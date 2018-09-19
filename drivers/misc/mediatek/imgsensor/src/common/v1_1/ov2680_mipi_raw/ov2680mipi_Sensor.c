@@ -60,7 +60,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = OV2680MIPI_SENSOR_ID,	/* record sensor id defined in Kd_imgsensor.h */
 
-	.checksum_value = 0x92dcaca1,	/* checksum value for Camera Auto Test, 0x64d5ee2e */
+	.checksum_value = 0x64d5ee2e,	/* checksum value for Camera Auto Test, 0x64d5ee2e */
 
 	.pre = {
 		.pclk = 66000000,	/* record different mode's pclk */
