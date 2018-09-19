@@ -177,6 +177,60 @@
 #define SEG3_GPU_DVFS_VSRAM15				(85000)		/* mV x 100 */
 
 /**************************************************
+ * MT6771 segment_4 : GPU DVFS OPP table Setting
+ **************************************************/
+#define SEG4_GPU_DVFS_FREQ0					(950000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ1					(875000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ2					(800000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ3					(743000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ4					(698000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ5					(653000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ6					(620000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ7					(580000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ8					(540000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ9					(500000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ10				(460000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ11				(420000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ12				(380000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ13				(340000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ14				(320000)	/* KHz */
+#define SEG4_GPU_DVFS_FREQ15				(300000)	/* KHz */
+
+#define SEG4_GPU_DVFS_VOLT0					(90000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT1					(86250)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT2					(82500)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT3					(79375)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT4					(76875)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT5					(74375)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT6					(72500)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT7					(71250)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT8					(70000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT9					(68750)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT10				(67500)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT11				(66250)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT12				(65000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT13				(63750)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT14				(63125)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VOLT15				(62500)		/* mV x 100 */
+
+#define SEG4_GPU_DVFS_VSRAM0				(100000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM1				(96250)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM2				(92500)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM3				(89375)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM4				(86875)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM5				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM6				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM7				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM8				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM9				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM10				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM11				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM12				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM13				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM14				(85000)		/* mV x 100 */
+#define SEG4_GPU_DVFS_VSRAM15				(85000)		/* mV x 100 */
+
+/**************************************************
  * PMIC Setting
  **************************************************/
 #define VGPU_MAX_VOLT					(SEG1_GPU_DVFS_VOLT0)
@@ -320,6 +374,7 @@ enum g_segment_id_enum {
 	MT6771_SEGMENT_1 = 1,
 	MT6771_SEGMENT_2,
 	MT6771_SEGMENT_3,
+	MT6771_SEGMENT_4,
 };
 enum g_post_divider_power_enum  {
 	POST_DIV2 = 1,

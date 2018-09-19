@@ -170,6 +170,24 @@ static struct g_opp_table_info g_opp_table_segment3[] = {
 	GPUOP(SEG3_GPU_DVFS_FREQ14, SEG3_GPU_DVFS_VOLT14, SEG3_GPU_DVFS_VSRAM14, 14),
 	GPUOP(SEG3_GPU_DVFS_FREQ15, SEG3_GPU_DVFS_VOLT15, SEG3_GPU_DVFS_VSRAM15, 15),
 };
+static struct g_opp_table_info g_opp_table_segment4[] = {
+	GPUOP(SEG4_GPU_DVFS_FREQ0, SEG4_GPU_DVFS_VOLT0, SEG4_GPU_DVFS_VSRAM0, 0),
+	GPUOP(SEG4_GPU_DVFS_FREQ1, SEG4_GPU_DVFS_VOLT1, SEG4_GPU_DVFS_VSRAM1, 1),
+	GPUOP(SEG4_GPU_DVFS_FREQ2, SEG4_GPU_DVFS_VOLT2, SEG4_GPU_DVFS_VSRAM2, 2),
+	GPUOP(SEG4_GPU_DVFS_FREQ3, SEG4_GPU_DVFS_VOLT3, SEG4_GPU_DVFS_VSRAM3, 3),
+	GPUOP(SEG4_GPU_DVFS_FREQ4, SEG4_GPU_DVFS_VOLT4, SEG4_GPU_DVFS_VSRAM4, 4),
+	GPUOP(SEG4_GPU_DVFS_FREQ5, SEG4_GPU_DVFS_VOLT5, SEG4_GPU_DVFS_VSRAM5, 5),
+	GPUOP(SEG4_GPU_DVFS_FREQ6, SEG4_GPU_DVFS_VOLT6, SEG4_GPU_DVFS_VSRAM6, 6),
+	GPUOP(SEG4_GPU_DVFS_FREQ7, SEG4_GPU_DVFS_VOLT7, SEG4_GPU_DVFS_VSRAM7, 7),
+	GPUOP(SEG4_GPU_DVFS_FREQ8, SEG4_GPU_DVFS_VOLT8, SEG4_GPU_DVFS_VSRAM8, 8),
+	GPUOP(SEG4_GPU_DVFS_FREQ9, SEG4_GPU_DVFS_VOLT9, SEG4_GPU_DVFS_VSRAM9, 9),
+	GPUOP(SEG4_GPU_DVFS_FREQ10, SEG4_GPU_DVFS_VOLT10, SEG4_GPU_DVFS_VSRAM10, 10),
+	GPUOP(SEG4_GPU_DVFS_FREQ11, SEG4_GPU_DVFS_VOLT11, SEG4_GPU_DVFS_VSRAM11, 11),
+	GPUOP(SEG4_GPU_DVFS_FREQ12, SEG4_GPU_DVFS_VOLT12, SEG4_GPU_DVFS_VSRAM12, 12),
+	GPUOP(SEG4_GPU_DVFS_FREQ13, SEG4_GPU_DVFS_VOLT13, SEG4_GPU_DVFS_VSRAM13, 13),
+	GPUOP(SEG4_GPU_DVFS_FREQ14, SEG4_GPU_DVFS_VOLT14, SEG4_GPU_DVFS_VSRAM14, 14),
+	GPUOP(SEG4_GPU_DVFS_FREQ15, SEG4_GPU_DVFS_VOLT15, SEG4_GPU_DVFS_VSRAM15, 15),
+};
 static const struct of_device_id g_gpufreq_of_match[] = {
 	{ .compatible = "mediatek,mt6771-gpufreq" },
 	{ /* sentinel */ }
@@ -192,7 +210,8 @@ static bool g_opp_stress_test_state;
 static bool g_fixed_freq_volt_state;
 static bool g_pbm_limited_ignore_state;
 static bool g_thermal_protect_limited_ignore_state;
-static unsigned int g_efuse_id;
+static unsigned int g_efuse_speed_bound_id;
+static unsigned int g_efuse_turbo_id;
 static unsigned int g_segment_id;
 static unsigned int g_opp_idx_num;
 static unsigned int g_cur_opp_freq;
@@ -1907,7 +1926,7 @@ static unsigned int __mt_gpufreq_calculate_dds(unsigned int freq_khz,
 	gpufreq_pr_debug("@%s: request freq = %d, post_divider = %d\n", __func__, freq_khz, (1 << post_divider_power));
 
 	/* [MT6771] dds is GPUPLL_CON1[21:0] */
-	if ((freq_khz >= SEG1_GPU_DVFS_FREQ15) && (freq_khz <= SEG1_GPU_DVFS_FREQ0)) {
+	if ((freq_khz >= 187500) && (freq_khz <= 950000)) {
 		dds = (((freq_khz / TO_MHz_HEAD * (1 << post_divider_power)) << DDS_SHIFT)
 				/ GPUPLL_FIN + ROUNDING_VALUE) / TO_MHz_TAIL;
 	} else {
@@ -2031,8 +2050,10 @@ static enum g_post_divider_power_enum __mt_gpufreq_get_post_divider_power(unsign
 	 */
 	enum g_post_divider_power_enum post_divider_power = POST_DIV4;
 
-	if (freq < 375000)
+	if (freq >= 187500 && freq < 375000)
 		post_divider_power = POST_DIV8;
+	if (freq  > 900000)
+		post_divider_power = POST_DIV2;
 
 	if (g_cur_post_divider_power != post_divider_power) {
 		g_parking = true;
@@ -2423,7 +2444,9 @@ static void __mt_gpufreq_set_initial(void)
 	g_cur_opp_cond_idx = 0;
 
 	/* set POST_DIVIDER initial value */
-	g_cur_post_divider_power = POST_DIV4;
+	g_cur_post_divider_power =
+		__mt_gpufreq_get_post_divider_power(
+		g_opp_table[g_cur_opp_cond_idx].gpufreq_khz, 0);
 	g_parking = false;
 
 	gpufreq_pr_debug("@%s: initial opp index = %d\n", __func__, g_cur_opp_cond_idx);
@@ -2535,32 +2558,38 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	/* check EFUSE register 0x11f10050[27:24] */
 	/* Free Version : 4'b0000 */
 	/* 1GHz Version : 4'b0001 */
-	/* 950MHz Version : 4'b0010 */
+	/* 950MHz Version : 4'b0010 (Segment4) */
 	/* 900MHz Version : 4'b0011 (Segment1) */
 	/* 850MHz Version : 4'b0100 */
 	/* 800MHz Version : 4'b0101 (Segment2) */
 	/* 750MHz Version : 4'b0110 */
 	/* 700MHz Version : 4'b0111 (Segment3) */
+	/* check EFUSE register 0x11F10050[3]=1 for Segment4 */
 	g_efuse_base = __mt_gpufreq_of_ioremap("mediatek,efusec", 0);
 	if (!g_efuse_base) {
 		gpufreq_pr_err("@%s: EFUSEC iomap failed", __func__);
 		return -ENOENT;
 	}
-	g_efuse_id = (readl(g_efuse_base + 0x50) & 0x0F000000) >> 24;
-	if ((g_efuse_id & 0x7) == 0x3) {
+	g_efuse_speed_bound_id = (readl(g_efuse_base + 0x50) & 0x0F000000);
+	g_efuse_turbo_id = (readl(g_efuse_base + 0x50) & 0x00000008);
+	if (g_efuse_speed_bound_id == 0x03000000) {
 		/* 900MHz Version */
 		g_segment_id = MT6771_SEGMENT_1;
-	} else if ((g_efuse_id & 0x7) == 0x5) {
+	} else if (g_efuse_speed_bound_id == 0x05000000) {
 		/* 800MHz Version */
 		g_segment_id = MT6771_SEGMENT_2;
-	} else if ((g_efuse_id & 0x7) == 0x7) {
+	} else if (g_efuse_speed_bound_id == 0x07000000) {
 		/* 700MHz Version */
 		g_segment_id = MT6771_SEGMENT_3;
+	} else if (g_efuse_speed_bound_id == 0x02000000 && g_efuse_turbo_id == 0x00000008) {
+		/* 950MHz Version */
+		g_segment_id = MT6771_SEGMENT_4;
 	} else {
 		/* Other Version, set default segment */
 		g_segment_id = MT6771_SEGMENT_2;
 	}
-	gpufreq_pr_info("@%s: g_efuse_id = 0x%08X, g_segment_id = %d\n", __func__, g_efuse_id, g_segment_id);
+	gpufreq_pr_info("@%s: g_efuse_speed_bound_id = 0x%08X, g_efuse_turbo_id = 0x%08X, g_segment_id = %d\n",
+			__func__, g_efuse_speed_bound_id, g_efuse_turbo_id, g_segment_id);
 
 	/* alloc PMIC regulator */
 	g_pmic = kzalloc(sizeof(struct g_pmic_info), GFP_KERNEL);
@@ -2596,7 +2625,11 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	} else if (g_segment_id == MT6771_SEGMENT_3) {
 		__mt_gpufreq_setup_opp_table(g_opp_table_segment3, ARRAY_SIZE(g_opp_table_segment3));
 		g_fixed_vsram_volt = SEG3_GPU_DVFS_VSRAM15;
-		g_fixed_vsram_volt_threshold = SEG3_GPU_DVFS_VOLT1;
+		g_fixed_vsram_volt_threshold = SEG3_GPU_DVFS_VOLT0;
+	} else if (g_segment_id == MT6771_SEGMENT_4) {
+		__mt_gpufreq_setup_opp_table(g_opp_table_segment4, ARRAY_SIZE(g_opp_table_segment4));
+		g_fixed_vsram_volt = SEG4_GPU_DVFS_VSRAM15;
+		g_fixed_vsram_volt_threshold = SEG4_GPU_DVFS_VOLT5;
 	}
 
 	/* setup PMIC init value */
