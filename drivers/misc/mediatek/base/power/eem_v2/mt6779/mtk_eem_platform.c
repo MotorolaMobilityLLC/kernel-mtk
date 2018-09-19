@@ -326,7 +326,8 @@ void get_freq_table_gpu(struct eem_det *det)
 	eem_debug("In gpu freq\n");
 
 	for (i = 0; i < NR_FREQ_GPU; i++) {
-		det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i),
+		det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx
+				(mt_gpufreq_get_ori_opp_idx(i)),
 					det->max_freq_khz);
 #if 0
 		eem_debug("freq_tbl_gpu[%d]=%d, (%d)\n",
@@ -470,11 +471,6 @@ void get_freq_table_vpu(struct eem_det *det)
 #endif
 		det->volt_tbl_orig[i] = VMAX_VAL;
 
-#if 0
-		eem_error("VPU max_f_khz=%d, freq_tbl[%d]=%d (%d)\n",
-			det->max_freq_khz, i, det->freq_tbl[i],
-			mt_gpufreq_get_freq_by_idx(i));
-#endif
 		if (det->freq_tbl[i] == 0)
 			break;
 	}
