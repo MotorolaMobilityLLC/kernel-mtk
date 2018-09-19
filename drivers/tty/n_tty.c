@@ -2424,7 +2424,7 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 	}
 break_out:
 	remove_wait_queue(&tty->write_wait, &wait);
-	if (b - buf != nr && tty->fasync)
+	if (b - buf != nr && tty->fasync && tty->driver_data)
 		set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
 	up_read(&tty->termios_rwsem);
 	return (b - buf) ? b - buf : retval;
