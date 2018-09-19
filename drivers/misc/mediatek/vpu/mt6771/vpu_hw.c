@@ -2805,6 +2805,11 @@ int vpu_hw_boot_sequence(int core)
 	ndelay(27);                     /* wait for 27ns */
 
 	VPU_CLR_BIT(ptr_reset, 12);     /* OCD_HALT_ON_RST pull down */
+	if (core >= VPU_MAX_NUM_CORES) { /* Set PRID */
+		LOG_DBG("vpu set prid failed, core idx=%d invalid\n", core);
+	} else {
+		vpu_write_field(core, FLD_PRID, core);
+	}
 	VPU_SET_BIT(ptr_reset, 4);      /* B_RST pull up */
 	VPU_SET_BIT(ptr_reset, 8);      /* D_RST pull up */
 	ndelay(27);                     /* wait for 27ns */
