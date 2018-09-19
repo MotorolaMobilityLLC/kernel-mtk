@@ -778,29 +778,33 @@ static void _pwrap_InitStaUpd(void)
 #else
 	WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0xfc);
 #endif
-#if 0
+
+#ifdef PMIC_WRAP_CRC_SUPPORT
 	/* CRC */
-#ifdef DUAL_PMICS
+#ifndef DUAL_PMICS
 	pwrap_write_nochk(PMIC_DEW_CRC_EN_ADDR, 0x1);
 	WRAP_WR32(PMIC_WRAP_CRC_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_SIG_ADR, DEW_CRC_VAL);
+	WRAP_WR32(PMIC_WRAP_SIG_ADR, PMIC_DEW_CRC_VAL_ADDR);
 #else
 	pwrap_write_nochk(PMIC_DEW_CRC_EN_ADDR, 0x1);
 	pwrap_write_nochk(EXT_DEW_CRC_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_CRC_EN, 0x1);
-	WRAP_WR32(PMIC_WRAP_SIG_ADR, (EXT_DEW_CRC_VAL << 16 | DEW_CRC_VAL));
+	WRAP_WR32(PMIC_WRAP_SIG_ADR, (PMIC_EXT_DEW_CRC_VAL << 16 |
+					PMIC_DEW_CRC_VAL_ADDR));
 #endif
-#endif
+#else
 	/* Signature */
 #ifndef DUAL_PMICS
 	WRAP_WR32(PMIC_WRAP_SIG_MODE, 0x1);
-	WRAP_WR32(PMIC_WRAP_SIG_ADR, MT6358_DEW_CRC_VAL);
+	WRAP_WR32(PMIC_WRAP_SIG_ADR, PMIC_DEW_CRC_VAL_ADDR);
 	WRAP_WR32(PMIC_WRAP_SIG_VALUE, 0x83);
 #else
 	WRAP_WR32(PMIC_WRAP_SIG_MODE, 0x3);
-	WRAP_WR32(PMIC_WRAP_SIG_ADR, (EXT_DEW_CRC_VAL << 16) | DEW_CRC_VAL);
+	WRAP_WR32(PMIC_WRAP_SIG_ADR, (PMIC_EXT_DEW_CRC_VAL << 16) |
+					PMIC_DEW_CRC_VAL_ADDR);
 	WRAP_WR32(PMIC_WRAP_SIG_VALUE, (0x83 << 16) | 0x83);
 #endif
+#endif /* end of crc */
 
 	WRAP_WR32(PMIC_WRAP_EINT_STA0_ADR, PMIC_CPU_INT_STA_ADDR);
 #ifdef DUAL_PMICS
@@ -1448,17 +1452,28 @@ static void pwrap_logging_at_isr(void)
 	PWRAPLOG("WDATA_SEQ_5=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_5));
 	PWRAPLOG("WDATA_SEQ_6=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_6));
 	PWRAPLOG("WDATA_SEQ_7=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_7));
+
 	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x8); /* clear log */
-	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x2); /* reenable */
+
+#ifdef PMIC_WRAP_MATCH_SUPPORT
+	/* Matching mode and Stop recording after interrupt trigger */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x5); /* reenable */
+#else
+	/* Matching mode and Continue recording after interrupt trigger */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x1); /* reenable */
+#endif
+
 	for (i = 0; i <= 14; i++) {
 		offset = 0xc00 + i * 4;
-		reg_addr = (PMIC_WRAP_BASE + offset);
-#if (PMIC_WRAP_KERNEL)
-		val = WRAP_RD32(((unsigned int *) (PMIC_WRAP_BASE + offset)));
-#else
+#if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
+		reg_addr = (unsigned int *) (PMIC_WRAP_BASE + offset);
 		val = WRAP_RD32(reg_addr);
-#endif
 		PWRAPLOG("addr:0x%p = 0x%x\n", reg_addr, val);
+#else
+		reg_addr = (PMIC_WRAP_BASE + offset);
+		val = WRAP_RD32(reg_addr);
+		PWRAPLOG("addr:0x%x = 0x%x\n", reg_addr, val);
+#endif
 	}
 	}
 }
