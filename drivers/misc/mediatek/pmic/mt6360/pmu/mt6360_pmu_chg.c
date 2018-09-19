@@ -83,6 +83,7 @@ struct mt6360_pmu_chg_info {
 
 	struct completion aicc_done;
 	struct completion pumpx_done;
+	atomic_t pe_complete;
 	/* mivr */
 	atomic_t mivr_cnt;
 	wait_queue_head_t waitq;
@@ -753,6 +754,7 @@ static int mt6360_enable_pump_express(struct mt6360_pmu_chg_info *mpci,
 	if (ret < 0)
 		return ret;
 	reinit_completion(&mpci->pumpx_done);
+	atomic_set(&mpci->pe_complete, 1);
 	timeout = wait_for_completion_interruptible_timeout(
 			       &mpci->pumpx_done, msecs_to_jiffies(pe_timeout));
 	if (timeout == 0)
@@ -1384,6 +1386,7 @@ static int mt6360_charger_do_event(struct charger_device *chg_dev, u32 event,
 static int mt6360_charger_plug_in(struct charger_device *chg_dev)
 {
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+	union power_supply_propval propval;
 	int ret = 0;
 
 	dev_dbg(mpci->dev, "%s\n", __func__);
@@ -1399,6 +1402,22 @@ static int mt6360_charger_plug_in(struct charger_device *chg_dev)
 	if (ret < 0) {
 		dev_err(mpci->dev, "%s: en te failed\n", __func__);
 		return ret;
+	}
+
+	/* Workaround for ibus stuck in pe/pe20 pattern */
+	ret = power_supply_get_property(mpci->psy,
+					POWER_SUPPLY_PROP_CHARGE_TYPE,
+					&propval);
+	if (ret < 0) {
+		dev_err(mpci->dev, "%s: get chg_type fail\n", __func__);
+		return ret;
+	}
+	if (atomic_read(&mpci->pe_complete) &&
+	    propval.intval != STANDARD_CHARGER) {
+		ret = mt6360_enable_pump_express(mpci, true);
+		if (ret < 0)
+			dev_err(mpci->dev, "%s: trigger pe20 pattern fail\n",
+				__func__);
 	}
 	return ret;
 }
@@ -1744,6 +1763,7 @@ static irqreturn_t mt6360_pmu_pumpx_donei_handler(int irq, void *data)
 	struct mt6360_pmu_chg_info *mpci = data;
 
 	dev_info(mpci->dev, "%s\n", __func__);
+	atomic_set(&mpci->pe_complete, 0);
 	complete(&mpci->pumpx_done);
 	return IRQ_HANDLED;
 }
@@ -2225,6 +2245,7 @@ static int mt6360_pmu_chg_probe(struct platform_device *pdev)
 #endif /* CONFIG_MT6360_PMU_CHARGER_TYPE_DETECT && !CONFIG_TCPC_CLASS */
 	init_completion(&mpci->aicc_done);
 	init_completion(&mpci->pumpx_done);
+	atomic_set(&mpci->pe_complete, 0);
 	atomic_set(&mpci->mivr_cnt, 0);
 	init_waitqueue_head(&mpci->waitq);
 	platform_set_drvdata(pdev, mpci);
