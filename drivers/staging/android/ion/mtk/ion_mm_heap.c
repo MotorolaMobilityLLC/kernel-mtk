@@ -48,19 +48,11 @@
 #define ION_FUNC_ENTER  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagStart, __func__); */
 #define ION_FUNC_LEAVE  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagEnd, __func__); */
 
-#ifdef CONFIG_DMAUSER_PAGES
-	static unsigned int order_gfp_flags[] = {
-		(__GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_RECLAIM,
-		(__GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_DIRECT_RECLAIM,
-		(__GFP_ZERO | __GFP_NOWARN)
-	};
-#else
-	static unsigned int order_gfp_flags[] = {
-		(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_RECLAIM,
-		(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_DIRECT_RECLAIM,
-		(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN)
-	};
-#endif
+static unsigned int order_gfp_flags[] = {
+	(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_RECLAIM,
+	(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_DIRECT_RECLAIM,
+	(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN)
+};
 
 static int order_to_index(unsigned int order)
 {
