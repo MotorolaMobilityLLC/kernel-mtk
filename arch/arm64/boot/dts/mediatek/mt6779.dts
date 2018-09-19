@@ -592,10 +592,37 @@
 		#clock-cells = <1>;
 	};
 
-	mfgcfg: mfgcfg@13000000 {
+	mfg_lorne@13000000 {
+		compatible = "mediatek,lorne";
+		reg = <0 0x13000000 0 0x80000>;
+		interrupts = <GIC_SPI 304 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-names = "RGX";
+		clock-frequency = <100000000>;
+	};
+
+	mfgcfg: mfgcfg@13fbf000 {
 		compatible = "mediatek,mfgcfg", "syscon";
 		reg = <0 0x13fbf000 0 0x1000>;
 		#clock-cells = <1>;
+	};
+	gpufreq {
+		compatible = "mediatek,mt6779-gpufreq";
+		clocks =
+			<&topckgen TOP_MUX_MFG>,
+			<&topckgen TOP_MFGPLL_CK>,
+			<&topckgen TOP_UNIVPLL_D3>,
+			<&scpsys SCP_SYS_MFG0>,
+			<&scpsys SCP_SYS_MFG1>,
+			<&scpsys SCP_SYS_MFG2>,
+			<&scpsys SCP_SYS_MFG3>;
+		clock-names =
+			"clk_mux",
+			"clk_main_parent",
+			"clk_sub_parent",
+			"mtcmos_mfg_async",
+			"mtcmos_mfg",
+			"mtcmos_mfg_core0",
+			"mtcmos_mfg_core1";
 	};
 
 	fhctl@1000ce00 {
