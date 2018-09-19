@@ -1,15 +1,4 @@
-/*
- * Copyright (C) 2018 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * audio_mem_control.h --  Mediatek ADSP dmemory control
  *
@@ -17,20 +6,15 @@
  * Author: Chipeng <Chipeng.chang@mediatek.com>
  */
 
-
-#ifndef AUDIO_MEM_CONTROL_H
-#define AUDIO_MEM_CONTROL_H
+#ifndef MTK_DSP_MEM_CONTROL_H
+#define MTK_DSP_MEM_CONTROL_H
 
 #include <linux/genalloc.h>
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/types.h>
 
-#include "../mtk-base-dsp.h"
-
-/* clk relate */
-#include "../../mt3967/mt3967-afe-clk.h"
-
+#include "mtk-base-dsp.h"
 
 struct audio_dsp_dram;
 struct gen_pool;
@@ -85,8 +69,6 @@ int mtk_init_adsp_msg_sharemem(struct audio_dsp_dram *msg_atod_share_buf,
 				unsigned long vaddr, unsigned long long paddr,
 				int size);
 
-/* get struct of sharemem_block */
-struct audio_dsp_dram *mtk_get_adsp_sharemem_block(int audio_task_id);
 unsigned int mtk_get_adsp_sharemem_size(int audio_task_id,
 					int task_sharemem_id);
 
@@ -96,4 +78,4 @@ int mtk_init_adsp_audio_share_mem(struct mtk_base_dsp *dsp);
 int dsp_dram_request(struct device *dev);
 int dsp_dram_release(struct device *dev);
 
-#endif /* end of AUDIO_MEM_CONTROL_H */
+#endif /* end of MTK_DSP_MEM_CONTROL_H */

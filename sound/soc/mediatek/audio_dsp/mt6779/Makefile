@@ -2,16 +2,11 @@
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 
-# include path
-ccflags-y += -Werror -I$(srctree)/sound/soc/mediatek/$(MTK_PLATFORM)/
-
-# MENU Governor Predict(low power)
-ifeq ($(CONFIG_MTK_ACAO_SUPPORT),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
+# adsp include path
+ifeq ($(CONFIG_SND_SOC_MTK_AUDIO_DSP),y)
+subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/common
+subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/$(MTK_PLATFORM)/
 endif
 
-# spm
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
-
 # platform code
-obj-$(CONFIG_SND_SOC_MTK_AUDIO_DSP) += audio_mem_control.o
+obj-$(CONFIG_SND_SOC_MTK_AUDIO_DSP) += dsp-platform-mem-control.o

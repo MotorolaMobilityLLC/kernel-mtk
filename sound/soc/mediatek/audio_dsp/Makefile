@@ -19,6 +19,7 @@ ifeq ($(CONFIG_SND_SOC_MTK_AUDIO_DSP),y)
 subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/audio_dsp/$(MTK_PLATFORM)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
 subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/common
+subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/$(MTK_PLATFORM)/
 endif
 
 # adsp driver path
@@ -33,6 +34,14 @@ endif
 # platform code
 obj-y += $(MTK_PLATFORM)/
 
+# spm
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+
+# MENU Governor Predict(low power)
+ifeq ($(CONFIG_MTK_ACAO_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/
+endif
+
 # common code
 obj-$(CONFIG_SND_SOC_MTK_AUDIO_DSP) += audio_buf.o
-obj-$(CONFIG_SND_SOC_MTK_AUDIO_DSP) += mtk-dsp-dai.o mtk-dsp-pcm.o mtk-dsp-common.o mtk-dsp-platform-driver.o
+obj-$(CONFIG_SND_SOC_MTK_AUDIO_DSP) += mtk-dsp-dai.o mtk-dsp-pcm.o mtk-dsp-common.o mtk-dsp-platform-driver.o mtk-dsp-mem-control.o

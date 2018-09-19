@@ -8,7 +8,7 @@
 #include <sound/pcm.h>
 #include <sound/core.h>
 
-#include "audio_mem_control.h"
+#include "mtk-dsp-mem-control.h"
 #include "mtk-dsp-common.h"
 #include "audio_buf.h"
 #include <linux/kprobes.h>
