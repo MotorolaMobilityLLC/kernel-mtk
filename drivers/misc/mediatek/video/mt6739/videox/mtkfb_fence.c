@@ -366,7 +366,7 @@ static size_t mtkfb_ion_phys_mmu_addr(struct ion_client *client, struct ion_hand
 				      unsigned int *mva)
 {
 	size_t size;
-	ion_phys_addr_t phy_addr;
+	ion_phys_addr_t phy_addr = 0;
 
 	if (!ion_client) {
 		MTKFB_FENCE_ERR("invalid ion client!\n");
