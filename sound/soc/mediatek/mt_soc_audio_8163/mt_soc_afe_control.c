@@ -794,10 +794,10 @@ void EnableI2SDivPower(uint32 Diveder_name, bool bEnable)
 {
 	if (bEnable) {
 		/* AUDIO_APLL1_DIV0 */
-		SetClkCfg(AUDIO_CLK_AUDDIV_0, 0 << Diveder_name,
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0 << Diveder_name,
 			 1 << Diveder_name);
 	} else
-		SetClkCfg(AUDIO_CLK_AUDDIV_0, 1 << Diveder_name,
+		Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 1 << Diveder_name,
 			1 << Diveder_name);
 }
 
@@ -851,7 +851,7 @@ void EnableApll1(bool bEnable)
 
 #if 0
 			/* apll2_div0_pdn power down */
-			SetClkCfg(AUDIO_CLK_AUDDIV_0, 0x0, 0x2);
+			Afe_Set_Reg(AUDIO_CLK_AUDDIV_0, 0x0, 0x2);
 #endif
 
 #ifndef COMMON_CLOCK_FRAMEWORK_API
