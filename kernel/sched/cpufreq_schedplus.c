@@ -276,6 +276,9 @@ static void cpufreq_sched_try_driver_target(
 	policy = cpufreq_cpu_get(gd->target_cpu);
 	/* update current freq asap if tiny system. */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	if (IS_ERR_OR_NULL(policy))
+		return;
+
 	max = policy->cpuinfo.max_freq;
 
 	/* freq is real world frequency already. */
