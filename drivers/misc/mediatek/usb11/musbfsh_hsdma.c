@@ -379,8 +379,8 @@ irqreturn_t musbfsh_dma_controller_irq(int irq, void *private_data)
 					 **/
 					txcsr |= MUSBFSH_TXCSR_TXPKTRDY;
 					musbfsh_writew(mbase, offset, txcsr);
-				}
-				musbfsh_dma_completion(musbfsh,
+				} else
+					musbfsh_dma_completion(musbfsh,
 						       musbfsh_chan->epnum,
 						       musbfsh_chan->transmit);
 			}
