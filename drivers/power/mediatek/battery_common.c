@@ -344,6 +344,7 @@ static enum power_supply_property battery_props[] = {
 	/* Add for Battery Service */
 	POWER_SUPPLY_PROP_batt_vol,
 	POWER_SUPPLY_PROP_batt_temp,
+	POWER_SUPPLY_PROP_TEMP,
 	/* Add for EM */
 	POWER_SUPPLY_PROP_TemperatureR,
 	POWER_SUPPLY_PROP_TempBattVoltage,
@@ -635,6 +636,9 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_batt_temp:
 		val->intval = data->BAT_batt_temp;
+		break;
+	case POWER_SUPPLY_PROP_TEMP:
+		val->intval = data->BAT_batt_temp * 10;
 		break;
 	case POWER_SUPPLY_PROP_TemperatureR:
 		val->intval = data->BAT_TemperatureR;
