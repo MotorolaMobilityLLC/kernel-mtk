@@ -27,6 +27,9 @@ int mdla_exit_procfs(void);
 
 void mdla_trace_begin(const int cmd_num);
 void mdla_trace_end(const int sw_cmd_id);
+void mdla_trace_tag_begin(const char *format, ...);
+void mdla_trace_tag_end(void);
+
 #endif
 
 #endif
