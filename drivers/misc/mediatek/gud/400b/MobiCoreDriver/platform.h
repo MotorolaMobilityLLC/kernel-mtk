@@ -37,7 +37,7 @@
 
 #define TBASE_CORE_SWITCHER
 /* Values of MPIDR regs in  cpu0, cpu1, cpu2, cpu3*/
-#if defined(CONFIG_MACH_MT3967)
+#if defined(CONFIG_MACH_MT3967) || defined(CONFIG_MACH_MT6779)
 #define CPU_IDS {0x81000000, 0x81000100, 0x81000200, 0x81000300, 0x81000400, \
 		0x81000500, 0x81000600, 0x81000700}
 #else
