@@ -901,16 +901,6 @@ enum eChannel {
 		}                                                              \
 	} while (0)
 
-/* basically , should separate into     p1/p1_d/p2/camsv/camsv_d, */
-/* currently, only use camsv/camsv_d/others     */
-enum eISPIrq {
-	_IRQ = 0,
-	_IRQ_D = 1,
-	_CAMSV_IRQ = 2,
-	_CAMSV_D_IRQ = 3,
-	_IRQ_MAX = 4,
-};
-
 enum eLOG_TYPE {
 	_LOG_DBG = 0,
 	/* currently, only used at ipl_buf_ctrl. to protect critical section */
@@ -4262,6 +4252,7 @@ static unsigned int prv_tstamp_us[_rt_dma_max_] = {0};
 static unsigned int sof_count[_ChannelMax] = {0, 0, 0, 0};
 static unsigned int start_time[_ChannelMax] = {0, 0, 0, 0};
 static unsigned int avg_frame_time[_ChannelMax] = {0, 0, 0, 0};
+static int vsync_cnt[2] = {0, 0};
 
 /* record lost p1_done or not, 1 for lost p1_done. 0 for normal , 2 for last
  * working buffer.
@@ -6597,6 +6588,8 @@ LOG_BYPASS:
 
 			if (ii == _rt_dma_max_)
 				pstRTBuf->state = 0;
+
+			vsync_cnt[0] = vsync_cnt[1] = 0;
 		}
 
 #ifdef _MAGIC_NUM_ERR_HANDLING_
@@ -10857,6 +10850,7 @@ IrqStatus[ISP_IRQ_TYPE_INT_SENINF4] =
 /*      */
 #endif
 #endif
+		vsync_cnt[0]++;
 	}
 
 	/* switch pass1 WDMA buffer     */
@@ -11147,6 +11141,7 @@ if (bSlowMotion == MFALSE) {
 			pstRTBuf->ring_buf[_rrzo_d_].data[1].bFilled,
 			pstRTBuf->ring_buf[_rrzo_d_].data[2].bFilled);
 		}
+		vsync_cnt[1]++;
 #ifdef _rtbc_buf_que_2_0_
 
 		sec = cpu_clock(0);	  /* ns */
@@ -11374,6 +11369,8 @@ if (bSlowMotion == MFALSE) {
 		}
 	}
 #endif
+//	log_inf("vsync_cnt[0]= %d, vsync_cnt[1] = %d\n",
+//	vsync_cnt[0], vsync_cnt[1]);
 	/* make sure isr sequence are all done after this status switch */
 	/* don't update CAMSV/CAMSV2 status */
 	for (j = 0; j < ISP_IRQ_TYPE_ISP_AMOUNT; j++) {
@@ -12375,7 +12372,34 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 #endif
-
+	case ISP_GET_VSYNC_CNT:
+		if (copy_from_user(&DebugFlag[0], (void *)Param,
+			sizeof(unsigned int)) != 0) {
+			log_err("get cur sof from user fail");
+			Ret = -EFAULT;
+		} else {
+			switch (DebugFlag[0]) {
+			case _IRQ:
+				DebugFlag[1] = vsync_cnt[0];
+				break;
+			case _IRQ_D:
+				DebugFlag[1] = vsync_cnt[1];
+				break;
+			default:
+				log_err("err P1 path(0x%x)\n", DebugFlag[0]);
+				Ret = -EFAULT;
+				break;
+			}
+		}
+		if (copy_to_user((void *)Param, &DebugFlag[1],
+			sizeof(unsigned int)) != 0) {
+			log_err("copy to user fail");
+			Ret = -EFAULT;
+		}
+		break;
+	case ISP_RESET_VSYNC_CNT:
+		vsync_cnt[0] = vsync_cnt[1] = 0;
+		break;
 	default:
 		log_err("Unknown Cmd(%d)", Cmd);
 		Ret = -EPERM;
@@ -12989,6 +13013,8 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd,
 	case ISP_GET_ISPCLK:
 	case ISP_DUMP_ISR_LOG:
 	case ISP_WAKELOCK_CTRL:
+	case ISP_GET_VSYNC_CNT:
+	case ISP_RESET_VSYNC_CNT:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
