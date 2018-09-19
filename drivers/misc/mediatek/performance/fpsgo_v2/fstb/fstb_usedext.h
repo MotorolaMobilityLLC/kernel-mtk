@@ -92,5 +92,11 @@ struct FSTB_RENDER_TARGET_FPS {
 	struct fps_level level[3];
 };
 
+struct FSTB_FTEH_LIST {
+	struct hlist_node hlist;
+	char process_name[16];
+	char thread_name[16];
+};
+
 #endif
 

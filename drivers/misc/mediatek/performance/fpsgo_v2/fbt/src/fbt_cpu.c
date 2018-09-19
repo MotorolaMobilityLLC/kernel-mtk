@@ -959,6 +959,19 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 	kfree(clus_floor_freq);
 }
 
+static int fbt_boost_correct(struct render_info *th_info,
+			unsigned int blc_wt, int pid)
+{
+	if (th_info->is_black == NOT_ASKED)
+		th_info->is_black =
+		(fpsgo_fbt2fstb_query_fteh_list(pid))?ASKED_IN:ASKED_OUT;
+
+	if (th_info->is_black == ASKED_IN)
+		return 0;
+
+	return fpsgo_fbt2fteh_judge_ceiling(th_info, blc_wt);
+}
+
 static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid, struct render_info *thread_info)
 {
 	int orig_blc = blc_wt;
@@ -975,7 +988,7 @@ static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid,
 		if (fbt_fteh_enable && thread_info &&
 			(thread_info->frame_type == NON_VSYNC_ALIGNED_TYPE ||
 			(thread_info->frame_type == VSYNC_ALIGNED_TYPE && thread_info->render_method == GLSURFACE))) {
-			ceiling_judge = fpsgo_fbt2fteh_judge_ceiling(thread_info, blc_wt);
+			ceiling_judge = fbt_boost_correct(thread_info, blc_wt, pid);
 
 			mutex_lock(&blc_mlock);
 			if (thread_info->p_blc) {
