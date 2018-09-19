@@ -77,8 +77,9 @@
 			safety_timer = <12>;		/* hour */
 			ircmp_resistor = <25000>;	/* uohm */
 			ircmp_vclamp = <32000>;		/* uV */
-			en_te;
-			en_wdt;
+			en_te = <1>;
+			en_wdt = <1>;
+			aicc_once = <1>;
 		};
 		fled {
 			compatible = "mediatek,mt6360_pmu_fled";

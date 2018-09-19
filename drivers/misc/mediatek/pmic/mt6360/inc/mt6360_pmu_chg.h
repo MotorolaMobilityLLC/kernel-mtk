@@ -136,6 +136,7 @@ struct mt6360_chg_platform_data {
 /* MT6360_PMU_CHG_STAT : 0x4A */
 #define MT6360_MASK_CHG_STAT	(0xC0)
 #define MT6360_SHFT_CHG_STAT	(6)
+#define MT6360_MASK_CHG_BATSYSUV	BIT(1)
 
 /* MT6360_PMU_ADC_CONFIG : 0x56 */
 #define MT6360_MASK_ZCV_EN	BIT(6)
@@ -148,6 +149,12 @@ struct mt6360_chg_platform_data {
 /* MT6360_PMU_FOD_CTRL : 0x65 */
 #define MT6360_MASK_FOD_SWEN	BIT(7)
 
+/* MT6360_PMU_CHG_CTRL20 : 0x66 */
+#define MT6360_MASK_EN_SDI	BIT(1)
+
+/* MT6360_PMU_FLED_EN : 0x7E */
+#define MT6360_MASK_STROBE_EN	BIT(2)
+
 /* MT6360_PMU_CHG_STAT5 : 0xE5 */
 #define MT6360_MASK_TYPEC_OTP	BIT(2)
 
@@ -158,9 +165,6 @@ struct mt6360_chg_platform_data {
 #define	MT6360_MASK_FOD_LR		BIT(5)
 #define MT6360_MASK_FOD_OV		BIT(1)
 #define MT6360_MASK_FOD_DONE		BIT(0)
-
-/* MT6360_PMU_FLED_EN : 0x7E */
-#define MT6360_MASK_STROBE_EN	BIT(2)
 
 /* MT6360_PMU_CHG_STAT1 : 0xE0 */
 #define MT6360_MASK_PWR_RDY_EVT	BIT(7)
