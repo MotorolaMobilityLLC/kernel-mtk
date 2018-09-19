@@ -502,7 +502,7 @@ static void sensor_init(void)
 	LOG_INF("E\n");
 	LOG_INF("[A5142] >> sensor_init\n");
 	write_cmos_sensor_8(0x0103, 0x01);	/* SOFTWARE_RESET (clears itself) */
-	mDELAY(100);		/* Initialization Time */
+	mdelay(100);		/* Initialization Time */
 
 	/* [Demo Initialization 1296 x 972 MCLK= 26MHz, PCLK=104MHz] */
 	/* stop_streaming */
@@ -677,7 +677,7 @@ static void sensor_init(void)
 	/* write_cmos_sensor(0x3014, 0x0908);  // FINE_INTEGRATION_TIME_ */
 	/* write_cmos_sensor_8(0x0100, 0x01);  // MODE_SELECT */
 
-	mDELAY(5);		/* Allow PLL to lock */
+	mdelay(5);		/* Allow PLL to lock */
 	LOG_INF("[A5142] <<  sensor_init\n");
 }				/*    MIPI_sensor_Init  */
 
@@ -697,7 +697,7 @@ static void preview_setting(void)
 	/* stop_streaming */
 	write_cmos_sensor_8(0x0100, 0x0);	/* MODE_SELECT */
 
-	mDELAY(20);
+	mdelay(20);
 
 	write_cmos_sensor_8(0x0104, 0x01);	/* GROUPED_PARAMETER_HOLD = 0x1 */
 
@@ -716,7 +716,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0308, 0x0A);	/* op_pix_clk_div =  10 */
 	write_cmos_sensor(0x030A, 0x01);	/* op_sys_clk_div = 1 */
 
-	mDELAY(10);
+	mdelay(10);
 
 	write_cmos_sensor(0x0344, 0x0008);	/* X_ADDR_START   =  8 */
 	write_cmos_sensor(0x0346, 0x0008);	/* Y_ADDR_START   =  8 */
@@ -741,7 +741,7 @@ static void preview_setting(void)
 	/* start_streaming */
 	write_cmos_sensor_8(0x0100, 0x01);	/* MODE_SELECT */
 
-	mDELAY(50);
+	mdelay(50);
 #else
 
 	/* stop_streaming */
@@ -763,7 +763,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0308, 0x0A);	/* op_pix_clk_div =  10 */
 	write_cmos_sensor(0x030A, 0x01);	/* op_sys_clk_div = 1 */
 
-	mDELAY(10);
+	mdelay(10);
 
 	write_cmos_sensor(0x0344, 0x0008);	/* X_ADDR_START   = 8 */
 	write_cmos_sensor(0x0346, 0x0008);	/* Y_ADDR_START    = 8 */
@@ -788,7 +788,7 @@ static void preview_setting(void)
 	/* start_streaming */
 	/* write_cmos_sensor_8(0x0100, 0x01);    // MODE_SELECT */
 
-	mDELAY(20);
+	mdelay(20);
 #endif
 	LOG_INF("[A5142] <<  preview_setting\n");
 }				/*    preview_setting  */
@@ -825,7 +825,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0308, 0x0A);	/* op_pix_clk_div =  10 */
 	write_cmos_sensor(0x030A, 0x01);	/* op_sys_clk_div = 1 */
 
-	mDELAY(10);
+	mdelay(10);
 
 	write_cmos_sensor(0x0344, 0x0008);	/* X_ADDR_START   = 8 */
 	write_cmos_sensor(0x0346, 0x0008);	/* Y_ADDR_START    = 8 */
@@ -850,7 +850,7 @@ static void capture_setting(kal_uint16 currefps)
 	/* start_streaming */
 	/* write_cmos_sensor_8(0x0100, 0x01);    // MODE_SELECT */
 
-	mDELAY(20);
+	mdelay(20);
 	LOG_INF("[A5142] <<  capture_setting\n");
 }				/*    capture_setting  */
 
@@ -870,7 +870,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	/* stop_streaming */
 	write_cmos_sensor_8(0x0100, 0x0);	/* MODE_SELECT */
 
-	mDELAY(20);
+	mdelay(20);
 
 	write_cmos_sensor_8(0x0104, 0x01);	/* GROUPED_PARAMETER_HOLD = 0x1 */
 
@@ -889,7 +889,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0308, 0x0A);	/* op_pix_clk_div =  10 */
 	write_cmos_sensor(0x030A, 0x01);	/* op_sys_clk_div = 1 */
 
-	mDELAY(10);
+	mdelay(10);
 
 	write_cmos_sensor(0x0344, 0x0008);	/* X_ADDR_START   =  8 */
 	write_cmos_sensor(0x0346, 0x0008);	/* Y_ADDR_START   =  8 */
@@ -914,7 +914,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	/* start_streaming */
 	write_cmos_sensor_8(0x0100, 0x01);	/* MODE_SELECT */
 
-	mDELAY(100);
+	mdelay(100);
 #else
 	preview_setting();
 #endif
