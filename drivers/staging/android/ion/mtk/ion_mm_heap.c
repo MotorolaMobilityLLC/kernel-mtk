@@ -882,12 +882,20 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 int ion_mm_heap_for_each_pool(int (*fn)(int high, int order, int cache,
 					size_t size))
 {
-	struct ion_heap *heap =
-	    ion_drv_get_heap(g_ion_device, ION_HEAP_TYPE_MULTIMEDIA, 1);
-	struct ion_system_heap
-	*sys_heap = container_of(heap, struct ion_system_heap, heap);
+	struct ion_heap *heap;
+	struct ion_system_heap *sys_heap;
 	int i;
 
+	heap = ion_drv_get_heap(g_ion_device, ION_HEAP_TYPE_MULTIMEDIA, 1);
+	if (!heap) {
+		IONMSG("%s get_heap is null\n", __func__);
+		return -1;
+	}
+	sys_heap = container_of(heap, struct ion_system_heap, heap);
+	if (!sys_heap) {
+		IONMSG("%s heap is null\n", __func__);
+		return -1;
+	}
 	for (i = 0; i < num_orders; i++) {
 		struct ion_page_pool *pool = sys_heap->pools[i];
 
