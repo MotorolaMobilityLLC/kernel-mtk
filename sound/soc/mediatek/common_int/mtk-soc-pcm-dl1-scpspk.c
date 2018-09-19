@@ -101,7 +101,6 @@ static bool vcore_dvfs_enable;
 
 static struct SPK_PROTECT_SERVICE spk_protect_service;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-static struct scp_reserve_mblock ScpReserveBuffer;
 static struct snd_dma_buffer ScpDramBuffer;
 
 static const int platformBufferOffset;
@@ -356,20 +355,16 @@ mtk_pcm_dl1spk_pointer(struct snd_pcm_substream *substream)
 
 static int dl1spk_get_scpdram_buffer(void)
 {
-	memset(&ScpReserveBuffer, 0, sizeof(ScpReserveBuffer));
-	ScpReserveBuffer.num = SPK_PROTECT_MEM_ID;
-	ScpReserveBuffer.start_phys =
-		scp_get_reserve_mem_phys(ScpReserveBuffer.num);
-	ScpReserveBuffer.start_virt =
-		scp_get_reserve_mem_virt(ScpReserveBuffer.num);
-	ScpReserveBuffer.size = scp_get_reserve_mem_size(ScpReserveBuffer.num);
-	ScpDramBuffer.addr = ScpReserveBuffer.start_phys;
-	ScpDramBuffer.area = (kal_uint8 *)ScpReserveBuffer.start_virt;
-	ScpDramBuffer.bytes = ScpReserveBuffer.size;
+	struct scp_spk_reserved_mem_t *reserved_mem;
+
+	reserved_mem = get_scp_spk_reserved_mem();
+	ScpDramBuffer.addr = reserved_mem->phy_addr;
+	ScpDramBuffer.area = (kal_uint8 *)reserved_mem->vir_addr;
+	ScpDramBuffer.bytes = reserved_mem->size;
 	memset_io(ScpDramBuffer.area, 0, ScpDramBuffer.bytes);
 	pr_debug("%s ScpDramBuffer.addr = %llx ScpDramBuffer.area = %p bytes = %zu",
-		__func__, ScpDramBuffer.addr, ScpDramBuffer.area,
-		ScpDramBuffer.bytes);
+		 __func__, ScpDramBuffer.addr, ScpDramBuffer.area,
+		 ScpDramBuffer.bytes);
 	return 0;
 }
 
@@ -528,9 +523,6 @@ static int mtk_pcm_dl1spk_hw_params(struct snd_pcm_substream *substream,
 				     spkproc_service_ipicmd_received,
 				     dl1scpspk_task_nnloaded_handling);
 
-	/* audio_reg_recv_message(TASK_SCENE_SPEAKER_PROTECTION,
-	 * spkprocservice_ipicmd_received);
-	 */
 	dl1spk_get_scpdram_buffer();
 	dl1spk_allocate_feedback_buffer(substream, hw_params);
 	dl1spk_allocate_platform_buffer(substream, hw_params);
@@ -886,6 +878,9 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	static int ctrl_val;
+	int ret;
+	unsigned int payloadlen = 0;
+	struct scp_spk_reserved_mem_t *reserved_mem;
 
 	pr_debug("%s(), value = %ld, scpspk_pcmdump = %d\n",
 		 __func__,
@@ -899,7 +894,7 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 		AudDrv_Emi_Clk_On();
 
 		if (ctrl_val == 1)
-			spkprotect_open_dump_file();
+			ret = spkprotect_open_dump_file();
 		else if (ctrl_val == 2)
 			spk_pcm_dump_split_task_enable();
 		else {
@@ -907,14 +902,25 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 				 __func__);
 			return -1;
 		}
-#if 0
-		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
+
+		if (ret < 0) {
+			pr_debug("%s(), open dump file fail, return\n",
+				 __func__);
+			return -1;
+		}
+
+		reserved_mem = get_scp_spk_dump_reserved_mem();
+		payloadlen = spkproc_ipi_pack_payload(SPK_PROTTCT_PCMDUMP_ON,
+						      reserved_mem->size,
+						      reserved_mem->phy_addr,
+						      NULL, NULL);
+		spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_ON,
-					    0,
+					    payloadlen,
 					    scpspk_pcmdump,
-					    0);
-#endif
+					    (char *)spkproc_ipi_get_payload());
+
 		spk_protect_service.ipiwait = true;
 	} else if (scpspk_pcmdump == true &&
 		   ucontrol->value.integer.value[0] == 0) {
@@ -930,14 +936,12 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 				 __func__);
 			return -1;
 		}
-#if 0
-		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
+
+		spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_OFF,
-					    0,
-					    scpspk_pcmdump,
-					    0);
-#endif
+					    1, 0, NULL);
+
 		AudDrv_Emi_Clk_Off();
 		ctrl_val = ucontrol->value.integer.value[0];
 	}
@@ -1112,10 +1116,9 @@ static int mtk_afe_dl1spk_probe(struct snd_soc_platform *platform)
 #ifdef use_wake_lock
 	aud_wake_lock_init(&scp_spk_suspend_lock, "scpspk lock");
 #endif
+	init_scp_spk_reserved_dram();
 	audio_ipi_client_spkprotect_init();
-
 	spkproc_service_set_spk_dump_message(&dump_ops);
-
 	audio_task_register_callback(TASK_SCENE_SPEAKER_PROTECTION,
 				     spkproc_service_ipicmd_received,
 				     dl1scpspk_task_nnloaded_handling);
