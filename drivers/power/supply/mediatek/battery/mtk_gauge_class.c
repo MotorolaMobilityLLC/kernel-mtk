@@ -836,7 +836,8 @@ int gauge_dev_set_reset_status(
 }
 
 int gauge_dev_dump(
-	struct gauge_device *gauge_dev, struct seq_file *m)
+	struct gauge_device *gauge_dev, struct seq_file *m,
+	int type)
 {
 	int ret = -ENOTSUPP;
 
@@ -846,7 +847,8 @@ int gauge_dev_dump(
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL &&
 		gauge_dev->ops->gauge_dump)
-		ret = gauge_dev->ops->gauge_dump(gauge_dev, m);
+		ret = gauge_dev->ops->gauge_dump(
+			gauge_dev, m, type);
 	gauge_unlock(gauge_dev);
 
 	return ret;

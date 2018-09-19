@@ -211,7 +211,7 @@ struct gauge_ops {
 	int (*gauge_set_reset_status)(
 		struct gauge_device *gauge_dev, int reset);
 	int (*gauge_dump)(
-		struct gauge_device *gauge_dev, struct seq_file *m);
+		struct gauge_device *gauge_dev, struct seq_file *m, int type);
 	int (*gauge_get_hw_version)(
 		struct gauge_device *gauge_dev);
 	int (*gauge_set_info)(
@@ -329,7 +329,7 @@ extern int gauge_dev_enable_battery_tmp_lt_interrupt(
 extern int gauge_dev_enable_battery_tmp_ht_interrupt(
 	struct gauge_device *gauge_dev, bool en, int threshold);
 extern int gauge_dev_dump(
-	struct gauge_device *gauge_dev, struct seq_file *m);
+	struct gauge_device *gauge_dev, struct seq_file *m, int type);
 extern int gauge_dev_get_hw_version(
 	struct gauge_device *gauge_dev);
 extern int gauge_dev_set_info(
