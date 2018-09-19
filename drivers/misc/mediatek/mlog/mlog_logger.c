@@ -723,7 +723,7 @@ collect_proc_mem_info:
 #endif
 #endif
 
-		} while (t != p);
+		} while (t && t != p);
 
 		/* emit log */
 		rss = P2K(get_mm_rss(p->mm));
