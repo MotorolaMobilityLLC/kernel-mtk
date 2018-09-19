@@ -58,6 +58,7 @@
 #include "apu_dvfs.h"
 #include <linux/regulator/consumer.h>
 #include "vpu_dvfs.h"
+#include <mtk_devinfo.h>
 
 
 #ifdef CONFIG_PM_WAKELOCKS
@@ -213,13 +214,16 @@ static bool force_change_vcore_opp[MTK_MDLA_CORE];
 static bool force_change_vvpu_opp[MTK_MDLA_CORE];
 static bool force_change_vmdla_opp[MTK_MDLA_CORE];
 static bool force_change_dsp_freq[MTK_MDLA_CORE];
-static bool force_change_dsp_if_freq[MTK_MDLA_CORE];
 static bool change_freq_first[MTK_MDLA_CORE];
 static bool opp_keep_flag;
 static uint8_t max_vcore_opp;
 //static uint8_t max_vvpu_opp;
 static uint8_t max_vmdla_opp;
 static uint8_t max_dsp_freq;
+static struct mdla_lock_power lock_power[MDLA_OPP_PRIORIYY_NUM][MTK_MDLA_CORE];
+static uint8_t max_opp[MTK_MDLA_CORE];
+static uint8_t min_opp[MTK_MDLA_CORE];
+static struct mutex power_lock_mutex;
 
 /* dvfs */
 static struct mdla_dvfs_opps opps;
@@ -234,6 +238,16 @@ static struct pm_qos_request mdla_qos_vmdla_request[MTK_MDLA_CORE];
 static struct regulator *vvpu_reg_id;
 static struct regulator *vmdla_reg_id;
 
+static void mdla_put_power(int core, enum mdlaPowerOnType type);
+static int mdla_set_power(struct mdla_power *power);
+static int mdla_get_power(int core);
+static uint8_t mdla_boost_value_to_opp(uint8_t boost_value);
+static bool mdla_update_lock_power_parameter
+	(struct mdla_lock_power *mdla_lock_power);
+static bool mdla_update_unlock_power_parameter
+	(struct mdla_lock_power *mdla_lock_power);
+static int mdla_lock_set_power(struct mdla_lock_power *mdla_lock_power);
+static int mdla_unlock_set_power(struct mdla_lock_power *mdla_lock_power);
 
 /*dvfs porting--*/
 #endif
@@ -318,6 +332,11 @@ static inline void command_entry_result(
 static u32 last_cmd_id = UINT32_MAX;
 static u32 fail_cmd_id = UINT32_MAX;
 static struct command_entry *last_cmd_ent;
+static inline
+struct command_entry *mdla_fifo_head(void)
+{
+	return last_cmd_ent;
+}
 
 static inline u32 mdla_fifo_head_id(void)
 {
@@ -374,7 +393,11 @@ static u32 last_cmd_id0 = UINT32_MAX;
 static u32 last_cmd_id1 = UINT32_MAX;
 static struct command_entry *last_cmd_ent0;
 static struct command_entry *last_cmd_ent1;
-
+static inline
+struct command_entry *mdla_fifo_head(void)
+{
+	return last_cmd_ent0;
+}
 static inline u32 mdla_fifo_head_id(void)
 {
 	return last_cmd_id0;
@@ -530,20 +553,27 @@ static int mdla_mmap(struct file *filp, struct vm_area_struct *vma)
 
 static void mdla_start_queue(struct work_struct *work)
 {
-	struct command_entry *run_cmd_data;
+	struct command_entry *ce;
 
 	mutex_lock(&cmd_list_lock);
 
 	while (max_cmd_id >= mdla_fifo_head_id()) {
+#ifndef MTK_MDLA_FPGA_PORTING
+/*end of cmd, power off mdla*/
+		//struct command_entry *fh = mdla_fifo_head()
+		//if (fh != NULL)
+			//Put bandwidth to fh->bandwidth.
+		mdla_put_power(0, VPT_ENQUE_ON);
+#endif
 		mdla_fifo_out();
 		if (!list_empty(&cmd_list)) {
-			run_cmd_data = list_first_entry(&cmd_list,
+			ce = list_first_entry(&cmd_list,
 					struct command_entry, list);
 			if (mdla_fifo_in(
-				run_cmd_data->id + run_cmd_data->count - 1,
-				run_cmd_data)) {
-				list_del(&run_cmd_data->list);
-				mdla_process_command(run_cmd_data);
+				ce->id + ce->count - 1,
+				ce)) {
+				list_del(&ce->list);
+				mdla_process_command(ce);
 			} else {
 				// TODO: remove debug
 				mdla_debug("%s: MDLA FIFO full\n", __func__);
@@ -792,21 +822,133 @@ static int mdla_get_hw_vcore_opp(int core)
 
 int mdla_get_opp(void)
 {
-	LOG_DBG("[mdla_%d] vvpu(%d->%d)\n", core, get_vvpu_value, opp_value);
+	LOG_DBG("[mdla] mdlacore.index:%d\n", opps.mdlacore.index);
 	return opps.mdlacore.index;
 }
+EXPORT_SYMBOL(mdla_get_opp);
+
+int get_mdlacore_opp(void)
+{
+	LOG_DBG("[mdla] get opp:%d\n", opps.mdlacore.index);
+	return opps.mdlacore.index;
+}
+EXPORT_SYMBOL(get_mdlacore_opp);
+
+int get_mdla_platform_floor_opp(void)
+{
+	return (MDLA_MAX_NUM_OPPS - 1);
+}
+EXPORT_SYMBOL(get_mdla_platform_floor_opp);
+
+int get_mdla_ceiling_opp(void)
+{
+	return max_opp[0];
+}
+EXPORT_SYMBOL(get_mdla_ceiling_opp);
+
+int get_mdla_opp_to_freq(uint8_t step)
+{
+	int freq = 0;
+	/* set dsp frequency - 0:788 MHz, 1:700 MHz, 2:606 MHz, 3:594 MHz*/
+	/* set dsp frequency - 4:560 MHz, 5:525 MHz, 6:450 MHz, 7:416 MHz*/
+	/* set dsp frequency - 8:364 MHz, 9:312 MHz, 10:273 MH, 11:208 MH*/
+	/* set dsp frequency - 12:137 MHz, 13:104 MHz, 14:52 MHz, 15:26 MHz*/
+
+	switch (freq) {
+	case 0:
+		freq = 788;
+		break;
+	case 1:
+		freq = 700;
+		break;
+	case 2:
+		freq = 606;
+		break;
+	case 3:
+		freq = 594;
+		break;
+	case 4:
+		freq = 560;
+		break;
+	case 5:
+		freq = 525;
+		break;
+	case 6:
+		freq = 450;
+		break;
+	case 7:
+		freq = 416;
+		break;
+	case 8:
+		freq = 364;
+		break;
+	case 9:
+		freq = 312;
+		break;
+	case 10:
+		freq = 273;
+		break;
+	case 11:
+		freq = 208;
+		break;
+	case 12:
+		freq = 137;
+		break;
+	case 13:
+		freq = 104;
+		break;
+	case 14:
+		freq = 52;
+		break;
+	case 15:
+		freq = 26;
+		break;
+
+	default:
+		LOG_ERR("wrong freq step(%d)", step);
+		return -EINVAL;
+	}
+	return freq;
+}
+EXPORT_SYMBOL(get_mdla_opp_to_freq);
 
 static int mdla_get_hw_vvpu_opp(int core)
 {
 	int opp_value = 0;
 	int get_vvpu_value = 0;
+	int vvpu_opp_0;
+	int vvpu_opp_1;
+	int vvpu_opp_2;
+	int vvpu_opp_0_vol;
+	int vvpu_opp_1_vol;
+	int vvpu_opp_2_vol;
+
+//index63:PTPOD 0x11C105B4
+	vvpu_opp_0 = (get_devinfo_with_index(63) & (0x7<<15))>>15;
+	vvpu_opp_1 = (get_devinfo_with_index(63) & (0x7<<12))>>12;
+	vvpu_opp_2 = (get_devinfo_with_index(63) & (0x7<<9))>>9;
+
+	if ((vvpu_opp_0 <= 7) && (vvpu_opp_0 >= 2))
+		vvpu_opp_0_vol = 800000;
+	else
+		vvpu_opp_0_vol = 825000;
+
+	if ((vvpu_opp_1 <= 7) && (vvpu_opp_1 >= 2))
+		vvpu_opp_1_vol = 700000;
+	else
+		vvpu_opp_1_vol = 725000;
+
+	if ((vvpu_opp_2 <= 7) && (vvpu_opp_2 >= 2))
+		vvpu_opp_2_vol = 625000;
+	else
+		vvpu_opp_2_vol = 650000;
 
 	get_vvpu_value = (int)regulator_get_voltage(vvpu_reg_id);
-	if (get_vvpu_value >= 825000)
+	if (get_vvpu_value >= vvpu_opp_0_vol)
 		opp_value = 0;
-	else if (get_vvpu_value > 725000)
+	else if (get_vvpu_value > vvpu_opp_1_vol)
 		opp_value = 0;
-	else if (get_vvpu_value > 650000)
+	else if (get_vvpu_value > vvpu_opp_2_vol)
 		opp_value = 1;
 	else
 		opp_value = 2;
@@ -820,13 +962,38 @@ static int mdla_get_hw_vmdla_opp(int core)
 {
 	int opp_value = 0;
 	int get_vmdla_value = 0;
+	int vmdla_opp_0;
+	int vmdla_opp_1;
+	int vmdla_opp_2;
+	int vmdla_opp_0_vol;
+	int vmdla_opp_1_vol;
+	int vmdla_opp_2_vol;
+
+	//index63:PTPOD 0x11C105B4
+	vmdla_opp_0 =  (get_devinfo_with_index(63) & (0x7<<24))>>24;
+	vmdla_opp_1 =  (get_devinfo_with_index(63) & (0x7<<21))>>21;
+	vmdla_opp_2 =  (get_devinfo_with_index(63) & (0x7<<18))>>18;
+	if ((vmdla_opp_0 <= 7) && (vmdla_opp_0 >= 2))
+		vmdla_opp_0_vol = 800000;
+	else
+		vmdla_opp_0_vol = 825000;
+
+	if ((vmdla_opp_1 <= 7) && (vmdla_opp_1 >= 2))
+		vmdla_opp_1_vol = 700000;
+	else
+		vmdla_opp_1_vol = 725000;
+
+	if ((vmdla_opp_2 <= 7) && (vmdla_opp_2 >= 2))
+		vmdla_opp_2_vol = 625000;
+	else
+		vmdla_opp_2_vol = 650000;
 
 	get_vmdla_value = (int)regulator_get_voltage(vmdla_reg_id);
-	if (get_vmdla_value >= 825000)
+	if (get_vmdla_value >= vmdla_opp_0_vol)
 		opp_value = 0;
-	else if (get_vmdla_value > 725000)
+	else if (get_vmdla_value > vmdla_opp_1_vol)
 		opp_value = 0;
-	else if (get_vmdla_value > 650000)
+	else if (get_vmdla_value > vmdla_opp_2_vol)
 		opp_value = 1;
 	else
 		opp_value = 2;
@@ -860,86 +1027,82 @@ static void mdla_dsp_if_freq_check(int core, uint8_t vmdla_index)
 	case 6:
 		opps.dsp.index = 5;
 		opps.ipu_if.index = 5;
-		if (vvpu_opp >= 5) {
-			/*dsp.index,ipu_if.index would not be changed*/
-			force_change_dsp_if_freq[core] = false;
-		} else {
-		/*dsp.index,ipu_if.index need to be changed*/
-			force_change_dsp_if_freq[core] = true;
+		if (vvpu_opp <= 5) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 7:
 		opps.dsp.index = 6;
 		opps.ipu_if.index = 6;
-		if (vvpu_opp >= 6)
-			force_change_dsp_if_freq[core] = false;
-		else
-			force_change_dsp_if_freq[core] = true;
+		if (vvpu_opp <= 6) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
+		}
 		break;
 	case 8:
 		opps.dsp.index = 7;
 		opps.ipu_if.index = 7;
-		if (vvpu_opp >= 7)
-			force_change_dsp_if_freq[core] = false;
-		else
-			force_change_dsp_if_freq[core] = true;
+		if (vvpu_opp <= 7) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
+		}
 		break;
 	case 9:
 		opps.dsp.index = 9;
 		opps.ipu_if.index = 9;
-		if (vvpu_opp >= 9)
-			force_change_dsp_if_freq[core] = false;
-		else
-			force_change_dsp_if_freq[core] = true;
+		if (vvpu_opp <= 9) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
+		}
 		break;
 	case 10:
 		opps.dsp.index = 10;
 		opps.ipu_if.index = 10;
-		if (vvpu_opp >= 10)
-			force_change_dsp_if_freq[core] = false;
-		else
-			force_change_dsp_if_freq[core] = true;
+		if (vvpu_opp <= 10) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
+		}
 		break;
 	case 11:
 		opps.dsp.index = 11;
 		opps.ipu_if.index = 11;
-		if (vvpu_opp >= 11)
-			force_change_dsp_if_freq[core] = false;
-		else
-			force_change_dsp_if_freq[core] = true;
-
+		if (vvpu_opp <= 11) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
+		}
 		break;
 	case 12:
 		opps.dsp.index = 12;
 		opps.ipu_if.index = 12;
-		if (vvpu_opp >= 12)
-			force_change_dsp_if_freq[core] = false;
-		else
-			force_change_dsp_if_freq[core] = true;
+		if (vvpu_opp <= 12) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
+		}
 		break;
 	case 13:
 		opps.dsp.index = 13;
 		opps.ipu_if.index = 13;
-		if (vvpu_opp >= 13)
-			force_change_dsp_if_freq[core] = false;
-		else
-			force_change_dsp_if_freq[core] = true;
+		if (vvpu_opp <= 13) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
+		}
 		break;
 	case 14:
 		opps.dsp.index = 14;
 		opps.ipu_if.index = 14;
-		if (vvpu_opp >= 14)
-			force_change_dsp_if_freq[core] = false;
-		else
-			force_change_dsp_if_freq[core] = true;
+		if (vvpu_opp <= 14) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
+		}
 		break;
 	case 15:
 		opps.dsp.index = 15;
 		opps.ipu_if.index = 15;
-		if (vvpu_opp >= 15)
-			force_change_dsp_if_freq[core] = false;
-		else
-			force_change_dsp_if_freq[core] = true;
+		if (vvpu_opp <= 15) {
+			opps.dsp.index = vvpu_opp;
+			opps.ipu_if.index = vvpu_opp;
+		}
 		break;
 	default:
 		LOG_ERR("wrong vmdla_index(%d)", vmdla_index);
@@ -966,7 +1129,6 @@ static void mdla_opp_check(int core, uint8_t vmdla_index, uint8_t freq_index)
 		force_change_vvpu_opp[core] = false;
 		force_change_vmdla_opp[core] = false;
 		force_change_dsp_freq[core] = false;
-		force_change_dsp_if_freq[core] = false;
 		goto out;
 	}
 
@@ -1015,6 +1177,18 @@ static void mdla_opp_check(int core, uint8_t vmdla_index, uint8_t freq_index)
 		}
 	}
 #else
+	if (vmdla_index < opps.vmdla.opp_map[max_opp[core]])
+		vmdla_index = opps.vmdla.opp_map[max_opp[core]];
+	if (vmdla_index > opps.vmdla.opp_map[min_opp[core]])
+		vmdla_index = opps.vmdla.opp_map[min_opp[core]];
+			if (freq_index < max_opp[core])
+				freq_index = max_opp[core];
+			if (freq_index > min_opp[core])
+				freq_index = min_opp[core];
+LOG_INF("opp_check + max_opp%d,min_opp%d,(%d/%d/%d),ori vmdla(%d)",
+	max_opp[core], min_opp[core], core,
+	vmdla_index, freq_index, opps.vmdla.index);
+
 if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
 
 	LOG_DBG("no need, vmdla opp(%d), hw vore opp(%d)\n",
@@ -1052,7 +1226,6 @@ if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
 	if (freq_index == 0xFF) {
 		LOG_DBG("no request, freq opp(%d)", freq_index);
 		force_change_dsp_freq[core] = false;
-		force_change_dsp_if_freq[core] = false;
 	} else {
 		if (freq_index < max_dsp_freq) {
 			LOG_INF("mdla bound dsp freq(%dMHz) to %dMHz",
@@ -1144,7 +1317,7 @@ if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
 	}
 	mutex_unlock(&opp_mutex);
 out:
-	LOG_INF("%s(%d)(%d/%d_%d)(%d/%d)(%d.%d.%d)(%d/%d)(%d/%d/%d/%d/%d)%d\n",
+	LOG_INF("%s(%d)(%d/%d_%d)(%d/%d)(%d.%d.%d)(%d/%d)(%d/%d/%d/%d)%d\n",
 		"opp_check",
 		core,
 		is_power_debug_lock,
@@ -1160,7 +1333,6 @@ out:
 		freq_check,
 		force_change_vmdla_opp[core],
 		force_change_dsp_freq[core],
-		force_change_dsp_if_freq[core],
 		change_freq_first[core],
 		opp_keep_flag);
 }
@@ -1241,7 +1413,6 @@ static bool mdla_change_opp(int core, int type)
 				opps.dsp.index,
 				opps.mdlacore.index,
 				opps.ipu_if.index);
-		if (force_change_dsp_if_freq[core]) {
 
 		ret = mdla_if_set_clock_source(clk_top_dsp_sel, opps.dsp.index);
 		if (ret) {
@@ -1259,7 +1430,6 @@ static bool mdla_change_opp(int core, int type)
 					"ret", ret);
 			goto out;
 		}
-			}
 			ret = mdla_set_clock_source(clk_top_dsp3_sel,
 						opps.mdlacore.index);
 			if (ret) {
@@ -1273,7 +1443,6 @@ static bool mdla_change_opp(int core, int type)
 
 
 		force_change_dsp_freq[core] = false;
-		force_change_dsp_if_freq[core] = false;
 		mutex_unlock(&opp_mutex);
 		break;
 	/* vmdla opp */
@@ -1507,7 +1676,7 @@ static int mdla_prepare_regulator_and_clock(struct device *pdev)
 		ret = -ENOENT;
 	    LOG_ERR("regulator_get vvpu_reg_id failed\n");
 	}
-	vmdla_reg_id = regulator_get(pdev, "mt6360,bulk1");
+	vmdla_reg_id = regulator_get(pdev, "VMDLA");
 	if (!vmdla_reg_id) {
 		ret = -ENOENT;
 		LOG_ERR("regulator_get vmdla_reg_id failed\n");
@@ -1621,7 +1790,6 @@ static int mdla_enable_regulator_and_clock(int core)
 	force_change_vcore_opp[core] = false;
 	force_change_vmdla_opp[core] = false;
 	force_change_dsp_freq[core] = false;
-	force_change_dsp_if_freq[core] = false;
 	return 0;
 #else
 	int ret = 0;
@@ -1837,7 +2005,6 @@ out:
 	force_change_vcore_opp[core] = false;
 	force_change_vmdla_opp[core] = false;
 	force_change_dsp_freq[core] = false;
-	force_change_dsp_if_freq[core] = false;
 	LOG_DBG("[mdla_%d] en_rc -\n", core);
 	return ret;
 #endif
@@ -2174,61 +2341,34 @@ static void mdla_put_power(int core, enum mdlaPowerOnType type)
 	LOG_DBG("[mdla_%d/%d] pp -\n", core, power_counter[core]);
 }
 
-int mdla_set_power(struct mdla_power *power)
+static int mdla_set_power(struct mdla_power *power)
 {
 	int ret = 0;
-	uint8_t vcore_opp_index = 0xFF;
 	uint8_t vmdla_opp_index = 0xFF;
 	uint8_t dsp_freq_index = 0xFF;
-	int i = 0, core = -1;
+	uint8_t opp_step = 0;
 
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
-		/*LOG_DBG("debug i(%d), (0x1 << i) (0x%x)", i, (0x1 << i));*/
-		if (power->core == (0x1 << i)) {
-			core = i;
-			break;
-		}
-	}
-
-	if (core >= MTK_MDLA_CORE || core < 0) {
-		LOG_ERR("wrong core index (0x%x/%d/%d)",
-				power->core, core, MTK_MDLA_CORE);
-		ret = -1;
-		return ret;
-	}
-
-	LOG_INF("[mdla_%d] set power opp:%d\n",
-			core, power->opp_step);
-
-	if (power->opp_step == 0xFF) {
-		vcore_opp_index = 0xFF;
-		vmdla_opp_index = 0xFF;
-		dsp_freq_index = 0xFF;
+	opp_step = mdla_boost_value_to_opp(power->boost_value);
+	if (opp_step < MDLA_MAX_NUM_OPPS && opp_step >= 0) {
+	vmdla_opp_index = opps.vmdla.opp_map[opp_step];
+	dsp_freq_index = opps.mdlacore.opp_map[opp_step];
 	} else {
-		if (power->opp_step < MDLA_MAX_NUM_OPPS &&
-							power->opp_step >= 0) {
-			vcore_opp_index = opps.vcore.opp_map[power->opp_step];
-			vmdla_opp_index = opps.vmdla.opp_map[power->opp_step];
-			dsp_freq_index =
-				opps.mdlacore.opp_map[power->opp_step];
-		} else {
-			LOG_ERR("wrong opp step (%d)", power->opp_step);
+		LOG_ERR("wrong opp step (%d)", opp_step);
 			ret = -1;
 			return ret;
 		}
-	}
-	mdla_opp_check(core, vmdla_opp_index, dsp_freq_index);
+	mdla_opp_check(0, vmdla_opp_index, dsp_freq_index);
 	//user->power_opp = power->opp_step;
 
-	ret = mdla_get_power(core);
+	ret = mdla_get_power(0);
 #if 0
 	mutex_lock(&(mdla_service_cores[core].state_mutex));
 	mdla_service_cores[core].state = VCT_IDLE;
 	mutex_unlock(&(mdla_service_cores[core].state_mutex));
 #endif
 	/* to avoid power leakage, power on/off need be paired */
-	mdla_put_power(core, VPT_PRE_ON);
-	LOG_INF("[mdla_%d] %s -\n", core, __func__);
+	mdla_put_power(0, VPT_PRE_ON);
+	LOG_INF("[mdla] %s -\n", __func__);
 	return ret;
 }
 
@@ -2281,7 +2421,7 @@ static void mdla_opp_keep_routine(struct work_struct *work)
 }
 static int mdla_init_hw(int core, struct platform_device *pdev)
 {
-	int ret, i;
+	int ret, i, j;
 	//int param;
 #if 0
 	struct vpu_shared_memory_param mem_param;
@@ -2340,7 +2480,6 @@ static int mdla_init_hw(int core, struct platform_device *pdev)
 			force_change_vcore_opp[i] = false;
 			force_change_vmdla_opp[i] = false;
 			force_change_dsp_freq[i] = false;
-			force_change_dsp_if_freq[i] = false;
 			change_freq_first[i] = false;
 			//exception_isr_check[i] = false;
 
@@ -2572,6 +2711,18 @@ static int mdla_init_hw(int core, struct platform_device *pdev)
 		#endif
 
 	}
+	/*init mdla lock power struct*/
+	for (i = 0 ; i < MDLA_OPP_PRIORIYY_NUM ; i++) {
+	lock_power[i][0].core = 0;
+	lock_power[i][0].max_boost_value = 100;
+	lock_power[i][0].min_boost_value = 0;
+	lock_power[i][0].lock = false;
+	lock_power[i][0].priority = NORMAL;
+		}
+	for (j = 0 ; j < MTK_MDLA_CORE ; j++) {
+		min_opp[j] = MDLA_MAX_NUM_OPPS-1;
+		max_opp[j] = 0;
+	}
 	return 0;
 
 out:
@@ -2795,6 +2946,9 @@ mdla_print_seq(s, "%s(rw): %s[%d/%d], %s[%d/%d]\n",
 			"dvfs_debug",
 			"vvpu", opps.vvpu.index, vvpu_opp,
 			"vmdla", opps.vmdla.index, vmdla_opp);
+mdla_print_seq(s, "dvfs_debug(rw): min/max opp[0][%d/%d]\n",
+	min_opp[0], max_opp[0]);
+
 mdla_print_seq(s, "%s[%d], %s[%d], %s[%d], %s[%d]\n",
 			"dsp", opps.dsp.index,
 			"ipu_if", opps.ipu_if.index,
@@ -2894,6 +3048,265 @@ int mdla_set_power_parameter(uint8_t param, int argc, int *args)
 
 out:
 	return ret;
+}
+
+static uint8_t mdla_boost_value_to_opp(uint8_t boost_value)
+{
+	int ret = 0;
+
+	if ((boost_value <= 100) && (boost_value >= 0))
+		ret = (100-boost_value)*(MDLA_MAX_NUM_OPPS-1)/100;
+	else
+		ret = MDLA_MAX_NUM_OPPS-1;
+
+	if (ret < 0)
+		ret = 0;
+	if (ret > MDLA_MAX_NUM_OPPS-1)
+		ret = MDLA_MAX_NUM_OPPS-1;
+	LOG_INF("%s opp %d\n", __func__, ret);
+	return ret;
+}
+
+static bool mdla_update_lock_power_parameter
+	(struct mdla_lock_power *mdla_lock_power)
+{
+	bool ret = true;
+	int i, core = -1;
+	unsigned int priority = mdla_lock_power->priority;
+
+	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+		if (mdla_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_MDLA_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			mdla_lock_power->core, core, MTK_MDLA_CORE);
+		ret = false;
+		return ret;
+	}
+	lock_power[priority][core].core = core;
+	lock_power[priority][core].max_boost_value =
+		mdla_lock_power->max_boost_value;
+	lock_power[priority][core].min_boost_value =
+		mdla_lock_power->min_boost_value;
+	lock_power[priority][core].lock = true;
+	lock_power[priority][core].priority =
+		mdla_lock_power->priority;
+LOG_INF("power_para core %d, maxboost:%d, minboost:%d pri%d\n",
+		lock_power[priority][core].core,
+		lock_power[priority][core].max_boost_value,
+		lock_power[priority][core].min_boost_value,
+		lock_power[priority][core].priority);
+	return ret;
+}
+static bool mdla_update_unlock_power_parameter
+	(struct mdla_lock_power *mdla_lock_power)
+{
+	bool ret = true;
+	int i, core = -1;
+	unsigned int priority = mdla_lock_power->priority;
+
+	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+		if (mdla_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_MDLA_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			mdla_lock_power->core, core, MTK_MDLA_CORE);
+		ret = false;
+		return ret;
+	}
+
+	lock_power[priority][core].core =
+		mdla_lock_power->core;
+	lock_power[priority][core].max_boost_value =
+		mdla_lock_power->max_boost_value;
+	lock_power[priority][core].min_boost_value =
+		mdla_lock_power->min_boost_value;
+	lock_power[priority][core].lock = false;
+	lock_power[priority][core].priority =
+		mdla_lock_power->priority;
+	LOG_INF("%s\n", __func__);
+	return ret;
+}
+uint8_t mdla_min_of(uint8_t value1, uint8_t value2)
+{
+	if (value1 <= value2)
+		return value1;
+	else
+		return value2;
+}
+uint8_t mdla_max_of(uint8_t value1, uint8_t value2)
+{
+	if (value1 <= value2)
+		return value2;
+	else
+		return value1;
+}
+
+bool mdla_update_max_opp(struct mdla_lock_power *mdla_lock_power)
+{
+	bool ret = true;
+	int i, core = -1;
+	uint8_t first_priority = NORMAL;
+	uint8_t first_priority_max_boost_value = 100;
+	uint8_t first_priority_min_boost_value = 0;
+	uint8_t temp_max_boost_value = 100;
+	uint8_t temp_min_boost_value = 0;
+	bool lock = false;
+	uint8_t max_boost = 100;
+	uint8_t min_boost = 0;
+	uint8_t priority = NORMAL;
+
+	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+		if (mdla_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_MDLA_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			mdla_lock_power->core, core, MTK_MDLA_CORE);
+		ret = false;
+		return ret;
+	}
+
+	for (i = 0 ; i < MDLA_OPP_PRIORIYY_NUM ; i++) {
+		if (lock_power[i][core].lock == true
+			&& lock_power[i][core].priority < NORMAL) {
+			first_priority = i;
+			first_priority_max_boost_value =
+				lock_power[i][core].max_boost_value;
+			first_priority_min_boost_value =
+				lock_power[i][core].min_boost_value;
+			break;
+			}
+	}
+	temp_max_boost_value = first_priority_max_boost_value;
+	temp_min_boost_value = first_priority_min_boost_value;
+/*find final_max_boost_value*/
+	for (i = first_priority ; i < MDLA_OPP_PRIORIYY_NUM ; i++) {
+		lock = lock_power[i][core].lock;
+		max_boost = lock_power[i][core].max_boost_value;
+		min_boost = lock_power[i][core].min_boost_value;
+		priority = lock_power[i][core].priority;
+		if (lock == true) {
+			if (lock_power[i][core].priority < NORMAL &&
+			(((max_boost <= temp_max_boost_value) &&
+			(max_boost >= temp_min_boost_value)) ||
+			((min_boost <= temp_max_boost_value) &&
+			(min_boost >= temp_min_boost_value)) ||
+			((max_boost >= temp_max_boost_value) &&
+			(min_boost <= temp_min_boost_value)))) {
+
+				temp_max_boost_value =
+	mdla_min_of(temp_max_boost_value, max_boost);
+				temp_min_boost_value =
+	mdla_max_of(temp_min_boost_value, min_boost);
+
+			}
+	}
+		}
+	max_opp[core] = mdla_boost_value_to_opp(temp_max_boost_value);
+	min_opp[core] = mdla_boost_value_to_opp(temp_min_boost_value);
+	LOG_INF("final_min_boost_value:%d final_max_boost_value:%d\n",
+		temp_min_boost_value, temp_max_boost_value);
+	return ret;
+}
+
+static int mdla_lock_set_power(struct mdla_lock_power *mdla_lock_power)
+{
+	int ret = -1;
+	int i, core = -1;
+
+	mutex_lock(&power_lock_mutex);
+	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+		if (mdla_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_MDLA_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			mdla_lock_power->core, core, MTK_MDLA_CORE);
+		ret = false;
+		mutex_unlock(&power_lock_mutex);
+		return ret;
+	}
+
+
+	if (!mdla_update_lock_power_parameter(mdla_lock_power)) {
+		mutex_unlock(&power_lock_mutex);
+		return -1;
+		}
+	if (!mdla_update_max_opp(mdla_lock_power)) {
+		mutex_unlock(&power_lock_mutex);
+		return -1;
+		}
+#if 0
+	if (vpu_update_max_opp(vpu_lock_power)) {
+	power.opp_step = min_opp[core];
+	power.freq_step = min_opp[core];
+	power.core = vpu_lock_power->core;
+	ret = vpu_set_power(user, &power);
+	}
+#endif
+	mutex_unlock(&power_lock_mutex);
+	return ret;
+}
+static int mdla_unlock_set_power(struct mdla_lock_power *mdla_lock_power)
+{
+	int ret = -1;
+	int i, core = -1;
+
+	mutex_lock(&power_lock_mutex);
+	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+		if (mdla_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_MDLA_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			mdla_lock_power->core, core, MTK_MDLA_CORE);
+		ret = false;
+		return ret;
+	}
+	if (!mdla_update_unlock_power_parameter(mdla_lock_power)) {
+		mutex_unlock(&power_lock_mutex);
+		return -1;
+		}
+	if (!mdla_update_max_opp(mdla_lock_power)) {
+		mutex_unlock(&power_lock_mutex);
+		return -1;
+		}
+	mutex_unlock(&power_lock_mutex);
+	return ret;
+
+}
+__u8 mdla_get_first_priority_cmd(void)
+{
+	struct command_entry *iter, *n;
+	__u8 first_priority = MDLA_REQ_MAX_NUM_PRIORITY-1;
+
+	if (!list_empty(&cmd_list)) {
+		list_for_each_entry_safe(iter, n, &cmd_list, list) {
+			if (iter->priority < first_priority)
+				first_priority = iter->priority;
+		}
+	}
+
+	LOG_INF("%s:first_priority=%d\n", __func__, first_priority);
+	return first_priority;
 }
 
 /*dvfs porting --*/
@@ -3224,11 +3637,29 @@ static int mdla_process_command(struct command_entry *ce)
 	u32 count = ce->count;
 	u32 *cmd = (u32 *) ce->kva;
 	int ret = 0;
+#ifndef MTK_MDLA_FPGA_PORTING
+	uint8_t opp_step = 0;
+	uint8_t vmdla_opp_index = 0xFF;
+	uint8_t dsp_freq_index = 0xFF;
+#endif
 	mdla_debug("%s: id: %d, count: %d, addr: %lx\n",
 		__func__, cmd[84], ce->count,
 		(unsigned long)addr);
 
 #ifndef MTK_MDLA_FPGA_PORTING
+		opp_step = mdla_boost_value_to_opp(ce->boost_value);
+		vmdla_opp_index = opps.vmdla.opp_map[opp_step];
+		dsp_freq_index = opps.mdlacore.opp_map[opp_step];
+		/*if running cmd priority < priority list, increase opp*/
+		if (ce->priority < mdla_get_first_priority_cmd()) {
+			LOG_INF("opp to 0 to speed up low priority cmd:%d\n",
+				ce->priority);
+			vmdla_opp_index = 0;
+			dsp_freq_index = 0;
+		}
+
+		mdla_opp_check(0, vmdla_opp_index, dsp_freq_index);
+
 	/* step1, enable clocks and boot-up if needed */
 	ret = mdla_get_power(0);
 	if (ret) {
@@ -3544,6 +3975,96 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 		return mdla_ion_kmap(arg);
 	case IOCTL_ION_KUNMAP:
 		return mdla_ion_kunmap(arg);
+#ifndef MTK_MDLA_FPGA_PORTING
+	case IOCTL_SET_POWER:
+	{
+		struct mdla_power power;
+
+		if (copy_from_user(&power, (void *) arg,
+			sizeof(struct mdla_power))) {
+			retval = -EFAULT;
+			return retval;
+		}
+
+		retval = mdla_set_power(&power);
+		LOG_INF("[SET_POWER] ret=%d\n", retval);
+		return retval;
+
+		break;
+	}
+
+	case IOCTL_EARA_LOCK_POWER:
+	{
+		struct mdla_lock_power mdla_lock_power;
+
+		if (copy_from_user(&mdla_lock_power, (void *) arg,
+			sizeof(struct mdla_lock_power))) {
+			retval = -EFAULT;
+			return retval;
+		}
+
+		mdla_lock_power.lock = true;
+		mdla_lock_power.priority = EARA_QOS;
+LOG_INF("[mdla] IOCTL_EARA_LOCK_POWER +,maxboost:%d, minboost:%d\n",
+	mdla_lock_power.max_boost_value, mdla_lock_power.min_boost_value);
+		retval = mdla_lock_set_power(&mdla_lock_power);
+		return retval;
+
+		break;
+	}
+	case IOCTL_EARA_UNLOCK_POWER:
+	{
+		struct mdla_lock_power mdla_lock_power;
+
+		if (copy_from_user(&mdla_lock_power, (void *) arg,
+			sizeof(struct mdla_lock_power))) {
+			retval = -EFAULT;
+			return retval;
+			}
+		mdla_lock_power.lock = false;
+		mdla_lock_power.priority = EARA_QOS;
+		LOG_INF("[mdla] IOCTL_EARA_UNLOCK_POWER +\n");
+		retval = mdla_unlock_set_power(&mdla_lock_power);
+		return retval;
+
+		break;
+	}
+	case IOCTL_POWER_HAL_LOCK_POWER:
+	{
+		struct mdla_lock_power mdla_lock_power;
+
+		if (copy_from_user(&mdla_lock_power, (void *) arg,
+			sizeof(struct mdla_lock_power))) {
+			retval = -EFAULT;
+			return retval;
+			}
+		mdla_lock_power.lock = true;
+		mdla_lock_power.priority = POWER_HAL;
+LOG_INF("[mdla] IOCTL_POWER_HAL_LOCK_POWER +, maxboost:%d, minboost:%d\n",
+	mdla_lock_power.max_boost_value, mdla_lock_power.min_boost_value);
+		retval = mdla_lock_set_power(&mdla_lock_power);
+		return retval;
+
+		break;
+	}
+	case IOCTL_POWER_HAL_UNLOCK_POWER:
+	{
+		struct mdla_lock_power mdla_lock_power;
+
+		if (copy_from_user(&mdla_lock_power, (void *) arg,
+			sizeof(struct mdla_lock_power))) {
+			retval = -EFAULT;
+			return retval;
+			}
+		mdla_lock_power.lock = false;
+		mdla_lock_power.priority = POWER_HAL;
+		LOG_INF("[mdla] IOCTL_POWER_HAL_UNLOCK_POWER +\n");
+		retval = mdla_unlock_set_power(&mdla_lock_power);
+		return retval;
+
+		break;
+	}
+#endif
 	default:
 		return -EINVAL;
 	}
