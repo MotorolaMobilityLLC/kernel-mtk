@@ -191,15 +191,11 @@ unsigned int spkproc_ipi_pack_payload(uint16_t msg_id, uint32_t param1,
 		ret = sizeof(unsigned int) * 4;
 		break;
 	case SPK_PROTECT_PREPARE:
-		if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
-		    substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE)
-			ipi_payload_buf[0] = Soc_Aud_I2S_WLEN_WLEN_32BITS;
-		else
-			ipi_payload_buf[0] = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-		ipi_payload_buf[1] = (uint32_t)substream->runtime->rate;
-		ipi_payload_buf[2] = (uint32_t)substream->runtime->channels;
+		ipi_payload_buf[0] = (uint32_t)(substream->runtime->format);
+		ipi_payload_buf[1] = (uint32_t)(substream->runtime->rate);
+		ipi_payload_buf[2] = (uint32_t)(substream->runtime->channels);
 		ipi_payload_buf[3] =
-			(uint32_t)substream->runtime->period_size;
+			(uint32_t)(substream->runtime->period_size);
 		ret = sizeof(unsigned int) * 4;
 		break;
 	case SPK_PROTECT_IVMEMPARAM:
@@ -230,14 +226,8 @@ unsigned int spkproc_ipi_pack_payload(uint16_t msg_id, uint32_t param1,
 		ret = sizeof(unsigned int) * 4;
 		break;
 	case SPK_PROTECT_SPEECH_PREPARE:
-		if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
-		    substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE)
-			ipi_payload_buf[0] =
-				Soc_Aud_I2S_WLEN_WLEN_32BITS;
-		else
-			ipi_payload_buf[0] =
-				Soc_Aud_I2S_WLEN_WLEN_16BITS;
-
+		ipi_payload_buf[0] =
+				(uint32_t)substream->runtime->format;
 		ipi_payload_buf[1] =
 			(uint32_t)substream->runtime->rate;
 		ipi_payload_buf[2] =
