@@ -386,8 +386,7 @@ int LC898212AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 
 int LC898212AF_GetFileName(unsigned char *pFileName)
 {
-	#if SUPPORT_GETTING_LENS_FOLDER_NAME
-	char FilePath[256];
+	char FilePath[512];
 	char *FileString;
 
 	sprintf(FilePath, "%s", __FILE__);
@@ -396,8 +395,6 @@ int LC898212AF_GetFileName(unsigned char *pFileName)
 	FileString = (strrchr(FilePath, '/') + 1);
 	strncpy(pFileName, FileString, AF_MOTOR_NAME);
 	LOG_INF("FileName : %s\n", pFileName);
-	#else
-	pFileName = '\0';
-	#endif
+
 	return 1;
 }
