@@ -350,7 +350,9 @@ static loff_t sdcardfs_file_llseek(struct file *file, loff_t offset, int whence)
 	int err;
 	struct file *lower_file;
 	const struct cred *saved_cred;
-	OVERRIDE_CRED(SDCARDFS_SB(file->f_path.dentry->d_sb), saved_cred);
+	saved_cred = override_fsids(SDCARDFS_SB(file->f_path.dentry->d_sb));
+	if (!saved_cred)
+		return -ENOMEM;
 
 
 	err = generic_file_llseek(file, offset, whence);
@@ -361,7 +363,7 @@ static loff_t sdcardfs_file_llseek(struct file *file, loff_t offset, int whence)
 	err = generic_file_llseek(lower_file, offset, whence);
 
 out:
-	REVERT_CRED(saved_cred);
+	revert_fsids(saved_cred);
 	return err;
 }
 
