@@ -38,6 +38,35 @@ void __attribute__((weak)) mtk_idle_cg_monitor(int sel) {}
 void __attribute__((weak)) idle_refcnt_inc(void) {}
 void __attribute__((weak)) idle_refcnt_dec(void) {}
 
+bool __attribute__((weak)) mtk_spm_arch_type_get(void) { return false; }
+void __attribute__((weak)) mtk_spm_arch_type_set(bool type) {}
+
+/* mtk_dpidle_is_active() for pmic_throttling_dlpt
+ *   return 0 : entering dpidle recently ( > 1s)
+ *                      => normal mode(dlpt 10s)
+ *   return 1 : entering dpidle recently (<= 1s)
+ *                      => light-loading mode(dlpt 20s)
+ */
+#define DPIDLE_ACTIVE_TIME		(1)
+struct timeval pre_dpidle_time;
+bool mtk_dpidle_is_active(void)
+{
+	struct timeval current_time;
+	long int diff;
+
+	do_gettimeofday(&current_time);
+	diff = current_time.tv_sec - pre_dpidle_time.tv_sec;
+
+	if (diff > DPIDLE_ACTIVE_TIME)
+		return false;
+	else if ((diff == DPIDLE_ACTIVE_TIME) &&
+		(current_time.tv_usec > pre_dpidle_time.tv_usec))
+		return false;
+	else
+		return true;
+}
+EXPORT_SYMBOL(mtk_dpidle_is_active);
+
 
 static ssize_t idle_state_read(char *ToUserBuf, size_t sz_t, void *priv)
 {
@@ -78,6 +107,11 @@ static ssize_t idle_state_read(char *ToUserBuf, size_t sz_t, void *priv)
 
 	log("\n");
 
+	log("**************** mtk_spm_arch **********************\n");
+	log("mtk_spm_arch: %s-oriented\n",
+		mtk_spm_arch_type_get() ? "resource" : "scenario");
+	log("\n");
+
 	#define MTK_DEBUGFS_IDLE	"/d/cpuidle/idle_state"
 	#define MTK_DEBUGFS_DPIDLE	"/d/cpuidle/dpidle_state"
 	#define MTK_DEBUGFS_SODI3	"/d/cpuidle/soidle3_state"
@@ -90,8 +124,10 @@ static ssize_t idle_state_read(char *ToUserBuf, size_t sz_t, void *priv)
 	log("sodi3 help:           cat %s\n", MTK_DEBUGFS_SODI3);
 	log("idle ratio profile:   echo ratio 1/0 > %s\n", MTK_DEBUGFS_IDLE);
 	log("idle latency profile: echo latency 1/0 > %s\n", MTK_DEBUGFS_IDLE);
-	log("cgmon off/dp/so3/so:  echo cgmon 0/1/2/3 > %s\n"
-		, MTK_DEBUGFS_IDLE);
+	log("cgmon off/dp/so3/so:  echo cgmon 0/1/2/3 > %s\n",
+		MTK_DEBUGFS_IDLE);
+	log("mtk_spm_arch_type:    echo spm_arch_type 0/1 > %s\n",
+		MTK_DEBUGFS_IDLE);
 	log("\n");
 
 	return p - ToUserBuf;
@@ -126,6 +162,8 @@ static ssize_t idle_state_write(char *FromUserBuf, size_t sz, void *priv)
 				parm == 3 ? IDLE_TYPE_SO : -1);
 		} else if (!strcmp(cmd, "screen_off_sodi3")) {
 			mtk_idle_screen_off_sodi3 = parm ? true : false;
+		} else if (!strcmp(cmd, "spm_arch_type")) {
+			mtk_spm_arch_type_set(parm ? true : false);
 		}
 		return sz;
 	} else if ((!kstrtoint(FromUserBuf, 10, &parm)) == 1) {

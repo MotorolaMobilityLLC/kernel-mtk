@@ -18,7 +18,7 @@
 #include <asm/setup.h>
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
-#include <mach/wd_api.h>
+#include <mt-plat/mtk_wd_api.h> /* ap wdt related definitons */
 #endif
 #if defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
@@ -27,6 +27,7 @@
 
 #include <mtk_spm_internal.h>
 #include <mtk_spm_suspend_internal.h>
+#include <mtk_spm_resource_req_internal.h>
 
 #include <mt-plat/mtk_ccci_common.h>
 
@@ -121,9 +122,13 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 static void spm_suspend_pcm_setup_before_wfi(u32 cpu,
 		struct pwr_ctrl *pwrctrl)
 {
+	unsigned int resource_usage = 0;
+
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 	iccs_enter_low_power_state();
 #endif
+
+	resource_usage = spm_get_resource_usage();
 
 	spm_suspend_pre_process(pwrctrl);
 
@@ -132,8 +137,8 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu,
 	__spm_sync_pcm_flags(pwrctrl);
 	pwrctrl->timer_val = __spm_get_pcm_timer_val(pwrctrl);
 
-	SMC_CALL(SUSPEND_ARGS, pwrctrl->pcm_flags, pwrctrl->pcm_flags1,
-		pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SUSPEND_ARGS, pwrctrl->pcm_flags,
+		       pwrctrl->pcm_flags1, pwrctrl->timer_val, resource_usage);
 }
 
 static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
@@ -202,7 +207,7 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 	}
 
 #if defined(CONFIG_PINCTRL_MTK)
-	if (wakesta->r12 & STA1_EINT_EVENT)
+	if (wakesta->r12 & R12_EINT_EVENT_B)
 		mt_eint_print_status();
 #endif
 
@@ -213,25 +218,25 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_ECCCI_DRIVER
-	if (wakesta->r12 & STA1_MD2AP_PEER_WAKEUP) {
+	if (wakesta->r12 & R12_MD2AP_PEER_WAKEUP_EVENT) {
 		hif_id = WAKE_SRC_MD_WDT;
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC,
 		(char *)&hif_id, sizeof(hif_id));
 	}
 
-	if (wakesta->r12 & STA1_AP2AP_PEER_WAKEUP) {
+	if (wakesta->r12 & R12_AP2AP_PEER_WAKEUP_EVENT) {
 		hif_id = WAKE_SRC_HIF_DPMAIF;
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC,
 		(char *)&hif_id, sizeof(hif_id));
 	}
 
-	if (wakesta->r12 & STA1_CCIF0_EVENT) {
+	if (wakesta->r12 & R12_CCIF0_EVENT_B) {
 		hif_id = WAKE_SRC_HIF_CCIF0;
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC,
 		(char *)&hif_id, sizeof(hif_id));
 	}
 
-	if (wakesta->r12 & STA1_CCIF1_EVENT) {
+	if (wakesta->r12 & R12_CCIF1_EVENT_B) {
 		hif_id = WAKE_SRC_HIF_CCIF1;
 		exec_ccci_kern_func_by_md_id(2, ID_GET_MD_WAKEUP_SRC,
 		(char *)&hif_id, sizeof(hif_id));

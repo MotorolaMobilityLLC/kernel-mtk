@@ -43,7 +43,8 @@
 	defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6759) || \
 	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || \
 	defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6765) || \
-	defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_MT3967)
+	defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_MT3967) || \
+	defined(CONFIG_MACH_MT6779)
 
 #include "clkbuf_v1/mtk_clkbuf_ctl.h"
 

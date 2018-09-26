@@ -119,6 +119,7 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 {
 	int ret = 0;
 
+#ifndef CONFIG_TCPC_CLASS
 	int boot_mode = 0;
 
 	if (!mtk_chg->chg_online) {
@@ -129,6 +130,7 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 			kernel_power_off();
 		}
 	}
+#endif /* !CONFIG_TCPC_CLASS */
 
 	return ret;
 }
@@ -145,6 +147,9 @@ static int mt_charger_get_property(struct power_supply *psy,
 		/* Force to 1 in all charger type */
 		if (mtk_chg->chg_type != CHARGER_UNKNOWN)
 			val->intval = 1;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_TYPE:
+		val->intval = mtk_chg->chg_type;
 		break;
 	default:
 		return -EINVAL;

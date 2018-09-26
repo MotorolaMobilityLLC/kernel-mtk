@@ -30,7 +30,6 @@
 
 #include <mtk_spm_irq.h>
 #include <mtk_spm_internal.h>
-#include <mtk_spm_mcdsr_internal.h>
 #include <mtk_sspm.h>
 
 #include <mtk_idle_sysfs.h>
@@ -326,7 +325,14 @@ static int spm_module_init(void)
 	}
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
-	SMC_CALL(ARGS, SPM_ARGS_SPMFW_IDX, spm_get_spmfw_idx(), 0);
+#if MTK_SPM_HARDWARE_CG_CHECK
+	/* Enable SPM hardware CG check and resource-oriented */
+	SMC_CALL(ARGS, SPM_ARGS_HARDWARE_CG_CHECK,
+		MTK_SPM_HARDWARE_CG_CHECK, MTK_SPM_ARCH_TYPE);
+#endif
+#if MTK_FEATURE_EANABLE_KICK_SPMFW
+	SMC_CALL(ARGS, SPM_ARGS_SPMFW_IDX_KICK, spm_get_spmfw_idx(), 0);
+#endif
 
 	spm_vcorefs_init();
 
@@ -355,8 +361,11 @@ unsigned int mtk_spm_read_register(int register_index)
 		return spm_read(MD1_PWR_CON);
 	else if (register_index == SPM_REG13)
 		return spm_read(PCM_REG13_DATA);
+/* SPARE_ACK_MASK removed, srcclkeni can not ctrl xo_wcn at MT6779 */
+#if 0
 	else if (register_index == SPM_SPARE_ACK_MASK)
 		return spm_read(SPARE_ACK_MASK);
+#endif
 	else
 		return 0;
 }

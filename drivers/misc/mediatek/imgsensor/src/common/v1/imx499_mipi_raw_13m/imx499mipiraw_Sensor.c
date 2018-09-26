@@ -102,7 +102,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = IMX499_SENSOR_ID,
 
 	/* checksum value for Camera Auto Test 2018.02.27 */
-	.checksum_value = 0xf50b67cd,
+	//.checksum_value = 0xf50b67cd,
+	.checksum_value = 0xc3d800a0,
 
 	.pre = {/*data rate 840 Mbps/lane */
 		.pclk = 280000000,	/* VTP Pixel rate */
@@ -130,9 +131,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.pclk = 564000000,/*VTP Pixel rate*/
 		.linelength = 5120,
 		.framelength = 3670,
-		.startx = 0,
-		.starty = 0,
-		.grabwindow_width = 4208,
+		.startx = 248,
+		.starty = 188,
+		.grabwindow_width = 4160,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.mipi_pixel_rate = 676800000,/*OP Pixel rate*/
@@ -280,7 +281,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	0000, 0000, 2328, 1746, 0, 0, 2328, 1746},	/*Preview*/
 	{4656, 3496, 0, 0, 4656, 3496, 4656, 3496,
 #if Crop_to_13M
-	0000, 0000, 4656, 3496, 224, 188, 4208, 3120},	/*Capture*/
+	0000, 0000, 4656, 3496, 248, 188, 4160, 3120},	/*Capture*/
 #else
 	0000, 0000, 4656, 3496, 0, 2, 4656, 3492},	/*Capture*/
 #endif

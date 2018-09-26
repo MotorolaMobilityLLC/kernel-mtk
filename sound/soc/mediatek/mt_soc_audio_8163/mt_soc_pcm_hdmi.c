@@ -894,7 +894,7 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream,
 	/* handle for buffer management */
 
 	pr_debug
-		("[%s] count=%d,WriteIdx = %x,RdId=%x,Rem=%x\n",
+		("[%s] count=%d,WriteIdx=%x,RdId=%x,Rem=%x\n",
 		__func__, (kal_uint32) count,
 		 Afe_Block->u4WriteIdx,
 		Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
@@ -925,15 +925,7 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream,
 			if (!access_ok(VERIFY_READ, data_w_ptr, copy_size)) {
 				pr_warn("[%s] 0 ptr invalid data_w_ptr = %p, size = %d,",
 					__func__, data_w_ptr, copy_size);
-				pr_warn("BufSz%d,Rem %d\n",
-					Afe_Block->u4BufferSize,
-					Afe_Block->u4DataRemained);
 			} else {
-			pr_debug
-			("[%s] memcpy wp=%x, ptr=%p, size=%x\n",
-			Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp,
-			data_w_ptr, copy_size);
-
 			if (copy_from_user(
 				(Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp),
 				data_w_ptr, copy_size)) {
@@ -949,13 +941,6 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream,
 			spin_unlock_irqrestore(&auddrv_hdmi_lock, flags);
 			data_w_ptr += copy_size;
 			count -= copy_size;
-
-			pr_debug
-				("[%s] end 1, cpsz:%x,WrId:%x,RdId:%x,Rem:%x\n",
-				__func__, copy_size, Afe_Block->u4WriteIdx,
-				 Afe_Block->u4DMAReadIdx,
-				Afe_Block->u4DataRemained);
-
 		} else {	/* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
 
@@ -967,14 +952,8 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream,
 					__func__, data_w_ptr, size_1);
 				pr_warn(" u4BufferSize = %d, u4DataRemained = %d\n",
 					Afe_Block->u4BufferSize,
-					 Afe_Block->u4DataRemained);
+					Afe_Block->u4DataRemained);
 			} else {
-				pr_debug
-				("%s copy wp=%x, data_w_ptr=%p, size_1=%x\n",
-				__func__,
-				Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp,
-				data_w_ptr, size_1);
-
 				if ((copy_from_user(
 					(Afe_Block->pucVirtBufAddr +
 					Afe_WriteIdx_tmp),
@@ -1000,14 +979,6 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream,
 				Afe_Block->u4BufferSize,
 				Afe_Block->u4DataRemained);
 			} else {
-				pr_debug
-				("[%s] mcmcpy Afe_pucAddr+Afe_WrId %x,\n",
-				__func__,
-				Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp);
-				pr_debug
-					(" data_w_ptr+size_1=%p, size_2=%x\n",
-					data_w_ptr + size_1, size_2);
-
 				if ((copy_from_user(
 					(Afe_Block->pucVirtBufAddr +
 					Afe_WriteIdx_tmp),
@@ -1028,7 +999,7 @@ static int mtk_pcm_hdmi_copy(struct snd_pcm_substream *substream,
 			data_w_ptr += copy_size;
 
 			pr_debug
-			("[%s] end 2,cp sz:%x,Wr:%x,RdId:%x,Rem:%x\n",
+			("[%s] end 2,cp sz:%x, Wr:%x, RdId:%x, Rem:%x\n",
 			__func__, copy_size, Afe_Block->u4WriteIdx,
 			Afe_Block->u4DMAReadIdx,
 			Afe_Block->u4DataRemained);

@@ -6,3 +6,4 @@ obj-y   +=  accel.o accel_factory.o
 
 obj-$(CONFIG_MTK_ACCELHUB) += accelhub/
 obj-$(CONFIG_MTK_BMI160_I2C)   += bmi160-i2c/
+obj-$(CONFIG_MTK_MPU6050G)   += mpu6050g/

@@ -711,10 +711,17 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 
 	names = kcalloc(ION_NUM_HEAP_IDS, sizeof(char *), GFP_ATOMIC);
 
-	if (!names)
+	if (!names) {
+		kfree(sizes);
 		return -ENOMEM;
+	}
 
-	down_read(&dev->lock);
+	if (!down_read_trylock(&dev->lock)) {
+		pr_notice("%s get lock fail\n", __func__);
+		kfree(sizes);
+		kfree(names);
+		return 0;
+	}
 	if (!ion_client_validate(dev, client)) {
 		seq_printf(s, "ion_client 0x%pK dead, can't dump its buffers\n",
 			   client);
@@ -745,6 +752,7 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 			   buffer->handle_count, handle, buffer);
 	}
 	mutex_unlock(&client->lock);
+	up_read(&dev->lock);
 
 	seq_puts(s, "----------------------------------------------------\n");
 
@@ -754,8 +762,6 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 			continue;
 		seq_printf(s, "%16.16s: %16zu\n", names[i], sizes[i]);
 	}
-
-	up_read(&dev->lock);
 
 	kfree(sizes);
 	kfree(names);
@@ -1770,8 +1776,12 @@ struct ion_heap *ion_drv_get_heap(struct ion_device *dev,
 {
 	struct ion_heap *_heap, *heap = NULL, *tmp;
 
-	if (need_lock)
-		down_write(&dev->lock);
+	if (need_lock) {
+		if (!down_read_trylock(&dev->lock)) {
+			pr_notice("%s get lock fail\n", __func__);
+			return NULL;
+		}
+	}
 
 	plist_for_each_entry_safe(_heap, tmp, &dev->heaps, node) {
 		if (_heap->id == heap_id) {
@@ -1781,7 +1791,7 @@ struct ion_heap *ion_drv_get_heap(struct ion_device *dev,
 	}
 
 	if (need_lock)
-		up_write(&dev->lock);
+		up_read(&dev->lock);
 
 	return heap;
 }

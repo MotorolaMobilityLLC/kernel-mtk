@@ -27,8 +27,7 @@ static u64 ms_interval = 2 * NSEC_PER_MSEC;
 static DEFINE_SPINLOCK(check_lock);
 static DEFINE_MUTEX(perf_ctl_mutex);
 
-#ifdef CONFIG_MTK_BLOCK_TAG
-#ifndef MTK_BTAG_FEATURE_MICTX_IOSTAT
+#if !defined(CONFIG_MTK_BLOCK_TAG) || !defined(MTK_BTAG_FEATURE_MICTX_IOSTAT)
 struct mtk_btag_mictx_iostat_struct {
 	__u64 duration;  /* duration time for below performance data (ns) */
 	__u32 tp_req_r;  /* throughput (per-request): read  (KB/s) */
@@ -44,6 +43,7 @@ struct mtk_btag_mictx_iostat_struct {
 };
 #endif
 
+#ifdef CONFIG_MTK_BLOCK_TAG
 static struct mtk_btag_mictx_iostat_struct iostatptr;
 
 void  __attribute__((weak)) mtk_btag_mictx_enable(int enable) {}
@@ -53,7 +53,7 @@ int __attribute__((weak)) mtk_btag_mictx_get_data(
 {
 	return -1;
 }
-#endif /* CONFIG_MTK_BLOCK_TAG */
+#endif
 
 u32 __attribute__((weak)) dvfsrc_sram_read(u32 offset)
 {
@@ -112,19 +112,20 @@ static inline u32 cpu_stall_ratio(int cpu)
 #endif
 }
 
-
+#define K(x) ((x) << (PAGE_SHIFT - 10))
 #define max_cpus 8
 
 void perf_tracker(u64 wallclock)
 {
 	int dram_rate = 0;
-	int mm_free_pages = 0;
+	long mm_free_pages = 0;
 #ifdef CONFIG_MTK_BLOCK_TAG
 	struct mtk_btag_mictx_iostat_struct *iostat = &iostatptr;
 #endif
 	int bw_c, bw_g, bw_mm, bw_total;
 	int i;
 	int stall[max_cpus] = {0};
+	long mm_available;
 
 	if (!perf_tracker_on || !perf_tracker_init)
 		return;
@@ -141,6 +142,7 @@ void perf_tracker(u64 wallclock)
 	bw_mm = dvfsrc_get_emi_bw(QOS_EMI_BW_MM);
 	bw_total = dvfsrc_get_emi_bw(QOS_EMI_BW_TOTAL);
 
+	/* trace for short msg */
 	trace_perf_index_s(dram_rate, bw_c, bw_g, bw_mm, bw_total);
 
 	if (!hit_long_check())
@@ -148,6 +150,7 @@ void perf_tracker(u64 wallclock)
 
 	/* free mem */
 	mm_free_pages = global_page_state(NR_FREE_PAGES);
+	mm_available = si_mem_available();
 
 #ifdef CONFIG_MTK_BLOCK_TAG
 	/* IO stat */
@@ -159,9 +162,10 @@ void perf_tracker(u64 wallclock)
 	for (i = 0; i < nr_cpu_ids || i < max_cpus; i++)
 		stall[i] = cpu_stall_ratio(i);
 
-	/* trace */
+	/* trace for long msg */
 	trace_perf_index_l(
-			mm_free_pages,
+			K(mm_free_pages),
+			K(mm_available),
 			iostat->wl,
 			iostat->tp_req_r, iostat->tp_all_r,
 			iostat->reqsize_r, iostat->reqcnt_r,

@@ -143,6 +143,7 @@ unsigned int read_dram_temperature(unsigned char channel);
 int dram_steps_freq(unsigned int step);
 unsigned int get_shuffle_status(void);
 int get_ddr_type(void);
+unsigned char get_ddr_mr(unsigned int index);
 int get_emi_ch_num(void);
 int dram_can_support_fh(void);
 unsigned int ucDram_Register_Read(unsigned int u4reg_addr);

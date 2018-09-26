@@ -24,7 +24,9 @@
 #include <linux/io.h>
 #include <linux/mutex.h>
 
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #include <scp_ipi.h>
+#endif
 #ifdef CONFIG_MTK_DO /* TODO: check only once in one file */
 #include <do.h>
 #endif
@@ -260,6 +262,8 @@ int audio_load_task(const uint8_t task_scene)
 	int retval = 0;
 
 	pr_debug("%s(+), task_scene: %d", __func__, task_scene);
+	if (task_scene >= TASK_SCENE_SIZE)
+		return -1;
 
 	mutex_lock(&audio_load_task_mutex);
 

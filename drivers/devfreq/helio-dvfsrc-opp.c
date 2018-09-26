@@ -20,12 +20,17 @@ static int vcore_dvfs_to_vcore_opp[VCORE_DVFS_OPP_NUM];
 static int vcore_dvfs_to_ddr_opp[VCORE_DVFS_OPP_NUM];
 static int vcore_uv_table[VCORE_OPP_NUM];
 static int vcore_opp_to_pwrap_cmd[VCORE_OPP_NUM];
+static int ddr_table[DDR_OPP_NUM];
 
 
 /* ToDo: Copy Opp Table to AEE Dump */
 int get_cur_vcore_dvfs_opp(void)
 {
+#if defined(VCOREFS_LEVEL_POSITIVE)
+	return __builtin_ffs(spm_get_dvfs_level());
+#else
 	return VCORE_DVFS_OPP_NUM - __builtin_ffs(spm_get_dvfs_level());
+#endif
 }
 
 void set_opp_table(int vcore_dvfs_opp, int vcore_uv, int ddr_khz)
@@ -154,6 +159,16 @@ void set_vcore_uv_table(int vcore_opp, int vcore_uv)
 			vcore_uv_to_pmic(vcore_uv));
 
 	vcore_uv_table[vcore_opp] = vcore_uv;
+}
+
+int get_opp_ddr_freq(int ddr_opp)
+{
+	return ddr_table[ddr_opp];
+}
+
+void set_opp_ddr_freq(int ddr_opp, int ddr_freq)
+{
+	ddr_table[ddr_opp] = ddr_freq;
 }
 
 int get_vcore_uv_table(int vcore_opp)

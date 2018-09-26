@@ -13,7 +13,7 @@
 #include "../audio_dsp/mtk-base-dsp.h"
 
 #include "mtk-dsp-common.h"
-#include "audio_mem_control.h"
+#include "mtk-dsp-mem-control.h"
 
 #define MTK_PCM_RATES (SNDRV_PCM_RATE_8000_48000 |\
 		       SNDRV_PCM_RATE_88200 |\

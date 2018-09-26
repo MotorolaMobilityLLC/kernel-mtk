@@ -1038,9 +1038,9 @@ static int mtk_wdt_probe(struct platform_device *dev)
 			return -ENODEV;
 		}
 	}
-
+#ifndef __USING_DUMMY_WDT_DRV__
 	mtk_wdt_mark_stage(RGU_STAGE_KERNEL);
-
+#endif
 	/* get irq for AP WDT */
 	if (!wdt_irq_id) {
 		wdt_irq_id = irq_of_parse_and_map(dev->dev.of_node, 0);

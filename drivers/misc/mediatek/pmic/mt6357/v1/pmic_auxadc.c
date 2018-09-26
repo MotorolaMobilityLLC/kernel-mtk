@@ -99,6 +99,18 @@ struct pmic_adc_dbg_st {
 };
 static unsigned int adc_dbg_addr[DBG_REG_SIZE];
 
+static void wk_auxadc_reset(void)
+{
+	pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
+	pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+	pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
+	pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
+	/* avoid GPS can't receive AUXADC ready after reset, request again */
+	pmic_set_register_value(PMIC_AUXADC_RQST_CH7, 1);
+	pmic_set_register_value(PMIC_AUXADC_RQST_DCXO_BY_GPS, 1);
+	pr_notice("reset AUXADC done\n");
+}
+
 static void wk_auxadc_dbg_dump(void)
 {
 	unsigned char reg_log[861] = "", reg_str[21] = "";
@@ -186,10 +198,7 @@ static int wk_bat_temp_dbg(int bat_temp_prev, int bat_temp)
 			arr_bat_temp[3], arr_bat_temp[4], bat_temp_new);
 
 		/* Reset AuxADC to observe VBAT/IBAT/BAT_TEMP */
-		pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
-		pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
-		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
-		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
+		wk_auxadc_reset();
 		for (i = 0; i < 5; i++) {
 			bat = auxadc_priv_read_channel(AUXADC_BATADC);
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
@@ -372,8 +381,7 @@ static int mdrt_kthread(void *x)
 			if (polling_cnt == 156) { /* 156 * 32ms ~= 5s*/
 				pr_notice("[MDRT_ADC] (%d) reset AUXADC\n",
 					polling_cnt);
-				pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
-				pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+				wk_auxadc_reset();
 			}
 			if (polling_cnt >= 312) { /* 312 * 32ms ~= 10s*/
 				mdrt_reg_dump();

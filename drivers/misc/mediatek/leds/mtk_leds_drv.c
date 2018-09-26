@@ -628,10 +628,16 @@ static int led_i2c_remove(struct i2c_client *client)
 static int mt65xx_leds_probe(struct platform_device *pdev)
 {
 	int i;
-	int ret;/* rc; */
+	int ret;
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
-	#ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 
+	if (!cust_led_list) {
+		pr_info("[LED] get dts fail! Probe exit.\n");
+		ret = -1;
+		goto err_dts;
+	}
+
+#ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 	/*i2c_register_board_info(4, &leds_board_info, 1);*/
 	if (i2c_add_driver(&led_i2c_driver)) {
 		LEDS_DRV_DEBUG("unable to add led-i2c driver.\n");
@@ -727,6 +733,7 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 		}
 	}
 
+err_dts:
 	return ret;
 }
 

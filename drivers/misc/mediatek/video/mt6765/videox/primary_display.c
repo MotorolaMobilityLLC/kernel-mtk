@@ -763,8 +763,10 @@ static unsigned int _fps_ctx_calc_cur_fps(struct fps_ctx_t *fps_ctx,
 	unsigned long long delta;
 	unsigned long long fps = 1000000000;
 
-	delta = cur_ns - fps_ctx->last_trig;
-	do_div(fps, delta);
+	if (cur_ns > fps_ctx->last_trig) {
+		delta = cur_ns - fps_ctx->last_trig;
+		do_div(fps, delta);
+	}
 
 	if (fps > 120ULL)
 		fps = 120ULL;

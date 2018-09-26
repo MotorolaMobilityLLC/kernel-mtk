@@ -372,7 +372,7 @@ static int mtk_capture2_pcm_copy(struct snd_pcm_substream *substream,
 	ssize_t DMA_Read_Ptr = 0, read_size = 0, read_count = 0;
 	unsigned long flags;
 
-	pr_debug("mtk_capture2_pcm_copy pos = %lucount = %lu\n",
+	pr_debug("mtk_capture2_pcm_copy pos = %lu count = %lu\n",
 		 pos, count);
 
 	/* get total bytes to copy */
@@ -417,17 +417,12 @@ static int mtk_capture2_pcm_copy(struct snd_pcm_substream *substream,
 	DMA_Read_Ptr = Vul_Block->u4DMAReadIdx;
 	spin_unlock_irqrestore(&auddrv_ULInCtl_lock, flags);
 
-	pr_debug
-		("%s 0,rdsz:%zu,Rem:%x,DMARd:%zu,DMARdId:%x\n",
-		__func__, read_count, read_size, Vul_Block->u4DataRemained,
-		Vul_Block->u4DMAReadIdx, Vul_Block->u4WriteIdx);
-
 	if (DMA_Read_Ptr + read_size < Vul_Block->u4BufferSize) {
 		if (DMA_Read_Ptr != Vul_Block->u4DMAReadIdx) {
 			pr_debug
-			("%s1,rdsz:%zu,Rem:%x,DMARd:%zu,DMARdId:%x\n",
-				__func__, read_size, Vul_Block->u4DataRemained,
-				 DMA_Read_Ptr, Vul_Block->u4DMAReadIdx);
+			("1,rdsz:%zu,Rem:%x,DMARd:%zu,DMARdId:%x\n",
+				read_size, Vul_Block->u4DataRemained,
+				DMA_Read_Ptr, Vul_Block->u4DMAReadIdx);
 		}
 
 		if (copy_to_user((void __user *)Read_Data_Ptr,

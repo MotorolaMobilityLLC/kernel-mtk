@@ -392,11 +392,6 @@ enum Soc_Aud_SGEN_AMP_DIV {
 	Soc_Aud_SGEN_AMP_DIV_1 = 7
 };
 
-enum Soc_Aud_Hw_Digital_Gain {
-	Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1,
-	Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2
-};
-
 enum Soc_Aud_BCK_INV {
 	Soc_Aud_INV_BCK_NO_INVERSE = 0,
 	Soc_Aud_INV_BCK_INVESE = 1

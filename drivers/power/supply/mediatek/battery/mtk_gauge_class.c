@@ -836,7 +836,8 @@ int gauge_dev_set_reset_status(
 }
 
 int gauge_dev_dump(
-	struct gauge_device *gauge_dev, struct seq_file *m)
+	struct gauge_device *gauge_dev, struct seq_file *m,
+	int type)
 {
 	int ret = -ENOTSUPP;
 
@@ -846,7 +847,8 @@ int gauge_dev_dump(
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL &&
 		gauge_dev->ops->gauge_dump)
-		ret = gauge_dev->ops->gauge_dump(gauge_dev, m);
+		ret = gauge_dev->ops->gauge_dump(
+			gauge_dev, m, type);
 	gauge_unlock(gauge_dev);
 
 	return ret;
@@ -947,7 +949,8 @@ struct gauge_device *gauge_device_register(const char *name,
 	struct gauge_device *gauge_dev;
 	int rc;
 
-	pr_debug("gauge_device_register: name=%s\n", name);
+	pr_debug("%s: name=%s\n",
+		__func__, name);
 	gauge_dev = kzalloc(sizeof(*gauge_dev), GFP_KERNEL);
 	if (!gauge_dev)
 		return ERR_PTR(-ENOMEM);

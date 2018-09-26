@@ -574,7 +574,7 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 		pe40->can_query,
 		ret);
 
-	pe40->pmic_vbus = pmic_get_vbus();
+	pe40->pmic_vbus = battery_get_vbus();
 	pe40->TA_vbus = cap.output_mv;
 	pe40->vbus_cali = pe40->TA_vbus - pe40->pmic_vbus;
 

@@ -238,6 +238,7 @@ struct DumpFirstErrorStruct {
 #define CMDQ_PROF_ONESHOT(args...)
 #endif
 
+#undef CMDQ_PROFILE_MMP
 #ifdef CMDQ_PROFILE_MMP
 #define CMDQ_PROF_MMP(args...) \
 	{ \

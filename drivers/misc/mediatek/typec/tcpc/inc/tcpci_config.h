@@ -388,5 +388,14 @@
 /* #define CONFIG_USB_PD_DBG_SKIP_ALERT_HANDLER */
 #define CONFIG_USB_PD_DBG_DP_DFP_D_AUTO_UPDATE
 
+/**********************************************************
+ * TypeC Shield Protection
+ **********************************************************/
+
+#define CONFIG_WATER_DETECTION
+#define CONFIG_WATER_DETECTION_RETRY	10
+#define CONFIG_FOREIGN_OBJECT_DETECTION
+#define CONFIG_CABLE_TYPE_DETECTION
+
 #endif /* CONFIG_TCPC_CLASS */
 #endif /* __LINUX_TCPC_CONFIG_H */

@@ -12,7 +12,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 
-import os, sys
+import os
 import collections
 import xml.dom.minidom
 
@@ -30,6 +30,7 @@ from ClkObj import ClkObj
 from ClkObj import ClkObj_Everest
 from ClkObj import ClkObj_Olympus
 from ClkObj import ClkObj_Rushmore
+from ClkObj import ClkObj_MT6779
 from I2cObj import I2cObj
 from I2cObj import I2cObj_MT6759
 from I2cObj import I2cObj_MT6775
@@ -434,5 +435,21 @@ class MT6775(ChipObj):
         ChipObj.replace_obj(self, 'md1_eint', Md1EintObj_MT6739())
         ChipObj.replace_obj(self, 'i2c', I2cObj_MT6775())
         ChipObj.refresh_eintGpioMap(self)
+
+
+class MT6779(ChipObj):
+    def __init__(self, dws_path, gen_path):
+        ChipObj.__init__(self, dws_path, gen_path)
+
+    def init_objs(self):
+        ChipObj.init_objs(self)
+        ChipObj.replace_obj(self, 'clk', ClkObj_MT6779())
+        ChipObj.replace_obj(self, 'pmic', PmicObj_MT6758())
+        ChipObj.replace_obj(self, 'gpio', GpioObj_MT6771())
+        ChipObj.replace_obj(self, 'eint', EintObj_MT6739(ChipObj.get_gpioObj(self)))
+        ChipObj.replace_obj(self, 'md1_eint', Md1EintObj_MT6739())
+        ChipObj.replace_obj(self, "i2c", I2cObj_MT6775())
+        ChipObj.refresh_eintGpioMap(self)
+
 
 

@@ -23,38 +23,38 @@
 static u32 pcm_timer_ramp_max_sec_loop = 1;
 
 char *wakesrc_str[32] = {
-	[0] = " STA1_PCM_TIMER",
-	[1] = " STA1_SPM_DEBUG",
-	[2] = " STA1_KP_IRQ",
-	[3] = " STA1_APWDT_EVENT",
-	[4] = " STA1_APXGPT_EVENT",
-	[5] = " STA1_CONN2AP_WAKEUP",
-	[6] = " STA1_EINT_EVENT",
-	[7] = " STA1_CONN_WDT_IRQ",
-	[8] = " STA1_CCIF0_EVENT",
-	[9] = " STA1_LOWBATTERY_IRQ",
-	[10] = " STA1_SSPM2SPM_WAKEUP",
-	[11] = " STA1_SCP2SPM_WAKEUP",
-	[12] = " STA1_ADSP2SPM_WAKEUP",
-	[13] = " STA1_PCM_WDT_WAKE",
-	[14] = " STA1_USB0_CDSC",
-	[15] = " STA1_USB0_POWERDWN",
-	[16] = " STA1_SYS_TIMER",
-	[17] = " STA1_EINT_EVENT_SECURE",
-	[18] = " STA1_CCIF1_EVENT",
-	[19] = " STA1_UART0_IRQ",
-	[20] = " STA1_AFE_IRQ_MCU",
-	[21] = " STA1_THERM_CTRL_EVENT",
-	[22] = " STA1_SYS_CIRQ_IRQ",
-	[23] = " STA1_MD2AP_PEER_WAKEUP",
-	[24] = " STA1_CSYSPWREQ",
-	[25] = " STA1_MD_WDT",
-	[26] = " STA1_AP2AP_PEER_WAKEUP",
-	[27] = " STA1_BY_SEJ",
-	[28] = " STA1_CPU_WAKEUP",
-	[29] = " STA1_ALL_CPU_IRQ",
-	[30] = " STA1_CPU_NOT_WFI",
-	[31] = " STA1_MCUSYS_IDLE",
+	[0] = " R12_PCM_TIMER_EVENT",
+	[1] = " R12_SPM_TWAM_IRQ_B",
+	[2] = " R12_KP_IRQ_B",
+	[3] = " R12_APWDT_EVENT_B",
+	[4] = " R12_APXGPT1_EVENT_B",
+	[5] = " R12_CONN2AP_SPM_WAKEUP_B",
+	[6] = " R12_EINT_EVENT_B",
+	[7] = " R12_CONN_WDT_IRQ_B",
+	[8] = " R12_CCIF0_EVENT_B",
+	[9] = " R12_LOWBATTERY_IRQ_B",
+	[10] = " R12_SC_SSPM2SPM_WAKEUP",
+	[11] = " R12_SC_SCP2SPM_WAKEUP",
+	[12] = " R12_SC_ADSP2SPM_WAKEUP",
+	[13] = " R12_PCM_WDT_EVENT_B",
+	[14] = " R12_USBX_CDSC_B",
+	[15] = " R12_USBX_POWERDWN_B",
+	[16] = " R12_SYS_TIMER_EVENT_B",
+	[17] = " R12_EINT_EVENT_SECURE_B",
+	[18] = " R12_CCIF1_EVENT_B",
+	[19] = " R12_UART0_IRQ_B",
+	[20] = " R12_AFE_IRQ_MCU_B",
+	[21] = " R12_THERMAL_CTRL_EVENT_B",
+	[22] = " R12_SYS_CIRQ_IRQ_B",
+	[23] = " R12_MD2AP_PEER_WAKEUP_EVENT",
+	[24] = " R12_CSYSPWREQ_B",
+	[25] = " R12_MD1_WDT_B",
+	[26] = " R12_AP2AP_PEER_WAKEUP_EVENT",
+	[27] = " R12_SEJ_EVENT_B",
+	[28] = " R12_SPM_CPU_WAKEUP_EVENT",
+	[29] = " R12_CPU_IRQOUT",
+	[30] = " R12_CPU_WFI",
+	[31] = " R12_MCUSYS_IDLE_TO_EMI_ALL",
 };
 
 /**************************************
@@ -138,8 +138,6 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	wakesta->md32pcm_event_sta = spm_read(MD32PCM_EVENT_STA);
 	/* backup of SPM_WAKEUP_MISC */
 	wakesta->wake_misc = spm_read(SPM_SW_RSV_5);
-	/* backup of SYS_TIMER */
-	wakesta->sys_timer = spm_read(SPM_SW_RSV_7);
 
 	/* get sleep time */
 	/* backup of PCM_TIMER_OUT */
@@ -157,21 +155,15 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	wakesta->debug_flag1 = spm_read(PCM_WDT_LATCH_SPARE_1);
 
 	/* get backup SW flag status */
-	wakesta->b_sw_flag = spm_read(SPM_BSI_D0_SR);   /* SPM_BSI_D0_SR */
-	wakesta->b_sw_flag2 = spm_read(SPM_BSI_D1_SR);   /* SPM_BSI_D1_SR */
+	wakesta->b_sw_flag0 = spm_read(SPM_SW_RSV_7);   /* SPM_SW_RSV_7 */
+	wakesta->b_sw_flag1 = spm_read(SPM_SW_RSV_8);   /* SPM_SW_RSV_8 */
 
 	/* get ISR status */
 	wakesta->isr = spm_read(SPM_IRQ_STA);
 
 	/* get SW flag status */
-	wakesta->sw_flag = spm_read(SPM_SW_FLAG);
-	wakesta->sw_flag2 = spm_read(SPM_SW_FLAG_2);
-
-	/* get the numbers of enter DDREN */
-	wakesta->num_ddren = spm_read(SPM_SW_RSV_8);
-
-	/* get the numbers of enter MCDSR */
-	wakesta->num_mcdsr = spm_read(SPM_SW_RSV_9);
+	wakesta->sw_flag0 = spm_read(SPM_SW_FLAG_0);
+	wakesta->sw_flag1 = spm_read(SPM_SW_FLAG_1);
 
 	/* get CLK SETTLE */
 	wakesta->clk_settle = spm_read(SPM_CLK_SETTLE); /* SPM_CLK_SETTLE */
@@ -210,25 +202,20 @@ unsigned int __spm_output_wake_reason(
 			wakesta->debug_flag, wakesta->debug_flag1);
 
 		aee_sram_printk(" sw_flag = 0x%x 0x%x\n",
-			wakesta->sw_flag, wakesta->sw_flag2);
+			wakesta->sw_flag0, wakesta->sw_flag1);
 		pr_info(" sw_flag = 0x%x 0x%x\n",
-			wakesta->sw_flag, wakesta->sw_flag2);
+			wakesta->sw_flag0, wakesta->sw_flag1);
 
 		aee_sram_printk(" b_sw_flag = 0x%x 0x%x\n",
-			wakesta->b_sw_flag, wakesta->b_sw_flag2);
+			wakesta->b_sw_flag0, wakesta->b_sw_flag1);
 		pr_info(" b_sw_flag = 0x%x 0x%x\n",
-			wakesta->b_sw_flag, wakesta->b_sw_flag2);
-
-		aee_sram_printk(" num = 0x%x 0x%x\n",
-			wakesta->num_ddren, wakesta->num_mcdsr);
-		pr_info(" num = 0x%x 0x%x\n",
-			wakesta->num_ddren, wakesta->num_mcdsr);
+			wakesta->b_sw_flag0, wakesta->b_sw_flag1);
 
 		wr =  WR_ABORT;
 	}
 
 
-	if (wakesta->r12 & STA1_PCM_TIMER) {
+	if (wakesta->r12 & R12_PCM_TIMER_EVENT) {
 
 		if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER_EVENT) {
 			local_ptr = wakesrc_str[0];
@@ -238,7 +225,7 @@ unsigned int __spm_output_wake_reason(
 		}
 	}
 
-	if (wakesta->r12 & STA1_SPM_DEBUG) {
+	if (wakesta->r12 & R12_SPM_TWAM_IRQ_B) {
 
 		if (wakesta->wake_misc & WAKE_MISC_DVFSRC_IRQ) {
 			local_ptr = " DVFSRC";
@@ -336,19 +323,18 @@ unsigned int __spm_output_wake_reason(
 		  wakesta->md32pcm_event_sta);
 
 	log_size += sprintf(log_buf + log_size,
-		  " req_sta =  0x%x 0x%x 0x%x 0x%x, isr = 0x%x, num = 0x%x 0x%x, ",
+		  " req_sta =  0x%x 0x%x 0x%x 0x%x, isr = 0x%x, ",
 		  wakesta->req_sta0, wakesta->req_sta1, wakesta->req_sta2,
-		  wakesta->req_sta3, wakesta->isr,
-		  wakesta->num_ddren, wakesta->num_mcdsr);
+		  wakesta->req_sta3, wakesta->isr);
 
 	log_size += sprintf(log_buf + log_size,
 		"raw_ext_sta = 0x%x, wake_misc = 0x%x, sw_flag = 0x%x 0x%x 0x%x 0x%x, req = 0x%x,",
 		wakesta->raw_ext_sta,
 		wakesta->wake_misc,
-		wakesta->sw_flag,
-		wakesta->sw_flag2,
-		wakesta->b_sw_flag,
-		wakesta->b_sw_flag2,
+		wakesta->sw_flag0,
+		wakesta->sw_flag1,
+		wakesta->b_sw_flag0,
+		wakesta->b_sw_flag1,
 		spm_read(SPM_SRC_REQ));
 
 	if (!strcmp(scenario, "suspend")) {
@@ -426,20 +412,6 @@ u32 __spm_get_wake_period(int pwake_time, unsigned int last_wr)
 		period = 36 * 3600;
 
 	return period;
-}
-
-/* FIXME:
- * 1. Need to move to
- * "drivers/misc/mediatek/base/power/spm/mt3967/sleep_def.h" later
- * 2. Need to check w/ DE for the correct value.
- */
-
-void __sync_vcore_ctrl_pcm_flag(u32 oper_cond, u32 *flag)
-{
-	if (oper_cond & DEEPIDLE_OPT_VCORE_LOW_VOLT)
-		*flag &= ~SPM_FLAG1_DISABLE_VCORE_LP_0P600V;
-	else
-		*flag |= SPM_FLAG1_DISABLE_VCORE_LP_0P600V;
 }
 
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");

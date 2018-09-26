@@ -32,11 +32,6 @@ void vmd1_pmic_setting_on(void)
 {
 	unsigned int vsram_md_vosel = 0x4F; /*993750*/
 
-	pmic_buck_vmodem_lp(SRCLKEN0, 1, 1, HW_LP);
-	pmic_buck_vmodem_lp(SRCLKEN2, 1, 1, HW_LP);
-	pmic_ldo_vsram_md_lp(SW, 1, 1, SW_ON);
-	pmic_ldo_vsram_md_lp(SRCLKEN2, 1, 1, HW_LP);
-
 	/* 1.Call PMIC driver API configure VMODEM voltage */
 	if (g_vmodem_vosel != 0) {
 		pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL,
@@ -60,19 +55,6 @@ void vmd1_pmic_setting_on(void)
 void vmd1_pmic_setting_off(void)
 {
 	PMICLOG("%s\n", __func__);
-
-	pmic_buck_vmodem_lp(SW, 1, 1, SW_OFF);
-	pmic_ldo_vsram_md_lp(SW, 1, 1, SW_OFF);
-
-	/* 1.Call PMIC driver API configure VMODEM off */
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 0);
-	/* 2.Call PMIC driver API configure VSRAM_MD off */
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_EN, 0);
-
-	PMICLOG("%s vmodem en %d\n", __func__,
-		(pmic_get_register_value(PMIC_DA_VMODEM_EN) & 0x1));
-	PMICLOG("%s vsram_md en %d\n", __func__,
-		(pmic_get_register_value(PMIC_DA_VSRAM_MD_B_EN) & 0x1));
 }
 
 void pmic_enable_smart_reset(unsigned char smart_en,
@@ -82,6 +64,11 @@ void pmic_enable_smart_reset(unsigned char smart_en,
 	pmic_set_register_value(PMIC_RG_SMART_RST_SDN_EN, smart_sdn_en);
 	pr_info("[%s] smart_en:%d, smart_sdn_en:%d\n",
 		__func__, smart_en, smart_sdn_en);
+}
+
+void enable_bat_temp_det(bool en)
+{
+	pmic_set_register_value(PMIC_AUXADC_BAT_TEMP_FROZE_EN, !en);
 }
 
 static unsigned int pmic_scp_set_regulator(struct mtk_regulator mt_reg,
@@ -118,6 +105,22 @@ static unsigned int pmic_scp_set_regulator(struct mtk_regulator mt_reg,
 		mt_reg.desc.name, is_sleep_vol?"sleep ":"", voltage);
 	return 0;
 }
+
+/*
+ * SCP enable VCORE/VSRAM control, return 0 if success
+ */
+int pmic_scp_ctrl_enable(bool vcore_en, bool vsram_en, bool is_pmrc_mode)
+{
+	int ret = 0;
+
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN, vcore_en);
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN, vsram_en);
+	pmic_set_register_value(PMIC_RG_VR_SSHUB_MODE, is_pmrc_mode);
+	pr_info("[%s]_vcore_en:%d vsram_en:%d is_pmic_mode:%d\n",
+		__func__, vcore_en, vsram_en, is_pmrc_mode);
+	return ret;
+}
+
 /*
  * SCP set VCORE voltage, return 0 if success,
  * otherwise return set voltage(uV)

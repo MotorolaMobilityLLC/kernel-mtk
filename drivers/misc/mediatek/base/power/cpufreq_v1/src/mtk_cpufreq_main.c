@@ -1571,6 +1571,8 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
+	/* init proc */
+	cpufreq_procfs_init();
 	_mt_cpufreq_aee_init();
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
@@ -1653,10 +1655,19 @@ static const struct dev_pm_ops _mt_cpufreq_pm_ops = {
 	.restore = _mt_cpufreq_resume,
 };
 
+#ifndef CPU_DVFS_DT_REG
 struct platform_device _mt_cpufreq_pdev = {
 	.name = "mt-cpufreq",
 	.id = -1,
 };
+#endif
+
+#if defined(CONFIG_OF) && defined(CPU_DVFS_DT_REG)
+static const struct of_device_id mt_cpufreq_match[] = {
+	{ .compatible = "mediatek,mt-cpufreq", },
+	{ },
+};
+#endif
 
 static struct platform_driver _mt_cpufreq_pdrv = {
 	.probe = _mt_cpufreq_pdrv_probe,
@@ -1665,6 +1676,9 @@ static struct platform_driver _mt_cpufreq_pdrv = {
 		   .name = "mt-cpufreq",
 		   .pm = &_mt_cpufreq_pm_ops,
 		   .owner = THIS_MODULE,
+#if defined(CONFIG_OF) && defined(CPU_DVFS_DT_REG)
+		   .of_match_table = of_match_ptr(mt_cpufreq_match),
+#endif
 		   },
 };
 
@@ -1744,35 +1758,35 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	ret = cpuhvfs_module_init();
 #endif
 
-	/* init proc */
-	if (cpufreq_procfs_init())
-		goto out;
-
+#ifndef CPU_DVFS_DT_REG
 	/* register platform device/driver */
 	ret = platform_device_register(&_mt_cpufreq_pdev);
 
 	if (ret) {
 		tag_pr_notice("fail to register cpufreq device @ %s()\n",
 		__func__);
-		goto out;
 	}
+#endif
 
 	ret = platform_driver_register(&_mt_cpufreq_pdrv);
 
 	if (ret) {
 		tag_pr_notice("fail to register cpufreq driver @ %s()\n",
 		__func__);
+#ifndef CPU_DVFS_DT_REG
 		platform_device_unregister(&_mt_cpufreq_pdev);
+#endif
 	}
 
-out:
 	return ret;
 }
 
 static void __exit _mt_cpufreq_pdrv_exit(void)
 {
 	platform_driver_unregister(&_mt_cpufreq_pdrv);
+#ifndef CPU_DVFS_DT_REG
 	platform_device_unregister(&_mt_cpufreq_pdev);
+#endif
 }
 
 module_init(_mt_cpufreq_tbl_init);

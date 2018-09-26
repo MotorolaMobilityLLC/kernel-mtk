@@ -24,6 +24,8 @@
 #include <helio-dvfsrc-mt6761.h>
 #elif defined(CONFIG_MACH_MT3967)
 #include <helio-dvfsrc-mt3967.h>
+#elif defined(CONFIG_MACH_MT6779)
+#include <helio-dvfsrc-mt6779.h>
 #else
 #include <helio-dvfsrc-mt67xx.h>
 #endif
@@ -37,6 +39,7 @@ struct reg_config {
 
 struct helio_dvfsrc {
 	struct devfreq		*devfreq;
+	int irq;
 	struct device *dev;
 	bool qos_enabled;
 	bool dvfsrc_enabled;
@@ -56,12 +59,16 @@ struct helio_dvfsrc {
 	struct notifier_block	pm_qos_power_model_ddr_request_nb;
 	struct notifier_block	pm_qos_power_model_vcore_request_nb;
 	struct notifier_block	pm_qos_vcore_dvfs_force_opp_nb;
+	struct notifier_block	pm_qos_isp_hrt_bw_nb;
+	struct notifier_block	pm_qos_apu_memory_bw_nb;
 
 	struct reg_config	*init_config;
 
 	bool opp_forced;
 	char			force_start[20];
 	char			force_end[20];
+	int (*suspend)(struct helio_dvfsrc *dvfsrc_dev);
+	int (*resume)(struct helio_dvfsrc *dvfsrc_dev);
 };
 
 #define DVFSRC_TIMEOUT		1000

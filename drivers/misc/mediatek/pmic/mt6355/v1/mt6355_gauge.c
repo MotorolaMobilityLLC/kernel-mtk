@@ -1944,7 +1944,7 @@ static int fgauge_get_nag_vbat(struct gauge_device *gauge_dev, int *vbat)
 	vbat_val = nag_vbat_reg & 0x7fff;
 	nag_vbat_mv = REG_to_MV_value(vbat_val);
 	*vbat = nag_vbat_mv;
-	battery_dump_nag();
+
 	return 0;
 }
 
@@ -2706,10 +2706,11 @@ int fgauge_set_reset_status(struct gauge_device *gauge_dev, int reset)
 
 }
 
-static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
+static int fgauge_dump(
+	struct gauge_device *gauge_dev, struct seq_file *m, int type)
 {
-	if (m != NULL)
-		seq_puts(m, "fgauge dump\n");
+	if (type == 1)
+		battery_dump_nag();
 
 	return 0;
 }

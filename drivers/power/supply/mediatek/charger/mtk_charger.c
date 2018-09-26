@@ -766,6 +766,20 @@ bool is_typec_adapter(struct charger_manager *info)
 	return false;
 }
 
+int charger_get_vbus(void)
+{
+	int ret = 0;
+	int vchr = 0;
+
+	if (pinfo == NULL)
+		return 0;
+	ret = charger_dev_get_vbus(pinfo->chg1_dev, &vchr);
+	if (ret < 0)
+		return 0;
+
+	return vchr;
+}
+
 /* internal algorithm common function end */
 
 /* sw jeita */
@@ -1192,7 +1206,7 @@ static bool mtk_chg_check_vbus(struct charger_manager *info)
 {
 	int vchr = 0;
 
-	vchr = pmic_get_vbus() * 1000; /* uV */
+	vchr = battery_get_vbus() * 1000; /* uV */
 	if (vchr > info->data.max_charger_voltage) {
 		chr_err("%s: vbus(%d mV) > %d mV\n", __func__, vchr / 1000,
 			info->data.max_charger_voltage / 1000);
@@ -1207,7 +1221,7 @@ static void mtk_battery_notify_VCharger_check(struct charger_manager *info)
 #if defined(BATTERY_NOTIFY_CASE_0001_VCHARGER)
 	int vchr = 0;
 
-	vchr = pmic_get_vbus() * 1000; /* uV */
+	vchr = battery_get_vbus() * 1000; /* uV */
 	if (vchr < info->data.max_charger_voltage)
 		info->notify_code &= ~(0x0001);
 	else {

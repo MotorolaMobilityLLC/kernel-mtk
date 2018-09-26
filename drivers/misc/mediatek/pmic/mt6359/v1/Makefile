@@ -14,10 +14,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
 obj-y += pmic_ipi.o
 endif
 
-#TODO
-#ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-#obj-y += mt6359_gauge.o
-#endif
+ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+obj-y += mt6359_gauge.o
+endif
 
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6359)	+= pmic.o pmic_common.o \
 		pmic_debugfs.o \
@@ -25,10 +24,10 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6359)	+= pmic.o pmic_common.o \
 		pmic_initial_setting.o \
 		pmic_api.o \
 		pmic_auxadc.o \
-		pmic_throttling_dlpt.o \
 		regulator_codegen.o \
 		pmic_lp_api.o \
 		pmic_efuse.o \
+		pmic_throttling_dlpt.o \
 
 		#TODO
 		#pmic_bif.o \

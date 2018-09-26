@@ -34,7 +34,8 @@ extern void ssusb_dual_phy_power_off(struct ssusb_mtk *ssusb,
 	bool host_mode);
 extern int ssusb_clk_on(struct ssusb_mtk *ssusb, int host_mode);
 extern int ssusb_clk_off(struct ssusb_mtk *ssusb, int host_mode);
-
+extern int ssusb_ext_pwr_on(struct ssusb_mtk *ssusb, int mode);
+extern int ssusb_ext_pwr_off(struct ssusb_mtk *ssusb, int mode);
 
 extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);

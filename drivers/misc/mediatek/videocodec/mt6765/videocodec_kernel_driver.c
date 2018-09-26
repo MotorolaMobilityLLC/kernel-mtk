@@ -2854,7 +2854,11 @@ static int vcodec_release(struct inode *inode, struct file *file)
 			} else if (CodecHWLock.eDriverType ==
 					VAL_DRIVER_TYPE_JPEG_ENC) {
 				disable_irq(VENC_IRQ_ID);
+#ifdef CONFIG_PM
+				pm_runtime_put_sync(vcodec_device2);
+#else
 				venc_power_off();
+#endif
 			}
 		}
 

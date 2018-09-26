@@ -19,6 +19,7 @@
 #include <linux/console.h>
 
 #include <mtk_sleep_internal.h>
+#include <mtk_spm_internal.h> /* mtk_idle_cond_check */
 #include <mtk_spm_suspend_internal.h>
 #include <mtk_idle_sysfs.h>
 #include <mtk_power_gs_api.h>
@@ -27,6 +28,12 @@
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 #include <mtk-soc-afe-control.h>
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
+
+#ifdef CONFIG_SND_SOC_MTK_SMART_PHONE
+#include <mtk-sp-afe-external.h>
+#define ConditionEnterSuspend mtk_audio_condition_enter_suspend
+#endif /* CONFIG_SND_SOC_MTK_SMART_PHONE */
+
 #include <mtk_mcdi_api.h>
 
 #include <mtk_lp_dts.h>
@@ -70,7 +77,8 @@ static int slp_suspend_ops_prepare(void)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
+#if defined(CONFIG_MTK_SND_SOC_NEW_ARCH) \
+|| defined(CONFIG_SND_SOC_MTK_SMART_PHONE)
 bool __attribute__ ((weak)) ConditionEnterSuspend(void)
 {
 	pr_info("NO %s !!!\n", __func__);
@@ -126,6 +134,11 @@ bool __attribute__((weak)) spm_is_enable_sleep(void)
 	return false;
 }
 
+void __attribute__((weak))
+mtk_suspend_cond_info(void)
+{
+}
+
 unsigned int __attribute__((weak))
 spm_go_to_sleep(void)
 {
@@ -151,14 +164,15 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	int ret = 0;
 
 #if SLP_SLEEP_DPIDLE_EN
-#ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
+#if defined(CONFIG_MTK_SND_SOC_NEW_ARCH) \
+|| defined(CONFIG_SND_SOC_MTK_SMART_PHONE)
 	int fm_radio_is_playing = 0;
 
 	if (ConditionEnterSuspend() == true)
 		fm_radio_is_playing = 0;
 	else
 		fm_radio_is_playing = 1;
-#endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
+#endif /* CONFIG_MTK_SND_SOC_NEW_ARCH || CONFIG_SND_SOC_MTK_SMART_PHONE */
 #endif
 
 #if 0
@@ -200,8 +214,11 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 
 	mcdi_task_pause(true);
 
+	mtk_idle_cond_update_state();
+
 #if SLP_SLEEP_DPIDLE_EN
-#ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
+#if defined(CONFIG_MTK_SND_SOC_NEW_ARCH) \
+|| defined(CONFIG_SND_SOC_MTK_SMART_PHONE)
 	if (slp_ck26m_on | fm_radio_is_playing) {
 #else
 	if (slp_ck26m_on) {
@@ -210,11 +227,12 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 					MTK_IDLE_OPT_SLEEP_DPIDLE, 0);
 		slp_wake_reason = get_slp_dp_last_wr();
 		slp_dp_cnt[smp_processor_id()]++;
-
-	} else
+	} else {
 #endif
+		mtk_suspend_cond_info();
 
 		slp_wake_reason = spm_go_to_sleep();
+	}
 
 	mcdi_task_pause(false);
 

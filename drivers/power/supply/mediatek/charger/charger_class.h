@@ -132,6 +132,11 @@ struct charger_ops {
 	int (*get_tchg_adc)(struct charger_device *, int *tchg_min,
 		int *tchg_max);
 	int (*get_zcv)(struct charger_device *, u32 *uV);
+
+	/* TypeC */
+	int (*get_fod_status)(struct charger_device *dev, u8 *status);
+	int (*enable_fod_oneshot)(struct charger_device *dev, bool en);
+	int (*is_typec_ot)(struct charger_device *dev, bool *ot);
 };
 
 static inline
@@ -231,6 +236,10 @@ extern int charger_dev_get_ibus(struct charger_device *chg_dev, u32 *ibus);
 extern int charger_dev_get_temperature(struct charger_device *chg_dev,
 					int *tchg_min, int *tchg_max);
 
+/* TypeC */
+extern int charger_dev_get_fod_status(struct charger_device *dev, u8 *status);
+extern int charger_dev_enable_fod_oneshot(struct charger_device *dev, bool en);
+extern int charger_dev_is_typec_ot(struct charger_device *dev, bool *ot);
 
 extern int register_charger_device_notifier(struct charger_device *chg_dev,
 			      struct notifier_block *nb);

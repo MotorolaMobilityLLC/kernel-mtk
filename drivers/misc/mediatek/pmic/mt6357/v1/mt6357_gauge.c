@@ -1635,7 +1635,7 @@ static int fgauge_get_nag_vbat(struct gauge_device *gauge_dev, int *vbat)
 	vbat_val = nag_vbat_reg & 0x7fff;
 	nag_vbat_mv = REG_to_MV_value(vbat_val);
 	*vbat = nag_vbat_mv;
-	battery_dump_nag();
+
 	return 0;
 }
 
@@ -2101,7 +2101,7 @@ int fgauge_set_reset_status(struct gauge_device *gauge_dev, int reset)
 
 }
 
-static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
+static void fgauge_dump_type0(struct seq_file *m)
 {
 	if (m != NULL) {
 		seq_puts(m, "fgauge dump\n");
@@ -2183,6 +2183,19 @@ static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 		charger_zcv, pmic_rdy,
 		pmic_zcv, pmic_in_zcv,
 		swocv, zcv_from, zcv_tmp);
+
+}
+
+
+static int fgauge_dump(
+	struct gauge_device *gauge_dev, struct seq_file *m, int type)
+{
+	if (type == 0)
+		fgauge_dump_type0(m);
+	else if (type == 1)
+		battery_dump_nag();
+
+
 	return 0;
 }
 

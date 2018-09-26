@@ -16,7 +16,8 @@ ifeq ($(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT),y)
 
 ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/audio_ipi/common/utility \
-	-I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
+	-I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework \
+	-I$(srctree)/drivers/misc/mediatek/scp/$(AUDIO_PLATFORM)
 
 obj-y += audio_ipi_client_spkprotect.o
 

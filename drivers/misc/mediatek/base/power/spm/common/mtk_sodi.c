@@ -31,7 +31,7 @@ static unsigned long so_block_cnt[NR_REASONS] = {0};
 static bool sodi3_feature_enable = MTK_IDLE_FEATURE_ENABLE_SODI3;
 static bool sodi3_bypass_idle_cond;
 static bool sodi3_bypass_pwm_check;
-static bool sodi3_force_vcore_lp_mode;
+static unsigned int sodi3_force_vcore_lp_mode;
 static unsigned int sodi3_flag = MTK_IDLE_LOG_REDUCE;
 
 unsigned long so3_cnt[NR_CPUS] = {0};
@@ -100,12 +100,10 @@ int soidle_enter(int cpu)
 	unsigned int op_cond = 0;
 
 	lockdep_off();
-	mtk_idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
 	mtk_idle_enter(IDLE_TYPE_SO, cpu, op_cond, sodi_flag);
-	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO, cpu);
 	lockdep_on();
 
-	so_cnt[cpu]++;
+	do_gettimeofday(&pre_dpidle_time);
 
 	return CPUIDLE_STATE_SO;
 }
@@ -220,16 +218,13 @@ int soidle3_enter(int cpu)
 {
 	unsigned int op_cond = 0;
 
-	if (sodi3_force_vcore_lp_mode)
-		op_cond |= MTK_IDLE_OPT_VCORE_LP_MODE;
+	op_cond |= sodi3_force_vcore_lp_mode;
 
 	lockdep_off();
-	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
 	mtk_idle_enter(IDLE_TYPE_SO3, cpu, op_cond, sodi3_flag);
-	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
 	lockdep_on();
 
-	so3_cnt[cpu]++;
+	do_gettimeofday(&pre_dpidle_time);
 
 	return CPUIDLE_STATE_SO3;
 }
@@ -267,7 +262,7 @@ static ssize_t soidle3_state_read(char *ToUserBuf, size_t sz, void *priv)
 
 	log("bypass_pwm=%d force_vcore_lp_mode=%d\n"
 			, sodi3_bypass_pwm_check ? 1 : 0
-			, sodi3_force_vcore_lp_mode ? 1 : 0);
+			, sodi3_force_vcore_lp_mode);
 
 	log("log_flag=0x%x\n", sodi3_flag);
 	log("\n");
@@ -304,7 +299,7 @@ static ssize_t soidle3_state_write(char *FromUserBuf, size_t sz, void *priv)
 		else if (!strcmp(cmd, "bypass_pwm"))
 			sodi3_bypass_pwm_check = !!parm;
 		else if (!strcmp(cmd, "force_vcore_lp_mode"))
-			sodi3_force_vcore_lp_mode = !!parm;
+			sodi3_force_vcore_lp_mode = parm;
 		else if (!strcmp(cmd, "cgmon"))
 			mtk_idle_cg_monitor(parm ? IDLE_TYPE_SO3 : -1);
 		else if (!strcmp(cmd, "log"))
@@ -351,7 +346,7 @@ void mtk_sodi3_init(struct mtk_idle_init_data *pData)
 
 	sodi3_bypass_idle_cond = false;
 	sodi3_bypass_pwm_check = false;
-	sodi3_force_vcore_lp_mode = false;
+	sodi3_force_vcore_lp_mode = 0;
 
 	mtk_idle_sysfs_entry_node_add("soidle3_state"
 				, 0644, &sodi3_state_fops, NULL);

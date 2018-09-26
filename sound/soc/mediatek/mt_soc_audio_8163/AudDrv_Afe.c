@@ -165,8 +165,7 @@ uint32 Afe_Get_Reg(uint32 offset)
 #endif
 	value = (uint32 *)(address);
 	pr_debug
-		("Afe_Get_Reg offset=%x address=%x value%x\n",
-	offset, address, *value);
+		("Afe_Get_Reg offset=%x value%x\n", offset, *value);
 	return *value;
 }
 EXPORT_SYMBOL(Afe_Get_Reg);

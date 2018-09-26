@@ -553,6 +553,16 @@ enum _isp_tg_enum_ {
 	_cam_tg_max_
 };
 
+/* basically , should separate into     p1/p1_d/p2/camsv/camsv_d, */
+/* currently, only use camsv/camsv_d/others     */
+enum eISPIrq {
+	_IRQ = 0,
+	_IRQ_D = 1,
+	_CAMSV_IRQ = 2,
+	_CAMSV_D_IRQ = 3,
+	_IRQ_MAX = 4,
+};
+
 /*  */
 enum _isp_dma_enum_ {
 	_imgi_ = 0,
@@ -976,6 +986,8 @@ enum ISP_CMD_ENUM {
 	ISP_CMD_SET_ISPCLK,
 	ISP_CMD_GET_ISPCLK,
 	ISP_CMD_WAKELOCK_CTRL,
+	ISP_CMD_GET_VSYNC_CNT,
+	ISP_CMD_RESET_VSYNC_CNT,
 	ISP_CMD_REGISTER_IRQ_USER_KEY,
 	/* register for a user key to do irq operation */
 	ISP_CMD_MARK_IRQ_REQUEST,
@@ -1062,6 +1074,10 @@ enum ISP_CMD_ENUM {
 
 #define ISP_WAKELOCK_CTRL \
 	_IOWR(ISP_MAGIC, ISP_CMD_WAKELOCK_CTRL,      unsigned int)
+#define ISP_GET_VSYNC_CNT \
+	_IOWR(ISP_MAGIC, ISP_CMD_GET_VSYNC_CNT,  unsigned int)
+#define ISP_RESET_VSYNC_CNT \
+	_IOW(ISP_MAGIC, ISP_CMD_RESET_VSYNC_CNT, unsigned int)
 
 #ifdef CONFIG_COMPAT
 

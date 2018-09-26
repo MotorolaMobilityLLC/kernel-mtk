@@ -241,22 +241,6 @@ static int get_devinfo(void)
 		}
 	}
 
-	if (eem_checkEfuse == 0) {
-		/* for verification */
-		val[0] = DEVINFO_0;
-		val[1] = DEVINFO_1;
-		val[2] = DEVINFO_2;
-		val[3] = DEVINFO_3;
-		val[4] = DEVINFO_4;
-		val[5] = DEVINFO_5;
-		val[6] = DEVINFO_6;
-		val[7] = DEVINFO_7;
-		val[8] = DEVINFO_8;
-		val[9] = DEVINFO_9;
-		val[10] = DEVINFO_10;
-		val[11] = DEVINFO_11;
-	}
-
 #if EEM_FAKE_EFUSE
 	/* for verification */
 	val[0] = DEVINFO_0;

@@ -45,18 +45,14 @@
 #include <mach/mtk_battery_property.h>
 #include <linux/reboot.h>
 #include <mtk_battery_internal.h>
-#else
-#if 0 /* TBD */
-#include <mt-plat/battery_meter.h>
-#include <mt-plat/battery_common.h>
-#include <mach/mtk_battery_meter.h>
-#endif
 #endif
 
 /*****************************************************************************
  * PMIC related define
  ******************************************************************************/
 #define PMIC_THROTTLING_DLPT_UT	0
+#define UNIT_FGCURRENT	(610352)
+#define DEFAULT_RFG	(50)
 
 /*****************************************************************************
  * PMIC PT and DLPT UT
@@ -254,16 +250,15 @@ int __attribute__ ((weak)) dlpt_check_power_off(void)
  * 65535-reg
  * (65535-(I *fg_cust_data.r_fg_value *1000 /UNIT_FGCURRENT *95 *100
  *  /fg_cust_data.car_tune_value))
+ *
+ * Ricky update for MT6359
+ * 65535–(I_mA*1000*fg_cust_data.r_fg_value / DEFAULT_RFG*1000*1000
+ * / fg_cust_data.car_tune_value / UNIT_FGCURRENT * 95 / 100)
+ *
  */
 #define bat_oc_h_thd(cur)   \
-(65535-(cur*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT* \
-	95*100/fg_cust_data.car_tune_value))
-
-#else /* CONFIG_MTK_GAUGE_VERSION != 30 */
-/* ex. Ireg = 65535 - (I * 950000uA / 2 / 158.122 / CAR_TUNE_VALUE * 100)*/
-/* (950000/2/158.122)*100~=300400*/
-#define bat_oc_h_thd(cur)   \
-(65535-((300400*cur/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4670mA*/
+(65535-(cur*1000*fg_cust_data.r_fg_value/DEFAULT_RFG*1000000 \
+	/fg_cust_data.car_tune_value/UNIT_FGCURRENT*95*100))
 
 #endif /* end of #if CONFIG_MTK_GAUGE_VERSION == 30 */
 
@@ -350,8 +345,8 @@ void fg_cur_h_int_handler(void)
 		upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
 		PMIC_FG_CUR_LTH_ADDR,
 		upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
-		PMIC_RG_INT_EN_FG_BAT0_H_ADDR,
-		upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT0_H_ADDR));
+		PMIC_RG_INT_EN_FG_CUR_H_ADDR,
+		upmu_get_reg_value(PMIC_RG_INT_EN_FG_CUR_H_ADDR));
 #endif
 }
 
@@ -382,8 +377,8 @@ void fg_cur_l_int_handler(void)
 		upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
 		PMIC_FG_CUR_LTH_ADDR,
 		upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
-		PMIC_RG_INT_EN_FG_BAT0_H_ADDR,
-		upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT0_H_ADDR));
+		PMIC_RG_INT_EN_FG_CUR_H_ADDR,
+		upmu_get_reg_value(PMIC_RG_INT_EN_FG_CUR_H_ADDR));
 #endif
 }
 
@@ -426,7 +421,6 @@ void __attribute__ ((weak)) register_battery_oc_notify(
 #endif
 
 #ifdef BATTERY_PERCENT_PROTECT
-static struct hrtimer bat_percent_notify_timer;
 static struct task_struct *bat_percent_notify_thread;
 static bool bat_percent_notify_flag;
 static DECLARE_WAIT_QUEUE_HEAD(bat_percent_notify_waiter);
@@ -449,6 +443,8 @@ struct battery_percent_callback_table bpcb_tb[] = {
 	{NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL},
 	{NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}
 };
+
+static struct notifier_block dlpt_nb = {0};
 
 void register_battery_percent_notify(
 	void (*battery_percent_callback)(enum BATTERY_PERCENT_LEVEL_TAG),
@@ -513,65 +509,68 @@ void exec_battery_percent_callback(
 
 int bat_percent_notify_handler(void *unused)
 {
-	ktime_t ktime;
-	int bat_per_val = 0;
-
 	do {
-		ktime = ktime_set(10, 0);
-
 		wait_event_interruptible(bat_percent_notify_waiter,
 					 (bat_percent_notify_flag == true));
 
 		__pm_stay_awake(&bat_percent_notify_lock);
 		mutex_lock(&bat_percent_notify_mutex);
 
-#if (CONFIG_MTK_GAUGE_VERSION == 30)
-		bat_per_val = battery_get_uisoc();
-#endif
-		if ((upmu_get_rgs_chrdet() == 0) &&
-		    (g_battery_percent_level == 0) &&
-		    (bat_per_val <= BAT_PERCENT_LINIT)) {
-			g_battery_percent_level = 1;
-			exec_battery_percent_callback(BATTERY_PERCENT_LEVEL_1);
-		} else if ((g_battery_percent_level == 1) &&
-			   (bat_per_val > BAT_PERCENT_LINIT)) {
-			g_battery_percent_level = 0;
-			exec_battery_percent_callback(BATTERY_PERCENT_LEVEL_0);
-		}
+		exec_battery_percent_callback(g_battery_percent_level);
 		bat_percent_notify_flag = false;
-
-		PMICLOG("bat_per_level=%d,bat_per_val=%d\n"
-			, g_battery_percent_level, bat_per_val);
+		PMICLOG("[%s] bat_per_level=%d\n", __func__,
+			g_battery_percent_level);
 
 		mutex_unlock(&bat_percent_notify_mutex);
 		__pm_relax(&bat_percent_notify_lock);
-
-		hrtimer_start(&bat_percent_notify_timer,
-			ktime, HRTIMER_MODE_REL);
-
 	} while (!kthread_should_stop());
 
 	return 0;
 }
 
-enum hrtimer_restart bat_percent_notify_task(struct hrtimer *timer)
+int dlpt_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 {
-	bat_percent_notify_flag = true;
-	wake_up_interruptible(&bat_percent_notify_waiter);
+	struct power_supply *psy = v;
+	union power_supply_propval val;
+	int ret = 0;
+	int uisoc = -1, bat_status = -1;
 
-	return HRTIMER_NORESTART;
+	if (strcmp(psy->desc->name, "battery") == 0) {
+		ret = power_supply_get_property(psy,
+			POWER_SUPPLY_PROP_CAPACITY, &val);
+		if (!ret)
+			uisoc = val.intval;
+
+		ret = power_supply_get_property(psy,
+			POWER_SUPPLY_PROP_STATUS, &val);
+		if (!ret)
+			bat_status = val.intval;
+
+		if ((bat_status != POWER_SUPPLY_STATUS_CHARGING &&
+			bat_status != -1) &&
+			(g_battery_percent_level == BATTERY_PERCENT_LEVEL_0) &&
+			(uisoc <= BAT_PERCENT_LINIT && uisoc > 0)) {
+			g_battery_percent_level = BATTERY_PERCENT_LEVEL_1;
+			bat_percent_notify_flag = true;
+			wake_up_interruptible(&bat_percent_notify_waiter);
+			PMICLOG("bat_percent_notify called, l=%d s=%d soc=%d\n",
+				g_battery_percent_level, bat_status, uisoc);
+		} else if ((bat_status != -1) &&
+			(g_battery_percent_level == BATTERY_PERCENT_LEVEL_1) &&
+			   (uisoc > BAT_PERCENT_LINIT)) {
+			g_battery_percent_level = BATTERY_PERCENT_LEVEL_0;
+			bat_percent_notify_flag = true;
+			wake_up_interruptible(&bat_percent_notify_waiter);
+			PMICLOG("bat_percent_notify called, l=%d s=%d soc=%d\n",
+				g_battery_percent_level, bat_status, uisoc);
+		}
+	}
+
+	return NOTIFY_DONE;
 }
 
 void bat_percent_notify_init(void)
 {
-	ktime_t ktime;
-
-	ktime = ktime_set(20, 0);
-	hrtimer_init(&bat_percent_notify_timer,
-		CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	bat_percent_notify_timer.function = bat_percent_notify_task;
-	hrtimer_start(&bat_percent_notify_timer, ktime, HRTIMER_MODE_REL);
-
 	wakeup_source_init(&bat_percent_notify_lock,
 		"bat_percent_notify_lock wakelock");
 
@@ -582,6 +581,9 @@ void bat_percent_notify_init(void)
 		pr_notice("Failed to create bat_percent_notify_thread\n");
 	else
 		pr_info("Create bat_percent_notify_thread : done\n");
+
+	dlpt_nb.notifier_call = dlpt_psy_event;
+	power_supply_reg_notifier(&dlpt_nb);
 }
 #else
 void __attribute__ ((weak)) register_battery_percent_notify(
@@ -619,9 +621,6 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat,
 
 	/* selection setting, move to LK pmic_dlpt_init */
 
-	/* enable setting */
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_CK_SW_MODE, 1);
-
 	/* start setting */
 	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_EN, 1);
 
@@ -637,9 +636,6 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat,
 
 	/* stop setting */
 	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_EN, 0);
-
-	/* disable setting */
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_CK_SW_MODE, 0);
 
 	*bat = (vbat_reg * 3 * 18000) / 32768;
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
@@ -991,8 +987,6 @@ int get_dlpt_imix(void)
 	volt_avg = volt_avg / 3;
 	curr_avg = curr_avg / 3;
 
-	//volt_avg = wk_vbat_cali(volt_avg, 1);
-
 	imix = (curr_avg + (volt_avg - g_lbatInt1) * 1000 / ptim_rac_val_avg)
 				/ 10;
 
@@ -1000,9 +994,6 @@ int get_dlpt_imix(void)
 	pr_info("[%s] %d,%d,%d,%d,%d,%d,%d\n", __func__,
 		volt_avg, curr_avg, g_lbatInt1, ptim_rac_val_avg, imix,
 		battery_get_soc(), battery_get_uisoc());
-#else
-	pr_info("[%s] %d,%d,%d,%d,%d,NA,NA\n", __func__,
-		volt_avg, curr_avg, g_lbatInt1, ptim_rac_val_avg, imix);
 #endif
 
 	if (imix < 0) {
@@ -1666,10 +1657,12 @@ void pmic_throttling_dlpt_suspend(void)
 	bat_oc_l_en_setting(0);
 
 	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
-		PMIC_FG_CUR_HTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
-		PMIC_FG_CUR_LTH_ADDR, upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
-		PMIC_RG_INT_EN_FG_BAT0_H_ADDR,
-		upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT0_H_ADDR));
+		PMIC_FG_CUR_HTH_ADDR,
+		upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
+		PMIC_FG_CUR_LTH_ADDR,
+		upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
+		PMIC_RG_INT_EN_FG_CUR_H_ADDR,
+		upmu_get_reg_value(PMIC_RG_INT_EN_FG_CUR_H_ADDR));
 #endif
 }
 
@@ -1686,13 +1679,13 @@ void pmic_throttling_dlpt_resume(void)
 	else
 		bat_oc_l_en_setting(1);
 
-	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n"
-		, PMIC_FG_CUR_HTH_ADDR
-		, upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR)
-		, PMIC_FG_CUR_LTH_ADDR
-		, upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR)
-		, PMIC_RG_INT_EN_FG_BAT0_H_ADDR
-		, upmu_get_reg_value(PMIC_RG_INT_EN_FG_BAT0_H_ADDR));
+	PMICLOG("Reg[0x%x]=0x%x, Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
+		PMIC_FG_CUR_HTH_ADDR,
+		upmu_get_reg_value(PMIC_FG_CUR_HTH_ADDR),
+		PMIC_FG_CUR_LTH_ADDR,
+		upmu_get_reg_value(PMIC_FG_CUR_LTH_ADDR),
+		PMIC_RG_INT_EN_FG_CUR_H_ADDR,
+		upmu_get_reg_value(PMIC_RG_INT_EN_FG_CUR_H_ADDR));
 #endif
 }
 
@@ -1784,12 +1777,11 @@ static void pmic_uvlo_init(void)
 
 int pmic_throttling_dlpt_init(void)
 {
-#ifdef CONFIG_MTK_GAUGE_VERSION
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
 	struct device_node *np;
 	u32 val;
 	char *path;
 
-#if (CONFIG_MTK_GAUGE_VERSION == 30)
 	path = "/bat_gm30";
 	np = of_find_node_by_path(path);
 	if (of_property_read_u32(np, "CAR_TUNE_VALUE", &val) == 0) {
@@ -1811,26 +1803,11 @@ int pmic_throttling_dlpt_init(void)
 			, fg_cust_data.r_fg_value);
 	}
 	pr_info("Get default UNIT_FGCURRENT= %d\n", UNIT_FGCURRENT);
-#elif (CONFIG_MTK_GAUGE_VERSION == 20)
-	path = "/bus/BAT_METTER";
-	np = of_find_node_by_path(path);
-	if (of_property_read_u32(np, "car_tune_value", &val) == 0) {
-		batt_meter_cust_data.car_tune_value = (int)val;
-		PMICLOG("Get car_tune_value from DT: %d\n"
-			, batt_meter_cust_data.car_tune_value);
-	} else {
-		batt_meter_cust_data.car_tune_value = CAR_TUNE_VALUE;
-		PMICLOG("Get car_tune_value from cust header\n");
-	}
 #endif /* end of #if CONFIG_MTK_GAUGE_VERSION == 30 */
-#endif /* end of #ifdef CONFIG_MTK_GAUGE_VERSION */
 
 	wakeup_source_init(&ptim_wake_lock, "PTIM_wakelock");
 	mutex_init(&ptim_mutex);
-	/* IMPEDANCE initial setting */
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_CNT_SEL, 1);
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_PRD_SEL, 6);
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_CK_SW_EN, 1);
+	/* IMPEDANCE initial setting move to LK */
 
 	/* no need to depend on LOW_BATTERY_PROTECT */
 	lbat_service_init();

@@ -422,7 +422,8 @@ TRACE_EVENT(perf_index_s,
 TRACE_EVENT(perf_index_l,
 
 	TP_PROTO(
-		int free_mem,
+		long free_mem,
+		long avail_mem,
 		int io_wl,
 		int io_req_r,
 		int io_all_r,
@@ -438,6 +439,7 @@ TRACE_EVENT(perf_index_l,
 	),
 
 	TP_ARGS(free_mem,
+		avail_mem,
 		io_wl,
 		io_req_r, io_all_r, io_reqsz_r, io_reqc_r,
 		io_req_w, io_all_w, io_reqsz_w, io_reqc_w,
@@ -447,7 +449,8 @@ TRACE_EVENT(perf_index_l,
 	),
 
 	TP_STRUCT__entry(
-		__field(int, free_mem)
+		__field(long, free_mem)
+		__field(long, avail_mem)
 		__field(int, io_wl)
 		__field(int, io_req_r)
 		__field(int, io_all_r)
@@ -464,6 +467,7 @@ TRACE_EVENT(perf_index_l,
 
 	TP_fast_assign(
 		__entry->free_mem   = free_mem;
+		__entry->avail_mem  = avail_mem;
 		__entry->io_wl      = io_wl;
 		__entry->io_req_r   = io_req_r;
 		__entry->io_all_r   = io_all_r;
@@ -479,8 +483,9 @@ TRACE_EVENT(perf_index_l,
 	),
 
 	TP_printk(
-		"free_mem=%d iostats=%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d stall=%d|%d|%d|%d|%d|%d|%d|%d",
+		"free_mem=%ld avail_mem=%ld iostats=%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d stall=%d|%d|%d|%d|%d|%d|%d|%d",
 		__entry->free_mem,
+		__entry->avail_mem,
 		__entry->io_wl,
 		__entry->io_req_r, __entry->io_all_r,
 		__entry->io_reqsz_r, __entry->io_reqc_r,

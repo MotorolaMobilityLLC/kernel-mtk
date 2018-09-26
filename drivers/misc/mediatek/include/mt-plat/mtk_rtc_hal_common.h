@@ -48,7 +48,6 @@ extern u16 rtc_read(u16 addr);
 extern void rtc_write(u16 addr, u16 data);
 extern void rtc_write_trigger(void);
 extern void rtc_writeif_unlock(void);
-extern void hal_rtc_reload_power(void);
 extern void rtc_xosc_write(u16 val, bool reload);
 extern void rtc_set_writeif(bool enable);
 extern void rtc_bbpu_pwrdown(bool auto_boot);

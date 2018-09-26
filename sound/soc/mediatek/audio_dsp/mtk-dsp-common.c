@@ -14,7 +14,7 @@
 #include <mtk-base-afe.h>
 
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
-#include <audio_mem_control.h>
+#include <mtk-dsp-mem-control.h>
 #include <mtk-base-dsp.h>
 #include <mtk-dsp-common.h>
 #endif
@@ -95,19 +95,27 @@ int mtk_scp_ipi_send(int task_scene, int data_type, int ack_type,
 {
 	struct ipi_msg_t ipi_msg;
 	int send_result = 0;
+	int retry_count = 20; // 5 x 20 = 100ms
 
 	/* pr_warn("%s(), scp_ipi send payload = %p\n", __func__, payload); */
 
 	memset((void *)&ipi_msg, 0, sizeof(struct ipi_msg_t));
-	send_result = audio_send_ipi_msg(
-		&ipi_msg, task_scene,
-		AUDIO_IPI_LAYER_TO_DSP, data_type,
-		ack_type, msg_id, param1, param2,
-		(char *)payload);
 
-	if (send_result != 0)
-		pr_warn("%s(), scp_ipi send fail\n", __func__);
+	do {
+		send_result = audio_send_ipi_msg(
+			&ipi_msg, task_scene,
+			AUDIO_IPI_LAYER_TO_DSP, data_type,
+			ack_type, msg_id, param1, param2,
+			(char *)payload);
 
+		if (send_result != 0)
+			pr_warn("%s(), scp_ipi send retry\n", __func__);
+	} while (send_result != 0 && retry_count);
+
+	if (send_result) {
+		pr_info("%s(), scp_ipi send fail\n", __func__);
+		AUD_ASSERT(false);
+	}
 
 	return send_result;
 }
@@ -126,6 +134,8 @@ int get_dspscene_by_dspdaiid(int id)
 		return TASK_SCENE_DEEPBUFFER;
 	case AUDIO_TASK_PLAYBACK_ID:
 		return TASK_SCENE_AUDPLAYBACK;
+	case AUDIO_TASK_CAPTURE_UL1_ID:
+		return TASK_SCENE_CAPTURE_UL1;
 	default:
 		pr_warn("%s() err\n", __func__);
 		return -1;
@@ -146,6 +156,8 @@ int get_dspdaiid_by_dspscene(int dspscene)
 		return AUDIO_TASK_DEEPBUFFER_ID;
 	case TASK_SCENE_AUDPLAYBACK:
 		return AUDIO_TASK_PLAYBACK_ID;
+	case TASK_SCENE_CAPTURE_UL1:
+		return AUDIO_TASK_CAPTURE_UL1_ID;
 	default:
 		pr_warn("%s() err\n", __func__);
 		return -1;
@@ -167,14 +179,27 @@ int get_audio_memery_type(struct snd_pcm_substream *substream)
 
 int afe_get_pcmdir(int dir, struct audio_hw_buffer buf)
 {
-	int ret = -1;
+	int ret = -1, i = 0, memif = 0;
 
 	if (dir == SNDRV_PCM_STREAM_CAPTURE)
-		return AUDIO_DSP_TASK_PCM_HWPARAM_UL;
+		ret = AUDIO_DSP_TASK_PCM_HWPARAM_UL;
 	else if (dir == SNDRV_PCM_STREAM_PLAYBACK)
-		return AUDIO_DSP_TASK_PCM_HWPARAM_DL;
+		ret = AUDIO_DSP_TASK_PCM_HWPARAM_DL;
+
 	if (buf.hw_buffer == BUFFER_TYPE_SHARE_MEM)
 		return ret;
+
+	/* check if it is hardware buffer
+	 * if yes ==> check if it is ref buffer.
+	 */
+	memif = buf.audio_memiftype;
+	for (i = 0; i < AUDIO_TASK_DAI_NUM; i++) {
+		if (get_afememref_by_afe_taskid(i) == memif &&
+		   buf.hw_buffer == BUFFER_TYPE_HW_MEM) {
+			ret = AUDIO_DSP_TASK_PCM_HWPARAM_REF;
+			break;
+		}
+	}
 
 	return ret;
 }
@@ -207,14 +232,8 @@ int afe_pcm_ipi_to_dsp(int command, struct snd_pcm_substream *substream,
 					   substream, params);
 		if (ret < 0)
 			break;
-		ret = set_audiobuffer_attribute(
-			&dsp_memif->audio_afepcm_buf,
-			substream, params, afe_get_pcmdir(substream->stream,
-			dsp_memif->audio_afepcm_buf));
-		if (ret < 0)
-			break;
 		ret = set_audiobuffer_hw(&dsp_memif->audio_afepcm_buf,
-					 true);
+					 BUFFER_TYPE_HW_MEM);
 		if (ret < 0)
 			break;
 		ret = set_audiobuffer_audio_irq_num(
@@ -229,6 +248,13 @@ int afe_pcm_ipi_to_dsp(int command, struct snd_pcm_substream *substream,
 		ret = set_audiobuffer_memorytype(
 			&dsp_memif->audio_afepcm_buf,
 			get_audio_memery_type(substream));
+		if (ret < 0)
+			break;
+		ret = set_audiobuffer_attribute(
+			&dsp_memif->audio_afepcm_buf,
+			substream, params,
+			afe_get_pcmdir(substream->stream,
+			dsp_memif->audio_afepcm_buf));
 		if (ret < 0)
 			break;
 

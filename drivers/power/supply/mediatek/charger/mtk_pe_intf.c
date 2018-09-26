@@ -24,7 +24,7 @@
 /* Unit of the following functions are uV, uA */
 static inline u32 pe_get_vbus(void)
 {
-	return pmic_get_vbus() * 1000;
+	return battery_get_vbus() * 1000;
 }
 
 static inline u32 pe_get_ibat(void)

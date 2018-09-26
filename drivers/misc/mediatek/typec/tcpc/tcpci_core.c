@@ -437,7 +437,7 @@ static int tcpc_device_irq_enable(struct tcpc_device *tcpc)
 		return -EINVAL;
 	}
 
-	ret = tcpci_init(tcpc, false);
+	ret = tcpci_init(tcpc, true);
 	if (ret < 0) {
 		pr_err("%s tcpc init fail\n", __func__);
 		return ret;

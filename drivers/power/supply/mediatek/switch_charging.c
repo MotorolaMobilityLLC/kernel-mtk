@@ -50,15 +50,15 @@ unsigned int g_bcct_value;
 unsigned int g_bcct_input_flag;
 unsigned int g_bcct_input_value;
 unsigned int g_full_check_count;
-CHR_CURRENT_ENUM g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
-CHR_CURRENT_ENUM g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
+enum CHR_CURRENT_ENUM g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
+enum CHR_CURRENT_ENUM g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
 unsigned int g_usb_state = USB_UNCONFIGURED;
 static bool usb_unlimited;
 #if (CONFIG_MTK_GAUGE_VERSION == 20)
 #ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
+enum BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_340000_V;
 #else
-BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
+enum BATTERY_VOLTAGE_ENUM g_cv_voltage = BATTERY_VOLT_04_200000_V;
 #endif
 unsigned int get_cv_voltage(void)
 {
@@ -187,9 +187,9 @@ _out:
 
 #if defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
 
-static BATTERY_VOLTAGE_ENUM select_jeita_cv(void)
+static enum BATTERY_VOLTAGE_ENUM select_jeita_cv(void)
 {
-	BATTERY_VOLTAGE_ENUM cv_voltage;
+	enum BATTERY_VOLTAGE_ENUM cv_voltage;
 
 	if (g_temp_status == TEMP_ABOVE_POS_60) {
 		cv_voltage = JEITA_TEMP_ABOVE_POS_60_CV_VOLTAGE;
@@ -215,7 +215,7 @@ static BATTERY_VOLTAGE_ENUM select_jeita_cv(void)
 
 unsigned int do_jeita_state_machine(void)
 {
-	BATTERY_VOLTAGE_ENUM cv_voltage;
+	enum BATTERY_VOLTAGE_ENUM cv_voltage;
 	unsigned int jeita_status = PMU_STATUS_OK;
 
 	/* JEITA battery temp Standard */
@@ -445,8 +445,8 @@ unsigned int set_chr_input_current_limit(int current_limit)
 static void mtk_select_ichg_aicr(void);
 unsigned int set_bat_charging_current_limit(int current_limit)
 {
-	CHR_CURRENT_ENUM chr_type_ichg = 0;
-	CHR_CURRENT_ENUM chr_type_aicr = 0;
+	enum CHR_CURRENT_ENUM chr_type_ichg = 0;
+	enum CHR_CURRENT_ENUM chr_type_aicr = 0;
 
 	mutex_lock(&g_ichg_access_mutex);
 	if (current_limit != -1) {
@@ -973,7 +973,7 @@ static void mtk_select_cv(void)
 {
 	int ret = 0;
 	u32 dynamic_cv = 0;
-	BATTERY_VOLTAGE_ENUM cv_voltage;
+	enum BATTERY_VOLTAGE_ENUM cv_voltage;
 
 #ifdef CONFIG_MTK_JEITA_STANDARD_SUPPORT
 	/* If temperautre is abnormal, return not permitted */

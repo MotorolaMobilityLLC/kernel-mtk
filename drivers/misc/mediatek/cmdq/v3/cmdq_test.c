@@ -2093,7 +2093,7 @@ static void testcase_get_result(void)
 	/* make sure each scenario runs properly with empty commands */
 	/* use CMDQ_SCENARIO_PRIMARY_ALL to test */
 	/* because it has COLOR0 HW flag */
-	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG_MDP, &handle);
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, gCmdqTestSecure);
 

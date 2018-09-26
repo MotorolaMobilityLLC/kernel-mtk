@@ -389,8 +389,10 @@ static void scp_A_notify_ws(struct work_struct *ws)
  */
 static void scp_timeout_ws(struct work_struct *ws)
 {
+#if SCP_RECOVERY_SUPPORT
 	if (scp_timeout_times < 10)
 		scp_send_reset_wq(RESET_TYPE_AWAKE);
+#endif
 
 	scp_timeout_times++;
 	pr_notice("[SCP] scp_timeout_times=%x\n", scp_timeout_times);
@@ -761,7 +763,9 @@ static ssize_t scp_wdt_trigger(struct device *dev
 {
 	unsigned int value = 0;
 
-	pr_debug("scp_wdt_trigger: %s\n", buf);
+	if (!buf || count == 0)
+		return count;
+	pr_debug("%s: %8s\n", __func__, buf);
 	if (kstrtouint(buf, 10, &value) == 0) {
 		if (value == 666)
 			scp_wdt_reset(SCP_A_ID);
@@ -778,11 +782,18 @@ DEVICE_ATTR(wdt_reset, 0200, NULL, scp_wdt_trigger);
 static ssize_t scp_reset_trigger(struct device *dev
 		, struct device_attribute *attr, const char *buf, size_t count)
 {
-	pr_debug("scp_reset_trigger: %s\n", buf);
+	unsigned int value = 0;
 
+	if (!buf || count == 0)
+		return count;
+	pr_debug("%s: %8s\n", __func__, buf);
 	/* scp reset by cmdm set flag =1 */
-	scp_reset_by_cmd = 1;
-	scp_wdt_reset(SCP_A_ID);
+	if (kstrtouint(buf, 10, &value) == 0) {
+		if (value == 666) {
+			scp_reset_by_cmd = 1;
+			scp_wdt_reset(SCP_A_ID);
+		}
+	}
 
 	return count;
 }
@@ -1397,8 +1408,7 @@ void scp_sys_reset_ws(struct work_struct *ws)
 	*(unsigned int *)scp_reset_reg = 0x1;
 	dsb(SY);
 #if SCP_BOOT_TIME_OUT_MONITOR
-	scp_ready_timer[SCP_A_ID].expires = jiffies + SCP_READY_TIMEOUT;
-	add_timer(&scp_ready_timer[SCP_A_ID]);
+	mod_timer(&scp_ready_timer[SCP_A_ID], jiffies + SCP_READY_TIMEOUT);
 #endif
 	/* clear scp reset by cmd flag*/
 	scp_reset_by_cmd = 0;
@@ -1444,6 +1454,7 @@ int scp_check_resource(void)
 	return scp_resource_status;
 }
 
+#if SCP_RECOVERY_SUPPORT
 void scp_region_info_init(void)
 {
 	/*get scp loader/firmware info from scp sram*/
@@ -1452,6 +1463,9 @@ void scp_region_info_init(void)
 	memcpy_from_scp(&scp_region_info_copy, scp_region_info,
 		sizeof(scp_region_info_copy));
 }
+#else
+void scp_region_info_init(void) {}
+#endif
 
 void scp_recovery_init(void)
 {
@@ -1640,11 +1654,15 @@ static int __init scp_init(void)
 	/* keep Univpll */
 	spm_resource_req(SPM_RESOURCE_USER_SCP, SPM_RESOURCE_CK_26M);
 
+#if SCP_RESERVED_MEM
+#ifdef CONFIG_OF_RESERVED_MEM
 	/* make sure the reserved memory for scp is ready */
 	if (scp_mem_size == 0) {
 		pr_err("[SCP] Reserving memory by of_device for SCP failed.\n");
 		return -1;
 	}
+#endif
+#endif
 
 	if (platform_driver_register(&mtk_scp_device))
 		pr_err("[SCP] scp probe fail\n");

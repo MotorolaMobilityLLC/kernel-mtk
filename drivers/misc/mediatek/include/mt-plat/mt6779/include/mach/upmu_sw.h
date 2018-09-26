@@ -30,20 +30,23 @@
 
 #define FG_RG_INT_EN_NAG_C_DLTV INT_NAG_C_DLTV
 
-#define FG_BAT0_INT_H_NO INT_FG_BAT0_H
-#define FG_BAT0_INT_L_NO INT_FG_BAT0_L
-#define FG_BAT_INT_H_NO INT_FG_BAT0_H
-#define FG_BAT_INT_L_NO INT_FG_BAT0_L
+#define FG_BAT0_INT_H_NO INT_FG_BAT_H
+#define FG_BAT0_INT_L_NO INT_FG_BAT_L
+#define FG_BAT_INT_H_NO INT_FG_BAT_H
+#define FG_BAT_INT_L_NO INT_FG_BAT_L
+
+
+#define FG_BAT1_INT_H_NO INT_FG_BAT_H
+#define FG_BAT1_INT_L_NO INT_FG_BAT_L
 
 #define FG_CUR_H_NO INT_FG_CUR_H
 #define FG_CUR_L_NO INT_FG_CUR_L
+
 #define FG_ZCV_NO INT_FG_ZCV
-#define FG_BAT1_INT_H_NO INT_FG_BAT1_H
-#define FG_BAT1_INT_L_NO INT_FG_BAT1_L
 #define FG_N_CHARGE_L_NO INT_FG_N_CHARGE_L
 #define FG_IAVG_H_NO INT_FG_IAVG_H
 #define FG_IAVG_L_NO INT_FG_IAVG_L
-#define FG_TIME_NO INT_FG_TIME_H
+#define FG_TIME_NO INT_ENUM_MAX
 #define FG_BAT_PLUGOUT_NO INT_BATON_BAT_OUT
 
 /* =============================================================================

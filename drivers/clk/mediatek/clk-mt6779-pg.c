@@ -29,7 +29,7 @@
 
 
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP  0
+#define MT_CCF_BRINGUP  1
 #define CONTROL_LIMIT 1
 
 #define	CHECK_PWR_ST	1
@@ -62,6 +62,7 @@ while (0)
 void __attribute__((weak)) mtk_wcn_cmb_stub_clock_fail_dump(void) {}
 
 /*MM Bus*/
+#if 0
 #ifdef CONFIG_OF
 void __iomem *clk_mmsys_config_base;
 void __iomem *clk_imgsys_base;
@@ -70,19 +71,19 @@ void __iomem *clk_venc_gcon_base;
 void __iomem *clk_camsys_base;
 #endif
 
-#if 0
+
 #define MM_CG_CLR0 (clk_mmsys_config_base + 0x108)
 #define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
 #define VDEC_CKEN_SET	(clk_vdec_gcon_base + 0x0000)
 #define VDEC_GALS_CFG (clk_vdec_gcon_base + 0x0168)
 #define VENC_CG_SET	(clk_venc_gcon_base + 0x0004)
-#endif
+
 #define MM_CG_CLR0 (clk_mmsys_config_base + 0x108)
 #define MM_CG_SET0 (clk_mmsys_config_base + 0x104)
 #define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
 #define CAM_CG_CLR	(clk_camsys_base + 0x0008)
 #define CAM_CG_CON	(clk_camsys_base + 0x0000)
-
+#endif
 
 /*
  * MTCMOS
@@ -4870,23 +4871,18 @@ struct clk *mt_clk_register_power_gate(const char *name,
 
 #define pg_md1	"pg_md1"
 #define pg_conn	"pg_conn"
-
 #define pg_dis	"pg_dis"
 #define pg_cam	"pg_cam"
 #define pg_isp	"pg_isp"
 #define pg_ipe	"pg_ipe"
 #define pg_ven	"pg_ven"
 #define pg_vde	"pg_vde"
-
 #define pg_audio	"pg_audio"
-
-
 #define pg_mfg0	"pg_mfg0"
 #define pg_mfg1	"pg_mfg1"
 #define pg_mfg2	"pg_mfg2"
 #define pg_mfg3	"pg_mfg3"
 #define pg_mfg4	"pg_mfg4"
-
 #define pg_vpu_vcore_d	"pg_vpu_vcore_d"
 #define pg_vpu_vcore_s	"pg_vpu_vcore_s"
 #define pg_vpu_conn_d	"pg_vpu_conn_d"
@@ -4933,46 +4929,39 @@ struct mtk_power_gate {
 struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MD1, pg_md1, NULL, NULL, SYS_MD1),
 	PGATE(SCP_SYS_CONN, pg_conn, NULL, NULL, SYS_CONN),
-
 	PGATE(SCP_SYS_DIS, pg_dis, NULL, mm_sel, SYS_DIS),
 	PGATE(SCP_SYS_CAM, pg_cam, pg_dis, cam_sel, SYS_CAM),
 	PGATE(SCP_SYS_ISP, pg_isp, pg_dis, img_sel, SYS_ISP),
 	PGATE(SCP_SYS_IPE, pg_ipe, pg_dis, ipe_sel, SYS_IPE),
 	PGATE(SCP_SYS_VEN, pg_ven, pg_dis, venc_sel, SYS_VEN),
 	PGATE(SCP_SYS_VDE, pg_vde, pg_dis, vdec_sel, SYS_VDE),
-
 	PGATE(SCP_SYS_AUDIO, pg_audio, NULL,
 		infracfg_ao_audio_26m_bclk_ck, SYS_AUDIO),
-
 	PGATE(SCP_SYS_MFG0, pg_mfg0, NULL, mfg_sel, SYS_MFG0),
 	PGATE(SCP_SYS_MFG1, pg_mfg1, pg_mfg0, NULL, SYS_MFG1),
 	PGATE(SCP_SYS_MFG2, pg_mfg2, pg_mfg1, NULL, SYS_MFG2),
 	PGATE(SCP_SYS_MFG3, pg_mfg3, pg_mfg2, NULL, SYS_MFG3),
 	PGATE(SCP_SYS_MFG4, pg_mfg4, pg_mfg3, NULL, SYS_MFG4),
-
 	PGATE(SCP_SYS_VPU_VCORE_DORMANT, pg_vpu_vcore_d, pg_dis,
-		dsp_sel, SYS_VPU_VCORE_DORMANT),
+		ipu_if_sel, SYS_VPU_VCORE_DORMANT),
 	PGATE(SCP_SYS_VPU_VCORE_SHUTDOWN, pg_vpu_vcore_s, pg_dis,
-		dsp_sel, SYS_VPU_VCORE_SHUTDOWN),
-
+		ipu_if_sel, SYS_VPU_VCORE_SHUTDOWN),
 	PGATE(SCP_SYS_VPU_CONN_DORMANT, pg_vpu_conn_d, pg_vpu_vcore_d,
-		ipu_if_sel, SYS_VPU_CONN_DORMANT),
+		dsp_sel, SYS_VPU_CONN_DORMANT),
 	PGATE(SCP_SYS_VPU_CONN_SHUTDOWN, pg_vpu_conn_s, pg_vpu_vcore_s,
-		ipu_if_sel, SYS_VPU_CONN_SHUTDOWN),
-
+		dsp_sel, SYS_VPU_CONN_SHUTDOWN),
 	PGATE(SCP_SYS_VPU_CORE0_DORMANT, pg_vpu_core0_d, pg_vpu_conn_d,
-		NULL, SYS_VPU_CORE0_DORMANT),
+		dsp1_sel, SYS_VPU_CORE0_DORMANT),
 	PGATE(SCP_SYS_VPU_CORE0_SHUTDOWN, pg_vpu_core0_s, pg_vpu_conn_s,
-		NULL, SYS_VPU_CORE0_SHUTDOWN),
+		dsp1_sel, SYS_VPU_CORE0_SHUTDOWN),
 	PGATE(SCP_SYS_VPU_CORE1_DORMANT, pg_vpu_core1_d, pg_vpu_conn_d,
-		NULL, SYS_VPU_CORE1_DORMANT),
+		dsp2_sel, SYS_VPU_CORE1_DORMANT),
 	PGATE(SCP_SYS_VPU_CORE1_SHUTDOWN, pg_vpu_core1_s, pg_vpu_conn_s,
-		NULL, SYS_VPU_CORE1_SHUTDOWN),
-
+		dsp2_sel, SYS_VPU_CORE1_SHUTDOWN),
 	PGATE(SCP_SYS_VPU_CORE2_DORMANT, pg_vpu_core2_d, pg_vpu_conn_d,
-		NULL, SYS_VPU_CORE2_DORMANT),
+		dsp3_sel, SYS_VPU_CORE2_DORMANT),
 	PGATE(SCP_SYS_VPU_CORE2_SHUTDOWN, pg_vpu_core2_s, pg_vpu_conn_s,
-		NULL, SYS_VPU_CORE2_SHUTDOWN),
+		dsp3_sel, SYS_VPU_CORE2_SHUTDOWN),
 };
 
 static void __init init_clk_scpsys(void __iomem *infracfg_reg,
@@ -5062,6 +5051,7 @@ static void __iomem *get_reg(struct device_node *np, int index)
 	return of_iomap(np, index);
 }
 
+#if 0
 #ifdef CONFIG_OF
 void iomap_mm(void)
 {
@@ -5105,6 +5095,7 @@ void iomap_mm(void)
 		pr_debug("[CLK_CAM] base failed\n");
 }
 #endif
+#endif
 
 static void __init mt_scpsys_init(struct device_node *node)
 {
@@ -5147,7 +5138,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 	ckgen_base = ckgen_reg;
 	/*MM Bus*/
-	iomap_mm();
+	/*iomap_mm();*/
 #if 0/*!MT_CCF_BRINGUP*/
 	/* subsys init: per modem owner request, disable modem power first */
 	disable_subsys(SYS_MD1);
@@ -5157,24 +5148,24 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_mfg1(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg3(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg4(STA_POWER_ON);
-#if 0
+#if 1
 	spm_mtcmos_ctrl_dis(STA_POWER_ON);
 	spm_mtcmos_ctrl_cam(STA_POWER_ON);
 	spm_mtcmos_ctrl_ven(STA_POWER_ON);
 	spm_mtcmos_ctrl_vde(STA_POWER_ON);
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
+	spm_mtcmos_ctrl_ipe(STA_POWER_ON);
 #endif
 #if 0 /*avoid hang in bring up*/
 	spm_mtcmos_ctrl_vpu_vcore_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_conn_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_core0_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_core1_shut_down(STA_POWER_ON);
-	/*spm_mtcmos_ctrl_vpu_core2_shut_down(STA_POWER_ON);*/
+	spm_mtcmos_ctrl_vpu_core2_shut_down(STA_POWER_ON);
 #endif
 	/*spm_mtcmos_ctrl_md1(STA_POWER_ON);*/
 	/*spm_mtcmos_ctrl_md1(STA_POWER_DOWN);*/
-	/*spm_mtcmos_ctrl_audio(STA_POWER_ON);*/
+	spm_mtcmos_ctrl_audio(STA_POWER_ON);
 #endif
 #endif				/* !MT_CCF_BRINGUP */
 }
@@ -5294,15 +5285,27 @@ static const char * const *get_img_clk_names(size_t *num)
 
 		/* IMG */
 		"imgsys_larb5",
-		"imgsys_larb2",
+		"imgsys_larb6",
 		"imgsys_dip",
-		"imgsys_fdvt",
-		"imgsys_dpe",
-		"imgsys_rsc",
 		"imgsys_mfb",
 		"imgsys_wpe_a",
-		"imgsys_wpe_b",
-		"imgsys_owe",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+
+static const char * const *get_ipe_clk_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* IPE */
+		"ipe_larb7",
+		"ipe_larb8",
+		"ipe_smi_subcom",
+		"ipe_fd",
+		"ipe_fe",
+		"ipe_rsc",
+		"ipe_dpe",
 	};
 	*num = ARRAY_SIZE(clks);
 	return clks;
@@ -5312,7 +5315,6 @@ static const char * const *get_mm_clk_names(size_t *num)
 {
 	static const char * const clks[] = {
 
-		/* MM */
 		"mm_smi_common",
 		"mm_smi_larb0",
 		"mm_smi_larb1",
@@ -5331,7 +5333,7 @@ static const char * const *get_mm_clk_names(size_t *num)
 		"mm_mdp_rsz1",
 		"mm_mdp_tdshp",
 		"mm_mdp_wrot0",
-		"mm_mdp_wdma0",
+		"mm_mdp_wrot1",
 		"mm_fake_eng",
 		"mm_disp_ovl0",
 		"mm_disp_ovl0_2l",
@@ -5345,6 +5347,7 @@ static const char * const *get_mm_clk_names(size_t *num)
 		"mm_disp_gamma0",
 		"mm_disp_dither0",
 		"mm_disp_split",
+		/* MM1 */
 		"mm_dsi0_mmck",
 		"mm_dsi0_ifck",
 		"mm_dpi_mmck",
@@ -5356,9 +5359,12 @@ static const char * const *get_mm_clk_names(size_t *num)
 		"mm_mmsys_r2y",
 		"mm_disp_rsz",
 		"mm_mdp_aal",
-		"mm_mdp_ccorr",
+		"mm_mdp_hdr",
 		"mm_dbi_mmck",
 		"mm_dbi_ifck",
+		"mm_disp_pm0",
+		"mm_disp_hrt_bw",
+		"mm_disp_ovl_fbdc",
 	};
 	*num = ARRAY_SIZE(clks);
 	return clks;
@@ -5372,6 +5378,7 @@ static const char * const *get_venc_clk_names(size_t *num)
 		"venc_larb",
 		"venc_venc",
 		"venc_jpgenc",
+		"venc_gals",
 	};
 	*num = ARRAY_SIZE(clks);
 	return clks;
@@ -5381,8 +5388,9 @@ static const char * const *get_vdec_clk_names(size_t *num)
 {
 	static const char * const clks[] = {
 
-		/* VDE */
+		/* VDEC */
 		"vdec_cken",
+		/* VDEC1 */
 		"vdec_larb1_cken",
 	};
 	*num = ARRAY_SIZE(clks);
@@ -5410,12 +5418,13 @@ void subsys_if_on(void)
 	unsigned int sta_md1 = spm_read(MD1_PWR_CON);
 	int ret = 0;
 	int i = 0;
-	size_t cam_num, img_num, mm_num, venc_num, vdec_num = 0;
+	size_t cam_num, img_num, ipe_num, mm_num, venc_num, vdec_num = 0;
 	/*size_t num, cam_num, img_num, mm_num, venc_num, vdec_num = 0;*/
 
 	/*const char * const *clks = get_all_clk_names(&num);*/
 	const char * const *cam_clks = get_cam_clk_names(&cam_num);
 	const char * const *img_clks = get_img_clk_names(&img_num);
+	const char * const *ipe_clks = get_ipe_clk_names(&ipe_num);
 	const char * const *mm_clks = get_mm_clk_names(&mm_num);
 	const char * const *venc_clks = get_venc_clk_names(&venc_num);
 	const char * const *vdec_clks = get_vdec_clk_names(&vdec_num);
@@ -5442,6 +5451,13 @@ void subsys_if_on(void)
 			dump_cg_state(img_clks[i]);
 		ret++;
 	}
+	if ((sta & IPE_PWR_STA_MASK) && (sta_s & IPE_PWR_STA_MASK)) {
+		pr_notice("suspend warning: SYS_IPE is on!!!\n");
+		check_ipe_clk_sts();
+		for (i = 0; i < ipe_num; i++)
+			dump_cg_state(ipe_clks[i]);
+		ret++;
+	}
 	if ((sta & MFG1_PWR_STA_MASK) && (sta_s & MFG1_PWR_STA_MASK)) {
 		pr_notice("suspend warning: SYS_MFG1 is on!!!\n");
 		ret++;
@@ -5461,10 +5477,7 @@ void subsys_if_on(void)
 		pr_notice("suspend warning: SYS_MFG3 is on!!!\n");
 		ret++;
 	}
-	if ((sta & MFG4_PWR_STA_MASK) && (sta_s & MFG4_PWR_STA_MASK)) {
-		pr_notice("suspend warning: SYS_MFG4 is on!!!\n");
-		ret++;
-	}
+
 	if ((sta & AUDIO_PWR_STA_MASK) && (sta_s & AUDIO_PWR_STA_MASK))
 		pr_notice("suspend warning: SYS_AUDIO is on!!!\n");
 	if ((sta & CAM_PWR_STA_MASK) && (sta_s & CAM_PWR_STA_MASK)) {
@@ -5494,6 +5507,11 @@ void subsys_if_on(void)
 		pr_notice("suspend warning: SYS_VPU_CORE1 is on!!!\n");
 		ret++;
 	}
+	if ((sta & VPU_CORE2_PWR_STA_MASK) &&
+		(sta_s & VPU_CORE2_PWR_STA_MASK)) {
+		pr_notice("suspend warning: SYS_VPU_CORE2 is on!!!\n");
+		ret++;
+	}
 	if ((sta & VDE_PWR_STA_MASK) && (sta_s & VDE_PWR_STA_MASK)) {
 		pr_notice("suspend warning: SYS_VDE is on!!!\n");
 		for (i = 0; i < vdec_num; i++)
@@ -5508,22 +5526,24 @@ void subsys_if_on(void)
 #endif
 }
 
-#if 0 /*only use for suspend test*/
+#if 1 /*only use for suspend test*/
 void mtcmos_force_off(void)
 {
-	spm_mtcmos_ctrl_mfg_2d(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg_core1(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg_core0(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg3(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg2(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg1(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg0(STA_POWER_DOWN);
 
+	spm_mtcmos_ctrl_vpu_core2_shut_down(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_vpu_core1_shut_down(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_vpu_core0_shut_down(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_vpu_top(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vpu_conn_shut_down(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vpu_vcore_shut_down(STA_POWER_DOWN);
 
 	spm_mtcmos_ctrl_cam(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_ven(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_vde(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_ipe(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
 

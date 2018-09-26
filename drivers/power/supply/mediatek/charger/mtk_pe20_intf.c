@@ -25,7 +25,7 @@ static int pe20_set_mivr(struct charger_manager *pinfo, int uV);
 /* Unit of the following functions are uV, uA */
 static inline u32 pe20_get_vbus(void)
 {
-	return pmic_get_vbus() * 1000;
+	return battery_get_vbus() * 1000;
 }
 
 static inline u32 pe20_get_vbat(void)
@@ -354,6 +354,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 		pe20->aicr_cable_imp = 1000000; /* uA */
 		chr_info("Bad cable\n");
 	}
+	charger_dev_set_input_current(pinfo->chg1_dev, pe20->aicr_cable_imp);
 
 	pr_info("%s: set aicr:%dmA, vbat:%dmV, mivr_state:%d\n",
 		__func__, pe20->aicr_cable_imp / 1000,

@@ -124,15 +124,6 @@ void clk_buf_save_afc_val(unsigned int afcdac)
 }
 
 /* Called by suspend driver to write afcdac into SPM register */
-void clk_buf_write_afcdac(void)
-{
-	if (!is_clkbuf_initiated)
-		return;
-
-	if (is_pmic_clkbuf)
-		return;
-}
-
 bool is_clk_buf_from_pmic(void)
 {
 	return true;

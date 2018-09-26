@@ -4328,7 +4328,12 @@ static void __ufshcd_transfer_req_compl(struct ufs_hba *hba,
 				UFS_TRACE_COMPLETED);
 			ufs_mtk_perf_heurisic_req_done(hba, cmd);
 			ufs_mtk_biolog_transfer_req_compl(index);
-			ufs_mtk_hie_req_done(hba, lrbp);
+			/*
+			 * file-based inline encryption:
+			 * call UFS key hint to release usage count
+			 */
+			if (hie_request_crypted(cmd->request))
+				ufs_mtk_hie_req_done(hba, lrbp);
 			result = ufshcd_transfer_rsp_status(hba, lrbp);
 			scsi_dma_unmap(cmd);
 			cmd->result = result;
@@ -5646,6 +5651,12 @@ static int ufshcd_reset_and_restore(struct ufs_hba *hba)
 	int retries = MAX_HOST_RESET_RETRIES;
 
 	do {
+		/* MTK PATCH */
+		err = ufs_mtk_pltfrm_ufs_device_reset(hba);
+		if (err)
+			dev_warn(hba->dev, "%s: device reset failed. err %d\n",
+				 __func__, err);
+
 		err = ufshcd_host_reset_and_restore(hba);
 	} while (err && --retries);
 

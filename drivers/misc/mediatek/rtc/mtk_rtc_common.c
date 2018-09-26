@@ -232,6 +232,29 @@ int set_rtc_spare_fg_value(int val)
 	return 0;
 }
 
+int get_rtc_spare0_fg_value(void)
+{
+	u16 temp;
+	unsigned long flags;
+
+	spin_lock_irqsave(&rtc_lock, flags);
+	temp = hal_rtc_get_spare_register(RTC_FG_INIT);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+
+	return temp;
+}
+
+int set_rtc_spare0_fg_value(int val)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&rtc_lock, flags);
+	hal_rtc_set_spare_register(RTC_FG_INIT, val);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+
+	return 0;
+}
+
 bool crystal_exist_status(void)
 {
 	unsigned long flags;
@@ -551,10 +574,9 @@ static void rtc_handler(void)
 		spin_unlock_irqrestore(&rtc_lock, flags);
 		return;
 	}
-#if RTC_RELPWR_WHEN_XRST
-	/* set AUTO bit because AUTO = 0 when PWREN = 1 and alarm occurs */
-	hal_rtc_reload_power();
-#endif
+
+	rtc_reset_bbpu_alarm_status();
+
 	pwron_alarm = hal_rtc_is_pwron_alarm(&nowtm, &tm);
 	nowtm.tm_year += RTC_MIN_YEAR;
 	tm.tm_year += RTC_MIN_YEAR;

@@ -58,6 +58,8 @@
 #include "adsp_reservedmem_define.h"
 #endif
 
+#include <mtk_spm_sleep.h>
+
 /* adsp awake timout count definition*/
 #define ADSP_AWAKE_TIMEOUT 5000
 /* adsp semaphore timout count definition*/
@@ -100,12 +102,6 @@ static struct adsp_work_struct adsp_A_notify_work;
 static struct adsp_work_struct adsp_timeout_work;
 
 static DEFINE_MUTEX(adsp_A_notify_mutex);
-
-struct clk *clk_adsp_infra;
-struct clk *clk_top_mux_adsp;
-struct clk *clk_top_adsppll_ck;
-struct clk *clk_adsp_clk26;
-struct clk *clk_apmixed_adsppll;
 
 char *adsp_core_ids[ADSP_CORE_TOTAL] = {"ADSP A"};
 DEFINE_SPINLOCK(adsp_awake_spinlock);
@@ -168,11 +164,6 @@ int get_adsp_semaphore(int flag)
 	if (!driver_init_done)
 		return -1;
 
-	if (adsp_awake_lock(ADSP_A_ID) == -1) {
-		pr_debug("%s: awake adsp fail\n", __func__);
-		return ret;
-	}
-
 	/* spinlock context safe*/
 	spin_lock_irqsave(&adsp_awake_spinlock, spin_flags);
 
@@ -202,10 +193,6 @@ int get_adsp_semaphore(int flag)
 
 	spin_unlock_irqrestore(&adsp_awake_spinlock, spin_flags);
 
-	if (adsp_awake_unlock(ADSP_A_ID) == -1)
-		pr_debug("%s: adsp_awake_unlock fail\n", __func__);
-
-
 	return ret;
 }
 EXPORT_SYMBOL_GPL(get_adsp_semaphore);
@@ -226,10 +213,6 @@ int release_adsp_semaphore(int flag)
 	if (!driver_init_done)
 		return -1;
 
-	if (adsp_awake_lock(ADSP_A_ID) == -1) {
-		pr_debug("%s: awake adsp fail\n", __func__);
-		return ret;
-	}
 	/* spinlock context safe*/
 	spin_lock_irqsave(&adsp_awake_spinlock, spin_flags);
 	flag = (flag * 2) + 1;
@@ -248,10 +231,6 @@ int release_adsp_semaphore(int flag)
 		pr_debug("[ADSP] %s %d not own by me\n", __func__, flag);
 
 	spin_unlock_irqrestore(&adsp_awake_spinlock, spin_flags);
-
-	if (adsp_awake_unlock(ADSP_A_ID) == -1)
-		pr_debug("%s: adsp_awake_unlock fail\n", __func__);
-
 
 	return ret;
 }
@@ -433,12 +412,11 @@ uint32_t adsp_power_on(uint32_t enable)
 	if (enable) {
 		adsp_enable_clock();
 		adsp_sw_reset();
-		//enable ADSPPLL
-		adsp_set_top_mux(1, CLK_TOP_ADSPPLL_CK);
+
+		adsp_set_clock_freq(CLK_DEFAULT_INIT_CK);
 		adsp_A_send_spm_request(true);
-		set_adsppll_rate(ADSPPLL_FREQ_480MHZ);
 	} else {
-		adsp_set_top_mux(1, CLK_CLK26M);
+		adsp_set_clock_freq(CLK_DEFAULT_26M_CK);
 	}
 	pr_debug("-%s (%x)\n", __func__, enable);
 	return 1;
@@ -1246,10 +1224,6 @@ void adsp_update_memory_protect_info(void)
 
 void adsp_enable_dsp_clk(bool enable)
 {
-	if (is_adsp_ready(ADSP_A_ID))
-		return;
-
-	/* no feature enabled ,enable dsp clock to write tcm*/
 	if (enable) {
 		pr_debug("enable dsp clk\n");
 		adsp_enable_clock();
@@ -1289,6 +1263,20 @@ int adsp_check_resource(void)
 #endif
 
 	return adsp_resource_status;
+}
+
+static int adsp_system_sleep_suspend(struct device *dev)
+{
+	if (!is_adsp_ready(ADSP_A_ID) && !adsp_feature_is_active())
+		spm_adsp_mem_protect();
+	return 0;
+}
+
+static int adsp_system_sleep_resume(struct device *dev)
+{
+	if (!is_adsp_ready(ADSP_A_ID) && !adsp_feature_is_active())
+		spm_adsp_mem_unprotect();
+	return 0;
 }
 
 static int adsp_device_probe(struct platform_device *pdev)
@@ -1339,38 +1327,7 @@ static int adsp_device_probe(struct platform_device *pdev)
 
 	adspreg.clkctrl = adspreg.cfg + ADSP_CLK_CTRL_OFFSET;
 	pr_debug("[ADSP] clkctrl base=0x%p\n", adspreg.clkctrl);
-
-	// clock init
-	clk_adsp_infra = devm_clk_get(&pdev->dev, "adsp_infra_clk");
-	if (IS_ERR(clk_adsp_infra)) {
-		dev_err(dev, "clk_get(\"adsp_infra_clk\") failed\n");
-		return PTR_ERR(clk_adsp_infra);
-	}
-
-	clk_top_mux_adsp = devm_clk_get(&pdev->dev, "top_mux_adsp");
-	if (IS_ERR(clk_top_mux_adsp)) {
-		dev_err(dev, "clk_get(\"top_mux_adsp\") failed\n");
-		return PTR_ERR(clk_top_mux_adsp);
-	}
-
-	clk_top_adsppll_ck = devm_clk_get(&pdev->dev, "top_adsppll_ck");
-	if (IS_ERR(clk_top_adsppll_ck)) {
-		dev_err(dev, "clk_get(\"top_adsppll_ck\") failed\n");
-		return PTR_ERR(clk_top_adsppll_ck);
-	}
-
-	clk_adsp_clk26 = devm_clk_get(&pdev->dev, "adsp_clk26");
-	if (IS_ERR(clk_adsp_clk26)) {
-		dev_err(dev, "clk_get(\"adsp_clk26\") failed\n");
-		return PTR_ERR(clk_adsp_clk26);
-	}
-
-	clk_apmixed_adsppll = devm_clk_get(&pdev->dev, "apmixed_adsppll");
-	if (IS_ERR(clk_apmixed_adsppll)) {
-		dev_err(dev, "clk_get(\"apmixed_adsppll\") failed\n");
-		return PTR_ERR(clk_apmixed_adsppll);
-	}
-
+	adsp_clk_device_probe(pdev);
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	adspreg.wdt_irq = res->start;
 	pr_debug("[ADSP] adspreg.wdt_irq=%d\n", adspreg.wdt_irq);
@@ -1397,14 +1354,17 @@ static int adsp_device_probe(struct platform_device *pdev)
 
 static int adsp_device_remove(struct platform_device *pdev)
 {
-	clk_disable_unprepare(clk_top_mux_adsp);
 	return 0;
 }
-
 
 static const struct of_device_id adsp_of_ids[] = {
 	{ .compatible = "mediatek,audio_dsp", },
 	{}
+};
+
+static const struct dev_pm_ops adsp_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(adsp_system_sleep_suspend,
+				adsp_system_sleep_resume)
 };
 
 static struct platform_driver mtk_adsp_device = {
@@ -1415,6 +1375,9 @@ static struct platform_driver mtk_adsp_device = {
 		.owner = THIS_MODULE,
 #ifdef CONFIG_OF
 		.of_match_table = adsp_of_ids,
+#endif
+#ifdef CONFIG_PM
+		.pm = &adsp_pm_ops,
 #endif
 	},
 };

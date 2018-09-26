@@ -1059,6 +1059,7 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 	unsigned long long tmp_target_limit = 60;
 	int cur_cpu_time;
 	int cur_gpu_time;
+	int sys_time;
 	int cur_cap;
 
 	cur_cpu_time = get_cpu_frame_time(iter);
@@ -1098,9 +1099,14 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 		second_chance_flag = 0;
 		fpsgo_systrace_c_fstb(iter->pid,
 				second_chance_flag, "second_chance_flag");
-		tmp_target_limit = 1000000000LL;
-		do_div(tmp_target_limit,
-				(long long)max(cur_cpu_time, cur_gpu_time));
+		sys_time = max(cur_cpu_time, cur_gpu_time);
+
+		if (sys_time > 0) {
+			tmp_target_limit = 1000000000LL;
+			do_div(tmp_target_limit,
+					(long long)sys_time);
+		}
+
 		fpsgo_systrace_c_fstb(iter->pid,
 				(int)tmp_target_limit, "tmp_target_limit");
 

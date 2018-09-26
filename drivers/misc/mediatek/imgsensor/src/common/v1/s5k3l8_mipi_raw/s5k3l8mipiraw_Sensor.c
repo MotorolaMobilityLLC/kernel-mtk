@@ -35,7 +35,8 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K3L8_SENSOR_ID,
 
-	.checksum_value = 0x49c09f86,
+	//.checksum_value = 0x49c09f86,
+	.checksum_value = 0xf336c953,
 
 	.pre = {
 		.pclk = 566400000,
@@ -55,9 +56,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.pclk = 560000000,
 		.linelength  = 5920,//5808,
 		.framelength = 3206,
-		.startx = 0,
+		.startx = 24,
 		.starty = 0,
-		.grabwindow_width  = 4208,
+		.grabwindow_width  = 4160,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 435200000,
@@ -68,10 +69,10 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.cap = {
 		.pclk = 566400000,
 		.linelength  = 5808,
-		.framelength = 3272,
-		.startx = 0,
+		.framelength = 3234,
+		.startx = 24,
 		.starty = 0,
-		.grabwindow_width  = 4208,
+		.grabwindow_width  = 4160,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
 		.mipi_pixel_rate = 435200000,
@@ -83,9 +84,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.pclk = 566400000,
 		.linelength  = 5808,
 		.framelength = 6490,
-		.startx = 0,
+		.startx = 24,
 		.starty = 0,
-		.grabwindow_width  = 4208,
+		.grabwindow_width  = 4160,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
 		.mipi_pixel_rate = 435200000,
@@ -254,7 +255,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	     0,    0, 2104, 1560,    0,    0, 2104, 1560}, // Preview
 // capture
 	{ 4208, 3120,    0,    0, 4208, 3120, 4208, 3120,
-	     0,    0, 4208, 3120,    0,    0, 4208, 3120},
+	     0,    0, 4208, 3120,    24,    0, 4160, 3120},
 // video
 	{ 4208, 3120,    0,    0, 4208, 3120, 4208, 3120,
 	     0,    0, 4208, 3120,    0,    0, 4208, 3120},
@@ -1134,11 +1135,11 @@ kal_uint16 addr_data_pair_capture_s5k3l8_30fps[] = {
 	0x0302, 0x0001,
 	0x0300, 0x0005,
 	0x030C, 0x0006,
-	0x030E, 0x0110,
+	0x030E, 0x0119,
 	0x030A, 0x0001,
 	0x0308, 0x0008,
 	0x0342, 0x16B0,
-	0x0340, 0x0CC8,
+	0x0340, 0x0CA2,
 	0x0202, 0x0200,
 	0x0200, 0x00C6,
 	0x0B04, 0x0101,

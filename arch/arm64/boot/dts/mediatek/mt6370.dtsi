@@ -201,7 +201,7 @@
 
 			/* 1 = Discharge VPOS when turn off */
 			/* 0 = disable */
-			db_vpos_disc = <0>;
+			db_vpos_disc = <1>;
 
 			db_delay = <3>;	/* 0 = no constraint */
 					/* 1 = 0 ms */

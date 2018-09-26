@@ -519,7 +519,7 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 	/* log_dbg("Count = %d\n", pREGIO->u4Count); */
 
 	for (i = 0; i < pREGIO->u4Count; i++) {
-		if (((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ADDR) &&
+		if (((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ENABLE) &&
 			((pFDVTWriteBuffer.u4Addr[i]) <= FDVT_MAX_OFFSET) &&
 			((pFDVTWriteBuffer.u4Addr[i] & 0x3) == 0)) {
 			/* log_dbg("Write: FDVT[0x%03lx](0x%08lx) = 0x%08lx\n",

@@ -380,6 +380,8 @@ struct mtu3 {
 	u8 address;
 	u8 test_mode_nr;
 	u32 hw_version;
+
+	struct delayed_work check_ltssm_work;
 };
 
 static inline struct mtu3 *gadget_to_mtu3(struct usb_gadget *g)
@@ -463,5 +465,6 @@ void mtu3_gadget_disconnect(struct mtu3 *mtu);
 
 irqreturn_t mtu3_ep0_isr(struct mtu3 *mtu);
 extern const struct usb_ep_ops mtu3_ep0_ops;
+extern void mtu3_check_ltssm_work(struct work_struct *data);
 
 #endif

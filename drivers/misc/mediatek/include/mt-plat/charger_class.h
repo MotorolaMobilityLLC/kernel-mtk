@@ -128,10 +128,16 @@ struct charger_ops {
 	int (*set_pe20_efficiency_table)(struct charger_device *dev);
 	int (*dump_registers)(struct charger_device *dev);
 
+	int (*get_vbus_adc)(struct charger_device *dev, u32 *vbus);
 	int (*get_ibus_adc)(struct charger_device *dev, u32 *ibus);
 	int (*get_tchg_adc)(struct charger_device *dev, int *tchg_min,
 		int *tchg_max);
 	int (*get_zcv)(struct charger_device *dev, u32 *uV);
+
+	/* TypeC */
+	int (*get_fod_status)(struct charger_device *dev, u8 *status);
+	int (*enable_fod_oneshot)(struct charger_device *dev, bool en);
+	int (*is_typec_ot)(struct charger_device *dev, bool *ot);
 };
 
 static inline void *charger_dev_get_drvdata(
@@ -249,6 +255,8 @@ extern int charger_dev_enable_direct_charging(
 	struct charger_device *charger_dev, bool en);
 extern int charger_dev_kick_direct_charging_wdt(
 	struct charger_device *charger_dev);
+extern int charger_dev_get_vbus(
+	struct charger_device *charger_dev, u32 *vbus);
 extern int charger_dev_get_ibus(
 	struct charger_device *charger_dev, u32 *ibus);
 extern int charger_dev_get_temperature(
@@ -259,6 +267,10 @@ extern int charger_dev_set_direct_charging_ibusoc(
 extern int charger_dev_set_direct_charging_vbusov(
 	struct charger_device *charger_dev, u32 uv);
 
+/* TypeC */
+extern int charger_dev_get_fod_status(struct charger_device *dev, u8 *status);
+extern int charger_dev_enable_fod_oneshot(struct charger_device *dev, bool en);
+extern int charger_dev_is_typec_ot(struct charger_device *dev, bool *ot);
 
 extern int register_charger_device_notifier(
 	struct charger_device *charger_dev,

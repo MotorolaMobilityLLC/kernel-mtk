@@ -46,8 +46,16 @@ static void toggle_opstate(struct ssusb_mtk *ssusb)
 	mtu3_setbits(ssusb->mac_base, U3D_DEVICE_CONTROL, DC_SESSION);
 }
 
+#if !defined(CONFIG_USB_MU3D_DRV)
+bool mt_usb_is_device(void)
+{
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_USB_XHCI_MTK)
+	return true;
+#else
+	return true;
+#endif
+}
 
-#ifdef NEVER
 bool usb_cable_connected(void)
 {
 	if (g_otg_sx)
@@ -55,7 +63,7 @@ bool usb_cable_connected(void)
 	else
 		return false;
 }
-#endif /* NEVER */
+#endif
 
 static void ssusb_ip_sw_reset(struct ssusb_mtk *ssusb)
 {

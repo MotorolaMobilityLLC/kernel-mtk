@@ -29,8 +29,7 @@
 /* #define USE_SINGLE_CLUSTER */
 
 #define CM_MGR_EMI_OPP 4
-#define CM_MGR_LOWER_OPP 8
-#define CM_MGR_LOWER_OPP_1 12
+#define CM_MGR_LOWER_OPP 6
 #define CM_MGR_CPU_CLUSTER 2
 #define CM_MGR_CPU_COUNT 8
 #define CM_MGR_CPU_LIMIT 6

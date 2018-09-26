@@ -84,7 +84,6 @@
 #include <mt-plat/battery_common.h>
 #include <mach/mt_battery_meter.h>
 #include <mach/mt_charging.h>
-#include <mach/mt_pmic.h>
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 #include <mach/mt_pmic_wrap.h>
 #endif
@@ -346,10 +345,12 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CURRENT_MAX,
 	POWER_SUPPLY_PROP_VOLTAGE_MAX,
+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 	/* Add for Battery Service */
 	POWER_SUPPLY_PROP_batt_vol,
 	POWER_SUPPLY_PROP_batt_temp,
+	POWER_SUPPLY_PROP_TEMP,
 	/* Add for EM */
 	POWER_SUPPLY_PROP_TemperatureR,
 	POWER_SUPPLY_PROP_TempBattVoltage,
@@ -683,6 +684,9 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_batt_temp:
 		val->intval = data->BAT_batt_temp;
 		break;
+	case POWER_SUPPLY_PROP_TEMP:
+		val->intval = data->BAT_batt_temp;
+		break;
 	case POWER_SUPPLY_PROP_TemperatureR:
 		val->intval = data->BAT_TemperatureR;
 		break;
@@ -712,6 +716,9 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		val->intval = 5000000;
+		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+		val->intval = data->BAT_batt_vol * 1000;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
 		val->intval = battery_meter_get_QMAX25() * 1000;
@@ -1532,7 +1539,7 @@ static ssize_t show_Power_On_Voltage(struct device *dev,
 }
 
 static ssize_t store_Power_On_Voltage(struct device *dev,
-		struct device_atttribute *attr, const char *buf, size_t size)
+		struct device_attribute *attr, const char *buf, size_t size)
 {
 	battery_log(BAT_LOG_CRTI, "[EM] Not Support Write Function\n");
 	return size;
@@ -2337,7 +2344,7 @@ unsigned int bat_is_recharging_phase(void)
 
 int get_bat_charging_current_level(void)
 {
-	CHR_CURRENT_ENUM charging_current;
+	enum CHR_CURRENT_ENUM charging_current;
 
 	battery_charging_control(CHARGING_CMD_GET_CURRENT, &charging_current);
 
@@ -2416,7 +2423,7 @@ unsigned long BAT_Get_Battery_Voltage(int polling_mode)
 }
 
 
-static void mt_battery_average_method_init(BATTERY_AVG_ENUM type,
+static void mt_battery_average_method_init(enum BATTERY_AVG_ENUM type,
 		unsigned int *bufferdata, unsigned int data, signed int *sum)
 {
 	unsigned int i;
@@ -2501,7 +2508,7 @@ static void mt_battery_average_method_init(BATTERY_AVG_ENUM type,
 }
 
 
-static unsigned int mt_battery_average_method(BATTERY_AVG_ENUM type,
+static unsigned int mt_battery_average_method(enum BATTERY_AVG_ENUM type,
 		unsigned int *bufferdata, unsigned int data,
 		signed int *sum, unsigned char batteryIndex)
 {
@@ -3058,9 +3065,9 @@ static void mt_battery_update_status(void)
 }
 
 
-CHARGER_TYPE mt_charger_type_detection(void)
+enum CHARGER_TYPE mt_charger_type_detection(void)
 {
-	CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+	enum CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
 
 	mutex_lock(&charger_type_mutex);
 
@@ -3125,7 +3132,7 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	return BMT_status.charger_type;
 }
 
-CHARGER_TYPE mt_get_charger_type(void)
+enum CHARGER_TYPE mt_get_charger_type(void)
 {
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	return STANDARD_HOST;
@@ -3963,7 +3970,6 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 		if (chargin_hw_init_done)
 			battery_charging_control(
 				CHARGING_CMD_SET_HV_THRESHOLD, &hv_voltage);
-*
 		wait_event_interruptible(charger_hv_detect_waiter,
 					 (charger_hv_detect_flag == true));
 
@@ -4907,7 +4913,7 @@ static int battery_remove(struct platform_device *dev)
 static void battery_shutdown(struct platform_device *dev)
 {
 	if (mtk_pep_get_is_connect() || mtk_pep20_get_is_connect()) {
-		CHR_CURRENT_ENUM input_current = CHARGE_CURRENT_70_00_MA;
+		enum CHR_CURRENT_ENUM input_current = CHARGE_CURRENT_70_00_MA;
 
 		battery_charging_control(
 				CHARGING_CMD_SET_INPUT_CURRENT, &input_current);

@@ -68,13 +68,13 @@ void mtk_pdc_check_cable_impedance(struct charger_manager *pinfo)
 		goto end;
 	}
 
-	vchr1 = pmic_get_vbus() * 1000;
+	vchr1 = battery_get_vbus() * 1000;
 
 	aicr_value = 500000;
 	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 	msleep(20);
 
-	vchr2 = pmic_get_vbus() * 1000;
+	vchr2 = battery_get_vbus() * 1000;
 
 	/*
 	 * Calculate cable impedance (|V1 - V2|) / (|I2 - I1|)

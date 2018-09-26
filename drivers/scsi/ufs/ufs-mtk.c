@@ -138,15 +138,29 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode,
 	/* get key index from key hint, or install new key to key hint */
 	key_idx = kh_get_hint(ufs_mtk_get_kh(), key, &need_update);
 
-	if (key_idx < 0)
+	/*
+	 * Return error if free key slots are unavailable (-ENOMEM).
+	 *
+	 * Bypass error by unsuccesful keyhint registration (-ENODEV)
+	 * because ufs host driver shall work fine in this case.
+	 */
+	if ((key_idx < 0) && (key_idx != -ENODEV))
 		return key_idx;
 
 	spin_unlock_irqrestore(info->hba->host->host_lock, flags);
 
 	if (need_update || (key_idx < 0)) {
 
+		/*
+		 * Shall happen only if keyhint is not registered
+		 * successfully. Use tag as key index directly and
+		 * always update key.
+		 *
+		 * Note. In this case, queue depth shall align to
+		 * number of key slots.
+		 */
 		if (key_idx < 0)
-			key_idx = 0;
+			key_idx = req->tag;
 
 		key_ptr = (u32 *)key;
 

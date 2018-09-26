@@ -366,6 +366,7 @@ source "drivers/misc/mediatek/mu3d/Kconfig"
 source "drivers/misc/mediatek/cirq/Kconfig"
 source "drivers/misc/mediatek/atf/Kconfig"
 source "drivers/misc/mediatek/vpu/Kconfig"
+source "drivers/misc/mediatek/mdla/Kconfig"
 source "drivers/misc/mediatek/nfc/Kconfig"
 source "drivers/misc/mediatek/performance/Kconfig"
 source "drivers/misc/mediatek/usb2jtag/Kconfig"
@@ -430,6 +431,7 @@ config MTK_GMO_RAM_OPTIMIZE
 	default n
 	select MTK_ENABLE_GMO
 	select MTK_ENABLE_AGO
+	select DM_ANDROID_VERITY_AT_MOST_ONCE_DEFAULT_ENABLED
 	help
 	  Provide centeral config to use memory efficiently.
 	  GMO must set both in kernel & project config to prevent

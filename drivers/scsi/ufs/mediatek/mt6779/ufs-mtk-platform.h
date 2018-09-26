@@ -17,14 +17,13 @@
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 /* If CLKBUF function not ready, comment this define */
-/* #define CLKBUF_READY */ /* Peter enable after clkbuf ready */
+#define CLKBUF_READY
 
 /* If UPMU function not ready, comment this define */
-/* #define UPMU_READY */ /* Peter enable after upmu ready */
+#define UPMU_READY
 #endif
 
-/* Peter enable and test after P ready */
-/* #define HIE_CHANGE_KEY_IN_NORMAL_WORLD */
+#define HIE_CHANGE_KEY_IN_NORMAL_WORLD
 
 /*
  * Platform dependent quirks
@@ -78,6 +77,7 @@ enum {
  */
 void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba,
 	struct ufs_pa_layer_attr *final);
+int  ufs_mtk_pltfrm_ufs_device_reset(struct ufs_hba *hba);
 int  ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba);
 int  ufs_mtk_pltfrm_deepidle_check_h8(void);
 void ufs_mtk_pltfrm_deepidle_leave(void);

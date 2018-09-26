@@ -17,37 +17,36 @@
 
 &msdc0 {
 	index = /bits/ 8 <0>;
-	/*clk_src = /bits/ 8 <MSDC0_CLKSRC_400MHZ>;*/
+	clk_src = /bits/ 8 <MSDC0_CLKSRC_400MHZ>;
 	bus-width = <8>;
 	max-frequency = <200000000>;
 	cap-mmc-highspeed;
-	/*mmc-ddr-1_8v;*/
+	mmc-ddr-1_8v;
 	/*mmc-hs200-1_8v;*/
 	/*mmc-hs400-1_8v;*/
 	no-sd;
 	no-sdio;
 	non-removable;
-	/*pinctl = <&msdc0_pins_default>;*/
+	pinctl = <&msdc0_pins_default>;
 	/*pinctl_hs400 = <&msdc0_pins_hs400>;*/
 	/*pinctl_hs200 = <&msdc0_pins_hs200>;*/
-	/*register_setting = <&msdc0_register_setting_default>;*/
+	register_setting = <&msdc0_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_EMMC>;
 	bootable;
 	status = "okay";
-	/*vmmc-supply = <&mt_pmic_vemc_ldo_reg>;*/
-	/*clocks = <&infracfg_ao INFRACFG_AO_MSDC0_SCK_CG>,*/
-	/*	<&infracfg_ao INFRACFG_AO_MSDC0_CG>;*/
-	/*clock-names = "msdc0-clock", "msdc0-hclock";*/
+	vmmc-supply = <&mt_pmic_vemc_ldo_reg>;
+	clocks = <&infracfg_ao INFRACFG_AO_MSDC0_SCK_CG>,
+		<&infracfg_ao INFRACFG_AO_MSDC0_CG>;
+	clock-names = "msdc0-clock", "msdc0-hclock";
 	hw_dvfs = /bits/ 8 <0>;
 };
 
 &msdc1 {
 	index = /bits/ 8 <1>;
-	/*clk_src = /bits/ 8 <MSDC1_CLKSRC_200MHZ>;*/
+	clk_src = /bits/ 8 <MSDC1_CLKSRC_200MHZ>;
 	bus-width = <4>;
 	max-frequency = <200000000>;
 	cap-sd-highspeed;
-	sd-vmch-fastoff;
 	sd-uhs-sdr12;
 	sd-uhs-sdr25;
 	sd-uhs-sdr50;
@@ -56,28 +55,28 @@
 	no-mmc;
 	no-sdio;
 
-	/*pinctl = <&msdc1_pins_default>;*/
-	/*pinctl_sdr104 = <&msdc1_pins_sdr104>;*/
-	/*pinctl_sdr50 = <&msdc1_pins_sdr50>;*/
-	/*pinctl_ddr50 = <&msdc1_pins_ddr50>;*/
-	/*register_setting = <&msdc1_register_setting_default>;*/
+	pinctl = <&msdc1_pins_default>;
+	pinctl_sdr104 = <&msdc1_pins_sdr104>;
+	pinctl_sdr50 = <&msdc1_pins_sdr50>;
+	pinctl_ddr50 = <&msdc1_pins_ddr50>;
+	register_setting = <&msdc1_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_SD>;
-	/*cd_level = /bits/ 8 <MSDC_CD_LOW>;*/
-	/*cd-gpios = <&pio 3 0>;*/
+	cd_level = /bits/ 8 <MSDC_CD_LOW>;
+	cd-gpios = <&pio 8 0>;
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	status = "okay";
 #else
 	status = "disable";
 #endif
-	/*vmmc-supply = <&mt_pmic_vmch_ldo_reg>;*/
-	/*vqmmc-supply = <&mt_pmic_vmc_ldo_reg>;*/
-	/*clocks = <&infracfg_ao INFRACFG_AO_MSDC1_SCK_CG>,*/
-	/*	<&infracfg_ao INFRACFG_AO_MSDC1_CG>;*/
-	/*clock-names = "msdc1-clock", "msdc1-hclock";*/
+	vmmc-supply = <&mt_pmic_vmch_ldo_reg>;
+	vqmmc-supply = <&mt_pmic_vmc_ldo_reg>;
+	clocks = <&infracfg_ao INFRACFG_AO_MSDC1_SCK_CG>,
+		<&infracfg_ao INFRACFG_AO_MSDC1_CG>;
+	clock-names = "msdc1-clock", "msdc1-hclock";
 	hw_dvfs = /bits/ 8 <0>;
 };
 
-#if 0
+
 &pio {
 	msdc0_pins_default: msdc0@default {
 		pins_cmd {
@@ -193,4 +192,3 @@
 		wdata_edge = /bits/ 8 <MSDC_SMPL_RISING>;
 	};
 };
-#endif

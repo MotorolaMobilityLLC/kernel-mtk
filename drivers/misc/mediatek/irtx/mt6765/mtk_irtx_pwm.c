@@ -266,6 +266,29 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd,
 	return ret;
 }
 
+#ifdef CONFIG_COMPAT
+static long compat_dev_char_ioctl(struct file *file, unsigned int cmd,
+		unsigned long arg)
+{
+	if (!file->f_op || !file->f_op->unlocked_ioctl) {
+		pr_info("file has no f_op or no unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+
+	switch (cmd) {
+	case COMPAT_IRTX_IOC_GET_SOLUTTION_TYPE:
+	case COMPAT_IRTX_IOC_SET_IRTX_LED_EN:
+		pr_debug("compat_ioctl : the IOCTL command is 0x%x\n", cmd);
+		return file->f_op->unlocked_ioctl(
+			file, cmd, (unsigned long)compat_ptr(arg));
+		break;
+	default:
+		pr_info("compat_ioctl : No such command!! 0x%x\n", cmd);
+		return -ENOIOCTLCMD;
+	}
+}
+#endif
+
 static struct file_operations const char_dev_fops = {
 	.owner = THIS_MODULE,
 	.open = &dev_char_open,
@@ -273,6 +296,10 @@ static struct file_operations const char_dev_fops = {
 	.read = &dev_char_read,
 	.write = &dev_char_write,
 	.unlocked_ioctl = &dev_char_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = &compat_dev_char_ioctl,
+#endif
+
 };
 static int irtx_probe(struct platform_device *plat_dev)
 {

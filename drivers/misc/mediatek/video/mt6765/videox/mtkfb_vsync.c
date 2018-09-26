@@ -97,6 +97,39 @@ static int mtkfb_vsync_flush(struct file *a_pstFile, fl_owner_t a_id)
 	return 0;
 }
 
+#ifdef CONFIG_COMPAT
+static long compat_mtkfb_vsync_unlocked_ioctl(struct file *file,
+		unsigned int cmd, unsigned long arg)
+{
+
+	compat_uint_t __user *data32;
+	unsigned long __user *data;
+	compat_uint_t u;
+	int err = 0;
+	long ret = 0;
+
+	if (!file->f_op || !file->f_op->unlocked_ioctl)
+		return -ENOTTY;
+
+	data32 = compat_ptr(arg);
+	data = compat_alloc_user_space(sizeof(unsigned long));
+
+	err |= get_user(u, data32);
+	err |= put_user(u, data);
+
+	if (err) {
+		pr_debug("compat_mtkfb_vsync_ioctl fail!\n");
+		return err;
+	}
+
+	ret = file->f_op->unlocked_ioctl(file, cmd,
+					(unsigned long)data);
+	return ret;
+
+}
+
+#endif
+
 static long mtkfb_vsync_unlocked_ioctl(struct file *file, unsigned int cmd,
 	unsigned long arg)
 {
@@ -151,6 +184,9 @@ static long mtkfb_vsync_unlocked_ioctl(struct file *file, unsigned int cmd,
 static const struct file_operations mtkfb_vsync_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = mtkfb_vsync_unlocked_ioctl,
+	#ifdef CONFIG_COMPAT
+	.compat_ioctl = compat_mtkfb_vsync_unlocked_ioctl,
+	#endif
 	.open = mtkfb_vsync_open,
 	.release = mtkfb_vsync_release,
 	.flush = mtkfb_vsync_flush,

@@ -94,7 +94,7 @@ void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba)
 #ifdef UPMU_READY
 	int vcc_enabled, vcc_value, vccq2_enabled, va09_enabled;
 
-	vcc_enabled = pmic_get_register_value(PMIC_DA_VEMC_EN);
+	vcc_enabled = pmic_get_register_value(PMIC_RG_LDO_VEMC_EN);
 	vcc_value = pmic_get_register_value(PMIC_RG_VEMC_VOSEL);
 	vccq2_enabled = pmic_get_register_value(PMIC_DA_EXT_PMIC_EN1);
 	va09_enabled = pmic_get_register_value(PMIC_DA_EXT_PMIC_EN1);
@@ -120,6 +120,34 @@ void ufs_mtk_pltfrm_gpio_trigger_init(struct ufs_hba *hba)
 				__func__);
 }
 #endif
+
+int ufs_mtk_pltfrm_ufs_device_reset(struct ufs_hba *hba)
+{
+	u32 reg;
+
+	if (!ufs_mtk_mmio_base_pericfg)
+		return 1;
+
+	reg = readl(ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
+	reg = reg & ~(1 << REG_UFS_PERICFG_RST_N_BIT);
+	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
+
+	/*
+	 * The reset signal is active low.
+	 * The UFS device shall detect more than or equal to 1us of positive
+	 * or negative RST_n pulse width.
+	 * To be on safe side, keep the reset low for at least 10us.
+	 */
+	usleep_range(10, 15);
+
+	reg = reg | (1 << REG_UFS_PERICFG_RST_N_BIT);
+	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
+
+	/* same as assert, wait for at least 10us after deassert */
+	usleep_range(10, 15);
+
+	return 0;
+}
 
 /*
  * In early-porting stage, because of no bootrom,
@@ -272,13 +300,10 @@ void ufs_mtk_pltfrm_deepidle_resource_req(struct ufs_hba *hba,
  */
 void ufs_mtk_pltfrm_deepidle_lock(struct ufs_hba *hba, bool lock)
 {
-/* peter mask for build error */
-#if 0
 	if (lock)
 		idle_lock_by_ufs(1);
 	else
 		idle_lock_by_ufs(0);
-#endif
 }
 
 int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)

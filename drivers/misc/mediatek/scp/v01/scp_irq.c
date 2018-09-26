@@ -73,7 +73,7 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 		writel(SCP_IRQ_SCP2HOST, SCP_A_TO_HOST_REG);
 	}
 #else
-	scp_excep_id reset_type;
+	enum scp_excep_id reset_type;
 	int reboot = 0;
 
 	if (reg & SCP_IRQ_WDT) {

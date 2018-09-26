@@ -419,15 +419,6 @@ static int mtk_fm_i2s_awb_pcm_copy(struct snd_pcm_substream *substream,
 	DMA_Read_Ptr = Awb_Block->u4DMAReadIdx;
 	spin_unlock_irqrestore(&auddrv_AWBInCtl_lock, flags);
 
-	pr_debug
-	("%s finish0, rcount:%x, size:%x, remained:%x, DRIdx:%x, WIdx:%x\n",
-		__func__,
-		read_count,
-		read_size,
-		Awb_Block->u4DataRemained,
-		Awb_Block->u4DMAReadIdx,
-		Awb_Block->u4WriteIdx);
-
 	if (DMA_Read_Ptr + read_size < Awb_Block->u4BufferSize) {
 		if (DMA_Read_Ptr != Awb_Block->u4DMAReadIdx) {
 			pr_debug
@@ -446,10 +437,6 @@ static int mtk_fm_i2s_awb_pcm_copy(struct snd_pcm_substream *substream,
 				__func__,
 				Read_Data_Ptr,
 				Awb_Block->pucVirtBufAddr);
-			pr_err("DRIdx:0x%x, DRPtr:%zu, read_size:%zu\n",
-				Awb_Block->u4DMAReadIdx,
-				DMA_Read_Ptr,
-				read_size);
 			return 0;
 		}
 
@@ -463,15 +450,6 @@ static int mtk_fm_i2s_awb_pcm_copy(struct snd_pcm_substream *substream,
 
 		Read_Data_Ptr += read_size;
 		count -= read_size;
-
-		pr_debug
-			("%s finish1, size:%x, DRIdx:%x, WIdx:%x, Remain:%x\n",
-			__func__,
-			read_size,
-			Awb_Block->u4DMAReadIdx,
-			Awb_Block->u4WriteIdx,
-			Awb_Block->u4DataRemained);
-
 	} else {
 		uint32 size_1 = Awb_Block->u4BufferSize - DMA_Read_Ptr;
 		uint32 size_2 = read_size - size_1;
@@ -492,10 +470,6 @@ static int mtk_fm_i2s_awb_pcm_copy(struct snd_pcm_substream *substream,
 				__func__,
 				Read_Data_Ptr,
 				Awb_Block->pucVirtBufAddr);
-			pr_err("RIdx:0x%x,DMARPtr:%zu, read_size:%zu\n",
-				Awb_Block->u4DMAReadIdx,
-				DMA_Read_Ptr,
-				read_size);
 			return 0;
 		}
 
@@ -506,14 +480,6 @@ static int mtk_fm_i2s_awb_pcm_copy(struct snd_pcm_substream *substream,
 		Awb_Block->u4DMAReadIdx %= Awb_Block->u4BufferSize;
 		DMA_Read_Ptr = Awb_Block->u4DMAReadIdx;
 		spin_unlock(&auddrv_AWBInCtl_lock);
-
-		pr_debug
-			("%s finish2,size_1:%x,RIdx:%x,WIdx:%x, Remain:%x\n",
-			__func__,
-			size_1,
-			Awb_Block->u4DMAReadIdx,
-			Awb_Block->u4WriteIdx,
-			Awb_Block->u4DataRemained);
 
 		if (DMA_Read_Ptr != Awb_Block->u4DMAReadIdx) {
 			pr_debug
@@ -531,10 +497,6 @@ static int mtk_fm_i2s_awb_pcm_copy(struct snd_pcm_substream *substream,
 				__func__,
 				Read_Data_Ptr,
 				Awb_Block->pucVirtBufAddr);
-			pr_err("RIdx:0x%x, RPtr:%zu, read_size:%zu\n",
-				Awb_Block->u4DMAReadIdx,
-				DMA_Read_Ptr,
-				read_size);
 			return read_count << 2;
 		}
 

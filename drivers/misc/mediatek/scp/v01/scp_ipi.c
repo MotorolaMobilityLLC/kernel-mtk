@@ -366,7 +366,6 @@ void scp_ipi_status_dump_id(enum ipi_id id)
 
 }
 
-
 void scp_ipi_status_dump(void)
 {
 	enum ipi_id id;
@@ -390,6 +389,17 @@ void scp_ipi_status_dump(void)
 
 void mt_print_scp_ipi_id(void)
 {
-	pr_info("[SCP]scp_ipi = %x\n", scp_rcv_obj[0]->id);
+	enum ipi_id id = scp_rcv_obj[0]->id;
+	unsigned char *buf = scp_rcv_obj[0]->share_buf;
+
+	switch (id) {
+	case IPI_SENSOR:
+		pr_info("[SCP] ipi id/type/action/event/reserve = %d/%d/%d/%d/%d\n",
+				id, buf[0], buf[1], buf[2], buf[3]);
+		break;
+	default:
+		pr_info("[SCP] ipi id = %d\n", id);
+		break;
+	}
 }
 

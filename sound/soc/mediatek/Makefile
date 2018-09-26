@@ -20,6 +20,7 @@ obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += common_int/
 obj-$(CONFIG_SND_SOC_MEDIATEK) += common/
 obj-$(CONFIG_SND_SOC_MT2701) += mt2701/
 obj-$(CONFIG_SND_SOC_MT3967) += mt3967/
+obj-$(CONFIG_SND_SOC_MT6779) += mt6779/
 obj-$(CONFIG_SND_SOC_MT8173) += mt8173/
 obj-$(CONFIG_SND_SOC_MT8163) += mt_soc_audio_8163/
 

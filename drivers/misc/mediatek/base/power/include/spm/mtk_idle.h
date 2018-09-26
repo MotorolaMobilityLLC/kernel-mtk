@@ -80,6 +80,7 @@ extern int mtk_idle_enter_dvt(int cpu);
 
 /* FIXME: DPIDLE - Refine dpidle api */
 #define dpidle_active_status() mtk_dpidle_is_active()
+extern struct timeval pre_dpidle_time;
 extern bool mtk_dpidle_is_active(void);
 
 /* Call as disp driver is ready */

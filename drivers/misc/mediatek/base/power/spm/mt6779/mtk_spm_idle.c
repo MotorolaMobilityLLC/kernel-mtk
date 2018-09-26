@@ -17,7 +17,10 @@
 #include <linux/spinlock.h>
 
 #include <mt-plat/mtk_ccci_common.h> /* exec_ccci_kern_func_by_md_id */
+
+#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mt-plat/mtk_wd_api.h> /* ap wdt related definitons */
+#endif
 
 #include <trace/events/mtk_idle_event.h>
 
@@ -52,7 +55,7 @@ static unsigned int idle_pcm_flags[NR_IDLE_TYPES] = {
 		/* SPM_FLAG_DISABLE_DDRPHY_PDN | */
 		SPM_FLAG_DISABLE_VCORE_DVS |
 		SPM_FLAG_DISABLE_VCORE_DFS |
-		SPM_FLAG_KEEP_CSYSPWRACK_HIGH |
+		SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 		#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 		SPM_FLAG_DISABLE_SSPM_SRAM_SLEEP |
 		#endif
@@ -62,7 +65,7 @@ static unsigned int idle_pcm_flags[NR_IDLE_TYPES] = {
 		SPM_FLAG_DISABLE_INFRA_PDN |
 		SPM_FLAG_DISABLE_VCORE_DVS |
 		SPM_FLAG_DISABLE_VCORE_DFS |
-		SPM_FLAG_KEEP_CSYSPWRACK_HIGH |
+		SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 		#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 		SPM_FLAG_DISABLE_SSPM_SRAM_SLEEP |
 		#endif
@@ -73,7 +76,7 @@ static unsigned int idle_pcm_flags[NR_IDLE_TYPES] = {
 		SPM_FLAG_DISABLE_INFRA_PDN |
 		SPM_FLAG_DISABLE_VCORE_DVS |
 		SPM_FLAG_DISABLE_VCORE_DFS |
-		SPM_FLAG_KEEP_CSYSPWRACK_HIGH |
+		SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 		#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 		SPM_FLAG_DISABLE_SSPM_SRAM_SLEEP |
 		#endif
@@ -214,9 +217,20 @@ static void spm_idle_pcm_setup_before_wfi(
 {
 	unsigned int resource_usage = 0;
 
+/* scenario-oriented */
+#if 0
 	resource_usage = (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE) ?
 		spm_get_resource_usage_by_user(SPM_RESOURCE_USER_SCP)
 		: spm_get_resource_usage();
+/* resource-oriented */
+#else
+	resource_usage = spm_get_resource_usage();
+
+	if (resource_usage & SPM_RESOURCE_CK_26M)
+		resource_usage &= (~SPM_RESOURCE_CK_26M);
+
+	resource_usage |= spm_get_resource_usage_by_user(SPM_RESOURCE_USER_SCP);
+#endif
 
 
 	mt_secure_call(smc_id[idle_type], pwrctrl->pcm_flags,
@@ -255,6 +269,11 @@ static unsigned long flags;
 static struct wd_api *wd_api;
 static int wd_ret;
 #endif
+
+bool mtk_idle_resource_pre_process(void)
+{
+	return (spm_get_resource_usage() & SPM_RESOURCE_CK_26M);
+}
 
 void mtk_idle_pre_process_by_chip(
 	int idle_type, int cpu, unsigned int op_cond, unsigned int idle_flag)
@@ -295,11 +314,6 @@ void mtk_idle_pre_process_by_chip(
 		}
 #endif
 	}
-
-	op_cond |= mtk_idle_cond_vcore_low_volt(idle_type);
-
-	if (idle_type == IDLE_TYPE_DP || idle_type == IDLE_TYPE_SO3)
-		__sync_vcore_ctrl_pcm_flag(op_cond, &pcm_flags1);
 
 	/* initialize pcm_flags/pcm_flags1 */
 	__spm_set_pwrctrl_pcm_flags(pwrctrl, pcm_flags);
@@ -444,7 +458,7 @@ static unsigned int mtk_dpidle_output_log(
 	} else {
 		if (wakesta->is_abort != 0 || wakesta->r12 == 0)
 			print_log = true;
-		else if (wakesta->is_abort <= IDLE_TIMER_OUT_CRITERIA)
+		else if (wakesta->timer_out <= IDLE_TIMER_OUT_CRITERIA)
 			print_log = true;
 		else if (check_print_log_duration())
 			print_log = true;
@@ -485,7 +499,7 @@ static unsigned int mtk_sodi_output_log(
 			timeout_cnt = 0;
 		} else if (wakesta->timer_out <= IDLE_TIMER_OUT_CRITERIA) {
 			print_log = true;
-			if (wakesta->r12 & STA1_AP2AP_PEER_WAKEUP)
+			if (wakesta->r12 & R12_AP2AP_PEER_WAKEUP_EVENT)
 				if (timeout_cnt++ > 220)
 					timeout_log = true;
 		} else if (check_print_log_duration()) {
@@ -505,7 +519,7 @@ static unsigned int mtk_sodi_output_log(
 	}
 
 	if (timeout_log) {
-		pr_info("STA1_AP2AP_PEER_WAKEUP too much,r12 = 0x%x\n",
+		pr_info("R12_AP2AP_PEER_WAKEUP_EVENT too much,r12 = 0x%x\n",
 			 wakesta->r12);
 		dpmaif_dump_reg();
 		timeout_cnt = 0;

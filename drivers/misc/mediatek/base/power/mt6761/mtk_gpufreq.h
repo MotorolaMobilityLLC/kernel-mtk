@@ -63,5 +63,6 @@ extern void mt_gpufreq_disable_CG(void);
 extern void mt_gpufreq_enable_MTCMOS(bool bEnableHWAPM);
 extern void mt_gpufreq_disable_MTCMOS(bool bEnableHWAPM);
 extern void mt_gpufreq_set_loading(unsigned int gpu_loading); /* legacy */
+extern int MTKPowerStatus(void);
 
 #endif /* _MT_GPUFREQ_H_ */

@@ -23,6 +23,7 @@ obj-y += common/mt635x-auxadc.o
 
 obj-$(CONFIG_MFD_RT5081_PMU)	+= rt5081/
 obj-$(CONFIG_MFD_MT6370_PMU)    += mt6370/
+obj-$(CONFIG_MFD_MT6360_PMU)    += mt6360/
 
 ifneq (,$(findstring evb,$(CONFIG_ARCH_MTK_PROJECT)))
 	subdir-ccflags-y += -DMTK_EVB_PLATFORM
