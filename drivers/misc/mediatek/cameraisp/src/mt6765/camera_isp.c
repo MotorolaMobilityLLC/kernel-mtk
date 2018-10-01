@@ -546,6 +546,8 @@ static unsigned int DumpBufferField;
 static bool g_bDumpPhyISPBuf = MFALSE;
 static unsigned int g_tdriaddr = 0xffffffff;
 static unsigned int g_cmdqaddr = 0xffffffff;
+static struct ISP_TEMP_CQ_STRUCT pCQ_dup = {NULL, NULL, NULL};
+
 static struct ISP_GET_DUMP_INFO_STRUCT g_dumpInfo
 		= {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
 static struct ISP_MEM_INFO_STRUCT g_TpipeBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
@@ -7127,6 +7129,27 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
+	case ISP_SET_VIR_CQ:
+		{
+			if (copy_from_user(&pCQ_dup, (void *)Param,
+			    sizeof(struct ISP_TEMP_CQ_STRUCT)) != 0) {
+				pr_info("get module fail\n");
+				Ret = -EFAULT;
+			} else {
+				pr_info("P1 VirCQ (%p_%p_%p)\n",
+					pCQ_dup.pCQ_dup0,
+					pCQ_dup.pCQ_dup1,
+					pCQ_dup.pCQ_dup2);
+			}
+		}
+		break;
+	case ISP_GET_VIR_CQ:
+		{
+			if (copy_to_user((void *)Param, &pCQ_dup,
+				sizeof(struct ISP_TEMP_CQ_STRUCT)) != 0)
+				pr_info("get CQ_STRUCT fail\n");
+		}
+		break;
 	case ISP_GET_INT_ERR:
 		if (copy_to_user((void *)Param, (void *)g_ISPIntErr,
 		    sizeof(unsigned int)*ISP_IRQ_TYPE_AMOUNT) != 0)
@@ -9116,6 +9139,8 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd,
 	case ISP_GET_CUR_ISP_CLOCK:
 	case ISP_SET_PM_QOS_INFO:
 	case ISP_SET_PM_QOS:
+	case ISP_SET_VIR_CQ:
+	case ISP_GET_VIR_CQ:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
