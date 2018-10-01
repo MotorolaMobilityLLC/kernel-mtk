@@ -1327,7 +1327,7 @@ unsigned char ParseEDID(void)
 }
 void ite66121_AppGetEdidInfo(struct _HDMI_EDID_T *pv_get_info)
 {
-
+	sink_support_resolution |= SINK_480P | SINK_720P60 | SINK_1080P30;
 	pv_get_info->ui4_ntsc_resolution |= sink_support_resolution;
 	pv_get_info->ui4_pal_resolution |= sink_support_resolution;
 	pv_get_info->ui4_sink_dtd_ntsc_resolution |= sink_support_resolution;
