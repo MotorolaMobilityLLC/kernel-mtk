@@ -63,11 +63,7 @@ static int pwk_start_monitor;
 #ifdef HANG_LOW_MEM
 #define MAX_HANG_INFO_SIZE (512*1024) /* 512 K info for low mem*/
 #else
-#ifndef __aarch64__
-#define MAX_HANG_INFO_SIZE (4*1024*1024) /* 4M info */
-#else
-#define MAX_HANG_INFO_SIZE (1*1024*1024) /* 1M info for 64bit*/
-#endif
+#define MAX_HANG_INFO_SIZE (2*1024*1024) /* 2M info */
 #endif
 
 static int MaxHangInfoSize = MAX_HANG_INFO_SIZE;
@@ -108,6 +104,9 @@ DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
 
 /* bleow code is added by QHQ  for hang detect */
 /* For the condition, where kernel is still alive, but system server is not scheduled. */
+static void ShowStatus(int flag);
+static void reset_hang_info(void);
+
 static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 #ifdef CONFIG_MTK_ENG_BUILD
 static int monit_hang_flag = 1;
@@ -159,6 +158,18 @@ static ssize_t monitor_hang_proc_write(struct file *filp, const char *ubuf, size
 	} else if (val == 0) {
 		monit_hang_flag = 0;
 		pr_debug("[hang_detect] disable ke.\n");
+	} else if (val == 2) {
+		reset_hang_info();
+		ShowStatus(0);
+	} else if (val == 3) {
+		reset_hang_info();
+		ShowStatus(1);
+	} else if (val == 4) {
+		hang_aee_warn = 0;
+		pr_info("[hang_detect] disable coredump.\n");
+	} else if (val == 5) {
+		hang_aee_warn = 2;
+		pr_info("[hang_detect] denable coredump.\n");
 	} else if (val > 10) {
 		show_native_bt_by_pid((int)val);
 	}
@@ -276,7 +287,12 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	if (cmd == AEEIOCTL_SET_HANG_REBOOT &&
 		(!strncmp(current->comm, "init", 4))) {
 		reboot_flag = true;
+#ifdef CONFIG_MTK_ENG_BUILD
+		hang_detect_counter = 3;
+#else
 		hang_detect_counter = 1;
+#endif
+		hd_timeout = 3;
 		pr_info("hang_detect: %s set reboot command.\n", current->comm);
 		return ret;
 	}
@@ -639,7 +655,7 @@ void show_thread_info(struct task_struct *p, bool dump_bt)
 		nsec_low(p->se.sum_exec_runtime),
 		task_pid_nr(p), p->nvcsw, p->nivcsw, p->flags,
 		(unsigned long)task_thread_info(p)->flags,
-		p->real_parent->pid);
+		p->tgid);
 #ifdef CONFIG_SCHED_INFO
 	Log2HangInfo("%llu", p->sched_info.last_arrival);
 #endif
@@ -1412,8 +1428,8 @@ static void show_bt_by_pid(int task_pid)
 		put_task_struct(p);
 	} else if (p != NULL) {
 		put_task_struct(p);
-		Log2HangInfo("%s pid %d state %d. stack is null.\n",
-			t->comm, task_pid, t->state);
+		Log2HangInfo("%s pid %d state %d, flags %d. stack is null.\n",
+			t->comm, task_pid, t->state, t->flags);
 	}
 	put_pid(pid);
 }
@@ -1491,7 +1507,7 @@ static void ShowStatus(int flag)
 
 }
 
-void reset_hang_info(void)
+static void reset_hang_info(void)
 {
 	Hang_Detect_first = false;
 	memset(Hang_Info, 0, MaxHangInfoSize);
@@ -1644,7 +1660,7 @@ static int hang_detect_thread(void *arg)
 				if (Hang_Detect_first == true) {
 					pr_err("[Hang_Detect] aee mode is %d, we should triger KE...\n", aee_mode);
 #ifdef CONFIG_MTK_RAM_CONSOLE
-					if (watchdog_thread_exist == false)
+					if (watchdog_thread_exist == false && reboot_flag == false)
 						aee_rr_rec_hang_detect_timeout_count(COUNT_ANDROID_REBOOT);
 #endif
 #ifdef CONFIG_MTK_ENG_BUILD
