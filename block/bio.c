@@ -915,6 +915,9 @@ void bio_advance(struct bio *bio, unsigned bytes)
 		bio_integrity_advance(bio, bytes);
 
 	bio_advance_iter(bio, &bio->bi_iter, bytes);
+
+	/* also advance bc_iv for HIE */
+	bio->bi_crypt_ctx.bc_iv += (bytes >> PAGE_SHIFT);
 }
 EXPORT_SYMBOL(bio_advance);
 
@@ -1832,9 +1835,6 @@ struct bio *bio_split(struct bio *bio, int sectors,
 		bio_integrity_trim(split, 0, sectors);
 
 	bio_advance(bio, split->bi_iter.bi_size);
-
-	/* also advance bc_iv in behind bio for hie */
-	bio->bi_crypt_ctx.bc_iv += (split->bi_iter.bi_size >> PAGE_SHIFT);
 
 	return split;
 }
