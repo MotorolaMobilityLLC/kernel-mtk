@@ -230,6 +230,50 @@ static void cm_mgr_timer_fn(unsigned long data)
 }
 #endif /* USE_TIMER_CHECK */
 
+struct timer_list cm_mgr_perf_timer;
+#define USE_TIMER_PERF_CHECK_TIME msecs_to_jiffies(50)
+
+static void cm_mgr_perf_timer_fn(unsigned long data)
+{
+	if (cm_mgr_perf_timer_enable)
+		check_cm_mgr_status_internal();
+}
+
+void cm_mgr_perf_set_status(int enable)
+{
+	cm_mgr_perf_platform_set_force_status(enable);
+
+	if (cm_mgr_perf_force_enable)
+		return;
+
+	cm_mgr_perf_platform_set_status(enable);
+
+	if (enable != cm_mgr_perf_timer_enable) {
+		cm_mgr_perf_timer_enable = enable;
+
+		if (enable == 1) {
+			unsigned long expires;
+
+			expires = jiffies + USE_TIMER_PERF_CHECK_TIME;
+			mod_timer(&cm_mgr_perf_timer, expires);
+
+			check_cm_mgr_status_internal();
+		} else
+			del_timer(&cm_mgr_perf_timer);
+	}
+}
+
+void cm_mgr_perf_set_force_status(int enable)
+{
+	if (enable != cm_mgr_perf_force_enable) {
+		cm_mgr_perf_force_enable = enable;
+		if (enable == 0) {
+			cm_mgr_perf_platform_set_force_status(enable);
+			check_cm_mgr_status_internal();
+		}
+	}
+}
+
 void check_cm_mgr_status_internal(void)
 {
 	unsigned long long result = 0;
@@ -240,6 +284,9 @@ void check_cm_mgr_status_internal(void)
 		return;
 
 	if (cm_mgr_disable_fb == 1 && cm_mgr_blank_status == 1)
+		return;
+
+	if (cm_mgr_perf_force_enable)
 		return;
 
 	if (spin_trylock(&cm_mgr_lock)) {
@@ -569,6 +616,13 @@ void check_cm_mgr_status_internal(void)
 cm_mgr_opp_end:
 		cm_mgr_update_met();
 
+		if (cm_mgr_perf_timer_enable) {
+			unsigned long expires;
+
+			expires = jiffies + USE_TIMER_PERF_CHECK_TIME;
+			mod_timer(&cm_mgr_perf_timer, expires);
+		}
+
 #ifdef USE_TIMER_CHECK
 		if (cm_mgr_timer_enable) {
 			if (vcore_dram_opp != CM_MGR_EMI_OPP) {
@@ -606,10 +660,6 @@ cm_mgr_opp_end:
 			time_cnt_data[0]++;
 		spin_unlock(&cm_mgr_lock);
 	}
-#if 0
-	else
-		pr_debug("trylock fail, cpu=%d, cluster = %d!!!!!!\n", smp_processor_id(), cluster);
-#endif
 }
 
 void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
@@ -670,6 +720,12 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "cm_mgr_timer_enable %d\n", cm_mgr_timer_enable);
 #endif /* USE_TIMER_CHECK */
 	seq_printf(m, "cm_mgr_ratio_timer_enable %d\n", cm_mgr_ratio_timer_enable);
+	seq_printf(m, "cm_mgr_perf_enable %d\n",
+			cm_mgr_perf_enable);
+	seq_printf(m, "cm_mgr_perf_timer_enable %d\n",
+			cm_mgr_perf_timer_enable);
+	seq_printf(m, "cm_mgr_perf_force_enable %d\n",
+			cm_mgr_perf_force_enable);
 	seq_printf(m, "cm_mgr_disable_fb %d\n", cm_mgr_disable_fb);
 	seq_printf(m, "light_load_cps %d\n", light_load_cps);
 	seq_printf(m, "total_bw_value %d\n", total_bw_value);
@@ -706,6 +762,10 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 	seq_puts(m, "\n");
 
 	seq_printf(m, "debounce_times_reset_adb %d\n", debounce_times_reset_adb);
+	seq_printf(m, "debounce_times_perf_down %d\n",
+			debounce_times_perf_down);
+	seq_printf(m, "debounce_times_perf_force_down %d\n",
+			debounce_times_perf_force_down);
 	seq_printf(m, "update_v2f_table %d\n", update_v2f_table);
 	seq_printf(m, "update %d\n", update);
 
@@ -780,6 +840,104 @@ static struct device cm_mgr_device = {
 	.init_name = "cm_mgr_device ",
 };
 
+static void cm_mgr_update_fw(void)
+{
+	int j = 0;
+	const struct firmware *fw;
+	int err;
+	int copy_size = 0;
+	int offset = 0;
+	int count;
+
+	do {
+		j++;
+		pr_debug("try to request_firmware() %s - %d\n", CPU_FW_FILE, j);
+		err = request_firmware(&fw, CPU_FW_FILE, &cm_mgr_device);
+		if (err)
+			pr_info("Failed to load %s, err = %d.\n", CPU_FW_FILE, err);
+	} while (err == -EAGAIN && j < 5);
+	if (err)
+		pr_info("Failed to load %s, err = %d.\n", CPU_FW_FILE, err);
+
+	if (!err) {
+		pr_info("request_firmware() %s, size 0x%x\n", CPU_FW_FILE, (int)fw->size);
+		update++;
+
+		for (count = 0; count < CM_MGR_MAX; count++) {
+			copy_size = vcore_power_array_size(count) * VCORE_ARRAY_SIZE * sizeof(unsigned int);
+			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+			if (fw->size < (copy_size + offset)) {
+				pr_info("oversize vcore_power_gain_%d 0x%x, 0x%x",
+						count, (int)fw->size, copy_size + offset);
+				goto out_fw;
+			}
+			memcpy(vcore_power_gain_ptr(count), fw->data, copy_size);
+		}
+
+#ifdef PER_CPU_STALL_RATIO
+#ifndef ATF_SECURE_SMC
+		for (count = 0; count < CM_MGR_MAX; count++) {
+			offset += copy_size;
+			copy_size = sizeof(cpu_power_gain_UpLow0);
+			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+			if (fw->size < (copy_size + offset)) {
+				pr_info("oversize cpu_power_gain_UpLow1 0x%x, 0x%x",
+						(int)fw->size, copy_size + offset);
+				goto out_fw;
+			}
+			memcpy(&cpu_power_gain_UpLow1, fw->data + offset, copy_size);
+
+			offset += copy_size;
+			copy_size = sizeof(cpu_power_gain_DownLow0);
+			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+			if (fw->size < (copy_size + offset)) {
+				pr_info("oversize cpu_power_gain_DownLow1 0x%x, 0x%x",
+						(int)fw->size, copy_size + offset);
+				goto out_fw;
+			}
+			memcpy(&cpu_power_gain_DownLow1, fw->data + offset, copy_size);
+
+			offset += copy_size;
+			copy_size = sizeof(cpu_power_gain_UpHigh0);
+			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+			if (fw->size < (copy_size + offset)) {
+				pr_info("oversize cpu_power_gain_UpHigh1 0x%x, 0x%x",
+						(int)fw->size, copy_size + offset);
+				goto out_fw;
+			}
+			memcpy(&cpu_power_gain_UpHigh1, fw->data + offset, copy_size);
+
+			offset += copy_size;
+			copy_size = sizeof(cpu_power_gain_DownHigh0);
+			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+			if (fw->size < (copy_size + offset)) {
+				pr_info("oversize cpu_power_gain_DownHigh1 0x%x, 0x%x",
+						(int)fw->size, copy_size + offset);
+				goto out_fw;
+			}
+			memcpy(&cpu_power_gain_DownHigh1, fw->data + offset, copy_size);
+		}
+#endif
+#endif
+
+		offset += copy_size;
+		copy_size = sizeof(_v2f_all);
+		pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+		if (fw->size < (copy_size + offset)) {
+			pr_info("oversize _v2f_all 0x%x, 0x%x",
+					(int)fw->size, copy_size + offset);
+			goto out_fw;
+		}
+		memcpy(&_v2f_all, fw->data + offset, copy_size);
+
+		release_firmware(fw);
+		fw = NULL;
+	}
+out_fw:
+	if (fw)
+		release_firmware(fw);
+}
+
 static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 					 const char __user *buffer, size_t count, loff_t *pos)
 {
@@ -806,7 +964,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	buf[count] = '\0';
 
 	ret = sscanf(buf, "%63s %d %d", cmd, &val_1, &val_2);
-	if (ret < 2) {
+	if (ret < 1) {
 		ret = -EPERM;
 		goto out;
 	}
@@ -826,6 +984,14 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	} else if (!strcmp(cmd, "cm_mgr_ratio_timer_enable")) {
 		cm_mgr_ratio_timer_enable = val_1;
 		cm_mgr_ratio_timer_en(val_1);
+	} else if (!strcmp(cmd, "cm_mgr_perf_enable")) {
+		cm_mgr_perf_enable = val_1;
+	} else if (!strcmp(cmd, "cm_mgr_perf_timer_enable")) {
+		cm_mgr_perf_timer_enable = val_1;
+		cm_mgr_perf_set_status(val_1);
+	} else if (!strcmp(cmd, "cm_mgr_perf_force_enable")) {
+		cm_mgr_perf_force_enable = val_1;
+		cm_mgr_perf_set_force_status(val_1);
 	} else if (!strcmp(cmd, "cm_mgr_disable_fb")) {
 		cm_mgr_disable_fb = val_1;
 		if (cm_mgr_disable_fb == 1 && cm_mgr_blank_status == 1)
@@ -856,103 +1022,22 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			debounce_times_down_adb[val_1] = val_2;
 	} else if (!strcmp(cmd, "debounce_times_reset_adb")) {
 		debounce_times_reset_adb = val_1;
+	} else if (!strcmp(cmd, "debounce_times_perf_down")) {
+		debounce_times_perf_down = val_1;
+	} else if (!strcmp(cmd, "debounce_times_perf_force_down")) {
+		debounce_times_perf_force_down = val_1;
 	} else if (!strcmp(cmd, "update_v2f_table")) {
 		update_v2f_table = !!val_1;
 	} else if (!strcmp(cmd, "update")) {
-		int j = 0;
-		const struct firmware *fw;
-		int err;
-		int copy_size = 0;
-		int offset = 0;
-		int count;
-
-		do {
-			j++;
-			pr_debug("try to request_firmware() %s - %d\n", CPU_FW_FILE, j);
-			err = request_firmware(&fw, CPU_FW_FILE, &cm_mgr_device);
-			if (err)
-				pr_info("Failed to load %s, err = %d.\n", CPU_FW_FILE, err);
-		} while (err == -EAGAIN && j < 5);
-		if (err)
-			pr_info("Failed to load %s, err = %d.\n", CPU_FW_FILE, err);
-
-		if (!err) {
-			pr_info("request_firmware() %s, size 0x%x\n", CPU_FW_FILE, (int)fw->size);
-			update++;
-
-			for (count = 0; count < CM_MGR_MAX; count++) {
-				copy_size = vcore_power_array_size(count) * VCORE_ARRAY_SIZE * sizeof(unsigned int);
-				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-				if (fw->size < (copy_size + offset)) {
-					pr_info("oversize vcore_power_gain_%d 0x%x, 0x%x",
-							count, (int)fw->size, copy_size + offset);
-					goto out_fw;
-				}
-				memcpy(vcore_power_gain_ptr(count), fw->data, copy_size);
-			}
-
-#ifdef PER_CPU_STALL_RATIO
-#ifndef ATF_SECURE_SMC
-			for (count = 0; count < CM_MGR_MAX; count++) {
-				offset += copy_size;
-				copy_size = sizeof(cpu_power_gain_UpLow0);
-				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-				if (fw->size < (copy_size + offset)) {
-					pr_info("oversize cpu_power_gain_UpLow1 0x%x, 0x%x",
-							(int)fw->size, copy_size + offset);
-					goto out_fw;
-				}
-				memcpy(&cpu_power_gain_UpLow1, fw->data + offset, copy_size);
-
-				offset += copy_size;
-				copy_size = sizeof(cpu_power_gain_DownLow0);
-				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-				if (fw->size < (copy_size + offset)) {
-					pr_info("oversize cpu_power_gain_DownLow1 0x%x, 0x%x",
-							(int)fw->size, copy_size + offset);
-					goto out_fw;
-				}
-				memcpy(&cpu_power_gain_DownLow1, fw->data + offset, copy_size);
-
-				offset += copy_size;
-				copy_size = sizeof(cpu_power_gain_UpHigh0);
-				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-				if (fw->size < (copy_size + offset)) {
-					pr_info("oversize cpu_power_gain_UpHigh1 0x%x, 0x%x",
-							(int)fw->size, copy_size + offset);
-					goto out_fw;
-				}
-				memcpy(&cpu_power_gain_UpHigh1, fw->data + offset, copy_size);
-
-				offset += copy_size;
-				copy_size = sizeof(cpu_power_gain_DownHigh0);
-				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-				if (fw->size < (copy_size + offset)) {
-					pr_info("oversize cpu_power_gain_DownHigh1 0x%x, 0x%x",
-							(int)fw->size, copy_size + offset);
-					goto out_fw;
-				}
-				memcpy(&cpu_power_gain_DownHigh1, fw->data + offset, copy_size);
-			}
-#endif
-#endif
-
-			offset += copy_size;
-			copy_size = sizeof(_v2f_all);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize _v2f_all 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
-			}
-			memcpy(&_v2f_all, fw->data + offset, copy_size);
-
-			release_firmware(fw);
-			fw = NULL;
-		}
-out_fw:
-		if (fw)
-			release_firmware(fw);
+		cm_mgr_update_fw();
+	} else if (!strcmp(cmd, "1")) {
+		/* cm_mgr_perf_force_enable */
+		cm_mgr_perf_force_enable = 1;
+		cm_mgr_perf_set_force_status(cm_mgr_perf_force_enable);
+	} else if (!strcmp(cmd, "0")) {
+		/* cm_mgr_perf_force_enable */
+		cm_mgr_perf_force_enable = 0;
+		cm_mgr_perf_set_force_status(cm_mgr_perf_force_enable);
 	}
 
 out:
@@ -1029,6 +1114,10 @@ int __init cm_mgr_module_init(void)
 	}
 
 	vcore_power_gain = vcore_power_gain_ptr(cm_mgr_get_idx());
+
+	init_timer_deferrable(&cm_mgr_perf_timer);
+	cm_mgr_perf_timer.function = cm_mgr_perf_timer_fn;
+	cm_mgr_perf_timer.data = 0;
 
 #ifdef USE_TIMER_CHECK
 	init_timer_deferrable(&cm_mgr_timer);

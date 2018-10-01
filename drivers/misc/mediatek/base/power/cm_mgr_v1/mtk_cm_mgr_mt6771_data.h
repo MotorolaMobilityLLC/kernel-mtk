@@ -61,13 +61,15 @@ static int light_load_cps = 1000;
 static int cm_mgr_loop_count;
 static int cm_mgr_loop;
 static int total_bw_value;
-static int cpu_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
-static int cpu_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
+int cpu_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
+int cpu_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
 int vcore_power_ratio_up[CM_MGR_EMI_OPP] = {80, 100};
 int vcore_power_ratio_down[CM_MGR_EMI_OPP] = {80, 100};
-static int debounce_times_up_adb[CM_MGR_EMI_OPP] = {0, 3};
-static int debounce_times_down_adb[CM_MGR_EMI_OPP] = {0, 3};
-static int debounce_times_reset_adb;
+int debounce_times_up_adb[CM_MGR_EMI_OPP] = {0, 3};
+int debounce_times_down_adb[CM_MGR_EMI_OPP] = {0, 3};
+int debounce_times_reset_adb;
+int debounce_times_perf_down = 50;
+int debounce_times_perf_force_down = 100;
 static int update;
 static int update_v2f_table = 1;
 static int cm_mgr_opp_enable = 1;
@@ -78,6 +80,9 @@ int cm_mgr_timer_enable = 1;
 int cm_mgr_ratio_timer_enable;
 int cm_mgr_disable_fb = 1;
 int cm_mgr_blank_status;
+int cm_mgr_perf_enable = 1;
+int cm_mgr_perf_timer_enable;
+int cm_mgr_perf_force_enable;
 
 static unsigned int vcore_power_gain_0[][VCORE_ARRAY_SIZE] = {
 	{64, 165},
