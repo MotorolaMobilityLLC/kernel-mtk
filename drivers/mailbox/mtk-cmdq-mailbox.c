@@ -30,7 +30,11 @@
 
 /* ddp main/sub, mdp path 0/1/2/3, general(misc) */
 #define CMDQ_OP_CODE_MASK		(0xff << CMDQ_OP_CODE_SHIFT)
+#if IS_ENABLED(CONFIG_MACH_MT6779)
 #define CMDQ_IRQ_MASK			0xffffff
+#else
+#define CMDQ_IRQ_MASK			0xffff
+#endif
 
 #define CMDQ_CURR_IRQ_STATUS		0x10
 #define CMDQ_THR_SLOT_CYCLES		0x30
