@@ -3924,8 +3924,7 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 	if (!list_empty(&ep_ring->td_list) &&
-		((urb->ep->desc.bmAttributes & USB_ENDPOINT_USAGE_MASK)
-				!= USB_ENDPOINT_USAGE_FEEDBACK)) {
+		!(xhci->quirks & XHCI_DEV_WITH_SYNC_EP)) {
 		unsigned int idle_ms = 0;
 		unsigned int left_trbs;
 
