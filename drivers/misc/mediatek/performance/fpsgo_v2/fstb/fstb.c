@@ -262,10 +262,12 @@ int fpsgo_fbt2fstb_query_fteh_list(int tid)
 
 	hlist_for_each_entry(iter, &fstb_fteh_list, hlist) {
 		if (!strncmp(proc_name, iter->process_name,
-					strlen(iter->process_name)) &&
+				strlen(iter->process_name)) &&
 			!strncmp(thrd_name, iter->thread_name,
-				strlen(iter->thread_name)))
+				strlen(iter->thread_name))) {
 			ret = 1;
+			break;
+		}
 	}
 
 	return ret;
@@ -1421,36 +1423,20 @@ static ssize_t fstb_fteh_list_write(struct file *file,
 	sepstr = buf;
 
 	substr = strsep(&sepstr, " ");
-	if (!substr || !strncpy(proc_name, substr,
-			sepstr - substr)) {
+	if (!substr || !strncpy(proc_name, substr, 16)) {
 		ret = -EINVAL;
 		goto err;
 	}
-	if (sepstr - substr > 17)
-		proc_name[15] = '\0';
-	else if (sepstr - substr - 1 >= 0)
-		proc_name[sepstr - substr - 1] = '\0';
-	else {
-		ret = -EINVAL;
-		goto err;
-	}
+	proc_name[15] = '\0';
 
 	substr = strsep(&sepstr, " ");
 
-	if (!substr || !strncpy(thrd_name, substr,
-			sepstr - substr)) {
+	if (!substr || !strncpy(thrd_name, substr, 16)) {
 		ret = -EINVAL;
 		goto err;
 	}
 
-	if (sepstr - substr > 17)
-		thrd_name[15] = '\0';
-	else if (sepstr - substr - 1 >= 0)
-		thrd_name[sepstr - substr - 1] = '\0';
-	else {
-		ret = -EINVAL;
-		goto err;
-	}
+	thrd_name[15] = '\0';
 
 	if (set_fteh_list(proc_name, thrd_name))
 		ret = -EINVAL;
