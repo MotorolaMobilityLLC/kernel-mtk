@@ -773,9 +773,7 @@ static void uart_get_info(struct tty_port *port,
 {
 	/* Ensure the state we copy is consistent and no hardware changes
 	   occur as we go */
-	mutex_lock(&port->mutex);
 	do_uart_get_info(port, retinfo);
-	mutex_unlock(&port->mutex);
 }
 
 static int uart_get_info_user(struct tty_port *port,
