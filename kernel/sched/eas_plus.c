@@ -158,12 +158,12 @@ int select_prefer_idle_cpu(struct task_struct *p)
 		}
 	}
 
-	if ((best_idle_cpu > 0) && idle_cpu(prev_cpu) &&
+	if ((best_idle_cpu >= 0) && idle_cpu(prev_cpu) &&
 		is_intra_domain(prev_cpu, best_idle_cpu)) {
 		best_idle_cpu = prev_cpu;
 	}
 
-	return (best_idle_cpu > 0) ? best_idle_cpu : fallback;
+	return (best_idle_cpu >= 0) ? best_idle_cpu : fallback;
 }
 
 /*
