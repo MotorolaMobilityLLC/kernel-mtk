@@ -26,7 +26,7 @@
 #define CFG_MIN_FPS_LIMIT	10
 #define FRAME_TIME_BUFFER_SIZE 200
 #define MAX_NR_FPS_LEVELS	1
-#define MAX_NR_RENDER_FPS_LEVELS	2
+#define MAX_NR_RENDER_FPS_LEVELS	5
 #define DISPLAY_FPS_FILTER_NS 100000000ULL
 #define ASFC_THRESHOLD_NS 20000000ULL
 #define ASFC_THRESHOLD_PERCENTAGE 30
@@ -89,7 +89,7 @@ struct FSTB_RENDER_TARGET_FPS {
 	char process_name[16];
 	int pid;
 	int nr_level;
-	struct fps_level level[3];
+	struct fps_level level[MAX_NR_RENDER_FPS_LEVELS];
 };
 
 struct FSTB_FTEH_LIST {
