@@ -285,13 +285,16 @@ static int CATMP_STEADY_TTJ_DELTA = 10000; /* magic number decided by experience
 	static struct timer_list atm_timer;
 	static unsigned long atm_timer_polling_delay = CLATM_INIT_HRTIMER_POLLING_DELAY;
 	/**
-	 * If curr_temp >= polling_trip_temp1, use interval
+	 * If curr_temp >= polling_trip_temp0, use interval/polling_factor0
+	 * else If curr_temp >= polling_trip_temp1, use interval
 	 * else if cur_temp >= polling_trip_temp2 && curr_temp < polling_trip_temp1,
 	 * use interval*polling_factor1
 	 * else, use interval*polling_factor2
 	 */
+	static int polling_trip_temp0 = 75000;
 	static int polling_trip_temp1 = 65000;
 	static int polling_trip_temp2 = 40000;
+	static int polling_factor0 = 2;
 	static int polling_factor1 = 2;
 	static int polling_factor2 = 4;
 #endif
@@ -1074,11 +1077,15 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 		opp0_cool = 0;
 
 #if defined(CATM_TPCB_EXTEND)
+	if ((g_turbo_bin) && (STEADY_TARGET_TPCB >= 58000))
+		opp0_cool = 0;
+
 	if (g_turbo_bin && (opp0_cool)) {
 		if (cpu_power > mt_ppm_thermal_get_power_big_max_opp(1))
 			cpu_power = mt_ppm_thermal_get_power_big_max_opp(1) - 5;
 	} else if (opp0_cool)
 		cpu_power -= 5;
+
 #else
 	if (opp0_cool)
 		cpu_power -= 5;
@@ -1175,6 +1182,10 @@ static int __phpb_calc_delta(int curr_temp, int prev_temp, int phpb_param_idx)
 		delta_power = (delta_power_tt + delta_power_tp) /
 			      __phpb_dynamic_theta(phpb_theta_max);
 	}
+	if ((tt < 0) && (curr_temp < TARGET_TJ)) {
+		delta_power = 0;
+		tscpu_dprintk("%s Wrong  TARGET_TJ\n", __func__);
+	}
 
 	return delta_power;
 }
@@ -1235,8 +1246,10 @@ static int phpb_calc_total(int prev_total_power, long curr_temp, long prev_temp)
 	 * calculated based on current opp
 	 */
 	int delta_power, total_power, curr_power;
+#if 0
 	int tt = TARGET_TJ - curr_temp;
 	int tp = prev_temp - curr_temp;
+#endif
 
 	delta_power = phpb_calc_delta(curr_temp, prev_temp);
 #if defined(THERMAL_VPU_SUPPORT)
@@ -1246,6 +1259,8 @@ static int phpb_calc_total(int prev_total_power, long curr_temp, long prev_temp)
 		return prev_total_power;
 
 	curr_power = get_total_curr_power();
+
+#if 0 /* Just use previous total power to avoid conflict with fpsgo */
 	/* In some conditions, we will consider using current request power to
 	 * avoid giving unlimit power budget.
 	 * Temp. rising is large,  requset power is of course less than power
@@ -1261,6 +1276,11 @@ static int phpb_calc_total(int prev_total_power, long curr_temp, long prev_temp)
 				prev_temp, curr_temp, prev_total_power, delta_power);
 		total_power = prev_total_power + delta_power;
 	}
+#else
+	tscpu_dprintk("%s prev_temp %ld, curr_temp %ld, prev %d, delta %d, curr %d\n", __func__,
+			prev_temp, curr_temp, prev_total_power, delta_power, curr_power);
+	total_power = prev_total_power + delta_power;
+#endif
 
 	total_power = clamp(total_power, MINIMUM_TOTAL_POWER, MAXIMUM_TOTAL_POWER);
 
@@ -2616,12 +2636,14 @@ static unsigned long atm_get_timeout_time(int curr_temp)
 	return atm_timer_polling_delay;
 #else
 
-	if (curr_temp >= polling_trip_temp1)
+	if (curr_temp >= polling_trip_temp0)
+		return atm_timer_polling_delay / polling_factor0;
+	else if (curr_temp >= polling_trip_temp1)
 		return atm_timer_polling_delay;
-	else if (curr_temp < polling_trip_temp2)
-		return atm_timer_polling_delay * polling_factor2;
-	else
+	else if (curr_temp >= polling_trip_temp2)
 		return atm_timer_polling_delay * polling_factor1;
+	else
+		return atm_timer_polling_delay * polling_factor2;
 #endif
 }
 #endif
