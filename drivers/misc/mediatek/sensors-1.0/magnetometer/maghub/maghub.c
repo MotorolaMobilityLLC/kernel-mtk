@@ -647,6 +647,11 @@ static int maghub_resume(struct platform_device *pdev)
 {
 	return 0;
 }
+static void maghub_shutdown(struct platform_device *pdev)
+{
+	maghub_enable(0);
+}
+
 static struct platform_device maghub_device = {
 	.name = MAGHUB_DEV_NAME,
 	.id = -1,
@@ -660,6 +665,7 @@ static struct platform_driver maghub_driver = {
 	.remove = maghub_remove,
 	.suspend = maghub_suspend,
 	.resume = maghub_resume,
+	.shutdown = maghub_shutdown,
 };
 
 static int maghub_local_remove(void)
