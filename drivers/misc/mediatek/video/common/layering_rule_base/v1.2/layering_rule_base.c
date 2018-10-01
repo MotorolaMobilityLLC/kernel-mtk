@@ -1983,7 +1983,6 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 	filp = filp_open(filename, O_RDONLY, 0777);
 	if (IS_ERR(filp)) {
 		DISP_PR_INFO("File open error:%s\n", filename);
-		filp_close(filp, NULL);
 		return -1;
 	}
 
