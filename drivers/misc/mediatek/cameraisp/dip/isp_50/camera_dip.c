@@ -2486,44 +2486,6 @@ static signed int DIP_P2_BufQue_CTRL_FUNC(struct DIP_P2_BUFQUE_STRUCT param)
 	return ret;
 }
 
-/*******************************************************************************
-*
-********************************************************************************/
-static signed int DIP_REGISTER_IRQ_USERKEY(char *userName)
-{
-	int key =  -1;
-	int i = 0;
-
-	spin_lock((spinlock_t *)(&SpinLock_UserKey));
-
-	/* 1. check the current users is full or not */
-	if (FirstUnusedIrqUserKey == IRQ_USER_NUM_MAX) {
-		key = -1;
-	} else {
-		/* 2. check the user had registered or not */
-		for (i = 1; i < FirstUnusedIrqUserKey; i++) {
-			/* index 0 is for all the users that do not register irq first */
-			if (strcmp((void *)IrqUserKey_UserInfo[i].userName, userName) == 0) {
-				key = IrqUserKey_UserInfo[i].userKey;
-				break;
-			}
-		}
-
-		/* 3.return new userkey for user if the user had not registered before */
-		if (key < 0) {
-			/* IrqUserKey_UserInfo[i].userName=userName; */
-			memset((void *)IrqUserKey_UserInfo[i].userName, 0, sizeof(IrqUserKey_UserInfo[i].userName));
-			strncpy((void *)IrqUserKey_UserInfo[i].userName, userName, USERKEY_STR_LEN-1);
-			IrqUserKey_UserInfo[i].userKey = FirstUnusedIrqUserKey;
-			key = FirstUnusedIrqUserKey;
-			FirstUnusedIrqUserKey++;
-		}
-	}
-
-	spin_unlock((spinlock_t *)(&SpinLock_UserKey));
-	LOG_INF("User(%s)key(%d)\n", userName, key);
-	return key;
-}
 
 /*******************************************************************************
 *
@@ -2589,8 +2551,6 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	unsigned int                 wakelock_ctrl;
 	unsigned int                 module;
 	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
-	int userKey =  -1;
-	struct DIP_REGISTER_USERKEY_STRUCT RegUserKey;
 	int i;
 
 	/*  */
@@ -2717,23 +2677,6 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	}
-	/*  */
-	case DIP_REGISTER_IRQ_USER_KEY:
-		if (copy_from_user(&RegUserKey, (void *)Param, sizeof(struct DIP_REGISTER_USERKEY_STRUCT)) == 0) {
-			userKey = DIP_REGISTER_IRQ_USERKEY(RegUserKey.userName);
-			RegUserKey.userKey = userKey;
-			if (copy_to_user((void *)Param, &RegUserKey, sizeof(struct DIP_REGISTER_USERKEY_STRUCT)) != 0)
-				LOG_ERR("copy_to_user failed\n");
-
-			if (RegUserKey.userKey < 0) {
-				LOG_ERR("query irq user key fail\n");
-				Ret = -1;
-			}
-		} else {
-			LOG_ERR("copy from user fail\n");
-		}
-
-		break;
 	/*  */
 	case DIP_FLUSH_IRQ_REQUEST:
 		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(struct DIP_WAIT_IRQ_STRUCT)) == 0) {
@@ -3000,7 +2943,6 @@ static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case DIP_GET_DUMP_INFO:
 	case DIP_WAIT_IRQ:
 	case DIP_CLEAR_IRQ: /* structure (no pointer) */
-	case DIP_REGISTER_IRQ_USER_KEY:
 	case DIP_FLUSH_IRQ_REQUEST:
 	case DIP_P2_BUFQUE_CTRL:/* structure (no pointer) */
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
