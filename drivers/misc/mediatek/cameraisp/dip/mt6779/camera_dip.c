@@ -274,6 +274,7 @@ static int nr_dip_devs;
 #endif
 
 /*#define AEE_DUMP_BY_USING_ION_MEMORY YWclose*/
+#define AEE_DUMP_BY_USING_ION_MEMORY
 #define AEE_DUMP_REDUCE_MEMORY
 #ifdef AEE_DUMP_REDUCE_MEMORY
 /* ion */
@@ -788,7 +789,7 @@ static signed int DIP_DumpDIPReg(void)
 	CMDQ_ERR("g_bIonBuf:(0x%x)\n", g_bIonBufferAllocated);
 #ifdef AEE_DUMP_REDUCE_MEMORY
 	if (g_bDumpPhyDIPBuf == MFALSE) {
-		ctrl_start = DIP_RD32(DIP_A_BASE + 0x0000);
+		ctrl_start = DIP_RD32(DIP_A_BASE + 0x1000);
 		if (g_bIonBufferAllocated == MFALSE) {
 			if (g_pPhyDIPBuffer != NULL) {
 				CMDQ_ERR("g_pPhyDIPBuffer isn't NULL(0x%pK)\n",
@@ -854,10 +855,10 @@ static signed int DIP_DumpDIPReg(void)
 		/*0x1502222C, CQ_D1A_CQ_THR2_BASEADDR*/
 		for (cmdqidx = 0; cmdqidx < 32 ; cmdqidx++) {
 			if (ctrl_start & (0x1<<cmdqidx) && (cmdqidx <= 1)) {
-				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x208 +
+				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x1208 +
 				(cmdqidx*DIP_CMDQ1_TO_CMDQ0_BASEADDR_OFFSET));
 			} else {
-				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x220 +
+				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x1220 +
 				((cmdqidx-1)*DIP_CMDQ_BASEADDR_OFFSET));
 			}
 			break;
@@ -959,6 +960,8 @@ static signed int DIP_DumpDIPReg(void)
 		g_cmdqaddr, g_tdriaddr);
 
     /*top control*/
+	CMDQ_ERR("dip: 0x15022000(0x%x)-0x15022004(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x1000), DIP_RD32(DIP_A_BASE + 0x1004));
 	CMDQ_ERR("dip: 0x15022010(0x%x)-0x15022014(0x%x)\n",
 		DIP_RD32(DIP_A_BASE + 0x1010), DIP_RD32(DIP_A_BASE + 0x1014));
 	CMDQ_ERR("dip: 0x15022018(0x%x)-0x1502201C(0x%x)\n",
