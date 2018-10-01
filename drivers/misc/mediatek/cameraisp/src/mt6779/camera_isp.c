@@ -48,7 +48,7 @@
 #define EP_STAGE
 #ifdef EP_STAGE
 #define EP_MARK_SMI           /* disable SMI related for EP */
-#define DUMMY_INT             /* For early if load dont need to use camera*/
+//#define DUMMY_INT             /* For early if load dont need to use camera*/
 #define EP_NO_PMQOS           /* If PMQoS is not ready on EP stage */
 
 /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
