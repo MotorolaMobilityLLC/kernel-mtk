@@ -5239,7 +5239,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				kfree(deque_buf);
 				return -EFAULT;
 			}
-			log_dbg("[rtbc]replace2]dma(%d),old(%d) PA(0x%x) VA(0x%x)",
+			log_dbg("[rtbc]replace2]dma(%d),old(%d) PA(0x%x) VA(0x%llx)",
 				rt_dma,
 				i,
 				pstRTBuf->ring_buf[rt_dma]
