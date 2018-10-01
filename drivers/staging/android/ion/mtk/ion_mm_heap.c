@@ -1708,6 +1708,8 @@ void shrink_ion_by_scenario(int need_lock)
 	struct ion_heap *movable_ion_heap =
 	    ion_drv_get_heap(g_ion_device, ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA,
 			     need_lock);
+	if (!movable_ion_heap)
+		return;
 
 	do {
 		nr_to_reclaim =
