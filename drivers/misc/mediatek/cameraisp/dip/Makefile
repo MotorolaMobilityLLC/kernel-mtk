@@ -21,6 +21,6 @@ ifeq ($(CONFIG_MACH_MT6771),y)
   obj-y += $(subst ",,isp_50)/
 endif
 
-ifeq ($(CONFIG_MACH_MT3967),y)
-  obj-y += $(subst ",,isp_50)/
+ifeq ($(CONFIG_MACH_MT6779),y)
+  obj-y += $(subst ",,mt6779)/
 endif

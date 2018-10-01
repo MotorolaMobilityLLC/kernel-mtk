@@ -66,7 +66,7 @@
 #include <linux/init.h>
 
 /*for SMI BW debug log*/
-#include"../../../smi/smi_debug.h"
+/*#include"../../../smi/smi_debug.h" YWclose*/
 
 /*for kernel log count*/
 #define _K_LOG_ADJUST (1)
@@ -123,7 +123,7 @@
 #define DUMMY_INT           (0) /*for early if load dont need to use camera*/
 
 /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
-#define EP_NO_CLKMGR /*YWopen*/
+/*#define EP_NO_CLKMGR*/
 
 #define DIP_BOTTOMHALF_WORKQ		(1)
 
