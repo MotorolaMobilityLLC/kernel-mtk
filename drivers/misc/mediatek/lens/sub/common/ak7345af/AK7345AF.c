@@ -145,6 +145,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	if (s4AF_WriteReg(0x0, (u16)((a_u4Position >> 2) & 0xff)) == 0 &&
 	    s4AF_WriteReg(0x1, (u16)(((a_u4Position >> 1) & 1) << 7)) ==
 		    0) {
+		g_u4CurrPosition = a_u4Position;
 		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");

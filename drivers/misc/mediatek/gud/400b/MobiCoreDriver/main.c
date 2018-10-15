@@ -482,13 +482,11 @@ static int mobicore_start(void)
 			break;
 	}
 
-	--core;
-	if (mc_active_core() != core) {
-		mc_dev_info("Switch to core %d (%u Hz)\n", core, freq);
+	for (--core; core >= 0 && mc_active_core() != core; --core) {
 		ret = mc_switch_core(core);
-		if (ret)
-			mc_dev_info("Switch to core %d (%u Hz) failed: %d\n",
-				core, freq, ret);
+		mc_dev_info("Switch to core %d (%u Hz): %d\n", core, freq, ret);
+		if (!ret)
+			break;
 	}
 #endif
 
@@ -540,6 +538,9 @@ static void mobicore_stop(void)
 int mc_wait_tee_start(void)
 {
 	int ret;
+
+	while (!is_mobicore_ready())
+		ssleep(1);
 
 	mutex_lock(&main_ctx.start_mutex);
 	while (main_ctx.start_ret == TEE_START_NOT_TRIGGERED) {

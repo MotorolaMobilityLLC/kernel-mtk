@@ -171,7 +171,7 @@ static void ubsan_epilogue(unsigned long *flags)
 
 	/* AEE Kernel API Dump for UBSan */
 	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT,
-		"",
+		"UBSan error",
 		"[UBSan report]");
 }
 

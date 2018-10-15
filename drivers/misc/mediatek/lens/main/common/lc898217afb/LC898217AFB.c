@@ -36,7 +36,7 @@
 #define LOG_INF(format, args...)
 #endif
 
-#define POWER_ALWAYS_ON 1
+#define POWER_ALWAYS_ON 0
 
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
@@ -213,6 +213,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	int ret = 0;
 
 	if (setPosition((unsigned short)a_u4Position) == 0) {
+		g_u4CurrPosition = a_u4Position;
 		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
