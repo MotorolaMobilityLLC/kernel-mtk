@@ -194,6 +194,16 @@
 		};
 	};
 };
+
+
+&i2c0 {
+	cap_touch@38 {
+		compatible = "mediatek,ft6xxx_touch";
+		reg = <0x38>;
+		status = "okay";
+	};
+};
+
 /* TOUCH end */
 &accdet {
 	accdet-mic-vol = <6>;
