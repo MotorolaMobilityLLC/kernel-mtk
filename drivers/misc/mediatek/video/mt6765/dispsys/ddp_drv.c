@@ -65,6 +65,7 @@
 #include "ddp_info.h"
 #include "ddp_m4u.h"
 #include "display_recorder.h"
+#include "disp_dts_gpio.h"
 
 /* #define DISP_NO_DPI */
 #ifndef DISP_NO_DPI
@@ -595,6 +596,137 @@ static int disp_probe(struct platform_device *pdev)
 	return 0;
 }
 
+#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P160BN)  
+
+struct pinctrl *disptepinctrl = NULL;
+struct pinctrl_state *dispte_en_h = NULL;
+struct pinctrl_state *dispte_en_l = NULL;
+
+struct pinctrl_state  *lcm_enn_outputl = NULL, *lcm_enn_outputh = NULL; 
+struct pinctrl_state  *lcm_enp_outputl = NULL, *lcm_enp_outputh = NULL; 
+
+int dts_gpio_state = 0; 
+static unsigned int lcm_id_gpio;
+
+static const struct of_device_id DispPWR_use_gpio_of_match[] = {
+	{.compatible = "tinno,lcm_pins_bl_en"},
+	{},
+};
+
+static int DispPWR_use_gpio_probe(struct platform_device *pdev)
+{
+	int ret = 0;
+	struct device_node *np;
+	np = pdev->dev.of_node;
+
+	printk("dispPWR_use_gpio_probe\n");
+
+	disptepinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(disptepinctrl)) {
+	        //printk("IS_ERR(disptepinctrl) \n");
+	        return -1;	
+	}
+	printk("%s,line = %d\n", __func__,__LINE__);
+	
+	lcm_enn_outputh = pinctrl_lookup_state(disptepinctrl, "lcm_enn_outputh");
+	if (IS_ERR(lcm_enn_outputh))
+	{
+		ret = PTR_ERR(lcm_enn_outputh);
+		dev_err(&pdev->dev, "fwq Cannot find lcm pinctrl state_enn_outputh!\n");
+		return ret;
+	}
+	lcm_enp_outputh = pinctrl_lookup_state(disptepinctrl, "lcm_enp_outputh");
+	if (IS_ERR(lcm_enp_outputh))
+	{
+		ret = PTR_ERR(lcm_enp_outputh);
+		dev_err(&pdev->dev, "fwq Cannot find lcm pinctrl state_enp_outputh!\n");
+		return ret;
+	}
+	lcm_enn_outputl = pinctrl_lookup_state(disptepinctrl, "lcm_enn_outputl");
+	if (IS_ERR(lcm_enn_outputl))
+	{
+		ret = PTR_ERR(lcm_enn_outputl);
+		dev_err(&pdev->dev, "fwq Cannot find lcm pinctrl state_enn_outputl!\n");
+		return ret;
+	}
+	lcm_enp_outputl = pinctrl_lookup_state(disptepinctrl, "lcm_enp_outputl");
+	if (IS_ERR(lcm_enp_outputl))
+	{
+		ret = PTR_ERR(lcm_enp_outputl);
+		dev_err(&pdev->dev, "fwq Cannot find lcm pinctrl state_enp_outputl!\n");
+		return ret;
+	}
+
+	ret = of_property_read_u32_index(np, "lcm-id-gpios", 1, &lcm_id_gpio);
+	if (ret)
+		dev_err(&pdev->dev," get lcm_id_gpio fail, ret = %d\n", ret);
+
+	dts_gpio_state = disp_dts_gpio_init_repo(pdev);
+	if (dts_gpio_state != 0)
+		dev_err(&pdev->dev, "retrieve GPIO DTS failed.");
+	printk("%s,line = %d\n", __func__,__LINE__);
+
+    return 0;
+}
+static int DispPWR_use_gpio_remove(struct platform_device *dev)	
+{
+	return 0;
+}
+
+static struct platform_driver DispPWR_use_gpio_driver = {
+	.probe	= DispPWR_use_gpio_probe,
+	.remove  = DispPWR_use_gpio_remove,
+	.driver    = {
+	.name       = "disppwr_gpio",
+	.of_match_table = DispPWR_use_gpio_of_match,	
+	},
+};
+
+
+
+void lcm_enn(int onoff)
+{
+	if(disptepinctrl != NULL){
+	    printk("lcm_power_ldo onoff  = %d,%p,%p,\n", onoff,lcm_enn_outputh,lcm_enn_outputl);
+	    if (onoff)
+	    {
+	    	pinctrl_select_state(disptepinctrl, lcm_enn_outputh);
+	    }
+	    else
+	    {
+		pinctrl_select_state(disptepinctrl, lcm_enn_outputl);
+	    }
+	}else{
+		printk("lcm power disptepinctrl fail \n");
+	}
+}
+
+void lcm_enp(int onoff)
+{
+	if(disptepinctrl != NULL){
+	    printk("lcm_power_ldo onoff  = %d,%p,%p\n", onoff,lcm_enp_outputl,lcm_enp_outputh);
+	    if (onoff)
+	    {
+		pinctrl_select_state(disptepinctrl, lcm_enp_outputh);
+	    }
+	    else
+	    {
+		pinctrl_select_state(disptepinctrl, lcm_enp_outputl);
+	    }
+	}else{
+		printk("lcm power disptepinctrl fail \n");
+	}
+}
+/*
+int get_lcm_id_status(void)
+{
+	int ret = -1;
+	ret = __gpio_get_value(lcm_id_gpio);
+	return ret;
+}
+*/
+#endif
+
 static int disp_remove(struct platform_device *pdev)
 {
 #if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || \
@@ -652,6 +784,16 @@ static int __init disp_init(void)
 		ret = -ENODEV;
 		return ret;
 	}
+
+	#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P160BN) 
+	//printk("%s,line = %d\n", __func__,__LINE__);
+	 if (platform_driver_register(&DispPWR_use_gpio_driver)) {
+	 	printk("%s,line = %d\n", __func__,__LINE__);
+
+		ret = -ENODEV;
+		return ret;
+	}
+	#endif
 	DDPMSG("disp driver init done\n");
 	return 0;
 }
@@ -663,7 +805,9 @@ static void __exit disp_exit(void)
 
 	cdev_del(disp_cdev);
 	unregister_chrdev_region(disp_devno, 1);
-
+	#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P160BN) 
+	platform_driver_unregister(&DispPWR_use_gpio_driver);
+    #endif
 	platform_driver_unregister(&dispsys_of_driver);
 
 	device_destroy(disp_class, disp_devno);

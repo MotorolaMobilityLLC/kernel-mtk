@@ -1122,6 +1122,11 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(HX83112B_FHDP_DSI_CMD_AUO_RT5081)
 	&hx83112b_fhdp_dsi_cmd_auo_rt5081_lcm_drv,
 #endif
+
+#if defined(ILI9881C_P160_HDPLUS_DSI_VDO_LCH)
+	&ili9881c_p160_hdplus_dsi_vdo_lch_lcm_drv,
+#endif
+
 };
 
 unsigned char lcm_name_list[][128] = {

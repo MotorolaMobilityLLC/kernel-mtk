@@ -525,3 +525,14 @@ config MTK_DM_VERITY_OFF
 	default n
 
 endmenu    # Misc
+
+config PROJECT_P160AN
+    bool "PROJECT_P160AN"
+    default n
+    help
+
+config PROJECT_P160BN
+    bool "PROJECT_P160BN"
+    default n
+    help
+
