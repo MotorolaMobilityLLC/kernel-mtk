@@ -361,6 +361,10 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
+	lcm_pins_bl_en: lcm_pins_bl_en@0 {
+		compatible = "tinno,lcm_pins_bl_en";
+	};
+
 	sysirq: intpol-controller@10200a80 {
 		compatible = "mediatek,mt6577-sysirq";
 		interrupt-controller;

@@ -168,6 +168,52 @@
 };
 
 /* TOUCH end */
+&lcm_pins_bl_en {
+	pinctrl-names = "bl_en_pin_default","lcm_enn_outputl","lcm_enn_outputh",
+			"lcm_enp_outputl","lcm_enp_outputh";
+	pinctrl-0 = <&bl_en_pin_default>;
+	pinctrl-1 = <&lcm_pins_bl_enn_outputl>;
+	pinctrl-2 = <&lcm_pins_bl_enn_outputh>;
+	pinctrl-3 = <&lcm_pins_bl_enp_outputl>;
+	pinctrl-4 = <&lcm_pins_bl_enp_outputh>;
+	
+	status = "okay";
+};
+&pio {
+	lcm_pins_bl_enn_outputl: bl_enn_outputl {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO53__FUNC_GPIO53>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	lcm_pins_bl_enn_outputh: bl_enn_outputh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO53__FUNC_GPIO53>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	lcm_pins_bl_enp_outputl: bl_enp_outputl {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO54__FUNC_GPIO54>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	lcm_pins_bl_enp_outputh: bl_enp_outputh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO54__FUNC_GPIO54>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	
+	bl_en_pin_default: bl_endefaultcfg {
+	};
+};
 
 /* CONSYS GPIO standardization */
 &pio {
