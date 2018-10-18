@@ -784,6 +784,7 @@ struct ISP_ED_BUFQUE_STRUCT {
 	int p2dupCQIdx;
 	int frameNum;
 	unsigned int timeoutUs;
+	int p2Scenario;
 };
 
 enum ISP_ED_BUF_STATE_ENUM {
