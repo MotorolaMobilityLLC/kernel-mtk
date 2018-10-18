@@ -517,7 +517,6 @@ config MTK_FD_LEAK_DETECT
 config MTK_FD_LEAK_SPECIFIC_DEBUG
 	bool "Specific demand in fd leak debug"
 	default n
-	depends on MTK_FD_LEAK_DETECT
 	help
 	  Specific demand in fd leak debug.
 	  Eg,
