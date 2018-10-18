@@ -278,10 +278,15 @@ out:
 	return ret;
 }
 
+#define MAX_FTEH_LENGTH 20
+static int fteh_list_length;
 static int set_fteh_list(char *proc_name,
 	char *thrd_name)
 {
 	struct FSTB_FTEH_LIST *new_fteh_list;
+
+	if (fteh_list_length >= MAX_FTEH_LENGTH)
+		return -ENOMEM;
 
 	new_fteh_list =
 		kzalloc(sizeof(*new_fteh_list), GFP_KERNEL);
@@ -304,6 +309,8 @@ static int set_fteh_list(char *proc_name,
 
 	hlist_add_head(&new_fteh_list->hlist,
 			&fstb_fteh_list);
+
+	fteh_list_length++;
 
 	return 0;
 
@@ -1519,7 +1526,7 @@ static ssize_t fstb_fteh_list_write(struct file *file,
 		size_t count, loff_t *data)
 {
 	int ret = count;
-	char *sepstr, *substr, *buf;
+	char *buf;
 	char proc_name[16], thrd_name[16];
 
 	buf = kmalloc(count + 1, GFP_KERNEL);
@@ -1531,23 +1538,11 @@ static ssize_t fstb_fteh_list_write(struct file *file,
 		goto err;
 	}
 	buf[count] = '\0';
-	sepstr = buf;
 
-	substr = strsep(&sepstr, " ");
-	if (!substr || !strncpy(proc_name, substr, 16)) {
+	if (sscanf(buf, "%15s %15s", proc_name, thrd_name) != 2) {
 		ret = -EINVAL;
 		goto err;
 	}
-	proc_name[15] = '\0';
-
-	substr = strsep(&sepstr, " ");
-
-	if (!substr || !strncpy(thrd_name, substr, 16)) {
-		ret = -EINVAL;
-		goto err;
-	}
-
-	thrd_name[15] = '\0';
 
 	if (set_fteh_list(proc_name, thrd_name))
 		ret = -EINVAL;
