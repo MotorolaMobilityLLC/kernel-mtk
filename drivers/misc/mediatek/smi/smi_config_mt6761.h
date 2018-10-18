@@ -112,10 +112,11 @@ struct mtk_smi_pair **smi_scen_pair[SMI_LARB_NUM + 1] = {
 };
 
 /* config */
-#define SMI_COMM_CONFIG_NUM	7
+#define SMI_COMM_CONFIG_NUM	8
 struct mtk_smi_pair smi_comm_config_pair[SMI_COMM_CONFIG_NUM] = {
 	{SMI_L1LEN, 0xb},
 	{SMI_WRR_REG0, 0xc30c30c},
+	{SMI_DCM, 0x4fd},
 	{SMI_Mx_RWULTRA_WRRy(1, 0, 0), 0x30c30c},
 	{SMI_Mx_RWULTRA_WRRy(1, 1, 0), 0x30c30c},
 	{SMI_Mx_RWULTRA_WRRy(2, 0, 0), 0x30c30c},
