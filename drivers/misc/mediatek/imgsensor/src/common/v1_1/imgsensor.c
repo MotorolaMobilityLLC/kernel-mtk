@@ -494,10 +494,13 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 	int i = 0;
 	struct IMGSENSOR             *pimgsensor   = &gimgsensor;
 	struct IMGSENSOR_SENSOR_INST *psensor_inst = &psensor->inst;
+	struct IMGSENSOR_HW_CFG      *phw_cfg      = imgsensor_hw_get_cfg(psensor_inst->sensor_idx);
+
+	if (phw_cfg == NULL)
+		return ret;
 
 	imgsensor_mutex_init(psensor_inst);
-	imgsensor_i2c_init(&psensor_inst->i2c_cfg,
-			imgsensor_custom_config[psensor_inst->sensor_idx].i2c_dev);
+	imgsensor_i2c_init(&psensor_inst->i2c_cfg, phw_cfg->i2c_dev);
 	imgsensor_i2c_filter_msg(&psensor_inst->i2c_cfg, true);
 
 	while (pimgsensor->psensor_list[i] && i < MAX_NUM_OF_SUPPORT_SENSOR) {
