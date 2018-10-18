@@ -18,6 +18,11 @@
 #define FPGA_PLATFORM
 #endif
 
+struct mt_usb_work {
+	struct delayed_work dwork;
+	int ops;
+};
+
 struct mt_usb_glue {
 	struct device *dev;
 	struct platform_device *musb;
@@ -42,6 +47,13 @@ enum CABLE_MODE {
 	CABLE_MODE_NORMAL,
 	CABLE_MODE_HOST_ONLY,
 	CABLE_MODE_MAX
+};
+
+/* specific USB operation */
+enum CONNECTION_OPS {
+	CONNECTION_OPS_DISC = 0,
+	CONNECTION_OPS_CHECK,
+	CONNECTION_OPS_CONN
 };
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
