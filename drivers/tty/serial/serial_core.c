@@ -1044,7 +1044,7 @@ static int uart_tiocmget(struct tty_struct *tty)
 {
 	struct uart_state *state = tty->driver_data;
 	struct tty_port *port = &state->port;
-	struct uart_port *uport;
+	struct uart_port *uport = state->uart_port;
 	int result = -EIO;
 
 	mutex_lock(&port->mutex);
