@@ -189,11 +189,11 @@ static const struct of_device_id apusb_of_ids[] = {
 
 MODULE_DEVICE_TABLE(of, apusb_of_ids);
 
-static struct timer_list musb_idle_timer;
+static struct delayed_work idle_work;
 
-static void musb_do_idle(unsigned long _musb)
+void do_idle_work(struct work_struct *data)
 {
-	struct musb *musb = (void *)_musb;
+	struct musb *musb = mtk_musb;
 	unsigned long flags;
 	u8 devctl;
 	enum usb_otg_state old_state;
@@ -234,6 +234,15 @@ static void musb_do_idle(unsigned long _musb)
 			musb->is_active);
 	spin_unlock_irqrestore(&musb->lock, flags);
 
+}
+
+static struct timer_list musb_idle_timer;
+
+static void musb_do_idle(unsigned long _musb)
+{
+	struct musb *musb = (void *)_musb;
+
+	queue_delayed_work(musb->st_wq, &idle_work, 0);
 }
 
 static void mt_usb_try_idle(struct musb *musb, unsigned long timeout)
@@ -1553,6 +1562,8 @@ static int mt_usb_probe(struct platform_device *pdev)
 
 	register_usb_hal_dpidle_request(usb_6763_dpidle_request);
 	register_usb_hal_disconnect_check(trigger_disconnect_check_work);
+
+	INIT_DELAYED_WORK(&idle_work, do_idle_work);
 
 	DBG(0, "keep musb->power & mtk_usb_power in the samae value\n");
 	mtk_usb_power = false;
