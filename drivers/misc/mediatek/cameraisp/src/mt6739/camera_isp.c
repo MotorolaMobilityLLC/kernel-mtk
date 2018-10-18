@@ -757,6 +757,7 @@ struct ISP_EDBUF_STRUCT {
 	/* p2 duplicate CQ index(for recognize belong to which package) */
 	signed int p2dupCQIdx;
 	enum ISP_ED_BUF_STATE_ENUM bufSts;  /* buffer status */
+	signed int p2Scenario;
 };
 static signed int P2_EDBUF_RList_FirstBufIdx;
 static signed int P2_EDBUF_RList_CurBufIdx;
@@ -771,7 +772,44 @@ struct ISP_EDBUF_MGR_STRUCT {
 	signed int frameNum;
 	 /* number of dequed buffer no matter deque success or fail */
 	signed int dequedNum;
+	signed int p2Scenario;
 };
+
+static signed int compareRingBufNode(struct ISP_EDBUF_STRUCT ringBufNode,
+	struct ISP_ED_BUFQUE_STRUCT param)
+{
+	if ((ringBufNode.processID == param.processID) &&
+		 (ringBufNode.callerID == param.callerID) &&
+		 (ringBufNode.p2Scenario == param.p2Scenario)) {
+		return 1;
+	}
+	return 0;
+}
+
+static signed int compareMgrNode(struct ISP_EDBUF_MGR_STRUCT mgrNode,
+	struct ISP_ED_BUFQUE_STRUCT param)
+{
+	if ((mgrNode.processID == param.processID) &&
+		 (mgrNode.callerID == param.callerID) &&
+		 (mgrNode.p2dupCQIdx == param.p2dupCQIdx) &&
+		 (mgrNode.p2Scenario == param.p2Scenario) &&
+		 (mgrNode.dequedNum < mgrNode.frameNum)) {
+		return 1;
+	}
+	return 0;
+}
+
+static signed int compareMgrNodeLossely(struct ISP_EDBUF_MGR_STRUCT mgrNode,
+	struct ISP_ED_BUFQUE_STRUCT param)
+{
+	if ((mgrNode.processID == param.processID) &&
+		(mgrNode.callerID == param.callerID) &&
+		(mgrNode.p2Scenario == param.p2Scenario)) {
+		return 1;
+	}
+	return 0;
+}
+
 static signed int P2_EDBUF_MList_FirstBufIdx;
 /* static volatile signed int P2_EDBUF_MList_CurBufIdx=0;*/
 static signed int P2_EDBUF_MList_LastBufIdx;
@@ -7290,6 +7328,7 @@ static signed int ISP_ED_BufQue_Erase(signed int idx, int listTag)
 		P2_EDBUF_MgrList[idx].p2dupCQIdx = -1;
 		P2_EDBUF_MgrList[idx].frameNum = 0;
 		P2_EDBUF_MgrList[idx].dequedNum = 0;
+		P2_EDBUF_MgrList[idx].p2Scenario = -1;
 		/* [2] update first     index */
 		if (P2_EDBUF_MgrList[tmpIdx].p2dupCQIdx == -1) {
 			/* traverse     count needed, cuz user may erase the element */
@@ -7327,6 +7366,7 @@ static signed int ISP_ED_BufQue_Erase(signed int idx, int listTag)
 		P2_EDBUF_RingList[idx].callerID = 0x0;
 		P2_EDBUF_RingList[idx].p2dupCQIdx = -1;
 		P2_EDBUF_RingList[idx].bufSts = ISP_ED_BUF_STATE_NONE;
+		P2_EDBUF_RingList[idx].p2Scenario = -1;
 		EDBufQueRemainNodeCnt--;
 		/* [2]update first index */
 		if (P2_EDBUF_RingList[tmpIdx].bufSts == ISP_ED_BUF_STATE_NONE) {
@@ -7381,30 +7421,32 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 	case P2_EDBUF_MLIST_TAG:
 		if (type == 0) { /* for user wait frame, do not care p2 dupCq index, first enqued p2 dupCQ first out */
 			if (P2_EDBUF_MList_FirstBufIdx <= P2_EDBUF_MList_LastBufIdx) {
-				for (i = P2_EDBUF_MList_FirstBufIdx; i <= P2_EDBUF_MList_LastBufIdx;
-				     i++) {
-					if ((P2_EDBUF_MgrList[i].processID == param.processID)
-					    && (P2_EDBUF_MgrList[i].callerID == param.callerID)) {
+				for (i = P2_EDBUF_MList_FirstBufIdx;
+					 i <= P2_EDBUF_MList_LastBufIdx;
+					 i++) {
+					if (compareMgrNodeLossely(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 					}
 				}
 			} else {
 				for (i = P2_EDBUF_MList_FirstBufIdx;
-				     i < _MAX_SUPPORT_P2_PACKAGE_NUM_; i++) {
-					if ((P2_EDBUF_MgrList[i].processID == param.processID)
-					    && (P2_EDBUF_MgrList[i].callerID == param.callerID)) {
+				     i < _MAX_SUPPORT_P2_PACKAGE_NUM_;
+				     i++) {
+					if (compareMgrNodeLossely(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 					}
 				}
 				if (idx != -1) {        /*get in the first     for     loop */
 				} else {
-					for (i = 0; i <= P2_EDBUF_MList_LastBufIdx; i++) {
-					if ((P2_EDBUF_MgrList[i].processID ==
-						param.processID)
-						&& (P2_EDBUF_MgrList[i].callerID ==
-						param.callerID)) {
+					for (i = 0;
+						 i <= P2_EDBUF_MList_LastBufIdx;
+						 i++) {
+					if (compareMgrNodeLossely(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 						}
@@ -7412,44 +7454,38 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 				}
 			}
 		} else {        /* for buffer node deque done notify */
-			if (P2_EDBUF_MList_FirstBufIdx <= P2_EDBUF_MList_LastBufIdx) {
-				for (i = P2_EDBUF_MList_FirstBufIdx; i <= P2_EDBUF_MList_LastBufIdx;
+			if (P2_EDBUF_MList_FirstBufIdx
+				 <= P2_EDBUF_MList_LastBufIdx) {
+				for (i = P2_EDBUF_MList_FirstBufIdx;
+					 i <= P2_EDBUF_MList_LastBufIdx;
 				     i++) {
-					if ((P2_EDBUF_MgrList[i].processID == param.processID)
-					    && (P2_EDBUF_MgrList[i].callerID == param.callerID)
-					    && (P2_EDBUF_MgrList[i].p2dupCQIdx == param.p2dupCQIdx)
-					    && (P2_EDBUF_MgrList[i].dequedNum <
-						P2_EDBUF_MgrList[i].frameNum)) {
-						/* avoid race that dupCQ_1 of buffer2 enqued while dupCQ_1*/
-						/*of buffer1 have beend deque done but not been erased yet */
+					if (compareMgrNode(
+						 P2_EDBUF_MgrList[i], param)) {
+						/* avoid race that dupCQ_1 of
+						 *buffer2 enqued while dupCQ_1
+						 *of buffer1 have beend deque
+						 * done but not been erased yet
+						 */
 						idx = i;
 						break;
 					}
 				}
 			} else {
 				for (i = P2_EDBUF_MList_FirstBufIdx;
-				     i < _MAX_SUPPORT_P2_PACKAGE_NUM_; i++) {
-					if ((P2_EDBUF_MgrList[i].processID == param.processID)
-					    && (P2_EDBUF_MgrList[i].callerID == param.callerID)
-					    && (P2_EDBUF_MgrList[i].p2dupCQIdx == param.p2dupCQIdx)
-					    && (P2_EDBUF_MgrList[i].dequedNum <
-						P2_EDBUF_MgrList[i].frameNum)) {
+				     i < _MAX_SUPPORT_P2_PACKAGE_NUM_;
+				     i++) {
+					if (compareMgrNode(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 					}
 				}
 				if (idx != -1) {        /*get in the first     for     loop */
 				} else {
-					for (i = 0; i <= P2_EDBUF_MList_LastBufIdx; i++) {
-
-					if ((P2_EDBUF_MgrList[i].processID ==
-						param.processID)
-						&& (P2_EDBUF_MgrList[i].callerID ==
-						param.callerID)
-						&& (P2_EDBUF_MgrList[i].p2dupCQIdx ==
-						param.p2dupCQIdx)
-						&& (P2_EDBUF_MgrList[i].dequedNum <
-						P2_EDBUF_MgrList[i].frameNum)) {
+					for (i = 0; i <= P2_EDBUF_MList_LastBufIdx;
+						 i++) {
+					if (compareMgrNode(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 					}
@@ -7461,16 +7497,14 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 	case P2_EDBUF_RLIST_TAG:
 		if (P2_EDBUF_RList_FirstBufIdx <= P2_EDBUF_RList_LastBufIdx) {
 			for (i = P2_EDBUF_RList_FirstBufIdx; i <= P2_EDBUF_RList_LastBufIdx; i++) {
-				if ((P2_EDBUF_RingList[i].processID == param.processID)
-				    && (P2_EDBUF_RingList[i].callerID == param.callerID)) {
+				if (compareRingBufNode(P2_EDBUF_RingList[i], param)) {
 					idx = i;
 					break;
 				}
 			}
 		} else {
 			for (i = P2_EDBUF_RList_FirstBufIdx; i < _MAX_SUPPORT_P2_FRAME_NUM_; i++) {
-				if ((P2_EDBUF_RingList[i].processID == param.processID)
-				    && (P2_EDBUF_RingList[i].callerID == param.callerID)) {
+				if (compareRingBufNode(P2_EDBUF_RingList[i], param)) {
 					idx = i;
 					break;
 				}
@@ -7478,8 +7512,7 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 			if (idx != -1) {        /*get in the first     for     loop */
 			} else {
 				for (i = 0; i <= P2_EDBUF_RList_LastBufIdx; i++) {
-					if ((P2_EDBUF_RingList[i].processID == param.processID)
-					    && (P2_EDBUF_RingList[i].callerID == param.callerID)) {
+					if (compareRingBufNode(P2_EDBUF_RingList[i], param)) {
 						idx = i;
 						break;
 					}
@@ -7563,11 +7596,16 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 				P2_EDBUF_RList_LastBufIdx =
 					(P2_EDBUF_RList_LastBufIdx + 1) % _MAX_SUPPORT_P2_FRAME_NUM_;
 			}
-			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].processID = param.processID;
-			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].callerID = param.callerID;
-			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].p2dupCQIdx = param.p2dupCQIdx;
-			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].bufSts =
-				ISP_ED_BUF_STATE_ENQUE;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].processID
+				= param.processID;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].callerID
+				= param.callerID;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].p2dupCQIdx
+				= param.p2dupCQIdx;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].bufSts
+				= ISP_ED_BUF_STATE_ENQUE;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].p2Scenario
+				= param.p2Scenario;
 			EDBufQueRemainNodeCnt++;
 
 			/* [3] add new buffer package in manager list */
@@ -7585,15 +7623,18 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 						(P2_EDBUF_MList_LastBufIdx +
 						 1) % _MAX_SUPPORT_P2_PACKAGE_NUM_;
 				}
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].processID =
-					param.processID;
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].callerID =
-					param.callerID;
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].p2dupCQIdx =
-					param.p2dupCQIdx;
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].frameNum =
-					param.frameNum;
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].dequedNum = 0;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].processID
+					= param.processID;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].callerID
+					= param.callerID;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].p2dupCQIdx
+					= param.p2dupCQIdx;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].frameNum
+					= param.frameNum;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].dequedNum
+					= 0;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].p2Scenario
+					= param.p2Scenario;
 			}
 		/* [4]update global     index */
 		ISP_ED_BufQue_Update_GPtr(P2_EDBUF_RLIST_TAG);
@@ -7767,6 +7808,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 			P2_EDBUF_RingList[i].processID = 0x0;
 			P2_EDBUF_RingList[i].callerID = 0x0;
 			P2_EDBUF_RingList[i].bufSts = ISP_ED_BUF_STATE_NONE;
+			P2_EDBUF_RingList[i].p2Scenario = -1;
 		}
 		P2_EDBUF_RList_FirstBufIdx = 0;
 		P2_EDBUF_RList_CurBufIdx = 0;
@@ -7778,6 +7820,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 			P2_EDBUF_MgrList[i].p2dupCQIdx = -1;
 			P2_EDBUF_MgrList[i].frameNum = 0;
 			P2_EDBUF_MgrList[i].dequedNum = 0;
+			P2_EDBUF_MgrList[i].p2Scenario = -1;
 		}
 		P2_EDBUF_MList_FirstBufIdx = 0;
 		P2_EDBUF_MList_LastBufIdx = -1;
@@ -11391,6 +11434,7 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 		P2_EDBUF_RingList[i].callerID = 0x0;
 		P2_EDBUF_RingList[i].p2dupCQIdx = -1;
 		P2_EDBUF_RingList[i].bufSts = ISP_ED_BUF_STATE_NONE;
+		P2_EDBUF_RingList[i].p2Scenario = -1;
 	}
 	P2_EDBUF_RList_FirstBufIdx = 0;
 	P2_EDBUF_RList_CurBufIdx = 0;
@@ -11401,6 +11445,7 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 		P2_EDBUF_MgrList[i].callerID = 0x0;
 		P2_EDBUF_MgrList[i].p2dupCQIdx = -1;
 		P2_EDBUF_MgrList[i].dequedNum = 0;
+		P2_EDBUF_MgrList[i].p2Scenario = -1;
 	}
 	P2_EDBUF_MList_FirstBufIdx = 0;
 	P2_EDBUF_MList_LastBufIdx = -1;
