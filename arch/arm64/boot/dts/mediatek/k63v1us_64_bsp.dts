@@ -12,10 +12,6 @@
 #endif
 
 
-&memory {
-	device_type = "memory";
-	reg = <0 0x40000000 0 0x3e1a0000>;
-};
 
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 &reserved_memory {
