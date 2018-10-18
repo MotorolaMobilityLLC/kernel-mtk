@@ -535,7 +535,8 @@ static int mtk_pcm_dl1spk_hw_params(struct snd_pcm_substream *substream,
 				    (char *)spkproc_ipi_get_payload());
 
 	payloadlen = spkproc_ipi_pack_payload(SPK_PROTECT_DLMEMPARAM,
-					      mspkPlaybackDramState, 0,
+					      mspkPlaybackDramState,
+					      Soc_Aud_Digital_Block_MEM_DL1,
 					      &SpkDL1Buffer, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_DLMEMPARAM, payloadlen, 0,
@@ -637,7 +638,9 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK,
-				    SPK_PROTECT_OPEN, 1, 0, NULL);
+				    SPK_PROTECT_OPEN,
+				    Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
+				    0, NULL);
 #endif
 	return 0;
 }
