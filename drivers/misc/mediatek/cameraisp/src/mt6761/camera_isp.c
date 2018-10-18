@@ -11224,7 +11224,7 @@ if (bSlowMotion == MFALSE) {
 		} else {
 			sof_pass1done[1] = 0;
 			if (p1_fbc[_dmaport].Bits.FB_NUM ==
-			    (p1_fbc[_dmaport].Bits.FBC_CNT - 1)) {
+			    (p1_fbc[_dmaport].Bits.FBC_CNT + 1)) {
 				sof_pass1done[1] = 2;
 			}
 		}
