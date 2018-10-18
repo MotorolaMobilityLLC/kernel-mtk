@@ -379,6 +379,28 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_hba = hba;
 	hba->crypto_hwfde_key_idx = -1;
 
+#ifdef CONFIG_MTK_UFS_SUPPORT
+	/*
+	 * Rename device to unify device path for booting storage device.
+	 *
+	 * Device rename shall be prior to any pinctrl operation to avoid
+	 * known kernel panic issue which can be triggered by dumping pin
+	 * information, for example,
+	 *
+	 * "cat /sys/kernel/debug/pinctrl/10005000.pinctrl/pinmux-pins".
+	 *
+	 * The panic is because create_pinctrl() will keep the original
+	 * device name string instance in kobject. However, old name string
+	 * instance will be freed during device_rename() but NOT awared by
+	 * pinctrl.
+	 *
+	 * Please also remove default pin state in device tree and related
+	 * code because create_pinctrl() will be activated before device
+	 * probing if default pin state is declared.
+	 */
+	device_rename(hba->dev, "bootdevice");
+#endif
+
 	ufs_mtk_pltfrm_init();
 
 	ufs_mtk_pltfrm_parse_dt(hba);
@@ -405,11 +427,6 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 
 	/* Get auto-hibern8 timeout from device tree */
 	ufs_mtk_parse_auto_hibern8_timer(hba);
-
-#ifdef CONFIG_MTK_UFS_SUPPORT
-	/* Rename device to unify device path for booting storage device */
-	device_rename(hba->dev, "bootdevice");
-#endif
 
 	return 0;
 

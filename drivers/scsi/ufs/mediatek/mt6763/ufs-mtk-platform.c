@@ -34,7 +34,6 @@ static void __iomem *ufs_mtk_mmio_base_infracfg_ao;
 static void __iomem *ufs_mtk_mmio_base_pericfg;
 static void __iomem *ufs_mtk_mmio_base_ufs_mphy;
 static struct pinctrl *ufs_mtk_pinctrl;
-static struct pinctrl_state *ufs_mtk_pins_default;
 static struct pinctrl_state *ufs_mtk_pins_va09_on;
 static struct pinctrl_state *ufs_mtk_pins_va09_off;
 
@@ -360,14 +359,6 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 	if (IS_ERR(ufs_mtk_pinctrl)) {
 		err = PTR_ERR(ufs_mtk_pinctrl);
 		dev_err(hba->dev, "error: ufs_mtk_pinctrl init fail\n");
-		return err;
-	}
-
-	ufs_mtk_pins_default = pinctrl_lookup_state(ufs_mtk_pinctrl, "default");
-
-	if (IS_ERR(ufs_mtk_pins_default)) {
-		err = PTR_ERR(ufs_mtk_pins_default);
-		dev_err(hba->dev, "error: ufs_mtk_pins_default init fail\n");
 		return err;
 	}
 

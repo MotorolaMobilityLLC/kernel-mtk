@@ -3958,22 +3958,15 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 &ufshci {
 	pinctrl-names =
-			"default",
 			"state_va09_on",
 			"state_va09_off";
 
-	pinctrl-0 = <&ufshci_pins_default>;
-	pinctrl-1 = <&ufshci_pins_state_va09_on>;
-	pinctrl-2 = <&ufshci_pins_state_va09_off>;
+	pinctrl-0 = <&ufshci_pins_state_va09_on>;
+	pinctrl-1 = <&ufshci_pins_state_va09_off>;
 	status = "okay";
 };
 
 &pio {
-	ufshci_pins_default: ufshci_default {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO131__FUNC_GPIO131>;
-		};
-	};
 	ufshci_pins_state_va09_on: ufshci_va09on {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO131__FUNC_GPIO131>;
