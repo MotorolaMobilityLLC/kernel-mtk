@@ -180,7 +180,6 @@ static int mt6660_codec_io_write(struct snd_soc_codec *codec,
 					      reg_size, reg_data);
 #endif /* CONFIG_RT_REGMAP */
 }
-
 static inline int mt6660_chip_power_on(struct snd_soc_codec *codec, int onoff)
 {
 	struct mt6660_chip *ri = snd_soc_codec_get_drvdata(codec);
@@ -193,6 +192,8 @@ static inline int mt6660_chip_power_on(struct snd_soc_codec *codec, int onoff)
 			ret = snd_soc_update_bits(codec,
 						  MT6660_REG_SYSTEM_CTRL,
 						  0x01, 0x00);
+			dev_info(ri->dev, "%s reg0x05 = 0x%x\n", __func__,
+				snd_soc_read(codec, MT6660_REG_IRQ_STATUS1));
 		}
 	} else {
 		if (--ri->pwr_cnt == 0) {
