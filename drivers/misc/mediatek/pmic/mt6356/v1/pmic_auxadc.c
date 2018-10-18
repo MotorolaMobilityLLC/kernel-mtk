@@ -82,6 +82,18 @@ unsigned int __attribute__ ((weak)) pmic_get_vbif28_volt(void)
 	return 0;
 }
 
+static void wk_auxadc_reset(void)
+{
+	pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
+	pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+	pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
+	pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
+	/* avoid GPS can't receive AUXADC ready after reset, request again */
+	pmic_set_register_value(PMIC_AUXADC_RQST_CH7, 1);
+	pmic_set_register_value(PMIC_AUXADC_RQST_DCXO_BY_GPS, 1);
+	pr_notice("reset AUXADC done\n");
+}
+
 bool is_isense_supported(void)
 {
 	/* PMIC MT6356 supports ISENSE */
@@ -197,14 +209,14 @@ void wk_auxadc_dbg_dump(void)
 			continue;
 		}
 		for (j = 0; adc_dbg_addr[j] != 0; j++) {
-			if (j % 43 == 0) {
+			if (j != 0 && j % 43 == 0) {
 				pr_notice("%d %s\n", pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
 				strncpy(reg_log, "", 860);
 			}
 			snprintf(reg_str, 20, "Reg[0x%x]=0x%x, ", adc_dbg_addr[j], pmic_adc_dbg[dbg_stamp].reg[j]);
 			strncat(reg_log, reg_str, 860);
 		}
-		pr_notice("[%s] %d %d %s\n", __func__, dbg_stamp, pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
+		pr_notice("%d %s\n", pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
 		strncpy(reg_log, "", 860);
 		dbg_stamp++;
 		if (dbg_stamp >= 4)
@@ -217,6 +229,7 @@ int wk_auxadc_battmp_dbg(int bat_temp)
 	unsigned short i;
 	int vbif = 0, bat_temp2 = 0, bat_temp3 = 0, bat_id = 0;
 	int arr_bat_temp[5];
+	int bat = 0, bat_cur = 0, is_charging = 0;
 
 	if (dbg_flag)
 		pr_notice("Another dbg is running\n");
@@ -241,6 +254,25 @@ int wk_auxadc_battmp_dbg(int bat_temp)
 		for (i = 0; i < 5; i++)
 			arr_bat_temp[i] = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
 		bat_temp = bat_temp_filter(arr_bat_temp, 5);
+		pr_notice("%d,%d,%d,%d,%d, BAT_TEMP_NEW:%d\n",
+			arr_bat_temp[0], arr_bat_temp[1], arr_bat_temp[2],
+			arr_bat_temp[3], arr_bat_temp[4], bat_temp);
+
+		/* Reset AuxADC to observe VBAT/IBAT/BAT_TEMP */
+		wk_auxadc_reset();
+		for (i = 0; i < 5; i++) {
+			bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+			is_charging = gauge_get_current(&bat_cur);
+#endif
+			if (is_charging == 0)
+				bat_cur = 0 - bat_cur;
+			arr_bat_temp[i] = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
+			pr_notice("[CH3_DBG] %d,%d,%d\n",
+				  bat, bat_cur, arr_bat_temp[i]);
+		}
+		bat_temp = bat_temp_filter(arr_bat_temp, 5);
+		pr_notice("Final BAT_TEMP_NEW:%d\n", bat_temp);
 	}
 	dbg_flag = 0;
 	return bat_temp;
