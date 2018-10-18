@@ -142,7 +142,7 @@ struct file *get_empty_filp(void)
 over:
 	/* Ran out of filps - report that */
 	if (get_nr_files() > old_max) {
-#ifdef FD_OVER_CHECK
+#ifdef CONFIG_MTK_FD_LEAK_DETECT
 		static int fd_dump_all_files;
 
 		if (!fd_dump_all_files) {

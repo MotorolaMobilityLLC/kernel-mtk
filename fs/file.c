@@ -517,7 +517,7 @@ static unsigned long find_next_fd(struct fdtable *fdt, unsigned long start)
 	return find_next_zero_bit(fdt->open_fds, maxfd, start);
 }
 
-#ifdef FD_OVER_CHECK
+#ifdef CONFIG_MTK_FD_LEAK_DETECT
 #define FD_CHECK_NAME_SIZE 256
 /* Declare a radix tree to construct fd set tree */
 static RADIX_TREE(over_fd_tree, GFP_KERNEL);
@@ -709,7 +709,7 @@ repeat:
 
 out:
 	spin_unlock(&files->file_lock);
-#ifdef FD_OVER_CHECK
+#ifdef CONFIG_MTK_FD_LEAK_DETECT
 	if (error == -EMFILE && !dump_current_open_files) {
 		/*add Backbone into FD white list for skype*/
 		/*if (strcmp(current->comm, "Backbone") != 0) {*/
