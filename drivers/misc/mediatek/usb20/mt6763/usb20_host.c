@@ -37,7 +37,6 @@ static struct tcpc_device *otg_tcpc_dev;
 static struct delayed_work register_otg_work;
 static int otg_tcp_notifier_call(struct notifier_block *nb,
 		unsigned long event, void *data);
-static void do_host_work(struct work_struct *data);
 #define TCPC_OTG_DEV_NAME "type_c_port0"
 static void do_register_otg_work(struct work_struct *data)
 {
@@ -161,6 +160,95 @@ static void _set_vbus(int is_on)
 	}
 }
 
+void mt_usb_set_vbus(struct musb *musb, int is_on)
+{
+#ifndef FPGA_PLATFORM
+
+	DBG(0, "is_on<%d>, control<%d>\n", is_on, vbus_control);
+
+	if (!vbus_control)
+		return;
+
+	if (is_on)
+		_set_vbus(1);
+	else
+		_set_vbus(0);
+#endif
+}
+
+int mt_usb_get_vbus_status(struct musb *musb)
+{
+#if 1
+	return true;
+#else
+	int	ret = 0;
+
+	if ((musb_readb(musb->mregs, MUSB_DEVCTL) & MUSB_DEVCTL_VBUS) != MUSB_DEVCTL_VBUS)
+		ret = 1;
+	else
+		DBG(0, "VBUS error, devctl=%x, power=%d\n", musb_readb(musb->mregs, MUSB_DEVCTL), musb->power);
+	pr_debug("vbus ready = %d\n", ret);
+	return ret;
+#endif
+}
+
+#if defined(CONFIG_USBIF_COMPLIANCE)
+int sw_deboun_time = 1;
+#else
+int sw_deboun_time = 400;
+#endif
+module_param(sw_deboun_time, int, 0400);
+struct switch_dev otg_state;
+
+int typec_control;
+module_param(typec_control, int, 0400);
+static bool typec_req_host;
+static bool iddig_req_host;
+
+static void do_host_work(struct work_struct *data);
+static void issue_host_work(int ops, int delay, bool on_st)
+{
+	struct mt_usb_work *work;
+
+	if (!mtk_musb) {
+		DBG(0, "mtk_musb = NULL\n");
+		return;
+	}
+
+	/* create and prepare worker */
+	work = kzalloc(sizeof(struct mt_usb_work), GFP_ATOMIC);
+	if (!work) {
+		DBG(0, "work is NULL, directly return\n");
+		return;
+	}
+	work->ops = ops;
+	INIT_DELAYED_WORK(&work->dwork, do_host_work);
+
+	/* issue connection work */
+	DBG(0, "issue work, ops<%d>, delay<%d>, on_st<%d>\n",
+		ops, delay, on_st);
+
+	if (on_st)
+		queue_delayed_work(mtk_musb->st_wq,
+					&work->dwork, msecs_to_jiffies(delay));
+	else
+		schedule_delayed_work(&work->dwork,
+					msecs_to_jiffies(delay));
+}
+void mt_usb_host_connect(int delay)
+{
+	typec_req_host = true;
+	DBG(0, "%s\n", typec_req_host ? "connect" : "disconnect");
+	issue_host_work(CONNECTION_OPS_CONN, delay, true);
+}
+void mt_usb_host_disconnect(int delay)
+{
+	typec_req_host = false;
+	DBG(0, "%s\n", typec_req_host ? "connect" : "disconnect");
+	issue_host_work(CONNECTION_OPS_DISC, delay, true);
+}
+#ifdef CONFIG_USB_C_SWITCH
+#ifdef CONFIG_TCPC_CLASS
 static void do_vbus_work(struct work_struct *data)
 {
 	struct mt_usb_work *work =
@@ -209,94 +297,6 @@ static void mt_usb_vbus_off(int delay)
 	issue_vbus_work(VBUS_OPS_OFF, delay);
 }
 
-void mt_usb_set_vbus(struct musb *musb, int is_on)
-{
-#ifndef FPGA_PLATFORM
-
-	DBG(0, "is_on<%d>, control<%d>\n", is_on, vbus_control);
-
-	if (!vbus_control)
-		return;
-
-	if (is_on)
-		_set_vbus(1);
-	else
-		_set_vbus(0);
-#endif
-}
-
-int mt_usb_get_vbus_status(struct musb *musb)
-{
-#if 1
-	return true;
-#else
-	int	ret = 0;
-
-	if ((musb_readb(musb->mregs, MUSB_DEVCTL) & MUSB_DEVCTL_VBUS) != MUSB_DEVCTL_VBUS)
-		ret = 1;
-	else
-		DBG(0, "VBUS error, devctl=%x, power=%d\n", musb_readb(musb->mregs, MUSB_DEVCTL), musb->power);
-	pr_debug("vbus ready = %d\n", ret);
-	return ret;
-#endif
-}
-
-#if defined(CONFIG_USBIF_COMPLIANCE)
-int sw_deboun_time = 1;
-#else
-int sw_deboun_time = 400;
-#endif
-module_param(sw_deboun_time, int, 0400);
-struct switch_dev otg_state;
-
-int typec_control;
-module_param(typec_control, int, 0400);
-static bool typec_req_host;
-static bool iddig_req_host;
-
-static void issue_host_work(int ops, int delay, bool on_st)
-{
-	struct mt_usb_work *work;
-
-	if (!mtk_musb) {
-		DBG(0, "mtk_musb = NULL\n");
-		return;
-	}
-
-	/* create and prepare worker */
-	work = kzalloc(sizeof(struct mt_usb_work), GFP_ATOMIC);
-	if (!work) {
-		DBG(0, "work is NULL, directly return\n");
-		return;
-	}
-	work->ops = ops;
-	INIT_DELAYED_WORK(&work->dwork, do_host_work);
-
-	/* issue connection work */
-	DBG(0, "issue work, ops<%d>, delay<%d>, on_st<%d>\n",
-		ops, delay, on_st);
-
-	if (on_st)
-		queue_delayed_work(mtk_musb->st_wq,
-					&work->dwork, msecs_to_jiffies(delay));
-	else
-		schedule_delayed_work(&work->dwork,
-					msecs_to_jiffies(delay));
-}
-void mt_usb_host_connect(int delay)
-{
-	typec_req_host = true;
-	DBG(0, "%s\n", typec_req_host ? "connect" : "disconnect");
-	issue_host_work(CONNECTION_OPS_CONN, delay, true);
-}
-void mt_usb_host_disconnect(int delay)
-{
-	typec_req_host = false;
-	DBG(0, "%s\n", typec_req_host ? "connect" : "disconnect");
-	issue_host_work(CONNECTION_OPS_DISC, delay, true);
-}
-#ifdef CONFIG_USB_C_SWITCH
-#ifdef CONFIG_TCPC_CLASS
 static int otg_tcp_notifier_call(struct notifier_block *nb,
 		unsigned long event, void *data)
 {
