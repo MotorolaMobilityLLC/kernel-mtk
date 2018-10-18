@@ -365,12 +365,12 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
+	spin_lock(&g_AF_SpinLock);
 	if (g_s4AF_Opened) {
+		spin_unlock(&g_AF_SpinLock);
 		LOG_INF("The device is opened\n");
 		return -EBUSY;
 	}
-
-	spin_lock(&g_AF_SpinLock);
 	g_s4AF_Opened = 1;
 	spin_unlock(&g_AF_SpinLock);
 
@@ -528,7 +528,7 @@ static const struct i2c_device_id AF_i2c_id[] = {{AF_DRVNAME, 0}, {} };
 /* TOOL : kernel-3.10\tools\dct */
 /* PATH : vendor\mediatek\proprietary\custom\#project#\kernel\dct\dct */
 #if I2C_CONFIG_SETTING == 2
-static const struct of_device_id MAINAF_of_match[] = {
+static const struct of_device_id MAIN2AF_of_match[] = {
 	{.compatible = "mediatek,CAMERA_MAIN_TWO_AF"}, {},
 };
 #endif
@@ -538,7 +538,7 @@ static struct i2c_driver AF_i2c_driver = {
 	.remove = AF_i2c_remove,
 	.driver.name = AF_DRVNAME,
 #if I2C_CONFIG_SETTING == 2
-	.driver.of_match_table = MAINAF_of_match,
+	.driver.of_match_table = MAIN2AF_of_match,
 #endif
 	.id_table = AF_i2c_id,
 };
@@ -614,7 +614,7 @@ static struct platform_driver g_stAF_Driver = {
 static struct platform_device g_stAF_device = {
 	.name = PLATFORM_DRIVER_NAME, .id = 0, .dev = {} };
 
-static int __init MAINAF_i2C_init(void)
+static int __init MAIN2AF_i2C_init(void)
 {
 #if I2C_CONFIG_SETTING == 1
 	i2c_register_board_info(LENS_I2C_BUSNUM, &kd_lens_dev, 1);
@@ -633,12 +633,12 @@ static int __init MAINAF_i2C_init(void)
 	return 0;
 }
 
-static void __exit MAINAF_i2C_exit(void)
+static void __exit MAIN2AF_i2C_exit(void)
 {
 	platform_driver_unregister(&g_stAF_Driver);
 }
-module_init(MAINAF_i2C_init);
-module_exit(MAINAF_i2C_exit);
+module_init(MAIN2AF_i2C_init);
+module_exit(MAIN2AF_i2C_exit);
 
 MODULE_DESCRIPTION("MAIN2AF lens module driver");
 MODULE_AUTHOR("KY Chen <ky.chen@Mediatek.com>");

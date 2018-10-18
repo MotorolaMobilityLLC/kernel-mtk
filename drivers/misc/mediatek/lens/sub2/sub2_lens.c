@@ -12,7 +12,7 @@
  */
 
 /*
- * SUB AF voice coil motor driver
+ * SUB2 AF voice coil motor driver
  *
  *
  */
@@ -36,8 +36,9 @@
 /* ------------------------- */
 
 #include "lens_info.h"
+#include "lens_list.h"
 
-#define AF_DRVNAME "SUBAF"
+#define AF_DRVNAME "SUB2AF"
 
 #if defined(CONFIG_MTK_LEGACY)
 #define I2C_CONFIG_SETTING 1
@@ -48,12 +49,12 @@
 #endif
 
 #if I2C_CONFIG_SETTING == 1
-#define LENS_I2C_BUSNUM 1
-#define I2C_REGISTER_ID 0x27
+#define LENS_I2C_BUSNUM 0
+#define I2C_REGISTER_ID 0x28
 #endif
 
-#define PLATFORM_DRIVER_NAME "lens_actuator_sub_af"
-#define AF_DRIVER_CLASS_NAME "actuatordrv_sub_af"
+#define PLATFORM_DRIVER_NAME "lens_actuator_sub2_af"
+#define AF_DRIVER_CLASS_NAME "actuatordrv_sub2_af"
 
 #if I2C_CONFIG_SETTING == 1
 static struct i2c_board_info kd_lens_dev __initdata = {
@@ -63,7 +64,7 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 #define AF_DEBUG
 #ifdef AF_DEBUG
 #define LOG_INF(format, args...)                                               \
-	pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
+	pr_info(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
@@ -81,14 +82,10 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
-	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl,
-	 BU6424AF_Release, BU6424AF_GetFileName, NULL},
-	{1, AFDRV_BU6429AF, BU6429AF_SetI2Cclient, BU6429AF_Ioctl,
-	 BU6429AF_Release, BU6429AF_GetFileName, NULL},
-	{1, AFDRV_DW9714AF, DW9714AF_SetI2Cclient, DW9714AF_Ioctl,
-	 DW9714AF_Release, DW9714AF_GetFileName, NULL},
-	{1, AFDRV_DW9718AF, DW9718AF_SetI2Cclient, DW9718AF_Ioctl,
-	 DW9718AF_Release, DW9718AF_GetFileName, NULL},
+#if 0
+	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl,
+	 AK7371AF_Release, AK7371AF_GetFileName, NULL},
+#endif
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
@@ -103,6 +100,20 @@ static dev_t g_AF_devno;
 static struct cdev *g_pAF_CharDrv;
 static struct class *actuator_class;
 static struct device *lens_device;
+
+
+void SUB2AF_PowerDown(void)
+{
+
+	if (g_pstAF_I2Cclient != NULL) {
+		LOG_INF("+\n");
+#if 0
+		AK7371AF_PowerDown(g_pstAF_I2Cclient,
+					&g_s4AF_Opened);
+#endif
+		LOG_INF("-\n");
+	}
+}
 
 static long AF_SetMotorName(__user struct stAF_MotorName *pstMotorName)
 {
@@ -319,12 +330,12 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
-	spin_lock(&g_AF_SpinLock);
 	if (g_s4AF_Opened) {
-		spin_unlock(&g_AF_SpinLock);
 		LOG_INF("The device is opened\n");
 		return -EBUSY;
 	}
+
+	spin_lock(&g_AF_SpinLock);
 	g_s4AF_Opened = 1;
 	spin_unlock(&g_AF_SpinLock);
 
@@ -482,8 +493,8 @@ static const struct i2c_device_id AF_i2c_id[] = {{AF_DRVNAME, 0}, {} };
 /* TOOL : kernel-3.10\tools\dct */
 /* PATH : vendor\mediatek\proprietary\custom\#project#\kernel\dct\dct */
 #if I2C_CONFIG_SETTING == 2
-static const struct of_device_id SUBAF_of_match[] = {
-	{.compatible = "mediatek,CAMERA_SUB_AF"}, {},
+static const struct of_device_id SUB2AF_of_match[] = {
+	{.compatible = "mediatek,CAMERA_SUB_TWO_AF"}, {},
 };
 #endif
 
@@ -492,7 +503,7 @@ static struct i2c_driver AF_i2c_driver = {
 	.remove = AF_i2c_remove,
 	.driver.name = AF_DRVNAME,
 #if I2C_CONFIG_SETTING == 2
-	.driver.of_match_table = SUBAF_of_match,
+	.driver.of_match_table = SUB2AF_of_match,
 #endif
 	.id_table = AF_i2c_id,
 };
@@ -568,7 +579,7 @@ static struct platform_driver g_stAF_Driver = {
 static struct platform_device g_stAF_device = {
 	.name = PLATFORM_DRIVER_NAME, .id = 0, .dev = {} };
 
-static int __init SUBAF_i2C_init(void)
+static int __init SUB2AF_i2C_init(void)
 {
 #if I2C_CONFIG_SETTING == 1
 	i2c_register_board_info(LENS_I2C_BUSNUM, &kd_lens_dev, 1);
@@ -587,13 +598,13 @@ static int __init SUBAF_i2C_init(void)
 	return 0;
 }
 
-static void __exit SUBAF_i2C_exit(void)
+static void __exit SUB2AF_i2C_exit(void)
 {
 	platform_driver_unregister(&g_stAF_Driver);
 }
-module_init(SUBAF_i2C_init);
-module_exit(SUBAF_i2C_exit);
+module_init(SUB2AF_i2C_init);
+module_exit(SUB2AF_i2C_exit);
 
-MODULE_DESCRIPTION("SUBAF lens module driver");
+MODULE_DESCRIPTION("SUB2AF lens module driver");
 MODULE_AUTHOR("KY Chen <ky.chen@Mediatek.com>");
 MODULE_LICENSE("GPL");
