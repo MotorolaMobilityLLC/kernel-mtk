@@ -181,7 +181,8 @@ static void _set_vbus(int is_on)
 #endif
 	}
 }
-
+#ifdef CONFIG_MTK_USB_TYPEC
+#ifdef CONFIG_TCPC_CLASS
 static void do_vbus_work(struct work_struct *data)
 {
 	struct mt_usb_work *work =
@@ -229,7 +230,8 @@ static void mt_usb_vbus_off(int delay)
 	DBG(0, "vbus_off\n");
 	issue_vbus_work(VBUS_OPS_OFF, delay);
 }
-
+#endif
+#endif
 void mt_usb_set_vbus(struct musb *musb, int is_on)
 {
 #ifndef FPGA_PLATFORM
