@@ -28,7 +28,6 @@ int l_plus_cpu = -1;
 static void
 update_system_overutilized(struct lb_env *env, struct sd_lb_stats *sds)
 {
-	struct sched_group *sg = env->sd->groups;
 	bool intra_overutil = false;
 	struct sg_lb_stats tmp_sgs;
 	unsigned long max_capacity;
@@ -45,7 +44,7 @@ update_system_overutilized(struct lb_env *env, struct sd_lb_stats *sds)
 		int this_cpu;
 
 		local_group = cpumask_test_cpu(env->dst_cpu,
-					sched_group_cpus(sg));
+					sched_group_cpus(group));
 		if (local_group)
 			sgs = &sds->local_stat;
 
@@ -61,8 +60,10 @@ update_system_overutilized(struct lb_env *env, struct sd_lb_stats *sds)
 
 			sgs->group_util += cpu_util(i);
 			if (cpu_overutilized(i)) {
-				if (capacity_orig_of(i) < max_capacity)
+				if (capacity_orig_of(i) < max_capacity) {
 					intra_overutil = true;
+					break;
+				}
 			}
 		}
 
@@ -74,17 +75,13 @@ update_system_overutilized(struct lb_env *env, struct sd_lb_stats *sds)
 		 * system-wide over-utilization,
 		 * that considers whole cluster not single cpu
 		 */
-		if (group->group_weight > 1) {
-			bool overutiled;
-
-			overutiled = (group->sgc->capacity * 1024)
-					< (sgs->group_util * 1280);
-
-			if (overutiled)
-				intra_overutil = true;
+		if (group->group_weight > 1 && (group->sgc->capacity * 1024 <
+						sgs->group_util * 1280))  {
+			intra_overutil = true;
+			break;
 		}
-
-	} while (sg != env->sd->groups);
+		group = group->next;
+	} while (group != env->sd->groups && !intra_overutil);
 
 	if (!lb_sd_parent(env->sd)) {
 		/* Update system-wide over-utilization indicator */

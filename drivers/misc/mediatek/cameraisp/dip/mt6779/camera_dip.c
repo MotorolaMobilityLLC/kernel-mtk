@@ -66,7 +66,7 @@
 #include <linux/init.h>
 
 /*for SMI BW debug log*/
-#include"../../../smi/smi_debug.h"
+/*#include"../../../smi/smi_debug.h" YWclose*/
 
 /*for kernel log count*/
 #define _K_LOG_ADJUST (1)
@@ -123,7 +123,7 @@
 #define DUMMY_INT           (0) /*for early if load dont need to use camera*/
 
 /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
-#define EP_NO_CLKMGR /*YWopen*/
+/*#define EP_NO_CLKMGR*/
 
 #define DIP_BOTTOMHALF_WORKQ		(1)
 
@@ -274,6 +274,7 @@ static int nr_dip_devs;
 #endif
 
 /*#define AEE_DUMP_BY_USING_ION_MEMORY YWclose*/
+#define AEE_DUMP_BY_USING_ION_MEMORY
 #define AEE_DUMP_REDUCE_MEMORY
 #ifdef AEE_DUMP_REDUCE_MEMORY
 /* ion */
@@ -788,7 +789,7 @@ static signed int DIP_DumpDIPReg(void)
 	CMDQ_ERR("g_bIonBuf:(0x%x)\n", g_bIonBufferAllocated);
 #ifdef AEE_DUMP_REDUCE_MEMORY
 	if (g_bDumpPhyDIPBuf == MFALSE) {
-		ctrl_start = DIP_RD32(DIP_A_BASE + 0x0000);
+		ctrl_start = DIP_RD32(DIP_A_BASE + 0x1000);
 		if (g_bIonBufferAllocated == MFALSE) {
 			if (g_pPhyDIPBuffer != NULL) {
 				CMDQ_ERR("g_pPhyDIPBuffer isn't NULL(0x%pK)\n",
@@ -854,10 +855,10 @@ static signed int DIP_DumpDIPReg(void)
 		/*0x1502222C, CQ_D1A_CQ_THR2_BASEADDR*/
 		for (cmdqidx = 0; cmdqidx < 32 ; cmdqidx++) {
 			if (ctrl_start & (0x1<<cmdqidx) && (cmdqidx <= 1)) {
-				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x208 +
+				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x1208 +
 				(cmdqidx*DIP_CMDQ1_TO_CMDQ0_BASEADDR_OFFSET));
 			} else {
-				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x220 +
+				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x1220 +
 				((cmdqidx-1)*DIP_CMDQ_BASEADDR_OFFSET));
 			}
 			break;
@@ -959,6 +960,8 @@ static signed int DIP_DumpDIPReg(void)
 		g_cmdqaddr, g_tdriaddr);
 
     /*top control*/
+	CMDQ_ERR("dip: 0x15022000(0x%x)-0x15022004(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x1000), DIP_RD32(DIP_A_BASE + 0x1004));
 	CMDQ_ERR("dip: 0x15022010(0x%x)-0x15022014(0x%x)\n",
 		DIP_RD32(DIP_A_BASE + 0x1010), DIP_RD32(DIP_A_BASE + 0x1014));
 	CMDQ_ERR("dip: 0x15022018(0x%x)-0x1502201C(0x%x)\n",
@@ -2994,51 +2997,6 @@ static signed int DIP_P2_BufQue_CTRL_FUNC(
 /**************************************************************
  *
  **************************************************************/
-static signed int DIP_REGISTER_IRQ_USERKEY(char *userName)
-{
-	int key =  -1;
-	int i = 0;
-
-	spin_lock((spinlock_t *)(&SpinLock_UserKey));
-
-	/* 1. check the current users is full or not */
-	if (FirstUnusedIrqUserKey == IRQ_USER_NUM_MAX) {
-		key = -1;
-	} else {
-	/* 2. check the user had registered or not */
-		for (i = 1; i < FirstUnusedIrqUserKey; i++) {
-	/* index 0 is for all the users that do not register irq first */
-			if (strcmp((void *)IrqUserKey_UserInfo[i].userName,
-				userName) == 0) {
-				key = IrqUserKey_UserInfo[i].userKey;
-				break;
-			}
-		}
-
-		/* 3.return new userkey for user */
-		/* if the user had not registered before */
-		if (key < 0) {
-			/* IrqUserKey_UserInfo[i].userName=userName; */
-			memset((void *)IrqUserKey_UserInfo[i].userName,
-				0,
-				sizeof(IrqUserKey_UserInfo[i].userName));
-			strncpy((void *)IrqUserKey_UserInfo[i].userName,
-				userName,
-				USERKEY_STR_LEN-1);
-			IrqUserKey_UserInfo[i].userKey = FirstUnusedIrqUserKey;
-			key = FirstUnusedIrqUserKey;
-			FirstUnusedIrqUserKey++;
-		}
-	}
-
-	spin_unlock((spinlock_t *)(&SpinLock_UserKey));
-	LOG_INF("User(%s)key(%d)\n", userName, key);
-	return key;
-}
-
-/**************************************************************
- *
- **************************************************************/
 static signed int DIP_FLUSH_IRQ(struct DIP_WAIT_IRQ_STRUCT *irqinfo)
 {
 	unsigned long flags;
@@ -3105,8 +3063,6 @@ static long DIP_ioctl(
 	unsigned int                 wakelock_ctrl;
 	unsigned int                 module;
 	unsigned long flags;
-	int userKey =  -1;
-	struct DIP_REGISTER_USERKEY_STRUCT RegUserKey;
 	int i;
 
 	/*  */
@@ -3257,25 +3213,6 @@ static long DIP_ioctl(
 		Ret = -EFAULT;
 	}
 	break;
-	}
-	/*  */
-	case DIP_REGISTER_IRQ_USER_KEY:
-	if (copy_from_user(&RegUserKey,
-		(void *)Param,
-		sizeof(struct DIP_REGISTER_USERKEY_STRUCT)) == 0) {
-		userKey = DIP_REGISTER_IRQ_USERKEY(RegUserKey.userName);
-		RegUserKey.userKey = userKey;
-		if (copy_to_user((void *)Param,
-			&RegUserKey,
-			sizeof(struct DIP_REGISTER_USERKEY_STRUCT)) != 0)
-			LOG_ERR("copy_to_user failed\n");
-
-		if (RegUserKey.userKey < 0) {
-			LOG_ERR("query irq user key fail\n");
-			Ret = -1;
-		}
-	} else {
-		LOG_ERR("copy from user fail\n");
 	}
 
 	break;
@@ -3574,7 +3511,6 @@ static long DIP_ioctl_compat(
 	case DIP_GET_DUMP_INFO:
 	case DIP_WAIT_IRQ:
 	case DIP_CLEAR_IRQ: /* structure (no pointer) */
-	case DIP_REGISTER_IRQ_USER_KEY:
 	case DIP_FLUSH_IRQ_REQUEST:
 	case DIP_P2_BUFQUE_CTRL:/* structure (no pointer) */
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);

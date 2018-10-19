@@ -373,11 +373,11 @@ static int chgdet_task_threadfn(void *data)
 
 	dev_info(pmi->dev, "%s: ++\n", __func__);
 	while (!kthread_should_stop()) {
-		atomic_set(&pmi->chgdet_cnt, 0);
 		ret = wait_event_interruptible(pmi->waitq,
 					     atomic_read(&pmi->chgdet_cnt) > 0);
 		if (ret < 0)
 			continue;
+		atomic_set(&pmi->chgdet_cnt, 0);
 		dev_dbg(pmi->dev, "%s: enter chgdet thread\n", __func__);
 		pm_stay_awake(pmi->dev);
 
