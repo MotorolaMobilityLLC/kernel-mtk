@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.18.2018.14:35:54"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.22.2018.10:06:02"-->
 <dct_cfg>
     <general chip="MT6761">
         <proj>Merlot_Phone</proj>
@@ -1553,26 +1553,6 @@
         </module>
         <module name="md1_eint">
             <count>3</count>
-            <eint0>
-                <varName>MD1_SIM1_HOT_PLUG_EINT</varName>
-                <debounce_time>10</debounce_time>
-                <polarity>High</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-                <dedicated_en>Disable</dedicated_en>
-                <srcPin ref_gpio="GPIO47">PAD_INT_SIM1</srcPin>
-                <socketType>0</socketType>
-            </eint0>
-            <eint1>
-                <varName>MD1_SIM2_HOT_PLUG_EINT</varName>
-                <debounce_time>10</debounce_time>
-                <polarity>High</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-                <dedicated_en>Disable</dedicated_en>
-                <srcPin ref_gpio="GPIO46">PAD_INT_SIM2</srcPin>
-                <socketType>0</socketType>
-            </eint1>
         </module>
         <module name="pmic">
             <chip>PMIC_MT6357PMUMP</chip>
