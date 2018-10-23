@@ -281,7 +281,7 @@ MODULE_LICENSE("GPL");
 #endif
 #endif
 
-#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P160BN)
+#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P161BN)
 #ifndef BUILD_LK
 #include <linux/kernel.h>
 #include <linux/module.h>

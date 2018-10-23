@@ -596,7 +596,7 @@ static int disp_probe(struct platform_device *pdev)
 	return 0;
 }
 
-#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P160BN)  
+#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P161BN)  
 
 struct pinctrl *disptepinctrl = NULL;
 struct pinctrl_state *dispte_en_h = NULL;
@@ -785,7 +785,7 @@ static int __init disp_init(void)
 		return ret;
 	}
 
-	#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P160BN) 
+	#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P161BN) 
 	//printk("%s,line = %d\n", __func__,__LINE__);
 	 if (platform_driver_register(&DispPWR_use_gpio_driver)) {
 	 	printk("%s,line = %d\n", __func__,__LINE__);
@@ -805,7 +805,7 @@ static void __exit disp_exit(void)
 
 	cdev_del(disp_cdev);
 	unregister_chrdev_region(disp_devno, 1);
-	#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P160BN) 
+	#if defined(CONFIG_LCM_BIAS_SUPPORT)||defined(CONFIG_PROJECT_P160AN)||defined(CONFIG_PROJECT_P161BN) 
 	platform_driver_unregister(&DispPWR_use_gpio_driver);
     #endif
 	platform_driver_unregister(&dispsys_of_driver);

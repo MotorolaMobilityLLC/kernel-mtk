@@ -532,8 +532,8 @@ config PROJECT_P160AN
     default n
     help
 
-config PROJECT_P160BN
-    bool "PROJECT_P160BN"
+config PROJECT_P161BN
+    bool "PROJECT_P161BN"
     default n
     help
 
