@@ -76,7 +76,7 @@
 		compatible = "mediatek,lcd-backlight";
 		led_mode = <5>;
 		data = <1>;
-		pwm_config = <0 3 0 0 0>;
+		pwm_config = <0 0 0 0 0>;
 	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
@@ -220,7 +220,7 @@
 &pio {
 	lcm_pins_bl_enn_outputl: bl_enn_outputl {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO53__FUNC_GPIO53>;
+			pinmux = <PINMUX_GPIO176__FUNC_GPIO176>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -228,14 +228,14 @@
 
 	lcm_pins_bl_enn_outputh: bl_enn_outputh {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO53__FUNC_GPIO53>;
+			pinmux = <PINMUX_GPIO176__FUNC_GPIO176>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	lcm_pins_bl_enp_outputl: bl_enp_outputl {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO54__FUNC_GPIO54>;
+			pinmux = <PINMUX_GPIO177__FUNC_GPIO177>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -243,7 +243,7 @@
 
 	lcm_pins_bl_enp_outputh: bl_enp_outputh {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO54__FUNC_GPIO54>;
+			pinmux = <PINMUX_GPIO177__FUNC_GPIO177>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -294,8 +294,8 @@
 		compatible = "richtek,rt9465";
 		reg = <0x4b>;
 		status = "okay";
-		rt,en_gpio_num = <176>;
-		rt,en_gpio = <&pio 176 0x0>;
+		rt,en_gpio_num = <178>;
+		rt,en_gpio = <&pio 178 0x0>;
 		rt,intr_gpio_num = <23>; /* direct defined GPIO num */
 		rt,intr_gpio = <&pio 23 0x0>;
 		interrupt-names = "wdtmri";

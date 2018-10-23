@@ -1127,6 +1127,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&ili9881c_p160_hdplus_dsi_vdo_lch_lcm_drv,
 #endif
 
+#if defined(JD9365Z_P160_HDPLUS_DSI_VDO_HLT)
+	&jd9365z_p160_hdplus_dsi_vdo_hlt_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
