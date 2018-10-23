@@ -719,5 +719,13 @@
 
 };
 
+&bat_gm30{
+CAR_TUNE_VALUE = <(100)>;
+};
+
+#ifdef CONFIG_MTK_BQ24157_SUPPORT
+#include "bq24157.dtsi"
+#endif
+
 #include <p160an/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
