@@ -70,10 +70,15 @@ struct cs35l41_private {
 	bool halo_booted;
 	bool enabled;
 	bool bus_spi;
+	bool fast_switch_en;
 	/* GPIO for /RST */
 	struct gpio_desc *reset_gpio;
 	struct completion global_pup_done;
 	struct completion global_pdn_done;
+	/* Run-time mixer */
+	unsigned int fast_switch_file_idx;
+	struct soc_enum fast_switch_enum;
+	const char **fast_switch_names;
 };
 
 int cs35l41_probe(struct cs35l41_private *cs35l41,

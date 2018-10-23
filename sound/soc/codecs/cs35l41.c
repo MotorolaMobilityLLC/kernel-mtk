@@ -39,6 +39,7 @@
 #include <linux/completion.h>
 #include <linux/spi/spi.h>
 #include <linux/err.h>
+#include <linux/firmware.h>
 
 #include "wm_adsp.h"
 #include "cs35l41.h"
@@ -227,6 +228,209 @@ static int cs35l41_gpi_glob_en_put(struct snd_kcontrol *kcontrol,
 	if (cs35l41->halo_booted && cs35l41->enabled)
 		regmap_write(cs35l41->regmap, CS35L41_DSP_VIRT1_MBOX_8,
 			     cs35l41->gpi_glob_en);
+
+	return 0;
+}
+
+static const char *cs35l41_fast_switch_text[] = {
+	"fast_switch1.txt",
+	"fast_switch2.txt",
+	"fast_switch3.txt",
+	"fast_switch4.txt",
+	"fast_switch5.txt",
+};
+
+static int cs35l41_fast_switch_en_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+	struct cs35l41_private *cs35l41 = snd_soc_codec_get_drvdata(codec);
+
+	ucontrol->value.integer.value[0] = cs35l41->fast_switch_en;
+
+	return 0;
+}
+
+static int cs35l41_do_fast_switch(struct cs35l41_private *cs35l41)
+{
+	char			val_str[CS35L41_BUFSIZE];
+	const char		*fw_name;
+	const struct firmware	*fw;
+	int			ret;
+	unsigned int		i, j, k;
+	s32			*data_ctl_buf, data_ctl_len, cmd_ctl, st_ctl,
+				val;
+	bool			fw_running	= false;
+
+	data_ctl_buf	= NULL;
+
+	fw_name	= cs35l41->fast_switch_names[cs35l41->fast_switch_file_idx];
+	dev_dbg(cs35l41->dev, "fw_name:%s\n", fw_name);
+	ret	= request_firmware(&fw, fw_name, cs35l41->dev);
+	if (ret < 0) {
+		dev_err(cs35l41->dev, "Failed to request firmware:%s\n",
+			fw_name);
+		return -EIO;
+	}
+
+	/* Parse number of data in file */
+	for (i = 0, j = 0; (char)fw->data[i] != ','; i++) {
+		if ((char)fw->data[i] == ' ') {
+			/* Skip white space */
+		} else {
+			/* fw->data[i] must be numerical digit */
+			if (j < CS35L41_BUFSIZE - 1) {
+				val_str[j]	= fw->data[i];
+				j++;
+			} else {
+				dev_err(cs35l41->dev, "Invalid input\n");
+				ret		= -EINVAL;
+				goto exit;
+			}
+		}
+	}
+	i++;	/* points to beginning of next number */
+	val_str[j]	= '\0';
+	ret		= kstrtos32(val_str, 10, &data_ctl_len);
+	if (ret < 0) {
+		dev_err(cs35l41->dev, "kstrtos32 failed (%d) val_str:%s\n",
+			ret, val_str);
+		goto exit;
+	}
+
+	dev_dbg(cs35l41->dev, "data_ctl_len:%u\n", data_ctl_len);
+
+	data_ctl_buf	= kcalloc(1, data_ctl_len * sizeof(s32), GFP_KERNEL);
+	if (!data_ctl_buf) {
+		ret	= -ENOMEM;
+		goto exit;
+	}
+
+	data_ctl_buf[0]	= cpu_to_be32(data_ctl_len);
+
+	/* i continues from end of previous loop */
+	for (j = 0, k = 1; i <= fw->size; i++) {
+		if (i == fw->size || (char)fw->data[i] == ',') {
+			/*
+			 * Reached end of parameter
+			 * delimited either by ',' or end of file
+			 * Parse number and write parameter
+			 */
+			val_str[j]	= '\0';
+			ret		= kstrtos32(val_str, 10, &val);
+			if (ret < 0) {
+				dev_err(cs35l41->dev,
+					"kstrtos32 failed (%d) val_str:%s\n",
+					ret, val_str);
+				goto exit;
+			}
+			data_ctl_buf[k] = cpu_to_be32(val);
+			j		= 0;
+			k++;
+		} else if ((char)fw->data[i] == ' ') {
+			/* Skip white space */
+		} else {
+			/* fw->data[i] must be numerical digit */
+			if (j < CS35L41_BUFSIZE - 1) {
+				val_str[j] = fw->data[i];
+				j++;
+			} else {
+				dev_err(cs35l41->dev, "Invalid input\n");
+				ret	= -EINVAL;
+				goto exit;
+			}
+		}
+	}
+
+	wm_adsp_write_ctl(&cs35l41->dsp, "CSPL_UPDATE_PARAMS_CONFIG",
+			  data_ctl_buf, data_ctl_len * sizeof(s32));
+
+	dev_dbg(cs35l41->dev,
+		"Wrote %u reg for CSPL_UPDATE_PARAMS_CONFIG\n", data_ctl_len);
+
+#ifdef DEBUG
+	wm_adsp_read_ctl(&cs35l41->dsp, "CSPL_UPDATE_PARAMS_CONFIG",
+			 data_ctl_buf, data_ctl_len * sizeof(s32));
+	dev_dbg(cs35l41->dev, "read CSPL_UPDATE_PARAMS_CONFIG:\n");
+	for (i = 0; i < data_ctl_len; i++)
+		dev_dbg(cs35l41->dev, "%u\n", be32_to_cpu(data_ctl_buf[i]));
+#endif
+	cmd_ctl		= cpu_to_be32(CSPL_CMD_UPDATE_PARAM);
+	wm_adsp_write_ctl(&cs35l41->dsp, "CSPL_COMMAND", &cmd_ctl, sizeof(s32));
+
+	/* Verify CSPL COMMAND */
+	for (i = 0; i < 5; i++) {
+		wm_adsp_read_ctl(&cs35l41->dsp, "CSPL_STATE", &st_ctl,
+				 sizeof(s32));
+		if (be32_to_cpu(st_ctl) == CSPL_ST_RUNNING) {
+			dev_dbg(cs35l41->dev,
+				"CSPL STATE == RUNNING (%u attempt)\n", i);
+			fw_running	= true;
+			break;
+		}
+
+		usleep_range(100, 110);
+	}
+
+	if (!fw_running) {
+		dev_err(cs35l41->dev, "CSPL_STATE (%d) is not running\n",
+			st_ctl);
+		ret	= -1;
+		goto exit;
+	}
+exit:
+	kfree(data_ctl_buf);
+	release_firmware(fw);
+	return ret;
+}
+
+static int cs35l41_fast_switch_en_put(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	int			ret = 0;
+
+	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+	struct cs35l41_private *cs35l41 = snd_soc_codec_get_drvdata(codec);
+
+	if (!cs35l41->fast_switch_en && ucontrol->value.integer.value[0])
+		/*
+		 * Rising on fast switch enable
+		 * Perform fast use case switching
+		 */
+		ret = cs35l41_do_fast_switch(cs35l41);
+
+	cs35l41->fast_switch_en = ucontrol->value.integer.value[0];
+
+	return ret;
+}
+
+static int cs35l41_fast_switch_file_put(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec	*codec = snd_soc_kcontrol_codec(kcontrol);
+	struct cs35l41_private	*cs35l41 = snd_soc_codec_get_drvdata(codec);
+	struct soc_enum		*soc_enum;
+	unsigned int		i = ucontrol->value.enumerated.item[0];
+
+	soc_enum = (struct soc_enum *)kcontrol->private_value;
+
+	if (i >= soc_enum->items) {
+		dev_err(codec->dev, "Invalid mixer input (%u)\n", i);
+		return -EINVAL;
+	}
+
+	cs35l41->fast_switch_file_idx = i;
+
+	return 0;
+}
+
+static int cs35l41_fast_switch_file_get(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec	*codec = snd_soc_kcontrol_codec(kcontrol);
+	struct cs35l41_private	*cs35l41 = snd_soc_codec_get_drvdata(codec);
+
+	ucontrol->value.enumerated.item[0] = cs35l41->fast_switch_file_idx;
 
 	return 0;
 }
@@ -539,6 +743,8 @@ static const struct snd_kcontrol_new cs35l41_aud_controls[] = {
 			   cs35l41_cspl_cmd_get, cs35l41_cspl_cmd_put),
 	SOC_SINGLE_EXT("DSP Booted", SND_SOC_NOPM, 0, 1, 0,
 			cs35l41_halo_booted_get, cs35l41_halo_booted_put),
+	SOC_SINGLE_EXT("Fast Use Case Switch Enable", SND_SOC_NOPM, 0, 1, 0,
+		       cs35l41_fast_switch_en_get, cs35l41_fast_switch_en_put),
 	SOC_SINGLE_EXT("GLOBAL_EN from GPIO", SND_SOC_NOPM, 0, 1, 0,
 			cs35l41_gpi_glob_en_get, cs35l41_gpi_glob_en_put),
 	WM_ADSP2_PRELOAD_SWITCH("DSP1", 1),
@@ -1427,6 +1633,7 @@ static int cs35l41_codec_probe(struct snd_soc_codec *codec)
 {
 	struct cs35l41_private *cs35l41 = snd_soc_codec_get_drvdata(codec);
 	struct classh_cfg *classh = &cs35l41->pdata.classh_config;
+	struct snd_kcontrol_new	*kcontrol;
 	int ret;
 
 	/* Set Platform Data */
@@ -1560,7 +1767,26 @@ static int cs35l41_codec_probe(struct snd_soc_codec *codec)
 
 	wm_adsp2_codec_probe(&cs35l41->dsp, codec);
 
-	return 0;
+	/* Add run-time mixer control for fast use case switch */
+	kcontrol = kzalloc(sizeof(*kcontrol), GFP_KERNEL);
+	if (!kcontrol) {
+		ret = -ENOMEM;
+		goto exit;
+	}
+
+	kcontrol->name	= "Fast Use Case Delta File";
+	kcontrol->iface = SNDRV_CTL_ELEM_IFACE_MIXER;
+	kcontrol->info	= snd_soc_info_enum_double;
+	kcontrol->get	= cs35l41_fast_switch_file_get;
+	kcontrol->put	= cs35l41_fast_switch_file_put;
+	kcontrol->private_value	= (unsigned long)&cs35l41->fast_switch_enum;
+	ret = snd_soc_add_codec_controls(codec, kcontrol, 1);
+	if (ret < 0)
+		dev_err(cs35l41->dev,
+			"snd_soc_add_codec_controls failed (%d)\n", ret);
+	kfree(kcontrol);
+exit:
+	return ret;
 }
 
 static int cs35l41_irq_gpio_config(struct cs35l41_private *cs35l41)
@@ -1673,18 +1899,58 @@ static struct snd_soc_codec_driver soc_codec_dev_cs35l41 = {
 
 
 static int cs35l41_handle_of_data(struct device *dev,
-				struct cs35l41_platform_data *pdata)
+				  struct cs35l41_platform_data *pdata,
+				  struct cs35l41_private *cs35l41)
 {
 	struct device_node *np = dev->of_node;
 	unsigned int val;
 	int ret;
+	size_t	num_fast_switch;
 	struct device_node *sub_node;
 	struct classh_cfg *classh_config = &pdata->classh_config;
 	struct irq_cfg *irq_gpio1_config = &pdata->irq_config1;
 	struct irq_cfg *irq_gpio2_config = &pdata->irq_config2;
+	unsigned int i;
 
 	if (!np)
 		return 0;
+
+	ret = of_property_count_strings(np, "cirrus,fast-switch");
+	if (ret < 0) {
+		/*
+		 * device tree do not provide file name.
+		 * Use default value
+		 */
+		num_fast_switch		= ARRAY_SIZE(cs35l41_fast_switch_text);
+		cs35l41->fast_switch_enum.items	=
+			ARRAY_SIZE(cs35l41_fast_switch_text);
+		cs35l41->fast_switch_enum.texts	= cs35l41_fast_switch_text;
+		cs35l41->fast_switch_names = cs35l41_fast_switch_text;
+	} else {
+		/* Device tree provides file name */
+		num_fast_switch			= (size_t)ret;
+		dev_info(dev, "num_fast_switch:%lu\n", num_fast_switch);
+		cs35l41->fast_switch_names =
+			devm_kmalloc(dev, num_fast_switch * sizeof(char *),
+				     GFP_KERNEL);
+		if (!cs35l41->fast_switch_names)
+			return -ENOMEM;
+		of_property_read_string_array(np, "cirrus,fast-switch",
+					      cs35l41->fast_switch_names,
+					      num_fast_switch);
+		for (i = 0; i < num_fast_switch; i++) {
+			dev_info(dev, "%d:%s\n", i,
+				 cs35l41->fast_switch_names[i]);
+		}
+		cs35l41->fast_switch_enum.items	= num_fast_switch;
+		cs35l41->fast_switch_enum.texts	= cs35l41->fast_switch_names;
+	}
+
+	cs35l41->fast_switch_enum.reg		= SND_SOC_NOPM;
+	cs35l41->fast_switch_enum.shift_l	= 0;
+	cs35l41->fast_switch_enum.shift_r	= 0;
+	cs35l41->fast_switch_enum.mask		=
+		roundup_pow_of_two(num_fast_switch) - 1;
 
 	pdata->right_channel = of_property_read_bool(np,
 					"cirrus,right-channel-amp");
@@ -1934,6 +2200,8 @@ int cs35l41_probe(struct cs35l41_private *cs35l41,
 	cs35l41->cspl_cmd = (unsigned int)CSPL_MBOX_CMD_RESUME;
 	cs35l41->gpi_glob_en = 0;
 	cs35l41->enabled = false;
+	cs35l41->fast_switch_en = false;
+	cs35l41->fast_switch_file_idx = 0;
 
 	for (i = 0; i < ARRAY_SIZE(cs35l41_supplies); i++)
 		cs35l41->supplies[i].supply = cs35l41_supplies[i];
@@ -1952,7 +2220,8 @@ int cs35l41_probe(struct cs35l41_private *cs35l41,
 	if (pdata) {
 		cs35l41->pdata = *pdata;
 	} else if (cs35l41->dev->of_node) {
-		ret = cs35l41_handle_of_data(cs35l41->dev, &cs35l41->pdata);
+		ret = cs35l41_handle_of_data(cs35l41->dev, &cs35l41->pdata,
+					     cs35l41);
 		if (ret != 0)
 			return ret;
 	} else {

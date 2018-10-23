@@ -738,6 +738,7 @@ extern const struct cs35l41_otp_map_element_t
 				cs35l41_otp_map_map[CS35L41_NUM_OTP_MAPS];
 
 #define CS35L41_REGSTRIDE			4
+#define CS35L41_BUFSIZE				64
 
 #define CS35L41_DSP_VIRT1_MBOX_SHIFT		20
 #define CS35L41_DSP_VIRT2_MBOX_SHIFT		21
@@ -763,6 +764,21 @@ enum cs35l41_cspl_mboxcmd {
 	CSPL_MBOX_CMD_STOP_PRE_REINIT = 4,
 	CSPL_MBOX_CMD_UNKNOWN_CMD = -1,
 	CSPL_MBOX_CMD_INVALID_SEQUENCE = -2,
+};
+
+enum cs35l41_cspl_cmd {
+	CSPL_CMD_NONE			= 0,
+	CSPL_CMD_MUTE			= 1,
+	CSPL_CMD_UNMUTE			= 2,
+	CSPL_CMD_UPDATE_PARAM		= 8,
+};
+
+enum cs35l41_cspl_st {
+	CSPL_ST_RUNNING			= 0,
+	CSPL_ST_ERROR			= 1,
+	CSPL_ST_MUTED			= 2,
+	CSPL_ST_REINITING		= 3,
+	CSPL_ST_DIAGNOSING		= 6,
 };
 
 #endif /*__CS35L41_H__*/
