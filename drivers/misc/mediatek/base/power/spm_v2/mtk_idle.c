@@ -726,7 +726,8 @@ void soidle3_before_wfi(int cpu)
 		gpt_set_cmp(idle_gpt, 1); /* Trigger idle_gpt Timerout imediately */
 	else
 #ifdef FEATURE_ENABLE_F26MSLEEP
-		gpt_set_cmp(idle_gpt, div_u64(soidle3_timer_left2, 406.25));
+		/*gpt_set_cmp(idle_gpt, div_u64(soidle3_timer_left2, 406.25));*/
+		gpt_set_cmp(idle_gpt, div_u64(soidle3_timer_left2 * 4, 1625));
 #else
 		gpt_set_cmp(idle_gpt, soidle3_timer_left2);
 #endif
