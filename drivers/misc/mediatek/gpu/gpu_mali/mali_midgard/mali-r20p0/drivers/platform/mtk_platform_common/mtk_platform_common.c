@@ -317,7 +317,7 @@ static int g_aee_called;
 static void aee_Handle(struct work_struct *_psWork)
 {
 	/* avoid the build warnning */
-	_psWork = _psWork;
+	/* _psWork = _psWork; */
 }
 void mtk_trigger_aee_report(const char *msg)
 {
@@ -335,7 +335,7 @@ static u64 g_pa;
 static void pa_Handle(struct work_struct *_psWork)
 {
 	/* avoid the build warnning */
-	_psWork = _psWork;
+	/*_psWork = _psWork; */
 }
 void mtk_trigger_emi_report(u64 pa)
 {

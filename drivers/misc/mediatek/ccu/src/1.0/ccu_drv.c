@@ -91,7 +91,6 @@ struct wakeup_source ccu_wake_lock;
 #else
 struct wake_lock ccu_wake_lock;
 #endif
-static volatile int g_bWaitLock;
 
 static irqreturn_t ccu_isr_callback_xxx(int rrq, void *device_id);
 

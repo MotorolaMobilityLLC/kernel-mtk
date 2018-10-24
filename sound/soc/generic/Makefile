@@ -1,4 +1,4 @@
-ccflags-y += -Wno-error=maybe-uninitialized
+ccflags-y += -Wno-error=uninitialized
 
 snd-soc-simple-card-objs	:= simple-card.o
 
