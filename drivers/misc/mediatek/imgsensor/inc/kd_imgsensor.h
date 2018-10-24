@@ -330,6 +330,8 @@
 #define SHARP3D_SENSOR_ID                       0x003d
 #define T8EV5_SENSOR_ID                         0x1011
 
+#define S5K3L6_SUNWIN_P161BN_SENSOR_ID                0x30C6
+#define SENSOR_DRVNAME_S5K3L6_SUNWIN_P161BN_MIPI_RAW  "s5k3l6_sunwin_p161bn_mipi_raw"
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
