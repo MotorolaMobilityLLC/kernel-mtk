@@ -952,7 +952,6 @@ static enum hrtimer_restart tcpc_timer_rt_pe_idle(struct hrtimer *timer)
 	TCPC_TIMER_TRIGGER();
 	return HRTIMER_NORESTART;
 }
-
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 
 /* TYPEC-TRY-TIMER */
@@ -1235,7 +1234,10 @@ void tcpc_enable_timer(struct tcpc_device *tcpc, uint32_t timer_id)
 	uint32_t r, mod, tout;
 
 	TCPC_TIMER_EN_DBG(tcpc, timer_id);
-	PD_BUG_ON(timer_id >= PD_TIMER_NR);
+	if (timer_id >= PD_TIMER_NR) {
+		PD_BUG_ON(1);
+		return;
+	}
 
 	mutex_lock(&tcpc->timer_lock);
 	if (timer_id >= TYPEC_TIMER_START_ID)
@@ -1265,7 +1267,10 @@ void tcpc_disable_timer(struct tcpc_device *tcpc_dev, uint32_t timer_id)
 
 	mask = tcpc_get_timer_enable_mask(tcpc_dev);
 
-	PD_BUG_ON(timer_id >= PD_TIMER_NR);
+	if (timer_id >= PD_TIMER_NR) {
+		PD_BUG_ON(1);
+		return;
+	}
 	if (mask & RT_MASK64(timer_id)) {
 		hrtimer_try_to_cancel(&tcpc_dev->tcpc_timer[timer_id]);
 		tcpc_clear_timer_enable_mask(tcpc_dev, timer_id);
