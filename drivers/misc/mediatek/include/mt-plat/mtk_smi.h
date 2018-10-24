@@ -62,9 +62,9 @@ enum MTK_SMI_BWC_SCEN {
 	SMI_BWC_SCEN_CAM_CP,
 	SMI_BWC_SCEN_ICFP,
 	SMI_BWC_SCEN_MM_GPU,
+	SMI_BWC_SCEN_N3D,
 	SMI_BWC_SCEN_CNT
 };
-#define SMI_BWC_SCEN_N3D	(0xFF)
 
 /* MMDVFS */
 enum mmdvfs_voltage_enum {
