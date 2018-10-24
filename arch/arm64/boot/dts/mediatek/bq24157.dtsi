@@ -1,5 +1,5 @@
 /* Please set primary/secondary charger to corresponding I2C bus */
-&i2c1 {
+&i2c5 {
 	bq24157@6a {
 		status = "okay";
 		compatible = "mediatek,bq24157";
