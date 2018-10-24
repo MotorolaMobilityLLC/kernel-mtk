@@ -50,6 +50,7 @@
 #include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_irq.h"
 
+#include "include/pmic_lbat_service.h"
 #include <mach/mtk_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
 /*#include <mach/mtk_spm_mtcmos.h>*/
@@ -1175,7 +1176,7 @@ int get_dlpt_imix(void)
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	PMICLOG("[get_dlpt_imix] %d,%d,%d,%d,%d,%d,%d\n", volt_avg, curr_avg, g_lbatInt1,
-		 ptim_rac_val_avg, imix, BMT_status.SOC, bat_get_ui_percentage());
+		 ptim_rac_val_avg, imix, battery_get_soc(), bat_get_ui_percentage());
 #endif
 
 	ptim_imix = imix;

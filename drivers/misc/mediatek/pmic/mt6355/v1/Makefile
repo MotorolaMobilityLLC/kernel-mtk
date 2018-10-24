@@ -1,12 +1,16 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(CONFIG_MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
+ccflags-y += -I$(srctree)/drivers/power/mediatek/charger
+ccflags-y += -I$(srctree)/drivers/power/mediatek/misc
+
 
 ifeq ($(CONFIG_MACH_MT6757), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)
 endif
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
