@@ -27,18 +27,22 @@ obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_hw.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_i2c.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_legacy.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_proc.o
+ifeq (,$(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(COMMON_VERSION)))
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_sensor_list.o
+else
+obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/$(COMMON_VERSION)/imgsensor_sensor_list.o
+endif
 
 
 define FILTER_DRV
-ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)
+ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(COMMON_VERSION)/$(1)),)
 ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/$(1)),)
 common_drv += ../common/$(COMMON_VERSION)/$(1)/
 else
 platform_drv += $(1)/
 endif
 else
-project_drv += ./camera_project/$(ARCH_MTK_PROJECT)/$(1)/
+project_drv += ./camera_project/$(ARCH_MTK_PROJECT)/$(COMMON_VERSION)/$(1)/
 endif
 endef
 
@@ -57,6 +61,11 @@ endif
 obj-y				+= $(platform_drv)
 obj-y				+= imgsensor_clk.o
 
+ifneq ($(project_drv),)
+$(info imgsensor drv by platform $(project_drv))
+endif
+obj-y				+= $(project_drv)
+
 ifeq (,$(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw))
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_hw
 obj-y				+= camera_hw/
@@ -64,7 +73,6 @@ ifneq ($(project_drv),)
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
 endif
 else
-obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
+obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/camera_hw/
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw
 endif
-
