@@ -511,6 +511,48 @@ config AXP20X_POWER
 	  This driver provides support for the power supply features of
 	  AXP20x PMIC.
 
+config TINNO_CUSTOM_CHARGER_PARA
+	bool "tinno custom charger parameter"
+	default n
+	help
+	  Say Y to enable
+	  tinno project need to custom charger parameter for defference customer
+config TINNO_JEITA_CURRENT
+	bool "tinno jeita current control"
+	default n
+	help
+	  Say Y to enable
+	  tinno project need to custom charging current for defference temperature
+
+config TINNO_CUSTOM_BATTERY_TABLE
+	bool "tinno custom battery table"
+	default n
+	help
+	  Say Y to enable
+	  tinno project need to custom battery zcv table for defference project
+
+config TINNO_REDETECT_CHARGER_SUPPORT
+	bool "TINNO_REDETECT_CHARGER_SUPPORT"
+	default n
+	help
+	  Say Y to enable
+	  tinno 8S  plugin USB cable, charger type detect from non-standard to standard.
+
+config TINNO_BATTERY_CHARGING_DATA_SUPPORT
+	bool "TINNO_BATTERY_DATA_SUPPORT"
+	default n
+	help
+	  Set yes to support tinno battery data support for
+	  smart battery.
+	  Set No to disable tinno battery data support for
+	  smart battery.
+
+config CUST_FGC_FGV_TH
+	bool "tinno custom battery soc threshold"
+	default n
+	help
+	  Say Y to enable
+
 if !MACH_MT8173
 source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
