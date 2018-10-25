@@ -68,7 +68,6 @@
 #include <mtk_gauge_time_service.h>
 
 #include <mach/mtk_battery_property.h>
-#include <mach/mtk_battery_table.h>
 #else
 #include <string.h>
 
@@ -80,7 +79,11 @@
 #include "simulator_kernel.h"
 #endif
 
-
+#ifdef CONFIG_TINNO_CUSTOM_BATTERY_TABLE
+#include "cust_battery_table.h"
+#else
+#include <mach/mtk_battery_table.h>	/* BATTERY_PROFILE_STRUCT */
+#endif
 
 /* ============================================================ */
 /* global variable */
@@ -408,7 +411,11 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.multi_temp_gauge0 = MULTI_TEMP_GAUGE0;
 
 	/*hw related */
+#ifdef CONFIG_TINNO_CUSTOM_BATTERY_TABLE
+	fg_cust_data.car_tune_value = UNIT_TRANS_10 * CUSTOM_CAR_TUNE_VALUE;
+#else
 	fg_cust_data.car_tune_value = UNIT_TRANS_10 * CAR_TUNE_VALUE;
+#endif
 	fg_cust_data.fg_meter_resistance = FG_METER_RESISTANCE;
 	fg_cust_data.com_fg_meter_resistance = FG_METER_RESISTANCE;
 	fg_cust_data.r_fg_value = UNIT_TRANS_10 * R_FG_VALUE;
@@ -453,9 +460,15 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.vbat2_det_voltage3 = VBAT2_DET_VOLTAGE3;
 
 	/* sw fg */
+#if defined (CONFIG_CUST_FGC_FGV_TH)
+	fg_cust_data.difference_fgc_fgv_th1 = CUST_DIFFERENCE_FGC_FGV_TH1;
+	fg_cust_data.difference_fgc_fgv_th2 = CUST_DIFFERENCE_FGC_FGV_TH2;
+	fg_cust_data.difference_fgc_fgv_th3 = CUST_DIFFERENCE_FGC_FGV_TH3;
+#else
 	fg_cust_data.difference_fgc_fgv_th1 = DIFFERENCE_FGC_FGV_TH1;
 	fg_cust_data.difference_fgc_fgv_th2 = DIFFERENCE_FGC_FGV_TH2;
 	fg_cust_data.difference_fgc_fgv_th3 = DIFFERENCE_FGC_FGV_TH3;
+#endif
 	fg_cust_data.difference_fgc_fgv_th_soc1 = DIFFERENCE_FGC_FGV_TH_SOC1;
 	fg_cust_data.difference_fgc_fgv_th_soc2 = DIFFERENCE_FGC_FGV_TH_SOC2;
 	fg_cust_data.nafg_time_setting = NAFG_TIME_SETTING;
@@ -471,7 +484,11 @@ void fg_custom_init_from_header(void)
 	/* mode select */
 	fg_cust_data.pmic_shutdown_current = PMIC_SHUTDOWN_CURRENT;
 	fg_cust_data.pmic_shutdown_sw_en = PMIC_SHUTDOWN_SW_EN;
+#if defined (CONFIG_CUST_FGC_FGV_TH)
+	fg_cust_data.force_vc_mode = CUST_FORCE_VC_MODE;
+#else
 	fg_cust_data.force_vc_mode = FORCE_VC_MODE;
+#endif
 	fg_cust_data.embedded_sel = EMBEDDED_SEL;
 	fg_cust_data.loading_1_en = LOADING_1_EN;
 	fg_cust_data.loading_2_en = LOADING_2_EN;
@@ -633,46 +650,6 @@ void fg_custom_init_from_header(void)
 	memcpy(&fg_table_cust_data.fg_profile[4].fg_profile,
 			&fg_profile_t4[gm.battery_id],
 			sizeof(fg_profile_t4[gm.battery_id]));
-
-	fg_table_cust_data.fg_profile[5].size =
-		sizeof(fg_profile_t5[gm.battery_id]) /
-		sizeof(struct FUELGAUGE_PROFILE_STRUCT);
-
-	memcpy(&fg_table_cust_data.fg_profile[5].fg_profile,
-			&fg_profile_t5[gm.battery_id],
-			sizeof(fg_profile_t5[gm.battery_id]));
-
-	fg_table_cust_data.fg_profile[6].size =
-		sizeof(fg_profile_t6[gm.battery_id]) /
-		sizeof(struct FUELGAUGE_PROFILE_STRUCT);
-
-	memcpy(&fg_table_cust_data.fg_profile[6].fg_profile,
-			&fg_profile_t6[gm.battery_id],
-			sizeof(fg_profile_t6[gm.battery_id]));
-
-	fg_table_cust_data.fg_profile[7].size =
-		sizeof(fg_profile_t7[gm.battery_id]) /
-		sizeof(struct FUELGAUGE_PROFILE_STRUCT);
-
-	memcpy(&fg_table_cust_data.fg_profile[7].fg_profile,
-			&fg_profile_t7[gm.battery_id],
-			sizeof(fg_profile_t7[gm.battery_id]));
-
-	fg_table_cust_data.fg_profile[8].size =
-		sizeof(fg_profile_t8[gm.battery_id]) /
-		sizeof(struct FUELGAUGE_PROFILE_STRUCT);
-
-	memcpy(&fg_table_cust_data.fg_profile[8].fg_profile,
-			&fg_profile_t8[gm.battery_id],
-			sizeof(fg_profile_t8[gm.battery_id]));
-
-	fg_table_cust_data.fg_profile[9].size =
-		sizeof(fg_profile_t9[gm.battery_id]) /
-		sizeof(struct FUELGAUGE_PROFILE_STRUCT);
-
-	memcpy(&fg_table_cust_data.fg_profile[9].fg_profile,
-			&fg_profile_t9[gm.battery_id],
-			sizeof(fg_profile_t9[gm.battery_id]));
 
 	for (i = 0; i < MAX_TABLE; i++) {
 		struct FUELGAUGE_PROFILE_STRUCT *p;
@@ -3942,8 +3919,10 @@ void mtk_battery_init(struct platform_device *dev)
 		bm_err("gauge_dev is NULL\n");
 
 	fg_custom_init_from_header();
+#ifndef CONFIG_TINNO_CUSTOM_BATTERY_TABLE
 #ifdef CONFIG_OF
 	fg_custom_init_from_dts(dev);
+#endif
 #endif
 
 	gauge_coulomb_service_init();

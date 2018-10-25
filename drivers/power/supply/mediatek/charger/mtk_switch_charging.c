@@ -66,6 +66,13 @@
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
 
+#ifdef CONFIG_TINNO_JEITA_CURRENT
+#ifdef CONFIG_TINNO_CUSTOM_CHARGER_PARA
+#include "cust_charging.h"
+#else
+#include "cust_charger_init.h"
+#endif
+#endif
 static int _uA_to_mA(int uA)
 {
 	if (uA == -1)
@@ -95,6 +102,36 @@ static void _disable_all_charging(struct charger_manager *info)
 			mtk_pe40_end(info, 3, true);
 	}
 }
+#ifdef CONFIG_TINNO_JEITA_CURRENT
+static void swchg_select_jeita_charging_current(struct charger_manager * info,struct charger_data *pdata)
+{
+	if (info->chr_type == STANDARD_CHARGER)
+	{
+		if (info->sw_jeita.sm == TEMP_T3_TO_T4)
+		{
+			pdata->input_current_limit = CUSTOM_AC_45_TO_60_TEMP_INPUT_CHARGER_CURRENT;
+			pdata->charging_current_limit = CUSTOM_AC_45_TO_60_TEMP_CHARGER_CURRENT;
+		}
+		else if (info->sw_jeita.sm == TEMP_T2_TO_T3)
+		{
+			pdata->input_current_limit = CUSTOM_AC_10_TO_45_TEMP_INPUT_CHARGER_CURRENT;
+			pdata->charging_current_limit = CUSTOM_AC_10_TO_45_TEMP_CHARGER_CURRENT;
+		}
+		else if (info->sw_jeita.sm == TEMP_T1_TO_T2)
+		{
+			pdata->input_current_limit = CUSTOM_AC_0_TO_10_TEMP_INPUT_CHARGER_CURRENT;
+			pdata->charging_current_limit = CUSTOM_AC_0_TO_10_TEMP_CHARGER_CURRENT;
+		}
+		else
+		{
+			//other case,should be disable charging
+			pdata->input_current_limit = 900000;
+			pdata->charging_current_limit = 0;
+		}
+		chr_err("[Jeita] temperature=%d,input=%d,current=%d \n",info->sw_jeita.sm,pdata->input_current_limit,pdata->charging_current_limit);
+	}
+}
+#endif /*CONFIG_TINNO_JEITA_CURRENT*/
 
 static void swchg_select_charging_current_limit(struct charger_manager *info)
 {
@@ -248,10 +285,14 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		    && info->chr_type == STANDARD_HOST)
 			pr_debug("USBIF & STAND_HOST skip current check\n");
 		else {
+#ifdef CONFIG_TINNO_JEITA_CURRENT
+				swchg_select_jeita_charging_current(info,pdata);
+#else
 			if (info->sw_jeita.sm == TEMP_T0_TO_T1) {
 				pdata->input_current_limit = 500000;
 				pdata->charging_current_limit = 350000;
 			}
+#endif /*CONFIG_TINNO_JEITA_CURRENT*/
 		}
 	}
 

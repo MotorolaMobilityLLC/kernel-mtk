@@ -75,6 +75,11 @@
 #include "mtk_charger_intf.h"
 #include "mtk_charger_init.h"
 
+#ifdef CONFIG_TINNO_CUSTOM_CHARGER_PARA
+#include "cust_charging.h"
+#endif
+
+
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
 static DEFINE_MUTEX(consumer_mutex);
@@ -1179,7 +1184,27 @@ static bool mtk_is_charger_on(struct charger_manager *info)
 {
 	enum charger_type chr_type;
 
+#ifdef CONFIG_TINNO_REDETECT_CHARGER_SUPPORT
+	static int s_detect_counter=0;
+	extern void do_charger_detect(void);
+
 	chr_type = mt_get_charger_type();
+  pr_err("%s: chr_type =%d, info->chr_type=%d, s_detect_counter=%d\n", __func__, chr_type, info->chr_type, s_detect_counter);
+  if (chr_type ==  NONSTANDARD_CHARGER && s_detect_counter < 8)  //8s
+  {
+      s_detect_counter ++;
+      do_charger_detect();
+		  chr_type =mt_get_charger_type();
+      info->chr_type = chr_type;
+	}
+	else
+	{
+	        s_detect_counter=0;
+	}
+#else
+       chr_type = mt_get_charger_type();
+#endif
+
 	if (chr_type == CHARGER_UNKNOWN) {
 		if (info->chr_type != CHARGER_UNKNOWN)
 			mtk_charger_plug_out(info);
@@ -1585,6 +1610,39 @@ static int charger_routine_thread(void *arg)
 
 	return 0;
 }
+
+#ifdef CONFIG_TINNO_CUSTOM_CHARGER_PARA
+static int tinno_custom_charger_init(struct charger_manager *info)
+{
+	info->data.battery_cv = CUSTOM_BATTERY_CV;
+	info->data.ac_charger_current = CUSTOM_AC_CHARGER_CURRENT;
+	info->data.ac_charger_input_current = CUSTOM_AC_CHARGER_INPUT_CURRENT;
+
+	/*custom sw jeita setting*/
+	info->enable_sw_jeita = CUSTOM_ENABLE_JEITA;
+	/*custom jeita CV*/
+	info->data.jeita_temp_above_t4_cv = CUSTOM_JEITA_TEMP_ABOVE_T4_CV_VOLTAGE;
+	info->data.jeita_temp_t3_to_t4_cv = CUSTOM_JEITA_TEMP_T3_TO_T4_CV_VOLTAGE;
+	info->data.jeita_temp_t2_to_t3_cv = CUSTOM_JEITA_TEMP_T2_TO_T3_CV_VOLTAGE;
+	info->data.jeita_temp_t1_to_t2_cv = CUSTOM_JEITA_TEMP_T1_TO_T2_CV_VOLTAGE;
+	info->data.jeita_temp_t0_to_t1_cv = CUSTOM_JEITA_TEMP_T0_TO_T1_CV_VOLTAGE;
+	info->data.jeita_temp_below_t0_cv = CUSTOM_JEITA_TEMP_BELOW_T0_CV_VOLTAGE;
+	/*custom jeita temp threshold*/
+	info->data.temp_t4_thres = CUSTOM_TEMP_T4_THRESHOLD;
+	info->data.temp_t4_thres_minus_x_degree = CUSTOM_TEMP_T4_THRES_MINUS_X_DEGREE;
+	info->data.temp_t3_thres = CUSTOM_TEMP_T3_THRESHOLD;
+	info->data.temp_t3_thres_minus_x_degree = CUSTOM_TEMP_T3_THRES_MINUS_X_DEGREE;
+	info->data.temp_t2_thres = CUSTOM_TEMP_T2_THRESHOLD;
+	info->data.temp_t2_thres_plus_x_degree = CUSTOM_TEMP_T2_THRES_PLUS_X_DEGREE;
+	info->data.temp_t1_thres = CUSTOM_TEMP_T1_THRESHOLD;
+	info->data.temp_t1_thres_plus_x_degree = CUSTOM_TEMP_T1_THRES_PLUS_X_DEGREE;
+	info->data.temp_t0_thres = CUSTOM_TEMP_T0_THRESHOLD;
+	info->data.temp_t0_thres_plus_x_degree = CUSTOM_TEMP_T0_THRES_PLUS_X_DEGREE;
+	info->data.temp_neg_10_thres = CUSTOM_TEMP_NEG_10_THRESHOLD;
+	return 0;
+}
+#endif
+
 
 static int mtk_charger_parse_dt(struct charger_manager *info,
 				struct device *dev)
@@ -2149,6 +2207,9 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 
 	chr_err("algorithm name:%s\n", info->algorithm_name);
 
+#ifdef CONFIG_TINNO_CUSTOM_CHARGER_PARA
+	tinno_custom_charger_init(info);
+#endif
 	return 0;
 }
 
