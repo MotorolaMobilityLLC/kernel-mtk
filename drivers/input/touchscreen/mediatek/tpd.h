@@ -142,6 +142,7 @@ struct tpd_driver_t {
 	void (*resume)(struct device *h);
 	int tpd_have_button;
 	struct tpd_attrs attrs;
+	void (*tpd_ftm_force_update) (char * ftm_update);
 };
 
 
