@@ -330,10 +330,8 @@
 #define SHARP3D_SENSOR_ID                       0x003d
 #define T8EV5_SENSOR_ID                         0x1011
 
-//P161bn
 #define S5K3L6_SUNWIN_P161BN_SENSOR_ID                0x30C6
-#define SP2509V_SUNWIN_P161BN_SENSOR_ID                 (0x2509)
-
+#define SENSOR_DRVNAME_S5K3L6_SUNWIN_P161BN_MIPI_RAW  "s5k3l6_sunwin_p161bn_mipi_raw"
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
@@ -516,9 +514,6 @@
 #define SENSOR_DRVNAME_OV13870_MIPI_RAW_5MP     "ov13870_mipi_raw_5mp"
 #define SENSOR_DRVNAME_OV8856_MIPI_RAW_5MP      "ov8856_mipi_raw_5mp"
 
-//P161BN
-#define SENSOR_DRVNAME_S5K3L6_SUNWIN_P161BN_MIPI_RAW  "s5k3l6_sunwin_p161bn_mipi_raw"
-#define SENSOR_DRVNAME_SP2509V_SUNWIN_P161BN_MIPI_RAW      "sp2509v_sunwin_p161bn_mipi_raw"
 #define mDELAY(ms)     mdelay(ms)
 #define uDELAY(us)       udelay(us)
 #endif              /* _KD_IMGSENSOR_H */
