@@ -304,6 +304,46 @@
 };
 /* accdet end */
 
+/* FINGERPRINT start */
+&spi0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	fingerprint@0 {
+		compatible = "goodix,goodix-fp";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		netlink-event = <30>;
+		status = "okay";
+	};
+};
+
+&goodix_fp {
+	pinctrl-names = "default", "reset_high", "reset_low";
+	pinctrl-0 = <&fingerprint_default>;
+	pinctrl-1 = <&fingerprint_reset_high>;
+	pinctrl-2 = <&fingerprint_reset_low>;
+	status = "okay";
+};
+
+&pio {
+	fingerprint_default: state_default {
+	};
+	fingerprint_reset_high: state_reset_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	fingerprint_reset_low: state_reset_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+/* FINGERPRINT end */
 
 /* battery end */
 &bat_gm30 {
@@ -596,28 +636,28 @@
 	};
 	camera_pins_cam2_rst0: cam2@0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO87__FUNC_GPIO87>;
+			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam2_rst1: cam2@1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO87__FUNC_GPIO87>;
+			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
 	camera_pins_cam2_pnd0: cam2@2 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO160__FUNC_GPIO160>;
+			pinmux = <PINMUX_GPIO107__FUNC_GPIO107>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam2_pnd1: cam2@3 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO160__FUNC_GPIO160>;
+			pinmux = <PINMUX_GPIO107__FUNC_GPIO107>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -666,14 +706,14 @@
 	};
 	camera_pins_cam_ldo_rear2_vcama_0: cam2@vcama0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			pinmux = <PINMUX_GPIO168__FUNC_GPIO168>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam_ldo_rear2_vcama_1: cam2@vcama1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			pinmux = <PINMUX_GPIO168__FUNC_GPIO168>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -742,6 +782,52 @@
 	status = "okay";
 
 };
+
+/*add for aw3641 driver for camera flashlight*/
+&pio {
+        flash_light_pin_cfg_output0: flashlightpincfg0 {
+            pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        flash_light_pin_cfg_output1: flashlightpincfg1 {
+            pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        flash_light_pin_en_output0: flashlightpinen0 {
+            pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        flash_light_pin_en_output1: flashlightpinen1 {
+            pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+         flash_light_pin_default: flashlighdefaultcfg {
+        };
+
+};
+
+&flashlights_aw3641 {
+        pinctrl-names = "flashlightpin_default", "flashlightpin_cfg0", "flashlightpin_cfg1","flashlightpin_en0","flashlightpin_en1";
+        pinctrl-0 = <&flash_light_pin_default>;
+        pinctrl-1 = <&flash_light_pin_cfg_output0>;
+        pinctrl-2 = <&flash_light_pin_cfg_output1>;
+        pinctrl-3 = <&flash_light_pin_en_output0>;
+        pinctrl-4 = <&flash_light_pin_en_output1>;
+        status = "okay";
+};
+
 
 &bat_gm30{
 CAR_TUNE_VALUE = <(100)>;

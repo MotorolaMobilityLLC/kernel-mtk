@@ -335,6 +335,8 @@
 
 #define GC5025_SUNWIN_P161BN_SENSOR_ID                0x5025
 #define SENSOR_DRVNAME_GC5025_SUNWIN_P161BN_MIPI_RAW  "gc5025_sunwin_p161bn_mipi_raw"
+#define SP2509V_SUNWIN_P161BN_SENSOR_ID                 (0x2509)
+#define SENSOR_DRVNAME_SP2509V_SUNWIN_P161BN_MIPI_RAW      "sp2509v_sunwin_p161bn_mipi_raw"
 
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
