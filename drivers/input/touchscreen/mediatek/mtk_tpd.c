@@ -39,10 +39,13 @@
 #define TPD_GET_VELOCITY_CUSTOM_X _IO(TOUCH_IOC_MAGIC, 0)
 #define TPD_GET_VELOCITY_CUSTOM_Y _IO(TOUCH_IOC_MAGIC, 1)
 #define TPD_GET_FILTER_PARA _IOWR(TOUCH_IOC_MAGIC, 2, struct tpd_filter_t)
+#define TOUCH_IO_MAGIC                   0xC0
+#define FTM_IOCTL_UPDATE	        _IOW(TOUCH_IO_MAGIC,  0x02,int)
 #ifdef CONFIG_COMPAT
-#define COMPAT_TPD_GET_FILTER_PARA _IOWR(TOUCH_IOC_MAGIC, \
-						2, struct tpd_filter_t)
+#define COMPAT_TPD_GET_FILTER_PARA _IOWR(TOUCH_IOC_MAGIC, 2, struct tpd_filter_t)
+#define COMPAT_FTM_IOCTL_UPDATE	        _IOW(TOUCH_IO_MAGIC,  0x02,compat_int_t)
 #endif
+static struct tpd_driver_t *g_tpd_drv;
 struct tpd_filter_t tpd_filter;
 struct tpd_dts_info tpd_dts_data;
 struct pinctrl *pinctrl1;
@@ -267,6 +270,19 @@ static long tpd_compat_ioctl(
 			return ret;
 		}
 		break;
+		case COMPAT_FTM_IOCTL_UPDATE:
+			if(arg32 == NULL)
+		{
+			printk("invalid argument.");
+			return -EINVAL;
+		}
+		ret = file->f_op->unlocked_ioctl(file, FTM_IOCTL_UPDATE,
+					   (unsigned long)arg32);
+		if (ret){
+		   printk("TPD_GET_FILTER_PARA unlocked_ioctl failed.");
+		   return ret;
+		}
+			break;
 	default:
 		pr_info("tpd: unknown IOCTL: 0x%08x\n", cmd);
 		ret = -ENOIOCTLCMD;
@@ -282,7 +298,7 @@ static long tpd_unlocked_ioctl(struct file *file,
 	void __user *data;
 
 	long err = 0;
-
+        char  ftm_update[126] ={ 0};
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE,
 			(void __user *)arg, _IOC_SIZE(cmd));
@@ -296,6 +312,12 @@ static long tpd_unlocked_ioctl(struct file *file,
 	}
 
 	switch (cmd) {
+	case FTM_IOCTL_UPDATE:
+		printk("geroge   tpd  ftm force upgrde :\n");
+   if( g_tpd_drv && g_tpd_drv->tpd_ftm_force_update){
+       g_tpd_drv->tpd_ftm_force_update(ftm_update);
+   }
+		break;
 	case TPD_GET_VELOCITY_CUSTOM_X:
 		data = (void __user *)arg;
 
@@ -407,7 +429,7 @@ static struct platform_driver tpd_driver = {
 			.of_match_table = touch_of_match,
 	},
 };
-static struct tpd_driver_t *g_tpd_drv;
+
 /* hh: use fb_notifier */
 static struct notifier_block tpd_fb_notifier;
 /* use fb_notifier */
@@ -481,6 +503,7 @@ int tpd_driver_add(struct tpd_driver_t *tpd_drv)
 		tpd_driver_list[0].suspend = tpd_drv->suspend;
 		tpd_driver_list[0].resume = tpd_drv->resume;
 		tpd_driver_list[0].tpd_have_button = tpd_drv->tpd_have_button;
+		tpd_driver_list[0].tpd_ftm_force_update= NULL;
 		return 0;
 	}
 	for (i = 1; i < TP_DRV_MAX_COUNT; i++) {
@@ -495,6 +518,7 @@ int tpd_driver_add(struct tpd_driver_t *tpd_drv)
 			tpd_driver_list[i].tpd_have_button =
 				tpd_drv->tpd_have_button;
 			tpd_driver_list[i].attrs = tpd_drv->attrs;
+			tpd_driver_list[i].tpd_ftm_force_update= tpd_drv->tpd_ftm_force_update;
 			break;
 		}
 		if (strcmp(tpd_driver_list[i].tpd_device_name,
