@@ -149,22 +149,6 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
-
-#if defined(SP2509V_SUNWIN_P161BN_MIPI_RAW)
-	{
-		SENSOR_DRVNAME_SP2509V_SUNWIN_P161BN_MIPI_RAW,
-		{
-                        {PDN, Vol_High, 0},
-                        {RST, Vol_Low, 0},
-                        {DOVDD, Vol_1800, 5},
-                        {AVDD, Vol_High, 5},
-                        {SensorMCLK, Vol_High, 1},
-                        {PDN, Vol_Low, 10},
-                        {RST, Vol_High, 20}
-		},
-	},
-#endif
-
 	/* add new sensor before this line */
 	{NULL,},
 };
