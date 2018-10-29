@@ -96,6 +96,29 @@
 		vsel_pin = <2>;
 	};
 };
+
+
+/*hall start*/
+
+&hall_1 {
+	pinctrl-names = "pin_default", "pin_cfg";
+	pinctrl-0 = <&hall_intpin_default>;
+	pinctrl-1 = <&hall_intpin_cfg>;
+	status = "okay";
+};
+&pio {
+	hall_intpin_default: halldefaultcfg {
+	};
+	hall_intpin_cfg: hallpincfg {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+/*hall end*/
+
 /* TOUCH start */
 &touch {
 	tpd-resolution = <720 1560>;
