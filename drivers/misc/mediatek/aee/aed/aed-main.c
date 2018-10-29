@@ -67,7 +67,7 @@ static int ke_log_available = 1;
 static struct proc_dir_entry *aed_proc_dir;
 
 #define MaxStackSize 8100
-#define MaxMapsSize 16384
+#define MaxMapsSize 65536
 
 /******************************************************************************
  * DEBUG UTILITIES

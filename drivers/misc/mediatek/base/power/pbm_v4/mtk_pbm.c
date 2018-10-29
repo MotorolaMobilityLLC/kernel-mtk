@@ -35,11 +35,9 @@
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_auxadc_intf.h>
 #include <mtk_cpufreq_api.h>
-#if 0 /* FIXME: bring up */
 #include <mtk_gpufreq.h>
 #include <mach/mtk_thermal.h>
 #include <mtk_ppm_api.h>
-#endif
 #endif
 
 #ifndef DISABLE_PBM_FEATURE
@@ -157,9 +155,7 @@ int hpf_get_power_leakage(void)
 	struct hpf *hpfmgr = &hpf_ctrl;
 	unsigned int leakage_cpu = 0, leakage_gpu = 0;
 
-#if 0 /* FIXME: bring up */
 	leakage_cpu = mt_ppm_get_leakage_mw(TOTAL_CLUSTER_LKG);
-#endif
 	leakage_gpu = mt_gpufreq_get_leakage_mw();
 	hpfmgr->loading_leakage = leakage_cpu + leakage_gpu;
 

@@ -188,7 +188,8 @@ unsigned int spkproc_ipi_pack_payload(uint16_t msg_id, uint32_t param1,
 		ipi_payload_buf[1] = (uint32_t)(*bmd_buffer->area);
 		ipi_payload_buf[2] = bmd_buffer->bytes;
 		ipi_payload_buf[3] = param1;
-		ret = sizeof(unsigned int) * 4;
+		ipi_payload_buf[4] = param2;
+		ret = sizeof(unsigned int) * 5;
 		break;
 	case SPK_PROTECT_PREPARE:
 		ipi_payload_buf[0] = (uint32_t)(substream->runtime->format);
@@ -216,14 +217,16 @@ unsigned int spkproc_ipi_pack_payload(uint16_t msg_id, uint32_t param1,
 		ipi_payload_buf[1] = (uint32_t)(*bmd_buffer->area);
 		ipi_payload_buf[2] = bmd_buffer->bytes;
 		ipi_payload_buf[3] = param1;
-		ret = sizeof(unsigned int) * 4;
+		ipi_payload_buf[4] = param2;
+		ret = sizeof(unsigned int) * 5;
 		break;
 	case SPK_PROTECT_SPEECH_DLMEMPARAM:
 		ipi_payload_buf[0] = (uint32_t)bmd_buffer->addr;
 		ipi_payload_buf[1] = (uint32_t)(*bmd_buffer->area);
 		ipi_payload_buf[2] = bmd_buffer->bytes;
 		ipi_payload_buf[3] = param1;
-		ret = sizeof(unsigned int) * 4;
+		ipi_payload_buf[4] = param2;
+		ret = sizeof(unsigned int) * 5;
 		break;
 	case SPK_PROTECT_SPEECH_PREPARE:
 		ipi_payload_buf[0] =

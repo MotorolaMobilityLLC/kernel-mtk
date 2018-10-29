@@ -113,6 +113,7 @@ static dev_t accdet_devno;
 static struct cdev *accdet_cdev;
 static struct class *accdet_class;
 static struct device *accdet_device;
+static int s_button_status;
 
 /* accdet input device to report cable type and key event */
 static struct input_dev *accdet_input_dev;
@@ -1794,6 +1795,7 @@ cur_AB = pmic_read(PMIC_ACCDET_MEM_IN_ADDR) >> ACCDET_STATE_MEM_IN_OFFSET;
 	pr_notice("accdet %s(), cur_status:%s current AB = %d\n", __func__,
 		     accdet_status_str[accdet_status], cur_AB);
 
+	s_button_status = 0;
 	pre_status = accdet_status;
 
 	switch (accdet_status) {
@@ -1841,6 +1843,7 @@ cur_AB = pmic_read(PMIC_ACCDET_MEM_IN_ADDR) >> ACCDET_STATE_MEM_IN_OFFSET;
 				cust_pwm_deb->debounce0);
 			mutex_lock(&accdet_eint_irq_sync_mutex);
 			if (eint_accdet_sync_flag) {
+				s_button_status = 1;
 				accdet_status = HOOK_SWITCH;
 				multi_key_detection(cur_AB);
 			} else
@@ -3164,3 +3167,22 @@ void mt_accdet_remove(void)
 	pr_debug("%s done!\n", __func__);
 }
 #endif /* end of #if PMIC_ACCDET_KERNEL */
+
+long mt_accdet_unlocked_ioctl(struct file *file, unsigned int cmd,
+	unsigned long arg)
+{
+	switch (cmd) {
+	case ACCDET_INIT:
+		break;
+	case SET_CALL_STATE:
+		break;
+	case GET_BUTTON_STATUS:
+		return s_button_status;
+	default:
+		pr_debug("[Accdet]accdet_ioctl : default\n");
+		break;
+	}
+	return 0;
+}
+
+

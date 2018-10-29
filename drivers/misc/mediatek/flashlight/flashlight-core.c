@@ -573,26 +573,33 @@ static int pt_is_low(int pt_low_vol, int pt_low_bat, int pt_over_cur)
 static int pt_trigger(void)
 {
 	struct flashlight_dev *fdev;
+	int is_flash_enable = 0;
 
 	mutex_lock(&fl_mutex);
 	list_for_each_entry(fdev, &flashlight_list, node) {
-		if (!fdev->ops)
-			continue;
+		if (fdev->enable)
+			is_flash_enable = 1;
+	}
+	if (is_flash_enable) {
+		list_for_each_entry(fdev, &flashlight_list, node) {
+			if (!fdev->ops)
+				continue;
 
-		fdev->ops->flashlight_open();
-		fdev->ops->flashlight_set_driver(1);
-		if (pt_strict) {
-			pr_info("PT trigger(%d,%d,%d) disable flashlight\n",
+			fdev->ops->flashlight_open();
+			fdev->ops->flashlight_set_driver(1);
+			if (pt_strict) {
+				pr_info("PT trigger(%d,%d,%d) disable flashlight\n",
 					pt_low_vol, pt_low_bat, pt_over_cur);
-			fl_enable(fdev, 0);
-		} else {
-			pr_info("PT trigger(%d,%d,%d) decrease duty: %d\n",
+				fl_enable(fdev, 0);
+			} else {
+				pr_info("PT trigger(%d,%d,%d) decrease duty: %d\n",
 					pt_low_vol, pt_low_bat,
 					pt_over_cur, fdev->low_pt_level);
-			fl_set_level(fdev, fdev->low_pt_level);
+				fl_set_level(fdev, fdev->low_pt_level);
+			}
+			fdev->ops->flashlight_set_driver(0);
+			fdev->ops->flashlight_release();
 		}
-		fdev->ops->flashlight_set_driver(0);
-		fdev->ops->flashlight_release();
 	}
 	mutex_unlock(&fl_mutex);
 
@@ -652,6 +659,7 @@ static long _flashlight_ioctl(
 	int type, ct, part;
 	int ret = 0;
 
+	memset(&fl_arg, 0, sizeof(struct flashlight_user_arg));
 	if (copy_from_user(&fl_arg, (void __user *)arg,
 				sizeof(struct flashlight_user_arg))) {
 		pr_err("Failed copy arguments from user\n");
