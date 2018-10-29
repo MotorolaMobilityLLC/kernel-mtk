@@ -1566,6 +1566,7 @@
                 <ldoVar>VCAMD</ldoVar>
                 <defEn>OFF</defEn>
                 <varName0>MAIN_CAMERA_2_POWER_D</varName0>
+                <varName1>SUB_CAMERA_POWER_D</varName1>
             </pmic3>
             <pmic4>
                 <ldoVar>VCAMIO</ldoVar>
