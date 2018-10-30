@@ -5797,8 +5797,8 @@ static int primary_display_get_round_corner_mva(
 			primary_display_get_corner_pattern_height_bot();
 		*height =
 			primary_display_get_corner_pattern_height();
-		*pitch =
-			primary_display_get_width();
+		*pitch = primary_display_get_corner_pattern_width();  //zhangdongfang add for get corner width
+			//primary_display_get_width();
 		corner_size = (*pitch) * (*height) * argb4444_bpp;
 		bt_size = (*pitch) * (*height_bot) * argb4444_bpp;
 
