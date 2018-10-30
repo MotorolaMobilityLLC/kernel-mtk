@@ -538,6 +538,11 @@ config PROJECT_P160AN
     default n
     help
 
+config PROJECT_P310
+    bool "PROJECT_P310"
+    default n
+    help
+
 config PROJECT_P161BN
     bool "PROJECT_P161BN"
     default n

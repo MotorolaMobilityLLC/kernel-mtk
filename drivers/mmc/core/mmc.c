@@ -30,6 +30,9 @@
 #include <linux/kthread.h>
 #include <mt-plat/mtk_boot_common.h>
 #endif
+ #ifdef CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
 
 #define DEFAULT_CMD6_TIMEOUT_MS	500
 
@@ -1916,6 +1919,10 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 
 	if (!oldcard)
 		host->card = card;
+//add for TinnoProductInfo 
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+    FULL_PRODUCT_DEVICE_CB(ID_FLASH, get_mmc_chip_info, card);
+#endif
 
 	return 0;
 

@@ -16,6 +16,7 @@
 #
 #
 ################################################################################
+subdir-ccflags-$(CONFIG_TINNO_PRODUCT_INFO) += -I$(srctree)/tinno/common_features/dev_info
 ifneq ($(filter y,$(CONFIG_MACH_MT8127) $(CONFIG_MACH_MT7623) $(CONFIG_MACH_MT8590)),)
 CONFIG_MTK_PLATFORM := mt8127
 endif

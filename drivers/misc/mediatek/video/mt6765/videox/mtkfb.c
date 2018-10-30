@@ -80,7 +80,9 @@
 #ifdef CONFIG_MTK_SMI_EXT
 #include "smi_public.h"
 #endif
-
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
 /* static variable */
 static u32 MTK_FB_XRES;
 static u32 MTK_FB_YRES;
@@ -2711,6 +2713,10 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	MSG_FUNC_LEAVE();
 	pr_info("disp driver(2) mtkfb_probe end\n");
+//add for TinnoProductInfo
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+    FULL_PRODUCT_DEVICE_INFO(ID_LCD, mtkfb_lcm_name);
+#endif
 	return 0;
 
 cleanup:

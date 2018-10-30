@@ -68,7 +68,10 @@
 #include <mt-plat/upmu_common.h>
 #include <pmic_lbat_service.h>
 
-
+//add for TinnoProductInfo 
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
 
 /* ============================================================ */
 /* define */
@@ -1348,6 +1351,14 @@ void update_fg_dbg_tool_value(void)
 {
 	/* Todo: backup variables */
 }
+//add for TinnoProductInfo 
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+int get_battery_vol_info(char *buf, void *arg0) {
+    long val = pmic_get_battery_voltage();
+    printk(KERN_ERR"%s:val:%d\n",__func__,(int)val);
+    return sprintf(buf, "%d mv", (int)val);
+}
+#endif
 
 static void nl_send_to_user(u32 pid, int seq, struct fgd_nl_msg_t *reply_msg)
 {
@@ -3577,7 +3588,12 @@ static int __init battery_probe(struct platform_device *dev)
 
 
 	gm.is_probe_done = true;
-
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+    {
+       int get_battery_vol_info(char *buf, void *arg0);
+       FULL_PRODUCT_DEVICE_CB(ID_BATTERY, get_battery_vol_info, NULL);
+    }
+#endif
 	return 0;
 }
 

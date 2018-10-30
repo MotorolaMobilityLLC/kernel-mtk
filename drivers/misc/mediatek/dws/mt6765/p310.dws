@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.22.2018.15:58:47"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.30.2018.09:31:52"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -69,27 +69,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint2>
-            <eint6>
-                <varName>ALSPS_MTK</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint6>
-            <eint7>
-                <varName>CHR_STAT</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint7>
-            <eint8>
-                <varName>GYRO</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint8>
             <eint9>
                 <varName>HALL_1</varName>
                 <debounce_time>0</debounce_time>
