@@ -113,6 +113,9 @@ Optional properties:
   14 = 60 s
   15 = 120 s
 
+  - cirrus,fast-switch : Specify file names for Fast Use Case Switching DSP
+    feature.  Files names are comma-separated strings.
+
 Optional H/G Algorithm sub-node:
 
   The cs35l41 node can have a single "cirrus,classh-internal-algo" sub-node
@@ -195,4 +198,5 @@ cs35l41: cs35l41@2 {
 	cirrus,boost-peak-milliamp = <4500>;
 	cirrus,boost-ind-nanohenry = <1000>;
 	cirrus,boost-cap-microfarad = <15>;
+	cirrus,fast-switch = "sample_fast_switch1.txt", "sample_fast_switch2.txt";
 };
