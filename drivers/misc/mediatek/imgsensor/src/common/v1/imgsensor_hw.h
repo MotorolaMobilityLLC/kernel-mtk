@@ -41,6 +41,9 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	struct IMGSENSOR_SENSOR *psensor,
 	char *curr_sensor_name,
 	enum IMGSENSOR_HW_POWER_STATUS pwr_status);
+#ifdef CONFIG_MTK_VCAMD_COMPATIBLE
+char* get_current_sensor_name(void);
+#endif
 
 #endif
 
