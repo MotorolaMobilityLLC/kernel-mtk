@@ -529,8 +529,13 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 
 	pREGIO = (FDVTRegIO *)a_pstCfg;
 
-	if (pREGIO->u4Count > FDVT_DRAM_REGCNT) {
+	if (pREGIO->u4Count > FDVT_DRAM_REGCNT || pREGIO->u4Count == 0) {
 		LOG_DBG("Buffer Size Exceeded!\n");
+		return -EFAULT;
+	}
+
+	if (pREGIO->pData == NULL) {
+		LOG_DBG("SetRegHW pRegIo->pData is NULL\n");
 		return -EFAULT;
 	}
 
@@ -561,6 +566,7 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 			(unsigned long)(FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]),
 			(unsigned long)pFDVTReadBuffer.u4Addr[i],
 			(unsigned long)FDVT_ADDR);
+			return -EFAULT;
 		}
 	}
 
@@ -581,8 +587,13 @@ static int FDVT_ReadRegHW(FDVTRegIO *a_pstCfg)
 		return -EINVAL;
 	}
 
-	if (a_pstCfg->u4Count > FDVT_DRAM_REGCNT) {
+	if (a_pstCfg->u4Count > FDVT_DRAM_REGCNT || a_pstCfg->u4Count == 0) {
 		LOG_DBG("Buffer Size Exceeded!\n");
+		return -EFAULT;
+	}
+
+	if (a_pstCfg->pData == NULL) {
+		LOG_DBG("ReadRegHW a_pstCfg->pData is NULL\n");
 		return -EFAULT;
 	}
 
@@ -718,14 +729,14 @@ static long FDVT_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case FDVT_IOC_T_SET_FDCONF_CMD:
 		/* LOG_DBG("[FDVT] FDVT set FD config\n"); */
 		FaceDetecteConfig();  /* LDVT Disable, Due to the different feature number between FD/SD/BD/REC */
-		FDVT_SetRegHW((FDVTRegIO *)pBuff);
-		haveConfig = 1;
+		ret = FDVT_SetRegHW((FDVTRegIO *)pBuff);
+		haveConfig = (ret == 0) ? 1:0;
 		break;
 	case FDVT_IOC_T_SET_SDCONF_CMD:
 		/* LOG_DBG("[FDVT] FDVT set SD config\n"); */
 		SmileDetecteConfig();
-		FDVT_SetRegHW((FDVTRegIO *)pBuff);
-		haveConfig = 1;
+		ret = FDVT_SetRegHW((FDVTRegIO *)pBuff);
+		haveConfig = (ret == 0) ? 1:0;
 		break;
 	case FDVT_IOC_G_READ_FDREG_CMD:
 		/* LOG_DBG("[FDVT] FDVT read FD config\n"); */
