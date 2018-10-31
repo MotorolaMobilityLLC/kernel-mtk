@@ -25,7 +25,7 @@
 #include <linux/string.h>
 #include <asm/div64.h>
 
-#if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
+#if defined(CONFIG_MTK_FPSGO) && defined(FPSGO_CPI)
 #include <fpsgo_common.h>
 #include <mtk_vcorefs_governor.h>
 #include <mtk_vcorefs_manager.h>
@@ -47,7 +47,7 @@ static int boost_value[NR_CGROUP][EAS_MAX_KIR];
 static int debug_boost_value[NR_CGROUP];
 static int debug;
 
-#if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
+#if defined(CONFIG_MTK_FPSGO) && defined(FPSGO_CPI)
 /* for CPI monitor */
 static int vcore_high;
 static int vcore;
@@ -652,7 +652,7 @@ static const struct file_operations perfmgr_m_sched_migrate_cost_n_fops = {
 };
 
 /*************************************************************************************/
-#if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
+#if defined(CONFIG_MTK_FPSGO) && defined(FPSGO_CPI)
 static ssize_t perfmgr_cpi_thres_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *pos)
 {
@@ -762,7 +762,7 @@ void perfmgr_eas_boost_init(void)
 	/*--sched migrate cost n--*/
 	proc_create("m_sched_migrate_cost_n", 0644, boost_dir, &perfmgr_m_sched_migrate_cost_n_fops);
 
-#if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
+#if defined(CONFIG_MTK_FPSGO) && defined(FPSGO_CPI)
 	proc_create("vcore_high", 0644, boost_dir, &perfmgr_vcore_high_fops);
 	proc_create("cpi_thres", 0644, boost_dir, &perfmgr_cpi_thres_fops);
 
