@@ -38,12 +38,12 @@ static DEFINE_PER_CPU(unsigned long long,  pmu_e8_count);
 
 static bool is_cpi_enabled;
 static DEFINE_MUTEX(cpi_lock);
-/* use raw type to avoid CTS simpleperf testcase fail */
+
 static struct perf_event_attr cpu_cycle_event_attr = {
-	.type           = PERF_TYPE_RAW,
-	.config         = 0x11,
+	.type           = PERF_TYPE_HARDWARE,
+	.config         = PERF_COUNT_HW_CPU_CYCLES,
 	.size           = sizeof(struct perf_event_attr),
-	.pinned         = 1,
+	.pinned         = 0,
 /*	.disabled       = 1, */
 	.sample_period  = 0, /* 1000000000, */ /* ns ? */
 };
@@ -52,7 +52,7 @@ static struct perf_event_attr inst_event_attr = {
 	.type           = PERF_TYPE_HARDWARE,
 	.config         = PERF_COUNT_HW_INSTRUCTIONS,
 	.size           = sizeof(struct perf_event_attr),
-	.pinned         = 1,
+	.pinned         = 0,
 /*	.disabled       = 1, */
 	.sample_period  = 0, /* 1000000000, */ /* ns ? */
 };
@@ -61,7 +61,7 @@ static struct perf_event_attr pmu_e1_event_attr = {
 	.type           = PERF_TYPE_RAW,
 	.config         = 0xe1,
 	.size           = sizeof(struct perf_event_attr),
-	.pinned         = 1,
+	.pinned         = 0,
 /*	.disabled       = 1, */
 	.sample_period  = 0, /* 1000000000, */ /* ns ? */
 };
@@ -70,7 +70,7 @@ static struct perf_event_attr pmu_e7_event_attr = {
 	.type           = PERF_TYPE_RAW,
 	.config         = 0xe7,
 	.size           = sizeof(struct perf_event_attr),
-	.pinned         = 1,
+	.pinned         = 0,
 /*	.disabled       = 1, */
 	.sample_period  = 0, /* 1000000000, */ /* ns ? */
 };
@@ -79,7 +79,7 @@ static struct perf_event_attr pmu_e8_event_attr = {
 	.type           = PERF_TYPE_RAW,
 	.config         = 0xe8,
 	.size           = sizeof(struct perf_event_attr),
-	.pinned         = 1,
+	.pinned         = 0,
 /*	.disabled       = 1, */
 	.sample_period  = 0, /* 1000000000, */ /* ns ? */
 };
