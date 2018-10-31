@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.30.2018.16:19:13"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.31.2018.10:29:08"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -1479,6 +1479,11 @@
                 <channel>I2C_CHANNEL_0</channel>
                 <address>0x5D</address>
             </device0>
+            <device1>
+                <varName>I2C_LCD_BIAS</varName>
+                <channel>I2C_CHANNEL_0</channel>
+                <address>0x3e</address>
+            </device1>
             <device4>
                 <varName>CAMERA_MAIN</varName>
                 <channel>I2C_CHANNEL_2</channel>
