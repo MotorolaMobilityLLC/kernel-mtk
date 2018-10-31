@@ -599,6 +599,12 @@ config MTK_IRIS_SUPPORT
 	bool "Biometric authentication - iris secure camera"
 	default n
 
+config MTK_DYNAMIC_LOAD_STORE_BYPASS_WA
+	bool "Support Mediatek dynamic workaround for CA75 load-store-bypassing"
+	default n
+	help
+	  Disable load-store-bypassing in user-space
+
 endmenu    # Misc
 
 endif
