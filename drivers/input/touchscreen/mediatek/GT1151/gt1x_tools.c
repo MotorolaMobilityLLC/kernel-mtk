@@ -453,7 +453,7 @@ static ssize_t gt1x_tool_read(struct file *filp, char __user *buffer, size_t cou
 		mutex_unlock(&rw_mutex);
 		return cmd_head.data_len;
 	} else if (cmd_head.wr == 2) {
-		GTP_DEBUG("Return ic type:0x%x len:%d.", buffer, (s32) cmd_head.data_len);
+		GTP_DEBUG("Return ic type:0x%x len:%d.", (unsigned int *) buffer, (s32) cmd_head.data_len);
 		mutex_unlock(&rw_mutex);
 		return -1;
 	} else if (cmd_head.wr == 4) {
