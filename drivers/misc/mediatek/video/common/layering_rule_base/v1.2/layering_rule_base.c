@@ -1983,12 +1983,14 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 	filp = filp_open(filename, O_RDONLY, 0777);
 	if (IS_ERR(filp)) {
 		DISP_PR_INFO("File open error:%s\n", filename);
+		set_fs(oldfs);
 		return -1;
 	}
 
 	if (!filp->f_op) {
 		DISP_PR_INFO("File Operation Method Error!!\n");
 		filp_close(filp, NULL);
+		set_fs(oldfs);
 		return -1;
 	}
 
@@ -2028,8 +2030,11 @@ static int load_hrt_test_data(struct disp_layer_info *disp_info)
 			}
 			disp_info->layer_num[disp_id] = layer_num;
 
-			if (disp_info->input_config[disp_id] == NULL)
+			if (disp_info->input_config[disp_id] == NULL) {
+				filp_close(filp, NULL);
+				set_fs(oldfs);
 				return 0;
+			}
 		} else if (strncmp(line_buf, "[set_layer]", 11) == 0) {
 			unsigned long int tmp_info;
 
