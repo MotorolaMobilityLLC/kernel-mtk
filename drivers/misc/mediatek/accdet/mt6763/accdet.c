@@ -448,12 +448,21 @@ static void send_accdet_status_event(int cable_type, int status)
 	switch (cable_type) {
 	case HEADSET_NO_MIC:
 		input_report_switch(kpd_accdet_dev, SW_HEADPHONE_INSERT, status);
+		/* when plug 4-pole out, if both AB=3 AB=0 happen,3-pole plug in will be incorrectly reported,
+		* then 3-pole plug-out is reported, if no mantory 4-pole plug-out,icon would be visible.
+		*/
+		if (status == 0)
+			input_report_switch(kpd_accdet_dev, SW_MICROPHONE_INSERT, status);
+
 		input_report_switch(kpd_accdet_dev, SW_JACK_PHYSICAL_INSERT, status);
 		input_sync(kpd_accdet_dev);
 		ACCDET_DEBUG("[accdet][send_accdet_status_Inputevent]HEADPHONE(3-pole) %s\n",
 			status?"PlugIn":"PlugOut");
 		break;
 	case HEADSET_MIC:
+	/* when plug 4-pole out, 3-pole plug out should also be reported for slow plug-in case */
+		if (status == 0)
+			input_report_switch(kpd_accdet_dev, SW_HEADPHONE_INSERT, status);
 		input_report_switch(kpd_accdet_dev, SW_HEADPHONE_INSERT, status);
 		input_report_switch(kpd_accdet_dev, SW_MICROPHONE_INSERT, status);
 		input_report_switch(kpd_accdet_dev, SW_JACK_PHYSICAL_INSERT, status);
