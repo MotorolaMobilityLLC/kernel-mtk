@@ -4038,6 +4038,13 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle, 
 	return ret;
 }
 
+void ddp_dump_and_reset_dsi0(void)
+{
+	DISPCHECK("CMDQ Timeout, Reset DSI\n");
+	DSI_DumpRegisters(DISP_MODULE_DSI0, 1);
+	DSI_Reset(DISP_MODULE_DSI0, NULL);
+}
+
 void *get_dsi_params_handle(UINT32 dsi_idx)
 {
 	if (dsi_idx != PM_DSI1)

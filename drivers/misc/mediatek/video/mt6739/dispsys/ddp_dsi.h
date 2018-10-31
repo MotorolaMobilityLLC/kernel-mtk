@@ -205,6 +205,7 @@ void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, u
 
 int dsi_enable_irq(enum DISP_MODULE_ENUM module, void *handle, unsigned int enable);
 int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle);
+void ddp_dump_and_reset_dsi0(void);
 
 
 #ifdef __cplusplus
