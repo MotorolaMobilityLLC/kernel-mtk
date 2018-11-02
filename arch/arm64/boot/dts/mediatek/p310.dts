@@ -96,9 +96,30 @@
 		vsel_pin = <2>;
 	};
 };
+
+/*hall start*/
+
+&hall_1 {
+	pinctrl-names = "pin_default", "pin_cfg";
+	pinctrl-0 = <&hall_intpin_default>;
+	pinctrl-1 = <&hall_intpin_cfg>;
+	status = "okay";
+};
+&pio {
+	hall_intpin_default: halldefaultcfg {
+	};
+	hall_intpin_cfg: hallpincfg {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+/*hall end*/
 /* TOUCH start */
 &touch {
-	tpd-resolution = <1080 1920>;
+	tpd-resolution = <720 1560>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
@@ -158,7 +179,60 @@
 		};
 	};
 };
+&i2c0 {
+	cap_touch@38 {
+		compatible = "mediatek,ft6xxx_touch";
+		reg = <0x38>;
+		status = "okay";
+	};
+};
 /* TOUCH end */
+&lcm_pins_bl_en {
+	pinctrl-names = "bl_en_pin_default","lcm_enn_outputl","lcm_enn_outputh",
+			"lcm_enp_outputl","lcm_enp_outputh";
+	pinctrl-0 = <&bl_en_pin_default>;
+	pinctrl-1 = <&lcm_pins_bl_enn_outputl>;
+	pinctrl-2 = <&lcm_pins_bl_enn_outputh>;
+	pinctrl-3 = <&lcm_pins_bl_enp_outputl>;
+	pinctrl-4 = <&lcm_pins_bl_enp_outputh>;
+	
+	status = "okay";
+};
+&pio {
+	lcm_pins_bl_enn_outputl: bl_enn_outputl {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO176__FUNC_GPIO176>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	lcm_pins_bl_enn_outputh: bl_enn_outputh {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO176__FUNC_GPIO176>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	lcm_pins_bl_enp_outputl: bl_enp_outputl {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO177__FUNC_GPIO177>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	lcm_pins_bl_enp_outputh: bl_enp_outputh {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO177__FUNC_GPIO177>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	
+	bl_en_pin_default: bl_endefaultcfg {
+	};
+};
 
 /* CONSYS GPIO standardization */
 &pio {

@@ -470,6 +470,11 @@ static long st21nfc_dev_ioctl(struct file *filp, unsigned int cmd,
 		/* For ST21NFCD usage only */
 		pr_info("%s Recovery Request\n", __func__);
 		if (st21nfc_dev->platform_data.reset_gpio != 0) {
+			if (irqIsAttached) {
+				struct i2c_client *client = st21nfc_dev->platform_data.client;
+				free_irq(client->irq, st21nfc_dev);
+				irqIsAttached = false;
+			}
 			gpio_set_value(st21nfc_dev->platform_data.reset_gpio,
 				       0);
 			msleep(20);
