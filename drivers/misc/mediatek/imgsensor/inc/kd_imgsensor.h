@@ -333,6 +333,9 @@
 #define S5K3L6_SUNWIN_P161BN_SENSOR_ID                0x30C6
 #define SENSOR_DRVNAME_S5K3L6_SUNWIN_P161BN_MIPI_RAW  "s5k3l6_sunwin_p161bn_mipi_raw"
 
+#define S5K4H7YX_SUNWIN_P310_SENSOR_ID                0x487b
+#define SENSOR_DRVNAME_S5K4H7YX_SUNWIN_P310_MIPI_RAW  "s5k4h7yx_sunwin_p310_mipi_raw"
+
 #define GC5025_SUNWIN_P161BN_SENSOR_ID                0x5025
 #define SENSOR_DRVNAME_GC5025_SUNWIN_P161BN_MIPI_RAW  "gc5025_sunwin_p161bn_mipi_raw"
 #define SP2509V_SUNWIN_P161BN_SENSOR_ID                 (0x2509)

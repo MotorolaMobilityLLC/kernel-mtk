@@ -54,6 +54,15 @@ struct GPIO_PINCTRL gpio_pinctrl_list[GPIO_CTRL_STATE_MAX_NUM] = {
 	{NULL},
 	{NULL},
 	{NULL},
+	/* Main3 */
+	{"cam4_pnd1"},
+	{"cam4_pnd0"},
+	{"cam4_rst1"},
+	{"cam4_rst0"},
+	{"cam4_vcama_on"},
+	{"cam4_vcama_off"},
+	{"cam4_vcamd_on"},
+	{"cam4_vcamd_off"},
 
 #ifdef MIPI_SWITCH
 	{"cam_mipi_switch_en_1"},
@@ -179,7 +188,10 @@ static enum IMGSENSOR_RETURN gpio_set(
 
 		(sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2)
 			? GPIO_CTRL_STATE_CAM2_PDN_H :
-			GPIO_CTRL_STATE_CAM3_PDN_H;
+
+		(sensor_idx == IMGSENSOR_SENSOR_IDX_SUB2)
+			? GPIO_CTRL_STATE_CAM3_PDN_H :
+			GPIO_CTRL_STATE_CAM4_PDN_H;
 
 		ppinctrl_state =
 		    pgpio->ppinctrl_state[ctrl_state_offset +

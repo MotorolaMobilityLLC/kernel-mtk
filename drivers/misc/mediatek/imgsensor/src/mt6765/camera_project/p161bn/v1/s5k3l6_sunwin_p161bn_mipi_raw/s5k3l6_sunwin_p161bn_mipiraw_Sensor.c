@@ -233,7 +233,6 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7] = {
  { 4208, 3120, 472,	336, 3264, 2448, 3264, 2448, 0,	0, 3264, 2448, 0, 0, 3264, 2448},//custom2
 };
 
-#if 0
 /*PD information update*/
 static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 {
@@ -250,7 +249,6 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 	.i4PosR = {{28,35},{80,35},{44,39},{64,39},{32,47},{76,47},{48,51},{60,51},{48,67},{60,67},{32,71},{76,71},{44,79},{64,79},{28,83},{80,83}},
 	.iMirrorFlip = 0,
 };
-#endif
 
 static void write_cmos_sensor_16_16(kal_uint16 addr, kal_uint16 para)
 {
@@ -2326,7 +2324,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG: /*full*/
 		case MSDK_SCENARIO_ID_CUSTOM1:
 		case MSDK_SCENARIO_ID_CUSTOM2:
-		//memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(struct SET_PD_BLOCK_INFO_T));
+		memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(struct SET_PD_BLOCK_INFO_T));
 		break;
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:

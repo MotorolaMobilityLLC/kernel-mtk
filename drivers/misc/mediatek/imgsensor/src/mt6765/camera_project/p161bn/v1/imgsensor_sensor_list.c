@@ -39,6 +39,12 @@ struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR] = {
 	SP2509V_SUNWIN_P161BN_MIPI_RAW_SensorInit},
 #endif
 
+#if defined(S5K4H7YX_SUNWIN_P310_MIPI_RAW)
+       {S5K4H7YX_SUNWIN_P310_SENSOR_ID, 
+	SENSOR_DRVNAME_S5K4H7YX_SUNWIN_P310_MIPI_RAW,
+	S5K4H7YX_SUNWIN_P310_MIPI_RAW_SensorInit},
+#endif
+
 	/*  ADD sensor driver before this line */
 	{0, {0}, NULL}, /* end of list */
 };
