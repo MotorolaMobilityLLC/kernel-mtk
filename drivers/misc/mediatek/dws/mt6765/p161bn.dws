@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="10.31.2018.10:29:08"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.05.2018.08:50:31"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -1605,8 +1605,8 @@
             <keyMatrix_ext>NC NC NC NC
 				NC NC NC NC
 				NC NC NC NC</keyMatrix_ext>
-            <downloadKey>NC NC POWER</downloadKey>
-            <modeKey>NC NC NC</modeKey>
+            <downloadKey>VOLUMEUP VOLUMEDOWN POWER</downloadKey>
+            <modeKey>NC VOLUMEUP VOLUMEDOWN</modeKey>
             <pwrKeyEint_gpioNum>0</pwrKeyEint_gpioNum>
             <pwrKeyUtility>POWER</pwrKeyUtility>
             <home_key>VOLUMEDOWN</home_key>
