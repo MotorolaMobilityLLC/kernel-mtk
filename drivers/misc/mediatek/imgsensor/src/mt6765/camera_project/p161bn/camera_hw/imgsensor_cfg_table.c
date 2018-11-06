@@ -208,7 +208,21 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
-
+#if defined(SENSOR_DRVNAME_IMX486_SUNWIN_P310_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_IMX486_SUNWIN_P310_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 2},
+			{PDN, Vol_Low, 0},
+			{RST, Vol_Low, 0},
+			{DOVDD, Vol_1800, 0},
+			{AVDD, Vol_2800, 0},
+			{DVDD, Vol_1100, 0},
+			{PDN, Vol_High, 2},
+		        {RST, Vol_High, 0}
+		},
+	},
+#endif
 	/* add new sensor before this line */
 	{NULL,},
 };

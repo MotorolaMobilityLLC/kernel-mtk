@@ -341,6 +341,9 @@
 #define SP2509V_SUNWIN_P161BN_SENSOR_ID                 (0x2509)
 #define SENSOR_DRVNAME_SP2509V_SUNWIN_P161BN_MIPI_RAW      "sp2509v_sunwin_p161bn_mipi_raw"
 
+#define IMX486_SUNWIN_P310_SENSOR_ID                0x486
+#define SENSOR_DRVNAME_IMX486_SUNWIN_P310_MIPI_RAW  "imx486_sunwin_p310_mipi_raw"
+
 /* CAMERA DRIVER NAME */
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */

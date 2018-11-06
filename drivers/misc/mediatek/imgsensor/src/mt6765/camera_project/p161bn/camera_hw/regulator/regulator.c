@@ -267,7 +267,8 @@ static enum IMGSENSOR_RETURN regulator_set(
 			//add for p161bn rear and front  VCAMD compatible
                         #ifdef CONFIG_MTK_VCAMD_COMPATIBLE
                         if(IMGSENSOR_HW_PIN_DVDD == pin && ((strcmp(get_current_sensor_name(),"gc5025_sunwin_p161bn_mipi_raw") == 0)
-							   || (strcmp(get_current_sensor_name(),"s5k4h7yx_sunwin_p310_mipi_raw") == 0))){
+							   || (strcmp(get_current_sensor_name(),"s5k4h7yx_sunwin_p310_mipi_raw") == 0)
+								|| (strcmp(get_current_sensor_name(),"imx486_sunwin_p310_mipi_raw") == 0))){
 				printk("sensor  = %s\n", get_current_sensor_name());
                                 pmic_config_interface(PMIC_RG_VCAMD_VOCAL_ADDR,10,0xf,0);
                         }
@@ -308,7 +309,8 @@ static enum IMGSENSOR_RETURN regulator_set(
 				//add for p161bn rear and front  VCAMD compatible
 				#ifdef CONFIG_MTK_VCAMD_COMPATIBLE
 				if(IMGSENSOR_HW_PIN_DVDD == pin && ((strcmp(get_current_sensor_name(),"gc5025_sunwin_p161bn_mipi_raw") == 0)
-								   || (strcmp(get_current_sensor_name(),"s5k4h7yx_sunwin_p310_mipi_raw") == 0))){
+								   || (strcmp(get_current_sensor_name(),"s5k4h7yx_sunwin_p310_mipi_raw") == 0)
+									|| (strcmp(get_current_sensor_name(),"imx486_sunwin_p310_mipi_raw") == 0))){
 					pmic_config_interface(PMIC_RG_VCAMD_VOCAL_ADDR,0,0xf,0);
 				}
                                 #endif

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.05.2018.08:50:31"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.06.2018.14:46:26"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -1574,6 +1574,7 @@
                 <defEn>OFF</defEn>
                 <varName0>MAIN_CAMERA_2_POWER_D</varName0>
                 <varName1>SUB_CAMERA_POWER_D</varName1>
+                <varName2>MAIN_CAMERA_POWER_D</varName2>
             </pmic3>
             <pmic4>
                 <ldoVar>VCAMIO</ldoVar>
