@@ -824,7 +824,13 @@ static int __do_pipe_flags(int *fd, struct file **files, int flags)
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && \
 	defined(CONFIG_MTK_FD_LEAK_SPECIFIC_DEBUG)
-	if (fdr >= 1000 || fdw >= 1000) {
+	/* sample and report warning */
+	int greaterFd = (fdr > fdw) ? fdr : fdw;
+
+	if ((greaterFd >= 1000 && greaterFd < 1020) ||
+		(greaterFd >= 2000 && greaterFd < 2012) ||
+		(greaterFd >= 3000 && greaterFd < 3012)) {
+
 		char aee_msg[200];
 		struct task_struct *process = current->group_leader;
 
