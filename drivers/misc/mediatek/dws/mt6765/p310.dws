@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.13.2018.11:14:04"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.13.2018.17:10:15"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -580,9 +580,9 @@
             </gpio56>
             <gpio57>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
                 <smt>false</smt>
@@ -1435,8 +1435,7 @@
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
-                <varName0>GPIO_FLASH_STROBE_PIN</varName0>
+                <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio153>
