@@ -93,7 +93,6 @@ static int mmc_queue_thread(void *d)
 	int cmdq_full = 0;
 	unsigned int tmo;
 #endif
-	bool io_boost_done = false;
 	bool part_cmdq_en = false;
 
 	/*
@@ -108,11 +107,10 @@ static int mmc_queue_thread(void *d)
 	down(&mq->thread_sem);
 	mt_bio_queue_alloc(current, q);
 
+	mtk_iobst_register_tid(current->pid);
+
 	do {
 		struct request *req = NULL;
-
-		mtk_io_boost_test_and_add_tid(current->pid,
-			&io_boost_done);
 
 		spin_lock_irq(q->queue_lock);
 
