@@ -28,7 +28,9 @@
 
 static int ppm_cpi_pmu_probe_cpu(int cpu);
 
-/* static DEFINE_PER_CPU(struct perf_event *, cpu_cycle_events); */
+#ifndef CONFIG_ARM64
+static DEFINE_PER_CPU(struct perf_event *, cpu_cycle_events);
+#endif
 static DEFINE_PER_CPU(struct perf_event *, inst_events);
 static DEFINE_PER_CPU(struct perf_event *, pmu_e1_events);
 static DEFINE_PER_CPU(struct perf_event *, pmu_e7_events);
@@ -42,7 +44,7 @@ static DEFINE_PER_CPU(unsigned long long,  pmu_e8_count);
 static bool is_cpi_enabled;
 static DEFINE_MUTEX(cpi_lock);
 
-#if 0
+#ifndef CONFIG_ARM64
 static struct perf_event_attr cpu_cycle_event_attr = {
 	.type           = PERF_TYPE_HARDWARE,
 	.config         = PERF_COUNT_HW_CPU_CYCLES,
@@ -94,7 +96,7 @@ static int stall_val_dbg;
 
 static unsigned int ppm_cpi_get_cpu_cycle_count(int cpu)
 {
-#if 1
+#ifdef CONFIG_ARM64
 	unsigned long long new = 0;
 	unsigned long long old = per_cpu(cpu_cycle_count, cpu);
 	unsigned int diff = 0;
@@ -220,6 +222,7 @@ static void ppm_cpi_get_pmu_val(void *val)
 	}
 }
 
+#ifdef CONFIG_ARM64
 static void ppm_cpi_enable_cycle_cnt(void *info)
 {
 	int cpu = smp_processor_id();
@@ -240,17 +243,20 @@ static void ppm_cpi_disable_cycle_cnt(void *info)
 	asm volatile("msr pmcntenset_el0, %0" :: "r"
 		((unsigned int)(enset & ~(1 << 31))));
 }
+#endif
 
 static void ppm_cpi_pmu_enable_locked(int cpu, int enable)
 {
-	/* struct perf_event *c_event = per_cpu(cpu_cycle_events, cpu); */
+#ifndef CONFIG_ARM64
+	struct perf_event *c_event = per_cpu(cpu_cycle_events, cpu);
+#endif
 	struct perf_event *i_event = per_cpu(inst_events, cpu);
 	struct perf_event *p1_event = per_cpu(pmu_e1_events, cpu);
 	struct perf_event *p7_event = per_cpu(pmu_e7_events, cpu);
 	struct perf_event *p8_event = per_cpu(pmu_e8_events, cpu);
 
 	if (enable) {
-#if 0
+#ifndef CONFIG_ARM64
 		if (c_event) {
 			perf_event_enable(c_event);
 			per_cpu(cpu_cycle_count, cpu) = perf_event_read_local(c_event);
@@ -270,7 +276,7 @@ static void ppm_cpi_pmu_enable_locked(int cpu, int enable)
 		if (p8_event)
 			perf_event_enable(p8_event);
 	} else {
-#if 0
+#ifndef CONFIG_ARM64
 		if (c_event)
 			perf_event_disable(c_event);
 #else
@@ -290,7 +296,9 @@ static void ppm_cpi_pmu_enable_locked(int cpu, int enable)
 
 static void ppm_cpi_pmu_enable(int cpu, int enable)
 {
-	/* struct perf_event *c_event = per_cpu(cpu_cycle_events, cpu); */
+#ifndef CONFIG_ARM64
+	struct perf_event *c_event = per_cpu(cpu_cycle_events, cpu);
+#endif
 	struct perf_event *i_event = per_cpu(inst_events, cpu);
 	struct perf_event *p1_event = per_cpu(pmu_e1_events, cpu);
 	struct perf_event *p7_event = per_cpu(pmu_e7_events, cpu);
@@ -303,8 +311,12 @@ static void ppm_cpi_pmu_enable(int cpu, int enable)
 		return;
 	}
 
-	if (enable && (/*!c_event || */!i_event || !p1_event
+#ifdef CONFIG_ARM64
+	if (enable && (!i_event || !p1_event || !p7_event || !p8_event))
+#else
+	if (enable && (!c_event || !i_event || !p1_event
 		       || !p7_event || !p8_event))
+#endif
 		ppm_cpi_pmu_probe_cpu(cpu); /* probe and enable */
 	else
 		ppm_cpi_pmu_enable_locked(cpu, enable);
@@ -347,13 +359,15 @@ static void ppm_cpi_pmu_overflow_handler(struct perf_event *event,
 static int ppm_cpi_pmu_probe_cpu(int cpu)
 {
 	struct perf_event *event;
-	/* struct perf_event *c_event = per_cpu(cpu_cycle_events, cpu); */
+#ifndef CONFIG_ARM64
+	struct perf_event *c_event = per_cpu(cpu_cycle_events, cpu);
+#endif
 	struct perf_event *i_event = per_cpu(inst_events, cpu);
 	struct perf_event *p1_event = per_cpu(pmu_e1_events, cpu);
 	struct perf_event *p7_event = per_cpu(pmu_e7_events, cpu);
 	struct perf_event *p8_event = per_cpu(pmu_e8_events, cpu);
 
-#if 0
+#ifndef CONFIG_ARM64
 	if (!c_event) {
 		event = perf_event_create_kernel_counter(
 			&cpu_cycle_event_attr,
@@ -441,7 +455,7 @@ static struct notifier_block ppm_cpi_nb = {
 	.priority	= 0,
 };
 
-#ifdef CONFIG_CPU_PM
+#if defined(CONFIG_ARM64) && defined(CONFIG_CPU_PM)
 /* re-init CPU cycle counter when core on */
 static int ppm_cpi_cpu_pm_notifier(struct notifier_block *self,
 				unsigned long cmd, void *v)
@@ -490,7 +504,7 @@ static int ppm_cpi_pmu_probe(void)
 	if (ret)
 		goto end;
 
-#ifdef CONFIG_CPU_PM
+#if defined(CONFIG_ARM64) && defined(CONFIG_CPU_PM)
 	ret = cpu_pm_register_notifier(&ppm_cpi_cpupm_nb);
 #endif
 
@@ -500,13 +514,15 @@ end:
 
 static void ppm_cpi_pmu_remove_cpu(int cpu)
 {
-	/* struct perf_event *c_event = per_cpu(cpu_cycle_events, cpu); */
+#ifndef CONFIG_ARM64
+	struct perf_event *c_event = per_cpu(cpu_cycle_events, cpu);
+#endif
 	struct perf_event *i_event = per_cpu(inst_events, cpu);
 	struct perf_event *p1_event = per_cpu(pmu_e1_events, cpu);
 	struct perf_event *p7_event = per_cpu(pmu_e7_events, cpu);
 	struct perf_event *p8_event = per_cpu(pmu_e8_events, cpu);
 
-#if 0
+#ifndef CONFIG_ARM64
 	if (c_event) {
 		perf_event_disable(c_event);
 		per_cpu(cpu_cycle_events, cpu) = NULL;
@@ -545,7 +561,7 @@ static void ppm_cpi_pmu_remove(void)
 {
 	int cpu;
 
-#ifdef CONFIG_CPU_PM
+#if defined(CONFIG_ARM64) && defined(CONFIG_CPU_PM)
 	cpu_pm_unregister_notifier(&ppm_cpi_cpupm_nb);
 #endif
 
