@@ -1450,7 +1450,10 @@ static int mt6370_tcpcdev_init(struct mt6370_chip *chip, struct device *dev)
 	}
 #endif	/* CONFIG_TCPC_VCONN_SUPPLY_MODE */
 
-	of_property_read_string(np, "mt-tcpc,name", (char const **)&name);
+	if (of_property_read_string(np, "mt-tcpc,name",
+				(char const **)&name) < 0) {
+		dev_info(dev, "use default name\n");
+	}
 
 	len = strlen(name);
 	desc->name = kzalloc(len+1, GFP_KERNEL);
