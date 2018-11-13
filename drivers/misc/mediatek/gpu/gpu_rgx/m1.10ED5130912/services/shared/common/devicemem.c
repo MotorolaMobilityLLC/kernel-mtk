@@ -437,10 +437,18 @@ _SubAllocImportAlloc(RA_PERARENA_HANDLE hArena,
 		key the RA off something and as we can't export suballocations
 		there is no valid reason to request an allocation an not map it
 	 */
+#ifdef __KERNEL__
+	eError = _DevmemImportStructDevMap2(psHeap,
+			IMG_TRUE,
+			psImport,
+			ui64OptionalMapAddress,
+			pszAnnotation);
+#else
 	eError = _DevmemImportStructDevMap(psHeap,
 			IMG_TRUE,
 			psImport,
 			ui64OptionalMapAddress);
+#endif
 	if (eError != PVRSRV_OK)
 	{
 		goto failMap;
@@ -2320,10 +2328,18 @@ DevmemMapToDevice(DEVMEM_MEMDESC *psMemDesc,
 	psImport = psMemDesc->psImport;
 	_DevmemMemDescAcquire(psMemDesc);
 
+#ifdef __KERNEL__
+	eError = _DevmemImportStructDevMap2(psHeap,
+			bMap,
+			psImport,
+			DEVICEMEM_UTILS_NO_ADDRESS,
+			"MapToDev");
+#else
 	eError = _DevmemImportStructDevMap(psHeap,
 			bMap,
 			psImport,
 			DEVICEMEM_UTILS_NO_ADDRESS);
+#endif
 	if (eError != PVRSRV_OK)
 	{
 		goto failMap;
@@ -2431,10 +2447,18 @@ DevmemMapToDeviceAddress(DEVMEM_MEMDESC *psMemDesc,
 	psImport = psMemDesc->psImport;
 	_DevmemMemDescAcquire(psMemDesc);
 
+#ifdef __KERNEL__
+	eError = _DevmemImportStructDevMap2(psHeap,
+			bMap,
+			psImport,
+			sDevVirtAddr.uiAddr,
+			"MapToDev_A");
+#else
 	eError = _DevmemImportStructDevMap(psHeap,
 			bMap,
 			psImport,
 			sDevVirtAddr.uiAddr);
+#endif
 	if (eError != PVRSRV_OK)
 	{
 		goto failMap;

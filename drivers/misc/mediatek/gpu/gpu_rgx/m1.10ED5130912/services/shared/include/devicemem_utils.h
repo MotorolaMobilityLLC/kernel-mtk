@@ -350,6 +350,14 @@ PVRSRV_ERROR _DevmemImportStructDevMap(DEVMEM_HEAP *psHeap,
 									   DEVMEM_IMPORT *psImport,
 									   IMG_UINT64 uiOptionalMapAddress);
 
+#ifdef __KERNEL__
+PVRSRV_ERROR _DevmemImportStructDevMap2(DEVMEM_HEAP *psHeap,
+										IMG_BOOL bMap,
+										DEVMEM_IMPORT *psImport,
+										IMG_UINT64 uiOptionalMapAddress,
+										const IMG_CHAR *pszStr);
+#endif
+
 /******************************************************************************
 @Function       _DevmemImportStructDevUnmap
 @Description    Unmaps the PMR referenced by the import struct from the
