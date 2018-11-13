@@ -1087,7 +1087,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		/* when leave screen idle: reset to default */
 		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE,
 			HRT_LEVEL_DEFAULT,
-			layering_rule_get_mm_freq_table(HRT_OPP_LEVEL_LEVEL0));
+			layering_rule_get_mm_freq_table(HRT_OPP_LEVEL_DEFAULT));
 #endif
 		if (kthread_should_stop())
 			break;
