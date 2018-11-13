@@ -123,8 +123,12 @@ static int get_gpio_id_from_dt(struct device_node *node, char *gpio_name, int *m
 	int ret = 0;
 
 	/* For new API, there is a shift between AP GPIO ID and MD GPIO ID */
+#ifdef ENABLE_GPIO_FORMAT_SPEC
+	ret = of_property_read_u32(node, gpio_name, &gpio_id);
+#else
 	gpio_id = of_get_named_gpio(node, gpio_name, 0);
 	ret = of_property_read_u32_index(node, gpio_name, 1, &md_view_gpio_id);
+#endif
 	if (ret) {
 		CCCI_ERROR_LOG(0, RPC, "get md view gpio id from dt fail\n");
 		return -1;
