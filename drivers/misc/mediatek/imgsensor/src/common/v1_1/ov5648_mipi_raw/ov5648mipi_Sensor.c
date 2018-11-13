@@ -77,6 +77,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		},
 	.cap = {
+#if 0
 		.pclk = 84000000,
 		.linelength = 2816,
 		.framelength = 1984,
@@ -87,6 +88,18 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.mipi_pixel_rate = 84000000,
 		.max_framerate = 150,
+#else
+		.pclk = 84000000,
+		.linelength = 2500,
+		.framelength = 1120,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 1920,
+		.grabwindow_height = 1080,
+		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
+		.mipi_pixel_rate = 84000000,
+		.max_framerate = 300,
+#endif
 		},
 	.cap1 = {
 		.pclk = 84000000,
@@ -101,6 +114,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 150,
 		},
 	.normal_video = {
+#if 0
 		.pclk = 84000000,
 		.linelength = 2816,
 		.framelength = 992,
@@ -111,6 +125,18 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.mipi_pixel_rate = 84000000,
 		.max_framerate = 300,
+#else
+	    .pclk = 84000000,
+		.linelength = 2500,
+		.framelength = 1120,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 1920,
+		.grabwindow_height = 1080,
+		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
+		.mipi_pixel_rate = 84000000,
+		.max_framerate = 300,
+#endif
 		},
 	.hs_video = {
 		.pclk = 84000000,
@@ -187,8 +213,8 @@ static struct imgsensor_struct imgsensor = {
 /* Sensor output window information */
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	{2624, 1956, 0, 0, 2624, 1956, 1312, 978, 8, 4, 1296, 972, 4, 8, 1280, 960},	/* Preview */
-	{2608, 1960, 8, 8, 2592, 1944, 2592, 1944, 0, 0, 2592, 1944, 0, 1, 2560, 1920},	/* capture */
-	{2624, 1956, 0, 0, 2624, 1956, 2592, 1944, 0, 0, 1296, 972, 4, 8, 1280, 960},	/* video */
+	{2624, 1956, 336, 434, 1952, 1088, 1952, 1088, 16, 4, 1920, 1080, 0, 0, 1920, 1080},	/* capture */
+	{2624, 1956, 336, 434, 1952, 1088, 1952, 1088, 16, 4, 1920, 1080, 0, 0, 1920, 1080},	/* video*/
 	{2624, 1956, 336, 434, 1952, 1088, 1952, 1088, 16, 4, 1920, 1080, 0, 0, 1920, 1080},	/* hight speed video */
 	{2624, 1956, 16, 254, 2592, 1448, 1296, 724, 8, 2, 1280, 720, 0, 0, 1280, 720}	/* slim video */
 };
@@ -790,7 +816,7 @@ static void preview_setting(void)
 	/* write_cmos_sensor(0x0100, 0x01); // Stream On */
 }				/*    preview_setting  */
 
-
+#if 0
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n", currefps);
@@ -866,7 +892,9 @@ static void capture_setting(kal_uint16 currefps)
 
 	/* write_cmos_sensor(0x0100, 0x01); // Stream On */
 }				/*    capture_setting  */
+#endif
 
+#if 0
 static void normal_video_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n", currefps);
@@ -946,7 +974,7 @@ static void normal_video_setting(kal_uint16 currefps)
 
 	/* write_cmos_sensor(0x0100, 0x01); // Stream On */
 }				/*    preview_setting  */
-
+#endif
 
 static void video_1080p_setting(void)
 {
@@ -1330,15 +1358,15 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
 	} else {
-		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			imgsensor.pclk = imgsensor_info.cap.pclk;
+		imgsensor.pclk = imgsensor_info.cap.pclk;
 		imgsensor.line_length = imgsensor_info.cap.linelength;
 		imgsensor.frame_length = imgsensor_info.cap.framelength;
 		imgsensor.min_frame_length = imgsensor_info.cap.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
 	}
 	spin_unlock(&imgsensor_drv_lock);
-	capture_setting(imgsensor.current_fps);
+	/*capture_setting(imgsensor.current_fps);*/
+	video_1080p_setting();
 	/* set_mirror_flip(sensor_config_data->SensorImageMirror); */
 	return ERROR_NONE;
 }				/* capture() */
@@ -1357,7 +1385,8 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	/* imgsensor.current_fps = 300; */
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
-	normal_video_setting(imgsensor.current_fps);
+	/*normal_video_setting(imgsensor.current_fps);*/
+	video_1080p_setting();
 	/* set_mirror_flip(sensor_config_data->SensorImageMirror); */
 	return ERROR_NONE;
 }				/*    normal_video   */
