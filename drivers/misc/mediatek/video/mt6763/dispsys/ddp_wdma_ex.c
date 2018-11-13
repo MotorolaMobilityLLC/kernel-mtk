@@ -173,7 +173,7 @@ static int wdma_config_yuv420(enum DISP_MODULE_ENUM module,
 	} else {
 		int m4u_port;
 
-		m4u_port = idx == 0 ? DISP_M4U_PORT_DISP_WDMA0 : DISP_M4U_PORT_DISP_WDMA0;
+		m4u_port = DISP_M4U_PORT_DISP_WDMA0;
 
 		cmdqRecWriteSecure(handle, disp_addr_convert(idx_offst + DISP_REG_WDMA_DST_ADDR1),
 				   CMDQ_SAM_H_2_MVA, dstAddress, u_off, u_size, m4u_port);
@@ -238,7 +238,7 @@ static int wdma_config(enum DISP_MODULE_ENUM module,
 	} else {
 		int m4u_port;
 
-		m4u_port = idx == 0 ? DISP_M4U_PORT_DISP_WDMA0 : DISP_M4U_PORT_DISP_WDMA0;
+		m4u_port = DISP_M4U_PORT_DISP_WDMA0;
 
 		/* for sec layer, addr variable stores sec handle */
 		/* we need to pass this handle and offset to cmdq driver */
