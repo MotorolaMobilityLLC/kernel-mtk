@@ -279,10 +279,11 @@ void mtk_idle_pre_process_by_chip(
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 
 		wd_ret = get_wd_api(&wd_api);
-		if (!wd_ret && wd_api)
+		if (!wd_ret && wd_api) {
 			wd_api->wd_spmwdt_mode_config(WD_REQ_EN
 							, WD_REQ_RST_MODE);
-		else {
+			wd_api->wd_suspend_notify();
+		} else {
 			aee_sram_printk("FAILED TO GET WD API\n");
 			pr_info("[IDLE] FAILED TO GET WD API\n");
 		}
@@ -355,9 +356,21 @@ void mtk_idle_post_process_by_chip(
 	if (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE) {
 		/* post watch dog config */
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
-		if (!wd_ret)
+		if (!wd_ret) {
+			if (!pwrctrl->wdt_disable)
+				wd_api->wd_resume_notify();
+			else {
+				aee_sram_printk(
+					"pwrctrl->wdt_disable %d\n",
+						pwrctrl->wdt_disable);
+				pr_info(
+					"[SPM] pwrctrl->wdt_disable %d\n",
+						pwrctrl->wdt_disable);
+			}
+
 			wd_api->wd_spmwdt_mode_config(WD_REQ_DIS
 							, WD_REQ_RST_MODE);
+		}
 #endif
 
 		/* restore timer_val and wake_src */
