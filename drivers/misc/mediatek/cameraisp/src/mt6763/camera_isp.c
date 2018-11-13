@@ -8963,10 +8963,11 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 		}
 	}
 	seq_puts(m, "============ isp p2 ke dump debug ============\n");
+	mutex_unlock(&gDipMutex);
 	LOG_INF("isp p2 ke dump end\n");
 #else
 	int i;
-
+	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
 	seq_puts(m, "============ isp p2 ke dump register============\n");
 	seq_puts(m, "isp p2 hw physical register\n");
 	for (i = 0; i < (ISP_DIP_REG_SIZE >> 2); i = i + 4) {
