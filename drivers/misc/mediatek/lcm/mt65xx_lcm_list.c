@@ -1057,6 +1057,9 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695B_FHD_DSI_CMD_AUO_RT5081_720P)
 	&nt35695B_fhd_dsi_cmd_auo_rt5081_720p_lcm_drv,
 #endif
+#if defined(NT35695B_FHD_DSI_CMD_AUO_RT5081_HDP)
+	&nt35695B_fhd_dsi_cmd_auo_rt5081_hdp_lcm_drv,
+#endif
 #if defined(NT35695B_FHD_DSI_CMD_AUO_RT5081_QHD)
 	&nt35695B_fhd_dsi_cmd_auo_rt5081_qhd_lcm_drv,
 #endif
