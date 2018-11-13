@@ -255,7 +255,7 @@ f_midi_complete(struct usb_ep *ep, struct usb_request *req)
 	int status = req->status;
 
 	if (!midi) {
-		ERROR(cdev, "f_midi_complete: midi is NULL!\n");
+		pr_info("f_midi_complete: midi is NULL!\n");
 		return;
 	}
 
