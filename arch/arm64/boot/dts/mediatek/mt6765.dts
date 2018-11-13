@@ -1655,6 +1655,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		aed = <0x1a>;
 		ch_offset_default = <0x100>;
 		mediatek,hs_only;
+		
 	};
 
 	i2c4: i2c4@11011000 {
@@ -2115,6 +2116,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
+		gpio-irq = <&pio 10 0x0>;
 	};
 
 	disp_mutex0: disp_mutex0@14001000 {
