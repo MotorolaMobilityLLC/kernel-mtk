@@ -726,7 +726,7 @@ static void ccci_rpc_work_helper(struct port_t *port, struct rpc_pkt *pkt,
 		{
 			u16 count = 0;
 			struct ccci_rpc_clkbuf_result *clkbuf;
-			CLK_BUF_SWCTRL_STATUS_T swctrl_status[CLKBUF_MAX_COUNT];
+			enum CLK_BUF_SWCTRL_STATUS_T swctrl_status[CLKBUF_MAX_COUNT];
 			struct ccci_rpc_clkbuf_input *clkinput;
 			u32 AfcDac;
 
