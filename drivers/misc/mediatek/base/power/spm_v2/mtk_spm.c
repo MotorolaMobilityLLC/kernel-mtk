@@ -580,15 +580,24 @@ static void spm_register_init(void)
 
 #ifdef CONFIG_MTK_MD3_SUPPORT
 #if CONFIG_MTK_MD3_SUPPORT /* Using this to check > 0 */
-	spm_write(SPM_INFRA_MISC, (spm_read(SPM_INFRA_MISC) &
-		~(0xff << MD_SRC_REQ_BIT)) | (0x6d << MD_SRC_REQ_BIT));
+	if (spm_infracfg_ao_base)
+		spm_write(SPM_INFRA_MISC,
+				(spm_read(SPM_INFRA_MISC) &
+				 ~(0xff << MD_SRC_REQ_BIT)) |
+				(0x6d << MD_SRC_REQ_BIT));
 #else /* CONFIG_MTK_MD3_SUPPORT is 0 */
-	spm_write(SPM_INFRA_MISC, (spm_read(SPM_INFRA_MISC) &
-		~(0xff << MD_SRC_REQ_BIT)) | (0x29 << MD_SRC_REQ_BIT));
+	if (spm_infracfg_ao_base)
+		spm_write(SPM_INFRA_MISC,
+				(spm_read(SPM_INFRA_MISC) &
+					~(0xff << MD_SRC_REQ_BIT)) |
+				(0x29 << MD_SRC_REQ_BIT));
 #endif
 #else /* CONFIG_MTK_MD3_SUPPORT is not defined */
-	spm_write(SPM_INFRA_MISC, (spm_read(SPM_INFRA_MISC) &
-		~(0xff << MD_SRC_REQ_BIT)) | (0x29 << MD_SRC_REQ_BIT));
+	if (spm_infracfg_ao_base)
+		spm_write(SPM_INFRA_MISC,
+				(spm_read(SPM_INFRA_MISC) &
+					~(0xff << MD_SRC_REQ_BIT)) |
+				(0x29 << MD_SRC_REQ_BIT));
 #endif
 
 	/* enable register control */
