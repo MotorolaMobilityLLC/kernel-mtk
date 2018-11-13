@@ -2461,7 +2461,8 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	if (g_efuse_id == 0x8 || g_efuse_id == 0xf) {
 		/* 6762M */
 		g_segment_id = MT6762M_SEGMENT;
-	} else if (g_efuse_id == 0x1 || g_efuse_id == 0x7) {
+	} else if (g_efuse_id == 0x1 || g_efuse_id == 0x7
+		|| g_efuse_id == 0x9) {
 		/* 6762 */
 		g_segment_id = MT6762_SEGMENT;
 	} else if (g_efuse_id == 0x2 || g_efuse_id == 0x5) {
