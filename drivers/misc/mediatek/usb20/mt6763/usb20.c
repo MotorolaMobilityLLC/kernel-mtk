@@ -405,7 +405,7 @@ void trigger_disconnect_check_work(void)
 }
 
 /* to avoid build error due to PMIC module not ready */
-#ifndef CONFIG_MTK_CHARGER
+#ifndef CONFIG_MTK_SMART_BATTERY
 #define BYPASS_PMIC_LINKAGE
 #endif
 static enum charger_type musb_hal_get_charger_type(void)
