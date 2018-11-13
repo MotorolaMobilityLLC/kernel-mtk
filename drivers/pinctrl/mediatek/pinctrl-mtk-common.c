@@ -1847,7 +1847,7 @@ void gpio_dump_regs_range(int start, int end)
 
 	chip = pctl->chip;
 
-	pr_debug("PIN: [MODE] [DIR] [DOUT] [DIN][PULL_EN] [PULL_SEL] [IES] [SMT] [DRIVE] ( [R1] [R0] )\n");
+	pr_info("PIN: [MODE] [DIR] [DOUT] [DIN][PULL_EN] [PULL_SEL] [IES] [SMT] [DRIVE] ( [R1] [R0] )\n");
 
 	if (start < 0) {
 		start = 0;
@@ -1859,7 +1859,7 @@ void gpio_dump_regs_range(int start, int end)
 
 	for (i = start; i <= end; i++) {
 		pull_val = mtk_pullsel_get(chip, i);
-		pr_debug("%4d: %d%d%d%d%d%d%d%d%d",
+		pr_info("%4d: %d%d%d%d%d%d%d%d%d",
 			i, mtk_pinmux_get(chip, i),
 			!mtk_gpio_get_direction(chip, i),
 			mtk_gpio_get_out(chip, i),
@@ -1870,9 +1870,9 @@ void gpio_dump_regs_range(int start, int end)
 			mtk_smt_get(chip, i),
 			mtk_driving_get(chip, i));
 		if ((pull_val & MTK_PUPD_R1R0_BIT_SUPPORT) && (pull_val >= 0))
-			pr_debug(" %d %d\n", !!(pull_val&4), !!(pull_val&2));
+			pr_info(" %d %d\n", !!(pull_val&4), !!(pull_val&2));
 		else
-			pr_debug("\n");
+			pr_info("\n");
 	}
 }
 
