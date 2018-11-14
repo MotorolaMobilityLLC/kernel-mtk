@@ -1,0 +1,8 @@
+&i2c5 {
+	bq2560x@6B {
+		compatible = "mediatek,bq2560x";
+		charger_name = "primary_chg";
+		reg = <0x6B>;
+		status = "okay";
+	};
+};
