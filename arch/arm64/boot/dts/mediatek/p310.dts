@@ -97,6 +97,13 @@
 	};
 };
 
+&i2c6 {
+	fs16xx@34 {
+		compatible = "foursemi,fs16xx";
+		reg = <0x34>;
+		status = "okay";
+	};
+};
 /*hall start*/
 
 &hall_1 {
