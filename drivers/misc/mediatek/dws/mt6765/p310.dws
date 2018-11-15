@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.13.2018.17:10:15"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.14.2018.16:48:32"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -1828,7 +1828,6 @@
             <pmic0>
                 <ldoVar>VCAMA</ldoVar>
                 <defEn>OFF</defEn>
-                <varName0>MAIN_CAMERA_POWER_A</varName0>
             </pmic0>
             <pmic1>
                 <ldoVar>VSIM1</ldoVar>
@@ -1841,7 +1840,8 @@
             <pmic3>
                 <ldoVar>VCAMD</ldoVar>
                 <defEn>OFF</defEn>
-                <varName0>MAIN_CAMERA_2_POWER_D</varName0>
+                <varName0>MAIN_CAMERA_POWER_D</varName0>
+                <varName1>MAIN_CAMERA_2_POWER_D</varName1>
             </pmic3>
             <pmic4>
                 <ldoVar>VCAMIO</ldoVar>
