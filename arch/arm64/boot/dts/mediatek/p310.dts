@@ -119,7 +119,7 @@
 /*hall end*/
 /* TOUCH start */
 &touch {
-	tpd-resolution = <720 1560>;
+	tpd-resolution = <720 1520>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
