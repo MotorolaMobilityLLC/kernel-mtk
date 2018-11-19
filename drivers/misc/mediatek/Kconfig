@@ -555,3 +555,7 @@ config PROJECT_P161BN
     default n
     help
 
+config LCM_BIAS_SUPPORT
+	bool "LCM have bias ic"
+	default n
+endif
