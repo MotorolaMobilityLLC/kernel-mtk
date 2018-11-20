@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.14.2018.16:48:32"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.20.2018.17:26:31"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -1720,17 +1720,17 @@
             </device6>
             <device7>
                 <varName>CAMERA_MAIN_TWO</varName>
-                <channel>I2C_CHANNEL_6</channel>
-                <address>0x2D</address>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x2E</address>
             </device7>
             <device8>
                 <varName>CAMERA_MAIN_TWO_EEPROM</varName>
-                <channel>I2C_CHANNEL_6</channel>
+                <channel>I2C_CHANNEL_4</channel>
                 <address>0x50</address>
             </device8>
             <device9>
                 <varName>CAMERA_MAIN_TWO_AF</varName>
-                <channel>I2C_CHANNEL_6</channel>
+                <channel>I2C_CHANNEL_4</channel>
                 <address>0x0C</address>
             </device9>
             <device10>
@@ -1795,7 +1795,7 @@
             </device21>
             <device22>
                 <varName>CCU_SENSOR_I2C_MAIN2_HW</varName>
-                <channel>I2C_CHANNEL_6</channel>
+                <channel>I2C_CHANNEL_4</channel>
                 <address>0x12</address>
             </device22>
         </module>
