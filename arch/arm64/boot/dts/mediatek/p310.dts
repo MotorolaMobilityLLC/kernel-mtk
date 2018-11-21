@@ -528,6 +528,54 @@
 	chg2_ta_ac_charger_current = <2000000>;
 };
 
+/*add for aw3641 driver for camera flashlight*/
+&pio {
+        flash_light_pin_cfg_output0: flashlightpincfg0 {
+            pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO57__FUNC_GPIO57>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        flash_light_pin_cfg_output1: flashlightpincfg1 {
+            pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO57__FUNC_GPIO57>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        flash_light_pin_en_output0: flashlightpinen0 {
+            pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+        flash_light_pin_en_output1: flashlightpinen1 {
+            pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+         flash_light_pin_default: flashlighdefaultcfg {
+        };
+
+};
+
+&flashlights_aw3641 {
+        pinctrl-names = "flashlightpin_default", "flashlightpin_cfg0", "flashlightpin_cfg1","flashlightpin_en0","flashlightpin_en1";
+        pinctrl-0 = <&flash_light_pin_default>;
+        pinctrl-1 = <&flash_light_pin_cfg_output0>;
+        pinctrl-2 = <&flash_light_pin_cfg_output1>;
+        pinctrl-3 = <&flash_light_pin_en_output0>;
+        pinctrl-4 = <&flash_light_pin_en_output1>;
+        status = "okay";
+};
+
+
+
+
 &pio {
 	camera_pins_cam0_mclk_on: camera_pins_cam0_mclk_on {
 		pins_cmd_dat {

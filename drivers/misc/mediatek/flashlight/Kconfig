@@ -36,6 +36,18 @@ config MTK_FLASHLIGHT_AW3641
 
                 Say M here if you want to compile this driver as a module.
 
+config MTK_FLASHLIGHT_AW3641_P310
+        tristate "Mediatek flashlight with driver IC (AW3641)"
+        depends on MTK_FLASHLIGHT
+        default n
+        help
+                This is for the flashlight driver IC (AW3641).
+
+                Say Y here if you want a flashlight driver IC AW3641.
+                Select this only if your board has this IC.
+
+                Say M here if you want to compile this driver as a module.
+				
 config MTK_FLASHLIGHT_LM3642
 	tristate "Mediatek flashlight with driver IC (TI LM3642)"
 	depends on MTK_FLASHLIGHT
