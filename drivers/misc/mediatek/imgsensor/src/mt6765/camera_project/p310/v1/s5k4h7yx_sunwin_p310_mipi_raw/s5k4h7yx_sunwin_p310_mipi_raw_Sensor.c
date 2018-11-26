@@ -997,8 +997,7 @@ static kal_uint32 open(void)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0;
-
-
+        printk("cyw:open update_otp 4h7 \n");
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
@@ -1021,7 +1020,7 @@ static kal_uint32 open(void)
 	if (imgsensor_info.sensor_id != sensor_id)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
-#if 0
+#if 1
 	if (!(update_otp()))
 	{
 		LOG_INF("Demon_otp update_otp error!");

@@ -38,13 +38,13 @@
 #define S5K4H7SUB_OTP_AWBFLAG_ADDR	0x0A0D
 #define S5K4H7SUB_LSC_PAGE		0
 #define S5K4H7SUB_FLAG_PAGE		21
-#define S5K4H7SUB_AWB_PAGE		21
+#define S5K4H7SUB_AWB_PAGE		22
 //Chenyee camera pangfei 20180608 modify for CSW1802A-9 begin
 #define S5K4H7SUB_OTP_FLAGFLAG_ADDR_G2	0x0A24
 
-#define G_G_GOLDEN 1024
-#define R_G_GOLDEN 0x020d
-#define B_G_GOLDEN 0x0297
+#define G_G_GOLDEN (unsigned int)(512+0.5) //1024
+#define R_G_GOLDEN (unsigned int)(2*88.0/(156+156)*512+0.5)//1600//0x020d*5
+#define B_G_GOLDEN (unsigned int)(2*111.0/(156+156)*512+0.5) //0x0297*5
 //Chenyee camera pangfei 20180608 modify for CSW1802A-9 end
 
 typedef struct {
@@ -90,6 +90,29 @@ OTP otp_data_info = {0};
 void get_4h7_page_data(int pageidx, unsigned char *pdata)
 {
 	unsigned short get_byte=0;
+	unsigned int addr = 0x0A05;
+	int i = 0;
+	otp_4h7_write_cmos_sensor_8(0x0A02,pageidx);
+	otp_4h7_write_cmos_sensor_8(0x0A00,0x01);
+
+	do
+	{
+		mdelay(1);
+		get_byte = otp_4h7_read_cmos_sensor(0x0A01);
+	}while((get_byte & 0x01) != 1);
+
+	for(i = 0; i < 20; i++){
+		pdata[i] = otp_4h7_read_cmos_sensor(addr);
+		addr++;
+        printk("OTP  otp_4h7_read_cmos_sensor pdata[%d]=0x%x",i,pdata[i]);
+	}
+
+	otp_4h7_write_cmos_sensor_8(0x0A00,0x00);
+}
+
+void get_4h7_page_data_lsc(int pageidx, unsigned char *pdata)
+{
+	unsigned short get_byte=0;
 	unsigned int addr = 0x0A04;
 	int i = 0;
 	otp_4h7_write_cmos_sensor_8(0x0A02,pageidx);
@@ -104,10 +127,12 @@ void get_4h7_page_data(int pageidx, unsigned char *pdata)
 	for(i = 0; i < 64; i++){
 		pdata[i] = otp_4h7_read_cmos_sensor(addr);
 		addr++;
+               printk("OTP  otp_4h7_read_cmos_sensor_lsc pdata[%d]=0x%x",i,pdata[i]);
 	}
 
 	otp_4h7_write_cmos_sensor_8(0x0A00,0x00);
 }
+
 
 unsigned short selective_read_region(int pageidx,unsigned int addr)
 {
@@ -126,6 +151,27 @@ unsigned short selective_read_region(int pageidx,unsigned int addr)
 	return get_byte;
 }
 
+
+unsigned short selective_read_region_16(int pageidx,unsigned int addr)
+{
+	unsigned short get_byte = 0;
+	otp_4h7_write_cmos_sensor_8(0x0A02,pageidx);
+	otp_4h7_write_cmos_sensor_8(0x0A00,0x01);
+	do
+	{
+		mdelay(1);
+		get_byte = otp_4h7_read_cmos_sensor(0x0A01);
+	}while((get_byte & 0x01) != 1);
+
+	get_byte = ((otp_4h7_read_cmos_sensor(addr) << 8) | otp_4h7_read_cmos_sensor(addr+1));
+	printk("--OTP  selective_read_region_16  addr=0x%x  addr+1=0x%x   get_byte=0x%x  addr=0x%x pageidx=%d" ,otp_4h7_read_cmos_sensor(addr),otp_4h7_read_cmos_sensor(addr+1),get_byte,addr, pageidx);
+
+	otp_4h7_write_cmos_sensor_8(0x0A00,0x00);
+
+	return get_byte;
+}
+
+#if 0
 unsigned int selective_read_region_16(int pageidx,unsigned int addr)
 {
 	unsigned int get_byte = 0;
@@ -142,9 +188,15 @@ unsigned int selective_read_region_16(int pageidx,unsigned int addr)
 	}
 
 	get_byte = ((otp_4h7_read_cmos_sensor(addr) << 8) | otp_4h7_read_cmos_sensor(addr+1));
+
+	printk("------OTP  selective_read_region_16  addr=0x%x  addr+1=0x%x   get_byte=0x%x  addr=0x%x pageidx=%d" ,otp_4h7_read_cmos_sensor(addr),otp_4h7_read_cmos_sensor(addr+1),get_byte,addr, pageidx);
+
 	old_pageidx = pageidx;
 	return get_byte;
 }
+
+#endif
+
 
 /*****************************************************
  * cal_rgb_gain
@@ -217,9 +269,10 @@ void apply_4h7_otp_awb(void)
 #endif
 //Chenyee camera pangfei 20180608 modify for CSW1802A-9 end
 
+	r_ratio = (unsigned int)(((float)otp_data_info.frggolden * 1000 / otp_data_info.frgcur + 500)/1000);
+	b_ratio = (unsigned int)(((float)otp_data_info.fbggolden * 1000 / otp_data_info.fbgcur + 500)/1000);
 
-	r_ratio = (unsigned int)((otp_data_info.frggolden * 1000 / otp_data_info.frgcur + 500)/1000);
-	b_ratio = (unsigned int)((otp_data_info.fbggolden * 1000 / otp_data_info.fbgcur + 500)/1000);
+        printk("OTP apply_4h7_otp_awb  otp_data_info.frggolden=0x%x  tp_data_info.fbggolden=0x%x  tp_data_info.frgcur=0x%x  otp_data_info.fbgcur=0x%x  r_ratio=0x%x  b_ratio=0x%x \n",otp_data_info.frggolden,otp_data_info.fbggolden,otp_data_info.frgcur,otp_data_info.fbgcur,r_ratio,b_ratio);
 
 	cal_rgb_gain(&otp_data_info.nr_gain, &otp_data_info.ng_gain, &otp_data_info.nb_gain, r_ratio, b_ratio);
 
@@ -245,7 +298,7 @@ void apply_4h7_otp_awb(void)
 
 	otp_4h7_write_cmos_sensor_8(0x0212,b_gain_h);
 	otp_4h7_write_cmos_sensor_8(0x0213,b_gain_l);
-	printk("OTP apply_4h7_otp_awb\n");
+	printk("OTP    apply_4h7_otp_awb  r_gain_h=0x%x  r_gain_l=0x%x  g_gain_h=0x%x  g_gain_l=0x%x  b_gain_h=0x%x  b_gain_l=0x%x \n",r_gain_h,r_gain_l,g_gain_h,g_gain_l,b_gain_h,b_gain_l);
 }
 
 /*********************************************************
@@ -275,11 +328,13 @@ int otp_group_info_4h7(void)
 		otp_data_info.lsc_offset = 0;
 		otp_data_info.lsc_group = 1;
 		otp_data_info.lsc_sum = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A32);
+                printk("4H7 OTP otp_data_info.lsc_group = 1;\n");
 	}
 	else if ( otp_data_info.lsc_infoflag == 0x03 ){
 		otp_data_info.lsc_offset = 1;
 		otp_data_info.lsc_group = 2;
 		otp_data_info.lsc_sum = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A34);
+                printk("otp_data_info.lsc_group = 2;\n");
 	}
 	else{
 		printk("4H7 OTP read data fail lsc empty!!!\n");
@@ -362,33 +417,46 @@ int otp_group_info_4h7(void)
 		//goto error;
 	}
 
-	AWB_Group1_flag =
+	otp_data_info.flag_infoflag =
 		selective_read_region(S5K4H7SUB_FLAG_PAGE,S5K4H7SUB_OTP_FLAGFLAG_ADDR);
-	AWB_Group2_flag =
-		selective_read_region(S5K4H7SUB_FLAG_PAGE,S5K4H7SUB_OTP_FLAGFLAG_ADDR_G2);
 
-	if( (AWB_Group1_flag == 0x01) || (AWB_Group2_flag == 0x01)){
-		if(AWB_Group1_flag == 0x01){
+	if( (otp_data_info.flag_infoflag>>4 & 0x0c) == 0x04 ){
+		otp_data_info.flag_offset = 0;
+		otp_data_info.flag_group = 1;
+	}
+	else if ( (otp_data_info.flag_infoflag>>4 & 0x03) == 0x01 ){
+		otp_data_info.flag_offset = 4;
+		otp_data_info.flag_group = 2;
+	}
+	else{
+		printk("4h7 OTP read data fail flag empty!!!\n");
+		//goto error;
+	}
+
+	if( (otp_data_info.flag_group ==1) || (otp_data_info.flag_group == 2)){
+		if(otp_data_info.flag_group ==1){
 			otp_data_info.flag_offset = 0;
 			otp_data_info.flag_group = 1;
 			otp_data_info.flag_infoflag = 1;
 			otp_data_info.group = 1;
 			
-			otp_data_info.frgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A0E);
-			otp_data_info.fbgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A10);
+			otp_data_info.frgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A05);//0x11f;
+			otp_data_info.fbgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A07);//0x179;
 
-			otp_data_info.awb_flag_sum = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A1B);
+			otp_data_info.awb_flag_sum = selective_read_region(S5K4H7SUB_AWB_PAGE,0x0A19);
+			printk("4h7 OTP read group 1 frgcur=0x%x fbgcur=0x%x awb_flag_sum=0x%x!\n", otp_data_info.frgcur,otp_data_info.fbgcur,otp_data_info.awb_flag_sum);
 		}
-		else if(AWB_Group2_flag == 0x01){
+		else if(otp_data_info.flag_group == 2){
 			otp_data_info.flag_offset = 4;
 			otp_data_info.flag_group = 2;
 			otp_data_info.flag_infoflag = 1;
 			otp_data_info.group = 2;
 			
-			otp_data_info.frgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A2E);
-			otp_data_info.fbgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A30);
+			otp_data_info.frgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A1A);
+			otp_data_info.fbgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A1C);
 
-			otp_data_info.awb_flag_sum = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A3B);
+			otp_data_info.awb_flag_sum = selective_read_region(S5K4H7SUB_AWB_PAGE,0x0A2E);
+			printk("4h7 OTP read group 2 frgcur=0x%x fbgcur=0x%x awb_flag_sum=0x%x!\n", otp_data_info.frgcur,otp_data_info.fbgcur,otp_data_info.awb_flag_sum);
 		}
 	}
 	else{
@@ -409,15 +477,48 @@ bool read_4h7_page(int page_start,int page_end,unsigned char *pdata)
 {
 	bool bresult = true;
 	int st_page_start = page_start;
+	if (page_start <= 0 || page_end > 22){
+		bresult = false;
+		printk(" OTP page_end is large!");
+		return bresult;
+	}
+	for(; st_page_start <= page_end; st_page_start++){
+                printk("OTP st_page_start=%d!",st_page_start);
+		get_4h7_page_data(st_page_start, pdata);
+	}
+	return bresult;
+}
+
+
+
+
+bool read_4h7_page_lsc(int page_start,int page_end,unsigned char *pdata)
+{
+	bool bresult = true;
+	int st_page_start = page_start;
 	if (page_start <= 0 || page_end > 21){
 		bresult = false;
 		printk(" OTP page_end is large!");
 		return bresult;
 	}
 	for(; st_page_start <= page_end; st_page_start++){
-		get_4h7_page_data(st_page_start, pdata);
+                printk("OTP st_page_start=%d page_end=%d ",st_page_start,page_end);
+		get_4h7_page_data_lsc(st_page_start, pdata);
 	}
 	return bresult;
+}
+
+unsigned int sum_awb_flag(unsigned int sum_start, unsigned int sum_end, unsigned char *pdata)
+{
+	int i = 0;
+	unsigned int start;
+	unsigned int re_sum = 0;
+	for(start = 0x0A05; i < 20; i++, start++){
+		if((start >= sum_start) && (start <= sum_end)){
+			re_sum += pdata[i];
+		}
+	}
+	return  re_sum;
 }
 
 unsigned int sum_awb_flag_lsc(unsigned int sum_start, unsigned int sum_end, unsigned char *pdata)
@@ -435,30 +536,38 @@ unsigned int sum_awb_flag_lsc(unsigned int sum_start, unsigned int sum_end, unsi
 
 bool check_sum_flag_awb(void)
 {
-	int page_start = 21,page_end = 21;
 
-	unsigned char data_p[21][64] = {};
-	bool bresult = true;
+	int page_start = 22,page_end = 22;
+
+	unsigned char data_p[22][20] = {};
+	bool bresult = 0;
 	unsigned int  sum_awbfg = 0;
+        unsigned int  checksum = 0;
 
 	bresult &= read_4h7_page(page_start, page_end, data_p[page_start-1]);
-
+        //printk("OTP 4h7 bresult = %d "，bresult);
 	if(otp_data_info.group == 1){
-		sum_awbfg = sum_awb_flag_lsc(0x0A05, 0X0A08, data_p[page_start-1]);
-		sum_awbfg += sum_awb_flag_lsc(0x0A0E, 0X0A1D, data_p[page_start-1]);
+
+		sum_awbfg = sum_awb_flag(0x0A05, 0X0A18, data_p[page_start-1]);
+		//sum_awbfg += sum_awb_flag(0x0A0E, 0X0A1D, data_p[page_start-1]);
+                checksum=(sum_awbfg%0xff)+1;
+                printk("OTP 4h7 check awb flag sum_awbfg=0x%x  checksum = 0x%x !!!",sum_awbfg,checksum);
 	}
 	else if (otp_data_info.group == 2){
-		sum_awbfg = sum_awb_flag_lsc(0x0A09, 0X0A0C, data_p[page_start-1]);
-		sum_awbfg += sum_awb_flag_lsc(0x0A1E, 0X0A2D, data_p[page_start-1]);
+		sum_awbfg = sum_awb_flag(0x0A09, 0X0A0C, data_p[page_start-1]);
+		//sum_awbfg += sum_awb_flag(0x0A1E, 0X0A2D, data_p[page_start-1]);
 	}
-	if(sum_awbfg == otp_data_info.awb_flag_sum){
+	if(checksum == otp_data_info.awb_flag_sum){
+                printk("OTP 4h7 checksum awb ok\n");
 		apply_4h7_otp_awb();
 	}
 	else{
 		printk("OTP 4h7 check awb flag sum fail!!!");
 		bresult &= 0;
 	}
+
 	return  bresult;
+
 }
 
 bool  check_sum_flag_lsc(void)
@@ -471,7 +580,7 @@ bool  check_sum_flag_lsc(void)
 
 	if(otp_data_info.lsc_group == 1){
 		for(page_start = 1, page_end = 6; page_start <= page_end; page_start++){
-			bresult &= read_4h7_page(page_start, page_start, data_p[page_start-1]);
+			bresult &= read_4h7_page_lsc(page_start, page_start, data_p[page_start-1]);
 			if(page_start == 6){
 				sum_slc += sum_awb_flag_lsc(0x0A04, 0x0A2B, data_p[page_start-1]);
 				continue;
@@ -495,7 +604,9 @@ bool  check_sum_flag_lsc(void)
 		}
 	}
 
+	#if 0
 	if(sum_slc == otp_data_info.lsc_sum){
+                printk("OTP 4h7 check lsc sum ok !!!");
 		apply_4h7_otp_enb_lsc();
 		otp_data_info.lsc_check_flag = 1;
 	}
@@ -504,6 +615,9 @@ bool  check_sum_flag_lsc(void)
 		bresult &= 0;
 		otp_data_info.lsc_check_flag = 0;
 	}
+        #endif
+
+        apply_4h7_otp_enb_lsc();
 	return  bresult;
 }
 
@@ -516,12 +630,14 @@ bool update_otp(void)
 	}
 	else{
 		if(check_sum_flag_awb() == 0 && otp_data_info.lsc_check_flag){
+
 			printk("OTP 4h7 check sum fail!!!\n");
 			result &= 0;
 		}
 		else{
 			printk("OTP 4h7 check ok\n");
 		}
+                check_sum_flag_lsc();
 	}
 	return  result;
 }
