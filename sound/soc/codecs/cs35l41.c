@@ -146,16 +146,19 @@ static int cs35l41_dsp_power_ev(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		if (cs35l41->halo_booted == false)
+		if ((cs35l41->halo_booted == false) ||
+		    (cs35l41->pdata.dsp_force_reload == true))
 			wm_halo_early_event(w, kcontrol, event);
 		else
 			cs35l41->dsp.booted = true;
 
 		return 0;
 	case SND_SOC_DAPM_PRE_PMD:
-		if (cs35l41->halo_booted == false) {
+		if ((cs35l41->halo_booted == false) ||
+		    (cs35l41->pdata.dsp_force_reload == true)) {
 			wm_halo_early_event(w, kcontrol, event);
 			wm_halo_event(w, kcontrol, event);
+			cs35l41->halo_booted = false;
 		}
 	default:
 		return 0;
@@ -170,7 +173,8 @@ static int cs35l41_dsp_load_ev(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
-		if (cs35l41->halo_booted == false) {
+		if ((cs35l41->halo_booted == false) ||
+		    (cs35l41->pdata.dsp_force_reload == true)) {
 			wm_halo_event(w, kcontrol, event);
 			cs35l41->halo_booted = true;
 		}
@@ -1664,6 +1668,8 @@ static int cs35l41_handle_of_data(struct device *dev,
 					"cirrus,lrclk-force-output");
 	pdata->amp_gain_zc = of_property_read_bool(np,
 					"cirrus,amp-gain-zc");
+	pdata->dsp_force_reload = of_property_read_bool(np,
+					"cirrus,dsp-force-reload");
 
 	if (of_property_read_u32(np, "cirrus,temp-warn_threshold", &val) >= 0)
 		pdata->temp_warn_thld = val | CS35L41_VALID_PDATA;
