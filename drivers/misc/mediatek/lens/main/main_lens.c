@@ -88,6 +88,10 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+	
+#ifdef CONFIG_MTK_LENS_DW9718SAF_IMX486_SUNWIN_P310_SUPPORT
+	{1, AFDRV_DW9718SAF_IMX486_SUNWIN_P310, DW9718SAF_IMX486_SUNWIN_P310_SetI2Cclient, DW9718SAF_IMX486_SUNWIN_P310_Ioctl, DW9718SAF_IMX486_SUNWIN_P310_Release},
+#endif
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl,
 	 AK7371AF_Release, AK7371AF_GetFileName, NULL},
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl,
@@ -172,8 +176,15 @@ void AFRegulatorCtrl(int Stage)
 				lens_device->of_node = node;
 
 				#if defined(CONFIG_MACH_MT6765)
-				regVCAMAF =
-					regulator_get(lens_device, "vldo28");
+				   if((strncmp(CONFIG_ARCH_MTK_PROJECT, "p310", 4) == 0)
+				   	||(strncmp(CONFIG_ARCH_MTK_PROJECT, "p311", 4) == 0)){
+					  regVCAMAF =
+					     regulator_get(lens_device, "vcama");
+				   }
+				   else{
+				      regVCAMAF =
+					     regulator_get(lens_device, "vldo28");
+				   	}
 				#else
 				regVCAMAF =
 					regulator_get(lens_device, "vcamaf");

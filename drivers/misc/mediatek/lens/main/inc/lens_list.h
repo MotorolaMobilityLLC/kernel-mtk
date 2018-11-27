@@ -151,6 +151,23 @@ extern int DW9718SAF_PowerDown(struct i2c_client *pstAF_I2Cclient,
 				int *pAF_Opened);
 extern int DW9718SAF_GetFileName(unsigned char *pFileName);
 
+//P310
+#define DW9718SAF_IMX486_SUNWIN_P310_SetI2Cclient DW9718SAF_IMX486_SUNWIN_P310_SetI2Cclient_Main
+#define DW9718SAF_IMX486_SUNWIN_P310_Ioctl DW9718SAF_IMX486_SUNWIN_P310_Ioctl_Main
+#define DW9718SAF_IMX486_SUNWIN_P310_Release DW9718SAF_IMX486_SUNWIN_P310_Release_Main
+#define DW9718SAF_IMX486_SUNWIN_P310_PowerDown DW9718SAF_IMX486_SUNWIN_P310_PowerDown_Main
+#define DW9718SAF_IMX486_SUNWIN_P310_GetFileName DW9718SAF_IMX486_SUNWIN_P310_GetFileName_Main
+extern int DW9718SAF_IMX486_SUNWIN_P310_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				  spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9718SAF_IMX486_SUNWIN_P310_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			    unsigned long a_u4Param);
+extern int DW9718SAF_IMX486_SUNWIN_P310_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int DW9718SAF_IMX486_SUNWIN_P310_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int DW9718SAF_IMX486_SUNWIN_P310_GetFileName(unsigned char *pFileName);
+
+
+
 #define DW9719TAF_SetI2Cclient DW9719TAF_SetI2Cclient_Main
 #define DW9719TAF_Ioctl DW9719TAF_Ioctl_Main
 #define DW9719TAF_Release DW9719TAF_Release_Main
