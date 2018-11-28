@@ -205,7 +205,8 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 		break;
 	}
 
-	if (pcustomize_sensor &&
+
+	if (pcustomize_sensor != NULL &&
 		strlen(pcustomize_sensor) > 2 &&
 		!strstr(pcustomize_sensor, curr_sensor_name))
 		return IMGSENSOR_RETURN_ERROR;
