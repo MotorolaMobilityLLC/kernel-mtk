@@ -862,8 +862,8 @@ void AudDrv_APLL24M_Clk_On(void)
 
 	if (Aud_APLL24M_Clk_cntr == 0) {
 		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
-			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock, 196607999);
-			pr_aud("+%s clk_set_rate = 196607999\n", __func__);
+			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock, 196608000);
+			pr_aud("+%s clk_set_rate = 196608000\n", __func__);
 			if (ret) {
 				pr_debug("%s clk_set_rate %s-98303000 fail %d\n",
 				       __func__, aud_clks[CLOCK_APMIXED_APLL1].name, ret);
@@ -1079,7 +1079,7 @@ void AudDrv_APLL2Tuner_Clk_On(void)
 			goto EXIT;
 		}
 
-		SetApmixedCfg(AP_PLL_CON5, 0x1 << 1, 0x1 << 1);
+		SetApmixedCfg(AP_PLL_CON5, 0x1, 0x1);
 	}
 	Aud_APLL2_Tuner_cntr++;
 EXIT:
@@ -1093,7 +1093,7 @@ void AudDrv_APLL2Tuner_Clk_Off(void)
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	Aud_APLL2_Tuner_cntr--;
 	if (Aud_APLL2_Tuner_cntr == 0) {
-		SetApmixedCfg(AP_PLL_CON5, 0x0 << 1, 0x1 << 1);
+		SetApmixedCfg(AP_PLL_CON5, 0x0, 0x1);
 		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare)
 			clk_disable(aud_clks[CLOCK_APLL1_TUNER].clock);
 	} else if (Aud_APLL2_Tuner_cntr < 0) {

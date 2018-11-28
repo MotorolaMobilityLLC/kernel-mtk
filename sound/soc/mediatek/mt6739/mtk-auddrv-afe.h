@@ -238,7 +238,7 @@ enum audio_sdm_level {
 #define AFE_IRQ_MCU_CNT4           (AFE_BASE + 0x03e8)
 #define AFE_IRQ_MCU_CNT11          (AFE_BASE + 0x03ec)
 #define AFE_APLL1_TUNER_CFG        (AFE_BASE + 0x03f0)
-#define AFE_APLL2_TUNER_CFG        (AFE_BASE + 0x03f4)
+#define AFE_APLL2_TUNER_CFG        (AFE_BASE + 0x03f0)
 #define AFE_MEMIF_HD_MODE          (AFE_BASE + 0x03f8)
 #define AFE_MEMIF_HDALIGN          (AFE_BASE + 0x03fc)
 #define AFE_CONN33                 (AFE_BASE + 0x0408)
