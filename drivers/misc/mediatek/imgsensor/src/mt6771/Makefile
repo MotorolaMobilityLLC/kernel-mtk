@@ -37,6 +37,10 @@ obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_ca_dummy.o
 endif
 endif
 
+ifneq ($(findstring 8788,$(ARCH_MTK_PROJECT)),)
+ARCH_MTK_PROJECT := tb8788p1_64_basic
+endif
+
 define FILTER_DRV
 ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)
 ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/$(1)),)
