@@ -8033,17 +8033,29 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 	case ISP_TRANSFOR_CCU_REG:
 		{
-			uint64_t hwTickCnt, ccu_reg_trans_Time;
+			unsigned int hwTickCnt[2];
+			unsigned long long reg_trans_Time;
+			unsigned long long sum;
 
-			if (copy_from_user(&hwTickCnt, (void *)Param,
-				sizeof(uint64_t)) == 0) {
-				ccu_reg_trans_Time =
-				archcounter_timesync_to_monotonic(hwTickCnt);
-				do_div(ccu_reg_trans_Time, 1000); /* ns to us */
+			if (copy_from_user(hwTickCnt, (void *)Param,
+				sizeof(unsigned int)*2) == 0) {
+
+				sum =
+				(unsigned long long)hwTickCnt[0] +
+				((unsigned long long)hwTickCnt[1]<<32);
+
+				reg_trans_Time =
+				archcounter_timesync_to_boot(sum);
+
+				hwTickCnt[1] =
+					do_div(reg_trans_Time, 1000000000);
+				hwTickCnt[1] =
+					hwTickCnt[1]/1000;
+				hwTickCnt[0] = reg_trans_Time;
 
 				if (copy_to_user((void *)Param,
-					&ccu_reg_trans_Time,
-					sizeof(uint64_t)) != 0) {
+					hwTickCnt,
+					sizeof(unsigned int)*2) != 0) {
 					Ret = -EFAULT;
 				}
 			} else {
@@ -9088,6 +9100,12 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd,
 		}
 		ret = filp->f_op->unlocked_ioctl(filp, ISP_SET_MEM_INFO,
 			(unsigned long)data);
+		return ret;
+	}
+	case COMPAT_ISP_TRANSFOR_CCU_REG: {
+		ret =
+			filp->f_op->unlocked_ioctl(filp, ISP_TRANSFOR_CCU_REG,
+					   (unsigned long)compat_ptr(arg));
 		return ret;
 	}
 	case ISP_GET_DUMP_INFO:
