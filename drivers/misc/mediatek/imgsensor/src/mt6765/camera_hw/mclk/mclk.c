@@ -17,8 +17,8 @@ struct MCLK_PINCTRL_NAMES
 	mclk_pinctrl_list[IMGSENSOR_SENSOR_IDX_MAX_NUM][MCLK_STATE_MAX_NUM] = {
 	{{"cam0_mclk_off"}, {"cam0_mclk_on"} },
 	{{"cam1_mclk_off"}, {"cam1_mclk_on"} },
-	{{"cam2_mclk_off"}, {"cam2_mclk_on"} },
 	{{"cam3_mclk_off"}, {"cam3_mclk_on"} },
+	{{"cam2_mclk_off"}, {"cam2_mclk_on"} },
 	{{"cam4_mclk_off"}, {"cam4_mclk_on"} },
 };
 

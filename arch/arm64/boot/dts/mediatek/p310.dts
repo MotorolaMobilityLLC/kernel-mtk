@@ -607,7 +607,6 @@
 			pinmux = <PINMUX_GPIO108__FUNC_GPIO108>;
 		};
 	};	
-	/*
 	camera_pins_cam3_mclk_on: camera_pins_cam3_mclk_on {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO88__FUNC_CMMCLK3>;
@@ -618,7 +617,6 @@
 			pinmux = <PINMUX_GPIO88__FUNC_GPIO88>;
 		};
 	};
-	*/
 	camera_pins_cam0_rst0: cam0@0 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO101__FUNC_GPIO101>;
@@ -836,6 +834,8 @@
 			"cam1_mclk_off",
 			"cam2_mclk_on",
 			"cam2_mclk_off",
+			"cam3_mclk_on",
+			"cam3_mclk_off",
 			"cam_mipi_switch_en_0",
 			"cam_mipi_switch_en_1",
 			"cam_mipi_switch_sel_0", 
@@ -870,10 +870,12 @@
 	pinctrl-26 = <&camera_pins_cam1_mclk_off>;
 	pinctrl-27 = <&camera_pins_cam2_mclk_on>;
 	pinctrl-28 = <&camera_pins_cam2_mclk_off>;
-	pinctrl-29 = <&camera_pins_mipi_switch_en_off>;
-	pinctrl-30 = <&camera_pins_mipi_switch_en_on>;
-	pinctrl-31 = <&camera_pins_mipi_switch_sel_off>;
-	pinctrl-32 = <&camera_pins_mipi_switch_sel_on>;
+	pinctrl-29 = <&camera_pins_cam3_mclk_on>;
+	pinctrl-30 = <&camera_pins_cam3_mclk_off>;	
+	pinctrl-31 = <&camera_pins_mipi_switch_en_off>;
+	pinctrl-32 = <&camera_pins_mipi_switch_en_on>;
+	pinctrl-33 = <&camera_pins_mipi_switch_sel_off>;
+	pinctrl-34 = <&camera_pins_mipi_switch_sel_on>;
 	
 	status = "okay";
 
