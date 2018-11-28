@@ -377,7 +377,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 	unsigned int rdma0_shadow_mode = 0;
 
-	DISPINFO("[disp_lowpower]%s\n", __func__);
+	DISPMSG("[disp_lowpower]%s\n", __func__);
 
 	if (use_wrot_sram() == 0)
 		return;
@@ -390,19 +390,23 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	/* 2.wait eof */
 	_cmdq_insert_wait_frame_done_token_mira(handle);
 
-	/* In cmd mode, after release wrot resource, primary display maybe enter idle */
-	/* mode, so the RDMA0 register only be written into shadow register. It will bring */
-	/* about RDMA0 and WROT1 use sram in the same time. Fix this bug by bypass */
-	/* shadow register. */
-	/* RDMA0 backup shadow mode and change to shadow register bypass mode */
-	rdma0_shadow_mode = DISP_REG_GET(DISP_REG_RDMA_SHADOW_UPDATE);
-	DISP_REG_SET(handle, DISP_REG_RDMA_SHADOW_UPDATE, (0x1<<1)|(0x0<<2));
 
-	/* 3.disable RDMA0 share sram */
-	DISP_REG_SET(handle, DISP_REG_RDMA_SRAM_SEL, 0);
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
+		(disp_helper_get_option(DISP_OPT_SHADOW_MODE)) != 2) {
+		/* In cmd mode, after release wrot resource, primary display maybe enter idle */
+		/* mode, so the RDMA0 register only be written into shadow register. It will bring */
+		/* about RDMA0 and WROT1 use sram in the same time. Fix this bug by bypass */
+		/* shadow register. */
+		/* RDMA0 backup shadow mode and change to shadow register bypass mode */
+		rdma0_shadow_mode = DISP_REG_GET(DISP_REG_RDMA_SHADOW_UPDATE);
+		DISP_REG_SET(handle, DISP_REG_RDMA_SHADOW_UPDATE, (0x1<<1)|(0x0<<2));
 
-	/* RDMA0 recover shadow mode*/
-	DISP_REG_SET(handle, DISP_REG_RDMA_SHADOW_UPDATE, rdma0_shadow_mode);
+		/* 3.disable RDMA0 share sram */
+		DISP_REG_SET(handle, DISP_REG_RDMA_SRAM_SEL, 0);
+
+		/* RDMA0 recover shadow mode*/
+		DISP_REG_SET(handle, DISP_REG_RDMA_SHADOW_UPDATE, rdma0_shadow_mode);
+	}
 
 	/* 4.release share sram resourceEvent*/
 	cmdqRecReleaseResource(handle, resourceEvent);
