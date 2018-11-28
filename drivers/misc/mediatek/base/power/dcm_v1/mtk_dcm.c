@@ -170,13 +170,12 @@ void dcm_set_default(unsigned int type)
 			dcm->saved_state = dcm->default_state;
 			dcm->current_state = dcm->default_state;
 			dcm->disable_refcnt = 0;
-#ifdef ENABLE_DCM_IN_LK
-			if (INIT_DCM_TYPE_BY_K & dcm->typeid) {
-#endif
+
+#ifndef ENABLE_DCM_IN_LK
+			if (dcm->typeid) {
 				if (dcm->preset_func)
 					dcm->preset_func();
 				dcm->func(dcm->current_state);
-#ifdef ENABLE_DCM_IN_LK
 			}
 #endif
 

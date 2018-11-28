@@ -50,7 +50,7 @@ struct DCM {
 	int default_state;
 	DCM_FUNC func;
 	DCM_PRESET_FUNC preset_func;
-	int typeid;
+	unsigned int typeid;
 	char *name;
 };
 
