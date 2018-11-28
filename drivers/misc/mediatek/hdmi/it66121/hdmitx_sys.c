@@ -1313,7 +1313,7 @@ unsigned char ParseEDID(void)
 					EDID_DEBUG_PRINTF("RxCapability.IEEEOUI = %lx\n",
 							  RxCapability.IEEEOUI);
 
-					if (RxCapability.IEEEOUI == 0x0c03) {
+					if ((RxCapability.IEEEOUI == 0x0c03) || (RxCapability.IEEEOUI == 0xc45dd8)) {
 						RxCapability.ValidHDMI = TRUE;
 						bValidCEA = TRUE;
 					} else {
