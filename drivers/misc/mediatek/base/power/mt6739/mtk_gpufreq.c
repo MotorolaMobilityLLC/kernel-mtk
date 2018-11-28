@@ -207,6 +207,19 @@ static void __iomem *g_apmixed_base;
 
 #define GPU_DVFS_PTPOD_DISABLE_VOLT_MT6739TW	GPU_DVFS_VOLT0_6739TW
 
+/* MT6739WD(6731) Use VCORE DVFS and need on/off VCORE & frequency control only */
+#define GPU_DVFS_FREQ0_6739WD	 (350000)	/* KHz */
+#define GPU_DVFS_FREQ1_6739WD	 (290000)	/* KHz */
+#define GPUFREQ_LAST_FREQ_LEVEL_6739WD	(GPU_DVFS_FREQ1_6739WD)
+
+#define GPU_DVFS_VOLT0_6739WD	 (108750)	/* mV x 100 */
+#define GPU_DVFS_VOLT1_6739WD	 (105000)	/* mV x 100 */
+
+#define GPU_DVFS_VSRAM0_6739WD	  (90000)	/* mV x 100 */
+#define GPU_DVFS_VSRAM1_6739WD	  (80000)	/* mV x 100 */
+
+#define GPU_DVFS_PTPOD_DISABLE_VOLT_MT6739WD	GPU_DVFS_VOLT0_6739WD
+
 /*****************************************
  * PMIC settle time (us), should not be changed
  ******************************************/
@@ -216,6 +229,9 @@ static void __iomem *g_apmixed_base;
 
 #define PMIC_MIN_VCORE_6739TW GPU_DVFS_VOLT1_6739TW
 #define PMIC_MAX_VCORE_6739TW GPU_DVFS_VOLT0_6739TW
+
+#define PMIC_MIN_VCORE_6739WD GPU_DVFS_VOLT1_6739WD
+#define PMIC_MAX_VCORE_6739WD GPU_DVFS_VOLT0_6739WD
 
 /* mt6739 us * 100 BEGIN */
 #define DELAY_FACTOR 625
@@ -285,6 +301,7 @@ static gpufreq_ptpod_update_notify g_pGpufreq_ptpod_update_notify;
 enum chip_ip_table {
 	ID_MT6739 = 0,
 	ID_MT6739TW,
+	ID_MT6739WD,
 };
 
 static enum chip_ip_table device_id;
@@ -305,6 +322,11 @@ static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_mt6739tw[] = {
 	GPUOP(GPU_DVFS_FREQ1_6739TW, GPU_DVFS_VOLT1_6739TW, GPU_DVFS_VSRAM1_6739TW, 1),
 	GPUOP(GPU_DVFS_FREQ2_6739TW, GPU_DVFS_VOLT2_6739TW, GPU_DVFS_VSRAM1_6739TW, 2),
 	GPUOP(GPU_DVFS_FREQ3_6739TW, GPU_DVFS_VOLT3_6739TW, GPU_DVFS_VSRAM1_6739TW, 3),
+};
+
+static struct mt_gpufreq_table_info mt_gpufreq_opp_tbl_mt6739wd[] = {
+	GPUOP(GPU_DVFS_FREQ0_6739WD, GPU_DVFS_VOLT0_6739WD, GPU_DVFS_VSRAM0_6739WD, 0),
+	GPUOP(GPU_DVFS_FREQ1_6739WD, GPU_DVFS_VOLT1_6739WD, GPU_DVFS_VSRAM1_6739WD, 1),
 };
 
 /*
@@ -2357,6 +2379,10 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		gpufreq_info("@%s: I am 6739TW seg_code(%x), fab_turbo(%x)\n", __func__,
 			get_devinfo_with_index(SEG_EFUSE), get_devinfo_with_index(TURBO_EFUSE));
 		device_id = ID_MT6739TW;
+	} else if ((get_devinfo_with_index(SEG_EFUSE) == 0xB8 || get_devinfo_with_index(SEG_EFUSE) == 0x38)) {
+		gpufreq_info("@%s: I am 6739WD(6731) seg_code(%x), fab_turbo(%x)\n", __func__,
+			get_devinfo_with_index(SEG_EFUSE), get_devinfo_with_index(TURBO_EFUSE));
+		device_id = ID_MT6739WD;
 	} else {
 		gpufreq_info("@%s: I am 6739 seg_code(%x), fab_turbo(%x)\n", __func__,
 			get_devinfo_with_index(SEG_EFUSE), get_devinfo_with_index(TURBO_EFUSE));
@@ -2409,6 +2435,9 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	else if (mt_gpufreq_dvfs_table_type == ID_MT6739TW)
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_mt6739tw,
 					ARRAY_SIZE(mt_gpufreq_opp_tbl_mt6739tw));
+	else if (mt_gpufreq_dvfs_table_type == ID_MT6739WD)
+		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_mt6739wd,
+					ARRAY_SIZE(mt_gpufreq_opp_tbl_mt6739wd));
 	else
 		mt_setup_gpufreqs_table(mt_gpufreq_opp_tbl_mt6739,
 					ARRAY_SIZE(mt_gpufreq_opp_tbl_mt6739));
@@ -3232,6 +3261,9 @@ static void _mt_gpufreq_fixed_volt(int fixed_volt)
 	} else if (device_id == ID_MT6739TW) {
 		max_volt = PMIC_MAX_VCORE_6739TW;
 		min_volt = PMIC_MIN_VCORE_6739TW;
+	} else if (device_id == ID_MT6739WD) {
+		max_volt = PMIC_MAX_VCORE_6739WD;
+		min_volt = PMIC_MIN_VCORE_6739WD;
 	} else {
 		max_volt = PMIC_MAX_VCORE;
 		min_volt = PMIC_MAX_VCORE;
