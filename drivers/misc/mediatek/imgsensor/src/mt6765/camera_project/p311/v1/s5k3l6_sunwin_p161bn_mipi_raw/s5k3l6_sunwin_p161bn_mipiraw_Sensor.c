@@ -1303,6 +1303,7 @@ static void sensor_init(void)
 	write_cmos_sensor_16_16(0x0100, 0x0000);
 	write_cmos_sensor_16_16(0x0000, 0x004a);
     write_cmos_sensor_16_16(0x0000, 0x30C6);
+	write_cmos_sensor_16_8(0x3403, 0x44);
     mdelay(3);
 	write_cmos_sensor_16_16(0x0A02, 0x3400);
     table_write_cmos_sensor(addr_data_pair_init,
