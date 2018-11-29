@@ -1021,7 +1021,7 @@ static kal_uint32 open(void)
 	if (imgsensor_info.sensor_id != sensor_id)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
-#if 0
+#if 1
 	if (!(update_otp()))
 	{
 		LOG_INF("Demon_otp update_otp error!");
