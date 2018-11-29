@@ -16,6 +16,7 @@
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{S5K3L6_SUNWIN_P161BN_SENSOR_ID, 0xA0, Common_read_region},
+    {IMX486_SUNWIN_P310_SENSOR_ID, 0xA2, Common_read_region},
 #if 0
 /*Below is commom sensor */
 	{IMX230_SENSOR_ID, 0xA0, Common_read_region},
