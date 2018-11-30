@@ -205,7 +205,9 @@ static const struct file_operations fp_fops = {
 	.read = fp_read,
 	.write = fp_write,
 	.unlocked_ioctl = fp_ioctl,
+#ifdef CONFIG_COMPAT
 	.compat_ioctl = fp_ioctl,
+#endif
 	.open = fp_open,
 	.release = fp_release,
 };

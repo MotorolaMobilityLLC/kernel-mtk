@@ -957,10 +957,14 @@ static long teei_config_ioctl(struct file *file,
 
 			teei_flags = 1;
 
+			TEEI_BOOT_FOOTPRINT("TEEI start to load driver TAs");
+
 			for (i = 0; i < param.uuid_count; i++)
 				tz_load_drv_by_str(param.uuids[i]);
 
 			param.flag = teei_flags;
+
+			TEEI_BOOT_FOOTPRINT("TEEI end of load driver TAs");
 
 			res = copy_to_user((void *)arg, &param,
 					sizeof(struct init_param));
@@ -1940,7 +1944,9 @@ static const struct file_operations teei_client_fops = {
 #else
 	.unlocked_ioctl = teei_client_ioctl,
 #endif
+#ifdef CONFIG_COMPAT
 	.compat_ioctl = teei_client_ioctl,
+#endif
 	.open = teei_client_open,
 	.mmap = teei_client_mmap,
 	.read = teei_client_dump,

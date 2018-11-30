@@ -176,7 +176,9 @@ static const struct file_operations keymaster_fops = {
 	.read = keymaster_read,
 	.write = keymaster_write,
 	.unlocked_ioctl = keymaster_ioctl,
+#ifdef CONFIG_COMPAT
 	.compat_ioctl = keymaster_ioctl,
+#endif
 	.open = keymaster_open,
 	.release = keymaster_release,
 };

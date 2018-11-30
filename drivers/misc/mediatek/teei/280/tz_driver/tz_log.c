@@ -97,13 +97,13 @@ static void tz_driver_dump_logs(struct tz_log_state *s)
 		 * Due to UART speed is slow, printing large number of
 		 * messages to UART will cause system reset by watchdog.
 		 * It can prevent from printing message to uart by using
-		 * KERN_DEBUG log level if with default print setting.
+		 * KERN_DEBUG log level if with default printk setting.
 		 * (default setting is print message to uart
 		 * if log level >= KERN_INFO)
 		 */
 
 		if (likely(is_teei_ready()))
-			IMSG_PRINTK_DEBUG("[TZ_LOG] %s", s->line_buffer);
+			IMSG_PRINTK("[TZ_LOG] %s", s->line_buffer);
 		else
 			IMSG_PRINTK("[TZ_LOG] %s", s->line_buffer);
 
