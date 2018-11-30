@@ -925,7 +925,7 @@ static kal_uint16 addr_data_pair_capture[] = {
 	0x314A, 0x5F00,
 	0x3300, 0x0000,
 	0x3400, 0x0000,
-	0x3402, 0x4E42,
+	0x3402, 0x4E46,
 	0x32B2, 0x0000,
 	0x32B4, 0x0000,
 	0x32B6, 0x0000,
@@ -985,7 +985,7 @@ static kal_uint16 addr_data_pair_normal_video[] = {
 	0x314A, 0x5F00,                                                  
 	0x3300, 0x0000,                                                  
 	0x3400, 0x0000,                                                  
-	0x3402, 0x4E42,                                                  
+	0x3402, 0x4E46,
 	0x32B2, 0x0000,                                                  
 	0x32B4, 0x0000,                                                  
 	0x32B6, 0x0000,                                                  
@@ -1221,7 +1221,7 @@ static kal_uint16 addr_data_pair_custom1[] = {
 	0x314A, 0x5F00,
 	0x3300, 0x0000,
 	0x3400, 0x0000,
-	0x3402, 0x4E42,
+	0x3402, 0x4E46,
 	0x32B2, 0x0000,
 	0x32B4, 0x0000,
 	0x32B6, 0x0000,
@@ -1281,7 +1281,7 @@ static kal_uint16 addr_data_pair_custom2[] = {
 	0x314A, 0x5F00,
 	0x3300, 0x0000,
 	0x3400, 0x0000,
-	0x3402, 0x4E42,
+	0x3402, 0x4E46,
 	0x32B2, 0x0000,
 	0x32B4, 0x0000,
 	0x32B6, 0x0000,
@@ -1303,7 +1303,6 @@ static void sensor_init(void)
 	write_cmos_sensor_16_16(0x0100, 0x0000);
 	write_cmos_sensor_16_16(0x0000, 0x004a);
     write_cmos_sensor_16_16(0x0000, 0x30C6);
-	write_cmos_sensor_16_8(0x3403, 0x44);
     mdelay(3);
 	write_cmos_sensor_16_16(0x0A02, 0x3400);
     table_write_cmos_sensor(addr_data_pair_init,
