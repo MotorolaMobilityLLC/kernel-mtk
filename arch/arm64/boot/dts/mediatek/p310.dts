@@ -528,6 +528,17 @@
 	chg2_ta_ac_charger_current = <2000000>;
 };
 
+&lk_charger {
+	/* charging current */
+	usb_charger_current = <500000>;
+	ac_charger_current = <2000000>;
+	ac_charger_input_current = <1800000>;
+	non_std_ac_charger_current = <500000>;
+	charging_host_charger_current = <1500000>;
+	ta_ac_charger_current = <3000000>;
+	pd_charger_current = <500000>;
+};
+
 /*add for aw3641 driver for camera flashlight*/
 &pio {
         flash_light_pin_cfg_output0: flashlightpincfg0 {
