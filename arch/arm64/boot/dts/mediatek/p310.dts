@@ -712,37 +712,6 @@
 			output-high;
 		};
 	};
-	
-	camera_pins_cam4_rst0: cam4@0 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam4_rst1: cam4@1 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO109__FUNC_GPIO109>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	camera_pins_cam4_pnd0: cam4@2 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO107__FUNC_GPIO107>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam4_pnd1: cam4@3 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO107__FUNC_GPIO107>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	
-	
 	camera_pins_cam_ldo_rear_vcama_0: cam0@vcamd0 {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO168__FUNC_GPIO168>;
@@ -813,20 +782,6 @@
 			output-high;
 		};
 	};
-	camera_pins_cam_ldo_rear3_vcama_0: cam4@vcama0 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	camera_pins_cam_ldo_rear3_vcama_1: cam4@vcama1 {
-		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
 	camera_pins_mipi_switch_en_on: camera_pins_mipi_switch_en_on {
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
@@ -874,10 +829,6 @@
 			"cam2_rst1",
 			"cam2_pnd0",
 			"cam2_pnd1",
-			"cam4_rst0",
-			"cam4_rst1",
-			"cam4_pnd0",
-			"cam4_pnd1",
 			"cam0_vcama_on",
 			"cam0_vcama_off",
 			"cam1_vcamd_on",
@@ -888,8 +839,6 @@
 			"cam2_vcamd_off",
 			"cam2_vcama_on",
 			"cam2_vcama_off",
-			"cam4_vcama_on",
-			"cam4_vcama_off",
 			"cam0_mclk_on",
 			"cam0_mclk_off",
 			"cam1_mclk_on",
@@ -916,40 +865,28 @@
 	pinctrl-10 = <&camera_pins_cam2_rst1>;
 	pinctrl-11 = <&camera_pins_cam2_pnd0>;
 	pinctrl-12 = <&camera_pins_cam2_pnd1>;
-	
-	pinctrl-13 = <&camera_pins_cam4_rst0>;
-	pinctrl-14 = <&camera_pins_cam4_rst1>;
-	pinctrl-15 = <&camera_pins_cam4_pnd0>;
-	pinctrl-16 = <&camera_pins_cam4_pnd1>;
-	
-	
-	pinctrl-17 = <&camera_pins_cam_ldo_rear_vcama_1>;
-	pinctrl-18 = <&camera_pins_cam_ldo_rear_vcama_0>;
-	pinctrl-19 = <&camera_pins_cam_ldo_sub_vcamd_1>;
-	pinctrl-20 = <&camera_pins_cam_ldo_sub_vcamd_0>;
-	pinctrl-21 = <&camera_pins_cam_ldo_sub_vcama_1>;
-	pinctrl-22 = <&camera_pins_cam_ldo_sub_vcama_0>;
-	pinctrl-23 = <&camera_pins_cam_ldo_rear2_vcamd_1>;
-	pinctrl-24 = <&camera_pins_cam_ldo_rear2_vcamd_0>;	
-	pinctrl-25 = <&camera_pins_cam_ldo_rear2_vcama_1>;
-	pinctrl-26 = <&camera_pins_cam_ldo_rear2_vcama_0>;
-	
-	pinctrl-27 = <&camera_pins_cam_ldo_rear3_vcama_1>;
-	pinctrl-28 = <&camera_pins_cam_ldo_rear3_vcama_0>;
-	
-	
-	pinctrl-29 = <&camera_pins_cam0_mclk_on>;
-	pinctrl-30 = <&camera_pins_cam0_mclk_off>;
-	pinctrl-31 = <&camera_pins_cam1_mclk_on>;
-	pinctrl-32 = <&camera_pins_cam1_mclk_off>;
-	pinctrl-33 = <&camera_pins_cam2_mclk_on>;
-	pinctrl-34 = <&camera_pins_cam2_mclk_off>;
-	pinctrl-35 = <&camera_pins_cam3_mclk_on>;
-	pinctrl-36 = <&camera_pins_cam3_mclk_off>;	
-	pinctrl-37 = <&camera_pins_mipi_switch_en_off>;
-	pinctrl-38 = <&camera_pins_mipi_switch_en_on>;
-	pinctrl-39 = <&camera_pins_mipi_switch_sel_off>;
-	pinctrl-40 = <&camera_pins_mipi_switch_sel_on>;
+	pinctrl-13 = <&camera_pins_cam_ldo_rear_vcama_1>;
+	pinctrl-14 = <&camera_pins_cam_ldo_rear_vcama_0>;
+	pinctrl-15 = <&camera_pins_cam_ldo_sub_vcamd_1>;
+	pinctrl-16 = <&camera_pins_cam_ldo_sub_vcamd_0>;
+	pinctrl-17 = <&camera_pins_cam_ldo_sub_vcama_1>;
+	pinctrl-18 = <&camera_pins_cam_ldo_sub_vcama_0>;
+	pinctrl-19 = <&camera_pins_cam_ldo_rear2_vcamd_1>;
+	pinctrl-20 = <&camera_pins_cam_ldo_rear2_vcamd_0>;	
+	pinctrl-21 = <&camera_pins_cam_ldo_rear2_vcama_1>;
+	pinctrl-22 = <&camera_pins_cam_ldo_rear2_vcama_0>;
+	pinctrl-23 = <&camera_pins_cam0_mclk_on>;
+	pinctrl-24 = <&camera_pins_cam0_mclk_off>;
+	pinctrl-25 = <&camera_pins_cam1_mclk_on>;
+	pinctrl-26 = <&camera_pins_cam1_mclk_off>;
+	pinctrl-27 = <&camera_pins_cam2_mclk_on>;
+	pinctrl-28 = <&camera_pins_cam2_mclk_off>;
+	pinctrl-29 = <&camera_pins_cam3_mclk_on>;
+	pinctrl-30 = <&camera_pins_cam3_mclk_off>;	
+	pinctrl-31 = <&camera_pins_mipi_switch_en_off>;
+	pinctrl-32 = <&camera_pins_mipi_switch_en_on>;
+	pinctrl-33 = <&camera_pins_mipi_switch_sel_off>;
+	pinctrl-34 = <&camera_pins_mipi_switch_sel_on>;
 	
 	status = "okay";
 

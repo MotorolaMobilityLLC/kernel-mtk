@@ -17,9 +17,9 @@ struct MCLK_PINCTRL_NAMES
 	mclk_pinctrl_list[IMGSENSOR_SENSOR_IDX_MAX_NUM][MCLK_STATE_MAX_NUM] = {
 	{{"cam0_mclk_off"}, {"cam0_mclk_on"} },
 	{{"cam1_mclk_off"}, {"cam1_mclk_on"} },
+	{{"cam2_mclk_off"}, {"cam2_mclk_on"} },
 	{{"cam3_mclk_off"}, {"cam3_mclk_on"} },
 	{{"cam4_mclk_off"}, {"cam4_mclk_on"} },
-	{{"cam2_mclk_off"}, {"cam2_mclk_on"} },
 };
 
 
@@ -115,7 +115,7 @@ static enum IMGSENSOR_RETURN mclk_set(
 	enum   IMGSENSOR_RETURN ret = IMGSENSOR_RETURN_SUCCESS;
 	enum MCLK_STATE state_index = MCLK_STATE_DISABLE;
 
-	pr_err("%s : sensor_idx %d mclk_set pinctrl, PinIdx %d, Val %d\n",
+	pr_debug("%s : sensor_idx %d mclk_set pinctrl, PinIdx %d, Val %d\n",
 	 __func__, sensor_idx, pin, pin_state);
 	 
 
