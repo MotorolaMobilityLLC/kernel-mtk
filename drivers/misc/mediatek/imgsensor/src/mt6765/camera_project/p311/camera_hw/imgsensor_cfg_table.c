@@ -178,6 +178,21 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			},
 		},
 #endif
+#if defined(S5K3P9SP_SUNWIN_P310_MIPI_RAW)
+	{
+                SENSOR_DRVNAME_S5K3P9SP_SUNWIN_P310_MIPI_RAW,
+		{
+                        {SensorMCLK, Vol_High, 2},
+                        {PDN, Vol_Low, 0},
+                        {RST, Vol_Low, 0},
+                        {DOVDD, Vol_1800, 0},
+                        {AVDD, Vol_2800, 0},
+                        {DVDD, Vol_1100, 0},
+                        {PDN, Vol_High, 2},
+                        {RST, Vol_High, 2}
+		},
+	},
+#endif
 #if defined(S5K3L6_SUNWIN_P161BN_MIPI_RAW)
 		{
 			SENSOR_DRVNAME_S5K3L6_SUNWIN_P161BN_MIPI_RAW,
