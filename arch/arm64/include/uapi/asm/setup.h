@@ -22,7 +22,7 @@
 
 #include <linux/types.h>
 
-#define COMMAND_LINE_SIZE	2048
+#define COMMAND_LINE_SIZE	4096
 
 /* general memory descriptor */
 struct mem_desc {
