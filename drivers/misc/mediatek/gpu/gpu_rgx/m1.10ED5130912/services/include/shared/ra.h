@@ -85,6 +85,10 @@ typedef IMG_UINT64 RA_LENGTH_T;
  */
 typedef IMG_UINT32 RA_FLAGS_T;
 
+#ifdef __KERNEL__
+IMG_INTERNAL void RA_Dump(RA_ARENA *arena);
+#endif
+
 /**
  *  @Function   RA_Create
  *

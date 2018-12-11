@@ -529,8 +529,15 @@ void mt_power_off(void)
 		rtc_xinfo("arch_reset\n");
 #ifdef CONFIG_MTK_CHARGER
 		mtk_chr_is_charger_exist(&exist);
-		if (exist == 1 || count > 10)
+		if (exist == 1 || count > 10) {
 			arch_reset(0, "charger");
+			break;
+		}
+#else
+		if (count > 10) {
+			arch_reset(0, "charger");
+			break;
+		}
 #endif
 		count++;
 #endif

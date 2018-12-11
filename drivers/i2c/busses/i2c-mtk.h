@@ -340,8 +340,16 @@ struct mt_i2c {
 	/* set in i2c probe */
 	void __iomem *base;/* i2c base addr */
 	void __iomem *pdmabase;/* dma base address*/
+	void __iomem *gpiobase;/* gpio base address */
 	int irqnr;	/* i2c interrupt number */
 	int id;
+	int scl_gpio_id; /* SCL GPIO number */
+	int sda_gpio_id; /* SDA GPIO number */
+	unsigned int gpio_start;
+	unsigned int mem_len;
+	unsigned int offset_eh_cfg;
+	unsigned int offset_pu_cfg;
+	unsigned int offset_rsel_cfg;
 	struct i2c_dma_buf dma_buf;/* memory alloc for DMA mode */
 	struct clk *clk_main;/* main clock for i2c bus */
 	struct clk *clk_dma;/* DMA clock for i2c via DMA */
@@ -403,7 +411,7 @@ struct mt_i2c {
 /* Hz for FPGA I2C work frequency */
 #endif
 
-
+extern void gpio_dump_regs_range(int start, int end);
 extern void i2c_dump_info(struct mt_i2c *i2c);
 #if defined(CONFIG_MTK_GIC_EXT)
 extern void mt_irq_dump_status(unsigned int irq);

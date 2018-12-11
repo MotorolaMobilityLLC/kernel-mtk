@@ -116,7 +116,9 @@ static DEFINE_MUTEX(mmprofile_buffer_init_mutex);
 static DEFINE_MUTEX(mmprofile_regtable_mutex);
 static DEFINE_MUTEX(mmprofile_meta_buffer_mutex);
 static struct mmprofile_event_t *p_mmprofile_ring_buffer;
+#ifdef CONFIG_MTK_ENG_BUILD
 static unsigned char *p_mmprofile_meta_buffer;
+#endif
 
 static struct mmp_static_event_t mmprofile_static_events[] = {
 	{MMP_ROOT_EVENT, "Root_Event", MMP_INVALID_EVENT},
@@ -323,7 +325,9 @@ void mmprofile_get_dump_buffer(unsigned int start, unsigned long *p_addr,
 static void mmprofile_init_buffer(void)
 {
 	unsigned int b_reset_ring_buffer = 0;
+#ifdef CONFIG_MTK_ENG_BUILD
 	unsigned int b_reset_meta_buffer = 0;
+#endif
 
 	if (!mmprofile_globals.enable)
 		return;
@@ -376,6 +380,7 @@ static void mmprofile_init_buffer(void)
 	MMP_LOG(ANDROID_LOG_DEBUG, "p_mmprofile_ring_buffer=0x%08lx",
 		(unsigned long)p_mmprofile_ring_buffer);
 
+#ifdef CONFIG_MTK_ENG_BUILD
 	if (!p_mmprofile_meta_buffer) {
 		mmprofile_globals.meta_buffer_size =
 			mmprofile_globals.new_meta_buffer_size;
@@ -398,8 +403,8 @@ static void mmprofile_init_buffer(void)
 	    vmalloc(mmprofile_globals.meta_buffer_size);
 #endif
 	}
-	MMP_LOG(ANDROID_LOG_DEBUG,
-		"p_mmprofile_meta_buffer=0x%08lx",
+
+	MMP_LOG(ANDROID_LOG_DEBUG, "p_mmprofile_meta_buffer=0x%08lx",
 		(unsigned long)p_mmprofile_meta_buffer);
 
 	if ((!p_mmprofile_ring_buffer) || (!p_mmprofile_meta_buffer)) {
@@ -416,10 +421,19 @@ static void mmprofile_init_buffer(void)
 		MMP_LOG(ANDROID_LOG_DEBUG, "Cannot allocate buffer");
 		return;
 	}
+#else
+	if (!p_mmprofile_ring_buffer) {
+		bmmprofile_init_buffer = 0;
+		mutex_unlock(&mmprofile_buffer_init_mutex);
+		MMP_LOG(ANDROID_LOG_DEBUG, "Cannot allocate buffer");
+		return;
+	}
+#endif
 
 	if (b_reset_ring_buffer)
 		memset((void *)(p_mmprofile_ring_buffer), 0,
 		       mmprofile_globals.buffer_size_bytes);
+#ifdef CONFIG_MTK_ENG_BUILD
 	if (b_reset_meta_buffer) {
 		struct mmprofile_meta_datablock_t *p_block;
 
@@ -433,6 +447,7 @@ static void mmprofile_init_buffer(void)
 		INIT_LIST_HEAD(&mmprofile_meta_buffer_list);
 		list_add_tail(&(p_block->list), &mmprofile_meta_buffer_list);
 	}
+#endif
 	bmmprofile_init_buffer = 1;
 
 	mutex_unlock(&mmprofile_buffer_init_mutex);

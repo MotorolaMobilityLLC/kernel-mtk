@@ -628,7 +628,6 @@ static int gyrohub_factory_get_cali(int32_t data[3])
 		return -1;
 	}
 #else
-	init_completion(&obj->calibration_done);
 	err = wait_for_completion_timeout(&obj->calibration_done,
 		msecs_to_jiffies(3000));
 	if (!err) {
@@ -657,7 +656,6 @@ static int gyrohub_factory_do_self_test(void)
 	if (ret < 0)
 		return -1;
 
-	init_completion(&obj->selftest_done);
 	ret = wait_for_completion_timeout(&obj->selftest_done,
 					  msecs_to_jiffies(3000));
 	if (!ret)
