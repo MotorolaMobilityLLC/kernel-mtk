@@ -99,7 +99,7 @@
 
 &i2c6 {
 	fs16xx@34 {
-		compatible = "foursemi,fs16xx";
+		compatible = "fs16xx,smartpa_i2c";
 		reg = <0x34>;
 		status = "okay";
 	};
