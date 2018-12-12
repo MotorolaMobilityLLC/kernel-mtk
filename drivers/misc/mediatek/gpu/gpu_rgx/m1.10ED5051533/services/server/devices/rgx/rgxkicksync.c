@@ -582,7 +582,7 @@ PVRSRV_ERROR PVRSRVRGXKickSyncKM(RGX_SERVER_KICKSYNC_CONTEXT * psKickSyncContext
 	LOOP_UNTIL_TIMEOUT(MAX_HW_TIME_US)
 	{
 		eError2 = RGXScheduleCommand(psKickSyncContext->psDeviceNode->pvDevice,
-		                             RGXFWIF_DM_3D,
+		                             RGXFWIF_DM_GP,
 		                             & sKickSyncKCCBCmd,
 		                             sizeof(sKickSyncKCCBCmd),
 		                             ui32ClientCacheOpSeqNum,
