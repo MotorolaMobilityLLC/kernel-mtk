@@ -465,6 +465,7 @@ int flashlight_dev_unregister_by_device_id(struct flashlight_device_id *dev_id)
 {
 	struct flashlight_dev *fdev;
 
+	pr_info("%d\n", __LINE__);
 	if (!dev_id)
 		return -EINVAL;
 

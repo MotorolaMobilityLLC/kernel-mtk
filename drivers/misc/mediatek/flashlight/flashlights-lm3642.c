@@ -81,6 +81,8 @@ struct lm3642_platform_data {
 	struct flashlight_device_id *dev_id;
 };
 
+static struct lm3642_platform_data *lm3642_pdata;
+
 /* lm3642 chip data */
 struct lm3642_chip_data {
 	struct i2c_client *client;
@@ -230,6 +232,11 @@ int lm3642_init(void)
 	/* get silicon revision */
 	is_lm3642lt = lm3642_read_reg(lm3642_i2c_client, LM3642_REG_SILICON_REVISION);
 	pr_info("LM3642(LT) revision(%d).\n", is_lm3642lt);
+	if (is_lm3642lt == -121) {
+		pr_info("lm3642 is not availible %p\n", lm3642_pdata);
+		flashlight_dev_unregister_by_device_id(lm3642_pdata->dev_id);
+		return -1;
+	}
 
 	/* disable */
 	ret = lm3642_write_reg(lm3642_i2c_client, LM3642_REG_ENABLE, LM3642_ENABLE_STANDBY);
@@ -366,7 +373,8 @@ static int lm3642_set_driver(int set)
 	if (set) {
 		if (!use_count)
 			ret = lm3642_init();
-		use_count++;
+		if (ret != -1)
+			use_count++;
 		pr_debug("Set driver: %d\n", use_count);
 	} else {
 		use_count--;
@@ -578,6 +586,8 @@ static int lm3642_probe(struct platform_device *pdev)
 		if (err)
 			goto err_free;
 	}
+
+	lm3642_pdata = pdata;
 
 	/* init work queue */
 	INIT_WORK(&lm3642_work, lm3642_work_disable);

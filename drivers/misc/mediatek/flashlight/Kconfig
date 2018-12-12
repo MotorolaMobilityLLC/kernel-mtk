@@ -120,6 +120,18 @@ config MTK_FLASHLIGHT_HA7109
 
 	  Say M here if you want to compile this driver as a module.
 
+config MTK_FLASHLIGHT_RT4509
+	tristate "Mediatek flashlight with driver IC (Richtek RT4509)"
+	depends on MTK_FLASHLIGHT
+	default n
+	help
+	  This is for the flashlight driver IC (Richtek RT4509).
+
+	  Say Y here if you want a flashlight driver IC RT4509.
+	  Select this only if your board has this IC.
+
+	  Say M here if you want to compile this driver as a module.
+
 config MTK_FLASHLIGHT_DUMMY
 	tristate "Mediatek flashlight dummy driver"
 	depends on MTK_FLASHLIGHT

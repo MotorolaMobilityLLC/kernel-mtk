@@ -79,8 +79,8 @@ static struct work_struct ha7109_work;
 #define HA7109_PINCTRL_PIN_HWEN 0
 #define HA7109_PINCTRL_PINSTATE_LOW 0
 #define HA7109_PINCTRL_PINSTATE_HIGH 1
-#define HA7109_PINCTRL_STATE_HWEN_HIGH "hwen_high"
-#define HA7109_PINCTRL_STATE_HWEN_LOW  "hwen_low"
+#define HA7109_PINCTRL_STATE_HWEN_HIGH "ha7109_hwen_high"
+#define HA7109_PINCTRL_STATE_HWEN_LOW  "ha7109_hwen_low"
 static struct pinctrl *ha7109_pinctrl;
 static struct pinctrl_state *ha7109_hwen_high;
 static struct pinctrl_state *ha7109_hwen_low;
@@ -96,6 +96,8 @@ struct ha7109_platform_data {
 	int channel_num;
 	struct flashlight_device_id *dev_id;
 };
+
+static struct ha7109_platform_data *ha7109_pdata;
 
 /* ha7109 chip data */
 struct ha7109_chip_data {
@@ -116,6 +118,7 @@ static int ha7109_pinctrl_init(struct platform_device *pdev)
 	if (IS_ERR(ha7109_pinctrl)) {
 		pr_info("Failed to get flashlight pinctrl.\n");
 		ret = PTR_ERR(ha7109_pinctrl);
+		return ret;
 	}
 
 	/* Flashlight HWEN pin initialization */
@@ -319,6 +322,11 @@ int ha7109_init(void)
 	ha7109_i2c_client->addr = 0x4F;
 	ret = ha7109_write_reg(ha7109_i2c_client, HA7109_REG_WRITE_PROTECT, 0x5A);
 	pr_info("addr:%d ret(%d).\n", ha7109_i2c_client->addr, ret);
+	if (ret == -121) {
+		pr_info("ha7109 is not availible %p\n", ha7109_pdata);
+		flashlight_dev_unregister_by_device_id(ha7109_pdata->dev_id);
+		return -1;
+	}
 
 	/* disable */
 	ret = ha7109_write_reg(ha7109_i2c_client, HA7109_REG_ENABLE, HA7109_ENABLE_STANDBY);
@@ -456,7 +464,8 @@ static int ha7109_set_driver(int set)
 	if (set) {
 		if (!use_count)
 			ret = ha7109_init();
-		use_count++;
+		if (ret != -1)
+			use_count++;
 		pr_debug("Set driver: %d\n", use_count);
 	} else {
 		use_count--;
@@ -674,6 +683,8 @@ static int ha7109_probe(struct platform_device *pdev)
 		if (err)
 			goto err_free;
 	}
+
+	ha7109_pdata = pdata;
 
 	/* init work queue */
 	INIT_WORK(&ha7109_work, ha7109_work_disable);
