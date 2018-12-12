@@ -948,6 +948,11 @@ void ion_mm_heap_memory_detail(void)
 	char seq_fmt[] = "|0x%p %10zu %5d(%5d) %16s %2d %5u-%-6u %48s |";
 	int seq_log_count = 0;
 	unsigned int heapid;
+	struct ion_heap *mm_heap = NULL;
+	struct ion_heap *camera_heap =
+		ion_drv_get_heap(g_ion_device,
+				 ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA, 0);
+	int i;
 
 	ION_PRINT_LOG_OR_SEQ(NULL, "%16s(%16s) %6s %12s %s\n",
 			     "client", "dbg_name", "pid", "size", "address");
@@ -1035,9 +1040,10 @@ skip_client_entry:
 
 			if (((1 << heapid) & ION_HEAP_MULTIMEDIA_MASK) ||
 			    ((1 << heapid) & ION_HEAP_CAMERA_MASK)) {
-				if ((1 << heapid) & ION_HEAP_MULTIMEDIA_MASK)
+				if ((1 << heapid) & ION_HEAP_MULTIMEDIA_MASK) {
 					mm_size += buffer->size;
-
+					mm_heap = buffer->heap;
+				}
 				if ((1 << heapid) & ION_HEAP_CAMERA_MASK)
 					cam_size += buffer->size;
 
@@ -1074,6 +1080,81 @@ skip_client_entry:
 		}
 
 		mutex_unlock(&dev->buffer_lock);
+
+		if (mm_heap) {
+			if (mm_heap->flags & ION_HEAP_FLAG_DEFER_FREE)
+				ION_PRINT_LOG_OR_SEQ(NULL, "%16.s %u %16zu\n",
+						     "deferred free heap_id",
+				mm_heap->id,
+				mm_heap->free_list_size);
+
+			for (i = 0; i < num_orders; i++) {
+				struct ion_system_heap *sys_heap =
+					container_of(mm_heap,
+						     struct ion_system_heap,
+						     heap);
+				struct ion_page_pool *pool = sys_heap->pools[i];
+
+				ION_PRINT_LOG_OR_SEQ(NULL,
+						     "%d order %u highmem pages in pool = %lu total, dev, 0x%p, heap id: %d\n",
+				pool->high_count, pool->order,
+				(1 << pool->order) * PAGE_SIZE *
+				pool->high_count, dev, mm_heap->id);
+				ION_PRINT_LOG_OR_SEQ(NULL,
+						     "%d order %u lowmem pages in pool = %lu total\n",
+				pool->low_count, pool->order,
+				(1 << pool->order) * PAGE_SIZE *
+				pool->low_count);
+				pool = sys_heap->cached_pools[i];
+				ION_PRINT_LOG_OR_SEQ(NULL,
+						     "%d order %u highmem pages in cached_pool = %lu total\n",
+				pool->high_count, pool->order,
+				(1 << pool->order) * PAGE_SIZE *
+				pool->high_count);
+				ION_PRINT_LOG_OR_SEQ(NULL,
+						     "%d order %u lowmem pages in cached_pool = %lu total\n",
+				pool->low_count, pool->order,
+				(1 << pool->order) * PAGE_SIZE *
+				pool->low_count);
+			}
+		}
+		if (camera_heap) {
+			if (camera_heap->flags & ION_HEAP_FLAG_DEFER_FREE)
+			ION_PRINT_LOG_OR_SEQ(NULL, "%16.s %u %16zu\n",
+					     "cam heap deferred free heap_id",
+					camera_heap->id,
+					camera_heap->free_list_size);
+
+			for (i = 0; i < num_orders; i++) {
+				struct ion_system_heap *sys_heap =
+					container_of(camera_heap,
+						     struct ion_system_heap,
+						     heap);
+				struct ion_page_pool *pool = sys_heap->pools[i];
+
+				ION_PRINT_LOG_OR_SEQ(NULL,
+						     "%d order %u highmem pages in pool = %lu total, dev, 0x%p, heap id: %d\n",
+				pool->high_count, pool->order,
+				(1 << pool->order) * PAGE_SIZE *
+				pool->high_count, dev, camera_heap->id);
+				ION_PRINT_LOG_OR_SEQ(NULL,
+						     "%d order %u lowmem pages in pool = %lu total\n",
+				pool->low_count, pool->order,
+				(1 << pool->order) * PAGE_SIZE *
+				pool->low_count);
+				pool = sys_heap->cached_pools[i];
+				ION_PRINT_LOG_OR_SEQ(NULL,
+						     "%d order %u highmem pages in cached_pool = %lu total\n",
+				pool->high_count, pool->order,
+				(1 << pool->order) * PAGE_SIZE *
+				pool->high_count);
+				ION_PRINT_LOG_OR_SEQ(NULL,
+						     "%d order %u lowmem pages in cached_pool = %lu total\n",
+				pool->low_count, pool->order,
+				(1 << pool->order) * PAGE_SIZE *
+							 pool->low_count);
+			}
+		}
 
 		ION_PRINT_LOG_OR_SEQ(NULL, "------------------------------\n");
 		ION_PRINT_LOG_OR_SEQ(NULL, "total orphaned: %16zu\n",
