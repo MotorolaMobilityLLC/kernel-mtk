@@ -268,6 +268,11 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 		0, 0, 1296, 736, 8, 8, 1280, 720}, /* Slim video */
 };
 
+static IMGSENSOR_CTRL_PIN_CAPABILITY ctrl_pin_capability = {
+	.flash = 0,
+	.strobe = 0,
+};
+
 static struct IMGSENSOR_I2C_CFG *get_i2c_cfg(void)
 {
 	return &(((struct IMGSENSOR_SENSOR_INST *)
@@ -2030,6 +2035,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_SET_SENSOR_SYNC_MODE:
 		LOG_INF("SENSOR_FEATURE_SET_SENSOR_SYNC_MODE\n");
 		set_sync_mode((MUINT32) (*feature_data_32));
+		break;
+	case SENSOR_FEATURE_GET_CTRL_PIN_CAPABILITY:
+		LOG_INF("SENSOR_FEATURE_GET_CTRL_PIN_CAPABILITY\n");
+		memcpy((void *)feature_return_para_32,
+		       (void *)&ctrl_pin_capability,
+		       sizeof(kal_uint32));
+		*feature_para_len = 4;
 		break;
 	default:
 		break;

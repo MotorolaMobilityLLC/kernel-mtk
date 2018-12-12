@@ -254,6 +254,7 @@ typedef enum {
 	SENSOR_FEATURE_SET_AS_SECURE_DRIVER,
 	SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE,
 	SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE,
+	SENSOR_FEATURE_GET_CTRL_PIN_CAPABILITY,
 	SENSOR_FEATURE_MAX
 } ACDK_SENSOR_FEATURE_ENUM;
 
@@ -822,6 +823,13 @@ typedef struct {
 	SENSOR_PHY_TYPE_ENUM SensroInterfaceType;
 	INDATA_FORMAT_ENUM SensorIndataformat;
 } IMGSENSOR_GPIO_STRUCT;
+
+typedef struct {
+	MUINT32 reserved:30;
+	MUINT32 flash:1;
+	MUINT32 strobe:1;
+} IMGSENSOR_CTRL_PIN_CAPABILITY;
+
 /*******************************************************************************
 *
 ********************************************************************************/
