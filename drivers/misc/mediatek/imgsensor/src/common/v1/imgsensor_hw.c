@@ -30,10 +30,7 @@ char *imgsensor_sensor_idx_name[IMGSENSOR_SENSOR_IDX_MAX_NUM] = {
 	IMGSENSOR_SENSOR_IDX_NAME_SUB2,
 	IMGSENSOR_SENSOR_IDX_NAME_MAIN3,
 };
-//add for p161bn rear and front  VCAMD compatible
-#ifdef CONFIG_MTK_VCAMD_COMPATIBLE
-char sensor_name[32] = {0};
-#endif
+
 enum IMGSENSOR_RETURN imgsensor_hw_release_all(struct IMGSENSOR_HW *phw)
 {
 	int i;
@@ -106,11 +103,6 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 
 	if (ppwr_seq->idx == NULL)
 		return IMGSENSOR_RETURN_ERROR;
-#ifdef CONFIG_MTK_VCAMD_COMPATIBLE
-	else
-		strcpy(&sensor_name[0],ppwr_seq->idx);
-#endif
-		
 
 	ppwr_info = ppwr_seq->pwr_info;
 
@@ -120,13 +112,13 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 		if (pwr_status == IMGSENSOR_HW_POWER_STATUS_ON &&
 		   ppwr_info->pin != IMGSENSOR_HW_PIN_UNDEF) {
 			pdev = phw->pdev[psensor_pwr->id[ppwr_info->pin]];
-		pr_debug(
-		   "sensor_idx = %d, pin=%d, pin_state_on=%d, hw_id =%d\n",
-		   sensor_idx,
-		   ppwr_info->pin,
-		   ppwr_info->pin_state_on,
-		  psensor_pwr->id[ppwr_info->pin]);
-		 
+		/*pr_debug(
+		 *  "sensor_idx = %d, pin=%d, pin_state_on=%d, hw_id =%d\n",
+		 *  sensor_idx,
+		 *  ppwr_info->pin,
+		 *  ppwr_info->pin_state_on,
+		 * psensor_pwr->id[ppwr_info->pin]);
+		 */
 
 			if (pdev->set != NULL)
 				pdev->set(
@@ -213,7 +205,8 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 		break;
 	}
 
-	if (pcustomize_sensor &&
+
+	if (pcustomize_sensor != NULL &&
 		strlen(pcustomize_sensor) > 2 &&
 		!strstr(pcustomize_sensor, curr_sensor_name))
 		return IMGSENSOR_RETURN_ERROR;
@@ -242,10 +235,3 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	return IMGSENSOR_RETURN_SUCCESS;
 }
 
-//add for p161bn rear and front  VCAMD compatible
-#ifdef CONFIG_MTK_VCAMD_COMPATIBLE
-char* get_current_sensor_name(void)
-{
-	return &sensor_name[0];
-}
-#endif
