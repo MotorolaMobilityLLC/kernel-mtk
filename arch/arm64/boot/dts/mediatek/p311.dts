@@ -899,5 +899,5 @@
 };
 
 #include "bq2560x.dtsi"
-#include <p310/cust.dtsi>
+#include <p311/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
