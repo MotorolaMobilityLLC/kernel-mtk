@@ -56,7 +56,7 @@ struct imgsensor_mode_struct {
 	 * by different scenario
 	 */
 	kal_uint8 mipi_data_lp2hs_settle_dc;
-
+	kal_uint32 mipi_pixel_rate;
 	/* following for GetDefaultFramerateByScenario() */
 	kal_uint16 max_framerate;
 
@@ -86,7 +86,7 @@ struct imgsensor_struct {
 	kal_bool test_pattern;	/* record test pattern mode or not */
 	MSDK_SCENARIO_ID_ENUM current_scenario_id;/* current scenario id */
 	kal_uint8 ihdr_en;	/* ihdr enable or disable */
-
+	kal_uint32 sync_mode; /* master or slave mode */
 	kal_uint8 i2c_write_id;	/* record current sensor's i2c write id */
 };
 
@@ -149,11 +149,15 @@ struct imgsensor_info_struct {
 	 */
 	kal_uint8 i2c_addr_table[5];
 	kal_uint32 i2c_speed;	/* i2c speed */
+	kal_uint32 sync_mode_capacity;
 };
 
 extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData,
 		       u8 *a_pRecvData, u16 a_sizeRecvData,
 		       u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
+
+void ov9282_2_stream_on(kal_bool enable, kal_uint32 shutter, kal_uint16 gain);
+extern void ov9282_stream_on(kal_bool enable, kal_uint32 shutter, kal_uint16 gain);
 
 #endif
