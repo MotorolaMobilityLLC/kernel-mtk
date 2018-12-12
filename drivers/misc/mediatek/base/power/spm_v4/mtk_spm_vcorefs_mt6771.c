@@ -469,7 +469,7 @@ void dvfsrc_hw_policy_mask(bool mask)
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 5));
 		spm_write(DVFSRC_SW_REQ2, 0);
 	} else {
-		spm_write(DVFSRC_EMI_REQUEST, 0x00209209);
+		spm_write(DVFSRC_EMI_REQUEST, 0x00290209);
 		spm_write(DVFSRC_EMI_REQUEST3, 0x09000000);
 		spm_write(DVFSRC_VCORE_REQUEST, 0x00150000);
 		/* spm_write(DVFSRC_VCORE_REQUEST2, 0x29292929); */
