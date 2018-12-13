@@ -308,43 +308,88 @@
 /* accdet end */
 
 /* FINGERPRINT start */
+
 &spi0 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	fingerprint@0 {
-		compatible = "goodix,goodix-fp";
-		reg = <0>;
-		spi-max-frequency = <8000000>;
-		netlink-event = <30>;
-		status = "okay";
-	};
-};
+       fingerprint: fingerprint@0 { 
+		compatible = "mediatek,fingerprint";
+		spi-max-frequency = <10000000>;
+/*
+		pinctrl-names = "fp_default", "fp_rst_high", "fp_rst_low","eint_as_int", "eint_in_low", "eint_in_float", "miso_pull_up", "miso_pull_disable" ,"eint_in_high";
 
-&goodix_fp {
-	pinctrl-names = "default", "reset_high", "reset_low";
-	pinctrl-0 = <&fingerprint_default>;
-	pinctrl-1 = <&fingerprint_reset_high>;
-	pinctrl-2 = <&fingerprint_reset_low>;
-	status = "okay";
-};
+		pinctrl-0 = <&fp_default>;
+		pinctrl-1 = <&fp_rst_high>;
+		pinctrl-2 = <&fp_rst_low>;
+		pinctrl-3 = <&fp_eint_as_int>;
+		pinctrl-4 = <&fp_eint_in_low>;
+		pinctrl-5 = <&fp_eint_in_float>;
+		pinctrl-6 = <&fp_miso_pull_up>;
+		pinctrl-7 = <&fp_miso_pull_disable>;
+		pinctrl-8 = <&fp_eint_in_high>;
+*/
+		reg = <0x0>;
+        interrupt-parent = <&pio>;
+        interrupts = <3 IRQ_TYPE_EDGE_RISING 3 0>;
+        status = "okay";
 
-&pio {
-	fingerprint_default: state_default {
-	};
-	fingerprint_reset_high: state_reset_high {
+		clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
+			 	<&topckgen CLK_TOP_SPI_SEL>,
+			 	<&infracfg_ao CLK_IFR_SPI0>;
+		clock-names = "parent-clk", "sel-clk", "spi-clk"; 
+
+        }; 
+}; 
+&pio {	
+	fp_rst_high: fp_rst_high {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			pinmux = <PINMUX_GPIO163__FUNC_GPIO163>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
-	fingerprint_reset_low: state_reset_low {
+
+	fp_rst_low: fp_rst_low {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			pinmux = <PINMUX_GPIO163__FUNC_GPIO163>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
+
+
+	fp_eint_as_int: eint@3 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+	fp_eint_in_low: eint_in_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <0>;
+			bias-pull-down = <00>;
+		};
+	};
+	fp_eint_in_high: eint_in_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO3__FUNC_GPIO3>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+	
+};
+
+&focal_fp {
+	//compatible = "mediatek,focal_fp";
+	pinctrl-names = "fp_rst_high", "fp_rst_low","eint_as_int", "eint_in_low", "eint_in_high";
+	pinctrl-0 = <&fp_rst_high>;
+	pinctrl-1 = <&fp_rst_low>;
+	pinctrl-2 = <&fp_eint_as_int>;
+	pinctrl-3 = <&fp_eint_in_low>;
+	pinctrl-4 = <&fp_eint_in_high>;
+	status = "okay";
+
 };
 /* FINGERPRINT end */
 
