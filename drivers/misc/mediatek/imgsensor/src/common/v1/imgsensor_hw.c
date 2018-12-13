@@ -30,7 +30,10 @@ char *imgsensor_sensor_idx_name[IMGSENSOR_SENSOR_IDX_MAX_NUM] = {
 	IMGSENSOR_SENSOR_IDX_NAME_SUB2,
 	IMGSENSOR_SENSOR_IDX_NAME_MAIN3,
 };
-
+//add for p161bn rear and front  VCAMD compatible
+#ifdef CONFIG_MTK_VCAMD_COMPATIBLE
+char sensor_name[32] = {0};
+#endif
 enum IMGSENSOR_RETURN imgsensor_hw_release_all(struct IMGSENSOR_HW *phw)
 {
 	int i;
@@ -103,6 +106,11 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 
 	if (ppwr_seq->idx == NULL)
 		return IMGSENSOR_RETURN_ERROR;
+#ifdef CONFIG_MTK_VCAMD_COMPATIBLE
+	else
+		strcpy(&sensor_name[0],ppwr_seq->idx);
+#endif
+		
 
 	ppwr_info = ppwr_seq->pwr_info;
 
@@ -235,3 +243,10 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	return IMGSENSOR_RETURN_SUCCESS;
 }
 
+//add for p161bn rear and front  VCAMD compatible
+#ifdef CONFIG_MTK_VCAMD_COMPATIBLE
+char* get_current_sensor_name(void)
+{
+	return &sensor_name[0];
+}
+#endif
