@@ -94,6 +94,8 @@ static void vibrator_enable(unsigned int dur, unsigned int activate)
 			dur = hw->vib_timer;
 
 		dur = (dur > 15000 ? 15000 : dur);
+		pr_err(VIB_TAG "cancel hrtimer, cust:%dms, value:%u, shutdown:%d, activate:%d\n",
+			hw->vib_timer, dur, g_mt_vib->shutdown_flag,activate);
 		atomic_set(&g_mt_vib->vibr_state, 1);
 		hrtimer_start(&g_mt_vib->vibr_timer,
 			      ktime_set(dur / 1000, (dur % 1000) * 1000000),
