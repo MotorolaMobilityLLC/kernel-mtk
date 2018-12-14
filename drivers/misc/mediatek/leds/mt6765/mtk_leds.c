@@ -40,10 +40,23 @@
 #include "mtk_leds_hal.h"
 #include "ddp_pwm.h"
 #include "mtkfb.h"
+#include "../../include/mt-plat/charger_type.h"
 
 #define MET_USER_EVENT_SUPPORT
 #ifdef MET_USER_EVENT_SUPPORT
 #include <mt-plat/met_drv.h>
+#endif
+
+#ifdef CONFIG_MTK_LEDS_GPIO
+static int flag_hight_gpio = 0;
+static int srceen_on = 1;
+static int first_boot_time=1; 
+static int flag_green = 0;
+static int bat_per_val = 0;
+extern  int Leds_Enable(int mode);
+extern signed int battery_get_uisoc(void);
+extern unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val,
+unsigned int MASK, unsigned int SHIFT);
 #endif
 
 /* for LED&Backlight bringup, define the dummy API */
@@ -386,12 +399,28 @@ int mt_led_set_pwm(int pwm_num, struct nled_setting *led)
 	 * disable PWM to turn off NLED.
 	 */
 	case NLED_OFF:
+	#ifdef CONFIG_MTK_LEDS_GPIO
+		pmic_config_interface (PMIC_CHRIND_EN_SEL_ADDR, 1, PMIC_CHRIND_EN_SEL_MASK, PMIC_CHRIND_EN_SEL_SHIFT);// sw contrl
+	#endif
 		pwm_setting.PWM_MODE_OLD_REGS.THRESH = 0;
 		pwm_setting.clk_div = CLK_DIV1;
 		pwm_setting.PWM_MODE_OLD_REGS.DATA_WIDTH = 100 / 2;
 		break;
 
 	case NLED_ON:
+	#ifdef CONFIG_MTK_LEDS_GPIO
+		pmic_config_interface (PMIC_CHRIND_EN_SEL_ADDR, 0, PMIC_CHRIND_EN_SEL_MASK, PMIC_CHRIND_EN_SEL_SHIFT); //hw contrl
+		bat_per_val = battery_get_uisoc();
+		printk("jhyu bat_per_val is %d\n",bat_per_val);
+		if(bat_per_val < 15 ){
+			if(!flag_hight_gpio && !srceen_on){
+				printk("geroge2 hight gpio ---\n");
+				flag_hight_gpio = 1;
+				srceen_on = 1;
+				Leds_Enable(2);//gpio hight mode
+			}
+		}
+	#endif
 		pwm_setting.PWM_MODE_OLD_REGS.THRESH = 30 / 2;
 		pwm_setting.clk_div = CLK_DIV1;
 		pwm_setting.PWM_MODE_OLD_REGS.DATA_WIDTH = 100 / 2;
@@ -776,6 +805,13 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 			/* sw workround for sync leds status */
 			first_time = false;
 		}
+        #ifdef CONFIG_MTK_LEDS_GPIO
+            if(!flag_green){
+                printk("geroge --> mt_mt65xx_blink_set  green  red control by sw \n");
+                flag_green = 1;
+                pmic_config_interface (PMIC_CHRIND_EN_SEL_ADDR, 1, PMIC_CHRIND_EN_SEL_MASK, PMIC_CHRIND_EN_SEL_SHIFT);
+            }
+        #endif
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6357
 		pmic_set_register_value(PMIC_RG_DRV_128K_CK_PDN, 0x0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_PDN, 0);
@@ -807,8 +843,27 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 	struct nled_setting led_tmp_setting = { 0, 0, 0 };
 	int tmp_level = level;
 	static bool button_flag;
+	int ret;
 	unsigned int BacklightLevelSupport =
 	    Cust_GetBacklightLevelSupport_byPWM();
+#ifdef CONFIG_MTK_LEDS_GPIO
+	if(first_boot_time) {
+		first_boot_time = 0;
+		Leds_Enable(0);//gpio pwm mode
+/*TINNO-SH-JHYU-UDAAP-1325 not turn on red led while conneting otg */
+		ret = mt_usb_is_otg();
+		if(ret)
+		{
+			pmic_config_interface (PMIC_CHRIND_EN_SEL_ADDR, 1, PMIC_CHRIND_EN_SEL_MASK, PMIC_CHRIND_EN_SEL_SHIFT);
+		}
+		else
+		{
+			ret = mt_get_charger_type();
+			if(!ret)  
+				pmic_config_interface (PMIC_CHRIND_EN_SEL_ADDR, 1, PMIC_CHRIND_EN_SEL_MASK, PMIC_CHRIND_EN_SEL_SHIFT);
+		}
+}
+#endif	
 
 	switch (cust->mode) {
 
@@ -839,6 +894,13 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 				mt_pwm_disable(cust->data,
 					       cust->config_data.pmic_pad);
 			} else {
+		#ifdef CONFIG_MTK_LEDS_GPIO
+			if(flag_green){
+			    flag_green = 0;
+			    printk("geroge  --- red --- set gpio hight and red control by HW   \n");
+			    pmic_config_interface (PMIC_CHRIND_EN_SEL_ADDR, 0, PMIC_CHRIND_EN_SEL_MASK, PMIC_CHRIND_EN_SEL_SHIFT);
+			}
+		#endif
 				led_tmp_setting.nled_mode = NLED_ON;
 				mt_led_set_pwm(cust->data, &led_tmp_setting);
 			}
@@ -877,6 +939,20 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 	case MT65XX_LED_MODE_CUST_BLS_PWM:
 		if (strcmp(cust->name, "lcd-backlight") == 0)
 			bl_brightness_hal = level;
+#ifdef CONFIG_MTK_LEDS_GPIO		
+		if(level== 0 ) { 
+			//if(srceen_on)
+			srceen_on = 0;			
+		}else {	 
+			if(flag_hight_gpio){
+				srceen_on =1;
+				printk("geroge gpio pwm mode \n");
+				flag_hight_gpio=0;
+				Leds_Enable(0);//gpio pwm mode				
+			    }
+		}
+
+#endif
 #ifdef MET_USER_EVENT_SUPPORT
 		if (enable_met_backlight_tag())
 			output_met_backlight_tag(level);

@@ -22,6 +22,9 @@ config BACKLIGHT_SUPPORT_LP8557
 	  Set n to disable.
 	  For pwm external backlight.
 
+config MTK_LEDS_GPIO
+ 	bool "MediaTek LED GPIO Support"
+
 config BACKLIGHT_SUPPORT_LM3697
 	bool "LM3697(DW8832) Support"
 	default n

@@ -24,14 +24,14 @@
 &odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <1>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
 		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
@@ -897,6 +897,37 @@
 	status = "okay";
 
 };
+
+&led_red_gpio {
+ 		pinctrl-names = "leds_red_pwm_set","leds_red_gpio_l","leds_red_gpio_h";
+ 		pinctrl-0 = <&leds_red_pwm_set>;
+ 		pinctrl-1 = <&leds_red_gpio_l>;
+ 		pinctrl-2 = <&leds_red_gpio_h>;
+ 		status = "okay";
+	};
+&pio {
+ 		leds_red_pwm_set:leds_red_pwm_set@gpio152 {
+ 			pins_cmd_dat {
+ 				pinmux = <PINMUX_GPIO152__FUNC_PWM2>;
+ 				slew-rate = <1>;
+				output-high;
+ 			};
+ 		};
+		leds_red_gpio_l:leds_red_gpio_l@gpio152 {
+ 			pins_cmd_dat {
+ 				pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+ 				slew-rate = <1>;
+				output-low;
+ 			};
+ 		};
+    	leds_red_gpio_h:leds_red_gpio_h@gpio152 {
+ 			pins_cmd_dat {
+				pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+				slew-rate = <1>;
+ 				output-high;
+			};
+ 		};
+	}; 
 
 #include "bq2560x.dtsi"
 #include <p311/cust.dtsi>
