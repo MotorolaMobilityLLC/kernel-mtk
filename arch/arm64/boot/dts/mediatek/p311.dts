@@ -539,6 +539,13 @@
 	pd_charger_current = <500000>;
 };
 
+/* SCC setting */
+&bat_gm30 {
+	speed-current = <2000000 1600000 1200000 1000000 750000 750000 600000 450000 400000 0>;
+	//status = "okay";
+};
+/* battery end */
+
 &pio {
 	camera_pins_cam0_mclk_on: camera_pins_cam0_mclk_on {
 		pins_cmd_dat {

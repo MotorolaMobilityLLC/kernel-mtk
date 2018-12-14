@@ -563,3 +563,10 @@ source "drivers/power/supply/mt81xx/Kconfig"
 endif
 
 endif # POWER_SUPPLY
+	  
+config TINNO_SCC_SUPPORT
+	bool "TINNO_SCC_SUPPORT"
+	default n
+	help
+	  Set yes to support tinno smart charging control
+	  Set No to disable tinno smart charging control

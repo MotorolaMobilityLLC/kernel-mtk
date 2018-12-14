@@ -49,3 +49,4 @@ else
 	endif
 endif
 
+obj-$(CONFIG_TINNO_SCC_SUPPORT) += scc_drv.o

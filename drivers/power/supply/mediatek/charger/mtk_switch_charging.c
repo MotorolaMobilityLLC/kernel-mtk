@@ -73,6 +73,11 @@
 #include "cust_charger_init.h"
 #endif
 #endif
+
+#if defined (CONFIG_TINNO_SCC_SUPPORT)
+#include <linux/scc_drv.h>
+#endif  /* CONFIG_TINNO_SCC_SUPPORT */
+
 static int _uA_to_mA(int uA)
 {
 	if (uA == -1)
@@ -128,6 +133,23 @@ static void swchg_select_jeita_charging_current(struct charger_manager * info,st
 			pdata->input_current_limit = 900000;
 			pdata->charging_current_limit = 0;
 		}
+		
+		#if defined (CONFIG_TINNO_SCC_SUPPORT)
+		{
+			int temp_CC_value = 0;
+		
+			temp_CC_value = scc_get_current();
+
+			printk("[SCC]""msc temp_CC_value=%d, cc=%d\n", temp_CC_value, pdata->charging_current_limit);
+
+			if(temp_CC_value != 0)
+				pdata->charging_current_limit = pdata->charging_current_limit > temp_CC_value ?  temp_CC_value : pdata->charging_current_limit;
+
+			printk("[SCC]""msc pdata->charging_current_limit = %d, temp_CC_value = %d\n",
+				pdata->charging_current_limit, temp_CC_value);
+		}
+		#endif  /* CONFIG_TINNO_SCC_SUPPORT */
+
 		chr_err("[Jeita] temperature=%d,input=%d,current=%d \n",info->sw_jeita.sm,pdata->input_current_limit,pdata->charging_current_limit);
 	}
 }

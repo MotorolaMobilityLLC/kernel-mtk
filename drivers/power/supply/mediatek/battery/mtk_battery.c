@@ -68,6 +68,10 @@
 #include <mt-plat/upmu_common.h>
 #include <pmic_lbat_service.h>
 
+#if defined (CONFIG_TINNO_SCC_SUPPORT)
+#include <linux/scc_drv.h>
+#endif  /* CONFIG_TINNO_SCC_SUPPORT */
+
 //add for TinnoProductInfo 
 #ifdef CONFIG_TINNO_PRODUCT_INFO
 #include <dev_info.h>
@@ -3455,6 +3459,11 @@ static int __init battery_probe(struct platform_device *dev)
 /*****************************/
 
 	mtk_battery_init(dev);
+
+	#if defined (CONFIG_TINNO_SCC_SUPPORT)
+	scc_init_speed_current_map("mediatek,bat_gm30");
+	scc_create_file();
+	#endif  /* CONFIG_TINNO_SCC_SUPPORT */
 
 	/* Power supply class */
 #if !defined(CONFIG_MTK_DISABLE_GAUGE)

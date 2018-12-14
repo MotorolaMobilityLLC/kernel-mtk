@@ -414,6 +414,19 @@ int backlight_brightness_set(int level)
 
 }
 EXPORT_SYMBOL(backlight_brightness_set);
+
+#if defined (CONFIG_TINNO_SCC_SUPPORT)
+/* /sys/kernel/debug/scc/lcd_brightness */
+int scc_get_lcd_brightness(void )
+{
+	if (g_leds_data[MT65XX_LED_TYPE_LCD])
+		return g_leds_data[MT65XX_LED_TYPE_LCD]->cdev.brightness;
+
+	return 0;
+}
+EXPORT_SYMBOL(scc_get_lcd_brightness);
+#endif  /* CONFIG_TINNO_SCC_SUPPORT */
+
 #if 0
 static ssize_t show_duty(struct device *dev, struct device_attribute *attr,
 			 char *buf)
