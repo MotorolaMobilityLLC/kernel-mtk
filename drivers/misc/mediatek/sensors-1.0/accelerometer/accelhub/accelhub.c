@@ -19,6 +19,7 @@
 #include <SCP_sensorHub.h>
 #include <accel.h>
 #include <hwmsensor.h>
+#include <dev_info.h>   //Added by TINNO for sensor dev info
 
 #define DEBUG 1
 #define SW_CALIBRATION
@@ -410,6 +411,19 @@ static void scp_init_work_done(struct work_struct *work)
 #ifndef MTK_OLD_FACTORY_CALIBRATION
 	int32_t cfg_data[6] = {0};
 #endif
+
+	//{ Added by TINNO for sensor dev info
+	{
+		struct sensorInfo_t acc_info;
+		int ret = sensor_set_cmd_to_hub(ID_ACCELEROMETER,
+			CUST_ACTION_GET_SENSOR_INFO, &acc_info);
+		if (ret < 0)
+			pr_err_ratelimited("get acc info failed.\n");
+		else
+			FULL_PRODUCT_DEVICE_INFO(ID_GSENSOR, acc_info.name);
+
+	}
+	//}
 
 	if (atomic_read(&obj->scp_init_done) == 0) {
 		pr_debug("scp is not ready to send cmd\n");

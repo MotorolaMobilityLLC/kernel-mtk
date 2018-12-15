@@ -20,6 +20,7 @@
 #include <gyroscope.h>
 #include <SCP_sensorHub.h>
 #include "SCP_power_monitor.h"
+#include <dev_info.h>   //Added by TINNO for sensor dev info
 
 /* name must different with gsensor gyrohub */
 #define GYROHUB_DEV_NAME    "gyro_hub"
@@ -445,6 +446,19 @@ static void scp_init_work_done(struct work_struct *work)
 #ifndef MTK_OLD_FACTORY_CALIBRATION
 	int32_t cfg_data[12] = {0};
 #endif
+
+	//{ Added by TINNO for sensor dev info
+	{
+		struct sensorInfo_t gyro_info;
+		int ret = sensor_set_cmd_to_hub(ID_GYROSCOPE,
+			CUST_ACTION_GET_SENSOR_INFO, &gyro_info);
+		if (ret < 0)
+			pr_err_ratelimited("get gyro info failed.\n");
+		else
+			FULL_PRODUCT_DEVICE_INFO(ID_GYRO, gyro_info.name);
+
+	}
+	//}
 
 	if (atomic_read(&obj->scp_init_done) == 0) {
 		pr_err("scp is not ready to send cmd\n");

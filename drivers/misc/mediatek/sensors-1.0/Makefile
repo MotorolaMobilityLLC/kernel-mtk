@@ -1,3 +1,5 @@
+subdir-ccflags-$(CONFIG_TINNO_PRODUCT_INFO) += -I$(srctree)/tinno/common_features/dev_info
+
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 obj-$(CONFIG_CUSTOM_KERNEL_SENSORHUB)	+= sensorHub/
 obj-$(CONFIG_MTK_HWMON)	    += hwmon/
