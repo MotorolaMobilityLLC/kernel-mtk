@@ -406,10 +406,13 @@ static void mt_usb_disable(struct musb *musb)
 	mtk_usb_power = false;
 }
 
+#ifdef CONFIG_MTK_LEDS_GPIO
 bool mt_usb_is_otg(void)
 {
 	return mtk_musb->is_host == 1;
 }
+#endif  /* CONFIG_MTK_LEDS_GPIO */
+
 /* ================================ */
 /* connect and disconnect functions */
 /* ================================ */

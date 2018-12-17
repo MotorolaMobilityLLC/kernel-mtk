@@ -40,7 +40,6 @@
 #include "mtk_leds_hal.h"
 #include "ddp_pwm.h"
 #include "mtkfb.h"
-#include "../../include/mt-plat/charger_type.h"
 
 #define MET_USER_EVENT_SUPPORT
 #ifdef MET_USER_EVENT_SUPPORT
@@ -48,6 +47,7 @@
 #endif
 
 #ifdef CONFIG_MTK_LEDS_GPIO
+#include "../../include/mt-plat/charger_type.h"
 static int flag_hight_gpio = 0;
 static int srceen_on = 1;
 static int first_boot_time=1; 
@@ -843,10 +843,10 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 	struct nled_setting led_tmp_setting = { 0, 0, 0 };
 	int tmp_level = level;
 	static bool button_flag;
-	int ret;
 	unsigned int BacklightLevelSupport =
 	    Cust_GetBacklightLevelSupport_byPWM();
 #ifdef CONFIG_MTK_LEDS_GPIO
+	int ret;
 	if(first_boot_time) {
 		first_boot_time = 0;
 		Leds_Enable(0);//gpio pwm mode
