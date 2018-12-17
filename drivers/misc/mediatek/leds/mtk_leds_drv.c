@@ -635,6 +635,73 @@ static int led_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 #endif
+
+#ifdef CONFIG_MTK_LEDS_GPIO
+static const struct of_device_id Leds_use_gpio_of_match[] = {
+    {.compatible = "mediatek,led-red-pwm"},
+    {},
+};
+struct pinctrl *ledspinctrl = NULL;
+struct pinctrl_state *leds_en_pwm = NULL;
+struct pinctrl_state *leds_en_h = NULL;
+struct pinctrl_state *leds_en_l = NULL;
+int Leds_Enable(int mode)
+{
+    if(ledspinctrl != NULL){
+        if(mode == 0)
+            pinctrl_select_state(ledspinctrl, leds_en_pwm);
+        if(mode == 1)
+            pinctrl_select_state(ledspinctrl, leds_en_l);
+        if(mode == 2)
+            pinctrl_select_state(ledspinctrl, leds_en_h);
+        printk("%s,line = %d\n", __func__,__LINE__);
+    }else{
+        printk("%s,line = %d, error\n", __func__,__LINE__);
+    }
+    return 0;
+}
+static int Leds_use_gpio_probe(struct platform_device *pdev)
+{
+
+    printk("leds_use_gpio_probe\n");
+    ledspinctrl = devm_pinctrl_get(&pdev->dev); 	
+    if (IS_ERR(ledspinctrl)) {
+        printk("IS_ERR(ledspinctrl) \n");
+        return -1;
+    }
+    leds_en_pwm = pinctrl_lookup_state(ledspinctrl, "leds_red_pwm_set");
+    if (IS_ERR(leds_en_pwm)) {
+        printk("IS_ERR(leds_en_h) \n");
+        return -1;
+    }
+    leds_en_h = pinctrl_lookup_state(ledspinctrl, "leds_red_gpio_h");
+    if (IS_ERR(leds_en_h)) {
+        printk("IS_ERR(leds_en_h) \n");
+        return -1;
+    }
+    leds_en_l = pinctrl_lookup_state(ledspinctrl, "leds_red_gpio_l");
+    if (IS_ERR(leds_en_l)) {
+        printk("IS_ERR(leds_en_l) \n");
+        return -1;
+    }
+    printk("leds_use_gpio_probe  --   end\n");
+    return 0;
+
+}
+static int Leds_use_gpio_remove(struct platform_device *dev)
+{
+    return 0;
+}
+static struct platform_driver Leds_use_gpio_driver={
+    .probe = Leds_use_gpio_probe,
+    .remove = Leds_use_gpio_remove,
+    .driver ={
+        .name = "led_gpio",
+        .of_match_table =Leds_use_gpio_of_match,
+     },
+};
+#endif
+
 /****************************************************************************
  * driver functions
  ***************************************************************************/
@@ -852,6 +919,11 @@ static int __init mt65xx_leds_init(void)
 	int ret;
 
 	LEDS_DRV_DEBUG("%s\n", __func__);
+#ifdef CONFIG_MTK_LEDS_GPIO
+    printk("%s,line = %d\n", __func__,__LINE__);
+    platform_driver_register(&Leds_use_gpio_driver);
+    printk("%s,line = %d\n", __func__,__LINE__);
+#endif
 
 #ifdef CONFIG_OF
 	ret = platform_device_register(&mt65xx_leds_device);
@@ -874,6 +946,9 @@ static int __init mt65xx_leds_init(void)
 static void __exit mt65xx_leds_exit(void)
 {
 	platform_driver_unregister(&mt65xx_leds_driver);
+#ifdef CONFIG_MTK_LEDS_GPIO
+    platform_driver_unregister(&Leds_use_gpio_driver);
+#endif
 /* platform_device_unregister(&mt65xx_leds_device); */
 }
 

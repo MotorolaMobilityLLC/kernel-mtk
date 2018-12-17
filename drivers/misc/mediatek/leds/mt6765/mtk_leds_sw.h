@@ -47,6 +47,7 @@ typedef int (*cust_brightness_set) (int level, int div);
 typedef int (*cust_set_brightness) (int level);
 
 /* 10bit backlight level */
+extern bool mt_usb_is_otg(void);
 #define LED_INCREASE_LED_LEVEL_MTKPATCH
 #ifdef LED_INCREASE_LED_LEVEL_MTKPATCH
 #define MT_LED_INTERNAL_LEVEL_BIT_CNT 10

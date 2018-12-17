@@ -3257,7 +3257,9 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	dynamic_options: dynamic_options {
 		compatible = "mediatek,dynamic_options";
 	};
-
+	led_red_gpio:led_red_gpio{
+		compatible = "mediatek,led-red-pwm";
+	};
 };
 
 #include "cust_mt6765_msdc.dtsi"
