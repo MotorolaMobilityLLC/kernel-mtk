@@ -1722,18 +1722,18 @@
             </device6>
             <device7>
                 <varName>CAMERA_MAIN_TWO</varName>
-                <channel>I2C_CHANNEL_4</channel>
+                <channel>I2C_CHANNEL_2</channel>
                 <address>0x2E</address>
             </device7>
             <device8>
                 <varName>CAMERA_MAIN_TWO_EEPROM</varName>
-                <channel>I2C_CHANNEL_4</channel>
-                <address>0x50</address>
+                <channel>I2C_CHANNEL_2</channel>
+                <address>0x51</address>
             </device8>
             <device9>
                 <varName>CAMERA_MAIN_TWO_AF</varName>
-                <channel>I2C_CHANNEL_4</channel>
-                <address>0x0C</address>
+                <channel>I2C_CHANNEL_2</channel>
+                <address>0x0D</address>
             </device9>
             <device10>
                 <varName>SPEAKER_AMP</varName>
@@ -1830,6 +1830,8 @@
             <pmic0>
                 <ldoVar>VCAMA</ldoVar>
                 <defEn>OFF</defEn>
+                <varName0>MAIN_CAMERA_POWER_A</varName0>
+                <varName1>MAIN_CAMERA_POWER_AF</varName1>
             </pmic0>
             <pmic1>
                 <ldoVar>VSIM1</ldoVar>
@@ -1851,11 +1853,11 @@
                 <varName0>MAIN_CAMERA_POWER_IO</varName0>
                 <varName1>SUB_CAMERA_POWER_IO</varName1>
                 <varName2>MAIN_CAMERA_2_POWER_IO</varName2>
+                <varName3>MAIN_CAMERA_3_POWER_IO</varName3>
             </pmic4>
             <pmic5>
                 <ldoVar>VLDO28</ldoVar>
                 <defEn>OFF</defEn>
-                <varName0>MAIN_CAMERA_POWER_AF</varName0>
                 <varName1>SUB_CAMERA_POWER_AF</varName1>
                 <varName2>MAIN_CAMERA_2_POWER_AF</varName2>
                 <varName3>CAP_TOUCH_VDD</varName3>

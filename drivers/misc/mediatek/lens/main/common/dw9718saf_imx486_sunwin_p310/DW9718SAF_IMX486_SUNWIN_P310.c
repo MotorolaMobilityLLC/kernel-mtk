@@ -139,8 +139,8 @@ static int initAF(void)
 		u8 data = 0xFF;
 		int i4RetValue = 0;
 		char puSendCmd[2] = {0x00, 0x00}; /* soft power on */
-		char puSendCmd2[2] = {0x01, 0x39};
-		char puSendCmd3[2] = {0x05, 0x07};
+	char puSendCmd2[2] = { 0x01, 0x3b };
+	char puSendCmd3[2] = { 0x05, 0x79 };
 
 		g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 		g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
@@ -263,6 +263,16 @@ int DW9718SAF_IMX486_SUNWIN_P310_Release(struct inode *a_pstInode, struct file *
 		char puSendCmd[2] = {0x00, 0x01};
 
 		LOG_INF("apply\n");
+
+		LOG_INF("Wait\n");
+		s4AF_WriteReg(250);
+		msleep(20);
+		s4AF_WriteReg(200); 
+		msleep(15);
+		s4AF_WriteReg(150);
+		msleep(15);
+		s4AF_WriteReg(100); 
+		msleep(15);	
 
 		g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 		g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
