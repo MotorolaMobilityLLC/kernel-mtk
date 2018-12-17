@@ -19,6 +19,7 @@
 #include "mag.h"
 #include <SCP_sensorHub.h>
 #include "SCP_power_monitor.h"
+#include <dev_info.h>   //Added by TINNO for sensor dev info
 
 #define MAGHUB_DEV_NAME         "mag_hub"
 #define DRIVER_VERSION          "1.0.1"
@@ -285,6 +286,11 @@ static void scp_init_work_done(struct work_struct *work)
 			sizeof(mag_libinfo.libname));
 		mag_libinfo.layout = obj->mag_info.mag_dev_info.layout;
 		mag_libinfo.deviceid = obj->mag_info.mag_dev_info.deviceid;
+		//{ Added by TINNO for sensor dev info
+		if (!strcmp(mag_libinfo.libname, "akm") && mag_libinfo.deviceid == 16) {
+			FULL_PRODUCT_DEVICE_INFO(ID_MSENSOR, "akm09918");
+		}
+		//}
 
 		err = mag_info_record(&mag_libinfo);
 		return;

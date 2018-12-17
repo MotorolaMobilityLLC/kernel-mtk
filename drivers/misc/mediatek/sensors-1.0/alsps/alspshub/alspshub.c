@@ -20,7 +20,7 @@
 #include <SCP_sensorHub.h>
 #include "SCP_power_monitor.h"
 #include <linux/pm_wakeup.h>
-
+#include <dev_info.h>   //Added by TINNO for sensor dev info
 
 #define ALSPSHUB_DEV_NAME     "alsps_hub_pl"
 
@@ -289,6 +289,19 @@ static void alspshub_init_done_work(struct work_struct *work)
 #ifndef MTK_OLD_FACTORY_CALIBRATION
 	int32_t cfg_data[2] = {0};
 #endif
+
+	//{ Added by TINNO for sensor dev info
+	{
+		struct sensorInfo_t ps_info;
+		int ret = sensor_set_cmd_to_hub(ID_PROXIMITY,
+			CUST_ACTION_GET_SENSOR_INFO, &ps_info);
+		if (ret < 0)
+			pr_err_ratelimited("get psensor info failed.\n");
+		else
+			FULL_PRODUCT_DEVICE_INFO(ID_PSENSOR, ps_info.name);
+
+	}
+	//}
 
 	if (atomic_read(&obj->scp_init_done) == 0) {
 		pr_err("wait for nvram to set calibration\n");
