@@ -3122,37 +3122,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #endif
 				};
 #endif
-
-				product {
-					compatible = "android,product";
-					dev = "/dev/block/platform/bootdevice/by-name/product";
-					type = "ext4";
-					mnt_flags = "ro";
-#ifndef CONFIG_MTK_AB_OTA_UPDATER
-#ifndef CONFIG_MTK_DM_VERITY_OFF
-#ifdef CONFIG_MTK_AVB20_SUPPORT
-					fsmgr_flags = "wait,avb";
-#else
-					fsmgr_flags = "wait";
-#endif
-#else
-					fsmgr_flags = "wait";
-#endif
-#else
-#ifndef CONFIG_MTK_DM_VERITY_OFF
-#ifdef CONFIG_MTK_AVB20_SUPPORT
-					fsmgr_flags = "wait,slotselect,avb";
-#else
-					fsmgr_flags = "wait,slotselect";
-#endif
-#else
-					fsmgr_flags = "wait,slotselect";
-#endif
-#endif
-				};
-
-
-
 #if 0
 #ifdef CONFIG_TARGET_COPY_OUT_ODM
 				odm {
@@ -3182,9 +3151,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #endif
 #endif
 				};
-
-
-
 #endif
 #endif
 
