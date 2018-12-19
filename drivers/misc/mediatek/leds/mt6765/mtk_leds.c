@@ -977,6 +977,25 @@ void mt_mt65xx_led_work(struct work_struct *work)
 	mutex_unlock(&leds_mutex);
 }
 
+//add by tinno
+static int BRIGHT_MAP[256]={
+0, 20 ,20 ,20 ,20 ,20 ,20 ,20 ,20 ,21 ,21 ,21 ,21 ,21 ,22 ,22 ,22 ,23 ,23 ,23 ,24 ,
+24 ,25 ,25 ,26 ,26 ,27 ,27 ,28 ,28 ,29 ,30 ,30 ,31 ,32 ,33 ,34 ,34 ,35 ,36 ,37 ,
+38 ,39 ,40 ,41 ,42 ,43 ,44 ,45 ,47 ,48 ,49 ,50 ,52 ,53 ,54 ,56 ,57 ,59 ,60 ,62 ,
+63 ,65 ,66 ,68 ,70 ,71 ,73 ,75 ,77 ,78 ,80 ,82 ,84 ,86 ,88 ,90 ,92 ,94 ,96 ,98 ,
+100 ,103 ,105 ,107 ,109 ,112 ,114 ,117 ,119 ,121 ,124 ,126 ,129 ,132 ,134 ,137 ,
+140 ,142 ,145 ,148 ,151 ,154 ,157 ,159 ,162 ,165 ,168 ,172 ,175 ,178 ,181 ,184 ,
+187 ,191 ,194 ,197 ,201 ,204 ,208 ,211 ,215 ,218 ,222 ,225 ,229 ,233 ,236 ,240 ,
+244 ,248 ,252 ,256 ,260 ,264 ,268 ,272 ,276 ,280 ,284 ,288 ,292 ,297 ,301 ,305 ,
+310 ,314 ,319 ,323 ,328 ,332 ,337 ,341 ,346 ,351 ,355 ,360 ,365 ,370 ,375 ,380 ,
+385 ,390 ,395 ,400 ,405 ,410 ,415 ,420 ,426 ,431 ,436 ,442 ,447 ,453 ,458 ,464 ,
+469 ,475 ,480 ,486 ,492 ,498 ,503 ,509 ,515 ,521 ,527 ,533 ,539 ,545 ,551 ,557 ,
+563 ,570 ,576 ,582 ,589 ,595 ,601 ,608 ,614 ,621 ,627 ,634 ,641 ,647 ,654 ,661 ,
+667 ,674 ,681 ,688 ,695 ,702 ,709 ,716 ,723 ,730 ,738 ,745 ,752 ,759 ,767 ,774 ,
+782 ,789 ,797 ,804 ,812 ,819 ,827 ,835 ,842 ,850 ,858 ,866 ,874 ,882 ,890 ,898 ,
+906 ,914 ,922 ,930 ,938 ,947 ,955 ,963 ,972 ,980 ,989 ,997 ,1006 ,1014 ,1023 };
+//add by tinno
+
 void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 {
 	struct mt65xx_led_data *led_data =
@@ -1001,14 +1020,12 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 				    255;
 			}
 			backlight_debug_log(led_data->level, level);
-			disp_pq_notify_backlight_changed((((1 <<
-					MT_LED_INTERNAL_LEVEL_BIT_CNT)
-							    - 1) * level +
-							   127) / 255);
-			disp_aal_notify_backlight_changed((((1 <<
-					MT_LED_INTERNAL_LEVEL_BIT_CNT)
-							    - 1) * level +
-							   127) / 255);
+                    //add by tinno
+                    //level = (((1 << MT_LED_INTERNAL_LEVEL_BIT_CNT) - 1) * level + 127) / 255;
+                    level = BRIGHT_MAP[level];
+                    disp_pq_notify_backlight_changed(level);
+                    disp_aal_notify_backlight_changed(level);
+                    //add by tinno
 		}
 	}
 #else
