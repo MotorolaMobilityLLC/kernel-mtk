@@ -595,14 +595,14 @@
 &pio {
         flash_light_pin_cfg_output0: flashlightpincfg0 {
             pins_cmd_dat {
-                        pinmux = <PINMUX_GPIO57__FUNC_GPIO57>;
+                        pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
                         slew-rate = <1>;
                         output-low;
                 };
         };
         flash_light_pin_cfg_output1: flashlightpincfg1 {
             pins_cmd_dat {
-                        pinmux = <PINMUX_GPIO57__FUNC_GPIO57>;
+                        pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
                         slew-rate = <1>;
                         output-high;
                 };
@@ -627,7 +627,15 @@
 };
 
 &flashlights_aw3641 {
-        pinctrl-names = "flashlightpin_default", "flashlightpin_cfg0", "flashlightpin_cfg1","flashlightpin_en0","flashlightpin_en1";
+        pinctrl-names = 
+		
+		"flashlightpin_default",
+		"flashlightpin_cfg0", 
+		"flashlightpin_cfg1",
+		"flashlightpin_en0",
+		"flashlightpin_en1";
+		
+		
         pinctrl-0 = <&flash_light_pin_default>;
         pinctrl-1 = <&flash_light_pin_cfg_output0>;
         pinctrl-2 = <&flash_light_pin_cfg_output1>;

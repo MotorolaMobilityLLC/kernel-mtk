@@ -103,14 +103,14 @@ static int aw3641_pinctrl_init(struct platform_device *pdev)
 	}
 
 	aw3641_hwmode_high = pinctrl_lookup_state(aw3641_pinctrl, "flashlightpin_cfg1");
-	if (IS_ERR(aw3641_hwen_high)) {
+	if (IS_ERR(aw3641_hwmode_high)) {
 		pr_err("Failed to init mode high(%s)\n", AW3641_PINCTRL_STATE_HWMODE_HIGH);
-		ret = PTR_ERR(aw3641_hwen_high);
+		ret = PTR_ERR(aw3641_hwmode_high);
 	}
 	aw3641_hwmode_low = pinctrl_lookup_state(aw3641_pinctrl, "flashlightpin_cfg0");
-	if (IS_ERR(aw3641_hwen_low)) {
+	if (IS_ERR(aw3641_hwmode_low)) {
 		pr_err("Failed to init mode low(%s)\n", AW3641_PINCTRL_STATE_HWMODE_LOW);
-		ret = PTR_ERR(aw3641_hwen_low);
+		ret = PTR_ERR(aw3641_hwmode_low);
 	}
     	pr_debug("Flashlight_use_gpio_probe exit\n");
 	return ret;
@@ -199,16 +199,25 @@ static int aw3641_enable(void)
 {
 	int pin = 0 ,state=1,i;
 
+	//pr_err("dy-aw3641_duty:%d:\n",g_flash_duty);
+
 	if (aw3641_is_torch(g_flash_duty)== 0) {
+
+	//pr_err("dy-aw3641_torch:%d:\n",g_flash_duty);
+	
 		aw3641_pinctrl_set(pin, state);
 		aw3641_pinctrl_set(pin+1, state-1);
 	} else if(aw3641_is_torch(g_flash_duty)==-1){
+
+	//pr_err("dy-aw3641_flash:%d:\n",g_flash_duty);
+	
 		pinctrl_select_state(aw3641_pinctrl, aw3641_hwmode_high);
-		pinctrl_select_state(aw3641_pinctrl, aw3641_hwen_high);
+		pinctrl_select_state(aw3641_pinctrl, aw3641_hwen_high);		
 		for(i=0;i<AW3641_LEVEL_NUM-g_flash_duty;i++) {
 			pinctrl_select_state(aw3641_pinctrl, aw3641_hwen_low);
 			pinctrl_select_state(aw3641_pinctrl, aw3641_hwen_high);
 		}
+		
 	}
 	return 0;
 }
