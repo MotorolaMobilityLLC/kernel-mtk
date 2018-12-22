@@ -49,6 +49,15 @@ static DECLARE_WAIT_QUEUE_HEAD(suspend_freeze_wait_head);
 enum freeze_state __read_mostly suspend_freeze_state;
 static DEFINE_SPINLOCK(suspend_freeze_lock);
 
+#if defined (CONFIG_TINNO_POWER_TRACE)
+static bool b_init = 0;
+static struct timespec total_sleep_ts;
+static struct timespec first_ts;
+static struct timespec suspend_ts;
+static struct timespec resume_ts;
+static struct timespec last_resume_ts;
+#endif  /* CONFIG_TINNO_POWER_TRACE */
+
 void freeze_set_ops(const struct platform_freeze_ops *ops)
 {
 	lock_system_sleep();
@@ -606,6 +615,78 @@ static int enter_state(suspend_state_t state)
 	return error;
 }
 
+// Jake.L, DATE20171209, Trace the sleep time, DATE20171209-01 START
+#if defined (CONFIG_TINNO_POWER_TRACE)
+static void pm_print_sleep_info(suspend_state_t state, 
+	struct timespec *p_suspend_ts, 
+	struct timespec *p_resume_ts)
+{
+	struct timespec delta_s_ts;
+	struct timespec delta_w_ts;
+
+	if (!b_init)
+	{
+		b_init = 1;
+		// set start debug.
+		total_sleep_ts.tv_sec = 0;
+		total_sleep_ts.tv_nsec = 0;
+		first_ts = *p_suspend_ts;
+		last_resume_ts = *p_suspend_ts;
+	}
+
+	// Caculate current sleep time.
+	if (p_resume_ts->tv_nsec >= p_suspend_ts->tv_nsec)
+	{
+		delta_s_ts.tv_nsec = p_resume_ts->tv_nsec - p_suspend_ts->tv_nsec;
+		delta_s_ts.tv_sec = p_resume_ts->tv_sec - p_suspend_ts->tv_sec;
+	}
+	else
+	{
+		delta_s_ts.tv_nsec = p_resume_ts->tv_nsec + 1000000000 - p_suspend_ts->tv_nsec;
+		delta_s_ts.tv_sec = p_resume_ts->tv_sec - p_suspend_ts->tv_sec - 1;
+	}
+
+	// Caculate total sleep time.
+	total_sleep_ts.tv_nsec += delta_s_ts.tv_nsec;
+	total_sleep_ts.tv_sec += delta_s_ts.tv_sec;
+	if (total_sleep_ts.tv_nsec >= 1000000000)
+	{
+		total_sleep_ts.tv_nsec -= 1000000000;
+		total_sleep_ts.tv_sec += 1;
+	}
+
+	// Caculate last wakeup time.
+	if (p_suspend_ts->tv_nsec < last_resume_ts.tv_nsec)
+	{
+		delta_w_ts.tv_nsec = p_suspend_ts->tv_nsec + 1000000000 - last_resume_ts.tv_nsec;
+		delta_w_ts.tv_sec = p_suspend_ts->tv_sec - last_resume_ts.tv_sec - 1;
+	}
+	else
+	{
+		delta_w_ts.tv_nsec = p_suspend_ts->tv_nsec - last_resume_ts.tv_nsec;
+		delta_w_ts.tv_sec = p_suspend_ts->tv_sec - last_resume_ts.tv_sec;
+	}
+	last_resume_ts = *p_resume_ts;
+
+	// Print last wakeup time, current sleep, total sleep time, total time.
+	pr_info("T_PM: sleep to %s, w=%lu.%09lu, s=%lu.%09lu, %lu/%lu seconds\n",
+		pm_states[state],
+		delta_w_ts.tv_sec, delta_w_ts.tv_nsec,
+		delta_s_ts.tv_sec, delta_s_ts.tv_nsec,
+		total_sleep_ts.tv_sec,
+		p_resume_ts->tv_sec - first_ts.tv_sec);
+}
+
+static void pm_suspend_marker(char *annotation, struct timespec *ts)
+{
+	struct rtc_time tm;
+
+	rtc_time_to_tm(ts->tv_sec, &tm);
+	pr_info("PM: suspend %s %ld-%02d-%02d %02d:%02d:%02d.%09lu UTC\n",
+		annotation, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+		tm.tm_hour, tm.tm_min, tm.tm_sec, ts->tv_nsec);
+}
+#else
 static void pm_suspend_marker(char *annotation)
 {
 	struct timespec ts;
@@ -617,6 +698,8 @@ static void pm_suspend_marker(char *annotation)
 		annotation, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 		tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
 }
+#endif  /* CONFIG_TINNO_POWER_TRACE */
+// Jake.L, DATE20171209-01 END
 
 /**
  * pm_suspend - Externally visible function for suspending the system.
@@ -632,7 +715,14 @@ int pm_suspend(suspend_state_t state)
 	if (state <= PM_SUSPEND_ON || state >= PM_SUSPEND_MAX)
 		return -EINVAL;
 
+	// Jake.L, DATE20171209, Trace the sleep time, DATE20171209-01 START
+	#if defined (CONFIG_TINNO_POWER_TRACE)
+	getnstimeofday(&suspend_ts);
+	pm_suspend_marker("entry", &suspend_ts);
+	#else
 	pm_suspend_marker("entry");
+	#endif  /* CONFIG_TINNO_POWER_TRACE */
+	// Jake.L, DATE20171209-01 END
 	error = enter_state(state);
 	if (error) {
 		suspend_stats.fail++;
@@ -640,7 +730,15 @@ int pm_suspend(suspend_state_t state)
 	} else {
 		suspend_stats.success++;
 	}
+	// Jake.L, DATE20171209, Trace the sleep time, DATE20171209-01 START
+	#if defined (CONFIG_TINNO_POWER_TRACE)
+	getnstimeofday(&resume_ts);
+	pm_suspend_marker("exit", &resume_ts);
+	pm_print_sleep_info(state, &suspend_ts, &resume_ts);
+	#else
 	pm_suspend_marker("exit");
+	#endif  /* CONFIG_TINNO_POWER_TRACE */
+	// Jake.L, DATE20171209-01 END
 	return error;
 }
 EXPORT_SYMBOL(pm_suspend);

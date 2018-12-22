@@ -312,3 +312,7 @@ config PM_GENERIC_DOMAINS_OF
 
 config CPU_PM
 	bool
+
+config TINNO_POWER_TRACE
+	bool "for TINNO power trace"
+	default n
