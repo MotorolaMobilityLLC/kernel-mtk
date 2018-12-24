@@ -157,6 +157,9 @@ static int EEPROM_get_cmd_info(unsigned int sensorID,
 				cmdInfo->readCMDFunc =
 					pCamCalList[i].readCamCalData;
 
+                cmdInfo->writeCMDFunc =
+                    pCamCalList[i].writeCamCalData;
+
 				return 1;
 			}
 		}

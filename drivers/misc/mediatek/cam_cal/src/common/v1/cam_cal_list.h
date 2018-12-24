@@ -21,6 +21,7 @@ struct stCAM_CAL_LIST_STRUCT {
 	unsigned int sensorID;
 	unsigned int slaveID;
 	cam_cal_cmd_func readCamCalData;
+    cam_cal_cmd_func writeCamCalData;
 };
 
 

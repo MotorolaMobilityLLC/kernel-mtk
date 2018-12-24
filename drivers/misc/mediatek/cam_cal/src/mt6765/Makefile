@@ -27,7 +27,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/i2c/busses/
 
 # Common code
 obj-y += ../common/$(COMMON_VERSION)/eeprom_driver.o
-obj-y += ../common/$(COMMON_VERSION)/eeprom_i2c_common_driver.o
+# obj-y += ../common/$(COMMON_VERSION)/eeprom_i2c_common_driver.o
 
 # Platform code
 obj-y += eeprom_i2c_custom_driver.o
@@ -42,5 +42,5 @@ endif
 endef
 
 # Project or platform code
-CUSTOM_SRC_LIST := cam_cal_list eeprom_i2c_dev
+CUSTOM_SRC_LIST := cam_cal_list eeprom_i2c_dev eeprom_i2c_common_driver
 $(foreach src,$(CUSTOM_SRC_LIST),$(eval $(call INC_CUSTOM_SRC,$(src))))
