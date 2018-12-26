@@ -585,8 +585,12 @@ static int led_switch_breath_pmic(enum mt65xx_led_pmic pmic_type,
 
 #define PMIC_PERIOD_NUM 8
 
-int pmic_period_array[] = { 2, 4, 6, 8, 10, 12, 20, 60 };
-int pmic_freqsel_array[] = { 0, 1, 2, 3, 4, 5, 9, 28 };
+// pony.ma, DATE20181226, blink fre is wrong, DATE20181226-01 START
+//int pmic_period_array[] = { 2, 4, 6, 8, 10, 12, 20, 60 };
+//int pmic_freqsel_array[] = { 0, 1, 2, 3, 4, 5, 9, 28 };
+int pmic_period_array[] = { 250, 500, 1000, 1250, 1666, 2000, 2500, 10000 };
+int pmic_freqsel_array[] = { 0, 4, 199, 499, 999, 1999, 4999, 4999 };
+// pony.ma, DATE20181226-01 END
 
 
 
