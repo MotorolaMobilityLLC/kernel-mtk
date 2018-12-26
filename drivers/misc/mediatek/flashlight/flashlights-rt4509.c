@@ -66,7 +66,7 @@
 #define RT4509_REG_LD_STAT (0x30)
 
 /* define level */
-#define RT4509_LEVEL_NUM 26
+#define RT4509_LEVEL_NUM 15
 #define RT4509_LEVEL_TORCH 0
 #define RT4509_HW_TIMEOUT 100 /* ms */
 
@@ -193,15 +193,13 @@ static int rt4509_pinctrl_set(int pin, int state)
  * rt4509 operations
  *****************************************************************************/
 static const int rt4509_current[RT4509_LEVEL_NUM] = {
-	 20,  40,  60,  100,  120,  140, 160, 200, 240, 300,
-	340, 400, 440,  500,  540,  600, 640, 700, 740, 800,
-	840, 900, 940, 1000, 1040, 1100
+	 40, 100, 140,  200,  240,  300, 340, 400, 500, 600,
+	700, 800, 900, 1000, 1100
 };
 
 static const unsigned char rt4509_flash_level[RT4509_LEVEL_NUM] = {
-	0x01, 0x02, 0x03, 0x05, 0x06, 0x07, 0x08, 0x0A, 0x0C, 0x0F,
-	0x11, 0x14, 0x16, 0x19, 0x1B, 0x1E, 0x20, 0x23, 0x25, 0x28,
-	0x2A, 0x2D, 0x2F, 0x32, 0x34, 0x37
+	0x02, 0x05, 0x07, 0x0A, 0x0C, 0x0F, 0x11, 0x14, 0x19, 0x1E,
+	0x23, 0x28, 0x2D, 0x32, 0x37
 };
 
 static int rt4509_verify_level(int level)
@@ -298,6 +296,8 @@ static int rt4509_hidden_mode(struct i2c_client *client)
 	rt4509_write_reg(client, 0xC7, 0xE1);
 	rt4509_write_reg(client, 0xB0, 0xC0);
 
+	mdelay(2);
+
 	return 0;
 }
 
@@ -321,17 +321,26 @@ static int rt4509_init(void)
 
 	ret = rt4509_read_reg(rt4509_i2c_client, RT4509_REG_DEV_INFO);
 	pr_info("dev_info %d 0x%02x\n", ret, ret);
-	if (ret == -121) {
+	if (ret == -EREMOTEIO) {
+		int i;
 		pr_info("rt4509 is not availible %p\n", rt4509_pdata);
-		flashlight_dev_unregister_by_device_id(rt4509_pdata->dev_id);
+		for (i = 0; i < rt4509_pdata->channel_num; i++)
+			flashlight_dev_unregister_by_device_id(&rt4509_pdata->dev_id[i]);
 		return -1;
 	}
 
-	/* set pulse width to 300us */
-	ret = rt4509_write_reg(rt4509_i2c_client_2, RT4509_REG_PULSE_WIDTH1, 0x01);
-	ret = rt4509_write_reg(rt4509_i2c_client_2, RT4509_REG_PULSE_WIDTH2, 0x2C);
+	/* set pulse width to 10ms */
+	rt4509_write_reg(rt4509_i2c_client, RT4509_REG_PULSE_WIDTH1, 0x27);
+	rt4509_write_reg(rt4509_i2c_client, RT4509_REG_PULSE_WIDTH2, 0x10);
 
-	return ret;
+	/* set pulse width to 300us */
+	rt4509_write_reg(rt4509_i2c_client_2, RT4509_REG_PULSE_WIDTH1, 0x01);
+	rt4509_write_reg(rt4509_i2c_client_2, RT4509_REG_PULSE_WIDTH2, 0x2C);
+
+	rt4509_write_reg(rt4509_i2c_client_2, RT4509_REG_PULSE_DELAY1, 0x00);
+	rt4509_write_reg(rt4509_i2c_client_2, RT4509_REG_PULSE_DELAY2, 0x0A);
+
+	return 0;
 }
 
 /* flashlight uninit */
