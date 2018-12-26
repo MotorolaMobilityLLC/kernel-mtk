@@ -215,7 +215,7 @@ static void mlog_reset_format(void)
 
 	len += hweight32(meminfo_filter);
 
-	if (vm_eventall == VMSTAT_EVENTALL_STOP)
+	if (vm_filter && vm_eventall == VMSTAT_EVENTALL_STOP)
 		len += hweight32(vm_filter);
 	else
 		len += NR_VM_EVENT_ITEMS;
