@@ -180,10 +180,10 @@ void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer *buffer)
 	spin_lock(&heap->free_lock);
 	list_add(&buffer->list, &heap->free_list);
 	heap->free_list_size += buffer->size;
-
-	if (heap->free_list_size > 200*1024*1024)
-		IONMSG("[ion_dbg] warning: free_list_size=0x%zu\n", heap->free_list_size);
-
+	if (heap->free_list_size > 200 * 1024 * 1024)
+		IONMSG(
+			"[ion_dbg] warning: free_list_size=%zu, heap_id:%u\n",
+			heap->free_list_size, heap->id);
 	spin_unlock(&heap->free_lock);
 	wake_up(&heap->waitqueue);
 }
@@ -297,6 +297,7 @@ static unsigned long ion_heap_shrink_count(struct shrinker *shrinker,
 		total = ion_heap_freelist_size(heap) / PAGE_SIZE;
 	if (heap->ops->shrink)
 		total += heap->ops->shrink(heap, sc->gfp_mask, 0);
+	IONMSG("%s, heap:%u, total:%d\n", __func__, heap->id, total);
 	return total;
 }
 
@@ -308,6 +309,7 @@ static unsigned long ion_heap_shrink_scan(struct shrinker *shrinker,
 	int freed = 0;
 	int to_scan = sc->nr_to_scan;
 
+	IONMSG("%s, heap:%u, to_scan:%d\n", __func__, heap->id, to_scan);
 	if (to_scan == 0)
 		return 0;
 
