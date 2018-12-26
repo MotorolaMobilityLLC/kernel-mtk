@@ -442,6 +442,7 @@ static int __init emi_ctrl_init(void)
 			pr_info("[EMI] fail to get rank_size\n");
 	}
 
+	pr_info("[EMI] dram_type(%d)\n", get_dram_type());
 	pr_info("[EMI] ch_num(%d)\n", get_ch_num());
 	pr_info("[EMI] rk_num(%d)\n", get_rk_num());
 	for (i = 0; i < get_rk_num(); i++)
@@ -481,6 +482,12 @@ unsigned int get_rank_size(unsigned int rank_index)
 
 	return 0;
 }
+
+unsigned int get_dram_type(void)
+{
+	return emi_info.dram_type;
+}
+EXPORT_SYMBOL(get_dram_type);
 
 void __iomem *mt_cen_emi_base_get(void)
 {

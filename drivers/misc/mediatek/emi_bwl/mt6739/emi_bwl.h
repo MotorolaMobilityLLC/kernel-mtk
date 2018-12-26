@@ -77,6 +77,7 @@ extern int mtk_mem_bw_ctrl(int sce, int op);
 extern unsigned int get_ch_num(void);
 extern unsigned int get_rk_num(void);
 extern unsigned int get_rank_size(unsigned int rank_index); /* unit: all channels */
+extern unsigned int get_dram_type(void);
 extern void __iomem *mt_emi_base_get(void); /* legacy API */
 extern void __iomem *mt_cen_emi_base_get(void);
 extern void __iomem *mt_chn_emi_base_get(void);
