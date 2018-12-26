@@ -37,6 +37,7 @@
 
 #include "mtk_dramc.h"
 #include "dramc.h"
+#include "emi_bwl.h"
 
 #ifdef CONFIG_OF_RESERVED_MEM
 #define DRAM_R0_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r0_dummy_read"
@@ -713,9 +714,16 @@ unsigned int get_shuffle_status(void)
 
 int get_ddr_type(void)
 {
-	/* TODO */
-	return DRAM_TYPE;
+	int type = get_dram_type();
 
+	switch (type) {
+	case 2:
+		return TYPE_LPDDR2;
+	case 3:
+		return TYPE_LPDDR3;
+	default:
+		return -1;
+	}
 }
 EXPORT_SYMBOL(get_ddr_type);
 
@@ -754,7 +762,13 @@ int dram_can_support_fh(void)
 {
 	if (No_DummyRead)
 		return 0;
-	/* TODO: check LPDDR2 */
+
+	/*
+	 * LPDDR2 cannot support DVFS
+	 */
+	if (get_ddr_type() == TYPE_LPDDR2)
+		return 0;
+
 	return 1;
 }
 EXPORT_SYMBOL(dram_can_support_fh);
@@ -881,9 +895,7 @@ static int dram_probe(struct platform_device *pdev)
 		return -1;
 	}
 
-	/* TODO */
-	/* DRAM_TYPE = get_dram_type(); */
-	DRAM_TYPE = TYPE_LPDDR3;
+	DRAM_TYPE = get_ddr_type();
 	pr_info("[DRAMC Driver] dram type =%d\n", DRAM_TYPE);
 
 	if (!DRAM_TYPE) {
@@ -1062,5 +1074,11 @@ unsigned int  mt_dramc_ta_addr_set(unsigned int rank, unsigned int temp_addr)
 EXPORT_SYMBOL(mt_dramc_ta_addr_set);
 
 #endif
+
+unsigned int platform_support_dram_type(void)
+{
+	return 1;
+}
+EXPORT_SYMBOL(platform_support_dram_type);
 
 MODULE_DESCRIPTION("MediaTek DRAMC Driver v0.1");

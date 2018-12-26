@@ -103,6 +103,7 @@ int exit_pasr_dpd_config(void);
 void del_zqcs_timer(void);
 void add_zqcs_timer(void);
 unsigned int mt_dramc_ta_addr_set(unsigned int rank, unsigned int temp_addr);
+unsigned int platform_support_dram_type(void);
 
 enum DDRTYPE {
 	TYPE_LPDDR3 = 1,

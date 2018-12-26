@@ -39,13 +39,17 @@
 #include "dramc.h"
 
 
-
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
 #define Reg_Readl(addr) readl(IOMEM(addr))
 
 #ifdef LAST_DRAMC_IP_BASED
 static void __iomem *(*get_emi_base)(void);
 __weak unsigned int mt_dramc_ta_addr_set(unsigned int rank, unsigned int temp_addr)
+{
+	return 0;
+}
+
+__weak unsigned int platform_support_dram_type(void)
 {
 	return 0;
 }
@@ -139,7 +143,7 @@ static int __init set_single_channel_test_angent(int channel)
 		temp = Reg_Readl(dramc_ao_base+base_reg[rank]) & 0xF;
 		if ((ddr_type == TYPE_LPDDR4) || (ddr_type == TYPE_LPDDR4X))
 			temp |= (test_agent_base>>1) & 0xFFFFFFF0;
-		else if (ddr_type == TYPE_LPDDR3)
+		else if ((ddr_type == TYPE_LPDDR3) || platform_support_dram_type())
 			temp |= (test_agent_base) & 0xFFFFFFF0;
 		else {
 			pr_err("[LastDRAMC] undefined DRAM type\n");
