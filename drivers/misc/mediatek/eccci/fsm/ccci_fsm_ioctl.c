@@ -304,8 +304,7 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(md_id);
 	int ret = 0;
 	enum MD_STATE_FOR_USER state_for_user;
-	struct siginfo sig_info;
-	unsigned int data, sig, pid;
+	unsigned int data;
 	char *VALID_USER = "ccci_mdinit";
 
 	if (!ctl)
@@ -416,21 +415,6 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 		break;
 	case CCCI_IOC_RESET_MD1_MD3_PCCIF:
 		ccci_md_reset_pccif(md_id);
-		break;
-	case CCCI_IOC_SEND_SIGNAL_TO_USER:
-		if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_NORMAL_LOG(md_id, FSM, "signal to RILD fail: copy_from_user fail\n");
-			ret = -EFAULT;
-			break;
-		}
-		sig = (data >> 16) & 0xFFFF;
-		pid = data & 0xFFFF;
-		sig_info.si_signo = sig;
-		sig_info.si_code = SI_KERNEL;
-		sig_info.si_pid = current->pid;
-		sig_info.si_uid = __kuid_val(current->cred->uid);
-		ret = kill_proc_info(SIGUSR2, &sig_info, pid);
-		CCCI_NORMAL_LOG(md_id, FSM, "send signal %d to rild %d ret=%d\n", sig, pid, ret);
 		break;
 	case CCCI_IOC_GET_MD_EX_TYPE:
 		ret = put_user((unsigned int)ctl->ee_ctl.ex_type, (unsigned int __user *)arg);
