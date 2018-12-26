@@ -280,10 +280,15 @@ static inline int wait_command(int core)
 				if (PWAITMODE & 0x1) {
 					ret = 0;
 					jump_out = true;
-					LOG_DBG("[vpu_%d] test PWAITMODE status(%d), ret(%d)\n", core, PWAITMODE, ret);
+					LOG_DBG("[vpu_%d] test PWAITMODE status(%d), done(%d), ret(%d)\n",
+						core, PWAITMODE,
+						vpu_service_cores[core].is_cmd_done,
+						ret);
 				} else {
-					LOG_WRN("[vpu_%d] PWAITMODE(%d) error status(%d), ret(%d)\n", core,
-						count, PWAITMODE, ret);
+					LOG_WRN("[vpu_%d] PWAITMODE(%d) error status(%d), done(%d), ret(%d)\n", core,
+						count, PWAITMODE,
+						vpu_service_cores[core].is_cmd_done,
+						ret);
 					if (count == 5) {
 						ret = -ETIMEDOUT;
 						jump_out = true;
@@ -1613,7 +1618,10 @@ static int isr_common_handler(int core)
 	struct vpu_log_reader_t *vpu_log_reader;
 	void *ptr;
 
-	LOG_DBG("vpu %d received a interrupt\n", core);
+	LOG_INF("vpu %d irq(0x%08x), INFO00(0x%08x), DEBUGPC(0x%08x)\n", core,
+		vpu_read_field(core, FLD_XTENSA_INFO17),
+		vpu_read_field(core, FLD_XTENSA_INFO00),
+		vpu_read_field(core, FLD_P_DEBUG_PC));
 
 	/* INFO 17 was used to reply command done */
 	req_cmd = vpu_read_field(core, FLD_XTENSA_INFO17);
