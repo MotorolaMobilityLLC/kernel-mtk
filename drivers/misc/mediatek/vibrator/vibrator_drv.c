@@ -294,6 +294,7 @@ static void vib_shutdown(struct platform_device *pdev)
 		atomic_set(&vibr->vibr_state, 0);
 		spin_unlock_irqrestore(&vibr->vibr_lock, flags);
 		vibr_Disable();
+		return;
 	}
 	spin_unlock_irqrestore(&vibr->vibr_lock, flags);
 }
