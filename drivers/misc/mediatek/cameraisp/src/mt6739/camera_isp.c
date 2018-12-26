@@ -71,6 +71,7 @@
 /* for kernel log reduction */
 #include <linux/printk.h>
 #endif
+#include <aee.h>
 
 #define CAMSV_DBG
 #ifdef CAMSV_DBG
@@ -106,6 +107,13 @@
 #define LOG_PR_WARN(format, args...)     pr_warn(MyTag format,  ##args)
 #define LOG_PR_ERR(format, args...)      pr_err(MyTag format,  ##args)
 #define LOG_PR_ALERT(format, args...)    pr_alert(MyTag format, ##args)
+
+/* --------------------------------------------------------------- */
+#define camera_isp_aee(key, string) \
+	do { \
+		LOG_PR_ERR(string); \
+		aee_kernel_exception("Camera-ISP", "\nCRDISPATCH_KEY:" key "\n" string); \
+	} while (0)
 
 /*******************************************************************
 *
@@ -1816,7 +1824,7 @@ bool ISP_chkModuleSetting(void)
 			(" CAM_FLK_NUM.FLK_NUM_Y.value(%d) * CAM_FLK_SIZE.FLK_SIZE_Y.value(%d) * 2) - 1)!!",
 				FLK_NUM_Y, FLK_SIZE_Y);
 		}
-		/*Check AF setting */
+	/*Check AF setting */
 
 	/* under twin case, sgg_sel won't be 0 , so , don't need to take into consideration at twin case */
 	cam_ctrl_en_p1_dma_d = ISP_RD32(ISP_ADDR + 0x14);
@@ -1844,10 +1852,12 @@ bool ISP_chkModuleSetting(void)
 	if (AF_EN == 0) {
 		if (AFO_D_EN == 1) {
 			LOG_INF("DO NOT enable AFO_D without enable AF\n");
-			rst = MFALSE;
+			rst = 2; /* 2: check module en */
 			goto AF_EXIT;
-		} else
+		} else {
+			rst = 0; /* PASS */
 			goto AF_EXIT;
+		}
 	}
 
 	/*  */
@@ -1857,14 +1867,16 @@ bool ISP_chkModuleSetting(void)
 	tg_h_lin_s = TG_H & 0x7fff;
 	if (tg_w_pxl_e - tg_w_pxl_s < 32) {
 		LOG_INF("tg width < 32, can't enable AF:0x%x\n", (tg_w_pxl_e - tg_w_pxl_s));
-		rst = MFALSE;
+		rst = 2;  /* 2: check module en */
+		goto AF_EXIT;
 	}
 
 	/* AFO and AF relaterd module enable check */
 	if ((AFO_D_EN == 0) || (SGG1_EN == 0)) {
 		LOG_INF("AF is enabled, MUST enable AFO/SGG1:0x%x_0x%x\n",
 		AFO_D_EN, SGG1_EN);
-		rst = MFALSE;
+		rst = 2; /* 2: check module en */
+		goto AF_EXIT;
 	}
 
 	/*  */
@@ -1896,15 +1908,17 @@ bool ISP_chkModuleSetting(void)
 	af_image_wd = cam_af_size & 0x3fff;
 	if (h_size != af_image_wd) {
 		LOG_INF("AF input size mismatch:0x%x_0x%x\n", af_image_wd, h_size);
-		rst = MFALSE;
+		rst = 3; /* 3: check image window */
+		goto AF_EXIT;
 	}
 
 	/* ofset */
 	af_vld_ystart = (cam_af_vld >> 16) & 0x3fff;
 	af_vld_xstart = cam_af_vld & 0x3fff;
 	if ((af_vld_xstart&0x1) || (af_vld_ystart&0x1)) {
-		rst = MFALSE;
 		LOG_INF("AF vld start must be even:0x%x_0x%x\n", af_vld_xstart, af_vld_ystart);
+		rst = 4; /* 4: check alignment */
+		goto AF_EXIT;
 	}
 
 	/* window num */
@@ -1913,12 +1927,14 @@ bool ISP_chkModuleSetting(void)
 	/* win_num_x = CAM_READ_BITS(this->m_pDrv->getPhyObj(),CAM_AF_BLK_1,AF_BLK_XNUM); */
 	/* win_num_y = CAM_READ_BITS(this->m_pDrv->getPhyObj(),CAM_AF_BLK_1,AF_BLK_YNUM); */
 	if ((af_blk_xnum == 0) || (af_blk_xnum > 128)) {
-		rst = MFALSE;
+		rst = 3; /* 3: check image window */
 		LOG_INF("AF af_blk_xnum :0x%x[1~128]\n", af_blk_xnum);
+		goto AF_EXIT;
 	}
 	if ((af_blk_ynum == 0) || (af_blk_ynum > 128)) {
-		rst = MFALSE;
+		rst = 3; /* 3: check image window */
 		LOG_INF("AF af_blk_ynum :0x%x[1~128]\n", af_blk_ynum);
+		goto AF_EXIT;
 	}
 
 	/* win size */
@@ -1926,8 +1942,9 @@ bool ISP_chkModuleSetting(void)
 	af_blk_ysize = (cam_af_blk_0 >> 16) & 0xff;
 	/* max */
 	if (af_blk_xsize > 254) {
-		rst = MFALSE;
+		rst = 3; /* 3: check image window */
 		LOG_INF("af max h win size:254 cur:0x%x\n", af_blk_xsize);
+		goto AF_EXIT;
 	}
 	/* min constraint */
 	if ((af_v_avg_lvl == 3) && (af_v_gonly == 1))
@@ -1940,29 +1957,34 @@ bool ISP_chkModuleSetting(void)
 		tmp = 8;
 	if (af_blk_xsize < tmp) {
 		LOG_INF("af min h win size::0x%x cur:0x%x [0x%x_0x%x]\n", tmp, af_blk_xsize, af_v_avg_lvl, af_v_gonly);
-		rst = MFALSE;
+		rst = 3; /* 3: check image window */
+		goto AF_EXIT;
 	}
 
 	if (af_v_gonly == 1) {
 		if (af_blk_xsize & 0x3) {
 			LOG_INF("af min h win size must 4 alighment:0x%x\n", af_blk_xsize);
-			rst = MFALSE;
+			rst = 4; /* 4: check alignment */
+			goto AF_EXIT;
 		}
 	} else {
 		if (af_blk_xsize & 0x1) {
 			LOG_INF("af min h win size must 2 alighment:0x%x\n", af_blk_xsize);
-			rst = MFALSE;
+			rst = 4; /* 4: check alignment */
+			goto AF_EXIT;
 		}
 	}
 
 	if (af_blk_ysize > 255) {
-		rst = MFALSE;
+		rst = 3; /* 3: check image window */
 		LOG_INF("af max v win size:255 cur:0x%x\n", af_blk_ysize);
+		goto AF_EXIT;
 	}
 	/* min constraint */
 	if (af_blk_xsize < 1) {
 		LOG_INF("af min v win size:1, cur:0x%x\n", af_blk_xsize);
-		rst = MFALSE;
+		rst = 3; /* 3: check image window */
+		goto AF_EXIT;
 	}
 
 	af_ext_stat_en = (cam_af_con >> 22) & 0x1;
@@ -1971,17 +1993,20 @@ bool ISP_chkModuleSetting(void)
 	if (af_ext_stat_en == 1) {
 		if (af_blk_xsize < 8) {
 			LOG_INF("AF_EXT_STAT_EN=1, af min h win size::8 cur:0x%x\n", af_blk_xsize);
-			rst = MFALSE;
+			rst = 3; /* 3: check image window */
+			goto AF_EXIT;
 		}
 		if ((SGG5_EN == 0) || (af_h_gonly != 0)) {
 			LOG_INF("AF_EXT_STAT_EN=1, MUST enable sgg5 & disable AF_H_GONLY:0x%x_0x%x\n",
 				SGG5_EN, af_h_gonly);
-			rst = MFALSE;
+			rst = 2; /* 2: check module en */
+			goto AF_EXIT;
 		}
 	} else {
 		if (SGG5_EN == 1) {
 			LOG_INF("AF_EXT_STAT_EN=0, sgg5 must be disabled:0x%x\n", SGG5_EN);
-			rst = MFALSE;
+			rst = 2; /* 2: check module en */
+			goto AF_EXIT;
 		}
 	}
 
@@ -1989,29 +2014,34 @@ bool ISP_chkModuleSetting(void)
 	afo_d_xsize = afo_d_xsize & 0x3fff;
 	afo_d_ysize = afo_d_ysize & 0x1fff;
 	if (afo_d_xsize * afo_d_ysize > 128*128*af_blk_sz) {
-		rst = MFALSE;
+		rst = 5; /* 5: check AFO size */
 		LOG_INF("afo max size out of range:0x%x_0x%x\n", afo_d_xsize * afo_d_ysize, 128*128*af_blk_sz);
+		goto AF_EXIT;
 	}
 
 	/* xsize/ysize */
 	xsize = af_blk_xnum*af_blk_sz;
 	if (afo_d_xsize != (xsize - 1)) {
 		LOG_INF("afo xsize mismatch:0x%x_0x%x\n", afo_d_xsize, (xsize - 1));
-		rst = MFALSE;
+		rst = 1; /* 1: check driver */
+		goto AF_EXIT;
 	}
 	ysize = af_blk_ynum;
 	if (afo_d_ysize != (ysize - 1)) {
 		LOG_INF("afo ysize mismatch:0x%x_0x%x\n", afo_d_ysize, (ysize - 1));
-		rst = MFALSE;
+		rst = 1; /* 1: check driver */
+		goto AF_EXIT;
 	}
 
 	if ((af_vld_xstart + af_blk_xsize*af_blk_xnum) > h_size) {
-		rst = MFALSE;
+		rst = 3; /* 3: check image window */
 		LOG_INF("af h window out of range:0x%x_0x%x\n", (af_vld_xstart + af_blk_xsize*af_blk_xnum), h_size);
+		goto AF_EXIT;
 	}
 	if ((af_vld_ystart + af_blk_ysize*af_blk_ynum) > v_size) {
-		rst = MFALSE;
+		rst = 3; /* 3: check image window */
 		LOG_INF("af v window out of range:0x%x_0x%x\n", (af_vld_ystart + af_blk_ysize*af_blk_ynum), v_size);
+		goto AF_EXIT;
 	}
 
 	/* AF_TH */
@@ -2022,55 +2052,40 @@ bool ISP_chkModuleSetting(void)
 	if ((af_sat_th0 > af_sat_th1) || (af_sat_th1 > af_sat_th2) || (af_sat_th2 > af_sat_th3)) {
 		LOG_INF("af sat th, MUST th3 >= th2 >= th1 >= th0:0x%x_0x%x_0x%x_0x%x\n",
 			af_sat_th3, af_sat_th2, af_sat_th1, af_sat_th0);
-		rst = MFALSE;
+		rst = 6; /* 6: check TH */
+		goto AF_EXIT;
 	}
 
 AF_EXIT:
-	if (rst == MFALSE)
-		LOG_INF("af check fail:cur mux:0x%x\n", sgg_sel);
+	/* 0: PASS, 1:  check driver, 2: check module en, 3: check image window
+	 * 4: check alignment, 5: check AFO size, 6: check TH
+	*/
+	if (rst == 0)
+		LOG_INF("af check pass\n");
+	else if (rst == 2)
+		camera_isp_aee("AF data error", "Error: AF module enable is over HW constraint.");
+	else if (rst == 3)
+		camera_isp_aee("AF data error", "Error: AF image window is over HW constraint.");
+	else if (rst == 4)
+		camera_isp_aee("AF data error", "Error: AF alignment is over HW constraint.");
+	else if (rst == 5)
+		camera_isp_aee("AF data error", "Error: AFO size is over HW constraint.");
+	else if (rst == 6)
+		camera_isp_aee("AF data error", "Error: AF TH is over HW constraint.");
+	else
+		LOG_INF("af check fail: check driver\n");
 
-		/*Check AE setting */
-#if 0
-		unsigned int cam_aao_xsize;  /*7390 */
-		unsigned int cam_aao_ysize;  /*7394 */
-		unsigned int cam_awb_win_num;        /*45BC */
-		unsigned int cam_ae_hst_ctl; /*4650 */
 
-		unsigned int AAO_XSIZE;
-		unsigned int AWB_W_HNUM;
-		unsigned int AWB_W_VNUM;
-		unsigned int histogramen_num;
-#endif
-		{
+		/*First Check AWB setting */
+		rst = 0;
+		cam_awb_win_num = ISP_RD32(ISP_ADDR + 0x5BC);
+		cam_ae_hst_ctl = ISP_RD32(ISP_ADDR + 0x650);
+		cam_aao_xsize = ISP_RD32(ISP_ADDR + 0x3390);
+		cam_aao_ysize = ISP_RD32(ISP_ADDR + 0x3394);
 
-			cam_awb_win_num = ISP_RD32(ISP_ADDR + 0x5BC);
-			cam_ae_hst_ctl = ISP_RD32(ISP_ADDR + 0x650);
-			cam_aao_xsize = ISP_RD32(ISP_ADDR + 0x3390);
-			cam_aao_ysize = ISP_RD32(ISP_ADDR + 0x3394);
-
-			AAO_XSIZE = cam_aao_xsize & 0x1ffff;
-			AWB_W_HNUM = cam_awb_win_num & 0xff;
-			AWB_W_VNUM = (cam_awb_win_num >> 16) & 0xff;
-			histogramen_num = 0;
-			for (i = 0; i < 4; i++) {
-				if ((cam_ae_hst_ctl >> i) & 0x1)
-					histogramen_num += 1;
-			}
-
-			if ((cam_aao_ysize + 1) != 1)
-				LOG_INF("Error HwRWCtrl::AAO_YSIZE(%d) must be equal 1 !!",
-					cam_aao_ysize);
-			if ((AAO_XSIZE + 1) !=
-			    (AWB_W_HNUM * AWB_W_VNUM * 5 + (histogramen_num << 8)))
-				LOG_INF
-				("Error HwRWCtrl::AAO_XSIZE(%d) = AWB_W_HNUM(%d)*AWB_W_VNUM(%d)*5 +",
-					AAO_XSIZE, AWB_W_HNUM, AWB_W_VNUM);
-				LOG_INF
-				(" (how many histogram enable(%d)(AE_HST0/1/2/3_EN))*2*128 !!",
-					histogramen_num);
-		}
-
-		/*Check AWB setting */
+		AAO_XSIZE = cam_aao_xsize & 0x1ffff;
+		AWB_W_HNUM = cam_awb_win_num & 0xff;
+		AWB_W_VNUM = (cam_awb_win_num >> 16) & 0xff;
 
 		cam_awb_win_num = ISP_RD32(ISP_ADDR + 0x5BC);
 		cam_awb_win_pit = ISP_RD32(ISP_ADDR + 0x5B8);
@@ -2083,6 +2098,11 @@ AF_EXIT:
 		} else {
 			AAO_InWidth = grab_width;
 			AAO_InHeight = grab_height;
+		}
+		if ((AAO_InWidth == 0) || (AAO_InHeight == 0)) {
+			LOG_INF("Error HwRWCtrl: AAO input size == 0!!");
+			rst = 1; /* 1: check driver */
+			goto AA_EXIT;
 		}
 		AWB_W_HNUM = (cam_awb_win_num & 0xff);
 		AWB_W_VNUM = ((cam_awb_win_num >> 16) & 0xff);
@@ -2106,6 +2126,8 @@ AF_EXIT:
 			LOG_INF
 			(" * AWB_W_HPIT(%d) + AWB_W_HORG(%d) !!",
 				 AWB_W_HPIT, AWB_W_HORG);
+			rst = 2; /* 2: check AWB size */
+			goto AA_EXIT;
 		}
 		if (AAO_InHeight < (AWB_W_VNUM * AWB_W_VPIT + AWB_W_VORG)) {
 			/*Error */
@@ -2121,7 +2143,45 @@ AF_EXIT:
 			LOG_INF
 			(" AWB_W_VNUM(%d)	* AWB_W_VPIT(%d) + AWB_W_VORG(%d) !!",
 				AWB_W_VNUM, AWB_W_VPIT, AWB_W_VORG);
+			rst = 2; /* 2: check AWB size */
+			goto AA_EXIT;
 		}
+
+		/* Then, check AE setting */
+
+		histogramen_num = 0;
+		for (i = 0; i < 4; i++) {
+			if ((cam_ae_hst_ctl >> i) & 0x1)
+				histogramen_num += 1;
+		}
+
+		if ((cam_aao_ysize + 1) != 1) {
+			LOG_INF("Error HwRWCtrl::AAO_YSIZE(%d) must be equal 1 !!",
+				cam_aao_ysize);
+			rst = 3;
+			goto AA_EXIT;
+		}
+		if ((AAO_XSIZE + 1) !=
+			(AWB_W_HNUM * AWB_W_VNUM * 5 + (histogramen_num << 8))) {
+			LOG_INF
+			("Error HwRWCtrl::AAO_XSIZE(%d) = AWB_W_HNUM(%d)*AWB_W_VNUM(%d)*5 +",
+				AAO_XSIZE, AWB_W_HNUM, AWB_W_VNUM);
+			LOG_INF
+			(" (how many histogram enable(%d)(AE_HST0/1/2/3_EN))*2*128 !!",
+				histogramen_num);
+			rst = 3;
+			goto AA_EXIT;
+		}
+AA_EXIT:
+	/* 0: PASS, 1:  check driver, 2: check AWB size, 3: check AE size */
+	if (rst == 0)
+		LOG_INF("aa check pass\n");
+	else if (rst == 2)
+		camera_isp_aee("AWB data error", "Error: AWB size is over HW constraint");
+	else if (rst == 3)
+		camera_isp_aee("AE data error", "Error: AAO size is over HW constraint");
+	else
+		LOG_INF("aa check fail, check driver\n");
 
 		/*Check EIS Setting */
 #if 0
