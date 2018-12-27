@@ -23,6 +23,7 @@
 #include <linux/platform_device.h>
 #include "musbhsdma.h"
 #include "usb20.h"
+#include <linux/switch.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #ifdef CONFIG_MTK_USB_TYPEC
@@ -30,11 +31,13 @@
 #include "tcpm.h"
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
+
 static struct notifier_block otg_nb;
 static struct tcpc_device *otg_tcpc_dev;
 static struct delayed_work register_otg_work;
 static int otg_tcp_notifier_call(struct notifier_block *nb,
 		unsigned long event, void *data);
+
 #define TCPC_OTG_DEV_NAME "type_c_port0"
 static void do_register_otg_work(struct work_struct *data)
 {
@@ -81,6 +84,7 @@ static struct charger_device *primary_charger;
 struct device_node		*usb_node;
 static int iddig_eint_num;
 static ktime_t ktime_start, ktime_end;
+static struct switch_dev otg_state;
 
 static struct musb_fifo_cfg fifo_cfg_host[] = {
 { .hw_ep_num = 1, .style = MUSB_FIFO_TX,
@@ -573,6 +577,7 @@ static void do_host_work(struct work_struct *data)
 	DBG(0, "work start, is_host=%d, host_on=%d\n",
 		mtk_musb->is_host, host_on);
 
+	switch_set_state((struct switch_dev *)&otg_state, host_on);
 	if (host_on && !mtk_musb->is_host) {
 		/* switch to HOST state before turn on VBUS */
 		MUSB_HST_MODE(mtk_musb);
@@ -790,7 +795,16 @@ void mt_usb_otg_init(struct musb *musb)
 	musb->fifo_cfg_host = fifo_cfg_host;
 	musb->fifo_cfg_host_size = ARRAY_SIZE(fifo_cfg_host);
 
+	otg_state.name = "otg_state";
+	otg_state.index = 0;
+	otg_state.state = 0;
+
+	if (switch_dev_register(&otg_state))
+		pr_notice("switch_dev_register fail\n");
+	else
+		pr_debug("switch_dev register success\n");
 }
+
 void mt_usb_otg_exit(struct musb *musb)
 {
 	DBG(0, "OTG disable vbus\n");

@@ -179,3 +179,4 @@ obj-$(CONFIG_FPGA)		+= fpga/
 obj-$(CONFIG_TEE)		+= tee/
 obj-$(CONFIG_TRUSTY)	+= trusty/
 obj-y    += ../tinno/common_features/
+obj-y	+= switch/
