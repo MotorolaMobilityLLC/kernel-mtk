@@ -46,13 +46,17 @@
 #include <linux/atomic.h>
 #include <linux/types.h>
 
+//add camera info for p311
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
+
 #include "imx486_sunwin_p310mipiraw_Sensor.h"
 #define LOG_INF(format, args...)    \
 	pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #define MULTI_WRITE 1
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-
 
 static struct imgsensor_info_struct imgsensor_info = {
 
@@ -1893,9 +1897,15 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				s_DEVINFO_ccm->device_used = DEVINFO_USED;
 				devinfo_check_add_device(s_DEVINFO_ccm);
 #endif
+
+//add camera info for p311
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+       FULL_PRODUCT_DEVICE_INFO_CAMERA(IMX486_SUNWIN_P310_SENSOR_ID, 0, "imx486_sunwin_p311_mipi_raw", 
+       imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);       
+#endif
+
 				return ERROR_NONE;
 			}
-
 		      LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
 				imgsensor.i2c_write_id, *sensor_id);
 
