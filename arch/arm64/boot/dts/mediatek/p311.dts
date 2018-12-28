@@ -68,7 +68,7 @@
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
 		vib_limit = <9>;
-		vib_vol= <9>;
+		vib_vol= <9>; 			//1001 :2.8V,    1011 :3.0V,   1101 :3.3V
 	};
 };
 
