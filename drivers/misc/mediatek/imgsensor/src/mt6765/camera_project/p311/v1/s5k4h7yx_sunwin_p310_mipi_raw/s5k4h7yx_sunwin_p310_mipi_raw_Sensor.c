@@ -35,6 +35,10 @@
 
 #include "s5k4h7yx_sunwin_p310_mipi_raw_Sensor.h"
 
+//add camera info for p311
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
 
 #define PFX "s5k4h7yx_sunwin_p310_camera_sensor"
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
@@ -956,6 +960,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
+
+//add camera info for p311
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+         FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K4H7YX_SUNWIN_P310_SENSOR_ID, 1, "s5k4h7yx_sunwin_p311_mipi_raw", 
+             imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);       
+#endif
 				/* return ERROR_NONE; */
 				break;
 			}
