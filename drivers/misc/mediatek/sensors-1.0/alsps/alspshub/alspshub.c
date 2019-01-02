@@ -575,6 +575,10 @@ static int pshub_factory_set_threshold(int32_t threshold[2])
 	spin_lock(&calibration_lock);
 	cfg_data[0] = atomic_read(&obj->ps_thd_val_high);
 	cfg_data[1] = atomic_read(&obj->ps_thd_val_low);
+	// Jake.L, DATE20190102, ps_thd_val_high include noise, DATE20190102-01 START
+	cfg_data[0] -= obj->ps_cali;
+	cfg_data[1] -= obj->ps_cali;
+	// Jake.L, DATE20190102-01 END
 	spin_unlock(&calibration_lock);
 	err = sensor_cfg_to_hub(ID_PROXIMITY,
 		(uint8_t *)cfg_data, sizeof(cfg_data));
