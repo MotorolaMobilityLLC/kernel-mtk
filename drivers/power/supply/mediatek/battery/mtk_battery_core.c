@@ -490,12 +490,11 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.force_vc_mode = FORCE_VC_MODE;
 #endif
 
-#ifdef CONFIG_TINNO_CUSTOM_BATTERY_TABLE
+#ifdef CONFIG_TINNO_CUSTOM_BATTERY_PROP
 	fg_cust_data.embedded_sel = CUST_EMBEDDED_SEL;
 #else
 	fg_cust_data.embedded_sel = EMBEDDED_SEL;
 #endif
-
 	
 	fg_cust_data.loading_1_en = LOADING_1_EN;
 	fg_cust_data.loading_2_en = LOADING_2_EN;
@@ -503,7 +502,7 @@ void fg_custom_init_from_header(void)
 
 	fg_cust_data.shutdown_gauge0 = SHUTDOWN_GAUGE0;
 	
-#ifdef CONFIG_TINNO_CUSTOM_BATTERY_TABLE
+#ifdef CONFIG_TINNO_CUSTOM_BATTERY_PROP
 	fg_cust_data.shutdown_1_time = CUST_SHUTDOWN_1_TIME;
 #else
 	fg_cust_data.shutdown_1_time = SHUTDOWN_1_TIME;

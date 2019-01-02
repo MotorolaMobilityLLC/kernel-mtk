@@ -531,6 +531,15 @@ config TINNO_CUSTOM_BATTERY_TABLE
 	  Say Y to enable
 	  tinno project need to custom battery zcv table for defference project
 
+# pony.ma, DATE20190102, battery prop, DATE20190102-01 START
+config TINNO_CUSTOM_BATTERY_PROP
+	bool "tinno custom battery prop"
+	default n
+	help
+	  Say Y to enable
+	  tinno project need to custom battery prop for defference project
+# pony.ma, DATE20190102-01 END
+
 config TINNO_REDETECT_CHARGER_SUPPORT
 	bool "TINNO_REDETECT_CHARGER_SUPPORT"
 	default n
