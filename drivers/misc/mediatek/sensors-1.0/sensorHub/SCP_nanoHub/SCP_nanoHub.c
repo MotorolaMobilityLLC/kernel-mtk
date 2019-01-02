@@ -615,11 +615,9 @@ static void SCP_sensorHub_moving_average(SCP_SENSOR_HUB_DATA_P rsp)
 	uint64_t scp_raw_time = 0, scp_now_time = 0;
 	uint64_t ipi_transfer_time = 0;
 
-	if (timekeeping_rtc_skipresume()) {
-		if (READ_ONCE(rtc_compensation_suspend)) {
-			pr_err("rtc_compensation_suspended,drop run algo\n");
+	if (!timekeeping_rtc_skipresume()) {
+		if (READ_ONCE(rtc_compensation_suspend))
 			return;
-		}
 	}
 	ap_now_time = ktime_get_boot_ns();
 	arch_counter = arch_counter_get_cntvct();
@@ -1068,7 +1066,7 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 	} else if (need_send == true && alt) {
 		if (alt_enable && data_t->flush_action == DATA_ACTION)
 			err = obj->dispatch_data_cb[alt_id](data_t, NULL);
-		else if (alt_enable && data_t->flush_action == FLUSH_ACTION) {
+		else if (data_t->flush_action == FLUSH_ACTION) {
 			p_flush_count = &mSensorState[alt].flushCnt;
 			if (atomic_dec_if_positive(p_flush_count) >= 0)
 				err = obj->dispatch_data_cb[alt_id](data_t,
@@ -1076,7 +1074,7 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 		}
 		if (raw_enable && data_t->flush_action == DATA_ACTION)
 			err = obj->dispatch_data_cb[sensor_id](data_t, NULL);
-		else if (raw_enable && data_t->flush_action == FLUSH_ACTION) {
+		else if (data_t->flush_action == FLUSH_ACTION) {
 			p_flush_count = &mSensorState[sensor_type].flushCnt;
 			if (atomic_dec_if_positive(p_flush_count) >= 0)
 				err = obj->dispatch_data_cb[sensor_id](data_t,
@@ -1645,7 +1643,9 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		break;
 	case ID_SAR:
 		data->time_stamp = data_t->time_stamp;
-		data->sar_event.state = data_t->sar_event.state;
+		data->sar_event.data[0] = data_t->sar_event.data[0];
+		data->sar_event.data[1] = data_t->sar_event.data[1];
+		data->sar_event.data[2] = data_t->sar_event.data[2];
 		break;
 	default:
 		err = -1;
@@ -1984,6 +1984,20 @@ int sensor_set_cmd_to_hub(uint8_t sensorType,
 			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
 			    + sizeof(req.set_cust_req.showReg);
 			break;
+		case CUST_ACTION_GET_SENSOR_INFO:
+			req.set_cust_req.getInfo.action =
+				CUST_ACTION_GET_SENSOR_INFO;
+			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
+			    + sizeof(req.set_cust_req.getInfo);
+			break;
+		default:
+			return -1;
+		}
+		break;
+	case ID_SAR:
+		req.set_cust_req.sensorType = ID_SAR;
+		req.set_cust_req.action = SENSOR_HUB_SET_CUST;
+		switch (action) {
 		case CUST_ACTION_GET_SENSOR_INFO:
 			req.set_cust_req.getInfo.action =
 				CUST_ACTION_GET_SENSOR_INFO;

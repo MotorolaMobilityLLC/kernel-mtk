@@ -23,6 +23,8 @@
 /* scp rescovery feature option*/
 #define SCP_RECOVERY_SUPPORT			(1)
 /* scp recovery timeout value (ms)*/
+#define SCP_PARAMS_TO_SCP_SUPPORT
+
 #define SCP_SYS_RESET_TIMEOUT			1000
 
 /* scp aed definition*/

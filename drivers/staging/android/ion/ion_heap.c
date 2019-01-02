@@ -178,6 +178,10 @@ void ion_heap_freelist_add(struct ion_heap *heap, struct ion_buffer *buffer)
 	spin_lock(&heap->free_lock);
 	list_add(&buffer->list, &heap->free_list);
 	heap->free_list_size += buffer->size;
+	if (heap->free_list_size > 200 * 1024 * 1024)
+		IONMSG(
+			"[ion_dbg] warning: free_list_size=%zu, heap_id:%u\n",
+			heap->free_list_size, heap->id);
 	spin_unlock(&heap->free_lock);
 	wake_up(&heap->waitqueue);
 }

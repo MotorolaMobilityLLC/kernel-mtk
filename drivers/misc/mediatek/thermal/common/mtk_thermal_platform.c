@@ -106,7 +106,7 @@ struct cpu_index_st {
 	unsigned long q[3];
 	unsigned long sq[3];
 	unsigned long tot_frme;
-	unsigned long tz;
+	long long tz;
 	int usage;
 	int freq;
 };
@@ -130,7 +130,7 @@ static int cpuloadings[NO_CPU_CORES];
 	} while (0)
 
 
-#define TRIMz_ex(tz, x)   ((tz = (unsigned long long)(x)) < 0 ? 0 : tz)
+#define TRIMz_ex(tz, x)   (unsigned long)((tz = (long long)(x)) < 0 ? 0 : tz)
 
 /* ********************************************* */
 /* CPU Index */

@@ -8034,27 +8034,33 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_TRANSFOR_CCU_REG:
 		{
 			unsigned int hwTickCnt[2];
+			unsigned int globaltime[2];
 			unsigned long long reg_trans_Time;
 			unsigned long long sum;
 
 			if (copy_from_user(hwTickCnt, (void *)Param,
 				sizeof(unsigned int)*2) == 0) {
 
+				pr_debug("hwTickCnt[0]:%u , hwTickCnt[1]:%u",
+					hwTickCnt[0], hwTickCnt[1]);
+
 				sum =
 				(unsigned long long)hwTickCnt[0] +
 				((unsigned long long)hwTickCnt[1]<<32);
 
+				pr_debug("sum of hwTickCnt:%llu", sum);
 				reg_trans_Time =
 				archcounter_timesync_to_boot(sum);
 
-				hwTickCnt[1] =
-					do_div(reg_trans_Time, 1000000000);
-				hwTickCnt[1] =
-					hwTickCnt[1]/1000;
-				hwTickCnt[0] = reg_trans_Time;
+				globaltime[1] =
+				do_div(reg_trans_Time, 1000000000);
+				globaltime[1] = globaltime[1]/1000;
+				globaltime[0] = reg_trans_Time;
+				pr_debug("sec:%u , usec:%u",
+					globaltime[0], globaltime[1]);
 
 				if (copy_to_user((void *)Param,
-					hwTickCnt,
+					globaltime,
 					sizeof(unsigned int)*2) != 0) {
 					Ret = -EFAULT;
 				}
