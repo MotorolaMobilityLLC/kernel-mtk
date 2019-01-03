@@ -444,8 +444,15 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.discharge_tracking_time = DISCHARGE_TRACKING_TIME;
 	fg_cust_data.charge_tracking_time = CHARGE_TRACKING_TIME;
 	fg_cust_data.difference_fullocv_vth = DIFFERENCE_FULLOCV_VTH;
+	
+	#ifdef CONFIG_TINNO_CUSTOM_BATTERY_PROP
+	fg_cust_data.difference_fullocv_ith =
+		UNIT_TRANS_10 * CUST_DIFFERENCE_FULLOCV_ITH;
+	#else
 	fg_cust_data.difference_fullocv_ith =
 		UNIT_TRANS_10 * DIFFERENCE_FULLOCV_ITH;
+	#endif
+		
 	fg_cust_data.charge_pseudo_full_level = CHARGE_PSEUDO_FULL_LEVEL;
 	fg_cust_data.over_discharge_level = OVER_DISCHARGE_LEVEL;
 	fg_cust_data.full_tracking_bat_int2_multiply =
@@ -508,7 +515,7 @@ void fg_custom_init_from_header(void)
 #else
 	fg_cust_data.shutdown_1_time = SHUTDOWN_1_TIME;
 #endif
-	
+
 	fg_cust_data.shutdown_gauge1_xmins = SHUTDOWN_GAUGE1_XMINS;
 	fg_cust_data.shutdown_gauge0_voltage = SHUTDOWN_GAUGE0_VOLTAGE;
 	fg_cust_data.shutdown_gauge1_vbat_en = SHUTDOWN_GAUGE1_VBAT_EN;
