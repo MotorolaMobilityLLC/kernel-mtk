@@ -61,6 +61,8 @@ static struct acc_init_info accelhub_init_info;
 static struct accelhub_ipi_data *obj_ipi_data;
 
 static int gsensor_init_flag = -1;
+// Jake.L, DATE20181228, sync calibrate data, DATE20181228-01 LINE
+static int gsensor_doing_calibrate = 0;
 static DEFINE_SPINLOCK(calibration_lock);
 
 static int gsensor_get_data(int *x, int *y, int *z, int *status);
@@ -500,6 +502,8 @@ static int gsensor_recv_data(struct data_unit_t *event, void *reserved)
 			(uint8_t)event->accelerometer_t.status;
 		spin_unlock(&calibration_lock);
 		complete(&obj->calibration_done);
+		// Jake.L, DATE20181228, sync calibrate data, DATE20181228-01 LINE
+		gsensor_doing_calibrate = 0;
 	} else if (event->flush_action == TEST_ACTION) {
 		atomic_set(&obj->selftest_status,
 			event->accelerometer_t.status);
@@ -543,6 +547,15 @@ static int gsensor_factory_get_raw_data(int32_t data[3])
 }
 static int gsensor_factory_enable_calibration(void)
 {
+	// Jake.L, DATE20181228, sync calibrate data, DATE20181228-01 START
+	#ifndef MTK_OLD_FACTORY_CALIBRATION
+	struct accelhub_ipi_data *obj = obj_ipi_data;
+
+	gsensor_doing_calibrate = 1;
+	init_completion(&obj->calibration_done);
+	#endif  /* MTK_OLD_FACTORY_CALIBRATION */
+	// Jake.L, DATE20181228-01 END
+	
 	return sensor_calibration_to_hub(ID_ACCELEROMETER);
 }
 static int gsensor_factory_clear_cali(void)
@@ -586,12 +599,17 @@ static int gsensor_factory_get_cali(int32_t data[3])
 		return -1;
 	}
 #else
-	err = wait_for_completion_timeout(&obj->calibration_done,
-					  msecs_to_jiffies(3000));
-	if (!err) {
-		pr_err("gsensor_factory_get_cali fail!\n");
-		return -1;
+	// Jake.L, DATE20181228, sync calibrate data, DATE20181228-01 START
+	// init_completion(&obj->calibration_done);
+	if (gsensor_doing_calibrate)
+	{
+		err = wait_for_completion_timeout(&obj->calibration_done, msecs_to_jiffies(3000));
+		if (!err) {
+			pr_err("gsensor_factory_get_cali fail!\n");
+			return -1;
+		}
 	}
+	// Jake.L, DATE20181228-01 END
 	spin_lock(&calibration_lock);
 	data[ACCELHUB_AXIS_X] = obj->static_cali[ACCELHUB_AXIS_X];
 	data[ACCELHUB_AXIS_Y] = obj->static_cali[ACCELHUB_AXIS_Y];
