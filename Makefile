@@ -401,6 +401,15 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -std=gnu89
+
+
+#Tinno:CJ add our define here {
+#$(warning COMMON_JOURNEY_CFLAGS $(COMMON_JOURNEY_CFLAGS))
+KBUILD_CFLAGS += $(COMMON_JOURNEY_CFLAGS)
+
+$(warning KBUILD_CFLAGS $(KBUILD_CFLAGS))
+# }
+
 KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
