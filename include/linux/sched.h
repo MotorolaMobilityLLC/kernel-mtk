@@ -2231,6 +2231,9 @@ struct task_struct {
 	unsigned long preempt_dur;
 #endif
 
+#ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
+    int below_aee;
+#endif
 /* CPU-specific state of this task */
 	struct thread_struct thread;
 /*
