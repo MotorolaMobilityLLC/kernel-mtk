@@ -549,6 +549,60 @@ ext4_read_block_bitmap(struct super_block *sb, ext4_group_t block_group)
 #define GLOBAL_SHELL_UID KUIDT_INIT(2000)
 #endif
 
+//this should only worked in debug mode.
+#ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
+const char* aee_comm[] = {
+    "aee_aedv",
+    "aee_archivev64",
+    "aee",
+    "aee_dumpstate",
+    "rtt",
+    "aee_aed64",
+    "aee_core_forwarder",
+    "aee_archive",
+    "aeev",
+    "aee_aedv64",
+    "aee_dumpstatev",
+    "aee_archive64",
+    "rttv",
+    "aee_archivev",
+    "aee_aed",
+    NULL
+};
+static bool if_below_aee(struct task_struct *tsk) {
+    int i = 0;
+    if(tsk == NULL)  {
+        return false; // not more tsk
+    } else if (tsk->below_aee != -1) {
+        //alreay checked
+        return tsk->below_aee;
+    } else if (tsk->comm != NULL) {
+        for(i=0;aee_comm[i] != NULL;i++) {
+            if(strcmp(tsk->comm,aee_comm[i]) == 0) {
+                return true; // below aee
+            }
+        }
+    }
+    if(tsk->parent != tsk) // not call it self
+        return if_below_aee(tsk->parent);
+    else
+        return false; // parent is self
+}
+static bool if_current_below_aee() {
+    if(current->below_aee == -1) 
+    {
+        if(if_below_aee(current)) {
+            printk("%s below to aee , dont use reserved area\n",current->comm);
+            current->below_aee = 1;
+        } else {
+            current->below_aee = 0;
+        }
+    }
+
+    //check again after test aee
+    return current->below_aee == 1;
+}
+#endif
 /**
  * ext4_has_free_clusters()
  * @sbi:	in-core super block structure.
@@ -564,7 +618,9 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 	s64 free_clusters, dirty_clusters, rsv, resv_clusters;
 	struct percpu_counter *fcc = &sbi->s_freeclusters_counter;
 	struct percpu_counter *dcc = &sbi->s_dirtyclusters_counter;
-
+#ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
+    bool below_aee = 0;
+#endif
 	free_clusters  = percpu_counter_read_positive(fcc);
 	dirty_clusters = percpu_counter_read_positive(dcc);
 	resv_clusters = atomic64_read(&sbi->s_resv_clusters);
@@ -604,9 +660,21 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 	    capable(CAP_SYS_RESOURCE) ||
 	    (flags & EXT4_MB_USE_ROOT_BLOCKS)
         ) {
+        
 		if (free_clusters >= (nclusters + dirty_clusters +
 				      resv_clusters))
+#ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
+        {
+            //this will only run in very low storage.
+            below_aee = if_current_below_aee();
+        
+            if(!below_aee)
+    			return 1;            
+        }
+#else
 			return 1;
+#endif
+
 	}
 	/* No free blocks. Let's see if we can dip into reserved pool */
 	if (flags & EXT4_MB_USE_RESERVED) {
