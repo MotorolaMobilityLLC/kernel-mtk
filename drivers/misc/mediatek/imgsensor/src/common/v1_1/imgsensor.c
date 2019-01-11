@@ -931,7 +931,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 				(unsigned char *)&pSensorSyncInfo->u2SensorNewGain,
 				(unsigned int *) &FeatureParaLen);
 		break;
-
+	case SENOSR_FEATURE_GET_OFFSET_TO_START_OF_EXPOSURE:
 	case SENSOR_FEATURE_GET_DEFAULT_FRAME_RATE_BY_SCENARIO:
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
 	case SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY:
