@@ -37,6 +37,7 @@ struct pg_callbacks {
 	struct list_head list;
 	void (*before_off)(enum subsys_id sys);
 	void (*after_on)(enum subsys_id sys);
+	void (*debug_dump)(enum subsys_id sys);
 };
 
 /* register new pg_callbacks and return previous pg_callbacks. */
