@@ -1037,10 +1037,17 @@ int xhci_mtk_init_sram(struct xhci_hcd *xhci)
 				  0, xhci_sram[i].mlength);
 		xhci_sram[i].state = STATE_INIT;
 
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 		pr_debug("[%d] p :%llx, v=%p, len=%d\n",
 				 i, xhci_sram[i].msram_phys_addr,
 				 xhci_sram[i].msram_virt_addr,
 				 xhci_sram[i].mlength);
+#else
+		pr_debug("[%d] p :%x, v=%p, len=%d\n",
+				 i, xhci_sram[i].msram_phys_addr,
+				 xhci_sram[i].msram_virt_addr,
+				 xhci_sram[i].mlength);
+#endif
 	}
 	return 0;
 }
@@ -1084,10 +1091,17 @@ int xhci_mtk_allocate_sram(int id, dma_addr_t *sram_phys_addr,
 
 	xhci_sram[id].state = STATE_USE;
 
+#ifdef CONFIG_PHYS_ADDR_T_64BIT
 	pr_info("%s get [%d] p :%llx, v=%p, len=%d\n",
 			__func__, id, xhci_sram[id].msram_phys_addr,
 			xhci_sram[id].msram_virt_addr,
 			xhci_sram[id].mlength);
+#else
+	pr_info("%s get [%d] p :%x, v=%p, len=%d\n",
+			__func__, id, xhci_sram[id].msram_phys_addr,
+			xhci_sram[id].msram_virt_addr,
+			xhci_sram[id].mlength);
+#endif
 	return 0;
 }
 
