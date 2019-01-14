@@ -545,7 +545,7 @@ ext4_read_block_bitmap(struct super_block *sb, ext4_group_t block_group)
 	return bh;
 }
 
-#ifdef JOURNEY_FEATURE_SYSTEM_ENHANCED
+#ifdef JOURNEY_FEATURE_USE_RESERVED_DISK
 #define GLOBAL_SHELL_UID KUIDT_INIT(2000)
 #endif
 
@@ -644,15 +644,22 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 		return 1;
 
 	/* Hm, nope.  Are (enough) root reserved clusters available? */
-#ifdef JOURNEY_FEATURE_SYSTEM_ENHANCED
+#ifdef JOURNEY_FEATURE_USE_RESERVED_DISK
     if(uid_gte(sbi->s_resuid, current_fsuid())) {
-
         if(uid_eq(sbi->s_resuid, GLOBAL_SHELL_UID)) {
             // shell unable use dd to fill the reserved storage.
         } else {
             // fstabe tell use which uid should reserved.
             flags |= EXT4_MB_USE_ROOT_BLOCKS;
         }
+    } else if(!capable(CAP_SYS_RESOURCE) && !(flags & EXT4_MB_USE_ROOT_BLOCKS)) { // not root ,not have flag
+        // we only allow 50% reserved area to resgid 
+        // because the app can request android.permission.USE_RESERVED_DISK to got the RESERVED_DISK gid
+        // we also will allow some gms app got this gid.
+        // so we must leave some space for the other uid which below system (< AID_NOBODY 9999)
+        // the reserved size is from fs_mgr.cpp tune_reserved_size function.
+        // it reserved MAX 2% area and default it 128MB
+        resv_clusters = resv_clusters * 3 / 4; // default is 96MB
     }
 #endif
 	if (uid_eq(sbi->s_resuid, current_fsuid()) ||
@@ -660,9 +667,8 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 	    capable(CAP_SYS_RESOURCE) ||
 	    (flags & EXT4_MB_USE_ROOT_BLOCKS)
         ) {
-        
-		if (free_clusters >= (nclusters + dirty_clusters +
-				      resv_clusters))
+        if (free_clusters >= (nclusters + dirty_clusters +
+                      resv_clusters))
 #ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
         {
             //this will only run in very low storage.
