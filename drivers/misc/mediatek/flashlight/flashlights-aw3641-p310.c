@@ -54,7 +54,7 @@ static struct work_struct aw3641_work;
 #define AW3641_PINCTRL_STATE_HWEN_LOW  "hwen_low"
 #define AW3641_PINCTRL_STATE_HWMODE_HIGH "hwmode_high"
 #define AW3641_PINCTRL_STATE_HWMODE_LOW  "hwmode_low"
-#define AW3641_LEVEL_NUM 11
+#define AW3641_LEVEL_NUM 10
 #define AW3641_LEVEL_TORCH 3
 
 static struct pinctrl *aw3641_pinctrl=NULL;
@@ -199,17 +199,17 @@ static int aw3641_enable(void)
 {
 	int pin = 0 ,state=1,i;
 
-	//pr_err("dy-aw3641_duty:%d:\n",g_flash_duty);
+	pr_err("dy-aw3641_duty:%d:\n",g_flash_duty);
 
 	if (aw3641_is_torch(g_flash_duty)== 0) {
 
-	//pr_err("dy-aw3641_torch:%d:\n",g_flash_duty);
+	pr_err("dy-aw3641_torch:%d:\n",g_flash_duty);
 	
 		aw3641_pinctrl_set(pin, state);
 		aw3641_pinctrl_set(pin+1, state-1);
 	} else if(aw3641_is_torch(g_flash_duty)==-1){
 
-	//pr_err("dy-aw3641_flash:%d:\n",g_flash_duty);
+	pr_err("dy-aw3641_flash:%d:\n",g_flash_duty);
 	
 		pinctrl_select_state(aw3641_pinctrl, aw3641_hwmode_high);
 		pinctrl_select_state(aw3641_pinctrl, aw3641_hwen_high);		
