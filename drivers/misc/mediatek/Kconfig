@@ -535,6 +535,10 @@ config MTK_DM_VERITY_OFF
 	bool "Disable dm-verity"
 	default n
 
+config MTK_IRIS_SUPPORT
+	bool "Biometric authentication - iris secure camera"
+	default n
+
 endmenu    # Misc
 
 endif
