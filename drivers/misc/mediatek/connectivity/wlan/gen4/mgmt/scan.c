@@ -3151,7 +3151,8 @@ static UINT_16 scanCalculateScoreBySnrRssi(P_BSS_DESC_T prBssDesc)
 		u2Score = 20;
 	else if (cRssi <= HARD_TO_CONNECT_RSSI_THRESOLD)
 		u2Score = 0;
-	u2Score = 8 * ((cRssi + 69)/5) + 28;
+	else
+		u2Score = 8 * ((cRssi + 69)/5) + 28;
 	u2Score *= WEIGHT_IDX_RSSI;
 
 	/* TODO: we don't know the valid value for SNR, so don't take it into account */
@@ -3341,9 +3342,10 @@ try_again:
 			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand + u2BlackListScore;
 
 		DBGLOG(SCN, INFO,
-			"%pM Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d]\n",
+		"%pM Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d,%d], ST[%d], BD[%d]\n",
 			prBssDesc->aucBSSID, u2ScoreTotal, u2ScoreBandwidth, u2ScoreChnlInfo, u2ScoreDeauth,
-			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi, u2ScoreSTBC, u2ScoreBand);
+			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi,
+			RCPI_TO_dBm(prBssDesc->ucRCPI), u2ScoreSTBC, u2ScoreBand);
 		if (cRssi < HARD_TO_CONNECT_RSSI_THRESOLD) {
 			if (!prCandBssDescForLowRssi) {
 				prCandBssDescForLowRssi = prBssDesc;
