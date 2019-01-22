@@ -22,6 +22,7 @@
 #include <linux/platform_device.h>
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
+#include <linux/reboot.h>
 #include "tcpm.h"
 
 #include <mt-plat/upmu_common.h>
@@ -69,7 +70,7 @@ static struct charger_consumer *chg_consumer;
 static void tcpc_mt_power_off(void)
 {
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	mt_power_off();
+	kernel_power_off();
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
 }
 
@@ -120,7 +121,7 @@ void pd_chrdet_int_handler(void)
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 			|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 			pr_notice("[pd_chrdet_int_handler] Unplug Charger/USB\n");
-			mt_power_off();
+			kernel_power_off();
 		}
 	}
 #endif
@@ -326,7 +327,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 					|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 					pr_err("%s: notify chg detach fail, power off\n", __func__);
-					mt_power_off();
+					kernel_power_off();
 				}
 			}
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
