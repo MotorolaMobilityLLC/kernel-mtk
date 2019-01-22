@@ -595,49 +595,49 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		 * Before VA09 LDO shutdown, some sw flow of mphy needs to be  done here.
 		*/
 		/* step1: force DIFZ hihg */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa09c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa09c);
 		reg = reg | (0x1 << 18);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa09c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa09c);
 
 		/* step2: force DA_MP_RX0_SQ_EN=0 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
 		reg = reg | (0x1);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
 		reg = reg & ~(0x1 << 1);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
 
 		/* step3: force DA_MP_CDR_ISO_EN=1 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 		reg = reg | (0x1 << 19);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 		reg = reg | (0x1 << 20);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 
 		/* step4: force DA_MP_CDR_PWR_ON=0 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 		reg = reg | (0x1 << 17);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 		reg = reg & ~(0x1 << 18);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 
 		/* step5: force DA_MP_PLL_ISO_EN=1 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 		reg = reg | (0x1 << 8);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 		reg = reg | (0x1 << 9);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 
 		/* step6: force DA_MP_PLL_PWR_ON=0 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 		reg = reg | (0x1 << 10);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 		reg = reg & ~(0x1 << 11);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 
 		#if 0
 		/* TEST ONLY: emulate UFSHCI power off by HCI SW reset */
@@ -658,49 +658,49 @@ static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		 * Before VA09 LDO is enabled, some sw flow of mphy needs to be  done here.
 		*/
 		/* step6: release DA_MP_PLL_PWR_ON=0 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 		reg = reg | (0x1 << 11);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 		reg = reg & ~(0x1 << 10);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 
 		/* step5: release DA_MP_PLL_ISO_EN=1 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 		reg = reg & ~(0x1 << 9);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 		reg = reg & ~(0x1 << 8);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0x008c);
 
 		/* step4: release DA_MP_CDR_PWR_ON=0 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 		reg = reg | (0x1 << 18);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 		reg = reg & ~(0x1 << 17);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 
 		/* step3: release DA_MP_CDR_ISO_EN=1 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 		reg = reg & ~(0x1 << 20);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 		reg = reg & ~(0x1 << 19);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xb044);
 
 		/* step2: release DA_MP_RX0_SQ_EN=0 */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
 		reg = reg | (0x1 << 1);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
 		reg = reg & ~(0x1);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa0ac);
 
 		/* step1: release DIFZ hihg */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa09c);
+		reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xa09c);
 		reg = reg & ~(0x1 << 18);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa09c);
+		writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xa09c);
 
 		/*
 		 * HCI power-on flow with link in hibern8
