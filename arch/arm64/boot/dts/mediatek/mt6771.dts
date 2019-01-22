@@ -1121,6 +1121,12 @@
 		interrupts = <GIC_SPI 171 IRQ_TYPE_LEVEL_LOW>;
 	};
 
+	dvfsp@0011bc00 {
+		compatible = "mediatek,mt6771-dvfsp";
+		reg = <0 0x0011bc00 0 0x1400>,
+		      <0 0x0011bc00 0 0x1400>;
+	};
+
 	mcdi@0011b000 {
 		compatible = "mediatek,mt6771-mcdi";
 		reg = <0 0x0011b000 0 0x800>;
