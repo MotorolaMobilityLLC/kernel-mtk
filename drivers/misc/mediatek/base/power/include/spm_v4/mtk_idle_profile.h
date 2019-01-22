@@ -22,12 +22,12 @@
 #define APXGPT_SYS_TICKS_PER_US ((u32)(13))
 #define APXGPT_RTC_TICKS_PER_MS ((u32)(32))
 
-typedef struct mtk_idle_twam {
+struct mtk_idle_twam {
 	u32 event;
 	u32 sel;
 	bool running;
 	bool speed_mode;
-} idle_twam_t, *p_idle_twam_t;
+};
 
 struct mtk_idle_buf {
 	char buf[IDLE_LOG_BUF_LEN];
@@ -52,7 +52,7 @@ struct mtk_idle_recent_ratio {
 void mtk_idle_twam_callback(struct twam_sig *ts);
 void mtk_idle_twam_disable(void);
 void mtk_idle_twam_enable(u32 event);
-p_idle_twam_t mtk_idle_get_twam(void);
+struct mtk_idle_twam *mtk_idle_get_twam(void);
 
 bool mtk_idle_get_ratio_status(void);
 void mtk_idle_ratio_calc_start(int type, int cpu);
