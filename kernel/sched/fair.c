@@ -6059,14 +6059,6 @@ CONSIDER_EAS:
 	if ((!energy_aware() && sched_feat(SCHED_HMP)) ||
 		(hybrid_support() && cpu_rq(cpu)->rd->overutilized)) {
 
-		/* consider idle prefer to improve latency in HMP. */
-		if (idle_cpu(new_cpu)) {
-#ifdef CONFIG_MTK_SCHED_TRACERS
-			trace_sched_select_task_rq(p, policy, prev_cpu, new_cpu);
-#endif
-			return new_cpu;
-		}
-
 		new_cpu = hmp_select_task_rq_fair(sd_flag, p, prev_cpu, new_cpu);
 #ifdef CONFIG_MTK_SCHED_TRACERS
 		policy |= (new_cpu << LB_HMP_SHIFT);
