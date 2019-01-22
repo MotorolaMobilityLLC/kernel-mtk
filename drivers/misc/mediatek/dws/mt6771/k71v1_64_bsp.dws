@@ -112,10 +112,10 @@
                 <debounce_en>Disable</debounce_en>
             </eint10>
             <eint20>
-                <varName>IRQ_NFC</varName>
+                <varName>GOODIX_FP</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>High</polarity>
-                <sensitive_level>Level</sensitive_level>
+                <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint20>
             <eint41>
@@ -294,9 +294,9 @@
             </gpio12>
             <gpio13>
                 <eint_mode>false</eint_mode>
-                <def_mode>4</def_mode>
+                <def_mode>2</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
+                <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <smt>false</smt>
@@ -304,7 +304,7 @@
             </gpio13>
             <gpio14>
                 <eint_mode>false</eint_mode>
-                <def_mode>4</def_mode>
+                <def_mode>2</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
@@ -314,17 +314,17 @@
             </gpio14>
             <gpio15>
                 <eint_mode>false</eint_mode>
-                <def_mode>4</def_mode>
+                <def_mode>2</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio15>
             <gpio16>
                 <eint_mode>false</eint_mode>
-                <def_mode>4</def_mode>
+                <def_mode>2</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>

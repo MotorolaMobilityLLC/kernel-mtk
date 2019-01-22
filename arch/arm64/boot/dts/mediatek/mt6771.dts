@@ -3978,6 +3978,10 @@
 	subpmic_pmu_eint: mt6370_pmu_eint {
 	};
 
+	goodix_fp: fingerprint {
+		compatible = "mediatek,goodix-fp";
+	};
+
 	tcpc_pd: mt6370_pd_eint {
 	};
 
