@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
+* Copyright (C) 2017 MediaTek Inc.
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License version 2 as
@@ -10,6 +10,10 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
+
+#ifdef CONFIG_FPGA_EARLY_PORTING
+#define __USING_DUMMY_WDT_DRV__
+#endif
 
 #include <linux/init.h>        /* For init/exit macros */
 #include <linux/module.h>      /* For MODULE_ marcros  */
@@ -38,8 +42,11 @@
 #include <ext_wd_drv.h>
 
 #include <mach/wd_api.h>
-#include <mt-plat/upmu_common.h>
 #include <linux/irqchip/mtk-eic.h>
+
+#ifndef __USING_DUMMY_WDT_DRV__
+#include <mt-plat/upmu_common.h>
+#endif
 
 void __iomem *toprgu_base;
 int	wdt_irq_id;
@@ -49,6 +56,7 @@ int ext_debugkey_io_eint = -1;
 
 static const struct of_device_id rgu_of_match[] = {
 	{ .compatible = "mediatek,mt6763-toprgu", },
+	{ .compatible = "mediatek,toprgu", },
 	{},
 };
 
@@ -81,25 +89,22 @@ static const struct of_device_id rgu_of_match[] = {
 #define KERNEL_MAGIC		(0x2)
 #define MAGIC_NUM_MASK		(0x3)
 
-/*
- * internal variables
- */
-/* static char expect_close; // Not use */
-/* static spinlock_t rgu_reg_operation_spinlock = SPIN_LOCK_UNLOCKED; */
-static DEFINE_SPINLOCK(rgu_reg_operation_spinlock);
-#ifndef CONFIG_KICK_SPM_WDT
-static unsigned int timeout;
-#endif
-static volatile bool  rgu_wdt_intr_has_trigger; /* For test use */
-static int g_last_time_time_out_value;
-static int g_wdt_enable = 1;
 #ifdef CONFIG_KICK_SPM_WDT
 #include <mach/mt_spm.h>
 static void spm_wdt_init(void);
-
 #endif
 
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
+
+static DEFINE_SPINLOCK(rgu_reg_operation_spinlock);
+static int wdt_last_timeout_val;
+static int wdt_enable = 1;
+static volatile bool wdt_intr_has_trigger; /* For test use */
+
+#ifndef CONFIG_KICK_SPM_WDT
+static unsigned int timeout;
+#endif
+
 /*
  *   this function set the timeout value.
  *   value: second
@@ -212,7 +217,7 @@ int mtk_wdt_enable(enum wk_wdt_en en)
 		tmp |=  MTK_WDT_REQ_MODE_KEY;
 		tmp |= (MTK_WDT_REQ_MODE_SPM_SCPSYS);
 		mt_reg_sync_writel(tmp, MTK_WDT_REQ_MODE);
-		g_wdt_enable = 1;
+		wdt_enable = 1;
 	}
 	if (en == WK_WDT_DIS) {
 		spm_wdt_disable_timer();
@@ -221,7 +226,7 @@ int mtk_wdt_enable(enum wk_wdt_en en)
 		tmp |=  MTK_WDT_REQ_MODE_KEY;
 		tmp &= ~(MTK_WDT_REQ_MODE_SPM_SCPSYS);
 		mt_reg_sync_writel(tmp, MTK_WDT_REQ_MODE);
-		g_wdt_enable = 0;
+		wdt_enable = 0;
 	}
     #else
 
@@ -230,11 +235,11 @@ int mtk_wdt_enable(enum wk_wdt_en en)
 	tmp |= MTK_WDT_MODE_KEY;
 	if (en == WK_WDT_EN) {
 		tmp |= MTK_WDT_MODE_ENABLE;
-		g_wdt_enable = 1;
+		wdt_enable = 1;
 	}
 	if (en == WK_WDT_DIS) {
 		tmp &= ~MTK_WDT_MODE_ENABLE;
-		g_wdt_enable = 0;
+		wdt_enable = 0;
 	}
 	pr_debug("mtk_wdt_enable value=%x,pid=%d\n", tmp, current->pid);
 	mt_reg_sync_writel(tmp, MTK_WDT_MODE);
@@ -249,7 +254,6 @@ int  mtk_wdt_confirm_hwreboot(void)
 	mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
 	return 0;
 }
-
 
 void mtk_wdt_restart(enum wd_restart_type type)
 {
@@ -279,6 +283,31 @@ void mtk_wdt_restart(enum wd_restart_type type)
 	#endif
 	} else
 		pr_debug("WDT:[mtk_wdt_restart] type=%d error pid =%d\n", type, current->pid);
+}
+
+void mtk_wd_suspend(void)
+{
+	/* mtk_wdt_ModeSelection(KAL_FALSE, KAL_FALSE, KAL_FALSE); */
+	/* en debug, dis irq, dis ext, low pol, dis wdt */
+	mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, FALSE);
+
+	mtk_wdt_restart(WD_TYPE_NORMAL);
+
+	/*aee_sram_printk("[WDT] suspend\n");*/
+	pr_debug("[WDT] suspend\n");
+}
+
+void mtk_wd_resume(void)
+{
+
+	if (wdt_enable == 1) {
+		mtk_wdt_set_time_out_value(wdt_last_timeout_val);
+		mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
+		mtk_wdt_restart(WD_TYPE_NORMAL);
+	}
+
+	/*aee_sram_printk("[WDT] resume(%d)\n", wdt_enable);*/
+	pr_debug("[WDT] resume(%d)\n", wdt_enable);
 }
 
 void wdt_dump_reg(void)
@@ -803,36 +832,6 @@ int mtk_wdt_dfd_timeout(int value)
 	return 0;
 }
 
-#else
-/* ------------------------------------------------------------------------------------------------- */
-/* Dummy functions */
-/* ------------------------------------------------------------------------------------------------- */
-void mtk_wdt_set_time_out_value(unsigned int value) {}
-static void mtk_wdt_set_reset_length(unsigned int value) {}
-void mtk_wdt_mode_config(bool dual_mode_en, bool irq,	bool ext_en, bool ext_pol, bool wdt_en) {}
-int mtk_wdt_enable(enum wk_wdt_en en) { return 0; }
-void mtk_wdt_restart(enum wd_restart_type type) {}
-static void mtk_wdt_sw_trigger(void){}
-static unsigned char mtk_wdt_check_status(void){ return 0; }
-void wdt_arch_reset(char mode) {}
-int  mtk_wdt_confirm_hwreboot(void){return 0; }
-void mtk_wd_suspend(void){}
-void mtk_wd_resume(void){}
-void wdt_dump_reg(void){}
-int mtk_wdt_swsysret_config(int bit, int set_value) { return 0; }
-int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode) {return 0; }
-int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en) {return 0; }
-void mtk_wdt_set_c2k_sysrst(unsigned int flag) {}
-int mtk_rgu_dram_reserved(int enable) {return 0; }
-int mtk_rgu_cfg_emi_dcs(int enable) {return 0; }
-int mtk_rgu_mcu_cache_preserve(int enable) {return 0; }
-int mtk_wdt_dfd_count_en(int value) {return 0; }
-int mtk_wdt_dfd_thermal1_dis(int value) {return 0; }
-int mtk_wdt_dfd_thermal2_dis(int value) {return 0; }
-int mtk_wdt_dfd_timeout(int value) {return 0; }
-
-#endif /* #ifndef __USING_DUMMY_WDT_DRV__ */
-
 #ifndef CONFIG_FIQ_GLUE
 static void wdt_report_info(void)
 {
@@ -855,7 +854,6 @@ static void wdt_report_info(void)
 	pr_debug("Qwdt: -- watchdog time out\n");
 }
 #endif
-
 
 #ifdef CONFIG_FIQ_GLUE
 static void wdt_fiq(void *arg, void *regs, void *svc_sp)
@@ -885,13 +883,13 @@ get_wd_api(&wd_api);
 static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
 {
 	pr_info("[RGU] mtk_wdt_isr\n");
+
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
-	/* mt65xx_irq_mask(AP_RGU_WDT_IRQ_ID); */
-	rgu_wdt_intr_has_trigger = 1;
+	wdt_intr_has_trigger = 1;
 	wdt_report_info();
 	WARN_ON(1);
-
 #endif
+
 	return IRQ_HANDLED;
 }
 #endif /* CONFIG_FIQ_GLUE */
@@ -921,9 +919,35 @@ static irqreturn_t mtk_wdt_sspm_isr(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-/*
- * Device interface
- */
+
+#else
+/* ------------------------------------------------------------------------------------------------- */
+/* Dummy functions */
+/* ------------------------------------------------------------------------------------------------- */
+void mtk_wdt_set_time_out_value(unsigned int value) {}
+void mtk_wdt_mode_config(bool dual_mode_en, bool irq,	bool ext_en, bool ext_pol, bool wdt_en) {}
+int mtk_wdt_enable(enum wk_wdt_en en) { return 0; }
+void mtk_wdt_restart(enum wd_restart_type type) {}
+void wdt_arch_reset(char mode) {}
+int  mtk_wdt_confirm_hwreboot(void){return 0; }
+void mtk_wd_suspend(void){}
+void mtk_wd_resume(void){}
+void wdt_dump_reg(void){}
+int mtk_wdt_swsysret_config(int bit, int set_value) { return 0; }
+int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode) {return 0; }
+int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en) {return 0; }
+void mtk_wdt_set_c2k_sysrst(unsigned int flag) {}
+int mtk_rgu_dram_reserved(int enable) {return 0; }
+int mtk_rgu_cfg_emi_dcs(int enable) {return 0; }
+int mtk_rgu_cfg_dvfsrc(int enable) {return 0; }
+int mtk_rgu_mcu_cache_preserve(int enable) {return 0; }
+int mtk_wdt_dfd_count_en(int value) {return 0; }
+int mtk_wdt_dfd_thermal1_dis(int value) {return 0; }
+int mtk_wdt_dfd_thermal2_dis(int value) {return 0; }
+int mtk_wdt_dfd_timeout(int value) {return 0; }
+
+#endif /* #ifndef __USING_DUMMY_WDT_DRV__ */
+
 static int mtk_wdt_probe(struct platform_device *dev)
 {
 	int ret = 0;
@@ -1014,8 +1038,8 @@ static int mtk_wdt_probe(struct platform_device *dev)
     #endif
 
 	/* Set timeout vale and restart counter */
-	g_last_time_time_out_value = 30;
-	mtk_wdt_set_time_out_value(g_last_time_time_out_value);
+	wdt_last_timeout_val = 30;
+	mtk_wdt_set_time_out_value(wdt_last_timeout_val);
 
 	mtk_wdt_restart(WD_TYPE_NORMAL);
 
@@ -1025,7 +1049,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	#else				/* Initialize to disable wdt */
 	pr_debug("[RGU] WDT disabled.\n");
 	mtk_wdt_mode_config(FALSE, FALSE, TRUE, FALSE, FALSE);
-	g_wdt_enable = 0;
+	wdt_enable = 0;
 	#endif
 
 	/* Update interval register value and check reboot flag */
@@ -1040,7 +1064,12 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	mtk_wdt_request_en_set(MTK_WDT_REQ_MODE_EINT, WD_REQ_DIS);
 	mtk_wdt_request_mode_set(MTK_WDT_REQ_MODE_SYSRST, WD_REQ_IRQ_MODE);
 	mtk_wdt_request_mode_set(MTK_WDT_REQ_MODE_EINT, WD_REQ_IRQ_MODE);
-#endif
+
+#else /* __USING_DUMMY_WDT_DRV__ */
+
+	interval_val = 0; /* dummy assignment */
+
+#endif /* __USING_DUMMY_WDT_DRV__ */
 
 	udelay(100);
 	pr_debug("[RGU] WDT_MODE(0x%x), WDT_NONRST_REG(0x%x)\n",
@@ -1072,33 +1101,6 @@ static void mtk_wdt_shutdown(struct platform_device *dev)
 	mtk_wdt_restart(WD_TYPE_NORMAL);
 	pr_debug("******** MTK WDT driver shutdown done ********\n");
 }
-
-void mtk_wd_suspend(void)
-{
-	/* mtk_wdt_ModeSelection(KAL_FALSE, KAL_FALSE, KAL_FALSE); */
-	/* en debug, dis irq, dis ext, low pol, dis wdt */
-	mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, FALSE);
-
-	mtk_wdt_restart(WD_TYPE_NORMAL);
-
-	/*aee_sram_printk("[WDT] suspend\n");*/
-	pr_debug("[WDT] suspend\n");
-}
-
-void mtk_wd_resume(void)
-{
-
-	if (g_wdt_enable == 1) {
-		mtk_wdt_set_time_out_value(g_last_time_time_out_value);
-		mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
-		mtk_wdt_restart(WD_TYPE_NORMAL);
-	}
-
-	/*aee_sram_printk("[WDT] resume(%d)\n", g_wdt_enable);*/
-	pr_debug("[WDT] resume(%d)\n", g_wdt_enable);
-}
-
-
 
 static struct platform_driver mtk_wdt_driver = {
 
