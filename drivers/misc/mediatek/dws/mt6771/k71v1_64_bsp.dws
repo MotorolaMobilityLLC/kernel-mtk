@@ -105,7 +105,7 @@
                 <debounce_en>Disable</debounce_en>
             </eint9>
             <eint10>
-                <varName>RT5081_PMU_EINT</varName>
+                <varName>SUBPMIC_PMU_EINT</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
@@ -119,7 +119,7 @@
                 <debounce_en>Disable</debounce_en>
             </eint20>
             <eint41>
-                <varName>RT5081_PD</varName>
+                <varName>TCPC_PD</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
@@ -259,7 +259,7 @@
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_RT5081_IRQB_EINT_PIN</varName0>
+                <varName0>GPIO_SUBPMIC_IRQB_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio10>
@@ -2163,7 +2163,7 @@
                 <address>0x4E</address>
             </device16>
             <device17>
-                <varName>RT5081_PMU</varName>
+                <varName>SUBPMIC_PMU</varName>
                 <channel>I2C_CHANNEL_5</channel>
                 <address>0x34</address>
             </device17>
