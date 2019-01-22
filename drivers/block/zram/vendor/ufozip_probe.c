@@ -644,8 +644,17 @@ static void disable_ufozip_clock(void)
 static int mt_ufozip_suspend(struct device *dev)
 {
 	struct hwzram_impl *hwz = dev_get_drvdata(dev);
+	unsigned long flags;
 
 	pr_info("%s\n", __func__);
+
+	spin_lock_irqsave(&lock, flags);
+	if (hclk_count) {
+		spin_unlock_irqrestore(&lock, flags);
+		pr_warn("%s: UFOZIP is in use.\n", __func__);
+		return -1;
+	}
+	spin_unlock_irqrestore(&lock, flags);
 
 	if (enable_ufozip_clock())
 		pr_warn("%s: failed to enable clock\n", __func__);
