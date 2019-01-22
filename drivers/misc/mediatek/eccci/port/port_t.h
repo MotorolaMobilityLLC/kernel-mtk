@@ -66,6 +66,7 @@ struct port_t {
 	/* device node related */
 	unsigned int minor;
 	char *name;
+	char *user;
 	/* un-initiallized in defination, always put them at the end */
 	int md_id;
 	void *port_proxy;
