@@ -72,6 +72,7 @@ typedef unsigned char   UINT8, *PUINT8, **PPUINT8;
 phys_addr_t gGpsEmiPhyBase;
 UINT8 __iomem *pGpsEmibaseaddr;
 struct gps_emi_dev *devobj;
+#define CONSYS_EMI_MPU_SETTING      0
 #define EMI_MPU_PROTECTION_IS_READY 1
 
 void mtk_wcn_consys_gps_memory_reserve(void)
@@ -95,19 +96,30 @@ INT32 mtk_wcn_consys_gps_emi_init(void)
 {
 	INT32 iRet = -1;
 
+#if defined(CONFIG_MACH_MT6757)
+	#undef CONSYS_EMI_MPU_SETTING
+	#define CONSYS_EMI_MPU_SETTING  1
+#endif
 	mtk_wcn_consys_gps_memory_reserve();
 	if (gGpsEmiPhyBase) {
-    #if CONSYS_EMI_MPU_SETTING
+	#if CONSYS_EMI_MPU_SETTING
 		/*set MPU for EMI share Memory*/
 		GPS_DBG("setting MPU for EMI share memory\n");
     #if EMI_MPU_PROTECTION_IS_READY
+		#if defined(CONFIG_MACH_MT6797)
 		emi_mpu_set_region_protection(gGpsEmiPhyBase,
 			gGpsEmiPhyBase + SZ_1M - 1,
 			20,
 			SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 				FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
+		#elif defined(CONFIG_MACH_MT6759)
+		emi_mpu_set_region_protection(gGpsEmiPhyBase,
+			gGpsEmiPhyBase + SZ_1M - 1,
+			30,
+			SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+				FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
+		#endif
     #endif
-
     #endif
 		GPS_DBG("get consys start phy address(0x%zx)\n", (size_t)gGpsEmiPhyBase);
     #if 0
@@ -127,13 +139,13 @@ INT32 mtk_wcn_consys_gps_emi_init(void)
 
 		pGpsEmibaseaddr = ioremap_nocache(gGpsEmiPhyBase, SZ_1M);
 		if (pGpsEmibaseaddr != NULL) {
-			UINT8 *pFullPatchName = "/system/etc/firmware/MNL.bin";
+			UINT8 *pFullPatchName = "MNL.bin";
 			osal_firmware *pPatch = NULL;
 
 			GPS_DBG("EMI mapping OK(0x%p)\n", pGpsEmibaseaddr);
 			memset_io(pGpsEmibaseaddr, 0, SZ_1M);
 			if ((pFullPatchName != NULL)
-				&& (wmt_dev_patch_get(pFullPatchName, &pPatch, 0/*BCNT_PATCH_BUF_HEADROOM*/) == 0)) {
+				&& (wmt_dev_patch_get(pFullPatchName, &pPatch) == 0)) {
 				if (pPatch != NULL) {
 					/*get full name patch success*/
 					GPS_DBG("get full patch name(%s) buf(0x%p) size(%ld)\n",
@@ -143,8 +155,19 @@ INT32 mtk_wcn_consys_gps_emi_init(void)
 			}
 			if (pPatch != NULL) {
 				if ((pPatch)->size <= SZ_1M) {
+					GPS_DBG("Prepare to copy FW\n");
 					memcpy(pGpsEmibaseaddr, (pPatch)->data, (pPatch)->size);
 					iRet = 1;
+					GPS_DBG("pGpsEmibaseaddr_1:0x%08x 0x%08x 0x%08x 0x%08x\n",
+						*(unsigned int *)pGpsEmibaseaddr,
+						*(((unsigned int *)pGpsEmibaseaddr)+1),
+						*(((unsigned int *)pGpsEmibaseaddr)+2),
+						*(((unsigned int *)pGpsEmibaseaddr)+3));
+					GPS_DBG("pGpsEmibaseaddr_2:0x%08x 0x%08x 0x%08x 0x%08x\n",
+						*(((unsigned int *)pGpsEmibaseaddr)+4),
+						*(((unsigned int *)pGpsEmibaseaddr)+5),
+						*(((unsigned int *)pGpsEmibaseaddr)+6),
+						*(((unsigned int *)pGpsEmibaseaddr)+7));
 				}
 			}
 		} else {
