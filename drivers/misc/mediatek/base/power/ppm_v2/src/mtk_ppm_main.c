@@ -710,9 +710,8 @@ int mt_ppm_main(void)
 					c_req->cpu_limit[i].advise_cpu_core
 				);
 		}
-#ifdef _TRACE_
+
 		trace_ppm_update(policy_mask, ppm_main_info.min_power_budget, c_req->root_cluster, buf);
-#endif
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 		for (i = 0; i < c_req->cluster_num; i++) {
