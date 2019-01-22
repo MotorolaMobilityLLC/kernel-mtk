@@ -767,7 +767,6 @@ WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetB
 	UINT_32 i, u4IeLength;
 	BOOLEAN	partial_result = FALSE;
 	P_AIS_FSM_INFO_T prAisFsmInfo;
-	UINT_8 ucScanTime = AIS_SCN_DONE_TIMEOUT_SEC;
 
 	DEBUGFUNC("wlanoidSetBssidListScanAdv()");
 
@@ -795,6 +794,8 @@ WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetB
 	}
 
 	prScanRequest = (P_PARAM_SCAN_REQUEST_ADV_T)pvSetBuffer;
+	/* P_AIS_FSM_INFO_T prAisFsmInfo; */
+	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 
 	ucSsidNum = (UINT_8)(prScanRequest->u4SsidNum);
 	for (i = 0; i < prScanRequest->u4SsidNum; i++) {
@@ -804,10 +805,6 @@ WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetB
 
 	pucIe = prScanRequest->pucIE;
 	u4IeLength = prScanRequest->u4IELength;
-
-	/* P_AIS_FSM_INFO_T prAisFsmInfo; */
-	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
-	cnmTimerStartTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer, SEC_TO_MSEC(ucScanTime));
 
 #if CFG_SUPPORT_RDD_TEST_MODE
 	if (prAdapter->prGlueInfo->rRegInfo.u4RddTestMode) {
@@ -838,6 +835,8 @@ WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetB
 		} else
 			return WLAN_STATUS_FAILURE;
 	}
+	cnmTimerStartTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer
+		, SEC_TO_MSEC(AIS_SCN_DONE_TIMEOUT_SEC));
 
 	return WLAN_STATUS_SUCCESS;
 } /* wlanoidSetBssidListScanAdv */

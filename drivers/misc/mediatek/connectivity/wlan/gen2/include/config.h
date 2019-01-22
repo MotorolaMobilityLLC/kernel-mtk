@@ -475,6 +475,7 @@
 
 #define CFG_SUPPORT_DETECT_ATHEROS_AP		0
 
+#define CFG_SCAN_ABORT_HANDLE		1
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Support EMI DEBUG
  *------------------------------------------------------------------------------
