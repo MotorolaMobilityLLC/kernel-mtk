@@ -743,9 +743,11 @@ VOID aisFsmStateAbort_SCAN(IN P_ADAPTER_T prAdapter)
 VOID aisFsmStateAbort_NORMAL_TR(IN P_ADAPTER_T prAdapter)
 {
 	P_AIS_FSM_INFO_T prAisFsmInfo;
+	P_AIS_BSS_INFO_T prAisBssInfo;
 
 	ASSERT(prAdapter);
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 
 	DBGLOG(AIS, TRACE, "aisFsmStateAbort_NORMAL_TR\n");
 
@@ -759,7 +761,14 @@ VOID aisFsmStateAbort_NORMAL_TR(IN P_ADAPTER_T prAdapter)
 
 	/* 2.2 reset local variable */
 	prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
-	prAdapter->rWifiVar.rConnSettings.ucSSIDLen = 0;
+	/* 2.3 need check ReasonOfDisconnect */
+
+	if (prAisBssInfo->ucReasonOfDisconnect == DISCONNECT_REASON_CODE_RADIO_LOST)
+		/*Beacon timeout and driver will try to connect to this the same SSID but different BSSID*/
+		DBGLOG(AIS, INFO, "Radio lost don't clear SSID len!\n");
+	else
+		prAdapter->rWifiVar.rConnSettings.ucSSIDLen = 0;
+
 }				/* end of aisFsmAbortNORMAL_TR() */
 
 #if CFG_SUPPORT_ADHOC
