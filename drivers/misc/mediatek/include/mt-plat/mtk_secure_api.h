@@ -174,8 +174,13 @@ mt_secure_call(MTK_SIP_KERNEL_EMIMPU_WRITE, offset, val, 0)
 #define emi_mpu_smc_read(offset) \
 mt_secure_call(MTK_SIP_KERNEL_EMIMPU_READ, offset, 0, 0)
 
+#ifdef CONFIG_ARM64
 #define emi_mpu_smc_set(start, end, region_permission) \
 mt_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, region_permission)
+#else
+#define emi_mpu_smc_set(start, end, apc8, apc0) \
+mt_mpu_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, apc8, apc0)
+#endif
 
 #define lpdma_smc_write(offset, val) \
 mt_secure_call(MTK_SIP_KERNEL_LPDMA_WRITE, offset, val, 0)
