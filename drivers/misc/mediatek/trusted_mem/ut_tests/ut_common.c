@@ -34,6 +34,7 @@
 #include "private/tmem_error.h"
 #include "private/tmem_utils.h"
 #include "private/tmem_proc.h"
+#include "private/tmem_cfg.h"
 #include "private/ut_entry.h"
 #include "private/ut_macros.h"
 #include "private/ut_common.h"
@@ -135,7 +136,17 @@ static enum UT_RET_STATE mem_alloc_variant(enum TRUSTED_MEM_TYPE mem_type,
 						    0);
 			ASSERT_EQ(0, ret, "free chunk memory");
 		} else { /* alignment < try_size */
+#ifdef TMEM_SMALL_ALIGNMENT_AUTO_ADJUST
+			ASSERT_EQ(0, ret, "alloc chunk memory");
+			ASSERT_EQ(1, ref_count, "reference count check");
+			ASSERT_NE(0, handle, "handle check");
+
+			ret = tmem_core_unref_chunk(mem_type, handle, mem_owner,
+						    0);
+			ASSERT_EQ(0, ret, "free chunk memory");
+#else
 			ASSERT_NE(0, ret, "alloc chunk memory");
+#endif
 		}
 	}
 
@@ -184,7 +195,10 @@ enum UT_RET_STATE mem_alloc_alignment_test(enum TRUSTED_MEM_TYPE mem_type,
 	u32 alignment, chunk_size, handle, ref_count;
 	u32 min_chunk_sz = tmem_core_get_min_chunk_size(mem_type);
 
-	/* alignment is less than size, we expect fail */
+	/* alignment is less than size, we expect result by defines:
+	 * expect fail if TMEM_SMALL_ALIGNMENT_AUTO_ADJUST is not defined
+	 * expect pass if TMEM_SMALL_ALIGNMENT_AUTO_ADJUST is defined
+	 */
 	for (chunk_size = min_chunk_sz; chunk_size <= SIZE_16M;
 	     chunk_size *= 2) {
 		alignment = chunk_size / 2;
@@ -192,7 +206,16 @@ enum UT_RET_STATE mem_alloc_alignment_test(enum TRUSTED_MEM_TYPE mem_type,
 		ret = tmem_core_alloc_chunk(mem_type, alignment, chunk_size,
 					    &ref_count, &handle, mem_owner, 0,
 					    0);
+#ifdef TMEM_SMALL_ALIGNMENT_AUTO_ADJUST
+		ASSERT_EQ(0, ret, "alloc chunk memory");
+		ASSERT_EQ(1, ref_count, "reference count check");
+		ASSERT_NE(0, handle, "handle check");
+
+		ret = tmem_core_unref_chunk(mem_type, handle, mem_owner, 0);
+		ASSERT_EQ(0, ret, "free chunk memory");
+#else
 		ASSERT_NE(0, ret, "alloc chunk memory");
+#endif
 	}
 
 	/* alignment is larger than size, we expect pass */

@@ -39,6 +39,7 @@
 #include "private/tmem_utils.h"
 #include "private/tmem_device.h"
 #include "private/tmem_priv.h"
+#include "private/tmem_cfg.h"
 
 bool is_shared_device_region_busy(enum TRUSTED_MEM_TYPE mem_type)
 {
@@ -184,21 +185,30 @@ static u32 get_ordered_size(u32 size, struct trusted_mem_configs *cfg)
 	return order_size;
 }
 
+static inline void alignment_update(u32 *alignment, u32 size,
+				    struct trusted_mem_configs *cfg)
+{
+	int ordered_size = get_ordered_size(size, cfg);
+
+	pr_debug("change alignment from 0x%x to 0x%x\n", *alignment,
+		 ordered_size);
+	*alignment = ordered_size;
+}
+
 static int alignment_adjust(u32 *alignment, u32 size,
 			    struct trusted_mem_configs *cfg)
 {
-	if ((*alignment == 0) || (*alignment > size)) {
-		int ordered_size = get_ordered_size(size, cfg);
-
-		pr_debug("change alignment from 0x%x to 0x%x\n", *alignment,
-			 ordered_size);
-		*alignment = ordered_size;
-	}
+	if ((*alignment == 0) || (*alignment > size))
+		alignment_update(alignment, size, cfg);
 
 	if (*alignment < size) {
+#ifdef TMEM_SMALL_ALIGNMENT_AUTO_ADJUST
+		alignment_update(alignment, size, cfg);
+#else
 		pr_err("wrong requested alignment: 0x%x, sz:0x%x\n", *alignment,
 		       size);
 		return TMEM_INVALID_ALIGNMENT_REQUEST;
+#endif
 	}
 
 	return TMEM_OK;
