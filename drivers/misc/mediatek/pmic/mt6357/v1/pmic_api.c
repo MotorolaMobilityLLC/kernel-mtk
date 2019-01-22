@@ -8124,14 +8124,14 @@ unsigned int mt6357_upmu_set_pwren(unsigned int val)
 	return ret;
 }
 
-unsigned int mt6357_upmu_set_bbpu(unsigned int val)
+unsigned int mt6357_upmu_set_bbpu_clr(unsigned int val)
 {
 	unsigned int ret = 0;
 
 	ret = pmic_config_interface((unsigned int)(MT6357_RTC_BBPU),
 				(unsigned int)(val),
-				(unsigned int)(PMIC_BBPU_MASK),
-				(unsigned int)(PMIC_BBPU_SHIFT)
+				(unsigned int)(PMIC_BBPU_CLR_MASK),
+				(unsigned int)(PMIC_BBPU_CLR_SHIFT)
 				);
 
 	return ret;
@@ -8159,6 +8159,34 @@ unsigned int mt6357_upmu_get_cbusy(void)
 				(&val),
 				(unsigned int)(PMIC_CBUSY_MASK),
 				(unsigned int)(PMIC_CBUSY_SHIFT)
+				);
+
+	return val;
+}
+
+unsigned int mt6357_upmu_get_alsta(void)
+{
+	unsigned int ret = 0;
+	unsigned int val = 0;
+
+	ret = pmic_read_interface((unsigned int)(MT6357_RTC_IRQ_STA),
+				(&val),
+				(unsigned int)(PMIC_ALSTA_MASK),
+				(unsigned int)(PMIC_ALSTA_SHIFT)
+				);
+
+	return val;
+}
+
+unsigned int mt6357_upmu_get_tcsta(void)
+{
+	unsigned int ret = 0;
+	unsigned int val = 0;
+
+	ret = pmic_read_interface((unsigned int)(MT6357_RTC_IRQ_STA),
+				(&val),
+				(unsigned int)(PMIC_TCSTA_MASK),
+				(unsigned int)(PMIC_TCSTA_SHIFT)
 				);
 
 	return val;
@@ -8856,14 +8884,14 @@ unsigned int mt6357_upmu_set_rtc_embck_sel_option(unsigned int val)
 	return ret;
 }
 
-unsigned int mt6357_upmu_set_rtc_eosc32_opt(unsigned int val)
+unsigned int mt6357_upmu_set_rtc_gps_ckout_en(unsigned int val)
 {
 	unsigned int ret = 0;
 
 	ret = pmic_config_interface((unsigned int)(MT6357_RTC_OSC32CON),
 				(unsigned int)(val),
-				(unsigned int)(PMIC_RTC_EOSC32_OPT_MASK),
-				(unsigned int)(PMIC_RTC_EOSC32_OPT_SHIFT)
+				(unsigned int)(PMIC_RTC_GPS_CKOUT_EN_MASK),
+				(unsigned int)(PMIC_RTC_GPS_CKOUT_EN_SHIFT)
 				);
 
 	return ret;
