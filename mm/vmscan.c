@@ -2034,7 +2034,7 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
 /* threshold of swapin and out */
 static unsigned int swpinout_threshold = 12000;
 module_param_named(threshold, swpinout_threshold, uint, S_IRUGO | S_IWUSR);
-static bool swap_is_not_thrashing(void)
+static bool swap_is_allowed(void)
 {
 	static unsigned long prev_time, last_thrashing_time;
 	static unsigned long prev_swpinout;
@@ -2068,6 +2068,10 @@ static bool swap_is_not_thrashing(void)
 		prev_swpinout = swpinout;
 		prev_time = jiffies;
 	}
+
+	/* Only kswapd is allowed to do more jobs */
+	if (!current_is_kswapd())
+		return false;
 
 	return no_thrashing;
 }
@@ -2457,7 +2461,7 @@ static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
 	 * (3)    shift:  3,  2,  1,  0
 	 *           nr:  4,  8, 16, 32
 	 */
-	if (swap_is_not_thrashing() && sc->priority > 8 &&
+	if (swap_is_allowed() && sc->priority > 8 &&
 			nr[LRU_INACTIVE_ANON] == 0) {
 		int shift = scan_anon_priority - DEF_PRIORITY + sc->priority;
 
