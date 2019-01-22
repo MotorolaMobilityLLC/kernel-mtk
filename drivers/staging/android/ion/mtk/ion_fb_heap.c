@@ -137,21 +137,6 @@ static int ion_fb_heap_allocate(struct ion_heap *heap,
 	return buffer_info->priv_phys == ION_CARVEOUT_ALLOCATE_FAIL ? -ENOMEM : 0;
 }
 
-void ion_fb_heap_free_buffer_info(struct ion_buffer *buffer)
-{
-	struct sg_table *table = buffer->sg_table;
-	struct ion_fb_buffer_info *buffer_info = (struct ion_fb_buffer_info *)buffer->priv_virt;
-
-	if (buffer_info) {
-		mutex_lock(&buffer_info->lock);
-
-		if ((buffer_info->module_id != -1) && (buffer_info->MVA))
-			m4u_dealloc_mva_sg(buffer_info->module_id, table, buffer->size, buffer_info->MVA);
-
-		mutex_unlock(&buffer_info->lock);
-	}
-}
-
 static void ion_fb_heap_free(struct ion_buffer *buffer)
 {
 	struct ion_heap *heap = buffer->heap;
@@ -196,7 +181,6 @@ static struct ion_heap_ops fb_heap_ops = {
 		.map_user = ion_heap_map_user,
 		.map_kernel = ion_heap_map_kernel,
 		.unmap_kernel = ion_heap_unmap_kernel,
-		.add_freelist = ion_fb_heap_free_buffer_info,
 };
 
 #define ION_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
