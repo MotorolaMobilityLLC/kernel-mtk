@@ -42,7 +42,10 @@
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/aee.h>
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include "sspm_ipi.h"
+#endif
+
 #include "mtk_cpufreq_internal.h"
 #include "mtk_cpufreq_hybrid.h"
 
