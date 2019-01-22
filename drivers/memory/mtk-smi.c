@@ -21,6 +21,7 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <soc/mediatek/smi.h>
+#include <linux/module.h>
 
 #define MT8173_SMI_LARB_NR	6
 #define MT8167_SMI_LARB_NR	3
@@ -364,4 +365,4 @@ err_unreg_smi:
 	platform_driver_unregister(&mtk_smi_common_driver);
 	return ret;
 }
-subsys_initcall(mtk_smi_init);
+module_init(mtk_smi_init);
