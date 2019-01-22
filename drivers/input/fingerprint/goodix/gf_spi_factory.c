@@ -26,12 +26,14 @@
 #include <linux/spi/spidev.h>
 
 /* MTK header */
+#ifndef CONFIG_SPI_MT65XX
 #include "mtk_spi.h"
 #include "mtk_spi_hal.h"
+#endif
 #include "mtk_gpio.h"
 
 /* there is no this file on standardized GPIO platform */
-#ifndef CONFIG_MTK_GPIOLIB_STAND
+#ifdef CONFIG_MTK_GPIO
 #include "mach/gpio_const.h"
 #endif
 
@@ -43,6 +45,7 @@
 static u32 gf_factory_SPIClk = 1*1000000;
 #endif
 
+#ifndef CONFIG_SPI_MT65XX
 int  gf_ioctl_spi_init_cfg_cmd(struct mt_chip_conf *mcc, unsigned long arg)
 {
 	int retval = 0;
@@ -73,6 +76,7 @@ int  gf_ioctl_spi_init_cfg_cmd(struct mt_chip_conf *mcc, unsigned long arg)
 	/* gf_debug(ERR_LOG, "%s:exit:%d\n", __func__,retval); */
 	return retval;
 }
+#endif
 
 #if 0
 static void gf_spi_setup_conf_factory(struct gf_device *gf_dev, u32 high_time,
