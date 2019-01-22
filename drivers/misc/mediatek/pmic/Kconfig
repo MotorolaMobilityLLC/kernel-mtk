@@ -13,6 +13,15 @@ config MTK_PMIC_NEW_ARCH
 
 	  Select n to support MTK PMIC LEGACY ARCH.
 
+config MTK_PMIC_COMMON
+	tristate "MediaTek Power Management Common driver"
+	default n
+	---help---
+	  This selects for MediaTek(R) PMIC common driver.
+	  This feature is mainly to separate to common and platform part from driver layer.
+	  Select y to support MTK PMIC COMMON feature.
+	  Set n and choose other chip.
+
 config MTK_PMIC_CHIP_MT6353
 	tristate "MediaTek PMIC MT6353 Driver"
 	default n
