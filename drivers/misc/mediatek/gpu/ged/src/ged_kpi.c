@@ -1080,6 +1080,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				psHead->i32DebugQedBuffer_length = 0;
 				psHead->isSF = psTimeStamp->isSF;
 				psHead->i32Gpu_uncompleted = 0;
+				psHead->last_QedBufferDelay = 0;
 				ged_kpi_update_target_time_and_target_fps(psHead,
 					GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
 				INIT_LIST_HEAD(&psHead->sList);
@@ -1161,7 +1162,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			/* recording cpu time per frame and boost CPU if needed */
 			phead_last1 = psHead->last_TimeStamp1;
 			psHead->t_cpu_latest =
-				psKPI->ullTimeStamp1 - psHead->last_TimeStamp1 - psHead->last_QedBufferDelay;
+				psKPI->ullTimeStamp1 - psHead->last_TimeStamp1;
 			psKPI->t_cpu = psHead->t_cpu_latest;
 			ged_log_perf_trace_counter("t_cpu", psKPI->t_cpu, psTimeStamp->pid, psTimeStamp->i32FrameID);
 			psKPI->QedBufferDelay = psHead->last_QedBufferDelay;
@@ -1346,6 +1347,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			list_for_each_prev_safe(psListEntry, psListEntryTemp, psList) {
 				psKPI = list_entry(psListEntry, GED_KPI, sList);
 				if (psKPI && ((psKPI->ulMask & GED_TIMESTAMP_TYPE_P) == 0)
+						&& ((psKPI->ulMask & GED_TIMESTAMP_TYPE_2) == 0)
 						&& (psKPI->i32QueueID == psTimeStamp->i32FrameID))
 					break;
 				psKPI = NULL;
