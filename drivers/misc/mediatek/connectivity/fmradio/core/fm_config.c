@@ -398,13 +398,19 @@ static fm_s32 fm_cust_config_default(fm_cust_cfg *cfg)
 		cfg->aud_cfg.aud_path = FM_AUD_MRGIF;
 		cfg->aud_cfg.i2s_info.status = FM_I2S_OFF;
 		cfg->aud_cfg.i2s_info.mode = FM_I2S_SLAVE;
-		cfg->aud_cfg.i2s_info.rate = FM_I2S_44K;
+		if (g_fm_chipid == 0x6632)
+			cfg->aud_cfg.i2s_info.rate = FM_I2S_48K;
+		else
+			cfg->aud_cfg.i2s_info.rate = FM_I2S_44K;
 		cfg->aud_cfg.i2s_pad = FM_I2S_PAD_IO;
 #elif defined FM_DIGITAL_INPUT
 		cfg->aud_cfg.aud_path = FM_AUD_I2S;
 		cfg->aud_cfg.i2s_info.status = FM_I2S_OFF;
 		cfg->aud_cfg.i2s_info.mode = FM_I2S_SLAVE;
-		cfg->aud_cfg.i2s_info.rate = FM_I2S_44K;
+		if (g_fm_chipid == 0x6632)
+			cfg->aud_cfg.i2s_info.rate = FM_I2S_48K;
+		else
+			cfg->aud_cfg.i2s_info.rate = FM_I2S_44K;
 		cfg->aud_cfg.i2s_pad = FM_I2S_PAD_IO;
 #elif defined FM_ANALOG_INPUT
 		cfg->aud_cfg.aud_path = FM_AUD_ANALOG;
