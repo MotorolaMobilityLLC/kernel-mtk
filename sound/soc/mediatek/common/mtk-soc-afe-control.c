@@ -614,8 +614,8 @@ AudDrv_IRQ_handler_exit:
 
 void EnableAPLLTunerbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
-		APLL2TunerCounter, SampleRate);
+	pr_aud("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
+	       APLL2TunerCounter, SampleRate);
 
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		APLL1TunerCounter++;
@@ -635,8 +635,8 @@ void EnableAPLLTunerbySampleRate(uint32 SampleRate)
 
 void DisableAPLLTunerbySampleRate(uint32 SampleRate)
 {
-	pr_debug("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
-		APLL2TunerCounter, SampleRate);
+	pr_aud("%s APLL1Counter = %d APLL2Counter = %d SampleRate = %d\n", __func__, APLL1TunerCounter,
+	       APLL2TunerCounter, SampleRate);
 
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		APLL1TunerCounter--;
@@ -1445,7 +1445,7 @@ void set_ul_src_enable(bool enable)
 {
 	unsigned long flags;
 
-	pr_debug("%s enable = %d\n", __func__, enable);
+	pr_aud("%s enable = %d\n", __func__, enable);
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (enable == true) {
@@ -1463,7 +1463,7 @@ void set_ul2_src_enable(bool enable)
 {
 	unsigned long flags;
 
-	pr_debug("%s enable = %d\n", __func__, enable);
+	pr_aud("%s enable = %d\n", __func__, enable);
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (enable == true) {
@@ -1481,7 +1481,7 @@ void SetDLSrcEnable(bool bEnable)
 {
 	unsigned long flags;
 
-	pr_debug("%s bEnable = %d\n", __func__, bEnable);
+	pr_aud("%s bEnable = %d\n", __func__, bEnable);
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (bEnable == true) {
@@ -1499,7 +1499,7 @@ void SetADDAEnable(bool bEnable)
 {
 	unsigned long flags;
 
-	pr_debug("%s bEnable = %d\n", __func__, bEnable);
+	pr_aud("%s bEnable = %d\n", __func__, bEnable);
 
 	spin_lock_irqsave(&afe_control_lock, flags);
 	if (bEnable == true) {
