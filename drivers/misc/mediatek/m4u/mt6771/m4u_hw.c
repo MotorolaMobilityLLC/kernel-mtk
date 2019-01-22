@@ -2349,7 +2349,7 @@ int m4u_dump_reg_for_smi_hang_issue(void)
 
 	if (mmsyscfgbaseaddr > 0) {
 		M4UMSG("====== dump mmsyscfg reg start 0x14000000===>\n");
-		m4u_dump_reg_ext(mmsyscfgbaseaddr, 0x100, 0x110);
+		m4u_dump_reg_ext(mmsyscfgbaseaddr, 0x100, 0x114);
 		m4u_dump_reg_ext(mmsyscfgbaseaddr, 0x914, 0x920);
 		m4u_dump_reg_ext(mmsyscfgbaseaddr, 0x96c, 0x974);
 		M4UMSG("====== dump mmsyscfg reg end =======>\n");
