@@ -529,15 +529,16 @@ void enable_dfp(struct typec_hba *hba)
 {
 	struct usbtypc *typec = get_usbtypec();
 
-		if (typec->host_driver && typec->host_driver->on == DISABLE) {
-			typec->host_driver->enable(typec->host_driver->priv_data);
-			typec->host_driver->on = ENABLE;
-			dev_err(hba->dev, "%s enable host", __func__);
-		}
+	if (typec->host_driver && typec->host_driver->on == DISABLE) {
+		typec->host_driver->enable(typec->host_driver->priv_data);
+		typec->host_driver->on = ENABLE;
+		dev_err(hba->dev, "%s enable host", __func__);
+	}
 }
 
 void disable_ufp(struct typec_hba *hba)
 {
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 	struct usbtypc *typec = get_usbtypec();
 
 	if (typec->device_driver && typec->device_driver->on == ENABLE) {
@@ -545,17 +546,24 @@ void disable_ufp(struct typec_hba *hba)
 		typec->device_driver->on = DISABLE;
 		dev_err(hba->dev, "%s disable device", __func__);
 	}
+#else
+	dev_err(hba->dev, "%s skip disable device", __func__);
+#endif
 }
 
 void enable_ufp(struct typec_hba *hba)
 {
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 	struct usbtypc *typec = get_usbtypec();
 
-		if (typec->device_driver && typec->device_driver->on == DISABLE) {
-			typec->device_driver->enable(typec->device_driver->priv_data);
-			typec->device_driver->on = ENABLE;
-			dev_err(hba->dev, "%s enable device", __func__);
-		}
+	if (typec->device_driver && typec->device_driver->on == DISABLE) {
+		typec->device_driver->enable(typec->device_driver->priv_data);
+		typec->device_driver->on = ENABLE;
+		dev_err(hba->dev, "%s enable device", __func__);
+	}
+#else
+	dev_err(hba->dev, "%s skip enable device", __func__);
+#endif
 }
 
 /*
