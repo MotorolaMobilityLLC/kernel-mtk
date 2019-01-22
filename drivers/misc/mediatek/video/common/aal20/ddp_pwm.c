@@ -56,6 +56,9 @@ static disp_pwm_id_t g_pwm_main_id = DISP_PWM0;
 static atomic_t g_pwm_backlight[1] = { ATOMIC_INIT(-1) };
 static volatile int g_pwm_max_backlight[1] = { 1023 };
 static ddp_module_notify g_ddp_notify;
+static volatile bool g_pwm_is_power_on;
+static volatile unsigned int g_pwm_value_before_power_off;
+
 static DEFINE_SPINLOCK(g_pwm_log_lock);
 
 
@@ -446,16 +449,20 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 	if (!ret)
 		disp_pwm_clksource_enable(pwm_src);
 
+	g_pwm_is_power_on = true;
 	return 0;
 }
 
 static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 {
+	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 	unsigned int pwm_div = 0;
 	unsigned int pwm_src = 0;
 	int ret = -1;
 
 	PWM_MSG("ddp_pwm_power_off: %d\n", module);
+	g_pwm_value_before_power_off = DISP_REG_GET(reg_base + DISP_PWM_CON_1_OFF) >> 16;
+	g_pwm_is_power_on = false;
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
 		atomic_set(&g_pwm_backlight[0], 0);
@@ -682,6 +689,28 @@ static void disp_pwm_dump(void)
 	}
 }
 
+static void disp_pwm_query_backlight(char *debug_output)
+{
+	char *temp_buf = debug_output;
+	const size_t buf_max_len = 100;
+	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
+	unsigned int val, high_width;
+
+	if (g_pwm_is_power_on == true) {
+		val = DISP_REG_GET(reg_base + DISP_PWM_CON_1_OFF);
+		high_width = val >> 16;
+	} else {
+		/* Read vlaue before clock off */
+		high_width = g_pwm_value_before_power_off;
+	}
+
+	if (high_width > 0)
+		snprintf(temp_buf, buf_max_len, "backlight is on (%d)", high_width);
+	else
+		snprintf(temp_buf, buf_max_len, "backlight is off");
+
+	PWM_NOTICE("%s", temp_buf);
+}
 
 void disp_pwm_test(const char *cmd, char *debug_output)
 {
@@ -727,6 +756,8 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 		log_num = (log_num < 1) ? 1 : ((log_num > PWM_LOG_BUFFER_SIZE) ? PWM_LOG_BUFFER_SIZE : log_num);
 		g_pwm_log_num = (int)log_num;
 		PWM_MSG("combine %lu backlight change log in one line", log_num);
+	} else if (strncmp(cmd, "queryBL", 7) == 0) {
+		disp_pwm_query_backlight(debug_output);
 	}
 }
 
