@@ -497,6 +497,8 @@ static int mrdump_mini_cpu_regs(int cpu, struct pt_regs *regs, struct task_struc
 		mrdump_mini_init();
 	if (cpu >= AEE_MTK_CPU_NUMS || mrdump_mini_ehdr == NULL)
 		return -1;
+	if (regs == NULL)
+		return -1;
 	id = main ? 0 : cpu + 1;
 	if (strncmp(mrdump_mini_ehdr->prstatus[id].name, "NA", 2))
 		return -1;
