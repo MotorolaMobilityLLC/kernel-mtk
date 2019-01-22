@@ -42,40 +42,40 @@ static int __init mrdump_key_init(void)
 			if (strcmp(source_str, "SYSRST") == 0)
 				source = MRDUMP_SYSRST;
 		} else {
-			pr_alert("MRDUMP_KEY: no source property, use legacy value EINT");
+			pr_notice("MRDUMP_KEY: no source property, use legacy value EINT");
 		}
 
 		if (!of_property_read_string(node, "mode", &mode_str)) {
 			if (strcmp(mode_str, "RST") == 0)
 				mode = MRDUMP_RST;
 		} else {
-			pr_alert("MRDUMP_KEY: no mode property, use legacy value IRQ");
+			pr_notice("MRDUMP_KEY: no mode property, use legacy value IRQ");
 		}
 	} else {
-		pr_alert("%s:MRDUMP_KEY node %s is not exist\n"
+		pr_notice("%s:MRDUMP_KEY node %s is not exist\n"
 			"MRDUMP_KEY is disabled\n", __func__, node_name);
 		goto out;
 	}
 
 	res = get_wd_api(&wd_api);
 	if (res < 0) {
-		pr_alert("%s: get_wd_api failed:%d\n"
+		pr_notice("%s: get_wd_api failed:%d\n"
 				"disable MRDUMP_KEY\n", __func__, res);
 	} else {
 		if (source == MRDUMP_SYSRST) {
 			res = wd_api->wd_debug_key_sysrst_config(1, mode);
 			if (res == -1)
-				pr_alert("%s: sysrst failed\n", __func__);
+				pr_notice("%s: sysrst failed\n", __func__);
 			else
-				pr_alert("%s: enable MRDUMP_KEY\n", __func__);
+				pr_notice("%s: enable MRDUMP_KEY\n", __func__);
 		} else if (source == MRDUMP_EINT) {
 			res = wd_api->wd_debug_key_eint_config(1, mode);
 			if (res == -1)
-				pr_alert("%s: eint failed\n", __func__);
+				pr_notice("%s: eint failed\n", __func__);
 			else
-				pr_alert("%s: enabled MRDUMP_KEY\n", __func__);
+				pr_notice("%s: enabled MRDUMP_KEY\n", __func__);
 		} else {
-			pr_alert("%s:source %d is not match\n"
+			pr_notice("%s:source %d is not match\n"
 				"disable MRDUMP_KEY\n", __func__, source);
 		}
 	}

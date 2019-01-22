@@ -51,7 +51,7 @@ static int __init early_mrdump_rsvmem(char *p)
 	for (i = 0; i < 4; i++) {
 		ret = sscanf(tmp_p, "0x%lx,0x%lx", &start_addr, &size);
 		if (ret != 2) {
-			pr_alert("%s:%s reserve failed ret=%d\n", __func__, p, ret);
+			pr_notice("%s:%s reserve failed ret=%d\n", __func__, p, ret);
 			return 0;
 		}
 		rsvmem_block[i].start_addr = start_addr;
@@ -81,7 +81,7 @@ __init void mrdump_rsvmem(void)
 				mrdump_rsv_conflict = 1;
 				mrdump_enable = 0;
 #endif
-				pr_err(" mrdump region start = %pa size =%pa is reserved already\n",
+				pr_notice(" mrdump region start = %pa size =%pa is reserved already\n",
 						&rsvmem_block[i].start_addr, &rsvmem_block[i].size);
 			}
 		}
