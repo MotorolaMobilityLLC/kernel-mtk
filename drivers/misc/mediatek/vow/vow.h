@@ -31,6 +31,7 @@
 #define VOWDRV_PR_ERR(format, args...) pr_err(format, ##args)
 
 #define VOW_DEVNAME                    "vow"
+#define VOW_IOC_MAGIC                  'V'
 #define VOW_PRE_LEARN_MODE             1
 #define MAX_VOW_SPEAKER_MODEL          10
 #define VOW_WAITCHECK_INTERVAL_MS      1
@@ -44,26 +45,15 @@
 #define WORD_H_MASK                    0xFF00
 #define WORD_L_MASK                    0x00FF
 
+/* below is control message */
+#define VOW_SET_CONTROL               _IOW(VOW_IOC_MAGIC, 0x03, unsigned int)
+#define VOW_SET_SPEAKER_MODEL         _IOW(VOW_IOC_MAGIC, 0x04, unsigned int)
+#define VOW_CLR_SPEAKER_MODEL         _IOW(VOW_IOC_MAGIC, 0x05, unsigned int)
+#define VOW_SET_APREG_INFO            _IOW(VOW_IOC_MAGIC, 0x09, unsigned int)
+
 /***********************************************************************************
 ** VOW Enum
 ************************************************************************************/
-
-/* below is control message */
-enum vow_ioctrl_message_t {
-	TEST_VOW_PRINT = 0,
-	VOWEINT_GET_BUFSIZE,
-	VOW_GET_STATUS,
-	VOW_SET_CONTROL,
-	VOW_SET_SPEAKER_MODEL,
-	VOW_CLR_SPEAKER_MODEL,
-	VOW_SET_INIT_MODEL,
-	VOW_SET_FIR_MODEL,
-	VOW_SET_NOISE_MODEL,
-	VOW_SET_APREG_INFO,
-	VOW_SET_REG_MODE,
-	VOW_FAKE_WAKEUP,
-};
-
 enum vow_control_cmd_t {
 	VOWControlCmd_Init = 0,
 	VOWControlCmd_ReadVoiceData,

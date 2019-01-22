@@ -153,7 +153,6 @@ static bool vow_IPICmd_ReceiveAck(ipi_msg_t *ipi_msg)
 	switch (ipi_msg->msg_id) {
 	case IPIMSG_VOW_ENABLE:
 	case IPIMSG_VOW_DISABLE:
-	case IPIMSG_VOW_SETMODE:
 	case IPIMSG_VOW_SET_MODEL:
 	case IPIMSG_VOW_SET_SMART_DEVICE:
 	case IPIMSG_VOW_APREGDATA_ADDR:
@@ -429,22 +428,6 @@ static bool vow_service_ReleaseSpeakerModel(int id)
 	vowserv.vow_speaker_model[I].enabled   = 0;
 
 	return true;
-}
-
-static bool vow_service_SetVowMode(unsigned long arg)
-{
-	bool ret;
-
-	vow_service_GetParameter(arg);
-
-	vowserv.vow_info_dsp[0] = vowserv.vow_info_apuser[0];
-
-	VOWDRV_DEBUG("SetVowMode:mode_%x\n", vowserv.vow_info_dsp[0]);
-	ret = vow_IPICmd_Send(AUDIO_IPI_PAYLOAD,
-			      AUDIO_IPI_MSG_BYPASS_ACK, IPIMSG_VOW_SETMODE,
-			      sizeof(unsigned int) * 1, 0,
-			      (char *)&vowserv.vow_info_dsp[0]);
-	return ret;
 }
 
 static bool vow_service_SetSpeakerModel(unsigned long arg)
@@ -919,6 +902,23 @@ static ssize_t VowDrv_SetSWIPLog(struct device *kobj, struct device_attribute *a
 }
 DEVICE_ATTR(vow_SetLibLog, S_IWUSR | S_IRUGO, VowDrv_GetSWIPLog, VowDrv_SetSWIPLog);
 
+static ssize_t VowDrv_SetEnableHW(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int enable;
+
+	if (!vow_check_scp_status()) {
+		VOWDRV_DEBUG("SCP is off, do not support VOW\n");
+		return n;
+	}
+	if (kstrtouint(buf, 0, &enable) != 0)
+		return -EINVAL;
+
+	VowDrv_EnableHW(enable);
+	VowDrv_ChangeStatus();
+	return n;
+}
+DEVICE_ATTR(vow_SetEnableHW, S_IWUSR, NULL, VowDrv_SetEnableHW);
+
 static int VowDrv_SetVowEINTStatus(int status)
 {
 	int ret = 0;
@@ -973,16 +973,7 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 	}
 
 	/* VOWDRV_DEBUG("VowDrv_ioctl cmd = %u arg = %lu\n", cmd, arg); */
-	/* VOWDRV_DEBUG("VowDrv_ioctl check arg = %u %u\n", VOWEINT_GET_BUFSIZE, VOW_SET_CONTROL); */
 	switch ((unsigned int)cmd) {
-	case VOWEINT_GET_BUFSIZE:
-		VOWDRV_DEBUG("VOWEINT_GET_BUFSIZE\n");
-		ret = sizeof(struct vow_eint_data_struct_t);
-		break;
-	case VOW_GET_STATUS:
-		VOWDRV_DEBUG("VOW_GET_STATUS\n");
-		ret = VowDrv_QueryVowEINTStatus();
-		break;
 	case VOW_SET_CONTROL:
 		switch (arg) {
 		case VOWControlCmd_Init:
@@ -1025,28 +1016,10 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		if (!vow_service_ReleaseSpeakerModel(arg))
 			ret = -EFAULT;
 		break;
-	case VOW_SET_INIT_MODEL:
-		VOWDRV_DEBUG("VOW_SET_INIT_MODEL(%lu)", arg);
-		break;
-	case VOW_SET_FIR_MODEL:
-		VOWDRV_DEBUG("VOW_SET_FIR_MODEL(%lu)", arg);
-		break;
-	case VOW_SET_NOISE_MODEL:
-		VOWDRV_DEBUG("VOW_SET_NOISE_MODEL(%lu)", arg);
-		break;
 	case VOW_SET_APREG_INFO:
 		VOWDRV_DEBUG("VOW_SET_APREG_INFO(%lu)", arg);
 		if (!vow_service_SetVBufAddr(arg))
 			ret = -EFAULT;
-		break;
-	case VOW_SET_REG_MODE:
-		VOWDRV_DEBUG("VOW_SET_MODE(%lu)", arg);
-		if (!vow_service_SetVowMode(arg))
-			ret = -EFAULT;
-		break;
-	case VOW_FAKE_WAKEUP:
-		vow_ipi_reg_ok(0);
-		VOWDRV_DEBUG("VOW_FAKE_WAKEUP(%lu)", arg);
 		break;
 	default:
 		VOWDRV_DEBUG("vow WrongParameter(%lu)", arg);
@@ -1066,18 +1039,11 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 		return -ENOTTY;
 	}
 	switch (cmd) {
-	case VOWEINT_GET_BUFSIZE:
-	case VOW_GET_STATUS:
-	case VOW_FAKE_WAKEUP:
-	case VOW_SET_REG_MODE:
 	case VOW_CLR_SPEAKER_MODEL:
 	case VOW_SET_CONTROL:
 		ret = fp->f_op->unlocked_ioctl(fp, cmd, arg);
 		break;
 	case VOW_SET_SPEAKER_MODEL:
-	case VOW_SET_INIT_MODEL:
-	case VOW_SET_FIR_MODEL:
-	case VOW_SET_NOISE_MODEL:
 	case VOW_SET_APREG_INFO: {
 		struct vow_model_info_kernel_t __user *data32;
 
@@ -1340,6 +1306,9 @@ static int VowDrv_mod_init(void)
 	if (unlikely(ret != 0))
 		return ret;
 	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_SetLibLog);
+	if (unlikely(ret != 0))
+		return ret;
+	ret = device_create_file(VowDrv_misc_device.this_device, &dev_attr_vow_SetEnableHW);
 	if (unlikely(ret != 0))
 		return ret;
 
