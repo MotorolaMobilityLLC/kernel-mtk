@@ -227,11 +227,6 @@ static int accelhub_ReadSensorData(char *buf, int bufsize)
 	acc[ACCELHUB_AXIS_Y] = data.accelerometer_t.y;
 	acc[ACCELHUB_AXIS_Z] = data.accelerometer_t.z;
 	status				 = data.accelerometer_t.status;
-#if 0
-	GSE_ERR("accelhub_ReadSensorData: timestamp: %lld, timestamp_gpt:
-		%lld, x: %d, y: %d, z: %d, status:%d!\n", time_stamp, time_stamp_gpt,
-		acc[ACCELHUB_AXIS_X], acc[ACCELHUB_AXIS_Y], acc[ACCELHUB_AXIS_Z], status);
-#endif
 
 	sprintf(buf, "%04x %04x %04x %04x", acc[ACCELHUB_AXIS_X], acc[ACCELHUB_AXIS_Y], acc[ACCELHUB_AXIS_Z], status);
 	if (atomic_read(&obj->trace) & ACCELHUB_TRC_IOCTL)
@@ -818,10 +813,10 @@ static int accelhub_probe(struct platform_device *pdev)
 	atomic_set(&obj->suspend, 0);
 	atomic_set(&obj->scp_init_done, 0);
 	atomic_set(&obj->first_ready_after_boot, 0);
-	scp_register_notify(&scp_ready_notifier);
-	err = SCP_sensorHub_data_registration(ID_ACCELEROMETER, gsensor_recv_data);
+	scp_A_register_notify(&scp_ready_notifier);
+	err = scp_sensorHub_data_registration(ID_ACCELEROMETER, gsensor_recv_data);
 	if (err < 0) {
-		GSE_ERR("SCP_sensorHub_data_registration failed\n");
+		GSE_ERR("scp_sensorHub_data_registration failed\n");
 		goto exit_kfree;
 	}
 	err = misc_register(&accelhub_misc_device);

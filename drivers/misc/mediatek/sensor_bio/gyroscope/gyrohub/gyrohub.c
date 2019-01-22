@@ -886,10 +886,10 @@ static int gyrohub_probe(struct platform_device *pdev)
 		GYROS_ERR("gpio_config failed\n");
 		goto exit_kfree;
 	}
-	scp_register_notify(&scp_ready_notifier);
-	err = SCP_sensorHub_data_registration(ID_GYROSCOPE, gyro_recv_data);
+	scp_A_register_notify(&scp_ready_notifier);
+	err = scp_sensorHub_data_registration(ID_GYROSCOPE, gyro_recv_data);
 	if (err < 0) {
-		GYROS_ERR("SCP_sensorHub_data_registration failed\n");
+		GYROS_ERR("scp_sensorHub_data_registration failed\n");
 		goto exit_kfree;
 	}
 	err = misc_register(&gyrohub_misc_device);
