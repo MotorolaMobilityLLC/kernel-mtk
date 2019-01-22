@@ -122,7 +122,7 @@ do { \
 		current->pid)
 
 #define INFO_MSG(fmt, args...) \
-	pr_debug(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
+	pr_info(TAGMSDC"%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
 		host->id, ##args, __func__, __LINE__, current->comm, \
 		current->pid)
 
