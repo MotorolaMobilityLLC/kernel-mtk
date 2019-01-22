@@ -774,7 +774,7 @@ void _vdo_mode_enter_idle(void)
 {
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	unsigned int bandwidth;
-	unsigned int hwc_fps = 60;
+	unsigned int in_fps = 60;
 #endif
 
 	DISPDBG("[disp_lowpower]%s\n", __func__);
@@ -830,7 +830,7 @@ void _vdo_mode_enter_idle(void)
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	/* update bandwidth */
-	disp_get_rdma_bandwidth(hwc_fps, &bandwidth);
+	disp_get_rdma_bandwidth(in_fps, &bandwidth);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
 			 !primary_display_is_decouple_mode(), bandwidth);
 	pm_qos_update_request(&primary_display_qos_request, bandwidth);
@@ -843,7 +843,8 @@ void _vdo_mode_leave_idle(void)
 {
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	unsigned int bandwidth;
-	unsigned int hwc_fps = 60;
+	unsigned int in_fps = 60;
+	unsigned int out_fps = 60;
 #endif
 
 	DISPDBG("[disp_lowpower]%s\n", __func__);
@@ -881,7 +882,7 @@ void _vdo_mode_leave_idle(void)
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	/* update bandwidth */
-	disp_get_ovl_bandwidth(hwc_fps, &bandwidth);
+	disp_get_ovl_bandwidth(in_fps, out_fps, &bandwidth);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
 			 !primary_display_is_decouple_mode(), bandwidth);
 	pm_qos_update_request(&primary_display_qos_request, bandwidth);
@@ -927,7 +928,8 @@ void _cmd_mode_leave_idle(void)
 {
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	unsigned int bandwidth;
-	unsigned int hwc_fps = 60;
+	unsigned int in_fps = 60;
+	unsigned int out_fps = 60;
 	int stable = 0;
 #endif
 
@@ -946,9 +948,9 @@ void _cmd_mode_leave_idle(void)
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	/* update bandwidth */
-	if (!primary_display_is_video_mode())
-		primary_fps_ctx_get_fps(&hwc_fps, &stable);
-	disp_get_ovl_bandwidth(hwc_fps, &bandwidth);
+	primary_fps_ctx_get_fps(&in_fps, &stable);
+	out_fps = in_fps;
+	disp_get_ovl_bandwidth(in_fps, out_fps, &bandwidth);
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
 			 !primary_display_is_decouple_mode(), bandwidth);
 	pm_qos_update_request(&primary_display_qos_request, bandwidth);
