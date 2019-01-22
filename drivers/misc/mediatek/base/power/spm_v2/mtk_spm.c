@@ -380,8 +380,10 @@ static void spm_register_init(void)
 	if (!node)
 		spm_err("find SLEEP node failed\n");
 	spm_base = of_iomap(node, 0);
-	if (!spm_base)
+	if (!spm_base) {
 		spm_err("base spm_base failed\n");
+		return;
+	}
 
 	spm_irq_0 = irq_of_parse_and_map(node, 0);
 	if (!spm_irq_0)
