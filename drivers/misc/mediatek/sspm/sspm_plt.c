@@ -116,7 +116,7 @@ static ssize_t sspm_alive_show(struct device *kobj, struct device_attribute *att
 
 	return sprintf(buf, "%s\n", ackdata ? "Alive" : "Dead");
 }
-DEVICE_ATTR(sspm_alive, S_IWUSR | S_IRUGO, sspm_alive_show, NULL);
+DEVICE_ATTR(sspm_alive, S_IRUGO, sspm_alive_show, NULL);
 
 
 int __init sspm_plt_init(void)
