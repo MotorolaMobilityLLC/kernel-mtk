@@ -6779,6 +6779,7 @@ static int allocate_trace_buffers(struct trace_array *tr, int size)
 	ret = allocate_trace_buffer(tr, &tr->max_buffer,
 				    allocate_snapshot ? size : 1);
 	if (WARN_ON(ret)) {
+		pr_debug("[ftrace]allocate_trace_buffers size %d\n", size);
 		ring_buffer_free(tr->trace_buffer.buffer);
 		free_percpu(tr->trace_buffer.data);
 		return -ENOMEM;

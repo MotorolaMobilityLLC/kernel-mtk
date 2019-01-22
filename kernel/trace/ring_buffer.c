@@ -1152,7 +1152,7 @@ static int __rb_allocate_pages(long nr_pages, struct list_head *pages, int cpu)
 
 	for (i = 0; i < nr_pages; i++) {
 #if !defined(CONFIG_MTK_USE_RESERVED_EXT_MEM)
-		struct page *page;
+		struct page *page = NULL;
 #endif
 		/*
 		 * __GFP_NORETRY flag makes sure that the allocation fails
