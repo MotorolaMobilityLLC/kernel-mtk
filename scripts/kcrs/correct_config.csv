@@ -1093,15 +1093,15 @@ CONFIG_USB_CONFIGFS_UEVENT,COMMON,,,y,y,y,y,y,,,y,,y
 CONFIG_USELIB,COMMON,,,N,N,N,N,N,,,N,,N
 CONFIG_MTK_GZ_KREE,PROJECT,chsuan.lin,,,,,O,O,,,O,,O
 CONFIG_GZ_V2_SUPPORT,PROJECT,chsuan.lin,,,,,O,O,,,O,,O
-CONFIG_DEBUG_OBJECTS,USER,stanley.chu,new config in this commit 9fb8ecd5d6e7c3b01d18f003d07cc178eaee9bd9,X,X,X,X,X,X,X,X,X,X
-CONFIG_DEBUG_OBJECTS_TIMERS,USER,stanley.chu,new config in this commit 9fb8ecd5d6e7c3b01d18f003d07cc178eaee9bd9,X,X,X,X,X,X,X,X,X,X
+CONFIG_DEBUG_OBJECTS,USER,stanley.chu,new config in this commit 9fb8ecd5d6e7c3b01d18f003d07cc178eaee9bd9,X(PLATFORM),X(PLATFORM),X(PLATFORM),X(USER),X(PLATFORM),X(PLATFORM),X(USER),X(USER),X(PLATFORM),X(PLATFORM)
+CONFIG_DEBUG_OBJECTS_TIMERS,USER,stanley.chu,new config in this commit 9fb8ecd5d6e7c3b01d18f003d07cc178eaee9bd9,X(PLATFORM),X(PLATFORM),X(PLATFORM),X(USER),X(PLATFORM),X(PLATFORM),X(USER),X(USER),X(PLATFORM),X(PLATFORM)
 CONFIG_TASKSTATS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASK_XACCT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASK_IO_ACCOUNTING,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_TIMER_TIMESYNC,PLATFORM,stanley.chu,new config in this commit 59a62d14e9bca322dd0498b6da8fdad698e7733a,X,X,X,y,X,X,y,y,y,y
 CONFIG_MTK_AKM09918,PROJECT,jy.lan,,y,y,y,,,,,,,
 CONFIG_ARM64_ERRATUM_858921,PLATFORM,stanley.chu,new config in this commit 5f8b8d201eeb6af7904ed276106097602763aaf7,X,X,X,X,X,X,X,y,X,y
-CONFIG_ARM_ERRATUM_858921,PLATFORM,stanley.chu,new config in this commit fec2807bf7ea34ddd06cdc7c7641416360058d7b,X,X,X,X,X,X,y,X,y,X
+CONFIG_ARM_ERRATA_858921,PLATFORM,stanley.chu,new config in this commit fec2807bf7ea34ddd06cdc7c7641416360058d7b,X,X,X,X,X,X,y,X,y,X
 CONFIG_USB_CONFIGFS_ACM,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_F_HID,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_MASS_STORAGE,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
