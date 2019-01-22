@@ -43,6 +43,10 @@
 /*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		8
 #define UNIVPLL_DIV			1
+#elif defined(CONFIG_MACH_MT6739)
+/*#define MT_CCF_BRINGUP*/
+#define INTEGER_BITS		7
+#define UNIVPLL_DIV			1
 #elif defined(CONFIG_MACH_MT6763)
 /*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		8
@@ -153,6 +157,8 @@ static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 	unsigned long fmin = 1500 * MHZ;
 #elif defined(CONFIG_MACH_MT6758)
 	unsigned long fmin = 2000 * MHZ;
+#elif defined(CONFIG_MACH_MT6739)
+	unsigned long fmin = 2000 * MHZ;
 #else
 	unsigned long fmin = 1000 * MHZ;
 #endif
@@ -222,7 +228,8 @@ static void mtk_pll_unprepare_dummy(struct clk_hw *hw)
 #if ((defined(CONFIG_MACH_MT6799))	\
 	|| (defined(CONFIG_MACH_MT6759))	\
 	|| (defined(CONFIG_MACH_MT6763))	\
-	|| (defined(CONFIG_MACH_MT6758)))
+	|| (defined(CONFIG_MACH_MT6758))	\
+	|| (defined(CONFIG_MACH_MT6739)))
 static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 		unsigned long parent_rate)
 {
@@ -395,7 +402,7 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 
 			r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
 			writel(r, pll->pwr_addr);
-			#if !defined(CONFIG_MACH_MT6758)
+			#if !defined(CONFIG_MACH_MT6758) || !defined(CONFIG_MACH_MT6739)
 			if (!strcmp(__clk_get_name(hw->clk), "univpll"))
 				univpll_192m_en(0);
 			#endif
@@ -519,7 +526,8 @@ static const struct clk_ops mtk_pll_ops_dummy = {
 #if ((defined(CONFIG_MACH_MT6799))	\
 	|| (defined(CONFIG_MACH_MT6763))	\
 	|| (defined(CONFIG_MACH_MT6759))	\
-	|| (defined(CONFIG_MACH_MT6758)))
+	|| (defined(CONFIG_MACH_MT6758))	\
+	|| (defined(CONFIG_MACH_MT6739)))
 static const struct clk_ops mtk_pll_ops = {
 	.is_enabled	= mtk_pll_is_prepared,
 	.enable		= mtk_pll_prepare,
