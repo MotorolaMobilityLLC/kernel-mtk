@@ -990,7 +990,7 @@ static int detect_impedance(void)
 
 	mtk_read_hp_detection_parameter(&hpdet_param);
 
-	Ana_Set_Reg(AUXADC_CON10, AUXADC_AVG_256, 0x7);
+	Ana_Set_Reg(AUXADC_CON10, AUXADC_AVG_64, 0x7);
 
 	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
 	setOffsetTrimBufferGain(3); /* HPDET trim. buffer gain : 18db */
