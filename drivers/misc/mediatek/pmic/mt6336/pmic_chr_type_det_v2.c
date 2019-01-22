@@ -575,6 +575,12 @@ struct mt_charger {
  ******************************************************************************/
 void do_charger_detect(void)
 {
+	if (!mt_usb_is_device()) {
+		g_chr_type = CHARGER_UNKNOWN;
+		pr_err("charger type: UNKNOWN, Now is usb host mode. Skip detection!!!\n");
+		return;
+	}
+
 	/* enable ctrl to lock power, keeping MT6336 in normal mode */
 	mt6336_ctrl_enable(core_ctrl);
 
