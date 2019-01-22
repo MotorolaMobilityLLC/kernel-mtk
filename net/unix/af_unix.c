@@ -1193,7 +1193,7 @@ out:
 
 #ifdef CONFIG_MTK_NET_LOGGING
 struct wait_for_peer_info_t {
-	char *process;
+	char process[20];
 	int pid;
 	unsigned long when;
 };
@@ -1222,7 +1222,7 @@ static long unix_wait_for_peer(struct sock *other, long timeo)
 	struct wait_for_peer_info_t wait_sk_info;
 
 	wait_sk_info.pid = current->pid;
-	wait_sk_info.process = current->comm;
+	strncpy(wait_sk_info.process, current->comm, sizeof(wait_sk_info.process));
 	wait_sk_info.when = jiffies;
 	init_timer_on_stack(&wait_peer_timer);
 	wait_peer_timer.function = print_wait_peer_sock_info;
