@@ -295,6 +295,10 @@ int send_message(ipi_queue_handler_t *handler, ipi_msg_t *p_ipi_msg)
 	int idx_msg = -1;
 	int retval = 0;
 
+	int try_cnt = 0;
+	const int k_max_try_cnt = 20;
+
+
 	AUD_LOG_V("%s(+)\n", __func__);
 
 	/* error handling */
@@ -330,18 +334,37 @@ int send_message(ipi_queue_handler_t *handler, ipi_msg_t *p_ipi_msg)
 
 	/* process queue */
 	if (is_queue_empty == true) { /* just send message to scp */
-		AUD_ASSERT(msg_queue->ipi_msg_ack.magic == 0); /* no other  working msg ack */
+		/* no other working msg ack */
+		if (msg_queue->ipi_msg_ack.magic != 0) {
+			print_msg_info(__func__, "ack not clean", &msg_queue->ipi_msg_ack);
+			/* AUD_ASSERT(msg_queue->ipi_msg_ack.magic == 0); */
+			memset(&msg_queue->ipi_msg_ack, 0, sizeof(ipi_msg_t));
+		}
 		retval = process_message_in_queue(msg_queue, p_ipi_msg, idx_msg);
 	} else { /* wait until processed, and then send message to scp */
-		retval = wait_event_interruptible(
-				 msg_queue->element[idx_msg].wq,
-				 msg_queue->idx_r == idx_msg);
+		do {
+			try_cnt++;
+			retval = wait_event_interruptible_timeout(
+					 msg_queue->element[idx_msg].wq,
+					 (msg_queue->idx_r == idx_msg ||
+					  msg_queue->enable == false),
+					 HZ / 10); /* 100 ms */
 
-		if (retval == -ERESTARTSYS)
-			retval = -EINTR;
-		else if (msg_queue->enable == false)
+			if (retval == -ERESTARTSYS) {
+				print_msg_info(__func__, "-ERESTARTSYS", p_ipi_msg);
+				retval = -EINTR;
+				mdelay(1);
+			} else if (msg_queue->enable == false) {
+				print_msg_info(__func__, "enable == false", p_ipi_msg);
+				retval = -1;
+				break;
+			}
+		} while (retval <= 0 && try_cnt < k_max_try_cnt);
+
+		if (retval == 0) { /* timeout */
+			print_msg_info(__func__, "timeout", p_ipi_msg);
 			retval = -1;
-		else
+		} else if (retval > 0)
 			retval = process_message_in_queue(msg_queue, p_ipi_msg, idx_msg);
 	}
 
@@ -386,7 +409,7 @@ int send_message_ack(ipi_queue_handler_t *handler, ipi_msg_t *p_ipi_msg_ack)
 
 
 	/* get msg ack & wake up queue */
-	AUD_ASSERT(msg_queue->ipi_msg_ack.magic == 0); /* no other  working msg ack */
+	AUD_ASSERT(msg_queue->ipi_msg_ack.magic == 0); /* no other working msg ack */
 	memcpy(&msg_queue->ipi_msg_ack, p_ipi_msg_ack, sizeof(ipi_msg_t));
 	wake_up_interruptible(&msg_queue->element[msg_queue->idx_r].wq);
 
@@ -402,6 +425,10 @@ static int process_message_in_queue(msg_queue_t *msg_queue, ipi_msg_t *p_ipi_msg
 
 	unsigned long flags = 0;
 	int retval = 0;
+
+	int try_cnt = 0;
+	const int k_max_try_cnt = 20;
+
 
 	AUD_LOG_V("%s(+)\n", __func__);
 
@@ -436,18 +463,42 @@ static int process_message_in_queue(msg_queue_t *msg_queue, ipi_msg_t *p_ipi_msg
 		retval = (msg_queue->enable) ? send_message_to_scp(p_ipi_msg) : -1;
 
 		if (retval == 0) { /* send to scp succeed, wait ack */
-			retval = wait_event_interruptible(
-					 msg_queue->element[msg_queue->idx_r].wq,
-					 msg_queue->ipi_msg_ack.magic == IPI_MSG_MAGIC_NUMBER);
-			if (retval == -ERESTARTSYS)
-				retval = -EINTR;
-			else if (msg_queue->enable == false)
+			do {
+				try_cnt++;
+				retval = wait_event_interruptible_timeout(
+						 msg_queue->element[msg_queue->idx_r].wq,
+						 (msg_queue->ipi_msg_ack.magic == IPI_MSG_MAGIC_NUMBER ||
+						  msg_queue->enable == false),
+						 HZ / 10); /* 100 ms */
+
+				if (retval == -ERESTARTSYS) {
+					print_msg_info(__func__, "-ERESTARTSYS", p_ipi_msg);
+					retval = -EINTR;
+					mdelay(1);
+				} else if (msg_queue->enable == false) {
+					print_msg_info(__func__, "enable == false", p_ipi_msg);
+					retval = -1;
+					break;
+				}
+			} while (retval <= 0 && try_cnt < k_max_try_cnt);
+
+			if (retval == 0) { /* timeout */
+				print_msg_info(__func__, "timeout", p_ipi_msg);
 				retval = -1;
-			else {
+			} else if (retval > 0) { /* get ack */
 				/* should be in pair */
-				AUD_ASSERT(check_ack_msg_valid(p_ipi_msg, &msg_queue->ipi_msg_ack) == true);
-				memcpy(p_ipi_msg, &msg_queue->ipi_msg_ack, sizeof(ipi_msg_t));
-				memset(&msg_queue->ipi_msg_ack, 0, sizeof(ipi_msg_t));
+				if (check_ack_msg_valid(p_ipi_msg, &msg_queue->ipi_msg_ack) == false) {
+					print_msg_info(__func__, "p_ipi_msg", p_ipi_msg);
+					print_msg_info(__func__, "p_ipi_msg_ack", &msg_queue->ipi_msg_ack);
+					AUD_ASSERT(check_ack_msg_valid(p_ipi_msg, &msg_queue->ipi_msg_ack) == true);
+					memset(&msg_queue->ipi_msg_ack, 0, sizeof(ipi_msg_t));
+					retval = -1;
+				} else {
+					print_msg_info(__func__, "ack back", p_ipi_msg);
+					memcpy(p_ipi_msg, &msg_queue->ipi_msg_ack, sizeof(ipi_msg_t));
+					memset(&msg_queue->ipi_msg_ack, 0, sizeof(ipi_msg_t));
+					retval = 0;
+				}
 			}
 		}
 
