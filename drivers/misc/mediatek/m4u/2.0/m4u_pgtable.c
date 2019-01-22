@@ -141,7 +141,7 @@ int m4u_get_pte_info(struct m4u_domain *domain, unsigned int mva, m4u_pte_info_t
 {
 	imu_pgd_t *pgd;
 	imu_pte_t *pte = NULL;
-	unsigned long pa = 0;
+	unsigned long long pa = 0;
 	unsigned int size;
 	int valid = 1;
 
