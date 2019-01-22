@@ -22,6 +22,7 @@
 #include <linux/printk.h>
 #include <linux/perf_event.h>
 #include <linux/kthread.h>
+#include <asm/arch_timer.h>
 
 /******************************************************************************
  * Tracepoints
@@ -34,13 +35,24 @@
 		unregister_trace_##probe_name(probe_##probe_name, NULL)
 
 struct met_api_tbl {
-	int (*met_tag_start)(unsigned int class_id, const char *name);
-	int (*met_tag_end)(unsigned int class_id, const char *name);
-	int (*met_tag_async_start)(unsigned int class_id, const char *name, unsigned int cookie);
-	int (*met_tag_async_end)(unsigned int class_id, const char *name, unsigned int cookie);
-	int (*met_tag_oneshot)(unsigned int class_id, const char *name, unsigned int value);
+	int (*met_tag_start)(unsigned int class_id,
+			     const char *name);
+	int (*met_tag_end)(unsigned int class_id,
+			   const char *name);
+	int (*met_tag_async_start)(unsigned int class_id,
+				   const char *name,
+				   unsigned int cookie);
+	int (*met_tag_async_end)(unsigned int class_id,
+				 const char *name,
+				 unsigned int cookie);
+	int (*met_tag_oneshot)(unsigned int class_id,
+			       const char *name,
+			       unsigned int value);
 	int (*met_tag_userdata)(char *pData);
-	int (*met_tag_dump)(unsigned int class_id, const char *name, void *data, unsigned int length);
+	int (*met_tag_dump)(unsigned int class_id,
+			    const char *name,
+			    void *data,
+			    unsigned int length);
 	int (*met_tag_disable)(unsigned int class_id);
 	int (*met_tag_enable)(unsigned int class_id);
 	int (*met_set_dump_buffer)(int size);
@@ -48,9 +60,12 @@ struct met_api_tbl {
 	int (*met_save_log)(const char *pathname);
 	int (*met_show_bw_limiter)(void);
 	int (*met_reg_bw_limiter)(void *fp);
-	int (*met_show_clk_tree)(const char *name, unsigned int addr, unsigned int status);
+	int (*met_show_clk_tree)(const char *name,
+				 unsigned int addr,
+				 unsigned int status);
 	int (*met_reg_clk_tree)(void *fp);
-	void (*met_sched_switch)(struct task_struct *prev, struct task_struct *next);
+	void (*met_sched_switch)(struct task_struct *prev,
+				 struct task_struct *next);
 	int (*enable_met_backlight_tag)(void);
 	int (*output_met_backlight_tag)(int level);
 };
@@ -86,7 +101,9 @@ int met_tag_end(unsigned int class_id, const char *name)
 }
 EXPORT_SYMBOL(met_tag_end);
 
-int met_tag_async_start(unsigned int class_id, const char *name, unsigned int cookie)
+int met_tag_async_start(unsigned int class_id,
+			const char *name,
+			unsigned int cookie)
 {
 	if (met_ext_api.met_tag_async_start)
 		return met_ext_api.met_tag_async_start(class_id, name, cookie);
@@ -94,7 +111,9 @@ int met_tag_async_start(unsigned int class_id, const char *name, unsigned int co
 }
 EXPORT_SYMBOL(met_tag_async_start);
 
-int met_tag_async_end(unsigned int class_id, const char *name, unsigned int cookie)
+int met_tag_async_end(unsigned int class_id,
+		      const char *name,
+		      unsigned int cookie)
 {
 	if (met_ext_api.met_tag_async_end)
 		return met_ext_api.met_tag_async_end(class_id, name, cookie);
@@ -118,7 +137,10 @@ int met_tag_userdata(char *pData)
 }
 EXPORT_SYMBOL(met_tag_userdata);
 
-int met_tag_dump(unsigned int class_id, const char *name, void *data, unsigned int length)
+int met_tag_dump(unsigned int class_id,
+		 const char *name,
+		 void *data,
+		 unsigned int length)
 {
 	if (met_ext_api.met_tag_dump)
 		return met_ext_api.met_tag_dump(class_id, name, data, length);
@@ -200,7 +222,10 @@ int met_reg_clk_tree(void *fp)
 }
 EXPORT_SYMBOL(met_reg_clk_tree);
 
-MET_DEFINE_PROBE(sched_switch, TP_PROTO(bool preempt, struct task_struct *prev, struct task_struct *next))
+MET_DEFINE_PROBE(sched_switch,
+		 TP_PROTO(bool preempt,
+			  struct task_struct *prev,
+			  struct task_struct *next))
 {
 	if (met_ext_api.met_sched_switch)
 		met_ext_api.met_sched_switch(prev, next);
@@ -275,7 +300,9 @@ void met_mmsys_event_gce_thread_begin(ulong thread_no, ulong task_handle,
 }
 EXPORT_SYMBOL(met_mmsys_event_gce_thread_begin);
 
-void met_mmsys_event_gce_thread_end(ulong thread_no, ulong task_handle, ulong engineFlag)
+void met_mmsys_event_gce_thread_end(ulong thread_no,
+				    ulong task_handle,
+				    ulong engineFlag)
 {
 }
 EXPORT_SYMBOL(met_mmsys_event_gce_thread_end);
@@ -328,4 +355,20 @@ struct task_struct *met_kthread_create_on_cpu(int (*threadfn)(void *data),
 	return kthread_create_on_cpu(threadfn, data, cpu, namefmt);
 }
 EXPORT_SYMBOL(met_kthread_create_on_cpu);
+
+int met_smp_call_function_single(
+	int cpu,
+	smp_call_func_t func,
+	void *info,
+	int wait)
+{
+	return smp_call_function_single(cpu, func, info, wait);
+}
+EXPORT_SYMBOL(met_smp_call_function_single);
+
+u64 met_arch_counter_get_cntvct(void)
+{
+	return arch_counter_get_cntvct();
+}
+EXPORT_SYMBOL(met_arch_counter_get_cntvct);
 
