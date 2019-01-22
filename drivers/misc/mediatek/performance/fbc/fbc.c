@@ -351,7 +351,7 @@ static void notify_touch(int action)
 		enable_touch_up_timer();
 	}
 
-	if (fbc_ux_state && !fbc_ux_state_pre)
+	if (fbc_ux_state == 1)
 		fbc_op->ux_enable(1);
 
 	fbc_tracer(-3, "ux_state", fbc_ux_state);
@@ -447,7 +447,7 @@ void notify_fbc_enable_legacy(int enable)
 	if (enable) {
 		chase = 0;
 		first_frame = 1;
-		last_frame_done_in_budget = 0;
+		last_frame_done_in_budget = 1;
 		his_cap[0] = his_cap[1] = -1;
 
 		if (act_switched) {
@@ -626,7 +626,7 @@ void notify_fbc_enable_eas(int enable)
 	if (enable) {
 		chase = 0;
 		first_frame = 1;
-		last_frame_done_in_budget = 0;
+		last_frame_done_in_budget = 1;
 		his_bv[0] = his_bv[1] = -1;
 
 		if (act_switched) {
@@ -654,6 +654,7 @@ static void notify_no_render_eas(void)
 
 	last_frame_done_in_budget = 1;
 	perfmgr_kick_fg_boost(KIR_FBC, -1);
+	fbc_tracer(-3, "boost_value", 0);
 	disable_frame_twanted_timer();
 
 	fbc_tracer(-3, "no_render", 1);
@@ -755,6 +756,8 @@ void notify_intended_vsync_eas(void)
 {
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	frame_done = 0;
 
 	enable_frame_twanted_timer();
 	if (last_frame_done_in_budget) {
