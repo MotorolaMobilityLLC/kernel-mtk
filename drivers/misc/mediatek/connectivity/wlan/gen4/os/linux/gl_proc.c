@@ -1061,7 +1061,7 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 		DBGLOG(INIT, ERROR, "copy from user failed\n");
 		return -EFAULT;
 	}
-
+	aucCfgBuf[u4CopySize - 1] = '\0';
 	for (; i < u4CopySize; i++) {
 		if (aucCfgBuf[i] == ' ') {
 			token_num++;
