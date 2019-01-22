@@ -980,7 +980,7 @@ static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
-	kal_uint8 iI;
+	kal_uint16 iI;
 
 	LOG_INF("[imx350MIPI]enter imx350MIPIGain2Reg function\n");
 	for (iI = 0; iI < IMX350MIPI_MaxGainIndex; iI++) {
