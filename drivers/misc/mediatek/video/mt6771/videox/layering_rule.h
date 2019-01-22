@@ -103,4 +103,11 @@ void antilatency_config_hrt(void);
 void update_layering_opt_by_disp_opt(enum DISP_HELPER_OPT option, int value);
 int set_emi_bound_tb(int idx, int num, int *val);
 
+/* For dynamic modify HRT table */
+int modify_display_hrt_cb(int num);
+void hrt_table_locked(void);
+void hrt_table_unlocked(void);
+int get_hrt_bound(int is_larb, int hrt_level);
+int get_hrt_discount(void);
+
 #endif

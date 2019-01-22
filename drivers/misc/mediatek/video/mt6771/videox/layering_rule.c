@@ -31,9 +31,13 @@
 #include "primary_display.h"
 #include "disp_lowpower.h"
 #include "mtk_disp_mgr.h"
+#include "mmdvfs_mgr.h"
 
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
+
+static DEFINE_MUTEX(hrt_table_lock);
+static int num_l;
 
 int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
@@ -386,7 +390,7 @@ static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 }
 
 
-static int get_hrt_bound(int is_larb, int hrt_level)
+int get_hrt_bound(int is_larb, int hrt_level)
 {
 	if (is_larb)
 		return larb_bound_table[l_rule_info.bound_tb_idx][hrt_level];
@@ -538,6 +542,53 @@ void update_layering_opt_by_disp_opt(enum DISP_HELPER_OPT opt, int value)
 	default:
 		break;
 	}
+}
+int modify_display_hrt_cb(int num)
+{
+	int i = 0, type = l_rule_info.bound_tb_idx;
+
+	/* just modify HRT table for LPDDR3 case now */
+	if (type != HRT_BOUND_TYPE_LP3)
+		return 1;
+
+	mutex_lock(&hrt_table_lock);
+
+	if (num < 0 || num > 150 || num == num_l) {
+		mutex_unlock(&hrt_table_lock);
+		return 1;
+	}
+
+	/* modify hrt table here */
+	for (i = 0; i < HRT_LEVEL_NUM; i++) {
+		emi_bound_table[type][i] += num_l;
+		emi_bound_table[type][i] -= num;
+	}
+	num_l = num;
+
+	DISPDBG("modify_display_hrt, num:%d\n", num);
+
+	mutex_unlock(&hrt_table_lock);
+
+	/* to gaurantee new HRT table would be applied */
+	/* TODO: add a new enum instead of using REFRESH_FOR_ANTI_LATENCY2 */
+	trigger_repaint(REFRESH_FOR_ANTI_LATENCY2);
+
+	return 0;
+}
+
+inline void hrt_table_locked(void)
+{
+	mutex_lock(&hrt_table_lock);
+}
+
+inline void hrt_table_unlocked(void)
+{
+	mutex_unlock(&hrt_table_lock);
+}
+
+inline int get_hrt_discount(void)
+{
+	return num_l;
 }
 
 static struct layering_rule_ops l_rule_ops = {

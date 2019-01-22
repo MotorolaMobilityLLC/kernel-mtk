@@ -1275,7 +1275,7 @@ static int fps_monitor_thread(void *data)
 /*********************** idle manager *****************************************/
 int primary_display_get_debug_state(char *stringbuf, int buf_len)
 {
-	int len = 0;
+	int len = 0, i = 0;
 	LCM_PARAMS *lcm_param = disp_lcm_get_params(pgc->plcm);
 	LCM_DRIVER *lcm_drv = pgc->plcm->drv;
 
@@ -1313,6 +1313,12 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 		      primary_display_is_video_mode() ? "video mode" : "cmd mode",
 		      primary_display_cmdq_enabled() ? "CMDQ Enabled" : "CMDQ Disabled",
 		      get_ddr_type() == TYPE_LPDDR3 ? "LPDDR3" : "LPDDR4");
+
+	/* print HRT table */
+	len += scnprintf(stringbuf + len, buf_len - len, "|HRT table(%d)=[", get_hrt_discount());
+	for (i = 0; i < HRT_LEVEL_NUM-1; i++)
+		len += scnprintf(stringbuf + len, buf_len - len, "%d, ", get_hrt_bound(0, i));
+	len += scnprintf(stringbuf + len, buf_len - len, "%d]\n", get_hrt_bound(0, HRT_LEVEL_NUM-1));
 
 	return len;
 }
@@ -4666,6 +4672,9 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		/*register_mmclk_switch_cb(primary_display_switch_mmsys_clk);*/
 
 	DISPCHECK("primary_display_init done\n");
+
+	/* register mmdvfs callback to decrease hrt capability */
+	mmdvfs_set_disp_hrt_cb(modify_display_hrt_cb);
 
 done:
 	DISPDBG("init and hold wakelock...\n");
