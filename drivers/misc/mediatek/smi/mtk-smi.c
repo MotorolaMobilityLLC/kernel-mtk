@@ -762,25 +762,40 @@ static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 #endif
 	return 0;
 }
-
-int smi_clk_prepare(int larb_id)
+int smi_bus_enable(enum SMI_LARB_ID larb_id, char *user_name)
 {
-	return larb_clock_prepare(larb_id, 1);
+	smi_clk_prepare(larb_id, user_name, 1);
+	smi_clk_enable(larb_id, user_name, 1);
+	return 0;
+}
+int smi_bus_disable(enum SMI_LARB_ID larb_id, char *user_name)
+{
+	smi_clk_disable(larb_id, user_name, 1);
+	smi_clk_unprepare(larb_id, user_name, 1);
+	return 0;
+}
+int smi_clk_prepare(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
+{
+	SMIDBG(1, "%s is calling smi_clk_prepare", user_name);
+	return larb_clock_prepare(larb_id, enable_mtcmos);
 }
 
-int smi_clk_enable(int larb_id)
+int smi_clk_enable(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
 {
-	return larb_clock_enable(larb_id, 1);
+	SMIDBG(1, "%s is calling smi_clk_enable", user_name);
+	return larb_clock_enable(larb_id, enable_mtcmos);
 }
 
-int smi_clk_unprepare(int larb_id)
+int smi_clk_unprepare(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
 {
-	return larb_clock_unprepare(larb_id, 1);
+	SMIDBG(1, "%s is calling smi_clk_unprepare", user_name);
+	return larb_clock_unprepare(larb_id, enable_mtcmos);
 }
 
-int smi_clk_disable(int larb_id)
+int smi_clk_disable(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos)
 {
-	return larb_clock_disable(larb_id, 1);
+	SMIDBG(1, "%s is calling smi_clk_disable", user_name);
+	return larb_clock_disable(larb_id, enable_mtcmos);
 }
 
 int larb_reg_restore(int larb)
@@ -936,7 +951,7 @@ static void smi_bus_optimization_prepare(int optimization_larbs)
 
 		if (optimization_larbs & larb_mask) {
 			SMIDBG(1, "prepare clock%d\n", i);
-			smi_clk_prepare(i);
+			smi_clk_prepare(i, "SMI", 1);
 		}
 	}
 }
@@ -951,7 +966,7 @@ static void smi_bus_optimization_unprepare(int optimization_larbs)
 
 		if (optimization_larbs & larb_mask) {
 			SMIDBG(1, "unprepare clock%d\n", i);
-			smi_clk_unprepare(i);
+			smi_clk_unprepare(i, "SMI", 1);
 		}
 	}
 }
@@ -964,7 +979,7 @@ static void smi_bus_optimization_enable(int optimization_larbs)
 
 		if (optimization_larbs & larb_mask) {
 			SMIDBG(1, "enable clock%d\n", i);
-			smi_clk_enable(i);
+			smi_clk_enable(i, "SMI", 1);
 		}
 	}
 }
@@ -977,7 +992,7 @@ static void smi_bus_optimization_disable(int optimization_larbs)
 
 		if (optimization_larbs & larb_mask) {
 			SMIDBG(1, "disable clock%d\n", i);
-			smi_clk_disable(i);
+			smi_clk_disable(i, "SMI", 1);
 		}
 	}
 }
