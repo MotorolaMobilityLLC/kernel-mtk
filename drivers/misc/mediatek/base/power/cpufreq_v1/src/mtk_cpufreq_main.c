@@ -58,24 +58,6 @@ struct pll_ctrl_t *id_to_pll_ctrl(enum mt_cpu_dvfs_pll_id id)
 	return (id < NR_MT_PLL) ? &pll_ctrl[id] : NULL;
 }
 
-unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id)
-{
-	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
-	struct pll_ctrl_t *pll_p = id_to_pll_ctrl(p->Pll_id);
-	unsigned int freq = 0;
-	unsigned long flags;
-
-	FUNC_ENTER(FUNC_LV_LOCAL);
-
-	cpufreq_lock(flags);
-	freq = pll_p->pll_ops->get_cur_freq(pll_p);
-	cpufreq_unlock(flags);
-
-	FUNC_EXIT(FUNC_LV_LOCAL);
-
-	return freq;
-}
-
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx);
 static unsigned int _calc_new_opp_idx_no_base(struct mt_cpu_dvfs *p, int new_opp_idx);
 
@@ -1357,7 +1339,6 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		policy->cpuinfo.max_freq = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
 		policy->cpuinfo.min_freq = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
 
-		policy->cur = mt_cpufreq_get_cur_phy_freq(id);	/* use cur phy freq is better */
 		policy->max = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
 		policy->min = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
 
@@ -1369,6 +1350,8 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		if (_mt_cpufreq_sync_opp_tbl_idx(p) >= 0)
 			if (p->idx_normal_max_opp == -1)
 				p->idx_normal_max_opp = p->idx_opp_tbl;
+
+		policy->cur = cpu_dvfs_get_cur_freq(p);	/* use cur phy freq is better */
 		p->mt_policy = policy;
 		p->armpll_is_available = 1;
 
