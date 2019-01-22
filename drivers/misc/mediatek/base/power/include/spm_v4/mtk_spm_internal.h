@@ -1077,6 +1077,7 @@ void spm_set_dummy_read_addr(int debug);
 extern int spm_fs_init(void);
 
 extern int spm_golden_setting_cmp(bool en);
+extern void spm_phypll_mode_check(void);
 extern u32 _spm_get_wake_period(int pwake_time, unsigned int last_wr);
 extern void __sync_big_buck_ctrl_pcm_flag(u32 *flag);
 
