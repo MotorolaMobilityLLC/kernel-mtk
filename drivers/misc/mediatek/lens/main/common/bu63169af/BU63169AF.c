@@ -22,6 +22,11 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 
+/* kernel standard for PMIC*/
+#if !defined(CONFIG_MTK_LEGACY)
+#include <linux/regulator/consumer.h>
+#endif
+
 #include "lens_info.h"
 #include "OIS_head.h"
 
@@ -50,6 +55,52 @@ static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 static unsigned int g_u4CheckDrvStatus;
 
+/* PMIC */
+#if !defined(CONFIG_MTK_LEGACY)
+static struct regulator *regVCAMAF;
+static struct device *lens_device;
+#endif
+
+static void TimeoutHandle(void)
+{
+	LOG_INF("TimeoutHandle\n");
+
+	#if !defined(CONFIG_MTK_LEGACY)
+	lens_device = &g_pstAF_I2Cclient->dev;
+
+	if (regVCAMAF == NULL)
+		regVCAMAF = regulator_get(lens_device, "vcamaf");
+
+	if (regulator_is_enabled(regVCAMAF)) {
+		LOG_INF("Camera Power enable\n");
+
+		if (regulator_is_enabled(regVCAMAF)) {
+			if (regulator_disable(regVCAMAF) != 0)
+				LOG_INF("Fail to regulator_disable\n");
+			if (regulator_disable(regVCAMAF) != 0)
+				LOG_INF("Fail to regulator_disable\n");
+		}
+
+		msleep(20);
+
+		if (!regulator_is_enabled(regVCAMAF)) {
+			LOG_INF("AF Power off\n");
+			if (regulator_set_voltage(regVCAMAF, 2800000, 2800000) != 0)
+				LOG_INF("regulator_set_voltage fail\n");
+			if (regulator_set_voltage(regVCAMAF, 2800000, 2800000) != 0)
+				LOG_INF("regulator_set_voltage fail\n");
+
+			LOG_INF("AF Power On\n");
+			if (regulator_enable(regVCAMAF) != 0)
+				LOG_INF("regulator_enable fail\n");
+			if (regulator_enable(regVCAMAF) != 0)
+				LOG_INF("regulator_enable fail\n");
+		}
+	} else {
+		LOG_INF("Camera Power disable\n");
+	}
+	#endif
+}
 
 static int s4AK7372AF_WriteReg(unsigned short a_u2Addr, unsigned short a_u2Data)
 {
@@ -125,6 +176,9 @@ int s4AF_WriteReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData, u
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, a_pSendData, a_sizeSendData);
 
+	if (i4RetValue == -EIO)
+		TimeoutHandle();
+
 	if (i4RetValue != a_sizeSendData) {
 		g_u4CheckDrvStatus++;
 		LOG_INF("I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
@@ -158,6 +212,9 @@ int s4AF_ReadReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData,
 	msg[1].buf = a_pRecvData;
 
 	i4RetValue = i2c_transfer(g_pstAF_I2Cclient->adapter, msg, sizeof(msg)/sizeof(msg[0]));
+
+	if (i4RetValue == -EIO)
+		TimeoutHandle();
 
 	if (i4RetValue != 2) {
 		g_u4CheckDrvStatus++;
@@ -222,6 +279,9 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_unlock(g_pAF_SpinLock);
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
+		spin_lock(g_pAF_SpinLock);
+		g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
+		spin_unlock(g_pAF_SpinLock);
 	}
 
 	return 0;
@@ -333,6 +393,10 @@ void BU63169AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+	#if !defined(CONFIG_MTK_LEGACY)
+	regVCAMAF = NULL;
+	lens_device = NULL;
+	#endif
 
 	LOG_INF("SetI2Cclient\n");
 }
