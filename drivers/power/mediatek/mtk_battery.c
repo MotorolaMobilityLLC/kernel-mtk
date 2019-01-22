@@ -136,6 +136,7 @@ int reset_fg_bat_int;
 
 bool is_init_done;
 
+static bool is_reset_battery_cycle;
 static int fixed_bat_tmp = 0xffff;
 static struct charger_consumer *pbat_consumer;
 static struct notifier_block bat_nb;
@@ -835,6 +836,8 @@ void fg_custom_init_from_header(void)
 
 	fg_cust_data.fg_tracking_current = FG_TRACKING_CURRENT;
 	fg_cust_data.fg_tracking_current_iboot_en = FG_TRACKING_CURRENT_IBOOT_EN;
+	fg_cust_data.ui_fast_tracking_en = UI_FAST_TRACKING_EN;
+	fg_cust_data.ui_fast_tracking_gap = UI_FAST_TRACKING_GAP;
 
 	fg_cust_data.bat_plug_out_time = BAT_PLUG_OUT_TIME;
 
@@ -2281,6 +2284,17 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	}
 	break;
 
+	case FG_DAEMON_CMD_IS_BATTERY_CYCLE_RESET:
+	{
+		int reset = is_reset_battery_cycle;
+
+		ret_msg->fgd_data_len += sizeof(reset);
+		memcpy(ret_msg->fgd_data, &reset, sizeof(reset));
+		bm_debug("[fg_res] FG_DAEMON_CMD_IS_BATTERY_CYCLE_RESET = %d\n", reset);
+		is_reset_battery_cycle = false;
+	}
+	break;
+
 	case FG_DAEMON_CMD_GET_AGING_FACTOR_CUST:
 	{
 		int aging_factor_cust = 0;
@@ -3572,6 +3586,39 @@ static ssize_t store_shutdown_cond_enable(struct device *dev, struct device_attr
 }
 static DEVICE_ATTR(shutdown_condition_enable, 0664, show_shutdown_cond_enable, store_shutdown_cond_enable);
 
+static ssize_t show_reset_battery_cycle(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG] show_reset_battery_cycle : %d\n", is_reset_battery_cycle);
+	return sprintf(buf, "%d\n", is_reset_battery_cycle);
+}
+
+static ssize_t store_reset_battery_cycle(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	unsigned long val = 0;
+	int ret;
+
+	bm_err("[store_reset_battery_cycle]\n");
+	if (buf != NULL && size != 0) {
+		bm_err("[store_reset_battery_cycle] buf is %s\n", buf);
+		ret = kstrtoul(buf, 10, &val);
+		if (val < 0) {
+			bm_err("[store_reset_battery_cycle] val is %d ??\n", (int)val);
+			val = 0;
+		}
+		if (val == 0)
+			is_reset_battery_cycle = false;
+		else {
+			is_reset_battery_cycle = true;
+			wakeup_fg_algo(FG_INTR_BAT_CYCLE);
+		}
+		bm_err("[store_reset_battery_cycle] store_reset_battery_cycle=%d\n", is_reset_battery_cycle);
+	}
+
+	return size;
+}
+static DEVICE_ATTR(reset_battery_cycle, 0664, show_reset_battery_cycle, store_reset_battery_cycle);
+
 static ssize_t show_BAT_EC(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	bm_err("[FG_IT] show_BAT_EC\n");
@@ -4102,6 +4149,7 @@ static int battery_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_On_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_Power_Off_Voltage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_shutdown_condition_enable);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_reset_battery_cycle);
 
 	fgtimer_service_init();
 
@@ -4166,6 +4214,7 @@ static int battery_probe(struct platform_device *dev)
 	wake_unlock(&battery_lock);
 
 #if defined(CONFIG_MTK_DISABLE_GAUGE)
+	bm_err("disable GM 3.0\n");
 	disable_fg();
 #endif
 
