@@ -95,3 +95,8 @@ int mmdvfs_set_mmsys_clk(MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode)
 	MMDVFS_BRINGUP_MSG(__func__);
 	return 0;
 }
+int mmdvfs_get_stable_isp_clk(void)
+{
+	MMDVFS_BRINGUP_MSG(__func__);
+	return 0;
+}
