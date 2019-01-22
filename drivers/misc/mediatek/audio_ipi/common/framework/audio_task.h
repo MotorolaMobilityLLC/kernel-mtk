@@ -28,8 +28,6 @@ enum {
 	TASK_SCENE_PRIMARY              = 7,
 	TASK_SCENE_DEEPBUFFER           = 8,
 	TASK_SCENE_AUDPLAYBACK          = 9,
-	TASK_SCENE_AUD_SWMIXER1         = 10,
-	TASK_SCENE_AUD_SWMIXER2         = 11,
 
 
 	/* control for driver */

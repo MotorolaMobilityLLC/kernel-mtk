@@ -44,6 +44,7 @@ enum { /* audio_ipi_msg_source_layer_t */
 	AUDIO_IPI_LAYER_FROM_KERNEL,
 	AUDIO_IPI_LAYER_FROM_DSP,
 
+	AUDIO_IPI_LAYER_FROM_SIZE,
 	AUDIO_IPI_LAYER_FROM_MAX = 15 /* 4-bit only */
 };
 
@@ -52,6 +53,7 @@ enum { /* audio_ipi_msg_target_layer_t */
 	AUDIO_IPI_LAYER_TO_KERNEL,
 	AUDIO_IPI_LAYER_TO_DSP,
 
+	AUDIO_IPI_LAYER_TO_SIZE,
 	AUDIO_IPI_LAYER_TO_MAX = 15 /* 4-bit only */
 };
 
@@ -59,6 +61,8 @@ enum { /* audio_ipi_msg_data_t */
 	AUDIO_IPI_MSG_ONLY,
 	AUDIO_IPI_PAYLOAD,
 	AUDIO_IPI_DMA,
+
+	AUDIO_IPI_TYPE_SIZE
 };
 
 enum { /* audio_ipi_msg_ack_t */
@@ -151,7 +155,7 @@ typedef void (*recv_message_t)(struct ipi_msg_t *p_ipi_msg);
 
 uint16_t get_message_buf_size(const struct ipi_msg_t *p_ipi_msg);
 
-void check_msg_format(const struct ipi_msg_t *p_ipi_msg, unsigned int len);
+int check_msg_format(const struct ipi_msg_t *p_ipi_msg, unsigned int len);
 
 void print_msg_info(
 	const char *func_name,

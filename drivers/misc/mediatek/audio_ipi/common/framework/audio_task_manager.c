@@ -260,6 +260,8 @@ int audio_load_task(const uint8_t task_scene)
 	int retval = 0;
 
 	pr_debug("%s(+), task_scene: %d", __func__, task_scene);
+	if (task_scene >= TASK_SCENE_SIZE)
+		return -1;
 
 	mutex_lock(&audio_load_task_mutex);
 

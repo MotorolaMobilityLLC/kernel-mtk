@@ -551,6 +551,7 @@ void dynamic_change_ring_buf_size(
 	if (!write_size)
 		return;
 
+	memset(&new_ringbuf, 0, sizeof(struct audio_ringbuf_t));
 
 	if (!rb->base || !rb->size) { /* init */
 		change_size = (2 * write_size);

@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #ifndef AUDIO_SPEECH_MSG_ID_H
 #define AUDIO_SPEECH_MSG_ID_H
@@ -24,9 +24,9 @@
 /* NOTE: all ack behaviors are rely on audio_ipi_msg_ack_t */
 enum ipi_msg_id_call_t {
 	/*
-	 * ========================================================================
+	 * =====================================================================
 	 *                             AP to OpenDSP
-	 * ========================================================================
+	 * =====================================================================
 	 */
 	/* volume, 0xAD0- */
 	IPI_MSG_A2D_UL_GAIN = IPI_MSG_A2D_BASE + 0x00,
@@ -64,17 +64,17 @@ enum ipi_msg_id_call_t {
 
 
 	/*
-	 * ========================================================================
+	 * =====================================================================
 	 *                             OpenDSP to AP
-	 * ========================================================================
+	 * =====================================================================
 	 */
 	IPI_MSG_D2A_PCM_DUMP_DATA_NOTIFY = IPI_MSG_D2A_BASE + 0x00,
 
 
 	/*
-	 * ========================================================================
+	 * =====================================================================
 	 *                             Modem to OpenDSP
-	 * ========================================================================
+	 * =====================================================================
 	 */
 	/* call data handshake, 0x3D0- */
 	IPI_MSG_M2D_CALL_DATA_READY = IPI_MSG_M2D_BASE + 0x00,
