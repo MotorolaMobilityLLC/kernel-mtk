@@ -68,6 +68,10 @@ static int hd_detect_enabled;
 static int hd_timeout = 0x7fffffff;
 static int hang_detect_counter = 0x7fffffff;
 static int dump_bt_done;
+#ifdef CONFIG_MT_ENG_BUILD
+static int hang_aee_warn = 1;
+#endif
+static int system_server_pid;
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_start_wait);
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
 
@@ -830,9 +834,31 @@ void reset_hang_info(void)
 	memset(&Hang_Info, 0, MaxHangInfoSize);
 	Hang_Info_Size = 0;
 }
+#ifdef CONFIG_MT_ENG_BUILD
+static int hang_detect_warn_thread(void *arg)
+{
 
+	/* unsigned long flags; */
+	struct sched_param param = {
+		.sched_priority = 99
+	};
+
+	char string_tmp[30];
+
+	sched_setscheduler(current, SCHED_FIFO, &param);
+	snprintf(string_tmp, 30, "hang_detect:[pid:%d]\n", system_server_pid);
+	sched_setscheduler(current, SCHED_FIFO, &param);
+	pr_notice("hang_detect create warning api: %s.", string_tmp);
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_PROCESS_COREDUMP,
+		"maybe have other hang_detect KE DB, please send together!!\n", string_tmp);
+	return 0;
+}
+#endif
 static int hang_detect_dump_thread(void *arg)
 {
+#ifdef CONFIG_MT_ENG_BUILD
+	struct task_struct *hd_thread;
+#endif
 
 	/* unsigned long flags; */
 	struct sched_param param = {
@@ -844,7 +870,15 @@ static int hang_detect_dump_thread(void *arg)
 	dump_bt_done = 1;
 	while (1) {
 		wait_event_interruptible(dump_bt_start_wait, dump_bt_done == 0);
-		ShowStatus();
+#ifdef CONFIG_MT_ENG_BUILD
+		if (hang_aee_warn == 1) {
+			hd_thread = kthread_create(hang_detect_warn_thread, NULL, "hang_detect2");
+			if (hd_thread != NULL)
+				wake_up_process(hd_thread);
+		} else
+#endif
+			ShowStatus();
+
 		dump_bt_done = 1;
 		wake_up_interruptible(&dump_bt_done_wait);
 	}
@@ -867,10 +901,22 @@ static int hang_detect_thread(void *arg)
 	while (1) {
 		pr_info("[Hang_Detect] hang_detect thread counts down %d:%d, status %d.\n",
 				hang_detect_counter, hd_timeout, hd_detect_enabled);
-		if ((hd_detect_enabled == 1)
-		    && (FindTaskByName("system_server") != -1)) {
+		system_server_pid = FindTaskByName("system_server");
+
+		if ((hd_detect_enabled == 1) && (system_server_pid != -1)) {
 #ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
+#endif
+#ifdef CONFIG_MT_ENG_BUILD
+			if (hang_detect_counter == 1 && hang_aee_warn == 1) {
+				hang_detect_counter = hd_timeout / 2;
+				dump_bt_done = 0;
+				wake_up_interruptible(&dump_bt_start_wait);
+				if (dump_bt_done != 1)
+					wait_event_interruptible_timeout(dump_bt_done_wait, dump_bt_done == 1, HZ*10);
+				hang_aee_warn = 0;
+
+			}
 #endif
 			if (hang_detect_counter <= 0) {
 				Log2HangInfo("[Hang_detect]Dump the %d time process bt.\n", Hang_Detect_first ? 2 : 1);
