@@ -19,7 +19,9 @@ static int __init mrdump_key_init(void)
 {
 	int res;
 	struct wd_api *wd_api = NULL;
-
+#if defined(CONFIG_FPGA_EARLY_PORTING)
+	return 0;
+#endif
 	res = get_wd_api(&wd_api);
 	if (res < 0) {
 		pr_alert("%s: get wd api error %d\n", __func__, res);
