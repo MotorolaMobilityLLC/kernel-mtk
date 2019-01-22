@@ -122,6 +122,11 @@ __weak void aee_stop_nested_panic(struct pt_regs *regs)
 {
 }
 
+__weak int aee_nested_printf(const char *fmt, ...)
+{
+	return 0;
+}
+
 __weak int aee_in_nested_panic(void)
 {
 	return 0;
