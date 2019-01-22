@@ -468,6 +468,7 @@ static void aee_rr_show_in_log(void)
 	if (ram_console_check_header(ram_console_old))
 		pr_err("ram_console: no valid data\n");
 	else {
+		pr_err("pmic & external buck: 0x%x\n", LAST_RRR_VAL(pmic_ext_buck));
 		pr_err("ram_console: CPU notifier status: %d, %d, 0x%llx, %llu\n",
 				LAST_RRR_VAL(hotplug_cpu_event),
 				LAST_RRR_VAL(hotplug_cb_index),
