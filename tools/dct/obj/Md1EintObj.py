@@ -15,16 +15,26 @@ class Md1EintObj(ModuleObj):
     def __init__(self):
         ModuleObj.__init__(self, 'cust_eint_md1.h', 'cust_md1_eint.dtsi')
         self.__srcPin = {}
+        self.__bSrcPinEnable = True
 
     def get_cfgInfo(self):
         # ConfigParser accept ":" and "=", so SRC_PIN will be treated specially
         cp = ConfigParser.ConfigParser(allow_no_value=True)
         cp.read(ModuleObj.get_figPath())
-        for option in cp.options('SRC_PIN'):
-            value = cp.get('SRC_PIN', option)
-            value = value[1:]
-            temp = value.split('=')
-            self.__srcPin[temp[0]] = temp[1]
+
+        if cp.has_option('Chip Type', 'MD1_EINT_SRC_PIN'):
+            flag = cp.get('Chip Type', 'MD1_EINT_SRC_PIN')
+            if flag == '0':
+                self.__bSrcPinEnable = False
+
+        if(self.__bSrcPinEnable):
+            for option in cp.options('SRC_PIN'):
+                value = cp.get('SRC_PIN', option)
+                value = value[1:]
+                temp = value.split('=')
+                self.__srcPin[temp[0]] = temp[1]
+        else:
+            self.__srcPin[''] = '-1'
 
     def read(self, node):
         nodes = node.childNodes
@@ -57,10 +67,10 @@ class Md1EintObj(ModuleObj):
                         data.set_debounceEnable(deeNode[0].childNodes[0].nodeValue)
                     if len(dedNode):
                         data.set_dedicatedEn(dedNode[0].childNodes[0].nodeValue)
-                    if len(srcNode):
+                    if len(srcNode) and len(srcNode[0].childNodes):
                         data.set_srcPin(srcNode[0].childNodes[0].nodeValue)
-                    if len(sktNode):
-                        data.set_socketType(sktNode[0].childNodes[0].nodeValue)\
+                    if len(sktNode) and len(sktNode[0].childNodes):
+                        data.set_socketType(sktNode[0].childNodes[0].nodeValue)
 
                     ModuleObj.set_data(self, node.nodeName, data)
         except:
@@ -84,9 +94,10 @@ class Md1EintObj(ModuleObj):
 
         gen_str += '''\n'''
 
-        for (key, value) in self.__srcPin.items():
-            gen_str += '''#define %s\t\t%s\n''' %(key, value)
-        gen_str += '''\n'''
+        if self.__bSrcPinEnable:
+            for (key, value) in self.__srcPin.items():
+                gen_str += '''#define %s\t\t%s\n''' %(key, value)
+            gen_str += '''\n'''
 
         gen_str += '''#define CUST_EINT_POLARITY_LOW\t\t0\n'''
         gen_str += '''#define CUST_EINT_POLARITY_HIGH\t\t1\n'''
@@ -110,7 +121,8 @@ class Md1EintObj(ModuleObj):
             gen_str += '''#define CUST_EINT_MD1_%s_SENSITIVE\t\tCUST_EINT_MD_%s_SENSITIVE\n''' %(num, value.get_sensitiveLevel().upper())
             gen_str += '''#define CUST_EINT_MD1_%s_DEBOUNCE_EN\t\tCUST_EINT_DEBOUNCE_%s\n''' %(num, value.get_debounceEnable().upper())
             gen_str += '''#define CUST_EINT_MD1_%s_DEDICATED_EN\t\t%s\n''' %(num, int(value.get_dedicatedEn()))
-            gen_str += '''#define CUST_EINT_MD1_%s_SRCPIN\t\t\t%s\n''' %(num, value.get_srcPin())
+            if self.__bSrcPinEnable:
+                gen_str += '''#define CUST_EINT_MD1_%s_SRCPIN\t\t\t%s\n''' %(num, value.get_srcPin())
             gen_str += '''\n'''
 
         gen_str += '''#define CUST_EINT_MD1_CNT\t\t\t%d\n''' %(count)
@@ -145,7 +157,10 @@ class Md1EintObj(ModuleObj):
             gen_str += '''\t\tinterrupts = <%s %d>;\n''' %(num, type)
             gen_str += '''\t\tdebounce = <%s %d>;\n''' %(num, (string.atoi(value.get_debounceTime()))*1000)
             gen_str += '''\t\tdedicated = <%s %d>;\n''' %(num, int(value.get_dedicatedEn()))
-            gen_str += '''\t\tsrc_pin = <%s %s>;\n''' %(num, self.__srcPin[value.get_srcPin()])
+            if self.__bSrcPinEnable:
+                gen_str += '''\t\tsrc_pin = <%s %s>;\n''' %(num, self.__srcPin[value.get_srcPin()])
+            else:
+                gen_str += '''\t\tsrc_pin = <%s %s>;\n''' %(num, -1)
             gen_str += '''\t\tsockettype = <%s %s>;\n''' %(num, value.get_socketType())
             gen_str += '''\t\tstatus = \"okay\";\n'''
             gen_str += '''\t};\n'''
@@ -155,4 +170,3 @@ class Md1EintObj(ModuleObj):
         gen_str += '''};\n'''
 
         return gen_str
-

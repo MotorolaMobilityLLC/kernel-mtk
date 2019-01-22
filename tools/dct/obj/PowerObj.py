@@ -20,7 +20,7 @@ class PowerObj(ModuleObj):
         self.__list = {}
 
     def getCfgInfo(self):
-        cp = ConfigParser.ConfigParser()
+        cp = ConfigParser.ConfigParser(allow_no_value=True)
         cp.read(ModuleObj.get_figPath())
 
         self.__list = cp.options('POWER')
@@ -72,4 +72,3 @@ class PowerObj(ModuleObj):
 
     def fill_dtsiFile(self):
         return ''
-

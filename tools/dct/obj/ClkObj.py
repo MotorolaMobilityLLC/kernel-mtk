@@ -34,6 +34,9 @@ class ClkObj(ModuleObj):
 
                 key = re.findall(r'\D+', node.nodeName)[0].upper() + self.__suffix + '%s' %(re.findall(r'\d+', node.nodeName)[0])
 
+                if key not in ModuleObj.get_data(self):
+	                continue;
+
                 data = ModuleObj.get_data(self)[key]
 
                 if len(varNode):
@@ -222,7 +225,9 @@ class ClkObj_Everest(ClkObj):
         gen_str += '''\n'''
 
         gen_str += '''&rf_clock_buffer_ctrl {\n'''
-        gen_str += '''\tmediatek,clkbuf-quantity = <%d>;\n''' %(ClkData._count)
+        gen_str += '''\tmediatek,clkbuf-quantity = <%d>;\n''' %(len(ModuleObj.get_data(self))-ClkData._count)
+        msg = 'rf clk buff count : %d' %(len(ModuleObj.get_data(self))-ClkData._count)
+        log(LogLevel.info, msg)
         gen_str += '''\tmediatek,clkbuf-config = <'''
 
         #sorted_list = sorted(ModuleObj.get_data(self).keys())
@@ -232,7 +237,7 @@ class ClkObj_Everest(ClkObj):
 
             if key.find(self.__rf) != -1:
                 gen_str += '''%d ''' %(ClkData._varList.index(value.get_varName()))
-        gen_str.rstrip()
+        gen_str = gen_str.rstrip()
         gen_str += '''>;\n'''
 
         gen_str += '''\tmediatek,clkbuf-driving-current = <'''
@@ -332,7 +337,105 @@ class ClkObj_Olympus(ClkObj_Everest):
 
         return gen_str
 
+class ClkObj_Rushmore(ClkObj):
 
+    def __init__(self):
+        ClkObj.__init__(self)
+        self.__suffix = '_BUF'
+
+    def parse(self, node):
+        ClkObj.parse(self, node)
+
+    def get_cfgInfo(self):
+        cp = ConfigParser.ConfigParser(allow_no_value=True)
+        cp.read(ModuleObj.get_figPath())
+
+        count = string.atoi(cp.get('CLK_BUF', 'CLK_BUF_COUNT'))
+        self.__count = count
+
+    def read(self, node):
+        nodes = node.childNodes
+        for node in nodes:
+            if node.nodeType == xml.dom.Node.ELEMENT_NODE:
+                if node.nodeName == 'count':
+                    continue
+
+                varNode = node.getElementsByTagName('varName')
+                curNode = node.getElementsByTagName('current')
+
+                key = re.findall(r'\D+', node.nodeName)[0].upper() + self.__suffix + '%s' %(re.findall(r'\d+', node.nodeName)[0])
+                data = ClkData()
+                if len(varNode):
+                    data.set_varName(varNode[0].childNodes[0].nodeValue)
+
+                #if len(curNode):
+                    #data.set_current(curNode[0].childNodes[0].nodeValue)
+
+                ModuleObj.set_data(self, key, data)
+
+        return True
+
+    def fill_hFile(self):
+        gen_str = '''typedef enum {\n'''
+        gen_str += '''\tCLOCK_BUFFER_DISABLE,\n'''
+        gen_str += '''\tCLOCK_BUFFER_SW_CONTROL,\n'''
+        gen_str += '''\tCLOCK_BUFFER_HW_CONTROL\n'''
+        gen_str += '''} MTK_CLK_BUF_STATUS;\n'''
+        gen_str += '''\n'''
+
+        gen_str += '''typedef enum {\n'''
+        gen_str += '''\tCLK_BUF_DRIVING_CURR_AUTO_K = -1,\n'''
+        gen_str += '''\tCLK_BUF_DRIVING_CURR_0,\n'''
+        gen_str += '''\tCLK_BUF_DRIVING_CURR_1,\n'''
+        gen_str += '''\tCLK_BUF_DRIVING_CURR_2,\n'''
+        gen_str += '''\tCLK_BUF_DRIVING_CURR_3\n'''
+        gen_str += '''} MTK_CLK_BUF_DRIVING_CURR;\n'''
+        gen_str += '''\n'''
+
+
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+            value = ModuleObj.get_data(self)[key]
+            if key.find('RF') != -1:
+                gen_str += '''#define %s_STATUS\t\t\t\tCLOCK_BUFFER_%s\n''' %(key[3:], value.get_varName())
+
+        gen_str += '''\n'''
+
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+            if key.find('RF') != -1:
+                continue
+            value = ModuleObj.get_data(self)[key]
+            idx = value.get_curList().index(value.get_current())
+            if cmp(value.get_curList()[0], DEFAULT_AUTOK) == 0:
+                idx -= 1
+
+            if idx >= 0:
+                gen_str += '''#define %s_DRIVING_CURR\t\tCLK_BUF_DRIVING_CURR_%d\n''' %(key, idx)
+            else:
+                gen_str += '''#define %s_DRIVING_CURR\t\tCLK_BUF_DRIVING_CURR_AUTO_K\n''' %(key)
+
+        gen_str += '''\n'''
+
+        return gen_str
+
+    def fill_dtsiFile(self):
+        gen_str = '''&rf_clock_buffer_ctrl {\n'''
+        gen_str += '''\tmediatek,clkbuf-quantity = <%d>;\n''' %(self.__count)
+        gen_str += '''\tmediatek,clkbuf-config = <'''
+
+        #sorted_list = sorted(ModuleObj.get_data(self).keys())
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+            if key.find('RF') == -1:
+                continue
+            value = ModuleObj.get_data(self)[key]
+            gen_str += '''%d ''' %(ClkData._varList.index(value.get_varName()))
+
+        gen_str = gen_str.rstrip()
+        gen_str += '''>;\n'''
+
+        gen_str += '''\tstatus = \"okay\";\n'''
+        gen_str += '''};\n'''
+
+        return gen_str
 
 
 

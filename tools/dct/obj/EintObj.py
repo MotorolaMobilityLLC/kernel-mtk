@@ -22,6 +22,10 @@ class EintObj(ModuleObj):
         ModuleObj.__init__(self, 'cust_eint.h', 'cust_eint.dtsi')
         self.__gpio_obj = gpio_obj
         self.__count = 0
+        self.__map_count = 0
+
+    def set_gpioObj(self, gpio_obj):
+        self.__gpio_obj = gpio_obj
 
     def read(self, node):
         nodes = node.childNodes
@@ -84,6 +88,9 @@ class EintObj(ModuleObj):
 
         EintData.set_mapTable(map)
         EintData.set_modeMap(mode_map)
+
+        if cp.has_option('EINT', 'EINT_MAP_COUNT'):
+            self.__map_count = string.atoi(cp.get('EINT', 'EINT_MAP_COUNT'))
 
         if cp.has_option('EINT', 'INTERNAL_EINT'):
             info = cp.get('EINT', 'INTERNAL_EINT')
@@ -170,15 +177,14 @@ class EintObj(ModuleObj):
     def fill_mappingTable(self):
         gen_str = '''&eintc {\n'''
         count = 0
-        for i in range(0, string.atoi(self.__count)):
-            if EintData.get_gpioNum(i) >= 0:
-                count += 1
 
-        #for value in EintData.get_mapTable().values():
-            #if value != -1:
-                #count += 1
-
-        count += len(EintData._int_eint)
+        if self.__map_count == 0:
+            for i in range(0, string.atoi(self.__count)):
+                if EintData.get_gpioNum(i) >= 0:
+                    count += 1
+            count += len(EintData._int_eint)
+        else:
+            count = self.__map_count
 
         gen_str += '''\tmediatek,mapping_table_entry = <%d>;\n''' %(count)
         gen_str += '''\t\t\t/* <gpio_pin, eint_pin> */\n'''
@@ -221,8 +227,8 @@ class EintObj(ModuleObj):
 
     def refGpio(self, eint_num, flag):
         gpio_vec= []
-        gpio_num = EintData.get_gpioNum(string.atoi(eint_num))
 
+        gpio_num = EintData.get_gpioNum(string.atoi(eint_num))
         if gpio_num >= 0:
             gpio_vec.append(gpio_num)
             if flag:
@@ -285,3 +291,5 @@ class EintObj(ModuleObj):
             gen_str += '''\n'''
 
         return gen_str
+
+
