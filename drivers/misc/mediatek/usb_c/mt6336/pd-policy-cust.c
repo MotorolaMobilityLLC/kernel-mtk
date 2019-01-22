@@ -175,6 +175,8 @@ void pd_execute_data_swap(struct typec_hba *hba, int data_role)
 	if (hba->task_state == PD_STATE_SRC_ATTACH)
 		debounce = 100;
 
+	dev_err(hba->dev, "Queue usb_work d=%d\n", debounce);
+
 	schedule_delayed_work(&hba->usb_work, msecs_to_jiffies(debounce));
 }
 

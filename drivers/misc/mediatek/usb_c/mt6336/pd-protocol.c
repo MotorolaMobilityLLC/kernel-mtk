@@ -3233,7 +3233,12 @@ int pd_task(void *data)
 		case PD_STATE_SNK_DISCOVERY:
 			/* Wait for source cap expired only if we are enabled */
 			if (state_changed(hba)) {
-				hba->flags &= ~PD_FLAGS_POWER_SWAPPED; /*PR SWAP path 2*/
+				if (hba->flags | PD_FLAGS_POWER_SWAPPED) {
+					if (hba->charger_det_notify)
+						hba->charger_det_notify(1);
+
+					hba->flags &= ~PD_FLAGS_POWER_SWAPPED;
+				}
 
 				/*
 				 * If we haven't passed hard reset counter,
@@ -3457,6 +3462,10 @@ int pd_task(void *data)
 
 		case PD_STATE_SNK_SWAP_STANDBY:
 			if (state_changed(hba)) {
+
+				if (hba->charger_det_notify)
+					hba->charger_det_notify(0);
+
 				/*Switch to Rp*/
 				pd_set_power_role(hba, PD_ROLE_SOURCE, 0);
 				typec_vbus_det_enable(hba, 1);
