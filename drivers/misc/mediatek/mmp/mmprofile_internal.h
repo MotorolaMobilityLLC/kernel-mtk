@@ -27,19 +27,19 @@ extern "C" {
 
 typedef struct {
 	unsigned int parentId;
-	char name[MMProfileEventNameMaxLen + 1];
+	char name[MMPROFILE_EVENT_NAME_MAX_LEN + 1];
 } MMProfile_EventInfo_t;
 
 struct MMProfile_EventSetting_t {
-	MMP_Event event;
+	mmp_event event;
 	unsigned int enable;
 	unsigned int recursive;
 	unsigned int ftrace;
 };
 
 struct MMProfile_EventLog_t {
-	MMP_Event event;
-	MMP_LogType type;
+	mmp_event event;
+	mmp_log_type type;
 	unsigned int data1;
 	unsigned int data2;
 };
@@ -73,21 +73,21 @@ typedef struct {
 
 typedef struct {
 	unsigned int cookie;
-	MMP_MetaDataType data_type;
+	mmp_metadata_type data_type;
 	unsigned int data_size;
 	unsigned int data_offset;
 } MMProfile_MetaData_t;
 
 typedef struct {
 	unsigned int id;
-	MMP_LogType type;
+	mmp_log_type type;
 	MMP_MetaData_t meta_data;
 } MMProfile_MetaLog_t;
 
 #ifdef CONFIG_COMPAT
 struct Compat_MMProfile_MetaLog_t {
 	unsigned int id;
-	MMP_LogType type;
+	mmp_log_type type;
 	struct Compat_MMP_MetaData_t meta_data;
 };
 #endif
