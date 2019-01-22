@@ -17,10 +17,6 @@
 #include "val_types_private.h"
 #include "hal_types_public.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define ADD_QUEUE(queue, index, q_type, q_address, q_offset, q_value, q_mask)       \
 	{                                                                                   \
 		queue[index].type     = q_type;                                                   \
@@ -160,10 +156,5 @@ typedef struct _HAL_HANDLE_T_ {
 	VAL_BOOL_T      bProfHWTime;        /* /< bProfHWTime */
 	VAL_UINT64_T    u8HWTime[2];        /* /< u8HWTime */
 } HAL_HANDLE_T;
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* #ifndef _HAL_TYPES_PRIVATE_H_ */
