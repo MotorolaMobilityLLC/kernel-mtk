@@ -24,7 +24,7 @@
 /* --- global ---- */
 #define MC_FC_INVALID	((u32)0)  /**< Invalid FastCall ID */
 
-#if (defined(CONFIG_ARM64) && !defined(MC_ARMV7_FC)) || (defined(MC_AARCH32_FC))
+#if !defined(MC_ARMV7_FC)
 
 #define FASTCALL_OWNER_TZOS_32  (0xBF000000) /**Trusted OS Fastcalls SMC32 */
 
