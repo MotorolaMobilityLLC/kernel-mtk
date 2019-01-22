@@ -166,7 +166,10 @@ ifeq ($(MTK_DDK_DEBUG),y)
 pvrsrvkm-y += \
  services/server/common/ri_server.o \
  generated/ri_bridge/client_ri_direct_bridge.o \
- generated/ri_bridge/server_ri_bridge.o 
+ generated/ri_bridge/server_ri_bridge.o \
+ generated/devicememhistory_bridge/server_devicememhistory_bridge.o \
+ generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
+ services/server/common/devicemem_history_server.o
 endif
 
 
@@ -236,7 +239,9 @@ endif
 
 ifeq ($(MTK_DDK_DEBUG),y)
 ccflags-y += \
- -I$(RGX_TOP)/generated/ri_bridge 
+ -I$(RGX_TOP)/generated/ri_bridge \
+ -I$(RGX_TOP)/generated/devicememhistory_bridge
+
 endif
 
 
