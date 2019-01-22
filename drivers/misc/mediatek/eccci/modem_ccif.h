@@ -30,8 +30,8 @@
 
 struct ccif_flow_control {
 	unsigned int head_magic;
-	volatile unsigned int ap_busy_queue;
-	volatile unsigned int md_busy_queue;
+	unsigned int ap_busy_queue;
+	unsigned int md_busy_queue;
 	unsigned int tail_magic;
 };
 
