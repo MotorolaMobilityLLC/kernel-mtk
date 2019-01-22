@@ -28,7 +28,7 @@
 
 #include "phy-mtk.h"
 #include "phy-mtk-ssusb-reg.h"
-#include "mtk-phy-hal.h"
+#include <mtk-ssusb-hal.h>
 
 static DEFINE_SPINLOCK(mu3phy_clock_lock);
 
@@ -93,7 +93,7 @@ int u3phyread32(void __iomem *addr)
 }
 
 #ifdef CONFIG_U3_PHY_SMT_LOOP_BACK_SUPPORT
-bool usb_phy_u3_loop_back_test(struct mtk_phy_instance *instance)
+bool phy_u3_loop_back_test(struct mtk_phy_instance *instance)
 {
 	int reg;
 	bool loop_back_ret = false;
@@ -195,7 +195,7 @@ bool usb_phy_u3_loop_back_test(struct mtk_phy_instance *instance)
 #endif
 
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
-static void usb_phy_sib_enable(struct mtk_phy_instance *instance, bool enable)
+static void phy_sib_enable(struct mtk_phy_instance *instance, bool enable)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 
@@ -246,7 +246,7 @@ static void usb_phy_sib_enable(struct mtk_phy_instance *instance, bool enable)
 
 #endif
 
-static int usb_phy_slew_rate_calibration(struct mtk_phy_instance *instance)
+static int phy_slew_rate_calibration(struct mtk_phy_instance *instance)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 	int i = 0;
@@ -301,7 +301,7 @@ static int usb_phy_slew_rate_calibration(struct mtk_phy_instance *instance)
 	return fgRet;
 }
 
-static int usb_phy_init_soc(struct mtk_phy_instance *instance)
+static int phy_init_soc(struct mtk_phy_instance *instance)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 	struct device_node *of_node = instance->phy->dev.of_node;
@@ -400,7 +400,7 @@ reg_done:
 }
 
 
-static void usb_phy_savecurrent(struct mtk_phy_instance *instance)
+static void phy_savecurrent(struct mtk_phy_instance *instance)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 
@@ -453,7 +453,7 @@ reg_done:
 	usb_enable_clock(phy_drv, false);
 }
 
-static void usb_phy_recover(struct mtk_phy_instance *instance)
+static void phy_recover(struct mtk_phy_instance *instance)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 
@@ -493,7 +493,7 @@ static void usb_phy_recover(struct mtk_phy_instance *instance)
 	u3phywrite32(U3D_U2PHYDTM1, RG_AVALID_OFST, RG_AVALID, 1);
 	u3phywrite32(U3D_U2PHYDTM1, RG_SESSEND_OFST, RG_SESSEND, 0);
 
-	usb_phy_slew_rate_calibration(instance);
+	phy_slew_rate_calibration(instance);
 
 }
 
@@ -529,7 +529,7 @@ static int charger_detect_release(struct mtk_phy_instance *instance)
 	return 0;
 }
 
-static void usb_phy_charger_switch_bc11(struct mtk_phy_instance *instance, bool on)
+static void phy_charger_switch_bc11(struct mtk_phy_instance *instance, bool on)
 {
 	if (on)
 		charger_detect_init(instance);
@@ -537,7 +537,7 @@ static void usb_phy_charger_switch_bc11(struct mtk_phy_instance *instance, bool 
 		charger_detect_release(instance);
 }
 
-static int usb_phy_lpm_enable(struct mtk_phy_instance  *instance, bool on)
+static int phy_lpm_enable(struct mtk_phy_instance  *instance, bool on)
 {
 	phy_printk(K_DEBUG, "%s+ = %d\n", __func__, on);
 
@@ -549,7 +549,7 @@ static int usb_phy_lpm_enable(struct mtk_phy_instance  *instance, bool on)
 	return 0;
 }
 
-static int usb_phy_host_mode(struct mtk_phy_instance  *instance, bool on)
+static int phy_host_mode(struct mtk_phy_instance  *instance, bool on)
 {
 	phy_printk(K_DEBUG, "%s+ = %d\n", __func__, on);
 
@@ -564,7 +564,7 @@ static int usb_phy_host_mode(struct mtk_phy_instance  *instance, bool on)
 	return 0;
 }
 
-static int usb_phy_ioread(struct mtk_phy_instance  *instance, int mode, u32 reg)
+static int phy_ioread(struct mtk_phy_instance  *instance, int mode, u32 reg)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 
@@ -576,7 +576,7 @@ static int usb_phy_ioread(struct mtk_phy_instance  *instance, int mode, u32 reg)
 		return 0;
 }
 
-static int usb_phy_iowrite(struct mtk_phy_instance  *instance, int mode, u32 val, u32 reg)
+static int phy_iowrite(struct mtk_phy_instance  *instance, int mode, u32 val, u32 reg)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 
@@ -589,7 +589,7 @@ static int usb_phy_iowrite(struct mtk_phy_instance  *instance, int mode, u32 val
 }
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-static bool usb_phy_check_in_uart_mode(struct mtk_phy_instance *instance)
+static bool phy_check_in_uart_mode(struct mtk_phy_instance *instance)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 	int usb_port_mode;
@@ -608,11 +608,11 @@ static bool usb_phy_check_in_uart_mode(struct mtk_phy_instance *instance)
 		return false;
 }
 
-static void usb_phy_switch_to_uart(struct mtk_phy_instance *instance)
+static void phy_switch_to_uart(struct mtk_phy_instance *instance)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
 
-	if (usb_phy_check_in_uart_mode(instance)) {
+	if (phy_check_in_uart_mode(instance)) {
 		phy_printk(K_DEBUG, "%s+ UART_MODE\n", __func__);
 		return;
 	}
@@ -641,13 +641,13 @@ static void usb_phy_switch_to_uart(struct mtk_phy_instance *instance)
 }
 
 
-static void usb_phy_switch_to_usb(struct mtk_phy_instance *instance)
+static void phy_switch_to_usb(struct mtk_phy_instance *instance)
 {
 	instance->uart_mode = false;
 
 	u3phywrite32(U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
 
-	usb_phy_init_soc(instance);
+	phy_init_soc(instance);
 }
 #endif
 
@@ -734,24 +734,24 @@ static const struct mtk_phy_interface ssusb_phys[] = {
 	.name		= "port0",
 	.port_num	= 0,
 	.reg_offset = 0x800,
-	.usb_phy_init = usb_phy_init_soc,
-	.usb_phy_savecurrent = usb_phy_savecurrent,
-	.usb_phy_recover  = usb_phy_recover,
-	.usb_phy_switch_to_bc11 = usb_phy_charger_switch_bc11,
-	.usb_phy_lpm_enable = usb_phy_lpm_enable,
-	.usb_phy_host_mode = usb_phy_host_mode,
-	.usb_phy_io_read = usb_phy_ioread,
-	.usb_phy_io_write = usb_phy_iowrite,
+	.usb_phy_init = phy_init_soc,
+	.usb_phy_savecurrent = phy_savecurrent,
+	.usb_phy_recover  = phy_recover,
+	.usb_phy_switch_to_bc11 = phy_charger_switch_bc11,
+	.usb_phy_lpm_enable = phy_lpm_enable,
+	.usb_phy_host_mode = phy_host_mode,
+	.usb_phy_io_read = phy_ioread,
+	.usb_phy_io_write = phy_iowrite,
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-	.usb_phy_switch_to_usb = usb_phy_switch_to_usb,
-	.usb_phy_switch_to_uart = usb_phy_switch_to_uart,
-	.usb_phy_check_in_uart_mode = usb_phy_check_in_uart_mode,
+	.usb_phy_switch_to_usb = phy_switch_to_usb,
+	.usb_phy_switch_to_uart = phy_switch_to_uart,
+	.usb_phy_check_in_uart_mode = phy_check_in_uart_mode,
 #endif
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
-	.usb_phy_sib_enable_switch = usb_phy_sib_enable,
+	.usb_phy_sib_enable_switch = phy_sib_enable,
 #endif
 #ifdef CONFIG_U3_PHY_SMT_LOOP_BACK_SUPPORT
-	.usb_phy_u3_loop_back_test = usb_phy_u3_loop_back_test,
+	.usb_phy_u3_loop_back_test = phy_u3_loop_back_test,
 #endif
 	},
 };
