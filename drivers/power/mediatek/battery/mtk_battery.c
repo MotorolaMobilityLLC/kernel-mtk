@@ -1723,6 +1723,38 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_err("Get POWERON_SYSTEM_IBOOT failed\n");
 	}
 
+	if (!of_property_read_u32(np, "FGC_FGV_TH1", &val)) {
+		fg_cust_data.difference_fgc_fgv_th1 = (int)val;
+		bm_debug("Get FGC_FGV_TH1: %d\n",
+			 fg_cust_data.difference_fgc_fgv_th1);
+	} else {
+		bm_err("Get FGC_FGV_TH1 failed\n");
+	}
+
+	if (!of_property_read_u32(np, "FGC_FGV_TH2", &val)) {
+		fg_cust_data.difference_fgc_fgv_th2 = (int)val;
+		bm_debug("Get FGC_FGV_TH2: %d\n",
+			 fg_cust_data.difference_fgc_fgv_th2);
+	} else {
+		bm_err("Get FGC_FGV_TH2 failed\n");
+	}
+
+	if (!of_property_read_u32(np, "FGC_FGV_TH3", &val)) {
+		fg_cust_data.difference_fgc_fgv_th3 = (int)val;
+		bm_debug("Get FGC_FGV_TH3: %d\n",
+			 fg_cust_data.difference_fgc_fgv_th3);
+	} else {
+		bm_err("Get FGC_FGV_TH3 failed\n");
+	}
+
+	if (!of_property_read_u32(np, "UISOC_UPDATE_T", &val)) {
+		fg_cust_data.uisoc_update_type = (int)val;
+		bm_debug("Get UISOC_UPDATE_T: %d\n",
+			 fg_cust_data.uisoc_update_type);
+	} else {
+		bm_err("Get UISOC_UPDATE_T failed\n");
+	}
+
 	if (!of_property_read_u32(np, "UIFULLLIMIT_EN", &val)) {
 		fg_cust_data.ui_full_limit_en = (int)val;
 		bm_debug("Get UIFULLLIMIT_EN: %d\n",
