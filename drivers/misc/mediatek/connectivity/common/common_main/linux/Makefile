@@ -2,6 +2,7 @@ ifeq ($(CONFIG_MTK_COMBO), y)
 
 ccflags-y += \
 	-I$(src)/../linux/include \
+	-I$(src)/../platform/include \
 	-I$(src)/../core/include \
 	-I$(src)/../include \
 	-I$(src)/../../common_detect \
