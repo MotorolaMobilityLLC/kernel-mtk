@@ -300,6 +300,8 @@ static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
 #endif
+
+	__spm_sync_pcm_flags(pwrctrl);
 }
 
 static void spm_sodi_post_process(void)
