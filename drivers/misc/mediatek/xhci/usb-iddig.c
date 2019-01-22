@@ -116,6 +116,16 @@ bool mtk_is_usb_id_pin_short_gnd(void)
 	return (mtk_idpin_cur_stat != IDPIN_OUT) ? true : false;
 }
 
+void mtk_set_host_mode_in_host(void)
+{
+	mtk_idpin_cur_stat = IDPIN_IN_HOST;
+}
+
+void mtk_set_host_mode_out(void)
+{
+	mtk_idpin_cur_stat = IDPIN_OUT;
+}
+
 
 void mtk_enable_host(void)
 {
