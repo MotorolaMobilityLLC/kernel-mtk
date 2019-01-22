@@ -692,7 +692,6 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 	spm_dpidle_before_wfi(cpu);
 
-	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
@@ -775,7 +774,6 @@ RESTORE_IRQ:
 #endif
 	mt_irq_mask_restore(&mask);
 	spin_unlock_irqrestore(&__spm_lock, flags);
-	lockdep_on();
 	spm_dpidle_after_wfi(cpu, wakesta.debug_flag);
 
 #if SPM_AEE_RR_REC

@@ -615,7 +615,6 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	/* enable APxGPT timer */
 	soidle_before_wfi(cpu);
 
-	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	mask = kmalloc(sizeof(struct mtk_irq_mask), GFP_ATOMIC);

@@ -299,7 +299,6 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	/* enable APxGPT timer */
 	soidle3_before_wfi(cpu);
 
-	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	mask = kmalloc(sizeof(struct mtk_irq_mask), GFP_ATOMIC);
@@ -391,7 +390,6 @@ RESTORE_IRQ:
 
 UNLOCK_SPM:
 	spin_unlock_irqrestore(&__spm_lock, flags);
-	lockdep_on();
 
 	/* stop APxGPT timer and enable caore0 local timer */
 	soidle3_after_wfi(cpu);
