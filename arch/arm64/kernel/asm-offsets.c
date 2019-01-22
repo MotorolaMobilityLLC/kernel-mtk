@@ -38,6 +38,8 @@ int main(void)
   DEFINE(TI_ADDR_LIMIT,		offsetof(struct thread_info, addr_limit));
   DEFINE(TI_TASK,		offsetof(struct thread_info, task));
   DEFINE(TI_CPU,		offsetof(struct thread_info, cpu));
+  DEFINE(TI_CPU_EXCP,		offsetof(struct thread_info, cpu_excp));
+  DEFINE(TI_REGS_ON_EXCP,	offsetof(struct thread_info, regs_on_excp));
   BLANK();
   DEFINE(THREAD_CPU_CONTEXT,	offsetof(struct task_struct, thread.cpu_context));
   BLANK();
