@@ -120,6 +120,12 @@ bool fg_time_en;
 struct fgtimer tracking_timer;
 
 static bool gDisableGM30;
+
+bool is_fg_disable(void)
+{
+	return gDisableGM30;
+}
+
 CHARGER_TYPE pre_chr_type;
 
 int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
