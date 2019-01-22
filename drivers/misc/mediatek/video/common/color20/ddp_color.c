@@ -1082,7 +1082,8 @@ static unsigned long g_tdshp1_va;
 #elif defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define TDSHP_PA_BASE   0x14009000
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || \
+	defined(CONFIG_MACH_MT6758)
 #define TDSHP_PA_BASE   0x14007000
 #else
 #define TDSHP_PA_BASE   0x14006000
@@ -1092,7 +1093,7 @@ static unsigned long g_tdshp1_va;
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
 #define MDP_COLOR_PA_BASE 0x1400A000
-#elif defined(CONFIG_MACH_MT6763)
+#elif defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 #define MDP_COLOR_PA_BASE 0x1400E000
 #else
 #define MDP_COLOR_PA_BASE 0x14007000
@@ -2691,7 +2692,7 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 		g_config_color30 = true;
 	}
 #endif
-#if defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 	g_config_color30 = true;
 #endif
 
