@@ -2512,7 +2512,7 @@ sub process {
 # Check for using deprecated configs mistakes
 		if(@deprecated_config) {
 			foreach (@deprecated_config) {
-				if($line =~ /$_/) {
+				if($line =~ /^\+.*($_)/) {
 					ERROR("USE_DEPRECATED_CONFIG",
 						"please do not use deprecated config '$_'\n" . $herecurr);
 				}
