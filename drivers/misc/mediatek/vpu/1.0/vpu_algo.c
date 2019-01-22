@@ -57,7 +57,7 @@ struct vpu_prop_desc g_vpu_prop_descs[VPU_NUM_PROPS] = {
 int vpu_init_algo(struct vpu_device *vpu_device)
 {
 	uint16_t i = 0;
-	uint32_t prop_data_offset = 0;
+	uint32_t offset = 0;
 	uint32_t prop_data_length;
 	struct vpu_prop_desc *prop_desc;
 
@@ -65,12 +65,12 @@ int vpu_init_algo(struct vpu_device *vpu_device)
 
 	for (i = 0; i < VPU_NUM_PROPS; i++) {
 		prop_desc = &g_vpu_prop_descs[i];
-		prop_desc->offset = prop_data_offset;
+		prop_desc->offset = offset;
 		prop_data_length = prop_desc->count * g_vpu_prop_type_size[prop_desc->type];
-		prop_data_offset += prop_data_length;
+		offset += prop_data_length;
 	}
 	/* the total length = last offset + last data length */
-	prop_info_data_length = prop_data_offset;
+	prop_info_data_length = offset;
 
 	return 0;
 }
@@ -142,6 +142,46 @@ err:
 	return -ENOENT;
 }
 
+static int vpu_calc_prop_offset(struct vpu_prop_desc *descs, uint32_t count,
+		uint32_t *length) {
+
+	struct vpu_prop_desc *prop_desc;
+	uint32_t offset = 0;
+	uint32_t alignment = 1;
+	uint32_t i, tmp;
+	size_t type_size;
+
+	/* get the alignment of struct packing */
+	for (i = 0; i < count; i++) {
+		prop_desc = &descs[i];
+		type_size = g_vpu_prop_type_size[prop_desc->type];
+
+		if (alignment < type_size)
+			alignment = type_size;
+	}
+
+	/* calculate every prop's offset  */
+	for (i = 0; i < count; i++) {
+		prop_desc = &descs[i];
+		type_size = g_vpu_prop_type_size[prop_desc->type];
+
+		/* align offset with next data type */
+		tmp = offset % type_size;
+		if (tmp)
+			offset += type_size - tmp;
+
+		/* padding if the remainder is not enough */
+		tmp = alignment - offset % alignment;
+		if (tmp < type_size)
+			offset += tmp;
+
+		prop_desc->offset = offset;
+		offset += prop_desc->count * type_size;
+	}
+	*length = offset;
+
+	return 0;
+}
 
 int vpu_create_algo(char *name, struct vpu_algo **ralgo)
 {
@@ -163,6 +203,10 @@ int vpu_create_algo(char *name, struct vpu_algo **ralgo)
 	CHECK_RET("vpu_hw_load_algo failed!\n");
 	ret = vpu_hw_get_algo_info(algo);
 	CHECK_RET("vpu_hw_get_algo_info failed!\n");
+	ret = vpu_calc_prop_offset(algo->info_descs, algo->info_desc_count, &algo->info_length);
+	CHECK_RET("vpu_calc_prop_offset[info] failed!\n");
+	ret = vpu_calc_prop_offset(algo->sett_descs, algo->sett_desc_count, &algo->sett_length);
+	CHECK_RET("vpu_calc_prop_offset[sett] failed!\n");
 
 	*ralgo = algo;
 	return 0;
