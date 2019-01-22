@@ -62,7 +62,7 @@
  */
 static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev);
 static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
-		unsigned int volt_old, unsigned int volt_new);
+		unsigned int volt_old, unsigned int volt_new, unsigned int vsram_volt_old, unsigned int vsram_volt_new);
 static void __mt_gpufreq_set_fixed_volt(int fixed_volt);
 static void __mt_gpufreq_set_fixed_freq(int fixed_freq);
 static void __mt_gpufreq_bucks_enable(void);
@@ -70,14 +70,18 @@ static void __mt_gpufreq_bucks_disable(void);
 static void __mt_gpufreq_vgpu_set_mode(unsigned int mode);
 static unsigned int __mt_gpufreq_get_cur_volt(void);
 static unsigned int __mt_gpufreq_get_cur_freq(void);
+static unsigned int __mt_gpufreq_get_cur_vsram_volt(void);
 static int __mt_gpufreq_get_opp_idx_by_volt(unsigned int volt);
+static unsigned int __mt_gpufreq_get_vsram_volt_by_target_volt(unsigned int volt);
 static unsigned int __mt_gpufreq_get_limited_freq_by_power(unsigned int limited_power);
 static enum g_post_divider_power_enum __mt_gpufreq_get_post_divider_power(unsigned int freq,
 		unsigned int efuse);
 static void __mt_gpufreq_switch_to_clksrc(enum g_clock_source_enum clksrc);
 static void __mt_gpufreq_kick_pbm(int enable);
 static void __mt_gpufreq_clock_switch(unsigned int freq_new);
-static void __mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new);
+static void __mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new,
+		unsigned int vsram_volt_old, unsigned int vsram_volt_new);
+static void __mt_gpufreq_volt_switch_without_vsram_volt(unsigned int volt_old, unsigned int volt_new);
 static void __mt_gpufreq_batt_oc_protect(unsigned int limited_idx);
 #ifdef MT_GPUFREQ_BATT_PERCENT_PROTECT
 static void __mt_gpufreq_batt_percent_protect(unsigned int limited_index);
@@ -88,6 +92,11 @@ static void __mt_gpufreq_update_max_limited_idx(void);
 static unsigned int __mt_gpufreq_calculate_dds(unsigned int freq_khz,
 		enum g_post_divider_power_enum post_divider_power);
 static void __mt_gpufreq_setup_opp_power_table(int num);
+static void __mt_gpufreq_calculate_springboard_opp_index(void);
+static void __mt_gpufreq_vsram_gpu_volt_switch(enum g_volt_switch_enum switch_way, unsigned int sfchg_rate,
+		unsigned int volt_old, unsigned int volt_new);
+static void __mt_gpufreq_vgpu_volt_switch(enum g_volt_switch_enum switch_way, unsigned int sfchg_rate,
+		unsigned int volt_old, unsigned int volt_new);
 
 
 /**
@@ -182,10 +191,12 @@ static unsigned int g_segment_id;
 static unsigned int g_opp_idx_num;
 static unsigned int g_cur_opp_freq;
 static unsigned int g_cur_opp_volt;
+static unsigned int g_cur_opp_vsram_volt;
 static unsigned int g_cur_opp_idx;
 static unsigned int g_cur_opp_cond_idx;
 static unsigned int g_keep_opp_freq;
 static unsigned int g_keep_opp_freq_idx;
+static unsigned int g_fixed_vsram_volt_idx;
 static unsigned int g_fixed_freq;
 static unsigned int g_fixed_volt;
 static unsigned int g_max_limited_idx;
@@ -196,6 +207,7 @@ static unsigned int g_vgpu_sfchg_frate;
 static unsigned int g_vsram_sfchg_rrate;
 static unsigned int g_vsram_sfchg_frate;
 static unsigned int g_DVFS_off_by_ptpod_idx;
+static unsigned int g_opp_springboard_idx;
 #ifdef MT_GPUFREQ_BATT_OC_PROTECT
 static bool g_batt_oc_limited_ignore_state;
 static unsigned int g_batt_oc_level;
@@ -316,7 +328,8 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 	}
 
 	/* set to the target frequency and voltage */
-	__mt_gpufreq_set(g_cur_opp_freq, target_freq, g_cur_opp_volt, target_volt);
+	__mt_gpufreq_set(g_cur_opp_freq, target_freq, g_cur_opp_volt, target_volt,
+			g_cur_opp_vsram_volt, __mt_gpufreq_get_vsram_volt_by_target_volt(target_volt));
 
 	g_cur_opp_idx = target_idx;
 	g_cur_opp_cond_idx = target_cond_idx;
@@ -497,9 +510,12 @@ void mt_gpufreq_restore_default_volt(void)
 				__func__, i, g_opp_table[i].gpufreq_volt);
 	}
 
-	__mt_gpufreq_volt_switch(g_cur_opp_volt, g_opp_table[g_cur_opp_cond_idx].gpufreq_volt);
+	__mt_gpufreq_calculate_springboard_opp_index();
+
+	__mt_gpufreq_volt_switch_without_vsram_volt(g_cur_opp_volt, g_opp_table[g_cur_opp_cond_idx].gpufreq_volt);
 
 	g_cur_opp_volt = g_opp_table[g_cur_opp_cond_idx].gpufreq_volt;
+	g_cur_opp_vsram_volt = g_opp_table[g_cur_opp_cond_idx].gpufreq_vsram;
 
 	mutex_unlock(&mt_gpufreq_lock);
 }
@@ -521,9 +537,12 @@ unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array
 				__func__, i, g_opp_table[i].gpufreq_volt);
 	}
 
-	__mt_gpufreq_volt_switch(g_cur_opp_volt, g_opp_table[g_cur_opp_cond_idx].gpufreq_volt);
+	__mt_gpufreq_calculate_springboard_opp_index();
+
+	__mt_gpufreq_volt_switch_without_vsram_volt(g_cur_opp_volt, g_opp_table[g_cur_opp_cond_idx].gpufreq_volt);
 
 	g_cur_opp_volt = g_opp_table[g_cur_opp_cond_idx].gpufreq_volt;
+	g_cur_opp_vsram_volt = g_opp_table[g_cur_opp_cond_idx].gpufreq_vsram;
 
 	mutex_unlock(&mt_gpufreq_lock);
 
@@ -911,16 +930,17 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 
 	seq_printf(m, "g_cur_opp_idx = %d, g_cur_opp_cond_idx = %d\n",
 			g_cur_opp_idx, g_cur_opp_cond_idx);
-	seq_printf(m, "g_cur_opp_freq = %d, g_cur_opp_volt = %d\n",
-			g_cur_opp_freq, g_cur_opp_volt);
-	seq_printf(m, "real freq = %d, real volt = %d\n",
-			__mt_gpufreq_get_cur_freq(), __mt_gpufreq_get_cur_volt());
+	seq_printf(m, "g_cur_opp_freq = %d, g_cur_opp_volt = %d, g_cur_opp_vsram_volt = %d\n",
+			g_cur_opp_freq, g_cur_opp_volt, g_cur_opp_vsram_volt);
+	seq_printf(m, "real freq = %d, real volt = %d, real vsram_volt = %d\n",
+			__mt_gpufreq_get_cur_freq(), __mt_gpufreq_get_cur_volt(), __mt_gpufreq_get_cur_vsram_volt());
 	seq_printf(m, "clock freq = %d\n", mt_get_ckgen_freq(9));
 	seq_printf(m, "g_segment_id = %d\n", g_segment_id);
 	seq_printf(m, "g_volt_enable_state = %d\n", g_volt_enable_state);
 	seq_printf(m, "g_opp_stress_test_state = %d\n", g_opp_stress_test_state);
 	seq_printf(m, "g_DVFS_off_by_ptpod_idx = %d\n", g_DVFS_off_by_ptpod_idx);
 	seq_printf(m, "g_max_limited_idx = %d\n", g_max_limited_idx);
+	seq_printf(m, "g_opp_springboard_idx = %d\n", g_opp_springboard_idx);
 	seq_printf(m, "gpu_loading = %d\n", gpu_loading);
 
 	for (i = 0; i < NUMBER_OF_LIMITED_IDX; i++)
@@ -1230,6 +1250,7 @@ static ssize_t mt_gpufreq_fixed_freq_volt_proc_write(struct file *file,
 			g_fixed_volt = 0;
 		} else {
 			g_cur_opp_freq = __mt_gpufreq_get_cur_freq();
+			fixed_volt = VOLT_NORMALIZATION(fixed_volt);
 			if (fixed_freq > g_cur_opp_freq) {
 				__mt_gpufreq_set_fixed_volt(fixed_volt);
 				__mt_gpufreq_set_fixed_freq(fixed_freq);
@@ -1303,25 +1324,41 @@ static int __mt_gpufreq_create_procfs(void)
  * - frequency ramp up need to wait voltage settle
  * - frequency ramp down do not need to wait voltage settle
  */
-static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
-		unsigned int volt_old, unsigned int volt_new)
+static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new, unsigned int volt_old, unsigned int volt_new,
+		unsigned int vsram_volt_old, unsigned int vsram_volt_new)
 {
-	gpufreq_pr_debug("@%s: freq: %d ---> %d, volt: %d ---> %d\n",
-			__func__, freq_old, freq_new, volt_old, volt_new);
+	gpufreq_pr_debug("@%s: freq: %d ---> %d, volt: %d ---> %d, vsram_volt: %d ---> %d\n",
+			__func__, freq_old, freq_new, volt_old, volt_new, vsram_volt_old, vsram_volt_new);
 
 	if (freq_new > freq_old) {
-		__mt_gpufreq_volt_switch(volt_old, volt_new);
+		if (vsram_volt_new > (volt_old + BUCK_VARIATION_MAX)) {
+			__mt_gpufreq_volt_switch(volt_old, g_opp_table[g_opp_springboard_idx].gpufreq_volt,
+					vsram_volt_old, g_opp_table[g_opp_springboard_idx].gpufreq_vsram);
+			__mt_gpufreq_volt_switch(g_opp_table[g_opp_springboard_idx].gpufreq_volt, volt_new,
+					g_opp_table[g_opp_springboard_idx].gpufreq_vsram, vsram_volt_new);
+		} else
+			__mt_gpufreq_volt_switch(volt_old, volt_new, vsram_volt_old, vsram_volt_new);
+
 		__mt_gpufreq_clock_switch(freq_new);
 	} else {
 		__mt_gpufreq_clock_switch(freq_new);
-		__mt_gpufreq_volt_switch(volt_old, volt_new);
+
+		if (vsram_volt_old > (volt_new + BUCK_VARIATION_MAX)) {
+			__mt_gpufreq_volt_switch(volt_old, g_opp_table[g_opp_springboard_idx].gpufreq_volt,
+					vsram_volt_old, g_opp_table[g_opp_springboard_idx].gpufreq_vsram);
+			__mt_gpufreq_volt_switch(g_opp_table[g_opp_springboard_idx].gpufreq_volt, volt_new,
+					g_opp_table[g_opp_springboard_idx].gpufreq_vsram, vsram_volt_new);
+		} else {
+			__mt_gpufreq_volt_switch(volt_old, volt_new, vsram_volt_old, vsram_volt_new);
+		}
 	}
 
-	gpufreq_pr_debug("@%s: real_freq = %d, real_volt = %d\n",
-			__func__, mt_get_ckgen_freq(9), __mt_gpufreq_get_cur_volt());
+	gpufreq_pr_debug("@%s: real_freq = %d, real_volt = %d, real_vsram_volt = %d\n", __func__,
+			mt_get_ckgen_freq(9), __mt_gpufreq_get_cur_volt(), __mt_gpufreq_get_cur_vsram_volt());
 
 	g_cur_opp_freq = freq_new;
 	g_cur_opp_volt = volt_new;
+	g_cur_opp_vsram_volt = vsram_volt_new;
 
 	__mt_gpufreq_kick_pbm(1);
 }
@@ -1390,71 +1427,98 @@ static void __mt_gpufreq_switch_to_clksrc(enum g_clock_source_enum clksrc)
 /*
  * switch voltage and vsram via PMIC
  */
-static void __mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
+static void __mt_gpufreq_volt_switch_without_vsram_volt(unsigned int volt_old, unsigned int volt_new)
 {
-	unsigned int vsram_new;
-	unsigned int vsram_old;
-	unsigned int max_diff;
-	unsigned int steps;
-	unsigned int sfchg_rate_vgpu;
-	unsigned int sfchg_rate_vsram;
-	int i;
+	unsigned int vsram_volt_new, vsram_volt_old;
 
 	volt_new = VOLT_NORMALIZATION(volt_new);
 
-	gpufreq_pr_debug("@%s: volt_new = %d, volt_old = %d\n",
-			__func__, volt_new, volt_old);
+	gpufreq_pr_debug("@%s: volt_new = %d, volt_old = %d\n", __func__, volt_new, volt_old);
 
-	i = __mt_gpufreq_get_opp_idx_by_volt(volt_new);
-	vsram_new = g_opp_table[i].gpufreq_vsram;
+	vsram_volt_new = __mt_gpufreq_get_vsram_volt_by_target_volt(volt_new);
+	vsram_volt_old = __mt_gpufreq_get_vsram_volt_by_target_volt(volt_old);
 
-	i = __mt_gpufreq_get_opp_idx_by_volt(volt_old);
-	vsram_old = g_opp_table[i].gpufreq_vsram;
+	__mt_gpufreq_volt_switch(volt_old, volt_new, vsram_volt_old, vsram_volt_new);
+}
 
-	gpufreq_pr_debug("@%s: vsram_new = %d, vsram_old = %d\n",
-			__func__, vsram_new, vsram_old);
+/*
+ * switch voltage and vsram via PMIC
+ */
+static void __mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new,
+		unsigned int vsram_volt_old, unsigned int vsram_volt_new)
+{
+	gpufreq_pr_debug("@%s: volt_new = %d, volt_old = %d, vsram_volt_new = %d, vsram_volt_old = %d\n",
+			__func__, volt_new, volt_old, vsram_volt_new, vsram_volt_old);
 
 	if (volt_new > volt_old) {
-		/* rising rate */
-		sfchg_rate_vsram = g_vsram_sfchg_rrate;
-		sfchg_rate_vgpu = g_vgpu_sfchg_rrate;
-
-		/* VSRAM_GPU */
-		regulator_set_voltage(g_pmic->reg_vsram_gpu, vsram_new*10, (SEG1_PMIC_MAX_VSRAM*10) + 125);
-		max_diff = vsram_new - vsram_old;
-		steps = (max_diff / DELAY_FACTOR) + 1;
-		gpufreq_pr_debug("@%s: udelay us(%d) = steps(%d) * sfchg_rate_vsram(%d)\n",
-				__func__, steps * sfchg_rate_vsram, steps, sfchg_rate_vsram);
-		udelay(steps * sfchg_rate_vsram);
-
-		/* VGPU */
-		regulator_set_voltage(g_pmic->reg_vgpu, volt_new*10, (SEG1_PMIC_MAX_VPROC*10) + 125);
-		max_diff = volt_new - volt_old;
-		steps = (max_diff / DELAY_FACTOR) + 1;
-		gpufreq_pr_debug("@%s: udelay us(%d) = steps(%d) * sfchg_rate_vgpu(%d)\n",
-				__func__, steps * sfchg_rate_vgpu, steps, sfchg_rate_vgpu);
-		udelay(steps * sfchg_rate_vgpu);
+		__mt_gpufreq_vsram_gpu_volt_switch(VOLT_RISING, g_vsram_sfchg_rrate, vsram_volt_old, vsram_volt_new);
+		__mt_gpufreq_vgpu_volt_switch(VOLT_RISING, g_vgpu_sfchg_rrate, volt_old, volt_new);
+		gpufreq_pr_debug("@%s: [RISING] vgpu_volt = %d, vsram_gpu_volt = %d\n", __func__,
+				regulator_get_voltage(g_pmic->reg_vgpu), regulator_get_voltage(g_pmic->reg_vsram_gpu));
 	} else {
-		/* falling rate */
-		sfchg_rate_vsram = g_vsram_sfchg_frate;
-		sfchg_rate_vgpu = g_vgpu_sfchg_frate;
-
-		/* VGPU */
-		regulator_set_voltage(g_pmic->reg_vgpu, volt_new*10, (SEG1_PMIC_MAX_VPROC*10) + 125);
-		max_diff = volt_old - volt_new;
-		steps = (max_diff / DELAY_FACTOR) + 1;
-		gpufreq_pr_debug("@%s: udelay us(%d) = steps(%d) * sfchg_rate_vgpu(%d)\n",
-				__func__, steps * sfchg_rate_vgpu, steps, sfchg_rate_vgpu);
-		udelay(steps * sfchg_rate_vgpu);
-
-		/* VSRAM_GPU */
-		regulator_set_voltage(g_pmic->reg_vsram_gpu, vsram_new*10, (SEG1_PMIC_MAX_VSRAM*10) + 125);
-		max_diff = vsram_old - vsram_new;
-		steps = (max_diff / DELAY_FACTOR) + 1;
-		gpufreq_pr_debug("@%s: udelay us(%d) = steps(%d) * sfchg_rate_vsram(%d)\n",
-				__func__, steps * sfchg_rate_vsram, steps, sfchg_rate_vsram);
-		udelay(steps * sfchg_rate_vsram);
+		__mt_gpufreq_vgpu_volt_switch(VOLT_FALLING, g_vgpu_sfchg_frate, volt_old, volt_new);
+		__mt_gpufreq_vsram_gpu_volt_switch(VOLT_FALLING, g_vsram_sfchg_frate, vsram_volt_old, vsram_volt_new);
+		gpufreq_pr_debug("@%s: [FALLING] vgpu_volt = %d, vsram_gpu_volt = %d\n", __func__,
+				regulator_get_voltage(g_pmic->reg_vgpu), regulator_get_voltage(g_pmic->reg_vsram_gpu));
 	}
+}
+
+/*
+ * calculate springboard opp index
+ * to avoid buck variation, the voltage between VGPU and VSRAM_GPU must be in 100mV ~ 250mV
+ * (Vgpu +- 6.25%, Vgpu_sram +- 47mV)
+ */
+static void __mt_gpufreq_calculate_springboard_opp_index(void)
+{
+	unsigned int i, upper_volt;
+
+	upper_volt = g_opp_table[g_opp_idx_num - 1].gpufreq_volt + BUCK_VARIATION_MAX;
+
+	for (i = 0; i < g_opp_idx_num; i++) {
+		if (g_opp_table[i].gpufreq_vsram <= upper_volt) {
+			g_opp_springboard_idx = i;
+			break;
+		}
+	}
+
+	gpufreq_pr_debug("@%s: upper_volt = %d, g_opp_springboard_idx = %d\n",
+			__func__, upper_volt, g_opp_springboard_idx);
+}
+
+/*
+ * switch VSRAM_GPU voltage via PMIC
+ */
+static void __mt_gpufreq_vsram_gpu_volt_switch(enum g_volt_switch_enum switch_way, unsigned int sfchg_rate,
+		unsigned int volt_old, unsigned int volt_new)
+{
+	unsigned int max_diff, steps;
+
+	max_diff = (switch_way == VOLT_RISING) ? (volt_new - volt_old) : (volt_old - volt_new);
+	steps = (max_diff / DELAY_FACTOR) + 1;
+
+	regulator_set_voltage(g_pmic->reg_vsram_gpu, volt_new * 10, VSRAM_GPU_MAX_VOLT * 10 + 125);
+	udelay(steps * sfchg_rate);
+
+	gpufreq_pr_debug("@%s: udelay us(%d) = steps(%d) * sfchg_rate(%d)\n",
+			__func__, steps * sfchg_rate, steps, sfchg_rate);
+}
+
+/*
+ * switch VGPU voltage via PMIC
+ */
+static void __mt_gpufreq_vgpu_volt_switch(enum g_volt_switch_enum switch_way, unsigned int sfchg_rate,
+		unsigned int volt_old, unsigned int volt_new)
+{
+	unsigned int max_diff, steps;
+
+	max_diff = (switch_way == VOLT_RISING) ? (volt_new - volt_old) : (volt_old - volt_new);
+	steps = (max_diff / DELAY_FACTOR) + 1;
+
+	regulator_set_voltage(g_pmic->reg_vgpu, volt_new * 10, VGPU_MAX_VOLT * 10 + 125);
+	udelay(steps * sfchg_rate);
+
+	gpufreq_pr_debug("@%s: udelay us(%d) = steps(%d) * sfchg_rate(%d)\n",
+			__func__, steps * sfchg_rate, steps, sfchg_rate);
 }
 
 /*
@@ -1550,8 +1614,9 @@ static void __mt_gpufreq_set_fixed_volt(int fixed_volt)
 	mt_gpufreq_voltage_enable_set(1);
 	gpufreq_pr_debug("@%s: now, g_fixed_freq = %d, g_fixed_volt = %d\n",
 			__func__, g_fixed_freq, g_fixed_volt);
-	__mt_gpufreq_volt_switch(g_cur_opp_volt, g_fixed_volt);
+	__mt_gpufreq_volt_switch_without_vsram_volt(g_cur_opp_volt, g_fixed_volt);
 	g_cur_opp_volt = g_fixed_volt;
+	g_cur_opp_vsram_volt = __mt_gpufreq_get_vsram_volt_by_target_volt(g_fixed_volt);
 }
 
 /*
@@ -1736,6 +1801,21 @@ static unsigned int __mt_gpufreq_get_cur_freq(void)
 }
 
 /*
+ * get current vsram voltage (mV * 100)
+ */
+static unsigned int __mt_gpufreq_get_cur_vsram_volt(void)
+{
+	unsigned int volt = 0;
+
+	/* WARRNING: regulator_get_voltage prints uV */
+	volt = regulator_get_voltage(g_pmic->reg_vsram_gpu) / 10;
+
+	gpufreq_pr_debug("@%s: volt = %d\n", __func__, volt);
+
+	return volt;
+}
+
+/*
  * get current voltage (mV * 100)
  */
 static unsigned int __mt_gpufreq_get_cur_volt(void)
@@ -1764,6 +1844,20 @@ static int __mt_gpufreq_get_opp_idx_by_volt(unsigned int volt)
 
 EXIT:
 	return i+1;
+}
+
+/*
+ * calculate vsram_volt via given volt
+ */
+static unsigned int __mt_gpufreq_get_vsram_volt_by_target_volt(unsigned int volt)
+{
+	unsigned int target_vsram;
+
+	if (volt > g_opp_table[g_fixed_vsram_volt_idx].gpufreq_volt)
+		target_vsram = volt + 10000;
+	else
+		target_vsram = g_opp_table[g_fixed_vsram_volt_idx].gpufreq_vsram;
+	return target_vsram;
 }
 
 /*
@@ -1978,6 +2072,7 @@ static void __mt_gpufreq_setup_opp_table(struct g_opp_table_info *freqs, int num
 	g_opp_idx_num = num;
 	g_max_limited_idx = 0;
 
+	__mt_gpufreq_calculate_springboard_opp_index();
 	__mt_gpufreq_setup_opp_power_table(num);
 }
 
@@ -2031,6 +2126,7 @@ static void __mt_gpufreq_set_initial(void)
 {
 	unsigned int cur_volt = 0;
 	unsigned int cur_freq = 0;
+	unsigned int cur_vsram_volt = 0;
 
 	mutex_lock(&mt_gpufreq_lock);
 
@@ -2043,14 +2139,17 @@ static void __mt_gpufreq_set_initial(void)
 
 	gpufreq_pr_debug("@%s: initial opp index = %d\n", __func__, g_cur_opp_cond_idx);
 
+	cur_vsram_volt = __mt_gpufreq_get_cur_vsram_volt();
 	cur_volt = __mt_gpufreq_get_cur_volt();
 	cur_freq = __mt_gpufreq_get_cur_freq();
 
 	__mt_gpufreq_set(cur_freq, g_opp_table[g_cur_opp_cond_idx].gpufreq_khz,
-			cur_volt, g_opp_table[g_cur_opp_cond_idx].gpufreq_volt);
+			cur_volt, g_opp_table[g_cur_opp_cond_idx].gpufreq_volt,
+			cur_vsram_volt, g_opp_table[g_cur_opp_cond_idx].gpufreq_vsram);
 
 	g_cur_opp_freq = g_opp_table[g_cur_opp_cond_idx].gpufreq_khz;
 	g_cur_opp_volt = g_opp_table[g_cur_opp_cond_idx].gpufreq_volt;
+	g_cur_opp_vsram_volt = g_opp_table[g_cur_opp_cond_idx].gpufreq_vsram;
 	g_cur_opp_idx = g_opp_table[g_cur_opp_cond_idx].gpufreq_idx;
 	g_cur_opp_cond_idx = g_cur_opp_idx;
 
@@ -2200,12 +2299,16 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif /* ifdef MT_GPUFREQ_STATIC_PWR_READY2USE */
 
 	/* setup OPP table by device ID */
-	if (g_segment_id == 1)
+	if (g_segment_id == MT6771_SEGMENT_1) {
 		__mt_gpufreq_setup_opp_table(g_opp_table_segment1, ARRAY_SIZE(g_opp_table_segment1));
-	else if (g_segment_id == 2)
+		g_fixed_vsram_volt_idx = 5;
+	} else if (g_segment_id == MT6771_SEGMENT_2) {
 		__mt_gpufreq_setup_opp_table(g_opp_table_segment2, ARRAY_SIZE(g_opp_table_segment2));
-	else if (g_segment_id == 3)
+		g_fixed_vsram_volt_idx = 3;
+	} else if (g_segment_id == MT6771_SEGMENT_3) {
 		__mt_gpufreq_setup_opp_table(g_opp_table_segment3, ARRAY_SIZE(g_opp_table_segment3));
+		g_fixed_vsram_volt_idx = 1;
+	}
 
 	/* setup PMIC init value */
 	g_vgpu_sfchg_rrate = __calculate_vgpu_sfchg_rate(true);
@@ -2213,13 +2316,10 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	g_vsram_sfchg_rrate = __calculate_vsram_sfchg_rate(true);
 	g_vsram_sfchg_frate = __calculate_vsram_sfchg_rate(false);
 
-	/* set VGPU */
-	regulator_set_voltage(g_pmic->reg_vgpu,
-			SEG1_PMIC_MAX_VPROC * 10, SEG1_PMIC_MAX_VPROC * 10 + 125);
-
 	/* set VSRAM_GPU */
-	regulator_set_voltage(g_pmic->reg_vsram_gpu,
-			SEG1_PMIC_MAX_VSRAM * 10, SEG1_PMIC_MAX_VSRAM * 10 + 125);
+	regulator_set_voltage(g_pmic->reg_vsram_gpu, VSRAM_GPU_MAX_VOLT * 10, VSRAM_GPU_MAX_VOLT * 10 + 125);
+	/* set VGPU */
+	regulator_set_voltage(g_pmic->reg_vgpu, VGPU_MAX_VOLT * 10, VGPU_MAX_VOLT * 10 + 125);
 
 	/* enable bucks (VGPU && VSRAM_GPU) enforcement */
 	if (regulator_enable(g_pmic->reg_vsram_gpu))
@@ -2245,10 +2345,11 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	/* setup initial frequency */
 	__mt_gpufreq_set_initial();
-	pr_info("[GPU/DVFS][INFO]@%s: current freq = %d KHz, current volt = %d mV, \t"
-			"g_cur_opp_freq = %d, g_cur_opp_volt = %d, g_cur_opp_idx = %d, g_cur_opp_cond_idx = %d\n",
-			__func__, __mt_gpufreq_get_cur_freq(), __mt_gpufreq_get_cur_volt() / 100,
-			g_cur_opp_freq, g_cur_opp_volt, g_cur_opp_idx, g_cur_opp_cond_idx);
+	pr_info("[GPU/DVFS][INFO]@%s: current freq = %d KHz, current volt = %d uV, \t"
+			"g_cur_opp_freq = %d, g_cur_opp_volt = %d, g_cur_opp_vsram_volt = %d, \t"
+			"g_cur_opp_idx = %d, g_cur_opp_cond_idx = %d\n",
+			__func__, __mt_gpufreq_get_cur_freq(), __mt_gpufreq_get_cur_volt() * 10,
+			g_cur_opp_freq, g_cur_opp_volt, g_cur_opp_vsram_volt, g_cur_opp_idx, g_cur_opp_cond_idx);
 
 #ifdef MT_GPUFREQ_LOW_BATT_VOLT_PROTECT
 	g_low_batt_limited_idx_lvl_0 = 0;
