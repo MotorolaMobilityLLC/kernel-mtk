@@ -1433,6 +1433,19 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		     },
 	 },
 	{
+	 .name = MT_SOC_CODEC_SPKSCPTXDAI_NAME,
+	 .ops = &mtk_codec_dai_1_ops,
+	 .playback = {
+		      .stream_name = MT_SOC_DL1SCPSPK_STREAM_NAME,
+		      .channels_min = 1,
+		      .channels_max = 2,
+		      .rate_min = 8000,
+		      .rate_max = 192000,
+		      .rates = SNDRV_PCM_RATE_8000_192000,
+		      .formats = SND_SOC_ADV_MT_FMTS,
+		      }
+	 },
+	{
 	 .name = MT_SOC_CODEC_VOICE_MD2DAI_NAME,
 	 .ops = &mtk_codec_dai_1_ops,
 	 .playback = {

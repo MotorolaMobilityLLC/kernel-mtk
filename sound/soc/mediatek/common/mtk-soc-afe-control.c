@@ -541,6 +541,26 @@ static unsigned int get_mcu_irq_mask(void)
 	return irq_mcu_mask;
 }
 
+int AudDrv_DSP_IRQ_handler(void *PrivateData)
+{
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL1]->mState == true)
+		Auddrv_DSP_DL1_Interrupt_Handler(PrivateData);
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL2]->mState == true)
+		Auddrv_DL2_Interrupt_Handler();
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL]->mState == true)
+		Auddrv_UL1_Interrupt_Handler();
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_AWB]->mState == true)
+		Auddrv_AWB_Interrupt_Handler();
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DAI]->mState == true)
+		Auddrv_DAI_Interrupt_Handler();
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->mState == true)
+		Auddrv_UL2_Interrupt_Handler();
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_MOD_DAI]->mState == true)
+		Auddrv_MOD_DAI_Interrupt_Handler();
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_HDMI]->mState == true)
+		Auddrv_HDMI_Interrupt_Handler();
+	return 0;
+}
 /*****************************************************************************
  * FUNCTION
  *  AudDrv_IRQ_handler / AudDrv_magic_tasklet
@@ -1782,7 +1802,7 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length,
 	pblock->pucPhysBufAddr = (kal_uint32)dma_addr;
 	pblock->pucVirtBufAddr = dma_area;
 
-	pr_warn("%s(), Afe_Buf_Length = %d, pucVirtBufAddr = %p, pblock->pucPhysBufAddr = 0x%x\n",
+	pr_debug("%s(), Afe_Buf_Length = %d, pucVirtBufAddr = %p, pblock->pucPhysBufAddr = 0x%x\n",
 		__func__, Afe_Buf_Length, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 
 	/* check 32 bytes align */
@@ -2176,6 +2196,108 @@ void Auddrv_DAI_Interrupt_Handler(void)
 		}
 	}
 
+	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+}
+
+void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
+{
+	/* irq1 ISR handler */
+	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1];
+	kal_int32 Afe_consumed_bytes = 0;
+	kal_int32 HW_memory_index = 0;
+	kal_int32 HW_Cur_ReadIdx = 0;
+	AFE_BLOCK_T *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
+	unsigned long flags;
+
+	if (Mem_Block == NULL)
+		return;
+
+	if (get_voice_usb_status() &&
+	    GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1)) {
+		if (Mem_Block->substreamL != NULL) {
+			if (Mem_Block->substreamL->substream != NULL)
+				snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+		}
+		return;
+	}
+
+	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
+
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) == false) {
+		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+		return;
+	}
+
+	HW_Cur_ReadIdx = word_size_align(Afe_Get_Reg(AFE_DL1_CUR));
+
+	if (HW_Cur_ReadIdx == 0) {
+		PRINTK_AUDDRV("[Auddrv] HW_Cur_ReadIdx ==0\n");
+		HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
+	}
+
+	HW_memory_index = HW_Cur_ReadIdx - Afe_Get_Reg(AFE_DL1_BASE);
+
+	PRINTK_AUD_DL1
+	    ("[Auddrv] HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x Afe_Block->pucPhysBufAddr = 0x%x\n",
+	     HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
+
+	/* get hw consume bytes */
+	if (HW_memory_index > Afe_Block->u4DMAReadIdx) {
+		Afe_consumed_bytes = HW_memory_index - Afe_Block->u4DMAReadIdx;
+	} else {
+		Afe_consumed_bytes =
+		    Afe_Block->u4BufferSize + HW_memory_index - Afe_Block->u4DMAReadIdx;
+	}
+
+	Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
+
+	PRINTK_AUD_DL1("+%s ReadIdx:%x WriteIdx:%x,Remained:%x, consumed_bytes:%x HW_memory_index = %x\n",
+	__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
+	Afe_consumed_bytes, HW_memory_index);
+
+
+	if (Afe_Block->u4DataRemained < Afe_consumed_bytes
+	    || Afe_Block->u4DataRemained <= 0 || Afe_Block->u4DataRemained >
+	    Afe_Block->u4BufferSize) {
+		if (AFE_dL_Abnormal_context.u4UnderflowCnt < DL_ABNORMAL_CONTROL_MAX) {
+			AFE_dL_Abnormal_context.pucPhysBufAddr[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+									Afe_Block->pucPhysBufAddr;
+			AFE_dL_Abnormal_context.u4BufferSize[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+									Afe_Block->u4BufferSize;
+			AFE_dL_Abnormal_context.u4ConsumedBytes[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+									Afe_consumed_bytes;
+			AFE_dL_Abnormal_context.u4DataRemained[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+									Afe_Block->u4DataRemained;
+			AFE_dL_Abnormal_context.u4DMAReadIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+									Afe_Block->u4DMAReadIdx;
+			AFE_dL_Abnormal_context.u4HwMemoryIndex[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+									HW_memory_index;
+			AFE_dL_Abnormal_context.u4WriteIdx[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+									Afe_Block->u4WriteIdx;
+			AFE_dL_Abnormal_context.MemIfNum[AFE_dL_Abnormal_context.u4UnderflowCnt] =
+									Soc_Aud_Digital_Block_MEM_DL1;
+		}
+		AFE_dL_Abnormal_context.u4UnderflowCnt++;
+	} else {
+		PRINTK_AUD_DL1("+DL_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
+			       Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained,
+			       Afe_Block->u4WriteIdx);
+		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
+		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
+		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
+	}
+
+	AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->interruptTrigger = 1;
+	PRINTK_AUD_DL1("-DL_Handling normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
+		       Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
+
+	if (Mem_Block->substreamL != NULL) {
+		if (Mem_Block->substreamL->substream != NULL) {
+			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
+		}
+	}
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 }
 

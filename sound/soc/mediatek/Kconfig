@@ -143,3 +143,11 @@ config MTK_AUDIO_TUNNELING_SUPPORT
 	  The decoding process is done in DSP.
 	  Select Y to enable MTK_AUDIO_TUNNELING_SUPPORT for DSP playback.
 
+config MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
+	bool "speaker protection through dsp"
+	help
+	  Only enable this when we have DSP.
+	  This makes speaker protection processing from dsp side.
+	  The process is done in DSP.
+	  Select Y to enable CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT for DSP playback.
+
