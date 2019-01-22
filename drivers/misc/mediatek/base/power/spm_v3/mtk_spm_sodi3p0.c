@@ -261,7 +261,7 @@ struct spm_lp_scen __spm_sodi3 = {
 static bool gSpm_sodi3_en = true;
 
 
-static void spm_sodi3_pre_process(u32 operation_cond)
+static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	unsigned int value = 0;
@@ -274,9 +274,8 @@ static void spm_sodi3_pre_process(u32 operation_cond)
 								PMIC_RG_VSRAM_DVFS1_VOSEL_MASK,
 								PMIC_RG_VSRAM_DVFS1_VOSEL_SHIFT);
 
-	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
 								IDX_ALL_1_VSRAM_NORMAL,
-								PMIC_RG_VSRAM_DVFS1_VOSEL_ADDR,
 								value);
 
 	/* VSRAM_DVFS2 */
@@ -285,10 +284,13 @@ static void spm_sodi3_pre_process(u32 operation_cond)
 								PMIC_RG_VSRAM_DVFS2_VOSEL_MASK,
 								PMIC_RG_VSRAM_DVFS2_VOSEL_SHIFT);
 
-	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_ALLINONE,
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
 								IDX_ALL_2_VSRAM_NORMAL,
-								PMIC_RG_VSRAM_DVFS2_VOSEL_ADDR,
 								value);
+
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
+								IDX_ALL_VCORE_SUSPEND,
+								pwrctrl->vcore_volt_pmic_val);
 
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
@@ -318,7 +320,7 @@ static void spm_sodi3_post_process(void)
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-static void spm_sodi3_notify_sspm_before_wfi(u32 operation_cond)
+static void spm_sodi3_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 	int ret;
 	struct spm_data spm_d;
@@ -336,6 +338,7 @@ static void spm_sodi3_notify_sspm_before_wfi(u32 operation_cond)
 	spm_opt |= operation_cond ? SPM_OPT_VCORE_LP_MODE   : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
+	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
 	ret = spm_to_sspm_command(SPM_ENTER_SODI3, &spm_d);
 	if (ret < 0)
@@ -359,7 +362,7 @@ static void spm_sodi3_notify_sspm_after_wfi(void)
 		spm_crit2("ret %d", ret);
 }
 #else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-static void spm_sodi3_notify_sspm_before_wfi(u32 operation_cond)
+static void spm_sodi3_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 }
 
@@ -375,9 +378,9 @@ static void spm_sodi3_pcm_setup_before_wfi(
 {
 	unsigned int resource_usage;
 
-	spm_sodi3_notify_sspm_before_wfi(operation_cond);
+	spm_sodi3_notify_sspm_before_wfi(pwrctrl, operation_cond);
 
-	spm_sodi3_pre_process(operation_cond);
+	spm_sodi3_pre_process(pwrctrl, operation_cond);
 
 	/* Get SPM resource request and update reg_spm_xxx_req */
 	resource_usage = spm_get_resource_usage();
@@ -387,7 +390,7 @@ static void spm_sodi3_pcm_setup_before_wfi(
 		SPM_PWR_CTRL_SODI, PWR_OPP_LEVEL, pwrctrl->opp_level);
 }
 
-static void spm_sodi3_pcm_setup_after_wfi(void)
+static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl)
 {
 	spm_sodi3_notify_sspm_after_wfi();
 
@@ -416,24 +419,26 @@ static void spm_sodi3_pcm_setup_before_wfi(
 	__spm_set_wakeup_event(pwrctrl);
 
 #if SPM_PCMWDT_EN
-	__spm_set_pcm_wdt(1);
+	if (!pwrctrl->wdt_disable)
+		__spm_set_pcm_wdt(1);
 #endif
 
-	spm_sodi3_notify_sspm_before_wfi(operation_cond);
+	spm_sodi3_notify_sspm_before_wfi(pwrctrl, operation_cond);
 
-	spm_sodi3_pre_process(operation_cond);
+	spm_sodi3_pre_process(pwrctrl, operation_cond);
 
 	__spm_kick_pcm_to_run(pwrctrl);
 }
 
-static void spm_sodi3_pcm_setup_after_wfi(void)
+static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl)
 {
 	spm_sodi3_notify_sspm_after_wfi();
 
 	spm_sodi3_post_process();
 
 #if SPM_PCMWDT_EN
-	__spm_set_pcm_wdt(0);
+	if (!pwrctrl->wdt_disable)
+		__spm_set_pcm_wdt(0);
 #endif
 
 	__spm_clean_after_wakeup();
@@ -626,6 +631,9 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	ch = get_channel_lock();
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 
+	pwrctrl->vcore_volt_pmic_val =
+		__spm_get_vcore_volt_pmic_val(!!operation_cond, ch);
+
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -671,7 +679,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 
 	__spm_get_wakeup_status(&wakesta);
 
-	spm_sodi3_pcm_setup_after_wfi();
+	spm_sodi3_pcm_setup_after_wfi(pwrctrl);
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_AWAKE);
 
