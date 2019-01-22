@@ -60,6 +60,17 @@ void connectivity_export_clk_buf_ctrl(/*enum clk_buf_id*/ int id, bool onoff);
  * Caller please be sure to #include:
  *	drivers/misc/mediatek/include/mt-plat/upmu_common.h
  ******************************************************************************/
+#if defined(CONFIG_MACH_MT6735) || defined(CONFIG_MACH_MT6735M) || defined(CONFIG_MACH_MT6753) || \
+	defined(CONFIG_MACH_MT6739) || \
+	defined(CONFIG_MACH_MT6755) || \
+	defined(CONFIG_MACH_MT6757) || \
+	defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6763) || \
+	defined(CONFIG_MACH_MT6797) || \
+	defined(CONFIG_MACH_MT6580) || \
+	defined(CONFIG_MACH_KIBOPLUS)
+#define CONNADP_HAS_PMIC_API
 #define KERNEL_pmic_config_interface connectivity_export_pmic_config_interface
 #define KERNEL_pmic_read_interface connectivity_export_pmic_read_interface
 #define KERNEL_pmic_set_register_value connectivity_export_pmic_set_register_value
@@ -68,6 +79,7 @@ void connectivity_export_pmic_config_interface(unsigned int RegNum, unsigned int
 void connectivity_export_pmic_read_interface(unsigned int RegNum, unsigned int *val,
 						unsigned int MASK, unsigned int SHIFT);
 void connectivity_export_pmic_set_register_value(/*PMU_FLAGS_LIST_ENUM*/ int flagname, unsigned int val);
+#endif
 
 /*******************************************************************************
  * MMC
