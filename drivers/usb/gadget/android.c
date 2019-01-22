@@ -945,6 +945,7 @@ static struct android_usb_function ptp_function = {
 	.init		= ptp_function_init,
 	.cleanup	= ptp_function_cleanup,
 	.bind_config	= ptp_function_bind_config,
+.ctrlrequest	= mtp_function_ctrlrequest,
 };
 struct eem_function_config {
 	u8      ethaddr[ETH_ALEN];
@@ -1052,7 +1053,7 @@ static struct android_usb_function eem_function = {
 	.unbind_config	= eem_function_unbind_config,
 	.attributes	= eem_function_attributes,
 };
-#if 0
+
 struct rndis_function_config {
 	u8      ethaddr[ETH_ALEN];
 	u32     vendorID;
@@ -1256,7 +1257,7 @@ static struct android_usb_function rndis_function = {
 	.unbind_config	= rndis_function_unbind_config,
 	.attributes	= rndis_function_attributes,
 };
-#endif
+
 
 
 struct mbim_function_config {
@@ -1762,7 +1763,7 @@ static struct android_usb_function *supported_functions[] = {
 	&ptp_function,
 	&eem_function,
 	&serial_function,
-	/* &rndis_function, */
+	&rndis_function,
 	&mass_storage_function,
 	&accessory_function,
 	&audio_source_function,
