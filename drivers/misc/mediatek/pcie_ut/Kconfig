@@ -1,0 +1,9 @@
+# pcie unit test
+
+config PCIE_MTK_UNIT
+	bool "pcie unit test"
+	depends on PCIE_MTK
+	help
+	  This is for debugging purpose. If unsure, say N.
+
+

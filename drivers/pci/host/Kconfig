@@ -173,4 +173,13 @@ config PCI_HISI
 	help
 	  Say Y here if you want PCIe controller support on HiSilicon HIP05 SoC
 
+config PCIE_MTK
+	bool "Mediatek PCIe Controller"
+	depends on OF
+	depends on PCI
+	help
+	  Say Y here if you want to enable PCIe controller support on Mediatek smart phone.
+	  Single Root complex (RC) with 1 Root Ports supports a Gen2 1-lan Link.
+	  PCIe include one Host/PCI bridge and 1 PCIe MAC.
+
 endmenu

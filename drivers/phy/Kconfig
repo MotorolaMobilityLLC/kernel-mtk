@@ -390,4 +390,11 @@ config PHY_CYGNUS_PCIE
 	  Enable this to support the Broadcom Cygnus PCIe PHY.
 	  If unsure, say N.
 
+config PHY_MTK_PCIE
+	tristate "Mediatek PCIE PHY driver"
+	select GENERIC_PHY
+	help
+	  Say 'Y' here to add support for Mediatek PCIE PHY driver
+	  for mt6799 series SoC.
+
 endmenu
