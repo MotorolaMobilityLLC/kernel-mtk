@@ -79,6 +79,16 @@ static int mtktscharger_debug_log;
  */
 static unsigned long prev_temp = 30000;
 
+/**
+ * If curr_temp >= polling_trip_temp1, use interval
+ * else if cur_temp >= polling_trip_temp2 && curr_temp < polling_trip_temp1, use interval*polling_factor1
+ * else, use interval*polling_factor2
+ */
+static int polling_trip_temp1 = 40000;
+static int polling_trip_temp2 = 20000;
+static int polling_factor1 = 5000;
+static int polling_factor2 = 10000;
+
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 static struct charger_consumer *pthermal_consumer;
 #endif
@@ -180,7 +190,12 @@ static int mtktscharger_get_temp(struct thermal_zone_device *thermal, int *t)
 	if (*t >= 85000)
 		mtktscharger_dprintk_always("HT %d\n", *t);
 
-	/* TODO: Add change polling delay features for low power. */
+	if ((int)*t >= polling_trip_temp1)
+		thermal->polling_delay = interval * 1000;
+	else if ((int)*t < polling_trip_temp2)
+		thermal->polling_delay = interval * polling_factor2;
+	else
+		thermal->polling_delay = interval * polling_factor1;
 
 	return 0;
 }
