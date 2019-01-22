@@ -108,9 +108,6 @@ int mtk_pe40_pd_request(struct charger_manager *pinfo,
 
 	charger_dev_set_mivr(pinfo->chg1_dev, mivr * 1000);
 
-	charger_dev_set_mivr(pinfo->chg1_dev, (adapter_mv -
-		PE40_VBUS_IR_DROP_THRESHOLD) * 1000);
-
 	pinfo->pe4.pe4_input_current_limit_setting = ma * 1000;
 	return ret;
 }
