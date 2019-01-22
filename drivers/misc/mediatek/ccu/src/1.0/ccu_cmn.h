@@ -233,11 +233,12 @@ int ccu_flush_commands_from_queue(ccu_user_t *user);
 /* #define LOG_WRN(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)*/
 /* #define LOG_ERR(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)*/
 
-/*#define LOG_DBG(format, args...)    printk(CCU_TAG "[%s] " format, __func__, ##args)*/
-/*#define LOG_INF(format, args...)    printk(CCU_TAG "[%s] " format, __func__, ##args)*/
-#define LOG_DBG(format, args...)    pr_debug(CCU_TAG "[%s] " format, __func__, ##args)
-#define LOG_INF(format, args...)    pr_info(CCU_TAG "[%s] " format, __func__, ##args)
-#define LOG_WRN(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
+/*#define LOG_DBG(format, args...)    pr_debug(CCU_TAG "[%s] " format, __func__, ##args)*/
+/*#define LOG_INF(format, args...)    pr_info(CCU_TAG "[%s] " format, __func__, ##args)*/
+/*#define LOG_WRN(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)*/
+#define LOG_DBG(format, args...)
+#define LOG_INF(format, args...)
+#define LOG_WRN(format, args...)
 #define LOG_ERR(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
 
 #define ccu_print_seq(seq_file, fmt, args...) \
