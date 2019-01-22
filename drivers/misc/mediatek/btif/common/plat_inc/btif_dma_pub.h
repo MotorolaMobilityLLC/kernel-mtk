@@ -193,5 +193,8 @@ int hal_rx_dma_irq_handler(P_MTK_DMA_INFO_STR p_dma_info,
 int hal_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info, ENUM_BTIF_REG_ID flag);
 
 int hal_dma_pm_ops(P_MTK_DMA_INFO_STR p_dma_info, MTK_BTIF_PM_OPID opid);
+int hal_dma_tx_has_pending(P_MTK_DMA_INFO_STR p_dma_info);
+int hal_dma_rx_has_pending(P_MTK_DMA_INFO_STR p_dma_info);
+int hal_rx_dma_lock(bool enable);
 
 #endif /*__HAL_BTIFD_DMA_PUB_H_*/

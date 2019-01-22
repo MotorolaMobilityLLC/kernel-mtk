@@ -22,6 +22,11 @@ ifneq ($(KERNELRELEASE),)
 	subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
     obj-y += common/
+ifneq ($(TARGET_BUILD_VARIANT), user)
+	subdir-ccflags-y += -D BTIF_DBG_SUPPORT=1
+else
+	subdir-ccflags-y += -D BTIF_DBG_SUPPORT=0
+endif
 
 # Otherwise we were called directly from the command
 # line; invoke the kernel build system.
