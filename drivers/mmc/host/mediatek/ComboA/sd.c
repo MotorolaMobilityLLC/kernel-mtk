@@ -67,6 +67,11 @@
 #define MVG_EMMC_DECLARE_INT32(...)
 #endif
 
+#ifdef CONFIG_HIE
+#include <linux/hie.h>
+#include <linux/blk_types.h>
+#endif
+
 #include "dbg.h"
 
 #define CAPACITY_2G             (2 * 1024 * 1024 * 1024ULL)
@@ -150,10 +155,10 @@ int msdc_rsp[] = {
 #define msdc_dma_off()          { MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO); MSDC_WRITE32(MSDC_AES_SEL, 0x0); }
 #define MSDC_CHECK_FDE_ERR(mmc, mrq)    msdc_check_fde_err(mmc, mrq)
 
-#elif defined(CONFIG_MTK_HW_FDE) && !defined(CONFIG_MTK_HW_FDE_AES)
-#define msdc_dma_on()           { msdc_fde(mmc, mrq); MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_PIO); }
+#elif (defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)) && !defined(CONFIG_MTK_HW_FDE_AES)
+#define msdc_dma_on()           { msdc_pre_crypto(mmc, mrq); MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_PIO); }
 #define msdc_dma_off()          { MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO); \
-					MSDC_CLR_BIT32(EMMC52_AES_EN, EMMC52_AES_ON); }
+					msdc_post_crypto(host); }
 #else
 #define msdc_dma_on()           MSDC_CLR_BIT32(MSDC_CFG, MSDC_CFG_PIO)
 #define msdc_dma_off()          MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_PIO)
@@ -1085,8 +1090,8 @@ static void msdc_pm(pm_message_t state, void *data)
 		N_MSG(PWR, "msdc%d -> %s Suspend", host->id,
 			evt == PM_EVENT_SUSPEND ? "PM" : "USR");
 
-#if defined(CONFIG_MTK_HW_FDE) && !defined(CONFIG_MTK_HW_FDE_AES)
-		host->is_fde_init = false;
+#if (defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)) && !defined(CONFIG_MTK_HW_FDE_AES)
+		host->is_crypto_init = false;
 #endif
 
 		if (host->hw->flags & MSDC_SYS_SUSPEND) {
@@ -2375,6 +2380,14 @@ error:
 	goto end;
 }
 
+#if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
+#include "mtk_sd_hw_fde.c"
+#endif
+
+#if (defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)) && !defined(CONFIG_MTK_HW_FDE_AES)
+#include "mtk_ufs_hw_fde.c"
+#endif
+
 static void msdc_dma_start(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
@@ -2671,14 +2684,6 @@ int msdc_if_send_stop(struct msdc_host *host,
 
 	return 0;
 }
-
-#if defined(CONFIG_MTK_HW_FDE) && defined(CONFIG_MTK_HW_FDE_AES)
-#include "mtk_sd_hw_fde.c"
-#endif
-
-#if defined(CONFIG_MTK_HW_FDE) && !defined(CONFIG_MTK_HW_FDE_AES)
-#include "mtk_ufs_hw_fde.c"
-#endif
 
 int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
 	struct mmc_data *data, struct mmc_request *mrq)
@@ -5058,6 +5063,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	pr_info("[%s]: msdc%d, mmc->caps=0x%x, mmc->caps2=0x%x\n",
 		__func__, host->id, mmc->caps, mmc->caps2);
 	msdc_dump_clock_sts(host);
+#endif
+
+#ifdef CONFIG_HIE
+	msdc_hie_register(host);
 #endif
 
 	return 0;
