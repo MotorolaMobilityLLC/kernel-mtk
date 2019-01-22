@@ -381,8 +381,5 @@ extern unsigned int sched_get_percpu_load(int cpu, bool reset, bool use_maxfreq)
 extern unsigned int sched_get_nr_heavy_task(void);
 extern void armpll_control(int id, int on);
 extern void mp_enter_suspend(int id, int suspend);
-
-typedef void (*sampler_func)(unsigned int, unsigned int *);
-extern void mt_cpu_stalldcm_registerCB(sampler_func pCB);
 extern void sched_big_task_nr(int *L_nr, int *B_nr);
 #endif
