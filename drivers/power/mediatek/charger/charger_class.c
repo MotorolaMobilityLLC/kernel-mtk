@@ -77,7 +77,7 @@ int charger_dev_is_enabled(struct charger_device *charger_dev, bool *en)
 
 	return -ENOTSUPP;
 }
-EXPORT_SYMBOL(charger_dev_enable);
+EXPORT_SYMBOL(charger_dev_is_enabled);
 
 int charger_dev_plug_in(struct charger_device *charger_dev)
 {
@@ -131,7 +131,7 @@ int charger_dev_get_min_charging_current(struct charger_device *charger_dev, u32
 
 	return -ENOTSUPP;
 }
-EXPORT_SYMBOL(charger_dev_get_charging_current);
+EXPORT_SYMBOL(charger_dev_get_min_charging_current);
 
 int charger_dev_enable_chip(struct charger_device *charger_dev, bool en)
 {
@@ -294,6 +294,7 @@ int charger_dev_enable_safety_timer(struct charger_device *charger_dev, bool en)
 
 	return -ENOTSUPP;
 }
+EXPORT_SYMBOL(charger_dev_enable_safety_timer);
 
 int charger_dev_is_safety_timer_enabled(struct charger_device *charger_dev, bool *en)
 {
@@ -311,6 +312,7 @@ int charger_dev_enable_termination(struct charger_device *charger_dev, bool en)
 
 	return -ENOTSUPP;
 }
+EXPORT_SYMBOL(charger_dev_enable_termination);
 
 int charger_dev_get_mivr_state(struct charger_device *charger_dev, bool *in_loop)
 {
