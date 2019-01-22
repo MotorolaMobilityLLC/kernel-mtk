@@ -118,14 +118,14 @@ enum {
 *T3:45
 *T4:50
 */
-typedef enum {
+enum sw_jeita_state_enum {
 	TEMP_BELOW_T0 = 0,
 	TEMP_T0_TO_T1,
 	TEMP_T1_TO_T2,
 	TEMP_T2_TO_T3,
 	TEMP_T3_TO_T4,
 	TEMP_ABOVE_T4
-} sw_jeita_state_enum;
+};
 
 struct sw_jeita_data {
 	int sm;
@@ -135,11 +135,11 @@ struct sw_jeita_data {
 };
 
 /* battery thermal protection */
-typedef enum {
+enum bat_temp_state_enum {
 	BAT_TEMP_LOW = 0,
 	BAT_TEMP_NORMAL,
 	BAT_TEMP_HIGH
-} bat_temp_state_enum;
+};
 
 struct battery_thermal_protection_data {
 	int sm;
