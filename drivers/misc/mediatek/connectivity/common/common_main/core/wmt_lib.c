@@ -1098,8 +1098,6 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 	P_OSAL_SIGNAL pSignal = NULL;
 	INT32 waitRet = -1;
 	P_OSAL_THREAD pThread;
-	PUINT8 pbuf = NULL;
-	INT32 len = 0;
 
 	osal_assert(pWmtDev);
 	osal_assert(pOp);
@@ -1152,14 +1150,9 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 		/* if (unlikely(!wait_ret)) { */
 		if (waitRet == 0) {
 			pThread = &gDevWmt.thread;
-			pbuf = "Wait wmtd complation timeout, just collect SYS_FTRACE to DB";
-			len = osal_strlen(pbuf);
 			WMT_ERR_FUNC
-				("wait completion timeout, opId(%d), show wmtd_thread stack!\n", pOp->op.opId);
-			/* TODO: how to handle it? retry? */
-			/* wcn_wmtd_timeout_collect_ftrace();*/ /*trigger collect SYS_FTRACE */
+				("Wait wmtd complation timeout, opId(%d), show wmtd_thread stack!\n", pOp->op.opId);
 			osal_thread_show_stack(pThread);
-			stp_dbg_trigger_collect_ftrace(pbuf, len);
 		} else {
 			if (pOp->result)
 				WMT_WARN_FUNC("opId(%d) result:%d\n", pOp->op.opId, pOp->result);
