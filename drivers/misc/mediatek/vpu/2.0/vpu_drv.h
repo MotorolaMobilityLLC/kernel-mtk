@@ -264,8 +264,9 @@ enum vpu_power_opp {
 };
 
 struct vpu_power {
-	uint8_t mode;
-	uint8_t opp;
+	uint8_t opp_step;
+	uint8_t freq_step;
+	uint32_t bw;
 };
 
 
@@ -322,6 +323,7 @@ struct vpu_request {
 	uint64_t sett_ptr;       /* pointer to the request setting */
 	uint64_t priv;           /* reserved for user */
 	struct vpu_buffer buffers[VPU_MAX_NUM_PORTS];
+	struct vpu_power power_param;
 };
 
 struct vpu_status {
