@@ -204,7 +204,10 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "PCM_IM_PTR             : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 
 		/* BW Info */
-		p += sprintf(p, "BW_TOTAL: %d (AVG: %d)\n", dvfsrc_get_bw(QOS_TOTAL), dvfsrc_get_bw(QOS_TOTAL_AVE));
+		p += sprintf(p, "BW_TOTAL: %d (AVG: %d) thres: 0x%x, 0x%x seg: 0x%x\n",
+				dvfsrc_get_bw(QOS_TOTAL), dvfsrc_get_bw(QOS_TOTAL_AVE),
+				spm_read(DVFSRC_EMI_QOS0), spm_read(DVFSRC_EMI_QOS1),
+				spm_read(QOS_SRAM_SEG));
 
 		/* EMI Monitor */
 		p += sprintf(p, "TOTAL_EMI(level 1/2): %d/%d (bwst: 0x%x, bwvl: 0x%x)\n",
@@ -282,8 +285,10 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("PCM_IM_PTR             :: 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 
 		/* BW Info */
-		spm_vcorefs_warn("BW_TOTAL: %d (AVG: %d)\n", dvfsrc_get_bw(QOS_TOTAL), dvfsrc_get_bw(QOS_TOTAL_AVE));
-
+		spm_vcorefs_warn("BW_TOTAL: %d (AVG: %d) thres: 0x%x, 0x%x seg: 0x%x\n",
+				dvfsrc_get_bw(QOS_TOTAL), dvfsrc_get_bw(QOS_TOTAL_AVE),
+				spm_read(DVFSRC_EMI_QOS0), spm_read(DVFSRC_EMI_QOS1),
+				spm_read(QOS_SRAM_SEG));
 		/* EMI Monitor */
 		spm_vcorefs_warn("TOTAL_EMI(level 1/2): %d/%d (bwst: 0x%x, bwvl: 0x%x)\n",
 					(bwst0_val & 1), ((bwst0_val >> 1) & 1), bwst0_val, bwvl0_val);
@@ -845,6 +850,27 @@ static void plat_info_init(void)
 	spm_vcorefs_warn("[%s] hw_rsv=0x%x, lt_opp_feautre_en=%d\n", __func__, hw_reserve, lt_opp_feature_en);
 }
 
+#define SEG_P38_6M 0x24
+#define SEG_P38_5M 0x34
+#define P38_DDR_MAX_khz 3300000
+
+static void seg_info_init(void)
+{
+	int seg_info = get_devinfo_with_index(30);
+
+	spm_vcorefs_warn("[%s] seg_info=0x%x\n", __func__, seg_info);
+
+	if ((seg_info&0xFF) == SEG_P38_6M ||
+	    (seg_info&0xFF) == SEG_P38_5M) {
+		if (vcorefs_get_ddr_by_steps(OPP_0) > P38_DDR_MAX_khz ||
+		   vcorefs_get_curr_ddr() > P38_DDR_MAX_khz) {
+			vcorefs_set_vcore_dvs_en(false);
+			vcorefs_set_ddr_dfs_en(false);
+			spm_vcorefs_warn("disable dvfs due to segment\n");
+		}
+	}
+}
+
 #if 0
 static int vcorefs_is_lp_flavor(void)
 {
@@ -924,6 +950,8 @@ static void dvfsrc_init_qos_opp(void)
 	}
 	spm_vcorefs_warn("pm_qos init opp (sw_req: 0x%x, vcore_req2: 0x%x)\n",
 			spm_read(DVFSRC_SW_REQ), spm_read(DVFSRC_VCORE_REQUEST2));
+
+	dvfsrc_update_sspm_ddr_opp_table(OPP_0, vcorefs_get_ddr_by_steps(OPP_0));
 }
 #endif
 
@@ -1057,6 +1085,7 @@ void spm_vcorefs_init(void)
 		vcorefs_set_ddr_dfs_en(true);
 	}
 #endif
+	seg_info_init();
 	dvfsrc_register_init();
 	vcorefs_module_init();
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
