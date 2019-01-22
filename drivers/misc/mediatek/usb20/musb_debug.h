@@ -64,6 +64,7 @@
 	} } while (0)
 
 extern unsigned musb_debug;
+extern unsigned musb_debug_limit;
 extern unsigned musb_uart_debug;
 
 static inline int _dbg_level(unsigned level)
@@ -80,11 +81,15 @@ static inline int _dbg_level(unsigned level)
 	static DEFINE_RATELIMIT_STATE(ratelimit, HZ, FREQ);\
 	static int skip_cnt;\
 	\
-	if (__ratelimit(&ratelimit)) {\
-		DBG(0, fmt " ,skip_cnt<%d>\n", ## args, skip_cnt);\
-		skip_cnt = 0;\
-	} else\
-	    skip_cnt++;\
+	if (unlikely(!musb_debug_limit))\
+		DBG(0, fmt "<unlimit>\n", ## args);\
+	else { \
+		if (__ratelimit(&ratelimit)) {\
+			DBG(0, fmt ", skip_cnt<%d>\n", ## args, skip_cnt);\
+			skip_cnt = 0;\
+		} else\
+			skip_cnt++;\
+	} \
 } while (0)\
 
 /* extern const char *otg_state_string(struct musb *); */
