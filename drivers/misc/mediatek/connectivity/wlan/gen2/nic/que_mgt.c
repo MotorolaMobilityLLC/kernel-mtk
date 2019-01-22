@@ -1362,7 +1362,8 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 
 		/* The current head STA will be examined when i = CFG_NUM_OF_STA_RECORD-1 */
 		prStaRec = &prAdapter->arStaRec[((*pu4HeadStaRecIndex) + i + 1) % CFG_NUM_OF_STA_RECORD];
-		ASSERT(prStaRec);
+		if (prStaRec == NULL)   /* for coverity issue */
+			break;
 
 		if (prStaRec->fgIsValid) {
 
@@ -4711,9 +4712,14 @@ VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 
 	/* Sanity Check */
 	if (!prReorderQueParm || !prReorderQueParm->fgIsValid || !prReorderQueParm->fgHasBubble) {
-		DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u]. QueParm %p valid %d has bubble %d\n",
+		if (prReorderQueParm) {
+			DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u]. QueParm %p valid %d has bubble %d\n",
 				   prCheckReorderEvent->ucStaRecIdx, prCheckReorderEvent->ucTid, prReorderQueParm,
 				   prReorderQueParm->fgIsValid, prReorderQueParm->fgHasBubble);
+		} else {
+			DBGLOG(QM, WARN, "QM:Bub Check Cancel STA[%u] TID[%u].\n",
+				   prCheckReorderEvent->ucStaRecIdx, prCheckReorderEvent->ucTid);
+		}
 		return;
 	}
 

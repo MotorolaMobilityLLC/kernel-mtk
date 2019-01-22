@@ -30,6 +30,7 @@
 */
 
 #define PROC_WLAN_THERMO                        "wlanThermo"
+#define PROC_COUNTRY                            "country"
 #define PROC_DRV_STATUS                         "status"
 #define PROC_RX_STATISTICS                      "rx_statistics"
 #define PROC_TX_STATISTICS                      "tx_statistics"
@@ -682,7 +683,6 @@ static ssize_t procfile_read(struct file *filp, char __user *buf, size_t count, 
 		retval = 0;
 	} else {
 		/*len = sprintf(page, "%d\n", g_psm_enable); */
-#if 1
 		if (gCoexBuf1.availSize <= 0) {
 			DBGLOG(INIT, WARN, "no data available\n");
 			retval = strlen(warn_msg) + 1;
@@ -695,9 +695,7 @@ static ssize_t procfile_read(struct file *filp, char __user *buf, size_t count, 
 				goto err_exit;
 			}
 			*f_pos += retval;
-		} else
-#endif
-		{
+		} else {
 			INT32 i = 0;
 			INT32 len = 0;
 			CHAR msg_info[128];
@@ -737,7 +735,6 @@ err_exit:
 	return retval;
 }
 
-#if 1
 typedef INT32 (*WLAN_DEV_DBG_FUNC)(void);
 static INT32 wlan_get_thermo_power(void);
 static INT32 wlan_get_link_mode(void);
@@ -778,7 +775,6 @@ INT32 wlan_get_link_mode(void)
 			   prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX].eConnectionState,
 			   prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX].eConnectionState, fgIsAPmode);
 
-#if 1
 
 	if (prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX].eConnectionState == PARAM_MEDIA_STATE_CONNECTED)
 		ucLinkMode |= BIT(0);
@@ -787,7 +783,6 @@ INT32 wlan_get_link_mode(void)
 	if (fgIsAPmode)
 		ucLinkMode |= BIT(2);
 
-#endif
 	gCoexBuf1.buffer[0] = ucLinkMode;
 	gCoexBuf1.availSize = 1;
 
@@ -809,7 +804,6 @@ static ssize_t procfile_write(struct file *filp, const char __user *buffer, size
 	/* gCoexBuf1.availSize = count; */
 
 	/* return gCoexBuf1.availSize; */
-#if 1
 	DBGLOG(INIT, TRACE, "write parameter len = %d\n\r", (INT32) len);
 	if (len >= sizeof(buf)) {
 		DBGLOG(INIT, ERROR, "input handling fail!\n");
@@ -830,7 +824,6 @@ static ssize_t procfile_write(struct file *filp, const char __user *buffer, size
 	if (!i4Ret)
 		DBGLOG(INIT, TRACE, "x = 0x%x\n", x);
 
-#if 1
 	pToken = strsep(&pBuf, "\t\n ");
 	if (pToken != NULL) {
 		i4Ret = kalkStrtos32(pToken, 16, &y); /* y = simple_strtol(pToken, NULL, 16); */
@@ -856,24 +849,52 @@ static ssize_t procfile_write(struct file *filp, const char __user *buffer, size
 	}
 
 	DBGLOG(INIT, TRACE, " x(0x%08x), y(0x%08x), z(0x%08x)\n\r", x, y, z);
-#endif
 
 	if ((ARRAY_SIZE(wlan_dev_dbg_func) > x) && NULL != wlan_dev_dbg_func[x])
 		(*wlan_dev_dbg_func[x]) ();
 	else
 		DBGLOG(INIT, ERROR, "no handler defined for command id(0x%08x)\n\r", x);
-#endif
 
 	/* len = gCoexBuf1.availSize; */
 	return len;
 }
-#endif
 	static const struct file_operations proc_fops = {
 		.owner = THIS_MODULE,
 		.read = procfile_read,
 		.write = procfile_write,
 	};
 #endif
+
+static ssize_t procCountryWrite(struct file *file, const char __user *buffer,
+										size_t count, loff_t *data)
+{
+	UINT_32 u4BufLen = 0;
+	WLAN_STATUS rStatus;
+	UINT_32 u4CopySize = sizeof(aucProcBuf);
+
+	kalMemSet(aucProcBuf, 0, u4CopySize);
+	if (u4CopySize >= count+1)
+		u4CopySize = count;
+
+	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
+		pr_err("error of copy from user\n");
+		return -EFAULT;
+	}
+
+	aucProcBuf[u4CopySize] = '\0';
+	rStatus = kalIoctl(g_prGlueInfo_proc, wlanoidSetCountryCode,
+				&aucProcBuf[0], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+	if (rStatus != WLAN_STATUS_SUCCESS) {
+		DBGLOG(INIT, INFO, "failed set country code: %s\n", aucProcBuf);
+		return -EINVAL;
+	}
+	return count;
+}
+
+static const struct file_operations country_ops = {
+	.owner = THIS_MODULE,
+	.write = procCountryWrite,
+};
 
 INT_32 procInitFs(VOID)
 {
@@ -916,6 +937,11 @@ INT_32 procInitFs(VOID)
 	}
 	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
+	prEntry = proc_create(PROC_COUNTRY, 0664, gprProcRoot, &country_ops);
+	if (prEntry == NULL) {
+		DBGLOG(INIT, ERROR, "Unable to create /proc entry\n\r");
+		return -1;
+	}
 	return 0;
 }				/* end of procInitProcfs() */
 

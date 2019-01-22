@@ -4370,7 +4370,7 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 	P_QUE_MGT_T prQM = &prAdapter->rQM;
 	CMD_GET_STA_STATISTICS_T rQueryCmdStaStatistics;
 	UINT_8 ucIdx;
-	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
+	P_GLUE_INFO_T prGlueInfo;
 
 	do {
 		ASSERT(pvQueryBuffer);
@@ -4387,6 +4387,10 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 			rResult = WLAN_STATUS_BUFFER_TOO_SHORT;
 			break;
 		}
+
+		prGlueInfo = prAdapter->prGlueInfo;
+		if (prGlueInfo == NULL)
+			break;
 
 		prQueryStaStatistics = (P_PARAM_GET_STA_STATISTICS) pvQueryBuffer;
 		*pu4QueryInfoLen = sizeof(PARAM_GET_STA_STA_STATISTICS);
