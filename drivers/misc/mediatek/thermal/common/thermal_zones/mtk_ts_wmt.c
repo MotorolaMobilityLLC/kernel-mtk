@@ -25,7 +25,7 @@
 /* For using net dev - */
 #include <mt-plat/mtk_wcn_cmb_stub.h>
 #include <mt-plat/aee.h>
-#include "mach/mt_thermal.h"
+#include "mach/mtk_thermal.h"
 #include "mtk_thermal_timer.h"
 #include <linux/uidgid.h>
 #include <linux/slab.h>

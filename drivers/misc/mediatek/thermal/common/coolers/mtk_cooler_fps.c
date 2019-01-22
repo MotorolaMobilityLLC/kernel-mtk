@@ -25,13 +25,16 @@
 /*kernel4.4 #include <linux/mtk_gpu_utility.h>*/
 #include "mt-plat/mtk_thermal_monitor.h"
 /* fps update from display */
+#ifdef CONFIG_MTK_FB
 #include "disp_session.h"
+#endif
 /* switch device to sent the (fps limit)uevent */
 #include <linux/switch.h>
-#include "mach/mt_thermal.h"
+#include "mach/mtk_thermal.h"
 #include <linux/uidgid.h>
+#ifdef CONFIG_MTK_GPU_SUPPORT
 #include "ged_dvfs.h"
-
+#endif
 
 /* 1: turn on adaptive fps cooler; 0: turn off */
 #define ADAPTIVE_FPS_COOLER              (1)
@@ -159,11 +162,15 @@ static int game_whitelist_check(void)
 
 static int fps_update(void)
 {
+#ifdef CONFIG_MTK_FB
 	disp_session_info info;
+
 
 	memset(&info, 0, sizeof(info));
 	info.session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
+
 	disp_mgr_get_session_info(&info);
+
 	/* mtk_cooler_fps_dprintk("display update fps is: %d.%d\n", info.updateFPS/100, info.updateFPS%100); */
 	/* mtk_cooler_fps_dprintk("is display fps stable: %d\n", info.is_updateFPS_stable); */
 #if 0
@@ -174,7 +181,7 @@ static int fps_update(void)
 #else
 	tm_input_fps = info.updateFPS/100;
 #endif
-
+#endif
 	return 0;
 }
 

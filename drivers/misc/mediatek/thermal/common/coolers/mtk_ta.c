@@ -18,7 +18,7 @@
 #include <linux/types.h>
 #include <linux/proc_fs.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mach/mt_thermal.h"
+#include "mach/mtk_thermal.h"
 #include "mt-plat/mtk_thermal_platform.h"
 #include <linux/slab.h>
 #include <linux/seq_file.h>
