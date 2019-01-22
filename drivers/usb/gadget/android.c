@@ -942,12 +942,67 @@ static int mtp_function_ctrlrequest(struct android_usb_function *f,
 	return mtp_ctrlrequest(cdev, c);
 }
 
+static int cpumask_to_int(const struct cpumask *cpu_mask)
+{
+	int mask = 0;
+	int cpu;
+
+	for_each_cpu(cpu, cpu_mask) {
+		pr_debug("[USB]%d\n", cpu);
+		mask |= (1 << cpu);
+	}
+
+	return mask;
+}
+
+static ssize_t cpu_mask_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct cpumask *cpu_mask = mtp_get_cpu_mask();
+
+	return sprintf(buf, "0x%X\n", (cpu_mask?cpumask_to_int(cpu_mask):0xFFFFFFFF));
+}
+
+static ssize_t cpu_mask_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	unsigned int mask;
+
+	if (kstrtouint(buf, 16, &mask) != 0)
+		return -EINVAL;
+
+	pr_info("Store => 0x%x\n", mask);
+
+	mtp_set_cpu_mask(mask);
+
+	return size;
+}
+
+static DEVICE_ATTR(cpu_mask, S_IRUGO | S_IWUSR, cpu_mask_show,
+					       cpu_mask_store);
+
+static ssize_t mtp_server_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", mtp_get_mtp_server());
+}
+
+static DEVICE_ATTR(mtp_server, S_IRUGO, mtp_server_show,
+					       NULL);
+
+static struct device_attribute *mtp_function_attributes[] = {
+	&dev_attr_cpu_mask,
+	&dev_attr_mtp_server,
+	NULL
+};
+
 static struct android_usb_function mtp_function = {
 	.name		= "mtp",
 	.init		= mtp_function_init,
 	.cleanup	= mtp_function_cleanup,
 	.bind_config	= mtp_function_bind_config,
 	.ctrlrequest	= mtp_function_ctrlrequest,
+	.attributes	= mtp_function_attributes,
 };
 
 /* PTP function is same as MTP with slightly different interface descriptor */
@@ -956,7 +1011,7 @@ static struct android_usb_function ptp_function = {
 	.init		= ptp_function_init,
 	.cleanup	= ptp_function_cleanup,
 	.bind_config	= ptp_function_bind_config,
-.ctrlrequest	= mtp_function_ctrlrequest,
+	.ctrlrequest	= mtp_function_ctrlrequest,
 };
 struct eem_function_config {
 	u8      ethaddr[ETH_ALEN];
@@ -2397,7 +2452,6 @@ static int android_bind(struct usb_composite_dev *cdev)
 
 	/* Save the default handler */
 	dev->setup_complete = cdev->req->complete;
-
 
 	/*
 	 * Start disconnected. Userspace will connect the gadget once
