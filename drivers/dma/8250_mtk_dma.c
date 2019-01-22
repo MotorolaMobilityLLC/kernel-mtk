@@ -634,8 +634,10 @@ static irqreturn_t mtk_dma_rx_interrupt(int irq, void *dev_id)
 	mtk_dma_chan_write(c, VFF_INT_FLAG, VFF_RX_INT_FLAG_CLR_B);
 
 	if (atomic_inc_return(&c->entry) > 1) {
+		spin_lock_irqsave(&mtkd->lock, flags);
 		if (list_empty(&mtkd->pending))
 			list_add_tail(&c->node, &mtkd->pending);
+		spin_unlock_irqrestore(&mtkd->lock, flags);
 		tasklet_schedule(&mtkd->task);
 	} else {
 		mtk_dma_start_rx(c);
@@ -655,7 +657,9 @@ static irqreturn_t mtk_dma_tx_interrupt(int irq, void *dev_id)
 
 	spin_lock_irqsave(&c->vc.lock, flags);
 	if (c->remain_size != 0) {
+		spin_lock_irqsave(&mtkd->lock, flags);
 		list_add_tail(&c->node, &mtkd->pending);
+		spin_unlock_irqrestore(&mtkd->lock, flags);
 		tasklet_schedule(&mtkd->task);
 	} else {
 		mtk_dma_remove_virt_list(d->vd.tx.cookie, &c->vc);
