@@ -413,6 +413,19 @@ enum c2k_channel {
 	AT6_CH_C2K = 21,
 	AT7_CH_C2K = 22,
 	AT8_CH_C2K = 23,
+	NET9_CH_C2K = 24,	/*unused port*/
+	NET10_CH_C2K = 25,	/*need sync with c2k */
+	NET11_CH_C2K = 26,	/*need sync with c2k */
+	NET12_CH_C2K = 27,
+	NET13_CH_C2K = 28,
+	NET14_CH_C2K = 29,	/*need sync with c2k */
+	NET15_CH_C2K = 30,
+	NET16_CH_C2K = 31,
+	NET17_CH_C2K = 32,
+	NET18_CH_C2K = 33,	/*need sync with c2k */
+	NET19_CH_C2K = 34,	/*need sync with c2k */
+	NET20_CH_C2K = 35,
+	NET21_CH_C2K = 36,
 
 	C2K_MAX_CH_NUM,
 	C2K_OVER_MAX_CH,
