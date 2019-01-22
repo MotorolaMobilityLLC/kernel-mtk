@@ -325,7 +325,7 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 	pr_warn("%s  pos = %lu count = %lu\n ", __func__, pos, count);
 
 	/* get total bytes to copy */
-	count = Align64ByteSize(audio_frame_to_bytes(substream, count));
+	count = word_size_align(audio_frame_to_bytes(substream, count));
 
 	/* check which memif nned to be write */
 	pDAI_MEM_ConTrol = Bt_Dai_Control_context;

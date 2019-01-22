@@ -396,7 +396,7 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream,
 			copy_size = count;
 	}
 
-	copy_size = Align64ByteSize(copy_size);
+	copy_size = word_size_align(copy_size);
 	PRINTK_AUD_DL1("copy_size=0x%x, count=0x%x\n", copy_size, (unsigned int)count);
 
 	if (copy_size != 0) {
@@ -442,8 +442,8 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream,
 		/* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
 
-			size_1 = Align64ByteSize((Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
-			size_2 = Align64ByteSize((copy_size - size_1));
+			size_1 = word_size_align((Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
+			size_2 = word_size_align((copy_size - size_1));
 			PRINTK_AUD_DL1("size_1=0x%x, size_2=0x%x\n", size_1, size_2);
 			if (!access_ok(VERIFY_READ, data_w_ptr, size_1)) {
 				pr_err("AudDrv_write 1ptr invalid data_w_ptr=%p, size_1=%d",

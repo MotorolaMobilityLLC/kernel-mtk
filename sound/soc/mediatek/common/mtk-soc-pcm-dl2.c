@@ -161,7 +161,7 @@ static snd_pcm_uframes_t mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream
 		}
 
 #ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
-		Afe_consumed_bytes = Align64ByteSize(Afe_consumed_bytes);
+		Afe_consumed_bytes = word_size_align(Afe_consumed_bytes);
 #endif
 
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
@@ -443,7 +443,7 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 	}
 
 #ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
-	copy_size = Align64ByteSize(copy_size);
+	copy_size = word_size_align(copy_size);
 #endif
 	*size = copy_size;
 	PRINTK_AUD_DL2("copy_size=%d, count=%d, bCopy %d, %pf %pf %pf %pf\n", copy_size, (unsigned int)count,
@@ -481,8 +481,8 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 			kal_uint32 size_1 = 0, size_2 = 0;
 
 #ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
-			size_1 = Align64ByteSize((Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
-			size_2 = Align64ByteSize((copy_size - size_1));
+			size_1 = word_size_align((Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
+			size_2 = word_size_align((copy_size - size_1));
 #else
 			size_1 = Afe_Block->u4BufferSize - Afe_WriteIdx_tmp;
 			size_2 = copy_size - size_1;
@@ -544,7 +544,7 @@ void mtk_dl2_copy2buffer(const void *addr, uint32_t size)
 			ISRCopyBuffer.pBufferBase, size, ISRCopyBuffer.u4BufferSize);
 
 #ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
-	size = Align64ByteSize(size);
+	size = word_size_align(size);
 #endif
 
 	Auddrv_Dl2_Spinlock_lock();
