@@ -2113,19 +2113,19 @@ int pmic_throttling_dlpt_init(void)
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	struct device_node *np;
 	u32 val;
-	char *path = "/bus/BAT_METTER";
-
-	np = of_find_node_by_path(path);
+	char *path;
 
 	#if (CONFIG_MTK_GAUGE_VERSION == 30)
-	if (of_property_read_u32(np, "car_tune_value", &val) == 0) {
+	path = "/bat_gm30";
+	np = of_find_node_by_path(path);
+	if (of_property_read_u32(np, "CAR_TUNE_VALUE", &val) == 0) {
 		fg_cust_data.car_tune_value = (int)val*10;
 		pr_err("Get car_tune_value from DT: %d\n", fg_cust_data.car_tune_value);
 	} else {
 		fg_cust_data.car_tune_value = CAR_TUNE_VALUE*10;
 		pr_err("Get default car_tune_value= %d\n", fg_cust_data.car_tune_value);
 	}
-	if (of_property_read_u32(np, "r_fg_value", &val) == 0) {
+	if (of_property_read_u32(np, "R_FG_VALUE", &val) == 0) {
 		fg_cust_data.r_fg_value = (int)val*10;
 		pr_err("Get r_fg_value from DT: %d\n", fg_cust_data.r_fg_value);
 	} else {
@@ -2134,6 +2134,8 @@ int pmic_throttling_dlpt_init(void)
 	}
 	pr_err("Get default UNIT_FGCURRENT= %d\n", UNIT_FGCURRENT);
 	#else
+	path = "/bus/BAT_METTER";
+	np = of_find_node_by_path(path);
 	if (of_property_read_u32(np, "car_tune_value", &val) == 0) {
 		batt_meter_cust_data.car_tune_value = (int)val;
 		PMICLOG("Get car_tune_value from DT: %d\n", batt_meter_cust_data.car_tune_value);
