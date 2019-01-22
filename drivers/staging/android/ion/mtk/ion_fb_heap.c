@@ -102,14 +102,14 @@ static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			IONMSG("[ion_fb_heap_phys]: Error. Allocate MVA failed.\n");
 			return -EFAULT;
 		}
-	}
 
-	buffer_info->MVA = port_info.mva;
+		buffer_info->MVA = port_info.mva;
+		*addr = (ion_phys_addr_t)buffer_info->MVA;
+	} else
+		*addr = (ion_phys_addr_t)buffer_info->MVA;
 
-	*addr = (ion_phys_addr_t)buffer_info->MVA;
 	mutex_unlock(&buffer_info->lock);
 	*len = buffer->size;
-
 	/*IONMSG("[ion_fb_heap_phys]: MVA = 0x%x, len = 0x%x.\n", buffer_info->MVA, (unsigned int) buffer->size);*/
 
 	return 0;
