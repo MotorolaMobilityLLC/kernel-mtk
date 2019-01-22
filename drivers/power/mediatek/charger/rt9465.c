@@ -40,7 +40,7 @@
 #include "mtk_charger_intf.h"
 #include "rt9465.h"
 #define I2C_ACCESS_MAX_RETRY	5
-#define RT9465_DRV_VERSION	"1.0.8_MTK"
+#define RT9465_DRV_VERSION	"1.0.9_MTK"
 
 /* ======================= */
 /* RT9465 Parameter        */
@@ -680,6 +680,7 @@ static inline int rt9465_clr_bit(struct rt9465_info *info, u8 reg, u8 mask)
 
 /* The following APIs will be reference in internal functions */
 static int rt9465_get_ichg(struct charger_device *chg_dev, u32 *uA);
+static int __rt9465_enable_chip(struct rt9465_info *info, bool en);
 
 static inline u8 rt9465_closest_reg(u32 min, u32 max, u32 step, u32 target)
 {
@@ -921,7 +922,7 @@ static bool rt9465_is_hw_exist(struct rt9465_info *info)
 {
 	int ret = 0;
 	u8 version = 0;
-	int retry_cnt = 2;
+	int retry_cnt = 10;
 
 	/* I2C might fail after EN pin is pulled high, retry again */
 	do {
@@ -930,6 +931,12 @@ static bool rt9465_is_hw_exist(struct rt9465_info *info)
 			break;
 		dev_err(info->dev, "%s: fail(%d)\n", __func__, ret);
 		retry_cnt--;
+
+		/* Reenable chip */
+		ret = __rt9465_enable_chip(info, true);
+		if (ret < 0)
+			dev_info(info->dev, "%s: re en chip fail\n", __func__);
+		msleep(20);
 	} while (retry_cnt > 0);
 
 	if (retry_cnt == 0)
@@ -1824,6 +1831,9 @@ MODULE_VERSION(RT9465_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.0.9
+ * (1) Add more retries for chip id check
+ *
  * 1.0.8
  * (1) Use standard GPIO API instead of pinctrl
  * (2) Remove EN pin pull high, lock i2c adapter workaround
