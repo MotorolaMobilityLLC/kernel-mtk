@@ -978,7 +978,7 @@ s32 gt1x_request_event_handler(void)
  */
 s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *pen_dev)
 {
-	u8 touch_data[1 + 8 * GTP_MAX_TOUCH + 2] = { 0 };
+	u8 touch_data[1 + 8 * DEFAULT_MAX_TOUCH_NUM + 2] = { 0 };
 	u8 touch_num = 0;
 	u16 cur_event = 0;
 	static u16 pre_event;
@@ -995,7 +995,7 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 
 	GTP_DEBUG_FUNC();
 	touch_num = data[0] & 0x0f;
-	if (touch_num > GTP_MAX_TOUCH) {
+	if (touch_num > tpd_dts_data.touch_max_num) {
 		GTP_ERROR("Illegal finger number = %d!", touch_num);
 		return ERROR_VALUE;
 	}
@@ -1095,7 +1095,7 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 
 		coor_data = &touch_data[1];
 		id = coor_data[0] & 0x0F;
-		for (i = 0; i < GTP_MAX_TOUCH; i++) {
+		for (i = 0; i < tpd_dts_data.touch_max_num; i++) {
 			if (i == id) {
 				input_x = coor_data[1] | (coor_data[2] << 8);
 				input_y = coor_data[3] | (coor_data[4] << 8);
@@ -1120,7 +1120,7 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 		}
 	} else if (CHK_BIT(pre_event, BIT_TOUCH)) {
 #ifdef CONFIG_GTP_ICS_SLOT_REPORT
-		int cycles = pre_index < 3 ? 3 : GTP_MAX_TOUCH;
+		int cycles = pre_index < 3 ? 3 : tpd_dts_data.touch_max_num;
 
 		input_report_key(tpd->dev, BTN_TOUCH, 0);
 		for (i = 0; i < cycles; i++) {

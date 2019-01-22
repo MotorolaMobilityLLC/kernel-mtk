@@ -70,6 +70,7 @@
 #define TPD_HAVE_CALIBRATION
 #define TPD_CALIBRATION_MATRIX        {962, 0, 0, 0, 1600, 0, 0, 0}
 #define KEY_GESTURE           KEY_F24	/* customize gesture-key */
+#define DEFAULT_MAX_TOUCH_NUM         10
 
 extern int tpd_em_log;
 
@@ -87,7 +88,6 @@ extern int tpd_em_log;
 #define GTP_WARP_Y_ON         0
 #endif
 
-#define GTP_MAX_TOUCH    5
 #ifdef CONFIG_GTP_WITH_STYLUS
 #define GTP_STYLUS_KEY_TAB {BTN_STYLUS, BTN_STYLUS2}
 #endif
