@@ -93,6 +93,7 @@ enum PMU_LP_TABLE_ENUM {
 	VIBR,
 	VUSB33_0,
 	VUSB33_1,
+	TREF,
 	TABLE_COUNT_END
 };
 
@@ -134,5 +135,6 @@ extern int pmic_ldo_vsim1_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, un
 extern int pmic_ldo_vsim2_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_ldo_vibr_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 extern int pmic_ldo_vusb33_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
+extern int pmic_ldo_tref_lp(enum BUCK_LDO_EN_USER user, unsigned char op_en, unsigned char op_cfg);
 
 #endif
