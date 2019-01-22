@@ -59,6 +59,6 @@
 #define CLATM_INIT_CFG_PHPB_GPU_TT								(80)
 #define CLATM_INIT_CFG_PHPB_GPU_TP								(80)
 
-#define CLATM_INIT_HRTIMER_POLLING_DELAY						(100)
+#define CLATM_INIT_HRTIMER_POLLING_DELAY						(50)
 
 #endif	/* __CLATM_INITCFG_H__ */

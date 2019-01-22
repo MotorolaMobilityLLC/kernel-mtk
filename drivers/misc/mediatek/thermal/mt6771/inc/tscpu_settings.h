@@ -114,6 +114,11 @@
 /* Thermal VPU throttling support */
 #define THERMAL_VPU_SUPPORT
 
+/* Thermal workaround for DDR/stressapptest fail
+* 8core@OPP0 can't over 70 degreeC
+*/
+#define DDR_STRESS_WORKAROUND
+
 /*=============================================================
  * Chip related
  *=============================================================
