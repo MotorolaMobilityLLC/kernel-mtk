@@ -43,7 +43,6 @@ unsigned long create_keymaster_fdrv(int buff_size)
 		return (unsigned long)NULL;
 	}
 
-
 	if (buff_size > VDRV_MAX_SIZE) {
 		IMSG_ERROR("[%s][%d]: keymaster Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
 		return (unsigned long)NULL;
@@ -138,18 +137,14 @@ int __send_keymaster_command(unsigned long share_memory_size)
 	fp_call_flag = GLSCH_HIGH;
 	n_invoke_t_drv(&smc_type, 0, 0);
 
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 
 	return 0;
-
 }
 
 int send_keymaster_command(unsigned long share_memory_size)
 {
-
 	struct fdrv_call_struct fdrv_ent;
 	int retVal = 0;
 

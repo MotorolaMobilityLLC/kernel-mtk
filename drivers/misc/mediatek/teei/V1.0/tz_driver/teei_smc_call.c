@@ -63,10 +63,8 @@ static u32 teei_smc(u32 cmd_addr, int size, int valid_flag)
 	Flush_Dcache_By_Area((unsigned long)t_nt_buffer, (unsigned long)t_nt_buffer + 0x1000);
 
 	n_invoke_t_nq(&smc_type, 0, 0);
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 
 	return 0;
 }
@@ -146,9 +144,8 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 
 	if (psema == NULL)
 		return -EINVAL;
-	else
-		smc_cmd->teei_sema = psema;
 
+	smc_cmd->teei_sema = psema;
 
 	if (cmd_buf != NULL) {
 		smc_cmd->req_buf_phys = virt_to_phys((void *)cmd_buf);

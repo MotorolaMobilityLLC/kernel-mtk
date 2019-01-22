@@ -35,29 +35,24 @@
 #include "backward_driver.h"
 #include "utdriver_macro.h"
 #include "../teei_fp/fp_func.h"
+
+#define IMSG_TAG "[tz_driver]"
 #include <imsg_log.h>
 
 unsigned long tui_display_message_buff;
 unsigned long tui_notice_message_buff;
 
-enum disp_pwm_id_t {
-	DISP_PWM0 = 0x1,
-	DISP_PWM1 = 0x2,
-	DISP_PWM_ALL = (DISP_PWM0 | DISP_PWM1)
-};
-
 unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 {
 	long retVal = 0;
-	unsigned long irq_flag = 0;
 	unsigned long temp_addr = 0;
 	struct message_head msg_head;
 	struct create_fdrv_struct msg_body;
 	struct ack_fast_call_struct msg_ack;
 
-	if (message_buff == NULL) {
+	if ((unsigned char *)message_buff == NULL) {
 		IMSG_ERROR("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
-		return NULL;
+		return (unsigned long)NULL;
 	}
 
 #ifdef UT_DMA_ZONE
@@ -66,9 +61,9 @@ unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(buff_size, SZ_4K)));
 #endif
 
-	if (temp_addr == NULL) {
+	if (temp_addr == 0) {
 		IMSG_ERROR("[%s][%d]: kmalloc fp drv buffer failed.\n", __FILE__, __LINE__);
-		return NULL;
+		return (unsigned long)NULL;
 	}
 
 	memset(&msg_head, 0, sizeof(struct message_head));
@@ -111,7 +106,7 @@ unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 			return temp_addr;
 		}
 	} else {
-		retVal = NULL;
+		retVal = 0;
 	}
 
 	/* Release the resource and return. */
@@ -158,7 +153,7 @@ void set_tui_display_command(unsigned long type)
 
 int __send_tui_display_command(unsigned long type)
 {
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 	uint32_t datalen = 0;
 
 	set_tui_display_command(type);
@@ -174,12 +169,10 @@ int __send_tui_display_command(unsigned long type)
 	}
 
 	fp_call_flag = GLSCH_HIGH;
-	n_invoke_t_drv((uint64_t *)&smc_type, 0, 0);
+	n_invoke_t_drv((uint64_t *)(&smc_type), 0, 0);
 
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
-	}
+	while (smc_type == 0x54)
+		nt_sched_t((uint64_t *)(&smc_type));
 
 	return 0;
 }
@@ -200,7 +193,7 @@ void set_tui_notice_command(unsigned long memory_size)
 
 int __send_tui_notice_command(unsigned long share_memory_size)
 {
-	uint64_t smc_type = 2;
+	unsigned long smc_type = 2;
 	uint32_t datalen = 0;
 
 	set_tui_notice_command(share_memory_size);
@@ -209,20 +202,15 @@ int __send_tui_notice_command(unsigned long share_memory_size)
 						tui_notice_message_buff +  sizeof(uint32_t) + datalen);
 
 	forward_call_flag = GLSCH_LOW;
-	n_invoke_t_nq(&smc_type, 0, 0);
-
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
-	}
-
+	n_invoke_t_nq((uint64_t *)(&smc_type), 0, 0);
+	while (smc_type == 0x54)
+		nt_sched_t((uint64_t *)(&smc_type));
 	return 0;
 }
 
 int send_tui_display_command(unsigned long type)
 {
 	struct fdrv_call_struct fdrv_ent;
-	int cpu_id = 0;
 	int retVal = 0;
 
 	down(&fdrv_lock);
@@ -270,7 +258,6 @@ int send_tui_display_command(unsigned long type)
 int send_tui_notice_command(unsigned long share_memory_size)
 {
 	struct fdrv_call_struct fdrv_ent;
-	int cpu_id = 0;
 	int retVal = 0;
 
 	down(&api_lock);
@@ -323,30 +310,19 @@ int send_power_down_cmd(void)
 	return retVal;
 }
 
-
-#define I2C_REE_CALL  0x1E
-#define I2C_TEE_CALL  0x1F
-
-int wait_for_power_down(void)
+int wait_for_power_down(void *data)
 {
-	int i = 0;
-	int ret = 0;
-
 	struct sched_param param = { .sched_priority = RTPM_PRIO_TPD };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	do {
-	set_current_state(TASK_INTERRUPTIBLE);
-	if ((power_down_flag == 1) && (enter_tui_flag)) {
-		add_work_entry(I2C_REE_CALL, NULL);
-		disp_aal_notify_backlight_changed(0);
-		add_work_entry(I2C_TEE_CALL, NULL);
-
-		send_power_down_cmd();
-		IMSG_DEBUG("[%s][%d]catch a power_down_flag!!!\n", __func__, __LINE__);
+		set_current_state(TASK_INTERRUPTIBLE);
+		if ((power_down_flag == 1) && (enter_tui_flag)) {
+			mtkfb_set_backlight_level(0);
+			send_power_down_cmd();
+			IMSG_DEBUG("[%s][%d]catch a power_down_flag!!!\n", __func__, __LINE__);
 		}
-
 		power_down_flag = 0;
 		msleep_interruptible(30);
 		set_current_state(TASK_RUNNING);
@@ -362,6 +338,5 @@ int tui_notify_reboot(struct notifier_block *this, unsigned long code, void *x)
 		send_power_down_cmd();
 		IMSG_DEBUG("[%s][%d]catch a ree_reboot_signal!!!\n", __func__, __LINE__);
 	}
-
 	return NOTIFY_OK;
 }

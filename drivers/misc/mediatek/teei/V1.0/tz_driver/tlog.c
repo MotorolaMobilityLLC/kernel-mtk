@@ -140,7 +140,7 @@ int tlog_print(unsigned long log_start)
 		IMSG_PRINTK("[UT_LOG] %s\n", tlog_line);
 		tlog_line_len = 0;
 		tlog_line[0] = 0;
-		msleep(1);
+		usleep_range(1000, 2000);
 	} else {
 		tlog_line[tlog_line_len] = entry->context;
 		tlog_line[tlog_line_len + 1] = 0;
@@ -201,7 +201,6 @@ int tlog_worker(void *p)
 	}
 
 	while (!kthread_should_stop()) {
-		Invalidate_Dcache_By_Area(tlog_buf, tlog_buf + MESSAGE_LENGTH * 64);
 		if (((struct ut_log_buf_head *)tlog_buf)->write_pos == tlog_pos) {
 			schedule_timeout_interruptible(1 * HZ);
 			continue;
@@ -302,7 +301,7 @@ int utgate_log_print(unsigned long log_start)
 		IMSG_PRINTK("[uTgate LOG] %s\n", utgate_log_line);
 		utgate_log_len = 0;
 		utgate_log_line[0] = 0;
-		msleep(1);
+		usleep_range(1000, 2000);
 	} else {
 		utgate_log_line[utgate_log_len] = *((char *)log_start);
 		utgate_log_line[utgate_log_len + 1] = 0;

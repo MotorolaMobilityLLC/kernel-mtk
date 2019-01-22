@@ -215,14 +215,14 @@ int teei_client_session_init(void *private_data, void *argp)
 		return  -EFAULT;
 	}
 
-	down_read(&(teei_contexts_head.teei_contexts_sem));
+	down_write(&(teei_contexts_head.teei_contexts_sem));
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
 			ctx_found = 1;
 			break;
 		}
 	}
-	up_read(&(teei_contexts_head.teei_contexts_sem));
+	up_write(&(teei_contexts_head.teei_contexts_sem));
 
 	if (!ctx_found) {
 		IMSG_ERROR("[%s][%d] can't find context.\n", __func__, __LINE__);
@@ -418,7 +418,7 @@ int teei_client_session_close(void *private_data, void *argp)
 		return -EFAULT;
 	}
 
-	down_read(&(teei_contexts_head.teei_contexts_sem));
+	down_write(&(teei_contexts_head.teei_contexts_sem));
 
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
@@ -433,7 +433,7 @@ int teei_client_session_close(void *private_data, void *argp)
 	}
 
 copy_to_user:
-	up_read(&(teei_contexts_head.teei_contexts_sem));
+	up_write(&(teei_contexts_head.teei_contexts_sem));
 
 	if (copy_to_user(argp, &ses_close, sizeof(ses_close))) {
 		IMSG_ERROR("[%s][%d] copy from user failed.\n", __func__, __LINE__);
@@ -577,7 +577,7 @@ int teei_client_send_cmd(void *private_data, void *argp)
 		return -EFAULT;
 	}
 
-	down_read(&(teei_contexts_head.teei_contexts_sem));
+	down_write(&(teei_contexts_head.teei_contexts_sem));
 
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
@@ -587,7 +587,7 @@ int teei_client_send_cmd(void *private_data, void *argp)
 
 	}
 
-	up_read(&(teei_contexts_head.teei_contexts_sem));
+	up_write(&(teei_contexts_head.teei_contexts_sem));
 
 	if (ctx_found == 0) {
 		IMSG_ERROR("[%s][%d] can't find context data!\n", __func__, __LINE__);
@@ -725,20 +725,20 @@ int teei_client_operation_release(void *private_data, void *argp)
 	if (enc_found == 0) {
 		IMSG_ERROR("[%s][%d] enc_found failed!\n", __func__, __LINE__);
 		return -EINVAL;
-	} else {
-		if (enc_context->ker_req_data_addr)
-			tz_free_shared_mem(enc_context->ker_req_data_addr, TEEI_1K_SIZE);
-
-		if (enc_context->ker_res_data_addr)
-			tz_free_shared_mem(enc_context->ker_res_data_addr, TEEI_1K_SIZE);
-
-
-		list_del(&enc_context->head);
-		/* kfree(enc_context->meta); */
-		tz_free_shared_mem(enc_context->meta, sizeof(struct teei_encode_meta) *
-							(TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
-		kfree(enc_context);
 	}
+
+	if (enc_context->ker_req_data_addr)
+		tz_free_shared_mem(enc_context->ker_req_data_addr, TEEI_1K_SIZE);
+
+	if (enc_context->ker_res_data_addr)
+		tz_free_shared_mem(enc_context->ker_res_data_addr, TEEI_1K_SIZE);
+
+
+	list_del(&enc_context->head);
+	/* kfree(enc_context->meta); */
+	tz_free_shared_mem(enc_context->meta, sizeof(struct teei_encode_meta) *
+						(TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));
+	kfree(enc_context);
 
 	return 0;
 }
@@ -1809,6 +1809,7 @@ int teei_client_shared_mem_free(void *private_data, void *argp)
 		return -EFAULT;
 	}
 
+	down_write(&(teei_contexts_head.teei_contexts_sem));
 	list_for_each_entry(temp_cont,
 						&teei_contexts_head.context_list,
 						link) {
@@ -1833,6 +1834,7 @@ int teei_client_shared_mem_free(void *private_data, void *argp)
 		}
 	}
 
+	up_write(&(teei_contexts_head.teei_contexts_sem));
 	return 0;
 }
 
@@ -2066,5 +2068,6 @@ int teei_client_service_exit(void *private_data)
 		}
 	}
 
+	up_write(&(teei_contexts_head.teei_contexts_sem));
 	return -EINVAL;
 }

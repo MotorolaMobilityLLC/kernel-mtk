@@ -41,7 +41,6 @@ unsigned long create_fp_fdrv(int buff_size)
 		return (unsigned long)NULL;
 	}
 
-
 	if (buff_size > VDRV_MAX_SIZE) {
 		IMSG_ERROR("[%s][%d]: FP Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
 		return (unsigned long)NULL;
@@ -133,10 +132,8 @@ int __send_fp_command(unsigned long share_memory_size)
 	fp_call_flag = GLSCH_HIGH;
 	n_invoke_t_drv(&smc_type, 0, 0);
 
-	while (smc_type == 0x54) {
-		udelay(IRQ_DELAY);
+	while (smc_type == 0x54)
 		nt_sched_t(&smc_type);
-	}
 
 	return 0;
 }
@@ -160,7 +157,6 @@ int send_fp_command(unsigned long share_memory_size)
 	fdrv_ent.fdrv_call_buff_size = share_memory_size;
 
 	/* with a wmb() */
-	wmb();
 
 	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 	retVal = add_work_entry(FDRV_CALL, (unsigned char *)(&fdrv_ent));
@@ -175,13 +171,11 @@ int send_fp_command(unsigned long share_memory_size)
 	down(&fdrv_sema);
 	IMSG_DEBUG("send_fp_command end\n");
 	/* with a rmb() */
-	rmb();
 
 	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, (unsigned long)fp_buff_addr + FP_BUFF_SIZE);
 
 	ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);
-
 
 	return fdrv_ent.retVal;
 }

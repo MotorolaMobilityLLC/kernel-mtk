@@ -15,7 +15,9 @@
 #define UTDRIVER_MACRO_H
 
 #ifdef CONFIG_MICROTRUST_TUI_DRIVER
+#ifndef TUI_SUPPORT
 #define TUI_SUPPORT
+#endif
 #endif
 
 #define START_STATUS			(0)

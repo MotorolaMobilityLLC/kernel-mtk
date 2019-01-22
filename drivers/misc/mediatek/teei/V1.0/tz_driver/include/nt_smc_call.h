@@ -202,6 +202,10 @@
 		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 7)
 #define NT_SCHED_T_FIQ_32	\
 		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 8)
+#ifdef TUI_SUPPORT
+#define NT_CANCEL_T_TUI_32	\
+		MAKE_SMC_CALL_ID(ID_FIELD_F_STANDARD_SMC_CALL, ID_FIELD_W_32, ID_FIELD_T_TRUSTED_OS_SERVICE3, 9)
+#endif
 #ifdef CONFIG_ARM64
 /*  ==================  NT FAST CALL ================   */
 static inline void n_init_t_boot_stage1(
@@ -227,7 +231,8 @@ static inline void n_init_t_boot_stage1(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_INIT_T_BOOT_STAGE1), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p2 = temp[0];
 }
 
@@ -246,7 +251,8 @@ static inline void n_switch_to_t_os_stage2(uint64_t *p0)
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_SWITCH_TO_T_OS_STAGE2), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3",  "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -262,7 +268,8 @@ static inline void nt_dump_state(void)
 	    "nop"
 	    : :
 	    [fun_id] "r" (NT_DUMP_STATE)
-	    : "x0", "x1", "x2", "x3",  "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void n_get_param_in(
@@ -275,19 +282,20 @@ static inline void n_get_param_in(
 
 	__asm__ volatile(
 	    /* ".arch_extension sec\n" */
-	    "mov r0, %[fun_id]\n\t"
+	    "mov x0, %[fun_id]\n\t"
 	    "mov x1, #0\n\t"
 	    "mov x2, #0\n\t"
 	    "mov x3, #0\n\t"
 	    "smc 0\n\t"
-	    "nop"
-	    "str x0, [%[temp]]\n\t"
-	    "str x1, [%[temp], #8]\n\t"
-	    "str x2, [%[temp], #16]\n\t"
-	    "str x3, [%[temp], #24]\n\t"
+		"nop\n\t"
+		"str x0, [%[temp]]\n\t"
+		"str x1, [%[temp], #8]\n\t"
+		"str x2, [%[temp], #16]\n\t"
+		"str x3, [%[temp], #24]\n\t"
 	    : :
 	    [fun_id] "r" (N_GET_PARAM_IN), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 
 	*rtc0 = temp[0];
 	*rtc1 = temp[1];
@@ -311,7 +319,8 @@ static inline void get_t_device_id(uint64_t *rtc0)
 			"str x1, [%[temp], #0]\n\t"
 			: :
 			[fun_id] "r" (N_GET_T_FP_DEVICE_ID), [temp] "r" (temp)
-			: "x0", "x1", "x2", "x3", "memory");
+			:  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+				"x13", "x14", "x15", "x16", "x17", "memory");
 
 	*rtc0 = temp[0];
 
@@ -339,7 +348,8 @@ static inline void n_init_t_fc_buf(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_INIT_T_FC_BUF), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p2 = temp[0];
 }
 static inline void n_invoke_t_fast_call(
@@ -364,7 +374,8 @@ static inline void n_invoke_t_fast_call(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_FAST_CALL), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -384,7 +395,8 @@ static inline void nt_sched_t(uint64_t *p)
 	    "nop"
 	    : :
 	    [fun_id] "r" (NT_SCHED_T), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p = temp[0];
 }
 
@@ -409,7 +421,8 @@ static inline void n_invoke_t_sys_ctl(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_SYS_CTL), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void n_invoke_t_nq(
@@ -434,7 +447,8 @@ static inline void n_invoke_t_nq(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_NQ), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -460,7 +474,8 @@ static inline void n_invoke_t_drv(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_DRV), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -485,7 +500,8 @@ static inline void n_raise_t_event(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_RAISE_T_EVENT), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void n_ack_t_invoke_drv(
@@ -510,7 +526,8 @@ static inline void n_ack_t_invoke_drv(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_ACK_T_INVOKE_DRV), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -536,7 +553,8 @@ static inline void n_invoke_t_load_tee(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_INVOKE_T_LOAD_TEE), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -562,7 +580,8 @@ static inline void n_ack_t_load_img(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_ACK_T_LOAD_IMG), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -587,7 +606,8 @@ static inline void nt_sched_t_fiq(
 	    "nop"
 	    : :
 	    [fun_id] "r" (NT_SCHED_T_FIQ), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 
@@ -612,7 +632,8 @@ static inline void nt_sched_core(
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_SWITCH_CORE), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 static inline void nt_get_non_irq_num(uint64_t *p0)
@@ -627,7 +648,8 @@ static inline void nt_get_non_irq_num(uint64_t *p0)
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_GET_NON_IRQ_NUM), [temp] "r" (temp)
-	    : "x0", "x1", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 static inline void nt_get_secure_os_state(uint64_t *p0)
@@ -642,7 +664,8 @@ static inline void nt_get_secure_os_state(uint64_t *p0)
 	    "nop"
 	    : :
 	    [fun_id] "r" (N_GET_SE_OS_STATE), [temp] "r" (temp)
-	    : "x0", "x1", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -658,7 +681,8 @@ static inline void nt_dump_t(void)
 	    "nop"
 	    : :
 	    [fun_id] "r" (NT_SCHED_T)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    :  "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 }
 
 #ifdef TUI_SUPPORT
@@ -684,7 +708,8 @@ static inline void nt_cancel_t_tui(
 	    "nop"
 	    : :
 	    [fun_id] "r" (NT_CANCEL_T_TUI), [temp] "r" (temp)
-	    : "x0", "x1", "x2", "x3", "memory");
+	    : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -710,7 +735,8 @@ static inline void nt_i2c_ree(
 	"nop"
 	: :
 	[fun_id] "r" (NT_I2C_REE), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 
@@ -736,7 +762,8 @@ static inline void nt_i2c_tee(
 	"nop"
 	: :
 	[fun_id] "r" (NT_I2C_TEE), [temp] "r" (temp)
-	: "x0", "x1", "x2", "x3", "memory");
+	: "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
+			"x13", "x14", "x15", "x16", "x17", "memory");
 	*p0 = temp[0];
 }
 #endif
