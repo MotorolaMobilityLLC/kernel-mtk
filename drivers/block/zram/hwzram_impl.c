@@ -1047,7 +1047,7 @@ static void *update_buf_for_incompressible(struct hwzram_impl *hwz, gfp_t gfp_fl
 
 static void refill_cached_bufs(struct hwzram_impl *hwz, phys_addr_t *bufs)
 {
-#define FILL_BUFS_GFP_FLAGS	(GFP_NOIO | __GFP_ZERO)
+#define FILL_BUFS_GFP_FLAGS	(GFP_NOIO | __GFP_ZERO | __GFP_NOWARN)
 	int i, enlarge;
 	uint16_t size;
 	phys_addr_t addr;
