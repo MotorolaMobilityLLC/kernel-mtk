@@ -3607,9 +3607,6 @@
 	md1_sim2_hot_plug_eint: md1_sim2_hot_plug_eint {
 	};
 
-	bat_gm30: bat_gm30{
-	};
-
 	usb_c_pinctrl: usb_c_pinctrl {
 	};
 
