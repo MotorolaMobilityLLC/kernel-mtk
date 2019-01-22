@@ -534,7 +534,7 @@ int situation_register_control_path(struct situation_control_path *ctl, int hand
 	cxt->ctl_context[index].situation_ctl.is_support_batch = ctl->is_support_batch;
 
 	sprintf(name, "situation_wakelock-%d", index);
-	wake_lock_init(&cxt->wake_lock[index], WAKE_LOCK_SUSPEND, name);
+	wake_lock_init(&cxt->wake_lock[index], WAKE_LOCK_SUSPEND, "situation");
 
 	return 0;
 }
