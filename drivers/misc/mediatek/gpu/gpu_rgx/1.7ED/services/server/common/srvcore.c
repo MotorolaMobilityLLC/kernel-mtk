@@ -253,11 +253,15 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 				IMG_UINT32 *ui32CapabilityFlags)
 {
 	PVRSRV_ERROR		eError = PVRSRV_OK;
-	PVRSRV_RGXDEV_INFO	*psDevInfo = psDeviceNode->pvDevice;
 	IMG_UINT32			ui32BuildOptions, ui32BuildOptionsMismatch;
 	IMG_UINT32			ui32DDKVersion, ui32DDKBuild;
 	PVRSRV_DATA			*psSRVData = NULL;
 	static IMG_BOOL		bIsFirstConnection=IMG_FALSE;
+
+#if defined(SUPPORT_WORKLOAD_ESTIMATION) || defined(SUPPORT_PDVFS)
+	PVRSRV_RGXDEV_INFO	*psDevInfo = psDeviceNode->pvDevice;
+#endif
+
 	/* Clear the flags */
 	*ui32CapabilityFlags = 0;
 	
@@ -321,6 +325,7 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 }
 #endif
 
+#if defined(SUPPORT_WORKLOAD_ESTIMATION)
 	/* Only enable if enabled in the UM */
 	if(ui32Flags & SRV_WORKEST_ENABLED)
 	{
@@ -330,7 +335,9 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 	{
 		PVR_DPF((PVR_DBG_ERROR,"PVRSRVConnectKM: Workload Estimation disabled. Not enabled in UM."));
 	}
+#endif
 
+#if defined(SUPPORT_PDVFS)
 	/* Only enable if enabled in the UM */
 	if(ui32Flags & SRV_PDVFS_ENABLED)
 	{
@@ -340,7 +347,7 @@ PVRSRVConnectKM(CONNECTION_DATA *psConnection,
 	{
 		PVR_DPF((PVR_DBG_ERROR,"PVRSRVConnectKM: Proactive DVFS disabled. Not enabled in UM."));
 	}
-	
+#endif
 
 #if defined(PDUMP)
 	/* Record this process ID in the persistent list to ensure
