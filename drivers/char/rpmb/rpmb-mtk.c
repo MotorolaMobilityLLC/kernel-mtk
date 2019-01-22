@@ -2225,9 +2225,10 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #endif
 
 	err = copy_from_user(&param, (void *)arg, sizeof(param));
-	if (err < 0) {
-		MSG(ERR, "%s, err=%x\n", __func__, err);
-		return -1;
+
+	if (err) {
+		MSG(ERR, "%s, copy from user failed: %x\n", __func__, err);
+		return -EFAULT;
 	}
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
@@ -2236,19 +2237,21 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			MSG(ERR, "%s, rpmb_buffer is NULL!\n", __func__);
 			return -1;
 		}
+
 		err = copy_from_user(&rpmb_size, (void *)arg, 4);
-		if (err < 0) {
-			MSG(ERR, "%s, err=%x\n", __func__, err);
-			return -1;
+
+		if (err) {
+			MSG(ERR, "%s, copy from user failed: %x\n", __func__, err);
+			return -EFAULT;
 		}
 		rpmbinfor.size =  *(unsigned char *)&rpmb_size | (*((unsigned char *)&rpmb_size+1) << 8);
 		rpmbinfor.size |= (*((unsigned char *)&rpmb_size+2) << 16) | (*((unsigned char *)&rpmb_size+3) << 24);
 		if (rpmbinfor.size <= (RPMB_DATA_BUFF_SIZE-4)) {
 			MSG(DBG_INFO, "%s, rpmbinfor.size is %d!\n", __func__, rpmbinfor.size);
 			err = copy_from_user(rpmb_buffer, (void *)arg, 4 + rpmbinfor.size);
-			if (err < 0) {
-				MSG(ERR, "%s, err=%x\n", __func__, err);
-				return -1;
+			if (err) {
+				MSG(ERR, "%s, copy from user failed: %x\n", __func__, err);
+				return -EFAULT;
 			}
 			rpmbinfor.data_frame = (rpmb_buffer + 4);
 		} else {
@@ -2366,12 +2369,11 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	memset(&rpmbinfor, 0, sizeof(struct rpmb_infor));
 #endif
 
-	/* MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__); */
-
 	err = copy_from_user(&param, (void *)arg, sizeof(param));
-	if (err < 0) {
-		MSG(ERR, "%s, err=%x\n", __func__, err);
-		return -1;
+
+	if (err) {
+		MSG(ERR, "%s, copy from user failed: %x\n", __func__, err);
+		return -EFAULT;
 	}
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
@@ -2381,18 +2383,18 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return -1;
 		}
 		err = copy_from_user(&rpmb_size, (void *)arg, 4);
-		if (err < 0) {
-			MSG(ERR, "%s, err=%x\n", __func__, err);
-			return -1;
+		if (err) {
+			MSG(ERR, "%s, copy from user failed: %x\n", __func__, err);
+			return -EFAULT;
 		}
 		rpmbinfor.size =  *(unsigned char *)&rpmb_size | (*((unsigned char *)&rpmb_size+1) << 8);
 		rpmbinfor.size |= (*((unsigned char *)&rpmb_size+2) << 16) | (*((unsigned char *)&rpmb_size+3) << 24);
 		if (rpmbinfor.size <= (RPMB_DATA_BUFF_SIZE-4)) {
 			MSG(INFO, "%s, rpmbinfor.size is %d!\n", __func__, rpmbinfor.size);
 			err = copy_from_user(rpmb_buffer, (void *)arg, 4 + rpmbinfor.size);
-			if (err < 0) {
-				MSG(ERR, "%s, err=%x\n", __func__, err);
-				return -1;
+			if (err) {
+				MSG(ERR, "%s, copy from user failed: %x\n", __func__, err);
+				return -EFAULT;
 			}
 			rpmbinfor.data_frame = (rpmb_buffer + 4);
 		} else {
