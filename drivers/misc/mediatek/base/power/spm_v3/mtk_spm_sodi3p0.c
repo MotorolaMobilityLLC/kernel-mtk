@@ -264,15 +264,29 @@ static bool gSpm_sodi3_en = true;
 
 static void spm_sodi3_pre_process(u32 operation_cond)
 {
-	/* set PMIC WRAP table for deepidle power control */
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	unsigned int vcore_lp_mode = !!(operation_cond);
+
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+
+	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
+
+	pmic_config_interface_nolock(
+		PMIC_RG_BUCK_VCORE_HW0_OP_EN_ADDR,
+		vcore_lp_mode,
+		PMIC_RG_BUCK_VCORE_HW0_OP_EN_MASK,
+		PMIC_RG_BUCK_VCORE_HW0_OP_EN_SHIFT);
+
+	pmic_config_interface_nolock(
+		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_ADDR,
+		vcore_lp_mode,
+		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
+		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
 #endif
 }
 
 static void spm_sodi3_post_process(void)
 {
-	/* set PMIC WRAP table for normal power control */
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif
