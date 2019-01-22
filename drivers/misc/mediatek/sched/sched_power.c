@@ -46,11 +46,7 @@ struct eas_data eas_info;
 static int ver_major = 1;
 static int ver_minor = 8;
 
-#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-static const char module_name[64] = "arctic, sched-assist dvfs,hps";
-#else
-static const char module_name[64] = "arctic";
-#endif
+static char module_name[128];
 
 /* To define limit of SODI */
 int sodi_limit = DEFAULT_SODI_LIMIT;
@@ -846,6 +842,22 @@ static int __init eas_stats_init(void)
 	int ret = 0;
 
 	eas_info.init = 0;
+
+
+	snprintf(module_name, sizeof(module_name), "%s %s%d %s",
+		"arctic",
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+		"sched-dvfs:", sched_dvfs_type,
+#else
+		"unknown:", 0,
+#endif
+
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+		"acao"
+#else
+		"hps"
+#endif
+	);
 
 	ret = init_eas_attribs();
 
