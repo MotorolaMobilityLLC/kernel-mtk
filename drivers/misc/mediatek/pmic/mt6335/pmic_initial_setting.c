@@ -242,8 +242,8 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vcamd2_lp(SW, 1, SW_OFF);
 	ret = pmic_ldo_vcamio_lp(SW, 1, SW_OFF);
 	ret = pmic_ldo_vcamaf_lp(SW, 1, SW_OFF);
-	ret = pmic_ldo_va10_lp(SRCLKEN2, 1, HW_LP);
-	ret = pmic_ldo_va12_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_va10_lp(SRCLKEN2, 0, HW_LP);
+	ret = pmic_ldo_va12_lp(SRCLKEN2, 0, HW_LP);
 	ret = pmic_ldo_va18_lp(SRCLKEN2, 1, HW_LP);
 	ret = pmic_ldo_vsim2_lp(SW, 1, SW_OFF);
 	ret = pmic_ldo_vsim1_lp(SW, 1, SW_OFF);
