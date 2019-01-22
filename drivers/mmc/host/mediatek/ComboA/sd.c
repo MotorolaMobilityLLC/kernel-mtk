@@ -2867,6 +2867,18 @@ int msdc_do_request_prepare(struct msdc_host *host, struct mmc_request *mrq)
 				l_card_no_cmd23 = 1;
 			}
 		}
+		/*
+		 * check the current region is RPMB or not
+		 * storage "host->autocmd when operating RPMB"
+		 * mask 'MSDC_AUTOCMD12' when operating RPMB"
+		 */
+		if (host->hw->host_function == MSDC_EMMC) {
+			if (host->mmc->card
+			 && (host->mmc->card->ext_csd.part_config &
+			     EXT_CSD_PART_CONFIG_ACC_MASK)
+			     == EXT_CSD_PART_CONFIG_ACC_RPMB)
+				host->autocmd &= ~MSDC_AUTOCMD12;
+		}
 	}
 
 	return l_card_no_cmd23;
