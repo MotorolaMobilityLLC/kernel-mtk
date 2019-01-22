@@ -1242,6 +1242,9 @@ static int __init scp_init(void)
 
 #if SCP_DVFS_INIT_ENABLE
 	scp_dvfs_init();
+	wait_scp_dvfs_init_done();
+	/* pll maybe gate, request pll before access any scp reg/sram */
+	scp_pll_mux_set(PLL_ENABLE);
 #endif
 
 	/* scp ready static flag initialise */
@@ -1335,11 +1338,11 @@ static int __init scp_init(void)
 	set_scp_mpu();
 #endif
 
-#if SCP_DVFS_INIT_ENABLE
-	wait_scp_dvfs_init_done();
-#endif
-
 	driver_init_done = true;
+#if SCP_DVFS_INIT_ENABLE
+	/* remember to release pll */
+	scp_pll_mux_set(PLL_DISABLE);
+#endif
 	reset_scp(SCP_ALL_ENABLE);
 
 	return ret;
