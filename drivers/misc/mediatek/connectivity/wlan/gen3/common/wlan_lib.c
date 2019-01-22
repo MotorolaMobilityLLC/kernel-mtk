@@ -2740,19 +2740,25 @@ WLAN_STATUS wlanImageQueryStatus(IN P_ADAPTER_T prAdapter)
 					     aucBuffer,
 					     sizeof(INIT_HIF_RX_HEADER_T) +
 					     sizeof(INIT_EVENT_PENDING_ERROR), &u4RxPktLength) != WLAN_STATUS_SUCCESS) {
+			DBGLOG(INIT, ERROR, "Wait Response event failed!\n");
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
 
 			/* EID / SeqNum check */
 			if (prInitHifRxHeader->rInitWifiEvent.ucEID != INIT_EVENT_ID_PENDING_ERROR) {
+				DBGLOG(INIT, ERROR, "Unexpected Event ID %d! expect %d\n",
+				       prInitHifRxHeader->rInitWifiEvent.ucEID, INIT_EVENT_ID_PENDING_ERROR);
 				u4Status = WLAN_STATUS_FAILURE;
 			} else if (prInitHifRxHeader->rInitWifiEvent.ucSeqNum != ucCmdSeqNum) {
+				DBGLOG(INIT, ERROR, "Unexpected SeqNum %d! expect %d\n",
+				       prInitHifRxHeader->rInitWifiEvent.ucSeqNum, ucCmdSeqNum);
 				u4Status = WLAN_STATUS_FAILURE;
 			} else {
 				prEventPendingError =
 				    (P_INIT_EVENT_PENDING_ERROR) (prInitHifRxHeader->rInitWifiEvent.aucBuffer);
 				if (prEventPendingError->ucStatus != 0) {	/* 0 for download success */
+					DBGLOG(INIT, ERROR, "Event status error %d!\n", prEventPendingError->ucStatus);
 					u4Status = WLAN_STATUS_FAILURE;
 				} else {
 					u4Status = WLAN_STATUS_SUCCESS;
@@ -2798,19 +2804,25 @@ WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 u
 					     aucBuffer,
 					     sizeof(INIT_HIF_RX_HEADER_T) +
 					     sizeof(INIT_EVENT_CMD_RESULT), &u4RxPktLength) != WLAN_STATUS_SUCCESS) {
+			DBGLOG(INIT, ERROR, "Wait Response event failed!\n");
 			u4Status = WLAN_STATUS_FAILURE;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
 
 			/* EID / SeqNum check */
 			if (prInitHifRxHeader->rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT) {
+				DBGLOG(INIT, ERROR, "Unexpected Event ID %d! expect %d\n",
+				       prInitHifRxHeader->rInitWifiEvent.ucEID, INIT_EVENT_ID_CMD_RESULT);
 				u4Status = WLAN_STATUS_FAILURE;
 			} else if (prInitHifRxHeader->rInitWifiEvent.ucSeqNum != ucCmdSeqNum) {
+				DBGLOG(INIT, ERROR, "Unexpected SeqNum %d! expect %d\n",
+				       prInitHifRxHeader->rInitWifiEvent.ucSeqNum, ucCmdSeqNum);
 				u4Status = WLAN_STATUS_FAILURE;
 			} else {
 				prEventCmdResult =
 				    (P_INIT_EVENT_CMD_RESULT) (prInitHifRxHeader->rInitWifiEvent.aucBuffer);
 				if (prEventCmdResult->ucStatus != 0) {	/* 0 for download success */
+					DBGLOG(INIT, ERROR, "Event status error %d!\n", prEventCmdResult->ucStatus);
 					u4Status = WLAN_STATUS_FAILURE;
 				} else {
 					u4Status = WLAN_STATUS_SUCCESS;
