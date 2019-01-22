@@ -15,10 +15,14 @@ obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6799) += 1.0/
 
 #subdir-ccflags-y += -DMTK_VPU_EMULATOR
-subdir-ccflags-y += -DMTK_VPU_DVT
 
-ifdef CONFIG_MTK_FPGA
+ifneq ($(TARGET_BUILD_VARIANT),user)
+	subdir-ccflags-y += -DMTK_VPU_DVT
+endif
+
+# FPGA environment
+ifeq ($(CONFIG_MTK_FPGA),y)
 	subdir-ccflags-y += -DMTK_VPU_FPGA_PORTING
-else ifdef CONFIG_FPGA_EARLY_PORTING
+else ifeq ($(CONFIG_FPGA_EARLY_PORTING),y)
 	subdir-ccflags-y += -DMTK_VPU_FPGA_PORTING
 endif
