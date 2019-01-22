@@ -386,10 +386,18 @@ void systracker_enable_default(void)
 	unsigned int timer_control_value;
 
 	timer_control_value = systracker_timeout_value();
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	writel(timer_control_value, IOMEM(BUS_DBG_TIMER_CON0));
+#else
+	writel(BUS_DBG_MAX_TIMEOUT_VAL, IOMEM(BUS_DBG_TIMER_CON0));
+#endif
 
 	timer_control_value = systracker_timeout2_value();
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	writel(timer_control_value, IOMEM(BUS_DBG_TIMER_CON1));
+#else
+	writel(BUS_DBG_MAX_TIMEOUT_VAL, IOMEM(BUS_DBG_TIMER_CON0));
+#endif
 
 	track_config.state = 1;
 	con = BUS_DBG_CON_BUS_DBG_EN | BUS_DBG_CON_BUS_OT_EN;
