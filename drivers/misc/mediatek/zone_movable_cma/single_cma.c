@@ -116,7 +116,7 @@ orig:
 	return cma_get_base(cma);
 }
 
-static int zmc_memory_init(struct reserved_mem *rmem)
+static int __init zmc_memory_init(struct reserved_mem *rmem)
 {
 	int ret;
 	int nr_registed = ARRAY_SIZE(single_cma_list);
