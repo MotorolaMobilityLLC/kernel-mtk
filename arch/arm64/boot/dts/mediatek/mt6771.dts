@@ -2162,20 +2162,9 @@
 		clock-names = "RSC_CLK_IMG_RSC";
 	};
 
-	wpe_a@1502a000 {
-		compatible = "mediatek,wpe_a";
+	wpe@1502a000 {
+		compatible = "mediatek,wpe";
 		reg = <0 0x1502a000 0 0x1000>;
-
-		clocks = <&imgsys CLK_IMG_WPE_A>;
-		clock-names = "WPE_CLK_IMG_WPE_A";
-	};
-
-	wpe_b@1502d000 {
-		compatible = "mediatek,wpe_b";
-		reg = <0 0x1502d000 0 0x1000>;
-
-		clocks = <&imgsys CLK_IMG_WPE_B>;
-		clock-names = "WPE_CLK_IMG_WPE_B";
 	};
 
 	fdvt@1502b000 {
