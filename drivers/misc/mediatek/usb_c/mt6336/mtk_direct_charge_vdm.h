@@ -51,7 +51,7 @@
 #define CMD_SET_UVLO_VOL_CUR 0x23
 #define CMD_AUTH 0x24
 
-#define MTK_VDM_TIMEOUT	(20*50)
+#define MTK_VDM_TIMEOUT	(300)
 
 struct pd_direct_chrg {
 	struct typec_hba *hba;
