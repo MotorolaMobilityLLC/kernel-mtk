@@ -19,23 +19,20 @@ static DECLARE_WORK(mt_tt_eas_work, (void *) notify_twanted_timeout_eas);
 static DECLARE_WORK(mt_touch_timeout_work, (void *) notify_touch_up_timeout);
 static DECLARE_WORK(mt_render_aware_timeout_work, (void *) notify_render_aware_timeout);
 static struct workqueue_struct *wq;
+static struct mutex notify_lock;
 static struct hrtimer hrt, hrt1, hrt2;
 static unsigned long __read_mostly mark_addr;
-struct mutex notify_lock;
-EXPORT_SYMBOL(notify_lock);
 
 static struct ppm_limit_data core_limit[NR_PPM_CLUSTERS];
 static int fbc_debug, fbc_ux_state, fbc_ux_state_pre, fbc_render_aware, fbc_render_aware_pre;
-static int fbc_trace, has_frame;
+static int fbc_game, fbc_trace, has_frame;
 static long frame_budget, twanted, twanted_ms, avg_frame_time, queue_time;
-static int ema, super_boost, boost_flag;
+static int ema, boost_method, super_boost, boost_flag;
 static int boost_value, touch_boost_value, current_max_bv, avg_boost, chase_boost1, chase_boost2;
 static int first_frame, swap_buffers_begin, first_vsync, frame_done, chase, act_switched;
 static long frame_info[MAX_THREAD][2]; /*0:current id, 1: frametime, if no render -1*/
 static int his_bv[2];
 static int vip_group[10];
-int fbc_game;
-EXPORT_SYMBOL(fbc_game);
 
 struct fbc_operation_locked {
 	void (*ux_enable)(int);
@@ -170,13 +167,20 @@ static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
 	if (!wq)
 		return HRTIMER_NORESTART;
 
-	queue_work(wq, &mt_tt_eas_work);
+	switch (boost_method) {
+	case EAS:
+		queue_work(wq, &mt_tt_eas_work);
+		break;
+	default:
+		queue_work(wq, &mt_tt_eas_work);
+		break;
+	}
 
 	return HRTIMER_NORESTART;
 }
 
 /*--------------------FRAME HINT OP------------------------*/
-void notify_touch(int action)
+static void notify_touch(int action)
 {
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
@@ -197,7 +201,6 @@ void notify_touch(int action)
 
 	fbc_tracer(-3, "ux_state", fbc_ux_state);
 }
-EXPORT_SYMBOL(notify_touch);
 
 static void notify_touch_up_timeout(void)
 {
@@ -244,8 +247,6 @@ static void notify_game(int game)
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
 	fbc_game = game;
-	if (fbc_game && fbc_ux_state == 1)
-		notify_touch(0);
 }
 
 static void notify_twanted_timeout_eas(void)
@@ -676,6 +677,18 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		}
 	} else if (strncmp(cmd, "ema", 3) == 0) {
 		ema = arg;
+	} else if (strncmp(cmd, "method", 6) == 0) {
+		mutex_lock(&notify_lock);
+		boost_method = arg;
+		switch (boost_method) {
+		case EAS:
+			fbc_op = &fbc_eas;
+			break;
+		default:
+			fbc_op = &fbc_eas;
+			break;
+		}
+		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "super_boost", 11) == 0) {
 		super_boost = arg;
 	} else if (strncmp(cmd, "trace", 5) == 0) {
@@ -690,6 +703,7 @@ static int device_show(struct seq_file *m, void *v)
 	SEQ_printf(m, "-----------------------------------------------------\n");
 	SEQ_printf(m, "trace:\t%d\n", fbc_trace);
 	SEQ_printf(m, "debug:\t%d\n", fbc_debug);
+	SEQ_printf(m, "method:\t%d\n", boost_method);
 	SEQ_printf(m, "ux state:\t%d\n", fbc_ux_state);
 	SEQ_printf(m, "ema:\t%d\n", ema);
 	SEQ_printf(m, "init:\t%d\n", touch_boost_value);
@@ -757,7 +771,7 @@ long device_ioctl(struct file *filp,
 
 	/*receive touch info*/
 	case IOCTL_WRITE_TH:
-		/*notify_touch(arg);*/
+		notify_touch(arg);
 		break;
 
 	/*receive frame_time info*/
@@ -827,6 +841,7 @@ static int __init init_fbc(void)
 	frame_budget = 16 * NSEC_PER_MSEC;
 	twanted = 12 * NSEC_PER_MSEC;
 	twanted_ms = twanted / NSEC_PER_MSEC;
+	boost_method = EAS;
 	ema = 5;
 	super_boost = SUPER_BOOST;
 	touch_boost_value = TOUCH_BOOST_EAS;
@@ -839,7 +854,6 @@ static int __init init_fbc(void)
 		pr_crit(TAG"work create fail\n");
 		return -ENOMEM;
 	}
-	init_fbc_touch();
 
 	hrtimer_init(&hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hrt.function = &mt_twanted_timeout;
