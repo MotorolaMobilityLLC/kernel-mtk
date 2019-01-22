@@ -771,6 +771,9 @@ WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetB
 		DBGLOG(REQ, WARN, "Fail in set BSSID list scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
 			prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_ADAPTER_NOT_READY;
+	} else if (prAdapter->fgTestMode) {
+		DBGLOG(OID, WARN, "didn't support Scan in test mode\n");
+		return WLAN_STATUS_FAILURE;
 	}
 
 	ASSERT(pu4SetInfoLen);
@@ -790,7 +793,7 @@ WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetB
 	prScanRequest = (P_PARAM_SCAN_REQUEST_ADV_T)pvSetBuffer;
 
 	ucSsidNum = (UINT_8)(prScanRequest->u4SsidNum);
-	for (i = 0 ; i < prScanRequest->u4SsidNum ; i++) {
+	for (i = 0; i < prScanRequest->u4SsidNum; i++) {
 		COPY_SSID(rSsid[i].aucSsid, rSsid[i].u4SsidLen, prScanRequest->rSsid[i].aucSsid,
 			prScanRequest->rSsid[i].u4SsidLen);
 	}
