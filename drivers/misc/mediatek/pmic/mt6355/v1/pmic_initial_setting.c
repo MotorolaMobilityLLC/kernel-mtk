@@ -22,6 +22,9 @@
 #include "include/pmic.h"
 #include "include/pmic_api.h"
 #include "include/pmic_api_buck.h"
+#if defined(CONFIG_MACH_MT6757)
+#include <mtk_clkbuf_ctl.h>
+#endif
 
 #define PMIC_32K_LESS_DETECT_V1      0
 #define PMIC_CO_TSX_V1               1
@@ -226,11 +229,17 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
 	ret = pmic_ldo_vtcxo24_lp(SRCLKEN1, 1, HW_OFF);
 #if defined(CONFIG_MTK_RTC)
-	if ((crystal_exist_status()) == true)
+	if (is_clk_buf_from_pmic()) {
+		if (crystal_exist_status() == true)
+			ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_OFF);
+		else
+			ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_LP);
+	} else {
 		ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_OFF);
-	else
+	}
+#else
+	ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_LP);
 #endif
-		ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_ldo_vxo18_lp(SRCLKEN0, 1, HW_OFF);
 	ret = pmic_ldo_vrf18_1_lp(SRCLKEN1, 1, HW_OFF);
 	ret = pmic_ldo_vrf18_2_lp(SRCLKEN1, 1, HW_OFF);
