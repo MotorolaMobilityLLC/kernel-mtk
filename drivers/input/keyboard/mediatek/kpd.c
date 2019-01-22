@@ -13,6 +13,7 @@
  * GNU General Public License for more details.
  *
  */
+#define DEBUG 1
 
 #include "kpd.h"
 #include <linux/wakelock.h>
@@ -20,9 +21,14 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/clk.h>
+#include <linux/debugfs.h>
 
 #define KPD_NAME	"mtk-kpd"
 #define MTK_KP_WAKESOURCE	/* this is for auto set wake up source */
+
+static struct dentry *kpd_droot;
+static struct dentry *kpd_dklog;
+int kpd_klog_en;
 
 void __iomem *kp_base;
 static unsigned int kp_irqnr;
@@ -1044,6 +1050,19 @@ static int __init kpd_mod_init(void)
 	register_sb_handler(&kpd_sb_handler_desc);
 #endif
 #endif
+
+#ifdef CONFIG_MTK_ENG_BUILD
+	kpd_klog_en = 1;
+#else
+	kpd_klog_en = 0;
+#endif
+
+	kpd_droot = debugfs_create_dir("keypad", NULL);
+
+	if (IS_ERR_OR_NULL(kpd_droot))
+		return 0;
+
+	kpd_dklog = debugfs_create_u32("debug", 0600, kpd_droot, &kpd_klog_en);
 
 	return 0;
 }
