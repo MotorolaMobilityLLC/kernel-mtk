@@ -1177,11 +1177,6 @@ int rpmb_req_get_wc(struct mmc_card *card, u8 *key, u32 *wc)
 
 	MSG(INFO, "%s start!!!\n", __func__);
 
-	if (strlen(key) != 32) {
-		MSG(ERR, "%s, error rpmb key len = 0x%x\n", __func__, (unsigned int)strlen(key));
-		return RPMB_WC_ERROR;
-	}
-
 	do {
 		rpmb_frame = kzalloc(sizeof(struct s_rpmb), 0);
 		if (rpmb_frame == NULL)
@@ -1211,12 +1206,20 @@ int rpmb_req_get_wc(struct mmc_card *card, u8 *key, u32 *wc)
 		/*
 		 * Authenticate response write counter frame.
 		 */
-		hmac_sha256(key, 32, rpmb_frame->data, 284, hmac);
+		if (key) {
+			if (strlen(key) != 32) {
+				MSG(ERR, "%s, error rpmb key len = 0x%x\n", __func__, (unsigned int)strlen(key));
+				ret = RPMB_WC_ERROR;
+				break;
+			}
 
-		if (memcmp(hmac, rpmb_frame->mac, RPMB_SZ_MAC) != 0) {
-			MSG(ERR, "%s, hmac compare error!!!\n", __func__);
-			ret = RPMB_HMAC_ERROR;
-			break;
+			hmac_sha256(key, 32, rpmb_frame->data, 284, hmac);
+
+			if (memcmp(hmac, rpmb_frame->mac, RPMB_SZ_MAC) != 0) {
+				MSG(ERR, "%s, hmac compare error!!!\n", __func__);
+				ret = RPMB_HMAC_ERROR;
+				break;
+			}
 		}
 
 		if (memcmp(nonce, rpmb_frame->nonce, RPMB_SZ_NONCE) != 0) {
