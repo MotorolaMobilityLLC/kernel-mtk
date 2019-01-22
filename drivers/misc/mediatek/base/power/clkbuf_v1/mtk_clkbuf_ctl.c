@@ -85,7 +85,7 @@ void clk_buf_set_by_flightmode(bool is_flightmode_on)
 {
 }
 
-void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status)
+void clk_buf_get_swctrl_status(enum CLK_BUF_SWCTRL_STATUS_T *status)
 {
 	if (!is_clkbuf_initiated)
 		return;
