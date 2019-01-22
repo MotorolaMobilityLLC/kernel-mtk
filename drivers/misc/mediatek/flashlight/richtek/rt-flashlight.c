@@ -520,6 +520,24 @@ int flashlight_is_ready(struct flashlight_device *flashlight_dev)
 }
 EXPORT_SYMBOL(flashlight_is_ready);
 
+int flashlight_get_irq1(struct flashlight_device *flashlight_dev)
+{
+	if (flashlight_dev->ops == NULL ||
+			flashlight_dev->ops->get_irq1 == NULL)
+		return -EINVAL;
+	return flashlight_dev->ops->get_irq1(flashlight_dev);
+}
+EXPORT_SYMBOL(flashlight_get_irq1);
+
+int flashlight_get_irq2(struct flashlight_device *flashlight_dev)
+{
+	if (flashlight_dev->ops == NULL ||
+			flashlight_dev->ops->get_irq2 == NULL)
+		return -EINVAL;
+	return flashlight_dev->ops->get_irq2(flashlight_dev);
+}
+EXPORT_SYMBOL(flashlight_get_irq2);
+
 static int flashlight_match_device_by_name(struct device *dev, const void *data)
 {
 	const char *name = data;

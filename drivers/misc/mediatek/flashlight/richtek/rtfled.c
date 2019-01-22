@@ -134,6 +134,20 @@ static int rtfled_resume(struct flashlight_device *flashlight_dev)
 	return 0;
 }
 
+static int rtfled_get_irq1(struct flashlight_device *flashlight_dev)
+{
+	struct rt_fled_dev *fled_dev = flashlight_get_data(flashlight_dev);
+
+	return fled_dev->hal->rt_hal_fled_get_irq1(fled_dev);
+}
+
+static int rtfled_get_irq2(struct flashlight_device *flashlight_dev)
+{
+	struct rt_fled_dev *fled_dev = flashlight_get_data(flashlight_dev);
+
+	return fled_dev->hal->rt_hal_fled_get_irq2(fled_dev);
+}
+
 static struct flashlight_ops rtfled_impl_ops = {
 	.set_torch_brightness = rtfled_set_torch_brightness,
 	.set_strobe_brightness = rtfled_set_strobe_brightness,
@@ -146,6 +160,8 @@ static struct flashlight_ops rtfled_impl_ops = {
 	.list_color_temperature = rtfled_list_color_temperature,
 	.suspend = rtfled_suspend,
 	.resume = rtfled_resume,
+	.get_irq1 = rtfled_get_irq1,
+	.get_irq2 = rtfled_get_irq2,
 };
 
 static void rfled_shutdown(struct platform_device *pdev)
@@ -369,6 +385,8 @@ static int rtfled_check_hal_implement(struct rt_fled_hal *hal)
 	rc |= check_hal_implemented(hal->rt_hal_fled_get_timeout_level_sel);
 	rc |= check_hal_implemented(hal->rt_hal_fled_get_lv_protection_sel);
 	rc |= check_hal_implemented(hal->rt_hal_fled_get_strobe_timeout_sel);
+	rc |= check_hal_implemented(hal->rt_hal_fled_get_irq1);
+	rc |= check_hal_implemented(hal->rt_hal_fled_get_irq2);
 
 	if (rc != 0)
 		RTFLED_WARN("check_hal_implemented have NULL item.\n");
