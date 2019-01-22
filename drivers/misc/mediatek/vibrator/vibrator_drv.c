@@ -141,27 +141,23 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 	struct vibrator_hw *hw = mt_get_cust_vibrator_hw();
 #endif
 
-	VIB_DEBUG("vibrator_enable: vibrator first in value = %d\n", value);
-
 	spin_lock_irqsave(&vibe_lock, flags);
-	while (hrtimer_cancel(&vibe_timer))
-		VIB_DEBUG("vibrator_enable: try to cancel hrtimer\n");
+	if (hrtimer_cancel(&vibe_timer))
+		VIB_DEBUG("vibrator_enable: cancel existed hrtimer, cust timer: %d(ms), value: %d, shutdown: %d\n",
+			hw->vib_timer, value, shutdown_flag);
+	else
+		VIB_DEBUG("vibrator_enable: no timer existed, cust timer: %d(ms), value: %d, shutdown: %d\n",
+			hw->vib_timer, value, shutdown_flag);
 
 	if (value == 0 || shutdown_flag == 1) {
-		VIB_DEBUG("vibrator_enable: shutdown_flag = %d\n",
-			  shutdown_flag);
 		vibe_state = 0;
 	} else {
-#if 1
-		VIB_DEBUG("vibrator_enable: vibrator cust timer: %d\n",
-			  hw->vib_timer);
 #ifdef CUST_VIBR_LIMIT
 		if (value > hw->vib_limit && value < hw->vib_timer)
 #else
 		if (value >= 10 && value < hw->vib_timer)
 #endif
 			value = hw->vib_timer;
-#endif
 
 		value = (value > 15000 ? 15000 : value);
 		vibe_state = 1;
@@ -170,7 +166,6 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 			      HRTIMER_MODE_REL);
 	}
 	spin_unlock_irqrestore(&vibe_lock, flags);
-	VIB_DEBUG("vibrator_enable: vibrator start: %d\n", value);
 	queue_work(vibrator_queue, &vibrator_work);
 }
 
