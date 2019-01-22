@@ -142,6 +142,7 @@ struct gtimer g1, g2, g3, g4, g5;
 #endif
 
 static bool gDisableGM30;
+static bool ntc_disable_nafg;
 
 struct gauge_device *gauge_dev;
 
@@ -639,11 +640,21 @@ struct fuel_gauge_table_custom_data fg_table_cust_data;
 /* ============================================================ */
 /* extern function */
 /* ============================================================ */
-static int proc_dump_dtsi_show(struct seq_file *m, void *v)
+
+static int proc_cmd_id;
+static unsigned int proc_subcmd;
+static unsigned int proc_subcmd_para1;
+static char proc_log[4096];
+
+static void proc_dump_log(struct seq_file *m)
 {
+	seq_printf(m, "subcmd:%d para1:%d\n", proc_subcmd, proc_subcmd_para1);
+	seq_printf(m, "%s\n", proc_log);
+}
 
+static void proc_dump_dtsi(struct seq_file *m)
+{
 	seq_puts(m, "********** dump DTSI **********\n");
-
 	seq_printf(m, "g_FG_PSEUDO100_T0 = %d\n", fg_cust_data.pseudo100_t0);
 	seq_printf(m, "g_FG_PSEUDO100_T1 = %d\n", fg_cust_data.pseudo100_t1);
 	seq_printf(m, "g_FG_PSEUDO100_T2 = %d\n", fg_cust_data.pseudo100_t2);
@@ -668,20 +679,94 @@ static int proc_dump_dtsi_show(struct seq_file *m, void *v)
 	seq_printf(m, "CAR_TUNE_VALUE = %d\n", fg_cust_data.car_tune_value);
 
 	seq_printf(m, "pl_two_sec_reboot = %d\n", pl_two_sec_reboot);
+}
+
+static int proc_dump_log_show(struct seq_file *m, void *v)
+{
+	int i;
+
+	seq_puts(m, "********** Gauge Dump **********\n");
+
+	seq_puts(m, "Command Table list\n");
+	seq_puts(m, "0: dump dtsi\n");
+	seq_puts(m, "1: dump v-mode table\n");
+	seq_printf(m, "current command:%d\n", proc_cmd_id);
+
+	switch (proc_cmd_id) {
+	case 0:
+		proc_dump_dtsi(m);
+		break;
+	case 1:
+		wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_LOG, 1);
+		for (i = 0; i < 5; i++) {
+			msleep(500);
+			if (proc_subcmd_para1 == 1)
+				break;
+		}
+		proc_dump_log(m);
+
+		break;
+
+	default:
+		seq_printf(m, "do not support command:%d\n", proc_cmd_id);
+		wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_LOG, proc_cmd_id);
+		for (i = 0; i < 5; i++) {
+			msleep(500);
+			if (proc_subcmd_para1 == proc_cmd_id)
+				break;
+		}
+		proc_dump_log(m);
+
+		break;
+	}
+
+
 
 	/*battery_dump_info(m);*/
 
 	return 0;
 }
 
-static int proc_dump_dtsi_open(struct inode *inode, struct file *file)
+static ssize_t proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *f_pos)
 {
-	return single_open(file, proc_dump_dtsi_show, NULL);
+	int cmd = 0;
+	char num[10];
+
+	memset(num, 0, 10);
+
+	pr_err("proc_write %s %d\n", buffer, (int)count);
+
+	if (!count)
+		return 0;
+
+	if (count > (sizeof(num) - 1))
+		return -EINVAL;
+
+	if (copy_from_user(num, buffer, count))
+		return -EFAULT;
+
+	if (kstrtoint(num, 10, &cmd) == 0)
+		proc_cmd_id = cmd;
+	else {
+		proc_cmd_id = 0;
+		return -EFAULT;
+	}
+
+	pr_err("proc_write success %d\n", cmd);
+	return count;
 }
 
-static const struct file_operations battery_dump_dtsi_proc_fops = {
-	.open = proc_dump_dtsi_open,
+
+static int proc_dump_log_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, proc_dump_log_show, NULL);
+}
+
+static const struct file_operations battery_dump_log_proc_fops = {
+	.open = proc_dump_log_open,
 	.read = seq_read,
+	.llseek	= seq_lseek,
+	.write = proc_write,
 };
 
 void battery_debug_init(void)
@@ -694,7 +779,8 @@ void battery_debug_init(void)
 		return;
 	}
 
-	proc_create("dump_dtsi", S_IRUGO | S_IWUSR, battery_dir, &battery_dump_dtsi_proc_fops);
+	proc_create("dump_log", 0644, battery_dir, &battery_dump_log_proc_fops);
+	/*proc_create("dump_dtsi", S_IRUGO | S_IWUSR, battery_dir, &battery_dump_dtsi_proc_fops);*/
 }
 
 static ssize_t show_Battery_Temperature(struct device *dev, struct device_attribute *attr,
@@ -1587,12 +1673,8 @@ int BattVoltToTemp(int dwVolt)
 	return sBaTTMP;
 }
 
-int force_get_tbat(bool update)
+int force_get_tbat_internal(bool update)
 {
-#if defined(CONFIG_POWER_EXT) || defined(FIXED_TBAT_25)
-	bm_debug("[force_get_tbat] fixed TBAT=25 t\n");
-	return 25;
-#else
 	int bat_temperature_volt = 0;
 	int bat_temperature_val = 0;
 	static int pre_bat_temperature_val = -1;
@@ -1692,6 +1774,19 @@ int force_get_tbat(bool update)
 		bat_temperature_val = pre_bat_temperature_val;
 	}
 
+	return bat_temperature_val;
+}
+
+int force_get_tbat(bool update)
+{
+#if defined(CONFIG_POWER_EXT) || defined(FIXED_TBAT_25)
+	bm_debug("[force_get_tbat] fixed TBAT=25 t\n");
+	return 25;
+#else
+	int bat_temperature_val = 0;
+
+	bat_temperature_val = force_get_tbat_internal(update);
+
 	if (bat_temperature_val <= BATTERY_TMP_TO_DISABLE_GM30 && gDisableGM30 == false) {
 		pr_err("battery temperature is too low %d and disable GM3.0\n", bat_temperature_val);
 		disable_fg();
@@ -1699,6 +1794,15 @@ int force_get_tbat(bool update)
 			battery_main.BAT_CAPACITY = 50;
 		battery_update(&battery_main);
 	}
+
+	if (bat_temperature_val <= BATTERY_TMP_TO_DISABLE_NAFG) {
+		ntc_disable_nafg = true;
+		bm_err("[force_get_tbat] ntc_disable_nafg %d %d\n", bat_temperature_val,
+			DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG);
+		return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
+	}
+
+	ntc_disable_nafg = false;
 
 	return bat_temperature_val;
 #endif
@@ -1928,6 +2032,20 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			ret_msg->fgd_data_len += sizeof(rac);
 			memcpy(ret_msg->fgd_data, &rac, sizeof(rac));
 			bm_debug("[fg_res] FG_DAEMON_CMD_GET_RAC = %d\n", rac);
+		}
+		break;
+
+	case FG_DAEMON_CMD_GET_DISABLE_NAFG:
+		{
+			int ret = 0;
+
+			if (ntc_disable_nafg == true)
+				ret = 1;
+			else
+				ret = 0;
+			ret_msg->fgd_data_len += sizeof(ret);
+			memcpy(ret_msg->fgd_data, &ret, sizeof(ret));
+			bm_debug("[fg_res] FG_DAEMON_CMD_GET_DISABLE_NAFG = %d\n", ret);
 		}
 		break;
 
@@ -2673,6 +2791,17 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	}
 	break;
 
+	case FG_DAEMON_CMD_DUMP_LOG:
+	{
+		proc_subcmd = msg->fgd_subcmd;
+		proc_subcmd_para1 = msg->fgd_subcmd_para1;
+		memset(proc_log, 0, 4096);
+		strncpy(proc_log, &msg->fgd_data[0], strlen(&msg->fgd_data[0]));
+		bm_err("[fg_res] FG_DAEMON_CMD_DUMP_LOG %d %d %d\n", msg->fgd_subcmd, msg->fgd_subcmd_para1,
+			(int)strlen(&msg->fgd_data[0]));
+	}
+	break;
+
 	case FG_DAEMON_CMD_GET_RTC_UI_SOC:
 	{
 		int rtc_ui_soc;
@@ -3138,7 +3267,7 @@ void fg_drv_update_hw_status(void)
 	hwocv = hwocv_new;
 	plugout_status = plugout_status_new;
 	tmp = tmp_new;
-	wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_LOG, 0);
+	wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_REGULAR_LOG, 0);
 }
 
 void fg_iavg_int_ht_handler(void)
@@ -4592,6 +4721,7 @@ MODULE_DEVICE_TABLE(of, mtk_bat_of_match);
 
 static int battery_suspend(struct platform_device *dev, pm_message_t state)
 {
+	bm_err("******** battery_suspend!! ********\n");
 	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
 	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
 	return 0;
@@ -4599,6 +4729,7 @@ static int battery_suspend(struct platform_device *dev, pm_message_t state)
 
 static int battery_resume(struct platform_device *dev)
 {
+	bm_err("******** battery_resume!! ********\n");
 	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
 	pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
 	return 0;
