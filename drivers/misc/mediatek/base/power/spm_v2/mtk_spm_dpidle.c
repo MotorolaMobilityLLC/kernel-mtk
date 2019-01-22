@@ -52,10 +52,6 @@
 #include "mtk_dramc.h"
 #include "mtk_spm_dpidle_mt6757.h"
 #endif
-/* Temporary: Fix build, No such file */
-/*#include <mt_power_gs-v1.h>*/
-/*#include <mt_golden_setting.h>*/
-
 /*
  * only for internal debug
  */
@@ -767,8 +763,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	snapshot_golden_setting(__func__, 0);
 #endif
-	/* Temporary: Fix build, implicit declaration of function */
-	/* mt_power_gs_dump_dpidle(); */
+	mt_power_gs_dump_dpidle();
 
 	if (request_uart_to_sleep()) {
 		wr = WR_UART_BUSY;
