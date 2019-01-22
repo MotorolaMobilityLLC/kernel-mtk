@@ -28,6 +28,10 @@ typedef struct spower_raw_s {
 #include "mtk_spower_data_mt6799.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6759)
+#include "mtk_spower_data_mt6759.h"
+#endif
+
 typedef struct voltage_row_s {
 	int mV[VSIZE];
 } vrow_t;
