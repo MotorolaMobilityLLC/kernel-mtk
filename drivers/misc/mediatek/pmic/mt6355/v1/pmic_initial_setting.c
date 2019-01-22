@@ -612,7 +612,7 @@ void PMIC_LP_INIT_SETTING(void)
 
 	/*--Deepidle--*/
 	pmic_buck_vproc11_lp(SRCLKEN2, 1, HW_LP);
-	pmic_buck_vproc12_lp(SRCLKEN2, 1, HW_LP);
+	pmic_buck_vproc12_lp(SW, 1, SW_OFF);
 	pmic_buck_vcore_lp(SRCLKEN2, 1, HW_LP);
 	pmic_buck_vgpu_lp(SRCLKEN2, 1, HW_LP);
 	pmic_buck_vdram1_lp(SRCLKEN2, 1, HW_LP);
