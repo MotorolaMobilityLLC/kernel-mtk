@@ -1420,7 +1420,11 @@ static void createWirelessDevice(void)
 	prWdev->iftype = NL80211_IFTYPE_STATION;
 	prWiphy->max_scan_ssids = SCN_SSID_MAX_NUM + 1; /* include one wildcard ssid */
 	prWiphy->max_scan_ie_len = 512;
+#if CFG_SUPPORT_SCHED_SCN_SSID_SETS
+	prWiphy->max_sched_scan_ssids     = CFG_SCAN_HIDDEN_SSID_MAX_NUM;
+#else
 	prWiphy->max_sched_scan_ssids     = CFG_SCAN_SSID_MAX_NUM;
+#endif
 	prWiphy->max_match_sets           = CFG_SCAN_SSID_MATCH_MAX_NUM;
 	prWiphy->max_sched_scan_ie_len    = CFG_CFG80211_IE_BUF_LEN;
 	prWiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) | BIT(NL80211_IFTYPE_ADHOC);

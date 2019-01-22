@@ -1507,8 +1507,15 @@ typedef struct _PARAM_SCAN_REQUEST_ADV_T {
 /*! \brief CFG80211 Scheduled Scan Request Container            */
 /*--------------------------------------------------------------*/
 typedef struct _PARAM_SCHED_SCAN_REQUEST_T {
+#if CFG_SUPPORT_SCHED_SCN_SSID_SETS
+	UINT_32 u4SsidNum;         /* passed in the probe_reqs */
+	PARAM_SSID_T arSsid[CFG_SCAN_HIDDEN_SSID_MAX_NUM];
+	UINT_32 u4MatchSsidNum;   /* matched for a scan request */
+	PARAM_SSID_T arMatchSsid[CFG_SCAN_SSID_MATCH_MAX_NUM];
+#else
 	UINT_32 u4SsidNum;
 	PARAM_SSID_T arSsid[CFG_SCAN_SSID_MATCH_MAX_NUM];
+#endif
 	INT_8 acRssiThresold[CFG_SCAN_SSID_MATCH_MAX_NUM];
 	UINT_32 u4IELength;
 	PUINT_8 pucIE;
