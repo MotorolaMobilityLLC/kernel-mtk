@@ -3160,14 +3160,19 @@ static u8 fdm_buf[128];
 static void mtk_nand_write_fdm_data(struct nand_chip *chip, u8 *pDataBuf, u32 u4SecNum)
 {
 	u32 i, j;
+#ifndef CONFIG_MNTL_SUPPORT
 	u8 checksum = 0;
 	bool empty = true;
 	struct nand_oobfree *free_entry;
+#endif
 	u8 *pBuf;
 	u8 *byte_ptr;
 	u32 fdm_data[2];
 
 	memcpy(fdm_buf, pDataBuf, u4SecNum * host->hw->nand_fdm_size);
+
+/* Disable fdm checksum since mntl need full fdm area */
+#ifndef CONFIG_MNTL_SUPPORT
 
 	free_entry = chip->ecc.layout->oobfree;
 	for (i = 0; i < MTD_MAX_OOBFREE_ENTRIES && free_entry[i].length; i++) {
@@ -3180,6 +3185,7 @@ static void mtk_nand_write_fdm_data(struct nand_chip *chip, u8 *pDataBuf, u32 u4
 
 	if (!empty)
 		fdm_buf[free_entry[i - 1].offset + free_entry[i - 1].length] = checksum;
+#endif
 
 	pBuf = (u8 *)fdm_data;
 	byte_ptr = (u8 *)fdm_buf;
