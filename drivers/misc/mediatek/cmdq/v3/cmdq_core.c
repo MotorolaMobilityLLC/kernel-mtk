@@ -268,9 +268,9 @@ static inline int32_t cmdq_core_disable_HW_thread(int32_t thread)
 	return 0;
 }
 
-static bool cmdq_core_is_local_var_cpr(uint32_t argument)
+static bool cmdq_core_is_thread_cpr(u32 argument)
 {
-	if (argument >= CMDQ_THREAD_SPR_NUMBER && argument < CMDQ_THREAD_MAX_LOCAL_VARIABLE)
+	if (argument >= CMDQ_THR_SPR_MAX && argument < CMDQ_THR_VAR_MAX)
 		return true;
 	else
 		return false;
@@ -400,19 +400,18 @@ void cmdq_delay_dump_thread(void)
 
 static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 {
-	uint32_t i;
-	uint32_t arg_a_type, arg_b_type, arg_c_type;
-	uint32_t arg_a_i, arg_b_i, arg_c_i, arg_header;
-	uint32_t *p_cmd_va;
-	uint32_t thread_offset;
-	uint32_t *p_instr_position = CMDQ_U32_PTR(pTask->replace_instr.position);
+	u32 i;
+	u32 arg_op_code;
+	u32 *p_cmd_va;
+	u32 thread_offset;
+	u32 *p_instr_position = CMDQ_U32_PTR(pTask->replace_instr.position);
 	u32 delay_event = CMDQ_SYNC_TOKEN_DELAY_THR0 + thread;
 
 	if (pTask->replace_instr.number == 0)
 		return;
 
 	CMDQ_MSG("replace_instr.number: %u\n", pTask->replace_instr.number);
-	thread_offset = CMDQ_CPR_STRAT_ID + CMDQ_THREAD_CPR_NUMBER * thread;
+	thread_offset = CMDQ_CPR_STRAT_ID + CMDQ_THR_CPR_MAX * thread;
 
 	for (i = 0; i < pTask->replace_instr.number; i++) {
 		if ((p_instr_position[i]+1)*CMDQ_INST_SIZE > pTask->commandSize) {
@@ -420,52 +419,40 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 			break;
 		}
 
-		p_cmd_va = p_instr_position[i] * 2 + cmdq_core_task_get_first_va(pTask);
-		arg_header = (p_cmd_va[1] >> 16) & 0xFFFF;
-		arg_a_i = p_cmd_va[1] & 0xFFFF;
-		arg_b_i = (p_cmd_va[0] >> 16) & 0xFFFF;
-		arg_c_i = p_cmd_va[0] & 0xFFFF;
+	p_cmd_va = p_instr_position[i] * 2 + cmdq_core_task_get_first_va(pTask);
+		arg_op_code = p_cmd_va[1] >> 24;
+		if (arg_op_code == CMDQ_CODE_WFE) {
+			u32 arg_event_id = p_cmd_va[1] & 0xFFFFFF;
 
-		arg_a_type = p_cmd_va[1] & (1 << 23);
-		arg_b_type = p_cmd_va[1] & (1 << 22);
-		arg_c_type = p_cmd_va[1] & (1 << 21);
-		if (arg_a_type != 0) {
-			if (true == cmdq_core_is_local_var_cpr(arg_a_i)) {
-				arg_a_i = thread_offset + (arg_a_i - CMDQ_THREAD_SPR_NUMBER);
-				p_cmd_va[1] = (arg_header<<16) | (arg_a_i & 0xFFFF);
-			} else if (arg_a_i == CMDQ_TASK_DUMMY_DELAY_START) {
-				arg_a_i = CMDQ_CPR_DELAY_STRAT_ID + thread*3;
-				p_cmd_va[1] = (arg_header<<16) | (arg_a_i & 0xFFFF);
-				arg_a_i++;
-				p_cmd_va[5] = (arg_header<<16) | (arg_a_i & 0xFFFF);
+			if (arg_event_id == CMDQ_SYNC_TOKEN_DELAY_THR0) {
 				/* Modify wait event */
-				p_cmd_va[3] = (CMDQ_CODE_WFE << 24) | (CMDQ_SYNC_TOKEN_DELAY_THR0 + thread);
-				p_cmd_va[7] = (CMDQ_CODE_WFE << 24) | (CMDQ_SYNC_TOKEN_DELAY_THR0 + thread);
+				arg_event_id = CMDQ_SYNC_TOKEN_DELAY_THR0 + thread;
+				p_cmd_va[1] = (arg_op_code << 24) | arg_event_id;
 				CMDQ_MSG("Dump event #: %d, value: %d\n", delay_event, cmdqCoreGetEvent(delay_event));
 			}
+		} else {
+			u32 arg_header = (p_cmd_va[1] >> 16) & 0xFFFF;
+			u32 arg_a_i = p_cmd_va[1] & 0xFFFF;
+			u32 arg_b_i = (p_cmd_va[0] >> 16) & 0xFFFF;
+			u32 arg_c_i = p_cmd_va[0] & 0xFFFF;
+			u32 arg_a_type = p_cmd_va[1] & (1 << 23);
+			u32 arg_b_type = p_cmd_va[1] & (1 << 22);
+			u32 arg_c_type = p_cmd_va[1] & (1 << 21);
+
+			if (arg_a_type != 0 && cmdq_core_is_thread_cpr(arg_a_i)) {
+				arg_a_i = thread_offset + (arg_a_i - CMDQ_THR_SPR_MAX);
+				p_cmd_va[1] = (arg_header<<16) | (arg_a_i & 0xFFFF);
+			}
+
+			if (arg_b_type != 0 && cmdq_core_is_thread_cpr(arg_b_i))
+				arg_b_i = thread_offset + (arg_b_i - CMDQ_THR_SPR_MAX);
+
+			if (arg_c_type != 0 && cmdq_core_is_thread_cpr(arg_c_i))
+				arg_c_i = thread_offset + (arg_c_i - CMDQ_THR_SPR_MAX);
+
+			p_cmd_va[0] = (arg_b_i<<16) | (arg_c_i & 0xFFFF);
 		}
 
-		if (arg_b_type != 0) {
-			if (true == cmdq_core_is_local_var_cpr(arg_b_i)) {
-				arg_b_i = thread_offset + (arg_b_i - CMDQ_THREAD_SPR_NUMBER);
-				p_cmd_va[0] = (arg_b_i<<16) | (arg_c_i & 0xFFFF);
-			} else if (arg_b_i == CMDQ_TASK_DUMMY_DELAY_RESULT) {
-				arg_b_i = CMDQ_CPR_DELAY_STRAT_ID + thread*3+2;
-				p_cmd_va[0] = (arg_b_i<<16) | (arg_c_i & 0xFFFF);
-				CMDQ_MSG("[DDD] replace delay result\n");
-			} else if (arg_b_i == CMDQ_TASK_DUMMY_DELAY_DURATION) {
-				arg_b_i = CMDQ_CPR_DELAY_STRAT_ID + thread*3+1;
-				p_cmd_va[0] = (arg_b_i<<16) | (arg_c_i & 0xFFFF);
-				CMDQ_MSG("[DDD] replace delay result\n");
-			}
-		}
-
-		if (arg_c_type != 0) {
-			if (true == cmdq_core_is_local_var_cpr(arg_c_i)) {
-				arg_c_i = thread_offset + (arg_c_i - CMDQ_THREAD_SPR_NUMBER);
-				p_cmd_va[0] = (arg_b_i<<16) | (arg_c_i & 0xFFFF);
-			}
-		}
 	}
 }
 
@@ -6810,6 +6797,21 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 		cmdq_core_dump_disp_trigger_loop("INFO");
 		/* end of HACK */
 
+		{
+			/* TODO: add mechanism to detect if current thread is delaying */
+			u32 delay_event = CMDQ_SYNC_TOKEN_DELAY_THR0 + thread;
+
+			cmdq_core_dump_thread(CMDQ_DELAY_THREAD_ID, "INFO");
+			CMDQ_MSG("Dump event #: %d, value: %d\n", delay_event, cmdqCoreGetEvent(delay_event));
+			CMDQ_MSG("Dump loop debug count: %d\n", CMDQ_REG_GET32(CMDQ_THR_SPR1(thread)));
+			CMDQ_MSG("Dump delay last delay start: 0x%08x, duration: 0x%08x\n",
+					CMDQ_REG_GET32(CMDQ_THR_SPR0(CMDQ_DELAY_THREAD_ID)),
+					CMDQ_REG_GET32(CMDQ_THR_SPR1(CMDQ_DELAY_THREAD_ID)));
+			CMDQ_MSG("Dump delay last check tpr: 0x%08x, passed duration: 0x%08x\n",
+					CMDQ_REG_GET32(CMDQ_THR_SPR2(CMDQ_DELAY_THREAD_ID)),
+					CMDQ_REG_GET32(CMDQ_THR_SPR3(CMDQ_DELAY_THREAD_ID)));
+		}
+
 		spin_unlock_irqrestore(&gCmdqExecLock, flags);
 
 		/* then we wait again */
@@ -8816,20 +8818,10 @@ int32_t cmdqCoreInitialize(void)
 	{
 		u32 fake_spr_sram = 0;
 
-		status = cmdq_core_alloc_sram_buffer(CMDQ_MAX_THREAD_COUNT * CMDQ_THREAD_CPR_NUMBER * sizeof(u32),
+		status = cmdq_core_alloc_sram_buffer(CMDQ_MAX_THREAD_COUNT * CMDQ_THR_CPR_MAX * sizeof(u32),
 											"Fake SPR", &fake_spr_sram);
 		if (status < 0)
 			CMDQ_ERR("Allocate Fake SPR failed !!");
-	}
-
-	/* pre-allocate TPR usage area */
-	{
-		u32 delay_cpr_sram = 0;
-
-		status = cmdq_core_alloc_sram_buffer(CMDQ_MAX_THREAD_COUNT * 3 * sizeof(u32),
-											"Delay CPR", &delay_cpr_sram);
-		if (status < 0)
-			CMDQ_ERR("Allocate Delay CPR failed !!");
 	}
 
 	/* allocate shared memory */

@@ -28,10 +28,10 @@ enum CMDQ_STACK_TYPE_ENUM {
 	CMDQ_STACK_TYPE_BREAK = 3,
 };
 
-#define CMDQ_DATA_BIT		(62)
-
-#define CMDQ_BIT_VALUE	(0LL)
-#define CMDQ_BIT_VAR	(1LL)
+#define CMDQ_DATA_BIT				(62)
+#define CMDQ_BIT_VALUE				(0LL)
+#define CMDQ_BIT_VAR				(1LL)
+#define CMDQ_TASK_CPR_INITIAL_VALUE	(0)
 
 struct cmdq_stack_node {
 	uint32_t position;
@@ -868,6 +868,19 @@ extern "C" {
  *     0 for success; else the error code is returned
  */
 	int32_t cmdq_op_end_while(struct cmdqRecStruct *handle);
+
+/**
+ * Linux like wait_event_timeout
+ * Parameter:
+ *     handle: the command queue recorder handle
+ *     arg_out, wait result (=0: timeout, >0: wait time when got event)
+ *     wait_event: GCE event
+ *     timeout_time: timeout time in us
+ * Return:
+ *     0 for success; else the error code is returned
+ */
+	s32 cmdq_op_wait_event_timeout(struct cmdqRecStruct *handle, CMDQ_VARIABLE *arg_out,
+			enum CMDQ_EVENT_ENUM wait_event, u32 timeout_time);
 
 /**
  * Create sub-function handle
