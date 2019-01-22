@@ -650,6 +650,10 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_SLEEP);
 
+	spm_sodi3_footprint(SPM_SODI3_ENTER_SPM_FLOW);
+
+	spm_sodi3_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS)) {
 		if (request_uart_to_sleep()) {
@@ -658,10 +662,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 		}
 	}
 #endif
-
-	spm_sodi3_footprint(SPM_SODI3_ENTER_SPM_FLOW);
-
-	spm_sodi3_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
@@ -685,6 +685,12 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_WFI);
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS))
+		request_uart_to_wakeup();
+RESTORE_IRQ:
+#endif
+
 	spm_sodi3_notify_sspm_after_wfi(operation_cond);
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_SSPM_ASYNC_IPI_AFTER_WFI);
@@ -695,18 +701,9 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_AWAKE);
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS))
-		request_uart_to_wakeup();
-#endif
-
 	wr = spm_sodi3_output_log(&wakesta, pcmdesc, sodi3_flags);
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_SPM_FLOW);
-
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-RESTORE_IRQ:
-#endif
 
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();

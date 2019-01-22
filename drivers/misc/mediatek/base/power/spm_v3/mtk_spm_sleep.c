@@ -707,22 +707,20 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_footprint(SPM_SUSPEND_LEAVE_WFI);
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	request_uart_to_wakeup();
+RESTORE_IRQ:
+#endif
+
 	/* record last wakesta */
 	__spm_get_wakeup_status(&spm_wakesta);
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_UART_AWAKE);
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	request_uart_to_wakeup();
-#endif
-
 	spm_suspend_pcm_setup_after_wfi(0, pwrctrl);
 
 	/* record last wakesta */
 	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc);
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-RESTORE_IRQ:
-#endif
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
