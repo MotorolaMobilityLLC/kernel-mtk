@@ -18,9 +18,9 @@
  *  IOCTL opcode for ufs ffu has the following opcode after
  *  Following the last SCSI IOCTL opcode.
  */
+#define UFS_IOCTL_QUERY         0x5388  /* Query descriptors, attr/flags */
 #define UFS_IOCTL_FFU           0x5389  /* Do firmware upgrade */
 #define UFS_IOCTL_GET_FW_VER    0x5390  /* Query production revision level */
-#define UFS_IOCTL_QUERY         0x5391  /* Query descriptors, attributes or glags */
 
 #define UFS_IOCTL_FFU_MAX_FW_SIZE_BYTES             (512L * 1024)
 #define UFS_IOCTL_FFU_MAX_FW_VER_BYTES              (4)
