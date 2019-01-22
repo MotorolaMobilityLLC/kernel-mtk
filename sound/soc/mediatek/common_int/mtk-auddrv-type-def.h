@@ -44,32 +44,4 @@
 #ifndef AUDIO_TYPE_DEF_H
 #define AUDIO_TYPE_DEF_H
 
-/* Type re-definition */
-#ifndef int8
-#endif
-
-#ifndef uint8
-#endif
-
-#ifndef int16
-#endif
-
-#ifndef uint16
-#endif
-
-#ifndef int32
-#endif
-
-#ifndef uint32
-#endif
-
-#ifndef int64
-#endif
-
-#ifndef uint64
-#endif
-
-#ifndef UINT32
-#endif
-
 #endif
