@@ -311,6 +311,10 @@ typedef	int64 kal_int64;
 void Ana_Set_Reg(uint32 offset, uint32 value, uint32 mask);
 uint32 Ana_Get_Reg(uint32 offset);
 
+/* Mtkaif Calibration*/
+#define MTKAIF_SCENARIO1_DEFAULT (15)
+#define MTKAIF_SCENARIO2_SHIFT   (11)
+
 /* for debug usage */
 void Ana_Log_Print(void);
 
