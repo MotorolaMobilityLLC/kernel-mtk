@@ -47,4 +47,7 @@ extern u32 spm_vcorefs_get_md_srcclkena(void);
 extern void dvfsrc_md_scenario_update(bool);
 extern void dvfsrc_set_scp_vcore_request(unsigned int val);
 
+extern void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv);
+extern void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz);
+
 #endif /* __MTK_SPM_VCORE_DVFS_H__ */

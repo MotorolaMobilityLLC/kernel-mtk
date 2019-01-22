@@ -28,6 +28,11 @@
 #include <helio-dvfsrc-opp.h>
 #include <mtk_dvfsrc_reg.h>
 #include <mtk_spm_vcore_dvfs.h>
+#include <mtk_spm_vcore_dvfs_ipi.h>
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include <sspm_ipi.h>
+#include <sspm_ipi_pin.h>
+#endif
 
 #include <mt-plat/aee.h>
 
@@ -36,7 +41,7 @@ __weak void spm_check_status_before_dvfs(void) { }
 __weak int spm_dvfs_flag_init(void) { return 0; }
 __weak int vcore_opp_init(void) { return 0; }
 
-static struct opp_profile opp_table[NUM_OPP] __nosavedata;
+static struct opp_profile opp_table[VCORE_DVFS_OPP_NUM];
 static struct helio_dvfsrc *dvfsrc;
 
 void dvfsrc_update_opp_table(void)
@@ -45,7 +50,7 @@ void dvfsrc_update_opp_table(void)
 	int opp;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
-	for (opp = 0; opp < NUM_OPP; opp++)
+	for (opp = 0; opp < VCORE_DVFS_OPP_NUM; opp++)
 		opp_ctrl_table[opp].vcore_uv = dvfsrc_get_vcore_by_steps(opp);
 
 	mutex_unlock(&dvfsrc->devfreq->lock);
@@ -57,18 +62,42 @@ char *dvfsrc_get_opp_table_info(char *p)
 	int i;
 	char *buff_end = p + PAGE_SIZE;
 
-	for (i = 0; i < NUM_OPP; i++) {
+	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++) {
 		p += snprintf(p, buff_end - p, "[OPP%d] vcore_uv: %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
 			     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
 		p += snprintf(p, buff_end - p, "[OPP%d] ddr_khz : %d\n", i, opp_ctrl_table[i].ddr_khz);
 		p += snprintf(p, buff_end - p, "\n");
 	}
 
-	for (i = 0; i < NUM_OPP; i++)
+	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
 		p += snprintf(p, buff_end - p, "OPP%d  : %u\n", i, opp_ctrl_table[i].vcore_uv);
 
 	return p;
 }
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv)
+{
+	struct qos_data qos_d;
+
+	qos_d.cmd = QOS_IPI_VCORE_OPP;
+	qos_d.u.vcore_opp.opp = opp;
+	qos_d.u.vcore_opp.vcore_uv = vcore_uv;
+
+	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 3);
+}
+
+void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
+{
+	struct qos_data qos_d;
+
+	qos_d.cmd = QOS_IPI_DDR_OPP;
+	qos_d.u.ddr_opp.opp = opp;
+	qos_d.u.ddr_opp.ddr_khz = ddr_khz;
+
+	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 3);
+}
+#endif
 
 void dvfsrc_init_opp_table(void)
 {
@@ -80,16 +109,21 @@ void dvfsrc_init_opp_table(void)
 	dvfsrc->curr_ddr_khz = vcorefs_get_curr_ddr();
 
 	pr_info("curr_vcore_uv: %u, curr_ddr_khz: %u\n",
-							dvfsrc->curr_vcore_uv,
-							dvfsrc->curr_ddr_khz);
+			dvfsrc->curr_vcore_uv,
+			dvfsrc->curr_ddr_khz);
 
-	for (opp = 0; opp < NUM_OPP; opp++) {
+	for (opp = 0; opp < VCORE_DVFS_OPP_NUM; opp++) {
 		opp_ctrl_table[opp].vcore_uv = dvfsrc_get_vcore_by_steps(opp);
 		opp_ctrl_table[opp].ddr_khz = dvfsrc_get_ddr_by_steps(opp);
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+		dvfsrc_update_sspm_vcore_opp_table(opp, opp_ctrl_table[opp].vcore_uv);
+		dvfsrc_update_sspm_ddr_opp_table(opp, opp_ctrl_table[opp].ddr_khz);
+#endif
+
 		pr_info("opp %u: vcore_uv: %u, ddr_khz: %u\n", opp,
-								opp_ctrl_table[opp].vcore_uv,
-								opp_ctrl_table[opp].ddr_khz);
+				opp_ctrl_table[opp].vcore_uv,
+				opp_ctrl_table[opp].ddr_khz);
 	}
 
 	spm_vcorefs_pwarp_cmd();
@@ -200,10 +234,10 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_4, data / 100);
 		break;
 	case PM_QOS_EMI_OPP:
-		if (data >= EMI_OPP_NUM)
-			data = EMI_OPP_NUM - 1;
+		if (data >= DDR_OPP_NUM)
+			data = DDR_OPP_NUM - 1;
 
-		level = EMI_OPP_NUM - data - 1;
+		level = DDR_OPP_NUM - data - 1;
 		dvfsrc_write(dvfsrc, DVFSRC_SW_REQ,
 				(dvfsrc_read(dvfsrc, DVFSRC_SW_REQ)
 				& ~(0x3)) | level);
