@@ -395,7 +395,7 @@ void check_cm_mgr_status_internal(void)
 		}
 #ifdef DEBUG_CM_MGR
 		print_hex_dump(KERN_INFO, "cpu_opp_cur: ", DUMP_PREFIX_NONE, 16,
-				1, &cpu_opp_cur[0], ARRAY_SIZE(cpu_opp_cur), 0);
+				1, &cpu_opp_cur[0], sizeof(cpu_opp_cur), 0);
 #endif /* DEBUG_CM_MGR */
 
 		vcore_power_up = 0;
@@ -408,8 +408,10 @@ void check_cm_mgr_status_internal(void)
 				cpu_ratio_idx[i] = RATIO_COUNT;
 		}
 #ifdef DEBUG_CM_MGR
+		print_hex_dump(KERN_INFO, "ratio: ", DUMP_PREFIX_NONE, 16,
+				1, &ratio[0], sizeof(ratio), 0);
 		print_hex_dump(KERN_INFO, "cpu_ratio_idx: ", DUMP_PREFIX_NONE, 16,
-				1, &cpu_ratio_idx[0], ARRAY_SIZE(cpu_ratio_idx), 0);
+				1, &cpu_ratio_idx[0], sizeof(cpu_ratio_idx), 0);
 #endif /* DEBUG_CM_MGR */
 
 		level = CM_MGR_EMI_OPP - vcore_dram_opp_cur;
