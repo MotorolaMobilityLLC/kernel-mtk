@@ -274,6 +274,9 @@ int musb_qmu_init(struct musb *musb)
 	musb_writel(musb->mregs, 0x204, musb_readl(musb->mregs, 0x204) | 0x4000);
 #endif
 
+	/* make IOC field in GPD workable */
+	musb_writel((musb->mregs + MUSB_QISAR), 0x30, 0);
+
 	qmu_base = (void __iomem *)(mtk_musb->mregs + MUSB_QMUBASE);
 	/* debug variable to check qmu_base issue */
 	qmu_base_2 = (void __iomem *)(mtk_musb->mregs + MUSB_QMUBASE);
