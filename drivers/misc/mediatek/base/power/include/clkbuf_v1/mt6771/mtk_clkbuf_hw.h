@@ -70,12 +70,48 @@ enum {
 	PWR_STATUS_CONN	= (1 << 1),
 };
 
+enum {
+	SOC_EN_M = 0,
+	SOC_EN_BB_G,
+	SOC_CLK_SEL_G,
+	SOC_EN_BB_CLK_SEL_G,
+};
+
+enum {
+	WCN_EN_M = 0,
+	WCN_EN_BB_G,
+	WCN_SRCLKEN_CONN,
+	WCN_BUF24_EN,
+};
+
+enum {
+	NFC_EN_M = 0,
+	NFC_EN_BB_G,
+	NFC_CLK_SEL_G,
+	NFC_BUF234_EN,
+};
+
+enum {
+	CEL_EN_M = 0,
+	CEL_EN_BB_G,
+	CEL_CLK_SEL_G,
+	CEL_BUF24_EN,
+};
+
+enum {
+	EXT_EN_M = 0,
+	EXT_EN_BB_G,
+	EXT_CLK_SEL_G,
+	EXT_BUF247_EN,
+};
+
 #define CLKBUF_USE_BBLPM
 
 void clk_buf_post_init(void);
 void clk_buf_init_pmic_clkbuf(void);
 void clk_buf_init_pmic_wrap(void);
 void clk_buf_init_pmic_swctrl(void);
+bool clk_buf_ctrl_combine(enum clk_buf_id id, bool onoff);
 
 #endif
 
