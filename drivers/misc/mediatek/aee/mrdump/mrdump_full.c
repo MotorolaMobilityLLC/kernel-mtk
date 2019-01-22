@@ -361,29 +361,11 @@ static ssize_t mrdump_version_show(struct kobject *kobj, struct kobj_attribute *
 	return snprintf(buf, PAGE_SIZE, "%s\n", MRDUMP_GO_DUMP);
 }
 
-static ssize_t manual_dump_show(struct kobject *kobj, struct kobj_attribute *attr,
-				char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%s\n", "Trigger manual dump with message, format \"manualdump:HelloWorld\"");
-}
-
-static ssize_t manual_dump_store(struct kobject *kobj, struct kobj_attribute *attr,
-			 const char *buf, size_t count)
-{
-	if (strncmp(buf, "manualdump:", 11) == 0)
-		aee_kdump_reboot(AEE_REBOOT_MODE_MANUAL_KDUMP, buf + 11);
-	return count;
-}
-
 static struct kobj_attribute mrdump_version_attribute =
 	__ATTR(version, 0600, mrdump_version_show, NULL);
 
-static struct kobj_attribute manual_dump_attribute =
-	__ATTR(manualdump, 0600, manual_dump_show, manual_dump_store);
-
 static struct attribute *attrs[] = {
 	&mrdump_version_attribute.attr,
-	&manual_dump_attribute.attr,
 	NULL,
 };
 
