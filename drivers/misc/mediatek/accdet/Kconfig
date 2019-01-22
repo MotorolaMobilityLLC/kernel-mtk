@@ -104,6 +104,15 @@ config MOISTURE_EXTERNAL_SUPPORT
 	  say Y here.
 	  If unsure, say N.
 
+config MT6771_QUERY_PCB_ID
+	bool "Mediatek mt6771, query pcbID to check ACC mode or DCC mode"
+	---help---
+	  Query PCBID to get PCB version and check which mic-mode is supported.
+	  mt6771: we get pcb info from GPIO111&GPIO175
+	  0  0:EVB, 0 1:phone_DCC,   1 0: phone_ACC,   1 1:Reserved.
+	  say yes for mtk internal device, othwise say no.
+	  If unsure, say N.
+
 config TS3A225E_ACCDET
 	bool "MediaTek ACCDET ts3a225e"
 	---help---
