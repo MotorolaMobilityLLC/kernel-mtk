@@ -122,6 +122,15 @@ config MTK_PASR
 	  This can help system reduce power consumption.
 	  It is based on MTK_MEMORY_LOWPOWER technology.
 
+config MTK_PERIODIC_DATA_COLLECTION
+	bool "Support Mediatek memory lowpower technology"
+	depends on MTK_MEMORY_LOWPOWER
+	default n
+	help
+	  Mediatek DRAM low power technology.
+	  It tries to compact memory periodically and
+	  to create a unused contiguous memory. The
+	  DRAM can enter low power state if it is idle.
 
 #source "drivers/misc/mediatek/base/power/Kconfig"
 source "drivers/misc/mediatek/freqhopping/Kconfig"
