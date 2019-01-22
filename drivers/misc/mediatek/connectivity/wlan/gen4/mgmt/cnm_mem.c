@@ -1135,72 +1135,61 @@ VOID cnmDumpStaRec(IN P_ADAPTER_T prAdapter, IN UINT_8 ucStaRecIdx)
 
 	DBGLOG(SW4, TRACE, "============= DUMP STA[%u] ===========\n", ucStaRecIdx);
 
-	DBGLOG(SW4, TRACE,
-	       "STA_IDX[%u] BSS_IDX[%u] MAC[" MACSTR "] TYPE[%s %s] WTBL[%u] USED[%u] State[%u]\n",
-	       prStaRec->ucIndex, prStaRec->ucBssIndex, MAC2STR(prStaRec->aucMacAddr),
-	       cnmStaRecGetTypeString(prStaRec->eStaType),
-	       cnmStaRecGetRoleString(prStaRec->eStaType), ucWTEntry, prStaRec->fgIsInUse, prStaRec->ucStaState);
+	/* [1]STA_IDX                  [2]BSS_IDX          [3]MAC                   [4]TYPE           [5]WTBL */
+	/* [6]USED                     [7]State            [8]QoS                   [9]HT/VHT         [10] AID */
+	/* [11]WMM                     [12]UAPSD           [13]SEC                  [14]PhyTypeSet    [15]Desired */
+	/* [16]NonHtBasic              [17]BssBasic        [18]Operational          [19]DesiredNonHT  [20]Df FixedRate*/
+	/* [21]HT Cap                  [22]ExtCap          [23]BeemCap              [24]MCS           [25]MCS32 */
+	/* [26]VHT Cap                 [27]TxMCS           [28]RxMCS                [29]VhtOpMode     [30]RCPI */
+	/* [31]InPS                    [32]TxAllowed       [33]KeyRdy               [34]AMPDU         [35]TxQLEN TC */
+	/* [36]BMP AC Delivery/Trigger [37]FreeQuota:Total [38]Delivery/NonDelivery [39]aucRxMcsBitmask */
 
-	DBGLOG(SW4, TRACE, "QoS[%u] HT/VHT[%u/%u] AID[%u] WMM[%u] UAPSD[%u] SEC[%u]\n",
-	       prStaRec->fgIsQoS,
-	       (prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11N) ? TRUE : FALSE,
-	       (prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11AC) ? TRUE : FALSE,
-	       prStaRec->u2AssocId,
-	       prStaRec->fgIsWmmSupported, prStaRec->fgIsUapsdSupported, secIsProtectedBss(prAdapter, prBssInfo));
+	DBGLOG(SW4, INFO,
+	"[1][%u],[2][%u],[3][" MACSTR "],[4][%s %s],[5][%u],[6][%u],[7][%u],[8][%u],[9][%u/%u],[10][%u]\n",
+		prStaRec->ucIndex, prStaRec->ucBssIndex, MAC2STR(prStaRec->aucMacAddr),
+		cnmStaRecGetTypeString(prStaRec->eStaType), cnmStaRecGetRoleString(prStaRec->eStaType),
+		ucWTEntry, prStaRec->fgIsInUse, prStaRec->ucStaState, prStaRec->fgIsQoS,
+		(prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11N) ? TRUE : FALSE,
+		(prStaRec->ucDesiredPhyTypeSet & PHY_TYPE_SET_802_11AC) ? TRUE : FALSE, prStaRec->u2AssocId);
 
-	DBGLOG(SW4, TRACE, "PhyTypeSet: BSS[0x%02x] Desired[0x%02x] NonHtBasic[0x%02x]\n",
-	       prBssInfo->ucPhyTypeSet, prStaRec->ucDesiredPhyTypeSet, prStaRec->ucNonHTBasicPhyType);
+	DBGLOG(SW4, INFO,
+	"[11][%u],[12][%u],[13][%u],[14][0x%x],[15][0x%x],[16][0x%x],[17][0x%x],[18][0x%x],[19][0x%x],[20][0x%x]\n",
+		prStaRec->fgIsWmmSupported, prStaRec->fgIsUapsdSupported, secIsProtectedBss(prAdapter, prBssInfo),
+		prBssInfo->ucPhyTypeSet, prStaRec->ucDesiredPhyTypeSet, prStaRec->ucNonHTBasicPhyType,
+		prBssInfo->u2BSSBasicRateSet, prStaRec->u2OperationalRateSet,
+		prStaRec->u2DesiredNonHTRateSet, prStaRec->u2HwDefaultFixedRateCode);
 
-	DBGLOG(SW4, TRACE,
-	       "RateSet: BssBasic[0x%04x] Operational[0x%04x] DesiredNonHT[0x%02x] DeafultFixedRate[0x%02x]\n",
-	       prBssInfo->u2BSSBasicRateSet, prStaRec->u2OperationalRateSet,
-	       prStaRec->u2DesiredNonHTRateSet, prStaRec->u2HwDefaultFixedRateCode);
+	DBGLOG(SW4, INFO,
+	"[21][0x%x],[22][0x%x],[23][0x%x],[24][0x%x],[25][%u],[26][0x%x],[27][0x%x],[28][0x%x],[29][0x%x],[30][%u]\n",
+		prStaRec->u2HtCapInfo, prStaRec->u2HtExtendedCap, prStaRec->u4TxBeamformingCap,
+		prStaRec->ucMcsSet, prStaRec->fgSupMcs32, prStaRec->u4VhtCapInfo, prStaRec->u2VhtTxMcsMap,
+		prStaRec->u2VhtRxMcsMap, prStaRec->ucVhtOpMode, prStaRec->ucRCPI);
 
-	DBGLOG(SW4, TRACE, "HT Cap[0x%04x] ExtCap[0x%04x] BeemCap[0x%08x] MCS[0x%02x] MCS32[%u]\n",
-	       prStaRec->u2HtCapInfo,
-	       prStaRec->u2HtExtendedCap, prStaRec->u4TxBeamformingCap, prStaRec->ucMcsSet, prStaRec->fgSupMcs32);
-
-	DBGLOG(SW4, TRACE, "VHT Cap[0x%08x] TxMCS[0x%04x] RxMCS[0x%04x] VhtOpMode[0x%02x]\n",
-	       prStaRec->u4VhtCapInfo, prStaRec->u2VhtTxMcsMap, prStaRec->u2VhtRxMcsMap, prStaRec->ucVhtOpMode);
-
-	DBGLOG(SW4, TRACE, "RCPI[%u] InPS[%u] TxAllowed[%u] KeyRdy[%u] AMPDU T/R[%u/%u]\n",
-	       prStaRec->ucRCPI,
-	       prStaRec->fgIsInPS,
-	       prStaRec->fgIsTxAllowed, prStaRec->fgIsTxKeyReady, prStaRec->fgTxAmpduEn, prStaRec->fgRxAmpduEn);
-
-	DBGLOG(SW4, TRACE, "TxQ LEN TC[0~5] [%03u:%03u:%03u:%03u:%03u:%03u]\n",
-	       prStaRec->aprTargetQueue[0]->u4NumElem,
-	       prStaRec->aprTargetQueue[1]->u4NumElem,
-	       prStaRec->aprTargetQueue[2]->u4NumElem,
-	       prStaRec->aprTargetQueue[3]->u4NumElem);
-
-	DBGLOG(SW4, TRACE, "BMP AC Delivery/Trigger[%02x/%02x]\n", prStaRec->ucBmpDeliveryAC, prStaRec->ucBmpTriggerAC);
-
-	DBGLOG(SW4, TRACE, "FreeQuota: Total[%u] Delivery/NonDelivery[%u/%u]\n",
-	       prStaRec->ucFreeQuota, prStaRec->ucFreeQuotaForDelivery, prStaRec->ucFreeQuotaForNonDelivery);
-
-	DBGLOG(SW4, TRACE, "aucRxMcsBitmask: [0][0x%02x] [1][0x%02x]\n",
-	       prStaRec->aucRxMcsBitmask[0], prStaRec->aucRxMcsBitmask[1]);
+	DBGLOG(SW4, INFO,
+	"[31][%u],[32][%u],[33][%u],[34][%u/%u],[35][%u:%u:%u:%u],[36][%x/%x],[37][%u],[38][%u/%u],[39][0x%x][0x%x]\n",
+		prStaRec->fgIsInPS, prStaRec->fgIsTxAllowed, prStaRec->fgIsTxKeyReady,
+		prStaRec->fgTxAmpduEn, prStaRec->fgRxAmpduEn,
+		prStaRec->aprTargetQueue[0]->u4NumElem, prStaRec->aprTargetQueue[1]->u4NumElem,
+		prStaRec->aprTargetQueue[2]->u4NumElem, prStaRec->aprTargetQueue[3]->u4NumElem,
+		prStaRec->ucBmpDeliveryAC, prStaRec->ucBmpTriggerAC, prStaRec->ucFreeQuota,
+		prStaRec->ucFreeQuotaForDelivery, prStaRec->ucFreeQuotaForNonDelivery,
+		prStaRec->aucRxMcsBitmask[0], prStaRec->aucRxMcsBitmask[1]);
 
 	for (i = 0; i < CFG_RX_MAX_BA_TID_NUM; i++) {
 		if (prStaRec->aprRxReorderParamRefTbl[i]) {
-			DBGLOG(SW4, TRACE, "<Rx BA Entry TID[%u]>\n", prStaRec->aprRxReorderParamRefTbl[i]->ucTid);
 			DBGLOG(SW4, TRACE,
-			       " Valid[%u] WinStart/End[%u/%u] WinSize[%u] ReOrderQueLen[%u]\n",
-			       prStaRec->aprRxReorderParamRefTbl[i]->fgIsValid,
-			       prStaRec->aprRxReorderParamRefTbl[i]->u2WinStart,
-			       prStaRec->aprRxReorderParamRefTbl[i]->u2WinEnd,
-			       prStaRec->aprRxReorderParamRefTbl[i]->u2WinSize,
-			       prStaRec->aprRxReorderParamRefTbl[i]->rReOrderQue.u4NumElem);
-			DBGLOG(SW4, TRACE,
-			       " Bubble Exist[%u] SN[%u]\n",
-			       prStaRec->aprRxReorderParamRefTbl[i]->fgHasBubble,
-			       prStaRec->aprRxReorderParamRefTbl[i]->u2FirstBubbleSn);
+			"TID[%u],Valid[%u],WinStart/End[%u/%u],WinSize[%u],ReOrderQueLen[%u],Bubble Exist[%u],SN[%u]\n",
+			prStaRec->aprRxReorderParamRefTbl[i]->ucTid,
+			prStaRec->aprRxReorderParamRefTbl[i]->fgIsValid,
+			prStaRec->aprRxReorderParamRefTbl[i]->u2WinStart,
+			prStaRec->aprRxReorderParamRefTbl[i]->u2WinEnd,
+			prStaRec->aprRxReorderParamRefTbl[i]->u2WinSize,
+			prStaRec->aprRxReorderParamRefTbl[i]->rReOrderQue.u4NumElem,
+			prStaRec->aprRxReorderParamRefTbl[i]->fgHasBubble,
+			prStaRec->aprRxReorderParamRefTbl[i]->u2FirstBubbleSn);
 		}
 	}
-
 	DBGLOG(SW4, TRACE, "============= DUMP END ===========\n");
-
 }
 
 UINT_32 cnmDumpMemoryStatus(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_32 u4Max)

@@ -1016,8 +1016,9 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 
 			ssid.aucSsid[(ssid.u4SsidLen >= PARAM_MAX_LEN_SSID) ?
 				     (PARAM_MAX_LEN_SSID - 1) : ssid.u4SsidLen] = '\0';
-			DBGLOG(INIT, INFO, "[wifi] %s netif_carrier_on [ssid:%s " MACSTR "]\n",
-			       prGlueInfo->prDevHandler->name, ssid.aucSsid, MAC2STR(arBssid));
+			DBGLOG(INIT, INFO, "[wifi] %s netif_carrier_on [ssid:%s " MACSTR "], Mac:" MACSTR "\n",
+			       prGlueInfo->prDevHandler->name, ssid.aucSsid, MAC2STR(arBssid),
+			       MAC2STR(prGlueInfo->prAdapter->rWifiVar.aucMacAddress));
 		} while (0);
 
 		if (prGlueInfo->fgIsRegistered == TRUE) {
