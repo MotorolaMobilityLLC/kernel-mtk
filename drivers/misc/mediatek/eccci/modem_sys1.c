@@ -159,6 +159,7 @@ static void md_cd_ccif_delayed_work(struct ccci_modem *md)
 	md_cd_clear_all_queue(CLDMA_HIF_ID, IN);
 #if (MD_GENERATION >= 6293)
 	md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_EXP);
+	md_ccif_reset_queue(CCIF_HIF_ID, 0);
 #endif
 	/* tell MD to reset CLDMA */
 	md_cd_ccif_send(md, H2D_EXCEPTION_CLEARQ_ACK);
