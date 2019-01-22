@@ -1203,7 +1203,7 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #endif
 #endif
 
-	if (cpu % 4) {
+	if (!(cpu == 0 || cpu == 4)) {
 		reason = BY_CPU;
 		goto get_idle_idx_2;
 	}
