@@ -1605,20 +1605,20 @@ static const struct mtk_gate mm_clks[] __initconst = {
 	GATE_MM0(MMSYS_DISP_DITHER0, "mm_disp_dither0", "mm_sel", 30),
 	GATE_MM0(MMSYS_DISP_SPLIT, "mm_disp_split", "mm_sel", 31),
 	/* MM1 */
-	GATE_MM1_DUMMY(MMSYS_DSI0_MM_CK, "mm_dsi0_mmck", "mm_sel", 0),
-	GATE_MM1_DUMMY(MMSYS_DSI0_IF_CK, "mm_dsi0_ifck", "mm_sel", 1),/* should mipipll1 */
-	GATE_MM1_DUMMY(MMSYS_DPI_MM_CK, "mm_dpi_mmck", "mm_sel", 2),
-	GATE_MM1_DUMMY(MMSYS_DPI_IF_CK, "mm_dpi_ifck", "dpi0_sel", 3),/* should dpi_ck */
-	GATE_MM1_DUMMY(MMSYS_FAKE_ENG2, "mm_fake_eng2", "mm_sel", 4),
-	GATE_MM1_DUMMY(MMSYS_MDP_DL_RX_CK, "mm_mdp_dl_rxck", "mm_sel", 5),
-	GATE_MM1_DUMMY(MMSYS_IPU_DL_RX_CK, "mm_ipu_dl_rxck", "mm_sel", 6),
-	GATE_MM1_DUMMY(MMSYS_26M, "mm_26m", "f_f26m_ck", 7),
-	GATE_MM1_DUMMY(MMSYS_MMSYS_R2Y, "mm_mmsys_r2y", "mm_sel", 8),
-	GATE_MM1_DUMMY(MMSYS_DISP_RSZ, "mm_disp_rsz", "mm_sel", 9),
-	GATE_MM1_DUMMY(MMSYS_MDP_AAL, "mm_mdp_aal", "mm_sel", 10),
-	GATE_MM1_DUMMY(MMSYS_MDP_CCORR, "mm_mdp_ccorr", "mm_sel", 11),
-	GATE_MM1_DUMMY(MMSYS_DBI_MM_CK, "mm_dbi_mmck", "mm_sel", 12),
-	GATE_MM1_DUMMY(MMSYS_DBI_IF_CK, "mm_dbi_ifck", "dpi0_sel", 13),
+	GATE_MM1(MMSYS_DSI0_MM_CK, "mm_dsi0_mmck", "mm_sel", 0),
+	GATE_MM1(MMSYS_DSI0_IF_CK, "mm_dsi0_ifck", "mm_sel", 1),/* should mipipll1 */
+	GATE_MM1(MMSYS_DPI_MM_CK, "mm_dpi_mmck", "mm_sel", 2),
+	GATE_MM1(MMSYS_DPI_IF_CK, "mm_dpi_ifck", "dpi0_sel", 3),/* should dpi_ck */
+	GATE_MM1(MMSYS_FAKE_ENG2, "mm_fake_eng2", "mm_sel", 4),
+	GATE_MM1(MMSYS_MDP_DL_RX_CK, "mm_mdp_dl_rxck", "mm_sel", 5),
+	GATE_MM1(MMSYS_IPU_DL_RX_CK, "mm_ipu_dl_rxck", "mm_sel", 6),
+	GATE_MM1(MMSYS_26M, "mm_26m", "f_f26m_ck", 7),
+	GATE_MM1(MMSYS_MMSYS_R2Y, "mm_mmsys_r2y", "mm_sel", 8),
+	GATE_MM1(MMSYS_DISP_RSZ, "mm_disp_rsz", "mm_sel", 9),
+	GATE_MM1(MMSYS_MDP_AAL, "mm_mdp_aal", "mm_sel", 10),
+	GATE_MM1(MMSYS_MDP_CCORR, "mm_mdp_ccorr", "mm_sel", 11),
+	GATE_MM1(MMSYS_DBI_MM_CK, "mm_dbi_mmck", "mm_sel", 12),
+	GATE_MM1(MMSYS_DBI_IF_CK, "mm_dbi_ifck", "dpi0_sel", 13),
 };
 
 static const struct mtk_gate_regs vdec0_cg_regs = {
@@ -2698,7 +2698,7 @@ void check_ven_clk_sts(void)
 	/* confirm mm0 clk */
 	pr_notice("VENC_CG_CON = 0x%08x\n", clk_readl(VENC_CG_CON));
 }
-#if 0
+#if 1
 void check_cam_clk_sts(void)
 {
 	/* confirm mm0 clk */
