@@ -810,7 +810,15 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* SPM */
 		p += sprintf(p, "SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "DVFS_LEVEL             : 0x%x\n", spm_read(DVFS_LEVEL));
+		p += sprintf(p, "SPM_SW_RSV_5           : 0x%x\n", spm_read(SPM_SW_RSV_5));
 		p += sprintf(p, "SPM_IRQ_STA            : 0x%x\n", spm_read(SPM_IRQ_STA));
+
+		p += sprintf(p, "SPM_PC_TRACE_G0~G3     : 0x%x, 0x%x, 0x%x, 0x%x\n",
+								spm_read(SPM_PC_TRACE_G0), spm_read(SPM_PC_TRACE_G1),
+								spm_read(SPM_PC_TRACE_G2), spm_read(SPM_PC_TRACE_G3));
+		p += sprintf(p, "SPM_PC_TRACE_G4~G7     : 0x%x, 0x%x, 0x%x, 0x%x\n",
+								spm_read(SPM_PC_TRACE_G4), spm_read(SPM_PC_TRACE_G5),
+								spm_read(SPM_PC_TRACE_G6), spm_read(SPM_PC_TRACE_G7));
 		p += sprintf(p, "PCM_REG_DATA_0~3       : 0x%x, 0x%x, 0x%x, 0x%x\n",
 								spm_read(PCM_REG0_DATA), spm_read(PCM_REG1_DATA),
 								spm_read(PCM_REG2_DATA), spm_read(PCM_REG3_DATA));
@@ -852,16 +860,23 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("DVFSRC_RECORD_4~7      : 0x%x, 0x%x, 0x%x, 0x%x\n",
 								spm_read(DVFSRC_RECORD_4), spm_read(DVFSRC_RECORD_5),
 								spm_read(DVFSRC_RECORD_6), spm_read(DVFSRC_RECORD_7));
-		spm_vcorefs_warn("DVFSRC_RECORD_L_0~3      : 0x%x, 0x%x, 0x%x, 0x%x\n",
+		spm_vcorefs_warn("DVFSRC_RECORD_L_0~3    : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(DVFSRC_RECORD_0_L), spm_read(DVFSRC_RECORD_1_L),
 							spm_read(DVFSRC_RECORD_2_L), spm_read(DVFSRC_RECORD_3_L));
-		spm_vcorefs_warn("DVFSRC_RECORD_L_4~7      : 0x%x, 0x%x, 0x%x, 0x%x\n",
+		spm_vcorefs_warn("DVFSRC_RECORD_L_4~7    : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(DVFSRC_RECORD_4_L), spm_read(DVFSRC_RECORD_5_L),
 							spm_read(DVFSRC_RECORD_6_L), spm_read(DVFSRC_RECORD_7_L));
 		/* SPM */
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("DVFS_LEVEL             : 0x%x\n", spm_read(DVFS_LEVEL));
+		spm_vcorefs_warn("SPM_SW_RSV_5           : 0x%x\n", spm_read(SPM_SW_RSV_5));
 		spm_vcorefs_warn("SPM_IRQ_STA            : 0x%x\n", spm_read(SPM_IRQ_STA));
+		spm_vcorefs_warn("SPM_PC_TRACE_G0~G3     : 0x%x, 0x%x, 0x%x, 0x%x\n",
+								spm_read(SPM_PC_TRACE_G0), spm_read(SPM_PC_TRACE_G1),
+								spm_read(SPM_PC_TRACE_G2), spm_read(SPM_PC_TRACE_G3));
+		spm_vcorefs_warn("SPM_PC_TRACE_G4~G7     : 0x%x, 0x%x, 0x%x, 0x%x\n",
+								spm_read(SPM_PC_TRACE_G4), spm_read(SPM_PC_TRACE_G5),
+								spm_read(SPM_PC_TRACE_G6), spm_read(SPM_PC_TRACE_G7));
 		spm_vcorefs_warn("PCM_REG_DATA_0~3       : 0x%x, 0x%x, 0x%x, 0x%x\n",
 								spm_read(PCM_REG0_DATA), spm_read(PCM_REG1_DATA),
 								spm_read(PCM_REG2_DATA), spm_read(PCM_REG3_DATA));
