@@ -486,7 +486,7 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	/* unsigned long flags; */
 	kal_uint32 u4RegValue;
 	kal_uint32 irq_mcu_en;
-	kal_uint32 irq_scp_en;
+	kal_uint32 irq_scp_en = 0;
 	kal_uint32 irq_temp_enable;
 	unsigned int irqIndex = 0;
 	unsigned int mcu_mask = get_mcu_irq_mask();
