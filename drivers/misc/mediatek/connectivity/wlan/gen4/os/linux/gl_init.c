@@ -913,7 +913,6 @@ struct net_device *gPrDev;
 static void wlanSetMulticastList(struct net_device *prDev)
 {
 	/* Allow to receive all multicast for WOW */
-	DBGLOG(INIT, INFO, "wlanSetMulticastList\n");
 	prDev->flags |= (IFF_MULTICAST | IFF_ALLMULTI);
 	gPrDev = prDev;
 	schedule_delayed_work(&workq, 0);

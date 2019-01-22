@@ -3970,7 +3970,7 @@ INT_32 kalReadToFile(const PUINT_8 pucPath, PUINT_8 pucData, UINT_32 u4Size, PUI
 	INT_32 ret = -1;
 	UINT_32 u4ReadSize = 0;
 
-	DBGLOG(INIT, INFO, "kalReadToFile() path %s\n", pucPath);
+	DBGLOG(INIT, TRACE, "kalReadToFile() path %s\n", pucPath);
 
 	file = kalFileOpen(pucPath, O_RDONLY, 0);
 

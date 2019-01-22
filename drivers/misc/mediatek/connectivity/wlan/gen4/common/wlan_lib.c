@@ -2365,10 +2365,9 @@ VOID wlanImageSectionGetFwInfo(IN P_ADAPTER_T prAdapter,
 
 	/* Dump image information */
 	if (ucCurSecNum == 0) {
-		DBGLOG(INIT, INFO, "%s INFO: chip_info[%u:E%u] feature[0x%02X]\n",
+		DBGLOG(INIT, INFO, "%s INFO: chip[%u:E%u] feature[0x%02X], date[%s] version[%c%c%c%c%c%c%c%c%c%c]\n",
 		       (eDlIdx == IMG_DL_IDX_N9_FW) ? "N9" : "CR4", prTailer->chip_info,
-		       prTailer->eco_code + 1, prTailer->feature_set);
-		DBGLOG(INIT, INFO, "date[%s] version[%c%c%c%c%c%c%c%c%c%c]\n",
+		       prTailer->eco_code + 1, prTailer->feature_set,
 		       prTailer->ram_built_date,
 		       prTailer->ram_version[0], prTailer->ram_version[1],
 		       prTailer->ram_version[2], prTailer->ram_version[3],
@@ -2383,6 +2382,7 @@ VOID wlanImageSectionGetFwInfo(IN P_ADAPTER_T prAdapter,
 	else
 		kalMemCopy(&prAdapter->rVerInfo.rCR4tailer, prTailer, sizeof(tailer_format_t));
 }
+
 #if CFG_SUPPORT_COMPRESSION_FW_OPTION
 VOID wlanImageSectionGetCompressFwInfo(IN P_ADAPTER_T prAdapter,
 IN PVOID pvFwImageMapFile, IN UINT_32 u4FwImageFileLength, IN UINT_8 ucTotSecNum, IN UINT_8 ucCurSecNum,
@@ -2443,6 +2443,7 @@ OUT PUINT_32 pu4DataMode, OUT PUINT_32 pu4BlockSize, OUT PUINT_32 pu4CRC, OUT PU
 	}
 }
 #endif
+
 VOID wlanImageSectionGetPatchInfo(IN P_ADAPTER_T prAdapter,
 				  IN PVOID pvFwImageMapFile, IN UINT_32 u4FwImageFileLength,
 				  IN UINT_8 ucTotSecNum, IN UINT_8 ucCurSecNum, IN ENUM_IMG_DL_IDX_T eDlIdx,
@@ -2468,12 +2469,11 @@ VOID wlanImageSectionGetPatchInfo(IN P_ADAPTER_T prAdapter,
 	/* Dump image information */
 	kalStrnCpy(aucBuffer, prPatchFormat->aucPlatform, 4);
 	aucBuffer[4] = '\0';
-	DBGLOG(INIT, INFO, "PATCH INFO: platform[%s] HW/SW ver[0x%04X] ver[0x%04X]\n",
-	       aucBuffer, prPatchFormat->u4SwHwVersion, prPatchFormat->u4PatchVersion);
+	kalStrnCpy(aucBuffer + 6, prPatchFormat->aucBuildDate, 16);
+	aucBuffer[16 + 6] = '\0';
 
-	kalStrnCpy(aucBuffer, prPatchFormat->aucBuildDate, 16);
-	aucBuffer[16] = '\0';
-	DBGLOG(INIT, INFO, "date[%s]\n", aucBuffer);
+	DBGLOG(INIT, INFO, "PATCH INFO: platform[%s] HW/SW ver[0x%04X] ver[0x%04X] date[%s]\n",
+	       aucBuffer, prPatchFormat->u4SwHwVersion, prPatchFormat->u4PatchVersion, aucBuffer + 6);
 
 	/* Backup to FW version info */
 	kalMemCopy(&prAdapter->rVerInfo.rPatchHeader, prPatchFormat, sizeof(PATCH_FORMAT_T));
@@ -2495,8 +2495,8 @@ VOID wlanImageSectionGetInfo(IN P_ADAPTER_T prAdapter,
 					  pu4DataMode);
 	}
 }
-#if CFG_SUPPORT_COMPRESSION_FW_OPTION
 
+#if CFG_SUPPORT_COMPRESSION_FW_OPTION
 BOOLEAN wlanImageSectionCheckFwCompressInfo(IN P_ADAPTER_T prAdapter,
 	IN PVOID pvFwImageMapFile, IN UINT_32 u4FwImageFileLength, IN ENUM_IMG_DL_IDX_T eDlIdx) {
 	UINT_8 ucCompression;
@@ -2517,7 +2517,6 @@ BOOLEAN wlanImageSectionCheckFwCompressInfo(IN P_ADAPTER_T prAdapter,
 	}
 	return FALSE;
 }
-
 
 WLAN_STATUS wlanImageSectionDownloadStage(IN P_ADAPTER_T prAdapter, IN PVOID pvFwImageMapFile,
 	IN UINT_32 u4FwImageFileLength, IN UINT_8 ucSectionNumber, IN ENUM_IMG_DL_IDX_T eDlIdx,
@@ -2698,6 +2697,7 @@ WLAN_STATUS wlanImageSectionDownloadStage(IN P_ADAPTER_T prAdapter,
 	return u4Status;
 }
 #endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function is called to confirm the status of
@@ -3492,7 +3492,7 @@ wlanCompressedFWConfigWifiFunc(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnable,
 	u4Status = wlanConfigWifiFuncStatus(prAdapter, ucCmdSeqNum);
 
 	if (u4Status != WLAN_STATUS_SUCCESS)
-		DBGLOG(INIT, INFO, "FW_START EVT failed\n");
+		DBGLOG(INIT, ERROR, "FW_START EVT failed\n");
 	else
 		DBGLOG(INIT, INFO, "FW_START EVT success!!\n");
 
@@ -7761,7 +7761,7 @@ WLAN_STATUS wlanCfgInit(IN P_ADAPTER_T prAdapter, PUINT_8 pucConfigBuf, UINT_32 
 	prWlanCfgRec->u4WlanCfgKeyLenMax = WLAN_CFG_REC_ENTRY_NUM_MAX;
 	prWlanCfgRec->u4WlanCfgValueLenMax = WLAN_CFG_REC_ENTRY_NUM_MAX;
 
-	DBGLOG(INIT, INFO, "Init wifi config len %u max entry %u\n", u4ConfigBufLen, prWlanCfg->u4WlanCfgEntryNumMax);
+	DBGLOG(INIT, TRACE, "Init wifi config len %u, max entry %u\n", u4ConfigBufLen, prWlanCfg->u4WlanCfgEntryNumMax);
 #if DBG
 	/* self test */
 	wlanCfgSet(prAdapter, "ConfigValid", "0x123", 0);
@@ -8364,7 +8364,7 @@ wlanGetSpeIdx(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	ENUM_BAND_T eBand = BAND_NULL;
 
 	if (ucBssIndex > MAX_BSS_INDEX) {
-		DBGLOG(SW4, INFO, "Invalid BssInfo index[%u], skip dump!\n", ucBssIndex);
+		DBGLOG(REQ, WARN, "Invalid BssInfo index[%u], skip dump!\n", ucBssIndex);
 		return ucRetValSpeIdx;
 	}
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
@@ -8397,9 +8397,9 @@ wlanGetSpeIdx(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 		} else
 			ucRetValSpeIdx = 0x18;
 	}
-	DBGLOG(INIT, INFO, "SpeIdx:%d,D:%d,G=%d,B=%d,Bss=%d\n",
-						ucRetValSpeIdx, prAdapter->rWifiVar.fgDbDcModeEn,
-						prBssInfo->fgIsGranted, eBand, ucBssIndex);
+	DBGLOG(REQ, TRACE, "SpeIdx:%d,D:%d,G=%d,B=%d,Bss=%d\n",
+			ucRetValSpeIdx, prAdapter->rWifiVar.fgDbDcModeEn,
+			prBssInfo->fgIsGranted, eBand, ucBssIndex);
 #endif
 	return ucRetValSpeIdx;
 }

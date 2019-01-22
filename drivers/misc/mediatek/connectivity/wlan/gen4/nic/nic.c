@@ -1214,7 +1214,7 @@ UINT_32 nicFreq2ChannelNum(UINT_32 u4FreqInKHz)
 	case 5865000:
 		return 173;
 	default:
-		DBGLOG(BSS, INFO, "Return Invalid Channelnum = 0.\n");
+		DBGLOG(NIC, WARN, "Invalid ChannelFreq %u, return 0\n", u4FreqInKHz);
 		return 0;
 	}
 }
@@ -1297,8 +1297,8 @@ WLAN_STATUS nicActivateNetwork(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	kalMemZero(&rCmdActivateCtrl.ucReserved, sizeof(rCmdActivateCtrl.ucReserved));
 
 #if 1				/* DBG */
-	DBGLOG(RSN, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 1);
-	DBGLOG(RSN, TRACE,
+	DBGLOG(NIC, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 1);
+	DBGLOG(NIC, TRACE,
 	       "[wlan index][Network] OwnMac=" MACSTR " BSSID=" MACSTR " BMCIndex = %d NetType=%d\n",
 	       MAC2STR(prBssInfo->aucOwnMacAddr), MAC2STR(prBssInfo->aucBSSID),
 	       prBssInfo->ucBMCWlanIndex, prBssInfo->eNetworkType);
@@ -1339,8 +1339,8 @@ WLAN_STATUS nicDeactivateNetwork(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	rCmdActivateCtrl.ucActive = 0;
 
 #if 1				/* DBG */
-	DBGLOG(RSN, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 0);
-	DBGLOG(RSN, TRACE,
+	DBGLOG(NIC, TRACE, "[wlan index][Network]=%d activate=%d\n", ucBssIndex, 0);
+	DBGLOG(NIC, TRACE,
 	       "[wlan index][Network] OwnMac=" MACSTR " BSSID=" MACSTR " BMCIndex = %d\n",
 	       MAC2STR(prBssInfo->aucOwnMacAddr), MAC2STR(prBssInfo->aucBSSID), prBssInfo->ucBMCWlanIndex);
 #endif
@@ -1670,7 +1670,7 @@ nicConfigPowerSaveProfile(IN P_ADAPTER_T prAdapter,
 			  IN UINT_8 ucBssIndex, IN PARAM_POWER_MODE ePwrMode, IN BOOLEAN fgEnCmdEvent)
 {
 	DEBUGFUNC("nicConfigPowerSaveProfile");
-	DBGLOG(INIT, TRACE, "ucBssIndex:%d, ePwrMode:%d, fgEnCmdEvent:%d\n", ucBssIndex, ePwrMode, fgEnCmdEvent);
+	DBGLOG(NIC, TRACE, "ucBssIndex:%d, ePwrMode:%d, fgEnCmdEvent:%d\n", ucBssIndex, ePwrMode, fgEnCmdEvent);
 
 	ASSERT(prAdapter);
 
@@ -1704,7 +1704,7 @@ WLAN_STATUS nicEnterCtiaMode(IN P_ADAPTER_T prAdapter, BOOLEAN fgEnterCtia, BOOL
 	WLAN_STATUS rWlanStatus;
 
 	DEBUGFUNC("nicEnterCtiaMode");
-	DBGLOG(INIT, TRACE, "nicEnterCtiaMode: %d\n", fgEnterCtia);
+	DBGLOG(NIC, TRACE, "nicEnterCtiaMode: %d\n", fgEnterCtia);
 
 	ASSERT(prAdapter);
 
@@ -1867,7 +1867,6 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 	UINT_8 ucCmdSeqNum;
 
 	DEBUGFUNC("wlanUpdateBeaconIETemplate");
-	DBGLOG(INIT, LOUD, "\n");
 
 	ASSERT(prAdapter);
 	prGlueInfo = prAdapter->prGlueInfo;
@@ -1887,7 +1886,7 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 	/* prepare command info */
 	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, (CMD_HDR_SIZE + u2CmdBufLen));
 	if (!prCmdInfo) {
-		DBGLOG(INIT, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
+		DBGLOG(NIC, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
 		return WLAN_STATUS_FAILURE;
 	}
 	/* increase command sequence number */
@@ -1984,11 +1983,7 @@ WLAN_STATUS nicQmUpdateWmmParms(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 
 	ASSERT(prAdapter);
 
-	DBGLOG(QM, INFO, "Update WMM parameters for BSS[%u]\n", ucBssIndex);
-
-	DBGLOG(QM, EVENT, "sizeof(AC_QUE_PARMS_T): %d\n", sizeof(AC_QUE_PARMS_T));
-	DBGLOG(QM, EVENT, "sizeof(CMD_UPDATE_WMM_PARMS): %d\n", sizeof(CMD_UPDATE_WMM_PARMS_T));
-	DBGLOG(QM, EVENT, "sizeof(WIFI_CMD_T): %d\n", sizeof(WIFI_CMD_T));
+	DBGLOG(QM, TRACE, "Update WMM parameters for BSS[%u]\n", ucBssIndex);
 
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
 	rCmdUpdateWmmParms.ucBssIndex = (UINT_8) ucBssIndex;
