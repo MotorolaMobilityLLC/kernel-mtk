@@ -538,7 +538,7 @@ struct ccu_i2c_arg {
 	unsigned int transfer_len;
 };
 
-extern void i2c_get_dma_buffer_addr(void **va);
+extern int i2c_get_dma_buffer_addr(void **va);
 extern int ccu_i2c_buf_mode_en(int enable);
 extern int ccu_init_i2c_buf_mode(unsigned short i2cId);
 extern int ccu_config_i2c_buf_mode(int transfer_len);

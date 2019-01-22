@@ -592,23 +592,25 @@ int ccu_i2c_buf_mode_en(int enable)
 	return ret;
 }
 
-void i2c_get_dma_buffer_addr(void **va)
+int i2c_get_dma_buffer_addr(void **va)
 {
 	struct i2c_client *pClient = NULL;
 	struct mt_i2c *i2c;
 
 	pClient = getCcuI2cClient();
+
+	if (pClient == MNULL) {
+		LOG_ERR("ccu client is NULL");
+		return -EFAULT;
+	}
+
 	i2c = i2c_get_adapdata(pClient->adapter);
 
-	/*if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1)*/
-	if (1) {
-		/*i2c_get_dma_buffer_addr_imp(pClient->adapter ,va);*/
-		*va = i2c->dma_buf.vaddr;
-		LOG_DBG("got i2c buf va: %p\n", *va);
-		/**va = (void *)0xa9a9a9;*/
-	} else {
-		LOG_DBG("iBurstWriteReg_HW only support main cam for now\n");
-	}
+	/*i2c_get_dma_buffer_addr_imp(pClient->adapter ,va);*/
+	*va = i2c->dma_buf.vaddr;
+	LOG_DBG("got i2c buf va: %p\n", *va);
+
+	return 0;
 }
 #endif
 
