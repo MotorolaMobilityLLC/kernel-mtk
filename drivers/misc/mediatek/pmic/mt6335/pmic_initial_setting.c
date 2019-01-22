@@ -17,8 +17,8 @@
 #include <linux/io.h>
 #include <linux/io.h>
 #include <linux/of_address.h>
-
 #include "include/pmic.h"
+#include "include/pmic_api_buck.h"
 
 #define PMIC_32K_LESS_DETECT_V1      0
 #define PMIC_CO_TSX_V1               1
@@ -160,6 +160,104 @@ int PMIC_POWER_HOLD(unsigned int hold)
 	return 0;
 }
 
+void PMIC_LP_INIT_SETTING(void)
+{
+	int ret = 0;
+
+	/*--suspend--*/
+	ret = pmic_buck_vcore_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_buck_vdram_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_buck_vmodem_lp(SW, 1, SW_OFF);
+	ret = pmic_buck_vmd1_lp(SW, 1, SW_OFF);
+	ret = pmic_buck_vs1_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_buck_vs2_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_buck_vpa1_lp(SW, 1, SW_OFF);
+	ret = pmic_buck_vimvo_lp(SW, 1, SW_LP);
+	ret = pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vsram_dvfs1_lp(SPM, 1, SPM_OFF);
+	ret = pmic_ldo_vsram_dvfs2_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vsram_vgpu_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vsram_vmd_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vrf18_1_lp(SRCLKEN1, 1, HW_OFF);
+	ret = pmic_ldo_vrf18_2_lp(SRCLKEN1, 1, HW_OFF);
+	ret = pmic_ldo_vrf12_lp(SRCLKEN1, 1, HW_OFF);
+	ret = pmic_ldo_vcn33_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcn28_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcn18_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcama1_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcama2_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcamd1_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcamd2_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcamio_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcamaf_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_va10_lp(SRCLKEN0, 1, HW_OFF);
+	ret = pmic_ldo_va12_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_va18_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vsim2_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vsim1_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vtouch_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vmc_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vmch_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vemc_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vufs18_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vefuse_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vusb33_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vio18_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vio28_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vbif28_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vmipi_lp(SRCLKEN1, 1, HW_OFF);
+	ret = pmic_ldo_vgp3_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vibr_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vxo22_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
+	/*--deepidle--*/
+	ret = pmic_buck_vcore_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_buck_vdram_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_buck_vmodem_lp(SW, 1, SW_OFF);
+	ret = pmic_buck_vmd1_lp(SW, 1, SW_OFF);
+	ret = pmic_buck_vs1_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_buck_vs2_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_buck_vpa1_lp(SW, 1, SW_OFF);
+	ret = pmic_buck_vimvo_lp(SW, 1, SW_LP);
+	ret = pmic_ldo_vsram_vcore_lp(SW, 1, SW_ON);
+	ret = pmic_ldo_vsram_dvfs1_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vsram_dvfs2_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vsram_vgpu_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vsram_vmd_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vrf18_1_lp(SRCLKEN1, 1, HW_OFF);
+	ret = pmic_ldo_vrf18_2_lp(SRCLKEN1, 1, HW_OFF);
+	ret = pmic_ldo_vrf12_lp(SRCLKEN1, 1, HW_OFF);
+	ret = pmic_ldo_vcn33_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcn28_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcn18_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcama1_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcama2_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcamd1_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcamd2_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcamio_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vcamaf_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_va10_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_va12_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_va18_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vsim2_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vsim1_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vtouch_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vmc_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vmch_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vemc_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vufs18_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vefuse_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vusb33_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vio18_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vio28_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vbif28_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vmipi_lp(SRCLKEN1, 1, HW_OFF);
+	ret = pmic_ldo_vgp3_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vibr_lp(SW, 1, SW_OFF);
+	ret = pmic_ldo_vxo22_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
+}
+
 void PMIC_INIT_SETTING_V1(void)
 {
 	unsigned int chip_version = 0;
@@ -207,8 +305,12 @@ void PMIC_INIT_SETTING_V1(void)
 	pr_err("[PMIC] is_wdt_reboot_chk=%d\n", is_wdt_reboot_pmic_chk);
 
 	ret = pmic_set_register_value(PMIC_TOP_RST_MISC_SET, 0x1);
-#if 0
-	/* for MT6335 E2 initial setting if need to execute in kernel */
+
+	/* for MT6335 LP setting*/
+#if defined(IPIMB)
+	pr_err("[LP INIT SETTING][IPIMB]\n");
+#else
+	PMIC_LP_INIT_SETTING();
 #endif
 
 /*****************************************************
