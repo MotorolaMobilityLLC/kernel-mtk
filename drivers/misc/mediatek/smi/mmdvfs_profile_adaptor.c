@@ -706,7 +706,7 @@ static void mmdvfs_configure_clk_hw(struct mmdvfs_adaptor *self,
 
 		ccf_ret = clk_set_parent((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle,
 			(struct clk *)self->mmdvfs_clk_sources[clk_source_id].ccf_handle);
-		MMDVFSMSG("clk_set_parent: handle = (%lx,%lx), src id = %d\n",
+		MMDVFSDEBUG(3, "clk_set_parent: handle = (%lx,%lx), src id = %d\n",
 		((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle),
 		((unsigned long)self->mmdvfs_clk_sources[clk_source_id].ccf_handle),
 		clk_source_id);
