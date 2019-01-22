@@ -89,6 +89,23 @@ static int int_spk_amp_gain_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int int_spk_amp_gain_put_volsw(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	int ret = 0;
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt6392_codec_priv *codec_data =
+		snd_soc_component_get_drvdata(component);
+
+	ret = snd_soc_put_volsw(kcontrol, ucontrol);
+	if (ret < 0)
+		return ret;
+
+	codec_data->spk_amp_gain = ucontrol->value.integer.value[0];
+
+	return 0;
+}
+
 /* Internal speaker mode (AB/D) */
 static const char * const int_spk_amp_mode_texts[] = {
 	"Class D",
@@ -161,8 +178,10 @@ static int mt6392_speaker_oc_flag_get(struct snd_kcontrol *kcontrol,
 
 static const struct snd_kcontrol_new mt6392_codec_controls[] = {
 	/* Internal speaker PGA gain control */
-	SOC_SINGLE_TLV("Int Spk Amp Playback Volume",
+	SOC_SINGLE_EXT_TLV("Int Spk Amp Playback Volume",
 		SPK_CON9, 8, 15, 0,
+		snd_soc_get_volsw,
+		int_spk_amp_gain_put_volsw,
 		int_spk_amp_gain_tlv),
 	/* Audio_Speaker_PGA_gain */
 	SOC_ENUM_EXT("Audio_Speaker_PGA_gain",
