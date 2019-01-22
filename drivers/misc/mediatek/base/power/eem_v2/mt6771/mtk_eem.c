@@ -102,7 +102,8 @@ struct task_struct *threadStress;
 static unsigned int ctrl_EEM_Enable = 1;
 /* Get time stmp to known the time period */
 static unsigned long long eem_pTime_us, eem_cTime_us, eem_diff_us;
-static unsigned int turbocode;
+static unsigned int cputurbo;
+static unsigned int gputurbo;
 
 /* for setting pmic pwm mode and auto mode */
 struct regulator *eem_regulator_vproc1;
@@ -323,14 +324,21 @@ static int get_devinfo(void)
 	eem_checkEfuse = 1;
 #endif
 
-	turbocode = (get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 3) & 0x1;
-	if (turbocode) {
+	cputurbo = (get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 3) & 0x1;
+	gputurbo = ((get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 6) & 0x1)
+		| cputurbo;
+
+	if (cputurbo) {
 		((int *)&turbo_bininfo)[0] = get_devinfo_with_index(TURBO_BIN_CODE_IDX_0);
 
 		if ((turbo_bininfo.CPU_T_BIN >= 1) && (turbo_bininfo.CPU_T_BIN <= 4))
 			turbo_bininfo.CPU_T_BIN -= 1;
 		else
 			turbo_bininfo.CPU_T_BIN = 0;
+	}
+
+	if (gputurbo) {
+		((int *)&turbo_bininfo)[0] = get_devinfo_with_index(TURBO_BIN_CODE_IDX_0);
 
 		if ((turbo_bininfo.GPU_OPP0_T_BIN >= 1) && (turbo_bininfo.GPU_OPP0_T_BIN <= 5))
 			turbo_bininfo.GPU_OPP0_T_BIN -= 1;
@@ -344,12 +352,13 @@ static int get_devinfo(void)
 	}
 
 #ifdef CONFIG_EEM_AEE_RR_REC
-	aee_rr_rec_ptp_devinfo_1(turbocode || (turbo_bininfo.CPU_T_BIN >> 1) ||
-		(turbo_bininfo.GPU_OPP0_T_BIN >> 4) || (turbo_bininfo.GPU_OPP1_T_BIN >> 7));
+	aee_rr_rec_ptp_devinfo_1(cputurbo | (turbo_bininfo.CPU_T_BIN >> 1) |
+		(turbo_bininfo.GPU_OPP0_T_BIN >> 4) | (turbo_bininfo.GPU_OPP1_T_BIN >> 7) |
+		(gputurbo >> 10));
 
 #if 0
 	eem_error("t:%d, tbin:%d, g0bin:%d, g1bin:%d, bin data: 0x%x",
-		turbocode, (turbo_bininfo.CPU_T_BIN), (turbo_bininfo.GPU_OPP0_T_BIN),
+		cputurbo, (turbo_bininfo.CPU_T_BIN), (turbo_bininfo.GPU_OPP0_T_BIN),
 		(turbo_bininfo.GPU_OPP1_T_BIN), get_devinfo_with_index(TURBO_BIN_CODE_IDX_0));
 #endif
 #endif
@@ -1576,7 +1585,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 			if (tmp_clamp_val > LCPU_VMAX1050_PMIC_VAL)
 				tmp_clamp_val = LCPU_VMAX1050_PMIC_VAL;
 
-			if ((turbocode == 1) && (i == 0))
+			if ((cputurbo == 1) && (i == 0))
 				det->volt_tbl_pmic[i] = det->ops->volt_2_pmic(det, cpu_t_volt[turbo_bininfo.CPU_T_BIN]);
 			else
 				det->volt_tbl_pmic[i] = min(
@@ -1588,7 +1597,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 					det->ops->eem_2_pmic(det, det->VMAX))),
 					tmp_clamp_val);
 
-			if ((turbocode == 1) && (i == 1)) {
+			if ((cputurbo == 1) && (i == 1)) {
 				if (det->volt_tbl_pmic[1] > det->volt_tbl_pmic[0])
 					det->volt_tbl_pmic[0] = det->volt_tbl_pmic[1];
 			}
@@ -1612,10 +1621,10 @@ static void eem_set_eem_volt(struct eem_det *det)
 			break;
 
 		case EEM_CTRL_GPU:
-			if ((turbocode == 1) && (i == 0))
+			if ((gputurbo == 1) && (i == 0))
 				det->volt_tbl_pmic[i] = det->ops->volt_2_pmic(
 					det, gpu_opp0_t_volt[turbo_bininfo.GPU_OPP0_T_BIN]);
-			else if ((turbocode == 1) && (i == 1))
+			else if ((gputurbo == 1) && (i == 1))
 				det->volt_tbl_pmic[i] = det->ops->volt_2_pmic(
 					det, gpu_opp1_t_volt[turbo_bininfo.GPU_OPP1_T_BIN]);
 			else
