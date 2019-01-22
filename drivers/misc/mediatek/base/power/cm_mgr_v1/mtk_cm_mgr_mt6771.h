@@ -58,6 +58,8 @@ extern int cm_mgr_get_cpu_count(int cluster);
 extern int cm_mgr_get_max_stall_ratio(int cluster);
 extern int cm_mgr_check_stall_ratio(int mp0, int mp2);
 extern void cm_mgr_ratio_timer_en(int enable);
+extern void cm_mgr_perf_platform_set_status(int enable);
+extern void cm_mgr_perf_platform_set_force_status(int enable);
 extern int cm_mgr_register_init(void);
 extern int cm_mgr_platform_init(void);
 

@@ -54,6 +54,7 @@
 #include <linux/fb.h>
 #include <linux/notifier.h>
 
+#include <linux/pm_qos.h>
 #include <helio-dvfsrc-opp.h>
 #include <mtk_spm_vcore_dvfs.h>
 #ifdef USE_IDLE_NOTIFY
@@ -514,6 +515,98 @@ void cm_mgr_ratio_timer_en(int enable)
 		add_timer(&cm_mgr_ratio_timer);
 	} else {
 		del_timer(&cm_mgr_ratio_timer);
+	}
+}
+
+static struct pm_qos_request ddr_opp_req;
+static int debounce_times_perf_down_local;
+static int pm_qos_update_request_status;
+void cm_mgr_perf_platform_set_status(int enable)
+{
+	if (enable) {
+		debounce_times_perf_down_local = 0;
+
+		if (cm_mgr_perf_enable == 0)
+			return;
+
+		if (cm_mgr_idx == CM_MGR_LP4X_2CH_3600) {
+			cpu_power_ratio_up[0] = 500;
+			cpu_power_ratio_up[1] = 500;
+			debounce_times_up_adb[1] = 0;
+		} else if (cm_mgr_idx == CM_MGR_LP4X_2CH_3200) {
+			cpu_power_ratio_up[0] = 500;
+			cpu_power_ratio_up[1] = 500;
+			debounce_times_up_adb[1] = 0;
+		} else if (cm_mgr_idx == CM_MGR_LP3_1CH_1866) {
+			cpu_power_ratio_up[0] = 500;
+			cpu_power_ratio_up[1] = 500;
+			debounce_times_up_adb[1] = 0;
+		}
+
+	} else {
+		if (++debounce_times_perf_down_local < debounce_times_perf_down)
+			return;
+
+		if (cm_mgr_idx == CM_MGR_LP4X_2CH_3600) {
+			cpu_power_ratio_up[0] = 100;
+			cpu_power_ratio_up[1] = 100;
+			debounce_times_up_adb[1] = 3;
+		} else if (cm_mgr_idx == CM_MGR_LP4X_2CH_3200) {
+			cpu_power_ratio_up[0] = 100;
+			cpu_power_ratio_up[1] = 100;
+			debounce_times_up_adb[1] = 3;
+		} else if (cm_mgr_idx == CM_MGR_LP3_1CH_1866) {
+			cpu_power_ratio_up[0] = 100;
+			cpu_power_ratio_up[1] = 100;
+			debounce_times_up_adb[1] = 3;
+		}
+
+		debounce_times_perf_down_local = 0;
+	}
+}
+
+void cm_mgr_perf_platform_set_force_status(int enable)
+{
+	if (enable) {
+		debounce_times_perf_down_local = 0;
+
+		if (cm_mgr_perf_enable == 0)
+			return;
+
+		if ((cm_mgr_perf_force_enable == 0) ||
+				(pm_qos_update_request_status == 1))
+			return;
+
+		if (cm_mgr_idx == CM_MGR_LP4X_2CH_3600)
+			pm_qos_update_request(&ddr_opp_req, 0);
+		else if (cm_mgr_idx == CM_MGR_LP4X_2CH_3200)
+			pm_qos_update_request(&ddr_opp_req, 0);
+		else if (cm_mgr_idx == CM_MGR_LP3_1CH_1866)
+			pm_qos_update_request(&ddr_opp_req, 0);
+
+		pm_qos_update_request_status = enable;
+	} else {
+		if (pm_qos_update_request_status == 0)
+			return;
+
+		if ((cm_mgr_perf_force_enable == 0) ||
+				(++debounce_times_perf_down_local >=
+				 debounce_times_perf_force_down)) {
+
+			if (cm_mgr_idx == CM_MGR_LP4X_2CH_3600) {
+				pm_qos_update_request(&ddr_opp_req,
+						PM_QOS_EMI_OPP_DEFAULT_VALUE);
+			} else if (cm_mgr_idx == CM_MGR_LP4X_2CH_3200) {
+				pm_qos_update_request(&ddr_opp_req,
+						PM_QOS_EMI_OPP_DEFAULT_VALUE);
+			} else if (cm_mgr_idx == CM_MGR_LP3_1CH_1866) {
+				pm_qos_update_request(&ddr_opp_req,
+						PM_QOS_EMI_OPP_DEFAULT_VALUE);
+			}
+
+			pm_qos_update_request_status = enable;
+			debounce_times_perf_down_local = 0;
+		}
 	}
 }
 
