@@ -76,7 +76,7 @@ static ssize_t show_buck_ldo_info(struct device *dev, struct device_attribute *a
 	return len;
 }
 
-static DEVICE_ATTR(buck_ldo_info, 0664, show_buck_ldo_info, NULL);     /*664*/
+static DEVICE_ATTR(buck_ldo_info, 0444, show_buck_ldo_info, NULL); /* 444 no write permission */
 
 /*****************************************************************************
  * PMIC6355 linux reguplator driver
