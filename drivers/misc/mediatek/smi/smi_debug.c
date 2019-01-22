@@ -45,6 +45,7 @@
 #include "smi_reg.h"
 #include "smi_debug.h"
 #include "smi_configuration.h"
+#include "m4u.h"
 
 #define SMI_LOG_TAG "smi"
 
@@ -250,8 +251,16 @@ static int get_status_code(int smi_larb_clk_status, int smi_larb_busy_count,
 
 int smi_debug_bus_hanging_detect_ext(unsigned short larbs, int show_dump, int output_gce_buffer)
 {
+	return smi_debug_bus_hanging_detect_ext2(larbs, show_dump, output_gce_buffer, 0);
+}
+
+int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
+	int output_gce_buffer, int enable_m4u_reg_dump)
+{
 /* output_gce_buffer = 1, write log into kernel log and CMDQ buffer. */
 /* dual_buffer = 0, write log into kernel log only */
+/* call m4u dump API when enable_m4u_reg_dump = 1 */
+
 	int i = 0;
 	int dump_time = 0;
 	int is_smi_issue = 0;
@@ -362,6 +371,11 @@ int smi_debug_bus_hanging_detect_ext(unsigned short larbs, int show_dump, int ou
 
 		}
 
+	}
+
+	if (enable_m4u_reg_dump) {
+		SMIMSG("call m4u API for m4u register dump\n");
+		m4u_dump_reg_for_smi_hang_issue();
 	}
 	return is_smi_issue;
 }
