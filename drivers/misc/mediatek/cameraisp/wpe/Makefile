@@ -11,8 +11,12 @@
 # GNU General Public License for more details.
 #
 
-obj-y += dip/
-obj-y += src/
-obj-y += owe/
-obj-y += rsc/
-obj-y += wpe/
+obj-y := camerawpe_dummy.o
+
+ifeq ($(CONFIG_MACH_MT6775),y)
+  obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+endif
+
+ifeq ($(CONFIG_MACH_MT6771),y)
+  obj-y += $(subst ",,mt6775)/
+endif
