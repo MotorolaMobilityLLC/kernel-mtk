@@ -22,7 +22,7 @@
 #include "clk-gate.h"
 #include "clk-mux.h"
 
-#include <dt-bindings/clock/mt6763-clk.h>
+#include <dt-bindings/clock/mt6771-clk.h>
 
 #define MT_CCF_BRINGUP	1
 #ifdef CONFIG_ARM64
@@ -51,7 +51,7 @@ while (0)
 #define PLL_PWR_ON  (0x1 << 0)
 #define PLL_ISO_EN  (0x1 << 1)
 
-static DEFINE_SPINLOCK(mt6763_clk_lock);
+static DEFINE_SPINLOCK(mt6771_clk_lock);
 
 /* Total 10 subsys */
 void __iomem *cksys_base;
@@ -1393,7 +1393,7 @@ static void __init mtk_topckgen_init(struct device_node *node)
 
 	mtk_clk_register_factors(top_divs, ARRAY_SIZE(top_divs), clk_data);
 	mtk_clk_register_mux_clr_set_upds(top_muxes, ARRAY_SIZE(top_muxes), base,
-		&mt6763_clk_lock, clk_data);
+		&mt6771_clk_lock, clk_data);
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
 	if (r)
@@ -1470,9 +1470,9 @@ CLK_OF_DECLARE(mtk_infracfg_ao, "mediatek,infracfg_ao",
 		mtk_infracfg_ao_init);
 
 /* FIXME: modify FMAX */
-#define MT6763_PLL_FMAX		(3200UL * MHZ)
+#define MT6771_PLL_FMAX		(3200UL * MHZ)
 
-#define CON0_MT6763_RST_BAR	BIT(24)
+#define CON0_MT6771_RST_BAR	BIT(24)
 
 #define PLL_B(_id, _name, _reg, _pwr_reg, _en_mask, _flags, _pcwbits,	\
 			_pd_reg, _pd_shift, _tuner_reg, _pcw_reg,	\
@@ -1483,8 +1483,8 @@ CLK_OF_DECLARE(mtk_infracfg_ao, "mediatek,infracfg_ao",
 		.pwr_reg = _pwr_reg,					\
 		.en_mask = _en_mask,					\
 		.flags = _flags,					\
-		.rst_bar_mask = CON0_MT6763_RST_BAR,			\
-		.fmax = MT6763_PLL_FMAX,				\
+		.rst_bar_mask = CON0_MT6771_RST_BAR,			\
+		.fmax = MT6771_PLL_FMAX,				\
 		.pcwbits = _pcwbits,					\
 		.pd_reg = _pd_reg,					\
 		.pd_shift = _pd_shift,					\
@@ -2062,12 +2062,12 @@ void check_cam_clk_sts(void)
 	pr_notice("CAMSYS_CG_CON = 0x%08x\n", clk_readl(CAMSYS_CG_CON));
 }
 
-static int __init clk_mt6763_init(void)
+static int __init clk_mt6771_init(void)
 {
 	/*timer_ready = true;*/
 	/*mtk_clk_enable_critical();*/
 
 	return 0;
 }
-arch_initcall(clk_mt6763_init);
+arch_initcall(clk_mt6771_init);
 
