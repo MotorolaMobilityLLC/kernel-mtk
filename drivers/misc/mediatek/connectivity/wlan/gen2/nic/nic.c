@@ -1935,6 +1935,23 @@ WLAN_STATUS nicQmUpdateWmmParms(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_I
 				   NULL, NULL, sizeof(CMD_UPDATE_WMM_PARMS_T), (PUINT_8)&rCmdUpdateWmmParms, NULL, 0);
 }
 
+WLAN_STATUS nicQmSetRxBASize(IN P_ADAPTER_T prAdapter, BOOLEAN enable, UINT32 size)
+{
+	CMD_SPECIFIC_RX_BA_WIN_SIZE_T rCmdRxBASize;
+
+	ASSERT(prAdapter);
+
+	rCmdRxBASize.fgEnabled = enable;
+	rCmdRxBASize.SpecificRxBAWinSize = size;
+
+	return wlanSendSetQueryCmd(prAdapter,
+				   CMD_ID_SET_RX_BA_WIN_SIZE,
+				   TRUE,
+				   FALSE,
+				   FALSE,
+				   NULL, NULL, sizeof(CMD_SPECIFIC_RX_BA_WIN_SIZE_T), (PUINT_8)&rCmdRxBASize, NULL, 0);
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This utility function is used to update TX power gain corresponding to

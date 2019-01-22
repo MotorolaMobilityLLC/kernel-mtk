@@ -4152,26 +4152,35 @@ static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long 
 {
 	struct fb_event *evdata = data;
 	INT_32 blank;
-	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T)wlan_fb_notifier_priv_data;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+
 
 	/* If we aren't interested in this event, skip it immediately ... */
-	if (event != FB_EVENT_BLANK || !prGlueInfo)
+	if (event != FB_EVENT_BLANK)
 		return 0;
 
+	if (kalHaltTryLock())
+		return 0;
+
+	prGlueInfo = (P_GLUE_INFO_T)wlan_fb_notifier_priv_data;
 	blank = *(INT_32 *)evdata->data;
 
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
-		kalPerMonEnable(prGlueInfo);
+		if (!kalIsHalted())
+			kalPerMonEnable(prGlueInfo);
 		wlan_fb_power_down = FALSE;
 		break;
 	case FB_BLANK_POWERDOWN:
 		wlan_fb_power_down = TRUE;
-		kalPerMonDisable(prGlueInfo);
+		if (!kalIsHalted())
+			kalPerMonDisable(prGlueInfo);
 		break;
 	default:
 		break;
 	}
+
+	kalHaltUnlock();
 	return 0;
 }
 
