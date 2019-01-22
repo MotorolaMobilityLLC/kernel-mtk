@@ -663,6 +663,15 @@ static void ipanic_oops_done(struct aee_oops *oops, int erase)
 		ipanic_erase();
 }
 
+void ipanic_zap_console_sem(void)
+{
+	if (console_trylock())
+		pr_err("we can get console_sem\n");
+	else
+		pr_err("we cannot get console_sem\n");
+	console_unlock();
+}
+
 static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 {
 	struct kmsg_dumper dumper;
@@ -699,8 +708,10 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	ipanic_enable = 0; /*for mlc/tlc nand project, only enable lk flow*/
 #endif
 
-	if (!has_mt_dump_support())
+	if (!has_mt_dump_support()) {
+		ipanic_zap_console_sem();
 		emergency_restart();
+	}
 
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_KERNEL_PANIC, "kernel Oops");
 	memset(&dumper, 0x0, sizeof(struct kmsg_dumper));
