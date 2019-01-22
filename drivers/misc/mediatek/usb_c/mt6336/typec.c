@@ -2270,6 +2270,8 @@ void auxadc_detect_cableout_hanlder(void)
 {
 	struct typec_hba *hba = get_hba();
 	uint16_t val;
+	unsigned int vbus = 0;
+	static unsigned int pre_vbus;
 
 	val = typec_auxadc_get_value(hba, FLAGS_AUXADC_MIN);
 
@@ -2277,10 +2279,13 @@ void auxadc_detect_cableout_hanlder(void)
 
 	typec_disable_auxadc(hba, 1, 0);
 
-	if ((val < SNK_VRPUSB_AUXADC_MIN_VAL) && (typec_vbus(hba) < PD_VSAFE5V_LOW)) {
+	vbus = typec_vbus(hba);
+
+	if ((val < SNK_VRPUSB_AUXADC_MIN_VAL) && ((vbus < (PD_VSAFE5V_LOW)) || (vbus < pre_vbus))) {
 		if (hba->charger_det_notify)
 			hba->charger_det_notify(0);
 	} else {
+		pre_vbus = vbus;
 		typec_enable_auxadc(hba, 1, 0);
 	}
 }
@@ -2506,24 +2511,28 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	init_completion(&hba->auxadc_event);
 #endif
 
-#if SUPPORT_PD
-	/*initialize PD*/
-	if (hba->mode == 2)
-		pd_init(hba);
-#endif
-
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
 		|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 		dev_err(hba->dev, "%s, in KPOC\n", __func__);
 		hba->support_role = TYPEC_ROLE_SINK;
 		hba->is_kpoc = true;
-		hba->kpoc_retry = 3;
-		hba->vbus_off_polling = hba->vbus_off_polling/2;
-		typec_set(hba, REG_TYPE_C_ADC_EN, TYPE_C_CTRL);
 		queue_work(hba->pd_wq, &hba->init_vbus_off);
 	}
 #endif
+
+#if SUPPORT_PD
+	/*initialize PD*/
+	if (hba->mode == 2)
+		pd_init(hba);
+#endif
+
+	if (hba->is_kpoc) {
+		hba->vbus_off_polling = hba->vbus_off_polling/2;
+		typec_set(hba, REG_TYPE_C_ADC_EN, TYPE_C_CTRL);
+
+		mt_ppm_sysboost_set_core_limit(BOOST_BY_USB, 1, 4, 4);
+	}
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 	mt_dual_role_phy_init(hba);
@@ -2565,7 +2574,10 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		/*Prefer Role 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
 		typec_set_mode(hba, hba->support_role, hba->rp_val, ((hba->prefer_role == 3)?1:0));
 
-		typec_enable(hba, 1);
+		if (hba->is_kpoc)
+			typec_enable(hba, 0);
+		else
+			typec_enable(hba, 1);
 	} else {
 		typec_enable(hba, 0);
 	}

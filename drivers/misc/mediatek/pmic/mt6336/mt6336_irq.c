@@ -357,8 +357,6 @@ static void mt6336_int_handler(void)
 			/* handle CC & PD irq first, CC & PD are at the same status register */
 			cc_pd_status = mt6336_get_register_value(mt6336_interrupts[cc_pd_i].address);
 			if (cc_pd_status) {
-				pr_err(MT6336TAG "[CHR_INT] Type-C status[0x%x]=0x%x\n",
-					mt6336_interrupts[cc_pd_i].address, cc_pd_status);
 				if (cc_pd_status & (1 << cc_j)
 				    && mt6336_interrupts[cc_pd_i].interrupts[cc_j].callback != NULL) {
 					mt6336_interrupts[cc_pd_i].interrupts[cc_j].callback();
@@ -369,6 +367,8 @@ static void mt6336_int_handler(void)
 					mt6336_interrupts[cc_pd_i].interrupts[pd_j].callback();
 					mt6336_interrupts[cc_pd_i].interrupts[pd_j].times++;
 				}
+				pr_err(MT6336TAG "[CHR_INT] Type-C status[0x%x]=0x%x\n",
+					mt6336_interrupts[cc_pd_i].address, cc_pd_status);
 				mt6336_set_register_value(mt6336_interrupts[cc_pd_i].address, cc_pd_status);
 			}
 			if (i == cc_pd_i && (j == cc_j || j == pd_j))
@@ -390,8 +390,10 @@ static void mt6336_int_handler(void)
 /* interrupt service */
 int mt6336_thread_kthread(void *x)
 {
+#if 0
 	unsigned int i;
 	unsigned int int_status_val = 0;
+#endif
 	struct sched_param param = {.sched_priority = 98 };
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
@@ -406,11 +408,13 @@ int mt6336_thread_kthread(void *x)
 		mt6336_ctrl_enable(irq_ctrl);
 		mt6336_int_handler();
 		mt6336_ctrl_disable(irq_ctrl);
+#if 0
 		for (i = 0; i < ARRAY_SIZE(mt6336_interrupts); i++) {
 			int_status_val = mt6336_get_register_value(mt6336_interrupts[i].address);
 			MT6336LOG("[CHR_INT] %d after, status[0x%x]=0x%x\n", i,
 				mt6336_interrupts[i].address, int_status_val);
 		}
+#endif
 		mdelay(1);
 
 		mutex_unlock(&mt6336_mutex);

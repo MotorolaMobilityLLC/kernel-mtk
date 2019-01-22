@@ -28,6 +28,7 @@
 #include <linux/jiffies.h>
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
+#include <mtk_ppm_api.h>
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 #include <linux/usb/class-dual-role.h>
@@ -328,7 +329,6 @@ struct typec_hba {
 	unsigned int pd_irq;
 	int id;
 	bool is_kpoc;
-	unsigned int kpoc_retry;
 
 #if !COMPLIANCE
 	atomic_t lowq_cnt;
@@ -580,6 +580,7 @@ extern void typec_disable_lowq(struct typec_hba *hba, char *str);
 extern struct typec_hba *get_hba(void);
 
 extern int pd_task(void *data);
+extern int pd_kpoc_task(void *data);
 extern void pd_set_data_role(struct typec_hba *hba, int role);
 extern void pd_get_message(struct typec_hba *hba, uint16_t *header, uint32_t *payload);
 extern int pd_is_power_swapping(struct typec_hba *hba);
