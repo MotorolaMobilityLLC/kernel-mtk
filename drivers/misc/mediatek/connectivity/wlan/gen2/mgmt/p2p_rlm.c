@@ -77,17 +77,17 @@ VOID rlmBssInitForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 	if (prBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT)
 		return;
 
-	/* Operation band, channel shall be ready before invoking this function.
-	 * Bandwidth may be ready if other network is connected
+	/* Operation band, channel shall be ready before invoking this function,
+	 * bandwidth may be ready if other network is connected.
 	 */
 	prBssInfo->fg40mBwAllowed = FALSE;
 	prBssInfo->fgAssoc40mBwAllowed = FALSE;
 	prBssInfo->eBssSCO = CHNL_EXT_SCN;
 
-	if (RLM_AP_IS_BW_40_ALLOWED(prAdapter, prBssInfo)) {
-		/* In this case, the first BSS's SCO is 40MHz and known, so AP can
+	if (RLM_NET_IS_11N(prBssInfo) && RLM_AP_IS_BW_40_ALLOWED(prAdapter, prBssInfo)) {
+		/* In this case, the first BSS's SCO is 40MHz and known, so GO can
 		 * apply 40MHz bandwidth, but the first BSS's SCO may be changed
-		 * later if its Beacon lost timeout occurs
+		 * later if its Beacon lost timeout occurs.
 		 */
 		if (cnmPreferredChannel(prAdapter, &eBand, &ucChannel, &eSCO) &&
 		    eSCO != CHNL_EXT_SCN && ucChannel == prBssInfo->ucPrimaryChannel && eBand == prBssInfo->eBand) {
@@ -107,7 +107,7 @@ VOID rlmBssInitForAP(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 		}
 	}
 
-	DBGLOG(RLM, INFO, "WLAN AP SCO=%d\n", prBssInfo->eBssSCO);
+	DBGLOG(RLM, INFO, "AP SCO=%d\n", prBssInfo->eBssSCO);
 }
 
 /*----------------------------------------------------------------------------*/

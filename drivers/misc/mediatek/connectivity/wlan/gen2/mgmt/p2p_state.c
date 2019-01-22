@@ -16,7 +16,7 @@ p2pStateInit_IDLE(IN P_ADAPTER_T prAdapter,
 		  IN P_P2P_FSM_INFO_T prP2pFsmInfo, IN P_BSS_INFO_T prP2pBssInfo, OUT P_ENUM_P2P_STATE_T peNextState)
 {
 	BOOLEAN fgIsTransOut = FALSE;
-/* P_P2P_CHNL_REQ_INFO_T prChnlReqInfo = (P_P2P_CHNL_REQ_INFO_T)NULL; */
+	P_P2P_CHNL_REQ_INFO_T prChnlReqInfo = (P_P2P_CHNL_REQ_INFO_T) NULL;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) &&
@@ -24,33 +24,15 @@ p2pStateInit_IDLE(IN P_ADAPTER_T prAdapter,
 
 		if ((prP2pBssInfo->eIntendOPMode == OP_MODE_ACCESS_POINT)
 		    && IS_NET_PWR_STATE_ACTIVE(prAdapter, NETWORK_TYPE_P2P_INDEX)) {
-			P_P2P_CHNL_REQ_INFO_T prChnlReqInfo = &(prP2pFsmInfo->rChnlReqInfo);
+			prChnlReqInfo = &prP2pFsmInfo->rChnlReqInfo;
 
 			fgIsTransOut = TRUE;
 			prChnlReqInfo->eChannelReqType = CHANNEL_REQ_TYPE_GO_START_BSS;
 
-			DBGLOG(P2P, INFO, "p2pStateInit_IDLE GO Scan\n");
 			*peNextState = P2P_STATE_REQING_CHANNEL;
 
-		} else {
-#if 0
-			else
-		if (IS_NET_PWR_STATE_ACTIVE(prAdapter, NETWORK_TYPE_P2P_INDEX)) {
-
-			ASSERT((prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) ||
-			       (prP2pBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE));
-
-			prChnlReqInfo = &prP2pFsmInfo->rChnlReqInfo;
-
-			if (prChnlReqInfo->fgIsChannelRequested) {
-				/* Start a timer for return channel. */
-				DBGLOG(P2P, TRACE, "start a GO channel timer.\n");
-			}
-
-		}
-#endif
+		} else
 			cnmTimerStartTimer(prAdapter, &(prAdapter->rP2pFsmTimeoutTimer), 5000);
-		}
 
 	} while (FALSE);
 
@@ -166,7 +148,6 @@ p2pStateAbort_REQING_CHANNEL(IN P_ADAPTER_T prAdapter, IN P_P2P_FSM_INFO_T prP2p
 	P_P2P_SPECIFIC_BSS_INFO_T prP2pSpecificBssInfo = (P_P2P_SPECIFIC_BSS_INFO_T) NULL;
 
 	do {
-
 		ASSERT_BREAK((prAdapter != NULL) && (prP2pFsmInfo != NULL) && (eNextState < P2P_STATE_NUM));
 
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
@@ -178,11 +159,10 @@ p2pStateAbort_REQING_CHANNEL(IN P_ADAPTER_T prAdapter, IN P_P2P_FSM_INFO_T prP2p
 				/* Setup for AP mode. */
 				p2pFuncStartGO(prAdapter,
 					       prP2pBssInfo,
-					       prP2pSpecificBssInfo->aucGroupSsid,
-					       prP2pSpecificBssInfo->u2GroupSsidLen,
 					       prP2pSpecificBssInfo->ucPreferredChannel,
 					       prP2pSpecificBssInfo->eRfBand,
-					       prP2pSpecificBssInfo->eRfSco, prP2pFsmInfo->fgIsApMode);
+					       prP2pSpecificBssInfo->eRfSco,
+					       prP2pFsmInfo->fgIsApMode);
 
 			} else {
 				/* Return Channel. */

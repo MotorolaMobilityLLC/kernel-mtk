@@ -493,6 +493,7 @@ typedef struct _WIFI_VAR_T {
 	UINT_8 aucInterfaceAddress[MAC_ADDR_LEN];
 
 	UINT_8 ucAvailablePhyTypeSet;
+	UINT_8 ucWithPhyTypeSpecificIE;
 
 	ENUM_PHY_TYPE_INDEX_T eNonHTBasicPhyType2G4;	/* Basic Phy Type used by SCN according
 							 * to the set of Available PHY Types

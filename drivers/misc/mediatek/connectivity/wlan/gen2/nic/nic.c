@@ -1985,6 +1985,83 @@ WLAN_STATUS nicQmSetRxBASize(IN P_ADAPTER_T prAdapter, BOOLEAN enable, UINT32 si
 				   NULL, NULL, sizeof(CMD_SPECIFIC_RX_BA_WIN_SIZE_T), (PUINT_8)&rCmdRxBASize, NULL, 0);
 }
 
+WLAN_STATUS nicSetUApsdParam(IN P_ADAPTER_T prAdapter,
+	IN PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T rUapsdParams, IN ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx)
+{
+	CMD_CUSTOM_UAPSD_PARAM_STRUCT_T rCmdUapsdParam;
+	P_PM_PROFILE_SETUP_INFO_T prPmProfSetupInfo;
+	P_BSS_INFO_T prBssInfo;
+	WLAN_STATUS ret;
+
+	DEBUGFUNC("nicSetUApsdParam");
+
+	ASSERT(prAdapter);
+
+	if (eNetworkTypeIdx >= NETWORK_TYPE_INDEX_NUM) {
+		DBGLOG(NIC, ERROR, "nicSetUApsdParam Invalid eNetworkTypeIdx\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
+	prBssInfo = &(prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx]);
+	prPmProfSetupInfo = &prBssInfo->rPmProfSetupInfo;
+
+	kalMemZero(&rCmdUapsdParam, sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T));
+
+	rCmdUapsdParam.fgEnAPSD = rUapsdParams.fgEnAPSD;
+	rCmdUapsdParam.fgEnAPSD_AcBe = rUapsdParams.fgEnAPSD_AcBe;
+	rCmdUapsdParam.fgEnAPSD_AcBk = rUapsdParams.fgEnAPSD_AcBk;
+	rCmdUapsdParam.fgEnAPSD_AcVo = rUapsdParams.fgEnAPSD_AcVo;
+	rCmdUapsdParam.fgEnAPSD_AcVi = rUapsdParams.fgEnAPSD_AcVi;
+	rCmdUapsdParam.ucMaxSpLen = rUapsdParams.ucMaxSpLen;
+
+	/* Fill BmpDeliveryAC and BmpTriggerAC by UapsdParams */
+	prPmProfSetupInfo->ucBmpDeliveryAC =
+	    ((rUapsdParams.fgEnAPSD_AcBe << 0) |
+	     (rUapsdParams.fgEnAPSD_AcBk << 1) |
+	     (rUapsdParams.fgEnAPSD_AcVi << 2) | (rUapsdParams.fgEnAPSD_AcVo << 3));
+	prPmProfSetupInfo->ucBmpTriggerAC =
+	    ((rUapsdParams.fgEnAPSD_AcBe << 0) |
+	     (rUapsdParams.fgEnAPSD_AcBk << 1) |
+	     (rUapsdParams.fgEnAPSD_AcVi << 2) | (rUapsdParams.fgEnAPSD_AcVo << 3));
+	prPmProfSetupInfo->ucUapsdSp = rUapsdParams.ucMaxSpLen;
+
+	DBGLOG(NIC, INFO, "nicSetUApsdParam EnAPSD[%d] Be[%d] Bk[%d] Vo[%d] Vi[%d] SPLen[%d]\n",
+		rCmdUapsdParam.fgEnAPSD, rCmdUapsdParam.fgEnAPSD_AcBe, rCmdUapsdParam.fgEnAPSD_AcBk,
+		rCmdUapsdParam.fgEnAPSD_AcVo, rCmdUapsdParam.fgEnAPSD_AcVi, rCmdUapsdParam.ucMaxSpLen);
+
+	switch (eNetworkTypeIdx) {
+	case NETWORK_TYPE_AIS_INDEX:
+		ret = wlanSendSetQueryCmd(prAdapter,
+			CMD_ID_SET_UAPSD_PARAM,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T),
+			(PUINT_8)&rCmdUapsdParam, NULL, 0);
+			break;
+
+	case NETWORK_TYPE_P2P_INDEX:
+		ret = wlanoidSendSetQueryP2PCmd(prAdapter,
+			CMD_ID_SET_UAPSD_PARAM,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T),
+			(PUINT_8)&rCmdUapsdParam, NULL, 0);
+			break;
+
+	default:
+		ret = WLAN_STATUS_FAILURE;
+		break;
+	}
+
+	return ret;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This utility function is used to update TX power gain corresponding to
