@@ -2,7 +2,7 @@
  * Copyright (C) 2010 - 2017 Novatek, Inc.
  *
  * $Revision: 18359 $
- * $Date: 2017-11-07 14:15:16 +0800 (週二, 07 十一月 2017) $
+ * $Date: 2017-11-16 16:57:40 +0800 (週四, 16 十一月 2017) $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1677,20 +1677,21 @@ void nvt_mp_parse_array(struct device_node *np, const char *name, int32_t *array
 #if NVT_DEBUG
 		NVT_LOG("%s =\n", name);
 		for (j = 0; j < Y_Channel; j++) {
-			printk("[NVT-ts] ");
+			pr_info("[NVT-ts] ");
 			for (i = 0; i < X_Channel; i++) {
 				iArrayIndex = j * X_Channel + i;
-				printk("%d ", array[iArrayIndex]);
+				pr_info("%5d, ", array[iArrayIndex]);
 			}
-			printk("\n");
+			pr_info("\n");
 		}
-
+#if TOUCH_KEY_NUM > 0
+		pr_info("[NVT-ts] ");
 		for (i = 0; i < Key_Channel; i++) {
 			iArrayIndex++;
-			printk("%d ", array[iArrayIndex]);
+			pr_info("%5d, ", array[iArrayIndex]);
 		}
-
-		printk("\n");
+		pr_info("\n");
+#endif
 #endif
 	}
 }
@@ -1724,7 +1725,9 @@ void nvt_mp_parse_dt(struct device_node *root, const char *node_compatible)
 
 	nvt_mp_parse_u32(np, "IC_Y_CFG_SIZE", &IC_Y_CFG_SIZE);
 
+#if TOUCH_KEY_NUM > 0
 	nvt_mp_parse_u32(np, "IC_KEY_CFG_SIZE", &IC_KEY_CFG_SIZE);
+#endif
 
 	nvt_mp_parse_u32(np, "X_Channel", &X_Channel);
 
@@ -1739,29 +1742,39 @@ void nvt_mp_parse_dt(struct device_node *root, const char *node_compatible)
 #endif
 
 	/* MP Criteria */
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Rawdata_P", &PS_Config_Lmt_Short_Rawdata_P);
+	if (!ts->carrier_system) {
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Rawdata_P", &PS_Config_Lmt_Short_Rawdata_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Rawdata_N", &PS_Config_Lmt_Short_Rawdata_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Rawdata_N", &PS_Config_Lmt_Short_Rawdata_N);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Rawdata_P", &PS_Config_Lmt_Key_Short_Rawdata_P);
+#if TOUCH_KEY_NUM > 0
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Rawdata_P", &PS_Config_Lmt_Key_Short_Rawdata_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Rawdata_N", &PS_Config_Lmt_Key_Short_Rawdata_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Rawdata_N", &PS_Config_Lmt_Key_Short_Rawdata_N);
+#endif
+	}
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Diff_P", &PS_Config_Lmt_Short_Diff_P);
+	if (ts->carrier_system) {
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Diff_P", &PS_Config_Lmt_Short_Diff_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Diff_N", &PS_Config_Lmt_Short_Diff_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Diff_N", &PS_Config_Lmt_Short_Diff_N);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Diff_P", &PS_Config_Lmt_Key_Short_Diff_P);
+#if TOUCH_KEY_NUM > 0
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Diff_P", &PS_Config_Lmt_Key_Short_Diff_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Diff_N", &PS_Config_Lmt_Key_Short_Diff_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Diff_N", &PS_Config_Lmt_Key_Short_Diff_N);
+#endif
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Base_P", &PS_Config_Lmt_Short_Base_P);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Base_P", &PS_Config_Lmt_Short_Base_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Base_N", &PS_Config_Lmt_Short_Base_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Short_Base_N", &PS_Config_Lmt_Short_Base_N);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Base_P", &PS_Config_Lmt_Key_Short_Base_P);
+#if TOUCH_KEY_NUM > 0
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Base_P", &PS_Config_Lmt_Key_Short_Base_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Base_N", &PS_Config_Lmt_Key_Short_Base_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_Short_Base_N", &PS_Config_Lmt_Key_Short_Base_N);
+#endif
+	}
 
 	nvt_mp_parse_array(np, "PS_Config_Lmt_Open_Rawdata_P", PS_Config_Lmt_Open_Rawdata_P,
 			X_Channel * Y_Channel + Key_Channel);
@@ -1779,35 +1792,47 @@ void nvt_mp_parse_dt(struct device_node *root, const char *node_compatible)
 
 	nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_CC_N", &PS_Config_Lmt_FW_CC_N);
 
+#if TOUCH_KEY_NUM > 0
 	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_P", &PS_Config_Lmt_Key_FW_CC_P);
 
 	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_N", &PS_Config_Lmt_Key_FW_CC_N);
+#endif
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_CC_I_P", &PS_Config_Lmt_FW_CC_I_P);
+	if (ts->carrier_system) {
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_CC_I_P", &PS_Config_Lmt_FW_CC_I_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_CC_I_N", &PS_Config_Lmt_FW_CC_I_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_CC_I_N", &PS_Config_Lmt_FW_CC_I_N);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_CC_Q_P", &PS_Config_Lmt_FW_CC_Q_P);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_CC_Q_P", &PS_Config_Lmt_FW_CC_Q_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_CC_Q_N", &PS_Config_Lmt_FW_CC_Q_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_CC_Q_N", &PS_Config_Lmt_FW_CC_Q_N);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_I_P", &PS_Config_Lmt_Key_FW_CC_I_P);
+#if TOUCH_KEY_NUM > 0
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_I_P", &PS_Config_Lmt_Key_FW_CC_I_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_I_N", &PS_Config_Lmt_Key_FW_CC_I_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_I_N", &PS_Config_Lmt_Key_FW_CC_I_N);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_Q_P", &PS_Config_Lmt_Key_FW_CC_Q_P);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_Q_P", &PS_Config_Lmt_Key_FW_CC_Q_P);
 
-	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_Q_N", &PS_Config_Lmt_Key_FW_CC_Q_N);
+		nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_CC_Q_N", &PS_Config_Lmt_Key_FW_CC_Q_N);
+#endif
+	}
 
 	nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_Diff_P", &PS_Config_Lmt_FW_Diff_P);
 
 	nvt_mp_parse_u32(np, "PS_Config_Lmt_FW_Diff_N", &PS_Config_Lmt_FW_Diff_N);
 
+#if TOUCH_KEY_NUM > 0
+	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_Diff_P", &PS_Config_Lmt_Key_FW_Diff_P);
+
+	nvt_mp_parse_u32(np, "PS_Config_Lmt_Key_FW_Diff_N", &PS_Config_Lmt_Key_FW_Diff_N);
+#endif
+
 	nvt_mp_parse_u32(np, "PS_Config_Diff_Test_Frame", &PS_Config_Diff_Test_Frame);
 
 	NVT_LOG("Parse mp criteria done!\n");
 }
-#endif
+#endif /* #ifdef CONFIG_OF */
 
 /*******************************************************
 Description:
