@@ -3301,6 +3301,10 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_ION_FREE_BY_HWMODULE:
 	case ISP_CQ_SW_PATCH:
 	case ISP_LARB_MMU_CTL:
+	case ISP_DFS_CTRL:
+	case ISP_DFS_UPDATE:
+	case ISP_GET_SUPPORTED_ISP_CLOCKS:
+	case ISP_GET_CUR_ISP_CLOCK:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
