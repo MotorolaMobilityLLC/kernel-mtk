@@ -620,6 +620,11 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 		/* Enable Short Slot Time */
 		prAdapter->rWifiVar.fgIsShortSlotTimeOptionEnable = TRUE;
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+		/* Enable drop independent packets with Rx Ba reordering */
+		prAdapter->rWifiVar.fgEnableReportIndependentPkt = TRUE;
+#endif
+
 		/* configure available PHY type set */
 		nicSetAvailablePhyTypeSet(prAdapter);
 

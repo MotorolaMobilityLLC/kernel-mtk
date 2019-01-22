@@ -371,16 +371,20 @@ VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, U
 				if (ucOpt0 == SWCR_RX_MDNS_FILTER_CMD_STOP) {
 					g_u4mDNSRXFilter &= ~(RX_MDNS_FILTER_START);
 
+					prAdapter->u4OsPacketFilter &= ~PARAM_PACKET_FILTER_MULTICAST;
 					u4rxfilter = prAdapter->u4OsPacketFilter;
 					fgUpdate = TRUE;
 				} else if (ucOpt0 == SWCR_RX_MDNS_FILTER_CMD_START) {
 					g_u4mDNSRXFilter |= (RX_MDNS_FILTER_START);
 
-					u4rxfilter = prAdapter->u4OsPacketFilter;
 					if ((g_u4mDNSRXFilter & RX_MDNS_FILTER_IPV4) ||
 					    (g_u4mDNSRXFilter & RX_MDNS_FILTER_IPV6)) {
+						prAdapter->u4OsPacketFilter |= PARAM_PACKET_FILTER_MULTICAST;
+#if 0
 						u4rxfilter |= PARAM_PACKET_FILTER_ALL_MULTICAST;
+#endif
 					}
+					u4rxfilter = prAdapter->u4OsPacketFilter;
 					fgUpdate = TRUE;
 				} else if (ucOpt0 == SWCR_RX_MDNS_FILTER_CMD_ADD) {
 					if (ucOpt1 < 31)
