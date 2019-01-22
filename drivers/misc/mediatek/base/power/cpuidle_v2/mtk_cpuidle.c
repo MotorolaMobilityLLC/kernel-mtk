@@ -58,7 +58,7 @@ static void mtk_spm_wakeup_src_restore(void)
 	int i;
 
 	for (i = 0; i < IRQ_NR_MAX; i++) {
-		if (readl_relaxed(SPM_WAKEUP_STA) & wake_src_irq[i])
+		if (readl_relaxed(SPM_SW_RSV_0) & wake_src_irq[i])
 			mt_irq_set_pending(irq_nr[i]);
 	}
 }
