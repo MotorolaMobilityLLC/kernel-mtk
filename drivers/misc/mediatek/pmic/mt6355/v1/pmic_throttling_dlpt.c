@@ -78,7 +78,9 @@
 #include <mach/mtk_pmic.h>
 #include <mt-plat/mtk_reboot.h>
 
-/*#include "mtk_spm_dpidle_mt6757.h"*/
+#ifdef CONFIG_MACH_MT6757
+#include "mtk_spm_dpidle_mt6757.h"
+#endif
 
 /*****************************************************************************
  * PMIC related define
@@ -578,6 +580,19 @@ void pmic_auxadc_unlock(void)
 	mt6355_auxadc_unlock();
 }
 
+void pmic_dump_adc_impedance(void)
+{
+	pr_err("Dump Impedence Value\n");
+	pr_err("AUXADC_IMP0:   0x%x\n", upmu_get_reg_value(MT6355_AUXADC_IMP0));
+	pr_err("AUXADC_IMP1:   0x%x\n", upmu_get_reg_value(MT6355_AUXADC_IMP1));
+	pr_err("AUXADC_ADC33:  0x%x\n", upmu_get_reg_value(MT6355_AUXADC_ADC33));
+	pr_err("AUXADC_ADC34:  0x%x\n", upmu_get_reg_value(MT6355_AUXADC_ADC34));
+	pr_err("[0x%x] 0x%x\n", MT6355_AUXADC_IMP_CG0, upmu_get_reg_value(MT6355_AUXADC_IMP_CG0));
+	mt6355_auxadc_dump_setting_regs();
+	mt6355_auxadc_dump_clk_regs();
+	mt6355_auxadc_dump_channel_regs();
+}
+
 int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
 {
 	unsigned int vbat_reg;
@@ -627,6 +642,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
 	while (pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS) == 0) {
 		if ((count_adc_imp++) > count_time_out_adc_imp) {
 			pr_err("do_ptim over %d times/ms\n", count_adc_imp);
+			pmic_dump_adc_impedance();
 			ret = 1;
 			break;
 		}
@@ -1227,9 +1243,11 @@ int dlpt_notify_handler(void *unused)
 	cur_ui_soc = pre_ui_soc;
 
 	do {
-		/*if (dpidle_active_status())*/
-		/*	ktime = ktime_set(20, 0);*/ /* light-loading mode */
-		/*(else*/
+#ifdef CONFIG_MACH_MT6757
+		if (dpidle_active_status())
+			ktime = ktime_set(20, 0); /* light-loading mode */
+		else
+#endif
 			ktime = ktime_set(10, 0); /* normal mode */
 
 		wait_event_interruptible(dlpt_notify_waiter, (dlpt_notify_flag == true));
