@@ -648,7 +648,7 @@ static int get_vr_step(int sensor_size, int camera_mode)
 	if (g_mmdvfs_mgr->is_lpddr4) {
 		/* All camera feature triggers HPM mode */
 		hpm_cam_mode = (MMDVFS_CAMERA_MODE_FLAG_PIP | MMDVFS_CAMERA_MODE_FLAG_IVHDR |
-		MMDVFS_CAMERA_MODE_FLAG_STEREO);
+		MMDVFS_CAMERA_MODE_FLAG_STEREO | MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM);
 		lpm_cam_mode = MMDVFS_CAMERA_MODE_FLAG_EIS_2_0;
 		vr_default_step =  MMDVFS_VOLTAGE_LOW_LOW;
 
@@ -656,7 +656,7 @@ static int get_vr_step(int sensor_size, int camera_mode)
 		/* All camera feature triggers HPM mode */
 		hpm_cam_mode = (MMDVFS_CAMERA_MODE_FLAG_PIP | MMDVFS_CAMERA_MODE_FLAG_VFB
 		| MMDVFS_CAMERA_MODE_FLAG_EIS_2_0 | MMDVFS_CAMERA_MODE_FLAG_IVHDR |
-		MMDVFS_CAMERA_MODE_FLAG_STEREO);
+		MMDVFS_CAMERA_MODE_FLAG_STEREO | MMDVFS_CAMERA_MODE_FLAG_DUAL_ZOOM);
 		vr_default_step = MMDVFS_VOLTAGE_LOW;
 	}
 
