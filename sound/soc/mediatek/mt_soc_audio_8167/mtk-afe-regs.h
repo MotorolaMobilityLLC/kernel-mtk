@@ -41,6 +41,7 @@
 #define AFE_CONN4		0x0030
 #define AFE_CONN5		0x005C
 #define AFE_HDMI_CONN0		0x0390
+#define AFE_CONN_TDMIN_CON	0x039C
 
 /* Memory interface */
 #define AFE_DL1_BASE		0x0040
@@ -104,10 +105,17 @@
 #define AFE_TDM_CON1		0x0548
 #define AFE_TDM_CON2		0x054c
 
+#define AFE_TDM_IN_CON1		0x0588
+
+#define AFE_IRQ_CNT10		0x08dc
+
+#define AFE_HDMI_IN_2CH_CON0	0x09c0
+#define AFE_HDMI_IN_2CH_BASE	0x09c4
+#define AFE_HDMI_IN_2CH_END	0x09c8
+#define AFE_HDMI_IN_2CH_CUR	0x09cc
+
 #define AFE_MEMIF_MON15		0x0d7c
 #define ABB_AFE_SDM_TEST	0x0f4c
-
-
 
 #define AFE_IRQ_STATUS_BITS	0xff
 
@@ -189,6 +197,13 @@
 #define AFE_HDMI_CONN0_O29_I29		(0x1 << 3)
 #define AFE_HDMI_CONN0_O28_I28		(0x0 << 0)
 
+/* AFE_CONN_TDMIN_CON (0x039C) */
+#define AFE_CONN_TDMIN_O41_I41		(0x1 << 3)
+#define AFE_CONN_TDMIN_O41_I40		(0x0 << 3)
+#define AFE_CONN_TDMIN_O40_I41		(0x1 << 0)
+#define AFE_CONN_TDMIN_O40_I40		(0x0 << 0)
+#define AFE_CONN_TDMIN_CON0_MASK	GENMASK(5, 0)
+
 /* AFE_TDM_CON1 (0x0548) */
 #define AFE_TDM_CON1_LRCK_WIDTH(x)	(((x) - 1) << 24)
 #define AFE_TDM_CON1_32_BCK_CYCLES	(0x2 << 12)
@@ -205,5 +220,21 @@
 
 /* AFE_TDM_CON2 (0x054c) */
 #define AFE_TDM_CON2_SOUT_MASK		GENMASK(14, 0)
+
+/* AFE_TDM_IN_CON1 (0x0588) */
+#define AFE_TDM_IN_CON1_LRCK_WIDTH(x)		(((x) - 1) << 24)
+#define AFE_TDM_IN_CON1_DISABLE_CH67		BIT(19)
+#define AFE_TDM_IN_CON1_DISABLE_CH01		BIT(18)
+#define AFE_TDM_IN_CON1_DISABLE_CH23		BIT(17)
+#define AFE_TDM_IN_CON1_DISABLE_CH45		BIT(16)
+#define AFE_TDM_IN_CON1_FAST_LRCK_CYCLE_32BCK	(0x2 << 12)
+#define AFE_TDM_IN_CON1_FAST_LRCK_CYCLE_16BCK	(0x0 << 12)
+#define AFE_TDM_IN_CON1_8CH_PER_SDATA		(0x2 << 10)
+#define AFE_TDM_IN_CON1_4CH_PER_SDATA		(0x1 << 10)
+#define AFE_TDM_IN_CON1_2CH_PER_SDATA		(0x0 << 10)
+#define AFE_TDM_IN_CON1_WLEN_32BIT		(0x2 << 8)
+#define AFE_TDM_IN_CON1_WLEN_16BIT		(0x0 << 8)
+#define AFE_TDM_IN_CON1_I2S			BIT(3)
+#define AFE_TDM_IN_CON1_EN			BIT(0)
 
 #endif

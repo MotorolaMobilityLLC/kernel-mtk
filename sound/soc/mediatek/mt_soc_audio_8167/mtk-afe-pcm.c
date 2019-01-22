@@ -49,6 +49,8 @@ static const unsigned int mtk_afe_backup_list[] = {
 	AFE_DAI_END,
 	AFE_HDMI_OUT_BASE,
 	AFE_HDMI_OUT_END,
+	AFE_HDMI_IN_2CH_BASE,
+	AFE_HDMI_IN_2CH_END,
 };
 
 static const struct snd_pcm_hardware mtk_afe_hardware = {
@@ -61,6 +63,16 @@ static const struct snd_pcm_hardware mtk_afe_hardware = {
 	.periods_min = 2,
 	.periods_max = 256,
 	.fifo_size = 0,
+};
+
+static unsigned int channels_2_4_6_8[] = {
+	2, 4, 6, 8
+};
+
+static struct snd_pcm_hw_constraint_list constraints_channels_tdm_in = {
+	.count = ARRAY_SIZE(channels_2_4_6_8),
+	.list = channels_2_4_6_8,
+	.mask = 0,
 };
 
 static snd_pcm_uframes_t mtk_afe_pcm_pointer
@@ -572,6 +584,9 @@ static int mtk_afe_enable_irq(struct mtk_afe *afe, struct mtk_afe_memif *memif)
 	case MTK_AFE_IRQ_7:
 		regmap_update_bits(afe->regmap, AFE_IRQ_MCU_CON, 1 << 14, 1 << 14);
 		break;
+	case MTK_AFE_IRQ_10:
+		regmap_update_bits(afe->regmap, AFE_IRQ_MCU_CON2, 1 << 4, 1 << 4);
+		break;
 	default:
 		break;
 	}
@@ -614,6 +629,10 @@ static int mtk_afe_disable_irq(struct mtk_afe *afe, struct mtk_afe_memif *memif)
 	case MTK_AFE_IRQ_7:
 		regmap_update_bits(afe->regmap, AFE_IRQ_MCU_CON, 1 << 14, 0 << 14);
 		regmap_write(afe->regmap, AFE_IRQ_CLR, 1 << 6);
+		break;
+	case MTK_AFE_IRQ_10:
+		regmap_update_bits(afe->regmap, AFE_IRQ_MCU_CON2, 1 << 4, 0 << 4);
+		regmap_write(afe->regmap, AFE_IRQ_CLR, 1 << 9);
 		break;
 	default:
 		break;
@@ -1329,6 +1348,113 @@ static int mtk_afe_hdmi_trigger(struct snd_pcm_substream *substream, int cmd,
 	}
 }
 
+static int mtk_afe_tdm_in_startup(struct snd_pcm_substream *substream,
+				struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_pcm_runtime * const runtime = substream->runtime;
+	struct mtk_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+
+	/* TODO: check whether channel constraint works */
+	snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
+				   &constraints_channels_tdm_in);
+
+	mtk_afe_enable_main_clk(afe);
+
+	/* TODO: enable tdm in clock */
+	return 0;
+}
+
+static void mtk_afe_tdm_in_shutdown(struct snd_pcm_substream *substream,
+				  struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mtk_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+
+	/* TODO: disable tdm in clock */
+
+	mtk_afe_disable_main_clk(afe);
+}
+
+static int mtk_afe_tdm_in_prepare(struct snd_pcm_substream *substream,
+				struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_pcm_runtime * const runtime = substream->runtime;
+	struct mtk_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+	unsigned int val;
+
+	/* TODO: configure tdm in clock rate */
+
+	val = AFE_TDM_IN_CON1_I2S;
+
+	/* bit width related */
+	if (snd_pcm_format_width(runtime->format) > 16) {
+		val |= AFE_TDM_IN_CON1_WLEN_32BIT |
+		       AFE_TDM_IN_CON1_FAST_LRCK_CYCLE_32BCK |
+		       AFE_TDM_IN_CON1_LRCK_WIDTH(32);
+	} else {
+		val |= AFE_TDM_IN_CON1_WLEN_16BIT |
+		       AFE_TDM_IN_CON1_FAST_LRCK_CYCLE_16BCK |
+		       AFE_TDM_IN_CON1_LRCK_WIDTH(16);
+	}
+
+	switch (runtime->channels) {
+	case 2:
+		val |= AFE_TDM_IN_CON1_2CH_PER_SDATA;
+		break;
+	case 4:
+		val |= AFE_TDM_IN_CON1_4CH_PER_SDATA;
+		break;
+	case 6:
+		val |= AFE_TDM_IN_CON1_8CH_PER_SDATA;
+		val |= AFE_TDM_IN_CON1_DISABLE_CH67;
+		break;
+	case 8:
+		val |= AFE_TDM_IN_CON1_8CH_PER_SDATA;
+		break;
+	default:
+		break;
+	}
+
+	regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1,
+			   ~(u32)AFE_TDM_IN_CON1_EN, val);
+
+	return 0;
+}
+
+static int mtk_afe_tdm_in_trigger(struct snd_pcm_substream *substream, int cmd,
+				struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mtk_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+		regmap_update_bits(afe->regmap, AFE_CONN_TDMIN_CON,
+				   AFE_CONN_TDMIN_CON0_MASK,
+				   AFE_CONN_TDMIN_O40_I40 | AFE_CONN_TDMIN_O41_I41);
+
+		regmap_update_bits(afe->regmap, AFE_HDMI_IN_2CH_CON0, 0x1, 0x1);
+
+		/* enable tdm in */
+		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, 0x1, 0x1);
+		return 0;
+	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+		/* disable tdm in */
+		regmap_update_bits(afe->regmap, AFE_TDM_IN_CON1, 0x1, 0);
+
+		regmap_update_bits(afe->regmap, AFE_HDMI_IN_2CH_CON0, 0x1, 0);
+		return 0;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int mtk_afe_dais_startup(struct snd_pcm_substream *substream,
 				struct snd_soc_dai *dai)
 {
@@ -1660,6 +1786,13 @@ static const struct snd_soc_dai_ops mtk_afe_hdmi_ops = {
 	.trigger	= mtk_afe_hdmi_trigger,
 };
 
+static const struct snd_soc_dai_ops mtk_afe_tdm_in_ops = {
+	.startup	= mtk_afe_tdm_in_startup,
+	.shutdown	= mtk_afe_tdm_in_shutdown,
+	.prepare	= mtk_afe_tdm_in_prepare,
+	.trigger	= mtk_afe_tdm_in_trigger,
+};
+
 static int mtk_afe_runtime_suspend(struct device *dev);
 static int mtk_afe_runtime_resume(struct device *dev);
 
@@ -1806,6 +1939,21 @@ static struct snd_soc_dai_driver mtk_afe_pcm_dais[] = {
 		},
 		.ops = &mtk_afe_dai_ops,
 	}, {
+		.name = "TDM_IN",
+		.id = MTK_AFE_MEMIF_TDM_IN,
+		.suspend = mtk_afe_dai_suspend,
+		.resume = mtk_afe_dai_resume,
+		.capture = {
+			.stream_name = "TDM_IN",
+			.channels_min = 2,
+			.channels_max = 8,
+			.rates = SNDRV_PCM_RATE_8000_192000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE |
+				   SNDRV_PCM_FMTBIT_S24_LE |
+				   SNDRV_PCM_FMTBIT_S32_LE,
+		},
+		.ops = &mtk_afe_dai_ops,
+	}, {
 	/* BE DAIs */
 		.name = "I2S",
 		.id = MTK_AFE_IO_I2S,
@@ -1943,6 +2091,20 @@ static struct snd_soc_dai_driver mtk_afe_pcm_dais[] = {
 				   SNDRV_PCM_FMTBIT_S24_LE,
 		},
 		.ops = &mtk_afe_hdmi_ops,
+	},  {
+	/* BE DAIs */
+		.name = "TDM_IN_IO",
+		.id = MTK_AFE_IO_TDM_IN,
+		.capture = {
+			.stream_name = "TDM IN Capture",
+			.channels_min = 2,
+			.channels_max = 8,
+			.rates = SNDRV_PCM_RATE_8000_192000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE |
+				   SNDRV_PCM_FMTBIT_S24_LE |
+				   SNDRV_PCM_FMTBIT_S32_LE,
+		},
+		.ops = &mtk_afe_tdm_in_ops,
 	},
 };
 
@@ -2151,6 +2313,8 @@ static const struct snd_soc_dapm_route mtk_afe_pcm_routes[] = {
 	{"I02", NULL, "DAIBT Mux"},
 	{"O11", "I02 Switch", "I02"},
 	{"DAI", NULL, "O11"},
+
+	{"TDM_IN", NULL, "TDM Capture"},
 };
 
 static const struct snd_soc_component_driver mtk_afe_pcm_dai_component = {
@@ -2323,6 +2487,27 @@ static const struct mtk_afe_memif_data memif_data[MTK_AFE_MEMIF_NUM] = {
 		.sram_offset = 0,
 		.format_reg = AFE_MEMIF_PBUF_SIZE,
 		.format_shift = 28,
+		.conn_format_mask = -1,
+		.prealloc_size = 0,
+	}, {
+		.name = "TDM_IN",
+		.id = MTK_AFE_MEMIF_TDM_IN,
+		.reg_ofs_base = AFE_HDMI_IN_2CH_BASE,
+		.reg_ofs_end = AFE_HDMI_IN_2CH_END,
+		.reg_ofs_cur = AFE_HDMI_IN_2CH_CUR,
+		.fs_shift = -1,
+		.mono_shift = -1,
+		.enable_shift = -1,
+		.irq_reg_cnt = AFE_IRQ_CNT10,
+		.irq_cnt_shift = 0,
+		.irq_mode = MTK_AFE_IRQ_10,
+		.irq_fs_reg = -1,
+		.irq_fs_shift = -1,
+		.irq_clr_shift = 9,
+		.max_sram_size = 0,
+		.sram_offset = 0,
+		.format_reg = AFE_MEMIF_PBUF2_SIZE,
+		.format_shift = 4,
 		.conn_format_mask = -1,
 		.prealloc_size = 0,
 	},
