@@ -980,7 +980,9 @@ static int tpd_local_init(void)
 	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/*set 2.8v*/
 	if (ret) {
 		GTP_ERROR("regulator_set_voltage(%d) failed!\n", ret);
+#ifndef CONFIG_MACH_MT6759
 		return -1;
+#endif
 	}
 #endif
 #ifdef TPD_POWER_SOURCE_CUSTOM
