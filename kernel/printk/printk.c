@@ -413,7 +413,7 @@ inline int get_detect_count(void)
 
 inline void set_logtoomuch_enable(int value)
 {
-	printk_too_much_enable = value;
+	/* printk_too_much_enable = value; */
 }
 
 inline int get_logtoomuch_enable(void)
