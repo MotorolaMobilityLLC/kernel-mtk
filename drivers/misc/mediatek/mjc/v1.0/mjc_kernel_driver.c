@@ -49,7 +49,7 @@
 /* LOG */
 #define MJC_ASSERT(x) {if (!(x)) pr_error("MJC assert fail, file:%s, line:%d", __FILE__, __LINE__); }
 
-#define MTK_MJC_DBG
+/* #define MTK_MJC_DBG */
 #ifdef MTK_MJC_DBG
 #define MJCDBG(string, args...)       pr_debug("MJC [pid=%d]"string, current->tgid, ##args)
 #else
