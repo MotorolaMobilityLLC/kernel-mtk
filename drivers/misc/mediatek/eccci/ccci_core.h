@@ -181,6 +181,16 @@ struct ccci_mem_layout {	/* all from AP view, AP has no haredware remap after MT
 	void __iomem *md1_md3_smem_vir;
 	phys_addr_t md1_md3_smem_phy;
 	unsigned int md1_md3_smem_size;
+
+	/* ccb data smem */
+	void __iomem *ccci_ccb_data_base_vir;
+	phys_addr_t ccci_ccb_data_base_phy;
+	unsigned int ccci_ccb_data_size;
+
+	/* dhl raw and dsp */
+	void __iomem *ccci_raw_dhl_base_vir;
+	phys_addr_t ccci_raw_dhl_base_phy;
+	unsigned int ccci_raw_dhl_size;
 };
 
 struct ccci_smem_layout {
@@ -201,13 +211,15 @@ struct ccci_smem_layout {
 	unsigned int ccci_ccism_smem_size;
 	unsigned int ccci_ccism_dump_size;
 
-	/* DHL share memory region */
-	void __iomem *ccci_ccb_dhl_base_vir;
-	phys_addr_t ccci_ccb_dhl_base_phy;
-	unsigned int ccci_ccb_dhl_size;
-	void __iomem *ccci_raw_dhl_base_vir;
-	phys_addr_t ccci_raw_dhl_base_phy;
-	unsigned int ccci_raw_dhl_size;
+	/* ccb ctrl smem
+	 *
+	 * ccb ctrl smem's physical position is inside old ccci sharememory
+	 * ccb ctrl's mpu is same with old sharememory, MDHW no need to touch ccb ctrl.
+	 * ccci raw sharememory is also in old sharememory.
+	 */
+	void __iomem *ccci_ccb_ctrl_base_vir;
+	phys_addr_t ccci_ccb_ctrl_base_phy;
+	unsigned int ccci_ccb_ctrl_size;
 
 	/* direct tethering region */
 	void __iomem *ccci_dt_netd_smem_base_vir;
@@ -254,6 +266,9 @@ typedef enum {
 	DUMP_FLAG_SMEM_CCISM = (1<<11),
 	DUMP_MD_BOOTUP_STATUS = (1<<12),
 	DUMP_FLAG_IRQ_STATUS = (1<<13),
+	DUMP_FLAG_SMEM_CCB_CTRL = (1<<14),
+	DUMP_FLAG_SMEM_CCB_DATA = (1<<15),
+	DUMP_FLAG_PCCIF_REG = (1 << 16),
 } MODEM_DUMP_FLAG;
 
 typedef enum {
@@ -303,6 +318,19 @@ struct ccci_force_assert_shm_fmt {
 	unsigned char reserved[0];
 };
 
+struct ccci_ccb_config {
+	unsigned int user_id;
+	unsigned char core_id;
+	unsigned int dl_page_size;
+	unsigned int ul_page_size;
+	unsigned int dl_buff_size;
+	unsigned int ul_buff_size;
+};
+struct ccci_ccb_debug {
+	unsigned int buffer_id;
+	unsigned int page_id;
+	unsigned int value;
+};
 
 typedef void __iomem *(*smem_sub_region_cb_t)(void *md_blk, int *size_o);
 
@@ -333,6 +361,7 @@ typedef enum{
 	MISC_INFO_CUSTOMER_VAL = 21,
 	CCCI_FAST_HEADER = 22,
 	MISC_INFO_C2K_MEID = 24,
+	MULTI_MD_MPU = 27,
 	MD_RUNTIME_FEATURE_ID_MAX,
 } MD_CCCI_RUNTIME_FEATURE_ID;
 
@@ -400,6 +429,23 @@ struct ap_query_md_feature {
 	u32 set_md_mpu_total_size;
 	u32 tail_pattern;
 };
+
+struct ap_query_md_feature_v2_1 {
+	u32 head_pattern;
+	struct ccci_feature_support feature_set[FEATURE_COUNT];
+	u32 share_memory_support;
+	u32 ap_runtime_data_addr;
+	u32 ap_runtime_data_size;
+	u32 md_runtime_data_addr;
+	u32 md_runtime_data_size;
+	u32 noncached_mpu_start_addr;
+	u32 noncached_mpu_total_size;
+	u32 cached_mpu_start_addr;
+	u32 cached_mpu_total_size;
+	u32 reserve_addr[12];
+	u32 tail_pattern;
+};
+
 /*********************************************/
 typedef enum {
 	MD_BOOT_MODE_INVALID = 0,
@@ -460,9 +506,10 @@ void scp_md_state_sync_work(struct work_struct *work);
 extern int ccci_subsys_bm_init(void);
 extern int ccci_subsys_sysfs_init(void);
 extern int ccci_subsys_dfo_init(void);
-/* per-modem sub-system */
+
 extern int switch_MD1_Tx_Power(unsigned int mode);
 extern int switch_MD2_Tx_Power(unsigned int mode);
+extern unsigned int align_to_2_power(unsigned int n);
 
 #ifdef FEATURE_MTK_SWITCH_TX_POWER
 int swtp_init(int md_id);
@@ -541,9 +588,18 @@ int swtp_init(int md_id);
 #define CCCI_IOC_GET_MD_BOOT_MODE       _IOR(CCCI_IOC_MAGIC, 59, unsigned int) /* md_init */
 
 #define CCCI_IOC_GET_AT_CH_NUM			_IOR(CCCI_IOC_MAGIC, 60, unsigned int) /* RILD */
-#define CCCI_IOC_ENTER_UPLOAD		_IO(CCCI_IOC_MAGIC, 61) /* modem log for S */
-#define CCCI_IOC_GET_RAT_STR			_IOR(CCCI_IOC_MAGIC, 62, unsigned int[16])
-#define CCCI_IOC_SET_RAT_STR			_IOW(CCCI_IOC_MAGIC, 63, unsigned int[16])
+
+#define CCCI_IOC_CCB_CTRL_BASE			_IOR(CCCI_IOC_MAGIC, 61, unsigned int)
+#define CCCI_IOC_CCB_CTRL_LEN			_IOR(CCCI_IOC_MAGIC, 62, unsigned int)
+#define CCCI_IOC_GET_CCB_CONFIG_LENGTH		_IOR(CCCI_IOC_MAGIC, 63, unsigned int)
+#define CCCI_IOC_GET_CCB_CONFIG			_IOWR(CCCI_IOC_MAGIC, 64, struct ccci_ccb_config) /* md_init */
+#define CCCI_IOC_CCB_CTRL_OFFSET			_IOR(CCCI_IOC_MAGIC, 65, unsigned int)
+#define CCCI_IOC_MB			_IO(CCCI_IOC_MAGIC, 66)
+#define CCCI_IOC_GET_CCB_DEBUG_VAL			_IOWR(CCCI_IOC_MAGIC, 67, struct ccci_ccb_debug) /* md_init */
+
+#define CCCI_IOC_ENTER_UPLOAD		_IO(CCCI_IOC_MAGIC, 68) /* modem log for S */
+#define CCCI_IOC_GET_RAT_STR			_IOR(CCCI_IOC_MAGIC, 69, unsigned int[16])
+#define CCCI_IOC_SET_RAT_STR			_IOW(CCCI_IOC_MAGIC, 70, unsigned int[16])
 
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */
@@ -727,6 +783,7 @@ typedef enum {
 	CCCI_MONITOR_CH,
 	CCCI_DUMMY_CH,
 	CCCI_SMEM_CH,
+	CCCI_CCB_CTRL,
 	CCCI_MAX_CH_NUM, /* RX channel ID should NOT be >= this!! */
 	CCCI_OVER_MAX_CH,
 
@@ -901,6 +958,12 @@ enum {
 	VOLTE_CORE,
 };
 
+typedef enum {
+	EXTERNAL_MODEM = 0,
+	INTERNAL_MODEM = 1,
+	MULTI_MD_MPU_SUPPORT = 2,
+} SHARE_MEMORY_SUPPORT;
+
 /* runtime data format uses EEMCS's version, NOT the same with legacy CCCI */
 struct modem_runtime {
 	u32 Prefix;			 /* "CCIF" */
@@ -967,4 +1030,6 @@ struct c2k_ctrl_port_msg {
 	unsigned char option;
 } __packed; /* not necessary, but it's a good gesture, :) */
 
+extern unsigned int ccb_configs_len;
+extern struct ccci_ccb_config ccb_configs[];
 #endif	/* __CCCI_CORE_H__ */

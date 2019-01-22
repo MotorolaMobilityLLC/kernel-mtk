@@ -647,6 +647,12 @@ typedef struct _smem_layout {
 	unsigned int total_smem_size;
 } smem_layout_t;
 
+typedef struct _ccb_layout {
+	unsigned long long ccb_data_buffer_addr;
+	unsigned int ccb_data_buffer_size;
+} ccb_layout_t;
+static ccb_layout_t ccb_info;
+
 static void share_memory_info_parsing(void)
 {
 	smem_layout_t smem_layout;
@@ -658,6 +664,17 @@ static void share_memory_info_parsing(void)
 		s_g_md_env_rdy_flag = 0; /* Reset to zero if get share memory info fail */
 		return;
 	}
+
+	/* Get ccb memory layout */
+	memset(&ccb_info, 0, sizeof(ccb_layout_t));
+	if (find_ccci_tag_inf("ccb_info", (char *)&ccb_info, sizeof(ccb_layout_t))
+			!= sizeof(ccb_layout_t)) {
+		CCCI_UTIL_ERR_MSG("Invalid ccb info dt para\n");
+	}
+
+	CCCI_UTIL_INF_MSG("ccci_util get ccb: data:%llx data_size:%d\n", ccb_info.ccb_data_buffer_addr,
+			ccb_info.ccb_data_buffer_size);
+
 	MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]ccci_share_mem at LK  :  0x%llx - 0x%llx  (0x%llx)\n",
 				smem_layout.base_addr,
 				smem_layout.base_addr + (unsigned long long)smem_layout.total_smem_size - 1LL,
@@ -936,6 +953,31 @@ static void parse_mpu_setting(void)
 	}
 }
 
+static void dump_retrieve_info(void)
+{
+	int retrieve_num, i;
+	u64 array[2], md1_mem_addr;
+	char buf[32];
+
+	md1_mem_addr =  md_resv_mem_addr[MD_SYS1];
+
+	if (find_ccci_tag_inf("retrieve_num", (char *)&retrieve_num, (int)sizeof(int)) < 0) {
+		CCCI_UTIL_ERR_MSG("get retrieve_num failed.\n");
+		return;
+	}
+
+	CCCI_UTIL_INF_MSG("retrieve number is %d.\n", retrieve_num);
+
+	for (i = 0; i < retrieve_num; i++) {
+		snprintf(buf, 32, "retrieve%d", i);
+		if (find_ccci_tag_inf(buf, (char *)&array, sizeof(array))) {
+			CCCI_UTIL_INF_MSG("AP view(0x%llx ~ 0x%llx), MD view(0x%llx ~ 0x%llx)\n",
+					array[0], array[0] + array[1],
+					array[0] - md1_mem_addr, array[0] + array[1] - md1_mem_addr);
+		}
+	}
+}
+
 static int __init early_init_dt_get_chosen(unsigned long node, const char *uname, int depth, void *data)
 {
 	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
@@ -978,6 +1020,7 @@ _common_process:
 	parse_option_setting_from_lk();
 	parse_mpu_setting();
 	md_mem_info_parsing();
+	dump_retrieve_info();
 	md_chk_hdr_info_parse();
 	share_memory_info_parsing();
 	verify_md_enable_setting();
@@ -1090,6 +1133,14 @@ int get_raw_check_hdr(int md_id, char buf[], int size)
 int modem_run_env_ready(int md_id)
 {
 	return s_g_md_env_rdy_flag & (1<<md_id);
+}
+
+int get_md_resv_ccb_info(int md_id, phys_addr_t *ccb_data_base, unsigned int *ccb_data_size)
+{
+	*ccb_data_base = ccb_info.ccb_data_buffer_addr;
+	*ccb_data_size = ccb_info.ccb_data_buffer_size;
+
+	return 0;
 }
 
 int get_md_resv_mem_info(int md_id, phys_addr_t *r_rw_base, unsigned int *r_rw_size, phys_addr_t *srw_base,

@@ -26,6 +26,8 @@
 #include "ccci_bm.h"
 #include "port_proxy.h"
 #include "port_char.h"
+#include "port_smem.h"
+#include "ccci_modem.h"
 
 #define MAX_QUEUE_LENGTH 32
 
@@ -37,8 +39,9 @@ static int dev_char_open(struct inode *inode, struct file *file)
 	struct ccci_port *status_poller;
 
 	port = port_proxy_get_port_by_node(major, minor);
-	if (atomic_read(&port->usage_cnt))
+	if (port->rx_ch != CCCI_CCB_CTRL && atomic_read(&port->usage_cnt))
 		return -EBUSY;
+
 	CCCI_NORMAL_LOG(port->md_id, CHAR, "port %s open with flag %X by %s\n", port->name, file->f_flags,
 		     current->comm);
 	atomic_inc(&port->usage_cnt);
@@ -273,6 +276,8 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 	if (ch == CCCI_SMEM_CH) {
 		ret = port_smem_ioctl(port, cmd, arg);
+	} else if (ch == CCCI_CCB_CTRL) {
+		ret = port_ccb_ioctl(port, cmd, arg);
 	} else if (ch == CCCI_IPC_RX) {
 		ret = port_ipc_ioctl(port, cmd, arg);
 	} else {
@@ -347,12 +352,78 @@ unsigned int dev_char_poll(struct file *fp, struct poll_table_struct *poll)
 static int dev_char_mmap(struct file *fp, struct vm_area_struct *vma)
 {
 	struct ccci_port *port = fp->private_data;
+	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
+	struct ccci_modem *md = port->modem;
+	int md_id = port->md_id;
+	int len, ret;
+	unsigned long pfn;
 
-	CCCI_DEBUG_LOG(port->md_id, CHAR, "mmap on %s\n", port->name);
-	if (port->rx_ch == CCCI_SMEM_CH)
-		return port_smem_mmap(port, vma);
+	switch (port->rx_ch) {
+	case CCCI_CCB_CTRL:
+		CCCI_NORMAL_LOG(md_id, CHAR, "remap control addr:0x%llx len:%d  map-len:%lu\n",
+				(unsigned long long)md->smem_layout.ccci_ccb_ctrl_base_phy,
+				md->smem_layout.ccci_ccb_ctrl_size, vma->vm_end - vma->vm_start);
+		if ((vma->vm_end - vma->vm_start) > md->smem_layout.ccci_ccb_ctrl_size) {
+			CCCI_ERROR_LOG(md_id, CHAR,
+					"invalid mm size request from %s\n", port->name);
+			return -EINVAL;
+		}
 
-	return -EPERM;
+		len = (vma->vm_end - vma->vm_start) < md->smem_layout.ccci_ccb_ctrl_size ?
+			vma->vm_end - vma->vm_start : md->smem_layout.ccci_ccb_ctrl_size;
+		pfn = md->smem_layout.ccci_ccb_ctrl_base_phy;
+		pfn >>= PAGE_SHIFT;
+		/* ensure that memory does not get swapped to disk */
+		vma->vm_flags |= VM_IO;
+		/* ensure non-cacheable */
+		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+		ret = remap_pfn_range(vma, vma->vm_start, pfn, len, vma->vm_page_prot);
+		if (ret) {
+			CCCI_ERROR_LOG(md_id, CHAR, "remap failed %d/%lx, 0x%llx -> 0x%llx\n", ret, pfn,
+					(unsigned long long)md->smem_layout.ccci_ccb_ctrl_base_phy,
+					(unsigned long long)vma->vm_start);
+			return -EAGAIN;
+		}
+
+		CCCI_NORMAL_LOG(md_id, CHAR, "remap succeed %lx, 0x%llx -> 0x%llx\n", pfn,
+				(unsigned long long) md->smem_layout.ccci_ccb_ctrl_base_phy,
+				(unsigned long long)vma->vm_start);
+
+		break;
+
+	case CCCI_SMEM_CH:
+		CCCI_NORMAL_LOG(md_id, CHAR, "remap addr:0x%llx len:%d  map-len:%lu\n",
+				(unsigned long long)smem_port->addr_phy, smem_port->length,
+				vma->vm_end - vma->vm_start);
+		if ((vma->vm_end - vma->vm_start) > smem_port->length) {
+			CCCI_ERROR_LOG(port->modem->index, CHAR,
+					"invalid mm size request from %s\n", port->name);
+			return -EINVAL;
+		}
+
+		len =
+			(vma->vm_end - vma->vm_start) <
+			smem_port->length ? vma->vm_end - vma->vm_start : smem_port->length;
+		pfn = smem_port->addr_phy;
+		pfn >>= PAGE_SHIFT;
+		/* ensure that memory does not get swapped to disk */
+		vma->vm_flags |= VM_IO;
+		/* ensure non-cacheable */
+		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+		ret = remap_pfn_range(vma, vma->vm_start, pfn, len, vma->vm_page_prot);
+		if (ret) {
+			CCCI_ERROR_LOG(md_id, CHAR, "remap failed %d/%lx, 0x%llx -> 0x%llx\n",
+					ret, pfn, (unsigned long long)smem_port->addr_phy,
+					(unsigned long long)vma->vm_start);
+			return -EAGAIN;
+		}
+
+		break;
+
+	default:
+		return -EPERM;
+	}
+	return 0;
 }
 
 static const struct file_operations char_dev_fops = {

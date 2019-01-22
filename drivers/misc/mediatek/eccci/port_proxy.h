@@ -235,6 +235,6 @@ static inline int port_proxy_append_fsm_event(struct port_proxy *proxy_p, CCCI_F
 /* External API Region called by port proxy object */
 /****************************************************************************************************************/
 extern int get_md_port_cfg(int md_id, struct ccci_port **ports);
-extern int port_smem_cfg(int md_id, struct ccci_smem_layout *smem_layout);
+extern int port_smem_cfg(struct ccci_modem *md);
 extern struct ccci_modem *ccci_md_get_modem_by_id(int md_id);
 #endif /* __PORT_PROXY_H__ */

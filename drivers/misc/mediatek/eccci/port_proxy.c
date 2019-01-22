@@ -759,7 +759,6 @@ struct port_proxy *port_proxy_alloc(int md_id, int md_capability, int napi_queue
 {
 	int ret = 0;
 	struct port_proxy *proxy_p;
-	struct ccci_smem_layout *smem_layout;
 
 	/* Allocate port_proxy obj and set all member zero */
 	proxy_p = kzalloc(sizeof(struct port_proxy), GFP_KERNEL);
@@ -775,9 +774,7 @@ struct port_proxy *port_proxy_alloc(int md_id, int md_capability, int napi_queue
 	snprintf(proxy_p->wakelock_name, sizeof(proxy_p->wakelock_name), "md%d_wakelock", md_id + 1);
 	wake_lock_init(&proxy_p->wakelock, WAKE_LOCK_SUSPEND, proxy_p->wakelock_name);
 
-	/* config port smem layout*/
-	smem_layout = ccci_md_get_smem(md);
-	port_smem_cfg(md_id, smem_layout);
+	port_smem_cfg(md);
 
 	ret = port_proxy_register_char_dev(proxy_p);
 	if (ret)
