@@ -2013,7 +2013,7 @@
 			<&mmsys_config MMSYS_DISP_RSZ>,
 			<&topckgen TOP_MUX_MM>,
 			<&topckgen TOP_MUX_DISP_PWM>,
-			<&infracfg_ao INFRACFG_AO_PWM_CG>,
+			<&infracfg_ao INFRACFG_AO_DISP_PWM_CG>,
 			<&clk26m>,
 			<&topckgen TOP_UNIVPLL_D3_D4>,
 			<&topckgen TOP_OSC_D2>,
