@@ -247,8 +247,8 @@ static inline void mtu3d_u3_ltssm_intr_handler(struct musb *musb, u32 dwLtssmVal
 	 * 5. The port shall maintain its low-impedance receiver termination (RRX-DC) defined in Table 6-13.
 	 */
 	if (dwLtssmValue & HOT_RST_INTR) {
-		DEV_INT32 link_err_cnt;
-		DEV_INT32 timeout_val;
+		int link_err_cnt;
+		int timeout_val;
 
 		os_printk(K_INFO, "LTSSM: HOT_RST_INTR\n");
 		/* Clear link error count */
@@ -287,7 +287,7 @@ static inline void mtu3d_u3_ltssm_intr_handler(struct musb *musb, u32 dwLtssmVal
 	 * 4. The LTSSM of a port shall transition to U0 through RxDetect and Polling.
 	 */
 	if (dwLtssmValue & WARM_RST_INTR) {
-		DEV_INT32 link_err_cnt;
+		int link_err_cnt;
 
 		os_printk(K_INFO, "LTSSM: WARM_RST_INTR\n");
 		/* Clear link error count */
