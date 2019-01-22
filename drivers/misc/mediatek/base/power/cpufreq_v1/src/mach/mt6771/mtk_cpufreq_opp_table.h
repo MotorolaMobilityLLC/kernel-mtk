@@ -299,8 +299,8 @@ static struct mt_cpu_freq_method opp_tbl_method_CCI_e0[] = {	/* FY */
 	FP(2,	2),
 	FP(2,	2),
 	FP(2,	2),
-	FP(2,	4),
-	FP(2,	4),
+	FP(4,	2),
+	FP(4,	2),
 };
 
 static struct mt_cpu_freq_method opp_tbl_method_LL_e1[] = {	/* FY2 */
@@ -359,8 +359,8 @@ static struct mt_cpu_freq_method opp_tbl_method_CCI_e1[] = {	/* FY2 */
 	FP(2,	2),
 	FP(2,	2),
 	FP(2,	2),
-	FP(2,	4),
-	FP(2,	4),
+	FP(4,	2),
+	FP(4,	2),
 };
 
 struct opp_tbl_m_info opp_tbls_m[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {	/* v1.1 */
