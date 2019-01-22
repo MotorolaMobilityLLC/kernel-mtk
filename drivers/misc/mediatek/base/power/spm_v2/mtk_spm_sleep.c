@@ -33,12 +33,12 @@
 #ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
 #endif
-/* #include "mtk_cpufreq.h" */
+#include "mtk_cpufreq.h"
 #include <mt-plat/upmu_common.h>
 #include "mtk_spm_misc.h"
 #include <mtk_clkbuf_ctl.h>
 
-#if 0
+#if 1
 #include <mtk_dramc.h>
 #endif
 
@@ -1173,7 +1173,7 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 #if defined(CONFIG_ARCH_MT6755)
 		value = 5;
 #elif defined(CONFIG_MACH_MT6757)
-		value = 4;
+		value = 0;
 #elif defined(CONFIG_ARCH_MT6797)
 		value = 6;
 #endif
