@@ -85,19 +85,14 @@ int usedBytes;
 	} while (0)
 
 #define BIT_CHECK(a, b) ((a) & (1<<(b)))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 static struct hpf hpf_ctrl = {
 	.switch_md1 = 1,
-#if !defined(DISABLE_PBM_MD3)
-	.switch_md3 = 0,
-#endif
 	.switch_gpu = 0,
 	.switch_flash = 0,
 
 	.md1_ccci_ready = 0,
-#if !defined(DISABLE_PBM_MD3)
-	.md3_ccci_ready = 0,
-#endif
 
 	.cpu_volt = 1000,	/* 1V = boot up voltage */
 	.gpu_volt = 0,
@@ -106,9 +101,6 @@ static struct hpf hpf_ctrl = {
 	.loading_leakage = 0,
 	.loading_dlpt = 0,
 	.loading_md1 = MD1_MAX_PW,
-#if !defined(DISABLE_PBM_MD3)
-	.loading_md3 = MD3_MAX_PW,
-#endif
 	.loading_cpu = 0,
 	.loading_gpu = 0,
 	.loading_flash = POWER_FLASH,	/* fixed */
@@ -170,15 +162,13 @@ static int md1_section_level_tdd[SECTION_NUM+1] = { GUARDING_PATTERN,
 						   VAL_MD1_TDD_SECTION_5,
 						   VAL_MD1_TDD_SECTION_6 };
 
-#if !defined(DISABLE_PBM_MD3)
-static int md3_section_level_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
-						VAL_MD3_C2K_SECTION_1,
-						VAL_MD3_C2K_SECTION_2,
-						VAL_MD3_C2K_SECTION_3,
-						VAL_MD3_C2K_SECTION_4,
-						VAL_MD3_C2K_SECTION_5,
-						VAL_MD3_C2K_SECTION_6 };
-#endif
+static int md1_section_level_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
+						VAL_MD1_C2K_SECTION_1,
+						VAL_MD1_C2K_SECTION_2,
+						VAL_MD1_C2K_SECTION_3,
+						VAL_MD1_C2K_SECTION_4,
+						VAL_MD1_C2K_SECTION_5,
+						VAL_MD1_C2K_SECTION_6 };
 
 static int md1_scenario_pwr[SCENARIO_NUM] = { PW_STANDBY,
 					    PW_2G_TALKING_OR_DATALINK,
@@ -220,15 +210,13 @@ static int md1_pa_pwr_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_PA_4G_upL2_SECTION_5,
 					    PW_MD1_PA_4G_upL2_SECTION_6 };
 
-#if !defined(DISABLE_PBM_MD3)
-static int md3_pa_pwr_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
-					 PW_MD3_PA_C2K_SECTION_1,
-					 PW_MD3_PA_C2K_SECTION_2,
-					 PW_MD3_PA_C2K_SECTION_3,
-					 PW_MD3_PA_C2K_SECTION_4,
-					 PW_MD3_PA_C2K_SECTION_5,
-					 PW_MD3_PA_C2K_SECTION_6 };
-#endif /*!defined(DISABLE_PBM_MD3)*/
+static int md1_pa_pwr_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
+					 PW_MD1_PA_C2K_SECTION_1,
+					 PW_MD1_PA_C2K_SECTION_2,
+					 PW_MD1_PA_C2K_SECTION_3,
+					 PW_MD1_PA_C2K_SECTION_4,
+					 PW_MD1_PA_C2K_SECTION_5,
+					 PW_MD1_PA_C2K_SECTION_6 };
 
 static int md1_rf_pwr_2g[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_RF_2G_SECTION_1,
@@ -262,15 +250,13 @@ static int md1_rf_pwr_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_RF_4G_upL2_SECTION_5,
 					    PW_MD1_RF_4G_upL2_SECTION_6 };
 
-#if !defined(DISABLE_PBM_MD3)
-static int md3_rf_pwr_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
-					 PW_MD3_RF_C2K_SECTION_1,
-					 PW_MD3_RF_C2K_SECTION_2,
-					 PW_MD3_RF_C2K_SECTION_3,
-					 PW_MD3_RF_C2K_SECTION_4,
-					 PW_MD3_RF_C2K_SECTION_5,
-					 PW_MD3_RF_C2K_SECTION_6 };
-#endif /*!defined(DISABLE_PBM_MD3)*/
+static int md1_rf_pwr_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
+					 PW_MD1_RF_C2K_SECTION_1,
+					 PW_MD1_RF_C2K_SECTION_2,
+					 PW_MD1_RF_C2K_SECTION_3,
+					 PW_MD1_RF_C2K_SECTION_4,
+					 PW_MD1_RF_C2K_SECTION_5,
+					 PW_MD1_RF_C2K_SECTION_6 };
 
 #endif /*MD_POWER_METER_ENABLE*/
 
@@ -334,20 +320,10 @@ void dump_kicker_info(void)
 	struct hpf *hpfmgr = &hpf_ctrl;
 
 #if 1
-
-#if !defined(DISABLE_PBM_MD3)
-	pbm_debug("(M1/M3/F/G)=%d,%d,%d,%d;(C/G)=%ld,%ld\n",
-		  hpfmgr->switch_md1,
-		  hpfmgr->switch_md3,
-		  hpfmgr->switch_flash,
-		  hpfmgr->switch_gpu, hpfmgr->loading_cpu, hpfmgr->loading_gpu);
-#else
 	pbm_debug("(M1/F/G)=%d,%d,%d;(C/G)=%ld,%ld\n",
 		hpfmgr->switch_md1,
 		hpfmgr->switch_flash,
 		hpfmgr->switch_gpu, hpfmgr->loading_cpu, hpfmgr->loading_gpu);
-#endif
-
 #else
 	pbm_debug
 	    ("[***] Switch (MD1: %d, MD2: %d, GPU: %d, Flash: %d, CPU_volt: %d, GPU_volt: %d, CPU_num: %d)\n",
@@ -414,7 +390,7 @@ unsigned long hpf_get_power_dlpt(void)
 static void init_md1_section_level(void)
 {
 	u32 *share_mem;
-	u32 mem_2g = 0, mem_3g = 0, mem_4g_upL1 = 0, mem_4g_upL2 = 0, mem_tdd = 0;
+	u32 mem_2g = 0, mem_3g = 0, mem_4g_upL1 = 0, mem_4g_upL2 = 0, mem_tdd = 0, mem_c2k = 0;
 	int section;
 
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, SMEM_USER_RAW_DBM, NULL);
@@ -425,6 +401,7 @@ static void init_md1_section_level(void)
 		mem_4g_upL1 |= md1_section_level_4g_upL1[section] << section_level[section];
 		mem_4g_upL2 |= md1_section_level_4g_upL2[section] << section_level[section];
 		mem_tdd |= md1_section_level_tdd[section] << section_level[section];
+		mem_c2k |= md1_section_level_c2k[section] << section_level[section];
 	}
 
 	/* Get 4 byte = 32 bit */
@@ -433,12 +410,14 @@ static void init_md1_section_level(void)
 	mem_4g_upL1 &= SECTION_LEN;
 	mem_4g_upL2 &= SECTION_LEN;
 	mem_tdd &= SECTION_LEN;
+	mem_c2k &= SECTION_LEN;
 
 	share_mem[SECTION_LEVLE_2G] = mem_2g;
 	share_mem[SECTION_LEVLE_3G] = mem_3g;
 	share_mem[SECTION_LEVLE_4G] = mem_4g_upL1;
 	share_mem[SECTION_1_LEVLE_4G] = mem_4g_upL2;
 	share_mem[SECTION_LEVLE_TDD] = mem_tdd;
+	share_mem[SECTION_1_LEVLE_C2K] = mem_c2k;
 
 	pbm_crit("AP2MD1 section level, 2G: 0x%x(0x%x), 3G: 0x%x(0x%x), ",
 			mem_2g, share_mem[SECTION_LEVLE_2G],
@@ -448,30 +427,10 @@ static void init_md1_section_level(void)
 			mem_4g_upL2, share_mem[SECTION_1_LEVLE_4G],
 			mem_tdd, share_mem[SECTION_LEVLE_TDD],
 			share_mem);
-}
-
-#if !defined(DISABLE_PBM_MD3)
-static void init_md3_section_level(void)
-{
-	u32 *share_mem;
-	u32 mem_c2k = 0;
-	int section;
-
-	share_mem = (u32 *)get_smem_start_addr(MD_SYS3, SMEM_USER_RAW_DBM, NULL);
-
-	for (section = 1; section <= SECTION_NUM; section++)
-		mem_c2k |= md3_section_level_c2k[section] << section_level[section];
-
-	/* Get 4 byte = 32 bit */
-	mem_c2k &= SECTION_LEN;
-
-	share_mem[SECTION_1_LEVLE_C2K] = mem_c2k;
-
-	pbm_crit("AP2MD3 section level, C2K: 0x%x(0x%x), addr: 0x%p\n",
+	pbm_crit("C2K section level, C2K: 0x%x(0x%x), addr: 0x%p\n",
 			mem_c2k, share_mem[SECTION_1_LEVLE_C2K],
 			share_mem);
 }
-#endif
 
 void init_md_section_level(enum pbm_kicker kicker)
 {
@@ -480,19 +439,11 @@ void init_md_section_level(enum pbm_kicker kicker)
 	if (kicker == KR_MD1) {
 		init_md1_section_level();
 		hpfmgr->md1_ccci_ready = 1;
-#if !defined(DISABLE_PBM_MD3)
-	} else if (kicker == KR_MD3) {
-		init_md3_section_level();
-		hpfmgr->md3_ccci_ready = 1;
-#endif
 	} else {
 		pbm_crit("unknown MD kicker: %d\n", kicker);
 	}
 
 	pbm_crit("MD section level init, MD1: %d\n", hpfmgr->md1_ccci_ready);
-#if !defined(DISABLE_PBM_MD3)
-	pbm_crit("MD section level init, MD3: %d\n", hpfmgr->md3_ccci_ready);
-#endif
 }
 
 static int is_scenario_hit(u32 share_reg, int scenario)
@@ -747,7 +698,7 @@ static int get_md1_4g_upL2_dbm_power(u32 *share_mem)
 	int section;
 
 	if (share_mem[DBM_4G_1_TABLE] == bef_share_mem) {
-		pbm_debug("MD1 4G dBm, no TX power, reg: 0x%x(0x%x) return 0, pa: %d, rf: %d\n",
+		pbm_debug("MD1 4G_1 dBm, no TX power, reg: 0x%x(0x%x) return 0, pa: %d, rf: %d\n",
 					share_mem[DBM_4G_1_TABLE], bef_share_mem, pa_power, rf_power);
 		return 0;
 	}
@@ -761,7 +712,7 @@ static int get_md1_4g_upL2_dbm_power(u32 *share_mem)
 			/* get RF power */
 			rf_power = md1_rf_pwr_4g_upL2[section];
 
-			pbm_debug("MD1 4G dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
+			pbm_debug("MD1 4G_1 dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_4G_1_TABLE], bef_share_mem, pa_power, rf_power, section);
 
 			bef_share_mem = share_mem[DBM_4G_1_TABLE];
@@ -772,42 +723,14 @@ static int get_md1_4g_upL2_dbm_power(u32 *share_mem)
 	return pa_power + rf_power;
 }
 
-#if !defined(DISABLE_PBM_MD3)
-static int get_md3_dBm_power(void)
+static int get_md1_c2k_dbm_power(u32 *share_mem)
 {
-	u32 *share_mem;
 	static u32 bef_share_mem;
 	static int pa_power, rf_power;
 	int section;
-	int i;
-
-	/* get dBm table from share-memory on EMI */
-	share_mem = (u32 *)get_smem_start_addr(MD_SYS3, 0, NULL);
-
-	if (share_mem == NULL) {
-		pbm_debug("MD3 share_mem is NULL, , use max pa and rf power (%d + %d)\n",
-			md3_pa_pwr_c2k[1], md3_rf_pwr_c2k[1]);
-		return md3_pa_pwr_c2k[1] + md3_rf_pwr_c2k[1];
-	}
-
-	/* TO-DO:
-	 * Should SHARE_MEM_BLOCK_NUM be the same?
-	 * If the shared memory start addresses of MD1 and MD3 are different.
-	 */
-	pbm_debug("[%s] share mem addr: 0x%p\n", __func__, share_mem);
-
-	usedBytes = 0;
-	for (i = 0; i < SHARE_MEM_BLOCK_NUM; i++) {
-		usedBytes += sprintf(log_buffer + usedBytes, "0x%x ", share_mem[i]);
-
-		if ((i + 1) % 10 == 0) {
-			usedBytes = 0;
-			pbm_debug("%s\n", log_buffer);
-		}
-	}
 
 	if (share_mem[DBM_C2K_1_TABLE] == bef_share_mem) {
-		pbm_debug("MD3 dBm, no TX power, reg: 0x%x(0x%x) return 0, pa: %d, rf: %d\n",
+		pbm_debug("MD1 C2K dBm, no TX power, reg: 0x%x(0x%x) return 0, pa: %d, rf: %d\n",
 					share_mem[DBM_C2K_1_TABLE], bef_share_mem, pa_power, rf_power);
 		return 0;
 	}
@@ -816,12 +739,12 @@ static int get_md3_dBm_power(void)
 		if (((share_mem[DBM_C2K_1_TABLE] >> section_level[section]) & SECTION_VALUE) !=
 							((bef_share_mem >> section_level[section]) & SECTION_VALUE)) {
 			/* get PA power */
-			pa_power = md3_pa_pwr_c2k[section];
+			pa_power = md1_pa_pwr_c2k[section];
 
 			/* get RF power */
-			rf_power = md3_rf_pwr_c2k[section];
+			rf_power = md1_rf_pwr_c2k[section];
 
-			pbm_debug("MD3 dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
+			pbm_debug("MD1 C2K dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_C2K_1_TABLE], bef_share_mem, pa_power, rf_power, section);
 
 			bef_share_mem = share_mem[DBM_C2K_1_TABLE];
@@ -831,12 +754,11 @@ static int get_md3_dBm_power(void)
 	}
 	return pa_power + rf_power;
 }
-#endif /* !defined(DISABLE_PBM_MD3) */
 
 static int get_md1_dBm_power(int scenario)
 {
 	u32 *share_mem;
-	int dbm_power;
+	int dbm_power, dbm_power_max;
 	int i;
 
 	if (scenario == S_STANDBY) {
@@ -868,20 +790,27 @@ static int get_md1_dBm_power(int scenario)
 
 	if (scenario == S_2G_TALKING_OR_DATALINK) {
 		dbm_power = get_md1_2g_dbm_power(share_mem);
+		dbm_power_max = get_md1_c2k_dbm_power(share_mem);
+		dbm_power_max = MAX(dbm_power, dbm_power_max);
 	} else if (scenario == S_3G_TALKING || scenario == S_3G_DATALINK) {
 		dbm_power = get_md1_3g_dbm_power(share_mem);
+		dbm_power_max = get_md1_c2k_dbm_power(share_mem);
+		dbm_power_max = MAX(dbm_power, dbm_power_max);
 	} else if (scenario == S_4G_DL_1CC || scenario == S_4G_DL_2CC || scenario == S_4G_DL_3CC) {
 		/* TO-DO:
 		 * Add one RF power or two RF power?
 		 */
 		dbm_power = get_md1_4g_upL1_dbm_power(share_mem);
 		dbm_power += get_md1_4g_upL2_dbm_power(share_mem);
+		dbm_power_max = get_md1_c2k_dbm_power(share_mem);
+		dbm_power_max = MAX(dbm_power, dbm_power_max);
 	} else {
-		dbm_power = 0;
+		dbm_power_max = 0;
 	}
 
-	return dbm_power;
+	return dbm_power_max;
 }
+
 #else
 void init_md_section_level(enum pbm_kicker kicker)
 {
@@ -892,7 +821,7 @@ void init_md_section_level(enum pbm_kicker kicker)
 #ifdef TEST_MD_POWER
 static void test_md_dbm_power(void)
 {
-	u32 i, j, y, z = 1, section[1] = {0};
+	u32 i, j, y, z = 1, dbm_power, dbm_power_max, section[1] = {0};
 
 	/* get MD1 2G dBm raw data */
 	for (i = 1; i <= SECTION_NUM; i++) {
@@ -908,7 +837,10 @@ static void test_md_dbm_power(void)
 
 			/* re-assign the value from y to section table */
 			section[DBM_2G_TABLE] |= y;
-			get_md1_2g_dbm_power(section);
+			dbm_power = get_md1_2g_dbm_power(section);
+			dbm_power_max = get_md1_c2k_dbm_power(section);
+			dbm_power_max = MAX(dbm_power, dbm_power_max);
+			pbm_debug("2G section=%d dbm_power_max=%d\n", i, dbm_power_max);
 		}
 	}
 
@@ -925,7 +857,10 @@ static void test_md_dbm_power(void)
 
 			/* re-assign the value from y to section table */
 			section[DBM_3G_TABLE] |= y;
-			get_md1_3g_dbm_power(section);
+			dbm_power = get_md1_3g_dbm_power(section);
+			dbm_power_max = get_md1_c2k_dbm_power(section);
+			dbm_power_max = MAX(dbm_power, dbm_power_max);
+			pbm_debug("3G section=%d dbm_power_max=%d\n", i, dbm_power_max);
 		}
 	}
 
@@ -942,7 +877,11 @@ static void test_md_dbm_power(void)
 
 			/* re-assign the value from y to section table */
 			section[DBM_4G_TABLE] |= y;
-			get_md1_4g_upL1_dbm_power(section);
+			dbm_power = get_md1_4g_upL1_dbm_power(section);
+			dbm_power += get_md1_4g_upL2_dbm_power(section);
+			dbm_power_max = get_md1_c2k_dbm_power(section);
+			dbm_power_max = MAX(dbm_power, dbm_power_max);
+			pbm_debug("4G section=%d dbm_power_max=%d\n", i, dbm_power_max);
 		}
 	}
 
@@ -959,7 +898,33 @@ static void test_md_dbm_power(void)
 
 			/* re-assign the value from y to section table */
 			section[DBM_4G_1_TABLE] |= y;
-			get_md1_4g_upL2_dbm_power(section);
+			dbm_power = get_md1_4g_upL1_dbm_power(section);
+			dbm_power += get_md1_4g_upL2_dbm_power(section);
+			dbm_power_max = get_md1_c2k_dbm_power(section);
+			dbm_power_max = MAX(dbm_power, dbm_power_max);
+			pbm_debug("4G section=%d dbm_power_max=%d\n", i, dbm_power_max);
+
+
+		}
+	}
+
+	for (i = 1; i <= SECTION_NUM; i++) {
+		for (j = 1; j <= SECTION_VALUE; j++) {
+
+			/* get section level value to y */
+			y = (section[DBM_C2K_1_TABLE] >> section_level[i]) & SECTION_VALUE;
+			y = (y+1) << section_level[i];
+
+			/* clean need assign section level to 0 */
+			z = ~((z | SECTION_VALUE) << section_level[i]);
+			section[DBM_C2K_1_TABLE] &= z;
+
+			/* re-assign the value from y to section table */
+			section[DBM_C2K_1_TABLE] |= y;
+			dbm_power = get_md1_2g_dbm_power(section);
+			dbm_power_max = get_md1_c2k_dbm_power(section);
+			dbm_power_max = MAX(dbm_power, dbm_power_max);
+			pbm_debug("C2K section=%d dbm_power_max=%d\n", i, dbm_power_max);
 		}
 	}
 }
@@ -999,43 +964,9 @@ unsigned long hpf_get_power_md1(void)
 	return hpfmgr->loading_md1;
 }
 
-#if !defined(DISABLE_PBM_MD3)
-unsigned long hpf_get_power_md3(void)
-{
-	struct hpf *hpfmgr = &hpf_ctrl;
-
-#if MD_POWER_METER_ENABLE
-	u32 pw_scenario, pw_dBm;
-#endif
-
-	if (hpfmgr->switch_md3) {
-#if MD_POWER_METER_ENABLE
-		if (!hpfmgr->md3_ccci_ready)
-			return MD3_MAX_PW;
-
-		/* get scenario power */
-		pw_scenario = PW_MD3;
-
-		pbm_debug("MD3 scenario pw: %d\n", pw_scenario);
-
-		/* get dBm power */
-		pw_dBm = get_md3_dBm_power();
-
-		hpfmgr->loading_md3 = pw_scenario + pw_dBm;
-#else
-		return MD3_MAX_PW;
-#endif
-	} else {
-		hpfmgr->loading_md3 = 0;
-	}
-
-	return hpfmgr->loading_md3;
-}
-#endif /*!defined(DISABLE_PBM_MD3)*/
-
 static void pbm_allocate_budget_manager(void)
 {
-	int _dlpt = 0, leakage = 0, md1 = 0, md3 = 0, dlpt = 0, cpu = 0, gpu = 0, flash = 0;
+	int _dlpt = 0, leakage = 0, md1 = 0, dlpt = 0, cpu = 0, gpu = 0, flash = 0;
 	int tocpu = 0, togpu = 0;
 	int multiple = 0;
 	int cpu_lower_bound = tscpu_get_min_cpu_pwr();
@@ -1045,9 +976,6 @@ static void pbm_allocate_budget_manager(void)
 	/* dump_kicker_info(); */
 	leakage = hpf_get_power_leakage();
 	md1 = hpf_get_power_md1();
-#if !defined(DISABLE_PBM_MD3)
-	md3 = hpf_get_power_md3();
-#endif
 	dlpt = hpf_get_power_dlpt();
 	cpu = hpf_get_power_cpu();
 	gpu = hpf_get_power_gpu();
@@ -1070,7 +998,7 @@ static void pbm_allocate_budget_manager(void)
 		return;
 	}
 
-	_dlpt = dlpt - (leakage + md1 + md3 + flash);
+	_dlpt = dlpt - (leakage + md1 + flash);
 	if (_dlpt < 0)
 		_dlpt = 0;
 
@@ -1115,15 +1043,15 @@ static void pbm_allocate_budget_manager(void)
 	}
 
 	if (mt_pbm_debug) {
-		pbm_debug("(C/G)=%d,%d => (D/L/M1/M3/F/C/G)=%d,%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
-			 cpu, gpu, dlpt, leakage, md1, md3, flash, tocpu, togpu, multiple, cpu_lower_bound);
+		pbm_debug("(C/G)=%d,%d => (D/L/M1/F/C/G)=%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
+			 cpu, gpu, dlpt, leakage, md1, flash, tocpu, togpu, multiple, cpu_lower_bound);
 	} else {
 		if ((pre_tocpu != tocpu && cpu > tocpu) || (pre_togpu != togpu && gpu > togpu))
-			pbm_crit("(C/G)=%d,%d => (D/L/M1/M3/F/C/G)=%d,%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
-				cpu, gpu, dlpt, leakage, md1, md3, flash, tocpu, togpu, multiple, cpu_lower_bound);
+			pbm_crit("(C/G)=%d,%d => (D/L/M1/F/C/G)=%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
+				cpu, gpu, dlpt, leakage, md1, flash, tocpu, togpu, multiple, cpu_lower_bound);
 		else if ((cpu > tocpu) || (gpu > togpu))
-			pbm_warn_limit("(C/G)=%d,%d => (D/L/M1/M3/F/C/G)=%d,%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
-				cpu, gpu, dlpt, leakage, md1, md3, flash, tocpu, togpu, multiple, cpu_lower_bound);
+			pbm_warn_limit("(C/G)=%d,%d => (D/L/M1/F/C/G)=%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
+				cpu, gpu, dlpt, leakage, md1, flash, tocpu, togpu, multiple, cpu_lower_bound);
 	}
 
 	pre_tocpu = tocpu;
@@ -1160,14 +1088,9 @@ static bool pbm_update_table_info(enum pbm_kicker kicker, struct mrp *mrpmgr)
 			is_update = true;
 		}
 		break;
-#if !defined(DISABLE_PBM_MD3)
 	case KR_MD3:		/* kicker 2 */
-		if (hpfmgr->switch_md3 != mrpmgr->switch_md) {
-			hpfmgr->switch_md3 = mrpmgr->switch_md;
-			is_update = true;
-		}
+		pr_notice("should not kicker KR_MD3\n");
 		break;
-#endif
 	case KR_CPU:		/* kicker 3 */
 		hpfmgr->cpu_volt = mrpmgr->cpu_volt;
 		if (hpfmgr->loading_cpu != mrpmgr->loading_cpu
@@ -1251,7 +1174,7 @@ void kicker_pbm_by_dlpt(unsigned int i_max)
 
 /*
  * kicker: 1, 2
- * who call : MD1, MD3
+ * who call : MD1
  * condition: on/off
  */
 void kicker_pbm_by_md(enum pbm_kicker kicker, bool status)
