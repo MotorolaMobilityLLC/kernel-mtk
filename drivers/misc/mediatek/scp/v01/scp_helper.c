@@ -455,7 +455,7 @@ static inline ssize_t scp_reg_status_show(struct device *kobj, struct device_att
 
 DEVICE_ATTR(scp_reg_status, 0444, scp_reg_status_show, NULL);
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 static inline ssize_t scp_db_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 
@@ -519,7 +519,7 @@ static int create_files(void)
 
 	if (unlikely(ret != 0))
 		return ret;
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 	/*only support debug db test in engineer build*/
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_db_test);
 

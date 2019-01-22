@@ -6,7 +6,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(CONFIG_MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include/mach
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
 
-ifeq ($(CONFIG_MT_ENG_BUILD),y)
+ifeq ($(CONFIG_MTK_ENG_BUILD),y)
 CFLAGS_scp_logger.o += -DDEBUG
 CFLAGS_scp_helper.o += -DDEBUG
 CFLAGS_scp_excep.o += -DDEBUG
