@@ -56,9 +56,7 @@ struct musb;
 struct musb_hw_ep;
 struct musb_ep;
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include <mt-plat/mtk_boot_common.h>
-#endif
 extern int fake_CDP;
 extern unsigned int musb_speed;
 

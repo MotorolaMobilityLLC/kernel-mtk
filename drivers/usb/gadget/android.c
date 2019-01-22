@@ -34,9 +34,7 @@
 
 #include "u_fs.h"
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include "f_hid.c"
-#endif
 #ifdef CONFIG_SND_RAWMIDI
 #include "f_midi.c"
 #endif
@@ -72,12 +70,10 @@ static const char longname[] = "Gadget Android";
 #define VENDOR_ID		0x18D1
 #define PRODUCT_ID		0x0001
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include <mt-plat/mtk_boot_common.h>
 #define KPOC_USB_FUNC "hid"
 #define KPOC_USB_VENDOR_ID 0x0E8D
 #define KPOC_USB_PRODUCT_ID 0x20FF
-#endif
 
 #ifdef CONFIG_SND_RAWMIDI
 /* f_midi configuration */
@@ -293,7 +289,6 @@ static void android_disable(struct android_dev *dev)
 
 /*-------------------------------------------------------------------------*/
 /* Supported functions initialization */
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 static int hid_function_init(struct android_usb_function *f,
 		struct usb_composite_dev *cdev)
 {
@@ -314,7 +309,6 @@ static struct android_usb_function hid_function = {
 	.cleanup	= hid_function_cleanup,
 	.bind_config	= hid_function_bind_config,
 };
-#endif
 
 struct functionfs_config {
 	bool opened;
@@ -1864,9 +1858,7 @@ static struct android_usb_function *supported_functions[] = {
 #ifdef CONFIG_USB_F_SS_LB
 	&loopback_function,
 #endif
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	&hid_function,
-#endif
 	NULL
 };
 
@@ -2052,7 +2044,6 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 	}
 
 	INIT_LIST_HEAD(&dev->enabled_functions);
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 		pr_notice("[USB]KPOC, func%s\n", KPOC_USB_FUNC);
 		err = android_enable_function(dev, KPOC_USB_FUNC);
@@ -2062,7 +2053,6 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 		mutex_unlock(&dev->mutex);
 		return size;
 	}
-#endif
 
 	strlcpy(buf, buff, sizeof(buf));
 	b = strim(buf);
@@ -2155,14 +2145,12 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 		 */
 		cdev->desc.idVendor = device_desc.idVendor;
 		cdev->desc.idProduct = device_desc.idProduct;
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 		if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
 				|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 			pr_notice("[USB]KPOC, vid:%d, pid:%d\n", KPOC_USB_VENDOR_ID, KPOC_USB_PRODUCT_ID);
 			cdev->desc.idVendor = cpu_to_le16(KPOC_USB_VENDOR_ID);
 			cdev->desc.idProduct = cpu_to_le16(KPOC_USB_PRODUCT_ID);
 		}
-#endif
 		cdev->desc.bcdDevice = device_desc.bcdDevice;
 		cdev->desc.bDeviceClass = device_desc.bDeviceClass;
 		cdev->desc.bDeviceSubClass = device_desc.bDeviceSubClass;
