@@ -300,7 +300,7 @@ static int init_cc_resources(struct platform_device *plat_dev)
 	}
 	SSI_LOG_DEBUG("CC registers mapped from %pa to 0x%p\n", &new_drvdata->res_mem->start, cc_base);
 	new_drvdata->cc_base = cc_base;
-	
+
 
 	/* Then IRQ */
 	new_drvdata->res_irq = platform_get_resource(plat_dev, IORESOURCE_IRQ, 0);
@@ -310,7 +310,7 @@ static int init_cc_resources(struct platform_device *plat_dev)
 		goto init_cc_res_err;
 	}
 	rc = request_irq(new_drvdata->res_irq->start, cc_isr,
-			 IRQF_SHARED , "cc63_perf_test", new_drvdata);
+			 IRQF_SHARED, "cc63_perf_test", new_drvdata);
 	if (unlikely(rc != 0)) {
 		SSI_LOG_ERR("Could not register to interrupt %llu\n",
 			(unsigned long long)new_drvdata->res_irq->start);
@@ -473,6 +473,7 @@ init_cc_res_err:
 		ssi_sysfs_fini();
 #endif
 		ssi_power_mgr_free(new_drvdata);
+
 		if (req_mem_cc_regs != NULL) {
 			if (irq_registered) {
 				free_irq(new_drvdata->res_irq->start, new_drvdata);
@@ -518,6 +519,7 @@ static void cleanup_cc_resources(struct platform_device *plat_dev)
 
 	/* Mask all interrupts */
 	fini_cc_regs(drvdata);
+
 	free_irq(drvdata->res_irq->start, drvdata);
 	drvdata->res_irq = NULL;
 
@@ -536,7 +538,6 @@ static void cleanup_cc_resources(struct platform_device *plat_dev)
 static int cc64_probe(struct platform_device *plat_dev)
 {
 	int rc;
-
 #if defined(CONFIG_ARM) && defined(DX_DEBUG)
 	uint32_t ctr, cacheline_size;
 

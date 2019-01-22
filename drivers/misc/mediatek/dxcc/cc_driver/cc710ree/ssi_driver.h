@@ -87,7 +87,7 @@
 
 #define SSI_GPR7_IRQ_MASK (1 << DX_HOST_IRR_SEP_HOST_GPR7_INT_BIT_SHIFT)
 
-#define SSI_CRA_PRIO 150
+#define SSI_CRA_PRIO 3000
 
 #define MIN_HW_QUEUE_SIZE 50 /* Minimum size required for proper function */
 
@@ -98,7 +98,7 @@
 /* Definitions for HW descriptors DIN/DOUT fields */
 #define NS_BIT 1
 #define AXI_ID 0
-/* AXI_ID is not actually the AXI ID of the transaction but the value of AXI_ID 
+/* AXI_ID is not actually the AXI ID of the transaction but the value of AXI_ID
    field in the HW descriptor. The DMA engine +8 that value. */
 
 /* Logging macros */
@@ -108,8 +108,6 @@
 #define SSI_LOG_WARNING(format, ...) SSI_LOG(KERN_WARNING, format, ##__VA_ARGS__)
 #define SSI_LOG_NOTICE(format, ...) SSI_LOG(KERN_NOTICE, format, ##__VA_ARGS__)
 #define SSI_LOG_INFO(format, ...) SSI_LOG(KERN_INFO, format, ##__VA_ARGS__)
-
-//#define DX_DEBUG
 #ifdef DX_DEBUG
 #define SSI_LOG_DEBUG(format, ...) SSI_LOG(KERN_DEBUG, format, ##__VA_ARGS__)
 #else /* Debug log messages are removed at compile time for non-DEBUG config. */
@@ -185,6 +183,7 @@ struct ssi_drvdata {
 	cycles_t isr_exit_cycles; /* Save for isr-to-tasklet latency */
 #endif
 	uint32_t inflight_counter;
+
 };
 
 struct ssi_crypto_alg {
@@ -224,7 +223,6 @@ struct async_gen_req_ctx {
 	dma_addr_t iv_dma_addr;
 	enum sep_crypto_direction op_type;
 };
-//#define DX_DUMP_BYTES
 
 #ifdef DX_DUMP_BYTES
 void dump_byte_array(const char *name, const uint8_t *the_array, unsigned long size);

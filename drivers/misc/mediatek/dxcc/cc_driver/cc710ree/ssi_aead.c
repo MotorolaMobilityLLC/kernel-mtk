@@ -3003,6 +3003,8 @@ int ssi_aead_alloc(struct ssi_drvdata *drvdata)
 
 	/* Linux crypto */
 	for (alg = 0; alg < ARRAY_SIZE(aead_algs); alg++) {
+		if (aead_algs[alg].synchronous)
+			continue;
 		t_alg = ssi_aead_create_alg(&aead_algs[alg]);
 		if (IS_ERR(t_alg)) {
 			rc = PTR_ERR(t_alg);

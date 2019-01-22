@@ -52,6 +52,7 @@ int ssi_ablkcipher_alloc(struct ssi_drvdata *drvdata);
 
 int ssi_ablkcipher_free(struct ssi_drvdata *drvdata);
 
+
 void ssi_blkcipher_create_setup_desc(
 	int cipher_mode,
 	int flow_mode,
@@ -63,5 +64,6 @@ void ssi_blkcipher_create_setup_desc(
 	unsigned int nbytes,
 	HwDesc_s desc[],
 	unsigned int *seq_size);
+
 
 #endif /*__SSI_CIPHER_H__*/

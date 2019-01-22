@@ -261,46 +261,25 @@ static inline void enqueue_seq(
 	int i;
 
 	for (i = 0; i < seq_len; i++) {
-//		SSI_LOG_DEBUG("0 desc[%02d]: 0x%08X 0x%p \n", i, 
-//			seq[i].word[0],(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));	
 		writel_relaxed(seq[i].word[0], (volatile void __iomem *)(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
-
-//		SSI_LOG_DEBUG("1 desc[%02d]: 0x%08X 0x%p \n", i, 
-//			seq[i].word[0],(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
 		writel_relaxed(seq[i].word[1], (volatile void __iomem *)(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
-
-//		SSI_LOG_DEBUG("2 desc[%02d]: 0x%08X 0x%p \n", i, 
-//			seq[i].word[0],(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
 		writel_relaxed(seq[i].word[2], (volatile void __iomem *)(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
-
-//		SSI_LOG_DEBUG("3 desc[%02d]: 0x%08X 0x%p \n", i, 
-//			seq[i].word[0],(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
-
 		writel_relaxed(seq[i].word[3], (volatile void __iomem *)(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
-//		SSI_LOG_DEBUG("4 desc[%02d]: 0x%08X 0x%p \n", i, 
-//			seq[i].word[0],(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
-
 		writel_relaxed(seq[i].word[4], (volatile void __iomem *)(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
-//		SSI_LOG_DEBUG("5 desc[%02d]: 0x%08X 0x%p \n", i, 
-//			seq[i].word[0],(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
-
 		wmb();
-//		SSI_LOG_DEBUG("6 desc[%02d]: 0x%08X 0x%p \n", i, 
-//			seq[i].word[0],(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
-
 		writel_relaxed(seq[i].word[5], (volatile void __iomem *)(cc_base+SASI_REG_OFFSET(CRY_KERNEL, DSCRPTR_QUEUE0_WORD0)));
 #ifdef DX_DUMP_DESCS
-		SSI_LOG_DEBUG("desc[%02d]: 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X\n", i, 
+		SSI_LOG_DEBUG("desc[%02d]: 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X 0x%08X\n", i,
 			seq[i].word[0], seq[i].word[1], seq[i].word[2], seq[i].word[3], seq[i].word[4], seq[i].word[5]);
 #endif
 	}
 }
 
 /*!
- * Completion will take place if and only if user requested completion 
- * by setting "is_dout = 0" in send_request().  
- * 
- * \param dev 
+ * Completion will take place if and only if user requested completion
+ * by setting "is_dout = 0" in send_request().
+ *
+ * \param dev
  * \param dx_compl_h The completion event to signal
  */
 static void request_mgr_complete(struct device *dev, void *dx_compl_h, void __iomem *cc_base)
@@ -489,11 +468,8 @@ int ssi_send_request(
 	else{
 		enqueue_seq(cc_base, desc, len);
 	}
-
 	enqueue_seq(cc_base, &req_mgr_h->compl_desc, (is_dout ? 0 : 1));
-
 	END_CYCLE_COUNT(ssi_req->op_type, STAT_PHASE_4);
-
 
 	CC_CYCLE_DESC_TAIL(cc_base, &req_mgr_h->monitor_desc, ssi_req->is_monitored_p);
 
@@ -505,7 +481,7 @@ int ssi_send_request(
 	req_mgr_h->q_free_slots -= total_seq_len;
 
 	spin_unlock_bh(&req_mgr_h->hw_lock);
-	
+
 	if (!is_dout) {
 		/* Wait upon sequence completion.
 		*  Return "0" -Operation done successfully. */

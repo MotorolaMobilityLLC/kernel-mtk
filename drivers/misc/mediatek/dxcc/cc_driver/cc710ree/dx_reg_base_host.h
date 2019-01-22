@@ -20,9 +20,7 @@
 #define DX_PLAT_ZYNQ7000_ZC706 1
 
 /* SEP core clock frequency in MHz */
-//#define DX_SEP_FREQ_MHZ 50
-#define DX_SEP_FREQ_MHZ 100
-
+#define DX_SEP_FREQ_MHZ 50
 #define DX_BASE_CC 0x80000000
 
 #define DX_BASE_ENV_REGS 0x40008000
