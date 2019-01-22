@@ -1112,6 +1112,13 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 		}
 	}
 
+	/* final chance to check hwocv */
+	if (_hw_ocv < 30000) {
+		bm_err("[read_hw_ocv] ERROR, _hw_ocv=%d, force use swocv\n", _hw_ocv);
+		_hw_ocv = _sw_ocv;
+		_hw_ocv_src = FROM_SW_OCV;
+	}
+
 	*data = _hw_ocv;
 
 	charger_zcv = _hw_ocv_chgin;
