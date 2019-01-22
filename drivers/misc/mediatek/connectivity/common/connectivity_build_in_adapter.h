@@ -42,6 +42,7 @@
 	defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6759) || \
 	defined(CONFIG_MACH_MT6771) || \
+	defined(CONFIG_MACH_MT6775) || \
 	defined(CONFIG_MACH_MT6763)
 #define CONNADP_HAS_CLOCK_BUF_CTRL
 #define KERNEL_clk_buf_ctrl connectivity_export_clk_buf_ctrl
