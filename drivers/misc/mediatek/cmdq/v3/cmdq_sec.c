@@ -1316,7 +1316,7 @@ static void cmdq_sec_dump_err_buffer(const struct TaskStruct *task, u32 *hwpc)
 
 static void cmdq_sec_dump_summary(const struct TaskStruct *task, s32 thread,
 	const struct TaskStruct **ngtask_out,
-	struct NGTaskInfoStruct **nginfo_out)
+	struct NGTaskInfoStruct *nginfo_out)
 {
 	u32 i;
 
