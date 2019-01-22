@@ -23,6 +23,6 @@ ccflags-y += -I$(GUD_ROOT_FOLDER)/TlcTui/inc \
              -I$(GUD_ROOT_FOLDER)/TlcTui/public
 
 ccflags-y += -DTUI_ENABLE_DISPLAY
-#ccflags-y += -DTUI_ENABLE_TOUCH
-#ccflags-y += -DTUI_LOCK_I2C
-#ccflags-y += -DTUI_ENABLE_MPU
+ccflags-y += -DTUI_ENABLE_TOUCH
+ccflags-y += -DTUI_LOCK_I2C
+ccflags-y += -DTUI_ENABLE_MPU
