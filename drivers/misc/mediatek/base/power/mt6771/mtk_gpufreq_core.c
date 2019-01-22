@@ -1286,7 +1286,7 @@ static int __mt_gpufreq_create_procfs(void)
 static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new, unsigned int volt_old, unsigned int volt_new,
 		unsigned int vsram_volt_old, unsigned int vsram_volt_new)
 {
-	gpufreq_pr_debug("@%s: freq: %d ---> %d, volt: %d ---> %d, vsram_volt: %d ---> %d\n",
+	gpufreq_pr_info("@%s: freq: %d ---> %d, volt: %d ---> %d, vsram_volt: %d ---> %d\n",
 			__func__, freq_old, freq_new, volt_old, volt_new, vsram_volt_old, vsram_volt_new);
 
 	if (freq_new > freq_old) {
