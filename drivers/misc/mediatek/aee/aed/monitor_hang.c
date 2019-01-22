@@ -1015,7 +1015,7 @@ void show_native_bt_by_pid(int task_pid)
 		/* change send ptrace_stop to send signal stop */
 		if (stat_nam[state] != 'T')
 			do_send_sig_info(SIGCONT, SEND_SIG_FORCED, p, true);
-		put_task_struct(t);
+		put_task_struct(p);
 	}
 	put_pid(pid);
 }
@@ -1345,7 +1345,7 @@ static void show_bt_by_pid(int task_pid)
 	pid = find_get_pid(task_pid);
 	t = p = get_pid_task(pid, PIDTYPE_PID);
 
-	if (p != NULL) {
+	if (p != NULL && p->stack != NULL) {
 		LOGE("show_bt_by_pid: %d: %s\n", task_pid, t->comm);
 		Log2HangInfo("show_bt_by_pid: %d: %s.\n", task_pid, t->comm);
 #ifndef __aarch64__	 /* 32bit */
@@ -1399,7 +1399,11 @@ static void show_bt_by_pid(int task_pid)
 				msleep(20);
 			Log2HangInfo("-\n");
 		} while_each_thread(p, t);
-		put_task_struct(t);
+		put_task_struct(p);
+	} else if (p != NULL) {
+		put_task_struct(p);
+		Log2HangInfo("%s pid %d state %d. stack is null.\n",
+			t->comm, task_pid, t->state);
 	}
 	put_pid(pid);
 }
