@@ -62,10 +62,9 @@
 #include <linux/suspend.h>
 
 #include <musb_core.h>
+#include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
-#include <mt-plat/charger_class.h>
-#include <mt-plat/mtk_charger.h>
-#include "mtk_pe20_intf.h"
+
 
 static void swchg_select_charging_current_limit(struct charger_manager *info)
 {

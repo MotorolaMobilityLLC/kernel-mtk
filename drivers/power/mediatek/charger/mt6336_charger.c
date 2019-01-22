@@ -66,8 +66,7 @@
 #include <linux/version.h>
 
 
-#include <mt-plat/charger_class.h>
-#include <mt-plat/mtk_charger.h>
+#include "mtk_charger_intf.h"
 #include <mt6336.h>
 
 static int mt6336_get_mivr(struct charger_device *chg_dev);

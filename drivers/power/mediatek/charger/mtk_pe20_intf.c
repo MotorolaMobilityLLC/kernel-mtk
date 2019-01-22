@@ -15,13 +15,10 @@
 #include <linux/mutex.h>
 #include <linux/wakelock.h>
 #include <linux/delay.h>
-#include <mt-plat/charger_class.h>
-#include <mt-plat/mtk_charger.h>
+
+#include "mtk_charger_intf.h"
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
-
-#include "mtk_pe20_intf.h"
-
 
 int mtk_pe20_reset_ta_vchr(struct charger_manager *pinfo)
 {
