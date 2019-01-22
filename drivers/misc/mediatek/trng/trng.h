@@ -14,7 +14,6 @@
 #ifndef __TRNG_H__
 #define __TRNG_H__
 
-#define MTK_SIP_LK_GET_RND	0xC2000110
 #define TRNG_MAGIC		0x74726e67
 
 static char *dirname = "sec";

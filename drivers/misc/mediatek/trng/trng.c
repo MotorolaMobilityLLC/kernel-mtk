@@ -18,26 +18,37 @@
 #include <linux/seq_file.h>
 #include "trng.h"
 
+#define BIT_STREAM_LEN	500000
 
 static int mtk_trng_dump(struct seq_file *m, void *v)
 {
-	int i = 1;
+	int i;
+	int loop;
 	size_t val[4] = {0};
 
-	pr_info("[TRNG] dump 4 sets of 32 bits rnd!\n");
+	loop = BIT_STREAM_LEN / 128;
 
-	val[0] = mt_secure_call_ret4(
-			MTK_SIP_LK_GET_RND,
-			TRNG_MAGIC,
-			0, 0, 0,
-			(void *)(val+1), (void *)(val+2), (void *)(val+3)
-		);
+	if ((BIT_STREAM_LEN > 0) && ((BIT_STREAM_LEN % 128) != 0))
+		loop += 1;
 
-	for (i = 0 ; i < 4 ; i++) {
-		pr_info("val[%d] = 0x%08x\n", i, (uint32_t)val[i]);
-		seq_printf(m, "0x%08x\n", (uint32_t)val[i]);
+	pr_info("[TRNG] loop %d times!\n", loop);
+	while (loop > 0) {
+		pr_info("[TRNG] dump 4 sets of 32 bits rnd!\n");
+
+		val[0] = mt_secure_call_ret4(
+				MTK_SIP_KERNEL_GET_RND,
+				TRNG_MAGIC,
+				0, 0, 0,
+				(void *)(val+1), (void *)(val+2), (void *)(val+3)
+				);
+
+		for (i = 0 ; i < 4 ; i++) {
+			pr_info("val[%d] = 0x%08x\n", i, (uint32_t)val[i]);
+			seq_printf(m, "0x%08x\n", (uint32_t)val[i]);
+		}
+
+		loop--;
 	}
-
 	return 0;
 }
 
