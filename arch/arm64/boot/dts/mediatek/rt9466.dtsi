@@ -11,6 +11,39 @@
  */
 
 /* Please set primary/secondary charger to corresponding I2C bus */
+
+&i2c1 {
+	rt9466@53 {
+		compatible = "richtek,rt9466";
+		reg = <0x53>;
+		/* rt,ceb_gpio_num = <160>; */
+		rt,intr_gpio = <&pio 25 0x0>;
+		rt,intr_gpio_num = <25>; /* direct defined GPIO num */
+		interrupt-names = "wdtmri", "chg_mivr", "chg_aiclmeasi",
+			"chg_statci";
+		status = "okay";
+		/*
+		 * Charger name
+		 * Main charger: primary_chg
+		 * Slave charger: secondary_chg
+		 */
+		charger_name = "primary_chg";
+		ichg = <2000000>; /* uA */
+		aicr = <500000>;  /* uA */
+		mivr = <4400000>; /* uV */
+		cv = <4350000>;   /* uV */
+		ieoc = <250000>;  /* uA */
+		safety_timer = <12>;  /* hour */
+		ircmp_resistor = <80000>; /* uohm */
+		ircmp_vclamp = <224000>;  /* uV */
+		en_te;
+		en_wdt;
+		/* en_jeita; */
+		/* en_irq_pulse; */
+		/* ceb_invert; */
+	};
+};
+
 &i2c0 {
 	rt9466@53 {
 		compatible = "richtek,rt9466";
@@ -38,36 +71,5 @@
 		/* en_jeita; */
 		/* en_irq_pulse; */
 		ceb_invert;
-	};
-};
-
-&i2c1 {
-	rt9466@53 {
-		compatible = "richtek,rt9466";
-		reg = <0x53>;
-		/* rt,ceb_gpio_num = <160>; */
-		rt,intr_gpio = <&pio 25 0x0>;
-		rt,intr_gpio_num = <25>; /* direct defined GPIO num */
-		interrupt-names = "wdtmri", "chg_mivr", "chg_aiclmeasi", "chg_statci";
-		status = "okay";
-		/*
-		 * Charger name
-		 * Main charger: primary_chg
-		 * Slave charger: secondary_chg
-		 */
-		charger_name = "primary_chg";
-		ichg = <2000000>; /* uA */
-		aicr = <500000>;  /* uA */
-		mivr = <4400000>; /* uV */
-		cv = <4350000>;   /* uV */
-		ieoc = <250000>;  /* uA */
-		safety_timer = <12>;  /* hour */
-		ircmp_resistor = <80000>; /* uohm */
-		ircmp_vclamp = <224000>;  /* uV */
-		en_te;
-		en_wdt;
-		/* en_jeita; */
-		/* en_irq_pulse; */
-		/* ceb_invert; */
 	};
 };
