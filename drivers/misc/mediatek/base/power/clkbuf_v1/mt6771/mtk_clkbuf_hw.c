@@ -111,7 +111,7 @@ static unsigned int mode_sel = BUF_MAN_M;
 
 /* TODO: enable BBLPM if its function is ready (set as 1) */
 /* #define CLK_BUF_HW_BBLPM_EN */
-static unsigned int bblpm_switch;
+static unsigned int bblpm_switch = 2;
 
 static unsigned int pwrap_dcxo_en_flag = (DCXO_CONN_ENABLE | DCXO_NFC_ENABLE);
 
@@ -244,6 +244,27 @@ static void pmic_clk_buf_ctrl(enum CLK_BUF_SWCTRL_STATUS_T *status)
 		     status[2], status[3], status[4], status[5], status[6]);
 }
 
+void clk_buf_ctrl_bblpm_hw(short on)
+{
+	u32 cw23 = 0;
+
+	if (!is_pmic_clkbuf)
+		return;
+	if (on) {
+		pmic_config_interface(PMIC_XO_BB_LPM_CEL_ADDR, 0x1,
+				      PMIC_XO_BB_LPM_CEL_MASK,
+				      PMIC_XO_BB_LPM_CEL_SHIFT);
+	} else {
+		pmic_config_interface(PMIC_XO_BB_LPM_CEL_ADDR, 0x0,
+				      PMIC_XO_BB_LPM_CEL_MASK,
+				      PMIC_XO_BB_LPM_CEL_SHIFT);
+	}
+
+	pmic_read_interface_nolock(PMIC_XO_BB_LPM_CEL_ADDR, &cw23,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	clk_buf_pr_dbg("%s(%u): CW23=0x%x\n", __func__, (on ? 1 : 0), cw23);
+}
+
 void clk_buf_control_bblpm(bool on)
 {
 #ifdef CLKBUF_USE_BBLPM
@@ -270,6 +291,47 @@ void clk_buf_control_bblpm(bool on)
 #endif
 }
 
+static void clk_buf_ctrl_bblpm_mask(enum clk_buf_id id, bool onoff)
+{
+	if (!is_pmic_clkbuf && (bblpm_switch != 2))
+		return;
+
+	mutex_lock(&clk_buf_ctrl_lock);
+
+	switch (id) {
+	case CLK_BUF_BB_MD:
+		pmic_config_interface(PMIC_XO_BUF1_BBLPM_EN_MASK_ADDR, onoff,
+				      PMIC_XO_BUF1_BBLPM_EN_MASK_MASK,
+				      PMIC_XO_BUF1_BBLPM_EN_MASK_SHIFT);
+		break;
+	case CLK_BUF_CONN:
+		pmic_config_interface(PMIC_XO_BUF2_BBLPM_EN_MASK_ADDR, onoff,
+				      PMIC_XO_BUF2_BBLPM_EN_MASK_MASK,
+				      PMIC_XO_BUF2_BBLPM_EN_MASK_SHIFT);
+		break;
+	case CLK_BUF_NFC:
+		pmic_config_interface(PMIC_XO_BUF3_BBLPM_EN_MASK_ADDR, onoff,
+				      PMIC_XO_BUF3_BBLPM_EN_MASK_MASK,
+				      PMIC_XO_BUF3_BBLPM_EN_MASK_SHIFT);
+		break;
+	case CLK_BUF_RF:
+		pmic_config_interface(PMIC_XO_BUF4_BBLPM_EN_MASK_ADDR, onoff,
+				      PMIC_XO_BUF4_BBLPM_EN_MASK_MASK,
+				      PMIC_XO_BUF4_BBLPM_EN_MASK_SHIFT);
+		break;
+	case CLK_BUF_UFS:
+		pmic_config_interface(PMIC_XO_BUF7_BBLPM_EN_MASK_ADDR, onoff,
+				      PMIC_XO_BUF7_BBLPM_EN_MASK_MASK,
+				      PMIC_XO_BUF7_BBLPM_EN_MASK_SHIFT);
+		break;
+	default:
+		clk_buf_pr_info("%s: id=%d isn't supported\n", __func__, id);
+		break;
+	}
+
+	mutex_unlock(&clk_buf_ctrl_lock);
+}
+
 /*
  * Baseband Low Power Mode (BBLPM) for PMIC clkbuf
  * Condition: XO_CELL/XO_NFC/XO_WCN/XO_EXT OFF
@@ -291,18 +353,20 @@ u32 clk_buf_bblpm_enter_cond(void)
 	/* if (pwr_sta & PWR_STATUS_MD) */
 	if (!is_clk_buf_under_flightmode())
 		bblpm_cond |= BBLPM_COND_CEL;
+	if (bblpm_switch != 2) {
 
-	if ((pmic_clk_buf_swctrl[XO_WCN] == CLK_BUF_SW_ENABLE) ||
-	    (pwr_sta & PWR_STATUS_CONN))
-		bblpm_cond |= BBLPM_COND_WCN;
+		if ((pmic_clk_buf_swctrl[XO_WCN] == CLK_BUF_SW_ENABLE) ||
+		    (pwr_sta & PWR_STATUS_CONN))
+			bblpm_cond |= BBLPM_COND_WCN;
 
-	if (pmic_clk_buf_swctrl[XO_NFC] == CLK_BUF_SW_ENABLE)
-		bblpm_cond |= BBLPM_COND_NFC;
+		if (pmic_clk_buf_swctrl[XO_NFC] == CLK_BUF_SW_ENABLE)
+			bblpm_cond |= BBLPM_COND_NFC;
 
 #ifdef CONFIG_MTK_UFS_BOOTING
-	if (ufs_mtk_deepidle_hibern8_check() < 0)
-		bblpm_cond |= BBLPM_COND_EXT;
+		if (ufs_mtk_deepidle_hibern8_check() < 0)
+			bblpm_cond |= BBLPM_COND_EXT;
 #endif
+	}
 #else /* !CLKBUF_USE_BBLPM */
 	bblpm_cond |= BBLPM_COND_SKIP;
 #endif
@@ -416,7 +480,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 		clk_buf_pr_info("%s: id=%d, onoff=%d\n", __func__, id, onoff);
 		break;
 	default:
-		clk_buf_pr_err("%s: id=%d isn't supported\n", __func__, id);
+		clk_buf_pr_info("%s: id=%d isn't supported\n", __func__, id);
 		break;
 	}
 
@@ -458,7 +522,7 @@ static int clk_buf_mode_set(enum clk_buf_id id)
 		break;
 	default:
 		ret = -5;
-		clk_buf_pr_err("%s: id=%d isn't supported\n", __func__, id);
+		clk_buf_pr_info("%s: id=%d isn't supported\n", __func__, id);
 		break;
 	}
 
@@ -613,7 +677,7 @@ bool clk_buf_ctrl_combine(enum clk_buf_id id, bool onoff)
 		break;
 	default:
 		ret = -1;
-		clk_buf_pr_err("%s: id=%d isn't supported\n", __func__, id);
+		clk_buf_pr_info("%s: id=%d isn't supported\n", __func__, id);
 		break;
 	}
 
@@ -721,7 +785,7 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 		break;
 	default:
 		ret = -1;
-		clk_buf_pr_err("%s: id=%d isn't supported\n", __func__, id);
+		clk_buf_pr_info("%s: id=%d isn't supported\n", __func__, id);
 		break;
 	}
 
@@ -755,7 +819,7 @@ void clk_buf_dump_dts_log(void)
 void clk_buf_dump_clkbuf_log(void)
 {
 	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw14 = 0,
-	    pmic_cw16 = 0, top_spi_con1 = 0;
+	    pmic_cw16 = 0, pmic_cw23 = 0, top_spi_con1 = 0;
 
 	pmic_read_interface(PMIC_XO_EXTBUF1_MODE_ADDR, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
@@ -769,9 +833,11 @@ void clk_buf_dump_clkbuf_log(void)
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface(PMIC_RG_SRCLKEN_IN3_EN_ADDR, &top_spi_con1,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	clk_buf_pr_info("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x, top_spi_con1=0x%x\n",
+	pmic_read_interface(PMIC_DCXO_CW23, &pmic_cw23,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	clk_buf_pr_info("%s CW00/02/11/14/16/23 = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, top_spi_con1=0x%x\n",
 		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14,
-		     pmic_cw16, top_spi_con1);
+		     pmic_cw16, pmic_cw23, top_spi_con1);
 }
 
 static u32 dcxo_dbg_read_auxout(u16 sel)
@@ -988,7 +1054,7 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 {
 	int len = 0;
 	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw13 = 0,
-	    pmic_cw14 = 0, pmic_cw15 = 0, pmic_cw16 = 0;
+	    pmic_cw14 = 0, pmic_cw15 = 0, pmic_cw16 = 0, pmic_cw23 = 0;
 
 	clk_buf_get_drv_curr();
 	clk_buf_get_xo_en();
@@ -1056,9 +1122,11 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface_nolock(PMIC_DCXO_CW16, &pmic_cw16,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CW00/02/11/13/14/15/16=0x%x %x %x %x %x %x %x\n",
+	pmic_read_interface_nolock(PMIC_DCXO_CW23, &pmic_cw23,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CW00/02/11/13/14/15/16/23=0x%x %x %x %x %x %x %x %x\n",
 			pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw13, pmic_cw14,
-			pmic_cw15, pmic_cw16);
+			pmic_cw15, pmic_cw16, pmic_cw23);
 	pmic_read_interface_nolock(PMIC_RG_SRCLKEN_IN3_EN_ADDR, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	len += snprintf(buf+len, PAGE_SIZE-len, "SRCLKEN_IN3_EN(srclken_conn)=0x%x\n", pmic_cw00);
@@ -1078,11 +1146,12 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	len += snprintf(buf+len, PAGE_SIZE-len, "bblpm_switch=%u, bblpm_cnt=%u, bblpm_cond=0x%x\n",
 			bblpm_switch, bblpm_cnt, clk_buf_bblpm_enter_cond());
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, \
-			SPARE_ACK_MASK=0x%x, flight mode = %d\n",
+			"MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x,",
 			clkbuf_readl(MD1_PWR_CON),
 			clkbuf_readl(PWR_STATUS),
-			clkbuf_readl(PCM_REG13_DATA),
+			clkbuf_readl(PCM_REG13_DATA));
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"SPARE_ACK_MASK=0x%x, flight mode = %d\n",
 			clkbuf_readl(SPARE_ACK_MASK),
 			is_clk_buf_under_flightmode());
 
@@ -1120,6 +1189,8 @@ static ssize_t clk_buf_debug_store(struct kobject *kobj, struct kobj_attribute *
 			bblpm_switch = 0;
 		else if (onoff == 1)
 			bblpm_switch = 1;
+		else if (onoff == 2)
+			bblpm_switch = 2;
 		else
 			goto ERROR_CMD;
 	} else {
@@ -1402,6 +1473,13 @@ void clk_buf_post_init(void)
 #ifndef CONFIG_NFC_CHIP_SUPPORT
 	/* no need to use XO_NFC if no NFC */
 	clk_buf_ctrl_internal(CLK_BUF_NFC, false);
+#endif
+#ifdef CLKBUF_USE_BBLPM
+	if (bblpm_switch == 2) {
+		clk_buf_ctrl_bblpm_mask(CLK_BUF_BB_MD, true);
+		clk_buf_ctrl_bblpm_mask(CLK_BUF_UFS, true);
+		clk_buf_ctrl_bblpm_hw(false);
+	}
 #endif
 }
 
