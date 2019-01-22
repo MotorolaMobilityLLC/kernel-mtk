@@ -33,9 +33,12 @@
 
 #define DM_MSG_PREFIX "crypt"
 
+#if defined(CONFIG_MTK_HW_FDE)
+#include <mt-plat/mtk_secure_api.h>
 #if defined(CONFIG_MTK_HW_FDE_AES)
 #include <fde_aes.h>
 #include <fde_aes_dbg.h>
+#endif
 #endif
 
 /*
@@ -1571,7 +1574,13 @@ static int crypt_setkey_allcpus(struct crypt_config *cc)
 	subkey_size = (cc->key_size - cc->key_extra_size) >> ilog2(cc->tfms_count);
 
 #if defined(CONFIG_MTK_HW_FDE)
-	if (cc->hw_fde == 0)
+	if (cc->hw_fde == 1) {
+		for (i = 0; i < (cc->key_size>>3); i++)
+			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_KEY,
+				*(u32 *)(cc->key+(i*8)),
+				*(u32 *)(cc->key+(i*8)+4),
+				(i<<16) | (cc->key_size & 0xffff));
+	} else
 #endif
 	{
 		for (i = 0; i < cc->tfms_count; i++) {
@@ -1970,10 +1979,6 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 		goto bad;
 	}
 	cc->start = tmpll;
-
-#if defined(CONFIG_MTK_HW_FDE_AES)
-	FDEERR("%s %s %s %s %s %s\n", __func__, argv[0], argv[1], argv[2], argv[3], argv[4]);
-#endif
 
 	argv += 5;
 	argc -= 5;
