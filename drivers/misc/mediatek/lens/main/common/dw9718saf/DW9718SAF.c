@@ -35,6 +35,9 @@
 #define LOG_INF(format, args...)
 #endif
 
+#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
+#define USE_ISRC_MODE_S5K3P8_SENSOR
+#endif
 
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
@@ -127,6 +130,9 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 static int initdrv(void)
 {
 	int i4RetValue = 0;
+
+#if defined(USE_ISRC_MODE_S5K3P8_SENSOR)
+#else
 	char puSendCmd2[2] = { 0x01, 0x39 };
 	char puSendCmd3[2] = { 0x05, 0x07 };
 
@@ -136,6 +142,7 @@ static int initdrv(void)
 		return -1;
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
+#endif
 
 	return i4RetValue;
 }
@@ -153,8 +160,15 @@ static inline int moveAF(unsigned long a_u4Position)
 	if (*g_pAF_Opened == 1) {
 		unsigned short InitPos;
 
-		initdrv();
 		ret = s4DW9718SAF_ReadReg(&InitPos);
+
+		if (initdrv() == 0) {
+			spin_lock(g_pAF_SpinLock);
+			*g_pAF_Opened = 2;
+			spin_unlock(g_pAF_SpinLock);
+		} else {
+			LOG_INF("VCM driver init fail\n");
+		}
 
 		if (ret == 0) {
 			LOG_INF("Init Pos %6d\n", InitPos);
@@ -168,10 +182,6 @@ static inline int moveAF(unsigned long a_u4Position)
 			g_u4CurrPosition = 0;
 			spin_unlock(g_pAF_SpinLock);
 		}
-
-		spin_lock(g_pAF_SpinLock);
-		*g_pAF_Opened = 2;
-		spin_unlock(g_pAF_SpinLock);
 	}
 
 	if (g_u4CurrPosition == a_u4Position)
