@@ -1108,3 +1108,4 @@ CONFIG_USB_CONFIGFS_F_HID,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_MASS_STORAGE,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_RNDIS,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_SERIAL,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
+CONFIG_MTK_IRIS_SUPPORT,PROJECT,yicheng.chen,new config in this commit Ie6ddb08406104d35a595ed9b83593cb455f91dca,,,,,,,,,,
