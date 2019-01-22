@@ -663,7 +663,7 @@ static bool wait_fmeter_done(u32 tri_bit)
 }
 
 #endif /* CLKDBG_6755 */
-
+#if 0
 static u32 fmeter_freq(enum FMETER_TYPE type, int k1, int clk)
 {
 #if 0
@@ -712,18 +712,18 @@ static u32 fmeter_freq(enum FMETER_TYPE type, int k1, int clk)
 #endif
 	return 0;
 }
+#endif
 /* k1 = 0 */
 static u32 measure_stable_fmeter_freq(enum FMETER_TYPE type, int k1, int clk)
 {
-	u32 last_freq = 0;
 	u32 freq;
-	u32 maxfreq;
 
 	if (type == CKGEN)
 		freq = mt_get_ckgen_freq(clk);
 	else
 		freq = mt_get_abist_freq(clk);
 	/*freq = fmeter_freq(type, k1, clk);*/
+	#if 0
 	maxfreq = max(freq, last_freq);
 
 	while (maxfreq > 0 && ABS_DIFF(freq, last_freq) * 100 / maxfreq > 10) {
@@ -731,6 +731,7 @@ static u32 measure_stable_fmeter_freq(enum FMETER_TYPE type, int k1, int clk)
 		freq = fmeter_freq(type, k1, clk);
 		maxfreq = max(freq, last_freq);
 	}
+	#endif
 
 	return freq;
 }
