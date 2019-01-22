@@ -19,6 +19,7 @@
 #include "mtk_charger_intf.h"
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
+#include <upmu_common.h>
 
 static int pe20_set_mivr(struct charger_manager *pinfo, int uV);
 
@@ -86,11 +87,8 @@ static int pe20_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
 {
 	int ret = 0;
 
-	ret = charger_dev_enable_vbus_ovp(pinfo->chg1_dev, enable);
-	if (ret == -ENOTSUPP)
-		return 0;
-
-	if (ret < 0)
+	ret = pmic_set_register_value(PMIC_RG_VCDT_HV_EN, enable);
+	if (ret != 0)
 		pr_err("%s: failed, ret = %d\n", __func__, ret);
 
 	return ret;
