@@ -883,6 +883,8 @@ static bool dpidle_can_enter(int cpu, int reason)
 	} else if (reason < NR_REASONS)
 		goto out;
 
+	reason = NR_REASONS;
+
 	if (!next_timer_criteria_check(dpidle_time_criteria)) {
 		reason = BY_TMR;
 		goto out;
@@ -1115,7 +1117,6 @@ static u32 slp_spm_SODI_flags = {
 };
 
 u32 slp_spm_deepidle_flags = {
-	SPM_FLAG_DIS_CPU_PDN  |
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
