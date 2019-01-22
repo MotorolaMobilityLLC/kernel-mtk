@@ -32,7 +32,7 @@ obj-$(CONFIG_MACH_MT6758) += legacy_controller/
 obj-$(CONFIG_MACH_MT6771) += legacy_controller/
 obj-$(CONFIG_MACH_MT6775) += legacy_controller/
 
-obj-$(CONFIG_MACH_MT6739) += cpu_loading/
+obj-y += cpu_loading/
 
 obj-$(CONFIG_MTK_LOAD_TRACKER) += load_track/
 
