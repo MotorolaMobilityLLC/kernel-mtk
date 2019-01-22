@@ -37,5 +37,8 @@ extern void mt_usb_disconnect(void);
 extern CHARGER_TYPE mt_get_charger_type(void);
 extern void mtk_charger_int_handler(void);
 
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT)
+extern int register_charger_det_callback(int (*func)(int));
+#endif /*CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT*/
 
 #endif /* __MTK_CHARGER_TYPE_H__ */
