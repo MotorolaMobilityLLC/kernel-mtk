@@ -367,6 +367,9 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 
 	pr_err("%s: starts\n", __func__);
 
+	if (pe20->is_cable_out_occur)
+		mtk_pe20_plugout_reset(pinfo);
+
 	/* Not to check charger type or
 	 * Not standard charger or
 	 * SOC is not in range
@@ -432,6 +435,9 @@ int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
 	mutex_lock(&pe20->access_lock);
 	wake_lock(&pe20->suspend_lock);
 	pr_err("%s: starts\n", __func__);
+
+	if (pe20->is_cable_out_occur)
+		mtk_pe20_plugout_reset(pinfo);
 
 	if (!pe20->is_connect) {
 		ret = -EIO;
@@ -589,8 +595,8 @@ int mtk_pe20_init(struct charger_manager *pinfo)
 	pinfo->pe2.profile[5].vchr = 9000;
 	pinfo->pe2.profile[6].vchr = 9500;
 	pinfo->pe2.profile[7].vchr = 9500;
-	pinfo->pe2.profile[8].vchr = 1000;
-	pinfo->pe2.profile[9].vchr = 1000;
+	pinfo->pe2.profile[8].vchr = 10000;
+	pinfo->pe2.profile[9].vchr = 10000;
 
 	return 0;
 }

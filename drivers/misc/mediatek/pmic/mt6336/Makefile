@@ -5,7 +5,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 
 
 # Mediatek PMIC MT63XX specific files
-obj-$(CONFIG_MTK_PMIC_CHIP_MT6336)	+= mt6336.o mt6336_efuse.o mt6336_auxadc.o pmic_chr_type_det.o
+obj-$(CONFIG_MTK_PMIC_CHIP_MT6336)	+= mt6336.o mt6336_efuse.o mt6336_auxadc.o
 ifdef _MT6336_E1
 $(warning MT6336_E1)
 	ccflags-y += -DMT6336_E1
@@ -18,8 +18,8 @@ ifneq ($(CONFIG_MTK_GAUGE_VERSION),30)
 obj-$(CONFIG_MTK_SMART_BATTERY) += charging_hw_mt6336.o
 endif
 
-#ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-#	obj-$(CONFIG_MTK_PMIC_CHIP_MT6336) += pmic_chr_type_det_v2.o
-#else
-#	obj-$(CONFIG_MTK_PMIC_CHIP_MT6336) += pmic_chr_type_det.o
-#endif
+ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+	obj-$(CONFIG_MTK_PMIC_CHIP_MT6336) += pmic_chr_type_det_v2.o
+else
+	obj-$(CONFIG_MTK_PMIC_CHIP_MT6336) += pmic_chr_type_det.o
+endif

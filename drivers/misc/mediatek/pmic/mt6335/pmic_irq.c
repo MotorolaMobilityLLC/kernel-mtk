@@ -337,6 +337,7 @@ void vpa_oc_int_handler(void)
 /*****************************************************************************
  * Chrdet Int Handler
  ******************************************************************************/
+#if (CONFIG_MTK_GAUGE_VERSION != 30)
 void chrdet_int_handler(void)
 {
 	pr_err(PMICTAG "[chrdet_int_handler]CHRDET status = plug-%s\n",
@@ -360,6 +361,7 @@ void chrdet_int_handler(void)
 	do_chrdet_int_task();
 #endif
 }
+#endif
 
 /*****************************************************************************
  * Auxadc Int Handler
@@ -690,8 +692,9 @@ void PMIC_EINT_SETTING(void)
 	pmic_register_interrupt_callback(INT_HOMEKEY, homekey_int_handler);
 	pmic_register_interrupt_callback(INT_PWRKEY_R, pwrkey_int_handler_r);
 	pmic_register_interrupt_callback(INT_HOMEKEY_R, homekey_int_handler_r);
-
+#if (CONFIG_MTK_GAUGE_VERSION != 30)
 	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
+#endif
 	pmic_register_interrupt_callback(INT_BAT_L, bat_l_int_handler);
 	pmic_register_interrupt_callback(INT_BAT_H, bat_h_int_handler);
 
@@ -702,8 +705,9 @@ void PMIC_EINT_SETTING(void)
 	pmic_enable_interrupt(INT_HOMEKEY, 1, "PMIC");
 	pmic_enable_interrupt(INT_PWRKEY_R, 1, "PMIC");
 	pmic_enable_interrupt(INT_HOMEKEY_R, 1, "PMIC");
-
+#if (CONFIG_MTK_GAUGE_VERSION != 30)
 	pmic_enable_interrupt(INT_CHRDET_EDGE, 1, "PMIC");
+#endif
 
 #if ENABLE_ALL_OC_IRQ
 	register_all_oc_interrupts();
