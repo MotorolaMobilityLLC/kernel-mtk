@@ -30,7 +30,6 @@
 #ifdef CONFIG_MACH_MT6799
 #include "include/pmic_regulator.h"
 #include "mtk_pmic_regulator.h"
-#include "mtk_etc.h"
 #endif
 
 #include "mach/mtk_freqhopping.h"
@@ -194,10 +193,6 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				mp_enter_suspend(2, 1);
 #endif
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
-#ifdef CONFIG_MACH_MT6799
-				/* pr_crit("Start to power up cluster and init etc !!\n"); */
-				mtk_etc_init();
-#endif
 			}
 		}
 		break;
@@ -216,12 +211,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				break;
 			}
 #endif
-#ifdef CONFIG_MACH_MT6799
-			/*pr_info("Start to power off cluster %d\n", cpu/4);*/
-			if (cpu/4 == 2)
-				mtk_etc_power_off();
-			/* pr_crit("Start to power off etc and cluster %d\n", cpu/4); */
-#endif
+
 			mt_secure_call(MTK_SIP_POWER_DOWN_CLUSTER, cpu/4, 0, 0);
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
 			/*pr_info("End of power off cluster %d\n", cpu/4);*/
