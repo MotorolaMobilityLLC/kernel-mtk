@@ -28,7 +28,7 @@
 #include <mtk_dramc.h>
 
 #ifdef CONFIG_MTK_DCS
-#include <mt_vcorefs_manager.h>
+#include <mtk_vcorefs_manager.h>
 #include <mt-plat/mtk_meminfo.h>
 #endif
 
