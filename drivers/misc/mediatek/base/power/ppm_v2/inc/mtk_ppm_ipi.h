@@ -26,7 +26,6 @@
 /* IPI Msg type */
 enum {
 	PPM_IPI_INIT,
-	PPM_IPI_UPDATE_ACT_CORE,
 	PPM_IPI_UPDATE_LIMIT,
 	PPM_IPI_THERMAL_LIMIT_TEST,
 	PPM_IPI_PTPOD_TEST,
@@ -43,9 +42,6 @@ struct ppm_ipi_data {
 			unsigned int cobra_tbl_addr;
 			unsigned int dvfs_tbl_type;
 		} init;
-		struct {
-			unsigned int core[NR_PPM_CLUSTERS];
-		} update_act_core;
 		struct {
 			struct {
 				unsigned char min_cpufreq_idx;
@@ -65,8 +61,6 @@ struct ppm_ipi_data {
 
 #ifdef PPM_SSPM_SUPPORT
 extern void ppm_ipi_init(unsigned int efuse_val, unsigned int cobra_tbl_addr);
-extern void ppm_ipi_update_act_core(struct ppm_cluster_status *cluster_status,
-					unsigned int cluster_num);
 extern void ppm_ipi_update_limit(struct ppm_client_req req);
 extern void ppm_ipi_thermal_limit_test(unsigned int budget);
 extern void ppm_ipi_ptpod_test(unsigned int activate);
