@@ -19,7 +19,7 @@
 #include <linux/of.h>
 #include <linux/leds.h>
 
-#include "../../rt-flashlight/rtfled.h"
+#include "../../flashlight/richtek/rtfled.h"
 #include "inc/rt5081_pmu.h"
 #include "inc/rt5081_pmu_bled.h"
 
@@ -32,7 +32,7 @@ struct rt5081_pmu_bled_data {
 
 static uint8_t bled_init_data[] = {
 	0x42, /* RT5081_PMU_REG_BLEN */
-	0x01, /* RT5081_PMU_REG_BLBSTCTRL */
+	0x89, /* RT5081_PMU_REG_BLBSTCTRL */
 	0x04, /* RT5081_PMU_REG_BLPWM */
 	0x00, /* RT5081_PMU_REG_BLCTRL */
 	0x00, /* RT5081_PMU_REG_BLDIM2 */
@@ -502,7 +502,7 @@ static int rt5081_pmu_bled_probe(struct platform_device *pdev)
 	bled_data->base.chip_name = "rt5081_pmu_bled";
 	bled_data->rt_flash_dev =
 		platform_device_register_resndata(bled_data->dev,
-						  "rt-flash-led", 1, NULL, 0,
+						  "rt-flash-led", 2, NULL, 0,
 						  NULL, 0);
 
 	if (IS_ERR(bled_data->rt_flash_dev)) {

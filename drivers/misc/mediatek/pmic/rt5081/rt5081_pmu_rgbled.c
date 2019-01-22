@@ -50,7 +50,7 @@ struct rt5081_pmu_rgbled_data {
 	.store = rt_led_##_name##_attr_store,\
 }
 
-static uint8_t rgbled_init_data[] = {
+static const uint8_t rgbled_init_data[] = {
 	0x60, /* RT5081_PMU_REG_RGB1DIM: 0x82 */
 	0x60, /* RT5081_PMU_REG_RGB2DIM: 0x83 */
 	0x60, /* RT5081_PMU_REG_RGB3DIM: 0x84 */
@@ -67,8 +67,8 @@ static uint8_t rgbled_init_data[] = {
 	0x52, /* RT5081_PMU_REG_RGB3TR: 0x8F */
 	0x25, /* RT5081_PMU_REG_RGB3TF: 0x90 */
 	0x11, /* RT5081_PMU_REG_RGB3TONTOFF: 0x91 */
-	0xe0, /* RT5081_PMU_REG_RGBCHRINDDIM: 0x92 */
-	0x04, /* RT5081_PMU_REG_RGBCHRINDCTRL: 0x93 */
+	0x60, /* RT5081_PMU_REG_RGBCHRINDDIM: 0x92 */
+	0x07, /* RT5081_PMU_REG_RGBCHRINDCTRL: 0x93 */
 	0x52, /* RT5081_PMU_REG_RGBCHRINDTR: 0x94 */
 	0x25, /* RT5081_PMU_REG_RGBCHRINDTF: 0x95 */
 	0x11, /* RT5081_PMU_REG_RGBCHRINDTONTOFF: 0x96 */
@@ -203,12 +203,118 @@ static enum led_brightness rt5081_pmu_led_bright_get(
 	return (ret & reg_mask) >> reg_shift;
 }
 
+static inline int rt5081_pmu_led_config_pwm(struct led_classdev *led_cdev,
+	unsigned long *delay_on, unsigned long *delay_off)
+{
+	const ulong dim_time[] = { 10000, 5000, 2000, 1000, 500, 200, 5, 1};
+	const unsigned long ton = *delay_on, toff = *delay_off;
+	int led_index = rt5081_pmu_led_get_index(led_cdev);
+	int reg_addr, reg_mask, reg_shift;
+	int i, j, ret = 0;
+
+	dev_dbg(led_cdev->dev, "%s, on %lu, off %lu\n", __func__, ton, toff);
+	/* find the close dim freq */
+	for (i = ARRAY_SIZE(dim_time) - 1; i >= 0; i--) {
+		if (dim_time[i] >= (ton + toff))
+			break;
+	}
+	if (i < 0) {
+		dev_warn(led_cdev->dev, "no match, sum %lu\n", ton + toff);
+		i = 0;
+	}
+	/* write pwm dim freq selection */
+	switch (led_index) {
+	case RT5081_PMU_LED1:
+		reg_addr = RT5081_PMU_REG_RGB1ISINK;
+		reg_mask = 0x38;
+		reg_shift = 3;
+		break;
+	case RT5081_PMU_LED2:
+		reg_addr = RT5081_PMU_REG_RGB2ISINK;
+		reg_mask = 0x38;
+		reg_shift = 3;
+		break;
+	case RT5081_PMU_LED3:
+		reg_addr = RT5081_PMU_REG_RGB3ISINK;
+		reg_mask = 0x38;
+		reg_shift = 3;
+		break;
+	case RT5081_PMU_LED4:
+		reg_addr = RT5081_PMU_REG_RGBCHRINDCTRL;
+		reg_mask = 0x1c;
+		reg_shift = 2;
+		break;
+	default:
+		return -EINVAL;
+	}
+	ret = rt5081_pmu_led_update_bits(led_cdev, reg_addr,
+					 reg_mask, i << reg_shift);
+	if (ret < 0)
+		return ret;
+	/* find the closest pwm duty */
+	j = 32 * ton / (ton + toff);
+	if (j == 0)
+		j = 1;
+	j--;
+	switch (led_index) {
+	case RT5081_PMU_LED1:
+		reg_addr = RT5081_PMU_REG_RGB1DIM;
+		break;
+	case RT5081_PMU_LED2:
+		reg_addr = RT5081_PMU_REG_RGB2DIM;
+		break;
+	case RT5081_PMU_LED3:
+		reg_addr = RT5081_PMU_REG_RGB3DIM;
+		break;
+	case RT5081_PMU_LED4:
+		reg_addr = RT5081_PMU_REG_RGBCHRINDDIM;
+		break;
+	default:
+		return -EINVAL;
+	}
+	reg_mask = RT5081_LED_PWMDUTYMASK;
+	reg_shift = RT5081_LED_PWMDUTYSHFT;
+	ret = rt5081_pmu_led_update_bits(led_cdev, reg_addr,
+					 reg_mask, j << reg_shift);
+	if (ret < 0)
+		return ret;
+	return 0;
+}
+
+static int rt5081_pmu_led_change_mode(struct led_classdev *led_cdev, int mode);
+static int rt5081_pmu_led_blink_set(struct led_classdev *led_cdev,
+	unsigned long *delay_on, unsigned long *delay_off)
+{
+	int mode_sel = RT5081_PMU_LED_PWMMODE;
+	int ret = 0;
+
+	if (!*delay_on && !*delay_off)
+		*delay_on = *delay_off = 500;
+	if (!*delay_off)
+		mode_sel = RT5081_PMU_LED_REGMODE;
+	if (mode_sel == RT5081_PMU_LED_PWMMODE) {
+		/* workaround, fix cc to pwm */
+		ret = rt5081_pmu_led_change_mode(led_cdev,
+						 RT5081_PMU_LED_BREATHMODE);
+		if (ret < 0)
+			dev_err(led_cdev->dev, "%s: mode fix fail\n", __func__);
+		ret = rt5081_pmu_led_config_pwm(led_cdev, delay_on, delay_off);
+		if (ret < 0)
+			dev_err(led_cdev->dev, "%s: cfg pwm fail\n", __func__);
+	}
+	ret = rt5081_pmu_led_change_mode(led_cdev, mode_sel);
+	if (ret < 0)
+		dev_err(led_cdev->dev, "%s: change mode fail\n", __func__);
+	return 0;
+}
+
 static struct rt5081_led_classdev rt5081_led_classdev[RT5081_PMU_MAXLED] = {
 	{
 		.led_dev =  {
 			.max_brightness = 6,
 			.brightness_set = rt5081_pmu_led_bright_set,
 			.brightness_get = rt5081_pmu_led_bright_get,
+			.blink_set = rt5081_pmu_led_blink_set,
 		},
 		.led_index = RT5081_PMU_LED1,
 	},
@@ -217,6 +323,7 @@ static struct rt5081_led_classdev rt5081_led_classdev[RT5081_PMU_MAXLED] = {
 			.max_brightness = 6,
 			.brightness_set = rt5081_pmu_led_bright_set,
 			.brightness_get = rt5081_pmu_led_bright_get,
+			.blink_set = rt5081_pmu_led_blink_set,
 		},
 		.led_index = RT5081_PMU_LED2,
 	},
@@ -225,6 +332,7 @@ static struct rt5081_led_classdev rt5081_led_classdev[RT5081_PMU_MAXLED] = {
 			.max_brightness = 6,
 			.brightness_set = rt5081_pmu_led_bright_set,
 			.brightness_get = rt5081_pmu_led_bright_get,
+			.blink_set = rt5081_pmu_led_blink_set,
 		},
 		.led_index = RT5081_PMU_LED3,
 	},
@@ -233,6 +341,7 @@ static struct rt5081_led_classdev rt5081_led_classdev[RT5081_PMU_MAXLED] = {
 			.max_brightness = 3,
 			.brightness_set = rt5081_pmu_led_bright_set,
 			.brightness_get = rt5081_pmu_led_bright_get,
+			.blink_set = rt5081_pmu_led_blink_set,
 		},
 		.led_index = RT5081_PMU_LED4,
 	},
@@ -242,6 +351,7 @@ static int rt5081_pmu_led_change_mode(struct led_classdev *led_cdev, int mode)
 {
 	int led_index = rt5081_pmu_led_get_index(led_cdev);
 	uint8_t reg_addr = 0;
+	int ret = 0;
 
 	if (mode >= RT5081_PMU_LED_MAXMODE)
 		return -EINVAL;
@@ -256,6 +366,12 @@ static int rt5081_pmu_led_change_mode(struct led_classdev *led_cdev, int mode)
 		reg_addr = RT5081_PMU_REG_RGB3DIM;
 		break;
 	case RT5081_PMU_LED4:
+		/* disable auto mode */
+		ret = rt5081_pmu_led_update_bits(led_cdev,
+						 RT5081_PMU_REG_RGBCHRINDDIM,
+						 0x80, 0x80);
+		if (ret < 0)
+			return ret;
 		reg_addr = RT5081_PMU_REG_RGBCHRINDDIM;
 		break;
 	default:
@@ -421,7 +537,8 @@ static ssize_t rt_led_pwm_duty_attr_show(struct device *dev,
 	if (ret < 0)
 		return ret;
 	reg_addr = ret & RT5081_LED_PWMDUTYMASK;
-	return snprintf(buf, PAGE_SIZE, "%d (max: %d)\n", reg_addr, RT5081_LED_PWMDUTYMAX);
+	return snprintf(buf, PAGE_SIZE, "%d (max: %d)\n", reg_addr,
+			RT5081_LED_PWMDUTYMAX);
 }
 
 static ssize_t rt_led_pwm_duty_attr_store(struct device *dev,
@@ -573,6 +690,12 @@ static void rt5081_pmu_led_pwm_activate(struct led_classdev *led_cdev)
 		}
 	}
 
+	/* workaround, fix cc to pwm */
+	ret = rt5081_pmu_led_change_mode(led_cdev, RT5081_PMU_LED_BREATHMODE);
+	if (ret < 0) {
+		dev_err(led_cdev->dev, "%s: mode fix fail\n", __func__);
+		goto out_change_mode;
+	}
 	ret = rt5081_pmu_led_change_mode(led_cdev, RT5081_PMU_LED_PWMMODE);
 	if (ret < 0) {
 		dev_err(led_cdev->dev, "%s: change mode fail\n", __func__);
