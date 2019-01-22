@@ -185,7 +185,7 @@ int vcorefs_get_curr_vcore(void)
 
 int vcorefs_get_curr_ddr(void)
 {
-#if 0 /* FIXME */
+#if 1
 	int ddr_khz;
 
 	ddr_khz = get_dram_data_rate() * 1000;
