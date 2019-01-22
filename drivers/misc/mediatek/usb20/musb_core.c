@@ -1032,8 +1032,11 @@ b_host:
 #endif
 			break;
 		default:
+			/* bypass VBUS check due to MTK HACK VBUS control
 			if ((devctl & MUSB_DEVCTL_VBUS)
-			    == (3 << MUSB_DEVCTL_VBUS_SHIFT)) {
+			    == (3 << MUSB_DEVCTL_VBUS_SHIFT))
+			 */
+			{
 				musb->xceiv->otg->state = OTG_STATE_A_HOST;
 				hcd->self.is_b_host = 0;
 			}
@@ -1289,7 +1292,10 @@ void musb_start(struct musb *musb)
 		musb_writeb(regs, MUSB_POWER, val);
 	}
 
-	musb->is_active = 1;
+	if (musb->is_host)
+		musb->is_active = 0;
+	else
+		musb->is_active = 1;
 }
 
 void musb_generic_disable(struct musb *musb)
