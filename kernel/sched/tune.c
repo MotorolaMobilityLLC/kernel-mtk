@@ -529,9 +529,14 @@ static void update_freq_fastpath(void)
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
 void set_min_boost_freq(int boost_value, int cpu_clus)
 {
-	int max_freq = schedtune_target_cap[cpu_clus].freq;
-	int max_cap = schedtune_target_cap[cpu_clus].cap;
-	int floor_cap, floor_freq;
+	int max_clus_nr = arch_get_nr_clusters();
+	int max_freq, max_cap, floor_cap, floor_freq;
+
+	if (cpu_clus >= max_clus_nr || cpu_clus < 0)
+		return;
+
+	max_freq = schedtune_target_cap[cpu_clus].freq;
+	max_cap = schedtune_target_cap[cpu_clus].cap;
 
 	floor_cap = (max_cap * (int)(boost_value+1) / 100);
 	floor_freq = (floor_cap * max_freq / max_cap);
