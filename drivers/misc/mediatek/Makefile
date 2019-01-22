@@ -224,3 +224,4 @@ obj-$(CONFIG_USB)	+= usb_boost/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= cmo/
 obj-$(CONFIG_PCIE_MTK_UNIT)	+= pcie_ut/
 obj-y += mtprintk/
+obj-$(CONFIG_MTK_ICCS_SUPPORT)+= iccs/
