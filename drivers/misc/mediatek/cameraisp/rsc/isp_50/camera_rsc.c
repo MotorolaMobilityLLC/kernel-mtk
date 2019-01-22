@@ -1550,12 +1550,10 @@ static signed int RSC_DumpReg(void)
 
 		for (j = 0; j < _SUPPORT_MAX_RSC_FRAME_REQUEST_;) {
 			LOG_INF
-			    ("RSC:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
+			    ("RSC:FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 			     j, g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j]
-			     , j + 1, g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j + 1],
-			     j + 2, g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j + 2]
-			     , j + 3, g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j + 3]);
-			j = j + 4;
+			     , j + 1, g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j + 1]);
+			j = j + 2;
 		}
 
 	}
@@ -3643,15 +3641,11 @@ static int rsc_dump_read(struct seq_file *m, void *v)
 
 		for (j = 0; j < _SUPPORT_MAX_RSC_FRAME_REQUEST_;) {
 			seq_printf(m,
-				   "RSC:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
+				   "RSC:FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 				   j, g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j]
 				   , j + 1,
-				   g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j + 1],
-				   j + 2,
-				   g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j + 2]
-				   , j + 3,
-				   g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j + 3]);
-			j = j + 4;
+				   g_RSC_ReqRing.RSCReq_Struct[i].RscFrameStatus[j + 1]);
+				j = j + 2;
 		}
 	}
 
