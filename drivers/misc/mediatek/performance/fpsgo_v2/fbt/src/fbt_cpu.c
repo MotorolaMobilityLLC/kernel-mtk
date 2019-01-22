@@ -485,6 +485,12 @@ static void fbt_set_walt_locked(int enable)
 	walt_enable = enable;
 }
 
+static void fbt_filter_ppm_log_locked(int filter)
+{
+	xgf_trace("fpsgo ppm log %d", filter);
+	ppm_game_mode_change_cb(filter);
+}
+
 static void fbt_get_new_base_blc(unsigned int *blc_wt, struct ppm_limit_data *pld)
 {
 	unsigned int *blc_freq;
@@ -1478,6 +1484,7 @@ void fpsgo_comp2fbt_frame_complete(struct render_info *thr, unsigned long long t
 		fbt_free_bhr();
 		if (bypass_flag == 0)
 			fbt_set_idleprefer_locked(0);
+		fbt_filter_ppm_log_locked(0);
 		mutex_unlock(&fbt_mlock);
 	} else {
 		mutex_lock(&fbt_mlock);
@@ -1527,6 +1534,7 @@ void fpsgo_comp2fbt_enq_start(struct render_info *thr, unsigned long long ts)
 
 	mutex_lock(&fbt_mlock);
 	fbt_set_idleprefer_locked(1);
+	fbt_filter_ppm_log_locked(1);
 	mutex_unlock(&fbt_mlock);
 }
 
@@ -1782,6 +1790,7 @@ void fpsgo_base2fbt_no_one_render(void)
 
 	fbt_set_idleprefer_locked(0);
 	fbt_free_bhr();
+	fbt_filter_ppm_log_locked(0);
 
 	mutex_unlock(&fbt_mlock);
 }
@@ -1863,9 +1872,10 @@ int fpsgo_ctrl2fbt_switch_fbt(int enable)
 	fbt_enable = enable;
 	xgf_trace("fbt_enable %d", fbt_enable);
 
-	ppm_game_mode_change_cb(enable);
-	if (!enable)
+	if (!enable) {
+		fbt_filter_ppm_log_locked(enable);
 		fbt_setting_exit();
+	}
 
 	mutex_unlock(&fbt_mlock);
 	return 0;
