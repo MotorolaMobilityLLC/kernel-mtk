@@ -276,13 +276,15 @@ static ssize_t mcsodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *att
 }
 #endif
 
+#endif
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return show_pwr_ctrl(__spm_vcorefs.pwrctrl, buf);
 }
 #endif
-#endif
+
 
 /**************************************
  * xxx_ctrl_store Function
@@ -985,6 +987,8 @@ static ssize_t mcsodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *at
 }
 #endif
 
+#endif
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				     const char *buf, size_t count)
@@ -994,7 +998,7 @@ static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute
 	return 0;
 }
 #endif
-#endif
+
 /**************************************
  * fm_suspend Function
  **************************************/
@@ -1017,9 +1021,9 @@ DEFINE_ATTR_RW(sodi_ctrl);
 #ifdef SUP_MCSODI_FS
 DEFINE_ATTR_RW(mcsodi_ctrl);
 #endif
+#endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 DEFINE_ATTR_RW(vcore_dvfs_ctrl);
-#endif
 #endif
 DEFINE_ATTR_RO(fm_suspend);
 
@@ -1033,9 +1037,9 @@ static struct attribute *spm_attrs[] = {
 #ifdef SUP_MCSODI_FS
 	__ATTR_OF(mcsodi_ctrl),
 #endif
+#endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	__ATTR_OF(vcore_dvfs_ctrl),
-#endif
 #endif
 	__ATTR_OF(fm_suspend),
 
