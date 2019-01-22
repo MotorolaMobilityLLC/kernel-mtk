@@ -1860,7 +1860,9 @@ VOID p2pRoleFsmRunEventAAATxFail(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prS
 
 	bssRemoveClient(prAdapter, prP2pBssInfo, prStaRec);
 
-	p2pFuncDisconnect(prAdapter, prP2pBssInfo, prStaRec, FALSE, REASON_CODE_UNSPECIFIED);
+	p2pFuncDisconnect(prAdapter, prP2pBssInfo, prStaRec, FALSE,
+			  prStaRec->eAuthAssocState == AAA_STATE_SEND_AUTH2 ?
+			  STATUS_CODE_AUTH_TIMEOUT : STATUS_CODE_ASSOC_TIMEOUT);
 
 	/* 20120830 moved into p2puUncDisconnect. */
 	/* cnmStaRecFree(prAdapter, prStaRec); */
