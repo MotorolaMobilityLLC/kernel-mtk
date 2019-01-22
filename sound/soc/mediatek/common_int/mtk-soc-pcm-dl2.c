@@ -729,9 +729,13 @@ retry:
 			ISRCopyBuffer.u4IsrConsumeSize = 0;
 
 		if (unlikely(remainCount)) {
+			if ((++retryCount) > 1) {
+				pr_debug("%s, retryCount %d, remainCount %d, count %d\n", __func__,
+					retryCount, remainCount, (int)count);
+				if (retryCount > 5)
+					goto exit;
+			}
 			count = remainCount;
-			if ((++retryCount) > 1)
-				pr_warn("%s, retryCount %d\n", __func__, retryCount);
 			goto retry;
 		}
 	}
