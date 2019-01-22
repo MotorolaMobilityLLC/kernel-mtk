@@ -1823,7 +1823,7 @@ if (len == 1) {
 					ps[0][i].other.x -= 1;
 					point_decimal[i].other.x = 0;
 				}
-				if (point_decimal[i].other.y >  dc[0] && ps[1][i].other.y < 0xffff) {
+				if (point_decimal[i].other.y >  dc[0] && ps[1][i].other.y < 0xfff) {
 					ps[0][i].other.y += 1;
 					point_decimal[i].other.y = 0;
 				}
