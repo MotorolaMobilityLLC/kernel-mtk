@@ -60,12 +60,12 @@ struct iwcCmdqAddrMetadata_t {
 	 *	A~B or B~D: size
 	 */
 
-	uint32_t type;			/* [IN] addr handle type*/
+	uint32_t type;		/* [IN] addr handle type*/
 	uint64_t baseHandle;	/* [IN]_h, secure address handle */
 	uint32_t blockOffset;	/* [IN]_b, block offset from handle(PA) to current block(plane) */
-	uint32_t offset;		/* [IN]_b, buffser offset to secure handle */
-	uint32_t size;			/* buffer size */
-	uint32_t port;			/* hw port id (i.e. M4U port id)*/
+	uint32_t offset;	/* [IN]_b, buffser offset to secure handle */
+	uint32_t size;		/* buffer size */
+	uint32_t port;		/* hw port id (i.e. M4U port id)*/
 };
 
 struct iwcCmdqDebugConfig_t {
@@ -197,6 +197,8 @@ struct iwcCmdqMessage_t {
 #define CMDQ_ERR_INVALID_SECURITY_THREAD (1505)
 #define CMDQ_ERR_PATH_RESOURCE_NOT_READY (1506)
 #define CMDQ_ERR_NULL_TASK (1507)
+/* msee error */
+#define CMDQ_ERR_OPEN_IOCTL_FAILED (1600)
 /* secure access error */
 #define CMDQ_ERR_MAP_ADDRESS_FAILED (2001)
 #define CMDQ_ERR_UNMAP_ADDRESS_FAILED (2002)

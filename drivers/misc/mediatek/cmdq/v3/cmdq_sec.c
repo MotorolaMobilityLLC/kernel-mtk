@@ -28,8 +28,6 @@ static struct list_head gCmdqSecContextList;	/* secure context list. note each p
 
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 
-/* mobicore driver interface */
-#include "mobicore_driver_api.h"
 /* sectrace interface */
 #ifdef CMDQ_SECTRACE_SUPPORT
 #include <linux/sectrace.h>
@@ -37,12 +35,11 @@ static struct list_head gCmdqSecContextList;	/* secure context list. note each p
 /* secure path header */
 #include "cmdqsectl_api.h"
 
-#define CMDQ_DR_UUID { { 2, 0xb, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
-#define CMDQ_TL_UUID { { 9, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+#include "isee_kernel_api.h"
+#endif
 
 static struct cmdqSecContextStruct *gCmdqSecContextHandle;	/* secure context to cmdqSecTL */
-/* sectrace */
-struct mc_bulk_map gCmdqSectraceMappedInfo;	/* sectrace log buffer, which mapped between NWd and SWd */
 
 /* internal control */
 
@@ -52,25 +49,50 @@ struct mc_bulk_map gCmdqSectraceMappedInfo;	/* sectrace log buffer, which mapped
  */
 #define CMDQ_OPEN_SESSION_ONCE (1)
 
+#define UUID_STR "09010000000000000000000000000000"
+
 /********************************************************************************
  * operator API
  *******************************************************************************/
-int32_t cmdq_sec_open_mobicore_impl(uint32_t deviceId)
+int32_t cmdq_sec_init_context_impl(struct cmdqSecContextStruct *handle)
 {
+#if defined(CMDQ_GP_SUPPORT)
+	int32_t status;
+
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+	while (!is_teei_ready()) {
+		CMDQ_MSG("[SEC] TEE is not ready, wait...\n");
+		msleep(1000);
+	}
+	CMDQ_LOG("[SEC] TEE is ready\n");
+#endif
+
+	status = TEEC_InitializeContext(UUID_STR, &(handle->gp_context));
+
+	if (status != TEEC_SUCCESS) {
+		/* print error message */
+		CMDQ_ERR("[SEC]TEEC_InitializeContext fail: status[0x%x]\n", status);
+	} else {
+		CMDQ_LOG("[SEC]TEEC_InitializeContext: status[0x%x]\n", status);
+	}
+
+	return status;
+#else
 	int32_t status;
 	enum mc_result mcRet = MC_DRV_ERR_UNKNOWN;
 	int retry_cnt = 0, max_retry = 30;
 
 	do {
 		status = 0;
-		mcRet = mc_open_device(deviceId);
+		mcRet = mc_open_device(MC_DEVICE_ID_DEFAULT);
 
 		/* Currently, a process context limits to open mobicore device once, */
 		/* and mc_open_device dose not support reference cout */
 		/* so skip the false alarm error.... */
 		if (mcRet == MC_DRV_ERR_INVALID_OPERATION) {
 			CMDQ_MSG("[SEC]_MOBICORE_OPEN: already opened, continue to execution\n");
-			status = -EEXIST;
+			status = 0;
+			handle->openMobicoreByOther = 1;
 		} else if (mcRet != MC_DRV_OK) {
 			CMDQ_ERR("[SEC]_MOBICORE_OPEN: err[0x%x], retry[%d]\n", mcRet, retry_cnt);
 			status = -1;
@@ -89,21 +111,26 @@ int32_t cmdq_sec_open_mobicore_impl(uint32_t deviceId)
 	}
 
 	return status;
+#endif
 }
 
-int32_t cmdq_sec_close_mobicore_impl(const uint32_t deviceId, const uint32_t openMobicoreByOther)
+int32_t cmdq_sec_deinit_context_impl(struct cmdqSecContextStruct *handle)
 {
+#if defined(CMDQ_GP_SUPPORT)
+	TEEC_FinalizeContext(&(handle->gp_context));
+	return 0;
+#else
 	int32_t status = 0;
 	enum mc_result mcRet = 0;
 
-	if (openMobicoreByOther == 1) {
+	if (handle->openMobicoreByOther == 1) {
 		/* do nothing */
 		/* let last user to close mobicore.... */
 		CMDQ_MSG("[SEC]_MOBICORE_CLOSE: opened by other, bypass device close\n");
 	} else {
-		mcRet = mc_close_device(deviceId);
+		mcRet = mc_close_device(MC_DEVICE_ID_DEFAULT);
 		CMDQ_MSG("[SEC]_MOBICORE_CLOSE: status[%d], ret[%0x], openMobicoreByOther[%d]\n",
-			 status, mcRet, openMobicoreByOther);
+			 status, mcRet, handle->openMobicoreByOther);
 		if (mcRet != MC_DRV_OK) {
 			CMDQ_ERR("[SEC]_MOBICORE_CLOSE: err[0x%x]\n", mcRet);
 			status = -1;
@@ -111,174 +138,307 @@ int32_t cmdq_sec_close_mobicore_impl(const uint32_t deviceId, const uint32_t ope
 	}
 
 	return status;
+#endif
 }
 
-int32_t cmdq_sec_allocate_wsm_impl(uint32_t deviceId, uint8_t **ppWsm, uint32_t wsmSize)
+int32_t cmdq_sec_allocate_wsm_impl(struct cmdqSecContextStruct *handle)
 {
 	int32_t status = 0;
-	enum mc_result mcRet = MC_DRV_OK;
+
+	if (handle->iwcMessage != NULL) {
+		CMDQ_ERR("[SEC]_WSM_ALLOC: err[pWsm is not NULL]");
+		return -1;
+	}
 
 	do {
-		if ((*ppWsm) != NULL) {
+#if defined(CMDQ_GP_SUPPORT)
+		handle->shared_mem.size = sizeof(struct iwcCmdqMessage_t);
+		handle->shared_mem.flags = TEEC_MEM_INPUT;
+		status = TEEC_AllocateSharedMemory(&(handle->gp_context), &(handle->shared_mem));
+		if (status != TEEC_SUCCESS) {
+			CMDQ_ERR("[SEC]TEEC_WSM_ALLOC: err[0x%x]\n", status);
 			status = -1;
-			CMDQ_ERR("[SEC]_WSM_ALLOC: err[pWsm is not NULL]");
-			break;
+		} else {
+			CMDQ_MSG("[SEC]TEEC_WSM_ALLOC: status[0x%x], pWsm: 0x%p\n", status, handle->shared_mem.buffer);
+			handle->iwcMessage = handle->shared_mem.buffer;
 		}
+#else
+		enum mc_result mcRet = MC_DRV_OK;
 
 		/* because world shared mem(WSM) will ba managed by mobicore device, not linux kernel */
 		/* instead of vmalloc/kmalloc, call mc_malloc_wasm to alloc WSM to prvent error such as */
 		/* "can not resolve tci physicall address" etc */
-		mcRet = mc_malloc_wsm(deviceId, 0, wsmSize, ppWsm, 0);
+		mcRet = mc_malloc_wsm(MC_DEVICE_ID_DEFAULT, 0,
+			sizeof(struct iwcCmdqMessage_t), (uint8_t **)&(handle->iwcMessage), 0);
 		if (mcRet != MC_DRV_OK) {
 			CMDQ_ERR("[SEC]_WSM_ALLOC: err[0x%x]\n", mcRet);
 			status = -1;
-			break;
+		} else {
+			CMDQ_MSG("[SEC]_WSM_ALLOC: status[%d], *ppWsm: 0x%p\n", status, handle->iwcMessage);
 		}
+#endif
+	} while (false);
 
-		CMDQ_MSG("[SEC]_WSM_ALLOC: status[%d], *ppWsm: 0x%p\n", status, (*ppWsm));
+	return status;
+}
+
+int32_t cmdq_sec_free_wsm_impl(struct cmdqSecContextStruct *handle)
+{
+#if defined(CMDQ_GP_SUPPORT)
+	TEEC_ReleaseSharedMemory(&(handle->shared_mem));
+	handle->iwcMessage = NULL;
+	return 0;
+#else
+	int32_t status = 0;
+	enum mc_result mcRet = mc_free_wsm(MC_DEVICE_ID_DEFAULT, handle->iwcMessage);
+
+	if (mcRet != MC_DRV_OK) {
+		CMDQ_ERR("_WSM_FREE: err[0x%x]", mcRet);
+		status = -1;
+	} else {
+		handle->iwcMessage = NULL;
+		CMDQ_VERBOSE("_WSM_FREE: ret[0x%x]\n", mcRet);
+	}
+
+	return status;
+#endif
+}
+
+int32_t cmdq_sec_open_session_impl(struct cmdqSecContextStruct *handle)
+{
+	int32_t status = 0;
+
+	if (!handle->iwcMessage) {
+		CMDQ_ERR("[SEC]_SESSION_OPEN: invalid param, pWsm[0x%p]\n", handle->iwcMessage);
+		return -1;
+	}
+
+	do {
+#if defined(CMDQ_GP_SUPPORT)
+		status = TEEC_OpenSession(&handle->gp_context, &handle->sessionHandle,
+			&handle->uuid, TEEC_LOGIN_PUBLIC, NULL, NULL, NULL);
+
+		if (status != TEEC_SUCCESS) {
+			/* print error message */
+			CMDQ_ERR("[SEC]TEEC_SESSION_OPEN fail: status[0x%x]\n", status);
+		} else {
+			CMDQ_MSG("[SEC]TEEC_SESSION_OPEN: status[0x%x]\n", status);
+		}
+#else
+		int retry_cnt = 0, max_retry = 30;
+		enum mc_result mcRet = MC_DRV_OK;
+
+		handle->sessionHandle.device_id = MC_DEVICE_ID_DEFAULT;
+
+		do {
+			mcRet = mc_open_session(&handle->sessionHandle, &handle->uuid,
+				handle->iwcMessage, sizeof(struct iwcCmdqMessage_t));
+			if (mcRet != MC_DRV_OK) {
+				CMDQ_ERR("[SEC]_SESSION_OPEN: err[0x%x], retry[%d]\n", mcRet, retry_cnt);
+				retry_cnt++;
+				msleep_interruptible(2000);
+				status = -1;
+				continue;
+			}
+
+			/* Open Session success */
+			status = 0;
+			break;
+		} while (retry_cnt < max_retry);
+
+		if (retry_cnt >= max_retry) {
+			/* print error message */
+			CMDQ_ERR("[SEC]_SESSION_OPEN fail: status[%d], mcRet[0x%x], retry[%d]\n",
+				status, mcRet, retry_cnt);
+		} else {
+			CMDQ_MSG("[SEC]_SESSION_OPEN: status[%d], mcRet[0x%x], retry[%d]\n",
+				status, mcRet, retry_cnt);
+		}
+#endif
 	} while (0);
 
 	return status;
 }
 
-int32_t cmdq_sec_free_wsm_impl(uint32_t deviceId, uint8_t **ppWsm)
+int32_t cmdq_sec_close_session_impl(struct cmdqSecContextStruct *handle)
 {
+#if defined(CMDQ_GP_SUPPORT)
+	TEEC_CloseSession(&(handle->sessionHandle));
+	return 0;
+#else
 	int32_t status = 0;
-	enum mc_result mcRet = mc_free_wsm(deviceId, (*ppWsm));
-
-	(*ppWsm) = (mcRet == MC_DRV_OK) ? (NULL) : (*ppWsm);
-	CMDQ_VERBOSE("_WSM_FREE: ret[0x%x], *ppWsm[0x%p]\n", mcRet, (*ppWsm));
-
-	if (mcRet != MC_DRV_OK) {
-		CMDQ_ERR("_WSM_FREE: err[0x%x]", mcRet);
-		status = -1;
-	}
-
-	return status;
-}
-
-int32_t cmdq_sec_open_session_impl(uint32_t deviceId,
-				   const struct mc_uuid_t *uuid,
-				   uint8_t *pWsm,
-				   uint32_t wsmSize, struct mc_session_handle *pSessionHandle)
-{
-	int32_t status = 0;
-	int retry_cnt = 0, max_retry = 30;
-	enum mc_result mcRet = MC_DRV_OK;
-
-	if (pWsm == NULL || pSessionHandle == NULL) {
-		status = -1;
-		CMDQ_ERR
-		    ("[SEC]_SESSION_OPEN: invalid param, pWsm[0x%p], pSessionHandle[0x%p]\n",
-		     pWsm, pSessionHandle);
-		return status;
-	}
-
-	memset(pSessionHandle, 0, sizeof(*pSessionHandle));
-	pSessionHandle->device_id = deviceId;
-
-	do {
-		mcRet = mc_open_session(pSessionHandle, uuid, pWsm, wsmSize);
-		if (mcRet != MC_DRV_OK) {
-			CMDQ_ERR("[SEC]_SESSION_OPEN: err[0x%x], retry[%d]\n", mcRet, retry_cnt);
-			retry_cnt++;
-			msleep_interruptible(2000);
-			status = -1;
-			continue;
-		}
-
-		/* Open Session success */
-		status = 0;
-		break;
-	} while (retry_cnt < max_retry);
-
-	if (retry_cnt >= max_retry) {
-		/* print error message */
-		CMDQ_ERR("[SEC]_SESSION_OPEN fail: status[%d], mcRet[0x%x], retry[%d]\n", status, mcRet, retry_cnt);
-	} else {
-		CMDQ_MSG("[SEC]_SESSION_OPEN: status[%d], mcRet[0x%x], retry[%d]\n", status, mcRet, retry_cnt);
-	}
-
-	return status;
-}
-
-int32_t cmdq_sec_close_session_impl(struct mc_session_handle *pSessionHandle)
-{
-	int32_t status = 0;
-	enum mc_result mcRet = mc_close_session(pSessionHandle);
+	enum mc_result mcRet = mc_close_session(&(handle->sessionHandle));
 
 	if (mcRet != MC_DRV_OK) {
 		CMDQ_ERR("_SESSION_CLOSE: err[0x%x]", mcRet);
 		status = -1;
 	}
 	return status;
+#endif
 }
 
-int32_t cmdq_sec_init_session_unlocked(const struct mc_uuid_t *uuid,
-				       uint8_t **ppWsm,
-				       uint32_t wsmSize,
-				       struct mc_session_handle *pSessionHandle,
-				       enum CMDQ_IWC_STATE_ENUM *pIwcState,
-				       uint32_t *openMobicoreByOther)
+int32_t cmdq_sec_init_session_unlocked(struct cmdqSecContextStruct *handle)
 {
 	int32_t openRet = 0;
 	int32_t status = 0;
-	uint32_t deviceId = MC_DEVICE_ID_DEFAULT;
 
-	CMDQ_MSG("[SEC]-->SESSION_INIT: iwcState[%d]\n", (*pIwcState));
+	CMDQ_MSG("[SEC]-->SESSION_INIT: iwcState[%d]\n", (handle->state));
 
 	do {
 #if CMDQ_OPEN_SESSION_ONCE
-		if (IWC_SES_OPENED <= (*pIwcState)) {
+		if (handle->state >= IWC_SES_OPENED) {
 			CMDQ_MSG("SESSION_INIT: already opened\n");
 			break;
 		}
 
-		CMDQ_MSG("[SEC]SESSION_INIT: open new session[%d]\n", (*pIwcState));
+		CMDQ_MSG("[SEC]SESSION_INIT: open new session[%d]\n", handle->state);
 #endif
 		CMDQ_VERBOSE
-		    ("[SEC]SESSION_INIT: wsmSize[%d], pSessionHandle: 0x%p\n",
-		     wsmSize, pSessionHandle);
+		    ("[SEC]SESSION_INIT: sessionHandle: 0x%p\n", &(handle->sessionHandle));
 
 		CMDQ_PROF_START(current->pid, "CMDQ_SEC_INIT");
 
-		if (IWC_MOBICORE_OPENED > (*pIwcState)) {
+		if (handle->state < IWC_CONTEXT_INITED) {
 			/* open mobicore device */
-			openRet = cmdq_sec_open_mobicore_impl(deviceId);
-			if (-EEXIST == openRet) {
-				/* mobicore has been opened in this process context */
-				/* it is a ok case, so continue to execute */
-				status = 0;
-				(*openMobicoreByOther) = 1;
-			} else if (openRet < 0) {
+			openRet = cmdq_sec_init_context_impl(handle);
+			if (openRet < 0) {
 				status = -1;
 				break;
 			}
-			(*pIwcState) = IWC_MOBICORE_OPENED;
+			handle->state = IWC_CONTEXT_INITED;
 		}
 
-		if (IWC_WSM_ALLOCATED > (*pIwcState)) {
+		if (handle->state < IWC_WSM_ALLOCATED) {
 			/* allocate world shared memory */
-			if (cmdq_sec_allocate_wsm_impl(deviceId, ppWsm, wsmSize) < 0) {
+			if (cmdq_sec_allocate_wsm_impl(handle) < 0) {
 				status = -1;
 				break;
 			}
-			(*pIwcState) = IWC_WSM_ALLOCATED;
+			handle->state = IWC_WSM_ALLOCATED;
 		}
 
 		/* open a secure session */
-		if (cmdq_sec_open_session_impl(deviceId, uuid, (*ppWsm), wsmSize, pSessionHandle)
-		    < 0) {
+		if (cmdq_sec_open_session_impl(handle) < 0) {
 			status = -1;
 			break;
 		}
-		(*pIwcState) = IWC_SES_OPENED;
+		handle->state = IWC_SES_OPENED;
 
 		CMDQ_PROF_END(current->pid, "CMDQ_SEC_INIT");
 	} while (0);
 
 	CMDQ_MSG("[SEC]<--SESSION_INIT[%d]\n", status);
 	return status;
+}
+
+void cmdq_sec_deinit_session_unlocked(struct cmdqSecContextStruct *handle)
+{
+	CMDQ_MSG("[SEC]-->SESSION_DEINIT\n");
+	do {
+		switch (handle->state) {
+		case IWC_SES_ON_TRANSACTED:
+		case IWC_SES_TRANSACTED:
+		case IWC_SES_MSG_PACKAGED:
+			/* continue next clean-up */
+		case IWC_SES_OPENED:
+			cmdq_sec_close_session_impl(handle);
+			/* continue next clean-up */
+		case IWC_WSM_ALLOCATED:
+			cmdq_sec_free_wsm_impl(handle);
+			/* continue next clean-up */
+		case IWC_CONTEXT_INITED:
+			cmdq_sec_deinit_context_impl(handle);
+			/* continue next clean-up */
+			break;
+		case IWC_INIT:
+			/* CMDQ_ERR("open secure driver failed\n"); */
+			break;
+		default:
+			break;
+		}
+
+	} while (0);
+
+	CMDQ_MSG("[SEC]<--SESSION_DEINIT\n");
+}
+
+int32_t cmdq_sec_execute_session_unlocked(struct cmdqSecContextStruct *handle,
+									int32_t timeout_ms)
+{
+#if defined(CMDQ_GP_SUPPORT)
+	int32_t status = 0;
+	struct TEEC_Operation operation;
+	u32 cmd = ((struct iwcCmdqMessage_t *)(handle->iwcMessage))->cmd;
+
+	memset(&operation, 0, sizeof(struct TEEC_Operation));
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+	operation.param_types = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT,
+					TEEC_NONE, TEEC_NONE, TEEC_NONE);
+#else
+	operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT,
+				TEEC_NONE, TEEC_NONE, TEEC_NONE);
+#endif
+	operation.params[0].memref.parent = &(handle->shared_mem);
+	operation.params[0].memref.size = sizeof(struct iwcCmdqMessage_t);
+	operation.params[0].memref.offset = 0;
+
+	status = TEEC_InvokeCommand(&(handle->sessionHandle), cmd, &operation, NULL);
+	if (status != TEEC_SUCCESS) {
+		/* print error and keep state */
+		CMDQ_ERR("[SEC]EXEC: TEEC_InvokeCommand %u err:%d\n", cmd, status);
+	} else {
+		CMDQ_MSG("[SEC]EXEC: TEEC_InvokeCommand %u ret:%d\n", cmd, status);
+		/* only update state in success */
+		handle->state = IWC_SES_ON_TRANSACTED;
+	}
+
+	return status;
+#else
+	enum mc_result mcRet;
+	int32_t status = 0;
+	const int32_t secureWoldTimeout_ms = timeout_ms > 0 ?
+		timeout_ms : MC_INFINITE_TIMEOUT;
+
+	CMDQ_PROF_START(current->pid, "CMDQ_SEC_EXE");
+
+	do {
+		/* notify to secure world */
+		mcRet = mc_notify(&(handle->sessionHandle));
+		if (mcRet != MC_DRV_OK) {
+			CMDQ_ERR("[SEC]EXEC: mc_notify err[0x%x]\n", mcRet);
+			status = -1;
+			break;
+		}
+
+		CMDQ_MSG("[SEC]EXEC: mc_notify ret[0x%x]\n", mcRet);
+
+		handle->state = IWC_SES_TRANSACTED;
+
+		/* wait respond */
+		mcRet = mc_wait_notification(&(handle->sessionHandle), secureWoldTimeout_ms);
+		if (mcRet == MC_DRV_ERR_TIMEOUT) {
+			CMDQ_ERR
+			    ("[SEC]EXEC: mc_wait_notification timeout, err[0x%x], secureWoldTimeout_ms[%d]\n",
+			     mcRet, secureWoldTimeout_ms);
+			status = -ETIMEDOUT;
+			break;
+		}
+
+		if (mcRet != MC_DRV_OK) {
+			CMDQ_ERR("[SEC]EXEC: mc_wait_notification err[0x%x]\n", mcRet);
+			status = -1;
+			break;
+		}
+
+		CMDQ_MSG("[SEC]EXEC: mc_wait_notification err[%d]\n", mcRet);
+
+		handle->state = IWC_SES_ON_TRANSACTED;
+	} while (0);
+
+	CMDQ_PROF_END(current->pid, "CMDQ_SEC_EXE");
+
+	return status;
+#endif
 }
 
 int32_t cmdq_sec_fill_iwc_command_basic_unlocked(int32_t iwcCommand, void *_pTask, int32_t thread,
@@ -315,7 +475,6 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 		CMDQ_ERR("[SEC]SESSION_MSG: Unable to fill message by empty task.\n");
 		return -EFAULT;
 	}
-
 	status = 0;
 	pIwc = (struct iwcCmdqMessage_t *) _pIwc;
 
@@ -338,7 +497,6 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 
 	if (thread != CMDQ_INVALID_THREAD) {
 		u8 *current_va = (u8 *)pIwc->command.pVABase;
-
 		/* basic data */
 		pIwc->command.scenario = pTask->scenario;
 		pIwc->command.thread = thread;
@@ -371,8 +529,8 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 		pIwc->command.waitCookie = pTask->secData.waitCookie;
 		pIwc->command.resetExecCnt = pTask->secData.resetExecCnt;
 
-		CMDQ_MSG("[SEC]SESSION_MSG: task: 0x%p, thread: %d, size: %d, scenario: %d, flag: 0x%016llx\n",
-				   pTask, thread, pTask->commandSize, pTask->scenario, pTask->engineFlag);
+		CMDQ_MSG("[SEC]SESSION_MSG: task:0x%p thread:%d size:%d flag:0x%016llx size:%zu\n",
+			pTask, thread, pTask->commandSize, pTask->engineFlag, sizeof(pIwc->command));
 
 		CMDQ_VERBOSE("[SEC]SESSION_MSG: addrList[%d][0x%p]\n",
 			     pTask->secData.addrMetadataCount,
@@ -460,112 +618,53 @@ int32_t cmdq_sec_fill_iwc_cancel_msg_unlocked(int32_t iwcCommand, void *_pTask, 
 	return 0;
 }
 
-int32_t cmdq_sec_execute_session_unlocked(struct mc_session_handle *pSessionHandle,
-					  enum CMDQ_IWC_STATE_ENUM *pIwcState, int32_t timeout_ms)
-{
-	enum mc_result mcRet;
-	int32_t status = 0;
-	const int32_t secureWoldTimeout_ms = (timeout_ms > 0) ?
-	    (timeout_ms) : (MC_INFINITE_TIMEOUT);
-
-	CMDQ_PROF_START(current->pid, "CMDQ_SEC_EXE");
-
-	do {
-		/* notify to secure world */
-		mcRet = mc_notify(pSessionHandle);
-		if (mcRet != MC_DRV_OK) {
-			CMDQ_ERR("[SEC]EXEC: mc_notify err[0x%x]\n", mcRet);
-			status = -1;
-			break;
-		}
-
-		CMDQ_MSG("[SEC]EXEC: mc_notify ret[0x%x]\n", mcRet);
-
-		(*pIwcState) = IWC_SES_TRANSACTED;
-
-
-		/* wait respond */
-		mcRet = mc_wait_notification(pSessionHandle, secureWoldTimeout_ms);
-		if (mcRet == MC_DRV_ERR_TIMEOUT) {
-			CMDQ_ERR
-			    ("[SEC]EXEC: mc_wait_notification timeout, err[0x%x], secureWoldTimeout_ms[%d]\n",
-			     mcRet, secureWoldTimeout_ms);
-			status = -ETIMEDOUT;
-			break;
-		}
-
-		if (mcRet != MC_DRV_OK) {
-			CMDQ_ERR("[SEC]EXEC: mc_wait_notification err[0x%x]\n", mcRet);
-			status = -1;
-			break;
-		}
-
-		CMDQ_MSG("[SEC]EXEC: mc_wait_notification err[%d]\n", mcRet);
-
-		(*pIwcState) = IWC_SES_ON_TRANSACTED;
-	} while (0);
-
-	CMDQ_PROF_END(current->pid, "CMDQ_SEC_EXE");
-
-	return status;
-}
-
-void cmdq_sec_deinit_session_unlocked(uint8_t **ppWsm,
-				      struct mc_session_handle *pSessionHandle,
-				      const enum CMDQ_IWC_STATE_ENUM iwcState,
-				      const uint32_t openMobicoreByOther)
-{
-	uint32_t deviceId = MC_DEVICE_ID_DEFAULT;
-
-	CMDQ_MSG("[SEC]-->SESSION_DEINIT\n");
-	do {
-		switch (iwcState) {
-		case IWC_SES_ON_TRANSACTED:
-		case IWC_SES_TRANSACTED:
-		case IWC_SES_MSG_PACKAGED:
-			/* continue next clean-up */
-		case IWC_SES_OPENED:
-			cmdq_sec_close_session_impl(pSessionHandle);
-			/* continue next clean-up */
-		case IWC_WSM_ALLOCATED:
-			cmdq_sec_free_wsm_impl(deviceId, ppWsm);
-			/* continue next clean-up */
-		case IWC_MOBICORE_OPENED:
-			cmdq_sec_close_mobicore_impl(deviceId, openMobicoreByOther);
-			/* continue next clean-up */
-			break;
-		case IWC_INIT:
-			/* CMDQ_ERR("open secure driver failed\n"); */
-			break;
-		default:
-			break;
-		}
-
-	} while (0);
-
-	CMDQ_MSG("[SEC]<--SESSION_DEINIT\n");
-}
-
 /********************************************************************************
  * context handle
  *******************************************************************************/
 int32_t cmdq_sec_setup_context_session(struct cmdqSecContextStruct *handle)
 {
 	int32_t status = 0;
-	const struct mc_uuid_t uuid = CMDQ_TL_UUID;
 
 	/* init iwc parameter */
-	if (handle->state == IWC_INIT)
-		handle->uuid = uuid;
+	if (handle->state == IWC_INIT) {
+#if defined(CMDQ_GP_SUPPORT)
+		/*09010000 0000 0000 0000000000000000*/
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+		handle->uuid = (struct TEEC_UUID) { 0x09010000, 0x0, 0x0,
+			{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 } };
+#else
+		handle->uuid = (TEEC_UUID) { 0x09010000, 0x0, 0x0,
+			{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 } };
+#endif
+
+#else
+		handle->uuid = (struct mc_uuid_t){ { 9, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
+#endif
+	}
 
 	/* init secure session */
-	status = cmdq_sec_init_session_unlocked(&(handle->uuid),
-						(uint8_t **) (&(handle->iwcMessage)),
-						sizeof(struct iwcCmdqMessage_t),
-						&(handle->sessionHandle),
-						&(handle->state), &(handle->openMobicoreByOther));
-	CMDQ_MSG("SEC_SETUP: status[%d], tgid[%d], mobicoreOpenByOther[%d]\n",
-		 status, handle->tgid, handle->openMobicoreByOther);
+	status = cmdq_sec_init_session_unlocked(handle);
+	CMDQ_MSG("SEC_SETUP: status[%d], tgid[%d]\n", status, handle->tgid);
+	return status;
+}
+
+int32_t cmdq_sec_teardown_context_session(struct cmdqSecContextStruct *handle)
+{
+	int32_t status = 0;
+
+	if (handle) {
+		CMDQ_MSG("[SEC]SEC_TEARDOWN: state: %d, iwcMessage:0x%p\n",
+			 handle->state, handle->iwcMessage);
+
+		cmdq_sec_deinit_session_unlocked(handle);
+
+		/* clrean up handle's attritubes */
+		handle->state = IWC_INIT;
+
+	} else {
+		CMDQ_ERR("[SEC]SEC_TEARDOWN: null secCtxHandle\n");
+		status = -1;
+	}
 	return status;
 }
 
@@ -609,7 +708,7 @@ void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, uint32_t iwcCommand
 		}
 	}
 
-	if (secStatus->status != 0 || sec_status_code != 0) {
+	if (secStatus->status != 0 || sec_status_code < 0) {
 		/* secure status may contains debug information */
 		CMDQ_ERR(
 			"Secure status: %d (%d) step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x dispatch: %s task: 0x%p\n",
@@ -692,7 +791,7 @@ int32_t cmdq_sec_handle_session_reply_unlocked(const struct iwcCmdqMessage_t *pI
 	}
 
 	/* log print */
-	if (status > 0) {
+	if (status < 0) {
 		CMDQ_ERR("SEC_SEND: status[%d], cmdId[%d], iwcRsp[%d]\n",
 			 status, iwcCommand, iwcRsp);
 	} else {
@@ -730,14 +829,12 @@ CmdqSecFillIwcCB cmdq_sec_get_iwc_msg_fill_cb_by_iwc_command(uint32_t iwcCommand
 }
 
 int32_t cmdq_sec_send_context_session_message(struct cmdqSecContextStruct *handle,
-					      uint32_t iwcCommand,
-					      struct TaskStruct *pTask,
-					      int32_t thread, CmdqSecFillIwcCB cb, void *data)
+			uint32_t iwcCommand, struct TaskStruct *pTask, int32_t thread, void *data)
 {
 	int32_t status;
 	const int32_t timeout_ms = (3 * 1000);
-	const CmdqSecFillIwcCB iwcFillCB = (cb == NULL) ?
-	    cmdq_sec_get_iwc_msg_fill_cb_by_iwc_command(iwcCommand) : (cb);
+	const CmdqSecFillIwcCB iwcFillCB =
+		cmdq_sec_get_iwc_msg_fill_cb_by_iwc_command(iwcCommand);
 
 	do {
 		/* fill message bufer */
@@ -750,9 +847,8 @@ int32_t cmdq_sec_send_context_session_message(struct cmdqSecContextStruct *handl
 		}
 
 		/* send message */
-		status = cmdq_sec_execute_session_unlocked(&(handle->sessionHandle),
-							   &(handle->state), timeout_ms);
-		if (status < 0) {
+		status = cmdq_sec_execute_session_unlocked(handle, timeout_ms);
+		if (status != 0) {
 			CMDQ_ERR("[SEC]cmdq_sec_execute_session_unlocked failed[%d], pid[%d:%d]\n",
 				 status, current->tgid, current->pid);
 			break;
@@ -766,32 +862,10 @@ int32_t cmdq_sec_send_context_session_message(struct cmdqSecContextStruct *handl
 	return status;
 }
 
-int32_t cmdq_sec_teardown_context_session(struct cmdqSecContextStruct *handle)
-{
-	int32_t status = 0;
-
-	if (handle) {
-		CMDQ_MSG("[SEC]SEC_TEARDOWN: state: %d, iwcMessage:0x%p\n",
-			 handle->state, handle->iwcMessage);
-
-		cmdq_sec_deinit_session_unlocked((uint8_t **) (&(handle->iwcMessage)),
-						 &(handle->sessionHandle),
-						 handle->state, handle->openMobicoreByOther);
-
-		/* clrean up handle's attritubes */
-		handle->state = IWC_INIT;
-
-	} else {
-		CMDQ_ERR("[SEC]SEC_TEARDOWN: null secCtxHandle\n");
-		status = -1;
-	}
-	return status;
-}
-
 void cmdq_sec_track_task_record(const uint32_t iwcCommand,
 	struct TaskStruct *pTask, CMDQ_TIME *pEntrySec, CMDQ_TIME *pExitSec)
 {
-	if (pTask == NULL)
+	if (!pTask)
 		return;
 
 	if (iwcCommand != CMD_CMDQ_TL_SUBMIT_TASK)
@@ -806,9 +880,7 @@ void cmdq_sec_track_task_record(const uint32_t iwcCommand,
 }
 
 int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
-	struct TaskStruct *pTask, int32_t thread,
-	CmdqSecFillIwcCB iwcFillCB, void *data,
-	bool throwAEE)
+		struct TaskStruct *pTask, int32_t thread, void *data, bool throwAEE)
 {
 	const int32_t tgid = current->tgid;
 	const int32_t pid = current->pid;
@@ -837,7 +909,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 
 		handle = gCmdqSecContextHandle;
 
-		if (handle == NULL) {
+		if (!handle) {
 			CMDQ_ERR("SEC_SUBMIT: tgid %d err[NULL secCtxHandle]\n", tgid);
 			status = -(CMDQ_ERR_NULL_SEC_CTX_HANDLE);
 			break;
@@ -851,8 +923,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		tEntrySec = sched_clock();
 
 		status =
-		    cmdq_sec_send_context_session_message(handle, iwcCommand, pTask, thread,
-							  iwcFillCB, data);
+		    cmdq_sec_send_context_session_message(handle, iwcCommand, pTask, thread, data);
 
 		tExitSec = sched_clock();
 		CMDQ_GET_TIME_IN_US_PART(tEntrySec, tExitSec, duration);
@@ -927,186 +998,6 @@ int32_t cmdq_sec_init_allocate_resource_thread(void *data)
 
 	return status;
 }
-
-/********************************************************************************
- * sectrace
- *******************************************************************************/
-
-int32_t cmdq_sec_fill_iwc_command_sectrace_unlocked(int32_t iwcCommand, void *_pTask,
-						    int32_t thread, void *_pIwc)
-{
-	struct iwcCmdqMessage_t *pIwc;
-
-	pIwc = (struct iwcCmdqMessage_t *) _pIwc;
-
-	/* specify command id only, don't care other other */
-	memset(pIwc, 0x0, sizeof(struct iwcCmdqMessage_t));
-	pIwc->cmd = iwcCommand;
-
-	switch (iwcCommand) {
-	case CMD_CMDQ_TL_SECTRACE_MAP:
-		pIwc->sectracBuffer.addr = (uint32_t) (gCmdqSectraceMappedInfo.secure_virt_addr);
-		pIwc->sectracBuffer.size = (gCmdqSectraceMappedInfo.secure_virt_len);
-		break;
-	case CMD_CMDQ_TL_SECTRACE_UNMAP:
-	case CMD_CMDQ_TL_SECTRACE_TRANSACT:
-	default:
-		pIwc->sectracBuffer.addr = 0;
-		pIwc->sectracBuffer.size = 0;
-		break;
-	}
-
-	/* medatada: debug config */
-	pIwc->debug.logLevel = (cmdq_core_should_print_msg()) ? (1) : (0);
-	pIwc->debug.enableProfile = cmdq_core_profile_enabled();
-
-	CMDQ_LOG("[sectrace]SESSION_MSG: iwcCommand:%d, msg(sectraceBuffer, addr:0x%x, size:%d)\n",
-		 iwcCommand, pIwc->sectracBuffer.addr, pIwc->sectracBuffer.size);
-
-	return 0;
-}
-
-#ifdef CMDQ_SECTRACE_SUPPORT
-static int cmdq_sec_sectrace_map(void *va, size_t size)
-{
-	int status;
-	enum mc_result mcRet;
-
-	CMDQ_LOG("[sectrace]-->map: start, va:%p, size:%d\n", va, (int)size);
-
-	status = 0;
-	cmdq_sec_lock_secure_path();
-	do {
-		/* HACK: submit a dummy message to ensure secure path init done */
-		status =
-		    cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_TEST_HELLO_TL, NULL,
-								   CMDQ_INVALID_THREAD, NULL, NULL,
-								   true);
-
-		/* map log buffer in NWd */
-		mcRet = mc_map(&(gCmdqSecContextHandle->sessionHandle),
-			       va, (uint32_t) size, &gCmdqSectraceMappedInfo);
-		if (mcRet != MC_DRV_OK) {
-			CMDQ_ERR("[sectrace]map: failed in NWd, mc_map err: 0x%x\n", mcRet);
-			status = -EFAULT;
-			break;
-		}
-
-		CMDQ_LOG
-		    ("[sectrace]map: mc_map sectrace buffer done, gCmdqSectraceMappedInfo(va:0x%08x, size:%d)\n",
-		     gCmdqSectraceMappedInfo.secure_virt_addr,
-		     gCmdqSectraceMappedInfo.secure_virt_len);
-
-		/* ask secure CMDQ to map sectrace log buffer */
-		status = cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_SECTRACE_MAP,
-									NULL, CMDQ_INVALID_THREAD,
-									cmdq_sec_fill_iwc_command_sectrace_unlocked,
-									NULL, true);
-		if (status < 0) {
-			CMDQ_ERR("[sectrace]map: failed in SWd: %d\n", status);
-			mc_unmap(&(gCmdqSecContextHandle->sessionHandle), va,
-				 &gCmdqSectraceMappedInfo);
-			status = -EFAULT;
-			break;
-		}
-	} while (0);
-
-	cmdq_sec_unlock_secure_path();
-
-	CMDQ_LOG("[sectrace]<--map: status: %d\n", status);
-
-	return status;
-}
-
-static int cmdq_sec_sectrace_unmap(void *va, size_t size)
-{
-	int status;
-	enum mc_result mcRet;
-
-	status = 0;
-	cmdq_sec_lock_secure_path();
-	do {
-		if (gCmdqSecContextHandle == NULL) {
-			status = -EFAULT;
-			break;
-		}
-
-		/* ask secure CMDQ to unmap sectrace log buffer */
-		status = cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_SECTRACE_UNMAP,
-									NULL, CMDQ_INVALID_THREAD,
-									cmdq_sec_fill_iwc_command_sectrace_unlocked,
-									NULL, true);
-		if (status < 0) {
-			CMDQ_ERR("[sectrace]unmap: failed in SWd: %d\n", status);
-			mc_unmap(&(gCmdqSecContextHandle->sessionHandle), va,
-				 &gCmdqSectraceMappedInfo);
-			status = -EFAULT;
-			break;
-		}
-
-		mcRet =
-		    mc_unmap(&(gCmdqSecContextHandle->sessionHandle), va, &gCmdqSectraceMappedInfo);
-
-	} while (0);
-
-	cmdq_sec_unlock_secure_path();
-
-	CMDQ_LOG("[sectrace]unmap: status: %d\n", status);
-
-	return status;
-}
-
-static int cmdq_sec_sectrace_transact(void)
-{
-	int status;
-
-	CMDQ_LOG("[sectrace]-->transact\n");
-
-	status = cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_SECTRACE_TRANSACT,
-								NULL, CMDQ_INVALID_THREAD,
-								cmdq_sec_fill_iwc_command_sectrace_unlocked,
-								NULL, true);
-
-	CMDQ_LOG("[sectrace]<--transact: status: %d\n", status);
-
-	return status;
-}
-#endif
-
-int32_t cmdq_sec_sectrace_init(void)
-{
-#ifdef CMDQ_SECTRACE_SUPPORT
-	int32_t status;
-	const uint32_t CMDQ_SECTRACE_BUFFER_SIZE_KB = 64;
-	union callback_func sectraceCB;
-
-	/* use callback_tl_function because CMDQ use "TCI" for inter-world communication */
-	sectraceCB.tl.map = cmdq_sec_sectrace_map;
-	sectraceCB.tl.unmap = cmdq_sec_sectrace_unmap;
-	sectraceCB.tl.transact = cmdq_sec_sectrace_transact;
-
-	/* create sectrace entry in debug FS */
-	status = init_sectrace("CMDQ_SEC", if_tci,	/* use TCI for inter world communication */
-			       usage_tl_dr,	/* print sectrace log for tl and driver */
-			       CMDQ_SECTRACE_BUFFER_SIZE_KB, &sectraceCB);
-
-	CMDQ_LOG("cmdq_sec_trace_init, status:%d\n", status);
-	return 0;
-#else
-	return 0;
-#endif
-}
-
-int32_t cmdq_sec_sectrace_deinit(void)
-{
-#ifdef CMDQ_SECTRACE_SUPPORT
-	/* destroy sectrace entry in debug FS */
-	deinit_sectrace("CMDQ_SEC");
-	return 0;
-#else
-	return 0;
-#endif
-}
 #endif				/* CMDQ_SECURE_PATH_SUPPORT */
 
 /********************************************************************************
@@ -1165,7 +1056,7 @@ int32_t cmdq_sec_exec_task_async_unlocked(struct TaskStruct *pTask, int32_t thre
 
 	status =
 		cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_SUBMIT_TASK, pTask, thread,
-		NULL, NULL, true);
+						NULL, true);
 	if (status < 0) {
 		/* Error status print */
 		CMDQ_ERR("%s[%d]\n", __func__, status);
@@ -1194,8 +1085,7 @@ int32_t cmdq_sec_cancel_error_task_unlocked(struct TaskStruct *pTask, int32_t th
 	}
 
 	status = cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_CANCEL_TASK,
-								pTask, thread, NULL,
-								(void *)pResult, true);
+								pTask, thread, (void *)pResult, true);
 	return status;
 #else
 	CMDQ_ERR("secure path not support\n");
@@ -1221,8 +1111,7 @@ int32_t cmdq_sec_allocate_path_resource_unlocked(bool throwAEE)
 
 	status =
 	    cmdq_sec_submit_to_secure_world_async_unlocked(CMD_CMDQ_TL_PATH_RES_ALLOCATE, NULL,
-							   CMDQ_INVALID_THREAD, NULL, NULL,
-							   throwAEE);
+							   CMDQ_INVALID_THREAD, NULL, throwAEE);
 	if (status < 0) {
 		/* Error status print */
 		CMDQ_ERR("%s[%d] reset context\n", __func__, status);
@@ -1246,14 +1135,10 @@ struct cmdqSecContextStruct *cmdq_sec_context_handle_create(uint32_t tgid)
 {
 	struct cmdqSecContextStruct *handle = NULL;
 
-	handle = kmalloc(sizeof(uint8_t *) * sizeof(struct cmdqSecContextStruct), GFP_ATOMIC);
+	handle = kzalloc(sizeof(uint8_t *) * sizeof(struct cmdqSecContextStruct), GFP_ATOMIC);
 	if (handle) {
 		handle->state = IWC_INIT;
-		handle->iwcMessage = NULL;
-
 		handle->tgid = tgid;
-		handle->referCount = 0;
-		handle->openMobicoreByOther = 0;
 	} else {
 		CMDQ_ERR("SecCtxHandle_CREATE: err[LOW_MEM], tgid[%d]\n", tgid);
 	}
@@ -1288,16 +1173,5 @@ void cmdqSecInitialize(void)
 
 void cmdqSecEnableProfile(const bool enable)
 {
-#ifdef CMDQ_SECURE_PATH_SUPPORT
-	CMDQ_LOG("[sectrace]enable profile %d\n", enable);
-
-	mutex_lock(&gCmdqSecProfileLock);
-
-	if (enable)
-		cmdq_sec_sectrace_init();
-	else
-		cmdq_sec_sectrace_deinit();
-
-	mutex_unlock(&gCmdqSecProfileLock);
-#endif
 }
+

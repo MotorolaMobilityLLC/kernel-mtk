@@ -6631,10 +6631,15 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 
 	cookie = cmdq_core_thread_exec_counter(thread);
 
-	CMDQ_AEE("CMDQ", "IRQ: err thread=%d,flag=0x%x,cookie:%d,PC:0x%08x,END:0x%08x\n",
-		thread, value, cookie,
-		CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)),
-		CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)));
+	if (cmdq_get_func()->isSecureThread(thread)) {
+		CMDQ_ERR("IRQ: err thread:%d flag:0x%x cookie:%d secure thread!\n",
+			thread, value, cookie);
+	} else {
+		CMDQ_ERR("IRQ: err thread:%d flag:0x%x cookie:%d PC:0x%08x END:0x%08x\n",
+			thread, value, cookie,
+			CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)),
+			CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)));
+	}
 
 	pThread = &(gCmdqContext.thread[thread]);
 
@@ -6650,10 +6655,12 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 #endif
 	/* suspend HW thread first, so that we work in a consistent state */
 	/* outer function should acquire spinlock - gCmdqExecLock */
-	status = cmdq_core_suspend_HW_thread(thread, __LINE__);
-	if (status < 0) {
-		/* suspend HW thread failed */
-		CMDQ_ERR("IRQ: suspend HW thread failed!");
+	if (!cmdq_get_func()->isSecureThread(thread)) {
+		status = cmdq_core_suspend_HW_thread(thread, __LINE__);
+		if (status < 0) {
+			/* suspend HW thread failed */
+			CMDQ_ERR("IRQ: suspend HW thread failed!");
+		}
 	}
 
 	if (pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)] != NULL) {
