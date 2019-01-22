@@ -1433,7 +1433,7 @@ size_t default_iommu_map_sg(struct iommu_domain *domain, unsigned long iova,
 	for_each_sg(sg, s, nents, i) {
 		phys_addr_t phys;
 
-		if (!IS_ERR(sg_page(s))) {
+		if (!sg_dma_address(s)) {
 			phys = page_to_phys(sg_page(s)) + s->offset;
 		} else {
 			/* this is for which sg do not have page struct */
