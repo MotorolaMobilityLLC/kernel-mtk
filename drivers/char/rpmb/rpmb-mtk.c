@@ -512,7 +512,7 @@ int emmc_rpmb_req_set_key(struct mmc_card *card, u8 *key)
 	struct emmc_rpmb_req rpmb_req;
 	struct s_rpmb *rpmb_frame;
 	int ret;
-	u8 __user user_key;
+	u8 user_key;
 
 	if (get_user(user_key, key))
 		return -EFAULT;
@@ -1253,7 +1253,7 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card, struct rpmb_ioc_param *para
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
 #ifdef RPMB_MULTI_BLOCK_ACCESS
-	u8 __user user_param_data;
+	u8 user_param_data;
 #endif
 
 	MSG(INFO, "%s start!!!\n", __func__);
@@ -1501,7 +1501,7 @@ int rpmb_req_ioctl_read_data(struct mmc_card *card, struct rpmb_ioc_param *param
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
 #ifdef RPMB_MULTI_BLOCK_ACCESS
-	u8 __user user_param_data;
+	u8 user_param_data;
 #endif
 
 	MSG(INFO, "%s start!!!\n", __func__);
@@ -2493,7 +2493,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	u32 rpmb_size = 0;
 	struct rpmb_infor rpmbinfor;
 	unsigned int *arg_p = (unsigned int *)arg;
-	unsigned int __user user_arg;
+	unsigned int user_arg;
 
 	memset(&rpmbinfor, 0, sizeof(struct rpmb_infor));
 #endif
