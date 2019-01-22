@@ -2127,7 +2127,7 @@ void pmic_throttling_dlpt_debug_init(struct platform_device *dev, struct dentry 
 #endif
 }
 
-int pmic_throttling_dlpt_init(void)
+int __init pmic_throttling_dlpt_init(void)
 {
 #ifdef DLPT_FEATURE_SUPPORT
 	const int *pimix = NULL;
