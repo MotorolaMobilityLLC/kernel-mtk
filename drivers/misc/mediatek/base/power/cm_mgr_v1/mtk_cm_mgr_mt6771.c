@@ -48,6 +48,9 @@
 #include <linux/of_address.h>
 #include <mtk_cm_mgr.h>
 
+#define CREATE_TRACE_POINTS
+#include "mtk_cm_mgr_mt6771_events.h"
+
 #include <linux/fb.h>
 #include <linux/notifier.h>
 
@@ -490,6 +493,30 @@ static int cm_mgr_is_lp_flavor(void)
 }
 #endif
 
+struct timer_list cm_mgr_ratio_timer;
+#define CM_MGR_RATIO_TIMER_MS	1
+
+static void cm_mgr_ratio_timer_fn(unsigned long data)
+{
+	trace_CM_MGR__stall_raio_0((unsigned int)cm_mgr_read(MP0_CPU_AVG_STALL_RATIO));
+	trace_CM_MGR__stall_raio_1((unsigned int)cm_mgr_read(CPU_AVG_STALL_RATIO));
+
+	cm_mgr_ratio_timer.expires = jiffies +
+		msecs_to_jiffies(CM_MGR_RATIO_TIMER_MS);
+	add_timer(&cm_mgr_ratio_timer);
+}
+
+void cm_mgr_ratio_timer_en(int enable)
+{
+	if (enable) {
+		cm_mgr_ratio_timer.expires = jiffies +
+			msecs_to_jiffies(CM_MGR_RATIO_TIMER_MS);
+		add_timer(&cm_mgr_ratio_timer);
+	} else {
+		del_timer(&cm_mgr_ratio_timer);
+	}
+}
+
 int cm_mgr_register_init(void)
 {
 	struct device_node *node;
@@ -559,6 +586,10 @@ int cm_mgr_platform_init(void)
 	if (cm_mgr_is_lp_flavor())
 		cm_mgr_enable = 1;
 #endif
+
+	init_timer_deferrable(&cm_mgr_ratio_timer);
+	cm_mgr_ratio_timer.function = cm_mgr_ratio_timer_fn;
+	cm_mgr_ratio_timer.data = 0;
 
 	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
 
