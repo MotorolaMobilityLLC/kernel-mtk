@@ -68,19 +68,16 @@
 /*
  * LOG
  */
-#define hps_emerg(fmt, args...)             pr_emerg("[HPS] " fmt, ##args)
-#define hps_alert(fmt, args...)             pr_alert("[HPS] " fmt, ##args)
-#define hps_crit(fmt, args...)              pr_crit("[HPS] " fmt, ##args)
-#define hps_error(fmt, args...)             pr_err("[HPS] " fmt, ##args)
-#define hps_warn(fmt, args...)              pr_warn("[HPS] " fmt, ##args)
-#define hps_notice(fmt, args...)            pr_notice("[HPS] " fmt, ##args)
-#define hps_info(fmt, args...)              pr_info("[HPS] " fmt, ##args)
-#define hps_debug(fmt, args...)             pr_debug("[HPS] " fmt, ##args)
+#define TAG	"[HPS] "
+#define tag_pr_err(fmt, args...)	pr_err(TAG fmt, ##args)
+#define tag_pr_notice(fmt, args...)	pr_notice(TAG fmt, ##args)
+#define tag_pr_info(fmt, args...)	pr_info(TAG fmt, ##args)
+#define tag_pr_debug(fmt, args...)	pr_debug(TAG fmt, ##args)
 
 #if EN_ISR_LOG
-#define hps_isr_info(fmt, args...)          hps_notice(fmt, ##args)
+#define hps_isr_info(fmt, args...)          tag_pr_info(fmt, ##args)
 #else
-#define hps_isr_info(fmt, args...)          hps_debug(fmt, ##args)
+#define hps_isr_info(fmt, args...)          tag_pr_debug(fmt, ##args)
 #endif
 
 /*
@@ -100,7 +97,7 @@
  */
 /*
  * #define STEP_BY_STEP_DEBUG
- *	hps_debug("@@@### file:%s, func:%s, line:%d ###@@@\n", __FILE__, __func__, __LINE__)
+ *	tag_pr_debug("@@@### file:%s, func:%s, line:%d ###@@@\n", __FILE__, __func__, __LINE__)
  */
 
 enum hps_init_state_e {

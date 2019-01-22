@@ -41,7 +41,7 @@ static ktime_t ktime;
 static int _hps_timer_callback(unsigned long data)
 {
 	int ret;
-	/*hps_warn("_hps_timer_callback\n"); */
+	/*tag_pr_info("_hps_timer_callback\n"); */
 	if (hps_ctxt.tsk_struct_ptr) {
 		ret = wake_up_process(hps_ctxt.tsk_struct_ptr);
 		if (!ret)
@@ -283,7 +283,7 @@ HPS_WAIT_EVENT:
 
 	}			/* while(1) */
 
-	hps_warn("leave _hps_task_main, cnt:%08d\n", cnt++);
+	tag_pr_info("leave _hps_task_main, cnt:%08d\n", cnt++);
 	return 0;
 }
 
@@ -303,11 +303,11 @@ int hps_task_start(void)
 		set_user_nice(hps_ctxt.tsk_struct_ptr, HPS_TASK_NORMAL_PRIORITY);
 		get_task_struct(hps_ctxt.tsk_struct_ptr);
 		wake_up_process(hps_ctxt.tsk_struct_ptr);
-		hps_warn("hps_task_start success, ptr: %p, pid: %d\n", hps_ctxt.tsk_struct_ptr,
-			 hps_ctxt.tsk_struct_ptr->pid);
+		tag_pr_info("hps_task_start success, ptr: %p, pid: %d\n", hps_ctxt.tsk_struct_ptr,
+			    hps_ctxt.tsk_struct_ptr->pid);
 	} else {
-		hps_warn("hps task already exist, ptr: %p, pid: %d\n", hps_ctxt.tsk_struct_ptr,
-			 hps_ctxt.tsk_struct_ptr->pid);
+		tag_pr_info("hps task already exist, ptr: %p, pid: %d\n", hps_ctxt.tsk_struct_ptr,
+			    hps_ctxt.tsk_struct_ptr->pid);
 	}
 	return 0;
 }
@@ -360,7 +360,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 
 	for (i = 0; i < p->cluster_num; i++) {
 		/*
-		 * hps_warn("ppm_limit_callback -> cluster%d: has_advise_core = %d, [%d, %d]\n",
+		 * tag_pr_info("ppm_limit_callback -> cluster%d: has_advise_core = %d, [%d, %d]\n",
 		 *	i, p->cpu_limit[i].has_advise_core,
 		 *	p->cpu_limit[i].min_cpu_core, p->cpu_limit[i].max_cpu_core);
 		 */
@@ -388,7 +388,7 @@ int hps_core_init(void)
 {
 	int r = 0;
 
-	hps_warn("hps_core_init\n");
+	tag_pr_info("hps_core_init\n");
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_TIMER) {
 		/*init timer */
 		init_timer(&hps_ctxt.tmr_list);
@@ -408,7 +408,7 @@ int hps_core_init(void)
 	/* init and start task */
 	r = hps_task_start();
 	if (r) {
-		hps_error("hps_task_start fail(%d)\n", r);
+		tag_pr_notice("hps_task_start fail(%d)\n", r);
 		return r;
 	}
 
@@ -424,7 +424,7 @@ int hps_core_deinit(void)
 {
 	int r = 0;
 
-	hps_warn("hps_core_deinit\n");
+	tag_pr_info("hps_core_deinit\n");
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_TIMER) {
 		/*deinit timer */
 		del_timer_sync(&hps_ctxt.tmr_list);
@@ -432,7 +432,7 @@ int hps_core_deinit(void)
 		/*deinit timer */
 		r = hrtimer_cancel(&hps_ctxt.hr_timer);
 		if (r)
-			hps_error("hps hr timer delete error!\n");
+			tag_pr_notice("hps hr timer delete error!\n");
 	}
 
 	hps_task_stop();
