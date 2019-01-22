@@ -781,14 +781,14 @@ static ssize_t ioctl_gaming(unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 #ifndef CONFIG_MTK_FPSGO
 	/*receive game info*/
-	case IOCTL_WRITE_GM:
+	case FPSGO_GAME:
 		fbc_op->game(arg);
 		break;
 #endif
 
 #ifdef CONFIG_MTK_FPSGO_FSTB
 	/*receive frame_time info*/
-	case IOCTL_WRITE_FC:
+	case FPSGO_FRAME_COMPLETE:
 		fstb_hwui_fc_ts[fstb_hwui_fc_idx] = fbc_get_time();
 		if (fstb_hwui_fc_ts[fstb_hwui_fc_idx] -
 				fstb_hwui_fc_ts[(fstb_hwui_fc_idx + 1) % FC_TOLERANCE_NUM] <
@@ -814,7 +814,7 @@ long fbc_ioctl(unsigned int cmd, unsigned long arg)
 
 	mutex_lock(&notify_lock);
 	if (fbc_debug) {
-		if (cmd == IOCTL_WRITE_FC)
+		if (cmd == FPSGO_FRAME_COMPLETE)
 			fbc_tracer(-3, "frame_time", arg);
 		goto ret_ioctl;
 	}
@@ -829,44 +829,44 @@ long fbc_ioctl(unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 #ifndef CONFIG_MTK_FPSGO
 	/*receive game info*/
-	case IOCTL_WRITE_GM:
+	case FPSGO_GAME:
 		fbc_op->game(arg);
 		break;
 #endif
 
 	/*receive act switch info*/
-	case IOCTL_WRITE_AS:
+	case FPSGO_ACT_SWITCH:
 		fbc_op->act_switch(arg);
 		break;
 
 	/*receive touch info*/
-	case IOCTL_WRITE_TH:
+	case FPSGO_TOUCH:
 		ret = notify_touch(arg);
 		break;
 
 	/*receive frame_time info*/
-	case IOCTL_WRITE_FC:
+	case FPSGO_FRAME_COMPLETE:
 		if (!is_ux_fbc_active())
 			goto ret_ioctl;
 		ret = fbc_op->frame_cmplt((long)arg);
 		break;
 
 	/*receive Intended-Vsync signal*/
-	case IOCTL_WRITE_IV:
+	case FPSGO_INTENDED_VSYNC:
 		if (!is_ux_fbc_active())
 			goto ret_ioctl;
 		fbc_op->intended_vsync();
 		break;
 
 	/*receive no-render signal*/
-	case IOCTL_WRITE_NR:
+	case FPSGO_NO_RENDER:
 		if (!is_ux_fbc_active())
 			goto ret_ioctl;
 	    fbc_op->no_render();
 		break;
 
 	/*receive queue_time signal*/
-	case IOCTL_WRITE_SB:
+	case FPSGO_SWAP_BUFFER:
 		if (!is_ux_fbc_active())
 			goto ret_ioctl;
 		swap_buffers_begin = 1;
