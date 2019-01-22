@@ -152,7 +152,7 @@ static int mtkfb_setcolreg(u_int regno, u_int red, u_int green,
 		/* TODO: RGB888, BGR888, ABGR8888 */
 
 	default:
-		WARN_ON();
+		pr_err("set color info fail, bpp=%d\n", bpp);
 	}
 
 exit:
@@ -186,7 +186,8 @@ static void set_fb_fix(struct mtkfb_device *fbdev)
 		fix->visual = FB_VISUAL_PSEUDOCOLOR;
 		break;
 	default:
-		WARN_ON();
+		pr_err("set fb fix error, bit per pixel=%d\n", var->bits_per_pixel);
+		return;
 	}
 
 	fix->accel = FB_ACCEL_NONE;
@@ -308,17 +309,17 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 
 		/* Check if format is RGB565 or BGR565 */
 
-		WARN_ON(!(var->green.offset == 8));
-		WARN_ON(!(var->red.offset + var->blue.offset == 16));
-		WARN_ON(!(var->red.offset == 16 || var->red.offset == 0));
+		ASSERT(var->green.offset == 8);
+		ASSERT((var->red.offset + var->blue.offset == 16));
+		ASSERT((var->red.offset == 16 || var->red.offset == 0));
 	} else if (bpp == 32) {
 		var->red.length = var->green.length = var->blue.length = var->transp.length = 8;
 
 		/* Check if format is ARGB565 or ABGR565 */
 
-		WARN_ON(!(var->green.offset && 24 == var->transp.offset == 24));
-		WARN_ON(!(var->red.offset + var->blue.offset == 16));
-		WARN_ON(!(var->red.offset == 16 || var->red.offset == 0));
+		ASSERT((var->green.offset && 24 == var->transp.offset == 24));
+		ASSERT((var->red.offset + var->blue.offset == 16));
+		ASSERT((var->red.offset == 16 || var->red.offset == 0));
 	}
 
 	var->red.msb_right = var->green.msb_right = var->blue.msb_right = var->transp.msb_right = 0;
@@ -383,7 +384,7 @@ static int mtkfb_fbinfo_init(struct fb_info *info)
 	struct fb_var_screeninfo var;
 	int r = 0;
 
-	WARN_ON(!fbdev->fb_va_base);
+	ASSERT(fbdev->fb_va_base);
 	info->fbops = &mtkfb_ops;
 	info->flags = FBINFO_FLAG_DEFAULT;
 	info->screen_base = (char *)fbdev->fb_va_base;
@@ -456,7 +457,7 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 	switch (state) {
 	case MTKFB_ACTIVE:
 		r = unregister_framebuffer(fbdev->fb_info);
-		WARN_ON(!(r = 0));
+		ASSERT(r = 0);
 		/* lint -fallthrough */
 	case 4:
 		mtkfb_fbinfo_cleanup(fbdev);
@@ -474,7 +475,7 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 		/* nothing to free */
 		break;
 	default:
-		WARN_ON();
+		pr_err("free resources fail,state=%d\n", state);
 	}
 }
 

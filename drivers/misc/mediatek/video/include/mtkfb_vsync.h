@@ -19,13 +19,13 @@
 
 #define MTKFB_VSYNC_IOCTL_MAGIC      'V'
 
-typedef enum {
+enum vsync_src {
 	MTKFB_VSYNC_SOURCE_LCM = 0,
 	MTKFB_VSYNC_SOURCE_HDMI = 1,
 	MTKFB_VSYNC_SOURCE_EPD = 2,
-} vsync_src;
+};
 
-#define MTKFB_VSYNC_IOCTL     _IOW(MTKFB_VSYNC_IOCTL_MAGIC, 1, vsync_src)
+#define MTKFB_VSYNC_IOCTL     _IOW(MTKFB_VSYNC_IOCTL_MAGIC, 1, enum vsync_src)
 
 #if defined(CONFIG_ARCH_MT6735)
 	|| defined(CONFIG_ARCH_MT6735M)

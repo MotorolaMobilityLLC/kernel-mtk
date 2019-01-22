@@ -66,7 +66,7 @@
 #define MTKFB_CHANGE_UPDATESPEED               MTK_IOW(19, unsigned long)
 #define MTKFB_GET_INTERFACE_TYPE               MTK_IOR(20, unsigned long)	/* /0 DBI, 1 DPI, 2 MIPI */
 #define MTKFB_GET_POWERSTATE		           MTK_IOR(21, unsigned long)	/* /0: power off  1: power on */
-#define MTKFB_GET_DISPLAY_IF_INFORMATION       MTK_IOR(22, mtk_dispif_info_t)
+#define MTKFB_GET_DISPLAY_IF_INFORMATION       MTK_IOR(22, struct mtk_dispif_info)
 /*called before SET_OVERLAY each time, if true, hwc will not use FB_LAYER again*/
 #define MTKFB_AEE_LAYER_EXIST                  MTK_IOR(23, unsigned long)
 #define MTKFB_GET_OVERLAY_LAYER_INFO           MTK_IOR(24, struct fb_overlay_layer_info)
@@ -121,44 +121,44 @@
 
 /* -------------------------------------------------------------------------- */
 
-typedef enum {
+enum MTK_FB_ORIENTATION {
 	MTK_FB_ORIENTATION_0 = 0,
 	MTK_FB_ORIENTATION_90 = 1,
 	MTK_FB_ORIENTATION_180 = 2,
 	MTK_FB_ORIENTATION_270 = 3,
-} MTK_FB_ORIENTATION;
+};
 
 
-typedef enum {
+enum MTK_FB_TV_SYSTEM {
 	MTK_FB_TV_SYSTEM_NTSC = 0,
 	MTK_FB_TV_SYSTEM_PAL = 1,
-} MTK_FB_TV_SYSTEM;
+};
 
 
-typedef enum {
+enum MTK_FB_TV_SRC_FORMAT {
 	MTK_FB_TV_FMT_RGB565 = 0,
 	MTK_FB_TV_FMT_YUV420_SEQ = 1,
 	MTK_FB_TV_FMT_UYUV422 = 2,
 	MTK_FB_TV_FMT_YUV420_BLK = 3,
-} MTK_FB_TV_SRC_FORMAT;
+};
 
-typedef enum {
+enum MTK_FB_OVL_LAYER_SECURE_MODE {
 	LAYER_NORMAL_BUFFER = 0,
 	LAYER_SECURE_BUFFER = 1,
 	LAYER_PROTECTED_BUFFER = 2,
 	LAYER_SECURE_BUFFER_WITH_ALIGN = 0x10001,	/* the higher 16 bits =1 for adding 64 bytes alignment */
-} MTK_FB_OVL_LAYER_SECURE_MODE;
+};
 
-typedef struct _disp_dfo_item {
+struct disp_dfo_item {
 	char name[32];
 	int value;
-} disp_dfo_item_t;
+};
 
 /* -------------------------------------------------------------------------- */
 struct fb_slt_catpure {
-	MTK_FB_FORMAT format;
+	enum MTK_FB_FORMAT format;
 
-	volatile char *outputBuffer;
+	char *outputBuffer;
 	unsigned int wdma_width;
 	unsigned int wdma_height;
 };
@@ -177,7 +177,7 @@ struct fb_update_window {
 	unsigned int width, height;
 };
 
-typedef enum {
+enum MTK_FB_LAYER_TYPE {
 	LAYER_2D = 0,
 	LAYER_3D_SBS_0 = 0x1,
 	LAYER_3D_SBS_90 = 0x2,
@@ -187,17 +187,18 @@ typedef enum {
 	LAYER_3D_TAB_90 = 0x20,
 	LAYER_3D_TAB_180 = 0x30,
 	LAYER_3D_TAB_270 = 0x40,
-} MTK_FB_LAYER_TYPE;
-
-typedef enum {
-	DISP_DIRECT_LINK_MODE,
-	DISP_DECOUPLE_MODE
-} MTK_DISP_MODE;
-struct fb_overlay_mode {
-	MTK_DISP_MODE mode;
 };
 
-typedef enum {			/* map sessions to scenairos in kernel driver */
+enum MTK_DISP_MODE {
+	DISP_DIRECT_LINK_MODE,
+	DISP_DECOUPLE_MODE
+};
+
+struct fb_overlay_mode {
+	enum MTK_DISP_MODE mode;
+};
+
+enum MTK_DISP_SESSION {			/* map sessions to scenairos in kernel driver */
 	DISP_SESSION_LCM = 1 << 0,	/* DSI0 */
 	DISP_SESSION_MEM = 1 << 1,	/* OVL0->WDMA0 */
 /* Extension mode, Dst buf is provided by user,for Wifi Display or other purpose */
@@ -207,14 +208,14 @@ typedef enum {			/* map sessions to scenairos in kernel driver */
 	DISP_SESSION_MEM1 = 1 << 5,	/* OVL1->WDMA1 */
 	/* TODO:can be extended with other Session Id */
 	SESSION_MASK = 0xff & ~(1 << 6)
-} MTK_DISP_SESSION;
+};
 
 struct fb_overlay_session {
 	unsigned int session;	/* one or more @MTK_DISP_SESSION combined */
 };
 
 struct fb_overlay_decouple {
-	MTK_DISP_MODE mode;
+	enum MTK_DISP_MODE mode;
 	unsigned int session;
 };
 struct fb_overlay_buffer {
@@ -235,7 +236,7 @@ struct fb_overlay_layer {
 	void *src_base_addr;
 	void *src_phy_addr;
 	unsigned int src_direct_link;
-	MTK_FB_FORMAT src_fmt;
+	enum MTK_FB_FORMAT src_fmt;
 	unsigned int src_use_color_key;
 	unsigned int src_color_key;
 	unsigned int src_pitch;
@@ -244,9 +245,9 @@ struct fb_overlay_layer {
 
 	unsigned int tgt_offset_x, tgt_offset_y;
 	unsigned int tgt_width, tgt_height;
-	MTK_FB_ORIENTATION layer_rotation;
-	MTK_FB_LAYER_TYPE layer_type;
-	MTK_FB_ORIENTATION video_rotation;
+	enum MTK_FB_ORIENTATION layer_rotation;
+	enum MTK_FB_LAYER_TYPE layer_type;
+	enum MTK_FB_ORIENTATION video_rotation;
 
 	unsigned int isTdshp;	/* set to 1, will go through tdshp first, then layer blending, then to color */
 
@@ -286,14 +287,14 @@ struct fb_overlay_layer_info {
 	int curr_conn_type;
 	int next_conn_type;
 	int hw_conn_type;
-	MTK_FB_ORIENTATION layer_rotation;
+	enum MTK_FB_ORIENTATION layer_rotation;
 };
 /* -------------------------------------------------------------------------- */
 
 struct fb_post_video_buffer {
 	void *phy_addr;
 	void *vir_addr;
-	MTK_FB_TV_SRC_FORMAT format;
+	enum MTK_FB_TV_SRC_FORMAT format;
 	unsigned int width, height;
 };
 
@@ -327,20 +328,20 @@ enum mtkfb_state {
 	MTKFB_ACTIVE = 100
 };
 
-typedef enum {
+enum MTKFB_LAYER_CONFIG_DIRTY {
 	MTKFB_LAYER_ENABLE_DIRTY = (1 << 0),
 	MTKFB_LAYER_FORMAT_DIRTY = (1 << 1),
 	MTKFB_LAYER_SET_DIRTY = (1 << 2),
-} MTKFB_LAYER_CONFIG_DIRTY;
+};
 
-typedef struct {
+struct update_ovls_work {
 	struct work_struct work;
 	struct list_head list;
 	struct fb_overlay_config config;
 	struct sync_fence *fences[4];
 	struct ion_handle *ion_handles[4];
 	void *dev;
-} update_ovls_work_t;
+};
 
 struct mtkfb_device {
 	int state;
@@ -352,7 +353,7 @@ struct mtkfb_device {
 	unsigned long ovl_size_in_byte;
 
 	unsigned long layer_enable;
-	MTK_FB_FORMAT *layer_format;
+	enum MTK_FB_FORMAT *layer_format;
 	unsigned int layer_config_dirty;
 
 	int xscale, yscale, mirror;	/* transformations.*/
