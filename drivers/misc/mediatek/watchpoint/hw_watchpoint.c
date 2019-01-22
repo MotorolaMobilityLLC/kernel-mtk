@@ -26,6 +26,7 @@
 #include <linux/delay.h>
 #include <mt-plat/sync_write.h>
 #include <asm/system_misc.h>
+#include <linux/notifier.h>
 
 struct wp_trace_context_t wp_tracer;
 
@@ -443,6 +444,9 @@ int wp_probe(struct platform_device *pdev)
 	pr_debug("[MTK_WP] wp_nr : %d , bp_nr : %d\n", wp_tracer.wp_nr, wp_tracer.bp_nr);
 	pr_debug("[MTK WP] Probe:Reset watchpoints");
 	reset_watchpoint();
+
+	register_cpu_notifier(&cpu_nfb);
+
 out:
 	return ret;
 }

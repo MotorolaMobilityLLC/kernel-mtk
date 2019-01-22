@@ -119,7 +119,6 @@ void print_dbgregs(int cpuid)
 }
 EXPORT_SYMBOL(print_dbgregs);
 #endif
-#if 1
 unsigned long *mt_save_dbg_regs(unsigned long *p, unsigned int cpuid)
 {
 
@@ -452,20 +451,8 @@ static int dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long ac
 	return NOTIFY_OK;
 }
 
-static struct notifier_block cpu_nfb = {
+struct notifier_block cpu_nfb = {
 	.notifier_call = dbgregs_hotplug_callback
 };
 
-static int __init regs_backup(void)
-{
-	struct device_node *node;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,hw_dbg");
-	if (node)
-		register_cpu_notifier(&cpu_nfb);
-	return 0;
-}
-
-subsys_initcall(regs_backup);
-#endif
 #endif
