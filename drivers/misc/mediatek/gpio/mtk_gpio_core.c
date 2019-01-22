@@ -640,11 +640,11 @@ static int mt_gpio_probe(struct platform_device *dev)
 
 	err = misc_register(misc);
 	if (err)
-		GPIOERR("register gpio\n");
+		GPIOERR("register gpio failed\n");
 
 	err = mt_gpio_create_attr(misc->this_device);
 	if (err)
-		GPIOERR("create attribute\n");
+		GPIOERR("create gpio attribute failed\n");
 
 	dev_set_drvdata(misc->this_device, mt_gpio);
 
@@ -659,10 +659,10 @@ static int mt_gpio_remove(struct platform_device *dev)
 
 	err = mt_gpio_delete_attr(obj->misc->this_device);
 	if (err)
-		GPIOERR("delete attr\n");
+		GPIOERR("gpio delete attr failed\n");
 
 	misc_deregister(obj->misc);
-	GPIOERR("deregister gpio\n");
+	GPIOMSG("deregister gpio\n");
 
 	return err;
 }
