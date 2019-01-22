@@ -21,6 +21,8 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/io.h>
+#include <linux/suspend.h>
+#include <linux/mfd/mt6397/rtc_misc.h>
 
 #define BSI_BASE          (xo_inst->base)
 #define BSI_CON	          0x0000
@@ -46,6 +48,7 @@ struct xo_dev {
 	struct clk *bsi_clk;
 	struct clk *rg_bsi_clk;
 	uint32_t cur_xo_capid;
+	bool has_ext_crystal;
 };
 
 static struct xo_dev *xo_inst;
@@ -220,9 +223,25 @@ static void get_xo_status(void)
 	pr_notice("[xo] status: 0x%x\n", status);
 }
 
+static void bsi_clock_enable(bool en)
+{
+	if (en) {
+		clk_prepare_enable(xo_inst->bsi_clk);
+		clk_prepare_enable(xo_inst->rg_bsi_clk);
+	} else {
+		clk_disable_unprepare(xo_inst->rg_bsi_clk);
+		clk_disable_unprepare(xo_inst->bsi_clk);
+	}
+}
+
 static ssize_t show_xo_capid(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "xo capid: 0x%x\n", XO_trim_read());
+	uint32_t capid;
+
+	bsi_clock_enable(true);
+	capid = XO_trim_read();
+	bsi_clock_enable(false);
+	return sprintf(buf, "xo capid: 0x%x\n", capid);
 }
 
 static ssize_t store_xo_capid(struct device *dev, struct device_attribute *attr,
@@ -242,11 +261,15 @@ static ssize_t store_xo_capid(struct device *dev, struct device_attribute *attr,
 			return size;
 		}
 
+		bsi_clock_enable(true);
+
 		pr_notice("original cap code: 0x%x\n", XO_trim_read());
 		XO_trim_write(capid);
 		mdelay(10);
 		xo_inst->cur_xo_capid = XO_trim_read();
 		pr_notice("write cap code 0x%x done. current cap code:0x%x\n", capid, xo_inst->cur_xo_capid);
+
+		bsi_clock_enable(false);
 	}
 
 	return size;
@@ -276,6 +299,8 @@ static ssize_t store_xo_board_offset(struct device *dev, struct device_attribute
 			return size;
 		}
 
+		bsi_clock_enable(true);
+
 		capid = XO_trim_read();
 		pr_notice("original cap code: 0x%x\n", capid);
 
@@ -289,6 +314,8 @@ static ssize_t store_xo_board_offset(struct device *dev, struct device_attribute
 		mdelay(10);
 		xo_inst->cur_xo_capid = XO_trim_read();
 		pr_notice("write cap code 0x%x done. current cap code:0x%x\n", capid, xo_inst->cur_xo_capid);
+
+		bsi_clock_enable(false);
 	}
 
 	return size;
@@ -314,6 +341,8 @@ static ssize_t store_xo_cmd(struct device *dev, struct device_attribute *attr,
 			return size;
 		}
 
+		bsi_clock_enable(true);
+
 		switch (cmd) {
 		case 1:
 			get_xo_status();
@@ -327,6 +356,8 @@ static ssize_t store_xo_cmd(struct device *dev, struct device_attribute *attr,
 		default:
 			pr_notice("cmd not support!\n");
 		}
+
+		bsi_clock_enable(false);
 	}
 
 	return size;
@@ -340,6 +371,13 @@ uint32_t mt_xo_get_current_capid(void)
 	return xo_inst->cur_xo_capid;
 }
 EXPORT_SYMBOL(mt_xo_get_current_capid);
+
+/* for SPM driver to get crystal status at suspend */
+bool mt_xo_has_ext_crystal(void)
+{
+	return xo_inst->has_ext_crystal;
+}
+EXPORT_SYMBOL(mt_xo_has_ext_crystal);
 
 static int mt_xo_dts_probe(struct platform_device *pdev)
 {
@@ -382,30 +420,38 @@ static int mt_xo_dts_probe(struct platform_device *pdev)
 		return PTR_ERR(xo_inst->rg_bsi_clk);
 	}
 
-	retval = clk_prepare_enable(xo_inst->bsi_clk);
-	if (retval) {
-		dev_err(&pdev->dev, "fail to enable bsi clock: %d\n", retval);
-		return retval;
-	}
-
-	retval = clk_prepare_enable(xo_inst->rg_bsi_clk);
-	if (retval) {
-		dev_err(&pdev->dev, "fail to enable rgbsi clock: %d\n", retval);
-		return retval;
-	}
+	bsi_clock_enable(true);
 
 	xo_inst->cur_xo_capid = XO_trim_read();
 	pr_notice("[xo] current cap code: 0x%x\n", xo_inst->cur_xo_capid);
+
+	bsi_clock_enable(false);
 
 	return retval;
 }
 
 static int mt_xo_dts_remove(struct platform_device *pdev)
 {
-	clk_disable_unprepare(xo_inst->rg_bsi_clk);
-	clk_disable_unprepare(xo_inst->bsi_clk);
+	bsi_clock_enable(false);
 	return 0;
 }
+
+static int xo_pm_suspend(struct device *device)
+{
+	xo_inst->has_ext_crystal = !mtk_misc_crystal_exist_status();
+
+	return 0;
+}
+
+static int xo_pm_resume(struct device *device)
+{
+	return 0;
+}
+
+struct dev_pm_ops const xo_pm_ops = {
+	.suspend = xo_pm_suspend,
+	.resume = xo_pm_resume,
+};
 
 static struct platform_driver mt_xo_driver = {
 	.remove		= mt_xo_dts_remove,
@@ -413,6 +459,7 @@ static struct platform_driver mt_xo_driver = {
 	.driver		= {
 		.name	= "mt_dts_xo",
 		.of_match_table = apxo_of_ids,
+		.pm = &xo_pm_ops,
 	},
 };
 
