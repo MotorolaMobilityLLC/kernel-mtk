@@ -483,7 +483,9 @@ void iccs_cluster_on_off(int cluster, int state)
 
 			mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
 
+#ifdef CONFIG_MACH_MT6799
 			mtk_etc_init();
+#endif
 			break;
 		}
 		iccs_set_cache_shared_state(cluster, 1);
