@@ -453,6 +453,51 @@ reg_done:
 	usb_enable_clock(phy_drv, false);
 }
 
+#define VAL_MAX_WIDTH_2	0x3
+#define VAL_MAX_WIDTH_3	0x7
+void usb_phy_tuning(struct mtk_phy_instance *instance)
+{
+	s32 u2_vrt_ref, u2_term_ref, u2_enhance;
+	struct device_node *of_node;
+
+	if (!instance->phy_tuning.inited) {
+		instance->phy_tuning.u2_vrt_ref = -1;
+		instance->phy_tuning.u2_term_ref = -1;
+		instance->phy_tuning.u2_enhance = -1;
+		of_node = of_find_compatible_node(NULL, NULL, instance->phycfg->tuning_node_name);
+		if (of_node) {
+			/* value won't be updated if property not being found */
+			of_property_read_u32(of_node, "u2_vrt_ref", (u32 *) &instance->phy_tuning.u2_vrt_ref);
+			of_property_read_u32(of_node, "u2_term_ref", (u32 *) &instance->phy_tuning.u2_term_ref);
+			of_property_read_u32(of_node, "u2_enhance", (u32 *) &instance->phy_tuning.u2_enhance);
+		}
+		instance->phy_tuning.inited = true;
+	}
+	u2_vrt_ref = instance->phy_tuning.u2_vrt_ref;
+	u2_term_ref = instance->phy_tuning.u2_term_ref;
+	u2_enhance = instance->phy_tuning.u2_enhance;
+
+	if (u2_vrt_ref != -1) {
+		if (u2_vrt_ref <= VAL_MAX_WIDTH_3) {
+			u3phywrite32(U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
+				RG_USB20_VRT_VREF_SEL, u2_vrt_ref);
+		}
+	}
+	if (u2_term_ref != -1) {
+		if (u2_term_ref <= VAL_MAX_WIDTH_3) {
+			u3phywrite32(U3D_USBPHYACR1, RG_USB20_TERM_VREF_SEL_OFST,
+				RG_USB20_TERM_VREF_SEL, u2_term_ref);
+		}
+	}
+	if (u2_enhance != -1) {
+		if (u2_enhance <= VAL_MAX_WIDTH_2) {
+			u3phywrite32(U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+				RG_USB20_PHY_REV_6, u2_enhance);
+		}
+	}
+}
+
+
 static void phy_recover(struct mtk_phy_instance *instance)
 {
 	struct mtk_phy_drv *phy_drv = instance->phy_drv;
@@ -494,7 +539,7 @@ static void phy_recover(struct mtk_phy_instance *instance)
 	u3phywrite32(U3D_U2PHYDTM1, RG_SESSEND_OFST, RG_SESSEND, 0);
 
 	phy_slew_rate_calibration(instance);
-
+	usb_phy_tuning(instance);
 }
 
 
@@ -732,6 +777,7 @@ int mtk_phy_drv_exit(struct platform_device *pdev, struct mtk_phy_drv *mtkphy)
 static const struct mtk_phy_interface ssusb_phys[] = {
 {
 	.name		= "port0",
+	.tuning_node_name = "mediatek,phy_tuning",
 	.port_num	= 0,
 	.reg_offset = 0x800,
 	.usb_phy_init = phy_init_soc,
