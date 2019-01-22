@@ -4749,6 +4749,10 @@ static ssize_t wpe_reg_write(struct file *file, const char __user *buffer, size_
 	char valSzBuf[24];
 	char *pszTmp;
 	int addr = 0, val = 0;
+	long int tempval;
+
+	if (WPEInfo.UserCount <= 0)
+		return 0;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -4760,7 +4764,7 @@ static ssize_t wpe_reg_write(struct file *file, const char __user *buffer, size_
 		pszTmp = strstr(addrSzBuf, "0x");
 		if (pszTmp == NULL) {
 			/*if (sscanf(addrSzBuf, "%d", &addr) != 1) */
-			if (kstrtoint(addrSzBuf, 0, &addr) != 0)
+			if (kstrtol(addrSzBuf, 10, (long int *)&tempval) != 0)
 				LOG_ERR("scan decimal addr is wrong !!:%s", addrSzBuf);
 		} else {
 			if (strlen(addrSzBuf) > 2) {
@@ -4774,7 +4778,7 @@ static ssize_t wpe_reg_write(struct file *file, const char __user *buffer, size_
 		pszTmp = strstr(valSzBuf, "0x");
 		if (pszTmp == NULL) {
 			/*if (sscanf(valSzBuf, "%d", &val) != 1) */
-			if (kstrtoint(valSzBuf, 0, &val) != 0)
+			if (kstrtol(valSzBuf, 10, (long int *)&tempval) != 0)
 				LOG_ERR("scan decimal value is wrong !!:%s", valSzBuf);
 		} else {
 			if (strlen(valSzBuf) > 2) {
@@ -4798,8 +4802,10 @@ static ssize_t wpe_reg_write(struct file *file, const char __user *buffer, size_
 		pszTmp = strstr(addrSzBuf, "0x");
 		if (pszTmp == NULL) {
 			/*if (1 != sscanf(addrSzBuf, "%d", &addr)) */
-			if (kstrtoint(addrSzBuf, 0, &addr) != 0)
+			if (kstrtol(addrSzBuf, 10, (long int *)&tempval) != 0)
 				LOG_ERR("scan decimal addr is wrong !!:%s", addrSzBuf);
+			else
+				addr = tempval;
 		} else {
 			if (strlen(addrSzBuf) > 2) {
 				if (sscanf(addrSzBuf + 2, "%x", &addr) != 1)
