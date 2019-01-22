@@ -75,5 +75,8 @@ unsigned int cam_cal_check_mtk_cid(struct i2c_client *client, cam_cal_cmd_func r
 unsigned int cam_cal_check_double_eeprom(struct i2c_client *client,
 	cam_cal_cmd_func readCamCalData);
 
+/*defined on kd_sensorlist.c*/
+void CAMERA_HW_Get_i2C_BusNum(unsigned int *I2C_Bus_Num);
+
 #endif /* __CAM_CAL_LIST_H */
 
