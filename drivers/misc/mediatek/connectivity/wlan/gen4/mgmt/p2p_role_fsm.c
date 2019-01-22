@@ -979,7 +979,7 @@ VOID p2pRoleFsmRunEventDelIface(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 		prGlueInfo = prAdapter->prGlueInfo;
 		if (prGlueInfo == NULL)
-			return;
+			break;
 
 		prP2pDelIfaceMsg = (P_MSG_P2P_DEL_IFACE_T) prMsgHdr;
 		ucRoleIdx = prP2pDelIfaceMsg->ucRoleIdx;

@@ -118,6 +118,7 @@
  */
 #define STA_REC_EXCLUDE_NONE        CFG_STA_REC_NUM
 
+#define MEM_TRACE_NUM			64
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -675,6 +676,11 @@ typedef struct _SW_RFB_T {
 } SW_RFB_T, *P_SW_RFB_T;
 #endif
 
+typedef struct _CMD_MEM_TRACE_T {
+	ULONG u4FuncAddr;
+	ULONG u4MemAddr;
+} CMD_MEM_TRACE_T, *P_CMD_MEM_TRACE_T;
+
 typedef enum _ENUM_STA_REC_CMD_ACTION_T {
 	STA_REC_CMD_ACTION_STA = 0,
 	STA_REC_CMD_ACTION_BSS = 1,
@@ -784,6 +790,8 @@ typedef struct _CMD_PEER_UPDATE_T {
 ********************************************************************************
 */
 
+extern CMD_MEM_TRACE_T arMemTrace[MEM_TRACE_NUM];
+
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -805,6 +813,9 @@ typedef struct _CMD_PEER_UPDATE_T {
 #define cnmMgtPktFree cnmPktFree
 #endif
 
+#define cnmMemAlloc(_prAdapter, _eRamType, _u4Length) \
+	cnmMemAllocEnh((_prAdapter), (_eRamType), (_u4Length), (PUINT_8)__func__)
+
 /*******************************************************************************
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -820,7 +831,9 @@ VOID cnmPktFree(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo);
 
 VOID cnmMemInit(IN P_ADAPTER_T prAdapter);
 
-PVOID cnmMemAlloc(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT_32 u4Length);
+PVOID cnmMemAllocEnh(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT_32 u4Length, IN PUINT_8 pucFunc);
+
+VOID cnmResetMemTrace(VOID);
 
 VOID cnmMemFree(IN P_ADAPTER_T prAdapter, IN PVOID pvMemory);
 

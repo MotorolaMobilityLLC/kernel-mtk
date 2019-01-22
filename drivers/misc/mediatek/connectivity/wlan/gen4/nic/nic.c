@@ -255,6 +255,7 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 {
 	P_TX_CTRL_T prTxCtrl;
 	P_RX_CTRL_T prRxCtrl;
+	UINT_32 i;
 
 	ASSERT(prAdapter);
 	prTxCtrl = &prAdapter->rTxCtrl;
@@ -313,7 +314,14 @@ VOID nicReleaseAdapterMemory(IN P_ADAPTER_T prAdapter)
 
 		if (!wlanIsChipNoAck(prAdapter)) {
 			/* Skip this ASSERT if chip is no ACK */
-			ASSERT(prAdapter->u4MemFreeDynamicCount == prAdapter->u4MemAllocDynamicCount);
+			if (prAdapter->u4MemFreeDynamicCount == prAdapter->u4MemAllocDynamicCount)
+				break;
+			for (i = 0; i < MEM_TRACE_NUM; i++) {
+				if (arMemTrace[i].u4MemAddr != 0)
+					DBGLOG(MEM, ERROR, "Unequal memory, MemAddr:0x%x FuncAddr:0x%x\n",
+						arMemTrace[i].u4MemAddr, arMemTrace[i].u4FuncAddr);
+			}
+			ASSERT(FALSE);
 		}
 	} while (FALSE);
 #endif
