@@ -253,6 +253,15 @@ enum tcpm_error_list {
 	TCPM_ERROR_NO_EXPLICIT_CONTRACT = -13,
 };
 
+#define TCPM_PDO_MAX_SIZE	7
+
+struct tcpm_remote_power_cap {
+	uint8_t selected_cap_idx;
+	uint8_t nr;
+	int max_mv[TCPM_PDO_MAX_SIZE];
+	int min_mv[TCPM_PDO_MAX_SIZE];
+	int ma[TCPM_PDO_MAX_SIZE];
+};
 /* Inquire TCPM status */
 
 enum tcpc_cc_voltage_status {
@@ -852,5 +861,6 @@ extern bool tcpm_inquire_during_direct_charge(struct tcpc_device *tcpc);
 extern bool tcpm_get_boot_check_flag(struct tcpc_device *tcpc);
 extern void tcpm_set_boot_check_flag(struct tcpc_device *tcpc, unsigned char en);
 extern bool tcpm_get_ta_hw_exist(struct tcpc_device *tcpc);
-
+extern int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
+					struct tcpm_remote_power_cap *cap);
 #endif /* TCPM_H_ */
