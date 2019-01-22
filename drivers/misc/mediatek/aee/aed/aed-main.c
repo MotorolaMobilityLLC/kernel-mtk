@@ -1441,12 +1441,6 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				}
 
 				user_ret = task_pt_regs(task);
-				if (user_ret == NULL) {
-					kfree(tmp);
-					read_unlock(&tasklist_lock);
-					ret = -EINVAL;
-					goto EXIT;
-				}
 				memcpy(&(tmp->regs), user_ret, sizeof(struct pt_regs));
 				if (copy_to_user
 				    ((struct aee_thread_reg __user *)arg, tmp,
