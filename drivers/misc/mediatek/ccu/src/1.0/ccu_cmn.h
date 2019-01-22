@@ -223,6 +223,16 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd);
  */
 int ccu_flush_commands_from_queue(ccu_user_t *user);
 
+/**
+ * ccu_clock_enable - Set CCU clock on
+ */
+int ccu_clock_enable(void);
+
+/**
+ * ccu_clock_disable - Set CCU clock off
+ */
+void ccu_clock_disable(void);
+
 
 /* LOG & AEE */
 #define CCU_TAG "[ccu]"
