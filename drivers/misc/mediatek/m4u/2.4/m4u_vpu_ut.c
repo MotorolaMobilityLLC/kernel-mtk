@@ -48,8 +48,8 @@ void test_case_check_mva_region(void)
 	unsigned int size, size_aligned;
 	unsigned int nr;
 	unsigned int startIdx;
-	m4u_buf_info_t tmp;
-	m4u_buf_info_t *pMvaInfo = &tmp;
+	struct m4u_buf_info_t tmp;
+	struct m4u_buf_info_t *pMvaInfo = &tmp;
 
 	pMvaInfo->port = M4U_PORT_VPU;/*M4U_PORT_DISP_OVL0, M4U_PORT_VPU*/
 
@@ -148,8 +148,8 @@ static void verify_m4u_do_mva_alloc_fake(unsigned int port_id)
 	unsigned int size, size_aligned;
 	unsigned int nr;
 	unsigned int startIdx;
-	m4u_buf_info_t tmp;
-	m4u_buf_info_t *pMvaInfo = &tmp;
+	struct m4u_buf_info_t tmp;
+	struct m4u_buf_info_t *pMvaInfo = &tmp;
 	unsigned int ret = 0;
 
 	pMvaInfo->port = port_id;/*M4U_PORT_DISP_OVL0, M4U_PORT_VPU*/
@@ -206,7 +206,7 @@ static void verify_m4u_do_mva_alloc_fix(unsigned int test_region_start,
 					unsigned int test_region_end,
 					unsigned int port_id,
 					mva_alloc_from_fix_region callback,
-					m4u_buf_info_t *pinfo_array[])
+					struct m4u_buf_info_t *pinfo_array[])
 {
 	unsigned int va_offset = 0xff, actual_mva_start;
 	int i = 0;
@@ -216,7 +216,7 @@ static void verify_m4u_do_mva_alloc_fix(unsigned int test_region_start,
 	unsigned int ret = 0;
 
 	for (i = test_region_start; i <= test_region_end; i++) {
-		pinfo_array[i] = vmalloc(sizeof(m4u_buf_info_t));
+		pinfo_array[i] = vmalloc(sizeof(struct m4u_buf_info_t));
 		pinfo_array[i]->port = port_id;/*M4U_PORT_DISP_OVL0, M4U_PORT_VPU*/
 
 		/*because formal parameter of m4u_do_mva_alloc_fix [mva] == fix mva region start,
@@ -263,7 +263,7 @@ unsigned int gtest_mva_end_normal[OUT_INDEX_END - OUT_INDEX_START + 1] = {0};
 static void verify_m4u_do_mva_alloc(unsigned int test_region_start,
 					unsigned int test_region_end,
 					unsigned int port_id,
-					m4u_buf_info_t *pinfo_array[])
+					struct m4u_buf_info_t *pinfo_array[])
 {
 	unsigned int va_offset = 0xff, actual_mva_start;
 	unsigned int size;
@@ -271,7 +271,7 @@ static void verify_m4u_do_mva_alloc(unsigned int test_region_start,
 	unsigned int ret = 0;
 
 	for (i = test_region_start; i <= test_region_end; i++) {
-		pinfo_array[i] = vmalloc(sizeof(m4u_buf_info_t));
+		pinfo_array[i] = vmalloc(sizeof(struct m4u_buf_info_t));
 		pinfo_array[i]->port = port_id;/*M4U_PORT_DISP_OVL0, M4U_PORT_VPU*/
 
 		size = gtest_mva_end[i] - gtest_mva_start[i] + 1;
@@ -294,7 +294,7 @@ static void verify_m4u_do_mva_alloc(unsigned int test_region_start,
 /*verify_m4u_do_mva_free only free non-vpu region. it doesn't need integrity-checking.*/
 static void verify_m4u_do_mva_free(unsigned int test_region_start,
 						unsigned int test_region_end,
-						m4u_buf_info_t *pinfo_array[])
+						struct m4u_buf_info_t *pinfo_array[])
 {
 	unsigned int size;
 	unsigned int i;
@@ -318,7 +318,7 @@ static void verify_m4u_do_mva_free(unsigned int test_region_start,
 /*free vpu region. need to check integrity*/
 static void verify_m4u_do_mva_free_fix(unsigned int test_region_start,
 							unsigned int test_region_end,
-							m4u_buf_info_t *pinfo_array[])
+							struct m4u_buf_info_t *pinfo_array[])
 {
 	unsigned int va_offset = 0xff, actual_mva_start;
 	unsigned int size, size_aligned, nr, startIdx;
@@ -358,10 +358,13 @@ static void verify_m4u_do_mva_free_fix(unsigned int test_region_start,
 /*allocate 5-9 success. free 5-9 success & check integrity pass*/
 void test_case_m4u_do_mva_alloc_fix(void)
 {
-	m4u_buf_info_t **p_info_array0 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
-	m4u_buf_info_t **p_info_array1 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
-	m4u_buf_info_t **p_info_array2 = vmalloc(sizeof(m4u_buf_info_t **) * (OUT_INDEX_END - OUT_INDEX_START + 1));
-	m4u_buf_info_t **p_info_array3 = vmalloc(sizeof(m4u_buf_info_t **) *
+	struct m4u_buf_info_t **p_info_array0 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array1 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array2 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (OUT_INDEX_END - OUT_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array3 = vmalloc(sizeof(struct m4u_buf_info_t **) *
 						(INTERSECT_INDEX_END - INTERSECT_INDEX_START + 1));
 
 	m4u_mvaGraph_dump();
@@ -398,10 +401,13 @@ void test_case_m4u_do_mva_alloc_fix(void)
 
 void test_case_m4u_do_mva_alloc_start_from(void)
 {
-	m4u_buf_info_t **p_info_array0 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
-	m4u_buf_info_t **p_info_array1 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
-	m4u_buf_info_t **p_info_array2 = vmalloc(sizeof(m4u_buf_info_t **) * (OUT_INDEX_END - OUT_INDEX_START + 1));
-	m4u_buf_info_t **p_info_array3 = vmalloc(sizeof(m4u_buf_info_t **) *
+	struct m4u_buf_info_t **p_info_array0 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array1 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array2 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (OUT_INDEX_END - OUT_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array3 = vmalloc(sizeof(struct m4u_buf_info_t **) *
 							(INTERSECT_INDEX_END - INTERSECT_INDEX_START + 1));
 
 	M4UMSG("test_case_m4u_do_mva_alloc_fix========================>\n");
@@ -441,10 +447,14 @@ void test_case_m4u_do_mva_alloc_start_from(void)
 void test_case_m4u_do_mva_free(void)
 {
 
-	m4u_buf_info_t **p_info_array0 = vmalloc(sizeof(m4u_buf_info_t **) * (OUT_INDEX_START - OUT_INDEX_START + 1));
-	m4u_buf_info_t **p_info_array1 = vmalloc(sizeof(m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
-	m4u_buf_info_t **p_info_array2 = vmalloc(sizeof(m4u_buf_info_t **) * (OUT_INDEX_END - OUT_INDEX_START + 1));
-	m4u_buf_info_t **p_info_array3 = vmalloc(sizeof(m4u_buf_info_t **) * (SUB_INDEX_END - SUB_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array0 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (OUT_INDEX_START - OUT_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array1 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (IN_INDEX_END - IN_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array2 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (OUT_INDEX_END - OUT_INDEX_START + 1));
+	struct m4u_buf_info_t **p_info_array3 =
+		vmalloc(sizeof(struct m4u_buf_info_t **) * (SUB_INDEX_END - SUB_INDEX_START + 1));
 
 	M4UMSG("test_case_m4u_do_mva_free========================>\n");
 	m4u_mvaGraph_dump();
@@ -479,8 +489,8 @@ void test_dummy(void)
 	int i = 0;
 	unsigned int size;
 	unsigned int nr;
-	m4u_buf_info_t tmp;
-	m4u_buf_info_t *pMvaInfo = &tmp;
+	struct m4u_buf_info_t tmp;
+	struct m4u_buf_info_t *pMvaInfo = &tmp;
 	unsigned int ret = 0;
 	unsigned int startIdx;
 
@@ -502,11 +512,11 @@ void test_dummy(void)
 void test_m4u_do_mva_alloc_stage3(void)
 {
 	int last_free_index_in_stage1, size0, size1, size2, nr;
-	m4u_buf_info_t *pinfo;
+	struct m4u_buf_info_t *pinfo;
 	unsigned int result_mva0, result_mva1, result_mva2;
 
 	M4UMSG("start to test_m4u_do_mva_alloc_stage3\n");
-	pinfo = vmalloc(sizeof(m4u_buf_info_t));
+	pinfo = vmalloc(sizeof(struct m4u_buf_info_t));
 	pinfo->port = 0;
 	last_free_index_in_stage1 = get_last_free_graph_idx_in_stage1_region();
 	M4UMSG("cur_first_index = 0x%x\n", last_free_index_in_stage1);
