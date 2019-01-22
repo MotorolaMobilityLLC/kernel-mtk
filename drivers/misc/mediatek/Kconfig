@@ -124,7 +124,7 @@ config MTK_PASR
 
 
 #source "drivers/misc/mediatek/base/power/Kconfig"
-#source "drivers/misc/mediatek/freqhopping/Kconfig"
+source "drivers/misc/mediatek/freqhopping/Kconfig"
 #source "drivers/misc/mediatek/pmic/Kconfig"
 source "drivers/misc/mediatek/pmic_wrap/Kconfig"
 source "drivers/misc/mediatek/power/Kconfig"
