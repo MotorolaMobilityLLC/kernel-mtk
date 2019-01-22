@@ -1221,15 +1221,16 @@ static int crypt_is_hw_fde(const char *path)
 	if (major == SCSI_DISK0_MAJOR ||
 		major == BLOCK_EXT_MAJOR)
 		return 1;
-	#if defined(CONFIG_MTK_FDE_AES)
+	#if defined(CONFIG_MTK_HW_FDE_AES)
 	/* SD card */
 	if (major == MMC_BLOCK_MAJOR && minor == 0)
 		return 1;
 	#endif
 #elif defined(CONFIG_MTK_EMMC_SUPPORT) /* eMMC booting */
-	#if defined(CONFIG_MTK_FDE_AES)
+	#if defined(CONFIG_MTK_HW_FDE_AES)
 	/* both eMMC and SD card use HW FDE */
-	if (major == MMC_BLOCK_MAJOR)
+	if (major == SCSI_DISK0_MAJOR ||
+		major == BLOCK_EXT_MAJOR)
 		return 1;
 	#else
 	/* eMMC device use HW FDE only. SD card cannot use HW FDE */
