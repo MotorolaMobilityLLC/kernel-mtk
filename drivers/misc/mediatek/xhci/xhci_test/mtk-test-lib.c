@@ -454,6 +454,7 @@ static int ring_doorbell_thread(void *data)
 	unsigned int randomSleep = 1000;
 	u32 field;
 	__u32 __iomem *db_addr;
+	unsigned long flags;
 
 	xhci = rrdb_data->xhci;
 	slot_id = rrdb_data->slot_id;
@@ -472,9 +473,11 @@ static int ring_doorbell_thread(void *data)
 /* , slot_id, ep_index); */
 		if (!(ep->ep_state & EP_HALT_PENDING) && !(ep->ep_state & SET_DEQ_PENDING)
 		    && !(ep->ep_state & EP_HALTED)) {
+			spin_lock_irqsave(&xhci->lock, flags);
 			field = xhci_readl(xhci, db_addr) & DB_MASK;
 			field |= EPI_TO_DB(ep_index);
 			writel(field, db_addr);
+			spin_unlock_irqrestore(&xhci->lock, flags);
 /* xhci_writel(xhci, field, db_addr); */
 		}
 		vdev = xhci->devs[slot_id];
@@ -482,10 +485,10 @@ static int ring_doorbell_thread(void *data)
 		if (vdev)
 			ep = &(vdev->eps[ep_index]);
 /* xhci_err(xhci, "ep: 0x%x\n", ep); */
-	} while (vdev && ep
+	} while ((vdev && ep
 		 && (!(ep->ep_state & EP_HALT_PENDING) && !(ep->ep_state & SET_DEQ_PENDING)
-		     && !(ep->ep_state & EP_HALTED)));
-	xhci_err(xhci, "ring_doorbell thread stopped, slot id: %d, ep index: %d, state: 0x%x\n",
+		     && !(ep->ep_state & EP_HALTED))) && g_stress_start);
+	xhci_dbg(xhci, "ring_doorbell thread stopped, slot id: %d, ep index: %d, state: 0x%x\n",
 		 slot_id, ep_index, ep->ep_state);
 	return 0;
 }
@@ -521,6 +524,7 @@ static int stop_endpoint_thread(void *data)
 	unsigned int randomSleep;
 	u32 field;
 	__u32 __iomem *db_addr;
+	unsigned long flags;
 
 	randomSleep = 1000;
 	xhci = stpep_data->xhci;
@@ -539,16 +543,20 @@ static int stop_endpoint_thread(void *data)
 				msleep(20);
 
 			g_stopping_ep = true;
+			spin_lock_irqsave(&xhci->lock, flags);
 			mtktest_xhci_queue_stop_endpoint(xhci, slot_id, ep_index);
 			mtktest_xhci_ring_cmd_db(xhci);
-			g_stopping_ep = false;
+			spin_unlock_irqrestore(&xhci->lock, flags);
 			msleep(100);
+			g_stopping_ep = false;
+			spin_lock_irqsave(&xhci->lock, flags);
 			field = xhci_readl(xhci, db_addr) & DB_MASK;
 			field |= EPI_TO_DB(ep_index);
 			writel(field, db_addr);
+			spin_unlock_irqrestore(&xhci->lock, flags);
 		}
-	} while (vdev && ep && (!(ep->ep_state & EP_HALT_PENDING) && !(ep->ep_state & SET_DEQ_PENDING)
-			&& !(ep->ep_state & EP_HALTED)));
+	} while ((vdev && ep && (!(ep->ep_state & EP_HALT_PENDING) && !(ep->ep_state & SET_DEQ_PENDING)
+			&& !(ep->ep_state & EP_HALTED))) && g_stress_start);
 	xhci_err(xhci, "stop endpoint thread stopped, slot id: %d, ep index: %d, state: 0x%x\n"
 		, slot_id, ep_index, ep->ep_state);
 	return 0;
@@ -5667,7 +5675,7 @@ static int stress_rdn_len_tx_thread(void *data)
 	do {
 		urb_tx = str_data->urb_tx_list[tx_index];
 		tx_status = urb_tx->status;
-		while (tx_status != URB_STATUS_IDLE) {
+		while ((tx_status != URB_STATUS_IDLE) && g_stress_start) {
 			if (tx_status != 0 && tx_status != -EINPROGRESS
 				&& tx_status != URB_STATUS_IDLE && tx_status != URB_STATUS_RX){
 				xhci_err(xhci, "[STRESS][ERROR] dev %d, ep %d, urb_tx %d not in valid status - %d\n"
@@ -5678,6 +5686,10 @@ static int stress_rdn_len_tx_thread(void *data)
 			}
 			msleep(20);
 			tx_status = urb_tx->status;
+		}
+		if (!g_stress_start) {
+			xhci_dbg(xhci, "stress_rdn_len_tx_thread exit");
+			break;
 		}
 		xhci_dbg(xhci, "[STRESS] queue tx urb %d, dev %d, ep %d\n"
 			, tx_index, str_data->dev_num, str_data->ep_num);
@@ -5734,7 +5746,7 @@ static int stress_rdn_len_tx_thread(void *data)
 			tx_index = 0;
 
 	} while (is_running && g_correct);
-
+	msleep(15000);
 	xhci_err(xhci, "[ERROR] exit tx urb handler thread, dev_num %d, ep_num %d\n"
 		, str_data->dev_num, str_data->ep_num);
 	kfree(str_data);
@@ -5765,7 +5777,7 @@ static int stress_rdn_len_tx_done_thread(void *data)
 	do {
 		urb_tx = str_data->urb_tx_list[tx_index];
 		tx_status = urb_tx->status;
-		while (tx_status != 0) {
+		while ((tx_status != 0) && g_stress_start) {
 			if (tx_status != 0 && tx_status != -EINPROGRESS
 				&& tx_status != URB_STATUS_IDLE && tx_status != URB_STATUS_RX){
 				xhci_err(xhci, "[STRESS][ERROR] dev %d, ep %d, urb_tx %d not in valid status - %d\n"
@@ -5777,6 +5789,12 @@ static int stress_rdn_len_tx_done_thread(void *data)
 			msleep(20);
 			tx_status = urb_tx->status;
 		}
+		if (!g_stress_start) {
+			msleep(15000);
+			xhci_dbg(xhci, "stress_rdn_len_tx_done_thread exit");
+			break;
+		}
+
 		ep_rx = urb_tx->ep;
 		if (usb_endpoint_xfer_isoc(&ep_rx->desc))
 			msleep(1500);
@@ -5825,9 +5843,10 @@ static int stress_rdn_len_tx_done_thread(void *data)
 			tx_index = 0;
 
 	} while (is_running && g_correct);
-	xhci_err(xhci, "[STRESS][ERROR] exit tx urb done thread, dev_num %d, ep_num %d\n"
-		, str_data->dev_num, str_data->ep_num);
-	kfree(str_data);
+/*	xhci_err(xhci, "[STRESS][ERROR] exit tx urb done thread, dev_num %d, ep_num %d\n"
+ *		, str_data->dev_num, str_data->ep_num);
+ *	kfree(str_data);
+*/
 	return 0;
 }
 
@@ -5866,7 +5885,7 @@ static int stress_rdn_len_rx_done_thread(void *data)
 		rx_status = urb_rx->status;
 		xhci_dbg(xhci, "[STRESS] check rx urb %d 0x%p, dev %d, ep %d\n"
 			, tx_index, urb_rx, str_data->dev_num, str_data->ep_num);
-		while (rx_status != 0) {
+		while ((rx_status != 0) && g_stress_start) {
 			if (rx_status != 0 && rx_status != -EINPROGRESS) {
 				xhci_err(xhci, "[STRESS][ERROR] dev %d, ep %d, urb_rx %d not in valid status - %d\n"
 					, str_data->dev_num, str_data->ep_num, tx_index, urb_rx->status);
@@ -5876,6 +5895,11 @@ static int stress_rdn_len_rx_done_thread(void *data)
 			}
 			msleep(20);
 			rx_status = urb_rx->status;
+		}
+		if (!g_stress_start) {
+			msleep(15000);
+			xhci_dbg(xhci, "stress_rdn_len_rx_done_thread exit");
+			break;
 		}
 		/* update urb_rx status to IDLE */
 		/* update urb_rx status to INPROGRESS */

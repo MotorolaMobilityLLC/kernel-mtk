@@ -37,7 +37,7 @@
 /* Device for a quirk */
 static const char hcd_name[] = "xhc_mtk";
 
-struct platform_device *g_pdev;
+static struct platform_device *g_pdev;
 
 
 void mtktest_xhci_vbus_on(void)
