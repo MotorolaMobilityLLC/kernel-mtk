@@ -186,12 +186,12 @@ long touch_boost_ioctl(unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	/*receive touch info*/
-	case IOCTL_WRITE_TH:
+	case FPSGO_TOUCH:
 		notify_touch(arg);
 		break;
 
 	/*receive frame_time info*/
-	case IOCTL_WRITE_FC:
+	case FPSGO_FRAME_COMPLETE:
 		notify_frame_complete(arg);
 		break;
 
