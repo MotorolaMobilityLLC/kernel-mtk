@@ -3046,8 +3046,11 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 		i4Status = -EINVAL;
 		break;
 	}
-	DBGLOG(REQ, INFO, "--> %s() prParams->index=%d, status=%d\n"
-		, __func__, prParams->index, i4Status);
+
+	if (i4Status != 0)
+		DBGLOG(REQ, INFO, "--> %s() prParams->index=%d, status=%d\n"
+			, __func__, prParams->index, i4Status);
+
 	return i4Status;
 }
 

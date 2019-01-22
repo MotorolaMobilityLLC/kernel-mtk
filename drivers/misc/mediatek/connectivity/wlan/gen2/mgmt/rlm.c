@@ -2707,16 +2707,16 @@ VOID rlmDeactivateNetwork(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetw
 
 	prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc &= ~eNetActiveSrcIdx;
 
+	DBGLOG(RLM, INFO, "rlmDeactivateNetwork, Type = %d, Src = %d, Active = %d, SrcVal= %d\n",
+		eNetworkTypeIdx, eNetActiveSrcIdx, IS_NET_ACTIVE(prAdapter, eNetworkTypeIdx),
+		prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc);
+
 	if ((IS_NET_ACTIVE(prAdapter, eNetworkTypeIdx)) &&
 		prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc == 0) {
 		UNSET_NET_ACTIVE(prAdapter, eNetworkTypeIdx);
 		/* sync with firmware */
-		DBGLOG(RLM, INFO, "rlmDeactivateNetwork\n");
 		nicDeactivateNetwork(prAdapter, eNetworkTypeIdx);
 	}
-	DBGLOG(RLM, INFO, "rlmDeactivateNetwork, Type= %d, Src= %d, SrcVal= %d\n",
-		eNetworkTypeIdx, eNetActiveSrcIdx,
-		prAdapter->rWifiVar.arBssInfo[eNetworkTypeIdx].ucNetActiveSrc);
 }
 
 #endif

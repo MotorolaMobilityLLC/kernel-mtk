@@ -10789,7 +10789,7 @@ wlanoidSetEnableDumpEMILog(IN P_ADAPTER_T prAdapter,
 		return WLAN_STATUS_INVALID_DATA;
 
 	pDriverDumpEMI = (P_CMD_DRIVER_DUMP_EMI_LOG_T)pvSetBuffer;
-	DBGLOG(OID, INFO, "%s: enable:0x%x", __func__,
+	DBGLOG(OID, TRACE, "%s: enable:0x%x", __func__,
 	pDriverDumpEMI->fgIsDriverDumpEmiLogEnable);
 
 	wlanSendSetQueryCmd(prAdapter,

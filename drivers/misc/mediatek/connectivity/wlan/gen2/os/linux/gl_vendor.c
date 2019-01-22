@@ -1683,7 +1683,7 @@ int mtk_cfg80211_vendor_set_band(struct wiphy *wiphy, struct wireless_dev *wdev,
 	ASSERT(wiphy);
 	ASSERT(wdev);
 
-	DBGLOG(REQ, INFO, "%s()\n", __func__);
+	DBGLOG(REQ, TRACE, "%s()\n", __func__);
 
 	if ((data == NULL) || !data_len)
 		goto nla_put_failure;
@@ -1725,20 +1725,18 @@ int mtk_cfg80211_vendor_set_roaming_policy(struct wiphy *wiphy, struct wireless_
 	ASSERT(wiphy);
 	ASSERT(wdev);
 
-	DBGLOG(REQ, INFO, "%s()\n", __func__);
+	DBGLOG(REQ, TRACE, "%s()\n", __func__);
 
 	if ((data == NULL) || !data_len)
 		goto nla_put_failure;
-
-	DBGLOG(REQ, INFO, "vendor command: data_len=%d, data=0x%x 0x%x\r\n",
-		data_len, *((UINT_32 *) data), *((UINT_32 *) data + 1));
 
 	attr = (struct nlattr *)data;
 	setRoaming = nla_get_u32(attr);
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
-	DBGLOG(REQ, INFO, "Vendor roaming policy=%d\r\n", setRoaming);
+	DBGLOG(REQ, INFO, "vendor command: data_len=%d, data=0x%x 0x%x, policy = %d\n",
+		data_len, *((UINT_32 *) data), *((UINT_32 *) data + 1), setRoaming);
 
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetDrvRoamingPolicy,
