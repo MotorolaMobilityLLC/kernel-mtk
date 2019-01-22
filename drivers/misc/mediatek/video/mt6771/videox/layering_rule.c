@@ -180,6 +180,8 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 	int gpu_rsz_idx = 0;
 	struct disp_rect src_layer_roi = {0, 0, 0, 0};
 	struct disp_rect src_total_roi = {0, 0, 0, 0};
+	struct disp_rect dst_layer_roi = {0, 0, 0, 0};
+	struct disp_rect dst_total_roi = {0, 0, 0, 0};
 	int all_ratio_x = 1;
 	int all_ratio_y = 1;
 	int layer_ratio_x = 1;
@@ -234,7 +236,16 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 				(c->dst_offset_x * c->src_width) / c->dst_width,
 				(c->dst_offset_y * c->src_height) / c->dst_height,
 				c->src_width, c->src_height);
+
+		rect_make(&dst_layer_roi, c->dst_offset_x, c->dst_offset_y,
+				c->dst_width, c->dst_height);
+
 		rect_join(&src_layer_roi, &src_total_roi, &src_total_roi);
+		rect_join(&dst_layer_roi, &dst_total_roi, &dst_total_roi);
+
+		if (src_total_roi.width > dst_total_roi.width ||
+			src_total_roi.height > dst_total_roi.height)
+			break;
 
 		if (src_total_roi.width > RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN ||
 			src_total_roi.height > RSZ_IN_MAX_HEIGHT)
