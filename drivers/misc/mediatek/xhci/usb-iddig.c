@@ -302,10 +302,18 @@ static int otg_iddig_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void otg_iddig_shutdown(struct platform_device *pdev)
+{
+	if (mtk_is_host_mode() == true) {
+		mtk_xhci_disable_vbus();
+		mtk_xhci_mtk_printk(K_ALET, "otg_disable_vbus\n");
+	}
+}
 
 static struct platform_driver otg_iddig_driver = {
 	.probe = otg_iddig_probe,
 	.remove = otg_iddig_remove,
+	.shutdown = otg_iddig_shutdown,
 	.driver = {
 		.name = "otg_iddig",
 		.owner = THIS_MODULE,
