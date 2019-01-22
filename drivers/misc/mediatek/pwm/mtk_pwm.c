@@ -1239,7 +1239,7 @@ s32 pwm_set_spec_config(struct pwm_spec_config *conf)
 {
 
 	if (conf->pwm_no >= PWM_MAX) {
-		PWMDBG("pwm number excess PWM_MAX\n");
+		PWMDBG("pwm number(%d) excess PWM_MAX(%d)\n", conf->pwm_no, PWM_MAX);
 		return -EEXCESSPWMNO;
 	}
 
