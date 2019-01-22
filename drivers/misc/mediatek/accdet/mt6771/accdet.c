@@ -49,7 +49,7 @@
  *		plug_out--Low level
  */
 #ifdef CONFIG_ACCDET_EINT_IRQ
-#define HW_MODE_SUPPORT
+/* #define HW_MODE_SUPPORT */
 #define HW_JACK_TYPE_0		(0)
 #define HW_JACK_TYPE_1		(1)
 #endif
@@ -92,6 +92,7 @@ struct pinctrl_state *pins_eint_int;
 #endif
 
 #ifdef HW_MODE_SUPPORT
+#define DIGITAL_FASTDISCHARGE_SUPPORT
 bool fast_discharge = true;
 #endif
 
@@ -661,7 +662,7 @@ static inline void check_cable_type(void)
 */
 				if (!fast_discharge) {
 					pmic_pwrap_write(ACCDET_CON24, ACCDET_FAST_DISCAHRGE_REVISE);
-					udelay(2000);
+					mdelay(20);
 					pmic_pwrap_write(ACCDET_CON24, ACCDET_FAST_DISCAHRGE_EN);
 					fast_discharge = true;
 				}
@@ -823,6 +824,7 @@ static inline void enable_accdet(u32 state_swctrl)
 	/* enable ACCDET unit */
 #ifndef HW_MODE_SUPPORT
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01) | ACCDET_ENABLE_B0);
+	ACCDET_DEBUG("[enable_accdet]no HW MODE [0x%x]=0x%x\n", ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01));
 #endif
 }
 
@@ -871,6 +873,7 @@ static inline void disable_accdet(void)
 #endif
 #ifndef HW_MODE_SUPPORT
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01) & (~(ACCDET_ENABLE_B0)));
+	ACCDET_DEBUG("[disable_accdet]no HW MODE [0x%x]=0x%x\n", ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01));
 #endif
 	pmic_pwrap_write(ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02)&(~ACCDET_SWCTRL_ACCDET_EN));/* clear clk */
 	ACCDET_DEBUG("[disable_accdet][0x%x]=0x%x\n", ACCDET_CON12, pmic_pwrap_read(ACCDET_CON12));
@@ -953,7 +956,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 #endif
 		reg_val = pmic_pwrap_read(ACCDET_CON02);
 		/* set PWM IDLE on */
-		/* pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_PWM_IDLE_B8_9_10); */
+		pmic_pwrap_write(ACCDET_CON02, reg_val|ACCDET_PWM_IDLE_B8_9_10);
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
 		enable_accdet(ACCDET_EINT0_PWM_IDLE_B11);/* enable ACCDET EINT0 unit */
 #elif defined CONFIG_ACCDET_SUPPORT_EINT1
@@ -972,6 +975,10 @@ static void accdet_eint_work_callback(struct work_struct *work)
 #ifdef CONFIG_ACCDET_EINT_IRQ
 		/* pwrap_write(ACCDET_CON24, pmic_pwrap_read(ACCDET_CON24)&(~0x1F)); */
 #endif
+		reg_val = pmic_pwrap_read(ACCDET_CON02);
+		pmic_pwrap_write(ACCDET_CON02,
+			(reg_val&(~ACCDET_PWM_IDLE_B8_9_10)));
+
 		disable_accdet();
 
 		headset_plug_out();
@@ -1771,6 +1778,22 @@ void accdet_init_once(int init_flag)
 		pmic_pwrap_write(AUDENC_ANA_CON7, pmic_pwrap_read(AUDENC_ANA_CON7) | 0x80);
 	#endif
 #endif
+#else /* SW MODE */
+	ACCDET_INFO("[accdet_init_once] sw mode setting,old Accdet_con24:0x%x, AUDENC_ANA_CON6:0x%x\n",
+		pmic_pwrap_read(ACCDET_CON24), pmic_pwrap_read(AUDENC_ANA_CON6));
+
+	reg_val = pmic_pwrap_read(ACCDET_CON24);
+	pmic_pwrap_write(ACCDET_CON24, (reg_val & (~ACCDET_HWMODE_SEL))|ACCDET_FAST_DISCAHRGE);
+
+	/*annlog fastdischarge*/
+	if (headset_dts_data.eint_level_pol == IRQ_TYPE_LEVEL_LOW) {
+		pmic_pwrap_write(AUDENC_ANA_CON6, pmic_pwrap_read(AUDENC_ANA_CON6)|
+		RG_AUDSPARE_FSTDSCHRG_ANALOG_DIR_EN | RG_AUDSPARE_FSTDSCHRG_IMPR_EN);
+	} else
+		pmic_pwrap_write(AUDENC_ANA_CON6, pmic_pwrap_read(AUDENC_ANA_CON6) & (0xE0));
+
+	ACCDET_INFO("[accdet_init_once] sw mode setting,new Accdet_con24:0x%x, AUDENC_ANA_CON6:0x%x\n",
+		pmic_pwrap_read(ACCDET_CON24), pmic_pwrap_read(AUDENC_ANA_CON6));
 #endif
 
 #ifndef CONFIG_HEADSET_SUPPORT_FIVE_POLE/* 3/4-pole need bypass CMP-c */
@@ -1805,7 +1828,7 @@ void accdet_init_once(int init_flag)
 		}
 
 		 /* ACCDET AUXADC AUTO Setting  */
-		pmic_pwrap_write(AUXADC_ACCDET, pmic_pwrap_read(AUXADC_ACCDET)|AUXADC_ACCDET_AUTO_SPL_EN);
+		/* pmic_pwrap_write(AUXADC_ACCDET, pmic_pwrap_read(AUXADC_ACCDET)|AUXADC_ACCDET_AUTO_SPL_EN); */
 
 /* =========interrupt enable and eint pwm set========== */
 #ifdef CONFIG_ACCDET_EINT_IRQ
