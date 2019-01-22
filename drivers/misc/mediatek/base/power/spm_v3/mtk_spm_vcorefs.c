@@ -964,6 +964,30 @@ int spm_vcorefs_pwarp_cmd(void)
 	return 0;
 }
 
+int spm_vcorefs_get_opp(void)
+{
+	unsigned long flags;
+	u32 dvfs_level[NUM_OPP] = { 0x10, 0x4, 0x2, 0x1};
+	int level;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	level = get_dvfs_level();
+
+	if (level == dvfs_level[OPP_0])
+		level = OPP_0;
+	else if (level == dvfs_level[OPP_2])
+		level = OPP_2;
+	else if (level == dvfs_level[OPP_3])
+		level = OPP_3;
+	else
+		level = OPP_1; /* 0x8(2ch), 0x4(4ch) */
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	return level;
+}
+
 static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 {
 	u32 mask;
@@ -1047,12 +1071,12 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 				/* E2 HRT WQHD */
 				spm_write(DVFSRC_M3733, 0xc80b4); /* >6.4G to opp0 */
 				spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp1 */
-				spm_write(DVFSRC_M1600, 0x5305a); /* >2.7G to opp2 */
+				spm_write(DVFSRC_M1600, 0x6405a); /* >3.2G to opp2 */
 			} else if (plat_lcd_resolution == MMDVFS_LCD_SIZE_FHD) {
 				/* E2 HRT FHD */
 				spm_write(DVFSRC_M3733, 0xc80b4); /* >6.4G to opp0 */
 				spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp1 */
-				spm_write(DVFSRC_M1600, 0x3205a); /* >1.6G to opp2 */
+				spm_write(DVFSRC_M1600, 0x5305a); /* >2.7G to opp2 */
 			}
 			#endif
 		}
@@ -1084,12 +1108,12 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 				/* E2 HRT WQHD */
 				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
 				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp0 */
-				spm_write(DVFSRC_M1600, 0x5305a); /* >5.3G to opp2 */
+				spm_write(DVFSRC_M1600, 0x6405a); /* >6.4G to opp2 */
 			} else if (plat_lcd_resolution == MMDVFS_LCD_SIZE_FHD) {
 				/* E2 HRT FHD */
 				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
 				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp0 */
-				spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
+				spm_write(DVFSRC_M1600, 0x5305a); /* >5.3G to opp2 */
 			}
 			#endif
 		}
@@ -1137,6 +1161,7 @@ int spm_dvfs_flag_init(void)
 static void dvfsrc_init(void)
 {
 	unsigned long flags;
+	u32 dvfs_mask[NUM_OPP] = { 0x7, 0x3, 0x1, 0x0};
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -1152,10 +1177,13 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x04104000);
 
 	/* FIXME 11/12 */
-	if (1)
+	if (1) {
+		/* C2K force 2667@0.8v */
+		spm_write(DVFSRC_CPU_LEVEL_MASK, (spm_read(DVFSRC_CPU_LEVEL_MASK) & ~(0xf << 4)) | (0xC << 4));
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0003);
-	else
+	} else {
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001);
+	}
 
 	spm_write(DVFSRC_MD_MAP_BW_0, 0x0);
 	spm_write(DVFSRC_MD_MAP_BW_1, 0x0);
@@ -1173,6 +1201,8 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_MD_MAP_BW_13, 0x0);
 	spm_write(DVFSRC_MD_MAP_BW_14, 0x0);
 	spm_write(DVFSRC_MD_MAP_BW_15, 0x0);
+
+	spm_write(DVFSRC_CPU_LEVEL_MASK, (spm_read(DVFSRC_CPU_LEVEL_MASK) & ~(0xf)) | dvfs_mask[BOOT_UP_OPP]);
 
 	/* enable DVFSRC */
 	spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (0x3));
