@@ -153,12 +153,16 @@ EXPORT_SYMBOL(sync_pt_free);
 static struct sync_fence *sync_fence_alloc(int size, const char *name)
 {
 	struct sync_fence *fence;
+	char fence_name[128] = "";
 
 	fence = kzalloc(size, GFP_KERNEL);
 	if (fence == NULL)
 		return NULL;
 
-	fence->file = anon_inode_getfile("sync_fence", &sync_fence_fops,
+	snprintf(fence_name, sizeof(fence_name),
+		 "sync_fence_%s", strcmp(name, "") ? name : "NULL");
+
+	fence->file = anon_inode_getfile(fence_name, &sync_fence_fops,
 					 fence, 0);
 	if (IS_ERR(fence->file))
 		goto err;
