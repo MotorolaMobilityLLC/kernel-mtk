@@ -20,29 +20,29 @@
 
 #define PRINT_THRESHOLD 10000
 ipi_id scp_ipi_id_record;
-ipi_id scp_A_ipi_mutex_owner;
-ipi_id scp_B_ipi_mutex_owner;
-ipi_id scp_A_ipi_owner;
-ipi_id scp_B_ipi_owner;
+ipi_id scp_ipi_mutex_owner[SCP_CORE_TOTAL];
+ipi_id scp_ipi_owner[SCP_CORE_TOTAL];
+
 unsigned int scp_ipi_id_record_count;
 
 struct scp_ipi_desc scp_ipi_desc[SCP_NR_IPI];
-struct share_obj *scp_A_send_obj, *scp_A_rcv_obj;
-struct share_obj *scp_B_send_obj, *scp_B_rcv_obj;
-struct mutex scp_A_ipi_mutex, scp_B_ipi_mutex;
-
+struct share_obj *scp_send_obj[SCP_CORE_TOTAL];
+struct share_obj *scp_rcv_obj[SCP_CORE_TOTAL];
+struct mutex scp_ipi_mutex[SCP_CORE_TOTAL];
 /*
  * find an ipi handler and invoke it
  */
 void scp_A_ipi_handler(void)
 {
-	/*pr_debug("scp A ipi handler %d\n", scp_A_rcv_obj->id);*/
-	if (scp_A_rcv_obj->id >= SCP_NR_IPI || scp_A_rcv_obj->id <= 0) {
+	/*pr_debug("scp A ipi handler %d\n", scp_rcv_obj[SCP_A_ID]->id);*/
+	if (scp_rcv_obj[SCP_A_ID]->id >= SCP_NR_IPI || scp_rcv_obj[SCP_A_ID]->id <= 0) {
 		/* ipi id abnormal*/
-		pr_err("[SCP] scp A ipi handler id abnormal, id = %d\n", scp_A_rcv_obj->id);
-	} else if (scp_ipi_desc[scp_A_rcv_obj->id].handler) {
-		memcpy_from_scp(scp_A_recv_buff, (void *)scp_A_rcv_obj->share_buf, scp_A_rcv_obj->len);
-		scp_ipi_desc[scp_A_rcv_obj->id].handler(scp_A_rcv_obj->id, scp_A_recv_buff, scp_A_rcv_obj->len);
+		pr_err("[SCP] A ipi handler id abnormal, id = %d\n", scp_rcv_obj[SCP_A_ID]->id);
+	} else if (scp_ipi_desc[scp_rcv_obj[SCP_A_ID]->id].handler) {
+		memcpy_from_scp(scp_recv_buff[SCP_A_ID], (void *)scp_rcv_obj[SCP_A_ID]->share_buf,
+			scp_rcv_obj[SCP_A_ID]->len);
+		scp_ipi_desc[scp_rcv_obj[SCP_A_ID]->id].handler(scp_rcv_obj[SCP_A_ID]->id, scp_recv_buff[SCP_A_ID],
+			scp_rcv_obj[SCP_A_ID]->len);
 		/* After SCP IPI handler,
 		 * send a awake ipi to avoid
 		 * SCP keeping in ipi busy idle state
@@ -51,7 +51,7 @@ void scp_A_ipi_handler(void)
 		writel((1 << SCP_A_IPI_AWAKE_NUM), SCP_GIPC_REG);
 	} else {
 		/* scp_ipi_handler is null or ipi id abnormal */
-		pr_err("[SCP] scp A ipi handler is null or abnormal, id = %d\n", scp_A_rcv_obj->id);
+		pr_err("[SCP] A ipi handler is null or abnormal, id = %d\n", scp_rcv_obj[SCP_A_ID]->id);
 	}
 	/* AP side write 1 to clear SCP to SPM reg.
 	 * scp side write 1 to set SCP to SPM reg.
@@ -68,12 +68,12 @@ void scp_A_ipi_handler(void)
  */
 void scp_A_ipi_init(void)
 {
-	mutex_init(&scp_A_ipi_mutex);
-	scp_A_rcv_obj = SCP_A_SHARE_BUFFER;
-	scp_A_send_obj = scp_A_rcv_obj + 1;
-	pr_debug("SCP A scp_A_rcv_obj = 0x%p\n", scp_A_rcv_obj);
-	pr_debug("SCP A scp_A_send_obj = 0x%p\n", scp_A_send_obj);
-	memset_io(scp_A_send_obj, 0, SHARE_BUF_SIZE);
+	mutex_init(&scp_ipi_mutex[SCP_A_ID]);
+	scp_rcv_obj[SCP_A_ID] = SCP_A_SHARE_BUFFER;
+	scp_send_obj[SCP_A_ID] = scp_rcv_obj[SCP_A_ID] + 1;
+	pr_debug("scp_rcv_obj[SCP_A_ID] = 0x%p\n", scp_rcv_obj[SCP_A_ID]);
+	pr_debug("scp_send_obj[SCP_A_ID] = 0x%p\n", scp_send_obj[SCP_A_ID]);
+	memset_io(scp_send_obj[SCP_A_ID], 0, SHARE_BUF_SIZE);
 }
 
 
@@ -82,13 +82,15 @@ void scp_A_ipi_init(void)
  */
 void scp_B_ipi_handler(void)
 {
-	/*pr_debug("scp B ipi handler %d\n", scp_B_rcv_obj->id);*/
-	if (scp_B_rcv_obj->id >= SCP_NR_IPI || scp_B_rcv_obj->id <= 0) {
+	/*pr_debug("scp B ipi handler %d\n", scp_rcv_obj[SCP_B_ID]->id);*/
+	if (scp_rcv_obj[SCP_B_ID]->id >= SCP_NR_IPI || scp_rcv_obj[SCP_B_ID]->id <= 0) {
 		/* ipi id abnormal*/
-		pr_err("[SCP] scp B ipi handler id abnormal, id = %d\n", scp_B_rcv_obj->id);
-	} else if (scp_ipi_desc[scp_B_rcv_obj->id].handler) {
-		memcpy_from_scp(scp_B_recv_buff, (void *)scp_B_rcv_obj->share_buf, scp_B_rcv_obj->len);
-		scp_ipi_desc[scp_B_rcv_obj->id].handler(scp_B_rcv_obj->id, scp_B_recv_buff, scp_B_rcv_obj->len);
+		pr_err("[SCP] B ipi handler id abnormal, id = %d\n", scp_rcv_obj[SCP_B_ID]->id);
+	} else if (scp_ipi_desc[scp_rcv_obj[SCP_B_ID]->id].handler) {
+		memcpy_from_scp(scp_recv_buff[SCP_B_ID], (void *)scp_rcv_obj[SCP_B_ID]->share_buf,
+			scp_rcv_obj[SCP_B_ID]->len);
+		scp_ipi_desc[scp_rcv_obj[SCP_B_ID]->id].handler(scp_rcv_obj[SCP_B_ID]->id, scp_recv_buff[SCP_B_ID],
+			scp_rcv_obj[SCP_B_ID]->len);
 		/* After SCP IPI handler,
 		 * send a awake ipi to avoid
 		 * SCP keeping in ipi busy idle state
@@ -97,7 +99,7 @@ void scp_B_ipi_handler(void)
 		writel((1 << SCP_B_IPI_AWAKE_NUM), SCP_GIPC_REG);
 	} else {
 		/* scp_ipi_handler is null or ipi id abnormal */
-		pr_err("[SCP] scp B ipi handler is null or abnormal, id = %d\n", scp_B_rcv_obj->id);
+		pr_err("[SCP] B ipi handler is null or abnormal, id = %d\n", scp_rcv_obj[SCP_B_ID]->id);
 	}
 	/* AP side write 1 to clear SCP to SPM reg.
 	 * scp side write 1 to set SCP to SPM reg.
@@ -114,12 +116,12 @@ void scp_B_ipi_handler(void)
  */
 void scp_B_ipi_init(void)
 {
-	mutex_init(&scp_B_ipi_mutex);
-	scp_B_rcv_obj = SCP_B_SHARE_BUFFER;
-	scp_B_send_obj = scp_B_rcv_obj + 1;
-	pr_debug("SCP B scp_B_rcv_obj = 0x%p\n", scp_B_rcv_obj);
-	pr_debug("SCP B scp_B_send_obj = 0x%p\n", scp_B_send_obj);
-	memset_io(scp_B_send_obj, 0, SHARE_BUF_SIZE);
+	mutex_init(&scp_ipi_mutex[SCP_B_ID]);
+	scp_rcv_obj[SCP_B_ID] = SCP_B_SHARE_BUFFER;
+	scp_send_obj[SCP_B_ID] = scp_rcv_obj[SCP_B_ID] + 1;
+	pr_debug("scp_rcv_obj[SCP_B_ID] = 0x%p\n", scp_rcv_obj[SCP_B_ID]);
+	pr_debug("scp_send_obj[SCP_B_ID] = 0x%p\n", scp_send_obj[SCP_B_ID]);
+	memset_io(scp_send_obj[SCP_B_ID], 0, SHARE_BUF_SIZE);
 }
 
 /*
@@ -179,167 +181,87 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 	scp_ipi_id_record = id;
 
 	if (scp_id >= SCP_CORE_TOTAL) {
-		pr_err("scp_ipi_send: SCP ID >= SCP_CORE_TOTAL\n");
+		pr_err("scp_ipi_send: scp_id:%d wrong\n", scp_id);
 		return ERROR;
 	}
 
 	if (in_interrupt()) {
 		if (wait) {
-			pr_err("scp_ipi_send: cannot busy wait in isr context\n");
+			pr_err("scp_ipi_send: cannot use in isr\n");
 			return ERROR;
 		}
 	}
 
-	if (scp_id == SCP_A_ID) {
-		/*Send IPI to SCP A */
-		if (is_scp_ready(SCP_A_ID) == 0) {
-			pr_err("scp_ipi_send: SCP A not enabled, id=%d\n", id);
-			return ERROR;
-		}
-
-		if (id >= SCP_NR_IPI) {
-			pr_err("scp_ipi_send: SCP A ipi id is incorrect\n");
-			return ERROR;
-		}
-
-		/*pr_debug("scp_ipi_send: SCP A ipi id = %d\n", id);*/
-		if (len > sizeof(scp_A_send_obj->share_buf) || buf == NULL) {
-			pr_err("scp_ipi_send: SCP A buffer is error\n");
-			return ERROR;
-		}
-
-		if (mutex_trylock(&scp_A_ipi_mutex) == 0) {
-			/*avoid scp ipi send log print too much*/
-			if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
-				(scp_ipi_id_record_count % PRINT_THRESHOLD == 1)) {
-				pr_err("scp_ipi_send:SCP A %d mutex_trylock busy,mutex owner=%d\n",
-					id, scp_A_ipi_mutex_owner);
-				scp_A_dump_regs();
-			}
-			return BUSY;
-		}
-
-		/* keep scp awake for sram copy*/
-		if (scp_awake_lock(SCP_A_ID) == -1) {
-			mutex_unlock(&scp_A_ipi_mutex);
-			pr_err("scp_ipi_send: SCP A ipi error, awake scp fail\n");
-			return ERROR;
-		}
-
-		/*get scp ipi mutex owner*/
-		scp_A_ipi_mutex_owner = id;
-
-		if ((GIPC_TO_SCP_REG & HOST_TO_SCP_A) > 0) {
-			scp_awake_unlock(SCP_A_ID);
-			mutex_unlock(&scp_A_ipi_mutex);
-			/*avoid scp ipi send log print too much*/
-			if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
-				(scp_ipi_id_record_count % PRINT_THRESHOLD == 1)) {
-				pr_err("scp_ipi_send: SCP A %d host to scp busy, ipi last time = %d\n", id,
-					scp_A_ipi_owner);
-				scp_A_dump_regs();
-			}
-			return BUSY;
-		}
-		/*get scp ipi send owner*/
-		scp_A_ipi_owner = id;
-
-		memcpy(scp_A_send_buff, buf, len);
-		/*pr_debug("scp_ipi_send: SCP A memory copy to scp sram\n");*/
-		memcpy_to_scp((void *)scp_A_send_obj->share_buf, scp_A_send_buff, len);
-		scp_A_send_obj->len = len;
-		scp_A_send_obj->id = id;
-		dsb(SY);
-
-		/*send host to scp ipi*/
-		/*pr_debug("scp_ipi_send: SCP A send host to scp ipi\n");*/
-		GIPC_TO_SCP_REG = HOST_TO_SCP_A;
-
-		if (wait)
-			while ((GIPC_TO_SCP_REG & HOST_TO_SCP_A) > 0)
-				;
-		/*send host to scp ipi cpmplete, unlock mutex*/
-		scp_awake_unlock(SCP_A_ID);
-		mutex_unlock(&scp_A_ipi_mutex);
-
-		/*pr_debug("scp_ipi_send: SCP A ipi send id = %d done\n", id);*/
-
-	} else {
-		/*Send IPI to SCP B*/
-		if (is_scp_ready(SCP_B_ID) == 0) {
-			pr_err("scp_ipi_send: SCP B not enabled\n");
-			return ERROR;
-		}
-
-		if (id >= SCP_NR_IPI) {
-			pr_err("scp_ipi_send: SCP B ipi id is incorrect\n");
-			return ERROR;
-		}
-
-		/*pr_debug("scp_ipi_send: SCP B ipi id = %d\n", id);*/
-		if (len > sizeof(scp_B_send_obj->share_buf) || buf == NULL) {
-			pr_err("scp_ipi_send: SCP B buffer is error\n");
-			return ERROR;
-		}
-
-		if (mutex_trylock(&scp_B_ipi_mutex) == 0) {
-			/*avoid scp ipi send log print too much*/
-			if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
-				(scp_ipi_id_record_count % PRINT_THRESHOLD == 1)) {
-				pr_err("scp_ipi_send: SCP B %d mutex_trylock busy, mutex owner = %d\n",
-					id, scp_B_ipi_mutex_owner);
-				scp_B_dump_regs();
-			}
-			return BUSY;
-		}
-
-		/* keep scp awake for sram copy*/
-		if (scp_awake_lock(SCP_B_ID) == -1) {
-			mutex_unlock(&scp_B_ipi_mutex);
-			pr_err("scp_ipi_send: SCP B ipi error, awake scp fail\n");
-			return ERROR;
-		}
-
-		/*get scp ipi mutex owner
-		 */
-		scp_B_ipi_mutex_owner = id;
-
-		if ((GIPC_TO_SCP_REG & HOST_TO_SCP_A) > 0) {
-			scp_awake_unlock(SCP_B_ID);
-			mutex_unlock(&scp_B_ipi_mutex);
-			/*avoid scp ipi send log print too much*/
-			if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
-				(scp_ipi_id_record_count % PRINT_THRESHOLD == 1)) {
-				pr_err("scp_ipi_send: SCP B %d host to scp busy, ipi last time = %d\n", id,
-					scp_B_ipi_owner);
-				scp_B_dump_regs();
-			}
-			return BUSY;
-		}
-		/*get scp ipi send owner*/
-		scp_B_ipi_owner = id;
-
-		memcpy(scp_B_send_buff, buf, len);
-		/*pr_debug("scp_ipi_send: SCP B memory copy to scp sram\n");*/
-		memcpy_to_scp((void *)scp_B_send_obj->share_buf, scp_B_send_buff, len);
-		scp_B_send_obj->len = len;
-		scp_B_send_obj->id = id;
-		dsb(SY);
-
-		/*send host to scp ipi*/
-		/*pr_debug("scp_ipi_send: SCP B send host to scp ipi\n");*/
-		GIPC_TO_SCP_REG = HOST_TO_SCP_B;
-
-		if (wait)
-			while ((GIPC_TO_SCP_REG & HOST_TO_SCP_B) > 0)
-				;
-		/*send host to scp ipi cpmplete, unlock mutex*/
-		scp_awake_unlock(SCP_B_ID);
-		mutex_unlock(&scp_B_ipi_mutex);
-
-		/*pr_debug("scp_ipi_send: SCP B ipi send id = %d done\n", id);*/
-
+	if (id >= SCP_NR_IPI) {
+		pr_err("scp_ipi_send: ipi id %d wrong\n", id);
+		return ERROR;
 	}
+	if (is_scp_ready(scp_id) == 0) {
+		pr_err("scp_ipi_send: %s not enabled, id=%d\n", core_ids[scp_id], id);
+		return ERROR;
+	}
+	if (len > sizeof(scp_send_obj[scp_id]->share_buf) || buf == NULL) {
+		pr_err("scp_ipi_send: %s buffer error\n", core_ids[scp_id]);
+		return ERROR;
+	}
+
+	if (mutex_trylock(&scp_ipi_mutex[scp_id]) == 0) {
+		/*avoid scp ipi send log print too much*/
+		if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
+			(scp_ipi_id_record_count % PRINT_THRESHOLD == 1)) {
+			pr_err("scp_ipi_send:%s %d mutex_trylock busy, owner=%d\n",
+				core_ids[scp_id], id, scp_ipi_mutex_owner[scp_id]);
+			scp_A_dump_regs();
+		}
+		return BUSY;
+	}
+
+	/* keep scp awake for sram copy*/
+	if (scp_awake_lock(scp_id) == -1) {
+		mutex_unlock(&scp_ipi_mutex[scp_id]);
+		pr_err("scp_ipi_send: %s ipi error, awake scp fail\n", core_ids[scp_id]);
+		return ERROR;
+	}
+
+	/*get scp ipi mutex owner*/
+	scp_ipi_mutex_owner[scp_id] = id;
+
+	if ((GIPC_TO_SCP_REG & (1<<scp_id)) > 0) {
+		scp_awake_unlock(scp_id);
+		mutex_unlock(&scp_ipi_mutex[scp_id]);
+		/*avoid scp ipi send log print too much*/
+		if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
+			(scp_ipi_id_record_count % PRINT_THRESHOLD == 1)) {
+			pr_err("scp_ipi_send: %s %d host to scp busy, ipi last time = %d\n", core_ids[scp_id], id,
+				scp_ipi_owner[scp_id]);
+			if (scp_id == SCP_A_ID)
+				scp_A_dump_regs();
+			else
+				scp_B_dump_regs();
+		}
+		return BUSY;
+	}
+	/*get scp ipi send owner*/
+	scp_ipi_owner[scp_id] = id;
+
+	memcpy(scp_send_buff[scp_id], buf, len);
+	memcpy_to_scp((void *)scp_send_obj[scp_id]->share_buf, scp_send_buff[scp_id], len);
+	scp_send_obj[scp_id]->len = len;
+	scp_send_obj[scp_id]->id = id;
+	dsb(SY);
+
+	/*send host to scp ipi*/
+	/*pr_debug("scp_ipi_send: SCP A send host to scp ipi\n");*/
+	GIPC_TO_SCP_REG = (1<<scp_id);
+
+	if (wait)
+		while ((GIPC_TO_SCP_REG & (1<<scp_id)) > 0)
+			;
+	/*send host to scp ipi cpmplete, unlock mutex*/
+	scp_awake_unlock(scp_id);
+	mutex_unlock(&scp_ipi_mutex[scp_id]);
+
 	return DONE;
 }
 EXPORT_SYMBOL_GPL(scp_ipi_send);
+
