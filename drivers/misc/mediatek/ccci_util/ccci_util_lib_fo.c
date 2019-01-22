@@ -204,6 +204,13 @@ typedef struct fos_item {
 #define MTK_MD3_SUPPORT	(0)
 #endif
 
+/* MTK_C2K_SUPPORT */
+#if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
+#define MTK_C2K_SUPPORT	(1)
+#else
+#define MTK_C2K_SUPPORT	(0)
+#endif
+
 /* MD5 */
 #ifdef CONFIG_MTK_MD5_SUPPORT
 #define MTK_MD5_SUPPORT	(CONFIG_MTK_MD5_SUPPORT)
@@ -223,13 +230,6 @@ typedef struct fos_item {
 #define MTK_ECCCI_C2K	(1)
 #else
 #define MTK_ECCCI_C2K	(0)
-#endif
-
-/* MTK_C2K_SUPPORT */
-#ifdef CONFIG_MTK_C2K_SUPPORT
-#define MTK_C2K_SUPPORT	(1)
-#else
-#define MTK_C2K_SUPPORT	(0)
 #endif
 
 /* MTK_C2K_LTE_MODE */
