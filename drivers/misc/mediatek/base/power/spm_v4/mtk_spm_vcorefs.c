@@ -404,11 +404,44 @@ int spm_vcorefs_get_opp(void)
 	unsigned long flags;
 	int level;
 
-	spin_lock_irqsave(&__spm_lock, flags);
+	if (is_vcorefs_can_work() == 1) {
+		spin_lock_irqsave(&__spm_lock, flags);
 
-	level = (spm_read(DVFSRC_LEVEL) >> 16);
+		level = (spm_read(DVFSRC_LEVEL) >> 16);
 
-	spin_unlock_irqrestore(&__spm_lock, flags);
+		if (level == 0x8)
+			level = OPP_0;
+		else if (level == 0x4)
+			level = OPP_1;
+		else if (level == 0x2)
+			level = OPP_2;
+		else if (level == 0x1)
+			level = OPP_3;
+		else if (level == 0x10)
+			level = 4;
+		else if (level == 0x20)
+			level = 5;
+		else if (level == 0x40)
+			level = 6;
+		else if (level == 0x80)
+			level = 7;
+		else if (level == 0x100)
+			level = 8;
+		else if (level == 0x200)
+			level = 9;
+		else if (level == 0x400)
+			level = 10;
+		else if (level == 0x800)
+			level = 11;
+		else if (level == 0x1000)
+			level = 12;
+		else if (level == 0x2000)
+			level = 13;
+
+		spin_unlock_irqrestore(&__spm_lock, flags);
+	} else {
+		level = BOOT_UP_OPP;
+	}
 
 	return level;
 }

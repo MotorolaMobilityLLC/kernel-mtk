@@ -397,11 +397,7 @@ char *governor_get_dvfs_info(char *p)
 	char *buff_end = p + PAGE_SIZE;
 
 	p += snprintf(p, buff_end - p, "sw_opp: %d\n", vcorefs_get_sw_opp());
-	#if !defined(CONFIG_MACH_MT6763)
 	p += snprintf(p, buff_end - p, "hw_opp: %d\n", vcorefs_get_hw_opp());
-	#else
-	p += snprintf(p, buff_end - p, "hw_opp: 0x%x\n", vcorefs_get_hw_opp());
-	#endif
 	p += snprintf(p, buff_end - p, "\n");
 
 	p += snprintf(p, buff_end - p, "[vcore_dvs]: %d\n", gvrctrl->vcore_dvs);
