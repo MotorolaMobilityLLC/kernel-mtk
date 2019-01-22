@@ -2193,15 +2193,6 @@ static const struct usb_gadget_ops musb_gadget_operations = {
  * about there being only one external upstream port.  It assumes
  * all peripheral ports are external...
  */
-
-/* #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0) */
-#if 0
-static void musb_gadget_release(struct device *dev)
-{
-	/* kref_put(WHAT) */
-}
-#endif
-
 static void init_peripheral_ep(struct musb *musb, struct musb_ep *ep, u8 epnum, int is_in)
 {
 	struct musb_hw_ep *hw_ep = musb->endpoints + epnum;
@@ -2298,29 +2289,13 @@ int musb_gadget_setup(struct musb *musb)
 	musb->g.speed = USB_SPEED_UNKNOWN;
 
 	/* this "gadget" abstracts/virtualizes the controller */
-/* #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0) */
-#if 0
-	dev_set_name(&musb->g.dev, "gadget");
-	musb->g.dev.parent = musb->controller;
-	musb->g.dev.dma_mask = musb->controller->dma_mask;
-	musb->g.dev.release = musb_gadget_release;
-#endif
 	musb->g.name = musb_driver_name;
-
 	musb->g.is_otg = 1;
 
 	musb_g_init_endpoints(musb);
 
 	musb->is_active = 0;
 	musb_platform_try_idle(musb, 0);
-/* #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0) */
-#if 0
-	status = device_register(&musb->g.dev);
-	if (status != 0) {
-		put_device(&musb->g.dev);
-		return status;
-	}
-#endif
 
 #ifdef CONFIG_OF
 	/*gadget device dma ops is null,so add musb controller dma ops*/
@@ -2344,11 +2319,6 @@ err:
 void musb_gadget_cleanup(struct musb *musb)
 {
 	usb_del_gadget_udc(&musb->g);
-/* #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0) */
-#if 0
-	if (musb->g.dev.parent)
-		device_unregister(&musb->g.dev);
-#endif
 }
 
 /*
