@@ -23,7 +23,9 @@ enum {
 	SPM_RESOURCE_CK_26M  = 1 << 2,
 	SPM_RESOURCE_AXI_BUS = 1 << 3,
 	SPM_RESOURCE_CPU     = 1 << 4,
-	NF_SPM_RESOURCE = 5
+
+	NF_SPM_RESOURCE = 5,
+	SPM_RESOURCE_ALL = (1 << NF_SPM_RESOURCE) - 1
 };
 
 enum {

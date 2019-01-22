@@ -366,8 +366,6 @@ void mtk_idle_dump_cnt_in_interval(void)
 		idle_ratio_profile_start_time = idle_get_current_time_ms();
 	}
 
-	spm_resource_req_dump();
-
 	/* update time base */
 	idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
 }
