@@ -11,6 +11,7 @@
 #include <linux/random.h>
 #include <linux/string.h>
 #include <linux/types.h>
+#include <linux/hie.h>
 
 #include "ext4_jbd2.h"
 #include "ext4.h"
@@ -36,12 +37,15 @@ static int ext4_is_encryption_context_consistent_with_policy(
 				 sizeof(ctx));
 	if (res != sizeof(ctx))
 		return 0;
+
+	if ((ctx.contents_encryption_mode != policy->contents_encryption_mode) &&
+		!(hie_is_ready() && (ctx.contents_encryption_mode == EXT4_ENCRYPTION_MODE_PRIVATE)))
+		return 0;
+
 	return (memcmp(ctx.master_key_descriptor, policy->master_key_descriptor,
 			EXT4_KEY_DESCRIPTOR_SIZE) == 0 &&
 		(ctx.flags ==
 		 policy->flags) &&
-		(ctx.contents_encryption_mode ==
-		 policy->contents_encryption_mode) &&
 		(ctx.filenames_encryption_mode ==
 		 policy->filenames_encryption_mode));
 }
@@ -74,7 +78,7 @@ static int ext4_create_encryption_context_from_policy(
 	}
 	if (policy->flags & ~EXT4_POLICY_FLAGS_VALID)
 		return -EINVAL;
-	ctx.contents_encryption_mode = policy->contents_encryption_mode;
+	ctx.contents_encryption_mode = ext4_default_data_encryption_mode();
 	ctx.filenames_encryption_mode = policy->filenames_encryption_mode;
 	ctx.flags = policy->flags;
 	BUILD_BUG_ON(sizeof(ctx.nonce) != EXT4_KEY_DERIVATION_NONCE_SIZE);
