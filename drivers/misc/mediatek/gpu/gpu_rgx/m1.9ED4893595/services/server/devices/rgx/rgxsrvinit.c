@@ -495,7 +495,10 @@ static INLINE void GetApphints(RGX_SRVINIT_APPHINTS *psHints, IMG_UINT64 ui64Ern
 		SrvInitParamGetUINT32List(pvParamState, FirmwareLogType, ui32ParamTemp);
 
 		/* Defaulting to TRACE */
-		ui32LogType |= RGXFWIF_LOG_TYPE_TRACE;
+		ui32LogType |= (RGXFWIF_LOG_TYPE_TRACE |
+						RGXFWIF_LOG_TYPE_GROUP_MAIN |
+						RGXFWIF_LOG_TYPE_GROUP_POW |
+						RGXFWIF_LOG_TYPE_GROUP_HWR);
 
 		if (ui32ParamTemp == 2 /* TRACE */)
 		{
