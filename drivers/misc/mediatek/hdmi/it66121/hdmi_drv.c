@@ -125,6 +125,10 @@ static int hdmi_ite_probe(struct i2c_client *client, const struct i2c_device_id 
 struct HDMI_UTIL_FUNCS hdmi_util = { 0 };
 unsigned char hdmi_powerenable = 0xff;
 
+static struct pinctrl *hdmi_pinctrl;
+static struct pinctrl_state *pins_hdmi_func;
+static struct pinctrl_state *pins_hdmi_gpio;
+
 static const struct i2c_device_id hdmi_ite_id[] = {
 	{DEVICE_NAME, 0},
 	{}
@@ -822,6 +826,7 @@ int ite66121_pmic_power_on(void)
 {
 	int ret;
 
+	pinctrl_select_state(hdmi_pinctrl, pins_hdmi_func);
 	ret = regulator_enable(hdmi_vcn33);
 	ret = regulator_enable(hdmi_vcn18);
 	ret = regulator_enable(hdmi_vrf12);
@@ -838,6 +843,7 @@ int ite66121_pmic_power_off(void)
 	int bus_switch_pin;
 	int ret;
 
+	pinctrl_select_state(hdmi_pinctrl, pins_hdmi_gpio);
 	ret = regulator_disable(hdmi_vcn33);
 	ret = regulator_disable(hdmi_vcn18);
 	ret = regulator_disable(hdmi_vrf12);
@@ -1008,6 +1014,32 @@ void hdmi_poll_isr(unsigned long n)
 
 }
 
+void vGet_Pinctrl_Mode(struct platform_device *pdev)
+{
+	int ret = 0;
+
+	if (pdev == NULL)
+		IT66121_LOG("vGet_DDC_Mode Error, Invalid device pointer\n");
+
+	hdmi_pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(hdmi_pinctrl)) {
+		ret = PTR_ERR(hdmi_pinctrl);
+		IT66121_LOG("HDMI pins, failure of setting\n");
+	} else {
+		pins_hdmi_func = pinctrl_lookup_state(hdmi_pinctrl, "hdmi_poweron");
+		if (IS_ERR(pins_hdmi_func)) {
+			ret = PTR_ERR(pins_hdmi_func);
+			IT66121_LOG("cannot find pins_hdmi_func pinctrl hdmi_poweron\n");
+		}
+
+		pins_hdmi_gpio = pinctrl_lookup_state(hdmi_pinctrl, "hdmi_poweroff");
+		if (IS_ERR(pins_hdmi_gpio)) {
+			ret = PTR_ERR(pins_hdmi_gpio);
+			IT66121_LOG("cannot find pins_hdmi_gpio pinctrl hdmi_poweroff\n");
+		}
+	}
+}
+
 int hdmi_internal_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -1022,7 +1054,7 @@ int hdmi_internal_probe(struct platform_device *pdev)
 	/* register i2c device */
 	if (ret)
 		IT66121_LOG(KERN_ERR "%s: failed to add it66121 i2c driver\n", __func__);
-
+	vGet_Pinctrl_Mode(pdev);
 	hdmi_vcn33 = devm_regulator_get(&pdev->dev, "vcn33");
 	hdmi_vcn18 = devm_regulator_get(&pdev->dev, "vcn18");
 	hdmi_vrf12 = devm_regulator_get(&pdev->dev, "vrf12");
@@ -1085,7 +1117,7 @@ static int __init ite66121_i2c_board_init(void)
 	ret = i2c_register_board_info(6, &it66121_i2c_hdmi, 1);
 
 	if (ret)
-		pr_debug("failed to register mt8193 i2c_board_info, ret=%d\n", ret);
+		pr_debug("failed to register ite66121 i2c_board_info, ret=%d\n", ret);
 
 	return ret;
 }
