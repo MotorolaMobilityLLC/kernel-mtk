@@ -2135,12 +2135,12 @@ static int sensorHub_pm_event(struct notifier_block *notifier, unsigned long pm_
 {
 	switch (pm_event) {
 	case PM_POST_SUSPEND:
-		SCP_LOG("resume\n");
+		SCP_LOG("resume bootime=%lld\n", ktime_get_boot_ns());
 		WRITE_ONCE(rtc_compensation_suspend, false);
 		sensor_send_timestamp_to_hub();
 		return NOTIFY_DONE;
 	case PM_SUSPEND_PREPARE:
-		SCP_LOG("suspend\n");
+		SCP_LOG("suspend bootime=%lld\n", ktime_get_boot_ns());
 		WRITE_ONCE(rtc_compensation_suspend, true);
 		return NOTIFY_DONE;
 	default:
