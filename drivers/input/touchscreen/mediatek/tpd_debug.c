@@ -258,21 +258,21 @@ static int tpd_debug_log_open(struct inode *inode, struct file *file)
 {
 	unsigned char *temp_buffer;
 
-	temp_buffer = tpd_buf.buffer;
-	memset(&tpd_buf, 0, sizeof(struct tpd_debug_log_buf));
-	if (temp_buffer == NULL)
-		tpd_buf.buffer = vmalloc(tpd_log_line_cnt * tpd_log_line_buffer);
-	else
-		tpd_buf.buffer = temp_buffer;
-	if (tpd_buf.buffer == NULL) {
-		pr_err("tpd_log: nomem for tpd_buf->buffer\n");
-		return -ENOMEM;
-	}
-	spin_lock_init(&tpd_buf.buffer_lock);
+	temp_buffer = vmalloc(tpd_log_line_cnt * tpd_log_line_buffer);
 	spin_lock(&tpd_buf.buffer_lock);
-	tpd_buf.head = tpd_buf.tail = 0;
-	spin_unlock(&tpd_buf.buffer_lock);
-
+	if (tpd_buf.buffer == NULL) {
+		if (temp_buffer == NULL) {
+			spin_unlock(&tpd_buf.buffer_lock);
+			pr_debug("tpd_log: nomem for tpd_buf->buffer\n");
+			return -ENOMEM;
+		}
+		tpd_buf.buffer = temp_buffer;
+		tpd_buf.head = tpd_buf.tail = 0;
+		spin_unlock(&tpd_buf.buffer_lock);
+	} else {
+		spin_unlock(&tpd_buf.buffer_lock);
+		vfree(temp_buffer);
+	}
 
 	file->private_data = &tpd_buf;
 	pr_debug("[tpd_em_log]: open log file\n");
@@ -281,11 +281,15 @@ static int tpd_debug_log_open(struct inode *inode, struct file *file)
 
 static int tpd_debug_log_release(struct inode *inode, struct file *file)
 {
+	unsigned char *temp_buffer = NULL;
 	/* struct tpd_debug_log_buf *tpd_buf = (tpd_debug_log_buf *)file->private_data; */
 	pr_debug("[tpd_em_log]: close log file\n");
-	if (tpd_buf.buffer)
-		vfree(tpd_buf.buffer);
+	spin_lock(&tpd_buf.buffer_lock);
+	temp_buffer = tpd_buf.buffer;
 	tpd_buf.buffer = NULL;
+	spin_unlock(&tpd_buf.buffer_lock);
+	if (temp_buffer)
+		vfree(temp_buffer);
 	/* free(tpd_buf); */
 	return 0;
 }
@@ -521,6 +525,7 @@ void tpd_em_log_release(void)
 static int __init tpd_log_init(void)
 {
 	memset(&tpd_buf, 0, sizeof(struct tpd_debug_log_buf));
+	spin_lock_init(&tpd_buf.buffer_lock);
 	if (misc_register(&tpd_debug_log_dev) < 0) {
 		pr_err("[tpd_em_log] :register device failed\n");
 		return -1;
