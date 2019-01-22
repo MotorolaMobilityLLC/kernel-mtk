@@ -34,8 +34,10 @@
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef CONFIG_MTK_ACAO_SUPPORT
 #include <mach/mtk_gpt.h>
+#endif
 #endif
 #include <mt-plat/mtk_ccci_common.h>
 #include <mtk_spm_misc.h>
@@ -55,7 +57,9 @@
 #include <mtk_hps_internal.h>
 #endif
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <trace/events/mtk_idle_event.h>
+#endif
 
 /*
  * only for internal debug
@@ -852,11 +856,15 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_dpidle_rcuidle(cpu, 1);
+#endif
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_dpidle_rcuidle(cpu, 0);
+#endif
 
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[2]);
@@ -1024,11 +1032,15 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_WFI);
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_dpidle_rcuidle(cpu, 1);
+#endif
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_dpidle_rcuidle(cpu, 0);
+#endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_LEAVE_WFI);
 
