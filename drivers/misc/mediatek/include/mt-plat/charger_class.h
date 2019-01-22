@@ -91,6 +91,8 @@ struct charger_ops {
 	int (*enable_direct_charging)(struct charger_device *);
 	int (*disable_direct_charging)(struct charger_device *);
 	int (*kick_direct_charging_wdt)(struct charger_device *);
+	int (*set_direct_charging_ibusoc)(struct charger_device *, u32 uA);
+	int (*set_direct_charging_vbusov)(struct charger_device *, u32 uV);
 
 	/* run AICL */
 	int (*run_aicl)(struct charger_device *);
