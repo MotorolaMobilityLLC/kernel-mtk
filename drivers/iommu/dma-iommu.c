@@ -403,8 +403,18 @@ static int __finalise_sg(struct device *dev, struct scatterlist *sg, int nents,
 	int i, count = 0;
 
 	for_each_sg(sg, s, nents, i) {
+#ifndef CONFIG_MTK_PSEUDO_M4U
 		/* Restore this segment's original unaligned fields first */
 		unsigned int s_iova_off = sg_dma_address(s);
+#else
+		/*
+		 * for pseudo m4u map the pa without page struct, the sg_dma_address(s)
+		 * stores the physical address, and pseudo m4u will always make sure the
+		 * pa is 4K aligned, so we do not want the s_iova_off to mess the
+		 * sg_dma_address(s)
+		 */
+		unsigned int s_iova_off = 0;
+#endif
 		unsigned int s_length = sg_dma_len(s);
 		unsigned int s_iova_len = s->length;
 
