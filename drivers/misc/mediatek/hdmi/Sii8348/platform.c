@@ -1072,13 +1072,29 @@ void dpi_gpio_ctrl(int enable)
 	if (!iocfg_1_base)
 		pr_debug("[IOCFG_1] base failed\n");
 	else {
-		if(enable) {
+		if (enable) {
 			HDMI_REG_SET_FIELD(0xFF000000, (iocfg_1_base + 0xA0), 0x11000000);
 			HDMI_REG_SET_FIELD(0xFF, (iocfg_1_base + 0xB0), 0x11);
 		} else {
 			HDMI_REG_SET_FIELD(0xFF000000, (iocfg_1_base + 0xA0), 0x0);
 			HDMI_REG_SET_FIELD(0xFF, (iocfg_1_base + 0xB0), 0x0);
 		}
+	}
+#endif
+
+#ifdef CONFIG_MACH_MT6799
+	node = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_rb");
+	if (!node)
+		pr_debug("[iocfg_rb] find node failed\n");
+
+	iocfg_1_base = of_iomap(node, 0);
+	if (!iocfg_1_base)
+		pr_debug("[iocfg_rb] base failed\n");
+	else {
+		if (enable)
+			HDMI_REG_SET_FIELD(0xF00, (iocfg_1_base + 0xB0), 0x400);
+		else
+			HDMI_REG_SET_FIELD(0xF00, (iocfg_1_base + 0xB0), 0x0);
 	}
 #endif
 #endif
