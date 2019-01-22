@@ -30,7 +30,11 @@ obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_sensor_list.o
 obj-y				+= ../common/$(COMMON_VERSION)/seninf.o
 
 ifeq ($(CONFIG_MTK_CAM_SECURITY_SUPPORT),y)
+ifneq ($(ARCH_MTK_PROJECT),k71v1_64_bsp_as)
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_ca.o
+else
+obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_ca_dummy.o
+endif
 endif
 
 define FILTER_DRV
