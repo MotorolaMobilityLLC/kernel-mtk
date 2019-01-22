@@ -44,6 +44,10 @@ else
     endif
 endif
 
+ifneq (,$(filter y,$(CONFIG_MTK_PMIC_CHIP_MT6335)))
+  MDI_IP_FOLDER:=mt6335
+endif
+
 MDP_COMMON_FOLDER:= ./
 
 #Top level common code
