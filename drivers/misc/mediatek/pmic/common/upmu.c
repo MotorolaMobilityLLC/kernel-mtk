@@ -326,6 +326,7 @@ void upmu_set_reg_value(unsigned int reg, unsigned int reg_val)
 #define Get_IS_EXT_VBAT_BOOST_EXIST _IOW('k', 21, int)
 #define Get_IS_EXT_SWCHR_EXIST _IOW('k', 22, int)
 #define Get_IS_EXT_BUCK2_EXIST _IOW('k', 23, int)
+#define Get_IS_EXT_BUCK3_EXIST _IOW('k', 24, int)
 
 
 static struct class *pmic_class;
@@ -345,8 +346,8 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Get_IS_EXT_BUCK_EXIST:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
-		/*adc_out_data[0] = is_ext_buck_exist();*/
-		adc_out_data[0] = is_ext_buck_gpio_exist();
+		adc_out_data[0] = is_ext_buck_exist();
+		/*adc_out_data[0] = is_ext_buck_gpio_exist();*/
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK_EXIST:%d\n", adc_out_data[0]);
 		break;
@@ -378,6 +379,12 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK2_EXIST:%d\n", adc_out_data[0]);
 		break;
+	case Get_IS_EXT_BUCK3_EXIST:
+		user_data_addr = (int *)arg;
+		ret = copy_from_user(adc_in_data, user_data_addr, 8);
+		adc_out_data[0] = 0;
+		ret = copy_to_user(user_data_addr, adc_out_data, 8);
+		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK3_EXIST:%d\n", adc_out_data[0]);
 	default:
 		PMICLOG("[pmic_ftm_ioctl] Error ID\n");
 		break;
@@ -492,9 +499,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC_EINT_SETTING] Done\n");
 #endif
 
-#ifdef REGULATOR_READY
 	mtk_regulator_init(dev);
-#endif
 
 #ifdef CONFIG_MTK_AUXADC_INTF
 	mtk_auxadc_init();
