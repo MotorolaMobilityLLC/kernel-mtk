@@ -7468,7 +7468,8 @@ static s32 cmdq_core_wait_task_done(struct TaskStruct *pTask, u32 timeout_ms)
 	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, snapshot_tasklist_in_wait_task_done);
 	/* snapshot from activelist without copy current task */
 	list_for_each_entry(entry_task, &gCmdqContext.taskActiveList, listEntry) {
-		if (entry_task->thread == thread && entry_task != pTask) {
+		if (entry_task->thread == thread && entry_task != pTask &&
+			task_list_count < CMDQ_MAX_TASK_IN_THREAD) {
 			task_list[task_list_count] = entry_task;
 			task_list_count++;
 		}
@@ -7693,7 +7694,8 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 	/* snapshot from activelist */
 	list_for_each_entry(entry_task, &gCmdqContext.taskActiveList, listEntry) {
-		if (entry_task->thread == thread) {
+		if (entry_task->thread == thread &&
+			task_list_count < CMDQ_MAX_TASK_IN_THREAD) {
 			task_list[task_list_count] = entry_task;
 			task_list_count++;
 		}
