@@ -14,7 +14,7 @@
  *
  * Filename:
  * ---------
- *     GC2365mipi_Sensor.h
+ *     GC2366mipi_Sensor.h
  *
  * Project:
  * --------
@@ -53,8 +53,8 @@
 #define STARTY 0x02
 #define STARTX 0x05
 #endif
-#ifndef _GC2365MIPI_SENSOR_H
-#define _GC2365MIPI_SENSOR_H
+#ifndef _GC2366MIPI_SENSOR_H
+#define _GC2366MIPI_SENSOR_H
 
 
 enum IMGSENSOR_MODE {
