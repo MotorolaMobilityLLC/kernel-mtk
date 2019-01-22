@@ -12,3 +12,4 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6353) += mt6353/
 obj-$(CONFIG_MTK_AUXADC_INTF)   += mtk_auxadc_intf.o
 
 obj-$(CONFIG_MFD_RT5081_PMU)	+= rt5081/
+obj-y += mtk_battery_adc_intf.o
