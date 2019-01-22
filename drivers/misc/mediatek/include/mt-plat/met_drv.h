@@ -346,7 +346,20 @@ void __attribute__((weak)) met_show_pmic_info(unsigned int RegNum, unsigned int 
 
 #endif				/* MET_USER_EVENT_SUPPORT */
 
+/*
+ * udmet API ( user-defined met )
+ */
+typedef  void (*MET_UDMET_POLLING_FUNC)(unsigned long long stamp, int cpu);
+void __attribute__((weak)) _met_udmet_register_polling(
+				char *mod_name,
+				MET_UDMET_POLLING_FUNC polling_func,
+				unsigned int period_multiply);
 
+#define met_udmet_register_polling(mod_name, polling_func, period_multiply) \
+{\
+	if (_met_udmet_register_polling)\
+		_met_udmet_register_polling(mod_name, polling_func, period_multiply);\
+}
 
 /*
  * Wrapper for DISP/MDP/GCE mmsys profiling
