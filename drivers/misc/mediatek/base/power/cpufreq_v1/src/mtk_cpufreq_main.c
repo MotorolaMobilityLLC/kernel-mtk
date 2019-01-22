@@ -235,8 +235,7 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 
 #if 0
 	aee_record_cpu_dvfs_step(7);
-
-	pll_p->pll_ops->set_armpll_dds(pll_p, opp_tbl_m[TARGET_OPP_IDX].slot->vco_dds,
+	pll_p->pll_ops->set_armpll_dds(pll_p, _search_for_vco_dds(p, idx, opp_tbl_m[TARGET_OPP_IDX].slot),
 		opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 #else
 	aee_record_cpu_dvfs_step(8);
@@ -854,19 +853,6 @@ static void _mt_cpufreq_cpu_CB_wrapper(enum mt_cpu_dvfs_id cluster_id, unsigned 
 	aee_record_cpu_dvfs_cb(0);
 }
 
-#ifdef ENABLE_TURBO_MODE_AP
-static int can_turbo;
-static int turbo_core_match(unsigned int *cpus)
-{
-	if (cpus[0] == 1 && cpus[2] == 1)
-		return 1;
-	else if (cpus[0] == 0 && cpus[2] == 1)
-		return 1;
-	else
-		return 0;
-}
-#endif
-
 int turbo_flag;
 static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					void *hcpu)
@@ -901,46 +887,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 #ifdef ENABLE_TURBO_MODE_AP
 	/* Turbo decision */
 	if (dev && turbo_flag) {
-		if (turbo_core_match(cpus) && cluster_id != MT_CPU_DVFS_L) {
-			switch (action & ~CPU_TASKS_FROZEN) {
-			case CPU_UP_PREPARE:
-				if (cluster_id == MT_CPU_DVFS_LL && cpus[MT_CPU_DVFS_LL] == 0)
-					break;
-				can_turbo = 0;
-#ifdef CONFIG_HYBRID_CPU_DVFS
-				/* Block until ack */
-				cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
-#else
-#endif
-				cpufreq_ver("DVFS - can't go turbo due to cpu%d CPU_UP_PREPARE\n", cpu);
-				break;
-			case CPU_DOWN_PREPARE:
-				if (cluster_id == MT_CPU_DVFS_B) {
-					can_turbo = 0;
-#ifdef CONFIG_HYBRID_CPU_DVFS
-					/* Block until ack */
-					cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
-#else
-#endif
-					cpufreq_ver("DVFS - can't go turbo due to cpu%d CPU_DOWN_PREPARE\n", cpu);
-				}
-				break;
-			case CPU_ONLINE:
-			case CPU_DEAD:
-				if (can_turbo == 0) {
-					can_turbo = 1;
-#ifdef CONFIG_HYBRID_CPU_DVFS
-					/* Block until ack */
-					cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
-#else
-#endif
-					cpufreq_ver("DVFS - can go turbo due to cpu%d CPU_ONLINE OR CPU_DEAD\n", cpu);
-				}
-				break;
-			default:
-				break;
-			}
-		}
+		mt_cpufreq_turbo_action(action, cpus, cluster_id);
 	}
 #endif
 
@@ -1211,14 +1158,10 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		p->mt_policy = policy;
 		p->armpll_is_available = 1;
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
-		if (turbo_flag && cpu_dvfs_is(p, MT_CPU_DVFS_B) && !turbo_is_inited) {
-			unsigned int turbo_f, turbo_v;
-
-			turbo_f = ((cpu_dvfs_get_max_freq(p) * 105 / 100) / 13) * 13 / 1000;
-			turbo_v = p->opp_tbl[0].cpufreq_volt;
-			cpuhvfs_set_turbo_scale(turbo_f * 1000, turbo_v);
-			turbo_is_inited = 1;
+#ifdef ENABLE_TURBO_MODE_AP
+		if (turbo_flag && !turbo_is_inited) {
+			turbo_is_inited = mt_cpufreq_turbo_config(id, cpu_dvfs_get_max_freq(p),
+				p->opp_tbl[0].cpufreq_volt);
 		}
 #endif
 
