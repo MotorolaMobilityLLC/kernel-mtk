@@ -54,6 +54,7 @@ struct helio_dvfsrc {
 	struct notifier_block	pm_qos_md_peri_memory_bw_nb;
 	struct notifier_block	pm_qos_emi_opp_nb;
 	struct notifier_block	pm_qos_vcore_opp_nb;
+	struct notifier_block	pm_qos_vcore_dvfs_fixed_opp_nb;
 
 	struct reg_config	*init_config;
 	struct reg_config	*suspend_config;
@@ -74,7 +75,6 @@ extern int vcorefs_get_curr_ddr(void);
 extern int dvfsrc_get_vcore_by_steps(u32 opp);
 extern int dvfsrc_get_ddr_by_steps(u32 opp);
 extern int is_vcorefs_can_work(void);
-extern int helio_dvfsrc_fixed(int ddr, int volt);
 extern int spm_dvfs_flag_init(void);
 extern void dvfsrc_update_opp_table(void);
 extern char *dvfsrc_get_opp_table_info(char *p);

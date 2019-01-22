@@ -197,7 +197,7 @@ static struct pm_qos_constraints emi_opp_constraints = {
 	.target_value = PM_QOS_EMI_OPP_DEFAULT_VALUE,
 	.default_value = PM_QOS_EMI_OPP_DEFAULT_VALUE,
 	.no_constraint_value = PM_QOS_EMI_OPP_DEFAULT_VALUE,
-	.type = PM_QOS_MAX,
+	.type = PM_QOS_MIN,
 	.notifiers = &emi_opp_notifier,
 };
 static struct pm_qos_object emi_opp_pm_qos = {
@@ -213,12 +213,27 @@ static struct pm_qos_constraints vcore_opp_constraints = {
 	.target_value = PM_QOS_VCORE_OPP_DEFAULT_VALUE,
 	.default_value = PM_QOS_VCORE_OPP_DEFAULT_VALUE,
 	.no_constraint_value = PM_QOS_VCORE_OPP_DEFAULT_VALUE,
-	.type = PM_QOS_MAX,
+	.type = PM_QOS_MIN,
 	.notifiers = &vcore_opp_notifier,
 };
 static struct pm_qos_object vcore_opp_pm_qos = {
 	.constraints = &vcore_opp_constraints,
 	.name = "vcore_opp",
+};
+
+static BLOCKING_NOTIFIER_HEAD(vcore_dvfs_fixed_opp_notifier);
+static struct pm_qos_constraints vcore_dvfs_fixed_opp_constraints = {
+	.req_list = LIST_HEAD_INIT(vcore_dvfs_fixed_opp_constraints.req_list),
+	.list = PLIST_HEAD_INIT(vcore_dvfs_fixed_opp_constraints.list),
+	.target_value = PM_QOS_VCORE_DVFS_FIXED_OPP_DEFAULT_VALUE,
+	.default_value = PM_QOS_VCORE_DVFS_FIXED_OPP_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_VCORE_DVFS_FIXED_OPP_DEFAULT_VALUE,
+	.type = PM_QOS_MIN,
+	.notifiers = &vcore_dvfs_fixed_opp_notifier,
+};
+static struct pm_qos_object vcore_dvfs_fixed_opp_pm_qos = {
+	.constraints = &vcore_dvfs_fixed_opp_constraints,
+	.name = "vcore_dvfs_fixed_opp",
 };
 
 static struct pm_qos_object *pm_qos_array[] = {
@@ -235,6 +250,7 @@ static struct pm_qos_object *pm_qos_array[] = {
 
 	&emi_opp_pm_qos,
 	&vcore_opp_pm_qos,
+	&vcore_dvfs_fixed_opp_pm_qos,
 };
 
 static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
