@@ -121,6 +121,12 @@ void mtk_pe40_reset(struct charger_manager *pinfo, bool enable)
 	swchgalg->state = CHR_CC;
 
 	pe40 = &pinfo->pe4;
+
+	if (pe40->is_connect == true) {
+		charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
+		charger_enable_vbus_ovp(pinfo, true);
+	}
+
 	pe40->cap.nr = 0;
 	pe40->is_enabled = enable;
 	pe40->is_connect = false;
@@ -129,8 +135,6 @@ void mtk_pe40_reset(struct charger_manager *pinfo, bool enable)
 	pe40->max_vbus = PE40_MAX_VBUS;
 	pe40->max_ibus = PE40_MAX_IBUS;
 	pe40->max_charger_ibus = PE40_MAX_IBUS * (100 - IBUS_ERR) / 100;
-	charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
-	charger_enable_vbus_ovp(pinfo, true);
 }
 
 void mtk_pe40_plugout_reset(struct charger_manager *pinfo)
@@ -684,10 +688,13 @@ int mtk_pe40_safety_check(struct charger_manager *pinfo)
 			goto err;
 		}
 
-		if (cap.output_mv != -1 && cap.output_mv - vbus >
-			PE40_VBUS_IR_DROP_THRESHOLD) {
-			chr_err("[pe40_err]vbus ov2 :vbus:%d avbus:%d\n",
-				vbus, cap.output_mv);
+		if (cap.output_mv != -1 &&
+			(cap.output_mv - vbus) > PE40_VBUS_IR_DROP_THRESHOLD) {
+			chr_err("[pe40_err]vbus ov2 vbus:%d TAvbus:%d %d %d\n",
+				vbus, cap.output_mv,
+				PE40_VBUS_IR_DROP_THRESHOLD,
+				(cap.output_mv - vbus) > PE40_VBUS_IR_DROP_THRESHOLD
+				);
 			goto err;
 		}
 
