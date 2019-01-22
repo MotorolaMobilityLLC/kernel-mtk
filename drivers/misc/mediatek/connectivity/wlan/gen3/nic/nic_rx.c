@@ -59,7 +59,7 @@
 */
 #define RX_RESPONSE_TIMEOUT (1000)
 
-#if CFG_SUPPORT_SNIFFER
+#if 0 /* CFG_SUPPORT_SNIFFER */
 /* in unit of 100kb/s */
 const EMU_MAC_RATE_INFO_T arMcsRate2PhyRate[] = {
 	/* Phy Rate Code,           BW20,  BW20 SGI, BW40, BW40 SGI, BW80, BW80 SGI, BW160, BW160 SGI */
@@ -1150,6 +1150,7 @@ VOID nicRxProcessMonitorPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwR
 	UINT_8 ucMcs;
 	UINT_8 ucFrMode;
 	UINT_8 ucShortGI;
+	UINT_32 u4PhyRate;
 
 #if CFG_SUPPORT_MULTITHREAD
 	KAL_SPIN_LOCK_DECLARATION();
@@ -1220,7 +1221,7 @@ VOID nicRxProcessMonitorPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwR
 	if ((ucRxMode == RX_VT_LEGACY_CCK) || (ucRxMode == RX_VT_LEGACY_OFDM)) {
 		/* Bit[2:0] for Legacy CCK, Bit[3:0] for Legacy OFDM */
 		ucRxRate = ((prRxStatusGroup3)->u4RxVector[0] & BITS(0, 3));
-		rMonitorRadiotap.ucRate = aucHwRate2PhyRate[ucRxRate];
+		rMonitorRadiotap.ucRate = nicGetHwRateByPhyRate(ucRxRate);
 	} else {
 		ucMcs = ((prRxStatusGroup3)->u4RxVector[0] & RX_VT_RX_RATE_AC_MASK);
 		/* VHTA1 B0-B1 */
@@ -1228,10 +1229,11 @@ VOID nicRxProcessMonitorPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwR
 		ucShortGI = ((prRxStatusGroup3)->u4RxVector[0] & RX_VT_SHORT_GI) ? 1 : 0;	/* VHTA2 B0 */
 
 		/* ucRate(500kbs) = u4PhyRate(100kbps) / 5, max ucRate = 0xFF */
-		if (arMcsRate2PhyRate[ucMcs].u4PhyRate[ucFrMode][ucShortGI] > 1275)
+		u4PhyRate = nicGetPhyRateByMcsRate(ucMcs, ucFrMode, ucShortGI);
+		if (u4PhyRate > 1275)
 			rMonitorRadiotap.ucRate = 0xFF;
 		else
-			rMonitorRadiotap.ucRate = arMcsRate2PhyRate[ucMcs].u4PhyRate[ucFrMode][ucShortGI] / 5;
+			rMonitorRadiotap.ucRate = u4PhyRate / 5;
 	}
 
 	/* Bit Number 3 CHANNEL */
@@ -1393,7 +1395,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	nicRxFillRFB(prAdapter, prSwRfb);
 	ucBssIndex = secGetBssIdxByWlanIdx(prAdapter, prSwRfb->ucWlanIdx);
 	GLUE_SET_PKT_BSS_IDX(prSwRfb->pvPacket, ucBssIndex);
-	StatsRxPktInfoDisplay(prSwRfb->pvHeader);
+	StatsRxPktInfoDisplay(prSwRfb);
 
 	prRetSwRfb = qmHandleRxPackets(prAdapter, prSwRfb);
 
@@ -1407,6 +1409,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 			if (prStaRec && IS_STA_IN_AIS(prStaRec)) {
 #if ARP_MONITER_ENABLE
 				qmHandleRxArpPackets(prAdapter, prRetSwRfb);
+				qmHandleRxDhcpPackets(prAdapter, prRetSwRfb);
 #endif
 				u4LastRxPacketTime = kalGetTimeTick();
 			}
@@ -1756,6 +1759,11 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		qmHandleEventCheckReorderBubble(prAdapter, prEvent);
 		break;
 
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+	case EVENT_ID_BA_FW_DROP_SN:
+		qmHandleEventDropByFW(prAdapter, prEvent);
+		break;
+#endif
 	case EVENT_ID_LINK_QUALITY:
 #if CFG_ENABLE_WIFI_DIRECT && CFG_SUPPORT_P2P_RSSI_QUERY
 		if (prEvent->u2PacketLen == EVENT_HDR_SIZE + sizeof(EVENT_LINK_QUALITY_EX)) {
@@ -2403,6 +2411,9 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		break;
 	case EVENT_ID_RSP_CHNL_UTILIZATION:
 		cnmHandleChannelUtilization(prAdapter, (struct EVENT_RSP_CHNL_UTILIZATION *)prEvent->aucBuffer);
+		break;
+	case EVENT_ID_UPDATE_FW_INFO:
+		nicEventUpdateFwInfo(prAdapter, prEvent);
 		break;
 	case EVENT_ID_ACCESS_REG:
 	case EVENT_ID_NIC_CAPABILITY:

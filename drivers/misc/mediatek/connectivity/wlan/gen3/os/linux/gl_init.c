@@ -2147,6 +2147,7 @@ bailout:
 	if (i4Status == WLAN_STATUS_SUCCESS) {
 		wlanCfgSetSwCtrl(prGlueInfo->prAdapter);
 		wlanCfgSetChip(prGlueInfo->prAdapter);
+		wlanGetFwInfo(prGlueInfo->prAdapter);
 		wlanCfgSetCountryCode(prGlueInfo->prAdapter);
 		/* Init performance monitor structure */
 		kalPerMonInit(prGlueInfo);

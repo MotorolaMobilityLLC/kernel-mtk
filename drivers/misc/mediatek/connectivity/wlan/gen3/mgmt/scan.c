@@ -1711,7 +1711,9 @@ VOID scanLogEssResult(P_ADAPTER_T prAdapter)
 	UINT_32 u4Index = 0;
 
 	if (u4ResultNum == 0) {
-		DBGLOG(SCN, INFO, "0 Bss is found\n");
+		DBGLOG(SCN, INFO, "0 Bss is found, %d, %d, %d, %d\n",
+			prAdapter->rWlanInfo.u4ScanDbgTimes1, prAdapter->rWlanInfo.u4ScanDbgTimes2,
+			prAdapter->rWlanInfo.u4ScanDbgTimes3, prAdapter->rWlanInfo.u4ScanDbgTimes4);
 		return;
 	}
 
@@ -1811,6 +1813,7 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 
 	if (prBssDesc->eBSSType == BSS_TYPE_P2P_DEVICE) {
 		/* NOTE(Kevin): Not supported by WZC(TBD) */
+		DBGLOG(SCN, INFO, "Bss Desc type is P2P\n");
 		return WLAN_STATUS_FAILURE;
 	}
 
@@ -1939,6 +1942,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 #ifndef _lint
 		ASSERT(0);
 #endif /* _lint */
+		DBGLOG(SCN, ERROR, "Ignore invalid Beacon Frame\n");
 		return rStatus;
 	}
 #if CFG_SLT_SUPPORT
@@ -1960,6 +1964,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 	/* 4 <1> Parse and add into BSS_DESC_T */
 	prBssDesc = scanAddToBssDesc(prAdapter, prSwRfb);
 
+	prAdapter->rWlanInfo.u4ScanDbgTimes1++;
 	if (prBssDesc) {
 
 		/* 4 <1.1> Beacon Change Detection for Connected BSS */
@@ -2049,9 +2054,11 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 			      (prSwRfb->u2PacketLen - prSwRfb->u2HeaderLen) -
 			      (UINT_16) (OFFSET_OF(WLAN_BEACON_FRAME_BODY_T, aucInfoElem[0])));
 
+		prAdapter->rWlanInfo.u4ScanDbgTimes2++;
 		/* 4 <3> Send SW_RFB_T to HIF when we perform SCAN for HOST */
 		if (prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE || prBssDesc->eBSSType == BSS_TYPE_IBSS) {
 			/* for AIS, send to host */
+			prAdapter->rWlanInfo.u4ScanDbgTimes3++;
 			if (prConnSettings->fgIsScanReqIssued || prAdapter->rWifiVar.rScanInfo.fgNloScanning
 #if CFG_SUPPORT_SCN_PSCN
 			|| prAdapter->rWifiVar.rScanInfo.fgPscnOngoing
@@ -2061,6 +2068,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 
 				fgAddToScanResult = scanCheckBssIsLegal(prAdapter, prBssDesc);
 
+				prAdapter->rWlanInfo.u4ScanDbgTimes4++;
 				if (fgAddToScanResult == TRUE)
 					rStatus = scanAddScanResult(prAdapter, prBssDesc, prSwRfb);
 			}
@@ -3074,6 +3082,12 @@ static BOOLEAN scanSanityCheckBssDesc(P_ADAPTER_T prAdapter,
 			prBssDesc->eBand, prBssDesc->ucChannelNum);
 		return FALSE;
 	}
+#if CFG_SUPPORT_RN
+	if (prAdapter->prAisBssInfo->fgDisConnReassoc == FALSE)
+#endif
+		if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), prBssDesc->rUpdateTime,
+					SEC_TO_SYSTIME(SCN_BSS_DESC_STALE_SEC)))
+			return FALSE;
 #if CFG_SUPPORT_WAPI
 	if (prAdapter->rWifiVar.rConnSettings.fgWapiMode) {
 		if (!wapiPerformPolicySelection(prAdapter, prBssDesc))
