@@ -3758,11 +3758,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			/* CMDQ init flow: */
 			/* 1. clock-on */
 			/* 2. reset all events */
-#ifdef CONFIG_PM
-			pm_runtime_get_sync(cmdq_dev_get());
-#else
 			cmdq_get_func()->enableGCEClockLocked(enable);
-#endif
 
 			cmdq_core_reset_hw_events();
 			cmdq_core_config_prefetch_gsize();
@@ -3802,14 +3798,10 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			/* Backup event */
 			cmdq_get_func()->eventBackup();
 			/* clock-off */
-#ifdef CONFIG_PM
-			pm_runtime_put_sync(cmdq_dev_get());
-#else
 			cmdq_get_func()->enableGCEClockLocked(enable);
 		} else if (clock_count < 0) {
 			CMDQ_ERR("enable clock %s error usage:%d smi use:%d\n",
 				__func__, clock_count, (s32)atomic_read(&gSMIThreadUsage));
-#endif
 		}
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
