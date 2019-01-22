@@ -3067,6 +3067,10 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 			blk_end_request_all(req, -EIO);
 		}
 		ret = 0;
+		if (part_cmdq_en) {
+			mmc_put_card(card);
+			return ret;
+		}
 		goto out;
 	}
 
