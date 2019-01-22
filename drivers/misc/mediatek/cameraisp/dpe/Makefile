@@ -25,7 +25,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 obj-y := cameradpe_dummy.o
 
 ifeq ($(CONFIG_MACH_MT6771),y)
-  obj-$(CONFIG_MTK_CAMERA_ISP_DPE_SUPPORT) += mt6775/camera_dpe.o
+  obj-$(CONFIG_MTK_CAMERA_ISP_DPE_SUPPORT) += isp_50/camera_dpe.o
+else ifeq ($(CONFIG_MACH_MT6775),y)
+  obj-$(CONFIG_MTK_CAMERA_ISP_DPE_SUPPORT) += isp_50/camera_dpe.o
 else
   obj-$(CONFIG_MTK_CAMERA_ISP_DPE_SUPPORT) += $(MTK_PLATFORM)/camera_dpe.o
 endif
