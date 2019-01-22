@@ -18,6 +18,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6771-msdc.h>
 #include <dt-bindings/pinctrl/mt6771-pinfunc.h>
+#include <generated/autoconf.h>
 
 / {
 	model = "mt6771";
@@ -3609,9 +3610,6 @@
 	};
 
 	md1_sim2_hot_plug_eint: md1_sim2_hot_plug_eint {
-	};
-
-	bat_gm30: bat_gm30{
 	};
 
 	usb_c_pinctrl: usb_c_pinctrl {
