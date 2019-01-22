@@ -29,7 +29,6 @@
 #include <linux/atomic.h>
 
 #include <hwmsensor.h>
-#include <hwmsen_dev.h>
 #include <sensors_io.h>
 #include <hwmsen_helper.h>
 

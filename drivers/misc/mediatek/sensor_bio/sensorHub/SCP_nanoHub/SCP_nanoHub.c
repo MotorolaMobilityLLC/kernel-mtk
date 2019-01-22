@@ -28,7 +28,6 @@
 #include <linux/time.h>
 #include "cust_sensorHub.h"
 #include "hwmsensor.h"
-#include "hwmsen_dev.h"
 #include "sensors_io.h"
 #include "SCP_sensorHub.h"
 #include "hwmsen_helper.h"

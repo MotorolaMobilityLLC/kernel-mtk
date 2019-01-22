@@ -23,7 +23,6 @@
 #include <linux/slab.h>
 #include <linux/module.h>
 #include <hwmsensor.h>
-#include <hwmsen_dev.h>
 #include <linux/poll.h>
 #include "sensor_attr.h"
 #include "sensor_event.h"

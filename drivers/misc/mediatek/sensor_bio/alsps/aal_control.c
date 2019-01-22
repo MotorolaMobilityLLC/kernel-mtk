@@ -18,7 +18,6 @@
 #include <linux/io.h>
 #include <linux/uaccess.h>
 
-#include <hwmsen_dev.h>
 #include <sensors_io.h>
 #include "inc/alsps.h"
 #include "inc/aal_control.h"
@@ -60,9 +59,7 @@ static long AAL_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		err = alsps_aal_enable(enable);
 		if (err) {
 			AAL_LOG("als driver don't support new arch, goto execute old arch: %ld\n", err);
-			err = hwmsen_aal_enable(enable);
-			if (err != 0)
-				AAL_ERR("Enable als driver fail %ld\n", err);
+			AAL_ERR("Enable als driver fail %ld\n", err);
 		}
 		break;
 
@@ -72,10 +69,6 @@ static long AAL_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 
 	case AAL_GET_ALS_DATA:
 		dat = alsps_aal_get_data();
-		if (dat < 0) {
-			AAL_LOG("alsps_aal_get_data fail\n");
-			dat = hwmsen_aal_get_data();
-		}
 		AAL_LOG("Get als dat :%d\n", dat);
 
 		if (copy_to_user(ptr, &dat, sizeof(dat))) {
