@@ -1209,14 +1209,11 @@ static ssize_t sodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr,
 	return show_pwr_ctrl(SPM_PWR_CTRL_SODI, __spm_sodi.pwrctrl, buf);
 }
 
-/* FIXME: */
-#if 0
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MACH_MT6771)
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	return show_pwr_ctrl(__spm_vcorefs.pwrctrl, buf);
+	return show_pwr_ctrl(SPM_PWR_CTRL_VCOREFS, __spm_vcorefs.pwrctrl, buf);
 }
-#endif
 #endif
 
 
@@ -2690,17 +2687,14 @@ static ssize_t sodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr
 	return store_pwr_ctrl(SPM_PWR_CTRL_SODI, __spm_sodi.pwrctrl, buf, count);
 }
 
-/* FIXME: */
-#if 0
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MACH_MT6771)
 static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				     const char *buf, size_t count)
 {
 
-	/* return store_pwr_ctrl(SPM_PWR_CTRL_VCOREFS, __spm_vcorefs.pwrctrl, buf, count); */
+	return store_pwr_ctrl(SPM_PWR_CTRL_VCOREFS, __spm_vcorefs.pwrctrl, buf, count);
 	return 0;
 }
-#endif
 #endif
 
 /**************************************
@@ -2721,9 +2715,8 @@ DEFINE_ATTR_RW(suspend_ctrl);
 DEFINE_ATTR_RW(dpidle_ctrl);
 DEFINE_ATTR_RW(sodi3_ctrl);
 DEFINE_ATTR_RW(sodi_ctrl);
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-/* FIXME: */
-/* DEFINE_ATTR_RW(vcore_dvfs_ctrl); */
+#if defined(CONFIG_MACH_MT6771)
+DEFINE_ATTR_RW(vcore_dvfs_ctrl);
 #endif
 DEFINE_ATTR_RO(fm_suspend);
 
@@ -2733,9 +2726,8 @@ static struct attribute *spm_attrs[] = {
 	__ATTR_OF(dpidle_ctrl),
 	__ATTR_OF(sodi3_ctrl),
 	__ATTR_OF(sodi_ctrl),
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	/* FIXME: */
-	/* __ATTR_OF(vcore_dvfs_ctrl), */
+#if defined(CONFIG_MACH_MT6771)
+	__ATTR_OF(vcore_dvfs_ctrl),
 #endif
 	__ATTR_OF(fm_suspend),
 
