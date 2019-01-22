@@ -1,9 +1,14 @@
 /*
- * (C) Copyright 2010
- * MediaTek <www.MediaTek.com>
+ * Copyright (C) 2016 MediaTek Inc.
  *
- * MTK GPU Extension Device
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #include <linux/cdev.h>
@@ -20,7 +25,6 @@
 #include <linux/wait.h>
 #include <linux/sched.h>
 #include <linux/vmalloc.h>
-//#include <mach/system.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/semaphore.h>
@@ -41,7 +45,8 @@
 
 #define GED_DRIVER_DEVICE_NAME "ged"
 
-#define GED_IOCTL_PARAM_BUF_SIZE 0x3000 //12KB
+/* 12 KB */
+#define GED_IOCTL_PARAM_BUF_SIZE 0x3000
 
 #ifdef GED_DEBUG
 #define GED_LOG_BUF_COMMON_GLES "GLES"
