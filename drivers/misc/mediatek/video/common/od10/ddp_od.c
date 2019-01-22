@@ -132,7 +132,7 @@ enum OD_DEBUG_MODE {
 	DEBUG_MODE_INK = 0x2,
 	DEBUG_MODE_INK_OSD = (DEBUG_MODE_OSD | DEBUG_MODE_INK)
 };
-static unsigned int g_od_debug_mode = DEBUG_MODE_INK_OSD;
+static unsigned int g_od_debug_mode = DEBUG_MODE_NONE;
 
 static DEFINE_MUTEX(g_od_global_lock);
 static volatile int g_od_is_enabled; /* OD is disabled by default */
@@ -215,7 +215,8 @@ static void _od_reg_init(void *cmdq)
 	DISP_REG_SET(cmdq, OD_BASE+0x100, 0x1FD3D9C6);
 	DISP_REG_SET(cmdq, OD_BASE+0x014, 0x00000001);
 	DISP_REG_SET(cmdq, OD_BASE+0x708, 0x00000000);
-	DISP_REG_SET(cmdq, OD_BASE+0x300, 0x39C83C1B);
+	DISP_REG_SET(cmdq, OD_BASE+0x300, 0x00000000);
+	/* DISP_REG_SET(cmdq, OD_BASE+0x300, 0x39C83C1B); */
 	DISP_REG_SET(cmdq, OD_BASE+0x79C, 0x00000001);
 	DISP_REG_SET(cmdq, OD_BASE+0x7E0, 0x74000000);
 	DISP_REG_SET(cmdq, OD_BASE+0x7C4, 0x0706B16A);
@@ -811,8 +812,10 @@ static int disp_od_ioctl_ctlcmd(enum DISP_MODULE_ENUM module, int msg, unsigned 
 {
 	struct DISP_OD_CMD cmd;
 
-	if (copy_from_user((void *)&cmd, (void *)arg, sizeof(struct DISP_OD_CMD)))
+	if (copy_from_user((void *)&cmd, (void *)arg, sizeof(struct DISP_OD_CMD))) {
+		ODERR("disp_od_ioctl_ctlcmd fail");
 		return -EFAULT;
+	}
 
 	ODDBG(OD_LOG_ALWAYS, "OD ioctl cmdq %lx", (unsigned long)cmdq);
 
@@ -824,6 +827,7 @@ static int disp_od_ioctl_ctlcmd(enum DISP_MODULE_ENUM module, int msg, unsigned 
 		} else if (cmd.param0 == OD_CTL_ENABLE_ON) {
 			disp_od_hwc_force(1);
 			disp_od_set_enabled(cmdq, 1);
+			disp_od_start_read(cmdq);
 		} else {
 			ODDBG(OD_LOG_ALWAYS, "unknown enable type command");
 		}
@@ -942,7 +946,7 @@ static void ddp_bypass_od(unsigned int width, unsigned int height, void *handle)
 	DISP_REG_SET(handle, DISP_REG_OD_EN, 0x0);
 }
 
-
+/* #define OD_ALWAYS_ON */
 static int od_config_od(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
 {
 #if defined(CONFIG_MTK_OD_SUPPORT)
@@ -974,7 +978,7 @@ static int od_config_od(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 
 	#if defined(OD_ALLOW_DEFAULT_TABLE) /* only support 17x17 table */
 		od_table_size = 17 * 17;
-		od_table = (void *)OD_Table_zero_17x17;
+		od_table = (void *)OD_Table_17x17;
 		ODDBG(OD_LOG_ALWAYS, "od_config_od: Use default 17x17 table");
 	#endif
 
@@ -998,6 +1002,11 @@ static int od_config_od(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 			ddp_bypass_od(pConfig->dst_w, pConfig->dst_h, cmdq);
 			ODDBG(OD_LOG_ALWAYS, "od_config_od: No od table bypass");
 		}
+
+	#if defined(OD_ALWAYS_ON)
+		disp_od_set_enabled(cmdq, 1);
+		disp_od_start_read(cmdq);
+	#endif
 
 #else /* Not support OD */
 		ddp_bypass_od(pConfig->dst_w, pConfig->dst_h, cmdq);
@@ -1118,7 +1127,7 @@ static int od_start(enum DISP_MODULE_ENUM module, void *cmdq)
 	OD_REG_SET_FIELD(cmdq, OD_REG72, 1, RG_RDRAM_LEN_X8);
 #endif
 	/* DMA settings */
-	DISP_REG_SET(cmdq, OD_BASE + 0x100, (620 << 20) | (65 << 10) | 440);
+	DISP_REG_SET(cmdq, OD_BASE + 0x100, (620 << 20) | (110 << 10) | 440);
 	DISP_REG_SET(cmdq, OD_BASE + 0x104, (6 << 20) | (6 << 10) | 6);
 	DISP_REG_SET(cmdq, OD_BASE + 0x108, (16 << 26) | (8 << 20) | (600 << 10) | 10);
 	DISP_REG_SET(cmdq, OD_BASE + 0x10c, (60 << 20) | (32 << 10) | 16);
