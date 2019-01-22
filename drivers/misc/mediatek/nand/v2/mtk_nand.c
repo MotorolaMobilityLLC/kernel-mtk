@@ -8289,7 +8289,8 @@ static void mtk_nand_init_hw(struct mtk_nand_host *host)
 	DRV_WriteReg16(NFI_INTR_EN_REG16, 0);
 
 	/* Enable automatic disable ECC clock when NFI is busy state */
-	DRV_WriteReg16(NFI_DEBUG_CON1_REG16, (NFI_BYPASS | WBUF_EN | HWDCM_SWCON_ON));
+	if (mtk_nfi_dev_comp->chip_ver != 3)
+		DRV_WriteReg16(NFI_DEBUG_CON1_REG16, (NFI_BYPASS | WBUF_EN | HWDCM_SWCON_ON));
 
 #ifdef CONFIG_PM
 	host->saved_para.suspend_flag = 0;
