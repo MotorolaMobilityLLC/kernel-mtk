@@ -132,11 +132,13 @@ int set_shutdown_cond(int shutdown_cond)
 	int now_current;
 	int now_is_charging = 0;
 	int now_is_kpoc;
+	bool curr_sign = 0;
 	int vbat;
 
 	now_current = battery_get_bat_current();
 	now_is_kpoc = battery_get_is_kpoc();
 	vbat = pmic_get_battery_voltage();
+	curr_sign = battery_get_bat_current_sign();
 
 	if (mt_get_charger_type() != CHARGER_UNKNOWN)
 		now_is_charging = 1;
@@ -192,14 +194,14 @@ int set_shutdown_cond(int shutdown_cond)
 
 			mutex_lock(&sdc.lock);
 			if (now_is_kpoc != 1) {
-				if (now_is_charging != 1) {
+				if (curr_sign != 1) {
 					sdc.shutdown_status.is_under_shutdown_voltage = true;
 					for (i = 0; i < AVGVBAT_ARRAY_SIZE; i++)
 						sdc.batdata[i] = vbat;
 					sdc.batidx = 0;
 				}
 			}
-			bm_err("LOW_BAT_VOLT:%d", vbat);
+			bm_err("LOW_BAT_VOLT:%d, curr_sign:%d\n", vbat, curr_sign);
 			mutex_unlock(&sdc.lock);
 		}
 		break;
