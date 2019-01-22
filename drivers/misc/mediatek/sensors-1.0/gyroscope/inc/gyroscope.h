@@ -59,6 +59,7 @@
 #define EVENT_TYPE_GYRO_X			ABS_X
 #define EVENT_TYPE_GYRO_Y			ABS_Y
 #define EVENT_TYPE_GYRO_Z			ABS_Z
+#define EVENT_TYPE_GYRO_TEMPERATURE		ABS_MISC
 #define EVENT_TYPE_GYRO_UPDATE               REL_X
 #define EVENT_TYPE_GYRO_STATUS     ABS_WHEEL
 #define EVENT_TYPE_GYRO_UPDATE                 REL_X
@@ -93,6 +94,7 @@ struct gyro_control_path {
 struct gyro_data_path {
 	int (*get_data)(int *x, int *y, int *z, int *status);
 	int (*get_raw_data)(int *x, int *y, int *z);
+	int (*get_temperature)(int *temperature);
 	int vender_div;
 };
 
