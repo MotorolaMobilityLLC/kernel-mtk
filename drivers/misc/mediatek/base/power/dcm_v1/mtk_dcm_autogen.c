@@ -208,7 +208,7 @@ bool dcm_infracfg_ao_emi_is_on(int on)
 	ret &= !!(reg_read(INFRA_BUS_DCM_CTRL_1) &
 		~INFRACFG_AO_EMI_REG0_MASK &
 		INFRACFG_AO_EMI_REG0_ON);
-	ret &= !!(reg_read(INFRA_EMI_DCM_CTRL) &
+	ret &= !!(reg_read(INFRA_EMI_BUS_CTRL_1_STA) &
 		~INFRACFG_AO_EMI_REG1_MASK &
 		INFRACFG_AO_EMI_REG1_ON);
 
@@ -224,7 +224,7 @@ void dcm_infracfg_ao_emi(int on)
 			~INFRACFG_AO_EMI_REG0_MASK) |
 			INFRACFG_AO_EMI_REG0_ON);
 		reg_write(INFRA_EMI_DCM_CTRL,
-			(reg_read(INFRA_EMI_DCM_CTRL) &
+			(reg_read(INFRA_EMI_BUS_CTRL_1_STA) &
 			~INFRACFG_AO_EMI_REG1_MASK) |
 			INFRACFG_AO_EMI_REG1_ON);
 	} else {
@@ -234,10 +234,13 @@ void dcm_infracfg_ao_emi(int on)
 			~INFRACFG_AO_EMI_REG0_MASK) |
 			INFRACFG_AO_EMI_REG0_OFF);
 		reg_write(INFRA_EMI_DCM_CTRL,
-			(reg_read(INFRA_EMI_DCM_CTRL) &
+			(reg_read(INFRA_EMI_BUS_CTRL_1_STA) &
 			~INFRACFG_AO_EMI_REG1_MASK) |
 			INFRACFG_AO_EMI_REG1_OFF);
 	}
+
+	/* TODO: enable after stress test is passed */
+	/* dcm_infracfg_ao_emi_indiv(on); */
 }
 
 #define INFRACFG_AO_MD_QAXI_REG0_MASK ((0x1 << 0) | \
@@ -1250,7 +1253,7 @@ void dcm_emi_emi_dcm_reg_1(int on)
 }
 
 #define EMI_EMI_DCM_REG_2_REG0_MASK ((0xff << 24))
-#define EMI_EMI_DCM_REG_2_REG0_ON ((0x0 << 24))
+#define EMI_EMI_DCM_REG_2_REG0_ON ((0x4 << 24))
 #define EMI_EMI_DCM_REG_2_REG0_OFF ((0xff << 24))
 
 bool dcm_emi_emi_dcm_reg_2_is_on(int on)

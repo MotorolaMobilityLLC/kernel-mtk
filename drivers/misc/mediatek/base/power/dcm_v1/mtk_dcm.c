@@ -19,7 +19,6 @@
 #include <linux/kernel.h>
 #include <linux/cpumask.h>
 #include <linux/cpu.h>
-#include <linux/bug.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_secure_api.h>
@@ -133,11 +132,8 @@ unsigned long dcm_cci_phys_base;
 #define aor(v, a, o) (((v) & (a)) | (o))
 
 /** global **/
-static DEFINE_MUTEX(dcm_lock);
 static short dcm_initiated;
-static short dcm_debug;
 static short dcm_cpu_cluster_stat;
-static struct notifier_block dcm_hotplug_nb;
 
 #ifdef CONFIG_MACH_MT6799
 static unsigned int all_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE
@@ -165,6 +161,12 @@ static unsigned int init_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE
 #error NO corresponding project can be found!!!
 #endif
 
+static short dcm_debug;
+static DEFINE_MUTEX(dcm_lock);
+#ifdef CONFIG_HOTPLUG_CPU
+static struct notifier_block dcm_hotplug_nb;
+#endif
+
 /*****************************************
  * following is implementation per DCM module.
  * 1. per-DCM function is 1-argu with ON/OFF/MODE option.
@@ -190,6 +192,22 @@ int dcm_armcore(ENUM_ARMCORE_DCM mode)
 
 	return 0;
 }
+
+#ifdef CONFIG_MACH_MT6799
+void dcm_infracfg_ao_emi_indiv(int on)
+{
+	if (on)
+		reg_write(INFRA_EMI_DCM_CTRL,
+			  (reg_read(INFRA_EMI_BUS_CTRL_1_STA) &
+			   ~INFRACFG_AO_EMI_INDIV_MASK) |
+			  INFRACFG_AO_EMI_INDIV_ON);
+	else
+		reg_write(INFRA_EMI_DCM_CTRL,
+			  (reg_read(INFRA_EMI_BUS_CTRL_1_STA) &
+			   ~INFRACFG_AO_EMI_INDIV_MASK) |
+			  INFRACFG_AO_EMI_INDIV_OFF);
+}
+#endif
 
 int dcm_infra(ENUM_INFRA_DCM on)
 {
@@ -354,21 +372,21 @@ int dcm_emi(ENUM_EMI_DCM on)
 #ifdef CONFIG_MACH_MT6799
 int dcm_gic_sync(ENUM_GIC_SYNC_DCM on)
 {
-	/* TODO: add function in WE2 */
+	/* TODO: add function */
 
 	return 0;
 }
 
 int dcm_last_core(ENUM_LAST_CORE_DCM on)
 {
-	/* TODO: add function in WE2 */
+	/* TODO: add function */
 
 	return 0;
 }
 
 int dcm_rgu(ENUM_RGU_DCM on)
 {
-	/* TODO: add function in WE2 */
+	/* TODO: add function */
 
 	return 0;
 }
@@ -735,7 +753,7 @@ void dcm_dump_regs(void)
 		REG_DUMP(MCUCFG_SYNC_DCM_MP2_REG);
 #endif
 
-/* TODO: add in WE2*/
+/* TODO: add function */
 #if 0
 	if (init_dcm_type & LAST_CORE_DCM_TYPE)
 
@@ -751,7 +769,7 @@ void dcm_dump_regs(void)
 	REG_DUMP(INFRA_BUS_DCM_CTRL_1);
 	REG_DUMP(INFRA_MDBUS_DCM_CTRL);
 	REG_DUMP(INFRA_QAXIBUS_DCM_CTRL);
-	REG_DUMP(INFRA_EMI_DCM_CTRL);
+	REG_DUMP(INFRA_EMI_BUS_CTRL_1_STA); /* read for INFRA_EMI_DCM_CTRL */
 	REG_DUMP(TOPCKGEN_DCM_CFG);
 
 	REG_DUMP(EMI_CONM);
@@ -898,10 +916,14 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 			dcm_dump_state(mask);
 			dcm_dump_regs();
 		} else if (!strcmp(cmd, "debug")) {
-			if (mask)
-				dcm_debug = 1;
-			else
+			if (mask == 0)
 				dcm_debug = 0;
+			else if (mask == 1)
+				dcm_debug = 1;
+			else if (mask == 2)
+				dcm_infracfg_ao_emi_indiv(0);
+			else if (mask == 3)
+				dcm_infracfg_ao_emi_indiv(1);
 		} else if (!strcmp(cmd, "set_stall_sel")) {
 			if (sscanf(buf, "%15s %x %x", cmd, &mp0, &mp1) == 3)
 				dcm_set_stall_wr_del_sel(mp0, mp1);
@@ -1159,6 +1181,7 @@ static int mt_dcm_dts_map(void)
 }
 #endif /* #ifdef CONFIG_PM */
 
+#ifdef CONFIG_HOTPLUG_CPU
 static int dcm_hotplug_nc(struct notifier_block *self,
 					 unsigned long action, void *hcpu)
 {
@@ -1223,6 +1246,7 @@ static int dcm_hotplug_nc(struct notifier_block *self,
 
 	return NOTIFY_OK;
 }
+#endif /* #ifdef CONFIG_HOTPLUG_CPU */
 
 int mt_dcm_init(void)
 {
@@ -1248,6 +1272,7 @@ int mt_dcm_init(void)
 	/* big ext buck iso power on */
 	reg_write(0x10B00260, reg_read(0x10B00260) & ~(0x1 << 2));
 	dcm_info("%s: 0x10B00260=0x%x\n", __func__, reg_read(0x10B00260));
+	dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_B;
 #endif
 
 #ifndef DCM_DEFAULT_ALL_OFF
@@ -1279,6 +1304,7 @@ int mt_dcm_init(void)
 #endif /* #ifdef DCM_DEBUG_MON */
 #endif /* #ifdef CONFIG_PM */
 
+#ifdef CONFIG_HOTPLUG_CPU
 	dcm_hotplug_nb = (struct notifier_block) {
 		.notifier_call	= dcm_hotplug_nc,
 		.priority	= INT_MIN + 2, /* NOTE: make sure this is lower than CPU DVFS */
@@ -1286,6 +1312,7 @@ int mt_dcm_init(void)
 
 	if (register_cpu_notifier(&dcm_hotplug_nb))
 		dcm_err("[%s]: fail to register_cpu_notifier\n", __func__);
+#endif /* #ifdef CONFIG_HOTPLUG_CPU */
 
 	dcm_initiated = 1;
 
