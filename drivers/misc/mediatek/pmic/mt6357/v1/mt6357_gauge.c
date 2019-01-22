@@ -501,7 +501,7 @@ static int read_hw_ocv_6357_plug_in(void)
 	signed int adc_result_reg = 0;
 	signed int adc_result = 0;
 
-#if defined(SWCHR_POWER_PATH) || defined(CONFIG_MTK_SWCHR_SUPPORT)
+#if defined(SWCHR_POWER_PATH)
 	adc_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_BAT_PLUGIN_SWCHR);
 	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_BAT_PLUGIN_SWCHR);
 	adc_result = REG_to_MV_value(adc_result_reg);
@@ -532,7 +532,7 @@ static int read_hw_ocv_6357_power_on(void)
 	signed int adc_result_reg = 0;
 	signed int adc_result = 0;
 
-#if defined(SWCHR_POWER_PATH) || defined(CONFIG_MTK_SWCHR_SUPPORT)
+#if defined(SWCHR_POWER_PATH)
 	adc_result_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_SWCHR);
 	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_PWRON_SWCHR);
 	adc_result = REG_to_MV_value(adc_result_reg);
@@ -1107,7 +1107,7 @@ static int fgauge_get_zcv(struct gauge_device *gauge_dev, int *zcv)
 	signed int adc_result_reg = 0;
 	signed int adc_result = 0;
 
-#if defined(SWCHR_POWER_PATH) || defined(CONFIG_MTK_SWCHR_SUPPORT)
+#if defined(SWCHR_POWER_PATH)
 	adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_FGADC_SWCHR);
 	adc_result = REG_to_MV_value(adc_result_reg);
 	bm_debug("[oam] fgauge_get_zcv ISENSE (swchr) : adc_result_reg=%d, adc_result=%d\n",
@@ -1154,14 +1154,15 @@ static void fgauge_set_nafg_intr_internal(int _prd, int _zcv_mv, int _thr_mv)
 	pmic_set_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_15_0, NAG_C_DLTV_Threashold_15_0);
 
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, _prd);
-#if defined(SWCHR_POWER_PATH) || defined(CONFIG_MTK_SWCHR_SUPPORT)
+#if defined(SWCHR_POWER_PATH)
 	pmic_set_register_value(PMIC_AUXADC_NAG_VBAT1_SEL, 1);	/* use Isense */
 #else
 	pmic_set_register_value(PMIC_AUXADC_NAG_VBAT1_SEL, 0);	/* use Batsns */
 #endif
 
-	bm_debug("[fg_bat_nafg][fgauge_set_nafg_interrupt_internal] time[%d] zcv[%d:%d] thr[%d:%d] 26_16[0x%x] 15_00[0x%x]\n",
-		_prd, _zcv_mv, _zcv_reg, _thr_mv, _thr_reg, NAG_C_DLTV_Threashold_26_16, NAG_C_DLTV_Threashold_15_0);
+	bm_debug("[fg_bat_nafg][fgauge_set_nafg_interrupt_internal] time[%d] zcv[%d:%d] thr[%d:%d] 26_16[0x%x] 15_00[0x%x] %d\n",
+		_prd, _zcv_mv, _zcv_reg, _thr_mv, _thr_reg, NAG_C_DLTV_Threashold_26_16, NAG_C_DLTV_Threashold_15_0,
+		pmic_get_register_value(PMIC_AUXADC_NAG_VBAT1_SEL));
 
 }
 
