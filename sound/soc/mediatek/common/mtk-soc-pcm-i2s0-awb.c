@@ -111,7 +111,7 @@ bypass_default_i2s_in:
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, false);
 
 	/* here to set interrupt */
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
+	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_AWB));
 
 	EnableAfe(false);
 }
@@ -162,7 +162,7 @@ bypass_default_i2s_in:
 
 	/* here to set interrupt */
 	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		     irq_request_number(Soc_Aud_Digital_Block_MEM_AWB),
 		     substream->runtime->rate,
 		     substream->runtime->period_size >> 1);
 

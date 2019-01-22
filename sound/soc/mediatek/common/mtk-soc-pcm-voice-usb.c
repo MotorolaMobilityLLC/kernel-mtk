@@ -99,9 +99,6 @@ static bool usb_prepare_done[2] = {false, false};
 static bool usb_use_dram[2] = {false, false};
 static int usb_mem_blk[2] = {Soc_Aud_Digital_Block_MEM_DL2,
 			     Soc_Aud_Digital_Block_MEM_AWB};
-static int usb_irq[2] = {Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
-			 Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE};
-
 
 static bool voice_usb_status;
 bool get_voice_usb_status(void)
@@ -724,7 +721,7 @@ static int mtk_voice_usb_start(struct snd_pcm_substream *substream)
 
 	/* here to set interrupt */
 	irq_add_user(substream,
-		     usb_irq[stream],
+		     irq_request_number(usb_mem_blk[stream]),
 		     substream->runtime->rate,
 		     substream->runtime->period_size);
 
@@ -744,7 +741,7 @@ static int mtk_voice_usb_stop(struct snd_pcm_substream *substream)
 			print_usb_dbg_log();
 	}
 
-	irq_remove_user(substream, usb_irq[stream]);
+	irq_remove_user(substream, irq_request_number(usb_mem_blk[stream]));
 
 	SetMemoryPathEnable(usb_mem_blk[stream], false);
 

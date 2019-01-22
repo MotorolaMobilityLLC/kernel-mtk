@@ -246,6 +246,7 @@ int irq_update_user(const void *_user,
 		    unsigned int _count);
 int irq_get_total_user(enum Soc_Aud_IRQ_MCU_MODE _irq);
 
+enum Soc_Aud_IRQ_MCU_MODE irq_request_number(Soc_Aud_Digital_Block mem_block);
 /* IRQ Register Control Table and Handler Function Table*/
 void RunIRQHandler(enum Soc_Aud_IRQ_MCU_MODE irqIndex);
 const struct Aud_IRQ_CTRL_REG *GetIRQCtrlReg(enum Soc_Aud_IRQ_MCU_MODE irqIndex);

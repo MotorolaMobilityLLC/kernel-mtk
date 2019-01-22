@@ -101,7 +101,7 @@ static int mtk_pcm_dl1Bt_stop(struct snd_pcm_substream *substream)
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_MEM_DL1, Soc_Aud_AFE_IO_Block_DAI_BT_OUT);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE);
+	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_DL1));
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_DAI_BT, false);
 
@@ -266,7 +266,7 @@ static int mtk_pcm_dl1bt_start(struct snd_pcm_substream *substream)
 
 	/* here to set interrupt */
 	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE,
+		     irq_request_number(Soc_Aud_Digital_Block_MEM_DL1),
 		     substream->runtime->rate,
 		     substream->runtime->period_size >> 1);
 
