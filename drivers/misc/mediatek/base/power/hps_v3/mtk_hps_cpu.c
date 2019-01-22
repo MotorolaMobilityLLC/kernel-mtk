@@ -183,9 +183,15 @@ int hps_cpu_init(void)
 
 #if 1
 	/* Change default power sequence of HPS*/
-	hps_sys.cluster_info[0].pwr_seq = 0;
-	hps_sys.cluster_info[1].pwr_seq = 2;
-	hps_sys.cluster_info[2].pwr_seq = 1;
+	if (hps_sys.cluster_num == 2) {
+		hps_sys.cluster_info[0].pwr_seq = 0;
+		hps_sys.cluster_info[1].pwr_seq = 1;
+	}
+	if (hps_sys.cluster_num == 3) {
+		hps_sys.cluster_info[0].pwr_seq = 0;
+		hps_sys.cluster_info[1].pwr_seq = 2;
+		hps_sys.cluster_info[2].pwr_seq = 1;
+	}
 #endif
 
 	/*
