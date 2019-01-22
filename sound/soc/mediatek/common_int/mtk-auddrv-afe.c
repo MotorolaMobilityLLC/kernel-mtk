@@ -184,20 +184,20 @@ void *Get_Afe_Powertop_Pointer()
 /* function to access apmixed sys */
 unsigned int GetApmixedCfg(unsigned int offset)
 {
-	volatile long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
-	volatile unsigned int *value;
+	long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
+	unsigned int *value;
 
-	value = (volatile unsigned int *)(address);
-	/* pr_debug("GetApmixedCfg offset=%x address = %x value = 0x%x\n", offset, address, *value); */
+	value = (unsigned int *)(address);
+	/* pr_debug("GetApmixedCfg(), offset = %x, address = %lx, value = 0x%x\n", offset, address, *value); */
 	return *value;
 }
 
 void SetApmixedCfg(unsigned int offset, unsigned int value, unsigned int mask)
 {
-	volatile long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
-	volatile unsigned int *AFE_Register = (volatile unsigned int *)address;
-	volatile unsigned int val_tmp;
-	/* pr_debug("SetApmixedCfg offset=%x, value=%x, mask=%x\n",offset,value,mask); */
+	long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
+	unsigned int *AFE_Register = (unsigned int *)address;
+	unsigned int val_tmp;
+	/* pr_debug("SetApmixedCfg(), offset = %x, value = %x, mask = %x\n", offset, value, mask); */
 	val_tmp = GetApmixedCfg(offset);
 	val_tmp &= (~mask);
 	val_tmp |= (value & mask);
@@ -208,16 +208,16 @@ void SetApmixedCfg(unsigned int offset, unsigned int value, unsigned int mask)
 unsigned int clksys_get_reg(unsigned int offset)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	volatile long address = (long)((char *)CLKSYS_ADDRESS + offset);
-	volatile unsigned int *value;
+	long address = (long)((char *)CLKSYS_ADDRESS + offset);
+	unsigned int *value;
 
 	if (CLKSYS_ADDRESS == NULL) {
 		pr_err("%s(), CLKSYS_ADDRESS is null\n", __func__);
 		return 0;
 	}
 
-	value = (volatile unsigned int *)(address);
-	pr_aud("%s offset=%x address = %lx value = 0x%x\n", __func__, offset, address, *value);
+	value = (unsigned int *)(address);
+	pr_aud("%s(), offset = %x, address = %lx, value = 0x%x\n", __func__, offset, address, *value);
 	return *value;
 #else
 	return 0;
@@ -227,9 +227,9 @@ unsigned int clksys_get_reg(unsigned int offset)
 void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	volatile long address = (long)((char *)CLKSYS_ADDRESS + offset);
-	volatile unsigned int *val_addr = (volatile unsigned int *)address;
-	volatile unsigned int val_tmp;
+	long address = (long)((char *)CLKSYS_ADDRESS + offset);
+	unsigned int *val_addr = (unsigned int *)address;
+	unsigned int val_tmp;
 	unsigned long flags = 0;
 
 	if (CLKSYS_ADDRESS == NULL) {
@@ -237,7 +237,7 @@ void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 		return;
 	}
 
-	pr_aud("%s offset=%x, value=%x, mask=%x\n", __func__, offset, value, mask);
+	pr_aud("%s(), offset = %x, value = %x, mask = %x\n", __func__, offset, value, mask);
 	spin_lock_irqsave(&clksys_set_reg_lock, flags);
 	val_tmp = clksys_get_reg(offset);
 	val_tmp &= (~mask);
