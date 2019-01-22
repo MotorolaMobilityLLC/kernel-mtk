@@ -903,7 +903,6 @@ static PUINT_8 apucFwName[] = {
 };
 
 static PUINT_8 apucCr4FwName[] = {
-	(PUINT_8) CFG_CR4_FW_FILENAME "_" HIF_NAME "_MT",
 	(PUINT_8) CFG_CR4_FW_FILENAME "_MT",
 	NULL
 };
@@ -961,7 +960,7 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo, IN PPUINT_8 apucNameTab
 		ret = request_firmware(&fw_entry, apucNameTable[ucNameIdx], prGlueInfo->prDev);
 
 		if (ret) {
-			DBGLOG(INIT, TRACE, "Request FW image: %s failed, errno[%d]\n",
+			DBGLOG(INIT, ERROR, "Request FW image: %s failed, errno[%d]\n",
 			       apucNameTable[ucNameIdx], fgResult);
 			continue;
 		} else {
@@ -1068,26 +1067,26 @@ PPUINT_8 apucName, PUINT_8 pucNameIdx, UINT_8 ucMaxNameIdx)
 
 	for (sub_idx = 0; apucNameTable[sub_idx]; sub_idx++) {
 		if ((*pucNameIdx + 3) < ucMaxNameIdx) {
-			/* Type 1. WIFI_RAM_CODE_MTxxxx_Ex */
+			/* Type 1. WIFI_RAM_CODE_MTxxxx */
+			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x",
+					apucNameTable[sub_idx], chip_id);
+			(*pucNameIdx) += 1;
+
+			/* Type 2. WIFI_RAM_CODE_MTxxxx.bin */
+			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x.bin",
+					apucNameTable[sub_idx], chip_id);
+			(*pucNameIdx) += 1;
+
+			/* Type 3. WIFI_RAM_CODE_MTxxxx_Ex */
 			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x_E%u",
 					apucNameTable[sub_idx], chip_id,
 					wlanGetEcoVersion(prGlueInfo->prAdapter));
 			(*pucNameIdx) += 1;
 
-			/* Type 2. WIFI_RAM_CODE_MTxxxx_Ex.bin */
+			/* Type 4. WIFI_RAM_CODE_MTxxxx_Ex.bin */
 			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x_E%u.bin",
 					apucNameTable[sub_idx], chip_id,
 					wlanGetEcoVersion(prGlueInfo->prAdapter));
-			(*pucNameIdx) += 1;
-
-			/* Type 3. WIFI_RAM_CODE_MTxxxx */
-			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x",
-					apucNameTable[sub_idx], chip_id);
-			(*pucNameIdx) += 1;
-
-			/* Type 4. WIFI_RAM_CODE_MTxxxx.bin */
-			snprintf(*(apucName + (*pucNameIdx)), FILE_NAME_MAX, "%s%x.bin",
-					apucNameTable[sub_idx], chip_id);
 			(*pucNameIdx) += 1;
 		} else {
 			/* the table is not large enough */
