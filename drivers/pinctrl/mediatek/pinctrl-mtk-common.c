@@ -1699,7 +1699,7 @@ static ssize_t mt_gpio_show_pin(struct device *dev, struct device_attribute *att
 	for (i = 0; i < chip->ngpio; i++) {
 		pull_val = mtk_pullsel_get(chip, i);
 
-		len += snprintf(buf+len, bufLen-len, "%4d:% d% d% d% d% d% d% d% d% d",
+		len += snprintf(buf+len, bufLen-len, "%4d: %d %d %d %d %d %d %d %d %d",
 				i,
 				mtk_pinmux_get(chip, i),
 				mtk_gpio_get_direction(chip, i),
@@ -1716,6 +1716,44 @@ static ssize_t mt_gpio_show_pin(struct device *dev, struct device_attribute *att
 	}
 	return len;
 }
+
+#ifndef CONFIG_MTK_GPIO
+void gpio_dump_regs(void)
+{
+	struct gpio_chip *chip;
+	unsigned i;
+	int pull_val;
+
+	if (!pctl) {
+		pr_err("pctl does not exist\n");
+		return;
+	}
+
+	chip = pctl->chip;
+
+	pr_err("PIN: [MODE] [DIR] [DOUT] [DIN] [PULL_EN] [PULL_SEL] [IES] [SMT] [DRIVE] ( [R1] [R0] )\n");
+
+	for (i = 0; i < chip->ngpio; i++) {
+		pull_val = mtk_pullsel_get(chip, i);
+
+		pr_err("%4d: %d %d %d %d %d %d %d %d %d",
+				i,
+				mtk_pinmux_get(chip, i),
+				mtk_gpio_get_direction(chip, i),
+				mtk_gpio_get_out(chip, i),
+				mtk_gpio_get_in(chip, i),
+				mtk_pullen_get(chip, i),
+				(pull_val >= 0) ? (pull_val&1) : -1,
+				mtk_ies_get(chip, i),
+				mtk_smt_get(chip, i),
+				mtk_driving_get(chip, i));
+		if ((pull_val & 8) && (pull_val >= 0))
+			pr_err(" %d %d\n", !!(pull_val&4), !!(pull_val&2));
+		else
+			pr_err("\n");
+	}
+}
+#endif
 
 static ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {

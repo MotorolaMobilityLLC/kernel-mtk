@@ -410,6 +410,7 @@ int mtk_pinctrl_update_gpio_value(struct mtk_pinctrl *pctl, int pin,
 
 int mtk_pinctrl_set_gpio_value(struct mtk_pinctrl *pctl, int pin,
 	bool value, int size, const struct mtk_pin_info pin_info[]);
+
 extern const struct dev_pm_ops mtk_eint_pm_ops;
 
 #ifdef CONFIG_MTK_EIC
