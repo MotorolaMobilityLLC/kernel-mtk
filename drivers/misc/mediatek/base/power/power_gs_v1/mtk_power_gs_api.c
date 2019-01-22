@@ -564,6 +564,10 @@ static ssize_t golden_test_proc_write(struct file *file, const char __user *buff
 
 PROC_FOPS_RW(golden_test);
 
+void __attribute__((weak)) mt_power_gs_internal_init(void)
+{
+}
+
 static int mt_golden_setting_init(void)
 {
 #define GOLDEN_SETTING_BUF_SIZE (2 * PAGE_SIZE)
@@ -611,6 +615,7 @@ static int mt_golden_setting_init(void)
 
 			_base_remap.table_size = REMAP_SIZE_MASK;
 			_base_remap.table_pos = 0;
+			mt_power_gs_internal_init();
 			mt_power_gs_table_init();
 		}
 	}
