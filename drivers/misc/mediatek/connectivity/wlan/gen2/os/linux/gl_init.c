@@ -1370,6 +1370,7 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	UINT_16 u2QueueIdx = 0;
 	OS_SYSTIME rCurTime;
 	UINT_32 u4NumPending;
+	UINT_32 u4SkbLen = 0;
 #if (CFG_SUPPORT_TDLS_DBG == 1)
 	UINT16 u2Identifier = 0;
 #endif
@@ -1438,6 +1439,8 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	DBGLOG(BOW, TRACE, "\n");
 #endif
 
+	u4SkbLen = prSkb->len;
+
 	if (wlanProcessSecurityFrame(prGlueInfo->prAdapter, (P_NATIVE_PACKET) prSkb) == FALSE) {
 
 		/* non-1x packets */
@@ -1487,8 +1490,8 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 		GLUE_INC_REF_CNT(prGlueInfo->i4TxPendingSecurityFrameNum);
 	}
 
-	DBGLOG(TX, EVENT, "\n+++++ pending frame %d len = %d +++++\n", prGlueInfo->i4TxPendingFrameNum, prSkb->len);
-	prGlueInfo->rNetDevStats.tx_bytes += prSkb->len;
+	DBGLOG(TX, EVENT, "\n+++++ pending frame %d len = %d +++++\n", prGlueInfo->i4TxPendingFrameNum, u4SkbLen);
+	prGlueInfo->rNetDevStats.tx_bytes += u4SkbLen;
 	prGlueInfo->rNetDevStats.tx_packets++;
 	if (netif_carrier_ok(prDev))
 		kalPerMonStart(prGlueInfo);
