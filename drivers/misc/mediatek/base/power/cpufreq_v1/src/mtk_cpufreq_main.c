@@ -95,6 +95,35 @@ static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned in
 	return i;
 }
 
+int _search_available_freq_idx(struct mt_cpu_dvfs *p, unsigned int target_khz,
+				      unsigned int relation)
+{
+	int new_opp_idx = -1;
+	int i;
+
+	FUNC_ENTER(FUNC_LV_HELP);
+
+	if (relation == CPUFREQ_RELATION_L) {
+		for (i = (signed)(p->nr_opp_tbl - 1); i >= 0; i--) {
+			if (cpu_dvfs_get_freq_by_idx(p, i) >= target_khz) {
+				new_opp_idx = i;
+				break;
+			}
+		}
+	} else {		/* CPUFREQ_RELATION_H */
+		for (i = 0; i < (signed)p->nr_opp_tbl; i++) {
+			if (cpu_dvfs_get_freq_by_idx(p, i) <= target_khz) {
+				new_opp_idx = i;
+				break;
+			}
+		}
+	}
+
+	FUNC_EXIT(FUNC_LV_HELP);
+
+	return new_opp_idx;
+}
+
 int get_cur_volt_wrapper(struct mt_cpu_dvfs *p, struct buck_ctrl_t *volt_p)
 {
 	unsigned int volt;
@@ -137,35 +166,6 @@ static int _search_for_vco_dds(struct mt_cpu_dvfs *p, int idx,
 	struct mt_cpu_freq_method *m)
 {
 	return (cpu_dvfs_get_freq_by_idx(p, idx) * m->pos_div * m->clk_div);
-}
-
-static int _search_available_freq_idx(struct mt_cpu_dvfs *p, unsigned int target_khz,
-				      unsigned int relation)
-{
-	int new_opp_idx = -1;
-	int i;
-
-	FUNC_ENTER(FUNC_LV_HELP);
-
-	if (relation == CPUFREQ_RELATION_L) {
-		for (i = (signed)(p->nr_opp_tbl - 1); i >= 0; i--) {
-			if (cpu_dvfs_get_freq_by_idx(p, i) >= target_khz) {
-				new_opp_idx = i;
-				break;
-			}
-		}
-	} else {		/* CPUFREQ_RELATION_H */
-		for (i = 0; i < (signed)p->nr_opp_tbl; i++) {
-			if (cpu_dvfs_get_freq_by_idx(p, i) <= target_khz) {
-				new_opp_idx = i;
-				break;
-			}
-		}
-	}
-
-	FUNC_EXIT(FUNC_LV_HELP);
-
-	return new_opp_idx;
 }
 
 static unsigned int _search_available_volt(struct mt_cpu_dvfs *p, unsigned int target_khz)

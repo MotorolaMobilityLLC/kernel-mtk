@@ -291,6 +291,8 @@ enum dvfs_time_profile {
 	NR_SET_V_F,
 };
 
+extern int _search_available_freq_idx(struct mt_cpu_dvfs *p, unsigned int target_khz,
+	unsigned int relation);
 extern void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_idx,
 	enum mt_cpu_dvfs_action_id action, void *data);
 extern int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt);
