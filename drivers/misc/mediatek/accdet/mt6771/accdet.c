@@ -205,7 +205,6 @@ static inline void clear_accdet_interrupt(void);
 static inline void clear_accdet_eint_interrupt(int eint_id);
 static inline int accdet_set_debounce(int state, unsigned int debounce);
 
-
 /* get plug-in Resister just for audio call */
 int accdet_read_audio_res(unsigned int res_value)
 {
@@ -325,7 +324,7 @@ static int accdet_get_dts_data(void)
 		/* for GPIO debounce */
 		of_property_read_u32(node, "accdet-plugout-debounce", &headset_dts_data.accdet_plugout_deb);
 		of_property_read_u32(node, "accdet-mic-mode", &headset_dts_data.accdet_mic_mode);
-		of_property_read_u32(node, "accdet-eint-level-pol", &headset_dts_data.eint_level_pol);
+		of_property_read_u32(node, "headset-eint-level-pol", &headset_dts_data.eint_level_pol);
 #ifdef CONFIG_FOUR_KEY_HEADSET
 		ret = of_property_read_u32_array(node, "headset-four-key-threshold", four_key, ARRAY_SIZE(four_key));
 		if (!ret)
@@ -1582,7 +1581,7 @@ static inline void accdet_eint_high_level_support(void)
 	reg_val = 0;
 	ACCDET_DEBUG("[accdet]eint_high_level_support enter--->\n");
 
-#if 0
+#if 1
 	/* set high level trigger */
 #ifdef CONFIG_ACCDET_EINT_IRQ
 		/* pwrap_write(ACCDET_CON01, ACCDET_DISABLE); */
@@ -1590,6 +1589,7 @@ static inline void accdet_eint_high_level_support(void)
 		if (g_cur_eint_state == EINT_PIN_PLUG_OUT) {
 			reg_val = pmic_pwrap_read(ACCDET_CON12);
 			if (headset_dts_data.eint_level_pol == IRQ_TYPE_LEVEL_HIGH) {
+				ACCDET_INFO("[accdet]pol = %d\n", headset_dts_data.eint_level_pol);
 				g_accdet_eint_type = IRQ_TYPE_LEVEL_HIGH;
 				pwrap_write(ACCDET_CON12, reg_val|ACCDET_EINT0_IRQ_POL_B14);
 				ACCDET_INFO("[accdet0]high:[0x%x]=0x%x\n", ACCDET_CON12, reg_val);
@@ -1597,21 +1597,21 @@ static inline void accdet_eint_high_level_support(void)
 				reg_val = pmic_pwrap_read(ACCDET_CON01);
 				ACCDET_INFO("[accdet0]high:1.[0x%x]=0x%x\n", ACCDET_CON01, reg_val);
 				/* set bit3 to enable default EINT init status */
-				pmic_pwrap_write(ACCDET_CON01, reg_val|ACCDET_EINT0_SEQ_INIT_EN);
+				pmic_pwrap_write(ACCDET_CON01, reg_val|ACCDET_EINT0_SEQ_INIT_EN_B3);
 				mdelay(2);
 				reg_val = pmic_pwrap_read(ACCDET_CON01);
 				ACCDET_INFO("[accdet0]high:2.[0x%x]=0x%x\n", ACCDET_CON01, reg_val);
-				reg_val = pmic_pwrap_read(ACCDET_DEFAULT_EINT_STS);
-				ACCDET_INFO("[accdet0]high:1.[0x%x]=0x%x\n", ACCDET_DEFAULT_EINT_STS, reg_val);
+				reg_val = pmic_pwrap_read(ACCDET_CON11);
+				ACCDET_INFO("[accdet0]high:1.[0x%x]=0x%x\n", ACCDET_CON11, reg_val);
 				/* set default EINT init status */
-				pmic_pwrap_write(ACCDET_DEFAULT_EINT_STS,
-					(reg_val|ACCDET_EINT0_IVAL_SEL)&(~ACCDET_EINT0_IVAL));
+				pmic_pwrap_write(ACCDET_CON11,
+					(reg_val|ACCDET_EINT0_IVAL_SEL_B14)&(~ACCDET_EINT0_IVAL_B2_6_10));
 				mdelay(2);
-				reg_val = pmic_pwrap_read(ACCDET_DEFAULT_EINT_STS);
-				ACCDET_INFO("[accdet0]high:2.[0x%x]=0x%x\n", ACCDET_DEFAULT_EINT_STS, reg_val);
+				reg_val = pmic_pwrap_read(ACCDET_CON11);
+				ACCDET_INFO("[accdet0]high:2.[0x%x]=0x%x\n", ACCDET_CON11, reg_val);
 				/* clear bit3 to disable default EINT init status */
 				reg_val = pmic_pwrap_read(ACCDET_CON01);
-				pmic_pwrap_write(ACCDET_CON01, reg_val&(~ACCDET_EINT0_SEQ_INIT_EN));
+				pmic_pwrap_write(ACCDET_CON01, reg_val&(~ACCDET_EINT0_SEQ_INIT_EN_B3));
 			} else {
 				g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;/* default level_low */
 				pwrap_write(ACCDET_CON12, reg_val&(~ACCDET_EINT0_IRQ_POL_B14));
@@ -1628,7 +1628,7 @@ static inline void accdet_eint_high_level_support(void)
 				g_accdet_eint_type = IRQ_TYPE_LEVEL_HIGH;
 				pwrap_write(ACCDET_CON12, reg_val|ACCDET_EINT1_IRQ_POL_B15);
 				ACCDET_INFO("[accdet1]high:[0x%x]=0x%x\n", ACCDET_CON12, reg_val);
-
+				#if 0
 				/* set pmic eint default value */
 				reg_val = pmic_pwrap_read(ACCDET_CON01);
 				ACCDET_INFO("[accdet1]high:1.[0x%x]=0x%x\n", ACCDET_CON01, reg_val);
@@ -1648,6 +1648,7 @@ static inline void accdet_eint_high_level_support(void)
 				/* clear bit5 to disable default EINT init status */
 				reg_val = pmic_pwrap_read(ACCDET_CON01);
 				pmic_pwrap_write(ACCDET_CON01, reg_val&(~ACCDET_EINT1_SEQ_INIT_EN));
+				#endif
 			} else {
 				g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
 				pwrap_write(ACCDET_CON12, reg_val&(~ACCDET_EINT1_IRQ_POL_B15));
@@ -1664,7 +1665,7 @@ static inline void accdet_eint_high_level_support(void)
 				g_accdet_eint_type = IRQ_TYPE_LEVEL_HIGH;
 				pwrap_write(ACCDET_CON12, reg_val|ACCDET_EINT_IRQ_POL_HIGH);
 				ACCDET_INFO("[accdet2]high:[0x%x]=0x%x\n", ACCDET_CON12, reg_val);
-
+				#if 0
 				/* set pmic eint default value */
 				reg_val = pmic_pwrap_read(ACCDET_CON01);
 				ACCDET_INFO("[accdet2]high:1.[0x%x]=0x%x\n", ACCDET_CON01, reg_val);
@@ -1684,6 +1685,7 @@ static inline void accdet_eint_high_level_support(void)
 				/* clear bit3bit5 to disable default EINT init status */
 				reg_val = pmic_pwrap_read(ACCDET_CON01);
 				pmic_pwrap_write(ACCDET_CON01, reg_val&(~ACCDET_EINT_SEQ_INIT_EN));
+				#endif
 			} else {
 				g_accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
 				pwrap_write(ACCDET_CON12, reg_val&(~ACCDET_EINT_IRQ_POL_LOW));
@@ -1730,14 +1732,22 @@ void accdet_init_once(int init_flag)
 
 #ifdef HW_MODE_SUPPORT
 		pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)&(~ACCDET_ENABLE_B0));/* close accdet en */
-		pmic_pwrap_write(AUDENC_ANA_CON6, pmic_pwrap_read(AUDENC_ANA_CON6)|
+		if (headset_dts_data.eint_level_pol == IRQ_TYPE_LEVEL_LOW) {
+			pmic_pwrap_write(AUDENC_ANA_CON6, pmic_pwrap_read(AUDENC_ANA_CON6)|
 			RG_AUDSPARE_FSTDSCHRG_ANALOG_DIR_EN | RG_AUDSPARE_FSTDSCHRG_IMPR_EN); /*annlog fastdischarge*/
+		} else
+			pmic_pwrap_write(AUDENC_ANA_CON6, pmic_pwrap_read(AUDENC_ANA_CON6) & (0xE0));
 #ifdef CONFIG_ACCDET_EINT_IRQ
 		pmic_pwrap_write(ACCDET_CON24, pmic_pwrap_read(ACCDET_CON24) & (0x3FF0));
 		reg_val = pmic_pwrap_read(ACCDET_CON24);
 	#ifdef CONFIG_ACCDET_SUPPORT_EINT0
-		pmic_pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWEN_SEL_0
-			|ACCDET_HWMODE_SEL|ACCDET_EINT0_DEB_OUT_DFF|ACCDET_EINIT_REVERSE);
+		if (headset_dts_data.eint_level_pol == IRQ_TYPE_LEVEL_LOW) {
+			pmic_pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWEN_SEL_0
+				|ACCDET_HWMODE_SEL|ACCDET_EINT0_DEB_OUT_DFF|ACCDET_EINIT_REVERSE);
+		} else {
+			pmic_pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWEN_SEL_0
+				|ACCDET_HWMODE_SEL|ACCDET_EINT0_DEB_OUT_DFF);
+		}
 	#elif defined CONFIG_ACCDET_SUPPORT_EINT1
 		pmic_pwrap_write(ACCDET_CON24, reg_val|ACCDET_HWEN_SEL_1
 			|ACCDET_HWMODE_SEL|ACCDET_EINT0_DEB_OUT_DFF|ACCDET_EINIT_REVERSE);
@@ -1847,6 +1857,8 @@ void accdet_init_once(int init_flag)
 #endif
 #endif/* end ifdef CONFIG_ACCDET_EINT_IRQ  */
 		ACCDET_INFO("[accdet_init_once] ACCDET_INIT1_ONCE done--->\n");
+
+		accdet_eint_high_level_support();
 	 } else {
 		 ACCDET_ERROR("[accdet_init_once] error: do nothing of accdet_init_once\n");
 	}
@@ -1863,10 +1875,9 @@ static inline void accdet_init(void)
 	/* set and clear initial bit every eint interrutp */
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)|ACCDET_SEQ_INIT_EN_B1);
 	mdelay(2);/* 2ms */
-	ACCDET_DEBUG("[accdet_init][0x%x]=0x%x\n", ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01));
+	ACCDET_INFO("[accdet_init][0x%x]=0x%x\n", ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01));
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01)&(~ACCDET_SEQ_INIT_EN_B1));
 	mdelay(1);
-
 	/* pmic_pwrap_write(ACCDET_CON13, 0x0); */
 
 	/* init the debounce time (debounce/32768)sec */
@@ -2512,6 +2523,7 @@ int mt_accdet_probe(struct platform_device *dev)
 	s_eint_accdet_sync_flag = 1;
 	/* Accdet Hardware Init */
 	ret = accdet_get_dts_data();
+
 	if (ret == 0) {
 		#ifdef CONFIG_ACCDET_EINT
 		ACCDET_INFO("[mt_accdet_probe]CONFIG_ACCDET_EINT opened!\n");
