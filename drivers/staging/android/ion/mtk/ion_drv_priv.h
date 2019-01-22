@@ -30,10 +30,16 @@ extern int (*ion_sync_kernel_func)(unsigned long start, size_t size, unsigned in
 
 #ifdef ION_HISTORY_RECORD
 int ion_history_init(void);
+void ion_history_count_kick(bool allc, size_t len);
 #else
 static inline int ion_history_init(void)
 {
 	return 0;
+}
+
+void ion_history_count_kick(bool allc, size_t len)
+{
+	/*do nothing*/
 }
 #endif
 
