@@ -253,7 +253,7 @@ EXPORT_SYMBOL_GPL(mt_usb_disconnect);
 
 bool usb_cable_connected(void)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING) && !defined(U3_COMPLIANCE)
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && !defined(U3_COMPLIANCE) && !defined(FOR_BRING_UP)
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
 #ifdef CONFIG_POWER_EXT
 	chg_type = mt_get_charger_type();
@@ -262,8 +262,10 @@ bool usb_cable_connected(void)
 		return true;
 #else
 	/* IPO shutdown, disable USB and send HWDISCONNECT uevent */
-	if (cable_mode == CABLE_MODE_CHRG_ONLY)
+	if (cable_mode == CABLE_MODE_CHRG_ONLY) {
+		os_printk(K_INFO, "%s CABLE_MODE_CHRG_ONLY\n", __func__);
 		return false;
+	}
 
 	if (upmu_is_chr_det()) {
 		chg_type = mt_get_charger_type();
@@ -410,6 +412,7 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 			cmode = CABLE_MODE_NORMAL;
 
 		if (cable_mode != cmode) {
+			cable_mode = cmode;
 			if (_mu3d_musb) {
 				if (down_interruptible(&_mu3d_musb->musb_lock))
 					os_printk(K_INFO, "%s: busy, Couldn't get musb_lock\n", __func__);
@@ -442,7 +445,6 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 #endif
 				}
 			}
-			cable_mode = cmode;
 #ifdef CONFIG_USB_MTK_DUALMODE
 			if (cmode == CABLE_MODE_CHRG_ONLY) {
 #ifdef CONFIG_USB_C_SWITCH
