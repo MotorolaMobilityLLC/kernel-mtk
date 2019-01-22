@@ -52,7 +52,6 @@ config MACH_MT6757
 	select MTK_SYSTRACKER_V2
 	select MTK_GIC_V3_EXT
 	select ARM_GIC_V3
-	select MTK_LM_MODE
 	select MTK_EIC_HISTORY_DUMP
 	select ARM_HAS_SG_CHAIN
 	select POWER_SUPPLY
@@ -99,7 +98,6 @@ config MACH_MT6763
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
 	select ARM_GIC_V3
-	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_EIC_HISTORY_DUMP
 	select MTK_EIC
 	select MTK_BOUNCING_CHECK
@@ -136,7 +134,6 @@ config MACH_MT6739
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
 	select ARM_GIC_V3
-	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_BOUNCING_CHECK
 	select MTK_SYSTRACKER_V2
 	select MTK_IRQ_NEW_DESIGN
@@ -174,7 +171,6 @@ config MACH_MT6771
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
 	select ARM_GIC_V3
-	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_SYSIRQ
 	select MTK_EINT_MULTI_TRIGGER_DESIGN
 	select MTK_ES_REG
