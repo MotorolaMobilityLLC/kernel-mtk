@@ -1222,9 +1222,7 @@ int32_t cmdq_core_get_secure_thread_exec_counter(const int32_t thread)
 
 	pVA = (uint32_t *) (gCmdqContext.hSecSharedMem->pVABase + offset);
 	value = *pVA;
-#if defined(CMDQ_SECURE_PATH_NORMAL_IRQ) || defined(CMDQ_SECURE_PATH_HW_LOCK)
-	value = value + 1;
-#endif
+
 	CMDQ_VERBOSE("[shared_cookie] get thread %d CNT(%p) value is %d\n", thread, pVA, value);
 
 	return value;
@@ -3095,6 +3093,12 @@ static int32_t cmdq_core_insert_backup_cookie_instr(struct TaskStruct *pTask, in
 			valueRegId);
 	}
 
+	/* cookie +1 because we get before EOC */
+	cmdq_core_append_command(pTask,
+		(CMDQ_CODE_LOGIC << 24) | (1 << 23) | (1 << 22) | (CMDQ_LOGIC_ADD << 16) |
+		(valueRegId + CMDQ_GPR_V3_OFFSET),
+		((valueRegId + CMDQ_GPR_V3_OFFSET) << 16) | 0x1);
+
 	/* Note that <MOVE> arg_b is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
@@ -4252,6 +4256,8 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 
 			for (index = startIndex; index < endIndex; ++index) {
 				if (index == CMDQ_DELAY_THREAD_ID)
+					continue;
+				if (cmdq_get_func()->isSecureThread(index))
 					continue;
 
 				spin_lock_irqsave(&gCmdqExecLock, flagsExecLock);
