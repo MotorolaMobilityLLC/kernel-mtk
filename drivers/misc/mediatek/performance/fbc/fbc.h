@@ -78,4 +78,4 @@
 
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
 extern int sched_scheduler_switch(SCHED_LB_TYPE new_sched);
-
+extern int linear_real_boost(int);
