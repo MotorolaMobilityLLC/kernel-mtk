@@ -46,6 +46,7 @@
 static struct i2c_dma_info g_dma_regs[I2C_MAX_CHANNEL];
 static struct mt_i2c *g_mt_i2c[I2C_MAX_CHANNEL];
 
+
 static inline void _i2c_writew(u16 value, struct mt_i2c *i2c, u8 offset)
 {
 	writew(value, i2c->base + i2c->ch_offset + offset);
@@ -564,6 +565,7 @@ static int i2c_set_speed(struct mt_i2c *i2c, unsigned int clk_src_in_hz)
 }
 
 #ifdef I2C_DEBUG_FS
+
 void i2c_dump_info1(struct mt_i2c *i2c)
 {
 	if (i2c->ext_data.isEnable && i2c->ext_data.timing)
@@ -1307,19 +1309,27 @@ int hw_trig_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 }
 EXPORT_SYMBOL(hw_trig_i2c_transfer);
 
-int i2c_ccu_enable(struct i2c_adapter *adap, struct i2c_msg *msgs,
-		int num, u16 ch_offset)
+int i2c_ccu_enable(struct i2c_adapter *adap, u16 ch_offset)
 {
 	int ret;
 	struct mt_i2c *i2c = i2c_get_adapdata(adap);
-
+	char buf[1];
+	/*This is just a dummy msg which is meaningless since these parameter
+	 * is actually not used.
+	 */
+	struct i2c_msg dummy_msg = {
+		.addr = 0x1,
+		.flags = I2C_MASTER_RD,
+		.len = 1,
+		.buf = (char *)buf,
+	};
 	if (mt_i2c_clock_enable(i2c))
 		return -EBUSY;
 	mutex_lock(&i2c->i2c_mutex);
 	i2c->is_hw_trig = true;
 	i2c->ext_data.ch_offset = ch_offset;
 	i2c->ext_data.is_ch_offset = true;
-	ret = __mt_i2c_transfer(i2c, msgs, num);
+	ret = __mt_i2c_transfer(i2c, &dummy_msg, 1);
 	i2c->is_hw_trig = false;
 	i2c->ext_data.is_ch_offset = false;
 	mutex_unlock(&i2c->i2c_mutex);
