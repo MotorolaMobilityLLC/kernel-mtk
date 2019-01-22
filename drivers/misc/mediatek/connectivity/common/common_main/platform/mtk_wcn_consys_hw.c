@@ -455,6 +455,10 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 {
 	INT32 iRet = -1;
 
+	iRet = platform_driver_register(&mtk_wmt_dev_drv);
+	if (iRet)
+		WMT_PLAT_ERR_FUNC("WMT platform driver registered failed(%d)\n", iRet);
+
 	if (wmt_consys_ic_ops == NULL)
 		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
 
@@ -491,10 +495,6 @@ INT32 mtk_wcn_consys_hw_init(VOID)
 	WMT_PLAT_INFO_FUNC("register connsys restore cb for complying with IPOH function\n");
 	register_swsusp_restore_noirq_func(ID_M_CONNSYS, mtk_wcn_consys_hw_restore, NULL);
 #endif
-
-	iRet = platform_driver_register(&mtk_wmt_dev_drv);
-	if (iRet)
-		WMT_PLAT_ERR_FUNC("WMT platform driver registered failed(%d)\n", iRet);
 
 	if (wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init)
 		wmt_consys_ic_ops->ic_bt_wifi_share_v33_spin_lock_init();
