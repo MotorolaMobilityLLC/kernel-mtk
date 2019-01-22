@@ -74,6 +74,12 @@
 #define DX_CACHE_PARAMS_SET_TIMEOUT_MS 100
 
 struct clk *dxcc_pub_clock;
+static bool fips_clock_control = 1;
+
+#ifdef TRUSTONIC_FIPS_SUPPORT
+module_param(fips_clock_control, bool, 0644);
+MODULE_PARM_DESC(fips_clock_control, "FIPS clock control bit: 1 (enabled)");
+#endif
 
 #ifdef DX_DUMP_BYTES
 void dump_byte_array(const char *name, const uint8_t *the_array, unsigned long size)
@@ -557,10 +563,12 @@ static int cc64_probe(struct platform_device *plat_dev)
 		return PTR_ERR(dxcc_pub_clock);
 	}
 
-	rc = clk_prepare_enable(dxcc_pub_clock);
-	if (rc != 0) {
-		SSI_LOG_ERR("Cannot prepare dxcc public core clock from common clock framework.\n");
-		return rc;
+	if (fips_clock_control) {
+		rc = clk_prepare_enable(dxcc_pub_clock);
+		if (rc != 0) {
+			SSI_LOG_ERR("Cannot prepare dxcc public core clock from common clock framework.\n");
+			return rc;
+		}
 	}
 
 	/* Map registers space */
@@ -583,7 +591,8 @@ static int cc64_remove(struct platform_device *plat_dev)
 #ifdef ENABLE_CYCLE_COUNT
 	display_all_stat_db();
 #endif
-	clk_disable_unprepare(dxcc_pub_clock);
+	if (fips_clock_control)
+		clk_disable_unprepare(dxcc_pub_clock);
 	return 0;
 }
 #if defined (CONFIG_PM_RUNTIME) || defined (CONFIG_PM_SLEEP)
