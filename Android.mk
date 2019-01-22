@@ -73,12 +73,6 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
         KERNEL_ZIMAGE_OUT := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/zImage
       endif
     endif
-    ifeq ($(strip $(MTK_INTERNAL)),yes)
-      KBUILD_BUILD_USER ?= mediatek
-      KBUILD_BUILD_HOST ?= mediatek
-    endif
-    export KBUILD_BUILD_USER
-    export KBUILD_BUILD_HOST
     export MTK_DTBO_FEATURE
     BUILT_KERNEL_TARGET := $(KERNEL_ZIMAGE_OUT).bin
     INSTALLED_KERNEL_TARGET := $(PRODUCT_OUT)/kernel
