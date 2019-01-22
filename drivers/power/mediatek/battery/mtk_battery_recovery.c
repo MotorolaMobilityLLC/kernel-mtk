@@ -110,6 +110,9 @@ int fg_bat_int2_lt_en;
 /* receive interrupt from mtk_battery.c */
 void wakeup_fg_algo_recovery(unsigned int intr_num)
 {
+	if (fg_interrupt_check() == false)
+		return;
+
 	switch (intr_num) {
 	case FG_INTR_BAT_TMP_C_HT:
 		fg_temp_c_int_handler();
@@ -1785,13 +1788,9 @@ void battery_recovery_init(void)
 {
 	bool is_bat_exist = 0;
 
-	bm_err("mtk_gauge enter BAT_R_init\n");
+	bm_err("enter MTK_BAT_RECOVERY init\n");
 	is_bat_exist = pmic_is_battery_exist();
-	while (is_bat_exist == 0) {
-		bm_err("is_bat_exist = %d\n", is_bat_exist);
-		msleep(1000);
-		is_bat_exist = pmic_is_battery_exist();
-	}
+	bm_err("is_bat_exist = %d\n", is_bat_exist);
 
 	if (is_bat_exist) {
 		bm_err("============battery_recovery: enter fgr_set_cust_data==========\n ");
@@ -1811,6 +1810,8 @@ void battery_recovery_init(void)
 		bm_err("============battery_recovery: set_init_flow_done==========\n ");
 		set_nvram_fail_status(1);
 		bm_err("============battery_recovery: set_enter_recovery(set_nvram_fail_status) done==========\n ");
+		bm_err("battery_recovery %d %d\n", fg_cust_data.pseudo100_t0, fg_table_cust_data.fg_profile_t0_size);
 	}
-	bm_err("battery_recovery_init %d %d\n", fg_cust_data.pseudo100_t0, fg_table_cust_data.fg_profile_t0_size);
+	bm_err("[battery_recovery] is_evb:%d,%d is_bat_exist %d\n",
+		is_evb_load(), fg_interrupt_check(), is_bat_exist);
 }
