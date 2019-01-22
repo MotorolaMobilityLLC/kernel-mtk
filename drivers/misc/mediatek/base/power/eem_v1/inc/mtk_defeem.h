@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MT_DEFEEM_
-#define _MT_DEFEEM_
+#ifndef _MTK_DEFEEM_
+#define _MTK_DEFEEM_
 
 #ifdef __KERNEL__
 	#include <linux/kernel.h>
