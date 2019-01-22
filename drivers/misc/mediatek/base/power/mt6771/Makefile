@@ -35,6 +35,8 @@ ifeq ($(TARGET_BUILD_VARIANT), eng)
 ccflags-y += -DMT_GPUFREQ_DEBUG_ENABLE
 endif
 
+obj-$(CONFIG_MACH_MT6771) += mtk_picachu.o
+
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6771) += mtk_gpufreq_core.o
 obj-$(CONFIG_MACH_MT6771) += mtk_gpu_log.o
