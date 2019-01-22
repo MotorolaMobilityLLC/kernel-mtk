@@ -233,6 +233,7 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 	int i = 0;
 	int reserved_mem_count;
 	int ret = 0;
+	phys_addr_t dram_end = 0;
 	struct reserved_mem tmp;
 	struct reserved_mem_ext *reserved_mem = NULL;
 	struct reserved_mem_ext *rmem, *prmem;
@@ -277,7 +278,7 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		seq_printf(m, "reserved_mem_cout(%d) over limits after parsing!\n",
 				reserved_mem_count);
 		kfree(reserved_mem);
-		return 0;
+		goto debug_info;
 	}
 
 	for (i = 0; i < reserved_mem_count; i++) {
@@ -292,6 +293,16 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 			reserved_mem_ext_compare, NULL);
 
 	seq_puts(m, "Reserve Memory Layout (prefix with \"*\" is no-map)\n");
+
+	i = reserved_mem_count - 1;
+	rmem = &reserved_mem[i];
+	dram_end = memblock_end_of_DRAM();
+
+	if (dram_end > rmem->base + rmem->size) {
+		mtk_memcfg_show_layout_region_kernel(m, dram_end,
+		dram_end - (rmem->base + rmem->size));
+	}
+
 	for (i = reserved_mem_count - 1; i > 0; i--) {
 		rmem = &reserved_mem[i];
 		prmem = &reserved_mem[i - 1];
@@ -320,6 +331,8 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 				memblock_start_of_DRAM() + size,
 				size, RESERVED_MAP, 1);
 	}
+
+	kfree(reserved_mem);
 
 debug_info:
 	seq_puts(m, "\n");
@@ -353,8 +366,6 @@ debug_info:
 	seq_printf(m, "memmap : %lu MB\n", mem_map_size >> 20);
 #endif
 #endif
-
-	kfree(reserved_mem);
 	return ret;
 }
 
