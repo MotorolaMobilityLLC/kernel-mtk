@@ -456,24 +456,22 @@ int mmc_run_queue_thread(void *data)
 		}
 		if (done_mrq) {
 			if (done_mrq->data->error || done_mrq->cmd->error) {
-				/* reset eMMC for data timeout case */
-				if (done_mrq->data->error == (unsigned int)-ETIMEDOUT) {
-					mmc_reset_cq(host);
-				} else {
+				mmc_wait_tran(host);
+				if (!is_err) {
+					is_err = true;
+					mmc_discard_cmdq(host);
 					mmc_wait_tran(host);
-					if (!is_err) {
-						is_err = true;
-						mmc_discard_cmdq(host);
-						mmc_wait_tran(host);
-						mmc_clr_dat_list(host);
-						atomic_set(&host->cq_rdy_cnt, 0);
-					}
+					mmc_clr_dat_list(host);
+					atomic_set(&host->cq_rdy_cnt, 0);
+				}
 
-					if (host->ops->execute_tuning) {
-						err = host->ops->execute_tuning(host, MMC_SEND_TUNING_BLOCK_HS200);
-						pr_notice("%s: tuning err: %d\n",
-							mmc_hostname(host), err);
-					}
+				if (host->ops->execute_tuning) {
+					err = host->ops->execute_tuning(host, MMC_SEND_TUNING_BLOCK_HS200);
+					pr_notice("%s: tuning err: %d\n",
+						mmc_hostname(host), err);
+					/* reset device if tune fail */
+					if (err && mmc_reset_for_cmdq(host))
+						pr_notice("[CQ] reinit fail\n");
 				}
 
 				host->cur_rw_task = 99;
