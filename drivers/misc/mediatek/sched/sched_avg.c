@@ -537,6 +537,31 @@ int sched_get_nr_overutil_avg(int cluster_id, int *l_avg, int *h_avg)
 }
 EXPORT_SYMBOL(sched_get_nr_overutil_avg);
 
+/*
+ * sched_big_task_nr
+ * @B_nr: big task nr.
+ * @L_nr: task suggested in L.
+ */
+#define MAX_CLUSTER_NR 3
+void sched_big_task_nr(int *L_nr, int *B_nr)
+{
+	int l_nr, b_nr;
+	int i;
+	int l_avg[MAX_CLUSTER_NR] = {0};
+	int h_avg[MAX_CLUSTER_NR] = {0};
+	int cluster_nr = arch_get_nr_clusters();
+
+	for (i = 0; i < cluster_nr; i++)
+		sched_get_nr_overutil_avg(i, &l_avg[i], &h_avg[i]);
+
+	l_nr = h_avg[0] + (l_avg[1] - h_avg[1]);
+	b_nr = h_avg[1] + l_avg[2];
+
+	*L_nr = (l_nr%100 > 25)?(l_nr/100+1):(l_nr/100);
+	*B_nr = (b_nr%100 > 25)?(b_nr/100+1):(b_nr/100);
+}
+EXPORT_SYMBOL(sched_big_task_nr);
+
 /**
  * sched_update_nr_prod
  * @cpu: The core id of the nr running driver.
