@@ -475,7 +475,9 @@ suspend_end:
  */
 static int hps_resume(struct device *dev)
 {
+#if 0
 	int cpu = 0;
+#endif
 /*	hps_warn("%s\n", __func__);*/
 
 	if (!hps_ctxt.suspend_enabled)
@@ -486,7 +488,7 @@ static int hps_resume(struct device *dev)
 	hps_ctxt.enabled = hps_ctxt.enabled_backup;
 	mutex_unlock(&hps_ctxt.lock);
 #endif
-#if 1
+#if 0
 	/*In order to fast screen on, power on extra little CPU to serve system resume. */
 	for (cpu = hps_ctxt.little_cpu_id_min; cpu <= hps_ctxt.little_cpu_id_max; cpu++) {
 		if (!cpu_online(cpu))
