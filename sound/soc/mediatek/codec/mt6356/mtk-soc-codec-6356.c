@@ -1207,12 +1207,14 @@ static int SetDcCompenSation(bool enable)
 static int get_hp_trim_offset(int channel)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#define DC_TRIM_TIMES 20
+#define TRIM_TIMES 26
+#define TRIM_DISCARD_NUM 3
+#define TRIM_USEFUL_NUM (TRIM_TIMES - (TRIM_DISCARD_NUM * 2))
 
-	int on_value[DC_TRIM_TIMES];
-	int off_value[DC_TRIM_TIMES];
+	int on_value[TRIM_TIMES];
+	int off_value[TRIM_TIMES];
 	int offset = 0;
-	int i;
+	int i, j, tmp;
 
 	if (channel != AUDIO_OFFSET_TRIM_MUX_HPL &&
 	    channel != AUDIO_OFFSET_TRIM_MUX_HPR){
@@ -1230,7 +1232,7 @@ static int get_hp_trim_offset(int channel)
 	EnableTrimbuffer(true);
 	usleep_range(1 * 1000, 10 * 1000);
 
-	for (i = 0; i < DC_TRIM_TIMES; i++)
+	for (i = 0; i < TRIM_TIMES; i++)
 		on_value[i] = audio_get_auxadc_value();
 
 	EnableTrimbuffer(false);
@@ -1245,7 +1247,7 @@ static int get_hp_trim_offset(int channel)
 	EnableTrimbuffer(true);
 	usleep_range(1 * 1000, 10 * 1000);
 
-	for (i = 0; i < DC_TRIM_TIMES; i++)
+	for (i = 0; i < TRIM_TIMES; i++)
 		off_value[i] = audio_get_auxadc_value();
 
 	EnableTrimbuffer(false);
@@ -1253,15 +1255,32 @@ static int get_hp_trim_offset(int channel)
 
 	OpenTrimBufferHardware(false, false);
 
+	/* sort */
+	for (i = 0; i < TRIM_TIMES - 1; i++) {
+		for (j = 0; j < TRIM_TIMES - 1 - i; j++) {
+			if (on_value[j] > on_value[j + 1]) {
+				tmp = on_value[j + 1];
+				on_value[j + 1] = on_value[j];
+				on_value[j] = tmp;
+			}
+			if (off_value[j] > off_value[j + 1]) {
+				tmp = off_value[j + 1];
+				off_value[j + 1] = off_value[j];
+				off_value[j] = tmp;
+			}
+		}
+	}
+
+
 	/* calculate result */
-	for (i = 0; i < DC_TRIM_TIMES; i++) {
+	for (i = TRIM_DISCARD_NUM; i < TRIM_TIMES - TRIM_DISCARD_NUM; i++) {
 		offset += on_value[i] - off_value[i];
 		pr_debug("%s(), offset diff %d, on %d, off %d\n",
 			 __func__,
 			 on_value[i] - off_value[i], on_value[i], off_value[i]);
 	}
 
-	offset = (offset + (DC_TRIM_TIMES / 2)) / DC_TRIM_TIMES;
+	offset = (offset + (TRIM_USEFUL_NUM / 2)) / TRIM_USEFUL_NUM;
 
 	pr_warn("%s(), channel = %d, offset = %d\n", __func__, channel, offset);
 
