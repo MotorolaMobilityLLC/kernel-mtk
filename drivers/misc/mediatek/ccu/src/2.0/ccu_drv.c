@@ -440,7 +440,7 @@ static int ccu_open(struct inode *inode, struct file *flip)
 	ccu_ion_init();
 
 	for (i = 0; i < CCU_IMPORT_BUF_NUM; i++)
-		import_buffer_handle[i] = NULL;
+		import_buffer_handle[i] = (struct ion_handle *)CCU_IMPORT_BUF_UNDEF;
 
 	return ret;
 }
@@ -855,6 +855,10 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 			}
 
 			for (i = 0; i < CCU_IMPORT_BUF_NUM; i++) {
+				if (import_mem.memID[i] == CCU_IMPORT_BUF_UNDEF) {
+					LOG_INF_MUST("imported buffer count: %d\n", i);
+					break;
+				}
 				import_buffer_handle[i] = ccu_ion_import_handle(import_mem.memID[i]);
 				if (!import_buffer_handle[i]) {
 					ret = -EFAULT;
@@ -889,8 +893,14 @@ static int ccu_release(struct inode *inode, struct file *flip)
 
 	ccu_force_powerdown();
 
-	for (i = 0; i < CCU_IMPORT_BUF_NUM; i++)
+	for (i = 0; i < CCU_IMPORT_BUF_NUM; i++) {
+		if (import_buffer_handle[i] == (struct ion_handle *)CCU_IMPORT_BUF_UNDEF) {
+			LOG_INF_MUST("freed buffer count: %d\n", i);
+			break;
+		}
+
 		ccu_ion_free_import_handle(import_buffer_handle[i]);/*can't in spin_lock*/
+	}
 
 	ccu_delete_user(user);
 
