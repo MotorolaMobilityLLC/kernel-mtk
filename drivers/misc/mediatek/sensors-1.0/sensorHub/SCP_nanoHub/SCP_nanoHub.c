@@ -401,7 +401,6 @@ int scp_sensorHub_data_registration(uint8_t sensor, SCP_sensorHub_handler handle
 
 	return 0;
 }
-
 static void SCP_sensorHub_write_wp_queue(SCP_SENSOR_HUB_DATA_P rsp)
 {
 	struct SCP_sensorHub_data *obj = obj_data;
@@ -414,7 +413,6 @@ static void SCP_sensorHub_write_wp_queue(SCP_SENSOR_HUB_DATA_P rsp)
 		SCP_PR_ERR("dropped currWp due to ringbuffer is full\n");
 	spin_unlock(&wp_queue->buffer_lock);
 }
-
 static int SCP_sensorHub_fetch_next_wp(uint32_t *currWp)
 {
 	int have_event;
@@ -432,7 +430,6 @@ static int SCP_sensorHub_fetch_next_wp(uint32_t *currWp)
 	/* SCP_PR_ERR("head:%d, tail:%d, currWp:%d\n", wp_queue->head, wp_queue->tail, *currWp); */
 	return have_event;
 }
-
 static int SCP_sensorHub_read_wp_queue(void)
 {
 	uint32_t currWp = 0;
@@ -443,7 +440,6 @@ static int SCP_sensorHub_read_wp_queue(void)
 	}
 	return 0;
 }
-
 static void SCP_sensorHub_sync_time_work(struct work_struct *work)
 
 {
@@ -470,13 +466,12 @@ static int SCP_sensorHub_direct_push_work(void *data)
 	}
 	return 0;
 }
-
 static void SCP_sensorHub_enable_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
 
 	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_LOG("sensor type %d != %d action %d != %d\n",
+		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
 			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
 	} else {
 		if (txrx_cmd.context == NULL)
@@ -488,13 +483,12 @@ static void SCP_sensorHub_enable_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 		}
 	}
 }
-
 static void SCP_sensorHub_set_delay_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
 
 	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_LOG("sensor type %d != %d action %d != %d\n",
+		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
 			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
 	} else {
 		if (txrx_cmd.context == NULL)
@@ -506,13 +500,12 @@ static void SCP_sensorHub_set_delay_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 		}
 	}
 }
-
 static void SCP_sensorHub_get_data_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
 
 	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_LOG("sensor type %d != %d action %d != %d\n",
+		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
 			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
 	} else {
 		if (txrx_cmd.context == NULL)
@@ -524,13 +517,12 @@ static void SCP_sensorHub_get_data_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 		}
 	}
 }
-
 static void SCP_sensorHub_batch_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
 
 	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_LOG("sensor type %d != %d action %d != %d\n",
+		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
 			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
 	} else {
 		if (txrx_cmd.context == NULL)
@@ -542,13 +534,12 @@ static void SCP_sensorHub_batch_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 		}
 	}
 }
-
 static void SCP_sensorHub_set_cfg_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
 
 	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_LOG("sensor type %d != %d action %d != %d\n",
+		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
 			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
 	} else {
 		if (txrx_cmd.context == NULL)
@@ -560,13 +551,12 @@ static void SCP_sensorHub_set_cfg_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 		}
 	}
 }
-
 static void SCP_sensorHub_set_cust_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
 
 	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_LOG("sensor type %d != %d action %d != %d\n",
+		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
 			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
 	} else {
 		if (txrx_cmd.context == NULL)
@@ -578,13 +568,12 @@ static void SCP_sensorHub_set_cust_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 		}
 	}
 }
-
 static void SCP_sensorHub_batch_timeout_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
 
 	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_LOG("sensor type %d != %d action %d != %d\n",
+		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
 			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
 	} else {
 		if (txrx_cmd.context == NULL)
@@ -596,13 +585,12 @@ static void SCP_sensorHub_batch_timeout_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_le
 		}
 	}
 }
-
 static void SCP_sensorHub_set_timestamp_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	SCP_SENSOR_HUB_DATA_P req = (SCP_SENSOR_HUB_DATA_P)txrx_cmd.tx;
 
 	if (req->req.sensorType != rsp->rsp.sensorType || req->req.action != rsp->rsp.action) {
-		SCP_LOG("sensor type %d != %d action %d != %d\n",
+		SCP_PR_ERR("sensor type %d != %d action %d != %d\n",
 			req->req.sensorType, rsp->rsp.sensorType, req->req.action, rsp->rsp.action);
 	} else {
 		if (txrx_cmd.context == NULL)
@@ -614,7 +602,6 @@ static void SCP_sensorHub_set_timestamp_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_le
 		}
 	}
 }
-
 static void SCP_sensorHub_moving_average(SCP_SENSOR_HUB_DATA_P rsp)
 {
 	uint64_t ap_now_time = 0, arch_counter = 0, scp_raw_time = 0, scp_now_time = 0;
@@ -631,12 +618,13 @@ static void SCP_sensorHub_moving_average(SCP_SENSOR_HUB_DATA_P rsp)
 	scp_now_time = scp_raw_time + ipi_transfer_time;
 	moving_average_filter(&moving_average_algo, ap_now_time, scp_now_time);
 }
-
 static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
 	struct SCP_sensorHub_data *obj = obj_data;
+#if 0
 	struct data_unit_t *event;
 	int handle = 0;
+#endif
 
 	switch (rsp->notify_rsp.event) {
 	case SCP_DIRECT_PUSH:
@@ -644,7 +632,7 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 		mark_timestamp(0, GOT_IPI, ktime_get_boot_ns(), 0);
 		mark_ipi_timestamp(arch_counter_get_cntvct() - rsp->notify_rsp.arch_counter);
 #ifdef DEBUG_PERFORMANCE_HW_TICK
-		pr_debug("[Performance Debug] ====> AP_get_ipi, Stanley kernel report tick:%llu\n",
+		pr_notice("[Performance Debug] ====> AP_get_ipi, Stanley kernel report tick:%llu\n",
 				arch_counter_get_cntvct());
 #endif
 		SCP_sensorHub_moving_average(rsp);
@@ -654,6 +642,7 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 		wake_up(&chre_kthread_wait);
 		break;
 	case SCP_NOTIFY:
+#if 0
 		handle = rsp->rsp.sensorType;
 		if (handle > ID_SENSOR_MAX_HANDLE) {
 			SCP_PR_ERR("invalid sensor %d\n", handle);
@@ -666,6 +655,7 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 			if (event->flush_action == FLUSH_ACTION)
 				atomic_dec(&mSensorState[handle].flushCnt);
 		}
+#endif
 		break;
 #ifdef CHRE_POWER_RESET_NOTIFY
 	case SCP_INIT_DONE:
@@ -735,82 +725,111 @@ static void SCP_sensorHub_IPI_handler(int id, void *data, unsigned int len)
 static void SCP_sensorHub_init_sensor_state(void)
 {
 	mSensorState[ID_ACCELEROMETER].sensorType = ID_ACCELEROMETER;
+	mSensorState[ID_ACCELEROMETER].timestamp_filter = true;
 
 	mSensorState[ID_GYROSCOPE].sensorType = ID_GYROSCOPE;
+	mSensorState[ID_GYROSCOPE].timestamp_filter = true;
 #ifdef CONFIG_MTK_UNCALI_GYROHUB
 	mSensorState[ID_GYROSCOPE].alt = ID_GYROSCOPE_UNCALIBRATED;
 	mSensorState[ID_GYROSCOPE_UNCALIBRATED].sensorType = ID_GYROSCOPE;
 	mSensorState[ID_GYROSCOPE_UNCALIBRATED].alt = ID_GYROSCOPE;
+	mSensorState[ID_GYROSCOPE_UNCALIBRATED].timestamp_filter = true;
 #endif
 
 	mSensorState[ID_MAGNETIC].sensorType = ID_MAGNETIC;
+	mSensorState[ID_MAGNETIC].timestamp_filter = true;
 #ifdef CONFIG_MTK_UNCALI_MAGHUB
 	mSensorState[ID_MAGNETIC].alt = ID_MAGNETIC_UNCALIBRATED;
 	mSensorState[ID_MAGNETIC_UNCALIBRATED].sensorType = ID_MAGNETIC;
 	mSensorState[ID_MAGNETIC_UNCALIBRATED].alt = ID_MAGNETIC;
+	mSensorState[ID_MAGNETIC_UNCALIBRATED].timestamp_filter = true;
 #endif
 
 	mSensorState[ID_LIGHT].sensorType = ID_LIGHT;
+	mSensorState[ID_LIGHT].timestamp_filter = false;
 
 	mSensorState[ID_PROXIMITY].sensorType = ID_PROXIMITY;
+	mSensorState[ID_PROXIMITY].timestamp_filter = false;
 
 	mSensorState[ID_PRESSURE].sensorType = ID_PRESSURE;
+	mSensorState[ID_PRESSURE].timestamp_filter = false;
 
 	mSensorState[ID_ORIENTATION].sensorType = ID_ORIENTATION;
+	mSensorState[ID_ORIENTATION].timestamp_filter = true;
 
 	mSensorState[ID_ROTATION_VECTOR].sensorType = ID_ROTATION_VECTOR;
+	mSensorState[ID_ROTATION_VECTOR].timestamp_filter = true;
 
 	mSensorState[ID_GAME_ROTATION_VECTOR].sensorType = ID_GAME_ROTATION_VECTOR;
+	mSensorState[ID_GAME_ROTATION_VECTOR].timestamp_filter = true;
 
 	mSensorState[ID_GEOMAGNETIC_ROTATION_VECTOR].sensorType = ID_GEOMAGNETIC_ROTATION_VECTOR;
+	mSensorState[ID_GEOMAGNETIC_ROTATION_VECTOR].timestamp_filter = true;
 
 	mSensorState[ID_LINEAR_ACCELERATION].sensorType = ID_LINEAR_ACCELERATION;
+	mSensorState[ID_LINEAR_ACCELERATION].timestamp_filter = true;
 
 	mSensorState[ID_GRAVITY].sensorType = ID_GRAVITY;
+	mSensorState[ID_GRAVITY].timestamp_filter = true;
 
 	mSensorState[ID_SIGNIFICANT_MOTION].sensorType = ID_SIGNIFICANT_MOTION;
 	mSensorState[ID_SIGNIFICANT_MOTION].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_SIGNIFICANT_MOTION].timestamp_filter = false;
 
 	mSensorState[ID_STEP_COUNTER].sensorType = ID_STEP_COUNTER;
 	mSensorState[ID_STEP_COUNTER].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[ID_STEP_COUNTER].timestamp_filter = false;
 
 	mSensorState[ID_STEP_DETECTOR].sensorType = ID_STEP_DETECTOR;
 	mSensorState[ID_STEP_DETECTOR].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[ID_STEP_DETECTOR].timestamp_filter = false;
 
 	mSensorState[ID_TILT_DETECTOR].sensorType = ID_TILT_DETECTOR;
 	mSensorState[ID_TILT_DETECTOR].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[ID_TILT_DETECTOR].timestamp_filter = false;
 
 	mSensorState[ID_IN_POCKET].sensorType = ID_IN_POCKET;
 	mSensorState[ID_IN_POCKET].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_IN_POCKET].timestamp_filter = false;
 
 	mSensorState[ID_ACTIVITY].sensorType = ID_ACTIVITY;
+	mSensorState[ID_ACTIVITY].timestamp_filter = false;
 
 	mSensorState[ID_GLANCE_GESTURE].sensorType = ID_GLANCE_GESTURE;
 	mSensorState[ID_GLANCE_GESTURE].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_GLANCE_GESTURE].timestamp_filter = false;
 
 	mSensorState[ID_PICK_UP_GESTURE].sensorType = ID_PICK_UP_GESTURE;
 	mSensorState[ID_PICK_UP_GESTURE].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_PICK_UP_GESTURE].timestamp_filter = false;
 
 	mSensorState[ID_WAKE_GESTURE].sensorType = ID_WAKE_GESTURE;
 	mSensorState[ID_WAKE_GESTURE].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_WAKE_GESTURE].timestamp_filter = false;
 
 	mSensorState[ID_ANSWER_CALL].sensorType = ID_ANSWER_CALL;
 	mSensorState[ID_ANSWER_CALL].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_ANSWER_CALL].timestamp_filter = false;
 
 	mSensorState[ID_STATIONARY_DETECT].sensorType = ID_STATIONARY_DETECT;
 	mSensorState[ID_STATIONARY_DETECT].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_STATIONARY_DETECT].timestamp_filter = false;
 
 	mSensorState[ID_MOTION_DETECT].sensorType = ID_MOTION_DETECT;
 	mSensorState[ID_MOTION_DETECT].rate = SENSOR_RATE_ONESHOT;
+	mSensorState[ID_MOTION_DETECT].timestamp_filter = false;
 
 	mSensorState[ID_DEVICE_ORIENTATION].sensorType = ID_DEVICE_ORIENTATION;
 	mSensorState[ID_DEVICE_ORIENTATION].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[ID_DEVICE_ORIENTATION].timestamp_filter = false;
 
 	mSensorState[ID_GEOFENCE].sensorType = ID_GEOFENCE;
 	mSensorState[ID_GEOFENCE].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[ID_GEOFENCE].timestamp_filter = false;
 
 	mSensorState[ID_FLOOR_COUNTER].sensorType = ID_FLOOR_COUNTER;
 	mSensorState[ID_FLOOR_COUNTER].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[ID_FLOOR_COUNTER].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)
@@ -943,6 +962,8 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 				need_send = true;
 			} else
 				need_send = false;
+			if (!mSensorState[sensor_type].timestamp_filter)
+				need_send = true;
 		}
 		if (need_send == true) {
 			if (!alt) {
@@ -961,12 +982,10 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 				else if (raw_enable && data_t->flush_action == FLUSH_ACTION) {
 					if (atomic_dec_if_positive(&mSensorState[sensor_type].flushCnt) >= 0)
 						err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
-				} else if (data_t->flush_action == BIAS_ACTION)
+				} else if (data_t->flush_action == BIAS_ACTION || data_t->flush_action == CALI_ACTION
+					|| data_t->flush_action == TEMP_ACTION)
 					err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
 			}
-		} else if (ID_STEP_DETECTOR == sensor_type || ID_PRESSURE == sensor_type) {
-			/* step_detector doesn't care timestamp now */
-			err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
 		}
 	}
 	return err;
@@ -1063,7 +1082,7 @@ static int sensor_send_dram_info_to_hub(void)
 		break;
 	}
 	if (retry < total)
-		SCP_LOG("sensor_send_dram_info_to_hub success!\n");
+		pr_notice("[sensorHub] sensor_send_dram_info_to_hub success!\n");
 	return SCP_SENSOR_HUB_SUCCESS;
 }
 
@@ -1866,7 +1885,6 @@ static int sensorHub_ready_event(struct notifier_block *this, unsigned long even
 static struct notifier_block sensorHub_ready_notifier = {
 	.notifier_call = sensorHub_ready_event,
 };
-
 static int sensorHub_probe(struct platform_device *pdev)
 {
 	struct SCP_sensorHub_data *obj;

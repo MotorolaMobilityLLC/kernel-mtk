@@ -49,11 +49,12 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 	hrtimer_start(timer, obj->target_ktime, HRTIMER_MODE_ABS);
 }
 
+#if !defined(CONFIG_NANOHUB) || !defined(CONFIG_MTK_BAROHUB)
 static void stopTimer(struct hrtimer *timer)
 {
 	hrtimer_cancel(timer);
 }
-
+#endif
 static struct baro_init_info *barometer_init_list[MAX_CHOOSE_BARO_NUM] = { 0 };
 
 static void baro_work_func(struct work_struct *work)
@@ -164,7 +165,7 @@ static struct baro_context *baro_context_alloc_object(void)
 	BARO_LOG("baro_context_alloc_object----\n");
 	return obj;
 }
-
+#if !defined(CONFIG_NANOHUB) || !defined(CONFIG_MTK_BAROHUB)
 static int baro_enable_and_batch(void)
 {
 	struct baro_context *cxt = baro_context_obj;
@@ -239,13 +240,9 @@ static int baro_enable_and_batch(void)
 		}
 		BARO_LOG("BARO batch done\n");
 	}
-	/* just for debug, remove it when everything is ok */
-	if (cxt->power == 0 && cxt->delay_ns >= 0)
-		BARO_LOG("batch will call firstly in API1.3, do nothing\n");
-
 	return 0;
 }
-
+#endif
 static ssize_t baro_store_active(struct device *dev, struct device_attribute *attr,
 				 const char *buf, size_t count)
 {
@@ -263,11 +260,19 @@ static ssize_t baro_store_active(struct device *dev, struct device_attribute *at
 		err = -1;
 		goto err_out;
 	}
+#if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_BAROHUB)
+	err = cxt->baro_ctl.enable_nodata(cxt->enable);
+	if (err) {
+		BARO_PR_ERR("baro turn on power err = %d\n", err);
+		goto err_out;
+	}
+#else
 	err = baro_enable_and_batch();
+#endif
 err_out:
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	BARO_LOG(" baro_store_active done\n");
-	return count;
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -296,10 +301,19 @@ static ssize_t baro_store_batch(struct device *dev, struct device_attribute *att
 		BARO_PR_ERR("grav_store_batch param error: err = %d\n", err);
 
 	mutex_lock(&baro_context_obj->baro_op_mutex);
+#if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_BAROHUB)
+	if (cxt->baro_ctl.is_support_batch)
+		err = cxt->baro_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+	else
+		err = cxt->baro_ctl.batch(0, cxt->delay_ns, 0);
+	if (err)
+		BARO_PR_ERR("baro set batch(ODR) err %d\n", err);
+#else
 	err = baro_enable_and_batch();
+#endif
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	BARO_LOG(" baro_store_batch done: %d\n", cxt->is_batch_enable);
-	return count;
+	return err;
 
 }
 
@@ -325,11 +339,11 @@ static ssize_t baro_store_flush(struct device *dev, struct device_attribute *att
 	if (cxt->baro_ctl.flush != NULL)
 		err = cxt->baro_ctl.flush();
 	else
-		BARO_LOG("BARO DRIVER OLD ARCHITECTURE DON'T SUPPORT BARO COMMON VERSION FLUSH\n");
+		BARO_PR_ERR("BARO DRIVER OLD ARCHITECTURE DON'T SUPPORT BARO COMMON VERSION FLUSH\n");
 	if (err < 0)
 		BARO_PR_ERR("baro enable flush err %d\n", err);
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t baro_show_flush(struct device *dev, struct device_attribute *attr, char *buf)
@@ -550,6 +564,8 @@ int baro_data_report(int value, int status, int64_t nt)
 	struct sensor_event event;
 	int err = 0;
 
+	memset(&event, 0, sizeof(struct sensor_event));
+
 	event.flush_action = DATA_ACTION;
 	event.time_stamp = nt;
 	event.word[0] = value;
@@ -557,7 +573,7 @@ int baro_data_report(int value, int status, int64_t nt)
 
 	err = sensor_input_event(baro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		BARO_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -566,11 +582,13 @@ int baro_flush_report(void)
 	struct sensor_event event;
 	int err = 0;
 
+	memset(&event, 0, sizeof(struct sensor_event));
+
 	BARO_LOG("flush\n");
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(baro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		BARO_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 

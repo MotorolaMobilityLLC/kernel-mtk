@@ -57,12 +57,12 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_enable_sensor != NULL) {
 			err = alsps_factory.fops->ps_enable_sensor(enable, 200);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_SET_PS_MODE fail!\n");
+				ALSPS_PR_ERR("ALSPS_SET_PS_MODE fail!\n");
 				return -EINVAL;
 			}
-			ALSPS_ERR("ALSPS_SET_PS_MODE, enable: %d, sample_period:%dms\n", enable, 200);
+			ALSPS_LOG("ALSPS_SET_PS_MODE, enable: %d, sample_period:%dms\n", enable, 200);
 		} else {
-			ALSPS_LOG("ALSPS_SET_PS_MODE NULL\n");
+			ALSPS_PR_ERR("ALSPS_SET_PS_MODE NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -70,13 +70,13 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_raw_data != NULL) {
 			err = alsps_factory.fops->ps_get_raw_data(&data);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_GET_PS_RAW_DATA read data fail!\n");
+				ALSPS_PR_ERR("ALSPS_GET_PS_RAW_DATA read data fail!\n");
 				return -EINVAL;
 			}
 			if (copy_to_user(ptr, &data, sizeof(data)))
 				return -EFAULT;
 		} else {
-			ALSPS_LOG("ALSPS_GET_PS_RAW_DATA NULL\n");
+			ALSPS_PR_ERR("ALSPS_GET_PS_RAW_DATA NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -86,12 +86,12 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->als_enable_sensor != NULL) {
 			err = alsps_factory.fops->als_enable_sensor(enable, 200);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_SET_ALS_MODE fail!\n");
+				ALSPS_PR_ERR("ALSPS_SET_ALS_MODE fail!\n");
 				return -EINVAL;
 			}
-			ALSPS_ERR("ALSPS_SET_ALS_MODE, enable: %d, sample_period:%dms\n", enable, 200);
+			ALSPS_LOG("ALSPS_SET_ALS_MODE, enable: %d, sample_period:%dms\n", enable, 200);
 		} else {
-			ALSPS_LOG("ALSPS_SET_ALS_MODE NULL\n");
+			ALSPS_PR_ERR("ALSPS_SET_ALS_MODE NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -99,13 +99,13 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->als_get_raw_data != NULL) {
 			err = alsps_factory.fops->als_get_raw_data(&data);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_GET_ALS_RAW_DATA read data fail!\n");
+				ALSPS_PR_ERR("ALSPS_GET_ALS_RAW_DATA read data fail!\n");
 				return -EINVAL;
 			}
 			if (copy_to_user(ptr, &data, sizeof(data)))
 				return -EFAULT;
 		} else {
-			ALSPS_LOG("ALSPS_GET_ALS_RAW_DATA NULL\n");
+			ALSPS_PR_ERR("ALSPS_GET_ALS_RAW_DATA NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -113,11 +113,11 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->als_enable_calibration != NULL) {
 			err = alsps_factory.fops->als_enable_calibration();
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_ALS_ENABLE_CALI FAIL!\n");
+				ALSPS_PR_ERR("ALSPS_ALS_ENABLE_CALI FAIL!\n");
 				return -EINVAL;
 			}
 		} else {
-			ALSPS_LOG("ALSPS_ALS_ENABLE_CALI NULL\n");
+			ALSPS_PR_ERR("ALSPS_ALS_ENABLE_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -125,13 +125,13 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_data != NULL) {
 			err = alsps_factory.fops->ps_get_data(&data);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_GET_PS_TEST_RESULT read data fail!\n");
+				ALSPS_PR_ERR("ALSPS_GET_PS_TEST_RESULT read data fail!\n");
 				return -EINVAL;
 			}
 			if (copy_to_user(ptr, &data, sizeof(data)))
 				return -EFAULT;
 		} else {
-			ALSPS_LOG("ALSPS_GET_PS_TEST_RESULT NULL\n");
+			ALSPS_PR_ERR("ALSPS_GET_PS_TEST_RESULT NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -139,11 +139,11 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_threashold != NULL) {
 			err = alsps_factory.fops->ps_get_threashold(threshold_data);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_GET_PS_THRESHOLD_HIGH read data fail!\n");
+				ALSPS_PR_ERR("ALSPS_GET_PS_THRESHOLD_HIGH read data fail!\n");
 				return -EINVAL;
 			}
 		} else {
-			ALSPS_LOG("ALSPS_GET_PS_THRESHOLD_HIGH NULL\n");
+			ALSPS_PR_ERR("ALSPS_GET_PS_THRESHOLD_HIGH NULL\n");
 			return -EINVAL;
 		}
 		if (copy_to_user(ptr, &threshold_data[0], sizeof(threshold_data[0])))
@@ -153,11 +153,11 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_threashold != NULL) {
 			err = alsps_factory.fops->ps_get_threashold(threshold_data);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_GET_PS_THRESHOLD_HIGH read data fail!\n");
+				ALSPS_PR_ERR("ALSPS_GET_PS_THRESHOLD_HIGH read data fail!\n");
 				return -EINVAL;
 			}
 		} else {
-			ALSPS_LOG("ALSPS_GET_PS_THRESHOLD_HIGH NULL\n");
+			ALSPS_PR_ERR("ALSPS_GET_PS_THRESHOLD_HIGH NULL\n");
 			return -EINVAL;
 		}
 		if (copy_to_user(ptr, &threshold_data[1], sizeof(threshold_data[1])))
@@ -169,11 +169,11 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_set_threashold != NULL) {
 			err = alsps_factory.fops->ps_set_threashold(threshold_data);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_SET_PS_THRESHOLD read data fail!\n");
+				ALSPS_PR_ERR("ALSPS_SET_PS_THRESHOLD read data fail!\n");
 				return -EINVAL;
 			}
 		} else {
-			ALSPS_LOG("ALSPS_SET_PS_THRESHOLD NULL\n");
+			ALSPS_PR_ERR("ALSPS_SET_PS_THRESHOLD NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -183,11 +183,11 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_set_cali != NULL) {
 			err = alsps_factory.fops->ps_set_cali(data);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_IOCTL_SET_CALI read data fail!\n");
+				ALSPS_PR_ERR("ALSPS_IOCTL_SET_CALI read data fail!\n");
 				return -EINVAL;
 			}
 		} else {
-			ALSPS_LOG("ALSPS_IOCTL_SET_CALI NULL\n");
+			ALSPS_PR_ERR("ALSPS_IOCTL_SET_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -195,11 +195,11 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_cali != NULL) {
 			err = alsps_factory.fops->ps_get_cali(&data);
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_IOCTL_GET_CALI FAIL!\n");
+				ALSPS_PR_ERR("ALSPS_IOCTL_GET_CALI FAIL!\n");
 				return -EINVAL;
 			}
 		} else {
-			ALSPS_LOG("ALSPS_IOCTL_GET_CALI NULL\n");
+			ALSPS_PR_ERR("ALSPS_IOCTL_GET_CALI NULL\n");
 			return -EINVAL;
 		}
 		if (copy_to_user(ptr, &data, sizeof(data)))
@@ -211,11 +211,11 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_clear_cali != NULL) {
 			err = alsps_factory.fops->ps_clear_cali();
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_IOCTL_CLR_CALI FAIL!\n");
+				ALSPS_PR_ERR("ALSPS_IOCTL_CLR_CALI FAIL!\n");
 				return -EINVAL;
 			}
 		} else {
-			ALSPS_LOG("ALSPS_IOCTL_CLR_CALI NULL\n");
+			ALSPS_PR_ERR("ALSPS_IOCTL_CLR_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -223,16 +223,16 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_enable_calibration != NULL) {
 			err = alsps_factory.fops->ps_enable_calibration();
 			if (err < 0) {
-				ALSPS_LOG("ALSPS_PS_ENABLE_CALI FAIL!\n");
+				ALSPS_PR_ERR("ALSPS_PS_ENABLE_CALI FAIL!\n");
 				return -EINVAL;
 			}
 		} else {
-			ALSPS_LOG("ALSPS_PS_ENABLE_CALI NULL\n");
+			ALSPS_PR_ERR("ALSPS_PS_ENABLE_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
 	default:
-		ALSPS_ERR("unknown IOCTL: 0x%08x\n", cmd);
+		ALSPS_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;
 	}
 	return 0;
@@ -264,7 +264,7 @@ static long alsps_factory_compat_ioctl(struct file *file, unsigned int cmd, unsi
 		err = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)arg32);
 		break;
 	default:
-		ALSPS_ERR("unknown IOCTL: 0x%08x\n", cmd);
+		ALSPS_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		err = -ENOIOCTLCMD;
 		break;
 	}
@@ -299,7 +299,7 @@ int alsps_factory_device_register(struct alsps_factory_public *dev)
 	alsps_factory.fops = dev->fops;
 	err = misc_register(&alsps_factory_device);
 	if (err) {
-		ALSPS_LOG("alsps_factory_device register failed\n");
+		ALSPS_PR_ERR("alsps_factory_device register failed\n");
 		err = -1;
 	}
 	return err;

@@ -84,7 +84,7 @@ static int stat_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReport
 static int stat_recv_data(struct data_unit_t *event, void *reserved)
 {
 	if (event->flush_action == FLUSH_ACTION)
-		STATHUB_PR_ERR("stat do not support flush\n");
+		STATHUB_LOG("stat do not support flush\n");
 	else if (event->flush_action == DATA_ACTION)
 		situation_notify(ID_STATIONARY_DETECT);
 	return 0;

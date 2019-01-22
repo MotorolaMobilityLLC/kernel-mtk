@@ -137,7 +137,7 @@ static struct act_context *act_context_alloc_object(void)
 	ACT_LOG("act_context_alloc_object----\n");
 	return obj;
 }
-
+#ifndef CONFIG_NANOHUB
 static int act_enable_and_batch(void)
 {
 	struct act_context *cxt = act_context_obj;
@@ -224,13 +224,9 @@ static int act_enable_and_batch(void)
 		}
 		ACT_LOG("ACT batch done\n");
 	}
-	/* just for debug, remove it when everything is ok */
-	if (cxt->power == 0 && cxt->delay_ns >= 0)
-		ACT_LOG("batch will call firstly in API1.3, do nothing\n");
-
 	return 0;
 }
-
+#endif
 static ssize_t act_store_active(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -248,11 +244,19 @@ static ssize_t act_store_active(struct device *dev, struct device_attribute *att
 		err = -1;
 		goto err_out;
 	}
+#ifdef CONFIG_NANOHUB
+	err = cxt->act_ctl.enable_nodata(cxt->enable);
+	if (err) {
+		ACT_PR_ERR("act turn on power err = %d\n", err);
+		goto err_out;
+	}
+#else
 	err = act_enable_and_batch();
+#endif
 	ACT_LOG(" act_store_active done\n");
 err_out:
 	mutex_unlock(&act_context_obj->act_op_mutex);
-	return count;
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -285,7 +289,17 @@ static ssize_t act_store_batch(struct device *dev, struct device_attribute *attr
 		return -1;
 	}
 	mutex_lock(&act_context_obj->act_op_mutex);
+#ifdef CONFIG_NANOHUB
+	if (cxt->act_ctl.is_support_batch)
+		err = cxt->act_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+	else
+		err = cxt->act_ctl.batch(0, cxt->delay_ns, 0);
+	if (err)
+		ACT_PR_ERR("act set batch(ODR) err %d\n", err);
+#else
 	err = act_enable_and_batch();
+#endif
+
 	mutex_unlock(&act_context_obj->act_op_mutex);
 	return err;
 }
@@ -312,11 +326,11 @@ static ssize_t act_store_flush(struct device *dev, struct device_attribute *attr
 	if (cxt->act_ctl.flush != NULL)
 		err = cxt->act_ctl.flush();
 	else
-		ACT_LOG("ACT DRIVER OLD ARCHITECTURE DON'T SUPPORT ACT COMMON VERSION FLUSH\n");
+		ACT_PR_ERR("ACT DRIVER OLD ARCHITECTURE DON'T SUPPORT ACT COMMON VERSION FLUSH\n");
 	if (err < 0)
 		ACT_PR_ERR("act enable flush err %d\n", err);
 	mutex_unlock(&act_context_obj->act_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t act_show_flush(struct device *dev, struct device_attribute *attr, char *buf)
@@ -549,7 +563,7 @@ int act_data_report(struct hwm_sensor_data *data, int status)
 
 	err = sensor_input_event(act_context_obj->mdev.minor, &event);
 	if (err < 0)
-		ACT_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -562,7 +576,7 @@ int act_flush_report(void)
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(act_context_obj->mdev.minor, &event);
 	if (err < 0)
-		ACT_PR_ERR("failed due to event buffer full\n");
+		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -619,7 +633,6 @@ static int act_remove(void)
 
 	return 0;
 }
-
 static int __init act_init(void)
 {
 	ACT_FUN(f);
@@ -637,6 +650,7 @@ static void __exit act_exit(void)
 	act_remove();
 	platform_driver_unregister(&activity_driver);
 }
+
 late_initcall(act_init);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("ACTIVITY device driver");

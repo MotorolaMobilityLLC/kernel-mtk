@@ -85,6 +85,12 @@ struct mag_data_path {
 
 };
 
+struct mag_libinfo_t {
+	char libname[64];
+	int32_t layout;
+	int32_t deviceid;
+};
+
 struct mag_control_path {
 	int (*open_report_data)(int en);
 	int (*set_delay)(u64 delay);
@@ -95,6 +101,7 @@ struct mag_control_path {
 	bool is_report_input_direct;
 	bool is_support_batch;
 	bool is_use_common_factory;
+	struct mag_libinfo_t libinfo;
 };
 
 

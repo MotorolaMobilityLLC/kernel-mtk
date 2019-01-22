@@ -237,53 +237,21 @@ endmenu  # MM
 menu "Sensors"
 
 config MTK_SENSOR_SUPPORT
-	bool "MTK SENSOR SUPPORT"
+	bool "MTK_SENSOR_SUPPORT"
 	help
 	  sensor config to sensor port sensor feature in project.
 
-config MTK_SENSOR_BIO
-	bool "MTK SENSOR driver BOOST IO(BIO) SUPPORT"
+config MTK_SENSORS_1_0
+	bool "MTK SENSORs driver 1.0 SUPPORT"
 	help
-	  This is an option for MTK SENSOR BIO driver.
+	  This is an option for MTK SENSOR 1.0 driver.
 	  we use BIO architecture instead of linux input
 	  architecture, BIO means boost io transfer data
 	  between kernel space and user space.
+	  And we support loadble drivers
 
-if !MTK_SENSOR_BIO
-source "drivers/misc/mediatek/accelerometer/Kconfig"
-#source "drivers/misc/mediatek/activity_sensor/Kconfig"
-source "drivers/misc/mediatek/alsps/Kconfig"
-source "drivers/misc/mediatek/rgbw/Kconfig"
-#source "drivers/misc/mediatek/answer_call_sensor/Kconfig"
-source "drivers/misc/mediatek/barometer/Kconfig"
-#source "drivers/misc/mediatek/face_down_sensor/Kconfig"
-#source "drivers/misc/mediatek/freefall_sensor/Kconfig"
-#source "drivers/misc/mediatek/gamerotationvector/Kconfig"
-#source "drivers/misc/mediatek/geomagneticrotationvector/Kconfig"
-#source "drivers/misc/mediatek/gesture/Kconfig"
-#source "drivers/misc/mediatek/glance_gesture_sensor/Kconfig"
-#source "drivers/misc/mediatek/gravity/Kconfig"
-source "drivers/misc/mediatek/gyroscope/Kconfig"
-#source "drivers/misc/mediatek/heart_rate_sensor/Kconfig"
-#source "drivers/misc/mediatek/humidity/Kconfig"
-source "drivers/misc/mediatek/hwmon/Kconfig"
-#source "drivers/misc/mediatek/linearacceleration/Kconfig"
-source "drivers/misc/mediatek/magnetometer/Kconfig"
-#source "drivers/misc/mediatek/pdr_sensor/Kconfig"
-#source "drivers/misc/mediatek/pedometer/Kconfig"
-#source "drivers/misc/mediatek/pick_up_sensor/Kconfig"
-#source "drivers/misc/mediatek/rotationvector/Kconfig"
-#source "drivers/misc/mediatek/sensorHub/Kconfig"
-#source "drivers/misc/mediatek/shake_sensor/Kconfig"
-#source "drivers/misc/mediatek/step_counter/Kconfig"
-#source "drivers/misc/mediatek/tilt_detector_sensor/Kconfig"
-#source "drivers/misc/mediatek/uncali_gyro/Kconfig"
-#source "drivers/misc/mediatek/uncali_mag/Kconfig"
-#source "drivers/misc/mediatek/wake_gesture_sensor/Kconfig"
-endif
-if MTK_SENSOR_BIO
-source "drivers/misc/mediatek/sensor_bio/Kconfig"
-endif
+source "drivers/misc/mediatek/sensors-1.0/Kconfig"
+
 endmenu  # Sensors
 
 

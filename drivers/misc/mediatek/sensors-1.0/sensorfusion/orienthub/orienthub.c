@@ -85,12 +85,12 @@ static int orientation_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
 
-	if (event->flush_action == FLUSH_ACTION)
-		err = orientation_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION)
 		err = orientation_data_report(event->orientation_t.azimuth, event->orientation_t.pitch,
 			event->orientation_t.roll, event->orientation_t.status,
 			(int64_t)(event->time_stamp + event->time_stamp_gpt));
+	else if (event->flush_action == FLUSH_ACTION)
+		err = orientation_flush_report();
 
 	return err;
 }

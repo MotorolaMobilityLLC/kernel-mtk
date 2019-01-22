@@ -1,6 +1,0 @@
-
-config MTK_ACTIVITYHUB
-	bool "activityhub for MediaTek package"
-	default n
-	help
-	  MTK sensor hub driver for activity sensor.

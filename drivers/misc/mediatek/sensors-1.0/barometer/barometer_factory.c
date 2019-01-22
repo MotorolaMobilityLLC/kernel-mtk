@@ -56,7 +56,7 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (baro_factory.fops != NULL && baro_factory.fops->enable_sensor != NULL) {
 			err = baro_factory.fops->enable_sensor(flag, 200);
 			if (err < 0) {
-				BARO_LOG("BAROMETER_IOCTL_INIT fail!\n");
+				BARO_PR_ERR("BAROMETER_IOCTL_INIT fail!\n");
 				return -EINVAL;
 			}
 			BARO_LOG("BAROMETER_IOCTL_INIT, enable: %d, sample_period:%dms\n", flag, 200);
@@ -69,13 +69,13 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (baro_factory.fops != NULL && baro_factory.fops->get_data != NULL) {
 			err = baro_factory.fops->get_data(&data);
 			if (err < 0) {
-				BARO_LOG("BAROMETER_GET_PRESS_DATA read data fail!\n");
+				BARO_PR_ERR("BAROMETER_GET_PRESS_DATA read data fail!\n");
 				return -EINVAL;
 			}
 			if (copy_to_user(ptr, &data, sizeof(data)))
 				return -EFAULT;
 		} else {
-			BARO_LOG("BAROMETER_GET_PRESS_DATA NULL\n");
+			BARO_PR_ERR("BAROMETER_GET_PRESS_DATA NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -83,11 +83,11 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		if (baro_factory.fops != NULL && baro_factory.fops->enable_calibration != NULL) {
 			err = baro_factory.fops->enable_calibration();
 			if (err < 0) {
-				BARO_LOG("BAROMETER_IOCTL_ENABLE_CALI fail!\n");
+				BARO_PR_ERR("BAROMETER_IOCTL_ENABLE_CALI fail!\n");
 				return -EINVAL;
 			}
 		} else {
-			BARO_LOG("BAROMETER_IOCTL_ENABLE_CALI NULL\n");
+			BARO_PR_ERR("BAROMETER_IOCTL_ENABLE_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -152,7 +152,7 @@ int baro_factory_device_register(struct baro_factory_public *dev)
 	baro_factory.fops = dev->fops;
 	err = misc_register(&baro_factory_device);
 	if (err) {
-		BARO_LOG("baro_factory_device register failed\n");
+		BARO_PR_ERR("baro_factory_device register failed\n");
 		err = -1;
 	}
 	return err;

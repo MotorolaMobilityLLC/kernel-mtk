@@ -135,6 +135,7 @@ struct acc_context {
 extern int acc_driver_add(struct acc_init_info *obj);
 extern int acc_data_report(struct acc_data *data);
 extern int acc_bias_report(struct acc_data *data);
+extern int acc_cali_report(struct acc_data *data);
 extern int acc_flush_report(void);
 extern int acc_register_control_path(struct acc_control_path *ctl);
 extern int acc_register_data_path(struct acc_data_path *data);

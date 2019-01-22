@@ -288,21 +288,17 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 	struct mag_data data;
 	struct maghub_ipi_data *obj = mag_ipi_data;
 
-	if (READ_ONCE(obj->android_enable) == false)
-		return 0;
-
-	data.x = event->magnetic_t.x;
-	data.y = event->magnetic_t.y;
-	data.z = event->magnetic_t.z;
-	data.status = event->magnetic_t.status;
-	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
-	data.reserved[0] = event->reserve[0];
-
-	if (event->flush_action == FLUSH_ACTION)
-		err = mag_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION && READ_ONCE(obj->android_enable) == true) {
+		data.x = event->magnetic_t.x;
+		data.y = event->magnetic_t.y;
+		data.z = event->magnetic_t.z;
+		data.status = event->magnetic_t.status;
+		data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
+		data.reserved[0] = event->reserve[0];
 		err = mag_data_report(&data);
-	else if (event->flush_action == BIAS_ACTION) {
+	} else if (event->flush_action == FLUSH_ACTION && READ_ONCE(obj->android_enable) == true) {
+		err = mag_flush_report();
+	} else if (event->flush_action == BIAS_ACTION) {
 		data.x = event->magnetic_t.x_bias;
 		data.y = event->magnetic_t.y_bias;
 		data.z = event->magnetic_t.z_bias;
@@ -310,196 +306,6 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 	}
 	return err;
 }
-
-static int maghub_open(struct inode *inode, struct file *file)
-{
-	struct maghub_ipi_data *obj = mag_ipi_data;
-	int ret = -1;
-
-	if (atomic_read(&obj->trace) & MAG_CTR_DEBUG)
-		MAGN_LOG("Open device node:maghub\n");
-	ret = nonseekable_open(inode, file);
-
-	return ret;
-}
-static int maghub_release(struct inode *inode, struct file *file)
-{
-	struct maghub_ipi_data *obj = mag_ipi_data;
-
-	if (atomic_read(&obj->trace) & MAG_CTR_DEBUG)
-		MAGN_LOG("Release device node:maghub\n");
-	return 0;
-}
-static long maghub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	void __user *argp = (void __user *)arg;
-
-	char buff[MAGHUB_BUFSIZE];	/* for chip information */
-	long ret = -1;		/* Return value. */
-	uint32_t enable = 0;
-
-	switch (cmd) {
-	case MSENSOR_IOCTL_READ_CHIPINFO:
-		if (argp == NULL) {
-			MAGN_PR_ERR("IO parameter pointer is NULL!\r\n");
-			break;
-		}
-
-		ret = maghub_ReadChipInfo(buff, MAGHUB_BUFSIZE);
-		if (copy_to_user(argp, buff, strlen(buff) + 1))
-			return -EFAULT;
-		break;
-
-	case MSENSOR_IOCTL_READ_SENSORDATA:
-		if (argp == NULL) {
-			MAGN_PR_ERR("IO parameter pointer is NULL!\r\n");
-			break;
-		}
-
-		ret = maghub_GetMData(buff, MAGHUB_BUFSIZE);
-		if (ret < 0) {
-			MAGN_PR_ERR("maghub_GetMData fail!\r\n");
-			break;
-		}
-
-		if (copy_to_user(argp, buff, strlen(buff) + 1))
-			return -EFAULT;
-		break;
-
-	case MSENSOR_IOCTL_SENSOR_ENABLE:
-
-		if (argp == NULL) {
-			MAGN_PR_ERR("IO parameter pointer is NULL!\r\n");
-			break;
-		}
-		if (copy_from_user(&enable, argp, sizeof(enable))) {
-			MAGN_LOG("copy_from_user failed.");
-			return -EFAULT;
-		}
-		MAGN_LOG("MSENSOR_IOCTL_SENSOR_ENABLE enable=%d!\r\n", enable);
-#if defined CONFIG_MTK_SCP_SENSORHUB_V1
-		ret = maghub_m_setPowerMode(enable);
-		if (ret < 0)
-			MAGN_PR_ERR("maghub_m_enable fail!\r\n");
-		if (enable == 1) {
-			sensor_set_delay_to_hub(ID_MAGNETIC, 100);
-			if (ret < 0)
-				MAGN_PR_ERR("sensor_set_delay_to_hub fail!\r\n");
-		}
-#elif defined CONFIG_NANOHUB
-		if (enable == 1) {
-			sensor_set_delay_to_hub(ID_MAGNETIC, 20);
-			if (ret < 0)
-				MAGN_PR_ERR("sensor_set_delay_to_hub fail!\r\n");
-		}
-		ret = maghub_m_setPowerMode(enable);
-		if (ret < 0)
-			MAGN_PR_ERR("maghub_m_enable fail!\r\n");
-#else
-
-#endif
-		break;
-
-	case MSENSOR_IOCTL_READ_FACTORY_SENSORDATA:
-		if (argp == NULL) {
-			MAGN_PR_ERR("IO parameter pointer is NULL!\r\n");
-			break;
-		}
-		if (copy_to_user(argp, buff, strlen(buff) + 1))
-			return -EFAULT;
-
-		break;
-
-	default:
-		MAGN_PR_ERR("%s not supported = 0x%04x", __func__, cmd);
-		ret = -ENOIOCTLCMD;
-		break;
-	}
-
-	return ret;
-}
-
-#ifdef CONFIG_COMPAT
-static long maghub_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	long ret = 0;
-
-	void __user *arg32 = compat_ptr(arg);
-
-	if (!file->f_op || !file->f_op->unlocked_ioctl)
-		return -ENOTTY;
-
-	switch (cmd) {
-
-	case COMPAT_MSENSOR_IOCTL_READ_CHIPINFO:
-		ret = file->f_op->unlocked_ioctl(file, MSENSOR_IOCTL_READ_CHIPINFO, (unsigned long)arg32);
-		if (ret) {
-			MAGN_LOG("MSENSOR_IOCTL_READ_CHIPINFO unlocked_ioctl failed.");
-			return ret;
-		}
-
-		break;
-
-	case COMPAT_MSENSOR_IOCTL_READ_SENSORDATA:
-		ret = file->f_op->unlocked_ioctl(file, MSENSOR_IOCTL_READ_SENSORDATA, (unsigned long)arg32);
-		if (ret) {
-			MAGN_LOG("MSENSOR_IOCTL_READ_SENSORDATA unlocked_ioctl failed.");
-			return ret;
-		}
-
-		break;
-
-	case COMPAT_MSENSOR_IOCTL_SENSOR_ENABLE:
-		if (arg32 == NULL) {
-			MAGN_LOG("invalid argument.");
-			return -EINVAL;
-		}
-
-		ret = file->f_op->unlocked_ioctl(file, MSENSOR_IOCTL_SENSOR_ENABLE, (unsigned long)(arg32));
-		if (ret) {
-			MAGN_LOG("MSENSOR_IOCTL_SENSOR_ENABLE unlocked_ioctl failed.");
-			return ret;
-		}
-
-		break;
-
-	case COMPAT_MSENSOR_IOCTL_READ_FACTORY_SENSORDATA:
-		if (arg32 == NULL) {
-			MAGN_LOG("invalid argument.");
-			return -EINVAL;
-		}
-
-		ret = file->f_op->unlocked_ioctl(file, MSENSOR_IOCTL_READ_FACTORY_SENSORDATA, (unsigned long)(arg32));
-		if (ret) {
-			MAGN_LOG("MSENSOR_IOCTL_READ_FACTORY_SENSORDATA unlocked_ioctl failed.");
-			return ret;
-		}
-		break;
-
-	default:
-		MAGN_LOG("%s not supported = 0x%04x", __func__, cmd);
-		ret =  -ENOIOCTLCMD;
-		break;
-	}
-	return ret;
-}
-#endif
-
-static const struct file_operations maghub_fops = {
-	.owner = THIS_MODULE,
-	.open = maghub_open,
-	.release = maghub_release,
-	.unlocked_ioctl = maghub_unlocked_ioctl,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl = maghub_compat_ioctl,
-#endif
-};
-
-static struct miscdevice maghub_misc_device = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = "msensor",
-	.fops = &maghub_fops,
-};
 static int maghub_enable(int en)
 {
 	int res = 0;
@@ -589,6 +395,77 @@ static struct scp_power_monitor scp_ready_notifier = {
 	.name = "mag",
 	.notifier_call = scp_ready_event,
 };
+static int maghub_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err = 0;
+	struct maghub_ipi_data *obj = mag_ipi_data;
+
+	if (enabledisable == true)
+		WRITE_ONCE(obj->factory_enable, true);
+	else
+		WRITE_ONCE(obj->factory_enable, false);
+
+	if (enabledisable == 1) {
+		err = sensor_set_delay_to_hub(ID_MAGNETIC, sample_periods_ms);
+		if (err < 0) {
+			MAGN_PR_ERR("sensor_set_delay_to_hub fail!\r\n");
+			return -1;
+		}
+	}
+	err = sensor_enable_to_hub(ID_MAGNETIC, enabledisable == true ? 1 : 0);
+	if (err < 0) {
+		MAGN_PR_ERR("sensor_enable_to_hub fail!\r\n");
+		return -1;
+	}
+	return 0;
+}
+static int maghub_factory_get_data(int32_t data[3], int *status)
+{
+	/* get raw data */
+	return  maghub_get_data(&data[0], &data[1], &data[2], status);
+}
+static int maghub_factory_get_raw_data(int32_t data[3])
+{
+	MAGN_LOG("do not support maghub_factory_get_raw_data!\n");
+	return 0;
+}
+static int maghub_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int maghub_factory_clear_cali(void)
+{
+	return 0;
+}
+static int maghub_factory_set_cali(int32_t data[3])
+{
+	return 0;
+}
+static int maghub_factory_get_cali(int32_t data[3])
+{
+	return 0;
+}
+static int maghub_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct mag_factory_fops maghub_factory_fops = {
+	.enable_sensor = maghub_factory_enable_sensor,
+	.get_data = maghub_factory_get_data,
+	.get_raw_data = maghub_factory_get_raw_data,
+	.enable_calibration = maghub_factory_enable_calibration,
+	.clear_cali = maghub_factory_clear_cali,
+	.set_cali = maghub_factory_set_cali,
+	.get_cali = maghub_factory_get_cali,
+	.do_self_test = maghub_factory_do_self_test,
+};
+
+static struct mag_factory_public maghub_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &maghub_factory_fops,
+};
 static int maghub_probe(struct platform_device *pdev)
 {
 	int err = 0;
@@ -616,10 +493,10 @@ static int maghub_probe(struct platform_device *pdev)
 		MAGN_PR_ERR("scp_sensorHub_data_registration failed\n");
 		goto exit_kfree;
 	}
-	err = misc_register(&maghub_misc_device);
+	err = mag_factory_device_register(&maghub_factory_device);
 	if (err) {
-		MAGN_PR_ERR("maghub_misc_device register failed\n");
-		goto exit_misc_device_register_failed;
+		MAGN_PR_ERR("mag_factory_device_register register failed\n");
+		goto exit_kfree;
 	}
 	/* Register sysfs attribute */
 	err = maghub_create_attr(&(maghub_init_info.platform_diver_addr->driver));
@@ -683,7 +560,7 @@ static int maghub_remove(struct platform_device *pdev)
 		MAGN_PR_ERR("maghub_delete_attr fail: %d\n", err);
 
 	kfree(platform_get_drvdata(pdev));
-	misc_deregister(&maghub_misc_device);
+	mag_factory_device_deregister(&maghub_factory_device);
 	return 0;
 }
 

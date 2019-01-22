@@ -365,6 +365,7 @@ static int accelhub_delete_attr(struct device_driver *driver)
 
 static void scp_init_work_done(struct work_struct *work)
 {
+	int32_t cfg_data[6] = {0};
 	struct accelhub_ipi_data *obj = obj_ipi_data;
 	int err = 0;
 
@@ -377,8 +378,14 @@ static void scp_init_work_done(struct work_struct *work)
 			err = accelhub_WriteCalibration_scp(obj->static_cali);
 			if (err < 0)
 				GSE_PR_ERR("accelhub_WriteCalibration_scp fail\n");
-			err = sensor_cfg_to_hub(ID_ACCELEROMETER, (uint8_t *)obj->dynamic_cali,
-				sizeof(obj->dynamic_cali));
+			cfg_data[0] = obj->dynamic_cali[0];
+			cfg_data[1] = obj->dynamic_cali[1];
+			cfg_data[2] = obj->dynamic_cali[2];
+
+			cfg_data[3] = obj->static_cali[0];
+			cfg_data[4] = obj->static_cali[1];
+			cfg_data[5] = obj->static_cali[2];
+			err = sensor_cfg_to_hub(ID_ACCELEROMETER, (uint8_t *)cfg_data, sizeof(cfg_data));
 			if (err < 0)
 				GSE_PR_ERR("sensor_cfg_to_hub fail\n");
 		}
@@ -391,19 +398,17 @@ static int gsensor_recv_data(struct data_unit_t *event, void *reserved)
 	struct acc_data data;
 	struct accelhub_ipi_data *obj = obj_ipi_data;
 
-	if (READ_ONCE(obj->android_enable) == false)
-		return 0;
-	data.x = event->accelerometer_t.x;
-	data.y = event->accelerometer_t.y;
-	data.z = event->accelerometer_t.z;
-	data.status = event->accelerometer_t.status;
-	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
-	data.reserved[0] = event->reserve[0];
-	if (event->flush_action == FLUSH_ACTION)
-		err = acc_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION && READ_ONCE(obj->android_enable) == true) {
+		data.x = event->accelerometer_t.x;
+		data.y = event->accelerometer_t.y;
+		data.z = event->accelerometer_t.z;
+		data.status = event->accelerometer_t.status;
+		data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
+		data.reserved[0] = event->reserve[0];
 		err = acc_data_report(&data);
-	else if (event->flush_action == BIAS_ACTION) {
+	} else if (event->flush_action == FLUSH_ACTION && READ_ONCE(obj->android_enable) == true) {
+		err = acc_flush_report();
+	} else if (event->flush_action == BIAS_ACTION) {
 		data.x = event->accelerometer_t.x_bias;
 		data.y = event->accelerometer_t.y_bias;
 		data.z = event->accelerometer_t.z_bias;
@@ -411,6 +416,14 @@ static int gsensor_recv_data(struct data_unit_t *event, void *reserved)
 		obj->dynamic_cali[ACCELHUB_AXIS_Y] = event->accelerometer_t.y_bias;
 		obj->dynamic_cali[ACCELHUB_AXIS_Z] = event->accelerometer_t.z_bias;
 		err = acc_bias_report(&data);
+	} else if (event->flush_action == CALI_ACTION) {
+		data.x = event->accelerometer_t.x_bias;
+		data.y = event->accelerometer_t.y_bias;
+		data.z = event->accelerometer_t.z_bias;
+		obj->static_cali[ACCELHUB_AXIS_X] = event->accelerometer_t.x_bias;
+		obj->static_cali[ACCELHUB_AXIS_Y] = event->accelerometer_t.y_bias;
+		obj->static_cali[ACCELHUB_AXIS_Z] = event->accelerometer_t.z_bias;
+		err = acc_cali_report(&data);
 	}
 	return err;
 }
@@ -570,9 +583,17 @@ static int gsensor_flush(void)
 
 static int gsensor_set_cali(uint8_t *data, uint8_t count)
 {
+	int32_t *buf = (int32_t *)data;
 	struct accelhub_ipi_data *obj = obj_ipi_data;
 
-	memcpy(obj->dynamic_cali, data, count);
+	obj->dynamic_cali[0] = buf[0];
+	obj->dynamic_cali[1] = buf[1];
+	obj->dynamic_cali[2] = buf[2];
+
+	obj->static_cali[0] = buf[3];
+	obj->static_cali[1] = buf[4];
+	obj->static_cali[2] = buf[5];
+
 	return sensor_cfg_to_hub(ID_ACCELEROMETER, data, count);
 }
 

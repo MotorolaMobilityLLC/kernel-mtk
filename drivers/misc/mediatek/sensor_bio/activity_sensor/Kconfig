@@ -1,7 +1,0 @@
-
-config CUSTOM_KERNEL_ACTIVITY_SENSOR
-	bool "CUSTOM KERNEL ACTIVITY SENSOR"
-	help
-	  Kernel space activity sensor driver.
-
-source "drivers/misc/mediatek/sensor_bio/activity_sensor/activityhub/Kconfig"
