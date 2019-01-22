@@ -1,5 +1,4 @@
-/*
- *  Copyright (C) 2016 Richtek Technology Corp.
+/* copyright (C) 2016 Richtek Technology Corp.
  *  patrick_chang <patrick_chang@richtek.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,25 +16,35 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
-#include <linux/regulator/mediatek/mtk_regulator_core.h>
-#include <linux/regulator/mediatek/mtk_regulator.h>
+#include <linux/regulator/driver.h>
+#include <linux/regulator/machine.h>
+#include <linux/regulator/of_regulator.h>
 #include "inc/rt5081_pmu.h"
 
-#define rt5081_dsvp_vol_reg RT5081_PMU_REG_DBVPOS
-#define rt5081_dsvp_vol_mask (0x3F)
-#define rt5081_dsvp_vol_shift (0)
-#define rt5081_dsvp_enable_reg RT5081_PMU_REG_DBCTRL2
-#define rt5081_dsvp_enable_bit (1 << 6)
-#define rt5081_dsvp_id 0
-#define rt5081_dsvp_type REGULATOR_VOLTAGE
+struct rt5081_dsv_regulator_struct {
+	unsigned char vol_reg;
+	unsigned char vol_mask;
+	unsigned char vol_shift;
+	unsigned char enable_reg;
+	unsigned char enable_bit;
+};
 
-#define rt5081_dsvn_vol_reg RT5081_PMU_REG_DBVNEG
-#define rt5081_dsvn_vol_mask (0x3F)
-#define rt5081_dsvn_vol_shift (0)
-#define rt5081_dsvn_enable_reg RT5081_PMU_REG_DBCTRL2
-#define rt5081_dsvn_enable_bit (1 << 3)
-#define rt5081_dsvn_id 1
-#define rt5081_dsvn_type REGULATOR_VOLTAGE
+static struct rt5081_dsv_regulator_struct rt5081_dsv_regulators[] = {
+	{
+		.vol_reg = RT5081_PMU_REG_DBVPOS,
+		.vol_mask = (0x3F),
+		.vol_shift = 0,
+		.enable_reg = RT5081_PMU_REG_DBCTRL2,
+		.enable_bit = (1 << 6),
+	},
+	{
+		.vol_reg = RT5081_PMU_REG_DBVNEG,
+		.vol_mask = (0x3F),
+		.vol_shift = 0,
+		.enable_reg = RT5081_PMU_REG_DBCTRL2,
+		.enable_bit = (1 << 3),
+	},
+};
 
 #define rt5081_dsv_min_uV (4000000)
 #define rt5081_dsv_max_uV (6000000)
@@ -54,42 +63,49 @@ enum {
 	RT5081_DSV_NEG,
 };
 
+struct dsv_regulator {
+	struct regulator_desc *desc;
+	struct regulator_dev *regulator;
+};
+
 struct rt5081_pmu_dsv_data {
+	struct dsv_regulator *dsvp;
+	struct dsv_regulator *dsvn;
 	struct rt5081_pmu_chip *chip;
 	struct device *dev;
-	struct mtk_simple_regulator_desc mreg_desc[2];
+	int id;
 };
 
 struct rt5081_pmu_dsv_platform_data {
 	union {
 		uint8_t raw;
 		struct {
-			uint8_t db_ext_en : 1;
-			uint8_t reserved : 3;
-			uint8_t db_periodic_fix : 1;
-			uint8_t db_single_pin : 1;
-			uint8_t db_freq_pm : 1;
-			uint8_t db_periodic_mode : 1;
+			uint8_t db_ext_en:1;
+			uint8_t reserved:3;
+			uint8_t db_periodic_fix:1;
+			uint8_t db_single_pin:1;
+			uint8_t db_freq_pm:1;
+			uint8_t db_periodic_mode:1;
 		};
 	} db_ctrl1;
 
 	union {
 		uint8_t raw;
 		struct {
-			uint8_t db_startup : 1;
-			uint8_t db_vneg_20ms : 1;
-			uint8_t db_vneg_disc : 1;
-			uint8_t reserved : 1;
-			uint8_t db_vpos_20ms : 1;
-			uint8_t db_vpos_disc : 1;
+			uint8_t db_startup:1;
+			uint8_t db_vneg_20ms:1;
+			uint8_t db_vneg_disc:1;
+			uint8_t reserved:1;
+			uint8_t db_vpos_20ms:1;
+			uint8_t db_vpos_disc:1;
 		};
 	} db_ctrl2;
 
 	union {
 		uint8_t raw;
 		struct {
-			uint8_t vbst : 6;
-			uint8_t delay : 2;
+			uint8_t vbst:6;
+			uint8_t delay:2;
 		} bitfield;
 	} db_vbst;
 
@@ -125,8 +141,7 @@ static irqreturn_t rt5081_pmu_dsv_vneg_scp_irq_handler(int irq, void *data)
 	ret = rt5081_pmu_reg_read(dsv_data->chip, RT5081_PMU_REG_DBSTAT);
 	if (ret&0x40)
 		regulator_notifier_call_chain(
-			dsv_data->mreg_desc[RT5081_DSV_NEG].rdev,
-			REGULATOR_EVENT_FAIL, NULL);
+			dsv_data->dsvn->regulator, REGULATOR_EVENT_FAIL, NULL);
 	return IRQ_HANDLED;
 }
 
@@ -139,8 +154,7 @@ static irqreturn_t rt5081_pmu_dsv_vpos_scp_irq_handler(int irq, void *data)
 	ret = rt5081_pmu_reg_read(dsv_data->chip, RT5081_PMU_REG_DBSTAT);
 	if (ret&0x80)
 		regulator_notifier_call_chain(
-			dsv_data->mreg_desc[RT5081_DSV_POS].rdev,
-			REGULATOR_EVENT_FAIL, NULL);
+			dsv_data->dsvp->regulator, REGULATOR_EVENT_FAIL, NULL);
 	return IRQ_HANDLED;
 }
 
@@ -161,14 +175,14 @@ static void rt5081_pmu_dsv_irq_register(struct platform_device *pdev)
 		if (!rt5081_dsv_irq_desc[i].name)
 			continue;
 		res = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
-						   rt5081_dsv_irq_desc[i].name);
+				rt5081_dsv_irq_desc[i].name);
 		if (!res)
 			continue;
 		ret = devm_request_threaded_irq(&pdev->dev, res->start, NULL,
-					rt5081_dsv_irq_desc[i].irq_handler,
-					IRQF_TRIGGER_FALLING,
-					rt5081_dsv_irq_desc[i].name,
-					platform_get_drvdata(pdev));
+				rt5081_dsv_irq_desc[i].irq_handler,
+				IRQF_TRIGGER_FALLING,
+				rt5081_dsv_irq_desc[i].name,
+				platform_get_drvdata(pdev));
 		if (ret < 0) {
 			dev_err(&pdev->dev, "request %s irq fail\n", res->name);
 			continue;
@@ -177,30 +191,8 @@ static void rt5081_pmu_dsv_irq_register(struct platform_device *pdev)
 	}
 }
 
-static int rt5081_dsv_reg_read(void *chip, uint32_t reg, uint32_t *data)
-{
-	int ret = rt5081_pmu_reg_read(chip, (uint8_t)reg);
-
-	if (ret < 0)
-		return ret;
-	*data = ret;
-	return 0;
-}
-
-static int rt5081_dsv_reg_write(void *chip, uint32_t reg, uint32_t data)
-{
-	return rt5081_pmu_reg_write(chip, (uint8_t)reg, (uint8_t)data);
-}
-
-static int rt5081_dsv_reg_update_bits(void *chip, uint32_t reg, uint32_t mask,
-		uint32_t data)
-{
-	return rt5081_pmu_reg_update_bits(chip, (uint8_t)reg,
-			(uint8_t)mask, (uint8_t)data);
-}
-
-static int rt5081_dsv_list_voltage(struct mtk_simple_regulator_desc *mreg_desc,
-	unsigned selector)
+static int rt5081_dsv_list_voltage(struct regulator_dev *rdev,
+		unsigned selector)
 {
 	int vout = 0;
 
@@ -210,16 +202,70 @@ static int rt5081_dsv_list_voltage(struct mtk_simple_regulator_desc *mreg_desc,
 	return vout;
 }
 
-static struct mtk_simple_regulator_control_ops mreg_ctrl_ops = {
-	.register_read = rt5081_dsv_reg_read,
-	.register_write = rt5081_dsv_reg_write,
-	.register_update_bits = rt5081_dsv_reg_update_bits,
-};
+static int rt5081_dsv_set_voltage_sel(
+		struct regulator_dev *rdev, unsigned selector)
+{
+	struct rt5081_pmu_dsv_data *info = rdev_get_drvdata(rdev);
+	const int count = rdev->desc->n_voltages;
+	u8 data;
 
-static struct mtk_simple_regulator_desc mreg_desc_table[] = {
-	mreg_decl(rt5081_dsvp, rt5081_dsv_list_voltage, 41, &mreg_ctrl_ops),
-	mreg_decl(rt5081_dsvn, rt5081_dsv_list_voltage, 41, &mreg_ctrl_ops),
-};
+	if (selector > count)
+		return -EINVAL;
+
+	data = (u8)selector;
+	data <<= rt5081_dsv_regulators[rdev->desc->id].vol_shift;
+
+	return rt5081_pmu_reg_update_bits(info->chip,
+		rt5081_dsv_regulators[rdev->desc->id].vol_reg,
+		rt5081_dsv_regulators[rdev->desc->id].vol_mask, data);
+}
+
+static int rt5081_dsv_get_voltage_sel(struct regulator_dev *rdev)
+{
+	struct rt5081_pmu_dsv_data *info = rdev_get_drvdata(rdev);
+	int ret;
+
+	ret = rt5081_pmu_reg_read(info->chip,
+		rt5081_dsv_regulators[rdev->desc->id].vol_reg);
+
+	if (ret < 0)
+		return ret;
+
+	return (ret&rt5081_dsv_regulators[rdev->desc->id].vol_mask)>>
+		rt5081_dsv_regulators[rdev->desc->id].vol_shift;
+}
+
+static int rt5081_dsv_enable(struct regulator_dev *rdev)
+{
+	struct rt5081_pmu_dsv_data *info = rdev_get_drvdata(rdev);
+
+	pr_info("%s, id = %d\n", __func__, rdev->desc->id);
+	return rt5081_pmu_reg_set_bit(info->chip,
+		rt5081_dsv_regulators[rdev->desc->id].enable_reg,
+		rt5081_dsv_regulators[rdev->desc->id].enable_bit);
+}
+
+static int rt5081_dsv_disable(struct regulator_dev *rdev)
+{
+	struct rt5081_pmu_dsv_data *info = rdev_get_drvdata(rdev);
+
+	pr_info("%s, id = %d\n", __func__, rdev->desc->id);
+	return rt5081_pmu_reg_clr_bit(info->chip,
+		rt5081_dsv_regulators[rdev->desc->id].enable_reg,
+		rt5081_dsv_regulators[rdev->desc->id].enable_bit);
+}
+
+static int rt5081_dsv_is_enabled(struct regulator_dev *rdev)
+{
+	struct rt5081_pmu_dsv_data *info = rdev_get_drvdata(rdev);
+	int ret;
+
+	ret = rt5081_pmu_reg_read(info->chip,
+		rt5081_dsv_regulators[rdev->desc->id].enable_reg);
+	if (ret < 0)
+		return ret;
+	return ret&rt5081_dsv_regulators[rdev->desc->id].enable_bit ? 1 : 0;
+}
 
 struct dbctrl_bitfield_desc {
 	const char *name;
@@ -242,10 +288,50 @@ static const struct dbctrl_bitfield_desc dbctrl2_desc[] = {
 	{ "db_vpos_disc", 5 },
 };
 
+static struct regulator_ops rt5081_dsv_regulator_ops = {
+	.list_voltage = rt5081_dsv_list_voltage,
+	.set_voltage_sel = rt5081_dsv_set_voltage_sel,
+	.get_voltage_sel = rt5081_dsv_get_voltage_sel,
+	.enable = rt5081_dsv_enable,
+	.disable = rt5081_dsv_disable,
+	.is_enabled = rt5081_dsv_is_enabled,
+};
+
+static struct regulator_desc rt5081_dsv_regulator_desc[] = {
+	{
+		.id = RT5081_DSV_POS,
+		.name = "rt5081_dsv_pos",
+		.n_voltages = 41,
+		.ops = &rt5081_dsv_regulator_ops,
+		.type = REGULATOR_VOLTAGE,
+		.owner = THIS_MODULE,
+	},
+	{
+		.id = RT5081_DSV_NEG,
+		.name = "rt5081_dsv_neg",
+		.n_voltages = 41,
+		.ops = &rt5081_dsv_regulator_ops,
+		.type = REGULATOR_VOLTAGE,
+		.owner = THIS_MODULE,
+	}
+};
+
+static inline struct regulator_dev *rt5081_dsv_regulator_register(
+		struct regulator_desc *desc, struct device *dev,
+		struct regulator_init_data *init_data, void *driver_data)
+{
+	struct regulator_config config = {
+		.dev = dev,
+		.init_data = init_data,
+		.driver_data = driver_data,
+	};
+
+	return regulator_register(desc, &config);
+}
 
 static inline int rt_parse_dt(struct device *dev,
-	struct rt5081_pmu_dsv_platform_data *pdata,
-	struct rt5081_pmu_dsv_platform_data *mask)
+		struct rt5081_pmu_dsv_platform_data *pdata,
+		struct rt5081_pmu_dsv_platform_data *mask)
 {
 	struct device_node *np = dev->of_node;
 	int i;
@@ -286,61 +372,65 @@ static inline int rt_parse_dt(struct device *dev,
 		mask->db_vneg_slew = 0x3  <<  6;
 		pdata->db_vneg_slew = val  <<  6;
 	}
-
 	return 0;
 }
 
-static int register_mtk_regulators(struct rt5081_pmu_dsv_data *dsv_data)
+static struct regulator_init_data *rt_parse_regulator_init_data(
+				struct device *dev, const char *node_name)
 {
-	int i, ret = 0;
+	struct regulator_init_data *init_data;
+	struct device_node *np = dev->of_node;
+	struct device_node *sub_np;
 
-	BUILD_BUG_ON(sizeof(dsv_data->mreg_desc)  != sizeof(mreg_desc_table));
-
-	memcpy(dsv_data->mreg_desc, mreg_desc_table, sizeof(mreg_desc_table));
-	for (i = 0; i < ARRAY_SIZE(mreg_desc_table); i++) {
-		dsv_data->mreg_desc[i].client = dsv_data->chip;
-		ret = mtk_simple_regulator_register(dsv_data->mreg_desc + i,
-			dsv_data->dev, NULL, NULL);
-		if (ret < 0) {
-			dev_info(dsv_data->dev,
-				"%s: failed to register mtk reg (%d)\n",
-				__func__, ret);
-			break;
-		}
+	sub_np = of_get_child_by_name(np, node_name);
+	if (!sub_np) {
+		dev_err(dev, "no child node %s", node_name);
+		return NULL;
+	}
+	init_data = of_get_regulator_init_data(dev, sub_np, NULL);
+	if (init_data) {
+		dev_info(dev,
+			"regulator_name = %s, min_uV = %d, max_uV = %d\n",
+			init_data->constraints.name,
+			init_data->constraints.min_uV,
+			init_data->constraints.max_uV);
+	} else {
+		dev_err(dev, "no init data for %s\n", node_name);
+		return NULL;
 	}
 
-	return ret;
+	return init_data;
 }
 
 static int dsv_apply_dts(struct rt5081_pmu_chip *chip,
-	struct rt5081_pmu_dsv_platform_data *pdata,
-	struct rt5081_pmu_dsv_platform_data *mask)
+		struct rt5081_pmu_dsv_platform_data *pdata,
+		struct rt5081_pmu_dsv_platform_data *mask)
 {
 	int ret = 0;
 
 	if (mask->db_ctrl1.raw)
 		ret = rt5081_pmu_reg_update_bits(chip, RT5081_PMU_REG_DBCTRL1,
-			mask->db_ctrl1.raw, pdata->db_ctrl1.raw);
+				mask->db_ctrl1.raw, pdata->db_ctrl1.raw);
 	if (ret < 0)
 		return ret;
 	if (mask->db_ctrl2.raw)
 		ret = rt5081_pmu_reg_update_bits(chip, RT5081_PMU_REG_DBCTRL2,
-			mask->db_ctrl2.raw, pdata->db_ctrl2.raw);
+				mask->db_ctrl2.raw, pdata->db_ctrl2.raw);
 	if (ret < 0)
 		return ret;
 	if (mask->db_vbst.raw)
 		ret = rt5081_pmu_reg_update_bits(chip, RT5081_PMU_REG_DBVBST,
-			mask->db_vbst.raw, pdata->db_vbst.raw);
+				mask->db_vbst.raw, pdata->db_vbst.raw);
 	if (ret < 0)
 		return ret;
 	if (mask->db_vpos_slew)
 		ret = rt5081_pmu_reg_update_bits(chip, RT5081_PMU_REG_DBVPOS,
-			mask->db_vpos_slew, pdata->db_vpos_slew);
+				mask->db_vpos_slew, pdata->db_vpos_slew);
 	if (ret < 0)
 		return ret;
 	if (mask->db_vneg_slew)
 		ret = rt5081_pmu_reg_update_bits(chip, RT5081_PMU_REG_DBVNEG,
-			mask->db_vneg_slew, pdata->db_vneg_slew);
+				mask->db_vneg_slew, pdata->db_vneg_slew);
 	if (ret < 0)
 		return ret;
 
@@ -350,34 +440,66 @@ static int dsv_apply_dts(struct rt5081_pmu_chip *chip,
 static int rt5081_pmu_dsv_probe(struct platform_device *pdev)
 {
 	struct rt5081_pmu_dsv_data *dsv_data;
+	struct regulator_init_data *init_data_p = NULL;
+	struct regulator_init_data *init_data_n = NULL;
 	bool use_dt = pdev->dev.of_node;
 	struct rt5081_pmu_dsv_platform_data pdata, mask;
 	int ret;
 
+	dev_info(&pdev->dev, "Probing....\n");
 	dsv_data = devm_kzalloc(&pdev->dev, sizeof(*dsv_data), GFP_KERNEL);
 	if (!dsv_data)
 		return -ENOMEM;
+	dsv_data->dsvp = devm_kzalloc(&pdev->dev,
+			sizeof(struct dsv_regulator), GFP_KERNEL);
+	dsv_data->dsvn = devm_kzalloc(&pdev->dev,
+			sizeof(struct dsv_regulator), GFP_KERNEL);
 
 	memset(&pdata, 0, sizeof(pdata));
 	memset(&mask, 0, sizeof(mask));
+
 	if (use_dt)
 		rt_parse_dt(&pdev->dev, &pdata, &mask);
+	init_data_p = rt_parse_regulator_init_data(&pdev->dev, "rt5081_dsvp");
+	init_data_n = rt_parse_regulator_init_data(&pdev->dev, "rt5081_dsvn");
+	if ((init_data_p == NULL) || (init_data_n == NULL)) {
+		dev_err(&pdev->dev, "no init data\n");
+		return -EINVAL;
+	}
+
 	dsv_data->chip = dev_get_drvdata(pdev->dev.parent);
 	dsv_data->dev = &pdev->dev;
+	dsv_data->dsvp->desc = &rt5081_dsv_regulator_desc[RT5081_DSV_POS];
+	dsv_data->dsvn->desc = &rt5081_dsv_regulator_desc[RT5081_DSV_NEG];
 	platform_set_drvdata(pdev, dsv_data);
 
 	ret = dsv_apply_dts(dsv_data->chip, &pdata, &mask);
 	if (ret < 0)
-		goto mtk_reg_apply_dts_fail;
-	ret = register_mtk_regulators(dsv_data);
-	if (ret < 0)
-		goto mtk_reg_register_fail;
+		goto reg_apply_dts_fail;
+
+	dsv_data->dsvp->regulator = rt5081_dsv_regulator_register(
+		dsv_data->dsvp->desc, &pdev->dev, init_data_p, dsv_data);
+	if (IS_ERR(dsv_data->dsvp->regulator)) {
+		dev_err(&pdev->dev, "fail to register dsv regulator %s\n",
+			dsv_data->dsvp->desc->name);
+		goto reg_dsvp_register_fail;
+	}
+
+	dsv_data->dsvn->regulator = rt5081_dsv_regulator_register(
+		dsv_data->dsvn->desc, &pdev->dev, init_data_n, dsv_data);
+	if (IS_ERR(dsv_data->dsvn->regulator)) {
+		dev_err(&pdev->dev, "fail to register dsv regulator %s\n",
+			dsv_data->dsvp->desc->name);
+		goto reg_dsvn_register_fail;
+	}
 
 	rt5081_pmu_dsv_irq_register(pdev);
 	dev_info(&pdev->dev, "%s successfully\n", __func__);
 	return ret;
-mtk_reg_apply_dts_fail:
-mtk_reg_register_fail:
+reg_apply_dts_fail:
+reg_dsvn_register_fail:
+	regulator_unregister(dsv_data->dsvp->regulator);
+reg_dsvp_register_fail:
 	dev_info(&pdev->dev, "%s failed\n", __func__);
 	return ret;
 }
