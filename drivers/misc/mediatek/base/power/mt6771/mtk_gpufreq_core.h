@@ -241,7 +241,7 @@
 /**************************************************
  * Condition Setting
  **************************************************/
-/* #define MT_GPUFREQ_OPP_STRESS_TEST */
+#define MT_GPUFREQ_OPP_STRESS_TEST
 #define MT_GPUFREQ_STATIC_PWR_READY2USE
 #define MT_GPUFREQ_LOW_BATT_VOLT_PROTECT
 #define MT_GPUFREQ_BATT_PERCENT_PROTECT /* todo: disable it */

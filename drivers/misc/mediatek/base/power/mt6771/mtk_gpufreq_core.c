@@ -169,12 +169,12 @@ static struct platform_driver g_gpufreq_pdrv = {
 	},
 };
 
-static bool g_debug;
 static bool g_parking;
 static bool g_DVFS_is_ready;
 static bool g_DVFS_is_paused_by_ptpod;
 static bool g_volt_enable_state;
 static bool g_keep_opp_freq_state;
+static bool g_opp_stress_test_state;
 static bool g_fixed_freq_volt_state;
 static bool g_pbm_limited_ignore_state;
 static bool g_thermal_protect_limited_ignore_state;
@@ -258,9 +258,11 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 	}
 
 #ifdef MT_GPUFREQ_OPP_STRESS_TEST
-	get_random_bytes(&idx, sizeof(idx));
-	idx = idx % g_opp_idx_num;
-	gpufreq_pr_debug("@%s: OPP stress test index: %d\n", __func__, idx);
+	if (g_opp_stress_test_state) {
+		get_random_bytes(&idx, sizeof(idx));
+		idx = idx % g_opp_idx_num;
+		gpufreq_pr_debug("@%s: OPP stress test index: %d\n", __func__, idx);
+	}
 #endif /* ifdef MT_GPUFREQ_OPP_STRESS_TEST */
 
 	if (idx > (g_opp_idx_num - 1)) {
@@ -1014,6 +1016,7 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "clock freq = %d\n", mt_get_ckgen_freq(9));
 	seq_printf(m, "g_segment_id = %d\n", g_segment_id);
 	seq_printf(m, "g_volt_enable_state = %d\n", g_volt_enable_state);
+	seq_printf(m, "g_opp_stress_test_state = %d\n", g_opp_stress_test_state);
 	seq_printf(m, "g_DVFS_off_by_ptpod_idx = %d\n", g_DVFS_off_by_ptpod_idx);
 	seq_printf(m, "g_max_limited_idx = %d\n", g_max_limited_idx);
 	for (i = 0; i < NUMBER_OF_LIMITED_IDX; i++)
@@ -1022,21 +1025,22 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+#ifdef MT_GPUFREQ_OPP_STRESS_TEST
 /*
- * PROCFS : show current debugging state
+ * PROCFS : show current opp stress test state
  */
-static int mt_gpufreq_debug_proc_show(struct seq_file *m, void *v)
+static int mt_gpufreq_opp_stress_test_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "GPU-DVFS debugging is %s (0x%1x)\n", g_debug ? "enabled" : "disabled", g_debug);
+	seq_printf(m, "g_opp_stress_test_state = %d\n", g_batt_oc_limited_ignore_state);
 	return 0;
 }
 
 /*
- * PROCFS : debugging message setting
- * 0 : hide
- * 1 : show
+ * PROCFS : opp stress test message setting
+ * 0 : disable
+ * 1 : enable
  */
-static ssize_t mt_gpufreq_debug_proc_write(struct file *file, const char __user *buffer,
+static ssize_t mt_gpufreq_opp_stress_test_proc_write(struct file *file, const char __user *buffer,
 		size_t count, loff_t *data)
 {
 	char buf[32];
@@ -1055,13 +1059,14 @@ static ssize_t mt_gpufreq_debug_proc_write(struct file *file, const char __user 
 	if (!kstrtoint(buf, 0, &value)) {
 		if (!value || !(value-1)) {
 			ret = 0;
-			g_debug = value;
+			g_opp_stress_test_state = value;
 		}
 	}
 
 out:
 	return (ret < 0) ? ret : count;
 }
+#endif /* ifdef MT_GPUFREQ_OPP_STRESS_TEST */
 
 /*
  * PROCFS : show Thermal/Power/PBM limited ignore state
@@ -1339,7 +1344,7 @@ out:
 /*
  * PROCFS : initialization
  */
-PROC_FOPS_RW(gpufreq_debug);
+PROC_FOPS_RW(gpufreq_opp_stress_test);
 PROC_FOPS_RW(gpufreq_power_limited);
 PROC_FOPS_RO(gpufreq_opp_dump);
 PROC_FOPS_RO(gpufreq_power_dump);
@@ -1358,7 +1363,7 @@ static int __mt_gpufreq_create_procfs(void)
 	};
 
 	const struct pentry entries[] = {
-		PROC_ENTRY(gpufreq_debug),
+		PROC_ENTRY(gpufreq_opp_stress_test),
 		PROC_ENTRY(gpufreq_power_limited),
 		PROC_ENTRY(gpufreq_opp_dump),
 		PROC_ENTRY(gpufreq_power_dump),
@@ -2178,7 +2183,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	gpufreq_pr_info("@%s: gpufreq driver probe, clock is %d KHz\n",
 			__func__, mt_get_ckgen_freq(9));
 
-	g_debug = 0;
+	g_opp_stress_test_state = false;
 	g_DVFS_off_by_ptpod_idx = 0;
 	/* Pause GPU DVFS for debug */
 	/* g_keep_opp_freq_state = true; */
