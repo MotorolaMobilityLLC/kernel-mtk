@@ -510,6 +510,9 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_GET_SET_CUSTOMER_CFG = 0x70, /* 0x70(Set) */
 
 	CMD_ID_TDLS_PS = 0x75,		/* 0x75 (Set) */
+
+	CMD_ID_GET_CNM = 0x79,
+
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */
@@ -643,6 +646,7 @@ typedef enum _ENUM_EVENT_ID_T {
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
 	EVENT_ID_BA_FW_DROP_SN = 0x55,
 #endif
+	EVENT_ID_GET_CNM = 0x79,
 
 	EVENT_ID_TDLS = 0x80,	/* TDLS event_id */
 
@@ -3142,6 +3146,9 @@ VOID nicEventBaFwDropSn(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 #ifdef FW_CFG_SUPPORT
 VOID nicCmdEventQueryCfgRead(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
 #endif
+
+VOID nicCmdEventQueryCnmInfo(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
+VOID nicEventCnmInfo(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
