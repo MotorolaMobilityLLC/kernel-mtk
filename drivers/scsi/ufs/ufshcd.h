@@ -539,6 +539,23 @@ struct ufs_hba {
 	 */
 	#define UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC		UFS_BIT(6)
 
+	/*
+	 * This quirk needs to be enabled if device requires hw reset
+	 * if linkup is failed after retries.
+	 */
+	#define UFSHCD_QUIRK_UFS_HCI_DEV_RST_FOR_LINKUP_FAIL		UFS_BIT(7)
+
+	/*
+	 * This quirk needs to be enabled if host needs vendor-specific reset flow.
+	 */
+	#define UFSHCD_QUIRK_UFS_HCI_VENDOR_HOST_RST		UFS_BIT(8)
+
+	/*
+	 * This quirk needs to be enabled if host needs manually disable ah8 before
+	 * ringing any doorbell slots.
+	 */
+	#define UFSHCD_QUIRK_UFS_HCI_DISABLE_AH8_BEFORE_RING_DOORBELL		UFS_BIT(9)
+
 	unsigned int quirks;	/* Deviations from standard UFSHCI spec. */
 
 	wait_queue_head_t tm_wq;
