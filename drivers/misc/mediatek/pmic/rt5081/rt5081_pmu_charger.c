@@ -1268,7 +1268,7 @@ static int __rt5081_set_aicr(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 		uA
 	);
 
-	dev_info(chg_data->dev, "%s: aicr = %d (0x%02X)\n", __func__, uA,
+	rt_dbg(chg_data->dev, "%s: aicr = %d (0x%02X)\n", __func__, uA,
 		reg_aicr);
 
 	ret = rt5081_pmu_reg_update_bits(
@@ -1287,7 +1287,7 @@ static int __rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 	u32 mivr = 0, aicl_vth = 0, aicr = 0;
 	bool mivr_stat = false;
 
-	dev_info(chg_data->dev, "%s\n", __func__);
+	rt_dbg(chg_data->dev, "%s\n", __func__);
 
 	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_CHGSTAT1,
 		RT5081_SHIFT_MIVR_STAT, &mivr_stat);
@@ -1297,7 +1297,7 @@ static int __rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 	}
 
 	if (!mivr_stat) {
-		dev_info(chg_data->dev, "%s: mivr stat not act\n", __func__);
+		rt_dbg(chg_data->dev, "%s: mivr stat not act\n", __func__);
 		goto out;
 	}
 
@@ -1598,7 +1598,7 @@ static int rt5081_enable_charging(struct charger_device *chg_dev, bool en)
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
-	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
+	rt_dbg(chg_data->dev, "%s: en = %d\n", __func__, en);
 
 	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
 		(chg_data->chip, RT5081_PMU_REG_CHGCTRL2, RT5081_MASK_CHG_EN);
@@ -2786,7 +2786,7 @@ static irqreturn_t rt5081_pmu_chg_mivr_irq_handler(int irq, void *data)
 	struct rt5081_pmu_charger_data *chg_data =
 		(struct rt5081_pmu_charger_data *)data;
 
-	dev_info(chg_data->dev, "%s\n", __func__);
+	rt_dbg(chg_data->dev, "%s\n", __func__);
 	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_CHGSTAT1,
 		RT5081_SHIFT_MIVR_STAT, &mivr_stat);
 	if (ret < 0) {
@@ -2795,7 +2795,7 @@ static irqreturn_t rt5081_pmu_chg_mivr_irq_handler(int irq, void *data)
 	}
 
 	if (!mivr_stat) {
-		dev_info(chg_data->dev, "%s: mivr stat not act\n", __func__);
+		rt_dbg(chg_data->dev, "%s: mivr stat not act\n", __func__);
 		goto out;
 	}
 
