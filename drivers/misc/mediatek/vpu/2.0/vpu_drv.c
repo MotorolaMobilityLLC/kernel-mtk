@@ -578,7 +578,14 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case VPU_IOCTL_SET_POWER:
 	{
-		LOG_ERR("2.0 do not support this cmd\n");
+		struct vpu_power power;
+
+		ret = copy_from_user(&power, (void *) arg, sizeof(struct vpu_power));
+		CHECK_RET("[SET_POWER] copy 'struct power' failed, ret=%d\n", ret);
+
+		ret = vpu_set_power(user, &power);
+		CHECK_RET("[SET_POWER] set power failed, ret=%d\n", ret);
+
 		break;
 	}
 	case VPU_IOCTL_ENQUE_REQUEST:
@@ -597,6 +604,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		ret |= get_user(req->requested_core, &u_req->requested_core);
 		ret |= copy_from_user(req->algo_id, u_req->algo_id,
 				VPU_MAX_NUM_CORES * sizeof(vpu_id_t));
+		ret |= get_user(req->frame_magic, &u_req->frame_magic);
 		ret |= get_user(req->status, &u_req->status);
 		ret |= get_user(req->buffer_count, &u_req->buffer_count);
 		ret |= get_user(req->sett_ptr, &u_req->sett_ptr);
@@ -605,6 +613,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		ret |= get_user(req->power_param.bw, &u_req->power_param.bw);
 		ret |= get_user(req->power_param.freq_step, &u_req->power_param.freq_step);
 		ret |= get_user(req->power_param.opp_step, &u_req->power_param.opp_step);
+		ret |= get_user(req->power_param.core, &u_req->power_param.core);
 		req->user_id = (unsigned long *)user;
 		#if 0
 		LOG_DBG("[vpu] enque test: user_id_0x%lx/0x%lx", (unsigned long)user, (unsigned long)(req->user_id));

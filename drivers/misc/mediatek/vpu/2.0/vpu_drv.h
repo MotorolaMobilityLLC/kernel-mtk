@@ -267,6 +267,7 @@ struct vpu_power {
 	uint8_t opp_step;
 	uint8_t freq_step;
 	uint32_t bw; /* unit: MByte/s */
+	unsigned int core; /* align with core index defined in user space header file*/
 };
 
 
@@ -317,6 +318,7 @@ struct vpu_request {
 	/* the final occupied core index for request, especially for request in common pool */
 	unsigned int occupied_core;
 	vpu_id_t algo_id[VPU_MAX_NUM_CORES];
+	int frame_magic; /* mapping for user space/kernel space */
 	uint8_t status;
 	uint8_t buffer_count;
 	uint32_t sett_length;

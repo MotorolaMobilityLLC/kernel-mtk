@@ -105,6 +105,12 @@ enum VpuCoreState {
 	VCT_NONE		= -1,
 };
 
+enum VpuPowerOnType {
+	VPT_PRE_ON		= 1,	/* power on previously by setPower */
+	VPT_ENQUE_ON	= 2,	/* power on by enque */
+};
+
+
 #define DECLARE_VLIST(type) \
 struct type ## _list { \
 	struct type node; \
@@ -331,6 +337,13 @@ int vpu_set_algo_parameter(uint8_t param, int argc, int *args);
  * @ruser:      return the created user.
  */
 int vpu_create_user(struct vpu_user **ruser);
+
+/**
+ * vpu_set_power - set the power mode by a user
+ * @user:       the pointer to user.
+ * @power:      the user's power mode.
+ */
+int vpu_set_power(struct vpu_user *user, struct vpu_power *power);
 
 /**
  * vpu_delete_user - delete vpu user, and remove it from user list

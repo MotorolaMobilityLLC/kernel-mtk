@@ -1140,7 +1140,7 @@ static int vpu_service_routine(void *arg)
 {
 	struct vpu_user *user = NULL;
 	struct vpu_request *req = NULL;
-	struct vpu_algo *algo = NULL;
+	/*struct vpu_algo *algo = NULL;*/
 	uint8_t vcore_opp_index = 0xFF;
 	uint8_t dsp_freq_index = 0xFF;
 	struct vpu_user *user_in_list = NULL;
@@ -1238,13 +1238,14 @@ static int vpu_service_routine(void *arg)
 			LOG_DBG("[vpu_%d] run, opp(%d/%d/%d)\n", service_core, req->power_param.opp_step,
 				vcore_opp_index, dsp_freq_index);
 			vpu_opp_check(service_core, vcore_opp_index, dsp_freq_index);
-			LOG_INF("[vpu_%d <- 0x%x] run, algo_id(%d->%d), opp(%d,%d/%d->%d, %d->%d)\n",
+			LOG_INF("[vpu_%d <- 0x%x] run, algo_id(%d->%d_%d), opp(%d,%d/%d->%d, %d->%d)\n",
 				service_core, req->requested_core,
 				vpu_service_cores[service_core].current_algo, (int)(req->algo_id[service_core]),
+				req->frame_magic,
 				req->power_param.opp_step, req->power_param.freq_step,
 				vcore_opp_index, opps.vcore.index,
 				dsp_freq_index, opps.dspcore[service_core].index);
-
+			#if 0
 			/*  prevent the worker shutdown vpu first, and current enque use the same algo_id */
 			/*ret = wait_to_do_vpu_running(service_core);*/
 			/*CHECK_RET("[vpu_%d] fail to wait_to_do_vpu_running!, ret = %d\n", service_core, ret);*/
@@ -1268,6 +1269,13 @@ static int vpu_service_routine(void *arg)
 			}
 			LOG_DBG("[vpu] flag - 4: hw_enque_request\n");
 			vpu_hw_enque_request(service_core, req);
+			#else
+			if (vpu_hw_processing_request(service_core, req)) {
+				LOG_ERR("[vpu_%d] hw_processing_request failed, while enque\n", service_core);
+				req->status = VPU_REQ_STATUS_FAILURE;
+				goto out;
+			}
+			#endif
 			LOG_DBG("[vpu] flag - 5: hw enque_request done\n");
 		} else {
 			/* consider that only one req in common pool and all services get pass through */
@@ -1295,8 +1303,9 @@ out:
 			LOG_DBG("[vpu] flag - 6: add to deque list\n");
 			req->occupied_core = (0x1 << service_core);
 			list_add_tail(vlist_link(req, struct vpu_request), &user->deque_list);
-			LOG_INF("[vpu_%d, 0x%x -> 0x%x] add to deque list done\n",
-				service_core, req->requested_core, req->occupied_core);
+			LOG_INF("[vpu_%d, 0x%x -> 0x%x] algo_id(%d_%d) add to deque list done\n",
+				service_core, req->requested_core, req->occupied_core,
+				(int)(req->algo_id[service_core]), req->frame_magic);
 			user->running = false;
 			mutex_unlock(&user->data_mutex);
 		} else {
@@ -1481,14 +1490,71 @@ static int vpu_get_power(int core)
 		return ret;
 }
 
-static void vpu_put_power(int core)
+static void vpu_put_power(int core, enum VpuPowerOnType type)
 {
 	LOG_DBG("[vpu_%d/%d] pp +\n", core, power_counter[core]);
 	mutex_lock(&power_counter_mutex[core]);
-	if (--power_counter[core] == 0)
+	if (--power_counter[core] == 0) {
+		switch (type) {
+		case VPT_PRE_ON:
+			LOG_DBG("[vpu_%d] VPT_PRE_ON\n", core);
+			mod_delayed_work(wq, &(power_counter_work[core].my_work),
+				msecs_to_jiffies(10 * PWR_KEEP_TIME_MS));
+			break;
+		case VPT_ENQUE_ON:
+		default:
+			LOG_DBG("[vpu_%d] VPT_ENQUE_ON\n", core);
 		mod_delayed_work(wq, &(power_counter_work[core].my_work), msecs_to_jiffies(PWR_KEEP_TIME_MS));
+		}
+	}
 	mutex_unlock(&power_counter_mutex[core]);
 	LOG_DBG("[vpu_%d/%d] pp -\n", core, power_counter[core]);
+}
+
+int vpu_set_power(struct vpu_user *user, struct vpu_power *power)
+{
+	int ret = 0;
+	uint8_t vcore_opp_index = 0xFF;
+	uint8_t dsp_freq_index = 0xFF;
+	int i = 0, core = -1;
+
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		/*LOG_DBG("debug i(%d), (0x1 << i) (0x%x)", i, (0x1 << i));*/
+		if (power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_VPU_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)", power->core, core, MTK_VPU_CORE);
+		ret = -1;
+		return ret;
+	}
+
+	LOG_INF("[vpu_%d] set power opp:%d, pid=%d, tid=%d\n",
+			core, power->opp_step,
+			user->open_pid, user->open_tgid);
+
+	if (power->opp_step == 0xFF) {
+		vcore_opp_index = 0xFF;
+		dsp_freq_index = 0xFF;
+	} else {
+		vcore_opp_index = opps.vcore.opp_map[power->opp_step];
+		dsp_freq_index = opps.dspcore[core].opp_map[power->opp_step];
+	}
+	vpu_opp_check(core, vcore_opp_index, dsp_freq_index);
+	user->power_opp = power->opp_step;
+
+	ret = vpu_get_power(core);
+	mutex_lock(&(vpu_service_cores[core].state_mutex));
+	vpu_service_cores[core].state = VCT_IDLE;
+	mutex_unlock(&(vpu_service_cores[core].state_mutex));
+
+	/* to avoid power leakage, power on/off need be paired */
+	vpu_put_power(core, VPT_PRE_ON);
+	LOG_INF("[vpu_%d] vpu_set_power -\n", core);
+	return ret;
 }
 
 static void vpu_power_counter_routine(struct work_struct *work)
@@ -1502,6 +1568,8 @@ static void vpu_power_counter_routine(struct work_struct *work)
 	mutex_lock(&power_counter_mutex[core]);
 	if (power_counter[core] == 0)
 		vpu_shut_down(core);
+	else
+		LOG_DBG("vpu_%d no need this time.\n", core);
 	mutex_unlock(&power_counter_mutex[core]);
 
 	LOG_INF("vpu_%d counterR -", core);
@@ -1828,7 +1896,7 @@ int vpu_hw_enable_jtag(bool enabled)
 	vpu_write_field(TEMP_CORE, FLD_DBG_EN, enabled);
 
 out:
-	vpu_put_power(TEMP_CORE);
+	vpu_put_power(TEMP_CORE, VPT_ENQUE_ON);
 	return ret;
 }
 
@@ -1922,6 +1990,8 @@ int vpu_hw_boot_sequence(int core)
 	VPU_SET_BIT(ptr_ctrl, 23);      /* RUN_STALL pull up to avoid fake cmd */
 	vpu_trace_end();
 	if (ret) {
+		LOG_ERR("[vpu_%d] boot-up timeout , status(%d/%d)\n", core,
+			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
 		vpu_dump_register(NULL);
 		vpu_aee("VPU Timeout", "timeout to external boot\n");
 		goto out;
@@ -1967,9 +2037,15 @@ int vpu_hw_set_debug(int core)
 			(now.tv_sec / 60) % (60), now.tv_sec % 60, now.tv_nsec / 1000);
 	/* 3. wait until done */
 	ret = wait_command(core);
-	vpu_trace_end();
-	CHECK_RET("[vpu_%d]timeout of set debug\n", core);
 	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
+	vpu_trace_end();
+	if (ret) {
+		LOG_ERR("[vpu_%d] set-debug timeout , status(%d/%d)\n", core,
+			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
+		vpu_dump_mesg(NULL);
+		vpu_dump_register(NULL);
+	}
+	CHECK_RET("[vpu_%d]timeout of set debug\n", core);
 
 	/* 4. check the result */
 	ret = vpu_check_postcond(core);
@@ -2110,12 +2186,12 @@ int vpu_boot_up(int core)
 	LOG_DBG("[vpu_%d] vpu_hw_set_debug done\n", core);
 
 out:
-
+#if 0 /* control on/off outside the via get_power/put_power */
 	if (ret) {
 		ret = vpu_disable_regulator_and_clock(core);
 		CHECK_RET("[vpu_%d]fail to disable regulator and clock\n", core);
 	}
-
+#endif
 	vpu_trace_end();
 	mutex_unlock(&power_mutex[core]);
 	return ret;
@@ -2227,22 +2303,24 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 	/* 3. wait until done */
 	ret = wait_command(core);
 	LOG_DBG("[vpu_%d] algo done\n", core);
+	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 	vpu_trace_end();
 	if (ret) {
+		LOG_ERR("[vpu_%d] load_algo timeout , status(%d/%d)\n", core,
+			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
 		vpu_aee("VPU Timeout", "core_%d timeout to do loader, algo_id=%d\n", core,
 			vpu_service_cores[core].current_algo);
 		goto out;
 	}
-	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 
 	/* 4. update the id of loaded algo */
 	vpu_service_cores[core].current_algo = algo->id[core];
 
 out:
 	unlock_command(core);
-	vpu_put_power(core);
+	vpu_put_power(core, VPT_ENQUE_ON);
 	vpu_trace_end();
 	LOG_DBG("[vpu] vpu_hw_load_algo -\n");
 	return ret;
@@ -2279,7 +2357,8 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 
 	if (g_vpu_log_level > 4)
 		vpu_dump_buffer_mva(request);
-	LOG_INF("[vpu_%d] start d2d\n", core);
+	LOG_INF("[vpu_%d] start d2d, id/frm (%d/%d)\n", core,
+		request->algo_id[core], request->frame_magic);
 	/* 1. write register */
 	/* command: d2d */
 	vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_DO_D2D);
@@ -2308,6 +2387,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	/* 3. wait until done */
 	ret = wait_command(core);
 	LOG_DBG("[vpu_%d] end d2d\n", core);
+	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 	#ifdef ENABLE_PMQOS
 	/* pmqos, release request after d2d done */
 	pm_qos_update_request(&vpu_qos_bw_request, PM_QOS_DEFAULT_VALUE);
@@ -2318,6 +2398,8 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	#endif
 	if (ret) {
 		request->status = VPU_REQ_STATUS_TIMEOUT;
+		LOG_ERR("[vpu_%d] hw_enque_request timeout , status(%d/%d)\n", core,
+			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
 		vpu_dump_buffer_mva(request);
 		vpu_dump_mesg(NULL);
 		vpu_dump_register(NULL);
@@ -2325,18 +2407,182 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 			vpu_service_cores[core].current_algo);
 		goto out;
 	}
-	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 
 	request->status = (vpu_check_postcond(core)) ? VPU_REQ_STATUS_FAILURE : VPU_REQ_STATUS_SUCCESS;
 
 out:
 	unlock_command(core);
-	vpu_put_power(core);
+	vpu_put_power(core, VPT_ENQUE_ON);
 	vpu_trace_end();
 	LOG_DBG("[vpu] vpu_hw_enque_request - (%d)", request->status);
 	return ret;
 
 }
+
+/* do whole processing for enque request, including check algo, load algo, run d2d. */
+/* minimize timing gap between each step for a single eqneu request and minimize the risk of timing issue */
+int vpu_hw_processing_request(int core, struct vpu_request *request)
+{
+	int ret;
+	struct vpu_algo *algo = NULL;
+	bool need_reload = false;
+
+	LOG_DBG("[vpu_%d/%d] pr + ", core, request->algo_id[core]);
+
+	/* step1, enable clocks and boot-up if needed */
+	ret = vpu_get_power(core);
+	if (ret) {
+		LOG_ERR("[vpu_%d] fail to get power!\n", core);
+		goto out2;
+	}
+	LOG_DBG("[vpu_%d] vpu_get_power done\n", core);
+
+	/* step2. check algo */
+	if (request->algo_id[core] != vpu_service_cores[core].current_algo) {
+		ret = vpu_find_algo_by_id(core, request->algo_id[core], &algo);
+		need_reload = true;
+		if (ret) {
+			request->status = VPU_REQ_STATUS_INVALID;
+			LOG_ERR("[vpu_%d] pr can not find the algo, id=%d\n",
+				core, request->algo_id[core]);
+			goto out2;
+		}
+	}
+
+	/* step3. do processing, algo loader and d2d*/
+	ret = wait_to_do_vpu_running(core);
+	CHECK_RET("[vpu_%d]pr load_algo fail to wait_to_do_vpu_running!, ret = %d\n", core, ret);
+	mutex_lock(&(vpu_service_cores[core].state_mutex));
+	vpu_service_cores[core].state = VCT_EXECUTING;
+	mutex_unlock(&(vpu_service_cores[core].state_mutex));
+	/* algo loader if needed */
+	if (need_reload) {
+		vpu_trace_begin("[vpu_%d] hw_load_algo(%d)", core, algo->id[core]);
+		lock_command(core);
+		LOG_DBG("start to load algo\n");
+
+		ret = vpu_check_precond(core);
+		CHECK_RET("[vpu_%d]have wrong status before do loader!\n", core);
+		LOG_DBG("[vpu_%d] vpu_check_precond done\n", core);
+
+		LOG_DBG("[vpu_%d] algo ptr/length (0x%lx/0x%x)\n", core,
+			(unsigned long)algo->bin_ptr, algo->bin_length);
+
+		/* 1. write register */
+		vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_DO_LOADER);           /* command: d2d */
+		vpu_write_field(core, FLD_XTENSA_INFO12, algo->bin_ptr);              /* binary data's address */
+		vpu_write_field(core, FLD_XTENSA_INFO13, algo->bin_length);           /* binary data's length */
+		vpu_write_field(core, FLD_XTENSA_INFO15, opps.dsp.values[opps.dsp.index]);
+		vpu_write_field(core, FLD_XTENSA_INFO16, opps.ipu_if.values[opps.ipu_if.index]);
+
+		/* 2. trigger interrupt */
+		vpu_trace_begin("[vpu_%d] dsp:load_algo running", core);
+		LOG_DBG("[vpu_%d] dsp:load_algo running\n", core);
+		vpu_write_field(core, FLD_RUN_STALL, 0);      /* RUN_STALL down */
+		vpu_write_field(core, FLD_CTL_INT, 1);
+
+		/* 3. wait until done */
+		ret = wait_command(core);
+		LOG_DBG("[vpu_%d] algo done\n", core);
+		vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
+		vpu_trace_end();
+		if (ret) {
+			LOG_ERR("[vpu_%d] pr_load_algo timeout , status(%d/%d)\n", core,
+				vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
+			vpu_dump_mesg(NULL);
+			vpu_dump_register(NULL);
+			vpu_aee("VPU Timeout", "core_%d timeout to do loader, algo_id=%d\n", core,
+				vpu_service_cores[core].current_algo);
+			goto out;
+		}
+
+		/* 4. update the id of loaded algo */
+		vpu_service_cores[core].current_algo = algo->id[core];
+		unlock_command(core);
+		vpu_trace_end();
+	}
+
+	/* d2d operation */
+	vpu_trace_begin("[vpu_%d] hw_processing_request(%d)", core, request->algo_id[core]);
+	LOG_DBG("start to enque request\n");
+	lock_command(core);
+	ret = vpu_check_precond(core);
+	if (ret) {
+		request->status = VPU_REQ_STATUS_BUSY;
+		LOG_ERR("error state before enque request!\n");
+		goto out;
+	}
+
+	memcpy((void *) (uintptr_t)vpu_service_cores[core].work_buf->va, request->buffers,
+			sizeof(struct vpu_buffer) * request->buffer_count);
+
+	if (g_vpu_log_level > 4)
+		vpu_dump_buffer_mva(request);
+	LOG_INF("[vpu_%d] start d2d, id/frm (%d/%d)\n", core,
+		request->algo_id[core], request->frame_magic);
+	/* 1. write register */
+	/* command: d2d */
+	vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_DO_D2D);
+	/* buffer count */
+	vpu_write_field(core, FLD_XTENSA_INFO12, request->buffer_count);
+	/* pointer to array of struct vpu_buffer */
+	vpu_write_field(core, FLD_XTENSA_INFO13, vpu_service_cores[core].work_buf->pa);
+	/* pointer to property buffer */
+	vpu_write_field(core, FLD_XTENSA_INFO14, request->sett_ptr);
+	/* size of property buffer */
+	vpu_write_field(core, FLD_XTENSA_INFO15, request->sett_length);
+
+	/* 2. trigger interrupt */
+	#ifdef ENABLE_PMQOS
+	/* pmqos, 10880 Mbytes per second */
+	pm_qos_update_request(&vpu_qos_bw_request, request->power_param.bw);/*max 10880*/
+	#endif
+	vpu_trace_begin("[vpu_%d] dsp:d2d running", core);
+	LOG_DBG("[vpu_%d] d2d running...\n", core);
+	#if defined(VPU_MET_READY)
+	MET_Events_Trace(1, core, request->algo_id[core]);
+	#endif
+	vpu_write_field(core, FLD_RUN_STALL, 0);      /* RUN_STALL pull down */
+	vpu_write_field(core, FLD_CTL_INT, 1);
+
+	/* 3. wait until done */
+	ret = wait_command(core);
+	LOG_DBG("[vpu_%d] end d2d\n", core);
+	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
+	#ifdef ENABLE_PMQOS
+	/* pmqos, release request after d2d done */
+	pm_qos_update_request(&vpu_qos_bw_request, PM_QOS_DEFAULT_VALUE);
+	#endif
+	vpu_trace_end();
+	#if defined(VPU_MET_READY)
+	MET_Events_Trace(0, core, request->algo_id[core]);
+	#endif
+	LOG_DBG("[vpu_%d] pr hw_d2d test , status(%d/%d)\n", core,
+			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
+	if (ret) {
+		request->status = VPU_REQ_STATUS_TIMEOUT;
+		LOG_ERR("[vpu_%d] pr hw_d2d timeout , status(%d/%d)\n", core,
+			vpu_read_field(core, FLD_XTENSA_INFO00), vpu_service_cores[core].is_cmd_done);
+		vpu_dump_buffer_mva(request);
+		vpu_dump_mesg(NULL);
+		vpu_dump_register(NULL);
+		vpu_aee("VPU Timeout", "core_%d timeout to do d2d, algo_id=%d\n", core,
+			vpu_service_cores[core].current_algo);
+		goto out;
+	}
+
+	request->status = (vpu_check_postcond(core)) ? VPU_REQ_STATUS_FAILURE : VPU_REQ_STATUS_SUCCESS;
+
+out:
+	unlock_command(core);
+	vpu_trace_end();
+out2:
+	vpu_put_power(core, VPT_ENQUE_ON);
+	LOG_DBG("[vpu] vpu_hw_processing_request - (%d)", request->status);
+	return ret;
+
+}
+
 
 int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 {
@@ -2424,7 +2670,7 @@ int vpu_hw_get_algo_info(int core, struct vpu_algo *algo)
 
 out:
 	unlock_command(core);
-	vpu_put_power(core);
+	vpu_put_power(core, VPT_ENQUE_ON);
 	vpu_trace_end();
 	LOG_DBG("[vpu] vpu_hw_get_algo_info -\n");
 	return ret;
@@ -2452,7 +2698,7 @@ void vpu_hw_unlock(struct vpu_user *user)
 	int TEMP_CORE = 0;
 
 	if (user->locked) {
-		vpu_put_power(TEMP_CORE);
+		vpu_put_power(TEMP_CORE, VPT_ENQUE_ON);
 		is_locked = false;
 		user->locked = false;
 		wake_up_interruptible(&lock_wait);
