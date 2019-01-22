@@ -438,46 +438,55 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 #define TOSTRING(value)           #value
 #define STRINGIZE(stringizedName) TOSTRING(stringizedName)
 
-	char *psensor_list_config = NULL;
-	char *sensor_configs = STRINGIZE(CONFIG_CUSTOM_KERNEL_IMGSENSOR);
+	char *psensor_list_with_end = NULL;
+	char *sensor_kconfig = STRINGIZE(CONFIG_CUSTOM_KERNEL_IMGSENSOR);
 
 	static int orderedSearchList[MAX_NUM_OF_SUPPORT_SENSOR] = {-1};
 	static bool get_search_list = true;
 	int i = 0;
 	int j = 0;
 	char *driver_name = NULL;
+	const char *pDTS_sensors = NULL;
+	struct device_node *of_node = of_find_compatible_node(NULL, NULL, "mediatek,camera_hw");
+
 
 	imgsensor_mutex_init(psensor_inst);
 	imgsensor_i2c_init(&psensor_inst->i2c_cfg, imgsensor_custom_config[psensor->inst.sensor_idx].i2c_dev);
 	imgsensor_i2c_filter_msg(&psensor_inst->i2c_cfg, true);
 
+
 	if (get_search_list) {
-		psensor_list_config = kmalloc(strlen(sensor_configs)-1, GFP_KERNEL);
-		if (psensor_list_config) {
-			for (j = 0; j < MAX_NUM_OF_SUPPORT_SENSOR; j++)
-				orderedSearchList[j] = -1;
-
-			memcpy(psensor_list_config, sensor_configs+1, strlen(sensor_configs)-2);
-			*(psensor_list_config+strlen(sensor_configs)-2) = '\0';
-
-			PK_DBG("psensor_list_config %s\n", psensor_list_config);
-			driver_name = strsep(&psensor_list_config, " \0");
-
-			while (driver_name != NULL) {
-				for (j = 0; j < MAX_NUM_OF_SUPPORT_SENSOR; j++) {
-					if (pSensorList[j].init == NULL)
-						break;
-					else if (!strcmp(driver_name, pSensorList[j].name)) {
-						orderedSearchList[i++] = j;
-						break;
-					}
-				}
-				driver_name = strsep(&psensor_list_config, " \0");
-			}
-			get_search_list = false;
-		}
-		kfree(psensor_list_config);
+		psensor_list_with_end = kmalloc(strlen(sensor_kconfig)-1, GFP_KERNEL);
 	}
+	if (psensor_list_with_end != NULL) {
+		for (j = 0; j < MAX_NUM_OF_SUPPORT_SENSOR; j++)
+			orderedSearchList[j] = -1;
+
+		memcpy(psensor_list_with_end, sensor_kconfig+1, strlen(sensor_kconfig)-2);
+		*(psensor_list_with_end+strlen(sensor_kconfig)-2) = '\0';
+		of_property_read_string(of_node, "enable-sensor", &pDTS_sensors);
+
+		PK_DBG("psensor_list_with_end %s ,pDTS_sensors %s\n",
+			psensor_list_with_end, pDTS_sensors == NULL ? "null" : pDTS_sensors);
+		driver_name = strsep(&psensor_list_with_end, " \0");
+
+		while (driver_name != NULL) {
+			for (j = 0; j < MAX_NUM_OF_SUPPORT_SENSOR; j++) {
+				if (pSensorList[j].init == NULL)
+					break;
+				else if (!strcmp(driver_name, pSensorList[j].name)) {
+					if (pDTS_sensors != NULL && !strstr(pDTS_sensors, driver_name))
+						continue;
+					orderedSearchList[i++] = j;
+					break;
+				}
+			}
+			driver_name = strsep(&psensor_list_with_end, " \0");
+		}
+		get_search_list = false;
+		kfree(psensor_list_with_end);
+	}
+
 
 
 	/*PK_DBG("get_search_list %d,\n %d %d %d %d\n %d %d %d %d\n %d %d %d %d\n %d %d %d %d\n",
