@@ -33,6 +33,7 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_EVENT_MDP_COLOR_SOF, mdp_color_sof)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_MVW_SOF, mdp_mvw_sof)
 	DECLAR_EVENT(CMDQ_EVENT_MDP_CROP_SOF, mdp_crop_sof)
+	DECLAR_EVENT(CMDQ_EVENT_MDP_AAL_SOF, mdp_aal_sof)
 
 	/* Display start frame */
 	DECLAR_EVENT(CMDQ_EVENT_DISP_OVL0_SOF, disp_ovl0_sof)
