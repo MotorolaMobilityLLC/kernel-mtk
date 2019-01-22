@@ -487,6 +487,7 @@ static int mt6336_enable_charging(struct charger_device *chg_dev, bool en)
 
 	if (en) {
 		mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 1);
+		mt6336_set_flag_register_value(MT6336_RG_A_LOOP_CLAMP_EN, 0);
 #if 0
 		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 		mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
