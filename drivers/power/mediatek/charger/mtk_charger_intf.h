@@ -97,29 +97,38 @@ struct charger_custom_data {
 	int ta_stop_battery_soc;
 };
 
-struct charger_manager {
-	const char *algorithm_name;
-	struct platform_device *pdev;
-
-	struct charger_device *primary_chg;
-	struct notifier_block charger_dev_nb;
-	void	*algorithm_data;
-
-	CHARGER_TYPE chr_type;
-	bool can_charging;
-
-	int usb_state;
-	bool usb_unlimited;
+struct charger_data {
+	int force_charging_current;
 	int thermal_input_current_limit;
 	int thermal_charging_current_limit;
 	int input_current_limit;
 	int charging_current_limit;
+};
+
+struct charger_manager {
+	const char *algorithm_name;
+	struct platform_device *pdev;
+	void	*algorithm_data;
+	int usb_state;
+	bool usb_unlimited;
+
+	struct charger_device *chg1_dev;
+	struct notifier_block chg1_nb;
+	struct charger_data chg1_data;
+
+	struct charger_device *chg2_dev;
+	struct notifier_block chg2_nb;
+	struct charger_data chg2_data;
+
+	CHARGER_TYPE chr_type;
+	bool can_charging;
 
 	int (*do_algorithm)(struct charger_manager *);
 	int (*plug_in)(struct charger_manager *);
 	int (*plug_out)(struct charger_manager *);
 	int (*do_charging)(struct charger_manager *, bool en);
 	int (*do_event)(struct notifier_block *nb, unsigned long event, void *v);
+	int (*change_current_setting)(struct charger_manager *);
 
 	/*notify charger user*/
 	struct srcu_notifier_head evt_nh;

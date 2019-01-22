@@ -32,7 +32,7 @@ int mtk_pe20_reset_ta_vchr(struct charger_manager *pinfo)
 
 	/* Reset TA's charging voltage */
 	do {
-		ret = charger_dev_set_ta20_reset(pinfo->primary_chg);
+		ret = charger_dev_set_ta20_reset(pinfo->chg1_dev);
 		msleep(250);
 
 		/* Check charger's voltage */
@@ -68,9 +68,9 @@ static int pe20_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
 	int ret = 0;
 
 	if (enable)
-		ret = charger_dev_enable_vbus_ovp(pinfo->primary_chg);
+		ret = charger_dev_enable_vbus_ovp(pinfo->chg1_dev);
 	else
-		ret = charger_dev_disable_vbus_ovp(pinfo->primary_chg);
+		ret = charger_dev_disable_vbus_ovp(pinfo->chg1_dev);
 
 	if (ret < 0)
 		pr_err("%s: failed, ret = %d\n",
@@ -99,7 +99,7 @@ static int pe20_set_mivr(struct charger_manager *pinfo, int mv)
 {
 	int ret = 0;
 
-	ret = charger_dev_set_mivr(pinfo->primary_chg, mv * 1000);
+	ret = charger_dev_set_mivr(pinfo->chg1_dev, mv * 1000);
 	if (ret < 0)
 		pr_err("%s: failed, ret = %d\n",
 			__func__, ret);
@@ -188,7 +188,7 @@ static int __pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 		return -EIO;
 	}
 
-	ret = charger_dev_send_ta20_current_pattern(pinfo->primary_chg, chr_volt * 1000);
+	ret = charger_dev_send_ta20_current_pattern(pinfo->chg1_dev, chr_volt * 1000);
 	if (ret < 0) {
 		pr_err("%s: failed, ret = %d\n",
 			__func__, ret);
@@ -269,7 +269,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 	/* Trigger adapter WDT to drop VBUS to 5V */
 	aicr_value = 100000;
 	/* battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &aicr_value); */
-	charger_dev_set_input_current(pinfo->primary_chg, aicr_value);
+	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 	mdelay(240);
 
 	/* Disable cable drop compensation */
@@ -279,7 +279,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 
 	/* Set ichg = 2500mA, set MIVR=4.5V */
 	/* battery_charging_control(CHARGING_CMD_SET_CURRENT, &CC_value); */
-	charger_dev_set_charging_current(pinfo->primary_chg, 2500000);
+	charger_dev_set_charging_current(pinfo->chg1_dev, 2500000);
 	mdelay(240);
 	pe20_set_mivr(pinfo, 4500);
 	/* pe20_set_mivr(pinfo, 4300); */
@@ -289,13 +289,13 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 
 	aicr_value = 800000;
 	/* battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &aicr_value); */
-	charger_dev_set_input_current(pinfo->primary_chg, aicr_value);
+	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 
 	/* To wait for soft-start */
 	msleep(150);
 
 	/* battery_charging_control(CHARGING_CMD_GET_VINDPM_STATE, &mivr_state); */
-	mivr_state = charger_dev_get_mivr_state(pinfo->primary_chg);
+	mivr_state = charger_dev_get_mivr_state(pinfo->chg1_dev);
 	if (mivr_state) {
 		pe20->aicr_cable_imp = 1000000;
 		goto end;
@@ -306,7 +306,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 
 	aicr_value = 500000;
 	/* battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &aicr_value); */
-	charger_dev_set_input_current(pinfo->primary_chg, aicr_value);
+	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 	msleep(20);
 
 	/* vchr2 = battery_meter_get_charger_voltage(); */
@@ -324,7 +324,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 	/* Recover cable drop compensation */
 	aicr_value = 100000;
 	/* battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &aicr_value); */
-	charger_dev_set_input_current(pinfo->primary_chg, aicr_value);
+	charger_dev_set_input_current(pinfo->chg1_dev, aicr_value);
 	msleep(300);
 
 	if (cable_imp < CABLE_IMP_THRESHOLD) {

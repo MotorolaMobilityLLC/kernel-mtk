@@ -62,6 +62,8 @@ extern int pe30_dc_enable(struct charger_manager *info, unsigned char charging_e
 extern int pe30_dc_kick_wdt(struct charger_manager *info);
 extern int pe30_dc_set_ibus_oc(struct charger_manager *info, unsigned int cur);
 extern int pe30_dc_get_temperature(struct charger_manager *info, int *min_temp, int *max_temp);
+extern int pe30_dc_enable_chip(struct charger_manager *info, unsigned char en);
+
 
 extern int pe30_chr_enable_charge(struct charger_manager *info, bool charging_enable);
 extern int pe30_chr_get_input_current(struct charger_manager *info, unsigned int *cur);
