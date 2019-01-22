@@ -577,25 +577,6 @@ struct spm_data {
 
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-#define DYNA_LOAD_PCM_PATH_SIZE 128
-#define PCM_FIRMWARE_VERSION_SIZE 128
-
-enum dyna_load_pcm_index {
-	DYNA_LOAD_PCM_SUSPEND = 0,
-	DYNA_LOAD_PCM_MAX,
-};
-
-struct dyna_load_pcm_t {
-	char path[DYNA_LOAD_PCM_PATH_SIZE];
-	char version[PCM_FIRMWARE_VERSION_SIZE];
-	char *buf;
-	dma_addr_t buf_dma;
-	struct pcm_desc desc;
-	int ready;
-};
-
-extern struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
-
 struct wake_status {
 	u32 assert_pc;		/* PCM_REG_DATA_INI */
 	u32 r12;		/* PCM_REG12_DATA */

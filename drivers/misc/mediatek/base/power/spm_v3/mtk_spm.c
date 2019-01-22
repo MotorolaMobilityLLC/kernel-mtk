@@ -46,7 +46,6 @@
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
-struct dyna_load_pcm_t dyna_load_pcm[DYNA_LOAD_PCM_MAX];
 
 void __iomem *spm_base;
 u32 spm_irq_0;
@@ -785,6 +784,7 @@ void unmask_edge_trig_irqs_for_cirq(void)
 #endif
 }
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 static atomic_t ipi_lock_cnt;
 
 bool is_sspm_ipi_lock_spm(void)
@@ -818,5 +818,6 @@ void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name)
 	trace_sspm_ipi(start, id, opt);
 #endif
 }
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 MODULE_DESCRIPTION("SPM Driver v0.1");

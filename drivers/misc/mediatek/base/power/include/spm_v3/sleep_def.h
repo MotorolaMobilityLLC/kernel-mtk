@@ -36,7 +36,7 @@
 #define SPM_FLAG_ENABLE_SODI3                 (1U << 14)
 #define SPM_FLAG_DIS_SRCCLKEN_LOW             (1U << 15)
 #define SPM_FLAG_DIS_SSPM_SRAM_SLEEP          (1U << 16)
-#define SPM_FLAG_DIS_MCDI_FLOW                (1U << 17)
+#define SPM_FLAG_DIS_DCSS0_LOW                (1U << 17)
 #define SPM_FLAG_DIS_ULPOSC_OFF               (1U << 18)
 #define SPM_FLAG_DIS_SYSPLL_OFF               (1U << 19)
 #define SPM_FLAG_FORCE_VPROC_VSRAM_OFF        (1U << 20)
