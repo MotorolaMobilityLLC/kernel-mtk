@@ -2283,6 +2283,7 @@ static int _DL_switch_to_DC_fast(int block)
 	/* move ovl config info from dl to dc */
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
 	       sizeof(data_config_dl->ovl_config));
+	data_config_dc->ovl_dirty = 1;
 	data_config_dc->p_golden_setting_context = data_config_dl->p_golden_setting_context;
 	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc,
 				pgc->cmdq_handle_ovl1to2_config);
@@ -2487,6 +2488,7 @@ static int DL_switch_to_OVL_DCM_fast(int sw_only, int block)
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
 		   sizeof(data_config_dl->ovl_config));
+	data_config_dc->ovl_dirty = 1;
 	data_config_dc->p_golden_setting_context = data_config_dl->p_golden_setting_context;
 	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc,
 				pgc->cmdq_handle_ovl1to2_config);
@@ -2932,6 +2934,7 @@ static int rdma_mode_switch_to_DC(struct cmdqRecStruct *handle, int block)
 
 	/* move ovl config info from dl to dc */
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config, sizeof(data_config_dl->ovl_config));
+	data_config_dc->ovl_dirty = 1;
 	data_config_dc->p_golden_setting_context = data_config_dl->p_golden_setting_context;
 	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc, pgc->cmdq_handle_ovl1to2_config);
 
@@ -6494,10 +6497,13 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		_convert_disp_input_to_ovl(ovl_cfg, input_cfg);
 
 		dprec_logger_start(DPREC_LOGGER_PRIMARY_CONFIG,
-			((ovl_cfg->layer & 0xF) << 28) | ((ovl_cfg->layer_en & 0xF) << 24) |
-			((ovl_cfg->ext_layer & 0xF) << 20) | ((ovl_cfg->ext_sel_layer & 0xF) << 16) |
-			((ovl_cfg->yuv_range & 0xF) << 12) | ((UFMT_GET_RGB(ovl_cfg->fmt) & 0xF) << 8) |
-			(UFMT_GET_ID(ovl_cfg->fmt) & 0xFF), ovl_cfg->addr);
+				   ((ovl_cfg->src_x & 0xFFFF) << 16) | (ovl_cfg->src_y & 0xFFFF),
+				   ((ovl_cfg->src_w & 0xFFFF) << 16) | (ovl_cfg->src_h & 0xFFFF));
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_config, MMPROFILE_FLAG_PULSE,
+				 ((ovl_cfg->layer & 0xF) << 28) | ((ovl_cfg->layer_en & 0xF) << 24) |
+				 ((ovl_cfg->ext_layer & 0xF) << 20) | ((ovl_cfg->ext_sel_layer & 0xF) << 16) |
+				 ((ovl_cfg->yuv_range & 0xF) << 12) | ((UFMT_GET_RGB(ovl_cfg->fmt) & 0xF) << 8) |
+				 (UFMT_GET_ID(ovl_cfg->fmt) & 0xFF), ovl_cfg->addr);
 		dprec_logger_done(DPREC_LOGGER_PRIMARY_CONFIG,
 			((ovl_cfg->dst_x & 0xFFFF) << 16) | (ovl_cfg->dst_y & 0xFFFF),
 			((ovl_cfg->dst_w & 0xFFFF) << 16) | (ovl_cfg->dst_h & 0xFFFF));

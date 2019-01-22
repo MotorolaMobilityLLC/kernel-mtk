@@ -473,12 +473,10 @@ static int _ovl_get_rsz_layer_roi(const struct OVL_CONFIG_STRUCT * const oc,
 		return -EINVAL;
 	}
 
-	if (oc->src_w < oc->dst_w) {
+	if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
 		*dst_x = 0;
-		*dst_w = oc->src_w;
-	}
-	if (oc->src_h < oc->dst_h) {
 		*dst_y = 0;
+		*dst_w = oc->src_w;
 		*dst_h = oc->src_h;
 	}
 
@@ -508,16 +506,11 @@ static int _ovl_get_rsz_roi(enum DISP_MODULE_ENUM module,
 			break;
 		if (!oc->layer_en)
 			break;
-		if (oc->src_w < oc->dst_w)
+
+		if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
 			*bg_w = oc->src_w;
-	} while (0);
-	do {
-		if (oc->ovl_index != module)
-			break;
-		if (!oc->layer_en)
-			break;
-		if (oc->src_h < oc->dst_h)
 			*bg_h = oc->src_h;
+		}
 	} while (0);
 
 	return 0;
@@ -545,12 +538,10 @@ static int _ovl_lc_config(enum DISP_MODULE_ENUM module,
 	u32 lc_h = pconfig->dst_h;
 
 	if (oc->layer_en) {
-		if (oc->src_w < oc->dst_w) {
+		if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
 			lc_x = oc->dst_x;
-			lc_w = oc->dst_w;
-		}
-		if (oc->src_h < oc->dst_h) {
 			lc_y = oc->dst_y;
+			lc_w = oc->dst_w;
 			lc_h = oc->dst_h;
 		}
 	}
