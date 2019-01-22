@@ -1246,16 +1246,6 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 #endif
 #endif
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	/* cg check */
-	memset(idle_block_mask, 0,
-		NR_TYPES * NF_CG_STA_RECORD * sizeof(unsigned int));
-	if (!mtk_idle_check_cg(idle_block_mask)) {
-		reason = BY_CLK;
-		goto get_idle_idx_2;
-	}
-#endif
-
 #ifdef CONFIG_MTK_DCS
 	/* check if DCS channel switching */
 	ret = dcs_get_dcs_status_trylock(&ch, &dcs_status);
@@ -1266,6 +1256,16 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 
 	dcs_lock_get = true;
 
+#endif
+
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	/* cg check */
+	memset(idle_block_mask, 0,
+		NR_TYPES * NF_CG_STA_RECORD * sizeof(unsigned int));
+	if (!mtk_idle_check_cg(idle_block_mask)) {
+		reason = BY_CLK;
+		goto get_idle_idx_2;
+	}
 #endif
 
 get_idle_idx_2:
