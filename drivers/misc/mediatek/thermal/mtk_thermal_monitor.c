@@ -40,11 +40,6 @@
 #include <mt-plat/mtk_thermal_platform.h>
 #include <linux/uidgid.h>
 
-/*#ifdef CONFIG_MD32_SUPPORT
-*#define CONFIG_MTK_THERMAL_EXT_CONTROL
-*#endif
-*/
-
 /* ************************************ */
 /* Definition */
 /* ************************************ */
@@ -304,409 +299,6 @@ static long int _get_current_time_us(void)
 }
 #endif
 
-#ifdef CONFIG_MTK_THERMAL_EXT_CONTROL
-#include "md32_ipi.h"
-#include "md32_helper.h"
-#include <mach/mtk_thermal_ext_control.h>
-
-#define MTK_THERMAL_DEFAULT_MAX_TEMPERATURE 300000
-#define MTK_THERMAL_MAX_TRIP_NUM 20
-
-enum mtk_thermal_control_state {
-	MTK_THERMAL_CONTROL_STATE_NONE = 0,
-	MTK_THERMAL_CONTROL_STATE_POLLING,
-	MTK_THERMAL_CONTROL_STATE_SWITCHING,
-	MTK_THERMAL_CONTROL_STATE_INTERRUPT,
-};
-
-struct mtk_thermal_ext_tz_data {
-	long high_trip_point;
-	long low_trip_point;
-	int polling_delay;
-	int last_temperature;
-	int trips;
-	struct mtk_thermal_tz_data *tzdata;
-	struct thermal_zone_device *tz;
-	bool set;
-};
-
-static int g_controlState;
-static DEFINE_MUTEX(mtk_thermal_ext_control_lock);
-static struct mtk_thermal_ext_tz_data mtk_thermal_ext_tz_values[MTK_THERMAL_EXT_SENSOR_COUNT];
-
-static int mtk_thermal_ext_get_threshold(struct mtk_thermal_ext_tz_data *tzdata,
-struct thermal_zone_device *thermal, struct thermal_zone_device_ops *ops, int trips) {
-	unsigned long temperature;
-	int i, j, ret, trip_num;
-	long trip_point[MTK_THERMAL_MAX_TRIP_NUM] = { 0 };
-	long temp;
-
-	if (!tzdata || !thermal || !ops) {
-		THRML_ERROR_LOG("%s invalid parameter\n", __func__);
-		return -1;
-	}
-
-	trip_num = (trips < MTK_THERMAL_MAX_TRIP_NUM) ? trips : MTK_THERMAL_MAX_TRIP_NUM;
-
-	if (ops->get_trip_temp) {
-		for (i = 0; i < trip_num; i++) {
-			ret = ops->get_trip_temp(thermal, i, &temperature);
-			trip_point[i] = (long)temperature;
-		}
-
-		if (trip_num > 1) {
-			/* Sort trip point */
-			for (i = (trip_num - 1); i > 0; i--) {
-				for (j = 0; j < i; j++) {
-					if (trip_point[j] > trip_point[j + 1]) {
-						temp = trip_point[j];
-						trip_point[j] = trip_point[j + 1];
-						trip_point[j + 1] = temp;
-					}
-				}
-			}
-
-			/*
-			 * Get trip points
-			 * Condition 1. temperature < low_trip_point < high_trip_point
-			 * Condition 2. low_trip_point <= temperature < high_trip_point
-			 */
-			for (i = 0; i < trip_num; i++) {
-				if (tzdata->last_temperature < trip_point[i]) {
-					if (i == 0) {
-						tzdata->low_trip_point = trip_point[0];
-						tzdata->high_trip_point = trip_point[1];
-					} else {
-						tzdata->low_trip_point = trip_point[i - 1];
-						tzdata->high_trip_point = trip_point[i];
-					}
-					break;
-				} else if (i == (trip_num - 1)) {
-					tzdata->low_trip_point = trip_point[i];
-					tzdata->high_trip_point =
-					    MTK_THERMAL_DEFAULT_MAX_TEMPERATURE;
-				}
-			}
-		} else if (trip_num == 1) {
-			tzdata->low_trip_point = trip_point[0];
-			tzdata->high_trip_point = MTK_THERMAL_DEFAULT_MAX_TEMPERATURE;
-		} else {
-			tzdata->low_trip_point = 0;
-			tzdata->high_trip_point = 0;
-		}
-	} else {
-		return -1;
-	}
-
-	return 0;
-}
-
-static int mtk_thermal_ext_get_temp(struct thermal_zone_device *tz, int *temp)
-{
-	int i;
-
-	mutex_lock(&mtk_thermal_ext_control_lock);
-	if (g_controlState == MTK_THERMAL_CONTROL_STATE_INTERRUPT) {
-		for (i = 0; i < MTK_THERMAL_EXT_SENSOR_COUNT; i++) {
-			if (mtk_thermal_ext_tz_values[i].set
-			    && mtk_thermal_ext_tz_values[i].tz == tz) {
-				*temp = mtk_thermal_ext_tz_values[i].last_temperature;
-				THRML_LOG("%s tz %s, return temp %d\n", __func__, tz->type, *temp);
-				mutex_unlock(&mtk_thermal_ext_control_lock);
-				return 0;
-			}
-		}
-	}
-	mutex_unlock(&mtk_thermal_ext_control_lock);
-
-	return -1;
-}
-
-static bool mtk_thermal_ext_ipi_msg_send(thermal_ipi_msg_id id, thermal_zone_data *tzdata,
-					 uint wait)
-{
-	thermal_ipi_msg msg;
-	ipi_status status;
-
-	THRML_LOG("%s msg id %x\n", __func__, (unsigned int)id);
-
-	memset(&msg, 0, sizeof(thermal_ipi_msg));
-	msg.id = id;
-	if (tzdata != NULL) {
-		msg.data.tz.id = tzdata->id;
-		msg.data.tz.high_trip_point = tzdata->high_trip_point;
-		msg.data.tz.low_trip_point = tzdata->low_trip_point;
-		msg.data.tz.polling_delay = tzdata->polling_delay;
-	}
-
-	status = md32_ipi_send(IPI_THERMAL, (void *)&msg, sizeof(thermal_ipi_msg), wait);
-	if (status != DONE) {
-		THRML_ERROR_LOG("%s send fail, ret %d\n", __func__, status);
-		return false;
-	}
-
-	return true;
-}
-
-static void mtk_thermal_ext_set_tz_threshold(struct mtk_thermal_ext_tz_data *tzdata, int idx)
-{
-	thermal_zone_data tz_threshold;
-
-	tz_threshold.id = idx;
-	tz_threshold.high_trip_point = tzdata->high_trip_point;
-	tz_threshold.low_trip_point = tzdata->low_trip_point;
-	if (tzdata->trips > 0)
-		tz_threshold.polling_delay = tzdata->polling_delay;
-	else
-		tz_threshold.polling_delay = 0;
-
-	THRML_LOG("%s id: %d, polling delay: %d, low trip: %d, high trip: %d\n", __func__,
-		  idx,
-		  tz_threshold.polling_delay,
-		  tz_threshold.low_trip_point, tz_threshold.high_trip_point);
-
-	mtk_thermal_ext_ipi_msg_send(THERMAL_AP_IPI_MSG_SET_TZ_THRESHOLD, &tz_threshold, true);
-}
-
-static void mtk_thermal_ext_update_tz_threshold(int tzidx, int temperature)
-{
-	int result;
-
-	mutex_lock(&mtk_thermal_ext_control_lock);
-	mtk_thermal_ext_tz_values[tzidx].last_temperature = temperature;
-	result = mtk_thermal_ext_get_threshold(&mtk_thermal_ext_tz_values[tzidx],
-					       mtk_thermal_ext_tz_values[tzidx].tz,
-					       mtk_thermal_ext_tz_values[tzidx].tzdata->ops,
-					       mtk_thermal_ext_tz_values[tzidx].trips);
-	if (result < 0) {
-		mtk_thermal_ext_tz_values[tzidx].high_trip_point =
-		    MTK_THERMAL_DEFAULT_MAX_TEMPERATURE;
-		mtk_thermal_ext_tz_values[tzidx].low_trip_point =
-		    MTK_THERMAL_DEFAULT_MAX_TEMPERATURE;
-	}
-	mutex_unlock(&mtk_thermal_ext_control_lock);
-
-	mtk_thermal_ext_set_tz_threshold(&mtk_thermal_ext_tz_values[tzidx], tzidx);
-}
-
-static void mtk_thermal_ext_switch_control_back(void)
-{
-	int i;
-
-	/* Switch state from interrupt mode to polling mode */
-	mutex_lock(&mtk_thermal_ext_control_lock);
-	if (g_controlState == MTK_THERMAL_CONTROL_STATE_INTERRUPT) {
-		for (i = 0; i < MTK_THERMAL_EXT_SENSOR_COUNT; i++) {
-			if (mtk_thermal_ext_tz_values[i].set
-			    && mtk_thermal_ext_tz_values[i].polling_delay > 0) {
-				schedule_delayed_work(&
-						      (mtk_thermal_ext_tz_values[i].tz->poll_queue),
-						      0);
-			}
-		}
-		g_controlState = MTK_THERMAL_CONTROL_STATE_POLLING;
-	}
-	mutex_unlock(&mtk_thermal_ext_control_lock);
-}
-
-static void mtk_thermal_ext_switch_control_out(void)
-{
-	int i;
-
-	/* [Warning] Not lock here because md32_ipi_send() also lock and
-	 * it will result in kernel warning (LockProve Warning)
-	* mutex_lock(&mtk_thermal_ext_control_lock);
-    */
-	if (g_controlState == MTK_THERMAL_CONTROL_STATE_POLLING) {
-		for (i = 0; i < MTK_THERMAL_EXT_SENSOR_COUNT; i++) {
-			if (mtk_thermal_ext_tz_values[i].set)
-				mtk_thermal_ext_update_tz_threshold(i, *tz_last_values[i]);
-		}
-		g_controlState = MTK_THERMAL_CONTROL_STATE_SWITCHING;
-	}
-	/* mutex_unlock(&mtk_thermal_ext_control_lock); */
-
-	mtk_thermal_ext_ipi_msg_send(THERMAL_AP_IPI_MSG_MD32_START, NULL, false);
-}
-
-static void mtk_thermal_ext_ipi_msg_handler(int id, void *data, uint len)
-{
-	thermal_ipi_msg *msg = (thermal_ipi_msg *) data;
-	int i;
-
-	THRML_LOG("%s id %d, msg id %x, len %d\n", __func__, id, msg->id, len);
-
-	switch (msg->id) {
-	case THERMAL_MD32_IPI_MSG_READY:
-		{
-			mtk_thermal_ext_switch_control_out();
-			break;
-		}
-
-	case THERMAL_MD32_IPI_MSG_MD32_START_ACK:
-		{
-			mutex_lock(&mtk_thermal_ext_control_lock);
-			if (g_controlState != MTK_THERMAL_CONTROL_STATE_SWITCHING)
-				break;
-
-			for (i = 0; i < MTK_THERMAL_EXT_SENSOR_COUNT; i++) {
-				if (mtk_thermal_ext_tz_values[i].set) {
-					/* [Warning] Can not use cancel_delayed_work_sync() here
-					* because it will cause kernel warning (LockProve Warning)
-					*/
-					if (cancel_delayed_work(&(mtk_thermal_ext_tz_values[i].tz->poll_queue)) == 0)
-						THRML_ERROR_LOG("%s work (tz %d) is running\n", __func__, i);
-				}
-			}
-			g_controlState = MTK_THERMAL_CONTROL_STATE_INTERRUPT;
-			mutex_unlock(&mtk_thermal_ext_control_lock);
-			break;
-		}
-
-	case THERMAL_MD32_IPI_MSG_REACH_THRESHOLD:
-		{
-			int tzidx = msg->data.tz_status.id;
-			struct thermal_zone_device *tz = NULL;
-
-			/* [Warning] Not lock here because md32_ipi_send() also lock and
-			 * it will result in kernel warning (LockProve Warning)
-			 */
-			/* mutex_lock(&mtk_thermal_ext_control_lock); */
-			if (g_controlState == MTK_THERMAL_CONTROL_STATE_INTERRUPT) {
-				if (mtk_thermal_ext_tz_values[tzidx].set) {
-					tz = mtk_thermal_ext_tz_values[tzidx].tz;
-
-					mtk_thermal_ext_update_tz_threshold(tzidx,
-									    (int)msg->
-									    data.tz_status.
-									    temperature);
-				}
-			}
-			/* mutex_unlock(&mtk_thermal_ext_control_lock); */
-
-			if (tz != NULL) {
-				thermal_zone_device_update(tz);
-				/* [Warning] Can not use cancel_delayed_work_sync() here
-				*because it will cause kernel warning (LockProve Warning)
-				*/
-				if (cancel_delayed_work(&(tz->poll_queue)) == 0) {
-					THRML_ERROR_LOG("%s work (tz %d) is running\n", __func__,
-							tzidx);
-				}
-			}
-			break;
-		}
-	}
-}
-
-static int mtk_thermal_ext_proc_show(struct seq_file *m, void *v)
-{
-	int i;
-
-	mutex_lock(&mtk_thermal_ext_control_lock);
-	seq_puts(m, "\r\n[EXT Thermal Control Debug]\r\n");
-	seq_puts(m, "=========================================\r\n");
-	seq_printf(m, "ap thermal state = %d\r\n", g_controlState);
-
-	for (i = 0; i < MTK_THERMAL_EXT_SENSOR_COUNT; i++) {
-		seq_printf(m,
-			   "tz %s, id: %d, set: %d, temp: %d, polling delay: %d, low trip: %d, high trip: %d\r\n",
-			   mtk_thermal_ext_tz_values[i].tz->type, i,
-			   mtk_thermal_ext_tz_values[i].set,
-			   mtk_thermal_ext_tz_values[i].last_temperature,
-			   mtk_thermal_ext_tz_values[i].polling_delay,
-			   mtk_thermal_ext_tz_values[i].low_trip_point,
-			   mtk_thermal_ext_tz_values[i].high_trip_point);
-	}
-	mutex_unlock(&mtk_thermal_ext_control_lock);
-
-	return 0;
-}
-
-static int mtk_thermal_ext_proc_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mtk_thermal_ext_proc_show, NULL);
-}
-
-static const struct file_operations mtk_thermal_ext_proc_fops = {
-	.owner = THIS_MODULE,
-	.open = mtk_thermal_ext_proc_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static int mtk_thermal_ext_get_tz_idx(char *type)
-{
-	if (strncmp(type, "mtktsabb", 8) == 0)
-		return MTK_THERMAL_EXT_SENSOR_ABB;
-	else if (strncmp(type, "mtktspmic", 9) == 0)
-		return MTK_THERMAL_EXT_SENSOR_PMIC;
-	else if (strncmp(type, "mtktsbattery2", 13) == 0)
-		return -1;
-	else if (strncmp(type, "mtktsbattery", 12) == 0)
-		return MTK_THERMAL_EXT_SENSOR_BATTERY;
-
-	return -1;
-}
-
-static int mtk_thermal_ext_notify(struct notifier_block *self, unsigned long action, void *dev)
-{
-#ifdef DYNAMIC_TCM_SWAP
-	MD32_REQUEST_SWAP *request_swap = (MD32_REQUEST_SWAP *) dev;
-
-	THRML_LOG("%s action: %d, current group: %d, start group: %d\n", __func__,
-		  action, request_swap->current_group, request_swap->group_start);
-
-	switch (action) {
-	case APP_TRIGGER_TCM_SWAP_START:
-		{
-			if (request_swap->prepare_result < 0) {
-				/* MD32 dynamic swap prepare failed */
-				break;
-			}
-
-			if (request_swap->current_group == GROUP_BASIC
-			    && request_swap->group_start == GROUP_A) {
-				mtk_thermal_ext_switch_control_back();
-			}
-			break;
-		}
-
-	case APP_TRIGGER_TCM_SWAP_DONE:
-		{
-			if (request_swap->current_group == GROUP_A
-			    && request_swap->group_start == GROUP_BASIC) {
-				mtk_thermal_ext_switch_control_out();
-			}
-			break;
-		}
-
-	case APP_TRIGGER_TCM_SWAP_FAIL:
-		{
-			if (request_swap->current_group == GROUP_BASIC
-			    && request_swap->group_start == GROUP_A) {
-				mtk_thermal_ext_switch_control_out();
-			}
-			break;
-		}
-
-	case APP_TRIGGER_APP_FINISHED:
-		break;
-
-	default:
-		break;
-	}
-#endif
-
-	return NOTIFY_OK;
-}
-
-static struct notifier_block mtk_thermal_ext_nb = {
-	.notifier_call = mtk_thermal_ext_notify,
-};
-#endif				/* CONFIG_MTK_THERMAL_EXT_CONTROL */
-
 static int mtk_thermal_get_tz_idx(char *type)
 {
 	if (strncmp(type, "mtktscpu", 8) == 0)
@@ -748,7 +340,6 @@ static struct proc_dir_entry *_get_proc_cooler_dir_entry(void)
 	mutex_lock(&MTM_COOLER_PROC_DIR_LOCK);
 	if (proc_cooler_dir_entry == NULL) {
 		proc_cooler_dir_entry = proc_mkdir("mtkcooler", NULL);
-		mb();
 		if (proc_cooler_dir_entry == NULL)
 			THRML_ERROR_LOG("%s mkdir /proc/mtkcooler failed\n", __func__);
 	}
@@ -761,7 +352,6 @@ static struct proc_dir_entry *_get_proc_tz_dir_entry(void)
 	mutex_lock(&MTM_TZ_PROC_DIR_LOCK);
 	if (proc_tz_dir_entry == NULL) {
 		proc_tz_dir_entry = proc_mkdir("mtktz", NULL);
-		mb();
 		if (proc_tz_dir_entry == NULL)
 			THRML_ERROR_LOG("%s mkdir /proc/mtktz failed\n", __func__);
 	}
@@ -1095,7 +685,6 @@ static int _mtkthermal_check_cooler_conditions(struct mtk_thermal_cooler_data *c
 #endif
 			}
 		}
-		mb();
 	}
 
 	return ret;
@@ -1636,22 +1225,6 @@ static int __init mtkthermal_init(void)
 	wake_lock_init(&mtm_wake_lock, WAKE_LOCK_SUSPEND, "alarm");
 #endif
 
-#ifdef CONFIG_MTK_THERMAL_EXT_CONTROL
-	g_controlState = MTK_THERMAL_CONTROL_STATE_POLLING;
-	memset(&mtk_thermal_ext_tz_values, 0,
-	       sizeof(struct mtk_thermal_ext_tz_data) * MTK_THERMAL_EXT_SENSOR_COUNT);
-
-	entry =
-	    proc_create("mtm_extctrl", S_IRUGO | S_IWUSR, dir_entry, &mtk_thermal_ext_proc_fops);
-	if (!entry)
-		THRML_ERROR_LOG("%s Can not create mtm_extctrl\n", __func__);
-
-	/* Register AP side IPI handler */
-	THRML_LOG("%s Register AP side IPI handler\n", __func__);
-	md32_ipi_registration(IPI_THERMAL, mtk_thermal_ext_ipi_msg_handler, "Thermal");
-	md32_register_notify(&mtk_thermal_ext_nb);
-#endif
-
 	INIT_DELAYED_WORK(&_mtm_sysinfo_poll_queue, _mtm_update_sysinfo);
 	_mtm_update_sysinfo(NULL);
 
@@ -1664,10 +1237,6 @@ static void __exit mtkthermal_exit(void)
 	THRML_LOG("%s\n", __func__);
 #if defined(CONFIG_MTK_THERMAL_TIME_BASE_PROTECTION)
 	wake_lock_destroy(&mtm_wake_lock);
-#endif
-
-#ifdef CONFIG_MTK_THERMAL_EXT_CONTROL
-	mutex_destroy(&mtk_thermal_ext_control_lock);
 #endif
 }
 
@@ -1822,15 +1391,8 @@ static int mtk_thermal_wrapper_get_temp
 		THRML_ERROR_LOG("[.get_temp] tz: %s unregistered.\n", thermal->type);
 		return 1;
 	}
-#ifndef CONFIG_MTK_THERMAL_EXT_CONTROL
 	if (ops->get_temp)
 		ret = ops->get_temp(thermal, &raw_temp);
-#else
-	if (mtk_thermal_ext_get_temp(thermal, &raw_temp) < 0) {
-		if (ops->get_temp)
-			ret = ops->get_temp(thermal, &raw_temp);
-	}
-#endif
 
 	nTemperature = (int)raw_temp;	/* /< Long cast to INT. */
 
@@ -2067,7 +1629,6 @@ int tc1, int tc2, int passive_delay, int polling_delay) {
 	tzdata->ma_lens[0] = 1;
 	tzdata->msma_ht[0] = MSMA_MAX_HT;
 #endif
-	mb();
 	mutex_unlock(&tzdata->ma_lock);
 
 	tz = thermal_zone_device_register(type, trips,	/* /< total number of trip points */
@@ -2087,49 +1648,6 @@ int tc1, int tc2, int passive_delay, int polling_delay) {
 	}
 	mutex_unlock(&MTM_GET_TEMP_LOCK);
 
-#ifdef CONFIG_MTK_THERMAL_EXT_CONTROL
-	tzidx = mtk_thermal_ext_get_tz_idx(type);
-	if (tzidx >= 0 && tzidx < MTK_THERMAL_EXT_SENSOR_COUNT) {
-		mutex_lock(&mtk_thermal_ext_control_lock);
-
-		mtk_thermal_ext_tz_values[tzidx].tz = tz;
-		mtk_thermal_ext_tz_values[tzidx].tzdata = tzdata;
-		mtk_thermal_ext_tz_values[tzidx].trips = trips;
-		mtk_thermal_ext_tz_values[tzidx].last_temperature = *tz_last_values[tzidx];
-		mtk_thermal_ext_tz_values[tzidx].polling_delay = polling_delay;
-		if (mtk_thermal_ext_get_threshold(&mtk_thermal_ext_tz_values[tzidx], tz, ops, trips)
-		    < 0) {
-			mtk_thermal_ext_tz_values[tzidx].high_trip_point =
-			    MTK_THERMAL_DEFAULT_MAX_TEMPERATURE;
-			mtk_thermal_ext_tz_values[tzidx].low_trip_point =
-			    MTK_THERMAL_DEFAULT_MAX_TEMPERATURE;
-		}
-		mtk_thermal_ext_tz_values[tzidx].set = true;
-		THRML_LOG
-		    ("%s %s, id: %d, temp: %d, polling delay: %d, low trip: %d, high trip: %d\n",
-		     __func__, type, tzidx, mtk_thermal_ext_tz_values[tzidx].last_temperature,
-		     mtk_thermal_ext_tz_values[tzidx].polling_delay,
-		     mtk_thermal_ext_tz_values[tzidx].low_trip_point,
-		     mtk_thermal_ext_tz_values[tzidx].high_trip_point);
-
-		if (g_controlState == MTK_THERMAL_CONTROL_STATE_INTERRUPT ||
-		    g_controlState == MTK_THERMAL_CONTROL_STATE_SWITCHING) {
-			/* Set TZ high/low threshold to MD32 */
-			mtk_thermal_ext_set_tz_threshold(&mtk_thermal_ext_tz_values[tzidx], tzidx);
-
-			/* [Warning] Can not use cancel_delayed_work_sync() here
-			*because it will cause kernel warning (LockProve Warning)
-			*/
-			if (g_controlState == MTK_THERMAL_CONTROL_STATE_INTERRUPT &&
-			    cancel_delayed_work(&(tz->poll_queue)) == 0) {
-				THRML_ERROR_LOG("%s cancel tz %d work, work is running\n", __func__,
-						type);
-			}
-		}
-
-		mutex_unlock(&mtk_thermal_ext_control_lock);
-	}
-#endif				/* CONFIG_MTK_THERMAL_EXT_CONTROL */
 
 	/* create a proc for this tz... */
 	if (_get_proc_tz_dir_entry() != NULL) {
@@ -2165,19 +1683,6 @@ void mtk_thermal_zone_device_unregister_wrapper(struct thermal_zone_device *tz)
 	/* delete the proc file entry from proc */
 	if (proc_tz_dir_entry != NULL)
 		remove_proc_entry((const char *)type, proc_tz_dir_entry);
-#ifdef CONFIG_MTK_THERMAL_EXT_CONTROL
-	tzidx = mtk_thermal_ext_get_tz_idx(tz->type);
-	mutex_lock(&mtk_thermal_ext_control_lock);
-	if (tzidx >= 0 && tzidx < MTK_THERMAL_EXT_SENSOR_COUNT) {
-		bool set = mtk_thermal_ext_tz_values[tzidx].set;
-		/* Unset MD32 TZ high/low threshold and polling delay */
-		memset(&mtk_thermal_ext_tz_values[tzidx], 0,
-		       sizeof(struct mtk_thermal_ext_tz_data));
-		if (set)
-			mtk_thermal_ext_set_tz_threshold(&mtk_thermal_ext_tz_values[tzidx], tzidx);
-	}
-	mutex_unlock(&mtk_thermal_ext_control_lock);
-#endif
 
 	tzidx = mtk_thermal_get_tz_idx(tz->type);
 
@@ -2433,7 +1938,6 @@ struct thermal_cooling_device *mtk_thermal_cooling_device_register_wrapper
 		mcdata->condition_last_value[i] = NULL;
 		mcdata->threshold[i] = 0;
 	}
-	mb();
 
 	/* create a proc for this cooler... */
 	if (_get_proc_cooler_dir_entry() != NULL) {
@@ -2482,7 +1986,6 @@ const struct thermal_cooling_device_ops_extra *ops_ext){
 		mcdata->condition_last_value[i] = NULL;
 		mcdata->threshold[i] = 0;
 	}
-	mb();
 
 	/* create a proc for this cooler... */
 	if (_get_proc_cooler_dir_entry() != NULL) {
@@ -2571,7 +2074,7 @@ int mtk_thermal_zone_bind_trigger_trip(struct thermal_zone_device *tz, int trip,
 }
 EXPORT_SYMBOL(mtk_thermal_zone_bind_trigger_trip);
 
-int mtk_thermal_get_temp(MTK_THERMAL_SENSOR_ID id)
+int mtk_thermal_get_temp(enum mtk_thermal_sensor_id id)
 {
 	int ret = 0;
 
