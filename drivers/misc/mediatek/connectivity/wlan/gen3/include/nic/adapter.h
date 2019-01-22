@@ -663,6 +663,7 @@ typedef struct _WIFI_VAR_T {
 	UINT_8 ucStaVhtMuBfee;
 
 	UINT_8 ucApWpsMode;
+	UINT_8 ucCert11nMode;
 	UINT_8 ucApChannel;
 
 	UINT_8 ucApSco;

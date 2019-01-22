@@ -128,6 +128,10 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 	COPY_MAC_ADDR(prConnSettings->aucMacAddress, aucZeroMacAddr);
 
 	prConnSettings->ucDelayTimeOfDisconnectEvent = AIS_DELAY_TIME_OF_DISCONNECT_SEC;
+	/*For 11n 5.2.16*/
+	if (prAdapter->rWifiVar.ucCert11nMode == 1)
+		prConnSettings->ucDelayTimeOfDisconnectEvent = 10;
+
 
 	COPY_MAC_ADDR(prConnSettings->aucBSSID, aucAnyBSSID);
 	prConnSettings->fgIsConnByBssidIssued = FALSE;
