@@ -2098,8 +2098,12 @@ static int __reserve_iova_sec(struct device *device,
 
 retry:
 	/* in case pseudo larb has not finished probe. */
-	if (!dev && device)
+	if (!dev && !device) {
+		M4UERR("device is NULL and the larb have not been probed\n");
+		return -EINVAL;
+	} else if (!dev && device) {
 		dev = device;
+	}
 
 	domain = iommu_get_domain_for_dev(dev);
 	if (!domain) {
