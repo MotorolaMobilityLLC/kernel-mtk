@@ -504,7 +504,22 @@ static void rtc_handler(void)
 				/* tm.tm_sec += 1; */
 				hal_rtc_set_alarm(&tm);
 				hal_rtc_is_pwron_alarm(&nowtm, &tm);
-				rtc_xinfo("KPOC set al nowtm %d, tm %d\n", nowtm.tm_sec, tm.tm_sec);
+				nowtm.tm_year += RTC_MIN_YEAR;
+				tm.tm_year += RTC_MIN_YEAR;
+				now_time = mktime(nowtm.tm_year, nowtm.tm_mon, nowtm.tm_mday,
+					nowtm.tm_hour, nowtm.tm_min, nowtm.tm_sec);
+				time = mktime(tm.tm_year, tm.tm_mon, tm.tm_mday, tm.tm_hour,
+					tm.tm_min, tm.tm_sec);
+				/* If the alarm time is expired, adding one sec to alarm */
+				if (time <= now_time) {
+					rtc_xinfo("KPOC set al tm %d <= nowtm %d, set altm+=1\n",
+						tm.tm_sec, nowtm.tm_sec);
+					time += 1;
+					rtc_time_to_tm(time, &tm);
+					tm.tm_year -= RTC_MIN_YEAR_OFFSET;
+					tm.tm_mon += 1;
+					hal_rtc_set_alarm(&tm);
+				}
 				spin_unlock(&rtc_lock);
 				arch_reset(0, "kpoc");
 			} else {
