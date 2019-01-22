@@ -625,14 +625,11 @@ static void imx398_apply_SPC(void)
 
 	for (i = 0; i < 126; i++) {
 		write_cmos_sensor(start_reg, imx398_SPC_data[i]);
-		LOG_INF("SPC[%d]= %x\n", i, imx398_SPC_data[i]);
 		start_reg++;
 	}
 	start_reg = 0x7f00;
 	for (i = 0; i < 126; i++) {
 		write_cmos_sensor(start_reg, imx398_SPC_data[i]);
-		LOG_INF("SPC[%d]= %x\n", i, imx398_SPC_data[i]);
-
 		start_reg++;
 	}
 
