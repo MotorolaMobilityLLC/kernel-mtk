@@ -1196,6 +1196,8 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 
 			if (prBssDesc)
 				COPY_MAC_ADDR(arBssid, prBssDesc->aucBSSID);
+			else
+				COPY_MAC_ADDR(arBssid, prGlueInfo->prAdapter->rWifiVar.rConnSettings.aucBSSID);
 			cfg80211_connect_result(prGlueInfo->prDevHandler,
 						arBssid,
 						prGlueInfo->aucReqIe,
