@@ -84,6 +84,15 @@ initcall_debug=1";
 		vib_limit = <9>;
 		vib_vol= <9>;
 	};
+	memory_ssmr_features: memory-ssmr-features {
+		compatible = "mediatek,memory-ssmr-features";
+		svp-size = <0 0>;
+		iris-recognition-size = <0 0>;
+		2d_fr-size = <0 0>;
+		tui-size = <0 0>;
+		wfd-size = <0 0>;
+		prot-sharedmem-size = <0 0>;
+	};
 	usb_c_pinctrl:usb_c_pinctrl {
 		compatible = "mediatek,usb_c_pinctrl";
 	};
