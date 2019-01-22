@@ -164,7 +164,10 @@ static struct acc_context *acc_context_alloc_object(void)
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report, acc_work_func);
 	obj->accel_workqueue = NULL;
-	obj->accel_workqueue = create_workqueue("accel_polling");
+	/* obj->accel_workqueue = create_workqueue("accel_polling"); */	/* bound */
+	obj->accel_workqueue = alloc_workqueue("accel_polling",		/* unbound */
+	WQ_MEM_RECLAIM | WQ_UNBOUND,
+	num_online_cpus());
 	if (!obj->accel_workqueue) {
 		kfree(obj);
 		return NULL;
