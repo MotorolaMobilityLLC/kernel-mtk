@@ -11,12 +11,13 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
- #include "mt_typec.h"
+ #include "mtk_typec.h"
 
 #if SUPPORT_PD
 #include "usb_pd_func.h"
 #include "usb_pd.h"
 #include "typec_reg.h"
+#include <typec.h>
 #include <mt6336/mt6336.h>
 
 #ifdef CONFIG_USB_PD_DUAL_ROLE
@@ -112,6 +113,7 @@ static struct state_mapping {
 #endif
 	{PD_STATE_HARD_RESET_RECEIVED, "HARD_RESET_RECEIVED"},
 	{PD_STATE_DISCOVERY_SOP_P, "DISCOVERY_SOP_P"},
+	{PD_STATE_SRC_DISABLED, "SRC_DISABLED"},
 	{PD_STATE_NO_TIMEOUT, "NO_TIMEOUT"},
 };
 
@@ -1313,23 +1315,8 @@ void pd_request_data_swap(struct typec_hba *hba)
 
 void pd_set_data_role(struct typec_hba *hba, int role)
 {
-	hba->data_role = role;
 	pd_execute_data_swap(hba, role);
-
-#ifdef CONFIG_USBC_SS_MUX
-#ifdef CONFIG_USBC_SS_MUX_DFP_ONLY
-	/*
-	 * Need to connect SS mux for if new data role is DFP.
-	 * If new data role is UFP, then disconnect the SS mux.
-	 */
-	if (role == PD_ROLE_DFP)
-		usb_mux_set(hba, TYPEC_MUX_USB, USB_SWITCH_CONNECT, hba->polarity);
-	else
-		usb_mux_set(hba, TYPEC_MUX_NONE, USB_SWITCH_DISCONNECT, hba->polarity);
-#else
-	usb_mux_set(hba, TYPEC_MUX_USB, USB_SWITCH_CONNECT, hba->polarity);
-#endif
-#endif
+	hba->data_role = role;
 
 	/*Only DFP receives SOP' and SOP''*/
 	if (hba->data_role == PD_ROLE_DFP)
@@ -1850,16 +1837,9 @@ int pd_task(void *data)
 	/* Ensure the power supply is in the default state */
 	/*pd_power_supply_reset(hba);*/
 
-	#if 0
-#ifdef CONFIG_USBC_SS_MUX
-	/* Initialize USB mux to its default state */
-	usb_mux_init(hba);
-#endif
-	#endif
-
 	/* Initialize PD protocol state variables for each port. */
-	hba->power_role = 0;
-	hba->data_role = 0;
+	hba->power_role = PD_NO_ROLE;
+	hba->data_role = PD_NO_ROLE;
 	hba->flags = 0;
 	hba->vdm_state = VDM_STATE_DONE;
 
@@ -2062,10 +2042,7 @@ int pd_task(void *data)
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
 			pd_dfp_exit_mode(hba, 0, 0);
 #endif
-#ifdef CONFIG_USBC_SS_MUX
-			usb_mux_set(hba, TYPEC_MUX_NONE, USB_SWITCH_DISCONNECT,
-					hba->polarity);
-#endif
+			trigger_driver(hba, DONT_CARE_TYPE, DISABLE, DONT_CARE);
 
 			/* be aware of Vbus */
 			typec_vbus_det_enable(hba, 1);
@@ -2088,6 +2065,8 @@ int pd_task(void *data)
 			if (state_changed(hba))
 				pd_rx_phya_setting(hba);
 
+			hba->power_role = PD_NO_ROLE;
+			hba->data_role = PD_NO_ROLE;
 			hba->vdm_state = VDM_STATE_DONE;
 			hba->cable_flags = PD_FLAGS_CBL_NO_INFO;
 
@@ -2130,7 +2109,6 @@ int pd_task(void *data)
 			break;
 
 		case PD_STATE_SRC_ATTACH:
-			#if PD_DVT
 			if (hba->pd_comm_enabled) {
 				if (hba->vbus_en == 1) {
 					pd_rx_enable(hba, 1);
@@ -2158,25 +2136,6 @@ int pd_task(void *data)
 					timeout = 5;
 				}
 			}
-			#else
-			if (hba->pd_comm_enabled)
-				pd_rx_enable(hba, 1);
-
-			pd_set_power_role(hba, PD_ROLE_SOURCE, 1);
-			pd_set_data_role(hba, PD_ROLE_DFP);
-
-#ifdef CONFIG_USBC_VCONN
-			/* drive Vconn ONLY when there is Ra */
-			if (typec_readw(TYPE_C_PWR_STATUS) & RO_TYPE_C_DRIVE_VCONN_CAPABLE) {
-				typec_drive_vconn(hba, 1);
-				hba->flags |= PD_FLAGS_VCONN_ON;
-			}
-#endif
-			hba->flags |= (PD_FLAGS_CHECK_PR_ROLE | PD_FLAGS_CHECK_DR_ROLE);
-			hard_reset_count = 0;
-			timeout = 5;
-			set_state(hba, PD_STATE_SRC_STARTUP);
-			#endif
 			break;
 
 		case PD_STATE_SRC_STARTUP:
