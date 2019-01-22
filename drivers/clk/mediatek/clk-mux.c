@@ -259,12 +259,15 @@ static int mtk_mux_clr_set_upd_set_parent(struct clk_hw *hw, u8 index)
 	val |= index << mux->mux_shift;
 
 	if (val != orig) {
+		#if defined(CONFIG_MACH_MT6799)
+		writel(val, mux->base + mux->mux_ofs);
+		#else
 		val = (mask << mux->mux_shift);
 		writel(val, mux->base + mux->mux_clr_ofs);
 
 		val = (index << mux->mux_shift);
 		writel(val, mux->base + mux->mux_set_ofs);
-
+		#endif
 		if (mux->upd_shift >= 0)
 			clk_writel(BIT(mux->upd_shift), mux->base + mux->upd_ofs);
 	}
