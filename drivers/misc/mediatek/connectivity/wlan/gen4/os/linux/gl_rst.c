@@ -76,9 +76,6 @@
 #include "precomp.h"
 #include "gl_rst.h"
 
-
-UINT_32 g_IsNeedDoChipReset;
-
 #if CFG_CHIP_RESET_SUPPORT
 
 /*******************************************************************************
@@ -92,7 +89,6 @@ UINT_32 g_IsNeedDoChipReset;
 */
 static BOOLEAN fgResetTriggered = FALSE;
 BOOLEAN fgIsResetting = FALSE;
-static BOOLEAN fgDoCoreDump = FALSE;
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -259,23 +255,31 @@ BOOLEAN kalIsResetting(VOID)
 static void mtk_wifi_trigger_reset(struct work_struct *work)
 {
 	BOOLEAN fgResult = FALSE;
+	RESET_STRUCT_T *rst = container_of(work, RESET_STRUCT_T, rst_trigger_work);
 
 	fgResetTriggered = TRUE;
-	if (fgDoCoreDump && !fgIsBusAccessFailed)
-		fgResult = mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40);
+	/* Set the power off flag to FALSE in WMT to prevent chip power off after
+	** wlanProbe return failure, because we need to do core dump afterward.
+	*/
+	if (rst->rst_trigger_flag & RST_FLAG_PREVENT_POWER_OFF)
+		mtk_wcn_set_connsys_power_off_flag(FALSE);
+
+	if ((rst->rst_trigger_flag & RST_FLAG_DO_CORE_DUMP) && !fgIsBusAccessFailed)
+		fgResult = mtk_wcn_wmt_assert_timeout(WMTDRV_TYPE_WIFI, 0x40, 0);
 	else
 		fgResult = mtk_wcn_wmt_do_reset(WMTDRV_TYPE_WIFI);
-	DBGLOG(INIT, INFO, "reset result %d, is core dump %d\n", fgResult, fgDoCoreDump);
+
+	DBGLOG(INIT, INFO, "reset result %d, trigger flag 0x%x\n", fgResult, rst->rst_trigger_flag);
 }
 
-BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, BOOLEAN fgCoreDump)
+BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, UINT_32 u4RstFlag, const PUINT_8 pucFile, UINT_32 u4Line)
 {
 	BOOLEAN fgResult = TRUE;
 
-#if CFG_WMT_RESET_API_SUPPORT
 	if (kalIsResetting() || fgResetTriggered) {
 		DBGLOG(INIT, ERROR,
-		       "Skip triggering whole-chip reset during resetting! Chip[%04X E%u]\n",
+		       "Skip trigger chip reset in %s line %u, during resetting! Chip[%04X E%u]\n",
+		       pucFile, u4Line,
 		       MTK_CHIP_REV, wlanGetEcoVersion(prAdapter));
 		DBGLOG(INIT, ERROR,
 		       "FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
@@ -288,7 +292,8 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, BOOLEAN fgCoreDump)
 		fgResult = TRUE;
 	} else {
 		DBGLOG(INIT, ERROR,
-		       "Trigger whole-chip reset! Chip[%04X E%u] FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
+		       "Trigger chip reset in %s line %u! Chip[%04X E%u] FW Ver DEC[%u.%u] HEX[%x.%x], Driver Ver[%u.%u]\n",
+		       pucFile, u4Line,
 		       MTK_CHIP_REV,
 		       wlanGetEcoVersion(prAdapter),
 		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
@@ -296,10 +301,10 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, BOOLEAN fgCoreDump)
 		       (prAdapter->rVerInfo.u2FwOwnVersion >> 8),
 		       (prAdapter->rVerInfo.u2FwOwnVersion & BITS(0, 7)),
 		       (prAdapter->rVerInfo.u2FwPeerVersion >> 8), (prAdapter->rVerInfo.u2FwPeerVersion & BITS(0, 7)));
-		fgDoCoreDump = fgCoreDump;
+
+		wifi_rst.rst_trigger_flag = u4RstFlag;
 		schedule_work(&(wifi_rst.rst_trigger_work));
 	}
-#endif
 
 	return fgResult;
 }

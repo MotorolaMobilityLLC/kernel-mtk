@@ -183,7 +183,7 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				/* CONSYS_REG_READ(CONSYS_CPUPCR_REG) */
 				if (fgWmtCoreDump == FALSE) {
 					kalSendAeeWarning("[Fatal error! Driver own fail!]", __func__);
-					glDoChipReset();
+					GL_RESET_TRIGGER(prAdapter, RST_FLAG_CHIP_RESET);
 				} else
 					DBGLOG(NIC, WARN,
 						"[Driver own fail!] WMT is code dumping !STOP AEE & chip reset\n");

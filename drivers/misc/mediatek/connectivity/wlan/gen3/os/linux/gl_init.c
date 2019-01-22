@@ -2293,11 +2293,6 @@ bailout:
 		default:
 			break;
 		}
-		/* Set the power off flag to FALSE in WMT to prevent chip power off after
-		 * wlanProbe return failure, because we need to do core dump afterward.
-		 */
-		if (g_IsNeedDoChipReset)
-			mtk_wcn_set_connsys_power_off_flag(FALSE);
 
 		DBGLOG(INIT, ERROR, "wlanProbe failed\n");
 	}

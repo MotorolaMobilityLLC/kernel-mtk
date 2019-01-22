@@ -947,7 +947,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 		if (WlanDmaFatalErr) {
 			if (!fgIsResetting)
-				glDoChipReset();
+				GL_RESET_TRIGGER(GlueInfo->prAdapter, RST_FLAG_CHIP_RESET);
 			return FALSE;
 		}
 		HIF_DBG(("[WiFi/HIF] DMA RX OK!\n"));
@@ -1161,7 +1161,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 
 		if (WlanDmaFatalErr) {
 			if (!fgIsResetting)
-				glDoChipReset();
+				GL_RESET_TRIGGER(GlueInfo->prAdapter, RST_FLAG_CHIP_RESET);
 			return FALSE;
 		}
 		HIF_DBG_TX(("[WiFi/HIF] DMA TX OK!\n"));

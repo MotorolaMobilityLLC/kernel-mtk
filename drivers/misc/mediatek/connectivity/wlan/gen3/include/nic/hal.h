@@ -82,7 +82,7 @@ do { \
 			fgIsBusAccessFailed = TRUE; \
 			DBGLOG(HAL, ERROR, "HAL_MCR_RD access fail! 0x%x: 0x%x\n", \
 				(UINT_32) (_u4Offset), *((PUINT_32) (_pu4Value))); \
-			glResetTrigger(_prAdapter); \
+			GL_RESET_TRIGGER(_prAdapter, RST_FLAG_CHIP_RESET); \
 		} \
 	} else { \
 		DBGLOG(HAL, WARN, "ignore HAL_MCR_RD access! 0x%x\n", \
@@ -104,7 +104,7 @@ do { \
 			fgIsBusAccessFailed = TRUE; \
 			DBGLOG(HAL, ERROR, "HAL_MCR_WR access fail! 0x%x: 0x%x\n", \
 				(UINT_32) (_u4Offset), (UINT_32) (_u4Value)); \
-			glResetTrigger(_prAdapter); \
+			GL_RESET_TRIGGER(_prAdapter, RST_FLAG_CHIP_RESET); \
 		} \
 	} else { \
 		DBGLOG(HAL, WARN, "ignore HAL_MCR_WR access! 0x%x: 0x%x\n", \
@@ -128,7 +128,7 @@ do { \
 			fgIsBusAccessFailed = TRUE; \
 			DBGLOG(HAL, ERROR, "HAL_PORT_RD access fail! 0x%x\n", \
 				(UINT_32) (_u4Port)); \
-			glResetTrigger(_prAdapter); \
+			GL_RESET_TRIGGER(_prAdapter, RST_FLAG_CHIP_RESET); \
 			break; \
 		} \
 	} else { \
@@ -153,7 +153,7 @@ do { \
 			fgIsBusAccessFailed = TRUE; \
 			DBGLOG(HAL, ERROR, "HAL_PORT_WR access fail! 0x%x\n", \
 				(UINT_32) (_u4Port)); \
-			glResetTrigger(_prAdapter); \
+			GL_RESET_TRIGGER(_prAdapter, RST_FLAG_CHIP_RESET); \
 			break; \
 		} \
 	} else { \

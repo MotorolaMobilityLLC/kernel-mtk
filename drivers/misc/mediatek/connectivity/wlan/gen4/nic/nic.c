@@ -633,10 +633,8 @@ VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 	prAdapter->prGlueInfo->IsrAbnormalCnt++;
 
 	halProcessAbnormalInterrupt(prAdapter);
-#if CFG_CHIP_RESET_SUPPORT
 	glGetRstReason(RST_PROCESS_ABNORMAL_INT);
-	glResetTrigger(prAdapter, TRUE);
-#endif
+	GL_RESET_TRIGGER(prAdapter, RST_FLAG_DO_CORE_DUMP);
 }
 
 /*----------------------------------------------------------------------------*/
