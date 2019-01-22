@@ -32,7 +32,7 @@
 		bootargs = "console=tty0 console=ttyMT3,921600n1 \
 vmalloc=496M slub_max_order=0 slub_debug=OFZPU \
 androidboot.hardware=mt6771 \
-firmware_class.path=/vendor/firmware";
+firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	cpus {
