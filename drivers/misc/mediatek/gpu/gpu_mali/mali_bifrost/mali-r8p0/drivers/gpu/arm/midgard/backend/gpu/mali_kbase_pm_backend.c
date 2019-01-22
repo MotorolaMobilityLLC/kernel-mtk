@@ -102,7 +102,6 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
 					callbacks->power_runtime_off_callback;
 		kbdev->pm.backend.callback_power_runtime_idle =
 					callbacks->power_runtime_idle_callback;
-
 		kbdev->pm.backend.callback_mtk_power_suspend =
 					callbacks->mtk_power_suspend_callback;
 		kbdev->pm.backend.callback_mtk_power_resume =
@@ -117,7 +116,6 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
 		kbdev->pm.backend.callback_power_runtime_on = NULL;
 		kbdev->pm.backend.callback_power_runtime_off = NULL;
 		kbdev->pm.backend.callback_power_runtime_idle = NULL;
-
 		kbdev->pm.backend.callback_mtk_power_suspend = NULL;
 		kbdev->pm.backend.callback_mtk_power_resume = NULL;
 	}

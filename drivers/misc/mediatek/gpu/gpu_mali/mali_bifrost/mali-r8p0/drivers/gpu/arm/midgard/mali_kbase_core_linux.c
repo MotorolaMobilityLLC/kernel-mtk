@@ -4464,6 +4464,8 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	const struct list_head *dev_list;
 	int err = 0;
 
+	dev_info(&pdev->dev, "GPU start probing\n");
+
 #ifdef CONFIG_OF
 	err = kbase_platform_early_init();
 	if (err) {
@@ -4478,6 +4480,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		kbase_platform_device_remove(pdev);
 		return -ENOMEM;
 	}
+
 	kbdev->dev = &pdev->dev;
 	dev_set_drvdata(kbdev->dev, kbdev);
 
@@ -4750,6 +4753,8 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 
 	kbase_dev_nr++;
 
+	dev_info(kbdev->dev, "GPU is probed successfully\n");
+
 	return err;
 }
 
@@ -4915,8 +4920,8 @@ static const struct dev_pm_ops kbase_pm_ops = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id kbase_dt_ids[] = {
-	{ .compatible = "arm,malit6xx" },
 	{ .compatible = "arm,mali-midgard" },
+	{ .compatible = "arm,mali-bifrost" },
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, kbase_dt_ids);
