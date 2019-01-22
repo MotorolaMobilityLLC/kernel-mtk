@@ -174,7 +174,7 @@ void __attribute__((weak)) idle_refcnt_dec(void)
 
 #endif
 
-static bool idle_force_vcore_lp_mode;
+static int idle_force_vcore_lp_mode;
 static bool idle_by_pass_secure_cg;
 static unsigned int idle_block_mask[NR_TYPES][NF_CG_STA_RECORD];
 static bool clkmux_cond[NR_TYPES];
@@ -278,10 +278,20 @@ static unsigned int check_and_update_vcore_lp_mode_cond(int type)
 
 	clkmux_cond[type] = mtk_idle_check_clkmux(type, clkmux_block_mask);
 
-	op_cond |=
-		idle_force_vcore_lp_mode ?
-		DEEPIDLE_OPT_VCORE_LP_MODE :
-		(clkmux_cond[type] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0);
+	switch (idle_force_vcore_lp_mode) {
+	case 0:
+		/* by clkmux check */
+		op_cond |= (clkmux_cond[type] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0);
+		break;
+	case 1:
+		/* enter LP mode */
+		op_cond |= DEEPIDLE_OPT_VCORE_LP_MODE;
+		break;
+	case 2:
+		/* no enter LP mode */
+		op_cond = (op_cond & ~DEEPIDLE_OPT_VCORE_LP_MODE);
+		break;
+	}
 
 	return op_cond;
 }
@@ -1438,7 +1448,7 @@ static ssize_t idle_state_write(struct file *filp,
 		} else if (!strcmp(cmd, "bypass_secure_cg")) {
 			idle_by_pass_secure_cg = param;
 		} else if (!strcmp(cmd, "force_vcore_lp_mode")) {
-			idle_force_vcore_lp_mode = !!param;
+			idle_force_vcore_lp_mode = param;
 		}
 		return count;
 	}
