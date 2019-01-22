@@ -2091,3 +2091,9 @@ static inline void account_reset_rq(struct rq *rq)
 #ifdef CONFIG_MTK_SCHED_INTEROP
 extern bool is_rt_throttle(int cpu);
 #endif
+
+#ifdef CONFIG_MACH_MT6771
+#define jump_step(idx, nr, st) { *st = 1; }
+#else
+#define jump_step(idx, nr, st) { *st = (idx < nr/3) ? 2 : 1; }
+#endif

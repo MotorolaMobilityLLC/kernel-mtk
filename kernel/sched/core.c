@@ -3049,17 +3049,14 @@ static void sched_freq_tick(int cpu)
 			const struct sched_group_energy *const sge = cpu_core_energy(cpu);
 			int nr_cap_states = sge->nr_cap_states;
 			int idx, tmp_idx;
-			int opp_jump_step;
+			int opp_jump_step = 1;
 
 			for (idx = 0; idx < nr_cap_states; idx++) {
 				if (sge->cap_states[idx].cap > capacity_curr+3)
 					break;
 			}
 
-			if (idx < nr_cap_states/3)
-				opp_jump_step = 2; /* far step */
-			else
-				opp_jump_step = 1; /* near step */
+			jump_step(idx, nr_cap_states, &opp_jump_step);
 
 			tmp_idx = idx + (opp_jump_step - 1);
 
