@@ -211,6 +211,10 @@
 #include "tdls.h"
 #endif
 
+#if CFG_SUPPORT_QA_TOOL
+#include "gl_qa_agent.h"
+#endif
+
 extern BOOLEAN fgIsResetting;
 
 /*******************************************************************************

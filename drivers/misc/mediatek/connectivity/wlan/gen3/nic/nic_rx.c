@@ -2315,11 +2315,15 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			PARAM_CUSTOM_MEM_DUMP_STRUCT_T rMemDumpInfo;
 			UINT_32 u4QueryInfo;
 
+			DBGLOG(RFTEST, INFO, "EVENT_ID_ICAP_DONE  <-----\n");
+
 			prEventIcapStatus = (P_EVENT_ICAP_STATUS_T) (prEvent->aucBuffer);
 
 			rMemDumpInfo.u4Address = prEventIcapStatus->u4StartAddress;
 			rMemDumpInfo.u4Length = prEventIcapStatus->u4IcapSieze;
-
+#if CFG_SUPPORT_QA_TOOL
+			rMemDumpInfo.u4IcapContent = prEventIcapStatus->u4IcapContent;
+#endif /* CFG_SUPPORT_QA_TOOL */
 			wlanoidQueryMemDump(prAdapter, &rMemDumpInfo, sizeof(rMemDumpInfo), &u4QueryInfo);
 
 		}

@@ -131,6 +131,20 @@ wlanSendSetQueryCmd(IN P_ADAPTER_T prAdapter,
 		    UINT_32 u4SetQueryInfoLen,
 		    PUINT_8 pucInfoBuffer, OUT PVOID pvSetQueryBuffer, IN UINT_32 u4SetQueryBufferLen);
 
+#if CFG_SUPPORT_TX_BF
+WLAN_STATUS
+wlanSendSetQueryExtCmd(IN P_ADAPTER_T prAdapter,
+		       UINT_8 ucCID,
+		       UINT_8 ucExtCID,
+		       BOOLEAN fgSetQuery,
+		       BOOLEAN fgNeedResp,
+		       BOOLEAN fgIsOid,
+		       PFN_CMD_DONE_HANDLER pfCmdDoneHandler,
+		       PFN_CMD_TIMEOUT_HANDLER pfCmdTimeoutHandler,
+		       UINT_32 u4SetQueryInfoLen,
+		       PUINT_8 pucInfoBuffer, OUT PVOID pvSetQueryBuffer, IN UINT_32 u4SetQueryBufferLen);
+#endif
+
 VOID cmdBufDumpCmdQueue(P_QUE_T prQueue, CHAR *queName);
 #if (CFG_SUPPORT_TRACE_TC4 == 1)
 VOID wlanDebugTC4Init(VOID);

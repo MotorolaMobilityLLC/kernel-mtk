@@ -59,6 +59,11 @@
 #define IOCTL_SET_DRIVER                (SIOCIWFIRSTPRIV + 14)
 #define IOCTL_GET_DRIVER                (SIOCIWFIRSTPRIV + 15)
 
+#if CFG_SUPPORT_QA_TOOL
+#define IOCTL_QA_TOOL_DAEMON            (SIOCIWFIRSTPRIV + 16)
+#define IOCTL_IWPRIV_ATE                (SIOCIWFIRSTPRIV + 17)
+#endif
+
 #define PRIV_CMD_REG_DOMAIN             0
 #define PRIV_CMD_BEACON_PERIOD          1
 #define PRIV_CMD_ADHOC_MODE             2
@@ -105,6 +110,10 @@
 #define PRIV_CMD_DUMP_MEM               27
 
 #define PRIV_CMD_P2P_MODE               28
+
+#if CFG_SUPPORT_QA_TOOL
+#define PRIV_QACMD_SET                  29
+#endif
 
 #define PRIV_CMD_MET_PROFILING          33
 /* 802.3 Objects (Ethernet) */
@@ -267,6 +276,12 @@ int priv_support_ioctl(IN struct net_device *prDev, IN OUT struct ifreq *prReq, 
 int priv_support_driver_cmd(IN struct net_device *prDev, IN OUT struct ifreq *prReq, IN int i4Cmd);
 
 INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN INT_32 i4TotalLen);
+
+#if CFG_SUPPORT_QA_TOOL
+int
+priv_ate_set(IN struct net_device *prNetDev,
+	     IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra);
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

@@ -93,6 +93,11 @@ static const struct iw_priv_args rIwPrivTable[] = {
 
 	{IOCTL_GET_DRIVER, IW_PRIV_TYPE_CHAR | 2000, IW_PRIV_TYPE_CHAR | 2000, "driver"},
 
+#if CFG_SUPPORT_QA_TOOL
+	/* added for ATE iwpriv Command */
+	{IOCTL_IWPRIV_ATE, IW_PRIV_TYPE_CHAR | 2000, 0, ""},
+#endif
+
 	/* sub-ioctl definitions */
 #if 0
 	{PRIV_CMD_REG_DOMAIN, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, "set_reg_domain"},
@@ -116,6 +121,9 @@ static const struct iw_priv_args rIwPrivTable[] = {
 	{PRIV_CMD_ACCESS_MCR, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_mcr"},
 	{PRIV_CMD_ACCESS_MCR, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
 	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, "get_mcr"},
+#endif
+#if CFG_SUPPORT_QA_TOOL
+	{PRIV_QACMD_SET, IW_PRIV_TYPE_CHAR | 2000, 0, "set"},
 #endif
 	{PRIV_CMD_SW_CTRL, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, "set_sw_ctrl"},
 	{PRIV_CMD_SW_CTRL, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,
@@ -162,7 +170,10 @@ static const iw_handler rIwPrivHandler[] = {
 	[IOCTL_SET_STRUCT_FOR_EM - SIOCIWFIRSTPRIV] = priv_set_struct,
 	[IOCTL_SET_INTS - SIOCIWFIRSTPRIV] = priv_set_ints,
 	[IOCTL_GET_INTS - SIOCIWFIRSTPRIV] = priv_get_ints,
-	[IOCTL_GET_DRIVER - SIOCIWFIRSTPRIV] = priv_set_driver
+	[IOCTL_GET_DRIVER - SIOCIWFIRSTPRIV] = priv_set_driver,
+#if CFG_SUPPORT_QA_TOOL
+	[IOCTL_IWPRIV_ATE - SIOCIWFIRSTPRIV] = priv_ate_set
+#endif
 };
 
 const struct iw_handler_def wext_handler_def = {
