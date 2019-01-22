@@ -104,6 +104,15 @@ config MTK_BTCVSD_ALSA
 	  the function for transferring/receiving
 	  BT encoded data to/from BT firmware.
 
+config MTK_HDMI_TDM
+	bool "MTK HDMI MULTI CHANNEL "
+	default n
+	help
+	  If you say Y, enable MTK_HDMI_TDM.
+	  This is for HDMI TDM function.
+	  This setting help you to enable
+	  HDMI multi channel function with TDM hardware.
+
 config MTK_SND_SOC_NEW_ARCH
 	bool "Support new audio architecture"
 	help

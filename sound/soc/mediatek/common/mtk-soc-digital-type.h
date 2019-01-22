@@ -231,7 +231,7 @@ typedef enum {
 	Soc_Aud_InterConnectionOutput_Num_Output
 } Soc_Aud_InterConnectionOutput;
 
-#ifdef _NON_COMMON_FEATURE_READY
+#ifdef CONFIG_MTK_HDMI_TDM
 typedef enum {
 	Soc_Aud_InterConnectionInput_I30,
 	Soc_Aud_InterConnectionInput_I31,

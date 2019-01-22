@@ -320,7 +320,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_VOICE_MD1DAI_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
-#ifdef _NON_COMMON_FEATURE_READY
+#ifdef CONFIG_MTK_HDMI_TDM
 	{
 		.name = "HDMI_OUT",
 		.stream_name = MT_SOC_HDMI_STREAM_NAME,
