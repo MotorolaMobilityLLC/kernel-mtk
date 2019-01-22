@@ -1653,7 +1653,7 @@ static long akm09915_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 	unsigned char sense_info[AKM_SENSOR_INFO_SIZE];
 	unsigned char sense_conf[AKM_SENSOR_CONF_SIZE];
 
-   MAGN_ERR("akm09915 cmd:0x%x\n", cmd); 
+   /* MAGN_ERR("akm09915 cmd:0x%x\n", cmd); */
 	switch (cmd) {
 	case ECS_IOCTL_WRITE:
 		/* AKMFUNC("ECS_IOCTL_WRITE"); */
