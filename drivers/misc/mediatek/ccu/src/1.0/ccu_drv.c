@@ -274,12 +274,14 @@ int ccu_create_user(ccu_user_t **user)
 
 int ccu_push_command_to_queue(ccu_user_t *user, ccu_cmd_st *cmd)
 {
-	if (!user) {
+	LOG_DBG("+:%s\n", __func__);
+	/*Accuire user_mutex to ensure drv. release func. concurrency*/
+	mutex_lock(&g_ccu_device->user_mutex);
+	if (user == NULL) {
 		LOG_ERR("empty user");
 		return -1;
 	}
-
-	LOG_DBG("+:%s\n", __func__);
+	mutex_unlock(&g_ccu_device->user_mutex);
 
 	mutex_lock(&user->data_mutex);
 	list_add_tail(vlist_link(cmd, ccu_cmd_st), &user->enque_ccu_cmd_list);
@@ -330,6 +332,15 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
 {
 	int ret;
 	ccu_cmd_st *cmd;
+	LOG_DBG("+:%s\n", __func__);
+
+	/*Accuire user_mutex to ensure drv. release func. concurrency*/
+	mutex_lock(&g_ccu_device->user_mutex);
+	if (user == NULL) {
+		LOG_ERR("empty user");
+		return -1;
+	}
+	mutex_unlock(&g_ccu_device->user_mutex);
 
 	/* wait until condition is true */
 	ret = wait_event_interruptible_timeout(user->deque_wait,
@@ -819,6 +830,8 @@ static int ccu_release(struct inode *inode, struct file *flip)
 	LOG_INF_MUST("ccu_release +");
 
 	ccu_delete_user(user);
+
+	LOG_INF_MUST("+:%s, delete_user done.\n", __func__);
 
 	ccu_force_powerdown();
 
