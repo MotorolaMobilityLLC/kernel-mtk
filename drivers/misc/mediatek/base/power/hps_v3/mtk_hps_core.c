@@ -373,7 +373,7 @@ ACAO_HPS_START:
 	/*Debug message dump*/
 	for (i = 0 ; i < 8 ; i++) {
 
-		if (cpu >= setup_max_cpus)
+		if (i >= setup_max_cpus)
 			break;
 
 		if (cpumask_test_cpu(i, hps_ctxt.online_core))
