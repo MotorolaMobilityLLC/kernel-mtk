@@ -1357,8 +1357,11 @@ static const struct dev_pm_ops tz_pm_ops = {
 static struct class *pTzClass;
 static struct device *pTzDevice;
 
-#ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
+#ifdef CONFIG_CMA
 static struct cma *tz_cma;
+#endif  /* CONFIG_CMA */
+
+#ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
 static struct page *secure_pages;
 static size_t secure_size;
 
@@ -1691,7 +1694,7 @@ static struct platform_driver tz_driver = {
 };
 
 /* CMA */
-#ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
+#ifdef CONFIG_CMA
 #include <linux/of_address.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/of_fdt.h>
@@ -1724,7 +1727,7 @@ static int __init rmem_tz_sec_setup(struct reserved_mem *rmem)
 	return 0;
 }
 RESERVEDMEM_OF_DECLARE(tz_sec, "shared-secure-pool", rmem_tz_sec_setup);
-#endif /* CONFIG_MTEE_CMA_SECURE_MEMORY */
+#endif  /* CONFIG_CMA */
 
 /******************************************************************************
  * register_tz_driver
