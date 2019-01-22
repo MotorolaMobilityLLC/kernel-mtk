@@ -409,7 +409,8 @@ static int ccif_check_flow_ctrl(struct ccci_modem *md, struct md_ccif_queue *que
 		buf_size = rx_buf->rx_control.write - rx_buf->rx_control.read;
 		if (buf_size < 0)
 			buf_size += rx_buf->rx_control.length;
-		if (buf_size <= rx_buf->rx_control.length / (2 << (queue->resume_cnt * 2))) {
+		if (buf_size <= rx_buf->rx_control.length / (2 << (queue->resume_cnt * 2)) &&
+			queue->resume_cnt < 3) {
 			if (md->md_state == READY) {
 				ret = ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_FLOW_CTRL_MSG, queue->index, 0);
 				if (ret < 0)
@@ -562,7 +563,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 			ccci_channel_update_packet_counter(md, &ccci_hdr);
 
 			if (queue->debug_id) {
-				CCCI_NORMAL_LOG(md->index, TAG, "Q%d Rx recv req ret=%d\n", queue->index, ret);
+				CCCI_REPEAT_LOG(md->index, TAG, "Q%d Rx recv req ret=%d\n", queue->index, ret);
 				queue->debug_id = 0;
 			}
 			spin_lock_irqsave(&queue->rx_lock, flags);
@@ -587,7 +588,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 
 			if (queue->debug_id == 0) {
 				queue->debug_id = 1;
-				CCCI_ERROR_LOG(md->index, TAG, "Q%d Rx err, ret = 0x%x\n", queue->index, ret);
+				CCCI_REPEAT_LOG(md->index, TAG, "Q%d Rx err, ret = 0x%x\n", queue->index, ret);
 			}
 
 			goto OUT;
@@ -1371,8 +1372,9 @@ static int md_ccif_op_reset_pccif(struct ccci_modem *md)
 static void md_ccif_dump_queue_history(struct ccci_modem *md, unsigned int qno)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+	u32 pending = mt_irq_get_pending(md_ctrl->ccif_irq_id);
 
-	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump md_ctrl->channel_id 0x%lx\n", md_ctrl->channel_id);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump md_ctrl->channel_id 0x%lx %d\n", md_ctrl->channel_id, pending);
 	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF Queue%d Control\n", qno);
 	CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d TX: w=%d, r=%d, len=%d\n",
 		qno, md_ctrl->txq[qno].ringbuf->tx_control.write,
@@ -1406,7 +1408,7 @@ static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *
 		dump_c2k_register(md, 2);
 
 	if (flag & DUMP_FLAG_IRQ_STATUS) {
-		CCCI_INF_MSG(md->index, KERN, "Dump AP CCIF IRQ status\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "Dump AP CCIF IRQ status\n");
 		mt_irq_dump_status(md_ctrl->ccif_irq_id);
 	}
 	if (flag & DUMP_FLAG_QUEUE_0)
