@@ -315,6 +315,8 @@ static inline int check_hal_implemented(void *x)
 
 static int rtfled_check_hal_implement(struct rt_fled_hal *hal)
 {
+	int rc = 0;
+
 	if (HAL_NOT_IMPLEMENTED(fled_set_torch_current))
 		hal->fled_set_torch_current = rtled_impl_set_torch_current;
 	if (HAL_NOT_IMPLEMENTED(fled_set_strobe_current))
@@ -337,24 +339,28 @@ static int rtfled_check_hal_implement(struct rt_fled_hal *hal)
 		hal->fled_get_strobe_timeout = rtled_impl_get_strobe_timeout;
 	if (HAL_NOT_IMPLEMENTED(fled_get_is_ready))
 		hal->fled_get_is_ready = rtled_impl_get_is_ready;
-	check_hal_implemented(hal->fled_set_mode);
-	check_hal_implemented(hal->fled_get_mode);
-	check_hal_implemented(hal->fled_strobe);
-	check_hal_implemented(hal->fled_troch_current_list);
-	check_hal_implemented(hal->fled_strobe_current_list);
-	check_hal_implemented(hal->fled_timeout_level_list);
-	check_hal_implemented(hal->fled_lv_protection_list);
-	check_hal_implemented(hal->fled_strobe_timeout_list);
-	check_hal_implemented(hal->fled_set_torch_current_sel);
-	check_hal_implemented(hal->fled_set_strobe_current_sel);
-	check_hal_implemented(hal->fled_set_timeout_level_sel);
-	check_hal_implemented(hal->fled_set_lv_protection_sel);
-	check_hal_implemented(hal->fled_set_strobe_timeout_sel);
-	check_hal_implemented(hal->fled_get_torch_current_sel);
-	check_hal_implemented(hal->fled_get_strobe_current_sel);
-	check_hal_implemented(hal->fled_get_timeout_level_sel);
-	check_hal_implemented(hal->fled_get_lv_protection_sel);
-	check_hal_implemented(hal->fled_get_strobe_timeout_sel);
+	rc |= check_hal_implemented(hal->fled_set_mode);
+	rc |= check_hal_implemented(hal->fled_get_mode);
+	rc |= check_hal_implemented(hal->fled_strobe);
+	rc |= check_hal_implemented(hal->fled_troch_current_list);
+	rc |= check_hal_implemented(hal->fled_strobe_current_list);
+	rc |= check_hal_implemented(hal->fled_timeout_level_list);
+	rc |= check_hal_implemented(hal->fled_lv_protection_list);
+	rc |= check_hal_implemented(hal->fled_strobe_timeout_list);
+	rc |= check_hal_implemented(hal->fled_set_torch_current_sel);
+	rc |= check_hal_implemented(hal->fled_set_strobe_current_sel);
+	rc |= check_hal_implemented(hal->fled_set_timeout_level_sel);
+	rc |= check_hal_implemented(hal->fled_set_lv_protection_sel);
+	rc |= check_hal_implemented(hal->fled_set_strobe_timeout_sel);
+	rc |= check_hal_implemented(hal->fled_get_torch_current_sel);
+	rc |= check_hal_implemented(hal->fled_get_strobe_current_sel);
+	rc |= check_hal_implemented(hal->fled_get_timeout_level_sel);
+	rc |= check_hal_implemented(hal->fled_get_lv_protection_sel);
+	rc |= check_hal_implemented(hal->fled_get_strobe_timeout_sel);
+
+	if (rc != 0)
+		RTFLED_WARN("check_hal_implemented have NULL item.\n");
+
 	return 0;
 }
 

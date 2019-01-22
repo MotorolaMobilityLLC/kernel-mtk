@@ -39,7 +39,7 @@ static ssize_t flashlight_show_name(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%s\n",
+	return scnprintf(buf, PAGE_SIZE, "%s\n",
 		       flashlight_dev->props.alias_name ?
 		       flashlight_dev->props.alias_name : "anonymous");
 }
@@ -49,7 +49,7 @@ static ssize_t flashlight_show_type(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%s\n",
+	return scnprintf(buf, PAGE_SIZE, "%s\n",
 		       flashlight_type_string[flashlight_dev->props.type]);
 }
 
@@ -58,7 +58,7 @@ static ssize_t flashlight_show_mode(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%s\n",
+	return scnprintf(buf, PAGE_SIZE, "%s\n",
 		       flashlight_mode_string[flashlight_dev->props.mode]);
 }
 
@@ -67,7 +67,7 @@ static ssize_t flashlight_show_torch_max_brightness(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%d\n",
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
 		       flashlight_dev->props.torch_max_brightness);
 }
 
@@ -76,7 +76,7 @@ static ssize_t flashlight_show_strobe_max_brightness(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%d\n",
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
 		       flashlight_dev->props.strobe_max_brightness);
 }
 
@@ -85,7 +85,7 @@ static ssize_t flashlight_show_color_temperature(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%d\n",
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
 		       flashlight_dev->props.color_temperature);
 }
 
@@ -94,7 +94,7 @@ static ssize_t flashlight_show_strobe_delay(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%d\n",
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
 		       flashlight_dev->props.strobe_delay);
 }
 
@@ -119,7 +119,7 @@ static ssize_t flashlight_show_strobe_timeout(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%d\n",
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
 		       flashlight_dev->props.strobe_timeout);
 }
 
@@ -161,7 +161,7 @@ static ssize_t flashlight_show_torch_brightness(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%d\n",
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
 		       flashlight_dev->props.torch_brightness);
 }
 
@@ -201,7 +201,7 @@ static ssize_t flashlight_show_strobe_brightness(struct device *dev,
 {
 	struct flashlight_device *flashlight_dev = to_flashlight_device(dev);
 
-	return sprintf(buf, "%d\n",
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
 		       flashlight_dev->props.strobe_brightness);
 }
 
