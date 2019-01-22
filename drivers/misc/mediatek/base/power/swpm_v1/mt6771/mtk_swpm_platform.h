@@ -41,7 +41,7 @@ enum ddr_freq {
 	DDR_800,
 	DDR_1200,
 	DDR_1600,
-	DDR_1866,
+	DDR_1800,
 
 	NR_DDR_FREQ
 };
@@ -64,8 +64,8 @@ enum dram_pwr_type {
 };
 
 struct aphy_pwr {
-	unsigned short bw[4];
-	unsigned short coef[4];
+	unsigned short bw[5];
+	unsigned short coef[5];
 };
 
 /* unit: uW / V^2 */
@@ -99,7 +99,7 @@ struct swpm_rec_data {
 	unsigned long long max_latency[NR_PROFILE_POINT];
 	unsigned long long prof_cnt[NR_PROFILE_POINT];
 
-	/* 2(short) * 4(pwr_type) * 68 = 544 bytes */
+	/* 2(short) * 4(pwr_type) * 84 = 672 bytes */
 	struct aphy_pwr_data aphy_pwr_tbl[NR_APHY_PWR_TYPE];
 
 	/* 4(int) * 3(pwr_type) * 7 = 84 bytes */
@@ -108,7 +108,7 @@ struct swpm_rec_data {
 	/* reserv for emi_idx in SSPM = 1024 bytes */
 	unsigned char reserv[1024];
 
-	/* remaining size = 276 bytes */
+	/* remaining size = 148 bytes */
 };
 
 extern struct swpm_rec_data *swpm_info_ref;
