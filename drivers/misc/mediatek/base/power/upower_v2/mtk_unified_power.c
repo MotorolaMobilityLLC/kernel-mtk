@@ -397,7 +397,7 @@ static int __init upower_get_tbl_ref(void)
 {
 #ifdef UPOWER_NOT_READY
 	return 0;
-#endif
+#else
 	/* get raw upower table and target upower table location */
 	get_original_table();
 
@@ -421,6 +421,7 @@ static int __init upower_get_tbl_ref(void)
 	upower_debug("upower tbl new location([0](%p)\n", upower_tbl_ref);
 
 	return 0;
+#endif
 }
 
 #ifdef UPOWER_PROFILE_API_TIME
