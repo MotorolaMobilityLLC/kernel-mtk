@@ -1238,7 +1238,6 @@ static inline void _fastpath_in_nat(unsigned char *offset2, struct fp_desc *desc
 		desc->flag |= DESC_FLAG_UNKNOWN_ETYPE;
 		return;
 	}
-	panic("Should not reach here!! %s:%d\n", __FILE__, __LINE__);
 }
 
 static inline int fastpath_in_internal(int iface, struct sk_buff *skb)
