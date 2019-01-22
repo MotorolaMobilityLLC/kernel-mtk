@@ -2823,8 +2823,12 @@ INT32 mtk_wcn_stp_send_data_raw(const PUINT8 buffer, const UINT32 length, const 
 		return length;
 	}
 
-	STP_DBG_FUNC("mtk_wcn_stp_send_data_raw, type = %d, data = %x %x %x %x %x %x ", type,
-		     buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
+	if (length >= 6)
+		STP_DBG_FUNC("mtk_wcn_stp_send_data_raw, type = %d data = %x %x %x %x %x %x ", type,
+				buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
+	else if (length > 0)
+		STP_DBG_FUNC("mtk_wcn_stp_send_data_raw, type = %d data = %x", type, buffer[0]);
+
 	/* remember tx type, forward following rx to this type */
 	STP_SET_PENDING_TYPE(stp_core_ctx, type);
 
