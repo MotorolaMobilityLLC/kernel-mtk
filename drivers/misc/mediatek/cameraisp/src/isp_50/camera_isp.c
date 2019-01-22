@@ -1621,7 +1621,6 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 #ifdef CONFIG_MTK_QOS_SUPPORT
 static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
 {
-	#define margin (110/100)
 	#define bit 8
 
 	unsigned int bw_cal = 0;
@@ -1635,7 +1634,6 @@ static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
 	}
 	case 1: {
 		bw_cal = (G_PM_QOS[module].bw_sum * G_PM_QOS[module].fps) / 1000000; /* MByte/s */
-		bw_cal = bw_cal * margin;/* MByte/s */
 		break;
 	}
 	default:
