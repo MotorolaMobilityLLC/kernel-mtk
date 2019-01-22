@@ -983,6 +983,7 @@ int rpmb_req_ioctl_read_data(struct rpmb_ioc_param *param)
 	u8 nonce[RPMB_SZ_NONCE] = {0};
 	u8 hmac[RPMB_SZ_MAC];
 	u8 *dataBuf, *dataBuf_start, *data_for_hmac;
+	u32 size_for_hmac;
 	int i, ret = 0;
 
 	MSG(DBG_INFO, "%s start!!!\n", __func__);
@@ -1061,6 +1062,9 @@ int rpmb_req_ioctl_read_data(struct rpmb_ioc_param *param)
 		 * Retrieve every data frame one by one.
 		 */
 
+		/* size for hmac calculation: 512 - 228 = 284 */
+		size_for_hmac = sizeof(struct rpmb_frame) - offsetof(struct rpmb_frame, data);
+
 		for (iCnt = 0; iCnt < tran_blkcnt; iCnt++) {
 
 			if (left_size >= RPMB_SZ_DATA)
@@ -1070,13 +1074,17 @@ int rpmb_req_ioctl_read_data(struct rpmb_ioc_param *param)
 
 			/*
 			 * dataBuf used for hmac calculation. we need to aggregate each block's data till to type field.
-			 * each block has 284 bytes need to aggregate.
+			 * each block has 284 bytes (size_for_hmac) need aggregation.
 			*/
 			data_for_hmac = data.ocmd.frames[iCnt].data;
 
-			memcpy(dataBuf, data_for_hmac, 284);
+			/* copy data part */
+			memcpy(dataBuf, data_for_hmac, RPMB_SZ_DATA);
 
-			dataBuf = dataBuf + 284;
+			/* copy left part */
+			memcpy(dataBuf + RPMB_SZ_DATA, data_for_hmac + RPMB_SZ_DATA, size_for_hmac - RPMB_SZ_DATA);
+
+			dataBuf = dataBuf + size_for_hmac;
 
 			/*
 			 * Sorry, I shouldn't copy read data to user's buffer now, it should be later
@@ -1094,7 +1102,7 @@ int rpmb_req_ioctl_read_data(struct rpmb_ioc_param *param)
 		/*
 		 * Authenticate response read data frame.
 		 */
-		hmac_sha256(param->key, 32, dataBuf_start, 284 * tran_blkcnt, hmac);
+		hmac_sha256(param->key, 32, dataBuf_start, size_for_hmac * tran_blkcnt, hmac);
 
 		if (memcmp(hmac, data.ocmd.frames[iCnt].key_mac, RPMB_SZ_MAC) != 0) {
 			MSG(ERR, "%s, hmac compare error!!!\n", __func__);
