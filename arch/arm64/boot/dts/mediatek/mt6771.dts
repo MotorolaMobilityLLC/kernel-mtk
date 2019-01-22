@@ -1688,6 +1688,24 @@
 		compatible = "mediatek,pmic-accdet";
 	};
 
+	mt6358_gauge {
+		compatible = "mediatek,mt6358_gauge";
+		gauge_name = "gauge";
+		alias_name = "MT6358";
+	};
+
+	gauge_timer {
+		compatible = "mediatek,gauge_timer_service";
+	};
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
+		#include "bat_setting/mt6771_battery_prop_ext.dtsi"
+	#else
+		#include "bat_setting/mt6771_battery_prop.dtsi"
+	#endif
+#endif
+
 	mdp_rdma0: mdp_rdma0@14001000 {
 		compatible = "mediatek,mdp_rdma0";
 		reg = <0 0x14001000 0 0x1000>;
