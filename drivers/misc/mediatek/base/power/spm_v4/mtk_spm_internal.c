@@ -368,4 +368,27 @@ u32 _spm_get_wake_period(int pwake_time, unsigned int last_wr)
 	return period;
 }
 
+#if defined(CONFIG_MACH_MT6771)
+bool is_big_buck_ctrl_by_spm(void)
+{
+	/* TODO */
+	/* check mcdi status with big_buck */
+	/* check hotplug status with big_buck */
+	return false;
+}
+#endif
+
+void __sync_big_buck_ctrl_pcm_flag(u32 *flag)
+{
+#if defined(CONFIG_MACH_MT6771)
+	if (is_big_buck_ctrl_by_spm()) {
+		*flag |= (SPM_FLAG1_BIG_BUCK_OFF_ENABLE |
+					SPM_FLAG1_BIG_BUCK_ON_ENABLE);
+	} else {
+		*flag &= ~(SPM_FLAG1_BIG_BUCK_OFF_ENABLE |
+					SPM_FLAG1_BIG_BUCK_ON_ENABLE);
+	}
+#endif
+}
+
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");
