@@ -51,7 +51,7 @@ pr_debug("[Thermal/TC/fps]" fmt, ##args)
 #define mtk_cooler_fps_dprintk(fmt, args...) \
 do { \
 	if (cl_fps_klog_on == 1) \
-		pr_debug("[Thermal/TC/fps]" fmt, ##args); \
+		pr_err("[Thermal/TC/fps]" fmt, ##args); \
 } while (0)
 
 #define MAX_NUM_INSTANCE_MTK_COOLER_FPS  4
