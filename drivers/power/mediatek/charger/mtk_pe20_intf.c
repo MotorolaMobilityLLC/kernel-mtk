@@ -128,9 +128,7 @@ static int pe20_leave(struct charger_manager *pinfo)
 static int pe20_check_leave_status(struct charger_manager *pinfo)
 {
 	int ret = 0;
-	int vchr = 0;
-	bool bif_exist = false;
-	u32 vbat = 0, cv = 0, ichg = 0;
+	int  ichg = 0, vchr = 0;
 	bool current_sign;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
@@ -151,28 +149,8 @@ static int pe20_check_leave_status(struct charger_manager *pinfo)
 	ichg = battery_meter_get_battery_current(); /* 0.1 mA */
 	ichg /= 10; /* mA */
 	current_sign = battery_meter_get_battery_current_sign();
-	bif_exist = pmic_is_bif_exist();
 
-	/* BIF exists, check CV & VBAT */
-	if (bif_exist) {
-		ret = mtk_get_dynamic_cv(pinfo, &cv);
-		cv = cv / 1000;
-		vbat = pmic_get_battery_voltage();
-		if (ret == 0) {
-			if (vbat >= cv && current_sign &&
-			    ichg < pinfo->data.pe20_ichg_level_threshold) {
-				ret = pe20_leave(pinfo);
-				if (ret < 0 || pe20->is_connect)
-					goto _err;
-				pr_err("%s: OK, vbat,cv = (%d,%d), stop PE+20\n",
-					__func__, vbat, cv);
-			}
-			return ret;
-		}
-		pr_err("%s: Get CV failed, use SOC\n", __func__);
-	}
-
-	/* BIF does not exist, check SOC */
+	/* Check SOC & Ichg */
 	if ((get_soc() / 100) > pinfo->data.ta_stop_battery_soc &&
 	    current_sign && ichg < pinfo->data.pe20_ichg_level_threshold) {
 		ret = pe20_leave(pinfo);
@@ -494,21 +472,21 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	    mt_get_charger_type() != STANDARD_CHARGER ||
 	    (get_soc() / 100) < pinfo->data.ta_start_battery_soc ||
 	    (get_soc() / 100) >= pinfo->data.ta_stop_battery_soc)
-		goto _err;
+		goto _out;
 
 	ret = pe20_init_ta(pinfo);
 	if (ret < 0)
-		goto _err;
+		goto _out;
 
 	ret = mtk_pe20_reset_ta_vchr(pinfo);
 	if (ret < 0)
-		goto _err;
+		goto _out;
 
 	mtk_pe20_check_cable_impedance(pinfo);
 
 	ret = pe20_detect_ta(pinfo);
 	if (ret < 0)
-		goto _err;
+		goto _out;
 
 	pe20->to_check_chr_type = false;
 
@@ -518,7 +496,7 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	mutex_unlock(&pe20->access_lock);
 
 	return ret;
-_err:
+_out:
 
 	pr_err("%s: stop, SOC = (%d, %d, %d), to_check_chr_type = %d, chr_type = %d, ret = %d\n",
 		__func__, get_soc() / 100, pinfo->data.ta_start_battery_soc,
