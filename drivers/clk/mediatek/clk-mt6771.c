@@ -1335,6 +1335,47 @@ static const struct mtk_gate mfg_cfg_clks[] __initconst = {
 	GATE_MFG_CFG(MFGCFG_BG3D, "mfg_cfg_bg3d", "mfg_sel", 10)
 };
 
+static const struct mtk_gate_regs apmixed_cg_regs = {
+	.set_ofs = 0x20,
+	.clr_ofs = 0x20,
+	.sta_ofs = 0x20,
+};
+
+#define GATE_APMIXED(_id, _name, _parent, _shift) {	\
+		.id = _id,				\
+		.name = _name,				\
+		.parent_name = _parent,			\
+		.regs = &apmixed_cg_regs,		\
+		.shift = _shift,			\
+		.ops = &mtk_clk_gate_ops_inv,		\
+	}
+
+static const struct mtk_gate apmixed_clks[] __initconst = {
+	/* AUDIO0 */
+	GATE_APMIXED(APMIXED_SSUSB26M, "apmixed_ssusb26m", "f_f26m_ck",
+		4),
+	GATE_APMIXED(APMIXED_APPLL26M, "apmixed_appll26m", "f_f26m_ck",
+		5),
+	GATE_APMIXED(APMIXED_MIPIC0_26M, "apmixed_mipic026m", "f_f26m_ck",
+		6),
+	GATE_APMIXED(APMIXED_MDPLLGP26M, "apmixed_mdpll26m", "f_f26m_ck",
+		7),
+	GATE_APMIXED(APMIXED_MMSYS_F26M, "apmixed_mmsys26m", "f_f26m_ck",
+		8),
+	GATE_APMIXED(APMIXED_UFS26M, "apmixed_ufs26m", "f_f26m_ck",
+		9),
+	GATE_APMIXED(APMIXED_MIPIC1_26M, "apmixed_mipic126m", "f_f26m_ck",
+		11),
+	GATE_APMIXED(APMIXED_MEMPLL26M, "apmixed_mempll26m", "f_f26m_ck",
+		13),
+	GATE_APMIXED(APMIXED_CLKSQ_LVPLL_26M, "apmixed_lvpll26m", "f_f26m_ck",
+		14),
+	GATE_APMIXED(APMIXED_MIPID0_26M, "apmixed_mipid026m", "f_f26m_ck",
+		16),
+	GATE_APMIXED(APMIXED_MIPID1_26M, "apmixed_mipid126m", "f_f26m_ck",
+		17),
+};
+
 static const struct mtk_gate_regs audio0_cg_regs = {
 	.set_ofs = 0x0,
 	.clr_ofs = 0x0,
@@ -1927,6 +1968,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 
 	/* FIXME: add code for APMIXEDSYS */
 	mtk_clk_register_plls(node, plls, ARRAY_SIZE(plls), clk_data);
+	mtk_clk_register_gates(node, apmixed_clks, ARRAY_SIZE(apmixed_clks), clk_data);
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 
 	if (r)
