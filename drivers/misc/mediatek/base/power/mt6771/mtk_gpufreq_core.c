@@ -967,20 +967,21 @@ static int mt_gpufreq_opp_stress_test_proc_show(struct seq_file *m, void *v)
 static ssize_t mt_gpufreq_opp_stress_test_proc_write(struct file *file, const char __user *buffer,
 		size_t count, loff_t *data)
 {
-	char buf[32];
+	char buf[64];
+	char cmd[64];
 	int len = 0;
 	int value = 0;
-	int ret = 0;
+	int ret = -EFAULT;
 
-	ret = -EFAULT;
 	len = (count < (sizeof(buf) - 1)) ? count : (sizeof(buf) - 1);
 
 	if (copy_from_user(buf, buffer, len))
 		goto out;
 
-	buf[len] = '\0';
+	strcpy(cmd, buf);
+	cmd[len] = '\0';
 
-	if (!kstrtoint(buf, 0, &value)) {
+	if (!kstrtoint(cmd, 0, &value)) {
 		if (!value || !(value-1)) {
 			ret = 0;
 			g_opp_stress_test_state = value;
@@ -1015,8 +1016,9 @@ static ssize_t mt_gpufreq_power_limited_proc_write(struct file *file,
 		const char __user *buffer, size_t count, loff_t *data)
 {
 	char buf[64];
+	char cmd[64];
 	int len = 0;
-	int ret = 0;
+	int ret = -EFAULT;
 	int i;
 	int size;
 	unsigned int value = 0;
@@ -1036,21 +1038,21 @@ static ssize_t mt_gpufreq_power_limited_proc_write(struct file *file,
 		"thermal_protect_power",
 	};
 
-	ret = -EFAULT;
 	len = (count < (sizeof(buf) - 1)) ? count : (sizeof(buf) - 1);
 
 	if (copy_from_user(buf, buffer, len))
 		goto out;
 
-	buf[len] = '\0';
+	strcpy(cmd, buf);
+	cmd[len] = '\0';
 
 	size = ARRAY_SIZE(array);
 
 	for (i = 0; i < size; i++) {
-		if (strncmp(array[i], buf, MIN(strlen(array[i]), count)) == 0) {
+		if (strncmp(array[i], cmd, MIN(strlen(array[i]), count)) == 0) {
 			char cond_buf[64];
 			snprintf(cond_buf, sizeof(cond_buf), "%s %%u", array[i]);
-			if (sscanf(buf, cond_buf, &value) == 1) {
+			if (sscanf(cmd, cond_buf, &value) == 1) {
 				ret = 0;
 				if (strncmp(array[i], "pbm_limited_power", strlen(array[i])) == 0) {
 					mt_gpufreq_set_power_limit_by_pbm(value);
@@ -1130,21 +1132,22 @@ static int mt_gpufreq_opp_freq_proc_show(struct seq_file *m, void *v)
 static ssize_t mt_gpufreq_opp_freq_proc_write(struct file *file,
 		const char __user *buffer, size_t count, loff_t *data)
 {
-	char buf[32];
+	char buf[64];
+	char cmd[64];
 	int len = 0;
 	int value = 0;
 	int i = 0;
-	int ret = 0;
+	int ret = -EFAULT;
 
-	ret = -EFAULT;
 	len = (count < (sizeof(buf) - 1)) ? count : (sizeof(buf) - 1);
 
 	if (copy_from_user(buf, buffer, len))
 		goto out;
 
-	buf[len] = '\0';
+	strcpy(cmd, buf);
+	cmd[len] = '\0';
 
-	if (kstrtoint(buf, 0, &value) == 0) {
+	if (kstrtoint(cmd, 0, &value) == 0) {
 		if (value == 0) {
 			g_keep_opp_freq_state = false;
 		} else {
@@ -1183,20 +1186,21 @@ static int mt_gpufreq_volt_enable_proc_show(struct seq_file *m, void *v)
 static ssize_t mt_gpufreq_volt_enable_proc_write(struct file *file,
 		const char __user *buffer, size_t count, loff_t *data)
 {
-	char buf[32];
+	char buf[64];
+	char cmd[64];
 	int len = 0;
 	int value = 0;
-	int ret = 0;
+	int ret = -EFAULT;
 
-	ret = -EFAULT;
 	len = (count < (sizeof(buf) - 1)) ? count : (sizeof(buf) - 1);
 
 	if (copy_from_user(buf, buffer, len))
 		goto out;
 
-	buf[len] = '\0';
+	strcpy(cmd, buf);
+	cmd[len] = '\0';
 
-	if (!kstrtoint(buf, 0, &value)) {
+	if (!kstrtoint(cmd, 0, &value)) {
 		if (!value || !(value-1)) {
 			ret = 0;
 			mt_gpufreq_voltage_enable_set(value);
@@ -1228,21 +1232,22 @@ static int mt_gpufreq_fixed_freq_volt_proc_show(struct seq_file *m, void *v)
 static ssize_t mt_gpufreq_fixed_freq_volt_proc_write(struct file *file,
 		const char __user *buffer, size_t count, loff_t *data)
 {
-	char buf[32];
+	char buf[64];
+	char cmd[64];
 	int len = 0;
-	int ret = 0;
+	int ret = -EFAULT;
 	int fixed_freq = 0;
 	int fixed_volt = 0;
 
-	ret = -EFAULT;
 	len = (count < (sizeof(buf) - 1)) ? count : (sizeof(buf) - 1);
 
 	if (copy_from_user(buf, buffer, len))
 		goto out;
 
-	buf[len] = '\0';
+	strcpy(cmd, buf);
+	cmd[len] = '\0';
 
-	if (sscanf(buf, "%d %d", &fixed_freq, &fixed_volt) == 2) {
+	if (sscanf(cmd, "%d %d", &fixed_freq, &fixed_volt) == 2) {
 		ret = 0;
 		if ((fixed_freq == 0) && (fixed_volt == 0)) {
 			g_fixed_freq_volt_state = false;
