@@ -152,8 +152,10 @@ int queue_dc_command(struct pd_direct_chrg *dc, uint32_t vid, int op, int cmd, c
 				pr_err("%s return cmd error\n", __func__);
 			else
 				status = MTK_VDM_SUCCESS;
-		} else
+		} else {
 			pr_err("%s Time out\n", __func__);
+			dc->hba->vdm_state = VDM_STATE_DONE;
+		}
 	} else
 		status = MTK_VDM_SW_BUSY;
 

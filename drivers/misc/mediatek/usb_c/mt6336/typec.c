@@ -2173,6 +2173,9 @@ void parse_dts(struct device_node *np, struct typec_hba *hba)
 	if (get_u32(np, "discover_vmd", &hba->discover_vmd) != 0)
 		hba->discover_vmd = 0;
 
+	if (get_u32(np, "kpoc_delay", &hba->kpoc_delay) != 0)
+		hba->kpoc_delay = 25*1000;
+
 }
 
 int typec_init(struct device *dev, struct typec_hba **hba_handle,
