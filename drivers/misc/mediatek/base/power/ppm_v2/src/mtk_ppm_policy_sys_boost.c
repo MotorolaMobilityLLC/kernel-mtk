@@ -629,6 +629,9 @@ static int __init ppm_sysboost_policy_init(void)
 		case BOOST_BY_USB:
 			sysboost_data[i].user_name = "USB";
 			break;
+		case BOOST_BY_USB_PD:
+			sysboost_data[i].user_name = "USB_PD";
+			break;
 		case BOOST_BY_UT:
 		default:
 			sysboost_data[i].user_name = "UT";
