@@ -12,6 +12,8 @@
  */
 #include <linux/linkage.h>
 #include <asm/assembler.h>
+#include <asm/thread_info.h>
+#include <linux/const.h>
 .extern _stext, _etext
 __stext:
 	.word _stext
@@ -137,6 +139,9 @@ ENDPROC(c_backtrace)
 .Ldumpstm:	stmfd	sp!, {instr, reg, stack, r7, lr}
 		mov	stack, r0
 		mov	instr, r1
+		eor	r0, stack, sv_fp
+		cmp	r0, #(THREAD_SIZE)
+		bhs	2f
 		mov	reg, #10
 		mov	r7, #0
 1:		mov	r3, #1
