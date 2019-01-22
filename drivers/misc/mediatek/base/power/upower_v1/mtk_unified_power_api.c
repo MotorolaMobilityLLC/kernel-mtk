@@ -140,13 +140,17 @@ upower_dtype type)
 	ptr_tbl_info = rcu_dereference(p_upower_tbl_infos);
 	ptr_tbl = ptr_tbl_info[bank].p_upower_tbl;
 	idx = ptr_tbl->lkg_idx;
-	ret = (type == UPOWER_DYN) ? ptr_tbl->row[volt_idx].dyn_pwr : ptr_tbl->row[volt_idx].lkg_pwr[idx];
+	ret = (type == UPOWER_DYN) ? ptr_tbl->row[volt_idx].dyn_pwr :
+			(type == UPOWER_LKG) ? ptr_tbl->row[volt_idx].lkg_pwr[idx] :
+			ptr_tbl->row[volt_idx].cap;
 	upower_read_unlock();
 	#else
 	ptr_tbl_info = p_upower_tbl_infos;
 	ptr_tbl = ptr_tbl_info[bank].p_upower_tbl;
 	idx = ptr_tbl->lkg_idx;
-	ret = (type == UPOWER_DYN) ? ptr_tbl->row[volt_idx].dyn_pwr : ptr_tbl->row[volt_idx].lkg_pwr[idx];
+	ret = (type == UPOWER_DYN) ? ptr_tbl->row[volt_idx].dyn_pwr :
+			(type == UPOWER_LKG) ? ptr_tbl->row[volt_idx].lkg_pwr[idx] :
+			ptr_tbl->row[volt_idx].cap;
 	#endif
 
 	#ifdef UPOWER_PROFILE_API_TIME
