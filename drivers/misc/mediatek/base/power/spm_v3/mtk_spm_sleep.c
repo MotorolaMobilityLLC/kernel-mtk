@@ -487,6 +487,8 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 
 	__spm_kick_pcm_to_run(pwrctrl);
 #else
+	pwrctrl->timer_val = __spm_get_pcm_timer_val(pwrctrl);
+
 	mt_secure_call(MTK_SIP_KERNEL_SPM_SUSPEND_ARGS, pwrctrl->pcm_flags, pwrctrl->pcm_flags1, pwrctrl->timer_val);
 	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS, SPM_PWR_CTRL_SUSPEND, PWR_OPP_LEVEL, pwrctrl->opp_level);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
