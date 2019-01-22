@@ -52,6 +52,11 @@ enum DFRC_DRV_HW_MODE {
 	DFRC_DRV_HW_MODE_ARR,
 };
 
+enum DFRC_DRV_POLICY_FLAG {
+	DFRC_DRV_POLICY_FLAG_NONE = 0x00,
+	DFRC_DRV_POLICY_FLAG_USE_VIDEO_MODE = 0x01,
+};
+
 struct DFRC_DRV_POLICY {
 	unsigned long long sequence;
 	int api;
@@ -60,6 +65,7 @@ struct DFRC_DRV_POLICY {
 	int mode;
 	int target_pid;
 	unsigned long long gl_context_id;
+	int flag;
 };
 
 struct DFRC_DRV_HWC_INFO {
