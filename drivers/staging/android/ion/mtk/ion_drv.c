@@ -865,7 +865,8 @@ static int __init ion_init(void)
 	}
 
 #ifdef CONFIG_PM
-	fb_register_client(&ion_fb_notifier_block);
+	if (fb_register_client(&ion_fb_notifier_block))
+		IONMSG("%s fb_register_client failed.\n", __func__);
 #endif
 	return 0;
 }
