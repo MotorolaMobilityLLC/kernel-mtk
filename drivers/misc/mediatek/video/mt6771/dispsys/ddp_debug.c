@@ -108,8 +108,8 @@ static char cmd_help_analysis[] =
 	"bit13: dsi mode\n"
 	"\n"
 	"other cmd:the cmd will be used set background\n"
-	"adb shell \"echo bg_set:6,1 > /d/mtkfb\"\n"
-	"6: font size(default 6)\n"
+	"adb shell \"echo bg_set:3,1 > /d/mtkfb\"\n"
+	"3: font size(default 3)\n"
 	"1: the location of lcm(default 1)\n";
 
 /* --------------------------------------------------------------------------- */
