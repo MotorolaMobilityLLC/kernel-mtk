@@ -88,7 +88,7 @@ int tcpm_get_cable_capability(void *ptr, unsigned char *capability)
 	unsigned char limit = 0;
 
 	if (hba->sop_p.cable_vdo) {
-		limit =  PD_VDO_CABLE_CURR(hba->sop_p.cable_vdo) + 1;
+		limit =  PD_VDO_CABLE_CURR(hba->sop_p.cable_vdo);
 
 		pr_info("%s limit = %d\n", __func__, limit);
 
