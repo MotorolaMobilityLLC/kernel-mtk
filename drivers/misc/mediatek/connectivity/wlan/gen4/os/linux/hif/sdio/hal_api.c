@@ -1834,9 +1834,9 @@ VOID halGetMailbox(IN P_ADAPTER_T prAdapter, IN UINT_32 u4MailboxNum, OUT PUINT_
 
 VOID halDeAggRxPktWorker(struct work_struct *work)
 {
-	P_GLUE_INFO_T prGlueInfo = ENTRY_OF(work, GLUE_INFO_T, rRxPktDeAggWork);
-	P_GL_HIF_INFO_T prHifInfo = &prGlueInfo->rHifInfo;
-	P_ADAPTER_T prAdapter = prGlueInfo->prAdapter;
+	P_GLUE_INFO_T prGlueInfo;
+	P_GL_HIF_INFO_T prHifInfo;
+	P_ADAPTER_T prAdapter;
 	P_SDIO_RX_COALESCING_BUF_T prRxBuf;
 	UINT_32 i;
 	QUE_T rTempFreeRfbList, rTempRxRfbList;
@@ -1851,22 +1851,26 @@ VOID halDeAggRxPktWorker(struct work_struct *work)
 	KAL_SPIN_LOCK_DECLARATION();
 	SDIO_TIME_INTERVAL_DEC();
 
+	if (g_u4HaltFlag)
+		return;
+
+	prGlueInfo = ENTRY_OF(work, GLUE_INFO_T, rRxPktDeAggWork);
+	prHifInfo = &prGlueInfo->rHifInfo;
+	prAdapter = prGlueInfo->prAdapter;
+
+	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT)
+		return;
+
 	prRxCtrl = &prAdapter->rRxCtrl;
 	prHifInfo = &prAdapter->prGlueInfo->rHifInfo;
 
 	QUEUE_INITIALIZE(prTempFreeRfbList);
 	QUEUE_INITIALIZE(prTempRxRfbList);
 
-	while (QUEUE_IS_NOT_EMPTY(&prHifInfo->rRxDeAggQueue)) {
-		mutex_lock(&prHifInfo->rRxDeAggQueMutex);
-		QUEUE_REMOVE_HEAD(&prHifInfo->rRxDeAggQueue, prRxBuf, P_SDIO_RX_COALESCING_BUF_T);
-		mutex_unlock(&prHifInfo->rRxDeAggQueMutex);
-
-		if (!prRxBuf) {
-			/* Reschedule this work */
-			schedule_delayed_work(&prAdapter->prGlueInfo->rRxPktDeAggWork, 0);
-			return;
-		}
+	mutex_lock(&prHifInfo->rRxDeAggQueMutex);
+	QUEUE_REMOVE_HEAD(&prHifInfo->rRxDeAggQueue, prRxBuf, P_SDIO_RX_COALESCING_BUF_T);
+	mutex_unlock(&prHifInfo->rRxDeAggQueMutex);
+	while (prRxBuf) {
 
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_FREE_QUE);
 		if (prRxCtrl->rFreeSwRfbList.u4NumElem < prRxBuf->u4PktCount) {
@@ -1887,7 +1891,9 @@ VOID halDeAggRxPktWorker(struct work_struct *work)
 			mutex_unlock(&prHifInfo->rRxDeAggQueMutex);
 
 			/* Reschedule this work */
-			schedule_delayed_work(&prAdapter->prGlueInfo->rRxPktDeAggWork, 0);
+			if ((prGlueInfo->ulFlag & GLUE_FLAG_HALT) == 0)
+				schedule_delayed_work(&prAdapter->prGlueInfo->rRxPktDeAggWork, 0);
+
 			return;
 		}
 
@@ -1928,6 +1934,13 @@ VOID halDeAggRxPktWorker(struct work_struct *work)
 		mutex_lock(&prHifInfo->rRxFreeBufQueMutex);
 		QUEUE_INSERT_TAIL(&prHifInfo->rRxFreeBufQueue, (P_QUE_ENTRY_T)prRxBuf);
 		mutex_unlock(&prHifInfo->rRxFreeBufQueMutex);
+
+		if (prGlueInfo->ulFlag & GLUE_FLAG_HALT)
+			return;
+
+		mutex_lock(&prHifInfo->rRxDeAggQueMutex);
+		QUEUE_REMOVE_HEAD(&prHifInfo->rRxDeAggQueue, prRxBuf, P_SDIO_RX_COALESCING_BUF_T);
+		mutex_unlock(&prHifInfo->rRxDeAggQueMutex);
 	}
 }
 
@@ -1936,6 +1949,10 @@ VOID halDeAggRxPkt(P_ADAPTER_T prAdapter, P_SDIO_RX_COALESCING_BUF_T prRxBuf)
 	P_GL_HIF_INFO_T prHifInfo;
 
 	prHifInfo = &prAdapter->prGlueInfo->rHifInfo;
+
+	/* Avoid to schedule DeAggWorker during uninit flow */
+	if (prAdapter->prGlueInfo->ulFlag & GLUE_FLAG_HALT)
+		return;
 
 	mutex_lock(&prHifInfo->rRxDeAggQueMutex);
 	QUEUE_INSERT_TAIL(&prHifInfo->rRxDeAggQueue, (P_QUE_ENTRY_T)prRxBuf);

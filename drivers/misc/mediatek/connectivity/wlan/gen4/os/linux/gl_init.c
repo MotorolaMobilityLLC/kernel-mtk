@@ -2562,7 +2562,7 @@ static VOID wlanRemove(VOID)
 
 	/* Stop works */
 	flush_work(&prGlueInfo->rTxMsduFreeWork);
-	flush_delayed_work(&prGlueInfo->rRxPktDeAggWork);
+	cancel_delayed_work_sync(&prGlueInfo->rRxPktDeAggWork);
 
 	DBGLOG(INIT, INFO, "wlan thread stopped\n");
 
