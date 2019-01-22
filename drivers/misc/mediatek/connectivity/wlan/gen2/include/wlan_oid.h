@@ -1850,3 +1850,9 @@ wlanoidQueryNchoEnable(IN P_ADAPTER_T prAdapter,
 			OUT PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
 
 #endif /* CFG_SUPPORT_NCHO */
+
+WLAN_STATUS
+wlanoidAbortScan(IN P_ADAPTER_T prAdapter,
+			OUT PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen,
+			OUT PUINT_32 pu4QueryInfoLen);
+
