@@ -227,8 +227,8 @@ EXPORT_SYMBOL_GPL(alarm_expires_remaining);
  */
 static int alarmtimer_suspend(struct device *dev)
 {
-	struct rtc_time tm;
-	ktime_t min, now;
+	struct rtc_time tm, time;
+	ktime_t min, now, temp;
 	unsigned long flags;
 	struct rtc_device *rtc;
 	int i;
@@ -256,8 +256,10 @@ static int alarmtimer_suspend(struct device *dev)
 		if (!next)
 			continue;
 		delta = ktime_sub(next->expires, base->gettime());
-		if (!min.tv64 || (delta.tv64 < min.tv64))
+		if (!min.tv64 || (delta.tv64 < min.tv64)) {
 			min = delta;
+			temp = next->expires;
+		}
 	}
 	if (min.tv64 == 0)
 		return 0;
@@ -272,6 +274,14 @@ static int alarmtimer_suspend(struct device *dev)
 	rtc_read_time(rtc, &tm);
 	now = rtc_tm_to_ktime(tm);
 	now = ktime_add(now, min);
+
+	time = rtc_ktime_to_tm(now);
+	pr_notice_ratelimited("%s convert %lld to %04d/%02d/%02d %02d:%02d:%02d (now = %04d/%02d/%02d %02d:%02d:%02d)\n",
+			__func__, temp.tv64,
+			time.tm_year+1900, time.tm_mon+1, time.tm_mday,
+			time.tm_hour, time.tm_min, time.tm_sec,
+			tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	/* Set alarm, if in the past reject suspend briefly to handle */
 	ret = rtc_timer_start(rtc, &rtctimer, now, ktime_set(0, 0));
