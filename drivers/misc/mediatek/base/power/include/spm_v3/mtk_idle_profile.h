@@ -44,10 +44,11 @@ struct mtk_idle_recent_ratio {
 	unsigned long long end_ts;
 };
 
-#define reset_idle_buf(idle) ((idle).p_idx = (idle).buf)
+#define reset_idle_buf(idle) \
+	do { (idle).p_idx = (idle).buf; (idle).buf[0] = '\0'; } while (0)
 #define get_idle_buf(idle)   ((idle).buf)
 #define idle_buf_append(idle, fmt, args...) \
-	((idle).p_idx += snprintf((idle).p_idx, IDLE_LOG_BUF_LEN - strlen((idle).buf), fmt, ##args))
+	((idle).p_idx += scnprintf((idle).p_idx, IDLE_LOG_BUF_LEN - strlen((idle).buf), fmt, ##args))
 
 void mtk_idle_twam_callback(struct twam_sig *ts);
 void mtk_idle_twam_disable(void);
