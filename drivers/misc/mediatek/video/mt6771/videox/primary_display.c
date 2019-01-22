@@ -2188,6 +2188,7 @@ static int DL_switch_to_OVL_DCM_fast(int sw_only, int block)
 	ddp_get_module_driver(DISP_MODULE_OVL1_2L)->start(DISP_MODULE_OVL1_2L, pgc->cmdq_handle_config);
 
 	/* 4.config ovl1 */
+	rdma_config.address = mva;
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	data_config_dl->dst_dirty = 1;
 	data_config_dl->ovl_dirty = 1;
