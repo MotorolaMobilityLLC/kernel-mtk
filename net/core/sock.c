@@ -1962,6 +1962,7 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
 #ifdef CONFIG_MTK_NET_LOGGING
 	if (sk->sk_family == AF_UNIX) {
 	del_timer(&debug_timer);
+	destroy_timer_on_stack(&debug_timer);
 	delay_time = jiffies - debug_block.when;
 	do_div(delay_time, HZ);
 	if (delay_time > 5) {
