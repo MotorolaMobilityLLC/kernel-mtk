@@ -956,18 +956,25 @@ err:
 
 void tee_shm_put(struct tee_context *ctx, struct tee_shm *shm)
 {
-	struct tee *tee = ctx->tee;
+	struct tee *tee;
+
+	WARN_ON(!ctx);
+	if (!ctx)
+		return;
+
+	tee = ctx->tee;
+	WARN_ON(!tee);
+	if (!tee)
+		return;
+
+	WARN_ON(!shm);
+	if (!shm)
+		return;
 
 	pr_debug("> shm=%p flags=%08x\n",
 		(void *) shm, shm->flags);
 
-	WARN_ON(!tee);
-	WARN_ON(!shm);
 	WARN_ON(!(shm->flags & TEE_SHM_MEMREF));
-
-	if (!tee) {
-		return;
-	}
 
 	if (shm_test_nonsecure(shm->flags)) {
 		pr_warn("invalid shared memory flags: 0x%x\n",
