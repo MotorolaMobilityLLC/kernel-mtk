@@ -381,17 +381,35 @@ void typec_clear(struct typec_hba *hba, uint16_t val, unsigned int reg)
 
 }
 
-void typec_enable_lowq(struct typec_hba *hba)
+void typec_enable_lowq(struct typec_hba *hba, char *str)
 {
 #if !COMPLIANCE
-	mt6336_ctrl_disable(hba->core_ctrl);
+	mutex_lock(&hba->lowq_lock);
+
+	if (atomic_read(&hba->lowq_cnt) > 0) {
+		atomic_dec(&hba->lowq_cnt);
+		mt6336_ctrl_disable(hba->core_ctrl);
+		if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
+			pr_info("%s %s LowQ cnt=%d\n", __func__, str, (int)atomic_read(&hba->lowq_cnt));
+	} else {
+		pr_info("%s %s Disable LowQ mode to much\n", __func__, str);
+	}
+
+	mutex_unlock(&hba->lowq_lock);
 #endif
 }
 
-void typec_disable_lowq(struct typec_hba *hba)
+void typec_disable_lowq(struct typec_hba *hba, char *str)
 {
 #if !COMPLIANCE
+	mutex_lock(&hba->lowq_lock);
+
+	atomic_inc(&hba->lowq_cnt);
 	mt6336_ctrl_enable(hba->core_ctrl);
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
+		pr_info("%s %s LowQ cnt=%d\n", __func__, str, (int)atomic_read(&hba->lowq_cnt));
+
+	mutex_unlock(&hba->lowq_lock);
 #endif
 }
 
@@ -752,7 +770,7 @@ unsigned int vbus_val_self(struct typec_hba *hba)
 	int vbus_val = 0;
 	int val = 0;
 
-	typec_disable_lowq(hba);
+	typec_disable_lowq(hba, "vbus_val_self");
 
 	if (!is_global_setting) {
 		/*
@@ -817,7 +835,7 @@ unsigned int vbus_val_self(struct typec_hba *hba)
 		mdelay(2);
 	}
 
-	typec_enable_lowq(hba);
+	typec_enable_lowq(hba, "vbus_val_self");
 
 	/*vbus_val_h = typec_read8(hba, AUXADC_ADC2_H) & 0x7F;*/
 	/*vbus_val_l = typec_read8(hba, AUXADC_ADC2);*/
@@ -842,9 +860,9 @@ unsigned int vbus_val(struct typec_hba *hba)
 {
 	int val = 0;
 
-	typec_disable_lowq(hba);
+	typec_disable_lowq(hba, "vbus_val");
 	val = (pmic_get_auxadc_value(AUXADC_LIST_VBUS) >> 3);
-	typec_enable_lowq(hba);
+	typec_enable_lowq(hba, "vbus_val");
 
 	return val;
 }
@@ -1578,6 +1596,8 @@ static void typec_wait_vbus_on_try_wait_snk(struct work_struct *work)
 	int i = 0;
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_on_try_wait_snk);
 
+	typec_disable_lowq(hba, "typec_wait_vbus_on_try_wait_snk");
+
 	while (((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_TRY_WAIT_SNK)
 		&& (i < POLLING_MAX_TIME(hba->vbus_on_polling))) {
 		if (hba->vbus_det_en && (typec_vbus(hba) > PD_VSAFE5V_LOW)) {
@@ -1589,12 +1609,15 @@ static void typec_wait_vbus_on_try_wait_snk(struct work_struct *work)
 		i++;
 		msleep(hba->vbus_on_polling);
 	}
+	typec_enable_lowq(hba, "typec_wait_vbus_on_try_wait_snk");
 }
 
 static void typec_wait_vbus_on_attach_wait_snk(struct work_struct *work)
 {
 	int i = 0;
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_on_attach_wait_snk);
+
+	typec_disable_lowq(hba, "typec_wait_vbus_on_attach_wait_snk");
 
 	while (((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACH_WAIT_SNK)
 		&& (i < POLLING_MAX_TIME(hba->vbus_on_polling))) {
@@ -1607,11 +1630,14 @@ static void typec_wait_vbus_on_attach_wait_snk(struct work_struct *work)
 		i++;
 		msleep(hba->vbus_on_polling);
 	}
+	typec_enable_lowq(hba, "typec_wait_vbus_on_attach_wait_snk");
 }
 
 static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 {
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_off_attached_snk);
+
+	typec_disable_lowq(hba, "typec_wait_vbus_off_attached_snk");
 
 	while ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SNK) {
 		int val = typec_vbus(hba);
@@ -1638,6 +1664,7 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 		}
 		msleep(hba->vbus_off_polling);
 	}
+	typec_enable_lowq(hba, "typec_wait_vbus_off_attached_snk");
 }
 
 #define WAIT_VSAFE0V_PERIOD 1000
@@ -1647,6 +1674,8 @@ static void typec_wait_vsafe0v(struct work_struct *work)
 {
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vsafe0v);
 	int cnt = 0;
+
+	typec_disable_lowq(hba, "typec_wait_vsafe0v");
 
 	while (cnt < WAIT_VSAFE0V_POLLING_CNT) {
 		int val = typec_vbus(hba);
@@ -1660,11 +1689,14 @@ static void typec_wait_vsafe0v(struct work_struct *work)
 		msleep(WAIT_VSAFE0V_PERIOD / WAIT_VSAFE0V_POLLING_CNT);
 		cnt++;
 	}
+	typec_enable_lowq(hba, "typec_wait_vsafe0v");
 }
 
 static void typec_wait_vbus_off_then_drive_attached_src(struct work_struct *work)
 {
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_off_then_drive_attached_src);
+
+	typec_disable_lowq(hba, "typec_wait_vbus_off_then_drive_attached_src");
 
 	while ((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACHED_SRC) {
 		if (hba->vbus_det_en && (typec_vbus(hba) < PD_VSAFE0V_HIGH)) {
@@ -1681,6 +1713,7 @@ static void typec_wait_vbus_off_then_drive_attached_src(struct work_struct *work
 		}
 		msleep(20);
 	}
+	typec_enable_lowq(hba, "typec_wait_vbus_off_then_drive_attached_src");
 }
 
 #if USE_AUXADC
@@ -1854,12 +1887,10 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		typec_drive_vbus(hba, 0);
 
 		if (hba->mode == 1)
-			typec_enable_lowq(hba);
+			typec_enable_lowq(hba, "ENT_DISABLE_INTR");
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_WAIT_SNK_INTR) {
-		typec_disable_lowq(hba);
-
 		/* At AttachWait.SNK, continue checking vSafe5V is presented or not?
 		 * If Vbus detected, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 1
 		 * to notify MAC layer.
@@ -1882,7 +1913,7 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 #endif
 			typec_int_enable(hba, TYPE_C_INTR_DRP_TOGGLE, TYPE_C_INTR_SRC_ADVERTISE);
 
-		typec_disable_lowq(hba);
+		typec_disable_lowq(hba, "ATTACH_SNK-SRC");
 	}
 
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
@@ -2219,8 +2250,9 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	}
 
 #if !COMPLIANCE
+	mutex_init(&hba->lowq_lock);
 	hba->core_ctrl = mt6336_ctrl_get("mt6336_pd");
-	hba->is_lowq = false;
+	atomic_set(&hba->lowq_cnt, 1);
 	mt6336_ctrl_enable(hba->core_ctrl);
 	dev_err(hba->dev, "Disable LowQ\n");
 #endif
@@ -2254,16 +2286,18 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		pd_init(hba);
 #endif
 
-#ifdef CONFIG_DUAL_ROLE_USB_INTF
-	mt_dual_role_phy_init(hba);
-#endif
-
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
 		|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 		dev_err(hba->dev, "%s, in KPOC\n", __func__);
 		hba->support_role = TYPEC_ROLE_SINK;
 	}
+#endif
+
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+	mt_dual_role_phy_init(hba);
+	hba->dual_role_supported_modes = (hba->support_role == TYPEC_ROLE_SINK) ?
+		DUAL_ROLE_SUPPORTED_MODES_UFP : DUAL_ROLE_SUPPORTED_MODES_DFP_AND_UFP;
 #endif
 
 	/*initialization completes*/
@@ -2302,7 +2336,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		typec_enable(hba, 0);
 	}
 
-	typec_enable_lowq(hba);
+	typec_enable_lowq(hba, "typec_init");
 
 next:
 	return 0;
