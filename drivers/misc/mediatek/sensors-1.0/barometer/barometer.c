@@ -272,7 +272,10 @@ static ssize_t baro_store_active(struct device *dev, struct device_attribute *at
 err_out:
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	BARO_LOG(" baro_store_active done\n");
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -297,8 +300,10 @@ static ssize_t baro_store_batch(struct device *dev, struct device_attribute *att
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 			&cxt->delay_ns, &cxt->latency_ns);
-	if (err != 4)
+	if (err != 4) {
 		BARO_PR_ERR("grav_store_batch param error: err = %d\n", err);
+		return -1;
+	}
 
 	mutex_lock(&baro_context_obj->baro_op_mutex);
 #if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_BAROHUB)
@@ -313,7 +318,10 @@ static ssize_t baro_store_batch(struct device *dev, struct device_attribute *att
 #endif
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	BARO_LOG(" baro_store_batch done: %d\n", cxt->is_batch_enable);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 
 }
 
@@ -343,7 +351,10 @@ static ssize_t baro_store_flush(struct device *dev, struct device_attribute *att
 	if (err < 0)
 		BARO_PR_ERR("baro enable flush err %d\n", err);
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t baro_show_flush(struct device *dev, struct device_attribute *attr, char *buf)

@@ -320,7 +320,10 @@ static ssize_t gyro_store_enable_nodata(struct device *dev, struct device_attrib
 
 err_out:
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t gyro_store_active(struct device *dev, struct device_attribute *attr,
@@ -364,7 +367,10 @@ static ssize_t gyro_store_active(struct device *dev, struct device_attribute *at
 err_out:
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 	GYRO_LOG(" gyro_store_active done\n");
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t gyro_show_active(struct device *dev,
@@ -408,7 +414,10 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 	err = gyro_enable_and_batch();
 #endif
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t gyro_show_batch(struct device *dev,
@@ -438,7 +447,10 @@ static ssize_t gyro_store_flush(struct device *dev, struct device_attribute *att
 	if (err < 0)
 		GYRO_INFO("gyro enable flush err %d\n", err);
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
-	return err;
+	if (err)
+		return err;
+	else
+		return count;
 }
 
 static ssize_t gyro_show_flush(struct device *dev,
