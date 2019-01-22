@@ -131,19 +131,6 @@ ACTION(CMDQ_ENG_MDP_WROT1,  MDP_WROT1)	\
 ACTION(CMDQ_ENG_MDP_WDMA,   MDP_WDMA)	\
 }
 
-static const uint64_t gCmdqEngineGroupBits[CMDQ_MAX_GROUP_COUNT] = {
-	CMDQ_ENG_ISP_GROUP_BITS,
-	CMDQ_ENG_MDP_GROUP_BITS,
-	CMDQ_ENG_DISP_GROUP_BITS,
-	CMDQ_ENG_JPEG_GROUP_BITS,
-	CMDQ_ENG_VENC_GROUP_BITS,
-	CMDQ_ENG_DPE_GROUP_BITS,
-	CMDQ_ENG_RSC_GROUP_BITS,
-	CMDQ_ENG_GEPF_GROUP_BITS,
-	CMDQ_ENG_WPE_GROUP_BITS,
-	CMDQ_ENG_EAF_GROUP_BITS
-};
-
 static struct cmdqDTSDataStruct gCmdqDtsData;
 
 /* task memory usage monitor */
@@ -2610,7 +2597,7 @@ int32_t cmdq_core_is_group_flag(enum CMDQ_GROUP_ENUM engGroup, uint64_t engineFl
 	if (!cmdq_core_is_valid_group(engGroup))
 		return false;
 
-	if (gCmdqEngineGroupBits[engGroup] & engineFlag)
+	if (cmdq_mdp_get_func()->getEngineGroupBits(engGroup) & engineFlag)
 		return true;
 
 	return false;
@@ -4072,9 +4059,8 @@ static void cmdq_core_enable_clock(uint64_t engineFlag,
 		if (pCallback[CMDQ_GROUP_ISP].clockOn == NULL) {
 			CMDQ_ERR("CLOCK: enable group %d clockOn func NULL\n", CMDQ_GROUP_ISP);
 		} else {
-			status =
-			    pCallback[CMDQ_GROUP_ISP].clockOn(gCmdqEngineGroupBits[CMDQ_GROUP_ISP] &
-							      engineFlag);
+			status = pCallback[CMDQ_GROUP_ISP].clockOn(
+				cmdq_mdp_get_func()->getEngineGroupBits(CMDQ_GROUP_ISP) & engineFlag);
 
 #if 1
 			++gCmdqISPClockCounter;
@@ -4103,7 +4089,8 @@ static void cmdq_core_enable_clock(uint64_t engineFlag,
 					 index);
 				continue;
 			}
-			status = pCallback[index].clockOn(gCmdqEngineGroupBits[index] & engines);
+			status = pCallback[index].clockOn(
+				cmdq_mdp_get_func()->getEngineGroupBits(index) & engines);
 			if (status < 0) {
 				/* Error status print */
 				CMDQ_ERR("CLOCK: enable group %d clockOn failed\n", index);
@@ -4475,9 +4462,8 @@ static void cmdq_core_disable_clock(uint64_t engineFlag,
 		if (pCallback[CMDQ_GROUP_ISP].clockOff == NULL) {
 			CMDQ_ERR("CLOCK: disable group %d clockOff func NULL\n", CMDQ_GROUP_ISP);
 		} else {
-			status =
-			    pCallback[CMDQ_GROUP_ISP].clockOff(gCmdqEngineGroupBits[CMDQ_GROUP_ISP]
-							       & engineFlag);
+			status = pCallback[CMDQ_GROUP_ISP].clockOff(
+				cmdq_mdp_get_func()->getEngineGroupBits(CMDQ_GROUP_ISP) & engineFlag);
 
 #if 1
 			--gCmdqISPClockCounter;
@@ -4513,8 +4499,8 @@ static void cmdq_core_disable_clock(uint64_t engineFlag,
 				     index);
 				continue;
 			}
-			status =
-			    pCallback[index].clockOff(gCmdqEngineGroupBits[index] & enginesNotUsed);
+			status = pCallback[index].clockOff(
+				cmdq_mdp_get_func()->getEngineGroupBits(index) & enginesNotUsed);
 			if (status < 0) {
 				/* Error status print */
 				CMDQ_ERR("CLOCK: Disable engine group %d clock failed\n", index);
@@ -4592,8 +4578,8 @@ static void cmdq_core_reset_hw_engine(int32_t engineFlag)
 				CMDQ_ERR("Reset engine group %d clock func NULL\n", index);
 				continue;
 			}
-			status =
-			    pCallback[index].resetEng(gCmdqEngineGroupBits[index] & engineFlag);
+			status = pCallback[index].resetEng(
+				cmdq_mdp_get_func()->getEngineGroupBits(index) & engineFlag);
 			if (status < 0) {
 				/* Error status print */
 				CMDQ_ERR("Reset engine group %d clock failed\n", index);
@@ -6467,8 +6453,9 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 			continue;
 		}
 
-		pCallback[index].dumpInfo((gCmdqEngineGroupBits[index] & printEngineFlag),
-					  gCmdqContext.logLevel);
+		pCallback[index].dumpInfo((
+			cmdq_mdp_get_func()->getEngineGroupBits(index) & printEngineFlag),
+			gCmdqContext.logLevel);
 	}
 
 	/* force dump DISP for DISP scenario with 0x0 engine flag */
@@ -6481,8 +6468,9 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 	if (isDispScn) {
 		index = CMDQ_GROUP_DISP;
 		if (pCallback[index].dumpInfo) {
-			pCallback[index].dumpInfo((gCmdqEngineGroupBits[index] & printEngineFlag),
-						  gCmdqContext.logLevel);
+			pCallback[index].dumpInfo((
+				cmdq_mdp_get_func()->getEngineGroupBits(index) & printEngineFlag),
+				gCmdqContext.logLevel);
 		}
 	}
 
