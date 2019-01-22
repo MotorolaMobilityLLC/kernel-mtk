@@ -673,6 +673,9 @@ static const struct net_device_ops ccmni_netdev_ops = {
 
 static int ccmni_napi_poll(struct napi_struct *napi, int budget)
 {
+#ifdef ENABLE_WQ_GRO
+	return 0;
+#else
 	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(napi->dev);
 	int md_id = ccmni->md_id;
 	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
@@ -683,6 +686,7 @@ static int ccmni_napi_poll(struct napi_struct *napi, int budget)
 		return ctlb->ccci_ops->napi_poll(md_id, ccmni->index, napi, budget);
 	else
 		return 0;
+#endif
 }
 
 static void ccmni_napi_poll_timeout(unsigned long data)
@@ -710,6 +714,7 @@ static inline int ccmni_inst_init(int md_id, ccmni_instance_t *ccmni, struct net
 	ccmni->md_id = md_id;
 	ccmni->napi = kzalloc(sizeof(struct napi_struct), GFP_KERNEL);
 	ccmni->timer = kzalloc(sizeof(struct timer_list), GFP_KERNEL);
+	ccmni->spinlock = kzalloc(sizeof(spinlock_t), GFP_KERNEL);
 
 	/* register napi device */
 	if (dev && (ctlb->ccci_ops->md_ability & MODEM_CAP_NAPI)) {
@@ -724,7 +729,7 @@ static inline int ccmni_inst_init(int md_id, ccmni_instance_t *ccmni, struct net
 #endif
 
 	atomic_set(&ccmni->usage, 0);
-	spin_lock_init(&ccmni->spinlock);
+	spin_lock_init(ccmni->spinlock);
 
 	return ret;
 }
@@ -1046,9 +1051,9 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 #endif
 	} else {
 #ifdef ENABLE_WQ_GRO
-		spin_lock_bh(&ccmni->spinlock);
+		spin_lock_bh(ccmni->spinlock);
 		napi_gro_receive(ccmni->napi, skb);
-		spin_unlock_bh(&ccmni->spinlock);
+		spin_unlock_bh(ccmni->spinlock);
 #else
 		if (!in_interrupt())
 			netif_rx_ni(skb);
@@ -1110,16 +1115,17 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 		netif_carrier_off(ccmni->dev);
 		break;
 
+#ifdef ENABLE_WQ_GRO
+	case RX_FLUSH:
+		spin_lock_bh(ccmni->spinlock);
+		napi_gro_flush(ccmni->napi, false);
+		spin_unlock_bh(ccmni->spinlock);
+		break;
+#else
 	case RX_IRQ:
 		mod_timer(ccmni->timer, jiffies + HZ);
 		napi_schedule(ccmni->napi);
 		wake_lock_timeout(&ctlb->ccmni_wakelock, HZ);
-		break;
-#ifdef ENABLE_WQ_GRO
-	case RX_FLUSH:
-		spin_lock_bh(&ccmni->spinlock);
-		napi_gro_flush(ccmni->napi, false);
-		spin_unlock_bh(&ccmni->spinlock);
 		break;
 #endif
 
