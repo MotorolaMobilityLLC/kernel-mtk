@@ -161,6 +161,7 @@ static struct gtimer g1, g2, g3, g4, g5;
 #endif
 
 static bool gDisableGM30;
+static bool cmd_disable_nafg;
 static bool ntc_disable_nafg;
 
 static struct gauge_device *gauge_dev;
@@ -765,8 +766,11 @@ static void proc_dump_dtsi(struct seq_file *m)
 #endif
 
 #ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
-	seq_puts(m, "CONFIG_MTK_ADDITIONAL_BATTERY_TABLE is defined\n");
+	seq_puts(m, "CONFIG_MTK_ADDITIONAL_BATTERY_TABLE is defined(5 bat table)\n");
+#else
+	seq_puts(m, "CONFIG_MTK_ADDITIONAL_BATTERY_TABLE NO defined(4 bat table)\n");
 #endif
+
 	seq_printf(m, "hw_version = %d\n", gauge_get_hw_version());
 
 
@@ -798,9 +802,9 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 	seq_puts(m, "Command Table list\n");
 	seq_puts(m, "0: dump dtsi\n");
 	seq_puts(m, "1: dump v-mode table\n");
-	seq_puts(m, "2: dump gauge hw register\n");
-	seq_puts(m, "3: kernel table\n");
-	seq_puts(m, "4: send CHR FULL\n");
+	seq_puts(m, "101: dump gauge hw register\n");
+	seq_puts(m, "102: kernel table\n");
+	seq_puts(m, "103: send CHR FULL\n");
 	seq_printf(m, "current command:%d\n", proc_cmd_id);
 
 	switch (proc_cmd_id) {
@@ -808,35 +812,28 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 		proc_dump_dtsi(m);
 		break;
 	case 1:
-		wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_LOG, 1);
+	case 2:
+	case 3:
+	case 4:
+		wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_LOG, proc_cmd_id);
 		for (i = 0; i < 5; i++) {
 			msleep(500);
 			if (proc_subcmd_para1 == 1)
 				break;
 		}
 		proc_dump_log(m);
-
 		break;
-
-	case 2:
+	case 101:
 		gauge_dev_dump(gauge_dev, m);
 		break;
-	case 3:
+	case 102:
 		dump_kernel_table(m);
 		break;
-	case 4:
+	case 103:
 		wakeup_fg_algo(FG_INTR_CHR_FULL);
 		break;
 	default:
 		seq_printf(m, "do not support command:%d\n", proc_cmd_id);
-		wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_LOG, proc_cmd_id);
-		for (i = 0; i < 5; i++) {
-			msleep(500);
-			if (proc_subcmd_para1 == proc_cmd_id)
-				break;
-		}
-		proc_dump_log(m);
-
 		break;
 	}
 
@@ -1130,7 +1127,11 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.shutdown_hl_zcv_t4 = g_SHUTDOWN_HL_ZCV_T4[g_fg_battery_id];
 
 	fg_cust_data.pseudo1_sel = PSEUDO1_SEL;
-	fg_cust_data.additional_battery_table_en = ADDITIONAL_BATTERY_TABLE_EN;
+#if defined(CONFIG_MTK_ADDITIONAL_BATTERY_TABLE)
+		fg_cust_data.additional_battery_table_en = 1;
+#else
+		fg_cust_data.additional_battery_table_en = 0;
+#endif
 	fg_cust_data.d0_sel = D0_SEL;
 	fg_cust_data.aging_sel = AGING_SEL;
 	fg_cust_data.bat_par_i = BAT_PAR_I;
@@ -1144,7 +1145,6 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.keep_100_percent_minsoc = KEEP_100_PERCENT_MINSOC;
 
 /* table */
-	fg_cust_data.additional_battery_table_en = ADDITIONAL_BATTERY_TABLE_EN;
 	fg_cust_data.temperature_t0 = TEMPERATURE_T0;
 	fg_cust_data.temperature_t1 = TEMPERATURE_T1;
 	fg_cust_data.temperature_t2 = TEMPERATURE_T2;
@@ -4061,8 +4061,8 @@ static DEVICE_ATTR(FG_daemon_disable, 0664, show_FG_daemon_disable, store_FG_dae
 
 static ssize_t show_FG_nafg_disable(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	bm_trace("[FG] show nafg disable : %d\n", gDisableGM30);
-	return sprintf(buf, "%d\n", gDisableGM30);
+	bm_trace("[FG] show nafg disable : %d\n", cmd_disable_nafg);
+	return sprintf(buf, "%d\n", cmd_disable_nafg);
 }
 
 static ssize_t store_FG_nafg_disable(struct device *dev, struct device_attribute *attr,
@@ -4080,6 +4080,11 @@ static ssize_t store_FG_nafg_disable(struct device *dev, struct device_attribute
 			bm_err("[store_FG_nafg_disable] val is %d ??\n", (int)val);
 			val = 0;
 		}
+
+		if (val == 0)
+			cmd_disable_nafg = false;
+		else
+			cmd_disable_nafg = true;
 
 		wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DISABLE_NAFG, val);
 
@@ -4524,7 +4529,7 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Get_META_BAT_VOL:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
-		BMT_status.bat_vol = battery_get_bat_avg_voltage() / 10;
+		BMT_status.bat_vol = battery_get_bat_voltage();
 		adc_out_data[0] = BMT_status.bat_vol;
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 
