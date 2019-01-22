@@ -462,4 +462,12 @@ static inline int ccci_md_broadcast_state(struct ccci_modem *md, MD_STATE state)
 /****************************************************************************************************************/
 extern void ccci_md_exception_notify(struct ccci_modem *md, MD_EX_STAGE stage);
 
+#if defined(FEATURE_SYNC_C2K_MEID)
+extern unsigned char tc1_read_meid_syncform(unsigned char *meid, int leng);
+#endif
+
+#if defined(FEATURE_TC1_CUSTOMER_VAL)
+extern int get_md_customer_val(unsigned char *value, unsigned int len);
+#endif
+
 #endif	/* __CCCI_MODEM_H__ */
