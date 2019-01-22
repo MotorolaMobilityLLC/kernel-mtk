@@ -144,7 +144,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 #else
 	.cap = {		/*data rate 1499.20 Mbps/lane */
-		.pclk = 748000000,
+		.pclk = 840000000,
 		.linelength = 6208,
 		.framelength = 4508,
 		.startx = 0,
