@@ -137,6 +137,8 @@
 #define MTK_SIP_KERNEL_AMMS_GET_FREE_ADDR (0x82000271 | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_AMMS_GET_FREE_LENGTH (0x82000272 | MTK_SIP_SMC_AARCH_BIT)
 
+/*I2C related SMC call */
+
 extern size_t mt_secure_call(size_t function_id,
 	size_t arg0, size_t arg1, size_t arg2);
 extern size_t mt_secure_call_all(size_t function_id,
