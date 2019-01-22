@@ -1142,6 +1142,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			psHead->t_cpu_latest =
 				psKPI->ullTimeStamp1 - psHead->last_TimeStamp1 - psHead->last_QedBufferDelay;
 			psKPI->t_cpu = psHead->t_cpu_latest;
+			ged_log_perf_trace_counter("t_cpu", (int)psKPI->t_cpu);
 			psKPI->QedBufferDelay = psHead->last_QedBufferDelay;
 			psHead->last_QedBufferDelay = 0;
 			psHead->last_TimeStamp1 = psKPI->ullTimeStamp1;
@@ -1228,10 +1229,14 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					psHead->t_gpu_latest = psKPI->ullTimeStamp2 - psKPI->ullTimeStampP;
 
 				psKPI->t_gpu = psHead->t_gpu_latest;
+				ged_log_perf_trace_counter("t_gpu", (int)psKPI->t_gpu);
 				psKPI->gpu_freq = mt_gpufreq_get_cur_freq() / 1000;
+				ged_log_perf_trace_counter("gpu_freq", (int)psKPI->gpu_freq);
 				psHead->last_TimeStamp2 = psTimeStamp->ullTimeStamp;
 				psHead->i32Gpu_uncompleted--;
 				mtk_get_gpu_loading(&psKPI->gpu_loading);
+				ged_log_perf_trace_counter("gpu_loading", (int)psKPI->gpu_loading);
+
 				if (psHead->last_TimeStamp1 != psKPI->ullTimeStamp1) {
 					psHead->last_QedBufferDelay =
 						psTimeStamp->ullTimeStamp - psHead->last_TimeStamp1;
@@ -1279,9 +1284,14 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				psKPI = NULL;
 			}
 			if (psKPI) {
+				int pre_fence_delay;
+
+				pre_fence_delay = (int)(psTimeStamp->ullTimeStamp - psKPI->ullTimeStamp1);
+				ged_log_perf_trace_counter("t_pre_fence_delay", pre_fence_delay);
 				psKPI->ulMask |= GED_TIMESTAMP_TYPE_P;
 				psKPI->ullTimeStampP = psTimeStamp->ullTimeStamp;
 			} else {
+				ged_log_perf_trace_counter("t_pre_fence_delay", 0);
 				GED_LOGE("[GED_KPI][Exception] TYPE_P: psKPI NULL, frameID: %lu\n",
 										psTimeStamp->i32FrameID);
 			}
