@@ -34,7 +34,7 @@
 #include <mach/mtk_rtc_hw.h>
 #include <mtk_pmic_wrap.h>
 #if defined CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-#include <mt_boot.h>
+#include <mtk_boot.h>
 #endif
 
 #include <mtk_gpio.h>
