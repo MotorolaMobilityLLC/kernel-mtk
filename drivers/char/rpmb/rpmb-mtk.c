@@ -60,12 +60,12 @@
 static struct mc_uuid_t rpmb_uuid = RPMB_UUID;
 static struct mc_session_handle rpmb_session = {0};
 static u32 rpmb_devid = MC_DEVICE_ID_DEFAULT;
-static dciMessage_t *rpmb_dci;
+static struct dciMessage_t *rpmb_dci;
 
 static struct mc_uuid_t rpmb_gp_uuid = RPMB_GP_UUID;
 static struct mc_session_handle rpmb_gp_session = {0};
 static u32 rpmb_gp_devid = MC_DEVICE_ID_DEFAULT;
-static dciMessage_t *rpmb_gp_dci;
+static struct dciMessage_t *rpmb_gp_dci;
 
 #endif
 
@@ -2028,7 +2028,7 @@ static int rpmb_open_session(void)
 
 
 		/* allocating WSM for DCI */
-		mc_ret = mc_malloc_wsm(rpmb_devid, 0, sizeof(dciMessage_t), (uint8_t **)&rpmb_dci, 0);
+		mc_ret = mc_malloc_wsm(rpmb_devid, 0, sizeof(struct dciMessage_t), (uint8_t **)&rpmb_dci, 0);
 		if (mc_ret != MC_DRV_OK) {
 			mc_close_device(rpmb_devid);
 			MSG(ERR, "%s, mc_malloc_wsm failed: %d\n", __func__, mc_ret);
@@ -2046,7 +2046,7 @@ static int rpmb_open_session(void)
 		mc_ret = mc_open_session(&rpmb_session,
 					 &rpmb_uuid,
 					 (uint8_t *) rpmb_dci,
-					 sizeof(dciMessage_t));
+					 sizeof(struct dciMessage_t));
 
 		if (mc_ret != MC_DRV_OK) {
 			MSG(ERR, "%s, mc_open_session failed.(%d)\n", __func__, cnt);
@@ -2137,7 +2137,7 @@ static int rpmb_gp_open_session(void)
 
 
 		/* allocating WSM for DCI */
-		mc_ret = mc_malloc_wsm(rpmb_gp_devid, 0, sizeof(dciMessage_t), (uint8_t **)&rpmb_gp_dci, 0);
+		mc_ret = mc_malloc_wsm(rpmb_gp_devid, 0, sizeof(struct dciMessage_t), (uint8_t **)&rpmb_gp_dci, 0);
 		if (mc_ret != MC_DRV_OK) {
 			mc_close_device(rpmb_gp_devid);
 			MSG(ERR, "%s, mc_malloc_wsm failed: %d\n", __func__, mc_ret);
@@ -2159,7 +2159,7 @@ static int rpmb_gp_open_session(void)
 		mc_ret = mc_open_session(&rpmb_gp_session,
 					 &rpmb_gp_uuid,
 					 (uint8_t *) rpmb_gp_dci,
-					 sizeof(dciMessage_t));
+					 sizeof(struct dciMessage_t));
 
 		if (mc_ret != MC_DRV_OK) {
 			MSG(ERR, "%s, mc_open_session failed.(%d)\n", __func__, cnt);
