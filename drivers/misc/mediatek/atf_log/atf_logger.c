@@ -374,7 +374,7 @@ static struct miscdevice atf_log_dev = {
 	.mode       = 0644,
 };
 
-static int __init dt_scan_memory(unsigned long node, const char *uname, int depth, void *data)
+static int __init atf_log_dt_scan_memory(unsigned long node, const char *uname, int depth, void *data)
 {
 	char *type = (char *)of_get_flat_dt_prop(node, "device_type", NULL);
 	__be32 *reg, *endp;
@@ -415,12 +415,12 @@ static int __init dt_scan_memory(unsigned long node, const char *uname, int dept
 	return node;
 }
 
-static unsigned long long __init atf_get_from_dt(unsigned long *phy_addr, unsigned int *len)
+static unsigned long long __init atf_log_get_from_dt(unsigned long *phy_addr, unsigned int *len)
 {
 	unsigned long node = 0;
 	struct mem_desc *mem_desc = NULL;
 
-	if (of_scan_flat_dt(dt_scan_memory, &node)) {
+	if (of_scan_flat_dt(atf_log_dt_scan_memory, &node)) {
 		mem_desc = (struct mem_desc *)of_get_flat_dt_prop(node, "tee_reserved_mem", NULL);
 		if (mem_desc && mem_desc->size) {
 			pr_notice("ATF reserved memory: 0x%08llx - 0x%08llx (0x%llx)\n",
@@ -546,7 +546,7 @@ static int __init atf_logger_probe(struct platform_device *pdev)
 	pr_notice("atf_log: inited");
 	/* get atf reserved memory(atf_buf_phy_ctl) from device tree */
 	/* pass from preloader to LK, then create the dt node in LK */
-	atf_get_from_dt(&atf_buf_phy_ctl, &atf_buf_len);    /* TODO */
+	atf_log_get_from_dt(&atf_buf_phy_ctl, &atf_buf_len);    /* TODO */
 	if (atf_buf_len == 0) {
 		pr_err("No atf_log_buffer!\n");
 		return -1;
@@ -648,5 +648,5 @@ module_init(atf_log_init);
 module_exit(atf_log_exit);
 
 MODULE_DESCRIPTION("MEDIATEK Module ATF Logging Driver");
-MODULE_AUTHOR("Liang Chiu<liang.chiu@mediatek.com>");
+MODULE_AUTHOR("Chun Fan<chun.fan@mediatek.com>");
 
