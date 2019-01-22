@@ -43,6 +43,7 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
+#include <linux/hie.h>
 
 #ifdef CONFIG_MMC_FFU
 #include <linux/mmc/ffu.h>
@@ -2916,6 +2917,7 @@ int mmc_blk_end_queued_req(struct mmc_host *host,
 			break;
 		}
 		mmc = brq->mrq.host;
+		hie_req_end_size(req, brq->data.bytes_xfered);
 		ret = blk_end_request(req, 0,
 			brq->data.bytes_xfered);
 
