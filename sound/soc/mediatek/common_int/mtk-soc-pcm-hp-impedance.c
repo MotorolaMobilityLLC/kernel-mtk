@@ -349,6 +349,7 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 		OpenHeadPhoneImpedanceSetting(false);
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
 		EnableTrimbuffer(false);
+		/* 6757p marked */
 		SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
 	} else {
 		unsigned short  value = 0;
@@ -542,7 +543,7 @@ static void ApplyDctoDl(void)
 			       detectSum, kDetectTimes, mhp_impedance);
 			break;
 		}
-		usleep_range(1*200, 1*200);
+		udelay(600);
 	}
 
 	/* Ramp-Down */
@@ -553,7 +554,7 @@ static void ApplyDctoDl(void)
 		/* apply to dram */
 		FillDatatoDlmemory(Sramdata, Dl1_Hp_Playback_dma_buf->bytes, dcValue);
 
-		usleep_range(1*200, 1*200);
+		udelay(600);
 	}
 #endif
 }
@@ -561,7 +562,7 @@ static void ApplyDctoDl(void)
 static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("+ %s()\n", __func__);
+	pr_warn("+ %s()\n", __func__);
 	if (mPrepareDone == false)
 		pr_warn("Audio_HP_ImpeDance driver is not prepared");
 
@@ -576,12 +577,14 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 		/*set AP DL gain to 0db*/
 
 		ApplyDctoDl();
+		/* 6757p marked */
 		SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
 		/* usleep_range(0.5*1000, 1*1000); */
 
 		OpenHeadPhoneImpedanceSetting(false);
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
 		EnableTrimbuffer(false);
+		/* 6757p marked */
 		SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
 	} else
 		pr_warn("Audio_HP_ImpeDance_Get just do nothing\n");
@@ -620,7 +623,6 @@ static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 
 	get_afe_platform_ops()->set_dpd_module(enable, dpd_impedance);
 	audio_dpd_switch = enable;
-
 	return 0;
 }
 

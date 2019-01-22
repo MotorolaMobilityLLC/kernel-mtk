@@ -71,6 +71,8 @@ void EnableTrimbuffer(bool benable);
 void SetHplTrimOffset(int Offset);
 void SetHprTrimOffset(int Offset);
 void setHpGainZero(void);
+void CalculateDCCompenForEachdB_L(void);
+void CalculateDCCompenForEachdB_R(void);
 
 /* headphone impedance detection function*/
 bool OpenHeadPhoneImpedanceSetting(bool bEnable);

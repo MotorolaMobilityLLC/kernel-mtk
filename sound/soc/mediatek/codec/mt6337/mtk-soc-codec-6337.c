@@ -873,6 +873,14 @@ void setOffsetTrimBufferGain(unsigned int gain)
 static int mHplTrimOffset;
 static int mHprTrimOffset;
 
+void CalculateDCCompenForEachdB_L(void)
+{
+}
+
+void CalculateDCCompenForEachdB_R(void)
+{
+}
+
 void SetHplTrimOffset(int Offset)
 {
 	pr_warn("%s Offset = %d\n", __func__, Offset);
