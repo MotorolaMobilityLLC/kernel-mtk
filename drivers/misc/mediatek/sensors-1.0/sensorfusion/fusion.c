@@ -263,7 +263,7 @@ static ssize_t fusion_show_flush(struct device *dev, struct device_attribute *at
 static int fusion_real_driver_init(void)
 {
 	int index = 0;
-	int err = 0;
+	int err = -1;
 
 	FUSION_LOG("fusion_real_driver_init +\n");
 	for (index = 0; index < max_fusion_support; index++) {
