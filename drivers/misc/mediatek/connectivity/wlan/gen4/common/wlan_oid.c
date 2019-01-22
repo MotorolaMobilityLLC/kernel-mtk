@@ -10960,7 +10960,7 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 
 	prSetP2P = (P_PARAM_CUSTOM_P2P_SET_STRUCT_T) pvSetBuffer;
 
-	DBGLOG(P2P, INFO, "Set P2P enable[%u] mode[%u]\n", prSetP2P->u4Enable, prSetP2P->u4Mode);
+	DBGLOG(P2P, TRACE, "Set P2P enable[%u] mode[%u]\n", prSetP2P->u4Enable, prSetP2P->u4Mode);
 
 	/*
 	 *    enable = 1, mode = 0  => init P2P network
@@ -10982,6 +10982,7 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 			/* ToDo:: ASSERT */
 			ASSERT(prAdapter->fgIsP2PRegistered);
 		} else {
+			DBGLOG(P2P, ERROR, "P2P Launch Failed\n");
 			status = WLAN_STATUS_FAILURE;
 		}
 

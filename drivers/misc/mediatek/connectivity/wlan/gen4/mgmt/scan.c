@@ -162,7 +162,7 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 	pucRoamBSSBuff = &prScanInfo->aucScanRoamBuffer[0];
 #endif
 
-	DBGLOG(SCN, INFO, "->scnInit()\n");
+	DBGLOG(SCN, TRACE, "->scnInit()\n");
 
 	/* 4 <1> Reset STATE and Message List */
 	prScanInfo->eCurrentState = SCAN_STATE_IDLE;

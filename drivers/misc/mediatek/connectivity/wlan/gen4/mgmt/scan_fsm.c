@@ -739,7 +739,7 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 					DBGFWLOG(SCN, TRACE, "Channel  : %s\n", g_aucScanChannelNum);
 					DBGFWLOG(SCN, INFO, "MdrdyCnt : %s\n", g_aucScanChannelMDRDY);
 					DBGFWLOG(SCN, INFO, "BAndPCnt : %s\n", g_aucScanChannelBeacon);
-					DBGFWLOG(SCN, INFO,
+					DBGFWLOG(SCN, TRACE,
 						"==================================================================================\n");
 					kalMemZero(g_aucScanChannelNum, SCN_SCAN_DONE_PRINT_BUFFER_LENGTH);
 					kalMemZero(g_aucScanChannelMDRDY, SCN_SCAN_DONE_PRINT_BUFFER_LENGTH);
