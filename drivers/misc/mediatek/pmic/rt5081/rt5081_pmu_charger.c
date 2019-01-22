@@ -39,7 +39,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.20_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.21_MTK"
 
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, S_IRUGO | S_IWUSR);
@@ -123,11 +123,13 @@ struct rt5081_pmu_charger_data {
 	u32 hidden_mode_cnt;
 	u32 ieoc;
 	bool ieoc_wkard;
+	atomic_t bc12_cnt;
+	atomic_t bc12_wkard;
 #ifdef CONFIG_TCPC_CLASS
 	atomic_t tcpc_usb_connected;
 #else
 	struct work_struct chgdet_work;
-#endif
+#endif /* CONFIG_TCPC_CLASS */
 };
 
 /* These default values will be used if there's no property in dts */
@@ -738,10 +740,72 @@ static int rt5081_inform_psy_changed(struct rt5081_pmu_charger_data *chg_data)
 	return ret;
 }
 
+static inline int rt5081_toggle_chgdet_flow(
+	struct rt5081_pmu_charger_data *chg_data)
+{
+	int ret = 0;
+	u8 data = 0;
+
+	/* read data */
+	ret = i2c_smbus_read_i2c_block_data(chg_data->chip->i2c,
+		RT5081_PMU_REG_DEVICETYPE, 1, &data);
+	if (ret < 0) {
+		dev_err(chg_data->dev, "%s: read usbd fail\n", __func__);
+		goto out;
+	}
+
+	/* usbd off */
+	data &= ~RT5081_MASK_USBCHGEN;
+	ret = i2c_smbus_write_i2c_block_data(chg_data->chip->i2c,
+		RT5081_PMU_REG_DEVICETYPE, 1, &data);
+	if (ret < 0) {
+		dev_err(chg_data->dev, "%s: usbd off fail\n", __func__);
+		goto out;
+	}
+
+	udelay(40);
+
+	/* usbd on */
+	data |= RT5081_MASK_USBCHGEN;
+	ret = i2c_smbus_write_i2c_block_data(chg_data->chip->i2c,
+		RT5081_PMU_REG_DEVICETYPE, 1, &data);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: usbd on fail\n", __func__);
+out:
+
+	return ret;
+}
+
+static int rt5081_bc12_workaround(struct rt5081_pmu_charger_data *chg_data)
+{
+	int ret = 0;
+
+	dev_info(chg_data->dev, "%s\n", __func__);
+
+	rt_mutex_lock(&chg_data->chip->io_lock);
+
+	ret = rt5081_toggle_chgdet_flow(chg_data);
+	if (ret < 0)
+		goto err;
+
+	mdelay(10);
+
+	ret = rt5081_toggle_chgdet_flow(chg_data);
+	if (ret < 0)
+		goto err;
+
+	goto out;
+err:
+	dev_err(chg_data->dev, "%s: fail\n", __func__);
+out:
+	rt_mutex_unlock(&chg_data->chip->io_lock);
+	return ret;
+}
+
 static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
-	bool pwr_rdy = false;
+	bool pwr_rdy = false, inform_psy = true;
 	u8 usb_status = 0;
 
 	dev_info(chg_data->dev, "%s\n", __func__);
@@ -757,9 +821,14 @@ static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 	}
 	pwr_rdy = !pwr_rdy;
 #endif
-	if (chg_data->pwr_rdy == pwr_rdy) {
+	if (chg_data->pwr_rdy == pwr_rdy &&
+		atomic_read(&chg_data->bc12_wkard) == 0) {
 		dev_info(chg_data->dev, "%s: pwr rdy(%d) is the same\n",
 			__func__, pwr_rdy);
+		if (!pwr_rdy) {
+			inform_psy = false;
+			goto out;
+		}
 		return 0;
 	}
 	chg_data->pwr_rdy = pwr_rdy;
@@ -767,8 +836,10 @@ static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 	/* plug out */
 	if (!pwr_rdy) {
 		chg_data->chg_type = CHARGER_UNKNOWN;
+		atomic_set(&chg_data->bc12_cnt, 0);
 		goto out;
 	}
+	atomic_inc(&chg_data->bc12_cnt);
 
 	/* plug in */
 	ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_USBSTATUS1);
@@ -779,6 +850,9 @@ static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 	usb_status = (ret & RT5081_MASK_USB_STATUS) >> RT5081_SHIFT_USB_STATUS;
 
 	switch (usb_status) {
+	case RT5081_CHG_TYPE_UNDER_GOING:
+		dev_info(chg_data->dev, "%s: under going...\n", __func__);
+		return ret;
 	case RT5081_CHG_TYPE_SDP:
 		chg_data->chg_type = STANDARD_HOST;
 		break;
@@ -796,6 +870,18 @@ static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 		break;
 	}
 
+	/* BC12 workaround (NONSTD -> STD) */
+	if (atomic_read(&chg_data->bc12_cnt) < 3 &&
+		chg_data->chg_type == STANDARD_HOST) {
+		ret = rt5081_bc12_workaround(chg_data);
+		/* Workaround success, wait for next event */
+		if (ret >= 0) {
+			atomic_set(&chg_data->bc12_wkard, 1);
+			return ret;
+		}
+		goto out;
+	}
+
 #ifdef RT5081_APPLE_SAMSUNG_TA_SUPPORT
 	ret = rt5081_detect_apple_samsung_ta(chg_data);
 	if (ret < 0)
@@ -803,13 +889,17 @@ static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 			__func__, ret);
 #endif
 
+out:
+	atomic_set(&chg_data->bc12_wkard, 0);
+
 	/* Turn off USB charger detection */
 	ret = rt5081_enable_chgdet_flow(chg_data, false);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: disable chrdet fail\n", __func__);
 
-out:
-	rt5081_inform_psy_changed(chg_data);
+	if (inform_psy)
+		rt5081_inform_psy_changed(chg_data);
+
 	return ret;
 }
 
@@ -1169,14 +1259,6 @@ static int __rt5081_set_aicr(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 	int ret = 0;
 	u8 reg_aicr = 0;
 
-
-	if (chg_data->aicr_limit != -1 && uA > chg_data->aicr_limit) {
-		dev_err(chg_data->dev,
-			"%s: %dmA over TA's cap, can only be %dmA\n",
-			__func__, uA, chg_data->aicr_limit);
-		uA = chg_data->aicr_limit;
-	}
-
 	/* Find corresponding reg value */
 	reg_aicr = rt5081_find_closest_reg_value(
 		RT5081_AICR_MIN,
@@ -1243,11 +1325,6 @@ static int __rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 
 	mutex_lock(&chg_data->pe_access_lock);
 	mutex_lock(&chg_data->aicr_access_lock);
-
-	/* Set AICR to max */
-	ret = __rt5081_set_aicr(chg_data, RT5081_AICR_MAX);
-	if (ret < 0)
-		goto unlock_out;
 
 	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_CHGCTRL14,
 		RT5081_MASK_AICL_MEAS);
@@ -1327,13 +1404,6 @@ static int __rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 {
 	int ret = 0;
 	u8 reg_ichg = 0;
-	bool ichg_wkard = false;
-
-	/* Workaround to make ichg always >= 900mA */
-	if (uA < 900000) {
-		ichg_wkard = true;
-		uA = 900000;
-	}
 
 	/* Find corresponding reg value */
 	reg_ichg = rt5081_find_closest_reg_value(
@@ -1363,10 +1433,7 @@ static int __rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 		ret = __rt5081_set_ieoc(chg_data, chg_data->ieoc - 100000);
 	}
 
-	if (ret < 0)
-		return ret;
-
-	return ichg_wkard ? -EINVAL : ret;
+	return ret;
 }
 
 static int __rt5081_set_cv(struct rt5081_pmu_charger_data *chg_data, u32 uV)
@@ -2483,7 +2550,7 @@ static int rt5081_detect_apple_samsung_ta(
 	ret = rt5081_pmu_reg_update_bits(
 		chg_data->chip,
 		RT5081_PMU_REG_QCSTATUS2,
-		0x03,
+		0x0F,
 		0x03
 	);
 
@@ -2513,7 +2580,7 @@ static int rt5081_detect_apple_samsung_ta(
 	ret = rt5081_pmu_reg_update_bits(
 		chg_data->chip,
 		RT5081_PMU_REG_QCSTATUS2,
-		0x0B,
+		0x0F,
 		0x0B
 	);
 	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_QCSTATUS2,
@@ -3530,6 +3597,8 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	chg_data->hidden_mode_cnt = 0;
 	chg_data->ieoc_wkard = false;
 	chg_data->ieoc = 250000; /* register default value 250mA */
+	atomic_set(&chg_data->bc12_cnt, 0);
+	atomic_set(&chg_data->bc12_wkard, 0);
 #ifdef CONFIG_TCPC_CLASS
 	atomic_set(&chg_data->tcpc_usb_connected, 0);
 #endif
@@ -3679,6 +3748,10 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.21_MTK
+ * (1) Remove keeping ichg >= 900mA
+ * (2) Add BC12 SDP workaround
+ *
  * 1.1.20_MTK
  * (1) Always keep setting of ichg >= 900mA
  * (2) Remove setting ichg to 512mA in pep20_reset
