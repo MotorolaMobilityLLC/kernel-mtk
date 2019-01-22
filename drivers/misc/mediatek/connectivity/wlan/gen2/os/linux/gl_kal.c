@@ -1582,7 +1582,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 
 
 #if (1 || defined(PPR2_TEST))
-			DBGLOG(TX, INFO, "setUP ucIpTos: %d, ucUP: %d\n", ucIpTos, ucUserPriority);
+			DBGLOG(TX, TRACE, "setUP ucIpTos: %d, ucUP: %d\n", ucIpTos, ucUserPriority);
 			if (pucIpHdr[9] == IP_PRO_ICMP && pucIpPayload[0] == 0x08) {
 				DBGLOG(TX, INFO, "PING ipid: %d ucIpTos: %d, ucUP: %d\n",
 					(pucIpHdr[5] << 8 | pucIpHdr[4]),
