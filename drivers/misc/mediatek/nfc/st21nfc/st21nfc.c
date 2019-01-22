@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2013 ST Microelectronics S.A.
+ * Copyright (C) 2016 ST Microelectronics S.A.
  * Copyright (C) 2010 Stollmann E+V GmbH
  * Copyright (C) 2010 Trusted Logic S.A.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -42,9 +43,9 @@
 
 #include <mtk_clkbuf_ctl.h>
 
-#define MAX_BUFFER_SIZE	256
+#define MAX_BUFFER_SIZE	260
 
-#define DRIVER_VERSION "1.0.9"
+#define DRIVER_VERSION "2.2.0.0"
 
 /* define the active state of the WAKEUP pin */
 #define ST21_IRQ_ACTIVE_HIGH 1
@@ -254,11 +255,6 @@ static int st21nfc_dev_open(struct inode *inode, struct file *filp)
 	if (enable_debug_log)
 		pr_info("%s:%d dev_open", __FILE__, __LINE__);
 
-	/*If use XTAL mode, please remove this function "clk_buf_ctrl" to
-	 *avoid additional power consumption.
-	 */
-	clk_buf_ctrl(CLK_BUF_NFC, true);
-
 	if (device_open) {
 		ret = -EBUSY;
 		if (enable_debug_log)
@@ -274,6 +270,12 @@ static int st21nfc_dev_open(struct inode *inode, struct file *filp)
 			pr_debug("%s: st21nfc_dev ptr %p\n", __func__, st21nfc_dev);
 		}
 	}
+
+	/*If use XTAL mode, please remove this function "clk_buf_ctrl" to
+	 *avoid additional power consumption.
+	 */
+	clk_buf_ctrl(CLK_BUF_NFC, true);
+
 	return ret;
 }
 
@@ -638,28 +640,30 @@ static int st21nfc_probe(struct i2c_client *client,
 	st21nfc_dev->platform_data.polarity_mode = platform_data->polarity_mode;
 	st21nfc_dev->platform_data.client = client;
 
-	pr_err("%s gpio_request, ret is %d %d %d %d // %d %d %d %d\n", __func__,
-		st21nfc_dev->platform_data.irq_gpio,
-		st21nfc_dev->platform_data.ena_gpio,
-		st21nfc_dev->platform_data.reset_gpio,
-		st21nfc_dev->platform_data.polarity_mode,
+	if (enable_debug_log) {
+		pr_debug("%s gpio_request, ret is %d %d %d %d // %d %d %d %d\n", __func__,
+		    st21nfc_dev->platform_data.irq_gpio,
+		    st21nfc_dev->platform_data.ena_gpio,
+		    st21nfc_dev->platform_data.reset_gpio,
+		    st21nfc_dev->platform_data.polarity_mode,
+		    platform_data->irq_gpio,
+		    platform_data->ena_gpio,
+		    platform_data->reset_gpio,
+		    platform_data->polarity_mode);
 
-		platform_data->irq_gpio,
-		platform_data->ena_gpio,
-		platform_data->reset_gpio,
-		platform_data->polarity_mode);
+		desc = gpio_to_desc(platform_data->irq_gpio);
+		if (!desc)
+			pr_debug("gpio_desc is null\n");
+		else
+			pr_debug("gpio_desc isn't null\n");
 
-	desc = gpio_to_desc(platform_data->irq_gpio);
-	if (!desc)
-		pr_err("gpio_desc is null\n");
-	else
-		pr_err("gpio_desc isn't null\n");
+		if (gpio_is_valid(platform_data->irq_gpio))
+			pr_debug("gpio number %d is valid\n", platform_data->irq_gpio);
 
-	if (gpio_is_valid(platform_data->irq_gpio))
-		pr_err("gpio number %d is valid\n", platform_data->irq_gpio);
+		if (gpio_is_valid(platform_data->reset_gpio))
+			pr_debug("gpio number %d is valid\n", platform_data->reset_gpio);
+	}
 
-	if (gpio_is_valid(platform_data->reset_gpio))
-		pr_err("gpio number %d is valid\n", platform_data->reset_gpio);
 	ret = gpio_request(platform_data->irq_gpio,
 #if (!defined(CONFIG_MTK_GPIO) || defined(CONFIG_MTK_GPIOLIB_STAND))
 		"gpio-irq-std"
@@ -758,8 +762,8 @@ static int st21nfc_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, st21nfc_dev);
 	ret = misc_register(&st21nfc_dev->st21nfc_device);
-	pr_info("ret of misc_register:%d\n", ret);
 	if (ret) {
+		pr_info("ret of misc_register:%d\n", ret);
 		pr_err("%s : misc_register failed\n", __FILE__);
 		goto err_misc_register;
 	}
@@ -850,11 +854,10 @@ static struct platform_driver st21nfc_platform_driver = {
 
 static int __init st21nfc_dev_init(void)
 {
-	if (enable_debug_log)
-		pr_debug("Loading st21nfc driver\n");
+	pr_info("Loading st21nfc driver\n");
 	platform_driver_register(&st21nfc_platform_driver);
 	if (enable_debug_log)
-		pr_debug("Loading st21nfc platform driver\n");
+		pr_debug("Loading st21nfc i2c driver\n");
 
 	return i2c_add_driver(&st21nfc_driver);
 }
@@ -863,8 +866,7 @@ module_init(st21nfc_dev_init);
 
 static void __exit st21nfc_dev_exit(void)
 {
-	if (enable_debug_log)
-		pr_debug("Unloading st21nfc driver\n");
+	pr_info("Unloading st21nfc driver\n");
 	i2c_del_driver(&st21nfc_driver);
 }
 
