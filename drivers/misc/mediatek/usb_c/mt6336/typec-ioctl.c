@@ -509,7 +509,7 @@ static ssize_t vbus_store(struct device *pdev, struct device_attribute *attr,
 	int on = 0;
 
 	if (kstrtoint(buff, 0, &on) == 0) {
-		typec_drive_vbus(hba, !!on);
+		hba->drive_vbus(hba, !!on);
 		dev_err(pdev, "Turn %s Vbus\n", ((!!on)?"_ON_":"_OFF_"));
 	}
 
