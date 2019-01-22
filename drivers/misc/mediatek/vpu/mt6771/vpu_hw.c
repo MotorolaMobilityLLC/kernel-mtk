@@ -1313,14 +1313,10 @@ int vpu_init_hw(int core, struct vpu_device *device)
 					vpu_service_cores[i].vpu_service_task =
 						kthread_create(vpu_service_routine,
 						&(vpu_service_cores[i].thread_variable), "vpu0");
-				} else if (i == 1) {
-					vpu_service_cores[i].vpu_service_task =
-						kthread_create(vpu_service_routine,
-						&(vpu_service_cores[i].thread_variable), "vpu1");
 				} else {
 					vpu_service_cores[i].vpu_service_task =
 						kthread_create(vpu_service_routine,
-						&(vpu_service_cores[i].thread_variable), "vpu2");
+						&(vpu_service_cores[i].thread_variable), "vpu1");
 				}
 				if (IS_ERR(vpu_service_cores[i].vpu_service_task)) {
 					ret = PTR_ERR(vpu_service_cores[i].vpu_service_task);
