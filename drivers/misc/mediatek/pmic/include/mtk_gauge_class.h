@@ -65,9 +65,12 @@ struct gauge_ops;
 
 enum gauge_info {
 	GAUGE_2SEC_REBOOT,
-
+	GAUGE_PL_CHARGING_STATUS,
+	GAUGE_MONITER_PLCHG_STATUS,
+	GAUGE_BAT_PLUG_STATUS,
 	GAUGE_INFO_MAX
 };
+
 
 enum gauge_hw_version {
 	GAUGE_HW_V1000 = 1000,
