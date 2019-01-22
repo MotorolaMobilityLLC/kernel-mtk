@@ -1792,7 +1792,7 @@ int vpu_ext_be_busy(void)
 
 int vpu_boot_up(int core)
 {
-	int ret;
+	int ret = 0;
 
 	LOG_DBG("[vpu_%d] boot_up +\n", core);
 	mutex_lock(&power_mutex[core]);
@@ -1832,7 +1832,7 @@ out:
 
 int vpu_shut_down(int core)
 {
-	int ret;
+	int ret = 0;
 	int i = 0;
 
 	LOG_DBG("[vpu_%d] shutdown +\n", core);
