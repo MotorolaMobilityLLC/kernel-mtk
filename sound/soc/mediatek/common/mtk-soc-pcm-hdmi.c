@@ -785,7 +785,7 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 
 
 #ifdef _TONE_TEST
-	copysinewavetohdmi(runtime->channels);
+	copysinewavetohdmi(substream->runtime->channels);
 #endif
 
 	/* here to set interrupt */
