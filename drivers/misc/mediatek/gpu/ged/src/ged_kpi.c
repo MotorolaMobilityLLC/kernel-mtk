@@ -1297,8 +1297,10 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				psTimeStamp->i32QedBuffer_length, psTimeStamp->ullTimeStamp, psHead);
 #endif
 		}
+#ifdef GED_KPI_DEBUG
 		else
 			GED_PR_ERR("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+#endif
 		break;
 	case GED_TIMESTAMP_TYPE_2:
 		ulID = (unsigned long) psTimeStamp->ullWnd;
@@ -1390,7 +1392,9 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 										psTimeStamp->i32FrameID);
 			}
 		} else {
+#ifdef GED_KPI_DEBUG
 			GED_PR_ERR("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+#endif
 		}
 		break;
 	case GED_TIMESTAMP_TYPE_P:
@@ -1420,11 +1424,15 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			} else {
 				ged_log_perf_trace_counter("t_pre_fence_delay",
 					0, psTimeStamp->pid, psTimeStamp->i32FrameID);
-				GED_PR_ERR("[GED_KPI][Exception] TYPE_P: psKPI NULL, frameID: %lu\n",
+#ifdef GED_KPI_DEBUG
+				GED_LOGE("[GED_KPI][Exception] TYPE_P: psKPI NULL, frameID: %lu\n",
 										psTimeStamp->i32FrameID);
+#endif
 			}
 		} else {
-			GED_PR_ERR("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+#ifdef GED_KPI_DEBUG
+			GED_LOGE("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+#endif
 		}
 		break;
 	case GED_TIMESTAMP_TYPE_S:
