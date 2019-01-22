@@ -221,4 +221,5 @@ extern void aee_kernel_RT_Monitor_api(int lParam);
 extern void mlog_get_buffer(char **ptr, int *size)__attribute__((weak));
 extern void get_msdc_aee_buffer(unsigned long *buff,
 	unsigned long *size)__attribute__((weak));
+extern void show_task_mem(void)__attribute__((weak));
 #endif
