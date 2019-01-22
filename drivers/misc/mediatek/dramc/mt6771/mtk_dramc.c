@@ -1461,6 +1461,7 @@ read_mr4_show, read_mr4_store);
 /*DRIVER_ATTR(dram_dfs, 0664, dram_dfs_show, dram_dfs_store);*/
 static struct timer_list zqcs_timer;
 static unsigned char low_freq_counter;
+DEFINE_SPINLOCK(sw_zq_tx_lock);
 
 void zqcs_timer_callback(unsigned long data)
 {
@@ -1478,7 +1479,7 @@ void zqcs_timer_callback(unsigned long data)
 #endif
 
 #if defined(SW_ZQCS) || defined(SW_TX_TRACKING)
-	unsigned long save_flags;
+	unsigned long save_flags, spinlock_save_flags;
 #ifdef DVFS_READY
 	unsigned int timeout;
 #endif
@@ -1513,6 +1514,7 @@ void zqcs_timer_callback(unsigned long data)
 #endif
 
 #ifdef SW_ZQCS
+	spin_lock_irqsave(&sw_zq_tx_lock, spinlock_save_flags);
 	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
 		pr_info("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
@@ -1579,6 +1581,7 @@ void zqcs_timer_callback(unsigned long data)
 					pr_warn("[DRAMC] release SPM HW SEMAPHORE fail!\n");
 				mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
 				local_irq_restore(save_flags);
+				spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 				pr_err("CA%x Rank%x ZQCal Start time out\n", CHCounter, RankCounter);
 				return;
 			}
@@ -1606,6 +1609,7 @@ void zqcs_timer_callback(unsigned long data)
 					pr_info("[DRAMC] release SPM HW SEMAPHORE fail!\n");
 			mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
 			local_irq_restore(save_flags);
+			spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 			pr_err("CA%x Rank%x ZQCal latch time out\n", CHCounter, RankCounter);
 			return;
 			}
@@ -1617,6 +1621,7 @@ void zqcs_timer_callback(unsigned long data)
 
 tx_start:
 	local_irq_restore(save_flags);
+	spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 #endif
 
 #ifdef SW_TX_TRACKING
@@ -1625,9 +1630,11 @@ tx_start:
 
 	udelay(200);
 
+	spin_lock_irqsave(&sw_zq_tx_lock, spinlock_save_flags);
 	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
 		local_irq_restore(save_flags);
+		spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 		pr_info("[DRAMC] TX 0 can NOT get SPM HW SEMAPHORE!\n");
 	} else {
 #ifdef DVFS_READY
@@ -1637,13 +1644,16 @@ tx_start:
 		if (release_dram_ctrl() != 0)
 			pr_info("[DRAMC] TX 0 release SPM HW SEMAPHORE fail!\n");
 		local_irq_restore(save_flags);
+		spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 	}
 
 	udelay(200);
 
+	spin_lock_irqsave(&sw_zq_tx_lock, spinlock_save_flags);
 	local_irq_save(save_flags);
 	if (acquire_dram_ctrl() != 0) {
 		local_irq_restore(save_flags);
+		spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 		pr_info("[DRAMC] TX 1 can NOT get SPM HW SEMAPHORE!\n");
 	} else {
 #ifdef DVFS_READY
@@ -1653,6 +1663,7 @@ tx_start:
 		if (release_dram_ctrl() != 0)
 			pr_info("[DRAMC] TX 1 release SPM HW SEMAPHORE fail!\n");
 		local_irq_restore(save_flags);
+		spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 	}
 #endif
 
