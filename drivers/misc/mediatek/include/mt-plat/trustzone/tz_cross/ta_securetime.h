@@ -73,18 +73,18 @@ struct TM_GB {
 
 /* end of SUPPORT_GB_SECURE_CLOCK */
 
-typedef struct SECURETIME_IVDATA {
+struct SECURETIME_IVDATA {
 	unsigned long long qwInitializationVector;
 	unsigned long long qwBlockOffset;
 	unsigned long  bByteOffset;
-} SECURETIME_IVDATA;
+};
 
 
-typedef struct TZ_SECURETIME_ENCINFO {
+struct TZ_SECURETIME_ENCINFO {
 	char role[100];
 	unsigned int dataSize; /* total enc buffer size	*/
 	unsigned int segNum; /* trunk number */
-	SECURETIME_IVDATA iv[10]; /* IV data for each trunk */
+	struct SECURETIME_IVDATA iv[10]; /* IV data for each trunk */
 	unsigned int offset[10]; /* pointer to an integer array,
 				  * each element describes clear data size
 				  */
@@ -94,7 +94,7 @@ typedef struct TZ_SECURETIME_ENCINFO {
 	unsigned int dstHandle;  /* true : dstData is a handle;
 				  * false : dstData is a buffer;
 				  */
-} TZ_SECURETIME_ENCINFO;
+};
 
 /* only be userd in tee, in user or kernel, should call the tee_service call */
 /* unsigned long long GetTee_SecureTime(); */

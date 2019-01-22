@@ -19,7 +19,7 @@
 /* Data Structure for Widevine TA
  * You should define data structure used both in REE/TEE here
  */
-typedef enum TEE_MTK_CryptoResult {
+enum TEE_MTK_CryptoResult {
 	TEE_MTK_Crypto_SUCCESS = 0,
 	TEE_MTK_Crypto_ERROR_INIT_FAILED,
 	TEE_MTK_Crypto_ERROR_TERMINATE_FAILED,
@@ -41,7 +41,7 @@ typedef enum TEE_MTK_CryptoResult {
 	TEE_MTK_Crypto_ERROR_RNG_NOT_SUPPORTED,
 	TEE_MTK_Crypto_ERROR_SETUP,
 	TEE_MTK_Crypto_LEFT_NAL
-} TEE_MTK_CryptoResult;
+};
 
 /* Command for Widevine TA */
 
