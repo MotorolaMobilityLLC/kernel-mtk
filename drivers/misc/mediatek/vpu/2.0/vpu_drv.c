@@ -804,11 +804,11 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 			temp_algo_id = vpu_get_algo_id_by_name(i, name);
 			if (temp_algo_id < 0) {
-				LOG_ERR("[GET_ALGO] can not find algo, name=%s, id:%d\n", u_algo->name, temp_algo_id);
+				LOG_ERR("[GET_ALGO] can not find algo, name=%s, id:%d\n", name, temp_algo_id);
 				ret = -ESPIPE;
 				goto out;
 			} else {
-				LOG_DBG("[GET_ALGO] core(%d) name=%s, id=%d\n", i, u_algo->name, temp_algo_id);
+				LOG_DBG("[GET_ALGO] core(%d) name=%s, id=%d\n", i, name, temp_algo_id);
 			}
 			algo_id[i] = (vpu_id_t)temp_algo_id;
 		}
