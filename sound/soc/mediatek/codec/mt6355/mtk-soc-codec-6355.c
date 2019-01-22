@@ -4221,7 +4221,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0000, 0x0fff);
 			/* Audio R preamplifier input sel : off, Audio R PGA 0 dB gain */
 			/* Disable audio R PGA */
-			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x00ff);
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x01ff);
 			/* disable MICBIAS0, No MICBIAS2 and ref mic mic bias is from MICBIAS0 in 6355 */
 		}
 
@@ -4233,7 +4233,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 
 			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0000, 0x0018);
 			/* disable ADC CLK from CLKGEN (13MHz) */
-			Ana_Set_Reg(AUDDEC_ANA_CON3, 0x0000, 0x0061);
+			Ana_Set_Reg(AUDENC_ANA_CON3, 0x0000, 0x0061);
 			/* disable audio ADC CLKGEN */
 
 			if (GetDLStatus() == false) {
