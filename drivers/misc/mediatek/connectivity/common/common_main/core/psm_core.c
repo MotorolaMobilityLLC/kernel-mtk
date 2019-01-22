@@ -894,6 +894,7 @@ static INT32 _stp_psm_wait_wmt_event(PVOID pvData)
 	MTKSTP_PSM_T *stp_psm = (MTKSTP_PSM_T *) pvData;
 
 	STP_PSM_DBG_FUNC("%s, stp_psm->flag= %ld\n", __func__, stp_psm->flag.data);
+	osal_ftrace_print("%s, stp_psm->flag= %ld\n", __func__, stp_psm->flag.data);
 
 	return (osal_test_bit(STP_PSM_WMT_EVENT_SLEEP_EN, &stp_psm->flag)) ||
 		(osal_test_bit(STP_PSM_WMT_EVENT_WAKEUP_EN, &stp_psm->flag)) ||
@@ -1260,6 +1261,7 @@ static inline VOID _stp_psm_stp_is_idle(ULONG data)
 	}
 
 	STP_PSM_DBG_FUNC("**IDLE is over %d msec, go to sleep!!!**\n", stp_psm->idle_time_to_sleep);
+	osal_ftrace_print("**IDLE is over %d msec, go to sleep!!!**\n", stp_psm->idle_time_to_sleep);
 	_stp_psm_notify_wmt_sleep_wq(stp_psm);
 }
 
@@ -1311,6 +1313,10 @@ static inline INT32 _stp_psm_do_wait(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T s
 	while (_stp_psm_get_state(stp_psm) != state && i < limit) {
 		osal_sleep_ms(POLL_WAIT);
 		i++;
+		if (i == 10) {
+			STP_PSM_WARN_FUNC("-Wait for %s takes %d msec\n", g_psm_state[state], i * POLL_WAIT);
+			_stp_psm_opid_dbg_out_printk(g_stp_psm_opid_dbg);
+		}
 		if (i >= 3)
 			continue;
 			STP_PSM_INFO_FUNC("STP is waiting state for %s, i=%d, state = %d\n",
@@ -1329,7 +1335,7 @@ static inline INT32 _stp_psm_do_wait(MTKSTP_PSM_T *stp_psm, MTKSTP_PSM_STATE_T s
 static inline INT32 _stp_psm_do_wakeup(MTKSTP_PSM_T *stp_psm)
 {
 	INT32 ret = 0;
-	INT32 retry = 10;
+	INT32 retry = 1;
 	P_OSAL_OP_Q pOpQ;
 	P_OSAL_OP pOp;
 
@@ -1371,6 +1377,7 @@ static inline INT32 _stp_psm_do_wakeup(MTKSTP_PSM_T *stp_psm)
 static inline INT32 _stp_psm_disable(MTKSTP_PSM_T *stp_psm)
 {
 	INT32 ret = STP_PSM_OPERATION_FAIL;
+	P_OSAL_THREAD psm_thread;
 
 	STP_PSM_DBG_FUNC("PSM Disable start\n\r");
 	ret = osal_lock_sleepable_lock(&stp_psm->user_lock);
@@ -1384,8 +1391,11 @@ static inline INT32 _stp_psm_disable(MTKSTP_PSM_T *stp_psm)
 	osal_unlock_sleepable_lock(&stp_psm->user_lock);
 	if (ret == STP_PSM_OPERATION_SUCCESS)
 		STP_PSM_DBG_FUNC("PSM Disable Success\n");
-	else
+	else {
 		STP_PSM_ERR_FUNC("***PSM Disable Fail***\n");
+		psm_thread = &stp_psm_i.PSMd;
+		osal_thread_show_stack(psm_thread);
+	}
 	return ret;
 }
 
@@ -1795,7 +1805,10 @@ static INT32 _stp_psm_opid_dbg_dmp_in(P_STP_PSM_OPID_RECORD p_opid_dbg, UINT32 o
 {
 	INT32 index = 0;
 	struct timeval now;
+	UINT64 ts;
+	ULONG nsec;
 
+	osal_get_local_time(&ts, &nsec);
 	if (p_opid_dbg) {
 		osal_lock_unsleepable_lock(&p_opid_dbg->lock);
 		do_gettimeofday(&now);
@@ -1809,6 +1822,8 @@ static INT32 _stp_psm_opid_dbg_dmp_in(P_STP_PSM_OPID_RECORD p_opid_dbg, UINT32 o
 		p_opid_dbg->queue[p_opid_dbg->in].sec = now.tv_sec;
 		p_opid_dbg->queue[p_opid_dbg->in].usec = now.tv_usec;
 		p_opid_dbg->queue[p_opid_dbg->in].pid = current->pid;
+		p_opid_dbg->queue[p_opid_dbg->in].l_sec = ts;
+		p_opid_dbg->queue[p_opid_dbg->in].l_nsec = nsec;
 		p_opid_dbg->size++;
 		STP_PSM_DBG_FUNC("pre_opid = %d, cur_opid = %d\n", p_opid_dbg->queue[p_opid_dbg->in].prev_flag,
 				 p_opid_dbg->queue[p_opid_dbg->in].cur_flag);
@@ -1845,9 +1860,11 @@ static INT32 _stp_psm_opid_dbg_out_printk(P_STP_PSM_OPID_RECORD p_opid_dbg)
 	STP_PSM_INFO_FUNC("loged record size = %d, in(%d), out(%d)\n", dumpSize, inIndex, outIndex);
 	while (dumpSize > 0) {
 
-		pr_debug("STP-PSM:%d.%ds, n(%d)pre_flag(%d)cur_flag(%d)line_no(%d) pid(%d)\n",
+		pr_debug("STP-PSM:%d.%ds, time[%llu.%06lu], n(%d)pre_flag(%d)cur_flag(%d)line_no(%d) pid(%d)\n",
 		       p_opid_dbg->queue[outIndex].sec,
 		       p_opid_dbg->queue[outIndex].usec,
+		       p_opid_dbg->queue[outIndex].l_sec,
+		       p_opid_dbg->queue[outIndex].l_nsec,
 		       p_opid_dbg->queue[outIndex].package_no,
 		       p_opid_dbg->queue[outIndex].prev_flag,
 		       p_opid_dbg->queue[outIndex].cur_flag,
