@@ -1293,7 +1293,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	} else {
 		pr_err(
 			"use default TEMP_T3_THRES_MINUS_X_DEGREE:%d\n", TEMP_T3_THRES_MINUS_X_DEGREE);
-		info->data.temp_t3_threshold = TEMP_T3_THRES_MINUS_X_DEGREE;
+		info->data.temp_t3_thres_minus_x_degree = TEMP_T3_THRES_MINUS_X_DEGREE;
 	}
 
 	if (of_property_read_u32(np, "temp_t2_threshold", &val) >= 0) {
