@@ -811,10 +811,19 @@ WLAN_STATUS halTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
 	UINT_32 au4WTSR[8];
+	P_GL_HIF_INFO_T prHifInfo;
 
+	prHifInfo = &prAdapter->prGlueInfo->rHifInfo;
 	prTxCtrl = &prAdapter->rTxCtrl;
 
-	HAL_READ_TX_RELEASED_COUNT(prAdapter, au4WTSR);
+	if (prHifInfo->fgIsPendingInt && (prHifInfo->prSDIOCtrl->u4WHISR & WHISR_TX_DONE_INT)) {
+		/* Get Tx done resource from pending interrupt status */
+		kalMemCopy(au4WTSR, &prHifInfo->prSDIOCtrl->rTxInfo, sizeof(UINT_32) * 8);
+
+		/* Clear pending Tx done interrupt */
+		prHifInfo->prSDIOCtrl->u4WHISR &= ~WHISR_TX_DONE_INT;
+	} else
+		HAL_READ_TX_RELEASED_COUNT(prAdapter, au4WTSR);
 
 	if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE) {
 		u4Status = WLAN_STATUS_FAILURE;
