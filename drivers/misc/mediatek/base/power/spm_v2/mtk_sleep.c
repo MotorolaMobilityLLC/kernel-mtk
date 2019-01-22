@@ -282,6 +282,8 @@ void gpio_dump_regs_func(void)
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
 	int ret = 0;
+
+	return 0; /* temporarily fix suspend fail */
 #if 0
 	u32 cpu = smp_processor_id();
 #endif
