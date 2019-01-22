@@ -61,8 +61,6 @@ static struct amp_i2c_control amp_list[AMP_TYPE_NUM] = {
 		.i2c_remove = rt5509_i2c_remove,
 		.i2c_shutdown = rt5509_i2c_shutdown,
 	},
-#else
-	NULL,
 #endif
 };
 
