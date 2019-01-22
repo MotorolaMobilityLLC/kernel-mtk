@@ -745,7 +745,7 @@ static unsigned int dpidle_log_discard_cnt;
 static unsigned int dpidle_log_print_prev_time;
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle)
+static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_cond)
 {
 	int ret;
 	struct spm_data spm_d;
@@ -775,7 +775,7 @@ static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle)
 		spm_crit2("ret %d", ret);
 }
 #else
-static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle)
+static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_cond)
 {
 }
 
@@ -796,12 +796,12 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		pr_err("dpidle spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
 }
 
-static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
-		struct pwr_ctrl *pwrctrl, bool sleep_dpidle)
+static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct pcm_desc *pcmdesc,
+		struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 	unsigned int resource_usage = 0;
 
-	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle);
+	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond);
 
 	spm_dpidle_pre_process();
 
@@ -851,8 +851,8 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 	}
 }
 
-static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
-		struct pwr_ctrl *pwrctrl, bool sleep_dpidle)
+static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct pcm_desc *pcmdesc,
+		struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 	unsigned int resource_usage = 0;
 
@@ -887,7 +887,7 @@ static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 		__spm_set_pcm_wdt(1);
 #endif
 
-	spm_dpidle_notify_sspm_before_wfi();
+	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond);
 
 	spm_dpidle_pre_process();
 
@@ -939,16 +939,19 @@ int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace)
 	return 0;
 }
 
-static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 dump_log)
+static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 log_cond)
 {
 	wake_reason_t wr = WR_NONE;
 	unsigned long int dpidle_log_print_curr_time = 0;
 	bool log_print = false;
 	static bool timer_out_too_short;
 
-	if (dump_log == DEEPIDLE_LOG_FULL) {
+	if (log_cond & DEEPIDLE_LOG_FULL) {
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
-	} else if (dump_log == DEEPIDLE_LOG_REDUCED) {
+
+		if (log_cond & DEEPIDLE_LOG_RESOURCE_USAGE)
+			spm_resource_req_dump();
+	} else if (log_cond & DEEPIDLE_LOG_REDUCED) {
 		/* Determine print SPM log or not */
 		dpidle_log_print_curr_time = spm_get_current_time_ms();
 
@@ -974,6 +977,9 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 						timer_out_too_short);
 			wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
 
+			if (log_cond & DEEPIDLE_LOG_RESOURCE_USAGE)
+				spm_resource_req_dump();
+
 			dpidle_log_print_prev_time = dpidle_log_print_curr_time;
 			dpidle_log_discard_cnt = 0;
 			timer_out_too_short = false;
@@ -992,7 +998,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	return wr;
 }
 
-wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
+wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 operation_cond)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
@@ -1052,7 +1058,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	}
 #endif
 
-	spm_dpidle_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, false);
+	spm_dpidle_pcm_setup_before_wfi(false, cpu, pcmdesc, pwrctrl, operation_cond);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
 
@@ -1078,7 +1084,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	request_uart_to_wakeup();
 #endif
 
-	wr = spm_output_wake_reason(&wakesta, pcmdesc, dump_log);
+	wr = spm_output_wake_reason(&wakesta, pcmdesc, log_cond);
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 RESTORE_IRQ:
@@ -1206,7 +1212,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	}
 #endif
 
-	spm_dpidle_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, true);
+	spm_dpidle_pcm_setup_before_wfi(true, cpu, pcmdesc, pwrctrl, 0);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_WFI);
 
