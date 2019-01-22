@@ -123,6 +123,15 @@ static int disp_aal_get_cust_led(void)
 	return ret;
 }
 
+bool disp_aal_is_support(void)
+{
+#ifdef CONFIG_MTK_AAL_SUPPORT
+	return true;
+#else
+	return false;
+#endif
+}
+
 static void backlight_brightness_set_with_lock(int bl_1024)
 {
 	_primary_path_switch_dst_lock();
