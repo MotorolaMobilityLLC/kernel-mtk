@@ -2023,8 +2023,10 @@ void fm_rds_reset_work_func(unsigned long data)
 
 	ret = fm_low_ops.ri.rds_blercheck(g_fm_struct->pstRDSData);
 
-	WCN_DBG(FM_NTC | MAIN, "ret=%d, Addr_Cnt=0x%02x, event_status=0x%04x\n", ret,
-		g_fm_struct->pstRDSData->AF_Data.Addr_Cnt, g_fm_struct->pstRDSData->event_status);
+	if (ret || g_fm_struct->pstRDSData->AF_Data.Addr_Cnt || g_fm_struct->pstRDSData->event_status) {
+		WCN_DBG(FM_NTC | MAIN, "ret=%d, Addr_Cnt=0x%02x, event_status=0x%04x\n", ret,
+			g_fm_struct->pstRDSData->AF_Data.Addr_Cnt, g_fm_struct->pstRDSData->event_status);
+	}
 	/* check af list get,can't use event==af_list because event will clear after read rds every time */
 	if (g_fm_struct->pstRDSData->AF_Data.Addr_Cnt == 0xFF)
 		g_fm_struct->pstRDSData->event_status |= RDS_EVENT_AF;
