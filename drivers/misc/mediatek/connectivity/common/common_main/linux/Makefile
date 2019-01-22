@@ -25,6 +25,4 @@ ifeq ($(CONFIG_MTK_BTIF), y)
 obj-y += stp_btif.o
 endif
 
-obj-$(CONFIG_MTK_COMBO_BT) += stp_chrdev_bt.o
-
 endif
