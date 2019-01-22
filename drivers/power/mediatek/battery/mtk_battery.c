@@ -1723,6 +1723,22 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_err("Get POWERON_SYSTEM_IBOOT failed\n");
 	}
 
+	if (!of_property_read_u32(np, "UIFULLLIMIT_EN", &val)) {
+		fg_cust_data.ui_full_limit_en = (int)val;
+		bm_debug("Get UIFULLLIMIT_EN: %d\n",
+			 fg_cust_data.ui_full_limit_en);
+	} else {
+		bm_err("Get UIFULLLIMIT_EN failed\n");
+	}
+
+	if (!of_property_read_u32(np, "MULTI_GAUGE0_EN", &val)) {
+		fg_cust_data.multi_temp_gauge0 = (int)val;
+		bm_debug("Get MULTI_GAUGE0_EN: %d\n",
+			 fg_cust_data.multi_temp_gauge0);
+	} else {
+		bm_err("Get MULTI_GAUGE0_EN failed\n");
+	}
+
 	if (!of_property_read_u32(np, "SHUTDOWN_GAUGE0_VOLTAGE", &val)) {
 		fg_cust_data.shutdown_gauge0_voltage = (int)val;
 		bm_debug("Get SHUTDOWN_GAUGE0_VOLTAGE: %d\n",
