@@ -1045,7 +1045,7 @@ static int sensor_send_dram_info_to_hub(void)
 	struct SCP_sensorHub_data *obj = obj_data;
 	SCP_SENSOR_HUB_DATA data;
 	unsigned int len = 0;
-	int err = 0, retry = 0, total = 3;
+	int err = 0, retry = 0, total = 10;
 
 	obj->shub_dram_phys = scp_get_reserve_mem_phys(SENS_MEM_ID);
 	obj->shub_dram_virt = scp_get_reserve_mem_virt(SENS_MEM_ID);
