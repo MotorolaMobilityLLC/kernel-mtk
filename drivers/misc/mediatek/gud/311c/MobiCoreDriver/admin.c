@@ -787,7 +787,8 @@ int is_authenticator_pid(pid_t pid)
 	/* Now compare (under locks to avoid a race-based attack) */
 	if (!service) {
 		mc_dev_notice("No authenticator connected\n");
-		return -ENOTCONN;
+		ret = -ENOTCONN;
+		goto end;
 	}
 
 	/* Get TGID for given PID */
@@ -801,6 +802,8 @@ int is_authenticator_pid(pid_t pid)
 		ret = -EPERM;
 	}
 	rcu_read_unlock();
+
+end:
 	mutex_unlock(&admin_ctx.services_mutex);
 	return ret;
 }
