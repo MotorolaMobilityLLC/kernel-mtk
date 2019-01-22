@@ -342,7 +342,7 @@ void get_freq_table_gpu(struct eem_det *det)
 {
 	int i = 0;
 
-	memset(det->freq_tbl, '0', sizeof(det->freq_tbl));
+	memset(det->freq_tbl, 0, sizeof(det->freq_tbl));
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
