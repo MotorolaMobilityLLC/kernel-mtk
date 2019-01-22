@@ -28,7 +28,7 @@ DEFINE_MUTEX(frame_q_head_lock);
 static LIST_HEAD(framequeue_pool_head);
 static DEFINE_MUTEX(framequeue_pool_lock);
 
-#if 0
+#if 1
 static GED_LOG_BUF_HANDLE ghlog;
 atomic_t ged_log_inited = ATOMIC_INIT(0);
 #define GEDLOG(fmt, ...) \
