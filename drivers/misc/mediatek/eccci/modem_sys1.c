@@ -397,6 +397,7 @@ static int md_cd_start(struct ccci_modem *md)
 	atomic_set(&md->reset_on_going, 0);
 
 	md->per_md_data.md_dbg_dump_flag = MD_DBG_DUMP_AP_REG;
+	md->per_md_data.sim_type = 0xEEEEEEEE;
 
 	/* 7. let modem go */
 	md_cd_let_md_go(md);
