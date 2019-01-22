@@ -45,14 +45,12 @@
 /* MET: define to enable MET*/
 /* #define ISP_MET_READY */
 
-#define EP_STAGE
+/* #define EP_STAGE */
 #ifdef EP_STAGE
-#if 0
 #define EP_MARK_SMI                   /* disable SMI related for EP */
 #define DUMMY_INT                       /* For early if load dont need to use camera*/
 #define EP_NO_PMQOS                  /* If PMQoS is not ready on EP stage */
 #define EP_NO_CLKMGR                /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
-#endif
 #define EP_NO_K_LOG_ADJUST    /* EP no need to adjust upper bound of kernel log count */
 #endif
 
@@ -2681,7 +2679,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				mmdvfs_pm_qos_update_request(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, dfs_update);
 				#endif
 				target_clk = dfs_update;
-				LOG_VRB("Set clock level:%d", dfs_update);
+				LOG_DBG("Set clock level:%d", dfs_update);
 			} else {
 				LOG_NOTICE("ISP_DFS_UPDATE copy_from_user failed\n");
 				Ret = -EFAULT;
