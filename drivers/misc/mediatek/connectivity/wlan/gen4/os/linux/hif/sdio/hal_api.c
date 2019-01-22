@@ -399,7 +399,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 					/* Trigger RESET */
 #if CFG_CHIP_RESET_SUPPORT
 					glGetRstReason(RST_DRV_OWN_FAIL);
-					glResetTrigger(prAdapter);
+					glResetTrigger(prAdapter, FALSE);
 #endif
 				}
 				GET_CURRENT_SYSTIME(&prAdapter->rLastOwnFailedLogTime);
@@ -468,7 +468,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 					/* Trigger RESET */
 #if CFG_CHIP_RESET_SUPPORT
 					glGetRstReason(RST_DRV_OWN_FAIL);
-					glResetTrigger(prAdapter);
+					glResetTrigger(prAdapter, FALSE);
 #endif
 				}
 
@@ -1322,11 +1322,11 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 		u2RxPktNum = (rxNum == 0 ? prEnhDataStr->rRxInfo.u.u2NumValidRx0Len :
 			prEnhDataStr->rRxInfo.u.u2NumValidRx1Len);
 
-		/* if this assertion happened, it is most likely a F/W bug */
-		ASSERT(u2RxPktNum <= HIF_RX_MAX_AGG_NUM);
-
-		if (u2RxPktNum > HIF_RX_MAX_AGG_NUM)
-			continue;
+		if (u2RxPktNum > HIF_RX_MAX_AGG_NUM) {
+			halProcessAbnormalInterrupt(prAdapter);
+			glResetTrigger(prAdapter, TRUE);
+			return;
+		}
 
 		if (u2RxPktNum == 0)
 			continue;
@@ -1372,9 +1372,10 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 				(UINT_32) prEnhDataStr->rRxInfo.u.au2Rx1Len[i]);
 
 			if (!u4RxLength) {
-				ASSERT(0);
 				DBGLOG(RX, ERROR, "[%s] RxLength == 0\n", __func__);
-				break;
+				halProcessAbnormalInterrupt(prAdapter);
+				glResetTrigger(prAdapter, TRUE);
+				return;
 			}
 
 			if (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN) < u4RxAvailAggLen) {
@@ -1384,8 +1385,9 @@ VOID halRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 				/* CFG_RX_COALESCING_BUFFER_SIZE is not large enough */
 				DBGLOG(RX, ERROR, "[%s] Request_len(%d) >= Available_len(%d)\n",
 					__func__, (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN)), u4RxAvailAggLen);
-				ASSERT(0);
-				break;
+				halProcessAbnormalInterrupt(prAdapter);
+				glResetTrigger(prAdapter, TRUE);
+				return;
 			}
 		}
 
@@ -1949,14 +1951,29 @@ P_SDIO_INT_LOG_T halGetIntLog(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Idx)
 
 VOID halProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 {
-	UINT_32 u4Value;
+	UINT_32 au4Value[] = {MCR_WASR, MCR_WCIR, MCR_WHLPCR, MCR_WHIER};
+	PUINT_8 pucCCR = (PUINT_8)&au4Value[0];
+	MTK_WCN_HIF_SDIO_CLTCTX cltCtx = prAdapter->prGlueInfo->rHifInfo.cltCtx;
+	UINT_8 i = 0;
 
-	HAL_MCR_RD(prAdapter, MCR_WASR, &u4Value);
-	DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx\n", u4Value);
+	for (; i < sizeof(au4Value)/sizeof(UINT_32); i++)
+		HAL_MCR_RD(prAdapter, au4Value[i], &au4Value[i]);
+
+	DBGLOG(REQ, WARN, "WASR 0x%x, WCIR 0x%x, WHLPCR 0x%x, WHIER 0x%x\n",
+		au4Value[0], au4Value[1], au4Value[2], au4Value[3]);
+
+	halPollDbgCr(prAdapter, 5);
+
+	for (i = 0; i < 8; i++)
+		mtk_wcn_hif_sdio_f0_readb(cltCtx, 0xf8 + i, &pucCCR[i]);
+
+	DBGLOG(REQ, WARN, "CCCR %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		pucCCR[0], pucCCR[1], pucCCR[2], pucCCR[3], pucCCR[4], pucCCR[5],
+		pucCCR[6], pucCCR[7]);
 
 	halPrintIntStatus(prAdapter);
 
-	if (u4Value & (WASR_RX0_UNDER_FLOW | WASR_RX1_UNDER_FLOW)) {
+	if (au4Value[0] & (WASR_RX0_UNDER_FLOW | WASR_RX1_UNDER_FLOW)) {
 		DBGLOG(REQ, WARN, "Skip all SDIO Rx due to Rx underflow error!\n");
 		prAdapter->prGlueInfo->rHifInfo.fgSkipRx = TRUE;
 	}

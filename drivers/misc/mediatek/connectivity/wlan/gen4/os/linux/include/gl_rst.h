@@ -181,14 +181,6 @@ extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 *                                 M A C R O S
 ********************************************************************************
 */
-#if CFG_CHIP_RESET_SUPPORT
-#define glDoCoreDump() \
-		do { \
-			DBGLOG(INIT, INFO, "do core dump in %s\n", __func__); \
-			mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 0x40); \
-		} while (0)
-#endif
-
 extern UINT_64 u8ResetTime;
 extern ENUM_CHIP_RESET_REASON_TYPE_T eResetReason;
 /*******************************************************************************
@@ -211,7 +203,7 @@ VOID glSendResetRequest(VOID);
 
 BOOLEAN kalIsResetting(VOID);
 
-BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter);
+BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter, BOOLEAN fgCoreDump);
 
 VOID glGetRstReason(ENUM_CHIP_RESET_REASON_TYPE_T eReason);
 
