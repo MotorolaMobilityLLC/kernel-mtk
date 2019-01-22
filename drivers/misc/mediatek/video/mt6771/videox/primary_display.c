@@ -7042,6 +7042,7 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 				m_ccorr_config.mode);
 
 			/* backup night params here */
+			mem_config.m_ccorr_config = m_ccorr_config;
 			cmdqRecBackupUpdateSlot(cmdq_handle, pgc->night_light_params, 0,
 				mem_config.m_ccorr_config.mode);
 			for (i = 0; i < 16; i++)
