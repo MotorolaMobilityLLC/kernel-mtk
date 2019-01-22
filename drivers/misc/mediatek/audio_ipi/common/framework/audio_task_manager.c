@@ -21,6 +21,7 @@
 #include <linux/wait.h>
 #include <linux/spinlock.h>
 
+#include <linux/io.h>
 #include <linux/mutex.h>
 
 #include <scp_ipi.h>
@@ -132,10 +133,10 @@ static char *get_do_name(const task_scene_t task_scene)
 	return do_name;
 #else
 	char *feature_name = g_audio_task_array[task_scene].feature_name;
-	DOListNode *all_do_info = mt_do_get_do_infos();
+	struct do_list_node *all_do_info = mt_do_get_do_infos();
 
-	DOListNode *do_node = NULL;
-	DOListNode *feature_node = NULL;
+	struct do_list_node *do_node = NULL;
+	struct do_list_node *feature_node = NULL;
 
 	char *do_name = NULL;
 
@@ -252,7 +253,7 @@ int audio_load_task(const task_scene_t task_scene)
 #ifndef CONFIG_MTK_DO /* without DO, do nothing */
 	return -1;
 #else
-	DOListNode *current_do = NULL;
+	struct do_list_node *current_do = NULL;
 
 	char *target_do_name = NULL;
 	int retval = 0;
@@ -270,7 +271,7 @@ int audio_load_task(const task_scene_t task_scene)
 
 	/* unload current */
 	if (g_current_do_name == NULL) { /* scp might load a default DO */
-		current_do = mt_do_get_loaded_do();
+		current_do = mt_do_get_loaded_do(SCP_B);
 		if (current_do != NULL &&
 		    current_do->name != NULL &&
 		    strcmp(target_do_name, current_do->name) != 0)

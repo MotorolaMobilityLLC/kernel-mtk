@@ -44,7 +44,7 @@
 #include "audio_dma_buf_control.h"
 
 #ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
-#include <mt_spm_sleep.h>       /* for spm_ap_mdsrc_req */
+#include <mtk_spm_sleep.h>       /* for spm_ap_mdsrc_req */
 #include "audio_ipi_client_phone_call.h"
 #endif
 
@@ -232,8 +232,8 @@ static long audio_ipi_driver_ioctl(
 		if (arg) { /* enable scp speech */
 			if (b_speech_on == false) {
 				b_speech_on = true;
-				register_feature(OPEN_DSP_FEATURE_ID);
-				request_freq();
+				scp_register_feature(OPEN_DSP_FEATURE_ID);
+				scp_request_freq();
 				if (b_dump_pcm_enable)
 					open_dump_file();
 			}
@@ -241,8 +241,8 @@ static long audio_ipi_driver_ioctl(
 			if (b_speech_on == true) {
 				b_speech_on = false;
 				close_dump_file();
-				deregister_feature(OPEN_DSP_FEATURE_ID);
-				request_freq();
+				scp_deregister_feature(OPEN_DSP_FEATURE_ID);
+				scp_request_freq();
 				/*scp_get_log(1);*/ /* dump scp log */
 			}
 		}
@@ -315,7 +315,7 @@ static int __init audio_ipi_driver_init(void)
 	int ret = 0;
 
 #if 0 /* TODO: this will cause KE/HWT ...... */
-	if (is_scp_ready() == 0) {
+	if (is_scp_B_ready() == 0) {
 		AUD_LOG_E("[SCP] scp not ready\n");
 		return -EACCES;
 	}

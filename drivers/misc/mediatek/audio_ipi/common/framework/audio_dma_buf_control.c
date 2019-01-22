@@ -24,14 +24,14 @@ static audio_resv_dram_t resv_dram;
 
 void init_reserved_dram(void)
 {
-	resv_dram.phy_addr = (char *)get_reserve_mem_phys(OPENDSP_MEM_ID);
-	resv_dram.vir_addr = (char *)get_reserve_mem_virt(OPENDSP_MEM_ID);
-	resv_dram.size     = (uint32_t)get_reserve_mem_size(OPENDSP_MEM_ID);
+	resv_dram.phy_addr = (char *)scp_get_reserve_mem_phys(OPENDSP_MEM_ID);
+	resv_dram.vir_addr = (char *)scp_get_reserve_mem_virt(OPENDSP_MEM_ID);
+	resv_dram.size     = (uint32_t)scp_get_reserve_mem_size(OPENDSP_MEM_ID);
 
 	AUD_LOG_D("resv_dram: pa %p, va %p, sz 0x%x\n",
 		  resv_dram.phy_addr, resv_dram.vir_addr, resv_dram.size);
 
-	if (is_scp_ready()) {
+	if (is_scp_B_ready()) {
 		AUD_ASSERT(resv_dram.phy_addr != NULL);
 		AUD_ASSERT(resv_dram.vir_addr != NULL);
 		AUD_ASSERT(resv_dram.size > 0);
