@@ -109,11 +109,11 @@ static void mtk_wdt_mark_stage(unsigned int stage)
 	mt_reg_sync_writel(reg, MTK_WDT_NONRST_REG2);
 }
 
-static void mtk_wdt_update_last_restart(void *last)
+static void mtk_wdt_update_last_restart(void *last, int cpu_id)
 {
 	wdt_kick_info[wdt_kick_info_idx].restart_time = sched_clock();
 	wdt_kick_info[wdt_kick_info_idx].restart_caller = last;
-	wdt_kick_info[wdt_kick_info_idx].cpu = smp_processor_id();
+	wdt_kick_info[wdt_kick_info_idx].cpu = cpu_id;
 	wdt_kick_info_idx = (wdt_kick_info_idx + 1) % MTK_WDT_KEEP_LAST_INFO;
 }
 
@@ -271,6 +271,7 @@ void mtk_wdt_restart(enum wd_restart_type type)
 {
 	void *here = __builtin_return_address(0);
 	struct device_node *np_rgu;
+	int cpuid = 0;
 
 	if (!toprgu_base) {
 
@@ -290,15 +291,18 @@ void mtk_wdt_restart(enum wd_restart_type type)
 	#else
 		mt_reg_sync_writel(MTK_WDT_RESTART_KEY, MTK_WDT_RESTART);
 	#endif
+		cpuid = smp_processor_id();
 		spin_unlock(&rgu_reg_operation_spinlock);
-		mtk_wdt_update_last_restart(here);
+		mtk_wdt_update_last_restart(here, cpuid);
 	} else if (type == WD_TYPE_NOLOCK) {
 	#ifdef CONFIG_KICK_SPM_WDT
 		spm_wdt_restart_timer_nolock();
 	#else
 		mt_reg_sync_writel(MTK_WDT_RESTART_KEY, MTK_WDT_RESTART);
 	#endif
-		mtk_wdt_update_last_restart(here);
+		/* smp_processor_id can only call at preempt-safe way */
+		/* so skip cpu_id info in WD_TYPE_NOLOCK */
+		mtk_wdt_update_last_restart(here, -1);
 	} else
 		pr_debug("WDT:[mtk_wdt_restart] type=%d error pid =%d\n", type, current->pid);
 }
