@@ -606,7 +606,15 @@ typedef struct _VAL_BufInfo {
 	VAL_UINT32_T        u4BSSize;
 } VAL_BufInfo;
 /* for DirectLink Meta Mode - */
-
+struct VAL_FRAME_INFO_T {
+	VAL_VOID_T *handle; /* driver handle */
+	VAL_DRIVER_TYPE_T driver_type;
+	VAL_UINT32_T input_size; /* input bitstream bytes */
+	VAL_UINT32_T frame_width;
+	VAL_UINT32_T frame_height; /* field pic has half height */
+	VAL_UINT32_T frame_type; /* 0: intra, 1: inter 1 ref, 2: inter 2 ref, 3: copy */
+	VAL_UINT32_T is_compressed; /* is output buffer compressed */
+};
 
 #ifdef __cplusplus
 }
