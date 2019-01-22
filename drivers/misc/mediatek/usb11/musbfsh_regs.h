@@ -251,6 +251,8 @@
 #define MUSBFSH_TXFIFOADD	0x64	/* 16-bit offset shifted right 3 */
 #define MUSBFSH_RXFIFOADD	0x66	/* 16-bit offset shifted right 3 */
 
+#define MUSBFSH_ULPI_REG_DATA  0x74 /* 8 bit */
+
 #define MUSBFSH_EPINFO		0x78	/* 8 bit */
 #define MUSBFSH_RAMINFO		0x79	/* 8 bit */
 #define MUSBFSH_LINKINFO	0x7a	/* 8 bit */

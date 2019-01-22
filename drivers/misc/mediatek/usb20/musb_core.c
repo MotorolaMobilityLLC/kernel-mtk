@@ -174,6 +174,7 @@ unsigned musb_uart_debug = 1;
 struct musb *mtk_musb;
 unsigned musb_speed = 1;
 bool mtk_usb_power;
+bool musb_shutted;
 
 struct timeval writeTime;
 struct timeval interruptTime;
@@ -1366,7 +1367,9 @@ static void gadget_stop(struct musb *musb)
 		if (musb->gadget_driver && musb->gadget_driver->disconnect) {
 			DBG(0, "musb->gadget_driver->disconnect:%p\n", musb->gadget_driver->disconnect);
 			/* align musb_g_disconnect */
+			#ifndef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
 			spin_unlock(&musb->lock);
+			#endif
 
 			musb->gadget_driver->disconnect(&musb->g);
 
@@ -1376,10 +1379,6 @@ static void gadget_stop(struct musb *musb)
 			#endif
 		}
 		musb->g.speed = USB_SPEED_UNKNOWN;
-	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
-	} else {
-		spin_unlock(&musb->lock);
-	#endif
 	}
 }
 
@@ -1417,7 +1416,11 @@ static void musb_shutdown(struct platform_device *pdev)
 	#endif
 
 	DBG(0, "shut down\n");
-	pr_err("%s, start to shut down\n", __func__);
+	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
+	disable_irq(mtk_musb->nIrq);
+	#endif
+	musb_shutted = true;
+	DBG(0, "%s, start to shut down = %d\n", __func__, musb_shutted);
 	pm_runtime_get_sync(musb->controller);
 
 	musb_platform_prepare_clk(musb);
@@ -1438,7 +1441,7 @@ static void musb_shutdown(struct platform_device *pdev)
 		musb_platform_set_vbus(mtk_musb, 0);
 		usb_remove_hcd(musb_to_hcd(musb));
 	}
-	musb_writeb(musb->mregs, MUSB_DEVCTL, 0);
+	/* musb_writeb(musb->mregs, MUSB_DEVCTL, 0); */
 	musb_platform_exit(musb);
 
 	musb_platform_unprepare_clk(musb);
