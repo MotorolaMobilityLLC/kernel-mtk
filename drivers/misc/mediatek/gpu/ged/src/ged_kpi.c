@@ -69,12 +69,21 @@ typedef enum {
 	GED_TIMESTAMP_TYPE_H		= 0x8,
 } GED_TIMESTAMP_TYPE;
 
+#ifdef GED_KPI_DFRC
 typedef enum {
 	GED_KPI_FRC_DEFAULT_MODE		= DFRC_DRV_MODE_DEFAULT,	/* No frame control is applied */
 	GED_KPI_FRC_FRR_MODE			= DFRC_DRV_MODE_FRR,
 	GED_KPI_FRC_ARR_MODE			= DFRC_DRV_MODE_ARR,
 	GED_KPI_FRC_SW_VSYNC_MODE		= DFRC_DRV_MODE_INTERNAL_SW,
 } GED_KPI_FRC_MODE_TYPE;
+#else
+typedef enum {
+	GED_KPI_FRC_DEFAULT_MODE		= 0,	/* No frame control is applied */
+	GED_KPI_FRC_FRR_MODE			= 1,
+	GED_KPI_FRC_ARR_MODE			= 2,
+	GED_KPI_FRC_SW_VSYNC_MODE		= 3,
+} GED_KPI_FRC_MODE_TYPE;
+#endif
 
 typedef struct GED_KPI_HEAD_TAG {
 	int pid;
@@ -212,6 +221,7 @@ static unsigned int g_gpu_freq_accum;
 static unsigned int g_frame_count;
 
 static int gx_game_mode;
+static int gx_3D_benchmark_on;
 static int gx_force_cpu_boost;
 static int enable_game_self_frc_detect = 1;
 static unsigned int gx_fps;
@@ -233,6 +243,7 @@ static int boost_upper_bound = 100;
 static void (*ged_kpi_cpu_boost_policy_fp)(GED_KPI_HEAD *psHead, GED_KPI *psKPI);
 module_param(target_t_cpu_remained, long, S_IRUGO|S_IWUSR);
 module_param(gx_game_mode, int, S_IRUGO|S_IWUSR);
+module_param(gx_3D_benchmark_on, int, S_IRUGO|S_IWUSR);
 module_param(gx_force_cpu_boost, int, S_IRUGO|S_IWUSR);
 module_param(cpu_boost_policy, int, S_IRUGO|S_IWUSR);
 module_param(boost_extra, int, S_IRUGO|S_IWUSR);
@@ -876,7 +887,8 @@ static GED_BOOL ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead
 		}
 
 		if (is_game_control_frame_rate && (psHead == main_head)
-			&& (psHead->frc_mode == GED_KPI_FRC_DEFAULT_MODE))
+			&& (psHead->frc_mode == GED_KPI_FRC_DEFAULT_MODE)
+			&& (gx_3D_benchmark_on == 0))
 			target_fps = target_fps_4_main_head;
 
 		psHead->target_fps = target_fps;
@@ -1016,8 +1028,10 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			}
 		}
 		if (psHead) {
+#ifdef GED_KPI_DFRC
 			int d_target_fps, mode, client;
 			unsigned long long ctx_id;
+#endif
 
 			/* new data */
 			psKPI->pid = psTimeStamp->pid;
@@ -1163,7 +1177,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					/* for aligning boost_accum_cpu presentation */
 					psKPI->boost_accum_gpu = boost_accum_gpu - 100;
 
-					if (gx_game_mode == 1 && enable_gpu_boost == 1) {
+					if (gx_game_mode == 1 && enable_gpu_boost == 1 && gx_3D_benchmark_on == 0) {
 						ged_kpi_set_gpu_dvfs_hint((int)(psHead->t_gpu_target/1000)
 												, (int)boost_accum_gpu);
 					} else {
