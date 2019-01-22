@@ -587,7 +587,7 @@ int gauge_dev_enable_vbat_high_interrupt(struct gauge_device *gauge_dev, int en)
 	return ret;
 }
 
-int gauge_dev_enable_vbat_low_threshold(struct gauge_device *gauge_dev, int threshold)
+int gauge_dev_set_vbat_low_threshold(struct gauge_device *gauge_dev, int threshold)
 {
 	int ret = -ENOTSUPP;
 
@@ -595,14 +595,14 @@ int gauge_dev_enable_vbat_low_threshold(struct gauge_device *gauge_dev, int thre
 		return ret;
 
 	gauge_lock(gauge_dev);
-	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_vbat_low_threshold)
-		ret = gauge_dev->ops->gauge_enable_vbat_low_threshold(gauge_dev, threshold);
+	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_vbat_low_threshold)
+		ret = gauge_dev->ops->gauge_set_vbat_low_threshold(gauge_dev, threshold);
 	gauge_unlock(gauge_dev);
 
 	return ret;
 }
 
-int gauge_dev_enable_vbat_high_threshold(struct gauge_device *gauge_dev, int threshold)
+int gauge_dev_set_vbat_high_threshold(struct gauge_device *gauge_dev, int threshold)
 {
 	int ret = -ENOTSUPP;
 
@@ -610,8 +610,8 @@ int gauge_dev_enable_vbat_high_threshold(struct gauge_device *gauge_dev, int thr
 		return ret;
 
 	gauge_lock(gauge_dev);
-	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_vbat_high_threshold)
-		ret = gauge_dev->ops->gauge_enable_vbat_high_threshold(gauge_dev, threshold);
+	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_set_vbat_high_threshold)
+		ret = gauge_dev->ops->gauge_set_vbat_high_threshold(gauge_dev, threshold);
 	gauge_unlock(gauge_dev);
 
 	return ret;
