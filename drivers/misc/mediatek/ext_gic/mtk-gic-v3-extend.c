@@ -65,6 +65,9 @@ static inline unsigned int virq_to_hwirq(unsigned int virq)
 	unsigned int hwirq;
 
 	desc = irq_to_desc(virq);
+
+	WARN_ON(!desc);
+
 	hwirq = gic_irq(&desc->irq_data);
 
 	return hwirq;
@@ -130,19 +133,17 @@ build_mask:
 	return true;
 }
 
-u32 mt_irq_get_pol(u32 irq)
+u32 mt_irq_get_pol_hw(u32 hwirq)
 {
 	u32 reg;
 	void __iomem *base = INT_POL_CTL0;
 
-	irq = virq_to_hwirq(irq);
-
-	if (irq < 32) {
-		pr_err("Fail to set polarity of interrupt %d\n", irq);
+	if (hwirq < 32) {
+		pr_err("Fail to set polarity of interrupt %d\n", hwirq);
 		return 0;
 	}
 
-	reg = ((irq - 32)/32);
+	reg = ((hwirq - 32)/32);
 
 	/* if reg_len_pol0 != 0, means there is 2nd POL reg base,
 	 * compute the correct offset for polarity reg in 2nd POL reg
@@ -159,6 +160,14 @@ u32 mt_irq_get_pol(u32 irq)
 
 	return readl_relaxed(IOMEM(base + reg*4));
 }
+
+u32 mt_irq_get_pol(u32 irq)
+{
+	u32 hwirq = virq_to_hwirq(irq);
+
+	return mt_irq_get_pol_hw(hwirq);
+}
+
 /*
  * mt_irq_mask_all: disable all interrupts
  * @mask: pointer to struct mtk_irq_mask for storing the original mask value.
@@ -257,22 +266,27 @@ int mt_irq_mask_restore(struct mtk_irq_mask *mask)
 	return 0;
 }
 
-u32 mt_irq_get_pending(unsigned int irq)
+u32 mt_irq_get_pending_hw(unsigned int hwirq)
 {
 	void __iomem *base;
-	u32 bit = 1 << (irq % 32);
+	u32 bit = 1 << (hwirq % 32);
 
-	irq = virq_to_hwirq(irq);
-
-	if (irq >= 32) {
+	if (hwirq >= 32) {
 		base = GIC_DIST_BASE;
 	} else {
 		gic_populate_rdist(&base);
 		base += SZ_64K;
 	}
 
-	return (readl_relaxed(base + GIC_DIST_PENDING_SET + (irq/32)*4)&bit) ?
+	return (readl_relaxed(base + GIC_DIST_PENDING_SET + (hwirq/32)*4)&bit) ?
 		1 : 0;
+}
+
+u32 mt_irq_get_pending(unsigned int irq)
+{
+	unsigned int hwirq = virq_to_hwirq(irq);
+
+	return mt_irq_get_pending_hw(hwirq);
 }
 
 u32 mt_irq_get_pending_vec(u32 start_irq)
@@ -306,21 +320,26 @@ u32 mt_irq_get_pending_vec(u32 start_irq)
 	return pending_vec;
 }
 
-void mt_irq_set_pending(unsigned int irq)
+void mt_irq_set_pending_hw(unsigned int hwirq)
 {
 	void __iomem *base;
-	u32 bit = 1 << (irq % 32);
+	u32 bit = 1 << (hwirq % 32);
 
-	irq = virq_to_hwirq(irq);
-
-	if (irq >= 32) {
+	if (hwirq >= 32) {
 		base = GIC_DIST_BASE;
 	} else {
 		gic_populate_rdist(&base);
 		base += SZ_64K;
 	}
 
-	writel(bit, base + GIC_DIST_PENDING_SET + (irq/32)*4);
+	writel(bit, base + GIC_DIST_PENDING_SET + (hwirq/32)*4);
+}
+
+void mt_irq_set_pending(unsigned int irq)
+{
+	unsigned int hwirq = virq_to_hwirq(irq);
+
+	mt_irq_set_pending_hw(hwirq);
 }
 
 /*
