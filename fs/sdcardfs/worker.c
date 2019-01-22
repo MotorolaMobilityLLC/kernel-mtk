@@ -398,15 +398,18 @@ static void get_derive_permissions_recursive_internal(struct dentry *parent)
 	struct dentry *dentry;
 
 	list_for_each_entry(dentry, &parent->d_subdirs, d_child) {
-		if (dentry->d_inode) {
-			if (dentry == parent)
-				continue;
-			sdcardfs_lock_dinode(dentry);
+		struct inode *inode = d_inode(dentry);
+
+		if (dentry == parent)
+			continue;
+
+		if (inode) {
+			mutex_lock(&inode->i_mutex);
 			get_derived_permission(parent, dentry);
-			fix_derived_permission(dentry->d_inode);
-			if (S_ISDIR(dentry->d_inode->i_mode))
+			fix_derived_permission(inode);
+			if (S_ISDIR(inode->i_mode))
 				get_derive_permissions_recursive_internal(dentry);
-			sdcardfs_unlock_dinode(dentry);
+			mutex_unlock(&inode->i_mutex);
 		}
 	}
 }
