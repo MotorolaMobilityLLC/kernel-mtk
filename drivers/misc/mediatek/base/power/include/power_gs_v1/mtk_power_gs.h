@@ -24,6 +24,8 @@
 #include <linux/uaccess.h>
 #include <linux/io.h>
 
+#include "mtk_power_gs_internal.h"
+
 #define REMAP_SIZE_MASK     0xFFF
 
 extern bool is_already_snap_shot;
@@ -91,9 +93,9 @@ void mt_power_gs_compare(char *scenario, char *pmic_name,
 unsigned int _golden_read_reg(unsigned int addr);
 void _golden_write_reg(unsigned int addr, unsigned int mask, unsigned int reg_val);
 int _snapshot_golden_setting(struct golden *g, const char *func, const unsigned int line);
-void mt_power_gs_suspend_compare(void);
-void mt_power_gs_dpidle_compare(void);
-void mt_power_gs_sodi_compare(void);
+void mt_power_gs_suspend_compare(unsigned int dump_flag);
+void mt_power_gs_dpidle_compare(unsigned int dump_flag);
+void mt_power_gs_sodi_compare(unsigned int dump_flag);
 void mt_power_gs_sp_dump(void);
 
 bool _is_exist_in_phys_to_virt_table(unsigned int phys_base);

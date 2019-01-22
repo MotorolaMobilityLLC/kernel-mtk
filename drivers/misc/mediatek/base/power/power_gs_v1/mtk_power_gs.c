@@ -32,30 +32,103 @@ bool slp_chk_golden_suspend = true;
 bool slp_chk_golden_dpidle = true;
 bool slp_chk_golden_sodi3 = true;
 
-void mt_power_gs_dump_suspend(void)
-{
-	if (slp_chk_golden_suspend)
-		mt_power_gs_suspend_compare();
-}
-EXPORT_SYMBOL(mt_power_gs_dump_suspend);
-
-void mt_power_gs_dump_dpidle(void)
-{
-	if (slp_chk_golden_dpidle)
-		mt_power_gs_dpidle_compare();
-}
-EXPORT_SYMBOL(mt_power_gs_dump_dpidle);
-
-void __weak mt_power_gs_sodi_compare(void)
+void __weak mt_power_gs_sodi_compare(unsigned int dump_flag)
 {
 	pr_warn("Power_gs: %s does not implement intead of dump suspend\n", __func__);
-	mt_power_gs_dump_suspend();
+	mt_power_gs_suspend_compare(GS_ALL);
 }
 
-void mt_power_gs_dump_sodi3(void)
+/* deprecated, temp used for api argument transfer */
+void mt_power_gs_f_dump_suspend(unsigned int dump_flag)
+{
+	if (slp_chk_golden_suspend)
+		mt_power_gs_suspend_compare(dump_flag);
+}
+void mt_power_gs_t_dump_suspend(int count, ...)
+{
+	unsigned int p1 = GS_ALL;
+	va_list v;
+
+	va_start(v, count);
+
+	/* C pre-processor macros do not distinguish well between zero and one arguments */
+	if (count)
+		p1 = va_arg(v, unsigned int);
+
+	/* if the argument is void, va_arg will get -1 */
+	if (p1 > GS_ALL)
+		p1 = GS_ALL;
+
+	mt_power_gs_f_dump_suspend(p1);
+	va_end(v);
+}
+EXPORT_SYMBOL(mt_power_gs_t_dump_suspend);
+void mt_power_gs_f_dump_dpidle(unsigned int dump_flag)
+{
+	if (slp_chk_golden_dpidle)
+		mt_power_gs_dpidle_compare(dump_flag);
+}
+void mt_power_gs_t_dump_dpidle(int count, ...)
+{
+	unsigned int p1 = GS_ALL;
+	va_list v;
+
+	va_start(v, count);
+
+	/* C pre-processor macros do not distinguish well between zero and one arguments */
+	if (count)
+		p1 = va_arg(v, unsigned int);
+
+	/* if the argument is void, va_arg will get -1 */
+	if (p1 > GS_ALL)
+		p1 = GS_ALL;
+
+	mt_power_gs_f_dump_dpidle(p1);
+	va_end(v);
+}
+EXPORT_SYMBOL(mt_power_gs_t_dump_dpidle);
+void mt_power_gs_f_dump_sodi3(unsigned int dump_flag)
 {
 	if (slp_chk_golden_sodi3)
-		mt_power_gs_sodi_compare();
+		mt_power_gs_sodi_compare(dump_flag);
+}
+void mt_power_gs_t_dump_sodi3(int count, ...)
+{
+	unsigned int p1 = GS_ALL;
+	va_list v;
+
+	va_start(v, count);
+
+	/* C pre-processor macros do not distinguish well between zero and one arguments */
+	if (count)
+		p1 = va_arg(v, unsigned int);
+
+	/* if the argument is void, va_arg will get -1 */
+	if (p1 > GS_ALL)
+		p1 = GS_ALL;
+
+	mt_power_gs_f_dump_sodi3(p1);
+	va_end(v);
+}
+EXPORT_SYMBOL(mt_power_gs_t_dump_sodi3);
+
+#undef mt_power_gs_dump_suspend
+#undef mt_power_gs_dump_dpidle
+#undef mt_power_gs_dump_sodi3
+
+void mt_power_gs_dump_suspend(void)
+{
+	mt_power_gs_f_dump_suspend(GS_ALL);
+}
+EXPORT_SYMBOL(mt_power_gs_dump_suspend);
+void mt_power_gs_dump_dpidle(void)
+{
+	mt_power_gs_f_dump_dpidle(GS_ALL);
+}
+EXPORT_SYMBOL(mt_power_gs_dump_dpidle);
+void mt_power_gs_dump_sodi3(void)
+{
+	mt_power_gs_f_dump_sodi3(GS_ALL);
 }
 EXPORT_SYMBOL(mt_power_gs_dump_sodi3);
 
