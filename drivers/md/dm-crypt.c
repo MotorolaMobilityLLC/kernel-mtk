@@ -1198,13 +1198,40 @@ static void kcryptd_io_read_work(struct work_struct *work)
 
 #if defined(CONFIG_MTK_HW_FDE)
 
+/*
+ * MTK PATCH:
+ *
+ * Get storage device type (for hw fde on/off decision)
+ * or id (for crypt_config).
+ *
+ * Returns:
+ *   0: Embedded storage, for example: eMMC or UFS.
+ *   1: External storage, for example: SD card.
+ *  -1: Unrecognizable storage.
+ */
+static int crypt_dev_id(const char *path)
+{
+	int type = -1;
+
+	if (strstr(path, "bootdevice")) {
+
+		/* example: /dev/block/platform/bootdevice/by-name/userdata */
+		type = 0;
+
+	} else if (strstr(path, "externdevice") || strstr(path, "vold")) {
+
+		/* example: /dev/block/vold/private:179,2 */
+		type = 1;
+	}
+
+	pr_info("[dm-crypt] dev path: %s, type: %d\n", path, type);
+
+	return type;
+}
+
 static int crypt_is_hw_fde(const char *path)
 {
-	dev_t uninitialized_var(dev);
-	unsigned int major, minor;
-	char dummy;
-
-	pr_debug("%s %d PATH : %s\n", __func__, __LINE__, path);
+	int dev_type;
 
 #if defined(CONFIG_MTK_HW_FDE_AES)
 	if (fde_aes_check_cmd(FDE_AES_EN_SW_CRYPTO, fde_aes_get_sw(), 0)) {
@@ -1213,101 +1240,26 @@ static int crypt_is_hw_fde(const char *path)
 	}
 #endif
 
-	if (sscanf(path, "%u:%u%c", &major, &minor, &dummy) == 2) {
-		/* Extract the major/minor numbers */
-		dev = MKDEV(major, minor);
-		if (MAJOR(dev) != major || MINOR(dev) != minor)
-			return -EOVERFLOW;
-	} else {
-		/* convert the path to a device */
-		struct block_device *bdev = lookup_bdev(path);
+	dev_type = crypt_dev_id(path);
 
-		if (IS_ERR(bdev))
-			return PTR_ERR(bdev);
-		dev = bdev->bd_dev;
-		major = MAJOR(dev);
-		minor = MINOR(dev);
-	}
+	if (dev_type == 0) {
 
-	pr_debug("%s %d Major:Minor %d:%d\n", __func__, __LINE__, major, minor);
+		/* Always support HW FDE in embedded storage if CONFIG_MTK_HW_FDE is true */
+		return 1;
 
-#if defined(CONFIG_MTK_UFS_BOOTING) /* UFS booting */
-	/* UFS device */
-	if (major == SCSI_DISK0_MAJOR ||
-		major == BLOCK_EXT_MAJOR)
+	} else if (dev_type == 1) {
+
+#if defined(CONFIG_MTK_HW_FDE_AES)
+		/* Support HW FDE in external storage by FDE_AES */
 		return 1;
-	#if defined(CONFIG_MTK_HW_FDE_AES)
-	/* SD card */
-	if (major == MMC_BLOCK_MAJOR && minor <= 2)
-		return 1;
-	#endif
-#elif defined(CONFIG_MTK_EMMC_SUPPORT) /* eMMC booting */
-	#if defined(CONFIG_MTK_HW_FDE_AES)
-	/* both eMMC and SD card use HW FDE */
-	if (major == MMC_BLOCK_MAJOR ||
-		major == BLOCK_EXT_MAJOR)
-		return 1;
-	#else
-	/* eMMC device use HW FDE only. SD card cannot use HW FDE */
-	if (major == BLOCK_EXT_MAJOR && minor < CONFIG_MMC_BLOCK_MINORS * 4)
-		return 1;
-	#endif
+#else
+		/* Do not support HW FDE in external storage. */
+		return 0;
 #endif
+
+	}
 
 	return 0;
-}
-
-static int crypt_dev_id(const char *path)
-{
-	dev_t uninitialized_var(dev);
-	unsigned int major, minor;
-	char dummy;
-
-	pr_debug("%s %d PATH : %s\n", __func__, __LINE__, path);
-
-	if (sscanf(path, "%u:%u%c", &major, &minor, &dummy) == 2) {
-		/* Extract the major/minor numbers */
-		dev = MKDEV(major, minor);
-		if (MAJOR(dev) != major || MINOR(dev) != minor)
-			return -EOVERFLOW;
-	} else {
-		/* convert the path to a device */
-		struct block_device *bdev = lookup_bdev(path);
-
-		if (IS_ERR(bdev))
-			return PTR_ERR(bdev);
-		dev = bdev->bd_dev;
-		major = MAJOR(dev);
-		minor = MINOR(dev);
-	}
-
-	pr_debug("%s %d Major:Minor %d:%d\n", __func__, __LINE__, major, minor);
-
-#if defined(CONFIG_MTK_UFS_BOOTING) /* UFS booting */
-	/* UFS device */
-	if (major == SCSI_DISK0_MAJOR ||
-		major == BLOCK_EXT_MAJOR)
-		return 0;
-	#if defined(CONFIG_MTK_HW_FDE_AES)
-	/* SD card */
-	if (major == MMC_BLOCK_MAJOR && minor <= 2)
-		return 1;
-	#endif
-#elif defined(CONFIG_MTK_EMMC_SUPPORT) /* eMMC booting */
-	#if defined(CONFIG_MTK_HW_FDE_AES)
-	/* both eMMC and SD card use HW FDE */
-	if (major == MMC_BLOCK_MAJOR)
-		return 1;
-	if (major == BLOCK_EXT_MAJOR)
-		return 0;
-	#else
-	/* eMMC device use HW FDE only. SD card cannot use HW FDE */
-	if (major == BLOCK_EXT_MAJOR && minor < CONFIG_MMC_BLOCK_MINORS * 4)
-		return 0;
-	#endif
-#endif
-
-	return -1;
 }
 #endif
 
