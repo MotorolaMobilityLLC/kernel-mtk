@@ -262,7 +262,7 @@ INT32 wmt_ctrl_rx(P_WMT_CTRL_DATA pWmtCtrlData /*UINT8 *pBuff, UINT32 buffLen, U
 		waitRet = wmt_dev_rx_timeout(&pDev->rWmtRxWq);
 		WMT_LOUD_FUNC("wmt_dev_rx_timeout returned\n");
 		if (waitRet == 0) {
-			wmt_lib_read_fw_cpupcr(5, 1, 1);
+			stp_dbg_poll_cpupcr(5, 1, 1);
 			WMT_ERR_FUNC("wmt_dev_rx_timeout: timeout,jiffies(%lu),timeoutvalue(%d)\n",
 				     jiffies, pDev->rWmtRxWq.timeoutValue);
 			return -1;

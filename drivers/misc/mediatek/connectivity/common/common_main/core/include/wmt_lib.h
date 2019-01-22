@@ -342,7 +342,6 @@ extern UINT32 wmt_lib_get_drv_status(UINT32 type);
 #endif
 extern INT32 wmt_lib_tm_temp_query(VOID);
 extern INT32 wmt_lib_trigger_reset(VOID);
-extern VOID wmt_lib_read_fw_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd);
 extern INT32 wmt_lib_wifi_fem_cfg_report(PVOID pvInfoBuf);
 #if CFG_WMT_PS_SUPPORT
 extern UINT32 wmt_lib_quick_sleep_ctrl(UINT32 en);
