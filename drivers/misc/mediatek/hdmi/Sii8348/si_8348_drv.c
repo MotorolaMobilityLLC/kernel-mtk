@@ -51,7 +51,7 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 #include<mach/dcl_sim_gpio.h>
 #endif
 
-#include <mach/irqs.h>
+/*#include <mach/irqs.h>*/
 #ifdef CONFIG_MTK_LEGACY
 #include "mach/eint.h"
 #include <mach/gpio_const.h>

@@ -46,7 +46,7 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 #include "si_8348_regs.h"
 #include "si_timing_defs.h"
 
-#include <mach/irqs.h>
+/*#include <mach/irqs.h>*/
 /*#include "mach/eint.h"*/
 
 #ifdef CONFIG_MTK_LEGACY
@@ -1051,14 +1051,14 @@ void dpi_gpio_ctrl(int enable)
             MHL_WARN("Cannot find MHL pinctrl--%s!!\n", dpi_gpio_name[offset]);
         }
         else
-            pinctrl_select_state(mhl_pinctrl, pin_state); 
-            
+            pinctrl_select_state(mhl_pinctrl, pin_state);
+
         offset +=2;
     }
 
 #ifdef CONFIG_IO_DRIVING
 	/* config DPI IO_DRIVING*/
-#ifdef CONFIG_ARCH_MT6757
+#ifdef CONFIG_MACH_MT6757
 	node = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_1");
 	if (!node)
 		pr_debug("[IOCFG_1] find node failed\n");

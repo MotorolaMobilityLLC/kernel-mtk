@@ -25,7 +25,7 @@
 static struct HDMI_DRIVER *hdmi_tx_drv;
 static int is_context_inited;
 
-disp_ddp_path_config hdmi_factory_dpi_params;
+struct disp_ddp_path_config hdmi_factory_dpi_params;
 struct DPI_PARAM_CONTEXT DPI_Params_Context;
 
 typedef struct _hdmi_factory_context {

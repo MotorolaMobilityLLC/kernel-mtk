@@ -40,11 +40,11 @@
 #include <linux/atomic.h>
 #include <linux/io.h>
 
-#include <mach/irqs.h>
+/*#include <mach/irqs.h>*/
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
-#include "mach/irqs.h"
+/*#include "mach/irqs.h"*/
 
 #include <asm/cacheflush.h>
 #include <asm/tlbflush.h>
@@ -54,7 +54,8 @@
 #include "m4u.h"
 #endif
 
-#include "mt-plat/mt_boot.h"
+#include "mt-plat/mtk_boot_common.h"
+/*#include "mt-plat/mt_boot.h"*/
 #include "mtkfb_info.h"
 #include "mtkfb.h"
 
@@ -135,7 +136,7 @@ struct HDMI_PARAMS _s_hdmi_params = { 0 };
 static int rdmafpscnt;
 
 struct HDMI_PARAMS *hdmi_params = &_s_hdmi_params;
-disp_ddp_path_config extd_dpi_params;
+struct disp_ddp_path_config extd_dpi_params;
 
 struct task_struct *hdmi_fence_release_task;
 wait_queue_head_t hdmi_fence_release_wq;
@@ -307,7 +308,7 @@ int hdmi_free_hdmi_buffer(void)
 
 static int hdmi_wait_vsync_kthread(void *data)
 {
-	disp_session_vsync_config vsync_config;
+	struct disp_session_vsync_config vsync_config;
 
 	struct sched_param param = {.sched_priority = 94 }; /*RTPM_PRIO_SCRN_UPDATE*/
 
@@ -368,7 +369,7 @@ int hdmi_waitVsync(void)
 {
 
 	unsigned int session_id = ext_disp_get_sess_id();
-	disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
+	struct disp_session_sync_info *session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	if (session_info)
 		dprec_start(&session_info->event_waitvsync, 0, 0);
@@ -502,7 +503,7 @@ int hdmi_audio_config(int format)
 	return 0;
 }
 
-static void _hdmi_rdma_irq_handler(DISP_MODULE_ENUM module, unsigned int param)
+static void _hdmi_rdma_irq_handler(enum DISP_MODULE_ENUM module, unsigned int param)
 {
 	if (!is_hdmi_active())
 		return;
@@ -1167,7 +1168,7 @@ int hdmi_get_dev_info(int is_sf, void *info)
 
 	if (is_sf == AP_GET_INFO) {
 		int displayid = 0;
-		mtk_dispif_info_t hdmi_info;
+		struct mtk_dispif_info hdmi_info;
 
 		if (!info) {
 			HDMI_LOG("ioctl pointer is NULL\n");
@@ -1221,9 +1222,9 @@ int hdmi_get_dev_info(int is_sf, void *info)
 				p->is_enabled, hdmi_info.displayType);
 		HDMI_LOG("DEV_INFO configuration get displayType-%d\n", hdmi_info.displayType);
 	} else if (is_sf == SF_GET_INFO) {
-		disp_session_info *dispif_info = (disp_session_info *) info;
+		struct disp_session_info *dispif_info = (struct disp_session_info *) info;
 
-		memset((void *)dispif_info, 0, sizeof(disp_session_info));
+		memset((void *)dispif_info, 0, sizeof(struct disp_session_info));
 
 		dispif_info->isOVLDisabled = (hdmi_layer_num == 1) ? 1 : 0;
 		dispif_info->maxLayerNum = hdmi_layer_num;
