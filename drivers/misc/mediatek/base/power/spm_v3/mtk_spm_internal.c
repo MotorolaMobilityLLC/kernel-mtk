@@ -143,8 +143,10 @@ int __spm_check_opp_level_impl(int ch)
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	opp = scp_get_dvfs_opp();
+	if (opp < 0)
+		opp = vcorefs_get_sw_opp();
 #else
-	opp = 0;
+	opp = vcorefs_get_sw_opp();
 #endif
 #else
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
