@@ -238,6 +238,10 @@ static int mtk_soc_pcm_hp_impedance_close(struct snd_pcm_substream *substream)
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
 	pr_aud("%s\n", __func__);
 	if (mPrepareDone == true) {
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_MEM_DL1,
+				  Soc_Aud_AFE_IO_Block_I2S1_DAC);
+
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		if (GetI2SDacEnable() == false)
 			SetI2SDacEnable(false);
