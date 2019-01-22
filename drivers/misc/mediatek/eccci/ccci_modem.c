@@ -617,7 +617,9 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 	ap_side_md_feature->feature_set[EE_AFTER_EPOF].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 
 	ap_side_md_feature->feature_set[CCMNI_MTU].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#ifdef ENABLE_FAST_HEADER
 	ap_side_md_feature->feature_set[CCCI_FAST_HEADER].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#endif
 }
 
 int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
