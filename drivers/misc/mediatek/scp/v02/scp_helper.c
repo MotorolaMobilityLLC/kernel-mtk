@@ -311,7 +311,6 @@ EXPORT_SYMBOL_GPL(scp_release_semaphore_3way);
 int scp_awake_lock(scp_core_id scp_id)
 {
 	int status_read_back;
-	int ipi_read_back;
 
 	struct mutex *scp_awake_mutex;
 	struct wake_lock *scp_wakelock;
@@ -392,10 +391,6 @@ int scp_awake_lock(scp_core_id scp_id)
 
 	if (ret == -1)
 		pr_err("scp_awake_lock: awake %s fail..\n", core_id);
-
-	ipi_read_back = (readl(SCP_GIPC_REG) >> scp_ipi_awake_num) & 0x1;
-	if (ipi_read_back == 1)
-		pr_err("scp_awake_lock: %s awake ipi not clear\n", core_id);
 
 	/* scp awake */
 	*scp_awake_count = *scp_awake_count + 1;
@@ -1031,6 +1026,34 @@ static inline ssize_t scp_B_awake_unlock_show(struct device *kobj, struct device
 
 DEVICE_ATTR(scp_B_awake_unlock, 0444, scp_B_awake_unlock_show, NULL);
 
+static inline ssize_t scp_ipi_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned int value = 0x5A5A;
+	ipi_status ret;
+
+	if (scp_ready[SCP_A_ID]) {
+		ret = scp_ipi_send(IPI_TEST1, &value, sizeof(value), 0, SCP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "SCP A ipi send ret=%u\n", ret);
+	} else
+		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
+}
+
+DEVICE_ATTR(scp_ipi_test, 0444, scp_ipi_test_show, NULL);
+
+static inline ssize_t scp_B_ipi_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	unsigned int value = 0x5A5A;
+	ipi_status ret;
+
+	if (scp_ready[SCP_B_ID]) {
+		ret = scp_ipi_send(IPI_TEST1, &value, sizeof(value), 0, SCP_B_ID);
+		return scnprintf(buf, PAGE_SIZE, "SCP B ipi send ret=%u\n", ret);
+	} else
+		return scnprintf(buf, PAGE_SIZE, "SCP B is not ready\n");
+}
+
+DEVICE_ATTR(scp_B_ipi_test, 0444, scp_B_ipi_test_show, NULL);
+
 void scp_wdt_reset(scp_core_id cpu_id)
 {
 	switch (cpu_id) {
@@ -1093,18 +1116,18 @@ static int create_files(void)
 		return ret;
 	}
 #if SCP_LOGGER_ENABLE
-	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_mobile_log);
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_mobile_log);
 	if (unlikely(ret != 0))
 		return ret;
 
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_logger_wakeup_AP);
 	if (unlikely(ret != 0))
 		return ret;
-
+#ifdef CONFIG_MTK_ENG_BUILD
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_mobile_log_UT);
 	if (unlikely(ret != 0))
 		return ret;
-
+#endif
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_get_last_log);
 	if (unlikely(ret != 0))
 		return ret;
@@ -1157,6 +1180,13 @@ static int create_files(void)
 	ret = device_create_file(scp_device.this_device, &dev_attr_wdt_reset);
 	if (unlikely(ret != 0))
 		return ret;
+	/* SCP IPI Debug sysfs*/
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_ipi_test);
+	if (unlikely(ret != 0))
+		return ret;
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_ipi_test);
+	if (unlikely(ret != 0))
+		return ret;
 #endif
 
 #if SCP_LOGGER_ENABLE
@@ -1167,11 +1197,11 @@ static int create_files(void)
 	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_logger_wakeup_AP);
 	if (unlikely(ret != 0))
 		return ret;
-
+#ifdef CONFIG_MTK_ENG_BUILD
 	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_mobile_log_UT);
 	if (unlikely(ret != 0))
 		return ret;
-
+#endif
 	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_get_last_log);
 	if (unlikely(ret != 0))
 		return ret;
@@ -1190,12 +1220,6 @@ static int create_files(void)
 
 	if (unlikely(ret != 0))
 		return ret;
-
-#ifdef CONFIG_MTK_ENG_BUILD
-
-	/*	ret = device_create_file(scp_device.this_device, &dev_attr_scp_B_db_test);
-	 */
-#endif
 
 	return 0;
 }
