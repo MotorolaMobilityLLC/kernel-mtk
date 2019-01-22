@@ -649,7 +649,6 @@ void oom_kill_process(struct oom_control *oc, struct task_struct *p,
 		spin_unlock_irqrestore(&victim->stack_trace_lock, flags);
 		pr_info("victim: %s\n, addr: 0x%lx, victim->mm: 0x%lx\n", victim->comm,
 				(unsigned long) victim, (unsigned long)victim->mm);
-		BUG();
 	}
 #endif
 	put_task_struct(victim);
