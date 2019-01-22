@@ -19,6 +19,7 @@ enum {
 	PWRAP_MEM_ID,
 	PMIC_MEM_ID,
 	UPD_MEM_ID,
+	QOS_MEM_ID,
 	NUMS_MEM_ID,
 };
 
@@ -43,7 +44,11 @@ static struct sspm_reserve_mblock sspm_reserve_mblock[NUMS_MEM_ID] = {
 		.num = UPD_MEM_ID,
 		.size = 0x1800, /* 6K */
 	},
-    /* TO align 64K, total is 1M+64K. The remaining size = 0x2100,   */
+	{
+		.num = QOS_MEM_ID,
+		.size = 0x1000, /* 4K */
+	},
+    /* TO align 64K, total is 1M+64K. The remaining size = 0x1100,   */
 };
 #endif
 #endif
