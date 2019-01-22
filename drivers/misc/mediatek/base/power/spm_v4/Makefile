@@ -29,6 +29,11 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include
 ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include/
 ccflags-y += -I$(srctree)/drivers/scsi/ufs/
 
+ifeq ($(CONFIG_MACH_MT6771), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/submodule/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/$(MTK_PLATFORM)/
+endif
+
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH), y)
 ccflags-y += -I$(srctree)/sound/soc/mediatek/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/sound/soc/mediatek/common_int/
