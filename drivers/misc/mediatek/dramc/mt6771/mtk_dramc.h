@@ -49,7 +49,6 @@
 #define PATTERN1 0x5A5A5A5A
 #define PATTERN2 0xA5A5A5A5
 
-#ifdef SW_TX_TRACKING
 #define DRAMC_AO_RKCFG		(dramc_ao_chx_base+0x034)
 #define DRAMC_AO_PD_CTRL	(dramc_ao_chx_base+0x038)
 #define DRAMC_AO_MRS		(dramc_ao_chx_base+0x05C)
@@ -81,7 +80,6 @@ enum TX_RESULT {
 	TX_FAIL_DATA_RATE,
 	TX_FAIL_VARIATION
 };
-#endif
 
 #ifdef LAST_DRAMC
 #define LAST_DRAMC_SRAM_MGR

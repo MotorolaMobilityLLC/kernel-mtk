@@ -72,6 +72,7 @@ unsigned char No_DummyRead;
 unsigned int DRAM_TYPE;
 unsigned int CH_NUM;
 unsigned int CBT_MODE;
+unsigned int lp4_highfreq_3600;
 
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
@@ -180,7 +181,6 @@ const char *uname, int depth, void *data)
 	return node;
 }
 
-#ifdef SW_TX_TRACKING
 static unsigned int read_dram_mode_reg(
 unsigned int mr_index, unsigned int *mr_value,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
@@ -236,6 +236,7 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	return TX_DONE;
 }
 
+#ifdef SW_TX_TRACKING
 static unsigned int start_dram_dqs_osc(void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 {
 	unsigned int response;
@@ -1135,7 +1136,9 @@ unsigned int get_dram_data_rate(void)
 		else
 			u4DataRate = 0;
 	} else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
-		if (u4DataRate == 3198)
+		if (u4DataRate == 3588)
+			u4DataRate = 3600;
+		else if (u4DataRate == 3198)
 			u4DataRate = 3200;
 		else if (u4DataRate == 2392)
 			u4DataRate = 2400;
@@ -1201,7 +1204,7 @@ int dram_steps_freq(unsigned int step)
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1866;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
-			freq = 3200;
+			freq = (lp4_highfreq_3600) ? 3600 : 3200;
 		break;
 	case 1:
 		if (DRAM_TYPE == TYPE_LPDDR3)
@@ -1213,7 +1216,7 @@ int dram_steps_freq(unsigned int step)
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1600;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
-			freq = 2400;
+			freq = (lp4_highfreq_3600) ? 3200 : 2400;
 		break;
 	case 3:
 		if (DRAM_TYPE == TYPE_LPDDR3)
@@ -1309,12 +1312,87 @@ const char *buf, size_t count)
 	return count;
 }
 
+#if defined(CONFIG_MTK_ENG_BUILD)
+static ssize_t read_mr4_show(struct device_driver *driver, char *buf)
+{
+	unsigned int rank, channel, temp;
+	unsigned int mr4[2][2];
+	void __iomem *dramc_ao_chx_base;
+	void __iomem *dramc_nao_chx_base;
+	void __iomem *ddrphy_chx_base;
+	ssize_t ret;
+	unsigned long save_flags;
+	unsigned int res;
+
+	ret = 0;
+
+	ret = snprintf(buf, PAGE_SIZE, "NO MR4\n");
+
+	mr4[0][0] = mr4[0][1] = mr4[1][0] = mr4[1][1] = 0;
+
+	local_irq_save(save_flags);
+
+	if (acquire_dram_ctrl() != 0) {
+		pr_warn("[DRAMC0] can NOT get SPM HW SEMAPHORE!\n");
+		local_irq_restore(save_flags);
+		return 0;
+	}
+
+	for (rank = 0; rank < 2; rank++) {
+		for (channel = 0; channel < 2; channel++) {
+			if (channel == 0) {
+				dramc_ao_chx_base = DRAMC_AO_CHA_BASE_ADDR;
+				dramc_nao_chx_base = DRAMC_NAO_CHA_BASE_ADDR;
+				ddrphy_chx_base = DDRPHY_AO_CHA_BASE_ADDR;
+			} else {
+				dramc_ao_chx_base = DRAMC_AO_CHB_BASE_ADDR;
+				dramc_nao_chx_base = DRAMC_NAO_CHB_BASE_ADDR;
+				ddrphy_chx_base = DDRPHY_AO_CHB_BASE_ADDR;
+			}
+
+			temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<26);
+			Reg_Sync_Writel(DRAMC_AO_MRS, temp | (rank<<26));
+
+			res = read_dram_mode_reg(4, &mr4[rank][channel], dramc_ao_chx_base, dramc_nao_chx_base);
+			if (res != TX_DONE)
+				goto ret_read_mr4;
+
+
+		}
+	}
+
+ret_read_mr4:
+	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<26);
+	Reg_Sync_Writel(DRAMC_AO_MRS, temp);
+
+	if (release_dram_ctrl() != 0)
+		pr_info("[DRAMC] release SPM HW SEMAPHORE fail!\n");
+
+	local_irq_restore(save_flags);
+
+	ret = snprintf(buf, PAGE_SIZE, "MR4: R0CHA=0x%x, R0CHB=0x%x, R1CHA=0x%x, R1CHB=0x%x\n",
+			mr4[0][0], mr4[0][1], mr4[1][0], mr4[1][1]);
+
+	return ret;
+}
+
+static ssize_t read_mr4_store(struct device_driver *driver,
+const char *buf, size_t count)
+{
+	return count;
+}
+#endif
 
 DRIVER_ATTR(emi_clk_mem_test, 0664,
 complex_mem_test_show, complex_mem_test_store);
 
 DRIVER_ATTR(read_dram_data_rate, 0664,
 read_dram_data_rate_show, read_dram_data_rate_store);
+
+#if defined(CONFIG_MTK_ENG_BUILD)
+DRIVER_ATTR(read_mr4, 0664,
+read_mr4_show, read_mr4_store);
+#endif
 
 /*DRIVER_ATTR(dram_dfs, 0664, dram_dfs_show, dram_dfs_store);*/
 static struct timer_list zqcs_timer;
@@ -1339,7 +1417,7 @@ void zqcs_timer_callback(unsigned long data)
 	unsigned long save_flags;
 	unsigned int timeout;
 
-	if ((get_dram_data_rate() == 3200) || (low_freq_counter >= 10))
+	if ((get_dram_data_rate() >= 3200) || (low_freq_counter >= 10))
 		low_freq_counter = 0;
 	else {
 		low_freq_counter++;
@@ -1351,7 +1429,7 @@ void zqcs_timer_callback(unsigned long data)
 		if (spm_vcorefs_get_md_srcclkena()) {
 			spm_request_dvfs_opp(0, OPP_1);
 			for (timeout = 100; timeout; timeout--) {
-				if (get_dram_data_rate() == 3200)
+				if (get_dram_data_rate() >= 3200)
 					break;
 				udelay(1);
 			}
@@ -1635,6 +1713,9 @@ static int dram_probe(struct platform_device *pdev)
 		break;
 	}
 
+	if (get_dram_data_rate() == 3600)
+		lp4_highfreq_3600 = 1;
+
 	pr_info("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 	pr_info("[DRAMC Driver] shuffle_status = %d\n", get_shuffle_status());
 
@@ -1660,6 +1741,15 @@ static int dram_probe(struct platform_device *pdev)
 		pr_warn("fail to create the read dram data rate sysfs files\n");
 		return ret;
 	}
+
+#if defined(CONFIG_MTK_ENG_BUILD)
+	ret = driver_create_file(pdev->dev.driver,
+	&driver_attr_read_mr4);
+	if (ret) {
+		pr_warn("fail to create the read mr4 sysfs files\n");
+		return ret;
+	}
+#endif
 
 	if (dram_can_support_fh())
 		pr_info("[DRAMC Driver] dram can support DFS\n");
