@@ -14,6 +14,8 @@
 #ifndef __MTK_STATIC_POWER_MTK6771_H__
 #define __MTK_STATIC_POWER_MTK6771_H__
 
+#define SPOWER_NOT_READY 1
+
 /* mv */
 #define V_OF_FUSE_CPU	900
 #define V_OF_FUSE_GPU	900
