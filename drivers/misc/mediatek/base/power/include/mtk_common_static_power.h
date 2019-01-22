@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -14,7 +14,8 @@
 #ifndef _COMMON_MTK_STATIC_POWER_H
 #define _COMMON_MTK_STATIC_POWER_H
 
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6739)
 #include "leakage_table_v2/mtk_static_power.h"
 #endif
 
