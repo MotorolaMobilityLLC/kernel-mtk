@@ -446,6 +446,9 @@ int sspm_ipi_send_async(int mid, int opts, void *buffer, int slot)
 
 	ret = sspm_mbox_send(mbno, pin->slot, mid - mbox->start, buffer, slot);
 	if (ret != 0) {
+#ifdef IPI_MONITOR
+		ipimon[mid].seqno--;
+#endif
 		/* release lock */
 		if (lock == 0) /* use mutex */
 			mutex_unlock(&pin->mutex_send);
@@ -650,6 +653,9 @@ int sspm_ipi_send_sync(int mid, int opts, void *buffer, int slot,
 	/* send IPI data to SSPM */
 	ret = sspm_mbox_send(mbno, pin->slot, mid - mbox->start, buffer, slot);
 	if (ret != 0) {
+#ifdef IPI_MONITOR
+		ipimon[mid].seqno--;
+#endif
 		/* release lock */
 		if (opts&IPI_OPT_POLLING) /* POLLING mode */
 			spin_unlock_irqrestore(&lock_polling[mid], flags);
