@@ -426,8 +426,18 @@ static int m4u_fill_sgtable_user(struct vm_area_struct *vma, unsigned long va, i
 		}
 
 		if (!pa || !sg) {
+			struct vm_area_struct *vma_temp;
+
 			M4UMSG("%s: fail va=0x%lx,page_num=0x%x,fail_va=0x%lx,pa=0x%lx,sg=0x%p,i=%d\n",
 				__func__, va, page_num, va_tmp, (unsigned long)pa, sg, i);
+
+			vma_temp = find_vma(current->mm, va_tmp);
+			if (vma_temp != NULL) {
+				M4UMSG("vm_start=0x%lx, vm_end=%lx, vm_flag= %lx\n",
+				vma->vm_start, vma->vm_end, vma->vm_flags);
+				M4UMSG("vma_temp_start=0x%lx, vma_temp_end=%lx, vm_temp_flag= %lx\n",
+				vma_temp->vm_start, vma_temp->vm_end, vma_temp->vm_flags);
+			}
 
 			show_pte(current->mm, va_tmp);
 			m4u_dump_mmaps(va);
@@ -481,6 +491,10 @@ static int m4u_create_sgtable_user(unsigned long va_align, struct sg_table *tabl
 		vma = find_vma(current->mm, va);
 		if (vma == NULL || vma->vm_start > va) {
 			M4UMSG("cannot find vma: va=0x%lx, vma=0x%p\n", va, vma);
+			if (vma != NULL) {
+				M4UMSG("vm_start=0x%lx, vm_end=0x%lx, vm_flag= 0x%lx\n",
+				vma->vm_start, vma->vm_end, vma->vm_flags);
+			}
 			m4u_dump_mmaps(va);
 			ret = -1;
 			goto out;
@@ -501,6 +515,13 @@ static int m4u_create_sgtable_user(unsigned long va_align, struct sg_table *tabl
 		} else {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 			ret = m4u_fill_sgtable_user(vma, va, vma_page_num, &sg, 1);
+			if (-1 == ret) {
+				struct vm_area_struct *vma_temp;
+
+				vma_temp = find_vma(current->mm, va_align);
+				M4UMSG("m4u_create_sgtable_user: vm_start=0x%lx, vm_end=0x%lx, vm_flag= 0x%lx\n",
+				vma_temp->vm_start, vma_temp->vm_end, vma_temp->vm_flags);
+			}
 		}
 		if (ret) {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
@@ -1242,9 +1263,9 @@ long m4u_dma_op(m4u_client_t *client, M4U_PORT_ID port,
 			}
 		}
 
-		if (i >= npages) {
+		if (i >= npages)
 			M4UERR("sg table is over pages number, i=%d, npages=0x%x\n", i, npages);
-		}
+
 		for (j = 0; j < npages_this_entry; j++) {
 			start = (unsigned long) m4u_cache_map_page_va(page++);
 
@@ -1752,7 +1773,7 @@ int m4u_config_port_tee(M4U_PORT_STRUCT *pM4uPort)	/* native */
 	m4u_dci_msg->port_param.virt = pM4uPort->Virtuality;
 	m4u_dci_msg->port_param.direction = pM4uPort->Direction;
 	m4u_dci_msg->port_param.distance = pM4uPort->Distance;
-	m4u_dci_msg->port_param.sec = 0;
+	m4u_dci_msg->port_param.sec = pM4uPort->Security;
 
 	ret = m4u_exec_cmd(&m4u_dci_session, m4u_dci_msg);
 	if (ret) {
@@ -1826,6 +1847,7 @@ out:
 	return ret;
 }
 
+/*#ifdef TO_BE_IMPL*/
 int m4u_larb_backup_sec(unsigned int larb_idx)
 {
 	int ret;
@@ -2526,7 +2548,7 @@ static int m4u_probe(struct platform_device *pdev)
 			unsigned int mva;
 
 			pMvaInfo = m4u_alloc_buf_info();
-			if (!pMvaInfo) {
+			if (pMvaInfo != NULL) {
 				pMvaInfo->port = M4U_PORT_UNKNOWN;
 				pMvaInfo->size = M4U_NONSEC_MVA_START - 0x100000;
 			}
@@ -2728,12 +2750,6 @@ static int __init MTK_M4U_Init(void)
 
 static int __init mtk_m4u_late_init(void)
 {
-
-#if !defined(CONFIG_MTK_CLKMGR)
-	smi_common_clock_off();
-	smi_larb0_clock_off();
-#endif
-
 	return 0;
 }
 
