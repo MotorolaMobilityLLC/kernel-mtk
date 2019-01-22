@@ -294,14 +294,14 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 	}
 #endif
 	if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
-		CCCI_NOTICE_LOG(md->index, TAG, "CCIF_MD wakeup source:(SRX_IDX/%d)\n", *(((u32 *) ccci_h) + 2));
+		CCCI_NOTICE_LOG(md->index, TAG, "CCIF_MD wakeup source:(SRX_IDX/%d)\n", ccci_h->channel);
 
 	ccci_hdr = *ccci_h;
 
  RETRY:
 	ret = ccci_md_recv_skb(md, skb);
 	CCCI_DEBUG_LOG(md->index, TAG, "Rx msg %x %x %x %x ret=%d\n",
-		ccci_h->data[0], ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ret);
+		ccci_hdr.data[0], ccci_hdr.data[1], *(((u32 *)&ccci_hdr) + 2), ccci_hdr.reserved, ret);
 	if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 		CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_sram_rx_work:ccci_port_recv_skb ret=%d\n", ret);
 		ccci_md_check_rx_seq_num(md, &ccci_hdr, 0);
@@ -542,10 +542,9 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 		}
 		if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
 			CCCI_NOTICE_LOG(md->index, TAG, "CCIF_MD wakeup source:(%d/%d)\n",
-				queue->index, *(((u32 *) ccci_h) + 2));
+				queue->index, ccci_h->channel);
 
 		md_ccif_tx_rx_printk(md, skb, queue->index, 0);
-		ccci_channel_update_packet_counter(md, ccci_h);
 
 		if (ccci_h->channel == CCCI_C2K_LB_DL)
 			atomic_set(&lb_dl_q, queue->index);
@@ -557,6 +556,9 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 			count++;
 			ccci_md_check_rx_seq_num(md, &ccci_hdr, queue->index);
+			ccci_md_add_log_history(md, IN, (int)queue->index, &ccci_hdr, (ret >= 0 ? 0 : 1));
+			ccci_channel_update_packet_counter(md, &ccci_hdr);
+
 			if (queue->debug_id) {
 				CCCI_NORMAL_LOG(md->index, TAG, "Q%d Rx recv req ret=%d\n", queue->index, ret);
 				queue->debug_id = 0;
@@ -567,7 +569,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 			if (likely(md->capability & MODEM_CAP_TXBUSY_STOP))
 				ccif_check_flow_ctrl(md, queue, rx_buf);
 
-			if (ccci_h->channel == CCCI_MD_LOG_RX) {
+			if (ccci_hdr.channel == CCCI_MD_LOG_RX) {
 				rx_data_cnt += pkg_size - 16;
 				pkg_num++;
 				CCCI_DEBUG_LOG(md->index, TAG,
@@ -696,6 +698,7 @@ static void md_ccif_queue_dump(struct ccci_modem *md)
 			md_ctrl->rxq[idx].ringbuf->rx_control.read,
 			md_ctrl->rxq[idx].ringbuf->rx_control.length);
 	}
+	ccci_md_dump_log_history(md, 1, QUEUE_NUM, QUEUE_NUM);
 }
 
 static void md_ccif_reset_queue(struct ccci_modem *md)
@@ -888,6 +891,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	char img_err_str[IMG_ERR_STR_LEN];
 	struct ccci_modem *md1 = NULL;
 	int ret = 0;
+	unsigned int retry_cnt = 0;
 
 	/*something do once*/
 	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
@@ -895,8 +899,13 @@ static int md_ccif_op_start(struct ccci_modem *md)
 		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
 		md1 = ccci_md_get_modem_by_id(MD_SYS1);
 		if (md1) {
-			while (md1->config.setting & MD_SETTING_FIRST_BOOT)
-				;
+			while (md1->config.setting & MD_SETTING_FIRST_BOOT) {
+				msleep(20);
+				if (retry_cnt++ > 1000) {
+					CCCI_ERROR_LOG(md->index, TAG, "wait MD1 start time out\n");
+					break;
+				}
+			}
 			CCCI_BOOTUP_LOG(md->index, TAG, "wait for MD1 starting done\n");
 		} else
 			CCCI_ERROR_LOG(md->index, TAG, "get MD1 modem struct fail\n");
@@ -1125,7 +1134,7 @@ static int md_ccif_op_send_skb(struct ccci_modem *md, int qno,
 		ret = ccci_ringbuf_write(md->index, queue->ringbuf, skb->data, skb->len);
 		if (ret != skb->len)
 			CCCI_ERROR_LOG(md->index, TAG, "TX:ERR rbf write: ret(%d)!=req(%d)\n", ret, skb->len);
-
+		ccci_md_add_log_history(md, OUT, (int)queue->index, ccci_h, 0);
 		/*free request */
 		ccci_free_skb(skb);
 
@@ -1289,6 +1298,7 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md, unsigned int tx_c
 {
 	int packet_size = sizeof(struct ap_query_md_feature) + sizeof(struct ccci_header);
 	struct ccci_header *ccci_h;
+	struct ccci_header ccci_h_bk;
 	struct ap_query_md_feature *ap_rt_data;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	int ret;
@@ -1304,6 +1314,12 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md, unsigned int tx_c
 	/*ccif_write32(&ccci_h->channel,0,CCCI_CONTROL_TX); */
 	/*as Runtime data always be the first packet we send on control channel */
 	ccif_write32((u32 *) ccci_h + 2, 0, tx_ch);
+	/*ccci_header need backup for log history*/
+	ccci_h_bk.data[0] = ccif_read32(&ccci_h->data[0], 0);
+	ccci_h_bk.data[1] = ccif_read32(&ccci_h->data[1], 0);
+	*((u32 *)&ccci_h_bk + 2) = ccif_read32((u32 *) ccci_h + 2, 0);
+	ccci_h_bk.reserved = ccif_read32(&ccci_h->reserved, 0);
+	ccci_md_add_log_history(md, OUT, (int)txqno, &ccci_h_bk, 0);
 
 	config_ap_runtime_data(md, ap_rt_data);
 
@@ -1331,6 +1347,22 @@ static int md_ccif_op_reset_pccif(struct ccci_modem *md)
 	reset_md1_md3_pccif(md);
 	return 0;
 }
+static void md_ccif_dump_queue_history(struct ccci_modem *md, unsigned int qno)
+{
+	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump md_ctrl->channel_id 0x%lx\n", md_ctrl->channel_id);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF Queue%d Control\n", qno);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d TX: w=%d, r=%d, len=%d\n",
+		qno, md_ctrl->txq[qno].ringbuf->tx_control.write,
+		md_ctrl->txq[qno].ringbuf->tx_control.read,
+		md_ctrl->txq[qno].ringbuf->tx_control.length);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d RX: w=%d, r=%d, len=%d\n",
+		qno, md_ctrl->rxq[qno].ringbuf->rx_control.write,
+		md_ctrl->rxq[qno].ringbuf->rx_control.read,
+		md_ctrl->rxq[qno].ringbuf->rx_control.length);
+	ccci_md_dump_log_history(md, 0, qno, qno);
+}
 
 static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *buff, int length)
 {
@@ -1355,6 +1387,12 @@ static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *
 	if (flag & DUMP_FLAG_IRQ_STATUS) {
 		CCCI_INF_MSG(md->index, KERN, "Dump AP CCIF IRQ status\n");
 		mt_irq_dump_status(md_ctrl->ccif_irq_id);
+	}
+	if (flag & DUMP_FLAG_QUEUE_0)
+		md_ccif_dump_queue_history(md, 0);
+	if (flag & DUMP_FLAG_QUEUE_0_1) {
+		md_ccif_dump_queue_history(md, 0);
+		md_ccif_dump_queue_history(md, 1);
 	}
 
 	return 0;
