@@ -319,7 +319,8 @@ int mmdvfs_internal_set_fine_step_default(enum MTK_SMI_BWC_SCEN smi_scenario, in
 
 void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event *event)
 {
-	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_VIN) {
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_VIN ||
+		mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_SYL) {
 		MMDVFSMSG("calibration event is not hanlded in this platform\n");
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 		return;
