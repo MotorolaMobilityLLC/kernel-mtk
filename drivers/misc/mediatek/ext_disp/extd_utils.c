@@ -210,6 +210,9 @@ char *_extd_ioctl_spy(unsigned int cmd)
 	case MTK_HDMI_FACTORY_DPI_STOP_AND_POWER_OFF:
 			return "MTK_HDMI_FACTORY_DPI_STOP_AND_POWER_OFF";
 
+	case MTK_HDMI_AUDIO_SETTING:
+			return "MTK_HDMI_AUDIO_SETTING";
+
 	default:
 		return "unknown ioctl command";
 	}

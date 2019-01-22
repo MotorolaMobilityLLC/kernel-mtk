@@ -302,6 +302,14 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 
 			break;
 		}
+
+	case MTK_HDMI_AUDIO_SETTING:
+		{
+			if (extd_driver[DEV_MHL] && extd_driver[DEV_MHL]->audio_setting)
+				r = extd_driver[DEV_MHL]->audio_setting(argp);
+			break;
+		}
+
 	default:
 		{
 			EXT_MGR_ERR("[EXTD]ioctl(%d) arguments is not support\n", cmd & 0x0ff);
