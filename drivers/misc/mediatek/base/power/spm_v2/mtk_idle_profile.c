@@ -14,21 +14,22 @@
 #include <mach/mtk_gpt.h>
 #include "mtk_cpufreq.h"
 #include "mtk_idle_profile.h"
+#include "mtk_spm_resource_req_internal.h"
 
 #if SPM_MET_TAGGING
 #include <core/met_drv.h>
 #endif
 
 #define IDLE_PROF_TAG     "Power/swap "
-#define idle_prof_emerg(fmt, args...)	pr_emerg(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_alert(fmt, args...)	pr_alert(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_crit(fmt, args...)	pr_crit(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_err(fmt, args...)		pr_err(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_warn(fmt, args...)	pr_warn(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_notice(fmt, args...)	pr_notice(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_info(fmt, args...)	pr_debug(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_ver(fmt, args...)		pr_debug(IDLE_PROF_TAG fmt, ##args)
-#define idle_prof_dbg(fmt, args...)		pr_debug(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_emerg(fmt, args...)   pr_notice(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_alert(fmt, args...)   pr_notice(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_crit(fmt, args...)    pr_notice(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_err(fmt, args...)     pr_notice(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_warn(fmt, args...)	pr_notice(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_notice(fmt, args...)  pr_notice(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_info(fmt, args...)    pr_debug(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_ver(fmt, args...)     pr_debug(IDLE_PROF_TAG fmt, ##args)
+#define idle_prof_dbg(fmt, args...)     pr_debug(IDLE_PROF_TAG fmt, ##args)
 
 
 /* idle ratio */
@@ -241,7 +242,7 @@ void mtk_idle_twam_enable(u32 event)
 
 void mtk_idle_ratio_calc_start(int type, int cpu)
 {
-	if (idle_ratio_en && type >= 0 && type < NR_TYPES && cpu == 0)
+	if (idle_ratio_en && type >= 0 && type < NR_TYPES && (cpu == 0 || cpu == 4))
 		idle_ratio_start_time[type] = idle_get_current_time_ms();
 
 #if SPM_MET_TAGGING
@@ -252,7 +253,7 @@ void mtk_idle_ratio_calc_start(int type, int cpu)
 
 void mtk_idle_ratio_calc_stop(int type, int cpu)
 {
-	if (idle_ratio_en && type >= 0 && type < NR_TYPES && cpu == 0)
+	if (idle_ratio_en && type >= 0 && type < NR_TYPES && (cpu == 0 || cpu == 4))
 		idle_ratio_value[type] += idle_get_current_time_ms() - idle_ratio_start_time[type];
 
 #if SPM_MET_TAGGING
@@ -360,6 +361,8 @@ void mtk_idle_dump_cnt_in_interval(void)
 			idle_ratio_value[i] = 0;
 		idle_ratio_profile_start_time = idle_get_current_time_ms();
 	}
+
+	spm_resource_req_dump();
 
 	/* update time base */
 	idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;

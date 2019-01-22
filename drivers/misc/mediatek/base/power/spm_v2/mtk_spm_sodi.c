@@ -267,10 +267,68 @@ static void spm_sodi_pmic_after_wfi(void)
 #elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 static void spm_sodi_pmic_before_wfi(void)
 {
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	u32 val;
+
+	__spm_pmic_pg_force_on();
+
+#ifdef SODI_VSRAM_VPROC_SHUTDOWN
+	pmic_read_interface_nolock(PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, &val, PMIC_VAL_SIZE_MASK, 0);
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_VSRAM_NORMAL,
+								PMIC_RG_LDO_VSRAM_PROC_EN_ADDR,
+								val | (1 << PMIC_RG_LDO_VSRAM_PROC_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_VSRAM_SLEEP,
+								PMIC_RG_LDO_VSRAM_PROC_EN_ADDR,
+								val & ~(1 << PMIC_RG_LDO_VSRAM_PROC_EN_SHIFT));
+
+	pmic_read_interface_nolock(PMIC_RG_BUCK_VPROC11_EN_ADDR, &val, PMIC_VAL_SIZE_MASK, 0);
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_VPROC_NORMAL,
+								PMIC_RG_BUCK_VPROC11_EN_ADDR,
+								val | (1 << PMIC_RG_BUCK_VPROC11_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_VPROC_SLEEP,
+								PMIC_RG_BUCK_VPROC11_EN_ADDR,
+								val & ~(1 << PMIC_RG_BUCK_VPROC11_EN_SHIFT));
+#else
+	pmic_read_interface_nolock(PMIC_RG_LDO_VSRAM_PROC_VOSEL_ADDR,
+								&val,
+								PMIC_RG_LDO_VSRAM_PROC_VOSEL_MASK,
+								PMIC_RG_LDO_VSRAM_PROC_VOSEL_SHIFT);
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_VSRAM_NORMAL,
+								PMIC_RG_LDO_VSRAM_PROC_VOSEL_ADDR,
+								val);
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_VSRAM_SLEEP,
+								PMIC_RG_LDO_VSRAM_PROC_VOSEL_ADDR,
+								VOLT_TO_PMIC_VAL(60000));
+
+	pmic_read_interface_nolock(PMIC_RG_BUCK_VPROC11_VOSEL_ADDR, &val, PMIC_VAL_SIZE_MASK, 0);
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_VPROC_NORMAL,
+								PMIC_RG_BUCK_VPROC11_VOSEL_ADDR,
+								val);
+	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_VPROC_SLEEP,
+								PMIC_RG_BUCK_VPROC11_VOSEL_ADDR,
+								VOLT_TO_PMIC_VAL(60000));
+#endif
+	pmic_read_interface_nolock(MT6355_TOP_SPI_CON0, &val, ALL_TOP_CON_MASK, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+					IDX_DI_SRCCLKEN_IN2_NORMAL,
+					val | (1 << PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+					IDX_DI_SRCCLKEN_IN2_SLEEP,
+					val & ~(1 << PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+#endif
 }
 
 static void spm_sodi_pmic_after_wfi(void)
 {
+	__spm_pmic_pg_force_off();
 }
 
 #else
