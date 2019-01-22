@@ -24,8 +24,10 @@ int pmic_get_battery_voltage(void)
 	int bat = 0;
 	bool is_evb = is_evb_load();
 
-	if (is_evb)
+	if (is_evb) {
 		bat = 4201;
+		return bat;
+	}
 #if defined(CONFIG_FPGA_EARLY_PORTING)
 	bat = 4201;
 #else
