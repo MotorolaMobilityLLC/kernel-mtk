@@ -195,7 +195,7 @@ unsigned int get_pwr_stat_check_map(int type, int idx)
 	if (!(type >= 0 && type < NF_PWR_STAT_MAP_TYPE))
 		return 0;
 
-	if (!(idx >= 0 && idx <= NF_CPU))
+	if (!(idx >= 0 && idx < NF_CPU))
 		return 0;
 
 	return cpu_cluster_pwr_stat_map[type][idx];
