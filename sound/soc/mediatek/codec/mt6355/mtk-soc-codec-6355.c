@@ -66,9 +66,10 @@
 
 #include "mtk-soc-analog-type.h"
 #include "mtk-soc-codec-63xx.h"
-
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef _GIT318_READY
 #include <mtk_clkbuf_ctl.h>
+#endif
 #endif
 #ifdef _GIT318_PMIC_READY
 #include <mach/mtk_pmic.h>
@@ -150,6 +151,14 @@ static unsigned int mUseHpDepopFlow;
 
 static unsigned int mUseUl260kFlow;
 
+enum mtkaif_version {
+	MTKAIF_1_0,
+	MTKAIF_1_5,
+	MTKAIF_NUM
+};
+
+static unsigned int use_mtkaif_version;
+
 static int ANC_enabled;
 
 /* DPD efuse variable and table */
@@ -206,7 +215,9 @@ static int mAdc_Power_Mode;
 static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static bool mClkBufferfromPMIC;
+#endif
 static uint32 MicbiasRef, GetMicbias;
 
 static int reg_AFE_VOW_CFG0;			/* VOW AMPREF Setting */
@@ -3666,8 +3677,6 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			}
 			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
 			/* ADDA loopback setting */
-
-			/* Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0238, 0x2238); */
 			/* Set 0x0238: MTKIF v1.0 in mt6331_codec_init_reg */
 			/* UL/DL mtkaif format setting */
 
@@ -3924,7 +3933,6 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
 			/* configure ADC setting */
 
-			/* Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0238, 0x2238); - Spec */
 			/* Set 0x0018: MTKIF v1.5 in mt6331_codec_init_reg */
 			/* UL/DL mtkaif format setting */
 
@@ -6147,7 +6155,6 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		Ana_Set_Reg(AFUNC_AUD_CON2, 0x0003, 0x009f);
 		Ana_Set_Reg(AFUNC_AUD_CON2, 0x000B, 0x009f);
 		Ana_Set_Reg(AFE_DL_SDM_CON1, 0x001D, 0x007f);
-		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0238, 0x03ff);
 		/* Set mtkif 1.0 for 6355 */
 		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0xC001);
 
@@ -6163,7 +6170,6 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		/* Inverse DL rx clock for 6757 */
 		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x1 << 15, 0x1 << 15);
 		/* pmic rxif sck inverse */
-
 		Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0001, 0x0001);
 		/* turn on dl */
 		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
@@ -6178,8 +6184,7 @@ static int Pmic_Loopback_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 		/* Inverse UL rx clock for 6757 */
 		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x1 << 8, 0x1 << 8);
 		/* pmic txif sck inverse */
-
-		Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0005, 0xffff);   /* power on uplink, and loopback from DL */
+		Ana_Set_Reg(AFE_UL_SRC_CON0_L, (use_mtkaif_version << 7) || 0x0005, 0xffff);  /* mtkaif 1.5 */
 		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0xffff);   /* turn on afe */
 	}
 
@@ -6284,7 +6289,6 @@ static int Voice_Call_DAC_DAC_HS_Set(struct snd_kcontrol *kcontrol,
 
 		/* UL */
 		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
-		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0238, 0xffff);
 
 		/* Clock inverse for 6757 */
 		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x1 << 8, 0x1 << 8);
@@ -7448,9 +7452,9 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 
 	Ana_Set_Reg(GPIO_MODE2, 0x0049, 0x01ff);
 	/* GPIO10. 11. 12  */
-
-	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1, 0x0238, 0x03ff);
-	/* UL/DL mtkaif format setting : 6355 using mtk1.0 for 6757 */
+	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG1,
+		    (!use_mtkaif_version << 5) | (!use_mtkaif_version << 9) | 0x0018, 0x03ff);
+	/* UL/DL mtkaif format setting : 6355 using mtk1.0 for 6757 / mtk1.5 for 6759 */
 	/* Ana_Set_Reg(AFE_ADDA6_PMIC_NEWIF_CFG1, 0x0000, 0x0300); */
 	/* No UL2 in 6355*/
 
@@ -7561,9 +7565,10 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 	*   false: RF clock buffer
 	*   true : PMIC clock buffer
 	*/
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	mClkBufferfromPMIC = is_clk_buf_from_pmic();
 	pr_debug("%s Clk_buf_from_pmic is %d\n", __func__, mClkBufferfromPMIC);
-
+#endif
 	return 0;
 }
 
@@ -7607,6 +7612,8 @@ static struct snd_soc_codec_driver soc_mtk_codec = {
 
 static int mtk_mt6331_codec_dev_probe(struct platform_device *pdev)
 {
+	int ret = 0;
+
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 
 	if (pdev->dev.dma_mask == NULL)
@@ -7616,17 +7623,32 @@ static int mtk_mt6331_codec_dev_probe(struct platform_device *pdev)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_CODEC_NAME);
 
 		/* check if use hp depop flow */
-		of_property_read_u32(pdev->dev.of_node,
-				"use_hp_depop_flow",
-				&mUseHpDepopFlow);
+		ret = of_property_read_u32(pdev->dev.of_node,
+					   "use_hp_depop_flow", &mUseHpDepopFlow);
+		if (ret)
+			pr_err("%s [use_hp_depop_flow] property_read error = %d\n",
+			       __func__, ret);
 
 		/* check if use UL 260k flow */
-		of_property_read_u32(pdev->dev.of_node,
-				"use_ul_260k",
-				&mUseUl260kFlow);
+		ret = of_property_read_u32(pdev->dev.of_node,
+					   "use_ul_260k", &mUseUl260kFlow);
+		if (ret)
+			pr_err("%s [use_ul_260k] property_read error = %d\n",
+			       __func__, ret);
 
-		pr_warn("%s(), use_hp_depop_flow = %d, use_ul_260k = %d\n",
-				__func__, mUseHpDepopFlow, mUseUl260kFlow);
+		/* check if use matkaif 1.5 */
+		ret = of_property_read_u32(pdev->dev.of_node,
+					   "use_mtkaif_ver", &use_mtkaif_version);
+		if (ret)
+			pr_err("%s [use_mtkaif_ver] property_read error = %d\n",
+			       __func__, ret);
+		else if (use_mtkaif_version >= MTKAIF_NUM) {
+			pr_err("%s Mtkaif not support this version = %d\n",
+			       __func__, use_mtkaif_version);
+
+		}
+		pr_warn("%s(), use_hp_depop_flow = %d, use_ul_260k = %d, use_mtkaif_ver = %d\n",
+			__func__, mUseHpDepopFlow, mUseUl260kFlow, use_mtkaif_version);
 	} else {
 		pr_warn("%s(), pdev->dev.of_node = NULL!!!\n", __func__);
 	}
