@@ -534,7 +534,7 @@ static int tpd_irq_registration(void)
 void gt1x_auto_update_done(void)
 {
 	tpd_pm_flag = 1;
-	wake_up_interruptible(&pm_waiter);
+	wake_up(&pm_waiter);
 }
 #if CONFIG_GTP_AUTO_UPDATE
 int gt1x_pm_notifier(struct notifier_block *nb, unsigned long val, void *ign)
@@ -543,7 +543,7 @@ int gt1x_pm_notifier(struct notifier_block *nb, unsigned long val, void *ign)
 	case PM_RESTORE_PREPARE:
 		pr_err("%s: PM_RESTORE_PREPARE enter\n", __func__);
 		if (!IS_ERR(update_thread) && update_thread) {
-			wait_event_interruptible(waiter, tpd_pm_flag == 1);
+			wait_event(pm_waiter, tpd_pm_flag == 1);
 			/* pr_err("%s: stoping update thread(%d)", __FUNCTION__, kthread_stop(update_thread)); */
 		}
 		pr_err("%s: PM_RESTORE_PREPARE leave\n", __func__);
@@ -641,7 +641,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		return err;
 	}
 	GTP_INFO("tpd_i2c_probe start.wait_event_interruptible");
-	wait_event_interruptible_timeout(init_waiter, check_flag == true, 5 * HZ);
+	wait_event_timeout(init_waiter, check_flag == true, 5 * HZ);
 	GTP_INFO("tpd_i2c_probe end.wait_event_interruptible");
 /*
  *	do {
@@ -675,7 +675,7 @@ static irqreturn_t tpd_eint_interrupt_handler(unsigned irq, struct irq_desc *des
 	disable_irq_nosync(touch_irq);
 	GTP_DEBUG("eint disable irq_flat=%d", irq_flag);
 	/*GTP_INFO("disable irq_flag=%d",irq_flag);*/
-	wake_up_interruptible(&waiter);
+	wake_up(&waiter);
 	return IRQ_HANDLED;
 }
 static int tpd_history_x, tpd_history_y;
@@ -791,7 +791,7 @@ static int tpd_event_handler(void *unused)
 		set_current_state(TASK_INTERRUPTIBLE);
 
 		if (tpd_eint_mode) {
-			wait_event_interruptible(waiter, tpd_flag != 0);
+			wait_event(waiter, tpd_flag != 0);
 			tpd_flag = 0;
 		} else {
 			GTP_DEBUG("Polling coordinate mode!");
@@ -896,7 +896,7 @@ int gt1x_debug_proc(u8 *buf, int count)
 			tpd_eint_mode = 0;
 			tpd_polling_time = mode;
 			tpd_flag = 1;
-			wake_up_interruptible(&waiter);
+			wake_up(&waiter);
 		} else {
 			GTP_INFO("Wrong polling time, please set between 10~200ms");
 		}
