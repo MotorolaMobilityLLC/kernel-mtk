@@ -184,7 +184,7 @@ struct mmdvfs_adaptor {
 	struct mmdvfs_video_property *codec_setting);
 	int (*apply_hw_configurtion_by_step)(struct mmdvfs_adaptor *self, int mmdvfs_step, int current_step);
 	int (*apply_vcore_hw_configurtion_by_step)(struct mmdvfs_adaptor *self, int mmdvfs_step);
-	int (*apply_clk_hw_configurtion_by_step)(struct mmdvfs_adaptor *self, int mmdvfs_step);
+	int (*apply_clk_hw_configurtion_by_step)(struct mmdvfs_adaptor *self, int mmdvfs_step, bool to_high);
 	int (*get_cam_sys_clk)(struct mmdvfs_adaptor *self, int mmdvfs_step);
 	/* static members */
 	void (*single_profile_dump_func)(struct mmdvfs_profile *profile);

@@ -230,7 +230,7 @@ static int mmdvfs_determine_step(struct mmdvfs_adaptor *self, int smi_scenario,
 	struct mmdvfs_cam_property *cam_setting, struct mmdvfs_video_property *codec_setting);
 static int mmdvfs_apply_hw_configurtion_by_step(struct mmdvfs_adaptor *self, int mmdvfs_step, int current_step);
 static int mmdvfs_apply_vcore_hw_configurtion_by_step(struct mmdvfs_adaptor *self, int mmdvfs_step);
-static int mmdvfs_apply_clk_hw_configurtion_by_step(struct mmdvfs_adaptor *self, int mmdvfs_step);
+static int mmdvfs_apply_clk_hw_configurtion_by_step(struct mmdvfs_adaptor *self, int mmdvfs_step, bool to_high);
 static int mmdvfs_get_cam_sys_clk(struct mmdvfs_adaptor *self, int mmdvfs_step);
 
 static int is_camera_profile_matched(struct mmdvfs_cam_property *cam_setting,
@@ -586,14 +586,14 @@ static int mmdvfs_apply_hw_configurtion_by_step(struct mmdvfs_adaptor *self,
 
 			if (self->apply_clk_hw_configurtion_by_step) {
 				MMDVFSDEBUG(3, "Apply CLK setting:\n");
-				self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step);
+				self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step, true);
 			} else {
 				MMDVFSDEBUG(3, "apply_clk_hw_configurtion_by_step is NULL. No clk change.\n");
 			}
 		} else {
 			if (self->apply_clk_hw_configurtion_by_step) {
 				MMDVFSDEBUG(3, "Apply CLK setting:\n");
-				self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step);
+				self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step, false);
 			} else {
 				MMDVFSDEBUG(3, "apply_clk_hw_configurtion_by_step is NULL. No clk change.\n");
 			}
@@ -656,8 +656,112 @@ static int mmdvfs_apply_vcore_hw_configurtion_by_step(
 
 }
 
+static void mmdvfs_configure_clk_hw(struct mmdvfs_adaptor *self,
+	struct mmdvfs_hw_configurtion *hw_config_ptr, int clk_idx, int mmdvfs_step)
+{
+	/* Get the clk step setting of each mm clks */
+	int clk_step = hw_config_ptr->clk_steps[clk_idx];
+	/* Get the specific clk descriptor */
+	struct mmdvfs_clk_hw_map *clk_hw_map_ptr = &(self->mmdvfs_clk_hw_maps[clk_idx]);
+	int clk_mux_mask = get_mmdvfs_clk_mux_mask();
+
+	if (clk_step < 0 || clk_step >= clk_hw_map_ptr->total_step) {
+		MMDVFSDEBUG(3, "invalid clk step (%d) for %s\n", clk_step,
+		clk_hw_map_ptr->clk_mux.ccf_name);
+		return;
+	}
+	if (!((1 << clk_idx) & clk_mux_mask)) {
+		MMDVFSMSG("CLK %d(%s) swich is not enabled, mask(0x%x)\n",
+		clk_idx, clk_hw_map_ptr->clk_mux.ccf_name, clk_mux_mask);
+		return;
+	}
+	/* Apply the clk setting */
+	if (clk_hw_map_ptr->config_method == MMDVFS_CLK_CONFIG_BY_MUX) {
+		/* Get clk source */
+		int clk_source_id = clk_hw_map_ptr->step_clk_source_id_map[clk_step];
+		int ccf_ret = -1;
+
+		if (clk_source_id < 0 || clk_source_id >= self->mmdvfs_clk_sources_num) {
+			MMDVFSDEBUG(3, "invalid clk source id: %d, step:%d, mux:%s\n",
+			clk_source_id, mmdvfs_step, clk_hw_map_ptr->clk_mux.ccf_name);
+			return;
+		}
+		MMDVFSDEBUG(3, "Change %s source to %s, expect clk = %d\n",
+		clk_hw_map_ptr->clk_mux.ccf_name,
+		self->mmdvfs_clk_sources[clk_source_id].ccf_name,
+		self->mmdvfs_clk_sources[clk_source_id].clk_rate_mhz);
+
+		if (clk_hw_map_ptr->clk_mux.ccf_handle == NULL ||
+			self->mmdvfs_clk_sources[clk_source_id].ccf_handle == NULL)   {
+			MMDVFSMSG("CCF handle can't be NULL during MMDVFS\n");
+			return;
+		}
+
+		ccf_ret = clk_prepare_enable((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
+		MMDVFSDEBUG(3, "clk_prepare_enable: andle = %lx\n",
+		((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
+
+		if (ccf_ret)
+			MMDVFSMSG("prepare clk NG: %s\n", clk_hw_map_ptr->clk_mux.ccf_name);
+
+		ccf_ret = clk_set_parent((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle,
+			(struct clk *)self->mmdvfs_clk_sources[clk_source_id].ccf_handle);
+		MMDVFSMSG("clk_set_parent: handle = (%lx,%lx), src id = %d\n",
+		((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle),
+		((unsigned long)self->mmdvfs_clk_sources[clk_source_id].ccf_handle),
+		clk_source_id);
+
+		if (ccf_ret)
+			MMDVFSMSG("Failed to set parent:%s,%s\n",
+			clk_hw_map_ptr->clk_mux.ccf_name,
+			self->mmdvfs_clk_sources[clk_source_id].ccf_name);
+
+		clk_disable_unprepare((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
+		MMDVFSDEBUG(3, "clk_disable_unprepare: handle = %lx\n",
+		((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
+	} else if (clk_hw_map_ptr->config_method == MMDVFS_CLK_CONFIG_PLL_RATE) {
+		int clk_rate = clk_hw_map_ptr->step_pll_freq_map[clk_step];
+		int pll_id = clk_hw_map_ptr->pll_id;
+
+		if (pll_id == -1) {
+			int ccf_ret = -1;
+
+			if (clk_rate < 0) {
+				MMDVFSMSG("invalid clk rate: %d, step:%d, pll:%s\n",
+				clk_rate, mmdvfs_step, clk_hw_map_ptr->clk_mux.ccf_name);
+				return;
+			}
+			if (clk_hw_map_ptr->clk_mux.ccf_handle == NULL) {
+				MMDVFSMSG("CCF handle can't be NULL during MMDVFS\n");
+				return;
+			}
+
+			ccf_ret = clk_set_rate((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle,
+				clk_rate);
+			MMDVFSMSG("clk_set_rate: handle = (%lx), rate = %d\n",
+			((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle), clk_rate);
+
+			if (ccf_ret)
+				MMDVFSMSG("Failed to set rate:%s->%d\n",
+				clk_hw_map_ptr->clk_mux.ccf_name, clk_rate);
+		} else {
+#ifdef CONFIG_MTK_FREQ_HOPPING
+			int hopping_ret = -1;
+
+			hopping_ret = mt_dfs_general_pll(pll_id, clk_rate);
+			MMDVFSMSG("pll_hopping_rate: id = (%d), dds = 0x%08x\n", pll_id, clk_rate);
+
+			if (hopping_ret)
+				MMDVFSMSG("Failed to hopping rate:%d->0x%08x\n", pll_id, clk_rate);
+#else
+			MMDVFSMSG("pll_hopping NOT SUPPORT: id = (%d)\n", pll_id);
+#endif
+		}
+	}
+}
+
 static int mmdvfs_apply_clk_hw_configurtion_by_step(
-	struct mmdvfs_adaptor *self, int mmdvfs_step_request)
+	struct mmdvfs_adaptor *self, int mmdvfs_step_request, bool to_high)
 {
 	struct mmdvfs_hw_configurtion *hw_config_ptr = NULL;
 	int clk_idx = 0;
@@ -695,108 +799,12 @@ static int mmdvfs_apply_clk_hw_configurtion_by_step(
 	MMDVFSDEBUG(3, "CLK SWITCH: total = %d, step: (%d)\n", hw_config_ptr->total_clks, mmdvfs_step);
 
 	/* Get each clk and setp it accord to config method   */
-	for (clk_idx = 0; clk_idx < hw_config_ptr->total_clks; clk_idx++) {
-		/* Get the clk step setting of each mm clks */
-		int clk_step = hw_config_ptr->clk_steps[clk_idx];
-		/* Get the specific clk descriptor */
-		struct mmdvfs_clk_hw_map *clk_hw_map_ptr = &(self->mmdvfs_clk_hw_maps[clk_idx]);
-
-		if (clk_step < 0 || clk_step >= clk_hw_map_ptr->total_step) {
-			MMDVFSDEBUG(3, "invalid clk step (%d) for %s\n", clk_step,
-			clk_hw_map_ptr->clk_mux.ccf_name);
-		} else {
-			if (!((1 << clk_idx) & clk_mux_mask)) {
-				MMDVFSMSG("CLK %d(%s) swich is not enabled, mask(0x%x)\n",
-				clk_idx, clk_hw_map_ptr->clk_mux.ccf_name, clk_mux_mask);
-				continue;
-			}
-			/* Apply the clk setting, only support mux now */
-			if (clk_hw_map_ptr->config_method == MMDVFS_CLK_CONFIG_BY_MUX) {
-				/* Get clk source */
-				int clk_source_id = clk_hw_map_ptr->step_clk_source_id_map[clk_step];
-
-				if (clk_source_id < 0 || clk_source_id >= self->mmdvfs_clk_sources_num)
-					MMDVFSDEBUG(3, "invalid clk source id: %d, step:%d, mux:%s\n",
-					clk_source_id, mmdvfs_step, clk_hw_map_ptr->clk_mux.ccf_name);
-				else {
-					int ccf_ret = -1;
-
-					MMDVFSDEBUG(3, "Change %s source to %s, expect clk = %d\n",
-					clk_hw_map_ptr->clk_mux.ccf_name,
-					self->mmdvfs_clk_sources[clk_source_id].ccf_name,
-					self->mmdvfs_clk_sources[clk_source_id].clk_rate_mhz);
-
-					if (clk_hw_map_ptr->clk_mux.ccf_handle == NULL ||
-						self->mmdvfs_clk_sources[clk_source_id].ccf_handle == NULL)   {
-						MMDVFSMSG("CCF handle can't be NULL during MMDVFS\n");
-						continue;
-					}
-
-					ccf_ret = clk_prepare_enable((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
-					MMDVFSDEBUG(3, "clk_prepare_enable: andle = %lx\n",
-					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
-
-					if (ccf_ret)
-						MMDVFSMSG("prepare clk NG: %s\n", clk_hw_map_ptr->clk_mux.ccf_name);
-
-					ccf_ret = clk_set_parent((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle,
-						(struct clk *)self->mmdvfs_clk_sources[clk_source_id].ccf_handle);
-					MMDVFSMSG("clk_set_parent: handle = (%lx,%lx), src id = %d\n",
-					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle),
-					((unsigned long)self->mmdvfs_clk_sources[clk_source_id].ccf_handle),
-					clk_source_id);
-
-
-					if (ccf_ret)
-						MMDVFSMSG("Failed to set parent:%s,%s\n",
-						clk_hw_map_ptr->clk_mux.ccf_name,
-						self->mmdvfs_clk_sources[clk_source_id].ccf_name);
-
-					clk_disable_unprepare((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
-					MMDVFSDEBUG(3, "clk_disable_unprepare: handle = %lx\n",
-					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
-				}
-			} else if (clk_hw_map_ptr->config_method == MMDVFS_CLK_CONFIG_PLL_RATE) {
-				int clk_rate = clk_hw_map_ptr->step_pll_freq_map[clk_step];
-				int pll_id = clk_hw_map_ptr->pll_id;
-
-				if (pll_id == -1) {
-					int ccf_ret = -1;
-
-					if (clk_rate < 0) {
-						MMDVFSMSG("invalid clk rate: %d, step:%d, pll:%s\n",
-						clk_rate, mmdvfs_step, clk_hw_map_ptr->clk_mux.ccf_name);
-						continue;
-					}
-					if (clk_hw_map_ptr->clk_mux.ccf_handle == NULL) {
-						MMDVFSMSG("CCF handle can't be NULL during MMDVFS\n");
-						continue;
-					}
-
-					ccf_ret = clk_set_rate((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle,
-						clk_rate);
-					MMDVFSMSG("clk_set_rate: handle = (%lx), rate = %d\n",
-					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle), clk_rate);
-
-					if (ccf_ret)
-						MMDVFSMSG("Failed to set rate:%s->%d\n",
-						clk_hw_map_ptr->clk_mux.ccf_name, clk_rate);
-				} else {
-#ifdef CONFIG_MTK_FREQ_HOPPING
-					int hopping_ret = -1;
-
-					hopping_ret = mt_dfs_general_pll(pll_id, clk_rate);
-					MMDVFSMSG("pll_hopping_rate: id = (%d), dds = 0x%08x\n", pll_id, clk_rate);
-
-					if (hopping_ret)
-						MMDVFSMSG("Failed to hopping rate:%d->0x%08x\n", pll_id, clk_rate);
-#else
-					MMDVFSMSG("pll_hopping NOT SUPPORT: id = (%d)\n", pll_id);
-#endif
-				}
-			}
-		}
-	}
+	if (to_high)
+		for (clk_idx = 0; clk_idx < hw_config_ptr->total_clks; clk_idx++)
+			mmdvfs_configure_clk_hw(self, hw_config_ptr, clk_idx, mmdvfs_step);
+	else
+		for (clk_idx = hw_config_ptr->total_clks - 1; clk_idx >= 0; clk_idx--)
+			mmdvfs_configure_clk_hw(self, hw_config_ptr, clk_idx, mmdvfs_step);
 	return 0;
 
 }
