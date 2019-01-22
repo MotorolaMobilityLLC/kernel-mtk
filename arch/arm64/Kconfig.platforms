@@ -73,6 +73,8 @@ config MACH_MT6757
 	select MTK_EIC_HISTORY_DUMP
 	select MTK_TIMER
 	select MTK_EIC
+	select MTK_L2C_PARITY_CHECK
+	select MTK_LASTPC_V2
 	help
 	  This enables support for MediaTek Helio P20 - MT6757
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
