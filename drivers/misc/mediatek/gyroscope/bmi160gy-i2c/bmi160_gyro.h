@@ -43,7 +43,7 @@
 #define BMI160_FS_1000_LSB              328
 #define BMI160_FS_2000_LSB              164
 
-#define DEGREE_TO_RAD				7506
+#define DEGREE_TO_RAD				7517
 #define SW_CALIBRATION
 #define BMG_DEV_NAME				"bmi160_gyro"
 #define UNKNOWN_DEV					"unknown sensor"
