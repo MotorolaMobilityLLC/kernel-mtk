@@ -16,7 +16,7 @@
 
 /* SPM resource request APIs: public */
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6757)
 
 #elif defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 

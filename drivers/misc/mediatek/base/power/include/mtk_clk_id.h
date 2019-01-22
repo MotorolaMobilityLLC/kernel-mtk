@@ -14,7 +14,7 @@
 #ifndef __MT_CLK_ID_H__
 #define __MT_CLK_ID_H__
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6757)
 
 #include "spm_v2/mtk_clk_id.h"
 

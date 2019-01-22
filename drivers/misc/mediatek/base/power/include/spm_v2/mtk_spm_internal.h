@@ -123,12 +123,6 @@ extern struct clk *i2c3_clk_main;
 #include <mach/mt_clkmgr.h>
 #endif
 
-#ifndef CONFIG_MTK_FPGA
-#if defined(CONFIG_ARCH_MT6797)
-#define SPM_VCORE_EN_MT6797
-#endif
-#endif
-
 struct pcm_desc {
 	const char *version;	/* PCM code version */
 	const u32 *base;	/* binary array base */
@@ -330,16 +324,7 @@ struct pwr_ctrl {
 	u8 mcusys_idle_mask;
 	u8 mp1top_idle_mask;
 	u8 mp0top_idle_mask;
-#if defined(CONFIG_ARCH_MT6797)
-	u8 mp2top_idle_mask;
-	u8 mp3top_idle_mask;
-	u8 mptop_idle_mask;
-#endif
 	u8 wfi_op;		/* 1:WFI_OP_AND, 0:WFI_OP_OR */
-#if defined(CONFIG_ARCH_MT6797)
-	u8 mp2_cpu0_wfi_en;
-	u8 mp2_cpu1_wfi_en;
-#endif
 	u8 mp1_cpu0_wfi_en;
 	u8 mp1_cpu1_wfi_en;
 	u8 mp1_cpu2_wfi_en;
@@ -376,10 +361,6 @@ struct pwr_ctrl {
 	u8 md_ddr_en_1_mask_b;
 	u8 md_vrf18_req_0_mask_b;
 	u8 md_vrf18_req_1_mask_b;
-#if defined(CONFIG_ARCH_MT6797)
-	u8 md1_dvfs_req_mask;
-	u8 cpu_dvfs_req_mask;
-#endif
 	u8 emi_bw_dvfs_req_mask;
 	u8 md_srcclkena_0_dvfs_req_mask_b;
 	u8 md_srcclkena_1_dvfs_req_mask_b;
@@ -403,9 +384,6 @@ struct pwr_ctrl {
 	u8 sdio_on_dvfs_req_mask_b;
 	u8 emi_boost_dvfs_req_mask_b;
 	u8 cpu_md_emi_dvfs_req_prot_dis;
-#if defined(CONFIG_ARCH_MT6797)
-	u8 disp_od_req_mask_b;
-#endif
 
 	/* for CONN */
 	u8 conn_mask_b;
@@ -458,11 +436,6 @@ enum dyna_load_pcm_index {
 enum dyna_load_pcm_index {
 	DYNA_LOAD_PCM_SUSPEND = 0,
 	DYNA_LOAD_PCM_SUSPEND_BY_MP1,
-#if defined(CONFIG_ARCH_MT6797)
-	DYNA_LOAD_PCM_VCOREFS_LPM,
-	DYNA_LOAD_PCM_VCOREFS_HPM,
-	DYNA_LOAD_PCM_VCOREFS_ULTRA,
-#endif
 	DYNA_LOAD_PCM_SODI,
 	DYNA_LOAD_PCM_SODI_BY_MP1,
 
@@ -574,10 +547,6 @@ extern struct dram_info *g_dram_info_dummy_read;
 extern int can_spm_pmic_set_vcore_voltage(void);
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
-extern u32 spm_get_pcm_vcorefs_index(void);
-#endif
-
 /**************************************
  * Macro and Inline
  **************************************/
@@ -636,21 +605,10 @@ static inline void update_pwrctrl_pcm_flags(u32 *flags)
 
 static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
 {
-#if defined(CONFIG_ARCH_MT6797)
-	int segment_code = mt_get_chip_hw_ver();
-#endif
-
 	if (pwrctrl->pcm_flags_cust == 0)
 		pwrctrl->pcm_flags = flags;
 	else
 		pwrctrl->pcm_flags = pwrctrl->pcm_flags_cust;
-
-#if defined(CONFIG_ARCH_MT6797)
-	if (segment_code == 0xCA01)
-		pwrctrl->pcm_flags |= SPM_FLAG_EN_SEGMENT2;
-	else
-		pwrctrl->pcm_flags &= ~SPM_FLAG_EN_SEGMENT2;
-#endif
 }
 
 static inline void set_pwrctrl_pcm_data(struct pwr_ctrl *pwrctrl, u32 data)

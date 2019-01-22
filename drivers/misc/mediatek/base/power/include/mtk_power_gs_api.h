@@ -14,7 +14,7 @@
 #ifndef __MTK_POWER_GS_API_H__
 #define __MTK_POWER_GS_API_H__
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #include "power_gs_v1/mtk_power_gs_api.h"
 
