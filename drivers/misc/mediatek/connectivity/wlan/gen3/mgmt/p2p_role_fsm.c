@@ -877,7 +877,7 @@ VOID p2pRoleFsmRunEventConnectionRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_
 			prChnlReqInfo->ucReqChnlNum = prP2pConnReqMsg->rChannelInfo.ucChannelNum;
 			prChnlReqInfo->eBand = prP2pConnReqMsg->rChannelInfo.eBand;
 			prChnlReqInfo->eChnlSco = prP2pConnReqMsg->eChnlSco;
-			prChnlReqInfo->u4MaxInterval = AIS_JOIN_CH_REQUEST_INTERVAL;
+			prChnlReqInfo->u4MaxInterval = P2P_JOIN_CH_REQUEST_INTERVAL;
 			prChnlReqInfo->eChnlReqType = CH_REQ_TYPE_JOIN;
 
 			prChnlReqInfo->eChannelWidth = prJoinInfo->prTargetBssDesc->eChannelWidth;
