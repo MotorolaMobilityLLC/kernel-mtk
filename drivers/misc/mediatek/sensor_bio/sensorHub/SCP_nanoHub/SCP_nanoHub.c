@@ -699,6 +699,9 @@ static void SCP_sensorHub_init_sensor_state(void)
 
 	mSensorState[ID_GEOFENCE].sensorType = ID_GEOFENCE;
 	mSensorState[ID_GEOFENCE].rate = SENSOR_RATE_ONCHANGE;
+
+	mSensorState[ID_FLOOR_COUNTER].sensorType = ID_FLOOR_COUNTER;
+	mSensorState[ID_FLOOR_COUNTER].rate = SENSOR_RATE_ONCHANGE;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)
@@ -1349,6 +1352,12 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->pdr_event.y = data_t->pdr_event.y;
 		data->pdr_event.z = data_t->pdr_event.z;
 		data->pdr_event.status = data_t->pdr_event.status;
+		break;
+	case ID_FLOOR_COUNTER:
+		data->time_stamp = data_t->time_stamp;
+		data->time_stamp_gpt = data_t->time_stamp_gpt;
+		data->floor_counter_t.accumulated_floor_count
+		    = data_t->floor_counter_t.accumulated_floor_count;
 		break;
 	default:
 		err = -1;
