@@ -604,9 +604,17 @@ struct spm_data {
 		struct {
 			unsigned int root_id;
 		} notify;
+#if defined(CONFIG_MACH_MT6758)
+		struct {
+			unsigned int vcore_level0;
+			unsigned int vcore_level1;
+		} vcorefs;
+
+#else
 		struct {
 			unsigned int pcm_flags;
 		} vcorefs;
+#endif
 	} u;
 };
 
