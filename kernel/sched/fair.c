@@ -6036,7 +6036,6 @@ CONSIDER_EAS:
 #endif
 				int idle_cpu;
 
-
 				idle_cpu = find_best_idle_cpu(p, prefer_idle);
 				if (idle_cpu >= 0) {
 					new_cpu = idle_cpu;

@@ -12,7 +12,6 @@
  */
 
 static bool is_intra_domain(int prev, int target);
-static inline int find_best_idle_cpu(struct task_struct *p, bool prefer_idle);
 static int select_prefer_idle_cpu(struct task_struct *p);
 static int select_max_spare_capacity_cpu(struct task_struct *p, int target);
 static int select_energy_cpu_plus(struct task_struct *p, int target);
@@ -156,7 +155,6 @@ int select_prefer_idle_cpu(struct task_struct *p)
  * cpu id or
  * -1 if target CPU is not found
  */
-	static inline
 int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 {
 	int iter_cpu;
@@ -165,7 +163,7 @@ int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 
 	for (iter_cpu = 0; iter_cpu < nr_cpu_ids; iter_cpu++) {
 		/* foreground task prefer idle to find bigger idle cpu */
-		int i = (prefer_idle && (task_util(p) > stune_task_threshold)) ?
+		int i = (sched_boost() || (prefer_idle && (task_util(p) > stune_task_threshold))) ?
 			nr_cpu_ids-iter_cpu-1 : iter_cpu;
 
 		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow) || cpu_isolated(i))

@@ -1148,6 +1148,15 @@ extern bool is_hybrid_enabled(void);
 extern int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv);
 #endif
 
+#ifdef CONFIG_MTK_SCHED_BOOST
+extern bool sched_boost(void);
+#else
+static inline bool sched_boost(void)
+{
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_MTK_UNIFY_POWER
 #include "../../drivers/misc/mediatek/base/power/include/mtk_upower.h"
 #endif
