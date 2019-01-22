@@ -10,7 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -27,31 +26,34 @@
 #include "mach/mtk_thermal.h"
 #include <linux/uidgid.h>
 #include <linux/slab.h>
-#if defined(CONFIG_MTK_GM_30)
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
 #include <mt-plat/mtk_charger.h>
 #else
 #include <charging.h>
 #endif
 
+#define mtktscharger_TEMP_CRIT (150000) /* 150.000 degree Celsius */
+
+#define mtktscharger_dprintk(fmt, args...) \
+do { \
+	if (mtktscharger_debug_log) \
+		pr_debug("[Thermal/tzcharger]" fmt, ##args); \
+} while (0)
+
+#define mtktscharger_dprintk_always(fmt, args...) \
+	pr_debug("[Thermal/tzcharger]" fmt, ##args)
+
+#define mtktscharger_pr_err(fmt, args...) \
+	pr_err("[Thermal/tzcharger]" fmt, ##args)
+
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 
-static unsigned int interval;	/* seconds, 0 : no auto polling */
-static int trip_temp[10] = { 125000, 110000, 100000, 90000, 80000, 70000, 65000, 60000, 55000, 50000 };
-static unsigned int cl_dev_sysrst_state;
-static struct thermal_zone_device *thz_dev;
-
-static struct thermal_cooling_device *cl_dev_sysrst;
-static int mtktscharger_debug_log;
-
 static int kernelmode;
-
+static unsigned int interval; /* seconds, 0 : no auto polling */
+static int num_trip = 1;
+static int trip_temp[10] = { 125000, 110000, 100000, 90000, 80000, 70000, 65000, 60000, 55000, 50000 };
 static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-static int num_trip;
-
-static unsigned long prev_temp = 30000;
-
 static char g_bind0[20] = "mtktscharger-sysrst";
 static char g_bind1[20] = "";
 static char g_bind2[20] = "";
@@ -62,40 +64,124 @@ static char g_bind6[20] = "";
 static char g_bind7[20] = "";
 static char g_bind8[20] = "";
 static char g_bind9[20] = "";
+static char *g_bind_a[10] = {&g_bind0[0], &g_bind1[0], &g_bind2[0]
+	, &g_bind3[0], &g_bind4[0], &g_bind5[0], &g_bind6[0], &g_bind7[0]
+	, &g_bind8[0], &g_bind9[0]};
+static struct thermal_zone_device *thz_dev;
 
-#define mtktscharger_TEMP_CRIT 150000	/* 150.000 degree Celsius */
+static unsigned int cl_dev_sysrst_state;
+static struct thermal_cooling_device *cl_dev_sysrst;
 
-#define mtktscharger_dprintk(fmt, args...)			\
-do {								\
-	if (mtktscharger_debug_log)					\
-		pr_debug("[Power/charger_Thermal]" fmt, ##args);	\
-} while (0)
+static int mtktscharger_debug_log;
 
+/* This is to preserve last temperature readings from charger driver.
+ * In case mtk_ts_charger.c fails to read temperature.
+ */
+static unsigned long prev_temp = 30000;
 
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+static struct charger_consumer *pthermal_consumer;
+#endif
 
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+struct charger_consumer __attribute__ ((weak))
+*charger_manager_get_by_name(struct device *dev,
+	const char *supply_name)
+{
+	mtktscharger_pr_err("%s not found.\n", __func__);
+	return NULL;
+}
+
+int __attribute__ ((weak))
+charger_manager_get_charger_temperature(struct charger_consumer *consumer,
+	int idx, int *tchg_min, int *tchg_max)
+{
+	mtktscharger_pr_err("%s not found.\n", __func__);
+	return -ENODEV;
+}
+#else
 int __attribute__ ((weak))
 mtk_chr_get_tchr(int *min_tchr, int *max_tchr)
 {
-	return -1;
+	mtktscharger_pr_err("%s not found.\n", __func__);
+	return -ENODEV;
 }
+#endif
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+/**
+ * Use new GM30 API to get charger temperatures.
+ * When nothing is defined, main charger temperature is read.
+ * When PEP30 is defined, direct charger temperature is read.
+ * When Dual Charging is defined, slave charger temperature is read.
+ * If main charger is not PMIC, it is necessary to create another TZ for main charger
+ * in both PEP30 and dual charging cases.
+ */
+static int mtktscharger_get_hw_temp(void)
+{
+	int charger_idx = MAIN_CHARGER;
+	int tmax = 0, tmin = 0;
+	int ret = -1;
+	int t = -127000;
+
+	if (!pthermal_consumer)
+		return t;
+
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+	charger_idx = DIRECT_CHARGER;
+#endif
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
+	charger_idx = SLAVE_CHARGER;
+#endif
+	ret = charger_manager_get_charger_temperature(pthermal_consumer,
+		charger_idx, &tmin, &tmax);
+
+	if (ret >= 0) {
+		t = tmax * 1000;
+		prev_temp = t;
+	} else if (ret == -ENODEV) {
+	} else {
+		t = prev_temp;
+	}
+
+	mtktscharger_dprintk("%s t=%d min=%d max=%d ret=%d\n", __func__, t, tmin, tmax, ret);
+
+	return t;
+}
+#else
+static int mtktscharger_get_hw_temp(void)
+{
+	int ret = -1;
+	int min_temp = 0, max_temp = 0;
+	int t = -127000;
+
+	ret = mtk_chr_get_tchr(&min_temp, &max_temp);
+
+	if (ret >= 0) {
+		t = max_temp * 1000;
+		prev_temp = t;
+	} else if (ret == -ENODEV) {
+	} else {
+		t = prev_temp;
+	}
+
+	mtktscharger_dprintk("%s t=%d min=%d max=%d ret=%d\n", __func__, t, min_temp, max_temp, ret);
+
+	return t;
+}
+#endif
 
 static int mtktscharger_get_temp(struct thermal_zone_device *thermal, int *t)
 {
-	/*unsigned char val = 0;*/
-	int ret = 0;
-	int min_temp = 0, max_temp = 0;
+	*t = mtktscharger_get_hw_temp();
 
-	mtktscharger_dprintk("[mtktscharger_get_temp] ~~~~\n");
-	*t = 0;
+	mtktscharger_dprintk("%s %d\n", __func__, *t);
 
-	ret = mtk_chr_get_tchr(&min_temp, &max_temp);
-	if (ret >= 0) {
-		*t = max_temp * 1000;
-		prev_temp = *t;
-	} else
-		*t = prev_temp;
+	if (*t >= 85000)
+		mtktscharger_dprintk_always("HT %d\n", *t);
 
-	mtktscharger_dprintk("temp =%d min=%d max=%d ret=%d ~~~~\n", *t, min_temp, max_temp, ret);
+	/* TODO: Add change polling delay features for low power. */
+
 	return 0;
 }
 
@@ -127,11 +213,11 @@ static int mtktscharger_bind(struct thermal_zone_device *thermal, struct thermal
 		return 0;
 
 	if (mtk_thermal_zone_bind_cooling_device(thermal, table_val, cdev)) {
-		mtktscharger_dprintk("[mtktscharger_bind] error binding cooling dev\n");
+		mtktscharger_dprintk("%s error binding %s\n", __func__, cdev->type);
 		return -EINVAL;
 	}
 
-	mtktscharger_dprintk("[mtktscharger_bind] binding OK, %d\n", table_val);
+	mtktscharger_dprintk("%s binding %s at %d\n", __func__, cdev->type, table_val);
 	return 0;
 }
 
@@ -164,11 +250,11 @@ static int mtktscharger_unbind(struct thermal_zone_device *thermal,
 		return 0;
 
 	if (thermal_zone_unbind_cooling_device(thermal, table_val, cdev)) {
-		mtktscharger_dprintk("[mtktscharger_unbind] error unbinding cooling dev\n");
+		mtktscharger_dprintk("%s error unbinding %s\n", __func__, cdev->type);
 		return -EINVAL;
 	}
 
-	mtktscharger_dprintk("[mtktscharger_unbind] unbinding OK\n");
+	mtktscharger_dprintk("%s unbinding OK\n", __func__);
 	return 0;
 }
 
@@ -185,14 +271,14 @@ static int mtktscharger_set_mode(struct thermal_zone_device *thermal, enum therm
 }
 
 static int mtktscharger_get_trip_type(struct thermal_zone_device *thermal, int trip,
-				   enum thermal_trip_type *type)
+	enum thermal_trip_type *type)
 {
 	*type = g_THERMAL_TRIP[trip];
 	return 0;
 }
 
 static int mtktscharger_get_trip_temp(struct thermal_zone_device *thermal, int trip,
-				   int *temp)
+	int *temp)
 {
 	*temp = trip_temp[trip];
 	return 0;
@@ -216,35 +302,50 @@ static struct thermal_zone_device_ops mtktscharger_dev_ops = {
 	.get_crit_temp = mtktscharger_get_crit_temp,
 };
 
+static int mtktscharger_register_thermal(void)
+{
+	mtktscharger_dprintk("%s\n", __func__);
+
+	/* trips : trip 0~2 */
+	thz_dev = mtk_thermal_zone_device_register("mtktscharger", num_trip, NULL, /* name: mtktscharger ??? */
+				&mtktscharger_dev_ops, 0, 0, 0, interval * 1000);
+
+	return 0;
+}
+
+static void mtktscharger_unregister_thermal(void)
+{
+	mtktscharger_dprintk("%s\n", __func__);
+
+	if (thz_dev) {
+		mtk_thermal_zone_device_unregister(thz_dev);
+		thz_dev = NULL;
+	}
+}
+
 static int mtktscharger_sysrst_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
-	mtktscharger_dprintk("mtktscharger_sysrst_get_max_state!!!\n");
 	*state = 1;
 	return 0;
 }
 
 static int mtktscharger_sysrst_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
-	mtktscharger_dprintk("mtktscharger_sysrst_get_cur_state = %d\n", cl_dev_sysrst_state);
 	*state = cl_dev_sysrst_state;
 	return 0;
 }
 
 static int mtktscharger_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
-	mtktscharger_dprintk("mtktscharger_sysrst_set_cur_state = %d\n", cl_dev_sysrst_state);
 	cl_dev_sysrst_state = state;
 	if (cl_dev_sysrst_state == 1) {
-		pr_debug("Power/charger_Thermal: reset, reset, reset!!!");
-		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-		pr_debug("*****************************************");
-		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+		pr_err("[Thermal/mtktscharger_sysrst] reset, reset, reset!!!\n");
+		pr_err("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+		pr_err("*****************************************\n");
+		pr_err("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
-
-
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
-
-
+		/* To trigger data abort to reset the system for thermal protection. */
+		*(unsigned int *)0x0 = 0xdead;
 	}
 
 	return 0;
@@ -259,33 +360,33 @@ static struct thermal_cooling_device_ops mtktscharger_cooling_sysrst_ops = {
 int mtktscharger_register_cooler(void)
 {
 	cl_dev_sysrst = mtk_thermal_cooling_device_register("mtktscharger-sysrst", NULL,
-							    &mtktscharger_cooling_sysrst_ops);
+						&mtktscharger_cooling_sysrst_ops);
 	return 0;
+}
+
+void mtktscharger_unregister_cooler(void)
+{
+	if (cl_dev_sysrst) {
+		mtk_thermal_cooling_device_unregister(cl_dev_sysrst);
+		cl_dev_sysrst = NULL;
+	}
 }
 
 static int mtktscharger_read(struct seq_file *m, void *v)
 {
+	seq_printf(m, "log=%d\n", mtktscharger_debug_log);
+	seq_printf(m, "polling delay=%d\n", interval * 1000);
+	seq_printf(m, "no of trips=%d\n", num_trip);
+	{
+		int i = 0;
 
-	seq_printf(m, "[mtktscharger_read] trip_0_temp=%d,trip_1_temp=%d,trip_2_temp=%d,trip_3_temp=%d,trip_4_temp=%d,\n",
-		trip_temp[0], trip_temp[1], trip_temp[2], trip_temp[3], trip_temp[4]);
-	seq_printf(m, "trip_5_temp=%d,trip_6_temp=%d,trip_7_temp=%d,trip_8_temp=%d,trip_9_temp=%d,\n",
-		trip_temp[5], trip_temp[6], trip_temp[7], trip_temp[8], trip_temp[9]);
-	seq_printf(m, "g_THERMAL_TRIP_0=%d,g_THERMAL_TRIP_1=%d,g_THERMAL_TRIP_2=%d,g_THERMAL_TRIP_3=%d\n",
-		g_THERMAL_TRIP[0], g_THERMAL_TRIP[1], g_THERMAL_TRIP[2], g_THERMAL_TRIP[3]);
-	seq_printf(m, "g_THERMAL_TRIP_4=%d, g_THERMAL_TRIP_5=%d,g_THERMAL_TRIP_6=%d,g_THERMAL_TRIP_7=%d\n",
-		g_THERMAL_TRIP[4], g_THERMAL_TRIP[5], g_THERMAL_TRIP[6], g_THERMAL_TRIP[7]);
-	seq_printf(m, "g_THERMAL_TRIP_8=%d,g_THERMAL_TRIP_9=%d,\n",
-		g_THERMAL_TRIP[8], g_THERMAL_TRIP[9]);
-	seq_printf(m, "cooldev0=%s,cooldev1=%s,cooldev2=%s,cooldev3=%s,cooldev4=%s,\n",
-		g_bind0, g_bind1, g_bind2, g_bind3, g_bind4);
-	seq_printf(m, "cooldev5=%s,cooldev6=%s,cooldev7=%s,cooldev8=%s,cooldev9=%s,time_ms=%d\n",
-		g_bind5, g_bind6, g_bind7, g_bind8, g_bind9, interval * 1000);
+		for (; i < 10; i++)
+			seq_printf(m, "%02d\t%d\t%d\t%s\n"
+				, i, trip_temp[i], g_THERMAL_TRIP[i], g_bind_a[i]);
+	}
 
 	return 0;
 }
-
-static int mtktscharger_register_thermal(void);
-static void mtktscharger_unregister_thermal(void);
 
 static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, size_t count,
 			       loff_t *data)
@@ -313,6 +414,8 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 
 	ptr_mtktscharger_data->desc[len] = '\0';
 
+	/* TODO: Add a switch of mtktscharger_debug_log. */
+
 	if (sscanf
 	    (ptr_mtktscharger_data->desc,
 	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
@@ -328,13 +431,12 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 		&ptr_mtktscharger_data->trip[8], &ptr_mtktscharger_data->t_type[8], ptr_mtktscharger_data->bind8,
 		&ptr_mtktscharger_data->trip[9], &ptr_mtktscharger_data->t_type[9], ptr_mtktscharger_data->bind9,
 		&ptr_mtktscharger_data->time_msec) == 32) {
-		mtktscharger_dprintk("[mtktscharger_write] mtktscharger_unregister_thermal\n");
 		mtktscharger_unregister_thermal();
 
 		if (num_trip < 0 || num_trip > 10) {
+			mtktscharger_dprintk_always("%s bad argument\n", __func__);
 			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktscharger_write",
 					"Bad argument");
-			mtktscharger_dprintk("[mtktscharger_write] bad argument\n");
 			kfree(ptr_mtktscharger_data);
 			return -EINVAL;
 		}
@@ -358,21 +460,21 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 			g_bind9[i] = ptr_mtktscharger_data->bind9[i];
 		}
 
-		mtktscharger_dprintk("[mtktscharger_write] g_THERMAL_TRIP_0=%d,",
+		mtktscharger_dprintk("%s g_THERMAL_TRIP_0=%d,", __func__,
 			g_THERMAL_TRIP[0]);
-		mtktscharger_dprintk("g_THERMAL_TRIP_1=%d,g_THERMAL_TRIP_2=%d,",
+		mtktscharger_dprintk("g_THERMAL_TRIP_1=%d g_THERMAL_TRIP_2=%d ",
 			g_THERMAL_TRIP[1], g_THERMAL_TRIP[2]);
-		mtktscharger_dprintk("g_THERMAL_TRIP_3=%d,g_THERMAL_TRIP_4=%d,",
+		mtktscharger_dprintk("g_THERMAL_TRIP_3=%d g_THERMAL_TRIP_4=%d ",
 			g_THERMAL_TRIP[3], g_THERMAL_TRIP[4]);
-		mtktscharger_dprintk("g_THERMAL_TRIP_5=%d,g_THERMAL_TRIP_6=%d",
+		mtktscharger_dprintk("g_THERMAL_TRIP_5=%d g_THERMAL_TRIP_6=%d ",
 			g_THERMAL_TRIP[5], g_THERMAL_TRIP[6]);
-		mtktscharger_dprintk("g_THERMAL_TRIP_7=%d,g_THERMAL_TRIP_8=%d,g_THERMAL_TRIP_9=%d,\n",
+		mtktscharger_dprintk("g_THERMAL_TRIP_7=%d g_THERMAL_TRIP_8=%d g_THERMAL_TRIP_9=%d\n",
 			g_THERMAL_TRIP[7], g_THERMAL_TRIP[8], g_THERMAL_TRIP[9]);
-		mtktscharger_dprintk("[mtktscharger_write] cooldev0=%s,cooldev1=%s,cooldev2=%s,",
+		mtktscharger_dprintk("cooldev0=%s cooldev1=%s cooldev2=%s ",
 			g_bind0, g_bind1, g_bind2);
-		mtktscharger_dprintk("cooldev3=%s,cooldev4=%s,",
+		mtktscharger_dprintk("cooldev3=%s cooldev4=%s ",
 			g_bind3, g_bind4);
-		mtktscharger_dprintk("cooldev5=%s,cooldev6=%s,cooldev7=%s,cooldev8=%s,cooldev9=%s\n",
+		mtktscharger_dprintk("cooldev5=%s cooldev6=%s cooldev7=%s cooldev8=%s cooldev9=%s\n",
 			g_bind5, g_bind6, g_bind7, g_bind8, g_bind9);
 
 		for (i = 0; i < num_trip; i++)
@@ -380,55 +482,26 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 
 		interval = ptr_mtktscharger_data->time_msec / 1000;
 
-		mtktscharger_dprintk("[mtktscharger_write] trip_0_temp=%d,trip_1_temp=%d,",
+		mtktscharger_dprintk("%s trip_0_temp=%d trip_1_temp=%d ", __func__,
 			trip_temp[0], trip_temp[1]);
-		mtktscharger_dprintk("trip_2_temp=%d,trip_3_temp=%d,",
+		mtktscharger_dprintk("trip_2_temp=%d trip_3_temp=%d ",
 			trip_temp[2], trip_temp[3]);
-		mtktscharger_dprintk("trip_4_temp=%d,trip_5_temp=%d,trip_6_temp=%d,",
+		mtktscharger_dprintk("trip_4_temp=%d trip_5_temp=%d trip_6_temp=%d ",
 			trip_temp[4], trip_temp[5], trip_temp[6]);
-		mtktscharger_dprintk("trip_7_temp=%d,trip_8_temp=%d,",
+		mtktscharger_dprintk("trip_7_temp=%d trip_8_temp=%d ",
 			trip_temp[7], trip_temp[8]);
-		mtktscharger_dprintk("trip_9_temp=%d,time_ms=%d\n", trip_temp[9], interval * 1000);
+		mtktscharger_dprintk("trip_9_temp=%d time_ms=%d\n", trip_temp[9], interval * 1000);
 
-		mtktscharger_dprintk("[mtktscharger_write] mtktscharger_register_thermal\n");
 		mtktscharger_register_thermal();
 
 		kfree(ptr_mtktscharger_data);
 		return count;
 	}
 
-	mtktscharger_dprintk("[mtktscharger_write] bad argument\n");
+	mtktscharger_dprintk("%s bad argument\n", __func__);
 	kfree(ptr_mtktscharger_data);
+
 	return -EINVAL;
-}
-
-static int mtktscharger_register_thermal(void)
-{
-	mtktscharger_dprintk("[mtktscharger_register_thermal]\n");
-
-	/* trips : trip 0~2 */
-	thz_dev = mtk_thermal_zone_device_register("mtktscharger", num_trip, NULL, /* name: mtktscharger ??? */
-						   &mtktscharger_dev_ops, 0, 0, 0, interval * 1000);
-
-	return 0;
-}
-
-void mtktscharger_unregister_cooler(void)
-{
-	if (cl_dev_sysrst) {
-		mtk_thermal_cooling_device_unregister(cl_dev_sysrst);
-		cl_dev_sysrst = NULL;
-	}
-}
-
-static void mtktscharger_unregister_thermal(void)
-{
-	mtktscharger_dprintk("[mtktscharger_unregister_thermal]\n");
-
-	if (thz_dev) {
-		mtk_thermal_zone_device_unregister(thz_dev);
-		thz_dev = NULL;
-	}
 }
 
 static int mtktscharger_open(struct inode *inode, struct file *file)
@@ -445,18 +518,21 @@ static const struct file_operations mtktscharger_fops = {
 	.release = single_release,
 };
 
-static int __init mtktscharger_init(void)
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+static int mtktscharger_pdrv_probe(struct platform_device *pdev)
 {
 	int err = 0;
 	struct proc_dir_entry *entry = NULL;
 	struct proc_dir_entry *mtktscharger_dir = NULL;
 
-	mtktscharger_dprintk("mtktscharger_init: Start\n");
+	mtktscharger_dprintk_always("%s\n", __func__);
 
+	pthermal_consumer = charger_manager_get_by_name(&pdev->dev, "charger");
 
-	err = mtktscharger_register_cooler();
-	if (err)
-		return err;
+	if (!pthermal_consumer) {
+		mtktscharger_pr_err("%s get get_by_name fails.\n", __func__);
+		return -EPERM;
+	}
 
 	err = mtktscharger_register_thermal();
 	if (err)
@@ -464,7 +540,7 @@ static int __init mtktscharger_init(void)
 
 	mtktscharger_dir = mtk_thermal_get_proc_drv_therm_dir_entry();
 	if (!mtktscharger_dir) {
-		mtktscharger_dprintk("[%s]: mkdir /proc/driver/thermal failed\n", __func__);
+		mtktscharger_pr_err("%s get /proc/driver/thermal failed\n", __func__);
 	} else {
 		entry =
 		    proc_create("tzcharger", S_IRUGO | S_IWUSR | S_IWGRP, mtktscharger_dir,
@@ -476,6 +552,92 @@ static int __init mtktscharger_init(void)
 	return 0;
 
 err_unreg:
+	mtktscharger_unregister_cooler();
+
+	return 0;
+}
+
+static int mtktscharger_pdrv_remove(struct platform_device *pdev)
+{
+	return 0;
+}
+
+struct platform_device mtktscharger_device = {
+	.name = "mtktscharger",
+	.id = -1,
+};
+
+static struct platform_driver mtktscharger_driver = {
+	.probe = mtktscharger_pdrv_probe,
+	.remove = mtktscharger_pdrv_remove,
+	.driver = {
+		   .name = "mtktscharger",
+		   .owner  = THIS_MODULE,
+		   },
+};
+#endif
+
+static int __init mtktscharger_init(void)
+{
+	int err = 0;
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	/* Move this segment to probe function in case mtktscharger reads temperature
+	 * before mtk_charger allows it.
+	 */
+#else
+	struct proc_dir_entry *entry = NULL;
+	struct proc_dir_entry *mtktscharger_dir = NULL;
+#endif
+
+	err = mtktscharger_register_cooler();
+	if (err)
+		return err;
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	/* Move this segment to probe function in case mtktscharger reads temperature
+	 * before mtk_charger allows it.
+	 */
+#else
+	err = mtktscharger_register_thermal();
+	if (err)
+		goto err_unreg;
+
+	mtktscharger_dir = mtk_thermal_get_proc_drv_therm_dir_entry();
+	if (!mtktscharger_dir) {
+		mtktscharger_dprintk("%s get /proc/driver/thermal failed\n", __func__);
+	} else {
+		entry =
+		    proc_create("tzcharger", S_IRUGO | S_IWUSR | S_IWGRP, mtktscharger_dir,
+				&mtktscharger_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+	}
+#endif
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	/* TODO: consider not to register a charger thermal zone if not PEP30 or dual charger. */
+	/* register platform device/driver */
+	err = platform_device_register(&mtktscharger_device);
+	if (err) {
+		mtktscharger_dprintk("%s fail to reg device\n", __func__);
+		goto err_unreg;
+	}
+
+	err = platform_driver_register(&mtktscharger_driver);
+	if (err) {
+		mtktscharger_dprintk("%s fail to reg driver\n", __func__);
+		goto reg_platform_driver_fail;
+	}
+#endif
+
+	return 0;
+
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+reg_platform_driver_fail:
+	platform_device_unregister(&mtktscharger_device);
+#endif
+
+err_unreg:
 
 	mtktscharger_unregister_cooler();
 
@@ -484,9 +646,10 @@ err_unreg:
 
 static void __exit mtktscharger_exit(void)
 {
-	mtktscharger_dprintk("[mtktscharger_exit]\n");
+	mtktscharger_dprintk("%s\n", __func__);
 	mtktscharger_unregister_thermal();
 	mtktscharger_unregister_cooler();
 }
+
 late_initcall(mtktscharger_init);
 module_exit(mtktscharger_exit);
