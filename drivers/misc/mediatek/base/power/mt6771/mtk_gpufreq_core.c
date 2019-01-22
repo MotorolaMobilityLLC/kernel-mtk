@@ -47,6 +47,8 @@
 #include "mtk_dramc.h"
 #include "mtk_gpufreq.h"
 #include "mtk_gpu_log.h"
+#include "ext_wd_drv.h"
+#include "mtk_wdt.h"
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 #include "mtk_gpu_bw.h"
@@ -944,6 +946,98 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 	gpufreq_pr_debug("@%s: limited power index = %d, limited_power = %d\n", __func__, i, limited_power);
 
 	mutex_unlock(&mt_gpufreq_power_lock);
+}
+
+void mt_gpufreq_reset_MFG_wrapper(void)
+{
+	u32 val;
+
+	mutex_lock(&mt_gpufreq_lock);
+
+	/* enable infra bus protect */
+	/* write 0x100012A0 = (0x1 << 21)|(0x1 << 22)), SET register */
+	writel((0x1 << 21)|(0x1 << 22), g_INFRA_AO_base + 0x2a0);
+	/* wait 0x10001228 bit [22:21] == 0x3 */
+	do {
+		val = readl(g_INFRA_AO_base + 0x228);
+	} while (((val & 0x600000) >> 21) != 0x3);
+	gpufreq_pr_info("@%s: enable infra bus protect successfully\n", __func__);
+
+	/* MFG wrapper reset */
+	/* 1. write register WDT_SWSYSRST (@ 0x1000_7018) = 0x88000004, [2] = mfg_rst, reset mfg */
+	/* 2. udelay 100 */
+	/* 3. write register WDT_SWSYSRST (@ 0x1000_7018) = 0x88000000, [2] = mfg_rst, release reset */
+	/* 4. udelay 100 */
+	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_MFG_RST, 1);
+	udelay(100);
+	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_MFG_RST, 0);
+	udelay(100);
+
+	/* disable infra bus protect */
+	/* write 0x100012A4 = (0x1 << 21)|(0x1 << 22)), CLR register */
+	writel((0x1 << 21)|(0x1 << 22), g_INFRA_AO_base + 0x2a4);
+
+	mutex_unlock(&mt_gpufreq_lock);
+}
+
+/* API: check if GPU is non-idle but infra is idle */
+int mt_gpufreq_check_GPU_non_idle_infra_idle(void)
+{
+	u32 val;
+	int counter = 0;
+
+	mutex_lock(&mt_gpufreq_lock);
+
+	/* GPU non-idle */
+	writel(0x1, g_MFG_base + 0xb4);
+	/* check if 0x10006170 bit 5 == 0, mfg_idle: 1 for idle, 0 for non-idle */
+	val = readl(g_SPM_base + 0x170);
+	gpufreq_pr_info("@%s: 0x10006170 val = 0x%x\n", __func__, val);
+	if ((val & 0x20) == 0x0)
+		counter++;
+	/* check if 0x1020E190 bit 13 == 0, mfg_mem_in_axi_idle: 1 for idle, 0 for non-idle */
+	val = readl(g_INFRA_base + 0x190);
+	gpufreq_pr_info("@%s: 0x1020E190 val = 0x%x\n", __func__, val);
+	if ((val & 0x2000) == 0x0)
+		counter++;
+
+	/* infra idle */
+	/* gpu -> infra port0/1 w/b/r cnt empty */
+	/* check if 0x10001D54 bit[23:16] == 0x77 */
+	val = readl(g_INFRA_AO_base + 0xd54);
+	gpufreq_pr_info("@%s: 0x10001D54 val = 0x%x\n", __func__, val);
+	if (((val & 0xFF0000) >> 16) == 0x77)
+		counter++;
+	/* gpu -> infra port0/1 idle and Infra -> EMI interface valid/ready */
+	/* check if 0x10001D3C bit [13:12] == 0x3 */
+	val = readl(g_INFRA_AO_base + 0xd3c);
+	gpufreq_pr_info("@%s: 0x10001D3C val = 0x%x\n", __func__, val);
+	if (((val & 0x3000) >> 12) == 0x3)
+		counter++;
+	/* check if 0x10001D3C bit [11] [9] [6] [4] [1] == 0x0 */
+	if ((val & 0xa51) == 0x0)
+		counter++;
+	/* check if 0x10001D44 bit [11] [9] [6] [4] [1] == 0x0 */
+	val = readl(g_INFRA_AO_base + 0xd44);
+	gpufreq_pr_info("@%s: 0x10001D44 val = 0x%x\n", __func__, val);
+	if ((val & 0xa51) == 0x0)
+		counter++;
+	/* Infra bus timeout */
+	/* check if 0x10001D04 bit 0 == 0x0, 1 for timeout */
+	val = readl(g_INFRA_AO_base + 0xd04);
+	gpufreq_pr_info("@%s: 0x10001D04 val = 0x%x\n", __func__, val);
+	if ((val & 0x1) == 0x0)
+		counter++;
+
+	if (counter == 7) {
+		gpufreq_pr_info("@%s: success\n", __func__);
+		mutex_unlock(&mt_gpufreq_lock);
+		return 1;
+	}
+
+	gpufreq_pr_info("@%s: fail\n", __func__);
+	mutex_unlock(&mt_gpufreq_lock);
+	return -1;
 }
 
 void mt_gpufreq_dump_reg(void)

@@ -25,7 +25,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/mach/
 ccflags-y += -I$(srctree)/drivers/clk/mediatek/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v2/$(MTK_PLATFORM)/inc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v2/$(MTK_PLATFORM)/inc/
+ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include/
+ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/wdt/common/wdt_v2/
 ccflags-y += -Wno-unused-variable
 ccflags-y += -Wno-unused-function
 
