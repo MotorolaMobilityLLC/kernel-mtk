@@ -984,7 +984,7 @@ VOID kalP2PIndicateScanDone(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex, 
 			/* report all queued beacon/probe response frames  to upper layer */
 			scanReportBss2Cfg80211(prGlueInfo->prAdapter, BSS_TYPE_P2P_DEVICE, NULL);
 
-			DBGLOG(INIT, INFO, "DBG:p2p_cfg_scan_done\n");
+			DBGLOG(INIT, TRACE, "DBG:p2p_cfg_scan_done\n");
 		}
 		KAL_RELEASE_MUTEX(prGlueInfo->prAdapter, MUTEX_DEL_INF);
 
@@ -1029,7 +1029,10 @@ kalP2PIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 							  prBcnProbeRspFrame, u4BufLen, i4SignalStrength, GFP_KERNEL);
 
 		/* Return this structure. */
-		cfg80211_put_bss(prGlueP2pInfo->prWdev->wiphy, prCfg80211Bss);
+		if (prCfg80211Bss)
+			cfg80211_put_bss(prGlueP2pInfo->prWdev->wiphy, prCfg80211Bss);
+		else
+			DBGLOG(P2P, WARN, "indicate BSS to cfg80211 failed\n");
 
 	} while (FALSE);
 
