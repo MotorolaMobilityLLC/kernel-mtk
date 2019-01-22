@@ -136,9 +136,9 @@ static void mtk_pidmap_seq_dump_readable(char **buff, unsigned long *size,
 	seq_printf(seq, "Entry size: %d bytes\n",
 			PIDMAP_ENTRY_SIZE);
 	seq_printf(seq, " - Task name size: %d bytes\n",
-			PIDMAP_TASKNAME_SIZE);
+			(int)PIDMAP_TASKNAME_SIZE);
 	seq_printf(seq, " - TGID size: %d bytes\n",
-			PIDMAP_TGID_SIZE);
+			(int)PIDMAP_TGID_SIZE);
 	seq_printf(seq, "Total Buffer Size: %d bytes\n",
 			PIDMAP_AEE_BUF_SIZE + PIDMAP_PROC_CMD_BUF_SIZE);
 	seq_printf(seq, "mtk_pidmap address: 0x%p\n",
