@@ -11,5 +11,5 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MTK_TIMER_TIMESYNC)      += timesync/
+obj-y      += timesync/
 obj-$(CONFIG_MTK_TIMER_ACCURACY_TEST) += accuracy-test/
