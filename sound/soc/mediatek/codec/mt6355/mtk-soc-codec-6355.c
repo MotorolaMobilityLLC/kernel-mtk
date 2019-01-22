@@ -708,7 +708,7 @@ void mtk_read_dpd_parameter(int impedance, struct mtk_dpd_param *dpd_param)
 {
 	int a2_lch = 0, a3_lch = 0, a2_rch = 0, a3_rch = 0;
 
-	if (!dpd_on) {
+	if (dpd_on) {
 		if (impedance < DPD_IMPEDANCE_THRESHOLD) {
 			a2_lch = dpd_a2[dpd_fab_id][DPD_IMPEDANCE_16OHM];
 			a3_lch = dpd_a3[DPD_CHANNEL_L][DPD_IMPEDANCE_16OHM];
