@@ -278,8 +278,8 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	/* disable DQS OSC 2 ranks simutaneously and specify rank index */
 	temp = Reg_Readl(DRAMC_AO_RKCFG) & ~(0x1<<11);
 	Reg_Sync_Writel(DRAMC_AO_RKCFG, temp);
-	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<28);
-	Reg_Sync_Writel(DRAMC_AO_MRS, temp | (rank<<28));
+	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3 << 24);
+	Reg_Sync_Writel(DRAMC_AO_MRS, temp | (rank << 24));
 
 	/* set DRAMC clock free run and CKE always on */
 	temp = Reg_Readl(DRAMC_AO_PD_CTRL) & 0xFFFFFFFD;
@@ -343,10 +343,10 @@ static unsigned int dramc_tx_tracking(int channel)
 	void __iomem *dramc_nao_chx_base;
 	void __iomem *ddrphy_chx_base;
 
-	unsigned int shu_level;
+	unsigned int shu_level, opp_level;
 	unsigned int shu_index;
 	unsigned int shu_offset_dramc, shu_offset_ddrphy;
-	unsigned int dqsosc_inc, dqsosc_dec;
+	unsigned int dqsosc_inc[2], dqsosc_dec[2];
 	unsigned int pi_orig[3][2][2]; /* [shuffle][rank][byte] */
 	unsigned int pi_new[3][2][2]; /* [shuffle][rank][byte] */
 	unsigned int dqm_orig[3][2][2];
@@ -375,26 +375,22 @@ static unsigned int dramc_tx_tracking(int channel)
 	}
 
 	shu_level = (Reg_Readl(DRAMC_AO_SHUSTATUS) >> 1) & 0x3;
-	if (shu_level == 0) {
-		tx_freq_ratio[0] = 0x8;
-		tx_freq_ratio[1] = 0x4;
-		tx_freq_ratio[2] = 0x6;
-	} else if (shu_level == 1) {
-		tx_freq_ratio[0] = 0x10;
-		tx_freq_ratio[1] = 0x8;
-		tx_freq_ratio[2] = 0xc;
-	} else {
-		tx_freq_ratio[0] = 0xa;
-		tx_freq_ratio[1] = 0x5;
-		tx_freq_ratio[2] = 0x8;
-	}
+	opp_level = shu_level + 1;
+
+	tx_freq_ratio[0] = dram_steps_freq(1) * 8 / dram_steps_freq(opp_level);
+	tx_freq_ratio[1] = dram_steps_freq(2) * 8 / dram_steps_freq(opp_level);
+	tx_freq_ratio[2] = dram_steps_freq(3) * 8 / dram_steps_freq(opp_level);
+
 	max_pi_adj[0] = 10;
-	max_pi_adj[1] = 4;
-	max_pi_adj[2] = 8;
+	max_pi_adj[1] = 7;
+	max_pi_adj[2] = 4;
 
 	shu_offset_dramc = 0x600 * shu_level;
-	dqsosc_inc = (Reg_Readl(DRAMC_AO_DQSOSC_PRD + shu_offset_dramc) >> 16) & 0xFF;
-	dqsosc_dec = (Reg_Readl(DRAMC_AO_DQSOSC_PRD + shu_offset_dramc) >> 24) & 0xFF;
+	dqsosc_inc[0] = (Reg_Readl(DRAMC_AO_DQSOSCTHRD + shu_offset_dramc) >>  0) & 0xFFF;
+	dqsosc_dec[0] = (Reg_Readl(DRAMC_AO_DQSOSCTHRD + shu_offset_dramc) >> 12) & 0xFFF;
+	dqsosc_inc[1] = (Reg_Readl(DRAMC_AO_DQSOSC_PRD + shu_offset_dramc) >>  8) & 0xF00;
+	dqsosc_inc[1] |= (Reg_Readl(DRAMC_AO_DQSOSCTHRD + shu_offset_dramc) >> 24) & 0xFF;
+	dqsosc_dec[1] = (Reg_Readl(DRAMC_AO_DQSOSC_PRD + shu_offset_dramc) >> 20) & 0xFFF;
 
 	/* mr1819_base[rank][byte] */
 	mr1819_base[0][0] = (Reg_Readl(DRAMC_AO_SHU1RK0_DQSOSC + shu_offset_dramc) >>  0) & 0xFFFF;
@@ -447,7 +443,7 @@ static unsigned int dramc_tx_tracking(int channel)
 		for (byte = 0; byte < 2; byte++) {
 			if (mr1819_cur[byte] >= mr1819_base[rank][byte]) {
 				mr1819_delta = mr1819_cur[byte] - mr1819_base[rank][byte];
-				pi_adjust = mr1819_delta / dqsosc_inc;
+				pi_adjust = mr1819_delta / dqsosc_inc[rank];
 				for (shu_index = 0; shu_index < 3; shu_index++) {
 					pi_adj = pi_adjust * tx_freq_ratio[shu_index] / tx_freq_ratio[shu_level];
 					if (pi_adj > max_pi_adj[shu_index]) {
@@ -461,14 +457,14 @@ static unsigned int dramc_tx_tracking(int channel)
 #if 0 /* print message for debugging */
 pr_info("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d INC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
-mr1819_delta, dqsosc_inc, pi_orig[shu_index][rank][byte],
+mr1819_delta, dqsosc_inc[rank], pi_orig[shu_index][rank][byte],
 (pi_adjust * tx_freq_ratio[shu_index] / tx_freq_ratio[shu_level]),
 pi_new[shu_index][rank][byte]);
 #endif
 				}
 			} else {
 				mr1819_delta = mr1819_base[rank][byte] - mr1819_cur[byte];
-				pi_adjust = mr1819_delta / dqsosc_dec;
+				pi_adjust = mr1819_delta / dqsosc_dec[rank];
 				for (shu_index = 0; shu_index < 3; shu_index++) {
 					pi_adj = pi_adjust * tx_freq_ratio[shu_index] / tx_freq_ratio[shu_level];
 					if (pi_adj > max_pi_adj[shu_index]) {
@@ -482,7 +478,7 @@ pi_new[shu_index][rank][byte]);
 #if 0 /* print message for debugging */
 pr_info("[DRAMC], CH%d RK%d B%d, shu=%d base=%X cur=%X delta=%d DEC=%d PI=0x%x Adj=%d newPI=0x%x\n",
 channel, rank, byte, shu_index, mr1819_base[rank][byte], mr1819_cur[byte],
-mr1819_delta, dqsosc_dec, pi_orig[shu_index][rank][byte],
+mr1819_delta, dqsosc_dec[rank], pi_orig[shu_index][rank][byte],
 (pi_adjust * tx_freq_ratio[shu_index] / tx_freq_ratio[shu_level]),
 pi_new[shu_index][rank][byte]);
 #endif
@@ -1144,6 +1140,7 @@ unsigned int get_dram_data_rate(void)
 
 	return u4DataRate;
 }
+EXPORT_SYMBOL(get_dram_data_rate);
 
 unsigned int read_dram_temperature(unsigned char channel)
 {
@@ -1398,9 +1395,9 @@ void zqcs_timer_callback(unsigned long data)
 			writel(readl(u4rg_24) | 0x10, u4rg_24); /* DMCKE1FIXON */
 
 			if (RankCounter == 0)
-				writel(readl(u4rg_5C) & 0xCFFFFFFF, u4rg_5C); /* Rank 0 */
+				writel(readl(u4rg_5C) & 0xFCFFFFFF, u4rg_5C); /* Rank 0 */
 			else if (RankCounter == 1) {
-				writel((readl(u4rg_5C) & 0xCFFFFFFF) | 0x10000000,
+				writel((readl(u4rg_5C) & 0xFCFFFFFF) | 0x01000000,
 				u4rg_5C); /* Rank 1 */
 			}
 			writel(readl(u4rg_60) | 0x10, u4rg_60); /* for ZQCal Start */
@@ -1529,7 +1526,7 @@ static int dram_probe(struct platform_device *pdev)
 
 	pr_debug("[DRAMC] module probe.\n");
 
-	for (i = 0; i < 6; i++) {
+	for (i = 0; i < (sizeof(base_temp) / sizeof(*base_temp)); i++) {
 		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
 		base_temp[i] = devm_ioremap_resource(&pdev->dev, res);
 		if (IS_ERR(base_temp[i])) {
