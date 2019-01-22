@@ -19,6 +19,7 @@ obj-$(CONFIG_MACH_MT6757) += perf_ioctl/
 obj-$(CONFIG_MACH_MT6763) += perf_ioctl/
 obj-$(CONFIG_MACH_MT6739) += perf_ioctl/
 obj-$(CONFIG_MACH_MT6758) += perf_ioctl/
+obj-$(CONFIG_MACH_MT6771) += perf_ioctl/
 
 obj-$(CONFIG_MACH_MT6799) += legacy_controller/
 obj-$(CONFIG_MACH_MT6757) += legacy_controller/

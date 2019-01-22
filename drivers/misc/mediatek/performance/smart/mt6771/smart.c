@@ -53,6 +53,7 @@
 
 #define S_LOG(fmt, args...)		pr_debug(TAG fmt, ##args)
 
+#if 0
 struct smart_det {
 	spinlock_t smart_lock;
 	wait_queue_head_t wq;
@@ -133,52 +134,15 @@ inline void smart_tracer(int pid, char *name, int count)
 	met_tag_oneshot(0, name, count);
 #endif
 }
+#endif
 
 int set_cpuset(int cluster)
 {
-	int ret;
-	char event_ll[10] = "DETECT=11"; /* HPS*/
-	char event_l[10] = "DETECT=10"; /* HPS*/
-	char event_all[10] = "DETECT=12"; /* HPS*/
-	char event_act_up[9]   = "ACTION=1"; /* up   */
-	char *envp_clu0[3] = { event_ll, event_act_up, NULL };
-	char *envp_clu1[3] = { event_l, event_act_up, NULL };
-	char *envp_cluall[3] = { event_all, event_act_up, NULL };
-	char **envp;
-
-	switch (cluster) {
-	case 0:
-		/* send 0-3 */
-		envp = &envp_clu0[0];
-		break;
-
-	case 1:
-		/* send 4-7 */
-		envp = &envp_clu1[0];
-		break;
-
-	case -1:
-		/* send 0-7 */
-		envp = &envp_cluall[0];
-		break;
-
-	default:
-		return -EINVAL;
-	}
-
-	if (!smart_context_obj)
-		return 0;
-
-	ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
-				 KOBJ_CHANGE, envp);
-	if (ret) {
-		pr_debug(TAG"kobject_uevent error:%d\n", ret);
-		return -EINVAL;
-	}
 
 	return 0;
 }
 
+#if 0
 int set_idle_prefer(int enable)
 {
 	int ret;
@@ -1071,4 +1035,5 @@ int __init init_smart(void)
 	return 0;
 }
 late_initcall(init_smart);
+#endif
 
