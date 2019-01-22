@@ -503,7 +503,13 @@ void xhci_free_or_cache_endpoint_ring(struct xhci_hcd *xhci,
 	int rings_cached;
 
 	rings_cached = virt_dev->num_rings_cached;
+
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if ((rings_cached < XHCI_MAX_RINGS_CACHED) &&
+		!virt_dev->eps[ep_index].ring->first_seg->sram_flag) {
+#else
 	if (rings_cached < XHCI_MAX_RINGS_CACHED) {
+#endif
 		virt_dev->ring_cache[rings_cached] =
 			virt_dev->eps[ep_index].ring;
 		virt_dev->num_rings_cached++;
