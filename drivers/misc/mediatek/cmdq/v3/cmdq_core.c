@@ -7491,11 +7491,9 @@ static s32 cmdq_core_wait_task_done(struct TaskStruct *pTask, u32 timeout_ms)
 			task_list_count++;
 		}
 	}
-
+	cmdq_core_group_end_task(pTask, task_list, task_list_count);
 
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, snapshot_tasklist_in_wait_task_done);
-
-	cmdq_core_group_end_task(pTask, task_list, task_list_count);
 
 	CMDQ_MSG("WAIT: task 0x%p waitq=%d state=%d\n", pTask, waitQ, pTask->taskState);
 	CMDQ_PROF_END(current->pid, "wait_for_task_done");
