@@ -1718,36 +1718,48 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 
 	ASSERT(prAdapter);
 
-	if (prAdapter->prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
-		DBGLOG(OID, INFO, "%s stopped! Releasing pending OIDs ..\n", KAL_GET_CURRENT_THREAD_NAME());
-	} else {
-		DBGLOG(OID, ERROR, "OID Timeout! Releasing pending OIDs ..\n");
-		prAdapter->ucOidTimeoutCount++;
+	do {
+		if (ulParamPtr == 1)
+			break;
 
-		if (prAdapter->ucOidTimeoutCount >= WLAN_OID_NO_ACK_THRESHOLD) {
-			if (!prAdapter->fgIsChipNoAck) {
-				DBGLOG(INIT, WARN,
-				       "No response from chip for %u times, set NoAck flag!\n",
-				       prAdapter->ucOidTimeoutCount);
+		if (prAdapter->prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
+			DBGLOG(OID, INFO, "%s stopped! Releasing pending OIDs ..\n", KAL_GET_CURRENT_THREAD_NAME());
+		} else {
+			DBGLOG(OID, ERROR, "OID Timeout! Releasing pending OIDs ..\n");
+			prAdapter->ucOidTimeoutCount++;
+
+			if (prAdapter->ucOidTimeoutCount >= WLAN_OID_NO_ACK_THRESHOLD) {
+				if (!prAdapter->fgIsChipNoAck) {
+					DBGLOG(INIT, WARN,
+					       "No response from chip for %u times, set NoAck flag!\n",
+					       prAdapter->ucOidTimeoutCount);
 #if 0
 #if CFG_CHIP_RESET_SUPPORT
-				glGetRstReason(RST_OID_TIMEOUT);
-				glResetTrigger(prAdapter);
+					glGetRstReason(RST_OID_TIMEOUT);
+					glResetTrigger(prAdapter);
 #endif
 #endif
-			}
+				}
 
-			prAdapter->fgIsChipNoAck = TRUE;
+				prAdapter->fgIsChipNoAck = TRUE;
+			}
+			set_bit(GLUE_FLAG_HIF_PRT_HIF_DBG_INFO_BIT, &(prAdapter->prGlueInfo->ulFlag));
 		}
-		set_bit(GLUE_FLAG_HIF_PRT_HIF_DBG_INFO_BIT, &(prAdapter->prGlueInfo->ulFlag));
-	}
+	} while (FALSE);
 
 	do {
 #if CFG_SUPPORT_MULTITHREAD
 		KAL_ACQUIRE_MUTEX(prAdapter, MUTEX_TX_CMD_CLEAR);
 #endif
+		/* 1: Clear pending OID in glue layer command queue */
+		kalOidCmdClearance(prAdapter->prGlueInfo);
 
-		/* 1: Clear Pending OID in prAdapter->rPendingCmdQueue */
+#if CFG_SUPPORT_MULTITHREAD
+		/* Clear pending OID in main_thread to hif_thread command queue */
+		wlanClearTxOidCommand(prAdapter);
+#endif
+
+		/* 2: Clear Pending OID in prAdapter->rPendingCmdQueue */
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_PENDING);
 
 		prCmdQue = &prAdapter->rPendingCmdQueue;
@@ -1781,14 +1793,6 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 		}
 
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_PENDING);
-
-#if CFG_SUPPORT_MULTITHREAD
-		/* Clear pending OID in main_thread to hif_thread command queue */
-		wlanClearTxOidCommand(prAdapter);
-#endif
-
-		/* 2: Clear pending OID in glue layer command queue */
-		kalOidCmdClearance(prAdapter->prGlueInfo);
 
 		/* 3: Clear pending OID queued in pvOidEntry with REQ_FLAG_OID set */
 		kalOidClearance(prAdapter->prGlueInfo);
