@@ -30,6 +30,8 @@
 #include <linux/of.h>
 #include <linux/of_fdt.h>
 #include <linux/of_reserved_mem.h>
+#include <linux/uaccess.h>
+#include <linux/highmem.h>
 #include "../../../../kernel/sched/sched.h"
 #include "mrdump_mini.h"
 #include "mrdump_private.h"
@@ -99,30 +101,80 @@ __weak struct vm_struct *find_vm_area(const void *addr)
 #define MIN_MARGIN PAGE_OFFSET
 #endif
 
-static void check_addr_valid(unsigned long addr, unsigned long *low, unsigned long *high)
+#undef mrdump_virt_addr_valid
+#define mrdump_virt_addr_valid(kaddr) pfn_valid(virt_2_pfn((unsigned long)(kaddr)))
+#ifdef __aarch64__
+static unsigned long virt_2_pfn(unsigned long addr)
 {
-	unsigned long l = *low;
-	unsigned long h = *high;
+	pgd_t *pgd = pgd_offset_k(addr), _pgd_val = {0};
+	pud_t *pud, _pud_val = {0};
+	pmd_t *pmd, _pmd_val = 0;
+	pte_t *ptep, _pte_val = 0;
+	unsigned long pfn = ~0UL;
 
-	while (l < addr) {
-		if (!mrdump_virt_addr_valid(l)) {
-			*low += PAGE_SIZE;
-			/* LOGE("address(0x%lx), low is invalid(0x%lx), new low is 0x%lx\n", addr, l, *low); */
+#ifdef CONFIG_ARM64
+	if (addr < VA_START)
+		goto OUT;
+#endif
+	if (probe_kernel_address(pgd, _pgd_val) || pgd_none(_pgd_val))
+		goto OUT;
+	pud = pud_offset(pgd, addr);
+	if (probe_kernel_address(pud, _pud_val) || pud_none(_pud_val))
+		goto OUT;
+	if (pud_sect(_pud_val)) {
+		pfn = pud_pfn(_pud_val) + ((addr&~PUD_MASK) >> PAGE_SHIFT);
+	} else if (pud_table(_pud_val)) {
+		pmd = pmd_offset(pud, addr);
+		if (probe_kernel_address(pmd, _pmd_val) || pmd_none(_pmd_val))
+			goto OUT;
+		if (pmd_sect(_pmd_val)) {
+			pfn = pmd_pfn(_pmd_val) + ((addr&~PMD_MASK) >> PAGE_SHIFT);
+		} else if (pmd_table(_pmd_val)) {
+			ptep = pte_offset_map(pmd, addr);
+			if (probe_kernel_address(ptep, _pte_val) || !pte_present(_pte_val)) {
+				pte_unmap(ptep);
+				goto OUT;
+			}
+			pfn = pte_pfn(_pte_val);
+			pte_unmap(ptep);
 		}
-		l += PAGE_SIZE;
 	}
-	if (*low > addr)
-		*low = addr;
-	while (h > addr) {
-		if (!mrdump_virt_addr_valid(h)) {
-			*high -= PAGE_SIZE;
-			/* LOGE("address(0x%lx), high is invalid(0x%lx), new high is 0x%lx\n", addr, l, *high); */
-		}
-		h -= PAGE_SIZE;
-	}
-	if (*high < addr)
-		*high = addr;
+OUT:
+	return pfn;
+
 }
+#else
+static unsigned long virt_2_pfn(unsigned long addr)
+{
+	pgd_t *pgd = pgd_offset_k(addr), _pgd_val = {0};
+	pud_t *pud, _pud_val = {0};
+	pmd_t *pmd, _pmd_val = 0;
+	pte_t *ptep, _pte_val = 0;
+	unsigned long pfn = ~0UL;
+
+	if (probe_kernel_address(pgd, _pgd_val) || pgd_none(_pgd_val))
+		goto OUT;
+	pud = pud_offset(pgd, addr);
+	if (probe_kernel_address(pud, _pud_val) || pud_none(_pud_val))
+		goto OUT;
+	pmd = pmd_offset(pud, addr);
+	if (probe_kernel_address(pmd, _pmd_val) || pmd_none(_pmd_val))
+		goto OUT;
+	if (pmd_sect(_pmd_val)) {
+		pfn = pmd_pfn(_pmd_val) + ((addr&~PMD_MASK) >> PAGE_SHIFT);
+	} else if (pmd_table(_pmd_val)) {
+		ptep = pte_offset_map(pmd, addr);
+		if (probe_kernel_address(ptep, _pte_val) || !pte_present(_pte_val)) {
+			pte_unmap(ptep);
+			goto OUT;
+		}
+		pfn = pte_pfn(_pte_val);
+		pte_unmap(ptep);
+	}
+OUT:
+	return pfn;
+}
+#endif
 
 /* copy from fs/binfmt_elf.c */
 static void fill_elf_header(struct elfhdr *elf, int segs)
@@ -280,42 +332,12 @@ int kernel_addr_valid(unsigned long addr)
 	return pfn_valid(pte_pfn(*pte));
 }
 
-void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
+static void mrdump_mini_add_entry_ext(unsigned long start, unsigned long end, unsigned long pa)
 {
+	unsigned long laddr, haddr;
 	struct elf_phdr *phdr;
-	/* struct vm_area_struct *vma; */
-	struct vm_struct *vm;
-	unsigned long laddr, haddr, lnew, hnew;
-	unsigned long paddr;
 	int i;
 
-	if (addr < MIN_MARGIN)
-		return;
-	hnew = ALIGN(addr + size / 2, PAGE_SIZE);
-	lnew = hnew - ALIGN(size, PAGE_SIZE);
-	if (!mrdump_virt_addr_valid(addr)) {
-		/* vma = find_vma(&init_mm, addr); */
-		/* pr_notice("mirdump: add: %p, vma: %x", addr, vma); */
-		/* if (!vma) */
-		/*      return; */
-		/* pr_notice("mirdump: (%p, %p), (%p, %p)", vma->vm_start, vma->vm_end, lnew, hnew);                */
-		/* hnew = min(vma->vm_end, hnew); */
-		/* lnew = max(vma->vm_start, lnew); */
-		vm = find_vm_area((void *)addr);
-		if (!vm)
-			return;
-		/* lnew = max((unsigned long)vm->addr, lnew); */
-		/* hnew = min((unsigned long)vm->addr + vm->size - PAGE_SIZE, hnew); */
-		/* only dump 1 page */
-		lnew = max((unsigned long)vm->addr, PAGE_ALIGN(addr) - PAGE_SIZE);
-		hnew = lnew + PAGE_SIZE;
-		paddr = __pfn_to_phys(vmalloc_to_pfn((void *)lnew));
-	} else {
-		check_addr_valid(addr, &lnew, &hnew);
-		lnew = max(lnew, MIN_MARGIN);
-		hnew = min_t(unsigned long, hnew, (unsigned long)high_memory);
-		paddr = __pa(lnew);
-	}
 	for (i = 0; i < MRDUMP_MINI_NR_SECTION; i++) {
 		phdr = &mrdump_mini_ehdr->phdrs[i];
 		if (phdr->p_type == PT_NULL)
@@ -324,22 +346,75 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 			continue;
 		laddr = phdr->p_vaddr;
 		haddr = laddr + phdr->p_filesz;
-		/* full overlap with exist */
-		if (lnew >= laddr && hnew <= haddr)
+		if (start >= laddr && end <= haddr)
 			return;
-		/* no overlap, new */
-		if (lnew >= haddr || hnew <= laddr)
+		if (start >= haddr || end <= laddr)
 			continue;
-		/* partial overlap with exist, joining */
-		lnew = lnew < laddr ? lnew : laddr;
-		hnew = hnew > haddr ? hnew : haddr;
-		paddr = __pa(lnew);
+		if (laddr < start) {
+			start = laddr;
+			pa = phdr->p_paddr;
+		}
+		if (haddr > end)
+			end = haddr;
 		break;
 	}
 	if (i < MRDUMP_MINI_NR_SECTION)
-		fill_elf_load_phdr(phdr, hnew - lnew, lnew, paddr);
+		fill_elf_load_phdr(phdr, end - start, start, pa);
 	else
 		LOGE("mrdump: MINI_NR_SECTION overflow!\n");
+}
+
+#ifdef __aarch64__
+static bool addr_in_kimg(unsigned long addr)
+{
+	if ((void *)(addr) >= (void *)KIMAGE_VADDR && (void *)(addr) < (void *)_end)
+		return true;
+	else
+		return false;
+}
+#else
+static bool addr_in_kimg(unsigned long addr)
+{
+	return false;
+}
+#endif
+
+void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
+{
+	unsigned long start = 0, __end, pa = 0, end_pfn = 0, _pfn;
+
+	if (!pfn_valid(virt_2_pfn(addr)))
+		return;
+	if (((addr < VMALLOC_END && addr >= VMALLOC_START) || addr < PAGE_OFFSET)
+			&& !addr_in_kimg(addr)) {
+		/*If addr belongs to non-linear mapping region and not in kernel image,
+		 *we only dump 1 page to economize on the number of sections of minirdump
+		 */
+		start = addr & PAGE_MASK;
+		mrdump_mini_add_entry_ext(start, start + PAGE_SIZE, __pfn_to_phys(virt_2_pfn(addr)));
+		return;
+	}
+	for (__end = ALIGN(addr + size / 2, PAGE_SIZE), addr = __end - ALIGN(size, PAGE_SIZE);
+			addr < __end; addr += PAGE_SIZE) {
+		_pfn = virt_2_pfn(addr);
+		if (pfn_valid(_pfn)) {
+			if (!start || _pfn != end_pfn) {
+				if (start)
+					mrdump_mini_add_entry_ext(start, start + (__pfn_to_phys(end_pfn) - pa), pa);
+				start = addr;
+				pa = __pfn_to_phys(_pfn);
+				end_pfn = _pfn + 1;
+			} else {
+				end_pfn++;
+			}
+		} else {
+			if (start)
+				mrdump_mini_add_entry_ext(start, start + (__pfn_to_phys(end_pfn) - pa), pa);
+			start = 0;
+		}
+	}
+	if (start)
+		mrdump_mini_add_entry_ext(start, start + (__pfn_to_phys(end_pfn) - pa), pa);
 }
 
 static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, struct task_struct *tsk, int stack)
