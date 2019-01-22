@@ -121,7 +121,7 @@ static int slp_suspend_ops_begin(suspend_state_t state)
 static int slp_suspend_ops_prepare(void)
 {
 	/* legacy log */
-	slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_prepare\t@@@@@@@@@@@@@@@@@@@@\n");
+	/* slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_prepare\t@@@@@@@@@@@@@@@@@@@@\n"); */
 
 	return 0;
 }
@@ -246,7 +246,7 @@ LEAVE_SLEEP:
 static void slp_suspend_ops_finish(void)
 {
 	/* legacy log */
-	slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_finish\t@@@@@@@@@@@@@@@@@@@@\n");
+	/* slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_finish\t@@@@@@@@@@@@@@@@@@@@\n"); */
 }
 
 static void slp_suspend_ops_end(void)
