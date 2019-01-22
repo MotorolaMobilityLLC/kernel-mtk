@@ -1636,6 +1636,9 @@ static inline char *alloc_secdata(void)
 static inline void free_secdata(void *secdata)
 { }
 #endif /* CONFIG_SECURITY */
+#ifdef CONFIG_MTK_ROOT_TRACE
+extern int sec_trace_root(const struct cred *old, const struct cred *new);
+#endif /* CONFIG_MTK_ROOT_TRACE */
 
 #endif /* ! __LINUX_SECURITY_H */
 
