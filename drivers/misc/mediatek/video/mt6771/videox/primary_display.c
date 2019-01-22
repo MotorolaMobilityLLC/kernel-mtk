@@ -4393,7 +4393,8 @@ int primary_display_suspend(void)
 	}
 	primary_display_idlemgr_kick(__func__, 0);
 
-	if (pgc->session_mode == DISP_SESSION_RDMA_MODE) {
+	if (pgc->session_mode == DISP_SESSION_RDMA_MODE ||
+	    pgc->session_mode == DISP_SESSION_DECOUPLE_MODE) {
 		/* switch back to DL mode before suspend */
 		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
 					       pgc->session_id, 0, NULL, 1);
@@ -5907,7 +5908,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 				;
 			}
 		} else if (old_mode == DISP_SESSION_DECOUPLE_MODE) {
-			if (!dc_request)
+			if (disp_helper_get_option(DISP_OPT_DC_BY_HRT) && !dc_request)
 				new_mode = DISP_SESSION_DIRECT_LINK_MODE;
 		}
 
@@ -6488,6 +6489,15 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 
 	_primary_path_lock(__func__);
 	primary_display_idlemgr_kick(__func__, 0);
+
+	if (pgc->scen == DISP_SCENARIO_FORCE_DC &&
+	    pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE &&
+	    sess_mode == DISP_SESSION_DIRECT_LINK_MODE &&
+	    !disp_mgr_has_mem_session()) {
+		/* force DC */
+		sess_mode = DISP_SESSION_DECOUPLE_MODE;
+		force = 1;
+	}
 
 	/* HWC only needs to control mirror or not mirror it doesn't need to control DL/DC */
 	if (!force && primary_display_is_mirror_mode() == _is_mirror_mode(sess_mode))
@@ -8438,7 +8448,7 @@ done:
 	return ret;
 }
 
-struct OPT_BACKUP tui_opt_backup[4] = {
+struct DISP_OPT_INFO tui_opt_backup[4] = {
 	{DISP_OPT_SHARE_SRAM, 0},
 	{DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 0},
 	{DISP_OPT_SMART_OVL, 0},
@@ -8455,7 +8465,7 @@ void stop_smart_ovl_nolock(void)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(tui_opt_backup); i++) {
-		if ((tui_opt_backup[i].option == DISP_OPT_SHARE_SRAM) && (tui_opt_backup[i].value == 1))
+		if ((tui_opt_backup[i].option == DISP_OPT_SHARE_SRAM) && (tui_opt_backup[i].backup == 1))
 			leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 	}
 	/* primary_display_esd_check_enable(0);*/
@@ -8469,7 +8479,7 @@ void restart_smart_ovl_nolock(void)
 		disp_helper_set_option(tui_opt_backup[i].option, tui_opt_backup[i].value);
 
 	for (i = 0; i < ARRAY_SIZE(tui_opt_backup); i++) {
-		if ((tui_opt_backup[i].option == DISP_OPT_SHARE_SRAM) && (tui_opt_backup[i].value == 1))
+		if ((tui_opt_backup[i].option == DISP_OPT_SHARE_SRAM) && (tui_opt_backup[i].backup == 1))
 			enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 	}
 }
@@ -8585,9 +8595,7 @@ void ddp_irq_callback(enum DISP_MODULE_ENUM module, unsigned int reg_value)
 static int self_refresh_idlemgr_status_backup;
 static int primary_display_enter_self_refresh(void)
 {
-	_primary_path_lock(__func__);
-
-	mmprofile_log_ex(ddp_mmp_get_events()->self_refresh, MMPROFILE_FLAG_START, 0, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->scen, MMPROFILE_FLAG_START, 1, 1);
 
 	if (primary_display_is_mirror_mode()) {
 		/* we only accept non-mirror mode */
@@ -8606,16 +8614,13 @@ static int primary_display_enter_self_refresh(void)
 	if (!primary_display_is_video_mode())
 		disp_register_irq_callback(ddp_irq_callback);
 
-	pgc->primary_display_scenario = DISP_SCENARIO_SELF_REFRESH;
+	pgc->scen = DISP_SCENARIO_SELF_REFRESH;
 out:
-	_primary_path_unlock(__func__);
 	return 0;
 }
 
 static int primary_display_exit_self_refresh(void)
 {
-	_primary_path_lock(__func__);
-
 	if (primary_display_is_mirror_mode()) {
 		/* we only accept non-mirror mode */
 		disp_aee_print("enter self-refresh mode fail\n");
@@ -8631,10 +8636,46 @@ static int primary_display_exit_self_refresh(void)
 	if (!primary_display_is_video_mode())
 		disp_unregister_irq_callback(ddp_irq_callback);
 
-	pgc->primary_display_scenario = DISP_SCENARIO_NORMAL;
+	pgc->scen = DISP_SCENARIO_NORMAL;
 out:
-	_primary_path_unlock(__func__);
-	mmprofile_log_ex(ddp_mmp_get_events()->self_refresh, MMPROFILE_FLAG_END, 0, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->scen, MMPROFILE_FLAG_END, 1, 1);
+	return 0;
+}
+
+static struct DISP_OPT_INFO force_dc_opt[] = {
+	{DISP_OPT_SMART_OVL, 0, 0},
+	{DISP_OPT_DC_BY_HRT, 0, 0}
+};
+
+static int prim_force_DC_enter(void)
+{
+	int ret = 0;
+
+	primary_display_idlemgr_kick(__func__, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->scen, MMPROFILE_FLAG_START, 2, 2);
+
+	/* disable smart-ovl */
+	disp_helper_backup_reset(force_dc_opt, ARRAY_SIZE(force_dc_opt));
+	if (!primary_display_is_mirror_mode() && !disp_mgr_has_mem_session()) {
+		/* switch to DC */
+		ret = do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE,
+				       primary_session_id, 0, NULL, 0);
+	}
+	return ret;
+}
+
+static int prim_force_DC_exit(void)
+{
+	primary_display_idlemgr_kick(__func__, 0);
+	/* restore smart-ovl */
+	disp_helper_restore(force_dc_opt, ARRAY_SIZE(force_dc_opt));
+
+	if (!primary_display_is_mirror_mode()) {
+		/* switch back to DL */
+		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+				       primary_session_id, 0, NULL, 1);
+	}
+	mmprofile_log_ex(ddp_mmp_get_events()->scen, MMPROFILE_FLAG_END, 2, 2);
 	return 0;
 }
 
@@ -8642,22 +8683,35 @@ int primary_display_set_scenario(int scenario)
 {
 	int ret = 0;
 
+	_primary_path_lock(__func__);
+
+	if (scenario == pgc->scen)
+		goto out;
+
 	if (scenario != DISP_SCENARIO_NORMAL &&
-	    pgc->primary_display_scenario != DISP_SCENARIO_NORMAL) {
+	    pgc->scen != DISP_SCENARIO_NORMAL) {
 		/* every scenario should start from NORMAL !! */
 		pr_err("%s set scenario %d fail ! current scenario is %d\n",
-			__func__, scenario, pgc->primary_display_scenario);
-		return -EINVAL;
+			__func__, scenario, pgc->scen);
+		ret = -EINVAL;
+		goto out;
 	}
 
-	if (scenario == DISP_SCENARIO_SELF_REFRESH)
+	if (scenario == DISP_SCENARIO_SELF_REFRESH) {
 		ret = primary_display_enter_self_refresh();
-
-	if (scenario == DISP_SCENARIO_NORMAL) {
-		if (pgc->primary_display_scenario == DISP_SCENARIO_SELF_REFRESH)
+	} else if (scenario == DISP_SCENARIO_FORCE_DC) {
+		ret = prim_force_DC_enter();
+	} else if (scenario == DISP_SCENARIO_NORMAL) {
+		if (pgc->scen == DISP_SCENARIO_SELF_REFRESH)
 			ret = primary_display_exit_self_refresh();
+		else if (pgc->scen == DISP_SCENARIO_FORCE_DC)
+			ret = prim_force_DC_exit();
 	}
+	if (!ret)
+		pgc->scen = scenario;
 
+out:
+	_primary_path_unlock(__func__);
 	return ret;
 }
 

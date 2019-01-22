@@ -94,5 +94,6 @@ void layering_rule_init(void);
 int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level);
 void antilatency_config_hrt(void);
 void update_layering_opt_by_disp_opt(enum DISP_HELPER_OPT option, int value);
+int set_emi_bound_tb(int idx, int num, int *val);
 
 #endif

@@ -1088,6 +1088,25 @@ static void process_dbg_opt(const char *opt)
 			force_dc_buf_fmt = UFMT_RGB565;
 		else if (strncmp(opt + 17, "off", 3) == 0)
 			force_dc_buf_fmt = 0;
+	} else if (strncmp(opt, "set_emi_bound_tb:", 17) == 0) {
+		int num, i, idx;
+		int val[8] = {0};
+		char fmt[256] = "set_emi_bound_tb:%d";
+
+		for (i = 0; i < ARRAY_SIZE(val); i++) {
+			/* make fmt like: "set_dsi_cmd:%d,%d,%d\n" */
+			strncat(fmt, ",%d", sizeof(fmt) - strlen(fmt) - 1);
+		}
+		strncat(fmt, "\n", sizeof(fmt) - strlen(fmt) - 1);
+
+		num = sscanf(opt, fmt, &idx, &val[0], &val[1], &val[2],
+			&val[3], &val[4], &val[5], &val[6], &val[7]);
+
+		if (num < 2 || num > HRT_LEVEL_NUM + 1)
+			return;
+
+		ret = set_emi_bound_tb(idx, num - 1, val);
+
 	} else if (strncmp(opt, "primary_basic_test:", 19) == 0) {
 		unsigned int layer_num, w, h, fmt, frame_num, vsync_num, x, y, r, g, b, a;
 		unsigned int layer_en_mask, cksum;

@@ -405,3 +405,24 @@ int disp_helper_get_option_list(char *stringbuf, int buf_len)
 
 	return len;
 }
+
+int disp_helper_backup_reset(struct DISP_OPT_INFO *info, int n)
+{
+	int i;
+
+	for (i = 0; i < n; i++) {
+		info[i].backup = disp_helper_get_option(info[i].option);
+		disp_helper_set_option(info[i].option, info[i].value);
+	}
+	return 0;
+}
+
+int disp_helper_restore(struct DISP_OPT_INFO *info, int n)
+{
+	int i;
+
+	for (i = 0; i < n; i++)
+		disp_helper_set_option(info[i].option, info[i].backup);
+
+	return 0;
+}
