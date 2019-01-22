@@ -238,10 +238,7 @@ static ssize_t rng_dev_read(struct file *filp, char __user *buf,
 			goto out;
 		}
 
-		if (mutex_lock_interruptible(&reading_mutex)) {
-			err = -ERESTARTSYS;
-			goto out_put;
-		}
+		mutex_lock(&reading_mutex);
 		if (!data_avail) {
 			bytes_read = rng_get_data(rng, rng_buffer,
 				rng_buffer_size(),
@@ -291,7 +288,6 @@ out:
 
 out_unlock_reading:
 	mutex_unlock(&reading_mutex);
-out_put:
 	put_rng(rng);
 	goto out;
 }

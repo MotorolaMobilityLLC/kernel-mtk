@@ -634,16 +634,11 @@ again:
 		spin_unlock(&parent->d_lock);
 		goto again;
 	}
-	if (parent != dentry) {
-		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-		if (unlikely(dentry->d_lockref.count < 0)) {
-			spin_unlock(&parent->d_lock);
-			parent = NULL;
-		}
-	} else {
-		parent = NULL;
-	}
 	rcu_read_unlock();
+	if (parent != dentry)
+		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+	else
+		parent = NULL;
 	return parent;
 }
 

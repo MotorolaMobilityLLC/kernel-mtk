@@ -53,7 +53,7 @@ static const char *handler[]= {
 	"Error"
 };
 
-int show_unhandled_signals = 0;
+int show_unhandled_signals = 1;
 
 /*
  * Dump out the contents of some memory nicely...
@@ -123,7 +123,7 @@ static void __dump_instr(const char *lvl, struct pt_regs *regs)
 	for (i = -4; i < 1; i++) {
 		unsigned int val, bad;
 
-		bad = get_user(val, &((u32 *)addr)[i]);
+		bad = __get_user(val, &((u32 *)addr)[i]);
 
 		if (!bad)
 			p += sprintf(p, i == 0 ? "(%08x) " : "%08x ", val);

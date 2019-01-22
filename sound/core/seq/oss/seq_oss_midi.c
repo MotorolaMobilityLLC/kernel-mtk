@@ -612,7 +612,9 @@ send_midi_event(struct seq_oss_devinfo *dp, struct snd_seq_event *ev, struct seq
 	if (!dp->timer->running)
 		len = snd_seq_oss_timer_start(dp->timer);
 	if (ev->type == SNDRV_SEQ_EVENT_SYSEX) {
-		snd_seq_oss_readq_sysex(dp->readq, mdev->seq_device, ev);
+		if ((ev->flags & SNDRV_SEQ_EVENT_LENGTH_MASK) == SNDRV_SEQ_EVENT_LENGTH_VARIABLE)
+			snd_seq_oss_readq_puts(dp->readq, mdev->seq_device,
+					       ev->data.ext.ptr, ev->data.ext.len);
 	} else {
 		len = snd_midi_event_decode(mdev->coder, msg, sizeof(msg), ev);
 		if (len > 0)

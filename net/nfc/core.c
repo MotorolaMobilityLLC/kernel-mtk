@@ -1093,7 +1093,7 @@ struct nfc_dev *nfc_allocate_device(struct nfc_ops *ops,
 err_free_dev:
 	kfree(dev);
 
-	return NULL;
+	return ERR_PTR(rc);
 }
 EXPORT_SYMBOL(nfc_allocate_device);
 

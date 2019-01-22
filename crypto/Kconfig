@@ -361,6 +361,7 @@ config CRYPTO_XTS
 	select CRYPTO_BLKCIPHER
 	select CRYPTO_MANAGER
 	select CRYPTO_GF128MUL
+	select CRYPTO_ECB
 	help
 	  XTS: IEEE1619/D16 narrow block cipher use with aes-xts-plain,
 	  key size 256, 384 or 512 bits. This implementation currently
@@ -1389,20 +1390,6 @@ config CRYPTO_SERPENT_AVX2_X86_64
 
 	  See also:
 	  <http://www.cl.cam.ac.uk/~rja14/serpent.html>
-
-config CRYPTO_SPECK
-	tristate "Speck cipher algorithm"
-	select CRYPTO_ALGAPI
-	help
-	  Speck is a lightweight block cipher that is tuned for optimal
-	  performance in software (rather than hardware).
-
-	  Speck may not be as secure as AES, and should only be used on systems
-	  where AES is not fast enough.
-
-	  See also: <https://eprint.iacr.org/2013/404.pdf>
-
-	  If unsure, say N.
 
 config CRYPTO_TEA
 	tristate "TEA, XTEA and XETA cipher algorithms"

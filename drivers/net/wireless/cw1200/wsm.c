@@ -379,6 +379,7 @@ static int wsm_multi_tx_confirm(struct cw1200_common *priv,
 {
 	int ret;
 	int count;
+	int i;
 
 	count = WSM_GET32(buf);
 	if (WARN_ON(count <= 0))
@@ -394,10 +395,11 @@ static int wsm_multi_tx_confirm(struct cw1200_common *priv,
 	}
 
 	cw1200_debug_txed_multi(priv, count);
-	do {
+	for (i = 0; i < count; ++i) {
 		ret = wsm_tx_confirm(priv, buf, link_id);
-	} while (!ret && --count);
-
+		if (ret)
+			return ret;
+	}
 	return ret;
 
 underflow:

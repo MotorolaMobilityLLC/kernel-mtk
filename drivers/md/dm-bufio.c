@@ -928,8 +928,7 @@ static void __get_memory_limit(struct dm_bufio_client *c,
 		buffers = c->minimum_buffers;
 
 	*limit_buffers = buffers;
-	*threshold_buffers = mult_frac(buffers,
-				       DM_BUFIO_WRITEBACK_PERCENT, 100);
+	*threshold_buffers = buffers * DM_BUFIO_WRITEBACK_PERCENT / 100;
 }
 
 /*
@@ -1527,8 +1526,7 @@ static unsigned long __scan(struct dm_bufio_client *c, unsigned long nr_to_scan,
 	int l;
 	struct dm_buffer *b, *tmp;
 	unsigned long freed = 0;
-	unsigned long count = c->n_buffers[LIST_CLEAN] +
-			      c->n_buffers[LIST_DIRTY];
+	unsigned long count = nr_to_scan;
 	unsigned long retain_target = get_retain_buffers(c);
 
 	for (l = 0; l < LIST_SIZE; l++) {
@@ -1822,15 +1820,19 @@ static int __init dm_bufio_init(void)
 	memset(&dm_bufio_caches, 0, sizeof dm_bufio_caches);
 	memset(&dm_bufio_cache_names, 0, sizeof dm_bufio_cache_names);
 
-	mem = (__u64)mult_frac(totalram_pages - totalhigh_pages,
-			       DM_BUFIO_MEMORY_PERCENT, 100) << PAGE_SHIFT;
+	mem = (__u64)((totalram_pages - totalhigh_pages) *
+		      DM_BUFIO_MEMORY_PERCENT / 100) << PAGE_SHIFT;
 
 	if (mem > ULONG_MAX)
 		mem = ULONG_MAX;
 
 #ifdef CONFIG_MMU
-	if (mem > mult_frac(VMALLOC_TOTAL, DM_BUFIO_VMALLOC_PERCENT, 100))
-		mem = mult_frac(VMALLOC_TOTAL, DM_BUFIO_VMALLOC_PERCENT, 100);
+	/*
+	 * Get the size of vmalloc space the same way as VMALLOC_TOTAL
+	 * in fs/proc/internal.h
+	 */
+	if (mem > (VMALLOC_END - VMALLOC_START) * DM_BUFIO_VMALLOC_PERCENT / 100)
+		mem = (VMALLOC_END - VMALLOC_START) * DM_BUFIO_VMALLOC_PERCENT / 100;
 #endif
 
 	dm_bufio_default_cache_size = mem;

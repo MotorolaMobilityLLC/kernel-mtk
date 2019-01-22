@@ -86,8 +86,6 @@ struct netfront_cb {
 /* IRQ name is queue name with "-tx" or "-rx" appended */
 #define IRQ_NAME_SIZE (QUEUE_NAME_SIZE + 3)
 
-static DECLARE_WAIT_QUEUE_HEAD(module_unload_q);
-
 struct netfront_stats {
 	u64			packets;
 	u64			bytes;
@@ -1331,7 +1329,6 @@ static struct net_device *xennet_create_dev(struct xenbus_device *dev)
 
 	netif_carrier_off(netdev);
 
-	xenbus_switch_state(dev, XenbusStateInitialising);
 	return netdev;
 
  exit:
@@ -1843,19 +1840,27 @@ static int talk_to_netback(struct xenbus_device *dev,
 		xennet_destroy_queues(info);
 
 	err = xennet_create_queues(info, &num_queues);
-	if (err < 0) {
-		xenbus_dev_fatal(dev, err, "creating queues");
-		kfree(info->queues);
-		info->queues = NULL;
-		goto out;
-	}
+	if (err < 0)
+		goto destroy_ring;
 
 	/* Create shared ring, alloc event channel -- for each queue */
 	for (i = 0; i < num_queues; ++i) {
 		queue = &info->queues[i];
 		err = setup_netfront(dev, queue, feature_split_evtchn);
-		if (err)
-			goto destroy_ring;
+		if (err) {
+			/* setup_netfront() will tidy up the current
+			 * queue on error, but we need to clean up
+			 * those already allocated.
+			 */
+			if (i > 0) {
+				rtnl_lock();
+				netif_set_real_num_tx_queues(info->netdev, i);
+				rtnl_unlock();
+				goto destroy_ring;
+			} else {
+				goto out;
+			}
+		}
 	}
 
 again:
@@ -1945,9 +1950,9 @@ abort_transaction_no_dev_fatal:
 	xenbus_transaction_end(xbt, 1);
  destroy_ring:
 	xennet_disconnect_backend(info);
-	xennet_destroy_queues(info);
+	kfree(info->queues);
+	info->queues = NULL;
  out:
-	device_unregister(&dev->dev);
 	return err;
 }
 
@@ -2024,10 +2029,7 @@ static void netback_changed(struct xenbus_device *dev,
 	case XenbusStateInitialised:
 	case XenbusStateReconfiguring:
 	case XenbusStateReconfigured:
-		break;
-
 	case XenbusStateUnknown:
-		wake_up_all(&module_unload_q);
 		break;
 
 	case XenbusStateInitWait:
@@ -2043,12 +2045,10 @@ static void netback_changed(struct xenbus_device *dev,
 		break;
 
 	case XenbusStateClosed:
-		wake_up_all(&module_unload_q);
 		if (dev->state == XenbusStateClosed)
 			break;
 		/* Missed the backend's CLOSING state -- fallthrough */
 	case XenbusStateClosing:
-		wake_up_all(&module_unload_q);
 		xenbus_frontend_closed(dev);
 		break;
 	}
@@ -2153,22 +2153,6 @@ static int xennet_remove(struct xenbus_device *dev)
 	struct netfront_info *info = dev_get_drvdata(&dev->dev);
 
 	dev_dbg(&dev->dev, "%s\n", dev->nodename);
-
-	if (xenbus_read_driver_state(dev->otherend) != XenbusStateClosed) {
-		xenbus_switch_state(dev, XenbusStateClosing);
-		wait_event(module_unload_q,
-			   xenbus_read_driver_state(dev->otherend) ==
-			   XenbusStateClosing ||
-			   xenbus_read_driver_state(dev->otherend) ==
-			   XenbusStateUnknown);
-
-		xenbus_switch_state(dev, XenbusStateClosed);
-		wait_event(module_unload_q,
-			   xenbus_read_driver_state(dev->otherend) ==
-			   XenbusStateClosed ||
-			   xenbus_read_driver_state(dev->otherend) ==
-			   XenbusStateUnknown);
-	}
 
 	xennet_disconnect_backend(info);
 

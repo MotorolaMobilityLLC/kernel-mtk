@@ -1431,25 +1431,17 @@ static ssize_t lcd_write(struct file *file,
 
 static int lcd_open(struct inode *inode, struct file *file)
 {
-	int ret;
-
-	ret = -EBUSY;
 	if (!atomic_dec_and_test(&lcd_available))
-		goto fail; /* open only once at a time */
+		return -EBUSY;	/* open only once at a time */
 
-	ret = -EPERM;
 	if (file->f_mode & FMODE_READ)	/* device is write-only */
-		goto fail;
+		return -EPERM;
 
 	if (lcd.must_clear) {
 		lcd_clear_display();
 		lcd.must_clear = false;
 	}
 	return nonseekable_open(inode, file);
-
- fail:
-	atomic_inc(&lcd_available);
-	return ret;
 }
 
 static int lcd_release(struct inode *inode, struct file *file)
@@ -1712,21 +1704,14 @@ static ssize_t keypad_read(struct file *file,
 
 static int keypad_open(struct inode *inode, struct file *file)
 {
-	int ret;
-
-	ret = -EBUSY;
 	if (!atomic_dec_and_test(&keypad_available))
-		goto fail;	/* open only once at a time */
+		return -EBUSY;	/* open only once at a time */
 
-	ret = -EPERM;
 	if (file->f_mode & FMODE_WRITE)	/* device is read-only */
-		goto fail;
+		return -EPERM;
 
 	keypad_buflen = 0;	/* flush the buffer on opening */
 	return 0;
- fail:
-	atomic_inc(&keypad_available);
-	return ret;
 }
 
 static int keypad_release(struct inode *inode, struct file *file)

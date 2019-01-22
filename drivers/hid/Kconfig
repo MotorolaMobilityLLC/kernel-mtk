@@ -165,11 +165,11 @@ config HID_CHERRY
 	Support for Cherry Cymotion keyboard.
 
 config HID_CHICONY
-	tristate "Chicony devices"
+	tristate "Chicony Tactical pad"
 	depends on HID
 	default !EXPERT
 	---help---
-	Support for Chicony Tactical pad and special keys on Chicony keyboards.
+	Support for Chicony Tactical pad.
 
 config HID_CORSAIR
 	tristate "Corsair devices"

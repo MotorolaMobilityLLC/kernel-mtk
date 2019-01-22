@@ -285,7 +285,7 @@ static inline unsigned int get_gc_cost(struct f2fs_sb_info *sbi,
 
 	/* alloc_mode == LFS */
 	if (p->gc_mode == GC_GREEDY)
-		return get_valid_blocks(sbi, segno, true);
+		return get_greedy_cost(sbi, segno);
 	else
 		return get_cb_cost(sbi, segno);
 }
@@ -466,10 +466,10 @@ static int check_valid_map(struct f2fs_sb_info *sbi,
 	struct seg_entry *sentry;
 	int ret;
 
-	down_read(&sit_i->sentry_lock);
+	mutex_lock(&sit_i->sentry_lock);
 	sentry = get_seg_entry(sbi, segno);
 	ret = f2fs_test_bit(offset, sentry->cur_valid_map);
-	up_read(&sit_i->sentry_lock);
+	mutex_unlock(&sit_i->sentry_lock);
 	return ret;
 }
 
@@ -608,7 +608,6 @@ static void move_data_block(struct inode *inode, block_t bidx,
 {
 	struct f2fs_io_info fio = {
 		.sbi = F2FS_I_SB(inode),
-		.ino = inode->i_ino,
 		.type = DATA,
 		.temp = COLD,
 		.op = REQ_OP_READ,
@@ -633,11 +632,6 @@ static void move_data_block(struct inode *inode, block_t bidx,
 
 	if (f2fs_is_atomic_file(inode))
 		goto out;
-
-	if (f2fs_is_pinned_file(inode)) {
-		f2fs_pin_file_control(inode, true);
-		goto out;
-	}
 
 	set_new_dnode(&dn, inode, NULL, NULL, 0);
 	err = get_dnode_of_data(&dn, bidx, LOOKUP_NODE);
@@ -665,8 +659,8 @@ static void move_data_block(struct inode *inode, block_t bidx,
 	allocate_data_block(fio.sbi, NULL, fio.old_blkaddr, &newaddr,
 					&sum, CURSEG_COLD_DATA, NULL, false);
 
-	fio.encrypted_page = f2fs_pagecache_get_page(META_MAPPING(fio.sbi),
-				newaddr, FGP_LOCK | FGP_CREAT, GFP_NOFS);
+	fio.encrypted_page = pagecache_get_page(META_MAPPING(fio.sbi), newaddr,
+					FGP_LOCK | FGP_CREAT, GFP_NOFS);
 	if (!fio.encrypted_page) {
 		err = -ENOMEM;
 		goto recover_block;
@@ -701,12 +695,7 @@ static void move_data_block(struct inode *inode, block_t bidx,
 	fio.op = REQ_OP_WRITE;
 	fio.op_flags = REQ_SYNC | REQ_NOIDLE;
 	fio.new_blkaddr = newaddr;
-	err = f2fs_submit_page_write(&fio);
-	if (err) {
-		if (PageWriteback(fio.encrypted_page))
-			end_page_writeback(fio.encrypted_page);
-		goto put_page_out;
-	}
+	f2fs_submit_page_write(&fio);
 
 	f2fs_update_iostat(fio.sbi, FS_GC_DATA_IO, F2FS_BLKSIZE);
 
@@ -740,11 +729,6 @@ static void move_data_page(struct inode *inode, block_t bidx, int gc_type,
 
 	if (f2fs_is_atomic_file(inode))
 		goto out;
-	if (f2fs_is_pinned_file(inode)) {
-		if (gc_type == FG_GC)
-			f2fs_pin_file_control(inode, true);
-		goto out;
-	}
 
 	if (gc_type == BG_GC) {
 		if (PageWriteback(page))
@@ -754,7 +738,6 @@ static void move_data_page(struct inode *inode, block_t bidx, int gc_type,
 	} else {
 		struct f2fs_io_info fio = {
 			.sbi = F2FS_I_SB(inode),
-			.ino = inode->i_ino,
 			.type = DATA,
 			.temp = COLD,
 			.op = REQ_OP_WRITE,
@@ -857,17 +840,10 @@ next_step:
 				continue;
 			}
 
-			if (!down_write_trylock(
-				&F2FS_I(inode)->dio_rwsem[WRITE])) {
-				iput(inode);
-				continue;
-			}
-
 			start_bidx = start_bidx_of_node(nofs, inode);
 			data_page = get_read_data_page(inode,
 					start_bidx + ofs_in_node, REQ_RAHEAD,
 					true);
-			up_write(&F2FS_I(inode)->dio_rwsem[WRITE]);
 			if (IS_ERR(data_page)) {
 				iput(inode);
 				continue;
@@ -925,10 +901,10 @@ static int __get_victim(struct f2fs_sb_info *sbi, unsigned int *victim,
 	struct sit_info *sit_i = SIT_I(sbi);
 	int ret;
 
-	down_write(&sit_i->sentry_lock);
+	mutex_lock(&sit_i->sentry_lock);
 	ret = DIRTY_I(sbi)->v_ops->get_victim(sbi, victim, gc_type,
 					      NO_CHECK_TYPE, LFS);
-	up_write(&sit_i->sentry_lock);
+	mutex_unlock(&sit_i->sentry_lock);
 	return ret;
 }
 
@@ -976,8 +952,8 @@ static int do_garbage_collect(struct f2fs_sb_info *sbi,
 		/*
 		 * this is to avoid deadlock:
 		 * - lock_page(sum_page)         - f2fs_replace_block
-		 *  - check_valid_map()            - down_write(sentry_lock)
-		 *   - down_read(sentry_lock)     - change_curseg()
+		 *  - check_valid_map()            - mutex_lock(sentry_lock)
+		 *   - mutex_lock(sentry_lock)     - change_curseg()
 		 *                                  - lock_page(sum_page)
 		 */
 		if (type == SUM_TYPE_NODE)
@@ -1116,7 +1092,6 @@ void build_gc_manager(struct f2fs_sb_info *sbi)
 
 	sbi->fggc_threshold = div64_u64((main_count - ovp_count) *
 				BLKS_PER_SEC(sbi), (main_count - resv_count));
-	sbi->gc_pin_file_threshold = DEF_GC_FAILED_PINNED_FILES;
 
 	/* give warm/cold data area from slower device */
 	if (sbi->s_ndevs && sbi->segs_per_sec == 1)

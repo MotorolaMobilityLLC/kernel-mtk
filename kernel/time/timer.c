@@ -781,15 +781,8 @@ static struct tvec_base *lock_timer_base(struct timer_list *timer,
 	__acquires(timer->base->lock)
 {
 	for (;;) {
-		struct tvec_base *base;
 		u32 tf;
-
-		/*
-		 * We need to use READ_ONCE() here, otherwise the compiler
-		 * might re-read @tf between the check for TIMER_MIGRATING
-		 * and spin_lock().
-		 */
-		tf = READ_ONCE(timer->flags);
+		struct tvec_base *base;
 
 		/*
 		 * We need to use READ_ONCE() here, otherwise the compiler

@@ -13,8 +13,6 @@
 #include <asm/irqflags.h>
 #include <asm/asm.h>
 #include <asm/smap.h>
-#include <asm/pgtable_types.h>
-#include <asm/kaiser.h>
 #include <linux/linkage.h>
 #include <linux/err.h>
 
@@ -52,7 +50,6 @@ ENDPROC(native_usergs_sysret32)
 ENTRY(entry_SYSENTER_compat)
 	/* Interrupts are off on entry. */
 	SWAPGS_UNSAFE_STACK
-	SWITCH_KERNEL_CR3_NO_STACK
 	movq	PER_CPU_VAR(cpu_current_top_of_stack), %rsp
 
 	/*
@@ -164,7 +161,6 @@ ENDPROC(entry_SYSENTER_compat)
 ENTRY(entry_SYSCALL_compat)
 	/* Interrupts are off on entry. */
 	SWAPGS_UNSAFE_STACK
-	SWITCH_KERNEL_CR3_NO_STACK
 
 	/* Stash user ESP and switch to the kernel stack. */
 	movl	%esp, %r8d
@@ -212,7 +208,6 @@ ENTRY(entry_SYSCALL_compat)
 	/* Opportunistic SYSRET */
 sysret32_from_system_call:
 	TRACE_IRQS_ON			/* User mode traces as IRQs on. */
-	SWITCH_USER_CR3
 	movq	RBX(%rsp), %rbx		/* pt_regs->rbx */
 	movq	RBP(%rsp), %rbp		/* pt_regs->rbp */
 	movq	EFLAGS(%rsp), %r11	/* pt_regs->flags (in r11) */
@@ -274,7 +269,6 @@ ENTRY(entry_INT80_compat)
 	PARAVIRT_ADJUST_EXCEPTION_FRAME
 	ASM_CLAC			/* Do this early to minimize exposure */
 	SWAPGS
-	SWITCH_KERNEL_CR3_NO_STACK
 
 	/*
 	 * User tracing code (ptrace or signal handlers) might assume that
@@ -317,7 +311,6 @@ ENTRY(entry_INT80_compat)
 
 	/* Go back to user mode. */
 	TRACE_IRQS_ON
-	SWITCH_USER_CR3
 	SWAPGS
 	jmp	restore_regs_and_iret
 END(entry_INT80_compat)

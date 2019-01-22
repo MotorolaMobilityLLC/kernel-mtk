@@ -20,6 +20,9 @@
 
 #include <asm/brk-imm.h>
 
+#ifdef CONFIG_GENERIC_BUG
+#define HAVE_ARCH_BUG
+
 #ifdef CONFIG_DEBUG_BUGVERBOSE
 #define _BUGVERBOSE_LOCATION(file, line) __BUGVERBOSE_LOCATION(file, line)
 #define __BUGVERBOSE_LOCATION(file, line)				\
@@ -33,36 +36,29 @@
 #define _BUGVERBOSE_LOCATION(file, line)
 #endif
 
-#ifdef CONFIG_GENERIC_BUG
+#define _BUG_FLAGS(flags) __BUG_FLAGS(flags)
 
-#define __BUG_ENTRY(flags) 				\
+#define __BUG_FLAGS(flags) asm volatile (		\
 		".pushsection __bug_table,\"a\"\n\t"	\
 		".align 2\n\t"				\
 	"0:	.long 1f - 0b\n\t"			\
 _BUGVERBOSE_LOCATION(__FILE__, __LINE__)		\
 		".short " #flags "\n\t"			\
 		".popsection\n"				\
-	"1:	"
-#else
-#define __BUG_ENTRY(flags) ""
-#endif
+							\
+	"1:	brk %[imm]"				\
+		:: [imm] "i" (BUG_BRK_IMM)		\
+)
 
-#define __BUG_FLAGS(flags)				\
-	asm volatile (					\
-		__BUG_ENTRY(flags)			\
-		"brk %[imm]" :: [imm] "i" (BUG_BRK_IMM)	\
-	);
-
-
-#define BUG() do {					\
-	__BUG_FLAGS(0);					\
-	unreachable();					\
+#define BUG() do {				\
+	_BUG_FLAGS(0);				\
+	unreachable();				\
 } while (0)
 
 #define __WARN_TAINT(taint) _BUG_FLAGS(BUGFLAG_TAINT(taint))
 #undef __WARN_TAINT
 
-#define HAVE_ARCH_BUG
+#endif /* ! CONFIG_GENERIC_BUG */
 
 #include <asm-generic/bug.h>
 

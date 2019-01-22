@@ -82,8 +82,7 @@ static ssize_t driver_override_store(struct device *_dev,
 	struct amba_device *dev = to_amba_device(_dev);
 	char *driver_override, *old = dev->driver_override, *cp;
 
-	/* We need to keep extra room for a newline */
-	if (count >= (PAGE_SIZE - 1))
+	if (count > PATH_MAX)
 		return -EINVAL;
 
 	driver_override = kstrndup(buf, count, GFP_KERNEL);

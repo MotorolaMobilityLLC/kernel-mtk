@@ -772,13 +772,16 @@ EXPORT_SYMBOL_GPL(rtc_irq_set_freq);
  */
 static int rtc_timer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer)
 {
-	struct timerqueue_node *next = timerqueue_getnext(&rtc->timerqueue);
+	struct timerqueue_node *next;
 	struct rtc_time tm;
 	ktime_t now;
 
 	timer->enabled = 1;
 	__rtc_read_time(rtc, &tm);
 	now = rtc_tm_to_ktime(tm);
+
+	timerqueue_add(&rtc->timerqueue, &timer->node);
+	next = timerqueue_getnext(&rtc->timerqueue);
 
 	/* Skip over expired timers */
 	while (next) {
@@ -787,8 +790,7 @@ static int rtc_timer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer)
 		next = timerqueue_iterate_next(next);
 	}
 
-	timerqueue_add(&rtc->timerqueue, &timer->node);
-	if (!next || ktime_before(timer->node.expires, next->expires)) {
+	if (&timer->node == next) {
 		struct rtc_wkalrm alarm;
 		int err;
 		alarm.time = rtc_ktime_to_tm(timer->node.expires);

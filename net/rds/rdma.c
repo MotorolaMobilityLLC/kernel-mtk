@@ -184,7 +184,7 @@ static int __rds_rdma_map(struct rds_sock *rs, struct rds_get_mr_args *args,
 	long i;
 	int ret;
 
-	if (rs->rs_bound_addr == 0 || !rs->rs_transport) {
+	if (rs->rs_bound_addr == 0) {
 		ret = -ENOTCONN; /* XXX not a great errno */
 		goto out;
 	}
@@ -516,9 +516,6 @@ int rds_rdma_extra_size(struct rds_rdma_args *args)
 	unsigned int i;
 
 	local_vec = (struct rds_iovec __user *)(unsigned long) args->local_vec_addr;
-
-	if (args->nr_local == 0)
-		return -EINVAL;
 
 	/* figure out the number of pages in the vector */
 	for (i = 0; i < args->nr_local; i++) {
@@ -869,7 +866,6 @@ int rds_cmsg_atomic(struct rds_sock *rs, struct rds_message *rm,
 err:
 	if (page)
 		put_page(page);
-	rm->atomic.op_active = 0;
 	kfree(rm->atomic.op_notifier);
 
 	return ret;

@@ -4777,8 +4777,7 @@ lpfc_nlp_remove(struct lpfc_vport *vport, struct lpfc_nodelist *ndlp)
 	lpfc_cancel_retry_delay_tmo(vport, ndlp);
 	if ((ndlp->nlp_flag & NLP_DEFER_RM) &&
 	    !(ndlp->nlp_flag & NLP_REG_LOGIN_SEND) &&
-	    !(ndlp->nlp_flag & NLP_RPI_REGISTERED) &&
-	    phba->sli_rev != LPFC_SLI_REV4) {
+	    !(ndlp->nlp_flag & NLP_RPI_REGISTERED)) {
 		/* For this case we need to cleanup the default rpi
 		 * allocated by the firmware.
 		 */

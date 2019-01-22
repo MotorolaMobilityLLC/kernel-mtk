@@ -401,12 +401,8 @@ static __u64 power_pmu_bhrb_to(u64 addr)
 	int ret;
 	__u64 target;
 
-	if (is_kernel_addr(addr)) {
-		if (probe_kernel_read(&instr, (void *)addr, sizeof(instr)))
-			return 0;
-
-		return branch_target(&instr);
-	}
+	if (is_kernel_addr(addr))
+		return branch_target((unsigned int *)addr);
 
 	/* Userspace: need copy instruction here then translate it */
 	pagefault_disable();
@@ -1381,7 +1377,7 @@ static int collect_events(struct perf_event *group, int max_count,
 	int n = 0;
 	struct perf_event *event;
 
-	if (group->pmu->task_ctx_nr == perf_hw_context) {
+	if (!is_software_event(group)) {
 		if (n >= max_count)
 			return -1;
 		ctrs[n] = group;
@@ -1389,7 +1385,7 @@ static int collect_events(struct perf_event *group, int max_count,
 		events[n++] = group->hw.config;
 	}
 	list_for_each_entry(event, &group->sibling_list, group_entry) {
-		if (event->pmu->task_ctx_nr == perf_hw_context &&
+		if (!is_software_event(event) &&
 		    event->state != PERF_EVENT_STATE_OFF) {
 			if (n >= max_count)
 				return -1;

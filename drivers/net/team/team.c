@@ -2380,7 +2380,7 @@ send_done:
 	if (!nlh) {
 		err = __send_and_alloc_skb(&skb, team, portid, send_func);
 		if (err)
-			return err;
+			goto errout;
 		goto send_done;
 	}
 
@@ -2660,7 +2660,7 @@ send_done:
 	if (!nlh) {
 		err = __send_and_alloc_skb(&skb, team, portid, send_func);
 		if (err)
-			return err;
+			goto errout;
 		goto send_done;
 	}
 
