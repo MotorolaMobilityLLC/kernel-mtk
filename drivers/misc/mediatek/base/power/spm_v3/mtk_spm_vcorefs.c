@@ -1177,13 +1177,10 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x04104000);
 
 	/* FIXME 11/12 */
-	if (1) {
-		/* C2K force 2667@0.8v */
-		spm_write(DVFSRC_CPU_LEVEL_MASK, (spm_read(DVFSRC_CPU_LEVEL_MASK) & ~(0xf << 4)) | (0xC << 4));
+	if (1)
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0003);
-	} else {
+	else
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001);
-	}
 
 	spm_write(DVFSRC_MD_MAP_BW_0, 0x0);
 	spm_write(DVFSRC_MD_MAP_BW_1, 0x0);
