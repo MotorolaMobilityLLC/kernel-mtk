@@ -42,15 +42,18 @@ bool pmic_is_battery_exist(void)
 	bool is_bat_exist;
 	int hw_id = pmic_get_register_value(PMIC_HWCID);
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6358)
+	temp = pmic_get_register_value(PMIC_AD_BATON_UNDET);
+#else
 	temp = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
-
+#endif
 	if (temp == 0)
 		is_bat_exist = true;
 	else
 		is_bat_exist = false;
 
 
-	bm_debug("[fg_is_battery_exist] PMIC_RGS_BATON_UNDET = %d\n", is_bat_exist);
+	bm_debug("[fg_is_battery_exist] PMIC_RGS_BATON_UNDET or PMIC_AD_BATON_UNDET = %d\n", is_bat_exist);
 
 	if (is_bat_exist == 0) {
 		if (hw_id == 0x3510) {
