@@ -753,9 +753,9 @@ static void hp_aux_feedback_loop_gain_ramp(bool up)
 
 static void hp_pull_down(bool enable)
 {
-	unsigned int from = enable ? 0x0 : 0x6;
-	unsigned int to = enable ? 0x6 : 0x0;
-	unsigned int i;
+	int from = enable ? 0x0 : 0x6;
+	int to = enable ? 0x6 : 0x0;
+	int i;
 
 	if (enable) {
 		for (i = from; i <= to; i++) {
