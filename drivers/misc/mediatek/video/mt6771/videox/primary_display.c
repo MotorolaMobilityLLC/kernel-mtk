@@ -5730,6 +5730,7 @@ out:
 }
 #endif
 
+
 static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 {
 	int i = 0;
@@ -5748,6 +5749,26 @@ static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 		}
 	}
 	return rsz;
+}
+
+static u64 get_input_data_sz(disp_path_handle disp_handle)
+{
+	u64 ovl_sz = 0;
+	int i;
+	struct disp_ddp_path_config *data_config = NULL;
+
+	data_config = dpmgr_path_get_last_config_notclear(disp_handle);
+
+	for (i = 0; i < ARRAY_SIZE(data_config->ovl_config); i++) {
+		struct OVL_CONFIG_STRUCT *ovl_cfg = &(data_config->ovl_config[i]);
+
+		if (ovl_cfg->layer_en) {
+			unsigned int Bpp = UFMT_GET_Bpp(ovl_cfg->fmt);
+
+			ovl_sz += (u64)ovl_cfg->dst_w * ovl_cfg->dst_h * Bpp;
+		}
+	}
+	return ovl_sz;
 }
 
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
@@ -6141,6 +6162,8 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	primary_get_path_handles(&disp_handle, &cmdq_handle);
 
 	if (primary_display_is_decouple_mode() && !primary_display_is_mirror_mode()) {
+		struct WDMA_CONFIG_STRUCT wdma_config;
+
 		pgc->dc_buf_id++;
 		pgc->dc_buf_id %= DISP_INTERNAL_BUFFER_COUNT;
 		wdma_mva = pgc->dc_buf[pgc->dc_buf_id];
@@ -6149,16 +6172,19 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			ret = -1;
 			goto done;
 		}
+		wdma_config = decouple_wdma_config;
+		wdma_config.dstAddress = wdma_mva;
+		if (force_dc_buf_fmt)
+			wdma_config.outputFormat = force_dc_buf_fmt;
 
-		decouple_wdma_config.dstAddress = wdma_mva;
-		_config_wdma_output(&decouple_wdma_config, pgc->ovl2mem_path_handle,
+		_config_wdma_output(&wdma_config, pgc->ovl2mem_path_handle,
 				    pgc->cmdq_handle_ovl1to2_config);
 		mem_config.addr = wdma_mva;
 		mem_config.buff_idx = -1;
 		mem_config.interface_idx = -1;
 		mem_config.security = DISP_NORMAL_BUFFER;
-		mem_config.pitch = decouple_wdma_config.dstPitch;
-		mem_config.fmt = decouple_wdma_config.outputFormat;
+		mem_config.pitch = wdma_config.dstPitch;
+		mem_config.fmt = wdma_config.outputFormat;
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_wdma_config,
 				 MMPROFILE_FLAG_PULSE, pgc->dc_buf_id, wdma_mva);
 	}
@@ -6521,7 +6547,7 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	unsigned long long ovl_sz, rdma_sz;
 	disp_path_handle disp_handle = NULL;
 	struct disp_ddp_path_config *data_config = NULL;
-	int i, stable;
+	int stable;
 	unsigned long long DL_bw, DC_bw, bw_th;
 
 	if (!disp_helper_get_option(DISP_OPT_SMART_OVL))
@@ -6560,16 +6586,7 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	rdma_sz = (unsigned long long)data_config->dst_h * data_config->dst_w * 3;
 
 	/* calc ovl data size */
-	ovl_sz = 0;
-	for (i = 0; i < ARRAY_SIZE(data_config->ovl_config); i++) {
-		struct OVL_CONFIG_STRUCT *ovl_cfg = &(data_config->ovl_config[i]);
-
-		if (ovl_cfg->layer_en) {
-			unsigned int Bpp = UFMT_GET_Bpp(ovl_cfg->fmt);
-
-			ovl_sz += (unsigned long long)ovl_cfg->dst_w * ovl_cfg->dst_h * Bpp;
-		}
-	}
+	ovl_sz = get_input_data_sz(disp_handle);
 
 	/* switch criteria is:  (DL) V.S. (DC):
 	 *   (ovl * lcm_fps) V.S. (ovl * hwc_fps + wdma * hwc_fps + rdma * lcm_fps)

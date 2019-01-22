@@ -20,6 +20,7 @@ void DBG_Deinit(void);
 #include "mmprofile.h"
 extern int bypass_blank;
 extern int lcm_mode_status;
+extern enum UNIFIED_COLOR_FMT force_dc_buf_fmt;
 extern int layer_layout_allow_non_continuous;
 extern unsigned idle_check_interval;
 
