@@ -66,10 +66,13 @@ phys_addr_t gConEmiPhyBase;
 
 P_WMT_CONSYS_IC_OPS wmt_consys_ic_ops;
 
+struct platform_device *g_pdev;
+
 #ifdef CONFIG_OF
 const struct of_device_id apwmt_of_ids[] = {
 	{.compatible = "mediatek,mt6757-consys",},
 	{.compatible = "mediatek,mt8167-consys",},
+	{.compatible = "mediatek,mt6759-consys",},
 	{}
 };
 #endif
@@ -132,6 +135,9 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 {
 	INT32 iRet = -1;
 
+	if (pdev)
+		g_pdev = pdev;
+
 	if (wmt_consys_ic_ops->consys_ic_need_store_pdev) {
 		if (wmt_consys_ic_ops->consys_ic_need_store_pdev() == MTK_WCN_BOOL_TRUE) {
 			if (wmt_consys_ic_ops->consys_ic_store_pdev)
@@ -169,6 +175,10 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 		if (wmt_consys_ic_ops->consys_ic_need_store_pdev() == MTK_WCN_BOOL_TRUE)
 			pm_runtime_disable(&pdev->dev);
 	}
+
+	if (g_pdev)
+		g_pdev = NULL;
+
 	return 0;
 }
 
@@ -280,7 +290,7 @@ INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable)
 	return 0;
 }
 
-UINT32 mtk_wcn_consys_soc_chipid(void)
+UINT32 mtk_wcn_consys_soc_chipid(VOID)
 {
 	if (wmt_consys_ic_ops == NULL)
 		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
@@ -441,7 +451,7 @@ int reserve_memory_consys_fn(struct reserved_mem *rmem)
 RESERVEDMEM_OF_DECLARE(reserve_memory_test, "mediatek,consys-reserve-memory", reserve_memory_consys_fn);
 
 
-INT32 mtk_wcn_consys_hw_init(void)
+INT32 mtk_wcn_consys_hw_init(VOID)
 {
 	INT32 iRet = -1;
 
@@ -449,7 +459,7 @@ INT32 mtk_wcn_consys_hw_init(void)
 		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
 
 	if (wmt_consys_ic_ops->consys_ic_read_reg_from_dts)
-		iRet = wmt_consys_ic_ops->consys_ic_read_reg_from_dts();
+		iRet = wmt_consys_ic_ops->consys_ic_read_reg_from_dts(g_pdev);
 	else
 		iRet = -1;
 
@@ -493,7 +503,7 @@ INT32 mtk_wcn_consys_hw_init(void)
 
 }
 
-INT32 mtk_wcn_consys_hw_deinit(void)
+INT32 mtk_wcn_consys_hw_deinit(VOID)
 {
 	if (pEmibaseaddr) {
 		iounmap(pEmibaseaddr);
@@ -511,7 +521,7 @@ INT32 mtk_wcn_consys_hw_deinit(void)
 	return 0;
 }
 
-UINT8 *mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset)
+PUINT8 mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset)
 {
 	UINT8 *p_virtual_addr = NULL;
 
@@ -592,10 +602,10 @@ VOID mtk_wcn_force_trigger_assert_debug_pin(VOID)
 		wmt_consys_ic_ops->ic_force_trigger_assert_debug_pin();
 }
 
-INT32 mtk_wcn_consys_read_irq_info_from_dts(INT32 *irq_num, UINT32 *irq_flag)
+INT32 mtk_wcn_consys_read_irq_info_from_dts(PINT32 irq_num, PUINT32 irq_flag)
 {
 	if (wmt_consys_ic_ops->consys_ic_read_irq_info_from_dts)
-		return wmt_consys_ic_ops->consys_ic_read_irq_info_from_dts(irq_num, irq_flag);
+		return wmt_consys_ic_ops->consys_ic_read_irq_info_from_dts(g_pdev, irq_num, irq_flag);
 	else
 		return 0;
 }
