@@ -22,35 +22,54 @@
 #include <linux/delay.h>
 #include <linux/bug.h>
 #include <asm/cacheflush.h>
-
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
-
+#include <mt-plat/mtk_secure_api.h>
 /*#include <mt_secure_api.h>*/
 #include <linux/topology.h>
-#if 0
 static struct notifier_block cpu_hotplug_nb;
+
+static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
+struct cpumask *mtk_cpu_cluster0_mask = to_cpumask(cpu_cluster0_bits);
+
+static DECLARE_BITMAP(cpu_cluster1_bits, CONFIG_NR_CPUS);
+struct cpumask *mtk_cpu_cluster1_mask = to_cpumask(cpu_cluster1_bits);
+
+static DECLARE_BITMAP(cpu_cluster2_bits, CONFIG_NR_CPUS);
+struct cpumask *mtk_cpu_cluster2_mask = to_cpumask(cpu_cluster2_bits);
+
+static unsigned long default_cluster0_mask = 0x000F;
+static unsigned long default_cluster1_mask = 0x00F0;
+static unsigned long default_cluster2_mask = 0x0300;
+
 static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					 unsigned long action, void *hcpu)
 {
 	unsigned int cpu = (long)hcpu;
 	struct cpumask cpuhp_cpumask;
 	struct cpumask cpu_online_cpumask;
+	unsigned int first_cpu;
 
 	switch (action) {
 	case CPU_UP_PREPARE:
 	case CPU_UP_PREPARE_FROZEN:
-#if 0
-		if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7)) {
-			arch_get_cluster_cpus(&cpuhp_cpumask, arch_get_cluster_id(cpu));
-			cpumask_and(&cpu_online_cpumask, &cpuhp_cpumask, cpu_online_mask);
-			if (!cpumask_weight(&cpu_online_cpumask))
-				mt6313_enable(VDVFS13, 1);
+		if (cpu < cpumask_weight(mtk_cpu_cluster0_mask)) {
+			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster0_mask);
+			if (first_cpu == CONFIG_NR_CPUS)
+				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 0, 0, 0);
+		} else if ((cpu >= cpumask_weight(mtk_cpu_cluster0_mask)) &&
+			(cpu < (cpumask_weight(mtk_cpu_cluster0_mask) +
+				  cpumask_weight(mtk_cpu_cluster1_mask)))) {
+			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster1_mask);
+			if (first_cpu == CONFIG_NR_CPUS)
+				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 1, 0, 0);
+		} else if ((cpu >= (cpumask_weight(mtk_cpu_cluster0_mask) +
+				cpumask_weight(mtk_cpu_cluster1_mask))) &&
+				(cpu < (cpumask_weight(mtk_cpu_cluster0_mask) +
+				cpumask_weight(mtk_cpu_cluster1_mask) +
+				cpumask_weight(mtk_cpu_cluster2_mask))))  {
+			first_cpu = cpumask_first_and(cpu_online_mask, mtk_cpu_cluster2_mask);
+			if (first_cpu == CONFIG_NR_CPUS)
+				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
 		}
-#endif
 		break;
 
 #ifdef CONFIG_HOTPLUG_CPU
@@ -72,17 +91,19 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 	}
 	return NOTIFY_OK;
 }
-#endif
 static __init int hotplug_cb_init(void)
 {
-/*	int ret;*/
+	int ret;
 	int i;
-#ifdef CONFIG_ARMPLL_CTRL
-	iomap();
-#endif
+
+	cpumask_clear(mtk_cpu_cluster0_mask);
+	cpumask_clear(mtk_cpu_cluster1_mask);
+	cpumask_clear(mtk_cpu_cluster2_mask);
+	mtk_cpu_cluster0_mask->bits[0] = default_cluster0_mask;
+	mtk_cpu_cluster1_mask->bits[0] = default_cluster1_mask;
+	mtk_cpu_cluster2_mask->bits[0] = default_cluster2_mask;
 	for (i = 0; i < num_possible_cpus(); i++)
 		set_cpu_present(i, true);
-#if 0
 	cpu_hotplug_nb = (struct notifier_block) {
 		.notifier_call	= cpu_hotplug_cb_notifier,
 		.priority	= CPU_PRI_PERF + 1,
@@ -91,18 +112,8 @@ static __init int hotplug_cb_init(void)
 	ret = register_cpu_notifier(&cpu_hotplug_nb);
 	if (ret)
 		return ret;
-#endif
 	pr_info("CPU Hotplug Low Power Notification\n");
 
 	return 0;
 }
 early_initcall(hotplug_cb_init);
-#if 0
-static int __init mt_hotplug_late(void)
-{
-	mt6313_enable(VDVFS13, 0);
-
-	return 0;
-}
-late_initcall(mt_hotplug_late);
-#endif
