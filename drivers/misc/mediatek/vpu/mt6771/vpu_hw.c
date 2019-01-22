@@ -25,7 +25,7 @@
 #include <mtk/ion_drv.h>
 #include <mtk/mtk_ion.h>
 #include <smi_debug.h>
-
+#include "mtk_devinfo.h"
 #ifndef MTK_VPU_FPGA_PORTING
 #include <mmdvfs_mgr.h>
 /*#include <mtk_pmic_info.h>*/
@@ -1343,7 +1343,7 @@ static int vpu_service_routine(void *arg)
 			LOG_DBG("[vpu_%d] run, opp(%d/%d/%d)\n", service_core, req->power_param.opp_step,
 				vcore_opp_index, dsp_freq_index);
 			vpu_opp_check(service_core, vcore_opp_index, dsp_freq_index);
-			LOG_INF("[vpu_%d<-0x%x]run,algoid(0x%lx_%d,%d->%d),op(%d,%d/%d->%d,%d->%d),f(0x%x),%d/%d/%d\n",
+			LOG_INF("[vpu_%d<-0x%x]R,Aid(0x%lx_%d,%d->%d),op(%d,%d/%d->%d,%d->%d),f(0x%x),%d/%d/%d/0x%x\n",
 				service_core, req->requested_core,
 				(unsigned long)req->request_id, req->frame_magic,
 				vpu_service_cores[service_core].current_algo, (int)(req->algo_id[service_core]),
@@ -1351,7 +1351,7 @@ static int vpu_service_routine(void *arg)
 				vcore_opp_index, opps.vcore.index,
 				dsp_freq_index, opps.dspcore[service_core].index, g_func_mask,
 				vpu_dev->servicepool_list_size[service_core],
-				vpu_dev->commonpool_list_size, is_locked);
+				vpu_dev->commonpool_list_size, is_locked, efuse_data);
 			#if 0
 			/*  prevent the worker shutdown vpu first, and current enque use the same algo_id */
 			/*ret = wait_to_do_vpu_running(service_core);*/
@@ -1746,6 +1746,24 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		vpu_dev = device;
 		is_power_debug_lock = false;
 
+		efuse_data = (get_devinfo_with_index(3) & 0xC00) >> 10;
+		LOG_INF("efuse_data: efuse_data(0x%x)", efuse_data);
+		switch (efuse_data) {
+		case 0x3: /*b11*/
+			vpu_dev->vpu_hw_support[0] = false;
+			vpu_dev->vpu_hw_support[1] = false;
+			break;
+		case 0x0:
+		default:
+			vpu_dev->vpu_hw_support[0] = true;
+			vpu_dev->vpu_hw_support[1] = true;
+			break;
+		case 0x2: /*b10*/
+			vpu_dev->vpu_hw_support[0] = true;
+			vpu_dev->vpu_hw_support[1] = false;
+			break;
+		}
+
 		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 			mutex_init(&(power_mutex[i]));
 			mutex_init(&(power_counter_mutex[i]));
@@ -1756,6 +1774,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 			force_change_dsp_freq[i] = false;
 			INIT_DELAYED_WORK(&(power_counter_work[i].my_work), vpu_power_counter_routine);
 
+			if (vpu_dev->vpu_hw_support[i]) {
 			vpu_service_cores[i].vpu_service_task =
 				(struct task_struct *)kmalloc(sizeof(struct task_struct), GFP_KERNEL);
 			if (vpu_service_cores[i].vpu_service_task != NULL) {
@@ -1779,6 +1798,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 				goto out;
 			}
 			wake_up_process(vpu_service_cores[i].vpu_service_task);
+			}
 
 			mutex_init(&(vpu_service_cores[i].cmd_mutex));
 			vpu_service_cores[i].is_cmd_done = false;
