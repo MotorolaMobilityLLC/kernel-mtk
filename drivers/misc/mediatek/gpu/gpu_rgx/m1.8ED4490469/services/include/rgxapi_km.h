@@ -50,7 +50,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
  @Function	RGXInitSLC
 
- @Description Init the SLC after a power up. It is required to call this 
+ @Description Init the SLC after a power up. It is required to call this
               function if using SUPPORT_SHARED_SLC. Otherwise, it shouldn't
 			  be called.
 
@@ -206,7 +206,7 @@ PVRSRV_ERROR IMG_CALLCONV RGXHWPerfEnableCounters(
 /******************************************************************************
  * RGX HW Performance Profiling Retrieval API(s)
  *
- * The client must ensure their use of this acquire/release API for a single 
+ * The client must ensure their use of this acquire/release API for a single
  * connection/stream must not be shared with multiple execution contexts e.g.
  * between a kernel thread and an ISR handler. It is the client’s
  * responsibility to ensure this API is not interrupted by a high priority
@@ -218,7 +218,7 @@ PVRSRV_ERROR IMG_CALLCONV RGXHWPerfEnableCounters(
 @Description    When there is data available to read this call returns with
                  the address and length of the data buffer the
                  client can safely read. This buffer may contain one or more
-                 event packets. If no data is available then this call 
+                 event packets. If no data is available then this call
 				 returns OK and sets *puiBufLen to 0 on exit.
 				 Clients must pair this call with a ReleaseData call.
 @Input          hDevData        Handle to connection/device object

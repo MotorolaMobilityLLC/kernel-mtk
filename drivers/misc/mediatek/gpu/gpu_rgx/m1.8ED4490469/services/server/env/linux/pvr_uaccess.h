@@ -69,7 +69,7 @@ static inline unsigned long pvr_copy_from_user(void *pvTo, const void __user *pv
 	}
 	return 1;
 }
-	
+
 #else /* real implementation */
 
 static inline unsigned long pvr_copy_from_user(void *pvTo, const void __user *pvFrom, unsigned long ulBytes)
@@ -85,7 +85,7 @@ static inline unsigned long pvr_copy_from_user(void *pvTo, const void __user *pv
 
     return ulBytes;
 }
-#endif /* klocworks */ 
+#endif /* klocworks */
 
 #endif /* __PVR_UACCESS_H__ */
 

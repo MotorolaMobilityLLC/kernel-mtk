@@ -63,7 +63,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXSetRegConfigType          
+            RGXSetRegConfigType
  *******************************************/
 
 /* Bridge in structure for RGXSetRegConfigType */
@@ -80,7 +80,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXSETREGCONFIGTYPE_TAG
 
 
 /*******************************************
-            RGXAddRegconfig          
+            RGXAddRegconfig
  *******************************************/
 
 /* Bridge in structure for RGXAddRegconfig */
@@ -99,7 +99,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXADDREGCONFIG_TAG
 
 
 /*******************************************
-            RGXClearRegConfig          
+            RGXClearRegConfig
  *******************************************/
 
 /* Bridge in structure for RGXClearRegConfig */
@@ -116,7 +116,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCLEARREGCONFIG_TAG
 
 
 /*******************************************
-            RGXEnableRegConfig          
+            RGXEnableRegConfig
  *******************************************/
 
 /* Bridge in structure for RGXEnableRegConfig */
@@ -133,7 +133,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXENABLEREGCONFIG_TAG
 
 
 /*******************************************
-            RGXDisableRegConfig          
+            RGXDisableRegConfig
  *******************************************/
 
 /* Bridge in structure for RGXDisableRegConfig */

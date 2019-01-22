@@ -66,7 +66,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXCreateComputeContext          
+            RGXCreateComputeContext
  *******************************************/
 
 /* Bridge in structure for RGXCreateComputeContext */
@@ -89,7 +89,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATECOMPUTECONTEXT_TAG
 
 
 /*******************************************
-            RGXDestroyComputeContext          
+            RGXDestroyComputeContext
  *******************************************/
 
 /* Bridge in structure for RGXDestroyComputeContext */
@@ -106,7 +106,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYCOMPUTECONTEXT_TAG
 
 
 /*******************************************
-            RGXKickCDM          
+            RGXKickCDM
  *******************************************/
 
 /* Bridge in structure for RGXKickCDM */
@@ -143,7 +143,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXKICKCDM_TAG
 
 
 /*******************************************
-            RGXFlushComputeData          
+            RGXFlushComputeData
  *******************************************/
 
 /* Bridge in structure for RGXFlushComputeData */
@@ -160,7 +160,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXFLUSHCOMPUTEDATA_TAG
 
 
 /*******************************************
-            RGXSetComputeContextPriority          
+            RGXSetComputeContextPriority
  *******************************************/
 
 /* Bridge in structure for RGXSetComputeContextPriority */
@@ -178,7 +178,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXSETCOMPUTECONTEXTPRIORITY_TAG
 
 
 /*******************************************
-            RGXGetLastComputeContextResetReason          
+            RGXGetLastComputeContextResetReason
  *******************************************/
 
 /* Bridge in structure for RGXGetLastComputeContextResetReason */
@@ -197,7 +197,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXGETLASTCOMPUTECONTEXTRESETREASON_TAG
 
 
 /*******************************************
-            RGXNotifyComputeWriteOffsetUpdate          
+            RGXNotifyComputeWriteOffsetUpdate
  *******************************************/
 
 /* Bridge in structure for RGXNotifyComputeWriteOffsetUpdate */

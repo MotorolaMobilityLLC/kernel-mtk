@@ -71,7 +71,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* ***************************************************************************
  * Server-side bridge entry points
  */
- 
+
 static IMG_INT
 PVRSRVBridgeHTBConfigure(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_IN_HTBCONFIGURE *psHTBConfigureIN,
@@ -83,7 +83,7 @@ PVRSRVBridgeHTBConfigure(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psHTBConfigureIN->ui32NameSize * sizeof(IMG_CHAR)) +
 			0;
 
@@ -157,7 +157,7 @@ PVRSRVBridgeHTBControl(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psHTBControlIN->ui32NumGroups * sizeof(IMG_UINT32)) +
 			0;
 
@@ -234,7 +234,7 @@ PVRSRVBridgeHTBLog(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psHTBLogIN->ui32NumArgs * sizeof(IMG_UINT32)) +
 			0;
 
@@ -301,8 +301,8 @@ HTBLog_exit:
 
 
 
-/* *************************************************************************** 
- * Server bridge dispatch related glue 
+/* ***************************************************************************
+ * Server bridge dispatch related glue
  */
 
 static POS_LOCK pHTBUFFERBridgeLock;

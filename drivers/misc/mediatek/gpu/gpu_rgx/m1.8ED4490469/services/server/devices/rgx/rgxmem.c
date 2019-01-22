@@ -265,7 +265,7 @@ void RGXUnregisterMemoryContext(IMG_HANDLE hPrivData)
 	 * Release the page catalogue address acquired in RGXRegisterMemoryContext().
 	 */
 	MMU_ReleaseBaseAddr(NULL /* FIXME */);
-	
+
 	/*
 	 * Free the firmware memory context.
 	 */
@@ -277,7 +277,7 @@ void RGXUnregisterMemoryContext(IMG_HANDLE hPrivData)
 
 /*
  * RGXRegisterMemoryContext
- */ 
+ */
 PVRSRV_ERROR RGXRegisterMemoryContext(PVRSRV_DEVICE_NODE	*psDeviceNode,
 									  MMU_CONTEXT			*psMMUContext,
 									  IMG_HANDLE			*hPrivData)
@@ -294,7 +294,7 @@ PVRSRV_ERROR RGXRegisterMemoryContext(PVRSRV_DEVICE_NODE	*psDeviceNode,
 		/*
 		 * This must be the creation of the Kernel memory context. Take a copy
 		 * of the MMU context for use when programming the BIF.
-		 */ 
+		 */
 		psDevInfo->psKernelMMUCtx = psMMUContext;
 	}
 	else
@@ -342,7 +342,7 @@ PVRSRV_ERROR RGXRegisterMemoryContext(PVRSRV_DEVICE_NODE	*psDeviceNode,
 					eError));
 			goto fail_alloc_fw_ctx;
 		}
-		
+
 		/*
 			Temporarily map the firmware memory context to the kernel.
 		*/
@@ -354,7 +354,7 @@ PVRSRV_ERROR RGXRegisterMemoryContext(PVRSRV_DEVICE_NODE	*psDeviceNode,
 					eError));
 			goto fail_acquire_cpu_addr;
 		}
-		
+
 		/*
 		 * Write the new memory context's page catalogue into the firmware memory
 		 * context for the client.
@@ -397,14 +397,14 @@ PVRSRV_ERROR RGXRegisterMemoryContext(PVRSRV_DEVICE_NODE	*psDeviceNode,
 			 * Dump the Mem context allocation
 			 */
 			DevmemPDumpLoadMem(psFWMemContextMemDesc, 0, sizeof(*psFWMemContext), PDUMP_FLAGS_CONTINUOUS);
-			
+
 
 			/*
 			 * Obtain a symbolic addr of the mem context structure
 			 */
-			eError = DevmemPDumpPageCatBaseToSAddr(psFWMemContextMemDesc, 
-												   &uiOffset, 
-												   aszName, 
+			eError = DevmemPDumpPageCatBaseToSAddr(psFWMemContextMemDesc,
+												   &uiOffset,
+												   aszName,
 												   PHYSMEM_PDUMP_MEMSPNAME_SYMB_ADDR_MAX_LENGTH);
 
 			if (eError != PVRSRV_OK)
@@ -467,7 +467,7 @@ PVRSRV_ERROR RGXRegisterMemoryContext(PVRSRV_DEVICE_NODE	*psDeviceNode,
 		MMU_SetDeviceData(psMMUContext, psFWMemContextMemDesc);
 		*hPrivData = psServerMMUContext;
 	}
-			
+
 	return PVRSRV_OK;
 
 #if defined(PDUMP)

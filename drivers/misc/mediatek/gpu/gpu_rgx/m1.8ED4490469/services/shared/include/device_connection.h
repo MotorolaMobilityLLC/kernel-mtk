@@ -1,8 +1,8 @@
 /*************************************************************************/ /*!
 @File           device_connection.h
-@Title          
+@Title
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    
+@Description
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.

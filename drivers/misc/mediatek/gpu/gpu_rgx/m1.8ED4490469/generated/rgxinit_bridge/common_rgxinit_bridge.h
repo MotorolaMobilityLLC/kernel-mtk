@@ -68,7 +68,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXInitAllocFWImgMem          
+            RGXInitAllocFWImgMem
  *******************************************/
 
 /* Bridge in structure for RGXInitAllocFWImgMem */
@@ -94,7 +94,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXINITALLOCFWIMGMEM_TAG
 
 
 /*******************************************
-            RGXInitFirmware          
+            RGXInitFirmware
  *******************************************/
 
 /* Bridge in structure for RGXInitFirmware */
@@ -127,7 +127,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXINITFIRMWARE_TAG
 
 
 /*******************************************
-            RGXInitFinaliseFWImage          
+            RGXInitFinaliseFWImage
  *******************************************/
 
 /* Bridge in structure for RGXInitFinaliseFWImage */
@@ -144,7 +144,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXINITFINALISEFWIMAGE_TAG
 
 
 /*******************************************
-            RGXInitDevPart2          
+            RGXInitDevPart2
  *******************************************/
 
 /* Bridge in structure for RGXInitDevPart2 */
@@ -169,7 +169,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXINITDEVPART2_TAG
 
 
 /*******************************************
-            GPUVIRTPopulateLMASubArenas          
+            GPUVIRTPopulateLMASubArenas
  *******************************************/
 
 /* Bridge in structure for GPUVIRTPopulateLMASubArenas */
@@ -188,7 +188,7 @@ typedef struct PVRSRV_BRIDGE_OUT_GPUVIRTPOPULATELMASUBARENAS_TAG
 
 
 /*******************************************
-            RGXInitGuest          
+            RGXInitGuest
  *******************************************/
 
 /* Bridge in structure for RGXInitGuest */
@@ -210,7 +210,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXINITGUEST_TAG
 
 
 /*******************************************
-            RGXInitFirmwareExtended          
+            RGXInitFirmwareExtended
  *******************************************/
 
 /* Bridge in structure for RGXInitFirmwareExtended */

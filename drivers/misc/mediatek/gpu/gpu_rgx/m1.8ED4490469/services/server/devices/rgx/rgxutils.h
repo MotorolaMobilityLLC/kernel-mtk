@@ -115,7 +115,7 @@ PVRSRV_ERROR RGXSetDeviceFlags(PVRSRV_RGXDEV_INFO *psDevInfo,
 
  @Description Execute the commands in the script
 
- @Input 
+ @Input
 
  @Return   PVRSRV_ERROR
 

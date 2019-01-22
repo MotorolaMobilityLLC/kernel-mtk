@@ -41,7 +41,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
 /* Each build option listed here is packed into a dword which
- * provides up to log2(RGX_BUILD_OPTIONS_MASK_KM + 1) flags for KM 
+ * provides up to log2(RGX_BUILD_OPTIONS_MASK_KM + 1) flags for KM
  * and (32 - log2(RGX_BUILD_OPTIONS_MASK_KM + 1)) flags for UM.
  * The corresponding bit is set if the build option
  * was enabled at compile time.
@@ -49,11 +49,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * In order to extract the enabled build flags the INTERNAL_TEST
  * switch should be enabled in a client program which includes this
  * header. Then the client can test specific build flags by reading
- * the bit value at ##OPTIONNAME##_SET_OFFSET in RGX_BUILD_OPTIONS_KM 
+ * the bit value at ##OPTIONNAME##_SET_OFFSET in RGX_BUILD_OPTIONS_KM
  * RGX_BUILD_OPTIONS.
  *
  * IMPORTANT: add new options to unused bits or define a new dword
- * (e.g. RGX_BUILD_OPTIONS_KM2 or RGX_BUILD_OPTIONS2) so that the bitfield 
+ * (e.g. RGX_BUILD_OPTIONS_KM2 or RGX_BUILD_OPTIONS2) so that the bitfield
  * remains backwards
  * compatible.
  */

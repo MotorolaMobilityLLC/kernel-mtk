@@ -66,8 +66,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  @Return   PVRSRV_ERROR :
 
 ******************************************************************************/
-PVRSRV_ERROR RGXPrePowerState(IMG_HANDLE				hDevHandle, 
-							  PVRSRV_DEV_POWER_STATE	eNewPowerState, 
+PVRSRV_ERROR RGXPrePowerState(IMG_HANDLE				hDevHandle,
+							  PVRSRV_DEV_POWER_STATE	eNewPowerState,
 							  PVRSRV_DEV_POWER_STATE	eCurrentPowerState,
 							  IMG_BOOL					bForced);
 
@@ -87,8 +87,8 @@ PVRSRV_ERROR RGXPrePowerState(IMG_HANDLE				hDevHandle,
  @Return   PVRSRV_ERROR :
 
 ******************************************************************************/
-PVRSRV_ERROR RGXPostPowerState(IMG_HANDLE				hDevHandle, 
-							   PVRSRV_DEV_POWER_STATE	eNewPowerState, 
+PVRSRV_ERROR RGXPostPowerState(IMG_HANDLE				hDevHandle,
+							   PVRSRV_DEV_POWER_STATE	eNewPowerState,
 							   PVRSRV_DEV_POWER_STATE	eCurrentPowerState,
 							  IMG_BOOL					bForced);
 

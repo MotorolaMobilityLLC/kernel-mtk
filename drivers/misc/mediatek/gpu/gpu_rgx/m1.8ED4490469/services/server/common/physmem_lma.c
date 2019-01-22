@@ -98,7 +98,7 @@ typedef struct _PMR_LMALLOCARRAY_DATA_ {
 
 } PMR_LMALLOCARRAY_DATA;
 
-static PVRSRV_ERROR _MapAlloc(PVRSRV_DEVICE_NODE *psDevNode, 
+static PVRSRV_ERROR _MapAlloc(PVRSRV_DEVICE_NODE *psDevNode,
 							  IMG_DEV_PHYADDR *psDevPAddr,
 							  size_t uiSize,
 							  IMG_BOOL bFwLocalAlloc,
@@ -196,7 +196,7 @@ _ZeroAlloc(PVRSRV_DEVICE_NODE *psDevNode,
 	void *pvKernLin = NULL;
 	PVRSRV_ERROR eError;
 
-	eError = _MapAlloc(psDevNode, 
+	eError = _MapAlloc(psDevNode,
 					   psDevPAddr,
 					   uiAllocSize,
 					   bFwLocalAlloc,
@@ -841,7 +841,7 @@ static void PMRReleaseKernelMappingDataLocalMem(PMR_IMPL_PRIVDATA pvPriv,
 
 	_UnMapAlloc(psLMAllocArrayData->psDevNode,
 				psLMAllocArrayData->uiAllocSize,
-				psLMAllocArrayData->bFwLocalAlloc, 
+				psLMAllocArrayData->bFwLocalAlloc,
 				0,
 				pvKernLinAddr);
 }
@@ -905,7 +905,7 @@ CopyBytesLocalMem(PMR_IMPL_PRIVDATA pvPriv,
 			pcKernelPointer = pvMapping;
 			pfnCopyBytes(&pcBuffer[uiBufferOffset], &pcKernelPointer[uiInAllocOffset], uiBytesCopyableFromAlloc);
 
-			_UnMapAlloc(psLMAllocArrayData->psDevNode, 
+			_UnMapAlloc(psLMAllocArrayData->psDevNode,
 						psLMAllocArrayData->uiAllocSize,
 						psLMAllocArrayData->bFwLocalAlloc,
 						0,
@@ -934,12 +934,12 @@ CopyBytesLocalMem(PMR_IMPL_PRIVDATA pvPriv,
 			pcKernelPointer = pvMapping;
 			pfnCopyBytes(pcBuffer, &pcKernelPointer[uiOffset], uiBufSz);
 
-			_UnMapAlloc(psLMAllocArrayData->psDevNode, 
+			_UnMapAlloc(psLMAllocArrayData->psDevNode,
 						psLMAllocArrayData->uiAllocSize,
-						psLMAllocArrayData->bFwLocalAlloc, 
+						psLMAllocArrayData->bFwLocalAlloc,
 						0,
 						pvMapping);
-			
+
 			uiBytesCopied = uiBufSz;
 	}
 	*puiNumBytes = uiBytesCopied;

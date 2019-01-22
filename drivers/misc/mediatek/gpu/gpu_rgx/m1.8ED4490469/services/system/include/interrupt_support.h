@@ -87,10 +87,10 @@ typedef struct _SYS_INTERRUPT_DATA_
 @Input          ui32Flags               Interrupt flags
 @Return         PVRSRV_OK on success, a failure code otherwise
 */ /**************************************************************************/
-PVRSRV_ERROR OSInstallSystemLISR(IMG_HANDLE *phLISR, 
+PVRSRV_ERROR OSInstallSystemLISR(IMG_HANDLE *phLISR,
 				 IMG_UINT32 ui32IRQ,
-				 const IMG_CHAR *pszDevName, 
-				 PFN_SYS_LISR pfnLISR, 
+				 const IMG_CHAR *pszDevName,
+				 PFN_SYS_LISR pfnLISR,
 				 void *pvData,
 				 IMG_UINT32 ui32Flags);
 

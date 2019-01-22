@@ -95,7 +95,7 @@ OSMMapPMR(IMG_HANDLE hBridge,
     {
         goto e0;
     }
-    
+
     *phOSMMapPrivDataOut = hPriv;
     *ppvMappingAddressOut = pvKernelAddress;
     *puiMappingLengthOut = uiLength;

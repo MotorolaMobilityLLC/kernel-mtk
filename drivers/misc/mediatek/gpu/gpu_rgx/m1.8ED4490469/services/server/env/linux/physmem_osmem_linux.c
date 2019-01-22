@@ -116,7 +116,7 @@ typedef struct _PMR_OSPAGEARRAY_DATA_ {
 
 	/*
 	  uiLog2PageSize;
-	
+
 	  size of each "page" -- this would normally be the same as
 	  PAGE_SHIFT, but we support the idea that we may allocate pages
 	  in larger chunks for better contiguity, using order>0 in the
@@ -1172,7 +1172,12 @@ _GetGFPFlags(PMR_OSPAGEARRAY_DATA *psPageArrayData)
 		/* Limit to 32 bit.
 		 * Achieved by NOT setting __GFP_HIGHMEM for 32 bit systems and
          * setting __GFP_DMA32 for 64 bit systems */
+	#if defined(CONFIG_MACH_MT6739)
+		/* change to use __GFP_HIGHMEM since __GFP_DMA32 can access only 512 MB DRAM */
+		gfp_flags |= __GFP_HIGHMEM;
+	#else
 		gfp_flags |= __GFP_DMA32;
+	#endif
 	}
 	else
 	{
@@ -1289,7 +1294,7 @@ _AllocOSPageArray(PVRSRV_DEVICE_NODE *psDevNode,
 		goto e_freed_none;
 	}
 
-	/* 
+	/*
 	 * Allocate the page array
 	 *
 	 * We avoid tracking this memory because this structure might go into the page pool.
@@ -1365,7 +1370,7 @@ e_free_kmem_cache:
 	kmem_cache_free(g_psLinuxPageArray, psPageArrayData);
 	PVR_DPF((PVR_DBG_ERROR,
 			 "%s: OS refused the memory allocation for the page pointer table. "
-			 "Did you ask for too much?", 
+			 "Did you ask for too much?",
 			 __func__));
 
 e_freed_none:
@@ -1859,7 +1864,7 @@ e_free_pages:
 
 			for (ui32PageToFree = uiPagesFromPool; ui32PageToFree < uiArrayIndex; ui32PageToFree++)
 			{
-				_FreeOSPage(ui32MinOrder, IMG_FALSE, ppsPageArray[ui32PageToFree]);	
+				_FreeOSPage(ui32MinOrder, IMG_FALSE, ppsPageArray[ui32PageToFree]);
 				ppsPageArray[ui32PageToFree] = INVALID_PAGE;
 			}
 		}
@@ -2144,7 +2149,7 @@ _FreeOSPage_CMA(struct device *dev,
 			int ret = set_memory_wb((unsigned long)pvPageVAddr, 1);
 			if (ret)
 			{
-				PVR_DPF((PVR_DBG_ERROR, 
+				PVR_DPF((PVR_DBG_ERROR,
 						"%s: Failed to reset page attribute",
 						__FUNCTION__));
 			}
@@ -3183,7 +3188,7 @@ PhysmemNewOSRamBackedPMR(PVRSRV_DEVICE_NODE *psDevNode,
 		uiChunkSize = uiSize;
 	}
 
-	/* 
+	/*
 	 * Use CMA framework if order is greater than OS page size; please note
 	 * that OSMMapPMRGeneric() has the same expectation as well.
 	 */

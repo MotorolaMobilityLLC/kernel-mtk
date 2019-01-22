@@ -80,7 +80,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            AllocSyncPrimitiveBlock          
+            AllocSyncPrimitiveBlock
  *******************************************/
 
 /* Bridge in structure for AllocSyncPrimitiveBlock */
@@ -101,7 +101,7 @@ typedef struct PVRSRV_BRIDGE_OUT_ALLOCSYNCPRIMITIVEBLOCK_TAG
 
 
 /*******************************************
-            FreeSyncPrimitiveBlock          
+            FreeSyncPrimitiveBlock
  *******************************************/
 
 /* Bridge in structure for FreeSyncPrimitiveBlock */
@@ -118,7 +118,7 @@ typedef struct PVRSRV_BRIDGE_OUT_FREESYNCPRIMITIVEBLOCK_TAG
 
 
 /*******************************************
-            SyncPrimSet          
+            SyncPrimSet
  *******************************************/
 
 /* Bridge in structure for SyncPrimSet */
@@ -137,7 +137,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMSET_TAG
 
 
 /*******************************************
-            ServerSyncPrimSet          
+            ServerSyncPrimSet
  *******************************************/
 
 /* Bridge in structure for ServerSyncPrimSet */
@@ -155,7 +155,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SERVERSYNCPRIMSET_TAG
 
 
 /*******************************************
-            ServerSyncAlloc          
+            ServerSyncAlloc
  *******************************************/
 
 /* Bridge in structure for ServerSyncAlloc */
@@ -175,7 +175,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SERVERSYNCALLOC_TAG
 
 
 /*******************************************
-            ServerSyncFree          
+            ServerSyncFree
  *******************************************/
 
 /* Bridge in structure for ServerSyncFree */
@@ -192,7 +192,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SERVERSYNCFREE_TAG
 
 
 /*******************************************
-            ServerSyncQueueHWOp          
+            ServerSyncQueueHWOp
  *******************************************/
 
 /* Bridge in structure for ServerSyncQueueHWOp */
@@ -212,7 +212,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SERVERSYNCQUEUEHWOP_TAG
 
 
 /*******************************************
-            ServerSyncGetStatus          
+            ServerSyncGetStatus
  *******************************************/
 
 /* Bridge in structure for ServerSyncGetStatus */
@@ -242,7 +242,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SERVERSYNCGETSTATUS_TAG
 
 
 /*******************************************
-            SyncPrimOpCreate          
+            SyncPrimOpCreate
  *******************************************/
 
 /* Bridge in structure for SyncPrimOpCreate */
@@ -266,7 +266,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMOPCREATE_TAG
 
 
 /*******************************************
-            SyncPrimOpTake          
+            SyncPrimOpTake
  *******************************************/
 
 /* Bridge in structure for SyncPrimOpTake */
@@ -289,7 +289,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMOPTAKE_TAG
 
 
 /*******************************************
-            SyncPrimOpReady          
+            SyncPrimOpReady
  *******************************************/
 
 /* Bridge in structure for SyncPrimOpReady */
@@ -307,7 +307,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMOPREADY_TAG
 
 
 /*******************************************
-            SyncPrimOpComplete          
+            SyncPrimOpComplete
  *******************************************/
 
 /* Bridge in structure for SyncPrimOpComplete */
@@ -324,7 +324,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMOPCOMPLETE_TAG
 
 
 /*******************************************
-            SyncPrimOpDestroy          
+            SyncPrimOpDestroy
  *******************************************/
 
 /* Bridge in structure for SyncPrimOpDestroy */
@@ -341,7 +341,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMOPDESTROY_TAG
 
 
 /*******************************************
-            SyncPrimPDump          
+            SyncPrimPDump
  *******************************************/
 
 /* Bridge in structure for SyncPrimPDump */
@@ -359,7 +359,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMPDUMP_TAG
 
 
 /*******************************************
-            SyncPrimPDumpValue          
+            SyncPrimPDumpValue
  *******************************************/
 
 /* Bridge in structure for SyncPrimPDumpValue */
@@ -378,7 +378,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMPDUMPVALUE_TAG
 
 
 /*******************************************
-            SyncPrimPDumpPol          
+            SyncPrimPDumpPol
  *******************************************/
 
 /* Bridge in structure for SyncPrimPDumpPol */
@@ -400,7 +400,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMPDUMPPOL_TAG
 
 
 /*******************************************
-            SyncPrimOpPDumpPol          
+            SyncPrimOpPDumpPol
  *******************************************/
 
 /* Bridge in structure for SyncPrimOpPDumpPol */
@@ -419,7 +419,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMOPPDUMPPOL_TAG
 
 
 /*******************************************
-            SyncPrimPDumpCBP          
+            SyncPrimPDumpCBP
  *******************************************/
 
 /* Bridge in structure for SyncPrimPDumpCBP */
@@ -440,7 +440,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCPRIMPDUMPCBP_TAG
 
 
 /*******************************************
-            SyncAllocEvent          
+            SyncAllocEvent
  *******************************************/
 
 /* Bridge in structure for SyncAllocEvent */
@@ -460,7 +460,7 @@ typedef struct PVRSRV_BRIDGE_OUT_SYNCALLOCEVENT_TAG
 
 
 /*******************************************
-            SyncFreeEvent          
+            SyncFreeEvent
  *******************************************/
 
 /* Bridge in structure for SyncFreeEvent */

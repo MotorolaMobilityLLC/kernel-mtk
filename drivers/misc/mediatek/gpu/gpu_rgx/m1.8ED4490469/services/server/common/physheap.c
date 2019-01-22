@@ -184,7 +184,7 @@ PVRSRV_ERROR PhysHeapAcquire(IMG_UINT32 ui32PhysHeapID,
 		}
 		psTmp = psTmp->psNext;
 	}
-	
+
 	if (psTmp == NULL)
 	{
 		eError = PVRSRV_ERROR_PHYSHEAP_ID_INVALID;

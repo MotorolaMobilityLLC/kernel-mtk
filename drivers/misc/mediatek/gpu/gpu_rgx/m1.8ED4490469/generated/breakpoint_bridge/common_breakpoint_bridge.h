@@ -63,7 +63,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXSetBreakpoint          
+            RGXSetBreakpoint
  *******************************************/
 
 /* Bridge in structure for RGXSetBreakpoint */
@@ -84,7 +84,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXSETBREAKPOINT_TAG
 
 
 /*******************************************
-            RGXClearBreakpoint          
+            RGXClearBreakpoint
  *******************************************/
 
 /* Bridge in structure for RGXClearBreakpoint */
@@ -101,7 +101,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCLEARBREAKPOINT_TAG
 
 
 /*******************************************
-            RGXEnableBreakpoint          
+            RGXEnableBreakpoint
  *******************************************/
 
 /* Bridge in structure for RGXEnableBreakpoint */
@@ -118,7 +118,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXENABLEBREAKPOINT_TAG
 
 
 /*******************************************
-            RGXDisableBreakpoint          
+            RGXDisableBreakpoint
  *******************************************/
 
 /* Bridge in structure for RGXDisableBreakpoint */
@@ -135,7 +135,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDISABLEBREAKPOINT_TAG
 
 
 /*******************************************
-            RGXOverallocateBPRegisters          
+            RGXOverallocateBPRegisters
  *******************************************/
 
 /* Bridge in structure for RGXOverallocateBPRegisters */

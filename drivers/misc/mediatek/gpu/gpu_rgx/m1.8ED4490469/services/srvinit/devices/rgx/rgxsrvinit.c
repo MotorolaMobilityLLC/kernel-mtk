@@ -59,6 +59,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rgx_compat_bvnc.h"
 
 #include "srvinit_osfunc.h"
+#include "mtk_mfgsys.h"
 
 #if !defined(SUPPORT_KERNEL_SRVINIT)
 #include "rgxdefs.h"
@@ -309,6 +310,7 @@ static INLINE void GetApphints(RGX_SRVINIT_APPHINTS *psHints, IMG_UINT64 ui64Ern
 #endif
 	SrvInitParamGetBOOL(pvParamState,    CheckMList, psHints->bCheckMlist);
 	SrvInitParamGetBOOL(pvParamState,    DisableClockGating, psHints->bDisableClockGating);
+	psHints->bDisableClockGating = 1;
 	SrvInitParamGetBOOL(pvParamState,    DisableDMOverlap, psHints->bDisableDMOverlap);
 	SrvInitParamGetBOOL(pvParamState,    DisableFEDLogging, psHints->bDisableFEDLogging);
 	SrvInitParamGetUINT32(pvParamState,  EnableAPM, ui32ParamTemp);
@@ -1358,7 +1360,7 @@ static PVRSRV_ERROR InitFirmware(SHARED_DEV_CONNECTION hServices,
 	IMG_CHAR *pszFWFilename = NULL;
 	IMG_CHAR *pszFWpFilename = NULL;
 #if defined(SUPPORT_KERNEL_SRVINIT)
-	IMG_CHAR aszFWFilenameStr[OSStringLength(RGX_FW_FILENAME)+MAX_BVNC_STRING_LEN+2];
+    IMG_CHAR aszFWFilenameStr[OSStringLength(RGX_FW_FILENAME)+MAX_BVNC_STRING_LEN+2];
 	IMG_CHAR aszFWpFilenameStr[OSStringLength(RGX_FW_FILENAME)+MAX_BVNC_STRING_LEN+3];
 	PVRSRV_DEVICE_NODE *psDeviceNode = (PVRSRV_DEVICE_NODE *)hServices;
 	PVRSRV_RGXDEV_INFO *psDevInfo = (PVRSRV_RGXDEV_INFO *)psDeviceNode->pvDevice;

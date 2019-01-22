@@ -61,7 +61,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*
- * Bits of PT, PD and PC not involving addresses 
+ * Bits of PT, PD and PC not involving addresses
  */
 
 #define RGX_MMUCTRL_PTE_PROTMASK	(RGX_MMUCTRL_PT_DATA_PM_META_PROTECT_EN | \
@@ -182,46 +182,46 @@ static MMU_DEVICEATTRIBS sRGXMMUDeviceAttributes;
 PVRSRV_ERROR RGXMMUInit_Register(PVRSRV_DEVICE_NODE *psDeviceNode)
 {
 	/* Setup of Px Entries:
-	 * 
-	 * 
+	 *
+	 *
 	 * PAGE TABLE (8 Byte):
-	 * 
+	 *
 	 * | 62              | 61...40         | 39...12 (varies) | 11...6          | 5             | 4      | 3               | 2               | 1         | 0     |
 	 * | PM/Meta protect | VP Page (39:18) | Physical Page    | VP Page (17:12) | Entry Pending | PM src | SLC Bypass Ctrl | Cache Coherency | Read Only | Valid |
-	 * 
-	 * 
+	 *
+	 *
 	 * PAGE DIRECTORY (8 Byte):
-	 * 
+	 *
 	 *  | 40            | 39...5  (varies)        | 4          | 3...1     | 0     |
-	 *  | Entry Pending | Page Table base address | (reserved) | Page Size | Valid | 
-	 * 
-	 * 
+	 *  | Entry Pending | Page Table base address | (reserved) | Page Size | Valid |
+	 *
+	 *
 	 * PAGE CATALOGUE (4 Byte):
-	 * 
-	 *  | 31...4                      | 3...2      | 1             | 0     | 
-	 *  | Page Directory base address | (reserved) | Entry Pending | Valid | 
-	 * 
+	 *
+	 *  | 31...4                      | 3...2      | 1             | 0     |
+	 *  | Page Directory base address | (reserved) | Entry Pending | Valid |
+	 *
      */
-    
-    
-    /* Example how to get the PD address from a PC entry. 
-     * The procedure is the same for PD and PT entries to retrieve PT and Page addresses: 
-     * 
+
+
+    /* Example how to get the PD address from a PC entry.
+     * The procedure is the same for PD and PT entries to retrieve PT and Page addresses:
+     *
      * 1) sRGXMMUPCEConfig.uiAddrMask applied to PC entry with '&':
-     *  | 31...4   | 3...2      | 1             | 0     | 
-	 *  | PD Addr  | 0          | 0             | 0     | 
-     * 
+     *  | 31...4   | 3...2      | 1             | 0     |
+	 *  | PD Addr  | 0          | 0             | 0     |
+     *
      * 2) sRGXMMUPCEConfig.uiAddrShift applied with '>>':
      *  | 27...0   |
-     *  | PD Addr  |  
-     * 
+     *  | PD Addr  |
+     *
      * 3) sRGXMMUPCEConfig.uiAddrLog2Align applied with '<<':
      *  | 39...0   |
      *  | PD Addr  |
-     * 
+     *
      */
-    
-	
+
+
 	/*
 	 * Setup sRGXMMUPCEConfig
 	 */
@@ -280,7 +280,7 @@ PVRSRV_ERROR RGXMMUInit_Register(PVRSRV_DEVICE_NODE *psDeviceNode)
 	sRGXMMUPTEConfig_4KBDP.uiBytesPerEntry = 8;
 
 	sRGXMMUPTEConfig_4KBDP.uiAddrMask = IMG_UINT64_C(0xfffffff000);
-	sRGXMMUPTEConfig_4KBDP.uiAddrShift = 12; 
+	sRGXMMUPTEConfig_4KBDP.uiAddrShift = 12;
 	sRGXMMUPTEConfig_4KBDP.uiAddrLog2Align = 12; /* Alignment of the physical addresses of the pages NOT PTs */
 
 	sRGXMMUPTEConfig_4KBDP.uiProtMask = RGX_MMUCTRL_PTE_PROTMASK;
@@ -333,8 +333,8 @@ PVRSRV_ERROR RGXMMUInit_Register(PVRSRV_DEVICE_NODE *psDeviceNode)
 	sRGXMMUPDEConfig_16KBDP.uiBytesPerEntry = 8;
 
 	sRGXMMUPDEConfig_16KBDP.uiAddrMask = IMG_UINT64_C(0xfffffffff0);
-	sRGXMMUPDEConfig_16KBDP.uiAddrShift = 10; 
-	sRGXMMUPDEConfig_16KBDP.uiAddrLog2Align = 10; 
+	sRGXMMUPDEConfig_16KBDP.uiAddrShift = 10;
+	sRGXMMUPDEConfig_16KBDP.uiAddrLog2Align = 10;
 
 	sRGXMMUPDEConfig_16KBDP.uiVarCtrlMask = IMG_UINT64_C(0x000000000e);
 	sRGXMMUPDEConfig_16KBDP.uiVarCtrlShift = 1;
@@ -780,7 +780,7 @@ static IMG_UINT64 RGXDerivePCEProt8(IMG_UINT32 uiProtFlags, IMG_UINT32 uiLog2Dat
 	PVR_UNREFERENCED_PARAMETER(uiLog2DataPageSize);
 
 	PVR_DPF((PVR_DBG_ERROR, "8-byte PCE not supported on this device"));
-	return 0;	
+	return 0;
 }
 
 
@@ -953,7 +953,7 @@ static PVRSRV_ERROR RGXGetPageSizeConfigCB(IMG_UINT32 uiLog2DataPageSize,
                  uiLog2DataPageSize));
         return PVRSRV_ERROR_MMU_INVALID_PAGE_SIZE_FOR_DEVICE;
     }
-    
+
     /* Refer caller's pointers to the data */
     *ppsMMUPDEConfig = psPageSizeConfig->psPDEConfig;
     *ppsMMUPTEConfig = psPageSizeConfig->psPTEConfig;

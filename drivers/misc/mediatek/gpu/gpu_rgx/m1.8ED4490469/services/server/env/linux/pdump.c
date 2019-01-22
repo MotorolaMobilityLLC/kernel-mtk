@@ -312,7 +312,7 @@ PVRSRV_ERROR PDumpOSInit(PDUMP_CHANNEL* psParam, PDUMP_CHANNEL* psScript,
 		{
 			return PVRSRV_ERROR_PDUMP_NOT_AVAILABLE;
 		}
-		
+
 		eError = PVRSRV_ERROR_OUT_OF_MEMORY;
 		if(!gsDBGPdumpState.pszFile)
 		{

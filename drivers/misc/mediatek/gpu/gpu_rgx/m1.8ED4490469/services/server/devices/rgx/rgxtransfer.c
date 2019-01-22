@@ -303,7 +303,7 @@ PVRSRV_ERROR PVRSRVRGXCreateTransferContextKM(CONNECTION_DATA		*psConnection,
 		goto fail_syncalloc;
 	}
 
-	/* 
+	/*
 	 * Create the FW framework buffer
 	 */
 	eError = PVRSRVRGXFrameworkCreateKM(psDeviceNode,
@@ -367,7 +367,7 @@ PVRSRV_ERROR PVRSRVRGXCreateTransferContextKM(CONNECTION_DATA		*psConnection,
 	}
 
 	*ppsTransferContext = psTransferContext;
-	
+
 	return PVRSRV_OK;
 
 
@@ -861,7 +861,7 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 								  &pas3DCmdHelper[0],
 								  "TQ_3D",
 								  FWCommonContextGetFWAddress(psTransferContext->s3DData.psServerCommonContext).ui32Addr);
-		
+
 	}
 
 	if ((ui322DCmdCount) && (psDevInfo->sDevFeatureCfg.ui64Features & RGX_FEATURE_TLA_BIT_MASK))
@@ -1092,7 +1092,7 @@ PVRSRV_ERROR PVRSRVRGXSetTransferContextPriorityKM(CONNECTION_DATA *psConnection
 		}
 		psTransferContext->s3DData.ui32Priority = ui32Priority;
 	}
-	
+
 	return PVRSRV_OK;
 
 fail_3dcontext:

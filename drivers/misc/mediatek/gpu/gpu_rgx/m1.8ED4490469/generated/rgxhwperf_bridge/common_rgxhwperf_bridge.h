@@ -63,7 +63,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXCtrlHWPerf          
+            RGXCtrlHWPerf
  *******************************************/
 
 /* Bridge in structure for RGXCtrlHWPerf */
@@ -82,7 +82,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCTRLHWPERF_TAG
 
 
 /*******************************************
-            RGXConfigEnableHWPerfCounters          
+            RGXConfigEnableHWPerfCounters
  *******************************************/
 
 /* Bridge in structure for RGXConfigEnableHWPerfCounters */
@@ -100,7 +100,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCONFIGENABLEHWPERFCOUNTERS_TAG
 
 
 /*******************************************
-            RGXCtrlHWPerfCounters          
+            RGXCtrlHWPerfCounters
  *******************************************/
 
 /* Bridge in structure for RGXCtrlHWPerfCounters */
@@ -119,7 +119,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCTRLHWPERFCOUNTERS_TAG
 
 
 /*******************************************
-            RGXConfigCustomCounters          
+            RGXConfigCustomCounters
  *******************************************/
 
 /* Bridge in structure for RGXConfigCustomCounters */

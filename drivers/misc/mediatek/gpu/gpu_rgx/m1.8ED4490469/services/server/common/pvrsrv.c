@@ -317,7 +317,7 @@ static void CleanupThread(void *pvData)
 	/* While the driver is in a good state and is not being unloaded
 	 * try to free any deferred items when signalled
 	 */
-	while ((psPVRSRVData->eServicesState == PVRSRV_SERVICES_STATE_OK) && 
+	while ((psPVRSRVData->eServicesState == PVRSRV_SERVICES_STATE_OK) &&
 			(!psPVRSRVData->bUnload))
 	{
 		/* Wait until signalled for deferred clean up OR wait for a
@@ -659,7 +659,7 @@ PVRSRVDriverInit(void)
 	PVRSRVGetAppHint(pvAppHintState, "CleanupThreadPriority",  IMG_UINT_TYPE, &ui32AppHintDefault, &ui32AppHintCleanupThreadPriority);
 
 	ui32AppHintDefault = PVRSRV_APPHINT_CLEANUPTHREADWEIGHT;
-	PVRSRVGetAppHint(pvAppHintState, "CleanupThreadWeight",    IMG_UINT_TYPE, &ui32AppHintDefault, &ui32AppHintCleanupThreadWeight); 
+	PVRSRVGetAppHint(pvAppHintState, "CleanupThreadWeight",    IMG_UINT_TYPE, &ui32AppHintDefault, &ui32AppHintCleanupThreadWeight);
 
 	ui32AppHintDefault = PVRSRV_APPHINT_WATCHDOGTHREADPRIORITY;
 	PVRSRVGetAppHint(pvAppHintState, "WatchdogThreadPriority", IMG_UINT_TYPE, &ui32AppHintDefault, &ui32AppHintWatchdogThreadPriority);
@@ -677,7 +677,7 @@ PVRSRVDriverInit(void)
 	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: Failed to set thread priority of deferred cleanup thread.",
-				 __func__));	
+				 __func__));
 		goto Error;
 	}
 
@@ -703,7 +703,7 @@ PVRSRVDriverInit(void)
 	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: Failed to set thread priority of the watchdog thread.",
-				 __func__));	
+				 __func__));
 		goto Error;
 	}
 
@@ -839,7 +839,7 @@ PVRSRVDriverDeInit(void)
 	{
 		PDUMPDEINIT();
 	}
-	
+
 	/* destroy event object */
 	if (gpsPVRSRVData->hGlobalEventObject)
 	{
@@ -878,7 +878,7 @@ PVRSRVDriverDeInit(void)
 #if defined(SUPPORT_PAGE_FAULT_DEBUG)
 	DevicememHistoryDeInitKM();
 #endif
-	
+
 	OSDeInitEnvData();
 
 	eError = PhysHeapDeinit();
@@ -1218,7 +1218,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVDeviceCreate(void *pvOSDevice,
 		}
 #endif
 
-		/* If additional psDeviceNode->pfnDevPx* callbacks are added, 
+		/* If additional psDeviceNode->pfnDevPx* callbacks are added,
 		   update the corresponding virtualization-specific override
 		   in pvrsrv_vz.c:PVRSRVVzDeviceCreate() */
 		psDeviceNode->pfnDevPxAlloc = LMA_PhyContigPagesAlloc;
@@ -2079,7 +2079,7 @@ PVRSRV_ERROR IMG_CALLCONV PollForGEValueKM (volatile IMG_UINT32*	pui32LinMemAddr
 
 	PVR_DPF((PVR_DBG_ERROR,"PollForValueKM: Timeout. Expected 0x%x but found 0x%x (mask 0x%x).",
 			ui32Value, ui32ActualValue, ui32Mask));
-	
+
 	return PVRSRV_ERROR_TIMEOUT;
 #endif /* NO_HARDWARE */
 }
@@ -2152,7 +2152,7 @@ PVRSRV_ERROR IMG_CALLCONV PollForValueKM (volatile IMG_UINT32*	pui32LinMemAddr,
 
 	PVR_DPF((PVR_DBG_ERROR,"PollForValueKM: Timeout. Expected 0x%x but found 0x%x (mask 0x%x).",
 			ui32Value, ui32ActualValue, ui32Mask));
-	
+
 	return PVRSRV_ERROR_TIMEOUT;
 #endif /* NO_HARDWARE */
 }
@@ -2199,7 +2199,7 @@ PVRSRV_ERROR IMG_CALLCONV WaitForValueKM(volatile IMG_UINT32  *pui32LinMemAddr,
 	}
 
 	eError = PVRSRV_ERROR_TIMEOUT;
-	
+
 	LOOP_UNTIL_TIMEOUT(MAX_HW_TIME_US)
 	{
 		ui32ActualValue = (*pui32LinMemAddr & ui32Mask);
@@ -2338,7 +2338,7 @@ IMG_BOOL PVRSRVSystemSnoopingOfCPUCache(PVRSRV_DEVICE_CONFIG *psDevConfig)
 	{
 		return IMG_TRUE;
 	}
-	return IMG_FALSE;	
+	return IMG_FALSE;
 }
 
 IMG_BOOL PVRSRVSystemSnoopingOfDeviceCache(PVRSRV_DEVICE_CONFIG *psDevConfig)

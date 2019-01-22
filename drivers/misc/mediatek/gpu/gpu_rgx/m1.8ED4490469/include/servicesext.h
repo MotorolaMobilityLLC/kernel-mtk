@@ -101,7 +101,7 @@ typedef enum _PVRSRV_DEV_POWER_STATE_
 
 /* Power transition handler prototypes */
 
-/*! 
+/*!
   Typedef for a pointer to a Function that will be called before a transition
   from one power state to another. See also PFN_POST_POWER.
  */
@@ -109,7 +109,7 @@ typedef PVRSRV_ERROR (*PFN_PRE_POWER) (IMG_HANDLE				hDevHandle,
 									   PVRSRV_DEV_POWER_STATE	eNewPowerState,
 									   PVRSRV_DEV_POWER_STATE	eCurrentPowerState,
 									   IMG_BOOL					bForced);
-/*! 
+/*!
   Typedef for a pointer to a Function that will be called after a transition
   from one power state to another. See also PFN_PRE_POWER.
  */

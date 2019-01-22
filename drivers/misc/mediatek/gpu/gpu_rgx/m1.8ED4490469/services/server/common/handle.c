@@ -132,7 +132,7 @@ struct _HANDLE_BASE_
 
 /*
  * The key for the handle hash table is an array of three elements, the
- * pointer to the resource, the resource type and the parent handle (or 
+ * pointer to the resource, the resource type and the parent handle (or
  * NULL if there is no parent). The eHandKey enumeration gives the
  * array indices of the elements making up the key.
  */
@@ -150,7 +150,7 @@ typedef uintptr_t HAND_KEY[HAND_KEY_LEN];
 /* Stores a pointer to the function table of the handle back-end in use */
 static HANDLE_IMPL_FUNCTAB const *gpsHandleFuncs = NULL;
 
-/* 
+/*
  * Global lock added to avoid to call the handling functions
  * only in a single threaded context.
  */
@@ -168,7 +168,7 @@ void UnlockHandle(void)
 }
 
 /*
- * Kernel handle base structure. This is used for handles that are not 
+ * Kernel handle base structure. This is used for handles that are not
  * allocated on behalf of a particular process.
  */
 PVRSRV_HANDLE_BASE *gpsKernelHandleBase = NULL;
@@ -239,8 +239,8 @@ PVRSRV_ERROR GetHandleData(PVRSRV_HANDLE_BASE *psBase,
 	HANDLE_DATA *psHandleData;
 	PVRSRV_ERROR eError;
 
-	eError = gpsHandleFuncs->pfnGetHandleData(psBase->psImplBase, 
-						  hHandle, 
+	eError = gpsHandleFuncs->pfnGetHandleData(psBase->psImplBase,
+						  hHandle,
 						  (void **)&psHandleData);
 	if (eError != PVRSRV_OK)
 	{
@@ -461,9 +461,9 @@ IMG_HANDLE ParentHandle(HANDLE_DATA *psHandleData)
 #pragma inline(GetHandleListFromHandleAndOffset)
 #endif
 static INLINE
-HANDLE_LIST *GetHandleListFromHandleAndOffset(PVRSRV_HANDLE_BASE *psBase, 
-					      IMG_HANDLE hEntry, 
-					      IMG_HANDLE hParent, 
+HANDLE_LIST *GetHandleListFromHandleAndOffset(PVRSRV_HANDLE_BASE *psBase,
+					      IMG_HANDLE hEntry,
+					      IMG_HANDLE hParent,
 					      size_t uiParentOffset,
 					      size_t uiEntryOffset)
 {
@@ -472,9 +472,9 @@ HANDLE_LIST *GetHandleListFromHandleAndOffset(PVRSRV_HANDLE_BASE *psBase,
 
 	PVR_ASSERT(psBase != NULL);
 
-	eError = GetHandleData(psBase, 
-			       &psHandleData, 
-			       hEntry, 
+	eError = GetHandleData(psBase,
+			       &psHandleData,
+			       hEntry,
 			       PVRSRV_HANDLE_TYPE_NONE);
 	if (eError != PVRSRV_OK)
 	{
@@ -529,10 +529,10 @@ PVRSRV_ERROR HandleListInsertBefore(PVRSRV_HANDLE_BASE *psBase,
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
-	psPrevEntry = GetHandleListFromHandleAndOffset(psBase, 
-						       psEntry->hPrev, 
-						       hParent, 
-						       uiParentOffset, 
+	psPrevEntry = GetHandleListFromHandleAndOffset(psBase,
+						       psEntry->hPrev,
+						       hParent,
+						       uiParentOffset,
 						       uiEntryOffset);
 	if (psPrevEntry == NULL)
 	{
@@ -546,10 +546,10 @@ PVRSRV_ERROR HandleListInsertBefore(PVRSRV_HANDLE_BASE *psBase,
 	{
 		HANDLE_LIST *psParentList;
 
-		psParentList = GetHandleListFromHandleAndOffset(psBase, 
-								hParent, 
-								hParent, 
-								uiParentOffset, 
+		psParentList = GetHandleListFromHandleAndOffset(psBase,
+								hParent,
+								hParent,
+								uiParentOffset,
 								uiParentOffset);
 		PVR_ASSERT(psParentList && psParentList->hParent == hParent);
 	}
@@ -591,13 +591,13 @@ PVRSRV_ERROR AdoptChild(PVRSRV_HANDLE_BASE *psBase,
 
 	PVR_ASSERT(hParent == psParentData->hHandle);
 
-	return HandleListInsertBefore(psBase, 
-				      hParent, 
-				      &psParentData->sChildren, 
-				      offsetof(HANDLE_DATA, sChildren), 
-				      psChildData->hHandle, 
-				      &psChildData->sSiblings, 
-				      offsetof(HANDLE_DATA, sSiblings), 
+	return HandleListInsertBefore(psBase,
+				      hParent,
+				      &psParentData->sChildren,
+				      offsetof(HANDLE_DATA, sChildren),
+				      psChildData->hHandle,
+				      &psChildData->sSiblings,
+				      offsetof(HANDLE_DATA, sSiblings),
 				      hParent);
 }
 
@@ -636,20 +636,20 @@ PVRSRV_ERROR HandleListRemove(PVRSRV_HANDLE_BASE *psBase,
 		HANDLE_LIST *psPrev;
 		HANDLE_LIST *psNext;
 
-		psPrev = GetHandleListFromHandleAndOffset(psBase, 
-							  psEntry->hPrev, 
-							  psEntry->hParent, 
-							  uiParentOffset, 
+		psPrev = GetHandleListFromHandleAndOffset(psBase,
+							  psEntry->hPrev,
+							  psEntry->hParent,
+							  uiParentOffset,
 							  uiEntryOffset);
 		if (psPrev == NULL)
 		{
 			return PVRSRV_ERROR_HANDLE_INDEX_OUT_OF_RANGE;
 		}
 
-		psNext = GetHandleListFromHandleAndOffset(psBase, 
-							  psEntry->hNext, 
-							  psEntry->hParent, 
-							  uiParentOffset, 
+		psNext = GetHandleListFromHandleAndOffset(psBase,
+							  psEntry->hNext,
+							  psEntry->hParent,
+							  uiParentOffset,
 							  uiEntryOffset);
 		if (psNext == NULL)
 		{
@@ -690,10 +690,10 @@ static INLINE
 PVRSRV_ERROR UnlinkFromParent(PVRSRV_HANDLE_BASE *psBase,
 			      HANDLE_DATA *psHandleData)
 {
-	return HandleListRemove(psBase, 
-				psHandleData->hHandle, 
-				&psHandleData->sSiblings, 
-				offsetof(HANDLE_DATA, sSiblings), 
+	return HandleListRemove(psBase,
+				psHandleData->hHandle,
+				&psHandleData->sSiblings,
+				offsetof(HANDLE_DATA, sSiblings),
 				offsetof(HANDLE_DATA, sChildren));
 }
 
@@ -737,10 +737,10 @@ PVRSRV_ERROR HandleListIterate(PVRSRV_HANDLE_BASE *psBase,
 		HANDLE_LIST *psEntry;
 		PVRSRV_ERROR eError;
 
-		psEntry = GetHandleListFromHandleAndOffset(psBase, 
-							   hHandle, 
-							   hParent, 
-							   uiParentOffset, 
+		psEntry = GetHandleListFromHandleAndOffset(psBase,
+							   hHandle,
+							   hParent,
+							   uiParentOffset,
 							   uiEntryOffset);
 		if (psEntry == NULL)
 		{
@@ -932,7 +932,7 @@ static PVRSRV_ERROR FreeHandle(PVRSRV_HANDLE_BASE *psBase,
 	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR,
-			 "FreeHandle: Error whilst unlinking from parent handle (%s)", 
+			 "FreeHandle: Error whilst unlinking from parent handle (%s)",
 			 PVRSRVGetErrorStringKM(eError)));
 		return eError;
 	}
@@ -1232,7 +1232,7 @@ PVRSRV_ERROR PVRSRVAllocSubHandle(PVRSRV_HANDLE_BASE *psBase,
 	{
 		PVR_DPF((PVR_DBG_ERROR, "PVRSRVAllocSubHandle: Failed to get parent handle structure"));
 
-		/* If we were able to allocate the handle then there should be no reason why we 
+		/* If we were able to allocate the handle then there should be no reason why we
 		   can't also get it's handle structure. Otherwise something has gone badly wrong. */
 		PVR_ASSERT(eError == PVRSRV_OK);
 
@@ -1660,9 +1660,9 @@ PVRSRV_ERROR PVRSRVAllocHandleBase(PVRSRV_HANDLE_BASE **ppsBase,
 		goto ErrorFreeHandleBase;
 	}
 
-	psBase->psHashTab = HASH_Create_Extended(HANDLE_HASH_TAB_INIT_SIZE, 
-						 sizeof(HAND_KEY), 
-						 HASH_Func_Default, 
+	psBase->psHashTab = HASH_Create_Extended(HANDLE_HASH_TAB_INIT_SIZE,
+						 sizeof(HAND_KEY),
+						 HASH_Func_Default,
 						 HASH_Key_Comp_Default);
 	if (psBase->psHashTab == NULL)
 	{
@@ -1712,9 +1712,9 @@ static PVRSRV_ERROR CountHandleDataWrapper(IMG_HANDLE hHandle, void *pvData)
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
-	eError = GetHandleData(psData->psBase, 
-			       &psHandleData, 
-			       hHandle, 
+	eError = GetHandleData(psData->psBase,
+			       &psHandleData,
+			       hHandle,
 			       PVRSRV_HANDLE_TYPE_NONE);
 	if (eError != PVRSRV_OK)
 	{
@@ -1814,9 +1814,9 @@ static PVRSRV_ERROR FreeHandleDataWrapper(IMG_HANDLE hHandle, void *pvData)
 		return PVRSRV_ERROR_INVALID_PARAMS;
 	}
 
-	eError = GetHandleData(psData->psBase, 
-			       &psHandleData, 
-			       hHandle, 
+	eError = GetHandleData(psData->psBase,
+			       &psHandleData,
+			       hHandle,
 			       PVRSRV_HANDLE_TYPE_NONE);
 	if (eError != PVRSRV_OK)
 	{

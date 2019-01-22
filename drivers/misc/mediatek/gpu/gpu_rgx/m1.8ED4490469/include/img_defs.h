@@ -174,7 +174,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 	/*
 	 * IMG_IMPORT is defined as IMG_EXPORT so that headers and implementations match.
-	 * Some compilers require the header to be declared IMPORT, while the implementation is declared EXPORT 
+	 * Some compilers require the header to be declared IMPORT, while the implementation is declared EXPORT
 	 */
 	#define	IMG_IMPORT	IMG_EXPORT
 
@@ -213,9 +213,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 		#define C_CALLCONV
 		#define __cdecl
 		/* IMG_IMPORT is defined as IMG_EXPORT so that headers and implementations match.
-		 * Some compilers require the header to be declared IMPORT, while the implementation is declared EXPORT 
+		 * Some compilers require the header to be declared IMPORT, while the implementation is declared EXPORT
 		 */
-		#define	IMG_IMPORT	IMG_EXPORT 
+		#define	IMG_IMPORT	IMG_EXPORT
 		#ifndef USE_CODE
 		#define IMG_ABORT()	printf("IMG_ABORT was called.\n")
 

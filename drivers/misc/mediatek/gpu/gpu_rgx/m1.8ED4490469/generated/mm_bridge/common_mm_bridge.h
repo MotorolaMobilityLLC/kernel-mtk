@@ -91,7 +91,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            PMRExportPMR          
+            PMRExportPMR
  *******************************************/
 
 /* Bridge in structure for PMRExportPMR */
@@ -112,7 +112,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PMREXPORTPMR_TAG
 
 
 /*******************************************
-            PMRUnexportPMR          
+            PMRUnexportPMR
  *******************************************/
 
 /* Bridge in structure for PMRUnexportPMR */
@@ -129,7 +129,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PMRUNEXPORTPMR_TAG
 
 
 /*******************************************
-            PMRGetUID          
+            PMRGetUID
  *******************************************/
 
 /* Bridge in structure for PMRGetUID */
@@ -147,7 +147,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PMRGETUID_TAG
 
 
 /*******************************************
-            PMRMakeLocalImportHandle          
+            PMRMakeLocalImportHandle
  *******************************************/
 
 /* Bridge in structure for PMRMakeLocalImportHandle */
@@ -165,7 +165,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PMRMAKELOCALIMPORTHANDLE_TAG
 
 
 /*******************************************
-            PMRUnmakeLocalImportHandle          
+            PMRUnmakeLocalImportHandle
  *******************************************/
 
 /* Bridge in structure for PMRUnmakeLocalImportHandle */
@@ -182,7 +182,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PMRUNMAKELOCALIMPORTHANDLE_TAG
 
 
 /*******************************************
-            PMRImportPMR          
+            PMRImportPMR
  *******************************************/
 
 /* Bridge in structure for PMRImportPMR */
@@ -203,7 +203,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PMRIMPORTPMR_TAG
 
 
 /*******************************************
-            PMRLocalImportPMR          
+            PMRLocalImportPMR
  *******************************************/
 
 /* Bridge in structure for PMRLocalImportPMR */
@@ -223,7 +223,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PMRLOCALIMPORTPMR_TAG
 
 
 /*******************************************
-            PMRUnrefPMR          
+            PMRUnrefPMR
  *******************************************/
 
 /* Bridge in structure for PMRUnrefPMR */
@@ -240,7 +240,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PMRUNREFPMR_TAG
 
 
 /*******************************************
-            PMRUnrefUnlockPMR          
+            PMRUnrefUnlockPMR
  *******************************************/
 
 /* Bridge in structure for PMRUnrefUnlockPMR */
@@ -257,7 +257,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PMRUNREFUNLOCKPMR_TAG
 
 
 /*******************************************
-            PhysmemNewRamBackedPMR          
+            PhysmemNewRamBackedPMR
  *******************************************/
 
 /* Bridge in structure for PhysmemNewRamBackedPMR */
@@ -283,7 +283,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PHYSMEMNEWRAMBACKEDPMR_TAG
 
 
 /*******************************************
-            PhysmemNewRamBackedLockedPMR          
+            PhysmemNewRamBackedLockedPMR
  *******************************************/
 
 /* Bridge in structure for PhysmemNewRamBackedLockedPMR */
@@ -309,7 +309,7 @@ typedef struct PVRSRV_BRIDGE_OUT_PHYSMEMNEWRAMBACKEDLOCKEDPMR_TAG
 
 
 /*******************************************
-            DevmemIntPin          
+            DevmemIntPin
  *******************************************/
 
 /* Bridge in structure for DevmemIntPin */
@@ -326,7 +326,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTPIN_TAG
 
 
 /*******************************************
-            DevmemIntUnpin          
+            DevmemIntUnpin
  *******************************************/
 
 /* Bridge in structure for DevmemIntUnpin */
@@ -343,7 +343,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTUNPIN_TAG
 
 
 /*******************************************
-            DevmemIntPinValidate          
+            DevmemIntPinValidate
  *******************************************/
 
 /* Bridge in structure for DevmemIntPinValidate */
@@ -361,7 +361,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTPINVALIDATE_TAG
 
 
 /*******************************************
-            DevmemIntUnpinInvalidate          
+            DevmemIntUnpinInvalidate
  *******************************************/
 
 /* Bridge in structure for DevmemIntUnpinInvalidate */
@@ -379,7 +379,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTUNPININVALIDATE_TAG
 
 
 /*******************************************
-            DevmemIntCtxCreate          
+            DevmemIntCtxCreate
  *******************************************/
 
 /* Bridge in structure for DevmemIntCtxCreate */
@@ -399,7 +399,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTCTXCREATE_TAG
 
 
 /*******************************************
-            DevmemIntCtxDestroy          
+            DevmemIntCtxDestroy
  *******************************************/
 
 /* Bridge in structure for DevmemIntCtxDestroy */
@@ -416,7 +416,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTCTXDESTROY_TAG
 
 
 /*******************************************
-            DevmemIntHeapCreate          
+            DevmemIntHeapCreate
  *******************************************/
 
 /* Bridge in structure for DevmemIntHeapCreate */
@@ -437,7 +437,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTHEAPCREATE_TAG
 
 
 /*******************************************
-            DevmemIntHeapDestroy          
+            DevmemIntHeapDestroy
  *******************************************/
 
 /* Bridge in structure for DevmemIntHeapDestroy */
@@ -454,7 +454,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTHEAPDESTROY_TAG
 
 
 /*******************************************
-            DevmemIntMapPMR          
+            DevmemIntMapPMR
  *******************************************/
 
 /* Bridge in structure for DevmemIntMapPMR */
@@ -475,7 +475,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTMAPPMR_TAG
 
 
 /*******************************************
-            DevmemIntUnmapPMR          
+            DevmemIntUnmapPMR
  *******************************************/
 
 /* Bridge in structure for DevmemIntUnmapPMR */
@@ -492,7 +492,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTUNMAPPMR_TAG
 
 
 /*******************************************
-            DevmemIntReserveRange          
+            DevmemIntReserveRange
  *******************************************/
 
 /* Bridge in structure for DevmemIntReserveRange */
@@ -512,7 +512,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTRESERVERANGE_TAG
 
 
 /*******************************************
-            DevmemIntUnreserveRange          
+            DevmemIntUnreserveRange
  *******************************************/
 
 /* Bridge in structure for DevmemIntUnreserveRange */
@@ -529,7 +529,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTUNRESERVERANGE_TAG
 
 
 /*******************************************
-            ChangeSparseMem          
+            ChangeSparseMem
  *******************************************/
 
 /* Bridge in structure for ChangeSparseMem */
@@ -555,7 +555,7 @@ typedef struct PVRSRV_BRIDGE_OUT_CHANGESPARSEMEM_TAG
 
 
 /*******************************************
-            DevmemIntMapPages          
+            DevmemIntMapPages
  *******************************************/
 
 /* Bridge in structure for DevmemIntMapPages */
@@ -577,7 +577,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTMAPPAGES_TAG
 
 
 /*******************************************
-            DevmemIntUnmapPages          
+            DevmemIntUnmapPages
  *******************************************/
 
 /* Bridge in structure for DevmemIntUnmapPages */
@@ -596,7 +596,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMINTUNMAPPAGES_TAG
 
 
 /*******************************************
-            DevmemIsVDevAddrValid          
+            DevmemIsVDevAddrValid
  *******************************************/
 
 /* Bridge in structure for DevmemIsVDevAddrValid */
@@ -614,7 +614,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVMEMISVDEVADDRVALID_TAG
 
 
 /*******************************************
-            HeapCfgHeapConfigCount          
+            HeapCfgHeapConfigCount
  *******************************************/
 
 /* Bridge in structure for HeapCfgHeapConfigCount */
@@ -632,7 +632,7 @@ typedef struct PVRSRV_BRIDGE_OUT_HEAPCFGHEAPCONFIGCOUNT_TAG
 
 
 /*******************************************
-            HeapCfgHeapCount          
+            HeapCfgHeapCount
  *******************************************/
 
 /* Bridge in structure for HeapCfgHeapCount */
@@ -650,7 +650,7 @@ typedef struct PVRSRV_BRIDGE_OUT_HEAPCFGHEAPCOUNT_TAG
 
 
 /*******************************************
-            HeapCfgHeapConfigName          
+            HeapCfgHeapConfigName
  *******************************************/
 
 /* Bridge in structure for HeapCfgHeapConfigName */
@@ -671,7 +671,7 @@ typedef struct PVRSRV_BRIDGE_OUT_HEAPCFGHEAPCONFIGNAME_TAG
 
 
 /*******************************************
-            HeapCfgHeapDetails          
+            HeapCfgHeapDetails
  *******************************************/
 
 /* Bridge in structure for HeapCfgHeapDetails */
@@ -697,7 +697,7 @@ typedef struct PVRSRV_BRIDGE_OUT_HEAPCFGHEAPDETAILS_TAG
 
 
 /*******************************************
-            DevmemIntRegisterPFNotifyKM          
+            DevmemIntRegisterPFNotifyKM
  *******************************************/
 
 /* Bridge in structure for DevmemIntRegisterPFNotifyKM */

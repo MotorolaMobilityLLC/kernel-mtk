@@ -63,7 +63,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXCreateTransferContext          
+            RGXCreateTransferContext
  *******************************************/
 
 /* Bridge in structure for RGXCreateTransferContext */
@@ -85,7 +85,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXCREATETRANSFERCONTEXT_TAG
 
 
 /*******************************************
-            RGXDestroyTransferContext          
+            RGXDestroyTransferContext
  *******************************************/
 
 /* Bridge in structure for RGXDestroyTransferContext */
@@ -102,7 +102,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXDESTROYTRANSFERCONTEXT_TAG
 
 
 /*******************************************
-            RGXSubmitTransfer          
+            RGXSubmitTransfer
  *******************************************/
 
 /* Bridge in structure for RGXSubmitTransfer */
@@ -143,7 +143,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXSUBMITTRANSFER_TAG
 
 
 /*******************************************
-            RGXSetTransferContextPriority          
+            RGXSetTransferContextPriority
  *******************************************/
 
 /* Bridge in structure for RGXSetTransferContextPriority */

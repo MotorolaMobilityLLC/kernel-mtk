@@ -52,11 +52,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	 - page directory, PD
 	 - page table, PT (can be variable sized)
 	 - data page, DP (can be variable sized)
-    Note: PD and PC are fixed size and can't be larger than 
+    Note: PD and PC are fixed size and can't be larger than
            the native physical (CPU) page size
 	Shifts and AlignShift variables:
-	 - 'xxxShift' represent the number of bits a bitfield is shifted left from bit0 
-	 - 'xxxAlignShift' is used to convert a bitfield (based at bit0) into byte units 
+	 - 'xxxShift' represent the number of bits a bitfield is shifted left from bit0
+	 - 'xxxAlignShift' is used to convert a bitfield (based at bit0) into byte units
 	 	by applying a bit shift left by 'xxxAlignShift' bits
 */
 
@@ -249,7 +249,7 @@ typedef IMG_UINT32 MMU_PROTFLAGS_T;
 
 typedef struct _MMU_CONTEXT_ MMU_CONTEXT;
 
-struct _PVRSRV_DEVICE_NODE_; 
+struct _PVRSRV_DEVICE_NODE_;
 
 typedef struct _MMU_PAGESIZECONFIG_
 {

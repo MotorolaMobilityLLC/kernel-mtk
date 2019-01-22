@@ -60,7 +60,7 @@ HeapCfgHeapConfigCount(CONNECTION_DATA * psConnection,
 {
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
     *puiNumHeapConfigsOut = psDeviceNode->sDevMemoryInfo.uiNumHeapConfigs;
 
     return PVRSRV_OK;
@@ -98,7 +98,7 @@ HeapCfgHeapConfigName(CONNECTION_DATA * psConnection,
 
     OSSNPrintf(pszHeapConfigNameOut, uiHeapConfigNameBufSz, "%s", psDeviceNode->sDevMemoryInfo.psDeviceMemoryHeapConfigArray[uiHeapConfigIndex].pszName);
 
-    return PVRSRV_OK;    
+    return PVRSRV_OK;
 }
 
 PVRSRV_ERROR

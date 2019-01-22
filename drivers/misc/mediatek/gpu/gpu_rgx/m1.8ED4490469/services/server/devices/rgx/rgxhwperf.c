@@ -82,7 +82,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	RGXHWPerfCopyDataL1toL2
 */
 static IMG_UINT32 RGXHWPerfCopyDataL1toL2(IMG_HANDLE hHWPerfStream,
-										  IMG_BYTE   *pbFwBuffer, 
+										  IMG_BYTE   *pbFwBuffer,
 										  IMG_UINT32 ui32BytesExp)
 {
   	IMG_BYTE 	 *pbL2Buffer;
@@ -142,8 +142,8 @@ static IMG_UINT32 RGXHWPerfCopyDataL1toL2(IMG_HANDLE hHWPerfStream,
 #endif
 
 	/* Try submitting all data in one TL packet. */
-	eError = TLStreamReserve2( hHWPerfStream, 
-							   &pbL2Buffer, 
+	eError = TLStreamReserve2( hHWPerfStream,
+							   &pbL2Buffer,
 							   (size_t)ui32BytesExp, ui32BytesExpMin,
 							   &ui32L2BufFree);
 	if ( eError == PVRSRV_OK )
@@ -239,15 +239,15 @@ static IMG_UINT32 RGXHWPerfDataStore(PVRSRV_RGXDEV_INFO	*psDevInfo)
 #ifdef HWPERF_MISR_FUNC_DEBUG
 	IMG_UINT32			ui32BytesExpSum = 0;
 #endif
-	
+
 	PVR_DPF_ENTERED;
 
 	/* Caller should check this member is valid before calling */
 	PVR_ASSERT(psDevInfo->hHWPerfStream);
-	
+
  	/* Get a copy of the current
-	 *   read (first packet to read) 
-	 *   write (empty location for the next write to be inserted) 
+	 *   read (first packet to read)
+	 *   write (empty location for the next write to be inserted)
 	 *   WrapCount (size in bytes of the buffer at or past end)
 	 * indexes of the FW buffer */
 	ui32SrcRIdx = psRGXFWIfTraceBufCtl->ui32HWPerfRIdx;
@@ -284,8 +284,8 @@ static IMG_UINT32 RGXHWPerfDataStore(PVRSRV_RGXDEV_INFO	*psDevInfo)
 		/* No, buffer has wrapped and write position is behind read position */
 		else
 		{
-			/* Byte count equal to 
-			 *     number of bytes from read position to the end of the buffer, 
+			/* Byte count equal to
+			 *     number of bytes from read position to the end of the buffer,
 			 *   + data in the extra space in the end of the buffer. */
 			ui32BytesExp = ui32SrcWrapCount - ui32SrcRIdx;
 
@@ -316,7 +316,7 @@ static IMG_UINT32 RGXHWPerfDataStore(PVRSRV_RGXDEV_INFO	*psDevInfo)
 			 * wrapped data in the beginning of the array, assuming there is
 			 * any and the RIdx was wrapped. */
 			if (   (ui32BytesCopied == ui32BytesExp)
-			    && (ui32SrcWIdx > 0) 
+			    && (ui32SrcWIdx > 0)
 				&& (ui32SrcRIdx == 0) )
 			{
 				ui32BytesExp = ui32SrcWIdx;
@@ -364,10 +364,10 @@ PVRSRV_ERROR RGXHWPerfDataStoreCB(PVRSRV_DEVICE_NODE *psDevInfo)
 	psRgxDevInfo = psDevInfo->pvDevice;
 
 	/* Keep HWPerf resource init check and use of
-	 * resources atomic, they may not be freed during use 
+	 * resources atomic, they may not be freed during use
 	 */
 	OSLockAcquire(psRgxDevInfo->hHWPerfLock);
-	
+
 	if (psRgxDevInfo->hHWPerfStream != 0)
 	{
 		ui32BytesCopied = RGXHWPerfDataStore(psRgxDevInfo);
@@ -409,7 +409,7 @@ static PVRSRV_ERROR RGXHWPerfTLCB(IMG_HANDLE hStream,
 	{
 	case TL_SOURCECB_OP_CLIENT_EOS:
 		/* Keep HWPerf resource init check and use of
-		 * resources atomic, they may not be freed during use 
+		 * resources atomic, they may not be freed during use
 		 */
 		OSLockAcquire(psRgxDevInfo->hHWPerfLock);
 		if (psRgxDevInfo->hHWPerfStream != 0)
@@ -606,11 +606,11 @@ PVRSRV_ERROR RGXHWPerfInitOnDemandResources(void)
 	 * Size chosen to allow MISR to write an L1 sized packet and for the client
 	 * application/daemon to drain a L1 sized packet e.g. ~ 1.5*L1.
 	 */
-	ui32L2BufferSize = gpsRgxDevInfo->ui32RGXFWIfHWPerfBufSize + 
+	ui32L2BufferSize = gpsRgxDevInfo->ui32RGXFWIfHWPerfBufSize +
 	                       (gpsRgxDevInfo->ui32RGXFWIfHWPerfBufSize>>1);
 	eError = TLStreamCreate(&gpsRgxDevInfo->hHWPerfStream, PVRSRV_TL_HWPERF_RGX_FW_STREAM,
-					ui32L2BufferSize, 
-					TL_FLAG_RESERVE_DROP_NEWER | TL_FLAG_NO_SIGNAL_ON_COMMIT, 
+					ui32L2BufferSize,
+					TL_FLAG_RESERVE_DROP_NEWER | TL_FLAG_NO_SIGNAL_ON_COMMIT,
 					NULL, NULL,
 #if !defined(SUPPORT_TL_PROODUCER_CALLBACK)
 					NULL, NULL
@@ -624,7 +624,7 @@ PVRSRV_ERROR RGXHWPerfInitOnDemandResources(void)
 	PVR_UNREFERENCED_PARAMETER(ui32L2BufferSize);
 	PVR_UNREFERENCED_PARAMETER(RGXHWPerfTLCB);
 ui32L2BufferSize = 0;
-#endif 
+#endif
 
 	PVR_DPF((PVR_DBG_MESSAGE, "HWPerf buffer size in bytes: L1: %d  L2: %d",
 			gpsRgxDevInfo->ui32RGXFWIfHWPerfBufSize, ui32L2BufferSize));
@@ -637,7 +637,7 @@ e1: /* L2 buffer initialisation failures */
 #endif
 e0: /* L1 buffer initialisation failures */
 	RGXHWPerfL1BufferDeinit();
-	
+
 	PVR_DPF_RETURN_RC(eError);
 }
 
@@ -723,7 +723,7 @@ static PVRSRV_ERROR RGXHWPerfCtrlFwBuffer(const PVRSRV_DEVICE_NODE *psDeviceNode
 	sKccbCmd.uCmdData.sHWPerfCtrl.ui64Mask = ui64Mask;
 
 	/* Ask the FW to carry out the HWPerf configuration command */
-	eError = RGXScheduleCommand(psDeviceNode->pvDevice,	RGXFWIF_DM_GP, 
+	eError = RGXScheduleCommand(psDeviceNode->pvDevice,	RGXFWIF_DM_GP,
 								&sKccbCmd, sizeof(sKccbCmd), 0, PDUMP_FLAGS_CONTINUOUS);
 	if (eError != PVRSRV_OK)
 	{
@@ -935,12 +935,12 @@ PVRSRV_ERROR PVRSRVRGXConfigEnableHWPerfCountersKM(
 	sKccbCmd.uCmdData.sHWPerfCfgEnableBlks.ui32NumBlocks = ui32ArrayLen;
 
 	eError = DevmemFwAllocate(psDeviceNode->pvDevice,
-			sizeof(RGX_HWPERF_CONFIG_CNTBLK)*ui32ArrayLen, 
+			sizeof(RGX_HWPERF_CONFIG_CNTBLK)*ui32ArrayLen,
 			PVRSRV_MEMALLOCFLAG_DEVICE_FLAG(PMMETA_PROTECT) |
-									  PVRSRV_MEMALLOCFLAG_GPU_READABLE | 
+									  PVRSRV_MEMALLOCFLAG_GPU_READABLE |
 									  PVRSRV_MEMALLOCFLAG_GPU_WRITEABLE |
 									  PVRSRV_MEMALLOCFLAG_CPU_READABLE |
-									  PVRSRV_MEMALLOCFLAG_KERNEL_CPU_MAPPABLE | 
+									  PVRSRV_MEMALLOCFLAG_KERNEL_CPU_MAPPABLE |
 									  PVRSRV_MEMALLOCFLAG_UNCACHED |
 									  PVRSRV_MEMALLOCFLAG_ZERO_ON_ALLOC,
 			"FwHWPerfCountersConfigBlock",
@@ -1100,12 +1100,12 @@ PVRSRV_ERROR PVRSRVRGXConfigCustomCountersKM(
 	if (psFwSelectCntrsMemDesc) DevmemReleaseCpuVirtAddr(psFwSelectCntrsMemDesc);
 
 	fail1:
-	if (psFwSelectCntrsMemDesc) 
+	if (psFwSelectCntrsMemDesc)
 	{
 		RGXUnsetFirmwareAddress(psFwSelectCntrsMemDesc);
 		DevmemFwFree(psDeviceNode->pvDevice, psFwSelectCntrsMemDesc);
 	}
-	
+
 	PVR_DPF_RETURN_RC(eError);
 }
 /*
@@ -1251,7 +1251,7 @@ PVRSRV_ERROR RGXHWPerfHostInitOnDemandResources(void)
 	        TL_FLAG_RESERVE_DROP_NEWER, _HWPerfHostOnConnectCB, NULL, NULL,
 	        NULL);
 	PVR_LOGG_IF_ERROR(eError, "TLStreamCreate", error_stream_create);
-	
+
 	PVR_DPF((DBGPRIV_MESSAGE, "HWPerf Host buffer size is %uKB",
 	        gpsRgxDevInfo->ui32HWPerfHostBufSize));
 
@@ -1937,7 +1937,7 @@ PVRSRV_ERROR PVRGpuTraceEnabledSet(IMG_BOOL bNewValue)
 {
 	PVRSRV_ERROR eError = PVRSRV_OK;
 
-	/* This entry point from DebugFS must take the global 
+	/* This entry point from DebugFS must take the global
 	 * bridge lock at this outer level of the stack before calling
 	 * into the RGX part of the driver which can lead to RGX
 	 * device data changes and communication with the FW which
@@ -2148,7 +2148,7 @@ static IMG_BOOL ValidAndEmitFTraceEvent(PVRSRV_RGXDEV_INFO *psDevInfo,
 	else
 	{
 		/* this ID belongs to range 1, so first index in range 1 and skip number of slots used up for range 0 */
-		ui32HwEventTypeIndex = (eType - RGX_HWPERF_HW_EVENT_RANGE1_FIRST_TYPE) + 
+		ui32HwEventTypeIndex = (eType - RGX_HWPERF_HW_EVENT_RANGE1_FIRST_TYPE) +
 		                       (RGX_HWPERF_HW_EVENT_RANGE0_LAST_TYPE - RGX_HWPERF_FW_EVENT_RANGE_FIRST_TYPE + 1);
 	}
 
@@ -2910,7 +2910,7 @@ PVRSRV_ERROR RGXHWPerfGetFilter(
 
 	/* No need to take hHWPerfLock here since we are only reading data
 	 * from always existing integers to return to debugfs which is an
-	 * atomic operation. 
+	 * atomic operation.
 	 */
 	switch (eStreamId) {
 		case RGX_HWPERF_STREAM_ID0_FW:

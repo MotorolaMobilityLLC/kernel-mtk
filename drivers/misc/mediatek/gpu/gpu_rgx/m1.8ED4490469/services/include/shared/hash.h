@@ -74,7 +74,7 @@ typedef PVRSRV_ERROR (*HASH_pfnCallback) (
                 uintptr_t arrays.
 @Input          uKeySize     The size of the hash key, in bytes.
 @Input          pKey         A pointer to the key to hash.
-@Input          uHashTabLen  The length of the hash table. 
+@Input          uHashTabLen  The length of the hash table.
 @Return         The hash value.
 */ /**************************************************************************/
 IMG_UINT32 HASH_Func_Default (size_t uKeySize, void *pKey, IMG_UINT32 uHashTabLen);

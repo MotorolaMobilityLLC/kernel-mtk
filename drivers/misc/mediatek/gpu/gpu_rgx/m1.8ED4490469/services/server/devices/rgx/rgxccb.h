@@ -68,7 +68,7 @@ typedef struct _RGX_CCB_CMD_HELPER_DATA_ {
 	RGX_CLIENT_CCB  			*psClientCCB;
 	IMG_CHAR 					*pszCommandName;
 	IMG_UINT32 					ui32PDumpFlags;
-	
+
 	IMG_UINT32					ui32ClientFenceCount;
 	PRGXFWIF_UFO_ADDR			*pauiFenceUFOAddress;
 	IMG_UINT32					*paui32FenceValue;
@@ -79,7 +79,7 @@ typedef struct _RGX_CCB_CMD_HELPER_DATA_ {
 	IMG_UINT32					ui32ServerSyncCount;
 	IMG_UINT32					*paui32ServerSyncFlags;
 	SERVER_SYNC_PRIMITIVE		**papsServerSyncs;
-	
+
 	RGXFWIF_CCB_CMD_TYPE		eType;
 	IMG_UINT32					ui32CmdSize;
 	IMG_UINT8					*pui8DMCmd;
@@ -142,7 +142,7 @@ typedef enum _RGX_CCB_REQUESTOR_TYPE_
 #define CONSTRUCT_ENUM(req) REQ_TYPE_##req,
 	RGX_CCB_REQUESTORS (CONSTRUCT_ENUM)
 #undef CONSTRUCT_ENUM
-	
+
 	/* should always be at the end */
 	REQ_TYPE_TOTAL_COUNT,
 } RGX_CCB_REQUESTOR_TYPE;

@@ -46,7 +46,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 #include "devicemem_heapcfg.h"
-#include "mmu_common.h"	
+#include "mmu_common.h"
 #include "ra.h"  		/* RA_ARENA */
 #include "pvrsrv_device.h"
 #include "srvkm.h"
@@ -323,7 +323,7 @@ typedef struct _PVRSRV_DEVICE_NODE_
 
 	struct _PVRSRV_DEVICE_NODE_	*psNext;
 	struct _PVRSRV_DEVICE_NODE_	**ppsThis;
-	
+
 	/* Functions for notification about memory contexts */
 	PVRSRV_ERROR			(*pfnRegisterMemoryContext)(struct _PVRSRV_DEVICE_NODE_	*psDeviceNode,
 														MMU_CONTEXT					*psMMUContext,
@@ -384,7 +384,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVDevInitCompatCheck(PVRSRV_DEVICE_NODE *psDeviceN
 
 PVRSRV_ERROR IMG_CALLCONV RGXClientConnectCompatCheck_ClientAgainstFW(PVRSRV_DEVICE_NODE * psDeviceNode, IMG_UINT32 ui32ClientBuildOptions);
 
-	
+
 #endif /* __DEVICE_H__ */
 
 /******************************************************************************

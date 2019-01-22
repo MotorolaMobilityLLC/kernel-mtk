@@ -136,7 +136,7 @@ PVRSRV_ERROR PVRSRVRGXCreateComputeContextKM(CONNECTION_DATA			*psConnection,
 		goto fail_contextsuspendalloc;
 	}
 
-	/* 
+	/*
 	 * Create the FW framework buffer
 	 */
 	eError = PVRSRVRGXFrameworkCreateKM(psDeviceNode,
@@ -159,7 +159,7 @@ PVRSRV_ERROR PVRSRVRGXCreateComputeContextKM(CONNECTION_DATA			*psConnection,
 				eError));
 		goto fail_frameworkcopy;
 	}
-	
+
 	sInfo.psFWFrameworkMemDesc = psComputeContext->psFWFrameworkMemDesc;
 	sInfo.psMCUFenceAddr = &sMCUFenceAddr;
 
@@ -358,7 +358,7 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 	                          & pPreAddr,
 	                          & pPostAddr,
 	                          & pRMWUFOAddr);
-	
+
 #if defined(SUPPORT_NATIVE_FENCE_SYNC)
 	if (i32CheckFenceFD >= 0 || i32UpdateTimelineFD >= 0)
 	{
@@ -412,7 +412,7 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 		goto fail_cmdinit;
 	}
 
-	eError = RGXCmdHelperAcquireCmdCCB(IMG_ARR_NUM_ELEMS(asCmdHelperData), 
+	eError = RGXCmdHelperAcquireCmdCCB(IMG_ARR_NUM_ELEMS(asCmdHelperData),
 	                                   asCmdHelperData);
 	if (eError != PVRSRV_OK)
 	{
@@ -475,7 +475,7 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 		}
 		OSWaitus(MAX_HW_TIME_US/WAIT_TRY_COUNT);
 	} END_LOOP_UNTIL_TIMEOUT();
-	
+
 	if (eError2 != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "PVRSRVRGXKickCDMKM failed to schedule kernel CCB command. (0x%x)", eError));
@@ -496,7 +496,7 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 	{
 		goto fail_cmdaquire;
 	}
-	
+
 #if defined(SUPPORT_NATIVE_FENCE_SYNC)
 	if (i32UpdateTimelineFD >= 0)
 	{
@@ -510,7 +510,7 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 			/* If we fail here, we cannot rollback the syncs as the hw already
 			 * has references to resources they may be protecting in the kick
 			 * so fallthrough */
-	
+
 			eError = PVRSRV_ERROR_INVALID_PARAMS;
 			goto fail_cmdaquire;
 		}
@@ -659,7 +659,7 @@ PVRSRV_ERROR PVRSRVRGXGetLastComputeContextResetReasonKM(RGX_SERVER_COMPUTE_CONT
 	PVR_ASSERT(psComputeContext != NULL);
 	PVR_ASSERT(peLastResetReason != NULL);
 	PVR_ASSERT(pui32LastResetJobRef != NULL);
-	
+
 	*peLastResetReason = FWCommonContextGetLastResetReason(psComputeContext->psServerCommonContext,
 	                                                       pui32LastResetJobRef);
 

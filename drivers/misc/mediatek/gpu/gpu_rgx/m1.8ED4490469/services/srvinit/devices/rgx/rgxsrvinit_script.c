@@ -253,7 +253,7 @@ static IMG_BOOL ScriptPrepareReadMetaRegThroughSP(RGX_SCRIPT_BUILD *psScript,
 	                             RGX_CR_META_SP_MSLVCTRL1_READY_EN |
 	                             RGX_CR_META_SP_MSLVCTRL1_GBLPORT_IDLE_EN);
 	if (!bCmdAdded) return IMG_FALSE;
-	
+
 	/* Issue a Read */
 	bCmdAdded = ScriptWriteRGXReg(psScript,
 	                              RGX_CR_META_SP_MSLVCTRL0,

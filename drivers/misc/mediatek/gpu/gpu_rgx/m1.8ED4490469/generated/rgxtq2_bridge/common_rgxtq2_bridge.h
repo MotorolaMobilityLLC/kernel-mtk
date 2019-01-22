@@ -64,7 +64,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXTDMCreateTransferContext          
+            RGXTDMCreateTransferContext
  *******************************************/
 
 /* Bridge in structure for RGXTDMCreateTransferContext */
@@ -86,7 +86,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXTDMCREATETRANSFERCONTEXT_TAG
 
 
 /*******************************************
-            RGXTDMDestroyTransferContext          
+            RGXTDMDestroyTransferContext
  *******************************************/
 
 /* Bridge in structure for RGXTDMDestroyTransferContext */
@@ -103,7 +103,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXTDMDESTROYTRANSFERCONTEXT_TAG
 
 
 /*******************************************
-            RGXTDMSubmitTransfer          
+            RGXTDMSubmitTransfer
  *******************************************/
 
 /* Bridge in structure for RGXTDMSubmitTransfer */
@@ -143,7 +143,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXTDMSUBMITTRANSFER_TAG
 
 
 /*******************************************
-            RGXTDMSetTransferContextPriority          
+            RGXTDMSetTransferContextPriority
  *******************************************/
 
 /* Bridge in structure for RGXTDMSetTransferContextPriority */
@@ -161,7 +161,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXTDMSETTRANSFERCONTEXTPRIORITY_TAG
 
 
 /*******************************************
-            RGXTDMNotifyWriteOffsetUpdate          
+            RGXTDMNotifyWriteOffsetUpdate
  *******************************************/
 
 /* Bridge in structure for RGXTDMNotifyWriteOffsetUpdate */

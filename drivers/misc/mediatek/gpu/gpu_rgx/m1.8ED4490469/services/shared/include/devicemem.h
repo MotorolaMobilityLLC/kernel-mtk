@@ -208,7 +208,7 @@ DevmemCreateContext(SHARED_DEV_CONNECTION hDevConnection,
 
 /*
  * DevmemAcquireDevPrivData()
- * 
+ *
  * Acquire the device private data for this memory context
  */
 PVRSRV_ERROR
@@ -217,7 +217,7 @@ DevmemAcquireDevPrivData(DEVMEM_CONTEXT *psCtx,
 
 /*
  * DevmemReleaseDevPrivData()
- * 
+ *
  * Release the device private data for this memory context
  */
 PVRSRV_ERROR
@@ -311,7 +311,7 @@ DevmemExportalignAdjustSizeAndAlign(IMG_UINT32 uiLog2Quantum,
  * that allocates the "suballocation".  The resulting allocation will
  * be mapped into GPU virtual memory and the physical memory to back
  * it will exist, by the time this call successfully completes.
- * 
+ *
  * The size must be a positive integer multiple of the alignment.
  * (i.e. the aligment specifies the alignment of both the start and
  * the end of the resulting allocation.)
@@ -387,7 +387,7 @@ DevmemFree(DEVMEM_MEMDESC *psMemDesc);
 	DevmemMapToDevice:
 
 	Map an allocation to the device it was allocated from.
-	This function _must_ be called before any call to 
+	This function _must_ be called before any call to
 	DevmemAcquireDevVirtAddr is made as it binds the allocation
 	to the heap.
 	DevmemReleaseDevVirtAddr is used to release the reference
@@ -481,7 +481,7 @@ DevmemImport(SHARED_DEV_CONNECTION hDevConnection,
 
 /*
  * DevmemMakeLocalImportHandle()
- * 
+ *
  * This is a "special case" function for making a server export cookie
  * which went through the direct bridge into an export cookie that can
  * be passed through the client bridge.
@@ -493,7 +493,7 @@ DevmemMakeLocalImportHandle(SHARED_DEV_CONNECTION hDevConnection,
 
 /*
  * DevmemUnmakeLocalImportHandle()
- * 
+ *
  * Free any resource associated with the Make operation
  */
 PVRSRV_ERROR

@@ -580,14 +580,14 @@ X(65535, RGXFW_GROUP_NULL, RGXFW_SF_LAST, "You should not use this string\n", 15
 /*  The symbolic names found in the table above are assigned an ui32 value of
  *  the following format:
  *  31 30 28 27       20   19  16    15  12      11            0   bits
- *  -   ---   ---- ----     ----      ----        ---- ---- ----   
+ *  -   ---   ---- ----     ----      ----        ---- ---- ----
  *     0-11: id number
  *    12-15: group id number
  *    16-19: number of parameters
  *    20-27: unused
  *    28-30: active: identify SF packet, otherwise regular int32
  *       31: reserved for signed/unsigned compatibility
- *   
+ *
  *   The following macro assigns those values to the enum generated SF ids list.
  */
 #define RGXFW_LOG_IDMARKER			(0x70000000)
@@ -596,9 +596,9 @@ X(65535, RGXFW_GROUP_NULL, RGXFW_SF_LAST, "You should not use this string\n", 15
 #define RGXFW_LOG_IDMASK			(0xFFF00000)
 #define RGXFW_LOG_VALIDID(I)		(((I) & RGXFW_LOG_IDMASK) == RGXFW_LOG_IDMARKER)
 
-typedef enum RGXFW_LOG_SFids { 
+typedef enum RGXFW_LOG_SFids {
 #define X(a, b, c, d, e) c = RGXFW_LOG_CREATESFID(a,b,e),
-	RGXFW_LOG_SFIDLIST 
+	RGXFW_LOG_SFIDLIST
 #undef X
 } RGXFW_LOG_SFids;
 

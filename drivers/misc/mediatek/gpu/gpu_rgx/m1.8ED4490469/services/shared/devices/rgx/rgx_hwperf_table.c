@@ -71,8 +71,8 @@ static IMG_BOOL rgxfw_hwperf_pow_st_direct(RGX_HWPERF_CNTBLK_ID eBlkType, IMG_UI
 {
 	PVR_UNREFERENCED_PARAMETER(eBlkType);
 	PVR_UNREFERENCED_PARAMETER(ui8UnitId);
-	
-	/* Avoid unused function warning for S6 BVNCs */	
+
+	/* Avoid unused function warning for S6 BVNCs */
 	PVR_UNREFERENCED_PARAMETER(rgxfw_hwperf_pow_st_true);
 
 #if defined(RGX_FEATURE_XT_TOP_INFRASTRUCTURE)
@@ -151,12 +151,12 @@ static IMG_BOOL rgxfw_hwperf_pow_st_indirect(RGX_HWPERF_CNTBLK_ID eBlkType, IMG_
 #  define rgxfw_hwperf_pow_st_indirect rgxfw_hwperf_pow_st_true
 #endif /* RGX_FIRMWARE */
 
-/* Currently there is no power island control in the firmware so 
+/* Currently there is no power island control in the firmware so
  * we currently assume these blocks are always powered. */
 #  define rgxfw_hwperf_pow_st_gandalf        rgxfw_hwperf_pow_st_true
 
 /* A direct block only in S7, always powered as it contains Garten like
- * Sidekick (S6) and Tornado (S6XT). 
+ * Sidekick (S6) and Tornado (S6XT).
  */
 #	define rgxfw_hwperf_pow_st_jones          rgxfw_hwperf_pow_st_true
 

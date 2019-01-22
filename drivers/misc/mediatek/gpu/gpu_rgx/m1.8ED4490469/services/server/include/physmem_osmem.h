@@ -66,18 +66,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /*************************************************************************/ /*!
 @Function       PhysmemNewOSRamBackedPMR
-@Description    Rogue Services will call this function to allocate GPU device 
-                memory from the PMR factory supported by the OS DDK port. This 
-                factory typically obtains physical memory from the kernel/OS 
-                API that allocates memory from the default heap of shared system 
-                memory available on the platform. The allocated memory must be 
-                page-aligned and be a whole number of pages. 
-                After allocating the required memory, the implementation must 
-                then call PMRCreatePMR() to obtain the PMR structure that 
+@Description    Rogue Services will call this function to allocate GPU device
+                memory from the PMR factory supported by the OS DDK port. This
+                factory typically obtains physical memory from the kernel/OS
+                API that allocates memory from the default heap of shared system
+                memory available on the platform. The allocated memory must be
+                page-aligned and be a whole number of pages.
+                After allocating the required memory, the implementation must
+                then call PMRCreatePMR() to obtain the PMR structure that
                 describes this allocation to the upper layers of the Services.
-                memory management sub-system. 
-                NB. Implementation of this function is mandatory. If shared 
-                system memory is not to be used in the OS port then the 
+                memory management sub-system.
+                NB. Implementation of this function is mandatory. If shared
+                system memory is not to be used in the OS port then the
                 implementation must return PVRSRV_ERROR_NOT_SUPPORTED.
 
 @Input          psDevNode        the device node

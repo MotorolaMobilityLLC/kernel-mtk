@@ -111,7 +111,7 @@ extern "C" {
 #include "common_synctracking_bridge.h"
 #endif
 
-/* 
+/*
  * Bridge Cmd Ids
  */
 
@@ -128,7 +128,7 @@ extern "C" {
  * is used in the macro definitions below to make PVRSRV_BRIDGE_FEATURE_*
  * take up no space in the dispatch table if SUPPORT_FEATURE is disabled.
  *
- * Note however that a bridge always defines PVRSRV_BRIDGE_FEATURE, even where 
+ * Note however that a bridge always defines PVRSRV_BRIDGE_FEATURE, even where
  * the feature is not enabled (each bridge group retains its own ioctl number).
  */
 
@@ -279,7 +279,7 @@ extern "C" {
 #define PVRSRV_BRIDGE_VALIDATION_DISPATCH_FIRST (PVRSRV_BRIDGE_RI_DISPATCH_LAST + 1)
 #define PVRSRV_BRIDGE_VALIDATION_DISPATCH_LAST  (PVRSRV_BRIDGE_VALIDATION_DISPATCH_FIRST + PVRSRV_BRIDGE_VALIDATION_CMD_LAST)
 #else
-#define PVRSRV_BRIDGE_VALIDATION_DISPATCH_FIRST 0 
+#define PVRSRV_BRIDGE_VALIDATION_DISPATCH_FIRST 0
 #define PVRSRV_BRIDGE_VALIDATION_DISPATCH_LAST  (PVRSRV_BRIDGE_RI_DISPATCH_LAST)
 #endif
 

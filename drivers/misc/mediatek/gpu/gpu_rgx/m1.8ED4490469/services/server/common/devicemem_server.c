@@ -91,7 +91,7 @@ struct _DEVMEMINT_CTX_
 	DLLIST_NODE sPageFaultNotifyListElem;
 };
 
-struct _DEVMEMINT_CTX_EXPORT_ 
+struct _DEVMEMINT_CTX_EXPORT_
 {
 	DEVMEMINT_CTX *psDevmemCtx;
 	PMR *psPMR;
@@ -173,7 +173,7 @@ static INLINE void _DevmemIntCtxRelease(DEVMEMINT_CTX *psDevmemCtx)
 			psDevNode->pfnUnregisterMemoryContext(psDevmemCtx->hPrivData);
 		}
 	    MMU_ContextDestroy(psDevmemCtx->psMMUContext);
-	
+
 		PVR_DPF((PVR_DBG_MESSAGE, "%s: Freed memory context %p", __FUNCTION__, psDevmemCtx));
 		OSFreeMem(psDevmemCtx);
 	}
@@ -1063,7 +1063,7 @@ DevmemIntChangeSparse(DEVMEMINT_HEAP *psDevmemHeap,
 					goto e0;
 				}
 			}
-			
+
 			/* Currently only used for debug */
 			if (SPARSE_REMAP_MEM == (uiSparseFlags & SPARSE_REMAP_MEM))
 			{
@@ -1112,7 +1112,7 @@ DevmemIntChangeSparse(DEVMEMINT_HEAP *psDevmemHeap,
 	return PVRSRV_OK;
 
 e0:
-	return eError;	
+	return eError;
 }
 
 /*************************************************************************/ /*!
@@ -1517,7 +1517,7 @@ DevmemIntPDumpBitmap(CONNECTION_DATA * psConnection,
 	PVRSRV_ERROR eError;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	eError = MMU_AcquirePDumpMMUContext(psDevMemContext->psMMUContext, &ui32ContextID);
 
 	if (eError != PVRSRV_OK)

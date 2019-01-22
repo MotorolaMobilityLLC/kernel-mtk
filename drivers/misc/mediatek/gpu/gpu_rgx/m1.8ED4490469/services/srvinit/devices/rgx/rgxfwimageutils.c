@@ -877,7 +877,7 @@ PVRSRV_ERROR RGXProcessFWImage(const void           *hPrivate,
 			                     psFWDataDevVAddrBase,
 			                     &pui32BootConf);
 		}
-	
+
 		/* Process FW image data stream */
 		eError = ProcessLDRCommandStream(hPrivate,
 		                                 pbRGXFirmware,

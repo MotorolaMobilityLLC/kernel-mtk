@@ -60,7 +60,7 @@ typedef struct _DLLIST_NODE_	*PDLLIST_NODE;
  * clients may need to create a mirror the structure definition if it needs
  * to be used in a structure shared between host and device. Consider such
  * clients if any changes are made to this structure.
- */ 
+ */
 typedef struct _DLLIST_NODE_
 {
 	struct _DLLIST_NODE_	*psPrevNode;
@@ -104,7 +104,7 @@ void dllist_init(PDLLIST_NODE psListHead)
 static INLINE
 IMG_BOOL dllist_is_empty(PDLLIST_NODE psListHead)
 {
-	return ((psListHead->psPrevNode == psListHead) 
+	return ((psListHead->psPrevNode == psListHead)
 				&& (psListHead->psNextNode == psListHead));
 }
 
@@ -162,7 +162,7 @@ void dllist_add_to_tail(PDLLIST_NODE psListHead, PDLLIST_NODE psNewNode)
 /*************************************************************************/ /*!
 @Function       dllist_node_is_in_list
 
-@Description    Returns IMG_TRUE if psNode is in a list 
+@Description    Returns IMG_TRUE if psNode is in a list
 
 @Input          psNode             List node
 
@@ -196,7 +196,7 @@ PDLLIST_NODE dllist_get_next_node(PDLLIST_NODE psListHead)
 	{
 		return psListHead->psNextNode;
 	}
-} 
+}
 
 
 /*************************************************************************/ /*!

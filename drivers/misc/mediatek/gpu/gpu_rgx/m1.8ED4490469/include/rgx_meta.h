@@ -53,7 +53,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /************************************************************************
-* META registers and MACROS 
+* META registers and MACROS
 ************************************************************************/
 #define	META_CR_CTRLREG_BASE(T)					(0x04800000 + 0x1000*(T))
 
@@ -142,7 +142,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 * META LDR Format
 ************************************************************************/
 /* Block header structure */
-typedef struct 
+typedef struct
 {
 	IMG_UINT32	ui32DevID;
 	IMG_UINT32	ui32SLCode;
@@ -153,7 +153,7 @@ typedef struct
 } RGX_META_LDR_BLOCK_HDR;
 
 /* High level data stream block  structure */
-typedef struct 
+typedef struct
 {
 	IMG_UINT16	ui16Cmd;
 	IMG_UINT16	ui16Length;
@@ -237,8 +237,8 @@ typedef struct
 #define RGXFW_SEGMMU_META_DM_ID			(0x7)
 
 #if defined(HW_ERN_45914)
-/* SLC caching strategy is emitted through the segment MMU. All the segments configured 
-   through this macro are CACHED in the SLC. The interface has been kept the same to 
+/* SLC caching strategy is emitted through the segment MMU. All the segments configured
+   through this macro are CACHED in the SLC. The interface has been kept the same to
    simplify the code changes. The bifdm argument is ignored (no longer relevant). */
 #if defined(HW_ERN_49144)
 #define RGXFW_SEGMMU_OUTADDR_TOP_S7(pers, coheren, mmu_ctx)     ( (((IMG_UINT64) ((pers)    & 0x3))  << 50) | \
@@ -266,7 +266,7 @@ typedef struct
 #endif
 
 /* META segments have 4kB minimum size */
-#define RGXFW_SEGMMU_ALIGN			(0x1000) 
+#define RGXFW_SEGMMU_ALIGN			(0x1000)
 
 /* Segmented MMU registers (n = segment id) */
 #define META_CR_MMCU_SEGMENTn_BASE(n)			(0x04850000 + (n)*0x10)
@@ -302,11 +302,11 @@ typedef struct
 #define META_MMU_CONTEXT_MAPPING        (0x1) /* fw data */
 #define META_MMU_CONTEXT_MAPPING_CODE   (0x0) /* fw code */
 
-#else 
+#else
 
 #define META_MMU_CONTEXT_MAPPING       (0x0)
 
-#endif 
+#endif
 
 /************************************************************************
 * RGX FW Bootloader defaults

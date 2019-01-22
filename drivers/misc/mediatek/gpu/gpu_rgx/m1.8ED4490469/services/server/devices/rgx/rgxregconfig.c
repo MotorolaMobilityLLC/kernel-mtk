@@ -52,7 +52,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 PVRSRV_ERROR PVRSRVRGXSetRegConfigTypeKM(CONNECTION_DATA * psDevConnection,
                                          PVRSRV_DEVICE_NODE	 *psDeviceNode,
                                          IMG_UINT8           ui8RegCfgType)
-{	
+{
 #if defined(SUPPORT_USER_REGISTER_CONFIGURATION)
 	PVRSRV_ERROR          eError       = PVRSRV_OK;
 	PVRSRV_RGXDEV_INFO 	  *psDevInfo   = psDeviceNode->pvDevice;
@@ -63,7 +63,7 @@ PVRSRV_ERROR PVRSRVRGXSetRegConfigTypeKM(CONNECTION_DATA * psDevConnection,
 
 	if (eRegCfgType < psRegCfg->eRegCfgTypeToPush)
 	{
-		PVR_DPF((PVR_DBG_ERROR, 
+		PVR_DPF((PVR_DBG_ERROR,
 		         "PVRSRVRGXSetRegConfigTypeKM: Register configuration requested (%d) is not valid since it has to be at least %d."
 				 " Configurations of different types need to go in order",
 				 eRegCfgType,
@@ -76,7 +76,7 @@ PVRSRV_ERROR PVRSRVRGXSetRegConfigTypeKM(CONNECTION_DATA * psDevConnection,
 	return eError;
 #else
 	PVR_UNREFERENCED_PARAMETER(psDevConnection);
-		
+
 	PVR_DPF((PVR_DBG_ERROR, "PVRSRVRGXSetRegConfigTypeKM: Feature disabled. Compile with SUPPORT_USER_REGISTER_CONFIGURATION"));
 	return PVRSRV_ERROR_FEATURE_DISABLED;
 #endif
@@ -95,7 +95,7 @@ PVRSRV_ERROR PVRSRVRGXAddRegConfigKM(CONNECTION_DATA * psConnection,
 	RGX_REG_CONFIG          *psRegCfg = &psDevInfo->sRegCongfig;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	if (psRegCfg->bEnabled)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "PVRSRVRGXAddRegConfigKM: Cannot add record whilst register configuration active."));
@@ -131,7 +131,7 @@ PVRSRV_ERROR PVRSRVRGXAddRegConfigKM(CONNECTION_DATA * psConnection,
 	return eError;
 #else
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	PVR_DPF((PVR_DBG_ERROR, "PVRSRVRGXSetRegConfigPIKM: Feature disabled. Compile with SUPPORT_USER_REGISTER_CONFIGURATION"));
 	return PVRSRV_ERROR_FEATURE_DISABLED;
 #endif
@@ -147,7 +147,7 @@ PVRSRV_ERROR PVRSRVRGXClearRegConfigKM(CONNECTION_DATA * psConnection,
 	RGX_REG_CONFIG          *psRegCfg = &psDevInfo->sRegCongfig;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	if (psRegCfg->bEnabled)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "PVRSRVRGXClearRegConfigKM: Attempt to clear register configuration whilst active."));
@@ -170,14 +170,14 @@ PVRSRV_ERROR PVRSRVRGXClearRegConfigKM(CONNECTION_DATA * psConnection,
 	}
 
 	psRegCfg->ui32NumRegRecords = 0;
-	psRegCfg->eRegCfgTypeToPush = RGXFWIF_REG_CFG_TYPE_PWR_ON; 
+	psRegCfg->eRegCfgTypeToPush = RGXFWIF_REG_CFG_TYPE_PWR_ON;
 
 	return eError;
 #else
 	PVR_DPF((PVR_DBG_ERROR, "PVRSRVRGXClearRegConfigKM: Feature disabled. Compile with SUPPORT_USER_REGISTER_CONFIGURATION"));
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	return PVRSRV_ERROR_FEATURE_DISABLED;
 #endif
 }
@@ -192,7 +192,7 @@ PVRSRV_ERROR PVRSRVRGXEnableRegConfigKM(CONNECTION_DATA * psConnection,
 	RGX_REG_CONFIG          *psRegCfg = &psDevInfo->sRegCongfig;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	sRegCfgCmd.eCmdType = RGXFWIF_KCCB_CMD_REGCONFIG;
 	sRegCfgCmd.uCmdData.sRegConfigData.eCmdType = RGXFWIF_REGCFG_CMD_ENABLE;
 
@@ -213,7 +213,7 @@ PVRSRV_ERROR PVRSRVRGXEnableRegConfigKM(CONNECTION_DATA * psConnection,
 	return eError;
 #else
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	PVR_DPF((PVR_DBG_ERROR, "PVRSRVRGXEnableRegConfigKM: Feature disabled. Compile with SUPPORT_USER_REGISTER_CONFIGURATION"));
 	return PVRSRV_ERROR_FEATURE_DISABLED;
 #endif
@@ -227,9 +227,9 @@ PVRSRV_ERROR PVRSRVRGXDisableRegConfigKM(CONNECTION_DATA * psConnection,
 	RGXFWIF_KCCB_CMD 	sRegCfgCmd;
 	PVRSRV_RGXDEV_INFO 	*psDevInfo = psDeviceNode->pvDevice;
 	RGX_REG_CONFIG          *psRegCfg = &psDevInfo->sRegCongfig;
-	
+
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	sRegCfgCmd.eCmdType = RGXFWIF_KCCB_CMD_REGCONFIG;
 	sRegCfgCmd.uCmdData.sRegConfigData.eCmdType = RGXFWIF_REGCFG_CMD_DISABLE;
 
@@ -251,7 +251,7 @@ PVRSRV_ERROR PVRSRVRGXDisableRegConfigKM(CONNECTION_DATA * psConnection,
 #else
 	PVR_DPF((PVR_DBG_ERROR, "PVRSRVRGXDisableRegConfigKM: Feature disabled. Compile with SUPPORT_USER_REGISTER_CONFIGURATION"));
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-		
+
 	return PVRSRV_ERROR_FEATURE_DISABLED;
 #endif
 }

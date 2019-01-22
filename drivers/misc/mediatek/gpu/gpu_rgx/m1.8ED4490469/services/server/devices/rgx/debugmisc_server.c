@@ -63,7 +63,7 @@ PVRSRVDebugMiscSLCSetBypassStateKM(
 	PVRSRV_ERROR  eError = PVRSRV_OK;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	sSLCBPCtlCmd.eCmdType = RGXFWIF_KCCB_CMD_SLCBPCTL;
 	sSLCBPCtlCmd.uCmdData.sSLCBPCtlData.bSetBypassed = bSetBypassed;
 	sSLCBPCtlCmd.uCmdData.sSLCBPCtlData.uiFlags = uiFlags;
@@ -136,7 +136,7 @@ PVRSRVRGXDebugMiscSetFWLogKM(
 	PVRSRV_RGXDEV_INFO* psDevInfo = psDeviceNode->pvDevice;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	/* check log type is valid */
 	if (ui32RGXFWLogType & ~RGXFWIF_LOG_TYPE_MASK)
 	{
@@ -192,7 +192,7 @@ PVRSRVRGXDebugMiscSetHCSDeadlineKM(
 {
 	PVRSRV_RGXDEV_INFO* psDevInfo = psDeviceNode->pvDevice;
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	return RGXFWSetHCSDeadline(psDevInfo, ui32HCSDeadlineMS);
 }
 
@@ -236,7 +236,7 @@ PVRSRVRGXDebugMiscDumpFreelistPageListKM(
 	DLLIST_NODE *psNode, *psNext;
 
 	PVR_UNREFERENCED_PARAMETER(psConnection);
-	
+
 	if (dllist_is_empty(&psDevInfo->sFreeListHead))
 	{
 		return PVRSRV_OK;

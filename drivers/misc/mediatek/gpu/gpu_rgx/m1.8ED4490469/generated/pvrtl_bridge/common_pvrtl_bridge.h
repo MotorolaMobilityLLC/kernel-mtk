@@ -67,7 +67,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            TLOpenStream          
+            TLOpenStream
  *******************************************/
 
 /* Bridge in structure for TLOpenStream */
@@ -87,7 +87,7 @@ typedef struct PVRSRV_BRIDGE_OUT_TLOPENSTREAM_TAG
 
 
 /*******************************************
-            TLCloseStream          
+            TLCloseStream
  *******************************************/
 
 /* Bridge in structure for TLCloseStream */
@@ -104,7 +104,7 @@ typedef struct PVRSRV_BRIDGE_OUT_TLCLOSESTREAM_TAG
 
 
 /*******************************************
-            TLAcquireData          
+            TLAcquireData
  *******************************************/
 
 /* Bridge in structure for TLAcquireData */
@@ -123,7 +123,7 @@ typedef struct PVRSRV_BRIDGE_OUT_TLACQUIREDATA_TAG
 
 
 /*******************************************
-            TLReleaseData          
+            TLReleaseData
  *******************************************/
 
 /* Bridge in structure for TLReleaseData */
@@ -142,7 +142,7 @@ typedef struct PVRSRV_BRIDGE_OUT_TLRELEASEDATA_TAG
 
 
 /*******************************************
-            TLDiscoverStreams          
+            TLDiscoverStreams
  *******************************************/
 
 /* Bridge in structure for TLDiscoverStreams */
@@ -164,7 +164,7 @@ typedef struct PVRSRV_BRIDGE_OUT_TLDISCOVERSTREAMS_TAG
 
 
 /*******************************************
-            TLReserveStream          
+            TLReserveStream
  *******************************************/
 
 /* Bridge in structure for TLReserveStream */
@@ -185,7 +185,7 @@ typedef struct PVRSRV_BRIDGE_OUT_TLRESERVESTREAM_TAG
 
 
 /*******************************************
-            TLCommitStream          
+            TLCommitStream
  *******************************************/
 
 /* Bridge in structure for TLCommitStream */
@@ -203,7 +203,7 @@ typedef struct PVRSRV_BRIDGE_OUT_TLCOMMITSTREAM_TAG
 
 
 /*******************************************
-            TLWriteData          
+            TLWriteData
  *******************************************/
 
 /* Bridge in structure for TLWriteData */

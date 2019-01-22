@@ -2,7 +2,7 @@
 @File
 @Title          RGX fw interface alignment checks
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    Checks to avoid disalignment in RGX fw data structures 
+@Description    Checks to avoid disalignment in RGX fw data structures
                 shared with the host
 @License        Dual MIT/GPLv2
 
@@ -46,7 +46,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __RGX_FWIF_ALIGNCHECKS_H__
 
 /* for the offsetof macro */
-#include <stddef.h> 
+#include <stddef.h>
 
 /*!
  ******************************************************************************

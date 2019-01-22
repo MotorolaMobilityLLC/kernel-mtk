@@ -61,7 +61,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            HTBConfigure          
+            HTBConfigure
  *******************************************/
 
 /* Bridge in structure for HTBConfigure */
@@ -80,7 +80,7 @@ typedef struct PVRSRV_BRIDGE_OUT_HTBCONFIGURE_TAG
 
 
 /*******************************************
-            HTBControl          
+            HTBControl
  *******************************************/
 
 /* Bridge in structure for HTBControl */
@@ -102,7 +102,7 @@ typedef struct PVRSRV_BRIDGE_OUT_HTBCONTROL_TAG
 
 
 /*******************************************
-            HTBLog          
+            HTBLog
  *******************************************/
 
 /* Bridge in structure for HTBLog */

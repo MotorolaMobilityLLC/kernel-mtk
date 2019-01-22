@@ -66,7 +66,7 @@ static const tuple SFs[]= {
 	RGXFW_LOG_SFIDLIST
 #undef X
 };
- 
+
 /*  idToStringID : Search SFs tuples {id,string} for a matching id.
  *   return index to array if found or RGXFW_SF_LAST if none found.
  *   bsearch could be used as ids are in increasing order. */

@@ -79,7 +79,7 @@ typedef IMG_UINT32 PVRSRV_CACHE_OP_ADDR_TYPE;	/*!< Type represents address requi
 	#endif
 #else
 	#if (CACHEFLUSH_KM_TYPE == CACHEFLUSH_KM_GLOBAL)
-		#if defined(__mips__) 
+		#if defined(__mips__)
 			/* Architecture does not support global cache maintenance */
 			#error "CACHEFLUSH_KM_GLOBAL is not supported on architecture"
 		#elif defined(__aarch64__)

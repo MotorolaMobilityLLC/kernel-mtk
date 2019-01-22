@@ -54,7 +54,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 #define DEVMEM_MAP_SVM_USER_MANAGED_RETRY				2
 
-static inline PVRSRV_ERROR 
+static inline PVRSRV_ERROR
 _DevmemCPUMapSVMKernelManaged(DEVMEM_HEAP *psHeap,
 							  DEVMEM_IMPORT *psImport,
 							  IMG_UINT64 *ui64MapAddress)
@@ -73,7 +73,7 @@ _DevmemCPUMapSVMKernelManaged(DEVMEM_HEAP *psHeap,
 	   means we lock-down the virtual address for the duration
 	   of the life-cycle of the allocation until a de-allocation
 	   request comes in. Thus the allocation is guaranteed not to
-	   change its virtual address on the CPU during its life-time. 
+	   change its virtual address on the CPU during its life-time.
 	   NOTE: Import might have already been CPU Mapped before now,
 	   normally this is not a problem, see fall back */
 	eError = _DevmemImportStructCPUMap(psImport);
@@ -112,14 +112,14 @@ failSVM:
 	return eError;
 }
 
-static inline void 
+static inline void
 _DevmemCPUUnmapSVMKernelManaged(DEVMEM_HEAP *psHeap, DEVMEM_IMPORT *psImport)
 {
 	PVR_UNREFERENCED_PARAMETER(psHeap);
 	_DevmemImportStructCPUUnmap(psImport);
 }
 
-static inline PVRSRV_ERROR 
+static inline PVRSRV_ERROR
 _DevmemCPUMapSVMUserManaged(DEVMEM_HEAP *psHeap,
 							DEVMEM_IMPORT *psImport,
 							IMG_UINT uiAlign,
@@ -143,15 +143,15 @@ _DevmemCPUMapSVMUserManaged(DEVMEM_HEAP *psHeap,
 	   SVM functions though this is not a hard requirement as long
 	   as the prior elsewhere obtained CPUMap virtual address meets
 	   SVM address requirements. This is a fall-back code-pathway
-	   so we have to test that this assumption holds before we 
+	   so we have to test that this assumption holds before we
 	   progress any further */
 	OSLockAcquire(psImport->sCPUImport.hLock);
 
 	if (psImport->sCPUImport.ui32RefCount)
 	{
 		/* Already CPU Mapped SVM heap allocation, this prior elsewhere
-		   obtained virtual address is  responsible for the above 
-		   XXX_KERNEL_MANAGED failure. As we are not responsible for 
+		   obtained virtual address is  responsible for the above
+		   XXX_KERNEL_MANAGED failure. As we are not responsible for
 		   this, we cannot progress any further so need to fail */
 		PVR_DPF((PVR_DBG_ERROR,
 				"%s: Previously obtained CPU map address not SVM compatible"
@@ -199,7 +199,7 @@ _DevmemCPUMapSVMUserManaged(DEVMEM_HEAP *psHeap,
 		   the PMR's size */
 		psImport->sCPUImport.pvCPUVAddr = (void*)(uintptr_t)uiAllocatedAddr;
 		PVR_ASSERT(uiAllocatedSize == psImport->uiSize);
-			
+
 		/* Map the import or allocation using the RA_Alloc virtual address;
 		   the kernel may fail the request if the supplied virtual address
 		   is already in-use in which case we re-try using another virtual
@@ -207,7 +207,7 @@ _DevmemCPUMapSVMUserManaged(DEVMEM_HEAP *psHeap,
 		eError = _DevmemImportStructCPUMap(psImport);
 		if (eError != PVRSRV_OK)
 		{
-			/* For now we simply discard failed RA_Alloc() obtained virtual 
+			/* For now we simply discard failed RA_Alloc() obtained virtual
 			   address (i.e. plenty of virtual space), this prevents us from
 			   re-using these and furthermore essentially blacklists these
 			   addresses from future SVM consideration; We exit fall-back
@@ -229,11 +229,11 @@ _DevmemCPUMapSVMUserManaged(DEVMEM_HEAP *psHeap,
 	} while (eError != PVRSRV_OK);
 
 	*ui64MapAddress = ui64SvmMapAddr;
-failSVM:	
+failSVM:
 	return eError;
 }
 
-static inline void 
+static inline void
 _DevmemCPUUnmapSVMUserManaged(DEVMEM_HEAP *psHeap, DEVMEM_IMPORT *psImport)
 {
 	RA_BASE_T uiAllocatedAddr;
@@ -246,7 +246,7 @@ _DevmemCPUUnmapSVMUserManaged(DEVMEM_HEAP *psHeap, DEVMEM_IMPORT *psImport)
 	_DevmemImportStructCPUUnmap(psImport);
 }
 
-static inline PVRSRV_ERROR 
+static inline PVRSRV_ERROR
 _DevmemImportStructDevMapSVM(DEVMEM_HEAP *psHeap,
 							 DEVMEM_IMPORT *psImport,
 							 IMG_UINT uiAlign,
@@ -292,7 +292,7 @@ _DevmemImportStructDevMapSVM(DEVMEM_HEAP *psHeap,
 	return eError;
 }
 
-static inline void 
+static inline void
 _DevmemImportStructDevUnmapSVM(DEVMEM_HEAP *psHeap, DEVMEM_IMPORT *psImport)
 {
 	switch(psHeap->eHeapType)
@@ -385,7 +385,7 @@ PVRSRV_ERROR _DevmemMemDescAlloc(DEVMEM_MEMDESC **ppsMemDesc)
 		eError = PVRSRV_ERROR_OUT_OF_MEMORY;
 		goto failAlloc;
 	}
-	
+
 	/* Structure must be zero'd incase it needs to be freed before it is initialised! */
 	OSCachedMemSet(psMemDesc, 0, sizeof(DEVMEM_MEMDESC));
 
@@ -467,7 +467,7 @@ void _DevmemMemDescRelease(DEVMEM_MEMDESC *psMemDesc)
 {
 	IMG_INT iRefCount;
 	PVR_ASSERT(psMemDesc != NULL);
-	
+
 	iRefCount = OSAtomicDecrement(&psMemDesc->hRefCount);
 	PVR_ASSERT(iRefCount >= 0);
 
@@ -617,7 +617,7 @@ PVRSRV_ERROR _DevmemImportStructAlloc(SHARED_DEV_CONNECTION hDevConnection,
 	}
 
     *ppsImport = psImport;
-    
+
     return PVRSRV_OK;
 
 failILockAlloc:
@@ -827,7 +827,7 @@ PVRSRV_ERROR _DevmemImportStructDevMap(DEVMEM_HEAP *psHeap,
 			uiAllocatedSize = psImport->uiSize;
 			sBase.uiAddr = uiAllocatedAddr;
 		}
-	
+
 		/* Setup page tables for the allocated VM space */
 		eError = BridgeDevmemIntReserveRange(psHeap->psCtx->hDevConnection,
 											 psHeap->hDevMemServerHeap,
@@ -842,7 +842,7 @@ PVRSRV_ERROR _DevmemImportStructDevMap(DEVMEM_HEAP *psHeap,
 		if (bMap)
 		{
 			DEVMEM_FLAGS_T uiMapFlags;
-			
+
 			uiMapFlags = psImport->uiFlags & PVRSRV_MEMALLOCFLAGS_PERMAPPINGFLAGSMASK;
 
 			/* Actually map the PMR to allocated VM space */
@@ -927,7 +927,7 @@ void _DevmemImportStructDevUnmap(DEVMEM_IMPORT *psImport)
 											psDeviceImport->hMapping);
 			PVR_ASSERT(eError == PVRSRV_OK);
 		}
-	
+
 	    eError = BridgeDevmemIntUnreserveRange(psImport->hDevConnection,
 	                                        psDeviceImport->hReservation);
 	    PVR_ASSERT(eError == PVRSRV_OK);

@@ -2,10 +2,10 @@
 @File
 @Title          Implementation Callbacks for Handle Manager API
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    Part of the handle manager API. This file is for declarations 
-                and definitions that are private/internal to the handle manager 
-                API but need to be shared between the generic handle manager 
-                code and the various handle manager backends, i.e. the code that 
+@Description    Part of the handle manager API. This file is for declarations
+                and definitions that are private/internal to the handle manager
+                API but need to be shared between the generic handle manager
+                code and the various handle manager backends, i.e. the code that
                 implements the various callbacks.
 @License        Dual MIT/GPLv2
 

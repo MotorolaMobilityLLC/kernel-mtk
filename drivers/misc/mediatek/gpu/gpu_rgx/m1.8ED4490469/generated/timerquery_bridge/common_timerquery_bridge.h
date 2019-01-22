@@ -62,7 +62,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            RGXBeginTimerQuery          
+            RGXBeginTimerQuery
  *******************************************/
 
 /* Bridge in structure for RGXBeginTimerQuery */
@@ -79,7 +79,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXBEGINTIMERQUERY_TAG
 
 
 /*******************************************
-            RGXEndTimerQuery          
+            RGXEndTimerQuery
  *******************************************/
 
 /* Bridge in structure for RGXEndTimerQuery */
@@ -96,7 +96,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXENDTIMERQUERY_TAG
 
 
 /*******************************************
-            RGXQueryTimer          
+            RGXQueryTimer
  *******************************************/
 
 /* Bridge in structure for RGXQueryTimer */
@@ -115,7 +115,7 @@ typedef struct PVRSRV_BRIDGE_OUT_RGXQUERYTIMER_TAG
 
 
 /*******************************************
-            RGXCurrentTime          
+            RGXCurrentTime
  *******************************************/
 
 /* Bridge in structure for RGXCurrentTime */

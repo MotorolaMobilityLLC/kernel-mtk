@@ -69,7 +69,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* ***************************************************************************
  * Server-side bridge entry points
  */
- 
+
 static IMG_INT
 PVRSRVBridgeRGXCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_IN_RGXCREATETRANSFERCONTEXT *psRGXCreateTransferContextIN,
@@ -84,7 +84,7 @@ PVRSRVBridgeRGXCreateTransferContext(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psRGXCreateTransferContextIN->ui32FrameworkCmdize * sizeof(IMG_BYTE)) +
 			0;
 
@@ -290,7 +290,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 	IMG_BYTE   *pArrayArgsBuffer2 = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psRGXSubmitTransferIN->ui32PrepareCount * sizeof(IMG_UINT32)) +
 			(psRGXSubmitTransferIN->ui32PrepareCount * sizeof(IMG_UINT32)) +
 			(psRGXSubmitTransferIN->ui32PrepareCount * sizeof(IMG_UINT32)) +
@@ -361,7 +361,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 		psFenceUFOSyncPrimBlockInt = (SYNC_PRIMITIVE_BLOCK ***)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXSubmitTransferIN->ui32PrepareCount * sizeof(SYNC_PRIMITIVE_BLOCK **);
 		/* Assigning hFenceUFOSyncPrimBlockInt2 to the right offset in the pool buffer for first dimension */
-		hFenceUFOSyncPrimBlockInt2 = (IMG_HANDLE **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hFenceUFOSyncPrimBlockInt2 = (IMG_HANDLE **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXSubmitTransferIN->ui32PrepareCount * sizeof(IMG_HANDLE);
 	}
 
@@ -403,7 +403,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 		psUpdateUFOSyncPrimBlockInt = (SYNC_PRIMITIVE_BLOCK ***)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXSubmitTransferIN->ui32PrepareCount * sizeof(SYNC_PRIMITIVE_BLOCK **);
 		/* Assigning hUpdateUFOSyncPrimBlockInt2 to the right offset in the pool buffer for first dimension */
-		hUpdateUFOSyncPrimBlockInt2 = (IMG_HANDLE **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hUpdateUFOSyncPrimBlockInt2 = (IMG_HANDLE **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXSubmitTransferIN->ui32PrepareCount * sizeof(IMG_HANDLE);
 	}
 
@@ -452,11 +452,11 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 		psServerSyncInt = (SERVER_SYNC_PRIMITIVE ***)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXSubmitTransferIN->ui32PrepareCount * sizeof(SERVER_SYNC_PRIMITIVE **);
 		/* Assigning hServerSyncInt2 to the right offset in the pool buffer for first dimension */
-		hServerSyncInt2 = (IMG_HANDLE **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hServerSyncInt2 = (IMG_HANDLE **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXSubmitTransferIN->ui32PrepareCount * sizeof(IMG_HANDLE);
 	}
 
-	
+
 	{
 		uiUpdateFenceNameInt = (IMG_CHAR*)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += 32 * sizeof(IMG_CHAR);
@@ -539,7 +539,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 	{
 		psSyncPMRsInt = (PMR **)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXSubmitTransferIN->ui32SyncPMRCount * sizeof(PMR *);
-		hSyncPMRsInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset); 
+		hSyncPMRsInt2 = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer) + ui32NextOffset);
 		ui32NextOffset += psRGXSubmitTransferIN->ui32SyncPMRCount * sizeof(IMG_HANDLE);
 	}
 
@@ -596,7 +596,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 			psFenceUFOSyncPrimBlockInt[i] = (SYNC_PRIMITIVE_BLOCK **)(((IMG_UINT8 *)pArrayArgsBuffer2) + ui32NextOffset2);
 			ui32NextOffset2 += ui32ClientFenceCountInt[i] * sizeof(SYNC_PRIMITIVE_BLOCK *);
 			/* Assigning each hFenceUFOSyncPrimBlockInt2 to the right offset in the pool buffer (this is the second dimension) */
-			hFenceUFOSyncPrimBlockInt2[i] = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer2) + ui32NextOffset2); 
+			hFenceUFOSyncPrimBlockInt2[i] = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer2) + ui32NextOffset2);
 			ui32NextOffset2 += ui32ClientFenceCountInt[i] * sizeof(IMG_HANDLE);
 		}
 	}
@@ -629,7 +629,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 			psUpdateUFOSyncPrimBlockInt[i] = (SYNC_PRIMITIVE_BLOCK **)(((IMG_UINT8 *)pArrayArgsBuffer2) + ui32NextOffset2);
 			ui32NextOffset2 += ui32ClientUpdateCountInt[i] * sizeof(SYNC_PRIMITIVE_BLOCK *);
 			/* Assigning each hUpdateUFOSyncPrimBlockInt2 to the right offset in the pool buffer (this is the second dimension) */
-			hUpdateUFOSyncPrimBlockInt2[i] = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer2) + ui32NextOffset2); 
+			hUpdateUFOSyncPrimBlockInt2[i] = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer2) + ui32NextOffset2);
 			ui32NextOffset2 += ui32ClientUpdateCountInt[i] * sizeof(IMG_HANDLE);
 		}
 	}
@@ -672,7 +672,7 @@ PVRSRVBridgeRGXSubmitTransfer(IMG_UINT32 ui32DispatchTableEntry,
 			psServerSyncInt[i] = (SERVER_SYNC_PRIMITIVE **)(((IMG_UINT8 *)pArrayArgsBuffer2) + ui32NextOffset2);
 			ui32NextOffset2 += ui32ServerSyncCountInt[i] * sizeof(SERVER_SYNC_PRIMITIVE *);
 			/* Assigning each hServerSyncInt2 to the right offset in the pool buffer (this is the second dimension) */
-			hServerSyncInt2[i] = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer2) + ui32NextOffset2); 
+			hServerSyncInt2[i] = (IMG_HANDLE *)(((IMG_UINT8 *)pArrayArgsBuffer2) + ui32NextOffset2);
 			ui32NextOffset2 += ui32ServerSyncCountInt[i] * sizeof(IMG_HANDLE);
 		}
 	}
@@ -1331,8 +1331,8 @@ RGXSetTransferContextPriority_exit:
 
 
 
-/* *************************************************************************** 
- * Server bridge dispatch related glue 
+/* ***************************************************************************
+ * Server bridge dispatch related glue
  */
 
 static IMG_BOOL bUseLock = IMG_TRUE;

@@ -61,7 +61,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 /*******************************************
-            DevicememHistoryMap          
+            DevicememHistoryMap
  *******************************************/
 
 /* Bridge in structure for DevicememHistoryMap */
@@ -80,7 +80,7 @@ typedef struct PVRSRV_BRIDGE_OUT_DEVICEMEMHISTORYMAP_TAG
 
 
 /*******************************************
-            DevicememHistoryUnmap          
+            DevicememHistoryUnmap
  *******************************************/
 
 /* Bridge in structure for DevicememHistoryUnmap */

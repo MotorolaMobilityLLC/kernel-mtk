@@ -47,7 +47,7 @@ typedef struct _IMG_DEV_VIRTADDR
 {
 	uint64_t  uiAddr;
 #define IMG_CAST_TO_DEVVADDR_UINT(var)		(uint64_t)(var)
-	
+
 } IMG_DEV_VIRTADDR;
 
 typedef uint64_t IMG_DEVMEM_SIZE_T;

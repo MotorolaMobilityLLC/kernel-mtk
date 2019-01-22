@@ -102,13 +102,13 @@ TLServerOpenStreamKM(const IMG_CHAR*  	 	   pszName,
 			if ((psNode = TLFindStreamNodeByName(pszName)) == NULL)
 			{
 				PVR_DPF((PVR_DBG_MESSAGE, "Stream %s does not exist, waiting...", pszName));
-				
+
 				/* Release TL_GLOBAL_DATA lock before sleeping */
 				OSLockRelease (psGD->hTLGDLock);
 
 				/* Will exit OK or with timeout, both cases safe to ignore */
 				eErrorEO = OSEventObjectWaitTimeout(hEvent, NO_STREAM_WAIT_PERIOD);
-				
+
 				/* Acquire lock after waking up */
 				OSLockAcquire (psGD->hTLGDLock);
 			}
@@ -278,7 +278,7 @@ TLServerCloseStreamKM(PTL_STREAM_DESC psSD)
 	/* Save the stream's reference in-case its destruction is required after this
 	 * client is removed */
 	psStream = psNode->psStream;
-	
+
 	/* Acquire TL_GLOBAL_DATA lock as the following TLRemoveDescAndTryFreeStreamNode
 	 * call will update the TL_SNODE's descriptor value */
 	OSLockAcquire (psGD->hTLGDLock);
@@ -291,14 +291,14 @@ TLServerCloseStreamKM(PTL_STREAM_DESC psSD)
 	psGD->uiClientCnt--;
 
 	OSLockRelease (psGD->hTLGDLock);
-	
+
 	/* Destroy the stream if its TL_SNODE was removed from TL_GLOBAL_DATA */
 	if (bDestroyStream)
 	{
 		TLStreamDestroy (psStream);
 		psStream = NULL;
 	}
-	
+
 	/* Clean up the descriptor structure */
 
 	if (!bIsWriteOnly)
@@ -503,7 +503,7 @@ TLServerAcquireDataKM(PTL_STREAM_DESC psSD,
 	 * when a valid stream descriptor is present (i.e. a client is connected).
 	 * Hence, no checks for stream being NON NULL are required after this. */
 	PVR_ASSERT (psNode->psStream);
-	
+
 	//PVR_DPF((PVR_DBG_VERBOSE, "TLServerAcquireDataKM evList=%p, evObj=%p", psSD->psNode->hReadEventObj, psSD->hReadEvent));
 
 	/* Check for data in the associated stream buffer, sleep/wait if none */

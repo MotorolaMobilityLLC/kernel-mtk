@@ -69,7 +69,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* ***************************************************************************
  * Server-side bridge entry points
  */
- 
+
 static IMG_INT
 PVRSRVBridgeConnect(IMG_UINT32 ui32DispatchTableEntry,
 					  PVRSRV_BRIDGE_IN_CONNECT *psConnectIN,
@@ -571,7 +571,7 @@ PVRSRVBridgeAlignmentCheck(IMG_UINT32 ui32DispatchTableEntry,
 	IMG_UINT32 ui32NextOffset = 0;
 	IMG_BYTE   *pArrayArgsBuffer = NULL;
 
-	IMG_UINT32 ui32BufferSize = 
+	IMG_UINT32 ui32BufferSize =
 			(psAlignmentCheckIN->ui32AlignChecksSize * sizeof(IMG_UINT32)) +
 			0;
 
@@ -728,10 +728,8 @@ EventObjectWaitTimeout_exit:
 }
 
 
-
-
-/* *************************************************************************** 
- * Server bridge dispatch related glue 
+/* ***************************************************************************
+ * Server bridge dispatch related glue
  */
 
 static IMG_BOOL bUseLock = IMG_TRUE;
@@ -786,7 +784,6 @@ PVRSRV_ERROR InitSRVCOREBridge(void)
 
 	SetDispatchTableEntry(PVRSRV_BRIDGE_SRVCORE, PVRSRV_BRIDGE_SRVCORE_EVENTOBJECTWAITTIMEOUT, PVRSRVBridgeEventObjectWaitTimeout,
 					NULL, bUseLock);
-
 
 	return PVRSRV_OK;
 }

@@ -77,7 +77,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(PVR_RI_DEBUG)
 #include "ri_server.h"
-#endif 
+#endif
 
 /* ourselves */
 #include "pmr.h"
@@ -936,7 +936,7 @@ PVRSRV_ERROR PMRSecureExportPMR(CONNECTION_DATA *psConnection,
 	PVRSRV_ERROR eError;
 
 	PVR_UNREFERENCED_PARAMETER(psDevNode);
-	
+
 	/* We are acquiring reference to PMR here because OSSecureExport
 	 * releases bridge lock and PMR lock for a moment and we don't want PMR
 	 * to be removed by other thread in the meantime. */
@@ -1190,8 +1190,8 @@ IMG_HANDLE PMRGetPmr(PMR *psPMR, size_t ulOffset)
 	As well as returning the physical offset we return the number of
 	bytes remaining till the next chunk and if this chunk is valid.
 
-	For multi-page operations, upper layers communicate their 
-	Log2PageSize else argument is redundant (set to zero). 
+	For multi-page operations, upper layers communicate their
+	Log2PageSize else argument is redundant (set to zero).
 */
 
 static void
@@ -1220,7 +1220,7 @@ _PMRLogicalOffsetToPhysicalOffset(const PMR *psPMR,
 		*pui32BytesRemain = TRUNCATE_64BITS_TO_32BITS(psPMR->uiLogicalSize - uiOffset);
 		puiPhysicalOffset[0] = uiOffset;
 		bValid[0] = IMG_TRUE;
-		
+
 		if (ui32NumOfPages > 1)
 		{
 			/* initial offset may not be page aligned, round down */
@@ -1241,7 +1241,7 @@ _PMRLogicalOffsetToPhysicalOffset(const PMR *psPMR,
 					uiOffset,
 					TRUNCATE_64BITS_TO_32BITS(psMappingTable->uiChunkSize),
 					&ui32Remain);
-			
+
 			if (psMappingTable->aui32Translation[ui64ChunkIndex] == TRANSLATION_INVALID)
 			{
 				bValid[idx] = IMG_FALSE;
@@ -1390,7 +1390,7 @@ PMR_ReadBytes(PMR *psPMR,
 										  &uiPhysicalOffset,
 										  &ui32Remain,
 										  &bValid);
-		/* 
+		/*
 			Copy till either then end of the
 			chunk or end of the buffer
 		*/
@@ -1562,7 +1562,7 @@ PMR_WriteBytes(PMR *psPMR,
 										  &ui32Remain,
 										  &bValid);
 
-		/* 
+		/*
 			Copy till either then end of the
 			chunk or end of the buffer
 		*/
@@ -1763,7 +1763,7 @@ PMR_DevPhysAddr(const PMR *psPMR,
 				IMG_DEV_PHYADDR *psDevAddrPtr,
 				IMG_BOOL *pbValid)
 {
-	IMG_UINT32 ui32Remain;	
+	IMG_UINT32 ui32Remain;
 	PVRSRV_ERROR eError = PVRSRV_OK;
 	IMG_DEVMEM_OFFSET_T auiPhysicalOffset[PMR_MAX_TRANSLATION_STACK_ALLOC];
 	IMG_DEVMEM_OFFSET_T *puiPhysicalOffset = auiPhysicalOffset;
@@ -1808,7 +1808,7 @@ PMR_DevPhysAddr(const PMR *psPMR,
     /* Currently excluded from the default build because of performance concerns.
      *
      * We do not need this part in other systems because the GPU has the same address view of system RAM as the CPU.
-     * Ideally this should be directly part of the PMR factories and they should always return 
+     * Ideally this should be directly part of the PMR factories and they should always return
      * the device physical address and not CPU physical or even better they should return the
 	 * DMA bus address. */
 
@@ -1877,14 +1877,14 @@ PMR_CpuPhysAddr(const PMR *psPMR,
     	}
     }
 
-    eError = PMR_DevPhysAddr(psPMR, ui32Log2PageSize, ui32NumOfPages, 
+    eError = PMR_DevPhysAddr(psPMR, ui32Log2PageSize, ui32NumOfPages,
 							 uiLogicalOffset, psDevPAddr, pbValid);
     if (eError != PVRSRV_OK)
     {
         goto e1;
     }
 	PhysHeapDevPAddrToCpuPAddr(psPMR->psPhysHeap, ui32NumOfPages, psCpuAddrPtr, psDevPAddr);
-	
+
 	if (ui32NumOfPages > PMR_MAX_TRANSLATION_STACK_ALLOC)
 	{
 		OSFreeMem(psDevPAddr);
@@ -2031,7 +2031,7 @@ _PMR_PDumpSymbolicAddrPhysical(const PMR *psPMR,
 
 
 	*puiNewOffset = uiPhysicalOffset & ((1 << PMR_GetLog2Contiguity(psPMR))-1);
-	*puiNextSymName = (IMG_DEVMEM_OFFSET_T) (((uiPhysicalOffset >> PMR_GetLog2Contiguity(psPMR))+1) 
+	*puiNextSymName = (IMG_DEVMEM_OFFSET_T) (((uiPhysicalOffset >> PMR_GetLog2Contiguity(psPMR))+1)
 	                                          << PMR_GetLog2Contiguity(psPMR));
 
 	return PVRSRV_OK;
@@ -2838,15 +2838,15 @@ PMRWritePMPageList(/* Target PMR, offset, and length */
 		pasDevAddrPtr = asDevPAddr;
 		pbPageIsValid = abValid;
 	}
-	
-	
+
+
 	eError = PMR_DevPhysAddr(psReferencePMR, uiLog2PageSize, uiNumPages, 0,
 							 pasDevAddrPtr, pbPageIsValid);
 	if (eError != PVRSRV_OK)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "Failed to map PMR pages into device physical addresses"));
 		goto e3;
-	}	
+	}
 #endif
 
     for (uiPageIndex = 0; uiPageIndex < uiNumPages; uiPageIndex++)
@@ -2965,10 +2965,10 @@ PMRWritePMPageList(/* Target PMR, offset, and length */
       error exit paths follow
     */
 #if !defined(NO_HARDWARE)
-e3: 
+e3:
     if (pasDevAddrPtr != asDevPAddr)
 	{
-		OSFreeMem(pbPageIsValid);  
+		OSFreeMem(pbPageIsValid);
 		OSFreeMem(pasDevAddrPtr);
 	}
  e2:

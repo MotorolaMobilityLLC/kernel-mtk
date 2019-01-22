@@ -124,7 +124,7 @@ PVRSRV_ERROR OSConnectionPrivateDataInit(IMG_HANDLE *phOsPrivateData, void *pvOS
 
 PVRSRV_ERROR OSConnectionPrivateDataDeInit(IMG_HANDLE hOsPrivateData)
 {
-	ENV_CONNECTION_DATA *psEnvConnection; 
+	ENV_CONNECTION_DATA *psEnvConnection;
 
 	if (hOsPrivateData == NULL)
 	{

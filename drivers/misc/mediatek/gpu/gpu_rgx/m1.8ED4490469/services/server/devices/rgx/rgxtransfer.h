@@ -66,7 +66,7 @@ typedef struct _RGX_SERVER_TQ_CONTEXT_ RGX_SERVER_TQ_CONTEXT;
 	Server-side implementation of RGXCreateTransferContext
 
  @Input pvDeviceNode - device node
- 
+
 FIXME fill this in
 
  @Return   PVRSRV_ERROR

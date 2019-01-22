@@ -59,7 +59,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  @Function	RGXKickSyncKM
 
  @Description Send a sync kick command to the FW
-	
+
  @Return   PVRSRV_ERROR
 ******************************************************************************/
 PVRSRV_ERROR RGXKickSyncKM(PVRSRV_DEVICE_NODE        *psDeviceNode,

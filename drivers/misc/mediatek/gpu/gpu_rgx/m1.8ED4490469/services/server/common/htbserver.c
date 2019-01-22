@@ -514,7 +514,7 @@ HTBControlKM(
 		eError = HTBLog(0, 0, ui32Time, HTB_SF_CTRL_FWSYNC_MARK_RPT,
 				g_sCtrl.ui32SyncMarker);
 		PVR_LOG_IF_ERROR( eError, "HTBLog");
-		eError = HTBLog(0, 0, ui32Time, HTB_SF_CTRL_FWSYNC_SCALE_RPT, 
+		eError = HTBLog(0, 0, ui32Time, HTB_SF_CTRL_FWSYNC_SCALE_RPT,
 				((IMG_UINT32)((g_sCtrl.ui64SyncOSTS>>32)&0xffffffff)), ((IMG_UINT32)(g_sCtrl.ui64SyncOSTS&0xffffffff)),
 				((IMG_UINT32)((g_sCtrl.ui64SyncCRTS>>32)&0xffffffff)), ((IMG_UINT32)(g_sCtrl.ui64SyncCRTS&0xffffffff)),
 				g_sCtrl.ui32SyncCalcClkSpd);

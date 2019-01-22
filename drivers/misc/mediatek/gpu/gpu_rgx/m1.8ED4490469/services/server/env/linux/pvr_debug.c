@@ -133,7 +133,7 @@ IMG_EXPORT void PVRSRVDebugPrintfDumpCCB(void)
 	int i;
 
 	mutex_lock(&gsDebugCCBMutex);
-	
+
 	for (i = 0; i < PVRSRV_DEBUG_CCB_MAX; i++)
 	{
 		PVRSRV_DEBUG_CCB *psDebugCCBEntry =
@@ -731,7 +731,7 @@ static int _DebugStatusSeqShow(struct seq_file *psSeqFile, void *pvData)
 		IMG_CHAR           *pszReason = "";
 		PVRSRV_DEVICE_HEALTH_STATUS eHealthStatus;
 		PVRSRV_DEVICE_HEALTH_REASON eHealthReason;
-		
+
 		/* Update the health status now if possible... */
 		if (psDeviceNode->pfnUpdateHealthStatus)
 		{
@@ -739,7 +739,7 @@ static int _DebugStatusSeqShow(struct seq_file *psSeqFile, void *pvData)
 		}
 		eHealthStatus = OSAtomicRead(&psDeviceNode->eHealthStatus);
 		eHealthReason = OSAtomicRead(&psDeviceNode->eHealthReason);
-		
+
 		switch (eHealthStatus)
 		{
 			case PVRSRV_DEVICE_HEALTH_STATUS_OK:  pszStatus = "OK";  break;

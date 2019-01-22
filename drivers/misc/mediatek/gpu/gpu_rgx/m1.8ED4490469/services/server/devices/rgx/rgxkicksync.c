@@ -2,7 +2,7 @@
 @File           rgxkicksync.c
 @Title          Server side of the sync only kick API
 @Copyright      Copyright (c) Imagination Technologies Ltd. All Rights Reserved
-@Description    
+@Description
 @License        Dual MIT/GPLv2
 
 The contents of this file are subject to the MIT license as set out below.
@@ -134,7 +134,7 @@ fail_contextalloc:
 fail_syncalloc:
 	OSFreeMem(psKickSyncContext);
 	return eError;
-}	
+}
 
 
 IMG_EXPORT
@@ -153,7 +153,7 @@ PVRSRV_ERROR PVRSRVRGXDestroyKickSyncContextKM(RGX_SERVER_KICKSYNC_CONTEXT * psK
 	if (eError == PVRSRV_ERROR_RETRY)
 	{
 		return eError;
-	}	
+	}
 	else if (eError != PVRSRV_OK)
 	{
 		PVR_LOG(("%s: Unexpected error from RGXFWRequestCommonContextCleanUp (%s)",
@@ -173,7 +173,7 @@ PVRSRV_ERROR PVRSRVRGXDestroyKickSyncContextKM(RGX_SERVER_KICKSYNC_CONTEXT * psK
 
 	SyncAddrListDeinit(&psKickSyncContext->sSyncAddrListFence);
 	SyncAddrListDeinit(&psKickSyncContext->sSyncAddrListUpdate);
-	
+
 	OSFreeMem(psKickSyncContext);
 
 	return PVRSRV_OK;
@@ -221,7 +221,7 @@ PVRSRV_ERROR PVRSRVRGXKickSyncKM(RGX_SERVER_KICKSYNC_CONTEXT * psKickSyncContext
 	/* Android fd sync update info */
 	struct pvr_sync_append_data *psFDFenceData = NULL;
 #endif
-	
+
 	ui32JobId = OSAtomicIncrement(&psKickSyncContext->hJobId);
 
 	eError = SyncAddrListPopulate(&psKickSyncContext->sSyncAddrListFence,
@@ -355,7 +355,7 @@ PVRSRV_ERROR PVRSRVRGXKickSyncKM(RGX_SERVER_KICKSYNC_CONTEXT * psKickSyncContext
 	sKickSyncKCCBCmd.uCmdData.sCmdKickData.ui32NumCleanupCtl = 0;
 	sKickSyncKCCBCmd.uCmdData.sCmdKickData.sWorkloadDataFWAddress.ui32Addr = 0;
 	sKickSyncKCCBCmd.uCmdData.sCmdKickData.ui32WorkEstCmdHeaderOffset = 0;
-	
+
 	/*
 	 * Submit the kicksync command to the firmware.
 	 */
@@ -389,7 +389,7 @@ PVRSRV_ERROR PVRSRVRGXKickSyncKM(RGX_SERVER_KICKSYNC_CONTEXT * psKickSyncContext
 		         "PVRSRVRGXKickSync failed to schedule kernel CCB command. (0x%x)",
 		         eError));
 	}
-	
+
 	/*
 	 * Now check eError (which may have returned an error from our earlier call
 	 * to RGXCmdHelperAcquireCmdCCB) - we needed to process any flush command first
@@ -439,7 +439,7 @@ fail_fdsync:
 #endif
 fail_syncaddrlist:
 	return eError;
-}	
+}
 
 
 /**************************************************************************//**
