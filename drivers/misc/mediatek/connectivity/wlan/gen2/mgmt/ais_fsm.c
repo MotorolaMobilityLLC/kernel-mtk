@@ -411,6 +411,7 @@ VOID aisFsmStateInit_JOIN(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 		case AUTH_MODE_WPA_PSK:
 		case AUTH_MODE_WPA2:
 		case AUTH_MODE_WPA2_PSK:
+		case AUTH_MODE_WPA_OSEN:
 			prAisFsmInfo->ucAvailableAuthTypes = (UINT_8) AUTH_TYPE_OPEN_SYSTEM;
 			break;
 

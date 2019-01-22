@@ -101,6 +101,7 @@ typedef enum _ENUM_PARAM_AUTH_MODE_T {
 	AUTH_MODE_WPA_NONE,	/*!< For Ad hoc */
 	AUTH_MODE_WPA2,
 	AUTH_MODE_WPA2_PSK,
+	AUTH_MODE_WPA_OSEN,
 	AUTH_MODE_NUM		/*!< Upper bound, not real case */
 } ENUM_PARAM_AUTH_MODE_T, *P_ENUM_PARAM_AUTH_MODE_T;
 

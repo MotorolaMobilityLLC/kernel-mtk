@@ -1498,7 +1498,12 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 				}
 			}
 #endif
-
+#if CFG_SUPPORT_HOTSPOT_2_0
+			/* since OSEN is mutual exclusion with RSN, so we reuse RSN here */
+			if (pucIE[1] >= 10 && kalMemCmp(pucIE+2, "\x50\x6f\x9a\x12", 4) == 0 &&
+				rsnParseOsenIE(prAdapter, (struct IE_WFA_OSEN *)pucIE, &prBssDesc->rRSNInfo))
+				prBssDesc->fgIEOsen = TRUE;
+#endif
 #if CFG_ENABLE_WIFI_DIRECT
 			if (prAdapter->fgIsP2PRegistered) {
 				if (p2pFuncParseCheckForP2PInfoElem(prAdapter, pucIE, &ucOuiType)) {

@@ -585,7 +585,7 @@ BOOLEAN rsnIsSuitableBSS(IN P_ADAPTER_T prAdapter, IN P_RSN_INFO_T prBssRsnInfo)
 		}
 		for (i = 0; i < prBssRsnInfo->u4AuthKeyMgtSuiteCount; i++) {
 			if (((prAdapter->rWifiVar.rConnSettings.rRsnInfo.au4AuthKeyMgtSuite[0] & 0x000000FF) !=
-			     GET_SELECTOR_TYPE(prBssRsnInfo->au4AuthKeyMgtSuite[0]))
+			     GET_SELECTOR_TYPE(prBssRsnInfo->au4AuthKeyMgtSuite[i]))
 			    && (i == prBssRsnInfo->u4AuthKeyMgtSuiteCount - 1)) {
 				DBGLOG(RSN, TRACE, "Break by AuthKeyMgtSuite\n");
 				break;
@@ -729,6 +729,16 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 			DBGLOG(RSN, TRACE, "RSN Information Element does not exist.\n");
 			return FALSE;
 		}
+#if CFG_SUPPORT_HOTSPOT_2_0
+	} else if (prAdapter->rWifiVar.rConnSettings.eAuthMode == AUTH_MODE_WPA_OSEN) {
+		/* OSEN is mutual exclusion with RSN, so we can reuse RSN's flag and variables */
+		if (prBss->fgIEOsen) {
+			prBssRsnInfo = &prBss->rRSNInfo;
+		} else {
+			DBGLOG(RSN, WARN, "OSEN Information Element does not exist.\n");
+			return FALSE;
+		}
+#endif
 	} else if (prAdapter->rWifiVar.rConnSettings.eEncStatus != ENUM_ENCRYPTION1_ENABLED) {
 		/* If the driver is configured to use WEP only, ignore this BSS. */
 		DBGLOG(RSN, TRACE, "-- Not WEP-only legacy BSS %d\n", prAdapter->rWifiVar.rConnSettings.eEncStatus);
@@ -2425,5 +2435,183 @@ BOOLEAN rsnCheckSecurityModeChanged(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 	 * eAuthMode, prBssDesc->u2CapInfo, prBssDesc->fgIEWPA, prBssDesc->fgIERSN));
 	 */
 	return FALSE;
+}
+#endif
+
+#if CFG_SUPPORT_HOTSPOT_2_0
+BOOLEAN rsnParseOsenIE(P_ADAPTER_T prAdapter, struct IE_WFA_OSEN *prInfoElem, P_RSN_INFO_T prOsenInfo)
+{
+	UINT_32 i;
+	INT_32 u4RemainRsnIeLen;
+	UINT_16 u2Version = 0;
+	UINT_16 u2Cap = 0;
+	UINT_32 u4GroupSuite = RSN_CIPHER_SUITE_CCMP;
+	UINT_16 u2PairSuiteCount = 0;
+	UINT_16 u2AuthSuiteCount = 0;
+	PUINT_8 pucPairSuite = NULL;
+	PUINT_8 pucAuthSuite = NULL;
+	PUINT_8 cp;
+
+	ASSERT(prOsenInfo);
+
+	cp = ((PUINT_8)prInfoElem) + 6;
+	u4RemainRsnIeLen = (INT_32) prInfoElem->ucLength - 4;
+	do {
+		if (u4RemainRsnIeLen == 0)
+			break;
+
+		/* Parse the Group Key Cipher Suite field. */
+		if (u4RemainRsnIeLen < 4) {
+			DBGLOG(RSN, WARN, "Fail to parse RSN IE in group cipher suite (IE len: %d)\n",
+					    prInfoElem->ucLength);
+			return FALSE;
+		}
+
+		WLAN_GET_FIELD_32(cp, &u4GroupSuite);
+		cp += 4;
+		u4RemainRsnIeLen -= 4;
+
+		if (u4RemainRsnIeLen == 0)
+			break;
+
+		/* Parse the Pairwise Key Cipher Suite Count field. */
+		if (u4RemainRsnIeLen < 2) {
+			DBGLOG(RSN, WARN, "Fail to parse RSN IE in pairwise cipher suite count (IE len: %d)\n",
+					    prInfoElem->ucLength);
+			return FALSE;
+		}
+
+		WLAN_GET_FIELD_16(cp, &u2PairSuiteCount);
+		cp += 2;
+		u4RemainRsnIeLen -= 2;
+
+		/* Parse the Pairwise Key Cipher Suite List field. */
+		i = (UINT_32) u2PairSuiteCount * 4;
+		if (u4RemainRsnIeLen < (INT_32) i) {
+			DBGLOG(RSN, WARN,
+				"Fail to parse RSN IE in pairwise cipher suite list (IE len: %d, Remain %u, Cnt %d GS %x)\n",
+					    prInfoElem->ucLength, u4RemainRsnIeLen, u2PairSuiteCount, u4GroupSuite);
+			return FALSE;
+		}
+
+		pucPairSuite = cp;
+
+		cp += i;
+		u4RemainRsnIeLen -= (INT_32) i;
+
+		if (u4RemainRsnIeLen == 0)
+			break;
+
+		/* Parse the Authentication and Key Management Cipher Suite Count field. */
+		if (u4RemainRsnIeLen < 2) {
+			DBGLOG(RSN, WARN, "Fail to parse RSN IE in auth & key mgt suite count (IE len: %d)\n",
+					    prInfoElem->ucLength);
+			return FALSE;
+		}
+
+		WLAN_GET_FIELD_16(cp, &u2AuthSuiteCount);
+		cp += 2;
+		u4RemainRsnIeLen -= 2;
+
+		/* Parse the Authentication and Key Management Cipher Suite List field. */
+
+		i = (UINT_32) u2AuthSuiteCount * 4;
+		if (u4RemainRsnIeLen < (INT_32) i) {
+			DBGLOG(RSN, WARN, "Fail to parse RSN IE in auth & key mgt suite list (IE len: %d)\n",
+					    prInfoElem->ucLength);
+			return FALSE;
+		}
+
+		pucAuthSuite = cp;
+
+		cp += i;
+		u4RemainRsnIeLen -= (INT_32) i;
+
+		if (u4RemainRsnIeLen == 0)
+			break;
+
+		/* Parse the RSN u2Capabilities field. */
+		if (u4RemainRsnIeLen < 2) {
+			DBGLOG(RSN, WARN, "Fail to parse RSN IE in RSN capabilities (IE len: %d)\n",
+					    prInfoElem->ucLength);
+			return FALSE;
+		}
+
+		WLAN_GET_FIELD_16(cp, &u2Cap);
+	} while (FALSE);
+
+	/* Save the RSN information for the BSS. */
+	prOsenInfo->ucElemId = ELEM_ID_VENDOR;
+
+	prOsenInfo->u2Version = 0;
+
+	prOsenInfo->u4GroupKeyCipherSuite = u4GroupSuite;
+
+	DBGLOG(RSN, TRACE, "RSN: version %d, group key cipher suite %02x-%02x-%02x-%02x\n",
+			   u2Version, (UCHAR) (u4GroupSuite & 0x000000FF),
+			   (UCHAR) ((u4GroupSuite >> 8) & 0x000000FF),
+			   (UCHAR) ((u4GroupSuite >> 16) & 0x000000FF), (UCHAR) ((u4GroupSuite >> 24) & 0x000000FF));
+
+	if (pucPairSuite) {
+		/* The information about the pairwise key cipher suites is present. */
+		if (u2PairSuiteCount > MAX_NUM_SUPPORTED_CIPHER_SUITES)
+			u2PairSuiteCount = MAX_NUM_SUPPORTED_CIPHER_SUITES;
+
+		prOsenInfo->u4PairwiseKeyCipherSuiteCount = (UINT_32) u2PairSuiteCount;
+
+		for (i = 0; i < (UINT_32) u2PairSuiteCount; i++) {
+			WLAN_GET_FIELD_32(pucPairSuite, &prOsenInfo->au4PairwiseKeyCipherSuite[i]);
+			pucPairSuite += 4;
+
+			DBGLOG(RSN, TRACE, "RSN: pairwise key cipher suite [%d]: %02x-%02x-%02x-%02x\n",
+					   (UINT_8) i, (UCHAR) (prOsenInfo->au4PairwiseKeyCipherSuite[i] & 0x000000FF),
+					   (UCHAR) ((prOsenInfo->au4PairwiseKeyCipherSuite[i] >> 8) & 0x000000FF),
+					   (UCHAR) ((prOsenInfo->au4PairwiseKeyCipherSuite[i] >> 16) & 0x000000FF),
+					   (UCHAR) ((prOsenInfo->au4PairwiseKeyCipherSuite[i] >> 24) & 0x000000FF));
+		}
+	} else {
+		/* The information about the pairwise key cipher suites is not present.
+		 * Use the default chipher suite for RSN: CCMP
+		 */
+		prOsenInfo->u4PairwiseKeyCipherSuiteCount = 1;
+		prOsenInfo->au4PairwiseKeyCipherSuite[0] = RSN_CIPHER_SUITE_CCMP;
+
+		DBGLOG(RSN, WARN, "No Pairwise Cipher Suite found, using default (CCMP)\n");
+	}
+
+	if (pucAuthSuite) {
+		/* The information about the authentication and key management suites is present. */
+		if (u2AuthSuiteCount > MAX_NUM_SUPPORTED_AKM_SUITES)
+			u2AuthSuiteCount = MAX_NUM_SUPPORTED_AKM_SUITES;
+
+		prOsenInfo->u4AuthKeyMgtSuiteCount = (UINT_32) u2AuthSuiteCount;
+
+		for (i = 0; i < (UINT_32) u2AuthSuiteCount; i++) {
+			WLAN_GET_FIELD_32(pucAuthSuite, &prOsenInfo->au4AuthKeyMgtSuite[i]);
+			pucAuthSuite += 4;
+
+			DBGLOG(RSN, TRACE, "RSN: AKM suite [%d]: %02x-%02x-%02x-%02x\n",
+					   (UINT_8) i, (UCHAR) (prOsenInfo->au4AuthKeyMgtSuite[i] & 0x000000FF),
+					   (UCHAR) ((prOsenInfo->au4AuthKeyMgtSuite[i] >> 8) & 0x000000FF),
+					   (UCHAR) ((prOsenInfo->au4AuthKeyMgtSuite[i] >> 16) & 0x000000FF),
+					   (UCHAR) ((prOsenInfo->au4AuthKeyMgtSuite[i] >> 24) & 0x000000FF));
+		}
+	} else {
+		/* The information about the authentication and key management suites
+		 * is not present. Use the default AKM suite for RSN.
+		 */
+		prOsenInfo->u4AuthKeyMgtSuiteCount = 1;
+		prOsenInfo->au4AuthKeyMgtSuite[0] = RSN_AKM_SUITE_802_1X;
+
+		DBGLOG(RSN, WARN, "No AKM found, using default (802.1X)\n");
+	}
+
+	prOsenInfo->u2RsnCap = u2Cap;
+#if CFG_SUPPORT_802_11W
+	prOsenInfo->fgRsnCapPresent = TRUE;
+#endif
+	DBGLOG(RSN, TRACE, "RSN cap: 0x%04x\n", prOsenInfo->u2RsnCap);
+
+	return TRUE;
 }
 #endif
