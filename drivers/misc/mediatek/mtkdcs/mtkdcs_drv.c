@@ -39,10 +39,18 @@ static struct task_struct *dcs_thread;
 
 #ifdef DCS_PROFILE
 struct perf {
+	/*
+	 * latest_async_time is not very accurate
+	 * sinece the entry_perf allows multiple callers
+	 * at the same time. It should be used in a
+	 * single user environment
+	 */
+	unsigned long long latest_async_time; /* not accurate */
 	unsigned long long latest_time;
 	unsigned long long max_time;
 };
 static struct perf perf;
+static unsigned long long async_start;
 #endif
 
 static char * const __dcs_status_name[DCS_NR_STATUS] = {
@@ -185,7 +193,7 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 {
 	int err;
 #ifdef DCS_PROFILE
-	unsigned long long start, t;
+	unsigned long long start, t, now;
 #endif
 
 	if ((sys_dcs_status < DCS_BUSY) &&
@@ -199,10 +207,17 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 #endif
 		err = dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
 #ifdef DCS_PROFILE
-		t = sched_clock() - start;
+		now = sched_clock();
+		t = now - start;
 		if (t > perf.max_time)
 			perf.max_time = t;
 		perf.latest_time = t;
+		if (status == DCS_NORMAL) {
+			/* we only care about the switch to normal time */
+			t = now - async_start;
+			perf.latest_async_time = t;
+		} else
+			perf.latest_async_time = 0;
 #endif
 		if (err) {
 			pr_err("[%d]ipi_write error: %d\n",
@@ -357,6 +372,9 @@ int dcs_enter_perf(enum dcs_kicker kicker)
 
 	/* wakeup thread */
 	pr_info("wakeup dcs_thread\n");
+#ifdef DCS_PROFILE
+	async_start = sched_clock();
+#endif
 	if (!wake_up_process(dcs_thread))
 		pr_info("dcs_thread is already running\n");
 
@@ -611,8 +629,9 @@ static ssize_t mtkdcs_perf_show(struct device *dev,
 {
 	int n = 0;
 
-	n += sprintf(buf + n, "latest=%lluns, max=%lluns\n",
-			perf.latest_time, perf.max_time);
+	n += sprintf(buf + n, "latest_ipi=%lluns, max_ipi=%lluns, latest_async=%lluns\n",
+			perf.latest_time, perf.max_time,
+			perf.latest_async_time);
 
 	return n;
 }
