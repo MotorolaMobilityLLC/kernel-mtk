@@ -276,7 +276,7 @@ static unsigned int scp_A_log_if_poll(struct file *file, poll_table *wait)
 	if (!(file->f_mode & FMODE_READ))
 		return ret;
 
-	poll_wait(file, &scp_A_logwait, wait);
+	/*poll_wait(file, &scp_A_logwait, wait);*/
 
 	ret = scp_A_log_poll();
 
