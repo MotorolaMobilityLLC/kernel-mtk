@@ -883,6 +883,8 @@ static void _mt_cpufreq_cpu_CB_wrapper(enum mt_cpu_dvfs_id cluster_id, unsigned 
 	aee_record_cpu_dvfs_cb(0);
 }
 
+#ifdef ENABLE_TURBO_MODE_AP
+static int can_turbo;
 static int turbo_core_match(unsigned int *cpus)
 {
 	if (cpus[0] == 1 && cpus[2] == 1)
@@ -892,8 +894,8 @@ static int turbo_core_match(unsigned int *cpus)
 	else
 		return 0;
 }
+#endif
 
-static int can_turbo;
 int turbo_flag;
 static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					void *hcpu)
@@ -925,6 +927,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 
 	dev = get_cpu_device(cpu);
 
+#ifdef ENABLE_TURBO_MODE_AP
 	/* Turbo decision */
 	if (dev && turbo_flag) {
 		if (turbo_core_match(cpus) && cluster_id != MT_CPU_DVFS_L) {
@@ -968,6 +971,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 			}
 		}
 	}
+#endif
 
 	if (dev) {
 		switch (action & ~CPU_TASKS_FROZEN) {
@@ -1259,6 +1263,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 			turbo_f = ((cpu_dvfs_get_max_freq(p) * 105 / 100) / 13) * 13 / 1000;
 			turbo_v = p->opp_tbl[0].cpufreq_volt;
 			cpuhvfs_set_turbo_scale(turbo_f * 1000, turbo_v);
+			turbo_is_inited = 1;
 		}
 #endif
 
