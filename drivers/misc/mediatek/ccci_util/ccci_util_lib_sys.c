@@ -166,7 +166,7 @@ static ssize_t ccci_md1_post_fix_show(char *buf)
 	return strlen(buf);
 }
 
-CCCI_ATTR(md1_postfix, 0440, &ccci_md1_post_fix_show, NULL);
+CCCI_ATTR(md1_postfix, 0444, &ccci_md1_post_fix_show, NULL);
 
 /* Sys -- dump buff usage */
 static ssize_t ccci_dump_buff_usage_show(char *buf)

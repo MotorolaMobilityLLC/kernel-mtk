@@ -1097,6 +1097,7 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	char md_protol[] = "DHL";
 	unsigned int sig = 0;
 	unsigned int pid = 0;
+	int retry;
 #ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
 	unsigned int val;
 	char magic_pattern[64];
@@ -1296,8 +1297,8 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 			CCCI_NORMAL_LOG(md_id, CHAR, "IOC_RELOAD_MD_TYPE: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
-			CCCI_NORMAL_LOG(md_id, CHAR, "IOC_RELOAD_MD_TYPE: storing md type(%d)!\n", md_type);
-			ccci_event_log("md%d: IOC_RELOAD_MD_TYPE: storing md type(%d)!\n", md_id, md_type);
+			CCCI_NORMAL_LOG(md_id, CHAR, "IOC_RELOAD_MD_TYPE: storing md type(0x%x)!\n", md_type);
+			ccci_event_log("md%d: IOC_RELOAD_MD_TYPE: storing md type(0x%x)!\n", md_id, md_type);
 			ccci_md_set_reload_type(proxy_p->md_obj, md_type);
 		}
 		break;
@@ -1334,7 +1335,15 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 		}
 		break;
 	case CCCI_IOC_GET_MD_TYPE:
-		md_type = ccci_md_get_load_type(proxy_p->md_obj);
+		retry = 100;
+		do {
+			md_type = get_legacy_md_type(md_id);
+			if (md_type)
+				break;
+			msleep(200);
+			retry--;
+		} while (retry);
+		CCCI_NORMAL_LOG(md_id, CHAR, "CCCI_IOC_GET_MD_TYPE: %d!\n", md_type);
 		ret = put_user((unsigned int)md_type, (unsigned int __user *)arg);
 		break;
 	case CCCI_IOC_STORE_MD_TYPE:
