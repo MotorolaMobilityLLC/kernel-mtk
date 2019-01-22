@@ -68,6 +68,8 @@
 #define DEBUG_DEEP_BUFFER_DL(format, args...)
 #endif
 
+#define CLEAR_BUFFER_US         600
+static int CLEAR_BUFFER_SIZE;
 
 static struct afe_mem_control_t *pMemControl;
 static struct snd_dma_buffer deep_buffer_dl_dma_buf;
@@ -408,6 +410,9 @@ static int mtk_deep_buffer_dl_prepare(struct snd_pcm_substream *substream)
 
 		EnableAfe(true);
 		mPrepareDone = true;
+
+		CLEAR_BUFFER_SIZE = substream->runtime->rate * CLEAR_BUFFER_US *
+				    audio_frame_to_bytes(substream, 1) / 1000000;
 	}
 	return 0;
 }
@@ -455,6 +460,46 @@ static struct page *mtk_deep_buffer_dl_page(struct snd_pcm_substream *substream,
 	return virt_to_page(dummy_page[substream->stream]); /* the same page */
 }
 
+static int mtk_deep_buffer_dl_ack(struct snd_pcm_substream *substream)
+{
+	int size_per_frame = audio_frame_to_bytes(substream, 1);
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	int copy_size = word_size_align(snd_pcm_playback_avail(runtime)*size_per_frame);
+
+	if (copy_size > CLEAR_BUFFER_SIZE)
+		copy_size = CLEAR_BUFFER_SIZE;
+
+	if (copy_size > 0) {
+		struct afe_block_t *afe_block_t = &pMemControl->rBlock;
+		snd_pcm_uframes_t appl_ofs = runtime->control->appl_ptr % runtime->buffer_size;
+		int32_t u4WriteIdx = appl_ofs * size_per_frame;
+
+		if (u4WriteIdx + copy_size < afe_block_t->u4BufferSize) {
+			memset_io(afe_block_t->pucVirtBufAddr + u4WriteIdx, 0, copy_size);
+			/*
+			* pr_debug("%s A, offset %d, clear buffer %d, copy_size %d\n",
+			*          __func__, u4WriteIdx, copy_size, copy_size);
+			*/
+		} else {
+			int32_t size_1 = 0, size_2 = 0;
+
+			size_1 = word_size_align((afe_block_t->u4BufferSize - u4WriteIdx));
+			size_2 = word_size_align((copy_size - size_1));
+
+			memset_io(afe_block_t->pucVirtBufAddr + u4WriteIdx, 0, size_1);
+			memset_io(afe_block_t->pucVirtBufAddr, 0, size_2);
+			/*
+			 * pr_debug("%s B-1, offset %d, clear buffer %d, copy_size %d\n",
+			 *          __func__, u4WriteIdx, size_1, copy_size);
+			 * pr_debug("%s B-2, offset %d, clear buffer %d, copy_size %d\n",
+			 *          __func__, 0, size_2, copy_size);
+			 */
+		}
+	}
+
+	return 0;
+}
+
 static struct snd_pcm_ops mtk_deep_buffer_dl_ops = {
 	.open =     mtk_deep_buffer_dl_open,
 	.close =    mtk_deep_buffer_dl_close,
@@ -465,6 +510,7 @@ static struct snd_pcm_ops mtk_deep_buffer_dl_ops = {
 	.trigger =  mtk_deep_buffer_dl_trigger,
 	.pointer =  mtk_deep_buffer_dl_pointer,
 	.page =     mtk_deep_buffer_dl_page,
+	.ack =      mtk_deep_buffer_dl_ack,
 };
 
 static int mtk_deep_buffer_dl_platform_probe(struct snd_soc_platform *platform)
