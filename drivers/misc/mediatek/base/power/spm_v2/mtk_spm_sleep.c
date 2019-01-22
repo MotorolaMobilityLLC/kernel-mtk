@@ -789,11 +789,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	int wd_ret;
 #endif
 	static wake_reason_t last_wr = WR_NONE;
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	struct pcm_desc *pcmdesc = NULL;
-#else
-	struct pcm_desc *pcmdesc;
-#endif
 	struct pwr_ctrl *pwrctrl;
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	int vcore_status;
