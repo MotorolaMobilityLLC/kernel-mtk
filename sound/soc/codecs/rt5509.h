@@ -473,5 +473,9 @@ struct rt_regmap_device *rt5509_regmap_register(
 	struct device *parent, void *client, void *drvdata);
 int rt5509_calib_create(struct rt5509_chip *chip);
 void rt5509_calib_destroy(struct rt5509_chip *chip);
+int rt5509_i2c_probe(struct i2c_client *client,
+		     const struct i2c_device_id *id);
+int rt5509_i2c_remove(struct i2c_client *client);
+void rt5509_i2c_shutdown(struct i2c_client *client);
 
 #endif /* #ifndef __RT5509_H */

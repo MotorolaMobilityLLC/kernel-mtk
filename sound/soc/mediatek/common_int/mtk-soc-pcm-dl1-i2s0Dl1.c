@@ -324,9 +324,8 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 				DisableALLbySampleRate(substream->runtime->rate);
 			}
 #if 0
-			EnableI2SDivPower(AUDIO_APLL12_DIV1, false);
-			EnableI2SDivPower(AUDIO_APLL12_DIV3, false);
-#else
+			/* EnableI2SDivPower(AUDIO_APLL12_DIV1, false); */
+			/* EnableI2SDivPower(AUDIO_APLL12_DIV3, false); */
 			EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, false);
 			EnableI2SCLKDiv(Soc_Aud_I2S3_MCKDIV, false);
 #endif
@@ -397,13 +396,13 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 				EnableALLbySampleRate(runtime->rate);
 				EnableAPLLTunerbySampleRate(runtime->rate);
 			}
-
+#if 0
 			SetCLkMclk(Soc_Aud_I2S1, runtime->rate); /* select I2S */
 			SetCLkMclk(Soc_Aud_I2S3, runtime->rate);
-#if 0
-			EnableI2SDivPower(AUDIO_APLL12_DIV1, true);
-			EnableI2SDivPower(AUDIO_APLL12_DIV3, true);
-#else
+
+			/* EnableI2SDivPower(AUDIO_APLL12_DIV1, true); */
+			/* EnableI2SDivPower(AUDIO_APLL12_DIV3, true); */
+
 			EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, true);
 			EnableI2SCLKDiv(Soc_Aud_I2S3_MCKDIV, true);
 #endif
