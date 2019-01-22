@@ -984,7 +984,6 @@ p2pFuncStartGO(IN P_ADAPTER_T prAdapter,
 						     prBssInfo->aucBSSID, 0xff, CIPHER_SUITE_NONE, 0xff, 0x0, BIT(0));
 		}
 
-		nicQmUpdateWmmParms(prAdapter, prBssInfo->ucBssIndex);
 #endif /* CFG_SUPPORT_AAA */
 
 		/* 3 <3> Set MAC HW */
@@ -994,6 +993,9 @@ p2pFuncStartGO(IN P_ADAPTER_T prAdapter,
 		/* 4 <3.2> Reset HW TSF Update Mode and Beacon Mode */
 		nicUpdateBss(prAdapter, prBssInfo->ucBssIndex);
 
+#if CFG_SUPPORT_AAA
+		nicQmUpdateWmmParms(prAdapter, prBssInfo->ucBssIndex);
+#endif
 		/* 4 <3.3> Update Beacon again for network phy type confirmed. */
 		bssUpdateBeaconContent(prAdapter, prBssInfo->ucBssIndex);
 
