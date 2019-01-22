@@ -13,30 +13,28 @@
 
 ifeq ($(CONFIG_MTK_ECCCI_DRIVER), y)
 
-obj-$(CONFIG_MTK_ECCCI_DRIVER) := ccci.o
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/inc/
+ccflags-y += -I$(srctree)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/inc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/port
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccmni/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/conn_md/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccmni
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(MTK_PLATFORM)
-
-# common services
-ccci-y := ccci_core.o ccci_bm.o ccci_modem.o modem_sys1.o
-
-# sub modules
-obj-y += fsm/
-obj-y += hif/
-obj-y += port/
-
-ifeq ($(CONFIG_MTK_ECCCI_C2K), y)
-ccci-y += modem_sys3.o
-endif
-
-# platform code
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-
+# port objects
+obj-$(CONFIG_MTK_ECCCI_DRIVER) := ccci_port.o
+ccci_port-y += port_cfg.o
+ccci_port-y += port_char.o
+ccci_port-y += port_ctlmsg.o
+ccci_port-y += port_ipc.o
+ccci_port-y += port_net.o
+ccci_port-y += port_poller.o
+ccci_port-y += port_proxy.o
+ccci_port-y += port_rpc.o
+ccci_port-y += port_smem.o
+ccci_port-y += port_sysmsg.o
 else
 obj-  := dummy.o # avoid build error
 endif
+

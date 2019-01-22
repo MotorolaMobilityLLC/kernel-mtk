@@ -428,7 +428,9 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			skb_pop_mac_header(skb);
 		} else {
 			CCMNI_ERR_MSG(ccmni->md_id,
-				      "ccmni-lan send wrong pkt with eth_len=0, ip_id=%04X\n", iph->id);
+				      "ccmni-lan send wrong pkt with eth_len=0, ip_id=%04X, data=%p, head=%p, ip_h=%x, mac_len=%d, len=%d, iph_off=%d\n",
+				      iph->id, skb->data, skb->head, skb->network_header,
+				      skb->mac_len, skb->len, skb_network_offset(skb));
 			dump_stack();
 			dev_kfree_skb(skb);
 			dev->stats.tx_dropped++;
@@ -511,12 +513,10 @@ tx_busy:
 	} else {
 		ccmni->tx_busy_cnt[is_ack]++;
 	}
-	/* when ul packet send fail for tx busy, resume mac header and length */
+
 	if (IS_CCMNI_LAN(dev)) {
 		skb_push(skb, mac_len);
 		skb_reset_mac_header(skb);
-		if (skb->len > skb_len)
-			skb->len = skb_len;
 	}
 	return NETDEV_TX_BUSY;
 }
@@ -1080,17 +1080,16 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 	return 0;
 }
 
-static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, int is_ack)
+static void ccmni_queue_state_callback(int md_id, int ccmni_idx, HIF_STATE state, int is_ack)
 {
 	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
 	ccmni_instance_t *ccmni = NULL;
 	ccmni_instance_t *ccmni_tmp = NULL;
 	struct net_device *dev = NULL;
 	struct netdev_queue *net_queue = NULL;
-	int i = 0;
 
 	if (unlikely(ctlb == NULL)) {
-		CCMNI_ERR_MSG(md_id, "invalid ccmni ctrl struct when ccmni_idx=%d md_sta=%d\n", ccmni_idx, state);
+		CCMNI_ERR_MSG(md_id, "invalid ccmni ctrl struct when ccmni_idx=%d hif_sta=%d\n", ccmni_idx, state);
 		return;
 	}
 
@@ -1098,48 +1097,17 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 	dev = ccmni_tmp->dev;
 	ccmni = (ccmni_instance_t *)netdev_priv(dev);
 
-	if ((state != RX_IRQ) && (state != RX_FLUSH) &&
-		(state != TX_IRQ) && (state != TX_FULL) &&
-		(atomic_read(&ccmni->usage) > 0)) {
-		CCMNI_INF_MSG(md_id, "md_state_cb: CCMNI%d, md_sta=%d, usage=%d\n",
-			ccmni_idx, state, atomic_read(&ccmni->usage));
-	}
-
 	switch (state) {
-	case READY:
-		/* Only do carrier on for ccmni-lan.
-		 * don't carrire on other interface, MD data link may be not ready. carrirer on it in ccmni_open
-		 */
-		if (IS_CCMNI_LAN(ccmni->dev))
-			netif_carrier_on(ccmni->dev);
-
-		for (i = 0; i < 2; i++) {
-			ccmni->tx_seq_num[i] = 0;
-			ccmni->tx_full_cnt[i] = 0;
-			ccmni->tx_irq_cnt[i] = 0;
-			ccmni->tx_full_tick[i] = 0;
-			ccmni->flags[i] &= ~CCMNI_TX_PRINT_F;
-		}
-		ccmni->rx_seq_num = 0;
+	case RX_IRQ:
+		mod_timer(ccmni->timer, jiffies+HZ);
+		napi_schedule(ccmni->napi);
+		wake_lock_timeout(&ctlb->ccmni_wakelock, HZ);
 		break;
-
-	case EXCEPTION:
-	case RESET:
-	case WAITING_TO_STOP:
-		netif_carrier_off(ccmni->dev);
-		break;
-
 #ifdef ENABLE_WQ_GRO
 	case RX_FLUSH:
 		spin_lock_bh(ccmni->spinlock);
 		napi_gro_flush(ccmni->napi, false);
 		spin_unlock_bh(ccmni->spinlock);
-		break;
-#else
-	case RX_IRQ:
-		mod_timer(ccmni->timer, jiffies + HZ);
-		napi_schedule(ccmni->napi);
-		wake_lock_timeout(&ctlb->ccmni_wakelock, HZ);
 		break;
 #endif
 
@@ -1189,6 +1157,53 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 					is_ack, ccmni->tx_full_cnt[is_ack], ccmni->tx_irq_cnt[is_ack]);
 			}
 		}
+		break;
+	}
+}
+
+static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state)
+{
+	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
+	ccmni_instance_t *ccmni = NULL;
+	ccmni_instance_t *ccmni_tmp = NULL;
+	struct net_device *dev = NULL;
+	int i = 0;
+
+	if (unlikely(ctlb == NULL)) {
+		CCMNI_ERR_MSG(md_id, "invalid ccmni ctrl struct when ccmni_idx=%d md_sta=%d\n", ccmni_idx, state);
+		return;
+	}
+
+	ccmni_tmp = ctlb->ccmni_inst[ccmni_idx];
+	dev = ccmni_tmp->dev;
+	ccmni = (ccmni_instance_t *)netdev_priv(dev);
+
+	if (atomic_read(&ccmni->usage) > 0)
+		CCMNI_INF_MSG(md_id, "md_state_cb: CCMNI%d, md_sta=%d, usage=%d\n",
+			ccmni_idx, state, atomic_read(&ccmni->usage));
+
+	switch (state) {
+	case READY:
+		/* Only do carrier on for ccmni-lan.
+		 * don't carrire on other interface, MD data link may be not ready. carrirer on it in ccmni_open
+		 */
+		if (IS_CCMNI_LAN(ccmni->dev))
+			netif_carrier_on(ccmni->dev);
+
+		for (i = 0; i < 2; i++) {
+			ccmni->tx_seq_num[i] = 0;
+			ccmni->tx_full_cnt[i] = 0;
+			ccmni->tx_irq_cnt[i] = 0;
+			ccmni->tx_full_tick[i] = 0;
+			ccmni->flags[i] &= ~CCMNI_TX_PRINT_F;
+		}
+		ccmni->rx_seq_num = 0;
+		break;
+
+	case EXCEPTION:
+	case RESET:
+	case WAITING_TO_STOP:
+		netif_carrier_off(ccmni->dev);
 		break;
 	default:
 		break;
@@ -1267,6 +1282,7 @@ struct ccmni_dev_ops ccmni_ops = {
 	.init = &ccmni_init,
 	.rx_callback = &ccmni_rx_callback,
 	.md_state_callback = &ccmni_md_state_callback,
+	.queue_state_callback = &ccmni_queue_state_callback,
 	.exit = ccmni_exit,
 	.dump = ccmni_dump,
 	.dump_rx_status = ccmni_dump_rx_status,
