@@ -669,6 +669,12 @@
 #define CATEGORY_WME_MGT_NOTIFICATION               17	/* WME management notification */
 #define CATEGORY_VENDOR_SPECIFIC_ACTION             127
 
+/* Public Action field*/
+#define PUBLIC_ACTION_GAS_INITIAL_REQ		    10
+#define PUBLIC_ACTION_GAS_INITIAL_RESP		    11
+#define PUBLIC_ACTION_GAS_COMEBACK_REQ		    12
+#define PUBLIC_ACTION_GAS_COMEBACK_RESP		    13
+
 /* 7.3.1.14 Block Ack Parameter Set field */
 #define BA_PARAM_SET_ACK_POLICY_MASK                BIT(1)
 #define BA_PARAM_SET_ACK_POLICY_MASK_OFFSET         1

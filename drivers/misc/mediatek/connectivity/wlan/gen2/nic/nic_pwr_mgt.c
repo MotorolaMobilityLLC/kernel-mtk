@@ -106,6 +106,7 @@ VOID nicpmSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 */
 /*----------------------------------------------------------------------------*/
 
+
 UINT_32 u4OriRegValue;
 BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 {
@@ -172,6 +173,7 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &u4RegValue);
 				DBGLOG(NIC, WARN, "<WiFi> [2]MCR_D2HRM2R = 0x%x, ORI_MCR_D2HRM2R = 0x%x\n",
 					u4RegValue, u4OriRegValue);
+				fgWmtCoreDump = glIsWmtCodeDump();
 				DBGLOG(NIC, WARN,
 					"<WiFi> Fatal error! Driver own fail!!!! %d, fgIsBusAccessFailed: %d,OWN retry:%d,fgCoreDump:%d\n",
 					u4OwnCnt++, fgIsBusAccessFailed, i, fgWmtCoreDump);
@@ -179,7 +181,6 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				for (u4FwCnt = 0; u4FwCnt < 16; u4FwCnt++)
 					DBGLOG(NIC, WARN, "0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR));
 				/* CONSYS_REG_READ(CONSYS_CPUPCR_REG) */
-				fgWmtCoreDump = glIsWmtCodeDump();
 				if (fgWmtCoreDump == FALSE) {
 					kalSendAeeWarning("[Fatal error! Driver own fail!]", __func__);
 					glDoChipReset();

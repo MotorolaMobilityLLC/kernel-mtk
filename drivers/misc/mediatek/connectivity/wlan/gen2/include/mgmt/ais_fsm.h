@@ -49,13 +49,14 @@
 #define AIS_BMC_MIN_TIMEOUT_VALID           TRUE
 
 #define AIS_JOIN_CH_GRANT_THRESHOLD         10
-#define AIS_JOIN_CH_REQUEST_INTERVAL        3000
+#define AIS_JOIN_CH_REQUEST_INTERVAL        4000
 
 #define AIS_SCN_DONE_TIMEOUT_SEC            30	/* 15 for 2.4G + 5G */ /* 5 */
 
 #define AIS_AUTORN_MIN_INTERVAL			20
 #define AIS_BLACKLIST_TIMEOUT               15 /* seconds */
 
+#define AIS_WAIT_OKC_PMKID_SEC              1000 /* unit: ms */
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -191,6 +192,8 @@ typedef struct _AIS_FSM_INFO_T {
 
 	TIMER_T rDeauthDoneTimer;
 
+	TIMER_T rWaitOkcPMKTimer;
+
 	UINT_8 ucSeqNumOfReqMsg;
 	UINT_8 ucSeqNumOfChReq;
 	UINT_8 ucSeqNumOfScanReq;
@@ -321,6 +324,8 @@ VOID
 aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 				ENUM_PARAM_MEDIA_STATE_T eConnectionState, BOOLEAN fgDelayIndication);
 
+VOID aisPostponedEventOfSchedScanReq(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T prAisFsmInfo);
+
 VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T prAisFsmInfo);
 
 VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, P_SW_RFB_T prAssocRspSwRfb);
@@ -402,6 +407,8 @@ aisFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 VOID aisFsmRunEventMgmtFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 VOID aisFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
+
+VOID aisFsmRunEventSetOkcPmk(IN P_ADAPTER_T prAdapter);
 
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 VOID aisTest(VOID);

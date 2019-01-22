@@ -354,6 +354,9 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 		case 0x0551:
 			HifInfo->ChipID = 0x6755;
 			break;
+		case 0x0633:
+			HifInfo->ChipID = 0x6570;
+			break;
 		}
 	}
 	DBGLOG(INIT, INFO, "[WiFi/HIF] ChipID = 0x%x\n", HifInfo->ChipID);
@@ -416,12 +419,10 @@ VOID glClearHifInfo(GLUE_INFO_T *GlueInfo)
 	iounmap(GlueInfo->rHifInfo.DmaRegBaseAddr);
 	iounmap(GlueInfo->rHifInfo.McuRegBaseAddr);
 	iounmap(GlueInfo->rHifInfo.APMcuRegBaseAddr);
-
 	GlueInfo->rHifInfo.HifRegBaseAddr = NULL;
 	GlueInfo->rHifInfo.DmaRegBaseAddr = NULL;
 	GlueInfo->rHifInfo.McuRegBaseAddr = NULL;
 	GlueInfo->rHifInfo.APMcuRegBaseAddr = NULL;
-
 	return;
 
 } /* end of glClearHifInfo() */
@@ -448,6 +449,7 @@ VOID glGetChipInfo(GLUE_INFO_T *GlueInfo, UINT_8 *pucChipBuf)
 	case MTK_CHIP_ID_8163:
 	case MTK_CHIP_ID_8167:
 	case MTK_CHIP_ID_6735:
+	case MTK_CHIP_ID_6570:
 	case MTK_CHIP_ID_6580:
 	case MTK_CHIP_ID_6755:
 	case MTK_CHIP_ID_7623:

@@ -202,7 +202,6 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN BO
 			cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
 			glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
 			/* dump TC4[0] ~ TC4[3] TX_DESC */
-
 			wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
 
 			fgWmtCoreDump = glIsWmtCodeDump();
@@ -1388,7 +1387,6 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 			fgScanReqCmd = TRUE;
 
 		}
-
 	}
 
 	/* <4> Write frame to data port */

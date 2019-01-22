@@ -380,6 +380,7 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen);
 VOID wlanDumpCommandFwStatus(VOID);
 
 VOID wlanDebugScanTargetBSSRecord(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
+
 VOID wlanDebugScanTargetBSSDump(P_ADAPTER_T prAdapter);
 
 VOID wlanPktDebugDumpInfo(P_ADAPTER_T prAdapter);
@@ -391,6 +392,24 @@ VOID wlanDebugHifDescriptorDump(P_ADAPTER_T prAdapter, ENUM_AMPDU_TYPE type
 	, ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T tcIndex);
 VOID wlanDebugScanRecord(P_ADAPTER_T prAdapter, ENUM_DBG_SCAN_T recordType);
 VOID wlanDebugScanDump(P_ADAPTER_T prAdapter);
+
+
+VOID wlanFWDLDebugInit(VOID);
+
+VOID wlanFWDLDebugStartSectionPacketInfo(UINT_32 u4Section, UINT_32 u4DownloadSize,
+	UINT_32 u4ResponseTime);
+
+VOID wlanFWDLDebugAddTxStartTime(UINT_32 u4TxStartTime);
+
+VOID wlanFWDLDebugAddTxDoneTime(UINT_32 u4TxDoneTime);
+
+VOID wlanFWDLDebugAddRxStartTime(UINT_32 u4RxStartTime);
+
+VOID wlanFWDLDebugAddRxDoneTime(UINT_32 u4RxDoneTime);
+
+VOID wlanFWDLDebugDumpInfo(VOID);
+
+VOID wlanFWDLDebugUninit(VOID);
 
 
 /*******************************************************************************

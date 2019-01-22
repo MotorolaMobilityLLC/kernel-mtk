@@ -84,6 +84,9 @@ endif
 ifeq ($(CONFIG_ARCH_MT6580), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
+ifeq ($(CONFIG_ARCH_MT6570), y)
+    MTK_SRAM_SIZE_OPTION=1
+endif
 ifeq ($(CONFIG_ARCH_MT8163), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
@@ -105,6 +108,7 @@ ccflags-y += -DDBG=0
 ccflags-y += -I$(src)/os -I$(src)/os/linux/include -I$(src)/os/linux/hif/ahb/include
 ccflags-y += -I$(src)/include -I$(src)/include/nic -I$(src)/include/mgmt
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 
 MODULE_NAME := wlan_gen2
 obj-$(CONFIG_MTK_COMBO_WIFI) += $(MODULE_NAME).o
@@ -237,6 +241,17 @@ $(MODULE_NAME)-objs  += $(PLAT_OBJS)
 endif
 
 ifeq ($(CONFIG_MACH_MT6757), y)
+PLAT_OBJS := $(PLAT_DIR)plat_priv.o
+$(MODULE_NAME)-objs  += $(PLAT_OBJS)
+endif
+
+ifeq ($(CONFIG_ARCH_MT6570), y)
+PLAT_OBJS := $(PLAT_DIR)plat_priv.o
+$(MODULE_NAME)-objs  += $(PLAT_OBJS)
+endif
+
+
+ifeq ($(CONFIG_ARCH_MT6735M), y)
 PLAT_OBJS := $(PLAT_DIR)plat_priv.o
 $(MODULE_NAME)-objs  += $(PLAT_OBJS)
 endif
