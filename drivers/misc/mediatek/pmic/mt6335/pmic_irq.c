@@ -39,6 +39,7 @@
 #include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
 #include "include/pmic_irq.h"
+#include "include/pmic_debugfs.h"
 
 #include <mach/mtk_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
@@ -60,6 +61,8 @@
 #include <mach/mtk_pmic.h>
 #include <mt-plat/mtk_reboot.h>
 #include <mt-plat/aee.h>
+
+#include <mt-plat/mtk_auxadc_intf.h>
 
 /*#define VPA_OC*/
 /*#include <mach/mt_ccci_common.h>*/
@@ -336,8 +339,8 @@ void vpa_oc_int_handler(void)
  ******************************************************************************/
 void chrdet_int_handler(void)
 {
-	PMICLOG("[chrdet_int_handler]CHRDET status = %d....\n",
-		pmic_get_register_value(PMIC_RGS_CHRDET));
+	pr_err(PMICTAG "[chrdet_int_handler]CHRDET status = plug-%s\n",
+		pmic_get_register_value(PMIC_RGS_CHRDET)?"in":"out");
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (!upmu_get_rgs_chrdet()) {
@@ -405,7 +408,7 @@ void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 	switch (intNo) {
 	default:
 		/* issue AEE exception and disable OC interrupt */
-		/* TBD: dump_exception_reg*/
+		kernel_dump_exception_reg();
 		aee_kernel_warning("PMIC OC", "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
 		pmic_enable_interrupt(intNo, 0, "PMIC");
 		pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
@@ -574,13 +577,15 @@ void register_all_oc_interrupts(void)
 static void pmic_int_handler(void)
 {
 	unsigned char i, j;
-	unsigned int ret;
 
 	for (i = 0; i < interrupts_size; i++) {
 		unsigned int int_status_val = 0;
 
 		int_status_val = upmu_get_reg_value(interrupts[i].address);
-		pr_err(PMICTAG "[PMIC_INT] addr[0x%x]=0x%x\n", interrupts[i].address, int_status_val);
+		if (int_status_val) {
+			pr_err(PMICTAG "[PMIC_INT] addr[0x%x]=0x%x\n", interrupts[i].address, int_status_val);
+			upmu_set_reg_value(interrupts[i].address, int_status_val);
+		}
 
 		for (j = 0; j < PMIC_INT_WIDTH; j++) {
 			if ((int_status_val) & (1 << j)) {
@@ -592,7 +597,6 @@ static void pmic_int_handler(void)
 					interrupts[i].interrupts[j].oc_callback((i * PMIC_INT_WIDTH + j),
 						interrupts[i].interrupts[j].name);
 				}
-				ret = pmic_config_interface(interrupts[i].address, 0x1, 0x1, j);
 			}
 		}
 	}
