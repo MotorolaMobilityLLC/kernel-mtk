@@ -34,6 +34,8 @@
 	((((u16)*((u8 *)(_buf) + 0)) << 8) | \
 	  (((u16)*((u8 *)(_buf) + 1)) << 0))
 
+static u32 fp_jhash_initval __read_mostly;
+
 /* set fastpath log level */
 u32 fp_log_level = K_ALET | K_CRIT | K_ERR | K_WARNIN | K_NOTICE;
 
@@ -47,71 +49,128 @@ struct interface ifaces[MAX_IFACE_NUM];
 spinlock_t fp_lock;
 
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
-struct fp_track_t fp_track;
+struct fp_track_table_list_t fp_track[MAX_TRACK_NUM];
+struct fp_track_table_list_t fp_table_buffer;
+unsigned int buffer_cnt;
+
 void dummy_destructor_track_table(struct sk_buff *skb)
 {
 	(void)skb;
 }
 
-static inline struct fp_cb *_get_cb_from_track_table(unsigned int index)
+static void fp_init_table_buffer(void)
 {
-	return &fp_track.table[index].cb;
+	int i;
+	struct fp_track_table_t *track_table;
+	struct fp_track_table_t *next_track_table = NULL;
+
+	TRACK_TABLE_INIT_LOCK(fp_table_buffer);
+	fp_table_buffer.table = NULL;
+
+	for (i = 0; i < TABLE_BUFFER_NUM; i++) {
+		track_table = kmalloc(sizeof(struct fp_track_table_t), GFP_ATOMIC);
+		if (!track_table) {
+			fp_printk(K_ERR, "%s: kmalloc failed!\n", __func__);
+			return;
+		}
+
+		memset(track_table, 0, sizeof(struct fp_track_table_t));
+		track_table->next_track_table = next_track_table;
+		next_track_table = track_table;
+
+		buffer_cnt++;
+	}
+	fp_table_buffer.table = track_table;
+
+	fp_printk(K_CRIT, "%s: Total table buffer num[%d], table head[%p]!\n",
+				__func__, buffer_cnt, fp_table_buffer.table);
 }
 
-static inline struct fp_cb *_insert_track_table(struct sk_buff *skb, unsigned int counter,
-					 unsigned int index)
+static struct fp_track_table_t *fp_get_table_buffer(void)
+{
+	unsigned long flags;
+	struct fp_track_table_t *track_table = NULL;
+
+	TRACK_TABLE_LOCK(fp_table_buffer, flags);
+
+	if (fp_table_buffer.table) {
+		track_table = fp_table_buffer.table;
+		fp_table_buffer.table = fp_table_buffer.table->next_track_table;
+
+		buffer_cnt--;
+	}
+
+	TRACK_TABLE_UNLOCK(fp_table_buffer, flags);
+
+	return track_table;
+}
+
+static void fp_put_table_buffer(struct fp_track_table_t *track_table)
+{
+	unsigned long flags;
+
+	TRACK_TABLE_LOCK(fp_table_buffer, flags);
+
+	track_table->next_track_table = fp_table_buffer.table;
+	fp_table_buffer.table = track_table;
+	buffer_cnt++;
+
+	TRACK_TABLE_UNLOCK(fp_table_buffer, flags);
+}
+
+static inline struct fp_cb *_insert_track_table(struct sk_buff *skb, struct fp_track_table_t *track_table)
 {
 
 	/* TODO: Peter: add nf_conntrack */
-	fp_track.table[index].ref_count = 0;
-	fp_track.table[index].valid = 1;
-	fp_track.table[index].tracked_address = (void *)skb;
-	fp_track.table[index].timestamp = counter;
-	fp_track.table[index].jiffies = jiffies;
-	fp_track.tracked_number++;
+	track_table->ref_count = 0;
+	track_table->tracked_address = (void *)skb;
+	track_table->jiffies = jiffies;
+	track_table->next_track_table = NULL;
 
-	return _get_cb_from_track_table(index);
+	return &track_table->cb;
 }
 
-static inline void _remove_track_table(unsigned int index)
+static inline void _remove_track_table(
+	bool is_first_track_table,
+	unsigned int index,
+	struct fp_track_table_t *prev_track_table,
+	struct fp_track_table_t *curr_track_table)
 {
-	struct fp_track_table_t *p_table = &fp_track.table[index];
+	if (is_first_track_table == true)
+		fp_track[index].table = curr_track_table->next_track_table;
+	else
+		prev_track_table->next_track_table = curr_track_table->next_track_table;
 
-	fp_printk(K_DEBUG, "%s: Remove index[%d] entry from fp track table skb[%p], counter[%d].\n", __func__,
-		 index, p_table->tracked_address, p_table->timestamp);
+	fp_put_table_buffer(curr_track_table);
 
-	p_table->valid = 0;
-	fp_track.tracked_number--;
 }
 
-static void init_track_table(void)
+static void fp_init_track_table(void)
 {
 	int i;
 
-	TRACK_TABLE_INIT_LOCK(fp_track);
-	fp_track.g_timestamp = 0;
-	fp_track.tracked_number = 0;
-	fp_track.table = vmalloc(sizeof(struct fp_track_table_t) * MAX_TRACK_NUM);
-
-	for (i = 0; i < MAX_TRACK_NUM; i++)
-		memset(&fp_track.table[i], 0, sizeof(struct fp_track_table_t));
+	for (i = 0; i < MAX_TRACK_NUM; i++) {
+		TRACK_TABLE_INIT_LOCK(fp_track[i]);
+		fp_track[i].table = NULL;
+	}
 }
 
 static void dest_track_table(void)
 {
-	vfree(fp_track.table);
+	del_all_track_table();
 }
 
 static struct fp_cb *add_track_table(struct sk_buff *skb, struct fp_desc *desc)
 {
 	struct fp_cb *cb = NULL;
-	struct ip4header *ip;
-	struct ip6header *ip6;
-	u_int8_t proto;
-	unsigned short sport = 0, dport = 0;
 	unsigned int hash;
 	unsigned long flags;
-	int i;
+	unsigned int list_cnt = 0;
+	bool is_first_track_table = true;
+	struct fp_track_table_t *track_table = NULL;
+	struct fp_track_table_t *curr_track_table = NULL;
+	struct fp_track_table_t *prev_track_table = NULL;
+	struct fp_track_table_t *tmp_track_table = NULL;
 
 	if (!skb || !desc) {
 		fp_printk(K_INFO, "%s: Null input, skb[%p], desc[%p].\n", __func__, skb, desc);
@@ -119,205 +178,191 @@ static struct fp_cb *add_track_table(struct sk_buff *skb, struct fp_desc *desc)
 	}
 
 	/* get hash value */
-	if (desc->flag & DESC_FLAG_IPV4) {
-		ip = (struct ip4header *) (skb->data + desc->l3_off);
-		proto = ip->ip_p;
-
-		switch (proto) {
-		case IPPROTO_TCP:
-			{
-				struct tcpheader *tcp = (struct tcpheader *) (skb->data + desc->l4_off);
-
-				sport = tcp->th_sport;
-				dport = tcp->th_dport;
-			}
-			break;
-		case IPPROTO_UDP:
-			{
-				struct udpheader *udp = (struct udpheader *) (skb->data + desc->l4_off);
-
-				sport = udp->uh_sport;
-				dport = udp->uh_dport;
-			}
-			break;
-		}
-		hash =
-			jhash_3words(ip->ip_src, ip->ip_dst, (u_int32_t) sport | (dport << 16),
-				 proto) % MAX_TRACK_NUM;
-
-	fp_printk(K_DEBUG, "%s: IPv4 add track table, skb[%p], src(0x%x), dst(0x%x), sport[%d], dport[%d], proto[%d], hash[%d], valid[%d].\n",
-				__func__, skb, ip->ip_src, ip->ip_dst, sport, dport,
-				proto, hash, fp_track.table[hash].valid);
-
-	} else if (desc->flag & DESC_FLAG_IPV6) {
-		ip6 = (struct ip6header *) (skb->data + desc->l3_off);
-		/* TODO: */
-		proto = ip6->nexthdr;
-
-		switch (proto) {
-		case IPPROTO_TCP:
-			{
-				struct tcpheader *tcp = (struct tcpheader *) (skb->data + desc->l4_off);
-
-				sport = tcp->th_sport;
-				dport = tcp->th_dport;
-			}
-			break;
-		case IPPROTO_UDP:
-			{
-				struct udpheader *udp = (struct udpheader *) (skb->data + desc->l4_off);
-
-				sport = udp->uh_sport;
-				dport = udp->uh_dport;
-			}
-			break;
-		}
-		hash =
-			jhash_3words(ip6->saddr.s6_addr32[0] ^ ip6->saddr.s6_addr32[1] ^ ip6->saddr.
-				 s6_addr32[2] ^ ip6->saddr.s6_addr32[3],
-				 ip6->daddr.s6_addr32[0] ^ ip6->daddr.s6_addr32[1] ^ ip6->daddr.
-				 s6_addr32[2] ^ ip6->daddr.s6_addr32[3],
-				 (u_int32_t) sport | (dport << 16), proto) % MAX_TRACK_NUM;
-
-		fp_printk(K_DEBUG, "%s: IPv6 add track table, skb[%p], src[%x, %x, %x, %x], dst[%x, %x, %x, %x], sport[%d], dport[%d], proto[%d], hash[%d], valid[%d].\n",
-					__func__, skb, ip6->saddr.s6_addr32[0], ip6->saddr.s6_addr32[1],
-					ip6->saddr.s6_addr32[2], ip6->saddr.s6_addr32[3], ip6->daddr.s6_addr32[0],
-					ip6->daddr.s6_addr32[1], ip6->daddr.s6_addr32[2], ip6->daddr.s6_addr32[3],
-					sport, dport, proto, hash, fp_track.table[hash].valid);
-
+	if ((desc->flag & DESC_FLAG_IPV4) || (desc->flag & DESC_FLAG_IPV6)) {
+		hash = jhash_1word(((unsigned long)skb & 0xFFFFFFFF), fp_jhash_initval) % MAX_TRACK_NUM;
 	} else {
 		/* TODO */
 		fp_printk(K_ERR, "%s: Not a IPv4/v6 packet, flag[%x], skb[%p].\n", __func__, desc->flag, skb);
 		goto out;
 	}
 
-	TRACK_TABLE_LOCK(fp_track, flags);
-	/* if there is no empty entry, return */
-	if (!fp_track.table[hash].valid) {
-		unsigned int counter_current;
-		/* update global counter */
-		counter_current = fp_track.g_timestamp;
-		fp_track.g_timestamp++;
-		if (fp_track.g_timestamp < counter_current) {
-			/* overflow, need to check if there is any duplicated entry in track table */
-			counter_current = fp_track.g_timestamp;
-			fp_track.g_timestamp++;
-			for (i = 0; i < MAX_TRACK_NUM; i++) {
-				if (!fp_track.table[i].valid)
-					continue;
+	track_table = fp_get_table_buffer();
+	if (track_table)
+		memset(track_table, 0, sizeof(struct fp_track_table_t));
+	else
+		fp_printk(K_ERR, "%s: Table buffer is used up, cannot get table buffer!.\n", __func__);
 
-				if (fp_track.table[i].tracked_address == (void *)skb) {
-					fp_printk(K_DEBUG, "%s: skb[%p] is duplicated, remove entry, index[%d].\n",
-								__func__, skb, i);
-					_remove_track_table(i);
+
+	fp_printk(K_DEBUG, "%s: JQ_debug: 1. Add track table, skb[%p], hash[%d], track_table[%p], remain buffer[%d].\n",
+				__func__, skb, hash, track_table, buffer_cnt);
+
+	TRACK_TABLE_LOCK(fp_track[hash], flags);
+	curr_track_table = fp_track[hash].table;
+
+	if (!curr_track_table) {
+		fp_track[hash].table = track_table;
+	} else {
+		while (curr_track_table) {
+			if (list_cnt >= MAX_TRACK_TABLE_LIST) {
+				fp_printk(K_DEBUG, "%s: JQ_debug: Reach max hash list! Don't add track table[%p], skb[%p], hash[%d], remain buffer[%d].\n",
+							__func__, track_table, skb, hash, buffer_cnt+1);
+
+				if (track_table)
+					fp_put_table_buffer(track_table);
+
+				TRACK_TABLE_UNLOCK(fp_track[hash], flags);
+				goto out;
+			}
+
+			tmp_track_table = curr_track_table->next_track_table;
+
+			if (curr_track_table->ref_count == 0) {
+				/* Remove timeout track table */
+				if (unlikely(time_after(jiffies, (curr_track_table->jiffies + msecs_to_jiffies(10))))) {
+					fp_printk(K_DEBUG, "%s: JQ_debug: Remove timeout track table[%p], skb[%p], hash[%d], is_first_track_table[%d], remain buffer[%d].\n",
+								__func__, curr_track_table, skb,
+								hash, is_first_track_table, buffer_cnt+1);
+
+					_remove_track_table(is_first_track_table, hash,
+										prev_track_table, curr_track_table);
+					curr_track_table = tmp_track_table;
+					continue;
 				}
 
+				/* Remove track table of duplicated skb */
+				if (unlikely(curr_track_table->tracked_address == (void *)skb)) {
+					fp_printk(K_DEBUG, "%s: JQ_debug: Remove track table[%p] of duplicated skb[%p], hash[%d], is_first_track_table[%d], remain buffer[%d].\n",
+								__func__, curr_track_table, skb,
+								hash, is_first_track_table, buffer_cnt+1);
+
+					_remove_track_table(is_first_track_table, hash,
+										prev_track_table, curr_track_table);
+					curr_track_table = tmp_track_table;
+					continue;
+				}
 			}
+
+			is_first_track_table = false;
+			prev_track_table = curr_track_table;
+			curr_track_table = tmp_track_table;
+			list_cnt++;
 		}
 
-		/* insert current skb into track table */
-		cb = _insert_track_table(skb, counter_current, hash);
+		if (is_first_track_table == true)
+			fp_track[hash].table = track_table;
+		else
+			prev_track_table->next_track_table = track_table;
 	}
 
-	TRACK_TABLE_UNLOCK(fp_track, flags);
+	/* insert current skb into track table */
+	if (track_table)
+		cb = _insert_track_table(skb, track_table);
 
-	fp_printk(K_DEBUG, "%s: After add track table, skb[%p], cb[%p].\n", __func__, skb, cb);
+	TRACK_TABLE_UNLOCK(fp_track[hash], flags);
+
+	fp_printk(K_DEBUG, "%s: JQ_debug: 2. Add track table, skb[%p], hash[%d], is_first_track_table[%d], track_table[%p].\n",
+				__func__, skb, hash, is_first_track_table, track_table);
+
 out:
 	return cb;
 }
 
-static struct fp_cb *search_and_hold_track_table(struct sk_buff *skb)
+static struct fp_cb *search_and_hold_track_table(
+	struct sk_buff *skb,
+	struct fp_track_table_t **curr_track_table)
 {
-	struct fp_cb *cb = NULL;
-	unsigned int timestamp = 0;
-	int index = -1;
-	int i;
+	unsigned int hash;
 	unsigned long flags;
+	struct fp_cb *cb = NULL;
+	bool is_first_track_table = true;
+	struct fp_track_table_t *prev_track_table = NULL;
 
 	if (likely(skb->destructor == dummy_destructor_track_table)) {
 		fp_printk(K_ERR, "%s: Dummy destructor track table, skb[%p].\n", __func__, skb);
 		return cb;
 	}
 
-	TRACK_TABLE_LOCK(fp_track, flags);
-	for (i = 0; i < MAX_TRACK_NUM; i++) {
-		if (likely(!fp_track.table[i].valid))
-			continue;
+	hash = jhash_1word(((unsigned long)skb & 0xFFFFFFFF), fp_jhash_initval) % MAX_TRACK_NUM;
 
-		if (unlikely(fp_track.table[i].tracked_address == (void *)skb)) {
-			if (unlikely(fp_track.table[i].timestamp >= timestamp)) {
-				timestamp = fp_track.table[i].timestamp;
+	fp_printk(K_DEBUG, "%s: JQ_debug: 1. Search track table, skb[%p], hash[%d].\n", __func__, skb, hash);
 
-				if (likely(index != -1)) {
-					fp_printk(K_DEBUG, "%s: skb[%p] is duplicated, remove entry, index[%d].\n",
-								__func__, skb, i);
-					_remove_track_table(index);
-				}
+	TRACK_TABLE_LOCK(fp_track[hash], flags);
+	*curr_track_table = fp_track[hash].table;
+	while (*curr_track_table) {
+		if (unlikely(((*curr_track_table)->tracked_address == (void *)skb)
+			&& ((*curr_track_table)->ref_count == 0))) {
+			fp_printk(K_DEBUG, "%s: JQ_debug: 2. Search track table, skb[%p], hash[%d], is_first_track_table[%d], track_table[%p].\n",
+						__func__, skb, hash, is_first_track_table, *curr_track_table);
 
-				index = i;
-			} else {
-				fp_printk(K_DEBUG, "%s: Not the same skb[%p], remove entry, index[%d].\n",
-							__func__, skb, i);
-				_remove_track_table(i);
-			}
-		} else {
-			if (unlikely
-			(time_after(jiffies, (fp_track.table[i].jiffies + msecs_to_jiffies(10)))
-			 && (fp_track.table[i].ref_count == 0))) {
-				fp_printk(K_DEBUG, "%s: skb[%p] is timeout, remove entry, index[%d].\n",
-							__func__, skb, i);
-				_remove_track_table(i);
-			}
+			/* Pop the track table from hash list */
+			if (is_first_track_table == true)
+				fp_track[hash].table = (*curr_track_table)->next_track_table;
+			else
+				prev_track_table->next_track_table = (*curr_track_table)->next_track_table;
+
+			(*curr_track_table)->ref_count++;
+			cb = &((*curr_track_table)->cb);
+
+			break;
 		}
+
+		is_first_track_table = false;
+		prev_track_table = *curr_track_table;
+		*curr_track_table = (*curr_track_table)->next_track_table;
 	}
-	if (unlikely(index != -1)) {
-		if (fp_track.table[index].ref_count == 0) {
-			fp_track.table[index].ref_count = 1;
-			cb = _get_cb_from_track_table(index);
-			cb->index = index;
-		}
-	} else {
-		fp_printk(K_DEBUG, "%s: Cannot find cb, skb[%p].\n", __func__, skb);
-	}
-	TRACK_TABLE_UNLOCK(fp_track, flags);
+	TRACK_TABLE_UNLOCK(fp_track[hash], flags);
 
 	return cb;
 }
 
-static void put_track_table(struct sk_buff *skb)
+static void put_track_table(
+	struct fp_track_table_t *curr_track_table)
 {
-	int i;
-	int count = 0;
-	unsigned long flags;
-
-	TRACK_TABLE_LOCK(fp_track, flags);
-	for (i = 0; i < MAX_TRACK_NUM; i++) {
-		if (!fp_track.table[i].valid)
-			continue;
-
-		if (fp_track.table[i].tracked_address == (void *)skb) {
-			fp_track.table[i].ref_count = 0;
-			_remove_track_table(i);
-			count++;
-		}
+	curr_track_table->ref_count--;
+	if (curr_track_table->ref_count == 0) {
+		fp_printk(K_DEBUG, "%s: JQ_debug: Remove track table track_table[%p], remain buffer[%d].\n",
+					__func__, curr_track_table, buffer_cnt+1);
+		fp_put_table_buffer(curr_track_table);
+	} else {
+		WARN_ON(1);
+		fp_printk(K_ERR, "%s: Invalid ref_count of track table[%p], ref_cnt[%d].\n", __func__,
+				curr_track_table, curr_track_table->ref_count);
 	}
-	WARN_ON(count > 1 || !count);
-	TRACK_TABLE_UNLOCK(fp_track, flags);
 }
 
 void del_all_track_table(void)
 {
 	int i;
 	unsigned long flags;
+	struct fp_track_table_t *curr_track_table = NULL;
+	struct fp_track_table_t *tmp_track_table = NULL;
 
-	TRACK_TABLE_LOCK(fp_track, flags);
+	fp_printk(K_CRIT, "%s: Delete all track table!\n", __func__);
+
+	/* Free table buffer on hash table */
 	for (i = 0; i < MAX_TRACK_NUM; i++) {
-		if (!fp_track.table[i].valid)
-			continue;
+		TRACK_TABLE_LOCK(fp_track[i], flags);
+		curr_track_table = fp_track[i].table;
 
-		_remove_track_table(i);
+		while (curr_track_table) {
+			tmp_track_table = curr_track_table->next_track_table;
+			kfree(curr_track_table);
+			curr_track_table = tmp_track_table;
+		}
+		fp_track[i].table = NULL;
+		TRACK_TABLE_UNLOCK(fp_track[i], flags);
 	}
-	TRACK_TABLE_UNLOCK(fp_track, flags);
+
+	/* Free unused table buffer */
+	TRACK_TABLE_LOCK(fp_table_buffer, flags);
+	curr_track_table = fp_table_buffer.table;
+
+	while (curr_track_table) {
+		tmp_track_table = curr_track_table->next_track_table;
+		kfree(curr_track_table);
+		curr_track_table = tmp_track_table;
+	}
+	TRACK_TABLE_UNLOCK(fp_table_buffer, flags);
 }
 
 #endif
@@ -482,6 +527,11 @@ static void fp_notifier_dest(void)
 #endif
 }
 
+static void fp_init_jhash(void)
+{
+	get_random_bytes(&fp_jhash_initval, sizeof(fp_jhash_initval));
+}
+
 static int fastpath_init(void)
 {
 	int ret = 0;
@@ -491,7 +541,9 @@ static int fastpath_init(void)
 	FP_INIT_LOCK(&fp_lock);
 
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
-	init_track_table();
+	fp_init_table_buffer();
+	fp_init_track_table();
+	fp_init_jhash();
 #endif
 
 #ifdef ENABLE_PORTBASE_QOS
@@ -743,7 +795,8 @@ void fastpath_out_nf_ipv4(
 	struct sk_buff *skb,
 	struct net_device *out,
 	unsigned char *offset2,
-	struct fp_cb *cb)
+	struct fp_cb *cb,
+	struct fp_track_table_t *curr_track_table)
 {
 	struct nf_conn *nat_ip_conntrack;
 	enum ip_conntrack_info ctinfo;
@@ -866,11 +919,17 @@ void fastpath_out_nf_ipv4(
 
 out:
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
-	put_track_table(skb);
+	put_track_table(curr_track_table);
 #endif
 }
 
-void fastpath_out_nf_ipv6(int iface, struct sk_buff *skb, struct net_device *out, struct fp_cb *cb, int l3_off)
+void fastpath_out_nf_ipv6(
+	int iface,
+	struct sk_buff *skb,
+	struct net_device *out,
+	struct fp_cb *cb,
+	int l3_off,
+	struct fp_track_table_t *curr_track_table)
 {
 	struct ip6header *ip6 = (struct ip6header *) (skb->data + l3_off);
 	unsigned char nexthdr;
@@ -1017,7 +1076,7 @@ void fastpath_out_nf_ipv6(int iface, struct sk_buff *skb, struct net_device *out
 
 out:
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
-	put_track_table(skb);
+	put_track_table(curr_track_table);
 #endif
 }
 
@@ -1025,12 +1084,13 @@ void fastpath_out_nf(int iface, struct sk_buff *skb, struct net_device *out)
 {
 	unsigned char *offset2 = skb->data;
 	struct fp_cb *cb;
+	struct fp_track_table_t *curr_track_table;
 
 	fp_printk(K_DEBUG, "%s: post-routing, add rule, skb[%p].\n", __func__, skb);
 
 	pm_reset_traffic();
 
-	cb = search_and_hold_track_table(skb);
+	cb = search_and_hold_track_table(skb, &curr_track_table);
 	if (!cb) {
 		fp_printk(K_DEBUG, "%s: Cannot find cb, skb[%p].\n", __func__, skb);
 		return;
@@ -1050,7 +1110,7 @@ void fastpath_out_nf(int iface, struct sk_buff *skb, struct net_device *out)
 
 	if (cb->flag & DESC_FLAG_TRACK_NAT) {
 		if (IPC_HDR_IS_V4(offset2)) {
-			fastpath_out_nf_ipv4(iface, skb, out, offset2, cb);
+			fastpath_out_nf_ipv4(iface, skb, out, offset2, cb, curr_track_table);
 			return;
 
 		} else {
@@ -1063,7 +1123,7 @@ void fastpath_out_nf(int iface, struct sk_buff *skb, struct net_device *out)
 		int l3_off = 0;
 
 		if (cb->flag & DESC_FLAG_IPV6) {
-			fastpath_out_nf_ipv6(iface, skb, out, cb, l3_off);
+			fastpath_out_nf_ipv6(iface, skb, out, cb, l3_off, curr_track_table);
 			return;
 
 		} else {
@@ -1076,7 +1136,7 @@ void fastpath_out_nf(int iface, struct sk_buff *skb, struct net_device *out)
 
 out:
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
-	put_track_table(skb);
+	put_track_table(curr_track_table);
 #endif
 }
 EXPORT_SYMBOL(fastpath_out_nf);
