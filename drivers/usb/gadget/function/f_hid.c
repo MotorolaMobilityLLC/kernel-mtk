@@ -955,7 +955,7 @@ static struct usb_function *hidg_alloc(struct usb_function_instance *fi)
 {
 	struct f_hidg *hidg;
 	struct f_hid_opts *opts;
-	struct hidg_func_descriptor *fdesc;
+	struct hidg_func_descriptor *fdesc = NULL;
 
 	/* allocate and initialize one new instance */
 	hidg = kzalloc(sizeof(*hidg), GFP_KERNEL);
@@ -968,6 +968,8 @@ static struct usb_function *hidg_alloc(struct usb_function_instance *fi)
 	++opts->refcnt;
 
 	hidg->minor = opts->minor;
+
+#if 0 /* skip get data from userspace */
 	hidg->bInterfaceSubClass = opts->subclass;
 	hidg->bInterfaceProtocol = opts->protocol;
 	hidg->report_length = opts->report_length;
@@ -982,7 +984,7 @@ static struct usb_function *hidg_alloc(struct usb_function_instance *fi)
 			return ERR_PTR(-ENOMEM);
 		}
 	}
-
+#else
 	if (!fdesc)
 		fdesc = &hid_data;
 
@@ -990,16 +992,15 @@ static struct usb_function *hidg_alloc(struct usb_function_instance *fi)
 	hidg->bInterfaceProtocol = fdesc->protocol;
 	hidg->report_length = fdesc->report_length;
 	hidg->report_desc_length = fdesc->report_desc_length;
-	if (fdesc->report_desc) {
-		hidg->report_desc = kmemdup(fdesc->report_desc,
-					    fdesc->report_desc_length,
-					    GFP_KERNEL);
-		if (!hidg->report_desc) {
-			kfree(hidg);
-			mutex_unlock(&opts->lock);
-			return ERR_PTR(-ENOMEM);
-		}
+	hidg->report_desc = kmemdup(fdesc->report_desc,
+				    fdesc->report_desc_length,
+				    GFP_KERNEL);
+	if (!hidg->report_desc) {
+		kfree(hidg);
+		mutex_unlock(&opts->lock);
+		return ERR_PTR(-ENOMEM);
 	}
+#endif
 
 	mutex_unlock(&opts->lock);
 
