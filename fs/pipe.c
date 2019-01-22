@@ -775,6 +775,12 @@ static int __do_pipe_flags(int *fd, struct file **files, int flags)
 {
 	int error;
 	int fdw, fdr;
+#if defined(CONFIG_MTK_AEE_FEATURE) && \
+	defined(CONFIG_MTK_FD_LEAK_SPECIFIC_DEBUG)
+	int greaterFd;
+	char aee_msg[200];
+	struct task_struct *process;
+#endif
 
 	if (flags & ~(O_CLOEXEC | O_NONBLOCK | O_DIRECT))
 		return -EINVAL;
@@ -799,18 +805,21 @@ static int __do_pipe_flags(int *fd, struct file **files, int flags)
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && \
 	defined(CONFIG_MTK_FD_LEAK_SPECIFIC_DEBUG)
-	if (fdr >= 1000 || fdw >= 1000) {
-		char aee_msg[200];
-		struct task_struct *process = current->group_leader;
+	/* sample and report warning */
+	greaterFd = (fdr > fdw) ? fdr : fdw;
 
+	if ((greaterFd >= 1000 && greaterFd < 1020) ||
+		(greaterFd >= 2000 && greaterFd < 2012) ||
+		(greaterFd >= 3000 && greaterFd < 3012)) {
+
+		process = current->group_leader;
 		snprintf(aee_msg, sizeof(aee_msg),
 			"[FDLEAK] pipe_fd[%d, %d], %s [tid:%d] [pid:%d],\n"
 			"Process: %s, %d, %d\n",
 			fdr, fdw, current->comm, current->pid, current->tgid,
 			process->comm, process->pid, process->tgid);
 		if (strstr(process->comm, "omx@1.0-service")) {
-			aee_kernel_warning_api("FDLEAK_DEBUG", 0,
-				DB_OPT_DEFAULT |
+			aee_kernel_warning_api("FDLEAK_DEBUG", 0, DB_OPT_DEFAULT |
 				DB_OPT_LOW_MEMORY_KILLER |
 				DB_OPT_PID_MEMORY_INFO | /* smaps and hprof*/
 				DB_OPT_NATIVE_BACKTRACE |
