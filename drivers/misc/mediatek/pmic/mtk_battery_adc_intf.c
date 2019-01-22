@@ -21,7 +21,13 @@ int pmic_get_battery_voltage(void)
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	bat = 4201;
 #else
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
+	bat = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
+#else
 	bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
+#endif
+
 #endif
 	return bat;
 }
