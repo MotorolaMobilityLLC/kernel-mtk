@@ -104,6 +104,8 @@ void spm_pmic_power_mode(int mode, int force, int lock);
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 struct spm_data;
 int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d);
+int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d);
+int spm_to_sspm_command_async_wait(u32 cmd);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 void mt_spm_for_gps_only(int enable);
