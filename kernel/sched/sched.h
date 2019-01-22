@@ -1780,3 +1780,18 @@ static inline u64 irq_time_read(int cpu)
 }
 #endif /* CONFIG_64BIT */
 #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+
+/* sched:  add for print aee log */
+#ifdef CONFIG_SMP
+static inline int rq_cpu(const struct rq *rq) { return rq->cpu; }
+#else
+static inline int rq_cpu(const struct rq *rq) { return 0; }
+#endif
+
+#ifdef TEST_SCHED_DEBUG_ENHANCEMENT
+extern void lock_timekeeper(void);
+#endif
+
+#ifdef CONFIG_SCHED_DEBUG
+extern void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq);
+#endif /* CONFIG_SCHED_DEBUG */
