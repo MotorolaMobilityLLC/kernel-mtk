@@ -403,6 +403,7 @@ static void md_oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	int ret = 0;
 	int data_int32 = 0;
+	char oc_str[30] = "";
 
 	switch (intNo) {
 	case INT_VPA_OC:
@@ -421,6 +422,7 @@ static void md_oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 		break;
 	}
 #ifdef CONFIG_MTK_CCCI_DEVICES
+	aee_kernel_warning(oc_str, "\nCRDISPATCH_KEY:MD OC\nOC Interrupt: %s", int_name);
 	ret = exec_ccci_kern_func_by_md_id(MD_SYS1, ID_PMIC_INTR, (char *)&data_int32, 4);
 #endif
 	if (ret)
