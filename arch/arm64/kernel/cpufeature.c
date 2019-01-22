@@ -586,8 +586,10 @@ void update_cpu_features(int cpu,
 	 * Mismatched CPU features are a recipe for disaster. Don't even
 	 * pretend to support them.
 	 */
-	WARN_TAINT_ONCE(taint, TAINT_CPU_OUT_OF_SPEC,
-			"Unsupported CPU feature variation.\n");
+	if (taint) {
+		pr_warn_once("Unsupported CPU feature variation detected.\n");
+		add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_STILL_OK);
+	}
 }
 
 u64 read_system_reg(u32 id)
