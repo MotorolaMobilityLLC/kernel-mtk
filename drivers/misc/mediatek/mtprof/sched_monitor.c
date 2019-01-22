@@ -39,6 +39,7 @@ enum mt_event_type {
 	evt_TASKLET,
 	evt_HRTIMER,
 	evt_STIMER,
+	evt_IPI,
 };
 
 static unsigned int WARN_ISR_DUR;
@@ -65,6 +66,7 @@ static unsigned int WARN_IRQ_DISABLE_DUR;
 
 /* //////////////////////////////////////////////////////// */
 DEFINE_PER_CPU(struct sched_block_event, ISR_mon);
+DEFINE_PER_CPU(struct sched_block_event, IPI_mon);
 DEFINE_PER_CPU(struct sched_block_event, SoftIRQ_mon);
 DEFINE_PER_CPU(struct sched_block_event, tasklet_mon);
 DEFINE_PER_CPU(struct sched_block_event, hrt_mon);
@@ -249,6 +251,19 @@ static void event_duration_check(struct sched_block_event *b)
 			     (void *)b->last_event, preempt_count(), b->preempt_count);
 		}
 		break;
+	case evt_IPI:
+		if (WARN_ISR_DUR > 0 && t_dur > WARN_ISR_DUR) {
+			pr_err
+			    ("[ISR DURATION WARN] IPI[%d], dur:%llu ns > %d ms,(s:%llu,e:%llu)\n",
+			     (int)b->last_event, t_dur,
+			     WARN_ISR_DUR / 1000000, b->last_ts, b->last_te);
+		}
+		if (b->preempt_count != preempt_count())
+			pr_err
+			    ("[IPI WARN]IRQ[%d:%s], Unbalanced Preempt Count:0x%x! Should be 0x%x\n",
+			     (int)b->last_event, isr_name(b->last_event), preempt_count(),
+			     b->preempt_count);
+		break;
 	}
 }
 
@@ -294,6 +309,36 @@ void mt_trace_ISR_end(int irq)
 	b = &__raw_get_cpu_var(hrt_mon);
 	reset_event_count(b);
 
+}
+/* ISR monitor */
+void mt_trace_IPI_start(int ipinr)
+{
+	struct sched_block_event *b;
+
+	b = &__raw_get_cpu_var(IPI_mon);
+
+	b->preempt_count = preempt_count();
+	b->cur_ts = sched_clock();
+	b->cur_event = (unsigned long)ipinr;
+}
+
+void mt_trace_IPI_end(int ipinr)
+{
+	struct sched_block_event *b;
+
+	b = &__raw_get_cpu_var(IPI_mon);
+
+	WARN_ON(b->cur_event != ipinr);
+	b->last_event = b->cur_event;
+	b->last_ts = b->cur_ts;
+	b->last_te = sched_clock();
+	b->cur_event = 0;
+	b->cur_ts = 0;
+	event_duration_check(b);
+
+	/* reset HRTimer function counter */
+	b = &__raw_get_cpu_var(hrt_mon);
+	reset_event_count(b);
 }
 
 /* SoftIRQ monitor */
@@ -901,6 +946,7 @@ static int __init init_mtsched_mon(void)
 		per_cpu(mtsched_mon_enabled, cpu) = 0;	/* 0x1 || 0x2, IRQ & Preempt */
 
 		per_cpu(ISR_mon, cpu).type = evt_ISR;
+		per_cpu(IPI_mon, cpu).type = evt_IPI;
 		per_cpu(SoftIRQ_mon, cpu).type = evt_SOFTIRQ;
 		per_cpu(tasklet_mon, cpu).type = evt_TASKLET;
 		per_cpu(hrt_mon, cpu).type = evt_HRTIMER;
