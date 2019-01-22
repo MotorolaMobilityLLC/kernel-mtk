@@ -111,9 +111,8 @@ void gauge_coulomb_dump_list(void)
 		return;
 	}
 
-
-	car = gauge_get_coulomb();
 	mutex_coulomb_lock();
+	car = gauge_get_coulomb();
 	if (list_empty(phead) != true) {
 		ft_debug("dump plus list start\n");
 		list_for_each(pos, phead) {

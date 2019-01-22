@@ -3149,6 +3149,42 @@ void fg_bat_temp_int_sw_check(void)
 void fg_drv_update_hw_status(void)
 {
 	static bool fg_current_state;
+	signed int chr_vol;
+	int fg_current, fg_coulomb, bat_vol, hwocv, plugout_status, tmp, bat_plugout_time;
+
+	gauge_dev_get_boot_battery_plug_out_status(gauge_dev, &plugout_status, &bat_plugout_time);
+
+	fg_current_state = gauge_get_current(&fg_current);
+	fg_coulomb = gauge_get_coulomb();
+	bat_vol = pmic_get_battery_voltage();
+	chr_vol = pmic_get_vbus();
+	hwocv = gauge_get_hwocv();
+	tmp = force_get_tbat(true);
+
+	bm_err("car[%d,%ld,%ld,%ld,%ld] c:%d %d vbat:%d vbus:%d hwocv:%d soc:%d %d gm3:%d %d %d\n",
+		fg_coulomb, coulomb_plus.end, coulomb_minus.end, soc_plus.end, soc_minus.end,
+		fg_current_state, fg_current, bat_vol, chr_vol, hwocv,
+		battery_get_bat_soc(), battery_get_bat_uisoc(),
+		gDisableGM30, fg_cust_data.disable_nafg, ntc_disable_nafg);
+
+	if (bat_get_debug_level() >= 7) {
+		gauge_coulomb_dump_list();
+		gtimer_dump_list();
+	}
+
+	bm_err("tmp:%d %d %d hcar2:%d lcar2:%d time:%d\n",
+		tmp, fg_bat_tmp_int_ht, fg_bat_tmp_int_lt,
+		fg_bat_int2_ht, fg_bat_int2_lt,
+		fg_get_system_sec());
+
+
+	wakeup_fg_algo_cmd(FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_DUMP_REGULAR_LOG, 0);
+
+}
+
+void fg_drv_update_hw_status2(void)
+{
+	static bool fg_current_state;
 	static int fg_current, fg_coulomb, bat_vol, hwocv, plugout_status;
 	bool fg_current_state_new;
 	int fg_current_new, fg_coulomb_new, bat_vol_new, hwocv_new, plugout_status_new, tmp_new;
@@ -3168,7 +3204,6 @@ void fg_drv_update_hw_status(void)
 		int bat_plugout_time = 0;
 
 		gauge_dev_get_boot_battery_plug_out_status(gauge_dev, &plugout_status_new, &bat_plugout_time);
-		pr_err("gauge_dev_get_boot_battery_plug_out_status %d %d\n", plugout_status_new, bat_plugout_time);
 	}
 
 	gauge_dev_get_time(gauge_dev, &time);
