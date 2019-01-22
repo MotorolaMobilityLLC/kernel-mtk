@@ -103,6 +103,10 @@ struct lsm6ds3h_gyro_i2c_data {
 	atomic_t suspend;
 	atomic_t selftest;
 	atomic_t filter;
+	atomic_t gyro_debounce;	/*debounce time after enabling ps */
+	atomic_t gyro_deb_on;	/*indicates if the debounce is on */
+	unsigned long gyro_deb_end;	/*the jiffies representing the end of debounce */
+
 	s32 cali_sw[LSM6DS3H_GYRO_AXES_NUM + 1];
 
 	/*data */
@@ -317,6 +321,7 @@ static int LSM6DS3H_gyro_SetPowerMode(struct i2c_client *client, bool enable)
 {
 	u8 databuf[2] = { 0 };
 	int res = 0;
+	struct lsm6ds3h_gyro_i2c_data *priv = obj_i2c_data;
 
 	if (enable == sensor_power) {
 		GYRO_LOG("Sensor power status is newest!\n");
@@ -356,6 +361,13 @@ static int LSM6DS3H_gyro_SetPowerMode(struct i2c_client *client, bool enable)
 		GYRO_LOG("LSM6DS3H set power mode: ODR 100hz failed!\n");
 		return LSM6DS3H_ERR_I2C;
 	}
+
+	if (enable == true) {
+		atomic_set(&priv->gyro_deb_on, 1);
+		priv->gyro_deb_end = jiffies + msecs_to_jiffies(atomic_read(&priv->gyro_debounce));
+	} else
+		atomic_set(&priv->gyro_deb_on, 0);
+
 	GYRO_LOG("set LSM6DS3H gyro power mode:ODR 100HZ ok %d!\n", enable);
 
 
@@ -537,8 +549,10 @@ static int LSM6DS3H_ReadGyroData(struct i2c_client *client, char *buf, int bufsi
 	int data[3];
 	struct lsm6ds3h_gyro_i2c_data *obj = i2c_get_clientdata(client);
 
-	if (sensor_power == false)
-		LSM6DS3H_gyro_SetPowerMode(client, true);
+	if (sensor_power == false) {
+		/*LSM6DS3H_gyro_SetPowerMode(client, true);*/
+		dump_stack();
+	}
 
 
 	if (hwmsen_read_block(client, LSM6DS3H_OUTX_L_G, databuf, 6)) {
@@ -943,6 +957,17 @@ static int lsm6ds3h_gyro_get_data(int *x, int *y, int *z, int *status)
 		GYRO_PR_ERR("obj_i2c_data is NULL!\n");
 		return -1;
 	}
+
+	if (atomic_read(&priv->gyro_deb_on) == 1) {
+		unsigned long endt = priv->gyro_deb_end;
+
+		if (time_after(jiffies, endt))
+			atomic_set(&priv->gyro_deb_on, 0);
+
+		if (atomic_read(&priv->gyro_deb_on) == 1)
+			return -1;
+	}
+
 	memset(buff, 0, sizeof(buff));
 	LSM6DS3H_ReadGyroData(priv->client, buff, LSM6DS3H_BUFSIZE);
 
@@ -969,9 +994,11 @@ static int lsm6ds3hg_factory_enable_sensor(bool enabledisable, int64_t sample_pe
 		return -1;
 	}
 #endif
-	err = lsm6ds3h_gyro_init_client(lsm6ds3h_i2c_client, false);
+	err = lsm6ds3h_gyro_init_client(lsm6ds3h_i2c_client, enabledisable);
 	if (err)
 		GYRO_PR_ERR("%s init_client failed!\n", __func__);
+	else
+		msleep(350);
 	return 0;
 }
 
@@ -985,7 +1012,7 @@ static int lsm6ds3hg_factory_get_data(int32_t data[3], int *status)
 		err = LSM6DS3H_gyro_SetPowerMode(lsm6ds3h_i2c_client, true);
 		if (err != 0)
 			GYRO_PR_ERR("MPU6515_SetPowerMode fail\n");
-		msleep(50);
+		msleep(350);
 	}
 	err = lsm6ds3h_gyro_get_data(&data[0], &data[1], &data[2], status);
 	data[0] = (int32_t) (data[0] / 1000);
@@ -1613,6 +1640,9 @@ static int lsm6ds3h_gyro_i2c_probe(struct i2c_client *client, const struct i2c_d
 
 	atomic_set(&obj->trace, 0);
 	atomic_set(&obj->suspend, 0);
+	atomic_set(&obj->gyro_debounce, 200); /*this sensor need about 120ms before data ready*/
+	atomic_set(&obj->gyro_deb_on, 0);
+	obj->gyro_deb_end = 0;
 
 
 
