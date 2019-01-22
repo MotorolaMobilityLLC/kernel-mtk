@@ -23,12 +23,12 @@
 #include <mach/mtk_eemcs_helper.h>
 
 #define mtk_cooler_mdtxpwr_dprintk_always(fmt, args...) \
-pr_debug("thermal/cooler/mdtxpwr" fmt, ##args)
+pr_debug("[Thermal/TC/mdtxpwr]" fmt, ##args)
 
 #define mtk_cooler_mdtxpwr_dprintk(fmt, args...) \
 do { \
 	if (cl_mdtxpwr_klog_on == 1) \
-		pr_debug("thermal/cooler/mdtxpwr" fmt, ##args); \
+		pr_debug("[Thermal/TC/mdtxpwr]" fmt, ##args); \
 } while (0)
 
 #define MAX_NUM_INSTANCE_MTK_COOLER_MDTXPWR  3

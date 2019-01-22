@@ -33,12 +33,12 @@
 #define cl_type_lower               "cl-amdtxctrl-l"
 
 #define mtk_cooler_amdtxctrl_dprintk_always(fmt, args...) \
-pr_debug("thermal/cooler/amdtxctrl" fmt, ##args)
+pr_debug("[Thermal/TC/amdtxctrl]" fmt, ##args)
 
 #define mtk_cooler_amdtxctrl_dprintk(fmt, args...) \
 do { \
 	if (cl_amdtxctrl_klog_on == 1) { \
-		pr_debug("thermal/cooler/amdtxctrl" fmt, ##args); \
+		pr_debug("[Thermal/TC/amdtxctrl]" fmt, ##args); \
 	} \
 } while (0)
 

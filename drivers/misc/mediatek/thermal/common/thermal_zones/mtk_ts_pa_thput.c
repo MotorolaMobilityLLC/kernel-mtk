@@ -45,7 +45,7 @@
 #define mtk_mdm_dprintk(fmt, args...)   \
 do {                                    \
 	if (mtk_mdm_debug_log)                \
-		pr_debug("[MDM_TxPower/PA_Thermal]" fmt, ##args); \
+		pr_debug("[Thermal/TZ/MDM_TxPower]" fmt, ##args); \
 } while (0)
 
 #define DEFINE_MDM_CB(index)	\

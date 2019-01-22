@@ -90,9 +90,13 @@ static int polling_factor2 = 10000;
 #define mtkts_btsmdpa_dprintk(fmt, args...)   \
 do {                                    \
 	if (mtkts_btsmdpa_debug_log) {                \
-		pr_debug("[Power/BTSMDPA_Thermal]" fmt, ##args); \
+		pr_debug("[Thermal/TZ/BTSMDPA]" fmt, ##args); \
 	}                                   \
 } while (0)
+
+#define mtkts_btsmdpa_printk(fmt, args...) \
+pr_debug("[Thermal/TZ/BTSMDPA]" fmt, ##args)
+
 
 
 /* #define INPUT_PARAM_FROM_USER_AP */
@@ -556,7 +560,7 @@ static int get_hw_btsmdpa_temp(void)
 	int times = 1, Channel = g_RAP_ADC_channel;	/* 6752=0(AUX_IN1_NTC) */
 
 	if (IMM_IsAdcInitReady() == 0) {
-		pr_debug("[thermal_auxadc_get_data]: AUXADC is not ready\n");
+		mtkts_btsmdpa_printk("[thermal_auxadc_get_data]: AUXADC is not ready\n");
 		return 0;
 	}
 
@@ -598,7 +602,7 @@ int mtkts_btsmdpa_get_hw_temp(void)
 
 #if MTKTS_BTSMDPA_SW_FILTER
 	if ((t_ret > 100000) || (t_ret < -30000)) {
-		pr_debug("[Power/BTSMDPA_Thermal] drop this data\n");
+		mtkts_btsmdpa_printk("[Power/BTSMDPA_Thermal] drop this data\n");
 		t_ret = pre_temp1;
 	} else if ((pre_temp1 != 0)
 		   && (((pre_temp1 - t_ret) >= DELTA_TEMP)
@@ -617,7 +621,7 @@ int mtkts_btsmdpa_get_hw_temp(void)
 	mutex_unlock(&BTSMDPA_lock);
 
 	if (t_ret > 40000)	/* abnormal high temp */
-		pr_debug("[Power/BTSMDPA_Thermal] T_btsmdpa=%d\n", t_ret);
+		mtkts_btsmdpa_printk("T_btsmdpa=%d\n", t_ret);
 
 	mtkts_btsmdpa_dprintk("[mtkts_btsmdpa_get_hw_temp] T_btsmdpa, %d\n", t_ret);
 	return t_ret;
@@ -1046,7 +1050,7 @@ static ssize_t mtkts_btsmdpa_param_write(struct file *file, const char __user *b
 			mtkts_btsmdpa_dprintk("g_RAP_pull_up_R=%d\n", g_RAP_pull_up_R);
 		} else {
 			kfree(ptr_param_data);
-			pr_debug("[mtkts_btsmdpa_write] bad PUP_R argument\n");
+			mtkts_btsmdpa_printk("[mtkts_btsmdpa_write] bad PUP_R argument\n");
 			return -EINVAL;
 		}
 
@@ -1055,7 +1059,7 @@ static ssize_t mtkts_btsmdpa_param_write(struct file *file, const char __user *b
 			mtkts_btsmdpa_dprintk("g_Rat_pull_up_voltage=%d\n", g_RAP_pull_up_voltage);
 		} else {
 			kfree(ptr_param_data);
-			pr_debug("[mtkts_btsmdpa_write] bad PUP_VOLT argument\n");
+			mtkts_btsmdpa_printk("[mtkts_btsmdpa_write] bad PUP_VOLT argument\n");
 			return -EINVAL;
 		}
 
@@ -1065,7 +1069,7 @@ static ssize_t mtkts_btsmdpa_param_write(struct file *file, const char __user *b
 					      g_TAP_over_critical_low);
 		} else {
 			kfree(ptr_param_data);
-			pr_debug("[mtkts_btsmdpa_write] bad OVERCRIT_L argument\n");
+			mtkts_btsmdpa_printk("[mtkts_btsmdpa_write] bad OVERCRIT_L argument\n");
 			return -EINVAL;
 		}
 
@@ -1074,7 +1078,7 @@ static ssize_t mtkts_btsmdpa_param_write(struct file *file, const char __user *b
 			mtkts_btsmdpa_dprintk("g_RAP_ntc_table=%d\n", g_RAP_ntc_table);
 		} else {
 			kfree(ptr_param_data);
-			pr_debug("[mtkts_btsmdpa_write] bad NTC_TABLE argument\n");
+			mtkts_btsmdpa_printk("[mtkts_btsmdpa_write] bad NTC_TABLE argument\n");
 			return -EINVAL;
 		}
 
@@ -1096,7 +1100,7 @@ static ssize_t mtkts_btsmdpa_param_write(struct file *file, const char __user *b
 		return count;
 	}
 
-	pr_debug("[mtkts_btsmdpa_write] bad argument\n");
+	mtkts_btsmdpa_printk("[mtkts_btsmdpa_write] bad argument\n");
 	kfree(ptr_param_data);
 	return -EINVAL;
 }
@@ -1113,7 +1117,7 @@ static ssize_t mtkts_btsmdpa_param_write(struct file *file, const char __user *b
 static void mtkts_btsmdpa_cancel_thermal_timer(void)
 {
 	/* cancel timer */
-	/* pr_debug("mtkts_btsmdpa_cancel_thermal_timer\n"); */
+	/* mtkts_btsmdpa_printk("mtkts_btsmdpa_cancel_thermal_timer\n"); */
 
 	/* stop thermal framework polling when entering deep idle */
 	/* if (thz_dev)
@@ -1124,7 +1128,7 @@ static void mtkts_btsmdpa_cancel_thermal_timer(void)
 
 static void mtkts_btsmdpa_start_thermal_timer(void)
 {
-	/* pr_debug("mtkts_btsmdpa_start_thermal_timer\n"); */
+	/* mtkts_btsmdpa_printk("mtkts_btsmdpa_start_thermal_timer\n"); */
 	/* resume thermal framework polling when leaving deep idle */
 	/* if (thz_dev != NULL && interval != 0)
 	*	mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(3000)));

@@ -23,12 +23,12 @@
 #include <mtk_cl_amddulthro.h>
 
 #define mtk_cooler_mddulthro_dprintk_always(fmt, args...) \
-pr_debug("thermal/cooler/mddulthro" fmt, ##args)
+pr_debug("[Thermal/TC/mddulthro]" fmt, ##args)
 
 #define mtk_cooler_mddulthro_dprintk(fmt, args...) \
 do { \
 	if (cl_mddulthro_klog_on == 1) \
-		pr_debug("thermal/cooler/mddulthro" fmt, ##args); \
+		pr_debug("[Thermal/TC/mddulthro]" fmt, ##args); \
 } while (0)
 
 #define MAX_NUM_INSTANCE_MTK_COOLER_MDDULTHRO  3

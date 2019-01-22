@@ -77,7 +77,7 @@ static char g_bind9[20] = "";
 #define mtkts6331_dprintk(fmt, args...)   \
 do {									\
 	if (mtkts6311_debug_log) {				\
-		pr_debug("[Thermal/PMIC_6311]" fmt, ##args); \
+		pr_debug("[Thermal/TZ/PMIC6311]" fmt, ##args); \
 	}								   \
 } while (0)
 
@@ -91,7 +91,7 @@ typedef struct {
 #define mtkts6311_dprintk(fmt, args...)   \
 do {									\
 	if (mtkts6311_debug_log) {				\
-		pr_debug("[Power/6311_Thermal]" fmt, ##args); \
+		pr_debug("[Thermal/TZ/PMIC6311]" fmt, ##args); \
 	}								   \
 } while (0)
 

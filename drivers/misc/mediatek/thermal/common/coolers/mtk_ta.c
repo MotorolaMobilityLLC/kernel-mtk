@@ -38,11 +38,11 @@ static int mtkts_ta_debug_log;
 #define tsta_dprintk(fmt, args...)   \
 	do {                                    \
 		if (mtkts_ta_debug_log) {                \
-			pr_debug("[Thermal_TA]" fmt, ##args); \
+			pr_debug("[Thermal/TC/TA]" fmt, ##args); \
 		}                                   \
 	} while (0)
 
-#define tsta_warn(fmt, args...)  pr_warn("[Thermal_TA]" fmt, ##args)
+#define tsta_warn(fmt, args...)  pr_warn("[Thermal/TC/TA]" fmt, ##args)
 
 /*=============================================================
  *Local variable definition

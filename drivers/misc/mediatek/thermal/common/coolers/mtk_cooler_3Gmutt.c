@@ -24,13 +24,13 @@
 
 static int cl_debug_flag;
 
-#define mtk_cooler_3Gmutt_dprintk_always(fmt, args...)pr_notice("[thermal/cooler/3Gmutt]" fmt, ##args)
+#define mtk_cooler_3Gmutt_dprintk_always(fmt, args...)pr_notice("[Thermal/TC/3Gmutt]" fmt, ##args)
 
 
 #define mtk_cooler_3Gmutt_dprintk(fmt, args...) \
 do { \
 	if (cl_mutt_klog_on  == 1) \
-		pr_debug("[thermal/cooler/3Gmutt]" fmt, ##args); \
+		pr_debug("[Thermal/TC/3Gmutt]" fmt, ##args); \
 } while (0)
 
 #define MAX_NUM_INSTANCE_MTK_COOLER_3GMUTT  4
