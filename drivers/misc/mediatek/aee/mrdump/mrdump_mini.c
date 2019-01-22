@@ -90,19 +90,10 @@ __weak struct vm_struct *find_vm_area(const void *addr)
 	return NULL;
 }
 
-#undef virt_addr_valid
 #ifdef __aarch64__
 #define MIN_MARGIN KIMAGE_VADDR
-#define virt_addr_valid(kaddr) ((((void *)(kaddr) >= (void *)PAGE_OFFSET && \
-				(void *)(kaddr) < (void *)high_memory) || \
-				((void *)(kaddr) >= (void *)KIMAGE_VADDR && \
-				(void *)(kaddr) < (void *)_end)) && \
-				pfn_valid(__pa(kaddr) >> PAGE_SHIFT))
 #else
 #define MIN_MARGIN PAGE_OFFSET
-#define virt_addr_valid(kaddr) ((void *)(kaddr) >= (void *)PAGE_OFFSET && \
-				(void *)(kaddr) < (void *)high_memory && \
-				pfn_valid(__pa(kaddr) >> PAGE_SHIFT))
 #endif
 
 static void check_addr_valid(unsigned long addr, unsigned long *low, unsigned long *high)
@@ -111,7 +102,7 @@ static void check_addr_valid(unsigned long addr, unsigned long *low, unsigned lo
 	unsigned long h = *high;
 
 	while (l < addr) {
-		if (!virt_addr_valid(l)) {
+		if (!mrdump_virt_addr_valid(l)) {
 			*low += PAGE_SIZE;
 			/* LOGE("address(0x%lx), low is invalid(0x%lx), new low is 0x%lx\n", addr, l, *low); */
 		}
@@ -120,7 +111,7 @@ static void check_addr_valid(unsigned long addr, unsigned long *low, unsigned lo
 	if (*low > addr)
 		*low = addr;
 	while (h > addr) {
-		if (!virt_addr_valid(h)) {
+		if (!mrdump_virt_addr_valid(h)) {
 			*high -= PAGE_SIZE;
 			/* LOGE("address(0x%lx), high is invalid(0x%lx), new high is 0x%lx\n", addr, l, *high); */
 		}
@@ -239,7 +230,7 @@ void mrdump_mini_add_misc_pa(unsigned long va, unsigned long pa, unsigned long s
 		mrdump_mini_ehdr->misc[i].data.paddr = pa;
 		mrdump_mini_ehdr->misc[i].data.size = size;
 		mrdump_mini_ehdr->misc[i].data.start =
-		    virt_addr_valid((void *)start) ? __pa(start) : 0;
+		    mrdump_virt_addr_valid((void *)start) ? __pa(start) : 0;
 		fill_note_L(note, name, NT_IPANIC_MISC, sizeof(struct mrdump_mini_elf_misc));
 		break;
 	}
@@ -247,7 +238,7 @@ void mrdump_mini_add_misc_pa(unsigned long va, unsigned long pa, unsigned long s
 
 void mrdump_mini_add_misc(unsigned long addr, unsigned long size, unsigned long start, char *name)
 {
-	if (!virt_addr_valid((void *)addr))
+	if (!mrdump_virt_addr_valid((void *)addr))
 		return;
 	mrdump_mini_add_misc_pa(addr, __pa(addr), size, start, name);
 }
@@ -298,7 +289,7 @@ void mrdump_mini_add_entry(unsigned long addr, unsigned long size)
 		return;
 	hnew = ALIGN(addr + size / 2, PAGE_SIZE);
 	lnew = hnew - ALIGN(size, PAGE_SIZE);
-	if (!virt_addr_valid(addr)) {
+	if (!mrdump_virt_addr_valid(addr)) {
 		/* vma = find_vma(&init_mm, addr); */
 		/* pr_err("mirdump: add: %p, vma: %x", addr, vma); */
 		/* if (!vma) */
@@ -355,20 +346,20 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 	unsigned long *top = NULL;
 	unsigned long *p;
 
-	if (virt_addr_valid(regs->reg_sp)) {
+	if (mrdump_virt_addr_valid(regs->reg_sp)) {
 		ti = (struct thread_info *)(regs->reg_sp & ~(THREAD_SIZE - 1));
 		tsk = ti->task;
 		bottom = (unsigned long *)regs->reg_sp;
 	}
-	if (!(virt_addr_valid(tsk) && ti == (struct thread_info *)tsk->stack)
-	    && virt_addr_valid(regs->reg_fp)) {
+	if (!(mrdump_virt_addr_valid(tsk) && ti == (struct thread_info *)tsk->stack)
+	    && mrdump_virt_addr_valid(regs->reg_fp)) {
 		ti = (struct thread_info *)(regs->reg_fp & ~(THREAD_SIZE - 1));
 		tsk = ti->task;
 		bottom = (unsigned long *)regs->reg_fp;
 	}
-	if (!virt_addr_valid(tsk) || ti != (struct thread_info *)tsk->stack) {
+	if (!mrdump_virt_addr_valid(tsk) || ti != (struct thread_info *)tsk->stack) {
 		tsk = cpu_curr(cpu);
-		if (virt_addr_valid(tsk)) {
+		if (mrdump_virt_addr_valid(tsk)) {
 			ti = (struct thread_info *)tsk->stack;
 			bottom = (unsigned long *)((void *)ti + sizeof(struct thread_info));
 		}
@@ -381,12 +372,12 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 	if (!stack)
 		return;
 	top = (unsigned long *)((void *)ti + THREAD_SIZE);
-	if (!virt_addr_valid(ti) || !virt_addr_valid(top) || bottom < (unsigned long *)ti
+	if (!mrdump_virt_addr_valid(ti) || !mrdump_virt_addr_valid(top) || bottom < (unsigned long *)ti
 	    || bottom > top)
 		return;
 
 	for (p = (unsigned long *)ALIGN((unsigned long)bottom, sizeof(unsigned long)); p < top; p++) {
-		if (!virt_addr_valid(*p))
+		if (!mrdump_virt_addr_valid(*p))
 			continue;
 		if (*p >= (unsigned long)ti && *p <= (unsigned long)top)
 			continue;
@@ -471,13 +462,13 @@ void mrdump_mini_build_task_info(struct pt_regs *regs)
 	struct task_struct *tsk, *cur;
 	struct aee_process_info *cur_proc;
 
-	if (!virt_addr_valid(current_thread_info())) {
+	if (!mrdump_virt_addr_valid(current_thread_info())) {
 		LOGE("current thread info invalid\n");
 		return;
 	}
 	cur = current_thread_info()->task;
 	tsk = cur;
-	if (!virt_addr_valid(tsk)) {
+	if (!mrdump_virt_addr_valid(tsk)) {
 		LOGE("tsk invalid\n");
 		return;
 	}
@@ -645,7 +636,7 @@ static void mrdump_mini_add_loads(void)
 	if (dump_all_cpus) {
 		for (cpu = 0; cpu < NR_CPUS; cpu++) {
 			tsk = cpu_curr(cpu);
-			if (virt_addr_valid(tsk))
+			if (mrdump_virt_addr_valid(tsk))
 				ti = (struct thread_info *)tsk->stack;
 			else
 				ti = NULL;
@@ -668,7 +659,7 @@ static void mrdump_mini_add_loads(void)
 #if 0
 	if (logbuf_lock.owner_cpu < NR_CPUS) {
 		tsk = cpu_curr(logbuf_lock.owner_cpu);
-		if (virt_addr_valid(tsk))
+		if (mrdump_virt_addr_valid(tsk))
 			ti = (struct thread_info *)tsk->stack;
 		else
 			ti = NULL;
