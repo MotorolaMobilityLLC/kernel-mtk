@@ -103,6 +103,35 @@ struct upower_tbl_info **upower_get_tbl(void)
 }
 EXPORT_SYMBOL(upower_get_tbl);
 
+/* for EAS to get pointer of core's tbl */
+struct upower_tbl *upower_get_core_tbl(unsigned int cpu)
+{
+	struct upower_tbl *ptr_tbl;
+	struct upower_tbl_info *ptr_tbl_info;
+	enum upower_bank bank = UPOWER_BANK_LL;
+
+	if (!upower_enable)
+		return NULL;
+
+	if (cpu < 4) /* cpu 0-3 */
+		bank = UPOWER_BANK_LL;
+	else if (cpu < 8) /* cpu 4-7 */
+		bank = UPOWER_BANK_LL + 1;
+	else if (cpu < 10) /* cpu 8-9 */
+		bank = UPOWER_BANK_LL + 2;
+
+#ifdef UPOWER_L_PLUS
+	if (cpu == UPOWER_L_PLUS_CORE)
+		bank = UPOWER_BANK_L_PLUS;
+#endif
+
+	ptr_tbl_info = p_upower_tbl_infos;
+	ptr_tbl = ptr_tbl_info[bank].p_upower_tbl;
+
+	return ptr_tbl;
+}
+EXPORT_SYMBOL(upower_get_core_tbl);
+
 /* for PPM to get lkg or dyn power*/
 unsigned int upower_get_power(enum upower_bank bank, unsigned int opp, enum
 upower_dtype type)
