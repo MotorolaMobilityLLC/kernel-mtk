@@ -151,7 +151,10 @@ VOID p2pFsmInit(IN P_ADAPTER_T prAdapter)
 		prP2pBssInfo->ucPrimaryChannel = P2P_DEFAULT_LISTEN_CHANNEL;
 		prP2pBssInfo->eBand = BAND_2G4;
 		prP2pBssInfo->eBssSCO = CHNL_EXT_SCN;
-
+#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
+		prP2pBssInfo->fgP2PPendingDeauth = FALSE;
+		prP2pBssInfo->u4P2PEapTxDoneTime = 0;
+#endif
 		if (prAdapter->rWifiVar.fgSupportQoS)
 			prP2pBssInfo->fgIsQBSS = TRUE;
 		else
@@ -2453,7 +2456,14 @@ WLAN_STATUS p2pRunEventAAAComplete(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T p
 WLAN_STATUS p2pRunEventAAASuccess(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 {
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
+	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 
+	ASSERT((prAdapter != NULL));
+	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+	prP2pBssInfo->fgP2PPendingDeauth = FALSE;
+	prP2pBssInfo->u4P2PEapTxDoneTime = 0;
+#endif
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prStaRec != NULL));
 

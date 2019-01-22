@@ -34,6 +34,9 @@ APPEND_VAR_IE_ENTRY_T txProbeRspIETable[] = {
 	, {(ELEM_HDR_LEN + ELEM_MIN_LEN_MTK_OUI), NULL, rlmGenerateMTKOuiIE}	/* 221 */
 #endif
 };
+#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
+#define P2P_DEAUTH_DELAY_TIME	50 /*ms*/
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -865,7 +868,9 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 {
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	ENUM_PARAM_MEDIA_STATE_T eOriMediaStatus;
-
+#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
+	UINT_32 u4DeauthDelayTimeDiff = 0;
+#endif
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prStaRec != NULL));
 
@@ -879,6 +884,17 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 		/* p2pIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, prStaRec->aucMacAddr); */
 		DBGLOG(P2P, INFO, "p2pFuncDisconnect, eCurrentOPMode: %d, sendDeauth: %s\n",
 			prP2pBssInfo->eCurrentOPMode, fgSendDeauth ? "True" : "False");
+#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
+		u4DeauthDelayTimeDiff = kalGetTimeTick() - prP2pBssInfo->u4P2PEapTxDoneTime;
+		if (prP2pBssInfo->fgP2PPendingDeauth == TRUE &&
+			u4DeauthDelayTimeDiff < P2P_DEAUTH_DELAY_TIME &&
+			fgSendDeauth == TRUE) {
+			kalMdelay(u4DeauthDelayTimeDiff);
+			DBGLOG(P2P, WARN, "The end of the delayed deauth at %d ms....\n", u4DeauthDelayTimeDiff);
+		}
+		prP2pBssInfo->fgP2PPendingDeauth = FALSE;
+		prP2pBssInfo->u4P2PEapTxDoneTime = 0;
+#endif
 		if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)
 			kalP2PGOStationUpdate(prAdapter->prGlueInfo, prStaRec, FALSE);
 #if CFG_SUPPORT_P2P_ECSA
@@ -3793,3 +3809,39 @@ BOOLEAN p2pFuncValidateProbeResp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMg
 	} while (FALSE);
 	return fgValidToSend;
 }
+#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
+VOID p2pFuncEAPfailureWorkaround(IN P_ADAPTER_T prAdapter,
+				IN UINT_8 *pucEvtBuf) {
+		P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
+		P_EVENT_TX_DONE_STATUS_T prTxDone = (P_EVENT_TX_DONE_STATUS_T) NULL;
+		PUINT_8 pucPkt = NULL;
+		UINT_16 u2EtherType = 0;
+		UINT_8 ucReasonCode = 0;
+		UINT_8 ucPktId = 0;
+
+		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+
+		prTxDone = (EVENT_TX_DONE_STATUS_T *) pucEvtBuf;
+
+		pucPkt = &prTxDone->aucPktBuf[64];
+		u2EtherType = kalGetPktEtherType(pucPkt);
+		ucReasonCode = pucPkt[ETH_HLEN+4];
+		ucPktId = pucPkt[ETH_HLEN+5];
+
+		/*fix p2p connetion issue, P2P GO driver needs delay the deauth frame
+		 * following the EAP-Fail packet to avoid race condition (from management
+		 * frame and data frame )
+		 */
+		if ((prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) && (u2EtherType == ENUM_PKT_1X ||
+			u2EtherType == ENUM_PKT_PROTECTED_1X) && ucReasonCode == 4) {
+			if (prTxDone->ucStatus == WLAN_STATUS_SUCCESS) {
+
+				prP2pBssInfo->fgP2PPendingDeauth = TRUE;
+				prP2pBssInfo->u4P2PEapTxDoneTime = kalGetTimeTick(); /*ms*/
+				DBGLOG(RX, WARN, "P2P GO fgP2PPendingDeauth = %d\n", prP2pBssInfo->fgP2PPendingDeauth);
+			}
+		}
+
+}
+#endif
+

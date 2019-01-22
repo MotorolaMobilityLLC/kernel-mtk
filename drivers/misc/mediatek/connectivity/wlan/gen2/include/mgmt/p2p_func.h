@@ -162,6 +162,10 @@ p2pFuncGetSpecAttri(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS wfdChangeMediaState(IN P_ADAPTER_T prAdapter,
 				IN ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx,
 				IN ENUM_PARAM_MEDIA_STATE_T eConnectionState);
+#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
+VOID p2pFuncEAPfailureWorkaround(IN P_ADAPTER_T prAdapter,
+				IN PUINT_8 pucEvtBuf);
+#endif
 #endif
 
 BOOLEAN p2pFuncValidateProbeResp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMgmtTxMsdu);
