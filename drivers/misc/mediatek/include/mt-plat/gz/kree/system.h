@@ -34,8 +34,6 @@ struct _cpus_cluster_freq {
 /* / KREE session handle type. */
 typedef int32_t KREE_SESSION_HANDLE;
 
-typedef uint32_t KREE_SHAREDMEM_HANDLE;
-
 
 /* Session Management */
 /**
