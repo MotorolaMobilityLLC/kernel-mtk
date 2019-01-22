@@ -53,7 +53,9 @@
 #if defined(CONFIG_ARCH_MT6797)
 #include <mtk_vcorefs_governor.h>
 #endif
-
+#if defined(CONFIG_ARCH_MT6757)
+#include <mtk_dramc.h>
+#endif
 #include <linux/uaccess.h>
 
 #ifdef CONFIG_CPU_ISOLATION
@@ -1679,6 +1681,10 @@ static noinline void go_to_rgidle(int cpu)
 static inline void soidle_pre_handler(void)
 {
 	hps_del_timer();
+#if defined(CONFIG_ARCH_MT6757)
+	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
+		del_zqcs_timer();
+#endif
 #ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_ARCH_MT6755)
 	/* stop Mali dvfs_callback timer */
@@ -1696,6 +1702,10 @@ static inline void soidle_pre_handler(void)
 static inline void soidle_post_handler(void)
 {
 	hps_restart_timer();
+#if defined(CONFIG_ARCH_MT6757)
+	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
+		add_zqcs_timer();
+#endif
 #ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_ARCH_MT6755)
 	/* restart Mali dvfs_callback timer */
@@ -1763,6 +1773,10 @@ u32 slp_spm_deepidle_flags = {
 static inline void dpidle_pre_handler(void)
 {
 	hps_del_timer();
+#if defined(CONFIG_ARCH_MT6757)
+	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
+		del_zqcs_timer();
+#endif
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
@@ -1774,6 +1788,10 @@ static inline void dpidle_pre_handler(void)
 static inline void dpidle_post_handler(void)
 {
 	hps_restart_timer();
+#if defined(CONFIG_ARCH_MT6757)
+	if ((get_ddr_type() == TYPE_LPDDR4) || (get_ddr_type() == TYPE_LPDDR4X))
+		add_zqcs_timer();
+#endif
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_THERMAL
 	/* restart thermal hrtimer for update temp info */
