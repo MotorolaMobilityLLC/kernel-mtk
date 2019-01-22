@@ -95,6 +95,10 @@ static mtkstp_context_struct stp_core_ctx = { 0 };
 #define STP_ENABLE_FW_COREDUMP(x, v)  ((x).en_coredump = (v))
 #define STP_ENABLE_FW_COREDUMP_FLAG(x)  ((x).en_coredump)
 
+#define STP_FW_COREDUMP_RECEIVE_FLAG(x)  ((x).r_coredump)
+#define STP_SET_FW_COREDUMP_RECEIVE_FLAG(x, v)  ((x).r_coredump = (v))
+
+
 #define STP_WMT_LAST_CLOSE(x)       ((x).f_wmt_last_close)
 #define STP_SET_WMT_LAST_CLOSE(x, v) ((x).f_wmt_last_close = (v))
 
@@ -1553,6 +1557,7 @@ INT32 mtk_wcn_stp_init(const mtkstp_callback * const cb_func)
 	STP_SET_PSM_CORE(stp_core_ctx, stp_psm_init());
 	STP_SET_FW_COREDUMP_FLAG(stp_core_ctx, 0);
 	STP_ENABLE_FW_COREDUMP(stp_core_ctx, 0);
+	STP_SET_FW_COREDUMP_RECEIVE_FLAG(stp_core_ctx, 0);
 	STP_SET_WMT_LAST_CLOSE(stp_core_ctx, 0);
 	STP_SET_EVT_ERR_ASSERT(stp_core_ctx, 0);
 
@@ -1956,6 +1961,7 @@ static INT32 stp_parser_data_in_mand_mode(UINT32 length, UINT8 *p_data)
 				}
 				continue;
 			}
+			mtk_wcn_stp_re_coredump_set(1);
 			if (STP_IS_READY(stp_core_ctx)) {
 				mtk_wcn_stp_dbg_dump_package();
 				stp_notify_btm_dump(STP_BTM_CORE(stp_core_ctx));
@@ -2275,6 +2281,7 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 			if (wmt_plat_dump_BGF_irq_status() == MTK_WCN_BOOL_TRUE)
 				wmt_plat_BGF_irq_dump_status();
 #endif
+			mtk_wcn_stp_re_coredump_set(1);
 			if (STP_IS_READY(stp_core_ctx))
 				mtk_wcn_stp_dbg_dump_package();
 
@@ -2562,6 +2569,16 @@ INT32 mtk_wcn_stp_coredump_start_get(VOID)
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 EXPORT_SYMBOL(mtk_wcn_stp_coredump_start_get);
 #endif
+
+INT32 mtk_wcn_stp_re_coredump_get(VOID)
+{
+	return STP_FW_COREDUMP_RECEIVE_FLAG(stp_core_ctx);
+}
+
+INT32 mtk_wcn_stp_re_coredump_set(UINT32 value)
+{
+	return STP_SET_FW_COREDUMP_RECEIVE_FLAG(stp_core_ctx, value);
+}
 
 
 /* mtk_wcn_stp_set_wmt_last_close -- set the state of link(UART or SDIO)
@@ -3517,6 +3534,7 @@ INT32 mtk_wcn_stp_coredump_timeout_handle(VOID)
 	stp_core_ctx.assert_info_cnt = 0;
 	mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
 	mtk_wcn_stp_coredump_start_ctrl(0);
+	mtk_wcn_stp_re_coredump_set(0);
 	stp_psm_set_sleep_enable(stp_core_ctx.psm);
 	stp_btm_reset_btm_wq(STP_BTM_CORE(stp_core_ctx));
 	if (STP_IS_ENABLE_RST(stp_core_ctx))

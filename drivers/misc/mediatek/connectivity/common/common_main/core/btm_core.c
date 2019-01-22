@@ -406,6 +406,7 @@ handler_done:
 			/* prevent multi reset case */
 			stp_btm_reset_btm_wq(stp_btm);
 			mtk_wcn_stp_coredump_start_ctrl(0);
+			mtk_wcn_stp_re_coredump_set(0);
 		}
 	}
 
@@ -658,7 +659,7 @@ static inline INT32 _stp_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 		wmt_plat_force_trigger_assert(STP_FORCE_TRG_ASSERT_DEBUG_PIN);
 	}
 	do {
-		if (mtk_wcn_stp_coredump_start_get() != 0) {
+		if (mtk_wcn_stp_re_coredump_get() != 0) {
 			status = 0;
 			break;
 		}
