@@ -361,10 +361,8 @@ static void ppm_limit_callback(struct ppm_client_req req)
 		 *	i, p->cpu_limit[i].has_advise_core,
 		 *	p->cpu_limit[i].min_cpu_core, p->cpu_limit[i].max_cpu_core);
 		 */
-#ifdef _TRACE_
 		trace_ppm_limit_callback_update(i, p->cpu_limit[i].has_advise_core,
 			p->cpu_limit[i].min_cpu_core, p->cpu_limit[i].max_cpu_core);
-#endif
 		if (!p->cpu_limit[i].has_advise_core) {
 			hps_sys.cluster_info[i].ref_base_value = p->cpu_limit[i].min_cpu_core;
 			hps_sys.cluster_info[i].ref_limit_value = p->cpu_limit[i].max_cpu_core;
