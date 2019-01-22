@@ -97,9 +97,6 @@ static struct workqueue_struct *binder_deferred_workqueue;
  * v0.2   - transaction timeout log
  * v0.2.1 - buffer allocation debug
  */
-#ifdef CONFIG_MTK_ENG_BUILD
-#define BINDER_MONITOR			"v0.2.1"	/* BINDER_MONITOR only turn on for eng build */
-#endif
 
 #ifdef BINDER_MONITOR
 #define MAX_SERVICE_NAME_LEN		32
