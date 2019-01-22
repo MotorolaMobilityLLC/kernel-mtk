@@ -1591,9 +1591,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>; /* UART IRQ */
 		clocks =  <&clk26m>, <&infracfg_ao INFRACFG_AO_UART1_CG>;
 		clock-names = "baud", "bus";
-		dmas = <&apdma 2
-				&apdma 3>;
-		dma-names = "tx", "rx";
 	};
 
 	apuart2: serial@11004000 {
@@ -1602,9 +1599,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_LOW>;/* UART IRQ */
 		clocks = <&clk26m>, <&infracfg_ao INFRACFG_AO_UART2_CG>;
 		clock-names = "baud", "bus";
-		dmas = <&apdma 4
-				&apdma 5>;
-		dma-names = "tx", "rx";
 	};
 
 	i2c6@11005000 {
