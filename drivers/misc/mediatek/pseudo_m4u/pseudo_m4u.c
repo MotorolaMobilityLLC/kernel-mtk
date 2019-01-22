@@ -389,6 +389,10 @@ int pseudo_m4u_do_config_port(M4U_PORT_STRUCT *pM4uPort)
 	uint32_t paramTypes;
 	TZ_RESULT ret;
 
+	/* do not config port if session has not been inited. */
+	if (!m4u_session)
+		return 0;
+
 	param[0].value.a = pM4uPort->ePortID;
 	param[0].value.b = pM4uPort->Virtuality;
 	param[1].value.a = pM4uPort->Distance;
