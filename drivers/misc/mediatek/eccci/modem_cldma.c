@@ -231,6 +231,27 @@ static inline void cldma_rbd_set_next_ptr(struct cldma_rbd *rbd, dma_addr_t next
 	CCCI_DEBUG_LOG(MD_SYS1, TAG, "%s:%pa, 0x%x, val=0x%x\n", __func__, &next_ptr, rbd->reserved, val);
 }
 
+static void cldma_dump_rgpd_queue(struct ccci_modem *md, unsigned int qno)
+{
+	unsigned int *tmp;
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	struct cldma_rgpd *rgpd;
+	struct cldma_request *req = NULL;
+
+	CCCI_NOTICE_LOG(md->index, TAG, " dump rxq %d, tr_done=%p, rx_refill=0x%p\n", qno,
+			md_ctrl->rxq[qno].tr_done->gpd, md_ctrl->rxq[qno].rx_refill->gpd);
+	list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
+		tmp = (unsigned int *)req->gpd;
+		CCCI_NOTICE_LOG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
+			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+		rgpd = (struct cldma_rgpd *)req->gpd;
+		if ((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0 && req->skb) {
+			tmp = (unsigned int *)req->skb->data;
+			CCCI_NOTICE_LOG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->skb->data,
+			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+		}
+	}
+}
 
 static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 {
@@ -493,6 +514,7 @@ again:
 			tmp = (unsigned int *)skb->data;
 			CCCI_NOTICE_LOG(md->index, TAG, "dump skb->data(%p):(%X/%X/%X/%X)\n",
 							skb->data, *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+			cldma_dump_rgpd_queue(md, queue->index);
 		}
 		/*set data len*/
 		skb_put(skb, rgpd->data_buff_len);
