@@ -35,7 +35,7 @@
 #include <asm/system_misc.h>
 #include <mt-plat/sync_write.h>
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifndef CONFIG_MTK_ACAO_SUPPORT)
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 #include <mach/mtk_gpt.h>
 #endif
 #endif
