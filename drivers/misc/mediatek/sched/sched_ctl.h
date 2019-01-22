@@ -18,12 +18,15 @@ enum {
 	SCHED_NO_BOOST = 0,
 	SCHED_ALL_BOOST,
 	SCHED_FG_BOOST,
+	SCHED_FORCE_BOOST,
+	SCHED_FORCE_STOP,
 	SCHED_UNKNOWN_BOOST
 };
 
 extern void set_user_space_global_cpuset(struct cpumask *global_cpus, int cgroup_id);
 extern void unset_user_space_global_cpuset(int cgroup_id);
 extern int sched_scheduler_switch(SCHED_LB_TYPE new_sched);
+int set_sched_boost(unsigned int val);
 #endif
 
 extern int idle_prefer_mode;

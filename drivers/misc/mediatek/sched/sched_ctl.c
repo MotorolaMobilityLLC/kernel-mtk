@@ -298,6 +298,11 @@ static ssize_t store_idle_prefer(struct kobject *kobj,
 	prefer_idle_for_perf_idx(1, en);
 #endif
 
+#ifdef CONFIG_MTK_SCHED_BOOST
+	/* trigger HMP */
+	set_sched_boost(en ? SCHED_FORCE_BOOST : SCHED_FORCE_STOP);
+#endif
+
 	/* trigger WALT */
 	sched_walt_enable(LT_WALT_SCHED, en);
 
@@ -574,15 +579,24 @@ int set_sched_boost(unsigned int val)
 		return 0;
 
 	mutex_lock(&sched_boost_mutex);
+
+	/* bail out if forcing mode */
+	if (val != SCHED_FORCE_STOP && sched_boost_type == SCHED_FORCE_BOOST) {
+		mutex_unlock(&sched_boost_mutex);
+		return 0;
+	}
+
 	/* back to original setting*/
 	if (sched_boost_type == SCHED_ALL_BOOST)
+		sched_scheduler_switch(SCHED_HYBRID_LB);
+	else if (sched_boost_type == SCHED_FORCE_BOOST)
 		sched_scheduler_switch(SCHED_HYBRID_LB);
 	else if (sched_boost_type == SCHED_FG_BOOST)
 		sched_unset_boost_fg();
 
 	sched_boost_type = val;
 
-	if (val == SCHED_NO_BOOST) {
+	if (val == SCHED_NO_BOOST || val == SCHED_FORCE_STOP) {
 		if (sysctl_sched_isolation_hint_enable_backup > 0)
 			sysctl_sched_isolation_hint_enable = sysctl_sched_isolation_hint_enable_backup;
 
@@ -591,7 +605,7 @@ int set_sched_boost(unsigned int val)
 		sysctl_sched_isolation_hint_enable_backup = sysctl_sched_isolation_hint_enable;
 		sysctl_sched_isolation_hint_enable = 0;
 
-		if (val == SCHED_ALL_BOOST)
+		if (val == SCHED_ALL_BOOST || val == SCHED_FORCE_BOOST)
 			sched_scheduler_switch(SCHED_HMP_LB);
 		else if (val == SCHED_FG_BOOST)
 			sched_set_boost_fg();
@@ -618,6 +632,9 @@ static ssize_t show_sched_boost(struct kobject *kobj,
 		break;
 	case SCHED_FG_BOOST:
 		len += snprintf(buf, max_len, "sched boost= foreground boost\n\n");
+		break;
+	case SCHED_FORCE_BOOST:
+		len += snprintf(buf, max_len, "sched boost= force boost\n\n");
 		break;
 	default:
 		len += snprintf(buf, max_len, "sched boost= no boost\n\n");
