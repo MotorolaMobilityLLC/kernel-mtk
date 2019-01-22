@@ -846,4 +846,5 @@ extern int typec_switch_usb_connect(void *data);
 extern int mu3d_force_on;
 extern void mt_usb_connect(void);
 extern void mt_usb_connect_test(int start);
+extern void trigger_disconnect_check_work(void);
 #endif	/* __MUSB_CORE_H__ */

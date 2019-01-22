@@ -363,6 +363,7 @@ static inline void mtu3d_u2_common_intr_handler(u32 dwIntrUsbValue)
 		os_writel(U3D_LTSSM_INFO, CLR_DISABLE_CNT);
 		os_printk(K_NOTICE, "w1c, U3D_LTSSM_INFO, CLR_DISABLE_CNT\n");
 #endif
+		trigger_disconnect_check_work();
 	}
 
 	if (dwIntrUsbValue & RESUME_INTR) {
