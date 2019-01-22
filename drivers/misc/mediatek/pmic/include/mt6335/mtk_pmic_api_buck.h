@@ -33,8 +33,8 @@ void wk_auxadc_bgd_ctrl_dbg(void);
 #define PMIC_LP_LDO_ENTRY(reg) {reg, MT6335_LDO_##reg##_CON0}
 #define PMIC_LP_LDO_VCN33_0_ENTRY(reg) {reg, MT6335_LDO_VCN33_CON0_BT}
 #define PMIC_LP_LDO_VCN33_1_ENTRY(reg) {reg, MT6335_LDO_VCN33_CON0_WIFI}
-#define PMIC_LP_LDO_VCN18_0_ENTRY(reg) {reg, MT6335_LDO_VCN33_CON0_BT}
-#define PMIC_LP_LDO_VCN18_1_ENTRY(reg) {reg, MT6335_LDO_VCN33_CON0_WIFI}
+#define PMIC_LP_LDO_VCN18_0_ENTRY(reg) {reg, MT6335_LDO_VCN18_CON0_BT}
+#define PMIC_LP_LDO_VCN18_1_ENTRY(reg) {reg, MT6335_LDO_VCN18_CON0_WIFI}
 #endif
 
 typedef enum {
