@@ -126,7 +126,8 @@ int musb_force_on;
 int musb_host_dynamic_fifo = 1;
 int musb_host_dynamic_fifo_usage_msk;
 bool musb_host_db_enable;
-bool musb_host_db_workaround;
+bool musb_host_db_workaround1 = true;
+bool musb_host_db_workaround2;
 long musb_host_db_delay_ns;
 long musb_host_db_workaround_cnt;
 module_param(musb_fake_CDP, int, 0400);
@@ -134,7 +135,8 @@ module_param(kernel_init_done, int, 0644);
 module_param(musb_host_dynamic_fifo, int, 0644);
 module_param(musb_host_dynamic_fifo_usage_msk, int, 0400);
 module_param(musb_host_db_enable, bool, 0644);
-module_param(musb_host_db_workaround, bool, 0644);
+module_param(musb_host_db_workaround1, bool, 0644);
+module_param(musb_host_db_workaround2, bool, 0644);
 module_param(musb_host_db_delay_ns, long, 0644);
 module_param(musb_host_db_workaround_cnt, long, 0644);
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
@@ -1964,13 +1966,12 @@ irqreturn_t musb_interrupt(struct musb *musb)
 
 					musb_host_db_workaround_cnt++;
 					ref_cnt = host_tx_refcnt_inc(ep_num);
-					DBG_LIMIT(5, "addtional TX<%d> got, ref_cnt<%d>",
+					DBG(0, "unexpect TX<%d> got, ref_cnt<%d>\n",
 							ep_num, ref_cnt);
 					skip_tx = true;
-				}
 
-				if (!musb_host_db_workaround)
-					skip_tx = false;
+					dump_tx_ops(ep_num);
+				}
 
 				if (likely(!skip_tx))
 					musb_host_tx(musb, ep_num);
