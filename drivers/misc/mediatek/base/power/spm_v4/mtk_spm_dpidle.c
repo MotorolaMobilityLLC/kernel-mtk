@@ -98,6 +98,13 @@ static inline void spm_dpidle_footprint(enum spm_deepidle_step step)
 #endif
 }
 
+static inline void spm_dpidle_reset_footprint(void)
+{
+#ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_deepidle_val(0);
+#endif
+}
+
 #ifdef CONFIG_FPGA_EARLY_PORTING
 static const u32 dpidle_binary[] = {
 	0xa1d58407, 0xa1d70407, 0x81f68407, 0x80358400, 0x1b80001f, 0x20000000,
@@ -913,7 +920,7 @@ RESTORE_IRQ:
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	spm_dpidle_footprint(0);
+	spm_dpidle_reset_footprint();
 
 #if 1
 	if (wr == WR_PCM_ASSERT)
@@ -1075,7 +1082,7 @@ RESTORE_IRQ:
 
 	spm_dpidle_notify_sspm_after_wfi_async_wait();
 
-	spm_dpidle_footprint(0);
+	spm_dpidle_reset_footprint();
 
 #if 1
 	if (last_wr == WR_PCM_ASSERT)
