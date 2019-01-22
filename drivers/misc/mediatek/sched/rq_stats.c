@@ -35,6 +35,8 @@
 #define MAX_LONG_SIZE 24
 #define DEFAULT_RQ_POLL_JIFFIES 1
 #define DEFAULT_DEF_TIMER_JIFFIES 5
+#define HEAVY_TASK_ENABLE 1
+
 #ifdef CONFIG_SCHED_HMP_PRIO_FILTER
 static unsigned int heavy_task_prio = NICE_TO_PRIO(CONFIG_SCHED_HMP_PRIO_FILTER_VAL);
 #define task_low_priority(prio) ((prio >= heavy_task_prio)?1:0)
@@ -50,7 +52,9 @@ static int cpufreq_variant = 1; /* set to 1 if per cpu load is cpu freq. variant
 struct notifier_block freq_transition;
 #endif /* CONFIG_CPU_FREQ */
 struct notifier_block cpu_hotplug;
-static unsigned int heavy_task_threshold = 650; /* max=1023 */
+static unsigned int heavy_task_threshold = 920; /* max=1023, for last_poll, threshold */
+static unsigned int heavy_task_threshold2 = 920; /* max=1023 for AHT, threshold  */
+static unsigned int avg_heavy_task_threshold = 65; /* max=99 for AHT, admission control */
 static int htask_cpucap_ctrl = 1;
 
 struct cpu_load_data {
@@ -347,6 +351,60 @@ static int ack_by_curcap(int cpu, int cluster_id, int max_cluster_id)
 	return acked;
 }
 
+int is_ack_curcap(int cpu)
+{
+	int cluster_id, cluster_nr;
+
+	cluster_nr = arch_get_nr_clusters();
+	cluster_id = arch_get_cluster_id(cpu);
+
+	return ack_by_curcap(cpu, cluster_id, cluster_nr-1);
+}
+EXPORT_SYMBOL(is_ack_curcap);
+
+int is_heavy_task(struct task_struct *p)
+{
+	int is_heavy = 0;
+
+	if (!HEAVY_TASK_ENABLE)
+		return 0;
+
+	if (!p)
+		return 0;
+
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+	if (task_low_priority(p->prio))
+		return 0;
+#endif
+	if (unlikely(p->se.load.weight > NICE_0_LOAD)) {
+		/* don't consider weight in heavy task detection */
+		long long task_wop_load = (p->se.avg.load_avg*NICE_0_LOAD)/p->se.load.weight;
+
+		if (task_wop_load >= heavy_task_threshold2)
+			is_heavy = 1;
+	} else {
+		if (p->se.avg.load_avg >= heavy_task_threshold2)
+			is_heavy = 1;
+	}
+
+	return is_heavy;
+}
+EXPORT_SYMBOL(is_heavy_task);
+
+int inc_nr_heavy_running(const char *invoker, struct task_struct *p, int inc, bool ack_cap)
+{
+	if (is_heavy_task(p)) {
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+		sched_update_nr_heavy_prod(invoker, cpu_of(task_rq(p)), inc, ack_cap);
+		trace_sched_avg_heavy_task_load(p);
+#endif
+		return inc;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(inc_nr_heavy_running);
+
 static unsigned int htask_statistic;
 unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int threshold)
 {
@@ -377,7 +435,18 @@ unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int t
 			if (task_low_priority(p->prio))
 				continue;
 #endif
-			if (p->se.avg.load_avg >= threshold) {
+			if (unlikely(p->se.load.weight > NICE_0_LOAD)) {
+				/* don't consider weight in heavy task detection */
+				long long task_wop_load = (p->se.avg.load_avg*NICE_0_LOAD)/p->se.load.weight;
+
+				if (task_wop_load >= threshold)
+					is_heavy = 1;
+			} else {
+				if (p->se.avg.load_avg >= threshold)
+					is_heavy = 1;
+			}
+
+			if (is_heavy) {
 				is_heavy = ack_by_curcap(cpu, cluster_id, clusters-1);
 				count += is_heavy ? 1 : 0;
 				__trace_out(is_heavy, cpu, p);
@@ -404,9 +473,27 @@ unsigned int sched_get_nr_heavy_task(void)
 }
 EXPORT_SYMBOL(sched_get_nr_heavy_task);
 
+/* sched_get_nr_heavy_task2:
+ *	return max heavy tasks nr in the cluster between last_poll and average heavy task
+ *	if CONFIG_MTK_SCHED_RQAVG_KS is defined.
+ */
 unsigned int sched_get_nr_heavy_task2(int cluster_id)
 {
-	return sched_get_nr_heavy_task_by_threshold(cluster_id, heavy_task_threshold);
+	int lastpoll_htask1 = 0, lastpoll_htask2 = 0;
+	int avg_htask = 0, avg_htask_scal = 0;
+	int max;
+
+	lastpoll_htask1 = sched_get_nr_heavy_task_by_threshold(cluster_id, heavy_task_threshold);
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+	lastpoll_htask2 = sched_get_nr_heavy_running_avg(cluster_id, &avg_htask_scal);
+#endif
+	avg_htask = (avg_htask_scal%100 >= avg_heavy_task_threshold)?(avg_htask_scal/100+1):(avg_htask_scal/100);
+
+	max =  max(max(lastpoll_htask1, lastpoll_htask2), avg_htask);
+
+	trace_sched_avg_heavy_task(lastpoll_htask1, lastpoll_htask2, avg_htask_scal, cluster_id, max);
+
+	return max;
 }
 EXPORT_SYMBOL(sched_get_nr_heavy_task2);
 
@@ -518,6 +605,11 @@ static int cpu_hotplug_handler(struct notifier_block *nb,
 		spin_lock_irqsave(&this_cpu->cpu_load_lock, flags);
 		update_average_load(AVG_LOAD_IGNORE, 0, cpu);
 		spin_unlock_irqrestore(&this_cpu->cpu_load_lock, flags);
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+		/* clear per_cpu variables for heavy task if needed */
+		if (val == CPU_UP_PREPARE)
+			WARN_ON(reset_heavy_task_stats(cpu));
+#endif
 		break;
 	case CPU_DOWN_PREPARE:
 		/* cpu_online()=1 here, flush previous load */
@@ -548,6 +640,15 @@ static int system_suspend_handler(struct notifier_block *nb,
 	return NOTIFY_OK;
 }
 
+int get_avg_heavy_task_threshold(void)
+{
+	return avg_heavy_task_threshold;
+}
+
+int get_heavy_task_threshold(void)
+{
+	return heavy_task_threshold;
+}
 
 static ssize_t hotplug_disable_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
@@ -695,6 +796,7 @@ static ssize_t cpu_normalized_load_show(struct kobject *kobj,
 }
 static struct kobj_attribute cpu_normalized_load_attr = __ATTR_RO(cpu_normalized_load);
 
+/* For htasks statistics */
 static ssize_t show_heavy_tasks(struct kobject *kobj,
 					struct kobj_attribute *attr, char *buf)
 {
@@ -710,21 +812,11 @@ static ssize_t show_heavy_tasks(struct kobject *kobj,
 	return len;
 }
 
-static ssize_t store_heavy_task_threshold(struct kobject *kobj,
-		struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	unsigned int val = 0;
-
-	if (sscanf(buf, "%iu", &val) != 0)
-		sched_set_heavy_task_threshold(val);
-
-	return count;
-}
-
 static struct kobj_attribute htasks_attr =
-	__ATTR(htasks, S_IWUSR | S_IRUSR, show_heavy_tasks,
-			store_heavy_task_threshold);
+	__ATTR(htasks, S_IRUSR, show_heavy_tasks,
+			NULL);
 
+/* For cpu capacity control */
 static ssize_t htask_cpucap_ctrl_store(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
 {
@@ -737,6 +829,96 @@ static ssize_t htask_cpucap_ctrl_store(struct kobject *kobj,
 }
 static struct kobj_attribute htask_cpucap_ctrl_attr = __ATTR_WO(htask_cpucap_ctrl);
 
+/* For read/write heavy_task_threshold */
+static ssize_t store_heavy_task_threshold(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+
+	if (sscanf(buf, "%iu", &val) != 0)
+		sched_set_heavy_task_threshold(val);
+	return count;
+}
+
+static ssize_t show_heavy_task_threshold(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len += snprintf(buf, max_len, "%d\n", heavy_task_threshold);
+
+	return len;
+}
+
+static struct kobj_attribute htasks_thresh_attr =
+__ATTR(htasks_thresh, S_IWUSR | S_IRUSR, show_heavy_task_threshold,
+		store_heavy_task_threshold);
+
+/* For read/write admission control for average heavy task */
+static ssize_t store_avg_heavy_task_ac(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+
+	if (sscanf(buf, "%iu", &val) != 0) {
+		if (val >= 0 && val < 100) {
+			avg_heavy_task_threshold = val;
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+			heavy_thresh_chg_notify();
+#endif
+		}
+	}
+	return count;
+}
+
+static ssize_t show_avg_heavy_task_ac(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len += snprintf(buf, max_len, "%d\n", avg_heavy_task_threshold);
+
+	return len;
+}
+
+static struct kobj_attribute avg_htasks_ac_attr =
+__ATTR(avg_htasks_ac, S_IWUSR | S_IRUSR, show_avg_heavy_task_ac,
+		store_avg_heavy_task_ac);
+
+/* For read/write threshold for average heavy task */
+static ssize_t store_avg_heavy_task_thresh(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+
+	if (sscanf(buf, "%iu", &val) != 0) {
+		if (val >= 0 && val < 1024) {
+			heavy_task_threshold2 = val;
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+			heavy_thresh_chg_notify();
+#endif
+		}
+	}
+	return count;
+}
+
+static ssize_t show_avg_heavy_task_thresh(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len += snprintf(buf, max_len, "%d\n", heavy_task_threshold2);
+
+	return len;
+}
+
+static struct kobj_attribute avg_htasks_thresh_attr =
+__ATTR(avg_htasks_thresh, S_IWUSR | S_IRUSR, show_avg_heavy_task_thresh,
+		store_avg_heavy_task_thresh);
+
 static struct attribute *rq_attrs[] = {
 	&cpu_normalized_load_attr.attr,
 	&def_timer_ms_attr.attr,
@@ -745,6 +927,9 @@ static struct attribute *rq_attrs[] = {
 	&hotplug_disabled_attr.attr,
 	&htasks_attr.attr,
 	&htask_cpucap_ctrl_attr.attr,
+	&htasks_thresh_attr.attr,
+	&avg_htasks_thresh_attr.attr,
+	&avg_htasks_ac_attr.attr,
 	NULL,
 };
 
