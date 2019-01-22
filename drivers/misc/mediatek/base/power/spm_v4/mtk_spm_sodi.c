@@ -104,6 +104,8 @@ static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operat
 	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
 	spm_opt |= (operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) ?
 		SPM_OPT_XO_UFS_OFF : 0;
+	spm_opt |= (operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM) ?
+		SPM_OPT_CLKBUF_ENTER_BBLPM : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
 
@@ -131,6 +133,8 @@ static void spm_sodi_notify_sspm_after_wfi(u32 operation_cond)
 
 	spm_opt |= (operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) ?
 		SPM_OPT_XO_UFS_OFF : 0;
+	spm_opt |= (operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM) ?
+		SPM_OPT_CLKBUF_ENTER_BBLPM : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
 
