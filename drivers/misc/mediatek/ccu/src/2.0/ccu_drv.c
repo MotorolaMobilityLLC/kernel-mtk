@@ -693,37 +693,14 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 					IrqInfo.EventInfo.St_type,
 					IrqInfo.EventInfo.Status);
 
-				ret = ccu_AFwaitirq(&IrqInfo, CCU_CAM_TG_1);
-
-				if (copy_to_user((void *)arg, &IrqInfo, sizeof(struct CCU_WAIT_IRQ_STRUCT))
-				    != 0) {
-					LOG_ERR("copy_to_user failed\n");
-					ret = -EFAULT;
-				}
-			} else {
-				LOG_ERR("copy_from_user failed\n");
-				ret = -EFAULT;
-			}
-
-			break;
-		}
-	case CCU_IOCTL_WAIT_AFB_IRQ:
-		{
-			if (copy_from_user(&IrqInfo, (void *)arg, sizeof(struct CCU_WAIT_IRQ_STRUCT)) == 0) {
-				if ((IrqInfo.Type >= CCU_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
-					ret = -EFAULT;
-					LOG_ERR("invalid type(%d)\n", IrqInfo.Type);
+				if (IrqInfo.bDumpReg == CCU_CAM_TG_1)
+					ret = ccu_AFwaitirq(&IrqInfo, CCU_CAM_TG_1);
+				else if (IrqInfo.bDumpReg == CCU_CAM_TG_2)
+					ret = ccu_AFwaitirq(&IrqInfo, CCU_CAM_TG_2);
+				else {
+					LOG_ERR("invalid CCU_CAM_TG:%d\n", IrqInfo.bDumpReg);
 					goto EXIT;
 				}
-
-				LOG_DBG("AFBIRQ type(%d), userKey(%d), timeout(%d), sttype(%d), st(%d)\n",
-					IrqInfo.Type,
-					IrqInfo.EventInfo.UserKey,
-					IrqInfo.EventInfo.Timeout,
-					IrqInfo.EventInfo.St_type,
-					IrqInfo.EventInfo.Status);
-
-				ret = ccu_AFwaitirq(&IrqInfo, CCU_CAM_TG_2);
 
 				if (copy_to_user((void *)arg, &IrqInfo, sizeof(struct CCU_WAIT_IRQ_STRUCT))
 				    != 0) {
@@ -893,11 +870,13 @@ static int ccu_release(struct inode *inode, struct file *flip)
 
 	LOG_INF_MUST("ccu_release +");
 
+	ccu_force_powerdown();
+
 	for (i = 0; i < CCU_IMPORT_BUF_NUM; i++)
 		ccu_ion_free_import_handle(import_buffer_handle[i]);/*can't in spin_lock*/
 
 	ccu_delete_user(user);
-	ccu_force_powerdown();
+
 	ccu_ion_uninit();
 
 	LOG_INF_MUST("ccu_release -");
