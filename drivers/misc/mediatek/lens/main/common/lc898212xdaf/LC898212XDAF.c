@@ -589,7 +589,38 @@ static inline int getAFCalPos(__user struct stAF_MotorCalPos *pstMotorCalPos)
 			u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
 			u4AF_CalibData_MACRO = convertAF_DAC(AF_Marco);
 		}
+	} else {
+		u8 val1 = 0, val2 = 0;
+		int AF_Infi = 0x00;
+		int AF_Marco = 0x00;
+
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0011, &val2); /* low byte */
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0012, &val1);
+		AF_Infi = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0013, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0014, &val1);
+		AF_Marco = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		LOG_INF("AF_Infi : %x\n", AF_Infi);
+		LOG_INF("AF_Marco : %x\n", AF_Marco);
+
+		Hall_Min = 0x8001;
+		Hall_Max = 0x7FFF;
+
+		if (AF_Marco > 1023 || AF_Infi > 1023 || AF_Infi > AF_Marco) {
+			u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
+			u4AF_CalibData_MACRO = convertAF_DAC(AF_Marco);
+
+			if (u4AF_CalibData_INF > u4AF_CalibData_MACRO) {
+				u4AF_CalibData_INF = 1023 - u4AF_CalibData_INF;
+				u4AF_CalibData_MACRO = 1023 - u4AF_CalibData_MACRO;
+			}
+		}
 	}
+
+	LOG_INF("AF_CalibData_INF : %d\n", u4AF_CalibData_INF);
+	LOG_INF("AF_CalibData_MACRO : %d\n", u4AF_CalibData_MACRO);
 
 	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k57v1", 5) == 0) {
 		u8 val1 = 0, val2 = 0;
