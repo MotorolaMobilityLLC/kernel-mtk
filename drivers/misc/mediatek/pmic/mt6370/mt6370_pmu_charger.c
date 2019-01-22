@@ -454,14 +454,12 @@ static int mt6370_set_usbsw_state(struct mt6370_pmu_charger_data *chg_data,
 
 	if (chg_data->usb_switch)
 		switch_set_state(chg_data->usb_switch, state);
-#if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_USB_MTK_HDRC)
 	else {
 		if (state == MT6370_USBSW_CHG)
 			Charger_Detect_Init();
 		else
 			Charger_Detect_Release();
 	}
-#endif
 #endif /* CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT */
 
 	return 0;
