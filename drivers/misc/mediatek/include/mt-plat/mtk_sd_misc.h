@@ -23,34 +23,6 @@
 #include <linux/mmc/sd.h>
 #endif
 
-#include <mtk_sd.h>
-
-#ifndef FPGA_PLATFORM
-extern void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18);
-#endif
-/* void msdc_dump_padctl(struct msdc_host *host); */
-extern u32 msdc_host_mode[HOST_MAX_NUM];
-extern u32 msdc_host_mode2[HOST_MAX_NUM];
-
-extern int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
-	unsigned int timeout_ms);
-extern int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd);
-extern struct msdc_host *mtk_msdc_host[];
-extern struct msdc_host *msdc_get_host(int host_function, bool boot, bool secondary);
-extern int msdc_reinit(struct msdc_host *host);
-#if 0
-extern int msdc_get_reserve(void);
-extern u32 msdc_get_capacity(int get_emmc_total);
-extern struct gendisk *mmc_get_disk(struct mmc_card *card);
-extern void msdc_get_driving(struct msdc_host *host, struct msdc_ioctl *msdc_ctl);
-#endif
-
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-/* extern struct excel_info PartInfoEmmc[PART_NUM]; */
-
-extern u32 g_emmc_mode_switch;
-#endif
-
 struct msdc_ioctl {
 	int opcode;
 	int host_num;
@@ -80,38 +52,8 @@ struct msdc_ioctl {
 	int sd30_power_control;
 };
 
+/* used by dumchar */
 extern  int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl);
-/**************for msdc_ssc***********************/
-#define AUDPLL_CTL_REG12                (0xF0007070)
-#define AUDPLL_CTL_REG01                (0xF00071E0)
-#define AUDPLL_CTL_REG02                (0xF100000C)
-
-#define AUDPLL_TSEL_MASK                (1792) /* MASK = 00000111 00000000 */
-#define AUDPLL_TSEL_RESULT1             (0)    /* REG = 00000000 00000000 30.5us */
-#define AUDPLL_TSEL_RESULT2             (256)  /* REG = 00000001 00000000 61.0us */
-#define AUDPLL_TSEL_RESULT3             (512)  /* REG = 00000010 00000000 122.1us */
-#define AUDPLL_TSEL_RESULT4             (768)  /* REG = 00000011 00000000 244.1us */
-#define AUDPLL_TSEL_RESULT5             (1024) /* REG = 00000100 00000000 448.3us */
-
-#define AUDPLL_BSEL_MASK                (7)  /* MASK = 00000000 00000111 */
-#define AUDPLL_BSEL_RESULT0             (0)  /* REG = 00000000 00000000 REG init val */
-#define AUDPLL_BSEL_RESULT1             (1)  /* REG = 00000000 00000001 2.26MHz */
-#define AUDPLL_BSEL_RESULT2             (2)  /* REG = 00000000 00000010 4.52MHz */
-#define AUDPLL_BSEL_RESULT3             (4)  /* REG = 00000000 00000100 9.04MHz */
-
-#define SET_HOP_BIT_NONE                (0)
-#define SET_HOP_BIT1                    (1)
-#define SET_HOP_BIT2                    (2)
-#define SET_HOP_BIT3                    (3)
-
-#define SET_HOP_TIME0                   (0)
-#define SET_HOP_TIME1                   (1)
-#define SET_HOP_TIME2                   (2)
-#define SET_HOP_TIME3                   (3)
-#define SET_HOP_TIME4                   (4)
-
-
-/**************for msdc_ssc***********************/
 
 #define MSDC_DRIVING_SETTING            (0)
 #define MSDC_CLOCK_FREQUENCY            (1)
@@ -122,14 +64,11 @@ extern  int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl);
 #define MSDC_GET_EXCSD                  (6)
 #define MSDC_ERASE_PARTITION            (7)
 #define MSDC_HOPPING_SETTING            (8)
-
 #define MSDC_REINIT_SDCARD              _IOW('r', 9, int)
-
 #define MSDC_SD30_MODE_SWITCH           (10)
 #define MSDC_GET_BOOTPART               (11)
 #define MSDC_SET_BOOTPART               (12)
 #define MSDC_GET_PARTSIZE               (13)
-
 #define MSDC_CD_PIN_EN_SDCARD           _IOW('r', 14, int)
 #define MSDC_SD_POWER_OFF               (15)
 #define MSDC_SD_POWER_ON                (16)
@@ -175,8 +114,10 @@ typedef enum {
 } SD3_MAX_CURRENT;
 
 typedef enum {
-	SDXC_NO_POWER_CONTROL = 0, /* 0  Host not supports >150mA current at 3.3V /3.0V/1.8V */
-	SDXC_POWER_CONTROL, /* 1 Host supports >150mA current at 3.3V /3.0V/1.8V */
+	SDXC_NO_POWER_CONTROL = 0,
+	/* Host does not supports >150mA current */
+	SDXC_POWER_CONTROL,
+	/* Host supports >150mA current */
 } SD3_POWER_CONTROL;
 
 typedef enum {
@@ -242,6 +183,7 @@ struct storage_info {
 	int emmc_reserve;
 };
 
+/* used by dumchar */
 int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type,
 	struct storage_info *info);
 
