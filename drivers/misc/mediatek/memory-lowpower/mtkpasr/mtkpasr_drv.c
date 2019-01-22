@@ -354,9 +354,10 @@ int mtkpasr_show_banks(char *buf)
 
 	/* Show banks */
 	for (i = 0; i < num_banks; i++) {
-		tmp = sprintf(buf, "Bank[%d] - start_pfn[0x%lx] end_pfn[0x%lx] segment[%d] rank[%d]\n",
+		tmp = sprintf(buf, "Bank[%2d] - start_pfn[%6lx] end_pfn[%6lx] segment[%2d] rank[%d] %s\n",
 				i, mtkpasr_banks[i].start_pfn, mtkpasr_banks[i].end_pfn - 1,
-				mtkpasr_banks[i].segment, mtkpasr_banks[i].rank);
+				mtkpasr_banks[i].segment, mtkpasr_banks[i].rank,
+				((mtkpasr_on >> mtkpasr_banks[i].segment) & 0x1) ? "[ON]" : "");
 		buf += tmp;
 		len += tmp;
 	}
@@ -409,8 +410,6 @@ static int show_pasr_status(char *buf)
 			buf += tmp;
 			len += tmp;
 		}
-		buf += tmp;
-		len += tmp;
 	}
 #endif
 	return len;
