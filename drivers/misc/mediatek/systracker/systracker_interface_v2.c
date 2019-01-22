@@ -571,7 +571,7 @@ static ssize_t tracker_run_store(struct device_driver *driver, const char *buf, 
 {
 	unsigned int value;
 
-	if (unlikely(kstrtou32(buf, 10, &value) != 1))
+	if (kstrtou32(buf, 10, &value))
 		return -EINVAL;
 
 	if (value == 1)
@@ -595,7 +595,7 @@ static ssize_t enable_wp_store(struct device_driver *driver, const char *buf, si
 {
 	unsigned int value;
 
-	if (unlikely(kstrtou32(buf, 10, &value) != 1))
+	if (kstrtou32(buf, 10, &value))
 		return -EINVAL;
 
 	if (value == 1)
