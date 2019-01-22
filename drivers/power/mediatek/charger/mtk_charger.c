@@ -242,6 +242,46 @@ int charger_manager_enable_high_voltage_charging(struct charger_consumer *consum
 	return 0;
 }
 
+int charger_manager_enable_power_path(struct charger_consumer *consumer,
+	int idx, bool en)
+{
+	int ret = 0;
+	bool is_en = true;
+	struct charger_manager *info = consumer->cm;
+	struct charger_device *chg_dev;
+
+
+	if (!info)
+		return -EINVAL;
+
+	switch (idx) {
+	case MAIN_CHARGER:
+		chg_dev = info->chg1_dev;
+		break;
+	case SLAVE_CHARGER:
+		chg_dev = info->chg2_dev;
+		break;
+	case DIRECT_CHARGER:
+		chg_dev = info->dc_chg;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	ret = charger_dev_is_powerpath_enabled(chg_dev, &is_en);
+	if (ret < 0) {
+		pr_err("%s: get is power path enabled failed\n", __func__);
+		return ret;
+	}
+	if (is_en == en) {
+		pr_err("%s: power path is already en = %d\n", __func__, is_en);
+		return 0;
+	}
+
+	pr_info("%s: enable power path = %d\n", __func__, en);
+	return charger_dev_enable_powerpath(chg_dev, en);
+}
+
 static int _charger_manager_enable_charging(struct charger_consumer *consumer,
 	int idx, bool en)
 {
@@ -1137,7 +1177,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
 	info->enable_pe_3 = of_property_read_bool(np, "enable_pe_3");
 
-	/* Current only pe20 is HV charging */
+	/* Currently, only pe20 is HV charging */
 	info->enable_hv_charging = info->enable_pe_2;
 
 	/* common */

@@ -76,5 +76,7 @@ extern int unregister_charger_manager_notifier(struct charger_consumer *consumer
 				struct notifier_block *nb);
 extern int charger_manager_enable_high_voltage_charging(struct charger_consumer *consumer,
 	bool en);
+extern int charger_manager_enable_power_path(struct charger_consumer *consumer,
+	int idx, bool en);
 
 #endif /* __MTK_CHARGER_H__ */
