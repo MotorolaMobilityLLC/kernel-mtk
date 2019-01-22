@@ -531,6 +531,7 @@ void cust_power_init(void)
 
 void cust_power_on(int enable)
 {
+#ifdef CONFIG_MACH_MT6799
 	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
 					"mediatek/evb99v1_64_ufs_mhl", 27) == 0) {
 		/* Enable mt6336 controller before use mt6336 */
@@ -562,10 +563,12 @@ void cust_power_on(int enable)
 		/* Disable mt6336 controller when unuse mt6336 */
 		mt6336_ctrl_disable(mt6336_ctrl);
 	}
+#endif
 }
 
 void cust_reset(int hwResetPeriod, int hwResetDelay, int is_power_on)
 {
+#ifdef CONFIG_MACH_MT6799
 	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
 						"mediatek/k99v2na_64", 19) == 0) {
 		/* Enable mt6336 controller before use mt6336 */
@@ -603,6 +606,7 @@ void cust_reset(int hwResetPeriod, int hwResetDelay, int is_power_on)
 		/* Disable mt6336 controller when unuse mt6336 */
 		mt6336_ctrl_disable(mt6336_ctrl);
 	}
+#endif
 }
 
 void cust_power_on_10v(int enable)
@@ -619,6 +623,7 @@ void cust_power_on_30v(int enable)
 
 void cust_reset_init(void)
 {
+#ifdef CONFIG_MACH_MT6799
 	/* RESET GPIO INIT */
 	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
 						"mediatek/k99v2na_64", 19) == 0) {
@@ -659,10 +664,12 @@ void cust_reset_init(void)
 		/* Disable mt6336 controller when unuse mt6336 */
 		mt6336_ctrl_disable(mt6336_ctrl);
 	}
+#endif
 }
 
 void cust_power_enable_init(void)
 {
+#ifdef CONFIG_MACH_MT6799
 	/* POWER_EN GPIO INIT */
 	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
 					"mediatek/evb99v1_64_ufs_mhl", 27) == 0) {
@@ -713,10 +720,12 @@ void cust_power_enable_init(void)
 		/* Disable mt6336 controller when unuse mt6336 */
 		mt6336_ctrl_disable(mt6336_ctrl);
 	}
+#endif
 }
 
 void cust_usb_misc_init(void)
 {
+#ifdef CONFIG_MACH_MT6799
 	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES,
 					"mediatek/k99v2na_64", 19) == 0) {
 		/* Get mt6336 controller when the first time of use mt6336 */
@@ -750,6 +759,7 @@ void cust_usb_misc_init(void)
 		/* Disable mt6336 controller when unuse mt6336 */
 		mt6336_ctrl_disable(mt6336_ctrl);
 	}
+#endif
 }
 
 static int anx7625_gpio_parse_dt(struct device *dev,

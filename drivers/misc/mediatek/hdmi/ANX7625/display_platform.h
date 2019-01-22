@@ -48,6 +48,8 @@ Revision History:
 
 
 /****************************************************************/
+#define TAG	"[EXTD/HDMI/ANX7625]"
+
 /*
 *#define SLIMPORT_TX_EDID_READ(context,fmt,arg...) \
 	pr_debug(fmt, ## arg);
@@ -55,16 +57,17 @@ Revision History:
 #define SLIMPORT_TX_EDID_READ(context, fmt, arg...)
 
 #define SLIMPORT_TX_EDID_INFO(context, fmt, arg...)	\
-	pr_info(fmt, ## arg)
+	pr_info(TAG fmt, ## arg)
 
 #define SLIMPORT_TX_DBG_INFO(driver_context, fmt, arg...)	\
-	pr_warn(fmt, ## arg)
-
+	pr_info(TAG fmt, ## arg)
+/*
+*
 #define SLIMPORT_TX_DBG_WARN(driver_context, fmt, arg...)	\
-	pr_warn(fmt, ## arg)
-
+	pr_info(fmt, ## arg)
+*/
 #define SLIMPORT_TX_DBG_ERR(driver_context, fmt, arg...)	\
-	pr_err(fmt, ## arg)
+	pr_info(TAG fmt, ## arg)
 
 enum PIN_TYPE {
 	RESET_PIN,
