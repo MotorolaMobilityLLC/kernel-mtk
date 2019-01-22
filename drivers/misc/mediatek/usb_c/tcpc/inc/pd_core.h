@@ -168,7 +168,7 @@
 #define APDO_PPS_EXTRACT_MAX_VOLT_RAW(raw)	(((raw) >> 17) & 0xff)
 #define APDO_PPS_EXTRACT_MIN_VOLT_RAW(raw)	(((raw) >> 8) & 0Xff)
 #define APDO_PPS_EXTRACT_CURR_RAW(raw)	(((raw) >> 0) & 0x7f)
-#define APDO_PPS_EXTRACT_PWR_LIMIT(raw)        (raw & (1<<27))
+#define APDO_PPS_EXTRACT_PWR_LIMIT(raw)        ((raw >> 27) & 0x1)
 
 #define APDO_PPS_EXTRACT_MAX_VOLT(raw)	\
 	(APDO_PPS_EXTRACT_MAX_VOLT_RAW(raw) * 100)
