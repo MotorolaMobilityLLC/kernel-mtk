@@ -1246,8 +1246,8 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 						prAdapter->rWifiVar.rConnSettings.fgIsConnReqIssued = FALSE;
 						prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
 						prAisBssInfo->fgDisConnReassoc = FALSE;
-						kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-								WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
+						aisIndicationOfMediaStateToHost(prAdapter,
+								PARAM_MEDIA_STATE_DISCONNECTED, FALSE);
 						eNextState = AIS_STATE_IDLE;
 						fgIsTransition = TRUE;
 						break;
@@ -2813,7 +2813,8 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 									     WLAN_STATUS_JOIN_FAILURE,
 									     (PVOID)&u2StatusCode,
 									     sizeof(u2StatusCode));
-
+						prAisBssInfo->eConnectionStateIndicated =
+							PARAM_MEDIA_STATE_DISCONNECTED;
 						eNextState = AIS_STATE_IDLE;
 					}
 #endif /* CFG_SUPPORT_ROAMING */
@@ -2826,8 +2827,8 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					prAisBssInfo->u2DeauthReason = prStaRec->u2ReasonCode;
 
 					prAisBssInfo->fgDisConnReassoc = FALSE;
-					kalIndicateStatusAndComplete(prAdapter->prGlueInfo,
-								 WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
+					aisIndicationOfMediaStateToHost(prAdapter,
+							PARAM_MEDIA_STATE_DISCONNECTED, FALSE);
 					/* restore tx power control */
 					rlmSetMaxTxPwrLimit(prAdapter, 0, 0);
 					eNextState = AIS_STATE_IDLE;
