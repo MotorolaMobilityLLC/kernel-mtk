@@ -44,6 +44,9 @@
 #include <mt-plat/aee.h>
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_auxadc_intf.h>
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+#include <mt-plat/mtk_battery.h>
+#endif
 
 #define AEE_DBG 1
 
@@ -144,13 +147,13 @@ void pmic_auxadc_resume(void)
 
 void wk_auxadc_bgd_ctrl_dbg(void)
 {
-	pr_err("EN_BAT_TEMP_L: %d\n", pmic_get_register_value(PMIC_RG_INT_EN_BAT_TEMP_L));
-	pr_err("EN_BAT_TEMP_H: %d\n", pmic_get_register_value(PMIC_RG_INT_EN_BAT_TEMP_H));
-	pr_err("BAT_TEMP_IRQ_EN_MAX: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MAX));
-	pr_err("BAT_TEMP_IRQ_EN_MIN: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MIN));
-	pr_err("BAT_TEMP_EN_MAX: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_EN_MAX));
-	pr_err("BAT_TEMP_EN_MIN: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_EN_MIN));
-	pr_err("BATON_TDET_EN: %d\n", pmic_get_register_value(PMIC_BATON_TDET_EN));
+	pr_notice("EN_BAT_TEMP_L: %d\n", pmic_get_register_value(PMIC_RG_INT_EN_BAT_TEMP_L));
+	pr_notice("EN_BAT_TEMP_H: %d\n", pmic_get_register_value(PMIC_RG_INT_EN_BAT_TEMP_H));
+	pr_notice("BAT_TEMP_IRQ_EN_MAX: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MAX));
+	pr_notice("BAT_TEMP_IRQ_EN_MIN: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MIN));
+	pr_notice("BAT_TEMP_EN_MAX: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_EN_MAX));
+	pr_notice("BAT_TEMP_EN_MIN: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_EN_MIN));
+	pr_notice("BATON_TDET_EN: %d\n", pmic_get_register_value(PMIC_BATON_TDET_EN));
 }
 
 int bat_temp_filter(int *arr, unsigned short size)
@@ -188,13 +191,13 @@ void wk_auxadc_dbg_dump(void)
 		}
 		for (j = 0; adc_dbg_addr[j] != 0; j++) {
 			if (j % 43 == 0) {
-				pr_err("%d %s\n", pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
+				pr_notice("%d %s\n", pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
 				strncpy(reg_log, "", 860);
 			}
 			snprintf(reg_str, 20, "Reg[0x%x]=0x%x, ", adc_dbg_addr[j], pmic_adc_dbg[dbg_stamp].reg[j]);
 			strncat(reg_log, reg_str, 860);
 		}
-		pr_err("[%s] %d %d %s\n", __func__, dbg_stamp, pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
+		pr_notice("[%s] %d %d %s\n", __func__, dbg_stamp, pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
 		strncpy(reg_log, "", 860);
 		dbg_stamp++;
 		if (dbg_stamp >= 4)
@@ -209,7 +212,7 @@ int wk_auxadc_battmp_dbg(int bat_temp)
 	int arr_bat_temp[5];
 
 	if (dbg_flag)
-		pr_err("Another dbg is running\n");
+		pr_notice("Another dbg is running\n");
 	dbg_flag = 1;
 	for (i = 0; adc_dbg_addr[i] != 0; i++)
 		pmic_adc_dbg[dbg_stamp].reg[i] = upmu_get_reg_value(adc_dbg_addr[i]);
@@ -222,7 +225,7 @@ int wk_auxadc_battmp_dbg(int bat_temp)
 	vbif = pmic_get_auxadc_value(AUXADC_LIST_VBIF);
 	bat_temp3 = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
 	bat_id = pmic_get_auxadc_value(AUXADC_LIST_BATID);
-	pr_err("BAT_TEMP1: %d, BAT_TEMP2:%d, VBIF:%d, BAT_TEMP3:%d, BATID:%d, DA_VBIF28_STB:%d\n",
+	pr_notice("BAT_TEMP1: %d, BAT_TEMP2:%d, VBIF:%d, BAT_TEMP3:%d, BATID:%d, DA_VBIF28_STB:%d\n",
 		bat_temp, bat_temp2, vbif, bat_temp3, bat_id, pmic_get_register_value(PMIC_DA_VBIF28_STB));
 
 	if (bat_temp < 200 ||
@@ -298,16 +301,53 @@ struct pmic_auxadc_channel_new mt6356_auxadc_channel[] = {
 };
 #define MT6356_AUXADC_CHANNEL_MAX	ARRAY_SIZE(mt6356_auxadc_channel)
 
+static int mts_timestamp;
 static unsigned int mts_count;
 static unsigned int mts_adc;
+static struct wake_lock mts_monitor_wake_lock;
+static struct mutex mts_monitor_mutex;
+static struct task_struct *mts_thread_handle;
+/*--wake up thread to polling MTS data--*/
+void wake_up_mts_monitor(void)
+{
+	PMICLOG("[%s]\n", __func__);
+	if (mts_thread_handle != NULL) {
+		wake_lock(&mts_monitor_wake_lock);
+		wake_up_process(mts_thread_handle);
+	} else
+		pr_err(PMICTAG "[%s] mts_thread_handle not ready\n", __func__);
+}
+
 /*--Monitor MTS reg--*/
+static void mt6356_mts_reg_dump(void)
+{
+	/* AUXADC_ADC_RDY_MDRT & AUXADC_ADC_OUT_MDRT */
+	pr_notice("AUXADC_ADC16 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC16));
+	pr_notice("AUXADC_ADC17 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC17));
+	pr_notice("AUXADC_ADC18 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC18));
+	pr_notice("AUXADC_ADC36 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC36));
+	pr_notice("AUXADC_MDRT_0 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_0));
+	pr_notice("AUXADC_MDRT_1 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_1));
+	pr_notice("AUXADC_MDRT_2 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_2));
+	pr_notice("AUXADC_MDRT_3 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_3));
+	pr_notice("AUXADC_MDRT_4 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_4));
+	/*--AUXADC CLK--*/
+	pr_notice("RG_AUXADC_CK_PDN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN));
+	pr_notice("RG_AUXADC_CK_PDN_HWEN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
+}
+
 void mt6356_auxadc_monitor_mts_regs(void)
 {
 	int count = 0;
+	int mts_timestamp_cur = 0;
 	unsigned int mts_adc_tmp = 0;
 
 	if (mts_adc == 0)
 		return;
+	mts_timestamp_cur = (int)get_monotonic_coarse().tv_sec;
+	if ((mts_timestamp_cur - mts_timestamp) < 5)
+		return;
+	mts_timestamp = mts_timestamp_cur;
 	mts_adc_tmp = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
 	pr_notice("[MTS_ADC] OLD = 0x%x, NOW = 0x%x, CNT = %d\n", mts_adc, mts_adc_tmp, mts_count);
 
@@ -316,20 +356,11 @@ void mt6356_auxadc_monitor_mts_regs(void)
 	else
 		mts_count = 0;
 
-	if (mts_count >= 8 && mts_count < 10) {
+	if (mts_count >= 7 && mts_count < 9) {
 		pwrap_dump_all_register();
-		/* AUXADC_ADC_RDY_MDRT & AUXADC_ADC_OUT_MDRT */
-		pr_notice("AUXADC_ADC36 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC36));
-		pr_notice("AUXADC_MDRT_0 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_0));
-		pr_notice("AUXADC_MDRT_1 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_1));
-		pr_notice("AUXADC_MDRT_2 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_2));
-		pr_notice("AUXADC_MDRT_3 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_3));
-		pr_notice("AUXADC_MDRT_4 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_4));
-		/*--AUXADC CLK--*/
-		pr_notice("RG_AUXADC_CK_PDN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN));
-		pr_notice("RG_AUXADC_CK_PDN_HWEN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
+		mt6356_mts_reg_dump();
 		/*--AUXADC CH7--*/
-		pr_notice("[MTS_ADC] trigger TSX by AP: %d\n", pmic_get_auxadc_value(AUXADC_LIST_TSX));
+		pmic_get_auxadc_value(AUXADC_LIST_TSX);
 		pmic_set_register_value(PMIC_AUXADC_RQST_CH7_BY_GPS, 1);
 		udelay(10);
 		while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_CH7_BY_GPS) != 1) {
@@ -346,37 +377,72 @@ void mt6356_auxadc_monitor_mts_regs(void)
 		}
 		pr_notice("AUXADC_ADC16 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC16));
 		pr_notice("AUXADC_ADC17 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC17));
-	}
-	if (mts_count == 12) {
-		pmic_set_register_value(PMIC_AUXADC_MDRT_DET_EN, 0);
-		udelay(10);
-		pmic_set_register_value(PMIC_AUXADC_MDRT_DET_EN, 1);
+		pr_notice("AUXADC_ADC18 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC18));
 	}
 	if (mts_count > 15) {
-		aee_kernel_warning("PMIC AUXADC:MDRT", "MDRT");
 		pwrap_dump_all_register();
 		pr_notice("DEW_READ_TEST = 0x%x\n", pmic_get_register_value(PMIC_DEW_READ_TEST));
-		/*--AUXADC CH7--*/
-		pr_notice("AUXADC_LIST_TSX = %d\n", pmic_get_auxadc_value(AUXADC_LIST_TSX));
 		/*--AUXADC--*/
-		/* AUXADC_ADC_RDY_MDRT & AUXADC_ADC_OUT_MDRT */
-		pr_notice("AUXADC_ADC36 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC36));
-		pr_notice("AUXADC_MDRT_0 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_0));
-		pr_notice("AUXADC_MDRT_1 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_1));
-		pr_notice("AUXADC_MDRT_2 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_2));
-		pr_notice("AUXADC_MDRT_3 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_3));
-		pr_notice("AUXADC_MDRT_4 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_MDRT_4));
-		/*--AUXADC CLK--*/
-		pr_notice("RG_AUXADC_CK_PDN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN));
-		pr_notice("RG_AUXADC_CK_PDN_HWEN = 0x%x\n", pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN));
+		mt6356_mts_reg_dump();
+		/*--AUXADC CH7--*/
+		pmic_get_auxadc_value(AUXADC_LIST_TSX);
+		pr_notice("AUXADC_ADC16 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC16));
+		pr_notice("AUXADC_ADC17 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC17));
+		pr_notice("AUXADC_ADC18 = 0x%x\n", upmu_get_reg_value(MT6356_AUXADC_ADC18));
 		mts_count = 0;
+		wake_up_mts_monitor();
 	}
 	mts_adc = mts_adc_tmp;
 }
 
+int mts_kthread(void *x)
+{
+	unsigned int i = 0;
+	unsigned int polling_cnt = 0;
+	unsigned int ktrhead_mts_adc = 0;
+
+	/* Run on a process content */
+	while (1) {
+		mutex_lock(&mts_monitor_mutex);
+		i = 0;
+		polling_cnt = 0;
+		ktrhead_mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
+		while (mts_adc == ktrhead_mts_adc) {
+			while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_MDRT) == 1) {
+				i++;
+				mdelay(1);
+			}
+			while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_MDRT) == 0) {
+				i++;
+				mdelay(1);
+			}
+			ktrhead_mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
+			if (polling_cnt % 20 == 0) {
+				pr_notice("[MTS_ADC] RDY=1 at %dms, AUXADC_ADC36=0x%x, MDRT_OUT=%d\n", i,
+					upmu_get_reg_value(MT6356_AUXADC_ADC36),
+					ktrhead_mts_adc);
+			}
+			if (polling_cnt >= 312) { /* 312 * 32ms ~= 10s*/
+				mt6356_mts_reg_dump();
+				aee_kernel_warning("PMIC AUXADC:MDRT", "MDRT");
+				break;
+			}
+			polling_cnt++;
+		}
+		mutex_unlock(&mts_monitor_mutex);
+		wake_unlock(&mts_monitor_wake_lock);
+
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule();
+	}
+	return 0;
+}
+/*--Monitor MTS reg End--*/
+
 int mt6356_get_auxadc_value(u8 channel)
 {
 	int count = 0, tdet_tmp = 0;
+	int bat_cur = 0, is_charging = 0;
 	signed int adc_result = 0, reg_val = 0;
 	struct pmic_auxadc_channel_new *auxadc_channel;
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
@@ -398,7 +464,7 @@ int mt6356_get_auxadc_value(u8 channel)
 	if (channel == AUXADC_LIST_VBIF) {
 		if (pmic_get_register_value(PMIC_BATON_TDET_EN)) {
 			tdet_tmp = 1;
-			pr_err("pmic auxadc baton_tdet_en should be zero\n");
+			pr_notice("pmic auxadc baton_tdet_en should be zero\n");
 			pmic_set_register_value(PMIC_BATON_TDET_EN, 0);
 		}
 	}
@@ -411,7 +477,11 @@ int mt6356_get_auxadc_value(u8 channel)
 	while (pmic_get_register_value(auxadc_channel->channel_rdy) != 1) {
 		usleep_range(1300, 1500);
 		if ((count++) > count_time_out) {
-			pr_err("[%s] (%d) Time out!\n", __func__, channel);
+			pr_err("[%s] (%d) Time out! STA0=0x%x, STA1=0x%x, STA2=0x%x\n", __func__,
+				auxadc_channel->ch_num,
+				upmu_get_reg_value(MT6356_AUXADC_STA0),
+				upmu_get_reg_value(MT6356_AUXADC_STA1),
+				upmu_get_reg_value(MT6356_AUXADC_STA2));
 			pr_err("[%s] Reg[0x%x]=0x%x, RG_AUXADC_CK_PDN_HWEN=%d, RG_AUXADC_CK_TSTSEL=%d, RG_SMPS_CK_TSTSEL=%d\n",
 				__func__,
 				MT6356_STRUP_CON6, upmu_get_reg_value(MT6356_STRUP_CON6),
@@ -436,8 +506,21 @@ int mt6356_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	if (__ratelimit(&ratelimit)) {
-		pr_err("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n",
+	if (channel != AUXADC_LIST_MT6356_BUCK1_TEMP && channel != AUXADC_LIST_MT6356_BUCK2_TEMP) {
+		if (__ratelimit(&ratelimit)) {
+			if (channel == AUXADC_LIST_BATTEMP) {
+				is_charging = gauge_get_current(&bat_cur);
+				if (is_charging == 0)
+					bat_cur = 0 - bat_cur;
+				pr_notice("[%s] ch_idx = %d, channel = %d, bat_cur = %d, reg_val = 0x%x, adc_result = %d\n",
+					__func__, channel, auxadc_channel->ch_num, bat_cur, reg_val, adc_result);
+			} else {
+				pr_notice("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n",
+					__func__, channel, auxadc_channel->ch_num, reg_val, adc_result);
+			}
+		}
+	} else {
+		PMICLOG("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n",
 			__func__, channel, auxadc_channel->ch_num, reg_val, adc_result);
 	}
 
@@ -445,14 +528,14 @@ int mt6356_get_auxadc_value(u8 channel)
 		dbg_count++;
 		if (battmp != 0 &&
 		    (adc_result < 200 || ((adc_result - battmp) > 100) || ((battmp - adc_result) > 100))) {
-			pr_err("VBIF28_OC_RAW_STATUS:%d\n",
+			pr_notice("VBIF28_OC_RAW_STATUS:%d\n",
 				pmic_get_register_value(PMIC_RG_INT_RAW_STATUS_VBIF28_OC));
 			if (pmic_get_register_value(PMIC_RG_INT_RAW_STATUS_VBIF28_OC) == 1)
 				pmic_set_register_value(PMIC_RG_INT_STATUS_VBIF28_OC, 1);
 			/* dump debug log when VBAT being abnormal */
-			pr_err("old: %d, new: %d\n", battmp, adc_result);
+			pr_notice("old: %d, new: %d\n", battmp, adc_result);
 			adc_result = wk_auxadc_battmp_dbg(adc_result);
-			pr_err("VBIF28_OC_RAW_STATUS:%d\n",
+			pr_notice("VBIF28_OC_RAW_STATUS:%d\n",
 				pmic_get_register_value(PMIC_RG_INT_RAW_STATUS_VBIF28_OC));
 			if (pmic_get_register_value(PMIC_RG_INT_RAW_STATUS_VBIF28_OC) == 1)
 				pmic_set_register_value(PMIC_RG_INT_STATUS_VBIF28_OC, 1);
@@ -460,7 +543,7 @@ int mt6356_get_auxadc_value(u8 channel)
 			if (aee_count < 2)
 				aee_kernel_warning("PMIC AUXADC:BAT TEMP", "BAT TEMP");
 			else
-				pr_err("aee_count=%d\n", aee_count);
+				pr_notice("aee_count=%d\n", aee_count);
 			aee_count++;
 #endif
 		} else if (dbg_count % 50 == 0)
@@ -499,24 +582,33 @@ void adc_dbg_init(void)
 	adc_dbg_addr[i] = 0x648;
 }
 
+static void mts_thread_init(void)
+{
+	mts_thread_handle = kthread_create(mts_kthread, (void *)NULL, "mts_thread");
+	if (IS_ERR(mts_thread_handle)) {
+		mts_thread_handle = NULL;
+		pr_err(PMICTAG "[adc_kthread] creation fails\n");
+	} else {
+		PMICLOG("[adc_kthread] kthread_create Done\n");
+	}
+}
+
 void mt6356_auxadc_init(void)
 {
 	unsigned char i;
 
-	pr_err("%s\n", __func__);
+	pr_info("%s\n", __func__);
 	wake_lock_init(&pmic_auxadc_wake_lock,
 			WAKE_LOCK_SUSPEND, "MT6356 AuxADC wakelock");
 	mutex_init(&pmic_adc_mutex);
+	wake_lock_init(&mts_monitor_wake_lock,
+			WAKE_LOCK_SUSPEND, "MT6356 MTS Monitor wakelock");
+	mutex_init(&mts_monitor_mutex);
 
 	/* set channel 0, 7 as 15 bits, others = 12 bits  000001000001*/
 	pmic_set_register_value(PMIC_RG_STRUP_AUXADC_RSTB_SEL, 1);
 	pmic_set_register_value(PMIC_RG_STRUP_AUXADC_RSTB_SW, 1);
-
-#if 0 /* de-featured in MT6356*/
-	pmic_set_register_value(PMIC_AUXADC_MDBG_DET_EN, 0);
-	pmic_set_register_value(PMIC_AUXADC_MDBG_DET_PRD, 0x40);
-#endif
-#if 0
+#if 1
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_EN, 1);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_PRD, 0x40);
 	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_WKUP_EN, 1);
@@ -540,7 +632,7 @@ void mt6356_auxadc_init(void)
 	g_pmic_pad_vbif28_vol = pmic_get_auxadc_value(AUXADC_LIST_VBIF);
 	if (g_pmic_pad_vbif28_vol < 2500) {
 		for (i = 0; i < 5; i++) {
-			pr_err("VBIF28_OC:%d\n", pmic_get_register_value(PMIC_RG_INT_RAW_STATUS_VBIF28_OC));
+			pr_notice("VBIF28_OC:%d\n", pmic_get_register_value(PMIC_RG_INT_RAW_STATUS_VBIF28_OC));
 			if (pmic_get_register_value(PMIC_RG_INT_RAW_STATUS_VBIF28_OC) != 1)
 				break;
 			pmic_set_register_value(PMIC_RG_INT_STATUS_VBIF28_OC, 1);
@@ -554,10 +646,11 @@ void mt6356_auxadc_init(void)
 	}
 	battmp = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
 	mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
-	pr_err("****[%s] VBIF28 = %d, BAT TEMP = %d, MTS_ADC = 0x%x\n",
+	pr_info("****[%s] VBIF28 = %d, BAT TEMP = %d, MTS_ADC = 0x%x\n",
 		__func__, pmic_get_vbif28_volt(), battmp, mts_adc);
 	mtk_idle_notifier_register(&pmic_auxadc_nb);
 	adc_dbg_init();
+	mts_thread_init();
 	pr_info("****[%s] DONE\n", __func__);
 }
 EXPORT_SYMBOL(mt6356_auxadc_init);
@@ -566,7 +659,7 @@ EXPORT_SYMBOL(mt6356_auxadc_init);
 {                                                                       \
 	value = pmic_get_register_value(_reg);				\
 	snprintf(buf+strlen(buf), 1024, "%s = 0x%x\n", #_reg, value);	\
-	pr_err("[%s] %s = 0x%x\n", __func__, #_reg,			\
+	pr_notice("[%s] %s = 0x%x\n", __func__, #_reg,			\
 		pmic_get_register_value(_reg));			\
 }
 
