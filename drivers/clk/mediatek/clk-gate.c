@@ -27,6 +27,8 @@
 /*#define MT_CCF_BRINGUP  1*/
 #elif defined(CONFIG_MACH_MT6759)
 /*#define MT_CCF_BRINGUP*/
+#elif defined(CONFIG_MACH_MT6758)
+#define MT_CCF_BRINGUP
 #endif
 
 #ifdef MT_CCF_BRINGUP
