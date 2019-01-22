@@ -140,6 +140,7 @@ int ged_bridge_event_notify(
 
 	return 0;
 }
+
 /* ----------------------------------------------------------------------------- */
 int ged_bridge_gpu_timestamp(
 	GED_BRIDGE_IN_GPU_TIMESTAMP * psGpuBeginINT,
@@ -170,12 +171,15 @@ int ged_bridge_gpu_timestamp(
 	}
 	return 0;
 }
+
 /* ----------------------------------------------------------------------------- */
+#ifdef MTK_FRR20
 int ged_bridge_wait_hw_vsync(void)
 {
 	ged_frr_wait_hw_vsync();
 	return 0;
 }
+
 /* ----------------------------------------------------------------------------- */
 int ged_bridge_query_target_fps(
 	GED_BRIDGE_IN_QUERY_TARGET_FPS * in,
@@ -185,4 +189,6 @@ int ged_bridge_query_target_fps(
 	out->fps = ged_frr_get_fps(in->pid, in->cid);
 	return 0;
 }
+#endif
+
 module_param(ged_boost_enable, uint, 0644);
