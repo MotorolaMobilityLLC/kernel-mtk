@@ -656,6 +656,8 @@ static struct _ccb_layout ccb_info;
 static unsigned int md1_phy_cap_size;
 static unsigned int md1_bank4_cache_offset;
 
+static unsigned int md_mtee_support;
+
 static void share_memory_info_parsing(void)
 {
 	struct _smem_layout smem_layout;
@@ -738,6 +740,11 @@ static void share_memory_info_parsing(void)
 				(md_resv_smem_addr[MD_SYS3] +
 				 md_resv_smem_size[MD_SYS3]));
 #endif
+	if (find_ccci_tag_inf("mtee_support", (char *)&md_mtee_support, sizeof(md_mtee_support))
+			!= sizeof(md_mtee_support))
+		CCCI_UTIL_ERR_MSG("using 0 as MTEE support\n");
+	else
+		CCCI_UTIL_INF_MSG("MTEE support: 0x%x\n", md_mtee_support);
 }
 
 static void md_mem_info_parsing(void)
@@ -1134,6 +1141,11 @@ int get_lk_load_md_info(char buf[], int size)
 	}
 
 	return has_write;
+}
+
+unsigned int get_mtee_is_enabled(void)
+{
+	return md_mtee_support;
 }
 
 int get_md_img_raw_size(int md_id)
