@@ -317,7 +317,6 @@ struct charger_manager {
 	bool charger_thread_timeout;
 	wait_queue_head_t  wait_que;
 	bool charger_thread_polling;
-	bool enable_polling;
 };
 
 /* charger related module interface */
