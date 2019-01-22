@@ -2297,7 +2297,14 @@ static int _DL_switch_to_DC_fast(int block)
 
 	/* move ovl config info from dl to dc */
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
-	       sizeof(data_config_dl->ovl_config));
+		sizeof(data_config_dl->ovl_config));
+	memcpy(&data_config_dc->rsz_enable, &data_config_dl->rsz_enable,
+		sizeof(data_config_dl->rsz_enable));
+	memcpy(&data_config_dc->rsz_src_roi, &data_config_dl->rsz_src_roi,
+		sizeof(data_config_dl->rsz_src_roi));
+	memcpy(&data_config_dc->rsz_dst_roi, &data_config_dl->rsz_dst_roi,
+		sizeof(data_config_dl->rsz_dst_roi));
+
 	data_config_dc->ovl_dirty = 1;
 	data_config_dc->p_golden_setting_context = data_config_dl->p_golden_setting_context;
 	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc,
