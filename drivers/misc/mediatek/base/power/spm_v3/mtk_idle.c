@@ -1437,7 +1437,7 @@ get_idle_idx_2:
 	}
 
 	/* Prevent potential out-of-bounds vulnerability */
-	i = (i >= NR_TYPES) ? NR_TYPES : i;
+	i = (i >= NR_TYPES) ? (NR_TYPES - 1) : i;
 
 	/* residency requirement of ALL C state is satisfied */
 	if (menu_select_state == CPUIDLE_STATE_SO3) {
