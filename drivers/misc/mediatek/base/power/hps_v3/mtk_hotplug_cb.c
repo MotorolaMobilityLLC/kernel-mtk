@@ -57,6 +57,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 	struct cpumask cpuhp_cpumask;
 	struct cpumask cpu_online_cpumask;
 	unsigned int first_cpu;
+	int ret;
 
 	switch (action) {
 	case CPU_UP_PREPARE:
@@ -90,7 +91,9 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					pr_info("MP1_ON:[1,");
 #endif
 					/*1. Power ON VSram*/
-					buck_enable(VSRAM_DVFS2, 1);
+					ret = buck_enable(VSRAM_DVFS2, 1);
+					if (ret != 1)
+						WARN_ON(1);
 #if BUCK_CTRL_DBLOG
 					pr_info("1],[2,");
 #endif
@@ -209,7 +212,9 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #endif
 
 					/*5. Turn off VSram*/
-					buck_enable(VSRAM_DVFS2, 0);
+					ret = buck_enable(VSRAM_DVFS2, 0);
+					if (ret == 1)
+						WARN_ON(1);
 #if BUCK_CTRL_DBLOG
 					pr_info("5]\n");
 #endif
