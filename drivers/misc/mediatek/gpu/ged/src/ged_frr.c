@@ -22,6 +22,11 @@
 #include "ged_type.h"
 #include "primary_display.h"
 
+#ifdef GED_LOGE
+#undef GED_LOGE
+#define GED_LOGE pr_warn
+#endif
+
 /* These module params are for developers to set specific fps and debug. */
 static int ged_frr_debug_pid = GED_FRR_TABLE_ZERO;
 static unsigned long ged_frr_debug_cid = GED_FRR_TABLE_ZERO;
@@ -160,8 +165,8 @@ GED_ERROR ged_frr_table_set_fps(int targetPid, uint64_t targetCid, int targetFps
 		return GED_ERROR_FAIL;
 	}
 
-	if (targetFps < GED_FRR_TABLE_LOWER_BOUND_FPS) {
-		GED_LOGE("[FRR] ged_frr_table_set_fps, targetFps < 30\n");
+	if (targetFps < GED_FRR_TABLE_LOWER_BOUND_FPS && targetFps != GED_FRR_TABLE_ZERO) {
+		GED_LOGE("[FRR] ged_frr_table_set_fps, targetFps < 20\n");
 		return GED_ERROR_INVALID_PARAMS;
 	}
 
@@ -190,15 +195,11 @@ GED_ERROR ged_frr_table_set_fps(int targetPid, uint64_t targetCid, int targetFps
 int ged_frr_table_get_fps(int targetPid, uint64_t targetCid)
 {
 	int i;
+	int fps, forAllFps;
 
 	if (!gpsFrrTable) {
 		GED_LOGE("[FRR] ged_frr_table_get_fps, gpsFrrTable(NULL)\n");
 		return GED_FRR_TABLE_ZERO;
-	}
-
-	if (gpsFrrTable[0].fps != GED_FRR_TABLE_ZERO) {
-		/*GED_LOGE("[FRR] get_fps: pid(%d), cid(%llu), fps(%d)\n",targetPid,targetCid,gpsFrrTable[0].fps);*/
-		return gpsFrrTable[0].fps;
 	}
 
 	if (ged_frr_debug_pid > GED_FRR_TABLE_ZERO && ged_frr_debug_cid > GED_FRR_TABLE_ZERO &&
@@ -210,15 +211,24 @@ int ged_frr_table_get_fps(int targetPid, uint64_t targetCid)
 		ged_frr_debug_fps = GED_FRR_TABLE_ZERO;
 	}
 
-	for (i = 1; i < giFrrTableSize; i++) {
+	fps = GED_FRR_TABLE_ZERO;
+	forAllFps = gpsFrrTable[0].fps;
+
+	for (i = 0; i < giFrrTableSize; i++) {
 		if (gpsFrrTable[i].pid == targetPid && gpsFrrTable[i].cid == targetCid) {
 			/*GED_LOGE("[FRR]get_fps: idx(%d), fps(%d)\n",i,gpsFrrTable[i].fps);*/
-			return gpsFrrTable[i].fps;
+			fps = gpsFrrTable[i].fps;
+			break;
 		}
 	}
 
-	/*GED_LOGE("[FRR]get_fps:idx(-1),pid(%d),cid(%llu),fps(0)\n",targetPid,targetCid);*/
-	return GED_FRR_TABLE_ZERO;
+	if (forAllFps > GED_FRR_TABLE_ZERO && fps > GED_FRR_TABLE_ZERO)
+		return (forAllFps > fps) ? fps : forAllFps;
+
+	if (forAllFps > GED_FRR_TABLE_ZERO)
+		return forAllFps;
+
+	return fps;
 }
 
 GED_ERROR ged_frr_wait_hw_vsync(void)
