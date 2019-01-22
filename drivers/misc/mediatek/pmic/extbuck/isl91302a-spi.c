@@ -276,7 +276,7 @@ static void isl91302a_reg_init(struct spi_device *spi)
 	ret |= isl91302a_write_byte(spi, 0x64, 0x76);
 	ret |= isl91302a_write_byte(spi, 0x65, 0x00);
 	if (ret < 0)
-		ISL91302A_ERR("%s init fail\n", __func__);
+		ISL91302A_PR_ERR("%s init fail\n", __func__);
 }
 
 static int isl91302a_check_id(struct spi_device *spi)
@@ -331,7 +331,7 @@ static int isl91302a_spi_probe(struct spi_device *spi)
 
 	ret = isl91302a_regulator_init(chip);
 	if (ret < 0) {
-		ISL91302A_ERR("%s regulator init fail\n", __func__);
+		ISL91302A_PR_ERR("%s regulator init fail\n", __func__);
 #ifdef CONFIG_RT_REGMAP
 		rt_regmap_device_unregister(chip->regmap_dev);
 #endif /* CONFIG_RT_REGMAP */

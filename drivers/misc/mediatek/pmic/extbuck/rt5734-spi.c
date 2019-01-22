@@ -456,7 +456,7 @@ static int rt5734_spi_probe(struct spi_device *spi)
 
 	ret = rt5734_regulator_init(chip);
 	if (ret < 0) {
-		RT5734_ERR("%s regulator init fail\n", __func__);
+		RT5734_PR_ERR("%s regulator init fail\n", __func__);
 		return -EINVAL;
 	}
 
