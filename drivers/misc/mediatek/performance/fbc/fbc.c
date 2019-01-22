@@ -808,8 +808,7 @@ static ssize_t ioctl_gaming(unsigned int cmd, unsigned long arg)
 	return 0;
 }
 
-long device_ioctl(struct file *filp,
-		unsigned int cmd, unsigned long arg)
+long fbc_ioctl(unsigned int cmd, unsigned long arg)
 {
 	ssize_t ret = 0;
 
@@ -886,8 +885,6 @@ ret_ioctl:
 }
 
 static const struct file_operations Fops = {
-	.unlocked_ioctl = device_ioctl,
-	.compat_ioctl = device_ioctl,
 	.open = device_open,
 	.write = device_write,
 	.read = seq_read,
@@ -896,7 +893,7 @@ static const struct file_operations Fops = {
 };
 
 /*--------------------INIT------------------------*/
-static int __init init_fbc(void)
+int init_fbc(void)
 {
 	struct proc_dir_entry *pe;
 	int i;
@@ -937,14 +934,6 @@ static int __init init_fbc(void)
 	hrt3.function = &mt_game_render_aware_timeout;
 #endif
 
-	ret_val = register_chrdev(DEV_MAJOR, DEV_NAME, &Fops);
-	if (ret_val < 0) {
-		pr_crit(TAG"%s failed with %d\n",
-				"Registering the character device ",
-				ret_val);
-		goto out_wq;
-	}
-
 	pe = proc_create("perfmgr/fbc", 0664, NULL, &Fops);
 	if (!pe) {
 		ret_val = -ENOMEM;
@@ -956,10 +945,7 @@ static int __init init_fbc(void)
 	return 0;
 
 out_chrdev:
-	unregister_chrdev(DEV_MAJOR, DEV_NAME);
-out_wq:
 	destroy_workqueue(wq);
 	return ret_val;
 }
-late_initcall(init_fbc);
 

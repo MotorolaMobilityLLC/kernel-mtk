@@ -15,12 +15,13 @@ ifeq ($(CONFIG_MACH_MT6739), y)
         ccflags-y += -DTOUCH_VCORE_OPP=0
 endif
 
-obj-y += fbc.o
-
-ifeq ($(CONFIG_MTK_FBC),y)
-ccflags-y += -DMTK_FBC_SUPPORT
+ifeq ($(CONFIG_MTK_FPSGO_FBT_UX),y)
+        obj-y += fbc.o
+else
+        ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/performance/perfmgr/$(MTK_PLATFORM)/),)
+            obj-y += touch_boost.o
+        endif
 endif
-
 
 ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/base/power/include \

@@ -39,9 +39,6 @@
 #include "fpsgo_common.h"
 #include "../perf_ioctl/perf_ioctl.h"
 
-#define DEV_MAJOR 121
-#define DEV_NAME "debug"
-
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define HPS_LATENCY 20000000
 #define TOUCH_TIMEOUT_SEC 5
@@ -65,3 +62,5 @@ void switch_init_boost(int);
 void switch_twanted(int);
 void switch_ema(int);
 void switch_super_boost(int);
+long fbc_ioctl(unsigned int cmd, unsigned long arg);
+int init_fbc(void);
