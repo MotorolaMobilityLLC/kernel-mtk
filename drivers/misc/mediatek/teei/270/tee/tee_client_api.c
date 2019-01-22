@@ -72,6 +72,7 @@ static struct file *teec_open_dev(const char *devname, const char *capabilities)
 	struct file *file;
 	struct tee_ioctl_set_hostname_arg arg;
 	int err;
+	char hostname[TEE_MAX_HOSTNAME_SIZE] = "bta_loader";
 
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
@@ -82,25 +83,16 @@ static struct file *teec_open_dev(const char *devname, const char *capabilities)
 	if (IS_ERR_OR_NULL(file))
 		return file;
 
-	if (!capabilities) {
-		IMSG_ERROR("Must assign capabilities or hostname");
-		err = -EINVAL;
-		goto exit;
-	}
-
-	if (strcmp(capabilities, "bta_loader") == 0) {
-		IMSG_DEBUG("client request will be serviced by BTA Loader");
-	} else if (strcmp(capabilities, "tta") == 0) {
+	if (capabilities && (strcmp(capabilities, "tta") == 0)) {
 		IMSG_DEBUG("client request will be serviced by GPTEE");
+		memset(hostname, 0, sizeof(hostname));
+		memcpy(hostname, capabilities, strlen(capabilities));
 	} else {
-		IMSG_ERROR("Unrecognized capability or hostname: '%s'",
-				capabilities);
-		err = -EINVAL;
-		goto exit;
+		IMSG_DEBUG("client request will be serviced by BTA Loader");
 	}
 
 	memset(&arg, 0, sizeof(arg));
-	strncpy((char *)arg.hostname, capabilities, TEE_MAX_HOSTNAME_SIZE-1);
+	strncpy((char *)arg.hostname, hostname, TEE_MAX_HOSTNAME_SIZE-1);
 
 	err = ioctl(file, TEE_IOC_SET_HOSTNAME, &arg);
 	if (err) {

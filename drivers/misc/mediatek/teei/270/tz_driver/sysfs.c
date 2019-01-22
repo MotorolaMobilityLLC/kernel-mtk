@@ -305,6 +305,23 @@ int tz_load_drv(struct TEEC_UUID *uuid)
 	return load_ut_drv(uuid);
 }
 
+int tz_load_drv_by_str(const char *buf)
+{
+	struct TEEC_UUID uuid;
+	size_t len = strlen(buf);
+
+	if (len < UUID_STRING_LENGTH) {
+		IMSG_ERROR("bad UUID length, buf '%s' len %zd\n",
+				buf, len);
+		return -EINVAL;
+	}
+
+	str_to_uuid(&uuid, buf);
+	print_uuid(&uuid);
+
+	return load_ut_drv(&uuid);
+}
+
 static ssize_t load_ut_drv_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t len)
@@ -326,6 +343,7 @@ static ssize_t load_ut_drv_store(struct device *dev,
 
 	return len;
 }
+
 static DEVICE_ATTR_WO(load_ut_drv);
 
 static int unload_ut_drv(struct TEEC_UUID *uuid)

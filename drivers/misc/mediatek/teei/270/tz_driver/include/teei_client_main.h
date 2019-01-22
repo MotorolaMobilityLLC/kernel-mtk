@@ -124,5 +124,6 @@ void remove_sysfs(struct platform_device *pdev);
 int teei_new_capi_init(void);
 int handle_new_capi_call(void *args);
 void notify_smc_completed(void);
+int tz_load_drv_by_str(const char *buf);
 
 #endif /* __TEEI_CLIENT_MAIN_H__ */
