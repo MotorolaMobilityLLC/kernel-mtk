@@ -18,13 +18,9 @@
 
 #include "vcorefs_v1/mtk_vcorefs_governor_mt6757.h"
 
-#elif defined(CONFIG_MACH_MT6799)
+#elif defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 
 #include "vcorefs_v3/mtk_vcorefs_governor.h"
-
-#elif defined(CONFIG_MACH_MT6759)
-
-#include "vcorefs_v3/mtk_vcorefs_governor_mt6759.h"
 
 #endif
 

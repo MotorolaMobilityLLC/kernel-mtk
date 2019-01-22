@@ -58,6 +58,7 @@ static DEFINE_MUTEX(governor_mutex);
 struct governor_profile {
 	bool vcore_dvs;
 	bool ddr_dfs;
+	bool mm_clk;
 	bool isr_debug;
 
 	int curr_vcore_uv;
@@ -70,13 +71,9 @@ struct governor_profile {
 };
 
 static struct governor_profile governor_ctrl = {
-#if defined(CONFIG_MACH_MT6759)
-	.vcore_dvs = 0,
-	.ddr_dfs = 0,
-#else
 	.vcore_dvs = SPM_VCORE_DVS_EN,
 	.ddr_dfs = SPM_DDR_DFS_EN,
-#endif
+	.mm_clk = SPM_MM_CLK_EN,
 	.isr_debug = 0,
 
 	.late_init_opp = LATE_INIT_OPP,
@@ -104,6 +101,8 @@ static char *kicker_name[] = {
 	"KIR_GPU",
 	"KIR_SYSFS",
 	"KIR_SYSFSX",
+	"KIR_MM_NON_FORCE",
+	"KIR_SYSFS_N",
 	"NUM_KICKER",
 
 	"KIR_LATE_INIT",
@@ -162,6 +161,13 @@ bool vcorefs_dram_dfs_en(void)
 	struct governor_profile *gvrctrl = &governor_ctrl;
 
 	return gvrctrl->ddr_dfs;
+}
+
+bool vcorefs_mm_clk_en(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	return gvrctrl->mm_clk;
 }
 
 int vcorefs_enable_debug_isr(bool enable)
@@ -320,6 +326,9 @@ int governor_debug_store(const char *buf)
 		set_vcorefs_en();
 	} else if (!strcmp(cmd, "ddr_dfs")) {
 		gvrctrl->ddr_dfs = val;
+		set_vcorefs_en();
+	} else if (!strcmp(cmd, "mm_clk")) {
+		gvrctrl->mm_clk = val;
 		set_vcorefs_en();
 	} else if (!strcmp(cmd, "isr_debug")) {
 		vcorefs_enable_debug_isr(val);

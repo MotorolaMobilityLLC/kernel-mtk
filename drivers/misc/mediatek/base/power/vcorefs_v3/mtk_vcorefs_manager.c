@@ -138,16 +138,23 @@ int spm_msdc_dvfs_setting(int msdc, bool enable)
 	return 0;
 }
 
+__weak int spm_vcorefs_get_kicker_group(int kicker)
+{
+	return 1;
+}
+
 static int _get_dvfs_opp(struct vcorefs_profile *pwrctrl, enum dvfs_kicker kicker, enum dvfs_opp opp)
 {
 	unsigned int dvfs_opp = UINT_MAX;
-	int i;
+	int i, group;
 	char table[NUM_KICKER * 4 + 1];
 	char *p = table;
 	char *buff_end = table + (NUM_KICKER * 4 + 1);
 
+	group = spm_vcorefs_get_kicker_group(kicker);
+
 	for (i = 0; i < NUM_KICKER; i++) {
-		if (kicker_table[i] < 0)
+		if (kicker_table[i] < 0 || group != spm_vcorefs_get_kicker_group(i))
 			continue;
 
 		if (kicker_table[i] < dvfs_opp)
