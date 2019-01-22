@@ -111,6 +111,7 @@ static
 int select_prefer_idle_cpu(struct task_struct *p)
 {
 	unsigned long min_util = boosted_task_util(p);
+	int prev_cpu = task_cpu(p);
 	int best_idle_cpu = -1;
 	int iter_cpu;
 #ifdef CONFIG_CGROUP_SCHEDTUNE
@@ -155,6 +156,11 @@ int select_prefer_idle_cpu(struct task_struct *p)
 			if (fallback < 0)
 				fallback = i;
 		}
+	}
+
+	if ((best_idle_cpu > 0) && idle_cpu(prev_cpu) &&
+		is_intra_domain(prev_cpu, best_idle_cpu)) {
+		best_idle_cpu = prev_cpu;
 	}
 
 	return (best_idle_cpu > 0) ? best_idle_cpu : fallback;
