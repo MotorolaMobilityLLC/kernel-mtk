@@ -85,9 +85,9 @@
 #define MTK_SPI_MAX_FIFO_SIZE 32
 #define MTK_SPI_PACKET_SIZE 1024
 #define SPI_1G_SIZE         (0x40000000)
-#define ADDRSHIFT_W_OFFSET  (6)
-#define ADDRSHIFT_W_MASK    (0xFFFFF03F)
-#define ADDRSHIFT_R_MASK    (0xFFFFFFC0)
+#define ADDRSHIFT_R_OFFSET  (6)
+#define ADDRSHIFT_R_MASK    (0xFFFFF03F)
+#define ADDRSHIFT_W_MASK    (0xFFFFFFC0)
 #define MTK_SPI_32BIS_MASK  (0xFFFFFFFF)
 #define MTK_SPI_32BIS_SHIFT (32)
 
@@ -386,8 +386,7 @@ static void mtk_spi_setup_dma_addr(struct spi_master *master,
 		if (mdata->tx_sgl) {
 			addr_ext = readl(mdata->peri_regs + mdata->dram_8gb_offset);
 			addr_ext = ((addr_ext & (ADDRSHIFT_W_MASK)) |
-				(u32)((cpu_to_le64(xfer->tx_dma) / SPI_1G_SIZE)
-				<< ADDRSHIFT_W_OFFSET));
+				(u32)(cpu_to_le64(xfer->tx_dma) / SPI_1G_SIZE));
 			writel(addr_ext, mdata->dram_8gb_offset + mdata->peri_regs);
 			writel((u32)(cpu_to_le64(xfer->tx_dma) % SPI_1G_SIZE),
 				mdata->base + SPI_TX_SRC_REG);
@@ -395,7 +394,8 @@ static void mtk_spi_setup_dma_addr(struct spi_master *master,
 		if (mdata->rx_sgl) {
 			addr_ext = readl(mdata->peri_regs + mdata->dram_8gb_offset);
 			addr_ext = ((addr_ext & (ADDRSHIFT_R_MASK)) |
-				(u32)(cpu_to_le64(xfer->rx_dma) / SPI_1G_SIZE));
+				(u32)((cpu_to_le64(xfer->rx_dma) / SPI_1G_SIZE)
+				<< ADDRSHIFT_R_OFFSET));
 			writel(addr_ext, mdata->dram_8gb_offset + mdata->peri_regs);
 			writel((u32)(cpu_to_le64(xfer->rx_dma) % SPI_1G_SIZE),
 				mdata->base + SPI_RX_DST_REG);
