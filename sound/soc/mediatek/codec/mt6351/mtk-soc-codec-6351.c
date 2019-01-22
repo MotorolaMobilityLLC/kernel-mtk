@@ -756,6 +756,7 @@ void setOffsetTrimBufferGain(unsigned int gain)
 
 static int mHplTrimOffset = 2048;
 static int mHprTrimOffset = 2048;
+static int mhpimpedance;
 
 void CalculateDCCompenForEachdB_L(void)
 {
@@ -783,6 +784,12 @@ void SetHprTrimOffset(int Offset)
 		mHprTrimOffset = 2048;
 		pr_err("SetHprTrimOffset offset may be invalid offset = %d\n", Offset);
 	}
+}
+
+void set_hp_impedance(int impedance)
+{
+	pr_warn("%s impedance = %d\n", __func__, impedance);
+	mhpimpedance = impedance;
 }
 
 void EnableTrimbuffer(bool benable)

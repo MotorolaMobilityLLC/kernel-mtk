@@ -252,6 +252,7 @@ void Ana_Log_Print(void)
 	pr_debug("ACCDET_CON14 = 0x%x\n", Ana_Get_Reg(ACCDET_CON14));
 	pr_debug("AUXADC_IMPEDANCE = 0x%x\n", Ana_Get_Reg(AUXADC_IMPEDANCE));
 	pr_debug("AUXADC_CON2 = 0x%x\n", Ana_Get_Reg(AUXADC_CON2));
+	pr_debug("RG_BUCK_VS1_VOTER_EN = 0x%x\n", Ana_Get_Reg(RG_BUCK_VS1_VOTER_EN));
 	pr_debug("-Ana_Log_Print\n");
 }
 EXPORT_SYMBOL(Ana_Log_Print);
@@ -564,6 +565,8 @@ int Ana_Debug_Read(char *buffer, const int size)
 		       Ana_Get_Reg(AUXADC_IMPEDANCE));
 	n += scnprintf(buffer + n, size - n, "AUXADC_CON2  = 0x%x\n",
 		       Ana_Get_Reg(AUXADC_CON2));
+	n += scnprintf(buffer + n, size - n, "RG_BUCK_VS1_VOTER_EN  = 0x%x\n",
+		       Ana_Get_Reg(RG_BUCK_VS1_VOTER_EN));
 	return n;
 }
 EXPORT_SYMBOL(Ana_Debug_Read);

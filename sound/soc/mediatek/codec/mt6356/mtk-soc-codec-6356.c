@@ -597,12 +597,20 @@ void EnableTrimbuffer(bool benable)
 	}
 }
 
+static int mhpimpedance;
+
 void CalculateDCCompenForEachdB_L(void)
 {
 }
 
 void CalculateDCCompenForEachdB_R(void)
 {
+}
+
+void set_hp_impedance(int impedance)
+{
+	pr_warn("%s impedance = %d\n", __func__, impedance);
+	mhpimpedance = impedance;
 }
 
 void OpenTrimBufferHardware(bool enable)

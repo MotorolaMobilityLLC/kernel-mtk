@@ -164,6 +164,7 @@ enum mtkaif_version {
 static unsigned int use_mtkaif_version;
 
 static int ANC_enabled;
+static int low_voltage_mode;
 
 /* DPD efuse variable and table */
 #define INVALID_DPD_VALUE (1323) /* Read 0 from EFUSE => 32 ohm, HD3 = 1323*/
@@ -200,6 +201,7 @@ static int dpd_a3[DPD_CHANNEL_NUM][DPD_IMPEDANCE_NUM];
 
 static const char *const amp_function[] = { "Off", "On" };
 static const char *const aud_clk_buf_function[] = { "Off", "On" };
+static const char *const audio_voltage_mode[] = { "Normal", "Low_Voltage" };
 
 /* static const char *DAC_SampleRate_function[] = {"8000", "11025", "16000", "24000", "32000", "44100", "48000"}; */
 static const char *const DAC_DL_PGA_Headset_GAIN[] = {
@@ -893,6 +895,8 @@ void setOffsetTrimBufferGain(unsigned int gain)
 
 static int mHplTrimOffset;
 static int mHprTrimOffset;
+static int mhpimpedance;
+
 
 #define MAX_HP_GAIN_LEVEL (31)
 
@@ -962,6 +966,12 @@ void SetHprTrimOffset(int Offset)
 {
 	pr_warn("%s Offset = %d\n", __func__, Offset);
 	mHprTrimOffset = Offset;
+}
+
+void set_hp_impedance(int impedance)
+{
+	pr_warn("%s impedance = %d\n", __func__, impedance);
+	mhpimpedance = impedance;
 }
 
 void EnableTrimbuffer(bool benable)
@@ -3429,6 +3439,33 @@ static int Handset_PGA_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	return 0;
 }
 
+static int set_lowvoltage_enable(int mode)
+{
+	pr_warn("%s(), value = %d\n", __func__, mode);
+	if (mode)
+		Ana_Set_Reg(RG_BUCK_VS1_VOTER_EN_CLR, 0x1 << 4, 0x1 << 4);
+	else
+		Ana_Set_Reg(RG_BUCK_VS1_VOTER_EN_SET, 0x1 << 4, 0x1 << 4);
+	return 0;
+}
+
+void set_lowvoltage_mode(int32_t pga_gain_index)
+{
+	pr_warn("%s(), pga_gain_index = %d\n", __func__, pga_gain_index);
+	if (mhpimpedance <= 16) {
+		if (pga_gain_index < 5)/*DAC_DL_PGA_Headset_GAIN[5] = 3dB*/
+			low_voltage_mode = 0;
+		else
+			low_voltage_mode = 1;
+	} else {
+		if (pga_gain_index < 3)/*DAC_DL_PGA_Headset_GAIN[3] = 5dB*/
+			low_voltage_mode = 0;
+		else
+			low_voltage_mode = 1;
+	}
+	set_lowvoltage_enable(low_voltage_mode);
+}
+
 static int Headset_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_aud("Headset_PGAL_Get = %d\n",
@@ -3457,6 +3494,7 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL])
 		headset_volume_ramp(oldindex, index);
 
+	set_lowvoltage_mode(index);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = index;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = index;
 	return 0;
@@ -3490,7 +3528,7 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 	if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR])
 		headset_volume_ramp(oldindex, index);
-
+	set_lowvoltage_mode(index);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = index;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = index;
 	return 0;
@@ -3656,6 +3694,27 @@ static int Audio_ANC_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int audio_voltage_mode_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = low_voltage_mode;
+	pr_aud("%s(), value = %d  (0x%x)\n", __func__, low_voltage_mode, Ana_Get_Reg(RG_BUCK_VS1_VOTER_EN));
+	return 0;
+}
+
+static int audio_voltage_mode_set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_voltage_mode)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	low_voltage_mode = ucontrol->value.integer.value[0];
+	set_lowvoltage_mode(low_voltage_mode);
+	pr_aud("%s(), audio_voltage_mode = %d\n", __func__, low_voltage_mode);
+	return 0;
+}
+
 static const struct soc_enum Audio_DL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
@@ -3677,6 +3736,7 @@ static const struct soc_enum Audio_DL_Enum[] = {
 			    aud_clk_buf_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_voltage_mode), audio_voltage_mode),
 };
 
 static const struct snd_kcontrol_new mt6331_snd_controls[] = {
@@ -3714,6 +3774,7 @@ static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 			codec_adc_sample_rate_get, codec_adc_sample_rate_set),
 	SOC_SINGLE_EXT("Codec_DAC_SampleRate", SND_SOC_NOPM, 0, MAX_DL_SAMPLE_RATE, 0,
 			codec_dac_sample_rate_get, codec_dac_sample_rate_set),
+	SOC_ENUM_EXT("Audio_Voltage_Mode", Audio_DL_Enum[13], audio_voltage_mode_get, audio_voltage_mode_set),
 };
 
 static const struct snd_kcontrol_new mt6331_Voice_Switch[] = {
@@ -7907,6 +7968,7 @@ static void InitGlobalVarDefault(void)
 #ifdef CONFIG_MTK_SPEAKER
 	mSpeaker_Ocflag = false;
 #endif
+	low_voltage_mode = 0;
 
 }
 
