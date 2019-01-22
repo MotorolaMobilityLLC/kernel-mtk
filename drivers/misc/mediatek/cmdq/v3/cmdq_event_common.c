@@ -400,6 +400,8 @@ static struct cmdq_event_table cmdq_events[] = {
 	DECLAR_EVENT(CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY, sw_token)
 	/* Trigger thread notify config thread */
 	DECLAR_EVENT(CMDQ_SYNC_TOKEN_EXT_STREAM_EOF, sw_token)
+	/* Check CABC setup finish */
+	DECLAR_EVENT(CMDQ_SYNC_TOKEN_EXT_CABC_EOF, sw_token)
 
 	/* Secure video path notify SW token */
 	DECLAR_EVENT(CMDQ_SYNC_DISP_OVL0_2NONSEC_END, sw_token)
