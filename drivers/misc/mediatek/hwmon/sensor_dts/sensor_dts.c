@@ -17,6 +17,7 @@
 #ifdef CONFIG_CUSTOM_KERNEL_ALSPS
 #include <cust_alsps.h>
 #endif
+#include <cust_rgbw.h>
 #include <cust_acc.h>
 #include <cust_gyro.h>
 #include <cust_mag.h>
@@ -184,6 +185,56 @@ struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
 }
 EXPORT_SYMBOL_GPL(get_alsps_dts_func);
 #endif
+
+struct rgbw_hw *get_rgbw_dts_func(const char *name, struct rgbw_hw *hw)
+{
+	int i, ret;
+	u32 i2c_num[] = {0};
+	u32 i2c_addr[C_CUST_I2C_ADDR_NUM] = {0};
+	u32 power_id[] = {0};
+	u32 power_vol[] = {0};
+	u32 is_batch_supported[] = {0};
+	struct device_node *node = NULL;
+
+	SENSOR_LOG("Device Tree get rgbw info!\n");
+	if (name == NULL)
+		return NULL;
+
+	node = of_find_compatible_node(NULL, NULL, name);
+	if (node) {
+		ret = of_property_read_u32_array(node , "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
+	if (ret == 0)
+		hw->i2c_num	=	i2c_num[0];
+
+	ret = of_property_read_u32_array(node , "i2c_addr", i2c_addr, ARRAY_SIZE(i2c_addr));
+	if (ret == 0) {
+		for (i = 0; i < C_CUST_I2C_ADDR_NUM; i++)
+			hw->i2c_addr[i]   = i2c_addr[i];
+	}
+
+	ret = of_property_read_u32_array(node , "power_id", power_id, ARRAY_SIZE(power_id));
+	if (ret == 0) {
+		if (power_id[0] == 0xffff)
+			hw->power_id = -1;
+		else
+			hw->power_id	=	power_id[0];
+	}
+
+	ret = of_property_read_u32_array(node , "power_vol", power_vol, ARRAY_SIZE(power_vol));
+	if (ret == 0)
+		hw->power_vol	=	power_vol[0];
+
+	ret = of_property_read_u32_array(node , "is_batch_supported", is_batch_supported,
+		ARRAY_SIZE(is_batch_supported));
+	if (ret == 0)
+		hw->is_batch_supported		 = is_batch_supported[0];
+	} else {
+		SENSOR_ERR("Device Tree: can not find rgbw node!. Go to use old cust info\n");
+		return NULL;
+	}
+	return hw;
+}
+EXPORT_SYMBOL_GPL(get_rgbw_dts_func);
 
 struct mag_hw *get_mag_dts_func(const char *name, struct mag_hw *hw)
 {

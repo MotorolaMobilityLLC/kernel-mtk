@@ -1,0 +1,10 @@
+
+config MTK_CM36652_NEW_RGBW
+	tristate "cm36652 RGBW for MediaTek package"
+	default n
+	help
+	  It support RGBW color sensor
+	  in this platform. If this option
+	  is set, it will support RGBW color
+	  sensor function of ambient
+	  and light sensor CM36652.

@@ -72,6 +72,8 @@
 #define SENSOR_STRING_TYPE_ANSWERCALL               "android.sensor.answer_call"
 #define SENSOR_TYPE_STATIONARY          (45)
 #define SENSOR_STRING_TYPE_STATIONARY               "android.sensor.stationary"
+#define SENSOR_TYPE_RGBW          	(46)
+#define SENSOR_STRING_TYPE_RGBW                     "android.sensor.rgbw"
 
 /*---------------------------------------------------------------------------*/
 #define ID_BASE							0
@@ -115,7 +117,8 @@
 #define ID_BRINGTOSEE                                   (ID_BASE+SENSOR_TYPE_BRINGTOSEE-1)
 #define ID_ANSWER_CALL                                   (ID_BASE+SENSOR_TYPE_ANSWER_CALL-1)
 #define ID_STATIONARY                                   (ID_BASE+SENSOR_TYPE_STATIONARY-1)
-#define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_STATIONARY-1)
+#define ID_RGBW						(ID_BASE+SENSOR_TYPE_RGBW-1)
+#define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_RGBW-1)
 #define ID_NONE							    (ID_SENSOR_MAX_HANDLE+1)
 
 #define ID_OFFSET                           (1)
@@ -192,6 +195,9 @@
 #define ALSPS_PL_DEV_NAME               "m_alsps_pl"
 #define ALSPS_INPUTDEV_NAME             "m_alsps_input"
 #define ALSPS_MISC_DEV_NAME             "m_alsps_misc"
+#define RGBW_PL_DEV_NAME                "m_rgbw_pl"
+#define RGBW_INPUTDEV_NAME              "m_rgbw_input"
+#define RGBW_MISC_DEV_NAME              "m_rgbw_misc"
 #define BARO_PL_DEV_NAME                "m_baro_pl"
 #define BARO_INPUTDEV_NAME              "m_baro_input"
 #define BARO_MISC_DEV_NAME              "m_baro_misc"
