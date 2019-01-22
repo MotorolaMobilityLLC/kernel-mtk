@@ -510,6 +510,7 @@ struct HDMI_DRIVER {
 /* HDMI Driver Functions */
 /* --------------------------------------------------------------------------- */
 
+extern struct semaphore hdmi_update_mutex;
 const struct HDMI_DRIVER *HDMI_GetDriver(void);
 void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *param);
 extern int	chip_device_id;
