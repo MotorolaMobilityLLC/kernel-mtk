@@ -398,11 +398,12 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 	struct IMGSENSOR_SENSOR_INST *psensor_inst = &psensor->inst;
 
 	IMGSENSOR_PROFILE_INIT(&psensor_inst->profile_time);
-	imgsensor_hw_power(&pimgsensor->hw, psensor, IMGSENSOR_HW_POWER_STATUS_ON);
+	err = imgsensor_hw_power(&pimgsensor->hw, psensor, IMGSENSOR_HW_POWER_STATUS_ON);
 
-	imgsensor_sensor_feature_control(psensor,
-					 SENSOR_FEATURE_CHECK_SENSOR_ID,
-					 (MUINT8 *) &sensorID, &retLen);
+	if (err == IMGSENSOR_RETURN_SUCCESS)
+		imgsensor_sensor_feature_control(psensor,
+				SENSOR_FEATURE_CHECK_SENSOR_ID,
+				(MUINT8 *) &sensorID, &retLen);
 
 	if (sensorID == 0 || sensorID == 0xFFFFFFFF) {	/* not implement this feature ID */
 		PK_DBG("Fail to get sensor ID %x\n", sensorID);
