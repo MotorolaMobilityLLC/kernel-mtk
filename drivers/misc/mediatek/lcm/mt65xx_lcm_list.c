@@ -1074,6 +1074,13 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_lcm_drv,
 #endif
 
+#if defined(OTM1287_WXGA_DSI_VDO_AUO_GUOXIAN)
+	&otm1287_wxga_dsi_vdo_auo_guoxian_lcm_drv,
+#endif
+
+#if defined(JD9365_WXGA_DSI_VDO_HSD_PINGBO)
+	&jd9365_wxga_dsi_vdo_hsd_pingbo_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
