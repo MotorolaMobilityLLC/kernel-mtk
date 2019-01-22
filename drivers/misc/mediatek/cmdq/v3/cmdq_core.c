@@ -2132,9 +2132,11 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 			index, p_sram_chunk->start_offset, p_sram_chunk->count, p_sram_chunk->owner);
 		index++;
 	}
+	cmdq_dev_enable_gce_clock(true);
 	seq_printf(m, "==Delay Task TPR_MASK(0x%08x), size(%u), started(%d), pa(%pa), va(0x%p), sram(%u)\n",
 		CMDQ_REG_GET32(CMDQ_TPR_MASK), g_delay_thread_cmd.buffer_size, g_delay_thread_started,
 		&g_delay_thread_cmd.mva_base, g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.sram_base);
+	cmdq_dev_enable_gce_clock(false);
 
 	seq_puts(m, "====== Engine Usage =======\n");
 
