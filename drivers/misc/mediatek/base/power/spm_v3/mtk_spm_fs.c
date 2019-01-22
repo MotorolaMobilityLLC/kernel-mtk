@@ -1007,9 +1007,11 @@ static ssize_t mcsodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *at
 static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				     const char *buf, size_t count)
 {
-
-	/* return store_pwr_ctrl(SPM_PWR_CTRL_VCOREFS, __spm_vcorefs.pwrctrl, buf, count); */
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+	return store_pwr_ctrl(SPM_PWR_CTRL_VCOREFS, __spm_vcorefs.pwrctrl, buf, count);
+#else
 	return 0;
+#endif
 }
 #endif
 
