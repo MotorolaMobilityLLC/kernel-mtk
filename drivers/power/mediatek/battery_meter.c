@@ -3309,7 +3309,10 @@ signed int battery_meter_get_battery_current(void)
 	signed int val = 0;
 
 	if (g_auxadc_solution == 1)
-		val = oam_i_2;
+		if (oam_i_2 < 0)
+			val = -oam_i_2;
+		else
+			val = oam_i_2;
 	else
 		ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &val);
 
@@ -3322,10 +3325,9 @@ kal_bool battery_meter_get_battery_current_sign(void)
 	kal_bool val = 0;
 
 	if (g_auxadc_solution == 1)
-		val = 0;	/* discharging */
+		val = gFG_Is_Charging;	/* discharging */
 	else
 		ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN, &val);
-
 	return val;
 }
 
