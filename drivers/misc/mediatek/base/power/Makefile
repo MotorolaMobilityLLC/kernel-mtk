@@ -23,6 +23,7 @@ obj-$(CONFIG_MACH_MT6763) += udi_v1/
 obj-$(CONFIG_MACH_MT6759) += ocp_v1/
 obj-$(CONFIG_MACH_MT6799) += leakage_table_v1/
 obj-$(CONFIG_MACH_MT6759) += leakage_table_v2/
+obj-$(CONFIG_MACH_MT6763) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6799) += cpufreq_v1/
 #obj-$(CONFIG_MACH_MT6763) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6759) += cpufreq_v1/
@@ -32,6 +33,7 @@ obj-$(CONFIG_MACH_MT6763) += eem_v2/
 obj-$(CONFIG_MACH_MT6799) += upower_v1/
 ifeq ($(CONFIG_MTK_UNIFY_POWER), y)
 obj-$(CONFIG_MACH_MT6759) += upower_v2/
+obj-$(CONFIG_MACH_MT6763) += upower_v2/
 endif
 obj-$(CONFIG_MACH_MT6757) += pbm_v1/
 obj-$(CONFIG_MACH_KIBOPLUS) += pbm_v1/
