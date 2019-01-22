@@ -122,7 +122,7 @@ struct eem_det {
 	unsigned int volt_tbl[NR_FREQ]; /* pmic value */
 	unsigned int volt_tbl_init2[NR_FREQ]; /* pmic value */
 	unsigned int volt_tbl_pmic[NR_FREQ]; /* pmic value */
-	unsigned int volt_tbl_bin[NR_FREQ]; /* pmic value */
+	unsigned int volt_offset_drcc[NR_FREQ]; /* pmic value */
 	unsigned char isTempInv;
 	unsigned char low_temp_off;
 	int volt_offset;
@@ -256,6 +256,11 @@ struct eem_devinfo {
 extern unsigned int freq[NR_FREQ];
 
 extern struct mutex record_mutex;
+
+/* #define DRCC_SUPPORT 1 */
+extern void mt_record_lock(unsigned long *flags);
+extern void mt_record_unlock(unsigned long *flags);
+
 extern unsigned int record_tbl_locked[NR_FREQ]; /* table used to apply to dvfs at final */
 
 /**************************************************

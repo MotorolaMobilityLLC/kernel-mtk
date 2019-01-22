@@ -89,14 +89,25 @@ int get_volt_cpu(struct eem_det *det)
 int set_volt_cpu(struct eem_det *det)
 {
 	int value = 0;
+#ifdef DRCC_SUPPORT
+	unsigned long flags;
+#endif
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	/* eem_debug("init02_vop_30 = 0x%x\n", det->vop30[EEM_PHASE_INIT02]); */
 
+#ifdef DRCC_SUPPORT
+	mt_record_lock(&flags);
+
+	for (value = 0; value < NR_FREQ; value++)
+		record_tbl_locked[value] = det->volt_tbl_pmic[value] + det->volt_offset_drcc[value];
+#else
 	mutex_lock(&record_mutex);
+
 	for (value = 0; value < NR_FREQ; value++)
 		record_tbl_locked[value] = det->volt_tbl_pmic[value];
+#endif
 
 	switch (det_to_id(det)) {
 	case EEM_DET_2L:
@@ -115,7 +126,12 @@ int set_volt_cpu(struct eem_det *det)
 		value = 0;
 		break;
 	}
+
+#ifdef DRCC_SUPPORT
+	mt_record_unlock(&flags);
+#else
 	mutex_unlock(&record_mutex);
+#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 

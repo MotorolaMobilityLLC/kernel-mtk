@@ -184,4 +184,7 @@ extern u8 aee_rr_curr_ptp_status(void);
 extern int mt_eem_status(enum eem_det_id id);
 extern unsigned int get_efuse_status(void);
 extern unsigned int mt_eem_is_enabled(void);
+
+/* DRCC */
+extern unsigned int drcc_offset_done;
 #endif
