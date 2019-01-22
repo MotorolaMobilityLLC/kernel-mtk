@@ -713,6 +713,59 @@ int dcs_full_init(void)
 	return 0;
 }
 
+static int __dcs_mpu_protection_enable(void)
+{
+	int err;
+
+	err = dcs_force_acc_low_ipi(1);
+	if (err) {
+		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		BUG(); /* fatal error */
+	}
+	pr_info("enable force acc low\n");
+
+	/* wait for EMI to consume all transactions in the proection range */
+	mdelay(1);
+
+	emi_mpu_set_region_protection((unsigned long long)mpu_start,
+			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
+			MPU_ACCESS_PERMISSON_FORBIDDEN);
+
+	pr_info("enable MPU\n");
+
+	/* wait for EMI to consume all transactions in the proection range */
+	mdelay(1);
+
+	return 0;
+}
+
+static int __dcs_mpu_protection_disable(void)
+{
+	int err;
+
+	emi_mpu_set_region_protection((unsigned long long)mpu_start,
+			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
+			MPU_ACCESS_PERMISSON_NO_PROTECTION);
+
+	pr_info("disable MPU\n");
+
+	/* wait for EMI to consume all transactions in the proection range */
+	mdelay(1);
+
+	err = dcs_force_acc_low_ipi(0);
+	if (err) {
+		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		BUG(); /* fatal error */
+	}
+
+	pr_info("disable force acc low\n");
+
+	/* wait for EMI to consume all transactions in the proection range */
+	mdelay(1);
+
+	return 0;
+}
+
 /*
  * dcs_mpu_protection
  *
@@ -723,24 +776,10 @@ int dcs_full_init(void)
  */
 int dcs_mpu_protection(int enable)
 {
-	int err;
-
-	err = dcs_force_acc_low_ipi(enable);
-	if (err) {
-		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
-		BUG(); /* fatal error */
-	}
-	pr_info("%s force acc low\n", enable ? "enable" : "disable");
-
-	emi_mpu_set_region_protection((unsigned long long)mpu_start,
-			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
-			enable ? MPU_ACCESS_PERMISSON_FORBIDDEN :
-			MPU_ACCESS_PERMISSON_NO_PROTECTION);
-
-	pr_info("%s MPU\n", enable ? "enable" : "disable");
-
-	/* wait for EMI to consume all transactions in the proection range */
-	mdelay(1);
+	if (enable)
+		__dcs_mpu_protection_enable();
+	else
+		__dcs_mpu_protection_disable();
 
 	return 0;
 }
