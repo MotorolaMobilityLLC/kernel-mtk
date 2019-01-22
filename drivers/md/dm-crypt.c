@@ -41,6 +41,8 @@
 #endif
 #endif
 
+#include <mt-plat/mtk_blocktag.h>
+
 /*
  * context holding the current state of a multi-part conversion
  */
@@ -872,6 +874,8 @@ static int crypt_convert_block(struct crypt_config *cc,
 	sg_init_table(&dmreq->sg_out, 1);
 	sg_set_page(&dmreq->sg_out, bv_out.bv_page, 1 << SECTOR_SHIFT,
 		    bv_out.bv_offset);
+
+	mtk_btag_pidlog_copy_pid(bv_in.bv_page, bv_out.bv_page);
 
 	bio_advance_iter(ctx->bio_in, &ctx->iter_in, 1 << SECTOR_SHIFT);
 	bio_advance_iter(ctx->bio_out, &ctx->iter_out, 1 << SECTOR_SHIFT);
