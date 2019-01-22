@@ -69,6 +69,7 @@ struct eem_det {
 	unsigned int BTS;
 	unsigned int t250;
 
+	unsigned int EEMCTL0;
 	/* constant */
 	unsigned int AGECONFIG;
 	unsigned int DCCONFIG;
@@ -136,6 +137,9 @@ struct eem_det {
 
     /* for debug */
 	unsigned char eem_eemEn[NR_EEM_PHASE];
+	/* for recording detector has temp inverse or not */
+	unsigned char isTempInv;
+	unsigned char low_temp_off;
 
 	#ifdef EEM_OFFSET
 	signed char volt_offset;
@@ -169,6 +173,7 @@ struct eem_log_det {
 
 struct eem_log {
 	unsigned int hw_res[NR_HW_RES];
+	unsigned int reg_dump_data_off[ARRAY_SIZE(reg_dump_addr_off)];
 	struct eem_log_det det_log[NR_EEM_DET];
 };
 
