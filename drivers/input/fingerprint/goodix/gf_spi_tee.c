@@ -2303,8 +2303,8 @@ static int gf_remove(struct spi_device *spi)
 
 	mutex_lock(&gf_dev->release_lock);
 	if (gf_dev->input == NULL) {
-		kfree(gf_dev);
 		mutex_unlock(&gf_dev->release_lock);
+		kfree(gf_dev);
 		FUNC_EXIT();
 		return 0;
 	}
