@@ -159,6 +159,11 @@ int	debug_msgs	= 1;	// print all msgs, default should be '0'
 
 static bool reset_on_exit = 0; // request to reset hw before unloading driver
 
+#ifdef CONFIG_MACH_MT6799
+/* declaration mt6336 controller */
+struct mt6336_ctrl *mt6336_ctrl;
+#endif
+
 module_param(debug_msgs, int, S_IRUGO);
 module_param(reset_on_exit, bool, S_IRUGO);
 
@@ -1175,6 +1180,8 @@ void reset_mhl_board(int hwResetPeriod, int hwResetDelay)
     pinctrl_select_state(mhl_pinctrl, rst_high_state);   
     mdelay(hwResetDelay);
 #else
+	/* Enable mt6336 controller before use mt6336 */
+	mt6336_ctrl_enable(mt6336_ctrl);
 	/* Config MT6336 GPIO3(MT6336 HW GPIO3 == MT6336  SW GPIO7) */
 	/* out high */
 	mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x80);
@@ -1185,6 +1192,8 @@ void reset_mhl_board(int hwResetPeriod, int hwResetDelay)
 	/* out high */
 	mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x80);
 	mdelay(hwResetDelay);
+	/* Disable mt6336 controller when unuse mt6336 */
+	mt6336_ctrl_disable(mt6336_ctrl);
 #endif
 }
 
@@ -1235,6 +1244,12 @@ void mhl_platform_init(void)
 		pinctrl_select_state(mhl_pinctrl, pin_state);
 	MHL_DBG("mhl_platform_init reset gpio init done!!\n");
 #else
+	/* Get mt6336 controller when the first time of use mt6336 */
+	mt6336_ctrl = mt6336_ctrl_get("mt6336_mhl");
+
+	/* Enable mt6336 controller before use mt6336 */
+	mt6336_ctrl_enable(mt6336_ctrl);
+
 	/* Config MT6336 GPIO3(MT6336 HW GPIO3 == MT6336  SW GPIO7) */
 	/* set to GPIO mode */
 	mt6336_set_flag_register_value(MT6336_GPIO7_MODE, 0x0);
@@ -1242,6 +1257,9 @@ void mhl_platform_init(void)
 	mt6336_set_flag_register_value(MT6336_GPIO_DIR0_SET, 0x80);
 	/* output high */
 	mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_SET, 0x80);
+
+	/* Disable mt6336 controller when unuse mt6336 */
+	mt6336_ctrl_disable(mt6336_ctrl);
 #endif
 
 	pin_state = pinctrl_lookup_state(mhl_pinctrl, eint_gpio_name[0]);
