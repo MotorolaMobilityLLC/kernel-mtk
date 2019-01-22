@@ -1035,7 +1035,7 @@ int xhci_mtk_allocate_sram(int id, dma_addr_t *sram_phys_addr,
 
 	xhci_sram[id].state = STATE_USE;
 
-	pr_debug("%s get [%d] p :%llx, v=%p, len=%d\n",
+	pr_info("%s get [%d] p :%llx, v=%p, len=%d\n",
 			__func__, id, xhci_sram[id].msram_phys_addr,
 			xhci_sram[id].msram_virt_addr,
 			xhci_sram[id].mlength);
@@ -1045,7 +1045,7 @@ int xhci_mtk_allocate_sram(int id, dma_addr_t *sram_phys_addr,
 int xhci_mtk_free_sram(int id)
 {
 	xhci_sram[id].state = STATE_INIT;
-	pr_debug("%s, id=%d\n", __func__, id);
+	pr_info("%s, id=%d\n", __func__, id);
 	return 0;
 }
 
