@@ -219,7 +219,7 @@ static BOOLEAN roamingFsmIsNeedScan(IN P_ADAPTER_T prAdapter)
 	}
 
 	if (!fgIsRoamingSSID) {
-		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+		prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
 		if (prBssDesc) {
 
 
@@ -427,7 +427,7 @@ VOID roamingFsmRunEventDiscovery(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Param)
 
 		/* sync. rcpi with firmware */
 		prAisBssInfo = prAdapter->prAisBssInfo;
-		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+		prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
 		if (prBssDesc) {
 			prBssDesc->ucRCPI = (UINT_8) (u4Param & 0xff);
 			DBGLOG(ROAMING, STATE, "EVENT-ROAMING DISCOVERY: Current Time = %ld, RCPI = %d\n",

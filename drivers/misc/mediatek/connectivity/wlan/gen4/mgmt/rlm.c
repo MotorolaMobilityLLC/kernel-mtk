@@ -2161,14 +2161,15 @@ static UINT_8 rlmRecIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInf
 
 	if (fgHasChannelSwitchIE != FALSE) {
 		P_BSS_DESC_T prBssDesc;
+		PARAM_SSID_T rSsid;
 
 		prBssInfo->ucPrimaryChannel = ucChannelAnnouncePri;
 		prBssInfo->ucVhtChannelWidth = 0;
 		prBssInfo->ucVhtChannelFrequencyS1 = 0;
 		prBssInfo->ucVhtChannelFrequencyS2 = 0;
 		prBssInfo->eBssSCO = 0;
-
-		prBssDesc = scanSearchBssDescByBssid(prAdapter, prBssInfo->aucBSSID);
+		COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen, prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
+		prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, prBssInfo->aucBSSID, TRUE, &rSsid);
 
 		if (prBssDesc) {
 			DBGLOG(RLM, INFO, "DFS: BSS: " MACSTR " Desc found, channel from %u to %u\n ",
@@ -2269,6 +2270,7 @@ rlmRecAssocRespIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, PU
 	BOOLEAN fgIsHasHtCap = FALSE;
 	BOOLEAN fgIsHasVhtCap = FALSE;
 	P_BSS_DESC_T prBssDesc;
+	PARAM_SSID_T rSsid;
 
 	ASSERT(prAdapter);
 	ASSERT(prBssInfo);
@@ -2279,8 +2281,8 @@ rlmRecAssocRespIeInfoForClient(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, PU
 	ASSERT(prStaRec);
 	if (!prStaRec)
 		return;
-
-	prBssDesc = scanSearchBssDescByBssid(prAdapter, prStaRec->aucMacAddr);
+	COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen, prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
+	prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, prStaRec->aucMacAddr, TRUE, &rSsid);
 
 	IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
 		switch (IE_ID(pucIE)) {
