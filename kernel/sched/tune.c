@@ -809,7 +809,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		ct = allocated_group[group_idx];
 		if (ct) {
 			rcu_read_lock();
-			ct->capacity_min = boost_value * 1024 / 100;
+			ct->capacity_min = div64_s64(boost_value * 1024, 100);
 			/* Update CPU capacity_min */
 			schedtune_boostgroup_update_capacity_min(ct->idx, ct->capacity_min);
 			rcu_read_unlock();
@@ -1190,7 +1190,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		}
 
 		rcu_read_lock();
-		st->capacity_min = boost * 1024 / 100;
+		st->capacity_min = div64_s64(boost * 1024, 100);
 		/* Update CPU capacity_min */
 		schedtune_boostgroup_update_capacity_min(st->idx, st->capacity_min);
 		rcu_read_unlock();
