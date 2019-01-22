@@ -25,7 +25,6 @@ obj-$(CONFIG_MTK_DCS) += mtkdcs/
 
 
 obj-$(CONFIG_MTK_BASE_POWER) += base/
-#obj-$(CONFIG_MTK_POWER_GS) += power_gs/
 obj-$(CONFIG_MEDIATEK_SOLUTION) += sched/
 #obj-$(CONFIG_MEDIATEK_SOLUTION) += mach/
 obj-$(CONFIG_MTK_SERIAL)	+= uart/
@@ -214,7 +213,6 @@ obj-n += crypto/
 
 #widevine drm
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
-#obj-$(CONFIG_MTK_POWER_GS)      += power_gs/
 obj-$(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) += sspm/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/cpu_stress/),)
 obj-$(CONFIG_MTK_CPU_STRESS)	+= cpu_stress/
