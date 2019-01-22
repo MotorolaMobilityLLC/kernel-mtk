@@ -710,6 +710,7 @@ static int disp_ccorr_set_coef(const DISP_CCORR_COEF_T __user *user_color_corr,
 		} else {
 			CCORR_ERR("disp_ccorr_set_coef: invalid ID = %d\n", id);
 			ret = -EFAULT;
+			kfree(ccorr);
 		}
 	}
 
