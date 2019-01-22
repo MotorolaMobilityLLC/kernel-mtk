@@ -928,15 +928,15 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			}
 			WMT_DBG_FUNC("len = %d\n", effectiveLen);
 
-			pOp = wmt_lib_get_free_op();
-			if (!pOp) {
-				WMT_WARN_FUNC("get_free_lxop fail\n");
-				iRet = -EFAULT;
-				break;
-			}
 			u4Wait = 2000;
 			if (copy_from_user(&gLpbkBuf[0], (PVOID)arg + sizeof(ULONG), effectiveLen)) {
 				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
+				iRet = -EFAULT;
+				break;
+			}
+			pOp = wmt_lib_get_free_op();
+			if (!pOp) {
+				WMT_WARN_FUNC("get_free_lxop fail\n");
 				iRet = -EFAULT;
 				break;
 			}
@@ -1165,14 +1165,15 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			UINT32 effectiveLen = 14;
 			P_OSAL_SIGNAL pSignal = NULL;
 
-			pOp = wmt_lib_get_free_op();
-			if (!pOp) {
-				WMT_WARN_FUNC("get_free_lxop fail\n");
+			if (copy_from_user(&desense_buf[0], (PVOID)arg, effectiveLen)) {
+				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
 				iRet = -EFAULT;
 				break;
 			}
-			if (copy_from_user(&desense_buf[0], (PVOID)arg, effectiveLen)) {
-				WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
+
+			pOp = wmt_lib_get_free_op();
+			if (!pOp) {
+				WMT_WARN_FUNC("get_free_lxop fail\n");
 				iRet = -EFAULT;
 				break;
 			}
