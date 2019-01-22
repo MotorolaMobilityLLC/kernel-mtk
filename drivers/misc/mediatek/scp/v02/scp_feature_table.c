@@ -19,7 +19,7 @@
 scp_feature_tb_t feature_table[NUM_FEATURE_ID] = {
 	{
 		.feature    = VOW_FEATURE_ID,
-		.freq       = 63,
+		.freq       = 75,
 		.core       = SCP_B_ID,
 		.enable     = 0,
 	},
