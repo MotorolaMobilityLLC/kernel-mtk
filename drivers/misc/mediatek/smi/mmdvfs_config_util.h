@@ -189,6 +189,7 @@ struct mmdvfs_step_util {
 	int mmclk_oop_to_legacy_step_num;
 	int *legacy_step_to_oop;
 	int legacy_step_to_oop_num;
+	int wfd_vp_mix_step;
 	void (*init)(struct mmdvfs_step_util *self);
 	int (*get_legacy_mmclk_step_from_mmclk_opp)(
 	struct mmdvfs_step_util *self, int mmclk_step);
