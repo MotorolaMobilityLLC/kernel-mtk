@@ -183,6 +183,7 @@ enum Fg_kernel_cmds {
 	FG_KERNEL_CMD_DUMP_REGULAR_LOG,
 	FG_KERNEL_CMD_DISABLE_NAFG,
 	FG_KERNEL_CMD_DUMP_LOG,
+	FG_KERNEL_CMD_UISOC_UPDATE_TYPE,
 
 	FG_KERNEL_CMD_FROM_USER_NUMBER
 
@@ -382,6 +383,32 @@ struct fuel_gauge_custom_data {
 
 	int pseudo1_sel;
 
+	/* using current to limit uisoc in 100% case */
+	int ui_full_limit_en;
+	int ui_full_limit_soc0;
+	int ui_full_limit_ith0;
+	int ui_full_limit_soc1;
+	int ui_full_limit_ith1;
+	int ui_full_limit_soc2;
+	int ui_full_limit_ith2;
+	int ui_full_limit_soc3;
+	int ui_full_limit_ith3;
+	int ui_full_limit_soc4;
+	int ui_full_limit_ith4;
+
+	/* using voltage to limit uisoc in 1% case */
+	int ui_low_limit_en;
+	int ui_low_limit_soc0;
+	int ui_low_limit_vth0;
+	int ui_low_limit_soc1;
+	int ui_low_limit_vth1;
+	int ui_low_limit_soc2;
+	int ui_low_limit_vth2;
+	int ui_low_limit_soc3;
+	int ui_low_limit_vth3;
+	int ui_low_limit_soc4;
+	int ui_low_limit_vth4;
+
 	/* Additional battery table */
 	int additional_battery_table_en;
 
@@ -402,6 +429,7 @@ struct fuel_gauge_custom_data {
 	int disable_nafg;
 
 	int zcv_car_gap_percentage;
+	int uisoc_update_type;
 
 #if 0
 /*======old setting ======*/
