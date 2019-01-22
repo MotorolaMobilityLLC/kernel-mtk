@@ -122,16 +122,6 @@ config MTK_PASR
 	  This can help system reduce power consumption.
 	  It is based on MTK_MEMORY_LOWPOWER technology.
 
-config MTK_HIBERNATION
-	bool "MTK Hibernation support (IPOH)"
-	depends on TOI
-	default y
-	help
-	  MTK Hibernation is the improved hibernation driver in kernel for IPOH.
-	  This depends on TuxOnIce implementation of kernel hibernation
-	  architecture to improve mediatek platform hibernation flow.
-	  This option is required when IPOH is enabled.
-
 
 #source "drivers/misc/mediatek/base/power/Kconfig"
 #source "drivers/misc/mediatek/freqhopping/Kconfig"
