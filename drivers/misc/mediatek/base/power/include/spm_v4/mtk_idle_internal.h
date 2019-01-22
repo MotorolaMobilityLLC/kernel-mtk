@@ -186,5 +186,54 @@ void __init iomap_init(void);
 
 bool mtk_idle_disp_is_pwm_rosc(void);
 
+unsigned int soidle_pre_handler(void);
+void soidle_post_handler(void);
+
+
+enum {
+	PIDX_SELECT,
+	PIDX_SELECT_TO_ENTER,
+	PIDX_ENTER_TOTAL,
+	PIDX_LEAVE_TOTAL,
+	PIDX_IDLE_NOTIFY_ENTER,
+	PIDX_PRE_HANDLER,
+	PIDX_SSPM_BEFORE_WFI,
+	PIDX_PRE_IRQ_PROCESS,
+	PIDX_PCM_SETUP_BEFORE_WFI,
+	PIDX_SSPM_BEFORE_WFI_ASYNC_WAIT,
+	PIDX_SSPM_AFTER_WFI,
+	PIDX_PCM_SETUP_AFTER_WFI,
+	PIDX_POST_IRQ_PROCESS,
+	PIDX_POST_HANDLER,
+	PIDX_SSPM_AFTER_WFI_ASYNC_WAIT,
+	PIDX_IDLE_NOTIFY_LEAVE,
+	NR_PIDX
+};
+
+#if defined(SPM_SODI_PROFILE_TIME) || defined(SPM_SODI3_PROFILE_TIME)
+void idle_latency_profile(unsigned int idle_type, int idx);
+void idle_latency_dump(unsigned int idle_type);
+#endif /* defined(SPM_SODI_PROFILE_TIME) || defined(SPM_SODI3_PROFILE_TIME) */
+
+#ifdef SPM_SODI_PROFILE_TIME
+#define profile_so_start(idx)   idle_latency_profile(IDLE_TYPE_SO, 2*idx)
+#define profile_so_end(idx)     idle_latency_profile(IDLE_TYPE_SO, 2*idx+1)
+#define profile_so_dump()       idle_latency_dump(IDLE_TYPE_SO)
+#else
+#define profile_so_start(idx)
+#define profile_so_end(idx)
+#define profile_so_dump()
+#endif /* SPM_SODI_PROFILE_TIME */
+
+#ifdef SPM_SODI3_PROFILE_TIME
+#define profile_so3_start(idx)  idle_latency_profile(IDLE_TYPE_SO3, 2*idx)
+#define profile_so3_end(idx)    idle_latency_profile(IDLE_TYPE_SO3, 2*idx+1)
+#define profile_so3_dump()      idle_latency_dump(IDLE_TYPE_SO3)
+#else
+#define profile_so3_start(idx)
+#define profile_so3_end(idx)
+#define profile_so3_dump()
+#endif /* SPM_SODI3_PROFILE_TIME */
+
 #endif /* __MTK_IDLE_INTERNAL_H__ */
 
