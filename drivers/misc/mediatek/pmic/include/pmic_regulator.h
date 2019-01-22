@@ -29,6 +29,8 @@
 #include "include/pmic.h"
 #include "mtk_pmic_regulator.h"
 
+#define REGULATOR_READY
+
 #define REGULATOR_TEST 0
 
 extern struct mtk_regulator mtk_ldos[];
