@@ -34,14 +34,19 @@ static int mt_dual_role_get_prop(struct dual_role_phy_instance *dual_role,
 	int ret = 0;
 	int mode, pr, dr;
 
-	if (musb->xceiv->otg->state == OTG_STATE_B_PERIPHERAL) {
-		mode = DUAL_ROLE_PROP_MODE_UFP;
-		pr = DUAL_ROLE_PROP_PR_SNK;
-		dr = DUAL_ROLE_PROP_DR_DEVICE;
-	} else if (musb->xceiv->otg->state == OTG_STATE_A_HOST) {
-		mode = DUAL_ROLE_PROP_MODE_DFP;
-		pr = DUAL_ROLE_PROP_PR_SRC;
-		dr = DUAL_ROLE_PROP_DR_HOST;
+	dev_info(musb->controller, "prop=%d, power=%d, is_host=%d",
+			 prop, musb->power, is_host_active(musb));
+
+	if (musb->power) {
+		if (is_host_active(musb)) {
+			mode = DUAL_ROLE_PROP_MODE_DFP;
+			pr = DUAL_ROLE_PROP_PR_SRC;
+			dr = DUAL_ROLE_PROP_DR_HOST;
+		} else {
+			mode = DUAL_ROLE_PROP_MODE_UFP;
+			pr = DUAL_ROLE_PROP_PR_SNK;
+			dr = DUAL_ROLE_PROP_DR_DEVICE;
+		}
 	} else {
 		mode = DUAL_ROLE_PROP_MODE_NONE;
 		pr = DUAL_ROLE_PROP_PR_NONE;
@@ -79,6 +84,14 @@ static int mt_dual_role_set_prop(struct dual_role_phy_instance *dual_role,
 			enum dual_role_property prop, const unsigned int *val)
 {
 	/* do nothing */
+	return 0;
+}
+
+int mt_usb_dual_role_changed(struct musb *musb)
+{
+	if (musb->dr_usb)
+		dual_role_instance_changed(musb->dr_usb);
+
 	return 0;
 }
 
