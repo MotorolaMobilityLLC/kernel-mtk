@@ -10,7 +10,5 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-ifeq ($(CONFIG_MICROTRUST_TEE_SUPPORT), y)
-$(info "CONFIG_MICROTRUST_TEE_VERSION=$(CONFIG_MICROTRUST_TEE_VERSION)")
-obj-y += $(subst ",,$(CONFIG_MICROTRUST_TEE_VERSION))/
-endif
+obj-$(CONFIG_MICROTRUST_VFS_DRIVER) += vfsFun.o fp_vendor.o
+ccflags-y += -D DEBUG_DO -fno-pic

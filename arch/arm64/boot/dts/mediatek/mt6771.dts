@@ -243,6 +243,9 @@
 		interrupts = <GIC_SPI 296 IRQ_TYPE_EDGE_RISING>,
 			<GIC_SPI 297 IRQ_TYPE_EDGE_RISING>;
 	};
+	utos_tester {
+		compatible = "microtrust,tester-v1";
+	};
 
 	msdc0:msdc@11230000 {
 		compatible = "mediatek,msdc";
@@ -306,6 +309,12 @@
 			size = <0 0x200000>;
 			alignment = <0 0x200000>;
 			alloc-ranges = <0 0x40000000 0 0x80000000>;
+		};
+		soter-shared-mem {
+			compatible = "microtrust,shared_mem";
+			no-map;
+			size = <0 0x500000>;
+			alloc-ranges = <0 0x40000000 0 0x50000000>;
 		};
 	};
 

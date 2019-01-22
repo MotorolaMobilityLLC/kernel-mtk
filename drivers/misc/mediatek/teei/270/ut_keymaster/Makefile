@@ -10,7 +10,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-ifeq ($(CONFIG_MICROTRUST_TEE_SUPPORT), y)
-$(info "CONFIG_MICROTRUST_TEE_VERSION=$(CONFIG_MICROTRUST_TEE_VERSION)")
-obj-y += $(subst ",,$(CONFIG_MICROTRUST_TEE_VERSION))/
-endif
+obj-$(CONFIG_MICROTRUST_KEYMASTER_DRIVER) += ut_keymaster.o
+#EXTRA_CFLAGS += -D DEBUG_DO -fno-pic
+ccflags-y += -D DEBUG_DO
+ccflags-y += -Wno-error
