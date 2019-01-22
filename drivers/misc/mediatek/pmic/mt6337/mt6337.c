@@ -345,6 +345,8 @@ void MT6337_INIT_SETTING(void)
 	ret = mt6337_config_interface(0x8006, 0x1, 0x1, 6);
 	/* [4:4]: RG_TRIM_75K_CK_PDN; Joseph/power down (FT trim use) */
 	ret = mt6337_config_interface(0x8200, 0x1, 0x1, 4);
+	/* [8:8]: RG_AUXADC_1M_CK_PDN; Joseph/power down */
+	ret = mt6337_config_interface(0x8200, 0x1, 0x1, 8);
 	/* [11:11]: RG_AUDIF_CK_PDN; Joseph/power down */
 	ret = mt6337_config_interface(0x8200, 0x1, 0x1, 11);
 	/* [3:3]: RG_INTRP_PRE_OC_CK_PDN; Joseph/power down (37 no use) */
@@ -355,13 +357,13 @@ void MT6337_INIT_SETTING(void)
 	ret = mt6337_config_interface(0x8206, 0x0, 0x1, 11);
 	/* [7:7]: RG_REG_CK_PDN_HWEN; Joseph/RG CLK HW */
 	ret = mt6337_config_interface(0x8218, 0x1, 0x1, 7);
-	/* [8:8]: RG_OSC_SEL_BUCK_LDO_EN; Joseph/OSC CLK mode don't care this signal*/
+	/* [8:8]: RG_OSC_SEL_BUCK_LDO_EN; Joseph/OSC CLK  mode don't care this signal */
 	ret = mt6337_config_interface(0x8232, 0x0, 0x1, 8);
 	/* [1:1]: RG_VA18_HW0_OP_EN; Joseph/LDO LP wi SRCLKEN */
 	ret = mt6337_config_interface(0x9008, 0x1, 0x1, 1);
 	/* [1:1]: RG_VA18_HW0_OP_CFG; Joseph/LDO LP wi SRCLKEN */
 	ret = mt6337_config_interface(0x900E, 0x1, 0x1, 1);
-	/* [15:15]: AUXADC_CK_AON; Juinn-Ting. Move from golden settings to initial settings as MT6335 */
+	/* [15:15]: AUXADC_CK_AON; Juinn-Ting. Move from golden settings to initial settings as MT6335. */
 	ret = mt6337_config_interface(0x9434, 0x0, 0x1, 15);
 	/* [5:3]: AUXADC_AVG_NUM_LARGE; Jyun-Jia/256 average */
 	ret = mt6337_config_interface(0x943A, 0x7, 0x7, 3);
@@ -379,12 +381,15 @@ void MT6337_INIT_SETTING(void)
 	ret = mt6337_config_interface(0x9446, 0x2, 0x3, 2);
 	/* [9:8]: AUXADC_TRIM_CH12_SEL; Jyun-Jia/ efuse ch7 */
 	ret = mt6337_config_interface(0x9446, 0x2, 0x3, 8);
+	/* [14:14]: AUXADC_START_SHADE_EN; Jyun-Jia */
+	ret = mt6337_config_interface(0x9456, 0x1, 0x1, 14);
 	/* [10:0]: GPIO_PULLEN0; Joseph/ no pull */
 	ret = mt6337_config_interface(0x9C06, 0x0, 0x7FF, 0);
 	/* [11:9]: GPIO8_MODE; Joseph/ MTKIF */
 	ret = mt6337_config_interface(0x9C28, 0x1, 0x7, 9);
 	/* [14:12]: GPIO9_MODE; Joseph/ MTKIF */
 	ret = mt6337_config_interface(0x9C28, 0x1, 0x7, 12);
+	pr_err(MT6337TAG "[%s] 2016-10-13 initial setting Done\n", __func__);
 }
 
 static int mt6337_probe(struct platform_device *dev)
@@ -399,7 +404,6 @@ static int mt6337_probe(struct platform_device *dev)
 
 	/* MT6337 initial setting */
 	MT6337_INIT_SETTING();
-	MT6337LOG("[MT6337_INIT_SETTING] Done\n");
 
 #if 0
 	MT6337LOG("[PMIC_EINT_SETTING] disable when CONFIG_FPGA_EARLY_PORTING\n");
