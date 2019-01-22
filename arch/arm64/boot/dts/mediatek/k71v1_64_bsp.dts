@@ -71,6 +71,9 @@ initcall_debug=1";
 		vib_limit = <9>;
 		vib_vol= <9>;
 	};
+	usb_c_pinctrl:usb_c_pinctrl {
+		compatible = "mediatek,usb_c_pinctrl";
+	};
 };
 
 &scp {
