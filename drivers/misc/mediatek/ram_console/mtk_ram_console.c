@@ -2477,42 +2477,42 @@ void aee_rr_show_ptp_e3(struct seq_file *m)
 
 void aee_rr_show_ptp_e4(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES6 = 0x%X\n", LAST_RRR_VAL(ptp_e4));
+	seq_printf(m, "M_HW_RES4 = 0x%X\n", LAST_RRR_VAL(ptp_e4));
 }
 
 void aee_rr_show_ptp_e5(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES7 = 0x%X\n", LAST_RRR_VAL(ptp_e5));
+	seq_printf(m, "M_HW_RES5 = 0x%X\n", LAST_RRR_VAL(ptp_e5));
 }
 
 void aee_rr_show_ptp_e6(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES8 = 0x%X\n", LAST_RRR_VAL(ptp_e6));
+	seq_printf(m, "M_HW_RES6 = 0x%X\n", LAST_RRR_VAL(ptp_e6));
 }
 
 void aee_rr_show_ptp_e7(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES9 = 0x%X\n", LAST_RRR_VAL(ptp_e7));
+	seq_printf(m, "M_HW_RES7 = 0x%X\n", LAST_RRR_VAL(ptp_e7));
 }
 
 void aee_rr_show_ptp_e8(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RESA = 0x%X\n", LAST_RRR_VAL(ptp_e8));
+	seq_printf(m, "M_HW_RES8 = 0x%X\n", LAST_RRR_VAL(ptp_e8));
 }
 
 void aee_rr_show_ptp_e9(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RESB = 0x%X\n", LAST_RRR_VAL(ptp_e9));
+	seq_printf(m, "M_HW_RES9 = 0x%X\n", LAST_RRR_VAL(ptp_e9));
 }
 
 void aee_rr_show_ptp_e10(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RESF = 0x%X\n", LAST_RRR_VAL(ptp_e10));
+	seq_printf(m, "M_HW_RESA = 0x%X\n", LAST_RRR_VAL(ptp_e10));
 }
 
 void aee_rr_show_ptp_e11(struct seq_file *m)
 {
-	seq_printf(m, "M_HW_RES10 = 0x%X\n", LAST_RRR_VAL(ptp_e11));
+	seq_printf(m, "M_HW_RESB = 0x%X\n", LAST_RRR_VAL(ptp_e11));
 }
 
 void aee_rr_show_ptp_vboot(struct seq_file *m)
