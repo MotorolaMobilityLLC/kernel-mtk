@@ -32,6 +32,7 @@ extern int (*fbt_notifier_cpu_frame_time_fps_stabilizer)(
 	unsigned int Max_cap,
 	unsigned int Target_fps);
 extern void (*display_time_fps_stablizer)(unsigned long long ts);
+extern void (*ged_kpi_output_gfx_info2_fp)(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq, u64 ulID);
 extern void fbt_cpu_vag_set_fps(unsigned int fps);
 
 #define FRAME_TIME_BUFFER_SIZE 300
@@ -54,10 +55,15 @@ struct FSTB_FRAME_INFO {
 	long long q2q_time[FRAME_TIME_BUFFER_SIZE];
 	long long weighted_cpu_time[FRAME_TIME_BUFFER_SIZE];
 	long long weighted_cpu_time_ts[FRAME_TIME_BUFFER_SIZE];
+	long long weighted_gpu_time[FRAME_TIME_BUFFER_SIZE];
+	long long weighted_gpu_time_ts[FRAME_TIME_BUFFER_SIZE];
 	int cur_capacity[FRAME_TIME_BUFFER_SIZE];
 	int weighted_cpu_time_begin;
 	int weighted_cpu_time_end;
+	int weighted_gpu_time_begin;
+	int weighted_gpu_time_end;
 	long long sorted_weighted_cpu_time[FRAME_TIME_BUFFER_SIZE];
+	long long sorted_weighted_gpu_time[FRAME_TIME_BUFFER_SIZE];
 
 };
 
