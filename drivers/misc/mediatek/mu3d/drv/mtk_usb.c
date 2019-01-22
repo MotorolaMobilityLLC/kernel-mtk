@@ -619,7 +619,7 @@ ssize_t musb_saving_mode_store(struct device *dev, struct device_attribute *attr
 		pr_info("dev is null!!\n");
 		return count;
 	/* } else if (1 == sscanf(buf, "%d", &saving)) { */
-	} else if (kstrtol(buf, 10, (long *)&tmp_val) == 0) {
+	} else if (kstrtol(buf, 10, &tmp_val) == 0) {
 		saving = tmp_val;
 		pr_info("old=%d new=%d\n", saving, saving_mode);
 		if (saving_mode == (!saving))
