@@ -262,6 +262,9 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 	if (!dvfsrc->enable)
 		goto out;
 
+	if (is_force_opp_enable())
+		goto out;
+
 	if (dvfsrc->skip)
 		goto out;
 
