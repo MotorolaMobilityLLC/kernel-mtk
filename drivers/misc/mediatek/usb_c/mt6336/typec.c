@@ -1803,6 +1803,37 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 	dev_err(hba->dev, "Exit %s st=%d", __func__, typec_read8(hba, TYPE_C_CC_STATUS));
 }
 
+#define INIT_VBUS_OFF_PERIOD 100
+#define INIT_VBUS_OFF_CNT 5
+
+static void typec_init_vbus_off(struct work_struct *work)
+{
+	struct typec_hba *hba = container_of(work, struct typec_hba, init_vbus_off);
+	int cnt = 0;
+
+	dev_err(hba->dev, "typec_init_vbus_off+\n");
+
+	typec_disable_lowq(hba, "typec_wait_vsafe0v");
+
+	while (cnt < INIT_VBUS_OFF_CNT) {
+		int val = typec_vbus(hba);
+
+		if (val < PD_VSAFE5V_LOW)
+			cnt++;
+		else
+			break;
+
+		msleep(INIT_VBUS_OFF_PERIOD);
+	}
+
+	if (cnt == INIT_VBUS_OFF_CNT && hba->charger_det_notify)
+		hba->charger_det_notify(0);
+
+	dev_err(hba->dev, "typec_init_vbus_off-\n");
+
+	typec_enable_lowq(hba, "typec_wait_vsafe0v");
+}
+
 #define WAIT_VSAFE0V_PERIOD 1000
 #define WAIT_VSAFE0V_POLLING_CNT 20
 
@@ -2396,6 +2427,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	INIT_WORK(&hba->wait_vbus_off_attached_snk, typec_wait_vbus_off_attached_snk);
 	INIT_WORK(&hba->wait_vbus_off_then_drive_attached_src, typec_wait_vbus_off_then_drive_attached_src);
 	INIT_WORK(&hba->wait_vsafe0v, typec_wait_vsafe0v);
+	INIT_WORK(&hba->init_vbus_off, typec_init_vbus_off);
+
 	#if USE_AUXADC
 	INIT_WORK(&hba->auxadc_voltage_mon_attached_snk, typec_auxadc_voltage_mon_attached_snk);
 	#endif
@@ -2488,6 +2521,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		hba->kpoc_retry = 3;
 		hba->vbus_off_polling = hba->vbus_off_polling/2;
 		typec_set(hba, REG_TYPE_C_ADC_EN, TYPE_C_CTRL);
+		queue_work(hba->pd_wq, &hba->init_vbus_off);
 	}
 #endif
 
