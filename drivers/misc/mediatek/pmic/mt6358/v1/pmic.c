@@ -12,27 +12,13 @@
  */
 
 #include <generated/autoconf.h>
-#include <linux/cdev.h>
 #include <linux/delay.h>
-#include <linux/debugfs.h>
 #include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/platform_device.h>
-#include <linux/preempt.h>
-#include <linux/uaccess.h>
 
-#include "mtk_devinfo.h"
-
+#include <mt-plat/mtk_devinfo.h>
 #include <mt-plat/upmu_common.h>
-#include <mach/mtk_pmic.h>
 #include "include/pmic.h"
-#include "include/pmic_irq.h"
-#include "include/pmic_throttling_dlpt.h"
-#include "include/pmic_debugfs.h"
-
-#ifdef CONFIG_MTK_AUXADC_INTF
-#include <mt-plat/mtk_auxadc_intf.h>
-#endif /* CONFIG_MTK_AUXADC_INTF */
+#include "include/regulator_codegen.h"
 
 void record_md_vosel(void)
 {
@@ -40,6 +26,7 @@ void record_md_vosel(void)
 	pr_info("[%s] vmodem_vosel = 0x%x\n", __func__, g_vmodem_vosel);
 }
 
+/* [Export API] */
 void vmd1_pmic_setting_on(void)
 {
 #if 0 /*TBD*/
@@ -85,7 +72,73 @@ int vcore_pmic_set_mode(unsigned char mode)
 	return (ret == mode) ? (0) : (-1);
 }
 
-/* [Export API] */
+static unsigned int pmic_scp_set_regulator(struct mtk_regulator mt_reg,
+	enum PMU_FLAGS_LIST vosel_reg, unsigned int voltage, bool is_sleep_vol)
+{
+	unsigned int min_uV = mt_reg.desc.min_uV;
+	unsigned int uV_step = mt_reg.desc.uV_step;
+	unsigned int n_voltages = mt_reg.desc.n_voltages;
+	unsigned short set_step = 0;
+	unsigned short get_step = 0;
+
+	set_step = (voltage - min_uV) / uV_step;
+	if (voltage < min_uV || set_step >= n_voltages) {
+		pr_notice("[%s] SSHUB_%s Set Wrong voltage=%duV is unsupportable range %d-%duV\n",
+			__func__, mt_reg.desc.name, voltage,
+			min_uV, (n_voltages * uV_step + min_uV));
+		return voltage;
+	}
+	pr_info("SSHUB_%s Expected %svolt step = %d\n",
+		mt_reg.desc.name, is_sleep_vol?"sleep ":"", set_step);
+	pmic_set_register_value(vosel_reg, set_step);
+	udelay(220);
+	get_step = pmic_get_register_value(vosel_reg);
+	if (get_step != set_step) {
+		pr_notice("[%s] Set SSHUB_%s Voltage fail with step = %d, read voltage = %duV\n",
+			__func__, mt_reg.desc.name, set_step,
+			(get_step * uV_step + min_uV));
+		return voltage;
+	}
+	pr_info("Set SSHUB_%s %sVoltage to %duV pass\n",
+		mt_reg.desc.name, is_sleep_vol?"sleep ":"", voltage);
+	return 0;
+}
+/*
+ * SCP set VCORE voltage, return 0 if success,
+ * otherwise return set voltage(uV)
+ */
+unsigned int pmic_scp_set_vcore(unsigned int voltage)
+{
+	return pmic_scp_set_regulator(
+		mt_bucks[MT6358_POWER_BUCK_VCORE],
+		PMIC_RG_BUCK_VCORE_SSHUB_VOSEL, voltage, false);
+}
+
+unsigned int pmic_scp_set_vcore_sleep(unsigned int voltage)
+{
+	return pmic_scp_set_regulator(
+		mt_bucks[MT6358_POWER_BUCK_VCORE],
+		PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP, voltage, true);
+}
+
+/*
+ * SCP set VSRAM_CORE(VSRAM_OTHERS) voltage, return 0 if success,
+ * otherwise return set voltage(uV)
+ */
+unsigned int pmic_scp_set_vsram_vcore(unsigned int voltage)
+{
+	return pmic_scp_set_regulator(
+		mt_ldos[MT6358_POWER_LDO_VSRAM_OTHERS],
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL, voltage, false);
+}
+
+unsigned int pmic_scp_set_vsram_vcore_sleep(unsigned int voltage)
+{
+	return pmic_scp_set_regulator(
+		mt_ldos[MT6358_POWER_LDO_VSRAM_OTHERS],
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP, voltage, true);
+}
+
 
 /*****************************************************************************
  * PMIC charger detection

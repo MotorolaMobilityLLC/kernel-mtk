@@ -291,6 +291,14 @@ mt_pmic_regulator {
 			regulator-max-microvolt = <3100000>;
 			regulator-enable-ramp-delay = <540>;
 		};
+		mt_pmic_va09_ldo_reg: ldo_va09 {
+			compatible = "regulator-fixed";
+			regulator-name = "va09";
+			regulator-min-microvolt = <900000>;
+			regulator-max-microvolt = <900000>;
+			regulator-enable-ramp-delay = <264>;
+			regulator-boot-on;
+		};
 	};	/* End of ldo_regulators */
 };/* End of mt_pmic_regulator */
 };

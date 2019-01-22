@@ -116,6 +116,7 @@ const char *pmic_auxadc_channel_name[] = {
 	"VCORE_TEMP",
 	"VPROC_TEMP",
 	"VGPU_TEMP",
+	"DCXO voltage",
 #endif
 };
 #define PMIC_AUXADC_CHANNEL_MAX	ARRAY_SIZE(pmic_auxadc_channel_name)
@@ -204,7 +205,7 @@ void pmic_auxadc_dump_regs(char *buf)
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6356 */
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6357
 	mt6357_auxadc_dump_regs(buf);
-#endif /* CONFIG_MTK_PMIC_CHIP_MT6356 */
+#endif /* CONFIG_MTK_PMIC_CHIP_MT6357 */
 }
 
 static struct mtk_auxadc_ops pmic_auxadc_ops = {
