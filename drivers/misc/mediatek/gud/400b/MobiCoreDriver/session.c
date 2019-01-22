@@ -309,7 +309,8 @@ static int check_prepare_identity(const struct mc_identity *identity,
 
 	/* Mobicore doesn't support GP client authentication. */
 	if (!g_ctx.f_client_login) {
-		mc_dev_notice("Unsupported login type %x", identity->login_type);
+		mc_dev_notice("Unsupported login type %x",
+			identity->login_type);
 		return -EINVAL;
 	}
 
