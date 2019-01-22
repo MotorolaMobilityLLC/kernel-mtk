@@ -79,7 +79,7 @@ static int sysrst_cpu_set_cur_state(struct thermal_cooling_device *cdev, unsigne
 		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
 
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		BUG();
 
 
 	}
@@ -111,7 +111,7 @@ static int sysrst_buck_set_cur_state(struct thermal_cooling_device *cdev, unsign
 		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
 
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		BUG();
 
 	}
 	return 0;
@@ -143,7 +143,7 @@ static int sysrst_tsap_set_cur_state(struct thermal_cooling_device *cdev, unsign
 		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
 
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		BUG();
 
 	}
 	return 0;
@@ -174,7 +174,7 @@ static int sysrst_tsbif_set_cur_state(struct thermal_cooling_device *cdev, unsig
 		pr_err("*****************************************\n");
 		pr_err("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		BUG();
 
 	}
 	return 0;

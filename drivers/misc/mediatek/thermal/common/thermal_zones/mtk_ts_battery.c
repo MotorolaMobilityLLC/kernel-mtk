@@ -456,7 +456,7 @@ static int tsbat_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsig
 		pr_debug("*****************************************");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		BUG();
 	}
 	return 0;
 }

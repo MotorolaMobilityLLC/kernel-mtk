@@ -722,7 +722,7 @@ static int mtk_imgs_sysrst_set_cur_state(struct thermal_cooling_device *cdev, un
 		pr_debug("*****************************************\n");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
-		*(unsigned int *)0x0 = 0xdead;	/* To trigger data abort to reset the system for thermal protection. */
+		BUG();
 	}
 	return 0;
 }
