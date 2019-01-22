@@ -26,7 +26,8 @@
 /*
  * CONFIG - compile time
  */
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6771)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6771) \
+|| defined(CONFIG_MACH_MT6775)
 #define CPU_BUCK_CTRL   (1)
 #else
 #define CPU_BUCK_CTRL   (0)
@@ -414,7 +415,7 @@ extern int hps_procfs_init(void);
 extern int hps_cpu_init(void);
 extern int hps_cpu_deinit(void);
 
-#if defined(CONFIG_MACH_MT6771)
+#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 extern  struct regulator *cpu_vproc11_id;
 extern  struct regulator *cpu_vsram11_id;
 #endif

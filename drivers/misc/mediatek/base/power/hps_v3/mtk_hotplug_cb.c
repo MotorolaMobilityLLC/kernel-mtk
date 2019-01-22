@@ -33,7 +33,7 @@
 #include "mtk_hps_internal.h"
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
 || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
-|| defined(CONFIG_MACH_MT6771)
+|| defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 #include "include/pmic_regulator.h"
 #include "mtk_pmic_regulator.h"
 #include "mach/mtk_freqhopping.h"
@@ -74,7 +74,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 	struct cpumask cpu_online_cpumask;
 	unsigned int first_cpu;
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6771)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
+
 	int ret;
 #endif
 	switch (action) {
@@ -91,7 +92,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #endif
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
 || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
-|| defined(CONFIG_MACH_MT6771)
+|| defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 				/*1. Turn on ARM PLL*/
 				armpll_control(1, 1);
 
@@ -101,7 +102,11 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					mt_pause_armpll(FH_PLL0, 0);
 				else
 #endif
+#ifdef CONFIG_MACH_MT6775
+					mt_pause_armpll(FH_PLL1, 0);
+#else
 					mt_pause_armpll(FH_PLL0, 0);
+#endif
 
 				/*3. Switch to HW mode*/
 				mp_enter_suspend(0, 1);
@@ -124,14 +129,14 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #endif
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
 || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
-|| defined(CONFIG_MACH_MT6771)
+|| defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 
 #if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 #if CPU_BUCK_CTRL
 
-#if defined(CONFIG_MACH_MT6771)
-#if 1
+#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
+
 					ret = regulator_enable(cpu_vsram11_id);
 					if (ret)
 						pr_info("regulator_enable vsram11 failed\n");
@@ -141,7 +146,6 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 						pr_info("regulator_enable vproc11 failed\n");
 					dsb(sy);
 					MP1_BUCK_STATUS = MP_BUCK_ON;
-#endif
 #else
 					/*1. Power ON VSram*/
 					ret = buck_enable(VSRAM_DVFS2, 1);
@@ -157,7 +161,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					mdelay(1);
 					dsb(sy);
 #endif
-#endif
+#endif /* CPU_BUCK_CTRL */
 				}
 #endif
 					/*4. Turn on ARM PLL*/
@@ -169,7 +173,11 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 						mt_pause_armpll(FH_PLL1, 0);
 					else
 #endif
+#ifdef CONFIG_MACH_MT6775
+					mt_pause_armpll(FH_PLL2, 0);
+#else
 					mt_pause_armpll(FH_PLL1, 0);
+#endif
 
 					/*6. Switch to HW mode*/
 					mp_enter_suspend(1, 1);
@@ -193,7 +201,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				}
 #endif
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
-|| defined(CONFIG_MACH_MT6771)
+|| defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 				/*1. Turn on ARM PLL*/
 				armpll_control(3, 1);
 
@@ -232,7 +240,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			mt_secure_call(MTK_SIP_POWER_DOWN_CLUSTER, cpu/4, 0, 0);
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
 || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
-|| defined(CONFIG_MACH_MT6771)
+|| defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 			/*pr_info("End of power off cluster %d\n", cpu/4);*/
 			switch (cpu/4) {/*Turn off ARM PLL*/
 			case 0:
@@ -240,10 +248,17 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				mp_enter_suspend(0, 0);
 
 				/*2. Pause FQHP function*/
+#ifdef CONFIG_MACH_MT6775
+				if (action == CPU_DEAD_FROZEN)
+					mt_pause_armpll(FH_PLL1, 0x11);
+				else
+					mt_pause_armpll(FH_PLL1, 0x01);
+#else
 				if (action == CPU_DEAD_FROZEN)
 					mt_pause_armpll(FH_PLL0, 0x11);
 				else
 					mt_pause_armpll(FH_PLL0, 0x01);
+#endif
 
 				/*3. Turn off ARM PLL*/
 				armpll_control(1, 0);
@@ -251,11 +266,20 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			case 1:
 				/*1. Switch to SW mode*/
 				mp_enter_suspend(1, 0);
+
 				/*2. Pause FQHP function*/
+#ifdef CONFIG_MACH_MT6775
+				if (action == CPU_DEAD_FROZEN)
+					mt_pause_armpll(FH_PLL2, 0x11);
+				else
+					mt_pause_armpll(FH_PLL2, 0x01);
+#else
 				if (action == CPU_DEAD_FROZEN)
 					mt_pause_armpll(FH_PLL1, 0x11);
 				else
 					mt_pause_armpll(FH_PLL1, 0x01);
+#endif
+
 				/*3. Turn off ARM PLL*/
 				armpll_control(2, 0);
 #if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
@@ -263,12 +287,11 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #if CPU_BUCK_CTRL
 
 
-#if defined(CONFIG_MACH_MT6771)
-#if 1
+#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
+
 					regulator_disable(cpu_vproc11_id);
 					regulator_disable(cpu_vsram11_id);
 					MP1_BUCK_STATUS = MP_BUCK_OFF;
-#endif
 #else
 					/*4. Power off Vproc2*/
 					hps_power_off_vproc2();
@@ -278,7 +301,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					if (ret == 1)
 						WARN_ON(1);
 #endif
-#endif
+#endif /* CPU_BUCK_CTRL */
 				}
 #endif
 				break;
