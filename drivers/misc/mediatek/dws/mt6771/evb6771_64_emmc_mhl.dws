@@ -2204,7 +2204,7 @@
                 <address>0x4B</address>
             </device18>
             <device19>
-                <varName>SMART_PA</varName>
+                <varName>SPEAKER_AMP</varName>
                 <channel>I2C_CHANNEL_6</channel>
                 <address>0x34</address>
             </device19>
