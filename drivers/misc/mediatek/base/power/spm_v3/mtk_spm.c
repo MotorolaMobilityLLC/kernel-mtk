@@ -399,8 +399,7 @@ int __init spm_module_init(void)
 	spm_sodi3_init();
 	spm_sodi_init();
 	spm_deepidle_init();
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) \
-	&& !defined(CONFIG_MACH_MT6775)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_DRAMC
 	if (spm_golden_setting_cmp(1) != 0)
@@ -559,8 +558,7 @@ EXPORT_SYMBOL(spm_twam_disable_monitor);
 /**************************************
  * SPM Golden Seting API(MEMPLL Control, DRAMC)
  **************************************/
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) \
-	&& !defined(CONFIG_MACH_MT6775)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 #ifdef CONFIG_MTK_DRAMC
 struct ddrphy_golden_cfg {
 	u32 base;
@@ -575,8 +573,8 @@ static struct ddrphy_golden_cfg ddrphy_setting[] = {
 	{DRAMC_AO_CHB, 0x038, 0xc0000027, 0xc0000007},
 	{PHY_AO_CHA, 0x284, 0x001bff00, 0x00000100},
 	{PHY_AO_CHB, 0x284, 0x001bff00, 0x00000100},
-	{PHY_AO_CHA, 0x28c, 0xffffffff, 0x836003be},
-	{PHY_AO_CHB, 0x28c, 0xffffffff, 0x836003be},
+	{PHY_AO_CHA, 0x28c, 0xffffffff, 0x806003be},
+	{PHY_AO_CHB, 0x28c, 0xffffffff, 0x806003be},
 	{PHY_AO_CHA, 0x2a8, 0x0c000000, 0x00000000},
 	{PHY_AO_CHB, 0x2a8, 0x0c000000, 0x00000000},
 	{PHY_AO_CHA, 0xc20, 0xfff80000, 0x00200000},
