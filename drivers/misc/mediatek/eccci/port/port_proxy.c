@@ -956,6 +956,7 @@ static inline void proxy_dispatch_queue_status(struct port_proxy *proxy_p, int h
 {
 	struct port_t *port;
 	int match = 0;
+	int i, matched = 0;
 
 	/*EE then notify EE port*/
 	if (unlikely(ccci_fsm_get_md_state(proxy_p->md_id) == EXCEPTION)) {
@@ -979,8 +980,27 @@ static inline void proxy_dispatch_queue_status(struct port_proxy *proxy_p, int h
 				|| qno == (port->txq_exp_index & 0x0F);
 		else
 			match = qno == port->rxq_index;
-		if (match && port->ops->queue_state_notify)
+		if (match && port->ops->queue_state_notify) {
 			port->ops->queue_state_notify(port, dir, qno, state);
+			matched = 1;
+		}
+	}
+	/*handle ccmni tx queue or tx ack queue state change*/
+	if (!matched && hif == CLDMA_HIF_ID) {
+		for (i = 0; i < proxy_p->port_number; i++) {
+			port = proxy_p->ports + i;
+			if (port->hif_id == CLDMA_HIF_ID) {
+				/* consider network data/ack queue design */
+				if (dir == OUT)
+					match = qno == port->txq_index
+						|| qno == (port->txq_exp_index & 0x0F);
+				else
+					match = qno == port->rxq_index;
+				if (match && port->ops->queue_state_notify)
+					port->ops->queue_state_notify(port, dir, qno, state);
+			} else
+				break;
+		}
 	}
 }
 static inline void proxy_dispatch_md_status(struct port_proxy *proxy_p, unsigned int state)

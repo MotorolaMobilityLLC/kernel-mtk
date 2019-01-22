@@ -806,8 +806,10 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 		req->skb = NULL;
 		/* step forward */
 		queue->tr_done = cldma_ring_step_forward(queue->tr_ring, req);
-		if (likely(ccci_md_get_cap_by_id(md_ctrl->md_id) & MODEM_CAP_TXBUSY_STOP))
-			cldma_queue_broadcast_state(md_ctrl, TX_IRQ, OUT, queue->index);
+		if (likely(ccci_md_get_cap_by_id(md_ctrl->md_id) & MODEM_CAP_TXBUSY_STOP)) {
+			if (queue->budget > queue->tr_ring->length / 8)
+				cldma_queue_broadcast_state(md_ctrl, TX_IRQ, OUT, queue->index);
+		}
 		spin_unlock_irqrestore(&queue->ring_lock, flags);
 		count++;
 #if MD_GENERATION >= (6293)
