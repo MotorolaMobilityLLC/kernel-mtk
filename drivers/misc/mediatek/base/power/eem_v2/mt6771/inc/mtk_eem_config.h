@@ -182,6 +182,7 @@ enum mt_cpu_dvfs_id {
 #define OVER_INV_TEM_VAL (27000)
 
 #define LOW_TEMP_OFF_DEFAULT	(0)
+#define LOW_TEMP_OFF_DEFAULT_GPU	(3)
 #define MARGIN_ADD_OFF			(5)
 
 
