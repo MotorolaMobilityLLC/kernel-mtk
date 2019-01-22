@@ -437,10 +437,8 @@ int mmc_run_queue_thread(void *data)
 	mt_bio_queue_alloc(current, NULL);
 	while (1) {
 
-		if (!io_boost_done) {
-			if (!mtk_io_boost_add_tid(current->pid))
-				io_boost_done = true;
-		}
+		mtk_io_boost_test_and_add_tid(current->pid,
+			&io_boost_done);
 
 		set_current_state(TASK_RUNNING);
 		mt_biolog_cmdq_check();

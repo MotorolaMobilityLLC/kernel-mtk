@@ -206,17 +206,14 @@ static int kjournald2(void *arg)
 	journal->j_task = current;
 	wake_up(&journal->j_wait_done_commit);
 
+	mtk_io_boost_test_and_add_tid(current->pid, &io_boost_done);
+
 	/*
 	 * And now, wait forever for commit wakeup events.
 	 */
 	write_lock(&journal->j_state_lock);
 
 loop:
-
-	if (!io_boost_done) {
-		if (!mtk_io_boost_add_tid(current->pid))
-			io_boost_done = true;
-	}
 
 	if (journal->j_flags & JBD2_UNMOUNT)
 		goto end_loop;
@@ -228,6 +225,9 @@ loop:
 		jbd_debug(1, "OK, requests differ\n");
 		write_unlock(&journal->j_state_lock);
 		del_timer_sync(&journal->j_commit_timer);
+
+		mtk_io_boost_test_and_add_tid(current->pid, &io_boost_done);
+
 		jbd2_journal_commit_transaction(journal);
 		write_lock(&journal->j_state_lock);
 		goto loop;

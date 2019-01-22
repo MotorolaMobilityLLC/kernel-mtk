@@ -113,10 +113,8 @@ static int mmc_queue_thread(void *d)
 		struct request *req = NULL;
 		unsigned int cmd_flags = 0;
 
-		if (!io_boost_done) {
-			if (!mtk_io_boost_add_tid(current->pid))
-				io_boost_done = true;
-		}
+		mtk_io_boost_test_and_add_tid(current->pid,
+			&io_boost_done);
 
 		spin_lock_irq(q->queue_lock);
 

@@ -35,6 +35,7 @@ static bool boost_task_file_ready;
 static int open_boost_task_file(void)
 {
 	int err = 0;
+	mm_segment_t oldfs;
 	static u64 last_trial_time;
 
 	if (!boost_task_file_ready) {
@@ -45,7 +46,12 @@ static int open_boost_task_file(void)
 			last_trial_time = sched_clock();
 	}
 
+	oldfs = get_fs();
+	set_fs(get_ds());
+
 	boost_tasks_fd = filp_open(BOOST_FILE_TASKS, O_WRONLY, 0);
+
+	set_fs(oldfs);
 
 	if (IS_ERR(boost_tasks_fd)) {
 
@@ -119,9 +125,29 @@ out:
 	return ret;
 }
 
+int mtk_io_boost_test_and_add_tid(int tid, bool *done)
+{
+	int ret;
+
+	if (done && *done)
+		return 0;
+
+	ret = mtk_io_boost_add_tid(tid);
+
+	if (!ret && done)
+		*done = true;
+
+	return ret;
+}
+
 #else
 
 int mtk_io_boost_add_tid(int tid)
+{
+	return 0;
+}
+
+int mtk_io_boost_test_and_add_tid(int tid, bool *done)
 {
 	return 0;
 }
