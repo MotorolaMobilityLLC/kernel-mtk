@@ -24,7 +24,7 @@
 #include "clk-gate.h"
 
 #if defined(CONFIG_MACH_MT6799)
-#define MT_CCF_BRINGUP  1
+/*#define MT_CCF_BRINGUP  1*/
 #endif
 
 #ifdef MT_CCF_BRINGUP
