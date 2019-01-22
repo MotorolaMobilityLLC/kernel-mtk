@@ -115,8 +115,7 @@ static unsigned int tm_pid;
 static unsigned int tm_input_pid;
 static unsigned int tm_wfd_stat;
 /* static unsigned int wifi_in_soc = 0; */
-static struct task_struct g_task;
-static struct task_struct *pg_task = &g_task;
+static struct task_struct *pg_task;
 
 /* + Cooler info + */
 static int g_num_trip;
@@ -217,6 +216,9 @@ static int wmt_send_signal(int level)
 
 	if (ret == 0 && tm_input_pid != tm_pid) {
 		tm_pid = tm_input_pid;
+
+		if (pg_task != NULL)
+			put_task_struct(pg_task);
 		pg_task = get_pid_task(find_vpid(tm_pid), PIDTYPE_PID);
 	}
 
