@@ -237,12 +237,12 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 	iWriteRegI2CTiming(pusendcmd, 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
 
-#define MULTI_WRITE 1
+#define MULTI_WRITE 0
 
 #if MULTI_WRITE
 #define I2C_BUFFER_LEN 765	/* trans# max is 255, each 3 bytes */
 #else
-#define I2C_BUFFER_LEN 3
+#define I2C_BUFFER_LEN 4
 
 #endif
 static kal_uint16 s5k4e6_table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
