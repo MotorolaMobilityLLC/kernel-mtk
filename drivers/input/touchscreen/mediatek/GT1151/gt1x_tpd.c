@@ -611,6 +611,10 @@ static int tpd_registration(void *client)
 	pm_notifier_block.priority = 0;
 	register_pm_notifier(&pm_notifier_block);
 #endif
+
+#ifdef CONFIG_MTK_LENS
+	AF_PowerDown();
+#endif
 	return 0;
 }
 
@@ -1148,6 +1152,9 @@ static void tpd_resume(struct device *h)
 	gt1x_esd_switch(SWITCH_ON);
 #endif
 
+#ifdef CONFIG_MTK_LENS
+	AF_PowerDown();
+#endif
 	GTP_DEBUG("tpd resume end.");
 }
 
