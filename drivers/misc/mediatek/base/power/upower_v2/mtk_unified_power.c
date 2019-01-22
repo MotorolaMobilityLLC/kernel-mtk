@@ -445,7 +445,7 @@ static int __init upower_get_tbl_ref(void)
 
 	upower_tbl_ref = (struct upower_tbl *)(uintptr_t)upower_data_virt_addr;
 
-#if UPOWER_USE_QOS_IPI
+#ifdef UPOWER_USE_QOS_IPI
 	upower_send_data_ipi(upower_data_phy_addr, upower_data_size);
 #else
 	/* send sspm reserved mem into sspm through eem's ipi */
