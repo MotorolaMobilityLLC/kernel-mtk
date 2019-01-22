@@ -54,7 +54,7 @@ obj-y += mtk_spm_resource_req.o
 obj-y += mtk_spm_sleep.o
 #obj-y += mtk_spm_sodi.o
 #obj-y += mtk_spm_sodi3p0.o
-#obj-y += mtk_spm_vcorefs.o
+obj-y += mtk_spm_vcorefs_mt6771.o
 else
 obj-y += mtk_idle.o
 obj-y += mtk_sleep.o

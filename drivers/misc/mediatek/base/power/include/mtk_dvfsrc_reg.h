@@ -22,7 +22,11 @@
 
 #include "spm_v3/mtk_dvfsrc_reg_mt6775.h"
 
-#elif defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771)
+#elif defined(CONFIG_MACH_MT6771)
+
+#include "spm_v4/mtk_dvfsrc_reg_mt6771.h"
+
+#elif defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
 
 #include "spm_v4/mtk_dvfsrc_reg.h"
 
