@@ -16,6 +16,7 @@
 #include <linux/time.h>
 #include <linux/jiffies.h>
 #include <linux/module.h>
+#include <../drivers/staging/android/sync.h>
 
 #include "ged_frr.h"
 #include "ged_base.h"
@@ -30,28 +31,23 @@
 #endif
 
 /* These module params are for developers to set specific fps and debug. */
-static int ged_frr_debug_pid = GED_FRR_TABLE_ZERO;
-static unsigned long ged_frr_debug_cid = GED_FRR_TABLE_ZERO;
-static int ged_frr_debug_fps = GED_FRR_TABLE_ZERO;
-static char *ged_frr_debug_dump_table;
+static char *ged_frr_debug_fence2context_table;
+module_param(ged_frr_debug_fence2context_table, charp, S_IRUGO|S_IWUSR);
 
-module_param(ged_frr_debug_pid, int, S_IRUGO|S_IWUSR);
-module_param(ged_frr_debug_cid, ulong, S_IRUGO|S_IWUSR);
-module_param(ged_frr_debug_fps, int, S_IRUGO|S_IWUSR);
-module_param(ged_frr_debug_dump_table, charp, S_IRUGO|S_IWUSR);
-
-/*  the "FRR fps Table" */
-typedef struct GED_FRR_FRR_TABLE_TYPE {
+/* Fence2Context Table */
+typedef struct GED_FRR_FENCE2CONTEXT_TABLE_TYPE {
 	int			pid;
 	uint64_t	cid;
-	int			fps;
+	void		*fid;
 	uint64_t	createTime;
-} GED_FRR_FRR_TABLE;
+} GED_FRR_FENCE2CONTEXT_TABLE;
 
-static GED_FRR_FRR_TABLE *gpsFrrTable;
-static int giFrrTableSize;
+static GED_FRR_FENCE2CONTEXT_TABLE *fence2ContextTable;
+static int fence2ContextTableSize;
 
-static void ged_frr_table_dump(void)
+static struct mutex fence2ContextTableLock;
+
+static void ged_frr_fence2context_table_dump(void)
 {
 	int i;
 	static char buf[1024];
@@ -59,180 +55,162 @@ static void ged_frr_table_dump(void)
 
 	memset(buf, '\0', 1024);
 
-	for (i = 0; i < giFrrTableSize; i++) {
+	for (i = 0; i < fence2ContextTableSize; i++) {
 		snprintf(temp, sizeof(temp),
-				"%d,%llu,%d,%llu\n",
-				gpsFrrTable[i].pid,
-				gpsFrrTable[i].cid,
-				gpsFrrTable[i].fps,
-				gpsFrrTable[i].createTime);
+				"%d,%llu,%p,%llu\n",
+				fence2ContextTable[i].pid,
+				fence2ContextTable[i].cid,
+				fence2ContextTable[i].fid,
+				fence2ContextTable[i].createTime);
 
 		strcat(buf, temp);
 	}
 
-	ged_frr_debug_dump_table = buf;
+	ged_frr_debug_fence2context_table = buf;
 }
 
-static GED_ERROR ged_frr_table_create(void)
+static GED_ERROR ged_frr_fence2context_table_create(void)
 {
 	int i;
 
-	gpsFrrTable = NULL;
-	giFrrTableSize = 0;
+	mutex_init(&fence2ContextTableLock);
 
-	giFrrTableSize = GED_FRR_TABLE_SIZE;
-	gpsFrrTable = (GED_FRR_FRR_TABLE *)ged_alloc(giFrrTableSize * sizeof(GED_FRR_FRR_TABLE));
+	fence2ContextTableSize = GED_FRR_FENCE2CONTEXT_TABLE_SIZE;
+	fence2ContextTable =
+		(GED_FRR_FENCE2CONTEXT_TABLE *)ged_alloc(fence2ContextTableSize * sizeof(GED_FRR_FENCE2CONTEXT_TABLE));
 
-	if (!gpsFrrTable) {
-		GED_LOGE("[FRR] ged_frr_table_create, gpsFrrTable(NULL)\n");
+	if (!fence2ContextTable) {
+		GED_LOGE("[FRR] fence2ContextTable is NULL\n");
 		return GED_ERROR_OOM;
 	}
 
-	for (i = 0; i < giFrrTableSize; i++) {
-		gpsFrrTable[i].pid = GED_FRR_TABLE_ZERO;
-		gpsFrrTable[i].cid = GED_FRR_TABLE_ZERO;
-		gpsFrrTable[i].fps = GED_FRR_TABLE_ZERO;
-		gpsFrrTable[i].createTime = GED_FRR_TABLE_ZERO;
+	for (i = 0; i < fence2ContextTableSize; i++) {
+		fence2ContextTable[i].pid = 0;
+		fence2ContextTable[i].cid = 0;
+		fence2ContextTable[i].fid = 0;
+		fence2ContextTable[i].createTime = 0;
 	}
 
-	gpsFrrTable[0].pid = GED_FRR_TABLE_FOR_ALL_PID;
-	gpsFrrTable[0].cid = GED_FRR_TABLE_FOR_ALL_CID;
-
-	ged_frr_table_dump();
+	ged_frr_fence2context_table_dump();
 
 	return GED_OK;
 }
 
-static GED_ERROR ged_frr_table_release(void)
+static GED_ERROR ged_frr_fence2context_table_release(void)
 {
-	if (gpsFrrTable)
-		ged_free(gpsFrrTable, giFrrTableSize * sizeof(GED_FRR_FRR_TABLE));
+	mutex_destroy(&fence2ContextTableLock);
+
+	if (fence2ContextTable)
+		ged_free(fence2ContextTable, fence2ContextTableSize * sizeof(GED_FRR_FENCE2CONTEXT_TABLE));
 
 	return GED_OK;
 }
 
-static GED_ERROR ged_frr_table_add_item(int targetPid, uint64_t targetCid, int targetFps)
+static GED_ERROR ged_frr_fence2context_table_add_item(int targetPid, uint64_t targetCid, void *targetFid)
 {
 	int i;
 	int targetIndex;
 	unsigned long long leastCreateTime;
 
-	GED_LOGE("[FRR] [+] ged_frr_table_add_item, pid(%d), cid(%llu), fps(%d)\n", targetPid, targetCid, targetFps);
+	GED_LOGE("[FRR] [+] add item: pid(%d), cid(%llu), fid(%p)\n", targetPid, targetCid, targetFid);
 
-	if (!gpsFrrTable) {
-		GED_LOGE("[FRR] [-] ged_frr_table_add_item, gpsFrrTable(NULL)\n");
+	if (!fence2ContextTable) {
+		GED_LOGE("[FRR] [-] add item: fence2ContextTable is NULL\n");
 		return GED_ERROR_FAIL;
 	}
 
-	targetIndex = 1;
-	leastCreateTime = gpsFrrTable[1].createTime;
+	targetIndex = 0;
+	leastCreateTime = fence2ContextTable[0].createTime;
 
-	for (i = 1; i < giFrrTableSize; i++) {
-		if (gpsFrrTable[i].pid == GED_FRR_TABLE_ZERO && gpsFrrTable[i].cid == GED_FRR_TABLE_ZERO) {
+	for (i = 0; i < fence2ContextTableSize; i++) {
+		if (fence2ContextTable[i].pid == 0) {
 			targetIndex = i;
 			break;
 		}
-		if (gpsFrrTable[i].createTime < leastCreateTime) {
-			leastCreateTime = gpsFrrTable[i].createTime;
+		if (fence2ContextTable[i].createTime < leastCreateTime) {
+			leastCreateTime = fence2ContextTable[i].createTime;
 			targetIndex = i;
 		}
 	}
 
-	gpsFrrTable[targetIndex].pid = targetPid;
-	gpsFrrTable[targetIndex].cid = targetCid;
-	gpsFrrTable[targetIndex].fps = targetFps;
-	gpsFrrTable[targetIndex].createTime = ged_get_time();
+	fence2ContextTable[targetIndex].pid = targetPid;
+	fence2ContextTable[targetIndex].cid = targetCid;
+	fence2ContextTable[targetIndex].fid = targetFid;
+	fence2ContextTable[targetIndex].createTime = ged_get_time();
 
-	GED_LOGE("[FRR] [-] ged_frr_table_add_item, targetIndex(%d)\n", targetIndex);
+	GED_LOGE("[FRR] [-] add item, targetIndex(%d)\n", targetIndex);
 
 	return GED_OK;
 }
 
 GED_ERROR ged_frr_system_init(void)
 {
-	return ged_frr_table_create();
+	return ged_frr_fence2context_table_create();
 }
 
 GED_ERROR ged_frr_system_exit(void)
 {
-	return ged_frr_table_release();
+	return ged_frr_fence2context_table_release();
 }
 
-GED_ERROR ged_frr_table_set_fps(int targetPid, uint64_t targetCid, int targetFps)
+GED_ERROR ged_frr_fence2context_table_update(int pid, uint64_t cid, int fenceFd)
 {
 	int i;
+	int ret = GED_ERROR_FAIL;
+	void *fence;
 
-	if (!gpsFrrTable) {
-		GED_LOGE("[FRR] ged_frr_table_set_fps, gpsFrrTable(NULL)\n");
+	if (!fence2ContextTable) {
+		GED_LOGE("[FRR] fence2ContextTable is NULL\n");
 		return GED_ERROR_FAIL;
 	}
 
-	if (targetFps < GED_FRR_TABLE_LOWER_BOUND_FPS && targetFps != GED_FRR_TABLE_ZERO) {
-		GED_LOGE("[FRR] ged_frr_table_set_fps, targetFps < 20\n");
+	if (fenceFd < 0) {
+		GED_LOGE("[FRR] fenceFd < 0\n");
 		return GED_ERROR_INVALID_PARAMS;
 	}
 
-	if (targetPid == GED_FRR_TABLE_FOR_ALL_PID && targetCid == GED_FRR_TABLE_FOR_ALL_CID) {
-		gpsFrrTable[0].fps = targetFps;
-		ged_frr_table_dump();
-		return GED_OK;
-	}
+	fence = (void *)sync_fence_fdget(fenceFd);
 
-	for (i = 1; i < giFrrTableSize; i++) {
-		if (gpsFrrTable[i].pid == targetPid && gpsFrrTable[i].cid == targetCid) {
-			gpsFrrTable[i].fps = targetFps;
-			ged_frr_table_dump();
-			return GED_OK;
+	mutex_lock(&fence2ContextTableLock);
+	for (i = 0; i < fence2ContextTableSize; i++) {
+		if (fence2ContextTable[i].pid == pid && fence2ContextTable[i].cid == cid) {
+			fence2ContextTable[i].fid = fence;
+			ged_frr_fence2context_table_dump();
+			ret = GED_OK;
+			break;
 		}
 	}
 
-	if (ged_frr_table_add_item(targetPid, targetCid, targetFps)) {
-		ged_frr_table_dump();
-		return GED_OK;
+	if (ret != GED_OK) {
+		ret = ged_frr_fence2context_table_add_item(pid, cid, fence);
+		ged_frr_fence2context_table_dump();
+	}
+	mutex_unlock(&fence2ContextTableLock);
+
+	return ret;
+}
+
+GED_ERROR ged_frr_fence2context_table_get_cid(int pid, void *fid, uint64_t *cid)
+{
+	int i;
+
+	if (!fence2ContextTable) {
+		GED_LOGE("[FRR] fence2ContextTable is NULL\n");
+		return GED_ERROR_FAIL;
+	}
+
+	for (i = 0; i < fence2ContextTableSize; i++) {
+		if ((fence2ContextTable[i].pid == pid) && (fence2ContextTable[i].fid == fid)) {
+			*cid = fence2ContextTable[i].cid;
+			return GED_OK;
+		}
 	}
 
 	return GED_ERROR_FAIL;
 }
 
-int ged_frr_table_get_fps(int targetPid, uint64_t targetCid)
+int ged_frr_get_fps(int targetPid, uint64_t targetCid)
 {
-#if 0
-	int i;
-	int fps, forAllFps;
-
-	if (!gpsFrrTable) {
-		GED_LOGE("[FRR] ged_frr_table_get_fps, gpsFrrTable(NULL)\n");
-		return GED_FRR_TABLE_ZERO;
-	}
-
-	if (ged_frr_debug_pid > GED_FRR_TABLE_ZERO && ged_frr_debug_cid > GED_FRR_TABLE_ZERO &&
-		ged_frr_debug_fps > GED_FRR_TABLE_ZERO) {
-
-		ged_frr_table_set_fps(ged_frr_debug_pid, ged_frr_debug_cid, ged_frr_debug_fps);
-		ged_frr_debug_pid = GED_FRR_TABLE_ZERO;
-		ged_frr_debug_cid = GED_FRR_TABLE_ZERO;
-		ged_frr_debug_fps = GED_FRR_TABLE_ZERO;
-	}
-
-	fps = GED_FRR_TABLE_ZERO;
-	forAllFps = gpsFrrTable[0].fps;
-
-	for (i = 0; i < giFrrTableSize; i++) {
-		if (gpsFrrTable[i].pid == targetPid && gpsFrrTable[i].cid == targetCid) {
-			/*GED_LOGE("[FRR]get_fps: idx(%d), fps(%d)\n",i,gpsFrrTable[i].fps);*/
-			fps = gpsFrrTable[i].fps;
-			break;
-		}
-	}
-
-	if (forAllFps > GED_FRR_TABLE_ZERO && fps > GED_FRR_TABLE_ZERO)
-		return (forAllFps > fps) ? fps : forAllFps;
-
-	if (forAllFps > GED_FRR_TABLE_ZERO)
-		return forAllFps;
-
-	return fps;
-#endif
 	int fps, mode;
 
 	dfrc_get_frr_setting(targetPid, targetCid, &fps, &mode);

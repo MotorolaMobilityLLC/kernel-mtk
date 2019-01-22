@@ -16,21 +16,17 @@
 
 #include "ged_type.h"
 
-#define GED_FRR_TABLE_SIZE 8
-#define GED_FRR_TABLE_FOR_ALL_PID -1
-#define GED_FRR_TABLE_FOR_ALL_CID 0xFFFFFFFF
-
-#define GED_FRR_TABLE_ZERO 0
-#define GED_FRR_TABLE_LOWER_BOUND_FPS 20
-#define GED_FRR_TABLE_UPPER_BOUND_FPS 60
+#define GED_FRR_FENCE2CONTEXT_TABLE_SIZE 5
 
 GED_ERROR ged_frr_system_init(void);
 
 GED_ERROR ged_frr_system_exit(void);
 
-GED_ERROR ged_frr_table_set_fps(int targetPid, uint64_t targetCid, int targetFps);
+int ged_frr_get_fps(int targetPid, uint64_t targetCid);
 
-int ged_frr_table_get_fps(int targetPid, uint64_t targetCid);
+GED_ERROR ged_frr_fence2context_table_update(int pid, uint64_t cid, int fenceFd);
+
+GED_ERROR ged_frr_fence2context_table_get_cid(int pid, void *fid, uint64_t *cid);
 
 GED_ERROR ged_frr_wait_hw_vsync(void);
 #endif
