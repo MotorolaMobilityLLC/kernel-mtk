@@ -77,6 +77,7 @@ struct clkdbg_ops {
 	const char * const *(*get_all_clk_names)(void);
 	const char * const *(*get_pwr_names)(void);
 	void (*setup_provider_clk)(struct provider_clk *pvdck);
+	u32 (*read_spm_pwr_status)(void);
 };
 
 void set_clkdbg_ops(const struct clkdbg_ops *ops);

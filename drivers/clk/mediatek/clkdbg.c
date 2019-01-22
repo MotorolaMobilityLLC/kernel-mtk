@@ -223,6 +223,20 @@ static void setup_provider_clk(struct provider_clk *pvdck)
 	clkdbg_ops->setup_provider_clk(pvdck);
 }
 
+static u32 read_spm_pwr_status(void)
+{
+	static void __iomem *scpsys_base;
+
+	if (!clkdbg_ops || !clkdbg_ops->read_spm_pwr_status) {
+		if (!scpsys_base)
+			scpsys_base = ioremap(0x10006000, PAGE_SIZE);
+
+		return clk_readl(scpsys_base + 0x60c);
+	}
+
+	return clkdbg_ops->read_spm_pwr_status();
+}
+
 static bool is_valid_reg(void __iomem *addr)
 {
 #ifdef CONFIG_64BIT
@@ -367,16 +381,6 @@ static int clkdbg_dump_regs2(struct seq_file *s, void *v)
 	proc_all_regname(print_reg2, s);
 
 	return 0;
-}
-
-static u32 read_spm_pwr_status(void)
-{
-	static void __iomem *scpsys_base;
-
-	if (!scpsys_base)
-		scpsys_base = ioremap(0x10006000, PAGE_SIZE);
-
-	return clk_readl(scpsys_base + 0x60c);
 }
 
 static bool clk_hw_pwr_is_on(struct clk_hw *c_hw,
