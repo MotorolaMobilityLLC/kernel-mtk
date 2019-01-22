@@ -125,6 +125,6 @@ extern struct musb_fifo_cfg ep0_cfg_u3;
 extern struct musb_fifo_cfg ep0_cfg_u2;
 extern void ep0_setup(struct musb *musb, struct musb_hw_ep *hw_ep0,
 		      const struct musb_fifo_cfg *cfg);
-
+extern bool is_usb_rdy(void);
 
 #endif				/* __MUSB_GADGET_H */

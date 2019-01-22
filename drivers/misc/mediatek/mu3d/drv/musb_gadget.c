@@ -1477,7 +1477,7 @@ static struct musb *mu3d_clk_off_musb;
 static void do_mu3d_clk_off_work(struct work_struct *work)
 {
 	os_printk(K_NOTICE, "do_mu3d_clk_off_work, issue connection work\n");
-	schedule_delayed_work_on(0, &mu3d_clk_off_musb->connection_work, 0);
+	schedule_delayed_work(&mu3d_clk_off_musb->connection_work, 0);
 }
 
 void set_usb_rdy(void)

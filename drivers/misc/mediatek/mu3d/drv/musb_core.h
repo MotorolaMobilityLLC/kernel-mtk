@@ -824,4 +824,6 @@ static inline int mtk_is_host_mode(void)
 extern int typec_switch_usb_disconnect(void *data);
 extern int typec_switch_usb_connect(void *data);
 #endif
+extern int mu3d_force_on;
+extern void mt_usb_connect(void);
 #endif	/* __MUSB_CORE_H__ */
