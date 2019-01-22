@@ -3543,6 +3543,8 @@ static int kbase_platform_device_remove(struct platform_device *pdev)
 	}
 #endif
 
+	if (mtk_common_deinit(pdev, kbdev))
+		pr_info("[MTK] fail to mtk_common_deinit\n");
 
 	if (kbdev->inited_subsys & inited_dev_list) {
 		dev_list = kbase_dev_list_get();
@@ -3708,7 +3710,8 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 #endif /* CONFIG_MALI_NO_MALI */
 
 	/* MTK  */
-	err = mtk_platform_init(pdev, kbdev);
+	err |= mtk_common_init(pdev, kbdev);
+	err |= mtk_platform_init(pdev, kbdev);
 	if (err) {
 		pr_err("[MALI] GPU: mtk_platform_init fail!\n");
 		return err;
@@ -3947,6 +3950,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 
 		ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
 		ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
+
 	}
 #endif
 

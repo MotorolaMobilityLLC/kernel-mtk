@@ -15,12 +15,15 @@
 #define __MTK_PLATFORM_COMMON_H__
 
 #include <linux/platform_device.h>
+#include "mtk_mfg_counter.h"
 
 #ifdef ENABLE_COMMON_DVFS
 /* MTK */
 #include "mtk_gpufreq.h"
 #endif
 
+int mtk_common_init(struct platform_device *pdev, struct kbase_device *kbdev);
+int mtk_common_deinit(struct platform_device *pdev, struct kbase_device *kbdev);
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev);
 
 #ifdef ENABLE_MTK_MEMINFO
