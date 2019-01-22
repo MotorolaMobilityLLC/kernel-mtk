@@ -1358,7 +1358,12 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 		new_request.num_policy = size;
 
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY) * size);
-		dfrc_pack_choosed_frr_policy(size, new_policy, expected_policy->frr_statistics);
+		if (new_policy != NULL) {
+			dfrc_pack_choosed_frr_policy(size, new_policy, expected_policy->frr_statistics);
+		} else {
+			DFRC_ERR("Failed to allocate new policy for adjusting FRR\n");
+			change = true;
+		}
 	} else if ((expected_policy->mode == DFRC_DRV_MODE_ARR ||
 			expected_policy->mode == DFRC_DRV_MODE_INTERNAL_SW) && g_forbid_vsync) {
 		dfrc_rdump("use default mode, because forbid adjusting vsync\n");
@@ -1393,7 +1398,12 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 		}
 
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY));
-		*new_policy = *expected_policy->arr_policy;
+		if (new_policy) {
+			*new_policy = *expected_policy->arr_policy;
+		} else {
+			DFRC_ERR("Failed to allocate new policy for adjusting ARR\n");
+			change = true;
+		}
 	} else if (expected_policy->mode == DFRC_DRV_MODE_INTERNAL_SW) {
 		dfrc_rdump("use isw mode\n");
 		fps = expected_policy->isw_policy->fps;
@@ -1408,7 +1418,12 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 		new_request.num_policy = 1;
 
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY));
-		*new_policy = *expected_policy->isw_policy;
+		if (new_policy) {
+			*new_policy = *expected_policy->isw_policy;
+		} else {
+			DFRC_ERR("Failed to allocate new policy for adjusting ISW\n");
+			change = true;
+		}
 	}
 
 	if (memcmp(&new_request, &g_request_notified, sizeof(g_request_notified))) {
