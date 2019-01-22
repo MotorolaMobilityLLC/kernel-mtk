@@ -125,14 +125,14 @@ static inline void map_dma_buffer(struct musb_request *request,
 
 #endif
 	if (request->request.dma == DMA_ADDR_INVALID) {
-		request->request.dma = dma_map_single(musb->controller->parent,
+		request->request.dma = dma_map_single(musb->controller,
 						      request->request.buf,
 						      length,
 						      request->tx
 						      ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
 		request->map_state = MUSB_MAPPED;
 	} else {
-		dma_sync_single_for_device(musb->controller->parent,
+		dma_sync_single_for_device(musb->controller,
 					   request->request.dma,
 					   length, request->tx ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
 		request->map_state = PRE_MAPPED;
@@ -154,12 +154,12 @@ static inline void unmap_dma_buffer(struct musb_request *request, struct musb *m
 		return;
 	}
 	if (request->map_state == MUSB_MAPPED) {
-		dma_unmap_single(musb->controller->parent,
+		dma_unmap_single(musb->controller,
 				 request->request.dma,
 				 length, request->tx ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
 		request->request.dma = DMA_ADDR_INVALID;
 	} else {		/* PRE_MAPPED */
-		dma_sync_single_for_cpu(musb->controller->parent,
+		dma_sync_single_for_cpu(musb->controller,
 					request->request.dma,
 					length, request->tx ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
 	}
