@@ -55,7 +55,7 @@ static unsigned int c2k_wdt_irq_nr;
 
 #define CPU_IDLE_STA_OFFSET 10
 
-static unsigned long dbg_data[40];
+static unsigned int dbg_data[40];
 static int mtk_cpuidle_initialized;
 
 static void mtk_spm_irq_set_pending(int wakeup_src, int irq_nr)
@@ -180,9 +180,9 @@ static void mtk_dbg_save_restore(int cpu, int save)
 
 	if ((cpu_idle_sta & nr_cpu_bit) == nr_cpu_bit) {
 		if (save)
-			mt_save_dbg_regs((unsigned int *) dbg_data, cpu);
+			mt_save_dbg_regs(dbg_data, cpu);
 		else
-			mt_restore_dbg_regs((unsigned int *) dbg_data, cpu);
+			mt_restore_dbg_regs(dbg_data, cpu);
 	} else {
 		if (!save)
 			mt_copy_dbg_regs(cpu, __builtin_ffs(~cpu_idle_sta) - 1);
