@@ -34,11 +34,12 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_ELBRUS)
 #include <ddp_clkmgr.h>
 #endif
 #endif
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
 #include <disp_lowpower.h>
 #include <disp_helper.h>
 #endif
@@ -147,10 +148,9 @@ static void disp_aal_trigger_refresh(int latency)
 		DISP_PATH_EVENT trigger_method = DISP_PATH_EVENT_TRIGGER;
 
 #ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
-		/*Allow 33ms latency only under VP & VR scenario for avoid*/
-		/*longer animation reduce available time of SODI which cause.*/
-		/*less power saving ratio when screen idle.*/
-
+		/* Allow 33ms latency only under VP & VR scenario for avoid */
+		/* longer animation reduce available time of SODI which cause. */
+		/* less power saving ratio when screen idle. */
 		if (scenario_latency < latency)
 			latency = scenario_latency;
 
@@ -178,8 +178,8 @@ static void disp_aal_set_interrupt(int enabled)
 			DISP_CPU_REG_SET(DISP_AAL_INTEN, 0x0);
 			AAL_DBG("Interrupt disabled");
 		} else {	/* Dirty histogram was not retrieved */
-			/* Only if the dirty hist was retrieved, interrupt can be disabled.*/
-			 /* Continue interrupt until AALService can get the latest histogram. */
+			/* Only if the dirty hist was retrieved, interrupt can be disabled. */
+			/* Continue interrupt until AALService can get the latest histogram. */
 		}
 	}
 
@@ -355,9 +355,12 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 	service_flags = 0;
 	if (bl_1024 == 0) {
 		backlight_brightness_set(0);
-		/* set backlight = 0 may be not from AAL, we have to let AALService*/
-		/* can turn on backlight on phone resumption */
+		/* set backlight = 0 may be not from AAL, */
+		/* we have to let AALService can turn on backlight on phone resumption */
 		service_flags = AAL_SERVICE_FORCE_UPDATE;
+		/* using CPU to set backlight = 0, */
+		/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
+		disp_pwm_set_force_update_flag();
 	} else if (!g_aal_is_init_regs_valid) {
 		/* AAL Service is not running */
 		backlight_brightness_set(bl_1024);
@@ -466,8 +469,8 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 	int ret = -EFAULT;
 	int backlight_value = 0;
 
-	/* Not need to protect g_aal_param, since only AALService*/
-	/*can set AAL parameters. */
+	/* Not need to protect g_aal_param, */
+	/* since only AALService can set AAL parameters. */
 	if (copy_from_user(&g_aal_param, param, sizeof(DISP_AAL_PARAM)) == 0) {
 		backlight_value = g_aal_param.FinalBacklight;
 #ifdef CONFIG_MTK_AAL_SUPPORT
@@ -547,6 +550,21 @@ static int aal_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, vo
 
 		width = pConfig->dst_w;
 		height = pConfig->dst_h;
+
+#ifdef DISP_PLATFORM_HAS_SHADOW_REG
+		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+				/* full shadow mode*/
+				DISP_REG_SET(cmdq, DISP_AAL_SHADOW_CTL, 0x0);
+			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+				/* force commit */
+				DISP_REG_SET(cmdq, DISP_AAL_SHADOW_CTL, 0x2);
+			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+				/* bypass shadow */
+				DISP_REG_SET(cmdq, DISP_AAL_SHADOW_CTL, 0x1);
+			}
+		}
+#endif
 
 		DISP_REG_SET(cmdq, DISP_AAL_SIZE, (width << 16) | height);
 		DISP_REG_MASK(cmdq, DISP_AAL_CFG, 0x0, 0x1);	/* Disable relay mode */
