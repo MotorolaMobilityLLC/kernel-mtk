@@ -210,6 +210,9 @@ uint64_t cmdq_virtual_flag_from_scenario_legacy(enum CMDQ_SCENARIO_ENUM scn)
 		flag = ((1LL << CMDQ_ENG_DISP_RDMA0) |
 			(1LL << CMDQ_ENG_DISP_UFOE) | (1LL << CMDQ_ENG_DISP_DSI0_CMD));
 		break;
+	case CMDQ_SCENARIO_RDMA2_DISP:
+		flag = (1LL << CMDQ_ENG_DISP_RDMA2);
+		break;
 	default:
 		flag = 0LL;
 		break;
