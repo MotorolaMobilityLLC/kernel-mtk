@@ -43,6 +43,8 @@
 #include <linux/uaccess.h>
 #include <linux/miscdevice.h>
 #include <linux/random.h>
+#include <linux/clk.h>
+#include <linux/highmem.h>
 #ifdef ZION_BRINGUP
 #include <mach/dma.h>
 #include <mach/mt_clkmgr.h>
@@ -101,12 +103,25 @@ bool DDR_INTERFACE = FALSE;
 void __iomem *mtk_nfi_base;
 void __iomem *mtk_nfiecc_base;
 void __iomem *mtk_io_base;
+void __iomem *mtk_io_cfg0_base;
+void __iomem *mtk_topckgen_base;
 u32 g_value;
 
 struct device_node *mtk_nfi_node;
 struct device_node *mtk_nfiecc_node;
 struct device_node *mtk_io_node;
+struct device_node *mtk_io_cfg0_node;
+struct device_node *mtk_topckgen_node;
 struct device_node *mtk_pm_node;
+
+static struct clk *nfi2x_sel;
+static struct clk *nfiecc_sel;
+static struct clk *nfiecc_src;
+static struct clk *nfi_sdr_src;
+static struct clk *nfi_ddr_src;
+static struct clk *nfi_cg_nfi;
+static struct clk *nfi_cg_nfi1x;
+static struct clk *nfi_cg_nfiecc;
 
 struct regulator *nfi_reg_vemc_3v3;
 
@@ -180,13 +195,6 @@ struct otp_ctl {
 };
 #endif
 
-#ifdef __D_PFM__
-
-struct timeval g_now;
-struct timeval g_begin;
-struct prof_struct g_pf_struct[15];
-u32 idx_prof;
-
 #ifdef __REPLAY_CALL__
 struct call_sequence call_trace[4096];
 u32 call_idx, temp_idx;
@@ -203,21 +211,28 @@ char *call_str[6] = {
 
 #endif
 
-char *prof_str[13] = {
-	"RAW_PART_READ",
-	"RAW_PART_READ_SECTOR",
-	"RAW_PART_READ_CACHE",
-	"RAW_PART_SLC_WRITE",
-	"RAW_PART_TLC_BLOCK_ACH",
-	"RAW_PART_TLC_BLOCK_SW",
-	"RAW_PART_ERASE",
-	"MNTL_PART_READ",
-	"MNTL_PART_READ_SECTOR",
-	"MNTL_PART_SLC_WRITE",
-	"MNTL_PART_TLC_BLOCK_ACH",
-	"MNTL_PART_TLC_BLOCK_SW",
-	"MNTL_PART_ERASE"
-};
+#ifdef __D_PFM__
+
+struct timeval g_now;
+struct timeval g_begin;
+struct prof_struct g_pf_struct[20];
+u32 idx_prof;
+u32 idx_pfm;
+
+char *prof_str[20];
+#endif
+
+#ifdef __D_PEM__
+struct timeval g_stimer;
+struct timeval g_etimer;
+struct perf_analysis_struct g_pf_analysis_struct[20];
+bool g_pf_analysis_page_read = FALSE;
+bool g_pf_analysis_subpage_read = FALSE;
+
+u32 idx_perf_analysis;
+u32 idx_pem;
+
+char *perf_analysis_str[20];
 #endif
 
 #define NAND_SECTOR_SIZE (512)
@@ -243,29 +258,6 @@ bool g_b2Die_CS;
 /*******************************************************************************
  * Gloable Varible Definition
  *******************************************************************************/
-struct nand_perf_log {
-	unsigned int ReadPageCount;
-	suseconds_t  ReadPageTotalTime;
-	unsigned int ReadBusyCount;
-	suseconds_t  ReadBusyTotalTime;
-	unsigned int ReadDMACount;
-	suseconds_t  ReadDMATotalTime;
-
-	unsigned int ReadSubPageCount;
-	suseconds_t  ReadSubPageTotalTime;
-
-	unsigned int WritePageCount;
-	suseconds_t  WritePageTotalTime;
-	unsigned int WriteBusyCount;
-	suseconds_t  WriteBusyTotalTime;
-	unsigned int WriteDMACount;
-	suseconds_t  WriteDMATotalTime;
-
-	unsigned int EraseBlockCount;
-	suseconds_t  EraseBlockTotalTime;
-
-};
-
 #ifdef PWR_LOSS_SPOH
 u32 pl_program_time;
 u32 pl_erase_time;
@@ -341,10 +333,6 @@ u32 pl_merge_time;
 
 #define PL_NAND_END(pl_time_write, duration)
 
-#endif
-#ifdef DUMP_PEF
-static struct nand_perf_log g_NandPerfLog = {0};
-static struct timeval g_NandLogTimer = {0};
 #endif
 #ifdef MTK_NAND_CMD_DUMP
 struct cmd_sequence {
@@ -460,6 +448,67 @@ int dummy_driver_debug;
 
 struct flashdev_info_t gn_devinfo;
 
+#if defined(__D_PEM__) || defined(__D_PFM__)
+int register_profile_item(int sys, char *name)
+{
+	int ret_idx;
+
+	if (sys == 0) {
+#ifdef __D_PFM__
+		ret_idx = idx_pfm;
+		prof_str[idx_pfm] = kmalloc(40, GFP_KERNEL);
+		strcpy(prof_str[idx_pfm], name);
+		idx_pfm++;
+#endif
+	} else {
+#ifdef __D_PEM__
+		ret_idx = idx_pem;
+		perf_analysis_str[idx_pem] = kmalloc(40, GFP_KERNEL);
+		strcpy(perf_analysis_str[idx_pem], name);
+		idx_pem++;
+#endif
+	}
+	return ret_idx;
+}
+
+void init_profile_system(void)
+{
+#if defined(__D_PFM__)
+	idx_pfm = 0;
+	register_profile_item(0, "RAW_PART_READ");
+	register_profile_item(0, "RAW_PART_READ_SECTOR");
+	register_profile_item(0, "RAW_PART_READ_CACHE");
+	register_profile_item(0, "RAW_PART_SLC_WRITE");
+	register_profile_item(0, "RAW_PART_TLC_BLOCK_ACH");
+	register_profile_item(0, "RAW_PART_TLC_BLOCK_SW");
+	register_profile_item(0, "RAW_PART_ERASE");
+	register_profile_item(0, "MNTL_PART_READ_SLC");
+	register_profile_item(0, "MNTL_PART_READ_TLC");
+	register_profile_item(0, "MNTL_PART_SLC_WRITE");
+	register_profile_item(0, "MNTL_PART_TLC_BLOCK_ACH");
+	register_profile_item(0, "MNTL_PART_TLC_BLOCK_SW");
+	register_profile_item(0, "MNTL_PART_ERASE");
+#endif
+#if defined(__D_PEM__)
+	idx_pem = 0;
+	register_profile_item(1, "NAND_PAGE_SLC_READ_BUSY_TIME");
+	register_profile_item(1, "NAND_PAGE_TLC_READ_BUSY_TIME");
+	register_profile_item(1, "NAND_PAGE_SLC_READ_DMA_TIME");
+	register_profile_item(1, "NAND_PAGE_TLC_READ_DMA_TIME");
+	register_profile_item(1, "NAND_SUBPAGE_SLC_READ_BUSY_TIME");
+	register_profile_item(1, "NAND_SUBPAGE_TLC_READ_BUSY_TIME");
+	register_profile_item(1, "NAND_SUBPAGE_SLC_READ_DMA_TIME");
+	register_profile_item(1, "NAND_SUBPAGE_TLC_READ_DMA_TIME");
+	register_profile_item(1, "NAND_PAGE_SLC_WRITE_BUSY_TIME");
+	register_profile_item(1, "NAND_PAGE_TLC_WRITE_BUSY_TIME");
+	register_profile_item(1, "NAND_PAGE_SLC_WRITE_DMA_TIME");
+	register_profile_item(1, "NAND_PAGE_TLC_WRITE_DMA_TIME");
+#endif
+
+}
+
+#endif
+
 int mtk_nand_paired_page_transfer(u32 pageNo, bool high_to_low)
 {
 	if (gn_devinfo.vendor != VEND_NONE)
@@ -471,24 +520,18 @@ int mtk_nand_paired_page_transfer(u32 pageNo, bool high_to_low)
 
 void nand_enable_clock(void)
 {
-#ifdef ZION_BRINGUP
-	enable_clock(MT_CG_NFI_SW_CG, "NFI");
-	enable_clock(MT_CG_NFI2X_SW_CG, "NFI");
-	enable_clock(MT_CG_NFI_BUS_SW_CG, "NFI");
-	enable_clock(MT_CG_NFIECC_SW_CG, "NFI");
-#endif	 /*TODO*/
-return;
+	clk_prepare_enable(nfi_cg_nfi);
+	clk_prepare_enable(nfi_cg_nfi1x);
+	clk_prepare_enable(nfi_cg_nfiecc);
+	return;
 }
 
 void nand_disable_clock(void)
 {
-#ifdef ZION_BRINGUP
-	disable_clock(MT_CG_NFI_SW_CG, "NFI");
-	disable_clock(MT_CG_NFI2X_SW_CG, "NFI");
-	disable_clock(MT_CG_NFI_BUS_SW_CG, "NFI");
-	disable_clock(MT_CG_NFIECC_SW_CG, "NFI");
-#endif	 /*TODO*/
-return;
+	clk_disable_unprepare(nfi_cg_nfi);
+	clk_disable_unprepare(nfi_cg_nfi1x);
+	clk_disable_unprepare(nfi_cg_nfiecc);
+	return;
 }
 
 static struct nand_ecclayout nand_oob_16 = {
@@ -522,7 +565,7 @@ struct nand_ecclayout nand_oob_128 = {
 
 static bool use_randomizer = FALSE;
 
-#ifdef DUMP_PEF
+#if 0
 static suseconds_t Cal_timediff(struct timeval *end_time, struct timeval *start_time)
 {
 	struct timeval difference;
@@ -572,6 +615,12 @@ void dump_nand_rwcount(void)
 #endif
 }
 #endif
+
+void dump_record(void)
+{
+
+}
+
 void dump_nfi(void)
 {
 #if __DEBUG_NAND
@@ -1046,10 +1095,10 @@ static void mtk_nand_interface_switch(struct mtd_info *mtd)
 		|| gn_devinfo.iowidth == IO_TOGGLESDR) {
 		if (DDR_INTERFACE == FALSE) {
 			if (mtk_nand_interface_config(mtd)) {
-				MSG(INIT, "[NFI] interface switch sync!!!!\n");
+				pr_info("[NFI] interface switch sync!!!!\n");
 				DDR_INTERFACE = TRUE;
 			} else {
-				MSG(INIT, "[NFI] interface switch fail!!!!\n");
+				pr_info("[NFI] interface switch fail!!!!\n");
 				DDR_INTERFACE = FALSE;
 			}
 		}
@@ -1124,12 +1173,12 @@ u16 u16IntStatus = DRV_Reg16(NFI_INTR_REG16);
 		if (!read_state) {
 			complete(&g_comp_AHB_Done);
 		} else {
-			DRV_WriteReg16(NFI_INTR_EN_REG16, 0);
+			DRV_WriteReg32(NFI_INTR_EN_REG16, 0);
 			mtk_change_colunm_cmd(real_row_addr_for_read, real_col_addr_for_read, data_sector_num_for_read);
 			NFI_CLN_REG16(NFI_CNFG_REG16, CNFG_BYTE_RW);
 			NFI_SET_REG16(NFI_CNFG_REG16, CNFG_DMA_BURST_EN);
 			DRV_Reg16(NFI_INTR_REG16);
-			DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_AHB_DONE_EN);
+			DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_AHB_DONE_EN | INTR_EN);
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 			if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) &&
 				(gn_devinfo.tlcControl.needchangecolumn))
@@ -1141,7 +1190,7 @@ u16 u16IntStatus = DRV_Reg16(NFI_INTR_REG16);
 	}
 	if (u16IntStatus & (u16) INTR_AHB_DONE_EN) {
 		if (!write_state) {
-			DRV_WriteReg16(NFI_INTR_EN_REG16, 0);
+			DRV_WriteReg32(NFI_INTR_EN_REG16, 0 | INTR_EN);
 			complete(&g_comp_read_interrupt);
 		} else {
 			(void)mtk_nand_check_RW_count(gn_devinfo.pagesize);
@@ -1149,14 +1198,14 @@ u16 u16IntStatus = DRV_Reg16(NFI_INTR_REG16);
 			if (host->pre_wb_cmd) {
 				if (host->wb_cmd == NAND_CMD_PAGEPROG) {
 					DRV_Reg16(NFI_INTR_REG16);
-					DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
+					DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN | INTR_EN);
 				}
 				(void)mtk_nand_set_command(host->wb_cmd);
 				if (host->wb_cmd != NAND_CMD_PAGEPROG)
 					complete(&g_comp_AHB_Done);
 			} else {
 				DRV_Reg16(NFI_INTR_REG16);
-				DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
+				DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN | INTR_EN);
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 				if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) &&
 					(gn_devinfo.tlcControl.normaltlc)) {
@@ -1299,14 +1348,14 @@ static void ECC_Config(struct mtk_nand_host_hw *hw, u32 ecc_bit)
 	/* configure ECC decoder && encoder */
 	DRV_WriteReg32(ECC_DECCNFG_REG32,
 			ecc_bit_cfg | DEC_CNFG_NFI | DEC_CNFG_EMPTY_EN | (u4DECODESize <<
-									 DEC_CNFG_CODE_SHIFT)|0x400);
+									 DEC_CNFG_CODE_SHIFT));
 
 	DRV_WriteReg32(ECC_ENCCNFG_REG32,
 			ecc_bit_cfg | ENC_CNFG_NFI | (u4ENCODESize << ENC_CNFG_MSG_SHIFT));
 #ifndef MANUAL_CORRECT
-	NFI_SET_REG32(ECC_DECCNFG_REG32, DEC_CNFG_CORRECT|0x400);
+	NFI_SET_REG32(ECC_DECCNFG_REG32, DEC_CNFG_CORRECT);
 #else
-	NFI_SET_REG32(ECC_DECCNFG_REG32, DEC_CNFG_EL|0x400);
+	NFI_SET_REG32(ECC_DECCNFG_REG32, DEC_CNFG_EL);
 #endif
 }
 
@@ -1895,7 +1944,7 @@ bool mtk_nand_device_reset(void)
 	DRV_WriteReg16(NFI_CNFG_REG16, CNFG_OP_RESET);
 
 	/* remove interrupt mode */
-	DRV_WriteReg16(NFI_INTR_EN_REG16, 0);
+	DRV_WriteReg32(NFI_INTR_EN_REG16, 0 | INTR_EN);
 
 	mtk_nand_set_command(NAND_CMD_RESET);
 
@@ -1947,6 +1996,17 @@ int mtk_nand_interface_async(void)
 	u32 val = 0;
 	struct gFeatureSet *feature_set = &(gn_devinfo.feature_set.FeatureSet);
 
+	/* disable ecc bypass for TLC NAND, SLC NAND only set for async */
+	NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, NFI_BYPASS);
+	NFI_CLN_REG32(ECC_BYPASS_REG32, ECC_BYPASS);
+
+	/* enable fast ecc clk & set PFM improve --- add at L17 project */
+	NFI_SET_REG32(NFI_DEBUG_CON1_REG32, NFI_ECC_CLK_EN);
+	NFI_SET_REG32(NFI_DEBUG_CON1_REG32, (WBUF_EN | AUTOC_HPROT_EN));
+	NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, (HWDCM_SWCON_EN | HWDCM_SWCON_EN_VAL));
+
+	DRV_WriteReg32(NFI_ACCCON_REG32, gn_devinfo.timmingsetting);
+
 	if (DDR_INTERFACE == TRUE) {
 		mtk_nand_GetFeature(NULL, feature_set->gfeatureCmd,
 				feature_set->Interface.address, (u8 *) &val, 4);
@@ -1964,15 +2024,6 @@ int mtk_nand_interface_async(void)
 			DRV_WriteReg16(NFI_NAND_TYPE_CNFG_REG32, 0);
 
 		mb();		/*make sure process order */
-#ifdef ZION_BRINGUP
-		clkmux_sel(MT_CLKMUX_NFI1X_INFRA_SEL, MT_CG_SYS_26M, "NFI");
-#endif
-
-		/* disable ecc bypass for TLC NAND, SLC NAND only set for async */
-		NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, NFI_BYPASS);
-		NFI_CLN_REG32(ECC_BYPASS_REG32, ECC_BYPASS);
-
-		DRV_WriteReg32(NFI_ACCCON_REG32, gn_devinfo.timmingsetting);
 
 		DDR_INTERFACE = FALSE;
 		MSG(INIT, "Disable DDR mode\n");
@@ -1983,39 +2034,14 @@ int mtk_nand_interface_async(void)
 
 static void mtk_nand_switch_sync(bool sync)
 {
-#ifdef ZION_BRINGUP
-	enum cg_clk_id id = MT_CG_MPLL_D8;
-#endif
-
-	/* disable ecc bypass for TLC NAND, SLC NAND only set for async */
-	NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, NFI_BYPASS);
-	NFI_CLN_REG32(ECC_BYPASS_REG32, ECC_BYPASS);
-
 	if (sync) {
-#ifdef ZION_BRINGUP
-		if (gn_devinfo.freq == 80)
-			id = MT_CG_MPLL_D14;
-		else if (gn_devinfo.freq == 100)
-			id = MT_CG_MPLL_D8;
+		clk_disable_unprepare(nfi2x_sel);
+		clk_set_parent(nfi2x_sel, nfi_ddr_src);
+		clk_prepare_enable(nfi2x_sel);
 
-		MSG(INIT, "[%s] - gn_devinfo.freq %d\n", __func__, gn_devinfo.freq);
-
-		disable_clock(MT_CG_NFI_SW_CG, "NFI");
-		mb();   /*make sure process order */
-		disable_clock(MT_CG_NFI2X_SW_CG, "NFI");
-		mb();   /*make sure process order */
-		clkmux_sel(MT_CLKMUX_NFI2X_GFMUX_SEL, id, "NFI");
-		mb();   /*make sure process order */
-		clkmux_sel(MT_CLKMUX_NFI1X_INFRA_SEL, MT_CG_SYS_TEMP, "NFI");
-		mb();   /*make sure process order */
-		enable_clock(MT_CG_NFI2X_SW_CG, "NFI");
-		mb();   /*make sure process order */
-		enable_clock(MT_CG_NFI_SW_CG, "NFI");
-		mb();   /*make sure process order */
-#endif
 		DRV_WriteReg32(NFI_ACCCON1_REG32,  0x01010400);
 		DRV_WriteReg32(NFI_ACCCON_REG32,   0x33418010);
-		DRV_WriteReg32(NFI_DLYCTRL_REG32,  0x00148010);
+		DRV_WriteReg32(NFI_DLYCTRL_REG32,  0x20008031);
 
 		while (0 == (DRV_Reg32(NFI_STA_REG32) && STA_FLASH_MACRO_IDLE))
 			;
@@ -2026,11 +2052,10 @@ static void mtk_nand_switch_sync(bool sync)
 
 		DDR_INTERFACE = TRUE;
 	} else {
-#ifdef ZION_BRINGUP
-		mb();       /*make sure process order */
-		clkmux_sel(MT_CLKMUX_NFI1X_INFRA_SEL, MT_CG_SYS_26M, "NFI");
-		mb();       /*make sure process order */
-#endif
+		clk_disable_unprepare(nfi2x_sel);
+		clk_set_parent(nfi2x_sel, nfi_sdr_src);
+		clk_prepare_enable(nfi2x_sel);
+
 		do {
 			DRV_WriteReg16(NFI_NAND_TYPE_CNFG_REG32, 0);
 		} while (DRV_Reg16(NFI_NAND_TYPE_CNFG_REG32) == 1);
@@ -2046,6 +2071,21 @@ static void mtk_nand_switch_sync(bool sync)
 	MSG(INIT, "%s - NFI_NAND_TYPE_CNFG_REG32 0x%x\n", __func__, DRV_Reg16(NFI_NAND_TYPE_CNFG_REG32));
 }
 
+static void ldo_reset(void)
+{
+	int ret;
+
+	regulator_disable(nfi_reg_vemc_3v3);
+	udelay(2000);
+	regulator_set_voltage(nfi_reg_vemc_3v3, 3300000, 3300000);
+	ret = regulator_enable(nfi_reg_vemc_3v3);
+	if (ret)
+		pr_info("nfi ldo enable fail!!\n");
+	udelay(100);
+	DRV_WriteReg16(NFI_NAND_TYPE_CNFG_REG32, 0);
+	DRV_WriteReg32(NFI_ACCCON_REG32, gn_devinfo.timmingsetting);
+}
+
 static int mtk_nand_interface_config(struct mtd_info *mtd)
 {
 	u32 timeout;
@@ -2053,21 +2093,23 @@ static int mtk_nand_interface_config(struct mtd_info *mtd)
 	int retry = 10;
 	int sretry = 10;
 	struct gFeatureSet *feature_set = &(gn_devinfo.feature_set.FeatureSet);
-#ifdef ZION_BRINGUP
-	enum cg_clk_id id = MT_CG_SYS_26M;
-#endif
 
 	/* disable ecc bypass for TLC NAND, SLC NAND only set for async */
 	NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, NFI_BYPASS);
 	NFI_CLN_REG32(ECC_BYPASS_REG32, ECC_BYPASS);
+
+	/* enable fast ecc clk & set PFM improve --- add at L17 project */
+	NFI_SET_REG32(NFI_DEBUG_CON1_REG32, NFI_ECC_CLK_EN);
+	NFI_SET_REG32(NFI_DEBUG_CON1_REG32, (WBUF_EN | AUTOC_HPROT_EN));
+	NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, (HWDCM_SWCON_EN | HWDCM_SWCON_EN_VAL));
 
 	mtk_nand_GetFeature(mtd, feature_set->gfeatureCmd,
 						feature_set->Interface.address, (u8 *) &val, 4);
 
 	if ((val != feature_set->Interface.feature) &&
 		(val != feature_set->Async_timing.feature)) {
-		pr_debug("[%s] Change mode to toggle first\n", __func__);
-		pr_debug("value %d, regs 0x%x, 0x%x, 0x%x\n", val,
+		pr_info("[%s] Change mode to toggle first\n", __func__);
+		pr_info("value %d, regs 0x%x, 0x%x, 0x%x\n", val,
 			DRV_Reg16(NFI_NAND_TYPE_CNFG_REG32),
 			DRV_Reg32(NFI_ACCCON1_REG32),
 			DRV_Reg32(NFI_ACCCON_REG32));
@@ -2083,19 +2125,15 @@ static int mtk_nand_interface_config(struct mtd_info *mtd)
 						feature_set->Interface.address, (u8 *) &val, 4);
 	if ((val != feature_set->Interface.feature) &&
 		(val != feature_set->Async_timing.feature)) {
-		pr_debug("[%s] LINE %d - value %d (0x%x)\n", __func__, __LINE__,
+		pr_info("[%s] LINE %d - value %d (0x%x)\n", __func__, __LINE__,
 			val, DRV_Reg16(NFI_NAND_TYPE_CNFG_REG32));
 	}
 
 	if (gn_devinfo.iowidth == IO_ONFI || gn_devinfo.iowidth == IO_TOGGLEDDR
 		|| gn_devinfo.iowidth == IO_TOGGLESDR) {
 		do {
-#ifdef ZION_BRINGUP
-			if (gn_devinfo.freq == 80)
-				id = MT_CG_MPLL_D14;
-			else if (gn_devinfo.freq == 100)
-				id = MT_CG_MPLL_D8;
-#endif
+			if (sretry != 10)
+				ldo_reset();
 /*reset*/
 			mtk_nand_device_reset();
 
@@ -2112,34 +2150,15 @@ static int mtk_nand_interface_config(struct mtd_info *mtd)
 						(u8 *) &feature_set->Interface.feature,
 						sizeof(feature_set->Interface.feature));
 
-#ifdef ZION_BRINGUP
-			NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, HWDCM_SWCON_ON);
+			clk_disable_unprepare(nfi2x_sel);
+			clk_set_parent(nfi2x_sel, nfi_ddr_src);
+			clk_prepare_enable(nfi2x_sel);
 
-			/*set infra_sel */
-			disable_clock(MT_CG_NFIECC_SW_CG, "NFI");
-			mb();   /*make sure process order */
-			disable_clock(MT_CG_NFI_SW_CG, "NFI");
-			mb();	/*make sure process order */
-			disable_clock(MT_CG_NFI2X_SW_CG, "NFI");
-			mb();	/*make sure process order */
+			clk_disable_unprepare(nfiecc_sel);
+			clk_set_parent(nfiecc_sel, nfiecc_src);
+			clk_prepare_enable(nfiecc_sel);
 
-			clkmux_sel(MT_CLKMUX_NFI2X_GFMUX_SEL, id, "NFI");
-			mb();	/*make sure process order */
-			clkmux_sel(MT_CLKMUX_NFI1X_INFRA_SEL, MT_CG_SYS_TEMP, "NFI");
-			mb();   /*make sure process order */
-			clkmux_sel(MT_CLKMUX_NFIECC_FGMUX_SEL, MT_CG_MPLL_D5, "NFI");
-			mb();   /*make sure process order */
-
-			enable_clock(MT_CG_NFIECC_SW_CG, "NFI");
-			mb();	/*make sure process order */
-			enable_clock(MT_CG_NFI2X_SW_CG, "NFI");
-			mb();	/*make sure process order */
-			enable_clock(MT_CG_NFI_SW_CG, "NFI");
-			/*enable_clock(MT_CG_MPLL_D7, "NFI"); */
-			mb();	/*make sure process order */
-#endif
-
-			DRV_WriteReg32(NFI_DLYCTRL_REG32, 0x00148010);
+			DRV_WriteReg32(NFI_DLYCTRL_REG32, 0x20008031);
 			val = gn_devinfo.dqs_delay_ctrl + (3 << 24);
 
 
@@ -2169,15 +2188,11 @@ static int mtk_nand_interface_config(struct mtd_info *mtd)
 				timeout--;
 			mtk_nand_reset();
 			DRV_WriteReg16(NFI_NAND_TYPE_CNFG_REG32, 0);
-#ifdef ZION_BRINGUP
-			mb();	/*make sure process order */
-			disable_clock(MT_CG_NFI_SW_CG, "NFI");
-			mb();	/*make sure process order */
-			clkmux_sel(MT_CLKMUX_NFI1X_INFRA_SEL, MT_CG_SYS_26M, "NFI");
-			mb();	/*make sure process order */
-			enable_clock(MT_CG_NFI_SW_CG, "NFI");
-			mb();	/*make sure process order */
-#endif
+
+			clk_disable_unprepare(nfi2x_sel);
+			clk_set_parent(nfi2x_sel, nfi_sdr_src);
+			clk_prepare_enable(nfi2x_sel);
+
 			DRV_WriteReg32(NFI_ACCCON_REG32, gn_devinfo.timmingsetting);
 
 			return 0;
@@ -2254,7 +2269,7 @@ static bool mtk_nand_ready_for_read_intr(struct nand_chip *nand, u32 u4RowAddr, 
 	mtk_nand_set_autoformat(full);
 
 	if (cmd == AD_CACHE_FINAL) {
-		DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
+		DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN | INTR_EN);
 		read_state = TRUE;
 
 		if (!mtk_nand_set_command(0x3F))
@@ -2266,7 +2281,7 @@ static bool mtk_nand_ready_for_read_intr(struct nand_chip *nand, u32 u4RowAddr, 
 		if (!mtk_nand_set_address(col_addr, u4RowAddr, colnob, rownob))
 			goto cleanup;
 
-		DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
+		DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN | INTR_EN);
 		read_state = TRUE;
 
 		if (!mtk_nand_set_command(0x31))
@@ -2284,7 +2299,7 @@ static bool mtk_nand_ready_for_read_intr(struct nand_chip *nand, u32 u4RowAddr, 
 			if (!mtk_nand_status_ready(STA_NAND_BUSY))
 				goto cleanup;
 		} else {
-			DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
+			DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN | INTR_EN);
 			read_state = TRUE;
 
 			if (!mtk_nand_set_command(NAND_CMD_READSTART))
@@ -2325,11 +2340,7 @@ static bool mtk_nand_ready_for_read(struct nand_chip *nand, u32 u4RowAddr, u32 u
 #ifndef CONFIG_MTK_TLC_NAND_SUPPORT
 	u32 phys = 0;
 #endif
-#ifdef DUMP_PEF
-	struct timeval stimer, etimer;
 
-	do_gettimeofday(&stimer);
-#endif
 #ifndef CONFIG_MTK_TLC_NAND_SUPPORT
 	if (full) {
 		mtk_dir = DMA_FROM_DEVICE;
@@ -2420,16 +2431,28 @@ static bool mtk_nand_ready_for_read(struct nand_chip *nand, u32 u4RowAddr, u32 u
 			goto cleanup;
 	}
 
+	PEM_BEGIN();
+
 	if (!mtk_nand_status_ready(STA_NAND_BUSY))
 		goto cleanup;
 
 	bRet = true;
 
 cleanup:
-#ifdef DUMP_PEF
-	do_gettimeofday(&etimer);
-	g_NandPerfLog.ReadBusyTotalTime += Cal_timediff(&etimer, &stimer);
-	g_NandPerfLog.ReadBusyCount++;
+#ifdef __D_PEM__
+	if (g_pf_analysis_page_read) {
+		if (gn_devinfo.tlcControl.slcopmodeEn)
+			PEM_END_OP(NAND_PAGE_SLC_READ_BUSY_TIME);
+		else
+			PEM_END_OP(NAND_PAGE_TLC_READ_BUSY_TIME);
+	} else if (g_pf_analysis_subpage_read) {
+		if (gn_devinfo.tlcControl.slcopmodeEn)
+			PEM_END_OP(NAND_SUBPAGE_SLC_READ_BUSY_TIME);
+		else
+			PEM_END_OP(NAND_SUBPAGE_SLC_READ_BUSY_TIME);
+	} else
+		;
+
 #endif
 	return bRet;
 }
@@ -2496,8 +2519,7 @@ static bool mtk_nand_ready_for_write(struct nand_chip *nand, u32 u4RowAddr, u32 
 		/*T_phys = __virt_to_phys(buf); */
 		if (!phys) {
 			pr_info
-				("[mt65xx_nand_ready_for_write]convert virt addr (%llx) to phys add fail!!!",
-				 (u64) buf);
+				("[mt65xx_nand_ready_for_write]convert virt addr (%p) to phys add fail!!!", buf);
 			return false;
 		}
 		DRV_WriteReg32(NFI_STRADDR_REG32, phys);
@@ -2545,10 +2567,11 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 {
 	struct timeval timer_timeout, timer_cur;
 	u32 dec_mask;
+#if 0
 	u32 decenum;
 	bool bEccHangWAR = FALSE;
 	u8 count = 4;
-
+#endif
 	do_gettimeofday(&timer_timeout);
 
 	timer_timeout.tv_usec += 800 * 1000;	/* 500ms */
@@ -2573,14 +2596,14 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 			return false;
 		}
 	}
-
+#if 0
 	decenum = DRV_Reg32(ECC_DECENUM0_REG32);
 	if (((decenum & 0x000000FF) == 0x7F)            ||
 		(((decenum >> 8) & 0x000000FF) == 0x7F)     ||
 		(((decenum >> 16) & 0x000000FF) == 0x7F)    ||
 		(((decenum >> 24) & 0x000000FF) == 0x7F))
 		bEccHangWAR = TRUE;
-
+#endif
 	while (DRV_Reg32(ECC_DECFSM_REG32) != ECC_DECFSM_IDLE) {
 		do_gettimeofday(&timer_cur);
 		if (timeval_compare(&timer_cur, &timer_timeout) >= 0) {
@@ -2594,11 +2617,10 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 				MSG(INIT, "ECC_DECDONE: timeout but finish job\n");
 				break;
 			}
-			if (!bEccHangWAR)
-				return false;
+			return false;
 		}
 	}
-
+#if 0
 	if (bEccHangWAR) {
 		while (count) {
 			DRV_Reg32(ECC_DECFSM_REG32);
@@ -2621,6 +2643,7 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 			}
 		}
 	}
+#endif
 	return true;
 }
 
@@ -2642,27 +2665,36 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
  ******************************************************************************/
 static bool mtk_nand_dma_read_data(struct mtd_info *mtd, u8 *buf, u32 length)
 {
-	int timeout = 0xFFFF;
-#ifdef DUMP_PEF
-	struct timeval stimer, etimer;
+	struct timeval timer_timeout, timer_cur;
 
-	do_gettimeofday(&stimer);
-#endif
+	int timeout = 0xFFFF;
+	u8 poll_retry = 0;
 
 	NFI_CLN_REG16(NFI_CNFG_REG16, CNFG_BYTE_RW);
 	DRV_Reg16(NFI_INTR_REG16);
 	/* DRV_WriteReg32(NFI_STRADDR_REG32, __virt_to_phys(pDataBuf)); */
-
-	if ((u64)buf % 16) {
+#if 0
+	if ((size_t)buf % 16) {
 		pr_debug("Un-16-aligned address\n");
 		NFI_CLN_REG16(NFI_CNFG_REG16, CNFG_DMA_BURST_EN);
 	} else {
 		NFI_SET_REG16(NFI_CNFG_REG16, CNFG_DMA_BURST_EN);
 	}
-
+#endif
 	NFI_SET_REG16(NFI_CNFG_REG16, CNFG_DMA_BURST_EN);
 
+	PEM_BEGIN();
+
+	/* the max value of EMI bus idle is about 576ms */
+	do_gettimeofday(&timer_timeout);
+	timer_timeout.tv_usec += 600 * 1000;
+	if (timer_timeout.tv_usec >= 1000000) {
+		timer_timeout.tv_usec -= 1000000;
+		timer_timeout.tv_sec += 1;
+	}
+
 	/*dmac_inv_range(pDataBuf, pDataBuf + u4Size); */
+	DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_AHB_DONE_EN);
 	mb();			/*make sure process order */
 	NFI_SET_REG32(NFI_CON_REG32, CON_NFI_BRD | CON_NFI_BWR);
 	g_running_dma = 1;
@@ -2674,33 +2706,66 @@ static bool mtk_nand_dma_read_data(struct mtd_info *mtd, u8 *buf, u32 length)
 
 
 #endif
-#if 0
+
 	while (!DRV_Reg16(NFI_INTR_REG16)) {
-		timeout--;
-		if (timeout == 0) {
-			pr_info("[%s] poll nfi_intr error\n", __func__);
+		do_gettimeofday(&timer_cur);
+		if (timeval_compare(&timer_cur, &timer_timeout) >= 0) {
+			pr_info("[%s]poll intr to: %d (sec %d, usec %d)\n", __func__, poll_retry,
+				(u32)(timer_cur.tv_sec - timer_timeout.tv_sec),
+				(u32)(timer_cur.tv_usec - timer_timeout.tv_usec));
 			dump_nfi();
-			g_running_dma = 0;
-			return false;	/*4 AHB Mode Time Out! */
+			if (poll_retry < 4) {
+				/* wait for EMI bus idle, usually under 1ms */
+				/* In seldom cases, the longest time need 576ms */
+				do_gettimeofday(&timer_timeout);
+				timer_timeout.tv_usec += 600 * 1000;
+				if (timer_timeout.tv_usec >= 1000000) {
+					timer_timeout.tv_usec -= 1000000;
+					timer_timeout.tv_sec += 1;
+				}
+			} else {
+				dump_nfi();
+				ASSERT(0);
+				g_running_dma = 0;
+				return false; /*4 AHB Mode Time Out! */
+			}
 		}
 	}
-#endif
+
 	g_running_dma = 0;
 	while ((length >> host->hw->nand_sec_shift) >
 		((DRV_Reg32(NFI_BYTELEN_REG32) & 0x1f000) >> 12)) {
 		timeout--;
 		if (timeout == 0) {
-			pr_info("[%s] poll BYTELEN error\n", __func__);
+			pr_info("[%s]poll BLEN to\n", __func__);
 			dump_nfi();
 			g_running_dma = 0;
 			return false;	/*4 AHB Mode Time Out! */
 		}
 	}
 
-#ifdef DUMP_PEF
-	do_gettimeofday(&etimer);
-	g_NandPerfLog.ReadDMATotalTime += Cal_timediff(&etimer, &stimer);
-	g_NandPerfLog.ReadDMACount++;
+	while ((DRV_Reg32(NFI_MASTERSTA_REG32) & 0x3) != 0) {
+		timeout--;
+		if (timeout == 0) {
+			pr_info("[%s]poll MSTSTA to\n", __func__);
+			dump_nfi();
+			g_running_dma = 0;
+			return false;   /*4 AHB Mode Time Out! */
+		}
+	}
+#ifdef __D_PEM__
+	if (g_pf_analysis_page_read) {
+		if (gn_devinfo.tlcControl.slcopmodeEn)
+			PEM_END_OP(NAND_PAGE_SLC_READ_DMA_TIME);
+		else
+			PEM_END_OP(NAND_PAGE_TLC_READ_DMA_TIME);
+	} else if (g_pf_analysis_subpage_read) {
+		if (gn_devinfo.tlcControl.slcopmodeEn)
+			PEM_END_OP(NAND_SUBPAGE_SLC_READ_DMA_TIME);
+		else
+			PEM_END_OP(NAND_SUBPAGE_SLC_READ_DMA_TIME);
+	} else
+		;
 #endif
 	return true;
 }
@@ -2715,7 +2780,7 @@ static bool mtk_nand_mcu_read_data(u8 *buf, u32 length)
 
 	time1 = sched_clock();
 #endif
-	if ((u64) buf % 4 || length % 4)
+	if ((size_t)buf % 4 || length % 4)
 		NFI_SET_REG16(NFI_CNFG_REG16, CNFG_BYTE_RW);
 	else
 		NFI_CLN_REG16(NFI_CNFG_REG16, CNFG_BYTE_RW);
@@ -2724,7 +2789,7 @@ static bool mtk_nand_mcu_read_data(u8 *buf, u32 length)
 	mb();			/*make sure process order */
 	NFI_SET_REG32(NFI_CON_REG32, CON_NFI_BRD | CON_NFI_BWR);
 
-	if ((u64) buf % 4 || length % 4) {
+	if ((size_t)buf % 4 || length % 4) {
 		for (i = 0; (i < (length)) && (timeout > 0);) {
 			/*if (FIFO_RD_REMAIN(DRV_Reg16(NFI_FIFOSTA_REG16)) >= 4) */
 			if (DRV_Reg16(NFI_PIO_DIRDY_REG16) & 1) {
@@ -2793,23 +2858,13 @@ static bool mtk_nand_dma_write_data(struct mtd_info *mtd, u8 *pDataBuf, u32 u4Si
 {
 	int i4Interrupt = g_i4Interrupt;
 	u32 timeout = 0xFFFF;
-#ifdef DUMP_PEF
-	struct timeval stimer, etimer;
-
-	do_gettimeofday(&stimer);
-#endif
-#ifdef ZION_BRINGUP
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-	u32 reg_val;
-#endif
-#endif
 
 	NFI_CLN_REG16(NFI_CNFG_REG16, CNFG_BYTE_RW);
 	DRV_Reg16(NFI_INTR_REG16);
-	DRV_WriteReg16(NFI_INTR_EN_REG16, 0);
+	DRV_WriteReg32(NFI_INTR_EN_REG16, 0);
 	/* DRV_WriteReg32(NFI_STRADDR_REG32, (u32 *)virt_to_phys(pDataBuf)); */
 
-	if ((u64)pDataBuf % 16) {	/* TODO: can not use AHB mode here */
+	if ((size_t)pDataBuf % 16) {	/* TODO: can not use AHB mode here */
 		pr_debug("Un-16-aligned address\n");
 		NFI_CLN_REG16(NFI_CNFG_REG16, CNFG_DMA_BURST_EN);
 	} else {
@@ -2821,18 +2876,14 @@ static bool mtk_nand_dma_write_data(struct mtd_info *mtd, u8 *pDataBuf, u32 u4Si
 	if (i4Interrupt) {
 		init_completion(&g_comp_AHB_Done);
 		DRV_Reg16(NFI_INTR_REG16);
-		DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_AHB_DONE_EN);
+		DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_AHB_DONE_EN | INTR_EN);
 	}
 
-#ifdef ZION_BRINGUP
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
-		reg_val = DRV_Reg16(NFI_DEBUG_CON1_REG32);
-		reg_val |= 0x4000;
-		DRV_WriteReg16(NFI_DEBUG_CON1_REG32, reg_val);
-	}
-#endif
-#endif
+	/* Set CE_HOLD to low when data program */
+	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+		NFI_SET_REG32(NFI_DEBUG_CON1_REG32, REG_CE_HOLD);
+
+	PEM_BEGIN();
 
 	/*dmac_clean_range(pDataBuf, pDataBuf + u4Size); */
 	mb();			/*make sure process order */
@@ -2870,11 +2921,11 @@ static bool mtk_nand_dma_write_data(struct mtd_info *mtd, u8 *pDataBuf, u32 u4Si
 		g_running_dma = 0;
 	}
 
-#ifdef DUMP_PEF
-	do_gettimeofday(&etimer);
-	g_NandPerfLog.WriteDMATotalTime += Cal_timediff(&etimer, &stimer);
-	g_NandPerfLog.WriteDMACount++;
-#endif
+	if (gn_devinfo.tlcControl.slcopmodeEn)
+		PEM_END_OP(NAND_PAGE_SLC_WRITE_DMA_TIME);
+	else
+		PEM_END_OP(NAND_PAGE_TLC_WRITE_DMA_TIME);
+
 	return true;
 }
 
@@ -2889,12 +2940,12 @@ static bool mtk_nand_mcu_write_data(struct mtd_info *mtd, const u8 *buf, u32 len
 	NFI_SET_REG32(NFI_CON_REG32, CON_NFI_BRD | CON_NFI_BWR);
 	pBuf32 = (u32 *) buf;
 
-	if ((u64) buf % 4 || length % 4)
+	if ((size_t)buf % 4 || length % 4)
 		NFI_SET_REG16(NFI_CNFG_REG16, CNFG_BYTE_RW);
 	else
 		NFI_CLN_REG16(NFI_CNFG_REG16, CNFG_BYTE_RW);
 
-	if ((u64) buf % 4 || length % 4) {
+	if ((size_t)buf % 4 || length % 4) {
 		for (i = 0; (i < (length)) && (timeout > 0);) {
 			if (DRV_Reg16(NFI_PIO_DIRDY_REG16) & 1) {
 				DRV_WriteReg32(NFI_DATAW_REG32, *buf++);
@@ -3066,7 +3117,7 @@ static void mtk_nand_stop_read(void)
 	if (g_bHwEcc)
 		ECC_Decode_End();
 
-	DRV_WriteReg16(NFI_INTR_EN_REG16, 0);
+	DRV_WriteReg32(NFI_INTR_EN_REG16, 0 | INTR_EN);
 }
 
 /******************************************************************************
@@ -3087,26 +3138,15 @@ static void mtk_nand_stop_read(void)
  ******************************************************************************/
 static void mtk_nand_stop_write(void)
 {
-#ifdef ZION_BRINGUP
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-	u32 reg_val;
-#endif
-#endif
 	NFI_CLN_REG32(NFI_CON_REG32, CON_NFI_BRD | CON_NFI_BWR);
 	if (g_bHwEcc)
 		ECC_Encode_End();
 
-	DRV_WriteReg16(NFI_INTR_EN_REG16, 0);
+	DRV_WriteReg32(NFI_INTR_EN_REG16, 0);
 
-#ifdef ZION_BRINGUP
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
-		reg_val = DRV_Reg16(NFI_DEBUG_CON1_REG32);
-		reg_val &= (~0x4000);
-		DRV_WriteReg16(NFI_DEBUG_CON1_REG32, reg_val);
-}
-#endif
-#endif
+	/* Set CE_HOLD to low when data program */
+	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+		NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, REG_CE_HOLD);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -3277,10 +3317,11 @@ static void mtk_nand_set_async(struct mtk_nand_host *host)
 	NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, NFI_BYPASS);
 	NFI_CLN_REG32(ECC_BYPASS_REG32, ECC_BYPASS);
 
-#ifdef ZION_BRINGUP
-	mb();		/*make sure process order */
-	clkmux_sel(MT_CLKMUX_NFI1X_INFRA_SEL, MT_CG_SYS_26M, "NFI");
-#endif
+	/* enable fast ecc clk & set PFM improve --- add at L17 project */
+	NFI_SET_REG32(NFI_DEBUG_CON1_REG32, NFI_ECC_CLK_EN);
+	NFI_SET_REG32(NFI_DEBUG_CON1_REG32, (WBUF_EN | AUTOC_HPROT_EN));
+	NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, (HWDCM_SWCON_EN | HWDCM_SWCON_EN_VAL));
+
 	DRV_WriteReg32(NFI_ACCCON_REG32, 0x31C083F9);
 
 	DDR_INTERFACE = FALSE;
@@ -3372,7 +3413,7 @@ int mtk_nand_exec_read_page_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4Pa
 	tempBitMap = 0;
 	mtk_nand_reset();
 
-	if (((u64) pPageBuf % 16) && local_buffer_16_align)
+	if (((size_t)pPageBuf % 16) && local_buffer_16_align)
 		buf = local_buffer_16_align;
 	else {
 		if (virt_addr_valid(pPageBuf) == 0)
@@ -3383,7 +3424,8 @@ int mtk_nand_exec_read_page_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4Pa
 	if (g_i4InterruptRdDMA) {
 		init_completion(&g_comp_read_interrupt);
 		DRV_Reg16(NFI_INTR_REG16);
-	}
+	} else
+		NFI_CLN_REG32(NFI_INTR_EN_REG16, INTR_EN);
 
 	backup_corrected = mtd->ecc_stats.corrected;
 	backup_failed = mtd->ecc_stats.failed;
@@ -3809,7 +3851,7 @@ int mtk_nand_exec_read_sector_single(struct mtd_info *mtd, u32 u4RowAddr, u32 u4
 
 	mtk_nand_reset();
 
-	if (((u64) pPageBuf % 16) && local_buffer_16_align)
+	if (((size_t)pPageBuf % 16) && local_buffer_16_align)
 		buf = local_buffer_16_align;
 	else {
 		if (virt_addr_valid(pPageBuf) == 0)
@@ -4271,9 +4313,7 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 	struct timeval pl_time_write;
 	suseconds_t duration;
 #endif
-#ifdef DUMP_PEF
-	struct timeval stimer, etimer;
-#endif
+
 	struct NFI_TLC_WL_INFO  tlc_wl_info;
 	u32 reg_val;
 	u32 real_row_addr = 0;
@@ -4309,10 +4349,6 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 		}
 	}
 
-#if 1 /* ONLY_FOR_FPGA */
-	if ((DRV_Reg32(NFI_NAND_TYPE_CNFG_REG32) & 1) == 1)
-		DRV_WriteReg32(NFI_DQS_HIGH_SET, 0x80000000);
-#endif
 	tlc_wl_info.wl_pre = WL_LOW_PAGE; /* avoid compile warning */
 	tlc_wl_info.word_line_idx = u4RowAddr;
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
@@ -4446,14 +4482,12 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 			} else
 				(void)mtk_nand_set_command(NAND_CMD_PAGEPROG);
 
+			PEM_BEGIN();
 			PL_NAND_RESET_P();
 			while (DRV_Reg32(NFI_STA_REG32) & STA_NAND_BUSY)
 				;
 		}
 
-#ifdef DUMP_PEF
-		do_gettimeofday(&stimer);
-#endif
 		if (g_i4Interrupt) {
 			if (!wait_for_completion_timeout(&g_comp_AHB_Done, 10)) {
 				while (DRV_Reg32(NFI_STA_REG32) & STA_NAND_BUSY)
@@ -4469,20 +4503,15 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 				;
 		}
 
+		if (gn_devinfo.tlcControl.slcopmodeEn)
+			PEM_END_OP(NAND_PAGE_SLC_WRITE_BUSY_TIME);
+		else
+			PEM_END_OP(NAND_PAGE_TLC_WRITE_BUSY_TIME);
+
 		g_running_dma = 0;
 		dma_unmap_sg(mtk_dev, &mtk_sg, 1, mtk_dir);
 		write_state = FALSE;
 
-#ifdef DUMP_PEF
-		do_gettimeofday(&etimer);
-		g_NandPerfLog.WriteBusyTotalTime += Cal_timediff(&etimer, &stimer);
-		g_NandPerfLog.WriteBusyCount++;
-#endif
-
-#if 1 /* ONLY_FOR_FPGA */
-		if ((DRV_Reg32(NFI_NAND_TYPE_CNFG_REG32) & 1) == 1)
-			DRV_WriteReg32(NFI_DQS_HIGH_SET, 0x00000000);
-#endif
 	PL_NAND_END(pl_time_write, duration);
 	PL_TIME_PROG(700);
 	if (use_randomizer && u4RowAddr >= RAND_START_ADDR)
@@ -4601,11 +4630,6 @@ static int mtk_nand_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 	u32 page_in_block;
 	u32 mapped_block;
 	u32 row_addr;
-#ifdef DUMP_PEF
-	struct timeval stimer, etimer;
-
-	do_gettimeofday(&stimer);
-#endif
 
 	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
 	/*pr_info("[WRITE] %d, %d, %d %d\n", mapped_block, block, page_in_block, page_per_block);*/
@@ -4635,12 +4659,6 @@ static int mtk_nand_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 
 	PFM_END_OP(RAW_PART_SLC_WRITE, mtd->writesize);
 
-#ifdef DUMP_PEF
-	do_gettimeofday(&etimer);
-	g_NandPerfLog.WritePageTotalTime += Cal_timediff(&etimer, &stimer);
-	g_NandPerfLog.WritePageCount++;
-	dump_nand_rwcount();
-#endif
 	return 0;
 }
 
@@ -4745,11 +4763,19 @@ static void mtk_nand_command_bp(struct mtd_info *mtd, unsigned int command, int 
 	  break;
 
 	case NAND_CMD_ERASE2:
-		init_completion(&g_comp_AHB_Done);
-		DRV_Reg16(NFI_INTR_REG16);
-		DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
-	  (void)mtk_nand_set_command(NAND_CMD_ERASE2);
-		if (!wait_for_completion_timeout(&g_comp_AHB_Done, 5)) {
+		if (g_i4Interrupt) {
+			init_completion(&g_comp_AHB_Done);
+			DRV_Reg16(NFI_INTR_REG16);
+			DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN | INTR_EN);
+		}
+		(void)mtk_nand_set_command(NAND_CMD_ERASE2);
+		if (g_i4Interrupt) {
+			if (!wait_for_completion_timeout(&g_comp_AHB_Done, 5)) {
+				while (DRV_Reg32(NFI_STA_REG32) & STA_NAND_BUSY)
+					;
+			}
+			DRV_WriteReg32(NFI_INTR_EN_REG16, 0);
+		} else {
 			while (DRV_Reg32(NFI_STA_REG32) & STA_NAND_BUSY)
 				;
 		}
@@ -5270,7 +5296,7 @@ static int mtk_nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip
  * Read a page to a logical address
  *
  *****************************************************************************/
-static int mtk_nand_read_page(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf, int page)
+int mtk_nand_read_page(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf, int page)
 {
 	int page_per_block = gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize;
 	u32 block;
@@ -5278,17 +5304,15 @@ static int mtk_nand_read_page(struct mtd_info *mtd, struct nand_chip *chip, u8 *
 	u32 mapped_block;
 	u32 row_addr;
 	int bRet = ERR_RTN_SUCCESS;
-#ifdef DUMP_PEF
-	struct timeval stimer, etimer;
 
-	do_gettimeofday(&stimer);
-#endif
 	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
+	/*pr_info("[READ] %d, %d, %d %d\n", mapped_block, block, page_in_block, page_per_block);*/
 	row_addr = page_in_block + mapped_block * page_per_block;
 
 	if (gn_devinfo.two_phyplane)
 		row_addr = page_in_block + (mapped_block << 1) * page_per_block;
 
+	PEM_PAGE_EN(TRUE);
 	PFM_BEGIN();
 
 	bRet =
@@ -5296,14 +5320,9 @@ static int mtk_nand_read_page(struct mtd_info *mtd, struct nand_chip *chip, u8 *
 					mtd->writesize, buf, chip->oob_poi);
 
 	PFM_END_OP(RAW_PART_READ, mtd->writesize);
+	PEM_PAGE_EN(FALSE);
 
 	if (bRet == ERR_RTN_SUCCESS) {
-#ifdef DUMP_PEF
-		do_gettimeofday(&etimer);
-		g_NandPerfLog.ReadPageTotalTime += Cal_timediff(&etimer, &stimer);
-		g_NandPerfLog.ReadPageCount++;
-		dump_nand_rwcount();
-#endif
 #ifdef CFG_SNAND_ACCESS_PATTERN_LOGGER
 		if (g_snand_pm_on == 1)
 			mtk_snand_pm_add_drv_record(_SNAND_PM_OP_READ_PAGE,
@@ -5330,11 +5349,6 @@ static int mtk_nand_read_subpage(struct mtd_info *mtd, struct nand_chip *chip, u
 	int sec_num = 1<<(chip->page_shift - host->hw->nand_sec_shift);
 	int spare_per_sector = mtd->oobsize / sec_num;
 	u32 row_addr;
-#ifdef DUMP_PEF
-	struct timeval stimer, etimer;
-
-	do_gettimeofday(&stimer);
-#endif
 
 	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
 	coladdr = subpage * (gn_devinfo.sectorsize + spare_per_sector);
@@ -5342,6 +5356,7 @@ static int mtk_nand_read_subpage(struct mtd_info *mtd, struct nand_chip *chip, u
 	if (gn_devinfo.two_phyplane)
 		row_addr = page_in_block + (mapped_block << 1) * page_per_block;
 
+	PEM_SUBPAGE_EN(TRUE);
 	PFM_BEGIN();
 
 	bRet =
@@ -5350,14 +5365,9 @@ static int mtk_nand_read_subpage(struct mtd_info *mtd, struct nand_chip *chip, u
 					  subpageno);
 
 	PFM_END_OP(RAW_PART_READ_SECTOR, gn_devinfo.sectorsize * subpageno);
+	PEM_SUBPAGE_EN(FALSE);
 
 	if (bRet == ERR_RTN_SUCCESS) {
-#ifdef DUMP_PEF
-		do_gettimeofday(&etimer);
-		g_NandPerfLog.ReadSubPageTotalTime += Cal_timediff(&etimer, &stimer);
-		g_NandPerfLog.ReadSubPageCount++;
-		dump_nand_rwcount();
-#endif
 #ifdef CFG_SNAND_ACCESS_PATTERN_LOGGER
 		if (g_snand_pm_on == 1)
 			mtk_snand_pm_add_drv_record(_SNAND_PM_OP_READ_SEC,
@@ -5705,11 +5715,6 @@ static int mtk_nand_erase(struct mtd_info *mtd, int page)
 	u32 page_in_block;
 	u32 mapped_block;
 	bool erase_fail = FALSE;
-#ifdef DUMP_PEF
-	struct timeval stimer, etimer;
-
-	do_gettimeofday(&stimer);
-#endif
 
 	PFM_BEGIN();
 
@@ -5747,13 +5752,6 @@ static int mtk_nand_erase(struct mtd_info *mtd, int page)
 	}
 
 	PFM_END_OP(RAW_PART_ERASE, 0);
-
-#ifdef DUMP_PEF
-	do_gettimeofday(&etimer);
-	g_NandPerfLog.EraseBlockTotalTime += Cal_timediff(&etimer, &stimer);
-	g_NandPerfLog.EraseBlockCount++;
-	dump_nand_rwcount();
-#endif
 #ifdef CFG_SNAND_ACCESS_PATTERN_LOGGER
 	if (g_snand_pm_on == 1)
 		mtk_snand_pm_add_drv_record(_SNAND_PM_OP_ERASE,
@@ -6949,10 +6947,9 @@ static void mtk_nand_init_hw(struct mtk_nand_host *host)
 	DRV_Reg16(NFI_INTR_REG16);
 
 	/* Interrupt arise when read data or program data to/from AHB is done. */
-	DRV_WriteReg16(NFI_INTR_EN_REG16, 0);
-	/* Enable automatic disable ECC clock when NFI is busy state */
-	DRV_WriteReg16(NFI_DEBUG_CON1_REG32, (WBUF_EN|HWDCM_SWCON_ON));
+	DRV_WriteReg32(NFI_INTR_EN_REG16, 0 | INTR_EN);
 	DRV_WriteReg16(NFI_NAND_TYPE_CNFG_REG32, 0);
+
 
 #ifdef CONFIG_PM
 	host->saved_para.suspend_flag = 0;
@@ -7018,17 +7015,54 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	u32 sector_size = NAND_SECTOR_SIZE;
 	u64 temp;
 
+	if (!pdev->dev.of_node) {
+		dev_info(&pdev->dev, "No DT found\n");
+		return -EINVAL;
+	}
+
 	mtk_nand_initialise_globals();
 
-#ifdef ZION_BRINGUP
-	MSG(INIT, "Enable NFI and NFIECC Clock\n");
-	enable_clock(MT_CG_NFI_BUS_SW_CG, "NFI");
-	enable_clock(MT_CG_NFI_SW_CG, "NFI");
-	enable_clock(MT_CG_NFI2X_SW_CG, "NFI");
-	enable_clock(MT_CG_NFIECC_SW_CG, "NFI");
-	clkmux_sel(MT_CLKMUX_NFIECC_FGMUX_SEL, MT_CG_MPLL_D5, "NFI");
-	clkmux_sel(MT_CLKMUX_NFI1X_INFRA_SEL, MT_CG_SYS_26M, "NFI");
-#endif
+	nfi2x_sel = devm_clk_get(&pdev->dev, "nfi2x_sel");
+	if (IS_ERR(nfi2x_sel))
+		dev_info(&pdev->dev, "can't get nfi2x_sel clk !\n");
+
+	nfiecc_sel = devm_clk_get(&pdev->dev, "nfiecc_sel");
+	if (IS_ERR(nfiecc_sel))
+		dev_info(&pdev->dev, "can't get nfiecc_sel clk !\n");
+
+	nfiecc_src = devm_clk_get(&pdev->dev, "syspll_d5");
+	if (IS_ERR(nfiecc_src))
+		dev_info(&pdev->dev, "can't get nfiecc_src clk !\n");
+
+	nfi_sdr_src = devm_clk_get(&pdev->dev, "syspll_d3");
+	if (IS_ERR(nfi_sdr_src))
+		dev_info(&pdev->dev, "can't get nfi_sdr_src clk !\n");
+
+	nfi_ddr_src = devm_clk_get(&pdev->dev, "syspll_d7");
+	if (IS_ERR(nfi_ddr_src))
+		dev_info(&pdev->dev, "can't get nfi_ddr_src clk !\n");
+
+	nfi_cg_nfi = devm_clk_get(&pdev->dev, "infra_nfi");
+	if (IS_ERR(nfi_cg_nfi))
+		dev_info(&pdev->dev, "can't get nfi_cg_nfi clk !\n");
+
+	nfi_cg_nfi1x = devm_clk_get(&pdev->dev, "infra_nfi_1x");
+	if (IS_ERR(nfi_cg_nfi1x))
+		dev_info(&pdev->dev, "can't get nfi_cg_nfi1x clk !\n");
+
+	nfi_cg_nfiecc = devm_clk_get(&pdev->dev, "infra_nfiecc");
+	if (IS_ERR(nfi_cg_nfiecc))
+		dev_info(&pdev->dev, "can't get nfi_cg_nfiecc clk !\n");
+
+	clk_prepare_enable(nfi2x_sel);
+	clk_set_parent(nfi2x_sel, nfi_sdr_src);
+
+	clk_prepare_enable(nfiecc_sel);
+	clk_set_parent(nfiecc_sel, nfiecc_src);
+
+	clk_prepare_enable(nfi_cg_nfi);
+	clk_prepare_enable(nfi_cg_nfi1x);
+	clk_prepare_enable(nfi_cg_nfiecc);
 
 	mtk_nfi_node = of_find_compatible_node(NULL, NULL, "mediatek,nfi");
 	mtk_nfi_base = of_iomap(mtk_nfi_node, 0);
@@ -7041,15 +7075,32 @@ static int mtk_nand_probe(struct platform_device *pdev)
 		MSG(INIT, "of_iomap for nfiecc base @ 0x%p\n", mtk_nfiecc_base);
 	}
 	if (mtk_io_node == NULL) {
-		mtk_io_node = of_find_compatible_node(NULL, NULL, "mediatek,IOCFG_B");
+		mtk_io_node = of_find_compatible_node(NULL, NULL, "mediatek,gpio");
 		mtk_io_base = of_iomap(mtk_io_node, 0);
 		MSG(INIT, "of_iomap for io base @ 0x%p\n", mtk_io_base);
 	}
+
+	if (mtk_io_cfg0_node == NULL) {
+		mtk_io_cfg0_node = of_find_compatible_node(NULL, NULL, "mediatek,io_cfg_lt");
+		mtk_io_cfg0_base = of_iomap(mtk_io_cfg0_node, 0);
+		MSG(INIT, "of_iomap for io cfg0 base @ 0x%p\n", mtk_io_cfg0_base);
+	}
+
+	if (mtk_topckgen_node == NULL) {
+		mtk_topckgen_node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
+		mtk_topckgen_base = of_iomap(mtk_topckgen_node, 0);
+		MSG(INIT, "of_iomap for io topckgen base @ 0x%p\n", mtk_topckgen_base);
+	}
+
 	mtk_pm_node = of_find_compatible_node(NULL, NULL,
 		"mediatek,mt_pmic_regulator_supply");
 	if (nfi_reg_vemc_3v3 == NULL)
-		nfi_reg_vemc_3v3 = regulator_get(&(pdev->dev), "vemc3v3");
+		nfi_reg_vemc_3v3 = regulator_get(&(pdev->dev), "vemc");
 	nfi_irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
+
+	#define MT_CLKMUX_NFI_INFRA_SEL     (mtk_topckgen_base+0x00B0)
+
+	MSG(INIT, "MT_CLKMUX_NFI_INFRA_SEL 0x%x\n", DRV_Reg32(MT_CLKMUX_NFI_INFRA_SEL));
 
 	hw = &mtk_nand_hw;
 	if (!hw) {
@@ -7144,7 +7195,7 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	 * Reset the chip, required by some chips (e.g. Micron MT29FxGxxxxx)
 	 * after power-up
 	 */
-
+	MSG(INIT, "MT_CLKMUX_NFI_INFRA_SEL 0x%x\n", DRV_Reg32(MT_CLKMUX_NFI_INFRA_SEL));
 	DDR_INTERFACE = FALSE;
 	mtk_nand_device_reset();
 	DRV_WriteReg16(NFI_CNRNB_REG16, 0xF1);
@@ -7389,7 +7440,6 @@ unsigned long long suspend_clk;
 static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	/* backup register */
-#ifdef ZION_BRINGUP
 /* #ifdef CONFIG_PM */
 
 	if (host->saved_para.suspend_flag == 0) {
@@ -7399,15 +7449,16 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 		host->saved_para.sNFI_PAGEFMT_REG16 = DRV_Reg32(NFI_PAGEFMT_REG32);
 		host->saved_para.sNFI_CON_REG32 = DRV_Reg32(NFI_CON_REG32);
 		host->saved_para.sNFI_ACCCON_REG32 = DRV_Reg32(NFI_ACCCON_REG32);
-		host->saved_para.sNFI_INTR_EN_REG16 = DRV_Reg16(NFI_INTR_EN_REG16);
+		host->saved_para.sNFI_INTR_EN_REG32 = DRV_Reg32(NFI_INTR_EN_REG16);
 		host->saved_para.sNFI_IOCON_REG16 = DRV_Reg16(NFI_IOCON_REG16);
 		host->saved_para.sNFI_CSEL_REG16 = DRV_Reg16(NFI_CSEL_REG16);
 		host->saved_para.sNFI_DEBUG_CON1_REG16 = DRV_Reg32(NFI_DEBUG_CON1_REG32);
 
 		/* save ECC register */
 		host->saved_para.sECC_ENCCNFG_REG32 = DRV_Reg32(ECC_ENCCNFG_REG32);
-		host->saved_para.sECC_DECCNFG_REG32 = (DRV_Reg32(ECC_DECCNFG_REG32) | 0x400);
-
+		host->saved_para.sECC_DECCNFG_REG32 = DRV_Reg32(ECC_DECCNFG_REG32);
+		/* prevent irq happen*/
+		NFI_CLN_REG32(NFI_INTR_EN_REG16, INTR_EN);
 		host->saved_para.suspend_flag = 1;
 		mtk_nand_interface_async();
 		nand_disable_clock();
@@ -7416,9 +7467,7 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 	} else
 		MSG(POWERCTL, "[NFI] Suspend twice !\n");
 
-#endif
-
-	  MSG(POWERCTL, "[NFI] Suspend !\n");
+	  pr_info("[NFI] Suspend! !\n");
 	  return 0;
 }
 
@@ -7440,12 +7489,14 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
  ******************************************************************************/
 static int mtk_nand_resume(struct platform_device *pdev)
 {
-#ifdef ZION_BRINGUP
 /* #ifdef CONFIG_PM */
 	int ret = 0;
 	unsigned long long clk = sched_clock();
 
 	if (host->saved_para.suspend_flag == 1) {
+
+		regulator_set_voltage(nfi_reg_vemc_3v3, 3300000, 3300000);
+		ret = regulator_enable(nfi_reg_vemc_3v3);
 		if ((clk - suspend_clk) < 1500000) {
 			clk = 1500000 - (clk - suspend_clk);
 			do_div(clk, 1000);
@@ -7453,8 +7504,6 @@ static int mtk_nand_resume(struct platform_device *pdev)
 			udelay(clk);
 		}
 
-		regulator_set_voltage(nfi_reg_vemc_3v3, 3300000, 3300000);
-		ret = regulator_enable(nfi_reg_vemc_3v3);
 		if (ret)
 			pr_info("nfi ldo enable fail!!\n");
 		nand_enable_clock();
@@ -7484,32 +7533,19 @@ static int mtk_nand_resume(struct platform_device *pdev)
 		/* Initialize interrupt. Clear interrupt, read clear. */
 		DRV_Reg16(NFI_INTR_REG16);
 
-		DRV_WriteReg16(NFI_INTR_EN_REG16, host->saved_para.sNFI_INTR_EN_REG16);
+		DRV_WriteReg32(NFI_INTR_EN_REG16, host->saved_para.sNFI_INTR_EN_REG32);
 		mtk_nand_device_reset();
+		/* Set NFI & device interface to async */
 		mtk_nand_interface_async();
 		(void)mtk_nand_reset();
 		DRV_WriteReg16(NFI_NAND_TYPE_CNFG_REG32, 0);
-		mb();	/*make sure process order */
-		disable_clock(MT_CG_NFI_SW_CG, "NFI");
-		mb();	/*make sure process order */
-		clkmux_sel(MT_CLKMUX_NFI1X_INFRA_SEL, MT_CG_SYS_26M, "NFI");
-		mb();	/*make sure process order */
-		enable_clock(MT_CG_NFI_SW_CG, "NFI");
-		mb();	/*make sure process order */
-
-		/* disable ecc bypass for TLC NAND, SLC NAND only set for async */
-		NFI_CLN_REG32(NFI_DEBUG_CON1_REG32, NFI_BYPASS);
-		NFI_CLN_REG32(ECC_BYPASS_REG32, ECC_BYPASS);
-
-		DRV_WriteReg32(NFI_ACCCON_REG32, gn_devinfo.timmingsetting);
-
+		clk_set_parent(nfi2x_sel, nfi_sdr_src);
 		nand_disable_clock();
 		host->saved_para.suspend_flag = 0;
 	} else {
 		pr_info("[NFI] Resume twice !\n");
 	}
-#endif
-	pr_debug("[NFI] Resume !\n");
+	pr_info("[NFI]Resume !!!!!!!!!!!!!!!!!!!!!\n");
 	return 0;
 }
 
@@ -7980,6 +8016,9 @@ static int __init mtk_nand_init(void)
 #endif
 
 	mtk_nand_fs_init();
+#if defined(__D_PEM__) || defined(__D_PFM__)
+	init_profile_system();
+#endif
 
 	return platform_driver_register(&mtk_nand_driver);
 }
@@ -8547,12 +8586,9 @@ int mtk_nand_read(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf, int pag
 	u32 mapped_block;
 	u32 ecc_stat = mtd->ecc_stats.corrected;
 	int bRet = ERR_RTN_SUCCESS;
-#ifdef DUMP_PEF
-	struct timeval stimer, etimer;
 
-	do_gettimeofday(&stimer);
-#endif
 	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
+	PEM_PAGE_EN(TRUE);
 	PFM_BEGIN();
 
 	if (g_i4InterruptRdDMA) {
@@ -8563,14 +8599,8 @@ int mtk_nand_read(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf, int pag
 						mtd->writesize, buf, chip->oob_poi, size);
 	}
 	PFM_END_OP(RAW_PART_READ_CACHE, size);
-
+	PEM_PAGE_EN(FALSE);
 	if (bRet == ERR_RTN_SUCCESS) {
-#ifdef DUMP_PEF
-		do_gettimeofday(&etimer);
-		g_NandPerfLog.ReadPageTotalTime += Cal_timediff(&etimer, &stimer);
-		g_NandPerfLog.ReadPageCount++;
-		dump_nand_rwcount();
-#endif
 #ifdef CFG_SNAND_ACCESS_PATTERN_LOGGER
 		if (g_snand_pm_on == 1)
 			mtk_snand_pm_add_drv_record(_SNAND_PM_OP_READ_PAGE,
@@ -8639,7 +8669,7 @@ int mtk_nand_read_page_to_cahce(struct mtd_info *mtd, u32 u4RowAddr)
 
 #if 1
 	DRV_Reg16(NFI_INTR_REG16);
-	DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
+	DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN | INTR_EN);
 	init_completion(&g_comp_AHB_Done);
 #endif
 	if (!mtk_nand_set_command(NAND_CMD_READSTART))
@@ -8711,7 +8741,7 @@ int mtk_nand_write_page_from_cache(struct mtd_info *mtd, u32 u4RowAddr, enum NFI
 		goto cleanup;
 #if 1
 	DRV_Reg16(NFI_INTR_REG16);
-	DRV_WriteReg16(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN);
+	DRV_WriteReg32(NFI_INTR_EN_REG16, INTR_BSY_RTN_EN | INTR_EN);
 	init_completion(&g_comp_AHB_Done);
 #endif
 	if (tlc_wl_info.wl_pre == WL_HIGH_PAGE)

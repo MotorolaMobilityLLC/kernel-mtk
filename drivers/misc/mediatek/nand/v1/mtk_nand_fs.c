@@ -65,48 +65,6 @@ int mtk_nand_proc_read(struct file *file, char *buffer, size_t count, loff_t *pp
 	p += sprintf(p, "Current working in %s mode\n", g_i4Interrupt ? "interrupt" : "polling");
 	p += sprintf(p, "NFI_ACCON = 0x%x\n", DRV_Reg32(NFI_ACCCON_REG32));
 	p += sprintf(p, "NFI_NAND_TYPE_CNFG_REG32 = 0x%x\n", DRV_Reg32(NFI_NAND_TYPE_CNFG_REG32));
-#ifdef DUMP_PEF
-	p += sprintf(p, "Read Page Count: %d, Read Page totalTime: %lu, Avg. RPage: %lu\r\n",
-			 g_NandPerfLog.ReadPageCount, g_NandPerfLog.ReadPageTotalTime,
-			 g_NandPerfLog.ReadPageCount ? (g_NandPerfLog.ReadPageTotalTime /
-							g_NandPerfLog.ReadPageCount) : 0);
-
-	p += sprintf(p, "Read subPage Count: %d, Read subPage totalTime: %lu, Avg. RPage: %lu\r\n",
-			 g_NandPerfLog.ReadSubPageCount, g_NandPerfLog.ReadSubPageTotalTime,
-			 g_NandPerfLog.ReadSubPageCount ? (g_NandPerfLog.ReadSubPageTotalTime /
-							g_NandPerfLog.ReadSubPageCount) : 0);
-
-	p += sprintf(p, "Read Busy Count: %d, Read Busy totalTime: %lu, Avg. R Busy: %lu\r\n",
-			 g_NandPerfLog.ReadBusyCount, g_NandPerfLog.ReadBusyTotalTime,
-			 g_NandPerfLog.ReadBusyCount ? (g_NandPerfLog.ReadBusyTotalTime /
-							g_NandPerfLog.ReadBusyCount) : 0);
-
-	p += sprintf(p, "Read DMA Count: %d, Read DMA totalTime: %lu, Avg. R DMA: %lu\r\n",
-			 g_NandPerfLog.ReadDMACount, g_NandPerfLog.ReadDMATotalTime,
-			 g_NandPerfLog.ReadDMACount ? (g_NandPerfLog.ReadDMATotalTime /
-						g_NandPerfLog.ReadDMACount) : 0);
-
-	p += sprintf(p, "Write Page Count: %d, Write Page totalTime: %lu, Avg. WPage: %lu\r\n",
-			 g_NandPerfLog.WritePageCount, g_NandPerfLog.WritePageTotalTime,
-			 g_NandPerfLog.WritePageCount ? (g_NandPerfLog.WritePageTotalTime /
-							 g_NandPerfLog.WritePageCount) : 0);
-
-	p += sprintf(p, "Write Busy Count: %d, Write Busy totalTime: %lu, Avg. W Busy: %lu\r\n",
-			 g_NandPerfLog.WriteBusyCount, g_NandPerfLog.WriteBusyTotalTime,
-			 g_NandPerfLog.WriteBusyCount ? (g_NandPerfLog.WriteBusyTotalTime /
-							 g_NandPerfLog.WriteBusyCount) : 0);
-
-	p += sprintf(p, "Write DMA Count: %d, Write DMA totalTime: %lu, Avg. W DMA: %lu\r\n",
-			 g_NandPerfLog.WriteDMACount, g_NandPerfLog.WriteDMATotalTime,
-			 g_NandPerfLog.WriteDMACount ? (g_NandPerfLog.WriteDMATotalTime /
-							g_NandPerfLog.WriteDMACount) : 0);
-
-	p += sprintf(p, "EraseBlock Count: %d, EraseBlock totalTime: %lu, Avg. Erase: %lu\r\n",
-			 g_NandPerfLog.EraseBlockCount, g_NandPerfLog.EraseBlockTotalTime,
-			 g_NandPerfLog.EraseBlockCount ? (g_NandPerfLog.EraseBlockTotalTime /
-							  g_NandPerfLog.EraseBlockCount) : 0);
-
-#endif
 	len = p - buffer;
 
 	return len < count ? len : count;
@@ -156,82 +114,10 @@ ssize_t  mtk_nand_proc_write(struct file *file, const char *buffer, size_t  coun
 
 	switch (cmd) {
 	case '1':
-#ifdef DUMP_PEF
-#ifdef CFG_SNAND_ACCESS_PATTERN_LOGGER
-		g_NandPerfLog.ReadPageCount = 0;
-		g_NandPerfLog.ReadPageTotalTime = 0;
-		g_NandPerfLog.ReadBusyCount = 0;
-		g_NandPerfLog.ReadBusyTotalTime = 0;
-		g_NandPerfLog.ReadDMACount = 0;
-		g_NandPerfLog.ReadDMATotalTime = 0;
-
-		g_NandPerfLog.WritePageCount = 0;
-		g_NandPerfLog.WritePageTotalTime = 0;
-		g_NandPerfLog.WriteBusyCount = 0;
-		g_NandPerfLog.WriteBusyTotalTime = 0;
-		g_NandPerfLog.WriteDMACount = 0;
-		g_NandPerfLog.WriteDMATotalTime = 0;
-
-		g_NandPerfLog.EraseBlockCount = 0;
-		g_NandPerfLog.EraseBlockTotalTime = 0;
-
-		g_NandPerfLog.ReadPageCount = 0;
-
-		g_snand_pm_on = 1;
-		g_snand_pm_cnt = 0;
-		g_snand_pm_wrapped = 0;
-#endif
-#endif
+		PEM_INIT();
 		break;
 	case '2':
-#ifdef CFG_SNAND_ACCESS_PATTERN_LOGGER
-		nand_get_device(mtd, FL_READING);
-		g_snand_pm_on = 0;
-		mtk_snand_pm_dump_record();
-#ifdef DUMP_PEF
-	if (g_NandPerfLog.ReadPageCount != 0)
-		pr_info("Read Page Count: %d, Read Page totalTime: %lu, Avg. RPage: %lu\r\n",
-			g_NandPerfLog.ReadPageCount, g_NandPerfLog.ReadPageTotalTime,
-			g_NandPerfLog.ReadPageTotalTime / g_NandPerfLog.ReadPageCount);
-
-	if (g_NandPerfLog.ReadBusyCount != 0)
-		pr_info
-			("Read Busy Count: %d, Read Busy totalTime: %lu, Avg. R Busy: %lu\r\n",
-			 g_NandPerfLog.ReadBusyCount, g_NandPerfLog.ReadBusyTotalTime,
-			 g_NandPerfLog.ReadBusyTotalTime / g_NandPerfLog.ReadBusyCount);
-
-	if (g_NandPerfLog.ReadDMACount != 0)
-		pr_info("Read DMA Count: %d, Read DMA totalTime: %lu, Avg. R DMA: %lu\r\n",
-			g_NandPerfLog.ReadDMACount, g_NandPerfLog.ReadDMATotalTime,
-			g_NandPerfLog.ReadDMATotalTime / g_NandPerfLog.ReadDMACount);
-
-	if (g_NandPerfLog.WritePageCount != 0)
-		pr_info
-			("Write Page Count: %d, Write Page totalTime: %lu, Avg. WPage: %lu\r\n",
-			 g_NandPerfLog.WritePageCount, g_NandPerfLog.WritePageTotalTime,
-			 g_NandPerfLog.WritePageTotalTime / g_NandPerfLog.WritePageCount);
-
-	if (g_NandPerfLog.WriteBusyCount != 0)
-		pr_info
-			("Write Busy Count: %d, Write Busy totalTime: %lu, Avg. W Busy: %lu\r\n",
-			 g_NandPerfLog.WriteBusyCount, g_NandPerfLog.WriteBusyTotalTime,
-			 g_NandPerfLog.WriteBusyTotalTime / g_NandPerfLog.WriteBusyCount);
-
-	if (g_NandPerfLog.WriteDMACount != 0)
-		pr_info("Write DMA Count: %d, Write DMA totalTime: %lu, Avg. W DMA: %lu\r\n",
-			g_NandPerfLog.WriteDMACount, g_NandPerfLog.WriteDMATotalTime,
-			g_NandPerfLog.WriteDMATotalTime / g_NandPerfLog.WriteDMACount);
-
-	if (g_NandPerfLog.EraseBlockCount != 0)
-		pr_info
-			("EraseBlock Count: %d, EraseBlock totalTime: %lu, Avg. Erase: %lu\r\n",
-			 g_NandPerfLog.EraseBlockCount, g_NandPerfLog.EraseBlockTotalTime,
-			 g_NandPerfLog.EraseBlockTotalTime / g_NandPerfLog.EraseBlockCount);
-#endif
-		nand_release_device(mtd);
-
-#endif
-
+		PEM_DUMP_D(NULL);
 		break;
 	case 'A':		/* NFIA driving setting */
 		tmp = DRV_Reg32(NFI_ACCCON_REG32);
@@ -276,26 +162,6 @@ ssize_t  mtk_nand_proc_write(struct file *file, const char *buffer, size_t  coun
 		CALL_TRACE_INIT();
 		break;
 	case 'R':
-#ifdef DUMP_PEF
-		g_NandPerfLog.ReadPageCount = 0;
-		g_NandPerfLog.ReadPageTotalTime = 0;
-		g_NandPerfLog.ReadBusyCount = 0;
-		g_NandPerfLog.ReadBusyTotalTime = 0;
-		g_NandPerfLog.ReadDMACount = 0;
-		g_NandPerfLog.ReadDMATotalTime = 0;
-		g_NandPerfLog.ReadSubPageCount = 0;
-		g_NandPerfLog.ReadSubPageTotalTime = 0;
-
-		g_NandPerfLog.WritePageCount = 0;
-		g_NandPerfLog.WritePageTotalTime = 0;
-		g_NandPerfLog.WriteBusyCount = 0;
-		g_NandPerfLog.WriteBusyTotalTime = 0;
-		g_NandPerfLog.WriteDMACount = 0;
-		g_NandPerfLog.WriteDMATotalTime = 0;
-
-		g_NandPerfLog.EraseBlockCount = 0;
-		g_NandPerfLog.EraseBlockTotalTime = 0;
-#endif
 		PFM_DUMP_D(NULL);
 		DUMP_CALL_TRACE(NULL);
 
@@ -414,6 +280,7 @@ int mtk_nand_proc_show(struct seq_file *m, void *v)
 	tmp = DRV_Reg16(NFI_NAND_TYPE_CNFG_REG32);
 	SEQ_printf(m, "NFI_NAND_TYPE = 0x%x (DDR %d)\n", tmp, DDR_INTERFACE);
 #endif
+	PEM_DUMP_D(m);
 	PFM_DUMP_D(m);
 	DUMP_CALL_TRACE(m);
 

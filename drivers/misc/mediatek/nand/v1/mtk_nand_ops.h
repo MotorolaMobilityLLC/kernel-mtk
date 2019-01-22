@@ -239,7 +239,7 @@ extern int mvg_current_case_check(void);
 extern struct mtk_nand_data_info *data_info;
 extern int mtk_nand_ops_init(struct mtd_info *mtd, struct nand_chip *chip);
 extern int mtk_nand_data_info_init(void);
-extern int get_data_partition_info(struct nand_ftl_partition_info *info);
+extern int get_data_partition_info(struct nand_ftl_partition_info *info, struct mtk_nand_chip_info *cinfo);
 
 extern int mtk_nand_exec_read_sector(struct mtd_info *mtd,
 			u32 u4RowAddr, u32 u4ColAddr, u32 u4PageSize,
@@ -257,4 +257,8 @@ u32 get_ftl_row_addr(struct mtk_nand_chip_info *info,
 int mtk_nand_multi_plane_read(struct mtd_info *mtd,
 			struct mtk_nand_chip_info *info, int page_num,
 			struct mtk_nand_chip_read_param *param);
+extern int mntl_update_part_tab(struct mtd_info *mtd, struct mtk_nand_chip_info *info, int num, unsigned int *blk);
+extern int load_part_tab(u8 *buf);
+
+extern void erase_pmt(struct mtd_info *mtd);
 #endif

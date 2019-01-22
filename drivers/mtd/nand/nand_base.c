@@ -275,12 +275,13 @@ void nand_release_device(struct mtd_info *mtd)
 	struct nand_chip *chip = mtd->priv;
 
 	/* Release the controller and the chip */
-	spin_lock(&chip->controller->lock);
-	chip->controller->active = NULL;
 #ifdef CONFIG_MTK_MTD_NAND
 	if (chip->state != FL_READY && chip->state != FL_PM_SUSPENDED)
 		nand_disable_clock();
 #endif
+
+	spin_lock(&chip->controller->lock);
+	chip->controller->active = NULL;
 	chip->state = FL_READY;
 	wake_up(&chip->controller->wq);
 	spin_unlock(&chip->controller->lock);
@@ -1042,12 +1043,12 @@ retry:
 		chip->controller->active = chip;
 
 	if (chip->controller->active == chip && chip->state == FL_READY) {
+		chip->state = new_state;
+		spin_unlock(lock);
 #ifdef CONFIG_MTK_MTD_NAND
 		if (new_state != FL_READY && new_state != FL_PM_SUSPENDED)
 			nand_enable_clock();
 #endif
-		chip->state = new_state;
-		spin_unlock(lock);
 		return 0;
 	}
 	if (new_state == FL_PM_SUSPENDED) {
@@ -2049,7 +2050,6 @@ read_retry:
 			ret = chip->read_page(mtd, chip, bufpoi, page);
 #else
 			chip->cmdfunc(mtd, NAND_CMD_READ0, 0x00, page);
-#endif
 			/*
 			 * Now read the page into the buffer.  Absent an error,
 			 * the read methods return max bitflips per ecc step.
@@ -2066,6 +2066,7 @@ read_retry:
 			else
 				ret = chip->ecc.read_page(mtd, chip, bufpoi,
 							  oob_required, page);
+#endif
 			if (ret < 0) {
 				if (use_bufpoi)
 					/* Invalidate page cache */

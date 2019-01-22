@@ -124,7 +124,7 @@ struct nfi_saved_para {
 	u32 sNFI_PAGEFMT_REG16;
 	u32 sNFI_CON_REG32;
 	u32 sNFI_ACCCON_REG32;
-	u16 sNFI_INTR_EN_REG16;
+	u32 sNFI_INTR_EN_REG32;
 	u16 sNFI_IOCON_REG16;
 	u16 sNFI_CSEL_REG16;
 	u16 sNFI_DEBUG_CON1_REG16;
@@ -233,6 +233,9 @@ extern bool empty_true;
 extern u32 total_error;
 extern void mtk_data_retention_test(struct mtd_info *mtd);
 #endif
+#if defined(CONFIG_PWR_LOSS_MTK_SPOH)
+extern int mvg_current_case_check(void);
+#endif
 
 void show_stack(struct task_struct *tsk, unsigned long *sp);
 extern int mtk_nand_interface_async(void);
@@ -244,6 +247,7 @@ extern bool mtk_nand_SetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *val
 extern bool mtk_nand_set_address(u32 u4ColAddr, u32 u4RowAddr, u16 u2ColNOB, u16 u2RowNOB);
 extern bool mtk_nand_device_reset(void);
 
+extern int mtk_nand_read_page(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf, int page);
 extern int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize, u8 *pPageBuf, u8 *pFDMBuf);
 extern int mtk_nand_block_bad_hw(struct mtd_info *mtd, loff_t ofs);
 extern int mtk_nand_erase_hw(struct mtd_info *mtd, int page);
