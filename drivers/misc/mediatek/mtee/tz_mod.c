@@ -960,8 +960,10 @@ static long __tz_reg_sharedmem(struct file *file, unsigned long arg,
 		cret = copy_from_user(tag,
 					(void *)(unsigned long)cparam->tag,
 					cparam->tag_size);
-		if (cret)
+		if (cret) {
+			kfree(tag);
 			return -EFAULT;
+		}
 		tag[cparam->tag_size] = '\0';
 	}
 
