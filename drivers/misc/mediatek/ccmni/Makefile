@@ -21,6 +21,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/c2k_ccci/
 
 eccmni-y := ccmni.o
 
+ccflags-y += -DMET_USER_EVENT_SUPPORT
+
 else
 obj-  := dummy.o # avoid build error
 endif

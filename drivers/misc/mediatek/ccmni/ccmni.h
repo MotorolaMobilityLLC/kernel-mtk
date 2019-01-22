@@ -60,6 +60,13 @@
 #define  MDT_TAG_PATTERN        0x46464646
 #define  CCMNI_FLT_NUM          32
 
+#define CCMNI_MET_DEBUG
+#if defined(CCMNI_MET_DEBUG)
+#define MET_LOG_TIMER           20 /*20ms*/
+#define CCMNI_RX_MET_ID         0xF0000
+#define CCMNI_TX_MET_ID         0xF1000
+#endif
+
 
 struct ccmni_ch {
 	int		   rx;
@@ -110,7 +117,7 @@ struct ccmni_instance {
 	unsigned int       rx_seq_num;
 	unsigned int       tx_seq_num[2];
 	unsigned int       flags[2];
-	spinlock_t	   *spinlock;
+	spinlock_t         *spinlock;
 	struct ccmni_ctl_block  *ctlb;
 	unsigned long      tx_busy_cnt[2];
 	unsigned long      tx_full_tick[2];
@@ -120,6 +127,12 @@ struct ccmni_instance {
 	unsigned int       rx_gro_cnt;
 	unsigned int       flt_cnt;
 	struct ccmni_fwd_filter flt_tbl[CCMNI_FLT_NUM];
+#if defined(CCMNI_MET_DEBUG)
+	unsigned long      rx_met_time;
+	unsigned long      tx_met_time;
+	unsigned long      rx_met_bytes;
+	unsigned long      tx_met_bytes;
+#endif
 	void               *priv_data;
 };
 
