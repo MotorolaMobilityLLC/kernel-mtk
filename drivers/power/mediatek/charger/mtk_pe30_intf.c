@@ -814,10 +814,10 @@ static void mtk_pe30_DC_soft_start(struct charger_manager *info)
 		return;
 	}
 
-	if (vbat >= info->data.cv_ss_step2)
-		current_setting = current_setting + info->data.cc_ss_step2;
-	else if (vbat >= info->data.cv_ss_step3)
+	if (vbat >= info->data.cv_ss_step3)
 		current_setting = current_setting + info->data.cc_ss_step3;
+	else if (vbat >= info->data.cv_ss_step2)
+		current_setting = current_setting + info->data.cc_ss_step2;
 	else
 		current_setting = current_setting + info->data.cc_ss_step;
 
