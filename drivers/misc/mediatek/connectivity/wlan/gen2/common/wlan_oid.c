@@ -826,15 +826,11 @@ WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetB
 #endif
 	{
 		if (prAdapter->fgEnOnlineScan == TRUE) {
-			if (prScanRequest == NULL)
-				return WLAN_STATUS_FAILURE;
 			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
 			if (partial_result == FALSE)
 				return WLAN_STATUS_FAILURE;
 			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
 		} else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
-			if (prScanRequest == NULL)
-				return WLAN_STATUS_FAILURE;
 			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
 			if (partial_result == FALSE)
 				return WLAN_STATUS_FAILURE;
