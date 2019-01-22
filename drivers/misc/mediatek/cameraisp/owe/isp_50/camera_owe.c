@@ -2144,6 +2144,13 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				goto EXIT;
 			}
+
+			if (owe_OccReq.m_pOweConfig == NULL) {
+				LOG_ERR("NULL OCC user Config\n");
+				Ret = -EFAULT;
+				goto EXIT;
+			}
+
 			if (copy_from_user
 			    (g_OccEnqueReq_Struct.OccFrameConfig, (void *)owe_OccReq.m_pOweConfig,
 			     owe_OccReq.m_ReqNum * sizeof(struct OWE_OCCConfig)) != 0) {
@@ -2248,6 +2255,12 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 				mutex_unlock(&gOweOccDequeMutex);
 
+				if (owe_OccReq.m_pOweConfig == NULL) {
+					LOG_ERR("NULL OCC user Config\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
+
 				if (copy_to_user
 				    ((void *)owe_OccReq.m_pOweConfig,
 				     &g_OccDequeReq_Struct.OccFrameConfig[0],
@@ -2282,6 +2295,13 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 				goto EXIT;
 			}
+
+			if (owe_WmfeReq.m_pWmfeConfig == NULL) {
+				LOG_ERR("NULL WMFE user Config\n");
+				Ret = -EFAULT;
+				goto EXIT;
+			}
+
 			if (copy_from_user
 			    (g_WmfeEnqueReq_Struct.WmfeFrameConfig,
 			     (void *)owe_WmfeReq.m_pWmfeConfig,
@@ -2390,6 +2410,12 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						       flags);
 
 				mutex_unlock(&gOweWmfeDequeMutex);
+
+				if (owe_WmfeReq.m_pWmfeConfig == NULL) {
+					LOG_ERR("NULL WMFE user Config\n");
+					Ret = -EFAULT;
+					goto EXIT;
+				}
 
 				if (copy_to_user
 				    ((void *)owe_WmfeReq.m_pWmfeConfig,
