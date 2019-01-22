@@ -39,6 +39,11 @@ void hook_debug_fault_code(int nr, int (*fn)(unsigned long, unsigned int,
 					     struct pt_regs *),
 			   int sig, int code, const char *name);
 
+#ifdef CONFIG_MEDIATEK_SOLUTION
+void hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *),
+			int sig, int code, const char *name);
+#endif
+
 struct mm_struct;
 extern void show_pte(struct mm_struct *mm, unsigned long addr);
 extern void __show_regs(struct pt_regs *);

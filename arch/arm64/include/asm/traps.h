@@ -34,6 +34,10 @@ struct undef_hook {
 void register_undef_hook(struct undef_hook *hook);
 void unregister_undef_hook(struct undef_hook *hook);
 
+#ifdef CONFIG_MEDIATEK_SOLUTION
+int register_async_abort_handler(void (*fn)(struct pt_regs *regs, void *), void *priv);
+#endif
+
 #ifdef CONFIG_FUNCTION_GRAPH_TRACER
 static inline int __in_irqentry_text(unsigned long ptr)
 {
