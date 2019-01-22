@@ -245,7 +245,6 @@ static int port_ipc_parse_gf_port(GF_IP_TYPE ip_type, GF_PROTOCOL_TYPE prot_type
 	int port_number = -1;
 	/*
 	*[Porting notes]
-	* For kernel security issue, remove filp_open file code
 	* if really need, please find suitable net interface to get opened port list
 	*/
 	CCCI_NORMAL_LOG(-1, IPC, "IP:%d Protocol:%d port number:%d\n", ip_type, prot_type, port_number);

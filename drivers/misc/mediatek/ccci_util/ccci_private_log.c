@@ -278,6 +278,7 @@ static struct ccci_dump_buffer repeat_ctlb[2];
 static struct ccci_dump_buffer reg_dump_ctlb[2];
 static struct ccci_dump_buffer history_ctlb[2];
 static int buff_bind_md_id[5];
+static int md_id_bind_buf_id[5];
 static int buff_en_bit_map;
 static char sep_buf[64];
 static char md_sep_buf[64];
@@ -435,25 +436,25 @@ static void format_separate_str(char str[], int type)
 
 	switch (type) {
 	case CCCI_DUMP_INIT:
-		sep_str = " Dump init log ";
+		sep_str = "[0]INIT LOG REGION";
 		break;
 	case CCCI_DUMP_NORMAL:
-		sep_str = " Dump normal log ";
+		sep_str = "[0]NORMAL LOG REGION";
 		break;
 	case CCCI_DUMP_BOOTUP:
-		sep_str = " Dump boot up log ";
+		sep_str = "[0]BOOT LOG REGION";
 		break;
 	case CCCI_DUMP_REPEAT:
-		sep_str = " Dump repeat log ";
+		sep_str = "[0]REPEAT LOG REGION";
 		break;
 	case CCCI_DUMP_MEM_DUMP:
-		sep_str = " Dump mem dump log ";
+		sep_str = "[0]MEM DUMP LOG REGION";
 		break;
 	case CCCI_DUMP_HISTORY:
-		sep_str = " Dump history log ";
+		sep_str = "[0]HISTORY LOG REGION";
 		break;
 	default:
-		sep_str = " Unsupport ";
+		sep_str = "[0]Unsupport REGION";
 		break;
 	}
 
@@ -529,6 +530,8 @@ static ssize_t ccci_dump_read(struct file *file, char __user *buf, size_t size, 
 			node_ptr++;
 
 			format_separate_str(sep_buf, index);
+			/*set log title md id */
+			sep_buf[9] = '0' + md_id_bind_buf_id[i];
 			/* insert region separator "___" to buf */
 			curr = user_info->sep_cnt1[i][index];
 			if (curr < 64) {
@@ -707,6 +710,7 @@ static void ccci_dump_buffer_init(void)
 		if (get_plat_capbility(MD_SYS1 + i)) {
 			buff_bind_md_id[MD_SYS1 + i] = j;
 			buff_en_bit_map |= 1<<j;
+			md_id_bind_buf_id[j] = MD_SYS1 + i + 1;
 			j++;
 		}
 	}

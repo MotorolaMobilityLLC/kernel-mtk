@@ -107,6 +107,7 @@ struct ccci_modem {
 	 * simply replace function set of kernel port to support it.
 	 */
 	unsigned int is_in_ee_dump;
+	unsigned int is_force_asserted;
 	phys_addr_t invalid_remap_base;
 	volatile struct ccci_modem_cfg config;
 	struct timer_list bootup_timer;
@@ -120,9 +121,9 @@ struct ccci_modem {
 	unsigned long logic_ch_pkt_cnt[CCCI_MAX_CH_NUM];
 	unsigned long logic_ch_pkt_pre_cnt[CCCI_MAX_CH_NUM];
 
-	unsigned long long latest_poll_isr_time;
 	unsigned long long latest_isr_time;
-	unsigned long long latest_q0_rx_time;
+	unsigned long long latest_q_rx_isr_time[MAX_RXQ_NUM];
+	unsigned long long latest_q_rx_time[MAX_RXQ_NUM];
 #ifdef CCCI_SKB_TRACE
 	unsigned long long netif_rx_profile[8];
 #endif
@@ -188,11 +189,13 @@ static inline void ccci_md_check_rx_seq_num(struct ccci_modem *md, struct ccci_h
 	if (assert_bit && md->seq_nums[IN][channel] != 0 && ((seq_num - md->seq_nums[IN][channel]) & 0x7FFF) != 1) {
 		CCCI_ERROR_LOG(md->index, CORE, "channel %d seq number out-of-order %d->%d\n",
 			     channel, seq_num, md->seq_nums[IN][channel]);
-		md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, qno);
-		param[0] = channel;
-		param[1] = md->seq_nums[IN][channel];
-		param[2] = seq_num;
-		ccci_md_force_assert(md, MD_FORCE_ASSERT_BY_MD_SEQ_ERROR, (char *)param, sizeof(param));
+		if (md->is_force_asserted == 0) {
+			md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, qno);
+			param[0] = channel;
+			param[1] = md->seq_nums[IN][channel];
+			param[2] = seq_num;
+			ccci_md_force_assert(md, MD_FORCE_ASSERT_BY_MD_SEQ_ERROR, (char *)param, sizeof(param));
+		}
 	} else {
 		md->seq_nums[IN][channel] = seq_num;
 	}
@@ -393,7 +396,7 @@ static inline int ccci_md_get_img_version(struct ccci_modem *md)
 }
 static inline unsigned long long ccci_md_get_latest_poll_isr_time(struct ccci_modem *md)
 {
-	return md->latest_poll_isr_time;
+	return md->latest_q_rx_isr_time[0];
 }
 static inline unsigned long long ccci_md_get_latest_isr_time(struct ccci_modem *md)
 {
@@ -402,7 +405,7 @@ static inline unsigned long long ccci_md_get_latest_isr_time(struct ccci_modem *
 
 static inline unsigned long long ccci_md_get_latest_q0_rx_time(struct ccci_modem *md)
 {
-	return md->latest_q0_rx_time;
+	return md->latest_q_rx_time[0];
 }
 static inline unsigned int ccci_md_get_seq_num(struct ccci_modem *md, DIRECTION dir, CCCI_CH ch)
 {
