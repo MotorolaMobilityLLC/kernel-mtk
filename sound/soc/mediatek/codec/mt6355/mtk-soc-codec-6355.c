@@ -2205,8 +2205,9 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* Disable HP driver core circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x00C0); /* 0x3000 */
 			/* Disable HP driver bias circuits */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00); /* 0x0000 */
-			/* Disable HP aux CMFB loop */
+			/* Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00); */ /* 0x0000 */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0x0e00); /* 0x8200 */
+			/* Disable HP aux CMFB loop and enable HP main CMFB loop for HP off state*/
 
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0030);
 			/* Disable HP aux feedback loop */
