@@ -17,6 +17,10 @@
  * subsystem list maintains.
  */
 
+#define OLD_KBUILD_MODNAME KBUILD_MODNAME
+#undef KBUILD_MODNAME
+#define KBUILD_MODNAME "power_main"
+
 #include <linux/device.h>
 #include <linux/kallsyms.h>
 #include <linux/export.h>
