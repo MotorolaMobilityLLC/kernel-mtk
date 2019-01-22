@@ -93,7 +93,6 @@ enum {
 	SENSOR_DEV_MAX = 0x50
 };
 
-static unsigned int g_lastDevID = SENSOR_DEV_NONE;
 
 /*******************************************************************************
 *
@@ -611,15 +610,12 @@ static long EEPROM_drv_ioctl(
 		do_gettimeofday(&ktv1);
 #endif
 
-	if (g_lastDevID != ptempbuf->deviceID) {
-		g_lastDevID = ptempbuf->deviceID;
 		if (EEPROM_set_i2c_bus(ptempbuf->deviceID) != 0) {
 			PK_DBG("deviceID Error!\n");
 			kfree(pBuff);
 			kfree(pu1Params);
 			return -EFAULT;
 		}
-	}
 
 	pcmdInf = EEPROM_get_cmd_info_ex(ptempbuf->sensorID, ptempbuf->deviceID);
 
@@ -652,14 +648,11 @@ static long EEPROM_drv_ioctl(
 		do_gettimeofday(&ktv1);
 #endif
 
-		if (g_lastDevID != ptempbuf->deviceID) {
-			g_lastDevID = ptempbuf->deviceID;
-			if (EEPROM_set_i2c_bus(ptempbuf->deviceID) != 0) {
-				PK_DBG("deviceID Error!\n");
-				kfree(pBuff);
-				kfree(pu1Params);
-				return -EFAULT;
-			}
+		if (EEPROM_set_i2c_bus(ptempbuf->deviceID) != 0) {
+			PK_DBG("deviceID Error!\n");
+			kfree(pBuff);
+			kfree(pu1Params);
+			return -EFAULT;
 		}
 		PK_DBG("SensorID=%x DeviceID=%x\n", ptempbuf->sensorID, ptempbuf->deviceID);
 		pcmdInf = EEPROM_get_cmd_info_ex(ptempbuf->sensorID, ptempbuf->deviceID);
