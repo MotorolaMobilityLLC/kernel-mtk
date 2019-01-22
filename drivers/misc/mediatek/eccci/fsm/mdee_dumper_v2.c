@@ -715,8 +715,8 @@ static void mdee_dumper_v2_dump_ee_info(struct ccci_fsm_ee *mdee, MDEE_DUMP_LEVE
 			if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
 				ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP, mdccci_dbg->base_ap_view_vir,
 					mdccci_dbg->size);
-				ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP, mdss_dbg->base_ap_view_vir,
-					mdss_dbg->size);
+			ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP, mdss_dbg->base_ap_view_vir,
+				mdss_dbg->size);
 
 			ccci_aed_v2(mdee, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_EX_MEM, ex_info, DB_OPT_FTRACE);
 		}

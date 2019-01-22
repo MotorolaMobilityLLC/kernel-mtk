@@ -847,15 +847,15 @@ long device_ioctl(struct file *filp,
 
 	/*receive no-render signal*/
 	case IOCTL_WRITE_NR:
-	if (!is_ux_fbc_active())
-		goto ret_ioctl;
-		fbc_op->no_render();
+		if (!is_ux_fbc_active())
+			goto ret_ioctl;
+	    fbc_op->no_render();
 		break;
 
 	/*receive queue_time signal*/
 	case IOCTL_WRITE_SB:
-	if (!is_ux_fbc_active())
-		goto ret_ioctl;
+		if (!is_ux_fbc_active())
+			goto ret_ioctl;
 		swap_buffers_begin = 1;
 		fbc_tracer(-3, "swap_buffers_begin", swap_buffers_begin);
 		break;
