@@ -825,20 +825,13 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_LPBK_POWER_CTRL:
 		do {
-			WMT_INFO_FUNC("luncher call LPBK!\n");
+			MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
 
-			if (always_pwr_on_flag != 0) {
-				schedule_work(&gPwrOnOffWork);
-				iRet = 0;
-			} else {
-				MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
-
-				if (arg)
-					bRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_LPBK);
-				else
-					bRet = mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
-				iRet = (bRet == MTK_WCN_BOOL_FALSE) ? -EFAULT : 0;
-			}
+			if (arg)
+				bRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_LPBK);
+			else
+				bRet = mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
+			iRet = (bRet == MTK_WCN_BOOL_FALSE) ? -EFAULT : 0;
 		} while (0);
 		break;
 	case WMT_IOCTL_LPBK_TEST:
