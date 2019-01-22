@@ -189,11 +189,11 @@ int update_cpu_loading(void)
 
 	tmp_cpu_loading = div_u64((100 * (wall_time - idle_time)), wall_time);
 
-	prev_cpu_loading = tmp_cpu_loading;
 
 	trace_cpu_loading_log("cpu_loading", "tmp_cpu_loading:%d\n", tmp_cpu_loading);
 	if (tmp_cpu_loading > over_threshold &&  over_threshold > prev_cpu_loading) {
 
+		prev_cpu_loading = tmp_cpu_loading;
 		/*send uevent*/
 		if (uevent_enable) {
 			strlcpy(event_string, "over=1", string_size);
@@ -210,6 +210,7 @@ int update_cpu_loading(void)
 		return 1;
 	}
 
+	prev_cpu_loading = tmp_cpu_loading;
 	mutex_unlock(&cpu_loading_lock);
 	return 3;
 }
