@@ -1785,8 +1785,10 @@ static unsigned int __mt_gpufreq_get_cur_volt(void)
 {
 	unsigned int volt = 0;
 
-	/* WARRNING: regulator_get_voltage prints uV */
-	volt = regulator_get_voltage(g_pmic->reg_vgpu) / 10;
+	if (g_volt_enable_state) {
+		/* WARRNING: regulator_get_voltage prints uV */
+		volt = regulator_get_voltage(g_pmic->reg_vgpu) / 10;
+	}
 
 	gpufreq_pr_debug("@%s: volt = %d\n", __func__, volt);
 
