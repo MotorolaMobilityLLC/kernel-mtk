@@ -324,16 +324,9 @@ CONFIG_MT6370_PMU_DSV,PROJECT,wilma.wu,,O,O,X,O,O,,,O,,O
 CONFIG_MT6370_PMU_FLED,PROJECT,wilma.wu,,O,O,X,O,O,,,O,,O
 CONFIG_MT6370_PMU_LDO,PROJECT,wilma.wu,,O,O,X,O,O,,,O,,O
 CONFIG_MT6771_QUERY_PCB_ID,PLATFORM,luhua.xu,,X,X,X,X,X,X,y,y,X,X
-CONFIG_MTD_BLOCK,PROJECT,chienwei.chang,,y,y,y,y,y,O,O,y,O,y
+CONFIG_MTD_BLOCK,COMMON,,,X,X,X,X,X,X,X,X,X,X
+CONFIG_MTD,COMMON,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTD_NAND_IDS,COMMON,,,X,X,X,X,X,X,X,X,X,X
-CONFIG_MTD_NAND_PLATFORM,PROJECT,Chienwei.Chang,,,,,,,,,,,
-CONFIG_MTD_NAND,PROJECT,Chienwei.Chang,,,,,,,,,,,
-CONFIG_MTD_OF_PARTS,PLATFORM,Chienwei.Chang,,X,X,X,X,X,X,X,X,X,X
-CONFIG_MTD,PROJECT,,,y,y,y,y,y,O,O,y,O,y
-CONFIG_MTD_UBI_BEB_LIMIT,PROJECT,linger.lee,,,,,,,,,,,
-CONFIG_MTD_UBI_GLUEBI,PROJECT,linger.lee,,,,,,,,,,,
-CONFIG_MTD_UBI,PROJECT,linger.lee,,,,,,,,,,,
-CONFIG_MTD_UBI_WL_THRESHOLD,PROJECT,linger.lee,,,,,,,,,,,
 CONFIG_MTK_AAL_SUPPORT,PROJECT,yiruei.wu,,,,,,,,,,,
 CONFIG_MTK_AB_OTA_UPDATER,PROJECT,haohsiang.hsu,,X,X,X,X,X,,,X,,X
 CONFIG_MTK_ACAO_SUPPORT,PROJECT,aaron.tian,,X,X,X,y,y,y,y,y,y,y
@@ -457,6 +450,7 @@ CONFIG_MTK_EMMC_CACHE,PROJECT,weiping.zhang,,,,,,,,,,,
 CONFIG_MTK_EMMC_CQ_SUPPORT,PROJECT,sophie.wang,new config in this commit ce3bff22fb846f2fad0552280d4bd580a95d28a6,,,,,,,,,,
 CONFIG_MTK_EMMC_SUPPORT_OTP,PROJECT,weiping.zhang,,,,,,,,,,,
 CONFIG_MTK_EMMC_SUPPORT,PROJECT,weiping.zhang,,,,,,,,,,,
+CONFIG_MTK_ENABLE_GENIEZONE,PROJECT,coboy.chen,,,,,,,,,,,
 CONFIG_MTK_ENABLE_MD2,COMMON,yanbin.ren,new config in this commit 9715b038cd89c33b3acb9a75a29652347cccc65c,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_ENG_BUILD,USER,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_EXTBUCK,PROJECT,vend_jeff_chang001,,X,X,X,,,,,,,
@@ -947,4 +941,3 @@ CONFIG_ZRAM_LZ4K_COMPRESS,PROJECT,Chinwen.Chang,,O,O,O,,,,,,,
 CONFIG_ZRAM,PROJECT,Chinwen.Chang,,O,y,y,,,,,,,
 CONFIG_ZSMALLOC,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_ZSM,PROJECT,Robbin.Chiu,new config 84a52cb60725192d8ae0c80b58c363c35484cfd4,,,,,,,,,,
-CONFIG_MTK_ENABLE_GENIEZONE,PROJECT,coboy.chen,,,,,,,,,,,
