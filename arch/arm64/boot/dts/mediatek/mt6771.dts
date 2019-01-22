@@ -1286,6 +1286,10 @@
 		#clock-cells = <1>;
 	};
 
+	accdet: accdet {
+		compatible = "mediatek,pmic-accdet";
+	};
+
 	mdp_rdma0@14001000 {
 		compatible = "mediatek,mdp_rdma0";
 		reg = <0 0x14001000 0 0x1000>;
