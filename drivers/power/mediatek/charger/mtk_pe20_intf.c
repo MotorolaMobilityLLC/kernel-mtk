@@ -45,7 +45,7 @@ int mtk_pe20_reset_ta_vchr(struct charger_manager *pinfo)
 	u32 retry_cnt = 0;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
-	pr_err("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 
 	/* Reset TA's charging voltage */
 	do {
@@ -131,7 +131,7 @@ static int pe20_leave(struct charger_manager *pinfo)
 	int ret = 0;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
-	pr_err("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 	ret = mtk_pe20_reset_ta_vchr(pinfo);
 	if (ret < 0 || pe20->is_connect) {
 		pr_err("%s: failed, is_connect = %d, ret = %d\n",
@@ -152,7 +152,7 @@ static int pe20_check_leave_status(struct charger_manager *pinfo)
 	bool current_sign;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
-	pr_err("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 
 	/* PE+ leaves unexpectedly */
 	vchr = pe20_get_vbus();
@@ -192,7 +192,7 @@ static int __pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 	int ret = 0;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
-	pr_err("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 
 	/* Not to set chr volt if cable is plugged out */
 	if (pe20->is_cable_out_occur) {
@@ -223,7 +223,7 @@ static int pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 	u32 sw_retry_cnt = 0, retry_cnt = 0;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
-	pr_err("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 
 	do {
 		vchr_before = pe20_get_vbus();
@@ -274,7 +274,7 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 	struct timespec ptime[2], diff;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
-	pr_debug("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 
 	if (pe20->vbat_orig > pinfo->data.vbat_cable_imp_threshold * 1000) {
 		pr_err("VBAT > %dmV, directly set aicr to %dmA\n",
@@ -362,7 +362,7 @@ static int pe20_detect_ta(struct charger_manager *pinfo)
 	int ret;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
-	pr_err("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 	pe20->ta_vchr_org = pe20_get_vbus();
 
 	/* Disable OVP */
@@ -400,7 +400,7 @@ static int pe20_init_ta(struct charger_manager *pinfo)
 	pe20->is_connect = false;
 	pe20->is_cable_out_occur = false;
 
-	pr_err("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 
 #ifdef PE20_HW_INIT /* need check */
 	ret = battery_charging_control(CHARGING_CMD_INIT, NULL);
@@ -423,7 +423,7 @@ int mtk_pe20_set_charging_current(struct charger_manager *pinfo,
 	if (!pe20->is_connect)
 		return -ENOTSUPP;
 
-	pr_err("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 	/* *aicr = 3200000; */
 	*aicr = pe20->aicr_cable_imp;
 	*ichg = pinfo->data.ta_ac_charger_current;
@@ -438,7 +438,7 @@ int mtk_pe20_plugout_reset(struct charger_manager *pinfo)
 	int ret = 0;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
-	pr_err("%s: starts\n", __func__);
+	chr_debug("%s: starts\n", __func__);
 
 	pe20->is_connect = false;
 	pe20->is_cable_out_occur = false;
@@ -491,7 +491,7 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	mutex_lock(&pe20->access_lock);
 	wake_lock(&pe20->suspend_lock);
 
-	pr_info("%s\n", __func__);
+	chr_debug("%s\n", __func__);
 
 	if (pe20->is_cable_out_occur)
 		mtk_pe20_plugout_reset(pinfo);
@@ -530,7 +530,7 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	return ret;
 out:
 
-	pr_err("%s: stop, SOC = (%d, %d, %d), to_check_chr_type = %d, chr_type = %d, ret = %d\n",
+	chr_info("%s: stop, SOC = (%d, %d, %d), to_check_chr_type = %d, chr_type = %d, ret = %d\n",
 		__func__, battery_get_bat_soc(), pinfo->data.ta_start_battery_soc,
 		pinfo->data.ta_stop_battery_soc, pe20->to_check_chr_type,
 		mt_get_charger_type(), ret);
@@ -554,7 +554,7 @@ int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
 	if (!pinfo->enable_hv_charging) {
-		pr_info("%s: hv charging is disabled\n", __func__);
+		chr_info("%s: hv charging is disabled\n", __func__);
 		if (pe20->is_connect) {
 			pe20_leave(pinfo);
 			pe20->to_check_chr_type = true;
@@ -563,21 +563,21 @@ int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
 	}
 
 	if (!pe20->is_enabled) {
-		pr_debug("%s: stop, PE+20 is disabled\n",
+		chr_info("%s: stop, PE+20 is disabled\n",
 			__func__);
 		return ret;
 	}
 
 	mutex_lock(&pe20->access_lock);
 	wake_lock(&pe20->suspend_lock);
-	pr_info("%s\n", __func__);
+	chr_debug("%s\n", __func__);
 
 	if (pe20->is_cable_out_occur)
 		mtk_pe20_plugout_reset(pinfo);
 
 	if (!pe20->is_connect) {
 		ret = -EIO;
-		pr_debug("%s: stop, PE+20 is not connected\n",
+		chr_info("%s: stop, PE+20 is not connected\n",
 			__func__);
 		wake_unlock(&pe20->suspend_lock);
 		mutex_unlock(&pe20->access_lock);
