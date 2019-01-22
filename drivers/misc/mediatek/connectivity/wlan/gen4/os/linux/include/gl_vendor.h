@@ -88,6 +88,7 @@
 ********************************************************************************
 */
 #define GOOGLE_OUI 0x001A11
+#define OUI_QCA 0x001374
 
 typedef enum {
 	/* Don't use 0 as a valid subcommand */
@@ -130,6 +131,7 @@ typedef enum {
 	WIFI_SUBCMD_SET_COUNTRY_CODE,                    /* 0x0006 */
 	WIFI_SUBCMD_SET_RSSI_MONITOR,			 /* 0x0007 */
 
+	WIFI_SUBCMD_SET_ROAMING = 0x0009,		 /* 0x0009 */
 	/* Add more sub commands here */
 
 } WIFI_SUB_COMMAND;
@@ -837,5 +839,8 @@ int mtk_cfg80211_vendor_event_hotlist_ap_lost(struct wiphy *wiphy, struct wirele
 					      P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len);
 
 int mtk_cfg80211_vendor_event_rssi_beyond_range(struct wiphy *wiphy, struct wireless_dev *wdev, INT_32 rssi);
+
+int mtk_cfg80211_vendor_set_roaming_policy(struct wiphy *wiphy, struct wireless_dev *wdev,
+					const void *data, int data_len);
 
 #endif /* _GL_VENDOR_H */
