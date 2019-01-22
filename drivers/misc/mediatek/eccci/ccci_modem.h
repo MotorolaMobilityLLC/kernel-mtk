@@ -187,8 +187,8 @@ static inline void ccci_md_check_rx_seq_num(struct ccci_modem *md, struct ccci_h
 	assert_bit = ccci_h->assert_bit;
 
 	if (assert_bit && md->seq_nums[IN][channel] != 0 && ((seq_num - md->seq_nums[IN][channel]) & 0x7FFF) != 1) {
-		CCCI_ERROR_LOG(md->index, CORE, "channel %d seq number out-of-order %d->%d\n",
-			     channel, seq_num, md->seq_nums[IN][channel]);
+		CCCI_ERROR_LOG(md->index, CORE, "channel %d seq number out-of-order %d->%d (data: %X, %X)\n",
+			     channel, seq_num, md->seq_nums[IN][channel], ccci_h->data[0], ccci_h->data[1]);
 		if (md->is_force_asserted == 0) {
 			md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, qno);
 			param[0] = channel;

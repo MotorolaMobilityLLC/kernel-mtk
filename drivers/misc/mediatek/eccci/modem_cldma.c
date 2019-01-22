@@ -240,6 +240,7 @@ static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 #ifdef CLDMA_DUMP_BD
 	struct cldma_request *req_bd = NULL;
 #endif
+	struct cldma_rgpd *rgpd;
 
 	/* use request's link head to traverse */
 	CCCI_MEM_LOG_TAG(md->index, TAG, " dump txq %d, tr_done=%p, tx_xmit=0x%p\n", qno,
@@ -264,6 +265,12 @@ static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 		tmp = (unsigned int *)req->gpd;
 		CCCI_MEM_LOG_TAG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
 			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+		rgpd = (struct cldma_rgpd *)req->gpd;
+		if ((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0 && req->skb) {
+			tmp = (unsigned int *)req->skb->data;
+			CCCI_MEM_LOG_TAG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->skb->data,
+			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+		}
 	}
 }
 
@@ -532,13 +539,13 @@ again:
 			/* step forward */
 			queue->tr_done = cldma_ring_step_forward(queue->tr_ring, req);
 			/* update log */
-			ccci_md_check_rx_seq_num(md, &ccci_h, queue->index);
 #if TRAFFIC_MONITOR_INTERVAL
 			md_ctrl->rx_traffic_monitor[queue->index]++;
 #endif
 			rxbytes += skb_bytes;
 			ccci_md_add_log_history(md, IN, (int)queue->index, &ccci_h, (ret >= 0 ? 0 : 1));
 			ccci_channel_update_packet_counter(md, &ccci_h);
+			ccci_md_check_rx_seq_num(md, &ccci_h, queue->index);
 			/* refill */
 			req = queue->rx_refill;
 			rgpd = (struct cldma_rgpd *)req->gpd;

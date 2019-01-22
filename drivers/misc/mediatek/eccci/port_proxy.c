@@ -687,7 +687,7 @@ void port_proxy_dump_status(struct port_proxy *proxy_p)
 	for (i = 0; i < proxy_p->port_number; i++) {
 		port = proxy_p->ports + i;
 		if (port->flags & PORT_F_RX_FULLED)
-			port_full |= (1 << i);
+			port_full |= (1LL << i);
 		if (port->tx_busy_count != 0 || port->rx_busy_count != 0) {
 			CCCI_REPEAT_LOG(proxy_p->md_id, TAG, "port %s busy count %d/%d\n", port->name,
 				     port->tx_busy_count, port->rx_busy_count);
