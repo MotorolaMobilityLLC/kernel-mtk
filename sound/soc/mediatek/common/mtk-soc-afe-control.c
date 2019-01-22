@@ -1191,7 +1191,7 @@ bool EnableSineGen(uint32 connection, bool direction, bool Enable)
 
 	/* by platform to implement*/
 	if (s_afe_platform_ops != NULL) {
-		ret = s_afe_platform_ops->set_sinegen(connection, direction, Enable, mAudioMEMIF);
+		ret = s_afe_platform_ops->set_sinegen(connection, direction, Enable);
 			} else {
 		pr_err("+%s(): No sine gen implementation, return false!\n", __func__);
 		ret = false;
