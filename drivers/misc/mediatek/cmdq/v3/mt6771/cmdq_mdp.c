@@ -42,6 +42,7 @@ struct CmdqMdpModuleBaseVA {
 	long MDP_WROT0;
 	long MDP_WDMA;
 	long VENC;
+	long SMI_LARB0;
 };
 static struct CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
 
@@ -435,6 +436,8 @@ void cmdq_mdp_init_module_base_VA(void)
 	gCmdqMdpModuleBaseVA.MDP_AAL = cmdq_dev_alloc_reference_VA_by_name("mdp_aal0");
 	gCmdqMdpModuleBaseVA.MDP_CCORR = cmdq_dev_alloc_reference_VA_by_name("mdp_ccorr0");
 	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_reference_VA_by_name("venc");
+	gCmdqMdpModuleBaseVA.SMI_LARB0 =
+		cmdq_dev_alloc_reference_VA_by_name("smi_larb0");
 }
 void cmdq_mdp_deinit_module_base_VA(void)
 {
@@ -448,6 +451,7 @@ void cmdq_mdp_deinit_module_base_VA(void)
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_AAL());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_CCORR());
 	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_VENC());
+	cmdq_dev_free_module_base_VA(gCmdqMdpModuleBaseVA.SMI_LARB0);
 	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(struct CmdqMdpModuleBaseVA));
 }
 bool cmdq_mdp_clock_is_on(enum CMDQ_ENG_ENUM engine)
@@ -482,6 +486,8 @@ bool cmdq_mdp_clock_is_on(enum CMDQ_ENG_ENUM engine)
 }
 void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 {
+	uint32_t regValue;
+
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
 		cmdq_mdp_enable_clock_CAM_MDP_TX(enable);
@@ -493,6 +499,13 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 		break;
 	case CMDQ_ENG_MDP_RDMA0:
 		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
+		/* check smi larb */
+		regValue =
+			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x298);
+		if (regValue)
+			CMDQ_LOG(
+				"[MDP][Abnormal]Job Unfinish, larb 0:(0x298, 6, 0x%x)\n",
+				regValue);
 		break;
 	case CMDQ_ENG_MDP_RSZ0:
 		cmdq_mdp_enable_clock_MDP_RSZ0(enable);
@@ -510,9 +523,23 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 			smi_bus_disable(SMI_LARB_MMSYS0, "MDPSRAM");
 			atomic_dec(&g_mdp_wrot0_usage);
 		}
+		/* check smi larb */
+		regValue =
+			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x29C);
+		if (regValue)
+			CMDQ_LOG(
+				"[MDP][Abnormal] Job Unfinish, larb 0:(0x29C, 7, 0x%x)\n",
+				regValue);
 		break;
 	case CMDQ_ENG_MDP_WDMA:
 		cmdq_mdp_enable_clock_MDP_WDMA(enable);
+		/* check smi larb */
+		regValue =
+			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x2A0);
+		if (regValue)
+			CMDQ_LOG(
+				"[MDP][Abnormal] Job Unfinish, larb 0:(0x2A0, 8, 0x%x)\n",
+				regValue);
 		break;
 	case CMDQ_ENG_MDP_TDSHP0:
 		cmdq_mdp_enable_clock_MDP_TDSHP0(enable);
