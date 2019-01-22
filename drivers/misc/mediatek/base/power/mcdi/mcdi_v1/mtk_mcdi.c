@@ -35,7 +35,7 @@
 
 #include <sspm_mbox.h>
 
-#include <trace/events/mtk_events.h>
+#include <trace/events/mtk_idle_event.h>
 /* #define USING_TICK_BROADCAST */
 
 #define MCDI_CPU_OFF        1
