@@ -247,11 +247,12 @@ static void ftrace_events_enable(int enable)
 		trace_set_clr_event(NULL, "sched_mon_msg", 1);
 #endif
 		trace_set_clr_event("mtk_events", NULL, 1);
-		if (boot_trace)
+		if (boot_trace) {
+			trace_set_clr_event("android_fs", NULL, 1);
 			trace_set_clr_event(NULL, "sched_blocked_reason", 1);
-		else
+		} else {
 			trace_set_clr_event("ipi", NULL, 1);
-
+		}
 		trace_set_clr_event("met_bio", NULL, 1);
 		trace_set_clr_event("met_fuse", NULL, 1);
 
