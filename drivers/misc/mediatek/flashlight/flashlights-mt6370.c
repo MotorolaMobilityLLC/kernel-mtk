@@ -33,36 +33,36 @@
 #include "flashlight-dt.h"
 
 /* device tree should be defined in flashlight-dt.h */
-#ifndef RT5081_DTNAME
-#define RT5081_DTNAME "mediatek,flashlights_rt5081"
+#ifndef MT6370_DTNAME
+#define MT6370_DTNAME "mediatek,flashlights_mt6370"
 #endif
 
-#define RT5081_NAME "flashlights-rt5081"
+#define MT6370_NAME "flashlights-mt6370"
 
 /* define channel, level */
-#define RT5081_CHANNEL_NUM 2
-#define RT5081_CHANNEL_CH1 0
-#define RT5081_CHANNEL_CH2 1
+#define MT6370_CHANNEL_NUM 2
+#define MT6370_CHANNEL_CH1 0
+#define MT6370_CHANNEL_CH2 1
 
-#define RT5081_NONE (-1)
-#define RT5081_DISABLE 0
-#define RT5081_ENABLE 1
-#define RT5081_ENABLE_TORCH 1
-#define RT5081_ENABLE_FLASH 2
+#define MT6370_NONE (-1)
+#define MT6370_DISABLE 0
+#define MT6370_ENABLE 1
+#define MT6370_ENABLE_TORCH 1
+#define MT6370_ENABLE_FLASH 2
 
-#define RT5081_LEVEL_NUM 32
-#define RT5081_LEVEL_TORCH 16
-#define RT5081_LEVEL_FLASH RT5081_LEVEL_NUM
-#define RT5081_WDT_TIMEOUT 1248 /* ms */
-#define RT5081_HW_TIMEOUT 400 /* ms */
+#define MT6370_LEVEL_NUM 32
+#define MT6370_LEVEL_TORCH 16
+#define MT6370_LEVEL_FLASH MT6370_LEVEL_NUM
+#define MT6370_WDT_TIMEOUT 1248 /* ms */
+#define MT6370_HW_TIMEOUT 400 /* ms */
 
 /* define mutex, work queue and timer */
-static DEFINE_MUTEX(rt5081_mutex);
-static struct work_struct rt5081_work_ch1;
-static struct work_struct rt5081_work_ch2;
-static struct hrtimer rt5081_timer_ch1;
-static struct hrtimer rt5081_timer_ch2;
-static unsigned int rt5081_timeout_ms[RT5081_CHANNEL_NUM];
+static DEFINE_MUTEX(mt6370_mutex);
+static struct work_struct mt6370_work_ch1;
+static struct work_struct mt6370_work_ch2;
+static struct hrtimer mt6370_timer_ch1;
+static struct hrtimer mt6370_timer_ch2;
+static unsigned int mt6370_timeout_ms[MT6370_CHANNEL_NUM];
 
 /* define usage count */
 static int use_count;
@@ -70,8 +70,8 @@ static int use_count;
 /* define RTK flashlight device */
 static struct flashlight_device *flashlight_dev_ch1;
 static struct flashlight_device *flashlight_dev_ch2;
-#define RT_FLED_DEVICE_CH1  "rt-flash-led1"
-#define RT_FLED_DEVICE_CH2  "rt-flash-led2"
+#define RT_FLED_DEVICE_CH1  "mt-flash-led1"
+#define RT_FLED_DEVICE_CH2  "mt-flash-led2"
 
 /* define charger consumer */
 static struct charger_consumer *flashlight_charger_consumer;
@@ -81,41 +81,41 @@ static struct charger_consumer *flashlight_charger_consumer;
 static int is_decrease_voltage;
 
 /* platform data */
-struct rt5081_platform_data {
+struct mt6370_platform_data {
 	int channel_num;
 	struct flashlight_device_id *dev_id;
 };
 
 
 /******************************************************************************
- * rt5081 operations
+ * mt6370 operations
  *****************************************************************************/
-static const int rt5081_current[RT5081_LEVEL_NUM] = {
+static const int mt6370_current[MT6370_LEVEL_NUM] = {
 	  25,   50,  75, 100, 125, 150, 175,  200,  225,  250,
 	 275,  300, 325, 350, 375, 400, 450,  500,  550,  600,
 	 650,  700, 750, 800, 850, 900, 950, 1000, 1050, 1100,
 	1150, 1200
 };
 
-static const unsigned char rt5081_torch_level[RT5081_LEVEL_TORCH] = {
+static const unsigned char mt6370_torch_level[MT6370_LEVEL_TORCH] = {
 	0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0x10, 0x12,
 	0x14, 0x16, 0x18, 0x1A, 0x1C, 0x1E
 };
 
-static const unsigned char rt5081_strobe_level[RT5081_LEVEL_FLASH] = {
+static const unsigned char mt6370_strobe_level[MT6370_LEVEL_FLASH] = {
 	0x80, 0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0x10,
 	0x12, 0x14, 0x16, 0x18, 0x1A, 0x1C, 0x20, 0x24, 0x28, 0x2C,
 	0x30, 0x34, 0x38, 0x3C, 0x40, 0x44, 0x48, 0x4C, 0x50, 0x54,
 	0x58, 0x5C
 };
 
-static int rt5081_decouple_mode;
-static int rt5081_en_ch1;
-static int rt5081_en_ch2;
-static int rt5081_level_ch1;
-static int rt5081_level_ch2;
+static int mt6370_decouple_mode;
+static int mt6370_en_ch1;
+static int mt6370_en_ch2;
+static int mt6370_level_ch1;
+static int mt6370_level_ch2;
 
-static int rt5081_is_charger_ready(void)
+static int mt6370_is_charger_ready(void)
 {
 	if (flashlight_is_ready(flashlight_dev_ch1) &&
 			flashlight_is_ready(flashlight_dev_ch2))
@@ -124,39 +124,39 @@ static int rt5081_is_charger_ready(void)
 		return FLASHLIGHT_CHARGER_NOT_READY;
 }
 
-static int rt5081_is_torch(int level)
+static int mt6370_is_torch(int level)
 {
-	if (level >= RT5081_LEVEL_TORCH)
+	if (level >= MT6370_LEVEL_TORCH)
 		return -1;
 
 	return 0;
 }
 
 #if 0
-static int rt5081_is_torch_by_timeout(int timeout)
+static int mt6370_is_torch_by_timeout(int timeout)
 {
 	if (!timeout)
 		return 0;
 
-	if (timeout >= RT5081_WDT_TIMEOUT)
+	if (timeout >= MT6370_WDT_TIMEOUT)
 		return 0;
 
 	return -1;
 }
 #endif
 
-static int rt5081_verify_level(int level)
+static int mt6370_verify_level(int level)
 {
 	if (level < 0)
 		level = 0;
-	else if (level >= RT5081_LEVEL_NUM)
-		level = RT5081_LEVEL_NUM - 1;
+	else if (level >= MT6370_LEVEL_NUM)
+		level = MT6370_LEVEL_NUM - 1;
 
 	return level;
 }
 
 /* flashlight enable function */
-static int rt5081_enable(void)
+static int mt6370_enable(void)
 {
 	int ret = 0;
 	flashlight_mode_t mode = FLASHLIGHT_MODE_TORCH;
@@ -167,18 +167,18 @@ static int rt5081_enable(void)
 	}
 
 	/* set flash mode if any channel is flash mode */
-	if ((rt5081_en_ch1 == RT5081_ENABLE_FLASH)
-			|| (rt5081_en_ch2 == RT5081_ENABLE_FLASH))
+	if ((mt6370_en_ch1 == MT6370_ENABLE_FLASH)
+			|| (mt6370_en_ch2 == MT6370_ENABLE_FLASH))
 		mode = FLASHLIGHT_MODE_FLASH;
 
 	/* enable channel 1 and channel 2 */
-	if (rt5081_en_ch1)
+	if (mt6370_en_ch1)
 		ret |= flashlight_set_mode(
 				flashlight_dev_ch1, mode);
 	else
 		ret |= flashlight_set_mode(
 				flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
-	if (rt5081_en_ch2)
+	if (mt6370_en_ch2)
 		ret |= flashlight_set_mode(
 				flashlight_dev_ch2, mode);
 	else
@@ -192,7 +192,7 @@ static int rt5081_enable(void)
 }
 
 /* flashlight disable function */
-static int rt5081_disable(void)
+static int mt6370_disable(void)
 {
 	int ret = 0;
 
@@ -212,10 +212,10 @@ static int rt5081_disable(void)
 }
 
 /* set flashlight level */
-static int rt5081_set_level_ch1(int level)
+static int mt6370_set_level_ch1(int level)
 {
-	level = rt5081_verify_level(level);
-	rt5081_level_ch1 = level;
+	level = mt6370_verify_level(level);
+	mt6370_level_ch1 = level;
 
 	if (!flashlight_dev_ch1) {
 		pr_err("Failed to set ht level since no flashlight device.\n");
@@ -223,19 +223,19 @@ static int rt5081_set_level_ch1(int level)
 	}
 
 	/* set brightness level */
-	if (!rt5081_is_torch(level))
+	if (!mt6370_is_torch(level))
 		flashlight_set_torch_brightness(
-				flashlight_dev_ch1, rt5081_torch_level[level]);
+				flashlight_dev_ch1, mt6370_torch_level[level]);
 	flashlight_set_strobe_brightness(
-			flashlight_dev_ch1, rt5081_strobe_level[level]);
+			flashlight_dev_ch1, mt6370_strobe_level[level]);
 
 	return 0;
 }
 
-static int rt5081_set_level_ch2(int level)
+static int mt6370_set_level_ch2(int level)
 {
-	level = rt5081_verify_level(level);
-	rt5081_level_ch2 = level;
+	level = mt6370_verify_level(level);
+	mt6370_level_ch2 = level;
 
 	if (!flashlight_dev_ch2) {
 		pr_err("Failed to set lt level since no flashlight device.\n");
@@ -243,21 +243,21 @@ static int rt5081_set_level_ch2(int level)
 	}
 
 	/* set brightness level */
-	if (!rt5081_is_torch(level))
+	if (!mt6370_is_torch(level))
 		flashlight_set_torch_brightness(
-				flashlight_dev_ch2, rt5081_torch_level[level]);
+				flashlight_dev_ch2, mt6370_torch_level[level]);
 	flashlight_set_strobe_brightness(
-			flashlight_dev_ch2, rt5081_strobe_level[level]);
+			flashlight_dev_ch2, mt6370_strobe_level[level]);
 
 	return 0;
 }
 
-static int rt5081_set_level(int channel, int level)
+static int mt6370_set_level(int channel, int level)
 {
-	if (channel == RT5081_CHANNEL_CH1)
-		rt5081_set_level_ch1(level);
-	else if (channel == RT5081_CHANNEL_CH2)
-		rt5081_set_level_ch2(level);
+	if (channel == MT6370_CHANNEL_CH1)
+		mt6370_set_level_ch1(level);
+	else if (channel == MT6370_CHANNEL_CH2)
+		mt6370_set_level_ch2(level);
 	else {
 		pr_err("Error channel\n");
 		return -1;
@@ -266,10 +266,10 @@ static int rt5081_set_level(int channel, int level)
 	return 0;
 }
 
-static int rt5081_set_scenario(int scenario)
+static int mt6370_set_scenario(int scenario)
 {
 	/* set decouple mode */
-	rt5081_decouple_mode = scenario & FLASHLIGHT_SCENARIO_DECOUPLE_MASK;
+	mt6370_decouple_mode = scenario & FLASHLIGHT_SCENARIO_DECOUPLE_MASK;
 
 	/* notify charger to increase or decrease voltage */
 	if (!flashlight_charger_consumer) {
@@ -277,7 +277,7 @@ static int rt5081_set_scenario(int scenario)
 		return -1;
 	}
 
-	mutex_lock(&rt5081_mutex);
+	mutex_lock(&mt6370_mutex);
 	if (scenario & FLASHLIGHT_SCENARIO_CAMERA_MASK) {
 		if (!is_decrease_voltage) {
 			pr_info("Decrease voltage level.\n");
@@ -291,20 +291,20 @@ static int rt5081_set_scenario(int scenario)
 			is_decrease_voltage = 0;
 		}
 	}
-	mutex_unlock(&rt5081_mutex);
+	mutex_unlock(&mt6370_mutex);
 
 	return 0;
 }
 
 /* flashlight init */
-static int rt5081_init(void)
+static int mt6370_init(void)
 {
 	/* clear flashlight state */
-	rt5081_en_ch1 = RT5081_NONE;
-	rt5081_en_ch2 = RT5081_NONE;
+	mt6370_en_ch1 = MT6370_NONE;
+	mt6370_en_ch2 = MT6370_NONE;
 
 	/* clear decouple mode */
-	rt5081_decouple_mode = FLASHLIGHT_SCENARIO_COUPLE;
+	mt6370_decouple_mode = FLASHLIGHT_SCENARIO_COUPLE;
 
 	/* clear charger status */
 	is_decrease_voltage = 0;
@@ -313,55 +313,55 @@ static int rt5081_init(void)
 }
 
 /* flashlight uninit */
-static int rt5081_uninit(void)
+static int mt6370_uninit(void)
 {
 	/* clear flashlight state */
-	rt5081_en_ch1 = RT5081_NONE;
-	rt5081_en_ch2 = RT5081_NONE;
+	mt6370_en_ch1 = MT6370_NONE;
+	mt6370_en_ch2 = MT6370_NONE;
 
 	/* clear decouple mode */
-	rt5081_decouple_mode = FLASHLIGHT_SCENARIO_COUPLE;
+	mt6370_decouple_mode = FLASHLIGHT_SCENARIO_COUPLE;
 
 	/* clear charger status */
 	is_decrease_voltage = 0;
 
-	return rt5081_disable();
+	return mt6370_disable();
 }
 
 
 /******************************************************************************
  * Timer and work queue
  *****************************************************************************/
-static void rt5081_work_disable_ch1(struct work_struct *data)
+static void mt6370_work_disable_ch1(struct work_struct *data)
 {
 	pr_debug("ht work queue callback\n");
-	rt5081_disable();
+	mt6370_disable();
 }
 
-static void rt5081_work_disable_ch2(struct work_struct *data)
+static void mt6370_work_disable_ch2(struct work_struct *data)
 {
 	pr_debug("lt work queue callback\n");
-	rt5081_disable();
+	mt6370_disable();
 }
 
-static enum hrtimer_restart rt5081_timer_func_ch1(struct hrtimer *timer)
+static enum hrtimer_restart mt6370_timer_func_ch1(struct hrtimer *timer)
 {
-	schedule_work(&rt5081_work_ch1);
+	schedule_work(&mt6370_work_ch1);
 	return HRTIMER_NORESTART;
 }
 
-static enum hrtimer_restart rt5081_timer_func_ch2(struct hrtimer *timer)
+static enum hrtimer_restart mt6370_timer_func_ch2(struct hrtimer *timer)
 {
-	schedule_work(&rt5081_work_ch2);
+	schedule_work(&mt6370_work_ch2);
 	return HRTIMER_NORESTART;
 }
 
-static int rt5081_timer_start(int channel, ktime_t ktime)
+static int mt6370_timer_start(int channel, ktime_t ktime)
 {
-	if (channel == RT5081_CHANNEL_CH1)
-		hrtimer_start(&rt5081_timer_ch1, ktime, HRTIMER_MODE_REL);
-	else if (channel == RT5081_CHANNEL_CH2)
-		hrtimer_start(&rt5081_timer_ch2, ktime, HRTIMER_MODE_REL);
+	if (channel == MT6370_CHANNEL_CH1)
+		hrtimer_start(&mt6370_timer_ch1, ktime, HRTIMER_MODE_REL);
+	else if (channel == MT6370_CHANNEL_CH2)
+		hrtimer_start(&mt6370_timer_ch2, ktime, HRTIMER_MODE_REL);
 	else {
 		pr_err("Error channel\n");
 		return -1;
@@ -370,12 +370,12 @@ static int rt5081_timer_start(int channel, ktime_t ktime)
 	return 0;
 }
 
-static int rt5081_timer_cancel(int channel)
+static int mt6370_timer_cancel(int channel)
 {
-	if (channel == RT5081_CHANNEL_CH1)
-		hrtimer_cancel(&rt5081_timer_ch1);
-	else if (channel == RT5081_CHANNEL_CH2)
-		hrtimer_cancel(&rt5081_timer_ch2);
+	if (channel == MT6370_CHANNEL_CH1)
+		hrtimer_cancel(&mt6370_timer_ch1);
+	else if (channel == MT6370_CHANNEL_CH2)
+		hrtimer_cancel(&mt6370_timer_ch2);
 	else {
 		pr_err("Error channel\n");
 		return -1;
@@ -387,60 +387,60 @@ static int rt5081_timer_cancel(int channel)
 /******************************************************************************
  * Flashlight operation wrapper function
  *****************************************************************************/
-static int rt5081_operate(int channel, int enable)
+static int mt6370_operate(int channel, int enable)
 {
 	ktime_t ktime;
 
 	/* setup enable/disable */
-	if (channel == RT5081_CHANNEL_CH1) {
-		rt5081_en_ch1 = enable;
-		if (rt5081_en_ch1)
-			if (rt5081_is_torch(rt5081_level_ch1))
-				rt5081_en_ch1 = RT5081_ENABLE_FLASH;
-	} else if (channel == RT5081_CHANNEL_CH2) {
-		rt5081_en_ch2 = enable;
-		if (rt5081_en_ch2)
-			if (rt5081_is_torch(rt5081_level_ch2))
-				rt5081_en_ch2 = RT5081_ENABLE_FLASH;
+	if (channel == MT6370_CHANNEL_CH1) {
+		mt6370_en_ch1 = enable;
+		if (mt6370_en_ch1)
+			if (mt6370_is_torch(mt6370_level_ch1))
+				mt6370_en_ch1 = MT6370_ENABLE_FLASH;
+	} else if (channel == MT6370_CHANNEL_CH2) {
+		mt6370_en_ch2 = enable;
+		if (mt6370_en_ch2)
+			if (mt6370_is_torch(mt6370_level_ch2))
+				mt6370_en_ch2 = MT6370_ENABLE_FLASH;
 	} else {
 		pr_err("Error channel\n");
 		return -1;
 	}
 
 	/* decouple mode */
-	if (rt5081_decouple_mode) {
-		if (channel == RT5081_CHANNEL_CH1)
-			rt5081_en_ch2 = RT5081_DISABLE;
-		else if (channel == RT5081_CHANNEL_CH2)
-			rt5081_en_ch1 = RT5081_DISABLE;
+	if (mt6370_decouple_mode) {
+		if (channel == MT6370_CHANNEL_CH1)
+			mt6370_en_ch2 = MT6370_DISABLE;
+		else if (channel == MT6370_CHANNEL_CH2)
+			mt6370_en_ch1 = MT6370_DISABLE;
 	}
 
 	/* operate flashlight and setup timer */
-	if ((rt5081_en_ch1 != RT5081_NONE) && (rt5081_en_ch2 != RT5081_NONE)) {
-		if ((rt5081_en_ch1 == RT5081_DISABLE) &&
-				(rt5081_en_ch2 == RT5081_DISABLE)) {
-			rt5081_disable();
-			rt5081_timer_cancel(RT5081_CHANNEL_CH1);
-			rt5081_timer_cancel(RT5081_CHANNEL_CH2);
+	if ((mt6370_en_ch1 != MT6370_NONE) && (mt6370_en_ch2 != MT6370_NONE)) {
+		if ((mt6370_en_ch1 == MT6370_DISABLE) &&
+				(mt6370_en_ch2 == MT6370_DISABLE)) {
+			mt6370_disable();
+			mt6370_timer_cancel(MT6370_CHANNEL_CH1);
+			mt6370_timer_cancel(MT6370_CHANNEL_CH2);
 		} else {
-			if (rt5081_timeout_ms[RT5081_CHANNEL_CH1]) {
+			if (mt6370_timeout_ms[MT6370_CHANNEL_CH1]) {
 				ktime = ktime_set(
-						rt5081_timeout_ms[RT5081_CHANNEL_CH1] / 1000,
-						(rt5081_timeout_ms[RT5081_CHANNEL_CH1] % 1000) * 1000000);
-				rt5081_timer_start(RT5081_CHANNEL_CH1, ktime);
+						mt6370_timeout_ms[MT6370_CHANNEL_CH1] / 1000,
+						(mt6370_timeout_ms[MT6370_CHANNEL_CH1] % 1000) * 1000000);
+				mt6370_timer_start(MT6370_CHANNEL_CH1, ktime);
 			}
-			if (rt5081_timeout_ms[RT5081_CHANNEL_CH2]) {
+			if (mt6370_timeout_ms[MT6370_CHANNEL_CH2]) {
 				ktime = ktime_set(
-						rt5081_timeout_ms[RT5081_CHANNEL_CH2] / 1000,
-						(rt5081_timeout_ms[RT5081_CHANNEL_CH2] % 1000) * 1000000);
-				rt5081_timer_start(RT5081_CHANNEL_CH2, ktime);
+						mt6370_timeout_ms[MT6370_CHANNEL_CH2] / 1000,
+						(mt6370_timeout_ms[MT6370_CHANNEL_CH2] % 1000) * 1000000);
+				mt6370_timer_start(MT6370_CHANNEL_CH2, ktime);
 			}
-			rt5081_enable();
+			mt6370_enable();
 		}
 
 		/* clear flashlight state */
-		rt5081_en_ch1 = RT5081_NONE;
-		rt5081_en_ch2 = RT5081_NONE;
+		mt6370_en_ch1 = MT6370_NONE;
+		mt6370_en_ch2 = MT6370_NONE;
 	}
 
 	return 0;
@@ -449,7 +449,7 @@ static int rt5081_operate(int channel, int enable)
 /******************************************************************************
  * Flashlight operations
  *****************************************************************************/
-static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
+static int mt6370_ioctl(unsigned int cmd, unsigned long arg)
 {
 	struct flashlight_dev_arg *fl_arg;
 	int channel;
@@ -458,7 +458,7 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 	channel = fl_arg->channel;
 
 	/* verify channel */
-	if (channel < 0 || channel >= RT5081_CHANNEL_NUM) {
+	if (channel < 0 || channel >= MT6370_CHANNEL_NUM) {
 		pr_err("Failed with error channel\n");
 		return -EINVAL;
 	}
@@ -467,52 +467,52 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
 		pr_debug("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
 				channel, (int)fl_arg->arg);
-		rt5081_timeout_ms[channel] = fl_arg->arg;
+		mt6370_timeout_ms[channel] = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
 		pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
-		rt5081_set_level(channel, fl_arg->arg);
+		mt6370_set_level(channel, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_SCENARIO:
 		pr_debug("FLASH_IOC_SET_SCENARIO(%d): %d\n",
 				channel, (int)fl_arg->arg);
-		rt5081_set_scenario(fl_arg->arg);
+		mt6370_set_scenario(fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
 		pr_debug("FLASH_IOC_SET_ONOFF(%d): %d\n",
 				channel, (int)fl_arg->arg);
-		rt5081_operate(channel, fl_arg->arg);
+		mt6370_operate(channel, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_IS_CHARGER_READY:
 		pr_debug("FLASH_IOC_IS_CHARGER_READY(%d)\n", channel);
-		fl_arg->arg = rt5081_is_charger_ready();
+		fl_arg->arg = mt6370_is_charger_ready();
 		break;
 
 	case FLASH_IOC_GET_DUTY_NUMBER:
 		pr_debug("FLASH_IOC_GET_DUTY_NUMBER(%d)\n", channel);
-		fl_arg->arg = RT5081_LEVEL_NUM;
+		fl_arg->arg = MT6370_LEVEL_NUM;
 		break;
 
 	case FLASH_IOC_GET_MAX_TORCH_DUTY:
 		pr_debug("FLASH_IOC_GET_MAX_TORCH_DUTY(%d)\n", channel);
-		fl_arg->arg = RT5081_LEVEL_TORCH - 1;
+		fl_arg->arg = MT6370_LEVEL_TORCH - 1;
 		break;
 
 	case FLASH_IOC_GET_DUTY_CURRENT:
-		fl_arg->arg = rt5081_verify_level(fl_arg->arg);
+		fl_arg->arg = mt6370_verify_level(fl_arg->arg);
 		pr_debug("FLASH_IOC_GET_DUTY_CURRENT(%d): %d\n",
 				channel, (int)fl_arg->arg);
-		fl_arg->arg = rt5081_current[fl_arg->arg];
+		fl_arg->arg = mt6370_current[fl_arg->arg];
 		break;
 
 	case FLASH_IOC_GET_HW_TIMEOUT:
 		pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
-		fl_arg->arg = RT5081_HW_TIMEOUT;
+		fl_arg->arg = MT6370_HW_TIMEOUT;
 		break;
 
 	default:
@@ -524,78 +524,78 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 	return 0;
 }
 
-static int rt5081_open(void)
+static int mt6370_open(void)
 {
 	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int rt5081_release(void)
+static int mt6370_release(void)
 {
 	/* Move to set driver for saving power */
 	return 0;
 }
 
-static int rt5081_set_driver(int set)
+static int mt6370_set_driver(int set)
 {
 	int ret = 0;
 
 	/* set chip and usage count */
-	mutex_lock(&rt5081_mutex);
+	mutex_lock(&mt6370_mutex);
 	if (set) {
 		if (!use_count)
-			ret = rt5081_init();
+			ret = mt6370_init();
 		use_count++;
 		pr_debug("Set driver: %d\n", use_count);
 	} else {
 		use_count--;
 		if (!use_count)
-			ret = rt5081_uninit();
+			ret = mt6370_uninit();
 		if (use_count < 0)
 			use_count = 0;
 		pr_debug("Unset driver: %d\n", use_count);
 	}
-	mutex_unlock(&rt5081_mutex);
+	mutex_unlock(&mt6370_mutex);
 
 	return ret;
 }
 
-static ssize_t rt5081_strobe_store(struct flashlight_arg arg)
+static ssize_t mt6370_strobe_store(struct flashlight_arg arg)
 {
-	rt5081_set_driver(1);
-	rt5081_set_scenario(
+	mt6370_set_driver(1);
+	mt6370_set_scenario(
 			FLASHLIGHT_SCENARIO_CAMERA | FLASHLIGHT_SCENARIO_COUPLE);
-	rt5081_set_level(arg.channel, arg.level);
-	rt5081_timeout_ms[arg.channel] = 0;
+	mt6370_set_level(arg.channel, arg.level);
+	mt6370_timeout_ms[arg.channel] = 0;
 
 	if (arg.level < 0)
-		rt5081_operate(arg.channel, RT5081_DISABLE);
+		mt6370_operate(arg.channel, MT6370_DISABLE);
 	else
-		rt5081_operate(arg.channel, RT5081_ENABLE);
+		mt6370_operate(arg.channel, MT6370_ENABLE);
 
 	msleep(arg.dur);
-	rt5081_set_scenario(
+	mt6370_set_scenario(
 			FLASHLIGHT_SCENARIO_FLASHLIGHT | FLASHLIGHT_SCENARIO_COUPLE);
-	rt5081_operate(arg.channel, RT5081_DISABLE);
-	rt5081_set_driver(0);
+	mt6370_operate(arg.channel, MT6370_DISABLE);
+	mt6370_set_driver(0);
 
 	return 0;
 }
 
-static struct flashlight_operations rt5081_ops = {
-	rt5081_open,
-	rt5081_release,
-	rt5081_ioctl,
-	rt5081_strobe_store,
-	rt5081_set_driver
+static struct flashlight_operations mt6370_ops = {
+	mt6370_open,
+	mt6370_release,
+	mt6370_ioctl,
+	mt6370_strobe_store,
+	mt6370_set_driver
 };
 
 
 /******************************************************************************
  * Platform device and driver
  *****************************************************************************/
-static int rt5081_parse_dt(struct device *dev,
-		struct rt5081_platform_data *pdata)
+static int mt6370_parse_dt(struct device *dev,
+		struct mt6370_platform_data *pdata)
 {
 	struct device_node *np, *cnp;
 	u32 decouple = 0;
@@ -629,7 +629,7 @@ static int rt5081_parse_dt(struct device *dev,
 			goto err_node_put;
 		if (of_property_read_u32(cnp, "part", &pdata->dev_id[i].part))
 			goto err_node_put;
-		snprintf(pdata->dev_id[i].name, FLASHLIGHT_NAME_SIZE, RT5081_NAME);
+		snprintf(pdata->dev_id[i].name, FLASHLIGHT_NAME_SIZE, MT6370_NAME);
 		pdata->dev_id[i].channel = i;
 		pdata->dev_id[i].decouple = decouple;
 
@@ -647,9 +647,9 @@ err_node_put:
 	return -EINVAL;
 }
 
-static int rt5081_probe(struct platform_device *pdev)
+static int mt6370_probe(struct platform_device *pdev)
 {
-	struct rt5081_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	struct mt6370_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	int ret;
 	int i;
 
@@ -661,22 +661,22 @@ static int rt5081_probe(struct platform_device *pdev)
 		if (!pdata)
 			return -ENOMEM;
 		pdev->dev.platform_data = pdata;
-		ret = rt5081_parse_dt(&pdev->dev, pdata);
+		ret = mt6370_parse_dt(&pdev->dev, pdata);
 		if (ret)
 			return ret;
 	}
 
 	/* init work queue */
-	INIT_WORK(&rt5081_work_ch1, rt5081_work_disable_ch1);
-	INIT_WORK(&rt5081_work_ch2, rt5081_work_disable_ch2);
+	INIT_WORK(&mt6370_work_ch1, mt6370_work_disable_ch1);
+	INIT_WORK(&mt6370_work_ch2, mt6370_work_disable_ch2);
 
 	/* init timer */
-	hrtimer_init(&rt5081_timer_ch1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	rt5081_timer_ch1.function = rt5081_timer_func_ch1;
-	hrtimer_init(&rt5081_timer_ch2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	rt5081_timer_ch2.function = rt5081_timer_func_ch2;
-	rt5081_timeout_ms[RT5081_CHANNEL_CH1] = 600;
-	rt5081_timeout_ms[RT5081_CHANNEL_CH2] = 600;
+	hrtimer_init(&mt6370_timer_ch1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	mt6370_timer_ch1.function = mt6370_timer_func_ch1;
+	hrtimer_init(&mt6370_timer_ch2, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	mt6370_timer_ch2.function = mt6370_timer_func_ch2;
+	mt6370_timeout_ms[MT6370_CHANNEL_CH1] = 600;
+	mt6370_timeout_ms[MT6370_CHANNEL_CH2] = 600;
 
 	/* clear attributes */
 	use_count = 0;
@@ -696,7 +696,7 @@ static int rt5081_probe(struct platform_device *pdev)
 
 	/* setup strobe mode timeout */
 	if (flashlight_set_strobe_timeout(flashlight_dev_ch1,
-				RT5081_HW_TIMEOUT, RT5081_HW_TIMEOUT + 200) < 0)
+				MT6370_HW_TIMEOUT, MT6370_HW_TIMEOUT + 200) < 0)
 		pr_err("Failed to set strobe timeout.\n");
 
 	/* get charger consumer manager */
@@ -709,10 +709,10 @@ static int rt5081_probe(struct platform_device *pdev)
 	/* register flashlight device */
 	if (pdata->channel_num) {
 		for (i = 0; i < pdata->channel_num; i++)
-			if (flashlight_dev_register_by_device_id(&pdata->dev_id[i], &rt5081_ops))
+			if (flashlight_dev_register_by_device_id(&pdata->dev_id[i], &mt6370_ops))
 				return -EFAULT;
 	} else {
-		if (flashlight_dev_register(RT5081_NAME, &rt5081_ops))
+		if (flashlight_dev_register(MT6370_NAME, &mt6370_ops))
 			return -EFAULT;
 	}
 
@@ -721,9 +721,9 @@ static int rt5081_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int rt5081_remove(struct platform_device *pdev)
+static int mt6370_remove(struct platform_device *pdev)
 {
-	struct rt5081_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	struct mt6370_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	int i;
 
 	pr_debug("Remove start.\n");
@@ -735,11 +735,11 @@ static int rt5081_remove(struct platform_device *pdev)
 		for (i = 0; i < pdata->channel_num; i++)
 			flashlight_dev_unregister_by_device_id(&pdata->dev_id[i]);
 	else
-		flashlight_dev_unregister(RT5081_NAME);
+		flashlight_dev_unregister(MT6370_NAME);
 
 	/* flush work queue */
-	flush_work(&rt5081_work_ch1);
-	flush_work(&rt5081_work_ch2);
+	flush_work(&mt6370_work_ch1);
+	flush_work(&mt6370_work_ch2);
 
 	/* clear RTK flashlight device */
 	flashlight_dev_ch1 = NULL;
@@ -751,50 +751,50 @@ static int rt5081_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_OF
-static const struct of_device_id rt5081_of_match[] = {
-	{.compatible = RT5081_DTNAME},
+static const struct of_device_id mt6370_of_match[] = {
+	{.compatible = MT6370_DTNAME},
 	{},
 };
-MODULE_DEVICE_TABLE(of, rt5081_of_match);
+MODULE_DEVICE_TABLE(of, mt6370_of_match);
 #else
-static struct platform_device rt5081_platform_device[] = {
+static struct platform_device mt6370_platform_device[] = {
 	{
-		.name = RT5081_NAME,
+		.name = MT6370_NAME,
 		.id = 0,
 		.dev = {}
 	},
 	{}
 };
-MODULE_DEVICE_TABLE(platform, rt5081_platform_device);
+MODULE_DEVICE_TABLE(platform, mt6370_platform_device);
 #endif
 
-static struct platform_driver rt5081_platform_driver = {
-	.probe = rt5081_probe,
-	.remove = rt5081_remove,
+static struct platform_driver mt6370_platform_driver = {
+	.probe = mt6370_probe,
+	.remove = mt6370_remove,
 	.driver = {
-		.name = RT5081_NAME,
+		.name = MT6370_NAME,
 		.owner = THIS_MODULE,
 #ifdef CONFIG_OF
-		.of_match_table = rt5081_of_match,
+		.of_match_table = mt6370_of_match,
 #endif
 	},
 };
 
-static int __init flashlight_rt5081_init(void)
+static int __init flashlight_mt6370_init(void)
 {
 	int ret;
 
 	pr_debug("Init start.\n");
 
 #ifndef CONFIG_OF
-	ret = platform_device_register(&rt5081_platform_device);
+	ret = platform_device_register(&mt6370_platform_device);
 	if (ret) {
 		pr_err("Failed to register platform device\n");
 		return ret;
 	}
 #endif
 
-	ret = platform_driver_register(&rt5081_platform_driver);
+	ret = platform_driver_register(&mt6370_platform_driver);
 	if (ret) {
 		pr_err("Failed to register platform driver\n");
 		return ret;
@@ -805,20 +805,20 @@ static int __init flashlight_rt5081_init(void)
 	return 0;
 }
 
-static void __exit flashlight_rt5081_exit(void)
+static void __exit flashlight_mt6370_exit(void)
 {
 	pr_debug("Exit start.\n");
 
-	platform_driver_unregister(&rt5081_platform_driver);
+	platform_driver_unregister(&mt6370_platform_driver);
 
 	pr_debug("Exit done.\n");
 }
 
 /* replace module_init() since conflict in kernel init process */
-late_initcall(flashlight_rt5081_init);
-module_exit(flashlight_rt5081_exit);
+late_initcall(flashlight_mt6370_init);
+module_exit(flashlight_mt6370_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Simon Wang <Simon-TCH.Wang@mediatek.com>");
-MODULE_DESCRIPTION("MTK Flashlight RT5081 Driver");
+MODULE_DESCRIPTION("MTK Flashlight MT6370 Driver");
 
