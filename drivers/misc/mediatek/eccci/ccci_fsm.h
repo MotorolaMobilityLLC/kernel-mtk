@@ -97,7 +97,7 @@ struct ccci_fsm_command {
 #define MD_EX_CCIF_TIMEOUT 10000
 #define MD_EX_REC_OK_TIMEOUT 10000
 #define MD_EX_PASS_TIMEOUT 10000
-#define EE_DONE_TIMEOUT 120 /* s */
+#define EE_DONE_TIMEOUT 180 /* s */
 
 
 int ccci_fsm_init(struct ccci_modem *md);
