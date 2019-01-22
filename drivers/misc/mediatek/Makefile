@@ -197,7 +197,7 @@ endif
 #obj-$(CONFIG_MTK_DISPLAY_120HZ_SUPPORT)	+= rrc/
 #obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
 # Crypto performance tools (disable by default)
-#obj-n += crypto/
+obj-n += crypto/
 
 #widevine drm
 #obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
