@@ -1202,6 +1202,9 @@ cnmPeerAdd(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen, PUI
 	prCmd = (CMD_PEER_ADD_T *) pvSetBuffer;
 
 	prAisBssInfo = prAdapter->prAisBssInfo;	/* for AIS only test */
+	if (!prAisBssInfo)
+		return TDLS_STATUS_FAIL;
+
 	prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) prAdapter->prAisBssInfo->ucBssIndex, prCmd->aucPeerMac);
 
 	if (prStaRec == NULL) {
@@ -1212,10 +1215,8 @@ cnmPeerAdd(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen, PUI
 		if (prStaRec == NULL)
 			return TDLS_STATUS_RESOURCES;
 
-		if (prAisBssInfo) {
-			if (prAisBssInfo->ucBssIndex)
-				prStaRec->ucBssIndex = prAisBssInfo->ucBssIndex;
-		}
+		if (prAisBssInfo->ucBssIndex)
+			prStaRec->ucBssIndex = prAisBssInfo->ucBssIndex;
 
 		/* init the prStaRec */
 		/* prStaRec will be zero first in cnmStaRecAlloc() */
