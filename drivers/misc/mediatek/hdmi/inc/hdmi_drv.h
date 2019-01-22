@@ -488,7 +488,7 @@ struct HDMI_DRIVER {
 	void (*setcecrxmode)(u8 u1cecrxmode);
 	void (*hdmistatus)(void);
 	void (*hdcpkey)(u8 *pbhdcpkey);
-	void (*getedid)(HDMI_EDID_T *pv_get_info);
+	void (*getedid)(struct _HDMI_EDID_T *pv_get_info);
 	void (*setcecla)(struct CEC_DRV_ADDR_CFG_T *prAddr);
 	void (*sendsltdata)(u8 *pu1Data);
 	void (*getceccmd)(struct CEC_FRAME_DESCRIPTION_IO *frame);

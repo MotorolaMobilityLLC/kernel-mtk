@@ -75,7 +75,7 @@
 #define MTK_HDMI_ENABLE_HDCP                    HDMI_IOWR(58, unsigned int)
 #define MTK_HDMI_STATUS                         HDMI_IOWR(59, unsigned int)
 #define MTK_HDMI_HDCP_KEY                       HDMI_IOWR(60, struct hdmi_hdcp_key)
-#define MTK_HDMI_GET_EDID                       HDMI_IOWR(61, HDMI_EDID_T)
+#define MTK_HDMI_GET_EDID                       HDMI_IOWR(61, struct _HDMI_EDID_T)
 #define MTK_HDMI_SETLA                          HDMI_IOWR(62, struct CEC_DRV_ADDR_CFG)
 #define MTK_HDMI_GET_CECCMD                     HDMI_IOWR(63, struct CEC_FRAME_DESCRIPTION_IO)
 #define MTK_HDMI_SET_CECCMD                     HDMI_IOWR(64, struct CEC_SEND_MSG)
