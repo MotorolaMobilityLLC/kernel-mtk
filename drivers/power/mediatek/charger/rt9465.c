@@ -32,6 +32,11 @@
 #ifdef CONFIG_RT9465_PWR_EN_TO_MT6336
 #include <mt6336.h>
 #endif
+
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+#include <mach/mtk_6306_gpio.h>
+#endif
+
 #include "mtk_charger_intf.h"
 #include "rt9465.h"
 #define I2C_ACCESS_MAX_RETRY	5
@@ -68,6 +73,7 @@ struct rt9465_desc {
 	u32 cv;			/* uV */
 	u32 ieoc;		/* uA */
 	u32 safety_timer;	/* hour */
+	u32 mt6306_en_pin;
 	bool enable_te;
 	bool enable_wdt;
 	int regmap_represent_slave_addr;
@@ -84,6 +90,7 @@ static struct rt9465_desc rt9465_default_desc = {
 	.cv = 4350000,		/* uV */
 	.ieoc = 250000,		/* uA */
 	.safety_timer = 12,	/* hour */
+	.mt6306_en_pin = 1,
 	.enable_te = true,
 	.enable_wdt = true,
 	.regmap_represent_slave_addr = RT9465_SLAVE_ADDR,
@@ -881,6 +888,17 @@ static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 	if (of_property_read_u32(np, "safety_timer", &desc->safety_timer) < 0)
 		dev_err(info->dev, "%s: no safety timer\n", __func__);
 
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+	if (of_property_read_u32(np, "mt6306_en_pin", &desc->mt6306_en_pin) < 0)
+		dev_notice(info->dev, "%s: no mt6306_en_pin\n", __func__);
+
+	dev_info(info->dev, "6306_enable_pin:%d\n", desc->mt6306_en_pin);
+	if (desc->mt6306_en_pin != 0) {
+		mt6306_set_gpio_dir(desc->mt6306_en_pin, MT6306_GPIO_DIR_OUT);
+		mt6306_set_gpio_out(desc->mt6306_en_pin, MT6306_GPIO_OUT_LOW);
+	}
+#endif
+
 	desc->enable_te = of_property_read_bool(np, "enable_te");
 	desc->enable_wdt = of_property_read_bool(np, "enable_wdt");
 
@@ -891,19 +909,36 @@ static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 
 static int _rt9465_enable_chip(struct rt9465_info *info, bool enable)
 {
+	bool enable_i2c_protect = true;
+
 	dev_info(info->dev, "%s: enable = %d\n", __func__, enable);
 #ifndef CONFIG_RT9465_PWR_EN_TO_MT6336
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+	if (info->desc->mt6306_en_pin != 0) {
+		dev_info(info->dev, "%s: use MT6306 gpio to enable rt9465 pin:%d\n", __func__,
+			info->desc->mt6306_en_pin);
+		enable_i2c_protect = false;
+	}
+#else
 	if (!info->en_pinctrl || !info->en_enable || !info->en_disable) {
-		dev_err(info->dev, "%s: no en pinctrl\n", __func__);
+		dev_notice(info->dev, "%s: no en pinctrl\n", __func__);
 		return -EIO;
 	}
+#endif
 #endif
 
 	mutex_lock(&info->gpio_access_lock);
 	if (enable) {
-		i2c_lock_adapter(info->i2c->adapter);
+		if (enable_i2c_protect == true)
+			i2c_lock_adapter(info->i2c->adapter);
+
 #ifndef CONFIG_RT9465_PWR_EN_TO_MT6336
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+		if (info->desc->mt6306_en_pin != 0)
+			mt6306_set_gpio_out(info->desc->mt6306_en_pin, MT6306_GPIO_OUT_HIGH);
+#else
 		pinctrl_select_state(info->en_pinctrl, info->en_enable);
+#endif
 #else
 		mt6336_ctrl_enable(info->lowq_ctrl);
 		mt6336_set_flag_register_value(MT6336_GPIO_DOUT1_SET, 0x8);
@@ -911,10 +946,16 @@ static int _rt9465_enable_chip(struct rt9465_info *info, bool enable)
 #endif
 		dev_info(info->dev, "%s: set gpio high\n", __func__);
 		udelay(10);
-		i2c_unlock_adapter(info->i2c->adapter);
+		if (enable_i2c_protect == true)
+			i2c_unlock_adapter(info->i2c->adapter);
 	} else {
 #ifndef CONFIG_RT9465_PWR_EN_TO_MT6336
-		pinctrl_select_state(info->en_pinctrl, info->en_disable);
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+		if (info->desc->mt6306_en_pin != 0)
+			mt6306_set_gpio_out(info->desc->mt6306_en_pin, MT6306_GPIO_OUT_LOW);
+#else
+			pinctrl_select_state(info->en_pinctrl, info->en_disable);
+#endif
 #else
 		mt6336_ctrl_enable(info->lowq_ctrl);
 		mt6336_set_flag_register_value(MT6336_GPIO_DOUT0_CLR, 0x8);
@@ -923,8 +964,14 @@ static int _rt9465_enable_chip(struct rt9465_info *info, bool enable)
 		dev_info(info->dev, "%s: set gpio low\n", __func__);
 	}
 
+#ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
+		dev_info(info->dev, "gpio_dir:%d gpio_out:%d\n",
+		mt6306_get_gpio_dir(MT6306_GPIO_01),
+		mt6306_get_gpio_out(MT6306_GPIO_01));
+#endif
+
 	/* Wait for chip's enable/disable */
-	mdelay(10);
+	mdelay(1);
 	mutex_unlock(&info->gpio_access_lock);
 
 	return 0;
