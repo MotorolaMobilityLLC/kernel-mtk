@@ -13,6 +13,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 /dts-v1/;
+#include <dt-bindings/clock/mt6771-clk.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6771-msdc.h>
@@ -202,15 +203,48 @@
 		clock-frequency = <13000000>;
 	};
 
-	topckgen@10000000 {
-		compatible = "mediatek,topckgen";
-		reg = <0 0x10000000 0 0x1000>;
+	clocks {
+		clk_null: clk_null {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <0>;
+		};
+
+		clk26m: clk26m {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <26000000>;
+		};
+
+		clk32k: clk32k {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32000>;
+		};
 	};
 
-	infracfg_ao@10001000 {
-		compatible = "mediatek,infracfg_ao";
+	topckgen: topckgen@10000000 {
+		compatible = "mediatek,topckgen", "syscon";
+		reg = <0 0x10000000 0 0x1000>;
+		#clock-cells = <1>;
+	};
+
+	infracfg_ao: infracfg_ao@10001000 {
+		compatible = "mediatek,infracfg_ao", "syscon";
 		reg = <0 0x10001000 0 0x1000>;
 		interrupts = <GIC_SPI 150 IRQ_TYPE_EDGE_RISING>;
+		#clock-cells = <1>;
+	};
+
+	scpsys: scpsys@10001000 {
+		compatible = "mediatek,scpsys";
+		reg = <0 0x10001000 0 0x1000>,
+				<0 0x10006000 0 0x1000>,
+				<0 0x1020e000 0 0x1000>,
+				<0 0x10000000 0 0x1000>,
+				<0 0x1a001000 0 0x1000>,
+				<0 0x14019000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	iocfg_0@10002000 {
@@ -441,9 +475,10 @@
 		interrupts = <GIC_SPI 177 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
-	apmixed@1000c000 {
-		compatible = "mediatek,apmixed";
+	apmixed: apmixed@1000c000 {
+		compatible = "mediatek,apmixed", "syscon";
 		reg = <0 0x1000c000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	fhctl@1000ce00 {
@@ -1130,8 +1165,9 @@
 	};
 
 	audio: audio@11220000 {
-		compatible = "mediatek,audio";
+		compatible = "mediatek,audio", "syscon";
 		reg = <0 0x11220000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	audgpio: mt_soc_dl1_pcm@11220000 {
@@ -1204,9 +1240,10 @@
 		reg = <0 0x11fa0000 0 0xc000>;
 	};
 
-	mfgcfg@13000000 {
-		compatible = "mediatek,mfgcfg";
+	mfgcfg: mfgcfg@13000000 {
+		compatible = "mediatek,mfgcfg", "syscon";
 		reg = <0 0x13000000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	mali@13040000 {
@@ -1231,10 +1268,11 @@
 		reg = <0 0x13ffef00 0 0x1000>;
 	};
 
-	mmsys_config@14000000 {
-		compatible = "mediatek,mmsys_config";
+	mmsys_config: mmsys_config@14000000 {
+		compatible = "mediatek,mmsys_config", "syscon";
 		reg = <0 0x14000000 0 0x1000>;
 		interrupts = <GIC_SPI 239 IRQ_TYPE_LEVEL_LOW>;
+		#clock-cells = <1>;
 	};
 
 	mdp_rdma0@14001000 {
@@ -1432,9 +1470,10 @@
 		reg = <0 0x14020000 0 0x1000>;
 	};
 
-	vdec_gcon@16000000 {
-		compatible = "mediatek,vdec_gcon";
+	vdec_gcon: vdec_gcon@16000000 {
+		compatible = "mediatek,vdec_gcon", "syscon";
 		reg = <0 0x16000000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	smi_larb1@16010000 {
@@ -1514,9 +1553,10 @@
 		reg = <0 0x16029000 0 0x1000>;
 	};
 
-	venc_gcon@17000000 {
-		compatible = "mediatek,venc_gcon";
+	venc_gcon: venc_gcon@17000000 {
+		compatible = "mediatek,venc_gcon", "syscon";
 		reg = <0 0x17000000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	smi_larb4@17010000 {
@@ -1557,9 +1597,10 @@
 		reg = <0 0x1502e000 0 0x1000>;
 	};
 
-	imgsys@15020000 {
-		compatible = "mediatek,imgsys";
+	imgsys: imgsys@15020000 {
+		compatible = "mediatek,imgsys", "syscon";
 		reg = <0 0x15020000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	smi_larb2@1502f000 {
@@ -1665,14 +1706,16 @@
 		reg = <0 0x1502e000 0 0x1000>;
 	};
 
-	camsys@1a000000 {
-		compatible = "mediatek,camsys";
+	camsys: camsys@1a000000 {
+		compatible = "mediatek,camsys", "syscon";
 		reg = <0 0x1a000000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
-	ipu_conn@19000000 {
-		compatible = "mediatek,ipu_conn";
+	ipu_conn: ipu_conn@19000000 {
+		compatible = "mediatek,ipu_conn", "syscon";
 		reg = <0 0x19000000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
 	ipu0@19180000 {
