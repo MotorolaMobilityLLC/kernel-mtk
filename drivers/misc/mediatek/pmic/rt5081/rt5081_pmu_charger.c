@@ -33,7 +33,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.4_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.5_MTK"
 
 /* ======================= */
 /* RT5081 Charger Variable */
@@ -544,13 +544,16 @@ out:
 static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 	enum rt5081_adc_sel adc_sel, int *adc_val)
 {
-	int ret = 0;
-	u8 adc_data[2] = {0, 0};
+	int ret = 0, i = 0;
+	u8 adc_data[6] = {0};
 	bool adc_start = false;
 	u32 aicr = 0, ichg = 0;
 	s64 adc_result = 0;
+	const int max_retry_cnt = 5;
+
 
 	mutex_lock(&chg_data->adc_access_lock);
+	rt5081_enable_hidden_mode(chg_data, true);
 
 	/* Select ADC to desired channel */
 	ret = rt5081_pmu_reg_update_bits(
@@ -592,6 +595,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		RT5081_MASK_ADC_DONEI
 	);
 
+
 	/* Start ADC conversation */
 	ret = rt5081_pmu_reg_set_bit(chg_data->chip, RT5081_PMU_REG_CHGADC,
 		RT5081_MASK_ADC_START);
@@ -606,38 +610,50 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 	ret = wait_event_interruptible_timeout(chg_data->wait_queue,
 		chg_data->irq_flag[RT5081_CHG_IRQIDX_CHGIRQ6] & RT5081_MASK_ADC_DONEI,
 		msecs_to_jiffies(200));
-	if (ret <= 0) {
-		ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_CHGADC,
-			RT5081_SHIFT_ADC_START, &adc_start);
-		if (ret < 0 || adc_start) {
-			dev_err(chg_data->dev,
-				"%s: wait conversation failed, sel = %d, ret = %d\n",
-				__func__, adc_sel, ret);
-			ret = -EINVAL;
-			goto out;
-		}
+
+	/* Check ADC_START to make sure ADC is finished */
+	for (i = 0; i < max_retry_cnt; i++) {
+		ret = rt5081_pmu_reg_test_bit(chg_data->chip,
+			RT5081_PMU_REG_CHGADC, RT5081_SHIFT_ADC_START,
+			&adc_start);
+		if (!adc_start && ret >= 0)
+			break;
+		dev_err(chg_data->dev, "%s: ADC_START is still 1\n", __func__);
+		mdelay(10);
+	}
+	if (i == max_retry_cnt) {
+		dev_err(chg_data->dev,
+			"%s: wait conversation failed, sel = %d, ret = %d\n",
+			__func__, adc_sel, ret);
+		ret = -EINVAL;
+		goto out;
 	}
 
 	mdelay(1);
 
 	/* Read ADC data */
 	ret = rt5081_pmu_reg_block_read(chg_data->chip, RT5081_PMU_REG_ADCDATAH,
-		2, adc_data);
+		6, adc_data);
 	if (ret < 0) {
 		dev_err(chg_data->dev,
 			"%s: read ADC data failed, ret = %d\n", __func__, ret);
 		goto out;
 	}
 
-	dev_dbg_ratelimited(chg_data->dev,
+	dev_dbg(chg_data->dev,
 		"%s: adc_sel = %d, adc_h = 0x%02X, adc_l = 0x%02X\n",
 		__func__, adc_sel, adc_data[0], adc_data[1]);
+
+	dev_dbg(chg_data->dev,
+		"%s: 0x4e~51 = (0x%02X, 0x%02X, 0x%02X, 0x%02X)\n", __func__,
+		adc_data[2], adc_data[3], adc_data[4], adc_data[5]);
 
 	/* Calculate ADC value */
 	adc_result = (adc_data[0] * 256 + adc_data[1]) * rt5081_adc_unit[adc_sel]
 		+ rt5081_adc_offset[adc_sel];
 
 out:
+
 	/* Coefficient of IBUS & IBAT */
 	if (adc_sel == RT5081_ADC_IBUS) {
 		if (aicr < 400000) /* 400mA */
@@ -652,6 +668,7 @@ out:
 	}
 
 	*adc_val = adc_result;
+	rt5081_enable_hidden_mode(chg_data, false);
 	mutex_unlock(&chg_data->adc_access_lock);
 	return ret;
 }
@@ -1037,6 +1054,188 @@ static void rt5081_aicl_work_handler(struct work_struct *work)
 		dev_err(chg_data->dev, "%s: run aicl failed\n", __func__);
 }
 
+static int _rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
+{
+	int ret = 0;
+	u8 reg_ichg = 0;
+
+	/* For adc workaround */
+	mutex_lock(&chg_data->ichg_access_lock);
+
+	/* Find corresponding reg value */
+	reg_ichg = rt5081_find_closest_reg_value(
+		RT5081_ICHG_MIN,
+		RT5081_ICHG_MAX,
+		RT5081_ICHG_STEP,
+		RT5081_ICHG_NUM,
+		uA
+	);
+
+	dev_info(chg_data->dev, "%s: ichg = %d (0x%02X)\n", __func__, uA,
+		reg_ichg);
+
+	ret = rt5081_pmu_reg_update_bits(
+		chg_data->chip,
+		RT5081_PMU_REG_CHGCTRL7,
+		RT5081_MASK_ICHG,
+		reg_ichg << RT5081_SHIFT_ICHG
+	);
+
+	/* Workaround to make IEOC accurate */
+	if (uA < 900000) /* 900mA */
+		ret = rt5081_set_ieoc(chg_data,
+			chg_data->chg_desc->ieoc + 100000);
+	else
+		ret = rt5081_set_ieoc(chg_data, chg_data->chg_desc->ieoc);
+
+	/* For adc workaround */
+	mutex_unlock(&chg_data->ichg_access_lock);
+
+	return ret;
+}
+
+static int _rt5081_set_aicr(struct rt5081_pmu_charger_data *chg_data, u32 uA)
+{
+	int ret = 0;
+	u8 reg_aicr = 0;
+
+	mutex_lock(&chg_data->aicr_access_lock);
+
+	if (chg_data->aicr_limit != -1 && uA > chg_data->aicr_limit) {
+		dev_err(chg_data->dev,
+			"%s: %dmA over TA's cap, can only be %dmA\n",
+			__func__, uA, chg_data->aicr_limit);
+		uA = chg_data->aicr_limit;
+	}
+
+	/* Find corresponding reg value */
+	reg_aicr = rt5081_find_closest_reg_value(
+		RT5081_AICR_MIN,
+		RT5081_AICR_MAX,
+		RT5081_AICR_STEP,
+		RT5081_AICR_NUM,
+		uA
+	);
+
+	dev_info(chg_data->dev, "%s: aicr = %d (0x%02X)\n", __func__, uA,
+		reg_aicr);
+
+	ret = rt5081_pmu_reg_update_bits(
+		chg_data->chip,
+		RT5081_PMU_REG_CHGCTRL3,
+		RT5081_MASK_AICR,
+		reg_aicr << RT5081_SHIFT_AICR
+	);
+
+	mutex_unlock(&chg_data->aicr_access_lock);
+	return ret;
+}
+
+static int _rt5081_set_cv(struct rt5081_pmu_charger_data *chg_data, u32 uV)
+{
+	int ret = 0;
+	u8 reg_cv = 0;
+
+	reg_cv = rt5081_find_closest_reg_value(
+		RT5081_BAT_VOREG_MIN,
+		RT5081_BAT_VOREG_MAX,
+		RT5081_BAT_VOREG_STEP,
+		RT5081_BAT_VOREG_NUM,
+		uV
+	);
+
+	dev_info(chg_data->dev, "%s: bat voreg = %d (0x%02X)\n", __func__, uV,
+		reg_cv);
+
+	ret = rt5081_pmu_reg_update_bits(
+		chg_data->chip,
+		RT5081_PMU_REG_CHGCTRL4,
+		RT5081_MASK_BAT_VOREG,
+		reg_cv << RT5081_SHIFT_BAT_VOREG
+	);
+
+	return ret;
+}
+
+static int _rt5081_enable_safety_timer(struct rt5081_pmu_charger_data *chg_data,
+	bool en)
+{
+	int ret = 0;
+
+	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
+	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
+		(chg_data->chip, RT5081_PMU_REG_CHGCTRL12, RT5081_MASK_TMR_EN);
+
+	return ret;
+}
+
+static int rt5081_enable_hz(struct rt5081_pmu_charger_data *chg_data, bool en)
+{
+	int ret = 0;
+
+	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
+	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
+		(chg_data->chip, RT5081_PMU_REG_CHGCTRL1, RT5081_MASK_HZ_EN);
+
+	return ret;
+}
+
+static int rt5081_set_ircmp_resistor(struct rt5081_pmu_charger_data *chg_data,
+	u32 uohm)
+{
+	int ret = 0;
+	u8 reg_resistor = 0;
+
+	reg_resistor = rt5081_find_closest_reg_value(
+		RT5081_IRCMP_RES_MIN,
+		RT5081_IRCMP_RES_MAX,
+		RT5081_IRCMP_RES_STEP,
+		RT5081_IRCMP_RES_NUM,
+		uohm
+	);
+
+	dev_info(chg_data->dev, "%s: resistor = %d (0x%02X)\n", __func__, uohm,
+		reg_resistor);
+
+	ret = rt5081_pmu_reg_update_bits(
+		chg_data->chip,
+		RT5081_PMU_REG_CHGCTRL18,
+		RT5081_MASK_IRCMP_RES,
+		reg_resistor << RT5081_SHIFT_IRCMP_RES
+	);
+
+	return ret;
+}
+
+static int rt5081_set_ircmp_vclamp(struct rt5081_pmu_charger_data *chg_data,
+	u32 uV)
+{
+	int ret = 0;
+	u8 reg_vclamp = 0;
+
+	reg_vclamp = rt5081_find_closest_reg_value(
+		RT5081_IRCMP_VCLAMP_MIN,
+		RT5081_IRCMP_VCLAMP_MAX,
+		RT5081_IRCMP_VCLAMP_STEP,
+		RT5081_IRCMP_VCLAMP_NUM,
+		uV
+	);
+
+	dev_info(chg_data->dev, "%s: vclamp = %d (0x%02X)\n", __func__, uV,
+		reg_vclamp);
+
+	ret = rt5081_pmu_reg_update_bits(
+		chg_data->chip,
+		RT5081_PMU_REG_CHGCTRL18,
+		RT5081_MASK_IRCMP_VCLAMP,
+		reg_vclamp << RT5081_SHIFT_IRCMP_VCLAMP
+	);
+
+	return ret;
+}
+
+
+
 /* =================== */
 /* Released interfaces */
 /* =================== */
@@ -1055,28 +1254,13 @@ static int rt5081_enable_charging(struct charger_device *chg_dev, bool en)
 	return ret;
 }
 
-static int rt5081_enable_hz(struct charger_device *chg_dev, bool en)
-{
-	int ret = 0;
-	struct rt5081_pmu_charger_data *chg_data =
-		dev_get_drvdata(&chg_dev->dev);
-
-	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
-
-	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
-		(chg_data->chip, RT5081_PMU_REG_CHGCTRL1, RT5081_MASK_HZ_EN);
-
-	return ret;
-}
-
 static int rt5081_enable_safety_timer(struct charger_device *chg_dev, bool en)
 {
 	int ret = 0;
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
-	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
-		(chg_data->chip, RT5081_PMU_REG_CHGCTRL12, RT5081_MASK_TMR_EN);
+	ret = _rt5081_enable_safety_timer(chg_data, en);
 
 	return ret;
 }
@@ -1154,41 +1338,10 @@ static int rt5081_get_ichg(struct charger_device *chg_dev, u32 *ichg)
 static int rt5081_set_ichg(struct charger_device *chg_dev, u32 uA)
 {
 	int ret = 0;
-	u8 reg_ichg = 0;
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
-	/* For adc workaround */
-	mutex_lock(&chg_data->ichg_access_lock);
-
-	/* Find corresponding reg value */
-	reg_ichg = rt5081_find_closest_reg_value(
-		RT5081_ICHG_MIN,
-		RT5081_ICHG_MAX,
-		RT5081_ICHG_STEP,
-		RT5081_ICHG_NUM,
-		uA
-	);
-
-	dev_info(chg_data->dev, "%s: ichg = %d (0x%02X)\n", __func__, uA,
-		reg_ichg);
-
-	ret = rt5081_pmu_reg_update_bits(
-		chg_data->chip,
-		RT5081_PMU_REG_CHGCTRL7,
-		RT5081_MASK_ICHG,
-		reg_ichg << RT5081_SHIFT_ICHG
-	);
-
-	/* Workaround to make IEOC accurate */
-	if (uA < 900000) /* 900mA */
-		ret = rt5081_set_ieoc(chg_data,
-			chg_data->chg_desc->ieoc + 100000);
-	else
-		ret = rt5081_set_ieoc(chg_data, chg_data->chg_desc->ieoc);
-
-	/* For adc workaround */
-	mutex_unlock(&chg_data->ichg_access_lock);
+	ret = _rt5081_set_ichg(chg_data, uA);
 
 	return ret;
 }
@@ -1214,39 +1367,11 @@ static int rt5081_get_aicr(struct charger_device *chg_dev, u32 *aicr)
 static int rt5081_set_aicr(struct charger_device *chg_dev, u32 uA)
 {
 	int ret = 0;
-	u8 reg_aicr = 0;
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
-	mutex_lock(&chg_data->aicr_access_lock);
+	ret = _rt5081_set_aicr(chg_data, uA);
 
-	if (chg_data->aicr_limit != -1 && uA > chg_data->aicr_limit) {
-		dev_err(chg_data->dev,
-			"%s: %dmA over TA's cap, can only be %dmA\n",
-			__func__, uA, chg_data->aicr_limit);
-		uA = chg_data->aicr_limit;
-	}
-
-	/* Find corresponding reg value */
-	reg_aicr = rt5081_find_closest_reg_value(
-		RT5081_AICR_MIN,
-		RT5081_AICR_MAX,
-		RT5081_AICR_STEP,
-		RT5081_AICR_NUM,
-		uA
-	);
-
-	dev_info(chg_data->dev, "%s: aicr = %d (0x%02X)\n", __func__, uA,
-		reg_aicr);
-
-	ret = rt5081_pmu_reg_update_bits(
-		chg_data->chip,
-		RT5081_PMU_REG_CHGCTRL3,
-		RT5081_MASK_AICR,
-		reg_aicr << RT5081_SHIFT_AICR
-	);
-
-	mutex_unlock(&chg_data->aicr_access_lock);
 	return ret;
 }
 
@@ -1269,10 +1394,10 @@ static int rt5081_set_mivr(struct charger_device *chg_dev, u32 uV)
 	return ret;
 }
 
-static int rt5081_get_battery_voreg(struct charger_device *chg_dev, u32 *voreg)
+static int rt5081_get_cv(struct charger_device *chg_dev, u32 *cv)
 {
 	int ret = 0;
-	u8 reg_voreg = 0;
+	u8 reg_cv = 0;
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
@@ -1280,42 +1405,25 @@ static int rt5081_get_battery_voreg(struct charger_device *chg_dev, u32 *voreg)
 	if (ret < 0)
 		return ret;
 
-	reg_voreg = (ret & RT5081_MASK_BAT_VOREG) >> RT5081_SHIFT_BAT_VOREG;
+	reg_cv = (ret & RT5081_MASK_BAT_VOREG) >> RT5081_SHIFT_BAT_VOREG;
 
-	*voreg = rt5081_find_closest_real_value(
+	*cv = rt5081_find_closest_real_value(
 		RT5081_BAT_VOREG_MIN,
 		RT5081_BAT_VOREG_MAX,
 		RT5081_BAT_VOREG_STEP,
-		reg_voreg
+		reg_cv
 	);
 
 	return ret;
 }
 
-static int rt5081_set_battery_voreg(struct charger_device *chg_dev, u32 uV)
+static int rt5081_set_cv(struct charger_device *chg_dev, u32 uV)
 {
 	int ret = 0;
-	u8 reg_voreg = 0;
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
-	reg_voreg = rt5081_find_closest_reg_value(
-		RT5081_BAT_VOREG_MIN,
-		RT5081_BAT_VOREG_MAX,
-		RT5081_BAT_VOREG_STEP,
-		RT5081_BAT_VOREG_NUM,
-		uV
-	);
-
-	dev_info(chg_data->dev, "%s: bat voreg = %d (0x%02X)\n", __func__, uV,
-		reg_voreg);
-
-	ret = rt5081_pmu_reg_update_bits(
-		chg_data->chip,
-		RT5081_PMU_REG_CHGCTRL4,
-		RT5081_MASK_BAT_VOREG,
-		reg_voreg << RT5081_SHIFT_BAT_VOREG
-	);
+	ret = _rt5081_set_cv(chg_data, uV);
 
 	return ret;
 }
@@ -1934,62 +2042,6 @@ static int rt5081_get_vbus(struct charger_device *chg_dev, u32 *vbus)
 }
 #endif
 
-static int rt5081_set_ircmp_resistor(struct charger_device *chg_dev, u32 uohm)
-{
-	int ret = 0;
-	u8 reg_resistor = 0;
-	struct rt5081_pmu_charger_data *chg_data =
-		dev_get_drvdata(&chg_dev->dev);
-
-	reg_resistor = rt5081_find_closest_reg_value(
-		RT5081_IRCMP_RES_MIN,
-		RT5081_IRCMP_RES_MAX,
-		RT5081_IRCMP_RES_STEP,
-		RT5081_IRCMP_RES_NUM,
-		uohm
-	);
-
-	dev_info(chg_data->dev, "%s: resistor = %d (0x%02X)\n", __func__, uohm,
-		reg_resistor);
-
-	ret = rt5081_pmu_reg_update_bits(
-		chg_data->chip,
-		RT5081_PMU_REG_CHGCTRL18,
-		RT5081_MASK_IRCMP_RES,
-		reg_resistor << RT5081_SHIFT_IRCMP_RES
-	);
-
-	return ret;
-}
-
-static int rt5081_set_ircmp_vclamp(struct charger_device *chg_dev, u32 uV)
-{
-	int ret = 0;
-	u8 reg_vclamp = 0;
-	struct rt5081_pmu_charger_data *chg_data =
-		dev_get_drvdata(&chg_dev->dev);
-
-	reg_vclamp = rt5081_find_closest_reg_value(
-		RT5081_IRCMP_VCLAMP_MIN,
-		RT5081_IRCMP_VCLAMP_MAX,
-		RT5081_IRCMP_VCLAMP_STEP,
-		RT5081_IRCMP_VCLAMP_NUM,
-		uV
-	);
-
-	dev_info(chg_data->dev, "%s: vclamp = %d (0x%02X)\n", __func__, uV,
-		reg_vclamp);
-
-	ret = rt5081_pmu_reg_update_bits(
-		chg_data->chip,
-		RT5081_PMU_REG_CHGCTRL18,
-		RT5081_MASK_IRCMP_VCLAMP,
-		reg_vclamp << RT5081_SHIFT_IRCMP_VCLAMP
-	);
-
-	return ret;
-}
-
 static int rt5081_plug_out(struct charger_device *chg_dev)
 {
 	int ret = 0;
@@ -2079,7 +2131,7 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 		__func__, ichg / 1000, aicr / 1000, mivr / 1000, ieoc / 1000);
 
 	dev_info(chg_data->dev,
-		"%s: VSYS = %dmV, VBAT = %dmV IBAT = %dmA, IBUS = %dmA\n",
+		"%s: VSYS = %dmV, VBAT = %dmV, IBAT = %dmA, IBUS = %dmA\n",
 		__func__, adc_vsys / 1000, adc_vbat / 1000, adc_ibat / 1000,
 		adc_ibus / 1000);
 
@@ -2997,19 +3049,19 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 		dev_err(chg_data->dev, "%s: select iinlmtsel failed\n",
 			__func__);
 
-	ret = rt5081_set_ichg(chg_data->chg_dev, chg_desc->ichg);
+	ret = _rt5081_set_ichg(chg_data, chg_desc->ichg);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: set ichg failed\n", __func__);
 
-	ret = rt5081_set_aicr(chg_data->chg_dev, chg_desc->aicr);
+	ret = _rt5081_set_aicr(chg_data, chg_desc->aicr);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: set aicr failed\n", __func__);
 
-	ret = rt5081_set_mivr(chg_data->chg_dev, chg_desc->mivr);
+	ret = _rt5081_set_mivr(chg_data, chg_desc->mivr);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: set mivr failed\n", __func__);
 
-	ret = rt5081_set_battery_voreg(chg_data->chg_dev, chg_desc->cv);
+	ret = _rt5081_set_cv(chg_data, chg_desc->cv);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: set voreg failed\n", __func__);
 
@@ -3030,7 +3082,7 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 		dev_err(chg_data->dev, "%s: set dc watch dog timer failed\n",
 			__func__);
 
-	ret = rt5081_enable_safety_timer(chg_data->chg_dev, true);
+	ret = _rt5081_enable_safety_timer(chg_data, true);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: enable charger timer failed\n",
 			__func__);
@@ -3045,18 +3097,17 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: disable jeita failed\n", __func__);
 
-	ret = rt5081_enable_hz(chg_data->chg_dev, false);
+	/* Disable HZ */
+	ret = rt5081_enable_hz(chg_data, false);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: disable hz failed\n", __func__);
 
-	ret = rt5081_set_ircmp_resistor(chg_data->chg_dev,
-		chg_desc->ircmp_resistor);
+	ret = rt5081_set_ircmp_resistor(chg_data, chg_desc->ircmp_resistor);
 	if (ret < 0)
 		dev_err(chg_data->dev,
 			"%s: set IR compensation resistor failed\n", __func__);
 
-	ret = rt5081_set_ircmp_vclamp(chg_data->chg_dev,
-		chg_desc->ircmp_vclamp);
+	ret = rt5081_set_ircmp_vclamp(chg_data, chg_desc->ircmp_vclamp);
 	if (ret < 0)
 		dev_err(chg_data->dev,
 			"%s: set IR compensation vclamp failed\n", __func__);
@@ -3081,10 +3132,6 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 
 
 static struct charger_ops rt5081_chg_ops = {
-#if 0
-	.enable_hz = rt5081_enable_hz,
-#endif
-
 	/* Normal charging */
 	.plug_out = rt5081_plug_out,
 	.plug_in = rt5081_plug_in,
@@ -3094,8 +3141,8 @@ static struct charger_ops rt5081_chg_ops = {
 	.set_charging_current = rt5081_set_ichg,
 	.get_input_current = rt5081_get_aicr,
 	.set_input_current = rt5081_set_aicr,
-	.get_constant_voltage = rt5081_get_battery_voreg,
-	.set_constant_voltage = rt5081_set_battery_voreg,
+	.get_constant_voltage = rt5081_get_cv,
+	.set_constant_voltage = rt5081_set_cv,
 	.kick_wdt = rt5081_kick_wdt,
 	.set_mivr = rt5081_set_mivr,
 	.is_charging_done = rt5081_is_charging_done,
@@ -3115,12 +3162,6 @@ static struct charger_ops rt5081_chg_ops = {
 	.enable_otg = rt5081_enable_otg,
 	.set_boost_current_limit = rt5081_set_otg_current_limit,
 	.enable_discharge = rt5081_enable_discharge,
-
-#if 0
-	/* IR compensation */
-	.set_ircmp_resistor = rt5081_set_ircmp_resistor,
-	.set_ircmp_vclamp = rt5081_set_ircmp_vclamp,
-#endif
 
 	/* PE+/PE+20 */
 	.send_ta_current_pattern = rt5081_set_pep_current_pattern,
@@ -3213,7 +3254,7 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 		goto err_create_wq;
 	}
 
-	/* Init discharging workqueue */
+	/* Init AICL workqueue */
 	INIT_WORK(&chg_data->aicl_work, rt5081_aicl_work_handler);
 
 	/* Get chg type det power supply */
@@ -3224,28 +3265,6 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 		ret = -EINVAL;
 		goto err_no_psy;
 	}
-
-	rt5081_pmu_charger_irq_register(pdev);
-
-	/* Register charger device */
-	chg_data->chg_dev = charger_device_register(
-		chg_data->chg_desc->chg_dev_name,
-		chg_data->dev, chg_data, &rt5081_chg_ops, &chg_data->chg_props);
-	if (IS_ERR_OR_NULL(chg_data->chg_dev)) {
-		ret = PTR_ERR(chg_data->chg_dev);
-		goto err_register_chg_dev;
-	}
-	chg_data->chg_dev->is_polling_mode = chg_data->chg_desc->en_polling;
-
-	/* Register charger device */
-	chg_data->ls_dev = charger_device_register(
-		chg_data->chg_desc->ls_dev_name,
-		chg_data->dev, chg_data, &rt5081_ls_ops, &chg_data->ls_props);
-	if (IS_ERR_OR_NULL(chg_data->ls_dev)) {
-		ret = PTR_ERR(chg_data->ls_dev);
-		goto err_register_ls_dev;
-	}
-	chg_data->ls_dev->is_polling_mode = chg_data->chg_desc->en_polling;
 
 	/* Do initial setting */
 	ret = rt5081_chg_init_setting(chg_data);
@@ -3262,10 +3281,30 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 		goto err_chg_sw_workaround;
 	}
 
+	rt5081_pmu_charger_irq_register(pdev);
+
+	/* Register charger device */
+	chg_data->chg_dev = charger_device_register(
+		chg_data->chg_desc->chg_dev_name,
+		chg_data->dev, chg_data, &rt5081_chg_ops, &chg_data->chg_props);
+	if (IS_ERR_OR_NULL(chg_data->chg_dev)) {
+		ret = PTR_ERR(chg_data->chg_dev);
+		goto err_register_chg_dev;
+	}
+	chg_data->chg_dev->is_polling_mode = chg_data->chg_desc->en_polling;
+
+	/* Register load switch charger device */
+	chg_data->ls_dev = charger_device_register(
+		chg_data->chg_desc->ls_dev_name,
+		chg_data->dev, chg_data, &rt5081_ls_ops, &chg_data->ls_props);
+	if (IS_ERR_OR_NULL(chg_data->ls_dev)) {
+		ret = PTR_ERR(chg_data->ls_dev);
+		goto err_register_ls_dev;
+	}
+	chg_data->ls_dev->is_polling_mode = chg_data->chg_desc->en_polling;
 
 	rt5081_dump_register(chg_data->chg_dev);
 	dev_info(&pdev->dev, "%s successfully\n", __func__);
-
 
 #if 0
 	chg_data->task = kthread_create(rt5081_dbg_thread, (void *)chg_data,
@@ -3276,12 +3315,11 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 #endif
 	return ret;
 
-err_chg_sw_workaround:
-err_chg_init_setting:
-	charger_device_unregister(chg_data->ls_dev);
 err_register_ls_dev:
 	charger_device_unregister(chg_data->chg_dev);
 err_register_chg_dev:
+err_chg_sw_workaround:
+err_chg_init_setting:
 err_no_psy:
 	destroy_workqueue(chg_data->aicl_wq);
 err_create_wq:
@@ -3341,6 +3379,10 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.5_MTK
+ * (1) Modify probe sequence
+ * (2) Change ADC log from ratelimited to normal one for debug
+ *
  * 1.1.4_MTK
  * (1) Add IEOC workaround
  *
