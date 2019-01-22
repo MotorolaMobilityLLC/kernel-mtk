@@ -60,6 +60,12 @@
 
 #define WDT_SWSYSRST		0x18
 #define WDT_SWSYSRST_KEY	0x88000000
+
+#define WDT_REQ_MODE 0x30
+#define WDT_REQ_MODE_KEY 0x33000000
+#define WDT_REQ_IRQ_EN 0x34
+#define WDT_REQ_IRQ_KEY 0x44000000
+
 #define DRV_NAME		"mtk-wdt"
 #define DRV_VERSION		"1.0"
 
@@ -255,6 +261,7 @@ static int mtk_wdt_probe(struct platform_device *pdev)
 {
 	struct mtk_wdt_dev *mtk_wdt;
 	struct resource *res;
+	unsigned int tmp;
 	int err;
 
 	mtk_wdt = devm_kzalloc(&pdev->dev, sizeof(*mtk_wdt), GFP_KERNEL);
@@ -297,6 +304,16 @@ static int mtk_wdt_probe(struct platform_device *pdev)
 			mtk_wdt->wdt_dev.timeout, nowayout);
 
 	toprgu_register_reset_controller(pdev, WDT_SWSYSRST);
+
+	/* enable scpsys thermal and thermal_controller request, and set to reset directly mode */
+	tmp = ioread32(mtk_wdt->wdt_base + WDT_REQ_MODE) | (1 << 18) | (1 << 0);
+	tmp |= WDT_REQ_MODE_KEY;
+	iowrite32(tmp, mtk_wdt->wdt_base + WDT_REQ_MODE);
+
+	tmp = ioread32(mtk_wdt->wdt_base + WDT_REQ_IRQ_EN);
+	tmp &= ~((1 << 18) | (1 << 0));
+	tmp |= WDT_REQ_IRQ_KEY;
+	iowrite32(tmp, mtk_wdt->wdt_base + WDT_REQ_IRQ_EN);
 
 	return 0;
 }
