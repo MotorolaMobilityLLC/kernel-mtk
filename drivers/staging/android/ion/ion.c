@@ -996,7 +996,7 @@ void ion_client_destroy(struct ion_client *client)
 				handle->buffer->size,  handle->buffer->kmap_cnt,
 				client->name ? client->name : NULL,
 				client->display_name ? client->display_name : NULL,
-				client->dbg_name ? client->dbg_name : NULL);
+				client->dbg_name);
 		ion_handle_destroy(&handle->ref);
 		mutex_unlock(&client->lock);
 	}
