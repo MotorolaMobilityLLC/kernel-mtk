@@ -35,13 +35,6 @@ extern int spm_for_gps_flag;
  * Config and Parameter
  **************************************/
 #define SPM_IRQ0_ID		spm_irq_0
-#define SPM_IRQ1_ID		spm_irq_1
-#define SPM_IRQ2_ID		spm_irq_2
-#define SPM_IRQ3_ID		spm_irq_3
-#define SPM_IRQ4_ID		spm_irq_4
-#define SPM_IRQ5_ID		spm_irq_5
-#define SPM_IRQ6_ID		spm_irq_6
-#define SPM_IRQ7_ID		spm_irq_7
 
 #include <mtk_spm_reg.h>
 

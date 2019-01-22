@@ -1159,8 +1159,11 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	wd_ret = get_wd_api(&wd_api);
-	if (!wd_ret)
+	if (!wd_ret) {
+		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
 		wd_api->wd_suspend_notify();
+	} else
+		spm_crit2("FAILED TO GET WD API\n");
 #endif
 
 	/* need be called before spin_lock_irqsave() */
@@ -1234,8 +1237,13 @@ RESTORE_IRQ:
 	get_channel_unlock();
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
-	if (!wd_ret)
-		wd_api->wd_resume_notify();
+	if (!wd_ret) {
+		if (!pwrctrl->wdt_disable)
+			wd_api->wd_resume_notify();
+		else
+			spm_crit2("pwrctrl->wdt_disable %d\n", pwrctrl->wdt_disable);
+		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
+	}
 #endif
 
 	/* restore original dpidle setting */
