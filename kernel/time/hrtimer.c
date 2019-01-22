@@ -1626,6 +1626,24 @@ static void init_hrtimers_cpu(int cpu)
 	}
 
 	cpu_base->cpu = cpu;
+
+	/*
+	 * MTK Fix:
+	 * We are here because CPU is doing plug-on with CPU_UP_PREPARE state.
+	 *
+	 * In this time, hang_detected shall be 0 because this CPU is just starting
+	 * working. However hang_detected may be 1 if this CPU was plugged-off with
+	 * hang_detected set as 1 before.
+	 *
+	 * If hang_detected is 1 in this new CPU, after the tick device binding to this
+	 * CPU is switched to HRTimer, this CPU will NOT do tick_program_event() for its
+	 * tick device because hang_detected is 1. In the end, this CPU will NOT have
+	 * any tick event in the future.
+	 *
+	 * Therefore we shall reset it specifically to avoid above case.
+	 */
+	cpu_base->hang_detected = 0;
+
 	hrtimer_init_hres(cpu_base);
 }
 
