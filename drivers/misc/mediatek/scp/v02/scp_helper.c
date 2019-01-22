@@ -1064,6 +1064,11 @@ int scp_check_resource(void)
 	return scp_resource_status;
 }
 
+
+/* scp_request_freq
+ * return :-1 means the scp request freq. error
+ * return :0  means the request freq. finished
+ */
 int scp_request_freq(void)
 {
 	int value = 0;
@@ -1114,7 +1119,8 @@ fatal_error:
 		pr_err("[SCP] set pll fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
 	if (flag == SET_PMIC_VOLT_FAIL)
 		pr_err("[SCP] set voltge fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
-	WARN_ON();
+	WARN_ON(1);
+	return -1;
 }
 
 /*
