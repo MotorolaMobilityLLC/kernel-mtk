@@ -79,12 +79,6 @@ typedef void (*CmdqEnableGCEClockLocked) (bool enable);
 /* parse error module by hwflag */
 typedef const char *(*CmdqParseErrorModule) (const struct TaskStruct *pTask);
 
-/* dump mmsys config */
-typedef void (*CmdqDumpMMSYSConfig) (void);
-
-/* dump clock gating */
-typedef void (*CmdqDumpClockGating) (void);
-
 /* dump SMI */
 typedef int (*CmdqDumpSMI) (const int showSmiDump);
 
@@ -130,8 +124,6 @@ struct cmdqCoreFuncStruct {
 	CmdqEnableCommonClockLocked enableCommonClockLocked;
 	CmdqEnableGCEClockLocked enableGCEClockLocked;
 	CmdqParseErrorModule parseErrorModule;
-	CmdqDumpMMSYSConfig dumpMMSYSConfig;
-	CmdqDumpClockGating dumpClockGating;
 	CmdqDumpSMI dumpSMI;
 	CmdqDumpGPR dumpGPR;
 	CmdqFlagFromScenario flagFromScenario;

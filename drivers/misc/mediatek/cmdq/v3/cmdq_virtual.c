@@ -898,24 +898,6 @@ const char *cmdq_virtual_parse_error_module_by_hwflag_impl(const struct TaskStru
  * Debug
  *
  */
-void cmdq_virtual_dump_mmsys_config(void)
-{
-	/* do nothing */
-}
-
-void cmdq_virtual_dump_clock_gating(void)
-{
-	uint32_t value[3] = { 0 };
-
-	value[0] = CMDQ_REG_GET32(MMSYS_CONFIG_BASE + 0x100);
-	value[1] = CMDQ_REG_GET32(MMSYS_CONFIG_BASE + 0x110);
-	CMDQ_ERR("MMSYS_CG_CON0(deprecated): 0x%08x, MMSYS_CG_CON1: 0x%08x\n", value[0], value[1]);
-#ifdef CMDQ_USE_LEGACY
-	value[2] = CMDQ_REG_GET32(MMSYS_CONFIG_BASE + 0x890);
-	CMDQ_ERR("MMSYS_DUMMY_REG: 0x%08x\n", value[2]);
-#endif
-}
-
 int cmdq_virtual_dump_smi(const int showSmiDump)
 {
 	int isSMIHang = 0;
@@ -1209,8 +1191,6 @@ void cmdq_virtual_function_setting(void)
 	 * Debug
 	 *
 	 */
-	pFunc->dumpMMSYSConfig = cmdq_virtual_dump_mmsys_config;
-	pFunc->dumpClockGating = cmdq_virtual_dump_clock_gating;
 	pFunc->dumpSMI = cmdq_virtual_dump_smi;
 	pFunc->dumpGPR = cmdq_virtual_dump_gpr;
 
