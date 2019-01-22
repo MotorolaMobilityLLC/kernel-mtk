@@ -317,6 +317,9 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 		if (hba->data_role == PD_ROLE_DFP)
 			snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)),
 						"alt_mode_svid=0x%04X\n", hba->alt_mode_svid);
+
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "wq_running=0x%X\n", hba->wq_running);
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "wq_cnt=0x%X\n", hba->wq_cnt);
 	}
 #if !COMPLIANCE
 	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "LowQ=%d\n", (int)atomic_read(&hba->lowq_cnt));

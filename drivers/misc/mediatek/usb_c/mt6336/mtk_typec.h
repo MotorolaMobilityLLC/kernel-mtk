@@ -163,6 +163,12 @@ enum sink_power_states {
 #define CC_REG_BASE 0x100
 #define PD_REG_BASE 0x200
 
+#define WQ_FLAGS_VBUSON_ATTACHWAIT_SNK (1 << 0) /* vbus_on_attach_wait_snk */
+#define WQ_FLAGS_VBUSON_TRYWAIT_SNK (1 << 1) /* vbus_on_try_wait_snk */
+#define WQ_FLAGS_VBUSOFF_ATTACHED_SNK (1 << 2) /* vbus_off_attached_snk */
+#define WQ_FLAGS_VBUSOFF_THEN_VBUSON (1 << 3) /* vbus_off_then_drive_attached_src */
+#define WQ_FLAGS_VSAFE0V (1 << 4) /* vsafe0v */
+
 enum enum_typec_dbg_lvl {
 	TYPEC_DBG_LVL_0 = 0, /*nothing*/
 	TYPEC_DBG_LVL_1 = 1, /*important interrupt dump, critical events*/
@@ -326,6 +332,8 @@ struct typec_hba {
 	struct work_struct wait_vbus_off_attached_snk;
 	struct work_struct wait_vbus_off_then_drive_attached_src;
 	struct work_struct wait_vsafe0v;
+	unsigned int wq_running;
+	unsigned int wq_cnt;
 #if USE_AUXADC
 	struct work_struct auxadc_voltage_mon_attached_snk;
 	struct completion auxadc_event;
