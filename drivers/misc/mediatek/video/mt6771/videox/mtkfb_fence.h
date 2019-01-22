@@ -199,6 +199,9 @@ unsigned int disp_sync_query_buf_info_nosync(unsigned int session_id, unsigned i
 				      unsigned int idx, unsigned long *mva, unsigned int *size);
 unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int timeline_id,
 				      unsigned int idx);
+unsigned int ___disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
+				      unsigned int idx, unsigned long *mva, unsigned int *size,
+				      void **va, int need_sync);
 int disp_sync_get_debug_info(char *stringbuf, int buf_len);
 int disp_sync_get_ovl_timeline_id(int layer_id);
 int disp_sync_get_output_timeline_id(void);

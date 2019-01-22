@@ -42,6 +42,7 @@ char *disp_session_mode_spy(unsigned int session_id);
 void dump_input_cfg_info(struct disp_input_config *input_cfg, unsigned int session_id, int is_err);
 int disp_input_free_dirty_roi(struct disp_frame_cfg_t *cfg);
 int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg);
+int disp_mgr_has_mem_session(void);
 
 void trigger_repaint(int type);
 

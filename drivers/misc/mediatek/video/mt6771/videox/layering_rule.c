@@ -30,6 +30,7 @@
 #include "ddp_rsz.h"
 #include "primary_display.h"
 #include "disp_lowpower.h"
+#include "mtk_disp_mgr.h"
 
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
@@ -435,6 +436,20 @@ void antilatency_config_hrt(void)
 	primary_display_manual_unlock();
 }
 
+static bool _adaptive_dc_enabled(void)
+{
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+	/* rdma don't support rotation */
+	return false;
+#endif
+
+	if (disp_mgr_has_mem_session() || !disp_helper_get_option(DISP_OPT_DC_BY_HRT) ||
+		is_DAL_Enabled())
+		return false;
+
+	return true;
+}
+
 static struct layering_rule_ops l_rule_ops = {
 	.resizing_rule = lr_rsz_layout,
 	.rsz_by_gpu_info_change = lr_gpu_change_rsz_info,
@@ -444,4 +459,5 @@ static struct layering_rule_ops l_rule_ops = {
 	.get_mapping_table = get_mapping_table,
 	.rollback_to_gpu_by_hw_limitation = filter_by_hw_limitation,
 	.unset_disp_rsz_attr = lr_unset_disp_rsz_attr,
+	.adaptive_dc_enabled = _adaptive_dc_enabled,
 };

@@ -36,6 +36,7 @@ static int debug_resolution_level;
 static struct layering_rule_info_t *l_rule_info;
 static struct layering_rule_ops *l_rule_ops;
 static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx);
+static unsigned int adaptive_dc_request;
 
 bool is_ext_path(struct disp_layer_info *disp_info)
 {
@@ -353,12 +354,16 @@ static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LE
 	struct layer_config *layer_info;
 
 	if (debug_level < DISP_DEBUG_LEVEL_INFO) {
-		DISPMSG("HRT hrt_num:0x%x/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d\n",
+		DISPMSG("HRT hrt_num:0x%x/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d/dc:%d\n",
 			disp_info->hrt_num, l_rule_info->primary_fps, l_rule_info->dal_enable,
 			HRT_GET_PATH_ID(l_rule_info->disp_path), get_scale_name(l_rule_info->scale_rate),
-			l_rule_info->layer_tb_idx, l_rule_info->bound_tb_idx);
+			l_rule_info->layer_tb_idx, l_rule_info->bound_tb_idx,
+			HRT_GET_DC_FLAG(disp_info->hrt_num));
 
 		for (i = 0 ; i < 2 ; i++) {
+			if (disp_info->layer_num[i] <= 0)
+				continue;
+
 			DISPMSG("HRT D%d/M%d/LN%d/hrt_num:0x%x/G(%d,%d)\n",
 				i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
 				disp_info->gles_head[i], disp_info->gles_tail[i]);
@@ -374,12 +379,16 @@ static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LE
 			}
 		}
 	} else {
-		DISPINFO("HRT hrt_num:0x%x/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d\n",
+		DISPINFO("HRT hrt_num:0x%x/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d/dc:%d\n",
 			disp_info->hrt_num, l_rule_info->primary_fps, l_rule_info->dal_enable,
 			HRT_GET_PATH_ID(l_rule_info->disp_path), get_scale_name(l_rule_info->scale_rate),
-			l_rule_info->layer_tb_idx, l_rule_info->bound_tb_idx);
+			l_rule_info->layer_tb_idx, l_rule_info->bound_tb_idx,
+			HRT_GET_DC_FLAG(disp_info->hrt_num));
 
 		for (i = 0 ; i < 2 ; i++) {
+			if (disp_info->layer_num[i] <= 0)
+				continue;
+
 			DISPINFO("HRT D%d/M%d/LN%d/hrt_num:0x%x/G(%d,%d)\n",
 				i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
 				disp_info->gles_head[i], disp_info->gles_tail[i]);
@@ -716,6 +725,17 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 	return 0;
 }
 
+static int rollback_all_to_GPU(struct disp_layer_info *disp_info, int disp_idx)
+{
+	if (disp_info->layer_num[disp_idx] <= 0)
+		return 0;
+
+	disp_info->gles_head[disp_idx] = 0;
+	disp_info->gles_tail[disp_idx] = disp_info->layer_num[disp_idx] - 1;
+	return 0;
+}
+
+
 static int filter_by_ovl_cnt(struct disp_layer_info *disp_info)
 {
 	int ret, disp_idx;
@@ -961,9 +981,18 @@ static int get_hrt_level(int sum_overlap_w, int is_larb)
 
 static bool has_hrt_limit(struct disp_layer_info *disp_info, int disp_idx)
 {
-	if (disp_info->layer_num[disp_idx] <= 0 ||
-		disp_info->disp_mode[disp_idx] == DISP_SESSION_DECOUPLE_MIRROR_MODE ||
-		disp_info->disp_mode[disp_idx] == DISP_SESSION_DECOUPLE_MODE)
+	if (disp_info->layer_num[disp_idx] <= 0)
+		return false;
+
+	/* after we request DC mode, we need to constantly check
+	 * hrt num for requesting DL next time
+	*/
+
+	if (disp_idx == HRT_PRIMARY && adaptive_dc_request)
+		return true;
+
+	if (disp_info->disp_mode[disp_idx] == DISP_SESSION_DECOUPLE_MIRROR_MODE ||
+	    disp_info->disp_mode[disp_idx] == DISP_SESSION_DECOUPLE_MODE)
 		return false;
 
 	return true;
@@ -1204,11 +1233,6 @@ static int calc_hrt_num(struct disp_layer_info *disp_info)
 #endif
 		disp_info->hrt_num = emi_hrt_level;
 
-#ifdef HAS_LARB_HRT
-	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE, emi_hrt_level, larb_hrt_level);
-#else
-	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE, emi_hrt_level, 0);
-#endif
 	return disp_info->hrt_num;
 }
 
@@ -1633,6 +1657,20 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
  * Fill layer id for each input layers. All the gles layer set as same layer id.
  *
  */
+	if (l_rule_ops->adaptive_dc_enabled == NULL ||
+	    !l_rule_ops->adaptive_dc_enabled() ||
+	    l_rule_info->dal_enable ||
+	    layering_info.hrt_num < HRT_LEVEL_NUM) {
+		/* do not request DC mode */
+		adaptive_dc_request = 0;
+	} else if (adaptive_dc_request == 0) {
+		/* the first time of request DC mode, rollback all to GPU */
+		adaptive_dc_request = 1;
+		rollback_all_to_GPU(&layering_info, HRT_PRIMARY);
+	}
+	if (adaptive_dc_request)
+		layering_info.hrt_num = 0;
+
 	ret = dispatch_ovl_id(&layering_info);
 	check_layering_result(&layering_info);
 
@@ -1640,8 +1678,13 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
 	HRT_SET_SCALE_SCENARIO(layering_info.hrt_num, l_rule_info->scale_rate);
 	HRT_SET_AEE_FLAG(layering_info.hrt_num, l_rule_info->dal_enable);
 	HRT_SET_WROT_SRAM_FLAG(layering_info.hrt_num, l_rule_info->wrot_sram);
-
+	HRT_SET_DC_FLAG(layering_info.hrt_num, adaptive_dc_request);
 	dump_disp_info(&layering_info, DISP_DEBUG_LEVEL_INFO);
+
+	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE,
+		layering_info.hrt_num,
+		(layering_info.gles_head[0] << 24) | (layering_info.gles_tail[0] << 16) |
+		(layering_info.layer_num[1] << 16) | (layering_info.layer_num[0] << 16));
 
 	ret = copy_layer_info_to_user(disp_info_user, debug_mode);
 	return ret;

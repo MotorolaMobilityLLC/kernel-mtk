@@ -71,6 +71,7 @@ struct DDP_MMP_Events {
 	mmp_event idlemgr;
 	mmp_event idle_monitor;
 	mmp_event share_sram;
+	mmp_event draw_rc;
 	mmp_event sec;
 	mmp_event svp_module[DISP_MODULE_NUM];
 	mmp_event tui;
