@@ -1450,14 +1450,14 @@ finished:
 		QMU_ERR("%s\n", string);
 #ifdef CONFIG_MEDIATEK_SOLUTION
 		{
-			u8 skip_val;
+			u16 skip_val;
 
-			skip_val = rx_csr &
+			skip_val = val &
 				(MUSB_RXCSR_INCOMPRX
 				 |MUSB_RXCSR_DATAERROR
 				 |MUSB_RXCSR_PID_ERR);
 
-			if (!skip_val)
+			if (val && !skip_val)
 				aee_kernel_warning(string, string);
 		}
 #endif
