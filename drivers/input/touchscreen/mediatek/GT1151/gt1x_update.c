@@ -801,7 +801,7 @@ int gt1x_update_firmware(char *filename)
 	ret = gt1x_update_prepare(filename);
 	if (ret) {
 		update_info.status = UPDATE_STATUS_IDLE;
-		return ret;
+		goto gt1x_update_exit;
 	}
 	update_info.progress = 1;
 
