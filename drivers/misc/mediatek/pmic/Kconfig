@@ -99,5 +99,15 @@ config REGULATOR_ISL91302A
 	 GPU, PROC1, PROC2
 	 Regulator Driver
 
+config REGULATOR_RT5738
+	bool "Richtek Ext Buck RT5738"
+	depends on MTK_EXTBUCK
+	default n
+	---help---
+	  Richtek I2c Interface
+	  Extern Buck for MTK Platform
+	  Say Y to enable it.
+	  Say N to disable it.
+
 source "drivers/misc/mediatek/pmic/rt5081/Kconfig"
 
