@@ -353,6 +353,9 @@ static signed int fg_set_iavg_intr(struct gauge_device *gauge_dev, void *data)
 	if (iavg_lt <= 0)
 		iavg_lt = 0;
 
+	gauge_dev->fg_hw_info.iavg_ht = iavg_ht;
+	gauge_dev->fg_hw_info.iavg_lt = iavg_lt;
+
 	fg_iavg_reg_ht = iavg_ht * 1000 * 1000 * gauge_dev->fg_cust_data->r_fg_value;
 	if (fg_iavg_reg_ht < 0) {
 		sign_bit_ht = 1;
