@@ -820,6 +820,10 @@ extern void usb_phy_switch_to_uart(void);
 extern ssize_t musb_cmode_show(struct device *dev, struct device_attribute *attr, char *buf);
 extern ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr, const char *buf,
 				size_t count);
+extern ssize_t musb_saving_mode_show(struct device *dev, struct device_attribute *attr, char *buf);
+extern ssize_t musb_saving_mode_store(struct device *dev, struct device_attribute *attr, const char *buf,
+				size_t count);
+extern bool is_saving_mode(void);
 
 extern void usb20_pll_settings(bool host, bool forceOn);
 
