@@ -179,10 +179,11 @@ void __attribute__((weak)) idle_refcnt_dec(void)
 #define IDLE_VCORE_FORCE_NORMAL_MODE        2
 #define IDLE_VCORE_BYPASS_CHECK_FOR_LP_MODE 3
 
-static int idle_force_vcore_lp_mode = IDLE_VCORE_BYPASS_CHECK_FOR_LP_MODE;
+static int idle_force_vcore_lp_mode = IDLE_VCORE_CHECK_FOR_LP_MODE;
 static bool idle_by_pass_secure_cg;
 static unsigned int idle_block_mask[NR_TYPES][NF_CG_STA_RECORD];
 static bool clkmux_cond[NR_TYPES];
+static bool vcore_cond[NR_TYPES];
 static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
 static unsigned int clkmux_addr[NF_CLK_CFG];
 
@@ -285,19 +286,21 @@ static unsigned int check_and_update_vcore_lp_mode_cond(int type)
 	memset(clkmux_block_mask[type],	0, NF_CLK_CFG * sizeof(unsigned int));
 
 	clkmux_cond[type] = mtk_idle_check_clkmux(type, clkmux_block_mask);
+	vcore_cond[type]  = mtk_idle_check_vcore_cond();
 
 	switch (idle_force_vcore_lp_mode) {
 	case IDLE_VCORE_CHECK_FOR_LP_MODE:
 		/* by clkmux check */
 		op_cond |= (clkmux_cond[type] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0);
+		op_cond |= (vcore_cond[type] ? DEEPIDLE_OPT_VCORE_LOW_VOLT : 0);
 		break;
 	case IDLE_VCORE_FORCE_LP_MODE:
 		/* enter LP mode */
-		op_cond |= DEEPIDLE_OPT_VCORE_LP_MODE;
+		op_cond |= (DEEPIDLE_OPT_VCORE_LP_MODE | DEEPIDLE_OPT_VCORE_LOW_VOLT);
 		break;
 	case IDLE_VCORE_FORCE_NORMAL_MODE:
 		/* no enter LP mode */
-		op_cond = (op_cond & ~DEEPIDLE_OPT_VCORE_LP_MODE);
+		op_cond &= ~(DEEPIDLE_OPT_VCORE_LP_MODE | DEEPIDLE_OPT_VCORE_LOW_VOLT);
 		break;
 	default:
 		op_cond = 0;
@@ -1522,6 +1525,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	}
 
 	mt_idle_log("dpidle_clkmux_cond = %d\n", clkmux_cond[IDLE_TYPE_DP]);
+	mt_idle_log("dpidle_vcore_cond = %d\n", vcore_cond[IDLE_TYPE_DP]);
 	for (i = 0; i < NF_CLK_CFG; i++)
 		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",
 							i,
@@ -1649,6 +1653,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	mt_idle_log("soidle3 pg_stat=0x%08x\n", idle_block_mask[IDLE_TYPE_SO3][NR_GRPS + 1]);
 
 	mt_idle_log("sodi3_clkmux_cond = %d\n",  clkmux_cond[IDLE_TYPE_SO3]);
+	mt_idle_log("sodi3_vcore_cond = %d\n", vcore_cond[IDLE_TYPE_SO3]);
 	for (i = 0; i < NF_CLK_CFG; i++)
 		mt_idle_log("[%02d]block_cond(0x%08x)=0x%08x\n",
 							i,

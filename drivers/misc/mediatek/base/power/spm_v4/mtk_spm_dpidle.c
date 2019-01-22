@@ -387,6 +387,7 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
 	__sync_big_buck_ctrl_pcm_flag(&spm_flags1);
+	__sync_vcore_ctrl_pcm_flag(operation_cond, &spm_flags1);
 	set_pwrctrl_pcm_flags1(pwrctrl, spm_flags1);
 
 	spin_lock_irqsave(&__spm_lock, flags);

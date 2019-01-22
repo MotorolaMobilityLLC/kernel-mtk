@@ -1080,6 +1080,7 @@ extern int spm_golden_setting_cmp(bool en);
 extern void spm_phypll_mode_check(void);
 extern u32 _spm_get_wake_period(int pwake_time, unsigned int last_wr);
 extern void __sync_big_buck_ctrl_pcm_flag(u32 *flag);
+extern void __sync_vcore_ctrl_pcm_flag(u32 oper_cond, u32 *flag);
 
 /**************************************
  * Macro and Inline

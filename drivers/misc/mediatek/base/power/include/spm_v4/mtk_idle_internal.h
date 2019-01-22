@@ -84,6 +84,7 @@ bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD
 bool mtk_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask);
 bool mtk_idle_check_clkmux(int idle_type,
 		unsigned int block_mask[NR_TYPES][NF_CLK_CFG]);
+bool mtk_idle_check_vcore_cond(void);
 
 void __init iomap_init(void);
 
