@@ -44,7 +44,7 @@
 #include <linux/notifier.h>
 #include <linux/freezer.h>
 
-/* #define MTK_LMK_USER_EVENT */
+#define MTK_LMK_USER_EVENT
 
 #ifdef MTK_LMK_USER_EVENT
 #include <linux/miscdevice.h>
@@ -142,16 +142,27 @@ static struct miscdevice mtklmk_misc = {
 	.fops = &mtklmk_fops,
 };
 
+static struct work_struct mtklmk_work;
+static int uevent_adj, uevent_minfree;
+static void mtklmk_async_uevent(struct work_struct *work)
+{
+#define MTKLMK_EVENT_LENGTH	(24)
+	char adj[MTKLMK_EVENT_LENGTH], free[MTKLMK_EVENT_LENGTH];
+	char *envp[3] = { adj, free, NULL };
+
+	snprintf(adj, MTKLMK_EVENT_LENGTH, "OOM_SCORE_ADJ=%d", uevent_adj);
+	snprintf(free, MTKLMK_EVENT_LENGTH, "MINFREE=%d", uevent_minfree);
+	kobject_uevent_env(&mtklmk_misc.this_device->kobj, KOBJ_CHANGE, envp);
+#undef MTKLMK_EVENT_LENGTH
+}
+
+static unsigned int mtklmk_initialized;
 static unsigned int mtklmk_uevent_timeout = 10000; /* ms */
 module_param_named(uevent_timeout, mtklmk_uevent_timeout, uint, 0644);
 static void mtklmk_uevent(int oom_score_adj, int minfree)
 {
-#define MTKLMK_EVENT_LENGTH	(24)
-
 	static unsigned long last_time;
 	unsigned long timeout;
-	char adj[MTKLMK_EVENT_LENGTH], free[MTKLMK_EVENT_LENGTH];
-	char *envp[3] = { adj, free, NULL };
 
 	/* change to use jiffies */
 	timeout = msecs_to_jiffies(mtklmk_uevent_timeout);
@@ -164,11 +175,9 @@ static void mtklmk_uevent(int oom_score_adj, int minfree)
 
 	last_time = jiffies;
 
-	snprintf(adj, MTKLMK_EVENT_LENGTH, "OOM_SCORE_ADJ=%d", oom_score_adj);
-	snprintf(free, MTKLMK_EVENT_LENGTH, "MINFREE=%d", minfree);
-	kobject_uevent_env(&mtklmk_misc.this_device->kobj, KOBJ_CHANGE, envp);
-
-#undef MTKLMK_EVENT_LENGTH
+	uevent_adj = oom_score_adj;
+	uevent_minfree = minfree;
+	schedule_work(&mtklmk_work);
 }
 #endif
 
@@ -628,7 +637,7 @@ log_again:
 
 #ifdef MTK_LMK_USER_EVENT
 	/* Send uevent if needed */
-	if (mtklmk_uevent_timeout)
+	if (mtklmk_initialized && current_is_kswapd() && mtklmk_uevent_timeout)
 		mtklmk_uevent(min_score_adj, minfree);
 #endif
 
@@ -653,10 +662,14 @@ static int __init lowmem_init(void)
 	register_shrinker(&lowmem_shrinker);
 
 #ifdef MTK_LMK_USER_EVENT
-	if (unlikely(misc_register(&mtklmk_misc)))
-		pr_info("%s: failed to register misc device!\n", __func__);
-	else
+	/* initialize work for uevent */
+	INIT_WORK(&mtklmk_work, mtklmk_async_uevent);
+
+	/* register as misc device */
+	if (!misc_register(&mtklmk_misc)) {
 		pr_info("%s: successful to register misc device!\n", __func__);
+		mtklmk_initialized = 1;
+	}
 #endif
 
 	return 0;
