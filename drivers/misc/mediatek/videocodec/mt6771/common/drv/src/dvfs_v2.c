@@ -18,7 +18,7 @@
 #include "dvfs_v2.h"
 
 #define DEFAULT_MHZ 99999
-#define DEBUG_ALGO
+/* #define DEBUG_ALGO */
 #ifdef DEBUG_ALGO
 #define AL_INFO pr_info
 #else
@@ -586,7 +586,7 @@ u64 match_freq(int target_mhz, u64 *freq_list, u32 freq_cnt)
 	if (res_mhz == DEFAULT_MHZ)
 		res_mhz = freq_list[0];
 
-	pr_info("match_freq %d -> %llu\n", target_mhz, res_mhz);
+	AL_INFO("match_freq %d -> %llu\n", target_mhz, res_mhz);
 
 	return res_mhz;
 }
