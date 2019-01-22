@@ -27,6 +27,9 @@
 
 #include <linux/fb.h>
 #include <linux/notifier.h>
+#if defined(CONFIG_MTK_QOS_SUPPORT)
+#include <linux/pm_qos.h>
+#endif
 
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
@@ -866,6 +869,36 @@ static struct notifier_block spm_vcorefs_fb_notif = {
 		.notifier_call = spm_vcorefs_fb_notifier_callback,
 };
 
+#if defined(CONFIG_MTK_QOS_SUPPORT)
+static void dvfsrc_init_qos_opp(void)
+{
+	u32 vcore_req[NUM_OPP] = {0x1, 0x1, 0x0, 0x0};
+	u32 emi_req[NUM_OPP] = {0x2, 0x1, 0x1, 0x0};
+	int emi_opp, vcore_opp;
+
+	if (__spm_get_dram_type() == SPMFW_LP4X_2CH_3200) {
+		vcore_req[1] = 0x0;
+		emi_req[1] = 0x2;
+	}
+	emi_opp = pm_qos_request(PM_QOS_EMI_OPP);
+	vcore_opp = pm_qos_request(PM_QOS_VCORE_OPP);
+	spm_vcorefs_warn("pm_qos curr opp: emi = %d(req: %d), vcore = %d(req: %d)\n",
+			emi_opp, emi_req[emi_opp], vcore_opp, vcore_req[vcore_opp]);
+	/* set vcore_opp */
+	if (vcore_req[vcore_opp]) {
+	spm_write(DVFSRC_VCORE_REQUEST2,
+				(spm_read(DVFSRC_VCORE_REQUEST2)
+				& ~(0x03000000)) | (vcore_req[vcore_opp] << 24));
+	}
+	/* set emi_opp */
+	if (emi_req[emi_opp]) {
+		spm_write(DVFSRC_SW_REQ,
+				(spm_read(DVFSRC_SW_REQ) & ~(0x3)) | (emi_req[emi_opp]));
+	}
+	spm_vcorefs_warn("pm_qos init opp (sw_req: 0x%x, vcore_req2: 0x%x)\n",
+			spm_read(DVFSRC_SW_REQ), spm_read(DVFSRC_VCORE_REQUEST2));
+}
+#endif
 
 void spm_vcorefs_init(void)
 {
@@ -899,6 +932,9 @@ void spm_vcorefs_init(void)
 		spm_go_to_vcorefs(flag);
 		dvfsrc_init();
 		vcorefs_late_init_dvfs();
+#if defined(CONFIG_MTK_QOS_SUPPORT)
+		dvfsrc_init_qos_opp();
+#endif
 		spm_vcorefs_warn("[%s] DONE\n", __func__);
 	} else {
 		#if VMODEM_VCORE_COBUCK
