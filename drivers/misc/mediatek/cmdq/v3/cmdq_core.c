@@ -4723,10 +4723,12 @@ static void cmdq_core_dump_status(const char *tag)
 		 (0x80000000 & value[0]) ? 1 : 0, coreExecThread, value[0]);
 	CMDQ_LOG("[%s]CMDQ_THR_EXEC_CYCLES:0x%08x, CMDQ_THR_TIMER:0x%08x, CMDQ_BUS_CTRL:0x%08x\n",
 		 tag, value[1], value[2], value[3]);
-	CMDQ_LOG("[%s]CMDQ_DEBUG_1: 0x%08x\n", tag, CMDQ_REG_GET32((GCE_BASE_VA + 0xF0)));
-	CMDQ_LOG("[%s]CMDQ_DEBUG_2: 0x%08x\n", tag, CMDQ_REG_GET32((GCE_BASE_VA + 0xF4)));
-	CMDQ_LOG("[%s]CMDQ_DEBUG_3: 0x%08x\n", tag, CMDQ_REG_GET32((GCE_BASE_VA + 0xF8)));
-	CMDQ_LOG("[%s]CMDQ_DEBUG_4: 0x%08x\n", tag, CMDQ_REG_GET32((GCE_BASE_VA + 0xFC)));
+	CMDQ_LOG("[%s]CMDQ_DEBUG: 0x%08x 0x%08x 0x%08x 0x%08x\n",
+		tag,
+		CMDQ_REG_GET32((GCE_BASE_VA + 0xF0)),
+		CMDQ_REG_GET32((GCE_BASE_VA + 0xF4)),
+		CMDQ_REG_GET32((GCE_BASE_VA + 0xF8)),
+		CMDQ_REG_GET32((GCE_BASE_VA + 0xFC)));
 }
 
 void cmdq_core_dump_disp_trigger_loop(const char *tag)
@@ -6876,12 +6878,11 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 		cmdq_core_dump_status("INFO");
 		cmdq_core_dump_pc(pTask, thread, "INFO");
 		cmdq_core_dump_thread(thread, "INFO");
-		CMDQ_LOG("Dump thread reg0: 0x%08x, reg1: 0x%08x\n",
-				CMDQ_REG_GET32(CMDQ_THR_SPR0(thread)),
-				CMDQ_REG_GET32(CMDQ_THR_SPR1(thread)));
-		CMDQ_LOG("Dump thread reg2: 0x%08x, reg3: 0x%08x\n",
-				CMDQ_REG_GET32(CMDQ_THR_SPR2(thread)),
-				CMDQ_REG_GET32(CMDQ_THR_SPR3(thread)));
+		CMDQ_LOG("Dump thread SPR:0x%08x 0x%08x 0x%08x 0x%08x\n",
+			CMDQ_REG_GET32(CMDQ_THR_SPR0(thread)),
+			CMDQ_REG_GET32(CMDQ_THR_SPR1(thread)),
+			CMDQ_REG_GET32(CMDQ_THR_SPR2(thread)),
+			CMDQ_REG_GET32(CMDQ_THR_SPR3(thread)));
 
 		/* HACK: check trigger thread status */
 		cmdq_core_dump_disp_trigger_loop("INFO");
@@ -6897,12 +6898,11 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(struct TaskStruct *pTa
 			cmdq_core_dump_thread_pc(CMDQ_DELAY_THREAD_ID);
 			CMDQ_MSG("Dump event #: %d, value: %d\n", delay_event, cmdqCoreGetEvent(delay_event));
 			CMDQ_MSG("Dump loop debug count: %d\n", CMDQ_REG_GET32(CMDQ_THR_SPR1(thread)));
-			CMDQ_MSG("Dump delay thread reg0: 0x%08x, reg1: 0x%08x\n",
-					CMDQ_REG_GET32(CMDQ_THR_SPR0(CMDQ_DELAY_THREAD_ID)),
-					CMDQ_REG_GET32(CMDQ_THR_SPR1(CMDQ_DELAY_THREAD_ID)));
-			CMDQ_MSG("Dump delay thread reg2: 0x%08x, reg3: 0x%08x\n",
-					CMDQ_REG_GET32(CMDQ_THR_SPR2(CMDQ_DELAY_THREAD_ID)),
-					CMDQ_REG_GET32(CMDQ_THR_SPR3(CMDQ_DELAY_THREAD_ID)));
+			CMDQ_MSG("Dump delay thread SPR:0x%08x 0x%08x 0x%08x 0x%08x\n",
+				CMDQ_REG_GET32(CMDQ_THR_SPR0(CMDQ_DELAY_THREAD_ID)),
+				CMDQ_REG_GET32(CMDQ_THR_SPR1(CMDQ_DELAY_THREAD_ID)),
+				CMDQ_REG_GET32(CMDQ_THR_SPR2(CMDQ_DELAY_THREAD_ID)),
+				CMDQ_REG_GET32(CMDQ_THR_SPR3(CMDQ_DELAY_THREAD_ID)));
 		}
 
 		/* then we wait again */
