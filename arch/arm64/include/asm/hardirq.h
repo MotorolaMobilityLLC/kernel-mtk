@@ -20,7 +20,7 @@
 #include <linux/threads.h>
 #include <asm/irq.h>
 
-#ifndef CONFIG_GZ_V2_SUPPORT
+#if !defined(CONFIG_GZ_V2_SUPPORT) && !defined(CONFIG_TRUSTY)
 #define NR_IPI	6
 #else
 #define NR_IPI 17
