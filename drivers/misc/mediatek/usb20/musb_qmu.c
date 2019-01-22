@@ -19,6 +19,7 @@
 #include <linux/timer.h>
 #include <linux/spinlock.h>
 #include <linux/stat.h>
+#include <linux/usb/composite.h>
 
 #include "musb_core.h"
 #include "musb_host.h"
@@ -54,12 +55,23 @@ static void do_low_power_timer_monitor_work(struct work_struct *work)
 {
 	static int state = IDLE_STAGE;
 	static unsigned int last_trigger_cnt;
+	struct usb_composite_dev *cdev = NULL;
+	char *usb_state = "NO-CDEV";
 
-	DBG(0, "state:%s, last:%d, balanced<%d,%d>\n",
+	if (mtk_musb && mtk_musb->is_ready) {
+		cdev = (mtk_musb->g).ep0->driver_data;
+		usb_state = "DISCONNECTED";
+	}
+
+	if (cdev && cdev->config)
+		usb_state = "CONFIGURED";
+
+	DBG(0, "state:%s, last:%d, balanced<%d,%d>, usb_state:%s\n",
 			state?"RUNNING_STAGE":"IDLE_STAGE",
 			last_trigger_cnt,
 			low_power_timer_total_trigger_cnt,
-			low_power_timer_total_wake_cnt);
+			low_power_timer_total_wake_cnt,
+			usb_state);
 
 	if (state == IDLE_STAGE) {
 		if (last_trigger_cnt != low_power_timer_total_trigger_cnt)
@@ -70,8 +82,7 @@ static void do_low_power_timer_monitor_work(struct work_struct *work)
 			state = IDLE_STAGE;
 		else if (last_trigger_cnt == low_power_timer_total_trigger_cnt
 				&& low_power_timer_total_trigger_cnt != low_power_timer_total_wake_cnt)
-			DBG(0, "%s:%d Error Here\n", __func__, __LINE__);
-			return;
+			musb_bug();
 	}
 
 	last_trigger_cnt = low_power_timer_total_trigger_cnt;

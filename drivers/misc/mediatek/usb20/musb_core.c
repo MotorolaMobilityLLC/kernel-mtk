@@ -246,6 +246,13 @@ void send_otg_event(enum usb_otg_event event)
 EXPORT_SYMBOL_GPL(send_otg_event);
 #endif
 
+void musb_bug(void)
+{
+	/* make KE happen */
+	char *ptr = NULL;
+	*ptr = 10;
+}
+
 void dumpTime(writeFunc_enum func, int epnum)
 {
 #if 0
@@ -1221,14 +1228,6 @@ void musb_start(struct musb *musb)
 
 	if (musb->is_active) {
 		if (musb->is_host) {
-			/* remove babble: NOISE_STILL_SOF:1, BABBLE_CLR_EN:0 */
-			intrusbe = musb_readb(regs, MUSB_ULPI_REG_DATA);
-			intrusbe = intrusbe | 0x80;
-			intrusbe = intrusbe & 0xbf;
-			musb_writeb(regs, MUSB_ULPI_REG_DATA, intrusbe);
-			DBG(0, "set ignore babble MUSB_ULPI_REG_DATA=%x\n",
-			    musb_readb(regs, MUSB_ULPI_REG_DATA));
-
 			DBG(0, "we are host now, add more interrupt devctl=%x\n",
 			    musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
 			musb->intrtxe = 0xffff;
@@ -1266,6 +1265,18 @@ void musb_start(struct musb *musb)
 	}
 
 	musb_writeb(regs, MUSB_INTRUSBE, intrusbe);
+
+	/* In U2 host mode, USB bus will issue Babble INT if it was interfered by
+	 * external signal,ex:drill nosie.we need to keep session on and continue
+	 * to seed SOF,and same time let hw don't care the babble signal
+	 * remove babble: NOISE_STILL_SOF:1, BABBLE_CLR_EN:0
+	 */
+	intrusbe = musb_readb(regs, MUSB_ULPI_REG_DATA);
+	intrusbe = intrusbe | 0x80;
+	intrusbe = intrusbe & 0xbf;
+	musb_writeb(regs, MUSB_ULPI_REG_DATA, intrusbe);
+	DBG(0, "set ignore babble MUSB_ULPI_REG_DATA=%x\n",
+			musb_readb(regs, MUSB_ULPI_REG_DATA));
 
 	if (musb_connect_legacy) {
 		if (musb_speed) {
@@ -1356,9 +1367,9 @@ void musb_stop(struct musb *musb)
 {
 	/* stop IRQs, timers, ... */
 	musb_generic_disable(musb);
+	gadget_stop(musb);
 	musb_platform_disable(musb);
 	musb->is_active = 0;
-	gadget_stop(musb);
 	DBG(0, "HDRC disabled\n");
 
 	/* FIXME
