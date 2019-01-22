@@ -1393,6 +1393,9 @@ static int configfs_composite_bind(struct usb_gadget *gadget,
 		gi->cdev.desc.iProduct = s[USB_GADGET_PRODUCT_IDX].id;
 		gi->cdev.desc.iSerialNumber = s[USB_GADGET_SERIAL_IDX].id;
 
+		if (strlen(s[USB_GADGET_SERIAL_IDX].s) == 0)
+			gi->cdev.desc.iSerialNumber = 0;
+
 #ifdef CONFIG_USB_CONFIGFS_UEVENT
 		serial_idx = gi->cdev.desc.iSerialNumber;
 #endif
