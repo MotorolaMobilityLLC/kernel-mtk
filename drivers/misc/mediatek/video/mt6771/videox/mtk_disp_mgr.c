@@ -840,9 +840,12 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 			dump_input_cfg_info(&cfg->input_cfg[i], session_id, is_err);
 		} else {
 			cfg->input_cfg[i].src_fence_struct = NULL;
+			/* remove fence log when layer is disable */
+#if 0
 			DISPPR_FENCE("S+/%sL%d/e%d/id%d\n", disp_session_mode_spy(session_id),
 				cfg->input_cfg[i].layer_id, cfg->input_cfg[i].layer_enable,
 				cfg->input_cfg[i].next_buff_idx);
+#endif
 		}
 
 		disp_sync_put_cached_layer_info(session_id, layer_id, &cfg->input_cfg[i], dst_mva);
