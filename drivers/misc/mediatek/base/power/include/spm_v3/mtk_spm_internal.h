@@ -250,7 +250,9 @@ struct pwr_ctrl {
 	u8 reg_sspm2spm_int2_mask_b;
 	u8 reg_sspm2spm_int3_mask_b;
 	u8 reg_dqssoc_req_mask_b;
-
+#ifdef CONFIG_MACH_MT6759
+	u8 reg_gce_vrf18_req2_mask_b;
+#endif
 	/* SPM_SRC3_MASK */
 	u8 reg_mpwfi_op;
 	u8 reg_spm_resource_req_rsv1_4_mask_b;
@@ -284,6 +286,14 @@ struct pwr_ctrl {
 	u8 reg_conn_mask_b;
 	u8 reg_conn_apsrc_sel;
 	u8 reg_md_srcclkena_0_vrf18_mask_b;
+
+#ifdef CONFIG_MACH_MT6759
+	/* SPM_SRC4_MASK */
+	u8 reg_ccif4_md_event_mask_b;
+	u8 reg_ccif4_ap_event_mask_b;
+	u8 reg_ccif5_md_event_mask_b;
+	u8 reg_ccif5_ap_event_mask_b;
+#endif
 
 	/* SPM_WAKEUP_EVENT_MASK */
 	u32 reg_wakeup_event_mask;
@@ -345,6 +355,9 @@ struct pwr_ctrl {
 	/* MCU17_WFI_EN */
 	u8 mcu17_wfi_en;
 
+#ifdef CONFIG_MACH_MT6759
+	u8 spm_rsv_con2;
+#endif
 	/* Auto-gen End */
 };
 
@@ -452,6 +465,9 @@ enum pwr_ctrl_enum {
 	PWR_REG_SSPM2SPM_INT2_MASK_B,
 	PWR_REG_SSPM2SPM_INT3_MASK_B,
 	PWR_REG_DQSSOC_REQ_MASK_B,
+#ifdef CONFIG_MACH_MT6759
+	PWR_REG_GCE_VRF18_REQ2_MASK_B,
+#endif
 	PWR_REG_MPWFI_OP,
 	PWR_REG_SPM_RESOURCE_REQ_RSV1_4_MASK_B,
 	PWR_REG_SPM_RESOURCE_REQ_RSV1_3_MASK_B,
@@ -484,6 +500,12 @@ enum pwr_ctrl_enum {
 	PWR_REG_CONN_MASK_B,
 	PWR_REG_CONN_APSRC_SEL,
 	PWR_REG_MD_SRCCLKENA_0_VRF18_MASK_B,
+#ifdef CONFIG_MACH_MT6759
+	PWR_REG_CCIF4_MD_EVENT_MASK_B,
+	PWR_REG_CCIF4_AP_EVENT_MASK_B,
+	PWR_REG_CCIF5_MD_EVENT_MASK_B,
+	PWR_REG_CCIF5_AP_EVENT_MASK_B,
+#endif
 	PWR_REG_WAKEUP_EVENT_MASK,
 	PWR_REG_EXT_WAKEUP_EVENT_MASK,
 	PWR_MCU0_WFI_EN,
@@ -504,6 +526,9 @@ enum pwr_ctrl_enum {
 	PWR_MCU15_WFI_EN,
 	PWR_MCU16_WFI_EN,
 	PWR_MCU17_WFI_EN,
+#ifdef CONFIG_MACH_MT6759
+	PWR_SPM_RSV_CON2,
+#endif
 	PWR_MAX_COUNT,
 };
 

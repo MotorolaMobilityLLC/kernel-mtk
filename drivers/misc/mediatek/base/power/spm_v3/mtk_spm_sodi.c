@@ -353,7 +353,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_sspm2spm_int2_mask_b = 1,
 	.reg_sspm2spm_int3_mask_b = 1,
 	.reg_dqssoc_req_mask_b = 0,
-	/* .reg_gce_vrf18_req2_mask_b = 0, */
+	.reg_gce_vrf18_req2_mask_b = 0,
 
 	/* SPM_SRC3_MASK */
 	.reg_mpwfi_op = 1,
@@ -390,10 +390,10 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
 
 	/* SPM_SRC4_MASK */
-	/* .reg_ccif4_ap_event_mask_b = 1, */
-	/* .reg_ccif4_md_event_mask_b = 1, */
-	/* .reg_ccif5_ap_event_mask_b = 1, */
-	/* .reg_ccif5_md_event_mask_b = 1, */
+	.reg_ccif4_ap_event_mask_b = 1,
+	.reg_ccif4_md_event_mask_b = 1,
+	.reg_ccif5_ap_event_mask_b = 1,
+	.reg_ccif5_md_event_mask_b = 1,
 
 	/* SPM_WAKEUP_EVENT_MASK */
 	.reg_wakeup_event_mask = 0xF1282208,
@@ -456,7 +456,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* SPM_RSV_CON2 */
-	/* .spm_rsv_con2 = 0, */ /* TODO */
+	.spm_rsv_con2 = 0,
 
 	/* Auto-gen End */
 #endif
@@ -479,8 +479,8 @@ static unsigned int logout_selfrefresh_cnt;
 
 static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-#ifndef CONFIG_MACH_MT6759
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef CONFIG_MACH_MT6799
 	unsigned int value = 0;
 
 	/* Set PMIC wrap table for Vproc/Vsram voltage decreased */
@@ -508,10 +508,10 @@ static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 								IDX_ALL_VCORE_SUSPEND,
 								pwrctrl->vcore_volt_pmic_val);
 
+#endif
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
-#endif
 #endif
 	__spm_sync_pcm_flags(pwrctrl);
 }
@@ -881,10 +881,10 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 
 	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
 		(1 << SPM_SODI_B4) | (1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));
-#ifndef CONFIG_MACH_MT6759
+
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3();
-#endif
+
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
 #ifdef SPM_SODI_PROFILE_TIME

@@ -574,8 +574,33 @@ int spm_golden_setting_cmp(bool en)
 #endif /* CONFIG_MTK_DRAMC */
 #endif
 
-#ifndef CONFIG_MACH_MT6759
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
+void spm_pmic_vcore_setting(int lp_mode)
+{
+	static int prev_mode = -1;
+
+	if (lp_mode == prev_mode)
+		return;
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
+	pmic_config_interface_nolock(
+		PMIC_RG_BUCK_VCORE_HW0_OP_EN_ADDR,
+		lp_mode,
+		PMIC_RG_BUCK_VCORE_HW0_OP_EN_MASK,
+		PMIC_RG_BUCK_VCORE_HW0_OP_EN_SHIFT);
+
+	pmic_config_interface_nolock(
+		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_ADDR,
+		lp_mode,
+		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
+		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
+#elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	pmic_buck_vcore_lp(SRCLKEN0, lp_mode, HW_LP);
+	pmic_ldo_vsram_core_lp(SRCLKEN0, lp_mode, HW_LP);
+#endif
+	prev_mode = lp_mode;
+}
+
 void spm_pmic_power_mode(int mode, int force, int lock)
 {
 	static int prev_mode = -1;
@@ -629,7 +654,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	prev_mode = mode;
 }
 #endif /* !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) */
-#endif
+
 void *mt_spm_base_get(void)
 {
 	return spm_base;
@@ -782,7 +807,6 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 
 void unmask_edge_trig_irqs_for_cirq(void)
 {
-
 	int i;
 
 	for (i = 0; i < NF_EDGE_TRIG_IRQS; i++) {
@@ -791,7 +815,6 @@ void unmask_edge_trig_irqs_for_cirq(void)
 			mt_irq_unmask_for_sleep_ex(edge_trig_irqs[i]);
 		}
 	}
-
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
