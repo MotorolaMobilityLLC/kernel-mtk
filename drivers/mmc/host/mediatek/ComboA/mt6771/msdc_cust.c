@@ -333,16 +333,6 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		if (!card_on)
 			pmic_enable_interrupt(INT_VMCH_OC, 0, "sdcard");
 
-		/* VMCH VOLSEL */
-		msdc_ldo_power(card_on, host->mmc->supply.vmmc, VOL_3000,
-			&host->power_flash);
-
-		/* Enable VMCH OC */
-		if (card_on) {
-			mdelay(3);
-			pmic_enable_interrupt(INT_VMCH_OC, 1, "sdcard");
-		}
-
 		/* hw det, power off */
 		if (host->hw->flags & MSDC_VMCH_FASTOFF) {
 			if (card_on) {
@@ -356,6 +346,17 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 				pmic_set_register_value(PMIC_RG_LDO_VMCH_SD_EN, 0);
 			}
 		}
+
+		/* VMCH VOLSEL */
+		msdc_ldo_power(card_on, host->mmc->supply.vmmc, VOL_3000,
+			&host->power_flash);
+
+		/* Enable VMCH OC */
+		if (card_on) {
+			mdelay(3);
+			pmic_enable_interrupt(INT_VMCH_OC, 1, "sdcard");
+		}
+
 		/* VMC VOLSEL */
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_3000,
 			&host->power_io);

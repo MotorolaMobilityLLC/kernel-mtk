@@ -214,7 +214,7 @@ struct dbg_run_host_log {
 	int type;
 	int cmd;
 	int arg;
-	int skip;
+	int skip_cmd23cnt;
 };
 static struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
 char msdc_aee_buffer[MSDC_AEE_BUFFER_SIZE];
@@ -222,7 +222,8 @@ static int dbg_host_cnt;
 static unsigned int printk_cpu_test = UINT_MAX;
 
 /* type 0: cmd, type 1 rsp */
-void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
+void mmc_cmd_log(struct mmc_host *mmc, int type, int cmd, int arg,
+	struct mmc_command *sbc)
 {
 	unsigned long long t;
 	unsigned long long nanosec_rem;
@@ -237,7 +238,7 @@ void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 
 	spin_lock_irqsave(&host->cmd_dump_lock, flags);
 	if (type == 1) {
-		 /*skip log if last cmd rsp are the same*/
+		/*skip log if last cmd rsp are the same*/
 		if (last_cmd == cmd &&
 			last_arg == arg && cmd == 13) {
 			skip++;
@@ -251,6 +252,8 @@ void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 		last_arg = arg;
 		l_skip = skip;
 		skip = 0;
+	} else if (check_mmc_cmd1825(cmd) && sbc) {
+		l_skip = sbc->arg & 0xffff;
 	}
 	t = cpu_clock(printk_cpu_test);
 	nanosec_rem = do_div(t, 1000000000)/1000;
@@ -259,7 +262,7 @@ void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 	dbg_run_host_log_dat[dbg_host_cnt].type = type;
 	dbg_run_host_log_dat[dbg_host_cnt].cmd = cmd;
 	dbg_run_host_log_dat[dbg_host_cnt].arg = arg;
-	dbg_run_host_log_dat[dbg_host_cnt].skip = l_skip;
+	dbg_run_host_log_dat[dbg_host_cnt].skip_cmd23cnt = l_skip;
 	dbg_host_cnt++;
 	if (dbg_host_cnt >= dbg_max_cnt)
 		dbg_host_cnt = 0;
@@ -299,7 +302,7 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 		type = dbg_run_host_log_dat[i].type;
 		cmd = dbg_run_host_log_dat[i].cmd;
 		arg = dbg_run_host_log_dat[i].arg;
-		skip = dbg_run_host_log_dat[i].skip;
+		skip = dbg_run_host_log_dat[i].skip_cmd23cnt;
 		if (cmd == 44 && !type) {
 			cnt = arg & 0xffff;
 			tag = (arg >> 16) & 0x1f;
@@ -336,7 +339,8 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 #endif
 }
 #else
-void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
+void mmc_cmd_log(struct mmc_host *mmc, int type, int cmd, int arg,
+	struct mmc_command *sbc)
 {
 }
 
