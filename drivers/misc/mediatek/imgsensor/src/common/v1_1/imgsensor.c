@@ -717,6 +717,9 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			PK_PR_ERR("[CAMERA_HW][pFeaturePara] ioctl copy from user failed\n");
 			return -EFAULT;
 		}
+	} else {
+		PK_PR_ERR("Wrong FeatureParaLen or pFeaturePara: %d %p\n", FeatureParaLen, pFeatureCtrl->pFeaturePara);
+		return -EFAULT;
 	}
 
 	/*in case that some structure are passed from user sapce by ptr */
@@ -965,6 +968,12 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			void *usr_ptr_Reg = (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
 			kal_uint32 *pReg = NULL;
 
+			/* buffer size exam */
+			if ((sizeof(kal_uint8) * u4RegLen) > IMGSENSOR_FEATURE_PARA_LEN_MAX) {
+				kfree(pFeaturePara);
+				PK_PR_ERR(" buffer size (%u) is too large\n", u4RegLen);
+				return -EINVAL;
+			}
 			pReg = kmalloc_array(u4RegLen, sizeof(kal_uint8), GFP_KERNEL);
 			if (pReg == NULL) {
 				kfree(pFeaturePara);
@@ -1159,6 +1168,15 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			char *pPdaf_data = NULL;
 			unsigned long long *pFeaturePara_64 = (unsigned long long *)pFeaturePara;
 			void *usr_ptr = (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
+			kal_uint32 buf_sz = (kal_uint32) (*(pFeaturePara_64 + 2));
+
+			/* buffer size exam */
+			if (buf_sz > PDAF_DATA_SIZE) {
+				kfree(pFeaturePara);
+				PK_PR_ERR(" buffer size (%u) can't larger than %d bytes\n",
+					  buf_sz, PDAF_DATA_SIZE);
+				return -EINVAL;
+			}
 
 			pPdaf_data = kmalloc(sizeof(char) * PDAF_DATA_SIZE, GFP_KERNEL);
 			if (pPdaf_data == NULL) {
@@ -1178,9 +1196,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 							       (unsigned int *)&FeatureParaLen);
 
 			if (copy_to_user((void __user *)usr_ptr,
-					 (void *)pPdaf_data,
-					 (kal_uint32) (*(pFeaturePara_64 + 2)))) {
-
+					 (void *)pPdaf_data, buf_sz)) {
 				PK_DBG("[CAMERA_HW]ERROR: copy_to_user fail\n");
 			}
 			kfree(pPdaf_data);
@@ -1212,8 +1228,9 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 	kfree(pFeaturePara);
 
-	if (copy_to_user((void __user *)pFeatureCtrl->pFeatureParaLen,
-			 (void *)&FeatureParaLen, sizeof(unsigned int))) {
+	if (pFeatureCtrl->pFeatureParaLen != NULL &&
+			copy_to_user((void __user *)pFeatureCtrl->pFeatureParaLen,
+			(void *)&FeatureParaLen, sizeof(unsigned int))) {
 		PK_DBG("[CAMERA_HW][pFeatureParaLen] ioctl copy to user failed\n");
 		return -EFAULT;
 	}

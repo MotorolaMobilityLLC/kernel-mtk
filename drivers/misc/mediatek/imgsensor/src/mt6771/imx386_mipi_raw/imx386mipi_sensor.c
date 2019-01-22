@@ -676,6 +676,10 @@ static void set_shutter_frame_length(kal_uint32 shutter, kal_uint32 frame_length
 			long_exp_times++;
 		if (long_exp_times > 128)
 			long_exp_times = 128;
+
+		if (long_exp_times < 1)
+			long_exp_times = 1;
+
 		long_exp_shift = fls(long_exp_times) - 1;
 		if (long_exp_times & (~(1 << long_exp_shift)))
 			long_exp_shift++;
