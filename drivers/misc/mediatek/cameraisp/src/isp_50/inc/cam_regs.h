@@ -319,6 +319,7 @@
 #define CAMSV_REG_FBC_IMGO_CTL1(module)  (isp_devs[module].regs + 0x0110)
 #define CAMSV_REG_FBC_IMGO_CTL2(module)  (isp_devs[module].regs + 0x0114)
 #define CAMSV_REG_IMGO_BASE_ADDR(module)  (isp_devs[module].regs + 0x0020)
+#define CAMSV_REG_TG_SEN_MODE(module)  (isp_devs[module].regs + 0x0230)
 #define CAMSV_REG_TG_VF_CON(module)  (isp_devs[module].regs + 0x0234)
 #define CAMSV_REG_TG_INTER_ST(module)  (isp_devs[module].regs + 0x026C)
 #define CAMSV_REG_TG_TIME_STAMP(module)  (isp_devs[module].regs + 0x02A0)
