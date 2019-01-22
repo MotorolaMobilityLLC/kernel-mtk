@@ -21,11 +21,11 @@
  *
  * Filename:
  * ---------
- *   mt_soc_pcm_common
+ *   mtk-soc-pcm-common
  *
  * Project:
  * --------
- *   mt_soc_common function
+ *   mtk-soc-pcm-common function
  *
  * Description:
  * ------------
