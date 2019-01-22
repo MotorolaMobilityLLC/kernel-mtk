@@ -62,7 +62,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	[IDLE_TYPE_DP] = {
 		0x00040802,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
-		0x000008C5,	/* INFRA2 */
+		0x000000C5,	/* INFRA2 */
 		0xFFFFFFFB,	/* MMSYS0 */
 		0x00003FFF,	/* MMSYS1 */
 		0xBEF000B8, /* PWR_STATE */
@@ -71,7 +71,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	[IDLE_TYPE_SO3] = {
 		0x02040802,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
-		0x000008D1,	/* INFRA2 */
+		0x000000D1,	/* INFRA2 */
 		0xFFFFFFFB,	/* MMSYS0 */
 		0x00003FFF,	/* MMSYS1 */
 		0xBEF000B0, /* PWR_STATE */
@@ -80,7 +80,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 	[IDLE_TYPE_SO] = {
 		0x00040802,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
-		0x000008C1,	/* INFRA2 */
+		0x000000C1,	/* INFRA2 */
 		0x000DFC00,	/* MMSYS0 */
 		0x00000D70,	/* MMSYS1 */
 		0xBEF000B0, /* PWR_STATE */
