@@ -19,9 +19,12 @@
 #include <linux/module.h>
 #include <linux/jiffies.h>
 #include <linux/atomic.h>
-
 #include <xhci-mtk-driver.h>
 #include <typec.h>
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+#include "usb_switch.h"
+#include "typec.h"
+#endif
 #ifdef CONFIG_TCPC_CLASS
 #include "tcpm.h"
 #include <linux/workqueue.h>
@@ -136,6 +139,12 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&tcpc_otg_lock);
 			usbc_otg_enable = true;
 			mutex_unlock(&tcpc_otg_lock);
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+			if (noti->typec_state.polarity == 0)
+				usb3_switch_ctrl_sel(CC2_SIDE);
+			else
+				usb3_switch_ctrl_sel(CC1_SIDE);
+#endif
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
 				noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			pr_info("%s OTG Plug out\n", __func__);

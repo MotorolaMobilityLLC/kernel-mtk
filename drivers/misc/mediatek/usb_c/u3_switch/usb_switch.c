@@ -384,6 +384,28 @@ struct usbtypc *get_usbtypec(void)
 	return g_exttypec;
 }
 
+void usb3_switch_ctrl_sel(int sel)
+{
+	struct usbtypc *typec;
+
+	typec = get_usbtypec();
+
+	usb3_switch_en(typec, ENABLE);
+	usb3_switch_sel(typec, sel);
+}
+
+void usb3_switch_ctrl_en(bool en)
+{
+	struct usbtypc *typec;
+
+	typec = get_usbtypec();
+
+	if (en)
+		usb3_switch_en(typec, ENABLE);
+	else
+		usb3_switch_en(typec, DISABLE);
+}
+
 static int usbc_pinctrl_probe(struct platform_device *pdev)
 {
 	int ret = 0;
