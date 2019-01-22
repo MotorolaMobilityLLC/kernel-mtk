@@ -94,9 +94,6 @@
 #include <linux/prefetch.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
-#ifdef CONFIG_USB_C_SWITCH
-#include <typec.h>
-#endif
 #ifdef CONFIG_USBIF_COMPLIANCE
 #include <linux/proc_fs.h>
 #include <linux/uaccess.h>
@@ -2077,16 +2074,6 @@ const struct hc_driver musb_hc_driver = {
 	.flags = HCD_USB2 | HCD_MEMORY,
 };
 
-#ifdef CONFIG_USB_C_SWITCH
-#ifndef CONFIG_TCPC_CLASS
-static struct typec_switch_data switch_driver = {
-	.name = (char *)musb_driver_name,
-	.type = DEVICE_TYPE,
-	.enable		= typec_switch_usb_connect,
-	.disable	= typec_switch_usb_disconnect,
-};
-#endif /* CONFIG_TCPC_CLASS */
-#endif
 /* --------------------------------------------------------------------------
  * Init support
  */
@@ -2128,7 +2115,6 @@ allocate_instance(struct device *dev, struct musb_hdrc_config *config, void __io
 		ep->musb = musb;
 		ep->epnum = epnum;
 	}
-	musb->in_ipo_off = false;
 	musb->controller = dev;
 
 	/* added for ssusb: */
@@ -2311,16 +2297,6 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 				? MUSB_CONTROLLER_MHDRC : MUSB_CONTROLLER_HDRC, musb);
 	if (status < 0)
 		goto fail3;
-
-#ifdef CONFIG_USB_C_SWITCH
-#ifndef CONFIG_TCPC_CLASS
-	switch_driver.priv_data = musb;
-	os_printk(K_INFO, "type c test\n");
-	status = register_typec_switch_callback(&switch_driver);
-	if (status < 0)
-		goto fail3;
-#endif /* CONFIG_TCPC_CLASS */
-#endif
 
 	/* REVISIT-J: Do _NOT_ support OTG functionality */
 	/* setup_timer(&musb->otg_timer, musb_otg_timer_func, (unsigned long) musb); */
