@@ -503,8 +503,10 @@ static long cam_cal_drv_ioctl(
 		}
 
 	}
-
-
+	if (ptempbuf == NULL) { /*It have to add */
+		CAM_CALDB("ptempbuf is Null !!!");
+		return -EFAULT;
+	}
 	switch (a_u4Command) {
 
 	case CAM_CALIOC_S_WRITE:/*Note: Write Command is Unverified!*/
