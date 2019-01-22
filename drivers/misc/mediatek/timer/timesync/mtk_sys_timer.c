@@ -31,11 +31,14 @@
 #include <linux/math64.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_sys_timer.h>
-#include <mtk_sys_timer_mbox.h>
 #include <mtk_sys_timer_typedefs.h>
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include <mtk_sys_timer_mbox.h>
 #include <sspm_define.h>
 #include <sspm_ipi.h>
 #include <sspm_mbox.h>
+#endif
 
 #define sys_timer_sysram_write(val, addr) mt_reg_sync_writel(val, addr)
 
@@ -193,6 +196,9 @@ void sys_timer_timesync_verify_sspm(void)
 }
 
 #else
+#define sys_timer_mbox_read(id, val)
+#define sys_timer_mbox_write(id, val)
+#define sys_timer_timesync_inc_ver(void)
 #define sys_timer_timesync_update_sspm(suspended, tick, ts)
 #define sys_timer_timesync_verify_sspm(void)
 #endif
