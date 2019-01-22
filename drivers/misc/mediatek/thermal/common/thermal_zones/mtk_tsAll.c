@@ -30,7 +30,7 @@
 #include <linux/uidgid.h>
 #include <linux/slab.h>
 
-#define RESERVED_TZS (10)
+#define RESERVED_TZS (12)
 
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
@@ -391,6 +391,9 @@ PROC_FOPS_RW(6);
 PROC_FOPS_RW(7);
 PROC_FOPS_RW(8);
 PROC_FOPS_RW(9);
+PROC_FOPS_RW(10);
+PROC_FOPS_RW(11);
+PROC_FOPS_RW(12);
 
 static const struct file_operations *thz_fops[RESERVED_TZS] = {
 	FOPS(1),
@@ -401,7 +404,10 @@ static const struct file_operations *thz_fops[RESERVED_TZS] = {
 	FOPS(6),
 	FOPS(7),
 	FOPS(8),
-	FOPS(9)
+	FOPS(9),
+	FOPS(10),
+	FOPS(11),
+	FOPS(12)
 };
 
 static int __init tsallts_init(void)
@@ -442,7 +448,6 @@ static int __init tsallts_init(void)
 	}
 
 	mtkTTimer_register("tztsAll", mtkts_allts_start_timer, mtkts_allts_cancel_timer);
-
 	return 0;
 }
 
