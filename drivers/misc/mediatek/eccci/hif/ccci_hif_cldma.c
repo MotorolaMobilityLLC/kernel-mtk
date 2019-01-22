@@ -406,6 +406,39 @@ static void cldma_timeout_timer_func(unsigned long data)
 }
 #endif
 
+#if MD_GENERATION == (6293)
+/*
+ *AP_L2RISAR0 register is different from others. its valid bit is 0,8,16,24
+ *So we have to gather/scatter it to match other registers
+*/
+static inline u32 cldma_reg_bit_gather(u32 reg_s)
+{
+	u32 reg_g = 0;
+	u32 i = 0;
+
+	while (reg_s) {
+		reg_g |= ((reg_s & 0x1) << i);
+		reg_s = reg_s >> 8;
+		i++;
+	}
+
+	return reg_g;
+}
+static inline u32 cldma_reg_bit_scatter(u32 reg_g)
+{
+	u32 reg_s = 0;
+	u32 i = 0;
+
+	while (reg_g && i < 4) {
+		reg_s |= ((reg_g & 0x1) << (8 * i));
+		reg_g = reg_g >> 1;
+		i++;
+	}
+
+	return reg_s;
+}
+#endif
+
 /* may be called from workqueue or NAPI or tasklet (queue0) context, only NAPI and tasklet with blocking=false */
 static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int blocking)
 {
@@ -437,6 +470,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 	static unsigned long long last_leave_time[CLDMA_RXQ_NUM] = { 0 };
 	static unsigned int sample_time[CLDMA_RXQ_NUM] = { 0 };
 	static unsigned int sample_bytes[CLDMA_RXQ_NUM] = { 0 };
+	unsigned int l2qe_s_offset = CLDMA_RX_QE_OFFSET;
 
 	total_time = sched_clock();
 	if (last_leave_time[queue->index] == 0)
@@ -614,8 +648,12 @@ again:
 		}
 		/* greedy mode */
 		L2RISAR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0);
+#if MD_GENERATION == (6293)
+		L2RISAR0 = cldma_reg_bit_gather(L2RISAR0);
+		l2qe_s_offset = CLDMA_RX_QE_OFFSET << 8;
+#endif
 		if ((L2RISAR0 & CLDMA_RX_INT_DONE & (1 << queue->index)) ||
-		    (L2RISAR0 & CLDMA_RX_INT_QUEUE_EMPTY & ((1 << queue->index) << CLDMA_RX_QE_OFFSET)))
+		    (L2RISAR0 & CLDMA_RX_INT_QUEUE_EMPTY & ((1 << queue->index) << l2qe_s_offset)))
 			retry = 1;
 		else
 			retry = 0;
@@ -628,7 +666,7 @@ again:
 			if (retry) {
 				/* ACK interrupt */
 				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0,
-						((1 << queue->index) << CLDMA_RX_QE_OFFSET));
+						((1 << queue->index) << l2qe_s_offset));
 				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0, (1 << queue->index));
 				/* clear IP busy register wake up cpu case */
 				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY,
@@ -1211,7 +1249,7 @@ static void cldma_rx_worker_start(struct md_cd_ctrl *md_ctrl, int qno)
 static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 {
 	int i, ret;
-	unsigned int L2TIMR0, L2RIMR0, L2TISAR0, L2RISAR0;
+	unsigned int L2TIMR0, L2RIMR0, L2TISAR0, L2RISAR0, L2RISAR0_REG;
 
 	/* get L2 interrupt status */
 	L2TISAR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TISAR0);
@@ -1229,7 +1267,14 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 #ifndef CLDMA_NO_TX_IRQ
 	L2TISAR0 &= (~L2TIMR0);
 #endif
+#if MD_GENERATION == (6293)
+	L2RISAR0 = cldma_reg_bit_gather(L2RISAR0);
 	L2RISAR0 &= (~L2RIMR0);
+	L2RISAR0_REG = cldma_reg_bit_scatter(L2RISAR0);
+#else
+	L2RISAR0 &= (~L2RIMR0);
+	L2RISAR0_REG = L2RISAR0;
+#endif
 
 	if (L2TISAR0 & CLDMA_TX_INT_ERROR)
 		CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "CLDMA Tx error (%x/%x)\n",
@@ -1299,7 +1344,7 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 		trace_cldma_irq(CCCI_TRACE_RX_IRQ, (L2RISAR0 & CLDMA_RX_INT_DONE));
 #endif
 		/* ack Rx interrupt */
-		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0, L2RISAR0);
+		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0, L2RISAR0_REG);
 		/* clear IP busy register wake up cpu case */
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY,
 			      cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY));

@@ -141,9 +141,9 @@ static void md_cd_ccif_delayed_work(struct ccci_modem *md)
 {
 	/* stop CLDMA, we don't want to get CLDMA IRQ when MD is resetting CLDMA after it got cleaq_ack */
 	cldma_stop(CLDMA_HIF_ID);
-
+	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_ccif_delayed_work: stop cldma done\n");
 	md_cldma_hw_reset(md->index);
-
+	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_ccif_delayed_work: hw reset done\n");
 	md_cd_clear_all_queue(CLDMA_HIF_ID, IN);
 #if (MD_GENERATION >= 6293)
 	md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_EXP);
