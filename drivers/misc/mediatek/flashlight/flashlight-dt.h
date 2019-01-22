@@ -11,7 +11,16 @@
  * GNU General Public License for more details.
  */
 
+#ifndef _FLASHLIGHT_DT_H
+#define _FLASHLIGHT_DT_H
 
-void dummy_file_function(int a)
-{
-}
+#ifdef mt6757
+#define LM3643_DTNAME     "mediatek,flashlights_lm3643"
+#define LM3643_DTNAME_I2C "mediatek,strobe_main"
+#endif
+
+#ifdef mt6799
+#define MT6336_DTNAME     "mediatek,flashlights_mt6336"
+#endif
+
+#endif /* _FLASHLIGHT_DT_H */
