@@ -60,7 +60,7 @@ bool disp_pwm_mux_is_osc(void)
 static void __iomem *disp_pmw_mux_base;
 
 #ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
-#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0x110)
+#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xB0)
 #endif
 #ifdef HARD_CODE_CONFIG
 #ifndef MUX_UPDATE_ADDR /* disp pwm source clock update register address */
@@ -89,16 +89,19 @@ enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 
 	switch (clk_req) {
 	case 0:
-		clkid = ULPOSC_D16;
+		clkid = TOP_OSC_D16;
 		break;
 	case 1:
-		clkid = ULPOSC_D2;
+		clkid = TOP_OSC_D4;
 		break;
 	case 2:
-		clkid = UNIVPLL1_D8;
+		clkid = TOP_OSC_D2;
 		break;
 	case 3:
-		clkid = CLK26M; /* Bypass config:default 26M */
+		clkid = TOP_UNIVPLL_D3_D4;
+		break;
+	case 4:
+		clkid = TOP_26M;
 		break;
 	default:
 		clkid = -1;
@@ -167,13 +170,13 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 	reg_before = disp_pwm_get_pwmmux();
 
 	if (clkid != -1) {
-		ddp_clk_prepare_enable(MUX_PWM);
-		ddp_clk_set_parent(MUX_PWM, clkid);
-		ddp_clk_disable_unprepare(MUX_PWM);
+		ddp_clk_prepare_enable(TOP_MUX_DISP_PWM);
+		ddp_clk_set_parent(TOP_MUX_DISP_PWM, clkid);
+		ddp_clk_disable_unprepare(TOP_MUX_DISP_PWM);
 	}
 
 	reg_after = disp_pwm_get_pwmmux();
-	g_pwm_mux_clock_source = (reg_after>>16) & 0x3;
+	g_pwm_mux_clock_source = reg_after & 0x7;
 	PWM_MSG("PWM_MUX %x->%x, clk_req=%d clkid=%d", reg_before, reg_after, clk_req, clkid);
 
 	return 0;
@@ -331,8 +334,9 @@ int disp_pwm_clksource_enable(int clk_req)
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D2:
-	case ULPOSC_D16:
+	case TOP_OSC_D16:
+	case TOP_OSC_D4:
+	case TOP_OSC_D2:
 		ulposc_enable(clkid);
 		break;
 	default:
@@ -350,8 +354,9 @@ int disp_pwm_clksource_disable(int clk_req)
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D2:
-	case ULPOSC_D16:
+	case TOP_OSC_D16:
+	case TOP_OSC_D4:
+	case TOP_OSC_D2:
 		ulposc_disable(clkid);
 		break;
 	default:
@@ -371,7 +376,9 @@ bool disp_pwm_mux_is_osc(void)
 {
 	bool is_osc = false;
 
-	if (g_pwm_mux_clock_source == 1 || g_pwm_mux_clock_source == 2)
+	if (g_pwm_mux_clock_source == 2 ||
+		g_pwm_mux_clock_source == 3 ||
+		g_pwm_mux_clock_source == 4)
 		is_osc = true;
 
 	return is_osc;
