@@ -338,7 +338,7 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 	unsigned int old_vproc = cur_vproc;
 	unsigned int old_vsram = cur_vsram;
 
-	volt = MIN(cur_vsram, MAX_VPROC_VOLT);
+	volt = MIN(volt, MAX_VPROC_VOLT);
 
 	if (volt > old_vproc)
 		notify_cpu_volt_sampler(p->id, volt, VOLT_UP, VOLT_PRECHANGE);
