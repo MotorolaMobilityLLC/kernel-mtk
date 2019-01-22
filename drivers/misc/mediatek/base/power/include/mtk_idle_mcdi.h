@@ -14,7 +14,8 @@
 #ifndef __MTK_IDLE_MCDI_COMMON_H__
 #define __MTK_IDLE_MCDI_COMMON_H__
 
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) \
+	|| defined(CONFIG_MACH_MT6771)
 
 #include "spm_v4/mtk_idle_mcdi.h"
 

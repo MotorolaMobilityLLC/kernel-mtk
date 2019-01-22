@@ -126,4 +126,5 @@ ifeq ($(CONFIG_MTK_ACAO_SUPPORT), y)
 obj-$(CONFIG_MACH_MT6763) += mcdi/
 obj-$(CONFIG_MACH_MT6758) += mcdi/
 obj-$(CONFIG_MACH_MT6739) += mcdi/
+#obj-$(CONFIG_MACH_MT6771) += mcdi/
 endif
