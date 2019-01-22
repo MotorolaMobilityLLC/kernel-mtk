@@ -683,6 +683,7 @@ struct WriteAddrStruct {
 	void *va;
 	dma_addr_t pa;
 	pid_t user;
+	void *file_node;
 };
 
 /**
@@ -1081,9 +1082,11 @@ extern "C" {
 
 	uint32_t cmdqCoreReadDataRegister(enum CMDQ_DATA_REGISTER_ENUM regID);
 
-	int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart);
+	int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart, void *node);
 	int cmdqCoreFreeWriteAddress(dma_addr_t paStart);
+	void cmdqCoreFreeWriteAddressNode(void *node);
 	uint32_t cmdqCoreReadWriteAddress(dma_addr_t pa);
+	void cmdqCoreReadWriteAddressBatch(u32 *addrs, u32 count, u32 *val_out);
 	uint32_t cmdqCoreWriteWriteAddress(dma_addr_t pa, uint32_t value);
 
 	int32_t cmdq_core_profile_enabled(void);

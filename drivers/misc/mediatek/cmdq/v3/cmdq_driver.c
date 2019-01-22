@@ -161,6 +161,7 @@ static int cmdq_release(struct inode *pInode, struct file *pFile)
 
 	/* scan through tasks that created by this file node and release them */
 	cmdq_core_release_task_by_file_node((void *)pNode);
+	cmdqCoreFreeWriteAddressNode((void *)pNode);
 
 	if (pFile->private_data != NULL) {
 		kfree(pFile->private_data);
@@ -244,8 +245,6 @@ static void cmdq_driver_process_read_address_request(struct cmdqReadAddressStruc
 	/* create kernel-space buffer for working */
 	uint32_t *addrs = NULL;
 	uint32_t *values = NULL;
-	dma_addr_t pa = 0;
-	int i = 0;
 
 	CMDQ_MSG("[READ_PA] cmdq_driver_process_read_address_request()\n");
 
@@ -280,11 +279,7 @@ static void cmdq_driver_process_read_address_request(struct cmdqReadAddressStruc
 		}
 
 		/* actually read these PA write buffers */
-		for (i = 0; i < req_user->count; ++i) {
-			pa = (0xFFFFFFFF & addrs[i]);
-			CMDQ_MSG("[READ_PA] req read dma address 0x%pa\n", &pa);
-			values[i] = cmdqCoreReadWriteAddress(pa);
-		}
+		cmdqCoreReadWriteAddressBatch(addrs, req_user->count, values);
 
 		/* copy value to user */
 		if (copy_to_user
@@ -804,7 +799,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 				return -EFAULT;
 			}
 
-			status = cmdqCoreAllocWriteAddress(addrReq.count, &paStart);
+			status = cmdqCoreAllocWriteAddress(addrReq.count, &paStart, (void *)pFile);
 			if (status != 0) {
 				CMDQ_ERR
 				    ("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS cmdqCoreAllocWriteAddress() failed\n");
