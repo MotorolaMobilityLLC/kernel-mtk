@@ -1243,9 +1243,10 @@ static int m4u_get_pages(M4U_MODULE_ID_ENUM eModuleID, unsigned long BufAddr,
 				unsigned int va_align = BufAddr & (~M4U_PAGE_MASK);
 				int fault_cnt;
 
-				for (fault_cnt = 0; fault_cnt < 300; fault_cnt++) {
+				for (fault_cnt = 0; fault_cnt < 30; fault_cnt++) {
 					*(pPhys + i) = m4u_user_v2p(va_align + 0x1000 * i);
-					if (!*(pPhys + i)) {
+					if (!*(pPhys + i) && (va_align + 0x1000 * i >= vma->vm_start)
+					    && (va_align + 0x1000 * i <= vma->vm_end)) {
 						handle_mm_fault(current->mm, vma, va_align + 0x1000 * i,
 								(vma->vm_flags & VM_WRITE) ? FAULT_FLAG_WRITE : 0);
 						cond_resched();
@@ -1253,7 +1254,7 @@ static int m4u_get_pages(M4U_MODULE_ID_ENUM eModuleID, unsigned long BufAddr,
 						break;
 				}
 
-				if (fault_cnt > 200) {
+				if (fault_cnt > 20) {
 					M4UMSG("%s, %d, fault_cnt %d, Bufaddr 0x%lx, i %d, page_num 0x%x\n",
 					__func__, __LINE__, fault_cnt, BufAddr, i, page_num);
 					M4UMSG("alloc_mva VM_PFNMAP module=%s, va=0x%lx, size=0x%lx, vm_flag=0x%x\n",
