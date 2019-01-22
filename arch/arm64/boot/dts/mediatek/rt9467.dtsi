@@ -17,9 +17,8 @@
 		reg = <0x5b>;
 		rt,intr_gpio_num = <101>;	/* direct defined GPIO num */
 		rt,intr_gpio = <&pio 101 0x0>;
-		interrupt-names = "wdtmri", "chg_rechgi", "chg_ieoci",
-			"chg_mivr", "chg_aiclmeasi", "attachi", "detachi",
-			"pwr_rdy", "chg_statci";
+		interrupt-names = "wdtmri", "chg_mivr", "chg_aiclmeasi",
+			"attachi", "detachi", "pwr_rdy", "chg_statci";
 		status = "okay";
 		/*
 		 * Charger name
@@ -41,7 +40,7 @@
 		en_wdt;
 		en_chgdet;
 		/* en_jeita; */
-		/* en_irq_pulse; */
+		en_irq_pulse;
 	};
 };
 
@@ -71,11 +70,10 @@
 		ircmp_resistor = <25000>;	/* uohm */
 		ircmp_vclamp = <32000>;		/* uV */
 		en_te;
-		en_wdt;
+		/* en_wdt; */
 		/* en_chgdet; */
 		/* en_jeita; */
 		/* en_irq_pulse; */
 		/* ceb_invert; */
 	};
 };
-
