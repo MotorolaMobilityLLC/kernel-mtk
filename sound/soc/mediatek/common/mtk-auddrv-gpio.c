@@ -189,6 +189,7 @@ void AudDrv_GPIO_probe(void *dev)
 
 static int AudDrv_GPIO_Select(enum audio_system_gpio_type _type)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	int ret = 0;
 
 	if (_type < 0 || _type >= GPIO_NUM) {
@@ -209,6 +210,9 @@ static int AudDrv_GPIO_Select(enum audio_system_gpio_type _type)
 		       __func__, _type);
 
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 static int set_aud_clk_mosi(bool _enable)
