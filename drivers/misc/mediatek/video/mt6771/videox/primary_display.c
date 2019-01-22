@@ -3662,11 +3662,10 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 		if (status & 0x1) {
 			/* ovl is not idle !! */
 			DISPPR_ERROR("disp ovl status error!! stat=0x%x\n", status);
-			/* disp_aee_print("ovl_stat 0x%x\n", status); */
+			primary_display_diagnose();
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_error,
 					 MMPROFILE_FLAG_PULSE, status, 0);
-			primary_display_diagnose();
-			ret = -1;
+			disp_aee_print("ovl_stat 0x%x\n", status);
 		}
 	}
 
