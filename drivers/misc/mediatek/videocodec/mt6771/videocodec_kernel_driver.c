@@ -1535,7 +1535,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 		mutex_lock(&EncEMILock);
 		gu4EncEMICounter++;
-		pr_debug("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
+		MODULE_MFV_LOGD("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4EncEMICounter, sizeof(VAL_UINT32_T));
 		if (ret) {
@@ -1555,7 +1555,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 		mutex_lock(&EncEMILock);
 		gu4EncEMICounter--;
-		pr_debug("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
+		MODULE_MFV_LOGD("[VCODEC] ENC_EMI_USER = %d\n", gu4EncEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4EncEMICounter, sizeof(VAL_UINT32_T));
 		if (ret) {
@@ -2263,7 +2263,7 @@ static int vcodec_open(struct inode *inode, struct file *file)
 	mutex_lock(&DriverOpenCountLock);
 	Driver_Open_Count++;
 
-	pr_debug("vcodec_open pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
+	MODULE_MFV_LOGD("vcodec_open pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
 	mutex_unlock(&DriverOpenCountLock);
 
 	/* TODO: Check upper limit of concurrent users? */
@@ -2286,7 +2286,7 @@ static int vcodec_release(struct inode *inode, struct file *file)
 	/* dump_stack(); */
 	MODULE_MFV_LOGD("vcodec_release, curr_tid =%d\n", current->pid);
 	mutex_lock(&DriverOpenCountLock);
-	pr_debug("vcodec_release pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
+	MODULE_MFV_LOGD("vcodec_release pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
 	Driver_Open_Count--;
 
 	if (Driver_Open_Count == 0) {
