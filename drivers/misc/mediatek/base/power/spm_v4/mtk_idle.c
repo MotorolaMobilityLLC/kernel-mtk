@@ -1044,7 +1044,7 @@ unsigned int ufs_cb_before_xxidle(void)
 	op_cond = ufs_in_hibernate ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0;
 
 	bblpm_check = !clk_buf_bblpm_enter_cond();
-	op_cond |= (ufs_in_hibernate && bblpm_check) ? DEEPIDLE_OPT_CLKBUF_BBLPM : 0;
+	op_cond |= bblpm_check ? DEEPIDLE_OPT_CLKBUF_BBLPM : 0;
 
 	return op_cond;
 #else
