@@ -1274,7 +1274,7 @@ MTK_WCN_BOOL wmt_lib_is_therm_ctrl_support(VOID)
 	}
 	if ((!osal_test_bit(WMT_STAT_STP_EN, &gDevWmt.state))
 	    || (!osal_test_bit(WMT_STAT_STP_RDY, &gDevWmt.state))) {
-		WMT_DBG_FUNC
+		WMT_INFO_FUNC
 		    ("thermal command can not be send: STP is not enable(%d) or ready(%d)\n",
 		     osal_test_bit(WMT_STAT_STP_EN, &gDevWmt.state), osal_test_bit(WMT_STAT_STP_RDY,
 										   &gDevWmt.state));
