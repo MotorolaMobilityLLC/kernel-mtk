@@ -236,14 +236,14 @@ enum musb_g_ep0_state {
 
 #define MUSB_MODE(musb) ((musb)->is_host ? "Host" : "Peripheral")
 
-typedef enum {
+enum writeFunc_enum {
 	funcWriteb = 0,
 	funcWritew,
 	funcWritel,
 	funcInterrupt
-} writeFunc_enum;
+};
 
-void dumpTime(writeFunc_enum func, int epnum);
+void dumpTime(enum writeFunc_enum func, int epnum);
 
 /******************************** TYPES *************************************/
 

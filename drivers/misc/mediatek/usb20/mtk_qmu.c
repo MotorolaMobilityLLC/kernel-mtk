@@ -18,18 +18,18 @@
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 #define USB_AUDIO_DATA_OUT 0
-static PGPD Tx_gpd_head_dram;
+static struct TGPD *Tx_gpd_head_dram;
 static u64 Tx_gpd_Offset_dram;
 #endif
 
-static PGPD Rx_gpd_head[MAX_QMU_EP + 1];
-static PGPD Tx_gpd_head[MAX_QMU_EP + 1];
-static PGPD Rx_gpd_end[MAX_QMU_EP + 1];
-static PGPD Tx_gpd_end[MAX_QMU_EP + 1];
-static PGPD Rx_gpd_last[MAX_QMU_EP + 1];
-static PGPD Tx_gpd_last[MAX_QMU_EP + 1];
-static GPD_R Rx_gpd_List[MAX_QMU_EP + 1];
-static GPD_R Tx_gpd_List[MAX_QMU_EP + 1];
+static struct TGPD *Rx_gpd_head[MAX_QMU_EP + 1];
+static struct TGPD *Tx_gpd_head[MAX_QMU_EP + 1];
+static struct TGPD *Rx_gpd_end[MAX_QMU_EP + 1];
+static struct TGPD *Tx_gpd_end[MAX_QMU_EP + 1];
+static struct TGPD *Rx_gpd_last[MAX_QMU_EP + 1];
+static struct TGPD *Tx_gpd_last[MAX_QMU_EP + 1];
+static struct _GPD_RANGE Rx_gpd_List[MAX_QMU_EP + 1];
+static struct _GPD_RANGE Tx_gpd_List[MAX_QMU_EP + 1];
 static u64 Rx_gpd_Offset[MAX_QMU_EP + 1];
 static u64 Tx_gpd_Offset[MAX_QMU_EP + 1];
 static u32 Rx_gpd_free_count[MAX_QMU_EP + 1];
@@ -68,20 +68,20 @@ u8 PDU_calcCksum(u8 *data, int len)
 	return 0xFF - ckSum;
 }
 
-static PGPD get_gpd(u8 isRx, u32 num)
+static struct TGPD *get_gpd(u8 isRx, u32 num)
 {
-	PGPD ptr;
+	struct TGPD *ptr;
 
 	if (isRx) {
 		ptr = Rx_gpd_List[num].pNext;
-		Rx_gpd_List[num].pNext = (PGPD) ((u8 *) (Rx_gpd_List[num].pNext) + GPD_LEN_ALIGNED);
+		Rx_gpd_List[num].pNext = (struct TGPD *) ((u8 *) (Rx_gpd_List[num].pNext) + GPD_LEN_ALIGNED);
 
 		if (Rx_gpd_List[num].pNext >= Rx_gpd_List[num].pEnd)
 			Rx_gpd_List[num].pNext = Rx_gpd_List[num].pStart;
 		Rx_gpd_free_count[num]--;
 	} else {
 		ptr = Tx_gpd_List[num].pNext;
-		Tx_gpd_List[num].pNext = (PGPD) ((u8 *) (Tx_gpd_List[num].pNext) + GPD_LEN_ALIGNED);
+		Tx_gpd_List[num].pNext = (struct TGPD *) ((u8 *) (Tx_gpd_List[num].pNext) + GPD_LEN_ALIGNED);
 
 		if (Tx_gpd_List[num].pNext >= Tx_gpd_List[num].pEnd)
 			Tx_gpd_List[num].pNext = Tx_gpd_List[num].pStart;
@@ -90,12 +90,12 @@ static PGPD get_gpd(u8 isRx, u32 num)
 	return ptr;
 }
 
-static void gpd_ptr_align(u8 isRx, u32 num, PGPD ptr)
+static void gpd_ptr_align(u8 isRx, u32 num, struct TGPD *ptr)
 {
 	if (isRx)
-		Rx_gpd_List[num].pNext = (PGPD) ((u8 *) (ptr) + GPD_LEN_ALIGNED);
+		Rx_gpd_List[num].pNext = (struct TGPD *) ((u8 *) (ptr) + GPD_LEN_ALIGNED);
 	else
-		Tx_gpd_List[num].pNext = (PGPD) ((u8 *) (ptr) + GPD_LEN_ALIGNED);
+		Tx_gpd_List[num].pNext = (struct TGPD *) ((u8 *) (ptr) + GPD_LEN_ALIGNED);
 }
 
 static dma_addr_t gpd_virt_to_phys(void *vaddr, u8 isRx, u32 num)
@@ -128,14 +128,14 @@ static void *gpd_phys_to_virt(dma_addr_t paddr, u8 isRx, u32 num)
 	return vaddr;
 }
 
-static void init_gpd_list(u8 isRx, int num, PGPD ptr, PGPD io_ptr, u32 size)
+static void init_gpd_list(u8 isRx, int num, struct TGPD *ptr, struct TGPD *io_ptr, u32 size)
 {
 	if (isRx) {
 		Rx_gpd_List[num].pStart = ptr;
-		Rx_gpd_List[num].pEnd = (PGPD) ((u8 *) (ptr + size) + (GPD_EXT_LEN * size));
+		Rx_gpd_List[num].pEnd = (struct TGPD *) ((u8 *) (ptr + size) + (GPD_EXT_LEN * size));
 		Rx_gpd_Offset[num] = (u64) (uintptr_t)ptr - (u64) (uintptr_t)io_ptr;
 		ptr++;
-		Rx_gpd_List[num].pNext = (PGPD) ((u8 *) ptr + GPD_EXT_LEN);
+		Rx_gpd_List[num].pNext = (struct TGPD *) ((u8 *) ptr + GPD_EXT_LEN);
 
 		QMU_INFO("Rx_gpd_List[%d].pStart=%p, pNext=%p, pEnd=%p\n",
 			 num, Rx_gpd_List[num].pStart, Rx_gpd_List[num].pNext,
@@ -143,10 +143,10 @@ static void init_gpd_list(u8 isRx, int num, PGPD ptr, PGPD io_ptr, u32 size)
 		QMU_INFO("Rx_gpd_Offset[%d]=%p\n", num, (void *)(uintptr_t)Rx_gpd_Offset[num]);
 	} else {
 		Tx_gpd_List[num].pStart = ptr;
-		Tx_gpd_List[num].pEnd = (PGPD) ((u8 *) (ptr + size) + (GPD_EXT_LEN * size));
+		Tx_gpd_List[num].pEnd = (struct TGPD *) ((u8 *) (ptr + size) + (GPD_EXT_LEN * size));
 		Tx_gpd_Offset[num] = (u64) (uintptr_t)ptr - (u64) (uintptr_t)io_ptr;
 		ptr++;
-		Tx_gpd_List[num].pNext = (PGPD) ((u8 *) ptr + GPD_EXT_LEN);
+		Tx_gpd_List[num].pNext = (struct TGPD *) ((u8 *) ptr + GPD_EXT_LEN);
 
 		QMU_INFO("Tx_gpd_List[%d].pStart=%p, pNext=%p, pEnd=%p\n",
 			 num, Tx_gpd_List[num].pStart, Tx_gpd_List[num].pNext,
@@ -158,7 +158,7 @@ static void init_gpd_list(u8 isRx, int num, PGPD ptr, PGPD io_ptr, u32 size)
 int qmu_init_gpd_pool(struct device *dev)
 {
 	u32 i, size;
-	TGPD *ptr, *io_ptr;
+	struct TGPD *ptr, *io_ptr;
 	dma_addr_t dma_handle;
 	u32 gpd_sz;
 	unsigned long addr;
@@ -187,8 +187,8 @@ int qmu_init_gpd_pool(struct device *dev)
 	for (i = isoc_ep_end_idx + 1 ; i <= MAX_QMU_EP; i++)
 		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
 
-	gpd_sz = (u32) (u64) sizeof(TGPD);
-	QMU_WARN("sizeof(TGPD):%d\n", gpd_sz);
+	gpd_sz = (u32) (u64) sizeof(struct TGPD);
+	QMU_WARN("sizeof(struct TGPD):%d\n", gpd_sz);
 	if (gpd_sz != GPD_SZ)
 		QMU_ERR("ERR!!!, GPD SIZE != %d\n", GPD_SZ);
 
@@ -196,7 +196,7 @@ int qmu_init_gpd_pool(struct device *dev)
 
 		/* Allocate Rx GPD */
 		size = GPD_LEN_ALIGNED * Rx_gpd_max_count[i];
-		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
+		ptr = (struct TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
 
@@ -204,7 +204,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		addr = virt_to_phys(ptr);
 
 		memset_io(ptr, 0, size);
-		io_ptr = (TGPD *)(uintptr_t)(dma_handle);
+		io_ptr = (struct TGPD *)(uintptr_t)(dma_handle);
 
 		init_gpd_list(RXQ, i, ptr, io_ptr, Rx_gpd_max_count[i]);
 		Rx_gpd_end[i] = Rx_gpd_last[i] = Rx_gpd_head[i] = ptr;
@@ -221,7 +221,7 @@ int qmu_init_gpd_pool(struct device *dev)
 
 		/* Allocate Tx GPD */
 		size = GPD_LEN_ALIGNED * Tx_gpd_max_count[i];
-		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
+		ptr = (struct TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 		if (!ptr)
 			return -ENOMEM;
 
@@ -229,7 +229,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		addr = virt_to_phys(ptr);
 
 		memset_io(ptr, 0, size);
-		io_ptr = (TGPD *)(uintptr_t)(dma_handle);
+		io_ptr = (struct TGPD *)(uintptr_t)(dma_handle);
 
 		init_gpd_list(TXQ, i, ptr, io_ptr, Tx_gpd_max_count[i]);
 		Tx_gpd_end[i] = Tx_gpd_last[i] = Tx_gpd_head[i] = ptr;
@@ -290,7 +290,7 @@ void mtk_usb_free_sram(int id)
 int gpd_switch_to_sram(struct device *dev)
 {
 	u32 size;
-	TGPD *ptr = NULL, *io_ptr;
+	struct TGPD *ptr = NULL, *io_ptr;
 	int index = ISOC_EP_START_IDX;
 	dma_addr_t dma_handle;
 
@@ -300,7 +300,7 @@ int gpd_switch_to_sram(struct device *dev)
 		mtk_audio_request_sram(&dma_handle,
 				(unsigned char **)&ptr, size, &usb_on_sram);
 	else
-		ptr = (TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
+		ptr = (struct TGPD *) dma_alloc_coherent(dev, size, &dma_handle, GFP_KERNEL);
 
 	if (!ptr) {
 		DBG(0, "NO MEMORY!!!\n");
@@ -310,7 +310,7 @@ int gpd_switch_to_sram(struct device *dev)
 	memset_io(ptr, 0, size);
 
 	/* setup Tx_gpd_Offset & Tx_gpd_List */
-	io_ptr = (TGPD *)(uintptr_t)(dma_handle);
+	io_ptr = (struct TGPD *)(uintptr_t)(dma_handle);
 	init_gpd_list(TXQ, index, ptr, io_ptr, Tx_gpd_max_count[index]);
 
 	Tx_gpd_end[index] = Tx_gpd_last[index] = Tx_gpd_head[index] = ptr;
@@ -326,7 +326,7 @@ int gpd_switch_to_sram(struct device *dev)
 void gpd_switch_to_dram(struct device *dev)
 {
 	u32 size;
-	TGPD *ptr, *io_ptr;
+	struct TGPD *ptr, *io_ptr;
 	int index = ISOC_EP_START_IDX;
 
 	size = GPD_LEN_ALIGNED * Tx_gpd_max_count[index];
@@ -341,7 +341,7 @@ void gpd_switch_to_dram(struct device *dev)
 	memset_io(ptr, 0, size);
 
 	/* setup Tx_gpd_Offset & Tx_gpd_List, careful about type casting */
-	io_ptr = (TGPD *)(uintptr_t)((u64)(uintptr_t)Tx_gpd_head_dram - Tx_gpd_Offset_dram);
+	io_ptr = (struct TGPD *)(uintptr_t)((u64)(uintptr_t)Tx_gpd_head_dram - Tx_gpd_Offset_dram);
 	init_gpd_list(TXQ, index, ptr, io_ptr, Tx_gpd_max_count[index]);
 
 	if (Tx_gpd_Offset[index] != Tx_gpd_Offset_dram) {
@@ -408,7 +408,7 @@ void qmu_destroy_gpd_pool(struct device *dev)
 
 static void prepare_rx_gpd(dma_addr_t pBuf, u32 data_len, u8 ep_num, u8 isioc)
 {
-	TGPD *gpd;
+	struct TGPD *gpd;
 
 	/* get gpd from tail */
 	gpd = Rx_gpd_end[ep_num];
@@ -455,7 +455,7 @@ static void prepare_rx_gpd(dma_addr_t pBuf, u32 data_len, u8 ep_num, u8 isioc)
 
 static void prepare_tx_gpd(dma_addr_t pBuf, u32 data_len, u8 ep_num, u8 zlp, u8 isioc)
 {
-	TGPD *gpd;
+	struct TGPD *gpd;
 
 	/* get gpd from tail */
 	gpd = Tx_gpd_end[ep_num];
@@ -788,8 +788,8 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 {
 	void __iomem *base = qmu_base;
 
-	TGPD *gpd = Rx_gpd_last[ep_num];
-	TGPD *gpd_current = (TGPD *) (uintptr_t)MGC_ReadQMU32(base, MGC_O_QMU_RQCPR(ep_num));
+	struct TGPD *gpd = Rx_gpd_last[ep_num];
+	struct TGPD *gpd_current = (struct TGPD *) (uintptr_t)MGC_ReadQMU32(base, MGC_O_QMU_RQCPR(ep_num));
 	struct musb_ep *musb_ep = &musb->endpoints[ep_num].ep_out;
 	struct usb_request *request = NULL;
 	struct musb_request *req;
@@ -804,7 +804,7 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 	request = &req->request;
 
 	/*Transfer PHY addr got from QMU register to VIR addr */
-	gpd_current = (TGPD *) gpd_phys_to_virt((dma_addr_t)(uintptr_t)gpd_current, RXQ, ep_num);
+	gpd_current = (struct TGPD *) gpd_phys_to_virt((dma_addr_t)(uintptr_t)gpd_current, RXQ, ep_num);
 
 	QMU_INFO("[RXD]%s EP%d, Last=%p, Current=%p, End=%p\n",
 		 __func__, ep_num, gpd, gpd_current, Rx_gpd_end[ep_num]);
@@ -928,8 +928,8 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 void qmu_done_tx(struct musb *musb, u8 ep_num)
 {
 	void __iomem *base = qmu_base;
-	TGPD *gpd = Tx_gpd_last[ep_num];
-	TGPD *gpd_current = (TGPD *) (uintptr_t)MGC_ReadQMU32(base, MGC_O_QMU_TQCPR(ep_num));
+	struct TGPD *gpd = Tx_gpd_last[ep_num];
+	struct TGPD *gpd_current = (struct TGPD *) (uintptr_t)MGC_ReadQMU32(base, MGC_O_QMU_TQCPR(ep_num));
 	struct musb_ep *musb_ep = &musb->endpoints[ep_num].ep_in;
 	struct usb_request *request = NULL;
 	struct musb_request *req = NULL;
@@ -1104,8 +1104,8 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 {
 	void __iomem *base = qmu_base;
 
-	TGPD *gpd = Rx_gpd_last[ep_num];
-	TGPD *gpd_current = (TGPD *)(uintptr_t)MGC_ReadQMU32(base, MGC_O_QMU_RQCPR(ep_num));
+	struct TGPD *gpd = Rx_gpd_last[ep_num];
+	struct TGPD *gpd_current = (struct TGPD *)(uintptr_t)MGC_ReadQMU32(base, MGC_O_QMU_RQCPR(ep_num));
 	struct musb_hw_ep	*hw_ep = musb->endpoints + ep_num;
 	struct musb_qh	*qh = hw_ep->in_qh;
 	struct urb	*urb = NULL;
@@ -1125,7 +1125,7 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 	DBG(4, "\n");
 
 	/*Transfer PHY addr got from QMU register to VIR addr*/
-	gpd_current = (TGPD *)gpd_phys_to_virt((dma_addr_t)(uintptr_t)gpd_current, RXQ, ep_num);
+	gpd_current = (struct TGPD *)gpd_phys_to_virt((dma_addr_t)(uintptr_t)gpd_current, RXQ, ep_num);
 	DBG(4, "\n");
 
 	QMU_INFO("[RXD]%s EP%d, Last=%p, Current=%p, End=%p\n",
@@ -1268,8 +1268,8 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 void h_qmu_done_tx(struct musb *musb, u8 ep_num)
 {
 	void __iomem *base = qmu_base;
-	TGPD *gpd = Tx_gpd_last[ep_num];
-	TGPD *gpd_current = (TGPD *)(uintptr_t)MGC_ReadQMU32(base, MGC_O_QMU_TQCPR(ep_num));
+	struct TGPD *gpd = Tx_gpd_last[ep_num];
+	struct TGPD *gpd_current = (struct TGPD *)(uintptr_t)MGC_ReadQMU32(base, MGC_O_QMU_TQCPR(ep_num));
 	struct musb_hw_ep	*hw_ep = musb->endpoints + ep_num;
 	struct musb_qh	*qh = hw_ep->out_qh;
 	struct urb	*urb = NULL;

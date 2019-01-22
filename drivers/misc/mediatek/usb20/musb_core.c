@@ -281,7 +281,7 @@ void musb_bug(void)
 	*ptr = 10;
 }
 
-void dumpTime(writeFunc_enum func, int epnum)
+void dumpTime(enum writeFunc_enum func, int epnum)
 {
 #if 0
 	struct timeval tv;

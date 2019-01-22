@@ -50,11 +50,11 @@ extern struct musb *mtk_musb;
 #endif
 struct musb;
 
-typedef enum {
+enum usb_state_enum {
 	USB_SUSPEND = 0,
 	USB_UNCONFIGURED,
 	USB_CONFIGURED
-} usb_state_enum;
+};
 
 /* USB phy and clock */
 extern void usb_phy_poweron(void);
