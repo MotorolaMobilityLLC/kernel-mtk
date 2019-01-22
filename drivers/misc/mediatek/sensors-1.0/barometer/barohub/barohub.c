@@ -247,6 +247,9 @@ static int barohub_factory_get_data(int32_t *data)
 		return -1;
 	}
 	err = kstrtoint(strbuf, 16, data);
+	if (err != 0)
+		BAR_LOG("kstrtoint fail\n");
+
 	return 0;
 }
 static int barohub_factory_get_raw_data(int32_t *data)

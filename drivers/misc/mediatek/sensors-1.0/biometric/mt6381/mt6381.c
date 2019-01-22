@@ -760,7 +760,7 @@ static ssize_t store_rstb_value(struct device_driver *ddri, const char *buf, siz
 
 	ret = kstrtoint(buf, 10, &value);
 
-	if (ret != 0) {
+	if (ret == 0) {
 		if (value == 1)
 			pinctrl_select_state(pinctrl_gpios, bio_pins_reset_high);
 		else if (value == 0)
@@ -852,7 +852,7 @@ static ssize_t store_delay(struct device_driver *ddri, const char *buf, size_t c
 	ret = kstrtoint(buf, 10, &delayTime);
 
 	BIOMETRIC_LOG("(%d)\n", delayTime);
-	if (0 != ret && 0 < delayTime)
+	if (0 == ret && 0 < delayTime)
 		mdelay(delayTime);
 
 	return count;
@@ -1024,7 +1024,7 @@ static ssize_t store_polling_delay(struct device_driver *ddri, const char *buf, 
 	ret = kstrtoint(buf, 10, &delayTime);
 
 	pr_notice("(%d)\n", delayTime);
-	if (0 != ret && 0 <= delayTime)
+	if (0 == ret && 0 <= delayTime)
 		polling_delay = delayTime;
 
 	return count;

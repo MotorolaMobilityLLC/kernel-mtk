@@ -2554,7 +2554,7 @@ static ssize_t store_chip_orientation(struct device_driver *ptDevDrv, const char
 		return 0;
 
 	ret = kstrtoint(pbBuf, 10, &_nDirection);
-	if (ret != 0) {
+	if (ret == 0) {
 		if (hwmsen_get_convert(_nDirection, &_pt_i2c_obj->cvt))
 			ACC_PR_ERR("ERR: fail to set direction\n");
 	}

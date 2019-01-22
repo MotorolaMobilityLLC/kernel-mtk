@@ -746,7 +746,7 @@ static int bmp_get_pressure(struct i2c_client *client, char *buf, int bufsize)
 		status = bmp_get_temperature(client, temp_buf, BMP_BUFSIZE);	/* update t_fine */
 		if (status != 0)
 			goto exit;
-		if (kstrtos32(temp_buf, 16, &temperature) != 1)
+		if (kstrtos32(temp_buf, 16, &temperature) != 0)
 			BAR_ERR("sscanf parsing fail\n");
 	}
 
@@ -1280,7 +1280,7 @@ static long bmp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		}
 
 		bmp_get_pressure(client, strbuf, BMP_BUFSIZE);
-		if (kstrtou32(strbuf, 16, &dat) != 1)
+		if (kstrtou32(strbuf, 16, &dat) != 0)
 			BAR_ERR("sscanf parsing fail\n");
 		if (copy_to_user(data, &dat, sizeof(dat))) {
 			err = -EFAULT;
@@ -1295,7 +1295,7 @@ static long bmp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 			break;
 		}
 		bmp_get_temperature(client, strbuf, BMP_BUFSIZE);
-		if (kstrtou32(strbuf, 16, &dat) != 1)
+		if (kstrtou32(strbuf, 16, &dat) != 0)
 			BAR_ERR("sscanf parsing fail\n");
 		if (copy_to_user(data, &dat, sizeof(dat))) {
 			err = -EFAULT;
