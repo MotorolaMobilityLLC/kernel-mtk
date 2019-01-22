@@ -1164,7 +1164,7 @@ static noinline void go_to_rgidle(int cpu)
  * xxidle_handler return 1 if enter and exit the low power state
  */
 
-static u32 slp_spm_SODI3_flags = {
+u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
@@ -1179,7 +1179,7 @@ static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_ENABLE_SODI3
 };
 
-static u32 slp_spm_SODI_flags = {
+u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
@@ -1221,7 +1221,7 @@ u32 slp_spm_deepidle_flags = {
 
 #endif /* platform difference */
 
-static u32 slp_spm_MCSODI_flags = {
+u32 slp_spm_MCSODI_flags = {
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	SPM_FLAG_ENABLE_MCSODI |
 #endif
