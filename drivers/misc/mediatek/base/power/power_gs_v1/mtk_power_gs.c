@@ -1,0 +1,91 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+#include <linux/init.h>
+#include <linux/io.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/proc_fs.h>
+
+#include <mt-plat/aee.h>
+#include <mt-plat/upmu_common.h>
+
+#include "mtk_power_gs.h"
+
+struct proc_dir_entry *mt_power_gs_dir;
+
+struct golden _golden;
+
+bool is_already_snap_shot;
+
+bool slp_chk_golden_suspend;
+bool slp_chk_golden_dpidle;
+bool slp_chk_golden_sodi3;
+
+void mt_power_gs_dump_suspend(void)
+{
+	if (slp_chk_golden_suspend) {
+		mt_power_gs_suspend_compare();
+		slp_chk_golden_suspend = 0;
+	}
+}
+EXPORT_SYMBOL(mt_power_gs_dump_suspend);
+
+void mt_power_gs_dump_dpidle(void)
+{
+	if (slp_chk_golden_dpidle) {
+		mt_power_gs_dpidle_compare();
+		slp_chk_golden_dpidle = 0;
+	}
+}
+EXPORT_SYMBOL(mt_power_gs_dump_dpidle);
+
+void mt_power_gs_dump_sodi3(void)
+{
+	if (slp_chk_golden_sodi3) {
+		mt_power_gs_dump_suspend();
+		slp_chk_golden_sodi3 = 0;
+	}
+}
+EXPORT_SYMBOL(mt_power_gs_dump_sodi3);
+
+int snapshot_golden_setting(const char *func, const unsigned int line)
+{
+	if (!is_already_snap_shot)
+		return _snapshot_golden_setting(&_golden, func, line);
+
+	return 0;
+}
+EXPORT_SYMBOL(snapshot_golden_setting);
+
+static void __exit mt_power_gs_exit(void)
+{
+}
+
+static int __init mt_power_gs_init(void)
+{
+	mt_power_gs_dir = proc_mkdir("mt_power_gs", NULL);
+
+	if (!mt_power_gs_dir)
+		pr_err("[%s]: mkdir /proc/mt_power_gs failed\n", __func__);
+
+	return 0;
+}
+
+module_param(slp_chk_golden_suspend, bool, 0644);
+module_param(slp_chk_golden_dpidle, bool, 0644);
+module_param(slp_chk_golden_sodi3, bool, 0644);
+module_init(mt_power_gs_init);
+module_exit(mt_power_gs_exit);
+
+MODULE_DESCRIPTION("MT Low Power Golden Setting");
