@@ -19,6 +19,7 @@
 #include "stp_core.h"
 #include "btm_core.h"
 #include "wmt_plat.h"
+#include <linux/kthread.h>
 
 #define PFX_BTM                         "[STP-BTM] "
 #define STP_BTM_LOG_LOUD                 4
@@ -120,8 +121,10 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 	case STP_OPID_BTM_DBG_DUMP:
 		/*Notify the wmt to get dump data */
 		STP_BTM_DBG_FUNC("wmt dmp notification\n");
+		set_user_nice(stp_btm->BTMd.pThread, -20);
 		dump_sink = mtk_wcn_stp_coredump_flag_get();
 		stp_dbg_core_dump(dump_sink);
+		set_user_nice(stp_btm->BTMd.pThread, 0);
 		break;
 
 	case STP_OPID_BTM_DUMP_TIMEOUT:
