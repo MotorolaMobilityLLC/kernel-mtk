@@ -2188,9 +2188,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	#endif
 
 	struct ISP_CLK_INFO ispclks;
-	/* #ifndef CONFIG_MTK_QOS_SUPPORT */
 	u32 lv = 0;
-	/* #endif */
 
 	/*  */
 	if (pFile->private_data == NULL) {
@@ -2692,9 +2690,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 		{
-#if 0
 		#ifdef CONFIG_MTK_QOS_SUPPORT
-			int result, lv = 0;
+			int result = 0;
 			u64 freq_steps[ISP_CLK_LEVEL_CNT];
 
 			/* Call mmdvfs_qos_get_freq_steps to get supported frequency */
@@ -2714,8 +2711,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 			for (; lv < ispclks.clklevelcnt; lv++) {
 				/* Save clk from low to high */
-				ispclks.clklevel[lv] = freq_steps[ispclks.clklevelcnt - lv - 1];
-				LOG_VRB("DFS Clk level:%d", ispclks.clklevel[lv]);
+				ispclks.clklevel[lv] = freq_steps[lv];
+				LOG_VRB("DFS Clk level[%d]:%d", lv, ispclks.clklevel[lv]);
 			}
 		#else
 			/* To get how many clk levels this platform is supported */
@@ -2731,12 +2728,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				/* To get all clk level on this platform */
 				ispclks.clklevel[lv] = mmdvfs_qos_get_thres_value(&isp_qos,
 							MMDVFS_PM_QOS_SUB_SYS_CAMERA, lv);
-				LOG_VRB("DFS Clk level:%d", ispclks.clklevel[lv]);
+				LOG_VRB("DFS Clk level[%d]:%d", lv, ispclks.clklevel[lv]);
 			}
 		#endif
-#endif
-			ispclks.clklevelcnt = 1;
-			ispclks.clklevel[lv] = 546;
 			if (copy_to_user((void *)Param, &ispclks, sizeof(struct ISP_CLK_INFO)) != 0) {
 				LOG_NOTICE("copy_to_user failed");
 				Ret = -EFAULT;
