@@ -579,11 +579,11 @@ cm_mgr_opp_end:
 					unsigned long expires;
 
 					expires = jiffies +
-						msecs_to_jiffies(1000);
+						USE_TIMER_CHECK_TIME;
 					mod_timer(&cm_mgr_timer, expires);
 				} else {
 					cm_mgr_timer.expires = jiffies +
-						msecs_to_jiffies(1000);
+						USE_TIMER_CHECK_TIME;
 					add_timer(&cm_mgr_timer);
 					timer_is_running = 1;
 				}
