@@ -29,6 +29,12 @@
 #include <linux/compat.h>
 #endif
 
+/* OIS/EIS Timer & Workqueue */
+#include <linux/init.h>
+#include <linux/hrtimer.h>
+#include <linux/ktime.h>
+/* ------------------------- */
+
 #include "lens_info.h"
 #include "lens_list.h"
 
@@ -66,13 +72,24 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 #define LOG_INF(format, args...)
 #endif
 
+/* OIS/EIS Timer & Workqueue */
+static struct workqueue_struct *ois_workqueue;
+static struct work_struct ois_work;
+static struct hrtimer ois_timer;
+
+static DEFINE_MUTEX(ois_mutex);
+static int g_EnableTimer;
+static int g_GetOisInfoCnt;
+static int g_OisPosIdx;
+static struct stAF_OisPosInfo OisPosInfo;
+/* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
-	{1, AFDRV_LC898212XDAF_F, LC898212XDAF_F_SetI2Cclient, LC898212XDAF_F_Ioctl, LC898212XDAF_F_Release},
-	{1, AFDRV_LC898217AF, LC898217AF_SetI2Cclient, LC898217AF_Ioctl, LC898217AF_Release},
-	{1, AFDRV_LC898217AFD, LC898217AFD_SetI2Cclient, LC898217AF_Ioctl, LC898217AF_Release},
-	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl, AK7371AF_Release},
-	{1, AFDRV_BU64748AF, bu64748af_SetI2Cclient_Main2, bu64748af_Ioctl_Main2, bu64748af_Release_Main2},
+	{1, AFDRV_LC898212XDAF_F, LC898212XDAF_F_SetI2Cclient, LC898212XDAF_F_Ioctl, LC898212XDAF_F_Release, NULL},
+	{1, AFDRV_LC898217AF, LC898217AF_SetI2Cclient, LC898217AF_Ioctl, LC898217AF_Release, NULL},
+	{1, AFDRV_LC898217AFD, LC898217AFD_SetI2Cclient, LC898217AF_Ioctl, LC898217AF_Release, NULL},
+	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl, AK7371AF_Release, NULL},
+	{1, AFDRV_BU64748AF, bu64748af_SetI2Cclient_Main2, bu64748af_Ioctl_Main2, bu64748af_Release_Main2, NULL},
 };
 
 static struct stAF_DrvList *g_pstAF_CurDrv;
@@ -115,10 +132,6 @@ static long AF_SetMotorName(__user struct stAF_MotorName *pstMotorName)
 	if (copy_from_user(&stMotorName, pstMotorName, sizeof(struct stAF_MotorName)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
-#if !defined(CONFIG_MTK_LEGACY)
-	AFRegulatorCtrl(1);
-#endif
-
 	LOG_INF("Set Motor Name : %s\n", stMotorName.uMotorName);
 
 	for (i = 0; i < MAX_NUM_OF_LENS; i++) {
@@ -160,6 +173,54 @@ static long AF_SetLensMotorName(struct stAF_MotorName stMotorName)
 }
 #endif
 
+static inline int64_t getCurNS(void)
+{
+	int64_t ns;
+	struct timespec time;
+
+	time.tv_sec = time.tv_nsec = 0;
+	get_monotonic_boottime(&time);
+	ns = time.tv_sec * 1000000000LL + time.tv_nsec;
+
+	return ns;
+}
+
+/* OIS/EIS Timer & Workqueue */
+static void ois_pos_polling(struct work_struct *data)
+{
+	mutex_lock(&ois_mutex);
+	if (g_pstAF_CurDrv) {
+		if (g_pstAF_CurDrv->pAF_OisGetHallPos) {
+			int PosX = 0, PosY = 0;
+
+			g_pstAF_CurDrv->pAF_OisGetHallPos(&PosX, &PosY);
+			OisPosInfo.TimeStamp[g_OisPosIdx] = getCurNS();
+			OisPosInfo.i4OISHallPosX[g_OisPosIdx] = PosX;
+			OisPosInfo.i4OISHallPosY[g_OisPosIdx] = PosY;
+			g_OisPosIdx++;
+			g_OisPosIdx &= OIS_DATA_MASK;
+		}
+	}
+	mutex_unlock(&ois_mutex);
+}
+
+static enum hrtimer_restart ois_timer_func(struct hrtimer *timer)
+{
+	g_GetOisInfoCnt--;
+
+	if (ois_workqueue != NULL && g_GetOisInfoCnt > 11)
+		queue_work(ois_workqueue, &ois_work);
+
+	if (g_GetOisInfoCnt < 10) {
+		g_EnableTimer = 0;
+		return HRTIMER_NORESTART;
+	}
+
+	hrtimer_forward_now(timer, ktime_set(0, 5000000));
+	return HRTIMER_RESTART;
+}
+/* ------------------------- */
+
 /* ////////////////////////////////////////////////////////////// */
 static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
@@ -178,6 +239,32 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 			AFRegulatorCtrl(1);
 		break;
 	#endif
+
+	case AFIOC_G_OISPOSINFO:
+		if (g_pstAF_CurDrv) {
+			if (g_pstAF_CurDrv->pAF_OisGetHallPos) {
+				__user struct stAF_OisPosInfo *pstOisPosInfo =
+				(__user struct stAF_OisPosInfo *)a_u4Param;
+
+				mutex_lock(&ois_mutex);
+
+				if (copy_to_user(pstOisPosInfo, &OisPosInfo, sizeof(struct stAF_OisPosInfo)))
+					LOG_INF("copy to user failed when getting motor information\n");
+
+				g_OisPosIdx = 0;
+				g_GetOisInfoCnt = 100;
+				memset(&OisPosInfo, 0, sizeof(OisPosInfo));
+				mutex_unlock(&ois_mutex);
+
+				if (g_EnableTimer == 0) {
+					/* Start Timer */
+					hrtimer_start(&ois_timer, ktime_set(0, 50000000), HRTIMER_MODE_REL);
+					g_EnableTimer = 1;
+				}
+
+			}
+		}
+		break;
 
 	default:
 		if (g_pstAF_CurDrv)
@@ -218,6 +305,24 @@ static int AF_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	g_s4AF_Opened = 1;
 	spin_unlock(&g_AF_SpinLock);
 
+#if !defined(CONFIG_MTK_LEGACY)
+	AFRegulatorCtrl(1);
+#endif
+
+	/* OIS/EIS Timer & Workqueue */
+	/* init work queue */
+	INIT_WORK(&ois_work, ois_pos_polling);
+
+	if (ois_workqueue == NULL)
+		ois_workqueue = create_singlethread_workqueue("ois_polling");
+
+	/* init timer */
+	hrtimer_init(&ois_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	ois_timer.function = ois_timer_func;
+
+	g_EnableTimer = 0;
+	/* ------------------------- */
+
 	LOG_INF("End\n");
 
 	return 0;
@@ -244,6 +349,20 @@ static int AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 #if !defined(CONFIG_MTK_LEGACY)
 	AFRegulatorCtrl(2);
 #endif
+
+	/* OIS/EIS Timer & Workqueue */
+	/* Cancel Timer */
+	hrtimer_cancel(&ois_timer);
+
+	/* flush work queue */
+	flush_work(&ois_work);
+
+	if (ois_workqueue) {
+		flush_workqueue(ois_workqueue);
+		destroy_workqueue(ois_workqueue);
+		ois_workqueue = NULL;
+	}
+	/* ------------------------- */
 
 	LOG_INF("End\n");
 
