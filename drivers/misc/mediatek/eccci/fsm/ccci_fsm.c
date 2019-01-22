@@ -54,6 +54,11 @@ static struct ccci_fsm_command *fsm_check_for_ee(struct ccci_fsm_ctl *ctl, int x
 
 static inline int fsm_broadcast_state(struct ccci_fsm_ctl *ctl, MD_STATE state)
 {
+	if (unlikely(ctl->md_state != BOOT_WAITING_FOR_HS2 && state == READY)) {
+		CCCI_NORMAL_LOG(ctl->md_id, FSM, "ignore HS2 when md_state=%d\n", ctl->md_state);
+		return 0;
+	}
+
 	CCCI_NORMAL_LOG(ctl->md_id, FSM, "md_state change from %d to %d\n", ctl->md_state, state);
 	ctl->md_state = state;
 
@@ -130,10 +135,12 @@ static void fsm_routine_exception(struct ccci_fsm_ctl *ctl, struct ccci_fsm_comm
 		fsm_md_no_response_handler(&ctl->ee_ctl);
 		break;
 	case EXCEPTION_WDT:
+		fsm_broadcast_state(ctl, EXCEPTION);
 		CCCI_ERROR_LOG(ctl->md_id, FSM, "MD_WDT!\n");
 		fsm_md_wdt_handler(&ctl->ee_ctl);
 		break;
 	case EXCEPTION_EE:
+		fsm_broadcast_state(ctl, EXCEPTION);
 		/* no need to implement another event polling in EE_CTRL, so we do it here */
 		ccci_md_exception_handshake(ctl->md_id, MD_EX_CCIF_TIMEOUT);
 		count = 0;
@@ -623,7 +630,6 @@ int ccci_fsm_recv_md_interrupt(int md_id, MD_IRQ_TYPE type)
 		return -CCCI_ERR_INVALID_PARAM;
 
 	wake_lock_timeout(&ctl->wakelock, 10 * HZ);
-	fsm_broadcast_state(ctl, EXCEPTION);
 
 	if (type == MD_IRQ_WDT) {
 		fsm_append_command(ctl, CCCI_COMMAND_WDT, 0);
