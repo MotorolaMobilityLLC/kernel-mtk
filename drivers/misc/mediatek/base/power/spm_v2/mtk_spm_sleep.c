@@ -673,7 +673,7 @@ void spm_suspend_aee_init(void)
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifdef CONFIG_MTK_PMIC
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 /* #include <cust_pmic.h> */
 #ifndef DISABLE_DLPT_FEATURE
 /* extern int get_dlpt_imix_spm(void); */
