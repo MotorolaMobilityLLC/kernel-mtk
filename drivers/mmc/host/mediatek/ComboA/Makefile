@@ -27,6 +27,10 @@ ifeq ($(CONFIG_MTK_PLATFORM), "mt6739")
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6357
 endif
 
+ifeq ($(CONFIG_MTK_PLATFORM), "mt6763")
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6356
+endif
+
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6799")
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335
 endif
