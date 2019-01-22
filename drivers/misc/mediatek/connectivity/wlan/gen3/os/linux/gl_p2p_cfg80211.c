@@ -751,7 +751,6 @@ int mtk_p2p_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *dev, struc
 		if ((wiphy == NULL) || (settings == NULL))
 			break;
 
-		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_start_ap.\n");
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
 		if (mtk_Netdev_To_RoleIdx(prGlueInfo->prP2PInfo, dev, &ucRoleIdx) < 0)
@@ -1718,13 +1717,11 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_pre_cmd(IN struct wiphy *wiphy, IN void 
 	prP2pSpecificBssInfo = prGlueInfo->prAdapter->rWifiVar.prP2pSpecificBssInfo;
 	/* prP2pConnSettings = prGlueInfo->prAdapter->rWifiVar.prP2PConnSettings; */
 
-	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_testmode_cmd\n");
-
 	if (data && len)
 		memcpy(&rParams, data, len);
 
-	DBGLOG(P2P, TRACE, "NL80211_ATTR_TESTDATA,idx_mode=%d idx=%d value=%lu\n",
-			    (INT_16) rParams.idx_mode, (INT_16) rParams.idx, rParams.value);
+	DBGLOG(P2P, TRACE, "NL80211_ATTR_TESTDATA, idx_mode=%d idx=%d value=%lu\n",
+	       (INT_16) rParams.idx_mode, (INT_16) rParams.idx, rParams.value);
 
 	index_mode = rParams.idx_mode;
 	index = rParams.idx;
@@ -1831,21 +1828,18 @@ int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *dat
 	prP2pSpecificBssInfo = prGlueInfo->prAdapter->rWifiVar.prP2pSpecificBssInfo;
 	/* prP2pConnSettings = prGlueInfo->prAdapter->rWifiVar.prP2PConnSettings; */
 
-	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_testmode_p2p_sigma_cmd\n");
-
 	if (data && len) {
 		prParams = (P_NL80211_DRIVER_P2P_SIGMA_PARAMS) data;
-		if (!prParams) {
-			DBGLOG(P2P, TRACE, "prParams is NULL\n");
-			return -EINVAL;
-		}
+	} else {
+		DBGLOG(P2P, ERROR, "data is NULL\n");
+		return -EINVAL;
 	}
 
 	index = (INT_32) prParams->idx;
 	value = (INT_32) prParams->value;
 
 	DBGLOG(P2P, TRACE, "NL80211_ATTR_TESTDATA, idx=%lu value=%lu\n",
-			    (INT_32) prParams->idx, (INT_32) prParams->value);
+	       (INT_32) prParams->idx, (INT_32) prParams->value);
 
 	/* 3 FIX ME: Add p2p role index selection */
 	if (p2pFuncRoleToBssIdx(prGlueInfo->prAdapter, 0, &ucBssIdx) != WLAN_STATUS_SUCCESS)
@@ -2046,7 +2040,7 @@ int mtk_p2p_cfg80211_testmode_hotspot_block_list_cmd(IN struct wiphy *wiphy, IN 
 	if (!prParams)
 		return fgIsValid;
 
-	DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_testmode_hotspot_block_list_cmd\n");
+	DBGLOG(P2P, INFO, "%s" MACSTR "\n", prParams->ucblocked?"Block":"Unblock", MAC2STR(prParams->aucBssid));
 
 	fgIsValid = kalP2PSetBlackList(prGlueInfo, prParams->aucBssid, prParams->ucblocked);
 
@@ -2068,9 +2062,7 @@ int mtk_p2p_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN i
 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
-#if 1
 	DBGLOG(P2P, TRACE, "--> %s()\n", __func__);
-#endif
 
 	if (data && len)
 		prParams = (P_NL80211_DRIVER_SW_CMD_PARAMS) data;
@@ -2108,6 +2100,10 @@ int mtk_p2p_cfg80211_testmode_get_best_channel(IN struct wiphy *wiphy, IN void *
 	P_PARAM_GET_CHN_INFO prGetChnLoad, prQueryLteChn;
 	PARAM_PREFER_CHN_INFO rPreferChannel = { 0, 0xFFFF, 0 };
 	PARAM_PREFER_CHN_INFO arChannelDirtyScore_2G[MAX_2G_BAND_CHN_NUM];
+	/* For ACS information print */
+	CHAR acLogChannel[ACS_PRINT_BUFFER_LEN];
+	CHAR acLogAPNum[ACS_PRINT_BUFFER_LEN];
+	CHAR acLogScore[ACS_PRINT_BUFFER_LEN];
 
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 
@@ -2115,7 +2111,7 @@ int mtk_p2p_cfg80211_testmode_get_best_channel(IN struct wiphy *wiphy, IN void *
 
 	prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 	if (!prGlueInfo) {
-		DBGLOG(P2P, ERROR, "No glue info\n");
+		DBGLOG(P2P, ERROR, "prGlueInfo is NULL\n");
 		return -EFAULT;
 	}
 
@@ -2175,9 +2171,14 @@ int mtk_p2p_cfg80211_testmode_get_best_channel(IN struct wiphy *wiphy, IN void *
 		arChannelDirtyScore_2G[i].ucChannel = aucChannelList[i].ucChannelNum;
 		arChannelDirtyScore_2G[i].u2APNumScore = u2APNumScore;
 
-		DBGLOG(P2P, INFO, "[ACS]channel=%d, AP num=%d, score=%d\n", aucChannelList[i].ucChannelNum,
-		    prGetChnLoad->rEachChnLoad[ucIdx].u2APNum, u2APNumScore);
+		kalSprintf(acLogChannel + i*5, "%5d", aucChannelList[i].ucChannelNum);
+		kalSprintf(acLogAPNum + i*5, "%5d", prGetChnLoad->rEachChnLoad[ucIdx].u2APNum);
+		kalSprintf(acLogScore + i*5, "%5d", u2APNumScore);
 	}
+
+	DBGLOG(P2P, INFO, "[ACS]Channel :%s\n", acLogChannel);
+	DBGLOG(P2P, INFO, "[ACS]AP num  :%s\n", acLogAPNum);
+	DBGLOG(P2P, INFO, "[ACS]Score   :%s\n", acLogScore);
 
 	/*
 	 * 3. Query LTE safe channels

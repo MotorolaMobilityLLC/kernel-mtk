@@ -366,6 +366,7 @@ struct KAL_HALT_CTRL_T {
 /* Macros of getting current thread id                                        */
 /*----------------------------------------------------------------------------*/
 #define KAL_GET_CURRENT_THREAD_ID() (current->pid)
+#define KAL_GET_CURRENT_THREAD_NAME() (current->comm)
 
 /*----------------------------------------------------------------------------*/
 /* Macros of SPIN LOCK operations for using in Driver Layer                   */
