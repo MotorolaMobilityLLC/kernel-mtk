@@ -25,6 +25,7 @@ struct mt6392_codec_priv {
 	struct snd_soc_codec *codec;
 	uint32_t speaker_mode;
 	uint32_t spk_amp_gain;
+	uint16_t spk_trim_offset;
 #ifdef CONFIG_DEBUG_FS
 	struct dentry *debugfs;
 #endif
@@ -47,6 +48,8 @@ struct mt6392_codec_priv {
 #define SPK_CON10                PMIC_REG(0x0066)
 #define SPK_CON11                PMIC_REG(0x0068)
 #define SPK_CON12                PMIC_REG(0x006A)
+
+#define TOP_CKPDN1_CLR           PMIC_REG(0x010C)
 
 int mt6392_codec_probe(struct snd_soc_codec *codec);
 int mt6392_codec_remove(struct snd_soc_codec *codec);
