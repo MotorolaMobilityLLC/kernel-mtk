@@ -19,6 +19,7 @@
 #include "typec_reg.h"
 #include <typec.h>
 #include <mt6336/mt6336.h>
+#include <mtk_clkbuf_ctl.h>
 
 #ifdef CONFIG_USB_PD_DUAL_ROLE
 #define DUAL_ROLE_IF_ELSE(hba, sink_clause, src_clause) \
@@ -1964,6 +1965,9 @@ int pd_task(void *data)
 			if (state_changed(hba))
 				pd_rx_phya_setting(hba);
 
+			/*Disable 26MHz clock XO_PD*/
+			clk_buf_ctrl(CLK_BUF_CHG, false);
+
 			hba->power_role = PD_NO_ROLE;
 			hba->data_role = PD_NO_ROLE;
 			hba->vdm_state = VDM_STATE_DONE;
@@ -2014,6 +2018,9 @@ int pd_task(void *data)
 		case PD_STATE_SRC_ATTACH:
 			if (hba->pd_comm_enabled) {
 				if (hba->vbus_en == 1) {
+					/*Enable 26MHz clock XO_PD*/
+					clk_buf_ctrl(CLK_BUF_CHG, true);
+
 					pd_rx_enable(hba, 1);
 
 					pd_set_power_role(hba, PD_ROLE_SOURCE, 1);
@@ -2442,6 +2449,9 @@ int pd_task(void *data)
 			break;
 
 		case PD_STATE_SNK_ATTACH:
+			/*Enable 26MHz clock XO_PD*/
+			clk_buf_ctrl(CLK_BUF_CHG, true);
+
 			/* reset message ID  on connection */
 			pd_set_msg_id(hba, 0);
 			/* initial data role for sink is UFP */
