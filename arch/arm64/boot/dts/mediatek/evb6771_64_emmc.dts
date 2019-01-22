@@ -610,5 +610,8 @@ initcall_debug=1";
 		c2_pin_val = <0>;
 	};
 };
+
 /* USB TYPEC GPIO end */
 
+#include <evb6771_64_emmc/cust.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/
