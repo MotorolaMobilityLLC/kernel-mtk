@@ -1936,7 +1936,7 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 
 	if (u2IELen > 0) {
 		kalMemCopy(prCmdBcnUpdate->aucIE, aucIe, u2IELen);
-		DBGLOG_MEM8_IE_ONE_LINE(REQ, INFO, "BCN_IE", prCmdBcnUpdate->aucIE, u2IELen);
+		DBGLOG_MEM8_IE_ONE_LINE(REQ, TRACE, "BCN_IE", prCmdBcnUpdate->aucIE, u2IELen);
 	}
 	/* insert into prCmdQueue */
 	kalEnqueueCommand(prGlueInfo, (P_QUE_ENTRY_T) prCmdInfo);

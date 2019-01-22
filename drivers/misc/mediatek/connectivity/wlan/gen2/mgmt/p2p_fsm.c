@@ -1180,9 +1180,9 @@ VOID p2pFsmRunEventBeaconUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 		prBcnUpdateMsg = (P_MSG_P2P_BEACON_UPDATE_T) prMsgHdr;
 
-		DBGLOG_MEM8_IE_ONE_LINE(P2P, INFO, "BcnHdr"
+		DBGLOG_MEM8_IE_ONE_LINE(P2P, TRACE, "BcnHdr"
 			, prBcnUpdateMsg->pucBcnHdr, prBcnUpdateMsg->u4BcnHdrLen)
-		DBGLOG_MEM8_IE_ONE_LINE(P2P, INFO, "BcnBody"
+		DBGLOG_MEM8_IE_ONE_LINE(P2P, TRACE, "BcnBody"
 			, prBcnUpdateMsg->pucBcnBody, prBcnUpdateMsg->u4BcnBodyLen);
 
 		p2pFuncProcessBeacon(prAdapter,
