@@ -72,15 +72,15 @@ obj-y += mtk_spm.o
 obj-y += mtk_spm_internal.o
 obj-y += mtk_spm_pmic_wrap.o
 obj-y += mtk_spm_sleep.o
-#obj-y += mt_spm_fs.o
-#obj-y += mt_idle.o
-#obj-y += mt_idle_profile.o
-#obj-y += mt_idle_mt6757.o
-#obj-y += mt_spm_dpidle.o
-#obj-y += mt_spm_dpidle_mt6757.o
-#obj-y += mt_spm_sodi.o
-#obj-y += mt_spm_sodi3p0.o
-#obj-y += mt_spm_sodi_cmdq.o
+#obj-y += mtk_spm_fs.o
+obj-y += mtk_idle.o
+obj-y += mtk_idle_profile.o
+obj-y += mtk_idle_mt6757.o
+obj-y += mtk_spm_dpidle.o
+obj-y += mtk_spm_dpidle_mt6757.o
+obj-y += mtk_spm_sodi.o
+obj-y += mtk_spm_sodi3p0.o
+obj-y += mtk_spm_sodi_cmdq.o
 obj-y += mtk_spm_vcorefs_mt6757.o
 endif
 
