@@ -62,17 +62,5 @@ void helio_dvfsrc_sspm_ipi_init(void)
 
 	qos_task = kthread_run(qos_recv_thread, NULL, "qos_recv");
 }
-
-void send_swpm_init_ipi(unsigned int addr, unsigned int size,
-	unsigned int ch_num)
-{
-	struct qos_data qos_d;
-
-	qos_d.cmd = QOS_IPI_SWPM_INIT;
-	qos_d.u.swpm_init.dram_addr = addr;
-	qos_d.u.swpm_init.dram_size = size;
-	qos_d.u.swpm_init.dram_ch_num = ch_num;
-	qos_ipi_to_sspm_command(&qos_d, 4);
-}
 #endif
 

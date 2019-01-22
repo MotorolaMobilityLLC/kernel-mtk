@@ -21,7 +21,6 @@
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <sspm_reservedmem_define.h>
 #endif
-#include <mtk_spm_vcore_dvfs.h>
 #include <mtk_dramc.h>
 #include <mtk_swpm_common.h>
 #include <mtk_swpm_platform.h>
@@ -329,7 +328,7 @@ static int __init swpm_init(void)
 	}
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	send_swpm_init_ipi((unsigned int)(rec_phys_addr & 0xFFFFFFFF),
+	swpm_send_init_ipi((unsigned int)(rec_phys_addr & 0xFFFFFFFF),
 		(unsigned int)(rec_size & 0xFFFFFFFF), get_emi_ch_num());
 #endif
 
