@@ -135,9 +135,10 @@ static unsigned int informEEMisReady;
 /* The EMM controller list managed by Picachu. */
 static unsigned int pi_eem_ctrl_id[] = {
 #if ENABLE_LOO
-	EEM_CTRL_2L, EEM_CTRL_L, EEM_CTRL_CCI, EEM_CTRL_L_HI, EEM_CTRL_2L_HI
+	EEM_CTRL_2L, EEM_CTRL_L, EEM_CTRL_CCI, EEM_CTRL_L_HI,
+	EEM_CTRL_2L_HI, EEM_CTRL_GPU,
 #else
-	EEM_CTRL_2L, EEM_CTRL_L, EEM_CTRL_CCI
+	EEM_CTRL_2L, EEM_CTRL_L, EEM_CTRL_CCI, EEM_CTRL_GPU
 #endif
 };
 
@@ -159,10 +160,12 @@ static struct pi_efuse_index pi_efuse_idx[] = {
 	{4, 0, 5, 16},		/* EEM_CTRL_CCI */
 	{9, 0, 8, 0},		/* EEM_CTRL_L_HI */
 	{7, 0, 8, 16},		/* EEM_CTRL_2L_HI */
+	{6, 0, 5, 0},		/* EEM_CTRL_GPU */
 #else
 	{10, 0, 11, 16},	/* EEM_CTRL_2L */
 	{12, 0, 11, 0},		/* EEM_CTRL_L */
 	{4, 0, 5, 16},		/* EEM_CTRL_CCI */
+	{6, 0, 5, 0},		/* EEM_CTRL_GPU */
 #endif
 };
 

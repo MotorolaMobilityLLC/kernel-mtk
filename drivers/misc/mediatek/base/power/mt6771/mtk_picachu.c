@@ -62,6 +62,7 @@
 #define EEM_BASEADDR		(0x1100B000)
 #define EEM_SIZE		(0x1000)
 #define TEMPSPARE0_OFFSET	(0x0F0)
+#define TEMPSPARE2_OFFSET	(0x0F8)
 #define EEMSPARE0_OFFSET	(0xF20)
 
 #undef TAG
@@ -141,6 +142,7 @@ struct pentry {
 enum mt_picachu_vproc_id {
 	MT_PICACHU_LITTLE_VPROC,	/* Little + CCI */
 	MT_PICACHU_BIG_VPROC,		/* B */
+	MT_PICACHU_GPU,
 
 	NR_PICACHU_VPROC,
 };
@@ -152,6 +154,8 @@ static struct picachu_proc picachu_proc_list[] = {
 	{"little", MT_PICACHU_LITTLE_VPROC, EEMSPARE0_OFFSET,
 	 PICACHU_PROC_ENTRY_ATTR},
 	{"big", MT_PICACHU_BIG_VPROC, TEMPSPARE0_OFFSET,
+	 PICACHU_PROC_ENTRY_ATTR},
+	{"gpu", MT_PICACHU_GPU, TEMPSPARE2_OFFSET,
 	 PICACHU_PROC_ENTRY_ATTR},
 	{0},
 };
@@ -250,6 +254,19 @@ static void picachu_get_data(enum mt_picachu_vproc_id vproc_id)
 
 	reg = eem_base_addr + proc->spare_reg_offset;
 
+	if (vproc_id == MT_PICACHU_GPU) {
+		/* GPU has only one register to be retrieved. */
+		val = picachu_read(reg);
+
+		tmp = (val >> PICACHU_SIGNATURE_SHIFT_BIT) & 0xff;
+		if (tmp != PICACHU_SIGNATURE)
+			return;
+
+		p->ptp1_efuse[0] = val & PICACHU_PTP1_EFUSE_MASK;
+
+		return;
+	}
+
 	for (i = 0; i < NR_EEM_EFUSE_PER_VPROC - 1; i++, reg += 4) {
 		val = picachu_read(reg);
 
@@ -284,9 +301,11 @@ static int eem_ctrl_id[NR_PICACHU_VPROC][NR_EEM_EFUSE_PER_VPROC] = {
 #if ENABLE_LOO
 	[MT_PICACHU_LITTLE_VPROC] = {EEM_CTRL_2L_HI, EEM_CTRL_2L, EEM_CTRL_CCI},
 	[MT_PICACHU_BIG_VPROC] = {EEM_CTRL_L_HI, EEM_CTRL_L, -1},
+	[MT_PICACHU_GPU] = {EEM_CTRL_GPU, -1, -1},
 #else
 	[MT_PICACHU_LITTLE_VPROC] = {EEM_CTRL_2L, EEM_CTRL_CCI},
 	[MT_PICACHU_BIG_VPROC] = {EEM_CTRL_L, -1},
+	[MT_PICACHU_GPU] = {EEM_CTRL_GPU, -1},
 #endif
 };
 
