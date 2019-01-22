@@ -724,6 +724,7 @@ typedef struct _WIFI_VAR_T {
 	UINT_8 ucStaHtBfer;
 	UINT_8 ucStaVhtBfer;
 	UINT_8 ucStaVhtMuBfee;
+	UINT_8 fgForceSTSNum;
 
 	UINT_8 ucDataTxDone;
 	UINT_8 ucDataTxRateMode;
