@@ -593,6 +593,10 @@ static ssize_t vpu_debug_power_write(struct file *flip, const char __user *buffe
 		param = VPU_POWER_PARAM_DVFS_DEBUG;
 	else if (strcmp(token, "jtag") == 0)
 		param = VPU_POWER_PARAM_JTAG;
+	else if (strcmp(token, "lock") == 0)
+		param = VPU_POWER_PARAM_LOCK;
+	else if (strcmp(token, "volt_step") == 0)
+		param = VPU_POWER_PARAM_VOLT_STEP;
 	else {
 		ret = -EINVAL;
 		LOG_ERR("no power param[%s]!\n", token);
