@@ -111,6 +111,9 @@
 /* 1: mtk_tc.c supports LVTS; 0: o.w. */
 #define CFG_THERM_LVTS							(0)
 
+/* Thermal VPU throttling support */
+#define THERMAL_VPU_SUPPORT
+
 /*=============================================================
  * Chip related
  *=============================================================
