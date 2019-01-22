@@ -237,7 +237,7 @@ do { \
 } while (0)
 
 #define CCMNI_INF_MSG(idx, fmt, args...) pr_debug("[ccci%d/net]" fmt, (idx+1), ##args)
-#define CCMNI_ERR_MSG(idx, fmt, args...) pr_err("[ccci%d/net][Error:%d]%s:" fmt, (idx+1), __LINE__, __func__, ##args)
+#define CCMNI_ERR_MSG(idx, fmt, args...) pr_debug("[ccci%d/net][Error:%d]%s:" fmt, (idx+1), __LINE__, __func__, ##args)
 
 
 #endif /* __CCCI_CCMNI_H__ */

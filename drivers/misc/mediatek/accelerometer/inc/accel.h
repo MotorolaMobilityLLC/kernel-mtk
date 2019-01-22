@@ -39,7 +39,7 @@
 
 
 #define ACC_TAG						"<ACCELEROMETER> "
-#define ACC_ERR(fmt, args...)		pr_err(ACC_TAG fmt, ##args)
+#define ACC_ERR(fmt, args...)		pr_debug(ACC_TAG fmt, ##args)
 #define ACC_LOG(fmt, args...)		pr_debug(ACC_TAG fmt, ##args)
 #define ACC_VER(fmt, args...)		pr_debug(ACC_TAG fmt, ##args)
 

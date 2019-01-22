@@ -18,8 +18,8 @@ struct seq_file;
 
 #define TAG	"[clkdbg] "
 
-#define clk_err(fmt, args...)	pr_err(TAG fmt, ##args)
-#define clk_warn(fmt, args...)	pr_warn(TAG fmt, ##args)
+#define clk_err(fmt, args...)	pr_debug(TAG fmt, ##args)
+#define clk_warn(fmt, args...)	pr_debug(TAG fmt, ##args)
 #define clk_info(fmt, args...)	pr_debug(TAG fmt, ##args)
 #define clk_dbg(fmt, args...)	pr_debug(TAG fmt, ##args)
 #define clk_ver(fmt, args...)	pr_debug(TAG fmt, ##args)
