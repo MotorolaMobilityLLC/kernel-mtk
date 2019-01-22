@@ -37,7 +37,7 @@
 		SMIMSG(string, ##args);\
 	} while (0)
 #else
-#define SMIMSG3(string, args...) SMIMSG(string, ##args)
+#define SMIMSG3(onoff, string, args...) SMIMSG(string, ##args)
 #endif
 #define SMITMP(string, args...) pr_debug("[pid=%d]"string, current->tgid, ##args)
 
