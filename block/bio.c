@@ -2059,6 +2059,22 @@ void bio_clone_blkcg_association(struct bio *dst, struct bio *src)
 
 #endif /* CONFIG_BLK_CGROUP */
 
+unsigned long bio_bc_iv_get(struct bio *bio)
+{
+	if (bio_bcf_test(bio, BC_IV_CTX))
+		return bio->bi_crypt_ctx.bc_iv;
+
+	if (bio_bcf_test(bio, BC_IV_PAGE_IDX)) {
+		struct page *p;
+
+		p = bio_page(bio);
+		if (p && page_mapping(p))
+			return page_file_index(p);
+	}
+	return BC_INVALD_IV;
+}
+EXPORT_SYMBOL_GPL(bio_bc_iv_get);
+
 static void __init biovec_init_slabs(void)
 {
 	int i;

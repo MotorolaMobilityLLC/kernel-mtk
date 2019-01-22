@@ -58,4 +58,14 @@ config HIE_DUMMY_CRYPT_KEY_SWITCH
 	  correctness of key passing from the file system to
 	  the block layer, and finally to the HIE driver.
 
+config HIE_DUMMY_CRYPT_IV
+	bool "HIE dummy crypt with iv"
+	default n
+	depends on HIE_DUMMY_CRYPT
+	help
+	  XOR the buffer with the initialzation vector(iv.),
+	  if BC_IV_PAGE_IDX flag is set in the bio crypt
+	  context. Used to verify the correctness of iv.
+	  calculation and block merge.
+
 endmenu

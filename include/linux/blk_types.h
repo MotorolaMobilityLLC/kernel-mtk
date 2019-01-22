@@ -22,7 +22,10 @@ typedef void (bio_destructor_t) (struct bio *);
 struct bio_crypt_ctx {
 	unsigned int	bc_flags;
 	unsigned int	bc_key_size;
-	unsigned long   bc_fs_type;
+	unsigned long	bc_fs_type;
+	struct super_block	*bc_sb;
+	unsigned long	bc_ino;
+	unsigned long   bc_iv;
 	struct key	*bc_keyring_key;
 #ifdef CONFIG_HIE_DUMMY_CRYPT
 	u32			dummy_crypt_key;
@@ -312,6 +315,8 @@ static inline unsigned int blk_qc_t_to_tag(blk_qc_t cookie)
  */
 enum bc_flags_bits {
 	__BC_CRYPT,        /* marks the request needs crypt */
+	__BC_IV_PAGE_IDX,  /* use page index as iv. */
+	__BC_IV_CTX,       /* use the iv saved in crypt context */
 	__BC_AES_128_XTS,  /* crypt algorithms */
 	__BC_AES_192_XTS,
 	__BC_AES_256_XTS,
@@ -322,6 +327,8 @@ enum bc_flags_bits {
 };
 
 #define BC_CRYPT		(1UL << __BC_CRYPT)
+#define BC_IV_PAGE_IDX  (1UL << __BC_IV_PAGE_IDX)
+#define BC_IV_CTX       (1UL << __BC_IV_CTX)
 #define BC_AES_128_XTS	(1UL << __BC_AES_128_XTS)
 #define BC_AES_192_XTS	(1UL << __BC_AES_192_XTS)
 #define BC_AES_256_XTS	(1UL << __BC_AES_256_XTS)
@@ -330,9 +337,47 @@ enum bc_flags_bits {
 #define BC_AES_128_ECB	(1UL << __BC_AES_128_ECB)
 #define BC_AES_256_ECB	(1UL << __BC_AES_256_ECB)
 
+#define BC_INVALD_IV    (~0UL)
+
+static inline void bio_bcf_set(struct bio *bio, unsigned int flag)
+{
+	if (bio)
+		bio->bi_crypt_ctx.bc_flags |= flag;
+}
+
+static inline void bio_bcf_clear(struct bio *bio, unsigned int flag)
+{
+	if (bio)
+		bio->bi_crypt_ctx.bc_flags &= (~flag);
+}
+
+static inline bool bio_bcf_test(struct bio *bio, unsigned int flag)
+{
+	return bio ? (bio->bi_crypt_ctx.bc_flags & flag) : 0;
+}
+
 static inline bool bio_encrypted(struct bio *bio)
 {
-	return bio ? (bio->bi_crypt_ctx.bc_flags & BC_CRYPT) : 0;
+	return bio_bcf_test(bio, BC_CRYPT);
 }
+
+static inline unsigned long bio_bc_ino(struct bio *bio)
+{
+	return bio->bi_crypt_ctx.bc_ino;
+}
+
+static inline void *bio_bc_sb(struct bio *bio)
+{
+	return (void *)bio->bi_crypt_ctx.bc_sb;
+}
+
+static inline
+void bio_bc_iv_set(struct bio *bio, unsigned long iv)
+{
+	bio->bi_crypt_ctx.bc_iv = iv;
+	bio_bcf_set(bio, BC_IV_CTX);
+}
+
+unsigned long bio_bc_iv_get(struct bio *bio);
 
 #endif /* __LINUX_BLK_TYPES_H */

@@ -666,8 +666,47 @@ static void blk_account_io_merge(struct request *req)
 	}
 }
 
-static bool crypto_not_mergeable(const struct bio *bio, const struct bio *nxt)
+
+static int crypto_try_merge_bio(struct bio *bio, struct bio *nxt, int type)
 {
+	unsigned long iv_bio, iv_nxt;
+	struct bio_vec bv;
+	struct bvec_iter iter;
+	unsigned int count = 0;
+
+	iv_bio = bio_bc_iv_get(bio);
+	iv_nxt = bio_bc_iv_get(nxt);
+
+	if (iv_bio == BC_INVALD_IV || iv_nxt == BC_INVALD_IV)
+		return ELEVATOR_NO_MERGE;
+
+	bio_for_each_segment(bv, bio, iter)
+		count++;
+
+	if ((iv_bio + count) != iv_nxt)
+		return ELEVATOR_NO_MERGE;
+
+	return type;
+}
+
+static int crypto_try_merge(struct request *rq, struct bio *bio, int type)
+{
+	/* flag mismatch => don't merge */
+	if (rq->bio->bi_crypt_ctx.bc_flags != bio->bi_crypt_ctx.bc_flags)
+		return ELEVATOR_NO_MERGE;
+
+	if (type == ELEVATOR_BACK_MERGE)
+		return crypto_try_merge_bio(rq->biotail, bio, type);
+	else if (type == ELEVATOR_FRONT_MERGE)
+		return crypto_try_merge_bio(bio, rq->bio, type);
+
+	return ELEVATOR_NO_MERGE;
+}
+
+static bool crypto_not_mergeable(struct request *req, struct bio *nxt)
+{
+	struct bio *bio = req->bio;
+
 	/* If neither is encrypted, no veto from us. */
 	if (~(bio->bi_crypt_ctx.bc_flags | nxt->bi_crypt_ctx.bc_flags) &
 	    BC_CRYPT) {
@@ -675,9 +714,22 @@ static bool crypto_not_mergeable(const struct bio *bio, const struct bio *nxt)
 	}
 
 	/* If one's encrypted and the other isn't, don't merge. */
+	/* If one's using page index as iv, and the other isn't don't merge */
 	if ((bio->bi_crypt_ctx.bc_flags ^ nxt->bi_crypt_ctx.bc_flags)
-	    & BC_CRYPT) {
+	    & (BC_CRYPT | BC_IV_PAGE_IDX))
 		return true;
+
+	/* If both using page index as iv */
+	if (bio->bi_crypt_ctx.bc_flags & nxt->bi_crypt_ctx.bc_flags &
+		BC_IV_PAGE_IDX) {
+		/* must be the same file on the same mount */
+		if ((bio_bc_sb(bio) != bio_bc_sb(nxt)) ||
+			(bio_bc_ino(bio) != bio_bc_ino(nxt)))
+			return true;
+		/* page index must be contiguous */
+		if (crypto_try_merge(req, bio, ELEVATOR_BACK_MERGE)
+			== ELEVATOR_NO_MERGE)
+			return true;
 	}
 
 	/* If the key lengths are different or the keys aren't the
@@ -716,7 +768,7 @@ static int attempt_merge(struct request_queue *q, struct request *req,
 	    !blk_write_same_mergeable(req->bio, next->bio))
 		return 0;
 
-	if (crypto_not_mergeable(req->bio, next->bio))
+	if (crypto_not_mergeable(req, next->bio))
 		return 0;
 
 	/*
@@ -823,7 +875,7 @@ bool blk_rq_merge_ok(struct request *rq, struct bio *bio)
 	    !blk_write_same_mergeable(rq->bio, bio))
 		return false;
 
-	if (crypto_not_mergeable(rq->bio, bio))
+	if (crypto_not_mergeable(rq, bio))
 		return false;
 
 	return true;
