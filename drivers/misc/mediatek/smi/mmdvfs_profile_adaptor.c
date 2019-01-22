@@ -71,6 +71,7 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj = {
 	mmdvfs_clk_sources_setting, MMDVFS_CLK_SOURCE_NUM,
 	mmdvfs_clk_hw_map_setting, MMDVFS_CLK_MUX_NUM,
 	mmdvfs_step_to_profile_mappings_setting, MMDVFS_OPP_MAX,
+	MMDVFS_SMI_USER_CONTROL_SCEN_MASK,
 	mmdvfs_profile_dump,
 	mmdvfs_single_hw_configuration_dump,
 	mmdvfs_hw_configuration_dump,
@@ -250,9 +251,15 @@ struct mmdvfs_adaptor *self, int mmdvfs_step_request)
 						return -1;
 					}
 
-					clk_disable_unprepare((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
-					MMDVFSMSG("clk_disable_unprepare: handle = %lx\n",
-					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
+					if ((clk_idx != MMDVFS_CLK_MUX_TOP_MM_SEL) &&
+						(clk_idx != MMDVFS_CLK_MUX_TOP_IMG_SEL)) {
+						clk_disable_unprepare((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
+						MMDVFSMSG("clk_disable_unprepare: handle = %lx\n",
+						((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
+					} else {
+						MMDVFSMSG("[Workaround]MM_SEL can't be unprepared now, handle=%lx\n",
+						((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
+					}
 				}
 			}
 		}
