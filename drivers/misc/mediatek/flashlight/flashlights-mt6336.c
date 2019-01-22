@@ -59,7 +59,7 @@
 #define MT6336_ENABLE_TORCH 1
 #define MT6336_ENABLE_FLASH 2
 
-#define MT6336_LEVEL_NUM 60
+#define MT6336_LEVEL_NUM 34
 #define MT6336_LEVEL_TORCH 8
 #define MT6336_WDT_TIMEOUT 600 /* ms */
 
@@ -81,12 +81,10 @@ static int use_count;
  * mt6336 operations
  *****************************************************************************/
 static const unsigned char mt6336_level[MT6336_LEVEL_NUM] = {
-	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0F, 0x11, 0x13,
-	0x15, 0x17, 0x19, 0x1B, 0x1D, 0x1F, 0x21, 0x23, 0x25, 0x27,
-	0x29, 0x2B, 0x2D, 0x2F, 0x31, 0x33, 0x35, 0x37, 0x39, 0x3B,
-	0x3D, 0x3F, 0x41, 0x43, 0x45, 0x47, 0x49, 0x4B, 0x4D, 0x4F,
-	0x51, 0x53, 0x55, 0x57, 0x59, 0x5B, 0x5D, 0x5F, 0x61, 0x63,
-	0x65, 0x67, 0x69, 0x6B, 0x6D, 0x6F, 0x71, 0x73, 0x75, 0x77
+	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0F, 0x13, 0x17,
+	0x1B, 0x1F, 0x23, 0x27, 0x2B, 0x2F, 0x33, 0x37, 0x3B, 0x3F,
+	0x43, 0x47, 0x4B, 0x4F, 0x53, 0x57, 0x5B, 0x5F, 0x63, 0x67,
+	0x6B, 0x6F, 0x73, 0x77
 };
 
 static int is_preenable;
@@ -132,10 +130,13 @@ static int mt6336_disable_charging(void)
 	int ret;
 
 	ret = mt6336_set_register_value(0x0400, 0x00);
-	if (ret)
-		fl_dbg("Failed to disable charging\n");
-	/* mt6336_set_flag_register_value(MT6336_RG_EN_BUCK, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_EN_BUCK, 0x00);
+	 * mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 0x00);
+	 */
+
+	/* TODO: only way to verify register is to get again */
+	ret = 0;
 
 	return ret;
 }
@@ -146,78 +147,71 @@ static int mt6336_preenable(void)
 	int ret;
 
 	ret = mt6336_set_register_value(0x0519, 0x0D);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_preenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_GM_EN, 0x06); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_CLAMP_EN, 0x01); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_GM_EN, 0x06);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_CLAMP_EN, 0x01);
+	 */
 
 	ret = mt6336_set_register_value(0x0520, 0x00);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_preenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_GM_TUNE_SYS_MSB, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_GM_TUNE_SYS_MSB, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x055A, 0x00);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_preenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_SWCHR_RSV_TRIM_MSB, 0x01); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_SWCHR_RSV_TRIM_MSB, 0x01);
+	 */
 
 	ret = mt6336_set_register_value(0x0455, 0x00);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_preenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_EN_HW_GAIN_SET, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_EN_HW_GAIN_SET, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x03C9, 0x00);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_preenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_AUXADC_HWGAIN_EN, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_AUXADC_HWGAIN_EN, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x03CF, 0x00);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_preenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_AUXADC_HWGAIN_DET_PRD_L, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_AUXADC_HWGAIN_DET_PRD_M, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x0553, 0x54);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_preenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_PWR_LG_DTC, 0x01); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_PWR_LG_SRCEH, 0x01); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_PWR_LG_SRC, 0x01); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_PWR_LG_VTHSEL, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_PWR_LG_DTC, 0x01);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_PWR_LG_SRCEH, 0x01);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_PWR_LG_SRC, 0x01);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_PWR_LG_VTHSEL, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x055F, 0xE0);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_preenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_FTR_RC, 0x03); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_FTR_DROP, 0x04); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_FTR_SHOOT_EN, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_FTR_DROP_EN, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_SWCHR_ZCD_TRIM_EN, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_FTR_RC, 0x03);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_FTR_DROP, 0x04);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_FTR_SHOOT_EN, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_FTR_DROP_EN, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_SWCHR_ZCD_TRIM_EN, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x053D, 0x45);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_preenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_VRAMP_SLP, 0x04); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_VRAMP_DCOS, 0x05); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_VRAMP_SLP, 0x04);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_VRAMP_DCOS, 0x05);
+	 */
 
-err_preenable:
+	/* TODO: only way to verify register is to get again */
+	ret = 0;
+
 	return ret;
 }
 
@@ -227,118 +221,115 @@ static int mt6336_postenable(void)
 	int ret;
 
 	ret = mt6336_set_register_value(0x052A, 0x88);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_GM_RSV_LSB, 0x88); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_GM_RSV_LSB, 0x88);
+	 */
 
 	ret = mt6336_set_register_value(0x0553, 0x14);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_PWR_LG_DTC, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_PWR_LG_SRCEH, 0x01); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_PWR_LG_SRC, 0x01); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_PWR_LG_VTHSEL, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_PWR_LG_DTC, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_PWR_LG_SRCEH, 0x01);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_PWR_LG_SRC, 0x01);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_PWR_LG_VTHSEL, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x0519, 0x3F);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_GM_EN, 0x1F); */
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_CLAMP_EN, 0x01); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_GM_EN, 0x1F);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_CLAMP_EN, 0x01);
+	 */
 
 	ret = mt6336_set_register_value(0x051E, 0x02);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_GM_TUNE_ICHIN_MSB, 0x02); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_GM_TUNE_ICHIN_MSB, 0x02);
+	 */
 
 	ret = mt6336_set_register_value(0x0520, 0x04);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_GM_TUNE_SYS_MSB, 0x04); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_GM_TUNE_SYS_MSB, 0x04);
+	 */
 
 	ret = mt6336_set_register_value(0x055A, 0x00);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_SWCHR_RSV_TRIM_MSB, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_SWCHR_RSV_TRIM_MSB, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x0455, 0x01);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_EN_HW_GAIN_SET, 0x01); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_EN_HW_GAIN_SET, 0x01);
+	 */
 
 	ret = mt6336_set_register_value(0x03C9, 0x10);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_AUXADC_HWGAIN_EN, 0x01); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_AUXADC_HWGAIN_EN, 0x01);
+	 */
 
 	ret = mt6336_set_register_value(0x03CF, 0x03);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_AUXADC_HWGAIN_DET_PRD_L, 0x08); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_AUXADC_HWGAIN_DET_PRD_M, 0x03);
+	 */
 
 	ret = mt6336_set_register_value(0x05AF, 0x02);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_ILED2_EN, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_OSDET_EN, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_IOSDET1_EN, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_IOSDET2_EN, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_EN_ADCIN_VBATSNS, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_EN_ADCIN_VBUS, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_EN_ADCIN_VBATON, 0x01); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_EN_ADCIN_VLED1, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_ILED2_EN, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_OSDET_EN, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_IOSDET1_EN, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_IOSDET2_EN, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_EN_ADCIN_VBATSNS, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_EN_ADCIN_VBUS, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_EN_ADCIN_VBATON, 0x01);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_EN_ADCIN_VLED1, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x064E, 0x02);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_ILED2_EN_SEL, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_OSDET_EN_SEL, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_IOSDET1_EN_SEL, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_IOSDET2_EN_SEL, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_EN_ADCIN_VBATSNS_SEL, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_EN_ADCIN_VBUS_SEL, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_EN_ADCIN_VBATON_SEL, 0x01); */
-	/* mt6336_set_flag_register_value(MT6336_RG_DA_QI_EN_ADCIN_VLED1_SEL, 0x00); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_ILED2_EN_SEL, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_OSDET_EN_SEL, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_IOSDET1_EN_SEL, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_IOSDET2_EN_SEL, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_EN_ADCIN_VBATSNS_SEL, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_EN_ADCIN_VBUS_SEL, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_EN_ADCIN_VBATON_SEL, 0x01);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_DA_QI_EN_ADCIN_VLED1_SEL, 0x00);
+	 */
 
 	ret = mt6336_set_register_value(0x0402, 0x03);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_DIS_REVFET, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_T_TERM_EXT, 0x00); */
-	/* mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0x01); */
-	/* mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0x01); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_DIS_REVFET, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_T_TERM_EXT, 0x00);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_EN_TERM, 0x01);
+	 * mt6336_set_flag_register_value(
+	 * MT6336_RG_EN_RECHARGE, 0x01);
+	 */
 
 	ret = mt6336_set_register_value(0x0529, 0x88);
-	if (ret) {
-		fl_dbg("Failed to set mt6336\n");
-		goto err_postenable;
-	}
-	/* mt6336_set_flag_register_value(MT6336_RG_A_LOOP_GM_RSV_MSB, 0x88); */
+	/* mt6336_set_flag_register_value(
+	 * MT6336_RG_A_LOOP_GM_RSV_MSB, 0x88);
+	 */
 
-err_postenable:
+	/* TODO: only way to verify register is to get again */
+	ret = 0;
+
 	return ret;
 }
 
@@ -348,7 +339,8 @@ static int mt6336_enable(void)
 	if ((mt6336_en_ht == MT6336_ENABLE_FLASH)
 			|| (mt6336_en_lt == MT6336_ENABLE_FLASH)) {
 		/* flash mode */
-		if (!mt6336_get_flag_register_value(MT6336_DA_QI_OTG_MODE_MUX)) {
+		if (!mt6336_get_flag_register_value(
+					MT6336_DA_QI_OTG_MODE_MUX)) {
 
 			/* disable charging */
 			mt6336_disable_charging();
@@ -359,11 +351,15 @@ static int mt6336_enable(void)
 
 			/* enable flash mode, source current and enable torch */
 			if (mt6336_en_ht)
-				mt6336_set_flag_register_value(MT6336_RG_EN_IFLA1, 0x01);
+				mt6336_set_flag_register_value(
+						MT6336_RG_EN_IFLA1, 0x01);
 			if (mt6336_en_lt)
-				mt6336_set_flag_register_value(MT6336_RG_EN_IFLA2, 0x01);
-			mt6336_set_flag_register_value(MT6336_RG_EN_LEDCS, 0x01);
-			mt6336_set_flag_register_value(MT6336_RG_EN_FLASH, 0x01);
+				mt6336_set_flag_register_value(
+						MT6336_RG_EN_IFLA2, 0x01);
+			mt6336_set_flag_register_value(
+					MT6336_RG_EN_LEDCS, 0x01);
+			mt6336_set_flag_register_value(
+					MT6336_RG_EN_FLASH, 0x01);
 
 		} else {
 			/* TODO: action in OTG mode */
@@ -374,17 +370,21 @@ static int mt6336_enable(void)
 		/* torch mode */
 
 		/* pre-enable steps */
-		if (!mt6336_get_flag_register_value(MT6336_DA_QI_OTG_MODE_MUX) &&
-				!mt6336_get_flag_register_value(MT6336_DA_QI_VBUS_PLUGIN_MUX)) {
+		if (!mt6336_get_flag_register_value(
+					MT6336_DA_QI_OTG_MODE_MUX) &&
+				!mt6336_get_flag_register_value(
+					MT6336_DA_QI_VBUS_PLUGIN_MUX)) {
 			mt6336_preenable();
 			is_preenable = 1;
 		}
 
 		/* enable torch mode, source current and enable torch */
 		if (mt6336_en_ht)
-			mt6336_set_flag_register_value(MT6336_RG_EN_ITOR1, 0x01);
+			mt6336_set_flag_register_value(
+					MT6336_RG_EN_ITOR1, 0x01);
 		if (mt6336_en_lt)
-			mt6336_set_flag_register_value(MT6336_RG_EN_ITOR2, 0x01);
+			mt6336_set_flag_register_value(
+					MT6336_RG_EN_ITOR2, 0x01);
 		mt6336_set_flag_register_value(MT6336_RG_EN_LEDCS, 0x01);
 		mt6336_set_flag_register_value(MT6336_RG_EN_TORCH, 0x01);
 	}
@@ -428,8 +428,8 @@ static int mt6336_set_level_ht(int level)
 	mt6336_level_ht = level;
 
 	/* set brightness level */
-	mt6336_set_flag_register_value(MT6336_RG_ITOR1, level);
-	mt6336_set_flag_register_value(MT6336_RG_IFLA1, level);
+	mt6336_set_flag_register_value(MT6336_RG_ITOR1, mt6336_level[level]);
+	mt6336_set_flag_register_value(MT6336_RG_IFLA1, mt6336_level[level]);
 
 	return 0;
 }
@@ -440,8 +440,8 @@ int mt6336_set_level_lt(int level)
 	mt6336_level_lt = level;
 
 	/* set brightness level */
-	mt6336_set_flag_register_value(MT6336_RG_ITOR2, level);
-	mt6336_set_flag_register_value(MT6336_RG_IFLA2, level);
+	mt6336_set_flag_register_value(MT6336_RG_ITOR2, mt6336_level[level]);
+	mt6336_set_flag_register_value(MT6336_RG_IFLA2, mt6336_level[level]);
 
 	return 0;
 }
@@ -591,20 +591,24 @@ static int mt6336_operate(int ct_index, int enable)
 	/* TODO: add clear state mechanism by timeout */
 
 	/* operate flashlight and setup timer */
-	if ((mt6336_en_ht != MT6336_NONE) && (mt6336_en_lt != MT6336_NONE)) {
-		if ((mt6336_en_ht == MT6336_DISABLE) && (mt6336_en_lt == MT6336_DISABLE)) {
+	if ((mt6336_en_ht != MT6336_NONE) &&
+			(mt6336_en_lt != MT6336_NONE)) {
+		if ((mt6336_en_ht == MT6336_DISABLE) &&
+				(mt6336_en_lt == MT6336_DISABLE)) {
 			mt6336_disable();
 			mt6336_timer_cancel(MT6336_CT_HT);
 			mt6336_timer_cancel(MT6336_CT_LT);
 		} else {
 			if (mt6336_timeout_ms[MT6336_CT_HT]) {
-				ktime = ktime_set(mt6336_timeout_ms[MT6336_CT_HT] / 1000,
-						(mt6336_timeout_ms[MT6336_CT_HT] % 1000) * 1000000);
+				ktime = ktime_set(
+					mt6336_timeout_ms[MT6336_CT_HT] / 1000,
+					(mt6336_timeout_ms[MT6336_CT_HT] % 1000) * 1000000);
 				mt6336_timer_start(MT6336_CT_HT, ktime);
 			}
 			if (mt6336_timeout_ms[MT6336_CT_LT]) {
-				ktime = ktime_set(mt6336_timeout_ms[MT6336_CT_LT] / 1000,
-						(mt6336_timeout_ms[MT6336_CT_LT] % 1000) * 1000000);
+				ktime = ktime_set(
+					mt6336_timeout_ms[MT6336_CT_LT] / 1000,
+					(mt6336_timeout_ms[MT6336_CT_LT] % 1000) * 1000000);
 				mt6336_timer_start(MT6336_CT_LT, ktime);
 			}
 			mt6336_enable();
@@ -627,7 +631,8 @@ static int mt6336_ioctl(unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS: %d\n", (int)fl_arg->arg);
+		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS: %d\n",
+				(int)fl_arg->arg);
 		mt6336_timeout_ms[ct_index] = fl_arg->arg;
 		break;
 
@@ -646,7 +651,8 @@ static int mt6336_ioctl(unsigned int cmd, unsigned long arg)
 		break;
 
 	default:
-		fl_info("No such command and arg: (%d, %d)\n", _IOC_NR(cmd), (int)fl_arg->arg);
+		fl_info("No such command and arg: (%d, %d)\n",
+				_IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
 
@@ -657,7 +663,7 @@ static int mt6336_open(void *pArg)
 {
 	fl_dbg("Open start\n");
 
-	/* Actual behavior move to set driver function since power saving issue */
+	/* Actual behavior move to set driver since power saving issue */
 
 	fl_dbg("Open done.\n");
 
@@ -702,16 +708,14 @@ static ssize_t mt6336_strobe_store(struct flashlight_arg arg)
 {
 	mt6336_set_driver();
 	mt6336_set_level(arg.ct, arg.level);
-	if (arg.ct == MT6336_CT_HT) {
-		mt6336_operate(MT6336_CT_HT, MT6336_ENABLE);
-		mt6336_operate(MT6336_CT_LT, MT6336_DISABLE);
-	} else {
-		mt6336_operate(MT6336_CT_HT, MT6336_DISABLE);
-		mt6336_operate(MT6336_CT_LT, MT6336_ENABLE);
-	}
+
+	if (arg.level < 0)
+		mt6336_operate(arg.ct, MT6336_DISABLE);
+	else
+		mt6336_operate(arg.ct, MT6336_ENABLE);
+
 	msleep(arg.dur);
-	mt6336_operate(MT6336_CT_HT, MT6336_DISABLE);
-	mt6336_operate(MT6336_CT_LT, MT6336_DISABLE);
+	mt6336_operate(arg.ct, MT6336_DISABLE);
 	mt6336_release(NULL);
 
 	return 0;
