@@ -4089,13 +4089,12 @@ static void testcase_wait_event_timeout(u32 max_round)
 	const CMDQ_VARIABLE arg_tpr = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) | CMDQ_TPR_ID;
 	const CMDQ_VARIABLE loop_debug_cpr = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) | CMDQ_SPR_FOR_LOOP_DEBUG;
 	CMDQ_VARIABLE wait_result_var = CMDQ_TASK_CPR_INITIAL_VALUE;
-	u32 begin_time, end_time, wait_result, begin_tpr, end_tpr, loop_count;
-	s32 duration_time;
+	u32 wait_result, begin_tpr, end_tpr, loop_count;
 	u32 round;
 
 	CMDQ_MSG("%s\n", __func__);
 
-	cmdq_alloc_mem(&slot_handle, 6);
+	cmdq_alloc_mem(&slot_handle, 4);
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	/* round wait: 3ms, 5ms, 7ms, 9ms, 11ms*/
@@ -4104,13 +4103,13 @@ static void testcase_wait_event_timeout(u32 max_round)
 		cmdq_task_reset(handle);
 		cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_USER_0);
 
-		cmdq_op_read_reg_to_mem(handle, slot_handle, 0, CMDQ_APXGPT2_COUNT);
-		cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 1);
+		cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 0);
 		cmdq_op_wait_event_timeout(handle, &wait_result_var, CMDQ_SYNC_TOKEN_USER_0, 10000);
-		cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 2);
-		cmdq_op_read_reg_to_mem(handle, slot_handle, 3, CMDQ_APXGPT2_COUNT);
-		cmdq_op_backup_CPR(handle, wait_result_var, slot_handle, 4);
-		cmdq_op_backup_CPR(handle, loop_debug_cpr, slot_handle, 5);
+		cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 1);
+		cmdq_op_backup_CPR(handle, wait_result_var, slot_handle, 2);
+		cmdq_op_backup_CPR(handle, loop_debug_cpr, slot_handle, 3);
+		cmdq_op_wait_event_timeout(handle, &wait_result_var, CMDQ_SYNC_TOKEN_USER_0, 3000);
+		cmdq_op_wait_event_timeout(handle, &wait_result_var, CMDQ_SYNC_TOKEN_USER_0, 3000);
 
 		cmdq_op_finalize_command(handle, false);
 		_test_submit_async(handle, &pTask);
@@ -4122,14 +4121,10 @@ static void testcase_wait_event_timeout(u32 max_round)
 
 		cmdqCoreWaitAndReleaseTask(pTask, 500);
 
-		cmdq_cpu_read_mem(slot_handle, 0, &begin_time);
-		cmdq_cpu_read_mem(slot_handle, 3, &end_time);
-		duration_time = (end_time - begin_time) * 76;
-		cmdq_cpu_read_mem(slot_handle, 1, &begin_tpr);
-		cmdq_cpu_read_mem(slot_handle, 2, &end_tpr);
-		cmdq_cpu_read_mem(slot_handle, 4, &wait_result);
-		cmdq_cpu_read_mem(slot_handle, 5, &loop_count);
-		CMDQ_LOG("Round#%d wait API duration time, %u, ns\n", round, duration_time);
+		cmdq_cpu_read_mem(slot_handle, 0, &begin_tpr);
+		cmdq_cpu_read_mem(slot_handle, 1, &end_tpr);
+		cmdq_cpu_read_mem(slot_handle, 2, &wait_result);
+		cmdq_cpu_read_mem(slot_handle, 3, &loop_count);
 		CMDQ_LOG("Round#%d wait result: 0x%08x = %u ns\n", round, wait_result, wait_result * 38);
 		CMDQ_LOG("Round#%d wait loop count: %u\n", round, loop_count);
 		CMDQ_LOG("Round#%d TPR before: 0x%08x, after: 0x%08x, %u ns\n",
@@ -5683,7 +5678,7 @@ static void testcase_general_handling(int32_t testID)
 		testcase_disp_simulate();
 		break;
 	case 145:
-		testcase_wait_event_timeout(5);
+		testcase_wait_event_timeout(20);
 		break;
 	case 144:
 		testcase_wait_event_timeout(1);
