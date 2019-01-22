@@ -163,9 +163,6 @@ static void fgauge_read_RTC_boot_status(struct gauge_device *gauge_dev)
 	else
 		rtc_invalid = 0;
 
-	fgauge_set_info(gauge_dev, GAUGE_BAT_PLUG_STATUS, 1);
-	bat_plug_out_time = 31;	/*[12:8], 5 bits*/
-
 	bm_err(
 	"[fgauge_read_RTC_boot_status] rtc_invalid %d plugout %d plugout_time %d spare3 0x%x\n",
 			rtc_invalid, is_bat_plugout, bat_plug_out_time,
@@ -177,8 +174,6 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 {
 	int bat_flag = 0;
 	int is_charger_exist;
-
-	fgauge_read_RTC_boot_status(gauge_dev);
 
 #if defined(CONFIG_MTK_DISABLE_GAUGE)
 #else
@@ -204,6 +199,12 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 		else
 			is_bat_plugout = 0;
 	}
+
+	fgauge_set_info(gauge_dev, GAUGE_BAT_PLUG_STATUS, 1);
+	bat_plug_out_time = 31;	/*[12:8], 5 bits*/
+
+	fgauge_read_RTC_boot_status(gauge_dev);
+
 
 	return 0;
 }
