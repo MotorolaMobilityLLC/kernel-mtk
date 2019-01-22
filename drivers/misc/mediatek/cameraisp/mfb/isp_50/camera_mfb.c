@@ -3422,7 +3422,7 @@ int MFB_pm_suspend(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	/* pr_debug("calling %s()\n", __func__); */
 	log_inf("MFB suspend g_u4EnableClockCount: %d, g_u4MfbCnt: %d", g_u4EnableClockCount, g_u4MfbCnt);
 
 	return MFB_suspend(pdev, PMSG_SUSPEND);
@@ -3434,7 +3434,7 @@ int MFB_pm_resume(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	/* pr_debug("calling %s()\n", __func__); */
 	log_inf("MFB resume g_u4EnableClockCount: %d, g_u4MfbCnt: %d", g_u4EnableClockCount, g_u4MfbCnt);
 
 	return MFB_resume(pdev);

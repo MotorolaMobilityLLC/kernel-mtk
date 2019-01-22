@@ -3866,7 +3866,7 @@ int DPE_pm_suspend(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	/* pr_debug("calling %s()\n", __func__); */
 	LOG_INF("DPE suspend g_u4EnableClockCount: %d, g_u4DpeCnt: %d", g_u4EnableClockCount, g_u4DpeCnt);
 
 	return DPE_suspend(pdev, PMSG_SUSPEND);
@@ -3878,7 +3878,7 @@ int DPE_pm_resume(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	pr_debug("calling %s()\n", __func__);
+	/* pr_debug("calling %s()\n", __func__); */
 	LOG_INF("DPE resume g_u4EnableClockCount: %d, g_u4DpeCnt: %d", g_u4EnableClockCount, g_u4DpeCnt);
 
 	return DPE_resume(pdev);
