@@ -1231,6 +1231,22 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		info->data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
 	}
 
+	if (of_property_read_u32(np, "apple_1_0a_charger_current", &val) >= 0) {
+		info->data.apple_1_0a_charger_current = val;
+	} else {
+		pr_err("use default APPLE_1_0A_CHARGER_CURRENT:%d\n",
+			APPLE_1_0A_CHARGER_CURRENT);
+		info->data.apple_1_0a_charger_current = APPLE_1_0A_CHARGER_CURRENT;
+	}
+
+	if (of_property_read_u32(np, "apple_2_1a_charger_current", &val) >= 0) {
+		info->data.apple_2_1a_charger_current = val;
+	} else {
+		pr_err("use default APPLE_2_1A_CHARGER_CURRENT:%d\n",
+			APPLE_2_1A_CHARGER_CURRENT);
+		info->data.apple_2_1a_charger_current = APPLE_2_1A_CHARGER_CURRENT;
+	}
+
 	if (of_property_read_u32(np, "ta_ac_charger_current", &val) >= 0) {
 		info->data.ta_ac_charger_current = val;
 	} else {
