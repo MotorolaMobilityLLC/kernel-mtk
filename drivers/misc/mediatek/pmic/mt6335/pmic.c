@@ -321,7 +321,7 @@ unsigned int pmic_scp_set_vcore(unsigned int voltage)
 }
 
 /* SCP set VSRAM_VCORE voltage, return 0 if success, otherwise return set voltage(uV) */
-unsigned short pmic_scp_set_vsram_vcore(unsigned int voltage)
+unsigned int pmic_scp_set_vsram_vcore(unsigned int voltage)
 {
 	const char *name = "VSRAM_VCORE_SSHUB";
 	unsigned int max_uV = 1200000;
