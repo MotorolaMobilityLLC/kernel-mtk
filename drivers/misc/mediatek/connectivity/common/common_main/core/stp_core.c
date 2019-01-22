@@ -308,7 +308,7 @@ static VOID stp_sdio_process_packet(VOID)
 
 static VOID stp_trace32_dump(VOID)
 {
-	INT32 dmp_num = 0;
+	LONG dmp_num = 0;
 
 	if (STP_IS_ENABLE_DBG(stp_core_ctx) && (stp_core_ctx.parser.type == STP_TASK_INDX)) {
 		if (stp_core_ctx.rx_counter != 0) {
@@ -316,10 +316,11 @@ static VOID stp_trace32_dump(VOID)
 			mtk_wcn_stp_ctx_save();
 			if (stp_core_ctx.assert_info_cnt == 0) {
 				dmp_num = stp_parser_dmp_num(stp_core_ctx.rx_buf);
-				if (dmp_num > 0) {
+				if (dmp_num > 0 && dmp_num < CORE_DUMP_NUM) {
 					STP_INFO_FUNC("parser dmp_num is %d\n", dmp_num);
 					stp_dbg_dump_num(dmp_num);
 				} else {
+					STP_INFO_FUNC("parser dmp_num out of range or not found %d\n", dmp_num);
 					stp_dbg_dump_num(CORE_DUMP_NUM);
 				}
 				stp_core_ctx.assert_info_cnt++;
@@ -397,7 +398,7 @@ static LONG stp_parser_dmp_num(PUINT8 str)
 
 static VOID stp_sdio_trace32_dump(VOID)
 {
-	INT32 dmp_num = 0;
+	LONG dmp_num = 0;
 
 	if (STP_IS_ENABLE_DBG(stp_core_ctx) && (stp_core_ctx.parser.type == STP_TASK_INDX) &&
 			(mtk_wcn_stp_coredump_flag_get() != 0)) {
@@ -406,10 +407,11 @@ static VOID stp_sdio_trace32_dump(VOID)
 			mtk_wcn_stp_ctx_save();
 			if (stp_core_ctx.assert_info_cnt == 0) {
 				dmp_num = stp_parser_dmp_num(stp_core_ctx.rx_buf);
-				if (dmp_num > 0) {
+				if (dmp_num > 0 && dmp_num < CORE_DUMP_NUM) {
 					STP_INFO_FUNC("parser dmp_num is %d\n", dmp_num);
 					stp_dbg_dump_num(dmp_num);
 				} else {
+					STP_INFO_FUNC("parser dmp_num out of range or not found %d\n", dmp_num);
 					stp_dbg_dump_num(CORE_DUMP_NUM);
 				}
 			}
