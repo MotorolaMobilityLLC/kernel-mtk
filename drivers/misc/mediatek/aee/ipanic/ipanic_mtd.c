@@ -202,7 +202,11 @@ static void ipanic_mtd_block_erase(void)
 			LOGE("Erase of 0x%llx, 0x%llx failed\n",
 			     (unsigned long long)erase.addr, (unsigned long long)erase.len);
 			if (rc == -EIO) {
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+				if (ctx->mtd->_block_markbad(ctx->mtd, erase.addr, NULL)) {
+#else
 				if (ctx->mtd->_block_markbad(ctx->mtd, erase.addr)) {
+#endif
 					LOGE("aee-ipanic: Err marking blk bad\n");
 					goto out;
 				}
