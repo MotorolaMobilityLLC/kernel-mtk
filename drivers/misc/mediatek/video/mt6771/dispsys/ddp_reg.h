@@ -84,6 +84,7 @@
 
 
 
+extern cmdqBackupSlotHandle dispsys_slot;
 
 /* DTS will assign reigister address dynamically, so can not define to 0x1000 */
 /* #define DISP_INDEX_OFFSET 0x1000 */
@@ -114,6 +115,7 @@
 #define DISPSYS_SMI_COMMON_BASE		ddp_get_module_va(DISP_MODULE_SMI_COMMON)
 #define DISPSYS_MIPITX0_BASE				ddp_get_module_va(DISP_MODULE_MIPI0)
 #define DISPSYS_MIPITX1_BASE				ddp_get_module_va(DISP_MODULE_MIPI1)
+#define DISPSYS_SLOT_BASE		    dispsys_slot
 
 #ifdef INREG32
 #undef INREG32
@@ -228,6 +230,14 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			if (hSlot) \
 				cmdqRecBackupRegisterToSlot(handle, hSlot, idx,\
 							    disp_addr_convert((unsigned long)(reg32)));\
+		}  \
+	} while (0)
+
+#define DISP_SLOT_SET(handle, hSlot, idx, val) \
+	do { \
+		if (handle != NULL) { \
+			if (hSlot) \
+				cmdqRecBackupUpdateSlot(handle, hSlot, idx, val); \
 		}  \
 	} while (0)
 

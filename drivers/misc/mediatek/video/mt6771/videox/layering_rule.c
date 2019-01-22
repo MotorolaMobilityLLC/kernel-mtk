@@ -26,6 +26,7 @@
 
 #include "mtk_dramc.h"
 #include "layering_rule.h"
+#include "disp_drv_log.h"
 
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
@@ -58,6 +59,15 @@ int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP4_HD */
 	{1200, 1200, 1200, 1200},
+};
+
+int mm_freq_table[HRT_DRAMC_TYPE_NUM][HRT_OPP_LEVEL_NUM] = {
+	/* HRT_DRAMC_TYPE_LP4_3733 */
+	{450, 450, 312, 312},
+	/* HRT_DRAMC_TYPE_LP4_3200 */
+	{450, 312, 312, 312},
+	/* HRT_DRAMC_TYPE_LP3 */
+	{450, 312, 312, 312},
 };
 
 /**
@@ -236,6 +246,34 @@ void layering_rule_init(void)
 {
 	l_rule_info.primary_fps = 60;
 	register_layering_rule_ops(&l_rule_ops, &l_rule_info);
+}
+
+int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level)
+{
+	enum HRT_DRAMC_TYPE dramc_type = HRT_DRAMC_TYPE_LP4_3733;
+
+	if (opp_level == HRT_OPP_LEVEL_DEFAULT) {
+		DISPINFO("skip opp level=%d\n", opp_level);
+		return 0;
+	} else if (opp_level > HRT_OPP_LEVEL_DEFAULT) {
+		DISPPR_ERROR("unsupport opp level=%d\n", opp_level);
+		return 0;
+	}
+
+#if defined(CONFIG_MTK_DRAMC)
+	if (get_ddr_type() == TYPE_LPDDR3)
+		dramc_type = HRT_DRAMC_TYPE_LP3;
+	else {
+		/* LPDDR4-3733, LPDDR4-3200 */
+		if (dram_steps_freq(0) == 3600)
+			dramc_type = HRT_DRAMC_TYPE_LP4_3733;
+		else
+			dramc_type = HRT_DRAMC_TYPE_LP4_3200;
+	}
+#endif
+	mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, dramc_type, opp_level);
+
+	return mm_freq_table[dramc_type][opp_level];
 }
 
 static struct layering_rule_ops l_rule_ops = {

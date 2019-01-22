@@ -26,6 +26,8 @@
 
 #define ALIGN_TO(x, n)	(((x) + ((n) - 1)) & ~((n) - 1))
 
+static unsigned long long wdma_bw;
+
 /*****************************************************************************/
 unsigned int wdma_index(enum DISP_MODULE_ENUM module)
 {
@@ -633,6 +635,8 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	consume_rate = res * frame_rate;
 	do_div(consume_rate, 1000);
 	consume_rate *= 1250;
+	wdma_bw = consume_rate * bytes_per_sec;
+	do_div(wdma_bw, frame_rate * 1000 * 1000);
 	do_div(consume_rate, 16 * 1000);
 
 	preultra_low = (preultra_low_us + fifo_off_drs_enter) * consume_rate * bytes_per_sec;
@@ -1110,6 +1114,12 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 
 		p_golden_setting = pConfig->p_golden_setting_context;
 		wdma_golden_setting(module, p_golden_setting, is_primary_flag, handle);
+
+		/* bandwidth report */
+		if (module == DISP_MODULE_WDMA0) {
+			DDPDBG("%s,bw%llu\n", ddp_get_module_name(module), wdma_bw);
+			DISP_SLOT_SET(handle, DISPSYS_SLOT_BASE, DISP_SLOT_WDMA0_BW, (unsigned int)wdma_bw);
+		}
 	}
 	return 0;
 }

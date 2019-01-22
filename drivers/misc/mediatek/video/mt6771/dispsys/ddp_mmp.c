@@ -134,6 +134,8 @@ void init_ddp_mmp_events(void)
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "primary_error");
 		DDP_MMP_Events.primary_set_cmd =
 		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "primary_set_cmd");
+		DDP_MMP_Events.primary_pm_qos =
+		    mmprofile_register_event(DDP_MMP_Events.primary_Parent, "primary_pm_qos");
 
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 		DDP_MMP_Events.Extd_Parent = mmprofile_register_event(DDP_MMP_Events.DDP, "ext_disp");

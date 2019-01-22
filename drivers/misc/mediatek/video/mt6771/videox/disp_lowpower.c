@@ -707,6 +707,11 @@ void _primary_display_enable_mmsys_clk(void)
 /* Share wrot sram end */
 void _vdo_mode_enter_idle(void)
 {
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	unsigned int bandwidth;
+	unsigned int hwc_fps = 60;
+#endif
+
 	DISPDBG("[disp_lowpower]%s\n", __func__);
 
 	/* backup for DL <-> DC */
@@ -757,10 +762,25 @@ void _vdo_mode_enter_idle(void)
 	set_is_display_idle(1);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		_idle_set_golden_setting();
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	/* update bandwidth */
+	disp_get_rdma_bandwidth(hwc_fps, &bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
+			 !primary_display_is_decouple_mode(), bandwidth);
+	pm_qos_update_request(&primary_display_qos_request, bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_END,
+			 !primary_display_is_decouple_mode(), bandwidth);
+#endif
 }
 
 void _vdo_mode_leave_idle(void)
 {
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	unsigned int bandwidth;
+	unsigned int hwc_fps = 60;
+#endif
+
 	DISPDBG("[disp_lowpower]%s\n", __func__);
 
 	/* set golden setting */
@@ -793,6 +813,16 @@ void _vdo_mode_leave_idle(void)
 		if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 			_idle_set_golden_setting();
 	}
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	/* update bandwidth */
+	disp_get_ovl_bandwidth(hwc_fps, &bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
+			 !primary_display_is_decouple_mode(), bandwidth);
+	pm_qos_update_request(&primary_display_qos_request, bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_END,
+			 !primary_display_is_decouple_mode(), bandwidth);
+#endif
 }
 
 void _cmd_mode_enter_idle(void)
@@ -817,10 +847,25 @@ void _cmd_mode_enter_idle(void)
 		_primary_display_disable_mmsys_clk();
 	}
 
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	/* update bandwidth */
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
+			 !primary_display_is_decouple_mode(), 0);
+	pm_qos_update_request(&primary_display_qos_request, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_END,
+			 !primary_display_is_decouple_mode(), 0);
+#endif
 }
 
 void _cmd_mode_leave_idle(void)
 {
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	unsigned int bandwidth;
+	unsigned int hwc_fps = 60;
+	int stable = 0;
+#endif
+
 	DISPDBG("[disp_lowpower]%s\n", __func__);
 
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
@@ -833,6 +878,18 @@ void _cmd_mode_leave_idle(void)
 #endif
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	/* update bandwidth */
+	if (!primary_display_is_video_mode())
+		primary_fps_ctx_get_fps(&hwc_fps, &stable);
+	disp_get_ovl_bandwidth(hwc_fps, &bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_START,
+			 !primary_display_is_decouple_mode(), bandwidth);
+	pm_qos_update_request(&primary_display_qos_request, bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos, MMPROFILE_FLAG_END,
+			 !primary_display_is_decouple_mode(), bandwidth);
+#endif
 }
 
 void primary_display_idlemgr_enter_idle_nolock(void)
@@ -855,31 +912,57 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 {
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	int step = MMDVFS_FINE_STEP_UNREQUEST;
+	enum HRT_OPP_LEVEL opp_level = HRT_OPP_LEVEL_DEFAULT;
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	unsigned int emi_opp, mm_freq;
+#endif
 
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
 		case HRT_LEVEL_LEVEL3:
 			step = MMDVFS_FINE_STEP_OPP0;
+			opp_level = HRT_OPP_LEVEL_LEVEL0;
 			break;
 		case HRT_LEVEL_LEVEL2:
 			step = MMDVFS_FINE_STEP_OPP1;
+			opp_level = HRT_OPP_LEVEL_LEVEL1;
 			break;
 		case HRT_LEVEL_LEVEL1:
 			step = MMDVFS_FINE_STEP_OPP2;
+			opp_level = HRT_OPP_LEVEL_LEVEL2;
 			break;
 		case HRT_LEVEL_LEVEL0:
 			step = MMDVFS_FINE_STEP_OPP3;
+			opp_level = HRT_OPP_LEVEL_LEVEL3;
 			break;
 		case HRT_LEVEL_DEFAULT:
 			step = MMDVFS_FINE_STEP_UNREQUEST;
+			opp_level = HRT_OPP_LEVEL_DEFAULT;
 			break;
 		default:
+			opp_level = HRT_OPP_LEVEL_DEFAULT;
 			break;
 		}
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+		emi_opp =
+		    (opp_level >= HRT_OPP_LEVEL_DEFAULT) ? PM_QOS_EMI_OPP_DEFAULT_VALUE : opp_level;
+		mm_freq =
+		    (opp_level >= HRT_OPP_LEVEL_DEFAULT) ? PM_QOS_MM_FREQ_DEFAULT_VALUE :
+		    layering_rule_get_mm_freq_table(opp_level);
+
 		/*scenario:MMDVFS_SCEN_DISP(0x17),SMI_BWC_SCEN_UI_IDLE(0xb)*/
+		mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_START,
+			scenario, (req << 16) | (atomic_read(&dvfs_ovl_req_status) & 0xFFFF));
+		pm_qos_update_request(&primary_display_emi_opp_request, emi_opp);
+		pm_qos_update_request(&primary_display_mm_freq_request, mm_freq);
+		mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_END,
+			scenario, (mm_freq << 16) | (emi_opp & 0xFFFF));
+#else
 		mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE,
 			scenario, (req << 16) | (step & 0xFFFF));
 		mmdvfs_set_fine_step(scenario, step);
+#endif
 		atomic_set(&dvfs_ovl_req_status, req);
 	}
 #endif
