@@ -848,6 +848,7 @@ extern void mt_usb_disconnect(void);
 extern void mt_usb_reconnect(void);
 extern void mt_usb_connect_test(int start);
 extern void trigger_disconnect_check_work(void);
+extern struct workqueue_struct *mt_usb_get_workqueue(void);
 /* specific USB operation */
 enum CONNECTION_OPS {
 	CONNECTION_OPS_DISC = 0,

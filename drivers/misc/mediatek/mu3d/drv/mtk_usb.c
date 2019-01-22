@@ -285,6 +285,14 @@ void mt_usb_reconnect(void)
 	issue_connection_work(CONNECTION_OPS_CHECK);
 }
 
+struct workqueue_struct *mt_usb_get_workqueue(void)
+{
+	if (_mu3d_musb)
+		return _mu3d_musb->st_wq;
+	else
+		return NULL;
+}
+
 /* build time force on */
 #if defined(CONFIG_FPGA_EARLY_PORTING)
 #define BYPASS_PMIC_LINKAGE
