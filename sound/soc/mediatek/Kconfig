@@ -28,7 +28,25 @@ config SND_SOC_MT2701_WM8960
 	select SND_SOC_WM8960
 	help
 	  This adds ASoC driver for Mediatek MT2701 boards
-	  with the WM8960 codecs.
+	  If unsure select "N".
+
+config SND_SOC_MT3886
+	tristate "ASoC support for Mediatek MT3886 chip"
+	depends on ARCH_MEDIATEK
+	select SND_SOC_MEDIATEK
+	help
+	  This adds ASoC driver for Mediatek MT3886 boards
+	  that can be used with other codecs.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
+config SND_SOC_MT3886_MT6358
+	tristate "ASoc Audio driver for MT3886 with MT6358 codec"
+	depends on SND_SOC_MT3886
+	select SND_SOC_MT6358
+	help
+	  This adds ASoC driver for Mediatek MT3886 boards
+	  with the MT6358 codecs.
 	  Select Y if you have such device.
 	  If unsure select "N".
 

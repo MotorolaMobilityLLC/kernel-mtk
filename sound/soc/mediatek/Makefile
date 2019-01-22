@@ -12,6 +12,7 @@
 #
 obj-$(CONFIG_SND_SOC_MEDIATEK) += common/
 obj-$(CONFIG_SND_SOC_MT2701) += mt2701/
+obj-$(CONFIG_SND_SOC_MT3886) += mt3886/
 obj-$(CONFIG_SND_SOC_MT8173) += mt8173/
 
 # New architecture
