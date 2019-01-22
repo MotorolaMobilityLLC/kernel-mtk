@@ -43,30 +43,5 @@ ssize_t expdb_read(struct file *filp, char *buf, size_t len, loff_t off)
 
 char *expdb_read_size(int off, int len)
 {
-	/*
-	int ret;
-	struct file *filp;
-	char *data;
-	int timeout = 0;
-
-	filp = NULL;
-	do {
-		filp = expdb_open();
-		if (timeout++ > 0) {
-			LOGE("open expdb partition fail [%ld]!\n", PTR_ERR(filp));
-			return NULL;
-		}
-		msleep(500);
-	} while (IS_ERR(filp));
-	data = kzalloc(len, GFP_KERNEL);
-	ret = kernel_read(filp, off, data, len);
-	fput(filp);
-	if (IS_ERR(ERR_PTR(ret))) {
-		kfree(data);
-		data = NULL;
-		LOGE("read from expdb fail [%d]!\n", ret);
-	}
-	return data;
-	*/
 	return NULL;
 }

@@ -21,15 +21,15 @@
 #define AEE_PROCESS_NAME_LENGTH 256
 #define AEE_BACKTRACE_LENGTH 3072
 
-typedef enum {
+enum AE_DEFECT_ATTR {
 	AE_DEFECT_FATAL,
 	AE_DEFECT_EXCEPTION,
 	AE_DEFECT_WARNING,
 	AE_DEFECT_REMINDING,
 	AE_DEFECT_ATTR_END
-} AE_DEFECT_ATTR;
+};
 
-typedef enum {
+enum AE_EXP_CLASS {
 	AE_KE = 0,		/* Fatal Exception */
 	AE_HWT,
 	AE_REBOOT,
@@ -50,9 +50,9 @@ typedef enum {
 	AE_SYSTEM_JAVA_DEFECT,
 	AE_SYSTEM_NATIVE_DEFECT,
 	AE_MANUAL_MRDUMP_KEY,
-} AE_EXP_CLASS;			/* General Program Exception Class */
+};			/* General Program Exception Class */
 
-typedef enum {
+enum AEE_REBOOT_MODE {
 	AEE_REBOOT_MODE_NORMAL = 0,
 	AEE_REBOOT_MODE_KERNEL_OOPS,
 	AEE_REBOOT_MODE_KERNEL_PANIC,
@@ -60,7 +60,7 @@ typedef enum {
 	AEE_REBOOT_MODE_WDT,
 	AEE_REBOOT_MODE_MANUAL_KDUMP,
 	AEE_REBOOT_MODE_MRDUMP_KEY,
-} AEE_REBOOT_MODE;
+};
 
 #define AEE_SZ_SYMBOL_L 140
 #define AEE_SZ_SYMBOL_S 80
@@ -113,8 +113,8 @@ extern void aee_rr_rec_hang_detect_timeout_count(unsigned int);
 
 struct aee_oops {
 	struct list_head list;
-	AE_DEFECT_ATTR attr;
-	AE_EXP_CLASS clazz;
+	enum AE_DEFECT_ATTR attr;
+	enum AE_EXP_CLASS clazz;
 
 	char module[AEE_MODULE_NAME_LENGTH];
 	/* consist with struct aee_process_info */
@@ -153,7 +153,7 @@ struct aee_oops {
 };
 
 struct aee_kernel_api {
-	void (*kernel_reportAPI)(const AE_DEFECT_ATTR attr, const int db_opt, const char *module,
+	void (*kernel_reportAPI)(const enum AE_DEFECT_ATTR attr, const int db_opt, const char *module,
 		     const char *msg);
 	void (*md_exception)(const char *assert_type, const int *log, int log_size, const int *phy,
 		     int phy_size, const char *detail, const int db_opt);
@@ -170,7 +170,7 @@ int aee_nested_printf(const char *fmt, ...);
 void aee_wdt_irq_info(void);
 void aee_wdt_fiq_info(void *arg, void *regs, void *svc_sp);
 void aee_trigger_kdb(void);
-struct aee_oops *aee_oops_create(AE_DEFECT_ATTR attr, AE_EXP_CLASS clazz, const char *module);
+struct aee_oops *aee_oops_create(enum AE_DEFECT_ATTR attr, enum AE_EXP_CLASS clazz, const char *module);
 void aee_oops_set_backtrace(struct aee_oops *oops, const char *backtrace);
 void aee_oops_set_process_path(struct aee_oops *oops, const char *process_path);
 void aee_oops_free(struct aee_oops *oops);
