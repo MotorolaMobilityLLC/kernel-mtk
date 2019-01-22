@@ -446,9 +446,9 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	int   region_status = 0;
 	const short fix_index0 = MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START);
 	const short fix_index1 = MVAGRAPH_INDEX(VPU_FIX_MVA_START);
-	const short gap_start_idx = GET_END_INDEX(fix_index0, VPU_RESET_VECTOR_BLOCK_NR) + 1;
-	const short gap_end_idx = fix_index1 - 1;
-	const short gap_nr = GET_RANGE_SIZE(gap_start_idx, gap_end_idx);
+	short gap_start_idx = GET_END_INDEX(fix_index0, VPU_RESET_VECTOR_BLOCK_NR) + 1;
+	short gap_end_idx = fix_index1 - 1;
+	short gap_nr = GET_RANGE_SIZE(gap_start_idx, gap_end_idx);
 
 	if (size == 0)
 		return 0;
@@ -459,7 +459,11 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	endRequire = (va + size - 1) | M4U_PAGE_MASK;
 	sizeRequire = endRequire - startRequire + 1;
 	nr = (sizeRequire + MVA_BLOCK_ALIGN_MASK) >> MVA_BLOCK_SIZE_ORDER;
-
+	if (fix_index1 == fix_index0) {
+		gap_start_idx = MVAGRAPH_INDEX(VPU_FIX_MVA_START);
+		gap_end_idx = GET_END_INDEX(fix_index0, VPU_RESET_VECTOR_BLOCK_NR) + 1;
+		gap_nr = GET_RANGE_SIZE(gap_start_idx, gap_end_idx);
+	}
 	/* ----------------------------------------------- */
 	/* find the proper mva graph on 3 stages:
 	 * stage 1: find it in graph range [0x1-0x4FF ]
