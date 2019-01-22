@@ -1,0 +1,30 @@
+#
+# MediaTek ICUSB Driver
+#
+
+config MTK_USBFSH
+	bool "MediaTek USB fullspeed Host driver"
+	---help---
+	  This is support for Mediatek customized Host-only MUSB hardware
+	  The USBFSH driver remove USB Device functions
+	  And provide supports for second MODEM or ICUSB, etc.
+
+config MTK_ICUSB_SUPPORT
+	bool "MediaTek ICUSB SIM card driver"
+	depends on MTK_USBFSH
+	---help---
+	  To support the ICUSB feature on USBFSH port
+	  ICUSB is a standard USB interface to connect special SIM card
+	  Beside normal SIM card feature, ICUSB provide more features
+	  Like Mass Storage, EEM, etc.
+	  This port is usually configured as USB port 1 on device.
+
+config MTK_DT_USB_SUPPORT
+	bool "MediaTek USBFSH dual talk feature driver"
+	depends on MTK_USBFSH
+	---help---
+	  To enable the dual talk feature in phone over MTK_MUSBFSH USB port
+	  When there is second MODEM on the device and connected to main
+	  SoC via MTK_MUSBFSH USB port. MTK_DT_USB_SUPPORT is need for
+	  supporting dual talk to transfer data between 2 MODEMs
+	  This port is usually configured as USB port 1 on device.
