@@ -44,6 +44,7 @@
 #define WORD_L                         8
 #define WORD_H_MASK                    0xFF00
 #define WORD_L_MASK                    0x00FF
+#define CYCLE_TO_NS                    71 /* multiplier of cycle to ns in 13m clock */
 
 /* below is control message */
 #define VOW_SET_CONTROL               _IOW(VOW_IOC_MAGIC, 0x03, unsigned int)
