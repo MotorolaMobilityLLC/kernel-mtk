@@ -39,7 +39,7 @@
 typedef int (*DCM_FUNC)(int);
 typedef void (*DCM_PRESET_FUNC)(void);
 
-typedef struct _dcm {
+struct DCM {
 	int current_state;
 	int saved_state;
 	int disable_refcnt;
@@ -48,7 +48,7 @@ typedef struct _dcm {
 	DCM_PRESET_FUNC preset_func;
 	int typeid;
 	char *name;
-} DCM;
+};
 
 extern short dcm_debug;
 extern short dcm_initiated;
