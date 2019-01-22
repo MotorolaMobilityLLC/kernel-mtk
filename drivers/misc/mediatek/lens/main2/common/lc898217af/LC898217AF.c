@@ -48,7 +48,7 @@ static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
-
+static unsigned int  g_MotorDirection;
 #define Min_Pos		0
 #define Max_Pos		1023
 
@@ -67,7 +67,7 @@ static int s4AF_ReadReg(u8 a_uAddr, u8 *a_uData)
 		return -1;
 	}
 
-	/* LOG_INF("ReadI2C 0x%x, 0x%x\n", a_uAddr, *a_uData); */
+	/* LOG_INF("RDI2C 0x%x, 0x%x\n", a_uAddr, *a_uData); */
 
 	return 0;
 }
@@ -78,6 +78,8 @@ static int s4AF_WriteReg(u8 a_uLength, u8 a_uAddr, u16 a_u2Data)
 	u8 puSendCmd2[3] = { a_uAddr, (u8) ((a_u2Data >> 8) & 0xFF), (u8) (a_u2Data & 0xFF) };
 
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR) >> 1;
+
+	/* LOG_INF("WRI2C 0x%04x, 0x%x\n", a_uAddr, a_u2Data); */
 
 	if (a_uLength == 0) {
 		if (i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2) < 0) {
@@ -100,7 +102,9 @@ static int setPosition(unsigned short UsPosition)
 	unsigned char UcPosL;
 	unsigned int i4RetValue = 0;
 
-	UsPosition = 1023 - UsPosition;
+	if (g_MotorDirection > 0)
+		UsPosition = 1023 - UsPosition;
+
 	UcPosH = (unsigned char) (UsPosition >> 8);
 	UcPosL = (unsigned char) (UsPosition & 0x00FF);
 	i4RetValue = s4AF_WriteReg(0, 0x84, UcPosH);
@@ -150,7 +154,7 @@ static inline int initdrv(void)
 	if (Temp == 0x72) {
 		s4AF_WriteReg(0, 0xE0, 0x01);
 		while (1) {
-			mdelay(10);
+			mdelay(20);
 			ret = s4AF_ReadReg(0xB3, &Temp);
 
 			if (Temp == 0 && ret == 0) {
@@ -158,7 +162,7 @@ static inline int initdrv(void)
 				break;
 			}
 
-			if (cnt >= 3)
+			if (cnt >= 20)
 				break;
 			cnt++;
 		}
@@ -327,6 +331,17 @@ int LC898217AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+	g_MotorDirection = 0;
+
+	return 1;
+}
+
+int LC898217AFD_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened)
+{
+	g_pstAF_I2Cclient = pstAF_I2Cclient;
+	g_pAF_SpinLock = pAF_SpinLock;
+	g_pAF_Opened = pAF_Opened;
+	g_MotorDirection = 1;
 
 	return 1;
 }

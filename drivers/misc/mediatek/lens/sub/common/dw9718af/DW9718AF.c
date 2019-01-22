@@ -124,13 +124,20 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	return 0;
 }
 
-static void initdrv(void)
+static int initdrv(void)
 {
+	int i4RetValue = 0;
 	char puSendCmd2[2] = { 0x01, 0x39 };
 	char puSendCmd3[2] = { 0x05, 0x65 };
 
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
-	i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
+
+	if (i4RetValue < 0)
+		return -1;
+
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
+
+	return i4RetValue;
 }
 
 

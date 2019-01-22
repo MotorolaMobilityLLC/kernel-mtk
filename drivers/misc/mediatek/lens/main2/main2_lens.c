@@ -70,6 +70,7 @@ static struct i2c_board_info kd_lens_dev __initdata = {
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_LC898212XDAF_F, LC898212XDAF_F_SetI2Cclient, LC898212XDAF_F_Ioctl, LC898212XDAF_F_Release},
 	{1, AFDRV_LC898217AF, LC898217AF_SetI2Cclient, LC898217AF_Ioctl, LC898217AF_Release},
+	{1, AFDRV_LC898217AFD, LC898217AFD_SetI2Cclient, LC898217AF_Ioctl, LC898217AF_Release},
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl, AK7371AF_Release},
 	{1, AFDRV_BU64748AF, bu64748af_SetI2Cclient_Main2, bu64748af_Ioctl_Main2, bu64748af_Release_Main2},
 };
