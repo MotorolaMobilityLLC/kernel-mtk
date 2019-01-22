@@ -351,6 +351,9 @@ int mtk_cfg80211_del_key(struct wiphy *wiphy, struct net_device *ndev, u8 key_in
 		rRemoveKey.u4KeyIndex |= BIT(30);
 	}
 
+	if ((prGlueInfo->prAdapter == NULL) || (prGlueInfo->prAdapter->prAisBssInfo == NULL))
+		return i4Rslt;
+
 	rRemoveKey.ucBssIdx = prGlueInfo->prAdapter->prAisBssInfo->ucBssIndex;
 
 	rStatus = kalIoctl(prGlueInfo,
