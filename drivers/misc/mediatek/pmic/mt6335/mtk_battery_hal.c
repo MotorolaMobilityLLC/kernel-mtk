@@ -1378,12 +1378,12 @@ void Intr_Number_to_Name(char *intr_name, int intr_no)
 		sprintf(intr_name, "FG_INTR_DLPT_SD");
 		break;
 
-	case FG_INTR_BAT_SW_TMP_HT:
-		sprintf(intr_name, "FG_INTR_BAT_SW_TEMP_HT");
+	case FG_INTR_BAT_TMP_C_HT:
+		sprintf(intr_name, "FG_INTR_BAT_TMP_C_HT");
 		break;
 
-	case FG_INTR_BAT_SW_TMP_LT:
-		sprintf(intr_name, "FG_INTR_BAT_SW_TEMP_LT");
+	case FG_INTR_BAT_TMP_C_LT:
+		sprintf(intr_name, "FG_INTR_BAT_TMP_C_LT");
 		break;
 
 

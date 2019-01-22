@@ -101,8 +101,11 @@ int fg_bat_int2_ht_en = 0xffff;
 int fg_bat_int2_lt_en = 0xffff;
 
 int fg_bat_tmp_int_gap;
+int fg_bat_tmp_c_int_gap;
 int fg_bat_tmp_ht = 0xffff;
 int fg_bat_tmp_lt = 0xffff;
+int fg_bat_tmp_c_ht = 0xffff;
+int fg_bat_tmp_c_lt = 0xffff;
 int fg_bat_tmp_int_ht = 0xffff;
 int fg_bat_tmp_int_lt = 0xffff;
 
@@ -756,6 +759,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.keep_100_percent = UNIT_TRANS_100 * KEEP_100_PERCENT;
 	fg_cust_data.difference_full_cv = DIFFERENCE_FULL_CV;
 	fg_cust_data.diff_bat_temp_setting = DIFF_BAT_TEMP_SETTING;
+	fg_cust_data.diff_bat_temp_setting_c = DIFF_BAT_TEMP_SETTING_C;
 	fg_cust_data.discharge_tracking_time = DISCHARGE_TRACKING_TIME;
 	fg_cust_data.charge_tracking_time = CHARGE_TRACKING_TIME;
 	fg_cust_data.difference_fullocv_vth = DIFFERENCE_FULLOCV_VTH;
@@ -838,7 +842,8 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.temperature_t2 = TEMPERATURE_T2;
 	fg_cust_data.temperature_t3 = TEMPERATURE_T3;
 	fg_cust_data.temperature_t4 = TEMPERATURE_T4;
-	fg_cust_data.temperature_t = TEMPERATURE_T;
+	fg_cust_data.temperature_tb0 = TEMPERATURE_TB0;
+	fg_cust_data.temperature_tb1 = TEMPERATURE_TB1;
 
 
 	fg_table_cust_data.fg_profile_t0_size =
@@ -1900,6 +1905,21 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	break;
 
 
+	case FG_DAEMON_CMD_SET_FG_BAT_TMP_C_GAP:
+	{
+		int tmp = force_get_tbat(true);
+
+		memcpy(&fg_bat_tmp_c_int_gap, &msg->fgd_data[0], sizeof(fg_bat_tmp_c_int_gap));
+
+		fg_bat_tmp_c_ht = tmp + fg_bat_tmp_c_int_gap;
+		fg_bat_tmp_c_lt = tmp - fg_bat_tmp_c_int_gap;
+
+		bm_warn("[fg_res][FG_TEMP_INT] FG_DAEMON_CMD_SET_FG_BAT_TMP_C_GAP = %d ht:%d lt:%d\n",
+			fg_bat_tmp_c_int_gap, fg_bat_tmp_c_ht, fg_bat_tmp_c_lt);
+
+	}
+	break;
+
 	case FG_DAEMON_CMD_SET_FG_BAT_TMP_GAP:
 	{
 		int tmp = force_get_tbat(true);
@@ -2577,7 +2597,7 @@ int wakeup_fg_algo(unsigned int flow_state)
 			return -1;
 		}
 
-		bm_debug("[battery_meter_driver] malloc size=%d pid=%d\n", size, g_fgd_pid);
+		bm_debug("[wakeup_fg_algo] malloc size=%d pid=%d\n", size, g_fgd_pid);
 		memset(fgd_msg, 0, size);
 		fgd_msg->fgd_cmd = FG_DAEMON_CMD_NOTIFY_DAEMON;
 		memcpy(fgd_msg->fgd_data, &flow_state, sizeof(flow_state));
@@ -2629,29 +2649,30 @@ void fg_bat_temp_int_init(void)
 	battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_HT, &fg_bat_new_ht);
 }
 
-void fg_bat_temp_int_internal(int sw_intr)
+void fg_bat_temp_int_internal(void)
 {
 	int tmp = force_get_tbat(true);
 	int fg_bat_temp_int_en;
 	int fg_bat_new_ht, fg_bat_new_lt;
 
-	bm_err("[fg_bat_temp_int_internal][FG_TEMP_INT]%d %d %d\n",
-		tmp, fg_bat_tmp_ht, fg_bat_tmp_lt);
+	bm_err("[fg_bat_temp_int_internal][FG_TEMP_INT] T[%d] V[%d %d] C[%d %d]\n",
+		tmp, fg_bat_tmp_ht, fg_bat_tmp_lt, fg_bat_tmp_c_ht, fg_bat_tmp_c_lt);
 
 	fg_bat_temp_int_en = 0;
 	battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_EN, &fg_bat_temp_int_en);
 
-	if (sw_intr == 1) {
-		if (tmp >= fg_bat_tmp_ht)
-			wakeup_fg_algo(FG_INTR_BAT_SW_TMP_HT);
-		else if (tmp <= fg_bat_tmp_lt)
-			wakeup_fg_algo(FG_INTR_BAT_SW_TMP_LT);
-	} else {
-		if (tmp >= fg_bat_tmp_ht)
-			wakeup_fg_algo(FG_INTR_BAT_TMP_HT);
-		else if (tmp <= fg_bat_tmp_lt)
-			wakeup_fg_algo(FG_INTR_BAT_TMP_LT);
-	}
+	if (tmp >= fg_bat_tmp_c_ht)
+		wakeup_fg_algo(FG_INTR_BAT_TMP_C_HT);
+	else if (tmp <= fg_bat_tmp_c_lt)
+		wakeup_fg_algo(FG_INTR_BAT_TMP_C_LT);
+
+	bm_err("[fg_bat_temp_int_internal][FG_TEMP_INT] T[%d] V[%d %d] C[%d %d]\n",
+		tmp, fg_bat_tmp_ht, fg_bat_tmp_lt, fg_bat_tmp_c_ht, fg_bat_tmp_c_lt);
+
+	if (tmp >= fg_bat_tmp_ht)
+		wakeup_fg_algo(FG_INTR_BAT_TMP_HT);
+	else if (tmp <= fg_bat_tmp_lt)
+		wakeup_fg_algo(FG_INTR_BAT_TMP_LT);
 
 	fg_bat_new_ht = TempToBattVolt(tmp + 1, 1);
 	fg_bat_new_lt = TempToBattVolt(tmp - 1, 0);
@@ -2666,25 +2687,25 @@ void fg_bat_temp_int_internal(int sw_intr)
 void fg_bat_temp_int_l_handler(void)
 {
 	bm_err("[fg_bat_temp_int_l_handler]\n");
-	fg_bat_temp_int_internal(0);
+	fg_bat_temp_int_internal();
 }
 
 void fg_bat_temp_int_h_handler(void)
 {
 	bm_err("[fg_bat_temp_int_h_handler]\n");
-	fg_bat_temp_int_internal(0);
+	fg_bat_temp_int_internal();
 }
 
 void fg_bat_sw_temp_int_l_handler(void)
 {
 	bm_err("[fg_bat_sw_temp_int_l_handler]\n");
-	fg_bat_temp_int_internal(1);
+	fg_bat_temp_int_internal();
 }
 
 void fg_bat_sw_temp_int_h_handler(void)
 {
 	bm_err("[fg_bat_sw_temp_int_h_handler]\n");
-	fg_bat_temp_int_internal(1);
+	fg_bat_temp_int_internal();
 }
 
 void fg_bat_temp_int_sw_check(void)
