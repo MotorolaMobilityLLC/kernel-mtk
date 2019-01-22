@@ -75,7 +75,7 @@ static bool GetAdcStatus(void);
 static void TurnOffDacPower(void);
 static void TurnOnDacPower(int device);
 static void setDlMtkifSrc(bool enable);
-static void SetDcCompenSation(void);
+static int SetDcCompenSation(bool enable);
 static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
 
@@ -95,11 +95,6 @@ static int mAudio_Analog_Mic1_mode = AUDIO_ANALOGUL_MODE_ACC;
 static int mAudio_Analog_Mic2_mode = AUDIO_ANALOGUL_MODE_ACC;
 static int mAudio_Analog_Mic3_mode = AUDIO_ANALOGUL_MODE_ACC;
 static int mAudio_Analog_Mic4_mode = AUDIO_ANALOGUL_MODE_ACC;
-
-static int TrimOffset = 2048;
-static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
-/* static const int DC1unit_in_uv = 21500; */	/* in uv with 0DB */
-static const int DC1devider = 8;	/* in uv */
 
 enum hp_depop_flow {
 	HP_DEPOP_FLOW_DEPOP_HW,
@@ -123,6 +118,10 @@ static int mAdc_Power_Mode;
 static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
+
+int (*enable_dc_compensation)(bool enable) = NULL;
+int (*set_lch_dc_compensation)(int value) = NULL;
+int (*set_rch_dc_compensation)(int value) = NULL;
 
 /* Jogi: Need? @{ */
 #define SND_SOC_ADV_MT_FMTS (\
@@ -362,6 +361,15 @@ bool hasHp33Ohm(void)
 	       mUseHpDepopFlow == HP_DEPOP_FLOW_DEPOP_HW_33OHM;
 }
 
+int set_codec_ops(struct mtk_codec_ops *ops)
+{
+	enable_dc_compensation = ops->enable_dc_compensation;
+	set_lch_dc_compensation = ops->set_lch_dc_compensation;
+	set_rch_dc_compensation = ops->set_rch_dc_compensation;
+
+	return 0;
+}
+
 /*extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);*/
 void Auddrv_Read_Efuse_HPOffset(void)
 {
@@ -589,35 +597,12 @@ void EnableTrimbuffer(bool benable)
 	}
 }
 
-static int mHplTrimOffset = 2048;
-static int mHprTrimOffset = 2048;
-
 void CalculateDCCompenForEachdB_L(void)
 {
 }
 
 void CalculateDCCompenForEachdB_R(void)
 {
-}
-
-void SetHplTrimOffset(int Offset)
-{
-	pr_warn("%s Offset = %d\n", __func__, Offset);
-	mHplTrimOffset = Offset;
-	if ((Offset > 2198) || (Offset < 1898)) {
-		mHplTrimOffset = 2048;
-		pr_err("SetHplTrimOffset offset may be invalid offset = %d\n", Offset);
-	}
-}
-
-void SetHprTrimOffset(int Offset)
-{
-	pr_warn("%s Offset = %d\n", __func__, Offset);
-	mHprTrimOffset = Offset;
-	if ((Offset > 2198) || (Offset < 1898)) {
-		mHprTrimOffset = 2048;
-		pr_err("SetHprTrimOffset offset may be invalid offset = %d\n", Offset);
-	}
 }
 
 void OpenTrimBufferHardware(bool enable)
@@ -627,6 +612,19 @@ void OpenTrimBufferHardware(bool enable)
 	/* TODO: KC: not final yet, need de last confirm */
 	if (enable) {
 		TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_HEADSETL);
+
+		/* reset all dc compensation */
+		if (enable_dc_compensation &&
+		    set_lch_dc_compensation &&
+		    set_rch_dc_compensation) {
+			enable_dc_compensation(false);
+			set_lch_dc_compensation(0);
+			set_rch_dc_compensation(0);
+		}
+
+		/* sdm output mute enable */
+		Ana_Set_Reg(AFUNC_AUD_CON1, 0x0000, 0xffff);
+		Ana_Set_Reg(AFUNC_AUD_CON0, 0xcbad, 0xffff);
 
 		/* Disable headphone short-circuit protection */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
@@ -684,23 +682,31 @@ void OpenTrimBufferHardware(bool enable)
 		/* Enable HPR/L main output stage step by step */
 		hp_main_output_ramp(true);
 
-		/* apply volume setting */
+		/* apply volume setting, 0dB */
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = 8;
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
 		HeadsetVoloumeSet();
 
 		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
-		/* Enable Audio DAC  */
+		/* Enable Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30ff, 0xffff);
 
 		/* Enable low-noise mode of DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xf201, 0xffff);
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0203, 0xffff);
 		udelay(100);
 
 		/* Switch HPL MUX to audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x32ff, 0xffff);
 		/* Switch HPR MUX to audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3aff, 0xffff);
+
+		/* Enable HS STB enhance circuit */
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0090, 0xffff);
 	} else {
+		/* Disable HS STB enhance circuit */
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0xffff);
+
 		/* HPR/HPL mux to open */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00);
 		/* Disable Audio DAC */
@@ -818,25 +824,6 @@ void OpenAnalogTrimHardware(bool enable)
 	}
 }
 
-void OpenAnalogHeadphone(bool bEnable)
-{
-	pr_warn("OpenAnalogHeadphone bEnable = %d", bEnable);
-	if (bEnable) {
-		SetHplTrimOffset(2048);
-		SetHprTrimOffset(2048);
-		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = 44100;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] = true;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true);
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] = true;
-	} else {
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] = false;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, false);
-		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] = false;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, false);
-	}
-}
-
 bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 {
 	pr_aud("%s benable = %d\n", __func__, bEnable);
@@ -880,6 +867,8 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
 		/* Disable HPR/L STB enhance circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc000, 0xffff);
+		/* Enable HP main CMFB Switch */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
 		/* No Pull-down HPL/R to AVSS28_AUD */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0xffff);
 
@@ -890,6 +879,8 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 
 		/* Enable HPDET circuit, select DACLP as HPDET input and HPR as HPDET output */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x1900, 0xffff);
+
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0203, 0xffff);
 	} else {
 		/* disable HPDET circuit */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0xff00);
@@ -959,79 +950,118 @@ void setHpGainZero(void)
 	Ana_Set_Reg(ZCD_CON2, 0x8, 0x001f);
 }
 
-void SetSdmLevel(unsigned int level)
+static int last_lch_comp_value, last_rch_comp_value;
+
+static const int dBFactor_Den = 8192;
+/* 1 / (10 ^ (dB / 20)) * dBFactor_Den */
+static const int dBFactor_Nom[20] = {
+	3261, 3659, 4106, 4607,
+	5169, 5799, 6507, 7301,
+	8192, 9192, 10313, 11572,
+	12983, 14568, 16345, 18340,
+	20577, 23088, 25905, 819200
+};
+
+static int mHplTrimOffset = 2048;
+static int mHprTrimOffset = 2048;
+
+void SetHplTrimOffset(int Offset)
 {
-	/* move to ap side */
+	pr_warn("%s Offset = %d\n", __func__, Offset);
+	mHplTrimOffset = Offset;
 }
 
-static void SetHprOffset(int OffsetTrimming)
+void SetHprTrimOffset(int Offset)
 {
-	short Dccompsentation = 0;
-	int DCoffsetValue = 0;
-	unsigned short RegValue = 0;
-
-	/* 10589 for square wave 34uA i-DAC output current */
-	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
-	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
-	Dccompsentation = DCoffsetValue;
-	RegValue = Dccompsentation;
-	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
-	/*Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, RegValue, 0xffff);*/
+	pr_warn("%s Offset = %d\n", __func__, Offset);
+	mHprTrimOffset = Offset;
 }
 
-static void SetHplOffset(int OffsetTrimming)
+static int calOffsetToDcComp(int TrimOffset)
 {
-	short Dccompsentation = 0;
-	int DCoffsetValue = 0;
-	unsigned short RegValue = 0;
-
-	/* 10589 for square wave 34uA i-DAC output current */
-	DCoffsetValue = (OffsetTrimming * 10589 + 2048) / 4096;
-	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
-	Dccompsentation = DCoffsetValue;
-	RegValue = Dccompsentation;
-	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
-	/*Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, RegValue, 0xffff);*/
+	/* The formula is from DE programming guide */
+	/* should be mantain by pmic owner */
+	/* 32768/2 is rounded value */
+	return (TrimOffset * 2804225 + (32768 / 2)) / 32768;
 }
 
-static void EnableDcCompensation(bool bEnable)
+static int get_dc_ramp_step(int gain)
 {
-#ifndef EFUSE_HP_TRIM
-/*	Ana_Set_Reg(AFE_DL_DC_COMP_CFG2, bEnable, 0x1);*/
-#endif
+	/* each step should be smaller than 100uV */
+	/* 1 pcm of dc compensation = 0.0808uV HP buffer voltage @ 0dB*/
+	/* 90uV / 0.0808uV(0dB) = 1113.73 */
+	int step_0db = 1114;
+
+	/* scale for specific gain */
+	return step_0db * dBFactor_Nom[gain] / dBFactor_Den;
 }
 
-static void SetHprOffsetTrim(void)
+static int SetDcCompenSation(bool enable)
 {
-	int OffsetTrimming = mHprTrimOffset - TrimOffset;
+	int lch_value = 0, rch_value = 0, tmp_ramp = 0;
+	int times = 0, i = 0;
+	int sign_lch = 0, sign_rch = 0;
+	int abs_lch = 0, abs_rch = 0;
+	int index_lgain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL];
+	int index_rgain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
+	int diff_lch = 0, diff_rch = 0, ramp_l = 0, ramp_r = 0;
+	int ramp_step = get_dc_ramp_step(index_lgain);
 
-	pr_aud("%s OffsetTrimming = %d (mHprTrimOffset(%d)- TrimOffset(%d))\n", __func__,
-	       OffsetTrimming, mHprTrimOffset, TrimOffset);
-	SetHprOffset(OffsetTrimming);
-}
+	if (enable_dc_compensation == NULL ||
+	    set_lch_dc_compensation == NULL ||
+	    set_rch_dc_compensation == NULL) {
+		pr_err("%s(), function not ready, enable %p, lch %p, rch %p\n",
+		       __func__, enable_dc_compensation,
+		       set_lch_dc_compensation, set_rch_dc_compensation);
+		return -EFAULT;
+	}
 
-static void SetHpLOffsetTrim(void)
-{
-	int OffsetTrimming = mHplTrimOffset - TrimOffset;
+	lch_value = calOffsetToDcComp(mHplTrimOffset * dBFactor_Nom[index_lgain] / dBFactor_Den);
+	rch_value = calOffsetToDcComp(mHprTrimOffset * dBFactor_Nom[index_rgain] / dBFactor_Den);
+	diff_lch = enable ? lch_value - last_lch_comp_value : lch_value;
+	diff_rch = enable ? rch_value - last_rch_comp_value : rch_value;
+	sign_lch = diff_lch < 0 ? -1 : 1;
+	sign_rch = diff_rch < 0 ? -1 : 1;
+	abs_lch = sign_lch * diff_lch;
+	abs_rch = sign_rch * diff_rch;
+	times = abs_lch > abs_rch ? (abs_lch / ramp_step) : (abs_rch / ramp_step);
+	pr_aud("%s enable = %d, index_gain = %d, times = %d, lch_value = %d -> %d, rch_value = %d -> %d\n",
+	       __func__, enable, index_lgain, times, last_lch_comp_value, lch_value, last_rch_comp_value, rch_value);
 
-	pr_aud("%s OffsetTrimming = %d (mHplTrimOffset(%d)- TrimOffset(%d))\n", __func__,
-	       OffsetTrimming, mHplTrimOffset, TrimOffset);
-	SetHplOffset(OffsetTrimming);
-}
+	if (enable) {
+		enable_dc_compensation(true);
+		for (i = 1; i <= times; i++) {
+			tmp_ramp = i * ramp_step;
+			if (tmp_ramp < abs_lch) {
+				ramp_l = last_lch_comp_value + sign_lch * tmp_ramp;
+				set_lch_dc_compensation(ramp_l << 8);
+			}
+			if (tmp_ramp < abs_rch) {
+				ramp_r = last_rch_comp_value + sign_rch * tmp_ramp;
+				set_rch_dc_compensation(ramp_r << 8);
+			}
+			udelay(100);
+		}
+		set_lch_dc_compensation(lch_value << 8);
+		set_rch_dc_compensation(rch_value << 8);
+		last_lch_comp_value = lch_value;
+		last_rch_comp_value = rch_value;
+	} else {
+		for (i = times; i >= 0; i--) {
+			tmp_ramp = i * ramp_step;
+			if (tmp_ramp < abs_lch)
+				set_lch_dc_compensation(tmp_ramp << 8);
 
-static void SetDcCompenSation(void)
-{
-#ifndef EFUSE_HP_TRIM
-	SetHprOffsetTrim();
-	SetHpLOffsetTrim();
-	EnableDcCompensation(true);
-#else				/* use efuse trim */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0800, 0x0800);	/* Enable trim circuit of HP */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, RG_AUDHPLTRIM_VAUDP15 << 3, 0x0078);	/* Trim offset voltage of HPL */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, RG_AUDHPRTRIM_VAUDP15 << 7, 0x0780);	/* Trim offset voltage of HPR */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, RG_AUDHPLFINETRIM_VAUDP15 << 12, 0x3000);	/* Fine trim offset voltage of HPL */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, RG_AUDHPRFINETRIM_VAUDP15 << 14, 0xC000);	/* Fine trim offset voltage of HPR */
-#endif
+			if (tmp_ramp < abs_rch)
+				set_rch_dc_compensation(tmp_ramp << 8);
+			udelay(100);
+		}
+		enable_dc_compensation(false);
+		last_lch_comp_value = 0;
+		last_rch_comp_value = 0;
+	}
+
+	return 0;
 }
 
 static int mt63xx_codec_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
@@ -1578,7 +1608,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3aff, 0xffff);
 
 			/* Apply digital DC compensation value to DAC */
-			SetDcCompenSation();
+			SetDcCompenSation(true);
 
 			/* No Pull-down HPL/R to AVSS28_AUD */
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4033, 0xffff);
@@ -1590,7 +1620,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Pull-down HPL/R to AVSS28_AUD */
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc033, 0xffff);
 
-			EnableDcCompensation(false);
+			SetDcCompenSation(false);
 
 			/* HPR/HPL mux to open */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00);

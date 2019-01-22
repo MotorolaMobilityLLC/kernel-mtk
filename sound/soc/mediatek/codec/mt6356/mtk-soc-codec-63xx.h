@@ -52,20 +52,15 @@ struct mtk_hpdet_param {
 	int resistance_second_threshold;
 };
 
-/* DPD parameter */
-struct mtk_dpd_param {
-	int efuse_on;
-	int a2_lch;
-	int a3_lch;
-	int a2_rch;
-	int a3_rch;
+struct mtk_codec_ops {
+	int (*enable_dc_compensation)(bool enable);
+	int (*set_lch_dc_compensation)(int value);
+	int (*set_rch_dc_compensation)(int value);
 };
 
 void audckbufEnable(bool enable);
 void OpenClassAB(void);
-void OpenAnalogHeadphone(bool bEnable);
 void OpenAnalogTrimHardware(bool bEnable);
-void SetSdmLevel(unsigned int level);
 void setOffsetTrimMux(unsigned int Mux);
 void setOffsetTrimBufferGain(unsigned int gain);
 void EnableTrimbuffer(bool benable);
@@ -85,5 +80,7 @@ void OpenTrimBufferHardware(bool bEnable);
 
 bool hasHpDepopHw(void);
 bool hasHp33Ohm(void);
+
+int set_codec_ops(struct mtk_codec_ops *ops);
 
 #endif
