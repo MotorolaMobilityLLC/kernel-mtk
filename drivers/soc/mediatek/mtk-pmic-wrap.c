@@ -574,6 +574,8 @@ static int mt8167_regs[] = {
 	[PWRAP_DCM_EN] =		0x144,
 	[PWRAP_DCM_DBC_PRD] =		0x148,
 	[PWRAP_SW_RST] =		0x168,
+	[PWRAP_OP_TYPE] =		0x16c,
+	[PWRAP_MSB_FIRST] =		0x170,
 };
 
 enum pmic_type {
@@ -1159,6 +1161,9 @@ static const struct of_device_id of_slave_match_tbl[] = {
 		.compatible = "mediatek,mt6397",
 		.data = &pmic_mt6397,
 	}, {
+		.compatible = "mediatek,mt6392",
+		.data = &pmic_mt6323,
+	}, {
 		/* sentinel */
 	}
 };
@@ -1211,9 +1216,8 @@ static struct pmic_wrapper_type pwrap_mt8167 = {
 	.spi_w = PWRAP_MAN_CMD_SPI_WRITE,
 	.wdt_src = PWRAP_WDT_SRC_MASK_ALL,
 	.has_bridge = 0,
-	.slv_switch = 0,
-	.init_reg_clock = pwrap_mt8173_init_reg_clock,
-	.init_soc_specific = pwrap_mt8173_init_soc_specific,
+	.slv_switch = 1,
+	.init_reg_clock = pwrap_mt2701_init_reg_clock,
 };
 
 static struct of_device_id of_pwrap_match_tbl[] = {
