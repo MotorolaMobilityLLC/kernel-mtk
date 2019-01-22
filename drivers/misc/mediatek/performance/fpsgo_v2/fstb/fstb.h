@@ -23,7 +23,8 @@ static inline int fpsgo_ctrl2fstb_display_time_update(unsigned long long ns) { r
 static inline int fpsgo_ctrl2fstb_gpu_time_update(
 		long long t_gpu, unsigned int cur_freq,
 		unsigned int cur_max_freq) { return 0; }
-void fpsgo_comp2fstb_queue_time_update(int pid, int frame_type, int render_method, unsigned long long ts);
+void fpsgo_comp2fstb_queue_time_update(
+	int pid, int frame_type, int render_method, unsigned long long ts, unsigned long long bufferid, int api);
 int fpsgo_comp2fstb_bypass(int pid);
 #ifdef CONFIG_MTK_FPSGO_FSTB
 int fpsgo_fstb2fbt_reset_asfc(int);

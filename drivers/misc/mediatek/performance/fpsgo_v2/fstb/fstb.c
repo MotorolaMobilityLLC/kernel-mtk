@@ -88,7 +88,8 @@ static int fps_error_threshold = 10;
 static int QUANTILE = 75;
 static long long FRAME_TIME_WINDOW_SIZE_US = 1000000;
 static long long ADJUST_INTERVAL_US = 1000000;
-int fstb_enable, fstb_active, fstb_idle_cnt;
+static int fstb_enable, fstb_active, fstb_idle_cnt;
+static int camera_scn;
 
 static void reset_fps_level(void);
 static int set_fps_level(int nr_level, struct fps_level *level);
@@ -353,6 +354,8 @@ int fpsgo_fbt2fstb_update_cpu_frame_info(
 		new_frame_info->queue_fps = CFG_MAX_FPS_LIMIT;
 		new_frame_info->frame_type = -1;
 		new_frame_info->render_method = -1;
+		new_frame_info->bufid = 0ULL;
+		new_frame_info->connected_api = 0;
 		new_frame_info->asfc_flag = 0;
 		new_frame_info->queue_time_begin = 0;
 		new_frame_info->queue_time_end = 0;
@@ -487,7 +490,9 @@ static unsigned int get_cpu_cur_capacity(struct FSTB_FRAME_INFO *iter)
 
 }
 
-void fpsgo_comp2fstb_queue_time_update(int pid, int frame_type, int render_method, unsigned long long ts)
+void fpsgo_comp2fstb_queue_time_update(int pid,
+	int frame_type, int render_method, unsigned long long ts,
+	unsigned long long bufferid, int api)
 {
 	struct FSTB_FRAME_INFO *iter;
 
@@ -522,6 +527,8 @@ void fpsgo_comp2fstb_queue_time_update(int pid, int frame_type, int render_metho
 		new_frame_info->queue_fps = CFG_MAX_FPS_LIMIT;
 		new_frame_info->frame_type = frame_type;
 		new_frame_info->render_method = render_method;
+		new_frame_info->connected_api = api;
+		new_frame_info->bufid = bufferid;
 		new_frame_info->asfc_flag = 0;
 		new_frame_info->queue_time_begin = 0;
 		new_frame_info->queue_time_end = 0;
@@ -532,6 +539,8 @@ void fpsgo_comp2fstb_queue_time_update(int pid, int frame_type, int render_metho
 		hlist_add_head(&iter->hlist, &fstb_frame_infos);
 	} else {
 		iter->render_method = render_method;
+		iter->connected_api = api;
+		iter->bufid = bufferid;
 		iter->frame_type = frame_type;
 	}
 
@@ -717,6 +726,10 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 		fpsgo_systrace_c_fstb(iter->pid, iter->asfc_flag, "asfc_flag");
 	}
 
+	/* check camera scn, if camera scn fps floor is 30*/
+	if (target_limit < 30 && camera_scn)
+		target_limit = 30;
+
 	return target_limit;
 
 }
@@ -743,6 +756,19 @@ int fpsgo_fbt2fstb_query_fps(int pid)
 	return targetfps;
 }
 
+/* check camera scn, if camera scn fps floor is 30*/
+static int check_camera_scn(void)
+{
+	struct FSTB_FRAME_INFO *iter;
+
+	hlist_for_each_entry(iter, &fstb_frame_infos, hlist) {
+		if (iter->connected_api == NATIVE_WINDOW_API_CAMERA)
+			return 1;
+	}
+
+	return 0;
+}
+
 static void fstb_fps_stats(struct work_struct *work)
 {
 	struct FSTB_FRAME_INFO *iter;
@@ -754,6 +780,8 @@ static void fstb_fps_stats(struct work_struct *work)
 		kfree(work);
 
 	mutex_lock(&fstb_lock);
+
+	camera_scn = check_camera_scn();
 
 	hlist_for_each_entry_safe(iter, n, &fstb_frame_infos, hlist) {
 		/* if this process did queue buffer while last polling window */
