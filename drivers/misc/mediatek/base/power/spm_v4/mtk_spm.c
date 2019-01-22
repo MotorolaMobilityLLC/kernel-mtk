@@ -547,6 +547,10 @@ static void __spm_check_dram_type(void)
 		__spmfw_idx = SPMFW_LP4X_2CH_3733;
 	else if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3200)
 		__spmfw_idx = SPMFW_LP4X_2CH_3200;
+	else if (ddr_type == TYPE_LPDDR4 && ddr_hz == 3600)
+		__spmfw_idx = SPMFW_LP4X_2CH_3733;
+	else if (ddr_type == TYPE_LPDDR4 && ddr_hz == 3200)
+		__spmfw_idx = SPMFW_LP4X_2CH_3200;
 	else if (ddr_type == TYPE_LPDDR3 && ddr_hz == 1866)
 		__spmfw_idx = SPMFW_LP3_1CH_1866;
 	pr_info("#@# %s(%d) __spmfw_idx 0x%x\n", __func__, __LINE__, __spmfw_idx);
