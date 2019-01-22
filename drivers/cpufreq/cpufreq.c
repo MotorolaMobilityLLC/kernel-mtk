@@ -1100,6 +1100,8 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy, unsigned int cp
 	cpumask_set_cpu(cpu, policy->cpus);
 	up_write(&policy->rwsem);
 
+	trace_cpu_frequency(policy->cur, cpu);
+
 	if (has_target()) {
 		ret = __cpufreq_governor(policy, CPUFREQ_GOV_START);
 		if (!ret)
