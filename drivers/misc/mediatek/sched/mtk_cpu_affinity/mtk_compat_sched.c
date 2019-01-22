@@ -14,7 +14,7 @@
 #include <linux/compat.h>
 #include <linux/fs.h>
 #include <linux/uaccess.h>
-#include "mt_sched_drv.h"
+#include "mtk_sched_drv.h"
 
 #ifdef CONFIG_COMPAT
 struct compat_ioctl_arg {

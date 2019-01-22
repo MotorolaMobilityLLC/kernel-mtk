@@ -11,7 +11,7 @@
 #include <linux/slab.h>
 #include <linux/irq_work.h>
 #ifdef CONFIG_MT_RT_THROTTLE_MON
-#include "mt_rt_mon.h"
+#include "mtk_rt_mon.h"
 #endif
 int sched_rr_timeslice = RR_TIMESLICE;
 

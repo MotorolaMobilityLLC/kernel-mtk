@@ -21,7 +21,7 @@
 #include "internals.h"
 
 #ifdef CONFIG_MT_RT_THROTTLE_MON
-#include "mt_rt_mon.h"
+#include "mtk_rt_mon.h"
 #endif
 /**
  * handle_bad_irq - handle spurious and unhandled irqs
