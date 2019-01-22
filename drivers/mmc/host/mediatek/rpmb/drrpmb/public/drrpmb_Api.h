@@ -29,6 +29,7 @@
 #define DCI_RPMB_CMD_READ_DATA      1
 #define DCI_RPMB_CMD_GET_WCNT       2
 #define DCI_RPMB_CMD_WRITE_DATA     3
+#define DCI_RPMB_CMD_PROGRAM_KEY    4
 
 
 /*... add more command ids when needed */
