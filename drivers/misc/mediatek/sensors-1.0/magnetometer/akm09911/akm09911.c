@@ -52,16 +52,6 @@ static uint8_t akm_fuse[3] = {0};
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id akm09911_i2c_id[] = { {AKM09911_DEV_NAME, 0}, {} };
 
-/* Maintain  cust info here */
-struct mag_hw mag_cust;
-static struct mag_hw *hw = &mag_cust;
-
-/* For  driver get cust info */
-struct mag_hw *get_cust_mag(void)
-{
-	return &mag_cust;
-}
-
 /*----------------------------------------------------------------------------*/
 static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int akm09911_i2c_remove(struct i2c_client *client);
@@ -92,7 +82,7 @@ enum {
 /*----------------------------------------------------------------------------*/
 struct akm09911_i2c_data {
 	struct i2c_client *client;
-	struct mag_hw *hw;
+	struct mag_hw hw;
 	atomic_t layout;
 	atomic_t trace;
 	struct hwmsen_convert cvt;
@@ -203,9 +193,6 @@ static int mag_i2c_write_block(struct i2c_client *client, u8 addr, u8 *data, u8 
 	return err;
 }
 #endif
-static void akm09911_power(struct mag_hw *hw, unsigned int on)
-{
-}
 
 static long AKI2C_RxData(char *rxData, int length)
 {
@@ -1210,7 +1197,7 @@ static ssize_t show_layout_value(struct device_driver *ddri, char *buf)
 	struct akm09911_i2c_data *data = i2c_get_clientdata(client);
 
 	return sprintf(buf, "(%d, %d)\n[%+2d %+2d %+2d]\n[%+2d %+2d %+2d]\n",
-		       data->hw->direction, atomic_read(&data->layout), data->cvt.sign[0],
+		       data->hw.direction, atomic_read(&data->layout), data->cvt.sign[0],
 		       data->cvt.sign[1], data->cvt.sign[2], data->cvt.map[0], data->cvt.map[1],
 		       data->cvt.map[2]);
 }
@@ -1228,11 +1215,11 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf, s
 		atomic_set(&data->layout, layout);
 		if (!hwmsen_get_convert(layout, &data->cvt))
 			MAGN_PR_ERR("HWMSEN_GET_CONVERT function error!\r\n");
-		else if (!hwmsen_get_convert(data->hw->direction, &data->cvt))
+		else if (!hwmsen_get_convert(data->hw.direction, &data->cvt))
 			MAGN_PR_ERR("invalid layout: %d, restore to %d\n", layout,
-				 data->hw->direction);
+				 data->hw.direction);
 		else {
-			MAGN_PR_ERR("invalid layout: (%d, %d)\n", layout, data->hw->direction);
+			MAGN_PR_ERR("invalid layout: (%d, %d)\n", layout, data->hw.direction);
 			ret = hwmsen_get_convert(0, &data->cvt);
 			if (!ret)
 				MAGN_PR_ERR("HWMSEN_GET_CONVERT function error!\r\n");
@@ -1250,12 +1237,9 @@ static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 	struct akm09911_i2c_data *data = i2c_get_clientdata(client);
 	ssize_t len = 0;
 
-	if (data->hw)
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
-				data->hw->i2c_num, data->hw->direction, data->hw->power_id,
-				data->hw->power_vol);
-	else
-		len += snprintf(buf + len, PAGE_SIZE - len, "CUST: NULL\n");
+	len += snprintf(buf + len, PAGE_SIZE - len, "CUST: %d %d (%d %d)\n",
+		data->hw.i2c_num, data->hw.direction, data->hw.power_id,
+		data->hw.power_vol);
 
 	len += snprintf(buf + len, PAGE_SIZE - len, "OPEN: %d\n", atomic_read(&dev_open_count));
 	return len;
@@ -1298,11 +1282,15 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 static ssize_t show_chip_orientation(struct device_driver *ddri, char *buf)
 {
 	ssize_t _tLength = 0;
-	struct mag_hw *_ptAccelHw = hw;
+	struct akm09911_i2c_data *_pt_i2c_obj = i2c_get_clientdata(this_client);
 
-	MAGN_LOG("[%s] default direction: %d\n", __func__, _ptAccelHw->direction);
+	if (_pt_i2c_obj == NULL)
+		return 0;
 
-	_tLength = snprintf(buf, PAGE_SIZE, "default direction = %d\n", _ptAccelHw->direction);
+	MAGN_LOG("[%s] default direction: %d\n", __func__, _pt_i2c_obj->hw.direction);
+
+	_tLength = snprintf(buf, PAGE_SIZE, "default direction = %d\n",
+		_pt_i2c_obj->hw.direction);
 
 	return _tLength;
 }
@@ -1435,21 +1423,12 @@ static int akm09911_delete_attr(struct device_driver *driver)
 /*----------------------------------------------------------------------------*/
 static int akm09911_suspend(struct device *dev)
 {
-	struct i2c_client *client = to_i2c_client(dev);
-	struct akm09911_i2c_data *obj = i2c_get_clientdata(client);
-
-	akm09911_power(obj->hw, 0);
-
 	return 0;
 }
 
 /*----------------------------------------------------------------------------*/
 static int akm09911_resume(struct device *dev)
 {
-	struct i2c_client *client = to_i2c_client(dev);
-	struct akm09911_i2c_data *obj = i2c_get_clientdata(client);
-
-	akm09911_power(obj->hw, 1);
 	return 0;
 }
 
@@ -1669,35 +1648,34 @@ static struct mag_factory_public akm09911_factory_device = {
 static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int err = 0;
-	struct i2c_client *new_client;
-	struct akm09911_i2c_data *data;
+	struct i2c_client *new_client = NULL;
+	struct akm09911_i2c_data *data = NULL;
 	struct mag_control_path ctl = { 0 };
 	struct mag_data_path mag_data = { 0 };
 
 	MAGN_LOG("akm09911_i2c_probe\n");
-	err = get_mag_dts_func(client->dev.of_node, hw);
-	if (err) {
-		MAGN_PR_ERR("get dts info fail\n");
-		err = -EFAULT;
-		goto exit;
-	}
-
 	data = kzalloc(sizeof(struct akm09911_i2c_data), GFP_KERNEL);
 	if (!data) {
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	data->hw = hw;
-	/*data->hw->direction from dts is for AKMD, rang is 1-8*/
-	/*now use akm09911_coordinate_convert api, so the rang is 0-7 */
-	data->hw->direction--;
-	err = hwmsen_get_convert(data->hw->direction, &data->cvt);
-	if (err) {
-		MAGN_PR_ERR("invalid direction: %d\n", data->hw->direction);
-		goto exit;
+	err = get_mag_dts_func(client->dev.of_node, &data->hw);
+	if (err < 0) {
+		MAGN_PR_ERR("get dts info fail\n");
+		err = -EFAULT;
+		goto exit_kfree;
 	}
-	atomic_set(&data->layout, data->hw->direction);
+
+	/*data->hw.direction from dts is for AKMD, rang is 1-8*/
+	/*now use akm09911_coordinate_convert api, so the rang is 0-7 */
+	data->hw.direction--;
+	err = hwmsen_get_convert(data->hw.direction, &data->cvt);
+	if (err) {
+		MAGN_PR_ERR("invalid direction: %d\n", data->hw.direction);
+		goto exit_kfree;
+	}
+	atomic_set(&data->layout, data->hw.direction);
 	atomic_set(&data->trace, 0);
 	/* init_waitqueue_head(&data_ready_wq); */
 	init_waitqueue_head(&open_wq);
@@ -1734,7 +1712,7 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 	ctl.batch = akm09911_batch;
 	ctl.flush = akm09911_flush;
 	ctl.is_report_input_direct = false;
-	ctl.is_support_batch = data->hw->is_batch_supported;
+	ctl.is_support_batch = data->hw.is_batch_supported;
 	strlcpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
 	ctl.libinfo.layout = AKECS_SetCert();
 	ctl.libinfo.deviceid = akm_device;
@@ -1763,10 +1741,12 @@ exit_init_failed:
 exit_misc_device_register_failed:
 exit_kfree:
 	kfree(data);
-	data = NULL;
 exit:
 	MAGN_PR_ERR("%s: err = %d\n", __func__, err);
 	akm09911_init_flag = -1;
+	data = NULL;
+	new_client = NULL;
+	this_client = NULL;
 	return err;
 }
 
@@ -1789,7 +1769,6 @@ static int akm09911_i2c_remove(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 static int akm09911_remove(void)
 {
-	akm09911_power(hw, 0);
 	atomic_set(&dev_open_count, 0);
 	i2c_del_driver(&akm09911_i2c_driver);
 	return 0;
@@ -1797,7 +1776,6 @@ static int akm09911_remove(void)
 
 static int akm09911_local_init(void)
 {
-	akm09911_power(hw, 1);
 	if (i2c_add_driver(&akm09911_i2c_driver)) {
 		MAGN_PR_ERR("i2c_add_driver error\n");
 		return -1;
