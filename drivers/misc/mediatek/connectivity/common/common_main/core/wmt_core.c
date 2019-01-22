@@ -2128,8 +2128,7 @@ static INT32 opfunc_therm_ctrl(P_WMT_OP pWmtOp)
 		ctrlpa1 = WMTDRV_TYPE_WMT;
 		ctrlpa2 = 36;
 		WMT_ERR_FUNC
-		    ("WMT-CORE: read THERM_CTRL_EVT/THERM_READ_EVENT fail(%d) len(%d, %d)\n", iRet,
-		     u4Res, evtLen);
+		    ("WMT-CORE: read THERM_CTRL_EVT/THERM_READ_EVENT fail(%d) len(%d)\n", iRet, u4Res);
 		wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
 		wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlpa1, &ctrlpa2);
 		return iRet;
