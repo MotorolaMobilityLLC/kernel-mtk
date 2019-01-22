@@ -85,7 +85,8 @@ struct thz_data {
 	int num_trip;
 	unsigned int interval;	/* mseconds, 0 : no auto polling */
 	int kernelmode;
-	int doing_tz_unregister;
+	struct semaphore sem_mutex;
+	int isTimerCancelled;
 };
 
 static struct thz_data g_tsData[RESERVED_TZS];
@@ -446,8 +447,15 @@ static void mtkts_allts_cancel_timer(void)
 	int i;
 
 	for (i = 0; i < g_img_max; i++) {
-		if (g_tsData[i].thz_dev && !g_tsData[i].doing_tz_unregister)
+		if (down_trylock(&g_tsData[i].sem_mutex))
+			continue;
+
+		if (g_tsData[i].thz_dev) {
 			cancel_delayed_work(&(g_tsData[i].thz_dev->poll_queue));
+			g_tsData[i].isTimerCancelled = 1;
+		}
+
+		up(&g_tsData[i].sem_mutex);
 	}
 }
 
@@ -457,9 +465,19 @@ static void mtkts_allts_start_timer(void)
 	int i;
 
 	for (i = 0; i < g_img_max; i++) {
-		if (g_tsData[i].thz_dev != NULL && g_tsData[i].interval != 0 && !g_tsData[i].doing_tz_unregister)
-			mod_delayed_work(system_freezable_power_efficient_wq, &(g_tsData[i].thz_dev->poll_queue),
+		if (!g_tsData[i].isTimerCancelled)
+			continue;
+
+		g_tsData[i].isTimerCancelled = 0;
+
+		if (down_trylock(&g_tsData[i].sem_mutex))
+			continue;
+
+		if (g_tsData[i].thz_dev != NULL && g_tsData[i].interval != 0)
+			mod_delayed_work(system_freezable_wq, &(g_tsData[i].thz_dev->poll_queue),
 				round_jiffies(msecs_to_jiffies(1000)));
+
+		up(&g_tsData[i].sem_mutex);
 		/*1000 = 1sec */
 	}
 }
@@ -546,13 +564,12 @@ static ssize_t tz ## num ## _proc_write(struct file *file, const char __user *bu
 		&pTempD->time_msec);	\
 \
 	if (i == 32) {	\
+		down(&g_tsData[num].sem_mutex);	\
 		mtk_imgs_dprintk("[mtk_imgs_write_"__stringify(num)"] thermal unregister\n");	\
 \
 		if (g_tsData[num].thz_dev) {	\
-			g_tsData[num].doing_tz_unregister = 1;	\
 			mtk_thermal_zone_device_unregister(g_tsData[num].thz_dev);	\
 			g_tsData[num].thz_dev = NULL;	\
-			g_tsData[num].doing_tz_unregister = 0;	\
 		}	\
 \
 		if (pTempD->num_trip < 0 || pTempD->num_trip > 10) {	\
@@ -560,6 +577,7 @@ static ssize_t tz ## num ## _proc_write(struct file *file, const char __user *bu
 				"[mtk_imgs_write_"__stringify(num)"]", "Bad argument");	\
 			mtk_imgs_dprintk("[mtk_imgs_write1] bad argument\n");	\
 			kfree(pTempD);	\
+			up(&g_tsData[num].sem_mutex);	\
 			return -EINVAL;	\
 		}	\
 \
@@ -599,11 +617,13 @@ static ssize_t tz ## num ## _proc_write(struct file *file, const char __user *bu
 			mtk_imgs_printk("Time_ms=%d\n", g_tsData[num].interval);	\
 		}	\
 \
+		mtk_imgs_dprintk("[mtk_imgs_write_"__stringify(num)"] thermal register\n");	\
 		if (g_tsData[num].thz_dev == NULL) {	\
 			g_tsData[num].thz_dev = mtk_thermal_zone_device_register(g_tsData[num].thz_name,\
 							g_tsData[num].num_trip, NULL, &mtk_imgs_dev_ops, 0,\
 							0, 0, g_tsData[num].interval);	\
 		}	\
+		up(&g_tsData[num].sem_mutex);	\
 \
 		kfree(pTempD);	\
 		return count;	\
@@ -743,6 +763,8 @@ static int __init mtk_imgs_init(void)
 		g_tsData[i].num_trip = 0;
 		g_tsData[i].interval = 0;
 		g_tsData[i].kernelmode = 0;
+		sema_init(&g_tsData[i].sem_mutex, 1);
+		g_tsData[i].isTimerCancelled = 0;
 	}
 
 	mtk_imgs_dir = mtk_thermal_get_proc_drv_therm_dir_entry();
@@ -804,10 +826,8 @@ static void __exit mtk_imgs_exit(void)
 	/* Unregister thermal zones */
 	for (i = 0; i < g_img_max; i++) {
 		if (g_tsData[i].thz_dev) {
-			g_tsData[i].doing_tz_unregister = 1;
 			mtk_thermal_zone_device_unregister(g_tsData[i].thz_dev);
 			g_tsData[i].thz_dev = NULL;
-			g_tsData[i].doing_tz_unregister = 0;
 		}
 	}
 

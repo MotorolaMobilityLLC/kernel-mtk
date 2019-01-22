@@ -38,6 +38,7 @@
 
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
+static DEFINE_SEMAPHORE(sem_mutex);
 
 static unsigned int interval;	/* seconds, 0 : no auto polling */
 static unsigned int trip_temp[10] = { 120000, 110000, 100000, 90000, 80000, 70000, 65000, 60000, 55000, 50000 };
@@ -524,6 +525,7 @@ static ssize_t tsbuck_write(struct file *file, const char __user *buffer, size_t
 	     &t_type[2], bind2, &trip[3], &t_type[3], bind3, &trip[4], &t_type[4], bind4, &trip[5],
 	     &t_type[5], bind5, &trip[6], &t_type[6], bind6, &trip[7], &t_type[7], bind7, &trip[8],
 	     &t_type[8], bind8, &trip[9], &t_type[9], bind9, &time_msec) == 32) {
+		down(&sem_mutex);
 		tsbuck_dprintk("[tsbuck_write] tsbuck_unregister_thermal\n");
 		tsbuck_unregister_thermal();
 
@@ -571,6 +573,7 @@ static ssize_t tsbuck_write(struct file *file, const char __user *buffer, size_t
 
 		tsbuck_dprintk("[tsbuck_write] tsbuck_register_thermal\n");
 		tsbuck_register_thermal();
+		up(&sem_mutex);
 
 		return count;
 	}

@@ -48,6 +48,7 @@ do { \
 
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
+static DEFINE_SEMAPHORE(sem_mutex);
 
 static int kernelmode;
 static unsigned int interval; /* seconds, 0 : no auto polling */
@@ -446,6 +447,8 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 		&ptr_mtktscharger_data->trip[8], &ptr_mtktscharger_data->t_type[8], ptr_mtktscharger_data->bind8,
 		&ptr_mtktscharger_data->trip[9], &ptr_mtktscharger_data->t_type[9], ptr_mtktscharger_data->bind9,
 		&ptr_mtktscharger_data->time_msec) == 32) {
+		down(&sem_mutex);
+		mtktscharger_dprintk("mtktscharger_unregister_thermal\n");
 		mtktscharger_unregister_thermal();
 
 		if (num_trip < 0 || num_trip > 10) {
@@ -453,6 +456,7 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktscharger_write",
 					"Bad argument");
 			kfree(ptr_mtktscharger_data);
+			up(&sem_mutex);
 			return -EINVAL;
 		}
 
@@ -507,7 +511,9 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 			trip_temp[7], trip_temp[8]);
 		mtktscharger_dprintk("trip_9_temp=%d time_ms=%d\n", trip_temp[9], interval * 1000);
 
+		mtktscharger_dprintk("mtktscharger_unregister_thermal\n");
 		mtktscharger_register_thermal();
+		up(&sem_mutex);
 
 		kfree(ptr_mtktscharger_data);
 		return count;

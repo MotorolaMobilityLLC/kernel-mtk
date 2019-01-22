@@ -42,7 +42,9 @@
  *Macro
  *=============================================================
  */
-static int doing_tz_unregister;
+static DEFINE_SEMAPHORE(sem_mutex);
+static int isTimerCancelled;
+
 #define MTKTS_BIF_TEMP_CRIT 60000	/* 60.000 degree Celsius */
 
 #define mtkts_bif_dprintk(fmt, args...)   \
@@ -279,6 +281,7 @@ static ssize_t mtkts_bif_write(struct file *file, const char __user *buffer, siz
 		&ptr_tmp_data->trip[8], &ptr_tmp_data->t_type[8], ptr_tmp_data->bind[8],
 		&ptr_tmp_data->trip[9], &ptr_tmp_data->t_type[9], ptr_tmp_data->bind[9],
 		&ptr_tmp_data->time_msec) == 32) {
+		down(&sem_mutex);
 		mtkts_bif_dprintk("[%s] mtkts_bif_unregister_thermal\n", __func__);
 		mtkts_bif_unregister_thermal();
 
@@ -289,6 +292,7 @@ static ssize_t mtkts_bif_write(struct file *file, const char __user *buffer, siz
 			#endif
 			mtkts_bif_dprintk("[%s] bad argument\n", __func__);
 			kfree(ptr_tmp_data);
+			up(&sem_mutex);
 			return -EINVAL;
 		}
 
@@ -327,8 +331,8 @@ static ssize_t mtkts_bif_write(struct file *file, const char __user *buffer, siz
 			trip_temp[8], trip_temp[9], interval * 1000);
 
 		mtkts_bif_dprintk("[%s] mtkts_bif_register_thermal\n", __func__);
-
 		mtkts_bif_register_thermal();
+		up(&sem_mutex);
 		kfree(ptr_tmp_data);
 		return count;
 	}
@@ -348,9 +352,14 @@ static void mtkts_bif_cancel_thermal_timer(void)
 	/* mtkts_bif_printk("mtkts_bif_cancel_thermal_timer\n"); */
 
 	/* stop thermal framework polling when entering deep idle */
+	if (down_trylock(&sem_mutex))
+		return;
 
-	if (thz_dev && !doing_tz_unregister)
+	if (thz_dev) {
 		cancel_delayed_work(&(thz_dev->poll_queue));
+		isTimerCancelled = 1;
+	}
+	up(&sem_mutex);
 }
 
 static void mtkts_bif_start_thermal_timer(void)
@@ -359,9 +368,17 @@ static void mtkts_bif_start_thermal_timer(void)
 
 	/* resume thermal framework polling when leaving deep idle */
 
-	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
-		mod_delayed_work(system_freezable_power_efficient_wq,
-				&(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(3000)));
+	if (!isTimerCancelled)
+		return;
+
+	isTimerCancelled = 0;
+
+	if (down_trylock(&sem_mutex))
+		return;
+
+	if (thz_dev != NULL && interval != 0)
+		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(3000)));
+	up(&sem_mutex);
 }
 
 
@@ -381,10 +398,8 @@ static void mtkts_bif_unregister_thermal(void)
 	mtkts_bif_dprintk("[%s]\n", __func__);
 
 	if (thz_dev) {
-		doing_tz_unregister = 1;
 		mtk_thermal_zone_device_unregister(thz_dev);
 		thz_dev = NULL;
-		doing_tz_unregister = 0;
 	}
 }
 
