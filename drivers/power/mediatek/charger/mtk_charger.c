@@ -2507,6 +2507,14 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb, unsigned long event,
 		/* PD is ready */
 		break;
 
+		case PD_CONNECT_PE_READY_SNK_PD30:
+			mutex_lock(&pinfo->charger_pd_lock);
+			chr_err("PD Notify PD30 ready\r\n");
+			pinfo->pd_type = PD_CONNECT_PE_READY_SNK_PD30;
+			mutex_unlock(&pinfo->charger_pd_lock);
+		/* PD30 is ready */
+		break;
+
 		case PD_CONNECT_PE_READY_SNK_APDO:
 			mutex_lock(&pinfo->charger_pd_lock);
 			chr_err("PD Notify APDO Ready\r\n");
