@@ -202,6 +202,11 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 	unsigned int pwr_idx = 0;
 	int i;
 
+	if (!cobra_init_done) {
+		ppm_warn("@%s: cobra_init_done is 0!\n", __func__);
+		return -1; /* wait cobra init */
+	}
+
 	for_each_ppm_clusters(i) {
 		int core = cluster_status[i].core_num;
 		int opp = cluster_status[i].freq_idx;

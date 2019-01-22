@@ -28,7 +28,7 @@ struct ppm_cobra_data *cobra_tbl;
 struct ppm_cobra_lookup cobra_lookup_data;
 
 static int Core_limit[NR_PPM_CLUSTERS] = {CORE_NUM_L, CORE_NUM_B};
-static int cobra_init_done;
+int cobra_init_done;
 
 #define ACT_CORE(cluster)	(active_core[PPM_CLUSTER_##cluster])
 #define CORE_LIMIT(cluster)	(core_limit_tmp[PPM_CLUSTER_##cluster])
