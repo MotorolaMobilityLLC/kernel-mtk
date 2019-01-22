@@ -319,6 +319,18 @@ static int mtk_smi_common_probe(struct platform_device *pdev)
 		return PTR_ERR(common->clk_smi);
 
 	pm_runtime_enable(dev);
+	/*
+	 * Without pm_runtime_get_sync(dev), the disp power domain
+	 * would be turn off after pm_runtime_enable, meanwhile disp
+	 * hw are still access register, this would cause system
+	 * abnormal.
+	 *
+	 * If we do not call pm_runtime_get_sync, then system would hang
+	 * in larb0's power domain attach, power domain SA and DE are
+	 * still checking that. We would like to bypass this first and
+	 * don't block the software flow.
+	 */
+	pm_runtime_get_sync(dev);
 	platform_set_drvdata(pdev, common);
 	return 0;
 }
@@ -365,4 +377,29 @@ err_unreg_smi:
 	platform_driver_unregister(&mtk_smi_common_driver);
 	return ret;
 }
-module_init(mtk_smi_init);
+
+/* put the disp power domain that we got in smi probe */
+static int __init mtk_smi_init_late(void)
+{
+	struct device *dev = gmtk_larb_dev[0].dev;
+
+	if (!dev) {
+		dev_err(dev, "%s, %d\n", __func__, __LINE__);
+		return -1;
+	}
+
+	/*
+	 * We get_sync the disp power domain in smi common probe,
+	 * need to put_sync it to avoid dis-pairing of get/put_sync
+	 * for the disp power domain.
+	 *
+	 * Use larb0's device is OK since it's in the same power
+	 * domain with smi common.
+	 */
+	pm_runtime_put_sync(dev);
+
+	return 0;
+}
+
+subsys_initcall(mtk_smi_init);
+late_initcall(mtk_smi_init_late);
