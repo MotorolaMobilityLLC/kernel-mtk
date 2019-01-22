@@ -982,6 +982,16 @@
 		reg = <0 0x0c532000 0 0x1000>;
 	};
 
+	mcucfg_mp0_counter@0c530000 {
+		compatible = "mediatek,mcucfg_mp0_counter";
+		reg = <0 0x0c530000 0 0x2000>;
+	};
+
+	mcucfg_mp2_counter@0c532000 {
+		compatible = "mediatek,mcucfg_mp2_counter";
+		reg = <0 0x0c532700 0 0x1000>;
+	};
+
 	infracfg@1020e000 {
 		compatible = "mediatek,infracfg";
 		reg = <0 0x1020e000 0 0x1000>;
