@@ -32,6 +32,7 @@ struct charger_device {
 	struct mutex ops_lock;
 	struct device dev;
 	struct srcu_notifier_head evt_nh;
+	void	*driver_data;
 };
 
 struct charger_ops {
@@ -90,8 +91,19 @@ struct charger_ops {
 	/* run AICL */
 	int (*run_aicl)(struct charger_device *);
 
+	int (*get_charging_status)(struct charger_device *);
 	int (*dump_registers)(struct charger_device *);
 };
+
+static inline void *charger_dev_get_drvdata(const struct charger_device *charger_dev)
+{
+	return charger_dev->driver_data;
+}
+
+static inline void charger_dev_set_drvdata(struct charger_device *charger_dev, void *data)
+{
+	charger_dev->driver_data = data;
+}
 
 extern struct charger_device *charger_device_register(const char *name,
 	struct device *parent, void *devdata, const struct charger_ops *ops,
@@ -123,5 +135,6 @@ extern int register_charger_device_notifier(struct charger_device *charger_dev,
 extern int unregister_charger_device_notifier(struct charger_device *charger_dev,
 				struct notifier_block *nb);
 extern int charger_dev_notify(struct charger_device *charger_dev, int event);
+extern int charger_dev_get_charging_status(struct charger_device *charger_dev);
 
 #endif /*LINUX_POWER_CHARGER_CLASS_H*/

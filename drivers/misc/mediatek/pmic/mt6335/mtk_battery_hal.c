@@ -1147,7 +1147,6 @@ signed int fgauge_get_soff_time(void *data)
 #endif
 }
 
-
 signed int fgauge_set_time_interrupt(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
@@ -1157,9 +1156,11 @@ signed int fgauge_set_time_interrupt(void *data)
 	unsigned int time_29_16, time_15_00;
 	int m = 0;
 	unsigned int ret = 0;
-	unsigned long time = 0;
+	unsigned long time = 0, time2;
+	unsigned long now;
 	unsigned int offsetTime = *(unsigned int *) (data);
 
+	do {
 	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 	/*(2)    Keep i2c read when status = 1 (0x06) */
 	m = 0;
@@ -1177,11 +1178,12 @@ signed int fgauge_set_time_interrupt(void *data)
 
 	time = time_15_00;
 	time |= time_29_16 << 16;
+		now = time;
 	time = time + offsetTime * 100 / UNIT_TIME;
 
 	bm_notice(
-		 "[fgauge_set_time_interrupt] low:0x%x high:0x%x time:0x%lx offsettime:0x%x!\r\n",
-		 time_15_00, time_29_16, time, offsetTime);
+			 "[fgauge_set_time_interrupt] now:%ld time:%ld\r\n",
+			 now/2, time/2);
 	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0008, 0x000F, 0x0);
 
 	m = 0;
@@ -1201,11 +1203,47 @@ signed int fgauge_set_time_interrupt(void *data)
 	pmic_set_register_value(PMIC_FG_TIME_HTH_29_16, (time & 0x3fff0000));
 	pmic_enable_interrupt(FG_TIME_NO, 1, "GM30");
 
-	bm_notice(
-		 "[fgauge_set_time_interrupt] low:0x%x high:0x%x\r\n",
-		 pmic_get_register_value(PMIC_FG_TIME_HTH_15_00),
-		 pmic_get_register_value(PMIC_FG_TIME_HTH_29_16));
 
+		/*read again to confirm */
+		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0001, 0x1F05, 0x0);
+		/*(2)    Keep i2c read when status = 1 (0x06) */
+		m = 0;
+		while (fg_get_data_ready_status() == 0) {
+			m++;
+			if (m > 1000) {
+				bm_notice(
+					 "[fgauge_set_time_interrupt] fg_get_data_ready_status timeout 1 !\r\n");
+				break;
+			}
+		}
+
+		time_15_00 = pmic_get_register_value(PMIC_FG_NTER_15_00);
+		time_29_16 = pmic_get_register_value(PMIC_FG_NTER_29_16);
+		time2 = time_15_00;
+		time2 |= time_29_16 << 16;
+
+		bm_notice(
+			 "[fgauge_set_time_interrupt] now:%ld time:%ld\r\n",
+			 now/2, time/2);
+		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0008, 0x000F, 0x0);
+
+		m = 0;
+		while (fg_get_data_ready_status() != 0) {
+			m++;
+			if (m > 1000) {
+				bm_notice(
+					 "[fgauge_set_time_interrupt] fg_get_data_ready_status timeout 2 !\r\n");
+				break;
+			}
+		}
+		/*(8)    Recover original settings */
+		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0000, 0x000F, 0x0);
+
+		bm_debug(
+			 "[fgauge_set_time_interrupt] low:0x%x high:0x%x time:%ld %ld\r\n",
+			 pmic_get_register_value(PMIC_FG_TIME_HTH_15_00),
+			 pmic_get_register_value(PMIC_FG_TIME_HTH_29_16), time, time2);
+	} while (time2 >= time);
 	return STATUS_OK;
 #endif
 

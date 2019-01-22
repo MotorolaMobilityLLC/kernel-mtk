@@ -146,10 +146,18 @@ int charger_dev_dump_registers(struct charger_device *charger_dev)
 	return 0;
 }
 
+int charger_dev_get_charging_status(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->get_charging_status)
+		return charger_dev->ops->get_charging_status(charger_dev);
+
+	return 0;
+}
+
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(
-		&charger_dev->evt_nh, event, NULL);
+		&charger_dev->evt_nh, event, charger_dev);
 }
 
 static DEVICE_ATTR(name, S_IRUGO, charger_show_name, NULL);

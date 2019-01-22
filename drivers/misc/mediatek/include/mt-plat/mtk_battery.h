@@ -16,6 +16,7 @@
 
 #include <linux/types.h>
 #include <linux/power_supply.h>
+#include <mach/mtk_charger_init.h>
 
 /* ============================================================ */
 /* Define Macro Value */
@@ -677,5 +678,30 @@ extern unsigned int bat_get_ui_percentage(void);
 #endif
 
 extern int bat_get_debug_level(void);
+
+
+extern int pmic_get_vbus(void);
+extern int pmic_get_battery_voltage(void);
+extern int pmic_is_bif_exist(void);
+extern int pmic_get_bif_battery_voltage(int *vbat);
+extern int pmic_get_bif_battery_temperature(int *tmp);
+
+
+/* mtk_power_misc */
+enum {
+	NORMAL = 0,
+	OVERHEAT,
+	SOC_ZERO_PERCENT,
+	UISOC_ONE_PERCENT,
+	LOW_BAT_VOLT,
+	DLPT_SHUTDOWN,
+	SHUTDOWN_FACTOR_MAX
+};
+
+extern void mtk_power_misc_init(struct platform_device *pdev);
+extern void notify_fg_shutdown(int sec);
+extern int set_shutdown_cond(int shutdown_cond);
+
+
 
 #endif /* End of _FUEL_GAUGE_GM_30_H */

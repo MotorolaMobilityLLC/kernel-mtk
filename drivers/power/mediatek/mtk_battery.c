@@ -109,6 +109,7 @@ bool fg_time_en;
 int Enable_BATDRV_LOG = 5;	/* Todo: charging.h use it, should removed */
 int reset_fg_bat_int;
 
+int fixed_bat_tmp = 0xffff;
 /********************** 0823_ac *******************************/
 static enum power_supply_property ac_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
@@ -378,6 +379,36 @@ struct fuel_gauge_table_custom_data fg_table_cust_data;
 /* ============================================================ */
 /* extern function */
 /* ============================================================ */
+
+static ssize_t show_Battery_Temperature(struct device *dev, struct device_attribute *attr,
+					       char *buf)
+{
+	pr_err("show_Battery_Temperature: %d %d\n", battery_main.BAT_batt_temp, fixed_bat_tmp);
+	return sprintf(buf, "%d\n", fixed_bat_tmp);
+}
+
+static ssize_t store_Battery_Temperature(struct device *dev, struct device_attribute *attr,
+						const char *buf, size_t size)
+{
+	signed int temp;
+
+	if (kstrtoint(buf, 10, &temp) == 0) {
+		int fg_bat_temp_int_en = 0;
+
+		fixed_bat_tmp = temp;
+		battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_EN, &fg_bat_temp_int_en);
+		pr_err("store_Battery_Temperature: fix bat tmp = %d!\n", temp);
+		battery_main.BAT_batt_temp = fixed_bat_tmp;
+		battery_update(&battery_main);
+	} else {
+		pr_err("store_Battery_Temperature: format error!\n");
+	}
+	return size;
+}
+
+static DEVICE_ATTR(Battery_Temperature, 0664, show_Battery_Temperature,
+		   store_Battery_Temperature);
+
 unsigned long BAT_Get_Battery_Current(int polling_mode)
 {
 	int bat_current;
@@ -826,6 +857,9 @@ int force_get_tbat(bool update)
 	static int pre_bat_temperature_val2;
 	static struct timespec pre_time;
 	struct timespec ctime, dtime;
+
+	if (fixed_bat_tmp != 0xffff)
+		return fixed_bat_tmp;
 
 	if (Bat_EC_ctrl.fixed_temp_en)
 		return Bat_EC_ctrl.fixed_temp_value;
@@ -2592,6 +2626,7 @@ static int battery_probe(struct platform_device *dev)
 		return ret;
 	}
 	bm_err("[BAT_probe] power_supply_register Battery Success !!\n");
+	ret = device_create_file(&(dev->dev), &dev_attr_Battery_Temperature);
 
 	wake_lock_init(&battery_lock, WAKE_LOCK_SUSPEND, "battery wakelock");
 	wake_lock(&battery_lock);
