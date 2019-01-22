@@ -27,7 +27,8 @@
 #include <mtk_vcorefs_manager.h>
 
 static enum dcs_status sys_dcs_status = DCS_NORMAL;
-static bool dcs_initialized;
+static bool dcs_core_initialized;
+static bool dcs_full_initialized;
 static int normal_channel_num;
 static int lowpower_channel_num;
 static struct rw_semaphore dcs_rwsem;
@@ -284,7 +285,7 @@ static int dcs_dram_channel_switch(enum dcs_status status)
 {
 	int ret = 0;
 
-	if (!dcs_initialized)
+	if (!dcs_core_initialized || !dcs_full_initialized)
 		return -ENODEV;
 
 	down_write(&dcs_rwsem);
@@ -312,7 +313,7 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 {
 	int ret = 0;
 
-	if (!dcs_initialized)
+	if (!dcs_core_initialized)
 		return -ENODEV;
 
 	down_write(&dcs_rwsem);
@@ -360,7 +361,7 @@ int dcs_enter_perf(enum dcs_kicker kicker)
 {
 	unsigned long k;
 
-	if (!dcs_initialized)
+	if (!dcs_core_initialized)
 		return -ENODEV;
 	if (kicker >= DCS_NR_KICKER)
 		return -EINVAL;
@@ -393,7 +394,7 @@ int dcs_exit_perf(enum dcs_kicker kicker)
 {
 	unsigned long k;
 
-	if (!dcs_initialized)
+	if (!dcs_core_initialized)
 		return -ENODEV;
 	if (kicker >= DCS_NR_KICKER)
 		return -EINVAL;
@@ -417,7 +418,7 @@ int dcs_switch_to_lowpower(void)
 {
 	int err;
 
-	if (!dcs_initialized)
+	if (!dcs_core_initialized)
 		return -ENODEV;
 
 	mutex_lock(&dcs_kicker_lock);
@@ -507,7 +508,7 @@ BUSY:
  */
 int dcs_get_dcs_status_lock(int *ch, enum dcs_status *dcs_status)
 {
-	if (!dcs_initialized)
+	if (!dcs_core_initialized)
 		return -ENODEV;
 
 	down_read(&dcs_rwsem);
@@ -525,7 +526,7 @@ int dcs_get_dcs_status_lock(int *ch, enum dcs_status *dcs_status)
  */
 int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *dcs_status)
 {
-	if (!dcs_initialized)
+	if (!dcs_core_initialized)
 		return -ENODEV;
 
 	if (!down_read_trylock(&dcs_rwsem)) {
@@ -547,7 +548,7 @@ BUSY:
  */
 void dcs_get_dcs_status_unlock(void)
 {
-	if (!dcs_initialized)
+	if (!dcs_core_initialized)
 		return;
 
 	up_read(&dcs_rwsem);
@@ -560,7 +561,24 @@ void dcs_get_dcs_status_unlock(void)
  */
 bool dcs_initialied(void)
 {
-	return dcs_initialized;
+	return dcs_core_initialized && dcs_full_initialized;
+}
+
+/*
+ * dcs_full_init
+ *
+ * Set dcs_full_initialized flag. The last module that DCS driver
+ * depends on should call this function.
+ * Do the first time of dcs_switch_to_lowpower().
+ *
+ * return 0 on success or error code
+ */
+int dcs_full_init(void)
+{
+	dcs_full_initialized = true;
+	dcs_switch_to_lowpower();
+
+	return 0;
 }
 
 static ssize_t mtkdcs_status_show(struct device *dev,
@@ -706,14 +724,12 @@ static int __init mtkdcs_init(void)
 		return -ENODEV;
 	}
 
-	dcs_initialized = true;
+	dcs_core_initialized = true;
 
 	return 0;
 }
 
 static void __exit mtkdcs_exit(void) { }
 
-/* switch to lowpower mode */
-late_initcall(dcs_switch_to_lowpower);
 module_init(mtkdcs_init);
 module_exit(mtkdcs_exit);
