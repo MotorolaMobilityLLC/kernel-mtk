@@ -130,6 +130,10 @@
 
 #define TBASE_SMC_AEE_DUMP                  (0xB200AEED)
 
+/* AMMS related SMC call */
+#define MTK_SIP_KERNEL_AMMS_GET_FREE_ADDR (0x82000271 | MTK_SIP_SMC_AARCH_BIT)
+#define MTK_SIP_KERNEL_AMMS_GET_FREE_LENGTH (0x82000272 | MTK_SIP_SMC_AARCH_BIT)
+
 #ifdef CONFIG_ARM64
 /* SIP SMC Call 64 */
 static noinline int mt_secure_call(u64 function_id,
@@ -147,6 +151,7 @@ static noinline int mt_secure_call(u64 function_id,
 	ret = (int)reg0;
 	return ret;
 }
+
 
 #else
 #include <asm/opcodes-sec.h>
