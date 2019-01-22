@@ -2163,32 +2163,27 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	read_volt_from_VOP(det);
 
 #if ENABLE_LOO
-	if (detid != EEM_DET_GPU) {
-		switch (detid) {
-		case EEM_DET_2L:
-			backupdet = id_to_eem_det(EEM_DET_2L_HI);
-			break;
-		case EEM_DET_L:
-			backupdet = id_to_eem_det(EEM_DET_L_HI);
-			break;
-		case EEM_DET_2L_HI:
-			backupdet = id_to_eem_det(EEM_DET_2L);
-			break;
-		case EEM_DET_L_HI:
-			backupdet = id_to_eem_det(EEM_DET_L);
-			break;
-		default:
-			backupdet = id_to_eem_det(EEM_DET_2L);
-			break;
-		}
-		det->ops->switch_bank(backupdet, NR_EEM_PHASE);
-		read_volt_from_VOP(backupdet);
-		det->ops->switch_bank(det, NR_EEM_PHASE);
+	/* Read low bank volt table due to low bank isr may not happen */
 
-		/* Copy high bank volt table to low bank */
-		if ((detid == EEM_DET_2L) || (detid == EEM_DET_L))
-			memcpy(det->volt_tbl, backupdet->volt_tbl, sizeof(det->volt_tbl)/2);
+	if ((detid == EEM_DET_2L_HI) &&
+		((final_init02_flag & EEM_2L_INIT02_FLAG) == EEM_2L_INIT02_FLAG)) {
+		/* Make sure aleast init02 isr already received */
+		backupdet = id_to_eem_det(EEM_DET_2L);
+		if (backupdet->isTempInv == 1) {
+			det->ops->switch_bank(backupdet, NR_EEM_PHASE);
+			read_volt_from_VOP(backupdet);
+			det->ops->switch_bank(det, NR_EEM_PHASE);
+		}
+	} else if ((detid == EEM_DET_L_HI) &&
+		((final_init02_flag & EEM_L_INIT02_FLAG) == EEM_L_INIT02_FLAG)) {
+		backupdet = id_to_eem_det(EEM_DET_L);
+		if (backupdet->isTempInv == 1) {
+			det->ops->switch_bank(backupdet, NR_EEM_PHASE);
+			read_volt_from_VOP(backupdet);
+			det->ops->switch_bank(det, NR_EEM_PHASE);
+		}
 	}
+
 #endif
 
 	for (i = 0; i < NR_FREQ; i++) {
@@ -2375,8 +2370,10 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	if (verr == 1) {
 #if ENABLE_LOO
 		if ((detid == EEM_DET_2L_HI) ||
-			((detid == EEM_DET_L_HI) && (det != &eem_detector_cci)))
+			((detid == EEM_DET_L_HI) && (det != &eem_detector_cci))) {
+			backupdet = (detid == EEM_DET_2L_HI) ? id_to_eem_det(EEM_DET_2L) : id_to_eem_det(EEM_DET_L);
 			memcpy(backupdet->volt_tbl, backupdet->volt_tbl_init2, sizeof(det->volt_tbl));
+		}
 #endif
 		memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl));
 	}
@@ -2548,6 +2545,8 @@ void eem_init02(const char *str)
 	FUNC_ENTER(FUNC_LV_LOCAL);
 	eem_debug("eem_init02 called by [%s]\n", str);
 #if ENABLE_LOO
+	final_init02_flag = 0;
+
 	/* For share cci bank, run cci init02 first */
 	if (cci_init02_done == 0) {
 		det = &eem_detector_cci;
