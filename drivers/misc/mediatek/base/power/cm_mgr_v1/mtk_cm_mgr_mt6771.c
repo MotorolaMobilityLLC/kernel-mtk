@@ -56,7 +56,7 @@
 #define CM_MGR_USE_PM_NOTIFY
 #ifdef CM_MGR_USE_PM_NOTIFY
 #include <linux/cpu_pm.h>
-static atomic_t cm_mgr_idle_mask;
+static int cm_mgr_idle_mask;
 #endif /* CM_MGR_USE_PM_NOTIFY */
 #include <mtk_spm_reg.h>
 void __iomem *spm_sleep_base;
@@ -171,11 +171,11 @@ static int cm_mgr_read_stall(int cpu)
 {
 	int val = 0;
 
-	if (spin_trylock(&cm_mgr_cpu_mask_lock)) {
+	if (spin_trylock(&sw_zq_tx_lock)) {
 
 		if (cpu < 4) {
 #ifdef CM_MGR_USE_PM_NOTIFY
-			if (atomic_read(&cm_mgr_idle_mask) & 0x0f)
+			if (cm_mgr_idle_mask & 0x0f)
 #else
 			if ((cm_mgr_read(spm_sleep_base + SPM_PWR_STATUS) & (1 << 8)) &&
 					(cm_mgr_read(spm_sleep_base + SPM_MP0_CPUTOP_PWR_CON) & (1 << 2)))
@@ -184,14 +184,14 @@ static int cm_mgr_read_stall(int cpu)
 				val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
 		} else {
 #ifdef CM_MGR_USE_PM_NOTIFY
-			if (atomic_read(&cm_mgr_idle_mask) & 0xf0)
+			if (cm_mgr_idle_mask & 0xf0)
 #else
 			if ((cm_mgr_read(spm_sleep_base + SPM_PWR_STATUS) & (1 << 15)) &&
 					(cm_mgr_read(spm_sleep_base + SPM_MP0_CPUTOP_PWR_CON) & (1 << 2)))
 #endif /* CM_MGR_USE_PM_NOTIFY */
 				val = cm_mgr_read(CPU0_STALL_COUNTER + 4 * (cpu - 4));
 		}
-		spin_unlock(&cm_mgr_cpu_mask_lock);
+		spin_unlock(&sw_zq_tx_lock);
 	}
 
 	return val;
@@ -276,6 +276,71 @@ int cm_mgr_check_stall_ratio(int mp0, int mp2)
 	return 0;
 }
 
+static void init_cpu_stall_counter(int cluster)
+{
+	unsigned int val;
+
+	if (cluster == 0) {
+		val = 0x11000;
+		cm_mgr_write(MP0_CPU_STALL_INFO, val);
+
+		val = RG_FMETER_EN;
+		cm_mgr_write(MP0_CPU0_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_MP0_AVG_STALL_PERIOD_1MS;
+		cm_mgr_write(MP0_CPU0_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_CPU0_AVG_STALL_RATIO_EN |
+			RG_CPU0_STALL_COUNTER_EN |
+			RG_CPU0_NON_WFX_COUNTER_EN;
+		cm_mgr_write(MP0_CPU0_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_CPU0_AVG_STALL_RATIO_EN |
+			RG_CPU0_STALL_COUNTER_EN |
+			RG_CPU0_NON_WFX_COUNTER_EN;
+		cm_mgr_write(MP0_CPU1_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_CPU0_AVG_STALL_RATIO_EN |
+			RG_CPU0_STALL_COUNTER_EN |
+			RG_CPU0_NON_WFX_COUNTER_EN;
+		cm_mgr_write(MP0_CPU2_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_CPU0_AVG_STALL_RATIO_EN |
+			RG_CPU0_STALL_COUNTER_EN |
+			RG_CPU0_NON_WFX_COUNTER_EN;
+		cm_mgr_write(MP0_CPU3_AVG_STALL_RATIO_CTRL, val);
+	} else {
+		val = CPUTOP_NON_WFX_COUNTER_EN;
+		cm_mgr_write(CPUTOP_NON_WFX_COUNTER_CTRL, val);
+
+		val = RG_FMETER_EN;
+		cm_mgr_write(CPU0_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_MP0_AVG_STALL_PERIOD_1MS;
+		cm_mgr_write(CPU0_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_CPU0_AVG_STALL_RATIO_EN |
+			RG_CPU0_STALL_COUNTER_EN |
+			RG_CPU0_NON_WFX_COUNTER_EN;
+		cm_mgr_write(CPU0_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_CPU0_AVG_STALL_RATIO_EN |
+			RG_CPU0_STALL_COUNTER_EN |
+			RG_CPU0_NON_WFX_COUNTER_EN;
+		cm_mgr_write(CPU1_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_CPU0_AVG_STALL_RATIO_EN |
+			RG_CPU0_STALL_COUNTER_EN |
+			RG_CPU0_NON_WFX_COUNTER_EN;
+		cm_mgr_write(CPU2_AVG_STALL_RATIO_CTRL, val);
+
+		val = RG_CPU0_AVG_STALL_RATIO_EN |
+			RG_CPU0_STALL_COUNTER_EN |
+			RG_CPU0_NON_WFX_COUNTER_EN;
+		cm_mgr_write(CPU3_AVG_STALL_RATIO_CTRL, val);
+	}
+}
+
 #ifdef CM_MGR_USE_PM_NOTIFY
 #ifdef CONFIG_CPU_PM
 static int cm_mgr_sched_pm_notifier(struct notifier_block *self,
@@ -283,14 +348,18 @@ static int cm_mgr_sched_pm_notifier(struct notifier_block *self,
 {
 	unsigned int cur_cpu = smp_processor_id();
 
-	spin_lock(&cm_mgr_cpu_mask_lock);
+	spin_lock(&sw_zq_tx_lock);
 
-	if (cmd == CPU_PM_EXIT)
-		atomic_or(1 << cur_cpu, &cm_mgr_idle_mask);
-	else if (cmd == CPU_PM_ENTER)
-		atomic_and(~(1 << cur_cpu), &cm_mgr_idle_mask);
+	if (cmd == CPU_PM_EXIT) {
+		if (((cm_mgr_idle_mask & 0x0f) == 0x0) && (cur_cpu < 4))
+			init_cpu_stall_counter(0);
+		else if (((cm_mgr_idle_mask & 0xf0) == 0x0) && (cur_cpu >= 4))
+			init_cpu_stall_counter(1);
+		cm_mgr_idle_mask |= (1 << cur_cpu);
+	} else if (cmd == CPU_PM_ENTER)
+		cm_mgr_idle_mask &= ~(1 << cur_cpu);
 
-	spin_unlock(&cm_mgr_cpu_mask_lock);
+	spin_unlock(&sw_zq_tx_lock);
 
 	return NOTIFY_OK;
 }
@@ -315,18 +384,22 @@ static int cm_mgr_cpu_callback(struct notifier_block *nfb,
 {
 	unsigned int cur_cpu = smp_processor_id();
 
-	spin_lock(&cm_mgr_cpu_mask_lock);
+	spin_lock(&sw_zq_tx_lock);
 
 	switch (action) {
 	case CPU_ONLINE:
-		atomic_or(1 << cur_cpu, &cm_mgr_idle_mask);
+		if (((cm_mgr_idle_mask & 0x0f) == 0x0) && (cur_cpu < 4))
+			init_cpu_stall_counter(0);
+		else if (((cm_mgr_idle_mask & 0xf0) == 0x0) && (cur_cpu >= 4))
+			init_cpu_stall_counter(1);
+		cm_mgr_idle_mask |= (1 << cur_cpu);
 		break;
 	case CPU_DOWN_PREPARE:
-		atomic_and(~(1 << cur_cpu), &cm_mgr_idle_mask);
+		cm_mgr_idle_mask &= ~(1 << cur_cpu);
 		break;
 	}
 
-	spin_unlock(&cm_mgr_cpu_mask_lock);
+	spin_unlock(&sw_zq_tx_lock);
 
 	return NOTIFY_OK;
 }
@@ -372,6 +445,7 @@ static struct notifier_block cm_mgr_fb_notifier = {
 	.notifier_call = cm_mgr_fb_notifier_callback,
 };
 
+#if 0
 static int cm_mgr_is_lp_flavor(void)
 {
 	int r = 0;
@@ -389,6 +463,7 @@ static int cm_mgr_is_lp_flavor(void)
 
 	return r;
 }
+#endif
 
 int cm_mgr_register_init(void)
 {
@@ -451,8 +526,10 @@ int cm_mgr_platform_init(void)
 
 	cm_mgr_hotplug_cb_init();
 
+#if 0
 	if (cm_mgr_is_lp_flavor())
 		cm_mgr_enable = 1;
+#endif
 
 	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
 
