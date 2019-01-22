@@ -100,7 +100,11 @@
  * 100 us, This is the EEM Detector sampling time as represented in
  * cycles of bclk_ck during INIT. 52 MHz
  */
-#define DETWINDOW_VAL        0xA28
+#if EEM_FAKE_EFUSE
+	#define DETWINDOW_VAL        0x514
+#else
+	#define DETWINDOW_VAL        0xA28
+#endif
 
 /*
  * mili Volt to config value. voltage = 600mV + val * 6.25mV
@@ -150,13 +154,18 @@
 #define DETMAX_VAL        (0xffff)    /* This timeout value is in cycles of bclk_ck. */
 #define AGECONFIG_VAL    (0x555555)
 #define AGEM_VAL        (0x0)
-#define DVTFIXED_VAL    (0x7) /* 0x7*/
+#define DVTFIXED_VAL    (0x6) /* 0x7*/
 #define DCCONFIG_VAL    (0x555555)
 
 /* different for GPU */
-#define VMAX_VAL_GPU        (0x56) /* eem domain: 0x56, volt domain: 0.935v */
 #define VBOOT_VAL_GPU       (0x41) /* eem domain: 0x38, volt domain: 0.75.v */
-#define DVTFIXED_VAL_GPU    (0x6)
+#define VMAX_VAL_GPU        (0x56) /* eem domain: 0x56, volt domain: 0.935v */
+#define VMIN_VAL_GPU        (0x2C)  /* eem domain: 0x2C, volt domain: 0.675v*/
+#define VCO_VAL_GPU         (0x2C) /* 0x2C */
+#define DVTFIXED_VAL_GPU    (0x4)
+
+/* different for L */
+#define VMAX_VAL_L        (0x60)
 
 /* different for SOC */
 #define VMAX_VAL_SOC    (0x56)/* eem domain: 0x56, volt domain: 0.935v */

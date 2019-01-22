@@ -176,7 +176,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.max_freq_khz	= 850000,/* 850 MHz */
 		.VBOOT		= VBOOT_VAL_GPU, /* 10uV */
 		.VMAX		= VMAX_VAL_GPU,
-		.VMIN		= VMIN_VAL,
+		.VMIN		= VMIN_VAL_GPU,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step	= EEM_STEP,
 		.pmic_base	= GPU_PMIC_BASE,
@@ -188,7 +188,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.AGECONFIG	= AGECONFIG_VAL,
 		.AGEM		= AGEM_VAL,
 		.DVTFIXED	= DVTFIXED_VAL_GPU,
-		.VCO		= VCO_VAL,
+		.VCO		= VCO_VAL_GPU,
 		.DCCONFIG	= DCCONFIG_VAL,
 
 	},
@@ -230,7 +230,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
 		.max_freq_khz	= 2340000,/* 2249 MHz */
 		.VBOOT		= VBOOT_VAL, /* 10uV */
-		.VMAX		= VMAX_VAL,
+		.VMAX		= VMAX_VAL_L,
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step   = EEM_STEP,
