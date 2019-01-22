@@ -666,7 +666,7 @@ void scp_wdt_reset(scp_core_id cpu_id)
 		break;
 	}
 }
-EXPORT_SYMBOL(scp_wdt_reset)
+EXPORT_SYMBOL(scp_wdt_reset);
 
 /*
  * trigger wdt manually
