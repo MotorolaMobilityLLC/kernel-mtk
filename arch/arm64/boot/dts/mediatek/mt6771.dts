@@ -1975,16 +1975,24 @@
 		#clock-cells = <1>;
 	};
 
-	ipu0@19180000 {
-		compatible = "mediatek,ipu0";
-		reg = <0 0x19180000 0 0x1000>;
-		interrupts = <GIC_SPI 292 IRQ_TYPE_LEVEL_LOW>;
+	ipu_adl: ipu_adl@19010000 {
+		compatible = "mediatek,ipu_adl", "syscon";
+		reg = <0 0x19010000 0 0x1000>;
+		#clock-cells = <1>;
 	};
 
-	ipu1@19280000 {
-		compatible = "mediatek,ipu1";
+	ipu0: ipu0@19180000 {
+		compatible = "mediatek,ipu0", "syscon";
+		reg = <0 0x19180000 0 0x1000>;
+		interrupts = <GIC_SPI 292 IRQ_TYPE_LEVEL_LOW>;
+		#clock-cells = <1>;
+	};
+
+	ipu1: ipu1@19280000 {
+		compatible = "mediatek,ipu1", "syscon";
 		reg = <0 0x19280000 0 0x1000>;
 		interrupts = <GIC_SPI 293 IRQ_TYPE_LEVEL_LOW>;
+		#clock-cells = <1>;
 	};
 
 	smi_larb3@1a002000 {
