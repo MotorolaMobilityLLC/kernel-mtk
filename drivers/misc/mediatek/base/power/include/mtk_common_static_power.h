@@ -18,5 +18,9 @@
 #include "leakage_table_v2/mtk_static_power.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6763)
+#include "leakage_table_v2/mtk_static_power.h"
+#endif
+
 #endif /* _COMMON_MTK_STATIC_POWER_H */
 
