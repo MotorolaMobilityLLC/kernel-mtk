@@ -2443,8 +2443,6 @@ static void __mt_gpufreq_set_initial(void)
 	unsigned int cur_freq = 0;
 	unsigned int cur_vsram_volt = 0;
 
-	mutex_lock(&mt_gpufreq_lock);
-
 	/* default OPP index */
 	g_cur_opp_cond_idx = 0;
 
@@ -2469,8 +2467,6 @@ static void __mt_gpufreq_set_initial(void)
 	g_cur_opp_vsram_volt = g_opp_table[g_cur_opp_cond_idx].gpufreq_vsram;
 	g_cur_opp_idx = g_opp_table[g_cur_opp_cond_idx].gpufreq_idx;
 	g_cur_opp_cond_idx = g_cur_opp_idx;
-
-	mutex_unlock(&mt_gpufreq_lock);
 }
 
 /*
