@@ -12,4 +12,4 @@
 #
 
 ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include
-obj-y += mtk_wdt.o
+obj-y += mtk_wdt_v2.o
