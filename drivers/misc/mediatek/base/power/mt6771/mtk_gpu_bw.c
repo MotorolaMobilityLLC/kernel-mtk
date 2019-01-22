@@ -60,7 +60,7 @@ static int mt_gpu_bw_ap2sspm(unsigned int eCMD, int type)
 	 *
 	 * apDebug = sspm_ipi_send_sync_new(IPI_ID_GPU_DVFS, IPI_OPT_POLLING, &gdvfs_d, 1, &md32Ret, 1);
 	 */
-	apDebug = sspm_ipi_send_sync_new(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 1, &md32Ret, 1);
+	apDebug = sspm_ipi_send_sync(IPI_ID_QOS, IPI_OPT_WAIT, &qos_d, 1, &md32Ret, 1);
 
 	if (apDebug < 0 || md32Ret < 0) {
 		dump_stack();
