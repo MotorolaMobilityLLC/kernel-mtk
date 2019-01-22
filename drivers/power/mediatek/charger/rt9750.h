@@ -1,0 +1,114 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ * ShuFanLee <shufan_lee@richtek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#ifndef __RT9750_LOAD_SWITCH_H
+#define __RT9750_LOAD_SWITCH_H
+
+#define RT9750_SLAVE_ADDR	0x67
+#define RT9750_DEVICE_INFO_E1	0x00
+
+enum rt9466_reg_addr {
+	RT9750_REG_CORE_CTRL0 = 0x00,
+	RT9750_REG_EVENT1_MASK,
+	RT9750_REG_EVENT2_MASK,
+	RT9750_REG_EVENT1,
+	RT9750_REG_EVENT2,
+	RT9750_REG_EVENT1_EN,
+	RT9750_REG_CONTROL,
+	RT9750_REG_ADC_CTRL,
+	RT9750_REG_SAMPLE_EN,
+	RT9750_REG_PROT_DLYOCP,
+	RT9750_REG_VBUS_OVP,
+	RT9750_REG_VOUT_REG,
+	RT9750_REG_VDROP_OVP,
+	RT9750_REG_VDROP_ALM,
+	RT9750_REG_VBAT_REG,
+	RT9750_REG_IBUS_OCP = 0x10,
+	RT9750_REG_TBUS_OTP,
+	RT9750_REG_TBAT_OTP,
+	RT9750_REG_VBUS_ADC2,
+	RT9750_REG_VBUS_ADC1,
+	RT9750_REG_IBUS_ADC2,
+	RT9750_REG_IBUS_ADC1,
+	RT9750_REG_VOUT_ADC2,
+	RT9750_REG_VOUT_ADC1,
+	RT9750_REG_VDROP_ADC2,
+	RT9750_REG_VDROP_ADC1,
+	RT9750_REG_VBAT_ADC2,
+	RT9750_REG_VBAT_ADC1,
+	RT9750_REG_TBUS_ADC2 = 0x1F,
+	RT9750_REG_TBUS_ADC1,
+	RT9750_REG_TBAT_ADC2,
+	RT9750_REG_TBAT_ADC1,
+	RT9750_REG_TDIE_ADC1,
+	RT9750_REG_EVENT_STATUS1,
+	RT9750_REG_EVENT_STATUS2,
+	RT9750_REG_EVENT_STATUS,
+};
+
+
+#define RT9750_VOUT_MAX		4200000
+#define RT9750_VOUT_MIN		5000000
+#define RT9750_VOUT_STEP	10000
+#define RT9750_VOUT_NUM		80
+
+#define RT9750_VBAT_MAX		4200000
+#define RT9750_VBAT_MIN		5000000
+#define RT9750_VBAT_STEP	10000
+#define RT9750_VBAT_NUM		80
+
+/* ========== RT9750_REG_CONTROL 0x06 ============ */
+#define RT9750_SHIFT_CHG_EN	4
+#define RT9750_SHIFT_WDT	2
+#define RT9750_MASK_CHG_EN	(1 << RT9750_SHIFT_CHG_EN)
+#define RT9750_MASK_WDT		0x0C
+
+/* ========== RT9750_REG_VOUT_REG 0x0B ============ */
+#define RT9750_SHIFT_VOUT	0
+#define RT9750_MASK_VOUT	0x7F
+
+/* ========== RT9750_REG_VBAT_REG 0x0E ============ */
+#define RT9750_SHIFT_VBAT	0
+#define RT9750_MASK_VBAT	0x7F
+
+/* ========== RT9750_REG_VBUS_ADC2 0x13 ============ */
+#define RT9750_SHIFT_VBUS_ADC2	0
+#define RT9750_MASK_VBUS_ADC2	0x1F
+
+/* ========== RT9750_REG_IBUS_ADC2 0x15 ============ */
+#define RT9750_SHIFT_IBUS_ADC2	0
+#define RT9750_MASK_IBUS_ADC2	0x1F
+
+/* ========== RT9750_REG_VOUT_ADC2 0x17 ============ */
+#define RT9750_SHIFT_VOUT_ADC2	0
+#define RT9750_MASK_VOUT_ADC2	0x1F
+
+/* ========== RT9750_REG_VDROP_ADC2 0x19 ============ */
+#define RT9750_SHIFT_VDROP_ADC2	0
+#define RT9750_MASK_VDROP_ADC2	0x03
+
+/* ========== RT9750_REG_VBAT_ADC2 0x1B ============ */
+#define RT9750_SHIFT_VBAT_ADC2	0
+#define RT9750_MASK_VBAT_ADC2	0x1F
+
+/* ========== RT9750_REG_TBUS_ADC2 0x1F ============ */
+#define RT9750_SHIFT_TBUS_ADC2	0
+#define RT9750_MASK_TBUS_ADC2	0x0F
+
+/* ========== RT9750_REG_TBAT_ADC2 0x21 ============ */
+#define RT9750_SHIFT_TBAT_ADC2	0
+
+#define RT9750_MASK_TBAT_ADC2	0x0F
+
+#endif /* __RT9750_LOAD_SWITCH_H */
