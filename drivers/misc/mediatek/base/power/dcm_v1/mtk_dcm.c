@@ -24,7 +24,9 @@
 #include <mt-plat/mtk_secure_api.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
-/* #include <mtk_dramc.h> */
+#ifdef USE_DRAM_API_INSTEAD
+#include <mtk_dramc.h>
+#endif /* #ifdef USE_DRAM_API_INSTEAD */
 #include <mtk_dcm_autogen.h>
 
 #if defined(__KERNEL__) && defined(CONFIG_OF)
@@ -310,6 +312,15 @@ int dcm_big_core(ENUM_BIG_CORE_DCM on)
 	return 0;
 }
 
+int dcm_stall_preset(void)
+{
+#ifdef CONFIG_MACH_MT6799
+	dcm_mcucfg_mp_stall_dcm(DCM_ON);
+#endif
+
+	return 0;
+}
+
 int dcm_stall(ENUM_STALL_DCM on)
 {
 #ifdef CONFIG_MACH_MT6799
@@ -327,13 +338,26 @@ int dcm_stall(ENUM_STALL_DCM on)
 
 int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on)
 {
+	int ret = 0;
 #ifdef CONFIG_MACH_MT6799
-#ifndef USE_DRAM_API_INSTEAD
+#ifdef USE_DRAM_API_INSTEAD
+	int ch;
+
+	for (ch = 0; ch < CHANNEL_NUMBER; ch++) {
+		ret = dcm_dramc_ao_switch(ch, on);
+		dcm_dbg("%s: ch=%d on/off=%d done\n", __func__, ch, on);
+		if (ret) {
+			dcm_err("%s: ch=%d on/off=%d fail, ret=%d\n", __func__,
+				ch, on, ret);
+			break;
+		}
+	}
+#else /* !USE_DRAM_API_INSTEAD */
 	dcm_dramc0_ao_dramc_dcm(on);
 	dcm_dramc1_ao_dramc_dcm(on);
 	dcm_dramc2_ao_dramc_dcm(on);
 	dcm_dramc3_ao_dramc_dcm(on);
-#endif /* #ifndef USE_DRAM_API_INSTEAD */
+#endif /* #ifdef USE_DRAM_API_INSTEAD */
 #elif defined(CONFIG_MACH_ELBRUS)
 	dcm_dramc0_ao_dramc_ao(on);
 	dcm_dramc1_ao_dramc_ao(on);
@@ -341,18 +365,31 @@ int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on)
 #error NO corresponding project can be found!!!
 #endif
 
-	return 0;
+	return ret;
 }
 
 int dcm_ddrphy(ENUM_DDRPHY_DCM on)
 {
+	int ret = 0;
 #ifdef CONFIG_MACH_MT6799
-#ifndef USE_DRAM_API_INSTEAD
+#ifdef USE_DRAM_API_INSTEAD
+	int ch;
+
+	for (ch = 0; ch < CHANNEL_NUMBER; ch++) {
+		ret = dcm_ddrphy_ao_switch(ch, on);
+		dcm_dbg("%s: ch=%d on/off=%d done\n", __func__, ch, on);
+		if (ret) {
+			dcm_err("%s: ch=%d on/off=%d fail, ret=%d\n", __func__,
+				ch, on, ret);
+			break;
+		}
+	}
+#else /* !USE_DRAM_API_INSTEAD */
 	dcm_ddrphy0ao_ddrphy(on);
 	dcm_ddrphy1ao_ddrphy(on);
 	dcm_ddrphy2ao_ddrphy(on);
 	dcm_ddrphy3ao_ddrphy(on);
-#endif /* #ifndef USE_DRAM_API_INSTEAD */
+#endif /* #ifdef USE_DRAM_API_INSTEAD */
 #elif defined(CONFIG_MACH_ELBRUS)
 	dcm_ddrphy0ao_ddrphy(on);
 	dcm_ddrphy1ao_ddrphy(on);
@@ -360,7 +397,7 @@ int dcm_ddrphy(ENUM_DDRPHY_DCM on)
 #error NO corresponding project can be found!!!
 #endif
 
-	return 0;
+	return ret;
 }
 
 int dcm_emi(ENUM_EMI_DCM on)
@@ -489,6 +526,7 @@ static DCM dcm_array[NR_DCM_TYPE] = {
 	 .typeid = STALL_DCM_TYPE,
 	 .name = "STALL_DCM",
 	 .func = (DCM_FUNC) dcm_stall,
+	 .preset_func = (DCM_PRESET_FUNC) dcm_stall_preset,
 	 .current_state = STALL_DCM_ON,
 	 .default_state = STALL_DCM_ON,
 	 .disable_refcnt = 0,
@@ -563,9 +601,9 @@ void dcm_set_default(unsigned int type)
 	DCM *dcm;
 
 #ifndef ENABLE_DCM_IN_LK
-	dcm_info("[%s]type:0x%08x, init_dcm_type=0x%x\n", __func__, type, init_dcm_type);
+	dcm_warn("[%s]type:0x%08x, init_dcm_type=0x%x\n", __func__, type, init_dcm_type);
 #else
-	dcm_info("[%s]type:0x%08x, init_dcm_type=0x%x, INIT_DCM_TYPE_BY_K=0x%x\n",
+	dcm_warn("[%s]type:0x%08x, init_dcm_type=0x%x, INIT_DCM_TYPE_BY_K=0x%x\n",
 		 __func__, type, init_dcm_type, INIT_DCM_TYPE_BY_K);
 #endif
 
@@ -603,7 +641,7 @@ void dcm_set_state(unsigned int type, int state)
 	DCM *dcm;
 	unsigned int init_dcm_type_pre = init_dcm_type;
 
-	dcm_info("[%s]type:0x%08x, set:%d, init_dcm_type_pre=0x%x\n",
+	dcm_warn("[%s]type:0x%08x, set:%d, init_dcm_type_pre=0x%x\n",
 		 __func__, type, state, init_dcm_type_pre);
 
 	mutex_lock(&dcm_lock);
@@ -631,7 +669,7 @@ void dcm_set_state(unsigned int type, int state)
 	}
 
 	if (init_dcm_type_pre != init_dcm_type) {
-		dcm_info("[%s]type:0x%08x, set:%d, init_dcm_type=0x%x->0x%x\n",
+		dcm_warn("[%s]type:0x%08x, set:%d, init_dcm_type=0x%x->0x%x\n",
 			 __func__, type, state, init_dcm_type_pre, init_dcm_type);
 		dcm_smc_msg_send(init_dcm_type);
 	}
@@ -646,7 +684,7 @@ void dcm_disable(unsigned int type)
 	DCM *dcm;
 	unsigned int init_dcm_type_pre = init_dcm_type;
 
-	dcm_info("[%s]type:0x%08x\n", __func__, type);
+	dcm_warn("[%s]type:0x%08x\n", __func__, type);
 
 	mutex_lock(&dcm_lock);
 
@@ -667,7 +705,7 @@ void dcm_disable(unsigned int type)
 	}
 
 	if (init_dcm_type_pre != init_dcm_type) {
-		dcm_info("[%s]type:0x%08x, init_dcm_type=0x%x->0x%x\n",
+		dcm_warn("[%s]type:0x%08x, init_dcm_type=0x%x->0x%x\n",
 			 __func__, type, init_dcm_type_pre, init_dcm_type);
 		dcm_smc_msg_send(init_dcm_type);
 	}
@@ -682,7 +720,7 @@ void dcm_restore(unsigned int type)
 	DCM *dcm;
 	unsigned int init_dcm_type_pre = init_dcm_type;
 
-	dcm_info("[%s]type:0x%08x\n", __func__, type);
+	dcm_warn("[%s]type:0x%08x\n", __func__, type);
 
 	mutex_lock(&dcm_lock);
 
@@ -710,7 +748,7 @@ void dcm_restore(unsigned int type)
 	}
 
 	if (init_dcm_type_pre != init_dcm_type) {
-		dcm_info("[%s]type:0x%08x, init_dcm_type=0x%x->0x%x\n",
+		dcm_warn("[%s]type:0x%08x, init_dcm_type=0x%x->0x%x\n",
 			 __func__, type, init_dcm_type_pre, init_dcm_type);
 		dcm_smc_msg_send(init_dcm_type);
 	}
@@ -1291,7 +1329,7 @@ static int dcm_hotplug_nc(struct notifier_block *self,
 int mt_dcm_init(void)
 {
 #ifdef DCM_BRINGUP
-	dcm_info("%s: skipped for bring up\n", __func__);
+	dcm_warn("%s: skipped for bring up\n", __func__);
 	return 0;
 #endif
 
