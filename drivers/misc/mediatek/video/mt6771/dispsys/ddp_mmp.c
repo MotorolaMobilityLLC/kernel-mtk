@@ -342,11 +342,11 @@ void init_ddp_mmp_events(void)
 		mmprofile_enable_event_recursive(DDP_MMP_Events.MutexParent, 1);
 		mmprofile_enable_event_recursive(DDP_MMP_Events.DDP_IRQ, 1);
 
-		mmprofile_enable_event(DDP_MMP_Events.primary_sw_mutex, 0);
+		mmprofile_enable_event(DDP_MMP_Events.primary_sw_mutex, 1);
 		mmprofile_enable_event(DDP_MMP_Events.fps_get, 0);
 		mmprofile_enable_event(DDP_MMP_Events.fps_set, 0);
-		mmprofile_enable_event(DDP_MMP_Events.fps_ext_get, 1);
-		mmprofile_enable_event(DDP_MMP_Events.fps_ext_set, 1);
+		mmprofile_enable_event(DDP_MMP_Events.fps_ext_get, 0);
+		mmprofile_enable_event(DDP_MMP_Events.fps_ext_set, 0);
 		mmprofile_enable_event_recursive(DDP_MMP_Events.primary_seq_info, 0);
 	}
 }

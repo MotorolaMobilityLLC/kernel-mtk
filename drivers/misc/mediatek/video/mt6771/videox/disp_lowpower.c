@@ -403,6 +403,7 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 239, 0);
 	primary_display_manual_lock();
 
 	if (!register_share_sram) {
@@ -412,6 +413,7 @@ static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 	}
 	_acquire_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 239, 1);
 
 	return 0;
 }
@@ -510,6 +512,7 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 239, 2);
 	/* need lock  */
 	primary_display_manual_lock();
 
@@ -521,6 +524,7 @@ static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	_release_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram, MMPROFILE_FLAG_PULSE, 239, 3);
 
 	return 0;
 }
