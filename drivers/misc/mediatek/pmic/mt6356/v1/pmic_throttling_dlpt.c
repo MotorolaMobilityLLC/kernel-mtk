@@ -1622,7 +1622,7 @@ static ssize_t store_battery_oc_protect_thd(struct device *dev, struct device_at
 	int battery_oc_l_thd, battery_oc_h_thd;
 	int num = sscanf(buf, "%d %d", &battery_oc_l_thd, &battery_oc_h_thd);
 
-	if ((num != 2) || (battery_oc_l_thd >= battery_oc_h_thd))
+	if ((num != 2) || (battery_oc_l_thd <= battery_oc_h_thd))
 		pr_err("Invalid parameter : %s\n", buf);
 	else {
 		g_battery_oc_l_thd = battery_oc_l_thd;
