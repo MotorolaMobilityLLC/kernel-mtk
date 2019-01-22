@@ -13,19 +13,12 @@
 
 #include <mt-plat/mtk_secure_api.h>
 
-#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
-#include <mt-plat/upmu_common.h>
-#endif
-
 #include <mtk_spm.h>
 #include <mtk_spm_idle.h>
 #include <mtk_spm_internal.h>
-#include <mtk_spm_pmic_wrap.h>
-#include <mtk_pmic_api_buck.h>
 #include <mtk_spm_sodi_cmdq.h>
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_resource_req_internal.h>
-
 
 /*
  * GCE write spm SW2SPM_MAILBOX_3 (0x100065F8)
@@ -52,39 +45,22 @@ void enter_pd_by_cmdq(struct cmdqRecStruct *handler)
 
 void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
-#endif
-
 	/* dvfsrc_md_scenario_update(1); */
 }
 
 void spm_sodi_post_process(void)
 {
 	/* dvfsrc_md_scenario_update(0); */
-
-#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-#endif
 }
 
 void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
-#endif
 	/* dvfsrc_md_scenario_update(1); */
 }
 
 void spm_sodi3_post_process(void)
 {
 	/* dvfsrc_md_scenario_update(0); */
-
-#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-#endif
 }
 
 void spm_sodi_pcm_setup_before_wfi(

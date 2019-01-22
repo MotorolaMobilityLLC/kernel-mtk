@@ -18,7 +18,7 @@
 #include "mtk_idle_profile.h"
 #include "mtk_spm_resource_req_internal.h"
 
-#if defined(CONFIG_CPU_FREQ)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <mtk_cpufreq_api.h>
 #endif
 
@@ -616,8 +616,8 @@ void dpidle_show_profile_time(void)
 					(abs(dpidle_profile[i] - dpidle_profile[i - 1]));
 		}
 
-#if defined(CONFIG_CPU_FREQ)
-#if defined(CONFIG_MACH_MT6763)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6771)
 		idle_buf_append(latency_profile_log, "cpu_freq:%u/%u\n",
 			mt_cpufreq_get_cur_freq(0),
 			mt_cpufreq_get_cur_freq(1));
@@ -700,11 +700,11 @@ void mtk_idle_latency_profile_result(unsigned int idle_type)
 	data = &idle_profile[idle_type][0];
 	pdata  = &g_pdata[idle_type];
 
-#if defined(CONFIG_CPU_FREQ)
-#if defined(CONFIG_MACH_MT6763)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6771)
 	log("%s (%u/%u),", mtk_get_idle_name(idle_type),
 		mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1));
-#else
+#elif defined(CONFIG_MACH_MT6739)
 	log("%s (%u),", mtk_get_idle_name(idle_type),
 		mt_cpufreq_get_cur_freq(0));
 #endif

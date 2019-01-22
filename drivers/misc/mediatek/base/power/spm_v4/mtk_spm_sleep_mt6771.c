@@ -110,8 +110,7 @@ static void spm_dump_pmic_reg(void)
 }
 #endif
 
-/* FIXME */
-#if 0
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static int mt_power_gs_dump_suspend_count = 2;
 #endif
 
@@ -161,8 +160,7 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-/* FIXME */
-#if 0
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(slp_dump_golden_setting_type);
 #endif
