@@ -1738,7 +1738,7 @@ int m4u_config_port_tee(M4U_PORT_STRUCT *pM4uPort)	/* native */
 	m4u_dci_msg->port_param.virt = pM4uPort->Virtuality;
 	m4u_dci_msg->port_param.direction = pM4uPort->Direction;
 	m4u_dci_msg->port_param.distance = pM4uPort->Distance;
-	m4u_dci_msg->port_param.sec = 0;
+	m4u_dci_msg->port_param.sec = pM4uPort->Security;
 
 	ret = m4u_exec_cmd(&m4u_dci_session, m4u_dci_msg);
 	if (ret) {
@@ -2032,10 +2032,6 @@ out:
 
 #endif
 
-#ifdef M4U_TEE_SERVICE_ENABLE
-static DEFINE_MUTEX(gM4u_sec_init);
-#endif
-
 static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
@@ -2142,13 +2138,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			M4UMSG("MTK_M4U_T_CONFIG_PORT,copy_from_user failed:%d\n", ret);
 			return -EFAULT;
 		}
-#ifdef M4U_TEE_SERVICE_ENABLE
-		mutex_lock(&gM4u_sec_init);
-#endif
 		ret = m4u_config_port(&m4u_port);
-#ifdef M4U_TEE_SERVICE_ENABLE
-		mutex_unlock(&gM4u_sec_init);
-#endif
 		break;
 	case MTK_M4U_T_MONITOR_START:
 		ret = copy_from_user(&PortID, (void *)arg, sizeof(unsigned int));
@@ -2180,13 +2170,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 				M4UMSG("MTK_M4U_T_CONFIG_PORT,copy_from_user failed:%d\n", ret);
 				return -EFAULT;
 			}
-#ifdef M4U_TEE_SERVICE_ENABLE
-			mutex_lock(&gM4u_sec_init);
-#endif
 			ret = m4u_config_port_array(&port_array);
-#ifdef M4U_TEE_SERVICE_ENABLE
-			mutex_unlock(&gM4u_sec_init);
-#endif
 		}
 		break;
 	case MTK_M4U_T_CONFIG_MAU:
@@ -2219,9 +2203,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 	case MTK_M4U_T_SEC_INIT:
 		{
 			M4UMSG("MTK M4U ioctl : MTK_M4U_T_SEC_INIT command!! 0x%x\n", cmd);
-			mutex_lock(&gM4u_sec_init);
 			ret = m4u_sec_init();
-			mutex_unlock(&gM4u_sec_init);
 		}
 		break;
 #endif
