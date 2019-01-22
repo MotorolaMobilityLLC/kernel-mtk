@@ -513,7 +513,7 @@ void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs, struct task_struct 
 }
 EXPORT_SYMBOL(mrdump_mini_per_cpu_regs);
 
-static inline void ipanic_save_regs(struct pt_regs *regs)
+void mrdump_mini_save_regs(struct pt_regs *regs)
 {
 #ifdef __aarch64__
 	__asm__ volatile ("stp	x0, x1, [sp,#-16]!\n\t"
@@ -656,7 +656,7 @@ void mrdump_mini_ke_cpu_regs(struct pt_regs *regs)
 
 	if (!regs) {
 		regs = &context;
-		ipanic_save_regs(regs);
+		mrdump_mini_save_regs(regs);
 	}
 	cpu = get_HW_cpuid();
 	mrdump_mini_cpu_regs(cpu, regs, current, 1);
