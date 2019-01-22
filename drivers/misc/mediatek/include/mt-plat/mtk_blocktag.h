@@ -19,7 +19,13 @@
 
 #if defined(CONFIG_MTK_BLOCK_TAG)
 
-#define MTK_BLOCK_TAG_PIDLOG_ENTRIES 50
+#define BLOCKTAG_PIDLOG_ENTRIES 50
+#define BLOCKTAG_NAME_LEN      16
+#define BLOCKTAG_PRINT_LEN     4096
+
+#define BTAG_RT(btag)     (btag ? &btag->rt : NULL)
+#define BTAG_CTX(btag)    (btag ? btag->ctx.priv : NULL)
+#define BTAG_KLOGEN(btag) (btag ? btag->klog_enable : 0)
 
 struct page_pid_logger {
 	unsigned short pid1;
@@ -69,7 +75,7 @@ struct mtk_btag_pidlogger_entry {
 
 struct mtk_btag_pidlogger {
 	__u16 current_pid;
-	struct mtk_btag_pidlogger_entry info[MTK_BLOCK_TAG_PIDLOG_ENTRIES];
+	struct mtk_btag_pidlogger_entry info[BLOCKTAG_PIDLOG_ENTRIES];
 };
 
 struct mtk_btag_cpu {
@@ -102,14 +108,50 @@ struct mtk_btag_ringtrace {
 	int max;
 };
 
-struct mtk_btag_ringtrace *mtk_btag_ringtrace_alloc(int size);
-void mtk_btag_ringtrace_free(struct mtk_btag_ringtrace *rt);
+typedef size_t (*mtk_btag_seq_f) (struct seq_file *);
+
+/* BlockTag */
+struct mtk_blocktag {
+	char name[BLOCKTAG_NAME_LEN];
+	struct mtk_btag_ringtrace rt;
+
+	struct prbuf_t {
+		spinlock_t lock;
+		char buf[BLOCKTAG_PRINT_LEN];
+	} prbuf;
+
+	/* lock order: ctx.priv->lock => prbuf.lock */
+	struct context_t {
+		int count;
+		int size;
+		void *priv;
+	} ctx;
+
+	struct dentry_t {
+		struct dentry *droot;
+		struct dentry *dklog;
+		struct dentry *dlog;
+		struct dentry *dmem;
+	} dentry;
+
+	mtk_btag_seq_f seq_show;
+
+	unsigned int klog_enable;
+	unsigned int used_mem;
+
+	struct list_head list;
+};
+
+struct mtk_blocktag *mtk_btag_alloc(const char *name,
+	unsigned ringtrace_count, size_t ctx_size, unsigned ctx_count,
+	mtk_btag_seq_f seq_show);
+void mtk_btag_free(struct mtk_blocktag *btag);
+
 struct mtk_btag_trace *mtk_btag_curr_trace(struct mtk_btag_ringtrace *rt);
 struct mtk_btag_trace *mtk_btag_next_trace(struct mtk_btag_ringtrace *rt);
 
-unsigned int mtk_btag_used_mem_get(void);
-int mtk_btag_pidlog_add_mmc(pid_t pid, __u32 len, int rw);
-int mtk_btag_pidlog_add_ufs(pid_t pid, __u32 len, int rw);
+int mtk_btag_pidlog_add_mmc(struct request_queue *q, pid_t pid, __u32 len, int rw);
+int mtk_btag_pidlog_add_ufs(struct request_queue *q, pid_t pid, __u32 len, int rw);
 void mtk_btag_pidlog_insert(struct mtk_btag_pidlogger *pidlog, pid_t pid, __u32 len, int rw);
 
 void mtk_btag_cpu_eval(struct mtk_btag_cpu *cpu);
@@ -117,20 +159,19 @@ void mtk_btag_pidlog_eval(struct mtk_btag_pidlogger *pl, struct mtk_btag_pidlogg
 void mtk_btag_throughput_eval(struct mtk_btag_throughput *tp);
 void mtk_btag_vmstat_eval(struct mtk_btag_vmstat *vm);
 
-const char *mtk_btag_pr_time(char *out, int size, const char *str, __u64 t);
-const char *mtk_btag_pr_speed(char *out, int size, __u64 usage, __u32 bytes);
-void mtk_btag_print_klog(char **ptr, int *len, struct mtk_btag_trace *tr);
+void mtk_btag_task_timetag(char *buf, unsigned len, unsigned stage,
+	unsigned max, const char *name[], uint64_t *t, __u32 bytes);
+void mtk_btag_klog(struct mtk_blocktag *btag, struct mtk_btag_trace *tr);
 
-void mtk_btag_seq_trace(struct seq_file *seq, struct mtk_btag_trace *tr);
-void mtk_btag_seq_time(struct seq_file *seq, uint64_t time);
-size_t mtk_btag_seq_usedmem(struct seq_file *seq, struct mtk_btag_ringtrace *rt);
-void mtk_btag_seq_debug_show_ringtrace(struct seq_file *seq,
-	struct mtk_btag_ringtrace *rt);
+void mtk_btag_pidlog_map_sg(struct request_queue *q, struct bio *bio, struct bio_vec *bvec);
+void mtk_btag_pidlog_submit_bio(struct bio *bio);
+void mtk_btag_pidlog_write_begin(struct page *p);
 
-ssize_t mtk_btag_debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos);
-void *mtk_btag_seq_debug_start(struct seq_file *seq, loff_t *pos);
-void *mtk_btag_seq_debug_next(struct seq_file *seq, void *v, loff_t *pos);
-void mtk_btag_seq_debug_stop(struct seq_file *seq, void *v);
+#else
+
+#define mtk_btag_pidlog_map_sg(...)
+#define mtk_btag_pidlog_submit_bio(...)
+#define mtk_btag_pidlog_write_begin(...)
 
 #endif
 

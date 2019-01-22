@@ -33,6 +33,7 @@
 #include <linux/ratelimit.h>
 #include <linux/pm_runtime.h>
 #include <linux/blk-cgroup.h>
+#include <mt-plat/mtk_blocktag.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/block.h>
@@ -2114,7 +2115,7 @@ blk_qc_t submit_bio(int rw, struct bio *bio)
 			count_vm_events(PGPGIN, count);
 		}
 
-		mt_pidlog_submit_bio(bio);
+		mtk_btag_pidlog_submit_bio(bio);
 
 		if (unlikely(block_dump)) {
 			char b[BDEVNAME_SIZE];

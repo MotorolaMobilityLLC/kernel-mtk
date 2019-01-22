@@ -39,46 +39,52 @@
 
 /* debugfs dentries */
 struct dentry *mtk_btag_droot;
-struct dentry *mtk_btag_dmem;
+struct dentry *mtk_btag_dlog;
+static void mtk_btag_init_debugfs(void);
+
+/* blocktag */
+static DEFINE_MUTEX(mtk_btag_list_lock);
+static LIST_HEAD(mtk_btag_list);
+
+static struct mtk_blocktag *mtk_btag_find(const char *name)
+{
+	struct mtk_blocktag *btag, *n;
+
+	list_for_each_entry_safe(btag, n, &mtk_btag_list, list) {
+		if (!strncmp(btag->name, name, BLOCKTAG_NAME_LEN-1))
+			return btag;
+	}
+	return NULL;
+}
+
+static struct mtk_blocktag *mtk_btag_find_locked(const char *name)
+{
+	struct mtk_blocktag *btag;
+
+	mutex_lock(&mtk_btag_list_lock);
+	btag = mtk_btag_find(name);
+	mutex_unlock(&mtk_btag_list_lock);
+	return btag;
+}
 
 /* pid logger: page loger*/
 unsigned long long mtk_btag_system_dram_size;
 struct page_pid_logger *mtk_btag_pagelogger;
 spinlock_t mtk_btag_pagelogger_lock;
-unsigned int mtk_btag_used_mem;
 
-unsigned int mtk_btag_used_mem_get(void)
+static size_t mtk_btag_seq_pidlog_usedmem(struct seq_file *seq)
 {
-	return mtk_btag_used_mem;
-}
-EXPORT_SYMBOL_GPL(mtk_btag_used_mem_get);
-
-size_t mtk_btag_seq_usedmem(struct seq_file *seq, struct mtk_btag_ringtrace *rt)
-{
-	size_t used_mem = 0;
 	size_t size = 0;
 
-	if (mtk_btag_used_mem) {
+	if (!IS_ERR_OR_NULL(mtk_btag_pagelogger)) {
 		size = (sizeof(struct page_pid_logger)*(mtk_btag_system_dram_size >> PAGE_SHIFT));
-		seq_printf(seq, "Page Logger buffer: %llu entries * %zu = %zu bytes\n",
+		seq_printf(seq, "page pid logger buffer: %llu entries * %zu = %zu bytes\n",
 			(mtk_btag_system_dram_size >> PAGE_SHIFT),
 			sizeof(struct page_pid_logger),
 			size);
-		used_mem += size;
 	}
-
-	if (rt) {
-		size = (sizeof(struct mtk_btag_trace) * rt->max);
-		seq_printf(seq, "Debugfs ring buffer: %d traces * %zu = %zu bytes\n",
-			rt->max,
-			sizeof(struct mtk_btag_trace),
-			size);
-		used_mem += size;
-	}
-
-	return used_mem;
+	return size;
 }
-EXPORT_SYMBOL_GPL(mtk_btag_seq_usedmem);
 
 #define biolog_fmt "wl:%d%%,%lld,%lld,%d.vm:%lld,%lld,%lld,%lld,%lld.cpu:%llu,%llu,%llu,%llu,%llu,%llu,%llu.pid:%d,"
 #define biolog_fmt_wt "wt:%d,%d,%lld."
@@ -91,7 +97,7 @@ void mtk_btag_pidlog_insert(struct mtk_btag_pidlogger *pidlog, pid_t pid, __u32 
 	struct mtk_btag_pidlogger_entry *pe;
 	struct mtk_btag_pidlogger_entry_rw *prw;
 
-	for (i = 0; i < MTK_BLOCK_TAG_PIDLOG_ENTRIES; i++) {
+	for (i = 0; i < BLOCKTAG_PIDLOG_ENTRIES; i++) {
 		pe = &pidlog->info[i];
 		if ((pe->pid == pid) || (pe->pid == 0)) {
 			pe->pid = pid;
@@ -104,15 +110,20 @@ void mtk_btag_pidlog_insert(struct mtk_btag_pidlogger *pidlog, pid_t pid, __u32 
 }
 EXPORT_SYMBOL_GPL(mtk_btag_pidlog_insert);
 
-static void mtk_btag_pidlog_add(unsigned short pid, __u32 len, int rw)
+static void mtk_btag_pidlog_add(struct request_queue *q, struct bio *bio,
+	unsigned short pid, __u32 len)
 {
+	int rw = (bio->bi_rw & REQ_WRITE) ? 1 : 0;
+	int major = bio->bi_bdev ? MAJOR(bio->bi_bdev->bd_dev) : 0;
+
 	if (pid != 0xFFFF) {
-#ifdef CONFIG_MTK_MMC_BLOCK_IO_LOG
-		if (mtk_btag_pidlog_add_mmc(pid, len, rw))
-			return;
+#ifdef CONFIG_MMC_BLOCK_IO_LOG
+		if (major == MMC_BLOCK_MAJOR)
+			mtk_btag_pidlog_add_mmc(q, pid, len, rw);
 #endif
 #ifdef CONFIG_MTK_UFS_BLOCK_IO_LOG
-		mtk_btag_pidlog_add_ufs(pid, len, rw);
+		if (major == SCSI_DISK0_MAJOR || major == BLOCK_EXT_MAJOR)
+			mtk_btag_pidlog_add_ufs(q, pid, len, rw);
 #endif
 	}
 }
@@ -121,13 +132,13 @@ static void mtk_btag_pidlog_add(unsigned short pid, __u32 len, int rw)
  * pidlog: hook function for __blk_bios_map_sg()
  * rw: 0=read, 1=write
  */
-void mt_pidlog_map_sg(struct bio_vec *bvec, int rw)
+void mtk_btag_pidlog_map_sg(struct request_queue *q, struct bio *bio, struct bio_vec *bvec)
 {
 	struct page_pid_logger *ppl, tmp;
 	unsigned long page_offset;
 	unsigned long flags;
 
-	if (!mtk_btag_pagelogger)
+	if (!mtk_btag_pagelogger || !bio || !bvec)
 		return;
 
 	page_offset = (unsigned long)(__page_to_pfn(bvec->bv_page)) - PHYS_PFN_OFFSET;
@@ -137,13 +148,13 @@ void mt_pidlog_map_sg(struct bio_vec *bvec, int rw)
 	tmp.pid2 = ppl->pid2;
 	spin_unlock_irqrestore(&mtk_btag_pagelogger_lock, flags);
 
-	mtk_btag_pidlog_add(tmp.pid1, bvec->bv_len, rw);
-	mtk_btag_pidlog_add(tmp.pid2, bvec->bv_len, rw);
+	mtk_btag_pidlog_add(q, bio, tmp.pid1, bvec->bv_len);
+	mtk_btag_pidlog_add(q, bio, tmp.pid2, bvec->bv_len);
 }
-EXPORT_SYMBOL_GPL(mt_pidlog_map_sg);
+EXPORT_SYMBOL_GPL(mtk_btag_pidlog_map_sg);
 
 /* pidlog: hook function for submit_bio() */
-void mt_pidlog_submit_bio(struct bio *bio)
+void mtk_btag_pidlog_submit_bio(struct bio *bio)
 {
 	struct bio_vec bvec;
 	struct bvec_iter iter;
@@ -171,10 +182,10 @@ void mt_pidlog_submit_bio(struct bio *bio)
 		}
 	}
 }
-EXPORT_SYMBOL_GPL(mt_pidlog_submit_bio);
+EXPORT_SYMBOL_GPL(mtk_btag_pidlog_submit_bio);
 
 /* pidlog: hook function for filesystem's write_begin() */
-void mt_pidlog_write_begin(struct page *p)
+void mtk_btag_pidlog_write_begin(struct page *p)
 {
 	struct page_pid_logger *ppl;
 	unsigned long flags;
@@ -194,7 +205,7 @@ void mt_pidlog_write_begin(struct page *p)
 	}
 	spin_unlock_irqrestore(&mtk_btag_pagelogger_lock, flags);
 }
-EXPORT_SYMBOL_GPL(mt_pidlog_write_begin);
+EXPORT_SYMBOL_GPL(mtk_btag_pidlog_write_begin);
 
 /* evaluate vmstat trace from global_page_state() */
 void mtk_btag_vmstat_eval(struct mtk_btag_vmstat *vm)
@@ -212,7 +223,7 @@ void mtk_btag_pidlog_eval(struct mtk_btag_pidlogger *pl, struct mtk_btag_pidlogg
 {
 	int i;
 
-	for (i = 0; i < MTK_BLOCK_TAG_PIDLOG_ENTRIES; i++) {
+	for (i = 0; i < BLOCKTAG_PIDLOG_ENTRIES; i++) {
 		if (ctx_pl->info[i].pid == 0)
 			break;
 	}
@@ -313,7 +324,7 @@ void mtk_btag_throughput_eval(struct mtk_btag_throughput *tp)
 EXPORT_SYMBOL_GPL(mtk_btag_throughput_eval);
 
 /* print trace to kerne log */
-void mtk_btag_print_klog(char **ptr, int *len, struct mtk_btag_trace *tr)
+static void mtk_btag_klog_entry(char **ptr, int *len, struct mtk_btag_trace *tr)
 {
 	int i, n;
 
@@ -361,7 +372,7 @@ void mtk_btag_print_klog(char **ptr, int *len, struct mtk_btag_trace *tr)
 	if (*len < 0)
 		return;
 
-	for (i = 0; i < MTK_BLOCK_TAG_PIDLOG_ENTRIES; i++) {
+	for (i = 0; i < BLOCKTAG_PIDLOG_ENTRIES; i++) {
 		struct mtk_btag_pidlogger_entry *pe;
 
 		pe = &tr->pidlog.info[i];
@@ -380,19 +391,36 @@ void mtk_btag_print_klog(char **ptr, int *len, struct mtk_btag_trace *tr)
 			return;
 	}
 }
-EXPORT_SYMBOL_GPL(mtk_btag_print_klog);
 
-const char *mtk_btag_pr_time(char *out, int size, const char *str, __u64 t)
+void mtk_btag_klog(struct mtk_blocktag *btag, struct mtk_btag_trace *tr)
+{
+	int len;
+	char *ptr;
+	unsigned long flags;
+
+	if (!btag || !btag->klog_enable || !tr)
+		return;
+
+	len = BLOCKTAG_PRINT_LEN-1;
+	ptr = &btag->prbuf.buf[0];
+
+	spin_lock_irqsave(&btag->prbuf.lock, flags);
+	mtk_btag_klog_entry(&ptr, &len, tr);
+	spin_unlock_irqrestore(&btag->prbuf.lock, flags);
+}
+EXPORT_SYMBOL_GPL(mtk_btag_klog);
+
+static int mtk_btag_pr_time(char *out, int size, const char *str, __u64 t)
 {
 	uint32_t nsec;
+	int ret;
 
 	nsec = do_div(t, 1000000000);
-	snprintf(out, size, ",%s=[%lu.%06lu]", str, (unsigned long)t, (unsigned long)nsec/1000);
-	return out;
+	ret = snprintf(out, size, ",%s=[%lu.%06lu]", str, (unsigned long)t, (unsigned long)nsec/1000);
+	return ret;
 }
-EXPORT_SYMBOL_GPL(mtk_btag_pr_time);
 
-const char *mtk_btag_pr_speed(char *out, int size, __u64 usage, __u32 bytes)
+static const char *mtk_btag_pr_speed(char *out, int size, __u64 usage, __u32 bytes)
 {
 	__u32 speed;
 
@@ -406,7 +434,33 @@ const char *mtk_btag_pr_speed(char *out, int size, __u64 usage, __u32 bytes)
 	snprintf(out, size, ",%u KB/s", speed);
 	return out;
 }
-EXPORT_SYMBOL_GPL(mtk_btag_pr_speed);
+
+void mtk_btag_task_timetag(char *buf, unsigned len, unsigned stage,
+	unsigned max, const char *name[], uint64_t *t, __u32 bytes)
+{
+	__u64 busy_time = 0;
+	int i;
+	int ret;
+
+	if (!buf || !len)
+		return;
+
+	for (i = 0; i <= stage; i++) {
+		ret = mtk_btag_pr_time(buf, len, name[i], t[i]);
+		buf += ret;
+		len -= ret;
+	}
+
+	if (stage == max-1) {
+		busy_time = t[stage] - t[0];
+		ret = mtk_btag_pr_time(buf, len, "busy", busy_time);
+		buf += ret;
+		len -= ret;
+		mtk_btag_pr_speed(buf, len, busy_time, bytes);
+	}
+}
+EXPORT_SYMBOL_GPL(mtk_btag_task_timetag);
+
 
 void mtk_btag_seq_time(struct seq_file *seq, uint64_t time)
 {
@@ -417,7 +471,7 @@ void mtk_btag_seq_time(struct seq_file *seq, uint64_t time)
 }
 EXPORT_SYMBOL_GPL(mtk_btag_seq_time);
 
-void mtk_btag_seq_trace(struct seq_file *seq, struct mtk_btag_trace *tr)
+static void mtk_btag_seq_trace(struct seq_file *seq, const char *name, struct mtk_btag_trace *tr)
 {
 	int i;
 
@@ -425,7 +479,7 @@ void mtk_btag_seq_trace(struct seq_file *seq, struct mtk_btag_trace *tr)
 		return;
 
 	mtk_btag_seq_time(seq, tr->time);
-	seq_printf(seq, "q:%d.", tr->qid);
+	seq_printf(seq, "%s.q:%d.", name, tr->qid);
 
 	if (tr->throughput.r.usage)
 		seq_printf(seq, biolog_fmt_rt,
@@ -457,7 +511,7 @@ void mtk_btag_seq_trace(struct seq_file *seq, struct mtk_btag_trace *tr)
 		tr->cpu.softirq,
 		tr->pid);
 
-	for (i = 0; i < MTK_BLOCK_TAG_PIDLOG_ENTRIES; i++) {
+	for (i = 0; i < BLOCKTAG_PIDLOG_ENTRIES; i++) {
 		struct mtk_btag_pidlogger_entry *pe;
 
 		pe = &tr->pidlog.info[i];
@@ -474,83 +528,6 @@ void mtk_btag_seq_trace(struct seq_file *seq, struct mtk_btag_trace *tr)
 	}
 	seq_puts(seq, ".\n");
 }
-EXPORT_SYMBOL_GPL(mtk_btag_seq_trace);
-
-ssize_t mtk_btag_debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
-{
-	return count;
-}
-EXPORT_SYMBOL_GPL(mtk_btag_debug_write);
-
-/* seq file operations */
-void *mtk_btag_seq_debug_start(struct seq_file *seq, loff_t *pos)
-{
-	unsigned int idx;
-
-	if (*pos < 0 || *pos >= 1)
-		return NULL;
-
-	idx = *pos + 1;
-	return (void *) ((unsigned long) idx);
-}
-EXPORT_SYMBOL_GPL(mtk_btag_seq_debug_start);
-
-void *mtk_btag_seq_debug_next(struct seq_file *seq, void *v, loff_t *pos)
-{
-	unsigned int idx;
-
-	++*pos;
-	if (*pos < 0 || *pos >= 1)
-		return NULL;
-
-	idx = *pos + 1;
-	return (void *) ((unsigned long) idx);
-}
-EXPORT_SYMBOL_GPL(mtk_btag_seq_debug_next);
-
-void mtk_btag_seq_debug_stop(struct seq_file *seq, void *v)
-{
-}
-EXPORT_SYMBOL_GPL(mtk_btag_seq_debug_stop);
-
-struct mtk_btag_ringtrace *mtk_btag_ringtrace_alloc(int size)
-{
-	struct mtk_btag_ringtrace *rt;
-
-	if (size <= 0)
-		return NULL;
-
-	rt = kmalloc(sizeof(struct mtk_btag_ringtrace), GFP_NOFS);
-
-	if (!rt)
-		return NULL;
-
-	rt->index = 0;
-	rt->max = size;
-	rt->trace = kmalloc_array(size,
-		sizeof(struct mtk_btag_trace), GFP_NOFS);
-
-	if (!rt->trace) {
-		kfree(rt);
-		return NULL;
-	}
-
-	memset(rt->trace, 0, (sizeof(struct mtk_btag_trace) * size));
-	spin_lock_init(&rt->lock);
-
-	return rt;
-}
-EXPORT_SYMBOL_GPL(mtk_btag_ringtrace_alloc);
-
-void mtk_btag_ringtrace_free(struct mtk_btag_ringtrace *rt)
-{
-	if (!rt)
-		return;
-
-	kfree(rt->trace);
-	kfree(rt);
-}
-EXPORT_SYMBOL_GPL(mtk_btag_ringtrace_free);
 
 /* get current trace in debugfs ring buffer */
 struct mtk_btag_trace *mtk_btag_curr_trace(struct mtk_btag_ringtrace *rt)
@@ -574,9 +551,21 @@ struct mtk_btag_trace *mtk_btag_next_trace(struct mtk_btag_ringtrace *rt)
 }
 EXPORT_SYMBOL_GPL(mtk_btag_next_trace);
 
-void mtk_btag_seq_debug_show_ringtrace(struct seq_file *seq,
-	struct mtk_btag_ringtrace *rt)
+/* clear debugfs ring buffer */
+static void mtk_btag_clear_trace(struct mtk_btag_ringtrace *rt)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&rt->lock, flags);
+	memset(rt->trace, 0, (sizeof(struct mtk_btag_trace) * rt->max));
+	rt->index = 0;
+	spin_unlock_irqrestore(&rt->lock, flags);
+}
+
+static void mtk_btag_seq_debug_show_ringtrace(struct seq_file *seq,
+	struct mtk_blocktag *btag)
+{
+	struct mtk_btag_ringtrace *rt = BTAG_RT(btag);
 	unsigned long flags;
 	int i, end;
 
@@ -586,17 +575,252 @@ void mtk_btag_seq_debug_show_ringtrace(struct seq_file *seq,
 	if (rt->index >= rt->max || rt->index < 0)
 		rt->index = 0;
 
+	seq_printf(seq, "<%s: blocktag trace>\n", btag->name);
+
 	spin_lock_irqsave(&rt->lock, flags);
 	end = (rt->index > 0) ? rt->index-1 : rt->max-1;
 	for (i = rt->index;;) {
-		mtk_btag_seq_trace(seq, &rt->trace[i]);
+		mtk_btag_seq_trace(seq, btag->name, &rt->trace[i]);
 		if (i == end)
 			break;
 		i = (i >= rt->max-1) ? 0 : i+1;
 	};
 	spin_unlock_irqrestore(&rt->lock, flags);
 }
-EXPORT_SYMBOL_GPL(mtk_btag_seq_debug_show_ringtrace);
+
+
+static size_t mtk_btag_seq_sub_show_usedmem(struct seq_file *seq,
+	struct mtk_blocktag *btag)
+{
+	size_t used_mem = 0;
+	size_t size;
+
+	seq_printf(seq, "<%s: memory usage>\n", btag->name);
+	seq_printf(seq, "%s blocktag: %zu bytes\n", btag->name, sizeof(struct mtk_blocktag));
+	used_mem += sizeof(struct mtk_blocktag);
+
+	if (BTAG_RT(btag)) {
+		size = (sizeof(struct mtk_btag_trace) * BTAG_RT(btag)->max);
+		seq_printf(seq, "%s debug ring buffer: %d traces * %zu = %zu bytes\n",
+			btag->name,
+			BTAG_RT(btag)->max,
+			sizeof(struct mtk_btag_trace),
+			size);
+		used_mem += size;
+	}
+
+	if (BTAG_CTX(btag)) {
+		size = btag->ctx.size * btag->ctx.count;
+		seq_printf(seq, "%s queue context: %d contexts * %d = %zu bytes\n",
+			btag->name,
+			btag->ctx.count,
+			btag->ctx.size,
+			size);
+		used_mem += size;
+	}
+	seq_printf(seq, "%s sub-total: %zu KB\n", btag->name, used_mem >> 10);
+	return used_mem;
+}
+
+/* clear all ringtraces */
+static ssize_t mtk_btag_main_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
+{
+	struct mtk_blocktag *btag, *n;
+
+	mutex_lock(&mtk_btag_list_lock);
+	list_for_each_entry_safe(btag, n, &mtk_btag_list, list)
+		mtk_btag_clear_trace(&btag->rt);
+	mutex_unlock(&mtk_btag_list_lock);
+	return count;
+}
+
+/* clear ringtrace */
+static ssize_t mtk_btag_sub_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
+{
+	struct seq_file *seq = file->private_data;
+	struct mtk_blocktag *btag;
+
+	if (seq && seq->private) {
+		btag = seq->private;
+		mtk_btag_clear_trace(&btag->rt);
+	}
+	return count;
+}
+
+/* seq file operations */
+static void *mtk_btag_seq_debug_start(struct seq_file *seq, loff_t *pos)
+{
+	unsigned int idx;
+
+	if (*pos < 0 || *pos >= 1)
+		return NULL;
+
+	idx = *pos + 1;
+	return (void *) ((unsigned long) idx);
+}
+
+static void *mtk_btag_seq_debug_next(struct seq_file *seq, void *v, loff_t *pos)
+{
+	unsigned int idx;
+
+	++*pos;
+	if (*pos < 0 || *pos >= 1)
+		return NULL;
+
+	idx = *pos + 1;
+	return (void *) ((unsigned long) idx);
+}
+
+static void mtk_btag_seq_debug_stop(struct seq_file *seq, void *v)
+{
+}
+
+static int mtk_btag_seq_sub_show(struct seq_file *seq, void *v)
+{
+	struct mtk_blocktag *btag = seq->private;
+
+	if (btag) {
+		mtk_btag_seq_debug_show_ringtrace(seq, btag);
+		if (btag->seq_show) {
+			seq_printf(seq, "<%s: context info>\n", btag->name);
+			btag->seq_show(seq);
+		}
+		mtk_btag_seq_sub_show_usedmem(seq, btag);
+	}
+	return 0;
+}
+
+static const struct seq_operations mtk_btag_seq_sub_ops = {
+	.start  = mtk_btag_seq_debug_start,
+	.next   = mtk_btag_seq_debug_next,
+	.stop   = mtk_btag_seq_debug_stop,
+	.show   = mtk_btag_seq_sub_show,
+};
+
+static int mtk_btag_sub_open(struct inode *inode, struct file *file)
+{
+	int rc;
+
+	rc = seq_open(file, &mtk_btag_seq_sub_ops);
+
+	if (!rc) {
+		struct seq_file *m = file->private_data;
+		struct dentry *entry = container_of(inode->i_dentry.first, struct dentry, d_u.d_alias);
+
+		if (entry && entry->d_parent) {
+			pr_err("[BLOCK_TAG] %s: %s/%s\n", __func__,
+				entry->d_parent->d_name.name,
+				entry->d_name.name);
+			m->private = mtk_btag_find_locked(entry->d_parent->d_name.name);
+		}
+	}
+	return rc;
+}
+
+static const struct file_operations mtk_btag_sub_fops = {
+	.owner		= THIS_MODULE,
+	.open		= mtk_btag_sub_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= seq_release,
+	.write		= mtk_btag_sub_write,
+};
+
+struct mtk_blocktag *mtk_btag_alloc(const char *name,
+	unsigned ringtrace_count, size_t ctx_size, unsigned ctx_count,
+	mtk_btag_seq_f seq_show)
+{
+	struct mtk_blocktag *btag;
+
+	if (!name || !ringtrace_count || !ctx_size || !ctx_count)
+		return NULL;
+
+	btag = mtk_btag_find(name);
+	if (btag) {
+		pr_warn("[BLOCK_TAG] %s: blocktag %s already exists.\n", __func__, name);
+		return NULL;
+	}
+
+	btag = kmalloc(sizeof(struct mtk_blocktag), GFP_NOFS);
+	if (!btag)
+		return NULL;
+
+	memset(btag, 0, sizeof(struct mtk_blocktag));
+	btag->seq_show = seq_show;
+	btag->used_mem = sizeof(struct mtk_blocktag) +
+		(sizeof(struct mtk_btag_trace) * ringtrace_count) +
+		(ctx_count * ctx_size);
+
+	/* ringtrace */
+	btag->rt.index = 0;
+	btag->rt.max = ringtrace_count;
+	spin_lock_init(&btag->rt.lock);
+	btag->rt.trace = kmalloc_array(ringtrace_count,
+		sizeof(struct mtk_btag_trace), GFP_NOFS);
+	if (!btag->rt.trace) {
+		kfree(btag);
+		return NULL;
+	}
+	memset(btag->rt.trace, 0, (sizeof(struct mtk_btag_trace) * ringtrace_count));
+	strncpy(btag->name, name, BLOCKTAG_NAME_LEN-1);
+	spin_lock_init(&btag->rt.lock);
+
+	/* context */
+	btag->ctx.count = ctx_count;
+	btag->ctx.size = ctx_size;
+	btag->ctx.priv = kmalloc_array(ctx_count, ctx_size, GFP_NOFS);
+	if (!btag->ctx.priv) {
+		kfree(btag->rt.trace);
+		kfree(btag);
+		return NULL;
+	}
+	memset(btag->ctx.priv, 0, ctx_size * ctx_count);
+
+	/* debugfs dentries */
+	mtk_btag_init_debugfs();
+	btag->dentry.droot = debugfs_create_dir(name, mtk_btag_droot);
+
+	if (IS_ERR(btag->dentry.droot)) {
+		pr_warn("[BLOCK_TAG] %s: fail to create debugfs root\n", name);
+		goto out;
+	}
+
+	btag->dentry.dmem = debugfs_create_u32("used_mem", 0440, btag->dentry.droot, &btag->used_mem);
+
+	if (IS_ERR(btag->dentry.dmem))
+		pr_warn("[BLOCK_TAG] %s: fail to create used_mem at debugfs\n", name);
+
+	btag->dentry.dklog = debugfs_create_u32("klog_enable", 0660, btag->dentry.droot, &btag->klog_enable);
+
+	if (IS_ERR(btag->dentry.dklog))
+		pr_warn("[BLOCK_TAG] %s: fail to create klog_enable at debugfs\n", name);
+
+	btag->dentry.dlog = debugfs_create_file("blockio", S_IFREG | S_IRUGO,
+		btag->dentry.droot, (void *)0, &mtk_btag_sub_fops);
+
+	if (IS_ERR(btag->dentry.dlog))
+		pr_warn("[BLOCK_TAG] %s: fail to create blockio at debugfs\n", name);
+
+out:
+	spin_lock_init(&btag->prbuf.lock);
+	list_add(&btag->list, &mtk_btag_list);
+
+	return btag;
+}
+EXPORT_SYMBOL_GPL(mtk_btag_alloc);
+
+void mtk_btag_free(struct mtk_blocktag *btag)
+{
+	if (!btag)
+		return;
+
+	list_del(&btag->list);
+	debugfs_remove_recursive(btag->dentry.droot);
+	kfree(btag->ctx.priv);
+	kfree(btag->rt.trace);
+	kfree(btag);
+}
+EXPORT_SYMBOL_GPL(mtk_btag_free);
 
 static int __init mtk_btag_early_memory_info(void)
 {
@@ -611,7 +835,7 @@ static int __init mtk_btag_early_memory_info(void)
 }
 fs_initcall(mtk_btag_early_memory_info);
 
-static unsigned long mtk_btag_pidlogger_init(void)
+static void mtk_btag_pidlogger_init(void)
 {
 	unsigned long count = mtk_btag_system_dram_size >> PAGE_SHIFT;
 	unsigned long size = count * sizeof(struct page_pid_logger);
@@ -628,38 +852,92 @@ static unsigned long mtk_btag_pidlogger_init(void)
 #endif
 
 init:
-	if (mtk_btag_pagelogger) {
+	if (mtk_btag_pagelogger)
 		memset(mtk_btag_pagelogger, -1, size);
-		return size;
-	}
+
 	pr_warn("[BLOCK_TAG] blockio: fail to allocate mtk_btag_pagelogger\n");
+}
+
+static int mtk_btag_seq_main_show(struct seq_file *seq, void *v)
+{
+	size_t used_mem = 0;
+	struct mtk_blocktag *btag, *n;
+
+	seq_puts(seq, "[Trace]\n");
+	mutex_lock(&mtk_btag_list_lock);
+	list_for_each_entry_safe(btag, n, &mtk_btag_list, list)
+		mtk_btag_seq_debug_show_ringtrace(seq, btag);
+
+	seq_puts(seq, "[Info]\n");
+	list_for_each_entry_safe(btag, n, &mtk_btag_list, list)
+		if (btag->seq_show) {
+			seq_printf(seq, "<%s: context info>\n", btag->name);
+			btag->seq_show(seq);
+		}
+
+	seq_puts(seq, "[Memory Usage]\n");
+	list_for_each_entry_safe(btag, n, &mtk_btag_list, list)
+		used_mem += mtk_btag_seq_sub_show_usedmem(seq, btag);
+	mutex_unlock(&mtk_btag_list_lock);
+
+	seq_puts(seq, "<blocktag core>\n");
+	used_mem += mtk_btag_seq_pidlog_usedmem(seq);
+
+	seq_puts(seq, "--------------------------------\n");
+	seq_printf(seq, "Total: %zu KB\n", used_mem >> 10);
+
 	return 0;
 }
 
+static const struct seq_operations mtk_btag_seq_main_ops = {
+	.start  = mtk_btag_seq_debug_start,
+	.next   = mtk_btag_seq_debug_next,
+	.stop   = mtk_btag_seq_debug_stop,
+	.show   = mtk_btag_seq_main_show,
+};
+
+static int mtk_btag_main_open(struct inode *inode, struct file *file)
+{
+	return seq_open(file, &mtk_btag_seq_main_ops);
+}
+
+static const struct file_operations mtk_btag_main_fops = {
+	.owner		= THIS_MODULE,
+	.open		= mtk_btag_main_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= seq_release,
+	.write		= mtk_btag_main_write,
+};
+
+static void mtk_btag_init_debugfs(void)
+{
+	if (mtk_btag_droot)
+		return;
+
+	mtk_btag_droot = debugfs_create_dir("blocktag", NULL);
+	if (IS_ERR(mtk_btag_droot)) {
+		pr_warn("[BLOCK_TAG] fail to create debugfs root: blocktag\n");
+		mtk_btag_droot = NULL;
+		return;
+	}
+
+	mtk_btag_dlog = debugfs_create_file("blockio", S_IFREG | S_IRUGO, NULL,
+		(void *)0, &mtk_btag_main_fops);
+	if (IS_ERR(mtk_btag_dlog))
+		pr_warn("[BLOCK_TAG] blocktag: fail to create log at debugfs\n");
+}
 
 static int __init mtk_btag_init(void)
 {
-	mtk_btag_used_mem = mtk_btag_pidlogger_init();
-	if (!mtk_btag_used_mem)
-		return 0;
-
-	mtk_btag_droot = debugfs_create_dir("blocktag", NULL);
-
-	if (IS_ERR(mtk_btag_droot)) {
-		pr_warn("[BLOCK_TAG] fail to create debugfs root: blocktag\n");
-		return 0;
-	}
-
-	mtk_btag_dmem = debugfs_create_u32("used_mem", 0440, mtk_btag_droot, &mtk_btag_used_mem);
-
-	if (IS_ERR(mtk_btag_dmem))
-		pr_warn("[BLOCK_TAG] blockio: fail to create used_mem at debugfs\n");
-
+	mtk_btag_pidlogger_init();
+	mtk_btag_init_debugfs();
 	return 0;
 }
 
 static void __exit mtk_btag_exit(void)
 {
+	debugfs_remove(mtk_btag_dlog);
 }
 
 module_init(mtk_btag_init);
