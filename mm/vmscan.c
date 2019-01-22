@@ -3089,18 +3089,18 @@ static bool zone_balanced(struct zone *zone, int order,
 {
 	if (IS_ZONE_MOVABLE_CMA_ZONE(zone)) {
 		unsigned long reclaimable = zone_reclaimable_pages(zone);
-		unsigned long min = min_wmark_pages(zone);
+		unsigned long min = high_wmark_pages(zone);
 
 		/* If no reclaimable pages, view ZONE_MOVABLE as balanced */
 		if (reclaimable == 0)
 			return true;
 
 		/*
-		 * If "the number of free pages is less than min_wmark_pages" and
-		 * "the number of reclaimable pages is less than min_wmark_pages",
-		 * view ZONE_MOVABLE as balanced.
+		 * If the number of reclaimable pages is less than high_wmark_pages,
+		 * view ZONE_MOVABLE as balanced, and terminate it earlier to let
+		 * system kill processes for rescue if needed.
 		 */
-		if (zone_page_state(zone, NR_FREE_PAGES) <= min && reclaimable <= min)
+		if (reclaimable <= min)
 			return true;
 	}
 
