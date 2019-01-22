@@ -407,22 +407,24 @@ static int _ovl_get_rsz_layer_roi(const struct OVL_CONFIG_STRUCT * const oc,
 				u32 *dst_x, u32 *dst_y, u32 *dst_w, u32 *dst_h)
 {
 	if (oc->src_w > oc->dst_w || oc->src_h > oc->dst_h) {
-		DDPERR("%s:L%d:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
+		DDPERR("%s:L%u:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
 		       oc->src_w, oc->src_h, oc->dst_w, oc->dst_h);
 		return -EINVAL;
 	}
-	if (oc->src_w < oc->dst_w && oc->dst_w != 0) {
-		*dst_x = oc->dst_x * oc->src_w / oc->dst_w;
+
+	if (oc->src_w < oc->dst_w) {
+		*dst_x = 0;
 		*dst_w = oc->src_w;
 	}
-	if (oc->src_h < oc->dst_h && oc->dst_h != 0) {
-		*dst_y = oc->dst_y * oc->src_h / oc->dst_h;
+	if (oc->src_h < oc->dst_h) {
+		*dst_y = 0;
 		*dst_h = oc->src_h;
 	}
+
 	if (oc->src_w != oc->dst_w || oc->src_h != oc->dst_h) {
-		DDPDBG("%s:(%u,%u,%ux%u)->(%u,%u,%ux%u)\n", __func__,
-			*dst_x, *dst_y, *dst_w, *dst_h,
-			oc->dst_x, oc->dst_y, oc->dst_w, oc->dst_h);
+		DDPDBG("%s:L%u:(%u,%u,%ux%u)->(%u,%u,%ux%u)\n", __func__,
+		       oc->layer, *dst_x, *dst_y, *dst_w, *dst_h,
+		       oc->dst_x, oc->dst_y, oc->dst_w, oc->dst_h);
 	}
 
 	return 0;
@@ -434,11 +436,8 @@ static int _ovl_get_rsz_roi(enum DISP_MODULE_ENUM module,
 {
 	struct OVL_CONFIG_STRUCT *oc = &pconfig->ovl_config[0];
 
-	*bg_w = pconfig->dst_w;
-	*bg_h = pconfig->dst_h;
-
 	if (oc->src_w > oc->dst_w || oc->src_h > oc->dst_h) {
-		DDPERR("%s:L%d:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
+		DDPERR("%s:L%u:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
 		       oc->src_w, oc->src_h, oc->dst_w, oc->dst_h);
 		return -EINVAL;
 	}
@@ -448,25 +447,16 @@ static int _ovl_get_rsz_roi(enum DISP_MODULE_ENUM module,
 			break;
 		if (!oc->layer_en)
 			break;
-		if (oc->dst_w == pconfig->dst_w) {
+		if (oc->src_w < oc->dst_w)
 			*bg_w = oc->src_w;
-			break;
-		}
-		if (oc->src_w < oc->dst_w && oc->src_w != 0)
-			*bg_w = pconfig->dst_w * oc->src_w / oc->dst_w;
 	} while (0);
-
 	do {
 		if (oc->ovl_index != module)
 			break;
 		if (!oc->layer_en)
 			break;
-		if (oc->dst_h == pconfig->dst_h) {
+		if (oc->src_h < oc->dst_h)
 			*bg_h = oc->src_h;
-			break;
-		}
-		if (oc->src_h < oc->dst_h && oc->src_h != 0)
-			*bg_h = pconfig->dst_h * oc->src_h / oc->dst_h;
 	} while (0);
 
 	return 0;
@@ -479,6 +469,38 @@ static int _ovl_set_rsz_roi(enum DISP_MODULE_ENUM module,
 
 	_ovl_get_rsz_roi(module, pconfig, &bg_w, &bg_h);
 	ovl_roi(module, bg_w, bg_h, gOVLBackground, handle);
+
+	return 0;
+}
+
+static int _ovl_lc_config(enum DISP_MODULE_ENUM module,
+			  struct disp_ddp_path_config *pconfig, void *handle)
+{
+	unsigned long ovl_base = ovl_base_addr(module);
+	struct OVL_CONFIG_STRUCT *oc = &pconfig->ovl_config[0];
+	u32 lc_x = 0;
+	u32 lc_y = 0;
+	u32 lc_w = pconfig->dst_w;
+	u32 lc_h = pconfig->dst_h;
+
+	if (oc->layer_en) {
+		if (oc->src_w < oc->dst_w) {
+			lc_x = oc->dst_x;
+			lc_w = oc->dst_w;
+		}
+		if (oc->src_h < oc->dst_h) {
+			lc_y = oc->dst_y;
+			lc_h = oc->dst_h;
+		}
+	}
+	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_XOFF,
+			   ovl_base + DISP_REG_OVL_LC_OFFSET, lc_x);
+	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_YOFF,
+			   ovl_base + DISP_REG_OVL_LC_OFFSET, lc_y);
+	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_SRC_W,
+			   ovl_base + DISP_REG_OVL_LC_SRC_SIZE, lc_w);
+	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_SRC_H,
+			   ovl_base + DISP_REG_OVL_LC_SRC_SIZE, lc_h);
 
 	return 0;
 }
@@ -1306,6 +1328,8 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 		ovl_bw = ovl_bw + tmp_bw;
 		DDPMSG("h:%u, w:%u, fps:%u, Bpp:%u, bw:%llu\n", pConfig->dst_h, pConfig->dst_w, fps, Bpp, tmp_bw);
 	}
+
+	_ovl_lc_config(module, pConfig, handle);
 
 	DDPDBG("%s bw:%llu\n", ddp_get_module_name(module), ovl_bw);
 	DDPDBG("%s: enabled_layers=0x%01x, enabled_ext_layers=0x%01x, ext_sel_layers=0x%04x\n",

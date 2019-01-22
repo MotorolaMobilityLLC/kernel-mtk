@@ -6185,6 +6185,17 @@ static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 			break;
 		}
 	}
+
+	if ((HRT_GET_PATH_ID(HRT_GET_PATH_SCENARIO(cfg->overlap_layer_num)) !=
+	     2) && (rsz == true)) {
+		struct disp_input_config *c = &cfg->input_cfg[0];
+
+		DISPERR("not RPO but L0(%u,%u,%ux%u)->(%u,%u,%ux%u)\n",
+			c->src_offset_x, c->src_offset_y, c->src_width,
+			c->src_height, c->tgt_offset_x, c->tgt_offset_y,
+			c->tgt_width, c->tgt_height);
+	}
+
 	return rsz;
 }
 
