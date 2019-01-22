@@ -16,32 +16,31 @@
 
 #include <linux/uaccess.h>
 
-typedef enum {
+enum disp_gamma_id_t {
 	DISP_GAMMA0 = 0,
 	DISP_GAMMA1,
 	DISP_GAMMA_TOTAL
-} disp_gamma_id_t;
+};
 
-typedef unsigned int gamma_entry;
 #define GAMMA_ENTRY(r10, g10, b10) (((r10) << 20) | ((g10) << 10) | (b10))
 
 #define DISP_GAMMA_LUT_SIZE 512
 
-typedef struct {
-	disp_gamma_id_t hw_id;
-	gamma_entry lut[DISP_GAMMA_LUT_SIZE];
-} DISP_GAMMA_LUT_T;
+struct DISP_GAMMA_LUT_T {
+	enum disp_gamma_id_t hw_id;
+	unsigned int lut[DISP_GAMMA_LUT_SIZE];
+};
 
-typedef enum {
+enum disp_ccorr_id_t {
 	DISP_CCORR0 = 0,
 	DISP_CCORR1,
 	DISP_CCORR_TOTAL
-} disp_ccorr_id_t;
+};
 
-typedef struct {
-	disp_ccorr_id_t hw_id;
+struct DISP_CCORR_COEF_T {
+	enum disp_ccorr_id_t hw_id;
 	unsigned int coef[3][3];
-} DISP_CCORR_COEF_T;
+};
 
 extern int corr_dbg_en;
 

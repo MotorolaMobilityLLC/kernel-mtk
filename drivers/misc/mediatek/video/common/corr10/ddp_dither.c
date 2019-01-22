@@ -54,7 +54,8 @@
 #endif
 
 #if defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6739)
 #define DITHER_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -130,7 +131,7 @@ void disp_dither_init(enum DISP_MODULE_ENUM module, int width, int height,
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_MT6799)
-	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, 0 << 8, 1 << 8);
+	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG + offset, 0 << 8, 1 << 8);
 #endif
 	DISP_REG_SET(cmdq, DISP_REG_DITHER_SIZE + offset, (width << 16) | height);
 
@@ -267,7 +268,7 @@ static int dither_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 struct DDP_MODULE_DRIVER ddp_driver_dither = {
 	.config = disp_dither_config,
 	.bypass = disp_dither_bypass,
-#if !defined(CONFIG_MACH_MT6759)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6739)
 	.init = disp_dither_power_on,
 	.deinit = disp_dither_power_off,
 #endif
