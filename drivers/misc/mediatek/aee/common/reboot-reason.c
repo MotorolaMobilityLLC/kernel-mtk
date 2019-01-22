@@ -104,6 +104,7 @@ static ssize_t powerup_reason_show(struct kobject *kobj, struct kobj_attribute *
 	char *br_ptr;
 	char *br_ptr_e;
 
+	memset(boot_reason, 0x0, 64);
 	br_ptr = strstr(saved_command_line, "androidboot.bootreason=");
 	if (br_ptr != 0) {
 		br_ptr_e = strstr(br_ptr, " ");
