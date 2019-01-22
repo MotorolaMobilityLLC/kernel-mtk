@@ -21,6 +21,7 @@
 /* for EINT register and enum */
 #include <upmu_common.h>
 #include "accdet.h"
+#include "reg_accdet.h"
 
 #include "mtk_auxadc_intf.h"
 
@@ -2344,9 +2345,26 @@ static int accdet_create_attr(struct device_driver *driver)
 }
 #endif
 
+#define AUDIO_MIC_MODE_ACC  1
+#define AUDIO_MIC_MODE_DCC   2
+
 /* just be called by audio module for DC trim */
 void accdet_late_init(unsigned long a)
 {
+	switch (a) {
+	case AUDIO_MIC_MODE_ACC:
+		headset_dts_data.accdet_mic_mode = HEADSET_MODE_1;
+		ACCDET_INFO("[accdet_late_init](0966phone)Switch to ACC mode,accdet_mic_mode:%d!\n",
+			headset_dts_data.accdet_mic_mode);
+		break;
+	case AUDIO_MIC_MODE_DCC:
+		ACCDET_INFO("[accdet_late_init]PCBID=1(0719phone&EVB&)Use default DCC mode!\n");
+		break;
+	default:
+		ACCDET_INFO("[accdet_late_init]invalid parameter=0x%lx Use default DCC mode!\n", a);
+		break;
+	}
+
 	if (atomic_cmpxchg(&s_accdet_first, 1, 0)) {
 		del_timer_sync(&accdet_init_timer);
 		accdet_init();
