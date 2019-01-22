@@ -3548,7 +3548,7 @@ static int testcase_cpu_config_mmsys(void *data)
 
 	CMDQ_LOG("%s\n", __func__);
 
-	cmdq_get_func()->enableCommonClockLocked(true);
+	cmdq_mdp_get_func()->mdpEnableCommonClock(true);
 
 	while (1) {
 		if (kthread_should_stop())
@@ -3561,6 +3561,8 @@ static int testcase_cpu_config_mmsys(void *data)
 	}
 
 	CMDQ_LOG("%s END\n", __func__);
+
+	cmdq_mdp_get_func()->mdpEnableCommonClock(false);
 
 	return 0;
 }

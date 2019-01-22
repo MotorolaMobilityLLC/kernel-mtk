@@ -64,9 +64,6 @@ typedef ssize_t(*CmdqPrintStatusClock) (char *buf);
 /* print seq status clock */
 typedef void (*CmdqPrintStatusSeqClock) (struct seq_file *m);
 
-/* enable common clock locked */
-typedef void (*CmdqEnableCommonClockLocked) (bool enable);
-
 /* enable GCE clock locked */
 typedef void (*CmdqEnableGCEClockLocked) (bool enable);
 
@@ -113,7 +110,6 @@ struct cmdqCoreFuncStruct {
 	CmdqModuleEntrySuspend moduleEntrySuspend;
 	CmdqPrintStatusClock printStatusClock;
 	CmdqPrintStatusSeqClock printStatusSeqClock;
-	CmdqEnableCommonClockLocked enableCommonClockLocked;
 	CmdqEnableGCEClockLocked enableGCEClockLocked;
 	CmdqParseErrorModule parseErrorModule;
 	CmdqDumpSMI dumpSMI;

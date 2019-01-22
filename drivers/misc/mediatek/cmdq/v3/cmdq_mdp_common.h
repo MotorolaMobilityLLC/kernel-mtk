@@ -73,6 +73,8 @@ typedef const char *(*CmdqPraseErrorModByEngFlag) (const struct TaskStruct *task
 
 typedef u64 (*CmdqMdpGetEngineGroupBits) (u32 engine_group);
 
+typedef void (*CmdqMdpEnableCommonClock) (bool enable);
+
 struct cmdqMDPFuncStruct {
 	CmdqDumpMMSYSConfig dumpMMSYSConfig;
 	CmdqVEncDumpInfo vEncDumpInfo;
@@ -97,6 +99,7 @@ struct cmdqMDPFuncStruct {
 	CmdqPraseErrorModByEngFlag parseErrModByEngFlag;
 	CmdqMdpGetEngineGroupBits getEngineGroupBits;
 	CmdqErrorResetCB errorReset;
+	CmdqMdpEnableCommonClock mdpEnableCommonClock;
 };
 
 /* track MDP task */
