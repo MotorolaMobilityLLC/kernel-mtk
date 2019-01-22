@@ -249,8 +249,10 @@ void check_cm_mgr_status_internal(void)
 		int ret;
 		int idx;
 		int max_ratio_idx[CM_MGR_CPU_CLUSTER];
+#ifdef LIGHT_LOAD
 		unsigned int cpu;
 		unsigned int rel_load, abs_load;
+#endif
 #ifdef PER_CPU_STALL_RATIO
 		int cpu_ratio_idx[CM_MGR_CPU_COUNT];
 #endif
@@ -292,8 +294,8 @@ void check_cm_mgr_status_internal(void)
 			spin_unlock(&cm_mgr_lock);
 			return;
 		}
-		cps_valid = 1;
 #endif
+		cps_valid = 1;
 
 		now = ktime_get();
 
