@@ -20,6 +20,8 @@ enum {
 	QOS_IPI_DDR_OPP,
 	QOS_IPI_ERROR_HANDLER,
 	QOS_IPI_SWPM_INIT,
+	QOS_IPI_UPOWER_DATA_TRANSFER,
+	QOS_IPI_UPOWER_DUMP_TABLE,
 
 	NR_QOS_IPI,
 };
@@ -49,6 +51,9 @@ struct qos_data {
 			unsigned int dram_size;
 			unsigned int dram_ch_num;
 		} swpm_init;
+		struct {
+			unsigned int arg[3];
+		} upower_data;
 	} u;
 };
 
