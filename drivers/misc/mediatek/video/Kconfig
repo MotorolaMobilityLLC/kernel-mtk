@@ -64,6 +64,15 @@ config CUSTOM_LCM_Y
 	  If you want to change LCM resolution, please set it.
 	  defaule value is "0".
 
+config MTK_ROUND_CORNER_SUPPORT
+        bool "enable medietak display round corner"
+        default n
+        help
+          define CONFIG_MTK_ROUND_CORNER_SUPPORT to enable Mediatek Round Corner on display.
+          If you want to use Meditek Round Corner on display, please make sure it is Y in xxx_defconfig.mk.
+	  This feature require round corner pattern provided in lcm driver folder.
+          If unsure, set N.
+
 config MTK_FB_SUPPORT_ASSERTION_LAYER
 	bool "AEE Assertion Layer Support"
 	depends on MTK_FB

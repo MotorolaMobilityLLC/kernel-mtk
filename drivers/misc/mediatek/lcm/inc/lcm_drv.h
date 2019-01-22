@@ -661,6 +661,12 @@ typedef struct {
 	void *od_table;
 	unsigned int max_refresh_rate;
 	unsigned int min_refresh_rate;
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	unsigned int round_corner_en;
+	unsigned int corner_pattern_width;
+	unsigned int corner_pattern_height;
+#endif
 } LCM_PARAMS;
 
 
