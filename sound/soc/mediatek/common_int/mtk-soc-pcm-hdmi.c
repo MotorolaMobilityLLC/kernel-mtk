@@ -82,7 +82,7 @@ static int mtk_afe_hdmi_probe(struct snd_soc_platform *platform);
 #define _DEBUG_TDM_KERNEL_ 1
 
 
-static uint32 table_sgen_golden_values[64] = {
+static unsigned int table_sgen_golden_values[64] = {
 	0x0FE50FE5, 0x285E1C44, 0x3F4A285E, 0x53C73414,
 	0x650C3F4A, 0x726F49E3, 0x7B6C53C7, 0x7FAB5CDC,
 	0x7F02650C, 0x79776C43, 0x6F42726F, 0x60C67781,
@@ -103,7 +103,7 @@ static uint32 table_sgen_golden_values[64] = {
 
 
 
-static uint32 table_sgen_4ch_golden_values[128] = {
+static unsigned int table_sgen_4ch_golden_values[128] = {
 	/* step   2              1              4              3 */
 	/* ch2       ch1            ch4          ch3 */
 	0x0FE50FE5, 0x0FE50FE5,
@@ -173,7 +173,7 @@ static uint32 table_sgen_4ch_golden_values[128] = {
 };
 
 
-static uint32 table_sgen_8ch_golden_values[] = {
+static unsigned int table_sgen_8ch_golden_values[] = {
 	0x0FE50000, 0x0FE50FE5, 0x0FE50FE5, 0x0FE50FE5,
 	0x285E0000, 0x3F4A3414, 0x285E1C44, 0x3F4A3414,
 	0x3F4A0000, 0x650C53C7, 0x3F4A285E, 0x650C53C7,
@@ -244,8 +244,8 @@ static void copysinewavetohdmi(unsigned int channels)
 {
 	uint8_t *Bufferaddr;
 	int Hdmi_Buffer_length;
-	uint32 arraybytes;
-	uint32 *SinewaveArr;
+	unsigned int arraybytes;
+	unsigned int *SinewaveArr;
 	int i;
 
 	Bufferaddr = HDMI_dma_buf->area;
@@ -330,9 +330,9 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	struct audio_hdmi_format *ptrAudioHDMIFormat;
-	uint32 runsamplerate = 44100;
-	uint32 outchannel = 2;
-	/* uint32 HDMIchannel = 8; */
+	unsigned int runsamplerate = 44100;
+	unsigned int outchannel = 2;
+	/* unsigned int HDMIchannel = 8; */
 	snd_pcm_format_t format  = SNDRV_PCM_FORMAT_S16_LE;
 
 	ptrAudioHDMIFormat = &mAudioHDMIFormat;
@@ -346,7 +346,7 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 	mHdmi_sidegen_control = ucontrol->value.integer.value[0];
 
 	if (mHdmi_sidegen_control) {
-		uint32 MclkDiv = 0;
+		unsigned int MclkDiv = 0;
 
 		pr_warn("%s(),mHdmi_sidegen_control\n", __func__);
 
@@ -733,7 +733,7 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime;
 	struct audio_hdmi_format *ptrAudioHDMIFormat;
-	uint32 MclkDiv;
+	unsigned int MclkDiv;
 
 	runtime = substream->runtime;
 	ptrAudioHDMIFormat = &mAudioHDMIFormat;
@@ -798,7 +798,7 @@ static int mtk_pcm_hdmi_prepare(struct snd_pcm_substream *substream)
 static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 {
 
-	/* uint32 u32AudioI2S = 0; */
+	/* unsigned int u32AudioI2S = 0; */
 
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_HDMI, substream);
 

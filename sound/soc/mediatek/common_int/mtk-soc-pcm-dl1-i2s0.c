@@ -100,8 +100,8 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 {
 	bool ret = false;
 	static int samplerate;
-	uint32 u32AudioI2sOut = 0;
-	uint32 u32Audio2ndI2sIn = 0;
+	unsigned int u32AudioI2sOut = 0;
+	unsigned int u32Audio2ndI2sIn = 0;
 
 	AudDrv_Clk_On();
 
@@ -507,7 +507,7 @@ static int mtk_pcm_i2s0_prepare(struct snd_pcm_substream *substream)
 static int mtk_pcm_i2s0_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	uint32 u32AudioI2S = 0;
+	unsigned int u32AudioI2S = 0;
 
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
 	if (runtime->format == SNDRV_PCM_FORMAT_S32_LE

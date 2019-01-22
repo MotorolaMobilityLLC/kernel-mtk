@@ -182,21 +182,21 @@ void *Get_Afe_Powertop_Pointer()
 }
 
 /* function to access apmixed sys */
-uint32 GetApmixedCfg(uint32 offset)
+unsigned int GetApmixedCfg(unsigned int offset)
 {
 	volatile long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
-	volatile uint32 *value;
+	volatile unsigned int *value;
 
-	value = (volatile uint32 *)(address);
+	value = (volatile unsigned int *)(address);
 	/* pr_debug("GetApmixedCfg offset=%x address = %x value = 0x%x\n", offset, address, *value); */
 	return *value;
 }
 
-void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask)
+void SetApmixedCfg(unsigned int offset, unsigned int value, unsigned int mask)
 {
 	volatile long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
-	volatile uint32 *AFE_Register = (volatile uint32 *)address;
-	volatile uint32 val_tmp;
+	volatile unsigned int *AFE_Register = (volatile unsigned int *)address;
+	volatile unsigned int val_tmp;
 	/* pr_debug("SetApmixedCfg offset=%x, value=%x, mask=%x\n",offset,value,mask); */
 	val_tmp = GetApmixedCfg(offset);
 	val_tmp &= (~mask);
@@ -247,7 +247,7 @@ void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 #endif
 }
 
-void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask)
+void Afe_Set_Reg(unsigned int offset, unsigned int value, unsigned int mask)
 {
 	int ret = 0;
 
@@ -259,9 +259,9 @@ void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask)
 }
 EXPORT_SYMBOL(Afe_Set_Reg);
 
-uint32 Afe_Get_Reg(uint32 offset)
+unsigned int Afe_Get_Reg(unsigned int offset)
 {
-	uint32 value;
+	unsigned int value;
 	int ret;
 
 	ret = regmap_read(pregmap, offset, &value);

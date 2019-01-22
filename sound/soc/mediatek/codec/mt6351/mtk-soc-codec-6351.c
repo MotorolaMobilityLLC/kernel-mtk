@@ -116,7 +116,7 @@ static void VOW32KCK_Enable(bool enable);
 #endif
 
 static struct codec_data_private *mCodec_data;
-static uint32 mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = {48000, 48000, 48000};
+static unsigned int mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = {48000, 48000, 48000};
 
 #define MAX_DL_SAMPLE_RATE (192000)
 #define MAX_UL_SAMPLE_RATE (192000)
@@ -179,7 +179,7 @@ static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
 static bool mClkBufferfromPMIC;
-static uint32 MicbiasRef, GetMicbias;
+static unsigned int MicbiasRef, GetMicbias;
 
 static int reg_AFE_VOW_CFG0;			/* VOW AMPREF Setting */
 static int reg_AFE_VOW_CFG1;			/* VOW A,B timeout initial value (timer) */
@@ -229,7 +229,7 @@ enum audio_vow_mic_type {
 
 /* AUDIO_VOW_MIC_TYPE_Handset_DMIC */
 /* AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K */
-static uint16 Handset_DMIC_PeriodicOnOff[7][22] = {
+static unsigned short Handset_DMIC_PeriodicOnOff[7][22] = {
 	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
 	{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x81EC, 0x0000,
 	 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x18F6, 0x0000},/* 90% */
@@ -249,7 +249,7 @@ static uint16 Handset_DMIC_PeriodicOnOff[7][22] = {
 
 /* AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC */
 /* AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM */
-static uint16 Handset_AMIC_DCC_PeriodicOnOff[7][22] = {
+static unsigned short Handset_AMIC_DCC_PeriodicOnOff[7][22] = {
 	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
 	{0x8000, 0x8000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0xC000, 0x81EC, 0x0000,
 	 0x1917, 0x8021, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x1917, 0x18F6, 0x0000},/* 90% */
@@ -269,7 +269,7 @@ static uint16 Handset_AMIC_DCC_PeriodicOnOff[7][22] = {
 
 /* AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC */
 /* AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM */
-static uint16 Headset_MIC_DCC_PeriodicOnOff[7][22] = {
+static unsigned short Headset_MIC_DCC_PeriodicOnOff[7][22] = {
 	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
 	{0x8000, 0x8000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0xC000, 0x81EC, 0x0000,
 	 0x1917, 0x8021, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x1917, 0x18F6, 0x0000},/* 90% */
@@ -1471,9 +1471,9 @@ static void SetDCcoupleNP(int MicBias, int mode)
 	}
 }
 
-uint32 GetULFrequency(uint32 frequency)
+unsigned int GetULFrequency(unsigned int frequency)
 {
-	uint32 Reg_value = 0;
+	unsigned int Reg_value = 0;
 
 	pr_warn("%s frequency =%d\n", __func__, frequency);
 	switch (frequency) {
@@ -1492,7 +1492,7 @@ uint32 GetULFrequency(uint32 frequency)
 }
 
 
-uint32 ULSampleRateTransform(uint32 SampleRate)
+unsigned int ULSampleRateTransform(unsigned int SampleRate)
 {
 	switch (SampleRate) {
 	case 8000:
@@ -1867,9 +1867,9 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 #endif
 };
 
-uint32 GetDLNewIFFrequency(unsigned int frequency)
+unsigned int GetDLNewIFFrequency(unsigned int frequency)
 {
-	uint32 Reg_value = 0;
+	unsigned int Reg_value = 0;
 
 	switch (frequency) {
 	case 8000:
@@ -3546,7 +3546,7 @@ static bool GetDacStatus(void)
 static bool TurnOnADcPowerACC(int ADCType, bool enable)
 {
 	bool refmic_using_ADC_L = false;
-	uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
+	unsigned int SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
 
 	pr_warn("%s ADCType = %d enable = %d, refmic_using_ADC_L=%d\n", __func__, ADCType,
 	       enable, refmic_using_ADC_L);
@@ -3809,9 +3809,9 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 {
 	pr_warn("%s ADCType = %d enable = %d\n", __func__, ADCType, enable);
 	if (enable) {
-		uint32 ULIndex = GetULFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]);
-		uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
-		/* uint32 SampleRate_VUL2 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC_2]; */
+		unsigned int ULIndex = GetULFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]);
+		unsigned int SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
+		/* unsigned int SampleRate_VUL2 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC_2]; */
 
 		if (GetAdcStatus() == false) {
 			audckbufEnable(true);
@@ -3909,7 +3909,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 
 static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 {
-	uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
+	unsigned int SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
 
 	pr_warn("%s(), enable %d, ADCType %d, AUDIO_MICSOURCE_MUX_IN_1 %d\n",
 		__func__,
@@ -4223,7 +4223,7 @@ static bool TurnOnVOWDigitalHW(bool enable)
 static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 {
 	int i = 0;
-	uint16 (*pBuf)[22];
+	unsigned short (*pBuf)[22];
 
 	if ((MicType == AUDIO_VOW_MIC_TYPE_Headset_MIC)
 	 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_AMIC)
@@ -5533,7 +5533,7 @@ static int SineTable_UL2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 	return 0;
 }
 
-static int32 Pmic_Loopback_Type;
+static int Pmic_Loopback_Type;
 
 static int Pmic_Loopback_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {

@@ -133,7 +133,7 @@ static int mdl1spk_hdoutput_control;
 static bool mdl1spkPrepareDone;
 
 static const void *spk_irq_user_id;
-static uint32 spk_irq_cnt;
+static unsigned int spk_irq_cnt;
 
 static struct device *mDev;
 
@@ -686,7 +686,7 @@ static int dl1spk_prepare_count;
 static int mtk_pcm_dl1spk_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	uint32 u32AudioI2S = 0;
+	unsigned int u32AudioI2S = 0;
 	int payloadlen = 0;
 	bool mI2SWLen;
 

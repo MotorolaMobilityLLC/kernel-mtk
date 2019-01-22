@@ -989,8 +989,8 @@ static int mtk_voice_usb_copy_cap(struct snd_pcm_substream *substream,
 			__func__, read_size, Awb_Block->u4DMAReadIdx, Awb_Block->u4WriteIdx,
 			Awb_Block->u4DataRemained);
 	} else {
-		uint32 size_1 = Awb_Block->u4BufferSize - DMA_Read_Ptr;
-		uint32 size_2 = read_size - size_1;
+		unsigned int size_1 = Awb_Block->u4BufferSize - DMA_Read_Ptr;
+		unsigned int size_2 = read_size - size_1;
 
 		if (DMA_Read_Ptr != Awb_Block->u4DMAReadIdx) {
 			pr_warn("%s 2, size1:0x%x, Remained:0x%x, Read_Ptr:0x%x, ReadIdx:0x%x\n",

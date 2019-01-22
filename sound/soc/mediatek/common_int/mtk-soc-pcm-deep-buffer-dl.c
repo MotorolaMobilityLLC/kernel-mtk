@@ -82,7 +82,7 @@ static bool vcore_dvfs_enable;
 static int deep_buffer_dl_hdoutput;
 static bool mPrepareDone;
 static const void *irq_user_id;
-static uint32 irq6_cnt;
+static unsigned int irq6_cnt;
 static struct device *mDev;
 
 static int deep_buffer_mem_blk;

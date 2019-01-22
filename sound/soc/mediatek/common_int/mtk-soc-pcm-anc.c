@@ -153,8 +153,8 @@ void *MD32_DTCM_VIRTUAL_ADDR;
 void *MD32_PTCM_VIRTUAL_ADDR;
 /*void *SPM_AUDIO_PWR_CON;
  * void *SPM_AUDIO_ACCESS;
- * #define WriteREG(_addr, _value) (*(volatile uint32 *)(_addr) = (uint32)(_value))
- * #define ReadREG(_addr)		  (*(volatile uint32 *)(_addr))
+ * #define WriteREG(_addr, _value) (*(volatile unsigned int *)(_addr) = (unsigned int)(_value))
+ * #define ReadREG(_addr)		  (*(volatile unsigned int *)(_addr))
 */
 
 typedef enum {
@@ -303,10 +303,10 @@ void setDebugDump(bool enable)
 
 void preset(void)
 {
-	volatile uint32 *AFE_Register;
-	volatile uint32 *SPM_Register;
+	volatile unsigned int *AFE_Register;
+	volatile unsigned int *SPM_Register;
 
-	AFE_Register = (volatile uint32 *)Get_Afe_Powertop_Pointer();
+	AFE_Register = (volatile unsigned int *)Get_Afe_Powertop_Pointer();
 	SPM_Register = ioremap_nocache(0x10006000, 0x1000);
 
 	pr_debug("ANCService_ioctl test(before) AFE_Register: %x", *AFE_Register);
@@ -795,7 +795,7 @@ static ssize_t ANCService_read(struct file *fp,  char __user *data,
 	int retval;
 	int i;
 
-	volatile uint32 *AFE_Register = (volatile uint32 *)Get_Afe_Powertop_Pointer();
+	volatile unsigned int *AFE_Register = (volatile unsigned int *)Get_Afe_Powertop_Pointer();
 
 	if (!dump_analog) {
 		cur += sprintf((char *)cur, "===DUMP MD32 Memory===\n");
