@@ -1622,6 +1622,37 @@ P_STA_RECORD_T bssRemoveClientByMac(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T pr
 	return NULL;
 }
 
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief Get station record by Address for AP mode
+*
+* @param[in] prBssInfo              Pointer to BSS_INFO_T.
+* @param[in] pucMacAddr               Pointer to target mac address
+*
+* @return pointer of STA_RECORD_T if found, otherwise, return NULL
+*/
+/*----------------------------------------------------------------------------*/
+
+P_STA_RECORD_T bssGetClientByAddress(IN P_BSS_INFO_T prBssInfo, PUINT_8 pucMacAddr)
+{
+	P_LINK_T prStaRecOfClientList;
+
+	ASSERT(prBssInfo);
+	ASSERT(pucMacAddr);
+
+	prStaRecOfClientList = &prBssInfo->rStaRecOfClientList;
+	if (!LINK_IS_EMPTY(prStaRecOfClientList)) {
+		P_STA_RECORD_T prCurrStaRec;
+
+		LINK_FOR_EACH_ENTRY(prCurrStaRec, prStaRecOfClientList, rLinkEntry, STA_RECORD_T) {
+			if (EQUAL_MAC_ADDR(prCurrStaRec->aucMacAddr, pucMacAddr))
+				return prCurrStaRec;
+		}
+	}
+	return NULL;
+}
+
+
 P_STA_RECORD_T bssRemoveHeadClient(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo)
 {
 	P_LINK_T prStaRecOfClientList;
