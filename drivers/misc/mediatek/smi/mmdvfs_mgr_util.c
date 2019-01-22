@@ -17,6 +17,8 @@
 #include "mmdvfs_internal.h"
 
 static mmdvfs_state_change_cb quick_mmdvfs_state_change_cbs[MMDVFS_SCEN_COUNT];
+static mmdvfs_prepare_action_cb quick_mmdvfs_prepare_action_cbs[MMDVFS_SCEN_COUNT];
+
 
 mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 {
@@ -47,6 +49,34 @@ mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 		result = MMDVFS_LCD_SIZE_WQHD;
 
 	return result;
+}
+
+int register_mmdvfs_prepare_cb(int mmdvfs_client_id, mmdvfs_prepare_action_cb func)
+{
+		if (mmdvfs_client_id >= 0 && mmdvfs_client_id < MMDVFS_SCEN_COUNT) {
+			MMDVFSMSG("register_mmdvfs_prepare_cb registered: %d\n", mmdvfs_client_id);
+			quick_mmdvfs_prepare_action_cbs[mmdvfs_client_id] = func;
+		} else {
+			MMDVFSMSG("clk_switch_cb register failed: id=%d\n", mmdvfs_client_id);
+			return 1;
+		}
+	return 0;
+}
+
+void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *event)
+{
+		int i = 0;
+
+		MMDVFSMSG("mmdvfs_notify_prepare_action: %d\n", event->event_type);
+		for (i = 0; i < MMDVFS_SCEN_COUNT; i++) {
+			mmdvfs_prepare_action_cb func = quick_mmdvfs_prepare_action_cbs[i];
+
+			if (func != NULL) {
+				MMDVFSMSG("mmdvfs_notify_prepare_action cb, client id:%d, act:%d\n",
+				i, event->event_type);
+				func(event);
+			}
+		}
 }
 
 
