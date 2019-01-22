@@ -137,7 +137,7 @@ extern int primary_display_switch_mode_for_mmdvfs(int sess_mode, unsigned int se
 
 enum {
 	MMDVFS_CAM_MON_SCEN = SMI_BWC_SCEN_CNT, MMDVFS_SCEN_MHL, MMDVFS_SCEN_MJC, MMDVFS_SCEN_DISP,
-	MMDVFS_SCEN_ISP, MMDVFS_SCEN_VP_HIGH_RESOLUTION, MMDVFS_SCEN_COUNT
+	MMDVFS_SCEN_ISP, MMDVFS_SCEN_VP_HIGH_RESOLUTION, MMDVFS_SCEN_VPU, MMDVFS_SCEN_COUNT
 };
 
 enum mmdvfs_vpu_clk {
@@ -148,6 +148,11 @@ enum mmdvfs_vpu_if_clk {
 		vpu_if_clk_0, vpu_if_clk_1,	vpu_if_clk_2,	vpu_if_clk_3
 };
 
+enum mmdvfs_vimvo_vol {
+		vimvo_vol_0, vimvo_vol_1,	vimvo_vol_2,	vimvo_vol_3
+};
+
+
 struct mmdvfs_state_change_event {
 	int scenario;
 	int feature_flag;
@@ -157,6 +162,7 @@ struct mmdvfs_state_change_event {
 	int mmsys_clk_step;
 	int vpu_clk_step;
 	int vpu_if_clk_step;
+	int vimvo_vol_step;
 };
 
 typedef int (*mmdvfs_state_change_cb)(struct mmdvfs_state_change_event *event);
