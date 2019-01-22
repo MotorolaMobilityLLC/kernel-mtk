@@ -13,8 +13,6 @@ teei-objs += backward_driver.o irq_register.o notify_queue.o teei_capi.o teei_fp
 
 obj-$(CONFIG_MICROTRUST_TZ_DRIVER) += teei.o
 
-
 ccflags-y += -D DEBUG_DO
-ccflags-y += -D UT_DMA_ZONE
 ccflags-y += -Wno-error
-
+ccflags-y += -D UT_DMA_ZONE

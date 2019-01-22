@@ -11,7 +11,7 @@
 #define SMC_INTERRUPTED     2
 #define SMC_PENDING         1
 #define SMC_SUCCESS         0
-
+extern void __flush_dcache_area(void *addr, size_t len);
 /**
  * @brief Encoding data type
  */
@@ -79,7 +79,11 @@ enum teei_cmd_type {
  * ***************************************************************/
 static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 {
-#if 0
+
+#ifdef CONFIG_ARM64
+	__flush_dcache_area((void *)start, (end - start));
+#else
+
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 
 	__asm__ __volatile__ (
@@ -98,7 +102,6 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 #endif
-	__flush_dcache_area((void *)start, (end - start));
 }
 /******************************************************************
  * @brief:
@@ -110,7 +113,38 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
  * *****************************************************************/
 static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long end)
 {
-#if 0
+
+#ifdef CONFIG_ARM64
+
+
+	uint64_t temp[2];
+
+	temp[0] = start;
+	temp[1] = end;
+	__asm__ volatile(
+		"ldr x0, [%[temp], #0]\n\t"
+		"ldr x1, [%[temp], #8]\n\t"
+		"mrs    x3, ctr_el0\n\t"
+		"ubfm   x3, x3, #16, #19\n\t"
+		"mov	x2, #4\n\t"
+		"lsl	x2, x2, x3\n\t"
+		"dsb	sy\n\t"
+		"sub	x3, x2, #1\n\t"
+		"bic	x0, x0, x3\n\t"
+		"1:	dc      ivac, x0\n\t"                       /* invalidate D line / unified line */
+		"add	x0, x0, x2\n\t"
+		"cmp	x0, x1\n\t"
+		"b.lo	1b\n\t"
+		"dsb	sy\n\t"
+		: :
+		[temp] "r" (temp)
+ : "x0", "x1", "x2", "x3", "memory");
+
+
+
+
+
+#else
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 	__asm__ __volatile__ (
 		"1:  mcr p15, 0, %[i], c7, c6, 1\n" /* Invalidate Data Cache Line (using MVA) Register */
@@ -126,26 +160,9 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 
 	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0) : "memory"); /* invalidate btc */
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
-#endif
 
-#if 0
-	__asm__ volatile(
-		"mrs	x3, ctr_el0\n\t"
-		"lsr	x3, x3, #16\n\t"
-		"and	x3, x3, #0xf\n\t"
-		"mov	x2, #4\n\t"
-		"lsl	x2, x2, x3\n\t"
-		"sub	x3, x2, #1\n\t"
-		"bic	%[start], %[start], x3\n\t"
-		"1:	dc	ivac, %[start]\n\t"			/* invalidate D line / unified line */
-		"add	%[start],%[start] , x2\n\t"
-		"cmp	%[start], %[end]\n\t"
-		"b.lo	1b\n\t"
-		"dsb	sy\n\t"
-		: :
-		[start]  "r" (start),
-		[end]  "r"  (end)
-		: "memory");
+
+
 #endif
 }
 

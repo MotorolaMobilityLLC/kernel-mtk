@@ -212,7 +212,7 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	ret = teei_smc(smc_cmd_phys, sizeof(struct teei_smc_cmd), NQ_VALID);
 
 	/* down(psema); */
-	
+
 	return 0;
 }
 
@@ -266,7 +266,7 @@ int teei_smc_call(u32 teei_cmd_type,
 {
 	int cpu_id = 0;
 	int retVal = 0;
-	
+
 	struct teei_smc_cmd *local_smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL);
 
 	if (local_smc_cmd == NULL) {
@@ -294,22 +294,24 @@ int teei_smc_call(u32 teei_cmd_type,
 
 	down(&smc_lock);
 
-	if (teei_config_flag == 1) 
+	if (teei_config_flag == 1)
 		complete(&global_down_lock);
 
 	/* with a wmb() */
 	wmb();
 
 #if 0
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
-	smp_call_function_single(cpu_id, secondary_teei_smc_call, (void *)(&smc_call_entry), 1);	
+	smp_call_function_single(cpu_id, secondary_teei_smc_call, (void *)(&smc_call_entry), 1);
+	put_online_cpus();
 #else
 	Flush_Dcache_By_Area((unsigned long)&smc_call_entry, (unsigned long)&smc_call_entry + sizeof(smc_call_entry));
 	retVal = add_work_entry(CAPI_CALL, (unsigned long)&smc_call_entry);
 	if (retVal != 0) {
 		tz_free_shared_mem(local_smc_cmd, sizeof(struct teei_smc_cmd));
 		return retVal;
-	}	
+	}
 #endif
 
 	down(psema);

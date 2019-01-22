@@ -16,7 +16,11 @@
 #include <linux/delay.h>
 #include <linux/irq.h>
 #include <asm/uaccess.h>
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#else
+#include <linux/clk.h>
+#endif
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/compat.h>
@@ -285,8 +289,11 @@ static void post_teei_invoke_drv(int cpu_id)
 static void teei_invoke_drv(void)
 {
 	int cpu_id = 0;
+
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	post_teei_invoke_drv(cpu_id);
+	put_online_cpus();
 
 	return;
 }
@@ -337,7 +344,7 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 
 static int teei_cpu_id[]={0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101, 0x0102, 0x0103,0x0200,0x0201,0x0202,0x0203};
 
-static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
+static int tz_driver_cpu_callback(struct notifier_block *self,
 		unsigned long action, void *hcpu)
 {
 	unsigned int cpu = (unsigned long)hcpu;
@@ -345,6 +352,7 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 	struct cpumask mtee_mask = { CPU_BITS_NONE };
 	int retVal = 0;
 	int i;
+	int switch_to_cpu_id = 0;
 
 	switch (action) {
 	case CPU_DOWN_PREPARE:
@@ -358,24 +366,24 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 					cpu_notify_flag = 1;
 					for_each_online_cpu(i)
 					{
-						printk("current on line cpu [%d]\n", i);
+						/*printk("current on line cpu [%d]\n", i);*/
 						if (i == cpu) {
 							continue;
 						}
-						current_cpu_id = i;
+						switch_to_cpu_id = i;
 					}
-					printk("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);
+					/*printk("current cpu id = [%d]\n", current_cpu_id);*/
+					nt_sched_core(teei_cpu_id[switch_to_cpu_id],teei_cpu_id[cpu],0);
 
-#if 1					
-					cpumask_set_cpu(current_cpu_id, &mtee_mask);
-					
-					set_cpus_allowed(teei_switch_task, mtee_mask);
-					printk("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);
+					/*printk("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);*/
+#if 1
+					cpumask_set_cpu(switch_to_cpu_id, &mtee_mask);
+					set_cpus_allowed_ptr(teei_switch_task, &mtee_mask);
+					/*printk("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);*/
+					current_cpu_id = switch_to_cpu_id;
+					printk("change cpu id from [%d] to [%d]\n", sched_cpu, switch_to_cpu_id);
 #endif
-					printk("current cpu id  \n");
-					nt_sched_core(teei_cpu_id[current_cpu_id],teei_cpu_id[cpu],0);
 
-					printk("change cpu id = [%d]\n", current_cpu_id);
 				}
 			}
 			break;
@@ -445,8 +453,10 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 	/* with a wmb() */
 	wmb();
 
+	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_init_cmdbuf, (void *)(&init_cmdbuf_entry), 1);
+	put_online_cpus();
 
 	/* with a rmb() */
 	rmb();
@@ -516,8 +526,8 @@ long create_cmd_buff(void)
 	/* smc_call to notify SOTER the share memory(message_buff) */
 
 	/* n_init_t_fc_buf((unsigned long)virt_to_phys(message_buff), 0, 0); */
-        printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n", __func__, __LINE__, 
-			(unsigned long)virt_to_phys(message_buff), 
+        printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n", __func__, __LINE__,
+			(unsigned long)virt_to_phys(message_buff),
 			(unsigned long)virt_to_phys(fdrv_message_buff),
 			(unsigned long)virt_to_phys(bdrv_message_buff),
 			(unsigned long)virt_to_phys(tlog_message_buff));
@@ -573,7 +583,7 @@ long teei_service_init_first(void)
 	if (soter_error_flag == 1)
 		return -1;
 
-	
+
 	/**
 	 * init service handler
 	 */
@@ -685,7 +695,9 @@ static int init_teei_framework(void)
 		return -1;
 	}
 
+	down(&smc_lock);
 	retVal = create_cmd_buff();
+	up(&smc_lock);
 	if (retVal < 0) {
 		printk("[%s][%d] create_cmd_buff failed !\n", __func__, __LINE__);
 		return retVal;
@@ -707,11 +719,11 @@ static int init_teei_framework(void)
 
 	/* waiting for keymaster share memory ready and anable the keymaster IOCTL */
 	up(&keymaster_api_lock);
-	
+
 	/* android notify the uTdriver that the TAs is ready !*/
 	down(&boot_decryto_lock);
 	up(&boot_decryto_lock);
-	
+
 	retVal = teei_service_init_second();
 	if (retVal == -1)
 		return -1;
@@ -726,7 +738,7 @@ static int init_teei_framework(void)
 	teei_config_flag = 1;
 
 	wake_up(&__fp_open_wq);
-	
+
 	return 0;
 }
 
@@ -802,10 +814,12 @@ static int teei_config_open(struct inode *inode, struct file *file)
  *		ENOMEM: No enough memory
  */
 
+/*
 static int teei_config_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	return 0;
 }
+*/
 
 /**
  * @brief		The release operation of /dev/teei_config device node.
@@ -831,7 +845,7 @@ static const struct file_operations teei_config_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = teei_config_ioctl,
 	.open = teei_config_open,
-	.mmap = teei_config_mmap,
+	/* .mmap = teei_config_mmap, */
 	.release = teei_config_release
 };
 
@@ -1612,7 +1626,7 @@ static int teei_client_init(void)
 		current_cpu_id = i;
 		printk("init stage : current_cpu_id = %d\n", current_cpu_id);
 	}
-	
+
 	printk("begin to create sub_thread.\n");
 
 #if 0
@@ -1644,7 +1658,7 @@ static int teei_client_init(void)
         wake_up_process(teei_switch_task);
 
 	cpumask_set_cpu(get_current_cpuid(), &mask);
-	set_cpus_allowed(teei_switch_task, mask);
+	set_cpus_allowed_ptr(teei_switch_task, &mask);
 
 	printk("create the sub_thread successfully!\n");
 

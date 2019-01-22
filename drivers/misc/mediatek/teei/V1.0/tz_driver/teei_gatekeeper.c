@@ -49,7 +49,12 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 		return NULL;
         }
 
-	temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(buff_size, SZ_4K)));
+#ifdef UT_DMA_ZONE
+        temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL | GFP_DMA, get_order(ROUND_UP(buff_size, SZ_4K)));
+#else
+        temp_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(buff_size, SZ_4K)));
+#endif
+
 
 	if (temp_addr == NULL) {
 		printk("[%s][%d]: kmalloc gatekeeper drv buffer failed.\n", __FILE__, __LINE__);
@@ -68,7 +73,7 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 	msg_body.fdrv_type = GK_SYS_NO;
 	msg_body.fdrv_phy_addr = virt_to_phys(temp_addr);
 
-	
+
 	msg_body.fdrv_size = buff_size;
 
 	local_irq_save(irq_flag);
@@ -140,11 +145,11 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 
         int cpu_id = 0;
         int retVal = 0;
-        struct fdrv_call_struct fdrv_ent; 
+        struct fdrv_call_struct fdrv_ent;
 
         down(&fdrv_lock);
         mutex_lock(&pm_mutex);
-        
+
         if (teei_config_flag == 1) {
                 complete(&global_down_lock);
         }

@@ -1,7 +1,6 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <asm/uaccess.h>
-#include <linux/compat.h>
 
 #include "teei_smc_struct.h"
 #include "teei_capi.h"
@@ -9,7 +8,14 @@
 #include "teei_id.h"
 #include "teei_debug.h"
 #include "teei_common.h"
-
+#ifdef CONFIG_ARM64
+#include <linux/compat.h>
+#else
+static inline void __user *compat_ptr(unsigned int * uptr)
+{
+	        return (void __user *)(unsigned long)uptr;
+}
+#endif
 #define printk(fmt, args...) printk("\033[;34m[TEEI][TZDriver]"fmt"\033[0m", ##args)
 
 int teei_client_close_session_for_service(void *private_data, struct teei_session *temp_ses);
@@ -86,7 +92,7 @@ int teei_client_context_init(void *private_data, void *argp)
 #endif
 	Flush_Dcache_By_Area((unsigned long)name,
                                         (unsigned long)name+sizeof(ctx.name));
-	
+
 
 	down_write(&(teei_contexts_head.teei_contexts_sem));
 
@@ -852,7 +858,7 @@ int teei_client_encode_uint32_64bit(void *private_data, void *argp)
 			void __user *pt = compat_ptr((unsigned int *)addr);
 			u32 value = 0;
 			copy_from_user(&value, pt, 4);
-			
+
 			//chengxin modify if user space is 64 bit, enc.data is a 64 bit addr, do not change to 32 bit
 			*(u32 *)((char *)enc_context->ker_req_data_addr + enc_context->enc_req_offset) = *(u32 *)enc.data;
 			//*(u32 *)((char *)enc_context->ker_req_data_addr + enc_context->enc_req_offset) = value;
@@ -1281,16 +1287,16 @@ int teei_client_encode_mem_ref_64bit(void *private_data, void *argp)
 	struct teei_session *session = NULL;
 	struct teei_shared_mem *temp_shared_mem = NULL;
 	unsigned int temp_addr;
-    
+
 	if (copy_from_user(&enc, argp, sizeof(enc))) {
 		printk("[%s][%d] copy from user failed!\n", __func__, __LINE__);
 		return -EFAULT;
 	}
-    
+
 	retVal = teei_client_prepare_encode(private_data, &enc, &enc_context, &session);
 	if (retVal != 0)
 		goto return_func;
-    
+
 	list_for_each_entry(temp_shared_mem, &session->shared_mem_list, s_head) {
 		u64 addr = enc.data;
 		if (temp_shared_mem && temp_shared_mem->index == enc.data) {
@@ -1514,7 +1520,7 @@ int teei_client_decode_uint32(void *private_data, void *argp)
 		if (dec_context->meta[dec_context->dec_res_pos].usr_addr) {
 			dec.data = (void*)((uint64_t)(dec_context->meta[dec_context->dec_res_pos].usr_addr));
 		}
-		
+
 		/* *(u32 *)dec.data = *((u32 *)((char *)dec_context->ker_res_data_addr + dec_context->dec_offset)); */
 		//chengxin modify
 		//u32 value = 0;
@@ -1523,7 +1529,7 @@ int teei_client_decode_uint32(void *private_data, void *argp)
 		//value =  *((u32 *)((char *)dec_context->ker_res_data_addr + dec_context->dec_offset));
 		//copy_to_user(pt, &value, 4);
 		unsigned int value1=0;
-		
+
 		if(((u32*)dec.data)==NULL)
 		{
 			printk("[%s][%d] error decode dec.data addr11111 is NULL!\n", __func__, __LINE__);
@@ -1533,11 +1539,11 @@ int teei_client_decode_uint32(void *private_data, void *argp)
 			printk("[%s][%d] decode data decode addr11111 is NULL!\n", __func__, __LINE__);
 		}
 		else
-		{	
+		{
 			value1=*((u32*)((char*)dec_context->ker_res_data_addr + dec_context->dec_offset));
 			*(unsigned long*)dec.data = value1;
-        }                            
-		
+        }
+
 		dec_context->dec_offset += sizeof(u32);
 		dec_context->dec_res_pos++;
 	}
