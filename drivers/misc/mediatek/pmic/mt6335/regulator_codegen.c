@@ -3044,16 +3044,6 @@ static int pmic_buck_vmd1_get_voltage_sel(struct regulator_dev *rdev)
 	return (mreg->da_vol_cb)();
 }
 
-/* Regulator vmd1 list_voltage */
-static int pmic_buck_vmd1_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 400000 + selector * 6250;
-	PMICLOG("buck vmd1 list_voltage: %d\n", voltage);
-	return voltage;
-}
-
 /* Regulator va12 enable */
 static int pmic_ldo_va12_enable(struct regulator_dev *rdev)
 {
@@ -4590,7 +4580,6 @@ static struct regulator_ops pmic_buck_vcore_ops = {
 	.is_enabled = pmic_buck_vcore_is_enabled,
 	.get_voltage_sel = pmic_buck_vcore_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vcore_set_voltage_sel,
-	.list_voltage = pmic_buck_vcore_list_voltage,
 	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_buck_vcore_enable_time, */
 };
