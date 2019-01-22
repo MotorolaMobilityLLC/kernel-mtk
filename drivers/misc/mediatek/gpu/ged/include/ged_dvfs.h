@@ -119,4 +119,5 @@ void ged_dvfs_gpu_clock_switch_notify(bool bSwitch);
 GED_ERROR ged_dvfs_system_init(void);
 void ged_dvfs_system_exit(void);
 
+extern void (*ged_kpi_set_gpu_dvfs_hint_fp)(int t_gpu_target, int boost_accum_gpu);
 
