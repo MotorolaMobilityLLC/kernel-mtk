@@ -3190,8 +3190,9 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 	DBGLOG(SCN, TRACE, "Max RSSI %d\n", cMaxRssi);
 try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
-		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
-			EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prConnSettings->aucBSSID)) {
+		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID) {
+			if (!EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prConnSettings->aucBSSID))
+				continue;
 			if (!scanSanityCheckBssDesc(prAdapter, prBssDesc, eBand, ucChannel, fgIsFixedChannel))
 				continue;
 			prCandBssDesc = prBssDesc;

@@ -804,7 +804,6 @@ VOID aisFsmStateAbort_NORMAL_TR(IN P_ADAPTER_T prAdapter)
 
 	/* 2.2 reset local variable */
 	prAisFsmInfo->fgIsInfraChannelFinished = TRUE;
-	prAdapter->rWifiVar.rConnSettings.ucSSIDLen = 0;
 }				/* end of aisFsmAbortNORMAL_TR() */
 
 #if CFG_SUPPORT_ADHOC
@@ -1365,6 +1364,9 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 		case AIS_STATE_JOIN_FAILURE:
 			prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
 			prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
+#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
+			prConnSettings->ucSSIDLen = 0;
+#endif
 #if CFG_SUPPORT_RN
 			if (prAisBssInfo->fgDisConnReassoc == TRUE) {
 				nicMediaJoinFailure(prAdapter, prAdapter->prAisBssInfo->ucBssIndex,
@@ -2567,6 +2569,9 @@ VOID aisCheckPostponedDisconnTimeout(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T 
 		prAisFsmInfo->eCurrentState = AIS_STATE_IDLE;
 	prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
 	prAisBssInfo->u2DeauthReason = REASON_CODE_BEACON_TIMEOUT;
+#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
+	prConnSettings->ucSSIDLen = 0;
+#endif
 	/* 4 <3> Indicate Disconnected Event to Host immediately. */
 	aisIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, FALSE);
 }				/* end of aisPostponedEventOfDisconnTimeout() */
@@ -3053,6 +3058,9 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 	}
 
 	if (!fgDelayIndication) {
+#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
+		prAdapter->rWifiVar.rConnSettings.ucSSIDLen = 0;
+#endif
 		/* 4 <5> Deactivate previous AP's STA_RECORD_T or all Clients in Driver if have. */
 		if (prAisBssInfo->prStaRecOfAP) {
 			/* cnmStaRecChangeState(prAdapter, prAisBssInfo->prStaRecOfAP, STA_STATE_1); */
