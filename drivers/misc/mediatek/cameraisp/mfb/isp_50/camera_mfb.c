@@ -1807,34 +1807,29 @@ static signed int MFB_WriteRegToHw(MFB_REG_STRUCT *pReg, unsigned int Count)
 static signed int MFB_WriteReg(MFB_REG_IO_STRUCT *pRegIo)
 {
 	signed int Ret = 0;
-	/*
-	 *  signed int TimeVd = 0;
-	 *  signed int TimeExpdone = 0;
-	 *  signed int TimeTasklet = 0;
-	 */
 	/* unsigned char* pData = NULL; */
 	MFB_REG_STRUCT *pData = NULL;
-	/*  */
+	/*	*/
 	if (MFBInfo.DebugMask & MFB_DBG_WRITE_REG)
 		log_dbg("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
-	/* pData = (unsigned char*)kmalloc((pRegIo->Count)*sizeof(MFB_REG_STRUCT), GFP_ATOMIC); */
-	pData = kmalloc((pRegIo->Count) * sizeof(MFB_REG_STRUCT), GFP_ATOMIC);
-	if (pData == NULL) {
-		log_dbg("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
-			current->comm,
-			current->pid,
-			current->tgid);
-		Ret = -ENOMEM;
-	}
-	/*  */
-	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (MFB_REG_RANGE>>2))) {
 		log_err("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
 		Ret = -EFAULT;
 		goto EXIT;
 	}
+	/* pData = (unsigned char*)kmalloc((pRegIo->Count)*sizeof(MFB_REG_STRUCT), GFP_ATOMIC); */
+	pData = kmalloc((pRegIo->Count) * sizeof(MFB_REG_STRUCT), GFP_KERNEL);
+	if (pData == NULL) {
+		log_err("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
+			current->comm,
+			current->pid,
+			current->tgid);
+		Ret = -ENOMEM;
+		goto EXIT;
+	}
 	if (copy_from_user
-	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(MFB_REG_STRUCT)) != 0) {
+		(pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(MFB_REG_STRUCT)) != 0) {
 		log_err("copy_from_user failed\n");
 		Ret = -EFAULT;
 		goto EXIT;
@@ -1849,6 +1844,7 @@ EXIT:
 	}
 	return Ret;
 }
+
 
 
 /*******************************************************************************
@@ -2557,11 +2553,13 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						       flags);
 
 				mutex_unlock(&gMfbDequeMutex);
+
 				if (mfb_MfbReq.m_pMfbConfig == NULL) {
 					log_err("NULL pointer:mfb_MfbReq.m_pMfbConfig");
 					Ret = -EFAULT;
 					goto EXIT;
 				}
+
 				if (copy_to_user
 				    ((void *)mfb_MfbReq.m_pMfbConfig,
 				     &g_MfbDequeReq_Struct.MfbFrameConfig[0],
@@ -3600,6 +3598,7 @@ static ssize_t mfb_reg_write(struct file *file, const char __user *buffer, size_
 	char valSzBuf[24];
 	char *pszTmp;
 	int addr = 0, val = 0;
+	long int tempval;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -3613,8 +3612,7 @@ static ssize_t mfb_reg_write(struct file *file, const char __user *buffer, size_
 	if (sscanf(desc, "%23s %23s", addrSzBuf, valSzBuf) == 2) {
 		pszTmp = strstr(addrSzBuf, "0x");
 		if (pszTmp == NULL) {
-			/*if (1 != sscanf(addrSzBuf, "%d", &addr))*/
-			if (kstrtoint(addrSzBuf, 0, &addr) != 0)
+			if (kstrtol(addrSzBuf, 10, (long int *)&tempval) != 0)
 				log_err("scan decimal addr is wrong !!:%s", addrSzBuf);
 		} else {
 			if (strlen(addrSzBuf) > 2) {
@@ -3627,8 +3625,7 @@ static ssize_t mfb_reg_write(struct file *file, const char __user *buffer, size_
 
 		pszTmp = strstr(valSzBuf, "0x");
 		if (pszTmp == NULL) {
-			/*if (1 != sscanf(valSzBuf, "%d", &val))*/
-			if (kstrtoint(valSzBuf, 0, &val) != 0)
+			if (kstrtol(valSzBuf, 10, (long int *)&tempval) != 0)
 				log_err("scan decimal value is wrong !!:%s", valSzBuf);
 		} else {
 			if (strlen(valSzBuf) > 2) {
@@ -3651,9 +3648,10 @@ static ssize_t mfb_reg_write(struct file *file, const char __user *buffer, size_
 	} else if (sscanf(desc, "%23s", addrSzBuf) == 1) {
 		pszTmp = strstr(addrSzBuf, "0x");
 		if (pszTmp == NULL) {
-			/*if (1 != sscanf(addrSzBuf, "%d", &addr))*/
-			if (kstrtoint(addrSzBuf, 0, &addr) != 0)
+			if (kstrtol(addrSzBuf, 10, (long int *)&tempval) != 0)
 				log_err("scan decimal addr is wrong !!:%s", addrSzBuf);
+			else
+				addr = tempval;
 		} else {
 			if (strlen(addrSzBuf) > 2) {
 				if (sscanf(addrSzBuf + 2, "%x", &addr) != 1)
