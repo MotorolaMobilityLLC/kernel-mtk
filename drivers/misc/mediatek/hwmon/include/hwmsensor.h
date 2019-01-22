@@ -74,6 +74,8 @@
 #define SENSOR_STRING_TYPE_STATIONARY               "android.sensor.stationary"
 #define SENSOR_TYPE_RGBW          	(46)
 #define SENSOR_STRING_TYPE_RGBW                     "android.sensor.rgbw"
+#define SENSOR_TYPE_PRESSURE_UNCALIBRATED					(50)
+#define SENSOR_STRING_TYPE_PRESSURE_UNCALIBRATED             "android.sensor.pressure_uncalibrated"
 
 /*---------------------------------------------------------------------------*/
 #define ID_BASE							0
@@ -118,7 +120,8 @@
 #define ID_ANSWER_CALL                                   (ID_BASE+SENSOR_TYPE_ANSWER_CALL-1)
 #define ID_STATIONARY                                   (ID_BASE+SENSOR_TYPE_STATIONARY-1)
 #define ID_RGBW						(ID_BASE+SENSOR_TYPE_RGBW-1)
-#define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_RGBW-1)
+#define ID_PRESSURE_UNCALIBRATED                     (ID_BASE + SENSOR_TYPE_PRESSURE_UNCALIBRATED - 1)
+#define ID_SENSOR_MAX_HANDLE	  (ID_BASE+SENSOR_TYPE_PRESSURE_UNCALIBRATED)
 #define ID_NONE							    (ID_SENSOR_MAX_HANDLE+1)
 
 #define ID_OFFSET                           (1)
@@ -189,6 +192,9 @@
 #define UNCALI_GYRO_PL_DEV_NAME         "m_uncali_gyro_pl"
 #define UNCALI_GYRO_INPUTDEV_NAME       "m_uncali_gyro_input"
 #define UNCALI_GYRO_MISC_DEV_NAME       "m_uncali_gyro_misc"
+#define UNCALI_BARO_PL_DEV_NAME         "m_uncali_baro_pl"
+#define UNCALI_BARO_INPUTDEV_NAME       "m_uncali_baro_input"
+#define UNCALI_BARO_MISC_DEV_NAME       "m_uncali_baro_misc"
 #define GYRO_PL_DEV_NAME                "m_gyro_pl"
 #define GYRO_INPUTDEV_NAME              "m_gyro_input"
 #define GYRO_MISC_DEV_NAME              "m_gyro_misc"

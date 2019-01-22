@@ -848,6 +848,47 @@ exit:
 	return status;
 }
 
+
+/*
+*get compensated pressure
+*unit: hectopascal(hPa)
+*/
+static int bmp_get_upressure(struct i2c_client *client, char *buf, int bufsize)
+{
+	struct bmp_i2c_data *obj;
+	int status;
+	s32 upressure = 0;
+
+	if (buf == NULL)
+		return -1;
+
+
+	if (client == NULL) {
+		*buf = 0;
+		return -2;
+	}
+
+	obj = i2c_get_clientdata(client);
+
+	/* update the ambient temperature according to the given meas. period */
+	/* below method will have false problem when jiffies wrap around. so replace */
+/*	if (obj->last_temp_measurement +
+*			obj->temp_measurement_period < jiffies) {
+*/
+
+	status = bmp_read_raw_pressure(client, &upressure);
+	if (status != 0)
+		goto exit;
+
+
+	sprintf(buf, "%08x", upressure);
+
+	BAR_LOG("un-compensated pressure value: %s\n", buf);
+exit:
+	return status;
+}
+
+
 /* bmp setting initialization */
 static int bmp_init_client(struct i2c_client *client)
 {
@@ -1561,6 +1602,23 @@ static int bmp_get_data(int *value, int *status)
 	return 0;
 }
 
+static int bmp_get_raw_data(int type, int *value)
+{
+	char buff[BMP_BUFSIZE];
+	int err = 0;
+
+	err = bmp_get_upressure(obj_i2c_data->client, buff, BMP_BUFSIZE);
+	if (err) {
+		BAR_ERR("get un-compensated pressure value failed, err = %d\n", err);
+		return -1;
+	}
+	if (kstrtoint(buff, 16, value) != 0)
+		BAR_ERR("sscanf parsing fail\n");
+
+	return 0;
+}
+
+
 static int bmp_i2c_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
@@ -1635,6 +1693,7 @@ static int bmp_i2c_probe(struct i2c_client *client,
 	}
 
 	data.get_data = bmp_get_data;
+	data.get_raw_data = bmp_get_raw_data;
 	data.vender_div = 100;
 	err = baro_register_data_path(&data);
 	if (err) {
