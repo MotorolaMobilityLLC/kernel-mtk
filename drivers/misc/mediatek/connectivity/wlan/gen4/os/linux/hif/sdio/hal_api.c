@@ -961,7 +961,7 @@ WLAN_STATUS halRxReadBuffer(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 			u4PktLen = (u4RegValue & BITS(16, 31)) >> 16;
 		}
 
-		DBGLOG(RX, TRACE, "RX%d: u4PktLen = %d\n", rxNum, u4PktLen);
+		DBGLOG(RX, TRACE, "RX%d: u4PktLen = %u\n", rxNum, u4PktLen);
 
 		/* 4 <4> Read Entire RFB and packet, include HW appended DW (Checksum Status) */
 		u4ReadBytes = ALIGN_4(u4PktLen) + 4;
@@ -970,7 +970,7 @@ WLAN_STATUS halRxReadBuffer(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 		/* 20091021 move the line to get the HIF RX header */
 		/* u4PktLen = (UINT_32)prHifRxHdr->u2PacketLen; */
 		if (u4PktLen != (UINT_32) HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus)) {
-			DBGLOG(RX, ERROR, "Read u4PktLen = %d, prHifRxHdr->u2PacketLen: %d\n",
+			DBGLOG(RX, ERROR, "Read u4PktLen = %u, prHifRxHdr->u2PacketLen: %d\n",
 			       u4PktLen, HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus));
 #if DBG
 			DBGLOG_MEM8(RX, TRACE, (PUINT_8) prRxStatus,
@@ -982,7 +982,7 @@ WLAN_STATUS halRxReadBuffer(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 		/* u4PktLen is byte unit, not inlude HW appended DW */
 
 		prSwRfb->ucPacketType = (UINT_8) HAL_RX_STATUS_GET_PKT_TYPE(prRxStatus);
-		DBGLOG(RX, TRACE, "ucPacketType = %d\n", prSwRfb->ucPacketType);
+		DBGLOG(RX, TRACE, "ucPacketType = %u\n", prSwRfb->ucPacketType);
 
 		prSwRfb->ucStaRecIdx =
 		    secGetStaIdxByWlanIdx(prAdapter, (UINT_8) HAL_RX_STATUS_GET_WLAN_IDX(prRxStatus));
@@ -1120,14 +1120,14 @@ halRxEnhanceReadBuffer(IN P_ADAPTER_T prAdapter,
 
 		/* 4 <2> if the RFB dw size or packet size is zero */
 		if (u4PktLen == 0) {
-			DBGLOG(RX, ERROR, "Packet Length = %lu\n", u4PktLen);
+			DBGLOG(RX, ERROR, "Packet Length = %u\n", u4PktLen);
 			ASSERT(0);
 			break;
 		}
 		/* 4 <3> if the packet is too large or too small */
 		/* ToDo[6630]: adjust CFG_RX_MAX_PKT_SIZE */
 		if (u4PktLen > CFG_RX_MAX_PKT_SIZE) {
-			DBGLOG(RX, TRACE, "Read RX Packet Lentgh Error (%lu)\n", u4PktLen);
+			DBGLOG(RX, TRACE, "Read RX Packet Lentgh Error (%u)\n", u4PktLen);
 			ASSERT(0);
 			break;
 		}

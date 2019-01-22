@@ -708,26 +708,22 @@ priv_set_int(IN struct net_device *prNetDev,
 		/* printk("addr=0x%08lx, data=0x%08lx\n", pu4IntBuf[1], pu4IntBuf[2]); */
 		prNdisReq = (P_NDIS_TRANSPORT_STRUCT) &aucOidBuf[0];
 
-		if (!prGlueInfo->fgMcrAccessAllowed) {
-			if (pu4IntBuf[1] == PRIV_CMD_TEST_MAGIC_KEY && pu4IntBuf[2] == PRIV_CMD_TEST_MAGIC_KEY)
+		if (pu4IntBuf[1] == PRIV_CMD_TEST_MAGIC_KEY) {
+			if (pu4IntBuf[2] == PRIV_CMD_TEST_MAGIC_KEY)
 				prGlueInfo->fgMcrAccessAllowed = TRUE;
 			status = 0;
 			break;
 		}
+		if (prGlueInfo->fgMcrAccessAllowed) {
+			kalMemCopy(&prNdisReq->ndisOidContent[0], &pu4IntBuf[1], 8);
 
-		if (pu4IntBuf[1] == PRIV_CMD_TEST_MAGIC_KEY && pu4IntBuf[2] == PRIV_CMD_TEST_MAGIC_KEY) {
-			status = 0;
-			break;
+			prNdisReq->ndisOidCmd = OID_CUSTOM_MCR_RW;
+			prNdisReq->inNdisOidlength = 8;
+			prNdisReq->outNdisOidLength = 8;
+
+			/* Execute this OID */
+			status = priv_set_ndis(prNetDev, prNdisReq, &u4BufLen);
 		}
-
-		kalMemCopy(&prNdisReq->ndisOidContent[0], &pu4IntBuf[1], 8);
-
-		prNdisReq->ndisOidCmd = OID_CUSTOM_MCR_RW;
-		prNdisReq->inNdisOidlength = 8;
-		prNdisReq->outNdisOidLength = 8;
-
-		/* Execute this OID */
-		status = priv_set_ndis(prNetDev, prNdisReq, &u4BufLen);
 		break;
 #endif
 

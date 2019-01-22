@@ -243,7 +243,7 @@ BOOL secCheckClassError(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN P_ST
 	if (!prStaRec || (prRxStatus->u2StatusFlag & RXS_DW2_RX_CLASSERR_BITMAP) == RXS_DW2_RX_CLASSERR_VALUE) {
 
 		DBGLOG(RSN, TRACE,
-		       "prStaRec=%x RX Status = %x RX_CLASSERR check!\n", prStaRec, prRxStatus->u2StatusFlag);
+		       "prStaRec=%p RX Status = %x RX_CLASSERR check!\n", prStaRec, prRxStatus->u2StatusFlag);
 
 		/* if (IS_NET_ACTIVE(prAdapter, ucBssIndex)) { */
 		authSendDeauthFrame(prAdapter,
@@ -762,7 +762,7 @@ VOID secPrivacyFreeForEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucEntry)
 
 	ASSERT(prAdapter);
 
-	if (ucEntry > WTBL_SIZE)
+	if (ucEntry >= WTBL_SIZE)
 		return;
 
 	DBGLOG(RSN, INFO, "secPrivacyFreeForEntry %d", ucEntry);
@@ -805,7 +805,7 @@ VOID secPrivacyFreeSta(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 		if (prWtbl[entry].ucUsed &&
 		    EQUAL_MAC_ADDR(prStaRec->aucMacAddr, prWtbl[entry].aucMacAddr) && prWtbl[entry].ucPairwise) {
 #if 1				/* DBG */
-			DBGLOG(RSN, INFO, "Free STA entry (%lu)!\n", entry);
+			DBGLOG(RSN, INFO, "Free STA entry (%u)!\n", entry);
 #endif
 			secPrivacyFreeForEntry(prAdapter, entry);
 			prStaRec->ucWlanIndex = WTBL_RESERVED_ENTRY;
