@@ -17,6 +17,7 @@
 #include <linux/spinlock.h>
 #include <linux/printk.h>
 #include <linux/module.h>
+#include <linux/seqlock.h>
 #include "engine_request.h"
 
 /*
@@ -170,6 +171,9 @@ signed int register_requests(struct engine_requests *eng, size_t size)
 		}
 	}
 
+	eng->req_running = false;
+	seqlock_init(&eng->seqlock);
+
 	/* init and inc for 1st request_handler use */
 	init_completion(&eng->req_handler_done);
 	complete(&eng->req_handler_done);
@@ -193,6 +197,10 @@ signed int unregister_requests(struct engine_requests *eng)
 			set_frame_data(&eng->reqs[r].frames[f], NULL);
 	}
 
+	write_seqlock(&eng->seqlock);
+	eng->req_running = false;
+	write_sequnlock(&eng->seqlock);
+
 	return 0;
 }
 
@@ -205,6 +213,23 @@ int set_engine_ops(struct engine_requests *eng, const struct engine_ops *ops)
 	eng->ops = ops;
 
 	return 0;
+}
+
+bool request_running(struct engine_requests *eng)
+{
+	unsigned int seq;
+	seqlock_t *lock;
+	bool running;
+
+	lock = &eng->seqlock;
+	do {
+		seq = read_seqbegin(lock);
+		running = eng->req_running;
+	} while (read_seqretry(lock, seq));
+
+	LOG_DBG("[%s] engine running request(%d)\n", __func__, running);
+
+	return running;
 }
 
 /*TODO: called in ENQUE_REQ */
@@ -306,6 +331,10 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 	if (rstate != REQUEST_STATE_PENDING) {
 		LOG_DBG("[%s]No pending request(%d), state:%d\n", __func__,
 								r, rstate);
+		write_seqlock(&eng->seqlock);
+		eng->req_running = false;
+		write_sequnlock(&eng->seqlock);
+
 		spin_unlock_irqrestore(lock, flags);
 
 		complete_all(&eng->req_handler_done);
@@ -343,7 +372,12 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 		if (rstate != REQUEST_STATE_PENDING) {
 			LOG_DBG("[%s]No pending request(%d), state:%d\n", __func__,
 								r, rstate);
+			write_seqlock(&eng->seqlock);
+			eng->req_running = false;
+			write_sequnlock(&eng->seqlock);
+
 			spin_unlock_irqrestore(lock, flags);
+
 			complete_all(&eng->req_handler_done);
 			LOG_DBG("[%s]complete(%d)\n", __func__, eng->req_handler_done.done);
 
@@ -355,6 +389,10 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 		if (rstate != REQUEST_STATE_RUNNING) {
 			LOG_WRN("[%s]No pending_run request(%d), state:%d\n", __func__,
 								r, rstate);
+			write_seqlock(&eng->seqlock);
+			eng->req_running = false;
+			write_sequnlock(&eng->seqlock);
+
 			spin_unlock_irqrestore(lock, flags);
 
 			complete_all(&eng->req_handler_done);
@@ -372,6 +410,9 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 	if (fstate == FRAME_STATUS_ENQUE) {
 		LOG_DBG("[%s]Processing request(%d) of frame(%d)\n",
 						__func__,  r, f);
+		write_seqlock(&eng->seqlock);
+		eng->req_running = true;
+		write_sequnlock(&eng->seqlock);
 
 		eng->reqs[r].frames[f].state = FRAME_STATUS_RUNNING;
 		spin_unlock_irqrestore(lock, flags);
@@ -389,7 +430,7 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 		LOG_DBG("[%s]complete(%d)\n", __func__, eng->req_handler_done.done);
 
 		return 1;
-		}
+	}
 
 	fn = (f + 1) % MAX_FRAMES_PER_REQUEST;
 	fstate = eng->reqs[r].frames[fn].state;
