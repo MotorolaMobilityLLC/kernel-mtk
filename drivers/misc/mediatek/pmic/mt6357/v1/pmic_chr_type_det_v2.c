@@ -359,6 +359,19 @@ void do_charger_detect(void)
 		return;
 	}
 
+	if (is_meta_mode()) {
+		/* Skip charger type detection to speed up meta boot */
+		pr_notice("charger type: force Standard USB Host in meta\n");
+		if (pmic_get_register_value(PMIC_RGS_CHRDET)) {
+			g_chr_type = STANDARD_HOST;
+			chrdet_inform_psy_changed(g_chr_type, 1);
+		} else {
+			g_chr_type = CHARGER_UNKNOWN;
+			chrdet_inform_psy_changed(g_chr_type, 0);
+		}
+		return;
+	}
+
 	mutex_lock(&chrdet_lock);
 
 	if (pmic_get_register_value(PMIC_RGS_CHRDET)) {
