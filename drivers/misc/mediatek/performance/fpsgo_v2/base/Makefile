@@ -17,6 +17,7 @@
 MTK_TOP = $(srctree)/drivers/misc/mediatek/
 FPSGO_TOP = $(MTK_TOP)/performance/fpsgo_v2/
 BASE_TOP = $(FPSGO_TOP)/base/
+COMP_TOP = $(FPSGO_TOP)/composer/
 FBT_TOP = $(FPSGO_TOP)/fbt/
 
 obj-$(CONFIG_MTK_FPSGO) += \
@@ -26,4 +27,5 @@ ccflags-y += \
 	-I$(srctree)/include/ \
 	-I$(MTK_TOP)/include/ \
 	-I$(BASE_TOP)/include/ \
+	-I$(COMP_TOP)/include/ \
 	-I$(FBT_TOP)/include/ \

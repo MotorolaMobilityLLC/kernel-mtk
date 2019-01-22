@@ -84,8 +84,8 @@ struct fbt_boost_info {
 
 struct render_info {
 	struct rb_node pid_node;
-	struct rb_node ui_pid_node;
 	struct list_head bufferid_list;
+	struct list_head ui_list;
 
 	/*render basic info pid bufferId..etc*/
 	int pid;
@@ -136,10 +136,8 @@ void fpsgo_thread_lock(struct mutex *mlock);
 void fpsgo_thread_unlock(struct mutex *mlock);
 void fpsgo_lockprove(const char *tag);
 void fpsgo_thread_lockprove(const char *tag, struct mutex *mlock);
-struct render_info *fpsgo_search_render_info_by_ui_pid(int ui_pid);
 void fpsgo_delete_render_info(int pid);
 struct render_info *fpsgo_search_and_add_render_info(int pid, int force);
-int fpsgo_add_render_info_by_ui_pid(struct render_info *data);
 int fpsgo_has_bypass(void);
 void fpsgo_check_thread_status(void);
 void fpsgo_clear(void);

@@ -45,6 +45,7 @@
 
 #define COMP_TAG "FPSGO_COMP"
 
+static struct rb_root ui_pid_tree;
 static struct rb_root connect_api_tree;
 static struct dentry *fpsgo_com_debugfs_dir;
 
@@ -115,6 +116,81 @@ struct connect_api_info *fpsgo_com_search_and_add_connect_api_info(int pid,
 	rb_insert_color(&tmp->rb_node, &connect_api_tree);
 
 	return tmp;
+}
+
+struct ui_pid_info *fpsgo_com_search_and_add_ui_pid_info(int ui_pid, int force)
+{
+	struct rb_node **p = &ui_pid_tree.rb_node;
+	struct rb_node *parent = NULL;
+	struct ui_pid_info *tmp = NULL;
+
+	fpsgo_lockprove(__func__);
+
+	while (*p) {
+		parent = *p;
+		tmp = rb_entry(parent, struct ui_pid_info, rb_node);
+
+		if (ui_pid < tmp->ui_pid)
+			p = &(*p)->rb_left;
+		else if (ui_pid > tmp->ui_pid)
+			p = &(*p)->rb_right;
+		else
+			return tmp;
+	}
+
+	if (!force)
+		return NULL;
+
+	tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
+	if (!tmp)
+		return NULL;
+
+	INIT_LIST_HEAD(&(tmp->render_list));
+
+	tmp->ui_pid = ui_pid;
+
+	rb_link_node(&tmp->rb_node, parent, p);
+	rb_insert_color(&tmp->rb_node, &ui_pid_tree);
+
+	return tmp;
+}
+
+void fpsgo_base2com_clear_ui_pid_info(void)
+{
+	struct rb_node *n;
+	struct ui_pid_info *iter;
+
+	fpsgo_lockprove(__func__);
+
+	n = rb_first(&ui_pid_tree);
+
+	while (n) {
+		iter = rb_entry(n, struct ui_pid_info, rb_node);
+		n = rb_next(n);
+		rb_erase(&iter->rb_node, &ui_pid_tree);
+		kfree(iter);
+	}
+}
+
+void fpsgo_base2com_delete_ui_pid_info(int ui_pid)
+{
+	struct ui_pid_info *data;
+
+	if (!ui_pid)
+		return;
+
+	fpsgo_lockprove(__func__);
+
+	data = fpsgo_com_search_and_add_ui_pid_info(ui_pid, 0);
+
+	if (!data)
+		return;
+
+	if (!list_empty(&data->render_list))
+		return;
+
+	rb_erase(&data->rb_node, &ui_pid_tree);
+	kfree(data);
 }
 
 int fpsgo_com_check_frame_type(int api, int type)
@@ -427,72 +503,63 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid,
 	unsigned long long t_frame_start)
 {
-	struct render_info *f_render;
+	struct ui_pid_info *ui;
+	struct render_info *pos, *next;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
 
 	fpsgo_render_tree_lock(__func__);
 
-	f_render = fpsgo_search_render_info_by_ui_pid(pid);
+	ui = fpsgo_com_search_and_add_ui_pid_info(pid, 0);
 
-	if (!f_render) {
+	if (!ui) {
 		fpsgo_render_tree_unlock(__func__);
-		FPSGO_COM_TRACE("%s: NON pair frame info : %d !!!!\n",
-			__func__, pid);
+		FPSGO_COM_TRACE("%s: NON pair frame info : %d !!!!\n", __func__, pid);
 		return;
 	}
 
-	fpsgo_thread_lock(&f_render->thr_mlock);
+	list_for_each_entry_safe(pos, next, &ui->render_list, ui_list) {
+		fpsgo_thread_lock(&pos->thr_mlock);
+		if (pos->frame_type != BY_PASS_TYPE && pos->render) {
+			fpsgo_systrace_c_fbt_gm(-300, pos->self_time,
+				"%d_%d-frame_time", pos->pid, pos->frame_type);
+			fpsgo_comp2fbt_frame_start(pos, t_frame_start, 0ULL);
+		}
+		fpsgo_thread_unlock(&pos->thr_mlock);
+	}
 	fpsgo_render_tree_unlock(__func__);
-
-	if (f_render->frame_type == BY_PASS_TYPE) {
-		fpsgo_thread_unlock(&f_render->thr_mlock);
-		return;
-	}
-
-	FPSGO_COM_TRACE("vysnc_aligned_frame_start pid[%d] ui_pid[%d] type[%d]",
-		f_render->pid, pid, f_render->frame_type);
-	if (f_render->render) {
-		fpsgo_systrace_c_fbt_gm(-300, f_render->self_time,
-			"%d_%d-frame_time", f_render->pid, f_render->frame_type);
-		fpsgo_comp2fbt_frame_start(f_render, t_frame_start, 0ULL);
-	}
-
-	fpsgo_thread_unlock(&f_render->thr_mlock);
 }
 
 void fpsgo_ctrl2comp_vysnc_aligned_no_render(int pid, int render, unsigned long long t_frame_done)
 {
-	struct render_info *f_render;
+	struct ui_pid_info *ui;
+	struct render_info *pos, *next;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
 
 	fpsgo_render_tree_lock(__func__);
 
-	f_render = fpsgo_search_render_info_by_ui_pid(pid);
+	ui = fpsgo_com_search_and_add_ui_pid_info(pid, 0);
 
-	if (!f_render) {
+	if (!ui) {
 		fpsgo_render_tree_unlock(__func__);
-		FPSGO_COM_TRACE("%s: NON pair frame info : %d !!!!\n",
-			__func__, pid);
+		FPSGO_COM_TRACE("%s: NON pair frame info : %d !!!!\n", __func__, pid);
 		return;
 	}
 
-	fpsgo_thread_lock(&f_render->thr_mlock);
+	list_for_each_entry_safe(pos, next, &ui->render_list, ui_list) {
+		fpsgo_thread_lock(&pos->thr_mlock);
+		if (pos->frame_type != BY_PASS_TYPE) {
+			pos->render = render;
+			fpsgo_systrace_c_fbt_gm(-300, render, "%d_%d-render", pos->pid, pos->frame_type);
+			FPSGO_COM_TRACE("%s pid[%d] ui_pid[%d] type[%d] render[%d]",
+				__func__, pos->pid, pos->ui_pid, pos->frame_type, render);
+			fpsgo_comp2fbt_frame_complete(pos, t_frame_done);
+		}
+		fpsgo_thread_unlock(&pos->thr_mlock);
+	}
 	fpsgo_render_tree_unlock(__func__);
 
-	if (f_render->frame_type == BY_PASS_TYPE) {
-		fpsgo_thread_unlock(&f_render->thr_mlock);
-		return;
-	}
-
-	f_render->render = render;
-	fpsgo_systrace_c_fbt_gm(-300, render, "%d_%d-render", f_render->pid, f_render->frame_type);
-	FPSGO_COM_TRACE("%s pid[%d] ui_pid[%d] type[%d] render[%d]",
-		__func__, f_render->pid, f_render->ui_pid, f_render->frame_type, render);
-	fpsgo_comp2fbt_frame_complete(f_render, t_frame_done);
-
-	fpsgo_thread_unlock(&f_render->thr_mlock);
 }
 
 void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
@@ -516,19 +583,24 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 
 	fpsgo_thread_lock(&f_render->thr_mlock);
 
-	if (!f_render->self_time && !f_render->ui_pid) {
-		int ret;
+	if (ui_pid != f_render->ui_pid) {
+		struct ui_pid_info *ui;
 
-		f_render->ui_pid = ui_pid;
-		ret = fpsgo_add_render_info_by_ui_pid(f_render);
-		if (!ret) {
-			memset(f_render, 0, sizeof(struct render_info));
-			f_render->pid = pid;
-			f_render->ui_pid = ui_pid;
+		ui = fpsgo_com_search_and_add_ui_pid_info(ui_pid, 1);
+
+		if (!ui) {
+			fpsgo_render_tree_unlock(__func__);
+			fpsgo_thread_unlock(&f_render->thr_mlock);
+			FPSGO_COM_TRACE("%s: store ui info fail : %d !!!!\n",
+				__func__, pid);
+			return;
 		}
+
 		f_render->frame_type = VSYNC_ALIGNED_TYPE;
-		FPSGO_COM_TRACE("fpsgo_add_render_info_by_ui_pid %d ret %d",
-			f_render->ui_pid, ret);
+		f_render->ui_pid = ui_pid;
+		list_add(&(f_render->ui_list), &(ui->render_list));
+		FPSGO_COM_TRACE("%s: add ui info : ui_pid:%d !!!!\n",
+				__func__, ui_pid);
 	}
 
 	if (!f_render->api && f_render->buffer_id) {
@@ -559,7 +631,7 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 	fpsgo_systrace_c_fbt_gm(-300, render, "%d_%d-render", pid, f_render->frame_type);
 	fpsgo_comp2fbt_frame_complete(f_render, t_frame_done);
 	FPSGO_COM_TRACE("frame_done pid[%d] ui[%d] type[%d] frame_t:%llu render:%d method:%d",
-		pid, ui_pid, f_render->frame_type, frame_time, render, render_method);
+		pid, f_render->ui_pid, f_render->frame_type, frame_time, render, render_method);
 
 	fpsgo_thread_unlock(&f_render->thr_mlock);
 }
@@ -597,8 +669,6 @@ void fpsgo_com_clear_connect_api_render_list(struct connect_api_info *connect_ap
 	fpsgo_lockprove(__func__);
 
 	list_for_each_entry_safe(pos, next, &connect_api->render_list, bufferid_list) {
-		FPSGO_COM_TRACE("delete render list pid[%d] api[%d] type[%d]",
-			pos->pid, pos->api, pos->frame_type);
 		fpsgo_delete_render_info(pos->pid);
 	}
 
@@ -644,18 +714,23 @@ void fpsgo_fstb2comp_check_connect_api(void)
 	FPSGO_COM_TRACE("%s ", __func__);
 
 	fpsgo_render_tree_lock(__func__);
-	rcu_read_lock();
-	for (n = rb_first(&connect_api_tree); n != NULL; n = rb_next(n)) {
+
+	n = rb_first(&connect_api_tree);
+
+	while (n) {
 		iter = rb_entry(n, struct connect_api_info, rb_node);
+		rcu_read_lock();
 		tsk = find_task_by_vpid(iter->tgid);
+		rcu_read_unlock();
 		if (!tsk) {
 			fpsgo_com_clear_connect_api_render_list(iter);
 			rb_erase(&iter->rb_node, &connect_api_tree);
+			n = rb_first(&connect_api_tree);
 			kfree(iter);
-		}
-
+		} else
+			n = rb_next(n);
 	}
-	rcu_read_unlock();
+
 	fpsgo_render_tree_unlock(__func__);
 
 }
@@ -691,18 +766,20 @@ static int fspgo_com_connect_api_info_show
 	for (n = rb_first(&connect_api_tree); n != NULL; n = rb_next(n)) {
 		iter = rb_entry(n, struct connect_api_info, rb_node);
 		tsk = find_task_by_vpid(iter->tgid);
-		get_task_struct(tsk);
 		if (tsk) {
+			get_task_struct(tsk);
 			seq_puts(m, "PID  TGID  NAME    BufferID    API    Key\n");
 			seq_printf(m, "%5d %5d %5s %4llu %5d %5X\n",
 			iter->pid, iter->tgid, tsk->comm, iter->buffer_id, iter->api, iter->buffer_key);
+			put_task_struct(tsk);
 		}
-		put_task_struct(tsk);
 		seq_puts(m, "******render list******\n");
 		list_for_each_entry_safe(pos, next, &iter->render_list, bufferid_list) {
+			fpsgo_thread_lock(&pos->thr_mlock);
 			seq_puts(m, "  PID  TGID	 BufferID	API    TYPE\n");
 			seq_printf(m, "%5d %5d %4llu %5d %5d\n",
 			pos->pid, pos->tgid, pos->buffer_id, pos->api, pos->frame_type);
+			fpsgo_thread_unlock(&pos->thr_mlock);
 		}
 		seq_puts(m, "***********************\n");
 		seq_puts(m, "=================================\n");
@@ -737,7 +814,7 @@ void fpsgo_composer_exit(void)
 
 int __init fpsgo_composer_init(void)
 {
-
+	ui_pid_tree = RB_ROOT;
 	connect_api_tree = RB_ROOT;
 
 	if (fpsgo_debugfs_dir) {
