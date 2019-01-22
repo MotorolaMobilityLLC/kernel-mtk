@@ -88,15 +88,19 @@ int release_dram_ctrl(void)
 #ifdef PLAT_DBG_INFO_MANAGE
 static void __iomem *plat_dbg_info_base[INFO_TYPE_MAX];
 static unsigned int plat_dbg_info_size[INFO_TYPE_MAX];
+static unsigned int plat_dbg_info_key[INFO_TYPE_MAX];
 
 static int __init plat_dbg_info_init(void)
 {
 	unsigned int temp_base[INFO_TYPE_MAX];
 	unsigned int i;
+	unsigned int max;
 	int ret;
 
 	if (of_chosen) {
-		ret = of_property_read_u32_array(of_chosen, "plat_dbg_info,base", temp_base, INFO_TYPE_MAX);
+		ret = of_property_read_u32(of_chosen, "plat_dbg_info,max", &max);
+		ret |= of_property_read_u32_array(of_chosen, "plat_dbg_info,key", plat_dbg_info_key, INFO_TYPE_MAX);
+		ret |= of_property_read_u32_array(of_chosen, "plat_dbg_info,base", temp_base, INFO_TYPE_MAX);
 		ret |= of_property_read_u32_array(of_chosen, "plat_dbg_info,size", plat_dbg_info_size, INFO_TYPE_MAX);
 
 		if (ret != 0) {
@@ -104,11 +108,14 @@ static int __init plat_dbg_info_init(void)
 			return -ENODEV;
 		}
 
+		if (max > INFO_TYPE_MAX)
+			pr_err("[PLAT DBG INFO] too many bootargs!\n");
+
 		for (i = 0; i < INFO_TYPE_MAX; i++) {
 			if (temp_base[i] != 0)
 				plat_dbg_info_base[i] = ioremap(temp_base[i], plat_dbg_info_size[i]);
-			pr_warn("[PLAT DBG INFO] %d: 0x%x(%p), %d\n",
-				i, temp_base[i], plat_dbg_info_base[i], plat_dbg_info_size[i]);
+			pr_warn("[PLAT DBG INFO] 0x%x: 0x%x(%p), %d\n",
+				plat_dbg_info_key[i], temp_base[i], plat_dbg_info_base[i], plat_dbg_info_size[i]);
 		}
 	} else {
 		pr_err("[PLAT DBG INFO] cannot find node \"of_chosen\"\n");
@@ -118,20 +125,28 @@ static int __init plat_dbg_info_init(void)
 	return 0;
 }
 
-void __iomem *get_dbg_info_base(DBG_INFO_TYPE info_type)
+void __iomem *get_dbg_info_base(unsigned int key)
 {
-	if (info_type >= TYPE_END)
-		return NULL;
+	unsigned int i;
 
-	return plat_dbg_info_base[info_type];
+	for (i = 0; i < INFO_TYPE_MAX; i++) {
+		if (plat_dbg_info_key[i] == key)
+			return plat_dbg_info_base[i];
+	}
+
+	return NULL;
 }
 
-unsigned int get_dbg_info_size(DBG_INFO_TYPE info_type)
+unsigned int get_dbg_info_size(unsigned int key)
 {
-	if (info_type >= TYPE_END)
-		return 0;
+	unsigned int i;
 
-	return plat_dbg_info_size[info_type];
+	for (i = 0; i < INFO_TYPE_MAX; i++) {
+		if (plat_dbg_info_key[i] == key)
+			return plat_dbg_info_size[i];
+	}
+
+	return 0;
 }
 
 core_initcall(plat_dbg_info_init);
