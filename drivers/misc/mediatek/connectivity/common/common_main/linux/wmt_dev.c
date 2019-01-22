@@ -1333,7 +1333,7 @@ static INT32 WMT_init(VOID)
 	if (chip_type == WMT_CHIP_TYPE_COMBO)
 		mtk_wcn_hif_sdio_update_cb_reg(wmt_dev_tra_sdio_update);
 
-	WMT_INFO_FUNC("wmt_dev register thermal cb\n");
+	WMT_DBG_FUNC("wmt_dev register thermal cb\n");
 	wmt_lib_register_thermal_ctrl_cb(wmt_dev_tm_temp_query);
 
 	if (chip_type == WMT_CHIP_TYPE_SOC)

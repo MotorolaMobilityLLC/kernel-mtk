@@ -999,7 +999,7 @@ static INT32 wmt_core_hw_check(VOID)
 		return -5;
 	}
 
-	WMT_INFO_FUNC("chip id(0x%x) ver_check ok\n", chipid);
+	WMT_DBG_FUNC("chip id(0x%x) ver_check ok\n", chipid);
 	gMtkWmtCtx.p_ic_ops = p_ops;
 	return 0;
 }
