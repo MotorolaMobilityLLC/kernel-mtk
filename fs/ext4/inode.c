@@ -18,6 +18,7 @@
  *  Assorted race fixes, rewrite of ext4_get_block() by Al Viro, 2000
  */
 
+#define DEBUG 1
 #include <linux/fs.h>
 #include <linux/time.h>
 #include <linux/highuid.h>
@@ -1869,6 +1870,14 @@ static int ext4_writepage(struct page *page,
 		len = size & ~PAGE_CACHE_MASK;
 	else
 		len = PAGE_CACHE_SIZE;
+
+	if (!page_has_buffers(page)) {
+		pr_warn("%s: page %p doesn't have buffers, flag: %lx. task flag: %x\n",
+			__func__, page, page->flags, current->flags);
+		redirty_page_for_writepage(wbc, page);
+		unlock_page(page);
+		return 0;
+	}
 
 	page_bufs = page_buffers(page);
 	/*
