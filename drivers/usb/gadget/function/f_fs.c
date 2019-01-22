@@ -1765,7 +1765,9 @@ static int ffs_func_eps_enable(struct ffs_function *func)
 		if (needs_comp_desc) {
 			comp_desc = (struct usb_ss_ep_comp_descriptor *)(ds +
 					USB_DT_ENDPOINT_SIZE);
-			ep->ep->maxburst = comp_desc->bMaxBurst + 1;
+			/* comp_desc->bMaxBurst makes kasan KE, it should be kasan BUG */
+			/* ep->ep->maxburst = comp_desc->bMaxBurst + 1; */
+			ep->ep->maxburst = 1;
 			ep->ep->comp_desc = comp_desc;
 		}
 
