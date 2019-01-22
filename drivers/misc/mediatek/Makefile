@@ -175,7 +175,7 @@ ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
 #obj-$(CONFIG_TRUSTY) += trustzone/
 endif
 
-#obj-$(CONFIG_THERMAL)   += thermal/
+obj-$(CONFIG_THERMAL)   += thermal/
 #obj-$(CONFIG_MTK_MULTIBRIDGE_SUPPORT) += multibridge/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
 #obj-$(CONFIG_MTK_ATF_LOGGER)	+= atf_log/
