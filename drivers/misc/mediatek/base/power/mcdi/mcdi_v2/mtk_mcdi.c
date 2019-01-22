@@ -50,7 +50,13 @@
 #define NF_CMD_BUF          128
 #define LOG_BUF_LEN         1024
 
-static int mcupm_fw_load_success = -1;
+enum MCUPM_FW_LOAD_STA {
+	MCUPM_SMC_CALL    = 0x00F,
+	MCUPM_FW_PARSE    = 0x0F0,
+	MCUPM_FW_KICK     = 0x0FF,
+};
+
+static unsigned int mcupm_fw_load_success;
 static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
 
@@ -111,6 +117,28 @@ int __attribute__((weak)) dpidle_enter(int cpu)
 int __attribute__((weak)) soidle3_enter(int cpu)
 {
 	return 1;
+}
+
+/* if success, return 1. If fail, return 0 */
+bool mcdi_fw_is_ready(void)
+{
+	if (mcupm_fw_load_success == 0) {
+		mcupm_fw_load_success =
+			mt_secure_call(MTK_SIP_KERNEL_MCUPM_FW_LOAD_STATUS, 0, 0, 0);
+
+		/* return val of mt_scure_call:
+		 * 0x0F: mcupm smc call fail
+		 * 0xF0: mcupm parse fw fail
+		 * 0xFF: mcupm fw kick pass
+		 */
+		if (mcupm_fw_load_success != MCUPM_FW_KICK) {
+#ifdef CONFIG_MTK_RAM_CONSOLE
+			aee_rr_rec_mcdi_r15_val(mcupm_fw_load_success);
+#endif
+			set_mcdi_enable_status(false);
+		}
+	}
+	return (mcupm_fw_load_success == MCUPM_FW_KICK) ? true : false;
 }
 
 int cluster_idx_get(int cpu)
@@ -271,7 +299,8 @@ static ssize_t mcdi_state_write(struct file *filp,
 		return -EINVAL;
 
 	if (!strncmp(cmd_str, "enable", strlen("enable"))) {
-		set_mcdi_enable_status(param != 0);
+		if (mcdi_fw_is_ready())
+			set_mcdi_enable_status(param != 0);
 		return count;
 	} else if (!strncmp(cmd_str, "s_state", strlen("s_state"))) {
 		set_mcdi_s_state(param);
@@ -678,22 +707,14 @@ void mcdi_heart_beat_log_dump(void)
 						feature_stat.enable,
 						feature_stat.s_state);
 
-	mcdi_buf_append(buf, ", system_idle_hint = %08x\n", system_idle_hint_result_raw());
+	mcdi_buf_append(buf, ", system_idle_hint = %08x ", system_idle_hint_result_raw());
+
+	if (mcupm_fw_load_success != MCUPM_FW_KICK)
+		mcdi_buf_append(buf, "(mcdi_fw_fail: 0x%x)\n", mcupm_fw_load_success);
+	else
+		mcdi_buf_append(buf, "\n");
 
 	pr_info("%s\n", get_mcdi_buf(buf));
-}
-
-/* if success, return 1. If fail, return 0 */
-static int is_mcupm_fw_load_success(void)
-{
-	if (mcupm_fw_load_success == -1) {
-		mcupm_fw_load_success =
-			mt_secure_call(MTK_SIP_KERNEL_MCUPM_FW_LOAD_STATUS, 0, 0, 0);
-
-		if (!mcupm_fw_load_success)
-			pr_err("[MCDI] load mcupmfw fail\n");
-	}
-	return mcupm_fw_load_success;
 }
 
 int mcdi_enter(int cpu)
@@ -704,9 +725,9 @@ int mcdi_enter(int cpu)
 	idle_refcnt_inc();
 	mcdi_profile_ts(MCDI_PROFILE_ENTER);
 
-	state = mcdi_governor_select(cpu, cluster_idx);
-
-	if (!is_mcupm_fw_load_success())
+	if (likely(mcdi_fw_is_ready()))
+		state = mcdi_governor_select(cpu, cluster_idx);
+	else
 		state = MCDI_STATE_WFI;
 
 	mcdi_profile_ts(MCDI_PROFILE_MCDI_GOVERNOR_SELECT_LEAVE);
@@ -821,11 +842,11 @@ bool mcdi_pause(bool paused)
 
 bool mcdi_task_pause(bool paused)
 {
-	bool ret = false;
+	if (!is_mcdi_working())
+		return true;
 
 	/* TODO */
 	if (paused) {
-
 		trace_mcdi_task_pause_rcuidle(smp_processor_id(), true);
 
 		/* Notify SSPM to disable MCDI */
@@ -844,9 +865,7 @@ bool mcdi_task_pause(bool paused)
 		trace_mcdi_task_pause_rcuidle(smp_processor_id(), 0);
 	}
 
-	ret = true;
-
-	return ret;
+	return true;
 }
 
 void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask)
