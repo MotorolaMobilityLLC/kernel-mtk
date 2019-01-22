@@ -143,7 +143,11 @@ static inline int moveAF(unsigned long a_u4Position)
 	}
 
 	if (*g_pAF_Opened == 1) {
-		unsigned short InitPos, InitPosM, InitPosL;
+		unsigned short InitPos, InitPosM, InitPosL, data;
+
+		s4AF_ReadReg(0x02, &data);
+
+		LOG_INF("Addr : 0x02 , Data : %x\n", data);
 
 		/* 00:active mode        10:Standby mode    x1:Sleep mode */
 		s4AF_WriteReg(0x02, 0x00);	/* from Standby mode to Active mode */
@@ -263,6 +267,33 @@ int AK7371AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 	}
 
 	LOG_INF("End\n");
+
+	return 0;
+}
+
+int AK7371AF_PowerDown(void)
+{
+	LOG_INF("+\n");
+	if (*g_pAF_Opened == 0) {
+		unsigned short data = 0;
+		int cnt = 0;
+
+		while (1) {
+			data = 0;
+
+			s4AF_WriteReg(0x02, 0x20);
+
+			s4AF_ReadReg(0x02, &data);
+
+			LOG_INF("Addr : 0x02 , Data : %x\n", data);
+
+			if (data == 0x20 || cnt == 3)
+				break;
+
+			cnt++;
+		}
+	}
+	LOG_INF("-\n");
 
 	return 0;
 }
