@@ -305,16 +305,16 @@ static int spkprotect_dump_kthread(void *data)
 			dump_queue->idx_r++;
 		}
 
-		AUD_LOG_D("current_idx = %d\n", current_idx);
+		AUD_LOG_V("current_idx = %d\n", current_idx);
 		switch (dump_queue->dump_package[current_idx].dump_data_type) {
 		case DUMP_PCM_PRE: {
 			size = datasize;
 			writedata = datasize;
 			pcm_dump = (struct pcm_dump_t *)dump_queue->dump_package[current_idx].data_addr;
-			AUD_LOG_D("pcm_dump = %p datasize = %d current_idx = %d\n", pcm_dump, datasize, current_idx);
+			AUD_LOG_V("pcm_dump = %p datasize = %d current_idx = %d\n", pcm_dump, datasize, current_idx);
 
 			while (size > 0) {
-				AUD_LOG_D("pcm_dump = %p writedata = %d\n", pcm_dump, writedata);
+				AUD_LOG_V("pcm_dump = %p writedata = %d\n", pcm_dump, writedata);
 				if (!IS_ERR(file_spkplayback_pcm)) {
 					ret = file_spkplayback_pcm->f_op->write(
 						      file_spkplayback_pcm,
@@ -331,10 +331,10 @@ static int spkprotect_dump_kthread(void *data)
 			size = datasize;
 			writedata = datasize;
 			pcm_dump = (struct pcm_dump_t *)dump_queue->dump_package[current_idx].data_addr;
-			AUD_LOG_D("pcm_dump = %p datasize = %d current_idx = %d\n", pcm_dump, datasize, current_idx);
+			AUD_LOG_V("pcm_dump = %p datasize = %d current_idx = %d\n", pcm_dump, datasize, current_idx);
 
 			while (size > 0) {
-				AUD_LOG_D("pcm_dump = %p writedata = %d\n", pcm_dump, writedata);
+				AUD_LOG_V("pcm_dump = %p writedata = %d\n", pcm_dump, writedata);
 				if (!IS_ERR(file_spkplayback_iv)) {
 					ret = file_spkplayback_iv->f_op->write(
 						      file_spkplayback_iv,
