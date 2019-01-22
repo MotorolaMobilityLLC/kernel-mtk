@@ -496,7 +496,6 @@ config MTK_AB_OTA_UPDATER
 config MTK_GROUP_ENABLE_VERITY
 	bool "Support enable dm verity for grouped switch"
 	default y
-	depends on !MTK_ENABLE_AGO
 	select BLK_DEV_MD
 	select MD_LINEAR
 	select DM_ANDROID_VERITY
