@@ -230,6 +230,9 @@ static int selective_read_region(u32 addr, u8 *data, u16 i2c_id, u32 size)
 unsigned int cat24c16_selective_read_region(struct i2c_client *client, unsigned int addr,
 	unsigned char *data, unsigned int size)
 {
+	if (client == NULL)/*for safe code*/
+		return 0;
+
 	g_pstI2Cclient = client;
 	if (selective_read_region(addr, data, g_pstI2Cclient->addr, size) == 0)
 		return size;
