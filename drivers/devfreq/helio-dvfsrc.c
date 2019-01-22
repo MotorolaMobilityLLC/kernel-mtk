@@ -29,6 +29,8 @@
 #include <mtk_dvfsrc_reg.h>
 #include <mtk_spm_vcore_dvfs.h>
 
+#include <mt-plat/aee.h>
+
 __weak void helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc) { }
 __weak void spm_check_status_before_dvfs(void) { }
 __weak int spm_dvfs_flag_init(void) { return 0; }
@@ -176,6 +178,7 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 
 	ret = wait_for_completion(is_dvfsrc_in_progress(dvfsrc) == 0, DVFSRC_TIMEOUT);
 	if (ret) {
+		spm_vcorefs_dump_dvfs_regs(NULL);
 		pr_err("Failed to get response from dvfsrc\n");
 		goto out;
 	}
@@ -204,6 +207,14 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		dvfsrc_write(dvfsrc, DVFSRC_SW_REQ,
 				(dvfsrc_read(dvfsrc, DVFSRC_SW_REQ)
 				& ~(0x3)) | level);
+
+		ret = wait_for_completion(get_dvfsrc_level(dvfsrc) >= emi_to_vcore_dvfs_level[level],
+				SPM_DVFS_TIMEOUT);
+		if (ret < 0) {
+			spm_vcorefs_dump_dvfs_regs(NULL);
+			aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
+		}
+
 		break;
 	case PM_QOS_VCORE_OPP:
 		if (data >= VCORE_OPP_NUM)
@@ -213,12 +224,20 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		dvfsrc_write(dvfsrc, DVFSRC_SW_REQ,
 				(dvfsrc_read(dvfsrc, DVFSRC_SW_REQ)
 				& ~(0xC)) | level);
+
+		ret = wait_for_completion(get_dvfsrc_level(dvfsrc) >= vcore_to_vcore_dvfs_level[level],
+				SPM_DVFS_TIMEOUT);
+		if (ret < 0) {
+			spm_vcorefs_dump_dvfs_regs(NULL);
+			aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
+		}
+
 		break;
 	case PM_QOS_VCORE_DVFS_FIXED_OPP:
-		if (data >= VCORE_DVFS_FIXED_OPP_NUM)
-			data = VCORE_DVFS_FIXED_OPP_NUM;
+		if (data >= VCORE_DVFS_OPP_NUM)
+			data = VCORE_DVFS_OPP_NUM;
 
-		if (data == VCORE_DVFS_FIXED_OPP_NUM) { /* no fix opp*/
+		if (data == VCORE_DVFS_OPP_NUM) { /* no fix opp*/
 			level = 0;
 			force_en_tar = 0;
 			dvfsrc_write(dvfsrc, DVFSRC_BASIC_CONTROL,
@@ -226,19 +245,26 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 					& ~(1 << 15)) | force_en_tar);
 			dvfsrc_write(dvfsrc, DVFSRC_FORCE, level);
 		} else { /* fix opp */
-			level = 1 << (VCORE_DVFS_FIXED_OPP_NUM - data - 1);
+			level = 1 << (VCORE_DVFS_OPP_NUM - data - 1);
 			force_en_tar = (1 << 15);
 			dvfsrc_write(dvfsrc, DVFSRC_FORCE, level);
 			dvfsrc_write(dvfsrc, DVFSRC_BASIC_CONTROL,
 					(dvfsrc_read(dvfsrc, DVFSRC_BASIC_CONTROL)
 					& ~(1 << 15)) | force_en_tar);
+
+			ret = wait_for_completion(get_dvfsrc_level(dvfsrc) == vcore_dvfs_to_vcore_dvfs_level[level],
+					SPM_DVFS_TIMEOUT);
+			if (ret < 0) {
+				spm_vcorefs_dump_dvfs_regs(NULL);
+				aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
+			}
+
 		}
 		break;
 	default:
 		break;
 	}
 
-	ret = wait_for_completion(is_dvfsrc_in_progress(dvfsrc) == 0, DVFSRC_TIMEOUT);
 	if (ret)
 		pr_err("Failed to adjust dvfsrc level\n");
 
@@ -247,6 +273,36 @@ out:
 
 	return ret;
 }
+
+#if 0
+void dvfsrc_set_vcore_request(unsigned int mask, unsigned int vcore_level)
+{
+	int r = 0;
+	unsigned int val = 0;
+
+	mutex_lock(&dvfsrc->devfreq->lock);
+
+	/* check DVFS idle */
+	r = wait_for_completion(is_dvfsrc_in_progress(dvfsrc) == 0, SPM_DVFS_TIMEOUT);
+	if (r < 0) {
+		spm_vcorefs_dump_dvfs_regs(NULL);
+		aee_kernel_exception("VCOREFS", "dvfsrc cannot be idle.");
+		goto out;
+	}
+
+	val = (spm_read(DVFSRC_VCORE_REQUEST) & ~mask) | vcore_level;
+	dvfsrc_write(dvfsrc, DVFSRC_VCORE_REQUEST, val);
+
+	r = wait_for_completion(get_dvfsrc_level(dvfsrc) >= vcore_to_vcore_dvfs_level[vcore_level], SPM_DVFS_TIMEOUT);
+	if (r < 0) {
+		spm_vcorefs_dump_dvfs_regs(NULL);
+		aee_kernel_exception("VCOREFS", "dvfsrc cannot be done.");
+	}
+
+out:
+	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+#endif
 
 static int pm_qos_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)

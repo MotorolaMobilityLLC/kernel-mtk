@@ -76,6 +76,13 @@ extern int spm_dvfs_flag_init(void);
 extern void dvfsrc_update_opp_table(void);
 extern char *dvfsrc_get_opp_table_info(char *p);
 
+extern u32 vcore_to_vcore_dvfs_level[];
+extern u32 emi_to_vcore_dvfs_level[];
+extern u32 vcore_dvfs_to_vcore_dvfs_level[];
+
+extern void dvfsrc_set_vcore_request(unsigned int mask, unsigned int vcore_level);
+extern void dvfsrc_set_scp_vcore_request(unsigned int vcore_level);
+
 #define DVFSRC_REG(dvfsrc, offset) (dvfsrc->regs + offset)
 #define DVFSRC_SRAM_REG(dvfsrc, offset) (dvfsrc->sram_regs + offset)
 
@@ -91,6 +98,7 @@ extern char *dvfsrc_get_opp_table_info(char *p);
 #define DVFSRC_TIMEOUT		1000
 
 #define is_dvfsrc_in_progress(dvfsrc)	(dvfsrc_read(dvfsrc, DVFSRC_LEVEL) & 0xFFFF)
+#define get_dvfsrc_level(dvfsrc)	(dvfsrc_read(dvfsrc, DVFSRC_LEVEL) >> 16)
 
 /* PMIC */
 #define vcore_pmic_to_uv(pmic)	\
