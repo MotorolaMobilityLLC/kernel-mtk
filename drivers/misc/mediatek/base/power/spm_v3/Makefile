@@ -29,6 +29,7 @@ endif
 
 ifeq ($(CONFIG_MACH_MT6799), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 #ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
 
 obj-y += mtk_idle.o

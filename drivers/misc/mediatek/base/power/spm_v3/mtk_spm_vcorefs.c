@@ -36,6 +36,10 @@
 #include <mtk_dvfsrc_reg.h>
 #include <mtk_eem.h>
 
+#ifdef CONFIG_MTK_SMI_EXT
+#include <mmdvfs_mgr.h>
+#endif
+
 #define is_dvfs_in_progress()    (spm_read(DVFS_LEVEL) & 0x1F)
 #define get_dvfs_level()         (spm_read(DVFS_LEVEL) & 0x1F)
 
@@ -51,7 +55,12 @@ void __iomem *dvfsrc_base;
 
 u32 plat_channel_num;
 u32 plat_chip_ver;
-u32 plat_lcd_resolution;
+
+#ifdef CONFIG_MTK_SMI_EXT
+mmdvfs_lcd_size_enum plat_lcd_resolution;
+#else
+int plat_lcd_resolution;
+#endif
 
 enum spm_vcorefs_step {
 	SPM_VCOREFS_ENTER = 0x00000001,
@@ -1027,18 +1036,20 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 			spm_write(DVFSRC_M3200, 0x64087); /* >3.2G to opp1 */
 			spm_write(DVFSRC_M1600, 0x3205a); /* >1.6G to opp2 */
 		} else {
-			/* FIXME panel resolution */
-			if (1) {
+			#ifdef CONFIG_MTK_SMI_EXT
+			/* panel resolution */
+			if (plat_lcd_resolution == MMDVFS_LCD_SIZE_WQHD) {
 				/* E2 HRT WQHD */
 				spm_write(DVFSRC_M3733, 0xc80b4); /* >6.4G to opp0 */
 				spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp1 */
 				spm_write(DVFSRC_M1600, 0x5305a); /* >2.7G to opp2 */
-			} else {
+			} else if (plat_lcd_resolution == MMDVFS_LCD_SIZE_FHD) {
 				/* E2 HRT FHD */
 				spm_write(DVFSRC_M3733, 0xc80b4); /* >6.4G to opp0 */
 				spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp1 */
 				spm_write(DVFSRC_M1600, 0x3205a); /* >1.6G to opp2 */
 			}
+			#endif
 		}
 
 		break;
@@ -1062,18 +1073,20 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 			spm_write(DVFSRC_M3200, 0x64087); /* >6.4G to opp1 */
 			spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
 		} else {
-			/* FIXME panel resolution */
-			if (1) {
+			#ifdef CONFIG_MTK_SMI_EXT
+			/* panel resolution */
+			if (plat_lcd_resolution == MMDVFS_LCD_SIZE_WQHD) {
 				/* E2 HRT WQHD */
 				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp1 */
 				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp1 */
 				spm_write(DVFSRC_M1600, 0x5305a); /* >5.3G to opp2 */
-			} else {
+			} else if (plat_lcd_resolution == MMDVFS_LCD_SIZE_FHD) {
 				/* E2 HRT FHD */
 				spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp1 */
 				spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp1 */
 				spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
 			}
+			#endif
 		}
 
 		break;
@@ -1305,8 +1318,12 @@ static void plat_info_init(void)
 	/* FIXME chip version */
 	plat_chip_ver = 46;
 
-	/* FIXME lcd resolution */
+	/* lcd resolution */
+	#ifdef CONFIG_MTK_SMI_EXT
+	plat_lcd_resolution = mmdvfs_get_lcd_resolution();
+	#else
 	plat_lcd_resolution = 46;
+	#endif
 
 	/* DRAM Channel */
 	plat_channel_num = get_channel_lock();
