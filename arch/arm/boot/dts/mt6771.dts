@@ -550,7 +550,6 @@
 		clock-div = <5>;
 		ch_offset_default = <0x100>;
 		ccu-ch-offset = <0x200>;
-		mediatek,dma_only;
 		mediatek,hs_only;
 	};
 
@@ -580,7 +579,6 @@
 		clock-div = <5>;
 		ch_offset_default = <0x100>;
 		ccu-ch-offset = <0x200>;
-		mediatek,dma_only;
 		mediatek,hs_only;
 	};
 
