@@ -33,7 +33,6 @@
 #include <linux/cpufreq.h>
 #endif
 
-
 #define TAG "[cpuLoading]"
 
 static unsigned long poltime_nsecs; /*set nanoseconds to polling time*/
@@ -74,9 +73,29 @@ static inline void __mt_update_tracing_mark_write_addr(void)
 			kallsyms_lookup_name("tracing_mark_write");
 }
 
-void cpu_loading_trace_print(char *module, char *string)
+void cpu_loading_trace(char *module, char *string)
 {
 	__mt_update_tracing_mark_write_addr();
+	preempt_disable();
+	event_trace_printk(tracing_mark_write_addr, "%d [%s] %s\n",
+			current->tgid, module, string);
+	preempt_enable();
+}
+
+void trace_cpu_loading_log(char *module, const char *fmt, ...)
+{
+	char log[256];
+	va_list args;
+	int len;
+
+
+	va_start(args, fmt);
+	len = vsnprintf(log, sizeof(log), fmt, args);
+
+	if (unlikely(len == 256))
+		log[255] = '\0';
+	va_end(args);
+	cpu_loading_trace(module, log);
 }
 #endif
 
@@ -87,14 +106,14 @@ static void enable_cpu_loading_timer(void)
 
 	ktime = ktime_set(poltime_secs, poltime_nsecs);
 	hrtimer_start(&hrt1, ktime, HRTIMER_MODE_REL);
-	cpu_loading_trace_print("cpu_loading", "enable timer");
+	trace_cpu_loading_log("cpu_loading", "enable timer");
 }
 
 /*close hrtimer*/
 static void disable_cpu_loading_timer(void)
 {
 	hrtimer_cancel(&hrt1);
-	cpu_loading_trace_print("cpu_loading", "disable timer");
+	trace_cpu_loading_log("cpu_loading", "disable timer");
 }
 
 static enum hrtimer_restart handle_cpu_loading_timeout(struct hrtimer *timer)
@@ -104,18 +123,18 @@ static enum hrtimer_restart handle_cpu_loading_timeout(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
-/* reset value if anyone change switch */
-/* 1.uevent_enable  */
-/* 2.poltime_secs   */
-/* 3.over_threshold */
-/* 4.poltime_nsecs  */
+/*reset value if anyone change switch*/
+/*  1.uevent_enable */
+/*  2.poltime_secs */
+/*  3.over_threshold */
+/*  4.poltime_nsecs */
 
 void reset_cpu_loading(void)
 {
 
 	int i;
 
-
+	trace_cpu_loading_log("cpu_loading", "reset_cpu_loading");
 	for_each_possible_cpu(i) {
 		cur_wall_time[i].time = prev_wall_time[i].time = 0;
 		cur_idle_time[i].time = prev_idle_time[i].time = 0;
@@ -128,9 +147,7 @@ void reset_cpu_loading(void)
 /*update info*/
 int update_cpu_loading(void)
 {
-	int j, ret;
-	int i, tmp_cpu_loading = 0;
-
+	int i, j, ret, tmp_cpu_loading = 0;
 	char *envp[2];
 	int string_size = 15;
 	char  event_string[string_size];
@@ -142,15 +159,18 @@ int update_cpu_loading(void)
 
 	mutex_lock(&cpu_loading_lock);
 
-	cpu_loading_trace_print("cpu_loading", "update cpu_loading");
+	trace_cpu_loading_log("cpu_loading", "update cpu_loading");
 
 	for_each_possible_cpu(j) {
 		/*idle time include iowait time*/
 		cur_idle_time[j].time = get_cpu_idle_time(j, &cur_wall_time[j].time, 1);
+
+		trace_cpu_loading_log("cpu_loading", "cur_idle_time[%d].time:%llu\n", j, cur_idle_time[j].time);
+		trace_cpu_loading_log("cpu_loading", "cur_wall_time[%d].time:%llu\n", j, cur_wall_time[j].time);
 	}
 
 	if (reset_flag) {
-		cpu_loading_trace_print("cpu_loading", "return reset");
+		trace_cpu_loading_log("cpu_loading", "return reset");
 
 		reset_flag = false;/*meet global value at first,and then set info to false  */
 
@@ -162,13 +182,17 @@ int update_cpu_loading(void)
 	for_each_possible_cpu(i) {
 		wall_time += cur_wall_time[i].time - prev_wall_time[i].time;
 		idle_time += cur_idle_time[i].time - prev_idle_time[i].time;
+
+		trace_cpu_loading_log("cpu_loading", "cur_idle_time[%d].time:%llu\n", i, cur_idle_time[i].time);
+		trace_cpu_loading_log("cpu_loading", "cur_wall_time[%d].time:%llu\n", i, cur_wall_time[i].time);
 	}
 
 	tmp_cpu_loading = div_u64((100 * (wall_time - idle_time)), wall_time);
 
+	prev_cpu_loading = tmp_cpu_loading;
 
+	trace_cpu_loading_log("cpu_loading", "tmp_cpu_loading:%d\n", tmp_cpu_loading);
 	if (tmp_cpu_loading > over_threshold &&  over_threshold > prev_cpu_loading) {
-		prev_cpu_loading = tmp_cpu_loading;
 
 		/*send uevent*/
 		if (uevent_enable) {
@@ -176,19 +200,16 @@ int update_cpu_loading(void)
 
 			ret = kobject_uevent_env(&cpu_loading_object->mdev.this_device->kobj, KOBJ_CHANGE, envp);
 			if (ret != 0) {
-				cpu_loading_trace_print("cpu_loading", "uevent failed");
+				trace_cpu_loading_log("cpu_loading", "uevent failed");
 				mutex_unlock(&cpu_loading_lock);
 				return -1;
 			}
-			cpu_loading_trace_print("cpu_loading", "sent uevent over success");
+			trace_cpu_loading_log("cpu_loading", "sent uevent over success");
 		}
 		mutex_unlock(&cpu_loading_lock);
 		return 1;
 	}
 
-	prev_cpu_loading = tmp_cpu_loading;
-
-	cpu_loading_trace_print("cpu_loading", "no change situation");
 	mutex_unlock(&cpu_loading_lock);
 	return 3;
 }
@@ -199,14 +220,15 @@ static void notify_cpu_loading_timeout(void)
 
 	mutex_lock(&cpu_loading_lock);
 
-	if (reset_flag)
+	if (reset_flag) {
+
 		reset_cpu_loading();
-	else{
+
+	} else {
 
 		for_each_possible_cpu(i) {
 			prev_wall_time[i].time = cur_wall_time[i].time;
 			prev_idle_time[i].time = cur_idle_time[i].time;
-
 		}
 	}
 
@@ -234,13 +256,48 @@ void init_cpu_loading_value(void)
 	mutex_unlock(&cpu_loading_lock);
 }
 
-static int mt_onof_show(struct seq_file *m, void *v)
+/* PROCFS */
+#define PROC_FOPS_RW(name) \
+	static int cpu_loading_ ## name ## _proc_open(\
+			struct inode *inode, struct file *file) \
+{ \
+	return single_open(file,\
+			cpu_loading_ ## name ## _proc_show, PDE_DATA(inode));\
+} \
+static const struct file_operations cpu_loading_ ## name ## _proc_fops = { \
+	.owner	= THIS_MODULE, \
+	.open	= cpu_loading_ ## name ## _proc_open, \
+	.read	= seq_read, \
+	.llseek	= seq_lseek,\
+	.release = single_release,\
+	.write	= cpu_loading_ ## name ## _proc_write,\
+}
+
+#define PROC_FOPS_RO(name) \
+	static int cpu_loading_ ## name ## _proc_open(\
+			struct inode *inode, struct file *file) \
+{  \
+	return single_open(file,\
+			cpu_loading_ ## name ## _proc_show, PDE_DATA(inode));\
+}  \
+static const struct file_operations cpu_loading_ ## name ## _proc_fops = { \
+	.owner	= THIS_MODULE, \
+	.open	= cpu_loading_ ## name ## _proc_open, \
+	.read	= seq_read, \
+	.llseek	= seq_lseek,\
+	.release = single_release, \
+}
+
+#define PROC_ENTRY(name) {__stringify(name), &cpu_loading_ ## name ## _proc_fops}
+
+static int cpu_loading_onof_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", onoff);
 	return 0;
 }
 
-static ssize_t mt_onof_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
+static ssize_t cpu_loading_onof_proc_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
 {
 	int val;
 	int ret;
@@ -273,28 +330,17 @@ static ssize_t mt_onof_write(struct file *filp, const char *ubuf, size_t cnt, lo
 	return cnt;
 }
 
-static int mt_onof_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mt_onof_show, inode->i_private);
-}
-
-static const struct file_operations mt_onof_fops = {
-	.open = mt_onof_open,
-	.write = mt_onof_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static int mt_poltime_secs_show(struct seq_file *m, void *v)
+static int cpu_loading_poltime_secs_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", poltime_secs);
 	return 0;
 }
 
-static ssize_t mt_poltime_secs_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
+static ssize_t cpu_loading_poltime_secs_proc_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
 {
 	int ret, val;
+
 	char buf[64];
 
 
@@ -311,12 +357,19 @@ static ssize_t mt_poltime_secs_write(struct file *filp, const char *ubuf, size_t
 	if (ret < 0)
 		return ret;
 
-	if (val > INT_MAX || val < 0)
+	if (val > INT_MAX || val < 0) {
+
+		trace_cpu_loading_log("cpu_loading", "out of range val:%d", val);
 		return -EINVAL;
+	}
 
 	/*check both poltime_secs and poltime_nsecs can't be zero */
-	if (!(poltime_nsecs | val))
+	if (!(poltime_nsecs | val)) {
+
+		trace_cpu_loading_log("cpu_loading", "both 0, val:%d poltime_nsecs:%lu", val, poltime_nsecs);
+
 		return -EINVAL;
+	}
 
 	mutex_lock(&cpu_loading_lock);
 
@@ -328,26 +381,14 @@ static ssize_t mt_poltime_secs_write(struct file *filp, const char *ubuf, size_t
 	return cnt;
 }
 
-static int mt_poltime_secs_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mt_poltime_secs_show, inode->i_private);
-}
-
-static const struct file_operations mt_poltime_secs_fops = {
-	.open = mt_poltime_secs_open,
-	.write = mt_poltime_secs_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static int mt_poltime_nsecs_show(struct seq_file *m, void *v)
+static int cpu_loading_poltime_nsecs_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%lu\n", poltime_nsecs);
 	return 0;
 }
 
-static ssize_t mt_poltime_nsecs_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
+static ssize_t cpu_loading_poltime_nsecs_proc_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
 {
 	unsigned long ret, val;
 
@@ -358,7 +399,6 @@ static ssize_t mt_poltime_nsecs_write(struct file *filp, const char *ubuf, size_
 
 	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
-
 	buf[cnt] = 0;
 
 	ret = _kstrtoul(buf, 10, &val);
@@ -366,12 +406,17 @@ static ssize_t mt_poltime_nsecs_write(struct file *filp, const char *ubuf, size_
 	if (ret < 0)
 		return ret;
 
-	if (val > UINT_MAX || val < 0)
-		return -EINVAL;
+	if (val >  UINT_MAX || val < 0) {
 
-	/*check both poltime_secs and poltime_nsecs can't be zero */
-	if (!(poltime_secs | val))
+		trace_cpu_loading_log("cpu_loading", "out of range val:%lu", val);
 		return -EINVAL;
+	}
+	/*check both poltime_secs and poltime_nsecs can't be zero */
+	if (!(poltime_secs | val)) {
+
+		trace_cpu_loading_log("cpu_loading", "both 0, val:%lu poltime_secs:%d", val, poltime_secs);
+		return -EINVAL;
+	}
 
 	mutex_lock(&cpu_loading_lock);
 
@@ -383,26 +428,14 @@ static ssize_t mt_poltime_nsecs_write(struct file *filp, const char *ubuf, size_
 	return cnt;
 }
 
-static int mt_poltime_nsecs_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mt_poltime_nsecs_show, inode->i_private);
-}
-
-static const struct file_operations mt_poltime_nsecs_fops = {
-	.open = mt_poltime_nsecs_open,
-	.write = mt_poltime_nsecs_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static int mt_overThrshold_show(struct seq_file *m, void *v)
+static int cpu_loading_overThrhld_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", over_threshold);
 	return 0;
 }
 
-static ssize_t mt_overThrshold_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
+static ssize_t cpu_loading_overThrhld_proc_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
 {
 	int ret;
 	int val;
@@ -421,6 +454,9 @@ static ssize_t mt_overThrshold_write(struct file *filp, const char *ubuf, size_t
 	if (ret < 0)
 		return ret;
 
+	if (val > 99)
+		return -EINVAL;
+
 	mutex_lock(&cpu_loading_lock);
 
 	over_threshold = val;
@@ -431,26 +467,13 @@ static ssize_t mt_overThrshold_write(struct file *filp, const char *ubuf, size_t
 	return cnt;
 }
 
-static int mt_overThrshold_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mt_overThrshold_show, inode->i_private);
-}
-
-static const struct file_operations mt_overThrshold_fops = {
-	.open = mt_overThrshold_open,
-	.write = mt_overThrshold_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static int mt_uevent_enble_show(struct seq_file *m, void *v)
+static int cpu_loading_uevent_enable_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", uevent_enable);
 	return 0;
 }
-
-static ssize_t mt_uevent_enble_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
+static ssize_t cpu_loading_uevent_enable_proc_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
 {
 	int val;
 	int ret;
@@ -476,46 +499,27 @@ static ssize_t mt_uevent_enble_write(struct file *filp, const char *ubuf, size_t
 	mutex_unlock(&cpu_loading_lock);
 
 	return cnt;
+
 }
-
-static int mt_uevent_enble_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mt_uevent_enble_show, inode->i_private);
-}
-
-static const struct file_operations mt_uevent_enble_fops = {
-	.open = mt_uevent_enble_open,
-	.write = mt_uevent_enble_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static int mt_prev_cpu_loading_show(struct seq_file *m, void *v)
+static int cpu_loading_prev_cpu_loading_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", prev_cpu_loading);
 	return 0;
 }
-
-static int mt_prev_cpu_loading_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mt_prev_cpu_loading_show, inode->i_private);
-}
-
-static const struct file_operations mt_prev_cpu_loading_fops = {
-	.open = mt_prev_cpu_loading_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
+PROC_FOPS_RW(onof);
+PROC_FOPS_RW(poltime_secs);
+PROC_FOPS_RW(poltime_nsecs);
+PROC_FOPS_RW(overThrhld);
+PROC_FOPS_RW(uevent_enable);
+PROC_FOPS_RO(prev_cpu_loading);
 
 /*--------------------INIT------------------------*/
 static int init_cpu_loading_kobj(void)
 {
 	int ret;
-
 	cpu_loading_object = kzalloc(sizeof(struct cpu_loading_context), GFP_KERNEL);
 
+	trace_cpu_loading_log("cpu_loading", "init_cpu_loading_obj start");
 	/* dev init */
 
 	cpu_loading_object->mdev.name = "cpu_loading";
@@ -528,7 +532,7 @@ static int init_cpu_loading_kobj(void)
 	ret = kobject_uevent(&cpu_loading_object->mdev.this_device->kobj, KOBJ_ADD);
 
 	if (ret) {
-		cpu_loading_trace_print("cpu_loading", "uevent creat  fail");
+		trace_cpu_loading_log("cpu_loading", "uevent creat  fail");
 		return -4;
 	}
 
@@ -537,10 +541,38 @@ static int init_cpu_loading_kobj(void)
 
 static int __init init_cpu_loading(void)
 {
-	struct proc_dir_entry *proc_entry;
 	struct proc_dir_entry *cpu_loading_dir = NULL;
-	int i;
+	int i, ret;
 
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+	};
+
+
+	const struct pentry entries[] = {
+		PROC_ENTRY(onof),
+		PROC_ENTRY(poltime_secs),
+		PROC_ENTRY(poltime_nsecs),
+		PROC_ENTRY(overThrhld),
+		PROC_ENTRY(uevent_enable),
+		PROC_ENTRY(prev_cpu_loading),
+	};
+	cpu_loading_dir = proc_mkdir("cpu_loading", NULL);
+
+	if (!cpu_loading_dir)
+		return -ENOMEM;
+
+	/* create procfs */
+	for (i = 0; i < ARRAY_SIZE(entries); i++) {
+		if (!proc_create(entries[i].name, 0644,
+					cpu_loading_dir, entries[i].fops)) {
+			pr_debug("%s(), create cpu_loading%s failed\n",
+					__func__, entries[i].name);
+			ret = -EINVAL;
+			return ret;
+		}
+	}
 	/*calc cpu num*/
 	cpu_num = num_possible_cpus();
 
@@ -559,8 +591,10 @@ static int __init init_cpu_loading(void)
 
 	/*workqueue init*/
 	wq = create_singlethread_workqueue("cpu_loading_work");
-	if (!wq)
+	if (!wq) {
+		trace_cpu_loading_log("cpu_loading", "work create fail");
 		return -ENOMEM;
+	}
 
 	/*timer init*/
 	hrtimer_init(&hrt1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
@@ -571,34 +605,7 @@ static int __init init_cpu_loading(void)
 
 	init_cpu_loading_value();
 	/* poting */
-	cpu_loading_dir = proc_mkdir("cpu_loading", NULL);
 
-	if (!cpu_loading_dir)
-		return -ENOMEM;
-
-	proc_entry = proc_create("onof", 0664, cpu_loading_dir, &mt_onof_fops);
-	if (!proc_entry)
-		return -ENOMEM;
-
-	proc_entry = proc_create("poltime_secs", 0664, cpu_loading_dir, &mt_poltime_secs_fops);
-	if (!proc_entry)
-		return -ENOMEM;
-
-	proc_entry = proc_create("poltime_nsecs", 0664, cpu_loading_dir, &mt_poltime_nsecs_fops);
-	if (!proc_entry)
-		return -ENOMEM;
-
-	proc_entry = proc_create("overThrhld", 0664, cpu_loading_dir, &mt_overThrshold_fops);
-	if (!proc_entry)
-		return -ENOMEM;
-
-	proc_entry = proc_create("uevent_enable", 0664, cpu_loading_dir, &mt_uevent_enble_fops);
-	if (!proc_entry)
-		return -ENOMEM;
-
-	proc_entry = proc_create("prev_cpu_loading", 0644, cpu_loading_dir, &mt_prev_cpu_loading_fops);
-	if (!proc_entry)
-		return -ENOMEM;
 
 	return 0;
 }
