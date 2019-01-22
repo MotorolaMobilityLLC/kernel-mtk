@@ -38,6 +38,7 @@
 #define MTK_PUPD_BIT_PU                 (1 << 1)
 
 /*#define GPIO_DEBUG*/
+/*#define CONFIG_PINCTRL_TEST*/
 /*#define GPIO_BRINGUP*/
 
 struct mtk_desc_function {
