@@ -308,7 +308,7 @@ struct typec_hba {
 	unsigned int pd_irq;
 	int id;
 
-#if COMPLIANCE
+#if !COMPLIANCE
 	bool is_lowq;
 	struct mt6336_ctrl *core_ctrl;
 #endif

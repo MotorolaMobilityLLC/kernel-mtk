@@ -635,15 +635,6 @@ extern void pd_request_power_swap(struct typec_hba *hba);
 extern void pd_request_data_swap(struct typec_hba *hba);
 
 /**
- * Set the PD communication enabled flag. When communication is disabled,
- * the port can still detect connection and source power but will not
- * send or respond to any PD communication.
- *
- * @param enable Enable flag to set
- */
-extern void pd_comm_enable(struct typec_hba *hba, int enable);
-
-/**
  * Set the PD pings enabled flag. When source has negotiated power over
  * PD successfully, it can optionally send pings periodically based on
  * this enable flag.

@@ -199,12 +199,9 @@ void pd_check_pr_role(struct typec_hba *hba, int pr_role, int flags)
 
 void pd_check_dr_role(struct typec_hba *hba, int dr_role, int flags)
 {
-	#if PD_DVT
-	#else
 	/* If UFP, try to switch to DFP */
 	if ((flags & PD_FLAGS_PARTNER_DR_DATA) && dr_role == PD_ROLE_UFP)
 		pd_request_data_swap(hba);
-	#endif
 }
 
 /* ----------------- Vendor Defined Messages ------------------ */
