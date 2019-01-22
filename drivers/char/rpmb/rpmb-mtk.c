@@ -119,7 +119,8 @@ do {\
 } while (0)
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
-#define RPMB_DATA_BUFF_SIZE (1024 * 33)
+#define RPMB_DATA_BUFF_SIZE (1024 * 24)
+#define RPMB_ONE_FRAME_SIZE (512)
 static unsigned char *rpmb_buffer;
 #endif
 
@@ -2317,10 +2318,10 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_WRITE_DATA\n", __func__);
 
-		err = rpmb_req_write_data(rpmbinfor.data_frame, rpmbinfor.size / 1024);
+		err = rpmb_req_write_data(rpmbinfor.data_frame, rpmbinfor.size / RPMB_ONE_FRAME_SIZE);
 
 		if (err) {
-			MSG(ERR, "%s, rpmb_req_write_data IO error!!!(%x)\n", __func__, err);
+			MSG(ERR, "%s, Microtrust rpmb write request IO error!!!(%x)\n", __func__, err);
 			return err;
 		}
 
@@ -2337,10 +2338,10 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_READ_DATA\n", __func__);
 
-		err = rpmb_req_read_data(rpmbinfor.data_frame, rpmbinfor.size / 1024);
+		err = rpmb_req_read_data(rpmbinfor.data_frame, rpmbinfor.size / RPMB_ONE_FRAME_SIZE);
 
 		if (err) {
-			MSG(ERR, "%s, rpmb_req_read_data IO error!!!(%x)\n", __func__, err);
+			MSG(ERR, "%s, Microtrust rpmb read request IO error!!!(%x)\n", __func__, err);
 			return err;
 		}
 
@@ -2358,9 +2359,8 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_GET_CNT\n", __func__);
 
 		err = rpmb_req_get_wc(NULL, &arg_k, NULL);
-
 		if (err) {
-			MSG(ERR, "%s, rpmb_req_get_wc IO error!!!(%x)\n", __func__, err);
+			MSG(ERR, "%s, Microtrust get rpmb write counter failed, error code (%x)\n", __func__, err);
 			return err;
 		}
 
@@ -2489,10 +2489,11 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	case RPMB_IOCTL_SOTER_WRITE_DATA:
 
-		ret = ut_rpmb_req_write_data(card, (struct s_rpmb *)(rpmbinfor.data_frame), rpmbinfor.size/1024);
+		ret = ut_rpmb_req_write_data(card, (struct s_rpmb *)(rpmbinfor.data_frame),
+					rpmbinfor.size/RPMB_ONE_FRAME_SIZE);
 
 		if (ret) {
-			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+			MSG(ERR, "%s, ISEE rpmb write request IO error!!!(%x)\n", __func__, ret);
 			goto end;
 		}
 
@@ -2505,10 +2506,11 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case RPMB_IOCTL_SOTER_READ_DATA:
 
-		ret = ut_rpmb_req_read_data(card, (struct s_rpmb *)(rpmbinfor.data_frame), rpmbinfor.size/1024);
+		ret = ut_rpmb_req_read_data(card, (struct s_rpmb *)(rpmbinfor.data_frame),
+					rpmbinfor.size/RPMB_ONE_FRAME_SIZE);
 
 		if (ret) {
-			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+			MSG(ERR, "%s, ISEE rpmb read request IO error!!!(%x)\n", __func__, ret);
 			goto end;
 		}
 
@@ -2524,7 +2526,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = ut_rpmb_req_get_wc(card, (unsigned int *)&arg_k);
 
 		if (ret) {
-			MSG(ERR, "%s, rpmb_req_get_wc IO error!!!(%x)\n", __func__, ret);
+			MSG(ERR, "%s, ISEE rpmb get write counter error (%x)\n", __func__, ret);
 			goto end;
 		}
 
@@ -2542,7 +2544,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = ut_rpmb_req_get_max_wr_size(card, (unsigned int *)&arg_k);
 
 		if (ret) {
-			MSG(ERR, "%s, ut_rpmb_req_get_max_wr_size failed: %x\n", __func__, ret);
+			MSG(ERR, "%s, ISEE rpmb get max write block size error (%x)\n", __func__, ret);
 			goto end;
 		}
 
