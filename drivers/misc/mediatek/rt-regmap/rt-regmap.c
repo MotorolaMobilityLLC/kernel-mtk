@@ -27,6 +27,7 @@
 #include <linux/semaphore.h>
 
 #include <mt-plat/rt-regmap.h>
+#define RT_REGMAP_VERSION	"1.1.10_G"
 
 struct rt_regmap_ops {
 	int (*regmap_block_write)(struct rt_regmap_device *rd, u32 reg,
@@ -1978,6 +1979,15 @@ struct rt_regmap_device *rt_regmap_device_register
 	char device_name[32];
 	unsigned char data;
 
+	if (!props) {
+		pr_err("%s rt_regmap_properties is NULL\n", __func__);
+		return NULL;
+	}
+	if (!rops) {
+		pr_err("%s rt_regmap_fops is NULL\n", __func__);
+		return NULL;
+	}
+
 	pr_info("regmap_device_register: name = %s\n", props->name);
 	rd = devm_kzalloc(parent, sizeof(*rd), GFP_KERNEL);
 	if (!rd) {
@@ -1993,10 +2003,6 @@ struct rt_regmap_device *rt_regmap_device_register
 	dev_set_drvdata(&rd->dev, drvdata);
 	snprintf(device_name, 32, "rt_regmap_%s", props->name);
 	dev_set_name(&rd->dev, device_name);
-	if (!props) {
-		devm_kfree(parent, rd);
-		return NULL;
-	}
 	memcpy(&rd->props, props, sizeof(struct rt_regmap_properties));
 
 	/* check rt_registe_map format */
@@ -2093,8 +2099,8 @@ EXPORT_SYMBOL(rt_regmap_device_unregister);
 
 static int __init regmap_plat_init(void)
 {
+	pr_info("Init Richtek RegMap %s\n", RT_REGMAP_VERSION);
 	rt_regmap_dir = debugfs_create_dir("rt-regmap", 0);
-	pr_info("Init Richtek RegMap\n");
 	if (IS_ERR(rt_regmap_dir)) {
 		pr_err("rt-regmap debugfs node create fail\n");
 		return -EINVAL;
