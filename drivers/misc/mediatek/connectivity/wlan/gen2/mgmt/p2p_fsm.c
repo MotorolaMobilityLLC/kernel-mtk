@@ -1030,10 +1030,23 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 				if (prP2pConnSettings->ucOperatingChnl != 0) {
 					prP2pSpecificBssInfo->ucPreferredChannel = prP2pConnSettings->ucOperatingChnl;
 					prP2pSpecificBssInfo->eRfBand = prP2pConnSettings->eBand;
+					prP2pSpecificBssInfo->eRfSco = rlmDecideScoForAP(prAdapter, prP2pBssInfo);
 				} else {
 					ASSERT(ucPreferedChnl != 0);
 					prP2pSpecificBssInfo->ucPreferredChannel = ucPreferedChnl;
 					prP2pSpecificBssInfo->eRfBand = eBand;
+					prP2pSpecificBssInfo->eRfSco = rlmDecideScoForAP(prAdapter, prP2pBssInfo);
+				}
+#else
+				if (ucPreferedChnl) {
+					prP2pSpecificBssInfo->ucPreferredChannel = ucPreferedChnl;
+					prP2pSpecificBssInfo->eRfBand = eBand;
+					prP2pSpecificBssInfo->eRfSco = rlmDecideScoForAP(prAdapter, prP2pBssInfo);
+				} else {
+					ASSERT(prP2pConnSettings->ucOperatingChnl != 0);
+					prP2pSpecificBssInfo->ucPreferredChannel = prP2pConnSettings->ucOperatingChnl;
+					prP2pSpecificBssInfo->eRfBand = prP2pConnSettings->eBand;
+					prP2pSpecificBssInfo->eRfSco = rlmDecideScoForAP(prAdapter, prP2pBssInfo);
 				}
 #endif
 				prChnlReqInfo->ucReqChnlNum = prP2pSpecificBssInfo->ucPreferredChannel;
