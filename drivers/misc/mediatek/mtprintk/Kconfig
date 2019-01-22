@@ -8,11 +8,11 @@ config PRINTK_MT_PREFIX
 	  the information about which cpu about this
 	  process in, and whether in isr.
 
-config MT_PRINTK_UART_CONSOLE
+config MTK_PRINTK_UART_CONSOLE
 	bool "MTK printk UART controller"
 	default y
 	help
-	  MT_PRINTK_UART_CONSOLE which is used to control whether to
+	  MTK_PRINTK_UART_CONSOLE which is used to control whether to
 	  control printk to uart console.  when boot up finish
 	  uart console do not output printk log.
 	  also RD can set the setting by command.
