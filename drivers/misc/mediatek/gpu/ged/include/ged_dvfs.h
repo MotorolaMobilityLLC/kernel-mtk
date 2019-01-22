@@ -75,6 +75,12 @@ typedef enum GED_DVFS_TUNING_MODE_TAG
 #define GED_EVENT_VILTE_VID      (1 << 9)
 #define GED_EVENT_LCD      (1 << 10)
 
+typedef void (*ged_event_change_fp)(void *private_data, int events);
+
+bool mtk_register_ged_event_change(const char *name, ged_event_change_fp callback, void *private_data);
+bool mtk_unregister_ged_event_change(const char *name);
+void mtk_ged_event_notify(int events);
+
 #define GED_EVENT_FORCE_ON  (1 << 0)
 #define GED_EVENT_FORCE_OFF  (1 << 1)
 #define GED_EVENT_NOT_SYNC  (1 << 2)
