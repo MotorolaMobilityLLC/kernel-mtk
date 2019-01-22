@@ -312,7 +312,7 @@ static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
 		      mr->life, mr->debnc);
 
 
-	if (mr->source | MINITOP_FTEH) {
+	if (mr->source & MINITOP_FTEH) {
 		if (mr->debnc_fteh > 0)
 			keep |= 1;
 		else
@@ -632,7 +632,7 @@ int fpsgo_fteh2minitop_query(int count, struct fteh_loading *fl)
 
 	for (n = rb_first(&minitop_root); n; n = rb_next(n)) {
 		mr = rb_entry(n, struct minitop_rec, node);
-		if (mr->source | MINITOP_FTEH)
+		if (mr->source & MINITOP_FTEH)
 			mr->debnc_fteh--;
 	}
 
@@ -646,7 +646,7 @@ int fpsgo_fteh2minitop_query(int count, struct fteh_loading *fl)
 			else if (mr->tid > fl[i].pid)
 				n = n->rb_right;
 			else {
-				if ((mr->source | MINITOP_FTEH) == 0) {
+				if ((mr->source & MINITOP_FTEH) == 0) {
 					fl[i].loading = 0;
 					break;
 				}
