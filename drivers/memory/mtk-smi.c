@@ -24,6 +24,7 @@
 
 #define MT8173_SMI_LARB_NR	6
 #define MT8167_SMI_LARB_NR	3
+#define MTK_SMI_LARB_NR_MAX	8
 #define MT8173_MMU_EN	0xf00
 #define MT8167_MMU_EN	0xfc0
 
@@ -43,7 +44,15 @@ struct mtk_smi_larb { /* larb: local arbiter */
 	struct device	*smi_common_dev;
 	u32		*mmu;
 	const struct mtk_larb_plat *mt_plat;
+	int		larbid;
 };
+
+struct mtk_larb_dev {
+	struct device *dev;
+	int larbid;
+};
+
+static struct mtk_larb_dev gmtk_larb_dev[MTK_SMI_LARB_NR_MAX];
 
 static int mtk_smi_enable(const struct mtk_smi *smi)
 {
@@ -116,6 +125,36 @@ void mtk_smi_larb_put(struct device *larbdev)
 	mtk_smi_disable(common);
 }
 
+int mtk_smi_larb_clock_on(int larbid, bool pm)
+{
+	struct device *dev = gmtk_larb_dev[larbid].dev;
+
+	if (!dev)
+		return -1;
+
+	return mtk_smi_larb_get(dev);
+}
+
+int mtk_smi_larb_ready(int larbid)
+{
+	struct device *dev = gmtk_larb_dev[larbid].dev;
+
+	if (dev)
+		return 1;
+
+	return 0;
+}
+
+void mtk_smi_larb_clock_off(int larbid, bool pm)
+{
+	struct device *dev = gmtk_larb_dev[larbid].dev;
+
+	if (!dev)
+		return;
+
+	mtk_smi_larb_put(dev);
+}
+
 static int
 mtk_smi_larb_bind(struct device *dev, struct device *master, void *data)
 {
@@ -168,6 +207,7 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 	struct device_node *smi_node;
 	struct platform_device *smi_pdev;
 	const struct of_device_id *of_id;
+	int ret, larbid;
 
 	if (!dev->pm_domain)
 		return -EPROBE_DEFER;
@@ -195,6 +235,10 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 		return PTR_ERR(larb->smi.clk_smi);
 	larb->smi.dev = dev;
 
+	ret = of_property_read_u32(dev->of_node, "mediatek,larbid", &larbid);
+	if (ret)
+		return ret;
+
 	smi_node = of_parse_phandle(dev->of_node, "mediatek,smi", 0);
 	if (!smi_node)
 		return -EINVAL;
@@ -214,6 +258,11 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 
 	pm_runtime_enable(dev);
 	platform_set_drvdata(pdev, larb);
+
+	gmtk_larb_dev[larbid].dev = &pdev->dev;
+	gmtk_larb_dev[larbid].larbid = larbid;
+	larb->larbid = larbid;
+
 	return component_add(dev, &mtk_smi_larb_component_ops);
 }
 

@@ -43,6 +43,9 @@ struct mtk_smi_iommu {
  */
 int mtk_smi_larb_get(struct device *larbdev);
 void mtk_smi_larb_put(struct device *larbdev);
+int mtk_smi_larb_clock_on(int larbid, bool pm);
+void mtk_smi_larb_clock_off(int larbid, bool pm);
+int mtk_smi_larb_ready(int larbid);
 
 #else
 
