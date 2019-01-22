@@ -253,7 +253,7 @@ static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
 static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
 	{79000, 815000, 79000, 76500},
 	{79000, 765000, 74000, 71500},
-	{69000, 71500, 69000, 66500},
+	{74000, 71500, 69000, 66500},
 	{69000, 66500, 64000, 61500},
 };
 #endif
