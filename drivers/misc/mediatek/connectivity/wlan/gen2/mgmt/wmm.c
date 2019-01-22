@@ -1,4 +1,59 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
+/*******************************************************************************
+*                         C O M P I L E R   F L A G S
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                    E X T E R N A L   R E F E R E N C E S
+********************************************************************************
+*/
+
 #include "precomp.h"
+
+/*******************************************************************************
+*                              C O N S T A N T S
+********************************************************************************
+*/
+UINT_8 const aucUp2ACIMap[8] = {ACI_BE, ACI_BK, ACI_BK, ACI_BE, ACI_VI, ACI_VI, ACI_VO, ACI_VO};
+
+/*******************************************************************************
+*                             D A T A   T Y P E S
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                            P U B L I C   D A T A
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                           P R I V A T E   D A T A
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                                 M A C R O S
+********************************************************************************
+*/
+
+/*******************************************************************************
+*                   F U N C T I O N   D E C L A R A T I O N S
+********************************************************************************
+*/
+
 static VOID
 wmmTxTspecFrame(P_ADAPTER_T prAdapter, UINT_8 ucTid, enum TSPEC_OP_CODE eOpCode,
 						  P_PARAM_QOS_TSPEC prTsParam);
@@ -20,7 +75,11 @@ static VOID wmmMayDoTsReplacement(P_ADAPTER_T prAdapter, UINT_8 ucNewTid);
 #if 0
 static void DumpData(PUINT8 prAddr, UINT8 uLen, char *tag);
 #endif
-UINT_8 const aucUp2ACIMap[8] = {ACI_BE, ACI_BK, ACI_BK, ACI_BE, ACI_VI, ACI_VI, ACI_VO, ACI_VO};
+
+/*******************************************************************************
+*                              F U N C T I O N S
+********************************************************************************
+*/
 
 VOID wmmInit(IN P_ADAPTER_T prAdapter)
 {
