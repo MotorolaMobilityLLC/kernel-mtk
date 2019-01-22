@@ -210,6 +210,7 @@ typedef struct _OSAL_WAKE_LOCK_ {
 	struct wake_lock wake_lock;
 	#endif
 	UINT8 name[MAX_WAKE_LOCK_NAME_LEN];
+	INT32 init_flag;
 } OSAL_WAKE_LOCK, *P_OSAL_WAKE_LOCK;
 #if 1
 typedef struct _OSAL_BIT_OP_VAR_ {
