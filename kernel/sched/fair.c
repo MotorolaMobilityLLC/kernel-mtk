@@ -5735,6 +5735,17 @@ done:
 	return target;
 }
 
+static bool is_the_same_domain(int prev, int target)
+{
+#ifdef CONFIG_ARM64
+	return (cpu_topology[prev].cluster_id ==
+				cpu_topology[target].cluster_id);
+#else
+	return (cpu_topology[prev].socket_id ==
+				cpu_topology[target].socket_id);
+#endif
+}
+
 static int energy_aware_wake_cpu(struct task_struct *p, int target)
 {
 	struct sched_domain *sd;
@@ -5814,6 +5825,10 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 			if (target_cpu == task_cpu(p))
 				target_cpu = i;
 		}
+
+	/* no need energy calculation if the same domain */
+	if (is_the_same_domain(task_cpu(p), target_cpu))
+		return target_cpu;
 
 	/* no energy comparison if the same cluster */
 	if (target_cpu != task_cpu(p)) {
@@ -5933,17 +5948,16 @@ CONSIDER_EAS:
 			if (true) {
 				int idle_cpu;
 
-				idle_cpu = find_best_idle_cpu(p, prev_cpu);
+				idle_cpu = find_best_idle_cpu(p, new_cpu);
 				if (idle_cpu < nr_cpu_ids) {
 					new_cpu = idle_cpu;
 					policy |= LB_IDLEST;
 				} else {
-					new_cpu = select_max_spare_capacity_cpu(p, prev_cpu);
+					new_cpu = select_max_spare_capacity_cpu(p, new_cpu);
 					policy |= LB_SPARE;
 				}
-			} else {
+			} else
 				new_cpu = select_idle_sibling(p, new_cpu);
-			}
 		}
 	} else while (sd) {
 		struct sched_group *group;
