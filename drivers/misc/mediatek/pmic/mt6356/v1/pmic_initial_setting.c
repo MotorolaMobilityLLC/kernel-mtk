@@ -137,7 +137,7 @@ void PMIC_LP_INIT_SETTING(void)
 		pmic_buck_vs1_lp(SRCLKEN2, 1, HW_LP);
 		pmic_buck_vs2_lp(SRCLKEN2, 1, HW_LP);
 		pmic_buck_vpa_lp(SW, 1, SW_OFF);
-		pmic_ldo_vsram_proc_lp(SRCLKEN2, 1, HW_LP);
+		pmic_ldo_vsram_proc_lp(SW, 1, SW_LP);
 		pmic_ldo_vsram_gpu_lp(SW, 1, SW_LP);
 		pmic_ldo_vsram_others_lp(SRCLKEN2, 1, HW_LP);
 		pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
@@ -206,13 +206,13 @@ void PMIC_LP_INIT_SETTING(void)
 		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_OFF);
 
 		/*--deepidle--*/
-		pmic_buck_vproc_lp(SRCLKEN2, 1, HW_LP);
+		pmic_buck_vproc_lp(SW, 1, SW_LP);
 		pmic_buck_vcore_lp(SRCLKEN2, 1, HW_LP);
 		pmic_buck_vmodem_lp(SRCLKEN2, 1, HW_LP);
 		pmic_buck_vs1_lp(SRCLKEN2, 1, HW_LP);
 		pmic_buck_vs2_lp(SRCLKEN2, 1, HW_LP);
 		pmic_buck_vpa_lp(SW, 1, SW_OFF);
-		pmic_ldo_vsram_proc_lp(SRCLKEN2, 1, HW_LP);
+		pmic_ldo_vsram_proc_lp(SW, 1, SW_LP);
 		pmic_ldo_vsram_gpu_lp(SW, 1, SW_OFF);
 		pmic_ldo_vsram_others_lp(SRCLKEN2, 1, HW_LP);
 		pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
