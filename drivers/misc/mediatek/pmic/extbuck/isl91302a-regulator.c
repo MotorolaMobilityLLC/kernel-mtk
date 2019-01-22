@@ -265,6 +265,7 @@ static int isl91302a_enable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 	unsigned int ret = 0;
 	unsigned char buck_id;
 
+	pr_err("isl91302a_enable_ipi ");
 	buck_id = mreg_desc->rdesc.id;
 	if (buck_id != 1) {
 		pr_err("%s only support proc2\n", __func__);
@@ -283,6 +284,7 @@ static int isl91302a_disable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 	unsigned int ret = 0;
 	unsigned char buck_id;
 
+	pr_err("isl91302a_disable_ipi ");
 	buck_id = mreg_desc->rdesc.id;
 	if (buck_id != 1) {
 		pr_err("%s only support proc2\n", __func__);
@@ -301,6 +303,7 @@ static int isl91302a_is_enabled_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 	unsigned int ret = 0;
 	unsigned char buck_id;
 
+	pr_err("isl91302a_is_enabled_ipi ");
 	buck_id = mreg_desc->rdesc.id;
 	if (buck_id != 1) {
 		pr_err("%s only support proc2\n", __func__);
