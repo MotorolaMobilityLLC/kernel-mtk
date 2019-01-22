@@ -38,7 +38,16 @@
 #include <typec.h>
 #endif
 
+#if CONFIG_MTK_GAUGE_VERSION == 30
+#include <mt-plat/mtk_battery.h>
+#else
 #include <mt-plat/battery_meter.h>
+#endif
+
+#include <mt-plat/charger_class.h>
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+#include <mtk_sleep.h>
+#endif
 
 #define RET_SUCCESS 0
 #define RET_FAIL 1
@@ -60,6 +69,10 @@ static struct mutex tcpc_otg_lock;
 static struct mutex tcpc_otg_pwr_lock;
 static bool tcpc_boost_on;
 #endif /* CONFIG_TCPC_CLASS */
+
+#if CONFIG_MTK_GAUGE_VERSION == 30
+static struct charger_device *primary_charger;
+#endif
 
 static struct wake_lock mtk_xhci_wakelock;
 
@@ -90,13 +103,23 @@ bool mtk_is_charger_4_vol(void)
 
 static void mtk_enable_otg_mode(void)
 {
+#if CONFIG_MTK_GAUGE_VERSION == 30
+	charger_dev_enable_otg(primary_charger, true);
+	charger_dev_set_boost_current_limit(primary_charger, 1500000);
+	charger_dev_kick_wdt(primary_charger);
+#else
 	set_chr_enable_otg(0x1);
 	set_chr_boost_current_limit(1500);
+#endif
 }
 
 static void mtk_disable_otg_mode(void)
 {
+#if CONFIG_MTK_GAUGE_VERSION == 30
+	charger_dev_enable_otg(primary_charger, false);
+#else
 	set_chr_enable_otg(0x0);
+#endif
 }
 
 static int mtk_xhci_hcd_init(void)
@@ -365,6 +388,15 @@ static int __init xhci_hcd_init(void)
 #endif /* CONFIG_TCPC_CLASS */
 	mtk_xhci_wakelock_init();
 	mtk_xhci_switch_init();
+
+#if CONFIG_MTK_GAUGE_VERSION == 30
+	primary_charger = get_charger_by_name("primary_chg");
+	if (!primary_charger) {
+		pr_err("%s: get primary charger device failed\n", __func__);
+		return -ENODEV;
+	}
+#endif
+
 #ifdef CONFIG_TCPC_CLASS
 	mutex_init(&tcpc_otg_lock);
 	mutex_init(&tcpc_otg_pwr_lock);
