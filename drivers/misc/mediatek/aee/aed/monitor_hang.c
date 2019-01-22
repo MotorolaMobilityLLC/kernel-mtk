@@ -52,7 +52,6 @@ static int wdt_kick_status;
 static int hwt_kick_times;
 static int pwk_start_monitor;
 
-#define AEEIOCTL_RT_MON_Kick _IOR('p', 0x0A, int)
 #define MaxHangInfoSize (1024*1024)
 #define MAX_STRING_SIZE 256
 char Hang_Info[MaxHangInfoSize];	/* 1M info */
@@ -332,88 +331,6 @@ static int FindTaskByName(char *name)
 	return ret;
 }
 
-static int save_kernel_trace(struct stackframe *frame, void *d)
-{
-	struct aee_process_bt *trace = d;
-	unsigned int id = trace->nr_entries;
-	/* use static var, not support concurrency */
-	static unsigned long stack;
-	int ret = 0;
-
-	if (id >= AEE_NR_FRAME)
-		return -1;
-	if (id == 0)
-		stack = frame->sp;
-	if (frame->fp < stack || frame->fp > ALIGN(stack, THREAD_SIZE))
-		ret = -1;
-#if 0
-	if (ret == 0 && in_exception_text(addr)) {
-#ifdef __aarch64__
-		excp_regs = (void *)(frame->fp + 0x10);
-		frame->pc = excp_regs->reg_pc - 4;
-#else
-		excp_regs = (void *)(frame->fp + 4);
-		frame->pc = excp_regs->reg_pc;
-		frame->lr = excp_regs->reg_lr;
-#endif
-		frame->sp = excp_regs->reg_sp;
-		frame->fp = excp_regs->reg_fp;
-	}
-#endif
-	trace->entries[id].pc = frame->pc;
-	snprintf(trace->entries[id].pc_symbol, AEE_SZ_SYMBOL_S, "%pS", (void *)frame->pc);
-#ifndef __aarch64__
-	trace->entries[id].lr = frame->lr;
-	snprintf(trace->entries[id].lr_symbol, AEE_SZ_SYMBOL_L, "%pS", (void *)frame->lr);
-#endif
-
-	++trace->nr_entries;
-	return ret;
-}
-
-static void get_kernel_bt(struct task_struct *tsk, struct aee_process_bt *bt)
-{
-	struct stackframe frame;
-	unsigned long stack_address;
-	static struct aee_bt_frame aed_backtrace_buffer[AEE_NR_FRAME];
-
-	bt->nr_entries = 0;
-	bt->entries = aed_backtrace_buffer;
-
-	memset(&frame, 0, sizeof(struct stackframe));
-	if (tsk != current) {
-		frame.fp = thread_saved_fp(tsk);
-		frame.sp = thread_saved_sp(tsk);
-#ifdef __aarch64__
-		frame.pc = thread_saved_pc(tsk);
-#else
-		frame.lr = thread_saved_pc(tsk);
-		frame.pc = 0xffffffff;
-#endif
-	} else {
-		register unsigned long current_sp asm("sp");
-
-		frame.fp = (unsigned long)__builtin_frame_address(0);
-		frame.sp = current_sp;
-#ifdef __aarch64__
-		frame.pc = (unsigned long)__builtin_return_address(0);
-#else
-		frame.lr = (unsigned long)__builtin_return_address(0);
-		frame.pc = (unsigned long)get_kernel_bt;
-#endif
-	}
-	stack_address = ALIGN(frame.sp, THREAD_SIZE);
-	if ((stack_address >= (PAGE_OFFSET + THREAD_SIZE)) && virt_addr_valid(stack_address))
-#ifdef __aarch64__
-	walk_stackframe(tsk, &frame, save_kernel_trace, bt);
-#else
-	walk_stackframe(&frame, save_kernel_trace, bt);
-#endif
-	else
-		LOGE("%s: Invalid sp value %lx\n", __func__, frame.sp);
-}
-
-
 static void Log2HangInfo(const char *fmt, ...)
 {
 	unsigned long len = 0;
@@ -428,19 +345,35 @@ static void Log2HangInfo(const char *fmt, ...)
 		return;
 	}
 	va_start(ap, fmt);
-	len = vsnprintf(&Hang_Info[Hang_Info_Size], MAX_STRING_SIZE, fmt, ap);
+	len = vscnprintf(&Hang_Info[Hang_Info_Size], MAX_STRING_SIZE, fmt, ap);
 	va_end(ap);
 	Hang_Info_Size += len;
+}
+
+
+static void get_kernel_bt(struct task_struct *tsk)
+{
+	struct stack_trace trace;
+	unsigned long stacks[32];
+	int i;
+
+	trace.entries = stacks;
+	/*save backtraces */
+	trace.nr_entries = 0;
+	trace.max_entries = 32;
+	trace.skip = 2;
+	save_stack_trace_tsk(tsk, &trace);
+	for (i = 0; i < trace.nr_entries; i++)
+		Log2HangInfo("[<%lx>] %pS\n", (long)trace.entries[i], (void *)trace.entries[i]);
 }
 
 
 void sched_show_task_local(struct task_struct *p)
 {
 	unsigned long free = 0;
-	int ppid, i;
+	int ppid;
 	unsigned state;
 	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
-	struct aee_process_bt ke_frame;
 	pid_t pid;
 
 	state = p->state ? __ffs(p->state) + 1 : 0;
@@ -470,17 +403,10 @@ void sched_show_task_local(struct task_struct *p)
 		     (unsigned long)task_thread_info(p)->flags);
 
 	pid = task_pid_nr(p);
-	ke_frame.pid = pid;
-	ke_frame.nr_entries = 0;
 
-	get_kernel_bt(p, &ke_frame);	/* Catch kernel-space backtrace */
-	Log2HangInfo("KBT,sysTid=%d,ke_frame.nr_entries:%d\n", pid, ke_frame.nr_entries);
-	for (i = 0; i < ke_frame.nr_entries; i++) {
-		LOGV("LHD11:frame %d: %s,pc(%lx)\n", i, ke_frame.entries[i].pc_symbol,
-		     (long)(ke_frame.entries[i].pc));
-		/*  format: [<0000000000000000>] __switch_to+0xa0/0xd8 */
-		Log2HangInfo("[<%lx>] %s\n", (long)((ke_frame.entries[i]).pc), ke_frame.entries[i].pc_symbol);
-	}
+	Log2HangInfo("KBT,sysTid=%d\n", pid);
+	get_kernel_bt(p);	/* Catch kernel-space backtrace */
+
 }
 
 void show_state_filter_local(unsigned long state_filter)
@@ -579,6 +505,8 @@ static int DumpThreadNativeMaps(pid_t pid)
 	struct pt_regs *user_ret;
 
 	current_task = find_task_by_vpid(pid);	/* get tid task */
+	if (current_task == NULL)
+		return -ESRCH;
 	user_ret = task_pt_regs(current_task);
 
 	if (!user_mode(user_ret)) {
@@ -815,14 +743,14 @@ static int DumpThreadNativeInfo_By_tid(pid_t tid)
 						      sizeof(tmp), 0);
 				if (copied != sizeof(tmp)) {
 					LOGE("access_process_vm  fp error\n");
-					/* return -EIO; */
+					return -EIO;
 				}
 				copied =
 				    access_process_vm(current_task, (unsigned long)tmpfp + 0x08,
 						      &tmpLR, sizeof(tmpLR), 0);
 				if (copied != sizeof(tmpLR)) {
 					LOGE("access_process_vm  pc error\n");
-					/* return -EIO; */
+					return -EIO;
 				}
 				tmpfp = tmp;
 				native_bt[frames] = tmpLR;
@@ -987,7 +915,7 @@ static int hang_detect_thread(void *arg)
 #ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
 #endif
-			pr_debug("[Hang_Detect] hang_detect thread counts down %d:%d.\n",
+			pr_info("[Hang_Detect] hang_detect thread counts down %d:%d.\n",
 				hang_detect_counter, hd_timeout);
 
 			if (hang_detect_counter <= 0) {
@@ -1028,7 +956,7 @@ void aee_kernel_RT_Monitor_api(int lParam)
 	if (lParam == 0) {
 		hd_detect_enabled = 0;
 		hang_detect_counter = hd_timeout;
-		pr_debug("[Hang_Detect] hang_detect disabled\n");
+		pr_info("[Hang_Detect] hang_detect disabled\n");
 	} else if (lParam > 0) {
 		/* lParem=0x1000|timeout,only set in aee call when NE in system_server
 		 *  so only change hang_detect_counter when call from AEE
@@ -1042,7 +970,7 @@ void aee_kernel_RT_Monitor_api(int lParam)
 			hang_detect_counter = hd_timeout =
 			    ((long)lParam + HD_INTER - 1) / (HD_INTER);
 		}
-		pr_debug("[Hang_Detect] hang_detect enabled %d\n", hd_timeout);
+		pr_info("[Hang_Detect] hang_detect enabled %d\n", hd_timeout);
 	}
 }
 
