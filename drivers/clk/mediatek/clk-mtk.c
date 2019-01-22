@@ -110,10 +110,9 @@ int __init mtk_clk_register_gates(struct device_node *node,
 	if (IS_ERR(regmap)) {
 		pr_err("Cannot find regmap for %s: %ld\n", node->full_name,
 				PTR_ERR(regmap));
-	#if defined(CONFIG_MACH_MT6763)
-	#else
+
 		return PTR_ERR(regmap);
-	#endif
+
 	}
 
 	for (i = 0; i < num; i++) {
