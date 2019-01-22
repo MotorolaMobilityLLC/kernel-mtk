@@ -910,10 +910,8 @@ VOID kalP2PIndicateScanDone(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex, 
 
 		if (prScanRequest != NULL) {
 			/* report all queued beacon/probe response frames  to upper layer */
-			/*
-			 * do not indicate again for getting last scan results
-			 * scanReportBss2Cfg80211(prGlueInfo->prAdapter, BSS_TYPE_P2P_DEVICE, NULL);
-			 */
+			scanReportBss2Cfg80211(prGlueInfo->prAdapter, BSS_TYPE_P2P_DEVICE, NULL);
+
 			cfg80211_scan_done(prScanRequest, fgIsAbort);
 		}
 
