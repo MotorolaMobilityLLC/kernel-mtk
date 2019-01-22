@@ -1518,6 +1518,9 @@ unsigned long zram_mlog(void)
 		return P2K(zs_get_total_pages(zram_devices->meta->mem_pool));
 #undef P2K
 
+#ifdef CONFIG_HWZRAM_DRV
+	return hwzram_mem_used_total() >> 10;
+#endif
 	return 0;
 }
 
@@ -1568,6 +1571,10 @@ static int zraminfo_proc_show(struct seq_file *m, void *v)
 #undef B2K
 		seq_printf(m, "Algorithm: [%s]\n", zram_devices->compressor);
 	}
+
+#ifdef CONFIG_HWZRAM_DRV
+	hwzraminfo_proc_show(m, v);
+#endif
 
 	return 0;
 }

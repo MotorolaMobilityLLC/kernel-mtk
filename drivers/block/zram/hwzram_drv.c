@@ -1,8 +1,37 @@
 /*
- * Hardware Compressed RAM block device
- * Copyright (C) 2015 Google Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
- * Sonny Rao <sonnyrao@chromium.org>
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * Modifications from MediaTek Inc.:
+ * 1. Add "last" check of bio vectors in copied case of hwzram_bvec_read.
+ * 2. Add bio_get before iterating bio vectors to avoid race condition.
+ * 3. Add another work to handle pending free request to avoid deadlock.
+ *
+ * It is based on Hardware Compressed RAM block device (hwzram)
+ *
+ * Hardware Compressed RAM block device
+ *
+ *  Copyright (C) 2015 The Chromium OS Authors
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  Sonny Rao <sonnyrao@chromium.org>
  *
  * Based on Compressed RAM block device (zram)
  *
@@ -405,9 +434,8 @@ static int hwzram_bvec_read(struct hwzram *hwzram, struct bio_vec *bvec,
 		cmpl->data = bio;
 		cmpl->compr_size = hwzram_get_obj_size(meta, index);
 		cmpl->callback = hwzram_impl_decompr_cb;
-		memcpy(cmpl->buffers, meta->table[index].compressed_buffers,
+		memcpy(cmpl->dma_bufs, meta->table[index].compressed_buffers,
 		       sizeof(phys_addr_t) * HWZRAM_MAX_BUFFERS_USED);
-
 		ret = hwzram_impl_decompress_page(hwzram->hwz, page, cmpl);
 		/* TBC - miss error handling */
 		if (ret != 0)
@@ -488,6 +516,7 @@ static int hwzram_bvec_write(struct hwzram *hwzram, struct bio_vec *bvec, u32 in
 	int ret;
 	struct hwzram_impl_completion *cmpl = kzalloc(sizeof(*cmpl),
 						      GFP_ATOMIC);
+
 	/* !!! make this a static allocation of fifo_size */
 	if (!cmpl) {
 		ret = -ENOMEM;
@@ -655,14 +684,22 @@ static void hwzram_reset_device(struct hwzram *hwzram, bool reset_capacity)
 static ssize_t disksize_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t len)
 {
+#define DEFAULT_DISKSIZE_PERC_RAM	(50)
+#define SUPPOSED_TOTALRAM	(0x20000)       /* 512MB */
+
 	u64 disksize;
 	struct hwzram_meta *meta;
 	struct hwzram *hwzram = dev_to_hwzram(dev);
 	int err;
 
 	disksize = memparse(buf, NULL);
-	if (!disksize)
-		return -EINVAL;
+	if (!disksize) {
+		/* Give it a default disksize */
+		disksize = DEFAULT_DISKSIZE_PERC_RAM * ((totalram_pages << PAGE_SHIFT) / 100);
+		/* Promote the default disksize if totalram_pages is smaller */
+		if (totalram_pages < SUPPOSED_TOTALRAM)
+			disksize += (disksize >> 1);
+	}
 
 	disksize = PAGE_ALIGN(disksize);
 	meta = hwzram_meta_alloc(disksize);
@@ -783,7 +820,7 @@ static int __hwzram_make_request(struct hwzram *hwzram, struct bio *bio)
 			struct bio_vec bv;
 
 			pr_info("%s: split bio vector case bvec.bv_len %d max %d\n",
-					__func__, bvec.bv_len, max_transfer_size);
+				__func__, bvec.bv_len, max_transfer_size);
 
 			bv.bv_page = bvec.bv_page;
 			bv.bv_len = max_transfer_size;
@@ -967,6 +1004,64 @@ static struct attribute *hwzram_disk_attrs[] = {
 static struct attribute_group hwzram_disk_attr_group = {
 	.attrs = hwzram_disk_attrs,
 };
+
+/* (in bytes) - lockless */
+unsigned long hwzram_mem_used_total(void)
+{
+	struct hwzram *hwzram = hwzram_devices;
+	unsigned long val = 0;
+
+	if (!hwzram)
+		return 0;
+
+	if (init_done(hwzram))
+		val = hwzram_impl_get_total_used(hwzram->hwz);
+
+	return val;
+}
+
+#ifdef CONFIG_PROC_FS
+void hwzraminfo_proc_show(struct seq_file *m, void *v)
+{
+	struct hwzram *hwzram = hwzram_devices;
+
+	if (!hwzram)
+		return;
+
+	if (num_devices == 1 && init_done(hwzram)) {
+#define P2K(x) (((unsigned long)x) << (PAGE_SHIFT - 10))
+#define B2K(x) (((unsigned long)x) >> (10))
+		seq_printf(m,
+				"DiskSize:       %8lu kB\n"
+				"OrigSize:       %8lu kB\n"
+				"ComprSize:      %8lu kB\n"
+				"MemUsed:        %8lu kB\n"
+				"ZeroPage:       %8lu kB\n"
+				"NotifyFree:     %8lu kB\n"
+				"FailReads:      %8lu kB\n"
+				"FailWrites:     %8lu kB\n"
+				"NumReads:       %8lu kB\n"
+				"NumWrites:      %8lu kB\n"
+				"InvalidIO:      %8lu kB\n"
+				"MaxUsedPages:   %8lu kB\n"
+				,
+				B2K(hwzram->disksize),
+				P2K(atomic64_read(&hwzram->stats.pages_stored)),
+				B2K(atomic64_read(&hwzram->stats.compr_data_size)),
+				B2K(hwzram_impl_get_total_used(hwzram->hwz)),
+				P2K(atomic64_read(&hwzram->stats.zero_pages)),
+				P2K(atomic64_read(&hwzram->stats.notify_free)),
+				P2K(atomic64_read(&hwzram->stats.failed_reads)),
+				P2K(atomic64_read(&hwzram->stats.failed_writes)),
+				P2K(atomic64_read(&hwzram->stats.num_reads)),
+				P2K(atomic64_read(&hwzram->stats.num_writes)),
+				P2K(atomic64_read(&hwzram->stats.invalid_io)),
+				P2K(atomic_long_read(&hwzram->stats.max_used_pages)));
+#undef P2K
+#undef B2K
+	}
+}
+#endif
 
 static int create_device(struct hwzram *hwzram, int device_id,
 			 struct hwzram_impl *hwz)
@@ -1180,4 +1275,5 @@ MODULE_PARM_DESC(num_devices, "Number of hwzram devices");
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("Sonny Rao <sonnyrao@chromium.org>");
+MODULE_AUTHOR("Mediatek");
 MODULE_DESCRIPTION("Hardware Compressed RAM Block Device");
