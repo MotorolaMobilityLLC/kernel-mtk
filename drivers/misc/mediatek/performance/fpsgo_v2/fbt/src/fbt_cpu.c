@@ -480,15 +480,7 @@ static void fbt_set_idleprefer_locked(int enable)
 
 static void fbt_set_walt_locked(int enable)
 {
-	if (force_walt_off)
-		return;
-
-	if (walt_enable == enable)
-		return;
-
-	xgf_trace("fpsgo %s walt", enable?"enable":"disable");
-	sched_walt_enable(LT_WALT_FPSGO, enable);
-	walt_enable = enable;
+	/* do NOT invoke WALT */
 }
 
 static void fbt_filter_ppm_log_locked(int filter)
