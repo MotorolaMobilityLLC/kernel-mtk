@@ -471,8 +471,13 @@ static ssize_t gyro_show_devnum(struct device *dev,
 	unsigned int devnum;
 	const char *devname = NULL;
 	int ret = 0;
+	struct input_handle *handle;
 
-	devname = dev_name(&gyro_context_obj->idev->dev);
+	list_for_each_entry(handle, &gyro_context_obj->idev->h_list, d_node)
+		if (strncmp(handle->name, "event", 5) == 0) {
+			devname = handle->name;
+			break;
+		}
 	ret = sscanf(devname+5, "%d", &devnum);
 	return snprintf(buf, PAGE_SIZE, "%d\n", devnum);
 }
