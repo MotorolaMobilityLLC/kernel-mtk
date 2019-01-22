@@ -428,6 +428,7 @@ struct fuel_gauge_custom_data {
 	int ui_full_limit_ith3;
 	int ui_full_limit_soc4;
 	int ui_full_limit_ith4;
+	int ui_full_limit_time;
 
 	/* using voltage to limit uisoc in 1% case */
 	int ui_low_limit_en;
@@ -441,6 +442,7 @@ struct fuel_gauge_custom_data {
 	int ui_low_limit_vth3;
 	int ui_low_limit_soc4;
 	int ui_low_limit_vth4;
+	int ui_low_limit_time;
 
 	/* Additional battery table */
 	int additional_battery_table_en;
