@@ -1202,13 +1202,13 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 
 		/* 4 <3> handling upon dequeue result */
 		if (eFrameAction == FRAME_ACTION_DROP_PKT) {
-			DBGLOG(INIT, INFO, "DROP CMD TYPE[%u] ID[0x%02X] SEQ[%u]\n",
-					    prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
+			DBGLOG(TX, INFO, "DROP CMD TYPE[%u] ID[0x%02X] SEQ[%u]\n",
+			       prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
 			wlanReleaseCommand(prAdapter, prCmdInfo, TX_RESULT_DROPPED_IN_DRIVER);
 			cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
 		} else if (eFrameAction == FRAME_ACTION_QUEUE_PKT) {
-			DBGLOG(INIT, TRACE, "QUE back CMD TYPE[%u] ID[0x%02X] SEQ[%u]\n",
-					     prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
+			DBGLOG(TX, TRACE, "QUE back CMD TYPE[%u] ID[0x%02X] SEQ[%u]\n",
+			       prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
 
 			QUEUE_INSERT_TAIL(prMergeCmdQue, prQueueEntry);
 		} else if (eFrameAction == FRAME_ACTION_TX_PKT) {
@@ -1218,8 +1218,8 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 
 			if (rStatus == WLAN_STATUS_RESOURCES) {
 				/* no more TC4 resource for further transmission */
-				DBGLOG(INIT, EVENT, "NO Res CMD TYPE[%u] ID[0x%02X] SEQ[%u]\n",
-						    prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
+				DBGLOG(TX, WARN, "NO Resource for CMD TYPE[%u] ID[0x%02X] SEQ[%u]\n",
+				       prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
 
 				QUEUE_INSERT_TAIL(prMergeCmdQue, prQueueEntry);
 				break;
@@ -1230,8 +1230,8 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 					kalOidComplete(prAdapter->prGlueInfo, prCmdInfo->fgSetQuery,
 						       prCmdInfo->u4SetInfoLen, rStatus);
 				cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
-				DBGLOG(TX, WARN, "TX CMD Status[%u], TYPE[%u] ID[0x%02X] SEQ[%u]\n", rStatus,
-						    prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
+				DBGLOG(TX, WARN, "TX CMD FAILED, Status[%u] TYPE[%u] ID[0x%02X] SEQ[%u]\n",
+				       rStatus, prCmdInfo->eCmdType, prCmdInfo->ucCID, prCmdInfo->ucCmdSeqNum);
 			}
 #else
 			rStatus = wlanSendCommand(prAdapter, prCmdInfo);
