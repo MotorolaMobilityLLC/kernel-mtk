@@ -13,6 +13,12 @@
 
 # TZ KREE driver makefile.
 
+# Kernel does not work with kcov instrumentation here.
+# the problem observed was insertion of __sanitizer_cov_trace_pc()
+# callback into middle of assemble embedded code. Thus the callback observed
+# inconsistent state and crashed.
+KCOV_INSTRUMENT_tz_system.o := n
+
 ccflags-y += -Werror
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/trustzone
 
