@@ -186,22 +186,22 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 
 	/* interconnection setting */
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_I2S3);
+			Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_I2S3);
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+			Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+			Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S3);
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+			Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-			Soc_Aud_AFE_IO_Block_I2S2_ADC_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+			Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
-		SetI2SAdcEnable(false);
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
+		set_adc_enable(false);
 
 	/* stop DAC output */
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
@@ -261,20 +261,6 @@ static struct page *mtk_uldlloopback_page(struct snd_pcm_substream *substream,
 	return virt_to_page(dummy_page[substream->stream]); /* the same page */
 }
 
-static AudioDigtalI2S mAudioDigitalI2S;
-static void ConfigAdcI2S(struct snd_pcm_substream *substream)
-{
-	mAudioDigitalI2S.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-	mAudioDigitalI2S.mBuffer_Update_word = 8;
-	mAudioDigitalI2S.mFpga_bit_test = 0;
-	mAudioDigitalI2S.mFpga_bit = 0;
-	mAudioDigitalI2S.mloopback = 0;
-	mAudioDigitalI2S.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
-	mAudioDigitalI2S.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
-	mAudioDigitalI2S.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-	mAudioDigitalI2S.mI2S_SAMPLERATE = (substream->runtime->rate);
-}
-
 static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -317,18 +303,18 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 	/* interconnection setting */
 	if (m_input_use_lch == 1) {
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S3);
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC_CH1, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 	} else {
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_I2S3);
+				Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_I2S3);
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+				Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+				Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
 	}
 
@@ -349,13 +335,12 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 	} else
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false) {
-		ConfigAdcI2S(substream);
-		SetI2SAdcIn(&mAudioDigitalI2S);
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
-		SetI2SAdcEnable(true);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false) {
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+		set_adc_in(substream->runtime->rate);
+		set_adc_enable(true);
 	} else
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
 
 	EnableAfe(true);
 

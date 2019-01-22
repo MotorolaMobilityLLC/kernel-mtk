@@ -65,7 +65,9 @@ typedef enum {
 	Soc_Aud_Digital_Block_MEM_HDMI,
 	/* ADDA */
 	Soc_Aud_Digital_Block_ADDA_DL,
+	Soc_Aud_Digital_Block_ADDA_DL2,
 	Soc_Aud_Digital_Block_ADDA_UL,
+	Soc_Aud_Digital_Block_ADDA_UL2,
 	Soc_Aud_Digital_Block_ADDA_VOW,
 	Soc_Aud_Digital_Block_ADDA_ANC,
 	Soc_Aud_Digital_Block_ADDA_ALL,
@@ -110,15 +112,17 @@ typedef enum {
 	Soc_Aud_AFE_IO_Block_MEM_MOD_DAI,
 	Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2,
 	Soc_Aud_AFE_IO_Block_MEM_VUL2_DATA2,
+	/* ADDA */
+	Soc_Aud_AFE_IO_Block_ADDA_UL,
+	Soc_Aud_AFE_IO_Block_ADDA_UL2,
+	Soc_Aud_AFE_IO_Block_ADDA_UL_LCH,
 	/* I2S */
 	Soc_Aud_AFE_IO_Block_I2S0,
 	Soc_Aud_AFE_IO_Block_I2S0_CH2,
 	Soc_Aud_AFE_IO_Block_I2S1_DAC,
 	Soc_Aud_AFE_IO_Block_I2S1_DAC_2,
-	Soc_Aud_AFE_IO_Block_I2S2_ADC,
-	Soc_Aud_AFE_IO_Block_I2S2_ADC_2,
-	Soc_Aud_AFE_IO_Block_I2S2_ADC_CH1,
-	Soc_Aud_AFE_IO_Block_I2S2_ADC_CH2,
+	Soc_Aud_AFE_IO_Block_I2S2,
+	Soc_Aud_AFE_IO_Block_I2S2_2,
 	Soc_Aud_AFE_IO_Block_I2S3,
 	Soc_Aud_AFE_IO_Block_I2S_CONNSYS,
 	/* HW gain contorl */
@@ -137,16 +141,17 @@ typedef enum {
 	Soc_Aud_AFE_IO_Block_HDMI_IN,
 	/* connection to int main modem */
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O,
-	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4,
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I,
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1,
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH2,
+	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4,
 	/* connection to extrt/int modem */
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O, /* 2 channel */
-	Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4,
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I, /* 2 channel */
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1,
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH2,
+	Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH3,
+	Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4,
 	/* num of IO block */
 	Soc_Aud_AFE_IO_Block_NUM_OF_IO_BLOCK
 } Soc_Aud_AFE_IO_Block;

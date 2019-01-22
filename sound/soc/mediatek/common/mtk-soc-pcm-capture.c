@@ -80,8 +80,6 @@ static uint32 irq2_cnt;
 /*
  *    function implementation
  */
-static void StartAudioCaptureHardware(struct snd_pcm_substream *substream);
-static void StopAudioCaptureHardware(struct snd_pcm_substream *substream);
 static int mtk_capture_probe(struct platform_device *pdev);
 static int mtk_capture_pcm_close(struct snd_pcm_substream *substream);
 static int mtk_asoc_capture_pcm_new(struct snd_soc_pcm_runtime *rtd);
@@ -180,45 +178,11 @@ static struct snd_pcm_hardware mtk_capture_hardware = {
 	.fifo_size =        0,
 };
 
-static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
+static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 {
-	pr_aud("StopAudioCaptureHardware\n");
-	irq_user_id = NULL;
+	pr_warn("%s, format = %d, rate = %d\n", __func__, substream->runtime->format, substream->runtime->rate);
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
-		SetI2SAdcEnable(false);
-
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, false);
-
-	/* here to set interrupt */
-	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
-
-	/* here to turn off digital part */
-	SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MEM_VUL);
-
-	EnableAfe(false);
-}
-
-static void ConfigAdcI2S(struct snd_pcm_substream *substream)
-{
-	mAudioDigitalI2S->mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-	mAudioDigitalI2S->mBuffer_Update_word = 8;
-	mAudioDigitalI2S->mFpga_bit_test = 0;
-	mAudioDigitalI2S->mFpga_bit = 0;
-	mAudioDigitalI2S->mloopback = 0;
-	mAudioDigitalI2S->mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
-	mAudioDigitalI2S->mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
-	mAudioDigitalI2S->mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-	mAudioDigitalI2S->mI2S_SAMPLERATE = (substream->runtime->rate);
-}
-
-static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
-{
-	pr_aud("StartAudioCaptureHardware\n");
-
-	ConfigAdcI2S(substream);
-	SetI2SAdcIn(mAudioDigitalI2S);
+	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
 
 	if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
 		substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
@@ -229,39 +193,29 @@ static void StartAudioCaptureHardware(struct snd_pcm_substream *substream)
 		SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT, Soc_Aud_AFE_IO_Block_MEM_VUL);
 	}
 
-	SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_I2S2_ADC, Soc_Aud_AFE_IO_Block_MEM_VUL);
+	SetIntfConnection(Soc_Aud_InterCon_Connection, Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL);
 
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false) {
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
-		SetI2SAdcEnable(true);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false) {
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
+		set_adc_in(substream->runtime->rate);
+		set_adc_enable(true);
 	} else {
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
 	}
 
-	/* here to set interrupt */
-	irq_add_user(substream,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
-		     substream->runtime->rate,
-		     substream->runtime->period_size);
-	irq_user_id = substream;
-	/* set memory */
-	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL, substream->runtime->rate);
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, true);
-
-	EnableAfe(true);
-}
-
-static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
-{
 	return 0;
 }
 
 static int mtk_capture_alsa_stop(struct snd_pcm_substream *substream)
 {
-	/* AFE_BLOCK_T *Vul_Block = &(VUL_Control_context->rBlock); */
-	pr_aud("mtk_capture_alsa_stop\n");
-	StopAudioCaptureHardware(substream);
-	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
+	pr_warn("%s\n", __func__);
+
+	irq_user_id = NULL;
+	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
+
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, false);
+
+	ClearMemBlock(Soc_Aud_Digital_Block_MEM_VUL);
 	return 0;
 }
 
@@ -361,6 +315,18 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 
 static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 {
+	pr_warn("%s\n", __func__);
+
+	SetIntfConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_AFE_IO_Block_ADDA_UL, Soc_Aud_AFE_IO_Block_MEM_VUL);
+
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
+		set_adc_enable(false);
+
+	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
+
+	EnableAfe(false);
+
 	AudDrv_Clk_Off();
 	vcore_dvfs(&vcore_dvfs_enable, true);
 	return 0;
@@ -368,9 +334,19 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_aud("mtk_capture_alsa_start\n");
-	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_VUL, substream);
-	StartAudioCaptureHardware(substream);
+	pr_warn("%s\n", __func__);
+
+	/* here to set interrupt */
+	irq_add_user(substream,
+		     Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE,
+		     substream->runtime->rate,
+		     substream->runtime->period_size);
+	irq_user_id = substream;
+	/* set memory */
+	SetSampleRate(Soc_Aud_Digital_Block_MEM_VUL, substream->runtime->rate);
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, true);
+
+	EnableAfe(true);
 	return 0;
 }
 

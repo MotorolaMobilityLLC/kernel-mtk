@@ -158,21 +158,6 @@ static int mtk_voice_bt_pcm_open(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-#if 0 /* not used */
-static void ConfigAdcI2S(struct snd_pcm_substream *substream)
-{
-	mAudioDigitalI2S.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-	mAudioDigitalI2S.mBuffer_Update_word = 8;
-	mAudioDigitalI2S.mFpga_bit_test = 0;
-	mAudioDigitalI2S.mFpga_bit = 0;
-	mAudioDigitalI2S.mloopback = 0;
-	mAudioDigitalI2S.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
-	mAudioDigitalI2S.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
-	mAudioDigitalI2S.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-	mAudioDigitalI2S.mI2S_SAMPLERATE = (substream->runtime->rate);
-}
-#endif
-
 static int mtk_voice_bt_close(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_voice_bt_close\n");
