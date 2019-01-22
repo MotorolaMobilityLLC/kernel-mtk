@@ -138,6 +138,11 @@ enum GED_INFO_TAG {
 GED_EVENT_GAS_MODE,
 GED_UNDEFINED
 };
+
+enum {
+	GAS_CATEGORY_GAME,
+	GAS_CATEGORY_OTHERS,
+};
 #endif
 
 unsigned long  __attribute__ ((weak))
@@ -199,9 +204,9 @@ static int game_mode_check(void)
 {
 	unsigned long result = ged_query_info(GED_EVENT_GAS_MODE);
 
-	if (result == 1)
+	if (result == GAS_CATEGORY_GAME)
 		in_game_mode = 1;
-	else if (result == 0)
+	else
 		in_game_mode = 0;
 
 	return 0;
