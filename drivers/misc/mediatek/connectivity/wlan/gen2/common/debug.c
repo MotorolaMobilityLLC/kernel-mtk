@@ -55,6 +55,27 @@ typedef struct _COMMAND_ENTRY {
 	struct COMMAND rCmd;
 } COMMAND_ENTRY, *P_COMMAND_ENTRY;
 
+typedef struct _PKT_INFO_ENTRY {
+	UINT_64 u8Timestamp;
+	UINT_8 status;
+	UINT_16 u2EtherType;
+	UINT_8 ucIpProto;
+	UINT_16 u2IpId;
+	UINT_16 u2ArpOpCode;
+
+} PKT_INFO_ENTRY, *P_PKT_INFO_ENTRY;
+
+typedef struct _PKT_TRACE_RECORD {
+	P_PKT_INFO_ENTRY pTxPkt;
+	P_PKT_INFO_ENTRY pRxPkt;
+	UINT_32 u4TxIndex;
+	UINT_32 u4RxIndex;
+} PKT_TRACE_RECORD, *P_PKT_TRACE_RECORD;
+
+
+#define PKT_INFO_BUF_MAX_NUM 50
+#define PKT_INFO_MSG_LENGTH 200
+#define PKT_INFO_MSG_GROUP_RANGE 3
 #define TC_RELEASE_TRACE_BUF_MAX_NUM 100
 #define TXED_CMD_TRACE_BUF_MAX_NUM 100
 #define TXED_COMMAND_BUF_MAX_NUM 10
@@ -62,6 +83,143 @@ typedef struct _COMMAND_ENTRY {
 static P_TC_RES_RELEASE_ENTRY gprTcReleaseTraceBuffer;
 static P_CMD_TRACE_ENTRY gprCmdTraceEntry;
 static P_COMMAND_ENTRY gprCommandEntry;
+static PKT_TRACE_RECORD grPktRec;
+
+
+VOID wlanPktDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode)
+{
+	if (eventType == PKT_TX)
+		status = 0xFF;
+
+	wlanPktDebugTraceInfo(status, eventType, ETH_P_ARP, 0, 0, u2ArpOpCode);
+
+}
+VOID wlanPktDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpProto, UINT_16 u2IpId)
+{
+	if (eventType == PKT_TX)
+		status = 0xFF;
+
+	wlanPktDebugTraceInfo(status, eventType, ETH_P_IP, ucIpProto, u2IpId, 0);
+
+}
+
+VOID wlanPktDebugTraceInfo(UINT_8 status, UINT_8 eventType
+	, UINT_16 u2EtherType, UINT_8 ucIpProto, UINT_16 u2IpId, UINT_16 u2ArpOpCode)
+{
+
+	P_PKT_INFO_ENTRY prPkt = NULL;
+	UINT_32 index;
+
+	DBGLOG(TX, LOUD, "PKT id = 0x%02x, status =%d, Proto = %d, type =%d\n"
+		, u2IpId, status, ucIpProto, eventType);
+	do {
+
+		if (grPktRec.pTxPkt == NULL || grPktRec.pRxPkt == NULL) {
+			DBGLOG(TX, ERROR, "pTxPkt is null point !");
+			break;
+		}
+
+		/* debug for Package info begin */
+		if (eventType == PKT_TX) {
+			prPkt = &grPktRec.pTxPkt[grPktRec.u4TxIndex];
+			grPktRec.u4TxIndex++;
+			if (grPktRec.u4TxIndex == PKT_INFO_BUF_MAX_NUM)
+				grPktRec.u4TxIndex = 0;
+		} else if (eventType == PKT_RX) {
+			prPkt = &grPktRec.pRxPkt[grPktRec.u4RxIndex];
+			grPktRec.u4RxIndex++;
+			if (grPktRec.u4RxIndex == PKT_INFO_BUF_MAX_NUM)
+				grPktRec.u4RxIndex = 0;
+		}
+
+		if (prPkt) {
+			prPkt->u8Timestamp = sched_clock();
+			prPkt->status = status;
+			prPkt->u2EtherType = u2EtherType;
+			prPkt->ucIpProto = ucIpProto;
+			prPkt->u2IpId = u2IpId;
+			prPkt->u2ArpOpCode = u2ArpOpCode;
+		}
+
+
+		/* Update tx status */
+		if (eventType == PKT_TX_DONE) {
+			/* Support Ethernet type = IP*/
+			if (u2EtherType == ETH_P_IP) {
+				for (index = 0; index < PKT_INFO_BUF_MAX_NUM; index++) {
+					if (grPktRec.pTxPkt[index].u2IpId == u2IpId) {
+						grPktRec.pTxPkt[index].status = status;
+						DBGLOG(TX, LOUD, "PKT_TX_DONE match\n");
+						break;
+					}
+				}
+			}
+		}
+	} while (FALSE);
+}
+
+VOID wlanPktDebugDumpInfo(P_ADAPTER_T prAdapter)
+{
+
+	UINT_32 i;
+	UINT_32 index;
+	UINT_32 offsetMsg;
+	UINT_32 pktIndex;
+	P_PKT_INFO_ENTRY prPktInfo;
+	UINT_8 pucMsg[PKT_INFO_MSG_LENGTH];
+
+	do {
+
+		if (grPktRec.pTxPkt == NULL || grPktRec.pRxPkt == NULL)
+			break;
+
+		if (grPktRec.u4TxIndex == 0 && grPktRec.u4RxIndex == 0)
+			break;
+
+		offsetMsg = 0;
+		/* start dump pkt info of tx/rx by decrease timestap */
+
+		for (i = 0 ; i < 2 ; i++) {
+			for (index = 0; index < PKT_INFO_BUF_MAX_NUM ; index++) {
+				if (i == 0) {
+					/* TX */
+					pktIndex = (PKT_INFO_BUF_MAX_NUM + (grPktRec.u4TxIndex - 1) - index)
+						% PKT_INFO_BUF_MAX_NUM;
+					prPktInfo = &grPktRec.pTxPkt[pktIndex];
+				} else if (i == 1) {
+					/* RX */
+					pktIndex = (PKT_INFO_BUF_MAX_NUM + (grPktRec.u4RxIndex - 1) - index)
+						% PKT_INFO_BUF_MAX_NUM;
+					prPktInfo = &grPktRec.pRxPkt[pktIndex];
+				}
+				/*ucIpProto = 0x01 ICMP */
+				/*ucIpProto = 0x11 UPD */
+				/*ucIpProto = 0x06 TCP */
+				offsetMsg += kalSnprintf(pucMsg + offsetMsg
+				, PKT_INFO_MSG_LENGTH
+				, "(%2d)t=%llu s=%d e=0x%02x,p=0x%2x id=0x%4x,op=%d  "
+				, index, prPktInfo->u8Timestamp
+				, prPktInfo->status
+				, prPktInfo->u2EtherType
+				, prPktInfo->ucIpProto
+				, prPktInfo->u2IpId
+				, prPktInfo->u2ArpOpCode);
+
+				if (index % PKT_INFO_MSG_GROUP_RANGE == 0) {
+					if (i == 0)
+						DBGLOG(TX, INFO, "%s\n", pucMsg);
+					else if (i == 1)
+						DBGLOG(RX, INFO, "%s\n", pucMsg);
+
+					offsetMsg = 0;
+					kalMemSet(pucMsg, '\0', PKT_INFO_MSG_LENGTH);
+				}
+			}
+		}
+
+	} while (FALSE);
+
+}
 VOID wlanDebugInit(VOID)
 {
 	/* debug for command/tc4 resource begin */
@@ -74,6 +232,17 @@ VOID wlanDebugInit(VOID)
 	gprCommandEntry = kalMemAlloc(TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY), PHY_MEM_TYPE);
 	kalMemZero(gprCommandEntry, TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY));
 	/* debug for command/tc4 resource end */
+
+	/* debug for package info begin */
+	grPktRec.pTxPkt = kalMemAlloc(PKT_INFO_BUF_MAX_NUM * sizeof(PKT_INFO_ENTRY), VIR_MEM_TYPE);
+	kalMemZero(grPktRec.pTxPkt, PKT_INFO_BUF_MAX_NUM * sizeof(PKT_INFO_ENTRY));
+	grPktRec.u4TxIndex = 0;
+	grPktRec.pRxPkt = kalMemAlloc(PKT_INFO_BUF_MAX_NUM * sizeof(PKT_INFO_ENTRY), VIR_MEM_TYPE);
+	kalMemZero(grPktRec.pRxPkt, PKT_INFO_BUF_MAX_NUM * sizeof(PKT_INFO_ENTRY));
+	grPktRec.u4RxIndex = 0;
+
+	/* debug for package info end */
+
 }
 
 VOID wlanDebugUninit(VOID)
@@ -84,7 +253,85 @@ VOID wlanDebugUninit(VOID)
 	kalMemFree(gprCmdTraceEntry, PHY_MEM_TYPE, TXED_CMD_TRACE_BUF_MAX_NUM * sizeof(CMD_TRACE_ENTRY));
 	kalMemFree(gprCommandEntry, PHY_MEM_TYPE, TXED_COMMAND_BUF_MAX_NUM * sizeof(COMMAND_ENTRY));
 	/* debug for command/tc4 resource end */
+
+	/* debug for package info begin */
+	kalMemFree(grPktRec.pTxPkt, VIR_MEM_TYPE, PKT_INFO_BUF_MAX_NUM * sizeof(PKT_INFO_ENTRY));
+	grPktRec.u4TxIndex = 0;
+	kalMemFree(grPktRec.pRxPkt, VIR_MEM_TYPE, PKT_INFO_BUF_MAX_NUM * sizeof(PKT_INFO_ENTRY));
+	grPktRec.u4RxIndex = 0;
+	/* debug for package info end */
 }
+
+VOID wlanDebugHifDescriptorDump(P_ADAPTER_T prAdapter, ENUM_AMPDU_TYPE type
+	, ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T tcIndex)
+{
+	/* debug for tx/rx description begin */
+	UINT_32 i;
+	UINT_32 u4TcCount;
+	UINT_32 u4Offset;
+	UINT_32 u4StartAddr;
+	P_HIF_TX_DESC_T prTxDesc;
+	P_HIF_RX_DESC_T prRxDesc;
+
+	do {
+		if (type == MTK_AMPDU_TX_DESC) {
+
+			if (tcIndex == DEBUG_TC0_INDEX) {
+				u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
+				u4StartAddr = AP_MCU_TX_DESC_ADDR;
+				u4Offset = AP_MCU_BANK_OFFSET;
+			} else if (tcIndex == DEBUG_TC4_INDEX) {
+				u4TcCount = NIC_TX_BUFF_COUNT_TC4;
+				u4StartAddr = AP_MCU_TC_INDEX_4_ADDR;
+				u4Offset = AP_MCU_TC_INDEX_4_OFFSET;
+			} else {
+				DBGLOG(TX, ERROR, "Type :%d TC_INDEX :%d don't support !", type, tcIndex);
+				break;
+			}
+
+			prTxDesc = (P_HIF_TX_DESC_T) kalMemAlloc(sizeof(HIF_TX_DESC_T), VIR_MEM_TYPE);
+
+			for (i = 0; i < u4TcCount ; i++) {
+				HAL_GET_APMCU_MEM(prAdapter, u4StartAddr, u4Offset, i, (PUINT_8)prTxDesc
+					, sizeof(HIF_TX_DESC_T));
+				DBGLOG(TX, INFO
+					, "TC%d[%d]uOwn:%2x,CS:%2x,R1:%2x,ND:0x%08x,SA: 0x%08x,R2:%x\n"
+					, tcIndex, i, prTxDesc->ucOwn, prTxDesc->ucDescChksum
+					, prTxDesc->u2Rsrv1, prTxDesc->u4NextDesc
+					, prTxDesc->u4BufStartAddr, prTxDesc->u4Rsrv2);
+			}
+			kalMemFree(prTxDesc, VIR_MEM_TYPE, sizeof(HIF_TX_DESC_T));
+
+		} else if (type == MTK_AMPDU_RX_DESC) {
+
+			if (tcIndex == DEBUG_TC0_INDEX) {
+				u4TcCount = NIC_TX_INIT_BUFF_COUNT_TC0;
+				u4StartAddr = AP_MCU_RX_DESC_ADDR;
+				u4Offset = AP_MCU_BANK_OFFSET;
+			} else {
+				DBGLOG(RX, ERROR, "Type :%d TC_INDEX :%d don't support !", type, tcIndex);
+				break;
+			}
+
+			prRxDesc = (P_HIF_RX_DESC_T) kalMemAlloc(sizeof(HIF_RX_DESC_T), VIR_MEM_TYPE);
+			DBGLOG(RX, INFO, "Start dump rx_desc from APMCU\n");
+			for (i = 0; i < NIC_TX_INIT_BUFF_COUNT_TC0 ; i++) {
+				HAL_GET_APMCU_MEM(prAdapter, u4StartAddr, u4Offset, i, (PUINT_8)prRxDesc
+					, sizeof(HIF_RX_DESC_T));
+				DBGLOG(RX, INFO
+					, "RX%d[%d]uOwn:%2x,CS:%2x,TO:%x,CSI:%x,ND:0x%08x,SA:0x%08x,len:%x,R1:%x\n"
+					, tcIndex, i, prRxDesc->ucOwn, prRxDesc->ucDescChksum
+					, prRxDesc->ucEtherTypeOffset, prRxDesc->ucChkSumInfo
+					, prRxDesc->u4NextDesc, prRxDesc->u4BufStartAddr
+					, prRxDesc->u2RxBufLen, prRxDesc->u2Rsrv1);
+			}
+			kalMemFree(prRxDesc, VIR_MEM_TYPE, sizeof(P_HIF_RX_DESC_T));
+		}
+	} while (FALSE);
+	/* debug for tx/rx description end */
+
+}
+
 
 VOID wlanReadFwStatus(P_ADAPTER_T prAdapter)
 {
@@ -152,6 +399,13 @@ VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_8 aucTxRlsCnt, UINT_8 uc
 	u2CurEntry++;
 	if (u2CurEntry == TXED_CMD_TRACE_BUF_MAX_NUM)
 		u2CurEntry = 0;
+}
+VOID wlanDumpTxReleaseCount(P_ADAPTER_T prAdapter)
+{
+	UINT_32 au4WTSR[2];
+
+	HAL_READ_TX_RELEASED_COUNT(prAdapter, au4WTSR);
+	DBGLOG(TX, INFO, "WTSR[1]=%d, WTSR[0]=%d\n", au4WTSR[1], au4WTSR[0]);
 }
 
 VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)

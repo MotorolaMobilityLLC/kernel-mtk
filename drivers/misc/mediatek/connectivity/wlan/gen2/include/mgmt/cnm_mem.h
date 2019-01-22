@@ -496,6 +496,8 @@ struct _STA_RECORD_T {
 #ifdef DSCP_SUPPORT
 	struct _QOS_MAP_SET *qosMapSet;
 #endif
+	UINT_16 u2MaxIdlePeriod;
+	UINT_8 ucIdleOption;
 };
 
 #if 0

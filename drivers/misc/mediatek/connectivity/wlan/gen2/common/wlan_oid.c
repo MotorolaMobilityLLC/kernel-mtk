@@ -525,7 +525,7 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 		return FALSE;
 
 	scan_req_t = (struct cfg80211_scan_request *)puPartialScanReq;
-	if ((scan_req_t->n_channels != 0) && (scan_req_t->channels != NULL)) {
+	if (scan_req_t->n_channels != 0) {
 
 		channel_counts = scan_req_t->n_channels;
 		DBGLOG(OID, INFO, "partional scan channel_counts=%d\n", channel_counts);
@@ -6808,12 +6808,11 @@ wlanoidRftestQueryAutoTest(IN P_ADAPTER_T prAdapter,
 		ASSERT(pvQueryBuffer);
 	ASSERT(pu4QueryInfoLen);
 
-	*pu4QueryInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
+	/*pu4QueryInfoLen is depended on upper-layer*/
+	*pu4QueryInfoLen = u4QueryBufferLen;
 
-	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
-		DBGLOG(OID, ERROR, "Invalid data. QueryBufferLen: %u.\n", u4QueryBufferLen);
-		return WLAN_STATUS_INVALID_LENGTH;
-	}
+	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T))
+		DBGLOG(OID, WARN, "Invalid data. QueryBufferLen: %u.\n", u4QueryBufferLen);
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvQueryBuffer;
 	rStatus = rftestQueryATInfo(prAdapter,
@@ -6854,10 +6853,9 @@ wlanoidRftestSetAutoTest(IN P_ADAPTER_T prAdapter,
 
 	*pu4SetInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
 
-	if (u4SetBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
-		DBGLOG(OID, ERROR, "Invalid data. SetBufferLen: %u.\n", u4SetBufferLen);
-		return WLAN_STATUS_INVALID_LENGTH;
-	}
+	if (u4SetBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T))
+		DBGLOG(OID, WARN, "Invalid data. SetBufferLen: %u.\n", u4SetBufferLen);
+
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvSetBuffer;
 	rStatus = rftestSetATInfo(prAdapter, prRfATInfo->u4FuncIndex, prRfATInfo->u4FuncData);
@@ -6943,18 +6941,26 @@ rftestQueryATInfo(IN P_ADAPTER_T prAdapter,
 
 		prTestStatus->rATInfo.u4FuncData =
 		    (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
-		u4QueryBufferLen = sizeof(EVENT_TEST_STATUS);
+		if (u4QueryBufferLen > 8) {
+			/*support FW version extended*/
+			prTestStatus->rATInfo.u4FuncData2 = prAdapter->rVerInfo.u2FwOwnVersionExtend;
+
+			DBGLOG(OID, INFO, "<wifi> version: 0x%x ,extended : 0x%x\n"
+				, prTestStatus->rATInfo.u4FuncData
+				, prTestStatus->rATInfo.u4FuncData2);
+		} else
+			DBGLOG(OID, INFO, "<wifi> version: 0x%x\n"
+				, prTestStatus->rATInfo.u4FuncData);
 
 		return WLAN_STATUS_SUCCESS;
 	} else if (u4FuncIndex == RF_AT_FUNCID_DRV_INFO) {
 		/* driver implementation */
 		prTestStatus = (P_EVENT_TEST_STATUS) pvQueryBuffer;
-
 		prTestStatus->rATInfo.u4FuncData = CFG_DRV_OWN_VERSION;
-		u4QueryBufferLen = sizeof(EVENT_TEST_STATUS);
 
 		return WLAN_STATUS_SUCCESS;
 	}
+
 	prCmdInfo = cmdBufAllocateCmdInfo(prAdapter, (CMD_HDR_SIZE + sizeof(CMD_TEST_CTRL_T)));
 
 	if (!prCmdInfo) {
@@ -9546,7 +9552,7 @@ wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
 
 	prCmdPscnAction = (P_CMD_SET_PSCAN_ENABLE) pvSetBuffer;
 
-	if (prCmdPscnAction->ucPscanAct == ENABLE) {
+	if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_ENABLE) {
 #if 0
 		DBGLOG(OID, INFO, "set  PCSN ENABLE\n");
 		if (scnFsmPSCNAction(prAdapter, (UINT_8) (prCmdPscnAction->ucPscanAct)) == TRUE) {
@@ -9559,7 +9565,7 @@ wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
 
 #endif
 		scnPSCNFsm(prAdapter, PSCN_SCANNING, NULL, NULL, NULL, NULL, FALSE, FALSE, FALSE, TRUE);
-	} else if (prCmdPscnAction->ucPscanAct == DISABLE) {
+	} else if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_DISABLE) {
 #if 0
 		DBGLOG(OID, INFO, "disable PCSN\n");
 		scnFsmPSCNAction(prAdapter, (UINT_8) DISABLE);
@@ -9568,7 +9574,7 @@ wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
 		scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, NULL, NULL, FALSE, FALSE, TRUE);
 
 		DBGLOG(OID, INFO, "ENABLE or disable PCSN\n");
-		if (!prScanInfo->fgPscnOnnning) {
+		if (!prScanInfo->fgPscnOngoing) {
 			DBGLOG(OID, INFO, "ENABLE PCSN\n");
 			scnFsmPSCNAction(prAdapter, ENABLE);
 		} else {

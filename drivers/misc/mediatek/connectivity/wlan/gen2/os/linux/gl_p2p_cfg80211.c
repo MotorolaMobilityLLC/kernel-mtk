@@ -1378,7 +1378,7 @@ void mtk_p2p_cfg80211_mgmt_frame_register(IN struct wiphy *wiphy,
 		if ((wiphy == NULL) || (wdev == NULL))
 			break;
 
-		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_mgmt_frame_register\n");
+		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_mgmt_frame_register\n");
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 

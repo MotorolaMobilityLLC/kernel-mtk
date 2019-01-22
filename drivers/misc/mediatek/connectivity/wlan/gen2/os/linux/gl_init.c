@@ -272,6 +272,7 @@ static struct cfg80211_ops mtk_wlan_ops = {
 #endif
 };
 
+
 static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 	{
 		{
@@ -397,6 +398,14 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		},
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_packet_keep_alive_stop
+	},
+	{
+		{
+			.vendor_id = OUI_QCA,
+			.subcmd = QCA_NL80211_VENDOR_SUBCMD_SETBAND
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_set_band
 	},
 };
 

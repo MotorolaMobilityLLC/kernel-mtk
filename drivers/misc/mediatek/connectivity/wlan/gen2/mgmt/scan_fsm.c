@@ -105,7 +105,7 @@ VOID scnFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_SCAN_STATE_T eNextState)
 		switch (prScanInfo->eCurrentState) {
 		case SCAN_STATE_IDLE:
 			/* check for pending scanning requests */
-			if (!LINK_IS_EMPTY(&(prScanInfo->rPendingMsgList))) {
+			if (!cnmChUtilIsRunning(prAdapter) && !LINK_IS_EMPTY(&(prScanInfo->rPendingMsgList))) {
 				/* load next message from pending list as scan parameters */
 				LINK_REMOVE_HEAD(&(prScanInfo->rPendingMsgList), prMsgHdr, P_MSG_HDR_T);
 
@@ -127,6 +127,7 @@ VOID scnFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_SCAN_STATE_T eNextState)
 			break;
 
 		case SCAN_STATE_SCANNING:
+			prScanInfo->u4ScanUpdateIdx++;
 			if (prScanParam->fgIsScanV2 == FALSE)
 				scnSendScanReq(prAdapter);
 			else
@@ -561,7 +562,10 @@ VOID scnFsmMsgStart(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	prScanParam = &prScanInfo->rScanParam;
 
-	if (prScanInfo->eCurrentState == SCAN_STATE_IDLE) {
+	if (prMsgHdr->eMsgId == MID_MNY_CNM_SCAN_CONTINUE) {
+		cnmMemFree(prAdapter, prMsgHdr);
+		scnFsmSteps(prAdapter, SCAN_STATE_IDLE);
+	} else if (prScanInfo->eCurrentState == SCAN_STATE_IDLE && !cnmChUtilIsRunning(prAdapter)) {
 		if (prMsgHdr->eMsgId == MID_AIS_SCN_SCAN_REQ
 		    || prMsgHdr->eMsgId == MID_BOW_SCN_SCAN_REQ
 		    || prMsgHdr->eMsgId == MID_P2P_SCN_SCAN_REQ || prMsgHdr->eMsgId == MID_RLM_SCN_SCAN_REQ) {
@@ -1223,13 +1227,17 @@ BOOLEAN scnFsmPSCNAction(IN P_ADAPTER_T prAdapter, IN UINT_8 ucPscanAct)
 
 	DBGLOG(SCN, TRACE, "scnFsmPSCNAction Act = %d\n", ucPscanAct);
 
-	rCmdPscnAction.ucPscanAct = ucPscanAct;
-	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	kalMemZero(&rCmdPscnAction, sizeof(CMD_SET_PSCAN_ENABLE));
 
-	if (ucPscanAct == DISABLE)
-		prScanInfo->fgPscnOnnning = FALSE;
-	if (ucPscanAct == ENABLE)
-		prScanInfo->fgPscnOnnning = TRUE;
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	if (ucPscanAct == PSCAN_ACT_ENABLE) {
+		prScanInfo->fgPscnOngoing = TRUE;
+		rCmdPscnAction.ucPscanAct = 0;
+	} else {
+		prScanInfo->fgPscnOngoing = FALSE;
+		rCmdPscnAction.ucPscanAct = 1; /* sync to firmware, 1 means disable, 0 means enable */
+	}
 
 	wlanSendSetQueryCmd(prAdapter,
 			    CMD_ID_SET_PSCN_ENABLE,
@@ -1282,7 +1290,7 @@ BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM pr
 	}
 #endif
 
-	if (1 /*prScanInfo->fgPscnOnnning == FALSE */) {
+	if (1 /*prScanInfo->fgPscnOngoing == FALSE */) {
 		wlanSendSetQueryCmd(prAdapter,
 				    CMD_ID_SET_PSCAN_PARAM,
 				    TRUE,
@@ -1317,7 +1325,7 @@ BOOLEAN scnFsmPSCNSetHotlist(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_HO
 	/* rCmdPscnAddHotlist.aucMacAddr = prCmdPscnAddHotlist->aucMacAddr; */
 	rCmdPscnAddHotlist.ucFlags = prCmdPscnAddHotlist->ucFlags;
 
-	if (prScanInfo->fgPscnOnnning && prScanInfo->prPscnParam->fgGScnEnable) {
+	if (prScanInfo->fgPscnOngoing && prScanInfo->prPscnParam->fgGScnEnable) {
 		wlanSendSetQueryCmd(prAdapter,
 				    CMD_ID_SET_PSCN_ADD_HOTLIST_BSSID,
 				    TRUE,
@@ -1356,7 +1364,7 @@ BOOLEAN scnFsmPSCNAddSWCBssId(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_S
 	rCmdPscnAddSWCBssId.i4RssiHighThreshold = prCmdPscnAddSWCBssId->i4RssiHighThreshold;
 	rCmdPscnAddSWCBssId.i4RssiLowThreshold = prCmdPscnAddSWCBssId->i4RssiLowThreshold;
 
-	if (prScanInfo->fgPscnOnnning && prScanInfo->prPscnParam->fgGScnEnable) {
+	if (prScanInfo->fgPscnOngoing && prScanInfo->prPscnParam->fgGScnEnable) {
 		wlanSendSetQueryCmd(prAdapter,
 				    CMD_ID_SET_PSCN_ADD_SW_BSSID,
 				    TRUE,
@@ -1395,7 +1403,7 @@ BOOLEAN scnFsmPSCNSetMacAddr(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_MAC_AD
 	rCmdPscnSetMacAddr.ucFlags = prCmdPscnSetMacAddr->ucFlags;
 	rCmdPscnSetMacAddr.ucVersion = prCmdPscnSetMacAddr->ucVersion;
 
-	if (1 /* (prScanInfo->fgPscnOnnning == TRUE */) {
+	if (1 /* (prScanInfo->fgPscnOngoing == TRUE */) {
 		wlanSendSetQueryCmd(prAdapter,
 				    CMD_ID_SET_PSCN_MAC_ADDR,
 				    TRUE,
@@ -1605,7 +1613,7 @@ scnRemoveFromPSCN(IN P_ADAPTER_T prAdapter,
 		  IN BOOLEAN fgRemoveGSCNfromPSCN, IN P_CMD_SET_PSCAN_PARAM prCmdPscnParam)
 {
 	P_SCAN_INFO_T prScanInfo;
-	UINT_8 ucPscanAct = DISABLE;
+	UINT_8 ucPscanAct = PSCAN_ACT_DISABLE;
 
 	ASSERT(prAdapter);
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
@@ -1636,7 +1644,7 @@ scnRemoveFromPSCN(IN P_ADAPTER_T prAdapter,
 
 		if (!fgRemoveNLOfromPSCN && !fgRemoveBatchSCNfromPSCN && !fgRemoveGSCNfromPSCN) {
 			/* prCmdPscnParam->fgIsPeriodicallyScn = FALSE; */
-			prScanInfo->fgPscnOnnning = FALSE;
+			prScanInfo->fgPscnOngoing = FALSE;
 			scnFsmPSCNSetParam(prAdapter, prCmdPscnParam);
 			scnFsmPSCNAction(prAdapter, ucPscanAct);
 		} else {
@@ -1778,7 +1786,7 @@ BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_
 	DBGLOG(SCN, INFO, "rGetGscnScnResultCmd: ucGetNum [%d]  fgFlush [%d]\n",
 		rGetGscnScnResultCmd.u4Num, rGetGscnScnResultCmd.ucFlush);
 
-	if (prScanInfo->fgPscnOnnning && prScanInfo->prPscnParam->fgGScnEnable) {
+	if (prScanInfo->fgPscnOngoing && prScanInfo->prPscnParam->fgGScnEnable) {
 		wlanSendSetQueryCmd(prAdapter,
 				CMD_ID_GET_GSCN_SCN_RESULT,
 				TRUE,
@@ -1827,21 +1835,21 @@ scnPSCNFsm(IN P_ADAPTER_T prAdapter,
 				if (prCmdNloReq || prCmdBatchReq) {
 					DBGLOG(SCN, TRACE, "PSCN_IDLE->PSCN_RESET,.... scnFsmPSCNActionDISABLE\n");
 					/*TBD check PSCAN is ongoing */
-					scnFsmPSCNAction(prAdapter, DISABLE);
+					scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 					break;
 				}
 
 			} else if (eNextPSCNState == PSCN_SCANNING) {
 				if (fgEnableGSCN) {
-					if (prScanInfo->fgPscnOnnning)
-						scnFsmPSCNAction(prAdapter, DISABLE);
+					if (prScanInfo->fgPscnOngoing)
+						scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 					if (prScanInfo->fgGScnParamSet) {
 						DBGLOG(SCN, TRACE,
 							"PSCN_IDLE->PSCN_SCANNING,.... scnFsmPSCNActionENABLE\n");
 						prScanInfo->prPscnParam->fgGScnEnable = TRUE;
 					scnFsmPSCNSetParam(prAdapter,
 							   (P_CMD_SET_PSCAN_PARAM)prScanInfo->prPscnParam);
-						scnFsmPSCNAction(prAdapter, ENABLE);
+						scnFsmPSCNAction(prAdapter, PSCAN_ACT_ENABLE);
 						eNextPSCNState = PSCN_SCANNING;
 					}
 				}
@@ -1865,7 +1873,7 @@ scnPSCNFsm(IN P_ADAPTER_T prAdapter,
 				if (prScanInfo->prPscnParam->fgNLOScnEnable
 				    || prScanInfo->prPscnParam->fgBatchScnEnable) {
 					scnFsmPSCNSetParam(prAdapter, (P_CMD_SET_PSCAN_PARAM) prScanInfo->prPscnParam);
-					scnFsmPSCNAction(prAdapter, ENABLE);
+					scnFsmPSCNAction(prAdapter, PSCAN_ACT_ENABLE);
 					eNextPSCNState = PSCN_SCANNING;
 					DBGLOG(SCN, TRACE,
 					       "PSCN_RESET->PSCN_SCANNING,.... fgNLOScnEnable/fgBatchScnEnable ENABLE\n");
@@ -1878,28 +1886,28 @@ scnPSCNFsm(IN P_ADAPTER_T prAdapter,
 				if (fgRemoveNLOfromPSCN || fgRemoveBatchSCNfromPSCN || fgRemoveGSCNfromPSCN) {
 					DBGLOG(SCN, TRACE,
 					       "PSCN_SCANNING->PSCN_RESET,.... fgRemoveNLOfromPSCN/fgRemoveBatchSCNfromPSCN/fgRemoveGSCNfromPSCN\n");
-					scnFsmPSCNAction(prAdapter, DISABLE);
+					scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 					break;
 				}
 
 				if (prCmdNloReq || prCmdBatchReq || prCmdGscnReq || prNewCmdGscnConfig) {
 					DBGLOG(SCN, TRACE,
 					       "PSCN_SCANNING->PSCN_RESET,.... prCmdNloReq/prCmdBatchReq/prCmdGscnReq/prNewCmdGscnConfig\n");
-					scnFsmPSCNAction(prAdapter, DISABLE);
+					scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 					break;
 				}
 
 			} else if (eNextPSCNState == PSCN_SCANNING) {
 				if (fgEnableGSCN) {
-					if (prScanInfo->prPscnParam->fgGScnEnable && (!prScanInfo->fgPscnOnnning)) {
+					if (prScanInfo->prPscnParam->fgGScnEnable && (!prScanInfo->fgPscnOngoing)) {
 						DBGLOG(SCN, TRACE,
-						       "PSCN_SCANNING->PSCN_SCANNING,.... fgGScnEnable/!fgPscnOnnning\n");
+						       "PSCN_SCANNING->PSCN_SCANNING,.... fgGScnEnable/!fgPscnOngoing\n");
 						/* scnFsmPSCNAction(prAdapter, ENABLE); */
 						eNextPSCNState = PSCN_SCANNING;
 					} else {
 
 						DBGLOG(SCN, TRACE,
-							   "PSCN_SCANNING->PSCN_SCANNING,.... fgGScnEnable/!fgPscnOnnning\n");
+							   "PSCN_SCANNING->PSCN_SCANNING,.... fgGScnEnable/!fgPscnOngoing\n");
 					}
 				}
 			}
