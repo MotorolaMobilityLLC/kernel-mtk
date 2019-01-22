@@ -1095,9 +1095,10 @@ static void _MC3XXX_LowResFilter(s16 nAxis, s16 naData[MC3XXX_AXES_NUM])
 
 _LRF_RETURN:
 
-	ACC_LOG(">>>>> [_MC3XXX_LowResFilter][%d] _nCurrDiff: %4d _nSumDiff: %4d _nCurrData:%4d	 Rep:%4d\n",
-		nAxis, _nCurrDiff, _nSumDiff, _nCurrData, s_taLRF_CB[nAxis].nRepValue);
-
+	/*
+	* ACC_LOG(">>>>> [_MC3XXX_LowResFilter][%d] _nCurrDiff: %4d _nSumDiff: %4d _nCurrData:%4d	 Rep:%4d\n",
+	*	nAxis, _nCurrDiff, _nSumDiff, _nCurrData, s_taLRF_CB[nAxis].nRepValue);
+	*/
 	s_taLRF_CB[nAxis].nPreValue = _nCurrData;
 
 	#undef _LRF_DIFF_COUNT_POS
