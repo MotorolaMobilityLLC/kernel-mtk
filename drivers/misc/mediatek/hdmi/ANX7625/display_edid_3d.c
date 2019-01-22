@@ -2620,10 +2620,13 @@ static uint8_t parse_861_short_descriptors(
 						p_payload->ci_data.xvYCC;
 					mhl_edid_3d_data->parse_data.meta_data_profile =
 						p_payload->cm_meta_data.meta_data;
-				}
+
 					SLIMPORT_TX_EDID_INFO(mhl_edid_3d_data->dev_context,
 				"EDID -> Short Descriptor Colorimetry Block\n");
 				break;
+				}
+				default:
+					break;
 				}
 				}
 

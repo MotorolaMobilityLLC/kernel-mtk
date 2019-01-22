@@ -1480,7 +1480,7 @@ static struct i2c_driver anx7625_driver = {
 	.id_table = anx7625_id,
 };
 
-static void __init anx7625_init_async(
+static void anx7625_init_async(
 	void *data, async_cookie_t cookie)
 {
 	int ret = 0;
