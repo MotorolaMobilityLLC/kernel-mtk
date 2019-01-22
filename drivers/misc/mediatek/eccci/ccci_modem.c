@@ -173,9 +173,9 @@ static void init_smem_regions(struct ccci_smem_region *regions,
 		regions[i].base_ap_view_phy = base_ap_view_phy + regions[i].offset;
 		regions[i].base_ap_view_vir = base_ap_view_vir + regions[i].offset;
 		regions[i].base_md_view_phy = base_md_view_phy + regions[i].offset;
-		CCCI_BOOTUP_LOG(-1, TAG, "init_smem_regions: reg[%d](%llx %p %llx)",
-				i, regions[i].base_ap_view_phy,
-				regions[i].base_ap_view_vir, regions[i].base_md_view_phy);
+		CCCI_BOOTUP_LOG(-1, TAG, "init_smem_regions: reg[%d](%lx %p %lx)",
+				i, (unsigned long)regions[i].base_ap_view_phy,
+				regions[i].base_ap_view_vir, (unsigned long)regions[i].base_md_view_phy);
 	}
 }
 
@@ -293,21 +293,21 @@ void ccci_md_config(struct ccci_modem *md)
 			ioremap_nocache(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
 				md->mem_layout.md_bank4_cacheable_total.size);
 	else
-		CCCI_ERROR_LOG(md->index, TAG, "get ccb info base:%llx size:%x\n",
-			md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
+		CCCI_ERROR_LOG(md->index, TAG, "get ccb info base:%lx size:%x\n",
+			(unsigned long)md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
 			md->mem_layout.md_bank4_cacheable_total.size);
 
 	md->mem_layout.md_bank4_cacheable_total.base_md_view_phy =
 		0x48000000 + md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy -
 		round_down(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy, 0x02000000);
 #endif
-	CCCI_BOOTUP_LOG(md->index, TAG, "smem info: (%llx %llx %p %d) (%llx %llx %p %d)\n",
-			md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy,
-			md->mem_layout.md_bank4_noncacheable_total.base_md_view_phy,
+	CCCI_BOOTUP_LOG(md->index, TAG, "smem info: (%lx %lx %p %d) (%lx %lx %p %d)\n",
+			(unsigned long)md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy,
+			(unsigned long)md->mem_layout.md_bank4_noncacheable_total.base_md_view_phy,
 			md->mem_layout.md_bank4_noncacheable_total.base_ap_view_vir,
 			md->mem_layout.md_bank4_noncacheable_total.size,
-			md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
-			md->mem_layout.md_bank4_cacheable_total.base_md_view_phy,
+			(unsigned long)md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
+			(unsigned long)md->mem_layout.md_bank4_cacheable_total.base_md_view_phy,
 			md->mem_layout.md_bank4_cacheable_total.base_ap_view_vir,
 			md->mem_layout.md_bank4_cacheable_total.size);
 	/* add alignment check */
