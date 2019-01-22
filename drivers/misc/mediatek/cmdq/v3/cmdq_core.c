@@ -5489,17 +5489,24 @@ void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize)
 	mutex_unlock(&gCmdqTaskMutex);
 }
 
-void cmdq_core_dump_task_mem(const struct TaskStruct *pTask)
+void cmdq_core_dump_task_mem(const struct TaskStruct *pTask, bool full_dump)
 {
 	struct CmdBufferStruct *cmd_buffer = NULL;
 
 	list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
 		if (list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list)) {
+			u32 available_size = CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
 			/* last one, dump according available size */
-			cmdqCoreDumpCommandMem(cmd_buffer->pVABase, CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size);
+			CMDQ_LOG("VABase: 0x%p, MVABase: %pa, size: %u\n",
+				cmd_buffer->pVABase, &cmd_buffer->MVABase, available_size);
+			if (full_dump)
+				cmdqCoreDumpCommandMem(cmd_buffer->pVABase, available_size);
 		} else {
 			/* not last buffer, dump all */
-			cmdqCoreDumpCommandMem(cmd_buffer->pVABase, CMDQ_CMD_BUFFER_SIZE);
+			CMDQ_LOG("VABase: 0x%p, MVABase: %pa, size: %lu\n",
+				cmd_buffer->pVABase, &cmd_buffer->MVABase, CMDQ_CMD_BUFFER_SIZE);
+			if (full_dump)
+				cmdqCoreDumpCommandMem(cmd_buffer->pVABase, CMDQ_CMD_BUFFER_SIZE);
 		}
 	}
 }
@@ -5537,8 +5544,6 @@ s32 cmdqCoreDebugDumpSRAM(u32 sram_base, u32 command_size)
 
 int32_t cmdqCoreDebugDumpCommand(const struct TaskStruct *pTask)
 {
-	struct CmdBufferStruct *cmd_buffer = NULL;
-
 	if (pTask == NULL)
 		return -EFAULT;
 
@@ -5549,15 +5554,7 @@ int32_t cmdqCoreDebugDumpCommand(const struct TaskStruct *pTask)
 			pTask->pCMDEnd, cmdq_core_task_get_first_va(pTask));
 	}
 
-	list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
-		if (list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list)) {
-			cmdqCoreDumpCommandMem(cmd_buffer->pVABase,
-				CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size);
-		} else {
-			cmdqCoreDumpCommandMem(cmd_buffer->pVABase,
-				CMDQ_CMD_BUFFER_SIZE);
-		}
-	}
+	cmdq_core_dump_task_mem(pTask, true);
 
 	if (pTask->use_sram_buffer)
 		cmdqCoreDebugDumpSRAM(pTask->sram_base, pTask->commandSize);

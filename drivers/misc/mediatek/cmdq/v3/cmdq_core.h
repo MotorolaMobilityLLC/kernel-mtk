@@ -1057,7 +1057,7 @@ extern "C" {
 	void cmdq_core_set_mem_monitor(bool enable);
 	void cmdq_core_dump_mem_monitor(void);
 
-	void cmdq_core_dump_task_mem(const struct TaskStruct *pTask);
+	void cmdq_core_dump_task_mem(const struct TaskStruct *pTask, bool full_dump);
 
 	struct StressContextStruct *cmdq_core_get_stress_context(void);
 	void cmdq_core_clean_stress_context(void);

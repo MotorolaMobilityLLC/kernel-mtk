@@ -3839,7 +3839,7 @@ void testcase_do_while_continue(void)
 
 	cmdq_op_finalize_command(handle, false);
 	_test_submit_async(handle, &task);
-	cmdq_core_dump_task_mem(task);
+	cmdq_core_dump_task_mem(task, true);
 	cmdqCoreWaitAndReleaseTask(task, 500);
 
 	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
@@ -3912,7 +3912,7 @@ static void testcase_basic_jump_c(void)
 
 	cmdq_op_finalize_command(handle, false);
 	_test_submit_async(handle, &task);
-	cmdq_core_dump_task_mem(task);
+	cmdq_core_dump_task_mem(task, true);
 	cmdqCoreWaitAndReleaseTask(task, 500);
 
 	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
@@ -3999,7 +3999,7 @@ static void testcase_basic_jump_c_do_while(void)
 
 	cmdq_op_finalize_command(handle, false);
 	_test_submit_async(handle, &task);
-	cmdq_core_dump_task_mem(task);
+	cmdq_core_dump_task_mem(task, true);
 	cmdqCoreWaitAndReleaseTask(task, 500);
 
 	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
@@ -4667,6 +4667,7 @@ void _testcase_boundary_mem_inst(uint32_t inst_num)
 {
 	int i;
 	struct cmdqRecStruct *handle = NULL;
+	struct TaskStruct *task = NULL;
 	uint32_t data;
 	uint32_t pattern = 0x0;
 	const unsigned long MMSYS_DUMMY_REG = CMDQ_TEST_MMSYS_DUMMY_VA;
@@ -4687,7 +4688,11 @@ void _testcase_boundary_mem_inst(uint32_t inst_num)
 		cmdqRecWrite(handle, CMDQ_TEST_MMSYS_DUMMY_PA, pattern, ~0);
 	}
 
-	cmdqRecFlush(handle);
+	cmdq_op_finalize_command(handle, false);
+	_test_submit_async(handle, &task);
+	cmdq_core_dump_task_mem(task, false);
+
+	cmdqCoreWaitAndReleaseTask(task, 500);
 	cmdqRecDestroy(handle);
 
 	/* verify data */
@@ -4786,7 +4791,7 @@ void _testcase_longloop_inst(uint32_t inst_num)
 	status = cmdqRecStartLoop(hLoopReq);
 	if (status != 0)
 		CMDQ_MSG("TEST FAIL: Unable to start loop\n");
-
+	cmdq_core_dump_task_mem(hLoopReq->pRunningTask, false);
 	/* WAIT */
 	while (g_loopIter < 5)
 		msleep_interruptible(500);
