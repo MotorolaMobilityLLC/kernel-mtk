@@ -66,8 +66,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.pclk = 84000000,	/* record different mode's pclk */
 		.linelength = 2816,	/* record different mode's linelength */
 		.framelength = 992,	/* record different mode's framelength */
-		.startx = 2,	/* record different mode's startx of grabwindow */
-		.starty = 2,	/* record different mode's starty of grabwindow */
+		.startx = 0,	/* record different mode's startx of grabwindow */
+		.starty = 0,	/* record different mode's starty of grabwindow */
 		.grabwindow_width = 1280,	/* record different mode's width of grabwindow */
 		.grabwindow_height = 960,	/* record different mode's height of grabwindow */
 		/*     following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario    */
@@ -80,8 +80,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.pclk = 84000000,
 		.linelength = 2816,
 		.framelength = 1984,
-		.startx = 2,
-		.starty = 6,
+		.startx = 0,
+		.starty = 0,
 		.grabwindow_width = 2560,
 		.grabwindow_height = 1920,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
@@ -92,8 +92,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.pclk = 84000000,
 		.linelength = 2816,
 		.framelength = 1984,
-		.startx = 2,
-		.starty = 2,
+		.startx = 0,
+		.starty = 0,
 		.grabwindow_width = 2560,
 		.grabwindow_height = 1920,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
@@ -104,8 +104,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.pclk = 84000000,
 		.linelength = 2816,
 		.framelength = 992,
-		.startx = 2,
-		.starty = 2,
+		.startx = 0,
+		.starty = 0,
 		.grabwindow_width = 1280,
 		.grabwindow_height = 960,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
@@ -707,7 +707,7 @@ static void sensor_init(void)
 	/* write_cmos_sensor(0x350b, 0x80); // gain = 8x */
 	write_cmos_sensor(0x4837, 0x17);	/* MIPI global timing */
 
-	write_cmos_sensor(0x0100, 0x01);	/* wake up from software sleep */
+	/* write_cmos_sensor(0x0100, 0x01); // wake up from software sleep */
 }				/*    MIPI_sensor_Init  */
 
 
@@ -719,7 +719,7 @@ static void preview_setting(void)
        *
        ********************************************************/
 
-	write_cmos_sensor(0x0100, 0x00);	/* Stream Off */
+	/* write_cmos_sensor(0x0100, 0x00); // Stream Off */
 	mDELAY(10);
 
 	write_cmos_sensor(0x3500, 0x00);	/* exposure [19:16] */
@@ -787,7 +787,7 @@ static void preview_setting(void)
 	/* write_cmos_sensor(0x350b, 0x80); // gain = 8x */
 	write_cmos_sensor(0x4837, 0x17);	/* MIPI global timing */
 
-	write_cmos_sensor(0x0100, 0x01);	/* Stream On */
+	/* write_cmos_sensor(0x0100, 0x01); // Stream On */
 }				/*    preview_setting  */
 
 
@@ -864,7 +864,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x350b, 0x40);	/* gain = 4x */
 	write_cmos_sensor(0x4837, 0x17);	/* MIPI global timing */
 
-	write_cmos_sensor(0x0100, 0x01);	/* Stream On */
+	/* write_cmos_sensor(0x0100, 0x01); // Stream On */
 }				/*    capture_setting  */
 
 static void normal_video_setting(kal_uint16 currefps)
@@ -944,7 +944,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	/* write_cmos_sensor(0x350b, 0x80); // gain = 8x */
 	write_cmos_sensor(0x4837, 0x17);	/* MIPI global timing */
 
-	write_cmos_sensor(0x0100, 0x01);	/* Stream On */
+	/* write_cmos_sensor(0x0100, 0x01); // Stream On */
 }				/*    preview_setting  */
 
 
@@ -1838,15 +1838,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_SET_FRAMERATE:
-		LOG_INF("current fps :%d\n", (UINT32) *feature_data);
+		LOG_INF("current fps :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.current_fps = *feature_data;
+		imgsensor.current_fps = (UINT16) * feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_SET_HDR:
-		LOG_INF("ihdr enable :%d\n", (BOOL) * feature_data);
+		LOG_INF("ihdr enable :%d\n", *feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.ihdr_en = (BOOL) * feature_data;
+		imgsensor.ihdr_en = (BOOL) * feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_GET_CROP_INFO:
