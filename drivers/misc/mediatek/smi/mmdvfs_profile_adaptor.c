@@ -276,8 +276,8 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6763_lp3 = {
 /* class: ISP PMQoS Handler */
 
 /* ISP DVFS Adaptor Impementation */
-static int get_step_by_threshold(struct mmdvfs_thresholds_dvfs_handler *self,
-	int class_id, int value);
+static s32 get_step_by_threshold(struct mmdvfs_thresholds_dvfs_handler *self,
+	u32 class_id, u32 value);
 
 struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj = {
 	NULL,
@@ -480,7 +480,7 @@ static int mmdvfs_apply_clk_hw_configurtion_by_step(
 					MMDVFSDEBUG(3, "Change %s source to %s, expect clk = %d\n",
 					clk_hw_map_ptr->clk_mux.ccf_name,
 					self->mmdvfs_clk_sources[clk_source_id].ccf_name,
-					self->mmdvfs_clk_sources[clk_source_id].requested_clk);
+					self->mmdvfs_clk_sources[clk_source_id].clk_rate_mhz);
 
 					if (clk_hw_map_ptr->clk_mux.ccf_handle == NULL ||
 						self->mmdvfs_clk_sources[clk_source_id].ccf_handle == NULL)   {
@@ -641,9 +641,9 @@ static void mmdvfs_single_hw_configuration_dump(struct mmdvfs_adaptor *self,
 	for (i = 0; i < hw_configuration->total_clks; i++) {
 		char *ccf_clk_source_name = "NONE";
 		char *ccf_clk_mux_name = "NONE";
-		int requested_clk = -1;
-		int clk_step = -1;
-		int clk_source_id = -1;
+		u32 clk_rate_mhz = 0;
+		u32 clk_step = 0;
+		u32 clk_source_id = 0;
 
 		struct mmdvfs_clk_hw_map *map_item = clk_hw_map + i;
 
@@ -654,14 +654,14 @@ static void mmdvfs_single_hw_configuration_dump(struct mmdvfs_adaptor *self,
 			ccf_clk_mux_name = map_item->clk_mux.ccf_name;
 		}
 
-		if (map_item->config_method != MMDVFS_CLK_CONFIG_NONE
-			&& clk_source_id < clk_soure_total && clk_source_id >= 0) {
+		if (map_item->config_method == MMDVFS_CLK_CONFIG_BY_MUX
+			&& clk_source_id < clk_soure_total) {
 			ccf_clk_source_name = clk_sources[clk_source_id].ccf_name;
-			requested_clk = clk_sources[clk_source_id].requested_clk;
+			clk_rate_mhz = clk_sources[clk_source_id].clk_rate_mhz;
 		}
 
 		MMDVFSDEBUG(3, "\t%s, %s, %dMhz\n", map_item->clk_mux.ccf_name,
-		ccf_clk_source_name, requested_clk);
+		ccf_clk_source_name, clk_rate_mhz);
 	}
 }
 
@@ -800,7 +800,7 @@ static void mmdvfs_step_util_init(struct mmdvfs_step_util *self)
 
 /* updat the step members only (HW independent part) */
 /* return the final step */
-static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, int	step, int client_id)
+static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, int step, int client_id)
 {
 	int scenario_idx = 0;
 	int opp_idx = 0;
@@ -874,38 +874,33 @@ static const struct mmdvfs_vpu_steps_setting *get_vpu_setting_impl(
 }
 
 /* ISP DVFS Adaptor Impementation */
-int get_step_by_threshold(struct mmdvfs_thresholds_dvfs_handler *self, int class_id, int value)
+static s32 get_step_by_threshold(struct mmdvfs_thresholds_dvfs_handler *self, u32 class_id, u32 value)
 {
 		struct mmdvfs_threshold_setting *setting_ptr = NULL;
 		int step_found = MMDVFS_FINE_STEP_UNREQUEST;
+		int threshold_idx = 0;
 
-		if (class_id < 0 || class_id > self->mmdvfs_threshold_setting_num)
+		if (class_id > self->mmdvfs_threshold_setting_num)
 			return MMDVFS_FINE_STEP_UNREQUEST;
-
-		setting_ptr = self->threshold_settings + class_id;
 
 		if (value == 0)
 			return MMDVFS_FINE_STEP_UNREQUEST;
 
-		if (setting_ptr) {
-			int threshold_idx = 0;
+		setting_ptr = &self->threshold_settings[class_id];
 
-			for (threshold_idx = 0 ; threshold_idx < setting_ptr->thresholds_num;
-				threshold_idx++) {
-				int *threshold = setting_ptr->thresholds + threshold_idx;
-				int *opp = setting_ptr->opps + threshold_idx;
+		for (threshold_idx = 0 ; threshold_idx < setting_ptr->thresholds_num;
+			threshold_idx++) {
+			int *threshold = setting_ptr->thresholds + threshold_idx;
+			int *opp = setting_ptr->opps + threshold_idx;
 
-				if ((threshold) && (opp) && (value > *threshold)) {
-					MMDVFSDEBUG(5, "value=%d,threshold=%d\n", value, *threshold);
-					step_found = *opp;
-					break;
-				}
+			if ((threshold) && (opp) && (value > *threshold)) {
+				MMDVFSDEBUG(5, "value=%d,threshold=%d\n", value, *threshold);
+				step_found = *opp;
+				break;
 			}
+		}
 		if (step_found == MMDVFS_FINE_STEP_UNREQUEST)
 			step_found = *(setting_ptr->opps + setting_ptr->thresholds_num-1);
-		} else {
-			step_found = MMDVFS_FINE_STEP_UNREQUEST;
-		}
 
 		return step_found;
 }
@@ -975,7 +970,7 @@ void mmdvfs_config_util_init(void)
 		g_mmdvfs_non_force_step_util->init(g_mmdvfs_non_force_step_util);
 }
 
-void mmdvfs_pm_qos_update_request(struct mmdvfs_pm_qos_request *req, int mmdvfs_pm_qos_class, int new_value)
+void mmdvfs_pm_qos_update_request(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qos_class, u32 new_value)
 {
 	int step = MMDVFS_FINE_STEP_UNREQUEST;
 	int mmdvfs_vote_id = -1;
@@ -1006,19 +1001,73 @@ void mmdvfs_pm_qos_update_request(struct mmdvfs_pm_qos_request *req, int mmdvfs_
 void mmdvfs_pm_qos_remove_request(struct mmdvfs_pm_qos_request *req)
 {
 	if (!req) {
-		MMDVFSDEBUG(5, "mmdvfs_pm_qos_request can't be NULL for PMQoS compatiable\n");
+		MMDVFSDEBUG(5, "mmdvfs_pm_qos_request can't be NULL for PMQoS compatiable (remove)\n");
 		return;
 	}
 	mmdvfs_pm_qos_update_request(req, req->pm_qos_class, 0);
 }
 
-void mmdvfs_pm_qos_add_request(struct mmdvfs_pm_qos_request *req, int mmdvfs_pm_qos_class,
-												int value)
+void mmdvfs_pm_qos_add_request(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qos_class, u32 value)
 {
 	if (!req) {
-		MMDVFSDEBUG(5, "mmdvfs_pm_qos_request can't be NULL for PMQoS compatiable\n");
-		req->pm_qos_class = mmdvfs_pm_qos_class;
+		MMDVFSDEBUG(5, "mmdvfs_pm_qos_request can't be NULL for PMQoS compatiable (add)\n");
+		return;
 	}
 
 	mmdvfs_pm_qos_update_request(req, mmdvfs_pm_qos_class, value);
 }
+
+static inline struct mmdvfs_threshold_setting *get_threshold_setting(u32 class_id)
+{
+	if (class_id > g_mmdvfs_thresholds_dvfs_handler->mmdvfs_threshold_setting_num)
+		return NULL;
+
+	return &g_mmdvfs_thresholds_dvfs_handler->threshold_settings[class_id];
+}
+
+u32 mmdvfs_qos_get_thres_count(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qos_class)
+{
+	struct mmdvfs_threshold_setting *setting_ptr = get_threshold_setting(mmdvfs_pm_qos_class);
+
+	if (setting_ptr)
+		return setting_ptr->thresholds_num;
+
+	return 0;
+}
+
+u32 mmdvfs_qos_get_thres_value(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qos_class, u32 thres_idx)
+{
+	struct mmdvfs_threshold_setting *setting_ptr = get_threshold_setting(mmdvfs_pm_qos_class);
+
+	if (setting_ptr) {
+		if (thres_idx > setting_ptr->thresholds_num)
+			return 0;
+		return setting_ptr->thresholds[thres_idx];
+	}
+	return 0;
+}
+
+u32 mmdvfs_qos_get_cur_thres(struct mmdvfs_pm_qos_request *req, u32 mmdvfs_pm_qos_class)
+{
+	struct mmdvfs_clk_hw_map *hw_map_ptr = NULL;
+	u32 clk_step = 0, config_method = 0, clk_rate_mhz = 0;
+	s32 current_step = mmdvfs_get_current_fine_step();
+
+	if (current_step < 0)
+		return 0;
+
+	if (mmdvfs_pm_qos_class == MMDVFS_PM_QOS_SUB_SYS_CAMERA) {
+		clk_step = g_mmdvfs_adaptor->get_cam_sys_clk(g_mmdvfs_adaptor, current_step);
+		hw_map_ptr = &g_mmdvfs_adaptor->mmdvfs_clk_hw_maps[MMDVFS_CLK_MUX_TOP_CAM_SEL];
+		config_method = hw_map_ptr->config_method;
+		if (config_method == MMDVFS_CLK_CONFIG_PLL_RATE)
+			clk_rate_mhz = hw_map_ptr->step_pll_freq_map[clk_step] / 1000000;
+		else if (config_method == MMDVFS_CLK_CONFIG_BY_MUX) {
+			u32 clk_source_id = hw_map_ptr->step_clk_source_id_map[clk_step];
+
+			clk_rate_mhz = g_mmdvfs_adaptor->mmdvfs_clk_sources[clk_source_id].clk_rate_mhz;
+		}
+	}
+	return clk_rate_mhz;
+}
+

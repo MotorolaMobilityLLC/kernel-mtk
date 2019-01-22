@@ -60,7 +60,7 @@ static clk_switch_cb quick_mmclk_cbs[MMDVFS_CLK_SWITCH_CB_MAX];
 static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
 
 /* Record the current step */
-static int g_mmdvfs_current_step;
+static s32 g_mmdvfs_current_step;
 
 static int g_mmdvfs_current_vpu_step;
 
@@ -99,7 +99,7 @@ static int mmdvfs_get_default_step(void)
 	return MMDVFS_FINE_STEP_UNREQUEST;
 }
 
-static int mmdvfs_get_current_fine_step(void)
+s32 mmdvfs_get_current_fine_step(void)
 {
 	return g_mmdvfs_current_step;
 }
@@ -253,9 +253,8 @@ int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
 }
 
 int mmdvfs_internal_set_fine_step(const char *adaptor_name,
-struct mmdvfs_adaptor *adaptor,
-struct mmdvfs_step_util *step_util, MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step,
-int notify_clk_change)
+	struct mmdvfs_adaptor *adaptor, struct mmdvfs_step_util *step_util,
+	MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_step, int notify_clk_change)
 {
 	int original_step = 0;
 	int final_step = MMDVFS_FINE_STEP_UNREQUEST;
@@ -266,8 +265,8 @@ int notify_clk_change)
 		return -1;
 	}
 
-	if ((smi_scenario >= (MTK_SMI_BWC_SCEN)MMDVFS_SCEN_COUNT) || (smi_scenario
-	< SMI_BWC_SCEN_NORMAL)) {
+	if ((smi_scenario >= (MTK_SMI_BWC_SCEN)MMDVFS_SCEN_COUNT) ||
+		(smi_scenario < SMI_BWC_SCEN_NORMAL)) {
 		MMDVFSERR("invalid scenario\n");
 		return -1;
 	}
@@ -287,7 +286,7 @@ int notify_clk_change)
 	legacy_clk = mmdvfs_get_stable_isp_clk();
 
 	if (g_mmdvfs_rt_debug_disable_mask &&
-			((1 << smi_scenario) & (*g_mmdvfs_rt_debug_disable_mask)))
+		((1 << smi_scenario) & (*g_mmdvfs_rt_debug_disable_mask)))
 		MMDVFSDEBUG(3,
 		"%s,set scen:(%d,0x%x)step:(%d,%d,0x%x,0x%x,0x%x,0x%x),C(%d,%d,0x%x),I(%d,%d),CLK:%d\n",
 		adaptor_name, smi_scenario, g_mmdvfs_concurrency, mmdvfs_step, final_step,
@@ -502,7 +501,7 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 	case MTK_MMDVFS_CMD_TYPE_QUERY:  /* query with some parameters */
 		{
 			int query_fine_step = mmdvfs_query(cmd->scen, cmd);
-			int current_fine_step =	mmdvfs_get_current_fine_step();
+			s32 current_fine_step = mmdvfs_get_current_fine_step();
 
 			/* Compare the step and return the result */
 			if (query_fine_step == current_fine_step) {
@@ -526,15 +525,15 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 
 	case MTK_MMDVFS_CMD_TYPE_GET:
 		{
-				cmd->ret = 0;
-				/* Put step in the command (bit 0-7) */
-				cmd->ret = g_mmdvfs_current_step & MMDVFS_IOCTL_CMD_STEP_FIELD_MASK;
-				/* Put mmclk in the command (bit 8-15), but not used now */
-				/* cmd->ret |= (current_mmsys_clk << MMDVFS_IOCTL_CMD_STEP_FIELD_LEN) */
-				/* & MMDVFS_IOCTL_CMD_MMCLK_FIELD_MASK; */
+			cmd->ret = 0;
+			/* Put step in the command (bit 0-7) */
+			cmd->ret = g_mmdvfs_current_step & MMDVFS_IOCTL_CMD_STEP_FIELD_MASK;
+			/* Put mmclk in the command (bit 8-15), but not used now */
+			/* cmd->ret |= (current_mmsys_clk << MMDVFS_IOCTL_CMD_STEP_FIELD_LEN) */
+			/* & MMDVFS_IOCTL_CMD_MMCLK_FIELD_MASK; */
 
-				MMDVFSMSG("Current step query result: %d, 0x%x\n",
-				g_mmdvfs_current_step, cmd->ret);
+			MMDVFSMSG("Current step query result: %d, 0x%x\n",
+			g_mmdvfs_current_step, cmd->ret);
 		}
 		break;
 
@@ -633,18 +632,18 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 
 	if (g_mmdvfs_adaptor &&
 		(!((1 << scen) & g_mmdvfs_adaptor->disable_auto_control_mask))) {
-	mmdvfs_fine_step = mmdvfs_determine_fine_step_default(scen, g_mmdvfs_cmd.sensor_size,
+		mmdvfs_fine_step = mmdvfs_determine_fine_step_default(scen, g_mmdvfs_cmd.sensor_size,
 		g_mmdvfs_cmd.camera_mode, g_mmdvfs_cmd.sensor_fps,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1]);
-	mmdvfs_set_fine_step(scen, mmdvfs_fine_step);
+		mmdvfs_set_fine_step(scen, mmdvfs_fine_step);
 	}
 
 	if (g_mmdvfs_non_force_adaptor &&
 		(!((1 << scen) & g_mmdvfs_non_force_adaptor->disable_auto_control_mask))) {
-	mmdvfs_fine_step_non_force = mmdvfs_determine_fine_step(g_mmdvfs_non_force_adaptor,
+		mmdvfs_fine_step_non_force = mmdvfs_determine_fine_step(g_mmdvfs_non_force_adaptor,
 		scen, g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.camera_mode, g_mmdvfs_cmd.sensor_fps,
 		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1]);
-	mmdvfs_set_fine_step_non_force(scen, mmdvfs_fine_step_non_force);
+		mmdvfs_set_fine_step_non_force(scen, mmdvfs_fine_step_non_force);
 	}
 
 	/* Boost for ISP related scenario */
