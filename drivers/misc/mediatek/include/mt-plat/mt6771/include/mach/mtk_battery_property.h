@@ -27,7 +27,10 @@
 /* NO_BAT_TEMP_COMPENSATE 1 = don't need bat_temper compensate, */
 /* but fg_meter_resistance still use for SWOCV */
 
+/* enable that soc = 0 , shutdown */
 #define SHUTDOWN_GAUGE0 1
+
+/* enable that uisoc = 1 and wait xmins then shutdown */
 #define SHUTDOWN_GAUGE1_XMINS 1
 /* define Xmins to shutdown*/
 #define SHUTDOWN_1_TIME	5
@@ -125,7 +128,6 @@
 #define VIR_OLDOCV_DIFF_EMB	10000	/* 1000mV */
 #define VIR_OLDOCV_DIFF_EMB_LT	10000	/* 1000mV */
 #define VIR_OLDOCV_DIFF_EMB_TMP	5
-
 
 #define TNEW_TOLD_PON_DIFF	5
 #define TNEW_TOLD_PON_DIFF2	15
@@ -254,7 +256,6 @@
 #define UI_LOW_LIMIT_VTH4 34000
 
 #define UI_LOW_LIMIT_TIME 99999
-
 
 
 #endif
