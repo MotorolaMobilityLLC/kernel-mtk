@@ -97,7 +97,7 @@ typedef unsigned short UINT16;
 #define DRV_Reg16(addr)             INREG16(addr)
 #define DRV_Reg(addr)               DRV_Reg16(addr)
 
-#if defined(AUXADC_CLK_CTR)
+#if defined(AUXADC_SPM)
 typedef unsigned int UINT32;
 #define READ_REGISTER_UINT32(reg) (*(volatile UINT32 * const)(reg))
 #define INREG32(x)          READ_REGISTER_UINT32((UINT32 *)((void *)(x)))
@@ -131,7 +131,7 @@ mt_reg_sync_writew(temp, addr);\
 #define AUXADC_DRV_WriteReg16(addr, data)            mt_reg_sync_writew(data, addr)
 #define AUXADC_DRV_ReadReg16(addr)                   DRV_Reg(addr)
 #define AUXADC_DRV_SetData16(addr, bitmask, value)   DRV_SetData(addr, bitmask, value)
-#if defined(AUXADC_CLK_CTR)
+#if defined(AUXADC_SPM)
 #define AUXADC_DRV_ReadReg32(addr)                   DRV_Reg32(addr)
 #endif
 
@@ -436,7 +436,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 #ifdef CONFIG_OF
 	struct device_node *node;
 
-#if defined(AUXADC_CLK_CTR)
+#if defined(AUXADC_SPM)
 	node = of_find_compatible_node(NULL, NULL, AUXADC_APMIX_NODE);
 #else
 	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
@@ -480,7 +480,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 static void mt_auxadc_hal_suspend(void)
 {
 	pr_debug("******** MT auxadc driver suspend!! ********\n");
-#if defined(AUXADC_CLK_CTR)
+#if defined(AUXADC_SPM)
 	AUXADC_SET_BITS((0x3 << 6) | (0x3 << 16), AUXADC_TS_X_BUFFER);
 	AUXADC_DRV_SetData16((volatile u16 *)AUXADC_CON1, 0xffff, 0x0);
 #endif
@@ -540,7 +540,7 @@ static void mt_auxadc_hal_resume(void)
 #endif
 #endif
 	mt_auxadc_power_on();
-#if defined(AUXADC_CLK_CTR)
+#if defined(AUXADC_SPM)
 	AUXADC_CLR_BITS((0x3 << 6) | (0x3 << 16), AUXADC_TS_X_BUFFER);
 #endif
 	/* AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);             //disable RTP */
