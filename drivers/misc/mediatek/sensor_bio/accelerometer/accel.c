@@ -339,14 +339,14 @@ static ssize_t acc_store_active(struct device *dev, struct device_attribute *att
 		err = cxt->acc_ctl.enable_nodata(1);
 		if (err) {
 			ACC_ERR("acc turn on power err = %d\n", err);
-			return -1;
+			goto err_out;
 		}
 		ACC_LOG("acc turn on power done\n");
 	} else {
 		err = cxt->acc_ctl.enable_nodata(0);
 		if (err) {
 			ACC_ERR("acc turn off power err = %d\n", err);
-			return -1;
+			goto err_out;
 		}
 		ACC_LOG("acc turn off power done\n");
 	}
@@ -400,11 +400,13 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 		err = cxt->acc_ctl.batch(0, cxt->delay_ns, 0);
 	if (err) {
 		ACC_ERR("acc set batch(ODR) err %d\n", err);
-		return -1;
+		goto err_out;
 	}
 #else
 	err = acc_enable_and_batch();
 #endif
+
+err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	return err;
 }
@@ -434,7 +436,7 @@ static ssize_t acc_store_flush(struct device *dev, struct device_attribute *attr
 	if (err < 0)
 		ACC_ERR("acc enable flush err %d\n", err);
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t acc_show_flush(struct device *dev,

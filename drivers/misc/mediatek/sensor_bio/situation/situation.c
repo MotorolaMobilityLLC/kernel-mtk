@@ -211,7 +211,7 @@ static ssize_t situation_store_active(struct device *dev, struct device_attribut
 	SITUATION_LOG("situation_store_active done\n");
 err_out:
 	mutex_unlock(&situation_context_obj->situation_op_mutex);
-	return count;
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -291,7 +291,7 @@ static ssize_t situation_store_flush(struct device *dev, struct device_attribute
 	if (err < 0)
 		SITUATION_ERR("situation enable flush err %d\n", err);
 	mutex_unlock(&situation_context_obj->situation_op_mutex);
-	return count;
+	return err;
 }
 
 static ssize_t situation_show_flush(struct device *dev, struct device_attribute *attr, char *buf)
