@@ -97,6 +97,7 @@
 #include <linux/pm_qos.h>
 #endif
 #include "mtk_ovl.h"
+#include "mtk_dramc.h"
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
@@ -1308,9 +1309,10 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 		      "|cmdq_handle_config=%p\tcmdq_handle_trigger=%p\tdpmgr_handle=%p\tovl2mem_path_handle=%p\n",
 		      pgc->cmdq_handle_config, pgc->cmdq_handle_trigger, pgc->dpmgr_handle,
 		      pgc->ovl2mem_path_handle);
-	len += scnprintf(stringbuf + len, buf_len - len, "|Current display driver status=%s + %s\n",
+	len += scnprintf(stringbuf + len, buf_len - len, "|Current display driver status=%s + %s, Dram type: %s\n",
 		      primary_display_is_video_mode() ? "video mode" : "cmd mode",
-		      primary_display_cmdq_enabled() ? "CMDQ Enabled" : "CMDQ Disabled");
+		      primary_display_cmdq_enabled() ? "CMDQ Enabled" : "CMDQ Disabled",
+		      get_ddr_type() == TYPE_LPDDR3 ? "LPDDR3" : "LPDDR4");
 
 	return len;
 }
@@ -3944,10 +3946,10 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 		if (status & 0x1) {
 			/* ovl is not idle !! */
 			DISPPR_ERROR("disp ovl status error!! stat=0x%x\n", status);
-			primary_display_diagnose();
+			/* primary_display_diagnose(); */
 			mmprofile_log_ex(ddp_mmp_get_events()->primary_error,
 					 MMPROFILE_FLAG_PULSE, status, 0);
-			disp_aee_print("ovl_stat 0x%x\n", status);
+			/* disp_aee_print("ovl_stat 0x%x\n", status); */
 		}
 	}
 
