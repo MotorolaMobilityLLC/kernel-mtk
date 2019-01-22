@@ -774,24 +774,16 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target, unsigned int force_
 	unsigned long ui32IRQFlags;
 
 	if (force_fallback) {
-		ged_set_backup_timer_timeout((u64)t_gpu_target);
 		gpu_freq_pre = ret_freq = mt_gpufreq_get_cur_freq();
 		goto FB_RET;
-	} else {
-		ged_set_backup_timer_timeout(0);
 	}
 
-	ged_cancel_backup_timer();
 	t_gpu /= 100000;
 	t_gpu_target /= 100000;
 
 	spin_lock_irqsave(&gsGpuUtilLock, ui32IRQFlags);
-	if (is_fallback_mode_triggered) {
+	if (is_fallback_mode_triggered)
 		is_fallback_mode_triggered = 0;
-		spin_unlock_irqrestore(&gsGpuUtilLock, ui32IRQFlags);
-		gpu_freq_pre = ret_freq = mt_gpufreq_get_cur_freq();
-		goto FB_RET;
-	}
 	spin_unlock_irqrestore(&gsGpuUtilLock, ui32IRQFlags);
 
 	if (t_gpu <= 0) {
@@ -799,6 +791,7 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target, unsigned int force_
 		gpu_freq_pre = ret_freq = mt_gpufreq_get_cur_freq();
 		goto FB_RET;
 	}
+	ged_cancel_backup_timer();
 
 	t_gpu_target = t_gpu_target * (100 - gx_gpu_dvfs_margin) / 100;
 	i32MaxLevel = (int)(mt_gpufreq_get_dvfs_table_num() - 1);
