@@ -6095,6 +6095,9 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config,
 	    !dc_request)
 		return 0;
 
+	if (is_DAL_Enabled())
+		return 0;
+
 	for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
 		if (data_config->ovl_config[i].layer_en) {
 			total_layer++;
