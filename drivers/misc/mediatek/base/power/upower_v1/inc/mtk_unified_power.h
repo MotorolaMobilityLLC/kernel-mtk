@@ -37,7 +37,7 @@ extern "C" {
 
 #define NR_UPOWER_DEGREE 6
 #define DEFAULT_LKG_IDX 0
-#define UPOWER_SEG_IDX 30
+#define UPOWER_FUNC_CODE_EFUSE_INDEX 120
 #define NR_UPOWER_CSTATES 2 /* only use c0, c1 */
 #define UPOWER_C1_VOLT 50000 /* 0.5v */
 #define UPOWER_C1_IDX 1 /* idx of c1 in idle_states[][idx] */
