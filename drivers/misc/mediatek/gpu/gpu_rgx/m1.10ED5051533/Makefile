@@ -55,7 +55,6 @@ pvrsrvkm-y += \
 	services/server/env/linux/physmem_dmabuf.o \
 	services/server/env/linux/handle_idr.o \
 	services/server/env/linux/pvr_gputrace.o \
-	services/server/env/linux/sync_native_server.o \
 	services/server/common/devicemem_heapcfg.o \
 	services/server/common/handle.o \
 	services/server/common/devicemem_server.o \
@@ -138,7 +137,6 @@ pvrsrvkm-y += \
 	services/system/common/vz_support.o \
 	services/system/common/vmm_type_stub.o \
 	kernel/drivers/staging/imgtec/pvr_platform_drv.o \
-	kernel/drivers/staging/imgtec/pvr_sync2.o \
 	kernel/drivers/staging/imgtec/pvr_drm.o \
 	generated/mm_bridge/server_mm_bridge.o \
 	generated/mm_bridge/client_mm_direct_bridge.o \
@@ -167,6 +165,19 @@ pvrsrvkm-y += \
 	generated/rgxsignals_bridge/server_rgxsignals_bridge.o \
 	generated/devicememhistory_bridge/server_devicememhistory_bridge.o \
 	generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
+
+ifeq ($(CONFIG_SYNC_FILE),y)
+	pvrsrvkm-y += \
+		kernel/drivers/staging/imgtec/pvr_sync_file.o \
+		kernel/drivers/staging/imgtec/pvr_counting_timeline.o \
+		kernel/drivers/staging/imgtec/pvr_sw_fence.o \
+		kernel/drivers/staging/imgtec/pvr_fence.o \
+		services/server/env/linux/dma_fence_sync_native_server.o
+else
+	pvrsrvkm-y += \
+		services/server/env/linux/sync_native_server.o \
+		kernel/drivers/staging/imgtec/pvr_sync2.o
+endif
 
 pvrsrvkm-$(CONFIG_ARM) += services/server/env/linux/osfunc_arm.o
 pvrsrvkm-$(CONFIG_ARM64) += services/server/env/linux/osfunc_arm64.o
