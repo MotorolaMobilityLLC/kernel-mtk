@@ -366,16 +366,16 @@ int SMI_MET_type_check(unsigned int parallel_mode, struct met_smi_conf *met_smi_
 {
 	int ret = 0;
 
+	if (!met_smi_config) {
+		met_smi_debug("met_smi_config object is NULL\n");
+		return -1;
+	}
+
 	SMI_MET_KERNEL_MSG("master=%d, reqtype=%d, desttype=%d, port=%d:%d:%d:%d:, rwtype=%d:%d:%d:%d\n",
 		 met_smi_config->master, met_smi_config->reqtype, met_smi_config->desttype,
 		 met_smi_config->port[0], met_smi_config->port[1], met_smi_config->port[2],
 		 met_smi_config->port[3], met_smi_config->rwtype[0], met_smi_config->rwtype[1],
 		 met_smi_config->rwtype[2], met_smi_config->rwtype[3]);
-
-	if (!met_smi_config) {
-		met_smi_debug("met_smi_config object is NULL\n");
-		return -1;
-	}
 
 	if (parallel_mode != 0 && parallel_mode != 1) {
 		met_smi_debug("parallel_mode is not available");
