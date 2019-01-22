@@ -246,6 +246,14 @@ struct eem_devinfo {
 	unsigned int CPU_L_DCMDET:8;
 };
 
+struct eem_bininfo {
+	/* M_HW_RES0 0x11f1_05BC */
+	unsigned int TURBO_REV1:17;
+	unsigned int GPU_OPP1_T_BIN:3;
+	unsigned int GPU_OPP0_T_BIN:3;
+	unsigned int CPU_T_BIN:3;
+	unsigned int TURBO_REV2:6;
+};
 /*********************************************
 *extern variables defined at mtk_eem.c
 *********************************************

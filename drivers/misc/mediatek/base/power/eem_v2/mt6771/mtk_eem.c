@@ -102,6 +102,7 @@ struct task_struct *threadStress;
 static unsigned int ctrl_EEM_Enable = 1;
 /* Get time stmp to known the time period */
 static unsigned long long eem_pTime_us, eem_cTime_us, eem_diff_us;
+static unsigned int turbocode;
 
 /* for setting pmic pwm mode and auto mode */
 struct regulator *eem_regulator_vproc1;
@@ -121,6 +122,7 @@ int release_cpu4;
 DEFINE_MUTEX(record_mutex);
 static struct eem_devinfo eem_devinfo;
 static struct hrtimer eem_log_timer;
+static struct eem_bininfo turbo_bininfo;
 static DEFINE_SPINLOCK(eem_spinlock);
 DEFINE_SPINLOCK(record_spinlock);
 
@@ -171,6 +173,13 @@ static struct pi_efuse_index pi_efuse_idx[] = {
 
 /* Global variable for slow idle*/
 unsigned int ptp_data[3] = {0, 0, 0};
+
+/* turbo volt bin */
+unsigned int cpu_t_volt[4] = {105000, 103750, 102500, 101250};
+unsigned int gpu_opp0_t_volt[5] = {90000, 89375, 88750, 88125, 87500};
+unsigned int gpu_opp1_t_volt[5] = {86250, 85625, 85000, 84375, 83750};
+
+
 #ifdef CONFIG_OF
 void __iomem *eem_base;
 static u32 eem_irq_number;
@@ -303,7 +312,7 @@ static int get_devinfo(void)
 		if (val[i] == 0) {
 			ret = 1;
 			eem_checkEfuse = 0;
-			eem_error("No EEM EFUSE available, will turn off EEM (val[%d] !!\n", i);
+			eem_error("No EEM EFUSE available, will turn off EEM (val[%d]) !!\n", i);
 			for_each_det(det)
 				det->disabled = 1;
 			break;
@@ -314,6 +323,36 @@ static int get_devinfo(void)
 	eem_checkEfuse = 1;
 #endif
 
+	turbocode = (get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 3) & 0x1;
+	if (turbocode) {
+		((int *)&turbo_bininfo)[0] = get_devinfo_with_index(TURBO_BIN_CODE_IDX_0);
+
+		if ((turbo_bininfo.CPU_T_BIN >= 1) && (turbo_bininfo.CPU_T_BIN <= 4))
+			turbo_bininfo.CPU_T_BIN -= 1;
+		else
+			turbo_bininfo.CPU_T_BIN = 0;
+
+		if ((turbo_bininfo.GPU_OPP0_T_BIN >= 1) && (turbo_bininfo.GPU_OPP0_T_BIN <= 5))
+			turbo_bininfo.GPU_OPP0_T_BIN -= 1;
+		else
+			turbo_bininfo.GPU_OPP0_T_BIN = 0;
+
+		if ((turbo_bininfo.GPU_OPP1_T_BIN >= 1) && (turbo_bininfo.GPU_OPP1_T_BIN <= 5))
+			turbo_bininfo.GPU_OPP1_T_BIN -= 1;
+		else
+			turbo_bininfo.GPU_OPP1_T_BIN = 0;
+	}
+
+#ifdef CONFIG_EEM_AEE_RR_REC
+	aee_rr_rec_ptp_devinfo_1(turbocode || (turbo_bininfo.CPU_T_BIN >> 1) ||
+		(turbo_bininfo.GPU_OPP0_T_BIN >> 4) || (turbo_bininfo.GPU_OPP1_T_BIN >> 7));
+
+#if 0
+	eem_error("t:%d, tbin:%d, g0bin:%d, g1bin:%d, bin data: 0x%x",
+		turbocode, (turbo_bininfo.CPU_T_BIN), (turbo_bininfo.GPU_OPP0_T_BIN),
+		(turbo_bininfo.GPU_OPP1_T_BIN), get_devinfo_with_index(TURBO_BIN_CODE_IDX_0));
+#endif
+#endif
 	FUNC_EXIT(FUNC_LV_HELP);
 	return ret;
 }
@@ -1297,7 +1336,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->features = FEA_INIT01 | FEA_INIT02;
 
 		if (eem_devinfo.FT_PGM <= 3)
-			det->volt_offset = MARGIN_ADD_OFF_VER3;
+			det->volt_offset = MARGIN_2L_ADD_OFF_VER3;
 		break;
 
 	case EEM_DET_L:
@@ -1312,10 +1351,9 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->features = FEA_INIT01 | FEA_INIT02;
 
 		if (eem_devinfo.FT_PGM <= 3)
-			det->volt_offset = MARGIN_ADD_OFF_VER3;
+			det->volt_offset = MARGIN_L_ADD_OFF_VER3;
 		else
 			det->volt_offset = MARGIN_ADD_OFF_VER4;
-
 		break;
 #endif
 #if ENABLE_LOO
@@ -1367,7 +1405,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->features = FEA_INIT01 | FEA_INIT02;
 
 		if (eem_devinfo.FT_PGM <= 3)
-			det->volt_offset = MARGIN_ADD_OFF_VER3;
+			det->volt_offset = MARGIN_2L_ADD_OFF_VER3;
 
 		break;
 #endif
@@ -1448,13 +1486,14 @@ static void eem_update_init2_volt_to_upower(struct eem_det *det, unsigned int *p
 static void eem_set_eem_volt(struct eem_det *det)
 {
 #if SET_PMIC_VOLT
-	unsigned i;
+	unsigned int i;
 	int low_temp_offset = 0;
 	struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
 #if ENABLE_LOO
 	struct eem_det *org_det = det;
 	unsigned int init2chk = 0;
 #endif
+	unsigned int tmp_clamp_val;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 #if ENABLE_LOO
@@ -1517,14 +1556,25 @@ static void eem_set_eem_volt(struct eem_det *det)
 			break;
 
 		case EEM_CTRL_L:
-			det->volt_tbl_pmic[i] = min(
-			(unsigned int)(clamp(
-				det->ops->eem_2_pmic(det,
-					(det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
-				det->ops->eem_2_pmic(det, det->VMIN),
-				det->ops->eem_2_pmic(det, det->VMAX))),
-				det->volt_tbl_orig[i]);
+			tmp_clamp_val = det->volt_tbl_orig[i] + MARGIN_ADD_OFF_VER4;
+			if (tmp_clamp_val > LCPU_VMAX1050_PMIC_VAL)
+				tmp_clamp_val = LCPU_VMAX1050_PMIC_VAL;
 
+			if ((turbocode == 1) && (i == 0))
+				det->volt_tbl_pmic[i] = det->ops->volt_2_pmic(det, cpu_t_volt[turbo_bininfo.CPU_T_BIN]);
+			else
+				det->volt_tbl_pmic[i] = min(
+				(unsigned int)(clamp(
+					det->ops->eem_2_pmic(det,
+						(det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
+					det->ops->eem_2_pmic(det, det->VMIN),
+					det->ops->eem_2_pmic(det, det->VMAX))),
+					tmp_clamp_val);
+
+			if ((turbocode == 1) && (i == 1)) {
+				if (det->volt_tbl_pmic[1] > det->volt_tbl_pmic[0])
+					det->volt_tbl_pmic[0] = det->volt_tbl_pmic[1];
+			}
 #if 0
 			if (eem_log_en)
 				eem_debug("L->hw_v[%d]=0x%X, V(%d)L(%d) volt_tbl_pmic[%d]=0x%X (%d)\n",
@@ -1544,12 +1594,20 @@ static void eem_set_eem_volt(struct eem_det *det)
 			break;
 
 		case EEM_CTRL_GPU:
-			det->volt_tbl_pmic[i] = min(
-			(unsigned int)(clamp(
-				det->ops->eem_2_pmic(det, (det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
-				det->ops->eem_2_pmic(det, det->VMIN),
-				det->ops->eem_2_pmic(det, det->VMAX))),
-				det->volt_tbl_orig[i]);
+			if ((turbocode == 1) && (i == 0))
+				det->volt_tbl_pmic[i] = det->ops->volt_2_pmic(
+					det, gpu_opp0_t_volt[turbo_bininfo.GPU_OPP0_T_BIN]);
+			else if ((turbocode == 1) && (i == 1))
+				det->volt_tbl_pmic[i] = det->ops->volt_2_pmic(
+					det, gpu_opp1_t_volt[turbo_bininfo.GPU_OPP1_T_BIN]);
+			else
+				det->volt_tbl_pmic[i] = min(
+				(unsigned int)(clamp(
+					det->ops->eem_2_pmic(det,
+						(det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
+					det->ops->eem_2_pmic(det, det->VMIN),
+					det->ops->eem_2_pmic(det, det->VMAX))),
+					det->volt_tbl_orig[i]);
 			break;
 
 		default:
