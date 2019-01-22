@@ -1900,7 +1900,7 @@ static void mtk_handle_tcp_event_result(
 		.event_id = TCP_DPM_EVT_HARD_RESET,
 	};
 
-	if (ret == TCPM_SUCCESS)
+	if (ret == TCPM_SUCCESS || ret == TCP_DPM_RET_NOT_SUPPORT)
 		return;
 
 	if (event->event_id == TCP_DPM_EVT_GET_STATUS
