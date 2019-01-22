@@ -604,7 +604,7 @@ static void fbt_do_jerk(struct work_struct *work)
 
 				if (blc_wt) {
 					fbt_set_boost_value(blc_wt);
-					fpsgo_systrace_c_fbt(thr->pid, blc_wt, "real perf_idx", cluster);
+					fpsgo_systrace_c_fbt(thr->pid, blc_wt, "real perf_idx");
 
 					update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
 					for (cluster = 0 ; cluster < cluster_num; cluster++) {
@@ -911,7 +911,7 @@ static void fbt_do_boost(int *clus_opp, unsigned int *clus_floor_freq, int pid)
 	final_blc = clamp(final_blc, 1U, 100U);
 
 	fbt_set_boost_value(final_blc);
-	fpsgo_systrace_c_fbt(pid, final_blc, "real perf_idx", cluster);
+	fpsgo_systrace_c_fbt(pid, final_blc, "real perf_idx");
 
 	if (bypass_flag == 0)
 		update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
@@ -1487,7 +1487,7 @@ void fpsgo_comp2fbt_frame_complete(struct render_info *thr, unsigned long long t
 		memset(base_freq, 0, cluster_num * sizeof(unsigned int));
 		xgf_trace("max_blc %d, max_blc_pid %d", max_blc, max_blc_pid);
 		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
-		fpsgo_systrace_c_fbt(thr->pid, 0, "real perf_idx", 0);
+		fpsgo_systrace_c_fbt(thr->pid, 0, "real perf_idx");
 		fbt_free_bhr();
 		if (bypass_flag == 0)
 			fbt_set_idleprefer_locked(0);
