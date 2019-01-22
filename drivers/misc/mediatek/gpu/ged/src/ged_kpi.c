@@ -72,6 +72,7 @@ typedef enum {
 	GED_TIMESTAMP_TYPE_S		= 0x8,
 	GED_TIMESTAMP_TYPE_P		= 0x10,
 	GED_TIMESTAMP_TYPE_H		= 0x20,
+	GED_SET_TARGET_FPS			= 0x40
 } GED_TIMESTAMP_TYPE;
 
 #ifdef GED_KPI_DFRC
@@ -1048,6 +1049,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 	GED_KPI *psKPI = NULL;
 	u64 ulID;
 	unsigned long long phead_last1;
+	int target_FPS;
 
 #ifdef GED_KPI_DEBUG
 	GED_LOGE("[GED_KPI] ts type = %d, pid = %d, wnd = %llu, frame = %lu\n",
@@ -1451,6 +1453,21 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 		}
 #endif
 		break;
+	case GED_SET_TARGET_FPS:
+
+		target_FPS = psTimeStamp->i32FrameID;
+		ulID = psTimeStamp->ullWnd;
+
+		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
+		if (psHead) {
+			ged_kpi_update_target_time_and_target_fps(psHead,
+				target_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
+		}
+#ifdef GED_KPI_DEBUG
+		else
+			GED_LOGE("%s: no such renderer for BQ_ID: %llu\n", __func__, ulID);
+#endif
+		break;
 	default:
 		break;
 	}
@@ -1532,6 +1549,8 @@ static GED_ERROR ged_kpi_push_timestamp(
 			ged_log_trace_counter("GED_KPI_HW_Vsync", event_hw_vsync);
 			event_hw_vsync++;
 			event_hw_vsync %= 2;
+			break;
+		case GED_SET_TARGET_FPS:
 			break;
 		}
 	}
@@ -1732,15 +1751,6 @@ GED_ERROR ged_kpi_hw_vsync(void)
 	return ged_kpi_push_timestamp(GED_TIMESTAMP_TYPE_H, ged_get_time(), 0, 0, 0, 0, 0, NULL);
 #else
 	return GED_OK;
-#endif
-}
-/* ----------------------------------------------------------------------------- */
-GED_BOOL ged_kpi_set_target_fps(unsigned int target_fps, int mode)
-{
-#ifdef MTK_GED_KPI
-	return ged_kpi_update_target_time_and_target_fps(main_head, target_fps, mode, -1);
-#else
-	return GED_FALSE;
 #endif
 }
 /* ----------------------------------------------------------------------------- */
@@ -1953,16 +1963,7 @@ void ged_kpi_set_game_hint(int mode)
 /* ----------------------------------------------------------------------------- */
 void ged_kpi_set_target_FPS(u64 ulID, int target_FPS)
 {
-	GED_KPI_HEAD *psHead;
-
-	psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, (unsigned long)ulID);
-	if (psHead) {
-		ged_kpi_update_target_time_and_target_fps(psHead,
-			target_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
-	}
-#ifdef GED_KPI_DEBUG
-	else
-		GED_LOGE("%s: no such renderer for BQ_ID: %llu\n", __func__, ulID);
-#endif
+	ged_kpi_push_timestamp(GED_SET_TARGET_FPS, 0, -1,
+							ulID, target_FPS, -1, -1, NULL);
 }
 EXPORT_SYMBOL(ged_kpi_set_target_FPS);
