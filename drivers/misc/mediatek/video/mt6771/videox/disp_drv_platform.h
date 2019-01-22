@@ -37,11 +37,11 @@
 #endif
 
 /* Wrap SPM/MMDVFS code for early porting */
-/* #define MTK_FB_SPM_SUPPORT */
+#define MTK_FB_SPM_SUPPORT
 /* #define MTK_FB_MMDVFS_SUPPORT */
-/* #define MTK_FB_SHARE_WDMA0_SUPPORT */
+#define MTK_FB_SHARE_WDMA0_SUPPORT
 
-/* #define SUPPORT_MMPROFILE */
+#define SUPPORT_MMPROFILE
 #define MTK_FB_ION_SUPPORT
 /* #define FPGA_DEBUG_PAN */
 #define MTKFB_M4U_SUPPORT
@@ -72,7 +72,7 @@ enum DISP_SESSION_ENUM {
 #define FBCONFIG_SHOULD_KICK_IDLEMGR
 
 /* Other platform-dependent features */
-/* #define DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT */
+#define DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
 /* #define DISP_PLATFORM_HAS_SHADOW_REG */
 
 #endif				/* __DISP_DRV_PLATFORM_H__ */
