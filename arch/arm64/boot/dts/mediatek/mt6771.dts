@@ -2336,6 +2336,23 @@
 		compatible = "mediatek,camsys", "syscon";
 		reg = <0 0x1a000000 0 0x1000>;
 		#clock-cells = <1>;
+		/* Camera CCF */
+		clocks = <&scpsys SCP_SYS_DIS>,
+				<&scpsys SCP_SYS_ISP>,
+				<&scpsys SCP_SYS_CAM>,
+				<&camsys CAMSYS_CAM_CGPDN>,
+				<&camsys CAMSYS_CAMTG_CGPDN>,
+				<&camsys CAMSYS_CAMSV0_CGPDN>,
+				<&camsys CAMSYS_CAMSV1_CGPDN>,
+				<&camsys CAMSYS_CAMSV2_CGPDN>;
+		clock-names = "ISP_SCP_SYS_DIS",
+				"ISP_SCP_SYS_ISP",
+				"ISP_SCP_SYS_CAM",
+				"CAMSYS_CAM_CGPDN",
+				"CAMSYS_CAMTG_CGPDN",
+				"CAMSYS_CAMSV0_CGPDN",
+				"CAMSYS_CAMSV1_CGPDN",
+				"CAMSYS_CAMSV2_CGPDN";
 	};
 
 	ipu_conn: ipu_conn@19000000 {

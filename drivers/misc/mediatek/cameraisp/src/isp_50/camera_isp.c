@@ -47,12 +47,12 @@
 
 #define EP_STAGE
 #ifdef EP_STAGE
-#define EP_MARK_SMI                   /* disable SMI related for EP */
 #if 0
+#define EP_MARK_SMI                   /* disable SMI related for EP */
 #define DUMMY_INT                       /* For early if load dont need to use camera*/
-#endif
-#define EP_NO_CLKMGR                /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
 #define EP_NO_PMQOS                  /* If PMQoS is not ready on EP stage */
+#define EP_NO_CLKMGR                /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
+#endif
 #define EP_NO_K_LOG_ADJUST    /* EP no need to adjust upper bound of kernel log count */
 #endif
 
@@ -303,7 +303,7 @@ static struct IspWorkqueTable isp_workque[ISP_IRQ_TYPE_AMOUNT] = {
 
 #include <linux/clk.h>
 struct ISP_CLK_STRUCT {
-	struct clk *ISP_SCP_SYS_MM0;
+	struct clk *ISP_SCP_SYS_DIS;
 	struct clk *ISP_SCP_SYS_ISP;
 	struct clk *ISP_SCP_SYS_CAM;
 	struct clk *ISP_CAM_CAMSYS;
@@ -389,7 +389,7 @@ static atomic_t G_u4DevNodeCt;
 int pr_detect_count;
 
 /*save ion fd*/
-/* #define ENABLE_KEEP_ION_HANDLE */
+#define ENABLE_KEEP_ION_HANDLE
 
 #ifdef ENABLE_KEEP_ION_HANDLE
 #define _ion_keep_max_   (64)/*32*/
@@ -1025,9 +1025,9 @@ static inline void Prepare_Enable_ccf_clock(void)
 	smi_bus_enable(SMI_LARB3, ISP_DEV_NAME);
 	#endif
 
-	ret = clk_prepare_enable(isp_clk.ISP_SCP_SYS_MM0);
+	ret = clk_prepare_enable(isp_clk.ISP_SCP_SYS_DIS);
 	if (ret)
-		LOG_NOTICE("cannot pre-en ISP_SCP_SYS_MM0 clock\n");
+		LOG_NOTICE("cannot pre-en ISP_SCP_SYS_DIS clock\n");
 
 	ret = clk_prepare_enable(isp_clk.ISP_SCP_SYS_ISP);
 	if (ret)
@@ -1069,7 +1069,7 @@ static inline void Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSYS);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_CAM);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_ISP);
-	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_MM0);
+	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_DIS);
 
 	#ifndef EP_MARK_SMI
 	LOG_INF("disable CG/MTCMOS through SMI CLK API\n");
@@ -2140,6 +2140,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	struct ion_handle *p_IonHnd;
 	#endif
 
+	struct ISP_CLK_INFO ispclks;
+	u32 lv = 0;
+
 	/*  */
 	if (pFile->private_data == NULL) {
 		LOG_NOTICE("private_data is NULL,(process, pid, tgid)=(%s, %d, %d)\n",
@@ -2572,8 +2575,18 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 #ifdef EP_NO_PMQOS
 	case ISP_DFS_CTRL:
 	case ISP_DFS_UPDATE:
-	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 	case ISP_GET_CUR_ISP_CLOCK:
+		break;
+	case ISP_GET_SUPPORTED_ISP_CLOCKS:
+
+		/* Set a default clk for EP */
+		ispclks.clklevel[lv] = 364;
+		LOG_VRB("Default DFS Clk level:%d for EP", ispclks.clklevel[lv]);
+
+		if (copy_to_user((void *)Param, &ispclks, sizeof(struct ISP_CLK_INFO)) != 0) {
+			LOG_NOTICE("copy_to_user failed");
+			Ret = -EFAULT;
+		}
 		break;
 #else
 	case ISP_DFS_CTRL:
@@ -2616,8 +2629,11 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		/* To get how many clk levels this platform is supported */
 		ispclks.clklevelcnt = mmdvfs_qos_get_thres_count(&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA);
 
-		if (ispclks.clklevelcnt > ISP_CLK_LEVEL_CNT)
+		if (ispclks.clklevelcnt > ISP_CLK_LEVEL_CNT) {
 			LOG_NOTICE("clklevelcnt is exceeded");
+			Ret = -EFAULT;
+			break;
+		}
 
 		for (; lv < ispclks.clklevelcnt; lv++) {
 			/* To get all clk level on this platform */
@@ -3938,19 +3954,18 @@ static int ISP_probe(struct platform_device *pDev)
 		#endif
 
 #ifndef EP_NO_CLKMGR /* CCF */
-		isp_clk.ISP_SCP_SYS_MM0 = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_MM0");
+		isp_clk.ISP_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_DIS");
 		isp_clk.ISP_SCP_SYS_ISP = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_ISP");
 		isp_clk.ISP_SCP_SYS_CAM = devm_clk_get(&pDev->dev, "ISP_SCP_SYS_CAM");
-		isp_clk.ISP_CAM_CAMSYS = devm_clk_get(&pDev->dev, "ISP_CLK_CAM");
-		isp_clk.ISP_CAM_CAMTG = devm_clk_get(&pDev->dev, "ISP_CLK_CAMTG");
+		isp_clk.ISP_CAM_CAMSYS = devm_clk_get(&pDev->dev, "CAMSYS_CAM_CGPDN");
+		isp_clk.ISP_CAM_CAMTG = devm_clk_get(&pDev->dev, "CAMSYS_CAMTG_CGPDN");
+		isp_clk.ISP_CAM_CAMSV0 = devm_clk_get(&pDev->dev, "CAMSYS_CAMSV0_CGPDN");
+		isp_clk.ISP_CAM_CAMSV1 = devm_clk_get(&pDev->dev, "CAMSYS_CAMSV1_CGPDN");
+		isp_clk.ISP_CAM_CAMSV2 = devm_clk_get(&pDev->dev, "CAMSYS_CAMSV2_CGPDN");
 
-		isp_clk.ISP_CAM_CAMSV0 = devm_clk_get(&pDev->dev, "ISP_CLK_CAMSV0");
-		isp_clk.ISP_CAM_CAMSV1 = devm_clk_get(&pDev->dev, "ISP_CLK_CAMSV1");
-		isp_clk.ISP_CAM_CAMSV2 = devm_clk_get(&pDev->dev, "ISP_CLK_CAMSV2");
-
-		if (IS_ERR(isp_clk.ISP_SCP_SYS_MM0)) {
-			LOG_NOTICE("cannot get ISP_SCP_SYS_MM0 clock\n");
-			return PTR_ERR(isp_clk.ISP_SCP_SYS_MM0);
+		if (IS_ERR(isp_clk.ISP_SCP_SYS_DIS)) {
+			LOG_NOTICE("cannot get ISP_SCP_SYS_DIS clock\n");
+			return PTR_ERR(isp_clk.ISP_SCP_SYS_DIS);
 		}
 		if (IS_ERR(isp_clk.ISP_SCP_SYS_ISP)) {
 			LOG_NOTICE("cannot get ISP_SCP_SYS_ISP clock\n");
