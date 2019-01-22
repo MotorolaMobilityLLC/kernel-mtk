@@ -1841,6 +1841,9 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 	INT32 i = 0;
 	UINT32 value = 0x0;
 	ENUM_WMT_CHIP_TYPE chip_type;
+	UINT8 cccr_value = 0x0;
+	INT32 chip_id = -1;
+	INT32 i_ret = 0;
 
 	if (!g_stp_dbg_cpupcr) {
 		STP_DBG_ERR_FUNC("NULL reference pointer\n");
@@ -1923,6 +1926,20 @@ INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
 				stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR1));
 		STP_DBG_INFO_FUNC("CONNSYS debug cr2 0x1807040c:0x%08x\n",
 				stp_dbg_soc_read_debug_crs(CONNSYS_DEBUG_CR2));
+	}
+
+	chip_id = mtk_wcn_wmt_chipid_query();
+	if (chip_id == 0x6632) {
+		for (i = 0; i < 8; i++) {
+			i_ret = mtk_wcn_hif_sdio_f0_readb(g_stp_sdio_host_info.sdio_cltctx,
+									       CCCR_F8 + i, &cccr_value);
+			if (i_ret)
+				STP_DBG_ERR_FUNC("read CCCR fail(%d), address(0x%x)\n", i_ret, CCCR_F8 + i);
+			else
+				STP_DBG_INFO_FUNC("read CCCR value(0x%x), address(0x%x)\n",
+								    cccr_value, CCCR_F8 + i);
+			cccr_value = 0x0;
+		}
 	}
 
 	return 0;
