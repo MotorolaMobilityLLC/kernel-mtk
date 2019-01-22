@@ -110,6 +110,7 @@
  /* ============================================================ // */
 unsigned int g_bcct_flag;
 CHR_CURRENT_ENUM g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
+CHR_CURRENT_ENUM g_temp_bcct_CC_value = CHARGE_CURRENT_0_00_MA;
 unsigned int g_usb_state = USB_UNCONFIGURED;
 unsigned int charging_full_current;	/* = CHARGING_FULL_CURRENT; *//* mA */
 unsigned int v_cc2topoff_threshold;	/* = V_CC2TOPOFF_THRES; */
@@ -789,7 +790,10 @@ void set_usb_current_unlimited(bool enable)
 
 void select_charging_curret_bcct(void)
 {
-	/* done on set_bat_charging_current_limit */
+	battery_log(BAT_LOG_FULL, "[BATTERY]bcct_CC_value : %d CC_value : %d\r\n",
+			g_temp_bcct_CC_value, g_temp_CC_value);
+	if (g_temp_bcct_CC_value < g_temp_CC_value)
+		g_temp_CC_value = g_temp_bcct_CC_value;
 }
 
 
@@ -840,16 +844,7 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 		else
 			g_temp_CC_value = CHARGE_CURRENT_450_00_MA;
 
-		if (BMT_status.charger_type == STANDARD_HOST)
-			if ((current_limit * 100) >= CHARGE_CURRENT_500_00_MA) {
-				g_temp_CC_value = USB_CHARGER_CURRENT;
-				battery_log(BAT_LOG_CRTI,
-		"[BATTERY] set_bat_charging_current_limit over usb spec(%d,%d)\r\n",
-				current_limit * 100, g_temp_CC_value);
-			}
-
-
-
+		g_temp_bcct_CC_value = g_temp_CC_value;
 	} else {
 		/* change to default current setting */
 		g_bcct_flag = 0;
