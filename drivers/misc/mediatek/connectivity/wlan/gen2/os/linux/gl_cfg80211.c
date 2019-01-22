@@ -101,6 +101,8 @@ mtk_cfg80211_change_iface(struct wiphy *wiphy,
 	ENUM_PARAM_OP_MODE_T eOpMode;
 	UINT_32 u4BufLen;
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
@@ -153,6 +155,8 @@ mtk_cfg80211_add_key(struct wiphy *wiphy,
 	UINT_32 u4BufLen = 0;
 	UINT_8 tmp1[8];
 	UINT_8 tmp2[8];
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -257,6 +261,8 @@ int mtk_cfg80211_del_key(struct wiphy *wiphy, struct net_device *ndev, u8 key_in
 	UINT_32 u4BufLen = 0;
 	INT_32 i4Rslt = -EINVAL;
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
@@ -350,6 +356,8 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 	UINT_32 u8diffTxBad, u8diffRetry;
 	INT_32 i4Rssi = 0;
 	PARAM_802_11_STATISTICS_STRUCT_T rStatistics;
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -724,7 +732,7 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
-	DBGLOG(REQ, TRACE, "mtk_cfg80211_scan\n");
+	DBGLOG(REQ, INFO, "mtk_cfg80211_scan\n");
 	kalMemZero(&rScanRequest, sizeof(PARAM_SCAN_REQUEST_EXT_T));
 
 	/* check if there is any pending scan not yet finished */
@@ -811,7 +819,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
-	DBGLOG(REQ, TRACE, "[wlan] mtk_cfg80211_connect %p %zu\n", sme->ie, sme->ie_len);
+	DBGLOG(REQ, INFO, "[wlan] mtk_cfg80211_connect %p %zu\n", sme->ie, sme->ie_len);
 	prConnSettings = &prGlueInfo->prAdapter->rWifiVar.rConnSettings;
 
 	if (prGlueInfo->prAdapter->rWifiVar.rConnSettings.eOPMode > NET_TYPE_AUTO_SWITCH)
@@ -1134,6 +1142,8 @@ int mtk_cfg80211_disconnect(struct wiphy *wiphy, struct net_device *ndev, u16 re
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
@@ -1165,6 +1175,8 @@ int mtk_cfg80211_join_ibss(struct wiphy *wiphy, struct net_device *ndev, struct 
 	UINT_32 u4BufLen = 0;
 	WLAN_STATUS rStatus;
 	struct ieee80211_channel *channel = NULL;
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -1213,6 +1225,8 @@ int mtk_cfg80211_leave_ibss(struct wiphy *wiphy, struct net_device *ndev)
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
@@ -1243,6 +1257,8 @@ int mtk_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *ndev, bo
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 	PARAM_POWER_MODE ePowerMode;
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -1285,6 +1301,8 @@ int mtk_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *ndev, struct 
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 	P_PARAM_PMKID_T prPmkid;
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -1344,6 +1362,8 @@ int mtk_cfg80211_flush_pmksa(struct wiphy *wiphy, struct net_device *ndev)
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 	P_PARAM_PMKID_T prPmkid;
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -1469,7 +1489,7 @@ int mtk_cfg80211_remain_on_channel(struct wiphy *wiphy,
 		ASSERT(prGlueInfo);
 
 #if 1
-		DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
+		DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 #endif
 
 		*cookie = prGlueInfo->u8Cookie++;
@@ -1536,7 +1556,7 @@ int mtk_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy,
 		ASSERT(prGlueInfo);
 
 #if 1
-		DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
+		DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 #endif
 
 		prMsgChnlAbort =
@@ -1583,7 +1603,7 @@ mtk_cfg80211_mgmt_tx(struct wiphy *wiphy,
 
 	do {
 #if 1
-		DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
+		DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 #endif
 
 		if ((wiphy == NULL) || (wdev == NULL) || (params == 0) || (cookie == NULL))
@@ -1685,6 +1705,8 @@ mtk_cfg80211_sched_scan_start(IN struct wiphy *wiphy,
 	UINT_32 i, u4BufLen;
 	P_PARAM_SCHED_SCAN_REQUEST prSchedScanRequest;
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 
 	ASSERT(prGlueInfo);
@@ -1749,6 +1771,8 @@ int mtk_cfg80211_sched_scan_stop(IN struct wiphy *wiphy, IN struct net_device *n
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
@@ -1797,6 +1821,8 @@ int mtk_cfg80211_assoc(struct wiphy *wiphy, struct net_device *ndev, struct cfg8
 #endif
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
@@ -1902,7 +1928,7 @@ int mtk_cfg80211_testmode_set_key_ext(IN struct wiphy *wiphy, IN void *data, IN 
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 
-	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	if (data && len) {
 		prParams = (P_NL80211_DRIVER_SET_KEY_EXTS) data;
@@ -1986,6 +2012,8 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 
 	ASSERT(wiphy);
 	ASSERT(prGlueInfo);
+
+	DBGLOG(QM, INFO, "--> %s()\n", __func__);
 
 	if (data && len) {
 		prParams = (P_NL80211_DRIVER_GET_STA_STATISTICS_PARAMS) data;
@@ -2414,6 +2442,8 @@ mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, 
 	ASSERT(wiphy);
 	ASSERT(prGlueInfo);
 
+	DBGLOG(QM, INFO, "--> %s()\n", __func__);
+
 	skb = cfg80211_testmode_alloc_reply_skb(wiphy, sizeof(PARAM_GET_STA_STA_STATISTICS) + 1);
 
 	if (!skb) {
@@ -2498,6 +2528,8 @@ int mtk_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN int l
 	int fgIsValid = 0;
 	UINT_32 u4SetInfoLen = 0;
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	ASSERT(wiphy);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
@@ -2534,7 +2566,7 @@ int mtk_cfg80211_testmode_hs20_cmd(IN struct wiphy *wiphy, IN void *data, IN int
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 
-	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	if (data && len) {
 		prParams = (struct wpa_driver_hs20_data_s *)data;
@@ -2584,6 +2616,8 @@ int mtk_cfg80211_testmode_set_poorlink_param(IN struct wiphy *wiphy, IN void *da
 	ASSERT(wiphy);
 	ASSERT(prGlueInfo);
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	if (data && len) {
 		prParams = (P_NL80211_DRIVER_POORLINK_PARAMS) data;
 	} else {
@@ -2610,6 +2644,8 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	P_NL80211_DRIVER_TEST_MODE_PARAMS prParams = NULL;
 	INT_32 i4Status = -EINVAL;
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
 
 	ASSERT(wiphy);
 
@@ -2666,6 +2702,11 @@ int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wd
 		i4Status = mtk_cfg80211_testmode_hs20_cmd(wiphy, data, len);
 		break;
 #endif
+	case TESTMODE_CMD_ID_STR_CMD:
+		i4Status = mtk_cfg80211_process_str_cmd(prGlueInfo,
+				(PUINT_8)(prParams+1), len - sizeof(*prParams));
+		break;
+
 	default:
 		i4Status = -EINVAL;
 		break;
@@ -2688,6 +2729,8 @@ int mtk_cfg80211_testmode_get_scan_done(IN struct wiphy *wiphy, IN void *data, I
 
 	ASSERT(wiphy);
 	ASSERT(prGlueInfo);
+
+	DBGLOG(QM, INFO, "--> %s()\n", __func__);
 
 	skb = cfg80211_testmode_alloc_reply_skb(wiphy, sizeof(UINT_32));
 	READY_TO_BEAM =
@@ -2746,6 +2789,8 @@ int	mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
 	if (kalHaltTryLock())
 		return 0;
 
@@ -2778,6 +2823,8 @@ int mtk_cfg80211_resume(struct wiphy *wiphy)
 	P_ADAPTER_T prAdapter = NULL;
 	UINT_8 i = 0;
 
+	DBGLOG(SCN, INFO, "--> %s()\n", __func__);
+
 	if (kalHaltTryLock())
 		return 0;
 
@@ -2806,3 +2853,30 @@ end:
 	kalHaltUnlock();
 	return 0;
 }
+
+INT_32 mtk_cfg80211_process_str_cmd(P_GLUE_INFO_T prGlueInfo, PUINT_8 cmd, INT_32 len)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	UINT_32 u4SetInfoLen = 0;
+
+	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+
+	if (kalStrniCmp(cmd, "tdls-ps ", 8) == 0) {
+#if CFG_SUPPORT_TDLS
+		DBGLOG(TDLS, INFO, "disable tdls-ps\n");
+		rStatus = kalIoctl(prGlueInfo,
+					   wlanoidDisableTdlsPs,
+					   (PVOID)(cmd+8), 1, FALSE, FALSE, TRUE, FALSE, &u4SetInfoLen);
+#else
+		DBGLOG(REQ, WARN, "not support tdls\n");
+		return -EOPNOTSUPP;
+#endif
+	} else
+		return -EOPNOTSUPP;
+
+	if (rStatus == WLAN_STATUS_SUCCESS)
+		return 0;
+
+	return -EINVAL;
+}
+
