@@ -31,7 +31,7 @@
 #include "mtk_battery.h"
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
-#define TCPC_CORE_VERSION		"2.0.6_MTK"
+#define TCPC_CORE_VERSION		"2.0.8_MTK"
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 static struct tcpc_device *tcpc_dev;
@@ -913,6 +913,14 @@ MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
 
 /* Release Version
+ * 2.0.8_MTK
+ * (1) fix timeout thread flow for wakeup pd event thread
+ *     after disable timer first.
+ *
+ * 2.0.7_MTK
+ * (1) add extract pd source capability pdo defined in
+ *     PD30 v1.1 ECN for pe40 get apdo profile.
+ *
  * 2.0.6_MTK
  * (1) register battery notifier for battery plug out
  *     avoid TA hardreset 3 times will show charing icon.
