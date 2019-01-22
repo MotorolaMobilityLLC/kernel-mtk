@@ -110,10 +110,10 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 {
 #define LP_OWN_BACK_TOTAL_DELAY_MS      2000	/* exponential of 2 */
 #define LP_OWN_BACK_LOOP_DELAY_MS       1	/* exponential of 2 */
-#define LP_OWN_BACK_CLR_OWN_ITERATION   256	/* exponential of 2 */
+#define LP_OWN_BACK_CLR_OWN_ITERATION   200	/* exponential of 2 */
 
 	BOOLEAN fgStatus = TRUE;
-	UINT_32 i, u4CurrTick;
+	UINT_32 i, u4CurrTick, u4WriteTick, u4WriteTickTemp;
 	UINT_32 u4RegValue = 0;
 	GL_HIF_INFO_T *HifInfo;
 
@@ -124,6 +124,7 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 	HifInfo = &prAdapter->prGlueInfo->rHifInfo;
 
+	u4WriteTick = 0;
 	u4CurrTick = kalGetTimeTick();
 	STATS_DRIVER_OWN_START_RECORD();
 	i = 0;
@@ -169,8 +170,8 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				DBGLOG(NIC, WARN, "<WiFi> [2]MCR_D2HRM2R = 0x%x, ORI_MCR_D2HRM2R = 0x%x\n",
 					u4RegValue, u4OriRegValue);
 				DBGLOG(NIC, WARN,
-					"<WiFi> Fatal error! Driver own fail!!!!!!!!!!!! %d, fgIsBusAccessFailed: %d\n",
-					u4OwnCnt++, fgIsBusAccessFailed);
+					"<WiFi> Fatal error! Driver own fail!!!!!!!!!!!! %d, fgIsBusAccessFailed: %d,OWN retry:%d\n",
+					u4OwnCnt++, fgIsBusAccessFailed, i);
 
 				DBGLOG(NIC, WARN, "CONNSYS FW CPUINFO:\n");
 				for (u4FwCnt = 0; u4FwCnt < 16; u4FwCnt++)
@@ -181,10 +182,17 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 			}
 			break;
 		}
-		if ((i & (LP_OWN_BACK_CLR_OWN_ITERATION - 1)) == 0) {
-			/* Software get LP ownership - per 256 iterations */
+
+		u4WriteTickTemp = kalGetTimeTick();
+		if (((u4WriteTickTemp - u4WriteTick) > LP_OWN_BACK_CLR_OWN_ITERATION)
+			|| (i == 0)) {
+			/* Software get LP ownership - per  LP_OWN_BACK_CLR_OWN_ITERATION*/
+			DBGLOG(NIC, TRACE, "retry i=%d, write LP_OWN_REQ_CLR cur time %u - %u\n",
+				i, u4WriteTickTemp, u4WriteTick);
 			HAL_MCR_WR(prAdapter, MCR_WHLPCR, WHLPCR_FW_OWN_REQ_CLR);
+			u4WriteTick = u4WriteTickTemp;
 		}
+
 
 		/* Delay for LP engine to complete its operation. */
 		kalMsleep(LP_OWN_BACK_LOOP_DELAY_MS);
@@ -467,3 +475,4 @@ BOOLEAN nicpmSetAcpiPowerD3(IN P_ADAPTER_T prAdapter)
 
 	return TRUE;
 }
+
