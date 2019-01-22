@@ -18,7 +18,7 @@
 #include <linux/slab.h>
 
 #include "mtk_spower_data.h"
-#include "mtk_static_power.h"
+#include "mtk_common_static_power.h"
 
 #define SP_TAG     "[Power/spower] "
 #define SPOWER_LOG_NONE		0
@@ -34,7 +34,6 @@
 #endif
 
 static sptbl_t sptab[MTK_SPOWER_MAX];
-static int mtk_efuse_leakage[MTK_LEAKAGE_MAX];
 
 int interpolate(int x1, int x2, int x3, int y1, int y2)
 {
@@ -179,7 +178,7 @@ int mtk_spower_make_table(sptbl_t *spt, int voltage, int degree, unsigned int id
 		tab[i] = &(all_tab[id]->tab_raw[i]);
 
 	/* get leakage that reads from efuse */
-	wat = mtk_efuse_leakage[tab[0]->leakage_id];
+	wat = spower_lkg_info[tab[0]->leakage_id].value;
 
 	/** lookup tables which the chip type locates to **/
 	for (i = 0; i < spower_raw->table_size; i++) {
@@ -442,6 +441,7 @@ static unsigned int mtSpowerInited;
 int mt_spower_init(void)
 {
 	int i, devinfo = 0;
+	unsigned int temp_lkg;
 	/* Group FF,TT,SS tables of all the banks together */
 	sptbl_list * tab[MTK_SPOWER_MAX];
 
@@ -456,22 +456,17 @@ int mt_spower_init(void)
 		return 0;
 
 	for (i = 0; i < MTK_LEAKAGE_MAX; i++) {
-		devinfo = (int)get_devinfo_with_index(devinfo_idx[i]);
-		mtk_efuse_leakage[i] = (devinfo >> devinfo_offset[i]) & 0xff;
-		SPOWER_INFO("[Efuse] %s => 0x%x\n", leakage_name[i], mtk_efuse_leakage[i]);
-		mtk_efuse_leakage[i] = (int) devinfo_table[mtk_efuse_leakage[i]];
-		SPOWER_INFO("[Efuse Leakage] %s => 0x%x\n", leakage_name[i], mtk_efuse_leakage[i]);
-#if 0
-		if (mtk_efuse_leakage[i] != 0) {
-			mtk_efuse_leakage[i] = (int) devinfo_table[mtk_efuse_leakage[i]];
-			mtk_efuse_leakage[i] = (int) (mtk_efuse_leakage[i] * V_OF_FUSE / 1000);
-		} else {
-			mtk_efuse_leakage[i] = default_leakage[i];
+		devinfo = (int)get_devinfo_with_index(spower_lkg_info[i].devinfo_idx);
+		temp_lkg = (devinfo >> spower_lkg_info[i].devinfo_offset) & 0xff;
+		SPOWER_INFO("[Efuse] %s => 0x%x\n", spower_lkg_info[i].name, temp_lkg);
+		/* if has leakage info in efuse, get the final leakage */
+		/* if no leakage info in efuse, spower_lkg_info[i].value will use default lkg */
+		if (temp_lkg != 0) {
+			temp_lkg = (int) devinfo_table[temp_lkg];
+			spower_lkg_info[i].value = (int) (temp_lkg * V_OF_FUSE / 1000);
 		}
-#else
-		mtk_efuse_leakage[i] = default_leakage[i];
-#endif
-		SPOWER_INFO("[Default Leakage] %s => %d\n", leakage_name[i], mtk_efuse_leakage[i]);
+		SPOWER_INFO("[Efuse Leakage] %s => 0x%x\n", spower_lkg_info[i].name, temp_lkg);
+		SPOWER_INFO("[Final Leakage] %s => %d\n", spower_lkg_info[i].name, spower_lkg_info[i].value);
 	}
 	SPOWER_INFO("spower table construct\n");
 	/** structurize the raw data **/
@@ -529,6 +524,13 @@ EXPORT_SYMBOL(mt_spower_get_leakage);
 
 int mt_spower_get_efuse_lkg(int dev)
 {
+	int id = 0;
+
+	if (dev > MTK_SPOWER_MAX)
+		return 0;
+
+	id = spower_raw[dev].leakage_id;
+#if 0
 	int devinfo = 0, efuse_lkg = 0, efuse_lkg_mw = 0;
 	int leakage_id = spower_raw[dev].leakage_id;
 
@@ -538,6 +540,8 @@ int mt_spower_get_efuse_lkg(int dev)
 					(int) (devinfo_table[efuse_lkg] * V_OF_FUSE / 1000);
 
 	return efuse_lkg_mw;
+#endif
+	return spower_lkg_info[id].value;
 }
 EXPORT_SYMBOL(mt_spower_get_efuse_lkg);
 
