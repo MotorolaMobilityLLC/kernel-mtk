@@ -271,7 +271,7 @@ void mtk_usb_free_sram(int id)
 int gpd_switch_to_sram(struct device *dev)
 {
 	u32 size;
-	TGPD *ptr, *io_ptr;
+	TGPD *ptr = NULL, *io_ptr;
 	int index = ISOC_EP_START_IDX;
 	dma_addr_t dma_handle;
 
