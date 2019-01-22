@@ -78,6 +78,7 @@ struct FPSGO_NOTIFIER_PUSH_TAG {
 static struct mutex notify_lock;
 struct workqueue_struct *g_psNotifyWorkQueue;
 static int fpsgo_enable;
+static int fpsgo_force_onoff;
 
 /* TODO: event register & dispatch */
 static void fpsgo_notifier_wq_cb_dfrc_fps(int dfrc_fps)
@@ -145,10 +146,16 @@ static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend, unsigne
 
 static void fpsgo_notifier_wq_cb_enable(int enable)
 {
-	FPSGO_LOGI("[FPSGO_CB] enable %d, fpsgo_enable %d\n", enable, fpsgo_enable);
+	FPSGO_LOGI("[FPSGO_CB] enable %d, fpsgo_enable %d, force_onoff %d\n",
+		enable, fpsgo_enable, fpsgo_force_onoff);
 
 	mutex_lock(&notify_lock);
 	if (enable == fpsgo_enable) {
+		mutex_unlock(&notify_lock);
+		return;
+	}
+
+	if (fpsgo_force_onoff != FPSGO_FREE && enable != fpsgo_force_onoff) {
 		mutex_unlock(&notify_lock);
 		return;
 	}
@@ -478,7 +485,19 @@ int fpsgo_is_enable(void)
 
 void fpsgo_switch_enable(int enable)
 {
-	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush =
+	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush = NULL;
+
+	if (!g_psNotifyWorkQueue) {
+		FPSGO_LOGE("[FPSGO_CTRL] NULL WorkQueue\n");
+		return;
+	}
+
+	FPSGO_LOGI("[FPSGO_CTRL] switch enable %d\n", enable);
+
+	if (fpsgo_is_force_enable() != FPSGO_FREE && enable != fpsgo_is_force_enable())
+		return;
+
+	vpPush =
 		(struct FPSGO_NOTIFIER_PUSH_TAG *) fpsgo_alloc_atomic(sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
 
 	if (!vpPush) {
@@ -486,19 +505,31 @@ void fpsgo_switch_enable(int enable)
 		return;
 	}
 
-	if (!g_psNotifyWorkQueue) {
-		FPSGO_LOGE("[FPSGO_CTRL] NULL WorkQueue\n");
-		fpsgo_free(vpPush, sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
-		return;
-	}
-
-	FPSGO_LOGI("[FPSGO_CTRL] switch enable %d\n", enable);
-
 	vpPush->ePushType = FPSGO_NOTIFIER_SWITCH_FPSGO;
 	vpPush->enable = enable;
 
 	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
 	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
+}
+
+int fpsgo_is_force_enable(void)
+{
+	int temp_onoff;
+
+	mutex_lock(&notify_lock);
+	temp_onoff = fpsgo_force_onoff;
+	mutex_unlock(&notify_lock);
+
+	return temp_onoff;
+}
+
+void fpsgo_force_switch_enable(int enable)
+{
+	mutex_lock(&notify_lock);
+	fpsgo_force_onoff = enable;
+	mutex_unlock(&notify_lock);
+
+	fpsgo_switch_enable(enable?1:0);
 }
 
 /* FSTB control */
@@ -562,6 +593,8 @@ static int __init fpsgo_init(void)
 		return -EFAULT;
 
 	mutex_init(&notify_lock);
+
+	fpsgo_force_onoff = 2;
 
 	init_fpsgo_common();
 	fbt_cpu_init();

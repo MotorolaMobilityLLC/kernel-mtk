@@ -57,6 +57,12 @@ enum {
 	NATIVE_WINDOW_API_CAMERA = 4,
 };
 
+enum {
+	FPSGO_FORCE_OFF = 0,
+	FPSGO_FORCE_ON = 1,
+	FPSGO_FREE = 2,
+};
+
 int init_fpsgo_common(void);
 
 #endif
