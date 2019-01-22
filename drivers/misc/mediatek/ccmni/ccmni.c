@@ -54,12 +54,29 @@ ccmni_ctl_block_t *ccmni_ctl_blk[MAX_MD_NUM];
 unsigned int ccmni_debug_level;
 
 /********************internal function*********************/
-static void ccmni_make_etherframe(void *_eth_hdr, unsigned char *mac_addr, unsigned int packet_type)
+static void ccmni_make_etherframe(int md_id, struct net_device *dev, void *_eth_hdr, unsigned char *mac_addr,
+				  unsigned int packet_type)
 {
 	struct ethhdr *eth_hdr = _eth_hdr;
+	static unsigned char dest_mac[6] = { 0x0a, 0x1a, 0x2a, 0x3a, 0x4a, 0x5a };
+	static unsigned char src_mac[6] = { 0x06, 0x16, 0x26, 0x36, 0x46, 0x56 };
+	struct net_device *br_dev = NULL;
 
-	memcpy(eth_hdr->h_dest, mac_addr, sizeof(eth_hdr->h_dest));
-	memset(eth_hdr->h_source, 0, sizeof(eth_hdr->h_source));
+	if (IS_CCMNI_LAN(dev)) {
+		memcpy(eth_hdr->h_source, src_mac, sizeof(eth_hdr->h_source));
+
+		br_dev = __dev_get_by_name(dev_net(dev), "mdbr0");
+		if (br_dev) {
+			memcpy(eth_hdr->h_dest, br_dev->dev_addr, sizeof(eth_hdr->h_dest));
+		} else {
+			CCMNI_ERR_MSG(md_id, "%s can't find mdbr0\n", dev->name);
+			memcpy(eth_hdr->h_dest, dest_mac, sizeof(eth_hdr->h_dest));
+		}
+	} else {
+		memcpy(eth_hdr->h_dest, mac_addr, sizeof(eth_hdr->h_dest));
+		memset(eth_hdr->h_source, 0, sizeof(eth_hdr->h_source));
+	}
+
 	if (packet_type == 0x60)
 		eth_hdr->h_proto = cpu_to_be16(ETH_P_IPV6);
 	else
@@ -122,6 +139,72 @@ static inline int is_ack_skb(int md_id, struct sk_buff *skb)
 	return ret;
 }
 
+static inline int arp_reply(int md_id, struct net_device *dev, struct ethhdr *eth, struct sk_buff *skb)
+{
+	struct arphdr_in *request, *reply;
+	struct sk_buff *new_skb;
+	struct ethhdr *new_eth;
+	static unsigned char fake_sha[6] = { 0x06, 0x16, 0x26, 0x36, 0x46, 0x56 };
+
+	request = (struct arphdr_in *)(skb->data + skb_network_offset(skb));
+	if (ARPHRD_ETHER != htons(request->ar_hrd) || ETH_P_IP != htons(request->ar_pro)
+		|| ETH_ALEN != request->ar_hln || 4 != request->ar_pln || ARPOP_REQUEST != htons(request->ar_op)) {
+		CCMNI_DBG_MSG(md_id,
+			      "arp_reply: %s not_arp_req, ar_hrd=0x%x, ar_pro=0x%x, ar_hln=%d, ar_pln=%d=, ar_op=0x%x\n",
+			      dev->name, htons(request->ar_hrd), htons(request->ar_pro), request->ar_hln,
+			      request->ar_pln, htons(request->ar_op));
+		goto not_arp_req;
+	}
+
+	new_skb = netdev_alloc_skb_ip_align(dev, arp_hdr_len(dev));
+	if (!new_skb) {
+		CCMNI_ERR_MSG(md_id, "arp_reply: %s can't alloc new skb\n", dev->name);
+		goto alloc_skb_fail;
+	}
+
+	reply = (struct arphdr_in *)new_skb->data;
+	reply->ar_hrd = htons(ARPHRD_ETHER);
+	reply->ar_pro = htons(ETH_P_IP);
+	reply->ar_hln = ETH_ALEN;
+	reply->ar_pln = 4;
+	reply->ar_op = htons(ARPOP_REPLY);
+
+	ether_addr_copy(reply->ar_sha, fake_sha);
+	memcpy(reply->ar_sip, request->ar_tip, 4);
+	ether_addr_copy(reply->ar_tha, request->ar_sha);
+	memcpy(reply->ar_tip, request->ar_sip, 4);
+
+	new_eth = (struct ethhdr *)(new_skb->data - 14);
+	ether_addr_copy(new_eth->h_dest, eth->h_source);
+	ether_addr_copy(new_eth->h_source, reply->ar_sha);
+	new_eth->h_proto = htons(ETH_P_ARP);
+
+	new_skb->len = 28;
+	new_skb->mac_len = 14;
+	skb_set_mac_header(new_skb, -ETH_HLEN);
+	skb_reset_network_header(new_skb);
+	new_skb->protocol = htons(ETH_P_ARP);
+
+	if (!in_interrupt())
+		netif_rx_ni(new_skb);
+	else
+		netif_rx(new_skb);
+
+	CCMNI_DBG_MSG(md_id, "%s send arp_reply_skb(0x%p) and free arp_request_skb(0x%p)\n", dev->name, new_skb, skb);
+
+	dev->stats.tx_packets++;
+	dev->stats.tx_bytes += skb->len;
+	dev_kfree_skb(skb);
+	return 0;
+
+ alloc_skb_fail:
+	dev->stats.tx_dropped++;
+	dev_kfree_skb(skb);
+	return 0;
+
+ not_arp_req:
+	return 1;
+}
 
 /********************internal debug function*********************/
 #if 1
@@ -316,6 +399,34 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
 	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[ccmni->md_id];
 	unsigned int is_ack = 0;
+	struct ethhdr *eth;
+	__be16 type;
+
+	/*if data_len=1500 with mac_header for ccmni-lan, skb->len>MTU,so it must before MTU judgement */
+	if (IS_CCMNI_LAN(dev)) {
+		if (skb_network_offset(skb) > 0) {
+			eth = (struct ethhdr *)skb_mac_header(skb);
+			type = eth->h_proto;
+			CCMNI_DBG_MSG(ccmni->md_id,
+				"[skb]data=%p, ip_h=%x, mac_h=%x, mac_len=%d, head_room=%d, len=%d, type=%x, iph_off=%d\n",
+				skb->data, skb->network_header, skb->mac_header,
+					skb->mac_len, skb_headroom(skb), skb->len, type, skb_network_offset(skb));
+
+			if (htons(ETH_P_ARP) == type)
+				if (!arp_reply(ccmni->md_id, dev, eth, skb))
+					return NETDEV_TX_OK;
+
+			skb_pull(skb, skb_network_offset(skb));
+			skb_pop_mac_header(skb);
+		} else {
+			CCMNI_ERR_MSG(ccmni->md_id,
+				"ccmni-lan send unexpect packet with eth_len=0, skb_data=%p, ip_h=%x, mac_len=%d, len=%d, iph_off=%d\n",
+				skb->data, skb->network_header, skb->mac_len, skb->len, skb_network_offset(skb));
+			dev_kfree_skb(skb);
+			dev->stats.tx_dropped++;
+			return NETDEV_TX_OK;
+		}
+	}
 
 	/* dev->mtu is changed  if dev->mtu is changed by upper layer */
 	if (unlikely(skb->len > dev->mtu)) {
@@ -596,6 +707,46 @@ static inline int ccmni_inst_init(int md_id, ccmni_instance_t *ccmni, struct net
 	return ret;
 }
 
+static inline void ccmni_dev_init(int md_id, struct net_device *dev)
+{
+	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
+
+	dev->header_ops = NULL;
+	dev->mtu = CCMNI_MTU;
+	dev->tx_queue_len = CCMNI_TX_QUEUE;
+	dev->watchdog_timeo = CCMNI_NETDEV_WDT_TO;
+	dev->flags = (IFF_NOARP | IFF_BROADCAST) & /* ccmni is a pure IP device */
+			(~IFF_MULTICAST);	/* ccmni is P2P */
+	dev->features = NETIF_F_VLAN_CHALLENGED; /* not support VLAN */
+	if (ctlb->ccci_ops->md_ability & MODEM_CAP_SGIO) {
+		dev->features |= NETIF_F_SG;
+		dev->hw_features |= NETIF_F_SG;
+	}
+	if (ctlb->ccci_ops->md_ability & MODEM_CAP_NAPI) {
+#ifdef ENABLE_NAPI_GRO
+		dev->features |= NETIF_F_GRO;
+		dev->hw_features |= NETIF_F_GRO;
+#else
+		/*
+		 * check gro_list_prepare, GRO needs hard_header_len == ETH_HLEN.
+		 * CCCI header can use ethernet header and padding bytes' region.
+		 */
+		dev->hard_header_len += sizeof(struct ccci_header);
+#endif
+	} else {
+#ifdef ENABLE_WQ_GRO
+		dev->features |= NETIF_F_GRO;
+		dev->hw_features |= NETIF_F_GRO;
+#else
+				dev->hard_header_len += sizeof(struct ccci_header);
+#endif
+	}
+	dev->addr_len = ETH_ALEN; /* ethernet header size */
+	dev->destructor = free_netdev;
+	dev->netdev_ops = &ccmni_netdev_ops;
+	random_ether_addr((u8 *) dev->dev_addr);
+}
+
 static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 {
 	int i = 0, j = 0, ret = 0;
@@ -652,40 +803,7 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 			}
 
 			/* init net device */
-			dev->header_ops = NULL;
-			dev->mtu = CCMNI_MTU;
-			dev->tx_queue_len = CCMNI_TX_QUEUE;
-			dev->watchdog_timeo = CCMNI_NETDEV_WDT_TO;
-			dev->flags = (IFF_NOARP | IFF_BROADCAST) & /* ccmni is a pure IP device */
-					(~IFF_MULTICAST);	/* ccmni is P2P */
-			dev->features = NETIF_F_VLAN_CHALLENGED; /* not support VLAN */
-			if (ctlb->ccci_ops->md_ability & MODEM_CAP_SGIO) {
-				dev->features |= NETIF_F_SG;
-				dev->hw_features |= NETIF_F_SG;
-			}
-			if (ctlb->ccci_ops->md_ability & MODEM_CAP_NAPI) {
-#ifdef ENABLE_NAPI_GRO
-				dev->features |= NETIF_F_GRO;
-				dev->hw_features |= NETIF_F_GRO;
-#else
-				/*
-				 * check gro_list_prepare, GRO needs hard_header_len == ETH_HLEN.
-				 * CCCI header can use ethernet header and padding bytes' region.
-				 */
-				dev->hard_header_len += sizeof(struct ccci_header);
-#endif
-			} else {
-#ifdef ENABLE_WQ_GRO
-				dev->features |= NETIF_F_GRO;
-				dev->hw_features |= NETIF_F_GRO;
-#else
-				dev->hard_header_len += sizeof(struct ccci_header);
-#endif
-			}
-			dev->addr_len = ETH_ALEN; /* ethernet header size */
-			dev->destructor = free_netdev;
-			dev->netdev_ops = &ccmni_netdev_ops;
-			random_ether_addr((u8 *) dev->dev_addr);
+			ccmni_dev_init(md_id, dev);
 
 			sprintf(dev->name, "%s%d", ctlb->ccci_ops->name, i);
 			CCMNI_INF_MSG(md_id, "register netdev name: %s\n", dev->name);
@@ -777,6 +895,42 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 		}
 	}
 
+	if (ctlb->ccci_ops->md_ability & MODEM_CAP_DIRECT_TETHERING) {
+		if (ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ)
+			/*alloc multiple tx queue, 2 txq and 1 rxq */
+			dev = alloc_etherdev_mqs(sizeof(ccmni_instance_t), 2, 1);
+		else
+			dev = alloc_etherdev(sizeof(ccmni_instance_t));
+		if (unlikely(dev == NULL)) {
+			CCMNI_ERR_MSG(md_id, "alloc netdev fail\n");
+			ret = -ENOMEM;
+			goto alloc_netdev_fail;
+		}
+		/*init net device */
+		ccmni_dev_init(md_id, dev);
+		dev->flags = IFF_BROADCAST | IFF_MULTICAST;	/*ccmni-lan need handle ARP packet */
+		sprintf(dev->name, "ccmni-lan");
+		CCMNI_INF_MSG(md_id, "register netdev name: %s\n", dev->name);
+
+		/*init private structure of netdev */
+		ccmni = netdev_priv(dev);
+		ccmni->index = i;
+		ret = ccmni_inst_init(md_id, ccmni, dev);
+		if (ret) {
+			CCMNI_ERR_MSG(md_id, "initial ccmni instance fail\n");
+			goto alloc_netdev_fail;
+		}
+		ctlb->ccmni_inst[i] = ccmni;
+
+		/*register net device */
+		ret = register_netdev(dev);
+		if (ret) {
+			CCMNI_ERR_MSG(md_id, "CCMNI%d register netdev fail: %d\n", i, ret);
+			goto alloc_netdev_fail;
+		}
+		CCMNI_DBG_MSG(md_id, "[CCMNI-LAN]CCMNI%d=%p, ctlb=%p, ctlb_ops=%p, dev=%p\n",
+			      i, ccmni, ccmni->ctlb, ccmni->ctlb->ccci_ops, ccmni->dev);
+	}
 	snprintf(ctlb->wakelock_name, sizeof(ctlb->wakelock_name), "ccmni_md%d", (md_id+1));
 	wake_lock_init(&ctlb->ccmni_wakelock, WAKE_LOCK_SUSPEND, ctlb->wakelock_name);
 
@@ -856,7 +1010,7 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 
 	/* skb_pull(skb, sizeof(struct ccci_header)); */
 	pkt_type = skb->data[0] & 0xF0;
-	ccmni_make_etherframe(skb->data-ETH_HLEN, dev->dev_addr, pkt_type);
+	ccmni_make_etherframe(md_id, dev, skb->data - ETH_HLEN, dev->dev_addr, pkt_type);
 	skb_set_mac_header(skb, -ETH_HLEN);
 	skb_reset_network_header(skb);
 	skb->dev = dev;

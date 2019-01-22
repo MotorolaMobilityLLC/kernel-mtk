@@ -155,6 +155,19 @@ typedef enum {
 	CCMNI_TXQ_END     = CCMNI_TXQ_NUM
 } CCMNI_TXQ_NO;
 
+struct arphdr_in {
+	__be16 ar_hrd;
+	__be16 ar_pro;
+	unsigned char ar_hln;
+	unsigned char ar_pln;
+	__be16 ar_op;
+
+	unsigned char ar_sha[ETH_ALEN];
+	unsigned char ar_sip[4];
+	unsigned char ar_tha[ETH_ALEN];
+	unsigned char ar_tip[4];
+};
+
 /*****************************extern function************************************/
 /* int  ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info); */
 /* void ccmni_exit(int md_id); */
