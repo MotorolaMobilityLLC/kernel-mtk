@@ -1364,6 +1364,9 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	enum dcs_status dcs_status;
 	bool dcs_lock_get = false;
 #endif
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	unsigned int mtk_idle_switch;
+#endif
 
 	mtk_idle_dump_cnt_in_interval();
 
@@ -1446,6 +1449,12 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* cg check */
+	mtk_idle_switch = 0;
+	for (i = 0; i < NR_TYPES - 1; i++)
+		mtk_idle_switch |= ((!!idle_switch[i]) << i);
+	if (!mtk_idle_switch)
+		goto get_idle_idx_2;
+
 	memset(idle_block_mask, 0,
 		NR_TYPES * NF_CG_STA_RECORD * sizeof(unsigned int));
 	if (!mtk_idle_check_cg(idle_block_mask)) {
