@@ -56,6 +56,7 @@
 #include <linux/sched.h>
 #include <linux/random.h>
 #include <linux/of.h>
+#include <linux/clk.h>
 
 #include "ssi_config.h"
 #include "ssi_driver.h"
@@ -72,6 +73,9 @@
 
 #define DX_CACHE_PARAMS_SET_MASK 0x80000000
 #define DX_CACHE_PARAMS_SET_TIMEOUT_MS 100
+
+static struct clk *dxcc_ao_clock;
+static struct clk *dxcc_pub_clock;
 
 #ifdef DX_DUMP_BYTES
 void dump_byte_array(const char *name, const uint8_t *the_array, unsigned long size)
@@ -548,8 +552,31 @@ static int cc64_probe(struct platform_device *plat_dev)
 		(ctr>>24), (ctr>>16)&0xF, (ctr>>4)&0xFFF, (ctr>>20)&0xF, ctr&0xF);
 #endif
 
-	/* Map registers space */
+	dxcc_ao_clock = devm_clk_get(&plat_dev->dev, "dxcc-ao-clock");
+	if (IS_ERR(dxcc_ao_clock)) {
+		SSI_LOG_ERR("Cannot get dxcc ao clock from common clock framework.\n");
+		return PTR_ERR(dxcc_ao_clock);
+	}
 
+	dxcc_pub_clock = devm_clk_get(&plat_dev->dev, "dxcc-pubcore-clock");
+	if (IS_ERR(dxcc_pub_clock)) {
+		SSI_LOG_ERR("Cannot get dxcc public core clock from common clock framework.\n");
+		return PTR_ERR(dxcc_pub_clock);
+	}
+
+	rc = clk_prepare_enable(dxcc_ao_clock);
+	if (rc != 0) {
+		SSI_LOG_ERR("Cannot prepare dxcc ao clock from common clock framework.\n");
+		return rc;
+	}
+
+	rc = clk_prepare_enable(dxcc_pub_clock);
+	if (rc != 0) {
+		SSI_LOG_ERR("Cannot prepare dxcc public core clock from common clock framework.\n");
+		return rc;
+	}
+
+	/* Map registers space */
 	rc = init_cc_resources(plat_dev);
 	if (rc != 0)
 		return rc;
@@ -562,14 +589,15 @@ static int cc64_probe(struct platform_device *plat_dev)
 static int cc64_remove(struct platform_device *plat_dev)
 {
 	SSI_LOG_DEBUG("Releasing CC64 resources...\n");
-	
+
 	cleanup_cc_resources(plat_dev);
 
 	SSI_LOG(KERN_INFO, "ARM cc710ree device terminated\n");
 #ifdef ENABLE_CYCLE_COUNT
 	display_all_stat_db();
 #endif
-	
+	clk_disable_unprepare(dxcc_pub_clock);
+	clk_disable_unprepare(dxcc_ao_clock);
 	return 0;
 }
 #if defined (CONFIG_PM_RUNTIME) || defined (CONFIG_PM_SLEEP)

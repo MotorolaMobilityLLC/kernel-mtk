@@ -394,7 +394,6 @@ int ssi_send_request(
 	rc = ssi_power_mgr_runtime_get(&drvdata->plat_dev->dev);
 	if (rc != 0) {
 		SSI_LOG_ERR("ssi_power_mgr_runtime_get returned %x\n",rc);
-		spin_unlock_bh(&req_mgr_h->hw_lock);
 		return rc;
 	}
 #endif
@@ -403,7 +402,7 @@ int ssi_send_request(
 		spin_lock_bh(&req_mgr_h->hw_lock);
 
 		/* Check if there is enough place in the SW/HW queues
-		in case iv gen add the max size and in case of no dout add 1 
+		in case iv gen add the max size and in case of no dout add 1
 		for the internal completion descriptor */
 		rc = request_mgr_queues_status_check(req_mgr_h,
 					       cc_base,

@@ -87,7 +87,7 @@
 
 #define SSI_GPR7_IRQ_MASK (1 << DX_HOST_IRR_SEP_HOST_GPR7_INT_BIT_SHIFT)
 
-#define SSI_CRA_PRIO 3000
+#define SSI_CRA_PRIO 150
 
 #define MIN_HW_QUEUE_SIZE 50 /* Minimum size required for proper function */
 

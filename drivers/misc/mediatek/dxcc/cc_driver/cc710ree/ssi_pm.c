@@ -30,6 +30,10 @@
 #include "ssi_hash.h"
 #include "ssi_pm.h"
 #include "ssi_pm_ext.h"
+#include <linux/clk.h>
+
+static struct clk *dxcc_ao_clk;
+static struct clk *dxcc_pub_clk;
 
 
 #if defined (CONFIG_PM_RUNTIME) || defined (CONFIG_PM_SLEEP)
@@ -48,7 +52,7 @@ int ssi_power_mgr_runtime_suspend(struct device *dev)
 	fini_cc_regs(drvdata);
 
 	/* Specific HW suspend code */
-	ssi_pm_ext_hw_suspend(dev);
+	ssi_pm_ext_hw_suspend(dev, dxcc_ao_clk, dxcc_pub_clk);
 	return 0;
 }
 
@@ -62,20 +66,26 @@ int ssi_power_mgr_runtime_resume(struct device *dev)
 	long timeout;
 
 	/* Specific HW resume code */
-	ssi_pm_ext_hw_resume(dev);
+	ssi_pm_ext_hw_resume(dev, dxcc_ao_clk, dxcc_pub_clk);
 
 	init_cc_gpr7_interrupt(drvdata);
 
 	//check sep initialization is done (when gpr7 is different from 0)
 	timeout = wait_for_completion_timeout(&((struct ssi_power_mgr_handle*)drvdata->power_mgr_handle)->sep_ready_compl, msecs_to_jiffies(5000));
-	SSI_LOG_DEBUG("after wait_for_completion_interruptible_timeout .\n");
+	SSI_LOG_DEBUG("after wait_for_completion_interruptible_timeout.\n");
 
 	if (timeout ==0) {
 		SSI_LOG_DEBUG("wait_for_completion_interruptible_timeout reached timeout.\n");
+
+		regVal = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_SEP_SW_MONITOR));
+		SSI_LOG_ERR("HOST_SEP_SW_MONITOR = %x\n", regVal);
+		regVal = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_SEP_HOST_GPR7));
+		SSI_LOG_ERR("HOST_SEP_HOST_GPR7 = %x\n", regVal);
+
 		rc = -EFAULT;
 		return rc;
 	}
-	
+
 	rc = init_cc_regs(drvdata, false);
 	if (rc !=0) {
 		SSI_LOG_ERR("init_cc_regs (%x)\n",rc);
@@ -84,10 +94,15 @@ int ssi_power_mgr_runtime_resume(struct device *dev)
 
 	regVal = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_SEP_HOST_GPR7));
 
-	//check if sep rom checksum error was reported on gpr7 
+	/* check if sep rom checksum error was reported on gpr7 */
 	if ( (regVal& CC_SEP_HOST_GPR7_CKSUM_ERROR_FLAG) != 0) {
 		SSI_FIPS_SET_CKSUM_ERROR();
 		SSI_LOG_ERR("SEP ROM chesum error detected when PM runtime resume. \n");
+
+		regVal = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_SEP_SW_MONITOR));
+		SSI_LOG_ERR("HOST_SEP_SW_MONITOR = %x\n", regVal);
+		regVal = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_SEP_HOST_GPR7));
+		SSI_LOG_ERR("HOST_SEP_HOST_GPR7 = %x\n", regVal);
 	}
 
 	rc = ssi_request_mgr_runtime_resume_queue(drvdata);
@@ -142,6 +157,19 @@ int ssi_power_mgr_init(struct ssi_drvdata *drvdata)
 	int rc = 0;
 #if defined (CONFIG_PM_RUNTIME) || defined (CONFIG_PM_SLEEP)
 	struct platform_device *plat_dev = drvdata->plat_dev;
+
+	dxcc_ao_clk = devm_clk_get(&plat_dev->dev, "dxcc-ao-clock");
+	if (IS_ERR(dxcc_ao_clk)) {
+		SSI_LOG_ERR("Cannot get dxcc ao clock from common clock framework in power manager.\n");
+		return PTR_ERR(dxcc_ao_clk);
+	}
+
+	dxcc_pub_clk = devm_clk_get(&plat_dev->dev, "dxcc-pubcore-clock");
+	if (IS_ERR(dxcc_pub_clk)) {
+		SSI_LOG_ERR("Cannot get dxcc public core clock from common clock framework in power manager.\n");
+		return PTR_ERR(dxcc_pub_clk);
+	}
+
 	/* must be before the enabling to avoid resdundent suspending */
 	pm_runtime_set_autosuspend_delay(&plat_dev->dev,SSI_SUSPEND_TIMEOUT);
 	pm_runtime_use_autosuspend(&plat_dev->dev);
