@@ -115,4 +115,12 @@ typedef struct {
 
 #define AFIOC_S_SETDRVNAME _IOW(AF_MAGIC, 10, stAF_MotorName)
 
+#define AFIOC_S_SETPOWERDOWN _IOW(AF_MAGIC, 11, u32)
+
+#define AFIOC_G_MOTOROISINFO _IOR(AF_MAGIC, 12, stAF_MotorOisInfo)
+
+#define AFIOC_S_SETPOWERCTRL _IOW(AF_MAGIC, 13, u32)
+
+#define AFIOC_S_SETLENSTEST  _IOW(AF_MAGIC, 14, u32)
+
 #endif
