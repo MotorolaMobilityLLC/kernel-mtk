@@ -2074,10 +2074,6 @@ static int TSF_reg_read(struct seq_file *m, void *v)
 				   (unsigned int)TSF_RD32(TSF_START_REG + i));
 		}
 
-		for (i = 0xC0; i <= 0xE4; i = i + 4) {
-			seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(TSF_BASE_HW + i),
-				   (unsigned int)TSF_RD32(TSF_START_REG + i));
-		}
 	}
 
 	return 0;
