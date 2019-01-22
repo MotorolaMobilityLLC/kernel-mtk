@@ -51,6 +51,9 @@ static unsigned int WARN_BURST_IRQ_DETECT;
 static unsigned int WARN_PREEMPT_DUR;
 static unsigned int WARN_IRQ_DISABLE_DUR;
 
+static unsigned int irq_info_enable;
+
+
 #define MAX_STACK_TRACE_DEPTH   32
 
 #define TIME_1MS  1000000
@@ -167,9 +170,9 @@ static void event_duration_check(struct sched_block_event *b)
 			    ("[SOFTIRQ DURATION WARN] SoftIRQ:%d, dur:%llu ns > %d ms,(s:%llu,e:%llu)\n",
 			     (int)b->last_event, t_dur, WARN_SOFTIRQ_DUR / 1000000, b->last_ts,
 			     b->last_te);
-			if (b_isr->last_ts > b->last_ts) {	/* ISR occur during SOFTIRQ */
+			if (irq_info_enable == 1 && b_isr->last_ts > b->last_ts) {	/* ISR occur during SOFTIRQ */
 				pr_err
-				    (" IRQ occurrs in this duration, IRQ[%d:%s], dur:%llu ns (s:%llu, e:%llu)\n\n",
+				    (" IRQ occurrs in this duration, IRQ[%d:%s], dur:%llu ns (s:%llu, e:%llu)\n",
 				     (int)b_isr->last_event, isr_name(b_isr->last_event),
 				     b_isr->last_te - b_isr->last_ts, b_isr->last_ts,
 				     b_isr->last_te);
@@ -193,9 +196,9 @@ static void event_duration_check(struct sched_block_event *b)
 			    ("[TASKLET DURATION WARN] Tasklet:%pS, dur:%llu ns > %d ms,(s:%llu,e:%llu)\n",
 			     (void *)b->last_event, t_dur, WARN_TASKLET_DUR / 1000000, b->last_ts,
 			     b->last_te);
-			if (b_isr->last_ts > b->last_ts) {	/* ISR occur during Tasklet */
+			if (irq_info_enable == 1 && b_isr->last_ts > b->last_ts) {	/* ISR occur during Tasklet */
 				pr_err
-				    (" IRQ occurrs in this duration, IRQ[%d:%s], dur:%llu ns (s:%llu, e:%llu)\n\n",
+				    (" IRQ occurrs in this duration, IRQ[%d:%s], dur:%llu ns (s:%llu, e:%llu)\n",
 				     (int)b_isr->last_event, isr_name(b_isr->last_event),
 				     b_isr->last_te - b_isr->last_ts, b_isr->last_ts,
 				     b_isr->last_te);
@@ -215,7 +218,7 @@ static void event_duration_check(struct sched_block_event *b)
 			    ("[HRTIMER DURATION WARN] HRTIMER:%pS, dur:%llu ns > %d ms,(s:%llu,e:%llu)\n",
 			     (void *)b->last_event, t_dur, WARN_HRTIMER_DUR / 1000000,
 			     b->last_ts, b->last_te);
-			if (lock_e->lock_owner && lock_e->lock_ts > b->last_ts
+			if (irq_info_enable == 1 && lock_e->lock_owner && lock_e->lock_ts > b->last_ts
 			    && lock_e->lock_dur > TIME_1MS) {
 				pr_err
 				    ("[HRTIMER WARN]get rq->lock, last owner:%s dur: %llu ns(s:%llu,e:%llu)\n",
@@ -237,9 +240,9 @@ static void event_duration_check(struct sched_block_event *b)
 			    ("[STIMER DURATION WARN] SoftTIMER:%pS, dur:%llu ns > %d ms,(s:%llu,e:%llu)\n",
 			     (void *)b->last_event, t_dur, WARN_STIMER_DUR / 1000000, b->last_ts,
 			     b->last_te);
-			if (b_isr->last_ts > b->last_ts) {	/* ISR occur during Softtimer */
+			if (irq_info_enable == 1 && b_isr->last_ts > b->last_ts) {	/* ISR occur during Softtimer */
 				pr_err
-				    (" IRQ occurrs in this duration, IRQ[%d:%s], dur:%llu ns (s:%llu, e:%llu)\n\n",
+				    (" IRQ occurrs in this duration, IRQ[%d:%s], dur:%llu ns (s:%llu, e:%llu)\n",
 				     (int)b_isr->last_event, isr_name(b_isr->last_event),
 				     b_isr->last_te - b_isr->last_ts, b_isr->last_ts,
 				     b_isr->last_te);
@@ -908,7 +911,7 @@ static int mt_sched_monitor_##param##_show(			\
 	void *v)						\
 {									\
 		SEQ_printf(m,			\
-			   "%d ns\n", warn_dur);	\
+			   "%d\n", warn_dur);	\
 		return 0;				\
 }								\
 static int mt_sched_monitor_##param##_open(struct inode *inode, struct file *file) \
@@ -932,6 +935,7 @@ DECLARE_MT_SCHED_MATCH(STIMER_DUR, WARN_STIMER_DUR);
 DECLARE_MT_SCHED_MATCH(PREEMPT_DUR, WARN_PREEMPT_DUR);
 DECLARE_MT_SCHED_MATCH(BURST_IRQ, WARN_BURST_IRQ_DETECT);
 DECLARE_MT_SCHED_MATCH(IRQ_DISABLE_DUR, WARN_IRQ_DISABLE_DUR);
+DECLARE_MT_SCHED_MATCH(IRQ_INFO_ENABLE, irq_info_enable);
 
 
 static int __init init_mtsched_mon(void)
@@ -961,6 +965,7 @@ static int __init init_mtsched_mon(void)
 	WARN_BURST_IRQ_DETECT = 25000;
 	WARN_PREEMPT_DUR = TIME_3MS;
 	WARN_IRQ_DISABLE_DUR = TIME_3MS;
+	irq_info_enable = 0;
 
 	if (!proc_mkdir("mtmon", NULL))
 		return -1;
@@ -998,6 +1003,10 @@ static int __init init_mtsched_mon(void)
 		return -ENOMEM;
 	pe = proc_create("mtmon/sched_mon_duration_IRQ_DISABLE", 0664, NULL,
 			 &mt_sched_monitor_IRQ_DISABLE_DUR_fops);
+	if (!pe)
+		return -ENOMEM;
+	pe = proc_create("mtmon/irq_info_enable", 0664, NULL,
+			 &mt_sched_monitor_IRQ_INFO_ENABLE_fops);
 	if (!pe)
 		return -ENOMEM;
 	return 0;
