@@ -29,6 +29,8 @@
 
 /* on:1, off:0 */
 int g_vgpu_power_on_flag;
+DEFINE_MUTEX(g_flag_lock);
+
 
 int g_mtk_gpu_efuse_set_already;
 
