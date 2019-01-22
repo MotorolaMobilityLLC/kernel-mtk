@@ -49,6 +49,7 @@
 
 #include "mtk_cpufreq_internal.h"
 #include "mtk_cpufreq_hybrid.h"
+#include "mtk_cpufreq_debug.h"
 
 #define DEFINE_FOPS_RO(fname)						\
 static int fname##_open(struct inode *inode, struct file *file)		\
@@ -194,10 +195,13 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 
 		if (is_in_suspend()) {
+			aee_record_cpu_dvfs_cb(6);
 			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
 			cpufreq_ver("Send with IPI_OPT_LOCK_POLLING\n");
-		} else
+		} else {
+			aee_record_cpu_dvfs_cb(7);
 			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
+		}
 
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
@@ -205,6 +209,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 			ret = ack_data;
 			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
+		aee_record_cpu_dvfs_cb(8);
 		break;
 #if 0
 	case IPI_SET_FREQ:
@@ -443,6 +448,7 @@ int cpuhvfs_set_cluster_on_off(int cluster_id, int state)
 	cdvfs_d.u.set_fv.arg[0] = cluster_id;
 	cdvfs_d.u.set_fv.arg[1] = state;
 
+	aee_record_cpu_dvfs_cb(5);
 	dvfs_to_spm2_command(IPI_SET_CLUSTER_ON_OFF, &cdvfs_d);
 
 	return 0;
