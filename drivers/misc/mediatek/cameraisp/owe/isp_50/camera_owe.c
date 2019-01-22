@@ -1024,7 +1024,7 @@ static signed int ConfigOCCHW(struct OWE_OCCConfig *pOccConfig)
 	if (OWE_DBG_DBGLOG == (OWE_DBG_DBGLOG & OWEInfo.DebugMask)) {
 		LOG_DBG("ConfigOCCHW Start!\n");
 #ifndef BYPASS_REG
-#define PRINT_DBG(REG) LOG_DBG(#REG ":0x%x!\n", pOccConfig->#REG)
+#define PRINT_DBG(REG) LOG_DBG(#REG ":0x%x!\n", pOccConfig->REG)
 		PRINT_DBG(DPE_OCC_CTRL_0);
 		PRINT_DBG(DPE_OCC_CTRL_1);
 		PRINT_DBG(DPE_OCC_CTRL_2);
@@ -1078,8 +1078,6 @@ static signed int ConfigOCCHW(struct OWE_OCCConfig *pOccConfig)
 	CMDQWR(DPE_OCC_WDMA_STRIDE);
 	CMDQWR(DPE_OCC_PQ_0);
 	CMDQWR(DPE_OCC_PQ_1);
-	CMDQWR(DPE_OCC_SPARE);
-	CMDQWR(DPE_OCC_DFT);
 
 	cmdqRecWrite(handle, OWE_OCC_START_HW, 0x1, CMDQ_REG_MASK);	/* OWE Interrupt read-clear mode */
 	cmdqRecWait(handle, CMDQ_EVENT_OCC_DONE);
