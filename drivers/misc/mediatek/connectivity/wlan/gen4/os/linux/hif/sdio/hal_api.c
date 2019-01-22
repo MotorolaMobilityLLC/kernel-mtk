@@ -1757,6 +1757,15 @@ VOID halPrintFirmwareAssertInfo(IN P_ADAPTER_T prAdapter)
 
 }
 
+VOID halPrintMailbox(IN P_ADAPTER_T prAdapter)
+{
+	UINT_32 u4MailBoxStatus0, u4MailBoxStatus1;
+
+	halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
+	halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
+	DBGLOG(INIT, ERROR, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
+}
+
 VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 {
 	UINT_32 u4IntrBits;
@@ -1772,12 +1781,17 @@ VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 #endif
 	}
 
+	if (u4IntrBits & WHISR_D2H_SW_RD_MAILBOX_INT)
+		halPrintMailbox(prAdapter);
+
 	if (u4IntrBits & SER_SDIO_N9_HOST_STOP_TX_OP) {
+		halPrintMailbox(prAdapter);
 		/* Stop HIF Tx operation */
 		nicSerStopTx(prAdapter);
 	}
 
 	if (u4IntrBits & SER_SDIO_N9_HOST_STOP_TX_RX_OP) {
+		halPrintMailbox(prAdapter);
 		/* Stop HIF Tx/Rx operation */
 		nicSerStopTxRx(prAdapter);
 	}
