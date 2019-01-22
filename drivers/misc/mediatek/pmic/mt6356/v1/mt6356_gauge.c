@@ -2528,7 +2528,8 @@ static int fgauge_enable_car_tune_value_calibration(struct gauge_device *gauge_d
 		bm_err("[444]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
 			sum_all, temp_sum, avg_cnt, current_from_ADC);
 
-		do_div(temp_sum, avg_cnt);
+		if (avg_cnt != 0)
+			do_div(temp_sum, avg_cnt);
 		current_from_ADC = temp_sum;
 
 		bm_err("[555]sum_all %lld temp_sum %lld avg_cnt %d current_from_ADC %lld\n",
@@ -2556,17 +2557,18 @@ static int fgauge_enable_car_tune_value_calibration(struct gauge_device *gauge_d
 
 		/* Move 100 from denominator to cali_car_tune's numerator */
 		/*cali_car_tune = meta_input_cali_current * 1000 / dvalue;*/
-		cali_car_tune = meta_input_cali_current * 1000 * 100 / dvalue;
+		if (dvalue != 0) {
+			cali_car_tune = meta_input_cali_current * 1000 * 100 / dvalue;
 
-		bm_err("[777]dvalue %d fg_cust_data.r_fg_value %d cali_car_tune %d\n",
-			dvalue, gauge_dev->fg_cust_data->r_fg_value, cali_car_tune);
-		*car_tune_value = cali_car_tune;
+			bm_err("[777]dvalue %d fg_cust_data.r_fg_value %d cali_car_tune %d\n",
+				dvalue, gauge_dev->fg_cust_data->r_fg_value, cali_car_tune);
+			*car_tune_value = cali_car_tune;
 
-		bm_err(
-			"[fgauge_meta_cali_car_tune_value][%d] meta:%d, adc:%lld, UNI_FGCUR:%d, r_fg_value:%d\n",
-			cali_car_tune, meta_input_cali_current, current_from_ADC,
-			UNIT_FGCURRENT, gauge_dev->fg_cust_data->r_fg_value);
-
+			bm_err(
+				"[fgauge_meta_cali_car_tune_value][%d] meta:%d, adc:%lld, UNI_FGCUR:%d, r_fg_value:%d\n",
+				cali_car_tune, meta_input_cali_current, current_from_ADC,
+				UNIT_FGCURRENT, gauge_dev->fg_cust_data->r_fg_value);
+		}
 		return 0;
 	}
 
