@@ -971,7 +971,8 @@ void MT_trace_irq_on(void)
 }
 
 static const char * const list_irq_disable[] = {
-	"print_cpu" /* debug purpose: used by sched_debug_show, sysrq_sched_debug_show */
+	/* debug purpose: sched_debug_show, sysrq_sched_debug_show */
+	"print_cpu"
 };
 
 bool mt_dump_irq_off_traces(int mode)
@@ -1429,6 +1430,8 @@ static int __init init_mtsched_mon(void)
 			 &mt_sched_monitor_func_fops);
 	if (!pe)
 		return -ENOMEM;
+
+	mt_sched_monitor_test_init();
 
 	sched_mon_warn_enable = 0;
 	sched_mon_func = evt_HARDIRQ;
