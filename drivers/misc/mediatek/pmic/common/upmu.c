@@ -253,10 +253,20 @@ unsigned short pmic_set_hk_reg_value(PMU_FLAGS_LIST_ENUM flagname, unsigned int 
 		return 1;
 	}
 
-	mutex_lock(&pmic_hk_mutex);
-	ret = pmic_write_device((unsigned int)(pFlag->offset), val,
-		(unsigned int)(pFlag->mask), (unsigned int)(pFlag->shift));
-	mutex_unlock(&pmic_hk_mutex);
+	if (preempt_count() > 0 || irqs_disabled() ||
+	    system_state != SYSTEM_RUNNING || oops_in_progress) {
+		ret = pmic_write_device(
+			(unsigned int)(pFlag->offset), val,
+			(unsigned int)(pFlag->mask),
+			(unsigned int)(pFlag->shift));
+	} else {
+		mutex_lock(&pmic_hk_mutex);
+		ret = pmic_write_device(
+			(unsigned int)(pFlag->offset), val,
+			(unsigned int)(pFlag->mask),
+			(unsigned int)(pFlag->shift));
+		mutex_unlock(&pmic_hk_mutex);
+	}
 	if (ret != 0) {
 		pr_err("[%s] error ret: %d when set Reg[0x%x]=0x%x\n", __func__,
 			 ret, (pFlag->offset), val);
