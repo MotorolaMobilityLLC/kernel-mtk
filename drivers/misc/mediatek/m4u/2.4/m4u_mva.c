@@ -402,8 +402,7 @@ int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv)
 	if (is_in && (pMvaInfo->port == M4U_PORT_VPU))
 		return 1;
 	else if (is_in && (pMvaInfo->port != M4U_PORT_VPU)) {
-		M4UMSG("%s: permission denied:\n", __func__);
-		M4UMSG("[0x%x - 0x%x] requested by port(%d) is in vpu reserved region!\n",
+		M4UINFO("[0x%x - 0x%x] requested by port(%d) is in vpu reserved region!\n",
 			startIdx, GET_END_INDEX(startIdx, nr),
 			pMvaInfo->port);
 		return -1;
@@ -417,8 +416,7 @@ int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv)
 	 */
 	if (!is_in && !is_interseted)
 		return 0;
-	M4UMSG("%s: permission denied:\n", __func__);
-	M4UMSG("[0x%x - 0x%x] requested by port(%d) intersects to vpu region!\n",
+	M4UINFO("[0x%x - 0x%x] requested by port(%d) intersects to vpu region!\n",
 		startIdx, GET_END_INDEX(startIdx, nr),
 		pMvaInfo->port);
 	return -1;
@@ -438,6 +436,11 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	unsigned long startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
 	int   requeired_mva_status = 0;
+	const short fix_index0 = MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START);
+	const short fix_index1 = MVAGRAPH_INDEX(VPU_FIX_MVA_START);
+	const short gap_start_idx = GET_END_INDEX(fix_index0, VPU_RESET_VECTOR_BLOCK_NR) + 1;
+	const short gap_end_idx = fix_index1 - 1;
+	const short gap_nr = GET_RANGE_SIZE(gap_start_idx, gap_end_idx);
 
 	if (size == 0)
 		return 0;
@@ -448,27 +451,58 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	endRequire = (va + size - 1) | M4U_PAGE_MASK;
 	sizeRequire = endRequire - startRequire + 1;
 	nr = (sizeRequire + MVA_BLOCK_ALIGN_MASK) >> MVA_BLOCK_SIZE_ORDER;
-	/* (sizeRequire>>MVA_BLOCK_SIZE_ORDER) + ((sizeRequire&MVA_BLOCK_ALIGN_MASK)!=0); */
 
 	/* ----------------------------------------------- */
-	/* find first match free region.
-	 * In normal cases, because that the bit14 of each mvaGraph in vpu region
-	 * is set. the quit loop condition of "mvaGraph[s] < nr" can jump vpu mvaGraph.
-	 * However, in extreme cases, such as memory corruption or bitflip, these
-	 * cases can destroy the vpu mvaGraph. So we should also do another protection
-	 * "m4u_check_mva_region" here.
+	/* find the proper mva graph on 3 stages:
+	 * stage 1: find it in graph range [0x1-0x4FF ]
+	 * every mva graph is neighbouring. cursor s navigate with plus the block nr in
+	 * each graph from start to end. if there is one index whose graph's value is bigger
+	 * than the number we need, that means we found the requeired region.
 	 */
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
-	for (s = 1; (s < (MVA_MAX_BLOCK_NR + 1)) && (mvaGraph[s] < nr);
+	for (s = 1; (s < fix_index0) && (mvaGraph[s] < nr);
 		s += (mvaGraph[s] & MVA_BLOCK_NR_MASK))
 		;
-	/*double-protection that if requeired_mva_status is 0,
-	 *it means non-vpu region allocation without config error. it's ok to alloc.
-	 */
+	/*if we didn't find the proper graph on stage 1, we will come to stage 2.
+	* in the case, all graph in [0x1-0x4FF ] is busy.
+	*/
+	if (s == fix_index0) {
+		/* stage 2: jump vpu reserved region and find it in graph range [0x501-0x5FF ]
+		 * MUST check if block number of gap region is enough to alloc.
+		 * if not, we need to alloc from common region
+		 */
+		if (nr <= gap_nr) {
+			M4UINFO("stage 2: stopped cursor(%d) on stage 1\n", s);
+			s = gap_start_idx;
+			for (; (s <= gap_end_idx) && (mvaGraph[s] < nr);
+				s += (mvaGraph[s] & MVA_BLOCK_NR_MASK))
+				;
+		} else
+			goto stage3;
+	}
+	/*if we didn't find the proper graph on stage 2, we will come to stage 3.
+	* in the case, the requeired nr may be more than gap nr.
+	* Or, all graph in grap region is busy.
+	*/
+	if (s == fix_index1) {
+		/* stage 3: jump vpu reserved region and find it in graph range [0x800-0xFFF ]
+		 * allocate from common region directly.
+		 */
+stage3:
+		M4UINFO("stage 3: stopped cursor(%d) on stage 2\n", s);
+		/*workaround for disp fb*/
+		s = MVAGRAPH_INDEX(VPU_FIX_MVA_END + 1) +
+			(mvaGraph[MVAGRAPH_INDEX(VPU_FIX_MVA_END + 1)] & MVA_BLOCK_NR_MASK);
+		for (; (s < (MVA_MAX_BLOCK_NR + 1)) && (mvaGraph[s] < nr);
+			s += (mvaGraph[s] & MVA_BLOCK_NR_MASK))
+			;
+	}
+
+	/*double check if mva region we got is in vpu reserved region. */
 	requeired_mva_status = m4u_check_mva_region(s, nr, priv);
 	if (requeired_mva_status) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
-		M4UMSG("port: %u illegal allocation!\n", ((m4u_buf_info_t *) priv)->port);
+		M4UMSG("mva_alloc error: fault cursor(%d)\n", s);
 		return 0;
 	}
 
@@ -478,7 +512,6 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 #ifdef M4U_PROFILE
 		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_M4U_ERROR], MMPROFILE_FLAG_PULSE, size, s);
 #endif
-
 		return 0;
 	}
 	/* ----------------------------------------------- */
@@ -962,10 +995,13 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	/*for debug*/
 	ret = check_reserved_region_integrity(MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START),
 						VPU_RESET_VECTOR_BLOCK_NR);
+	if (!ret)
+		M4UMSG("check_reserved_region_integrity error when free mva(0x%x)\n", mva);
+
 	ret = check_reserved_region_integrity(MVAGRAPH_INDEX(VPU_FIX_MVA_START),
 						VPU_FIX_BLOCK_NR);
 	if (!ret)
-		M4UMSG("check_reserved_region_integrity error when free mva\n");
+		M4UMSG("check_reserved_region_integrity error when free mva(0x%x)\n", mva);
 
 	return 0;
 }
