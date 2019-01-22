@@ -83,7 +83,6 @@
 #include "mtk-auddrv-afe.h"
 #include "mtk-auddrv-def.h"
 #include "mtk-auddrv-afe.h"
-#include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-clk.h"
 
 
