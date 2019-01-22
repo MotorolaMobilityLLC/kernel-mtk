@@ -239,7 +239,7 @@ extern unsigned int freq[NR_FREQ];
 extern unsigned int eem_vcore[VCORE_NR_FREQ];
 extern unsigned int eem_vcore_index[VCORE_NR_FREQ];
 extern unsigned char vcore_freq[NR_FREQ];
-extern unsigned int vcore_opp[VCORE_NR_FREQ][4];
+extern unsigned int (*vcore_opp)[VCORE_NR_FREQ];
 
 /* for setting pmic pwm mode and auto mode */
 extern struct regulator *eem_regulator_proc1;

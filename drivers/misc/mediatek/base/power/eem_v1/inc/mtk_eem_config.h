@@ -20,7 +20,7 @@
 #define EN_DEBUG_LOG       (1) /* enable eem_debug */
 #define EN_SHORT_LOG       (0)
 #define DVT                (0)
-#define EEM_BANK_SOC       (1)
+#define EEM_BANK_SOC       (0)
 #define EARLY_PORTING      (0) /* for detecting real vboot in eem_init01 */
 #define ISRTIMER           (0)
 #define DUMP_DATA_TO_DE    (0)
@@ -36,7 +36,7 @@
 
 /* for early porting */
 /* #define EARLY_PORTING_GPU */
-#define EARLY_PORTING_PPM
+/* #define EARLY_PORTING_PPM */
 /* #define EARLY_PORTING_PMIC */
 /* #define EARLY_PORTING_VCORE */
 /* because thermal still have bug */
@@ -84,6 +84,7 @@
 #define DEVINFO_11 0x00000000
 #define DEVINFO_IDX_10 62
 #define DEVINFO_IDX_11 63
+#define DEVINFO_IDX_VOLT_BIN 122
 
 /* atever */
 #define DEVINFO_IDX_FTPGM 74
@@ -159,7 +160,7 @@
 #define GPU_PMIC_STEP       (120) /* 1.231/1024=0.001202v=120(10uv)*/
 
 /* common part: for big, cci, LL, L*/
-#define VBOOT_VAL        (0x38) /* eem domain: 0x38, volt domain: 0.75.v */
+#define VBOOT_VAL        (0x39) /* eem domain: 0x38, volt domain: 0.75.v */
 #define VMAX_VAL        (0x60) /* eem domain: 0x60, volt domain: 1v*/
 #define VMIN_VAL        (0x2C)  /* eem domain: 0x2C, volt domain: 0.675v*/
 #define VCO_VAL            (0x2C) /* 0x2C */
