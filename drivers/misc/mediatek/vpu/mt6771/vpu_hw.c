@@ -66,6 +66,7 @@ struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM] = {
 #define CMD_WAIT_TIME_MS    (3 * 1000)
 #define OPP_WAIT_TIME_MS    (300)
 #define PWR_KEEP_TIME_MS    (500)
+#define OPP_KEEP_TIME_MS    (500)
 #define IOMMU_VA_START      (0x7DA00000)
 #define IOMMU_VA_END        (0x82600000)
 #define POWER_ON_MAGIC		(2)
@@ -164,7 +165,11 @@ struct my_struct_t {
 static struct workqueue_struct *wq;
 static void vpu_power_counter_routine(struct work_struct *);
 static struct my_struct_t power_counter_work[MTK_VPU_CORE];
-/*static DECLARE_DELAYED_WORK(power_counter_work, vpu_power_counter_routine);*/
+
+/* static struct workqueue_struct *opp_wq; */
+static void vpu_opp_keep_routine(struct work_struct *);
+static DECLARE_DELAYED_WORK(opp_keep_work, vpu_opp_keep_routine);
+
 
 /* power */
 static struct mutex power_mutex[MTK_VPU_CORE];
@@ -175,6 +180,7 @@ static int power_counter[MTK_VPU_CORE];
 static struct mutex opp_mutex;
 static bool force_change_vcore_opp[MTK_VPU_CORE];
 static bool force_change_dsp_freq[MTK_VPU_CORE];
+static bool opp_keep_flag;
 static wait_queue_head_t waitq_change_vcore;
 static wait_queue_head_t waitq_do_core_executing;
 static uint8_t max_vcore_opp;
@@ -328,9 +334,10 @@ static inline int wait_to_do_change_vcore_opp(int core)
 	int ret = 0;
 	int retry = 0;
 
-	if (g_func_mask & VFM_SKIP_WAIT_VCORE) {
-		if (g_vpu_log_level > 3)
-			LOG_INF("[vpu_%d_0x%x] wait change vcore return now\n", core, g_func_mask);
+	if (g_func_mask & VFM_NEED_WAIT_VCORE) {
+		if (g_vpu_log_level > VpuLogThre_STATE_MACHINE)
+			LOG_INF("[vpu_%d_0x%x] wait for vcore change now\n", core, g_func_mask);
+	} else {
 		return ret;
 	}
 #if 0
@@ -415,6 +422,13 @@ static inline int wait_to_do_vpu_running(int core)
 {
 	int ret = 0;
 	int retry = 0;
+
+	if (g_func_mask & VFM_NEED_WAIT_VCORE) {
+		if (g_vpu_log_level > VpuLogThre_STATE_MACHINE)
+			LOG_INF("[vpu_%d_0x%x] wait for vpu running now\n", core, g_func_mask);
+	} else {
+		return ret;
+	}
 #if 0
 	return (wait_event_interruptible_timeout(
 				waitq_do_core_executing, vpu_opp_change_idle_check(),
@@ -529,6 +543,7 @@ static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 	if ((vcore_index == 0xFF) || (vcore_index == get_vcore_opp)) {
 		LOG_DBG("no need, vcore opp(%d), hw vore opp(%d)\n", vcore_index, get_vcore_opp);
 		force_change_vcore_opp[core] = false;
+		opps.vcore.index = vcore_index;
 	} else {
 		if (vcore_index < max_vcore_opp) {
 			LOG_INF("vpu bound vcore opp(%d) to %d", vcore_index, max_vcore_opp);
@@ -537,9 +552,9 @@ static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 
 		if (vcore_index >= opps.count) {
 			LOG_ERR("wrong vcore opp(%d), max(%d)", vcore_index, opps.count - 1);
-		} else if (vcore_index != opps.vcore.index) {
+		} else if ((vcore_index < opps.vcore.index) ||
+				((vcore_index > opps.vcore.index) && (!opp_keep_flag))) {
 			opps.vcore.index = vcore_index;
-			/*opps.index = vcore_index;*/
 			force_change_vcore_opp[core] = true;
 			freq_check = true;
 		}
@@ -556,32 +571,54 @@ static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 		}
 
 		if ((opps.dspcore[core].index != freq_index) || (freq_check)) {
-			opps.dspcore[core].index = freq_index;
-			if (opps.vcore.index > 0 && opps.dspcore[core].index < 4) {
-				/* adjust 0~3 to 4~7 for real table if needed*/
-				opps.dspcore[core].index = opps.dspcore[core].index + 4;
-			}
-			opps.dsp.index = 7;
-			opps.ipu_if.index = 7;
-			for (i = 0 ; i < MTK_VPU_CORE ; i++) {
-				LOG_DBG("opp_check opps.dspcore[%d].index(%d -> %d)", core,
-					opps.dspcore[core].index, opps.dsp.index);
-				/* interface should be the max freq of vpu cores */
-				if (opps.dspcore[i].index < opps.dsp.index) {
-					opps.dsp.index = opps.dspcore[i].index;
-					opps.ipu_if.index = opps.dspcore[i].index;
+			/* freq_check for all vcore adjust related operation in acceptable region */
+
+			/* vcore not change and dsp change */
+			if ((force_change_vcore_opp[core] == false) &&
+				(freq_index > opps.dspcore[core].index) &&
+				(opp_keep_flag)) {
+				if (g_vpu_log_level > VpuLogThre_ALGO_OPP_INFO)
+					LOG_INF("opp_check(%d) dsp keep high (%d/%d_%d/%d)\n", core,
+						force_change_vcore_opp[core],
+						freq_index, opps.dspcore[core].index, opp_keep_flag);
+			} else {
+				opps.dspcore[core].index = freq_index;
+				if (opps.vcore.index > 0 && opps.dspcore[core].index < 4) {
+					/* adjust 0~3 to 4~7 for real table if needed*/
+					opps.dspcore[core].index = opps.dspcore[core].index + 4;
 				}
+				opps.dsp.index = 7;
+				opps.ipu_if.index = 7;
+				for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+					LOG_DBG("opp_check opps.dspcore[%d].index(%d -> %d)", core,
+						opps.dspcore[core].index, opps.dsp.index);
+					/* interface should be the max freq of vpu cores */
+					if ((opps.dspcore[i].index < opps.dsp.index) &&
+						(opps.dspcore[i].index >= max_dsp_freq)) {
+						opps.dsp.index = opps.dspcore[i].index;
+						opps.ipu_if.index = opps.dspcore[i].index;
+					}
+				}
+				force_change_dsp_freq[core] = true;
+
+				opp_keep_flag = true;
+				mod_delayed_work(wq, &opp_keep_work, msecs_to_jiffies(OPP_KEEP_TIME_MS));
 			}
-			force_change_dsp_freq[core] = true;
+		} else {
+			/* vcore not change & dsp not change */
+			if (g_vpu_log_level > VpuLogThre_ALGO_OPP_INFO)
+				LOG_INF("opp_check(%d) vcore/dsp no change\n", core);
+			opp_keep_flag = true;
+			mod_delayed_work(wq, &opp_keep_work, msecs_to_jiffies(OPP_KEEP_TIME_MS));
 		}
 	}
 	mutex_unlock(&opp_mutex);
 out:
-	LOG_INF("opp_check(%d) - locked(%d), [vcore(%d/%d) %d.%d.%d.%d), check(%d/%d/%d)",
-		core, is_power_debug_lock,
+	LOG_INF("opp_check(%d)-lock(%d/%d_%d),[vcore(%d/%d) %d.%d.%d.%d),max(%d/%d),check(%d/%d/%d),%d\n",
+		core, is_power_debug_lock, vcore_index, freq_index,
 		opps.vcore.index, get_vcore_opp, opps.dsp.index, opps.dspcore[0].index,
-		opps.dspcore[1].index, opps.ipu_if.index, freq_check,
-		force_change_vcore_opp[core], force_change_dsp_freq[core]);
+		opps.dspcore[1].index, opps.ipu_if.index, max_vcore_opp, max_dsp_freq, freq_check,
+		force_change_vcore_opp[core], force_change_dsp_freq[core], opp_keep_flag);
 }
 
 static bool vpu_change_opp(int core, int type)
@@ -678,8 +715,16 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 	LOG_INF("vpu_thermal_en_throttle_cb, opp(%d)->(%d/%d)\n",
 		vpu_opp, vcore_opp_index, vpu_freq_index);
 
-	for (i = 0 ; i < MTK_VPU_CORE ; i++)
+	mutex_lock(&opp_mutex);
+	max_dsp_freq = vpu_freq_index;
+	max_vcore_opp = vcore_opp_index;
+	mutex_unlock(&opp_mutex);
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		mutex_lock(&opp_mutex);
+		opp_keep_flag = false; /* force change for all core under thermal request */
+		mutex_unlock(&opp_mutex);
 		vpu_opp_check(i, vcore_opp_index, vpu_freq_index);
+	}
 
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 		if (force_change_dsp_freq[i]) {
@@ -711,16 +756,10 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 				LOG_INF("thermal force change dsp freq to 182MHz\n");
 				break;
 			}
-			mutex_lock(&opp_mutex);
-			max_dsp_freq = vpu_freq_index;
-			mutex_unlock(&opp_mutex);
 			vpu_change_opp(i, OPPTYPE_DSPFREQ);
 		} else if (force_change_vcore_opp[i]) {
 			/* vcore change should wait */
 			LOG_INF("thermal force change vcore opp to %d\n", vcore_opp_index);
-			mutex_lock(&opp_mutex);
-			max_vcore_opp = vcore_opp_index;
-			mutex_unlock(&opp_mutex);
 			/* vcore only need to change one time from thermal request*/
 			if (i == 0)
 				vpu_change_opp(i, OPPTYPE_VCORE);
@@ -1097,6 +1136,7 @@ static int vpu_disable_regulator_and_clock(int core)
 	LOG_DBG("[vpu_%d] disable result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 out:
 	is_power_on[core] = false;
+	opps.dspcore[core].index = 7;
 	LOG_INF("[vpu_%d] dis_rc -\n", core);
 	return ret;
 
@@ -1656,6 +1696,15 @@ static void vpu_power_counter_routine(struct work_struct *work)
 	LOG_INF("vpu_%d counterR -", core);
 }
 
+static void vpu_opp_keep_routine(struct work_struct *work)
+{
+	LOG_INF("vpu_opp_keep_routine flag (%d) +\n", opp_keep_flag);
+	mutex_lock(&opp_mutex);
+	opp_keep_flag = false;
+	mutex_unlock(&opp_mutex);
+	LOG_INF("vpu_opp_keep_routine flag (%d) -\n", opp_keep_flag);
+}
+
 int vpu_init_hw(int core, struct vpu_device *device)
 {
 	int ret, i;
@@ -1693,6 +1742,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		is_locked = false;
 		max_vcore_opp = 0;
 		max_dsp_freq = 0;
+		opp_keep_flag = false;
 		vpu_dev = device;
 		is_power_debug_lock = false;
 
@@ -1884,6 +1934,7 @@ int vpu_uninit_hw(void)
 			vpu_service_cores[i].work_buf = NULL;
 		}
 	}
+	cancel_delayed_work(&opp_keep_work);
 	/* pmqos  */
 	#ifdef ENABLE_PMQOS
 	pm_qos_remove_request(&vpu_qos_bw_request);
@@ -2060,7 +2111,7 @@ int vpu_hw_boot_sequence(int core)
 	/* default set pre-ultra instead of ultra */
 	VPU_SET_BIT(ptr_axi_0, 28);
 
-	if (g_vpu_log_level > 1)
+	if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
 		LOG_INF("[vpu_%d] REG_AXI_DEFAULT0(0x%x)\n", core,
 			vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x13C));
 
@@ -2458,7 +2509,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	memcpy((void *) (uintptr_t)vpu_service_cores[core].work_buf->va, request->buffers,
 			sizeof(struct vpu_buffer) * request->buffer_count);
 
-	if (g_vpu_log_level > 4)
+	if (g_vpu_log_level > VpuLogThre_DUMP_BUF_MVA)
 		vpu_dump_buffer_mva(request);
 	LOG_INF("[vpu_%d] start d2d, id/frm (%d/%d)\n", core,
 		request->algo_id[core], request->frame_magic);
@@ -2532,7 +2583,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 	struct vpu_algo *algo = NULL;
 	bool need_reload = false;
 
-	if (g_vpu_log_level > 2)
+	if (g_vpu_log_level > VpuLogThre_ALGO_OPP_INFO)
 		LOG_INF("[vpu_%d/%d] pr + ", core, request->algo_id[core]);
 
 	/* step1, enable clocks and boot-up if needed */
@@ -2571,7 +2622,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 		CHECK_RET("[vpu_%d]have wrong status before do loader!\n", core);
 		LOG_DBG("[vpu_%d] vpu_check_precond done\n", core);
 
-		if (g_vpu_log_level > 2)
+		if (g_vpu_log_level > VpuLogThre_ALGO_OPP_INFO)
 			LOG_INF("[vpu_%d] algo ptr/length (0x%lx/0x%x)\n", core,
 				(unsigned long)algo->bin_ptr, algo->bin_length);
 
@@ -2590,7 +2641,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 
 		/* 3. wait until done */
 		ret = wait_command(core);
-		if (g_vpu_log_level > 2)
+		if (g_vpu_log_level > VpuLogThre_ALGO_OPP_INFO)
 			LOG_INF("[vpu_%d] algo done\n", core);
 		vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 		vpu_trace_end();
@@ -2627,7 +2678,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 	memcpy((void *) (uintptr_t)vpu_service_cores[core].work_buf->va, request->buffers,
 			sizeof(struct vpu_buffer) * request->buffer_count);
 
-	if (g_vpu_log_level > 4)
+	if (g_vpu_log_level > VpuLogThre_DUMP_BUF_MVA)
 		vpu_dump_buffer_mva(request);
 	LOG_INF("[vpu_%d] start d2d, id/frm (%d/%d), bw(%d), algo(%d->%d, %d)\n", core,
 		request->algo_id[core], request->frame_magic,
@@ -2660,7 +2711,7 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 
 	/* 3. wait until done */
 	ret = wait_command(core);
-	if (g_vpu_log_level > 1)
+	if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
 		LOG_INF("[vpu_%d] end d2d\n", core);
 	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 	#ifdef ENABLE_PMQOS

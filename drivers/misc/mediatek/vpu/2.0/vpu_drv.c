@@ -411,7 +411,7 @@ int vpu_get_request_from_queue(struct vpu_user *user, uint64_t request_id, struc
 			}
 		}
 
-		if (g_vpu_log_level > 1)
+		if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
 			LOG_INF("[vpu] vpu_get_request_from_queue (%d)\n", get);
 		if (get)
 			list_del_init(vlist_link(req, struct vpu_request));
@@ -597,8 +597,8 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		struct vpu_request *req;
 		struct vpu_request *u_req;
 
-		if (g_vpu_log_level > 1)
-			LOG_INF("[vpu] VPU_IOCTL_ENQUE_REQUEST +\n");
+		/*if (g_vpu_log_level > VpuLogThre_PERFORMANCE)*/
+		LOG_INF("[vpu] VPU_IOCTL_ENQUE_REQUEST +\n");
 
 		ret = vpu_alloc_request(&req);
 		CHECK_RET("[ENQUE alloc request failed, ret=%d\n", ret);
@@ -647,7 +647,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		/* free the request, error happened here*/
 		vpu_free_request(req);
-		if (g_vpu_log_level > 1)
+		if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
 			LOG_INF("[vpu] .VPU_IOCTL_ENQUE_REQUEST - ");
 		ret = -EFAULT;
 		break;
@@ -658,7 +658,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		uint64_t kernel_request_id;
 		struct vpu_request *u_req;
 
-		if (g_vpu_log_level > 1)
+		if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
 			LOG_INF("[vpu] VPU_IOCTL_DEQUE_REQUEST + ");
 
 		u_req = (struct vpu_request *) arg;
@@ -685,7 +685,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		ret = vpu_free_request(req);
 		CHECK_RET("[DEQUE] free request, ret=%d\n", ret);
-		if (g_vpu_log_level > 1)
+		if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
 			LOG_INF("[vpu] VPU_IOCTL_DEQUE_REQUEST - ");
 		break;
 	}
