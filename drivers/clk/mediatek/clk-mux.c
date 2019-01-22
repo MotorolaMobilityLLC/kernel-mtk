@@ -102,8 +102,18 @@ static int mtk_mux_clr_set_upd_enable(struct clk_hw *hw)
 	val &= ~BIT(mux->gate_shift);
 
 	if (val != orig) {
-		clk_writel(val, mux->base + mux->mux_ofs);
-
+#if defined(CONFIG_MACH_MT6799)
+		if ((strcmp(__clk_get_name(mux->hw.clk), "venc_sel")) &&
+			(strcmp(__clk_get_name(mux->hw.clk), "mfg_sel")) &&
+			(strcmp(__clk_get_name(mux->hw.clk), "camtg_sel")) &&
+			(strcmp(__clk_get_name(mux->hw.clk), "i2c_sel")))
+			clk_writel(val, mux->base + mux->mux_ofs);
+		else {
+			clk_writel(BIT(mux->gate_shift), mux->base + mux->mux_clr_ofs);
+		}
+#else
+			clk_writel(val, mux->base + mux->mux_ofs);
+#endif
 		if (mux->upd_shift >= 0)
 			clk_writel(BIT(mux->upd_shift), mux->base + mux->upd_ofs);
 	}
@@ -152,8 +162,18 @@ static void mtk_mux_clr_set_upd_disable(struct clk_hw *hw)
 	val |= BIT(mux->gate_shift);
 
 	if (val != orig) {
+#if defined(CONFIG_MACH_MT6799)
+		if ((strcmp(__clk_get_name(mux->hw.clk), "venc_sel")) &&
+			(strcmp(__clk_get_name(mux->hw.clk), "mfg_sel")) &&
+			(strcmp(__clk_get_name(mux->hw.clk), "camtg_sel")) &&
+			(strcmp(__clk_get_name(mux->hw.clk), "i2c_sel")))
+			clk_writel(val, mux->base + mux->mux_ofs);
+		else {
+			writel(BIT(mux->gate_shift), mux->base + mux->mux_set_ofs);
+		}
+#else
 		clk_writel(val, mux->base + mux->mux_ofs);
-
+#endif
 		if (mux->upd_shift >= 0)
 			clk_writel(BIT(mux->upd_shift), mux->base + mux->upd_ofs);
 	}
@@ -259,15 +279,26 @@ static int mtk_mux_clr_set_upd_set_parent(struct clk_hw *hw, u8 index)
 	val |= index << mux->mux_shift;
 
 	if (val != orig) {
-		#if defined(CONFIG_MACH_MT6799)
-		writel(val, mux->base + mux->mux_ofs);
-		#else
+#if defined(CONFIG_MACH_MT6799)
+		if ((strcmp(__clk_get_name(mux->hw.clk), "venc_sel")) &&
+			(strcmp(__clk_get_name(mux->hw.clk), "mfg_sel")) &&
+			(strcmp(__clk_get_name(mux->hw.clk), "camtg_sel")) &&
+			(strcmp(__clk_get_name(mux->hw.clk), "i2c_sel")))
+			writel(val, mux->base + mux->mux_ofs);
+		else {
+			val = (mask << mux->mux_shift);
+			writel(val, mux->base + mux->mux_clr_ofs);
+
+			val = (index << mux->mux_shift);
+			writel(val, mux->base + mux->mux_set_ofs);
+		}
+#else
 		val = (mask << mux->mux_shift);
 		writel(val, mux->base + mux->mux_clr_ofs);
 
 		val = (index << mux->mux_shift);
 		writel(val, mux->base + mux->mux_set_ofs);
-		#endif
+#endif
 		if (mux->upd_shift >= 0)
 			clk_writel(BIT(mux->upd_shift), mux->base + mux->upd_ofs);
 	}
