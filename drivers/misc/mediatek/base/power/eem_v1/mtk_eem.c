@@ -267,6 +267,11 @@ void __iomem *eem_base;
 static u32 eem_irq_number;
 #endif
 
+/* Definition for Picachu */
+#define PI_PTP1_MTDES_START_BIT	0
+#define PI_PTP1_BDES_START_BIT	8
+#define PI_PTP1_MDES_START_BIT	16
+
 /*=============================================================
 * common functions for both ap and sspm eem
 *=============================================================
@@ -366,12 +371,20 @@ static void mt_eem_disable_mtcmos(void)
 	eem_debug("mt_eem_disable_mtcmos done\n");
 }
 
+void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse)
+{
+	struct eem_det *det = id_to_eem_det(id);
+
+	det->pi_efuse = pi_efuse;
+}
+
 static int get_devinfo(void)
 {
 	int ret = 0;
 	int *val;
 	int i = 0;
 	struct eem_det *det;
+	unsigned int mtdes_idx, bdes_mdes_idx;
 
 	/* if legacy eem, save efuse data into eem_devinfo */
 	/* if sspm eem, save efuse data into logs */
@@ -465,6 +478,29 @@ static int get_devinfo(void)
 	val[11] = 0x005500C0;
 	val[12] = 0;
 	#endif
+
+	/* Update MTDES/BDES/MDES if they are modified by PICACHU. */
+	for_each_det(det) {
+
+		if (!det->pi_efuse)
+			continue;
+
+		bdes_mdes_idx = (det->ctrl_id << 1);
+		mtdes_idx = bdes_mdes_idx + 1;
+
+		/* Update MTDES */
+		val[mtdes_idx] = (val[mtdes_idx] & 0xFF00FFFF) |
+		(((det->pi_efuse >> PI_PTP1_MTDES_START_BIT) & 0xff) << 16);
+
+		/* Update BDES */
+		val[bdes_mdes_idx] = (val[bdes_mdes_idx] & 0xFFFFFF00) |
+		((det->pi_efuse >> PI_PTP1_BDES_START_BIT) & 0xff);
+
+		/* Update MDES */
+		val[bdes_mdes_idx] = (val[bdes_mdes_idx] & 0xFFFF00FF) |
+		(((det->pi_efuse >> PI_PTP1_BDES_START_BIT) & 0x0000FF00));
+	}
+
 	eem_debug("M_HW_RES0 = 0x%08X\n", val[0]);
 	eem_debug("M_HW_RES1 = 0x%08X\n", val[1]);
 	eem_debug("M_HW_RES2 = 0x%08X\n", val[2]);
