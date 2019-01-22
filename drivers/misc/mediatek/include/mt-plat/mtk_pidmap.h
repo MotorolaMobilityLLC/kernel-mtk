@@ -19,8 +19,19 @@
 #include <linux/types.h>
 #include <linux/sched.h>
 
-#define PIDMAP_AEE_BUFFER_SIZE    (512 * 1024)
+/* buffer size */
+#define PIDMAP_AEE_BUF_SIZE       (512 * 1024)
 #define PIDMAP_PROC_CMD_BUF_SIZE  (1)
+
+/* raw file format, unit: bytes */
+#define PIDMAP_TGID_SIZE          (sizeof(uint16_t))
+
+/* mtk_pidmap_struct */
+#define PIDMAP_ENTRY_SIZE         (16)
+#define PIDMAP_ENTRY_CNT	\
+	(PIDMAP_AEE_BUF_SIZE / PIDMAP_ENTRY_SIZE)
+#define PIDMAP_TASKNAME_SIZE \
+	(PIDMAP_ENTRY_SIZE - PIDMAP_TGID_SIZE)
 
 enum PIDMAP_PROC_MODE {
 	PIDMAP_PROC_DUMP_RAW      = 0,
