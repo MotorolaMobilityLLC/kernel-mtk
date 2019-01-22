@@ -520,10 +520,20 @@ extern struct cpufreq_governor cpufreq_gov_interactive;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_SCHED)
 extern struct cpufreq_governor cpufreq_gov_sched;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_sched)
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDPLUS)
+extern struct cpufreq_governor cpufreq_gov_sched;
+#define CPUFREQ_DEFAULT_GOVERNOR        (&cpufreq_gov_sched)
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL)
 extern struct cpufreq_governor cpufreq_gov_schedutil;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_schedutil)
 #endif
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+extern unsigned int get_sched_cur_freq(int cid);
+#else
+static inline int get_sched_cur_freq(int cid) { return 0; };
+#endif
+
 
 static inline void cpufreq_policy_apply_limits(struct cpufreq_policy *policy)
 {

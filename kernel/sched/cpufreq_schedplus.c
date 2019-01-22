@@ -187,6 +187,15 @@ struct gov_data {
 	u64 last_freq_update_time;
 };
 
+static inline bool is_sched_assist(void)
+{
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	return true;
+#else
+	return false;
+#endif
+}
+
 void temporary_dvfs_down_throttle_change(int change, unsigned long new_throttle)
 {
 	int i;
@@ -198,6 +207,24 @@ void temporary_dvfs_down_throttle_change(int change, unsigned long new_throttle)
 			g_gd[i]->down_throttle_nsec = g_gd[i]->down_throttle_nsec_bk;
 	}
 }
+
+/*
+ * return requested frequency if sched-gov used.
+ */
+unsigned int get_sched_cur_freq(int cid)
+{
+	if (!sched_freq())
+		return 0;
+
+	if (is_sched_assist())
+		return 0;
+
+	if ((cid > -1 && cid < MAX_CLUSTER_NR) && g_gd[cid])
+		return g_gd[cid]->requested_freq;
+	else
+		return 0;
+}
+EXPORT_SYMBOL(get_sched_cur_freq);
 
 void show_freq_kernel_log(int dbg_id, int cid, unsigned int freq)
 {
@@ -649,15 +676,6 @@ static struct attribute_group sched_attr_group_gov_pol;
 static struct attribute_group *get_sysfs_attr(void)
 {
 	return &sched_attr_group_gov_pol;
-}
-
-static inline bool is_sched_assist(void)
-{
-#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-	return true;
-#else
-	return false;
-#endif
 }
 
 static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
