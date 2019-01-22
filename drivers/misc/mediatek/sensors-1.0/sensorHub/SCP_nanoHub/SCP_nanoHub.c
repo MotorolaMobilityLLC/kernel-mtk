@@ -299,7 +299,7 @@ static void ipi_work(struct work_struct *work)
 		list_del(&m->queue);
 		spin_unlock(&master.lock);
 		list_for_each_entry(t, &m->transfers, transfer_list) {
-			if (!t->tx_buf && !t->rx_buf && t->len) {
+			if (!t->tx_buf && t->len) {
 				status = -EINVAL;
 				SCP_PR_ERR("transfer param wrong :%d\n", status);
 				break;
