@@ -80,7 +80,7 @@ static int handle_to_index(int handle)
 		FUSION_PR_ERR("handle_to_index invalid handle:%d, index:%d\n", handle, index);
 		return index;
 	}
-	FUSION_LOG("handle_to_index handle:%d, index:%d\n", handle, index);
+	/* FUSION_LOG("handle_to_index handle:%d, index:%d\n", handle, index); */
 	return index;
 }
 
@@ -98,11 +98,11 @@ static int fusion_enable_and_batch(int index)
 			FUSION_PR_ERR("fusion turn off power err = %d\n", err);
 			return -1;
 		}
-		FUSION_LOG("fusion turn off power done\n");
+		/* FUSION_LOG("fusion turn off power done\n"); */
 
 		cxt->fusion_context[index].power = 0;
 		cxt->fusion_context[index].delay_ns = -1;
-		FUSION_LOG("FUSION disable done\n");
+		/* FUSION_LOG("FUSION disable done\n"); */
 		return 0;
 	}
 	/* power off -> power on */
@@ -113,10 +113,10 @@ static int fusion_enable_and_batch(int index)
 			FUSION_PR_ERR("fusion turn on power err = %d\n", err);
 			return -1;
 		}
-		FUSION_LOG("fusion turn on power done\n");
+		/* FUSION_LOG("fusion turn on power done\n"); */
 
 		cxt->fusion_context[index].power = 1;
-		FUSION_LOG("FUSION power on done\n");
+		/* FUSION_LOG("FUSION power on done\n"); */
 	}
 	/* rate change */
 	if (cxt->fusion_context[index].power == 1 && cxt->fusion_context[index].delay_ns >= 0) {
@@ -131,8 +131,8 @@ static int fusion_enable_and_batch(int index)
 			FUSION_PR_ERR("fusion set batch(ODR) err %d\n", err);
 			return -1;
 		}
-		FUSION_LOG("fusion set ODR, fifo latency done\n");
-		FUSION_LOG("FUSION batch done\n");
+		/* FUSION_LOG("fusion set ODR, fifo latency done\n"); */
+		/* FUSION_LOG("FUSION batch done\n"); */
 	}
 	return 0;
 }
