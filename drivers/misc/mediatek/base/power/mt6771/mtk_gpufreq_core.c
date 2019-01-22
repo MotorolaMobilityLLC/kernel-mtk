@@ -2173,7 +2173,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		g_segment_id = MT6771_SEGMENT_3;
 	} else {
 		/* Other Version, set default segment */
-		g_segment_id = MT6771_SEGMENT_1;
+		g_segment_id = MT6771_SEGMENT_2;
 	}
 	gpufreq_pr_info("@%s: g_efuse_id = 0x%08X, g_segment_id = %d\n", __func__, g_efuse_id, g_segment_id);
 
