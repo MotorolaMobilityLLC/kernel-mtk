@@ -538,7 +538,7 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 
 	/*set a wq to enable scp logger*/
 	scp_logger_notify_work[SCP_A_ID].id = SCP_A_ID;
-	scp_schedule_work(&scp_logger_notify_work[SCP_A_ID]);
+	scp_schedule_logger_work(&scp_logger_notify_work[SCP_A_ID]);
 }
 
 /*
@@ -567,7 +567,9 @@ static void scp_logger_notify_ws(struct work_struct *ws)
 	retrytimes = SCP_IPI_RETRY_TIMES;
 	do {
 		ret = scp_ipi_send(scp_ipi_id, &magic, sizeof(magic), 0, scp_core_id);
-		pr_debug("[SCP]scp_logger_notify_ws ipi ret=%d\n", ret);
+		if ((retrytimes % 500) == 0)
+			pr_debug("[SCP]scp_logger_notify_ws ipi ret=%d\n", ret);
+
 		if (ret == SCP_IPI_DONE)
 			break;
 		retrytimes--;

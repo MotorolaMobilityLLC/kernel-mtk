@@ -168,7 +168,7 @@ extern void scp_A_ipi_init(void);
 extern void scp_A_register_notify(struct notifier_block *nb);
 extern void scp_A_unregister_notify(struct notifier_block *nb);
 extern void scp_schedule_work(struct scp_work_struct *scp_ws);
-
+extern void scp_schedule_logger_work(struct scp_work_struct *scp_ws);
 extern int get_scp_semaphore(int flag);
 extern int release_scp_semaphore(int flag);
 extern int scp_get_semaphore_3way(int flag);
@@ -186,7 +186,7 @@ void set_scp_mpu(void);
 extern phys_addr_t scp_mem_base_phys;
 extern phys_addr_t scp_mem_base_virt;
 extern phys_addr_t scp_mem_size;
-extern unsigned int scp_reset_status;
+extern atomic_t scp_reset_status;
 
 #if SCP_VCORE_TEST_ENABLE
 extern unsigned int mt_get_ckgen_freq(unsigned int ID);
