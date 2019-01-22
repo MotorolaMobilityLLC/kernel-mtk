@@ -279,6 +279,12 @@ int rndis_send_ep0_response(struct usb_composite_dev *cdev,
 
 	spin_lock_irqsave(&cdev->lock, flags);
 
+	if (cdev->gadget->speed == USB_SPEED_UNKNOWN) {
+		pr_warn("%s, USB_SPEED_UNKNOWN, directly return\n", __func__);
+		spin_unlock_irqrestore(&cdev->lock, flags);
+		return 0;
+	}
+
 	pr_debug("%s\n", __func__);
 
 	if (!params->dev) {
