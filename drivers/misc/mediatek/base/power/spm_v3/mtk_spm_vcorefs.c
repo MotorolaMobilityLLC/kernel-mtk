@@ -26,6 +26,7 @@
 #endif
 
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_chip.h>
 
 #include <mtk_spm_misc.h>
 #include <mtk_spm_vcore_dvfs.h>
@@ -1060,8 +1061,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) & ~(1U << 0)); /* DVFS mapping table by channel*/
 		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) & ~(1U << 2)); /* BW by channel */
 
-		/* FIXME 11/12 */
-		if (1) {
+		if (plat_chip_ver == CHIP_SW_VER_01) {
 			/* E1 C+G jump level */
 			spm_write(DVFSRC_SIGNAL_CTRL, 0xc032a2);
 		} else {
@@ -1069,8 +1069,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 			spm_write(DVFSRC_SIGNAL_CTRL, 0x8032a2);
 		}
 
-		/* FIXME 11/12 */
-		if (1) {
+		if (plat_chip_ver == CHIP_SW_VER_01) {
 			/* E1 HRT WQHD/FHD */
 			spm_write(DVFSRC_M3733, 0xa60b4); /* >5.3G to opp0 */
 			spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp0 */
@@ -1097,8 +1096,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		spm_write(DVFSRC_CHOOSE, spm_read(DVFSRC_CHOOSE) | (1U << 0));
 		spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (1U << 2));
 
-		/* FIXME 11/12 */
-		if (1) {
+		if (plat_chip_ver == CHIP_SW_VER_01) {
 			/* E1 C+G jump level*/
 			spm_write(DVFSRC_SIGNAL_CTRL, 0xc032a2);
 		} else {
@@ -1106,8 +1104,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 			spm_write(DVFSRC_SIGNAL_CTRL, 0xc032a2);
 		}
 
-		/* FIXME 11/12 */
-		if (1) {
+		if (plat_chip_ver == CHIP_SW_VER_01) {
 			/* E1 HRT WQHD/FHD */
 			spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
 			spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp0 */
@@ -1186,8 +1183,7 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_BANDWIDTH_CONST1, 0x04100000);
 	spm_write(DVFSRC_BANDWIDTH_CONST2, 0x04104000);
 
-	/* FIXME 11/12 */
-	if (1)
+	if (plat_chip_ver == CHIP_SW_VER_01)
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001);
 	else
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001);
@@ -1289,8 +1285,8 @@ void spm_go_to_vcorefs(int spm_flags)
 
 static void plat_info_init(void)
 {
-	/* FIXME chip version */
-	plat_chip_ver = 46;
+	/* HW chip version */
+	plat_chip_ver = mt_get_chip_sw_ver();
 
 	/* lcd resolution */
 	#ifdef CONFIG_MTK_SMI_EXT
