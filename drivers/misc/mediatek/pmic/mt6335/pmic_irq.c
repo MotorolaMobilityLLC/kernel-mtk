@@ -424,6 +424,7 @@ void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 	case INT_VCAMIO_OC:
 	case INT_VSIM1_OC:
 	case INT_VSIM2_OC:
+	case INT_VMCH_OC:
 		/* keep OC interrupt and keep tracking */
 		pr_err(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
 		break;
