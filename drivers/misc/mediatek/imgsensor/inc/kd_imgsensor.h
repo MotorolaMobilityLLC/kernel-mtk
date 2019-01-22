@@ -33,25 +33,26 @@
 *
 ********************************************************************************/
 #define YUV_INFO(_id, name, getCalData)\
-	{ \
-		_id, name, \
-NSFeature :  : YUVSensorInfo < _id >  :  : createInstance(name, #name), \
-		(NSFeature :  : SensorInfoBase*(*)()) \
-NSFeature :  : YUVSensorInfo < _id >  :  : getInstance, \
-NSFeature :  : YUVSensorInfo < _id >  :  : getDefaultData, \
-		getCalData, \
-NSFeature :  : YUVSensorInfo < _id >  :  : getNullFlickerPara \
-	}
+{ \
+	_id, name, \
+	NSFeature::YUVSensorInfo<_id>::createInstance(name, #name), \
+	(NSFeature::SensorInfoBase*(*)()) \
+	NSFeature::YUVSensorInfo<_id>::getInstance, \
+	NSFeature::YUVSensorInfo<_id>::getDefaultData, \
+	getCalData, \
+	NSFeature::YUVSensorInfo<_id>::getNullFlickerPara \
+}
 #define RAW_INFO(_id, name, getCalData)\
-	{ \
-		_id, name, \
-NSFeature :  : RAWSensorInfo < _id >  :  : createInstance(name, #name), \
-		(NSFeature :  : SensorInfoBase*(*)()) \
-NSFeature :  : RAWSensorInfo < _id >  :  : getInstance, \
-NSFeature :  : RAWSensorInfo < _id >  :  : getDefaultData, \
-		getCalData, \
-NSFeature :  : RAWSensorInfo < _id >  :  : getFlickerPara \
-	}
+{ \
+	_id, name, \
+	NSFeature::RAWSensorInfo<_id>::createInstance(name, #name), \
+	(NSFeature::SensorInfoBase*(*)()) \
+	NSFeature::RAWSensorInfo<_id>::getInstance, \
+	NSFeature::RAWSensorInfo<_id>::getDefaultData, \
+	getCalData, \
+	NSFeature::RAWSensorInfo<_id>::getFlickerPara \
+}
+
 /*******************************************************************************
 *
 ********************************************************************************/
