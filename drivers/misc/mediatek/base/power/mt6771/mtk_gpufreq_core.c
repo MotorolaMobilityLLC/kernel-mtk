@@ -740,10 +740,14 @@ EXPORT_SYMBOL(mt_gpufreq_get_cur_freq);
 
 /*
  * API : get current voltage
+ * This is exported API, which reports local backup for latest
+ * updated VGPU directly
+ * Since some non-preemptive thread could not use regulator_get,
+ * This is not a redundant API
  */
 unsigned int mt_gpufreq_get_cur_volt(void)
 {
-	return __mt_gpufreq_get_cur_volt();
+	return (g_volt_enable_state) ? g_cur_opp_volt : 0;
 }
 EXPORT_SYMBOL(mt_gpufreq_get_cur_volt);
 
