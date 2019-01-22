@@ -191,6 +191,9 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 		case GED_BRIDGE_COMMAND_GE_INFO:
 			SET_FUNC_AND_CHECK(ged_bridge_ge_info, GE_INFO);
 			break;
+		case GED_BRIDGE_COMMAND_GPU_TIMESTAMP:
+			SET_FUNC_AND_CHECK(ged_bridge_gpu_timestamp, GPU_TIMESTAMP);
+			break;
 		default:
 			GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
 			break;
