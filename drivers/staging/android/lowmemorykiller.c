@@ -42,26 +42,59 @@
 #include <linux/rcupdate.h>
 #include <linux/profile.h>
 #include <linux/notifier.h>
+#include <linux/freezer.h>
+
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+#include <mt-plat/aee.h>
+#include <disp_assert_layer.h>
+static u32 in_lowmem;
+#endif
+
+#ifdef CONFIG_MTK_ION
+#include "mtk/ion_drv.h"
+#endif
+
+#ifdef CONFIG_MTK_GPU_SUPPORT
+#include <mt-plat/mtk_gpu_utility.h>
+#endif
+
+static short lowmem_debug_adj;	/* default: 0 */
+#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_AEE_FEATURE
+static short lowmem_kernel_warn_adj;	/* default: 0 */
+#endif
+#define output_expect(x) likely(x)
+static u32 enable_candidate_log = 1;
+#define LMK_LOG_BUF_SIZE 500
+static u8 lmk_log_buf[LMK_LOG_BUF_SIZE];
+#else
+#define output_expect(x) unlikely(x)
+static u32 enable_candidate_log;
+#endif
+static DEFINE_SPINLOCK(lowmem_shrink_lock);
 
 #define CREATE_TRACE_POINTS
 #include "trace/lowmemorykiller.h"
 
-static uint32_t lowmem_debug_level = 1;
-static short lowmem_adj[6] = {
+static u32 lowmem_debug_level = 1;
+static short lowmem_adj[9] = {
 	0,
 	1,
 	6,
 	12,
 };
-static int lowmem_adj_size = 4;
-static int lowmem_minfree[6] = {
+
+static int lowmem_adj_size = 9;
+static int lowmem_minfree[9] = {
 	3 * 512,	/* 6MB */
 	2 * 1024,	/* 8MB */
 	4 * 1024,	/* 16MB */
 	16 * 1024,	/* 64MB */
 };
-static int lowmem_minfree_size = 4;
 
+static int lowmem_minfree_size = 9;
+
+static struct task_struct *lowmem_deathpending;
 static unsigned long lowmem_deathpending_timeout;
 
 #define lowmem_print(level, x...)			\
@@ -70,9 +103,32 @@ static unsigned long lowmem_deathpending_timeout;
 			pr_info(x);			\
 	} while (0)
 
+static int
+task_notify_func(struct notifier_block *self, unsigned long val, void *data);
+
+static struct notifier_block task_nb = {
+	.notifier_call	= task_notify_func,
+};
+
+static int
+task_notify_func(struct notifier_block *self, unsigned long val, void *data)
+{
+	struct task_struct *task = data;
+
+	if (task == lowmem_deathpending)
+		lowmem_deathpending = NULL;
+
+	return NOTIFY_DONE;
+}
+
 static unsigned long lowmem_count(struct shrinker *s,
 				  struct shrink_control *sc)
 {
+#ifdef CONFIG_FREEZER
+	/* Do not allow LMK to work when system is freezing */
+	if (pm_freezing)
+		return 0;
+#endif
 	return global_page_state(NR_ACTIVE_ANON) +
 		global_page_state(NR_ACTIVE_FILE) +
 		global_page_state(NR_INACTIVE_ANON) +
@@ -96,6 +152,119 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 						global_page_state(NR_SHMEM) -
 						total_swapcache_pages();
 
+	int print_extra_info = 0;
+	static unsigned long lowmem_print_extra_info_timeout;
+#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+	int to_be_aggressive = 0;
+	unsigned long swap_pages = 0;
+#endif
+#ifdef CONFIG_MT_ENG_BUILD
+	int pid_dump = -1; /* process to be dump */
+	int max_mem = 0;
+	static int pid_flm_warn = -1;
+	static unsigned long flm_warn_timeout;
+	int log_offset = 0, log_ret;
+#endif
+
+	/*
+	* If we already have a death outstanding, then
+	* bail out right away; indicating to vmscan
+	* that we have nothing further to offer on
+	* this pass.
+	*
+	*/
+	if (lowmem_deathpending &&
+	    time_before_eq(jiffies, lowmem_deathpending_timeout))
+		return SHRINK_STOP;
+
+	/* Subtract CMA free pages from other_free if this is an unmovable page allocation */
+	if (IS_ENABLED(CONFIG_CMA))
+		if (!(sc->gfp_mask & __GFP_MOVABLE))
+			other_free -= global_page_state(NR_FREE_CMA_PAGES);
+
+	if (!spin_trylock(&lowmem_shrink_lock)) {
+		lowmem_print(4, "lowmem_shrink lock failed\n");
+		return SHRINK_STOP;
+	}
+
+	/*
+	 * Check whether it is caused by low memory in lower zone(s)!
+	 * This will help solve over-reclaiming situation while total number
+	 * of free pages is enough, but lower zone(s) is(are) under low memory.
+	 */
+	if (!current_is_kswapd()) {
+		enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
+
+		if (high_zoneidx < MAX_NR_ZONES - 1) {
+			struct pglist_data *pgdat;
+			struct zone *z;
+			enum zone_type zoneidx;
+			unsigned long accumulated_pages = 0, scale = totalram_pages;
+			int new_other_free = 0, new_other_file = 0;
+
+			/* Go through all memory nodes */
+			for_each_online_pgdat(pgdat) {
+				for (zoneidx = 0; zoneidx <= high_zoneidx; zoneidx++) {
+					z = pgdat->node_zones + zoneidx;
+					accumulated_pages += z->managed_pages;
+					new_other_free += zone_page_state(z, NR_FREE_PAGES);
+					new_other_free -= high_wmark_pages(z);
+					new_other_file += zone_page_state(z, NR_FILE_PAGES);
+					new_other_file -= zone_page_state(z, NR_SHMEM);
+				}
+			}
+
+			/*
+			 * Update if we go through ONLY lower zone(s) ACTUALLY
+			 * and scale in totalram_pages
+			 */
+			if (totalram_pages > accumulated_pages) {
+				do_div(scale, accumulated_pages);
+				if (totalram_pages > accumulated_pages * scale)
+					scale += 1;
+				new_other_free *= scale;
+				new_other_file *= scale;
+				other_free = new_other_free;
+				other_file = new_other_file;
+			}
+		}
+	}
+
+	/*
+	 * Accumulate swappiness if reaching minfree[0]
+	if (IS_ENABLED(CONFIG_SWAP) && other_file < lowmem_minfree[0]) {
+		if (vm_swappiness < 200) {
+			vm_swappiness += 5;
+			other_file = lowmem_minfree[0];
+		}
+	} else
+		vm_swappiness = 100;
+	 */
+
+	/* Let other_free be positive or zero */
+	if (other_free < 0) {
+		/* lowmem_print(1, "Original other_free [%d] is too low!\n", other_free); */
+		other_free = 0;
+	}
+
+#if defined(CONFIG_64BIT) && defined(CONFIG_SWAP)
+	/* Halve other_free if there is less free swap */
+	if (vm_swap_full()) {
+		lowmem_print(3, "Halve other_free %d\n", other_free);
+		other_free >>= 1;
+	}
+#endif
+
+#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+	swap_pages = atomic_long_read(&nr_swap_pages);
+	/* More than 1/2 swap usage */
+	if (swap_pages * 2 < total_swap_pages)
+		to_be_aggressive++;
+	/* More than 3/4 swap usage */
+	if (swap_pages * 4 < total_swap_pages)
+		to_be_aggressive++;
+#endif
+
 	if (lowmem_adj_size < array_size)
 		array_size = lowmem_adj_size;
 	if (lowmem_minfree_size < array_size)
@@ -103,6 +272,13 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	for (i = 0; i < array_size; i++) {
 		minfree = lowmem_minfree[i];
 		if (other_free < minfree && other_file < minfree) {
+#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+			if (to_be_aggressive != 0 && i > 3) {
+				i -= to_be_aggressive;
+				if (i < 3)
+					i = 3;
+			}
+#endif
 			min_score_adj = lowmem_adj[i];
 			break;
 		}
@@ -115,10 +291,40 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	if (min_score_adj == OOM_SCORE_ADJ_MAX + 1) {
 		lowmem_print(5, "lowmem_scan %lu, %x, return 0\n",
 			     sc->nr_to_scan, sc->gfp_mask);
+
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+		/* Disable indication if low memory */
+		if (in_lowmem) {
+			in_lowmem = 0;
+			lowmem_print(1, "LowMemoryOff\n");
+		}
+#endif
+		spin_unlock(&lowmem_shrink_lock);
 		return 0;
 	}
 
 	selected_oom_score_adj = min_score_adj;
+
+	/* More debug log */
+	if (output_expect(enable_candidate_log)) {
+		if (min_score_adj <= lowmem_debug_adj) {
+			if (time_after_eq(jiffies, lowmem_print_extra_info_timeout)) {
+				lowmem_print_extra_info_timeout = jiffies + HZ;
+				print_extra_info = 1;
+			}
+		}
+
+		if (print_extra_info) {
+			lowmem_print(1, "Free memory other_free: %d, other_file:%d pages\n", other_free, other_file);
+#ifdef CONFIG_MT_ENG_BUILD
+			log_offset = snprintf(lmk_log_buf, LMK_LOG_BUF_SIZE, "%s",
+					      "<lmk>  pid  adj  score_adj     rss   rswap name\n");
+#else
+			lowmem_print(1,
+				     "<lmk>  pid  adj  score_adj     rss   rswap name\n");
+#endif
+		}
+	}
 
 	rcu_read_lock();
 	for_each_process(tsk) {
@@ -132,18 +338,83 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		if (!p)
 			continue;
 
-		if (test_tsk_thread_flag(p, TIF_MEMDIE) &&
+#ifdef CONFIG_MT_ENG_BUILD
+		if (p->signal->flags & SIGNAL_GROUP_COREDUMP) {
+			task_unlock(p);
+			continue;
+		}
+#endif
+
+		if (task_lmk_waiting(p) && p->mm &&
 		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
+#ifdef CONFIG_MT_ENG_BUILD
+			static pid_t last_dying_pid;
+
+			if (last_dying_pid != p->pid) {
+				lowmem_print(1, "lowmem_shrink return directly, due to  %d (%s) is dying\n",
+					     p->pid, p->comm);
+				last_dying_pid = p->pid;
+			}
+#endif
 			task_unlock(p);
 			rcu_read_unlock();
-			return 0;
+			spin_unlock(&lowmem_shrink_lock);
+			return SHRINK_STOP;
 		}
 		oom_score_adj = p->signal->oom_score_adj;
+
+		if (output_expect(enable_candidate_log)) {
+			if (print_extra_info) {
+#ifdef CONFIG_MT_ENG_BUILD
+log_again:
+				log_ret = snprintf(lmk_log_buf + log_offset, LMK_LOG_BUF_SIZE - log_offset,
+						   "<lmk>%5d%11d%8lu%8lu %s\n", p->pid,
+						   oom_score_adj, get_mm_rss(p->mm),
+						   get_mm_counter(p->mm, MM_SWAPENTS), p->comm);
+
+				if ((log_offset + log_ret) >= LMK_LOG_BUF_SIZE || log_ret < 0) {
+					*(lmk_log_buf + log_offset) = '\0';
+					lowmem_print(1, "\n%s", lmk_log_buf);
+					log_offset = 0;
+					memset(lmk_log_buf, 0x0, LMK_LOG_BUF_SIZE);
+					goto log_again;
+				} else {
+					log_offset += log_ret;
+				}
+#else
+				lowmem_print(1,	"<lmk>%5d%11d%8lu%8lu %s\n", p->pid,
+					     oom_score_adj, get_mm_rss(p->mm),
+					     get_mm_counter(p->mm, MM_SWAPENTS), p->comm);
+#endif
+			}
+		}
+
+#ifdef CONFIG_MT_ENG_BUILD
+		tasksize = get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS);
+
+		/*
+		* dump memory info when framework low memory:
+		* record the first two pid which consumed most memory.
+		*/
+		if (tasksize > max_mem) {
+			max_mem = tasksize;
+			pid_dump = p->pid;
+		}
+
+		if (p->pid == pid_flm_warn &&
+		    time_before_eq(jiffies, flm_warn_timeout)) {
+			task_unlock(p);
+			continue;
+		}
+#endif
 		if (oom_score_adj < min_score_adj) {
 			task_unlock(p);
 			continue;
 		}
-		tasksize = get_mm_rss(p->mm);
+
+#ifndef CONFIG_MT_ENG_BUILD
+		tasksize = get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS);
+#endif
 		task_unlock(p);
 		if (tasksize <= 0)
 			continue;
@@ -160,6 +431,12 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		lowmem_print(2, "select '%s' (%d), adj %hd, size %d, to kill\n",
 			     p->comm, p->pid, oom_score_adj, tasksize);
 	}
+
+#ifdef CONFIG_MT_ENG_BUILD
+	if (log_offset > 0)
+		lowmem_print(1, "\n%s", lmk_log_buf);
+#endif
+
 	if (selected) {
 		long cache_size = other_file * (long)(PAGE_SIZE / 1024);
 		long cache_limit = minfree * (long)(PAGE_SIZE / 1024);
@@ -167,13 +444,8 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 		task_lock(selected);
 		send_sig(SIGKILL, selected, 0);
-		/*
-		 * FIXME: lowmemorykiller shouldn't abuse global OOM killer
-		 * infrastructure. There is no real reason why the selected
-		 * task should have access to the memory reserves.
-		 */
 		if (selected->mm)
-			mark_oom_victim(selected);
+			task_set_lmk_waiting(selected);
 		task_unlock(selected);
 		trace_lowmemory_kill(selected, cache_size, cache_limit, free);
 		lowmem_print(1, "Killing '%s' (%d), adj %hd,\n" \
@@ -187,13 +459,80 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			     cache_size, cache_limit,
 			     min_score_adj,
 			     free);
+		lowmem_deathpending = selected;
 		lowmem_deathpending_timeout = jiffies + HZ;
+		set_tsk_thread_flag(selected, TIF_MEMDIE);
+
+		if (output_expect(enable_candidate_log)) {
+			if (print_extra_info) {
+				show_free_areas(0);
+			#ifdef CONFIG_MTK_ION
+				/* Show ION status */
+				ion_mm_heap_memory_detail();
+			#endif
+			#ifdef CONFIG_MTK_GPU_SUPPORT
+				if (mtk_dump_gpu_memory_usage() == false)
+					lowmem_print(1, "mtk_dump_gpu_memory_usage not support\n");
+			#endif
+			}
+		}
+
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+		/*
+		* when kill adj=0 process trigger kernel warning, only in MTK internal eng load
+		*/
+		if ((selected_oom_score_adj <= lowmem_kernel_warn_adj) && /*lowmem_kernel_warn_adj=16 for test*/
+			time_after_eq(jiffies, flm_warn_timeout)) {
+			if (pid_dump != pid_flm_warn) {
+				#define MSG_SIZE_TO_AEE 70
+				char msg_to_aee[MSG_SIZE_TO_AEE];
+
+				lowmem_print(1, "low memory trigger kernel warning\n");
+				snprintf(msg_to_aee, MSG_SIZE_TO_AEE,
+					 "please contact AP/AF memory module owner[pid:%d]\n", pid_dump);
+				aee_kernel_warning_api("LMK", 0, DB_OPT_DEFAULT |
+					DB_OPT_DUMPSYS_ACTIVITY |
+					DB_OPT_LOW_MEMORY_KILLER |
+					DB_OPT_PID_MEMORY_INFO | /* smaps and hprof*/
+					DB_OPT_PROCESS_COREDUMP |
+					DB_OPT_DUMPSYS_SURFACEFLINGER |
+					DB_OPT_DUMPSYS_GFXINFO |
+					DB_OPT_DUMPSYS_PROCSTATS,
+					"Framework low memory\nCRDISPATCH_KEY:FLM_APAF", msg_to_aee);
+
+				if (pid_dump == selected->pid) {/*select 1st time, filter it*/
+					pid_flm_warn = pid_dump;
+					flm_warn_timeout = jiffies + 60 * HZ;
+					lowmem_deathpending = NULL;
+					lowmem_print(1, "'%s' (%d) max RSS, not kill\n",
+						     selected->comm, selected->pid);
+					send_sig(SIGSTOP, selected, 0);
+					rcu_read_unlock();
+					spin_unlock(&lowmem_shrink_lock);
+					return rem;
+				}
+			} else {
+				lowmem_print(1, "pid_flm_warn:%d, select '%s' (%d)\n",
+					     pid_flm_warn, selected->comm, selected->pid);
+				pid_flm_warn = -1; /*reset*/
+			}
+		}
+#endif
+
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+		/* Show an indication if low memory */
+		if (!in_lowmem && selected_oom_score_adj <= lowmem_debug_adj) {
+			in_lowmem = 1;
+			lowmem_print(1, "LowMemoryOn\n");
+		}
+#endif
 		rem += selected_tasksize;
 	}
 
 	lowmem_print(4, "lowmem_scan %lu, %x, return %lu\n",
 		     sc->nr_to_scan, sc->gfp_mask, rem);
 	rcu_read_unlock();
+	spin_unlock(&lowmem_shrink_lock);
 	return rem;
 }
 
@@ -205,6 +544,14 @@ static struct shrinker lowmem_shrinker = {
 
 static int __init lowmem_init(void)
 {
+#ifdef CONFIG_ZRAM
+#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+	vm_swappiness = 150;
+#else
+	vm_swappiness = 100;
+#endif
+#endif
+	task_free_register(&task_nb);
 	register_shrinker(&lowmem_shrinker);
 	return 0;
 }
@@ -288,6 +635,73 @@ static const struct kparam_array __param_arr_adj = {
 #endif
 
 /*
+ * get_min_free_pages
+ * returns the low memory killer watermark of the given pid,
+ * When the system free memory is lower than the watermark, the LMK (low memory
+ * killer) may try to kill processes.
+ */
+int get_min_free_pages(pid_t pid)
+{
+	struct task_struct *p;
+	int target_oom_adj = 0;
+	int i = 0;
+	int array_size = ARRAY_SIZE(lowmem_adj);
+
+	if (lowmem_adj_size < array_size)
+		array_size = lowmem_adj_size;
+	if (lowmem_minfree_size < array_size)
+		array_size = lowmem_minfree_size;
+
+	for_each_process(p) {
+		/* search pid */
+		if (p->pid == pid) {
+			task_lock(p);
+			target_oom_adj = p->signal->oom_score_adj;
+			task_unlock(p);
+			/* get min_free value of the pid */
+			for (i = array_size - 1; i >= 0; i--) {
+				if (target_oom_adj >= lowmem_adj[i]) {
+					pr_debug("pid: %d, target_oom_adj = %d, lowmem_adj[%d] = %d, lowmem_minfree[%d] = %d\n",
+						 pid, target_oom_adj, i, lowmem_adj[i], i, lowmem_minfree[i]);
+					return lowmem_minfree[i];
+				}
+			}
+			goto out;
+		}
+	}
+
+out:
+	lowmem_print(3, "[%s]pid: %d, adj: %d, lowmem_minfree = 0\n",
+		     __func__, pid, p->signal->oom_score_adj);
+	return 0;
+}
+EXPORT_SYMBOL(get_min_free_pages);
+
+/* Query LMK minfree settings */
+/* To query default value, you can input index with value -1. */
+size_t query_lmk_minfree(int index)
+{
+	int which;
+
+	/* Invalid input index, return default value */
+	if (index < 0)
+		return lowmem_minfree[2];
+
+	/* Find a corresponding output */
+	which = 5;
+	do {
+		if (lowmem_adj[which] <= index)
+			break;
+	} while (--which >= 0);
+
+	/* Fix underflow bug */
+	which = (which < 0) ? 0 : which;
+
+	return lowmem_minfree[which];
+}
+EXPORT_SYMBOL(query_lmk_minfree);
+
+/*
  * not really modular, but the easiest way to keep compat with existing
  * bootargs behaviour is to continue using module_param here.
  */
@@ -304,4 +718,6 @@ module_param_array_named(adj, lowmem_adj, short, &lowmem_adj_size,
 module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size,
 			 S_IRUGO | S_IWUSR);
 module_param_named(debug_level, lowmem_debug_level, uint, S_IRUGO | S_IWUSR);
+module_param_named(debug_adj, lowmem_debug_adj, short, S_IRUGO | S_IWUSR);
+module_param_named(candidate_log, enable_candidate_log, uint, S_IRUGO | S_IWUSR);
 
