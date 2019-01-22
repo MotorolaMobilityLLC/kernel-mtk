@@ -48,3 +48,12 @@ config MTK_SPM_IN_ATF
 	default n
 	---help---
 	  move SPM to ATF
+
+config MTK_UNIFY_POWER
+	bool "MTK UNIFY POWER"
+	default n
+	---help---
+	  This kernel config can be used to enable unified power table.
+	  This table can provide power data and capacity to someone who
+	  need it.
+	  If unsure, say Y.

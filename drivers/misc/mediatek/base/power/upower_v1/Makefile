@@ -19,7 +19,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
 endif
 
+ifeq ($(CONFIG_MTK_UNIFY_POWER), y)
 obj-y += mtk_unified_power.o
 obj-y += mtk_unified_power_internal.o
 obj-y += mtk_unified_power_api.o
-
+endif
