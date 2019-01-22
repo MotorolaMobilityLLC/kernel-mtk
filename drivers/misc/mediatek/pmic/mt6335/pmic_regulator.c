@@ -260,7 +260,7 @@ int buck_set_voltage(BUCK_TYPE type, unsigned int voltage)
 
 	if (type == VS1 || type == VS2) {
 		voltage >>= 1;
-		value = (voltage - mtk_bucks_class[type].min_uV)/(mtk_bucks_class[type].uV_step);
+		value = (voltage - (mtk_bucks_class[type].min_uV >> 1))/(mtk_bucks_class[type].uV_step);
 	} else
 		value = (voltage - mtk_bucks_class[type].min_uV)/(mtk_bucks_class[type].uV_step);
 
@@ -297,7 +297,7 @@ unsigned int buck_get_voltage(BUCK_TYPE type)
 	value = pmic_get_register_value(mtk_bucks_class[type].da_ni_vosel);
 
 	if (type == VS1 || type == VS2) {
-		voltage = ((value * (mtk_bucks_class[type].uV_step)) + mtk_bucks_class[type].min_uV);
+		voltage = ((value * (mtk_bucks_class[type].uV_step)) + (mtk_bucks_class[type].min_uV >> 1));
 		voltage <<= 1;
 	} else
 		voltage = ((value * (mtk_bucks_class[type].uV_step)) + mtk_bucks_class[type].min_uV);
