@@ -46,7 +46,7 @@
 #include <mtd/ubi-user.h>
 #include "ubi.h"
 #ifdef CONFIG_MTK_FTL
-#include "../mt_ftl.h"
+#include "../mtk_ftl.h"
 #endif
 
 /**
