@@ -45,11 +45,13 @@
 
 #define BUCK_CTRL_DBLOG		(0)
 
+#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 #define MTK_DRCC_SUPPORT
 #ifdef MTK_DRCC_SUPPORT
 #include "mtk_drcc.h"
 	/* Use include: extern void drcc_fail_composite(void); */
 static unsigned int cpus_L;
+#endif
 #endif
 
 static struct notifier_block cpu_hotplug_nb;
@@ -81,6 +83,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #endif
 	switch (action) {
 	case CPU_ONLINE:
+	#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 		#ifdef MTK_DRCC_SUPPORT
 		arch_get_cluster_cpus(&cpuhp_cpumask, 1);
 		cpumask_and(&cpu_online_cpumask,
@@ -88,16 +91,21 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			cpu_online_mask);
 		cpus_L = cpumask_weight(&cpu_online_cpumask);
 		/* Calibration Fail */
-		/* pr_notice("[xxxx_drcc HPCB] c=%d, L_cs=%d\n ", cpu, cpus_L); */
+		#if 0
+		pr_notice("[xxxx_drcc HPCB] c=%d, L_cs=%d\n ",
+			cpu,
+			cpus_L);
+		#endif
 		if ((cpus_L == 1) &&
 			(mtk_drcc_calibration_result() == 0)) {
 			/* Log into SRAM debug. */
 			/* DRCC_debug_info(1,3,123456); */
 			pr_notice("DRCC calibration fail !!!\n");
+			/* drcc_fail_composite(); */
 		}
 		/* pr_notice("DRCC calibration done !!!\n"); */
-		/* drcc_fail_composite(); */
 		#endif
+	#endif
 		break;
 	case CPU_UP_PREPARE:
 	case CPU_UP_PREPARE_FROZEN:

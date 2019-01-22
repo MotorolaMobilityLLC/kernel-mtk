@@ -99,8 +99,6 @@
 	DF_S(ptp_temp, "ptp_temp[%d] = %llx\n"),
 	DF(ptp_status, "ptp_status: 0x%x\n"),
 	DF(eem_pi_offset, "eem_pi_offset : 0x%x\n"),
-	DF(etc_status, "etc_status : 0x%x\n"),
-	DF(etc_mode, "etc_mode : 0x%x\n"),
 	DF_A(thermal_temp, "thermal_temp = %d\n", THERMAL_RESERVED_TZS),
 	DF(thermal_status, "thermal_status: %d\n"),
 	DF(thermal_ATM_status, "thermal_ATM_status: %d\n"),
