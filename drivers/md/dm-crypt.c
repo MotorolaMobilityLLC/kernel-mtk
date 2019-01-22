@@ -1229,7 +1229,7 @@ static int crypt_is_hw_fde(const char *path)
 #elif defined(CONFIG_MTK_EMMC_SUPPORT) /* eMMC booting */
 	#if defined(CONFIG_MTK_HW_FDE_AES)
 	/* both eMMC and SD card use HW FDE */
-	if (major == SCSI_DISK0_MAJOR ||
+	if (major == MMC_BLOCK_MAJOR ||
 		major == BLOCK_EXT_MAJOR)
 		return 1;
 	#else
