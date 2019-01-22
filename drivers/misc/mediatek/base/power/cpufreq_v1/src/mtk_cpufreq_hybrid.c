@@ -158,9 +158,8 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 
 		cpufreq_ver("I'd like to initialize sspm DVFS, segment code = %d\n", cdvfs_d->u.set_fv.arg[0]);
 
-		spin_lock_irqsave(&cpudvfs_send_lock, flags);
-		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-		spin_unlock_irqrestore(&cpudvfs_send_lock, flags);
+		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -174,9 +173,8 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 
 		cpufreq_ver("I'd like to initialize sspm DVFS, segment code = %d\n", cdvfs_d->u.set_fv.arg[0]);
 
-		spin_lock_irqsave(&cpudvfs_send_lock, flags);
-		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-		spin_unlock_irqrestore(&cpudvfs_send_lock, flags);
+		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
