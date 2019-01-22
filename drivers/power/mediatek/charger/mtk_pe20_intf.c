@@ -226,9 +226,10 @@ static int pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 		vchr_delta = abs(vchr_after - chr_volt);
 
 		/* It is successful
-		 * if difference to target is less than 500mA
+		 * if difference to target is less than 500mV
+		 * (FIXME: modify to 750mV temporarily)
 		 */
-		if (vchr_delta < 500000 && ret == 0) {
+		if (vchr_delta < 750000 && ret == 0) {
 			pr_err("%s: OK, vchr = (%d, %d), vchr_target = %dmV\n",
 				__func__, vchr_before / 1000, vchr_after / 1000,
 				chr_volt / 1000);
