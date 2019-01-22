@@ -26,6 +26,8 @@
 #include <mt-plat/mtk_rtc_hal_common.h>
 #include <mt-plat/mtk_rtc.h>
 #include "include/pmic_throttling_dlpt.h"
+#include <linux/proc_fs.h>
+
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6336
 #include "mt6336.h"
 #endif
@@ -212,8 +214,8 @@ void preloader_init(void)
 	efuse_cal = pmic_get_register_value(PMIC_RG_FGADC_GAINERROR_CAL);
 	pmic_set_register_value(PMIC_FG_GAIN, efuse_cal);
 
-	hw_id = upmu_get_reg_value(0x0200);
-	sw_id = upmu_get_reg_value(0x0202);
+	hw_id = pmic_get_register_value(PMIC_HWCID);
+	sw_id = pmic_get_register_value(PMIC_SWCID);
 
 
 	ret = fgauge_get_time(&fg_curr_time);
@@ -2715,13 +2717,22 @@ static signed int fg_set_rtc_ui_soc(void *data)
 	return STATUS_OK;
 }
 
+static signed int fg_get_rtc_invalid(void *data)
+{
+	/* DON'T get spare3_reg_valid here */
+	/* because it has been reset by fg_set_fg_reset_rtc_status() */
+
+	*(signed int *) (data) = rtc_invalid;
+	bm_notice("[fg_get_rtc_invalid] rtc_invalid %d\n", rtc_invalid);
+
+	return STATUS_OK;
+}
+
 int gspare0_reg, gspare3_reg;
-
-
 static void fgauge_read_RTC_boot_status(void)
 {
 	int hw_id = pmic_get_register_value(PMIC_HWCID);
-	int spare0_reg, spare0_reg_b13;
+	unsigned int spare0_reg, spare0_reg_b13;
 	int spare3_reg;
 	int spare3_reg_valid;
 
@@ -2741,7 +2752,7 @@ static void fgauge_read_RTC_boot_status(void)
 		if ((hw_id & 0xff00) == 0x3500)
 			is_bat_plugout = spare0_reg_b13;
 		else
-			is_bat_plugout = ~spare0_reg_b13;
+			is_bat_plugout = !spare0_reg_b13;
 
 		bat_plug_out_time = spare0_reg & 0x1f;	/*[12:8], 5 bits*/
 	} else {
@@ -3124,6 +3135,13 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 }
 
 
+void battery_dump_info(struct seq_file *m)
+{
+	seq_printf(m, "rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d sp0:0x%x sp3:0x%x\n",
+			rtc_invalid, is_bat_plugout, bat_plug_out_time, gspare0_reg, gspare3_reg);
+}
+
+
 static signed int(*bm_func[BATTERY_METER_CMD_NUMBER]) (void *data);
 
 signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
@@ -3202,6 +3220,7 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_GET_FG_CURRENT_IAVG_VALID] = fg_get_current_iavg_valid;
 		bm_func[BATTERY_METER_CMD_GET_RTC_UI_SOC] = fg_get_rtc_ui_soc;
 		bm_func[BATTERY_METER_CMD_SET_RTC_UI_SOC] = fg_set_rtc_ui_soc;
+		bm_func[BATTERY_METER_CMD_GET_RTC_INVALID] = fg_get_rtc_invalid;
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {
