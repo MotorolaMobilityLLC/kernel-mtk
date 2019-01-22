@@ -1280,16 +1280,6 @@ static void kcryptd_io_write(struct dm_crypt_io *io)
 {
 	struct bio *clone = io->ctx.bio_out;
 
-#if defined(CONFIG_MTK_HW_FDE)
-	struct crypt_config *cc = io->cc;
-
-	if (cc->hw_fde == 1) {
-		clone->bi_hw_fde = 1;
-		clone->bi_iter.bi_sector = cc->start + io->sector;
-		clone->bi_key_idx = key_idx;
-	}
-#endif
-
 	generic_make_request(clone);
 }
 
@@ -1659,15 +1649,17 @@ static void crypt_dtr(struct dm_target *ti)
 	if (!cc)
 		return;
 
-	if (cc->write_thread)
-		kthread_stop(cc->write_thread);
-
-	if (cc->io_queue)
-		destroy_workqueue(cc->io_queue);
+/* MTK PATCH */
 #if defined(CONFIG_MTK_HW_FDE)
 	if (cc->hw_fde == 0)
 #endif
 	{
+		if (cc->write_thread)
+			kthread_stop(cc->write_thread);
+
+		if (cc->io_queue)
+			destroy_workqueue(cc->io_queue);
+
 		if (cc->crypt_queue)
 			destroy_workqueue(cc->crypt_queue);
 	}
@@ -2035,18 +2027,21 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 	}
 
 	ret = -ENOMEM;
-	cc->io_queue = alloc_workqueue("kcryptd_io",
-				       WQ_HIGHPRI |
-				       WQ_MEM_RECLAIM,
-				       1);
-	if (!cc->io_queue) {
-		ti->error = "Couldn't create kcryptd io queue";
-		goto bad;
-	}
+
+/* MTK PATCH */
 #if defined(CONFIG_MTK_HW_FDE)
 	if (cc->hw_fde == 0)
 #endif
 	{
+		cc->io_queue = alloc_workqueue("kcryptd_io",
+					       WQ_HIGHPRI |
+					       WQ_MEM_RECLAIM,
+					       1);
+		if (!cc->io_queue) {
+			ti->error = "Couldn't create kcryptd io queue";
+			goto bad;
+		}
+
 		if (test_bit(DM_CRYPT_SAME_CPU, &cc->flags))
 			cc->crypt_queue = alloc_workqueue("kcryptd",
 							  WQ_HIGHPRI |
@@ -2061,19 +2056,21 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 			ti->error = "Couldn't create kcryptd queue";
 			goto bad;
 		}
-	}
 
-	init_waitqueue_head(&cc->write_thread_wait);
-	cc->write_tree = RB_ROOT;
+		init_waitqueue_head(&cc->write_thread_wait);
+		cc->write_tree = RB_ROOT;
 
-	cc->write_thread = kthread_create(dmcrypt_write, cc, "dmcrypt_write");
-	if (IS_ERR(cc->write_thread)) {
-		ret = PTR_ERR(cc->write_thread);
-		cc->write_thread = NULL;
-		ti->error = "Couldn't spawn write thread";
-		goto bad;
+		cc->write_thread = kthread_create(dmcrypt_write,
+							cc,
+							"dmcrypt_write");
+		if (IS_ERR(cc->write_thread)) {
+			ret = PTR_ERR(cc->write_thread);
+			cc->write_thread = NULL;
+			ti->error = "Couldn't spawn write thread";
+			goto bad;
+		}
+		wake_up_process(cc->write_thread);
 	}
-	wake_up_process(cc->write_thread);
 
 	ti->num_flush_bios = 1;
 	ti->discard_zeroes_data_unsupported = true;
@@ -2115,8 +2112,16 @@ static int crypt_map(struct dm_target *ti, struct bio *bio)
 	io->ctx.req = (struct ablkcipher_request *)(io + 1);
 
 #if defined(CONFIG_MTK_HW_FDE)
-	if (cc->hw_fde == 1)
-		kcryptd_queue_read(io);
+	if (cc->hw_fde == 1) {
+		/*
+		 * Do what kcryptd_io_read_work() do here directly to
+		 * avoid kworker overhead.
+		 */
+		crypt_inc_pending(io);
+		if (kcryptd_io_read(io, GFP_NOIO)) /* For Read/Write */
+			io->error = -ENOMEM;
+		crypt_dec_pending(io);
+	}
 	else
 #endif
 	{
