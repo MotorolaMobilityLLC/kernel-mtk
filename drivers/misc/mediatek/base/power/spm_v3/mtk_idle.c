@@ -1475,7 +1475,7 @@ int dpidle_enter(int cpu)
 
 	dpidle_pre_process(cpu);
 
-	operation_cond = clkmux_cond[IDLE_TYPE_DP] ? 0x1 : 0x0;
+	operation_cond |= clkmux_cond[IDLE_TYPE_DP] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0;
 
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log, operation_cond);
 

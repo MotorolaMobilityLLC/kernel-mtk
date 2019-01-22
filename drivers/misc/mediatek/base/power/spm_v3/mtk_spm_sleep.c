@@ -469,14 +469,18 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	int ret;
 	struct spm_data spm_d;
+	unsigned int spm_opt = 0;
 
 #ifdef SSPM_TIMESYNC_SUPPORT
 	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
 	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
 #endif
 
-	spm_d.u.suspend.univpll_status = univpll_is_used();
-	spm_d.u.suspend.gps_status = spm_for_gps_flag;
+	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
+	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
+
+	spm_d.u.suspend.spm_opt = spm_opt;
+
 	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
 	if (ret < 0) {
 		spm_crit2("ret %d", ret);
