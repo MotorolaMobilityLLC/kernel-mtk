@@ -267,8 +267,8 @@ void spm_resource_req_block_dump(void)
 
 	if (curr_res_usage == SPM_RESOURCE_ALL) {
 		pr_err("[resource_req_block] user: 0x%x, 0x%x\n",
-				resc_desc[SPM_RESOURCE_CPU].user_usage[0],
-				resc_desc[SPM_RESOURCE_CPU].user_usage[1]);
+				resc_desc[0].user_usage[0],
+				resc_desc[0].user_usage[1]);
 	}
 
 	spin_unlock_irqrestore(&spm_resource_desc_update_lock, flags);
