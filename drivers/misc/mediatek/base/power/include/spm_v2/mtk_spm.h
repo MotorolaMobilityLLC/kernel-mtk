@@ -62,14 +62,14 @@ extern u32 spm_irq_7;
 
 #include "mtk_spm_reg.h"
 
-typedef enum {
+enum {
 	WR_NONE = 0,
 	WR_UART_BUSY = 1,
 	WR_PCM_ASSERT = 2,
 	WR_PCM_TIMER = 3,
 	WR_WAKE_SRC = 4,
 	WR_UNKNOWN = 5,
-} wake_reason_t;
+};
 
 enum mt_vcorefs_fw {
 	VCOREFS_FW_LPM	 = (1 << 0),	/*  1600/1.0  : 1270/0.9 : 1066/0.9 */

@@ -259,7 +259,7 @@ static void spm_sodi3_resume_wdt(struct pwr_ctrl *pwrctrl, void *api)
 #endif
 }
 
-wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 operation_cond)
+unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 operation_cond)
 {
 	void *api = NULL;
 	struct wake_status wakesta;
@@ -267,7 +267,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	struct mtk_irq_mask mask;
 #endif
-	wake_reason_t wr = WR_NONE;
+	unsigned int wr = WR_NONE;
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi3.pwrctrl;
 	u32 cpu = spm_data;

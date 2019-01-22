@@ -653,7 +653,7 @@ extern int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl);
 extern void __spm_sync_pcm_flags(struct pwr_ctrl *pwrctrl);
 
 extern void __spm_get_wakeup_status(struct wake_status *wakesta);
-extern wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
+extern unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 		const struct pcm_desc *pcmdesc, bool suspend, const char *scenario);
 
 extern void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl);
@@ -666,7 +666,7 @@ extern int spm_fs_init(void);
 
 extern int spm_golden_setting_cmp(bool en);
 extern void __spm_set_pcm_wdt(int en);
-extern u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr);
+extern u32 _spm_get_wake_period(int pwake_time, unsigned int last_wr);
 
 extern int get_channel_lock(bool blocking);
 extern void get_channel_unlock(void);
@@ -699,6 +699,7 @@ do {					\
 #define wfi_with_sync()					\
 do {							\
 	isb();						\
+	/* add mb() before wfi */			\
 	mb();						\
 	__asm__ __volatile__("wfi" : : : "memory");	\
 } while (0)

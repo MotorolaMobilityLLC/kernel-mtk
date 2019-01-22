@@ -252,7 +252,7 @@ static void rekick_sodi3_common_scenario(void)
 {
 }
 
-wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
+unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 {
 #if SPM_SODI3_PCMWDT_EN && defined(CONFIG_MTK_WD_KICKER)
 	int wd_ret;
@@ -261,7 +261,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	struct wake_status wakesta;
 	unsigned long flags;
 	struct mtk_irq_mask *mask;
-	wake_reason_t wr = WR_NONE;
+	unsigned int wr = WR_NONE;
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_sodi3.pwrctrl;
 	int vcore_status;
