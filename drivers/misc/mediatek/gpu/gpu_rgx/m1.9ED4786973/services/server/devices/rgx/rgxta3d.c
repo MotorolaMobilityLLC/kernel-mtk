@@ -111,7 +111,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /* define the number of commands required to be set up by the CCB helper */
 /* 1 command for the TA */
 #define CCB_CMD_HELPER_NUM_TA_COMMANDS 1
-/* Up to 3 commands for the 3D (partial render fence, partial reader, and render) */
+/* Up to 3 commands for the 3D (partial render fence, partial render, and render) */
 #define CCB_CMD_HELPER_NUM_3D_COMMANDS 3
 
 typedef struct _DEVMEM_REF_LOOKUP_
@@ -3026,7 +3026,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 	/* Count of the number of TA and 3D update values (may differ from number of
 	 * TA and 3D updates later, as sync checkpoints do not need to specify a value)
 	 */
-	IMG_UINT32 ui32ClientTAUpdateValueCount = ui32ClientTAUpdateCount;
+	IMG_UINT32 ui32ClientPRUpdateValueCount = 0;
 	IMG_UINT32 ui32Client3DUpdateValueCount = ui32Client3DUpdateCount;
 	PSYNC_CHECKPOINT *apsFenceSyncCheckpoints = NULL;
 	IMG_UINT32 ui32FenceSyncCheckpointCount = 0;
@@ -3167,7 +3167,7 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 	}
 
 #if defined(SUPPORT_NATIVE_FENCE_SYNC) || defined(SUPPORT_FALLBACK_FENCE_SYNC)
-	if (ui32Client3DUpdateCount || (PVRSRVIsTimelineValidKM(iUpdateTimeline) && piUpdateFence))
+	if (ui32Client3DUpdateCount || (PVRSRVIsTimelineValidKM(iUpdateTimeline) && piUpdateFence && bKick3D))
 #else
 	if (ui32Client3DUpdateCount)
 #endif
@@ -3635,20 +3635,18 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 				}
 				else
 				{
-					/* Allocate memory to hold the list of update values (including our timeline update) */
-					pui32IntAllocatedUpdateValues = OSAllocMem(sizeof(*pui32IntAllocatedUpdateValues) * (ui32ClientTAUpdateValueCount+1));
+					/* Allocate memory to hold our timeline update value (for PR update) */
+					pui32IntAllocatedUpdateValues = OSAllocMem(sizeof(*pui32IntAllocatedUpdateValues) * (ui32ClientPRUpdateValueCount+1));
 					if (!pui32IntAllocatedUpdateValues)
 					{
 						/* Failed to allocate memory */
 						eError = PVRSRV_ERROR_OUT_OF_MEMORY;
 						goto fail_alloc_update_values_mem;
 					}
-					OSCachedMemSet(pui32IntAllocatedUpdateValues, 0xcc, sizeof(*pui32IntAllocatedUpdateValues) * (ui32ClientTAUpdateValueCount+1));
-					CHKPT_DBG((PVR_DBG_ERROR, "%s: Copying %d TA update values into pui32IntAllocatedUpdateValues(<%p>)", __FUNCTION__, ui32ClientTAUpdateCount, (void*)pui32IntAllocatedUpdateValues));
-					/* Copy the update values into the new memory, then append our timeline update value */
-					OSCachedMemCopy(pui32IntAllocatedUpdateValues, paui32ClientTAUpdateValue, ui32ClientTAUpdateValueCount * sizeof(*paui32ClientTAUpdateValue));
+					OSCachedMemSet(pui32IntAllocatedUpdateValues, 0xcc, sizeof(*pui32IntAllocatedUpdateValues) * (ui32ClientPRUpdateValueCount+1));
 				}
 #if defined(TA3D_CHECKPOINT_DEBUG)
+				if (bKick3D)
 				{
 					IMG_UINT32 iii;
 					IMG_UINT32 *pui32Tmp = (IMG_UINT32*)pui32IntAllocatedUpdateValues;
@@ -3681,18 +3679,19 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 				}
 				else
 				{
-					pui32TimelineUpdateWp = pui32IntAllocatedUpdateValues + ui32ClientTAUpdateValueCount;
+					/* Use the sSyncAddrList3DUpdate for PR (as it doesn't have one of its own) */
+					pui32TimelineUpdateWp = pui32IntAllocatedUpdateValues;
 					*pui32TimelineUpdateWp = ui32FenceTimelineUpdateValue;
-					ui32ClientTAUpdateValueCount++;
-					ui32ClientTAUpdateCount++;
-					SyncAddrListAppendSyncPrim(&psRenderContext->sSyncAddrListTAUpdate,
-												   psFenceTimelineUpdateSync);
-					if (!pauiClientTAUpdateUFOAddress)
+					ui32ClientPRUpdateValueCount++;
+					ui32ClientPRUpdateCount++;
+					SyncAddrListAppendSyncPrim(&psRenderContext->sSyncAddrList3DUpdate,
+					                           psFenceTimelineUpdateSync);
+					if (!pauiClientPRUpdateUFOAddress)
 					{
-						pauiClientTAUpdateUFOAddress = psRenderContext->sSyncAddrListTAUpdate.pasFWAddrs;
+						pauiClientPRUpdateUFOAddress = psRenderContext->sSyncAddrList3DUpdate.pasFWAddrs;
 					}
-					/* Update paui32ClientTAUpdateValue to point to our new list of update values */
-					paui32ClientTAUpdateValue = pui32IntAllocatedUpdateValues;
+					/* Update paui32ClientPRUpdateValue to point to our new list of update values */
+					paui32ClientPRUpdateValue = pui32IntAllocatedUpdateValues;
 				}
 #if defined(TA3D_CHECKPOINT_DEBUG)
 				{
@@ -3817,15 +3816,15 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 					ui32ClientTAFenceCount += ui32FenceSyncCheckpointCount;
 				}
 				CHKPT_DBG((PVR_DBG_ERROR, "%s:   {ui32ClientTAFenceCount now %d}", __FUNCTION__, ui32ClientTAFenceCount));
-				/* Attach update to the TA Updates */
-				SyncAddrListAppendCheckpoints(&psRenderContext->sSyncAddrListTAUpdate,
-												  1,
-												  &psUpdateSyncCheckpoint);
-				if (!pauiClientTAUpdateUFOAddress)
+				/* Attach update to the 3D (used for PR) Updates */
+				SyncAddrListAppendCheckpoints(&psRenderContext->sSyncAddrList3DUpdate,
+				                              1,
+				                              &psUpdateSyncCheckpoint);
+				if (!pauiClientPRUpdateUFOAddress)
 				{
-					pauiClientTAUpdateUFOAddress = psRenderContext->sSyncAddrListTAUpdate.pasFWAddrs;
+					pauiClientPRUpdateUFOAddress = psRenderContext->sSyncAddrList3DUpdate.pasFWAddrs;
 				}
-				ui32ClientTAUpdateCount++;
+				ui32ClientPRUpdateCount++;
 			}
 			CHKPT_DBG((PVR_DBG_ERROR, "%s:   (after pvr_sync) ui32ClientTAFenceCount=%d, ui32ClientTAUpdateCount=%d, ui32Client3DFenceCount=%d, ui32Client3DUpdateCount=%d, ui32ClientPRUpdateCount=%d,", __FUNCTION__, ui32ClientTAFenceCount, ui32ClientTAUpdateCount, ui32Client3DFenceCount, ui32Client3DUpdateCount, ui32ClientPRUpdateCount));
 		}
@@ -3856,6 +3855,12 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 			PVR_ASSERT(pauiClient3DUpdateUFOAddress);
 			PVR_ASSERT(paui32Client3DUpdateValue);
 		}
+		if (ui32ClientPRUpdateCount)
+		{
+			PVR_ASSERT(pauiClientPRUpdateUFOAddress);
+			PVR_ASSERT(paui32ClientPRUpdateValue);
+		}
+
 	}
 #endif /* SUPPORT_NATIVE_FENCE_SYNC || defined (SUPPORT_FALLBACK_FENCE_SYNC) */
 	CHKPT_DBG((PVR_DBG_ERROR, "%s: ui32ClientTAFenceCount=%d, pauiClientTAFenceUFOAddress=<%p> Line ", __func__, ui32ClientTAFenceCount, (void*)paui32ClientTAFenceValue));
@@ -4054,8 +4059,10 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 
 		/* Init the 3D PR command helper */
 		/*
-			See note above PVRFDSyncQueryFencesKM as to why updates for android
-			syncs are passed in with the PR
+			Updates for Android (fence sync and Timeline sync prim) are provided in the PR-update
+			if no 3D is present. This is so the timeline update cannot happen out of order with any
+			other 3D already in flight for the same timeline (PR-updates are done in the 3D cCCB).
+			This out of order timeline sync prim update could happen if we attach it to the TA update.
 		*/
 		if (ui32ClientPRUpdateCount)
 		{
