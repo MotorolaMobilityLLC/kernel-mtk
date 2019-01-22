@@ -10,6 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+
 #ifndef __CCU_A_REGS_H__
 #define __CCU_A_REGS_H__
 

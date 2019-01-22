@@ -31,6 +31,9 @@
  *============================================================================
  ****************************************************************************/
 
+#undef USE_OIS
+#undef CAPTURE_WDR
+
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>

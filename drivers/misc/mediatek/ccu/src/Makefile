@@ -16,6 +16,7 @@
 
 #subdir-ccflags-y += -DMTK_VPU_EMULATOR
 subdir-ccflags-y += -DMTK_VPU_KERNEL
+#subdir-ccflags-y += -DCCU_AF_ENABLE
 
 platform = $(subst ",,$(CONFIG_MTK_PLATFORM))
 

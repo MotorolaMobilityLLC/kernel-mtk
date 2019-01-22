@@ -38,7 +38,6 @@
 
 #include <linux/io.h> /*for mb();*/
 
-#include "ccu_inc.h"
 #include "ccu_hw.h"
 #include "ccu_reg.h"
 #include "ccu_cmn.h"
