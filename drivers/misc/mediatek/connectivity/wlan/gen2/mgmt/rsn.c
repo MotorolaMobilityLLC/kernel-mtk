@@ -2047,6 +2047,9 @@ void rsnStartSaQueryTimer(IN P_ADAPTER_T prAdapter)
 	    kalMemAlloc(prBssSpecInfo->u4SaQueryCount * ACTION_SA_QUERY_TR_ID_LEN, VIR_MEM_TYPE);
 	if (!prBssSpecInfo->pucSaQueryTransId) {
 		DBGLOG(RSN, ERROR, "MFP: Fail to alloc buffer for sa query id list\n");
+		if (pucTmp)
+			kalMemFree(pucTmp, VIR_MEM_TYPE,
+			  (prBssSpecInfo->u4SaQueryCount - 1) * ACTION_SA_QUERY_TR_ID_LEN);
 		return;
 	}
 
