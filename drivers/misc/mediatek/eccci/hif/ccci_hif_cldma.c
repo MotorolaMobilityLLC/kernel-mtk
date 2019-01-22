@@ -1230,7 +1230,7 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 							 msecs_to_jiffies(0));
 				CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "txq%d queue work=%d\n", i, ret);
 			}
-			if (L2TISAR0 & CLDMA_TX_INT_DONE & ((1 << i) << CLDMA_TX_QE_OFFSET))
+			if (L2TISAR0 & (CLDMA_TX_INT_DONE | ((1 << i) << CLDMA_TX_QE_OFFSET)))
 				cldma_tx_queue_empty_handler(&md_ctrl->txq[i]);
 		}
 	}
