@@ -264,7 +264,7 @@ static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
 static bool gSpm_lcm_vdo_mode;
 
-static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl)
+static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	unsigned int value = 0;
@@ -311,7 +311,7 @@ static void spm_sodi_post_process(void)
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl)
+static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 	int ret;
 	struct spm_data spm_d;
@@ -321,6 +321,8 @@ static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl)
 
 	spm_opt |= univpll_is_used() ? SPM_OPT_UNIVPLL_STAT : 0;
 	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
+	spm_opt |= (operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) ?
+		SPM_OPT_XO_UFS_OFF : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
 	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
@@ -330,22 +332,29 @@ static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl)
 		spm_crit2("ret %d", ret);
 }
 
-static void spm_sodi_notify_sspm_after_wfi(void)
+static void spm_sodi_notify_sspm_after_wfi(u32 operation_cond)
 {
 	int ret;
 	struct spm_data spm_d;
+	unsigned int spm_opt = 0;
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
+
+	spm_opt |= (operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) ?
+		SPM_OPT_XO_UFS_OFF : 0;
+
+	spm_d.u.suspend.spm_opt = spm_opt;
+
 	ret = spm_to_sspm_command(SPM_LEAVE_SODI, &spm_d);
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
 }
 #else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl)
+static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 }
 
-static void spm_sodi_notify_sspm_after_wfi(void)
+static void spm_sodi_notify_sspm_after_wfi(u32 operation_cond)
 {
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
@@ -365,13 +374,13 @@ void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 }
 
 static void spm_sodi_pcm_setup_before_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
+	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 	unsigned int resource_usage;
 
-	spm_sodi_notify_sspm_before_wfi(pwrctrl);
+	spm_sodi_notify_sspm_before_wfi(pwrctrl, operation_cond);
 
-	spm_sodi_pre_process(pwrctrl);
+	spm_sodi_pre_process(pwrctrl, operation_cond);
 
 	/* Get SPM resource request and update reg_spm_xxx_req */
 	resource_usage = spm_get_resource_usage();
@@ -381,9 +390,9 @@ static void spm_sodi_pcm_setup_before_wfi(
 		SPM_PWR_CTRL_SODI, PWR_OPP_LEVEL, pwrctrl->opp_level);
 }
 
-static void spm_sodi_pcm_setup_after_wfi(void)
+static void spm_sodi_pcm_setup_after_wfi(u32 operation_cond)
 {
-	spm_sodi_notify_sspm_after_wfi();
+	spm_sodi_notify_sspm_after_wfi(operation_cond);
 
 	spm_sodi_post_process();
 }
@@ -404,7 +413,7 @@ void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 }
 
 static void spm_sodi_pcm_setup_before_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
+	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
 	__spm_set_cpu_status(cpu);
 	__spm_reset_and_init_pcm(pcmdesc);
@@ -422,16 +431,16 @@ static void spm_sodi_pcm_setup_before_wfi(
 
 	__spm_set_wakeup_event(pwrctrl);
 
-	spm_sodi_notify_sspm_before_wfi(pwrctrl);
+	spm_sodi_notify_sspm_before_wfi(pwrctrl, operation_cond);
 
-	spm_sodi_pre_process(pwrctrl);
+	spm_sodi_pre_process(pwrctrl, operation_cond);
 
 	__spm_kick_pcm_to_run(pwrctrl);
 }
 
-static void spm_sodi_pcm_setup_after_wfi(void)
+static void spm_sodi_pcm_setup_after_wfi(u32 operation_cond)
 {
-	spm_sodi_notify_sspm_after_wfi();
+	spm_sodi_notify_sspm_after_wfi(operation_cond);
 
 	spm_sodi_post_process();
 
@@ -559,7 +568,7 @@ static wake_reason_t spm_sodi_output_log(
 	return wr;
 }
 
-wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
+wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 operation_cond)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
@@ -624,7 +633,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	spm_sodi_footprint(SPM_SODI_ENTER_SPM_FLOW);
 
-	spm_sodi_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl);
+	spm_sodi_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
 
 	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
 				(1 << SPM_SODI_B3) | (1 << SPM_SODI_B4) |
@@ -644,7 +653,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	__spm_get_wakeup_status(&wakesta);
 
-	spm_sodi_pcm_setup_after_wfi();
+	spm_sodi_pcm_setup_after_wfi(operation_cond);
 
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_AWAKE);
 
