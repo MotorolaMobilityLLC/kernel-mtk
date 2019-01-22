@@ -1314,6 +1314,9 @@ void cldma_stop(unsigned char hif_id)
 	do {
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STOP_CMD, CLDMA_BM_ALL_QUEUE);
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STOP_CMD);	/* dummy read */
+#if MD_GENERATION >= (6293)
+		break;
+#endif
 		ret = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "stop Tx CLDMA, status=%x, count=%d\n", ret, count);
@@ -1327,13 +1330,11 @@ void cldma_stop(unsigned char hif_id)
 			/*md_cd_dump_debug_register(md_ctrl);*/
 			cldma_dump_register(md_ctrl);
 			if (count >= 1600000) {
-#if MD_GENERATION <= (6292)
 				/*After confirmed with EMI, Only call before EE*/
 				dump_emi_latency();
 #if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Tx CLDMA failed.\n", DB_OPT_DEFAULT);
-#endif
 #endif
 				break;
 			}
@@ -1344,6 +1345,9 @@ void cldma_stop(unsigned char hif_id)
 	do {
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_STOP_CMD, CLDMA_BM_ALL_QUEUE);
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_STOP_CMD);	/* dummy read */
+#if MD_GENERATION >= (6293)
+		break;
+#endif
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "stop Rx CLDMA, status=%x, count=%d\n", ret, count);
@@ -1358,13 +1362,11 @@ void cldma_stop(unsigned char hif_id)
 			/*md_cd_dump_debug_register(md_ctrl);*/
 			cldma_dump_register(md_ctrl);
 			if (count >= 1600000) {
-#if MD_GENERATION <= (6292)
 				/*After confirmed with EMI, Only call before EE*/
 				dump_emi_latency();
 #if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Rx CLDMA failed.\n", DB_OPT_DEFAULT);
-#endif
 #endif
 				break;
 			}
@@ -1429,6 +1431,9 @@ void cldma_stop_for_ee(unsigned char hif_id)
 	do {
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STOP_CMD, CLDMA_BM_ALL_QUEUE);
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STOP_CMD);	/* dummy read */
+#if MD_GENERATION >= (6293)
+		break;
+#endif
 		ret = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "stop Tx CLDMA E, status=%x, count=%d\n", ret, count);
@@ -1442,13 +1447,11 @@ void cldma_stop_for_ee(unsigned char hif_id)
 			/*md_cd_dump_debug_register(md_ctrl);*/
 			cldma_dump_register(md_ctrl);
 			if (count >= 1600000) {
-#if MD_GENERATION <= (6292)
 				/*After confirmed with EMI, Only call before EE*/
 				dump_emi_latency();
 #if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Tx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
-#endif
 #endif
 				break;
 			}
@@ -1460,6 +1463,9 @@ void cldma_stop_for_ee(unsigned char hif_id)
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_STOP_CMD,
 			      CLDMA_BM_ALL_QUEUE & NONSTOP_QUEUE_MASK);
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_STOP_CMD);	/* dummy read */
+#if MD_GENERATION >= (6293)
+		break;
+#endif
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS) & NONSTOP_QUEUE_MASK;
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "stop Rx CLDMA E, status=%x, count=%d\n", ret, count);
@@ -1473,13 +1479,11 @@ void cldma_stop_for_ee(unsigned char hif_id)
 			/*md_cd_dump_debug_register(md_ctrl);*/
 			cldma_dump_register(md_ctrl);
 			if (count >= 1600000) {
-#if MD_GENERATION <= (6292)
 				/*After confirmed with EMI, Only call before EE*/
 				dump_emi_latency();
 #if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Rx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
-#endif
 #endif
 				break;
 			}
