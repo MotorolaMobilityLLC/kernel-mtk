@@ -14,14 +14,19 @@
 #include "mtk_ppm_internal.h"
 
 #ifdef PPM_SSPM_SUPPORT
+#include <linux/ktime.h>
 #include "sspm_ipi.h"
 
 
 static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 {
 	int ack_data = 0, ret = 0, i, opt;
+	ktime_t now;
+	unsigned long long delta;
 
 	ppm_dbg(IPI, "@%s: cmd=0x%x\n", __func__, cmd);
+
+	now = ktime_get();
 
 	if (ppm_main_info.is_in_suspend)
 		opt = IPI_OPT_LOCK_POLLING;
@@ -94,8 +99,11 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 
 	default:
 		ppm_err("@%s cmd(0x%x) wrong!!!\n", __func__, cmd);
-		break;
+		return -1;
 	}
+
+	delta = ktime_to_us(ktime_sub(ktime_get(), now));
+	ppm_profile_update_ipi_exec_time(cmd, delta);
 
 	return ret;
 }
