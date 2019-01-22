@@ -21,6 +21,8 @@
 #include <linux/preempt.h>
 #include <linux/uaccess.h>
 
+#include "mtk_devinfo.h"
+
 #include <mt-plat/upmu_common.h>
 #include <mach/mtk_pmic.h>
 #include "include/pmic.h"
@@ -36,11 +38,29 @@
 #include "pwrap_hal.h"
 #endif
 
-static unsigned int vmodem_vosel = 0x6F;        /* VMODEM 1.19375V: 0x6F */
-
-
 void vmd1_pmic_setting_on(void)
 {
+	unsigned int vcore_vosel = 0;
+	unsigned int vmodem_vosel = 0;
+	unsigned int segment = get_devinfo_with_index(29);
+	unsigned char vcore_segment = (unsigned char)((segment & 0x000C0000) >> 18);
+	unsigned char vmodem_segment = (unsigned char)((segment & 0x00002000) >> 13);
+
+	if (!vcore_segment)
+		vcore_vosel = 0x6C;/* VCORE 1.19375V: 0x6C */
+	else
+		vcore_vosel = 0x65;/* VCORE 1.15V: 0x65 */
+
+	if (!vmodem_segment)
+		vmodem_vosel = 0x6F;/* VMODEM 1.19375V: 0x6F */
+	else
+		vmodem_vosel = 0x68;/* VMODEM 1.15V: 0x68 */
+
+	if (pmic_get_register_value(PMIC_DA_VCORE_VOSEL) != vcore_vosel)
+		pr_err("vmd1_pmic_setting_on vcore vosel = 0x%x, da_vosel = 0x%x",
+			pmic_get_register_value(PMIC_RG_BUCK_VCORE_VOSEL),
+			pmic_get_register_value(PMIC_DA_VCORE_VOSEL));
+
 	/* 1.Call PMIC driver API configure VMODEM voltage */
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, vmodem_vosel);
 	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != vmodem_vosel)
