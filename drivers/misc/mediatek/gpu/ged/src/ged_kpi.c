@@ -1352,9 +1352,9 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				} else {
 					ged_kpi_set_gpu_dvfs_hint(((int)vsync_period / 1000), 100);
 				}
-				ged_kpi_output_gfx_info(psHead->t_gpu_latest, mt_gpufreq_get_cur_freq(),
+				ged_kpi_output_gfx_info(psHead->t_gpu_latest, psKPI->gpu_freq * 1000,
 					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()));
-				ged_kpi_output_gfx_info2(psHead->t_gpu_latest, psKPI->gpu_freq,
+				ged_kpi_output_gfx_info2(psHead->t_gpu_latest, psKPI->gpu_freq * 1000,
 					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()), ulID);
 			} else {
 				GED_PR_ERR("[GED_KPI][Exception] TYPE_2: psKPI NULL, frameID: %lu\n",
