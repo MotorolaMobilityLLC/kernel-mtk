@@ -277,6 +277,7 @@ config MACH_MT6771
 	select ARM64_CRYPTO
 	select CRYPTO_SHA2_ARM64_CE
 	select CRYPTO_AES_ARM64_CE_BLK
+	select MTK_SYSTRACKER_V2
 	help
 	  This enables support for MediaTek MT6771
 	  Support for aarch64 Architecture
