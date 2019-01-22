@@ -891,6 +891,9 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable HPDET circuit, select DACLP as HPDET input and HPR as HPDET output */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x1900, 0xffff);
 	} else {
+		/* disable HPDET circuit */
+		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0xff00);
+
 		/* Disable Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x000f);
 
