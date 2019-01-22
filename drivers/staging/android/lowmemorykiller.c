@@ -304,7 +304,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	if (output_expect(enable_candidate_log)) {
 		if (min_score_adj <= lowmem_debug_adj) {
 			if (time_after_eq(jiffies, lowmem_print_extra_info_timeout)) {
-				lowmem_print_extra_info_timeout = jiffies + HZ;
+				lowmem_print_extra_info_timeout = jiffies + HZ * 2;
 				print_extra_info = 1;
 			}
 		}
