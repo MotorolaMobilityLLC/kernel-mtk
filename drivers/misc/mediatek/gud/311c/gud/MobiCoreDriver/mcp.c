@@ -246,12 +246,12 @@ static void mcp_dump_mobicore_status(void)
 	if (mcp_ctx.dump.off)
 		ret = -EBUSY;
 
-	mc_dev_err("TEE halted. Status dump:");
+	mc_dev_info("TEE halted. Status dump:");
 	for (i = 0; i < (size_t)ARRAY_SIZE(status_map); i++) {
 		u32 info;
 
 		if (!mc_fc_info(status_map[i].index, NULL, &info)) {
-			mc_dev_err("  %-20s= 0x%08x\n",
+			mc_dev_info("  %-20s= 0x%08x\n",
 				   status_map[i].msg, info);
 			if (ret >= 0)
 				ret = kasnprintf(&mcp_ctx.dump,
@@ -274,7 +274,7 @@ static void mcp_dump_mobicore_status(void)
 		}
 	}
 
-	mc_dev_err("  %-20s= 0x%s\n", "mcExcep.uuid", uuid_str);
+	mc_dev_info("  %-20s= 0x%s\n", "mcExcep.uuid", uuid_str);
 	if (ret >= 0)
 		ret = kasnprintf(&mcp_ctx.dump, "%-20s= 0x%s\n", "mcExcep.uuid",
 				 uuid_str);
@@ -827,7 +827,7 @@ int mcp_close_session(struct mcp_session *session)
 		session->state = MCP_SESSION_CLOSE_FAILED;
 	}
 	mutex_unlock(&mcp_ctx.sessions_lock);
-	mc_dev_devel("close session %x ret %d state %d", session->id, ret,
+	mc_dev_devel("close session %x ret %d state %d\n", session->id, ret,
 		     session->state);
 	return ret;
 }
