@@ -498,6 +498,13 @@ int port_smem_init(struct port_t *port)
 	struct ccci_smem_port *smem_port;
 	struct ccci_smem_region *smem_region = ccci_md_get_smem_by_user_id(md_id, port->minor);
 
+#if (MD_GENERATION < 6293)
+	if (!smem_region) {
+		CCCI_ERROR_LOG(md_id, CHAR, "smem port %d not available\n", port->minor);
+		return -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
+	}
+#endif
+
 	/*Set SMEM MINOR base*/
 	port->minor += CCCI_SMEM_MINOR_BASE;
 	if (port->flags & PORT_F_WITH_CHAR_NODE) {
