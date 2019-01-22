@@ -71,6 +71,8 @@ static int pe20_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
 	int ret = 0;
 
 	ret = charger_dev_enable_vbus_ovp(pinfo->chg1_dev, enable);
+	if (ret == -ENOTSUPP)
+		return 0;
 
 	if (ret < 0)
 		pr_err("%s: failed, ret = %d\n", __func__, ret);
