@@ -106,6 +106,7 @@ obj-$(CONFIG_MACH_MT6763) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6739) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6758) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6771) += power_gs_v1/
+obj-$(CONFIG_MACH_MT6775) += power_gs_v1/
 endif
 obj-$(CONFIG_MACH_MT6757) += hps_v2/
 obj-$(CONFIG_MACH_MT6763) += hps_v3/
