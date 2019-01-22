@@ -326,7 +326,6 @@ __debug_object_init(void *addr, struct debug_obj_descr *descr, int onstack)
 	struct debug_bucket *db;
 	struct debug_obj *obj;
 	unsigned long flags;
-	int on_stack_err = 0;
 
 	fill_pool();
 
@@ -343,7 +342,7 @@ __debug_object_init(void *addr, struct debug_obj_descr *descr, int onstack)
 			debug_objects_oom();
 			return;
 		}
-		on_stack_err = debug_object_is_on_stack(addr, onstack);
+		debug_object_is_on_stack(addr, onstack);
 	}
 
 	switch (obj->state) {
@@ -358,7 +357,7 @@ __debug_object_init(void *addr, struct debug_obj_descr *descr, int onstack)
 		state = obj->state;
 		raw_spin_unlock_irqrestore(&db->lock, flags);
 		debug_object_fixup(descr->fixup_init, addr, state);
-		goto out;
+		return;
 
 	case ODEBUG_STATE_DESTROYED:
 		debug_print_object(obj, "init");
@@ -368,10 +367,6 @@ __debug_object_init(void *addr, struct debug_obj_descr *descr, int onstack)
 	}
 
 	raw_spin_unlock_irqrestore(&db->lock, flags);
-
-out:
-	if (on_stack_err)
-		debug_object_mtk_aee_warning("wrong object location");
 }
 
 /**
