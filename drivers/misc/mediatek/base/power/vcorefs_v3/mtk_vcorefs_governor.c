@@ -96,6 +96,7 @@ static char *kicker_name[] = {
 	"KIR_ANC_MD32",
 	"KIR_EFUSE",
 	"KIR_PASR",
+	"KIR_SDIO",
 	"KIR_SYSFS",
 	"KIR_SYSFSX",
 	"NUM_KICKER",
