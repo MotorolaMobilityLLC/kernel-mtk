@@ -206,11 +206,13 @@ static int __init parse_cluster(struct device_node *cluster, int depth)
  * use the default SCHED_CAPACITY_SCALE value for cpu_scale.
  */
 static const struct cpu_efficiency table_efficiency[] = {
+	{"arm,cortex-a73", 4466},
 	{"arm,cortex-a15", 3891},
 	{"arm,cortex-a17", 3276},
 	{"arm,cortex-a12", 3276},
 	{"arm,cortex-a53", 2520},
 	{"arm,cortex-a7",  2048},
+	{"arm,cortex-a35", 2043},
 	{NULL, },
 };
 

@@ -203,9 +203,11 @@ struct cpu_efficiency {
  * use the default SCHED_CAPACITY_SCALE value for cpu_scale.
  */
 static const struct cpu_efficiency table_efficiency[] = {
+	{ "arm,cortex-a73", 3630 },
 	{ "arm,cortex-a72", 4186 },
 	{ "arm,cortex-a57", 3891 },
 	{ "arm,cortex-a53", 2048 },
+	{ "arm,cortex-a35", 1661 },
 	{ NULL, },
 };
 
