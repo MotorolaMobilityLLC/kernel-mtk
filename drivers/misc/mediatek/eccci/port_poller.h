@@ -14,7 +14,7 @@
 #ifndef __PORT_POLLER_H__
 #define __PORT_POLLER_H__
 
-#include <ccci_core.h>
+#include "ccci_core.h"
 
 struct port_md_status_poller {
 	unsigned long long latest_poll_start_time;

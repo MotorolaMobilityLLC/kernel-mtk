@@ -14,7 +14,7 @@
 #ifndef __PORT_CTLMSG_H__
 #define __PORT_CTLMSG_H__
 
-#include <ccci_core.h>
+#include "ccci_core.h"
 
 /****************************************************************************************************************/
 /* External API Region called by port ctl object */
