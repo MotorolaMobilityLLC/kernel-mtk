@@ -43,7 +43,11 @@ enum eem_det_id {
 #if ENABLE_LOO
 	EEM_DET_L_HI = EEM_CTRL_L_HI,
 #endif
+<<<<<<< HEAD
 	EEM_DET_GPU	=	EEM_CTRL_GPU,
+=======
+	EEM_DET_GPU =	EEM_CTRL_GPU,
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 #if ENABLE_LOO
 	EEM_DET_2L_HI	=	EEM_CTRL_2L_HI,
 #endif

@@ -15,8 +15,12 @@
 #define _MTK_EEM_CONFIG_H_
 
 /* CONFIG (SW related) */
+<<<<<<< HEAD
 /* FIX me */
 #define EEM_NOT_READY	(0)
+=======
+/* #define EEM_NOT_READY	(0) */
+>>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 #define CONFIG_EEM_SHOWLOG	(0)
 #define EN_ISR_LOG		(0)
 #define EEM_BANK_SOC		(0) /* use voltage bin, so disable it */
