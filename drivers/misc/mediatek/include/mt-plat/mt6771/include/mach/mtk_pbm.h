@@ -94,10 +94,13 @@ enum section_level_tbl {
 
 enum md1_scenario {
 	S_STANDBY = 0,
-	S_2G_TALKING_OR_DATALINK,
-	S_3G_TALKING,
-	S_3G_DATALINK,
+	S_2G_CONNECT,
+	S_3G_C2K_TALKING,
+	S_3G_4G_C2K_PAGING,
+	S_3G_C2K_DATALINK,
 	S_4G_DL_1CC,
+	S_4G_DL_2CC,
+	S_4G_POSITIONING,
 	SCENARIO_NUM
 };
 
@@ -176,6 +179,15 @@ enum md1_section_level_tbl_4g_upL1 {
 	VAL_MD1_4G_upL1_SECTION_6 = 0
 };
 
+enum md1_section_level_tbl_4g_upL2 {
+	VAL_MD1_4G_upL2_SECTION_1 = 21,
+	VAL_MD1_4G_upL2_SECTION_2 = 19,
+	VAL_MD1_4G_upL2_SECTION_3 = 17,
+	VAL_MD1_4G_upL2_SECTION_4 = 14,
+	VAL_MD1_4G_upL2_SECTION_5 = 12,
+	VAL_MD1_4G_upL2_SECTION_6 = 0
+};
+
 enum md1_section_level_tbl_tdd {
 	VAL_MD1_TDD_SECTION_1 = 21,
 	VAL_MD1_TDD_SECTION_2 = 19,
@@ -199,10 +211,13 @@ enum md1_section_level_tbl_c2k {
  */
 enum md1_scenario_pwr_tbl {
 	PW_STANDBY = 2,
-	PW_2G_TALKING_OR_DATALINK = 76,
-	PW_3G_TALKING = 182,
-	PW_3G_DATALINK = 398,
-	PW_4G_DL_1CC = 499
+	PW_2G_CONNECT = 76,
+	PW_3G_C2K_TALKING = 182,
+	PW_3G_4G_C2K_PAGING = 398,
+	PW_3G_C2K_DATALINK = 499,
+	PW_4G_DL_1CC = 499,
+	PW_4G_DL_2CC = 499,
+	PW_4G_POSITIONING = 499
 };
 
 /*
@@ -233,6 +248,15 @@ enum md1_pa_pwr_tbl_4g_upL1 {
 	PW_MD1_PA_4G_upL1_SECTION_4 = 432,
 	PW_MD1_PA_4G_upL1_SECTION_5 = 323,
 	PW_MD1_PA_4G_upL1_SECTION_6 = 190
+};
+
+enum md1_pa_pwr_tbl_4g_upL2 {
+	PW_MD1_PA_4G_upL2_SECTION_1 = 1252,
+	PW_MD1_PA_4G_upL2_SECTION_2 = 865,
+	PW_MD1_PA_4G_upL2_SECTION_3 = 690,
+	PW_MD1_PA_4G_upL2_SECTION_4 = 432,
+	PW_MD1_PA_4G_upL2_SECTION_5 = 323,
+	PW_MD1_PA_4G_upL2_SECTION_6 = 190
 };
 
 enum md1_pa_pwr_tbl_c2k {
@@ -272,6 +296,15 @@ enum md1_rf_pwr_tbl_4g_upL1 {
 	PW_MD1_RF_4G_upL1_SECTION_4 = 216,
 	PW_MD1_RF_4G_upL1_SECTION_5 = 216,
 	PW_MD1_RF_4G_upL1_SECTION_6 = 159
+};
+
+enum md1_rf_pwr_tbl_4g_upL2 {
+	PW_MD1_RF_4G_upL2_SECTION_1 = 243,
+	PW_MD1_RF_4G_upL2_SECTION_2 = 243,
+	PW_MD1_RF_4G_upL2_SECTION_3 = 234,
+	PW_MD1_RF_4G_upL2_SECTION_4 = 216,
+	PW_MD1_RF_4G_upL2_SECTION_5 = 216,
+	PW_MD1_RF_4G_upL2_SECTION_6 = 159
 };
 
 enum md1_rf_pwr_tbl_c2k {
