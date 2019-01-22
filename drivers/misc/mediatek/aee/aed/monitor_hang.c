@@ -69,7 +69,7 @@ static int hd_timeout = 0x7fffffff;
 static int hang_detect_counter = 0x7fffffff;
 static int dump_bt_done;
 #ifdef CONFIG_MTK_ENG_BUILD
-static int hang_aee_warn = 1;
+static int hang_aee_warn = 2;
 #endif
 static int system_server_pid;
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_start_wait);
@@ -380,6 +380,9 @@ static int DumpThreadNativeMaps(pid_t pid)
 	int flags;
 	struct mm_struct *mm;
 	struct pt_regs *user_ret;
+	char tpath[512];
+	char *path_p = NULL;
+	struct path base_path;
 
 	current_task = find_task_by_vpid(pid);	/* get tid task */
 	if (current_task == NULL)
@@ -410,12 +413,13 @@ static int DumpThreadNativeMaps(pid_t pid)
 			     (unsigned char *)(file->f_path.dentry->d_iname));
 
 			if (flags & VM_EXEC) {	/* we only catch code section for reduce maps space */
-				Log2HangInfo("%08lx-%08lx %c%c%c%c %s\n", vma->vm_start,
+				base_path = file->f_path;
+				path_p = d_path(&base_path, tpath, 512);
+				Log2HangInfo("%08lx-%08lx %c%c%c%c    %s\n", vma->vm_start,
 					     vma->vm_end, flags & VM_READ ? 'r' : '-',
 					     flags & VM_WRITE ? 'w' : '-',
 					     flags & VM_EXEC ? 'x' : '-',
-					     flags & VM_MAYSHARE ? 's' : 'p',
-					     (unsigned char *)(file->f_path.dentry->d_iname));
+					     flags & VM_MAYSHARE ? 's' : 'p', path_p);
 			}
 		} else {
 			const char *name = arch_vma_name(vma);
@@ -908,9 +912,10 @@ static int hang_detect_thread(void *arg)
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
 #endif
 #ifdef CONFIG_MTK_ENG_BUILD
-			if (hang_detect_counter == 1 && hang_aee_warn == 1 && hd_timeout != 11) {
+			if (hang_detect_counter == 1 && hang_aee_warn == 2 && hd_timeout != 11) {
 				hang_detect_counter = hd_timeout / 2;
 				dump_bt_done = 0;
+				hang_aee_warn = 1;
 				wake_up_interruptible(&dump_bt_start_wait);
 				if (dump_bt_done != 1)
 					wait_event_interruptible_timeout(dump_bt_done_wait, dump_bt_done == 1, HZ*10);
