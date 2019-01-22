@@ -2641,7 +2641,7 @@ static int mtk_uart_init_ports(void)
 #ifdef CONFIG_OF
 #if defined(ENABLE_VFIFO)
 		if (uart->setting->vff) {
-			if (i * 2 < ARRAY_SIZE(mtk_uart_vfifo_port) / sizeof(mtk_uart_vfifo_port[0])) {
+			if (i * 2 < ARRAY_SIZE(mtk_uart_vfifo_port)) {
 				for (idx = i * 2; idx < i * 2 + 2; idx++) {
 					vfifo = &mtk_uart_vfifo_port[idx];
 					vfifo->base = (apdma_uart0_base + 0x0080 * idx);
