@@ -953,7 +953,7 @@ static int read_average_auxadc_value(int channels, unsigned int times)
 	for (counter = 0; counter < times; ++counter)
 		average = average + offset[counter];
 
-	average = (average + (times / 2)) / times;
+	average = DIV_ROUND_CLOSEST(average, times);
 
 	return average;
 }
@@ -1323,7 +1323,7 @@ static int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 	/* R = V /I */
 	/* V = auxDiff * (1800mv /auxResolution)  /TrimBufGain */
 	/* I =  pcmOffset * DAC_constant * Gsdm * Gibuf */
-	return (3600000 / pcm_offset * aux_diff + 3916) / 7832;
+	return DIV_ROUND_CLOSEST(3600000 / pcm_offset * aux_diff, 7832);
 }
 
 static int mtk_calculate_hp_impedance(int dc_init, int dc_input, short pcm_offset,
@@ -1339,13 +1339,13 @@ static int mtk_calculate_hp_impedance(int dc_init, int dc_input, short pcm_offse
 
 	dc_value = dc_input - dc_init;
 	r_tmp = mtk_calculate_impedance_formula(pcm_offset, dc_value);
-	r_tmp = (r_tmp + (detect_times / 2)) / detect_times;
+	r_tmp = DIV_ROUND_CLOSEST(r_tmp, detect_times);
 
 	/* Efuse calibration */
 	if ((efuse_current_calibration != 0) && (r_tmp != 0)) {
 		pr_aud("%s(), Before Calibration from EFUSE: %d, R: %d\n",
 		       __func__, efuse_current_calibration, r_tmp);
-		r_tmp = (r_tmp * (128 + efuse_current_calibration) + 64) / 128;
+		r_tmp = DIV_ROUND_CLOSEST(r_tmp * (128 + efuse_current_calibration), 128);
 	}
 
 	pr_aud("%s(), pcm_offset %d dcoffset %d detected resistor is %d\n",
@@ -1518,8 +1518,7 @@ static int calOffsetToDcComp(int TrimOffset)
 {
 	/* The formula is from DE programming guide */
 	/* should be mantain by pmic owner */
-	/* 32768/2 is rounded value */
-	return (TrimOffset * 2804225 + (32768 / 2)) / 32768;
+	return DIV_ROUND_CLOSEST(TrimOffset * 2804225, 32768);
 }
 
 static void set_lch_dc_compensation_reg(int lch_value)
@@ -1559,8 +1558,8 @@ static void SetDcCompenSation(bool enable)
 	int index_rgain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	int diff_lch = 0, diff_rch = 0, ramp_l = 0, ramp_r = 0;
 
-	lch_value = calOffsetToDcComp(hpl_dc_offset * dBFactor_Nom[index_lgain] / dBFactor_Den);
-	rch_value = calOffsetToDcComp(hpr_dc_offset * dBFactor_Nom[index_rgain] / dBFactor_Den);
+	lch_value = calOffsetToDcComp(DIV_ROUND_CLOSEST(hpl_dc_offset * dBFactor_Nom[index_lgain], dBFactor_Den));
+	rch_value = calOffsetToDcComp(DIV_ROUND_CLOSEST(hpr_dc_offset * dBFactor_Nom[index_rgain], dBFactor_Den));
 	diff_lch = enable ? lch_value - last_lch_comp_value : lch_value;
 	diff_rch = enable ? rch_value - last_rch_comp_value : rch_value;
 	sign_lch = diff_lch < 0 ? -1 : 1;
