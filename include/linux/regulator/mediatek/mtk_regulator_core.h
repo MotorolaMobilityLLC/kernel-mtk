@@ -1,22 +1,26 @@
 /*
- * mtk-regulator-core.h -- MTK Regulator driver support.
- *
- * Copyright (C) 2013 Richtek Technology Corp.
+ * mtk_regulator_core.h -- MTK Regulator driver support.
+ * Copyright (C) 2016 MediaTek Inc.
  * Author: Patrick Chang <patrick_chang@richtek.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * published by the Free Software Foundation.
  *
- * MTK Regulator Driver Interface.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+
 
 #ifndef __LINUX_REGULATOR_MTK_REGULATOR_CORE_H_
 #define __LINUX_REGULATOR_MTK_REGULATOR_CORE_H_
 #include <linux/regulator/driver.h>
 #include <linux/regulator/mediatek/mtk_regulator.h>
 #include <linux/mutex.h>
+
+#define MTK_SIMPLE_REGULATOR_VERSION "0.0.2_MTK"
 
 typedef uint8_t mreg_reg_t;
 typedef struct mutex mreg_mutex_t;
@@ -141,7 +145,5 @@ static inline void mtk_simple_regulator_mutex_destroy(mreg_mutex_t *lock)
 	.list_voltage = _list_voltage, \
 	.mreg_ctrl_ops = ctrl_ops, \
 }
-
-#define MTK_SIMPLE_REGULATOR_VERSION "0.0.1_MTK"
 
 #endif /* __LINUX_REGULATOR_MTK_REGULATOR_CORE_H_ */

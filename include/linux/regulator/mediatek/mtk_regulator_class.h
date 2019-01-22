@@ -1,14 +1,18 @@
 /*
- * Copyright (C) 2013 Richtek Technology Corp.
+ * mtk_regulator_class.h -- MTK Regulator driver support.
+ * Copyright (C) 2016 MediaTek Inc.
  * Author: Patrick Chang <patrick_chang@richtek.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * published by the Free Software Foundation.
  *
- * MTK Regulator Driver Interface.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+
 
 #ifndef __LINUX_REGULATOR_MTK_REGULATOR_CLASS_H_
 #define __LINUX_REGULATOR_MTK_REGULATOR_CLASS_H_
