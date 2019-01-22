@@ -2,7 +2,7 @@ config MTK_TINYSYS_SSPM_SUPPORT
 	bool "Specifiy If Platform Support SSPM"
 	default n
 	help
-		SSPM is a MediaTek in-house DSP for power management under secure world.
+		SSPM is a MediaTek in-house hardware for power management under secure world.
 		It receives command from IPI interface.
 		Set y to enable this DSP to manage power.
 		Set n to stay with legancy feature.
