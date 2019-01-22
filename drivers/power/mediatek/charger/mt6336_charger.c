@@ -1,0 +1,704 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
+/*
+ *
+ * Filename:
+ * ---------
+ *    mtk_charger.c
+ *
+ * Project:
+ * --------
+ *   Android_Software
+ *
+ * Description:
+ * ------------
+ *   This Module defines functions of Battery charging
+ *
+ * Author:
+ * -------
+ * Wy Chuang
+ *
+ */
+#include <linux/init.h>		/* For init/exit macros */
+#include <linux/module.h>	/* For MODULE_ marcros  */
+#include <linux/fs.h>
+#include <linux/device.h>
+#include <linux/interrupt.h>
+#include <linux/spinlock.h>
+#include <linux/platform_device.h>
+#include <linux/device.h>
+#include <linux/kdev_t.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/delay.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/types.h>
+#include <linux/wait.h>
+#include <linux/slab.h>
+#include <linux/fs.h>
+#include <linux/sched.h>
+#include <linux/poll.h>
+#include <linux/power_supply.h>
+#include <linux/wakelock.h>
+#include <linux/time.h>
+#include <linux/mutex.h>
+#include <linux/kthread.h>
+#include <linux/proc_fs.h>
+#include <linux/platform_device.h>
+#include <linux/seq_file.h>
+#include <linux/scatterlist.h>
+#include <linux/suspend.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/version.h>
+
+
+#include <mt-plat/charger_class.h>
+#include <mt-plat/mtk_charger.h>
+#include <mt6336.h>
+
+
+struct mt6336_charger_info {
+	int i2c_log_level;
+	struct power_supply_desc psd;
+	struct power_supply *psy;
+
+	const char *charger_dev_name;
+	struct charger_properties charger_prop;
+	struct charger_device *charger_dev;
+
+};
+
+/* mt6336 VCV_CON0[7:0], uV */
+static const unsigned int VBAT_CV_VTH[] = {
+	2600000, 2612500, 2625000, 2637500,
+	2650000, 2662500, 2675000, 2687500,
+	2700000, 2712500, 2725000, 2737500,
+	2750000, 2762500, 2775000, 2787500,
+	2800000, 2812500, 2825000, 2837500,
+	2850000, 2862500, 2875000, 2887500,
+	2900000, 2912500, 2925000, 2937500,
+	2950000, 2962500, 2975000, 2987500,
+	3000000, 3012500, 3025000, 3037500,
+	3050000, 3062500, 3075000, 3087500,
+	3100000, 3112500, 3125000, 3137500,
+	3150000, 3162500, 3175000, 3187500,
+	3200000, 3212500, 3225000, 3237500,
+	3250000, 3262500, 3275000, 3287500,
+	3300000, 3312500, 3325000, 3337500,
+	3350000, 3362500, 3375000, 3387500,
+	3400000, 3412500, 3425000, 3437500,
+	3450000, 3462500, 3475000, 3487500,
+	3500000, 3512500, 3525000, 3537500,
+	3550000, 3562500, 3575000, 3587500,
+	3600000, 3612500, 3625000, 3637500,
+	3650000, 3662500, 3675000, 3687500,
+	3700000, 3712500, 3725000, 3737500,
+	3750000, 3762500, 3775000, 3787500,
+	3800000, 3812500, 3825000, 3837500,
+	3850000, 3862500, 3875000, 3887500,
+	3900000, 3912500, 3925000, 3937500,
+	3950000, 3962500, 3975000, 3987500,
+	4000000, 4012500, 4025000, 4037500,
+	4050000, 4062500, 4075000, 4087500,
+	4100000, 4112500, 4125000, 4137500,
+	4150000, 4162500, 4175000, 4187500,
+	4200000, 4212500, 4225000, 4237500,
+	4250000, 4262500, 4275000, 4287500,
+	4300000, 4312500, 4325000, 4337500,
+	4350000, 4362500, 4375000, 4387500,
+	4400000, 4412500, 4425000, 4437500,
+	4450000, 4462500, 4475000, 4487500,
+	4500000, 4512500, 4525000, 4537500,
+	4550000, 4562500, 4575000, 4587500,
+	4600000, 4612500, 4625000, 4637500,
+	4650000, 4662500, 4675000, 4687500,
+	4700000, 4712500, 4725000, 4737500,
+	4750000, 4762500, 4775000, 4787500,
+	4800000,
+};
+
+/* mt6336 ICC_CON0[6:0], uA */
+static const unsigned int CS_VTH[] = {
+	500000, 550000, 600000, 650000,
+	700000, 750000, 800000, 850000,
+	900000, 950000, 1000000, 1050000,
+	1100000, 1150000, 1200000, 1250000,
+	1300000, 1350000, 1400000, 1450000,
+	1500000, 1550000, 1600000, 1650000,
+	1700000, 1750000, 1800000, 1850000,
+	1900000, 1950000, 2000000, 2050000,
+	2100000, 2150000, 2200000, 2250000,
+	2300000, 2350000, 2400000, 2450000,
+	2500000, 2550000, 2600000, 2650000,
+	2700000, 2750000, 2800000, 2850000,
+	2900000, 2950000, 3000000, 3050000,
+	3100000, 3150000, 3200000, 3250000,
+	3300000, 3350000, 3400000, 3450000,
+	3500000, 3550000, 3600000, 3650000,
+	3700000, 3750000, 3800000, 3850000,
+	3900000, 3950000, 4000000, 4050000,
+	4100000, 4150000, 4200000, 4250000,
+	4300000, 4350000, 4400000, 4450000,
+	4500000, 4550000, 4600000, 4650000,
+	4700000, 4750000, 4800000, 4850000,
+	4900000, 4950000, 5000000,
+};
+
+/* mt6336 ICL_CON0[5:0], uA */
+static const unsigned int INPUT_CS_VTH[] = {
+	50000, 100000, 150000, 500000,
+	550000, 600000, 650000, 700000,
+	750000, 800000, 850000, 900000,
+	950000, 1000000, 1050000, 1100000,
+	1150000, 1200000, 1250000, 1300000,
+	1350000, 1400000, 1450000, 1500000,
+	1550000, 1600000, 1650000, 1700000,
+	1750000, 1800000, 1850000, 1900000,
+	1950000, 2000000, 2050000, 2100000,
+	2150000, 2200000, 2250000, 2300000,
+	2350000, 2400000, 2450000, 2500000,
+	2550000, 2600000, 2650000, 2700000,
+	2750000, 2800000, 2850000, 2900000,
+	2950000, 3000000, 3050000, 3100000,
+	3150000, 3200000,
+};
+
+/* MT6336 GER_CON2[4:0], uV */
+static const unsigned int MIVR_REG[] = {
+	4300000, 4350000, 4400000, 4450000,
+	4500000, 4550000, 4600000, 4650000,
+	4700000, 4750000, 4800000, 4850000,
+	4900000, 4900000, 4900000, 4900000,
+	5500000, 6000000, 6500000, 7000000,
+	7500000, 8000000, 8500000, 9000000,
+	9500000, 10000000, 10500000, 11000000,
+	11500000,
+};
+
+/* MT6336 OTG_CTRL2[2:0], uA */
+static const unsigned int BOOST_CURRENT_LIMIT[] = {
+	100000, 500000, 900000, 1200000,
+	1500000, 2000000,
+};
+
+struct mt6336_charger_info *info;
+
+static unsigned int charging_value_to_parameter(const unsigned int *parameter,
+						const unsigned int array_size,
+						const unsigned int val)
+{
+	if (val < array_size)
+		return parameter[val];
+
+	pr_err("Can't find the parameter\n");
+	return parameter[0];
+
+}
+
+static unsigned int charging_parameter_to_value(const unsigned int *parameter,
+						const unsigned int array_size,
+						const unsigned int val)
+{
+	unsigned int i;
+
+	pr_debug("array_size = %d\n", array_size);
+
+	for (i = 0; i < array_size; i++) {
+		if (val == *(parameter + i))
+			return i;
+	}
+
+	pr_err("NO register value match\n");
+	return 0;
+}
+
+static unsigned int bmt_find_closest_level(const unsigned int *pList,
+					   unsigned int number,
+					   unsigned int level)
+{
+	unsigned int i;
+	unsigned int max_value_in_last_element;
+
+	if (pList[0] < pList[1])
+		max_value_in_last_element = true;
+	else
+		max_value_in_last_element = false;
+
+	if (max_value_in_last_element == true) {
+		/* max value in the last element */
+		for (i = (number - 1); i != 0; i--) {
+			if (pList[i] <= level) {
+				pr_debug("zzf_%d<=%d i=%d\n", pList[i], level, i);
+				return pList[i];
+			}
+		}
+
+		pr_err("Can't find closest level\n");
+		return pList[0];
+	}
+
+	/* max value in the first element */
+	for (i = 0; i < number; i++) {
+		if (pList[i] <= level)
+			return pList[i];
+	}
+
+	pr_err("Can't find closest level\n");
+	return pList[number - 1];
+}
+
+static int mt6336_parse_dt(struct mt6336_charger_info *info, struct device *dev)
+{
+	struct device_node *np = dev->of_node;
+
+	pr_err("%s: starts\n", __func__);
+
+	if (!np) {
+		pr_err("%s: no device node\n", __func__);
+		return -EINVAL;
+	}
+
+	if (of_property_read_string(np, "charger_name",
+		&info->charger_dev_name) < 0) {
+		pr_err("%s: no charger name\n", __func__);
+		info->charger_dev_name = "PrimarySWCHG";
+	}
+
+	if (of_property_read_string(np, "alias_name",
+		&info->charger_prop.alias_name) < 0) {
+		pr_err("%s: no alias name\n", __func__);
+		info->charger_prop.alias_name = "mt6366";
+	}
+
+	pr_err("chr name:%s alias:%s\n",
+		info->charger_dev_name, info->charger_prop.alias_name);
+
+	return 0;
+}
+
+static enum power_supply_property mt6336_charger_props[] = {
+	POWER_SUPPLY_PROP_ONLINE,
+};
+
+static char *mt6336_charger_supply_list[] = {
+	"none",
+};
+
+static int mt6336_charger_get_property(struct power_supply *psy,
+				enum power_supply_property psp,
+				union power_supply_propval *val)
+{
+	/*struct mt6336_charger_info *info = dev_get_drvdata(psy->dev->parent);*/
+	int ret = 0;
+
+	switch (psp) {
+	case POWER_SUPPLY_PROP_ONLINE:
+		val->intval = 1;
+		break;
+	default:
+		ret = -EINVAL;
+		break;
+	}
+
+	return ret;
+}
+
+static int mt6336_charger_set_property(struct power_supply *psy,
+				enum power_supply_property psp,
+				const union power_supply_propval *val)
+{
+	/*struct mt6336_charger_info *info = dev_get_drvdata(psy->dev->parent);*/
+	int ret = 0;
+
+	switch (psp) {
+	case POWER_SUPPLY_PROP_ONLINE:
+		break;
+	default:
+		break;
+	}
+	return ret;
+}
+
+/* TODO: Below is callback */
+
+int mt6336_plug_in_setting(struct charger_device *chg_dev)
+{
+	/* Before any software action, set RG_DIS_LOWQ_MODE = High */
+	mt6336_config_interface(0x409, 0x01, 0xFF, 0);
+	/* disable ICL150 pin */
+	mt6336_config_interface(0x438, 0x08, 0xFF, 0);
+	/* DISABLE BC12 TIMER AND ALSO RESET BC12 */
+	mt6336_config_interface(0x42B, 0x01, 0xFF, 0);
+	/* It would overwrite FT vale */
+	mt6336_config_interface(0x50E, 0x20, 0xFF, 0);
+	/* switching freq to 1MHz */
+	mt6336_config_interface(0x43A, 0x02, 0xFF, 0);
+	/* AUXADC E-Fuse calibration setting for each channel */
+	mt6336_config_interface(0x357, 0x04, 0xFF, 0);
+	mt6336_config_interface(0x356, 0x31, 0xFF, 0);
+	mt6336_config_interface(0x355, 0xE0, 0xFF, 0);
+	/* VM<=7V for normal VBUS stability */
+	mt6336_config_interface(0x552, 0xE8, 0xFF, 0);
+	mt6336_config_interface(0x548, 0x11, 0xFF, 0);
+	mt6336_config_interface(0x53F, 0x0B, 0xFF, 0);
+	mt6336_config_interface(0x53D, 0x02, 0xFF, 0);
+	mt6336_config_interface(0x519, 0x3F, 0xFF, 0);
+	/* DPM */
+	mt6336_config_interface(0x51A, 0x35, 0xFF, 0);
+	mt6336_config_interface(0x51B, 0x84, 0xFF, 0);
+	/* IBAT */
+	mt6336_config_interface(0x51C, 0x01, 0xFF, 0);
+	mt6336_config_interface(0x51D, 0x84, 0xFF, 0);
+	/* ICHIN */
+	mt6336_config_interface(0x51E, 0x01, 0xFF, 0);
+	mt6336_config_interface(0x51F, 0x84, 0xFF, 0);
+	/* SYS */
+	mt6336_config_interface(0x520, 0x34, 0xFF, 0);
+	mt6336_config_interface(0x521, 0x44, 0xFF, 0);
+	/* THR */
+	mt6336_config_interface(0x522, 0x35, 0xFF, 0);
+	mt6336_config_interface(0x523, 0x84, 0xFF, 0);
+	mt6336_config_interface(0x526, 0x04, 0xFF, 0);
+	/* RG_VCV[7:0] set value 88=4.3V; 80=4.2V; B1=4.8V; FF=4.8V; 8C=4.35V */
+	mt6336_config_interface(0x427, 0x8C, 0xFF, 0);
+	mt6336_config_interface(0x428, 0x03, 0xFF, 0);
+	mt6336_config_interface(0x42F, 0x8c, 0xFF, 0);
+	mt6336_config_interface(0x528, 0x02, 0xFF, 0);
+	mt6336_config_interface(0x431, 0x16, 0xFF, 0);
+	mt6336_config_interface(0x437, 0x79, 0xFF, 0);
+	mt6336_config_interface(0x42A, 0x20, 0xFF, 0);
+	mt6336_config_interface(0x426, 0x26, 0xFF, 0);
+	mt6336_config_interface(0x42C, 0x20, 0xFF, 0);
+	mt6336_config_interface(0x436, 0x0F, 0xFF, 0);
+	mt6336_config_interface(0x402, 0x03, 0xFF, 0);
+	mt6336_config_interface(0x430, 0x00, 0xFF, 0);
+	mt6336_config_interface(0x400, 0x03, 0xFF, 0);
+	mt6336_config_interface(0x434, 0x0C, 0xFF, 0);
+	mt6336_config_interface(0x43B, 0x00, 0xFF, 0);
+
+	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_SAFETY_TIMEOUT, "mt6336 charger");
+
+	mt6336_enable_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_SAFETY_TIMEOUT, "mt6336 charger");
+
+	return 0;
+}
+
+static int mt6336_enable_charging(struct charger_device *chg_dev)
+{
+	pr_err("%s\n", __func__);
+	mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 1);
+
+	return 0;
+}
+
+static int mt6336_disable_charging(struct charger_device *chg_dev)
+{
+	pr_err("%s\n", __func__);
+	mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 0);
+
+	return 0;
+}
+
+static int mt6336_get_ichg(struct charger_device *chg_dev)
+{
+	unsigned int array_size;
+	unsigned int val;
+
+	/*Get current level */
+	array_size = ARRAY_SIZE(CS_VTH);
+	val = mt6336_get_flag_register_value(MT6336_RG_ICC);
+
+	return charging_value_to_parameter(CS_VTH, array_size, val);
+}
+
+static int mt6336_set_ichg(struct charger_device *chg_dev, int ichg)
+{
+	int status = 0;
+	unsigned int set_ichg;
+	unsigned int array_size;
+	unsigned int register_value;
+
+	array_size = ARRAY_SIZE(CS_VTH);
+	set_ichg = bmt_find_closest_level(CS_VTH, array_size, ichg);
+	register_value = charging_parameter_to_value(CS_VTH, array_size, set_ichg);
+	mt6336_set_flag_register_value(MT6336_RG_ICC, register_value);
+
+	pr_err("mt6336_set_ichg: %d %d %d\n", ichg, set_ichg, register_value);
+
+	return status;
+}
+
+static int mt6336_set_cv(struct charger_device *chg_dev, int cv)
+{
+	int status = 0;
+	unsigned short int array_size;
+	unsigned int set_cv;
+	unsigned short int register_value;
+
+	array_size = ARRAY_SIZE(VBAT_CV_VTH);
+	set_cv = bmt_find_closest_level(VBAT_CV_VTH, array_size, cv);
+	register_value = charging_parameter_to_value(VBAT_CV_VTH, array_size, set_cv);
+	pr_err("%s register_value=0x%x %d %d\n", __func__, register_value, cv, set_cv);
+
+	mt6336_set_flag_register_value(MT6336_RG_VCV, register_value);
+
+	return status;
+}
+
+static int mt6336_get_aicr(struct charger_device *chg_dev)
+{
+	unsigned int array_size;
+	unsigned int val;
+
+	array_size = ARRAY_SIZE(INPUT_CS_VTH);
+	val = mt6336_get_flag_register_value(MT6336_RG_ICL);
+
+	return charging_value_to_parameter(INPUT_CS_VTH, array_size, val);
+}
+
+static int mt6336_set_aicr(struct charger_device *chg_dev, int aicr)
+{
+	int status = 0;
+	unsigned int set_aicr;
+	unsigned int array_size;
+	unsigned int register_value;
+
+	array_size = ARRAY_SIZE(INPUT_CS_VTH);
+	set_aicr = bmt_find_closest_level(INPUT_CS_VTH, array_size, aicr);
+	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size, set_aicr);
+	mt6336_set_flag_register_value(MT6336_RG_ICL, register_value);
+
+	pr_err("mt6336_set_aicr: %d %d %d\n", aicr, set_aicr, register_value);
+
+	return status;
+}
+
+static int mt6336_dump_register(struct charger_device *chg_dev)
+{
+	int status = 0;
+	unsigned short icc;
+	unsigned short icl150pin;
+	unsigned int aicr = 0;
+	unsigned short chg_en;
+	unsigned short vcv;
+	unsigned short aicc;
+
+	icc = mt6336_get_flag_register_value(MT6336_RG_ICC);
+	icl150pin = mt6336_get_flag_register_value(MT6336_RG_EN_ICL150PIN);
+	aicr = mt6336_get_aicr(chg_dev);
+	chg_en = mt6336_get_flag_register_value(MT6336_RG_EN_CHARGE);
+	vcv = mt6336_get_flag_register_value(MT6336_RG_VCV);
+	aicc = mt6336_get_flag_register_value(MT6336_RG_EN_AICC);
+
+	pr_err("[MT6336] ICC:%dmA, ICL:%dmA, ICL150PIN=%d, VCV:%dmV, CHGEN=%d, AICC=%d\n",
+		icc * 50 + 500, aicr / 1000, icl150pin, (vcv * 125 + 26000) / 10, chg_en, aicc);
+
+	return status;
+}
+
+void mt6336_vbat_ovp_callback(void)
+{
+	pr_err("mt6336_vbat_ovp_callback\n");
+	if (info != NULL) {
+		pr_err("call chain\n");
+		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_BAT_OVP);
+	} else {
+		pr_err("do not call chain\n");
+	}
+}
+
+void mt6336_vbus_ovp_callback(void)
+{
+	pr_err("mt6336_vbus_ovp_callback\n");
+	if (info != NULL)
+		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_VBUS_OVP);
+}
+
+void mt6336_eoc_callback(void)
+{
+	pr_err("mt6336_eoc_callback\n");
+	if (info != NULL) {
+		pr_err("call chain\n");
+		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_EOC);
+	} else {
+		pr_err("do not call chain\n");
+	}
+
+}
+
+void mt6336_rechg_callback(void)
+{
+	pr_err("mt6336_rechg_callback\n");
+	if (info != NULL) {
+		pr_err("call chain\n");
+		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_EOC);
+	} else {
+		pr_err("do not call chain\n");
+	}
+}
+
+void mt6336_safety_timeout_callback(void)
+{
+	pr_err("mt6336_safety_timeout_callback\n");
+	if (info != NULL) {
+		pr_err("call chain\n");
+		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_EOC);
+	} else {
+		pr_err("do not call chain\n");
+	}
+}
+
+
+/* TODO: Above is callback */
+
+
+static struct charger_ops mt6366_charger_dev_ops = {
+	.suspend = NULL,
+	.resume = NULL,
+	.plug_in = mt6336_plug_in_setting,
+	.plug_out = NULL,
+	.enable = mt6336_enable_charging,
+	.disable = mt6336_disable_charging,
+	.get_charging_current = mt6336_get_ichg,
+	.set_charging_current = mt6336_set_ichg,
+	.set_constant_voltage = mt6336_set_cv,
+	.get_input_current = mt6336_get_aicr,
+	.set_input_current = mt6336_set_aicr,
+	.dump_registers = mt6336_dump_register,
+};
+
+static int mt6336_charger_probe(struct platform_device *pdev)
+{
+	int ret = 0;
+
+	pr_err("%s: starts\n", __func__);
+
+	info = devm_kzalloc(&pdev->dev, sizeof(struct mt6336_charger_info), GFP_KERNEL);
+	if (!info)
+		return -ENOMEM;
+
+	mt6336_parse_dt(info, &pdev->dev);
+	platform_set_drvdata(pdev, info);
+
+#if 0
+	info->psy.name = info->charger_dev_name;
+	info->psy.type = POWER_SUPPLY_TYPE_UNKNOWN;
+	info->psy.supplied_to = mt6336_charger_supply_list;
+	info->psy.properties = mt6336_charger_props;
+	info->psy.num_properties = ARRAY_SIZE(mt6336_charger_props);
+	info->psy.get_property = mt6336_charger_get_property;
+	info->psy.set_property = mt6336_charger_set_property;
+#else
+	info->psd.name = info->charger_dev_name;
+	info->psd.type = POWER_SUPPLY_TYPE_UNKNOWN;
+	info->psd.properties = mt6336_charger_props;
+	info->psd.num_properties = ARRAY_SIZE(mt6336_charger_props);
+	info->psd.get_property = mt6336_charger_get_property;
+	info->psd.set_property = mt6336_charger_set_property;
+
+	info->psy->supplied_to = mt6336_charger_supply_list;
+#endif
+
+	/*ret = power_supply_register(&pdev->dev, &info->psy);*/
+	info->psy = power_supply_register(&pdev->dev, &info->psd, NULL);
+	if (ret < 0) {
+		pr_err("mt6336 power supply regiseter fail\n");
+		ret = -EINVAL;
+		goto err_register_psy;
+	}
+
+	/* Register charger device */
+	info->charger_dev = charger_device_register(info->charger_dev_name,
+		&pdev->dev, info, &mt6366_charger_dev_ops, &info->charger_prop);
+	if (IS_ERR_OR_NULL(info->charger_dev)) {
+		ret = PTR_ERR(info->charger_dev);
+		goto err_register_charger_dev;
+	}
+
+	mt6336_register_interrupt_callback(MT6336_INT_CHR_BAT_OVP, mt6336_vbat_ovp_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_CHR_VBUS_OVP, mt6336_vbus_ovp_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_STATE_BUCK_EOC, mt6336_eoc_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_CHR_BAT_RECHG, mt6336_rechg_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_SAFETY_TIMEOUT, mt6336_safety_timeout_callback);
+
+
+	return 0;
+
+err_register_charger_dev:
+	power_supply_unregister(info->psy);
+err_register_psy:
+	devm_kfree(&pdev->dev, info);
+	return ret;
+
+}
+
+static int mt6336_charger_remove(struct platform_device *pdev)
+{
+	struct mt6336_charger_info *mt = platform_get_drvdata(pdev);
+
+	if (mt) {
+		power_supply_unregister(mt->psy);
+		devm_kfree(&pdev->dev, mt);
+	}
+	return 0;
+}
+
+static void mt6336_charger_shutdown(struct platform_device *dev)
+{
+}
+
+
+static const struct of_device_id mt6336_charger_of_match[] = {
+	{.compatible = "mediatek,mt6336_charger",},
+	{},
+};
+
+MODULE_DEVICE_TABLE(of, mt6336_charger_of_match);
+
+static struct platform_driver mt6336_charger_driver = {
+	.probe = mt6336_charger_probe,
+	.remove = mt6336_charger_remove,
+	.shutdown = mt6336_charger_shutdown,
+	.driver = {
+		   .name = "mt6336_charger",
+		   .of_match_table = mt6336_charger_of_match,
+		   },
+};
+
+static int __init mt6336_charger_init(void)
+{
+	return platform_driver_register(&mt6336_charger_driver);
+}
+module_init(mt6336_charger_init);
+
+static void __exit mt6336_charger_exit(void)
+{
+	platform_driver_unregister(&mt6336_charger_driver);
+}
+module_exit(mt6336_charger_exit);
+
+MODULE_AUTHOR("wy.chuang <wy.chuang@mediatek.com>");
+MODULE_DESCRIPTION("MTK Switch Charger Device Driver");
+MODULE_LICENSE("GPL");

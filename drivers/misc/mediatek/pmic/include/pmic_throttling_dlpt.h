@@ -50,4 +50,6 @@ extern void bat_h_int_handler(void);
 extern void bat_l_int_handler(void);
 extern void fg_cur_h_int_handler(void);
 extern void fg_cur_l_int_handler(void);
+extern int get_rac(void);
+extern int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur);
 #endif				/* _PMIC_THROTTLING_DLPT_H_ */
