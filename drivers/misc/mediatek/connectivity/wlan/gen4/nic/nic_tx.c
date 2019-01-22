@@ -2700,7 +2700,8 @@ UINT_8 nicTxGetWlanIdx(P_ADAPTER_T prAdapter, UINT_8 ucBssIdx, UINT_8 ucStaRecId
 		ucWlanIndex = prStaRec->ucWlanIndex;
 	else if ((ucStaRecIdx == STA_REC_INDEX_BMCAST) && prBssInfo->fgIsInUse) {
 		if (prBssInfo->fgBcDefaultKeyExist) {
-			if (prBssInfo->wepkeyWlanIdx < NIC_TX_DEFAULT_WLAN_INDEX)
+			if (prBssInfo->wepkeyUsed[prBssInfo->ucBcDefaultKeyIdx] &&
+				prBssInfo->wepkeyWlanIdx < NIC_TX_DEFAULT_WLAN_INDEX)
 				ucWlanIndex = prBssInfo->wepkeyWlanIdx;
 			else if (prBssInfo->ucBMCWlanIndexSUsed[prBssInfo->ucBcDefaultKeyIdx])
 				ucWlanIndex = prBssInfo->ucBMCWlanIndexS[prBssInfo->ucBcDefaultKeyIdx];
