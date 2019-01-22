@@ -410,7 +410,10 @@ static int mtk_voice_pm_ops_suspend(struct device *device)
 	pr_warn("%s, b_modem1_speech_on=%d, b_modem2_speech_on=%d,speech_md_usage_control=%d\n",
 		__func__, b_modem1_speech_on, b_modem2_speech_on, speech_md_usage_control);
 
-	if (b_modem1_speech_on == true || b_modem2_speech_on == true || speech_md_usage_control == true)
+	if (b_modem1_speech_on == true ||
+	    b_modem2_speech_on == true ||
+	    speech_md_usage_control == true ||
+	    GetOffloadEnableFlag() == true)  /* check dsp mp3 running status*/
 		AudDrv_AUDINTBUS_Sel(0); /* George select clk26M power down sysplll when suspend*/
 
 	return 0;
@@ -431,7 +434,10 @@ static int mtk_voice_pm_ops_resume(struct device *device)
 	b_modem1_speech_on = (bool)(Afe_Get_Reg(PCM2_INTF_CON) & 0x1);
 	b_modem2_speech_on = (bool)(Afe_Get_Reg(PCM_INTF_CON1) & 0x1);
 	AudDrv_Clk_Off();
-	if (b_modem1_speech_on == true || b_modem2_speech_on == true || speech_md_usage_control == true)
+	if (b_modem1_speech_on == true ||
+	    b_modem2_speech_on == true ||
+	    speech_md_usage_control == true ||
+	    GetOffloadEnableFlag() == true)
 		AudDrv_AUDINTBUS_Sel(1); /*George  syspll1_d4 */
 
 	return 0;
