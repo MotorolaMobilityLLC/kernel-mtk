@@ -94,7 +94,7 @@ enum {
 #define MIRAVISION_HW_VERSION       (0)
 #endif
 
-#define MIRAVISION_SW_VERSION       (2)	/* 1:Android Lollipop, 2:Android Marshmallow */
+#define MIRAVISION_SW_VERSION       (3)	/* 3:Android N*/
 #define MIRAVISION_SW_FEATURE_VIDEO_DC  (0x1)
 #define MIRAVISION_SW_FEATURE_AAL       (0x2)
 #define MIRAVISION_SW_FEATURE_PQDS       (0x4)
