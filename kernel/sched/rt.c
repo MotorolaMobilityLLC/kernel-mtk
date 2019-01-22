@@ -1772,6 +1772,13 @@ static struct task_struct *pick_highest_pushable_task(struct rq *rq, int cpu)
 
 static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
 
+#ifndef CONFIG_SCHED_HMP
+extern unsigned int hmp_cpu_is_slowest(int cpu)
+{
+	return 1;
+}
+#endif
+
 #ifdef CONFIG_MTK_SCHED_INTEROP
 static int mt_sched_interop_rt(int cpu, struct cpumask *lowest_mask)
 {
@@ -1780,7 +1787,7 @@ static int mt_sched_interop_rt(int cpu, struct cpumask *lowest_mask)
 	mt_sched_printf(sched_interop, "current cpu=%d, find idle cpu from cpumask 0x%lx",
 			cpu, lowest_mask->bits[0]);
 
-	if (cpumask_test_cpu(cpu, lowest_mask) && idle_cpu(cpu))
+	if (cpumask_test_cpu(cpu, lowest_mask) && idle_cpu(cpu) && hmp_cpu_is_slowest(cpu))
 		return cpu;
 
 	for_each_cpu(cpu, lowest_mask) {
