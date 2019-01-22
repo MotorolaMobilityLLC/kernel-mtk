@@ -1077,6 +1077,10 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 		ccmni->tx_seq_num[0] = 0;
 		ccmni->tx_seq_num[1] = 0;
 		ccmni->rx_seq_num = 0;
+		ccmni->tx_full_cnt = 0;
+		ccmni->tx_irq_cnt = 0;
+		ccmni->tx_full_tick = 0;
+		ccmni->flags &= ~CCMNI_TX_PRINT_F;
 		break;
 
 	case EXCEPTION:
@@ -1111,8 +1115,13 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 				if (netif_queue_stopped(ccmni->dev))
 					netif_wake_queue(ccmni->dev);
 			}
-			CCMNI_INF_MSG(md_id, "md_state_cb: %s, md_sta=TX_IRQ, index=0x%x, usage=%d\n",
-				ccmni->dev->name, ccmni->index, atomic_read(&ccmni->usage));
+			ccmni->tx_irq_cnt++;
+			if (ccmni->flags & CCMNI_TX_PRINT_F || time_after(jiffies, ccmni->tx_full_tick + 1)) {
+				ccmni->flags &= ~CCMNI_TX_PRINT_F;
+				CCMNI_INF_MSG(md_id, "%s(%d), idx %d, md_sta=TX_IRQ, cnt(%u, %u)\n",
+					ccmni->dev->name, atomic_read(&ccmni->usage), ccmni->index,
+					ccmni->tx_full_cnt, ccmni->tx_irq_cnt);
+			}
 		}
 		break;
 
@@ -1126,8 +1135,14 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 				netif_tx_stop_queue(net_queue);
 			} else
 				netif_stop_queue(ccmni->dev);
-			CCMNI_INF_MSG(md_id, "md_state_cb: %s, md_sta=TX_FULL, index=0x%x, usage=%d\n",
-				ccmni->dev->name, ccmni->index, atomic_read(&ccmni->usage));
+			ccmni->tx_full_cnt++;
+			if (time_after(jiffies, ccmni->tx_full_tick + 1)) {
+				ccmni->tx_full_tick = jiffies;
+				ccmni->flags |= CCMNI_TX_PRINT_F;
+				CCMNI_INF_MSG(md_id, "%s(%d), idx %d, md_sta=TX_FULL, cnt(%u, %u)\n",
+					ccmni->dev->name, atomic_read(&ccmni->usage), ccmni->index,
+					ccmni->tx_full_cnt, ccmni->tx_irq_cnt);
+			}
 		}
 		break;
 	default:
