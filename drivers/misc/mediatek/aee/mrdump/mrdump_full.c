@@ -298,12 +298,6 @@ void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 	save_current_task();
 
 	/* FIXME: Check reboot_mode is valid */
-#ifdef CONFIG_MTK_WATCHDOG
-	if ((mtk_rgu_status_is_sysrst() || mtk_rgu_status_is_eintrst())) {
-		pr_notice("reboot by MRDUMP_KEY\n");
-		crash_record->reboot_mode = AEE_REBOOT_MODE_MRDUMP_KEY;
-	} else
-#endif
 		crash_record->reboot_mode = reboot_mode;
 }
 
