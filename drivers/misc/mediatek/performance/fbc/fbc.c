@@ -13,11 +13,12 @@
 #include "fbc.h"
 
 #define NR_PPM_CLUSTERS 3
-/*static void mt_power_pef_transfer(void);*/
-/*static DEFINE_TIMER(mt_pp_transfer_timer, (void *)mt_power_pef_transfer, 0, 0);*/
 static void mt_power_pef_transfer_work(void);
 static DECLARE_WORK(mt_pp_work, (void *) mt_power_pef_transfer_work);
 static DEFINE_SPINLOCK(tlock);
+static struct workqueue_struct *wq;
+
+
 
 static int boost_value;
 static int touch_boost_value;
@@ -31,21 +32,23 @@ static int first_frame;
 static int EMA;
 static int boost_method;
 static int frame_done;
-static int SUPER_BOOST;
+static int super_boost;
 static int is_game;
 static int is_30_fps;
 static int fbc_trace;
+static int chase;
 static unsigned long __read_mostly mark_addr;
-/*static unsigned long long last_frame_ts;*/
-/*static unsigned long long curr_frame_ts;*/
 
 static struct ppm_limit_data freq_limit[NR_PPM_CLUSTERS];
 static struct ppm_limit_data core_limit[NR_PPM_CLUSTERS];
 
 static struct hrtimer hrt;
-static int capacity;
+static long long capacity;
+static long long chase_capacity;
+static long long avg_capacity;
 
 static int power_ll[16][2];
+static int power_l[16][2];
 static int power_b[16][2];
 
 
@@ -62,11 +65,15 @@ inline void fbc_tracer(int pid, char *name, int count)
 void update_pwd_tbl(void)
 {
 	int i;
-	/*struct upower_tbl *ptr_tbl;*/
 
 	for (i = 0; i < 16; i++) {
 		power_ll[i][0] = mt_cpufreq_get_freq_by_idx(0, 15 - i);
 		power_ll[i][1] = upower_get_power(UPOWER_BANK_LL, 15 - i, UPOWER_CPU_STATES);
+	}
+
+	for (i = 0; i < 16; i++) {
+		power_l[i][0] = mt_cpufreq_get_freq_by_idx(1, 15 - i);
+		power_l[i][1] = upower_get_power(UPOWER_BANK_L, 15 - i, UPOWER_CPU_STATES);
 	}
 
 	for (i = 0; i < 16; i++) {
@@ -86,7 +93,12 @@ static void boost_freq(int capacity)
 {
 	int i, j;
 
-#if 1
+
+	if (capacity > 1024)
+		capacity = 1024;
+	if (capacity <= 0)
+		capacity = 1;
+
 	/*LL freq*/
 	for (i = 0; i < 16; i++) {
 		if (capacity <= power_ll[i][1]) {
@@ -96,7 +108,18 @@ static void boost_freq(int capacity)
 	}
 
 	if (i >= 16)
-		freq_limit[0].min = freq_limit[0].max = power_ll[16][0];
+		freq_limit[0].min = freq_limit[0].max = power_ll[15][0];
+
+	/*L freq*/
+	for (i = 0; i < 16; i++) {
+		if (capacity <= power_l[i][1]) {
+			freq_limit[1].min = freq_limit[1].max = power_l[i][0];
+			break;
+		}
+	}
+
+	if (i >= 16)
+		freq_limit[1].min = freq_limit[1].max = power_l[15][0];
 
 	/*B freq*/
 	for (j = 0; j < 16; j++) {
@@ -106,15 +129,16 @@ static void boost_freq(int capacity)
 		}
 	}
 	if (j >= 16)
-		freq_limit[2].min = freq_limit[2].max = power_b[16][0];
-#endif
+		freq_limit[2].min = freq_limit[2].max = power_b[15][0];
 	update_userlimit_cpu_freq(KIR_FBC, NR_PPM_CLUSTERS, freq_limit);
 #if 0
-	pr_crit(TAG"[boost_freq_2] capacity=%d (i,j)=(%d,%d), ll_freq=%d, b_freq=%d\n",
+	pr_crit(TAG"[boost_freq] capacity=%d (i,j)=(%d,%d), ll_freq=%d, b_freq=%d\n",
 			capacity, i, j, freq_limit[0].max, freq_limit[2].max);
 #endif
 	fbc_tracer(-1, "fbc_freq_ll", freq_limit[0].max);
-	fbc_tracer(-2, "fbc_freq_b", freq_limit[2].max);
+	fbc_tracer(-1, "fbc_freq_l", freq_limit[1].max);
+	fbc_tracer(-1, "fbc_freq_b", freq_limit[2].max);
+	fbc_tracer(-1, "capacity", capacity);
 
 }
 
@@ -125,7 +149,7 @@ static void enable_frame_twanted_timer(void)
 
 	/*mt_kernel_trace_counter("Timeout", 0);*/
 	spin_lock_irqsave(&tlock, flags);
-	ktime = ktime_set(0, NSEC_PER_MSEC*X_ms);
+	ktime = ktime_set(0, NSEC_PER_MSEC * X_ms);
 	hrtimer_start(&hrt, ktime, HRTIMER_MODE_REL);
 	spin_unlock_irqrestore(&tlock, flags);
 }
@@ -142,24 +166,23 @@ static void disable_frame_twanted_timer(void)
 /*static void mt_power_pef_transfer(void)*/
 static enum hrtimer_restart mt_power_pef_transfer(struct hrtimer *timer)
 {
-	mt_power_pef_transfer_work();
+	if (wq)
+		queue_work(wq, &mt_pp_work);
 	/*pr_crit(TAG"chase_frame\n");*/
 	return HRTIMER_NORESTART;
 }
 
 static void mt_power_pef_transfer_work(void)
 {
-	int boost_value_super;
 
 	if (frame_done == 0) {
-		if (boost_value < 0)
-			boost_value_super = SUPER_BOOST;
-		else if (boost_value + SUPER_BOOST < 100)
-			boost_value_super = SUPER_BOOST + boost_value;
-		else
-			boost_value_super = 100;
-		perfmgr_kick_fg_boost(KIR_FBC, boost_value_super);
-		/* trace .. */
+		chase_capacity = capacity * (100 + super_boost) / 100;
+		if (chase_capacity > 1024)
+			chase_capacity = 1024;
+
+		boost_freq(chase_capacity);
+		chase = 1;
+		fbc_tracer(-1, "chase", chase);
 	}
 }
 
@@ -226,13 +249,14 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 			return cnt;
 		if (fbc_touch && fbc_touch_pre == 0) {
 			core_limit[0].min = 3;
-			core_limit[0].max = 3;
-			core_limit[1].min = 0;
-			core_limit[1].max = 0;
+			core_limit[0].max = -1;
+			core_limit[1].min = -1;
+			core_limit[1].max = -1;
 			core_limit[2].min = 1;
-			core_limit[2].max = 1;
+			core_limit[2].max = -1;
 			update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
 
+			chase = 0;
 			capacity = 286;
 			if (boost_method == 2)
 				boost_freq(capacity);
@@ -282,9 +306,9 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 			} else if (fbc_touch == 1) {
 
 				if (boost_value <= 0)
-					boost_value_super = SUPER_BOOST;
-				else if (boost_value + SUPER_BOOST < 100)
-					boost_value_super = SUPER_BOOST + boost_value;
+					boost_value_super = super_boost;
+				else if (boost_value + super_boost < 100)
+					boost_value_super = super_boost + boost_value;
 				else
 					boost_value_super = 100;
 
@@ -304,8 +328,8 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		EMA = arg1;
 	 else if (strncmp(option, "METHOD", 6) == 0)
 		boost_method = arg1;
-	 else if (strncmp(option, "SUPER_BOOST", 11) == 0)
-		SUPER_BOOST = arg1;
+	 else if (strncmp(option, "super_boost", 11) == 0)
+		super_boost = arg1;
 	 else if (strncmp(option, "GAME", 4) == 0)
 		is_game = arg1;
 	 else if (strncmp(option, "30FPS", 5) == 0)
@@ -324,14 +348,14 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 static int device_show(struct seq_file *m, void *v)
 {
 	SEQ_printf(m, "-----------------------------------------------------\n");
-	SEQ_printf(m, "TOUCH: %d\n", fbc_touch);
-	SEQ_printf(m, "INIT: %d\n", touch_boost_value);
-	SEQ_printf(m, "DEBUG: %d\n", fbc_debug);
-	SEQ_printf(m, "TWANTED: %lld\n", Twanted);
+	SEQ_printf(m, "touch: %d\n", fbc_touch);
+	SEQ_printf(m, "init: %d\n", touch_boost_value);
+	SEQ_printf(m, "debug: %d\n", fbc_debug);
+	SEQ_printf(m, "twanted: %lld\n", Twanted);
 	SEQ_printf(m, "first frame: %d\n", first_frame);
-	SEQ_printf(m, "EZ: %d\n", boost_method);
-	SEQ_printf(m, "SUPER_BOOST: %d\n", SUPER_BOOST);
-	SEQ_printf(m, "EMA: %d\n", EMA);
+	SEQ_printf(m, "ez: %d\n", boost_method);
+	SEQ_printf(m, "super_boost: %d\n", super_boost);
+	SEQ_printf(m, "ema: %d\n", EMA);
 	SEQ_printf(m, "game mode: %d\n", is_game);
 	SEQ_printf(m, "30 fps: %d\n", is_30_fps);
 	SEQ_printf(m, "trace: %d\n", fbc_trace);
@@ -343,10 +367,6 @@ static int device_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, device_show, inode->i_private);
 }
-
-
-/*--------------------INIT------------------------*/
-#define TIME_5SEC_IN_MS 5000
 
 
 ssize_t device_ioctl(struct file *filp,
@@ -367,7 +387,7 @@ ssize_t device_ioctl(struct file *filp,
 			frame_done = 1;
 			disable_frame_twanted_timer();
 			if (first_frame) {
-				boost_linear = SUPER_BOOST;
+				boost_linear = super_boost;
 				avgFT = frame_time;
 				first_frame = 0;
 			} else {
@@ -409,6 +429,15 @@ ssize_t device_ioctl(struct file *filp,
 				pr_crit(TAG"chase_frame\n");
 		} else if (boost_method == 2) {
 
+			if (chase == 1) {
+				avg_capacity = (Twanted * capacity
+					+ ((long long)frame_time - Twanted) * (chase_capacity))
+					/ (long long)frame_time;
+			} else
+				avg_capacity = capacity;
+
+			chase = 0;
+			fbc_tracer(-1, "chase", chase);
 			frame_done = 1;
 			disable_frame_twanted_timer();
 			if (first_frame) {
@@ -419,18 +448,18 @@ ssize_t device_ioctl(struct file *filp,
 			}
 			boost_linear = (long long)((avgFT - Twanted) * 100 / Twanted);
 
-			capacity = capacity * (100 + boost_linear) / 100;
+			capacity = avg_capacity * (100 + boost_linear) / 100;
 
 			if (capacity > 1024)
-				capacity =  1024;
+				capacity = 1024;
 			if (capacity <= 0)
 				capacity = 1;
 
 			boost_freq(capacity);
 
-			fbc_tracer(-3, "capacity", capacity);
-			fbc_tracer(-4, "avg_frame_time", avgFT);
-			fbc_tracer(-5, "frame_time", frame_time);
+			fbc_tracer(-1, "avg_frame_time", avgFT);
+			fbc_tracer(-1, "frame_time", frame_time);
+			fbc_tracer(-1, "avg_capacity", avg_capacity);
 
 #if 0
 			pr_crit(TAG" frame complete FT=%lu, avgFT=%lld, boost_linear=%lld, capacity=%d",
@@ -443,26 +472,15 @@ ssize_t device_ioctl(struct file *filp,
 	break;
 	/*receive Intended-Vsync signal*/
 	case IOCTL_WRITE1:
-		if (!fbc_debug) {
-			/*if (!is_game) {*/
-			/*	if (boost_method == 1) {*/
-			/*		frame_done = 0;*/
-			/*		enable_frame_twanted_timer();*/
-			/*pr_crit(TAG" frame: Intended Vsync\n");*/
-			/*		mt_kernel_trace_counter("averaged_frame_time", avgFT);*/
-					/*trace_counter("Intended Vsync:enable_twanted_timer", 1);*/
-					/*trace_sched_heavy_task("Intended Vsync: enable_twanted_timer");*/
-					/*	}*/
-			/*}*/
+		if (!fbc_debug && fbc_touch && !is_game && boost_method == 2) {
+			frame_done = 0;
+			enable_frame_twanted_timer();
 		}
 		break;
 	case IOCTL_WRITE2:
 		if (!fbc_debug) {
 			if (is_game) {
-				/*pr_crit(TAG" frame: Vsync-sf\n");*/
 				enable_frame_twanted_timer();
-				/*trace_counter("Vsync-sf: enable_twanted_timer", 1);*/
-				/*trace_sched_heavy_task("Vsync-f: ensable_twanted_timer");*/
 			}
 		}
 		break;
@@ -470,17 +488,10 @@ ssize_t device_ioctl(struct file *filp,
 		if (!fbc_debug) {
 			if (is_game) {
 				if (arg == ID_EGL) {
-					/*pr_crit(TAG" frame: EGL\n");*/
 					disable_frame_twanted_timer();
-					/*trace_counter("EGL: disable_twanted_timer", 1);*/
-					/*trace_sched_heavy_task("EGL: disable_twanted_timer");*/
 				} else if (arg == ID_OMR) {
-					/* com.tencent.tmgp.sgame */
 					if (is_30_fps) {
-						/*pr_crit(TAG" frame: OMR\n");*/
 						disable_frame_twanted_timer();
-						/*trace_counter("OMR: disable_twanted_timer", 1);*/
-						/*trace_sched_heavy_task("OMR: disable_twanted_timer");*/
 					}
 				}
 			}
@@ -513,6 +524,7 @@ static const struct file_operations Fops = {
 
 #endif
 
+/*--------------------INIT------------------------*/
 static int __init init_fbc(void)
 {
 	struct proc_dir_entry *pe;
@@ -521,6 +533,7 @@ static int __init init_fbc(void)
 
 
 	boost_value = 50;
+	chase = 0;
 	fbc_debug = 0;
 	fbc_touch = 0;
 	fbc_touch_pre = 0;
@@ -532,7 +545,7 @@ static int __init init_fbc(void)
 	first_frame = 1;
 	EMA = 5;
 	frame_done = 0;
-	SUPER_BOOST = 30;
+	super_boost = 30;
 	is_game = 0;
 	is_30_fps = 0;
 	capacity = 286;
@@ -540,6 +553,12 @@ static int __init init_fbc(void)
 	mark_addr = kallsyms_lookup_name("tracing_mark_write");
 
 	update_pwd_tbl();
+
+	wq = create_singlethread_workqueue("mt_pp_work");
+	if (!wq)
+		pr_crit(TAG"mt_pp_work create fail\n");
+
+
 
 
 	pr_crit(TAG"init FBC driver start\n");
