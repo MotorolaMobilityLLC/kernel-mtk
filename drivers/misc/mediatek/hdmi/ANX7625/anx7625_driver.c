@@ -1493,9 +1493,6 @@ static void anx7625_init_async(
 
 	TRACE("%s:\n", __func__);
 
-#ifdef ANX7625_MTK_PLATFORM
-	slimport_platform_init();
-#endif
 	ret = i2c_add_driver(&anx7625_driver);
 	if (ret < 0)
 		pr_err("%s: failed to register anx7625 i2c drivern",
@@ -1521,6 +1518,7 @@ int slimport_anx7625_init(void)
 	TRACE("%s:\n", __func__);
 
 #ifdef ANX7625_MTK_PLATFORM
+	slimport_platform_init();
 	async_schedule(anx7625_init_async, NULL);
 #endif
 	return 0;
