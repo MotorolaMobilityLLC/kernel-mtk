@@ -839,11 +839,7 @@ unsigned int teei_flags = 0;
 
 int is_teei_ready(void)
 {
-#if 1 /* for disabling TEEI */
-	return 1;
-#else
 	return teei_flags;
-#endif
 }
 EXPORT_SYMBOL(is_teei_ready);
 
