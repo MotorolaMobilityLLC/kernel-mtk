@@ -599,15 +599,16 @@ static int fstb_get_queue_fps(struct FSTB_FRAME_INFO *iter, long long interval)
 
 	queue_fps = (long long)(iter->queue_time_end - i) * 1000000LL;
 	do_div(queue_fps, interval);
-	fpsgo_systrace_c_fstb(iter->pid, (int)queue_fps, "queue_fps_nofilter");
 
 	if (avg_frame_interval != 0) {
 		retval = 1000000000ULL * frame_interval_count;
 		do_div(retval, avg_frame_interval);
 		mtk_fstb_dprintk_always("%s  %d %llu\n", __func__, iter->pid, retval);
+		fpsgo_systrace_c_fstb(iter->pid, (int)retval, "queue_fps");
 		return retval;
 	}
 	mtk_fstb_dprintk_always("%s  %d %d\n", __func__, iter->pid, 0);
+	fpsgo_systrace_c_fstb(iter->pid, 0, "queue_fps");
 
 	return 0;
 }
@@ -632,30 +633,13 @@ static int fps_update(struct FSTB_FRAME_INFO *iter)
  */
 static int calculate_fps_limit(int target_fps)
 {
-	int i, fps_limit = max_fps_limit;
-
-
 	if (target_fps >= max_fps_limit)
 		return max_fps_limit;
 
-	for (i = nr_fps_levels - 1; i >= 0; i--) {
-		if (fps_levels[i].start >= target_fps) {
-			if (target_fps >= fps_levels[i].end)
-				fps_limit = target_fps;
-			else {
-				if (i == nr_fps_levels - 1)
-					fps_limit = fps_levels[i].end;
-				else
-					fps_limit = fps_levels[i+1].start;
-			}
-			break;
-		}
-	}
+	if (target_fps <= min_fps_limit)
+		return min_fps_limit;
 
-	if (i < 0)
-		fps_limit = max_fps_limit;
-
-	return fps_limit;
+	return target_fps;
 }
 
 static int cur_cpu_time;

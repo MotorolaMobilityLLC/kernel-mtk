@@ -134,13 +134,8 @@ static void xgf_update_tick(struct xgf_proc *proc, struct xgf_tick *tick,
 	if (!p) {
 		pr_notice("%s: get task %d failed\n", __func__,
 			  proc->render);
-		/*
-		 * avoid hacking exit callpath, reset render.
-		 * however, we cannot clean timer list, which
-		 * we might be traversing.
-		 *
-		 * proc->render = 0;
-		 */
+		xgf_reset_render(proc);
+
 		return;
 	}
 
