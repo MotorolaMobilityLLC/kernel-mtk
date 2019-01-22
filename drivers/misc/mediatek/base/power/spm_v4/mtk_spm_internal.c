@@ -105,7 +105,8 @@ int __spm_get_md_srcclkena_setting(void)
 
 	if (md_srcclkena < 0) {
 		val = get_devinfo_with_index(54);
-		if ((((val >> 28) & 0x3) != 0x0) & (((val >> 25) & 0x1) == 0x0))
+		if (((((val >> 28) & 0x3) == 0x1) || (((val >> 28) & 0x3) == 0x2))
+				& (((val >> 25) & 0x1) == 0x0))
 			md_srcclkena = 1;
 		else
 			md_srcclkena = 0;

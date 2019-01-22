@@ -81,6 +81,8 @@ extern u32 aee_rr_curr_deepidle_val(void);
 extern void aee_rr_rec_spm_suspend_val(u32 val);
 extern u32 aee_rr_curr_spm_suspend_val(void);
 #endif
+extern int sleep_ddr_status;
+extern int sleep_vcore_status;
 
 /* Vcore DVFS */
 #if SPM_AEE_RR_REC
