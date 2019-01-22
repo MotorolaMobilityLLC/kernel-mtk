@@ -108,6 +108,8 @@ Revision History:
 
 #define video_3d(id)   mipi_video_timing_table[id].video_3D_type
 
+struct EDID_Timing_Format v_edid_timing;
+
 void sp_tx_show_information(void)
 {
 	unchar c, c1;

@@ -49,7 +49,7 @@ struct MIPI_Video_Format {
 
 	unsigned char compress_ratio;
 	unsigned char video_3D_type;
-	const unsigned char *pps_reg;
+	unsigned char *pps_reg;
 	const struct RegisterValueConfig *custom_reg0;
 	const struct RegisterValueConfig *custom_reg1;
 
@@ -69,6 +69,16 @@ struct MIPI_Video_Format {
 		unsigned int MIPI_V_Back_Porch;
 	} MIPI_inputl[2];
 };
+
+
+struct EDID_Timing_Format {
+	unsigned char timing_id;
+	unsigned long MIPI_pixel_frequency;  /*Hz*/
+	struct TimingInfor timing_info;
+};
+
+extern struct EDID_Timing_Format v_edid_timing;
+
 
 enum AudioType {
 	AUDIO_I2S,
@@ -140,9 +150,10 @@ struct RegisterValueConfig {
 	unsigned char val;
 };
 
-extern  const struct MIPI_Video_Format mipi_video_timing_table[];
+extern  struct MIPI_Video_Format mipi_video_timing_table[];
 extern const struct AudioFormat audio_format_table[];
-extern const unsigned char PPS_4K[];
+extern unsigned char PPS_4K[];
+extern unsigned char PPS_Custom[];
 
 void sp_tx_show_information(void);
 void sp_tx_pclk_calc(enum SP_LINK_BW hbr_rbr, unsigned long  *pclk,

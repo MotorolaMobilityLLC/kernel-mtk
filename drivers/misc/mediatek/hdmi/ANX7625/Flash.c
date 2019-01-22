@@ -41,7 +41,6 @@ Revision History:
 
 unsigned char const OCM_FW_HEX[][HEX_LINE_SIZE] = {
 #include "MI2_main_ocm.h"
-
 };
 unsigned char const SECURE_OCM_HEX[][HEX_LINE_SIZE] = {
 #include "MI2_secure_ocm.h"

@@ -68,7 +68,7 @@ Revision History:
 #endif /* NEVER */
 
 
-#define ANX7625_DRV_VERSION "1.00"
+#define ANX7625_DRV_VERSION "1.05"
 
 /*Dynamic config timing format by up-layer parsing edid data.*/
 /*#define DYNAMIC_CONFIG_MIPI*/
