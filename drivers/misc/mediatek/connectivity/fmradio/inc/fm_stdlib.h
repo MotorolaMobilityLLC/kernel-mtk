@@ -59,12 +59,12 @@
 #define fm_vfree(ptr)  vfree(ptr)
 
 #else
-inline void *fm_memset(void *buf, fm_s8 val, fm_s32 len)
+inline void *fm_memset(void *buf, signed char val, signed int len)
 {
 	return memset(buf, val, len);
 }
 
-inline void *fm_memcpy(void *dst, const void *src, fm_s32 len)
+inline void *fm_memcpy(void *dst, const void *src, signed int len)
 {
 	return memcpy(dst, src, len);
 }

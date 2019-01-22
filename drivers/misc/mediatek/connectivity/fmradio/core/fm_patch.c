@@ -27,18 +27,17 @@
  * @position - the read position
  * If success, return read length in bytes, else error code
  */
-fm_s32 fm_file_read(const fm_s8 *filename, fm_u8 *dst, fm_s32 len, fm_s32 position)
+signed int fm_file_read(const signed char *filename, unsigned char *dst, signed int len, signed int position)
 {
 	const struct firmware *fw = NULL;
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	ret = request_firmware(&fw, filename, NULL);
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, "Failed to load firmware \"%s\"\n", filename);
 		return -FM_EPATCH;
-	} else {
-		WCN_DBG(FM_NTC | CHIP, "load firmware \"%s\" ok\n", filename);
 	}
+	WCN_DBG(FM_NTC | CHIP, "load firmware \"%s\" ok\n", filename);
 
 	if (len >= fw->size) {
 		memcpy(dst, fw->data, fw->size);
@@ -52,8 +51,8 @@ fm_s32 fm_file_read(const fm_s8 *filename, fm_u8 *dst, fm_s32 len, fm_s32 positi
 	return ret;
 }
 
-fm_s32 fm_file_write(const fm_s8 *filename, fm_u8 *dst, fm_s32 len, fm_s32 *ppos)
+signed int fm_file_write(const signed char *filename, unsigned char *dst, signed int len, signed int *ppos)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 	return ret;
 }

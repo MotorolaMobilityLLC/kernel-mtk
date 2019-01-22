@@ -29,145 +29,146 @@
 #define RDS_RT_MULTI_REV_TH 80	/* 100 */
 /* #define RDS_CBC_DEPENDENCY */
 
-typedef struct rds_packet_t {
-	fm_u16 blkA;
-	fm_u16 blkB;
-	fm_u16 blkC;
-	fm_u16 blkD;
-	fm_u16 cbc;		/* correct bit cnt */
-	fm_u16 crc;		/* crc checksum */
-} rds_packet_t;
+struct rds_packet_t {
+	unsigned short blkA;
+	unsigned short blkB;
+	unsigned short blkC;
+	unsigned short blkD;
+	unsigned short cbc;		/* correct bit cnt */
+	unsigned short crc;		/* crc checksum */
+};
 
-typedef struct rds_rx_t {
-	fm_u16 sin;
-	fm_u16 cos;
-	rds_packet_t data[MAX_RDS_RX_GROUP_CNT];
-} rds_rx_t;
+struct rds_rx_t {
+	unsigned short sin;
+	unsigned short cos;
+	struct rds_packet_t data[MAX_RDS_RX_GROUP_CNT];
+};
 
-typedef enum rds_ps_state_machine_t {
+enum rds_ps_state_machine_t {
 	RDS_PS_START = 0,
 	RDS_PS_DECISION,
 	RDS_PS_GETLEN,
 	RDS_PS_DISPLAY,
 	RDS_PS_FINISH,
 	RDS_PS_MAX
-} rds_ps_state_machine_t;
+};
 
-typedef enum rds_rt_state_machine_t {
+enum rds_rt_state_machine_t {
 	RDS_RT_START = 0,
 	RDS_RT_DECISION,
 	RDS_RT_GETLEN,
 	RDS_RT_DISPLAY,
 	RDS_RT_FINISH,
 	RDS_RT_MAX
-} rds_rt_state_machine_t;
+};
 
 enum {
 	RDS_GRP_VER_A = 0,	/* group version A */
 	RDS_GRP_VER_B
 };
 
-typedef enum rds_blk_t {
+enum rds_blk_t {
 	RDS_BLK_A = 0,
 	RDS_BLK_B,
 	RDS_BLK_C,
 	RDS_BLK_D,
 	RDS_BLK_MAX
-} rds_blk_t;
+};
 
 /* For RDS feature, these strcutures also be defined in "fm.h" */
-typedef struct rds_flag_t {
-	fm_u8 TP;
-	fm_u8 TA;
-	fm_u8 Music;
-	fm_u8 Stereo;
-	fm_u8 Artificial_Head;
-	fm_u8 Compressed;
-	fm_u8 Dynamic_PTY;
-	fm_u8 Text_AB;
-	fm_u32 flag_status;
-} rds_flag_t;
+struct rds_flag_t {
+	unsigned char TP;
+	unsigned char TA;
+	unsigned char Music;
+	unsigned char Stereo;
+	unsigned char Artificial_Head;
+	unsigned char Compressed;
+	unsigned char Dynamic_PTY;
+	unsigned char Text_AB;
+	unsigned int flag_status;
+};
 
-typedef struct rds_ct_t {
-	fm_u16 Month;
-	fm_u16 Day;
-	fm_u16 Year;
-	fm_u16 Hour;
-	fm_u16 Minute;
-	fm_u8 Local_Time_offset_signbit;
-	fm_u8 Local_Time_offset_half_hour;
-} rds_ct_t;
+struct rds_ct_t {
+	unsigned short Month;
+	unsigned short Day;
+	unsigned short Year;
+	unsigned short Hour;
+	unsigned short Minute;
+	unsigned char Local_Time_offset_signbit;
+	unsigned char Local_Time_offset_half_hour;
+};
 
-typedef struct rds_af_t {
-	fm_s16 AF_Num;
-	fm_s16 AF[2][25];	/* 100KHz */
-	fm_u8 Addr_Cnt;
-	fm_u8 isMethod_A;
-	fm_u8 isAFNum_Get;
-} rds_af_t;
+struct rds_af_t {
+	signed short AF_Num;
+	signed short AF[2][25];	/* 100KHz */
+	unsigned char Addr_Cnt;
+	unsigned char isMethod_A;
+	unsigned char isAFNum_Get;
+};
 
-typedef struct rds_ps_t {
-	fm_u8 PS[4][8];
-	fm_u8 Addr_Cnt;
-} rds_ps_t;
+struct rds_ps_t {
+	unsigned char PS[4][8];
+	unsigned char Addr_Cnt;
+};
 
-typedef struct rds_rt_t {
-	fm_u8 TextData[4][64];
-	fm_u8 GetLength;
-	fm_u8 isRTDisplay;
-	fm_u8 TextLength;
-	fm_u8 isTypeA;
-	fm_u8 BufCnt;
-	fm_u16 Addr_Cnt;
-} rds_rt_t;
+struct rds_rt_t {
+	unsigned char TextData[4][64];
+	unsigned char GetLength;
+	unsigned char isRTDisplay;
+	unsigned char TextLength;
+	unsigned char isTypeA;
+	unsigned char BufCnt;
+	unsigned short Addr_Cnt;
+};
 
-typedef struct rds_raw_t {
-	fm_s32 dirty;		/* indicate if the data changed or not */
-	fm_s32 len;		/* the data len form chip */
-	fm_u8 data[148];
-} rds_raw_t;
+struct rds_raw_t {
+	signed int dirty;		/* indicate if the data changed or not */
+	signed int len;		/* the data len form chip */
+	unsigned char data[148];
+};
 
-typedef struct rds_group_cnt_t {
+struct rds_group_cnt_t {
 	unsigned int total;
 	unsigned int groupA[16];	/* RDS groupA counter */
 	unsigned int groupB[16];	/* RDS groupB counter */
-} rds_group_cnt_t;
+};
 
-typedef enum rds_group_cnt_op_t {
+enum rds_group_cnt_op_t {
 	RDS_GROUP_CNT_READ = 0,
 	RDS_GROUP_CNT_WRITE,
 	RDS_GROUP_CNT_RESET,
 	RDS_GROUP_CNT_MAX
-} rds_group_cnt_op_t;
+};
 
-typedef struct rds_group_cnt_req_t {
-	fm_s32 err;
+struct rds_group_cnt_req_t {
+	signed int err;
 	enum rds_group_cnt_op_t op;
 	struct rds_group_cnt_t gc;
-} rds_group_cnt_req_t;
+};
 
-typedef struct rds_t {
+struct rds_t {
 	struct rds_ct_t CT;
 	struct rds_flag_t RDSFlag;
-	fm_u16 PI;
-	fm_u8 Switch_TP;
-	fm_u8 PTY;
+	unsigned short PI;
+	unsigned char Switch_TP;
+	unsigned char PTY;
 	struct rds_af_t AF_Data;
 	struct rds_af_t AFON_Data;
-	fm_u8 Radio_Page_Code;
-	fm_u16 Program_Item_Number_Code;
-	fm_u8 Extend_Country_Code;
-	fm_u16 Language_Code;
+	unsigned char Radio_Page_Code;
+	unsigned short Program_Item_Number_Code;
+	unsigned char Extend_Country_Code;
+	unsigned short Language_Code;
 	struct rds_ps_t PS_Data;
-	fm_u8 PS_ON[8];
+	unsigned char PS_ON[8];
 	struct rds_rt_t RT_Data;
-	fm_u16 event_status;	/* will use RDSFlag_Struct RDSFlag->flag_status to check which event, is that ok? */
+	/* will use RDSFlag_Struct RDSFlag->flag_status to check which event, is that ok? */
+	unsigned short event_status;
 	struct rds_group_cnt_t gc;
-} rds_t;
+};
 
 /* Need care the following definition. */
 /* valid Rds Flag for notify */
-typedef enum rds_flag_status_t {
+enum rds_flag_status_t {
 	RDS_FLAG_IS_TP = 0x0001,	/* Program is a traffic program */
 	RDS_FLAG_IS_TA = 0x0002,	/* Program currently broadcasts a traffic ann. */
 	RDS_FLAG_IS_MUSIC = 0x0004,	/* Program currently broadcasts music */
@@ -176,9 +177,9 @@ typedef enum rds_flag_status_t {
 	RDS_FLAG_IS_COMPRESSED = 0x0020,	/* Program content is compressed */
 	RDS_FLAG_IS_DYNAMIC_PTY = 0x0040,	/* Program type can change */
 	RDS_FLAG_TEXT_AB = 0x0080	/* If this flag changes state, a new radio text string begins */
-} rds_flag_status_t;
+};
 
-typedef enum rds_event_status_t {
+enum rds_event_status_t {
 	RDS_EVENT_FLAGS = 0x0001,	/* One of the RDS flags has changed state */
 	RDS_EVENT_PI_CODE = 0x0002,	/* The program identification code has changed */
 	RDS_EVENT_PTY_CODE = 0x0004,	/* The program type code has changed */
@@ -195,25 +196,26 @@ typedef enum rds_event_status_t {
 	RDS_EVENT_RDS = 0x2000,	/* RDS Interrupt had arrived durint timer period */
 	RDS_EVENT_NO_RDS = 0x4000,	/* RDS Interrupt not arrived durint timer period */
 	RDS_EVENT_RDS_TIMER = 0x8000	/* Timer for RDS Bler Check. ---- BLER  block error rate */
-} rds_event_status_t;
+};
 
 #define RDS_LOG_SIZE 1
 struct rds_log_t {
 	struct rds_rx_t rds_log[RDS_LOG_SIZE];
-	fm_s32 log_len[RDS_LOG_SIZE];
-	fm_u32 size;
-	fm_u32 in;
-	fm_u32 out;
-	fm_u32 len;
-	fm_s32 (*log_in)(struct rds_log_t *thiz, struct rds_rx_t *new_log, fm_s32 new_len);
-	fm_s32 (*log_out)(struct rds_log_t *thiz, struct rds_rx_t *dst, fm_s32 *dst_len);
+	signed int log_len[RDS_LOG_SIZE];
+	unsigned int size;
+	unsigned int in;
+	unsigned int out;
+	unsigned int len;
+	signed int (*log_in)(struct rds_log_t *thiz, struct rds_rx_t *new_log, signed int new_len);
+	signed int (*log_out)(struct rds_log_t *thiz, struct rds_rx_t *dst, signed int *dst_len);
 };
 
-extern fm_s32 rds_parser(rds_t *rds_dst, struct rds_rx_t *rds_raw, fm_s32 rds_size, fm_u16(*getfreq) (void));
-extern fm_s32 rds_grp_counter_get(struct rds_group_cnt_t *dst, struct rds_group_cnt_t *src);
-extern fm_s32 rds_grp_counter_reset(struct rds_group_cnt_t *gc);
-extern fm_s32 rds_log_in(struct rds_log_t *thiz, struct rds_rx_t *new_log, fm_s32 new_len);
-extern fm_s32 rds_log_out(struct rds_log_t *thiz, struct rds_rx_t *dst, fm_s32 *dst_len);
+extern signed int rds_parser(struct rds_t *rds_dst, struct rds_rx_t *rds_raw,
+				signed int rds_size, unsigned short(*getfreq) (void));
+extern signed int rds_grp_counter_get(struct rds_group_cnt_t *dst, struct rds_group_cnt_t *src);
+extern signed int rds_grp_counter_reset(struct rds_group_cnt_t *gc);
+extern signed int rds_log_in(struct rds_log_t *thiz, struct rds_rx_t *new_log, signed int new_len);
+extern signed int rds_log_out(struct rds_log_t *thiz, struct rds_rx_t *dst, signed int *dst_len);
 
 #define DEFINE_RDSLOG(name) \
 	struct rds_log_t name = { \

@@ -40,12 +40,12 @@ static struct fm_lock *fm_rtc_mutex;	/* protect FM GPS RTC drift info */
 
 static struct fm_timer *fm_timer_sys;
 
-static fm_bool scan_stop_flag = fm_false;
+static bool scan_stop_flag; /* false */
 static struct fm_gps_rtc_info gps_rtc_info;
-static volatile bool g_fm_stat[3] = {
-	fm_false,		/* RX power */
-	fm_false,		/* TX power */
-	fm_false,		/* TX scan */
+static bool g_fm_stat[3] = {
+	false,		/* RX power */
+	false,		/* TX power */
+	false,		/* TX scan */
 };
 
 /* chipid porting table */
@@ -63,6 +63,7 @@ static struct fm_chip_mapping fm_support_chip_array[] = {
 { 0x8163, 0x6627, FM_AD_DIE_CHIP },
 { 0x6755, 0x6627, FM_AD_DIE_CHIP },
 { 0x0326, 0x6627, FM_AD_DIE_CHIP },
+{ 0x6570, 0x6580, FM_SOC_CHIP    },
 { 0x6580, 0x6580, FM_SOC_CHIP    },
 { 0x6630, 0x6630, FM_COMBO_CHIP  },
 { 0x6797, 0x6631, FM_AD_DIE_CHIP },
@@ -75,8 +76,8 @@ static struct fm_chip_mapping fm_support_chip_array[] = {
 };
 
 /* RDS reset related functions */
-static fm_u16 fm_cur_freq_get(void);
-static fm_s32 fm_cur_freq_set(fm_u16 new_freq);
+static unsigned short fm_cur_freq_get(void);
+static signed int fm_cur_freq_set(unsigned short new_freq);
 static enum fm_op_state fm_op_state_get(struct fm *fmp);
 static enum fm_op_state fm_op_state_set(struct fm *fmp, enum fm_op_state sta);
 static void fm_timer_func(unsigned long data);
@@ -87,15 +88,15 @@ static void fm_rds_reset_work_func(unsigned long data);
 /* then fm_eint_handler will schedule fm_eint_work_func to run */
 static void fm_eint_handler(void);
 static void fm_eint_work_func(unsigned long data);
-static fm_s32 fm_rds_parser(struct rds_rx_t *rds_raw, fm_s32 rds_size);
-static fm_s32 pwrdown_flow(struct fm *fm);
+static signed int fm_rds_parser(struct rds_rx_t *rds_raw, signed int rds_size);
+static signed int pwrdown_flow(struct fm *fm);
 
-static fm_u16 fm_cur_freq_get(void)
+static unsigned short fm_cur_freq_get(void)
 {
 	return g_fm_struct ? g_fm_struct->cur_freq : 0;
 }
 
-static fm_s32 fm_cur_freq_set(fm_u16 new_freq)
+static signed int fm_cur_freq_set(unsigned short new_freq)
 {
 	if (g_fm_struct)
 		g_fm_struct->cur_freq = new_freq;
@@ -149,9 +150,9 @@ enum fm_pwr_state fm_pwr_state_set(struct fm *fmp, enum fm_pwr_state sta)
 	return FM_PWR_MAX;
 }
 
-fm_s32 fm_set_stat(struct fm *fmp, int which, bool stat)
+signed int fm_set_stat(struct fm *fmp, int which, bool stat)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fmp == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -173,9 +174,9 @@ fm_s32 fm_set_stat(struct fm *fmp, int which, bool stat)
 	return ret;
 }
 
-fm_s32 fm_get_stat(struct fm *fmp, int which, bool *stat)
+signed int fm_get_stat(struct fm *fmp, int which, bool *stat)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fmp == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -200,14 +201,14 @@ fm_s32 fm_get_stat(struct fm *fmp, int which, bool *stat)
 	return ret;
 }
 
-static volatile fm_s32 subsys_rst_state = FM_SUBSYS_RST_OFF;
+static signed int subsys_rst_state = FM_SUBSYS_RST_OFF;
 
-fm_s32 fm_sys_state_get(struct fm *fmp)
+signed int fm_sys_state_get(struct fm *fmp)
 {
 	return subsys_rst_state;
 }
 
-fm_s32 fm_sys_state_set(struct fm *fmp, fm_s32 sta)
+signed int fm_sys_state_set(struct fm *fmp, signed int sta)
 {
 	if ((sta >= FM_SUBSYS_RST_OFF) && (sta < FM_SUBSYS_RST_MAX)) {
 		WCN_DBG(FM_NTC | MAIN, "sys state set from %d to %d\n", subsys_rst_state, sta);
@@ -219,7 +220,7 @@ fm_s32 fm_sys_state_set(struct fm *fmp, fm_s32 sta)
 	return subsys_rst_state;
 }
 
-fm_s32 fm_subsys_reset(struct fm *fm)
+signed int fm_subsys_reset(struct fm *fm)
 {
 	/* check if we are resetting */
 	if (fm_sys_state_get(fm) != FM_SUBSYS_RST_OFF) {
@@ -237,7 +238,7 @@ out:
 	return 0;
 }
 
-fm_s32 fm_wholechip_rst_cb(fm_s32 sta)
+signed int fm_wholechip_rst_cb(signed int sta)
 {
 	struct fm *fm = g_fm_struct;
 
@@ -256,10 +257,10 @@ fm_s32 fm_wholechip_rst_cb(fm_s32 sta)
 	return 0;
 }
 
-static fm_s32 fm_which_chip(fm_u16 chipid, enum fm_cfg_chip_type *type)
+static signed int fm_which_chip(unsigned short chipid, enum fm_cfg_chip_type *type)
 {
-	fm_s16 i = 0;
-	fm_s16 fm_chip  = -1;
+	signed short i = 0;
+	signed short fm_chip  = -1;
 
 	for (i = 0; i < (sizeof(fm_support_chip_array)/sizeof(struct fm_chip_mapping)); i++) {
 		if (chipid == fm_support_chip_array[i].con_chip) {
@@ -280,10 +281,10 @@ static fm_s32 fm_which_chip(fm_u16 chipid, enum fm_cfg_chip_type *type)
 	return fm_chip;
 }
 
-fm_s32 fm_open(struct fm *fmp)
+signed int fm_open(struct fm *fmp)
 {
-	fm_s32 ret = 0;
-	fm_s32 chipid;
+	signed int ret = 0;
+	signed int chipid;
 
 	if (fmp == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -292,7 +293,7 @@ fm_s32 fm_open(struct fm *fmp)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (fmp->chipon == fm_false) {
+	if (fmp->chipon == false) {
 		chipid = mtk_wcn_wmt_chipid_query();
 		WCN_DBG(FM_NTC | MAIN, "wmt chip id=0x%x\n", chipid);
 
@@ -308,9 +309,9 @@ fm_s32 fm_open(struct fm *fmp)
 	return ret;
 }
 
-fm_s32 fm_close(struct fm *fmp)
+signed int fm_close(struct fm *fmp)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fmp == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -326,11 +327,11 @@ fm_s32 fm_close(struct fm *fmp)
 	return ret;
 }
 
-fm_s32 fm_rds_read(struct fm *fmp, fm_s8 *dst, fm_s32 len)
+signed int fm_rds_read(struct fm *fmp, signed char *dst, signed int len)
 {
-	fm_s32 copy_len = 0, left = 0;
+	signed int copy_len = 0, left = 0;
 
-	copy_len = sizeof(rds_t);
+	copy_len = sizeof(struct rds_t);
 
 	if (FM_EVENT_GET(fmp->rds_event) == FM_RDS_DATA_READY) {
 		if (FM_LOCK(fm_read_lock))
@@ -362,10 +363,10 @@ fm_s32 fm_rds_read(struct fm *fmp, fm_s8 *dst, fm_s32 len)
 	return copy_len - left;
 }
 
-fm_s32 fm_powerup(struct fm *fm, struct fm_tune_parm *parm)
+signed int fm_powerup(struct fm *fm, struct fm_tune_parm *parm)
 {
-	fm_s32 ret = 0;
-	fm_u8 tmp_vol;
+	signed int ret = 0;
+	unsigned char tmp_vol;
 
 	if (fm_low_ops.bi.pwron == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -386,13 +387,13 @@ fm_s32 fm_powerup(struct fm *fm, struct fm_tune_parm *parm)
 		goto out;
 	}
 
-	if (fm->chipon == fm_false) {
+	if (fm->chipon == false) {
 		ret = fm_low_ops.bi.pwron(0);
 		if (ret) {
 			ret = -ENODEV;
 			goto out;
 		}
-		fm->chipon = fm_true;
+		fm->chipon = true;
 	}
 
 	if (fm_pwr_state_get(fm) == FM_PWR_RX_ON) {
@@ -447,9 +448,9 @@ out:
 /*
  *  fm_powerup_tx
  */
-fm_s32 fm_powerup_tx(struct fm *fm, struct fm_tune_parm *parm)
+signed int fm_powerup_tx(struct fm *fm, struct fm_tune_parm *parm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.pwron == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -477,9 +478,9 @@ fm_s32 fm_powerup_tx(struct fm *fm, struct fm_tune_parm *parm)
 		return -FM_ELOCK;
 
 	/* for normal case */
-	if (fm->chipon == fm_false) {
+	if (fm->chipon == false) {
 		fm_low_ops.bi.pwron(0);
-		fm->chipon = fm_true;
+		fm->chipon = true;
 	}
 
 	fm_pwr_state_set(fm, FM_PWR_TX_ON);
@@ -499,9 +500,9 @@ out:
 	return ret;
 }
 
-static fm_s32 pwrdown_flow(struct fm *fm)
+static signed int pwrdown_flow(struct fm *fm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.ri.rds_onoff == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -520,7 +521,7 @@ static fm_s32 pwrdown_flow(struct fm *fm)
 	if (fm_pwr_state_get(fm) == FM_PWR_RX_ON) {
 		/* Disable all interrupt */
 		fm_disable_rds_BlerCheck();
-		fm_low_ops.ri.rds_onoff(fm->pstRDSData, fm_false);
+		fm_low_ops.ri.rds_onoff(fm->pstRDSData, false);
 		fm_disable_eint();
 
 		fm_pwr_state_set(fm, FM_PWR_OFF);
@@ -537,9 +538,9 @@ out:
 	return ret;
 }
 
-fm_s32 fm_powerdown(struct fm *fm, int type)
+signed int fm_powerdown(struct fm *fm, int type)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (type == 1) {	/* 0: RX 1: TX */
 		ret = fm_powerdowntx(fm);
@@ -555,17 +556,17 @@ fm_s32 fm_powerdown(struct fm *fm, int type)
 		FM_UNLOCK(fm_ops_lock);
 	}
 
-	if ((fm_pwr_state_get(fm) == FM_PWR_OFF) && (fm->chipon == fm_true)) {
+	if ((fm_pwr_state_get(fm) == FM_PWR_OFF) && (fm->chipon == true)) {
 		fm_low_ops.bi.pwroff(0);
-		fm->chipon = fm_false;
+		fm->chipon = false;
 	}
 
 	return ret;
 }
 
-fm_s32 fm_powerdowntx(struct fm *fm)
+signed int fm_powerdowntx(struct fm *fm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.pwrdownseq_tx == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -575,7 +576,7 @@ fm_s32 fm_powerdowntx(struct fm *fm)
 		return -FM_ELOCK;
 
 	if (fm_pwr_state_get(fm) == FM_PWR_TX_ON) {
-		/* fm_low_ops.ri.rds_onoff(fm->pstRDSData, fm_false); */
+		/* fm_low_ops.ri.rds_onoff(fm->pstRDSData, false); */
 		/* execute power down sequence */
 		ret = fm_low_ops.bi.pwrdownseq_tx();
 		if (ret)
@@ -600,11 +601,11 @@ fm_s32 fm_powerdowntx(struct fm *fm)
 *
 * Return:		0, if success; error code, if failed
 ***********************************************************/
-fm_s32 fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm)
+signed int fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm)
 {
-	fm_s32 ret = 0;
-	fm_u16 scandir = 0;
-	fm_u16 space = parm->space;
+	signed int ret = 0;
+	unsigned short scandir = 0;
+	unsigned short space = parm->space;
 
 	if (fm_low_ops.bi.tx_scan == NULL) {
 		pr_err("%s,invalid pointer\n", __func__);
@@ -613,7 +614,7 @@ fm_s32 fm_tx_scan(struct fm *fm, struct fm_tx_scan_parm *parm)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (fm->chipon != fm_true) {
+	if (fm->chipon != true) {
 		parm->err = FM_BADSTATUS;
 		ret = -EPERM;
 		WCN_DBG(FM_ERR | MAIN, "tx scan chip not on\n");
@@ -682,10 +683,10 @@ out:
 	return ret;
 }
 
-fm_s32 fm_cqi_get(struct fm *fm, fm_s32 ch_num, fm_s8 *buf, fm_s32 buf_size)
+signed int fm_cqi_get(struct fm *fm, signed int ch_num, signed char *buf, signed int buf_size)
 {
-	fm_s32 ret = 0;
-	fm_s32 idx = 0;
+	signed int ret = 0;
+	signed int idx = 0;
 
 	if (fm_low_ops.bi.cqi_get == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -694,7 +695,7 @@ fm_s32 fm_cqi_get(struct fm *fm, fm_s32 ch_num, fm_s8 *buf, fm_s32 buf_size)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (fm_true == scan_stop_flag) {
+	if (true == scan_stop_flag) {
 		WCN_DBG(FM_NTC | MAIN, "scan flow aborted, do not get CQI\n");
 		ret = -1;
 		goto out;
@@ -739,9 +740,9 @@ out:
   *  @freq - gived channel
   *  return value: 0, not a dese chan; 1, a dese chan; else error NO.
   */
-fm_s32 fm_is_dese_chan(struct fm *pfm, fm_u16 freq)
+signed int fm_is_dese_chan(struct fm *pfm, unsigned short freq)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (pfm == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -762,9 +763,9 @@ fm_s32 fm_is_dese_chan(struct fm *pfm, fm_u16 freq)
   *  @freq - gived channel
   *  return value: 0, not a dese chan; 1, a dese chan; else error NO.
   */
-fm_s32 fm_desense_check(struct fm *pfm, fm_u16 freq, fm_s32 rssi)
+signed int fm_desense_check(struct fm *pfm, unsigned short freq, signed int rssi)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (pfm == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -780,9 +781,9 @@ fm_s32 fm_desense_check(struct fm *pfm, fm_u16 freq, fm_s32 rssi)
 	return ret;
 }
 
-fm_s32 fm_dump_reg(void)
+signed int fm_dump_reg(void)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.dumpreg) {
 		if (FM_LOCK(fm_ops_lock))
@@ -798,9 +799,9 @@ fm_s32 fm_dump_reg(void)
   *  @freq - target buffer
   *  return value: 0, success; else error NO.
   */
-fm_s32 fm_get_hw_info(struct fm *pfm, struct fm_hw_info *req)
+signed int fm_get_hw_info(struct fm *pfm, struct fm_hw_info *req)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (req == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -825,7 +826,7 @@ fm_s32 fm_get_hw_info(struct fm *pfm, struct fm_hw_info *req)
 	return ret;
 }
 
-fm_s32 fm_get_aud_info(fm_audio_info_t *data)
+signed int fm_get_aud_info(struct fm_audio_info_t *data)
 {
 	if (fm_low_ops.bi.get_aud_info)
 		return fm_low_ops.bi.get_aud_info(data);
@@ -843,7 +844,7 @@ fm_s32 fm_get_aud_info(fm_audio_info_t *data)
   *  @req - target buffer
   *  return value: 0, success; else error NO.
   */
-fm_s32 fm_get_i2s_info(struct fm *pfm, struct fm_i2s_info *req)
+signed int fm_get_i2s_info(struct fm *pfm, struct fm_i2s_info *req)
 {
 	if (fm_low_ops.bi.i2s_get == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -853,9 +854,9 @@ fm_s32 fm_get_i2s_info(struct fm *pfm, struct fm_i2s_info *req)
 	return fm_low_ops.bi.i2s_get(&req->status, &req->mode, &req->rate);
 }
 
-fm_s32 fm_hwscan_stop(struct fm *fm)
+signed int fm_hwscan_stop(struct fm *fm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if ((fm_op_state_get(fm) != FM_STA_SCAN) && (fm_op_state_get(fm) != FM_STA_SEEK)) {
 		WCN_DBG(FM_WAR | MAIN, "fm isn't on scan, no need stop\n");
@@ -869,7 +870,7 @@ fm_s32 fm_hwscan_stop(struct fm *fm)
 
 	fm_low_ops.bi.scanstop();
 	fm_low_ops.bi.seekstop();
-	scan_stop_flag = fm_true;
+	scan_stop_flag = true;
 	WCN_DBG(FM_DBG | MAIN, "fm will stop scan\n");
 
 	if (FM_LOCK(fm_ops_lock))
@@ -888,9 +889,9 @@ fm_s32 fm_hwscan_stop(struct fm *fm)
  * @antenna - 0, long; 1, short
  * If success, return 0; else error code
  */
-fm_s32 fm_ana_switch(struct fm *fm, fm_s32 antenna)
+signed int fm_ana_switch(struct fm *fm, signed int antenna)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.anaswitch == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -915,9 +916,9 @@ fm_s32 fm_ana_switch(struct fm *fm, fm_s32 antenna)
 }
 
 /* volume?[0~15] */
-fm_s32 fm_setvol(struct fm *fm, fm_u32 vol)
+signed int fm_setvol(struct fm *fm, unsigned int vol)
 {
-	fm_u8 tmp_vol;
+	unsigned char tmp_vol;
 
 	if (fm_pwr_state_get(fm) != FM_PWR_RX_ON)
 		return -EPERM;
@@ -931,15 +932,15 @@ fm_s32 fm_setvol(struct fm *fm, fm_u32 vol)
 
 	tmp_vol = (vol > 15) ? 15 : vol;
 	fm_low_ops.bi.volset(tmp_vol);
-	fm->vol = (fm_s32) tmp_vol;
+	fm->vol = (signed int) tmp_vol;
 
 	FM_UNLOCK(fm_ops_lock);
 	return 0;
 }
 
-fm_s32 fm_getvol(struct fm *fm, fm_u32 *vol)
+signed int fm_getvol(struct fm *fm, unsigned int *vol)
 {
-	fm_u8 tmp_vol;
+	unsigned char tmp_vol;
 
 	if (fm_pwr_state_get(fm) != FM_PWR_RX_ON)
 		return -EPERM;
@@ -952,15 +953,15 @@ fm_s32 fm_getvol(struct fm *fm, fm_u32 *vol)
 		return -FM_ELOCK;
 
 	fm_low_ops.bi.volget(&tmp_vol);
-	*vol = (fm_u32) tmp_vol;
+	*vol = (unsigned int) tmp_vol;
 
 	FM_UNLOCK(fm_ops_lock);
 	return 0;
 }
 
-fm_s32 fm_mute(struct fm *fm, fm_u32 bmute)
+signed int fm_mute(struct fm *fm, unsigned int bmute)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_pwr_state_get(fm) != FM_PWR_RX_ON) {
 		ret = -EPERM;
@@ -974,20 +975,20 @@ fm_s32 fm_mute(struct fm *fm, fm_u32 bmute)
 		return -FM_ELOCK;
 
 	if (bmute) {
-		ret = fm_low_ops.bi.mute(fm_true);
-		fm->mute = fm_true;
+		ret = fm_low_ops.bi.mute(true);
+		fm->mute = true;
 	} else {
-		ret = fm_low_ops.bi.mute(fm_false);
-		fm->mute = fm_false;
+		ret = fm_low_ops.bi.mute(false);
+		fm->mute = false;
 	}
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
 }
 
-fm_s32 fm_getrssi(struct fm *fm, fm_s32 *rssi)
+signed int fm_getrssi(struct fm *fm, signed int *rssi)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_pwr_state_get(fm) != FM_PWR_RX_ON) {
 		ret = -EPERM;
@@ -1006,9 +1007,9 @@ fm_s32 fm_getrssi(struct fm *fm, fm_s32 *rssi)
 	return ret;
 }
 
-fm_s32 fm_read(struct fm *fm, fm_u8 addr, fm_u16 *val)
+signed int fm_read(struct fm *fm, unsigned char addr, unsigned short *val)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
@@ -1019,9 +1020,9 @@ fm_s32 fm_read(struct fm *fm, fm_u8 addr, fm_u16 *val)
 	return ret;
 }
 
-fm_s32 fm_write(struct fm *fm, fm_u8 addr, fm_u16 val)
+signed int fm_write(struct fm *fm, unsigned char addr, unsigned short val)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
@@ -1032,9 +1033,9 @@ fm_s32 fm_write(struct fm *fm, fm_u8 addr, fm_u16 val)
 	return ret;
 }
 
-fm_s32 fm_top_read(struct fm *fm, fm_u16 addr, fm_u32 *val)
+signed int fm_top_read(struct fm *fm, unsigned short addr, unsigned int *val)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
@@ -1045,9 +1046,9 @@ fm_s32 fm_top_read(struct fm *fm, fm_u16 addr, fm_u32 *val)
 	return ret;
 }
 
-fm_s32 fm_top_write(struct fm *fm, fm_u16 addr, fm_u32 val)
+signed int fm_top_write(struct fm *fm, unsigned short addr, unsigned int val)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
@@ -1058,9 +1059,9 @@ fm_s32 fm_top_write(struct fm *fm, fm_u16 addr, fm_u32 val)
 	return ret;
 }
 
-fm_s32 fm_host_read(struct fm *fm, fm_u32 addr, fm_u32 *val)
+signed int fm_host_read(struct fm *fm, unsigned int addr, unsigned int *val)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
@@ -1071,9 +1072,9 @@ fm_s32 fm_host_read(struct fm *fm, fm_u32 addr, fm_u32 *val)
 	return ret;
 }
 
-fm_s32 fm_host_write(struct fm *fm, fm_u32 addr, fm_u32 val)
+signed int fm_host_write(struct fm *fm, unsigned int addr, unsigned int val)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
@@ -1084,9 +1085,9 @@ fm_s32 fm_host_write(struct fm *fm, fm_u32 addr, fm_u32 val)
 	return ret;
 }
 
-fm_s32 fm_pmic_read(struct fm *fm, fm_u8 addr, fm_u32 *val)
+signed int fm_pmic_read(struct fm *fm, unsigned char addr, unsigned int *val)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.pmic_read == NULL) {
 		pr_err("%s,invalid pointer\n", __func__);
@@ -1101,9 +1102,9 @@ fm_s32 fm_pmic_read(struct fm *fm, fm_u8 addr, fm_u32 *val)
 	return ret;
 }
 
-fm_s32 fm_pmic_write(struct fm *fm, fm_u8 addr, fm_u32 val)
+signed int fm_pmic_write(struct fm *fm, unsigned char addr, unsigned int val)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.pmic_write == NULL) {
 		pr_err("%s,invalid pointer\n", __func__);
@@ -1118,7 +1119,7 @@ fm_s32 fm_pmic_write(struct fm *fm, fm_u8 addr, fm_u32 val)
 	return ret;
 }
 
-fm_s32 fm_chipid_get(struct fm *fm, fm_u16 *chipid)
+signed int fm_chipid_get(struct fm *fm, unsigned short *chipid)
 {
 	if (chipid == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1133,9 +1134,9 @@ fm_s32 fm_chipid_get(struct fm *fm, fm_u16 *chipid)
 	return 0;
 }
 
-fm_s32 fm_monostereo_get(struct fm *fm, fm_u16 *ms)
+signed int fm_monostereo_get(struct fm *fm, unsigned short *ms)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.msget == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1148,7 +1149,7 @@ fm_s32 fm_monostereo_get(struct fm *fm, fm_u16 *ms)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (fm_low_ops.bi.msget(ms) == fm_false)
+	if (fm_low_ops.bi.msget(ms) == false)
 		ret = -FM_EPARA;
 
 	FM_UNLOCK(fm_ops_lock);
@@ -1160,9 +1161,9 @@ fm_s32 fm_monostereo_get(struct fm *fm, fm_u16 *ms)
  * @MonoStereo -- 0, auto; 1, mono
  * If success, return 0; else error code
  */
-fm_s32 fm_monostereo_set(struct fm *fm, fm_s32 ms)
+signed int fm_monostereo_set(struct fm *fm, signed int ms)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.msset == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1177,9 +1178,9 @@ fm_s32 fm_monostereo_set(struct fm *fm, fm_s32 ms)
 	return ret;
 }
 
-fm_s32 fm_pamd_get(struct fm *fm, fm_u16 *pamd)
+signed int fm_pamd_get(struct fm *fm, unsigned short *pamd)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.pamdget == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1192,16 +1193,16 @@ fm_s32 fm_pamd_get(struct fm *fm, fm_u16 *pamd)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (fm_low_ops.bi.pamdget(pamd) == fm_false)
+	if (fm_low_ops.bi.pamdget(pamd) == false)
 		ret = -FM_EPARA;
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
 }
 
-fm_s32 fm_caparray_get(struct fm *fm, fm_s32 *ca)
+signed int fm_caparray_get(struct fm *fm, signed int *ca)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.caparray_get == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1220,9 +1221,9 @@ fm_s32 fm_caparray_get(struct fm *fm, fm_s32 *ca)
 	return ret;
 }
 
-fm_s32 fm_em_test(struct fm *fm, fm_u16 group, fm_u16 item, fm_u32 val)
+signed int fm_em_test(struct fm *fm, unsigned short group, unsigned short item, unsigned int val)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.em == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1231,16 +1232,16 @@ fm_s32 fm_em_test(struct fm *fm, fm_u16 group, fm_u16 item, fm_u32 val)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	if (fm_false == fm_low_ops.bi.em(group, item, val))
+	if (false == fm_low_ops.bi.em(group, item, val))
 		ret = -FM_EPARA;
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
 }
 
-fm_s32 fm_set_search_th(struct fm *fm, struct fm_search_threshold_t parm)
+signed int fm_set_search_th(struct fm *fm, struct fm_search_threshold_t parm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.set_search_th == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1254,9 +1255,9 @@ fm_s32 fm_set_search_th(struct fm *fm, struct fm_search_threshold_t parm)
 	return ret;
 }
 
-fm_s32 fm_rds_tx(struct fm *fm, struct fm_rds_tx_parm *parm)
+signed int fm_rds_tx(struct fm *fm, struct fm_rds_tx_parm *parm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.ri.rds_tx == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1288,9 +1289,9 @@ out:
 	return ret;
 }
 
-fm_s32 fm_rds_onoff(struct fm *fm, fm_u16 rdson_off)
+signed int fm_rds_onoff(struct fm *fm, unsigned short rdson_off)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_pwr_state_get(fm) != FM_PWR_RX_ON) {
 		ret = -EPERM;
@@ -1304,8 +1305,8 @@ fm_s32 fm_rds_onoff(struct fm *fm, fm_u16 rdson_off)
 		return -FM_ELOCK;
 
 	if (rdson_off) {
-		fm->rds_on = fm_true;
-		if (fm_low_ops.ri.rds_onoff(fm->pstRDSData, fm_true) == fm_false) {
+		fm->rds_on = true;
+		if (fm_low_ops.ri.rds_onoff(fm->pstRDSData, true) == false) {
 			WCN_DBG(FM_ALT | MAIN, "FM_IOCTL_RDS_ONOFF on faield\n");
 			ret = -EPERM;
 			goto out;
@@ -1313,9 +1314,9 @@ fm_s32 fm_rds_onoff(struct fm *fm, fm_u16 rdson_off)
 
 		fm_enable_rds_BlerCheck(fm);
 	} else {
-		fm->rds_on = fm_false;
+		fm->rds_on = false;
 		fm_disable_rds_BlerCheck();
-		if (fm_low_ops.ri.rds_onoff(fm->pstRDSData, fm_false) == fm_false) {
+		if (fm_low_ops.ri.rds_onoff(fm->pstRDSData, false) == false) {
 			WCN_DBG(FM_ALT | MAIN, "FM_IOCTL_RDS_ONOFF off faield\n");
 			ret = -EPERM;
 		};
@@ -1326,9 +1327,9 @@ out:
 	return ret;
 }
 
-fm_s32 fm_rds_good_bc_get(struct fm *fm, fm_u16 *gbc)
+signed int fm_rds_good_bc_get(struct fm *fm, unsigned short *gbc)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.ri.rds_gbc_get == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1347,9 +1348,9 @@ fm_s32 fm_rds_good_bc_get(struct fm *fm, fm_u16 *gbc)
 	return ret;
 }
 
-fm_s32 fm_rds_bad_bc_get(struct fm *fm, fm_u16 *bbc)
+signed int fm_rds_bad_bc_get(struct fm *fm, unsigned short *bbc)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.ri.rds_gbc_get == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1368,9 +1369,9 @@ fm_s32 fm_rds_bad_bc_get(struct fm *fm, fm_u16 *bbc)
 	return ret;
 }
 
-fm_s32 fm_rds_bler_ratio_get(struct fm *fm, fm_u16 *bbr)
+signed int fm_rds_bler_ratio_get(struct fm *fm, unsigned short *bbr)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.ri.rds_bbr_get == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1383,15 +1384,15 @@ fm_s32 fm_rds_bler_ratio_get(struct fm *fm, fm_u16 *bbr)
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	*bbr = (fm_u16) fm_low_ops.ri.rds_bbr_get();
+	*bbr = (unsigned short) fm_low_ops.ri.rds_bbr_get();
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
 }
 
-fm_s32 fm_rds_group_cnt_get(struct fm *fm, struct rds_group_cnt_t *dst)
+signed int fm_rds_group_cnt_get(struct fm *fm, struct rds_group_cnt_t *dst)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.ri.rds_gc_get == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1410,9 +1411,9 @@ fm_s32 fm_rds_group_cnt_get(struct fm *fm, struct rds_group_cnt_t *dst)
 	return ret;
 }
 
-fm_s32 fm_rds_group_cnt_reset(struct fm *fm)
+signed int fm_rds_group_cnt_reset(struct fm *fm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.ri.rds_gc_reset == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1427,9 +1428,9 @@ fm_s32 fm_rds_group_cnt_reset(struct fm *fm)
 	return ret;
 }
 
-fm_s32 fm_rds_log_get(struct fm *fm, struct rds_rx_t *dst, fm_s32 *dst_len)
+signed int fm_rds_log_get(struct fm *fm, struct rds_rx_t *dst, signed int *dst_len)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.ri.rds_log_get == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1452,9 +1453,9 @@ fm_s32 fm_rds_log_get(struct fm *fm, struct rds_rx_t *dst, fm_s32 *dst_len)
 	return ret;
 }
 
-fm_s32 fm_rds_block_cnt_reset(struct fm *fm)
+signed int fm_rds_block_cnt_reset(struct fm *fm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.ri.rds_bc_reset == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1469,9 +1470,9 @@ fm_s32 fm_rds_block_cnt_reset(struct fm *fm)
 	return ret;
 }
 
-fm_s32 fm_i2s_set(struct fm *fm, fm_s32 onoff, fm_s32 mode, fm_s32 sample)
+signed int fm_i2s_set(struct fm *fm, signed int onoff, signed int mode, signed int sample)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.i2s_set == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1497,9 +1498,9 @@ fm_s32 fm_i2s_set(struct fm *fm, fm_s32 onoff, fm_s32 mode, fm_s32 sample)
 /*
  *  fm_tune_tx
  */
-fm_s32 fm_tune_tx(struct fm *fm, struct fm_tune_parm *parm)
+signed int fm_tune_tx(struct fm *fm, struct fm_tune_parm *parm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.tune_tx == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1518,7 +1519,7 @@ fm_s32 fm_tune_tx(struct fm *fm, struct fm_tune_parm *parm)
 	fm_op_state_set(fm, FM_STA_TUNE);
 	WCN_DBG(FM_NTC | MAIN, "Tx tune to %d\n", parm->freq);
 	/* tune to desired channel */
-	if (fm_true != fm_low_ops.bi.tune_tx(parm->freq)) {
+	if (true != fm_low_ops.bi.tune_tx(parm->freq)) {
 		parm->err = FM_TUNE_FAILED;
 		WCN_DBG(FM_ALT | MAIN, "Tx tune failed\n");
 		ret = -EPERM;
@@ -1532,10 +1533,10 @@ fm_s32 fm_tune_tx(struct fm *fm, struct fm_tune_parm *parm)
 /*
  *  fm_tune
  */
-fm_s32 fm_tune(struct fm *fm, struct fm_tune_parm *parm)
+signed int fm_tune(struct fm *fm, struct fm_tune_parm *parm)
 {
-	fm_s32 ret = 0;
-	fm_s32 len;
+	signed int ret = 0;
+	signed int len;
 	struct rds_raw_t rds_log;
 
 	if (fm_low_ops.bi.mute == NULL) {
@@ -1558,12 +1559,12 @@ fm_s32 fm_tune(struct fm *fm, struct fm_tune_parm *parm)
 
 	/* clean RDS first in case RDS event report before tune success */
 	/* clean RDS data */
-	fm_memset(fm->pstRDSData, 0, sizeof(rds_t));
+	fm_memset(fm->pstRDSData, 0, sizeof(struct rds_t));
 
 	/* clean RDS log buffer */
 	do {
 		ret = fm_rds_log_get(fm, (struct rds_rx_t *)&(rds_log.data), &len);
-		rds_log.dirty = TRUE;
+		rds_log.dirty = true;
 		rds_log.len = (len < sizeof(rds_log.data)) ? len : sizeof(rds_log.data);
 		WCN_DBG(FM_ALT | MAIN, "clean rds log, rds_log.len =%d\n", rds_log.len);
 		if (ret < 0)
@@ -1575,7 +1576,7 @@ fm_s32 fm_tune(struct fm *fm, struct fm_tune_parm *parm)
 		ret = -EPERM;
 		goto out;
 	}
-/* fm_low_ops.bi.mute(fm_true); */
+/* fm_low_ops.bi.mute(true); */
 	ret = fm_low_ops.bi.rampdown();
 	if (ret) {
 		WCN_DBG(FM_ALT | MAIN, "FM ramp down failed\n");
@@ -1585,12 +1586,12 @@ fm_s32 fm_tune(struct fm *fm, struct fm_tune_parm *parm)
 	fm_op_state_set(fm, FM_STA_TUNE);
 	WCN_DBG(FM_ALT | MAIN, "tuning to %d\n", parm->freq);
 
-	if (fm_true != fm_low_ops.bi.setfreq(parm->freq)) {
+	if (true != fm_low_ops.bi.setfreq(parm->freq)) {
 		parm->err = FM_TUNE_FAILED;
 		WCN_DBG(FM_ALT | MAIN, "FM tune failed\n");
 		ret = -FM_EFW;
 	}
-	/* fm_low_ops.bi.mute(fm_false);//open for dbg */
+	/* fm_low_ops.bi.mute(false);//open for dbg */
 	fm_op_state_set(fm, FM_STA_PLAY);
 out:
 	FM_UNLOCK(fm_ops_lock);
@@ -1598,10 +1599,10 @@ out:
 }
 
 /* cqi log tool entry */
-fm_s32 fm_cqi_log(void)
+signed int fm_cqi_log(void)
 {
-	fm_s32 ret = 0;
-	fm_u16 freq;
+	signed int ret = 0;
+	unsigned short freq;
 
 	if (fm_low_ops.bi.cqi_log == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1622,9 +1623,9 @@ fm_s32 fm_cqi_log(void)
 	return ret;
 }
 
-fm_s32 fm_pre_search(struct fm *fm)
+signed int fm_pre_search(struct fm *fm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.pre_search == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1643,9 +1644,9 @@ fm_s32 fm_pre_search(struct fm *fm)
 	return ret;
 }
 
-fm_s32 fm_restore_search(struct fm *fm)
+signed int fm_restore_search(struct fm *fm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.restore_search == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1665,9 +1666,9 @@ fm_s32 fm_restore_search(struct fm *fm)
 }
 
 /*fm soft mute tune function*/
-fm_s32 fm_soft_mute_tune(struct fm *fm, struct fm_softmute_tune_t *parm)
+signed int fm_soft_mute_tune(struct fm *fm, struct fm_softmute_tune_t *parm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.softmute_tune == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1678,28 +1679,30 @@ fm_s32 fm_soft_mute_tune(struct fm *fm, struct fm_softmute_tune_t *parm)
 		return -FM_ELOCK;
 
 	if (fm_pwr_state_get(fm) != FM_PWR_RX_ON) {
-		parm->valid = fm_false;
+		parm->valid = false;
 		ret = -EPERM;
 		goto out;
 	}
-	/* fm_low_ops.bi.mute(fm_true); */
+	/* fm_low_ops.bi.mute(true); */
 	/* fm_op_state_set(fm, FM_STA_TUNE); */
 
-	if (fm_false == fm_low_ops.bi.softmute_tune(parm->freq, &parm->rssi, &parm->valid)) {
-		parm->valid = fm_false;
+	if (false == fm_low_ops.bi.softmute_tune(parm->freq, &parm->rssi, &parm->valid)) {
+		parm->valid = false;
 		WCN_DBG(FM_ALT | MAIN, "sm tune failed\n");
 		ret = -EPERM;
 	}
-/* fm_low_ops.bi.mute(fm_false); */
+/* fm_low_ops.bi.mute(false); */
+	WCN_DBG(FM_DBG | MAIN, "%s, freq=%d, rssi=%d, valid=%d\n", __func__, parm->freq, parm->rssi, parm->valid);
+
 out:
 	FM_UNLOCK(fm_ops_lock);
 
 	return ret;
 }
 
-fm_s32 fm_over_bt(struct fm *fm, fm_s32 flag)
+signed int fm_over_bt(struct fm *fm, signed int flag)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (fm_low_ops.bi.fm_via_bt == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1723,7 +1726,7 @@ fm_s32 fm_over_bt(struct fm *fm, fm_s32 flag)
 	return ret;
 }
 
-fm_s32 fm_tx_support(struct fm *fm, fm_s32 *support)
+signed int fm_tx_support(struct fm *fm, signed int *support)
 {
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
@@ -1738,7 +1741,7 @@ fm_s32 fm_tx_support(struct fm *fm, fm_s32 *support)
 	return 0;
 }
 
-fm_s32 fm_rdstx_support(struct fm *fm, fm_s32 *support)
+signed int fm_rdstx_support(struct fm *fm, signed int *support)
 {
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
@@ -1754,9 +1757,9 @@ fm_s32 fm_rdstx_support(struct fm *fm, fm_s32 *support)
 }
 
 /*1:on,0:off*/
-fm_s32 fm_rdstx_enable(struct fm *fm, fm_s32 enable)
+signed int fm_rdstx_enable(struct fm *fm, signed int enable)
 {
-	fm_s32 ret = -1;
+	signed int ret = -1;
 
 	if (fm_low_ops.ri.rds_tx_enable == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -1777,13 +1780,13 @@ fm_s32 fm_rdstx_enable(struct fm *fm, fm_s32 enable)
 		if (ret)
 			WCN_DBG(FM_ERR | MAIN, "rds_tx_enable fail=[%d]!\n", ret);
 
-		fm->rdstx_on = fm_true;
+		fm->rdstx_on = true;
 	} else {
 		ret = fm_low_ops.ri.rds_tx_disable();
 		if (ret)
 			WCN_DBG(FM_ERR | MAIN, "rds_tx_disable fail=[%d]!\n", ret);
 
-		fm->rdstx_on = fm_false;
+		fm->rdstx_on = false;
 	}
 	WCN_DBG(FM_NTC | MAIN, "rds tx enable=[%d]!\n", enable);
 	FM_UNLOCK(fm_ops_lock);
@@ -1813,7 +1816,7 @@ out:
 
 static void fm_tx_power_ctrl_worker_func(unsigned long data)
 {
-	fm_s32 ctrl = 0, ret = 0;
+	signed int ctrl = 0, ret = 0;
 	struct fm *fm = g_fm_struct;
 
 	WCN_DBG(FM_NTC | MAIN, "+%s():\n", __func__);
@@ -1841,8 +1844,8 @@ out:
 
 static void fm_tx_rtc_ctrl_worker_func(unsigned long data)
 {
-	fm_s32 ret = 0;
-	fm_s32 ctrl = 0;
+	signed int ret = 0;
+	signed int ctrl = 0;
 	struct fm_gps_rtc_info rtcInfo;
 	/* struct timeval curTime; */
 	/* struct fm *fm = (struct fm*)fm_cb; */
@@ -1901,8 +1904,8 @@ out:
 
 static void fm_tx_desense_wifi_worker_func(unsigned long data)
 {
-	fm_s32 ret = 0;
-	fm_s32 ctrl = 0;
+	signed int ret = 0;
+	signed int ctrl = 0;
 	struct fm *fm = g_fm_struct;
 
 	WCN_DBG(FM_NTC | MAIN, "+%s():\n", __func__);
@@ -1940,10 +1943,10 @@ Date:		    2011/04/10
 Return Value:   success:0, failed: error coe
 ************************************************************************************
 */
-fm_s32 fm_get_gps_rtc_info(struct fm_gps_rtc_info *src)
+signed int fm_get_gps_rtc_info(struct fm_gps_rtc_info *src)
 {
-	fm_s32 ret = 0;
-/* fm_s32 retry_cnt = 0; */
+	signed int ret = 0;
+/* signed int retry_cnt = 0; */
 	struct fm_gps_rtc_info *dst = &gps_rtc_info;
 
 	if (src == NULL) {
@@ -1969,7 +1972,7 @@ fm_s32 fm_get_gps_rtc_info(struct fm_gps_rtc_info *src)
 	}
 	if (src->tvThd.tv_sec > 0) {
 		dst->tvThd.tv_sec = src->tvThd.tv_sec;
-		WCN_DBG(FM_NTC | MAIN, "%s, new [tvThd=%d]\n", __func__, (fm_s32) dst->tvThd.tv_sec);
+		WCN_DBG(FM_NTC | MAIN, "%s, new [tvThd=%d]\n", __func__, (signed int) dst->tvThd.tv_sec);
 	}
 	ret = fm_rtc_mutex->trylock(fm_rtc_mutex, dst->retryCnt);
 	if (ret)
@@ -2007,7 +2010,7 @@ static void fm_disable_rds_BlerCheck(void)
 
 void fm_rds_reset_work_func(unsigned long data)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	if (!fm_low_ops.ri.rds_blercheck)
 		return;
@@ -2041,7 +2044,7 @@ void fm_subsys_reset_work_func(unsigned long data)
 
 	fm_sys_state_set(g_fm_struct, FM_SUBSYS_RST_START);
 
-	if (g_fm_struct->chipon == fm_false) {
+	if (g_fm_struct->chipon == false) {
 		WCN_DBG(FM_ALT | MAIN, "chip off no need do recover\n");
 		goto out;
 	}
@@ -2049,7 +2052,7 @@ void fm_subsys_reset_work_func(unsigned long data)
 	/* if whole chip reset, wmt will clear fm-on-flag, and firmware turn fm to off status,
 	* so no need turn fm off again
 	*/
-	if (g_fm_struct->wholechiprst == fm_false) {
+	if (g_fm_struct->wholechiprst == false) {
 		fm_low_ops.bi.pwrdownseq();
 		/* subsystem power off */
 		if (fm_low_ops.bi.pwroff(0)) {
@@ -2069,7 +2072,7 @@ void fm_subsys_reset_work_func(unsigned long data)
 		goto out;
 	}
 	/* recover context */
-	if (g_fm_struct->chipon == fm_false) {
+	if (g_fm_struct->chipon == false) {
 		fm_low_ops.bi.pwroff(0);
 		WCN_DBG(FM_ALT | MAIN, "no need do recover\n");
 		goto out;
@@ -2086,7 +2089,7 @@ void fm_subsys_reset_work_func(unsigned long data)
 
 	fm_low_ops.bi.setfreq(fm_cur_freq_get());
 
-	fm_low_ops.bi.volset((fm_u8) g_fm_struct->vol);
+	fm_low_ops.bi.volset((unsigned char) g_fm_struct->vol);
 
 	g_fm_struct->mute = 0;
 	fm_low_ops.bi.mute(g_fm_struct->mute);
@@ -2107,7 +2110,7 @@ void fm_subsys_reset_work_func(unsigned long data)
 out:
 	fm_sys_state_set(g_fm_struct, FM_SUBSYS_RST_END);
 	fm_sys_state_set(g_fm_struct, FM_SUBSYS_RST_OFF);
-	g_fm_struct->wholechiprst = fm_true;
+	g_fm_struct->wholechiprst = true;
 
 	FM_UNLOCK(fm_ops_lock);
 	g_dbg_level = 0xfffffff5;
@@ -2123,10 +2126,10 @@ static void fm_eint_handler(void)
 		fm->eint_wkthd->add_work(fm->eint_wkthd, fm->eint_wk);
 }
 
-static fm_s32 fm_rds_parser(struct rds_rx_t *rds_raw, fm_s32 rds_size)
+static signed int fm_rds_parser(struct rds_rx_t *rds_raw, signed int rds_size)
 {
 	struct fm *fm = g_fm_struct;	/* (struct fm *)work->data; */
-	rds_t *pstRDSData = fm->pstRDSData;
+	struct rds_t *pstRDSData = fm->pstRDSData;
 
 	if (FM_LOCK(fm_read_lock))
 		return -FM_ELOCK;
@@ -2149,7 +2152,7 @@ static void fm_eint_work_func(unsigned long data)
 	fm_enable_eint();
 }
 
-static fm_s32 fm_callback_register(struct fm_callback *cb)
+static signed int fm_callback_register(struct fm_callback *cb)
 {
 	if (cb == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
@@ -2161,9 +2164,9 @@ static fm_s32 fm_callback_register(struct fm_callback *cb)
 	return 0;
 }
 
-static fm_s32 fm_ops_register(struct fm_lowlevel_ops *ops)
+static signed int fm_ops_register(struct fm_lowlevel_ops *ops)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	ret = fm_callback_register(&ops->cb);
 	if (ret) {
@@ -2185,7 +2188,7 @@ static fm_s32 fm_ops_register(struct fm_lowlevel_ops *ops)
 
 	return ret;
 }
-static fm_s32 fm_callback_unregister(struct fm_callback *cb)
+static signed int fm_callback_unregister(struct fm_callback *cb)
 {
 	if (cb == NULL) {
 		WCN_DBG(FM_ERR | MAIN, "%s,cb invalid pointer\n", __func__);
@@ -2196,9 +2199,9 @@ static fm_s32 fm_callback_unregister(struct fm_callback *cb)
 	return 0;
 }
 
-static fm_s32 fm_ops_unregister(struct fm_lowlevel_ops *ops)
+static signed int fm_ops_unregister(struct fm_lowlevel_ops *ops)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	ret = fm_rds_ops_unregister(&ops->ri);
 	if (ret) {
@@ -2221,9 +2224,9 @@ static fm_s32 fm_ops_unregister(struct fm_lowlevel_ops *ops)
 	return ret;
 }
 
-static fm_s16 fm_cust_config_setting(void)
+static signed short fm_cust_config_setting(void)
 {
-	fm_u16 chipid = 0;
+	unsigned short chipid = 0;
 	enum fm_cfg_chip_type type = FM_CHIP_TYPE_MAX;
 
 	if (fm_low_ops.bi.chipid_get)
@@ -2238,9 +2241,9 @@ static fm_s16 fm_cust_config_setting(void)
 	return 0;
 }
 
-struct fm *fm_dev_init(fm_u32 arg)
+struct fm *fm_dev_init(unsigned int arg)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 	struct fm *fm = NULL;
 
 /* if (!fm_low_ops.ri.rds_bci_get) */
@@ -2255,14 +2258,14 @@ struct fm *fm_dev_init(fm_u32 arg)
 	}
 
 	fm->ref = 0;
-	fm->chipon = fm_false;
+	fm->chipon = false;
 	fm_pwr_state_set(fm, FM_PWR_OFF);
 	/* FM Tx */
 	fm->vcoon = FM_TX_VCO_ON_DEFAULT;
 	fm->vcooff = FM_TX_VCO_OFF_DEFAULT;
 	fm->txpwrctl = FM_TX_PWR_CTRL_INVAL_DEFAULT;
 	fm->tx_pwr = FM_TX_PWR_LEVEL_MAX;
-	fm->wholechiprst = fm_true;
+	fm->wholechiprst = true;
 	gps_rtc_info.err = 0;
 	gps_rtc_info.age = 0;
 	gps_rtc_info.drift = 0;
@@ -2284,7 +2287,7 @@ struct fm *fm_dev_init(fm_u32 arg)
 	fm_flag_event_get(fm->rds_event);
 
 	/* alloc fm rds data structure */
-	fm->pstRDSData = fm_zalloc(sizeof(rds_t));
+	fm->pstRDSData = fm_zalloc(sizeof(struct rds_t));
 	if (!fm->pstRDSData) {
 		WCN_DBG(FM_ALT | MAIN, "-ENOMEM for RDS\n");
 		ret = -ENOMEM;
@@ -2434,9 +2437,9 @@ ERR_EXIT:
 	return NULL;
 }
 
-fm_s32 fm_dev_destroy(struct fm *fm)
+signed int fm_dev_destroy(struct fm *fm)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	WCN_DBG(FM_DBG | MAIN, "%s\n", __func__);
 
@@ -2498,9 +2501,9 @@ fm_s32 fm_dev_destroy(struct fm *fm)
 	return ret;
 }
 
-fm_s32 fm_env_setup(void)
+signed int fm_env_setup(void)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	WCN_DBG(FM_NTC | MAIN, "%s\n", __func__);
 
@@ -2561,9 +2564,9 @@ fm_s32 fm_env_setup(void)
 	return ret;
 }
 
-fm_s32 fm_env_destroy(void)
+signed int fm_env_destroy(void)
 {
-	fm_s32 ret = 0;
+	signed int ret = 0;
 
 	WCN_DBG(FM_NTC | MAIN, "%s\n", __func__);
 
@@ -2612,7 +2615,7 @@ fm_s32 fm_env_destroy(void)
  *
  * Return 0, if 760~1080; return 1, if 7600 ~ 10800, else err code < 0
  */
-fm_s32 fm_get_channel_space(fm_s32 freq)
+signed int fm_get_channel_space(signed int freq)
 {
 	if ((freq >= 640) && (freq <= 1080))
 		return 0;

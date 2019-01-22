@@ -104,41 +104,39 @@ enum fm_cfg_parser_state {
 	FM_CFG_STAT_COMMENT
 };
 
-typedef enum fm_cfg_parser_state fm_cfg_parser_state_t;
-
 #define COMMENT_CHAR '#'
 #define DELIMIT_CHAR '='
 
 #define isspace(a) ((a) == 0x20)
 
 struct fm_rx_cust_cfg {
-	fm_s32 desene_rssi_th;
-	fm_s32 pamd_th;
-	fm_s32 mr_th;
-	fm_s32 atdc_th;
-	fm_s32 prx_th;
-	fm_s32 atdev_th;
-	fm_s32 short_ana_rssi_th;
-	fm_s32 long_ana_rssi_th;
-	fm_s32 cqi_th;
-	fm_s32 smg_th;
-	fm_s32 deemphasis;
-	fm_s32 osc_freq;
+	signed int desene_rssi_th;
+	signed int pamd_th;
+	signed int mr_th;
+	signed int atdc_th;
+	signed int prx_th;
+	signed int atdev_th;
+	signed int short_ana_rssi_th;
+	signed int long_ana_rssi_th;
+	signed int cqi_th;
+	signed int smg_th;
+	signed int deemphasis;
+	signed int osc_freq;
 };
 
 struct fm_tx_cust_cfg {
-	fm_s32 scan_hole_low;
-	fm_s32 scan_hole_high;
-	fm_s32 power_level;
-	fm_s32 pamd_th;
-	fm_s32 mr_th;
-	fm_s32 smg_th;
+	signed int scan_hole_low;
+	signed int scan_hole_high;
+	signed int power_level;
+	signed int pamd_th;
+	signed int mr_th;
+	signed int smg_th;
 };
-typedef struct {
+struct fm_cust_cfg {
 	struct fm_rx_cust_cfg rx_cfg;
 	struct fm_tx_cust_cfg tx_cfg;
-	fm_audio_info_t aud_cfg;
-} fm_cust_cfg;
+	struct fm_audio_info_t aud_cfg;
+};
 
 enum fm_cust_cfg_op {
 	FM_CFG_RX_RSSI_TH_LONG = 0,
@@ -171,20 +169,20 @@ enum fm_cfg_chip_type {
 	FM_CHIP_TYPE_MAX
 };
 
-typedef fm_s32(*CFG_HANDLER) (fm_s8 *grp, fm_s8 *key, fm_s8 *val, fm_cust_cfg *cfg);
-extern fm_s32 to_upper_n(fm_s8 *str, fm_s32 len);
-extern fm_s32 check_hex_str(fm_s8 *str, fm_s32 len);
-extern fm_s32 check_dec_str(fm_s8 *str, fm_s32 len);
-extern fm_s32 ascii_to_hex(fm_s8 *in_ascii, fm_u16 *out_hex);
-extern fm_s32 ascii_to_dec(fm_s8 *in_ascii, fm_s32 *out_dec);
-extern fm_s32 trim_string(fm_s8 **start);
-extern fm_s32 trim_path(fm_s8 **start);
-extern fm_s32 cfg_parser(fm_s8 *buffer, CFG_HANDLER handler, fm_cust_cfg *cfg);
-extern fm_s32 cfg_item_match(fm_s8 *src_key, fm_s8 *src_val, fm_s8 *dst_key, fm_s32 *dst_val);
+typedef signed int(*CFG_HANDLER) (signed char *grp, signed char *key, signed char *val, struct fm_cust_cfg *cfg);
+extern signed int to_upper_n(signed char *str, signed int len);
+extern signed int check_hex_str(signed char *str, signed int len);
+extern signed int check_dec_str(signed char *str, signed int len);
+extern signed int ascii_to_hex(signed char *in_ascii, unsigned short *out_hex);
+extern signed int ascii_to_dec(signed char *in_ascii, signed int *out_dec);
+extern signed int trim_string(signed char **start);
+extern signed int trim_path(signed char **start);
+extern signed int cfg_parser(signed char *buffer, CFG_HANDLER handler, struct fm_cust_cfg *cfg);
+extern signed int cfg_item_match(signed char *src_key, signed char *src_val, signed char *dst_key, signed int *dst_val);
 
-extern fm_s32 fm_cust_config_setup(const fm_s8 *filename);
-extern fm_u16 fm_cust_config_fetch(enum fm_cust_cfg_op op_code);
-extern fm_u16 fm_cust_config_chip(fm_u16 chipid, enum fm_cfg_chip_type type);
+extern signed int fm_cust_config_setup(const signed char *filename);
+extern unsigned short fm_cust_config_fetch(enum fm_cust_cfg_op op_code);
+extern unsigned short fm_cust_config_chip(unsigned short chipid, enum fm_cfg_chip_type type);
 
-extern fm_cust_cfg fm_config;
+extern struct fm_cust_cfg fm_config;
 #endif /* __FM_CONFIG_H__ */
