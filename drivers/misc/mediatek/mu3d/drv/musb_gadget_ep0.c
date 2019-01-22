@@ -95,8 +95,11 @@ __releases(musb->lock) __acquires(musb->lock)
 	int retval;
 
 	os_printk(K_DEBUG, "%s\n", __func__);
-	if (!musb->gadget_driver)
+	if (!musb->gadget_driver || !musb->softconnect) {
+		os_printk(K_NOTICE, "%s, driver<%p>, softconn<%d>\n",
+				__func__, musb->gadget_driver, musb->softconnect);
 		return -EOPNOTSUPP;
+	}
 	spin_unlock(&musb->lock);
 	retval = musb->gadget_driver->setup(&musb->g, ctrlrequest);
 
