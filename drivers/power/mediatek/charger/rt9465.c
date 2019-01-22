@@ -86,8 +86,6 @@ struct rt9465_info {
 	struct rt9465_desc *desc;
 	struct charger_device *chg_dev;
 	struct charger_properties chg_props;
-	struct power_supply_desc psd;
-	struct power_supply *psy;
 	struct mutex i2c_access_lock;
 	struct mutex adc_access_lock;
 	struct mutex gpio_access_lock;
@@ -131,10 +129,6 @@ static const unsigned char rt9465_reg_addr[] = {
 	RT9465_REG_CHG_FAULT_MASK,
 	RT9465_REG_CHG_IRQ1_MASK,
 	RT9465_REG_CHG_IRQ2_MASK,
-};
-
-static enum power_supply_property rt9465_chg_props[] = {
-	POWER_SUPPLY_PROP_ONLINE,
 };
 
 /* ========= */
@@ -495,39 +489,6 @@ static u32 rt9465_find_closest_real_value(const u32 min, const u32 max,
 
 	return ret_val;
 }
-
-static int rt9465_chg_get_property(struct power_supply *psy,
-	enum power_supply_property psp, union power_supply_propval *val)
-{
-	int ret = 0;
-
-	switch (psp) {
-	case POWER_SUPPLY_PROP_ONLINE:
-		val->intval = 1;
-		break;
-	default:
-		ret = -EINVAL;
-		break;
-	}
-
-	return ret;
-}
-
-static int rt9465_chg_set_property(struct power_supply *psy,
-	enum power_supply_property psp, const union power_supply_propval *val)
-{
-	int ret = 0;
-
-	switch (psp) {
-	case POWER_SUPPLY_PROP_ONLINE:
-		break;
-	default:
-		break;
-	}
-	return ret;
-}
-
-
 
 static irqreturn_t rt9465_irq_handler(int irq, void *data)
 {
@@ -1255,19 +1216,6 @@ static int rt9465_probe(struct i2c_client *i2c,
 		goto err_parse_dt;
 	}
 
-	/* Register power supply class */
-	info->psd.name = info->desc->chg_dev_name;
-	info->psd.type = POWER_SUPPLY_TYPE_UNKNOWN;
-	info->psd.properties = rt9465_chg_props;
-	info->psd.num_properties = ARRAY_SIZE(rt9465_chg_props);
-	info->psd.get_property = rt9465_chg_get_property;
-	info->psd.set_property = rt9465_chg_set_property;
-	info->psy = power_supply_register(&i2c->dev, &info->psd, NULL);
-	if (!info->psy) {
-		pr_err("rt9465 power supply regiseter fail\n");
-		goto err_register_psy;
-	}
-
 	/* Register charger device */
 	info->chg_dev = charger_device_register(info->desc->chg_dev_name,
 		&i2c->dev, info, &rt9465_chg_ops, &info->chg_props);
@@ -1325,7 +1273,6 @@ err_register_regmap:
 #endif
 err_parse_dt:
 err_register_chg_dev:
-err_register_psy:
 err_enable_chip:
 err_no_dev:
 err_register_irq:
@@ -1434,11 +1381,14 @@ module_exit(rt9465_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9465 Charger Driver");
-MODULE_VERSION("1.0.0_MTK");
+MODULE_VERSION("1.0.1_MTK");
 
 
 /*
  * Version Note
+ * 1.0.1
+ * (1) Remove registering power supply class
+ *
  * 1.0.0
- * First Release
+ * Initial Release
  */
