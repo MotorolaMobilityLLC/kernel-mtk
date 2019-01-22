@@ -57,7 +57,7 @@
 #endif
 
 /* scp awake timout count definition*/
-#define SCP_AWAKE_TIMEOUT 50
+#define SCP_AWAKE_TIMEOUT 5000
 /* scp semaphore timout count definition*/
 #define SEMAPHORE_TIMEOUT 5000
 #define SEMAPHORE_3WAY_TIMEOUT 5000
@@ -395,7 +395,7 @@ int scp_awake_lock(scp_core_id scp_id)
 		if (status_read_back == 0)
 			scp_awake_repeat++;
 
-		udelay(1000);
+		udelay(10);
 		status_read_back = (readl(SCP_CPU_SLEEP_STATUS) >> scp_deep_sleep_bit) & 0x1;
 		if (status_read_back == 0 && scp_awake_repeat > 0) {
 			ret = 0;
@@ -459,7 +459,7 @@ int scp_awake_unlock(scp_core_id scp_id)
 	}
 
 	if (*scp_awake_count > 1)
-		pr_err("scp_awake_lock: %s awake count=%d, NOT sync!!\n", core_id, *scp_awake_count);
+		pr_err("scp_awake_unlock: %s awake count=%d, NOT sync!!\n", core_id, *scp_awake_count);
 
 	/* get scp sema to keep scp awake*/
 	ret = release_scp_semaphore(scp_semaphore_flag);
@@ -467,7 +467,7 @@ int scp_awake_unlock(scp_core_id scp_id)
 		if (*scp_awake_count > 0)
 			*scp_awake_count = *scp_awake_count - 1;
 
-		pr_err("scp_awake_lock: %s release sema. fail\n", core_id);
+		pr_err("scp_awake_unlock: %s release sema. fail\n", core_id);
 		mutex_unlock(scp_awake_mutex);
 		WARN_ON(1);
 		return ret;

@@ -33,7 +33,7 @@
 #define SCP_TIMER_TIMEOUT	        (1 * HZ) /* 1 seconds*/
 #define ROUNDUP(a, b)		        (((a) + ((b)-1)) & ~((b)-1))
 #define PLT_LOG_ENABLE              0x504C5402 /*magic*/
-#define SCP_IPI_RETRY_TIMES         (50)
+#define SCP_IPI_RETRY_TIMES         (5000)
 
 
 #define SCP_LOGGER_UT (1)
@@ -978,7 +978,7 @@ static void scp_logger_notify_ws(struct work_struct *ws)
 		if (ret == DONE)
 			break;
 		retrytimes--;
-		udelay(100);
+		udelay(2000);
 	} while (retrytimes > 0);
 
 	/*enable logger flag*/
