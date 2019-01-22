@@ -140,6 +140,7 @@ static void mtk_switch_armpll(int cpu, int hw_mode)
 		switch_armpll_l_hwmode(hw_mode);
 }
 
+#if 0
 static void mtk_dbg_save_restore(int cpu, int save)
 {
 	unsigned int cpu_idle_sta;
@@ -156,6 +157,15 @@ static void mtk_dbg_save_restore(int cpu, int save)
 		if (!save)
 			mt_copy_dbg_regs(cpu, __builtin_ffs(~cpu_idle_sta) - 1);
 	}
+}
+#endif
+
+static void mtk_dbg_save_restore(int cpu, int save)
+{
+	if (save)
+		mt_save_dbg_regs(dbg_data, cpu);
+	else
+		mt_restore_dbg_regs(dbg_data, cpu);
 }
 
 static void mtk_platform_save_context(int cpu, int idx)

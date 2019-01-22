@@ -155,6 +155,7 @@ config MACH_MT6799
 	select MTK_EIC
 	select MTK_BOUNCING_CHECK
 	select ARM64_ERRATUM_845719
+	select MTK_WATCHPOINT
 	help
 	  This enables support for MediaTek MT6799
 	  Support for aarch64 Architecture
