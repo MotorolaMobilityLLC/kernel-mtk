@@ -216,13 +216,14 @@ void rtc_enable_k_eosc(void)
 	}
 	/*Switch the DCXO from 32k-less mode to RTC mode, otherwise, EOSC cali will fail*/
 	/*RTC mode will have only OFF mode and FPM */
-	pmic_config_interface_nolock(PMIC_XO_EN32K_MAN_ADDR, 0, PMIC_XO_EN32K_MAN_MASK, PMIC_XO_EN32K_MAN_SHIFT);
-
+	pmic_config_interface_nolock(PMIC_XO_EN32K_MAN_ADDR, 0, PMIC_XO_EN32K_MAN_MASK,
+		PMIC_XO_EN32K_MAN_SHIFT);
 	rtc_write(RTC_BBPU, rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
 	rtc_write_trigger();
 
 	osc32 = rtc_read(RTC_OSC32CON);
-	rtc_xosc_write((osc32 & ~RTC_EMBCK_SEL_EOSC) | RTC_EMBCK_SEL_K_EOSC | RTC_EMBCK_SRC_SEL, true);
+	/* Set RTC_EMBCK_SEL_EOSC setting but RTC_EMBCK_SEL_K_EOSC is for HW hard code bug*/
+	rtc_xosc_write((osc32 & ~RTC_EMBCK_SEL_HW) | RTC_EMBCK_SEL_EOSC | RTC_EMBCK_SRC_SEL, true);
 	hal_rtc_xinfo("RTC_enable_k_eosc\n");
 }
 
