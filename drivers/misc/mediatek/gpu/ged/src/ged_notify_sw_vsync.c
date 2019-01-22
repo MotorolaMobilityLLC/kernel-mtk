@@ -33,7 +33,7 @@
 
 #ifndef ENABLE_TIMER_BACKUP
 #undef GED_DVFS_TIMER_TIMEOUT
-#define GED_DVFS_TIMER_TIMEOUT 70000000
+#define GED_DVFS_TIMER_TIMEOUT 25000000
 #endif
 
 
@@ -322,6 +322,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	
 		/*if no timer-backup need to start timer for event notify to real driver*/
 #ifndef ENABLE_TIMER_BACKUP
+#if 0
 		if (hrtimer_try_to_cancel(&g_HT_hwvsync_emu)) {
 			/* Timer is either queued or in cb
 			* cancel it to ensure it is not bother any way
@@ -337,6 +338,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Notify New Timer Start (ts=%llu)", temp);
 			timer_switch_locked(true);
 		}
+#endif
 #endif			///	#ifdef ENABLE_TIMER_BACKUP
 	return GED_INTENTIONAL_BLOCK; // not to do further operations
 #endif
@@ -346,11 +348,15 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 }
 
 extern unsigned int gpu_loading;
+/* extern unsigned int gpu_block; */
+/* extern unsigned int gpu_idle; */
+/* extern unsigned int gpu_av_loading; */
 enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
 {
 	unsigned long long temp;
 	long long llDiff;
 	GED_NOTIFY_SW_SYNC* psNotify;
+	/* bool bDebug; */
 
 	temp = cpu_clock(smp_processor_id()); // interrupt contex no need to set non-preempt
 
@@ -361,10 +367,13 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
 		psNotify = (GED_NOTIFY_SW_SYNC*)ged_alloc_atomic(sizeof(GED_NOTIFY_SW_SYNC));
 		
 #ifndef ENABLE_TIMER_BACKUP		
-		mtk_get_gpu_loading(&gpu_loading);
+		/* bDebug = ged_dvfs_cal_gpu_utilization(&gpu_av_loading, &gpu_block, &gpu_idle); */
+		/* ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] (%d) loading: %u", bDebug, gpu_av_loading); */
+	    ged_dvfs_cal_gpu_utilization(&gpu_av_loading, &gpu_block, &gpu_idle);
+		gpu_loading = gpu_av_loading;
+
 #endif
 		if(false==g_bGPUClock && 0==gpu_loading && (temp - g_ns_gpu_on_ts> GED_DVFS_TIMER_TIMEOUT) )
-			
 		{
 			if (psNotify)
 			{
