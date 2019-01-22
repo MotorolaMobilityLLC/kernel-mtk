@@ -300,6 +300,12 @@ static bool spm_sodi_mem_mode_change(void)
 }
 #endif
 
+static void spm_sodi_append_log(char *buf, const char *local_ptr)
+{
+	if ((strlen(buf) + strlen(local_ptr)) < LOG_BUF_SIZE)
+		strncat(buf, local_ptr, strlen(local_ptr));
+}
+
 unsigned int spm_sodi_output_log(
 	struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 flags, u32 operation_cond)
 {
@@ -387,17 +393,17 @@ unsigned int spm_sodi_output_log(
 
 				if (wakesta->r12 & WAKE_SRC_R12_PCMTIMER) {
 					if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER)
-						strcat(buf, " PCM_TIMER");
+						spm_sodi_append_log(buf, " PCM_TIMER");
 
 					if (wakesta->wake_misc & WAKE_MISC_TWAM)
-						strcat(buf, " TWAM");
+						spm_sodi_append_log(buf, " TWAM");
 
 					if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE)
-						strcat(buf, " CPU");
+						spm_sodi_append_log(buf, " CPU");
 				}
 				for (i = 1; i < 32; i++) {
 					if (wakesta->r12 & (1U << i)) {
-						strcat(buf, wakesrc_str[i]);
+						spm_sodi_append_log(buf, wakesrc_str[i]);
 						wr = WR_WAKE_SRC;
 					}
 				}
