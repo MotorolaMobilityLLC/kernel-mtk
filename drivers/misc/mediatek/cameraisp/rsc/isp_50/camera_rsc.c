@@ -256,6 +256,8 @@ static void ISP_TaskletFunc_RSC(unsigned long data);
 static struct Tasklet_table RSC_tasklet[RSC_IRQ_TYPE_AMOUNT] = {
 	{ISP_TaskletFunc_RSC, &Rsctkt[RSC_IRQ_TYPE_INT_RSC_ST]},
 };
+static struct work_struct logWork;
+static void logPrint(struct work_struct *data);
 
 struct wake_lock RSC_wake_lock;
 
@@ -3435,6 +3437,7 @@ static signed int RSC_probe(struct platform_device *pDev)
 
 		wake_lock_init(&RSC_wake_lock, WAKE_LOCK_SUSPEND, "rsc_lock_wakelock");
 
+		INIT_WORK(&logWork, logPrint);
 		for (i = 0; i < RSC_IRQ_TYPE_AMOUNT; i++)
 			tasklet_init(RSC_tasklet[i].pRSC_tkt, RSC_tasklet[i].tkt_cb, 0);
 
@@ -4147,8 +4150,11 @@ static irqreturn_t ISP_Irq_RSC(signed int Irq, void *DeviceId)
 	#endif
 
 	if (RscStatus & RSC_INT_ST)
+#if 1
+		schedule_work(&logWork);
+#else
 		tasklet_schedule(RSC_tasklet[RSC_IRQ_TYPE_INT_RSC_ST].pRSC_tkt);
-
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -4160,6 +4166,12 @@ static void ISP_TaskletFunc_RSC(unsigned long data)
 
 }
 
+static void logPrint(struct work_struct *data)
+{
+	unsigned long arg = 0;
+
+	ISP_TaskletFunc_RSC(arg);
+}
 
 /*******************************************************************************
 *
