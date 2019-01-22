@@ -1068,11 +1068,17 @@ int nanohub_reset(struct nanohub_data *data)
 
 int nanohub_suspend(struct iio_dev *iio_dev)
 {
+	struct nanohub_data *data = iio_priv(iio_dev);
+
+	nanohub_mask_interrupt(data, 2);
 	return 0;
 }
 
 int nanohub_resume(struct iio_dev *iio_dev)
 {
+	struct nanohub_data *data = iio_priv(iio_dev);
+
+	nanohub_unmask_interrupt(data, 2);
 	return 0;
 }
 
