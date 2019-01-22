@@ -201,6 +201,9 @@ long dfrc_reg_policy_locked(const struct DFRC_DRV_POLICY *policy)
 	} else if (policy->mode >= DFRC_DRV_MODE_MAXIMUM || policy->mode < DFRC_DRV_MODE_DEFAULT) {
 		DFRC_WRN("reg_policy: policy mode is invalid\n");
 		return -EINVAL;
+	} else if (policy->api >= DFRC_DRV_API_MAXIMUM || policy->api <= DFRC_DRV_API_UNKNOWN) {
+		DFRC_WRN("reg_policy: policy api is invalid\n");
+		return -EINVAL;
 	}
 
 	list_for_each(iter, &g_fps_policy_list) {
@@ -296,6 +299,9 @@ long dfrc_set_policy_locked(const struct DFRC_DRV_POLICY *policy)
 		return -EINVAL;
 	} else if (policy->mode >= DFRC_DRV_MODE_MAXIMUM || policy->mode < DFRC_DRV_MODE_DEFAULT) {
 		DFRC_WRN("set_policy: policy mode is invalid\n");
+		return -EINVAL;
+	} else if (policy->api >= DFRC_DRV_API_MAXIMUM || policy->api <= DFRC_DRV_API_UNKNOWN) {
+		DFRC_WRN("set_policy: policy api is invalid\n");
 		return -EINVAL;
 	}
 
