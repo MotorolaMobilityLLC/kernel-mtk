@@ -22,4 +22,4 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6355)	+= pmic.o pmic_irq.o pmic_common.o \
 		pmic_api.o pmic_lp_api.o \
 		regulator_codegen.o pmic_auxadc.o \
 		pmic_initial_setting.o \
-		pmic_throttling_dlpt.o pmic_debugfs.o
+		pmic_throttling_dlpt.o pmic_debugfs.o pmic_bif.o
