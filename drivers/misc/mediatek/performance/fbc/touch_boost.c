@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#include "perf_ioctl.h"
+#include "../perf_ioctl/perf_ioctl.h"
 #include "perfmgr.h"
 
 #define TAG "TOUCH_BOOST"
@@ -253,7 +253,6 @@ int init_touch_boost(void)
 	return 0;
 
 out_chrdev:
-out_wq:
 	destroy_workqueue(wq);
 	return ret_val;
 }
