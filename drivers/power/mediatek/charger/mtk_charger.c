@@ -748,8 +748,10 @@ void mtk_charger_int_handler(void)
 
 	pr_err("mtk_charger_int_handler ,type:%d\n", mt_get_charger_type());
 
-	if (pinfo == NULL)
+	if (pinfo == NULL || info->init_done == false) {
+		pr_err("charger is not rdy ,skip\n");
 		return;
+	}
 
 	_wake_up_charger(info);
 }
@@ -2113,6 +2115,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	}
 	mutex_unlock(&consumer_mutex);
 	info->chg1_consumer = charger_manager_get_by_name(&pdev->dev, "charger1");
+	info->init_done = true;
+	_wake_up_charger(info);
 
 	return 0;
 }
