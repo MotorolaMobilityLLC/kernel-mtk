@@ -92,6 +92,8 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 	struct IMGSENSOR_HW_DEVICE       *pdev;
 	int                               pin_cnt = 0;
 
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 30);
+
 	while (ppwr_seq->idx != NULL &&
 		ppwr_seq < ppower_sequence + IMGSENSOR_HW_SENSOR_MAX_NUM &&
 		strcmp(ppwr_seq->idx, pcurr_idx)) {
@@ -109,9 +111,11 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 		if (pwr_status == IMGSENSOR_HW_POWER_STATUS_ON) {
 			if (ppwr_info->pin != IMGSENSOR_HW_PIN_UNDEF) {
 				pdev = phw->pdev[psensor_pwr->id[ppwr_info->pin]];
-				PK_DBG
-				    ("sensor_idx %d, ppwr_info->pin %d, ppwr_info->pin_state_on %d",
-				     sensor_idx, ppwr_info->pin, ppwr_info->pin_state_on);
+
+				if (__ratelimit(&ratelimit))
+					PK_DBG
+					("sensor_idx %d, ppwr_info->pin %d, ppwr_info->pin_state_on %d",
+					sensor_idx, ppwr_info->pin, ppwr_info->pin_state_on);
 
 				if (pdev->set != NULL)
 					pdev->set(pdev->pinstance,
@@ -130,9 +134,11 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 		while (pin_cnt) {
 			ppwr_info--;
 			pin_cnt--;
-			PK_DBG
-			    ("sensor_idx %d, ppwr_info->pin %d, ppwr_info->pin_state_off %d",
-			     sensor_idx, ppwr_info->pin, ppwr_info->pin_state_off);
+
+			if (__ratelimit(&ratelimit))
+				PK_DBG
+				("sensor_idx %d, ppwr_info->pin %d, ppwr_info->pin_state_off %d",
+				sensor_idx, ppwr_info->pin, ppwr_info->pin_state_off);
 
 			if (ppwr_info->pin != IMGSENSOR_HW_PIN_UNDEF) {
 				pdev = phw->pdev[psensor_pwr->id[ppwr_info->pin]];
