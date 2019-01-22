@@ -790,6 +790,64 @@ static int hdmi_ite_probe(struct i2c_client *client, const struct i2c_device_id 
 
 }
 
+#define HDMI_MAX_INSERT_CALLBACK   10
+static CABLE_INSERT_CALLBACK hdmi_callback_table[HDMI_MAX_INSERT_CALLBACK];
+void hdmi_register_cable_insert_callback(CABLE_INSERT_CALLBACK cb)
+{
+	int i = 0;
+
+	for (i = 0; i < HDMI_MAX_INSERT_CALLBACK; i++) {
+		if (hdmi_callback_table[i] == cb)
+			break;
+	}
+	if (i < HDMI_MAX_INSERT_CALLBACK)
+		return;
+
+	for (i = 0; i < HDMI_MAX_INSERT_CALLBACK; i++) {
+		if (hdmi_callback_table[i] == NULL)
+		break;
+	}
+	if (i == HDMI_MAX_INSERT_CALLBACK) {
+		IT66121_LOG("not enough mhl callback entries for module\n");
+		return;
+	}
+
+	hdmi_callback_table[i] = cb;
+	IT66121_LOG("callback: %p,i: %d\n", hdmi_callback_table[i], i);
+}
+
+void hdmi_unregister_cable_insert_callback(CABLE_INSERT_CALLBACK cb)
+{
+	int i;
+
+	for (i = 0; i < HDMI_MAX_INSERT_CALLBACK; i++) {
+		if (hdmi_callback_table[i] == cb) {
+			IT66121_LOG("unregister cable insert callback: %p, i: %d\n", hdmi_callback_table[i], i);
+			hdmi_callback_table[i] = NULL;
+			break;
+		}
+	}
+	if (i == HDMI_MAX_INSERT_CALLBACK) {
+		IT66121_LOG("Try to unregister callback function 0x%lx which was not registered\n",
+				(unsigned long int)cb);
+		return;
+	}
+}
+
+void hdmi_invoke_cable_callbacks(enum HDMI_STATE state)
+{
+	int i = 0, j = 0;
+
+	for (i = 0; i < HDMI_MAX_INSERT_CALLBACK; i++) {
+		if (hdmi_callback_table[i])
+			j = i;
+	}
+
+	if (hdmi_callback_table[j]) {
+		IT66121_LOG("callback: %p, state: %d, j: %d\n", hdmi_callback_table[j], state, j);
+		hdmi_callback_table[j](state);
+	}
+}
 
 const struct HDMI_DRIVER *HDMI_GetDriver(void)
 {
@@ -814,6 +872,8 @@ const struct HDMI_DRIVER *HDMI_GetDriver(void)
 		/* .write          = it66121_write, */
 		.get_state = it66121_get_state,
 		.log_enable = it66121_log_enable,
+		.register_callback   = hdmi_register_cable_insert_callback,
+		.unregister_callback = hdmi_unregister_cable_insert_callback,
 	};
 
 	return &HDMI_DRV;
@@ -1113,14 +1173,22 @@ static void __exit mtk_hdmitx_exit(void)
 static int __init ite66121_i2c_board_init(void)
 {
 	int ret = 0;
-
+	unsigned int i2c_port = 0;
+	struct device_node *dn;
 	IT66121_LOG("hdmi %s\n", __func__);
-	ret = i2c_register_board_info(6, &it66121_i2c_hdmi, 1);
-
+	dn = of_find_compatible_node(NULL, NULL, "mediatek,mt8183-hdmitx");
+	if (!dn) {
+		IT66121_LOG("Failed to find HDMI node\n");
+		return -EINVAL;
+		}
+	ret = of_property_read_u32(dn, "mediatek,hdmi_bridgeic_port", &i2c_port);
+	if (ret < 0)
+		i2c_port = 6;
+	ret = i2c_register_board_info(i2c_port, &it66121_i2c_hdmi, 1);
 	if (ret)
-		pr_debug("failed to register ite66121 i2c_board_info, ret=%d\n", ret);
-
+		pr_debug("failed register hdmi i2c,please check port %d\n", i2c_port);
 	return ret;
+
 }
 /*----------------------------------------------------------------------------*/
 core_initcall(ite66121_i2c_board_init);
