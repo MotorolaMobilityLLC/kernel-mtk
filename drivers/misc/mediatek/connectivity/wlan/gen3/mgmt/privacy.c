@@ -885,9 +885,7 @@ VOID secPrivacyFreeSta(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 			if (prWtbl[entry].ucUsed &&
 				(prStaRec->ucIndex == prWtbl[entry].ucStaIndex)) {
 				secPrivacyFreeForEntry(prAdapter, entry);
-#if 1				/* DBG */
-				DBGLOG(RSN, INFO, "Free the STA entry (%u)!\n", entry);
-#endif
+				DBGLOG(RSN, TRACE, "Free the STA entry (%u)!\n", entry);
 			}
 		}
 	}
