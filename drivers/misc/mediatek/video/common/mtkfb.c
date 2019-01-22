@@ -291,9 +291,8 @@ exit:
 int mtkfb_set_backlight_level(unsigned int level)
 {
 	MTKFB_FUNC();
-	pr_debug("mtkfb_set_backlight_level:%d Start\n", level);
 	primary_display_setbacklight(level);
-	pr_debug("mtkfb_set_backlight_level End\n");
+
 	return 0;
 }
 EXPORT_SYMBOL(mtkfb_set_backlight_level);
