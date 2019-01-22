@@ -32,7 +32,8 @@
 #define MTK_PUPD_R1R0_BIT_R1            (1 << 2)
 #define MTK_PUPD_R1R0_BIT_SUPPORT       (1 << 3)
 #define MTK_PUPD_R1R0_GET_PUPD(val)     (val & MTK_PUPD_R1R0_BIT_PUPD)
-#define MTK_PUPD_R1R0_GET_PULLEN(val)   (val & (MTK_PUPD_R1R0_BIT_R0 | MTK_PUPD_R1R0_BIT_R1))
+#define MTK_PUPD_R1R0_GET_PULLEN(val)   ((val & (MTK_PUPD_R1R0_BIT_R0 | MTK_PUPD_R1R0_BIT_R1)) >> 1)
+#define MTK_PUPD_R1R0_GET_SUPPORT(val)  (val & MTK_PUPD_R1R0_BIT_SUPPORT)
 #define MTK_PUPD_BIT_PD                 (1 << 0)
 #define MTK_PUPD_BIT_PU                 (1 << 1)
 
@@ -410,6 +411,8 @@ int mtk_pinctrl_update_gpio_value(struct mtk_pinctrl *pctl, int pin,
 
 int mtk_pinctrl_set_gpio_value(struct mtk_pinctrl *pctl, int pin,
 	bool value, int size, const struct mtk_pin_info pin_info[]);
+
+int mtk_pctrl_get_gpio_chip_base(void);
 
 extern const struct dev_pm_ops mtk_eint_pm_ops;
 
