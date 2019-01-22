@@ -73,6 +73,12 @@ void vmd1_pmic_setting_on(void)
 {
 	unsigned int ret = 0;
 
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+	ret = pmic_buck_vmodem_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_ldo_vsram_md_lp(SRCLKEN0, 1, HW_LP);
+	ret = pmic_buck_vmodem_lp(SRCLKEN2, 1, HW_LP);
+	ret = pmic_ldo_vsram_md_lp(SRCLKEN2, 1, HW_LP);
+#endif
 	if (pmic_get_register_value(PMIC_DA_VMODEM_EN) &&
 			pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_EN) &&
 			pmic_get_register_value(PMIC_RG_LDO_VSRAM_MD_EN) &&
@@ -134,17 +140,15 @@ void vmd1_pmic_setting_on(void)
 		pr_err("vmd1_pmic_setting_on vsram_md vosel = 0x%x, da_vosel = 0x%x",
 			pmic_get_register_value(PMIC_RG_LDO_VSRAM_MD_VOSEL),
 			pmic_get_register_value(PMIC_DA_QI_VSRAM_MD_VOSEL));
-
-#if defined(CONFIG_MACH_MT6759)
-	ret = pmic_buck_vmodem_lp(SRCLKEN0, 1, HW_LP);
-	ret = pmic_ldo_vsram_md_lp(SRCLKEN0, 1, HW_LP);
-	ret = pmic_buck_vmodem_lp(SRCLKEN2, 1, HW_LP);
-	ret = pmic_ldo_vsram_md_lp(SRCLKEN2, 1, HW_LP);
-#endif
 }
 
 void vmd1_pmic_setting_off(void)
 {
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+	pmic_buck_vmodem_lp(SW, 1, SW_OFF);
+	pmic_ldo_vsram_md_lp(SW, 1, SW_OFF);
+#endif
+
 	/* 1.Call PMIC driver API configure VMODEM off */
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 0);
 	/* 2.Call PMIC driver API configure VSRAM_MD off */
