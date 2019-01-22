@@ -513,7 +513,7 @@ static void disable_soidle3_by_mask(int grp, unsigned int mask)
 	spin_unlock_irqrestore(&soidle3_condition_mask_spin_lock, flags);
 }
 
-void enable_soidle3_by_bit(int id)
+static void enable_soidle3_by_bit(int id)
 {
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
@@ -521,9 +521,8 @@ void enable_soidle3_by_bit(int id)
 	WARN_ON(INVALID_GRP_ID(grp));
 	enable_soidle3_by_mask(grp, mask);
 }
-EXPORT_SYMBOL(enable_soidle3_by_bit);
 
-void disable_soidle3_by_bit(int id)
+static void disable_soidle3_by_bit(int id)
 {
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
@@ -531,7 +530,6 @@ void disable_soidle3_by_bit(int id)
 	WARN_ON(INVALID_GRP_ID(grp));
 	disable_soidle3_by_mask(grp, mask);
 }
-EXPORT_SYMBOL(disable_soidle3_by_bit);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static bool mtk_idle_cpu_criteria(void)
@@ -646,7 +644,7 @@ static void disable_soidle_by_mask(int grp, unsigned int mask)
 	spin_unlock_irqrestore(&soidle_condition_mask_spin_lock, flags);
 }
 
-void enable_soidle_by_bit(int id)
+static void enable_soidle_by_bit(int id)
 {
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
@@ -656,9 +654,8 @@ void enable_soidle_by_bit(int id)
 	/* enable the settings for SODI3 at the same time */
 	enable_soidle3_by_mask(grp, mask);
 }
-EXPORT_SYMBOL(enable_soidle_by_bit);
 
-void disable_soidle_by_bit(int id)
+static void disable_soidle_by_bit(int id)
 {
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
@@ -668,7 +665,6 @@ void disable_soidle_by_bit(int id)
 	/* disable the settings for SODI3 at the same time */
 	disable_soidle3_by_mask(grp, mask);
 }
-EXPORT_SYMBOL(disable_soidle_by_bit);
 
 static bool soidle_can_enter(int cpu, int reason)
 {
@@ -796,7 +792,7 @@ static void disable_dpidle_by_mask(int grp, unsigned int mask)
 	spin_unlock_irqrestore(&dpidle_condition_mask_spin_lock, flags);
 }
 
-void enable_dpidle_by_bit(int id)
+static void enable_dpidle_by_bit(int id)
 {
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
@@ -804,9 +800,8 @@ void enable_dpidle_by_bit(int id)
 	WARN_ON(INVALID_GRP_ID(grp));
 	enable_dpidle_by_mask(grp, mask);
 }
-EXPORT_SYMBOL(enable_dpidle_by_bit);
 
-void disable_dpidle_by_bit(int id)
+static void disable_dpidle_by_bit(int id)
 {
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
@@ -814,7 +809,6 @@ void disable_dpidle_by_bit(int id)
 	WARN_ON(INVALID_GRP_ID(grp));
 	disable_dpidle_by_mask(grp, mask);
 }
-EXPORT_SYMBOL(disable_dpidle_by_bit);
 
 static bool dpidle_can_enter(int cpu, int reason)
 {
