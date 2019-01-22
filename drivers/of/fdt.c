@@ -28,6 +28,7 @@
 
 #include <asm/setup.h>  /* for COMMAND_LINE_SIZE */
 #include <asm/page.h>
+#include <mt-plat/mtk_memcfg.h>
 
 /*
  * of_fdt_limit_memory - limit the number of regions in the /memory node
@@ -495,10 +496,20 @@ static int __init __reserved_mem_reserve_reg(unsigned long node,
 		size = dt_mem_next_cell(dt_root_size_cells, &prop);
 
 		if (size &&
-		    early_init_dt_reserve_memory_arch(base, size, nomap) == 0)
+		    early_init_dt_reserve_memory_arch(base, size, nomap) == 0) {
 			pr_debug("Reserved memory: reserved region for node '%s': base %pa, size %ld MiB\n",
 				uname, &base, (unsigned long)size / SZ_1M);
-		else
+			if (nomap) {
+				mtk_memcfg_write_memory_layout_info(MTK_MEMCFG_MEMBLOCK_PHY,
+						uname, base, size);
+				MTK_MEMCFG_LOG_AND_PRINTK(
+					"[PHY layout]%s   :   0x%08llx - 0x%08llx (0x%llx)\n",
+					uname,
+					(unsigned long long)base,
+					(unsigned long long)base + size - 1,
+					(unsigned long long)size);
+			}
+		} else
 			pr_info("Reserved memory: failed to reserve memory for node '%s': base %pa, size %ld MiB\n",
 				uname, &base, (unsigned long)size / SZ_1M);
 

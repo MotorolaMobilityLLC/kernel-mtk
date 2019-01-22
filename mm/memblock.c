@@ -59,6 +59,22 @@ static int memblock_can_resize __initdata_memblock;
 static int memblock_memory_in_slab __initdata_memblock = 0;
 static int memblock_reserved_in_slab __initdata_memblock = 0;
 
+struct memblock_record memblock_record[100];
+struct memblock_stack_trace memblock_stack_trace[100];
+int memblock_count;
+
+inline void init_memblock_stack_trace(struct memblock_stack_trace *trace,
+		unsigned long size, int skip)
+{
+	memset(trace->addrs, 0, MAX_MEMBLOCK_TRACK_DEPTH);
+	trace->size = size;
+	trace->trace.nr_entries = 0;
+	trace->trace.max_entries = MAX_MEMBLOCK_TRACK_DEPTH;
+	trace->trace.skip = skip;
+	trace->trace.entries = trace->addrs;
+	trace->merge = 0;
+}
+
 ulong __init_memblock choose_memblock_flags(void)
 {
 	return system_has_some_mirror ? MEMBLOCK_MIRROR : MEMBLOCK_NONE;
