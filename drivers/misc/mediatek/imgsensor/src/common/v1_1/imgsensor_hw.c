@@ -63,6 +63,8 @@ enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw)
 		}
 	}
 
+	mutex_init(&phw->common.pinctrl_mutex);
+
 	return IMGSENSOR_RETURN_SUCCESS;
 }
 
@@ -128,6 +130,9 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 		while (pin_cnt) {
 			ppwr_info--;
 			pin_cnt--;
+			PK_DBG
+			    ("sensor_idx %d, ppwr_info->pin %d, ppwr_info->pin_state_off %d",
+			     sensor_idx, ppwr_info->pin, ppwr_info->pin_state_off);
 
 			if (ppwr_info->pin != IMGSENSOR_HW_PIN_UNDEF) {
 				pdev = phw->pdev[psensor_pwr->id[ppwr_info->pin]];

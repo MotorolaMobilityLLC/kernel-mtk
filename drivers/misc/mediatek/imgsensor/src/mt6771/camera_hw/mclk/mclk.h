@@ -16,7 +16,7 @@
 
 #include <linux/of.h>
 #include <linux/of_fdt.h>
-
+#include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/pinctrl/pinctrl.h>
 
@@ -37,6 +37,7 @@ struct MCLK_PINCTRL_NAMES {
 struct mclk {
 	struct pinctrl       *ppinctrl;
 	struct pinctrl_state *ppinctrl_state[IMGSENSOR_SENSOR_IDX_MAX_NUM][MCLK_STATE_MAX_NUM];
+	struct mutex         *pmclk_mutex;
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_mclk_open(struct IMGSENSOR_HW_DEVICE **pdevice);

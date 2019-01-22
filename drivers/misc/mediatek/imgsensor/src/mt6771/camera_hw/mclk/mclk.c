@@ -30,6 +30,8 @@ static enum IMGSENSOR_RETURN mclk_init(
 	enum   IMGSENSOR_RETURN ret           = IMGSENSOR_RETURN_SUCCESS;
 	int i;
 
+	pinst->pmclk_mutex = &pcommon->pinctrl_mutex;
+
 	pinst->ppinctrl = devm_pinctrl_get(&pcommon->pplatform_device->dev);
 	if (IS_ERR(pinst->ppinctrl)) {
 		PK_PR_ERR("%s : Cannot find camera pinctrl!\n", __func__);
@@ -51,7 +53,6 @@ static enum IMGSENSOR_RETURN mclk_init(
 
 			ret = IMGSENSOR_RETURN_ERROR;
 		}
-
 
 		if (mclk_pinctrl_list[i][MCLK_STATE_ENABLE].ppinctrl_names)
 			pinst->ppinctrl_state[i][MCLK_STATE_ENABLE] =
@@ -104,11 +105,16 @@ static enum IMGSENSOR_RETURN mclk_set(
 		pin_state = (pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_0) ? MCLK_STATE_ENABLE : MCLK_STATE_DISABLE;
 
 		ppinctrl_state = pinst->ppinctrl_state[sensor_idx][pin_state];
+
+		mutex_lock(pinst->pmclk_mutex);
+
 		if (!IS_ERR(ppinctrl_state))
 			pinctrl_select_state(pinst->ppinctrl, ppinctrl_state);
 		else
 			PK_PR_ERR("%s : sensor_idx %d mclk_set pinctrl, PinIdx %d, Val %d\n",
 			__func__, sensor_idx, pin, pin_state);
+
+		mutex_unlock(pinst->pmclk_mutex);
 	}
 	return ret;
 }
