@@ -396,6 +396,13 @@ struct ufs_init_prefetch {
 		 UFSHCD_DBG_PRINT_HOST_STATE_EN |	   \
 		 UFSHCD_DBG_PRINT_ABORT_CMD_EN)
 
+enum ufs_crypto_state {
+	UFS_CRYPTO_HW_FDE             = (1 << 0),
+	UFS_CRYPTO_HW_FDE_ENCRYPTED   = (1 << 1),
+	UFS_CRYPTO_HW_FBE             = (1 << 2),
+	UFS_CRYPTO_HW_FBE_ENCRYPTED   = (1 << 3),
+};
+
 /**
  * struct ufs_hba - per adapter private structure
  * @mmio_base: UFSHCI base register address
@@ -643,8 +650,10 @@ struct ufs_hba {
 	struct device_attribute rpm_info_attr;
 	struct device_attribute spm_info_attr;
 
-	/* hwfde key index */
-	int hwfde_key_idx;
+	/* crypto */
+	/* hw-fde key index */
+	int crypto_hwfde_key_idx;
+	u32 crypto_feature;
 
 	int req_r_cnt;
 	int req_w_cnt;

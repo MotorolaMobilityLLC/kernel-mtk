@@ -214,7 +214,7 @@ void ufs_mtk_hwfde_cfg_cmd(struct ufs_hba *hba,
 	if (cmd->request->bio && cmd->request->bio->bi_hw_fde) {
 
 		/* in case hw fde is enabled and key index is updated by dm-crypt */
-		if (cmd->request->bio->bi_key_idx != hba->hwfde_key_idx) {
+		if (cmd->request->bio->bi_key_idx != hba->crypto_hwfde_key_idx) {
 
 			/* acquire host lock to ensure atomicity during key change in atf */
 			spin_lock_irqsave(hba->host->host_lock, flags);
@@ -222,13 +222,13 @@ void ufs_mtk_hwfde_cfg_cmd(struct ufs_hba *hba,
 			/* do key change */
 			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 3), 0, 0);
 
-			hwfde_key_idx_old = hba->hwfde_key_idx;
-			hba->hwfde_key_idx = cmd->request->bio->bi_key_idx;
+			hwfde_key_idx_old = hba->crypto_hwfde_key_idx;
+			hba->crypto_hwfde_key_idx = cmd->request->bio->bi_key_idx;
 
 			spin_unlock_irqrestore(hba->host->host_lock, flags);
 
 			dev_info(hba->dev, "update hw-fde key, ver %d->%d\n", hwfde_key_idx_old,
-				hba->hwfde_key_idx);
+				hba->crypto_hwfde_key_idx);
 		}
 
 		lba = ((cmd->cmnd[2]) << 24) | ((cmd->cmnd[3]) << 16) |
@@ -240,6 +240,9 @@ void ufs_mtk_hwfde_cfg_cmd(struct ufs_hba *hba,
 		lrbp->crypto_dunl = dunl;
 		lrbp->crypto_dunu = dunu;
 		lrbp->crypto_en = 1;
+
+		/* mark data has ever gone through encryption/decryption path */
+		hba->crypto_feature |= UFS_CRYPTO_HW_FDE_ENCRYPTED;
 
 	} else {
 		/* disable inline encryption */
@@ -373,7 +376,7 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_host_scramble_enable = 0;
 	ufs_mtk_tr_cn_used = 0;
 	ufs_mtk_hba = hba;
-	hba->hwfde_key_idx = -1;
+	hba->crypto_hwfde_key_idx = -1;
 
 	ufs_mtk_pltfrm_init();
 
@@ -2002,8 +2005,26 @@ void ufs_mtk_dbg_hang_detect_dump(void)
 	ufs_mtk_dbg_dump_trace(ufs_mtk_hba->nutrs + ufs_mtk_hba->nutrs / 2, NULL);
 }
 
+static void ufs_mtk_dbg_dump_feature(struct ufs_hba *hba, struct seq_file *m)
+{
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "-- Crypto Features ----\n");
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "Features          = 0x%x\n",
+		hba->crypto_feature);
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, " HW-FDE           = 0x%x\n",
+		UFS_CRYPTO_HW_FDE);
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, " HW-FDE Encrypted = 0x%x\n",
+		UFS_CRYPTO_HW_FDE_ENCRYPTED);
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, " HW-FBE           = 0x%x\n",
+		UFS_CRYPTO_HW_FBE);
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, " HW-FBE Encrypted = 0x%x\n",
+		UFS_CRYPTO_HW_FBE_ENCRYPTED);
+	UFS_DEVINFO_PROC_MSG(m, hba->dev, "-----------------------\n");
+}
+
 void ufs_mtk_dbg_proc_dump(struct seq_file *m)
 {
+	ufs_mtk_dbg_dump_feature(ufs_mtk_hba, m);
+
 	/*
 	 * do not touch host to get unipro or mphy information via
 	 * dme commands during exception handling since interrupt
@@ -2108,6 +2129,9 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode, const char *key, int len, 
 	lrbp->crypto_dunl = dunl;
 	lrbp->crypto_dunu = dunu;
 
+	/* mark data has ever gone through encryption/decryption path */
+	info->hba->crypto_feature |= UFS_CRYPTO_HW_FBE_ENCRYPTED;
+
 	return 0;
 }
 
@@ -2134,14 +2158,19 @@ struct hie_dev *ufs_mtk_hie_get_dev(void)
 static int ufs_mtk_probe(struct platform_device *pdev)
 {
 	int err;
+	struct ufs_hba *hba;
 	struct device *dev = &pdev->dev;
 
 	ufs_mtk_biolog_init();
 
 	/* perform generic probe */
 	err = ufshcd_pltfrm_init(pdev, &ufs_hba_mtk_vops);
-	if (err)
+	if (err) {
 		dev_err(dev, "ufshcd_pltfrm_init() failed %d\n", err);
+		goto out;
+	}
+
+	hba = platform_get_drvdata(pdev);
 
 #ifdef CONFIG_HIE
 
@@ -2155,8 +2184,17 @@ static int ufs_mtk_probe(struct platform_device *pdev)
 	 */
 	hie_kh_register(&ufs_hie_dev, 512, 16);
 
+	hba->crypto_feature |= UFS_CRYPTO_HW_FBE;
+
 #endif
 
+#if defined(CONFIG_MTK_HW_FDE)
+
+	hba->crypto_feature |= UFS_CRYPTO_HW_FDE;
+
+#endif
+
+out:
 	return err;
 }
 
