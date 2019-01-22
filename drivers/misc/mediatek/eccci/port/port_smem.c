@@ -138,6 +138,9 @@ int port_smem_rx_wakeup(struct port_t *port)
 	unsigned long flags;
 	int md_id = port->md_id;
 
+	if (smem_port == NULL)
+		return -EFAULT;
+
 	if (smem_port->type != TYPE_CCB)
 		return -EFAULT;
 	spin_lock_irqsave(&smem_port->write_lock, flags);
