@@ -102,7 +102,6 @@ static void __mt_gpufreq_vsram_gpu_volt_switch(enum g_volt_switch_enum switch_wa
 static void __mt_gpufreq_vgpu_volt_switch(enum g_volt_switch_enum switch_way, unsigned int sfchg_rate,
 		unsigned int volt_old, unsigned int volt_new);
 
-
 /**
  * ===============================================
  * SECTION : Local variables definition
@@ -181,6 +180,9 @@ static struct platform_driver g_gpufreq_pdrv = {
 		.of_match_table = g_gpufreq_of_match,
 	},
 };
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include "mtk_gpufreq.h"
 
 static bool g_parking;
 static bool g_DVFS_is_paused_by_ptpod;
@@ -241,6 +243,10 @@ static unsigned int g_limited_idx_array[NUMBER_OF_LIMITED_IDX] = { 0 };
 static bool g_limited_ignore_array[NUMBER_OF_LIMITED_IDX] = { false };
 static void __iomem *g_apmixed_base;
 static void __iomem *g_efuse_base;
+static void *g_MFG_base;
+static void *g_INFRA_AO_base;
+static void *g_SPM_base;
+static void *g_INFRA_base;
 phys_addr_t gpu_fdvfs_virt_addr; /* for GED, legacy ?! */
 
 /**
@@ -346,6 +352,15 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 	mutex_unlock(&mt_gpufreq_lock);
 
 	return 0;
+}
+
+/*
+ * dump freq and volt information for debugging
+ */
+void mt_gpufreq_dump_status(void)
+{
+	gpufreq_pr_info("@%s: freq: %d, volt: %d, vsram_volt: %d\n", __func__,
+			mt_get_ckgen_freq(9), __mt_gpufreq_get_cur_volt(), __mt_gpufreq_get_cur_vsram_volt());
 }
 
 /*
@@ -894,6 +909,131 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 	gpufreq_pr_debug("@%s: limited power index = %d, limited_power = %d\n", __func__, i, limited_power);
 
 	mutex_unlock(&mt_gpufreq_power_lock);
+}
+
+void mt_gpufreq_dump_reg(void)
+{
+	if (g_MFG_base == NULL || g_INFRA_AO_base == NULL || g_SPM_base == NULL || g_INFRA_base == NULL) {
+		gpufreq_pr_info("@%s: fail to I/O remap n", __func__);
+		return;
+	}
+
+	/* gpu ip <-> merge */
+	gpufreq_pr_info("@%s: gpu ip <-> merge ...\n", __func__);
+	writel(0x10, g_MFG_base + 0x180); /* write 0x13000180 = 0x10, [7:4]=0x1, [3:0]=0x0 */
+	writel(0xff, g_MFG_base + 0x184); /* write 0x13000184 = 0xff, [1]=0x1 */
+	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
+	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
+	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
+	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
+	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+
+	/* merge <-> axi1to2 */
+	gpufreq_pr_info("@%s: merge <-> axi1to2 ...\n", __func__);
+	writel(0x11, g_MFG_base + 0x180); /* write 0x13000180 = 0x11, [7:4]=0x1, [3:0]=0x1 */
+	writel(0xff, g_MFG_base + 0x184); /* write 0x13000184 = 0xff, [1]=0x1 */
+	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
+	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
+	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
+	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
+	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+
+	/* axi1to2 <-> memif0_freq_bridge */
+	gpufreq_pr_info("@%s: axi1to2 <-> memif0_freq_bridge ...\n", __func__);
+	writel(0x12, g_MFG_base + 0x180); /* write 0x13000180 = 0x12, [7:4]=0x1, [3:0]=0x2 */
+	writel(0xff, g_MFG_base + 0x184); /* write 0x13000184 = 0xff, [1]=0x1 */
+	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
+	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
+	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
+	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
+	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+
+	/* axi1to2 <-> memif1_freq_bridge */
+	gpufreq_pr_info("@%s: axi1to2 <-> memif1_freq_bridge ...\n", __func__);
+	writel(0x13, g_MFG_base + 0x180); /* write 0x13000180 = 0x13, [7:4]=0x1, [3:0]=0x3 */
+	writel(0xff, g_MFG_base + 0x184); /* write 0x13000184 = 0xff, [1]=0x1 */
+	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
+	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
+	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
+	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
+	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+
+	/* memif0_freq_bridge <-> memif0 gals tx */
+	pr_info("[GPU/MALI] memif0_freq_bridge <-> memif0 gals tx\n");
+	gpufreq_pr_info("@%s: memif0_freq_bridge <-> memif0 gals tx ...\n", __func__);
+	writel(0x100000, g_MFG_base + 0x180); /* write 0x13000180 = 0x100000, [23:20]=0x1, [19:16]=0x0 */
+	writel(0xff00, g_MFG_base + 0x184); /* write 0x13000184 = 0xff00 */
+	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
+	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
+	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
+	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
+	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+
+	/* memif1_freq_bridge <-> memif1 gals tx */
+	gpufreq_pr_info("@%s: memif1_freq_bridge <-> memif1 gals tx ...\n", __func__);
+	writel(0x110000, g_MFG_base + 0x180); /* write 0x13000180 = 0x110000, [23:20]=0x1, [19:16]=0x1 */
+	writel(0xff00, g_MFG_base + 0x184); /* write 0x13000184 = 0xff00 */
+	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
+	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
+	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
+	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
+	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+
+	/* mfg memif0 gals tx */
+	gpufreq_pr_info("@%s: mfg memif0 gals tx ...\n", __func__);
+	writel(0x80000, g_MFG_base + 0x180); /* write 0x13000180 = 0x80000, [19:16]=0x8 */
+	writel(0x0, g_MFG_base + 0x184);
+	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
+	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
+	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
+	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
+	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+
+	/* mfg memif1 gals tx */
+	gpufreq_pr_info("@%s: mfg memif1 gals tx ...\n", __func__);
+	writel(0x90000, g_MFG_base + 0x180); /* write 0x13000180 = 0x90000, [19:16]=0x9 */
+	writel(0x0, g_MFG_base + 0x184);
+	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
+	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
+	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
+	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
+	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+
+	/* idle */
+	gpufreq_pr_info("@%s: idle ...\n", __func__);
+	writel(0x1, g_MFG_base + 0xb4); /* write 0x130000b4 = 0x1 */
+	/* SUBSYS_IDLE_STA */
+	gpufreq_pr_info("@%s: 0x10006170 val = 0x%x\n", __func__, readl(g_SPM_base + 0x170));
+	/* INFRA_BUS_IDLE_STA5 */
+	gpufreq_pr_info("@%s: 0x1020E190 val = 0x%x\n", __func__, readl(g_INFRA_base + 0x190));
+
+	/* bus protect related */
+	gpufreq_pr_info("@%s: bus protect related ...\n", __func__);
+	/* INFRA_TOPAXI_PROTECTEN */
+	gpufreq_pr_info("@%s: 0x10001220 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x220));
+	/* INFRA_TOPAXI_PROTECTEN_STA1 */
+	gpufreq_pr_info("@%s: 0x10001228 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x228));
+	/* INFRA_TOPAXI_PROTECTEN_1 */
+	gpufreq_pr_info("@%s: 0x10001250 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x250));
+	/* INFRA_TOPAXI_PROTECTEN_STA1_1 */
+	gpufreq_pr_info("@%s: 0x10001258 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x258));
+	/* INFRA_TOPAXI_PROTECTSTA0_1 */
+	gpufreq_pr_info("@%s: 0x10001254 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0x254));
+
+	/* infra port0/1 w/b/r cnt empty */
+	gpufreq_pr_info("@%s: infra port0/1 w/b/r cnt empty ...\n", __func__);
+	gpufreq_pr_info("@%s: 0x10001d54 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0xd54));
+
+	/* infra port0/1 idle and Infra – EMI interface valid/ready */
+	gpufreq_pr_info("@%s: infra port0/1 idle and Infra ...\n", __func__);
+	gpufreq_pr_info("@%s: 0x10001d3c val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0xd3c));
+	gpufreq_pr_info("@%s: 0x10001d44 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0xd44));
+
+	/* Infra bus timeout */
+	gpufreq_pr_info("@%s: Infra bus timeout ...\n", __func__);
+	gpufreq_pr_info("@%s: 0x10001d04 val = 0x%x\n", __func__, readl(g_INFRA_AO_base + 0xd04));
+
+	mt_gpufreq_dump_status();
 }
 
 /*
@@ -2148,7 +2288,22 @@ static void __mt_gpufreq_setup_opp_power_table(int num)
 }
 
 /*
- *Set default OPP index at driver probe function
+ * I/O remap
+ */
+static void *__mt_gpufreq_of_ioremap(const char *node_name, int idx)
+{
+	struct device_node *node;
+
+	node = of_find_compatible_node(NULL, NULL, node_name);
+
+	if (node)
+		return of_iomap(node, idx);
+
+	return NULL;
+}
+
+/*
+ * Set default OPP index at driver probe function
  */
 static void __mt_gpufreq_set_initial(void)
 {
@@ -2189,8 +2344,6 @@ static void __mt_gpufreq_set_initial(void)
  */
 static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 {
-	struct device_node *apmixed_node;
-	struct device_node *efuse_node;
 	struct device_node *node;
 	int i;
 
@@ -2282,8 +2435,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	/* 800MHz Version : 4'b0101 (Segment2) */
 	/* 750MHz Version : 4'b0110 */
 	/* 700MHz Version : 4'b0111 (Segment3) */
-	efuse_node = of_find_compatible_node(NULL, NULL, "mediatek,efusec");
-	g_efuse_base = of_iomap(efuse_node, 0);
+	g_efuse_base = __mt_gpufreq_of_ioremap("mediatek,efusec", 0);
 	if (!g_efuse_base) {
 		gpufreq_pr_err("@%s: EFUSEC iomap failed", __func__);
 		return -ENOENT;
@@ -2367,8 +2519,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	g_volt_enable_state = true;
 
 	/* init APMIXED base address */
-	apmixed_node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
-	g_apmixed_base = of_iomap(apmixed_node, 0);
+	g_apmixed_base = __mt_gpufreq_of_ioremap("mediatek,apmixed", 0);
 	if (!g_apmixed_base) {
 		gpufreq_pr_err("@%s: APMIXED iomap failed", __func__);
 		return -ENOENT;
@@ -2426,6 +2577,31 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	mt_gpu_bw_init();
 #endif
+
+	g_MFG_base = __mt_gpufreq_of_ioremap("mediatek,mfgcfg", 0);
+	if (!g_MFG_base) {
+		gpufreq_pr_info("@%s: MGF iomap failed", __func__);
+		return -ENOENT;
+	}
+
+	g_INFRA_AO_base = __mt_gpufreq_of_ioremap("mediatek,mfgcfg", 1);
+	if (!g_INFRA_AO_base) {
+		gpufreq_pr_info("@%s: INFRA_AO iomap failed", __func__);
+		return -ENOENT;
+	}
+
+
+	g_SPM_base = __mt_gpufreq_of_ioremap("mediatek,mfgcfg", 2);
+	if (!g_SPM_base) {
+		gpufreq_pr_info("@%s: SPM iomap failed", __func__);
+		return -ENOENT;
+	}
+
+	g_INFRA_base = __mt_gpufreq_of_ioremap("mediatek,mfgcfg", 3);
+	if (!g_INFRA_base) {
+		gpufreq_pr_info("@%s: INFRA iomap failed", __func__);
+		return -ENOENT;
+	}
 
 	return 0;
 }

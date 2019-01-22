@@ -25,3 +25,7 @@ ccflags-y += -DCONFIG_PROC_FS
 ccflags-y += -DENABLE_MTK_MEMINFO
 ccflags-$(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT) += -DENABLE_COMMON_DVFS
 
+ifneq (, $(findstring $(CONFIG_MTK_PLATFORM), "mt6771"))
+ccflags-y += -DENABLE_MTK_DEBUG
+$(info *GPU defined ENABLE_MTK_DEBUG)
+endif
