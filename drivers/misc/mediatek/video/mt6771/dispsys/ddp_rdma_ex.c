@@ -291,6 +291,8 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	long long temp;
 	long long temp_for_div;
 
+	return;
+
 	if (!p_golden_setting) {
 		DDPPR_ERR("golden setting is null, %s,%d\n", __FILE__, __LINE__);
 		ASSERT(0);
