@@ -112,7 +112,7 @@ char * const dcs_status_name(enum dcs_status status)
 #include "sspm_ipi.h"
 static unsigned int dcs_recv_data[4];
 
-static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
+static int dcs_get_status_ipi(enum dcs_status *dcs_status)
 {
 	int ipi_data_ret = 0, err;
 	unsigned int ipi_buf[6];
@@ -127,7 +127,10 @@ static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
 		return -EBUSY;
 	}
 
-	*sys_dcs_status = (ipi_data_ret) ? DCS_LOWPOWER : DCS_NORMAL;
+	if (ipi_data_ret == -1)
+		return -EBUSY;
+
+	*dcs_status = (ipi_data_ret) ? DCS_LOWPOWER : DCS_NORMAL;
 
 	return 0;
 }
@@ -252,6 +255,7 @@ static int dcs_force_acc_low_ipi(int enable)
 static int __dcs_dram_channel_switch(enum dcs_status status)
 {
 	int err;
+	int retry = 100;
 #ifdef DCS_PROFILE
 	unsigned long long start, t, now;
 #endif
@@ -266,6 +270,25 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 		start = sched_clock();
 #endif
 		err = dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
+		if (err) {
+			pr_err("[%d]ipi_write error: %d\n",
+					__LINE__, err);
+			sys_dcs_status = DCS_BUSY;
+			BUG(); /* fatal error */
+			return -EBUSY;
+		}
+		/* poll status */
+		msleep(700);
+		while (retry > 0) {
+			err = dcs_get_status_ipi(&sys_dcs_status);
+			if (!err)
+				break;
+			pr_warn("dcs get status (%d)\n", retry);
+			msleep(100);
+			retry--;
+		}
+		if (retry == 0)
+			BUG();
 #ifdef DCS_PROFILE
 		now = sched_clock();
 		t = now - start;
@@ -279,14 +302,10 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 		} else
 			perf.latest_async_time = 0;
 #endif
-		if (err) {
-			pr_err("[%d]ipi_write error: %d\n",
-					__LINE__, err);
-			sys_dcs_status = DCS_BUSY;
-			BUG(); /* fatal error */
-			return -EBUSY;
-		}
-		sys_dcs_status = status;
+		if (sys_dcs_status != status)
+			pr_warn("status not changed. (%s should be %s\n",
+					dcs_status_name(sys_dcs_status),
+					dcs_status_name(status));
 		pr_info("sys_dcs_status=%s\n", dcs_status_name(sys_dcs_status));
 		nr_swap++;
 
