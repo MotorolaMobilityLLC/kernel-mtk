@@ -520,7 +520,7 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0100, 0x00);	/* Software Standy */
 	write_cmos_sensor(0x0103, 0x01);	/* Software Reset */
 
-	mDELAY(5);
+	mdelay(5);
 
 	write_cmos_sensor(0x3001, 0x00);	/* D[7:0] set to input */
 	write_cmos_sensor(0x3002, 0x00);	/* D[11:8] set to input */
@@ -720,7 +720,7 @@ static void preview_setting(void)
        ********************************************************/
 
 	/* write_cmos_sensor(0x0100, 0x00); // Stream Off */
-	mDELAY(10);
+	mdelay(10);
 
 	write_cmos_sensor(0x3500, 0x00);	/* exposure [19:16] */
 	write_cmos_sensor(0x3501, 0x3d);	/* exposure */
@@ -1037,7 +1037,7 @@ static void video_720p_setting(void)
 
 	write_cmos_sensor(0x0100, 0x00);	/* Stream Off */
 
-	mDELAY(10);
+	mdelay(10);
 	write_cmos_sensor(0x3500, 0x00);	/* exposure [19:16] */
 	write_cmos_sensor(0x3501, 0x2d);	/* exposure */
 	write_cmos_sensor(0x3502, 0xc0);	/* exposure */
