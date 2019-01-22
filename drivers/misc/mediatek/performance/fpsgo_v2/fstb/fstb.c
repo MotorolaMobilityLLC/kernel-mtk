@@ -800,6 +800,7 @@ static int calculate_fps_limit(struct FSTB_FRAME_INFO *iter, int target_fps)
 		mtk_fstb_dprintk_always("%s strncpy null\n", __func__);
 		goto out;
 	}
+	proc_name[15] = '\0';
 	put_task_struct(gtsk);
 
 	for (i = 0; i < nr_render_target_fps; i++) {
@@ -1306,6 +1307,7 @@ static ssize_t fstb_fps_list_write(struct file *file, const char __user *buffer,
 			ret = -EINVAL;
 			goto err;
 		}
+		render_target[nr_render_target_fps].process_name[15] = '\0';
 		substr = strsep(&sepstr, " ");
 		if (kstrtoint(substr, 10, &(render_target[nr_render_target_fps].nr_level)) != 0 ||
 				render_target[nr_render_target_fps].nr_level > 3) {
@@ -1332,6 +1334,7 @@ static ssize_t fstb_fps_list_write(struct file *file, const char __user *buffer,
 		mtk_fstb_dprintk_always("%s nr_render_target_fps %d\n", __func__, nr_render_target_fps);
 
 err:
+	kfree(buf);
 	mutex_unlock(&fstb_lock);
 	return ret;
 }
