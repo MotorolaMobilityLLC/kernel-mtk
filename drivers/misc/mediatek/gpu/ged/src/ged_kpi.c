@@ -1313,9 +1313,15 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					g_force_gpu_dvfs_fallback = 0;
 				else
 					g_force_gpu_dvfs_fallback = 1;
-
-				gpu_freq_pre = ged_kpi_gpu_dvfs(time_spent, psKPI->t_gpu_target
+				if (gx_game_mode)
+					gpu_freq_pre = ged_kpi_gpu_dvfs(
+						time_spent, psKPI->t_gpu_target
 						, g_force_gpu_dvfs_fallback);
+				else /* set 60 FPS as target */
+					gpu_freq_pre = ged_kpi_gpu_dvfs(
+						time_spent, 16666666
+						, g_force_gpu_dvfs_fallback);
+
 				last_3D_done = cur_3D_done;
 
 				if (gx_game_mode)
