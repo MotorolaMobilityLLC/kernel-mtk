@@ -51,7 +51,7 @@ int __attribute__((weak)) check_scp_resource(void)
 
 #define SPM_WAKE_PERIOD         600	/* sec */
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 /* CPU_PWR_STATUS */
 /* CPU_PWR_STATUS_2ND */
 #define MP0_CPU0                (1U <<  9)
@@ -165,7 +165,7 @@ const char *twam_event_str[32] = {
 	[31] = "CONN_DDR_EN",
 };
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define SPM_CPU_PWR_STATUS		PWR_STATUS
 #define SPM_CPU_PWR_STATUS_2ND	PWR_STATUS_2ND
 
@@ -226,7 +226,7 @@ u32 is_scp_request_freq(void)
 /**************************************
  * Function and API
  **************************************/
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	u32 con1;
@@ -666,20 +666,7 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 #endif
 #endif
 
-#if defined(CONFIG_ARCH_MT6755)
-	spm_write(SPM_SRC_REQ, (!!pwrctrl->cpu_md_dvfs_sop_force_on << 16) |
-			(!!pwrctrl->spm_flag_run_common_scenario << 10) |
-			(!!pwrctrl->spm_flag_dis_vproc_vsram_dvs << 9) |
-			(!!pwrctrl->spm_flag_keep_csyspwrupack_high << 8) |
-			(!!pwrctrl->spm_ddren_req << 7) |
-			(!!pwrctrl->spm_dvfs_force_down << 6) |
-			(!!pwrctrl->spm_dvfs_req << 5) |
-			(!!pwrctrl->spm_vrf18_req << 4) |
-			(!!pwrctrl->spm_infra_req << 3) |
-			(!!pwrctrl->spm_lte_req << 2) |
-			(!!pwrctrl->spm_f26m_req << 1) |
-			(!!pwrctrl->spm_apsrc_req << 0));
-#elif defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	{
 		u8 spm_vrf18_req = pwrctrl->spm_vrf18_req;
 		u8 spm_infra_req = pwrctrl->spm_infra_req;
@@ -1361,7 +1348,6 @@ void __spm_restore_pmic_ck_pdn(void)
 
 void __spm_bsi_top_init_setting(void)
 {
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* needs to check type of clk buf if MT6757 */
 	if (!is_clk_buf_from_pmic()) {
@@ -1375,7 +1361,6 @@ void __spm_bsi_top_init_setting(void)
 		spm_write(spm_bsi1cfg + 0x2030, 0x1);
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	}
-#endif
 #endif
 }
 

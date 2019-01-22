@@ -18,13 +18,7 @@
 #ifndef __MT_SPM_REG__H__
 #define __MT_SPM_REG__H__
 
-#if defined(CONFIG_ARCH_MT6755)
-
-#include "mt_spm_reg_mt6755.h"
-
-#define WAKE_SRC_CONN2AP R12_CONN2AP_SPM_WAKEUP_B
-
-#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #include "mtk_spm_reg_mt6757.h"
 

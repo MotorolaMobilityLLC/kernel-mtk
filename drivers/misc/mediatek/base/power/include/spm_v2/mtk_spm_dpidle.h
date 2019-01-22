@@ -14,11 +14,7 @@
 #ifndef __MTK_SPM_DPIDLE__H__
 #define __MTK_SPM_DPIDLE__H__
 
-#if defined(CONFIG_ARCH_MT6755)
-
-#include "mt_spm_dpidle_mt6755.h"
-
-#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #include "mtk_spm_dpidle_mt6757.h"
 

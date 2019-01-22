@@ -40,27 +40,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 
 ccflags-$(CONFIG_MTK_MET) += -DMET_USER_EVENT_SUPPORT
 
-#ifeq ($(CONFIG_ARCH_MT6755), y)
-#ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
-
-#obj-y += mt_idle.o
-#obj-y += mt_idle_profile.o
-#obj-y += mt_idle_mt6755.o
-#obj-y += mt_sleep.o
-#obj-y += mt_spm.o
-#obj-y += mt_spm_dpidle.o
-#obj-y += mt_spm_dpidle_mt6755.o
-#obj-y += mt_spm_fs.o
-#obj-y += mt_spm_internal.o
-#obj-y += mt_spm_mcdi.o
-#obj-y += mt_spm_pmic_wrap.o
-#obj-y += mt_spm_sleep.o
-#obj-y += mt_spm_sodi.o
-#obj-y += mt_spm_sodi3p0.o
-#obj-y += mt_spm_sodi_cmdq.o
-#obj-y += mt_spm_vcorefs_mt6755.o
-#endif
-
 ifeq ($(CONFIG_MACH_MT6757), y)
 #ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6757/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/
