@@ -488,7 +488,6 @@ CONFIG_MTK_ICM20645G,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda85
 CONFIG_MTK_ICM20645GY,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda85d1c6ea1c0120c87fa93fc2570e8,,,,,
 CONFIG_MTK_IMGSENSOR,COMMON,,,y,y,y,y,y
 CONFIG_MTK_INPKHUB,PROJECT,qiangming.xia,new config in this commit e5afb39d5bc749c04142bb69e4f89131015320a6,,,,,
-CONFIG_MTK_INTERNAL,PROJECT,junzhi.zhao,,,,,,
 CONFIG_MTK_ION,COMMON,youhua.li,new config in this commit 30f50f4e2f5b4c1996816cc4997e5c6b86d28386,y,y,y,y,y
 CONFIG_MTK_IRAT_SUPPORT,PROJECT,anny.hu,,,,,,
 CONFIG_MTK_IRQ,PLATFORM,,,X,X,X,X,X
