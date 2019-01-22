@@ -239,6 +239,9 @@ static int mtkpasr_config(int times, get_range_t func)
 {
 	unsigned long spfn, epfn;
 	int which, i;
+#ifndef CONFIG_MTK_DCS
+	int retry = 3;
+#endif
 
 	/* Not enable */
 	if (!mtkpasr_enable)
@@ -272,10 +275,14 @@ static int mtkpasr_config(int times, get_range_t func)
 #endif
 
 #ifndef CONFIG_MTK_DCS
+retry_pasr:
 	/* APMCU flow */
 	MTKPASR_PRINT("%s: PASR[0x%lx]\n", __func__, mtkpasr_on);
-	if (enter_pasr_dpd_config(mtkpasr_on & 0xFF, mtkpasr_on >> 0x8) != 0)
+	if (enter_pasr_dpd_config(mtkpasr_on & 0xFF, mtkpasr_on >> 0x8) != 0) {
+		if (--retry)
+			goto retry_pasr;
 		MTKPASR_PRINT("%s: failed to program DRAMC!\n", __func__);
+	}
 #else
 	/* Channel based PASR configuration */
 	enable_dcs_pasr();
