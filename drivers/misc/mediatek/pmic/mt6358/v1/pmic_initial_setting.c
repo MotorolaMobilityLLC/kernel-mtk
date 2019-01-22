@@ -140,7 +140,7 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_ldo_va12_lp(SRCLKEN0, 1, HW_LP);
 	pmic_ldo_vaux18_lp(SRCLKEN0, 1, HW_LP);
 	pmic_ldo_vaud28_lp(SRCLKEN0, 1, HW_LP);
-	pmic_ldo_vio28_lp(SRCLKEN0, 1, HW_LP);
+	pmic_ldo_vio28_lp(SW, 1, SW_ON);
 	pmic_ldo_vio18_lp(SW, 1, SW_ON);
 	pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
 	pmic_ldo_vdram2_lp(SRCLKEN0, 1, HW_LP);
@@ -182,7 +182,7 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_ldo_va12_lp(SRCLKEN2, 1, HW_LP);
 	pmic_ldo_vaux18_lp(SRCLKEN2, 1, HW_LP);
 	pmic_ldo_vaud28_lp(SW, 1, SW_ON);
-	pmic_ldo_vio28_lp(SRCLKEN2, 1, HW_LP);
+	pmic_ldo_vio28_lp(SW, 1, SW_ON);
 	pmic_ldo_vio18_lp(SW, 1, SW_ON);
 	pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
 	pmic_ldo_vdram2_lp(SRCLKEN2, 1, HW_LP);
