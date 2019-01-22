@@ -52,13 +52,14 @@
 #define LM3642_REG_CURRENT_CONTROL (0x09)
 
 #define LM3642_REG_ENABLE (0x0A)
-#define LM3642_ENABLE_STANDBY (0x00)
-#define LM3642_ENABLE_TORCH (0x02)
-#define LM3642_ENABLE_FLASH (0x03)
+#define LM3642_REG_FLAG (0x0B)
+#define LM3642_ENABLE_STANDBY (0x20)
+#define LM3642_ENABLE_TORCH (0x22)
+#define LM3642_ENABLE_FLASH (0x23)
 
 /* define level */
 #define LM3642_LEVEL_NUM 18
-#define LM3642_LEVEL_TORCH 4
+#define LM3642_LEVEL_TORCH 6
 #define LM3642_HW_TIMEOUT 800 /* ms */
 
 /* define mutex and work queue */
@@ -97,7 +98,7 @@ static const int lm3642_current[LM3642_LEVEL_NUM] = {
 };
 
 static const unsigned char lm3642_flash_level[LM3642_LEVEL_NUM] = {
-	0x00, 0x10, 0x20, 0x30, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x00, 0x10, 0x20, 0x30, 0x52, 0x73, 0x04, 0x05, 0x06, 0x07,
 	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
 
@@ -199,6 +200,28 @@ static int lm3642_set_level(int level)
 	return lm3642_write_reg(lm3642_i2c_client, reg, val);
 }
 
+extern int lm3642_read_flag(void)
+{
+	return lm3642_read_reg(lm3642_i2c_client, LM3642_REG_FLAG);
+}
+
+extern int lm3642_strobe_trigger(int en)
+{
+	unsigned char val;
+
+	pr_info("lm3642_strobe_trigger: en:%d REG_EN:%02x\n",
+		en, lm3642_read_reg(lm3642_i2c_client, LM3642_REG_ENABLE));
+	if (en == 1)
+		val = LM3642_ENABLE_FLASH;
+	else
+		val = LM3642_ENABLE_STANDBY;
+	pr_info("status: %d\n", lm3642_read_flag());
+	lm3642_write_reg(lm3642_i2c_client, LM3642_REG_ENABLE, val);
+	pr_info("read level: %02x\n", lm3642_read_reg(lm3642_i2c_client, LM3642_REG_CURRENT_CONTROL));
+	pr_info("read enable: %02x\n", lm3642_read_reg(lm3642_i2c_client, LM3642_REG_ENABLE));
+	return 0;
+}
+
 /* flashlight init */
 int lm3642_init(void)
 {
@@ -217,6 +240,7 @@ int lm3642_init(void)
 			LM3642_FLASH_RAMP_TIME |
 			LM3642_FLASH_TIMEOUT);
 
+	lm3642_set_level(5);
 	return ret;
 }
 
@@ -282,6 +306,8 @@ static int lm3642_ioctl(unsigned int cmd, unsigned long arg)
 				hrtimer_start(&lm3642_timer, ktime, HRTIMER_MODE_REL);
 			}
 			lm3642_enable();
+		} else if (fl_arg->arg == 2) {
+			lm3642_strobe_trigger(1);
 		} else {
 			lm3642_disable();
 			hrtimer_cancel(&lm3642_timer);

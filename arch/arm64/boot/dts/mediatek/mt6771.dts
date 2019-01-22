@@ -2991,6 +2991,26 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "mediatek,flashlight_core";
 	};
 
+	flashlights_lm3642: flashlights_lm3642 {
+		compatible = "mediatek,flashlights_lm3642";
+		decouple = <1>;
+		channel@1 {
+			type = <1>;
+			ct = <0>;
+			part = <0>;
+		};
+	};
+
+	flashlights_ha7109: flashlights_ha7109 {
+		compatible = "mediatek,flashlights_ha7109";
+		decouple = <1>;
+		channel@1 {
+			type = <1>;
+			ct = <1>;
+			part = <0>;
+		};
+	};
+
 	flashlights_mt6370: flashlights_mt6370 {
 		compatible = "mediatek,flashlights_mt6370";
 		decouple = <0>;
