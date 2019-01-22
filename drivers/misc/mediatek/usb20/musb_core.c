@@ -125,10 +125,18 @@ int kernel_init_done;
 int musb_force_on;
 int musb_host_dynamic_fifo = 1;
 int musb_host_dynamic_fifo_usage_msk;
+bool musb_host_db_enable;
+bool musb_host_db_workaround;
+long musb_host_db_delay_ns;
+long musb_host_db_workaround_cnt;
 module_param(musb_fake_CDP, int, 0400);
 module_param(kernel_init_done, int, 0644);
 module_param(musb_host_dynamic_fifo, int, 0644);
 module_param(musb_host_dynamic_fifo_usage_msk, int, 0400);
+module_param(musb_host_db_enable, bool, 0644);
+module_param(musb_host_db_workaround, bool, 0644);
+module_param(musb_host_db_delay_ns, long, 0644);
+module_param(musb_host_db_workaround_cnt, long, 0644);
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;
@@ -1940,9 +1948,25 @@ irqreturn_t musb_interrupt(struct musb *musb)
 			/* musb_ep_select(musb->mregs, ep_num); */
 			/* REVISIT just retval |= ep->tx_irq(...) */
 			retval = IRQ_HANDLED;
-			if (devctl & MUSB_DEVCTL_HM)
-				musb_host_tx(musb, ep_num);
-			else
+			if (devctl & MUSB_DEVCTL_HM) {
+				bool skip_tx = false;
+
+				if (host_tx_refcnt_dec(ep_num) < 0) {
+					int ref_cnt;
+
+					musb_host_db_workaround_cnt++;
+					ref_cnt = host_tx_refcnt_inc(ep_num);
+					DBG_LIMIT(5, "addtional TX<%d> got, ref_cnt<%d>",
+							ep_num, ref_cnt);
+					skip_tx = true;
+				}
+
+				if (!musb_host_db_workaround)
+					skip_tx = false;
+
+				if (likely(!skip_tx))
+					musb_host_tx(musb, ep_num);
+			} else
 				musb_g_tx(musb, ep_num);
 		}
 		reg >>= 1;
