@@ -74,7 +74,7 @@ static struct pmic_wrap_setting pw = {
 	.addr = {{0, 0} },
 
 	.set[PMIC_WRAP_PHASE_ALLINONE] = {
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759)
 		._[IDX_ALL_VSRAM_PWR_ON]      = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(0:0, 1),},
 		._[IDX_ALL_VSRAM_SHUTDOWN]    = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(0:0, 0),},
 		._[IDX_ALL_VSRAM_NORMAL]      = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(1:0, 1),},
@@ -91,6 +91,23 @@ static struct pmic_wrap_setting pw = {
 		._[IDX_ALL_VPROC_SHUTDOWN]    = {PMIC_RG_BUCK_VPROC11_EN_ADDR, _BITS_(0:0, 0),},
 		._[IDX_ALL_VPROC_NORMAL]      = {PMIC_RG_BUCK_VPROC11_EN_ADDR, _BITS_(1:0, 1),},
 		._[IDX_ALL_VPROC_SLEEP]       = {PMIC_RG_BUCK_VPROC11_EN_ADDR, _BITS_(1:0, 3),},
+#elif defined(CONFIG_MACH_MT6758)
+		._[CMD_0]    = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(0:0, 1),},
+		._[CMD_1]    = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(0:0, 0),},
+		._[CMD_2]    = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(1:0, 1),},
+		._[CMD_3]    = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(1:0, 3),},
+		._[CMD_4]    = {PMIC_RG_SRCLKEN_IN2_EN_ADDR, _BITS_(0:0, 1),},
+		._[CMD_5]    = {PMIC_RG_SRCLKEN_IN2_EN_ADDR, _BITS_(0:0, 0),},
+		._[CMD_6]    = {0, 0,},
+		._[CMD_7]    = {PMIC_RG_BUCK_VCORE_VOSEL_ADDR, VOLT_TO_PMIC_VAL(60000),},
+		._[CMD_8]    = {PMIC_RG_BUCK_VCORE_VOSEL_ADDR, VOLT_TO_PMIC_VAL(70000),},
+		._[CMD_9]    = {PMIC_RG_BUCK_VCORE_VOSEL_ADDR, VOLT_TO_PMIC_VAL(80000),},
+		._[CMD_10]   = {0, 0,},
+		._[CMD_11]   = {0, 0,},
+		._[CMD_12]   = {PMIC_RG_BUCK_VPROC11_EN_ADDR, _BITS_(0:0, 1),},
+		._[CMD_13]   = {PMIC_RG_BUCK_VPROC11_EN_ADDR, _BITS_(0:0, 0),},
+		._[CMD_14]   = {PMIC_RG_BUCK_VPROC11_EN_ADDR, _BITS_(1:0, 1),},
+		._[CMD_15]   = {PMIC_RG_BUCK_VPROC11_EN_ADDR, _BITS_(1:0, 3),},
 #else
 		._[IDX_ALL_1_VSRAM_PWR_ON]      = {MT6335_LDO_VSRAM_DVFS1_CON0, _BITS_(0:0, 1),},
 		._[IDX_ALL_1_VSRAM_SHUTDOWN]    = {MT6335_LDO_VSRAM_DVFS1_CON0, _BITS_(0:0, 0),},
