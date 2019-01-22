@@ -51,7 +51,11 @@
 #include <linux/fb.h>
 #include <linux/notifier.h>
 
+#include <helio-dvfsrc-opp.h>
 #include <mtk_spm_vcore_dvfs.h>
+#ifdef USE_IDLE_NOTIFY
+#include "mtk_idle.h"
+#endif /* USE_IDLE_NOTIFY */
 
 #define CM_MGR_USE_PM_NOTIFY
 #ifdef CM_MGR_USE_PM_NOTIFY
@@ -447,6 +451,33 @@ static struct notifier_block cm_mgr_fb_notifier = {
 	.notifier_call = cm_mgr_fb_notifier_callback,
 };
 
+#ifdef USE_IDLE_NOTIFY
+static int cm_mgr_idle_cb(struct notifier_block *nfb,
+				  unsigned long id,
+				  void *arg)
+{
+	switch (id) {
+	case NOTIFY_SOIDLE_ENTER:
+	case NOTIFY_SOIDLE3_ENTER:
+		if (get_cur_ddr_opp() != CM_MGR_EMI_OPP)
+			check_cm_mgr_status_internal();
+		break;
+	case NOTIFY_DPIDLE_ENTER:
+	case NOTIFY_DPIDLE_LEAVE:
+	case NOTIFY_SOIDLE_LEAVE:
+	case NOTIFY_SOIDLE3_LEAVE:
+	default:
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cm_mgr_idle_notify = {
+	.notifier_call = cm_mgr_idle_cb,
+};
+#endif /* USE_IDLE_NOTIFY */
+
 #if 0
 static int cm_mgr_is_lp_flavor(void)
 {
@@ -527,6 +558,10 @@ int cm_mgr_platform_init(void)
 	spin_lock_init(&cm_mgr_cpu_mask_lock);
 
 	cm_mgr_hotplug_cb_init();
+
+#ifdef USE_IDLE_NOTIFY
+	mtk_idle_notifier_register(&cm_mgr_idle_notify);
+#endif /* USE_IDLE_NOTIFY */
 
 #if 0
 	if (cm_mgr_is_lp_flavor())

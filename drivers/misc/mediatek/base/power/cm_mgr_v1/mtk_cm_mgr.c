@@ -219,6 +219,19 @@ static void update_v2f(int update, int debug)
 	}
 }
 
+#ifdef USE_TIMER_CHECK
+struct timer_list cm_mgr_timer;
+static int timer_is_running;
+
+static void cm_mgr_timer_fn(unsigned long data)
+{
+	timer_is_running = 0;
+
+	if (cm_mgr_timer_enable)
+		check_cm_mgr_status_internal();
+}
+#endif /* USE_TIMER_CHECK */
+
 void check_cm_mgr_status_internal(void)
 {
 	unsigned long long result = 0;
@@ -532,6 +545,28 @@ void check_cm_mgr_status_internal(void)
 cm_mgr_opp_end:
 		cm_mgr_update_met();
 
+#ifdef USE_TIMER_CHECK
+		if (cm_mgr_timer_enable) {
+			if (vcore_dram_opp != CM_MGR_EMI_OPP) {
+				if (timer_is_running) {
+					unsigned long expires;
+
+					expires = jiffies +
+						msecs_to_jiffies(1000);
+					mod_timer(&cm_mgr_timer, expires);
+				} else {
+					cm_mgr_timer.expires = jiffies +
+						msecs_to_jiffies(1000);
+					add_timer(&cm_mgr_timer);
+					timer_is_running = 1;
+				}
+			} else {
+				del_timer(&cm_mgr_timer);
+				timer_is_running = 0;
+			}
+		}
+#endif /* USE_TIMER_CHECK */
+
 		done = ktime_get();
 		if (!ktime_after(done, now)) {
 			/* pr_debug("ktime overflow!!\n"); */
@@ -614,6 +649,9 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 
 	seq_printf(m, "cm_mgr_opp_enable %d\n", cm_mgr_opp_enable);
 	seq_printf(m, "cm_mgr_enable %d\n", cm_mgr_enable);
+#ifdef USE_TIMER_CHECK
+	seq_printf(m, "cm_mgr_timer_enable %d\n", cm_mgr_timer_enable);
+#endif /* USE_TIMER_CHECK */
 	seq_printf(m, "cm_mgr_disable_fb %d\n", cm_mgr_disable_fb);
 	seq_printf(m, "light_load_cps %d\n", light_load_cps);
 	seq_printf(m, "total_bw_value %d\n", total_bw_value);
@@ -763,6 +801,10 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 		cm_mgr_enable = val_1;
 		if (!cm_mgr_enable)
 			dvfsrc_set_power_model_ddr_request(0);
+#ifdef USE_TIMER_CHECK
+	} else if (!strcmp(cmd, "cm_mgr_timer_enable")) {
+		cm_mgr_timer_enable = val_1;
+#endif /* USE_TIMER_CHECK */
 	} else if (!strcmp(cmd, "cm_mgr_disable_fb")) {
 		cm_mgr_disable_fb = val_1;
 		if (cm_mgr_disable_fb == 1 && cm_mgr_blank_status == 1)
@@ -966,6 +1008,12 @@ int __init cm_mgr_module_init(void)
 	}
 
 	vcore_power_gain = vcore_power_gain_ptr(cm_mgr_get_idx());
+
+#ifdef USE_TIMER_CHECK
+	init_timer_deferrable(&cm_mgr_timer);
+	cm_mgr_timer.function = cm_mgr_timer_fn;
+	cm_mgr_timer.data = 0;
+#endif /* USE_TIMER_CHECK */
 
 #ifdef ATF_SECURE_SMC
 	pr_info("ATF_SECURE_SMC\n");
