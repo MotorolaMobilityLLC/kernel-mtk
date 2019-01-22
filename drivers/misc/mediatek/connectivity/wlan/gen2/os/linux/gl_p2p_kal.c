@@ -1270,17 +1270,27 @@ struct ieee80211_channel *kalP2pFuncGetChannelEntry(IN P_GL_P2P_INFO_T prP2pInfo
 VOID kalP2pUpdateECSA(IN P_ADAPTER_T prAdapter, IN P_EVENT_ECSA_RESULT prECSA)
 {
 	P_BSS_INFO_T prBssInfo = &(prAdapter->rWifiVar.arBssInfo[prECSA->ucNetTypeIndex]);
-
+	UINT_32 u4Freq = 0;
 	struct cfg80211_chan_def chandef;
 	RF_CHANNEL_INFO_T rChannelInfo;
 	enum nl80211_channel_type chantype;
 	struct ieee80211_channel *channel;
 
 
-	UINT_32 u4Freq = nicChannelNum2Freq(prECSA->ucPrimaryChannel);
+	if (prECSA == NULL) {
+		DBGLOG(P2P, ERROR, "ECSA_RESULT is null!\n");
+		return;
+	}
+
+	if (prECSA->ucStatus == ECSA_EVENT_STATUS_UPDATE_BEACON) {
+		DBGLOG(P2P, INFO, "ECSA FW upeate beacon success!\n");
+		return;
+	}
+
+	u4Freq = nicChannelNum2Freq(prECSA->ucPrimaryChannel);
 
 	if (!u4Freq) {
-		DBGLOG(P2P, INFO, "channel number invalid: %d\n", prECSA->ucPrimaryChannel);
+		DBGLOG(P2P, ERROR, "channel number invalid: %d\n", prECSA->ucPrimaryChannel);
 		return;
 	}
 
