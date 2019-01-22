@@ -785,6 +785,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 	unsigned int ret;
 	unsigned int *pStatus;
 	unsigned int emi_bw = 0;
+	unsigned int picSize = 0;
 
 	/* JpegDrvEncParam cfgEnc; */
 	JPEG_ENC_DRV_IN cfgEnc;
@@ -862,16 +863,17 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		/* src_cfg.yuv_format = cfgEnc.encFormat; */
 
 	#ifdef CONFIG_MTK_QOS_SUPPORT
+		picSize = (cfgEnc.encWidth * cfgEnc.encHeight) / 1000000;
 		/* BW = encode width x height x bpp x 1.6(assume compress ratio is 0.6) */
 		if (cfgEnc.encFormat == 0x0 || cfgEnc.encFormat == 0x1)
-			emi_bw = (((cfgEnc.encWidth * cfgEnc.encHeight * 2) * 8/5) / 1000000) + 1;
+			emi_bw = ((picSize * 2) * 8/5) + 1;
 		else
-			emi_bw = (((cfgEnc.encWidth * cfgEnc.encHeight * 3/2) * 8/5 / 1000000) + 1);
+			emi_bw = ((picSize * 3/2) * 8/5) + 1;
 
 		/* considering FPS, 16MP = 20 FPS, 21MP = 15 FPS, 26MP = 10 FPS */
-		if (emi_bw >= 22)
+		if (picSize >= 22)
 			emi_bw *= 10;
-		else if (emi_bw >= 17)
+		else if (picSize >= 17)
 			emi_bw *= 15;
 		else
 			emi_bw *= 20;
@@ -880,8 +882,8 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		pm_qos_update_request(&jpgenc_qos_request, emi_bw);
 	#endif
 		/* 1. set src config */
-		JPEG_MSG("[JPEGDRV]SRC_IMG: %x %x, DU:%x, fmt:%x, BW:%d!!\n", cfgEnc.encWidth,
-			 cfgEnc.encHeight, cfgEnc.totalEncDU, cfgEnc.encFormat, emi_bw);
+		JPEG_MSG("[JPEGDRV]SRC_IMG: %x %x, DU:%x, fmt:%x, picSize %d, BW:%d!!\n", cfgEnc.encWidth,
+			 cfgEnc.encHeight, cfgEnc.totalEncDU, cfgEnc.encFormat, picSize, emi_bw);
 
 		ret =
 		    jpeg_drv_enc_set_src_image(cfgEnc.encWidth, cfgEnc.encHeight, cfgEnc.encFormat,
