@@ -45,6 +45,8 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 
+#include <power_gs_v1/mtk_power_gs_api.h>
+
 #include <mt-plat/mtk_io.h>
 
 /*
@@ -1050,6 +1052,10 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
 #endif
+
+	/* Dump low power golden setting */
+	if (operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)
+		mt_power_gs_dump_dpidle();
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 

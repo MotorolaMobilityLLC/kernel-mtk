@@ -242,6 +242,9 @@ static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
 bool                    dpidle_by_pass_pg;
+static bool             dpidle_gs_dump_req;
+static unsigned int     dpidle_gs_dump_delay_ms = 10000; /* 10 sec */
+static unsigned int     dpidle_gs_dump_req_ts;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
 static unsigned int     dpidle_run_once;
 
@@ -1463,6 +1466,17 @@ int dpidle_enter(int cpu)
 
 	dpidle_pre_process(cpu);
 
+	if (dpidle_gs_dump_req) {
+		unsigned int current_ts = idle_get_current_time_ms();
+
+		if ((current_ts - dpidle_gs_dump_req_ts) >= dpidle_gs_dump_delay_ms) {
+			idle_warn("dpidle dump LP golden\n");
+
+			dpidle_gs_dump_req = 0;
+			operation_cond |= DEEPIDLE_OPT_DUMP_LP_GOLDEN;
+		}
+	}
+
 	operation_cond |= clkmux_cond[IDLE_TYPE_DP] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0;
 
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log, operation_cond);
@@ -1886,6 +1900,13 @@ static ssize_t dpidle_state_write(struct file *filp,
 		else if (!strcmp(cmd, "bypass_pg")) {
 			dpidle_by_pass_pg = param;
 			idle_warn("bypass_pg = %d\n", dpidle_by_pass_pg);
+		} else if (!strcmp(cmd, "golden")) {
+			dpidle_gs_dump_req = param;
+
+			if (dpidle_gs_dump_req)
+				dpidle_gs_dump_req_ts = idle_get_current_time_ms();
+		} else if (!strcmp(cmd, "golden_delay_ms")) {
+			dpidle_gs_dump_delay_ms = (param >= 0) ? param : 0;
 		} else if (!strcmp(cmd, "log"))
 			dpidle_dump_log = param;
 
