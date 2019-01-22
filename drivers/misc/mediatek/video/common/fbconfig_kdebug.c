@@ -117,7 +117,7 @@ static struct PM_TOOL_S pm_params = {
 	.pLcm_params = NULL,
 	.pLcm_drv = NULL,
 };
-struct mutex fb_config_lock;
+static struct mutex fb_config_lock;
 
 static void *pm_get_handle(void)
 {
@@ -165,7 +165,7 @@ void Panel_Master_DDIC_config(void)
 
 	struct list_head *p;
 	struct CONFIG_RECORD_LIST *node;
-
+	mutex_lock(&fb_config_lock);
 	list_for_each_prev(p, &head_list.list) {
 		node = list_entry(p, struct CONFIG_RECORD_LIST, list);
 		switch (node->record.type) {
@@ -183,32 +183,14 @@ void Panel_Master_DDIC_config(void)
 		}
 
 	}
-
+	mutex_unlock(&fb_config_lock);
 }
-
-/*static void print_from_head_to_tail(void)*/
-/*{*/
-/*	int i;*/
-/*	struct list_head *p;*/
-/*	CONFIG_RECORD_LIST *print;*/
-/*	pr_debug("DDIC=====>:print_from_head_to_tail  START\n");*/
-
-/*	list_for_each_prev(p, &head_list.list) {*/
-/*		print = list_entry(p, CONFIG_RECORD_LIST, list);*/
-/*		pr_debug("type:%d num %d value:\r\n", print->record.type, print->record.ins_num);*/
-/*		for (i = 0; i < print->record.ins_num; i++)*/
-/*			pr_debug("0x%x\t", print->record.ins_array[i]);*/
-/*		pr_debug("\r\n");*/
-/*	}*/
-/*	pr_debug("DDIC=====>:print_from_head_to_tail  END\n");*/
-
-/*}*/
 
 static void free_list_memory(void)
 {
 	struct list_head *p, *n;
 	struct CONFIG_RECORD_LIST *print;
-
+	mutex_lock(&fb_config_lock);
 	list_for_each_safe(p, n, &head_list.list) {
 		print = list_entry(p, struct CONFIG_RECORD_LIST, list);
 		list_del(&print->list);
@@ -219,6 +201,7 @@ static void free_list_memory(void)
 		pr_debug("*****list is empty!!\n");
 	else
 		pr_debug("*****list is NOT empty!!\n");
+	mutex_unlock(&fb_config_lock);
 
 }
 
@@ -227,7 +210,6 @@ static int fbconfig_open(struct inode *inode, struct file *file)
 	struct PM_TOOL_S *pm_params;
 
 	file->private_data = inode->i_private;
-	mutex_init(&fb_config_lock);
 	pm_params = (struct PM_TOOL_S *) pm_get_handle();
 	PanelMaster_set_PM_enable(1);
 	pm_params->pLcm_drv = DISP_GetLcmDrv();
@@ -336,11 +318,9 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case DRIVER_IC_CONFIG_DONE:
 	{
 		/* print_from_head_to_tail(); */
-		mutex_lock(&fb_config_lock);
 		Panel_Master_dsi_config_entry("PM_DDIC_CONFIG", NULL);
 		/*free the memory ..... */
 		free_list_memory();
-		mutex_unlock(&fb_config_lock);
 		return 0;
 	}
 	case MIPI_SET_CC:
@@ -1311,6 +1291,7 @@ void PanelMaster_Init(void)
 #endif
 
 	INIT_LIST_HEAD(&head_list.list);
+	mutex_init(&fb_config_lock);
 }
 
 void PanelMaster_Deinit(void)
