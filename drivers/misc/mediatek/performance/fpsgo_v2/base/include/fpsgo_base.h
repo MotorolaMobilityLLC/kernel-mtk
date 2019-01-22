@@ -60,7 +60,6 @@ struct fbt_thread_blc {
 
 struct fbt_boost_info {
 	int fstb_target_fps;
-	int last_target_fps;
 
 	/* rescue*/
 	struct fbt_proc proc;
@@ -76,8 +75,6 @@ struct fbt_boost_info {
 	int middle_enable;
 
 	/* APP self-control*/
-	unsigned long long asfc_time;
-	int asfc_last_fps;
 	int sf_check;
 	int sf_bound;
 };

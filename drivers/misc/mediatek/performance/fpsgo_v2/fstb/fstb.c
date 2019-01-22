@@ -698,6 +698,9 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 				target_limit = tmp_target_limit;
 		} else
 			target_limit = iter->target_fps;
+
+		if (iter->asfc_flag == 1 && iter->queue_fps >= 36)
+			iter->asfc_flag = 0;
 		/*stable state*/
 	} else {
 		second_chance_flag = 0;
@@ -709,7 +712,7 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 		target_limit = 30;
 
 
-	if (iter->target_fps == 30) {
+	if (target_limit == 30) {
 		iter->asfc_flag = 1;
 		fpsgo_systrace_c_fstb(iter->pid, iter->asfc_flag, "asfc_flag");
 	}

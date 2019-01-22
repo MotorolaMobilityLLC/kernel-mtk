@@ -1113,7 +1113,6 @@ static int fbt_boost_policy(
 	unsigned long long temp_blc;
 	unsigned long flags, flags2;
 	unsigned long long t1, t2, t_sleep;
-	char reset_asfc = 0;
 	struct fbt_boost_info *boost_info;
 	int pid;
 	int frame_type;
@@ -1154,36 +1153,11 @@ static int fbt_boost_policy(
 			boost_info->middle_enable = 0;
 	}
 
-	if (boost_info->asfc_last_fps == target_fps && boost_info->asfc_time
-		&& boost_info->last_target_fps == TARGET_UNLIMITED_FPS
-		&& frame_type == NON_VSYNC_ALIGNED_TYPE) {
-		unsigned long long asfc_tmp;
-
-		asfc_tmp = ts;
-		if (asfc_tmp - boost_info->asfc_time < 300 * TIME_1MS)
-			boost_info->sf_bound = min(sf_bound_max, (boost_info->sf_bound + sf_bound_min));
-		fpsgo_systrace_c_fbt_gm(pid, boost_info->sf_bound, "sf_bound");
-	}
-
-	boost_info->last_target_fps = target_fps;
 	fpsgo_systrace_c_fbt(pid, boost_info->middle_enable, "middle_enable");
 	fpsgo_systrace_c_fbt_gm(pid, boost_info->sf_check, "sf_check");
 
-	if (boost_info->middle_enable) {
+	if (boost_info->middle_enable)
 		target_time = fbt_middle_vsync_check(target_time, t_cpu_slptime, g_vsync_distance, ts);
-		if (target_fps == 30) {
-			unsigned long long deqstar_time;
-
-			deqstar_time = thread_info->t_dequeue_end - thread_info->dequeue_length;
-
-			if (thread_info->t_dequeue_end > vsync_time && deqstar_time < vsync_time
-				&& thread_info->dequeue_length > deqtime_bound) {
-				boost_info->asfc_time = ts;
-				boost_info->asfc_last_fps = target_fps;
-				reset_asfc = 1;
-			}
-		}
-	}
 	fpsgo_systrace_c_fbt_gm(pid, target_time, "target_time");
 
 	spin_lock_irqsave(&loading_slock, flags2);
@@ -1239,9 +1213,6 @@ static int fbt_boost_policy(
 		fpsgo_systrace_c_fbt_gm(pid, atomic_read(&thread_info->pLoading->loading), "loading");
 	}
 	spin_unlock_irqrestore(&loading_slock, flags);
-
-	if (boost_info->middle_enable && reset_asfc)
-		fpsgo_fbt2fstb_reset_asfc(pid, 0);
 
 	mutex_lock(&blc_mlock);
 	if (thread_info->p_blc)
@@ -1732,7 +1703,6 @@ void fpsgo_base2fbt_node_init(struct render_info *obj)
 	boost = &(obj->boost_info);
 	boost->sf_bound = sf_bound_min;
 	boost->fstb_target_fps = TARGET_UNLIMITED_FPS;
-	boost->last_target_fps = TARGET_UNLIMITED_FPS;
 	fbt_init_jerk(&(boost->proc.jerks[0]), 0);
 	fbt_init_jerk(&(boost->proc.jerks[1]), 1);
 
