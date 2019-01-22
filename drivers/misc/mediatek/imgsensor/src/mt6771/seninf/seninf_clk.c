@@ -142,12 +142,14 @@ void seninf_clk_open(struct SENINF_CLK *pclk)
 
 void seninf_clk_release(struct SENINF_CLK *pclk)
 {
-	MINT32 i;
+	MINT32 i = SENINF_CLK_IDX_MAX_NUM;
 
-	for (i = SENINF_CLK_IDX_MIN_NUM; i < SENINF_CLK_IDX_MAX_NUM; i++)
+	do {
+		i--;
 		for (; atomic_read(&pclk->enable_cnt[i]) > 0;) {
 			clk_disable_unprepare(pclk->mclk_sel[i]);
 			atomic_dec(&pclk->enable_cnt[i]);
 		}
+	} while (i);
 }
 
