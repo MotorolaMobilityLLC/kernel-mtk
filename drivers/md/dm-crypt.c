@@ -1235,7 +1235,7 @@ static int crypt_is_hw_fde(const char *path)
 		return 1;
 	#if defined(CONFIG_MTK_HW_FDE_AES)
 	/* SD card */
-	if (major == MMC_BLOCK_MAJOR && minor == 0)
+	if (major == MMC_BLOCK_MAJOR && minor <= 2)
 		return 1;
 	#endif
 #elif defined(CONFIG_MTK_EMMC_SUPPORT) /* eMMC booting */
