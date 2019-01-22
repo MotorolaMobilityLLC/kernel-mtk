@@ -143,6 +143,8 @@ static inline void set_pcppage_migratetype(struct page *page, int migratetype)
 	page->index = migratetype;
 }
 
+struct kernel_reserve_meminfo kernel_reserve_meminfo;
+
 #ifdef CONFIG_PM_SLEEP
 /*
  * The following functions are used by the suspend/hibernate code to temporarily
@@ -5904,6 +5906,20 @@ void __init mem_init_print_info(const char *str)
 	       totalhigh_pages << (PAGE_SHIFT-10),
 #endif
 	       str ? ", " : "", str ? str : "");
+
+		kernel_reserve_meminfo.available = nr_free_pages() << (PAGE_SHIFT - 10);
+		kernel_reserve_meminfo.total = physpages << (PAGE_SHIFT - 10);
+		kernel_reserve_meminfo.kernel_code = codesize >> 10;
+		kernel_reserve_meminfo.rwdata = datasize >> 10;
+		kernel_reserve_meminfo.rodata = rosize >> 10;
+		kernel_reserve_meminfo.init = (init_data_size + init_code_size) >> 10;
+		kernel_reserve_meminfo.bss = bss_size >> 10;
+		kernel_reserve_meminfo.reserved =
+			(physpages - totalram_pages) << (PAGE_SHIFT-10);
+
+#ifdef CONFIG_HIGHMEM
+		kernel_reserve_meminfo.highmem = totalhigh_pages << (PAGE_SHIFT - 10);
+#endif
 }
 
 /**

@@ -29,6 +29,7 @@
 extern int memblock_count;
 extern struct memblock_record memblock_record[100];
 extern struct memblock_stack_trace memblock_stack_trace[100];
+extern struct kernel_reserve_meminfo kernel_reserve_meminfo;
 
 #define MTK_MEMCFG_LOG_AND_PRINTK(fmt, arg...)  \
 	do {    \
