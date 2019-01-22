@@ -364,6 +364,8 @@ typedef enum {
 	CCCI_IMSM_TX			= 170,
 	CCCI_WOA_RX			= 171,
 	CCCI_WOA_TX			= 172,
+	CCCI_XCAP_RX			= 173,
+	CCCI_XCAP_TX			= 174,
 
 	CCCI_C2K_PPP_DATA, /* data ch for c2k */
 
