@@ -1119,6 +1119,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	UINT_8 ucHwChannelNum = 0;
 	UINT_8 ucIeDsChannelNum = 0;
 	UINT_8 ucIeHtChannelNum = 0;
+	ENUM_CHNL_EXT_T eSco = CHNL_EXT_SCN;
 	BOOLEAN fgIsValidSsid = FALSE, fgEscape = FALSE;
 	PARAM_SSID_T rSsid;
 	UINT_64 u8Timestamp;
@@ -1510,12 +1511,9 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			if (IE_LEN(pucIE) != (sizeof(IE_HT_OP_T) - 2))
 				break;
 
-			if ((((P_IE_HT_OP_T) pucIE)->ucInfo1 & HT_OP_INFO1_SCO) != CHNL_EXT_RES) {
-				prBssDesc->eSco = (ENUM_CHNL_EXT_T)
+			eSco = (ENUM_CHNL_EXT_T)
 				    (((P_IE_HT_OP_T) pucIE)->ucInfo1 & HT_OP_INFO1_SCO);
-			}
 			ucIeHtChannelNum = ((P_IE_HT_OP_T) pucIE)->ucPrimaryChannel;
-
 			break;
 
 #if CFG_SUPPORT_WAPI
@@ -1615,7 +1613,10 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		ucHwChannelNum = HIF_RX_HDR_GET_CHNL_NUM(prHifRxHdr);
 
 		if (prBssDesc->eBand == BAND_2G4) {
-
+#if (CFG_FORCE_USE_20BW == 0)
+			if (eSco != CHNL_EXT_RES)
+				prBssDesc->eSco = eSco;
+#endif
 			/* Update RCPI if in right channel */
 			if (ucIeDsChannelNum >= 1 && ucIeDsChannelNum <= 14) {
 
@@ -1638,6 +1639,8 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		}
 		/* 5G Band */
 		else {
+			if (eSco != CHNL_EXT_RES)
+				prBssDesc->eSco = eSco;
 			if (ucIeHtChannelNum >= 1 && ucIeHtChannelNum < 200) {
 				/* Receive Beacon/ProbeResp frame from adjacent channel. */
 				if ((ucIeHtChannelNum == ucHwChannelNum) || (prHifRxHdr->ucRcpi > prBssDesc->ucRCPI))
