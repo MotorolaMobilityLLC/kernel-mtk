@@ -856,11 +856,14 @@ static void cmdq_core_copy_v3_struct(struct TaskStruct *pTask, struct cmdqComman
 	uint32_t array_num = 0;
 	uint32_t *p_instr_position = NULL;
 
-	pTask->replace_instr.number = pCommandDesc->replace_instr.number;
-	if (pTask->replace_instr.number == 0) {
+	if (pCommandDesc->replace_instr.number == 0 ||
+		pCommandDesc->replace_instr.number >= CMDQ_MAX_COMMAND_SIZE) {
 		pTask->replace_instr.position = (cmdqU32Ptr_t) (unsigned long)NULL;
+		pTask->replace_instr.position = 0;
 		return;
 	}
+
+	pTask->replace_instr.number = pCommandDesc->replace_instr.number;
 
 	array_num = pTask->replace_instr.number * sizeof(uint32_t);
 
