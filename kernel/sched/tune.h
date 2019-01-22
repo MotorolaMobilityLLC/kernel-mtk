@@ -1,4 +1,3 @@
-
 #ifdef CONFIG_SCHED_TUNE
 
 #include <linux/reciprocal_div.h>
@@ -27,6 +26,8 @@ void show_ste_info(void);
 void show_pwr_info(void);
 
 extern int sys_boosted;
+extern int idle_prefer_mode;
+extern bool idle_prefer_need(void);
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 

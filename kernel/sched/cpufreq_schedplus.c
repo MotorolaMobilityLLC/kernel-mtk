@@ -174,6 +174,8 @@ struct gov_data {
 	ktime_t down_throttle;
 	unsigned int up_throttle_nsec;
 	unsigned int down_throttle_nsec;
+	unsigned int up_throttle_nsec_bk;
+	unsigned int down_throttle_nsec_bk;
 	unsigned int throttle_nsec;
 	struct task_struct *task;
 	struct irq_work irq_work;
@@ -184,6 +186,18 @@ struct gov_data {
 	enum throttle_type thro_type; /* throttle up or down */
 	u64 last_freq_update_time;
 };
+
+void temporary_dvfs_down_throttle_change(int change, unsigned long new_throttle)
+{
+	int i;
+
+	for (i = 0; i < MAX_CLUSTER_NR; i++) {
+		if (change)
+			g_gd[i]->down_throttle_nsec = new_throttle;
+		else
+			g_gd[i]->down_throttle_nsec = g_gd[i]->down_throttle_nsec_bk;
+	}
+}
 
 void show_freq_kernel_log(int dbg_id, int cid, unsigned int freq)
 {
@@ -879,6 +893,7 @@ static ssize_t store_up_throttle_nsec(struct cpufreq_policy *policy,
 	if (ret < 0)
 		return ret;
 	gd->up_throttle_nsec = val;
+	gd->up_throttle_nsec_bk = val;
 	return count;
 }
 
@@ -902,6 +917,7 @@ static ssize_t store_down_throttle_nsec(struct cpufreq_policy *policy,
 	if (ret < 0)
 		return ret;
 	gd->down_throttle_nsec = val;
+	gd->down_throttle_nsec_bk = val;
 	return count;
 }
 
@@ -989,8 +1005,10 @@ static int __init cpufreq_sched_init(void)
 			WARN_ON(1);
 			return -ENOMEM;
 		}
-		g_gd[i]->up_throttle_nsec = THROTTLE_UP_NSEC;
-		g_gd[i]->down_throttle_nsec = THROTTLE_DOWN_NSEC;
+		g_gd[i]->up_throttle_nsec      = THROTTLE_UP_NSEC;
+		g_gd[i]->down_throttle_nsec    = THROTTLE_DOWN_NSEC;
+		g_gd[i]->up_throttle_nsec_bk   = THROTTLE_UP_NSEC;
+		g_gd[i]->down_throttle_nsec_bk = THROTTLE_DOWN_NSEC;
 		g_gd[i]->throttle_nsec = THROTTLE_NSEC;
 		g_gd[i]->last_freq_update_time = 0;
 		/* keep cid needed */

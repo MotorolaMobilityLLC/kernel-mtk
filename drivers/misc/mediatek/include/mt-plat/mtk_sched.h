@@ -49,6 +49,7 @@ enum sched_status_t {
 enum {
 	LT_WALT_POWERHAL  = 0,
 	LT_WALT_FPSGO,
+	LT_WALT_SCHED,
 	LT_UNKNOWN_USER
 };
 
