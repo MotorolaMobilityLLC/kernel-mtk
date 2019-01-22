@@ -326,7 +326,8 @@ int pd_custom_vdm(struct typec_hba *hba, int cnt, uint32_t *payload,
 			len = handle_dc_auth(hba->dc, cnt, payload, rpayload);
 		} else if (hba->dc->auth_pass > 0) {
 			mtk_direct_charging_payload(hba->dc, cnt, payload);
-			complete(&hba->dc->rx_event);
+			hba->dc->data_in = true;
+			wake_up(&hba->dc->wq);
 		} else {
 			dev_err(hba->dev, "%s can not handle RT7207 CMD\n", __func__);
 		}

@@ -59,7 +59,8 @@ struct pd_direct_chrg {
 	struct mutex vdm_payload_lock;
 	bool dc_vdm_inited;
 	uint32_t vdm_payload[7];
-	struct completion rx_event;
+	wait_queue_head_t wq;
+	bool data_in;
 	uint32_t auth_code;
 	int32_t auth_pass;
 #ifdef CONFIG_DEBUG_FS
