@@ -946,12 +946,12 @@ VOID nicCmdEventSetMediaStreamMode(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prC
 VOID nicCmdEventSetStopSchedScan(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
 {
 	/*
-	 *  DBGLOG(SCN, INFO, "--->nicCmdEventSetStopSchedScan\n" ));
+	 * DBGLOG(SCN, INFO, "--->nicCmdEventSetStopSchedScan\n" ));
 	 */
 	ASSERT(prAdapter);
 	ASSERT(prCmdInfo);
 	/*
-	 *  DBGLOG(SCN, INFO, "<--kalSchedScanStopped\n" );
+	 * DBGLOG(SCN, INFO, "<--kalSchedScanStopped\n" );
 	 */
 	if (prCmdInfo->fgIsOid) {
 		/* Update Set Information Length */
@@ -960,8 +960,8 @@ VOID nicCmdEventSetStopSchedScan(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmd
 	}
 
 	DBGLOG(SCN, INFO, "nicCmdEventSetStopSchedScan OID done, release lock and send event to uplayer\n");
-	/*Due to dead lock issue, need to release the IO control before calling kernel APIs */
-	kalSchedScanStopped(prAdapter->prGlueInfo);
+	/* Due to dead lock issue, need to release the IO control before calling kernel APIs */
+	kalSchedScanStopped(prAdapter->prGlueInfo, !prCmdInfo->fgIsOid);
 
 }
 
@@ -3026,6 +3026,22 @@ VOID nicEventTdls(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 {
 	TdlsexEventHandle(prAdapter->prGlueInfo, (PUINT_8)prEvent->aucBuffer,
 		(UINT_32)(prEvent->u2PacketLength - 8));
+}
+
+VOID nicEventRssiMonitor(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
+{
+	INT_32 rssi = 0;
+	P_GLUE_INFO_T prGlueInfo;
+	struct wiphy *wiphy;
+
+	prGlueInfo = prAdapter->prGlueInfo;
+	wiphy = priv_to_wiphy(prGlueInfo);
+
+	kalMemCopy(&rssi, prEvent->aucBuffer, sizeof(INT_32));
+	DBGLOG(RX, TRACE, "EVENT_ID_RSSI_MONITOR value=%d\n", rssi);
+
+	mtk_cfg80211_vendor_event_rssi_beyond_range(wiphy,
+		prGlueInfo->prDevHandler->ieee80211_ptr, rssi);
 }
 
 VOID nicEventDumpMem(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)

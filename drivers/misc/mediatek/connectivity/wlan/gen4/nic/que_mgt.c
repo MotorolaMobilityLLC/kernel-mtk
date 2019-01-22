@@ -4670,7 +4670,7 @@ VOID qmHandleEventBssAbsencePresence(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 	/* DBGLOG(QM, TRACE, ("qmHandleEventBssAbsencePresence (ucNetTypeIdx=%d, fgIsAbsent=%d, FreeQuota=%d)\n", */
 	/* prEventBssStatus->ucNetTypeIdx, prBssInfo->fgIsNetAbsent, prBssInfo->ucBssFreeQuota)); */
 
-	DBGLOG(QM, INFO, "NAF=%d,%d,%d\n",
+	DBGLOG(QM, INFO, "Bss Absence Presence NAF=%d,%d,%d\n",
 	       prEventBssStatus->ucBssIndex, prBssInfo->fgIsNetAbsent, prBssInfo->ucBssFreeQuota);
 
 	if (!prBssInfo->fgIsNetAbsent) {

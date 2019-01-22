@@ -111,7 +111,7 @@
 VOID nicpmWakeUpWiFi(IN P_ADAPTER_T prAdapter)
 {
 	if (!nicVerifyChipID(prAdapter)) {
-		DBGLOG(INIT, ERROR, "Chip id verify error!\n");
+		DBGLOG(NIC, ERROR, "Chip id verify error!\n");
 		return;
 	}
 	HAL_WAKE_UP_WIFI(prAdapter);

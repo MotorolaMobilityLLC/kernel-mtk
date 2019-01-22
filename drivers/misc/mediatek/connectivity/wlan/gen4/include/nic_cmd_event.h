@@ -70,7 +70,7 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
-
+#include "gl_vendor.h"
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -400,6 +400,10 @@ enum {
 #endif /* CFG_SUPPORT_MU_MIMO */
 #endif /* CFG_SUPPORT_QA_TOOL */
 
+#define SCN_PSCAN_SWC_RSSI_WIN_MAX  75
+#define SCN_PSCAN_SWC_MAX_NUM       8
+#define SCN_PSCAN_HOTLIST_REPORT_MAX_NUM 8
+
 typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_DUMMY_RSV = 0x00,	/* 0x00 (Set) */
 	CMD_ID_TEST_CTRL = 0x01,	/* 0x01 (Set) */
@@ -489,6 +493,15 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_PF_CAPAILITY = 0x59,	/* 0x59 (Set) */
 #endif
 
+	/* CFG_SUPPORT_GSCN  */
+	CMD_ID_GET_PSCAN_CAPABILITY = 0x60,	/* 0x60 (Set) */
+	CMD_ID_SET_PSCAN_ENABLE,	/* 0x61 (Set) */
+	CMD_ID_SET_PSCAN_PARAM,	/* 0x62 (Set) */
+	CMD_ID_SET_GSCAN_ADD_HOTLIST_BSSID,	/* 0x63 (Set) */
+	CMD_ID_SET_GSCAN_ADD_SWC_BSSID,	/* 0x64 (Set) */
+	CMD_ID_SET_GSCAN_MAC_ADDR,	/* 0x65 (Set) */
+	CMD_ID_GET_GSCAN_RESULT,	/* 0x66 (Get) */
+
 #if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
 	CMD_ID_SET_ROAMING_SKIP = 0x6D,	/* 0x6D (Set) used to setting roaming skip*/
 #endif
@@ -509,7 +522,9 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_CAL_BACKUP_IN_HOST_V2 = 0xAE,	/* 0xAE (Set / Query) */
 #endif
 
-	CMD_ID_ACCESS_REG = 0xc0,	/* 0xc0 (Set / Query) */
+	CMD_ID_WFC_KEEP_ALIVE = 0xA0,	/* 0xa0(Set) */
+	CMD_ID_RSSI_MONITOR = 0xA1,	/* 0xa1(Set) */
+	CMD_ID_ACCESS_REG = 0xC0,	/* 0xc0 (Set / Query) */
 	CMD_ID_MAC_MCAST_ADDR,	/* 0xc1 (Set / Query) */
 	CMD_ID_802_11_PMKID,	/* 0xc2 (Set / Query) */
 	CMD_ID_ACCESS_EEPROM,	/* 0xc3 (Set / Query) */
@@ -589,6 +604,14 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_RTT_UPDATE_RANGE = 0x29,	/* 0x29 (Unsoiicited) */
 	EVENT_ID_CHECK_REORDER_BUBBLE = 0x2a,	/* 0x2a (Unsoiicited) */
 	EVENT_ID_BATCH_RESULT = 0x2b,	/* 0x2b (Query) */
+	/* CFG_SUPPORT_GSCN  */
+	EVENT_ID_GSCAN_CAPABILITY = 0x30,
+	EVENT_ID_GSCAN_SCAN_COMPLETE = 0x31,
+	EVENT_ID_GSCAN_FULL_RESULT = 0x32,
+	EVENT_ID_GSCAN_SIGNIFICANT_CHANGE = 0x33,
+	EVENT_ID_GSCAN_GEOFENCE_FOUND = 0x34,
+	EVENT_ID_GSCAN_SCAN_AVAILABLE = 0x35,
+	EVENT_ID_GSCAN_RESULT = 0x36,
 
 	EVENT_ID_UART_ACK = 0x40,	/* 0x40 (Unsolicited) */
 	EVENT_ID_UART_NAK,	/* 0x41 (Unsolicited) */
@@ -615,6 +638,8 @@ typedef enum _ENUM_EVENT_ID_T {
 
 	EVENT_ID_UPDATE_COEX_PHYRATE = 0x90,	/* 0x90 (Unsolicited) */
 
+	EVENT_ID_RSSI_MONITOR = 0xA1,
+
 #if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
 	EVENT_ID_CAL_BACKUP_IN_HOST_V2 = 0xAE,	/* 0xAE (Query - CMD_ID_CAL_BACKUP) */
 	EVENT_ID_CAL_ALL_DONE = 0xAF,	/* 0xAF (FW Cal All Done Event) */
@@ -639,6 +664,16 @@ typedef enum _ENUM_EVENT_ID_T {
 
 	EVENT_ID_END
 } ENUM_EVENT_ID_T, *P_ENUM_EVENT_ID_T;
+
+#define CMD_ID_SET_PSCN_ADD_HOTLIST_BSSID CMD_ID_SET_GSCAN_ADD_HOTLIST_BSSID	/* 0x45 (Set) */
+#define CMD_ID_SET_PSCN_ADD_SW_BSSID CMD_ID_SET_GSCAN_ADD_SWC_BSSID	/* 0x46 (Set) */
+#define CMD_ID_SET_PSCN_MAC_ADDR     CMD_ID_SET_GSCAN_MAC_ADDR          /* 0x65 (Set) */	/* 0x47 (Set) */
+#define CMD_ID_SET_PSCN_ENABLE      CMD_ID_SET_PSCAN_ENABLE
+
+#define NLO_CHANNEL_TYPE_SPECIFIED	0
+#define NLO_CHANNEL_TYPE_DUAL_BAND	1
+#define NLO_CHANNEL_TYPE_2G4_ONLY	2
+#define NLO_CHANNEL_TYPE_5G_ONLY	3
 
 #if CFG_WOW_SUPPORT
 
@@ -1860,6 +1895,69 @@ typedef struct _CMD_SET_WMM_PS_TEST_STRUCT_T {
 	UINT_8 ucIsDisableUcTrigger;	/* not to trigger UC on beacon TIM is matched (under U-APSD) */
 } CMD_SET_WMM_PS_TEST_STRUCT_T, *P_CMD_SET_WMM_PS_TEST_STRUCT_T;
 
+typedef struct _GSCN_CHANNEL_INFO_T {
+	UINT_8 ucBand;
+	UINT_8 ucChannelNumber;	/* Channel Number */
+	UINT_8 ucPassive;	/* 0 => active, 1 => passive scan; ignored for DFS */
+	UINT_8 aucReserved[1];
+
+	UINT_32 u4DwellTimeMs;	/* dwell time hint */
+	/* Add channel class */
+} GSCN_CHANNEL_INFO_T, *P_GSCN_CHANNEL_INFO_T;
+
+typedef struct _GSCAN_BUCKET_T {
+	UINT_16 u2BucketIndex;	/* bucket index, 0 based */
+	UINT_8 ucBucketFreqMultiple;	/* desired period, in millisecond;
+					 * if this is too low, the firmware should choose to generate
+					 * results as fast as it can instead of failing the command
+					 */
+	 /* report_events semantics -
+	  *  This is a bit field; which defines following bits -
+	  *  REPORT_EVENTS_EACH_SCAN	=> report a scan completion event after scan. If this is not set
+	  *				    then scan completion events should be reported if
+	  *				    report_threshold_percent or report_threshold_num_scans is
+	  *				    reached.
+	  *  REPORT_EVENTS_FULL_RESULTS => forward scan results (beacons/probe responses + IEs)
+	  *				    in real time to HAL, in addition to completion events
+	  *				    Note: To keep backward compatibility, fire completion
+	  *				    events regardless of REPORT_EVENTS_EACH_SCAN.
+	  *  REPORT_EVENTS_NO_BATCH	=> controls if scans for this bucket should be placed in the
+	  *				    history buffer
+	  */
+	UINT_8 ucReportFlag;
+	UINT_8 ucMaxBucketFreqMultiple; /* max_period / base_period */
+	UINT_8 ucStepCount;
+	UINT_8 ucNumChannels;
+	UINT_8 aucReserved[1];
+	WIFI_BAND eBand;	/* when UNSPECIFIED, use channel list */
+	GSCN_CHANNEL_INFO_T arChannelList[GSCAN_MAX_CHANNELS];	/* channels to scan; these may include DFS channels */
+} GSCAN_BUCKET_T, *P_GSCAN_BUCKET_T;
+
+typedef struct _CMD_GSCN_REQ_T {
+	UINT_8 ucFlags;
+	UINT_8 ucNumScnToCache;
+	UINT_8 aucReserved[2];
+	UINT_32 u4BufferThreshold;
+	UINT_32 u4BasePeriod;	/* base timer period in ms */
+	UINT_32 u4NumBuckets;
+	UINT_32 u4MaxApPerScan;	/* number of APs to store in each scan in the */
+	/* BSSID/RSSI history buffer (keep the highest RSSI APs) */
+	GSCAN_BUCKET_T arBucket[GSCAN_MAX_BUCKETS];
+} CMD_GSCN_REQ_T, *P_CMD_GSCN_REQ_T;
+
+typedef struct _CMD_GSCN_SCN_COFIG_T {
+	UINT_8 ucNumApPerScn;		/* GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN */
+	UINT_32 u4BufferThreshold;	/* GSCAN_ATTRIBUTE_REPORT_THRESHOLD */
+	UINT_32 u4NumScnToCache;	/* GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE */
+} CMD_GSCN_SCN_COFIG_T, *P_CMD_GSCN_SCN_COFIG_T;
+
+typedef struct _CMD_GET_GSCAN_RESULT {
+	UINT_8 ucVersion;
+	UINT_8 aucReserved[2];
+	UINT_8 ucFlush;
+	UINT_32 u4Num;
+} CMD_GET_GSCAN_RESULT_T, *P_CMD_GET_GSCAN_RESULT_T;
+
 /* Definition for CHANNEL_INFO.ucBand:
  * 0:       Reserved
  * 1:       BAND_2G4
@@ -2388,13 +2486,18 @@ typedef enum _ENUM_NLO_AUTH_ALGORITHM {
 	NLO_AUTH_ALGO_RSNA_PSK = 7,
 } ENUM_NLO_AUTH_ALGORITHM, *P_ENUM_NLO_AUTH_ALGORITHM;
 
-typedef struct _NLO_NETWORK {
-	UINT_8 ucNumChannelHint[4];
+struct NLO_SSID_MATCH_SETS {
+	INT_8 cRssiThresold;
 	UINT_8 ucSSIDLength;
-	UINT_8 ucCipherAlgo;
-	UINT_16 u2AuthAlgo;
 	UINT_8 aucSSID[32];
-} NLO_NETWORK, *P_NLO_NETWORK;
+};
+
+struct NLO_NETWORK {
+	UINT_8 ucChannelType; /* 0: specific channel; 1: dual band; 2: 2.4G; 3: 5G; 3*/
+	UINT_8 ucChnlNum;
+	UINT_8 aucChannel[94];
+	struct NLO_SSID_MATCH_SETS arMatchSets[16];
+};
 
 typedef struct _CMD_NLO_REQ {
 	UINT_8 ucSeqNum;
@@ -2406,7 +2509,7 @@ typedef struct _CMD_NLO_REQ {
 	UINT_8 ucEntryNum;
 	UINT_8 ucFlag;		/* BIT(0) Check cipher */
 	UINT_16 u2IELen;
-	NLO_NETWORK arNetworkList[16];
+	struct NLO_NETWORK rNLONetwork;
 	UINT_8 aucIE[0];
 } CMD_NLO_REQ, *P_CMD_NLO_REQ;
 
@@ -2570,6 +2673,109 @@ typedef struct _CMD_STATS_LOG_T {
 	UINT_32 u4DurationInMs;
 	UINT_8 aucReserved[32];
 } CMD_STATS_LOG_T, *P_CMD_STATS_LOG_T;
+
+typedef struct _EVENT_GSCAN_CAPABILITY_T {
+	UINT_8 ucVersion;
+	UINT_8 aucReserved1[3];
+	UINT_32 u4MaxScanCacheSize;
+	UINT_32 u4MaxScanBuckets;
+	UINT_32 u4MaxApCachePerScan;
+	UINT_32 u4MaxRssiSampleSize;
+	UINT_32 u4MaxScanReportingThreshold;
+	UINT_32 u4MaxHotlistAps;
+	UINT_32 u4MaxSignificantWifiChangeAps;
+	UINT_32 au4Reserved[4];
+} EVENT_GSCAN_CAPABILITY_T, *P_EVENT_GSCAN_CAPABILITY_T;
+
+typedef struct _EVENT_GSCAN_SCAN_AVAILABLE_T {
+	UINT_16 u2Num;
+	UINT_8 aucReserved[2];
+} EVENT_GSCAN_SCAN_AVAILABLE_T, *P_EVENT_GSCAN_SCAN_AVAILABLE_T;
+
+typedef struct _EVENT_GSCAN_SCAN_COMPLETE_T {
+	UINT_8 ucScanState;
+	UINT_8 aucReserved[3];
+} EVENT_GSCAN_SCAN_COMPLETE_T, *P_EVENT_GSCAN_SCAN_COMPLETE_T;
+
+typedef struct WIFI_GSCAN_RESULT {
+	UINT_64 u8Ts;		/* Time of discovery           */
+	UINT_8 arSsid[ELEM_MAX_LEN_SSID + 1];	/* null terminated             */
+	UINT_8 arMacAddr[6];	/* BSSID                       */
+	UINT_32 u4Channel;	/* channel frequency in MHz    */
+	INT_32 i4Rssi;		/* in db                       */
+	UINT_64 u8Rtt;		/* in nanoseconds              */
+	UINT_64 u8RttSd;	/* standard deviation in rtt   */
+	UINT_16 u2BeaconPeriod;	/* units are Kusec             */
+	UINT_16 u2Capability;	/* Capability information      */
+	UINT_32 u4IeLength;	/* byte length of Information Elements */
+	UINT_8 ucIeData[1];	/* IE data to follow           */
+} WIFI_GSCAN_RESULT_T, *P_WIFI_GSCAN_RESULT_T;
+
+typedef struct _EVENT_GSCAN_RESULT_T {
+	UINT_8 ucVersion;
+	UINT_8 aucReserved[3];
+	UINT_16 u2ScanId;
+	UINT_16 u2ScanFlags;
+	UINT_16 u2NumOfResults;
+	WIFI_GSCAN_RESULT_T rResult[1];
+} EVENT_GSCAN_RESULT_T, *P_EVENT_GSCAN_RESULT_T;
+
+typedef struct _EVENT_GSCAN_FULL_RESULT_T {
+	WIFI_GSCAN_RESULT_T rResult;
+	UINT_32 u4BucketMask;		/* scan chbucket bitmask */
+	UINT_32 u4IeLength;		/* byte length of Information Elements */
+	UINT_8  ucIeData[1];		/* IE data to follow */
+} EVENT_GSCAN_FULL_RESULT_T, *P_EVENT_GSCAN_FULL_RESULT_T;
+
+typedef struct GSCAN_SWC_NET {
+	UINT_16 u2Flags;
+	UINT_16 u2Channel;
+	UINT_8 arBssid[6];
+	INT_8 aicRssi[SCN_PSCAN_SWC_RSSI_WIN_MAX];
+} GSCAN_SWC_NET_T, P_GSCAN_SWC_NET_T;
+
+typedef struct _EVENT_GSCAN_SIGNIFICANT_CHANGE_T {
+	UINT_8 ucVersion;
+	UINT_8 aucReserved[3];
+	GSCAN_SWC_NET_T arNet[SCN_PSCAN_SWC_MAX_NUM];
+} EVENT_GSCAN_SIGNIFICANT_CHANGE_T, *P_EVENT_GSCAN_SIGNIFICANT_CHANGE_T;
+
+typedef struct _EVENT_GSCAN_GEOFENCE_FOUND_T {
+	UINT_8 ucVersion;
+	UINT_8 aucReserved[3];
+	WIFI_GSCAN_RESULT_T rResult[SCN_PSCAN_HOTLIST_REPORT_MAX_NUM];
+} EVENT_GSCAN_GEOFENCE_FOUND_T, *P_EVENT_GSCAN_GEOFENCE_FOUND_T;
+
+typedef struct _CMD_SET_PSCAN_PARAM {
+	UINT_8 ucVersion;
+	CMD_NLO_REQ rCmdNloReq;
+	CMD_BATCH_REQ_T rCmdBatchReq;
+	CMD_GSCN_REQ_T rCmdGscnReq;
+	BOOLEAN fgNLOScnEnable;
+	BOOLEAN fgBatchScnEnable;
+	BOOLEAN fgGScnEnable;
+	UINT_32 u4BasePeriod;
+} CMD_SET_PSCAN_PARAM, *P_CMD_SET_PSCAN_PARAM;
+
+typedef struct _CMD_SET_PSCAN_ADD_HOTLIST_BSSID {
+	UINT_8 aucMacAddr[6];
+	UINT_8 ucFlags;
+	UINT_8 aucReserved[5];
+} CMD_SET_PSCAN_ADD_HOTLIST_BSSID, *P_CMD_SET_PSCAN_ADD_HOTLIST_BSSID;
+
+typedef struct _CMD_SET_PSCAN_ADD_SWC_BSSID {
+	INT_32 i4RssiLowThreshold;
+	INT_32 i4RssiHighThreshold;
+	UINT_8 aucMacAddr[6];
+	UINT_8 aucReserved[6];
+} CMD_SET_PSCAN_ADD_SWC_BSSID, *P_CMD_SET_PSCAN_ADD_SWC_BSSID;
+
+typedef struct _CMD_SET_PSCAN_MAC_ADDR {
+	UINT_8 ucVersion;
+	UINT_8 ucFlags;
+	UINT_8 aucMacAddr[6];
+	UINT_8 aucReserved[8];
+} CMD_SET_PSCAN_MAC_ADDR, *P_CMD_SET_PSCAN_MAC_ADDR;
 
 typedef struct _EVENT_WIFI_RDD_TEST_T {
 	UINT_32 u4FuncIndex;
@@ -2808,6 +3014,7 @@ VOID nicEventCalAllDone(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 #endif
 VOID nicEventDebugMsg(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventTdls(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
+VOID nicEventRssiMonitor(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventDumpMem(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventAssertDump(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventHifCtrl(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);

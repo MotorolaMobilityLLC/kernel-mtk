@@ -546,6 +546,9 @@ rlmDomainGetChnlList(P_ADAPTER_T prAdapter,
 		     ENUM_BAND_T eSpecificBand, BOOLEAN fgNoDfs,
 		     UINT_8 ucMaxChannelNum, PUINT_8 pucNumOfChannel, P_RF_CHANNEL_INFO_T paucChannelList);
 
+VOID rlmDomainGetDfsChnls(P_ADAPTER_T prAdapter,
+			  UINT_8 ucMaxChannelNum, PUINT_8 pucNumOfChannel, P_RF_CHANNEL_INFO_T paucChannelList);
+
 VOID rlmDomainSendCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);
 
 VOID rlmDomainSendDomainInfoCmd(P_ADAPTER_T prAdapter, BOOLEAN fgIsOid);

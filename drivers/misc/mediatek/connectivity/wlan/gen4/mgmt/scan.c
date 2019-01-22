@@ -185,7 +185,7 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 
 		pucRoamBSSBuff += ALIGN_4(sizeof(ROAM_BSS_DESC_T));
 	}
-	ASSERT(((ULONG) pucRoamBSSBuff - (ULONG)&prScanInfo->aucScanRoamBuffer[0]) ==
+	ASSERT(((ULONG)pucRoamBSSBuff - (ULONG)&prScanInfo->aucScanRoamBuffer[0]) ==
 	       SCN_ROAM_MAX_BUFFER_SIZE);
 #endif
 	/* reset freest channel information */
@@ -193,6 +193,34 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 
 	/* reset NLO state */
 	prScanInfo->fgNloScanning = FALSE;
+#if CFG_SUPPORT_SCN_PSCN
+	prScanInfo->fgPscnOngoing = FALSE;
+	prScanInfo->fgGScnConfigSet = FALSE;
+	prScanInfo->fgGScnParamSet = FALSE;
+	prScanInfo->prPscnParam = kalMemAlloc(sizeof(CMD_SET_PSCAN_PARAM), VIR_MEM_TYPE);
+	if (!(prScanInfo->prPscnParam)) {
+		DBGLOG(SCN, ERROR, "Alloc memory for CMD_SET_PSCAN_PARAM fail\n");
+		return;
+	}
+	kalMemZero(prScanInfo->prPscnParam, sizeof(CMD_SET_PSCAN_PARAM));
+
+	prScanInfo->eCurrentPSCNState = PSCN_IDLE;
+#endif
+
+#if CFG_SUPPORT_GSCN
+	prScanInfo->prGscnFullResult = kalMemAlloc(offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data)
+			+ CFG_IE_BUFFER_SIZE, VIR_MEM_TYPE);
+	if (!(prScanInfo->prGscnFullResult)) {
+#if CFG_SUPPORT_SCN_PSCN
+		kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(CMD_SET_PSCAN_PARAM));
+#endif
+		DBGLOG(SCN, ERROR, "Alloc memory for PARAM_WIFI_GSCAN_FULL_RESULT fail\n");
+		return;
+	}
+	kalMemZero(prScanInfo->prGscnFullResult,
+		offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data) + CFG_IE_BUFFER_SIZE);
+#endif
+
 }				/* end of scnInit() */
 
 VOID scnFreeAllPendingScanRquests(IN P_ADAPTER_T prAdapter)
@@ -257,6 +285,17 @@ VOID scnUninit(IN P_ADAPTER_T prAdapter)
 #if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
 	LINK_INITIALIZE(&prScanInfo->rRoamFreeBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rRoamBSSDescList);
+#endif
+
+#if CFG_SUPPORT_SCN_PSCN
+	kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(CMD_SET_PSCAN_PARAM));
+
+	prScanInfo->eCurrentPSCNState = PSCN_IDLE;
+#endif
+
+#if CFG_SUPPORT_GSCN
+	kalMemFree(prScanInfo->prGscnFullResult, VIR_MEM_TYPE,
+		offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data) + CFG_IE_BUFFER_SIZE);
 #endif
 }				/* end of scnUninit() */
 
@@ -1858,7 +1897,7 @@ WLAN_STATUS scanAddScanResult(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDes
 	nicAddScanResult(prAdapter,
 			 rMacAddr,
 			 &rSsid,
-			 prWlanBeaconFrame->u2CapInfo & CAP_INFO_PRIVACY ? 1 : 0,
+			 prWlanBeaconFrame->u2CapInfo,
 			 RCPI_TO_dBm(prBssDesc->ucRCPI),
 			 eNetworkType,
 			 &rConfiguration,
@@ -2022,7 +2061,11 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 		if (prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE || prBssDesc->eBSSType == BSS_TYPE_IBSS) {
 			/* for AIS, send to host */
 			prAdapter->rWlanInfo.u4ScanDbgTimes3++;
-			if (prConnSettings->fgIsScanReqIssued) {
+			if (prConnSettings->fgIsScanReqIssued || prAdapter->rWifiVar.rScanInfo.fgNloScanning
+#if CFG_SUPPORT_SCN_PSCN
+			|| prAdapter->rWifiVar.rScanInfo.fgPscnOngoing
+#endif
+			) {
 				BOOLEAN fgAddToScanResult;
 
 				fgAddToScanResult = scanCheckBssIsLegal(prAdapter, prBssDesc);
@@ -2129,7 +2172,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 		/* 4 <2.1> Check Unsupported BSS PHY Type */
 		if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
 
-			DBGLOG(SCN, INFO, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n", prBssDesc->ucPhyTypeSet);
+			DBGLOG(SCN, TRACE, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n", prBssDesc->ucPhyTypeSet);
 			continue;
 		}
 		/* 4 <2.2> Check if has unknown NonHT BSS Basic Rate Set. */
@@ -2225,7 +2268,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 			if ((prConnSettings->fgIsConnByBssidIssued) &&
 				(prBssDesc->eBSSType == BSS_TYPE_INFRASTRUCTURE)) {
 				if (UNEQUAL_MAC_ADDR(prConnSettings->aucBSSID, prBssDesc->aucBSSID)) {
-					DBGLOG(SCN, INFO, "SEARCH: Ignore due to BSSID was not matched!\n");
+					DBGLOG(SCN, LOUD, "SEARCH: Ignore due to BSSID was not matched!\n");
 					continue;
 				}
 			}

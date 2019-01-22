@@ -356,7 +356,7 @@ typedef struct _PARAM_AUTH_EVENT_T {
 typedef struct _PARAM_BSSID_EX_T {
 	UINT_32 u4Length;	/*!< Length of structure */
 	PARAM_MAC_ADDRESS arMacAddress;	/*!< BSSID */
-	UINT_8 Reserved[2];
+	UINT_16 u2CapInfo;
 	PARAM_SSID_T rSsid;	/*!< SSID */
 	UINT_32 u4Privacy;	/*!< Need WEP encryption */
 	PARAM_RSSI rRssi;	/*!< in dBm */
@@ -1861,9 +1861,12 @@ typedef struct _PARAM_SCAN_REQUEST_ADV_T {
 typedef struct _PARAM_SCHED_SCAN_REQUEST_T {
 	UINT_32 u4SsidNum;
 	PARAM_SSID_T arSsid[CFG_SCAN_SSID_MATCH_MAX_NUM];
+	INT_8 acRssiThresold[CFG_SCAN_SSID_MATCH_MAX_NUM];
 	UINT_32 u4IELength;
 	PUINT_8 pucIE;
 	UINT_16 u2ScanInterval;	/* in milliseconds */
+	UINT_8 ucChnlNum;
+	PUINT_8 pucChannels;
 } PARAM_SCHED_SCAN_REQUEST, *P_PARAM_SCHED_SCAN_REQUEST;
 
 #if CFG_SUPPORT_PASSPOINT
@@ -1887,6 +1890,26 @@ typedef struct _PARAM_CUSTOM_MONITOR_SET_STRUCT_T {
 	UINT_8 aucResv[9];
 } PARAM_CUSTOM_MONITOR_SET_STRUCT_T, *P_PARAM_CUSTOM_MONITOR_SET_STRUCT_T;
 #endif
+
+/*--------------------------------------------------------------*/
+/*! \brief PSCN Scan Request Container            */
+/*--------------------------------------------------------------*/
+
+typedef struct _CMD_GET_PSCAN_CAPABILITY {
+	/*TBD*/
+} CMD_GET_GSCAN_CAPABILITY, *P_CMD_GET_GSCAN_CAPABILITY;
+
+typedef enum _ENUM_PSCAN_ACT_T {
+	PSCAN_ACT_DISABLE = 0,
+	PSCAN_ACT_ENABLE,
+	PSCAN_ACT_SUSPEND,
+	PSCAN_ACT_CLEAR
+} ENUM_PSCAN_ACT_T, *P_ENUM_PSCAN_ACT_T;
+
+typedef struct _CMD_SET_PSCAN_ENABLE {
+	UINT_8 ucPscanAct;
+	UINT_8 aucReserved[3];
+} CMD_SET_PSCAN_ENABLE, *P_CMD_SET_PSCAN_ENABLE;
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 /*--------------------------------------------------------------*/
@@ -2065,6 +2088,10 @@ wlanoidSetAtimWindow(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS
 wlanoidSetChannel(IN P_ADAPTER_T prAdapter,
 		  IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidRssiMonitor(IN P_ADAPTER_T prAdapter,
+		   OUT PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
 
 WLAN_STATUS
 wlanoidQueryRssi(IN P_ADAPTER_T prAdapter,
@@ -2627,11 +2654,32 @@ WLAN_STATUS wlanoidSetMonitor(IN P_ADAPTER_T prAdapter,
 			      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 #endif
 
+#if CFG_SUPPORT_GSCN
+WLAN_STATUS
+wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidSetGSCNParam(IN P_ADAPTER_T prAdapter,
+		    IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidSetGSCNConfig(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidGetGSCNResult(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+#endif
+
 WLAN_STATUS
 wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
-				IN PVOID pvSetBuffer,
-				IN UINT_32 u4SetBufferLen,
-				OUT PUINT_32 pu4SetInfoLen);
+		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidPacketKeepAlive(IN P_ADAPTER_T prAdapter,
+		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
 #if CFG_SUPPORT_DBDC
 WLAN_STATUS
 wlanoidSetDbdcEnable(
