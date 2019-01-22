@@ -14,11 +14,6 @@
 #ifndef _HAL_TYPES_PRIVATE_H_
 #define _HAL_TYPES_PRIVATE_H_
 
-#define DumpReg__   /* /< Dump Reg for debug */
-#ifdef DumpReg__
-#include <stdio.h>
-#endif
-
 #include "val_types_private.h"
 #include "hal_types_public.h"
 
