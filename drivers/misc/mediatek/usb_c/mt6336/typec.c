@@ -2293,8 +2293,13 @@ void auxadc_detect_cableout_hanlder(void)
 	vbus = typec_vbus(hba);
 
 	if ((val < SNK_VRPUSB_AUXADC_MIN_VAL) && ((vbus < (PD_VSAFE5V_LOW)) || (vbus < pre_vbus))) {
-		if (hba->charger_det_notify)
+		if (hba->is_kpoc && hba->charger_det_notify)
 			hba->charger_det_notify(0);
+
+		if (hba->vbus_det_en)
+			typec_vbus_present(hba, 0);
+
+		pre_vbus = 0;
 	} else {
 		pre_vbus = vbus;
 		typec_enable_auxadc(hba, 1, 0);
@@ -2516,6 +2521,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	hba->task_state = PD_STATE_DISABLED;
 	hba->is_kpoc = false;
 	hba->is_boost = false;
+	hba->is_shutdown = false;
 	hba->wq_running = 0;
 	hba->wq_cnt = 0;
 
