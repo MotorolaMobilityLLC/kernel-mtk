@@ -15,6 +15,7 @@ config TRUSTONIC_TEE_VERSION
 	depends on TRUSTONIC_TEE_SUPPORT
 	default "302d" if (MACH_MT6757)
 	default "311c"
+	default "400b" if (MACH_MT6775)
 
 #config MT_TRUSTONIC_TEE_DEBUGFS
 #	bool "Enable Trustonic TEE debugfs"
@@ -86,11 +87,3 @@ config TRUSTONIC_TRUSTED_UI
 	  Trustonic TUI features was based on Trustonic TEE mechanism to protect
 	  Touch/Display inside TEE, to prevent malicious access of sensitive data
 	  used by APPs like Banking.
-
-# TODO: Obsolete, to-be-removed
-#config TRUSTONIC_TRUSTED_UI_FB_BLANK
-#	bool "<t-base TUI with fb_blank"
-#	depends on TRUSTONIC_TRUSTED_UI
-#	default n
-#	---help---
-#	  Blank the framebuffer before starting a TUI session
