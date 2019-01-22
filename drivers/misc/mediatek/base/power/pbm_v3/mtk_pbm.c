@@ -417,7 +417,11 @@ static void init_md1_section_level(void)
 #endif
 	int section;
 
+#if defined(CONFIG_MTK_ECCCI_DRIVER)
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, SMEM_USER_RAW_DBM, NULL);
+#else
+	return;
+#endif
 
 	for (section = 1; section <= SECTION_NUM; section++) {
 		mem_2g |= md1_section_level_2g[section] << section_level[section];
@@ -881,7 +885,11 @@ static int get_md1_dBm_power(int scenario)
 	}
 
 	/* get dBm table from share-memory on EMI */
+#if defined(CONFIG_MTK_ECCCI_DRIVER)
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, 0, NULL);
+#else
+	return 0;
+#endif
 
 	if (share_mem == NULL) {
 #if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6771)
