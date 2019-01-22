@@ -838,7 +838,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF SRAM (last %d bytes)\n", length);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dest_buff, length);
 #if (MD_GENERATION >= 6293)
-		ccci_hif_dump_status(md->hif_flag, DUMP_FLAG_CCIF, 0);
+		ccci_hif_dump_status(md->hif_flag, DUMP_FLAG_CCIF | DUMP_FLAG_IRQ_STATUS, 0);
 #endif
 	}
 
