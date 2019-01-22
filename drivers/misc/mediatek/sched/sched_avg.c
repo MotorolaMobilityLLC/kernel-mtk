@@ -801,7 +801,7 @@ static struct timer_list tracker_timer;
 static void tracker_isr(unsigned long data)
 {
 	sched_max_util_task_tracking();
-	mod_timer(&tracker_timer, jiffies + HZ/100); /* 10ms */
+	mod_timer(&tracker_timer, jiffies + HZ/32); /* 32ms */
 }
 
 static int init_heavy_tlb(void)
@@ -884,7 +884,7 @@ static int init_heavy_tlb(void)
 
 		init_timer_deferrable(&tracker_timer);
 		tracker_timer.function = tracker_isr;
-		tracker_timer.expires = jiffies + HZ/100; /*10ms*/
+		tracker_timer.expires = jiffies + HZ/32; /*32ms*/
 		add_timer(&tracker_timer);
 
 		init_heavy = 1;
