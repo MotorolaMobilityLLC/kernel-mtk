@@ -1251,6 +1251,9 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 	struct mmc_blk_data *main_md = dev_get_drvdata(&card->dev);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	/* add for reset emmc when error happen */
+	current_mmc_part_type = md->part_type;
+
 	if (card->host->cmdq_support_changed == 1)
 		card->host->cmdq_support_changed = 0;
 	else

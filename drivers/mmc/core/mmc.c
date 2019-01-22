@@ -700,6 +700,13 @@ static int mmc_compare_ext_csds(struct mmc_card *card, unsigned bus_width)
 	u8 *bw_ext_csd;
 	int err;
 
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT)
+	/* add for emmc reset when error happen */
+	/* return directly because compare fail seldom happens when reinit emmc */
+	if (emmc_resetting_when_cmdq)
+		return 0;
+#endif
+
 	if (bus_width == MMC_BUS_WIDTH_1)
 		return 0;
 
@@ -1783,12 +1790,10 @@ err:
 	return err;
 }
 
-#ifdef CONFIG_MMC_FFU
 int mmc_reinit_oldcard(struct mmc_host *host)
 {
 	return mmc_init_card(host, host->card->ocr, host->card);
 }
-#endif
 
 static int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
 {
@@ -2071,8 +2076,10 @@ static int _mmc_resume(struct mmc_host *host)
 
 	if (mmc_card_is_sleep(host->card) && mmc_can_sleep(host->card)) {
 		err = mmc_awake(host);
-		if (err)
-			goto out;
+		/*
+		 * No matter if err happens, we should guarantee mmc can run
+		 * suspend next time.
+		 */
 		mmc_card_clr_sleep(host->card);
 	} else
 		err = mmc_init_card(host, host->card->ocr, host->card);
@@ -2081,7 +2088,7 @@ static int _mmc_resume(struct mmc_host *host)
 	/*
 	 * Turn on cache if eMMC reversion before v5.0
 	 */
-	if (host->card->ext_csd.rev < 7)
+	if (!err && host->card->ext_csd.rev < 7)
 		err = mmc_cache_ctrl(host, 1);
 
 out:

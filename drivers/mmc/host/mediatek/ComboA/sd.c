@@ -1056,17 +1056,24 @@ static void msdc_card_reset(struct mmc_host *mmc)
 
 	pr_notice("XXX msdc%d reset card\n", host->id);
 
-	if (host->power_control) {
-		host->power_control(host, 0);
-		udelay(10);
-		host->power_control(host, 1);
-	}
-	usleep_range(200, 500);
+	if (mmc->caps & MMC_CAP_HW_RESET) {
+		if (host->power_control) {
+			host->power_control(host, 0);
+			udelay(10);
+			host->power_control(host, 1);
+		}
+		usleep_range(200, 500);
 
-	msdc_pin_reset(host, MSDC_PIN_PULL_DOWN, 1);
-	udelay(2);
-	msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
-	usleep_range(200, 500);
+		msdc_pin_reset(host, MSDC_PIN_PULL_DOWN, 1);
+		udelay(2);
+		msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
+		usleep_range(200, 500);
+	}
+
+	mmc->ios.timing = MMC_TIMING_LEGACY;
+	mmc->ios.clock = 260000;
+	msdc_ops_set_ios(mmc, &mmc->ios);
+
 	msdc_init_hw(host);
 }
 
@@ -4059,7 +4066,8 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 
 	msdc_gate_clock(host, 1);
 
-	return 0;
+	/* return error to reset emmc when timeout occurs during autok */
+	return ret;
 }
 
 static void msdc_unreq_vcore(struct work_struct *work)

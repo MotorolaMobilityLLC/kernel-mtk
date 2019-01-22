@@ -490,6 +490,9 @@ void mmc_request_done(struct mmc_host *, struct mmc_request *);
 void mmc_handle_queued_request(struct mmc_host *host);
 int mmc_blk_end_queued_req(struct mmc_host *host,
 	struct mmc_async_req *areq, int index, int status);
+/* add for reset emmc when error happen */
+extern int current_mmc_part_type;
+extern int emmc_resetting_when_cmdq;
 #endif
 
 static inline void mmc_signal_sdio_irq(struct mmc_host *host)
