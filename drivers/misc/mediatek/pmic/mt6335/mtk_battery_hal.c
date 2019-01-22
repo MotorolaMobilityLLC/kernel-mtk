@@ -145,7 +145,7 @@ signed int MV_to_REG_12_value(signed int _reg)
 {
 	int ret = (_reg * 4096) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3);
 
-	bm_debug("[MV_to_REG_12_value] %d => %d\n", _reg, ret);
+	bm_trace("[MV_to_REG_12_value] %d => %d\n", _reg, ret);
 	return ret;
 }
 
@@ -153,7 +153,7 @@ signed int MV_to_REG_12_temp_value(signed int _reg)
 {
 	int ret = (_reg * 4096) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_2);
 
-	bm_debug("[MV_to_REG_12_temp_value] %d => %d\n", _reg, ret);
+	bm_trace("[MV_to_REG_12_temp_value] %d => %d\n", _reg, ret);
 	return ret;
 }
 
@@ -161,7 +161,7 @@ signed int REG_to_MV_value(signed int _reg)
 {
 	int ret = (_reg * VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3) / ADC_PRECISE;
 
-	bm_debug("[REG_to_MV_value] %d => %d\n", _reg, ret);
+	bm_trace("[REG_to_MV_value] %d => %d\n", _reg, ret);
 	return ret;
 }
 
@@ -169,7 +169,7 @@ signed int MV_to_REG_value(signed int _mv)
 {
 	int ret = (_mv * ADC_PRECISE) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3);
 
-	bm_debug("[MV_to_REG_value] %d => %d\n", _mv, ret);
+	bm_trace("[MV_to_REG_value] %d => %d\n", _mv, ret);
 	return ret;
 }
 
@@ -1862,7 +1862,7 @@ static signed int fg_is_charger_exist(void *data)
 	is_charger_exist = pmic_get_register_value(PMIC_RGS_CHRDET);
 	*(unsigned int *) (data) = is_charger_exist;
 
-	bm_debug("[fg_is_charger_exist] %d\n",
+	bm_trace("[fg_is_charger_exist] %d\n",
 			*(signed int *) (data));
 
 	return STATUS_OK;
