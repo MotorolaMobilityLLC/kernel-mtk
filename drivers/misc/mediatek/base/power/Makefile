@@ -52,6 +52,8 @@ obj-$(CONFIG_MACH_MT6763) += eem_v2/
 obj-$(CONFIG_MACH_MT6739) += eem_v2/
 obj-$(CONFIG_MACH_MT6771) += eem_v2/
 obj-$(CONFIG_MACH_MT6775) += eem_v2/
+obj-$(CONFIG_MACH_MT6771) += drcc_v1/
+obj-$(CONFIG_MACH_MT6775) += drcc_v1/
 endif
 obj-$(CONFIG_MACH_MT6799) += upower_v1/
 obj-$(CONFIG_MACH_MT6771) += upower_v2/

@@ -18,6 +18,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/hps_v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/iccs/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/drcc_v1/$(MTK_PLATFORM)/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/extbuck/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335

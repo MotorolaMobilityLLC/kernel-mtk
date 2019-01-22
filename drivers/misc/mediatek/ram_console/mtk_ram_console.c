@@ -122,6 +122,10 @@ struct last_reboot_reason {
 	uint8_t gpu_dvfs_oppidx;
 	uint8_t gpu_dvfs_status;
 
+	uint32_t drcc_0;
+	uint32_t drcc_1;
+	uint32_t drcc_2;
+	uint32_t drcc_3;
 	uint32_t ptp_devinfo_0;
 	uint32_t ptp_devinfo_1;
 	uint32_t ptp_devinfo_2;
@@ -166,8 +170,6 @@ struct last_reboot_reason {
 	uint64_t ptp_temp;
 	uint8_t ptp_status;
 	uint8_t eem_pi_offset;
-	uint8_t etc_status;
-	uint8_t etc_mode;
 
 
 	int8_t thermal_temp[THERMAL_RESERVED_TZS];
@@ -1297,6 +1299,34 @@ u8 aee_rr_curr_gpu_dvfs_status(void)
 	return LAST_RR_VAL(gpu_dvfs_status);
 }
 
+void aee_rr_rec_drcc_0(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_0, val);
+}
+
+void aee_rr_rec_drcc_1(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_1, val);
+}
+
+void aee_rr_rec_drcc_2(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_2, val);
+}
+
+void aee_rr_rec_drcc_3(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_3, val);
+}
+
 void aee_rr_rec_ptp_devinfo_0(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1605,20 +1635,6 @@ void aee_rr_rec_eem_pi_offset(u8 val)
 	LAST_RR_SET(eem_pi_offset, val);
 }
 
-void aee_rr_rec_etc_status(u8 val)
-{
-	if (!ram_console_init_done)
-		return;
-	LAST_RR_SET(etc_status, val);
-}
-
-void aee_rr_rec_etc_mode(u8 val)
-{
-	if (!ram_console_init_done)
-		return;
-	LAST_RR_SET(etc_mode, val);
-}
-
 int aee_rr_init_thermal_temp(int num)
 {
 	if (num < 0 || num >= THERMAL_RESERVED_TZS) {
@@ -1753,6 +1769,26 @@ void aee_rr_rec_ocp_enable(u8 val)
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
 	LAST_RR_SET(ocp_enable, val);
+}
+
+u32 aee_rr_curr_drcc_0(void)
+{
+	return LAST_RR_VAL(drcc_0);
+}
+
+u32 aee_rr_curr_drcc_1(void)
+{
+	return LAST_RR_VAL(drcc_1);
+}
+
+u32 aee_rr_curr_drcc_2(void)
+{
+	return LAST_RR_VAL(drcc_2);
+}
+
+u32 aee_rr_curr_drcc_3(void)
+{
+	return LAST_RR_VAL(drcc_3);
 }
 
 u32 aee_rr_curr_ptp_devinfo_0(void)
@@ -1973,16 +2009,6 @@ u8 aee_rr_curr_ptp_status(void)
 u8 aee_rr_curr_eem_pi_offset(void)
 {
 	return LAST_RR_VAL(eem_pi_offset);
-}
-
-u8 aee_rr_curr_etc_status(void)
-{
-	return LAST_RR_VAL(etc_status);
-}
-
-u8 aee_rr_curr_etc_mode(void)
-{
-	return LAST_RR_VAL(etc_mode);
 }
 
 s8 aee_rr_curr_thermal_temp(int index)
@@ -2460,6 +2486,26 @@ void aee_rr_show_gpu_dvfs_status(struct seq_file *m)
 	seq_printf(m, "gpu_dvfs_status: 0x%x\n", LAST_RRR_VAL(gpu_dvfs_status));
 }
 
+void aee_rr_show_drcc_0(struct seq_file *m)
+{
+	seq_printf(m, "drcc_0 = 0x%X\n", LAST_RRR_VAL(drcc_0));
+}
+
+void aee_rr_show_drcc_1(struct seq_file *m)
+{
+	seq_printf(m, "drcc_1 = 0x%X\n", LAST_RRR_VAL(drcc_1));
+}
+
+void aee_rr_show_drcc_2(struct seq_file *m)
+{
+	seq_printf(m, "drcc_2 = 0x%X\n", LAST_RRR_VAL(drcc_2));
+}
+
+void aee_rr_show_drcc_3(struct seq_file *m)
+{
+	seq_printf(m, "drcc_3 = 0x%X\n", LAST_RRR_VAL(drcc_3));
+}
+
 void aee_rr_show_ptp_devinfo_0(struct seq_file *m)
 {
 	seq_printf(m, "EEM devinfo0 = 0x%X\n", LAST_RRR_VAL(ptp_devinfo_0));
@@ -2774,16 +2820,6 @@ void aee_rr_show_eem_pi_offset(struct seq_file *m)
 	seq_printf(m, "eem_pi_offset : 0x%x\n", LAST_RRR_VAL(eem_pi_offset));
 }
 
-void aee_rr_show_etc_status(struct seq_file *m)
-{
-	seq_printf(m, "etc_status : 0x%x\n", LAST_RRR_VAL(etc_status));
-}
-
-void aee_rr_show_etc_mode(struct seq_file *m)
-{
-	seq_printf(m, "etc_mode : 0x%x\n", LAST_RRR_VAL(etc_mode));
-}
-
 void aee_rr_show_idvfs_ctrl_reg(struct seq_file *m)
 {
 	seq_printf(m, "idvfs_ctrl_reg = 0x%x\n", LAST_RRR_VAL(idvfs_ctrl_reg));
@@ -3070,6 +3106,10 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_gpu_dvfs_vgpu,
 	aee_rr_show_gpu_dvfs_oppidx,
 	aee_rr_show_gpu_dvfs_status,
+	aee_rr_show_drcc_0,
+	aee_rr_show_drcc_1,
+	aee_rr_show_drcc_2,
+	aee_rr_show_drcc_3,
 	aee_rr_show_ptp_devinfo_0,
 	aee_rr_show_ptp_devinfo_1,
 	aee_rr_show_ptp_devinfo_2,
@@ -3113,8 +3153,6 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ptp_temp,
 	aee_rr_show_ptp_status,
 	aee_rr_show_eem_pi_offset,
-	aee_rr_show_etc_status,
-	aee_rr_show_etc_mode,
 	aee_rr_show_thermal_temp,
 	aee_rr_show_thermal_status,
 	aee_rr_show_thermal_ATM_status,
