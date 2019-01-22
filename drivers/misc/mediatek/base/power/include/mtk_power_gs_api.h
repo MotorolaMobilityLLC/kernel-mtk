@@ -18,10 +18,6 @@
 
 #include "power_gs_v1/mtk_power_gs_api.h"
 
-#elif defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
-
-#elif defined(CONFIG_ARCH_MT6580)
-
 #elif defined(CONFIG_MACH_MT6799)
 
 #include "power_gs_v1/mtk_power_gs_api.h"
