@@ -11,6 +11,8 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 
+#include <linux/completion.h>
+
 #ifndef _ENGINE_REQUESTS_H_
 #define _ENGINE_REQUESTS_H_
 
@@ -70,6 +72,7 @@ struct engine_requests {
 	struct ring_ctrl req_ctl;
 	struct request reqs[MAX_REQUEST_SIZE_PER_ENGINE];
 	const struct engine_ops *ops;
+	struct completion req_handler_done;
 };
 
 signed int init_ring_ctl(struct ring_ctrl *rctl);

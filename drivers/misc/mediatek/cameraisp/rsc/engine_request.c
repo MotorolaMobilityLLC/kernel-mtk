@@ -144,6 +144,10 @@ signed int register_requests(struct engine_requests *eng, size_t size)
 		}
 	}
 
+	/* init and inc for 1st request_handler use */
+	init_completion(&eng->req_handler_done);
+	complete(&eng->req_handler_done);
+
 	return 0;
 }
 
@@ -198,7 +202,7 @@ signed int enque_request(struct engine_requests *eng, unsigned fcnt,
 		goto ERROR;
 	}
 
-	LOG_INF("request(%d) enqued with %d frames", r, fcnt);
+	LOG_DBG("request(%d) enqued with %d frames", r, fcnt);
 	for (f = 0; f < fcnt; f++)
 		eng->reqs[r].frames[f].state = FRAME_STATUS_ENQUE;
 	eng->reqs[r].state = REQUEST_STATE_PENDING;
@@ -246,6 +250,11 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 	if (eng == NULL)
 		return -1;
 
+	LOG_DBG("[%s]waits for completion(%d).\n", __func__, eng->req_handler_done.done);
+	wait_for_completion(&eng->req_handler_done);
+	reinit_completion(&eng->req_handler_done);
+	LOG_DBG("[%s]previous request completed, reset(%d).\n", __func__, eng->req_handler_done.done);
+
 	spin_lock_irqsave(lock, flags);
 
 	/*
@@ -260,9 +269,12 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 #if REQUEST_REGULATION
 	(void) fn;
 	if (rstate != REQUEST_STATE_PENDING) {
-		LOG_WRN("[%s]No pending request(%d), state:%d\n", __func__,
+		LOG_DBG("[%s]No pending request(%d), state:%d\n", __func__,
 								r, rstate);
 		spin_unlock_irqrestore(lock, flags);
+
+		complete_all(&eng->req_handler_done);
+		LOG_DBG("[%s]complete(%d)\n", __func__, eng->req_handler_done.done);
 
 		return 0;
 	}
@@ -272,7 +284,7 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 	for (f = 0; f < MAX_FRAMES_PER_REQUEST; f++) {
 		fstate = eng->reqs[r].frames[f].state;
 		if (fstate == FRAME_STATUS_ENQUE) {
-			LOG_INF("[%s]Processing request(%d) of frame(%d)\n",
+			LOG_DBG("[%s]Processing request(%d) of frame(%d)\n",
 							__func__,  r, f);
 
 			spin_unlock_irqrestore(lock, flags);
@@ -294,9 +306,11 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 	*/
 	if (eng->reqs[r].pending_run == false) {
 		if (rstate != REQUEST_STATE_PENDING) {
-			LOG_WRN("[%s]No pending request(%d), state:%d\n", __func__,
+			LOG_DBG("[%s]No pending request(%d), state:%d\n", __func__,
 								r, rstate);
 			spin_unlock_irqrestore(lock, flags);
+			complete_all(&eng->req_handler_done);
+			LOG_DBG("[%s]complete(%d)\n", __func__, eng->req_handler_done.done);
 
 			return 0;
 		}
@@ -308,6 +322,8 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 								r, rstate);
 			spin_unlock_irqrestore(lock, flags);
 
+			complete_all(&eng->req_handler_done);
+			LOG_DBG("[%s]complete(%d)\n", __func__, eng->req_handler_done.done);
 			return 0;
 		}
 
@@ -319,7 +335,7 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 
 	fstate = eng->reqs[r].frames[f].state;
 	if (fstate == FRAME_STATUS_ENQUE) {
-		LOG_INF("[%s]Processing request(%d) of frame(%d)\n",
+		LOG_DBG("[%s]Processing request(%d) of frame(%d)\n",
 						__func__,  r, f);
 
 		eng->reqs[r].frames[f].state = FRAME_STATUS_RUNNING;
@@ -332,8 +348,11 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 
 	} else {
 		spin_unlock_irqrestore(lock, flags);
-		LOG_INF("[%s]already running frame %d of request %d",
+		LOG_WRN("[%s]already running frame %d of request %d",
 						__func__, f, r);
+		complete_all(&eng->req_handler_done);
+		LOG_DBG("[%s]complete(%d)\n", __func__, eng->req_handler_done.done);
+
 		return 1;
 		}
 
@@ -348,6 +367,9 @@ signed int request_handler(struct engine_requests *eng, spinlock_t *lock)
 #endif
 
 	spin_unlock_irqrestore(lock, flags);
+
+	complete_all(&eng->req_handler_done);
+	LOG_DBG("complete_all done = %d\n", eng->req_handler_done.done);
 
 	return 1;
 
@@ -437,7 +459,7 @@ signed int deque_request(struct engine_requests *eng, unsigned *fcnt,
 		}
 #else
 	*fcnt = eng->reqs[r].fctl.size;
-	LOG_INF("[%s]deque request(%d) has %d frames", __func__, r, *fcnt);
+	LOG_DBG("[%s]deque request(%d) has %d frames", __func__, r, *fcnt);
 #endif
 	if (eng->ops->req_deque_cb == NULL || req == NULL) {
 		LOG_ERR("[%s]NULL req_deque_cb/req", __func__);
