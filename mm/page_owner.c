@@ -104,20 +104,20 @@ static void free_entry(BtEntry *entry)
 	bitmap_clear(bitmap, index, 1);
 }
 
-void release_backtrace(BtEntry *entry)
+void release_backtrace(BtEntry *entry, int nr_pages)
 {
 	unsigned long flags;
 
 	spin_lock_irqsave(&page_owner_spin_lock, flags);
-	entry->allocations--;
+	entry->allocations -= nr_pages;
 
-	if (entry->allocations == 0)
+	if (entry->allocations <= 0)
 		free_entry(entry);
 
 	spin_unlock_irqrestore(&page_owner_spin_lock, flags);
 }
 
-BtEntry *record_backtrace(unsigned long *backtrace, size_t nr_entry)
+BtEntry *record_backtrace(unsigned long *backtrace, int nr_pages, size_t nr_entry)
 {
 	size_t hash = get_hash(backtrace, nr_entry);
 	size_t slot = hash % BT_HASH_TABLE_SIZE;
@@ -128,7 +128,7 @@ BtEntry *record_backtrace(unsigned long *backtrace, size_t nr_entry)
 	entry = find_entry(&gBtTable, slot, backtrace, nr_entry);
 
 	if (entry != NULL)
-		entry->allocations++;
+		entry->allocations += nr_pages;
 	else {
 		entry = alloc_entry();
 
@@ -140,7 +140,7 @@ BtEntry *record_backtrace(unsigned long *backtrace, size_t nr_entry)
 			return NULL;
 		}
 
-		entry->allocations = 1;
+		entry->allocations = nr_pages;
 		entry->nr_entries = nr_entry;
 
 		memcpy(entry->backtrace, backtrace, nr_entry * sizeof(unsigned long));
@@ -284,7 +284,7 @@ void __reset_page_owner(struct page *page, unsigned int order)
 		__clear_bit(PAGE_EXT_OWNER, &page_ext->flags);
 #ifdef CONFIG_PAGE_OWNER_SLIM
 		if (page_ext && page_ext->entry) {
-			release_backtrace(page_ext->entry);
+			release_backtrace(page_ext->entry, 1 << page_ext->order);
 			page_ext->entry = NULL;
 		}
 #endif
@@ -315,7 +315,7 @@ void __set_page_owner(struct page *page, unsigned int order, gfp_t gfp_mask)
 	save_stack_trace(&trace);
 
 #ifdef CONFIG_PAGE_OWNER_SLIM
-	entry = record_backtrace(trace.entries, trace.nr_entries);
+	entry = record_backtrace(trace.entries, 1 << order, trace.nr_entries);
 	page_ext->entry = entry;
 #else
 	page_ext->nr_entries = trace.nr_entries;
