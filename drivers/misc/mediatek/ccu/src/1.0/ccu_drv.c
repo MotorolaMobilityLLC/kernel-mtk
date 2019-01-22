@@ -155,10 +155,6 @@ const struct dev_pm_ops ccu_pm_ops = {
 /* CCU Driver: Prototype                                                     */
 /*---------------------------------------------------------------------------*/
 
-/*
- * Note!!! The order and member of .compatible must be the same with that in
- *  "CCU_DEV_NODE_ENUM" in ccu_drv.h
- */
 static const struct of_device_id ccu_of_ids[] = {
 	{.compatible = "mediatek,ccu",},
 	{.compatible = "mediatek,ccu_camsys",},
@@ -451,12 +447,13 @@ int ccu_i2c_frame_reset(void)
 	ccu_reset_i2c_apdma(i2c);
 
 	/*--todo:remove dump log on production*/
-	ccu_record_i2c_dma_info(i2c);
+	/*ccu_record_i2c_dma_info(i2c);*/
 
 	i2c_writew(I2C_FIFO_ADDR_CLR, i2c, OFFSET_FIFO_ADDR_CLR);
-
+	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP, i2c, OFFSET_INTR_MASK);
+	mb();
 	/*--todo:remove dump log on production*/
-	ccu_i2c_dump_info(i2c);
+	/*ccu_i2c_dump_info(i2c);*/
 
 	return 0;
 }
@@ -506,7 +503,7 @@ int ccu_trigger_i2c(int transac_len, MBOOL do_dma_en)
 		}
 	default:
 		{
-			LOG_DBG("ccu_trigger_i2c fail, unknown channel: %d\n", g_ccuI2cChannel);
+			LOG_ERR("ccu_trigger_i2c fail, unknown channel: %d\n", g_ccuI2cChannel);
 			return MNULL;
 		}
 	}
@@ -531,12 +528,15 @@ int ccu_config_i2c_buf_mode(int transfer_len)
 	i2c->msg_len = transfer_len;
 	i2c_writew(transfer_len, i2c, OFFSET_TRANSFER_LEN);
 
-	ccu_reset_i2c_apdma(i2c);
+	/*ccu_reset_i2c_apdma(i2c);*/
 
 	ccu_record_i2c_dma_info(i2c);
 
-	mb();			/*flush before sending DMA start*/
-	i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
+	/*flush before sending DMA start*/
+	/*mb();*/
+	/*i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);*/
+
+	ccu_i2c_frame_reset();
 
 	ccu_i2c_dump_info(i2c);
 
@@ -743,11 +743,11 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
 	/* wait until condition is true */
 	ret = wait_event_interruptible_timeout(user->deque_wait,
 					       !list_empty(&user->deque_ccu_cmd_list),
-					       msecs_to_jiffies(30 * 1000));
+					       msecs_to_jiffies(3 * 1000));
 
 	/* ret == 0, if timeout; ret == -ERESTARTSYS, if signal interrupt */
 	if (ret < 1) {
-		LOG_DBG("timeout: pop a command! ret=%d\n", ret);
+		LOG_ERR("timeout: pop a command! ret=%d\n", ret);
 		*rcmd = NULL;
 		return -1;
 	}
@@ -755,7 +755,7 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
 	/* This part should not be happened */
 	if (list_empty(&user->deque_ccu_cmd_list)) {
 		/*mutex_unlock(&user->data_mutex);*/
-		LOG_DBG("pop a command from empty queue! ret=%d\n", ret);
+		LOG_ERR("pop a command from empty queue! ret=%d\n", ret);
 		*rcmd = NULL;
 		return -1;
 	};
@@ -798,14 +798,6 @@ int ccu_set_power(ccu_power_t *power)
 {
 	return ccu_power(power);
 }
-
-
-
-int ccu_write_register(ccu_reg_values_t regs)
-{
-	return 0;
-}
-
 
 static int ccu_open(struct inode *inode, struct file *flip)
 {
@@ -1408,22 +1400,7 @@ EXIT:
 		LOG_DBG("n3d_a_base=0x%lx\n", g_ccu_device->n3d_a_base);
 		LOG_ERR("ccu n3da probe success...\n");
 	}
-
-	/*
-	*else if ((strcmp("ccu_camsys", g_ccu_device->dev->of_node->name) == 0)) {
-	*	g_ccu_device->camsys_base = (unsigned long)of_iomap(node, 0);
-	*	LOG_DBG("ccu_base_camsys=0x%lx\n", g_ccu_device->camsys_base);
-	*	ccu_init_hw(g_ccu_device);
-	*	LOG_DBG("probe 2 finish...\n");
-	*} else if ((strcmp("n3d_ctl_a", g_ccu_device->dev->of_node->name) == 0)) {
-	*	g_ccu_device->n3d_a_base = (unsigned long)of_iomap(node, 0);
-	*	LOG_DBG("n3d_a_base=0x%lx\n", g_ccu_device->n3d_a_base);
-	*	LOG_DBG("probe 3 finish...\n");
-	*}
-	*/
 #endif
-
-
 #endif
 
 	LOG_DBG("- X. CCU driver probe.\n");
@@ -1505,36 +1482,6 @@ static int __init CCU_INIT(void)
 		LOG_ERR("failed to register CCU driver");
 		return -ENODEV;
 	}
-#if 0
-#ifdef MTK_CCU_EMULATOR
-#else
-	/* get register address */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,ccu");
-	if (!node) {
-		LOG_ERR("find mediatek,ccu node failed!!!\n");
-		return -ENODEV;
-	}
-	g_ccu_device->ccu_base = (unsigned long)of_iomap(node, 0);
-	if (!g_ccu_device->ccu_base) {
-		LOG_ERR("unable to map g_ccu_device->ccu_base registers!!!\n");
-		return -ENODEV;
-	}
-	LOG_DBG("g_ccu_device->ccu_base: %lx\n", g_ccu_device->ccu_base);
-	/**/
-	node = of_find_compatible_node(NULL, NULL, "mediatek,ccu_camsys");
-	if (!node) {
-		LOG_ERR("find mediatek,ccu_camsys node failed!!!\n");
-		return -ENODEV;
-	}
-	g_ccu_device->camsys_base = (unsigned long)of_iomap(node, 0);
-	if (!g_ccu_device->camsys_base) {
-		LOG_ERR("unable to map g_ccu_device->camsys_base registers!!!\n");
-		return -ENODEV;
-	}
-	LOG_DBG("g_ccu_device->ccu_camsys: %lx\n", g_ccu_device->camsys_base);
-	/**/
-#endif
-#endif
 
 	LOG_DBG("platform_driver_register finsish\n");
 
