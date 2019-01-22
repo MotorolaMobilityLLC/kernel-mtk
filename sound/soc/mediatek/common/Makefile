@@ -37,6 +37,7 @@ obj-y += mtk-soc-afe-control.o mtk-soc-pcm-common.o
 obj-$(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT) += mtk-soc-offload-common.o
 obj-y += mtk-soc-pcm-capture.o mtk-soc-pcm-dl1.o mtk-soc-pcm-dummy.o mtk-soc-pcm-routing.o mtk-soc-pcm-capture2.o mtk-soc-pcm-i2s2-adc2.o
 obj-y += mtk-soc-pcm-voice-md1.o mtk-soc-pcm-voice-md2.o mtk-soc-pcm-voice-md1-bt.o mtk-soc-pcm-voice-md2-bt.o
+obj-y += mtk-soc-pcm-voice-usb.o mtk-soc-pcm-voice-usb-echoref.o
 obj-y += mtk-soc-pcm-dl1-i2s0.o mtk-soc-pcm-dl1-i2s0Dl1.o mtk-soc-pcm-i2s0-awb.o
 #obj-y += mtk-soc-pcm-hdmi.o
 obj-y += mtk-soc-pcm-uldlloopback.o mtk-soc-pcm-dl2.o

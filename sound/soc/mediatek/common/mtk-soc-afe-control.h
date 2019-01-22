@@ -140,6 +140,8 @@ bool SetMemIfFetchFormatPerSample(uint32 InterfaceType, uint32 eFetchFormat);
 bool SetMemIfFormatReg(uint32 InterfaceType, uint32 eFetchFormat);
 bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output);
 
+int set_memif_pbuf_size(int aud_blk, enum memif_pbuf_size pbuf_size);
+
 bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S, bool audioAdcI2SStatus);
 bool setChipDmicPath(bool _enable, uint32 sample_rate);
 
