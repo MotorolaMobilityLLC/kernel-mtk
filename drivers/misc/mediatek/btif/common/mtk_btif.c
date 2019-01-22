@@ -3443,6 +3443,10 @@ int mtk_btif_hal_get_log_lvl(void)
 	return mtk_btif_dbg_lvl;
 }
 
+void mtk_btif_read_cpu_sw_rst_debug(void)
+{
+	mtk_btif_read_cpu_sw_rst_debug_plat();
+}
 
 /*---------------------------------------------------------------------------*/
 

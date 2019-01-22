@@ -2882,6 +2882,21 @@ MTK_WCN_BOOL mtk_wcn_stp_is_uart_mand_mode(void)
 
 /*****************************************************************************
 * FUNCTION
+*  mtk_wcn_stp_wakeup_consys_debug
+* DESCRIPTION
+*  output wakeup consys message for check
+* PARAMETERS
+*  none.
+* RETURNS
+*  none.
+*****************************************************************************/
+void mtk_wcn_stp_wakeup_consys_debug(void)
+{
+	mtk_wcn_consys_stp_btif_wakeup_debug();
+}
+
+/*****************************************************************************
+* FUNCTION
 *  mtk_wcn_stp_is_btif_fullset_mode
 * DESCRIPTION
 *  Is stp use BTIF fullset mode?

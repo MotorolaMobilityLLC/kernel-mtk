@@ -1113,7 +1113,7 @@ int hal_btif_raise_wak_sig(P_MTK_BTIF_INFO_STR p_btif)
 
 /*wait for a period for longer than 1/32k period, here we use 40us*/
 	set_current_state(TASK_UNINTERRUPTIBLE);
-	usleep_range(64, 96);
+	usleep_range(128, 160);
 /*
  * according to linux/documentation/timers/timers-how-to, we choose usleep_range
  * SLEEPING FOR ~USECS OR SMALL MSECS ( 10us - 20ms):      * Use usleep_range
@@ -1387,3 +1387,10 @@ int hal_btif_pm_ops(P_MTK_BTIF_INFO_STR p_btif_info, MTK_BTIF_PM_OPID opid)
 
 	return i_ret;
 }
+void mtk_btif_read_cpu_sw_rst_debug_plat(void)
+{
+#define CONSYS_AP2CONN_WAKEUP_OFFSET	0x00000064
+	BTIF_WARN_FUNC("+CONSYS_AP2CONN_WAKEUP_OFFSET(0x%x)\n",
+			   BTIF_READ32(mtk_btif.base + CONSYS_AP2CONN_WAKEUP_OFFSET));
+}
+
