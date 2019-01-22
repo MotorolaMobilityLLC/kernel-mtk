@@ -93,58 +93,6 @@ const char *wakesrc_str[32] = {
 /**************************************
  * Function and API
  **************************************/
-/* FIXME: */
-#if 0
-int __spm_check_opp_level_impl(int ch)
-{
-	int opp = vcorefs_get_sw_opp();
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-	int scp_opp = scp_get_dvfs_opp();
-
-	if (scp_opp >= 0)
-		opp = min(scp_opp, opp);
-#endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
-
-	return opp;
-}
-
-int __spm_check_opp_level(int ch)
-{
-	int level[4] = {4, 3, 1, 0};
-	int opp = 0;
-
-	if (ch == 2)
-		level[1] = 3;
-	else
-		level[1] = 2;
-
-	opp = __spm_check_opp_level_impl(ch);
-
-	if (opp < 0 || opp >= ARRAY_SIZE(level)) {
-		spm_crit2("%s: error opp number %d\n", __func__, opp);
-		opp = 0;
-	}
-
-	return level[opp];
-}
-
-unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
-{
-	unsigned int vcore_volt_pmic_val = 0;
-	int opp = 0;
-
-	opp = __spm_check_opp_level_impl(ch);
-
-	if (opp < 0 || opp >= 4) {
-		spm_crit2("%s: error opp number %d\n", __func__, opp);
-		opp = 0;
-	}
-
-	vcore_volt_pmic_val = (is_vcore_volt_lower) ? VOLT_TO_PMIC_VAL(56800) : get_vcore_ptp_volt(opp);
-
-	return vcore_volt_pmic_val;
-}
-#endif
 
 int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl)
 {
@@ -282,8 +230,8 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 	}
 	WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-	spm_print(suspend, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, ch = %u\n",
-		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag, wakesta->dcs_ch);
+	spm_print(suspend, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
+		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag);
 
 	spm_print(suspend,
 		  "r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
@@ -390,40 +338,5 @@ u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
 
 	return period;
 }
-
-#if 0
-int get_channel_lock(bool blocking)
-{
-#ifdef CONFIG_MTK_DCS
-	int ch = 0, ret = -1;
-	enum dcs_status dcs_status;
-
-	if (blocking)
-		ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
-	else
-		ret = dcs_get_dcs_status_trylock(&ch, &dcs_status);
-
-	if (ret) {
-		aee_kernel_warning("DCS Warring", "dcs_get_dcs_status_lock busy");
-		return -1;
-	}
-
-	return ch;
-#else
-	/* return get_dram_channel_number(); */
-	return 4; /* FIXME */
-#endif
-}
-
-void get_channel_unlock(void)
-{
-#ifdef CONFIG_MTK_DCS
-	dcs_get_dcs_status_unlock();
-
-#else
-	/* Nothing */
-#endif
-}
-#endif
 
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");

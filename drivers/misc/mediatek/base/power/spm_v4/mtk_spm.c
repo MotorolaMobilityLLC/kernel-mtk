@@ -265,7 +265,6 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 		return NOTIFY_DONE;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	case PM_SUSPEND_PREPARE:
-		spm_d.u.notify.root_id = hps_get_root_id();
 		spin_lock_irqsave(&__spm_lock, flags);
 		ret = spm_to_sspm_command(SPM_SUSPEND_PREPARE, &spm_d);
 		spin_unlock_irqrestore(&__spm_lock, flags);
@@ -580,20 +579,14 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_SODI3:
-		pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
-		pmic_ldo_vsram_dvfs1_lp(SRCLKEN0, 1, HW_LP);
-		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_LP);
-		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_LP);
+		pmic_ldo_vldo28_lp(SRCLKEN0, 0, HW_LP);
+		pmic_ldo_vldo28_lp(SW, 1, SW_ON);
 		break;
 	case PMIC_PWR_SODI:
 		/* nothing */
 		break;
 	case PMIC_PWR_SUSPEND:
-		pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
-		pmic_ldo_vsram_dvfs1_lp(SRCLKEN0, 0, HW_LP);
-		pmic_ldo_vsram_dvfs1_lp(SPM, 1, SPM_OFF);
-		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_OFF);
-		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_OFF);
+		pmic_ldo_vldo28_lp(SRCLKEN0, 1, HW_LP);
 		break;
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);

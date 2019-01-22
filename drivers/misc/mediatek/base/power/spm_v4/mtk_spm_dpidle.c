@@ -702,7 +702,6 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 					0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
-	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
 	ret = spm_to_sspm_command_async(SPM_DPIDLE_ENTER, &spm_d);
 	if (ret < 0)
@@ -788,7 +787,6 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 	resource_usage = (!sleep_dpidle) ? spm_get_resource_usage() : 0;
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_DPIDLE_ARGS, pwrctrl->pcm_flags, resource_usage, 0);
-	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS, SPM_PWR_CTRL_DPIDLE, PWR_OPP_LEVEL, pwrctrl->opp_level);
 
 	if (sleep_dpidle)
 		mt_secure_call(MTK_SIP_KERNEL_SPM_SLEEP_DPIDLE_ARGS, pwrctrl->timer_val, pwrctrl->wake_src, 0);
@@ -926,27 +924,12 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	u32 cpu = spm_data;
-	/* FIXME: */
-	/* int ch; */
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER);
 
 	pwrctrl = __spm_dpidle.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* spm_set_dummy_read_addr(false); */
-
-	/* need be called before spin_lock_irqsave() */
-	/* FIXME: */
-#if 0
-	ch = get_channel_lock(0);
-	pwrctrl->opp_level = __spm_check_opp_level(ch);
-	pwrctrl->vcore_volt_pmic_val =
-						__spm_get_vcore_volt_pmic_val(
-							!!(operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE),
-							ch);
-	wakesta.dcs_ch = (u32)ch;
-#endif
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -1029,10 +1012,6 @@ RESTORE_IRQ:
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
 
-	/* need be called after spin_unlock_irqrestore() */
-	/* FIXME: */
-	/* get_channel_unlock(); */
-
 	spm_dpidle_footprint(0);
 
 #if 1
@@ -1074,8 +1053,6 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	int cpu = smp_processor_id();
-	/* FIXME: */
-	/* int ch; */
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER);
 
@@ -1086,7 +1063,6 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	dpidle_wake_src = pwrctrl->wake_src;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* spm_set_dummy_read_addr(false); */
 
 #if SPM_PWAKE_EN
 	sec = _spm_get_wake_period(-1, last_wr);
@@ -1102,15 +1078,6 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 		wd_api->wd_suspend_notify();
 	} else
 		spm_crit2("FAILED TO GET WD API\n");
-#endif
-
-	/* need be called before spin_lock_irqsave() */
-	/* FIXME: */
-#if 0
-	ch = get_channel_lock(0);
-	pwrctrl->opp_level = __spm_check_opp_level(ch);
-	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
-	wakesta.dcs_ch = (u32)ch;
 #endif
 
 	lockdep_off();
@@ -1183,10 +1150,6 @@ RESTORE_IRQ:
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
-
-	/* need be called after spin_unlock_irqrestore() */
-	/* FIXME: */
-	/* get_channel_unlock(); */
 
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	if (!wd_ret) {

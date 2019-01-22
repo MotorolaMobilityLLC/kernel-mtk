@@ -36,7 +36,6 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_spm_pmic_wrap.h>
-#include <mt6337_api.h>
 
 #include <mtk_power_gs_api.h>
 
@@ -242,10 +241,6 @@ static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 								IDX_ALL_2_VSRAM_NORMAL,
 								value);
 
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
-								IDX_ALL_VCORE_SUSPEND,
-								pwrctrl->vcore_volt_pmic_val);
-
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
@@ -263,8 +258,6 @@ static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 		vcore_lp_mode,
 		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
 		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
-
-	wk_mt6337_set_lp_setting();
 #endif
 
 	__spm_sync_pcm_flags(pwrctrl);
@@ -276,8 +269,6 @@ static void spm_sodi3_post_process(void)
 #if 0
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-
-	wk_mt6337_restore_lp_setting();
 #endif
 #endif
 }
@@ -304,7 +295,6 @@ static void spm_sodi3_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl, u32 opera
 		SPM_OPT_XO_UFS_OFF : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
-	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
 	ret = spm_to_sspm_command_async(SPM_ENTER_SODI3, &spm_d);
 	if (ret < 0)
@@ -380,8 +370,6 @@ static void spm_sodi3_pcm_setup_before_wfi(
 	resource_usage = spm_get_resource_usage();
 	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
 		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
-	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-		SPM_PWR_CTRL_SODI, PWR_OPP_LEVEL, pwrctrl->opp_level);
 }
 
 static void spm_sodi3_pcm_setup_after_wfi(struct pwr_ctrl *pwrctrl, u32 operation_cond)
@@ -541,7 +529,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi3.pwrctrl;
 	u32 cpu = spm_data;
-	/* int ch; */
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER);
 
@@ -551,7 +538,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE; /* PDN mode */
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* spm_set_dummy_read_addr(false); */
 
 #if 0
 	/* for gps only case */
@@ -573,15 +559,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 #endif
 
 	soidle3_before_wfi(cpu);
-
-	/* need be called before spin_lock_irqsave() */
-	/* FIXME: */
-#if 0
-	ch = get_channel_lock(0);
-	pwrctrl->opp_level = __spm_check_opp_level(ch);
-	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
-	wakesta.dcs_ch = (u32)ch;
-#endif
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -667,9 +644,6 @@ RESTORE_IRQ:
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
-
-	/* need be called after spin_unlock_irqrestore() */
-	/* get_channel_unlock(); */
 
 	soidle3_after_wfi(cpu);
 
