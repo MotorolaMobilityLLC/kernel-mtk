@@ -178,6 +178,7 @@ int ccu_read_info_reg(int regNo);
 
 int32_t ccu_get_current_fps(void);
 
+void ccu_get_sensor_i2c_slave_addr(int32_t *sensorI2cSlaveAddr);
 
 /* =============================== define in ccu_drv.c  =============================== */
 
