@@ -1473,7 +1473,7 @@ static void vmstat_shepherd(struct work_struct *w)
 
 	put_online_cpus();
 
-	schedule_delayed_work(&shepherd,
+	queue_delayed_work(system_unbound_wq, &shepherd,
 		round_jiffies_relative(sysctl_stat_interval));
 
 }
@@ -1491,7 +1491,7 @@ static void __init start_shepherd_timer(void)
 	cpumask_copy(cpu_stat_off, cpu_online_mask);
 
 	vmstat_wq = alloc_workqueue("vmstat", WQ_FREEZABLE|WQ_MEM_RECLAIM, 0);
-	schedule_delayed_work(&shepherd,
+	queue_delayed_work(system_unbound_wq, &shepherd,
 		round_jiffies_relative(sysctl_stat_interval));
 }
 
