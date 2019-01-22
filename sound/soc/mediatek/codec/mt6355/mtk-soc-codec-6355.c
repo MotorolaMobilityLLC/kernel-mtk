@@ -3684,7 +3684,7 @@ static int set_lowvoltage_enable(int mode)
 void set_lowvoltage_mode(int32_t pga_gain_index)
 {
 	pr_warn("%s(), pga_gain_index = %d\n", __func__, pga_gain_index);
-	if (hp_impedance <= 16) {
+	if (hp_impedance <= 24) {
 		if (pga_gain_index < 5)/*DAC_DL_PGA_Headset_GAIN[5] = 3dB*/
 			low_voltage_mode = 0;
 		else
