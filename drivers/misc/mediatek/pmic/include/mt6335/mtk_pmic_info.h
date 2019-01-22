@@ -48,5 +48,6 @@ extern unsigned int gPMICDbgLvl;
 extern unsigned int pmic_scp_set_vcore(unsigned int);
 extern unsigned int pmic_scp_set_vsram_vcore(unsigned int);
 extern unsigned int enable_vsram_vcore_hw_tracking(unsigned int en);
+extern unsigned int enable_vimvo_lp_mode(unsigned int);
 
 #endif				/* _MT_PMIC_INFO_H_ */
