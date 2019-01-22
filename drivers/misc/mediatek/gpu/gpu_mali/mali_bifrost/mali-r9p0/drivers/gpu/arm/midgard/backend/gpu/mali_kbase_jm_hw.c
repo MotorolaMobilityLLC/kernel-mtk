@@ -57,25 +57,32 @@ static enum hrtimer_restart kbasep_reset_timer_callback(struct hrtimer *timer);
 static unsigned int need_reset_MFG_wrapper;
 #endif
 
-/**/
+/* DEBUG ONLY! Send debug command to GPU and get relavant status */
 void kbase_try_dump_gpu_debug_info(struct kbase_device *kbdev)
 {
-		/*DEBUG ONLY! Send debug command to GPU and get relavant status*/
+	unsigned int dbg_lo, dbg_hi;
+	int counter = 0;
+
 #define DBG_SEND_L2_GROUP 0xDEB00760
 #define DBG_ACTIVE_BIT (1 << 31)
 #define GPU_DBG_LO 0x0FE8
 #define GPU_DBG_HI 0x0FEC
-		unsigned int dbg_lo, dbg_hi;
 
-		GPULOG("Send debug command to GPU and get relavant status....");
+	GPULOG("Send debug command to GPU and get relavant status....");
 
-		kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), DBG_SEND_L2_GROUP, NULL);
-		while ((kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_STATUS), NULL) & DBG_ACTIVE_BIT))
-			;
-		dbg_lo = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_LO), NULL);
-		dbg_hi = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_HI), NULL);
+	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), DBG_SEND_L2_GROUP, NULL);
+	while ((kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_STATUS), NULL) & DBG_ACTIVE_BIT)) {
+		counter++;
+		if (counter >= 10000) {
+			GPULOG("DEBUG INFO : counter timeout (> %d)", counter);
+			break;
+		}
+	}
 
-		GPULOG("DEBUG INFO :LO 0x%x, HI 0x%x", dbg_lo, dbg_hi);
+	dbg_lo = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_LO), NULL);
+	dbg_hi = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_HI), NULL);
+
+	GPULOG("DEBUG INFO : LO 0x%x, HI 0x%x, counter %d", dbg_lo, dbg_hi, counter);
 }
 
 static inline int kbasep_jm_is_js_free(struct kbase_device *kbdev, int js,
