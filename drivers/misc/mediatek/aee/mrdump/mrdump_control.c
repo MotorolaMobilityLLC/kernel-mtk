@@ -150,7 +150,7 @@ void mrdump_cblock_init(void)
 	machdesc_p->modules_start = (uint64_t)MODULES_VADDR;
 	machdesc_p->modules_end = (uint64_t)MODULES_END;
 
-	machdesc_p->phys_offset = (uint64_t)PHYS_OFFSET;
+	machdesc_p->phys_offset = (uint64_t)(phys_addr_t)PHYS_OFFSET;
 	machdesc_p->master_page_table = (uintptr_t)__pa(&swapper_pg_dir);
 
 #if defined(CONFIG_SPARSEMEM_VMEMMAP)
