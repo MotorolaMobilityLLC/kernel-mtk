@@ -18,6 +18,8 @@
 #include <linux/regulator/mt6392-regulator.h>
 #include <linux/regulator/of_regulator.h>
 
+#define MT6392_BUCK_MODE_AUTO	0
+#define MT6392_BUCK_MODE_FORCE_PWM	1
 #define MT6392_LDO_MODE_NORMAL	0
 #define MT6392_LDO_MODE_LP	1
 
@@ -41,7 +43,8 @@ struct mt6392_regulator_info {
 };
 
 #define MT6392_BUCK(match, vreg, min, max, step, volt_ranges, enreg,	\
-		vosel, vosel_mask, voselon, vosel_ctrl)			\
+		vosel, vosel_mask, voselon, vosel_ctrl,			\
+		_modeset_reg, _modeset_mask)				\
 [MT6392_ID_##vreg] = {							\
 	.desc = {							\
 		.name = #vreg,						\
@@ -62,6 +65,8 @@ struct mt6392_regulator_info {
 	.vselon_reg = voselon,						\
 	.vselctrl_reg = vosel_ctrl,					\
 	.vselctrl_mask = BIT(1),					\
+	.modeset_reg = _modeset_reg,					\
+	.modeset_mask = _modeset_mask,					\
 }
 
 #define MT6392_LDO(match, vreg, ldo_volt_table, enreg, enbit, vosel,	\
@@ -161,6 +166,69 @@ static int mt6392_get_status(struct regulator_dev *rdev)
 	return (regval & info->qi) ? REGULATOR_STATUS_ON : REGULATOR_STATUS_OFF;
 }
 
+static int mt6392_buck_set_mode(struct regulator_dev *rdev, unsigned int mode)
+{
+	int ret, val = 0;
+	struct mt6392_regulator_info *info = rdev_get_drvdata(rdev);
+	u32 reg_value;
+
+	if (!info->modeset_mask) {
+		dev_err(&rdev->dev, "regulator %s doesn't support set_mode\n", info->desc.name);
+		return -EINVAL;
+	}
+
+	switch (mode) {
+	case REGULATOR_MODE_FAST:
+		val = MT6392_BUCK_MODE_FORCE_PWM;
+		break;
+	case REGULATOR_MODE_NORMAL:
+		val = MT6392_BUCK_MODE_AUTO;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	val <<= ffs(info->modeset_mask) - 1;
+
+	ret = regmap_update_bits(rdev->regmap, info->modeset_reg,
+				  info->modeset_mask, val);
+
+	if (regmap_read(rdev->regmap, info->modeset_reg, &reg_value) < 0) {
+		dev_err(&rdev->dev, "Failed to read register value\n");
+		return -EIO;
+	}
+	dev_info(&rdev->dev, "info->modeset_reg 0x%x = 0x%x\n", info->modeset_reg, reg_value);
+
+	return ret;
+}
+
+static unsigned int mt6392_buck_get_mode(struct regulator_dev *rdev)
+{
+	unsigned int val;
+	unsigned int mode;
+	int ret;
+	struct mt6392_regulator_info *info = rdev_get_drvdata(rdev);
+
+	if (!info->modeset_mask) {
+		dev_err(&rdev->dev, "regulator %s doesn't support get_mode\n", info->desc.name);
+		return -EINVAL;
+	}
+
+	ret = regmap_read(rdev->regmap, info->modeset_reg, &val);
+	if (ret < 0)
+		return ret;
+
+	val &= info->modeset_mask;
+	val >>= ffs(info->modeset_mask) - 1;
+
+	if (val & 0x1)
+		mode = REGULATOR_MODE_FAST;
+	else
+		mode = REGULATOR_MODE_NORMAL;
+
+	return mode;
+}
+
 static int mt6392_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
 {
 	int ret, val = 0;
@@ -229,6 +297,8 @@ static struct regulator_ops mt6392_volt_range_ops = {
 	.disable = regulator_disable_regmap,
 	.is_enabled = regulator_is_enabled_regmap,
 	.get_status = mt6392_get_status,
+	.set_mode = mt6392_buck_set_mode,
+	.get_mode = mt6392_buck_get_mode,
 };
 
 static struct regulator_ops mt6392_volt_table_ops = {
@@ -259,13 +329,13 @@ static struct regulator_ops mt6392_volt_fixed_ops = {
 static struct mt6392_regulator_info mt6392_regulators[] = {
 	MT6392_BUCK("buck_vproc", VPROC, 700000, 1493750, 6250,
 		buck_volt_range1, MT6392_VPROC_CON7, MT6392_VPROC_CON9, 0x7f,
-		MT6392_VPROC_CON10, MT6392_VPROC_CON5),
+		MT6392_VPROC_CON10, MT6392_VPROC_CON5, MT6392_VPROC_CON2, 0x100),
 	MT6392_BUCK("buck_vsys", VSYS, 1400000, 2987500, 12500,
 		buck_volt_range2, MT6392_VSYS_CON7, MT6392_VSYS_CON9, 0x7f,
-		MT6392_VSYS_CON10, MT6392_VSYS_CON5),
+		MT6392_VSYS_CON10, MT6392_VSYS_CON5, MT6392_VSYS_CON2, 0x100),
 	MT6392_BUCK("buck_vcore", VCORE, 700000, 1493750, 6250,
 		buck_volt_range1, MT6392_VCORE_CON7, MT6392_VCORE_CON9, 0x7f,
-		MT6392_VCORE_CON10, MT6392_VCORE_CON5),
+		MT6392_VCORE_CON10, MT6392_VCORE_CON5, MT6392_VCORE_CON2, 0x100),
 	MT6392_REG_FIXED("ldo_vxo22", VXO22, MT6392_ANALDO_CON1, 10, 2200000,
 		MT6392_ANALDO_CON1, 0x2),
 	MT6392_LDO("ldo_vaud22", VAUD22, ldo_volt_table1,
@@ -352,6 +422,7 @@ static int mt6392_regulator_probe(struct platform_device *pdev)
 	struct mt6397_chip *mt6392 = dev_get_drvdata(pdev->dev.parent);
 	struct regulator_config config = {};
 	struct regulator_dev *rdev;
+	struct regulation_constraints *c;
 	int i;
 	u32 reg_value;
 
@@ -377,6 +448,15 @@ static int mt6392_regulator_probe(struct platform_device *pdev)
 				mt6392_regulators[i].desc.name);
 			return PTR_ERR(rdev);
 		}
+
+		/* Constrain board-specific capabilities according to what
+		 * this driver and the chip itself can actually do.
+		 */
+		c = rdev->constraints;
+		c->valid_modes_mask |= REGULATOR_MODE_NORMAL|
+			REGULATOR_MODE_STANDBY | REGULATOR_MODE_FAST;
+		c->valid_ops_mask |= REGULATOR_CHANGE_MODE;
+
 	}
 	return 0;
 }
