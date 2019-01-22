@@ -92,7 +92,6 @@ MODULE_PARM_DESC(gPMRAllocFail, "When number of PMR allocs reaches"
 
 
 #if defined(SUPPORT_DISPLAY_CLASS)
-1
 /* Display class interface */
 #include "kerneldisplay.h"
 EXPORT_SYMBOL(DCRegisterDevice);
