@@ -927,15 +927,16 @@ void xhci_mtk_allow_sleep(unsigned int sleep_ms)
 	if (unlikely(sleep_ms <= MIN_SLEEP_MS))
 		goto not_sleep;
 
-	/* step2: check if xhci control buffer on sram */
-	if (unlikely(xhci_sram[0].state != STATE_ALLOCATE_SUCCESS))
-		goto not_sleep;
+	/* step2: check if xhci state is normal */
+	for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++)
+		if (unlikely(xhci_sram[i].state == STATE_NOMEM))
+			goto not_sleep;
 
 	/* setp3: check if usb audio data on sram */
 	for (i = 0; i < USB_AUDIO_DATA_BLOCK_NUM; i++) {
-		if (unlikely(usb_audio_sram[i].state == STATE_ALLOCATE_FAIL))
+		if (unlikely(usb_audio_sram[i].state == STATE_NOMEM))
 			goto not_sleep;
-		else if (usb_audio_sram[i].state == STATE_ALLOCATE_SUCCESS)
+		else if (usb_audio_sram[i].state == STATE_USE)
 			data_sram = true;
 	}
 
@@ -971,7 +972,7 @@ int xhci_mtk_init_sram(struct xhci_hcd *xhci)
 							   xhci_sram_size, &xhci_sram)) {
 
 		for (i = 0; i < XHCI_SRAM_BLOCK_NUM; i++)
-			xhci_sram[i].state = STATE_ALLOCATE_FAIL;
+			xhci_sram[i].state = STATE_NOMEM;
 
 		pr_err("mtk_audio_request_sram fail\n");
 		return -ENOMEM;
@@ -985,13 +986,12 @@ int xhci_mtk_init_sram(struct xhci_hcd *xhci)
 		offset += xhci_sram[i].mlength;
 		memset_io(xhci_sram[i].msram_virt_addr,
 				  0, xhci_sram[i].mlength);
-		xhci_sram[i].state = STATE_ALLOCATE_SUCCESS;
+		xhci_sram[i].state = STATE_INIT;
 
 		pr_debug("[%d] p :%llx, v=%p, len=%d\n",
 				 i, xhci_sram[i].msram_phys_addr,
 				 xhci_sram[i].msram_virt_addr,
 				 xhci_sram[i].mlength);
-
 	}
 	return 0;
 }
@@ -1017,12 +1017,24 @@ int xhci_mtk_deinit_sram(struct xhci_hcd *xhci)
 int xhci_mtk_allocate_sram(int id, dma_addr_t *sram_phys_addr,
 						   unsigned char **msram_virt_addr)
 {
+	if (xhci_sram[id].state == STATE_NOMEM)
+		return -ENOMEM;
+
+	if (xhci_sram[id].state == STATE_USE) {
+		/* use the same sram block, set state to nomem*/
+		xhci_sram[id].state = STATE_NOMEM;
+		return -ENOMEM;
+	}
+
 	*sram_phys_addr = xhci_sram[id].msram_phys_addr;
 	*msram_virt_addr =
 		(unsigned char *)xhci_sram[id].msram_virt_addr;
 
 	memset_io(xhci_sram[id].msram_virt_addr,
 			  0, xhci_sram[id].mlength);
+
+	xhci_sram[id].state = STATE_USE;
+
 	pr_debug("%s get [%d] p :%llx, v=%p, len=%d\n",
 			__func__, id, xhci_sram[id].msram_phys_addr,
 			xhci_sram[id].msram_virt_addr,
@@ -1032,6 +1044,7 @@ int xhci_mtk_allocate_sram(int id, dma_addr_t *sram_phys_addr,
 
 int xhci_mtk_free_sram(int id)
 {
+	xhci_sram[id].state = STATE_INIT;
 	pr_debug("%s, id=%d\n", __func__, id);
 	return 0;
 }
@@ -1041,7 +1054,7 @@ void *mtk_usb_alloc_sram(int id, size_t size, dma_addr_t *dma)
 	void *sram_virt_addr = NULL;
 
 	/* check if xhci control buffer on sram */
-	if (xhci_sram[0].state != STATE_ALLOCATE_SUCCESS)
+	if (xhci_sram[0].state != STATE_USE)
 		return NULL;
 
 	mtk_audio_request_sram(dma, (unsigned char **)&sram_virt_addr,
@@ -1051,10 +1064,10 @@ void *mtk_usb_alloc_sram(int id, size_t size, dma_addr_t *dma)
 		usb_audio_sram[id].mlength = size;
 		usb_audio_sram[id].msram_phys_addr = *dma;
 		usb_audio_sram[id].msram_virt_addr =  sram_virt_addr;
-		usb_audio_sram[id].state = STATE_ALLOCATE_SUCCESS;
+		usb_audio_sram[id].state = STATE_USE;
 		pr_debug("%s, id=%d\n", __func__, id);
 	} else {
-		usb_audio_sram[id].state = STATE_ALLOCATE_FAIL;
+		usb_audio_sram[id].state = STATE_NOMEM;
 		pr_err("%s fail id=%d\n", __func__, id);
 	}
 
@@ -1063,16 +1076,16 @@ void *mtk_usb_alloc_sram(int id, size_t size, dma_addr_t *dma)
 
 void mtk_usb_free_sram(id)
 {
-	if (usb_audio_sram[id].state == STATE_ALLOCATE_SUCCESS) {
+	if (usb_audio_sram[id].state == STATE_USE) {
 		mtk_audio_free_sram(&usb_audio_sram[id]);
 		usb_audio_sram[id].mlength = 0;
 		usb_audio_sram[id].msram_phys_addr = 0;
 		usb_audio_sram[id].msram_virt_addr =  NULL;
-		usb_audio_sram[id].state = STATE_UNINIT;
 		pr_debug("%s, id=%d\n", __func__, id);
 	} else {
 		pr_err("%s, fail id=%d\n", __func__, id);
 	}
+	usb_audio_sram[id].state = STATE_UNINIT;
 }
 #endif
 
