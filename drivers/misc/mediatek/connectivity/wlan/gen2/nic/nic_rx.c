@@ -712,6 +712,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 						qmHandleRxDhcpPackets(prAdapter, prRetSwRfb);
 					}
 #endif
+						secHandleRxEapolPacket(prAdapter, prRetSwRfb, prStaRec);
 						nicRxProcessPktWithoutReorder(prAdapter, prRetSwRfb);
 						break;
 
@@ -1204,12 +1205,8 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 	case EVENT_ID_TX_DONE_STATUS:
 	{
-		STATS_TX_PKT_DONE_INFO_DISPLAY(prAdapter, prEvent->aucBuffer);
-#if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
-		p2pFuncEAPfailureWorkaround(prAdapter, prEvent->aucBuffer);
-#endif
+		secHandleTxStatus(prAdapter, prEvent->aucBuffer);
 	}
-
 		break;
 
 	case EVENT_ID_TX_DONE:

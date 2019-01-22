@@ -115,6 +115,9 @@ VOID p2pFsmInit(IN P_ADAPTER_T prAdapter)
 		/* 4 <2> Initiate BSS_INFO_T - common part */
 		BSS_INFO_INIT(prAdapter, NETWORK_TYPE_P2P_INDEX);
 
+		/* init add key action */
+		prP2pBssInfo->eKeyAction = SEC_TX_KEY_COMMAND;
+
 		/* 4 <2.1> Initiate BSS_INFO_T - Setup HW ID */
 		prP2pBssInfo->ucConfigAdHocAPMode = AP_MODE_11G_P2P;
 		prP2pBssInfo->ucHwDefaultFixedRateCode = RATE_OFDM_6M;
@@ -1715,6 +1718,9 @@ VOID p2pFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 				/* fire the update jiffies */
 				prAdapter->prGlueInfo->ulLastUpdate = jiffies;
 				DBGLOG(P2P, INFO, "P2P GC Join Success\n");
+
+				/* reset add key action */
+				prP2pBssInfo->eKeyAction = SEC_TX_KEY_COMMAND;
 
 #if CFG_SUPPORT_P2P_RSSI_QUERY
 				/* <1.5> Update RSSI if necessary */
