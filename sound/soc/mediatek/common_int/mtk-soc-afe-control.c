@@ -1012,6 +1012,11 @@ bool set_adc2_in(unsigned int rate)
 	return set_chip_adc2_in(rate);
 }
 
+int get_dai_rate(Soc_Aud_Digital_Block digitalBlock)
+{
+	return mtk_dais[digitalBlock].sample_rate;
+}
+
 #ifdef AFE_CONNSYS_I2S_CON
 int setConnsysI2SIn(AudioDigtalI2S *mDigitalI2S)
 {
