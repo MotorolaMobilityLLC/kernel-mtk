@@ -196,6 +196,8 @@ static ssize_t procDbgLevelWrite(struct file *file, const char __user *buffer,
 	kalMemSet(g_aucProcBuf, 0, u4CopySize);
 	if (u4CopySize >= count+1)
 		u4CopySize = count;
+	else
+		u4CopySize = u4CopySize - 1;
 	if (copy_from_user(g_aucProcBuf, buffer, u4CopySize)) {
 		pr_err("error of copy from user\n");
 		return -EFAULT;
@@ -375,6 +377,8 @@ static ssize_t procSetCamCfgWrite(struct file *file, const char __user *buffer, 
 	kalMemSet(g_aucProcBuf, 0, u4CopySize);
 	if (u4CopySize >= count + 1)
 		u4CopySize = count;
+	else
+		u4CopySize = u4CopySize - 1;
 
 	if (copy_from_user(g_aucProcBuf, buffer, u4CopySize)) {
 		pr_err("error of copy from user\n");
@@ -487,6 +491,8 @@ static ssize_t procPktDelayDbgCfgWrite(struct file *file, const char __user *buf
 	kalMemSet(g_aucProcBuf, 0, u4CopySize);
 	if (u4CopySize >= count + 1)
 		u4CopySize = count;
+	else
+		u4CopySize = u4CopySize - 1;
 
 	if (copy_from_user(g_aucProcBuf, buffer, u4CopySize)) {
 		pr_err("error of copy from user\n");
@@ -567,6 +573,8 @@ static ssize_t procRoamWrite(struct file *file, const char __user *buffer,
 	kalMemSet(g_aucProcBuf, 0, u4CopySize);
 	if (u4CopySize >= count+1)
 		u4CopySize = count;
+	else
+		u4CopySize = u4CopySize - 1;
 	if (copy_from_user(g_aucProcBuf, buffer, u4CopySize)) {
 		pr_err("error of copy from user\n");
 		return -EFAULT;
@@ -636,6 +644,8 @@ static ssize_t procCountryWrite(struct file *file, const char __user *buffer,
 	kalMemSet(g_aucProcBuf, 0, u4CopySize);
 	if (u4CopySize >= count+1)
 		u4CopySize = count;
+	else
+		u4CopySize = u4CopySize - 1;
 	if (copy_from_user(g_aucProcBuf, buffer, u4CopySize)) {
 		pr_err("error of copy from user\n");
 		return -EFAULT;
@@ -1056,12 +1066,14 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 
 	if (u4CopySize >= (count + 1))
 		u4CopySize = count;
+	else
+		u4CopySize = u4CopySize - 1;
 
 	if (copy_from_user(aucCfgBuf, buf, u4CopySize)) {
 		DBGLOG(INIT, ERROR, "copy from user failed\n");
 		return -EFAULT;
 	}
-	aucCfgBuf[u4CopySize - 1] = '\0';
+	aucCfgBuf[u4CopySize] = '\0';
 	for (; i < u4CopySize; i++) {
 		if (aucCfgBuf[i] == ' ') {
 			token_num++;
