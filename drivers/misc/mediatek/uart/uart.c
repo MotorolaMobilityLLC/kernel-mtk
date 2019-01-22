@@ -2454,10 +2454,13 @@ static int mtk_uart_suspend(struct platform_device *pdev, pm_message_t state)
 	int ret = 0;
 	struct mtk_uart *uart = platform_get_drvdata(pdev);
 
+	if (!uart)
+		return -1;
+
 	/* For console_suspend_enabled=0 */
 	mtk_uart_save(uart);
 
-	if (uart && (uart->nport < UART_NR) && (uart != bt_port)) {
+	if ((uart->nport < UART_NR) && (uart != bt_port)) {
 		ret = uart_suspend_port(&mtk_uart_drv, &uart->port);
 		pr_debug("[UART%d] Suspend(%d)!\n", uart->nport, ret);
 		mtk_uart_switch_rx_to_gpio(uart);
