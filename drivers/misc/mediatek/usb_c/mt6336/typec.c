@@ -1454,6 +1454,8 @@ void typec_drive_vbus_e3(struct typec_hba *hba, uint8_t on)
 		typec_write8(hba, (tmp | RG_EN_OTG), 0x400);
 
 		typec_write8(hba, 0x83, 0x51F);
+		typec_write8(hba, 0x20, 0x652);
+		typec_write8(hba, 0x04, 0x561);
 	} else {
 		uint8_t tmp;
 		/*
@@ -1497,6 +1499,9 @@ void typec_drive_vbus_e3(struct typec_hba *hba, uint8_t on)
 
 		tmp = typec_read8(hba, 0x400);
 		typec_write8(hba, (tmp & (~RG_EN_OTG)), 0x400);
+
+		typec_write8(hba, 0x00, 0x561);
+		typec_write8(hba, 0x00, 0x652);
 	}
 
 skip:
