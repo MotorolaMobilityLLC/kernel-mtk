@@ -21,10 +21,10 @@
 #include <linux/kallsyms.h>
 #include <linux/ptrace.h>
 
-#define LOGD(fmt, msg...)	pr_notice(fmt, ##msg)
-#define LOGV(fmt, msg...)
+#define LOGD(fmt, msg...)	no_printk(fmt, ##msg)
+#define LOGV(fmt, msg...)    no_printk(fmt, ##msg)
 #define LOGI	LOGD
-#define LOGE(fmt, msg...)	pr_err(fmt, ##msg)
+#define LOGE(fmt, msg...)	no_printk(fmt, ##msg)
 #define LOGW	LOGE
 
 #define IPANIC_MODULE_TAG "KERNEL-PANIC"
