@@ -33,6 +33,7 @@
 
 #include <sspm_mbox.h>
 
+#include <trace/events/mtk_events.h>
 /* #define USING_TICK_BROADCAST */
 
 #define MCDI_CPU_OFF        1
@@ -284,12 +285,23 @@ int mcdi_enter(int cpu)
 
 		break;
 	case MCDI_STATE_CPU_OFF:
+
+		trace_mcdi(cpu, 1);
+
 		mcdi_cpu_off(cpu);
+
+		trace_mcdi(cpu, 0);
+
 		mcdi_cnt_cpu[cpu]++;
 
 		break;
 	case MCDI_STATE_CLUSTER_OFF:
+
+		trace_mcdi(cpu, 1);
+
 		mcdi_cluster_off(cpu);
+
+		trace_mcdi(cpu, 0);
 
 		mcdi_cnt_cluster[cluster_idx]++;
 		mcdi_cnt_cpu[cpu]++;
