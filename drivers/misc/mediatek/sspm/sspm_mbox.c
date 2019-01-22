@@ -86,7 +86,7 @@ int sspm_mbox_polling(unsigned int mbox, unsigned int irq, unsigned int slot,
 		if (irqs & irq)
 			break;
 
-		udelay(10);
+		udelay(1);
 	}
 #else
 	irqs = readl(out_irq);
@@ -143,17 +143,16 @@ int sspm_mbox_send(unsigned int mbox, unsigned int slot, unsigned int irq, void 
 static irqreturn_t sspm_mbox_irq_handler(int irq, void *dev_id)
 {
 	struct sspm_mbox *desc = (struct sspm_mbox *) dev_id;
-	unsigned int irqs, clear_irqs;
+	unsigned int irqs;
 	void __iomem *out_irq;
 
 	out_irq = desc->in_out + MBOX_OUT_IRQ_OFS;
 	irqs = readl(out_irq);
-	clear_irqs = irqs;
 
 	if (desc->isr)
-		clear_irqs = desc->isr(desc->id, desc->base, irqs);
+		desc->isr(desc->id, desc->base, irqs);
 
-	writel(clear_irqs, out_irq);
+	writel(irqs, out_irq);
 
 	return IRQ_HANDLED;
 }
