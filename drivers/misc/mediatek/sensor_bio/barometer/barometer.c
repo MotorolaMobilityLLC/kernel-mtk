@@ -312,12 +312,10 @@ static ssize_t baro_store_batch(struct device *dev, struct device_attribute *att
 		err = cxt->baro_ctl.batch(0, cxt->delay_ns, 0);
 	if (err) {
 		BARO_PR_ERR("baro set batch(ODR) err %d\n", err);
-		goto err_out;
 	}
 #else
 	err = baro_enable_and_batch();
 #endif
-err_out:
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
 	BARO_LOG(" baro_store_batch done: %d\n", cxt->is_batch_enable);
 	return err;
