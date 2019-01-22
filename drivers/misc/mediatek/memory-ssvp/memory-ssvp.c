@@ -52,6 +52,8 @@
 #define SSVP_ALIGN_SHIFT (SSVP_CMA_ALIGN_PAGE_ORDER + PAGE_SHIFT)
 #define SSVP_ALIGN (1 << SSVP_ALIGN_SHIFT)
 
+#define SSVP_UPPER_LIMIT 0x100000000UL
+
 #include <mt-plat/aee.h>
 #include "mt-plat/mtk_meminfo.h"
 
@@ -265,6 +267,20 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 		else {
 			page = zmc_cma_alloc(cma, _svpregs[SSVP_TUI].count,
 					SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
+
+#ifdef SSVP_UPPER_LIMIT
+			if (page) {
+				phys_addr_t start = page_to_phys(page);
+				phys_addr_t end = start + (_svpregs[SSVP_TUI].count << PAGE_SHIFT);
+
+				if (end > SSVP_UPPER_LIMIT) {
+					pr_err("[Reserve Over Limit]: Get region(%pa) over limit(0x%lx)\n",
+							&end, SSVP_UPPER_LIMIT);
+					cma_release(cma, page, _svpregs[SSVP_TUI].count);
+					page = NULL;
+				}
+			}
+#endif
 			if (page)
 				svp_usage_count += _svpregs[SSVP_TUI].count;
 		}
@@ -450,6 +466,19 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 			msleep(100);
 		} while (page == NULL && offline_retry < 20);
 
+#ifdef SSVP_UPPER_LIMIT
+		if (page) {
+			phys_addr_t start = page_to_phys(page);
+			phys_addr_t end = start + (_svpregs[SSVP_SVP].count << PAGE_SHIFT);
+
+			if (end > SSVP_UPPER_LIMIT) {
+				pr_err("[Reserve Over Limit]: Get region(%pa) over limit(0x%lx)\n",
+						&end, SSVP_UPPER_LIMIT);
+				cma_release(cma, page, _svpregs[SSVP_SVP].count);
+				page = NULL;
+			}
+		}
+#endif
 
 		if (page) {
 			svp_usage_count += _svpregs[SSVP_SVP].count;
@@ -715,6 +744,44 @@ static const struct file_operations memory_ssvp_fops = {
 	.release	= single_release,
 };
 
+static int ssvp_sanity(void)
+{
+#ifdef SSVP_UPPER_LIMIT
+	phys_addr_t start;
+	unsigned long size;
+#endif
+	char *err_msg = NULL;
+
+	if (!cma) {
+		pr_err("[INIT FAIL]: cma is not inited\n");
+		err_msg = "SVP sanity: CAM init fail\nCRDISPATCH_KEY:SVP_SS1";
+		goto out;
+	}
+
+
+#ifdef SSVP_UPPER_LIMIT
+	start = cma_get_base(cma);
+	size = cma_get_size(cma);
+
+	if (start + (_SSVP_MBSIZE_ * SZ_1M) > SSVP_UPPER_LIMIT) {
+		pr_err("[INVALID REGION]: CMA PA over 32 bit\n");
+		pr_info("MBSIZE: %d, cma start: %pa, size:0x%lx\n", _SSVP_MBSIZE_, &start, size);
+		err_msg = "SVP sanity: invalid CMA region due to over 32bit\nCRDISPATCH_KEY:SVP_SS1";
+		goto out;
+	}
+#endif
+
+	return 0;
+
+out:
+	aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
+			| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
+			| DB_OPT_DUMPSYS_PROCSTATS,
+			err_msg,
+			"please contact SS memory module owner\n");
+	return -1;
+}
+
 static int __init memory_ssvp_debug_init(void)
 {
 	int ret = 0;
@@ -722,10 +789,11 @@ static int __init memory_ssvp_debug_init(void)
 
 	struct dentry *dentry;
 
-	if (!cma) {
-		pr_err("memory-ssvp cma is not inited\n");
+	if (ssvp_sanity() < 0) {
+		pr_err("SSVP sanity fail\n");
 		return 1;
-	}
+	} else
+		pr_info("[PASS]: SSVP sanity.\n");
 
 	dentry = debugfs_create_file("memory-ssvp", S_IRUGO, NULL, NULL,
 					&memory_ssvp_fops);
