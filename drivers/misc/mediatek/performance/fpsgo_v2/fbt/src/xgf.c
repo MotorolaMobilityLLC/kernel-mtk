@@ -234,10 +234,8 @@ void fpsgo_create_render_dep(void)
 
 	xgf_lock(__func__);
 
-	if (!render_dep_count_buff) {
-		xgf_unlock(__func__);
-		return;
-	}
+	if (!render_dep_count_buff)
+		goto out;
 
 	hlist_for_each_entry_safe(proc_iter, n, &xgf_procs, hlist) {
 		r = &proc_iter->deps_rec;
@@ -298,6 +296,7 @@ void fpsgo_create_render_dep(void)
 			}
 		}
 	}
+out:
 	xgf_unlock(__func__);
 	xgf_free(render_deps_buff);
 }
@@ -964,8 +963,8 @@ static unsigned long long xgf_dep_sched_slptime(int rpid,
 	struct xgf_deps *deps;
 	struct rb_root *r;
 	unsigned long long now_ts = ged_get_time();
-	unsigned long long dur;
-	unsigned long long dep_max_slptime;
+	unsigned long long dur = 0ULL;
+	unsigned long long dep_max_slptime = 0ULL;
 
 	xgf_lockprove(__func__);
 
@@ -1006,9 +1005,6 @@ static unsigned long long xgf_dep_sched_slptime(int rpid,
 				dep_max_slptime = dur;
 		}
 	}
-
-	if (!dep_max_slptime)
-		dep_max_slptime = 0ULL;
 
 	return dep_max_slptime;
 }
