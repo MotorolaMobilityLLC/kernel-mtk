@@ -420,8 +420,6 @@ _PMRCreate(PMR_SIZE_T uiLogicalSize,
 	psPMR->uiFlags = uiFlags;
 	psPMR->psMappingTable = psMappingTable;
 	psPMR->bSparseAlloc = bSparse;
-	psPMR->uiKey = psContext->uiNextKey;
-	psPMR->uiSerialNum = psContext->uiNextSerialNum;
 
 	psPMR->ui32PMRSignature = PMR_SIGNATURE_LIVE;
 
@@ -430,6 +428,8 @@ _PMRCreate(PMR_SIZE_T uiLogicalSize,
 #endif
 
 	OSLockAcquire(psContext->hLock);
+	psPMR->uiKey = psContext->uiNextKey;
+	psPMR->uiSerialNum = psContext->uiNextSerialNum;
 	psContext->uiNextKey = (0x80200003 * psContext->uiNextKey)
 		^ (0xf00f0081 * (uintptr_t)pvPMRLinAddr);
 	psContext->uiNextSerialNum ++;
