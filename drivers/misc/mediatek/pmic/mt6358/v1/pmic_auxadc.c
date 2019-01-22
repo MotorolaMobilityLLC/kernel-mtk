@@ -321,7 +321,9 @@ void mt6358_auxadc_monitor_mts_regs(void)
 		mts_count = 0;
 
 	if (mts_count >= 7 && mts_count < 9) {
+#ifdef CONFIG_MTK_PMIC_WRAP_HAL
 		pwrap_dump_all_register();
+#endif
 		mt6358_mts_reg_dump();
 		/*--AUXADC CH7--*/
 		pmic_get_auxadc_value(AUXADC_LIST_TSX);
@@ -344,7 +346,9 @@ void mt6358_auxadc_monitor_mts_regs(void)
 		pr_notice("AUXADC_ADC17 = 0x%x\n", upmu_get_reg_value(MT6358_AUXADC_ADC17));
 	}
 	if (mts_count > 15) {
+#ifdef CONFIG_MTK_PMIC_WRAP_HAL
 		pwrap_dump_all_register();
+#endif
 		pr_notice("DEW_READ_TEST = 0x%x\n", pmic_get_register_value(PMIC_DEW_READ_TEST));
 		/*--AUXADC--*/
 		mt6358_mts_reg_dump();

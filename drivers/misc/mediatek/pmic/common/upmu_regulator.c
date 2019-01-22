@@ -30,7 +30,6 @@
 #include <linux/uaccess.h>
 
 #include <mt-plat/upmu_common.h>
-#include <mach/mtk_pmic_wrap.h>
 #include "include/pmic_regulator.h"
 #include "include/regulator_codegen.h"
 
