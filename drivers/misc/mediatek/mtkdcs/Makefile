@@ -5,5 +5,6 @@ endif
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mtkdcs/include/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mtkdcs/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
 obj-y += mtkdcs_drv.o
