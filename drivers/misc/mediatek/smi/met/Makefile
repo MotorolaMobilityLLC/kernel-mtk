@@ -20,4 +20,7 @@ endif
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759"))
 ccflags-y += -DSMI_MET_ALA
 obj-y += met_smi_configuration_6759.o
+else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6763"))
+ccflags-y += -DSMI_MET_BIA
+obj-y += met_smi_configuration_6763.o
 endif
