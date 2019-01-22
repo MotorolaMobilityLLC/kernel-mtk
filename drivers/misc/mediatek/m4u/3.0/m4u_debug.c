@@ -816,7 +816,7 @@ static int m4u_debug_set(void *data, u64 val)
 		memset(&port, 0, sizeof(M4U_PORT_STRUCT));
 
 		port.ePortID = M4U_PORT_HW_VDEC_PP_EXT;
-		port.Virtuality = 1;
+		port.Virtuality = 0;
 		M4UMSG("(0) config port: mmu: %d, sec: %d\n", port.Virtuality, port.Security);
 		m4u_config_port(&port);
 #if 0
@@ -831,10 +831,10 @@ static int m4u_debug_set(void *data, u64 val)
 #endif
 
 		port.ePortID = M4U_PORT_HW_VDEC_PP_EXT;
-		M4UMSG("(1) config port: mmu: %d, sec: %d\n", port.Virtuality, port.Security);
+		M4UMSG("(1) config port tee: mmu: %d, sec: %d\n", port.Virtuality, port.Security);
 		m4u_config_port_tee(&port);
 		port.Security = 1;
-		M4UMSG("(2) config port: mmu: %d, sec: %d\n", port.Virtuality, port.Security);
+		M4UMSG("(2) config port tee: mmu: %d, sec: %d\n", port.Virtuality, port.Security);
 		m4u_config_port_tee(&port);
 	}
 	break;
