@@ -4837,7 +4837,7 @@ static int mt6356_codec_probe(struct snd_soc_codec *codec)
 	efuse_current_calibrate = read_efuse_hp_impedance_current_calibration();
 	mInitCodec = true;
 
-	get_hp_lr_trim_offset();
+	/*get_hp_lr_trim_offset();*/
 
 	return 0;
 }
