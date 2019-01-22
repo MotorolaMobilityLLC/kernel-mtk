@@ -293,6 +293,10 @@ static ssize_t tpd_debug_log_read(struct file *file, char __user *buffer,
 	unsigned int retval = 0, unit = tpd_log_line_buffer;
 	unsigned char *tmp_buf = NULL;
 
+	if (tpd_buf == NULL)
+		return -ENOMEM;
+
+
 	if (tpd_buf->head == tpd_buf->tail && (file->f_flags & O_NONBLOCK))
 		return -EAGAIN;
 
