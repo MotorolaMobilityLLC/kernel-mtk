@@ -945,15 +945,15 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 	switch (module) {
 	case ISP_IRQ_TYPE_INT_CAM_A_ST:
 		regModule = ISP_CAM_A_IDX;
-		strcpy(cam, "CAM_A");
+		strncpy(cam, "CAM_A", sizeof("CAM_A"));
 		break;
 	case ISP_IRQ_TYPE_INT_CAM_B_ST:
 		regModule = ISP_CAM_B_IDX;
-		strcpy(cam, "CAM_B");
+		strncpy(cam, "CAM_B", sizeof("CAM_B"));
 		break;
 	case ISP_IRQ_TYPE_INT_CAM_C_ST:
 		regModule = ISP_CAM_C_IDX;
-		strcpy(cam, "CAM_C");
+		strncpy(cam, "CAM_C", sizeof("CAM_C"));
 		break;
 	default:
 		LOG_NOTICE("unsupported module:0x%x\n", module);
