@@ -652,8 +652,7 @@ again:
 		L2RISAR0 = cldma_reg_bit_gather(L2RISAR0);
 		l2qe_s_offset = CLDMA_RX_QE_OFFSET << 8;
 #endif
-		if ((L2RISAR0 & CLDMA_RX_INT_DONE & (1 << queue->index)) ||
-		    (L2RISAR0 & CLDMA_RX_INT_QUEUE_EMPTY & ((1 << queue->index) << l2qe_s_offset)))
+		if ((L2RISAR0 & CLDMA_RX_INT_DONE & (1 << queue->index)))
 			retry = 1;
 		else
 			retry = 0;
@@ -842,7 +841,7 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_RESUME_CMD,
 					CLDMA_BM_ALL_QUEUE & (1 << queue->index));
 				resume_done = 1;
-				CCCI_REPEAT_LOG(md_ctrl->md_id, TAG, "resume txq %d in tx done\n", queue->index);
+				CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "resume txq %d in tx done\n", queue->index);
 			}
 		}
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
@@ -1016,6 +1015,8 @@ static void cldma_tx_done(struct work_struct *work)
 #endif
 
 	count = queue->tr_ring->handle_tx_done(queue, 0, 0);
+	if (count && md_ctrl->tx_busy_warn_cnt)
+		md_ctrl->tx_busy_warn_cnt = 0;
 
 #if TRAFFIC_MONITOR_INTERVAL
 	md_ctrl->tx_done_last_count[queue->index] = count;
@@ -1039,7 +1040,7 @@ static void cldma_tx_done(struct work_struct *work)
 		if (md_ctrl->txq_active & (1 << queue->index))
 			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TIMCR0,
 				      (CLDMA_TX_INT_DONE & (1 << queue->index)) |
-				      (CLDMA_TX_INT_QUEUE_EMPTY & ((1 << queue->index) << CLDMA_RX_QE_OFFSET)));
+				      (CLDMA_TX_INT_QUEUE_EMPTY & ((1 << queue->index) << CLDMA_TX_QE_OFFSET)));
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 #endif
 	}
@@ -1331,6 +1332,8 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 #ifdef CLDMA_TRACE
 		trace_cldma_irq(CCCI_TRACE_TX_IRQ, (L2TISAR0 & CLDMA_TX_INT_DONE));
 #endif
+		if (md_ctrl->tx_busy_warn_cnt && (L2TISAR0 & CLDMA_TX_INT_DONE))
+			md_ctrl->tx_busy_warn_cnt = 0;
 		/* ack Tx interrupt */
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TISAR0, L2TISAR0);
 		for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
@@ -1355,7 +1358,7 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 							 msecs_to_jiffies(0));
 				CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "txq%d queue work=%d\n", i, ret);
 			}
-			if (L2TISAR0 & (CLDMA_TX_INT_DONE | ((1 << i) << CLDMA_TX_QE_OFFSET)))
+			if (L2TISAR0 & (CLDMA_TX_INT_QUEUE_EMPTY & (((1 << i) << CLDMA_TX_QE_OFFSET))))
 				cldma_tx_queue_empty_handler(&md_ctrl->txq[i]);
 		}
 	}
@@ -2275,7 +2278,7 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 					"ch=%d qno=%d free slot 0, CLDMA_AP_L2TIMR0=0x%x\n",
 					ccci_h.channel, qno, cldma_read32(md_ctrl->cldma_ap_pdn_base,
 					CLDMA_AP_L2TIMR0));
-			if (++md_ctrl->tx_busy_warn_cnt == 4) {
+			if (++md_ctrl->tx_busy_warn_cnt == 1000) {
 				CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "tx busy: dump CLDMA and GPD status\n");
 				CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "tx busy: dump CLDMA and GPD status\n");
 				md_ctrl->ops->dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, -1);
