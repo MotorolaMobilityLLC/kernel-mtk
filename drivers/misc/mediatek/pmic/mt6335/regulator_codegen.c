@@ -671,16 +671,6 @@ static int pmic_buck_vs1_get_voltage_sel(struct regulator_dev *rdev)
 	return (mreg->da_vol_cb)();
 }
 
-/* Regulator vs1 list_voltage */
-static int pmic_buck_vs1_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 1200000 + selector * 12500;
-	PMICLOG("buck vs1 list_voltage: %d\n", voltage);
-	return voltage;
-}
-
 /* Regulator vibr enable */
 static int pmic_ldo_vibr_enable(struct regulator_dev *rdev)
 {
@@ -956,16 +946,6 @@ static int pmic_buck_vimvo_get_voltage_sel(struct regulator_dev *rdev)
 	return (mreg->da_vol_cb)();
 }
 
-/* Regulator vimvo list_voltage */
-static int pmic_buck_vimvo_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 400000 + selector * 6250;
-	PMICLOG("buck vimvo list_voltage: %d\n", voltage);
-	return voltage;
-}
-
 /* Regulator vsram_vcore enable */
 static int pmic_ldo_vsram_vcore_enable(struct regulator_dev *rdev)
 {
@@ -1065,16 +1045,6 @@ static int pmic_ldo_vsram_vcore_get_voltage_sel(struct regulator_dev *rdev)
 	}
 
 	return (mreg->da_vol_cb)();
-}
-
-/* Regulator vsram_vcore list_voltage */
-static int pmic_ldo_vsram_vcore_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 400000 + selector * 6250;
-	PMICLOG("ldo vsram_vcore list_voltage: %d\n", voltage);
-	return voltage;
 }
 
 /* Regulator vcamio enable */
@@ -1302,16 +1272,6 @@ static int pmic_ldo_vsram_vmd_get_voltage_sel(struct regulator_dev *rdev)
 	}
 
 	return (mreg->da_vol_cb)();
-}
-
-/* Regulator vsram_vmd list_voltage */
-static int pmic_ldo_vsram_vmd_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 400000 + selector * 6250;
-	PMICLOG("ldo vsram_vmd list_voltage: %d\n", voltage);
-	return voltage;
 }
 
 /* Regulator vcn18_bt enable */
@@ -1667,16 +1627,6 @@ static int pmic_buck_vmodem_get_voltage_sel(struct regulator_dev *rdev)
 	return (mreg->da_vol_cb)();
 }
 
-/* Regulator vmodem list_voltage */
-static int pmic_buck_vmodem_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 400000 + selector * 6250;
-	PMICLOG("buck vmodem list_voltage: %d\n", voltage);
-	return voltage;
-}
-
 /* Regulator vcore enable */
 static int pmic_buck_vcore_enable(struct regulator_dev *rdev)
 {
@@ -1776,16 +1726,6 @@ static int pmic_buck_vcore_get_voltage_sel(struct regulator_dev *rdev)
 	}
 
 	return (mreg->da_vol_cb)();
-}
-
-/* Regulator vcore list_voltage */
-static int pmic_buck_vcore_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 400000 + selector * 6250;
-	PMICLOG("buck vcore list_voltage: %d\n", voltage);
-	return voltage;
 }
 
 /* Regulator vmipi enable */
@@ -2015,16 +1955,6 @@ static int pmic_ldo_vsram_dvfs2_get_voltage_sel(struct regulator_dev *rdev)
 	return (mreg->da_vol_cb)();
 }
 
-/* Regulator vsram_dvfs2 list_voltage */
-static int pmic_ldo_vsram_dvfs2_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 400000 + selector * 6250;
-	PMICLOG("ldo vsram_dvfs2 list_voltage: %d\n", voltage);
-	return voltage;
-}
-
 /* Regulator vs2 enable */
 static int pmic_buck_vs2_enable(struct regulator_dev *rdev)
 {
@@ -2124,16 +2054,6 @@ static int pmic_buck_vs2_get_voltage_sel(struct regulator_dev *rdev)
 	}
 
 	return (mreg->da_vol_cb)();
-}
-
-/* Regulator vs2 list_voltage */
-static int pmic_buck_vs2_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 1200000 + selector * 12500;
-	PMICLOG("buck vs2 list_voltage: %d\n", voltage);
-	return voltage;
 }
 
 /* Regulator vefuse enable */
@@ -2352,16 +2272,6 @@ static int pmic_buck_vpa1_get_voltage_sel(struct regulator_dev *rdev)
 	return (mreg->da_vol_cb)();
 }
 
-/* Regulator vpa1 list_voltage */
-static int pmic_buck_vpa1_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 500000 + selector * 50000;
-	PMICLOG("buck vpa1 list_voltage: %d\n", voltage);
-	return voltage;
-}
-
 /* Regulator vrf18_1 enable */
 static int pmic_ldo_vrf18_1_enable(struct regulator_dev *rdev)
 {
@@ -2524,16 +2434,6 @@ static int pmic_ldo_vsram_vgpu_get_voltage_sel(struct regulator_dev *rdev)
 	}
 
 	return (mreg->da_vol_cb)();
-}
-
-/* Regulator vsram_vgpu list_voltage */
-static int pmic_ldo_vsram_vgpu_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 400000 + selector * 6250;
-	PMICLOG("ldo vsram_vgpu list_voltage: %d\n", voltage);
-	return voltage;
 }
 
 /* Regulator vcamd2 enable */
@@ -3429,16 +3329,6 @@ static int pmic_ldo_vsram_dvfs1_get_voltage_sel(struct regulator_dev *rdev)
 	return (mreg->da_vol_cb)();
 }
 
-/* Regulator vsram_dvfs1 list_voltage */
-static int pmic_ldo_vsram_dvfs1_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 400000 + selector * 6250;
-	PMICLOG("ldo vsram_dvfs1 list_voltage: %d\n", voltage);
-	return voltage;
-}
-
 /* Regulator vcn33_bt enable */
 static int pmic_ldo_vcn33_bt_enable(struct regulator_dev *rdev)
 {
@@ -4047,16 +3937,6 @@ static int pmic_buck_vdram_get_voltage_sel(struct regulator_dev *rdev)
 	return (mreg->da_vol_cb)();
 }
 
-/* Regulator vdram list_voltage */
-static int pmic_buck_vdram_list_voltage(struct regulator_dev *rdev, unsigned selector)
-{
-	int voltage;
-
-	voltage = 600000 + selector * 6250;
-	PMICLOG("buck vdram list_voltage: %d\n", voltage);
-	return voltage;
-}
-
 /* Regulator vxo22 enable */
 static int pmic_ldo_vxo22_enable(struct regulator_dev *rdev)
 {
@@ -4588,7 +4468,7 @@ static struct regulator_ops pmic_buck_vs1_ops = {
 	.is_enabled = pmic_buck_vs1_is_enabled,
 	.get_voltage_sel = pmic_buck_vs1_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vs1_set_voltage_sel,
-	.list_voltage = pmic_buck_vs1_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_buck_vs1_enable_time, */
 };
 
@@ -4618,7 +4498,7 @@ static struct regulator_ops pmic_buck_vimvo_ops = {
 	.is_enabled = pmic_buck_vimvo_is_enabled,
 	.get_voltage_sel = pmic_buck_vimvo_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vimvo_set_voltage_sel,
-	.list_voltage = pmic_buck_vimvo_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_buck_vimvo_enable_time, */
 };
 
@@ -4629,7 +4509,7 @@ static struct regulator_ops pmic_ldo_vsram_vcore_ops = {
 	.is_enabled = pmic_ldo_vsram_vcore_is_enabled,
 	.get_voltage_sel = pmic_ldo_vsram_vcore_get_voltage_sel,
 	.set_voltage_sel = pmic_ldo_vsram_vcore_set_voltage_sel,
-	.list_voltage = pmic_ldo_vsram_vcore_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_ldo_vsram_vcore_enable_time, */
 };
 
@@ -4656,7 +4536,7 @@ static struct regulator_ops pmic_ldo_vsram_vmd_ops = {
 	.is_enabled = pmic_ldo_vsram_vmd_is_enabled,
 	.get_voltage_sel = pmic_ldo_vsram_vmd_get_voltage_sel,
 	.set_voltage_sel = pmic_ldo_vsram_vmd_set_voltage_sel,
-	.list_voltage = pmic_ldo_vsram_vmd_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_ldo_vsram_vmd_enable_time, */
 };
 
@@ -4699,7 +4579,7 @@ static struct regulator_ops pmic_buck_vmodem_ops = {
 	.is_enabled = pmic_buck_vmodem_is_enabled,
 	.get_voltage_sel = pmic_buck_vmodem_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vmodem_set_voltage_sel,
-	.list_voltage = pmic_buck_vmodem_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_buck_vmodem_enable_time, */
 };
 
@@ -4711,6 +4591,7 @@ static struct regulator_ops pmic_buck_vcore_ops = {
 	.get_voltage_sel = pmic_buck_vcore_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vcore_set_voltage_sel,
 	.list_voltage = pmic_buck_vcore_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_buck_vcore_enable_time, */
 };
 
@@ -4737,7 +4618,7 @@ static struct regulator_ops pmic_ldo_vsram_dvfs2_ops = {
 	.is_enabled = pmic_ldo_vsram_dvfs2_is_enabled,
 	.get_voltage_sel = pmic_ldo_vsram_dvfs2_get_voltage_sel,
 	.set_voltage_sel = pmic_ldo_vsram_dvfs2_set_voltage_sel,
-	.list_voltage = pmic_ldo_vsram_dvfs2_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_ldo_vsram_dvfs2_enable_time, */
 };
 
@@ -4748,7 +4629,7 @@ static struct regulator_ops pmic_buck_vs2_ops = {
 	.is_enabled = pmic_buck_vs2_is_enabled,
 	.get_voltage_sel = pmic_buck_vs2_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vs2_set_voltage_sel,
-	.list_voltage = pmic_buck_vs2_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_buck_vs2_enable_time, */
 };
 
@@ -4770,7 +4651,7 @@ static struct regulator_ops pmic_buck_vpa1_ops = {
 	.is_enabled = pmic_buck_vpa1_is_enabled,
 	.get_voltage_sel = pmic_buck_vpa1_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vpa1_set_voltage_sel,
-	.list_voltage = pmic_buck_vpa1_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_buck_vpa1_enable_time, */
 };
 
@@ -4789,7 +4670,7 @@ static struct regulator_ops pmic_ldo_vsram_vgpu_ops = {
 	.is_enabled = pmic_ldo_vsram_vgpu_is_enabled,
 	.get_voltage_sel = pmic_ldo_vsram_vgpu_get_voltage_sel,
 	.set_voltage_sel = pmic_ldo_vsram_vgpu_set_voltage_sel,
-	.list_voltage = pmic_ldo_vsram_vgpu_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_ldo_vsram_vgpu_enable_time, */
 };
 
@@ -4852,7 +4733,7 @@ static struct regulator_ops pmic_buck_vmd1_ops = {
 	.is_enabled = pmic_buck_vmd1_is_enabled,
 	.get_voltage_sel = pmic_buck_vmd1_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vmd1_set_voltage_sel,
-	.list_voltage = pmic_buck_vmd1_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_buck_vmd1_enable_time, */
 };
 
@@ -4882,7 +4763,7 @@ static struct regulator_ops pmic_ldo_vsram_dvfs1_ops = {
 	.is_enabled = pmic_ldo_vsram_dvfs1_is_enabled,
 	.get_voltage_sel = pmic_ldo_vsram_dvfs1_get_voltage_sel,
 	.set_voltage_sel = pmic_ldo_vsram_dvfs1_set_voltage_sel,
-	.list_voltage = pmic_ldo_vsram_dvfs1_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_ldo_vsram_dvfs1_enable_time, */
 };
 
@@ -4945,7 +4826,7 @@ static struct regulator_ops pmic_buck_vdram_ops = {
 	.is_enabled = pmic_buck_vdram_is_enabled,
 	.get_voltage_sel = pmic_buck_vdram_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vdram_set_voltage_sel,
-	.list_voltage = pmic_buck_vdram_list_voltage,
+	.list_voltage = regulator_list_voltage_linear,
 	/* .enable_time = pmic_buck_vdram_enable_time, */
 };
 
