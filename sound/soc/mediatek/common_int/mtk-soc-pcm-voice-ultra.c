@@ -85,7 +85,7 @@ static struct voice_ultra_info ultra_info = {
 	.capture_info_ready = false,
 };
 
-static AudioDigitalPCM  Voice1Pcm = {
+static struct audio_digital_pcm  Voice1Pcm = {
 	.mTxLchRepeatSel = Soc_Aud_TX_LCH_RPT_TX_LCH_NO_REPEAT,
 	.mVbt16kModeSel  = Soc_Aud_VBT_16K_MODE_VBT_16K_MODE_DISABLE,
 	.mExtModemSel = Soc_Aud_EXT_MODEM_MODEM_2_USE_INTERNAL_MODEM,
@@ -100,7 +100,7 @@ static AudioDigitalPCM  Voice1Pcm = {
 	.mModemPcmOn = false,
 };
 
-static AudioDigitalPCM  Voice2IntPcm = {
+static struct audio_digital_pcm  Voice2IntPcm = {
 	.mBclkOutInv = false,
 	.mTxLchRepeatSel = Soc_Aud_TX_LCH_RPT_TX_LCH_NO_REPEAT,
 	.mVbt16kModeSel  = Soc_Aud_VBT_16K_MODE_VBT_16K_MODE_DISABLE,

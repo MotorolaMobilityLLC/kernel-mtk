@@ -117,7 +117,7 @@ static void StopAudioFMI2SAWBHardware(struct snd_pcm_substream *substream)
 
 static void StartAudioFMI2SAWBHardware(struct snd_pcm_substream *substream)
 {
-	AudioDigtalI2S mI2SInAttribute;
+	struct audio_digital_i2s mI2SInAttribute;
 
 	pr_warn("StartAudioFMI2SAWBHardware\n");
 

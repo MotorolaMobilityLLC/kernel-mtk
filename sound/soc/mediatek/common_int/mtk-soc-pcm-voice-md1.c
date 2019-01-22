@@ -77,7 +77,7 @@ bool get_voice_status(void)
 }
 EXPORT_SYMBOL(get_voice_status);
 
-static AudioDigitalPCM  Voice1Pcm = {
+static struct audio_digital_pcm  Voice1Pcm = {
 	.mTxLchRepeatSel = Soc_Aud_TX_LCH_RPT_TX_LCH_NO_REPEAT,
 	.mVbt16kModeSel  = Soc_Aud_VBT_16K_MODE_VBT_16K_MODE_DISABLE,
 	.mExtModemSel = Soc_Aud_EXT_MODEM_MODEM_2_USE_INTERNAL_MODEM,
