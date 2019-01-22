@@ -43,6 +43,11 @@ WLAN_STATUS p2pFuncProcessBeacon(IN P_ADAPTER_T prAdapter,
 				 IN PUINT_8 pucNewBcnHdr, IN UINT_32 u4NewHdrLen,
 				 IN PUINT_8 pucNewBcnBody, IN UINT_32 u4NewBodyLen);
 
+#if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
+WLAN_STATUS p2pFuncUpdateProbeRspIEs(IN P_ADAPTER_T prAdapter, IN P_MSG_P2P_BEACON_UPDATE_T prIETemp,
+			IN ENUM_NETWORK_TYPE_INDEX_T eNetTypeIndex);
+#endif
+
 BOOLEAN
 p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 		    IN P_SW_RFB_T prSwRfb, IN PP_STA_RECORD_T pprStaRec, OUT PUINT_16 pu2StatusCode);

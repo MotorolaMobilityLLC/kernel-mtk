@@ -55,6 +55,9 @@ typedef enum _ENUM_IE_UPD_METHOD_T {
 	IE_UPD_METHOD_UPDATE_RANDOM,
 	IE_UPD_METHOD_UPDATE_ALL,
 	IE_UPD_METHOD_DELETE_ALL,
+#if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
+	IE_UPD_METHOD_UPDATE_PROBE_RSP,
+#endif
 } ENUM_IE_UPD_METHOD_T, *P_ENUM_IE_UPD_METHOD_T;
 
 /*******************************************************************************

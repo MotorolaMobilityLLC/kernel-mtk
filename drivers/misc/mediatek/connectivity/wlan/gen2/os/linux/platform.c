@@ -39,7 +39,7 @@
 ********************************************************************************
 */
 #if CFG_TC10_FEATURE
-#define WIFI_NVRAM_FILE_NAME   "/system/etc/firmware/WIFI"
+#define WIFI_NVRAM_FILE_NAME   "/vendor/firmware/WIFI"
 #else
 #define WIFI_NVRAM_FILE_NAME   "/data/nvram/APCFG/APRDEB/WIFI"
 #endif

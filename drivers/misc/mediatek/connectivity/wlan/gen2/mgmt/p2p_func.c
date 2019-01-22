@@ -533,6 +533,93 @@ WLAN_STATUS p2pFuncProcessBeacon(IN P_ADAPTER_T prAdapter,
 	return rWlanStatus;
 }				/* p2pFuncProcessBeacon */
 
+#if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
+WLAN_STATUS p2pFuncUpdateProbeRspIEs(IN P_ADAPTER_T prAdapter, IN P_MSG_P2P_BEACON_UPDATE_T prIETemp,
+			IN ENUM_NETWORK_TYPE_INDEX_T eNetTypeIndex)
+{
+	P_BSS_INFO_T prBssInfo;
+	P_MSDU_INFO_T prMsduInfo;
+	UINT_32 u4IeArraySize = 0, u4Idx = 0;
+	P_UINT_8 pucP2pIe = NULL;
+	P_UINT_8 pucWpsIe = NULL;
+	P_UINT_8 pucWfdIe = NULL;
+	P_P2P_SPECIFIC_BSS_INFO_T prP2pSpecificBssInfo = NULL;
+
+	prBssInfo = &(prAdapter->rWifiVar.arBssInfo[eNetTypeIndex]);
+	prP2pSpecificBssInfo = prAdapter->rWifiVar.prP2pSpecificBssInfo;
+
+	/* reuse beacon MsduInfo */
+	prMsduInfo = prBssInfo->prBeacon;
+
+	/* beacon prMsduInfo will be NULLify once BSS deactivated, so skip if it is */
+	if (!prMsduInfo)
+		return WLAN_STATUS_SUCCESS;
+
+	if (!prIETemp->pucProbeRsp) {
+		DBGLOG(BSS, INFO, "change beacon: has no extra probe response IEs\n");
+		return WLAN_STATUS_SUCCESS;
+	}
+	if (p2pFuncIsAPMode(prAdapter->rWifiVar.prP2pFsmInfo)) {
+		DBGLOG(BSS, INFO, "change beacon: pure Ap mode do not add extra probe response IEs\n");
+		return WLAN_STATUS_SUCCESS;
+	}
+	prMsduInfo->u2FrameLength = 0;
+
+	bssBuildBeaconProbeRespFrameCommonIEs(prMsduInfo, prBssInfo, prIETemp->pucProbeRsp);
+
+	u4IeArraySize = sizeof(txProbeRspIETable) / sizeof(APPEND_VAR_IE_ENTRY_T);
+
+	for (u4Idx = 0; u4Idx < u4IeArraySize; u4Idx++) {
+		if (txProbeRspIETable[u4Idx].pfnAppendIE)
+			txProbeRspIETable[u4Idx].pfnAppendIE(prAdapter, prMsduInfo);
+	}
+
+	/* process probe response IE from supplicant */
+	pucP2pIe = (P_UINT_8) cfg80211_find_vendor_ie(WLAN_OUI_WFA, WLAN_OUI_TYPE_WFA_P2P,
+			prIETemp->pucProbeRsp,
+			prIETemp->u4ProbeRsp_len);
+
+	pucWfdIe = (P_UINT_8) cfg80211_find_vendor_ie(WLAN_OUI_WFA, WLAN_OUI_TYPE_WFA_P2P + 1,
+			prIETemp->pucProbeRsp,
+			prIETemp->u4ProbeRsp_len);
+
+	pucWpsIe = (P_UINT_8) cfg80211_find_vendor_ie(WLAN_OUI_MICROSOFT, WLAN_OUI_TYPE_MICROSOFT_WPS,
+			prIETemp->pucProbeRsp,
+			prIETemp->u4ProbeRsp_len);
+
+	if (pucP2pIe) {
+		kalMemCopy(prMsduInfo->prPacket + prMsduInfo->u2FrameLength,
+				pucP2pIe, IE_SIZE(pucP2pIe));
+		prMsduInfo->u2FrameLength += IE_SIZE(pucP2pIe);
+	}
+
+	if (pucWfdIe) {
+		kalMemCopy(prMsduInfo->prPacket + prMsduInfo->u2FrameLength,
+				pucWfdIe, IE_SIZE(pucWfdIe));
+		prMsduInfo->u2FrameLength += IE_SIZE(pucWfdIe);
+	}
+
+	if (pucWpsIe) {
+		kalMemCopy(prMsduInfo->prPacket + prMsduInfo->u2FrameLength,
+				pucWpsIe, IE_SIZE(pucWpsIe));
+		prMsduInfo->u2FrameLength += IE_SIZE(pucWpsIe);
+	}
+
+	kalMemFree(prIETemp->pucProbeRsp, VIR_MEM_TYPE, prIETemp->u4ProbeRsp_len);
+
+	DBGLOG(BSS, INFO, "update probe response for network index: %d, IE len: %d\n",
+				eNetTypeIndex, prMsduInfo->u2FrameLength);
+	/* dumpMemory8(prMsduInfo->prPacket, prMsduInfo->u2FrameLength); */
+
+	return nicUpdateBeaconIETemplate(prAdapter,
+					 IE_UPD_METHOD_UPDATE_PROBE_RSP,
+					 eNetTypeIndex,
+					 prBssInfo->u2CapInfo,
+					 prMsduInfo->prPacket,
+					 prMsduInfo->u2FrameLength);
+}
+#endif /*CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP*/
+
 /* TODO: We do not apply IE in deauth frame set from upper layer now. */
 WLAN_STATUS
 p2pFuncDeauth(IN P_ADAPTER_T prAdapter,
