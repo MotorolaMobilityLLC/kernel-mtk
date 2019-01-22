@@ -278,7 +278,6 @@ static inline int check_desttype_valid(int master, int port, int desttype)
 	}
 #endif
 	return MET_SMI_SUCCESS;
-
 }
 
 static inline int check_reqtype_valid(int master, int port, int reqtype)
@@ -307,11 +306,7 @@ static inline int check_bustype_valid(int master, int port, int bustype)
 		return MET_SMI_FAIL;
 #endif
 	return MET_SMI_SUCCESS;
-
 }
-
-
-
 
 int SMI_MET_SMI_base_Init(void)
 {
@@ -346,15 +341,12 @@ int SMI_MET_SMI_base_Init(void)
 	return 0;
 }
 
-
-
 static const char smi_met_header_legacy_mode[] =
 	"TS0,TS1,metadata,active,request,beat,byte,CP,DP,OSTD,CPMAX,OSTDMAX\n";
 static const char smi_met_header_parallel_mode[] = "TS0,TS1,metadata,byte\n";
 static int larb_already_configed[smi_met_SMI_LARB_NUMBER + smi_met_SMI_COMM_NUMBER];
 static int parall_port_num[smi_met_SMI_LARB_NUMBER + smi_met_SMI_COMM_NUMBER];
 struct met_smi_conf met_smi_conf_array[smi_met_SMI_LARB_NUMBER + smi_met_SMI_COMM_NUMBER];
-
 
 int SMI_MET_get_header(unsigned int parallel_mode, char *buf, unsigned int *larb_number)
 {
@@ -574,8 +566,6 @@ int SMI_MET_config(struct met_smi_conf *met_smi_config, unsigned int conf_num,
 }
 EXPORT_SYMBOL(SMI_MET_config)
 
-
-
 void SMI_MET_start(void)
 {
 	int larbno;
@@ -603,6 +593,28 @@ void SMI_MET_start(void)
 }
 EXPORT_SYMBOL(SMI_MET_start)
 
+static void smi_init_value(void)
+{
+	int i;
+
+	smi_parallel_mode = 0;
+	for (i = 0; i < (smi_met_SMI_LARB_NUMBER + smi_met_SMI_COMM_NUMBER); i++) {
+		parall_port_num[i] = 0;
+		larb_already_configed[i] = 0;
+		met_smi_conf_array[i].master = 0;
+		met_smi_conf_array[i].port[0] = -1;
+		met_smi_conf_array[i].port[1] = -1;
+		met_smi_conf_array[i].port[2] = -1;
+		met_smi_conf_array[i].port[3] = -1;
+		met_smi_conf_array[i].rwtype[0] = SMI_RW_ALL;
+		met_smi_conf_array[i].rwtype[1] = SMI_RW_ALL;
+		met_smi_conf_array[i].rwtype[2] = SMI_RW_ALL;
+		met_smi_conf_array[i].rwtype[3] = SMI_RW_ALL;
+		met_smi_conf_array[i].desttype = SMI_DEST_EMI;
+		met_smi_conf_array[i].reqtype = SMI_REQ_ALL;
+	}
+}
+
 void SMI_MET_stop(void)
 {
 	int larbno;
@@ -611,6 +623,7 @@ void SMI_MET_stop(void)
 
 	/* reset configurations */
 	/* clear config array */
+	smi_init_value();
 
 	/* clear */
 	for (larbno = 0; larbno < smi_met_SMI_LARB_NUMBER; larbno++) {
