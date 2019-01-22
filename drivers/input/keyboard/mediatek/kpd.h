@@ -132,7 +132,7 @@ static inline bool powerOff_slidePin_interface(void)
 #ifdef CONFIG_KPD_PWRKEY_USE_PMIC
 void kpd_pwrkey_pmic_handler(unsigned long pressed);
 #else
-static inline void kpd_pwrkey_pmic_handler(unsigned long data);
+static inline void kpd_pwrkey_pmic_handler(unsigned long data) {}
 #endif
 void kpd_pmic_rstkey_handler(unsigned long pressed);
 
