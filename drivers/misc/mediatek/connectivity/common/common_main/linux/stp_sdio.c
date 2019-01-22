@@ -1252,6 +1252,8 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 	UINT32 prev_wr_idx;
 	UINT32 buf_allocation;
 	UINT32 room;
+	UINT64 ts;
+	ULONG nsec;
 
 	STPSDIO_LOUD_FUNC("enter\n");
 	osal_ftrace_print("%s|S|L|%d\n", __func__, size);
@@ -1277,6 +1279,9 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		    (UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
 #endif
 		gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+		osal_get_local_time(&ts, &nsec);
+		gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
+		gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
 
 		STPSDIO_DBG_FUNC("(Empty) Enqueue done\n");
 #if KMALLOC_UPDATE
@@ -1365,6 +1370,9 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 1) =
 				(UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
 			gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+			osal_get_local_time(&ts, &nsec);
+			gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
+			gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
 
 			pkt_bufp =
 			    gp_info->pkt_buf.tx_buf +
@@ -1472,6 +1480,9 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			*(gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 1) =
 				(UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
 			gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+			osal_get_local_time(&ts, &nsec);
+			gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
+			gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
 
 			pkt_bufp = gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx
 				* STP_SDIO_TX_ENTRY_SIZE + STP_SDIO_HDR_SIZE;
@@ -3115,8 +3126,9 @@ VOID stp_sdio_txdbg_dump(VOID)
 #endif
 
 #endif
-		STPSDIO_INFO_FUNC("pkt_buf.tx_buf idx(%x) ts(%d) len(%d)\n",
-				idx, gp_info->pkt_buf.tx_buf_ts[idx], len);
+		STPSDIO_INFO_FUNC("pkt_buf.tx_buf idx(%x) ts(%d) len(%d), time[%llu.%06lu]\n",
+				idx, gp_info->pkt_buf.tx_buf_ts[idx], len,
+				gp_info->pkt_buf.tx_buf_local_ts[idx], gp_info->pkt_buf.tx_buf_local_nsec[idx]);
 		if (len == 0) {
 			STPSDIO_INFO_FUNC("idx(%x) 0 == len dump skip\n", idx);
 			continue;
