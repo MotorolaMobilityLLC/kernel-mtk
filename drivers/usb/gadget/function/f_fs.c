@@ -1188,7 +1188,7 @@ static long ffs_epfile_ioctl(struct file *file, unsigned code,
 
 	ENTER();
 
-	if (!file || !epfile)
+	if (!epfile)
 		return -EINVAL;
 
 	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE))
