@@ -68,6 +68,10 @@
 #define VPU_FIX_MVA_SIZE                 (VPU_FIX_MVA_END - VPU_FIX_MVA_START + 1)
 #define VPU_FIX_BLOCK_NR                 MVA_GRAPH_BLOCK_NR_ALIGNED(VPU_FIX_MVA_SIZE)
 
+/*reserved ccu mva region*/
+#define CCU_FIX_MVA_START			0x2FB00000
+#define CCU_FIX_MVA_END				0x33C00000
+
 #define MVA_COMMON_CONTIG_RETGION_START          0x80000000
 
 int check_reserved_region_integrity(unsigned int start, unsigned int nr);
