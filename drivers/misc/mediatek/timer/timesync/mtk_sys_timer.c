@@ -332,12 +332,12 @@ static int sys_timer_work_init(void)
 	return 0;
 }
 
-#ifdef SYS_TIMER_TIMESYNC_REGULAR
 static void sys_timer_timesync_ws(struct work_struct *ws)
 {
 	sys_timer_timesync_sync_base(SYS_TIMER_TIMESYNC_FLAG_SYNC);
 }
 
+#ifdef SYS_TIMER_TIMESYNC_REGULAR
 static void sys_timer_timesync_timeout(unsigned long data)
 {
 	sys_timer_timesync_sync_base(SYS_TIMER_TIMESYNC_FLAG_ASYNC);
@@ -348,7 +348,14 @@ static void sys_timer_timesync_timeout(unsigned long data)
 
 static int sys_timer_timesync_cfg_regular_sync(void)
 {
+	/*
+	 * init work for
+	 * 1. regular sync by sys_timer itself.
+	 * 2. regular sync by sched_clock_poll.
+	 */
 	INIT_WORK(&(timesync_cxt.work), sys_timer_timesync_ws);
+
+	/* timer for regular sync by sys_timer itself */
 	setup_timer(&(timesync_cxt.timer), &sys_timer_timesync_timeout, 0);
 	timesync_cxt.timer.expires = jiffies + TIMESYNC_REGULAR_SYNC_SEC;
 	add_timer(&(timesync_cxt.timer));
@@ -356,7 +363,15 @@ static int sys_timer_timesync_cfg_regular_sync(void)
 	return 0;
 }
 #else
-#define sys_timer_timesync_cfg_regular_sync()
+static int sys_timer_timesync_cfg_regular_sync(void)
+{
+	/*
+	 * init work for regular sync by sched_clock_poll only
+	 */
+	INIT_WORK(&(timesync_cxt.work), sys_timer_timesync_ws);
+
+	return 0;
+}
 #endif
 
 static int sys_timer_timesync_init(struct platform_device *pdev)
@@ -437,6 +452,10 @@ static ssize_t sys_timer_dbgfs_debug_write(struct file *filp,
 
 	if (val == 1)
 		sys_timer_timesync_verify_sspm();
+	else if (val == 2)
+		sys_timer_timesync_sync_base(SYS_TIMER_TIMESYNC_FLAG_SYNC);
+	else if (val == 3)
+		sys_timer_timesync_sync_base(SYS_TIMER_TIMESYNC_FLAG_ASYNC);
 	else
 		pr_info("unsupported value %d\n", val);
 
