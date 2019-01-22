@@ -3138,9 +3138,11 @@ static struct timeval ext_diff(struct timeval start, struct timeval end)
 
 int start_ext_sync_signal(void)
 {
-	unsigned int dl1_state =
-		GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1);
+	unsigned int dl1_state;
 
+	ext_sync_signal_lock();
+
+	dl1_state = GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1);
 
 	do_gettimeofday(&ext_time);
 	ext_time_prev = ext_time;
@@ -3156,14 +3158,18 @@ int start_ext_sync_signal(void)
 	if (dl1_state == true)
 		Auddrv_DL1_Interrupt_Handler();
 
+	ext_sync_signal_unlock();
 	return 0;
 }
 EXPORT_SYMBOL(start_ext_sync_signal);
 
 int stop_ext_sync_signal(void)
 {
-	unsigned int dl1_state =
-		GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1);
+	unsigned int dl1_state;
+
+	ext_sync_signal_lock();
+
+	dl1_state = GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1);
 
 	do_gettimeofday(&ext_time);
 
@@ -3176,8 +3182,6 @@ int stop_ext_sync_signal(void)
 		ext_time_diff.tv_sec,
 		ext_time_diff.tv_usec);
 
-	irq_from_ext_module--;
-
 	if (irq_from_ext_module > 0) {
 		irq_from_ext_module--;
 	} else {
@@ -3189,14 +3193,18 @@ int stop_ext_sync_signal(void)
 	if (dl1_state == true)
 		Auddrv_DL1_Interrupt_Handler();
 
+	ext_sync_signal_unlock();
 	return 0;
 }
 EXPORT_SYMBOL(stop_ext_sync_signal);
 
 int ext_sync_signal(void)
 {
-	unsigned int dl1_state =
-		GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1);
+	unsigned int dl1_state;
+
+	ext_sync_signal_lock();
+
+	dl1_state = GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1);
 
 	do_gettimeofday(&ext_time);
 
@@ -3211,9 +3219,23 @@ int ext_sync_signal(void)
 
 	if (irq_from_ext_module && dl1_state == true)
 		Auddrv_DL1_Interrupt_Handler();
+
+	ext_sync_signal_unlock();
 	return 0;
 }
 EXPORT_SYMBOL(ext_sync_signal);
+
+static DEFINE_SPINLOCK(ext_sync_lock);
+static unsigned long ext_sync_lock_flags;
+void ext_sync_signal_lock(void)
+{
+	spin_lock_irqsave(&ext_sync_lock, ext_sync_lock_flags);
+}
+
+void ext_sync_signal_unlock(void)
+{
+	spin_unlock_irqrestore(&ext_sync_lock, ext_sync_lock_flags);
+}
 
 static snd_pcm_uframes_t get_dlmem_frame_index(struct snd_pcm_substream *substream,
 	AFE_MEM_CONTROL_T *afe_mem_control, Soc_Aud_Digital_Block mem_block)

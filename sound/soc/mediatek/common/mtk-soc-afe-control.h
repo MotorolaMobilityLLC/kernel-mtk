@@ -273,6 +273,8 @@ bool is_irq_from_ext_module(void);
 int start_ext_sync_signal(void);
 int stop_ext_sync_signal(void);
 int ext_sync_signal(void);
+void ext_sync_signal_lock(void);
+void ext_sync_signal_unlock(void);
 
 struct mtk_mem_blk_ops {
 	int (*set_memif_addr)(AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk);
