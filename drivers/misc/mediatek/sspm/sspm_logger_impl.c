@@ -49,7 +49,7 @@ struct log_ctrl_s {
 	unsigned int info_ofs;
 	unsigned int buff_ofs;
 	unsigned int buff_size;
-#ifdef SSPM_LASTK_SUPPORT
+#if SSPM_LASTK_SUPPORT
 	unsigned int linfo_ofs;
 	unsigned int lbuff_ofs;
 	unsigned int lbuff_size;
@@ -65,7 +65,7 @@ static unsigned int sspm_logger_inited;
 static struct log_ctrl_s *log_ctl;
 static struct buffer_info_s *buf_info, *lbuf_info;
 static struct timer_list sspm_log_timer;
-#ifdef SSPM_LASTK_SUPPORT
+#if SSPM_LASTK_SUPPORT
 static unsigned int sspm_logger_lastk_exists;
 #endif
 static DEFINE_MUTEX(sspm_log_mutex);
@@ -178,7 +178,7 @@ error:
 	return 0;
 }
 
-#ifdef SSPM_LASTK_SUPPORT
+#if SSPM_LASTK_SUPPORT
 static unsigned int sspm_log_lastk_get(char *buf)
 {
 	unsigned int ret, w_pos;
@@ -234,7 +234,7 @@ static ssize_t sspm_mobile_log_store(struct device *kobj, struct device_attribut
 
 DEVICE_ATTR(sspm_mobile_log, S_IWUSR | S_IRUGO, sspm_mobile_log_show, sspm_mobile_log_store);
 
-#ifdef SSPM_LASTK_SUPPORT
+#if SSPM_LASTK_SUPPORT
 static ssize_t sspm_log_lastk_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 	unsigned int ret;
@@ -272,7 +272,7 @@ unsigned int __init sspm_logger_init(phys_addr_t start, phys_addr_t limit)
 
 	last_ofs += log_ctl->buff_size;
 
-#ifdef SSPM_LASTK_SUPPORT
+#if SSPM_LASTK_SUPPORT
 	log_ctl->linfo_ofs = last_ofs;
 
 	last_ofs += sizeof(*lbuf_info);
@@ -311,7 +311,7 @@ int __init sspm_logger_init_done(void)
 		if (unlikely(ret != 0))
 			return ret;
 
-#ifdef SSPM_LASTK_SUPPORT
+#if SSPM_LASTK_SUPPORT
 		ret = sspm_sysfs_create_file(&dev_attr_sspm_log_lastk);
 
 		if (unlikely(ret != 0))
