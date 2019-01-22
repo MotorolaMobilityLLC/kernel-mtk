@@ -775,6 +775,7 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target, unsigned int force_
 
 	if (force_fallback) {
 		ged_set_backup_timer_timeout((u64)t_gpu_target);
+		gpu_freq_pre = ret_freq = mt_gpufreq_get_cur_freq();
 		goto FB_RET;
 	} else {
 		ged_set_backup_timer_timeout(0);
@@ -837,6 +838,7 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target, unsigned int force_
 		, t_gpu, t_gpu_target, gpu_freq_tar, gpu_freq_pre);
 
 	g_CommitType = MTK_GPU_DVFS_TYPE_VSYNCBASED;
+
 	ged_dvfs_gpu_freq_commit((unsigned long)ui32NewFreqID, gpu_freq_tar, GED_DVFS_DEFAULT_COMMIT);
 
 	ret_freq = gpu_freq_tar;
