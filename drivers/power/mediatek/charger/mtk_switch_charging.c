@@ -113,6 +113,11 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		goto done;
 	}
 
+	if ((get_boot_mode() == META_BOOT) || ((get_boot_mode() == ADVMETA_BOOT))) {
+		pdata->input_current_limit = 200000; /* 200mA */
+		goto done;
+	}
+
 	if (info->chr_type == STANDARD_HOST) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)) {
 			if (info->usb_state == USB_SUSPEND)
@@ -224,7 +229,9 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 		pr_err("[charger]Charger Error, turn OFF charging !\n");
 	} else if ((get_boot_mode() == META_BOOT) || ((get_boot_mode() == ADVMETA_BOOT))) {
 		charging_enable = false;
-		pr_err("[charger]In meta or advanced meta mode, disable charging.\n");
+		info->chg1_data.input_current_limit = 200000; /* 200mA */
+		charger_dev_set_input_current(info->chg1_dev, info->chg1_data.input_current_limit);
+		pr_err("[charger]In meta or advanced meta mode, disable charging and set input current limit to 200mA\n");
 	} else {
 		mtk_pe20_start_algorithm(info);
 		mtk_pe_start_algorithm(info);
