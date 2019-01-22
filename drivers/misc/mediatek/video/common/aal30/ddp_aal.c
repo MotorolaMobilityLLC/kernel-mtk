@@ -169,7 +169,6 @@ enum AAL_UPDATE_HIST {
 	UPDATE_MULTIPLE
 };
 
-static int g_aal_dre_bypass = 1;
 static volatile bool g_aal_reset_count;
 static volatile int g_aal_prev_pipe;
 
@@ -271,31 +270,6 @@ static int disp_aal_exit_idle(const char *caller, int need_kick)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_AAL_SUPPORT
-static void disp_aal_write_bypass_dre_regs(enum DISP_MODULE_ENUM module, void *cmdq)
-{
-	const int offset = aal_get_offset(module);
-#ifdef CONFIG_MTK_DRE30_SUPPORT
-	if (module != AAL0_MODULE_NAMING)
-		return;
-
-	if (g_aal_change_to_dre30 == false)
-		return;
-#endif				/* CONFIG_MTK_DRE30_SUPPORT */
-
-	/* disable dre bypass mode */
-	if (g_aal_hw_offset == true) {
-#if defined(CONFIG_MACH_MT6799)
-		DISP_REG_MASK(cmdq, DISP_AAL_DRE_MAPPING_00_2 + offset,
-			(g_aal_dre_bypass << 4), 1 << 4);
-#endif
-	} else {
-		DISP_REG_MASK(cmdq, DISP_AAL_DRE_MAPPING_00 + offset,
-			(g_aal_dre_bypass << 4), 1 << 4);
-	}
-}
-#endif				/* CONFIG_MTK_AAL_SUPPORT */
-
 static int disp_aal_init(enum DISP_MODULE_ENUM module, int width, int height, void *cmdq)
 {
 	const int index = index_of_aal(module);
@@ -303,9 +277,6 @@ static int disp_aal_init(enum DISP_MODULE_ENUM module, int width, int height, vo
 #ifdef CONFIG_MTK_AAL_SUPPORT
 	/* Enable AAL histogram, engine */
 	DISP_REG_MASK(cmdq, DISP_AAL_CFG + aal_get_offset(module), 0x3 << 1, (0x3 << 1) | 0x1);
-#ifdef CONFIG_MTK_DRE30_SUPPORT
-	disp_aal_write_bypass_dre_regs(module, cmdq);
-#endif				/* CONFIG_MTK_DRE30_SUPPORT */
 #endif				/* CONFIG_MTK_AAL_SUPPORT */
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
@@ -1394,6 +1365,8 @@ static void disp_aal_dre3_config(void *cmdq, const DISP_AAL_INITREG *init_regs)
 		init_regs->dre_blk_area_min);
 	DISP_REG_MASK(cmdq, DISP_AAL_SRAM_CFG,
 		init_regs->hist_bin_type, 0x1);
+
+	g_aal_change_to_dre30 = true;
 #endif				/* CONFIG_MTK_DRE30_SUPPORT */
 }
 
@@ -1408,14 +1381,12 @@ static int disp_aal_write_init_regs(enum DISP_MODULE_ENUM module, void *cmdq)
 		int i, j = 0;
 		int *gain;
 
-		g_aal_dre_bypass = init_regs->dre_map_bypass;
-#ifndef CONFIG_MTK_DRE30_SUPPORT
-		disp_aal_write_bypass_dre_regs(module, cmdq);
-#endif
-
 		gain = init_regs->cabc_gainlmt;
 		if (g_aal_hw_offset == true) {
 #if defined(CONFIG_MACH_MT6799)
+			DISP_REG_MASK(cmdq, DISP_AAL_DRE_MAPPING_00_2 + offset,
+				(init_regs->dre_map_bypass << 4), 1 << 4);
+
 			for (i = 0; i <= 10; i++) {
 				DISP_REG_SET(cmdq, DISP_AAL_CABC_GAINLMT_TBL_2(i) + offset,
 					     CABC_GAINLMT(gain[j], gain[j + 1], gain[j + 2]));
@@ -1423,6 +1394,9 @@ static int disp_aal_write_init_regs(enum DISP_MODULE_ENUM module, void *cmdq)
 			}
 #endif
 		} else {
+			DISP_REG_MASK(cmdq, DISP_AAL_DRE_MAPPING_00 + offset,
+				(init_regs->dre_map_bypass << 4), 1 << 4);
+
 			for (i = 0; i <= 10; i++) {
 				DISP_REG_SET(cmdq, DISP_AAL_CABC_GAINLMT_TBL(i) + offset,
 					     CABC_GAINLMT(gain[j], gain[j + 1], gain[j + 2]));
@@ -1499,8 +1473,6 @@ static int disp_aal_write_param_to_reg(enum DISP_MODULE_ENUM module, struct cmdq
 			memcpy(&g_aal_gain, &g_aal_gain_db, sizeof(DISP_DRE30_PARAM));
 			spin_unlock_irqrestore(&g_aal_dre3_gain_lock, flags);
 		}
-
-		disp_aal_write_bypass_dre_regs(module, cmdq);
 	}
 #else
 	gain = param->DREGainFltStatus;
@@ -1748,8 +1720,6 @@ static void ddp_aal_dre3_restore(void *cmq_handle)
 		g_aal_backup.SRAM_CFG, 0x1);
 
 	ddp_aal_dre3_write_curve_full(cmq_handle);
-
-	g_aal_change_to_dre30 = true;
 #endif				/* CONFIG_MTK_DRE30_SUPPORT */
 }
 
