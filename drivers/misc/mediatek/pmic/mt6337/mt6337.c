@@ -53,13 +53,13 @@ unsigned int mt6337_read_interface(unsigned int RegNum, unsigned int *val, unsig
 		pr_err("[%s] Reg[0x%x] pmic_wrap read data fail\n", __func__, RegNum);
 		return return_value;
 	}
-	/*PMICLOG"[mt6337_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
+	/*MT6337LOG"[mt6337_read_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
 
 	pmic_reg &= (MASK << SHIFT);
 	*val = (pmic_reg >> SHIFT);
-	/*PMICLOG"[mt6337_read_interface] val=0x%x\n", *val);*/
+	/*MT6337LOG"[mt6337_read_interface] val=0x%x\n", *val);*/
 #else
-	/*PMICLOG("[mt6337_read_interface] Can not access HW PMIC\n");*/
+	/*MT6337LOG("[mt6337_read_interface] Can not access HW PMIC\n");*/
 #endif	/*defined(CONFIG_PMIC_HW_ACCESS_EN)*/
 
 	return return_value;
@@ -87,7 +87,7 @@ unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val, unsi
 		mutex_unlock(&mt6337_access_mutex);
 		return return_value;
 	}
-	/*PMICLOG"[mt6337_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
+	/*MT6337LOG"[mt6337_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
 
 	pmic_reg &= ~(MASK << SHIFT);
 	pmic_reg |= (val << SHIFT);
@@ -100,7 +100,7 @@ unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val, unsi
 		mutex_unlock(&mt6337_access_mutex);
 		return return_value;
 	}
-	/*PMICLOG"[mt6337_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
+	/*MT6337LOG"[mt6337_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg);*/
 
 	mutex_unlock(&mt6337_access_mutex);
 #else	/*---IPIMB---*/
@@ -108,7 +108,7 @@ unsigned int mt6337_config_interface(unsigned int RegNum, unsigned int val, unsi
 #endif	/*---IPIMB---*/
 
 #else
-	/*PMICLOG("[mt6337_config_interface] Can not access HW PMIC\n");*/
+	/*MT6337LOG("[mt6337_config_interface] Can not access HW PMIC\n");*/
 #endif	/*defined(CONFIG_PMIC_HW_ACCESS_EN)*/
 
 	return return_value;
@@ -132,7 +132,7 @@ unsigned int mt6337_config_interface_nolock(unsigned int RegNum, unsigned int va
 		pr_err("[%s] PWRAP Error return value=%d\n", __func__, return_value);
 		return return_value;
 	}
-	/*PMICLOG"[mt6337_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
+	/*MT6337LOG"[mt6337_config_interface] Reg[%x]=0x%x\n", RegNum, pmic_reg); */
 
 	pmic_reg &= ~(MASK << SHIFT);
 	pmic_reg |= (val << SHIFT);
@@ -144,13 +144,13 @@ unsigned int mt6337_config_interface_nolock(unsigned int RegNum, unsigned int va
 		pr_err("[%s] PWRAP Error return value=%d\n", __func__, return_value);
 		return return_value;
 	}
-	/*PMICLOG"[mt6337_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
+	/*MT6337LOG"[mt6337_config_interface] write Reg[%x]=0x%x\n", RegNum, pmic_reg); */
 #else /*---IPIMB---*/
 
 #endif /*---IPIMB---*/
 
 #else
-	/*PMICLOG("[mt6337_config_interface] Can not access HW PMIC\n"); */
+	/*MT6337LOG("[mt6337_config_interface] Can not access HW PMIC\n"); */
 #endif	/*defined(CONFIG_PMIC_HW_ACCESS_EN)*/
 
 	return return_value;
@@ -185,10 +185,10 @@ void mt6337_dump_register(struct seq_file *m)
 	const MT6337_PMU_FLAG_TABLE_ENTRY *pFlag_E = &mt6337_pmu_flags_table[MT6337_PMU_COMMAND_MAX - 1];
 	unsigned int i = 0;
 
-	PMICLOG("dump PMIC 6337 register\n");
+	MT6337LOG("dump PMIC 6337 register\n");
 
 	for (i = (pFlag_S->offset); i <= (pFlag_E->offset - 10); i = i + 10) {
-		PMICLOG("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
+		MT6337LOG("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
 			i, mt6337_upmu_get_reg_value(i),
 			i + 2, mt6337_upmu_get_reg_value(i + 2),
 			i + 4, mt6337_upmu_get_reg_value(i + 4),
@@ -334,7 +334,7 @@ void mt6337_debug_init(struct platform_device *dev)
 	debugfs_create_file("dump_mt6337_reg", S_IRUGO | S_IWUSR, mt6337_dir,
 		NULL, &mt6337_dump_register_proc_fops);
 
-	PMICLOG("proc_create mt6337_dump_register_proc_fops\n");
+	MT6337LOG("proc_create mt6337_dump_register_proc_fops\n");
 }
 
 /*****************************************************************************
@@ -398,34 +398,31 @@ static int mt6337_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 
-	PMICLOG("******** MT6337 driver probe!! ********\n");
+	MT6337LOG("******** MT6337 driver probe!! ********\n");
 	/*get PMIC CID */
-	pr_debug
-	    ("PMIC CID=0x%x PowerGoodStatus = 0x%x OCStatus = 0x%x ThermalStatus = 0x%x rsvStatus = 0x%x\n",
-	     mt6337_get_register_value(MT6337_PMIC_SWCID), mt6337_upmu_get_reg_value(0x21c),
-	     mt6337_upmu_get_reg_value(0x214), mt6337_upmu_get_reg_value(0x21e), mt6337_upmu_get_reg_value(0x2a6));
+	pr_err("MT6337 CID=0x%x", mt6337_get_register_value(MT6337_PMIC_SWCID));
 
 	/* mt6337_upmu_set_reg_value(0x2a6, 0xff); */ /* TBD */
 
 	/* MT6337 initial setting */
 	MT6337_INIT_SETTING();
-	PMICLOG("[MT6337_INIT_SETTING] Done\n");
+	MT6337LOG("[MT6337_INIT_SETTING] Done\n");
 
 #if 0
-	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_FPGA_EARLY_PORTING\n");
+	MT6337LOG("[PMIC_EINT_SETTING] disable when CONFIG_FPGA_EARLY_PORTING\n");
 #else
 	/* MT6337 Interrupt Service */
 	MT6337_EINT_SETTING();
-	PMICLOG("[MT6337_EINT_SETTING] Done\n");
+	MT6337LOG("[MT6337_EINT_SETTING] Done\n");
 #endif
 
 	mt6337_debug_init(dev);
-	PMICLOG("[MT6337] mt6337_debug_init : done.\n");
+	MT6337LOG("[MT6337] mt6337_debug_init : done.\n");
 
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_mt6337_access);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_mt6337_auxadc_ut);
 
-	PMICLOG("[PMIC] device_create_file for EM : done.\n");
+	MT6337LOG("[PMIC] device_create_file for EM : done.\n");
 
 	/*pwrkey_sw_workaround_init(); */
 	return 0;
@@ -433,21 +430,21 @@ static int mt6337_probe(struct platform_device *dev)
 
 static int mt6337_remove(struct platform_device *dev)
 {
-	PMICLOG("******** MT6337 pmic driver remove!! ********\n");
+	MT6337LOG("******** MT6337 pmic driver remove!! ********\n");
 
 	return 0;
 }
 
 static void mt6337_shutdown(struct platform_device *dev)
 {
-	PMICLOG("******** MT6337 pmic driver shutdown!! ********\n");
+	MT6337LOG("******** MT6337 pmic driver shutdown!! ********\n");
 }
 
 static int mt6337_suspend(struct platform_device *dev, pm_message_t state)
 {
 	pmic_suspend_state_mt6337 = true;
 
-	PMICLOG("******** MT6337 pmic driver suspend!! ********\n");
+	MT6337LOG("******** MT6337 pmic driver suspend!! ********\n");
 
 	return 0;
 }
@@ -456,7 +453,7 @@ static int mt6337_resume(struct platform_device *dev)
 {
 	pmic_suspend_state_mt6337 = false;
 
-	PMICLOG("******** MT6337 driver resume!! ********\n");
+	MT6337LOG("******** MT6337 driver resume!! ********\n");
 
 	return 0;
 }
@@ -499,7 +496,7 @@ static int __init mt6337_init(void)
 		return ret;
 	}
 
-	PMICLOG("****[%s] Initialization : DONE !!\n", __func__);
+	MT6337LOG("****[%s] Initialization : DONE !!\n", __func__);
 
 	return 0;
 }

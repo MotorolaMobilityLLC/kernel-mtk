@@ -28,8 +28,15 @@
 			reg, upmu_get_reg_value(reg)); \
 	} while (0)
 
+#define PMIC_LOG_DBG     4
+#define PMIC_LOG_INFO    3
+#define PMIC_LOG_NOT     2
+#define PMIC_LOG_WARN    1
+#define PMIC_LOG_ERR     0
+
 /* extern variable */
 extern struct dentry *mtk_pmic_dir;
+extern unsigned int gPMICDbgLvl;
 
 /* extern function */
 extern void kernel_dump_exception_reg(void);
