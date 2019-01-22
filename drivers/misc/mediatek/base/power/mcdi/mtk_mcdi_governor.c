@@ -461,7 +461,7 @@ int any_core_deepidle_sodi_check(int cpu)
 	/* Check other deepidle/SODI criteria */
 	mtk_idle_state = mtk_idle_select(cpu);
 
-	if (state >= 0 && state < NR_TYPES)
+	if (mtk_idle_state >= 0 && mtk_idle_state < NR_TYPES)
 		state = mcdi_get_mcdi_idle_state(mtk_idle_state);
 
 	if (!(state == MCDI_STATE_SODI || state == MCDI_STATE_DPIDLE || state == MCDI_STATE_SODI3)) {
