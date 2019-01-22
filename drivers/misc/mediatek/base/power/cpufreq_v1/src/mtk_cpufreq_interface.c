@@ -22,6 +22,7 @@
 unsigned int func_lv_mask;
 unsigned int do_dvfs_stress_test;
 unsigned int dvfs_power_mode;
+unsigned int sched_dvfs_enable;
 
 ktime_t now[NR_SET_V_F];
 ktime_t delta[NR_SET_V_F];
@@ -390,6 +391,10 @@ static ssize_t cpufreq_sched_disable_proc_write(struct file *file, const char __
 	else {
 #ifdef CONFIG_HYBRID_CPU_DVFS
 		cpuhvfs_set_sched_dvfs_disable(sched_disable);
+		if (sched_disable)
+			sched_dvfs_enable = 0;
+		else
+			sched_dvfs_enable = 1;
 #endif
 	}
 
