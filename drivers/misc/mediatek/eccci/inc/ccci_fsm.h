@@ -27,5 +27,6 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg);
 MD_STATE ccci_fsm_get_md_state(int md_id);
 MD_STATE_FOR_USER ccci_fsm_get_md_state_for_user(int md_id);
 
+extern void mdee_set_ex_time_str(unsigned char md_id, unsigned int type, char *str);
 #endif /* __CCCI_FSM_H__ */
 

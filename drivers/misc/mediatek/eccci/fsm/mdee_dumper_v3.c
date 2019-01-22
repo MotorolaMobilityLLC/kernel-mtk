@@ -58,7 +58,8 @@ static void ccci_aed_v3(struct ccci_fsm_ee *mdee, unsigned int dump_flag, char *
 
 	if (info_str_len > AED_STR_LEN)
 		buff[AED_STR_LEN - 1] = '\0';	/* Cut string length to AED_STR_LEN */
-	snprintf(buff, AED_STR_LEN, "md%d:%s%s", md_id + 1, aed_str, img_inf);
+	snprintf(buff, AED_STR_LEN, "md%d:%s%s%s", md_id + 1, aed_str, mdee->ex_start_time, img_inf);
+	memset(mdee->ex_start_time, 0x0, sizeof(mdee->ex_start_time));
 	/* MD ID must sync with aee_dump_ccci_debug_info() */
  err_exit1:
 	if (dump_flag & CCCI_AED_DUMP_CCIF_REG) {
