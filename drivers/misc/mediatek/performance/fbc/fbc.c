@@ -47,7 +47,7 @@ static int vip_group[10];
 
 struct fbc_operation_locked {
 	void (*ux_enable)(int);
-	void (*frame_cmplt)(long);
+	int (*frame_cmplt)(long);
 	void (*intended_vsync)(void);
 	void (*no_render)(void);
 	void (*game)(int);
@@ -182,8 +182,9 @@ static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
 }
 
 /*--------------------FRAME HINT OP------------------------*/
-static void notify_touch(int action)
+static int notify_touch(int action)
 {
+	int ret = 0;
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
@@ -193,7 +194,7 @@ static void notify_touch(int action)
 	if (action == 1) {
 		fbc_ux_state = 1;
 		disable_touch_up_timer();
-		vcorefs_request_dvfs_opp(KIR_FBT, TOUCH_VCORE_OPP);
+		ret = vcorefs_request_dvfs_opp(KIR_FBT, TOUCH_VCORE_OPP);
 	} else if (action == 0) {
 		fbc_ux_state = 2;
 		enable_touch_up_timer();
@@ -203,6 +204,8 @@ static void notify_touch(int action)
 		fbc_op->ux_enable(1);
 
 	fbc_tracer(-3, "ux_state", fbc_ux_state);
+
+	return ret;
 }
 
 static void notify_touch_up_timeout(void)
@@ -403,11 +406,12 @@ static void notify_no_render_eas(void)
 	}
 }
 
-void notify_frame_complete_eas(long frame_time)
+int notify_frame_complete_eas(long frame_time)
 {
 
 	long boost_linear = 0;
 	int boost_real = 0, i;
+	int ret = 0;
 
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
@@ -463,7 +467,7 @@ void notify_frame_complete_eas(long frame_time)
 		;
 	/* if someone not done */
 	if (i < MAX_THREAD && frame_info[i][1] == -1)
-		return;
+		return ret;
 
 	/* evaluate overall frame_time */
 	frame_time = 0;
@@ -523,7 +527,7 @@ void notify_frame_complete_eas(long frame_time)
 		if (first_vsync) {
 			first_frame = 0;
 			/* release DRAM touch boost */
-			vcorefs_request_dvfs_opp(KIR_FBT, -1);
+			ret = vcorefs_request_dvfs_opp(KIR_FBT, -1);
 		}
 		fbc_tracer(-4, "first_frame", first_frame);
 	}
@@ -561,6 +565,8 @@ void notify_frame_complete_eas(long frame_time)
 	fbc_tracer(-4, "current_max_bv", current_max_bv);
 	fbc_tracer(-4, "his_bv[0]", his_bv[0]);
 	fbc_tracer(-4, "his_bv[1]", his_bv[1]);
+
+	return ret;
 }
 
 void notify_intended_vsync_eas(void)
@@ -822,14 +828,14 @@ long device_ioctl(struct file *filp,
 
 	/*receive touch info*/
 	case IOCTL_WRITE_TH:
-		notify_touch(arg);
+		ret = notify_touch(arg);
 		break;
 
 	/*receive frame_time info*/
 	case IOCTL_WRITE_FC:
 		if (!is_ux_fbc_active())
 			goto ret_ioctl;
-		fbc_op->frame_cmplt((long)arg);
+		ret = fbc_op->frame_cmplt((long)arg);
 		break;
 
 	/*receive Intended-Vsync signal*/
@@ -862,7 +868,7 @@ long device_ioctl(struct file *filp,
 
 ret_ioctl:
 	mutex_unlock(&notify_lock);
-	return ret;
+	return ret >= 0 ? ret : 0;
 }
 
 static const struct file_operations Fops = {
