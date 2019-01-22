@@ -987,7 +987,7 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int stop_type)
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
 	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is power off, stop_type=%d\n", stop_type);
-	ret = md_ccif_power_off(md, stop_type);
+	ret = md_ccif_power_off(md, stop_type == MD_FLIGHT_MODE_ENTER ? 100 : 0);
 	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is power off done, %d\n", ret);
 	for (idx = 0; idx < QUEUE_NUM; idx++)
 		flush_work(&md_ctrl->rxq[idx].qwork);
