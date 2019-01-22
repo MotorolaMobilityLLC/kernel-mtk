@@ -29,6 +29,7 @@ config SYSTEM_TRUSTED_KEYRING
 config SYSTEM_TRUSTED_KEYS
 	string "Additional X.509 keys for default system keyring"
 	depends on SYSTEM_TRUSTED_KEYRING
+	default "certs/verity.x509.pem"
 	help
 	  If set, this option should be the filename of a PEM-formatted file
 	  containing trusted X.509 certificates to be included in the default

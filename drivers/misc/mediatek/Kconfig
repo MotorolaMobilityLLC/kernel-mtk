@@ -492,9 +492,22 @@ config MTK_AB_OTA_UPDATER
 	bool "Support Android A/B system updates"
 	default n
 
-config SYSTEM_AS_ROOT
+config SYSTEM_AS_ROOT_FOR_VERITY
 	bool "Support system-as-root, which merges ramdisk.img into system.img to make system-only OTA work in Treble"
-	default n
+	default y
+	depends on !MTK_ENABLE_AGO
+	select BLK_DEV_MD
+	select MD_LINEAR
+	select DM_ANDROID_VERITY
+	select KEYS
+	select INTEGRITY_SIGNATURES
+	select INTEGRITY_ASYMMETRIC_KEYS
+	select SYSTEM_TRUSTED_KEYRING
+	select DM_VERITY
+	select X509_CERTIFICATE_PARSER
+	select PUBLIC_KEY_ALGO_RSA
+	select ASYMMETRIC_KEY_TYPE
+	select ASYMMETRIC_PUBLIC_KEY_SUBTYPE
 
 source "drivers/misc/mediatek/aee/Kconfig"
 source "drivers/misc/mediatek/atf_log/Kconfig"
