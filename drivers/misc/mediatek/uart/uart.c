@@ -1410,10 +1410,12 @@ static void mtk_uart_dma_free(struct mtk_uart *uart, struct mtk_uart_dma *dma)
 	}
 	spin_lock_irqsave(&uart->port.lock, flags);
 	mtk_uart_stop_dma(dma);
-	if (dma->vfifo && timer_pending(&dma->vfifo->timer))
-		del_timer_sync(&dma->vfifo->timer);
-	if (dma->vfifo && hrtimer_active(&dma->vfifo->flush))
-		hrtimer_cancel(&dma->vfifo->flush);
+	if (dma->mode == UART_TX_VFIFO_DMA) {
+		if (dma->vfifo && timer_pending(&dma->vfifo->timer))
+			del_timer_sync(&dma->vfifo->timer);
+		if (dma->vfifo && hrtimer_active(&dma->vfifo->flush))
+			hrtimer_cancel(&dma->vfifo->flush);
+	}
 	/* [ALPS00030487] tasklet_kill function may schedule, so release spin lock first,
 	 *                  after release, set spin lock again.
 	 */
