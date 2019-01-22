@@ -124,7 +124,6 @@ extern void gpd_switch_to_dram(struct device *dev);
 #endif
 extern int mtk_qmu_dbg_level;	/* refer to musb_core.c */
 extern int mtk_qmu_max_gpd_num;
-extern struct musb_hw_ep *qmu_isoc_ep;
 extern int isoc_ep_end_idx;
 extern int isoc_ep_gpd_count;
 static inline int mtk_dbg_level(unsigned level)
