@@ -627,11 +627,14 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 			kicker_pbm_by_flash(fl_arg.arg);
 #endif
 #ifdef CONFIG_MTK_FLASHLIGHT_PT
-		if (pt_low_bat != BATTERY_PERCENT_LEVEL_0
-				|| pt_low_vol != LOW_BATTERY_LEVEL_0
-				|| pt_over_cur != BATTERY_OC_LEVEL_0)
-			fl_dbg("Pt status: (%d,%d,%d)\n",
-					pt_low_vol, pt_low_bat, pt_over_cur);
+			if (pt_low_bat != BATTERY_PERCENT_LEVEL_0
+					|| pt_low_vol != LOW_BATTERY_LEVEL_0
+					|| pt_over_cur != BATTERY_OC_LEVEL_0) {
+				fl_dbg("Pt status: (%d,%d,%d), strict=%d\n",
+						pt_low_vol, pt_low_bat, pt_over_cur, pt_strict);
+				if (pt_strict)
+					return -EFAULT;
+			}
 #endif
 			ret = pf->flashlight_ioctl(cmd, (unsigned long)&fl_arg);
 			if (ret) {
