@@ -43,7 +43,8 @@
 #endif
 #include "i2c-mtk.h"
 
-static struct i2c_dma_info g_dma_regs[10];
+static struct i2c_dma_info g_dma_regs[I2C_MAX_CHANNEL];
+static struct mt_i2c *g_mt_i2c[I2C_MAX_CHANNEL];
 
 static inline void i2c_writew(u16 value, struct mt_i2c *i2c, u8 offset)
 {
@@ -82,49 +83,22 @@ s32 map_cg_regs(struct mt_i2c *i2c)
 
 void dump_cg_regs(struct mt_i2c *i2c)
 {
-	if (!cg_base) {
-		pr_err("cg_base NULL\n");
+	u32 clk_sta_val, clk_sta_offs, cg_bit;
+
+	if (!cg_base || i2c->id >= I2C_MAX_CHANNEL) {
+		pr_err("cg_base %p, i2c id = %d\n", cg_base, i2c->id);
 		return;
 	}
 
+	clk_sta_offs = i2c->dev_comp->clk_sta_offset[i2c->id];
+	clk_sta_val = readl(cg_base + clk_sta_offs);
+	cg_bit = i2c->dev_comp->cg_bit[i2c->id];
+
 	pr_err("[I2C] cg regs dump:\n"
-		"name %s, offset 0x%x: value = 0x%08x\n",
+		"name %s, offset 0x%x: value = 0x%08x, bit %d, clock %s\n",
 		i2c->dev_comp->clk_compatible,
-		i2c->dev_comp->clk_sta_offset,
-		readl(cg_base + i2c->dev_comp->clk_sta_offset));
-}
-
-s32 check_cg_sta(struct mt_i2c *i2c)
-{
-	int  id, cg_cnt, cg_bit, err = 1;
-	unsigned int cg_reg;
-
-	if (!cg_base)
-		return err;
-
-	cg_cnt = __clk_get_enable_count(i2c->clk_main);
-
-	id = i2c->id;
-	cg_bit = i2c->dev_comp->cg_bit[id];
-	cg_reg = readl(cg_base + i2c->dev_comp->clk_sta_offset);
-	if ((cg_cnt <= 0) || (cg_reg & (0x1 << cg_bit))) {
-		dev_err(i2c->dev, "addr: %x, err irq w/o clk ccf %d(local %d)\n",
-			i2c->addr, cg_cnt, i2c->cg_cnt);
-		dev_err(i2c->dev, "addr: %x, err irq cg bit%d = %d, cg_reg = 0x%x\n", i2c->addr,
-			cg_bit, cg_reg & (0x1 << cg_bit) ? 1 : 0, cg_reg);
-		err = -1;
-
-		/*enable clock*/
-		writel((0x1 << cg_bit), cg_base + i2c->dev_comp->clk_sta_offset - 0x4);
-		i2c_dump_info(i2c);
-		mt_irq_dump_status(i2c->irqnr);
-		/*disable clock*/
-		writel((0x1 << cg_bit), cg_base + i2c->dev_comp->clk_sta_offset - 0x8);
-	} else {
-		err = 0;
-	}
-
-	return err;
+		clk_sta_offs, clk_sta_val, cg_bit,
+		clk_sta_val & (1 << cg_bit) ? "off":"on");
 }
 
 void __iomem *dma_base;
@@ -642,6 +616,26 @@ void i2c_dump_info(struct mt_i2c *i2c)
 {
 }
 #endif
+
+void dump_i2c_status(int id)
+{
+	if (id >= I2C_MAX_CHANNEL) {
+		pr_err("error %s, id = %d\n", __func__, id);
+		return;
+	}
+
+	if (!g_mt_i2c[id]) {
+		pr_err("error %s, g_mt_i2c[%d] == NULL\n", __func__, id);
+		return;
+	}
+
+	dump_cg_regs(g_mt_i2c[id]);
+	(void)mt_i2c_clock_enable(g_mt_i2c[id]);
+	i2c_dump_info(g_mt_i2c[id]);
+	mt_i2c_clock_disable(g_mt_i2c[id]);
+}
+EXPORT_SYMBOL(dump_i2c_status);
+
 static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 {
 	u16 addr_reg;
@@ -1219,8 +1213,6 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 {
 	struct mt_i2c *i2c = dev_id;
 
-	check_cg_sta(i2c);
-
 	/* Clear interrupt mask */
 	i2c_writew(~(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP),
 		i2c, OFFSET_INTR_MASK);
@@ -1304,7 +1296,7 @@ static const struct mtk_i2c_compatible mt6758_compat = {
 	.check_max_freq = 1,
 	.ext_time_config = 0,
 	.clk_compatible = "mediatek,pericfg",
-	.clk_sta_offset = 0x278,
+	.clk_sta_offset[0] = 0x278,
 	.cg_bit[0] = 16,
 	.cg_bit[1] = 17,
 	.cg_bit[2] = 24,
@@ -1325,7 +1317,7 @@ static const struct mtk_i2c_compatible mt6759_compat = {
 	.check_max_freq = 1,
 	.ext_time_config = 0,
 	.clk_compatible = "mediatek,pericfg",
-	.clk_sta_offset = 0x278,
+	.clk_sta_offset[0] = 0x278,
 	.cg_bit[0] = 16,
 	.cg_bit[1] = 17,
 	.cg_bit[2] = 24,
@@ -1345,18 +1337,6 @@ static const struct mtk_i2c_compatible mt6799_compat = {
 	.set_ltiming = 0,
 	.check_max_freq = 0,
 	.ext_time_config = 0,
-	.clk_compatible = "mediatek,mt6799-pericfg",
-	.clk_sta_offset = 0x278,
-	.cg_bit[0] = 16,
-	.cg_bit[1] = 17,
-	.cg_bit[2] = 24,
-	.cg_bit[3] = 25,
-	.cg_bit[4] = 20,
-	.cg_bit[5] = 21,
-	.cg_bit[6] = 22,
-	.cg_bit[7] = 23,
-	.cg_bit[8] = 18,
-	.cg_bit[9] = 19,
 };
 
 static const struct mtk_i2c_compatible mt6763_compat = {
@@ -1367,6 +1347,27 @@ static const struct mtk_i2c_compatible mt6763_compat = {
 	.set_aed = 1,
 	.check_max_freq = 1,
 	.ext_time_config = 0,
+	.clk_compatible = "mediatek,infracfg_ao",
+	.clk_sta_offset[0] = 0x90,
+	.cg_bit[0] = 11,
+	.clk_sta_offset[1] = 0xac,
+	.cg_bit[1] = 22,
+	.clk_sta_offset[2] = 0xac,
+	.cg_bit[2] = 24,
+	.clk_sta_offset[3] = 0xac,
+	.cg_bit[3] = 7,
+	.clk_sta_offset[4] = 0xac,
+	.cg_bit[4] = 20,
+	.clk_sta_offset[5] = 0x90,
+	.cg_bit[5] = 14,
+	.clk_sta_offset[6] = 0xc8,
+	.cg_bit[6] = 6,
+	.clk_sta_offset[7] = 0x90,
+	.cg_bit[7] = 12,
+	.clk_sta_offset[8] = 0x90,
+	.cg_bit[8] = 13,
+	.clk_sta_offset[9] = 0xac,
+	.cg_bit[9] = 18,
 };
 
 static const struct mtk_i2c_compatible elbrus_compat = {
@@ -1413,6 +1414,9 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	i2c->base = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(i2c->base))
 		return PTR_ERR(i2c->base);
+
+	if (i2c->id < I2C_MAX_CHANNEL)
+		g_mt_i2c[i2c->id] = i2c;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 
