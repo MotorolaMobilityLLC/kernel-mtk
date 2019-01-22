@@ -248,6 +248,8 @@ static int mtk_pcm_mrgrx_close(struct snd_pcm_substream *substream)
 		Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 		Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+	SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+		Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S3);
 
 	EnableAfe(false);
 
@@ -278,6 +280,8 @@ static int mtk_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 				Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S1_DAC);
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S3);
 
 		/* Set HW_GAIN */
 		SetHwDigitalGainMode(Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1, runtime->rate,
