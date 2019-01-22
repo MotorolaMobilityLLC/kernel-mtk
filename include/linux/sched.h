@@ -1550,7 +1550,7 @@ enum perf_event_task_context {
 #define mt_sched_printf(event, x...) \
 do { \
 	char strings[128] = "";  \
-	snprintf(strings, 128, x); \
+	snprintf(strings, sizeof(strings)-1, x); \
 	pr_alert(x); \
 	trace_##event(strings); \
 } while (0)
@@ -1558,7 +1558,7 @@ do { \
 #define mt_sched_printf(event, x...) \
 do { \
 	char strings[128] = "";  \
-	snprintf(strings, 128, x); \
+	snprintf(strings, sizeof(strings)-1, x); \
 	trace_##event(strings); \
 } while (0)
 
