@@ -44,9 +44,7 @@ static inline unsigned long boosted_task_util(struct task_struct *task);
 
 #include "vip.c"
 
-#if MET_SCHED_DEBUG
 #include <mt-plat/met_drv.h>
-#endif
 
 /* global default 0 */
 int stune_task_threshold;
@@ -140,6 +138,19 @@ unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
 		return sd->smt_gain / sd->span_weight;
 
 	return SCHED_CAPACITY_SCALE;
+}
+
+/*
+ * Add a system-wide over-utilization indicator which
+ * is updated in load-balance.
+ */
+static bool system_overutil;
+
+static inline bool system_overutilized(int cpu)
+{
+	met_tag_oneshot(0, "sched_overutil_sys", system_overutil);
+
+	return system_overutil;
 }
 
 #ifdef CONFIG_CFS_BANDWIDTH
@@ -4388,8 +4399,13 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		walt_inc_cumulative_runnable_avg(rq, p);
 
 		if (!task_new && !rq->rd->overutilized &&
-				cpu_overutilized(rq->cpu))
+				cpu_overutilized(rq->cpu)) {
 			rq->rd->overutilized = true;
+
+			/* Little.cpu */
+			if (capacity_orig_of(cpu_of(rq)) < (rq->rd->max_cpu_capacity.val))
+				system_overutil = true;
+		}
 
 		schedtune_enqueue_task(p, cpu_of(rq));
 
@@ -5885,7 +5901,7 @@ done:
 	return target;
 }
 
-static bool is_the_same_domain(int prev, int target)
+static bool is_intra_domain(int prev, int target)
 {
 #ifdef CONFIG_ARM64
 	return (cpu_topology[prev].cluster_id ==
@@ -5983,7 +5999,7 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 		}
 
 	/* no need energy calculation if the same domain */
-	if (is_the_same_domain(task_cpu(p), target_cpu))
+	if (is_intra_domain(task_cpu(p), target_cpu))
 		return target_cpu;
 
 	if (task_util(p) <= 0)
@@ -6055,7 +6071,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	 *  if hybrid enabled and system is over-utilized.
 	 */
 	if ((energy_aware() && !hybrid_support()) ||
-			(hybrid_support() && !cpu_rq(cpu)->rd->overutilized))
+			(hybrid_support() && !system_overutilized(cpu)))
 		goto CONSIDER_EAS;
 
 	/* HMP fork balance:
@@ -6110,7 +6126,7 @@ CONSIDER_EAS:
 	}
 
 	if (!sd) {
-		if (energy_aware() && !cpu_rq(cpu)->rd->overutilized) {
+		if (energy_aware() && !system_overutilized(cpu)) {
 			new_cpu = energy_aware_wake_cpu(p, prev_cpu);
 			policy |= LB_EAS;
 		}
@@ -6180,7 +6196,7 @@ CONSIDER_EAS:
 
 	/*  Consider hmp if no EAS  or over-utiled in hybrid mode. */
 	if ((!energy_aware() && sched_feat(SCHED_HMP)) ||
-		(hybrid_support() && cpu_rq(cpu)->rd->overutilized)) {
+		(hybrid_support() && system_overutilized(cpu))) {
 
 		new_cpu = hmp_select_task_rq_fair(sd_flag, p, prev_cpu, new_cpu);
 #ifdef CONFIG_MTK_SCHED_TRACERS
@@ -7516,10 +7532,11 @@ group_type group_classify(struct sched_group *group,
 static inline void update_sg_lb_stats(struct lb_env *env,
 			struct sched_group *group, int load_idx,
 			int local_group, struct sg_lb_stats *sgs,
-			bool *overload, bool *overutilized)
+			bool *overload, bool *overutilized, bool *intra_overutil)
 {
 	unsigned long load;
 	int i;
+	unsigned long max_capacity = cpu_rq(smp_processor_id())->rd->max_cpu_capacity.val;
 
 	memset(sgs, 0, sizeof(*sgs));
 
@@ -7555,8 +7572,27 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 		if (idle_cpu(i))
 			sgs->idle_cpus++;
 
-		if (cpu_overutilized(i))
+		if (cpu_overutilized(i)) {
+			if (capacity_orig_of(i) < max_capacity)
+				*intra_overutil = true;
+
 			*overutilized = true;
+		}
+	}
+
+	/*
+	 * A capacity base hint for over-utilization.
+	 * Not to trigger system overutiled if heavy tasks in Big.cluster, so
+	 * add the free room(20%) of Big.cluster is impacted which means
+	 * system-wide over-utilization, that considers whole cluster not single cpu
+	 */
+	if (group->group_weight > 1) {
+		bool overutiled;
+
+		overutiled = (group->sgc->capacity * 1024) < (sgs->group_util * 1280);
+
+		if (overutiled)
+			*intra_overutil = true;
 	}
 
 	/* Adjust by relative CPU capacity of the group */
@@ -7671,6 +7707,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 	struct sg_lb_stats tmp_sgs;
 	int load_idx, prefer_sibling = 0;
 	bool overload = false, overutilized = false;
+	bool intra_overutil = false;
+	bool tmp_sys_overutil = false;
 
 	if (child && child->flags & SD_PREFER_SIBLING)
 		prefer_sibling = 1;
@@ -7692,7 +7730,11 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		}
 
 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
-						&overload, &overutilized);
+						&overload, &overutilized, &intra_overutil);
+
+		/* if a overutil occurs in cluster, that means a system-wide hint needed. */
+		if (intra_overutil)
+			tmp_sys_overutil = true;
 
 		if (local_group)
 			goto next_group;
@@ -7740,6 +7782,10 @@ next_group:
 		/* Update over-utilization (tipping point, U >= 0) indicator */
 		if (env->dst_rq->rd->overutilized != overutilized)
 			env->dst_rq->rd->overutilized = overutilized;
+
+		/* Update system-wide over-utilization indicator */
+		if (system_overutil != tmp_sys_overutil)
+			system_overutil = tmp_sys_overutil;
 	} else {
 		if (!env->dst_rq->rd->overutilized && overutilized)
 			env->dst_rq->rd->overutilized = true;
@@ -7958,7 +8004,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	struct sd_lb_stats sds;
 	int local_cpu = 0, busiest_cpu = 0;
 	struct cpumask *busiest_cpumask;
-	int same_clus = 0;
+	int intra = 0;
 
 	init_sd_lb_stats(&sds);
 
@@ -7976,12 +8022,20 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 		local_cpu = env->dst_cpu;
 		busiest_cpu = group_first_cpu(sds.busiest);
 
-		same_clus = is_the_same_domain(local_cpu, busiest_cpu);
-		mt_sched_printf(sched_lb, "%s: local_cpu=%d, busiest_cpu=%d, busiest_mask=%lu, same_cluster=%d",
-				__func__, local_cpu, busiest_cpu, busiest_cpumask->bits[0], same_clus);
+		intra = is_intra_domain(local_cpu, busiest_cpu);
+		mt_sched_printf(sched_lb, "%s: local=%d, busiest=%d, busiest_mask=%lu, intra=%d",
+					__func__, local_cpu, busiest_cpu, busiest_cpumask->bits[0], intra);
 	}
 
-	if (energy_aware() && !env->dst_rq->rd->overutilized && !same_clus)
+	/*
+	 * Load Balance Consideration:
+	 *
+	 * intra-cluster: doing load_balance anytime.
+	 * inter-cluster: doing load_balance if system_overuitlized.
+	 *
+	 * If system is NOT overutilized, no need do GTS balance.
+	 */
+	if (energy_aware() && !system_overutilized(env->dst_cpu) && !intra)
 		goto out_balanced;
 
 	/* ASYM feature bypasses nice load balance check */
@@ -8636,7 +8690,7 @@ static int idle_balance(struct rq *this_rq)
 #endif
 
 #ifdef CONFIG_SCHED_HMP_PLUS
-	if ((!energy_aware() || cpu_overutilized(this_cpu)) && !pulled_task)
+	if ((!energy_aware() || system_overutilized(this_cpu)) && !pulled_task)
 		pulled_task = hmp_idle_pull(this_cpu);
 #endif
 	raw_spin_lock(&this_rq->lock);
@@ -8943,16 +8997,6 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
 		if (!(sd->flags & SD_LOAD_BALANCE))
 			continue;
 
-#ifndef CONFIG_MTK_LOAD_BALANCE_ENHANCEMENT
-		/* nohz CPU need GTS balance to migrate tasks for more than 2 clusters*/
-		/* Don't consider GTS balance if hybrid support */
-		if (hybrid_support()) {
-			if (sd->child || (!sd->child &&
-				(rcu_dereference(per_cpu(sd_scs, cpu)) == NULL)))
-			continue;
-		}
-#endif
-
 		/*
 		 * Stop the load balance at this level. There is another
 		 * CPU in our sched group which is doing load balancing more
@@ -9192,7 +9236,7 @@ static void run_rebalance_domains(struct softirq_action *h)
 
 	/* bypass load balance of HMP if EAS consideration */
 	if ((!energy_aware() && sched_feat(SCHED_HMP)) ||
-			(hybrid_support() && cpu_rq(this_cpu)->rd->overutilized))
+			(hybrid_support() && system_overutilized(this_cpu)))
 		hmp_force_up_migration(this_cpu);
 
 	/*
@@ -9263,8 +9307,13 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 	if (static_branch_unlikely(&sched_numa_balancing))
 		task_tick_numa(rq, curr);
 
-	if (!rq->rd->overutilized && cpu_overutilized(task_cpu(curr)))
+	if (!rq->rd->overutilized && cpu_overutilized(task_cpu(curr))) {
 		rq->rd->overutilized = true;
+
+		/* Little.cpu */
+		if (capacity_orig_of(cpu_of(rq)) < (rq->rd->max_cpu_capacity.val))
+			system_overutil = true;
+	}
 }
 
 /*
