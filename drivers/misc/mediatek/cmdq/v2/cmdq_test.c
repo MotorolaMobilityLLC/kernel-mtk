@@ -3725,6 +3725,191 @@ void testcase_get_task_by_engine(void)
 	CMDQ_MSG("%s end\n", __func__);
 }
 
+void testcase_reorder(void)
+{
+	struct cmdqRecStruct *handleA, *handleB;
+	uint32_t idx = 0;
+	uint32_t data;
+	const unsigned long MMSYS_DUMMY_REG = CMDQ_TEST_MMSYS_DUMMY_VA;
+	struct TaskStruct *pTaskA1 = NULL, *pTaskA2 = NULL, *pTaskA3 = NULL;
+	struct TaskStruct *pTaskB = NULL;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* clear token */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+	CMDQ_REG_SET32(MMSYS_DUMMY_REG, 0xdeaddead);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handleA);
+	cmdq_task_reset(handleA);
+	cmdq_task_set_secure(handleA, gCmdqTestSecure);
+	cmdq_op_wait_no_clear(handleA, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_finalize_command(handleA, false);
+	handleA->engineFlag = (1LL << CMDQ_ENG_MDP_CAMIN);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handleB);
+	cmdq_task_reset(handleB);
+	cmdq_task_set_secure(handleB, gCmdqTestSecure);
+	cmdq_op_wait_no_clear(handleB, CMDQ_SYNC_TOKEN_USER_0);
+	handleB->engineFlag = (1LL << CMDQ_ENG_MDP_CAMIN);
+
+	/*
+	 * Make this task to boundary size.
+	 * -3 because reserve for wait+eoc+jump
+	 */
+	for (idx = 0; idx < CMDQ_CMD_BUFFER_SIZE / sizeof(CMDQ_INST_SIZE) - 3; idx++)
+		cmdqRecWrite(handleB, CMDQ_TEST_MMSYS_DUMMY_PA, idx, ~0);
+	idx--;
+
+	cmdq_op_finalize_command(handleB, false);
+
+	/* large task insert to front case */
+	handleA->priority = 0;
+	_test_submit_async(handleA, &pTaskA1);
+	handleA->priority = 1;
+	_test_submit_async(handleA, &pTaskA2);
+	handleA->priority = 4;
+	_test_submit_async(handleA, &pTaskA3);
+	handleB->priority = 7;
+	_test_submit_async(handleB, &pTaskB);
+
+	/* set token to run */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_0);
+
+	cmdqCoreWaitAndReleaseTask(pTaskA1, 500);
+	cmdqCoreWaitAndReleaseTask(pTaskA2, 500);
+	cmdqCoreWaitAndReleaseTask(pTaskA3, 500);
+	cmdqCoreWaitAndReleaseTask(pTaskB, 500);
+
+	/* clear token */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+
+	data = CMDQ_REG_GET32(CMDQ_TEST_MMSYS_DUMMY_VA);
+	if (idx != data)
+		CMDQ_ERR(
+			"TEST FAIL: reg value is 0x%08x, not pattern 0x%08x (large in front case)\n",
+			data, idx);
+
+	/* clear dummy again */
+	CMDQ_REG_SET32(MMSYS_DUMMY_REG, 0xdeaddead);
+
+	/* large task switch to last case */
+	handleA->priority = 0;
+	_test_submit_async(handleA, &pTaskA1);
+	handleB->priority = 1;
+	_test_submit_async(handleB, &pTaskB);
+	handleA->priority = 4;
+	_test_submit_async(handleA, &pTaskA2);
+
+	/* set token to run */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_0);
+
+	cmdqCoreWaitAndReleaseTask(pTaskA1, 500);
+	cmdqCoreWaitAndReleaseTask(pTaskA2, 500);
+	cmdqCoreWaitAndReleaseTask(pTaskB, 500);
+
+	/* clear token */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+
+	data = CMDQ_REG_GET32(CMDQ_TEST_MMSYS_DUMMY_VA);
+	if (idx != data)
+		CMDQ_ERR(
+			"TEST FAIL: reg value is 0x%08x, not pattern 0x%08x (large at last case)\n",
+			data, idx);
+
+	cmdq_task_destroy(handleA);
+	cmdq_task_destroy(handleB);
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+void testcase_reorder_last(void)
+{
+	struct cmdqRecStruct *handleA, *handleB, *handleC;
+	uint32_t idx = 0;
+	struct TaskStruct *tasks[30] = {0};
+	uint32_t task_idx = 0;
+	uint32_t wait_task_idx = 0;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* clear token */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_1);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handleA);
+	cmdq_task_reset(handleA);
+	cmdq_task_set_secure(handleA, gCmdqTestSecure);
+	cmdq_op_wait(handleA, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_finalize_command(handleA, false);
+	handleA->engineFlag = (1LL << CMDQ_ENG_MDP_CAMIN);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handleB);
+	cmdq_task_reset(handleB);
+	cmdq_task_set_secure(handleB, gCmdqTestSecure);
+	cmdq_op_wait_no_clear(handleB, CMDQ_SYNC_TOKEN_USER_1);
+	cmdq_op_finalize_command(handleB, false);
+	handleB->engineFlag = (1LL << CMDQ_ENG_MDP_CAMIN);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handleC);
+	cmdq_task_reset(handleC);
+	cmdq_task_set_secure(handleC, gCmdqTestSecure);
+	cmdq_op_wait(handleC, CMDQ_SYNC_TOKEN_USER_1);
+	cmdq_op_finalize_command(handleC, false);
+	handleC->engineFlag = (1LL << CMDQ_ENG_MDP_CAMIN);
+
+	_test_submit_async(handleA, &tasks[task_idx++]);
+	_test_submit_async(handleA, &tasks[task_idx++]);
+
+	/* full the thread except last one */
+	for (idx = 2; idx < 14; idx++)
+		_test_submit_async(handleB, &tasks[task_idx++]);
+
+	/* do not let last task in thread array run */
+	_test_submit_async(handleC, &tasks[task_idx++]);
+
+	/* this is the last task in thread list, index 15 */
+	_test_submit_async(handleB, &tasks[task_idx++]);
+
+	/* let first 1 task go and insert more one */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_0);
+	msleep_interruptible(3);
+	wait_task_idx = task_idx;
+	_test_submit_async(handleA, &tasks[task_idx++]);
+	msleep_interruptible(3);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_1);
+
+	/* wait the target, this must timeout without KE */
+	CMDQ_LOG("%s wait task: 0x%p, end inst: 0x%08x:%08x\n",
+		__func__, tasks[wait_task_idx],
+		tasks[wait_task_idx]->pCMDEnd[0], tasks[wait_task_idx]->pCMDEnd[-1]);
+	if (cmdqCoreWaitAndReleaseTask(tasks[wait_task_idx], 2500) == 0)
+		CMDQ_ERR("TEST FAIL: Last task should timeout but not success!\n");
+
+	/* clear all */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_0);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_1);
+	msleep_interruptible(100);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_0);
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | CMDQ_SYNC_TOKEN_USER_1);
+
+	for (idx = 0; idx < task_idx; idx++) {
+		if (idx == wait_task_idx)
+			continue;
+		CMDQ_LOG("%s keep wait other tasks: 0x%p, end inst: 0x%08x:%08x\n",
+			__func__, tasks[idx],
+			tasks[idx]->pCMDEnd[0], tasks[idx]->pCMDEnd[-1]);
+		if (cmdqCoreWaitAndReleaseTask(tasks[idx], 500) < 0)
+			CMDQ_ERR("TEST FAIL: Other task cannot pass, task: 0x%p\n", tasks[idx]);
+	}
+
+	cmdq_task_destroy(handleA);
+	cmdq_task_destroy(handleB);
+	cmdq_task_destroy(handleC);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -3742,6 +3927,10 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 140:
+		testcase_reorder();
+		testcase_reorder_last();
+		break;
 	case 139:
 		testcase_invalid_handle();
 		break;
