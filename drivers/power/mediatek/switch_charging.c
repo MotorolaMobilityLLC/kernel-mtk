@@ -901,7 +901,7 @@ static void mtk_select_cv(void)
 
 	battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
-#if defined(CONFIG_MTK_HAFG_20)
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
 	g_cv_voltage = cv_voltage;
 #endif
 }
