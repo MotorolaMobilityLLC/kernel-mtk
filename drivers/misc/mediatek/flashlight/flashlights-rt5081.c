@@ -546,14 +546,14 @@ static int rt5081_set_driver(int set)
 		if (!use_count)
 			ret = rt5081_init();
 		use_count++;
-		pr_debug("Set driver: %d\n", use_count);
+		pr_info_ratelimited("Set driver: %d\n", use_count);
 	} else {
 		use_count--;
 		if (!use_count)
 			ret = rt5081_uninit();
 		if (use_count < 0)
 			use_count = 0;
-		pr_debug("Unset driver: %d\n", use_count);
+		pr_info_ratelimited("Unset driver: %d\n", use_count);
 	}
 	mutex_unlock(&rt5081_mutex);
 
