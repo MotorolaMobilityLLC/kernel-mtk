@@ -886,6 +886,7 @@ static void fstb_fps_stats(struct work_struct *work)
 	struct hlist_node *n;
 	int target_fps = max_fps_limit;
 	int idle = 1;
+	int fstb_active2xgf;
 
 	if (work != &fps_stats_work)
 		kfree(work);
@@ -939,6 +940,11 @@ static void fstb_fps_stats(struct work_struct *work)
 		fstb_idle_cnt = 0;
 	}
 
+	if (fstb_active)
+		fstb_active2xgf = 1;
+	else
+		fstb_active2xgf = 0;
+
 	if (fstb_enable && fstb_active)
 		enable_fstb_timer();
 	else
@@ -947,7 +953,7 @@ static void fstb_fps_stats(struct work_struct *work)
 	mutex_unlock(&fstb_lock);
 
 	fpsgo_check_thread_status();
-	fpsgo_fstb2xgf_do_recycle(fstb_active);
+	fpsgo_fstb2xgf_do_recycle(fstb_active2xgf);
 }
 
 static int set_fps_level(int nr_level, struct fps_level *level)
