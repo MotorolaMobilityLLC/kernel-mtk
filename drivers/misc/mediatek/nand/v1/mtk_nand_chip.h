@@ -19,6 +19,8 @@
 #define MTK_NAND_CACHE_PROGRAM_SUPPORT		(1<<2)
 #define MTK_NAND_DISCONTIGOUS_BUFFER_SUPPORT	(1<<3)
 #define MTK_NAND_MULTI_CHIP_SUPPORT		(1<<4)
+#define MTK_NAND_MULTI_READ_DIFFERENT_OFFSET	(1<<5)
+#define MTK_NAND_MULTI_READ_DIFFERENT_PAGE	(1<<6)
 
 enum nand_flash_type {
 	MTK_NAND_FLASH_SLC = 0,
@@ -84,7 +86,9 @@ struct mtk_nand_chip_info {
 	/*              0: Not support, 1: support, next gen IP  */
 	/*      bit[4]: Multi-chip mode */
 	/*              0: Not support, 1: Support */
-	/*      bit[5~31]: Reserved  */
+	/*	bit[5]: Support different offset/size for multi-page read */
+	/*	bit[6]: Support different page for multi-page read */
+	/*      bit[7~31]: Reserved  */
 };
 
 /* struct mtk_nand_chip_info *mtk_nand_chip_init(void)
