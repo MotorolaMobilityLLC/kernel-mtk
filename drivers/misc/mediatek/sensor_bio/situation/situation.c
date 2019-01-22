@@ -513,7 +513,6 @@ int situation_register_control_path(struct situation_control_path *ctl, int hand
 {
 	struct situation_context *cxt = NULL;
 	int index = -1;
-	char name[64] = {0};
 
 	SITUATION_FUN();
 	if (NULL == ctl || NULL == ctl->open_report_data) {
@@ -533,8 +532,13 @@ int situation_register_control_path(struct situation_control_path *ctl, int hand
 	cxt->ctl_context[index].situation_ctl.is_support_wake_lock = ctl->is_support_wake_lock;
 	cxt->ctl_context[index].situation_ctl.is_support_batch = ctl->is_support_batch;
 
-	sprintf(name, "situation_wakelock-%d", index);
-	wake_lock_init(&cxt->wake_lock[index], WAKE_LOCK_SUSPEND, "situation");
+	cxt->wake_lock_name[index] = kzalloc(64, GFP_KERNEL);
+	if (!cxt->wake_lock_name[index]) {
+		SITUATION_ERR("Alloc wake_lock_name error!\n");
+		return -1;
+	}
+	sprintf(cxt->wake_lock_name[index], "situation_wakelock-%d", index);
+	wake_lock_init(&cxt->wake_lock[index], WAKE_LOCK_SUSPEND, cxt->wake_lock_name[index]);
 
 	return 0;
 }
