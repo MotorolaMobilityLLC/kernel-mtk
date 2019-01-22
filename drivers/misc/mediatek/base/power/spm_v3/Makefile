@@ -68,6 +68,7 @@ obj-y += mtk_spm_vcorefs.o
 endif
 
 ifeq ($(CONFIG_MACH_MT6759), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 obj-y += mtk_idle.o
@@ -89,4 +90,5 @@ obj-y += mtk_spm_sodi.o
 obj-y += mtk_spm_sodi3p0.o
 obj-y += mtk_spm_mcsodi.o
 obj-y += mtk_spm_sodi_cmdq.o
+obj-y += mtk_spm_vcorefs_mt6759.o
 endif
