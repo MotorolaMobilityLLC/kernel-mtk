@@ -2184,6 +2184,19 @@ void split_page(struct page *page, unsigned int order)
 #endif
 
 	gfp_mask = get_page_owner_gfp(page);
+#ifdef CONFIG_PAGE_OWNER_SLIM
+	/*
+	 * Normal page owner do not need to reset page owner for split
+	 * page, because page_ext belong to each page.
+	 * Normal page owner directly rewrite owner of page_ext.
+	 * In CONFIG_PAGE_OWNER_SLIM case, number of page count will
+	 * break balance (allocate/free) when directly rewrite page
+	 * owner.
+	 * Split page need to modify owner surly. We reset page owner
+	 * than set page owner to guarantee allocate/free are balanced.
+	 */
+	reset_page_owner(page, order);
+#endif
 	set_page_owner(page, 0, gfp_mask);
 	for (i = 1; i < (1 << order); i++) {
 		set_page_refcounted(page + i);
