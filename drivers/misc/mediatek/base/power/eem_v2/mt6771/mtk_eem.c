@@ -1430,12 +1430,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		break;
 	}
 
-	memset(det->volt_tbl, 0, sizeof(det->volt_tbl));
-	memset(det->volt_tbl_pmic, 0, sizeof(det->volt_tbl_pmic));
-	memset(det->volt_offset_drcc, 0, sizeof(det->volt_offset_drcc));
-	memset(det->freq_tbl, 0, sizeof(det->freq_tbl));
-	memset(record_tbl_locked, 0, sizeof(record_tbl_locked));
-
 	/* get DVFS frequency table */
 	if (det->ops->get_freq_table)
 		det->ops->get_freq_table(det);
@@ -1639,6 +1633,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 #endif
 
 	}
+	dsb(sy);
 
 #if UPDATE_TO_UPOWER
 #if ENABLE_LOO
@@ -1666,10 +1661,10 @@ static void eem_set_eem_volt(struct eem_det *det)
 #endif
 #endif
 
-		if ((0 == (det->disabled % 2)) && (0 == (det->disabled & BY_PROCFS_INIT2)))
-			wake_up_interruptible(&ctrl->wq);
-		else
-			eem_error("Disabled by [%d]\n", det->disabled);
+	if ((0 == (det->disabled % 2)) && (0 == (det->disabled & BY_PROCFS_INIT2)))
+		wake_up_interruptible(&ctrl->wq);
+	else
+		eem_error("Disabled by [%d]\n", det->disabled);
 
 #endif
 
