@@ -461,7 +461,7 @@ EXPORT_SYMBOL(charger_dev_run_aicl);
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(
-		&charger_dev->evt_nh, event, charger_dev);
+		&charger_dev->evt_nh, event, &charger_dev->noti);
 }
 
 static DEVICE_ATTR(name, S_IRUGO, charger_show_name, NULL);

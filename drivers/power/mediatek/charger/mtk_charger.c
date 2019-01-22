@@ -2051,6 +2051,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	info->chg2_data.thermal_charging_current_limit = -1;
 	info->chg2_data.thermal_input_current_limit = -1;
 
+	info->sw_jeita.error_recovery_flag = true;
+
 	mtk_charger_init_timer(info);
 
 	kthread_run(charger_routine_thread, info, "charger_thread");
