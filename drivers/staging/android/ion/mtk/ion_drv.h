@@ -23,7 +23,8 @@
 
 enum ION_CMDS {
 	ION_CMD_SYSTEM,
-	ION_CMD_MULTIMEDIA
+	ION_CMD_MULTIMEDIA,
+	ION_CMD_MULTIMEDIA_SEC
 };
 
 enum ION_MM_CMDS {
@@ -59,6 +60,10 @@ enum ION_ERRORE {
 	ION_ERROR_CONFIG_LOCKED = 0x10000
 };
 
+/* mm or mm_sec heap flag which is do not conflist with ION_HEAP_FLAG_DEFER_FREE */
+#define ION_FLAG_MM_HEAP_INIT_ZERO BIT(16)
+#define ION_FLAG_MM_HEAP_SEC_PA BIT(18)
+
 struct ion_sys_cache_sync_param {
 	union {
 		ion_user_handle_t handle;
@@ -74,6 +79,8 @@ enum ION_DMA_TYPE {
 	ION_DMA_UNMAP_AREA,
 	ION_DMA_MAP_AREA_VA,
 	ION_DMA_UNMAP_AREA_VA,
+	ION_DMA_FLUSH_BY_RANGE,
+	ION_DMA_FLUSH_BY_RANGE_USE_VA,
 	ION_DMA_CACHE_FLUSH_ALL
 };
 
@@ -218,6 +225,14 @@ int ion_dma_map_area(int fd, ion_user_handle_t handle, int dir);
 int ion_dma_unmap_area(int fd, ion_user_handle_t handle, int dir);
 void ion_dma_map_area_va(void *start, size_t size, enum ION_DMA_DIR dir);
 void ion_dma_unmap_area_va(void *start, size_t size, enum ION_DMA_DIR dir);
+
+struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *);
+void ion_mm_heap_destroy(struct ion_heap *);
+
+struct ion_heap *ion_fb_heap_create(struct ion_platform_heap *);
+void ion_fb_heap_destroy(struct ion_heap *);
+
+int ion_device_destroy_heaps(struct ion_device *dev);
 
 #endif
 

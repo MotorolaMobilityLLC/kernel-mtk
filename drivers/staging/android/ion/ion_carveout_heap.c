@@ -41,8 +41,8 @@ ion_phys_addr_t ion_carveout_allocate(struct ion_heap *heap,
 	unsigned long offset = gen_pool_alloc(carveout_heap->pool, size);
 
 	if (!offset) {
-		IONMSG("ion_carveout alloc fail! size=%lu, free=%zu\n", size,
-		       gen_pool_avail(carveout_heap->pool));
+		IONMSG("ion_carveout alloc fail! size=0x%lu, free=0x%zu\n", size,
+			gen_pool_avail(carveout_heap->pool));
 		return ION_CARVEOUT_ALLOCATE_FAIL;
 	}
 
@@ -85,7 +85,7 @@ static int ion_carveout_heap_allocate(struct ion_heap *heap,
 	if (align > PAGE_SIZE)
 		return -EINVAL;
 
-	table = kmalloc(sizeof(*table), GFP_KERNEL);
+	table = kmalloc(sizeof(struct sg_table), GFP_KERNEL);
 	if (!table)
 		return -ENOMEM;
 	ret = sg_alloc_table(table, 1, GFP_KERNEL);
@@ -121,7 +121,7 @@ static void ion_carveout_heap_free(struct ion_buffer *buffer)
 
 	if (ion_buffer_cached(buffer))
 		dma_sync_sg_for_device(NULL, table->sgl, table->nents,
-				       DMA_BIDIRECTIONAL);
+							DMA_BIDIRECTIONAL);
 
 	ion_carveout_free(heap, paddr, buffer->size);
 	sg_free_table(table);
@@ -151,7 +151,7 @@ static struct ion_heap_ops carveout_heap_ops = {
 };
 
 static void ion_carveout_chunk_show(struct gen_pool *pool,
-				    struct gen_pool_chunk *chunk,
+		struct gen_pool_chunk *chunk,
 		void *data)
 {
 	int order, nlongs, nbits, i;
@@ -170,7 +170,7 @@ static void ion_carveout_chunk_show(struct gen_pool *pool,
 }
 
 static int ion_carveout_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
-					void *unused)
+				      void *unused)
 {
 	struct ion_carveout_heap *carveout_heap = container_of(heap, struct ion_carveout_heap, heap);
 	size_t size_avail, total_size;
@@ -178,8 +178,8 @@ static int ion_carveout_heap_debug_show(struct ion_heap *heap, struct seq_file *
 	total_size = gen_pool_size(carveout_heap->pool);
 	size_avail = gen_pool_avail(carveout_heap->pool);
 
-	seq_printf(s, "total_size=%zu, free=%zu, base=%lu\n",
-		   total_size, size_avail, carveout_heap->base);
+	seq_printf(s, "total_size=0x%zu, free=0x%zu, base=0x%lu\n",
+	total_size, size_avail, carveout_heap->base);
 
 	gen_pool_for_each_chunk(carveout_heap->pool, ion_carveout_chunk_show, s);
 
@@ -203,7 +203,7 @@ struct ion_heap *ion_carveout_heap_create(struct ion_platform_heap *heap_data)
 	if (ret)
 		return ERR_PTR(ret);
 
-	carveout_heap = kzalloc(sizeof(*carveout_heap), GFP_KERNEL);
+	carveout_heap = kzalloc(sizeof(struct ion_carveout_heap), GFP_KERNEL);
 	if (!carveout_heap)
 		return ERR_PTR(-ENOMEM);
 
