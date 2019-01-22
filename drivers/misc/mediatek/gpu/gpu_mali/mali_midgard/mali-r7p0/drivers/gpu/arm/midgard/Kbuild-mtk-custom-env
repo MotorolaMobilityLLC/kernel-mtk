@@ -30,6 +30,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM
 #include path for pmic
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(CONFIG_MTK_PLATFORM)
 
+#include path for dram
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(CONFIG_MTK_PLATFORM)
+
 ccflags-y += -DCONFIG_DEBUG_FS
 ccflags-y += -DCONFIG_PROC_FS
 ccflags-y += -DENABLE_MTK_MEMINFO
@@ -40,7 +43,8 @@ ccflags-y += \
     -I$(MTK_TOP)/include/ \
     -I$(MTK_TOP)/include/mt-plat \
     -I$(MTK_TOP)/include/mt-plat/$(subst ",,$(CONFIG_MTK_PLATFORM))/include \
-    -I$(MTK_TOP)/base/power/$(subst ",,$(CONFIG_MTK_PLATFORM))/
+    -I$(MTK_TOP)/base/power/$(subst ",,$(CONFIG_MTK_PLATFORM))/ \
+    -I$(MTK_TOP)/base/power/include/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
 
