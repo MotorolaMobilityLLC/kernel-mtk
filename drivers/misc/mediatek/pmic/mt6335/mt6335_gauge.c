@@ -2605,6 +2605,41 @@ int fgauge_set_reset_status(struct gauge_device *gauge_dev, int reset)
 
 }
 
+static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
+{
+	seq_puts(m, "fgauge dump\n");
+
+	return 0;
+}
+
+static int fgauge_get_hw_version(struct gauge_device *gauge_dev)
+{
+	return GAUGE_HW_V2000;
+}
+
+static int fgauge_set_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int value)
+{
+	int ret = 0;
+
+	if (ginfo == GAUGE_2SEC_REBOOT)
+		pmic_config_interface(PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
+	else
+		ret = -1;
+
+	return 0;
+}
+
+static int fgauge_get_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int *value)
+{
+	int ret = 0;
+
+	if (ginfo == GAUGE_2SEC_REBOOT)
+		pmic_read_interface(PMIC_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
+	else
+		ret = -1;
+
+	return 0;
+}
 
 static struct gauge_ops mt6335_gauge_ops = {
 	.gauge_initial = fgauge_initial,
@@ -2649,6 +2684,11 @@ static struct gauge_ops mt6335_gauge_ops = {
 	.gauge_get_rtc_ui_soc = fgauge_get_rtc_ui_soc,
 	.gauge_is_rtc_invalid = fgauge_is_rtc_invalid,
 	.gauge_set_reset_status = fgauge_set_reset_status,
+	.gauge_dump = fgauge_dump,
+	.gauge_get_hw_version = fgauge_get_hw_version,
+	.gauge_set_info = fgauge_set_info,
+	.gauge_get_info = fgauge_get_info,
+
 };
 
 static int mt6335_parse_dt(struct mt6335_gauge *info, struct device *dev)

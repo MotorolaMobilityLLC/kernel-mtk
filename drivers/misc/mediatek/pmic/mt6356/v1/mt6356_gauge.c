@@ -521,11 +521,6 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, 10);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0, 5000);
 
-	/* workaround , nafg interrupt does not work in KPOC */
-	if (bat_is_kpoc() == true) {
-		pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN, 0);
-		pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN, 0);
-	}
 	return 0;
 }
 
@@ -2530,7 +2525,7 @@ static int fgauge_enable_car_tune_value_calibration(struct gauge_device *gauge_d
 	return 0;
 }
 
-int fgauge_set_rtc_ui_soc(struct gauge_device *gauge_dev, int rtc_ui_soc)
+static int fgauge_set_rtc_ui_soc(struct gauge_device *gauge_dev, int rtc_ui_soc)
 {
 	int spare3_reg = get_rtc_spare_fg_value();
 	int spare3_reg_valid;
@@ -2548,7 +2543,7 @@ int fgauge_set_rtc_ui_soc(struct gauge_device *gauge_dev, int rtc_ui_soc)
 	return 0;
 }
 
-int fgauge_get_rtc_ui_soc(struct gauge_device *gauge_dev, int *ui_soc)
+static int fgauge_get_rtc_ui_soc(struct gauge_device *gauge_dev, int *ui_soc)
 {
 	int spare3_reg = get_rtc_spare_fg_value();
 	int rtc_ui_soc;
@@ -2619,7 +2614,7 @@ int fgauge_set_reset_status(struct gauge_device *gauge_dev, int reset)
 
 }
 
-int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
+static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 {
 	seq_puts(m, "fgauge dump\n");
 	seq_printf(m, "AUXADC_ADC_RDY_LBAT2 :%x\n",
@@ -2678,6 +2673,35 @@ int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 	return 0;
 }
 
+static int fgauge_get_hw_version(struct gauge_device *gauge_dev)
+{
+	return GAUGE_HW_V2000;
+}
+
+static int fgauge_set_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int value)
+{
+	int ret = 0;
+
+	if (ginfo == GAUGE_2SEC_REBOOT)
+		pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
+	else
+		ret = -1;
+
+	return 0;
+}
+
+static int fgauge_get_info(struct gauge_device *gauge_dev, enum gauge_info ginfo, int *value)
+{
+	int ret = 0;
+
+	if (ginfo == GAUGE_2SEC_REBOOT)
+		pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x0);
+	else
+		ret = -1;
+
+	return 0;
+}
+
 
 static struct gauge_ops mt6356_gauge_ops = {
 	.gauge_initial = fgauge_initial,
@@ -2723,6 +2747,9 @@ static struct gauge_ops mt6356_gauge_ops = {
 	.gauge_is_rtc_invalid = fgauge_is_rtc_invalid,
 	.gauge_set_reset_status = fgauge_set_reset_status,
 	.gauge_dump = fgauge_dump,
+	.gauge_get_hw_version = fgauge_get_hw_version,
+	.gauge_set_info = fgauge_set_info,
+	.gauge_get_info = fgauge_get_info,
 };
 
 static int mt6356_parse_dt(struct mt6356_gauge *info, struct device *dev)
