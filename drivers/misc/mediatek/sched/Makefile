@@ -25,3 +25,5 @@ obj-$(CONFIG_MTK_SCHED_RQAVG_KS) += sched_avg.o
 obj-$(CONFIG_MT_CPU_AFFINITY) += mtk_cpu_affinity/
 obj-$(CONFIG_MT_RT_THROTTLE_MON) += rt_monitor.o
 
+# For CPU topology to user space
+obj-y += cputopo.o
