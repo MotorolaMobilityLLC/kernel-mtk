@@ -37,6 +37,7 @@
 #include <linux/ratelimit.h>
 #include <linux/timekeeping.h>
 #include <linux/math64.h>
+#include <linux/of_address.h>
 
 #include "include/pmic.h"
 #include "include/pmic_auxadc.h"
@@ -364,7 +365,7 @@ struct pmic_auxadc_channel_new mt6358_auxadc_channel[] = {
 		PMIC_AUXADC_ADC_RDY_CH6, PMIC_AUXADC_ADC_OUT_CH6},
 };
 
-#ifdef CONFIG_MTK_MD1_SUPPORT
+static bool mts_enable = true;
 static int mts_timestamp;
 static unsigned int mts_count;
 static unsigned int mts_adc;
@@ -522,9 +523,6 @@ int mts_kthread(void *x)
 	return 0;
 }
 /*--Monitor MTS reg End--*/
-#else
-static unsigned int mts_adc;
-#endif
 
 static void mt6358_auxadc_timeout_dump(unsigned short ch_num)
 {
@@ -711,13 +709,31 @@ int mt6358_get_auxadc_value(u8 channel)
 		battmp = adc_result;
 	}
 
-#ifdef CONFIG_MTK_MD1_SUPPORT
 	/*--Monitor MTS Thread--*/
-	if (channel == AUXADC_LIST_BATADC)
+	if ((channel == AUXADC_LIST_BATADC) && mts_enable)
 		mt6358_auxadc_monitor_mts_regs();
-#endif
 
 	return adc_result;
+}
+
+void parsing_cust_setting(void)
+{
+	struct device_node *np;
+	unsigned int disable_modem;
+
+	/* check customer setting */
+	np = of_find_compatible_node(NULL, NULL, "mediatek,mt-pmic-custom-setting");
+	if (!np) {
+		HKLOG("[%s]Failed to find device-tree node\n", __func__);
+		return;
+	}
+
+	if (!of_property_read_u32(np, "disable-modem", &disable_modem)) {
+		if (disable_modem)
+			mts_enable = false;
+	}
+
+	of_node_put(np);
 }
 
 void adc_dbg_init(void)
@@ -741,7 +757,6 @@ void adc_dbg_init(void)
 	adc_dbg_addr[i++] = MT6358_PCHR_VREF_ELR_1;
 }
 
-#ifdef CONFIG_MTK_MD1_SUPPORT
 static void mts_thread_init(void)
 {
 	mts_thread_handle = kthread_create(mts_kthread, (void *)NULL, "mts_thread");
@@ -752,7 +767,6 @@ static void mts_thread_init(void)
 		HKLOG("[adc_kthread] kthread_create Done\n");
 	}
 }
-#endif
 
 void mt6358_adc_cali_init(void)
 {
@@ -809,13 +823,14 @@ void mt6358_auxadc_init(void)
 			WAKE_LOCK_SUSPEND, "PMIC AuxADC wakelock");
 	mutex_init(&pmic_adc_mutex);
 
-#ifdef CONFIG_MTK_MD1_SUPPORT
-	wake_lock_init(&mts_monitor_wake_lock,
+	parsing_cust_setting();
+	if (mts_enable) {
+		wake_lock_init(&mts_monitor_wake_lock,
 			WAKE_LOCK_SUSPEND, "PMIC MTS Monitor wakelock");
-	mutex_init(&mts_monitor_mutex);
-	mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
-	mts_thread_init();
-#endif
+		mutex_init(&mts_monitor_mutex);
+		mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
+		mts_thread_init();
+	}
 
 	/* Remove register setting which is set by PMIC initial setting in PL */
 	battmp = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
