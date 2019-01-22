@@ -17,7 +17,7 @@
 #define TZ_TA_HDMI_NAME "HDMI TA"
 #define TZ_TA_HDMI_UUID "eaf800b0-da1b-11e2-a28f-0800200c9a66"
 
-typedef enum {
+enum HDMI_TA_SERVICE_CMD_T {
 	HDMI_TA_WRITE_REG = 0,
 	HDMI_TA_DPI1_WRITE_REG,
 	HDMI_TA_INSTALL_HDCP_KEY,
@@ -31,13 +31,13 @@ typedef enum {
 	HDMI_TA_LOAD_ROM,
 	HDMI_TA_HDCP_FAIL,
 	HDMI_TA_HDCP_OFF,
-} HDMI_TA_SERVICE_CMD_T;
+};
 
-typedef enum {
+enum TA_RETURN_HDMI_HDCP_STATE {
 	TA_RETURN_HDCP_STATE_ENC_EN = 0,
 	TA_RETURN_HDCP_STATE_ENC_FAIL,
 	TA_RETURN_HDCP_STATE_ENC_UNKNOWN
-} TA_RETURN_HDMI_HDCP_STATE;
+};
 
 extern unsigned char vTaGetHdcpStatus(void);
 extern unsigned char vTaGetHdmiStatus(void);
