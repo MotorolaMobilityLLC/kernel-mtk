@@ -49,6 +49,10 @@
 #include <../drivers/staging/android/sync.h>
 #endif
 
+#ifdef GED_ENABLE_FB_DVFS
+#include <ged_notify_sw_vsync.h>
+#endif
+
 int (*ged_kpi_push_app_self_fc_fp_fbt)(int is_game_control_frame_rate, pid_t pid);
 EXPORT_SYMBOL(ged_kpi_push_app_self_fc_fp_fbt);
 
@@ -1310,6 +1314,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				gpu_freq_pre = ged_kpi_gpu_dvfs(time_spent, psKPI->t_gpu_target
 						, g_force_gpu_dvfs_fallback);
 				last_3D_done = cur_3D_done;
+
+				if (gx_game_mode)
+					ged_set_backup_timer_timeout(0);
+				else
+					ged_set_backup_timer_timeout(psKPI->t_gpu_target);
 #endif
 
 				if (psHead->last_TimeStamp1 != psKPI->ullTimeStamp1) {
