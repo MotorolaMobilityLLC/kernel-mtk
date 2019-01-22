@@ -132,6 +132,7 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_GET_TSM_STATISTICS = 0x5F,
 	CMD_ID_SET_SYSTEM_SUSPEND = 0x60,	/* 0x60 (Set) */
 	CMD_ID_UPDATE_AC_PARMS = 0x6A,		/* 0x6A (Set) */
+	CMD_ID_SET_CTIA_MODE_STATUS = 0x6B,		/* 0x6B (Set) */
 	CMD_ID_SET_ROAMING_SKIP = 0x6D, /* 0x6D (Set) */
 	CMD_ID_SET_DROP_PACKET_CFG = 0x6E,   /* 0x6E (Set) */
 #if (CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST || CFG_SUPPORT_FCC_POWER_BACK_OFF)
@@ -1551,6 +1552,13 @@ typedef struct _CMD_NLO_CANCEL_T {
 	UINT_8 ucSeqNum;
 	UINT_8 aucReserved[3];
 } CMD_NLO_CANCEL, *P_CMD_NLO_CANCEL;
+
+
+struct CMD_SET_CTIA_MODE {
+	UINT_8  ucCmdVersion;
+	UINT_8  ucCtiaModeEnable;
+	UINT_8  ucReserved[2];
+};
 
 typedef struct _EVENT_NLO_DONE_T {
 	UINT_8      ucSeqNum;
