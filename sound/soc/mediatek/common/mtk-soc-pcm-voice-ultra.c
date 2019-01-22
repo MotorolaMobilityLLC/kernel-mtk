@@ -178,8 +178,8 @@ static void ultra_md1_enable(bool enable, struct snd_pcm_runtime *runtime)
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
 
-		Voice1Pcm.mPcmModeWidebandSel =
-			(runtime->rate == 8000) ? Soc_Aud_PCM_MODE_PCM_MODE_8K : Soc_Aud_PCM_MODE_PCM_MODE_16K;
+		Voice1Pcm.mPcmModeWidebandSel = SampleRateTransform(runtime->rate,
+								    Soc_Aud_Digital_Block_MODEM_PCM_2_O);
 		Voice1Pcm.mAsyncFifoSel = Soc_Aud_BYPASS_SRC_SLAVE_USE_ASYNC_FIFO;
 		SetModemPcmConfig(MODEM_1, Voice1Pcm);
 		SetModemPcmEnable(MODEM_1, true);
@@ -207,8 +207,8 @@ static void ultra_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 		SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_MEM_AWB_CH1);
 
-		Voice2IntPcm.mPcmModeWidebandSel =
-			(runtime->rate == 8000) ? Soc_Aud_PCM_MODE_PCM_MODE_8K : Soc_Aud_PCM_MODE_PCM_MODE_16K;
+		Voice2IntPcm.mPcmModeWidebandSel = SampleRateTransform(runtime->rate,
+								       Soc_Aud_Digital_Block_MODEM_PCM_2_O);
 		/* Voice2IntPcm.mAsyncFifoSel = Soc_Aud_BYPASS_SRC_SLAVE_USE_ASYNC_FIFO; */
 		SetModemPcmConfig(MODEM_EXTERNAL, Voice2IntPcm);
 		SetModemPcmEnable(MODEM_EXTERNAL, true);

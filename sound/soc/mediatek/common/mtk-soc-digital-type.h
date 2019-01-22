@@ -503,6 +503,7 @@ enum Soc_Aud_PCM_MODE {
 	Soc_Aud_PCM_MODE_PCM_MODE_8K = 0,
 	Soc_Aud_PCM_MODE_PCM_MODE_16K = 1,
 	Soc_Aud_PCM_MODE_PCM_MODE_32K = 2,
+	Soc_Aud_PCM_MODE_PCM_MODE_48K = 3,
 };
 
 enum Soc_Aud_PCM_FMT {

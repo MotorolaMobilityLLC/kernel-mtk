@@ -298,20 +298,9 @@ static int mtk_voice1_prepare(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
 	SetI2SAdcEnable(true);
 	EnableAfe(true);
-	switch (runtimeStream->rate) {
-	case 8000:
-		Voice1Pcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_8K;
-		break;
-	case 16000:
-		Voice1Pcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_16K;
-		break;
-	case 32000:
-		Voice1Pcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_32K;
-		break;
-	default:
-		Voice1Pcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_16K;
-		break;
-	}
+
+	Voice1Pcm.mPcmModeWidebandSel = SampleRateTransform(runtimeStream->rate,
+							    Soc_Aud_Digital_Block_MODEM_PCM_2_O);
 
 	Voice1Pcm.mAsyncFifoSel = Soc_Aud_BYPASS_SRC_SLAVE_USE_ASYNC_FIFO;
 	SetModemPcmConfig(MODEM_1, Voice1Pcm);
