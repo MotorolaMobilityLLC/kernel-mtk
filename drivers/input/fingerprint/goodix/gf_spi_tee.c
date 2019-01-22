@@ -1825,6 +1825,7 @@ static int gf_probe(struct spi_device *spi)
 #ifdef SUPPORT_REE_MILAN_A_SERIALS
 	gf_spi_read_bytes_ree(gf_dev, 0x0142, 2, tmp_buf);
 	gf_debug(INFO_LOG, "%s line:%d ChipID:0x%x  0x%x\n", __func__, __LINE__, tmp_buf[0], tmp_buf[1]);
+	memcpy(id_buf, tmp_buf, 2);
 #endif
 
 	FUNC_EXIT();
