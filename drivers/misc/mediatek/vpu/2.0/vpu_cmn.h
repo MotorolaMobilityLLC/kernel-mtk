@@ -84,7 +84,7 @@ struct vpu_shared_memory {
 };
 
 enum vpu_power_param {
-	VPU_POWER_PARAM_DYNAMIC,
+	VPU_POWER_PARAM_FIX_OPP,
 	VPU_POWER_PARAM_DVFS_DEBUG,
 	VPU_POWER_PARAM_JTAG,
 	VPU_POWER_PARAM_LOCK,
