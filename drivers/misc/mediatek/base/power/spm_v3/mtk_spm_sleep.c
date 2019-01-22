@@ -809,6 +809,9 @@ RESTORE_IRQ:
 #endif
 	spm_suspend_footprint(0);
 
+	if (last_wr == WR_PCM_ASSERT)
+		rekick_vcorefs_scenario();
+
 	return last_wr;
 }
 
