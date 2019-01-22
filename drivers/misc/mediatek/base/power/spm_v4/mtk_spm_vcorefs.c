@@ -452,16 +452,12 @@ static void dvfsrc_hw_policy_mask(bool force)
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 0));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 4));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 8));
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 12));
-		spm_write(DVFSRC_VCORE_REQUEST, spm_read(DVFSRC_VCORE_REQUEST) & ~(0xf << 12));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 16));
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 3));
 	} else {
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 0));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 4));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x2 << 8));
-		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 12));
-		spm_write(DVFSRC_VCORE_REQUEST, spm_read(DVFSRC_VCORE_REQUEST) | (0x5 << 12));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 16));
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 3));
 	}
@@ -576,8 +572,8 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_EMI_MD2SPM0, 0xFFFFFFFF);
 	spm_write(DVFSRC_EMI_MD2SPM1, 0xFFFFFFFF);
 
-	spm_write(DVFSRC_EMI_REQUEST, 0x00299299);
-	spm_write(DVFSRC_VCORE_REQUEST, 0x00105000);
+	spm_write(DVFSRC_EMI_REQUEST, 0x00290299);
+	spm_write(DVFSRC_VCORE_REQUEST, 0x00100000);
 	spm_write(DVFSRC_FORCE, 0x00080000);
 	spm_write(DVFSRC_BASIC_CONTROL, 0x0000803B);
 	spm_write(DVFSRC_BASIC_CONTROL, 0x0000023B);
