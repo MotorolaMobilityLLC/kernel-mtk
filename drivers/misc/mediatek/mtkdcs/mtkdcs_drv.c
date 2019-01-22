@@ -23,8 +23,8 @@
 #include <mach/emi_mpu.h>
 #include <mt-plat/mtk_meminfo.h>
 #include "mtkdcs_drv.h"
-#include <mt_spm_vcorefs.h>
-#include <mt_vcorefs_manager.h>
+#include <mtk_spm_vcore_dvfs.h>
+#include <mtk_vcorefs_manager.h>
 
 static enum dcs_status sys_dcs_status = DCS_NORMAL;
 static bool dcs_initialized;
