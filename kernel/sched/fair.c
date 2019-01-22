@@ -9715,5 +9715,5 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 	if (max_spare_cpu > -1)
 		return max_spare_cpu;
 	else
-		return target;
+		return task_cpu(p);
 }
