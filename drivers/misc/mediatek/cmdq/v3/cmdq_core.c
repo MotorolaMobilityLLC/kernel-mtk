@@ -49,6 +49,7 @@
 #include <linux/pm_qos.h>
 #include <linux/pm_runtime.h>
 #include "cmdq_record_private.h"
+#include "smi_public.h"
 
 /* #define CMDQ_PROFILE_COMMAND_TRIGGER_LOOP */
 /* #define CMDQ_ENABLE_BUS_ULTRA */
@@ -2710,11 +2711,16 @@ static void cmdq_core_enable_resource_clk_unlock(
 	u64 engine_flag, bool enable)
 {
 	struct ResourceUnitStruct *pResource = NULL;
+	s32 ref;
 
 	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (pResource->engine_flag & engine_flag) {
-			CMDQ_LOG("[Res] resource clock engine:0x%016llx enable:%s\n",
-				engine_flag, enable ? "true" : "false");
+			if (enable)
+				ref = atomic_inc_return(&pResource->ref);
+			else
+				ref = atomic_dec_return(&pResource->ref);
+			CMDQ_LOG("[Res] resource clock engine:0x%016llx enable:%s ref:%d\n",
+				engine_flag, enable ? "true" : "false", ref);
 			cmdq_mdp_get_func()->enableMdpClock(enable, pResource->engine_id);
 			break;
 		}
@@ -3794,6 +3800,10 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			cmdq_get_func()->eventBackup();
 			/* clock-off */
 			cmdq_get_func()->enableGCEClockLocked(enable);
+
+			if (cmdq_mdp_dump_wrot0_usage())
+				cmdq_core_dump_resource_status(
+					CMDQ_SYNC_RESOURCE_WROT0);
 		} else if (clock_count < 0) {
 			CMDQ_ERR("enable clock %s error usage:%d smi use:%d\n",
 				__func__, clock_count, (s32)atomic_read(&gSMIThreadUsage));
@@ -4634,8 +4644,9 @@ void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent)
 			CMDQ_ERR("[Res]   notify: %llu, delay: %lld\n", pResource->notify, pResource->delay);
 			CMDQ_ERR("[Res]   lock: %llu, unlock: %lld\n", pResource->lock, pResource->unlock);
 			CMDQ_ERR("[Res]   acquire: %llu, release: %lld\n", pResource->acquire, pResource->release);
-			CMDQ_ERR("[Res] isUsed:%d, isLend:%d, isDelay:%d\n",
-				pResource->used, pResource->lend, pResource->delaying);
+			CMDQ_ERR("[Res] isUsed:%d, isLend:%d, isDelay:%d, ref:%d\n",
+				pResource->used, pResource->lend, pResource->delaying,
+				(s32)atomic_read(&pResource->ref));
 			if (pResource->releaseCB == NULL)
 				CMDQ_ERR("[Res] release CB func is NULL\n");
 			mutex_unlock(&gCmdqResourceMutex);
@@ -8067,6 +8078,10 @@ int32_t cmdqCoreSuspend(void)
 			execThreads, refCount);
 		killTasks = true;
 	}
+
+	/* dump wrot0 usage for shre sram */
+	if (cmdq_mdp_dump_wrot0_usage())
+		cmdq_core_dump_resource_status(CMDQ_SYNC_RESOURCE_WROT0);
 
 	/*  */
 	/* We need to ensure the system is ready to suspend, */

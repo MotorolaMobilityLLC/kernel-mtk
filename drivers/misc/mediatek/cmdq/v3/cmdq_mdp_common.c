@@ -28,6 +28,7 @@
 #include <linux/pm_qos.h>
 #include <linux/uaccess.h>
 #include <linux/math64.h>
+#include <linux/iopoll.h>
 #ifdef CONFIG_MTK_QOS_SUPPORT
 #include "cmdq_mdp_pmqos.h"
 #include <mmdvfs_pmqos.h>
@@ -36,6 +37,7 @@
 static struct cmdqMDPTaskStruct gCmdqMDPTask[MDP_MAX_TASK_NUM];
 static int gCmdqMDPTaskIndex;
 static long g_cmdq_mmsys_base;
+atomic_t g_mdp_wrot0_usage;
 #ifdef CONFIG_MTK_QOS_SUPPORT
 static struct mdp_context gCmdqMdpContext;
 static struct pm_qos_request mdp_bw_qos_request[MDP_TOTAL_THREAD];
@@ -965,22 +967,21 @@ int cmdq_mdp_loop_reset_impl(const unsigned long resetReg,
 			     const uint32_t resetMask,
 			     const uint32_t resetPollingValue, const int32_t maxLoopCount)
 {
-	int loop = 0;
+	u32 poll_value = 0;
+	s32 ret;
 
 	CMDQ_REG_SET32(resetReg, resetWriteValue);
-	while (loop < maxLoopCount) {
-		if (resetPollingValue == (CMDQ_REG_GET32(resetStateReg) & resetMask))
-			break;
 
-		loop++;
-	}
+	/* polling with 10ms timeout */
+	ret = readl_poll_timeout_atomic((void *)resetStateReg, poll_value,
+		(poll_value & resetMask) == resetPollingValue, 0, 10000);
 
 	/* return polling result */
-	if (loop >= maxLoopCount) {
-		CMDQ_ERR
-		    ("%s failed, Reg:0x%lx, writeValue:0x%08x, stateReg:0x%lx, mask:0x%08x, pollingValue:0x%08x\n",
-		     __func__, resetReg, resetWriteValue, resetStateReg, resetMask,
-		     resetPollingValue);
+	if (ret == -ETIMEDOUT) {
+		CMDQ_ERR(
+			"%s failed Reg:0x%lx writeValue:0x%08x stateReg:0x%lx mask:0x%08x pollingValue:0x%08x\n",
+			__func__, resetReg, resetWriteValue, resetStateReg,
+			resetMask, resetPollingValue);
 		return -EFAULT;
 	}
 
@@ -1066,7 +1067,6 @@ void cmdq_mdp_loop_off(enum CMDQ_ENG_ENUM engine,
 			CMDQ_AEE("MDP",
 				 "Disable %ld engine failed, resetStatus:%d, initStatus:%d\n",
 				 resetReg, resetStatus, initStatus);
-			return;
 		}
 
 		cmdq_mdp_get_func()->enableMdpClock(false, engine);
@@ -1577,4 +1577,17 @@ void cmdq_mdp_platform_function_setting(void)
 {
 }
 #endif
+
+s32 cmdq_mdp_dump_wrot0_usage(void)
+{
+	s32 usage = atomic_read(&g_mdp_wrot0_usage);
+
+	if (!usage)
+		return 0;
+	CMDQ_LOG("[warn]MDP WROT0 ref:%d\n", usage);
+	CMDQ_LOG("[warn]SMI LARB0 ref:%d\n", smi_clk_get_ref_count(0));
+
+	return usage;
+}
+
 
