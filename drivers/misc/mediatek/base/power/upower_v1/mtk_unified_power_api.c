@@ -45,13 +45,20 @@ EXPORT_SYMBOL(upower_update_volt_by_eem);
 /* PTP will update volt in eem_set_eem_volt */
 void upower_update_degree_by_eem(enum upower_bank bank, int deg)
 {
-	unsigned int idx;
+	int idx = -1;
 	int i;
+	int upper;
 
-	idx = (deg <= 50) ? 0 :
-		(deg <= 60 && deg > 50) ? 1 :
-		(deg <= 70 && deg > 60) ? 2 :
-		(deg <= 80 && deg > 70) ? 3 : 4;
+	/* calculate upper bound first, then decide idx of degree */
+	for (i = NR_UPOWER_DEGREE - 1; i > 0; i--) {
+		upper = (degree_set[i] + degree_set[i-1] + 1) / 2;
+		if (deg <= upper) {
+			idx = i;
+			break;
+		}
+	}
+	if (idx == -1)
+		idx = 0;
 
 	/* UPOWER_BANK_B +3 = UPOWER_BANK_CLS_B */
 	if (bank >= NR_UPOWER_BANK) {
@@ -96,9 +103,7 @@ struct upower_tbl_info **upower_get_tbl(void)
 	return ptr;
 #endif
 	if (upower_enable) {
-		upower_debug("p_upower_tbl_infos %p--> upower tbl infos[0]->tbl %p\n",
-			&p_upower_tbl_infos, p_upower_tbl_infos->p_upower_tbl);
-
+		upower_debug("get upower tbl location = %p\n", p_upower_tbl_infos->p_upower_tbl);
 		return &p_upower_tbl_infos;
 	} else {
 		return NULL;
