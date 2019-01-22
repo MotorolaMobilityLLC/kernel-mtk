@@ -898,8 +898,8 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		}
 
 		/* 4 .set ctrl config */
-		JPEG_MSG("[JPEGDRV]ENC_CFG: exif:%d, q:%d, DRI:%d !!\n", cfgEnc.enableEXIF,
-			 cfgEnc.encQuality, cfgEnc.restartInterval);
+		/* JPEG_MSG("[JPEGDRV]ENC_CFG: exif:%d, q:%d, DRI:%d !!\n", cfgEnc.enableEXIF, */
+		/*	 cfgEnc.encQuality, cfgEnc.restartInterval); */
 
 		jpeg_drv_enc_ctrl_cfg(cfgEnc.enableEXIF, cfgEnc.encQuality, cfgEnc.restartInterval);
 
@@ -962,7 +962,6 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 	#else
 		/* set timeout */
 		timeout_jiff = enc_result.timeout * HZ / 1000;
-		JPEG_MSG("[JPEGDRV]JPEG Encoder Time Jiffies : %ld\n", timeout_jiff);
 
 		if (jpeg_isr_enc_lisr() < 0) {
 			do {
