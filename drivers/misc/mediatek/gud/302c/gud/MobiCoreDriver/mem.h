@@ -114,6 +114,9 @@ struct mc_mem_context {
 	struct mutex		table_lock;
 };
 
+/* MobiCore Memory data. */
+extern struct mc_mem_context mem_ctx;
+
 /*
  * Allocate MMU table and map buffer into it.
  * That is, create respective table entries.
