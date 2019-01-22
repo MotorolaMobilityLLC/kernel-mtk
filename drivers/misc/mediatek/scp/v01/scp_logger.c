@@ -109,6 +109,7 @@ static void scp_logger_wakeup_handler(int id, void *data, unsigned int len)
 static size_t scp_A_get_last_log(size_t b_len)
 {
 	size_t ret = 0;
+	int scp_awake_flag;
 	unsigned int log_start_idx;
 	unsigned int log_end_idx;
 	unsigned int update_start_idx;
@@ -123,8 +124,12 @@ static size_t scp_A_get_last_log(size_t b_len)
 	}
 
 	/*SCP keep awake */
-	if (scp_awake_lock(SCP_A_ID) == -1)
+	scp_awake_flag = 0;
+	if (scp_awake_lock(SCP_A_ID) == -1) {
+		scp_awake_flag = -1;
 		pr_debug("scp_A_get_last_log: awake scp fail\n");
+	}
+
 
 	log_start_idx = readl((void __iomem *)(SCP_TCM + scp_A_log_start_addr_last));
 	log_end_idx = readl((void __iomem *)(SCP_TCM + scp_A_log_end_addr_last));
@@ -161,9 +166,10 @@ static size_t scp_A_get_last_log(size_t b_len)
 
 
 	/*SCP release awake */
-	if (scp_awake_unlock(SCP_A_ID) == -1)
-		pr_debug("scp_A_get_last_log: awake unlock fail\n");
-
+	if (scp_awake_flag == 0) {
+		if (scp_awake_unlock(SCP_A_ID) == -1)
+			pr_debug("scp_A_get_last_log: awake unlock fail\n");
+	}
 
 	vfree(pre_scp_last_log_buf);
 	return ret;
