@@ -1910,6 +1910,9 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 	PUINT_8 aucLookAheadBuf = NULL;
 	UINT_8 ucEthTypeLenOffset = ETHER_HEADER_LEN - ETHER_TYPE_LEN;
 	PUINT_8 pucNextProtocol = NULL;
+#if DSCP_SUPPORT
+	UINT_8 ucUserPriority;
+#endif
 
 	u4PacketLen = prSkb->len;
 
@@ -1943,7 +1946,15 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			DBGLOG(INIT, WARN, "Invalid IPv4 packet length: %lu\n", u4PacketLen);
 			break;
 		}
-
+#if DSCP_SUPPORT
+		if (GLUE_GET_PKT_BSS_IDX(prSkb) != P2P_DEV_BSS_INDEX) {
+			ucUserPriority = getUpFromDscp(prGlueInfo,
+					GLUE_GET_PKT_BSS_IDX(prSkb),
+					aucLookAheadBuf[ETHER_TYPE_LEN + 1] & 0x3F);
+			if (ucUserPriority != 0xFF)
+				prSkb->priority = ucUserPriority;
+		}
+#endif
 		kalIPv4FrameClassifier(prGlueInfo, prPacket, pucNextProtocol, prTxPktInfo);
 		break;
 

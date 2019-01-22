@@ -71,7 +71,7 @@
 *                    E X T E R N A L   R E F E R E N C E S
 ********************************************************************************
 */
-
+#include "qosmap.h"
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -210,6 +210,24 @@ typedef struct _FRAG_INFO_T {
 	P_SW_RFB_T pr1stFrag;
 	OS_SYSTIME rReceiveLifetimeLimit;	/* The receive time of 1st fragment */
 } FRAG_INFO_T, *P_FRAG_INFO_T;
+
+#ifdef DSCP_SUPPORT
+struct _DSCP_EXCEPTION {
+	UINT_8 dscp;
+	UINT_8 userPriority;
+};
+
+struct _DSCP_RANGE {
+	UINT_8 lDscp;
+	UINT_8 hDscp;
+};
+
+struct _QOS_MAP_SET {
+	struct _DSCP_RANGE dscpRange[8];
+	UINT_8 dscpExceptionNum;
+	struct _DSCP_EXCEPTION dscpException[1];
+};
+#endif
 
 /* Define STA record structure */
 struct _STA_RECORD_T {
@@ -523,6 +541,9 @@ struct _STA_RECORD_T {
 	UINT_8 ucSmMsmtToken; /* Measurement Request Token */
 	UINT_16 u2MaxIdlePeriod;
 	UINT_8 ucIdleOption;
+#ifdef DSCP_SUPPORT
+	struct _QOS_MAP_SET *qosMapSet;
+#endif
 };
 
 #if 0
