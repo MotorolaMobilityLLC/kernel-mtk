@@ -3632,8 +3632,8 @@
 
 	usb3_phy {
 		 compatible = "mediatek,usb3_phy";
-		 clocks = <&infracfg_ao INFRACFG_AO_USB_CG>;
-		 clock-names = "ssusb_clk";
+		 clocks = <&infracfg_ao INFRACFG_AO_USB_CG>, <&infracfg_ao INFRACFG_AO_UNIPRO_SCK_CG>;
+		 clock-names = "ssusb_clk", "sys_ck";
 	};
 
 	mt_soc_btcvsd_rx_pcm {
