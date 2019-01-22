@@ -47,7 +47,7 @@
 /*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		7
 #define UNIVPLL_DIV			1
-#elif defined(CONFIG_MACH_MT6763)
+#elif (defined(CONFIG_MACH_MT6763) || (defined(CONFIG_MACH_MT6771)))
 /*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		8
 #define UNIVPLL_DIV			2
@@ -153,7 +153,7 @@ static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 		u32 freq, u32 fin)
 {
-#if defined(CONFIG_MACH_MT6763)
+#if (defined(CONFIG_MACH_MT6763) || (defined(CONFIG_MACH_MT6771)))
 	unsigned long fmin = 1500 * MHZ;
 #elif defined(CONFIG_MACH_MT6758)
 	unsigned long fmin = 2000 * MHZ;
@@ -229,6 +229,7 @@ static void mtk_pll_unprepare_dummy(struct clk_hw *hw)
 	|| (defined(CONFIG_MACH_MT6759))	\
 	|| (defined(CONFIG_MACH_MT6763))	\
 	|| (defined(CONFIG_MACH_MT6758))	\
+	|| (defined(CONFIG_MACH_MT6771))	\
 	|| (defined(CONFIG_MACH_MT6739)))
 static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 		unsigned long parent_rate)
@@ -314,7 +315,7 @@ static int mtk_pll_prepare(struct clk_hw *hw)
 		/*pr_err("[CCF] %s: %s is already power on\n", __func__, __clk_get_name(hw->clk));*/
 	} else {
 		/*pr_err("[CCF] %s: %s is power off\n", __func__, __clk_get_name(hw->clk));*/
-#if defined(CONFIG_MACH_MT6763)
+#if (defined(CONFIG_MACH_MT6763) || (defined(CONFIG_MACH_MT6771)))
 		if (!strcmp(__clk_get_name(hw->clk), "univpll"))
 			univpll_192m_en(1);
 #endif
@@ -402,7 +403,7 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 
 			r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
 			writel(r, pll->pwr_addr);
-			#if defined(CONFIG_MACH_MT6763)
+			#if (defined(CONFIG_MACH_MT6763) || (defined(CONFIG_MACH_MT6771)))
 			if (!strcmp(__clk_get_name(hw->clk), "univpll"))
 				univpll_192m_en(0);
 			#endif
@@ -527,6 +528,7 @@ static const struct clk_ops mtk_pll_ops_dummy = {
 	|| (defined(CONFIG_MACH_MT6763))	\
 	|| (defined(CONFIG_MACH_MT6759))	\
 	|| (defined(CONFIG_MACH_MT6758))	\
+	|| (defined(CONFIG_MACH_MT6771))	\
 	|| (defined(CONFIG_MACH_MT6739)))
 static const struct clk_ops mtk_pll_ops = {
 	.is_enabled	= mtk_pll_is_prepared,
