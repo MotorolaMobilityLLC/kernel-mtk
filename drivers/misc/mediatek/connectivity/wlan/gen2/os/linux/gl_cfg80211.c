@@ -409,8 +409,7 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 			prGlueInfo->i4RssiCache = i4Rssi;
 		}
 
-		/* 4. Fill Tx OK and Tx Bad */
-
+		/* 4. Fill Tx OK/Bad Rx */
 		sinfo->filled |= BIT(NL80211_STA_INFO_TX_PACKETS);
 		sinfo->filled |= BIT(NL80211_STA_INFO_TX_FAILED);
 		sinfo->filled |= BIT(NL80211_STA_INFO_TX_BYTES64);

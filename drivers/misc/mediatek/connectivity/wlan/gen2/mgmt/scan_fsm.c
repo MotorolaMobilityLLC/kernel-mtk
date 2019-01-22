@@ -214,11 +214,14 @@ VOID scnSendScanReqExtCh(IN P_ADAPTER_T prAdapter)
 		 * mtk supplicant will scan 4 channels for prograssive scan
 		 * customer supplicant should have 3 channels when do social scan
 		 */
-		if (prScanParam->ucChannelListNum <= 4 ||
-			prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+		if (prScanParam->ucChannelListNum <= 4) {
 			DBGLOG(P2P, INFO, "scnSendScanReqExtCh Channel number %d for 70ms, OP_MODE[%d]\n",
 				prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
 			prCmdScanReq->u2ChannelDwellTime = 70;
+		} else if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+			DBGLOG(P2P, INFO, "scnSendScanReqExtCh Channel number %d for 100ms, OP_MODE[%d]\n",
+				prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
+			prCmdScanReq->u2ChannelDwellTime = 100;
 		} else
 			prCmdScanReq->u2ChannelDwellTime = 30;
 			/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
@@ -343,11 +346,14 @@ VOID scnSendScanReq(IN P_ADAPTER_T prAdapter)
 			* mtk supplicant will scan 4 channels for prograssive scan
 			* customer supplicant should have 3 channels when do social scan
 			*/
-			if (prScanParam->ucChannelListNum <= 4 ||
-				prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+			if (prScanParam->ucChannelListNum <= 4) {
 				DBGLOG(P2P, INFO, "scnSendScanReq Channel number %d for 70ms, OP_MODE[%d]\n",
 					prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
 				prCmdScanReq->u2ChannelDwellTime = 70;
+			} else if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+				DBGLOG(P2P, INFO, "scnSendScanReq Channel number %d for 100ms, OP_MODE[%d]\n",
+					prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
+				prCmdScanReq->u2ChannelDwellTime = 100;
 			} else
 				prCmdScanReq->u2ChannelDwellTime = 30;
 				/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
@@ -475,11 +481,14 @@ VOID scnSendScanReqV2ExtCh(IN P_ADAPTER_T prAdapter)
 		 * mtk supplicant will scan 4 channels for prograssive scan
 		 * customer supplicant should have 3 channels when do social scan
 		 */
-		if (prScanParam->ucChannelListNum <= 4 ||
-			prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+		if (prScanParam->ucChannelListNum <= 4) {
 			DBGLOG(P2P, INFO, "scnSendScanReqV2ExtCh Channel number %d for 70ms, OP_MODE[%d]\n",
 				prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
 			prCmdScanReq->u2ChannelDwellTime = 70;
+		} else if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+			DBGLOG(P2P, INFO, "scnSendScanReqV2ExtCh Channel number %d for 100ms, OP_MODE[%d]\n",
+				prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
+			prCmdScanReq->u2ChannelDwellTime = 100;
 		} else
 			prCmdScanReq->u2ChannelDwellTime = 30;
 			/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
@@ -596,11 +605,14 @@ VOID scnSendScanReqV3ExtCh(IN P_ADAPTER_T prAdapter)
 		 * mtk supplicant will scan 4 channels for prograssive scan
 		 * customer supplicant should have 3 channels when do social scan
 		 */
-		if (prScanParam->ucChannelListNum <= 4 ||
-			prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+		if (prScanParam->ucChannelListNum <= 4) {
 			DBGLOG(P2P, INFO, "scnSendScanReqV3ExtCh Channel number %d for 70ms, OP_MODE[%d]\n",
 				prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
 			prCmdScanReqV3->u2ChannelDwellTime = 70;
+		} else if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+			DBGLOG(P2P, INFO, "scnSendScanReqV3ExtCh Channel number %d for 100ms, OP_MODE[%d]\n",
+				prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
+			prCmdScanReqV3->u2ChannelDwellTime = 100;
 		} else
 			prCmdScanReqV3->u2ChannelDwellTime = 30;
 			/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
@@ -712,11 +724,14 @@ VOID scnSendScanReqV2(IN P_ADAPTER_T prAdapter)
 			* mtk supplicant will scan 4 channels for prograssive scan
 			* customer supplicant should have 3 channels when do social scan
 			*/
-			if (prScanParam->ucChannelListNum <= 4 ||
-				prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+			if (prScanParam->ucChannelListNum <= 4) {
 				DBGLOG(P2P, INFO, "scnSendScanReqV2 Channel number %d for 70ms, OP_MODE[%d]\n",
 					prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
 				prCmdScanReqV3->u2ChannelDwellTime = 70;
+			} else if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) {
+				DBGLOG(P2P, INFO, "scnSendScanReqV2 Channel number %d for 100ms, OP_MODE[%d]\n",
+					prScanParam->ucChannelListNum, prP2pBssInfo->eCurrentOPMode);
+				prCmdScanReqV3->u2ChannelDwellTime = 100;
 			} else
 				prCmdScanReqV3->u2ChannelDwellTime = 30;
 				/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
