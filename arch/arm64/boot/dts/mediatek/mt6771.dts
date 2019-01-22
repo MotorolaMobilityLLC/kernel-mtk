@@ -47,7 +47,7 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x001>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
@@ -55,7 +55,7 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x002>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
@@ -63,7 +63,7 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x003>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
@@ -72,7 +72,7 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a73";
 			reg = <0x100>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
