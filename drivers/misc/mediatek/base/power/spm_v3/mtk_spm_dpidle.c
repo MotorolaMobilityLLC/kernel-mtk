@@ -74,15 +74,13 @@
 #define reg_read(addr)         __raw_readl(IOMEM(addr))
 
 #if !defined(CONFIG_MTK_SPM_IN_ATF)
-#ifdef CONFIG_OF
 #define MCUCFG_BASE             spm_mcucfg
-#else
-#define MCUCFG_BASE             (0xF0200000)	/* 0x1020_0000 */
-#endif
 #define MP0_AXI_CONFIG          (MCUCFG_BASE + 0x2C)
 #define MP1_AXI_CONFIG          (MCUCFG_BASE + 0x22C)
+#define CPUCFG                  (MCUCFG_BASE + 0x2008)
 #define MP2_AXI_CONFIG          (MCUCFG_BASE + 0x220C)
 #define ACINACTM                (1 << 4)
+#define MP2_ACINACTM            (1 << 0)
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
 enum spm_deepidle_step {
