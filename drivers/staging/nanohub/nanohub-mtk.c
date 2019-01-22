@@ -30,6 +30,7 @@ struct nanohub_ipi_rx_st {
 struct nanohub_ipi_rx_st nanohub_ipi_rx;
 
 struct iio_dev *nanohub_iio_dev;
+struct semaphore scp_nano_ipi_sem;
 
 struct nanohub_ipi_data {
 	struct nanohub_data data;
@@ -100,13 +101,14 @@ int nanohub_ipi_read(void *data, u8 *rx, int max_length, int timeout)
 
 static int nanohub_ipi_open(void *data)
 {
+	down(&scp_nano_ipi_sem);
 	reinit_completion(&nanohub_ipi_rx.isr_comp);	/* reset when every retry start */
 	return 0;
 }
 
 static void nanohub_ipi_close(void *data)
 {
-	/* do nothing */
+	up(&scp_nano_ipi_sem);
 }
 
 void nanohub_ipi_comms_init(struct nanohub_ipi_data *ipi_data)
@@ -124,6 +126,7 @@ void nanohub_ipi_comms_init(struct nanohub_ipi_data *ipi_data)
 /*	comms->tx_buffer = kmalloc(4096, GFP_KERNEL | GFP_DMA); */
 	comms->rx_buffer = kmalloc(4096, GFP_KERNEL | GFP_DMA);
 	nanohub_ipi_rx.buff = comms->rx_buffer;
+	sema_init(&scp_nano_ipi_sem, 1);
 }
 
 static int nanohub_ipi_remove(struct platform_device *pdev);
