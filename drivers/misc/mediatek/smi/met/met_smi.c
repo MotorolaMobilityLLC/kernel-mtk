@@ -360,7 +360,7 @@ int SMI_MET_get_header(unsigned int parallel_mode, char *buf, unsigned int *larb
 	smi_parallel_mode = parallel_mode;
 	return ret;
 }
-EXPORT_SYMBOL(SMI_MET_get_header)
+EXPORT_SYMBOL(SMI_MET_get_header);
 
 int SMI_MET_type_check(unsigned int parallel_mode, struct met_smi_conf *met_smi_config)
 {
@@ -408,7 +408,7 @@ int SMI_MET_type_check(unsigned int parallel_mode, struct met_smi_conf *met_smi_
 
 	return ret;
 }
-EXPORT_SYMBOL(SMI_MET_type_check)
+EXPORT_SYMBOL(SMI_MET_type_check);
 
 static int already_configured;
 
@@ -564,7 +564,7 @@ int SMI_MET_config(struct met_smi_conf *met_smi_config, unsigned int conf_num,
 	}
 	return 0;
 }
-EXPORT_SYMBOL(SMI_MET_config)
+EXPORT_SYMBOL(SMI_MET_config);
 
 void SMI_MET_start(void)
 {
@@ -591,7 +591,7 @@ void SMI_MET_start(void)
 	smi_reg_sync_writel(u4RegVal | 0x1, SMI_MET_COMM_MON_ENA(SMICommBaseAddr[0]));
 
 }
-EXPORT_SYMBOL(SMI_MET_start)
+EXPORT_SYMBOL(SMI_MET_start);
 
 static void smi_init_value(void)
 {
@@ -642,7 +642,7 @@ void SMI_MET_stop(void)
 		met_smi_debug(debug_msg);
 	}
 }
-EXPORT_SYMBOL(SMI_MET_stop)
+EXPORT_SYMBOL(SMI_MET_stop);
 
 #define NARRAY			  (2+(SMI_LARB_NUMBER+SMI_COMM_NUMBER)*10)
 #define metadata 0x5555aaaa
@@ -853,4 +853,4 @@ void SMI_MET_polling(void)
 	/* output log to ftrace buffer */
 	ms_smi(cnt, smi_value);
 }
-EXPORT_SYMBOL(SMI_MET_polling)
+EXPORT_SYMBOL(SMI_MET_polling);
