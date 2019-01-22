@@ -663,4 +663,5 @@ enum {
 };
 extern void usb_hal_dpidle_request(int mode);
 extern void register_usb_hal_dpidle_request(void (*function)(int));
+extern void wake_up_bat(void);
 #endif				/* __MUSB_CORE_H__ */
