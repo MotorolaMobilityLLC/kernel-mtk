@@ -646,7 +646,7 @@ void enable_dummy_load(unsigned int en)
 #endif /* #ifdef DLPT_FEATURE_SUPPORT */
 
 #ifdef DLPT_FEATURE_SUPPORT
-static struct hrtimer dlpt_notify_timer;
+static struct timer_list dlpt_notify_timer;
 static struct task_struct *dlpt_notify_thread;
 static bool dlpt_notify_flag;
 static DECLARE_WAIT_QUEUE_HEAD(dlpt_notify_waiter);
@@ -986,7 +986,7 @@ static int g_low_per_timeout_val = 60;
 
 int dlpt_notify_handler(void *unused)
 {
-	ktime_t ktime;
+	unsigned long dlpt_notify_interval;
 	int pre_ui_soc = 0;
 	int cur_ui_soc = 0;
 	int diff_ui_soc = 1;
@@ -998,9 +998,9 @@ int dlpt_notify_handler(void *unused)
 
 	do {
 		if (dpidle_active_status())
-			ktime = ktime_set(20, 0); /* light-loading mode */
+			dlpt_notify_interval = HZ * 20; /* light-loading mode */
 		else
-			ktime = ktime_set(10, 0); /* normal mode */
+			dlpt_notify_interval = HZ * 10; /* normal mode */
 
 		wait_event_interruptible(dlpt_notify_waiter, (dlpt_notify_flag == true));
 
@@ -1082,30 +1082,33 @@ int dlpt_notify_handler(void *unused)
 		mutex_unlock(&dlpt_notify_mutex);
 		pmic_wake_unlock(&dlpt_notify_lock);
 
-		hrtimer_start(&dlpt_notify_timer, ktime, HRTIMER_MODE_REL);
+		set_timer_slack(&dlpt_notify_timer, HZ/2);
+		mod_timer(&dlpt_notify_timer, jiffies + dlpt_notify_interval);
 
 	} while (!kthread_should_stop());
 
 	return 0;
 }
 
-enum hrtimer_restart dlpt_notify_task(struct hrtimer *timer)
+void dlpt_notify_task(unsigned long data)
 {
 	dlpt_notify_flag = true;
 	wake_up_interruptible(&dlpt_notify_waiter);
 	PMICLOG("dlpt_notify_task is called\n");
 
-	return HRTIMER_NORESTART;
+	return;
 }
 
 void dlpt_notify_init(void)
 {
-	ktime_t ktime;
+	unsigned long dlpt_notify_interval;
 
-	ktime = ktime_set(30, 0);
-	hrtimer_init(&dlpt_notify_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	dlpt_notify_interval = HZ * 30;
+	init_timer_deferrable(&dlpt_notify_timer);
 	dlpt_notify_timer.function = dlpt_notify_task;
-	hrtimer_start(&dlpt_notify_timer, ktime, HRTIMER_MODE_REL);
+	dlpt_notify_timer.data = (unsigned long)&dlpt_notify_timer;
+	set_timer_slack(&dlpt_notify_timer, HZ/2);
+	mod_timer(&dlpt_notify_timer, jiffies + dlpt_notify_interval);
 
 	dlpt_notify_thread = kthread_run(dlpt_notify_handler, 0, "dlpt_notify_thread");
 	if (IS_ERR(dlpt_notify_thread))
