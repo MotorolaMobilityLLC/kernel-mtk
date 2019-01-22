@@ -2538,6 +2538,7 @@ MTK_WCN_BOOL wmt_core_trigger_stp_assert(VOID)
 
 	if (mtk_wcn_stp_coredump_flag_get() == 0) {
 		WMT_INFO_FUNC("coredump is disabled, omit trigger STP assert\n");
+		wmt_lib_trigger_reset();
 		return MTK_WCN_BOOL_FALSE;
 	}
 
