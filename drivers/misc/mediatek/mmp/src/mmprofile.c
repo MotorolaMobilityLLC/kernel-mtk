@@ -1614,53 +1614,84 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			mutex_lock(&mmprofile_meta_buffer_mutex);
 			list_for_each_entry(p_meta_data_block, &mmprofile_meta_buffer_list, list) {
 				if (p_meta_data_block->data_size > 0) {
-					put_user(p_meta_data_block->cookie,
-						 &(p_meta_data[meta_data_count].cookie));
-					put_user(p_meta_data_block->data_size,
-						 &(p_meta_data[meta_data_count].data_size));
-					put_user(p_meta_data_block->data_type,
-						 &(p_meta_data[meta_data_count].data_type));
+					if (!put_user(p_meta_data_block->cookie,
+						 &(p_meta_data[meta_data_count].cookie))) {
+						mutex_unlock(&mmprofile_meta_buffer_mutex);
+						return -EFAULT;
+					}
+					if (!put_user(p_meta_data_block->data_size,
+						 &(p_meta_data[meta_data_count].data_size))) {
+						mutex_unlock(&mmprofile_meta_buffer_mutex);
+						return -EFAULT;
+					}
+					if (!put_user(p_meta_data_block->data_type,
+						 &(p_meta_data[meta_data_count].data_type))) {
+						mutex_unlock(&mmprofile_meta_buffer_mutex);
+						return -EFAULT;
+					}
 					buffer_size += p_meta_data_block->data_size;
 					meta_data_count++;
 				}
 			}
-			put_user(meta_data_count, (unsigned int __user *)arg);
+			if (!put_user(meta_data_count, (unsigned int __user *)arg)) {
+				mutex_unlock(&mmprofile_meta_buffer_mutex);
+				return -EFAULT;
+			}
 			/* pr_debug("[mmprofile_ioctl] meta_data_count=%d meta_data_size=%x\n", */
 			/* meta_data_count, buffer_size); */
 			offset = 8 + sizeof(mmprofile_metadata_t) * meta_data_count;
 			index = 0;
 			list_for_each_entry(p_meta_data_block, &mmprofile_meta_buffer_list, list) {
-				if (p_meta_data_block->data_size > 0) {
-					put_user(offset - 8, &(p_meta_data[index].data_offset));
-					/* pr_debug("[mmprofile_ioctl] MetaRecord: offset=%x size=%x\n", */
-					/* offset-8, p_meta_data_block->data_size); */
-					if (((unsigned long)(p_meta_data_block->meta_data) +
-					     p_meta_data_block->data_size) >
-					    ((unsigned long)p_mmprofile_meta_buffer +
-					     mmprofile_globals.meta_buffer_size)) {
-						unsigned long left_size =
-						    (unsigned long)p_mmprofile_meta_buffer +
-						    mmprofile_globals.meta_buffer_size -
-						    (unsigned long)(p_meta_data_block->meta_data);
-						retn =
-						    copy_to_user((void __user *)(arg + offset),
-								 p_meta_data_block->meta_data,
-								 left_size);
-						retn =
-						    copy_to_user((void __user *)(arg + offset + left_size),
-								 p_mmprofile_meta_buffer,
-								 p_meta_data_block->data_size -
-								 left_size);
-					} else
-						retn =
-						    copy_to_user((void __user *)(arg + offset),
-								 p_meta_data_block->meta_data,
-								 p_meta_data_block->data_size);
-					offset = (offset + p_meta_data_block->data_size + 3) & (~3);
-					index++;
+				if (p_meta_data_block->data_size <= 0)
+					continue;
+				if (!put_user(offset - 8, &(p_meta_data[index].data_offset))) {
+					mutex_unlock(&mmprofile_meta_buffer_mutex);
+					return -EFAULT;
 				}
+				/* pr_debug("[mmprofile_ioctl] MetaRecord: offset=%x size=%x\n", */
+				/* offset-8, p_meta_data_block->data_size); */
+				if (((unsigned long)(p_meta_data_block->meta_data) +
+					    p_meta_data_block->data_size) >
+					   ((unsigned long)p_mmprofile_meta_buffer +
+					    mmprofile_globals.meta_buffer_size)) {
+					unsigned long left_size =
+						   (unsigned long)p_mmprofile_meta_buffer +
+						   mmprofile_globals.meta_buffer_size -
+						   (unsigned long)(p_meta_data_block->meta_data);
+					retn =
+						   copy_to_user((void __user *)(arg + offset),
+								p_meta_data_block->meta_data,
+								left_size);
+					if (!retn) {
+						mutex_unlock(&mmprofile_meta_buffer_mutex);
+						return retn;
+					}
+					retn =
+						   copy_to_user((void __user *)(arg + offset + left_size),
+								p_mmprofile_meta_buffer,
+								p_meta_data_block->data_size -
+								left_size);
+					if (!retn) {
+						mutex_unlock(&mmprofile_meta_buffer_mutex);
+						return retn;
+					}
+				} else {
+					retn =
+						   copy_to_user((void __user *)(arg + offset),
+								p_meta_data_block->meta_data,
+								p_meta_data_block->data_size);
+					if (!retn) {
+						mutex_unlock(&mmprofile_meta_buffer_mutex);
+						return retn;
+					}
+				}
+				offset = (offset + p_meta_data_block->data_size + 3) & (~3);
+				index++;
 			}
-			put_user(offset - 8, (unsigned int __user *)(arg + 4));
+			if (!put_user(offset - 8, (unsigned int __user *)(arg + 4))) {
+				mutex_unlock(&mmprofile_meta_buffer_mutex);
+				return -EFAULT;
+			}
 			/* pr_debug("[mmprofile_ioctl] Finished: offset=%x\n", offset-8); */
 			mutex_unlock(&mmprofile_meta_buffer_mutex);
 		}
