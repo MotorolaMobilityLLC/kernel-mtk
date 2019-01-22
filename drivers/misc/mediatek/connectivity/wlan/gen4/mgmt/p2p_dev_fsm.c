@@ -354,7 +354,8 @@ p2pDevFsmStateTransition(IN P_ADAPTER_T prAdapter,
 			} else {
 				p2pDevStateAbort_CHNL_ON_HAND(prAdapter,
 							      prAdapter->aprBssInfo[prP2pDevFsmInfo->ucBssIndex],
-							      prP2pDevFsmInfo, &(prP2pDevFsmInfo->rChnlReqInfo));
+							      prP2pDevFsmInfo, &(prP2pDevFsmInfo->rChnlReqInfo),
+							      eNextState);
 			}
 			break;
 		case P2P_DEV_STATE_OFF_CHNL_TX:
@@ -405,7 +406,27 @@ VOID p2pDevFsmRunEventTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 			/* TODO: IDLE timeout for low power mode. */
 			break;
 		case P2P_DEV_STATE_CHNL_ON_HAND:
-			p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo, P2P_DEV_STATE_IDLE);
+			switch (prAdapter->prP2pInfo->eConnState) {
+			case P2P_CNN_GO_NEG_REQ:
+			case P2P_CNN_GO_NEG_RESP:
+			case P2P_CNN_INVITATION_REQ:
+			case P2P_CNN_DEV_DISC_REQ:
+			case P2P_CNN_PROV_DISC_REQ:
+				DBGLOG(P2P, INFO, "P2P: re-enter CHNL_ON_HAND with state: %d\n",
+				       prAdapter->prP2pInfo->eConnState);
+				p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo,
+							 P2P_DEV_STATE_CHNL_ON_HAND);
+				break;
+			case P2P_CNN_NORMAL:
+			case P2P_CNN_GO_NEG_CONF:
+			case P2P_CNN_INVITATION_RESP:
+			case P2P_CNN_DEV_DISC_RESP:
+			case P2P_CNN_PROV_DISC_RES:
+			default:
+				p2pDevFsmStateTransition(prAdapter, prP2pDevFsmInfo,
+							 P2P_DEV_STATE_IDLE);
+				break;
+			}
 			break;
 		default:
 			ASSERT(FALSE);
@@ -542,12 +563,12 @@ VOID p2pDevFsmRunEventChannelRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
 
-		DBGLOG(P2P, STATE, "p2pDevFsmRunEventChannelRequest\n");
-
 		prP2pDevFsmInfo = prAdapter->rWifiVar.prP2pDevFsmInfo;
 
-		if (prP2pDevFsmInfo == NULL)
+		if (prP2pDevFsmInfo == NULL) {
+			DBGLOG(P2P, WARN, "uninitialized p2p Dev fsm\n");
 			break;
+		}
 
 		prChnlReqInfo = &(prP2pDevFsmInfo->rChnlReqInfo);
 
@@ -894,6 +915,8 @@ VOID p2pFsmRunEventScanRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
 
 		prP2pScanReqMsg = (P_MSG_P2P_SCAN_REQUEST_T) prMsgHdr;
+
+		prAdapter->prP2pInfo->eConnState = P2P_CNN_NORMAL;
 
 		if (prP2pScanReqMsg->ucBssIdx == P2P_DEV_BSS_INDEX)
 			p2pDevFsmRunEventScanRequest(prAdapter, prMsgHdr);

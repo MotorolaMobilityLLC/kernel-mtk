@@ -140,8 +140,24 @@
  ********************************************************************************
  */
 
+/* if driver need wait for a longger time when do p2p connection */
+typedef enum _ENUM_P2P_CONNECT_STATE_T {
+	P2P_CNN_NORMAL = 0,
+	P2P_CNN_GO_NEG_REQ,
+	P2P_CNN_GO_NEG_RESP,
+	P2P_CNN_GO_NEG_CONF,
+	P2P_CNN_INVITATION_REQ,
+	P2P_CNN_INVITATION_RESP,
+	P2P_CNN_DEV_DISC_REQ,
+	P2P_CNN_DEV_DISC_RESP,
+	P2P_CNN_PROV_DISC_REQ,
+	P2P_CNN_PROV_DISC_RES
+} ENUM_P2P_CNN_STATE_T, *P_ENUM_P2P_CNN_STATE_T;
+
+
 struct _P2P_INFO_T {
 	UINT_32 u4DeviceNum;
+	ENUM_P2P_CNN_STATE_T eConnState;
 	EVENT_P2P_DEV_DISCOVER_RESULT_T arP2pDiscoverResult[CFG_MAX_NUM_BSS_LIST];
 	PUINT_8 pucCurrIePtr;
 	/* A common pool for IE of all scan results. */
