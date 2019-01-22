@@ -1090,6 +1090,11 @@ int try_to_del_timer_sync(struct timer_list *timer)
 	spin_unlock_irqrestore(&base->lock, flags);
 
 #if defined(CONFIG_SMP) && !defined(CONFIG_ARM64_LSE_ATOMICS)
+
+#ifndef dmac_flush_range
+#define dmac_flush_range __dma_flush_range
+#endif
+
 	/*
 	 * MTK PATCH to fix ARM v8.0 live spinlock issue.
 	 *
@@ -1100,8 +1105,10 @@ int try_to_del_timer_sync(struct timer_list *timer)
 	 * to promise that other CPU can see correct lock value to avoid
 	 * starvation or unfair spinlock competition.
 	 */
-	if (ret == -1 && irqs_disabled())
-		__flush_dcache_area(&base->lock, sizeof(spinlock_t));
+	if (ret == -1 && irqs_disabled()) {
+		dmac_flush_range((void *)&base->lock,
+			(void *)&base->lock + sizeof(spinlock_t) - 1);
+	}
 #endif
 
 	return ret;
