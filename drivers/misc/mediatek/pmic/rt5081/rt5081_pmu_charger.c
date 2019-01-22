@@ -2059,6 +2059,11 @@ static int rt5081_plug_out(struct charger_device *chg_dev)
 	/* Reset AICR limit */
 	chg_data->aicr_limit = -1;
 
+	/* Enable ILIM_EN */
+	ret = rt5081_enable_ilim(chg_data, true);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: en ilim failed\n", __func__);
+
 	/* Disable charger */
 	ret = rt5081_enable_charging(chg_dev, false);
 	if (ret < 0) {
@@ -2070,6 +2075,7 @@ static int rt5081_plug_out(struct charger_device *chg_dev)
 	ret = rt5081_enable_wdt(chg_data, false);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: disable wdt failed\n", __func__);
+
 
 	return ret;
 }
@@ -2095,6 +2101,14 @@ static int rt5081_plug_in(struct charger_device *chg_dev)
 		dev_err(chg_data->dev, "%s: en chg failed\n", __func__);
 		return ret;
 	}
+
+	/* Wait 1200ms for HW unlock dead battery event */
+	msleep(1200);
+
+	/* Disable ILIM_EN */
+	ret = rt5081_enable_ilim(chg_data, false);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: disable ilim failed\n", __func__);
 
 	return ret;
 }
@@ -3391,6 +3405,8 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
  * (2) Change ADC log from ratelimited to normal one for debug
  * (3) Polling ADC_START after receiving ADC_DONE irq
  * (4) Disable ZCV in probe function
+ * (5) Plug out -> enable ILIM_EN
+ *     Plug in -> sleep 1200ms -> disable ILIM_EN
  *
  * 1.1.4_MTK
  * (1) Add IEOC workaround
