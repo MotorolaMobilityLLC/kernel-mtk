@@ -188,8 +188,32 @@ int ccci_get_ccmni_channel(int md_id, int ccmni_idx, struct ccmni_ch *channel)
 		channel->dl_ack = CCCI_CCMNI18_TX;
 		channel->multiq = 0;
 		break;
+	case 18:
+		channel->rx = CCCI_CCMNI19_RX;
+		channel->rx_ack = 0xFF;
+		channel->tx = CCCI_CCMNI19_TX;
+		channel->tx_ack = 0xFF;
+		channel->dl_ack = CCCI_CCMNI19_TX;
+		channel->multiq = 0;
+		break;
+	case 19:
+		channel->rx = CCCI_CCMNI20_RX;
+		channel->rx_ack = 0xFF;
+		channel->tx = CCCI_CCMNI20_TX;
+		channel->tx_ack = 0xFF;
+		channel->dl_ack = CCCI_CCMNI20_TX;
+		channel->multiq = 0;
+		break;
+	case 20:
+		channel->rx = CCCI_CCMNI21_RX;
+		channel->rx_ack = 0xFF;
+		channel->tx = CCCI_CCMNI21_TX;
+		channel->tx_ack = 0xFF;
+		channel->dl_ack = CCCI_CCMNI21_TX;
+		channel->multiq = 0;
+		break;
 #ifdef FEATURE_DIRECT_TETHERING_LOGGING
-	case 18: /* CCMIN-LAN should always be the last one*/
+	case 21: /* CCMIN-LAN should always be the last one*/
 		channel->rx = CCCI_CCMNILAN_RX;
 		channel->rx_ack = 0xFF;
 		channel->tx = CCCI_CCMNILAN_TX;
@@ -301,7 +325,7 @@ int ccmni_napi_poll(int md_id, int ccmni_idx, struct napi_struct *napi, int weig
 
 struct ccmni_ccci_ops eccci_ccmni_ops = {
 	.ccmni_ver = CCMNI_DRV_V0,
-	.ccmni_num = 18,
+	.ccmni_num = 21,
 	.name = "ccmni",
 #ifndef FEATURE_DIRECT_TETHERING_LOGGING
 	.md_ability = MODEM_CAP_DATA_ACK_DVD | MODEM_CAP_CCMNI_MQ,
