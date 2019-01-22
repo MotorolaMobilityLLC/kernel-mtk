@@ -133,15 +133,6 @@ int mtk_chr_is_charger_exist(unsigned char *exist)
 		*exist = 1;
 	return 0;
 }
-#if 0 /* FIXME */
-bool upmu_is_chr_det(void)
-{
-	if (mt_get_charger_type() == CHARGER_UNKNOWN)
-		return false;
-	else
-		return true;
-}
-#endif
 
 /*=============== fix me==================*/
 
@@ -571,8 +562,6 @@ static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 		}
 #endif
 	}
-	pr_debug("[BATTERY] BATTERY_NOTIFY_CASE_0002_VBATTEMP (%x)\n",
-		info->notify_code);
 #endif
 }
 
@@ -860,6 +849,45 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	return 0;
 }
 
+
+static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	int is_ta_detected = 0;
+
+	pr_debug("[%s] chr_type:%d UISOC:%d startsoc:%d stopsoc:%d\n", __func__,
+		mt_get_charger_type(), get_ui_soc(),
+		pinfo->data.ta_start_battery_soc,
+		pinfo->data.ta_stop_battery_soc);
+
+	if (IS_ENABLED(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)) {
+		/* Is PE+20 connect */
+		if (mtk_pe20_get_is_connect(pinfo))
+			is_ta_detected = 1;
+		pr_debug("%s: pe20_is_connect = %d\n",
+			__func__, mtk_pe20_get_is_connect(pinfo));
+#if 0 /* TODO: Add PE+ */
+		/* Is PE+ connect */
+		if (mtk_pe_get_is_connect(pinfo))
+			is_ta_detected = 1;
+		pr_err("%s: pe_is_connect = %d\n",
+			__func__, mtk_pep_get_is_connect(pinfo));
+#endif
+	}
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
+	/* Is PE connect */
+	if (is_ta_connect == KAL_TRUE)
+		is_ta_detected = 1;
+#endif
+
+	pr_debug("%s: detected = %d\n", __func__, is_ta_detected);
+
+	return sprintf(buf, "%u\n", is_ta_detected);
+}
+
+static DEVICE_ATTR(Pump_Express, 0444, show_Pump_Express, NULL);
+
 static ssize_t show_BatteryNotify(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct charger_manager *pinfo = dev->driver_data;
@@ -958,8 +986,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	srcu_init_notifier_head(&info->evt_nh);
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_sw_jeita);
+	/* Battery warning */
 	ret = device_create_file(&(pdev->dev), &dev_attr_BatteryNotify);
 	ret = device_create_file(&(pdev->dev), &dev_attr_BN_TestMode);
+	/* Pump express */
+	ret = device_create_file(&(pdev->dev), &dev_attr_Pump_Express);
 
 	mtk_pe20_init(info);
 

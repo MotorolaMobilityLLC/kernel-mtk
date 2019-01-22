@@ -70,6 +70,7 @@
 #include <mt-plat/mtk_charger.h>
 #include <mt6336.h>
 
+static int mt6336_get_mivr(struct charger_device *chg_dev);
 
 struct mt6336_charger {
 	int i2c_log_level;
@@ -474,19 +475,20 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 	unsigned short vcv;
 	unsigned short chg_en;
 	unsigned short state;
-	unsigned short aicc;
-	unsigned short vpam;
+	unsigned short pam_state;
+	unsigned int vpam;
 
 	icc = mt6336_get_flag_register_value(MT6336_RG_ICC);
 	aicr = mt6336_get_aicr(chg_dev);
 	vcv = mt6336_get_flag_register_value(MT6336_RG_VCV);
 	chg_en = mt6336_get_flag_register_value(MT6336_RG_EN_CHARGE);
 	state = mt6336_get_register_value(MT6336_PMIC_ANA_CORE_DA_RGS13);
-	aicc = mt6336_get_flag_register_value(MT6336_RG_EN_AICC);
-	vpam = mt6336_get_flag_register_value(MT6336_RG_VPAM);
+	pam_state = mt6336_get_flag_register_value(MT6336_AD_QI_PAM_MODE);
+	vpam = mt6336_get_mivr(chg_dev);
 
-	pr_err("[MT6336] ICC:%dmA, ICL:%dmA, VCV:%dmV, CHGEN=%d, state=0x%x, AICC=%d, VPAM=0x%x\n",
-		icc * 50 + 500, aicr / 1000, (vcv * 125 + 26000) / 10,  chg_en, state, aicc, vpam);
+	pr_err("[MT6336] ICC:%dmA, ICL:%dmA, VCV:%dmV, VPAM:%dmV, CHGEN=%d, state=0x%x, PAM:%d\n",
+		icc * 50 + 500, aicr / 1000, (vcv * 125 + 26000) / 10, vpam / 1000,
+		chg_en, state, pam_state);
 
 	return 0;
 }
@@ -570,6 +572,17 @@ static int mt6336_set_mivr(struct charger_device *chg_dev, int uv)
 	pr_err("%s: 0x%x %d %d\n", __func__, register_value, uv, set_mivr);
 
 	return 0;
+}
+
+static int mt6336_get_mivr(struct charger_device *chg_dev)
+{
+	unsigned int array_size;
+	unsigned int val;
+
+	array_size = ARRAY_SIZE(MIVR_REG);
+	val = mt6336_get_flag_register_value(MT6336_RG_VPAM);
+
+	return charging_value_to_parameter(MIVR_REG, array_size, val);
 }
 
 void mt6336_vbat_ovp_callback(void)
