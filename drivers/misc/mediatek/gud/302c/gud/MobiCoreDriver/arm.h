@@ -41,6 +41,7 @@ inline bool is_secure_mode(void)
 inline bool has_security_extensions(void)
 {
 	u32 fea = 0;
+
 	asm volatile(
 		"mrc p15, 0, %[fea], cr0, cr1, 0" :
 		[fea]"=r" (fea));

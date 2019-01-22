@@ -104,8 +104,10 @@ struct mc_session_handle {
  * inform the Trustlet with the content of this structure via the TCI.
  */
 struct mc_bulk_map {
-	/* The virtual address of the Bulk buffer regarding the address space
-	 * of the Trustlet, already includes a possible offset! */
+	/*
+	 * The virtual address of the Bulk buffer regarding the address space
+	 * of the Trustlet, already includes a possible offset!
+	 */
 	uint32_t secure_virt_addr;
 	uint32_t secure_virt_len;	/* Length of the mapped Bulk buffer */
 };

@@ -38,15 +38,21 @@ struct tlc_tui_response_t {
 #define TLC_TUI_CMD_START_ACTIVITY      1
 /* Stop TUI session */
 #define TLC_TUI_CMD_STOP_ACTIVITY       2
-/* Queue a buffer
- * IN: index of buffer to be queued */
+/*
+ * Queue a buffer
+ * IN: index of buffer to be queued
+ */
 #define TLC_TUI_CMD_QUEUE               3
-/* Queue a new buffer and dequeue the buffer currently displayed
- * IN: indexes of buffer to be queued */
+/*
+ * Queue a new buffer and dequeue the buffer currently displayed
+ * IN: indexes of buffer to be queued
+ */
 #define TLC_TUI_CMD_QUEUE_DEQUEUE       4
-/* Alloc buffers
+/*
+ * Alloc buffers
  * IN: number of buffers
- * OUT: ion fd */
+ * OUT: ion fd
+ */
 #define TLC_TUI_CMD_ALLOC_FB            5
 /* Free buffers */
 #define TLC_TUI_CMD_FREE_FB             6

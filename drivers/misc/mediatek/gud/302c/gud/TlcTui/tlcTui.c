@@ -52,7 +52,7 @@ static bool tlc_open_driver(void)
 	/* Allocate WSM buffer for the DCI */
 	mc_ret = mc_malloc_wsm(DEVICE_ID, 0, sizeof(struct tui_dci_msg_t),
 			(uint8_t **)&dci, 0);
-	if (MC_DRV_OK != mc_ret) {
+	if (mc_ret != MC_DRV_OK) {
 		pr_debug("ERROR %s: Allocation of DCI WSM failed: %d\n",
 			 __func__, mc_ret);
 		return false;
@@ -65,7 +65,7 @@ static bool tlc_open_driver(void)
 	/* Open session with the Driver */
 	mc_ret = mc_open_session(&dr_session_handle, &dr_uuid, (uint8_t *)dci,
 			(uint32_t)sizeof(struct tui_dci_msg_t));
-	if (MC_DRV_OK != mc_ret) {
+	if (mc_ret != MC_DRV_OK) {
 		pr_debug("ERROR %s: Open driver session failed: %d\n",
 			 __func__, mc_ret);
 		ret = false;
@@ -112,7 +112,7 @@ static void tlc_wait_cmd_from_driver(void)
 
 	/* Wait for a command from secure driver */
 	ret = mc_wait_notification(&dr_session_handle, -1);
-	if (MC_DRV_OK == ret)
+	if (ret == MC_DRV_OK)
 		pr_debug("tlc_wait_cmd_from_driver: Got a command\n");
 	else
 		pr_debug("ERROR %s: mc_wait_notification() failed: %d\n",
@@ -167,23 +167,22 @@ static void tlc_process_cmd(void)
 	uint32_t ret = TUI_DCI_ERR_INTERNAL_ERROR;
 	uint32_t command_id = CMD_TUI_SW_NONE;
 
-	if (NULL == dci) {
-		pr_debug("ERROR %s: DCI has not been set up properly - exiting"\
-			 "\n", __func__);
+	if (dci == NULL) {
+		pr_debug("ERROR %s: DCI not set up properly, exiting\n",
+			 __func__);
 		return;
-	} else {
-		command_id = dci->cmd_nwd.id;
 	}
 
+	command_id = dci->cmd_nwd.id;
+
 	/* Warn if previous response was not acknowledged */
-	if (CMD_TUI_SW_NONE == command_id) {
+	if (command_id == CMD_TUI_SW_NONE) {
 		pr_debug("ERROR %s: Notified without command\n", __func__);
 		return;
-	} else {
-		if (dci->nwd_rsp.id != CMD_TUI_SW_NONE)
-			pr_debug("%s: Warning, previous response not ack\n",
-				 __func__);
 	}
+
+	if (dci->nwd_rsp.id != CMD_TUI_SW_NONE)
+		pr_debug("%s: Warning, previous response not ack\n", __func__);
 
 	/* Handle command */
 	switch (command_id) {
@@ -192,7 +191,7 @@ static void tlc_process_cmd(void)
 
 		/* Start android TUI activity */
 		ret = send_cmd_to_user(TLC_TUI_CMD_START_ACTIVITY);
-		if (TUI_DCI_OK != ret)
+		if (ret != TUI_DCI_OK)
 			break;
 
 		/* allocate TUI frame buffer */
@@ -200,13 +199,13 @@ static void tlc_process_cmd(void)
 				dci->cmd_nwd.payload.alloc_data.alloc_size,
 				dci->cmd_nwd.payload.alloc_data.num_of_buff);
 
-		if (TUI_DCI_OK != ret)
+		if (ret != TUI_DCI_OK)
 			break;
 
 		/* Deactivate linux UI drivers */
 		ret = hal_tui_deactivate();
 
-		if (TUI_DCI_OK != ret) {
+		if (ret != TUI_DCI_OK) {
 			hal_tui_free();
 			send_cmd_to_user(TLC_TUI_CMD_STOP_ACTIVITY);
 			break;
@@ -244,7 +243,7 @@ static void tlc_process_cmd(void)
 	/* Notify SWd */
 	pr_debug("DCI RSP NOTIFY CORE\n");
 	ret = mc_notify(&dr_session_handle);
-	if (MC_DRV_OK != ret)
+	if (ret != MC_DRV_OK)
 		pr_debug("ERROR %s: Notify failed: %d\n", __func__, ret);
 }
 
@@ -256,7 +255,7 @@ static void tlc_close_driver(void)
 
 	/* Close session with the Driver */
 	ret = mc_close_session(&dr_session_handle);
-	if (MC_DRV_OK != ret) {
+	if (ret != MC_DRV_OK) {
 		pr_debug("ERROR %s: Closing driver session failed: %d\n",
 			 __func__, ret);
 	}
@@ -274,7 +273,7 @@ static void tlc_close(void)
 	pr_debug("%s: Closing tbase\n", __func__);
 	/* Close the tbase device */
 	ret = mc_close_device(DEVICE_ID);
-	if (MC_DRV_OK != ret) {
+	if (ret != MC_DRV_OK) {
 		pr_debug("ERROR %s: Closing tbase device failed: %d\n",
 			 __func__, ret);
 	}
@@ -291,9 +290,8 @@ bool tlc_notify_event(uint32_t event_type)
 	bool ret = false;
 	enum mc_result result;
 
-	if (NULL == dci) {
-		pr_debug("ERROR tlc_notify_event: DCI has not been set up "\
-			 "properly - exiting\n");
+	if (dci == NULL) {
+		pr_err("ERROR tlc_notify_event: DCI not set up, exiting\n");
 		return false;
 	}
 
@@ -304,7 +302,7 @@ bool tlc_notify_event(uint32_t event_type)
 	/* Signal the Driver */
 	pr_debug("DCI EVENT NOTIFY CORE\n");
 	result = mc_notify(&dr_session_handle);
-	if (MC_DRV_OK != result) {
+	if (result != MC_DRV_OK) {
 		pr_debug("ERROR tlc_notify_event: mc_notify failed: %d\n",
 			 result);
 		ret = false;
@@ -336,8 +334,10 @@ int main_thread(void *uarg)
 		tlc_process_cmd();
 	}
 
-	/* Close tlc. Note that this frees the DCI pointer.
-	 * Do not use this pointer after tlc_close().*/
+	/*
+	 * Close tlc. Note that this frees the DCI pointer.
+	 * Do not use this pointer after tlc_close().
+	 */
 	tlc_close();
 
 	return 0;
@@ -345,12 +345,14 @@ int main_thread(void *uarg)
 
 int tlc_wait_cmd(uint32_t *cmd_id)
 {
-	/* Create the TlcTui Main thread and start secure driver (only
-	   1st time) */
+	/*
+	 * Create the TlcTui Main thread and start secure driver (only
+	 * 1st time)
+	 */
 	if (dr_session_handle.session_id == 0) {
 		thread_id = kthread_run(main_thread, NULL, "dci_thread");
 		if (!thread_id) {
-			pr_debug(KERN_ERR "Unable to start Trusted UI main thread\n");
+			pr_err("Unable to start Trusted UI main thread\n");
 			return -EFAULT;
 		}
 	}

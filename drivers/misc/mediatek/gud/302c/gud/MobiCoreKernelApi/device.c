@@ -113,6 +113,7 @@ void mcore_device_close(struct mcore_device_t *dev)
 bool mcore_device_has_sessions(struct mcore_device_t *dev)
 {
 	int ret = 0;
+
 	mutex_lock(&(dev->session_vector_lock));
 	ret = !list_empty(&dev->session_vector);
 	mutex_unlock(&(dev->session_vector_lock));
@@ -183,6 +184,7 @@ struct wsm *mcore_device_allocate_contiguous_wsm(struct mcore_device_t *dev,
 						 uint32_t len)
 {
 	struct wsm *wsm = NULL;
+
 	do {
 		if (len == 0)
 			break;
