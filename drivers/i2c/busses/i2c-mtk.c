@@ -32,9 +32,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/clk.h>
-#if 0
-#include <mt_cpufreq_hybrid.h>
-#endif
+#include <mtk_cpufreq_hybrid.h>
 #ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 #include <mtk_kbase_spm.h>
 #endif
@@ -185,7 +183,6 @@ err_main:
 
 static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 {
-#if 0
 #if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 	if (i2c->have_pmic)
 		clk_disable_unprepare(i2c->clk_pmic);
@@ -196,7 +193,6 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 
 	clk_disable_unprepare(i2c->clk_dma);
 #endif
-#endif
 }
 
 static int i2c_get_semaphore(struct mt_i2c *i2c)
@@ -205,7 +201,6 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 	int count = 100;
 #endif
 
-#if 0
 	if (i2c->appm) {
 		if (cpuhvfs_get_dvfsp_semaphore(SEMA_I2C_DRV) != 0) {
 			dev_err(i2c->dev, "sema time out 2ms\n");
@@ -217,7 +212,6 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 			}
 		}
 	}
-#endif
 
 #ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 	if (i2c->gpupm) {
@@ -246,10 +240,8 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 
 static int i2c_release_semaphore(struct mt_i2c *i2c)
 {
-#if 0
 	if (i2c->appm)
 		cpuhvfs_release_dvfsp_semaphore(SEMA_I2C_DRV);
-#endif
 #ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 	if (i2c->gpupm)
 		dvfs_gpu_pm_spin_unlock_for_vgpu();
@@ -684,7 +676,10 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 
 static inline void mt_i2c_copy_to_dma(struct mt_i2c *i2c, struct i2c_msg *msg)
 {
-	/* if the operate is write, write-read, multi-write, need to copy the data to DMA memory */
+	/*
+	 * if the operate is write, write-read, multi-write, need to copy the data
+	 * to DMA memory.
+	 */
 	if (!(msg->flags & I2C_M_RD))
 		memcpy(i2c->dma_buf.vaddr + i2c->total_len - msg->len,
 			msg->buf, msg->len);
@@ -899,12 +894,12 @@ err_exit:
 #endif
 
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
-int i2c_tui_enable_clock(void)
+int i2c_tui_enable_clock(int id)
 {
 	struct i2c_adapter *adap;
 	struct mt_i2c *i2c;
 
-	adap = i2c_get_adapter(4);
+	adap = i2c_get_adapter(id);
 	if (!adap) {
 		pr_err("Cannot get adapter\n");
 		return -1;
@@ -917,12 +912,12 @@ int i2c_tui_enable_clock(void)
 	return 0;
 }
 
-int i2c_tui_disable_clock(void)
+int i2c_tui_disable_clock(int id)
 {
 	struct i2c_adapter *adap;
 	struct mt_i2c *i2c;
 
-	adap = i2c_get_adapter(4);
+	adap = i2c_get_adapter(id);
 	if (!adap) {
 		pr_err("Cannot get adapter\n");
 		return -1;
@@ -1320,7 +1315,6 @@ static void __exit mt_i2c_exit(void)
 
 module_init(mt_i2c_init);
 module_exit(mt_i2c_exit);
-
 
 /* module_platform_driver(mt_i2c_driver); */
 
