@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 #include <linux/kernel.h>
+#include <linux/math64.h>
 #include <mach/mtk_gpt.h>
 #include "mtk_cpuidle.h"
 #include "mtk_idle_internal.h"
@@ -231,6 +232,7 @@ void mtk_idle_ratio_calc_stop(int type, int cpu)
 			ratio->value_so3 = (type == IDLE_TYPE_SO3) ? ratio->value : 0;
 			ratio->value_so = (type == IDLE_TYPE_SO) ? ratio->value : 0;
 		} else {
+#if defined(__LP64__) || defined(_LP64)
 			ratio->value = ((IDLE_RATIO_WINDOW_MS - interval) *
 							last_ratio / IDLE_RATIO_WINDOW_MS)
 							+ last_idle_time;
@@ -243,6 +245,20 @@ void mtk_idle_ratio_calc_stop(int type, int cpu)
 			ratio->value_so = ((IDLE_RATIO_WINDOW_MS - interval) *
 							last_ratio_so / IDLE_RATIO_WINDOW_MS)
 							+ ((type == IDLE_TYPE_SO) ? last_idle_time : 0);
+#else
+			ratio->value = div_s64((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio, IDLE_RATIO_WINDOW_MS)
+							+ last_idle_time;
+			ratio->value_dp = div_s64((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio_dp, IDLE_RATIO_WINDOW_MS)
+							+ ((type == IDLE_TYPE_DP) ? last_idle_time : 0);
+			ratio->value_so3 = div_s64((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio_so3, IDLE_RATIO_WINDOW_MS)
+							+ ((type == IDLE_TYPE_SO3) ? last_idle_time : 0);
+			ratio->value_so = div_s64((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio_so, IDLE_RATIO_WINDOW_MS)
+							+ ((type == IDLE_TYPE_SO) ? last_idle_time : 0);
+#endif
 		}
 #if 0
 		idle_prof_err("XXIDLE %llu, %llu, %llu, %llu, %llu, %llu, %llu, %llu, %d\n",

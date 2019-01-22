@@ -27,6 +27,7 @@
 #include <mt-plat/mtk_rtc.h>
 #include "include/pmic_throttling_dlpt.h"
 #include <linux/proc_fs.h>
+#include <linux/math64.h>
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6336
 #include "mt6336.h"
@@ -835,13 +836,24 @@ signed int fgauge_set_columb_interrupt_internal1(void *data, int reset)
 		(pmic_get_register_value(PMIC_FG_CAR_31_16)));
 
 	/* gap to register-base */
+#if defined(__LP64__) || defined(_LP64)
 	car = car * CAR_TO_REG_FACTOR / 10;
+#else
+	car = div_s64(car * CAR_TO_REG_FACTOR, 10);
+#endif
 
 	if (fg_cust_data.r_fg_value != 100)
+#if defined(__LP64__) || defined(_LP64)
 		car = (car * fg_cust_data.r_fg_value) / 100;
+#else
+		car = div_s64(car * fg_cust_data.r_fg_value, 100);
+#endif
 
+#if defined(__LP64__) || defined(_LP64)
 	car = ((car * 1000) / fg_cust_data.car_tune_value);
-
+#else
+	car = div_s64(car * 1000, fg_cust_data.car_tune_value);
+#endif
 	upperbound = value32_CAR;
 	lowbound = value32_CAR;
 
@@ -1012,7 +1024,11 @@ static signed int fgauge_read_columb_internal(void *data, int reset, int precise
 	Temp_Value = (((Temp_Value * 35986) / 10) + (5)) / 10;	/*[28:14]'s LSB=359.86 uAh */
 #else
 	/* 0.1 mAh */
+#if defined(__LP64__) || defined(_LP64)
 	Temp_Value = Temp_Value * UNIT_FGCAR / 1000;
+#else
+	Temp_Value = div_s64(Temp_Value * UNIT_FGCAR, 1000);
+#endif
 	do_div(Temp_Value, 10);
 	Temp_Value = Temp_Value + 5;
 	do_div(Temp_Value, 10);
@@ -1082,7 +1098,11 @@ signed int fgauge_get_time(void *data)
 
 	time = time_15_00;
 	time |= time_29_16 << 16;
+#if defined(__LP64__) || defined(_LP64)
 	time = time * UNIT_TIME / 100;
+#else
+	time = div_s64(time * UNIT_TIME, 100);
+#endif
 	ret_time = time;
 
 	bm_trace(
@@ -1138,7 +1158,11 @@ signed int fgauge_get_soff_time(void *data)
 
 	time = soff_time_15_00;
 	time |= soff_time_29_16 << 16;
+#if defined(__LP64__) || defined(_LP64)
 	time = time * UNIT_TIME / 100;
+#else
+	time = div_s64(time * UNIT_TIME, 100);
+#endif
 	ret_time = time;
 
 	bm_trace(
@@ -1436,7 +1460,11 @@ void read_fg_hw_info_time(void)
 
 	time = time_15_00;
 	time |= time_29_16 << 16;
+#if defined(__LP64__) || defined(_LP64)
 	time = time * UNIT_TIME / 100;
+#else
+	time = div_s64(time * UNIT_TIME, 100);
+#endif
 	fg_hw_info.time = time;
 }
 
@@ -1474,7 +1502,11 @@ void read_fg_hw_info_ncar(void)
 	}
 
 	/* 0.1 mAh */
+#if defined(__LP64__) || defined(_LP64)
 	Temp_Value = Temp_Value * UNIT_FGCAR / 1000;
+#else
+	Temp_Value = div_s64(Temp_Value * UNIT_FGCAR, 1000);
+#endif
 	do_div(Temp_Value, 10);
 	Temp_Value = Temp_Value + 5;
 	do_div(Temp_Value, 10);
@@ -1527,7 +1559,11 @@ void read_fg_hw_info_car(void)
 	}
 
 	/* 0.1 mAh */
+#if defined(__LP64__) || defined(_LP64)
 	Temp_Value = Temp_Value * UNIT_FGCAR / 1000;
+#else
+	Temp_Value = div_s64(Temp_Value * UNIT_FGCAR, 1000);
+#endif
 	do_div(Temp_Value, 10);
 	Temp_Value = Temp_Value + 5;
 	do_div(Temp_Value, 10);
@@ -2338,10 +2374,16 @@ void fg_set_zcv_intr_internal(int fg_zcv_det_time, int fg_zcv_car_th)
 	do_div(fg_zcv_car_th_reg, UNIT_FGCAR_ZCV);
 
 	if (fg_cust_data.r_fg_value != 100)
+#if defined(__LP64__) || defined(_LP64)
 		fg_zcv_car_th_reg = (fg_zcv_car_th_reg * fg_cust_data.r_fg_value) / 100;
-
+#else
+		fg_zcv_car_th_reg = div_s64(fg_zcv_car_th_reg * fg_cust_data.r_fg_value, 100);
+#endif
+#if defined(__LP64__) || defined(_LP64)
 	fg_zcv_car_th_reg = ((fg_zcv_car_th_reg * 1000) / fg_cust_data.car_tune_value);
-
+#else
+	fg_zcv_car_th_reg = div_s64(fg_zcv_car_th_reg * 1000, fg_cust_data.car_tune_value);
+#endif
 	fg_zcv_car_thr_h_reg = (fg_zcv_car_th_reg & 0xffff0000) >> 16;
 	fg_zcv_car_thr_l_reg = fg_zcv_car_th_reg & 0x0000ffff;
 
