@@ -32,7 +32,7 @@
 #include "mach/mtk_freqhopping.h"
 #endif
 
-#define CPU_BUCK_CTRL	(0)
+#define CPU_BUCK_CTRL	(1)
 static struct notifier_block cpu_hotplug_nb;
 
 static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
