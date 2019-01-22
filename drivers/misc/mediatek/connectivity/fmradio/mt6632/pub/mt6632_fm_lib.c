@@ -375,17 +375,6 @@ static fm_s32 mt6632_pmic_ctrl(void)
 		return ret;
 	}
 
-	ret = fm_host_reg_read(0x81020010, &val);
-	if (ret) {
-		WCN_DBG(FM_ERR | CHIP, "0x81020010 rd failed\n");
-		return ret;
-	}
-	ret = fm_host_reg_write(0x81020010, val & 0xFFFDFFFF);
-	if (ret) {
-		WCN_DBG(FM_ERR | CHIP, "0x81020010 wr failed\n");
-		return ret;
-	}
-
 	return ret;
 }
 
