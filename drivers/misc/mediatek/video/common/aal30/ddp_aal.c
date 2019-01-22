@@ -201,6 +201,8 @@ static unsigned int g_aal_hist_count;
 #endif			/* CONFIG_MTK_DRE30_SUPPORT */
 #endif			/* CONFIG_MTK_AAL_SUPPORT */
 
+static volatile unsigned int g_aal_panel_type = CONFIG_BY_CUSTOM_LIB;
+
 #define aal_min(a, b)			(((a) < (b)) ? (a) : (b))
 
 static inline bool disp_aal_check_module(enum DISP_MODULE_ENUM module, const char *func, int line)
@@ -1283,6 +1285,9 @@ static int disp_aal_copy_hist_to_user(DISP_AAL_HIST __user *hist)
 #ifdef CONFIG_MTK_DRE30_SUPPORT
 	memcpy(&g_aal_dre30_hist_db, &g_aal_dre30_hist, sizeof(DISP_DRE30_HIST));
 #endif
+#ifdef AAL_CUSTOMER_GET_PANEL_TYPE
+	g_aal_hist.panel_type = g_aal_panel_type;
+#endif
 	g_aal_hist.serviceFlags = 0;
 	g_aal_hist_available = 0;
 	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
@@ -1351,6 +1356,8 @@ static void disp_aal_dre3_config(void *cmdq, const DISP_AAL_INITREG *init_regs)
 		(init_regs->dre_blk_y_num << 5) | init_regs->dre_blk_x_num);
 	DISP_REG_SET(cmdq, DISP_AAL_DRE_BLOCK_INFO_02,
 		(init_regs->dre_blk_height << 13) | init_regs->dre_blk_width);
+	DISP_REG_MASK(cmdq, DISP_AAL_DRE_BLOCK_INFO_04,
+		(init_regs->dre_flat_length_slope << 13), 0x3FF << 13);
 	DISP_REG_SET(cmdq, DISP_AAL_DRE_CHROMA_HIST_00,
 		(init_regs->dre_s_upper << 24) | (init_regs->dre_s_lower << 16) |
 		(init_regs->dre_y_upper << 8) | init_regs->dre_y_lower);
@@ -1451,6 +1458,16 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, enum DISP_MODULE_ENUM modul
 	return ret;
 }
 
+void disp_aal_set_lcm_type(unsigned int panel_type)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&g_aal_hist_lock, flags);
+	g_aal_panel_type = panel_type;
+	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
+
+	AAL_DBG("disp_aal_set_lcm_type: %d", g_aal_panel_type);
+}
 
 #define DRE_REG_2(v0, off0, v1, off1)           (((v1) << (off1)) | ((v0) << (off0)))
 #define DRE_REG_3(v0, off0, v1, off1, v2, off2) (((v2) << (off2)) | (v1 << (off1)) | ((v0) << (off0)))
@@ -1659,6 +1676,7 @@ struct aal_backup { /* structure for backup AAL register value */
 	unsigned int DRE_BLOCK_INFO_00;
 	unsigned int DRE_BLOCK_INFO_01;
 	unsigned int DRE_BLOCK_INFO_02;
+	unsigned int DRE_BLOCK_INFO_04;
 	unsigned int DRE_BLOCK_INFO_05;
 	unsigned int DRE_BLOCK_INFO_06;
 	unsigned int DRE_CHROMA_HIST_00;
@@ -1676,6 +1694,7 @@ static void ddp_aal_dre3_backup(void)
 	g_aal_backup.DRE_BLOCK_INFO_00 = DISP_REG_GET(DISP_AAL_DRE_BLOCK_INFO_00);
 	g_aal_backup.DRE_BLOCK_INFO_01 = DISP_REG_GET(DISP_AAL_DRE_BLOCK_INFO_01);
 	g_aal_backup.DRE_BLOCK_INFO_02 = DISP_REG_GET(DISP_AAL_DRE_BLOCK_INFO_02);
+	g_aal_backup.DRE_BLOCK_INFO_04 = DISP_REG_GET(DISP_AAL_DRE_BLOCK_INFO_04);
 	g_aal_backup.DRE_CHROMA_HIST_00 = DISP_REG_GET(DISP_AAL_DRE_CHROMA_HIST_00);
 	g_aal_backup.DRE_CHROMA_HIST_01 = DISP_REG_GET(DISP_AAL_DRE_CHROMA_HIST_01);
 	g_aal_backup.DRE_ALPHA_BLEND_00 = DISP_REG_GET(DISP_AAL_DRE_ALPHA_BLEND_00);
@@ -1736,6 +1755,8 @@ static void ddp_aal_dre3_restore(void *cmq_handle)
 		g_aal_backup.DRE_BLOCK_INFO_00 & (0x1FFF << 13), 0x1FFF << 13);
 	DISP_REG_SET(cmq_handle, DISP_AAL_DRE_BLOCK_INFO_01, g_aal_backup.DRE_BLOCK_INFO_01);
 	DISP_REG_SET(cmq_handle, DISP_AAL_DRE_BLOCK_INFO_02, g_aal_backup.DRE_BLOCK_INFO_02);
+	DISP_REG_MASK(cmq_handle, DISP_AAL_DRE_BLOCK_INFO_04,
+		g_aal_backup.DRE_BLOCK_INFO_04 & (0x3FF << 13), 0x3FF << 13);
 	DISP_REG_SET(cmq_handle, DISP_AAL_DRE_CHROMA_HIST_00, g_aal_backup.DRE_CHROMA_HIST_00);
 	DISP_REG_MASK(cmq_handle, DISP_AAL_DRE_CHROMA_HIST_01,
 		g_aal_backup.DRE_CHROMA_HIST_01 & 0xFFFF, 0xFFFF);
@@ -2308,5 +2329,9 @@ void aal_test(const char *cmd, char *debug_output)
 		aal_ut_cmd(cmd + 3);
 	} else if (strncmp(cmd, "dre", 3) == 0) {
 		aal_dump_dre();
+	} else if (strncmp(cmd, "lcm_type:", 9) == 0) {
+		unsigned int panel_type = cmd[9] - '0';
+
+		disp_aal_set_lcm_type(panel_type);
 	}
 }
