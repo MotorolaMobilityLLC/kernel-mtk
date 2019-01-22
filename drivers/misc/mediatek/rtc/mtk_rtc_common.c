@@ -482,13 +482,14 @@ static void rtc_handler(void)
 	bool pwron_alm = false, isLowPowerIrq = false, pwron_alarm = false;
 	struct rtc_time nowtm;
 	struct rtc_time tm;
+	unsigned long flags;
 
 	rtc_xinfo("rtc_tasklet_handler start\n");
 
-	spin_lock(&rtc_lock);
+	spin_lock_irqsave(&rtc_lock, flags);
 	isLowPowerIrq = hal_rtc_is_lp_irq();
 	if (isLowPowerIrq) {
-		spin_unlock(&rtc_lock);
+		spin_unlock_irqrestore(&rtc_lock, flags);
 		return;
 	}
 #if RTC_RELPWR_WHEN_XRST
@@ -533,7 +534,7 @@ static void rtc_handler(void)
 					tm.tm_mon += 1;
 					hal_rtc_set_alarm(&tm);
 				}
-				spin_unlock(&rtc_lock);
+				spin_unlock_irqrestore(&rtc_lock, flags);
 				arch_reset(0, "kpoc");
 			} else {
 				hal_rtc_save_pwron_alarm();
@@ -553,7 +554,7 @@ static void rtc_handler(void)
 			hal_rtc_set_alarm(&tm);
 		}
 	}
-	spin_unlock(&rtc_lock);
+	spin_unlock_irqrestore(&rtc_lock, flags);
 
 	if (rtc != NULL)
 		rtc_update_irq(rtc, 1, RTC_IRQF | RTC_AF);
