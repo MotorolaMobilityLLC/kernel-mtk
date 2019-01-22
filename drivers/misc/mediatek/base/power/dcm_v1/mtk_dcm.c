@@ -892,13 +892,38 @@ int dcm_set_stall_wr_del_sel(unsigned int mp0, unsigned int mp1)
 	return 0;
 }
 
+/*
+ * input argument of fsel
+ * 0: 1/1
+ * 1: 1/2
+ * 2: 1/4
+ * 3: 1/8
+ * 4: 1/16
+ * 5: 1/32
+ */
+void dcm_set_fmem_fsel_dbc(unsigned int fsel, unsigned int dbc)
+{
+#ifdef CONFIG_MACH_MT6799
+	if (fsel > 5)
+		return;
+
+	mutex_lock(&dcm_lock);
+
+	topckgen_emi_dcm_full_fsel_set(0x10 >> fsel);
+	topckgen_emi_dcm_dbc_cnt_set(dbc);
+	dcm_info("%s: set fmem fsel=%d, dbc=%d\n", __func__, fsel, dbc);
+
+	mutex_unlock(&dcm_lock);
+#endif
+}
+
 static ssize_t dcm_state_store(struct kobject *kobj,
 				   struct kobj_attribute *attr, const char *buf,
 				   size_t n)
 {
 	char cmd[16];
 	unsigned int mask;
-	unsigned int mp0, mp1;
+	unsigned int val0, val1;
 	int ret, mode;
 
 	if (sscanf(buf, "%15s %x", cmd, &mask) == 2) {
@@ -925,8 +950,11 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 			else if (mask == 3)
 				dcm_infracfg_ao_emi_indiv(1);
 		} else if (!strcmp(cmd, "set_stall_sel")) {
-			if (sscanf(buf, "%15s %x %x", cmd, &mp0, &mp1) == 3)
-				dcm_set_stall_wr_del_sel(mp0, mp1);
+			if (sscanf(buf, "%15s %x %x", cmd, &val0, &val1) == 3)
+				dcm_set_stall_wr_del_sel(val0, val1);
+		} else if (!strcmp(cmd, "set_fmem")) {
+			if (sscanf(buf, "%15s %d %d", cmd, &val0, &val1) == 3)
+				dcm_set_fmem_fsel_dbc(val0, val1);
 		} else if (!strcmp(cmd, "set")) {
 			if (sscanf(buf, "%15s %x %d", cmd, &mask, &mode) == 3) {
 				mask &= all_dcm_type;

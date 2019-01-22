@@ -1171,7 +1171,7 @@ void dcm_mcucfg_mcu_misc_dcm(int on)
 			(0x7f << 24) | \
 			(0x1 << 31))
 #define TOPCKGEN_CKSYS_DCM_EMI_REG0_ON ((0x1 << 23) | \
-			(0x1 << 24) | \
+			(0x8 << 24) | \
 			(0x1 << 31))
 #define TOPCKGEN_CKSYS_DCM_EMI_REG0_OFF ((0x0 << 23) | \
 			(0x0 << 24) | \
@@ -1182,12 +1182,20 @@ static unsigned int topckgen_emi_dcm_full_fsel_get(void)
 	return (reg_read(TOPCKGEN_DCM_CFG) >> 16) & 0x1f;
 }
 #endif
-static void topckgen_emi_dcm_full_fsel_set(unsigned int val)
+void topckgen_emi_dcm_full_fsel_set(unsigned int val)
 {
 	reg_write(TOPCKGEN_DCM_CFG,
 		(reg_read(TOPCKGEN_DCM_CFG) &
 		~(0x1f << 16)) |
 		(val & 0x1f) << 16);
+}
+
+void topckgen_emi_dcm_dbc_cnt_set(unsigned int val)
+{
+	reg_write(TOPCKGEN_DCM_CFG,
+		(reg_read(TOPCKGEN_DCM_CFG) &
+		~(0x7f << 24)) |
+		(val & 0x7f) << 24);
 }
 
 bool dcm_topckgen_cksys_dcm_emi_is_on(int on)
@@ -1205,7 +1213,7 @@ void dcm_topckgen_cksys_dcm_emi(int on)
 {
 	if (on) {
 		/* TINFO = "Turn ON DCM 'topckgen_cksys_dcm_emi'" */
-		topckgen_emi_dcm_full_fsel_set(0x0);
+		topckgen_emi_dcm_full_fsel_set(0x4);  /* FIXME: workaround for MD EMI latency */
 		reg_write(TOPCKGEN_DCM_CFG,
 			(reg_read(TOPCKGEN_DCM_CFG) &
 			~TOPCKGEN_CKSYS_DCM_EMI_REG0_MASK) |
