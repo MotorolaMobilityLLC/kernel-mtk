@@ -47,22 +47,23 @@ int g_curFreqID;
 static void _mtk_check_MFG_idle(void)
 {
 	u32 val;
+	unsigned int counter = 0;
 
 	/* MFG_QCHANNEL_CON (0x130000b4) bit [1:0] = 0x01 */
-	val = readl(g_MFG_base + 0xb4);
-	writel((val & ~(0x2)) | 0x1, g_MFG_base + 0xb4);
+	writel((0x0 & ~(0x2)) | 0x1, g_MFG_base + 0xb4);
 	MFG_DEBUG("[MALI] 0x130000b4 val = 0x%x\n", readl(g_MFG_base + 0xb4));
 
 	/* set register MFG_DEBUG_SEL (0x13000180) bit [7:0] = 0x3 */
-	val = readl(g_MFG_base + 0x180);
-	writel((val & ~(0xFF)) | 0x3, g_MFG_base + 0x180);
+	writel((0x0 & ~(0xFF)) | 0x3, g_MFG_base + 0x180);
 	MFG_DEBUG("[MALI] 0x13000180 val = 0x%x\n", readl(g_MFG_base + 0x180));
 
 	/* polling register MFG_DEBUG_TOP (0x13000188) bit 2 = 0x1 => 1 for idle, 0 for non-idle */
 	do {
 		val = readl(g_MFG_base + 0x188);
-		MFG_DEBUG("[MALI] 0x13000188 val = 0x%x\n", val);
-	} while ((val & 0x4) != 0x4);
+		if ((val & 0x4) == 0x4)
+			counter++;
+		MFG_DEBUG("[MALI] 0x13000188 val = 0x%x, counter = %d\n", val, counter);
+	} while (counter >= 10);
 }
 
 /*
@@ -135,8 +136,6 @@ static void _mtk_pm_callback_power_off(void)
 
 static int _mtk_pm_callback_power_on(void)
 {
-	u32 val;
-
 	mutex_lock(&g_mfg_lock);
 
 	MFG_DEBUG("[MALI] power on ....\n");
@@ -154,8 +153,7 @@ static int _mtk_pm_callback_power_on(void)
 
 	/* Write 1 into 0x13000130 bit 0 to enable timestamp register (TIMESTAMP).*/
 	/* TIMESTAMP will be used by clGetEventProfilingInfo.*/
-	val = readl(g_MFG_base + 0x130);
-	writel(val | 0x1, g_MFG_base + 0x130);
+	writel(0x0 | 0x1, g_MFG_base + 0x130);
 
 	/* Resume frequency before power off */
 	mtk_set_mt_gpufreq_target(g_curFreqID);
