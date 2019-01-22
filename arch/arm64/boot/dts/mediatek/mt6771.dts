@@ -1719,9 +1719,40 @@
 	};
 
 	mali@13040000 {
-		compatible = "mediatek,mali";
-		reg = <0 0x13040000 0 0x1000>;
-		interrupts = <GIC_SPI 278 IRQ_TYPE_LEVEL_LOW>;
+		compatible = "mediatek,mali", "arm,mali-midgard", "arm,mali-bifrost";
+		reg = <0 0x13040000 0 0x4000>;
+		interrupts =
+			<GIC_SPI 278 IRQ_TYPE_LEVEL_LOW>,
+			<GIC_SPI 279 IRQ_TYPE_LEVEL_LOW>,
+			<GIC_SPI 280 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-names =
+			"GPU",
+			"MMU",
+			"JOB";
+	};
+
+	gpufreq {
+		compatible = "mediatek,mt6771-gpufreq";
+		clocks =
+			<&topckgen TOP_MUX_MFG>,
+			<&topckgen TOP_MFGPLL_CK>,
+			<&clk26m>,
+			<&mfgcfg MFGCFG_BG3D>,
+			<&scpsys SCP_SYS_MFG_ASYNC>,
+			<&scpsys SCP_SYS_MFG>,
+			<&scpsys SCP_SYS_MFG_CORE0>,
+			<&scpsys SCP_SYS_MFG_CORE1>,
+			<&scpsys SCP_SYS_MFG_2D>;
+		clock-names =
+			"clk_mux",
+			"clk_main_parent",
+			"clk_sub_parent",
+			"subsys_mfg_cg",
+			"mtcmos_mfg_async",
+			"mtcmos_mfg",
+			"mtcmos_mfg_core0",
+			"mtcmos_mfg_core1",
+			"mtcmos_mfg_core2";
 	};
 
 	mali_tb@1307f000 {
