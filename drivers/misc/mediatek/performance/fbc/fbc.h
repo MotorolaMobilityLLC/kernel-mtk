@@ -37,24 +37,10 @@
 #include <linux/ioctl.h>
 #include "legacy_controller.h"
 #include "eas_controller.h"
+#include <uapi/linux/fpsgo.h>
 
 #define DEV_MAJOR 121
 #define DEV_NAME "debug"
-#define DEV_IOCTL_AS 0xA0
-#define IOCTL_WRITE_AS _IOW(DEV_IOCTL_AS, 10, int)
-#define DEV_IOCTL_GM 0xB0
-#define IOCTL_WRITE_GM _IOW(DEV_IOCTL_GM, 10, int)
-#define DEV_IOCTL_TH 0xC0
-#define IOCTL_WRITE_TH _IOW(DEV_IOCTL_TH, 10, int)
-#define DEV_IOCTL_FC 0xD0
-#define IOCTL_WRITE_FC _IOW(DEV_IOCTL_FC, 10, int)
-#define DEV_IOCTL_IV 0xE0
-#define IOCTL_WRITE_IV _IOW(DEV_IOCTL_IV, 10, int)
-#define DEV_IOCTL_NR 0xF0
-#define IOCTL_WRITE_NR _IOW(DEV_IOCTL_NR, 10, int)
-#define DEV_IOCTL_QB 0xF1
-#define IOCTL_WRITE_QB _IOW(DEV_IOCTL_QB, 10, int)
-
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define HPS_LATENCY 20000000

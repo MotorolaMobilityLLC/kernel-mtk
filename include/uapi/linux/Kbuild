@@ -129,6 +129,7 @@ header-y += firewire-cdev.h
 header-y += firewire-constants.h
 header-y += flat.h
 header-y += fou.h
+header-y += fpsgo.h
 header-y += fs.h
 header-y += fsl_hypervisor.h
 header-y += fuse.h
