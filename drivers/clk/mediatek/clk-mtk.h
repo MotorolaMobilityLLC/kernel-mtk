@@ -198,6 +198,9 @@ struct mtk_pll_data {
 	const struct clk_ops *ops;
 	u32 rst_bar_mask;
 	unsigned long fmax;
+	unsigned long fmin;
+	uint32_t pcwchgreg;
+	int pcwintbits;
 	int pcwbits;
 	uint32_t pcw_reg;
 	int pcw_shift;

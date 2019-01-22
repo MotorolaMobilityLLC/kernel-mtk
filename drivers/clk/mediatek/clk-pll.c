@@ -100,8 +100,14 @@ static unsigned long __mtk_pll_recalc_rate(struct mtk_clk_pll *pll, u32 fin,
 	u64 vco;
 	u8 c = 0;
 
+#if defined(CONFIG_MACH_MT6739)
+	int int_bits = pll->data->pcwintbits;
+#else
+	int int_bits = INTEGER_BITS;
+#endif
+
 	/* The fractional part of the PLL divider. */
-	pcwfbits = pcwbits > INTEGER_BITS ? pcwbits - INTEGER_BITS : 0;
+	pcwfbits = pcwbits > int_bits ? pcwbits - int_bits : 0;
 
 	vco = (u64)fin * pcw;
 
@@ -121,6 +127,12 @@ static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 {
 	u32 con1, val;
 
+#if defined(CONFIG_MACH_MT6739)
+	int pcwchgreg = pll->data->pcwchgreg;
+#else
+	int pcwchgreg = REG_CON1;
+#endif
+
 	/* set postdiv */
 	val = readl(pll->pd_addr);
 	val &= ~(POSTDIV_MASK << pll->data->pd_shift);
@@ -138,11 +150,11 @@ static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 	val |= pcw << pll->data->pcw_shift;
 	writel(val, pll->pcw_addr);
 
-	con1 = readl(pll->base_addr + REG_CON1);
+	con1 = readl(pll->base_addr + pcwchgreg);
 
 	con1 |= CON0_PCW_CHG;
 
-	writel(con1, pll->base_addr + REG_CON1);
+	writel(con1, pll->base_addr + pcwchgreg);
 	if (pll->tuner_addr)
 		writel(con1 + 1, pll->tuner_addr);
 
@@ -163,14 +175,19 @@ static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 {
 #if (defined(CONFIG_MACH_MT6763) || (defined(CONFIG_MACH_MT6771)))
 	unsigned long fmin = 1500 * MHZ;
+	int int_bits = INTEGER_BITS;
 #elif defined(CONFIG_MACH_MT6758)
 	unsigned long fmin = 2000 * MHZ;
+	int int_bits = INTEGER_BITS;
 #elif defined(CONFIG_MACH_MT6739)
-	unsigned long fmin = 2000 * MHZ;
+	unsigned long fmin = pll->data->fmin;
+	int int_bits = pll->data->pcwintbits;
 #elif defined(CONFIG_MACH_MT6775)
 	unsigned long fmin = 2000 * MHZ;
+	int int_bits = INTEGER_BITS;
 #else
 	unsigned long fmin = 1000 * MHZ;
+	int int_bits = INTEGER_BITS;
 #endif
 	const struct mtk_pll_div_table *div_table = pll->data->div_table;
 	u64 _pcw;
@@ -196,8 +213,9 @@ static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 		}
 	}
 
+
 	/* _pcw = freq * postdiv / fin * 2^pcwfbits */
-	_pcw = ((u64)freq << val) << (pll->data->pcwbits - INTEGER_BITS);
+	_pcw = ((u64)freq << val) << (pll->data->pcwbits - int_bits);
 	do_div(_pcw, fin);
 
 	*pcw = (u32)_pcw;
