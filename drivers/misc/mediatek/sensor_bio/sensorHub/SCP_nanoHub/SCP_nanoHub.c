@@ -22,6 +22,9 @@
 #include <linux/atomic.h>
 #include <linux/types.h>
 #include <linux/module.h>
+#include <asm/arch_timer.h>
+#include <linux/wakelock.h>
+#include <linux/suspend.h>
 #include <scp_ipi.h>
 #include "scp_helper.h"
 #include "scp_excep.h"
@@ -55,7 +58,7 @@
 static int sensor_send_timestamp_to_hub(void);
 static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp);
 static int SCP_sensorHub_init_flag = -1;
-
+static uint8_t rtc_compensation_suspend;
 struct curr_wp_queue {
 	spinlock_t buffer_lock;
 	uint32_t head;
@@ -72,6 +75,7 @@ struct SCP_sensorHub_data {
 	struct workqueue_struct	*direct_push_workqueue;
 	struct timer_list sync_time_timer;
 	struct work_struct sync_time_worker;
+	struct wake_lock sync_time_wake_lock;
 
 	volatile struct sensorFIFO *volatile SCP_sensorFIFO;
 	struct curr_wp_queue wp_queue;
@@ -955,24 +959,44 @@ static int sensor_send_dram_info_to_hub(void)
 		SCP_ERR("sensor_send_dram_info_to_hub success!\n");
 	return SCP_SENSOR_HUB_SUCCESS;
 }
-int sensor_send_timestamp_to_hub(void)
+static int sensor_send_timestamp_wake_locked(void)
 {
 	SCP_SENSOR_HUB_DATA req;
 	int len;
 	int err = 0;
-	uint64_t ns;
+	uint64_t ns, arch_counter;
 	struct timespec time;
 
 	time.tv_sec = time.tv_nsec = 0;
+	/* sensor_send_timestamp_to_hub is process context, we only disable irq is safe */
+	local_irq_disable();
 	get_monotonic_boottime(&time);
+	arch_counter = arch_counter_get_cntvct();
+	local_irq_enable();
 	ns = time.tv_sec * 1000000000LL + time.tv_nsec;
 	req.set_config_req.sensorType = 0;
 	req.set_config_req.action = SENSOR_HUB_SET_TIMESTAMP;
 	req.set_config_req.ap_timestamp = ns;
+	req.set_config_req.arch_counter = arch_counter;
+	pr_err("\nhongxu, ns:%lld, arch_counter:%lld!\n", ns, arch_counter);
 	len = sizeof(req.set_config_req);
 	err = scp_sensorHub_req_send(&req, &len, 1);
 	if (err < 0)
 			SCP_ERR("scp_sensorHub_req_send fail!\n");
+	return err;
+}
+
+static int sensor_send_timestamp_to_hub(void)
+{
+	int err = 0;
+	struct SCP_sensorHub_data *obj = obj_data;
+
+	if (!READ_ONCE(rtc_compensation_suspend)) {
+		wake_lock(&obj->sync_time_wake_lock);
+		err = sensor_send_timestamp_wake_locked();
+		wake_unlock(&obj->sync_time_wake_lock);
+	} else
+		SCP_ERR("rtc_compensation_suspend is suspended, we drop sync time!\n");
 	return err;
 }
 
@@ -1764,6 +1788,9 @@ static int sensorHub_probe(struct platform_device *pdev)
 	scp_ipi_registration(IPI_SENSOR, SCP_sensorHub_IPI_handler, "SCP_sensorHub");
 	/* init receive scp dram data worker */
 	INIT_WORK(&obj->direct_push_work, SCP_sensorHub_direct_push_work);
+	/* obj->direct_push_workqueue = alloc_workqueue("chre_work", WQ_MEM_RECLAIM |
+	*			WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
+	*/
 	obj->direct_push_workqueue = create_singlethread_workqueue("chre_work");
 	if (obj->direct_push_workqueue == NULL) {
 		SCP_ERR("direct_push_workqueue fail\n");
@@ -1778,6 +1805,7 @@ static int sensorHub_probe(struct platform_device *pdev)
 	obj->sync_time_timer.function = SCP_sensorHub_sync_time_func;
 	init_timer(&obj->sync_time_timer);
 	mod_timer(&obj->sync_time_timer, jiffies + 3 * HZ);
+	wake_lock_init(&obj->sync_time_wake_lock, WAKE_LOCK_SUSPEND, "sync_time");
 	/* this call back can get scp power down status */
 	scp_A_register_notify(&sensorHub_ready_notifier);
 	/* this call back can get scp power UP status */
@@ -1801,13 +1829,13 @@ static int sensorHub_remove(struct platform_device *pdev)
 
 static int sensorHub_suspend(struct platform_device *pdev, pm_message_t msg)
 {
-	sensor_send_timestamp_to_hub();
+	/* sensor_send_timestamp_to_hub(); */
 	return 0;
 }
 
 static int sensorHub_resume(struct platform_device *pdev)
 {
-	sensor_send_timestamp_to_hub();
+	/* sensor_send_timestamp_to_hub(); */
 	return 0;
 }
 
@@ -1908,6 +1936,32 @@ static struct platform_driver sensorHub_driver = {
 	.resume = sensorHub_resume,
 };
 
+#ifdef CONFIG_PM
+static int sensorHub_pm_event(struct notifier_block *notifier, unsigned long pm_event,
+			void *unused)
+{
+	switch (pm_event) {
+	case PM_POST_SUSPEND:
+		pr_err("hongxu PM_POST_SUSPEND\n");
+		WRITE_ONCE(rtc_compensation_suspend, false);
+		sensor_send_timestamp_to_hub();
+		return NOTIFY_DONE;
+	case PM_SUSPEND_PREPARE:
+		pr_err("hongxu PM_SUSPEND_PREPARE\n");
+		WRITE_ONCE(rtc_compensation_suspend, true);
+		return NOTIFY_DONE;
+	default:
+		return NOTIFY_OK;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block sensorHub_pm_notifier_func = {
+	.notifier_call = sensorHub_pm_event,
+	.priority = 0,
+};
+#endif /* CONFIG_PM */
+
 static int __init SCP_sensorHub_init(void)
 {
 	SCP_sensorHub_ipi_master_init();
@@ -1924,6 +1978,12 @@ static int __init SCP_sensorHub_init(void)
 		SCP_ERR("create attribute err\n");
 		nanohub_delete_attr(&sensorHub_driver.driver);
 	}
+#ifdef CONFIG_PM
+	if (register_pm_notifier(&sensorHub_pm_notifier_func)) {
+		SCP_ERR("Failed to register PM notifier.\n");
+		return -1;
+	}
+#endif /* CONFIG_PM */
 	return 0;
 }
 

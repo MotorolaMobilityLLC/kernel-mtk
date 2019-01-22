@@ -858,6 +858,7 @@ typedef struct {
 	uint32_t bufferBase;/* use int to store buffer DRAM base LSB 32 bits */
 	uint32_t bufferSize;
 	uint64_t ap_timestamp;
+	uint64_t arch_counter;
 	/* uint32_t    reserved[8]; */
 } SCP_SENSOR_HUB_SET_CONFIG_REQ;
 
