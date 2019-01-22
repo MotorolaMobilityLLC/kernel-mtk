@@ -55,11 +55,11 @@ UINT_8 pref5GhzLo = PREF_LO_5GHZ;
 #define ROAMING_NO_SWING_SCORE_STEP 10
 #define HARD_TO_CONNECT_RSSI_THRESOLD -80
 
-#define WEIGHT_IDX_CHNL_UTIL	2
+#define WEIGHT_IDX_CHNL_UTIL		2
 #define WEIGHT_IDX_SNR			3
-#define WEIGHT_IDX_RSSI			3
+#define WEIGHT_IDX_RSSI			4
 #define WEIGHT_IDX_SCN_MISS_CNT	2
-#define WEIGHT_IDX_PROBE_RSP	1
+#define WEIGHT_IDX_PROBE_RSP		1
 #define WEIGHT_IDX_CLIENT_CNT	3
 #define WEIGHT_IDX_AP_NUM		2
 #define WEIGHT_IDX_5G_BAND		2
@@ -3051,7 +3051,30 @@ static BOOLEAN scanSanityCheckBssDesc(P_ADAPTER_T prAdapter,
 	}
 	return TRUE;
 }
+static UINT_16 scanCalculateScoreByRssi(P_BSS_DESC_T prBssDesc)
+{
+	UINT_16 u2Score = 0;
+	INT_8 cRssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
 
+	if (cRssi >= -20)
+		u2Score = BSS_FULL_SCORE;
+	else if (cRssi >= -55)
+		u2Score = 95;
+	else if (cRssi >= -65)
+		u2Score = 90;
+	else if (cRssi >= -70)
+		u2Score = 85;
+	else if (cRssi >= -77)
+		u2Score = 30;
+	else if (cRssi <= -88 && cRssi > -100)
+		u2Score = 20;
+	else if (cRssi <= -100)
+		u2Score = 0;
+
+	u2Score *= WEIGHT_IDX_RSSI;
+
+	return u2Score;
+}
 /*****
 *Bss Characteristics to be taken into account when calculate Score:
 *Channel Loading Group:
@@ -3128,10 +3151,12 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 				cMaxRssi = cRssi;
 		}
 	}
-#endif
 	DBGLOG(SCN, INFO, "Max RSSI %d, ConnectionPolicy =%d\n",
-		  cMaxRssi,
-		  prConnSettings->eConnectionPolicy);
+		cMaxRssi,
+		prConnSettings->eConnectionPolicy);
+#endif
+
+
 try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
@@ -3182,6 +3207,7 @@ try_again:
 		u2ScoreChnlInfo = scanCalculateScoreByChnlInfo(prAisSpecificBssInfo, prBssDesc->ucChannelNum);
 		u2ScoreSnrRssi = scanCalculateScoreBySnrRssi(prBssDesc);
 #endif
+		u2ScoreSnrRssi = scanCalculateScoreByRssi(prBssDesc);
 		u2ScoreDeauth = CALCULATE_SCORE_BY_DEAUTH(prBssDesc);
 		u2ScoreProbeRsp = CALCULATE_SCORE_BY_PROBE_RSP(prBssDesc);
 		u2ScoreScanMiss = CALCULATE_SCORE_BY_MISS_CNT(prAdapter, prBssDesc);
