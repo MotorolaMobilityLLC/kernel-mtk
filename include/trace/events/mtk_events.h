@@ -151,17 +151,22 @@ TRACE_EVENT(ppm_hica,
 		 const char *target_state,
 		 long usage,
 		 long capacity,
+		 int big_tsk_L,
+		 int big_tsk_B,
 		 int heavy_tsk,
 		 int freq,
 		 int result),
 
-	TP_ARGS(cur_state, target_state, usage, capacity, heavy_tsk, freq, result),
+	TP_ARGS(cur_state, target_state, usage, capacity, big_tsk_L,
+		big_tsk_B, heavy_tsk, freq, result),
 
 	TP_STRUCT__entry(
 		__string(cur, cur_state)
 		__string(target, target_state)
 		__field(long, usage)
 		__field(long, capacity)
+		__field(int, big_tsk_L)
+		__field(int, big_tsk_B)
 		__field(int, heavy_tsk)
 		__field(int, freq)
 		__field(int, result)
@@ -172,15 +177,19 @@ TRACE_EVENT(ppm_hica,
 		__assign_str(target, target_state);
 		__entry->usage = usage;
 		__entry->capacity = capacity;
+		__entry->big_tsk_L = big_tsk_L;
+		__entry->big_tsk_B = big_tsk_B;
 		__entry->heavy_tsk = heavy_tsk;
 		__entry->freq = freq;
 		__entry->result = result;
 	),
 
-	TP_printk("%s->%s(%s), usage=%ld, capacity=%ld, heavy_tsk=%d, freq=%d",
+	TP_printk("%s->%s(%s), usage=%ld, capacity=%ld, big_tsk=%d/%d, heavy_tsk=%d, freq=%d",
 		__get_str(cur), __get_str(target),
 		(__entry->result) ? "O" : "X",
-		__entry->usage, __entry->capacity, __entry->heavy_tsk, __entry->freq)
+		__entry->usage, __entry->capacity,
+		__entry->big_tsk_L, __entry->big_tsk_B,
+		__entry->heavy_tsk, __entry->freq)
 );
 
 TRACE_EVENT(ppm_overutil_update,
