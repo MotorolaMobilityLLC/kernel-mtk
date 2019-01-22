@@ -489,7 +489,7 @@
 #define CPU_DVFS_FREQ15_LL_FY5_1_T		793000		/* KHz */
 
 /* for DVFS OPP table B */
-#define CPU_DVFS_FREQ0_L_FY5_1_T		2158000		/* KHz */
+#define CPU_DVFS_FREQ0_L_FY5_1_T		2106000		/* KHz */
 #define CPU_DVFS_FREQ1_L_FY5_1_T		1924000		/* KHz */
 #define CPU_DVFS_FREQ2_L_FY5_1_T		1846000		/* KHz */
 #define CPU_DVFS_FREQ3_L_FY5_1_T		1781000		/* KHz */
