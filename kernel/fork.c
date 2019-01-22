@@ -1627,6 +1627,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	if (signal_pending(current)) {
 		retval = -ERESTARTNOINTR;
 
+		memcpy(sig, current->pending.signal.sig, sizeof(sig));
+		memcpy(shared_sig, current->signal->shared_pending.signal.sig,
+		       sizeof(shared_sig));
 		for (i = 0; i < _NSIG_WORDS; ++i)
 			pr_err("pending i=%d sig=0x%lx shared_sig=0x%lx\n",
 			       i, sig[i], shared_sig[i]);
