@@ -408,6 +408,7 @@ int pr_detect_count;
 #define _ion_keep_max_   (64)/*32*/
 #include "ion_drv.h" /*g_ion_device*/
 static struct ion_client *pIon_client;
+static struct mutex ion_client_mutex;
 static int G_WRDMA_IonCt[ISP_CAMSV0_IDX - ISP_CAM_A_IDX][_dma_max_wr_*_ion_keep_max_];
 static int G_WRDMA_IonFd[ISP_CAMSV0_IDX - ISP_CAM_A_IDX][_dma_max_wr_*_ion_keep_max_];
 static struct ion_handle *G_WRDMA_IonHnd[ISP_CAMSV0_IDX - ISP_CAM_A_IDX][_dma_max_wr_*_ion_keep_max_];
@@ -3720,7 +3721,9 @@ static int ISP_open(
 
 #ifdef ENABLE_KEEP_ION_HANDLE
 	/* create ion client*/
+	mutex_lock(&ion_client_mutex);
 	ISP_ion_init();
+	mutex_unlock(&ion_client_mutex);
 #endif
 
 	archcounter_timesync_init(MTRUE); /* Global timer enable */
@@ -4094,7 +4097,9 @@ static int ISP_release(
 			ISP_ion_free_handle_by_module(i);
 	}
 
+	mutex_lock(&ion_client_mutex);
 	ISP_ion_uninit();
+	mutex_unlock(&ion_client_mutex);
 #endif
 
 	/* Disable clock.
@@ -4954,6 +4959,8 @@ static int __init ISP_Init(void)
 
 	/*  */
 	LOG_DBG("- E.");
+	/*  */
+	mutex_init(&ion_client_mutex);
 	/*  */
 	atomic_set(&G_u4DevNodeCt, 0);
 	/*  */
