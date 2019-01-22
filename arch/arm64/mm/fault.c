@@ -632,7 +632,7 @@ void __init hook_debug_fault_code(int nr,
 
 
 #ifdef CONFIG_MEDIATEK_SOLUTION
-void __init hook_fault_code(int nr,
+void hook_fault_code(int nr,
 			    int (*fn)(unsigned long, unsigned int, struct pt_regs *),
 			    int sig, int code, const char *name)
 {
