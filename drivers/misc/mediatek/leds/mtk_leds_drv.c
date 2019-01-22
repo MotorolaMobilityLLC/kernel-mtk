@@ -24,7 +24,9 @@
 #include <linux/spinlock.h>
 #include <mtk_leds_hal.h>
 #include <mtk_leds_drv.h>
+#ifdef CONFIG_MTK_PWM
 #include <mt-plat/mtk_pwm.h>
+#endif
 #include <ddp_aal.h>
 
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
@@ -35,6 +37,10 @@
 /****************************************************************************
  * variables
  ***************************************************************************/
+#ifndef CONFIG_MTK_PWM
+#define CLK_DIV1 0
+#endif
+
 struct cust_mt65xx_led *bl_setting;
 static unsigned int bl_div = CLK_DIV1;
 #define PWM_DIV_NUM 8
