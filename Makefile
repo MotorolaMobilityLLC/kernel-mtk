@@ -394,10 +394,11 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -std=gnu89
 
-ifeq ($(findstring aarch64-linux-gnu-5.4, $(CROSS_COMPILE)), aarch64-linux-gnu-5.4)
+ifeq ($(findstring aarch64-linux-gnu-6.3.1, $(CROSS_COMPILE)), aarch64-linux-gnu-6.3.1)
    KBUILD_CFLAGS += -Wno-maybe-uninitialized -Wno-array-bounds \
             -Wno-discarded-array-qualifiers \
-            -Wno-logical-not-parentheses
+            -Wno-logical-not-parentheses \
+            -Wno-misleading-indentation
 endif
 
 KBUILD_AFLAGS_KERNEL :=
