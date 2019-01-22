@@ -1116,17 +1116,6 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 		/* disable auto-hibern8 */
 		ufshcd_writel(hba, 0, REG_AHIT);
 
-		/*
-		 * SK-Hynix Device Issue:
-		 * If "entering manual H8" is issued immediately after
-		 * "leaving AH8", device may stuck and then LineReset happen.
-		 *
-		 * Temporary SW Workaround:
-		 * Issue a dummy SSU operation to ensure host will leave AH8
-		 * in this moment to fix it."
-		 */
-		ufshcd_set_dev_pwr_mode(hba, hba->curr_dev_pwr_mode);
-
 		/* ensure hibernate enter/exit interrupts are enabled for future manual-hibern8 */
 		ufshcd_enable_intr(hba, (UIC_HIBERNATE_ENTER | UIC_HIBERNATE_EXIT));
 
