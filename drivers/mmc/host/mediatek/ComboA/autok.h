@@ -27,18 +27,18 @@
 
 struct msdc_host;
 
-#define E_RESULT_PASS     (0)
-#define E_RESULT_CMD_TMO  (1<<0)
-#define E_RESULT_RSP_CRC  (1<<1)
-#define E_RESULT_DAT_CRC  (1<<2)
-#define E_RESULT_DAT_TMO  (1<<3)
-#define E_RESULT_W_CRC    (1<<4)
-#define E_RESULT_ERR      (1<<5)
-#define E_RESULT_START    (1<<6)
-#define E_RESULT_PW_SMALL (1<<7)
-#define E_RESULT_KEEP_OLD (1<<8)
-#define E_RESULT_CMP_ERR  (1<<9)
-#define E_RESULT_FATAL_ERR  (1<<10)
+#define E_RES_PASS     (0)
+#define E_RES_CMD_TMO  (1<<0)
+#define E_RES_RSP_CRC  (1<<1)
+#define E_RES_DAT_CRC  (1<<2)
+#define E_RES_DAT_TMO  (1<<3)
+#define E_RES_W_CRC    (1<<4)
+#define E_RES_ERR      (1<<5)
+#define E_RES_START    (1<<6)
+#define E_RES_PW_SMALL (1<<7)
+#define E_RES_KEEP_OLD (1<<8)
+#define E_RES_CMP_ERR  (1<<9)
+#define E_RES_FATAL_ERR  (1<<10)
 
 #define E_RESULT_MAX
 
@@ -53,7 +53,10 @@ struct msdc_host;
 #define MERGE_HOST_CLK_TX   (1<<8)
 #define MERGE_HS200_SDR104  (MERGE_CMD | MERGE_DAT)
 #define MERGE_HS400         (MERGE_CMD | MERGE_DS_DAT)
-#define MERGE_DDR208        (MERGE_CMD | MERGE_DS_DAT | MERGE_DEVICE_D_RX | MERGE_HOST_D_TX)
+#define MERGE_DDR208        (MERGE_CMD \
+							| MERGE_DS_DAT \
+							| MERGE_DEVICE_D_RX \
+							| MERGE_HOST_D_TX)
 
 #ifndef NULL
 #define NULL                0
@@ -98,13 +101,17 @@ enum TUNE_TX_TYPE {
 };
 
 enum AUTOK_PARAM {
-	/* command response sample selection (MSDC_SMPL_RISING, MSDC_SMPL_FALLING) */
+	/* command response sample selection
+	 * (MSDC_SMPL_RISING, MSDC_SMPL_FALLING)
+	 */
 	CMD_EDGE,
 
 	/* cmd response async fifo out edge select */
 	CMD_FIFO_EDGE,
 
-	/* read data sample selection (MSDC_SMPL_RISING, MSDC_SMPL_FALLING) */
+	/* read data sample selection
+	 * (MSDC_SMPL_RISING, MSDC_SMPL_FALLING)
+	 */
 	RDATA_EDGE,
 
 	/* read data async fifo out edge select */
@@ -113,8 +120,10 @@ enum AUTOK_PARAM {
 	/* write data crc status async fifo out edge select */
 	WD_FIFO_EDGE,
 
-	/* [Data Tune]CMD Pad RX Delay Line1 Control. This register is used to
-	 * fine-tune CMD pad macro respose latch timing. Total 32 stages[Data Tune]
+	/* [Data Tune]CMD Pad RX Delay Line1 Control.
+	 * This register is used to
+	 * fine-tune CMD pad macro respose latch timing.
+	 * Total 32 stages[Data Tune]
 	 */
 	CMD_RD_D_DLY1,
 
@@ -122,26 +131,33 @@ enum AUTOK_PARAM {
 	CMD_RD_D_DLY1_SEL,
 
 	/* [Data Tune]CMD Pad RX Delay Line2 Control. This register is used to
-	 * fine-tune CMD pad macro respose latch timing. Total 32 stages[Data Tune]
+	 * fine-tune CMD pad macro respose latch timing.
+	 * Total 32 stages[Data Tune]
 	 */
 	CMD_RD_D_DLY2,
 
 	/* [Data Tune]CMD Pad RX Delay Line1 Sel-> delay cell2 enable */
 	CMD_RD_D_DLY2_SEL,
 
-	/* [Data Tune]DAT Pad RX Delay Line1 Control (for MSDC RD), Total 32 stages [Data Tune] */
+	/* [Data Tune]DAT Pad RX Delay Line1 Control (for MSDC RD),
+	 * Total 32 stages [Data Tune]
+	 */
 	DAT_RD_D_DLY1,
 
 	/* [Data Tune]DAT Pad RX Delay Line1 Sel-> delay cell1 enable */
 	DAT_RD_D_DLY1_SEL,
 
-	/* [Data Tune]DAT Pad RX Delay Line2 Control (for MSDC RD), Total 32 stages [Data Tune] */
+	/* [Data Tune]DAT Pad RX Delay Line2 Control (for MSDC RD),
+	 * Total 32 stages [Data Tune]
+	 */
 	DAT_RD_D_DLY2,
 
 	/* [Data Tune]DAT Pad RX Delay Line2 Sel-> delay cell2 enable */
 	DAT_RD_D_DLY2_SEL,
 
-	/* Internal MSDC clock phase selection. Total 8 stages, each stage can delay 1 clock period of msdc_src_ck */
+	/* Internal MSDC clock phase selection. Total 8 stages,
+	 * each stage can delay 1 clock period of msdc_src_ck
+	 */
 	INT_DAT_LATCH_CK,
 
 	/* DS Pad Z clk delay count, range: 0~63, Z dly1(0~31)+Z dly2(0~31) */
@@ -176,7 +192,9 @@ enum AUTOK_PARAM {
 	EMMC50_DATA6_TX_DLY,
 	EMMC50_DATA7_TX_DLY,
 
-	/* CLK Pad TX Delay Control. This register is used to add delay to CLK phase. Total 32 stages */
+	/* CLK Pad TX Delay Control. This register is used to
+	 * add delay to CLK phase. Total 32 stages
+	 */
 	PAD_CLK_TXDLY_AUTOK,
 	TUNING_PARAM_COUNT,
 
@@ -279,21 +297,30 @@ enum AUTOK_PARAM {
 
 	TUNING_PARA_SCAN_COUNT,
 
-	/* Data line rising/falling latch  fine tune selection in read transaction.
-	 * 1'b0: All data line share one value indicated by MSDC_IOCON.R_D_SMPL.
-	 * 1'b1: Each data line has its own  selection value indicated by Data line (x): MSDC_IOCON.R_D(x)_SMPL
+	/* Data line rising/falling latch
+	 * fine tune selection in read transaction.
+	 * 1'b0: All data line share one value indicated
+	 * by MSDC_IOCON.R_D_SMPL.
+	 * 1'b1: Each data line has its own  selection value indicated by
+	 * Data line (x): MSDC_IOCON.R_D(x)_SMPL
 	 */
 	READ_DATA_SMPL_SEL,
 
-	/* Data line rising/falling latch  fine tune selection in write transaction.
-	 * 1'b0: All data line share one value indicated by MSDC_IOCON.W_D_SMPL.
-	 * 1'b1: Each data line has its own selection value indicated by Data line (x): MSDC_IOCON.W_D(x)_SMPL
+	/* Data line rising/falling latch
+	 * fine tune selection in write transaction.
+	 * 1'b0: All data line share one value indicated by
+	 * MSDC_IOCON.W_D_SMPL.
+	 * 1'b1: Each data line has its own selection value
+	 * indicated by Data line (x): MSDC_IOCON.W_D(x)_SMPL
 	 */
 	WRITE_DATA_SMPL_SEL,
 
-	/* Data line delay line fine tune selection. 1'b0: All data line share one delay
-	 * selection value indicated by PAD_TUNE.PAD_DAT_RD_RXDLY. 1'b1: Each data line has its
-	 * own delay selection value indicated by Data line (x): DAT_RD_DLY(x).DAT0_RD_DLY
+	/* Data line delay line fine tune selection.
+	 *1'b0: All data line share one delay
+	 * selection value indicated by PAD_TUNE.PAD_DAT_RD_RXDLY.
+	 * 1'b1: Each data line has its
+	 * own delay selection value indicated by
+	 * Data line (x): DAT_RD_DLY(x).DAT0_RD_DLY
 	 */
 	DATA_DLYLINE_SEL,
 
@@ -306,10 +333,14 @@ enum AUTOK_PARAM {
 	/* [Async_FIFO Mode Sel For CMD Path] */
 	MSDC_RESP_ASYNC_FIFO_SEL,
 
-	/* Write Path Mux for emmc50 function & emmc45 function , Only emmc50 design valid,[1-eMMC50, 0-eMMC45] */
+	/* Write Path Mux for emmc50 function & emmc45 function ,
+	 * Only emmc50 design valid,[1-eMMC50, 0-eMMC45]
+	 */
 	EMMC50_WDATA_MUX_EN,
 
-	/* CMD Path Mux for emmc50 function & emmc45 function , Only emmc50 design valid,[1-eMMC50, 0-eMMC45] */
+	/* CMD Path Mux for emmc50 function & emmc45 function ,
+	 * Only emmc50 design valid,[1-eMMC50, 0-eMMC45]
+	 */
 	EMMC50_CMD_MUX_EN,
 
 	/* CMD response DS latch or internal clk latch */
@@ -321,13 +352,17 @@ enum AUTOK_PARAM {
 	/* CKBUF in CKGEN Delay Selection. Total 32 stages */
 	CKGEN_MSDC_DLY_SEL,
 
-	/* CMD response turn around period. The turn around cycle = CMD_RSP_TA_CNTR + 2,
-	 * Only for USH104 mode, this register should be set to 0 in non-UHS104 mode
+	/* CMD response turn around period.
+	 *The turn around cycle = CMD_RSP_TA_CNTR + 2,
+	 * Only for USH104 mode, this register should be
+	 * set to 0 in non-UHS104 mode
 	 */
 	CMD_RSP_TA_CNTR,
 
-	/* Write data and CRC status turn around period. The turn around cycle = WRDAT_CRCS_TA_CNTR + 2,
-	 * Only for USH104 mode,  this register should be set to 0 in non-UHS104 mode
+	/* Write data and CRC status turn around period.
+	 * The turn around cycle = WRDAT_CRCS_TA_CNTR + 2,
+	 * Only for USH104 mode,  this register should be set to 0
+	 * in non-UHS104 mode
 	 */
 	WRDAT_CRCS_TA_CNTR,
 
@@ -344,11 +379,13 @@ extern int autok_init_ddr208(struct msdc_host *host);
 extern int autok_init_sdr104(struct msdc_host *host);
 extern int autok_init_hs200(struct msdc_host *host);
 extern int autok_init_hs400(struct msdc_host *host);
-extern int autok_offline_tuning_clk_TX(struct msdc_host *host, unsigned int opcode);
+extern int autok_offline_tuning_clk_TX(struct msdc_host *host,
+	unsigned int opcode);
 extern int autok_offline_tuning_TX(struct msdc_host *host, u8 *res);
 extern int autok_offline_tuning_device_RX(struct msdc_host *host, u8 *res);
 extern void autok_msdc_tx_setting(struct msdc_host *host, struct mmc_ios *ios);
-extern void autok_low_speed_switch_edge(struct msdc_host *host, struct mmc_ios *ios, enum ERROR_TYPE error_type);
+extern void autok_low_speed_switch_edge(struct msdc_host *host,
+	struct mmc_ios *ios, enum ERROR_TYPE error_type);
 extern void autok_tuning_parameter_init(struct msdc_host *host, u8 *res);
 extern int autok_sdio30_plus_tuning(struct msdc_host *host, u8 *res);
 extern int autok_execute_tuning(struct msdc_host *host, u8 *res);
@@ -356,7 +393,8 @@ extern int hs200_execute_tuning(struct msdc_host *host, u8 *res);
 extern int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res);
 extern int hs400_execute_tuning(struct msdc_host *host, u8 *res);
 extern int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res);
-extern int autok_vcore_merge_sel(struct msdc_host *host, unsigned int merge_cap);
+extern int autok_vcore_merge_sel(struct msdc_host *host,
+	unsigned int merge_cap);
 
 #endif  /* _AUTOK_H_ */
 

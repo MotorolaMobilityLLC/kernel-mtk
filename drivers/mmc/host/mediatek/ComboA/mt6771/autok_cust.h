@@ -137,9 +137,6 @@ struct AUTOK_PLAT_PARA_MISC {
 };
 
 struct AUTOK_PLAT_TOP_CTRL {
-	u8 msdc0_pad_dly_top;
-	u8 msdc1_pad_dly_top;
-	u8 msdc2_pad_dly_top;
 	u8 msdc0_rx_enhance_top;
 	u8 msdc1_rx_enhance_top;
 	u8 msdc2_rx_enhance_top;
@@ -209,16 +206,16 @@ struct AUTOK_PLAT_FUNC {
 	do { \
 		autok_para_rx.chip_hw_ver = mt_get_chip_hw_ver(); \
 		autok_para_rx.ckgen_val = 0; \
-		autok_para_rx.latch_en_cmd_hs400 = 2; \
-		autok_para_rx.latch_en_crc_hs400 = 2; \
-		autok_para_rx.latch_en_cmd_hs200 = 1; \
-		autok_para_rx.latch_en_crc_hs200 = 1; \
-		autok_para_rx.latch_en_cmd_ddr208 = 2; \
-		autok_para_rx.latch_en_crc_ddr208 = 2; \
+		autok_para_rx.latch_en_cmd_hs400 = 3; \
+		autok_para_rx.latch_en_crc_hs400 = 3; \
+		autok_para_rx.latch_en_cmd_hs200 = 2; \
+		autok_para_rx.latch_en_crc_hs200 = 2; \
+		autok_para_rx.latch_en_cmd_ddr208 = 4; \
+		autok_para_rx.latch_en_crc_ddr208 = 4; \
 		autok_para_rx.latch_en_cmd_sd_sdr104 = 1; \
 		autok_para_rx.latch_en_crc_sd_sdr104 = 1; \
-		autok_para_rx.latch_en_cmd_sdio_sdr104 = 1; \
-		autok_para_rx.latch_en_crc_sdio_sdr104 = 1; \
+		autok_para_rx.latch_en_cmd_sdio_sdr104 = 2; \
+		autok_para_rx.latch_en_crc_sdio_sdr104 = 2; \
 		autok_para_rx.latch_en_cmd_hs = 1; \
 		autok_para_rx.latch_en_crc_hs = 1; \
 		autok_para_rx.cmd_ta_val = 0; \
@@ -248,10 +245,10 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_rx.read_dat_cnt_ddr208 = 1; \
 		autok_para_rx.end_bit_chk_cnt_hs400 = 3; \
 		autok_para_rx.end_bit_chk_cnt_ddr208 = 3; \
-		autok_para_rx.latchck_switch_cnt_hs400 = 3; \
-		autok_para_rx.latchck_switch_cnt_ddr208 = 3; \
+		autok_para_rx.latchck_switch_cnt_hs400 = 4; \
+		autok_para_rx.latchck_switch_cnt_ddr208 = 5; \
 		autok_para_rx.ds_dly3_hs400 = 20; \
-		autok_para_rx.ds_dly3_ddr208 = 20; \
+		autok_para_rx.ds_dly3_ddr208 = 0; \
 	} while (0)
 
 #define get_platform_para_misc(autok_para_misc) \
@@ -266,9 +263,6 @@ struct AUTOK_PLAT_FUNC {
 
 #define get_platform_top_ctrl(autok_top_ctrl) \
 	do { \
-		autok_top_ctrl.msdc0_pad_dly_top = 1; \
-		autok_top_ctrl.msdc1_pad_dly_top = 1; \
-		autok_top_ctrl.msdc2_pad_dly_top = 0; \
 		autok_top_ctrl.msdc0_rx_enhance_top = 1; \
 		autok_top_ctrl.msdc1_rx_enhance_top = 1; \
 		autok_top_ctrl.msdc2_rx_enhance_top = 0; \
@@ -285,8 +279,8 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_func.new_path_sdr104 = 1; \
 		autok_para_func.new_path_hs = 1; \
 		autok_para_func.multi_sync = 1; \
-		autok_para_func.rx_enhance = 0; \
-		autok_para_func.msdc0_bypass_duty_modify = 0; \
+		autok_para_func.rx_enhance = 1; \
+		autok_para_func.msdc0_bypass_duty_modify = 1; \
 		autok_para_func.msdc1_bypass_duty_modify = 0; \
 		autok_para_func.msdc2_bypass_duty_modify = 0; \
 	} while (0)
