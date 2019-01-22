@@ -928,7 +928,7 @@ int32_t cmdq_op_write_reg_secure(struct cmdqRecStruct *handle, uint32_t addr,
 #endif
 }
 
-int32_t cmdq_op_poll_v2(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
+int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
 {
 	int32_t status;
 
@@ -944,7 +944,7 @@ int32_t cmdq_op_poll_v2(struct cmdqRecStruct *handle, uint32_t addr, uint32_t va
 }
 
 /* Efficient Polling */
-int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
+int32_t cmdq_op_poll_v3(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
 {
 	/*
 	 * Simulate Code
