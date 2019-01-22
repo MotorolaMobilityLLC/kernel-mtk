@@ -826,6 +826,7 @@ extern int tcpm_shutdown(struct tcpc_device *tcpc_dev);
 extern int tcpm_inquire_remote_cc(struct tcpc_device *tcpc_dev,
 	uint8_t *cc1, uint8_t *cc2, bool from_ic);
 extern int tcpm_inquire_vbus_level(struct tcpc_device *tcpc_dev, bool from_ic);
+extern int tcpm_inquire_typec_remote_rp_curr(struct tcpc_device *tcpc_dev);
 extern bool tcpm_inquire_cc_polarity(struct tcpc_device *tcpc_dev);
 extern uint8_t tcpm_inquire_typec_attach_state(struct tcpc_device *tcpc_dev);
 extern uint8_t tcpm_inquire_typec_role(struct tcpc_device *tcpc_dev);
@@ -1273,6 +1274,11 @@ static inline int tcpm_inquire_vbus_level(
 	struct tcpc_device *tcpc_dev, bool from_ic)
 {
 	return TCPM_ERROR_NO_IMPLEMENT;
+}
+
+static inline int tcpm_inquire_typec_remote_rp_curr(struct tcpc_device *tcpc_dev)
+{
+	return 0;
 }
 
 static inline bool tcpm_inquire_cc_polarity(struct tcpc_device *tcpc_dev)
