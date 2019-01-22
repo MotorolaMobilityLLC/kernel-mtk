@@ -44,7 +44,23 @@
 #include <linux/io.h>
 #include <linux/i2c.h>
 #include "i2c-mtk.h"
-#include <m4u.h>
+
+
+
+#include "mtk_ion.h"
+
+#include "ion_drv.h"
+
+#include <linux/iommu.h>
+
+
+#ifdef CONFIG_MTK_IOMMU
+#include "mtk_iommu.h"
+#include <dt-bindings/memory/mt6763-larb-port.h>
+#else
+#include "m4u.h"
+#endif
+
 
 #include <linux/clk.h>
 
@@ -215,7 +231,7 @@ static const struct file_operations ccu_fops = {
 m4u_callback_ret_t ccu_m4u_fault_callback(int port, unsigned int mva, void *data)
 {
 	LOG_DBG("[m4u] fault callback: port=%d, mva=0x%x", port, mva);
-	return M4U_CALLBACK_HANDLED;
+	return 0/*M4U_CALLBACK_HANDLED*/;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1171,9 +1187,17 @@ static int __init CCU_INIT(void)
 
 	/* Register M4U callback */
 	LOG_DBG("register m4u callback");
+
+#ifdef CONFIG_MTK_IOMMU
+	mtk_iommu_register_fault_callback(CCUI_OF_M4U_PORT, (mtk_iommu_fault_callback_t *)ccu_m4u_fault_callback, 0);
+	mtk_iommu_register_fault_callback(CCUO_OF_M4U_PORT, (mtk_iommu_fault_callback_t *)ccu_m4u_fault_callback, 0);
+	mtk_iommu_register_fault_callback(CCUG_OF_M4U_PORT, (mtk_iommu_fault_callback_t *)ccu_m4u_fault_callback, 0);
+
+#elif defined(CONFIG_MTK_M4U)
 	m4u_register_fault_callback(CCUI_OF_M4U_PORT, ccu_m4u_fault_callback, NULL);
 	m4u_register_fault_callback(CCUO_OF_M4U_PORT, ccu_m4u_fault_callback, NULL);
 	m4u_register_fault_callback(CCUG_OF_M4U_PORT, ccu_m4u_fault_callback, NULL);
+#endif
 
 	LOG_DBG("platform_driver_register start\n");
 	if (platform_driver_register(&ccu_driver)) {
@@ -1195,9 +1219,18 @@ static void __exit CCU_EXIT(void)
 
 	/* Un-Register M4U callback */
 	LOG_DBG("un-register m4u callback");
+
+#ifdef CONFIG_MTK_IOMMU
+	mtk_iommu_unregister_fault_callback(CCUI_OF_M4U_PORT);
+	mtk_iommu_unregister_fault_callback(CCUO_OF_M4U_PORT);
+	mtk_iommu_unregister_fault_callback(CCUG_OF_M4U_PORT);
+
+#elif defined(CONFIG_MTK_M4U)
 	m4u_unregister_fault_callback(CCUI_OF_M4U_PORT);
 	m4u_unregister_fault_callback(CCUO_OF_M4U_PORT);
 	m4u_unregister_fault_callback(CCUG_OF_M4U_PORT);
+#endif
+
 }
 
 
