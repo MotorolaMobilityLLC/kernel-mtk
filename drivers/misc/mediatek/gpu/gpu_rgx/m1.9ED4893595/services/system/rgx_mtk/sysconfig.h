@@ -79,11 +79,11 @@ int MTKSysGetIRQ(void);
 #define SYS_MTK_RGX_REGS_SIZE               0x80000
 
 #if defined(CONFIG_MACH_MT8173)
-#define SYS_MTK_RGX_IRQ                     0
+#define SYS_MTK_RGX_IRQ                     0x102
 #elif defined(CONFIG_MACH_MT8167)
-#define SYS_MTK_RGX_IRQ                     219
+#define SYS_MTK_RGX_IRQ                     0xDB
 #elif defined(CONFIG_MACH_MT6739)
-#define SYS_MTK_RGX_IRQ                     336
+#define SYS_MTK_RGX_IRQ                     0x150
 #else
 #endif
 
