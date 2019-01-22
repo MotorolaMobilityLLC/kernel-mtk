@@ -176,7 +176,7 @@ enum audio_offset_trim_mux {
 	AUDIO_OFFSET_TRIM_MUX_GROUND,
 };
 
-struct mt6356_codec_priv {
+struct mt6358_codec_priv {
 	int mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_TYPE_MAX];
 	int mAudio_Ana_Mux[AUDIO_ANALOG_MAX_MUX_TYPE];
 	int mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_MAX];
