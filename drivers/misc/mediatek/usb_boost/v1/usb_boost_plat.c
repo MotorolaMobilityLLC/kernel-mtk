@@ -11,22 +11,18 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 #include <linux/module.h>
-#include "mt_ppm_api.h"
+#include "mtk_ppm_api.h"
 #include "usb_boost.h"
 
 /* platform specific parameter here */
-#ifdef CONFIG_ARCH_MT6755
+#ifdef CONFIG_MACH_MT6799
 static int cpu_freq_test_para[] = {1, 5, 500, 0};
 static int cpu_core_test_para[] = {1, 5, 500, 0};
 /* -1 denote not used*/
 struct act_arg_obj cpu_freq_test_arg = {2000000000, -1, -1};
 struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
-#elif defined(CONFIG_ARCH_MT6797)
-static int cpu_freq_test_para[] = {1, 2, 800, 0};
-static int cpu_core_test_para[] = {1, 2, 800, 0};
-/* -1 denote not used*/
-struct act_arg_obj cpu_freq_test_arg = {1500000000, -1, -1};
-struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
+#elif defined(CONFIG_ARCH_MT6XXX)
+/* add new here */
 #endif
 
 static int freq_hold(struct act_arg_obj *arg)
