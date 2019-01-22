@@ -482,10 +482,10 @@ static int barohub_probe(struct platform_device *pdev)
 	atomic_set(&obj->suspend, 0);
 
 	atomic_set(&obj->scp_init_done, 0);
-	scp_register_notify(&scp_ready_notifier);
-	err = SCP_sensorHub_data_registration(ID_PRESSURE, baro_recv_data);
+	scp_A_register_notify(&scp_ready_notifier);
+	err = scp_sensorHub_data_registration(ID_PRESSURE, baro_recv_data);
 	if (err < 0) {
-		BAR_ERR("SCP_sensorHub_data_registration failed\n");
+		BAR_ERR("scp_sensorHub_data_registration failed\n");
 		goto exit_kfree;
 	}
 	err = misc_register(&barohub_misc_device);
@@ -553,9 +553,7 @@ static int barohub_remove(struct platform_device *pdev)
 	if (err)
 		BAR_ERR("barohub_delete_attr failed, err = %d\n", err);
 
-	err = misc_deregister(&barohub_misc_device);
-	if (err)
-		BAR_ERR("misc_deregister failed, err = %d\n", err);
+	misc_deregister(&barohub_misc_device);
 
 	obj_ipi_data = NULL;
 	kfree(platform_get_drvdata(pdev));
