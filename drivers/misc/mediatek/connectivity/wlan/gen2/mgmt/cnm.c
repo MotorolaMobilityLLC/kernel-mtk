@@ -121,9 +121,10 @@ VOID cnmChMngrRequestPrivilege(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 		return;
 	}
 
-	DBGLOG(CNM, INFO, "ChReq net=%d token=%d b=%d c=%d s=%d\n",
+	DBGLOG(CNM, INFO, "ChReq net=%d token=%d b=%d c=%d s=%d d=%d\n",
 			   prMsgChReq->ucNetTypeIndex, prMsgChReq->ucTokenID,
-			   prMsgChReq->eRfBand, prMsgChReq->ucPrimaryChannel, prMsgChReq->eRfSco);
+			   prMsgChReq->eRfBand, prMsgChReq->ucPrimaryChannel,
+			   prMsgChReq->eRfSco, prMsgChReq->u4MaxInterval);
 
 	prCmdBody->ucNetTypeIndex = prMsgChReq->ucNetTypeIndex;
 	prCmdBody->ucTokenID = prMsgChReq->ucTokenID;
@@ -258,9 +259,10 @@ VOID cnmChMngrHandleChEvent(P_ADAPTER_T prAdapter, P_WIFI_EVENT_T prEvent)
 		return;
 	}
 
-	DBGLOG(CNM, INFO, "ChGrant net=%d token=%d ch=%d sco=%d\n",
+	DBGLOG(CNM, INFO, "ChGrant net=%d token=%d ch=%d sco=%d dur=%d\n",
 			   prEventBody->ucNetTypeIndex, prEventBody->ucTokenID,
-			   prEventBody->ucPrimaryChannel, prEventBody->ucRfSco);
+			   prEventBody->ucPrimaryChannel, prEventBody->ucRfSco,
+			   prEventBody->u4GrantInterval);
 
 	ASSERT(prEventBody->ucNetTypeIndex < NETWORK_TYPE_INDEX_NUM);
 	ASSERT(prEventBody->ucStatus == EVENT_CH_STATUS_GRANT);
