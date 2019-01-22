@@ -23,7 +23,6 @@
 #define EMI_BWCT0_4TH		(CEN_EMI_BASE + 0x780)
 #define EMI_BWCT0_5TH		(CEN_EMI_BASE + 0x7B0)
 static unsigned int decs_status;
-static DEFINE_SPINLOCK(bwl_lock);
 
 unsigned int decode_bwl_env(
 	unsigned int dram_type, unsigned int ch_num, unsigned int rk_num)
@@ -38,15 +37,14 @@ unsigned int acquire_bwl_ctrl(void __iomem *LAST_EMI_BASE)
 {
 	unsigned int timeout;
 
-	spin_lock(&bwl_lock);
 	decs_status = readl(IOMEM(LAST_EMI_DECS_CTRL));
 
 	mt_reg_sync_writel(0x1, LAST_EMI_DECS_CTRL);
 	for (timeout = 1; readl(IOMEM(LAST_EMI_DECS_CTRL)) != 2; timeout++) {
 		mdelay(1);
 		if ((timeout % 100) == 0) {
+			mt_reg_sync_writel(decs_status, LAST_EMI_DECS_CTRL);
 			pr_debug("[BWL] switch scenario timeout\n");
-			spin_unlock(&bwl_lock);
 			return -1;
 		}
 	}
@@ -57,7 +55,6 @@ unsigned int acquire_bwl_ctrl(void __iomem *LAST_EMI_BASE)
 void release_bwl_ctrl(void __iomem *LAST_EMI_BASE)
 {
 	mt_reg_sync_writel(decs_status, LAST_EMI_DECS_CTRL);
-	spin_unlock(&bwl_lock);
 }
 
 void resume_decs(void __iomem *CEN_EMI_BASE)
