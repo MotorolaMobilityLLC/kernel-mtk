@@ -780,14 +780,14 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 				LOG_ERR("[GET_ALGO] can not find algo, name=%s, id:%d\n", u_algo->name, temp_algo_id);
 				ret = -ESPIPE;
 				goto out;
+			} else {
+				LOG_DBG("[GET_ALGO] core(%d) name=%s, id=%d\n", i, u_algo->name, temp_algo_id);
 			}
-			else
-				LOG_INF("[GET_ALGO] core(%d) name=%s, id=%d\n", i, u_algo->name, temp_algo_id);
-			algo_id[i] = temp_algo_id;
+			algo_id[i] = (vpu_id_t)temp_algo_id;
 		}
 
 		ret = copy_to_user(u_algo->id, algo_id,
-				VPU_MAX_NUM_CORES * sizeof(vpu_id_t));
+				MTK_VPU_CORE * sizeof(vpu_id_t));
 		CHECK_RET("[GET_ALGO] update id failed, ret=%d\n", ret);
 
 
