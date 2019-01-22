@@ -135,7 +135,7 @@ enum OD_DEBUG_MODE {
 static unsigned int g_od_debug_mode = DEBUG_MODE_NONE;
 
 static DEFINE_MUTEX(g_od_global_lock);
-static volatile int g_od_is_enabled; /* OD is disabled by default */
+static volatile int g_od_is_enabled = 1; /* OD is enabled by default */
 
 enum OD_DISABLED_BIT_FLAGS {
 	DISABLED_BY_HWC = 0,
