@@ -3846,11 +3846,10 @@ static irqreturn_t diso_auxadc_irq_thread(int irq, void *dev_id)
 		wake_up_bat();
 		break;
 	case DC_WITH_USB:
-		/*usb delayed work will reflact BMT_staus , so need update state ASAP */
-		if ((BMT_status.charger_type == STANDARD_HOST)
-		    || (BMT_status.charger_type == CHARGING_HOST))
-			mt_usb_disconnect();	/* disconnect if connected */
 		BMT_status.charger_type = CHARGER_UNKNOWN;	/* reset chr_type */
+		if (DISO_data.diso_state.cur_vusb_state == DISO_OFFLINE)
+			mt_usb_disconnect();
+
 		wake_up_bat();
 		break;
 	case DC_ONLY:
