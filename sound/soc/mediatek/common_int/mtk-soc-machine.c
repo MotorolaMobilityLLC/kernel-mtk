@@ -199,30 +199,36 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	char *token4 = NULL;
 	char *token5 = NULL;
 	char *temp = NULL;
+	char *str_begin = NULL;
 
 	unsigned long regaddr = 0;
 	unsigned long regvalue = 0;
 	char delim[] = " ,";
 
-	memset_io((void *)InputString, 0, MAX_DEBUG_WRITE_INPUT);
+	if (!count) {
+		pr_debug("%s(), count is 0, return directly\n", __func__);
+		goto exit;
+	}
 
 	if (count > MAX_DEBUG_WRITE_INPUT)
 		count = MAX_DEBUG_WRITE_INPUT;
+
+	memset_io((void *)InputString, 0, MAX_DEBUG_WRITE_INPUT);
 
 	if (copy_from_user((InputString), buf, count))
 		pr_warn("%s(), copy_from_user fail, mt_soc_debug_write count = %zu, temp = %s\n",
 			__func__, count, InputString);
 
-	temp = kstrndup(InputString, MAX_DEBUG_WRITE_INPUT - 1, GFP_KERNEL);
-	if (!temp) {
+	str_begin = kstrndup(InputString, MAX_DEBUG_WRITE_INPUT - 1, GFP_KERNEL);
+	if (!str_begin) {
 		pr_warn("%s(), kstrdup fail\n", __func__);
 		goto exit;
 	}
+	temp = str_begin;
 
 	pr_debug("copy_from_user mt_soc_debug_write count = %zu, temp = %s, pointer = %p\n",
 		count, InputString, InputString);
 	token1 = strsep(&temp, delim);
-	pr_debug("token1\n");
 	pr_debug("token1 = %s\n", token1);
 	token2 = strsep(&temp, delim);
 	pr_debug("token2 = %s\n", token2);
@@ -293,7 +299,7 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	}
 	AudDrv_Clk_Off();
 
-	kfree(temp);
+	kfree(str_begin);
 exit:
 	return count;
 }
