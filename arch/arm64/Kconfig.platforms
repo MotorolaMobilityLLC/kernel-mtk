@@ -116,6 +116,7 @@ config MACH_MT6759
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_WATCHPOINT
+	select MTK_BOUNCING_CHECK
 	help
 	  This enables support for MediaTek MT6759
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
@@ -184,6 +185,7 @@ config MACH_MT6763
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_EIC_HISTORY_DUMP
 	select MTK_EIC
+	select MTK_BOUNCING_CHECK
 	help
 	  This enables support for MediaTek MT6763
 	  Support for aarch64 Architecture
