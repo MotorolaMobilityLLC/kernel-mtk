@@ -81,7 +81,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x00040802,	/* INFRA0 */
 		0x03AFB900,	/* INFRA1 */
 		0x000008C1,	/* INFRA2 */
-		0x000FFFE0,	/* MMSYS0 */
+		0x000DFC00,	/* MMSYS0 */
 		0x00000D70,	/* MMSYS1 */
 		0xBEF000B0, /* PWR_STATE */
 	},
@@ -231,8 +231,8 @@ unsigned int clkmux_condition_mask[NF_CLKMUX][NF_CLKMUX_COND_SET] = {
 
 	/* CLK_CFG_7 */
 	[CLKMUX_SPM]
-		= { 2,
-			0x80, 0x00, 0x00, 0x00,
+		= { 0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 	[CLKMUX_SSUSB_XHCI]
 		= { 2,
@@ -651,6 +651,9 @@ bool mtk_idle_check_clkmux(
 		clkmux_val = ((clkcfgs[idx] & masks[offset]) >> shifts[offset]);
 
 		check_num = clkmux_condition_mask[i][0];
+
+		if (check_num == 0)
+			result = true;
 
 		for (k = 0; k < check_num; k++) {
 
