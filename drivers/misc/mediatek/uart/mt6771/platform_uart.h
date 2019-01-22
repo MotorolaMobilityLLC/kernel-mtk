@@ -55,7 +55,7 @@
 #if defined(CONFIG_FPGA_EARLY_PORTING)
 #define UART_NR                     2
 #else
-#define UART_NR                     2
+#define UART_NR                     3
 #endif
 
 #ifndef FALSE
