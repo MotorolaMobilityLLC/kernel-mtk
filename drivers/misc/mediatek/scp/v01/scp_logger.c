@@ -744,6 +744,7 @@ void scp_get_log(scp_core_id scp_id)
 {
 	pr_debug("[SCP] %s\n", __func__);
 #if SCP_LOGGER_ENABLE
+	scp_A_get_last_log(SCP_AED_STR_LEN - 200);
 	/*move last log to dram*/
 	scp_crash_log_move_to_buf(scp_id);
 #endif
