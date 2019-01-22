@@ -192,8 +192,12 @@ static int check_offs_len(struct mtd_info *mtd,
 	u64 start_addr;
 	loff_t temp, temp1;
 
-	start_addr = part_get_startaddress(ofs, &idx);
-	block_size = mtd->eraseregions[idx].erasesize;
+	if (mtk_is_normal_tlc_nand() && !mtk_block_istlc(ofs))
+		block_size = mtd->erasesize / 3;
+	else {
+		start_addr = part_get_startaddress(ofs, &idx);
+		block_size = mtd->eraseregions[idx].erasesize;
+	}
 
 	/* Start address must align on block boundary
 	 * ofs is transferred as u32 for 32 bit kernel % build error
@@ -219,8 +223,12 @@ static int check_offs_len(struct mtd_info *mtd,
 
 	if (mtk_nand_IsRawPartition(ofs))
 		block_size = (1ULL << (chip->phys_erase_shift - 1));
-	else
-		block_size = (1ULL << chip->phys_erase_shift);
+	else {
+		if (!mtk_block_istlc(ofs))
+			block_size = (1ULL << (chip->phys_erase_shift - 1));
+		else
+			block_size = (1ULL << chip->phys_erase_shift);
+	}
 	/* Start address must align on block boundary */
 	if (ofs & (block_size - 1)) {
 		pr_debug("%s: unaligned address\n", __func__);

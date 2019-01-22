@@ -97,7 +97,8 @@ char *page_readbuf;
 #define  PMT_MAGIC	 'p'
 #define PMT_READ		_IOW(PMT_MAGIC, 1, int)
 #define PMT_WRITE		_IOW(PMT_MAGIC, 2, int)
-#define PMT_VERSION	_IOW(PMT_MAGIC, 3, int)
+#define PMT_VERSION		_IOW(PMT_MAGIC, 3, int)
+#define PMT_UPDATE		_IOW(PMT_MAGIC, 4, int)
 
 
 #if 0
@@ -460,11 +461,11 @@ static long pmt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case PMT_READ:
-		pr_debug("PMT IOCTL: PMT_READ\n");
+		pr_err("PMT IOCTL: PMT_READ\n");
 		ret = read_pmt(uarg);
 		break;
 	case PMT_WRITE:
-		pr_debug("PMT IOCTL: PMT_WRITE\n");
+		pr_err("PMT IOCTL: PMT_WRITE\n");
 		if (copy_from_user(&pmtctl, uarg, sizeof(DM_PARTITION_INFO_PACKET))) {
 			ret = -EFAULT;
 			goto exit;
@@ -474,10 +475,22 @@ static long pmt_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		break;
 	case PMT_VERSION:
+		pr_err("PMT IOCTL: PMT_VERSION\n");
 		if (copy_to_user((void __user *)arg, &version, PT_SIG_SIZE))
 			ret = -EFAULT;
 		else
 			ret = 0;
+		break;
+	case PMT_UPDATE:
+		if (copy_from_user(&new_part[0], uarg, sizeof(new_part))) {
+			ret = -EFAULT;
+			goto exit;
+		}
+		pi.pt_changed = 1;
+		pi.tool_or_sd_update = 2;
+		update_part_tab((struct mtd_info *)&host->mtd);
+		memcpy(&lastest_part, &new_part[0], sizeof(pt_resident) * PART_MAX_COUNT);
+		pr_err("PMT IOCTL: PMT_UPDATE\n");
 		break;
 	default:
 		ret = -EINVAL;
@@ -861,10 +874,19 @@ int update_part_tab(struct mtd_info *mtd)
 	u64 temp_value;
 
 	temp_value = 0;
-	memset(page_buf, 0xFF, page_size + 64);
+	memset(page_buf, 0xFF, page_size + mtd->oobsize);
 
 	ei.mtd = mtd;
-	ei.len = mtd->erasesize;
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+	if ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+	&& (devinfo.tlcControl.normaltlc))
+		ei.len = mtd->erasesize / 3;
+	else
+#endif
+	if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER)
+		ei.len = mtd->erasesize / 2;
+	else
+		ei.len = mtd->erasesize;
 	ei.time = 1000;
 	ei.retries = 2;
 	ei.callback = NULL;
@@ -878,7 +900,7 @@ int update_part_tab(struct mtd_info *mtd)
 	ops_pt.ooboffs = 0;
 
 	if ((pi.pt_changed == 1 || pi.pt_has_space == 0) && pi.tool_or_sd_update == 2) {
-		pr_debug("update_pt pt changes\n");
+		pr_err("update_pt pt changes  0x%llx\n", start_addr);
 
 		ei.addr = start_addr;
 		if (mtd->_erase(mtd, &ei) != 0) {	/* no good block for used in replace pool */
@@ -918,7 +940,7 @@ int update_part_tab(struct mtd_info *mtd)
 				ops_pt.datbuf = (uint8_t *) page_buf;
 				/* no good block for used in replace pool . still used the original ones */
 				if (mtd->_write_oob(mtd, (loff_t) current_addr, &ops_pt) != 0) {
-					pr_notice("update_pt write failed %x\n", retry_w);
+					pr_err("update_pt write failed %x\n", retry_w);
 					memset(page_buf, 0, PT_SIG_SIZE);
 					if (mtd->_write_oob(mtd, (loff_t) current_addr, &ops_pt) !=
 					    0) {
@@ -927,7 +949,7 @@ int update_part_tab(struct mtd_info *mtd)
 						continue;
 					}
 				} else {
-					pr_debug("write pt success %llx %x\n",
+					pr_err("write pt success %llx %x\n",
 					       current_addr, retry_w);
 					break;	/* retry_w should not count. */
 				}
@@ -946,7 +968,7 @@ int update_part_tab(struct mtd_info *mtd)
 			if ((mtd->_read_oob(mtd, (loff_t) current_addr, &ops_pt) != 0)
 			    || memcmp(page_buf, page_readbuf, page_size)) {
 
-				pr_debug("v or r failed %x\n", retry_r);
+				pr_err("v or r failed %x\n", retry_r);
 				memset(page_buf, 0, PT_SIG_SIZE);
 				ops_pt.datbuf = (uint8_t *) page_buf;
 				if (mtd->_write_oob(mtd, (loff_t) current_addr, &ops_pt) != 0) {
@@ -956,7 +978,7 @@ int update_part_tab(struct mtd_info *mtd)
 				}
 
 			} else {
-				pr_debug("update_pt r&v ok%llx\n", current_addr);
+				pr_err("update_pt r&v ok%llx\n", current_addr);
 				break;
 			}
 		}
