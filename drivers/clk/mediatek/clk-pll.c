@@ -40,7 +40,7 @@
 #define INTEGER_BITS		8
 #define UNIVPLL_DIV			1
 #elif defined(CONFIG_MACH_MT6758)
-#define MT_CCF_BRINGUP
+/*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		8
 #define UNIVPLL_DIV			1
 #elif defined(CONFIG_MACH_MT6763)
@@ -345,7 +345,7 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 	u32 r;
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 	if (!strcmp(__clk_get_name(hw->clk), "univpll")) {
 	} else {
 		if (readl(pll->pwr_addr) & CON0_PWR_ON) {
@@ -395,8 +395,10 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 
 			r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
 			writel(r, pll->pwr_addr);
+			#if !defined(CONFIG_MACH_MT6758)
 			if (!strcmp(__clk_get_name(hw->clk), "univpll"))
 				univpll_192m_en(0);
+			#endif
 		}
 	}
 #endif
