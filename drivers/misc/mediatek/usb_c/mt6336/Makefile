@@ -1,6 +1,7 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
 obj-y += typec.o typec-ioctl.o typec-pltfrm.o
 obj-y += pd-policy.o pd-policy-cust.o pd-protocol.o

@@ -1947,6 +1947,8 @@ int pd_task(void *data)
 			if (state_changed(hba))
 				pd_rx_phya_setting(hba);
 
+			typec_enable_lowq(hba);
+
 			/*Disable 26MHz clock XO_PD*/
 			clk_buf_ctrl(CLK_BUF_CHG, false);
 
