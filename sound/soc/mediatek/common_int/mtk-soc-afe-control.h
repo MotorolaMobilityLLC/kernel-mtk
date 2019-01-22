@@ -152,6 +152,9 @@ bool set_chip_adc_in(unsigned int rate);
 bool set_chip_adc2_in(unsigned int rate);
 bool setChipDmicPath(bool _enable, uint32 sample_rate);
 
+void set_stf_gain(int gain);
+void set_stf_positive_gain_db(int gain_db);
+
 /* Sample Rate Transform */
 uint32 SampleRateTransform(uint32 sampleRate, Soc_Aud_Digital_Block audBlock);
 
