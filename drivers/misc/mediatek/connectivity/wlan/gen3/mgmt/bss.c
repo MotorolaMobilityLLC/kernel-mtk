@@ -770,29 +770,28 @@ bssBuildBeaconProbeRespFrameCommonIEs(IN P_MSDU_INFO_T prMsduInfo, IN P_BSS_INFO
 	pucBuffer = (PUINT_8) ((ULONG) prMsduInfo->prPacket + (ULONG) prMsduInfo->u2FrameLength);
 	ASSERT(pucBuffer);
 
-	/* Compose the frame body of the Probe Response frame. */
 	/* 4 <1> Fill the SSID element. */
 	SSID_IE(pucBuffer)->ucId = ELEM_ID_SSID;
-#if 0
-	SSID_IE(pucBuffer)->ucLength = prBssInfo->ucSSIDLen;
-	if (prBssInfo->ucSSIDLen)
-		kalMemCopy(SSID_IE(pucBuffer)->aucSSID, prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
-#else
-	if (prBssInfo->eHiddenSsidType == ENUM_HIDDEN_SSID_LEN) {
-		if ((!pucDestAddr) &&	/* For Beacon only. */
-		    (prBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)) {
+
+	if ((!pucDestAddr) && (prBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)) {
+		/* For Beacon */
+		if (prBssInfo->eHiddenSsidType == ENUM_HIDDEN_SSID_ZERO_CONTENT) {
+			/* clear the data, but keep the correct length of the SSID */
+			SSID_IE(pucBuffer)->ucLength = prBssInfo->ucSSIDLen;
+			kalMemZero(SSID_IE(pucBuffer)->aucSSID, prBssInfo->ucSSIDLen);
+		} else if (prBssInfo->eHiddenSsidType == ENUM_HIDDEN_SSID_ZERO_LEN) {
+			/* empty SSID */
 			SSID_IE(pucBuffer)->ucLength = 0;
-		} else {	/* probe response */
+		} else {
 			SSID_IE(pucBuffer)->ucLength = prBssInfo->ucSSIDLen;
 			if (prBssInfo->ucSSIDLen)
 				kalMemCopy(SSID_IE(pucBuffer)->aucSSID, prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
 		}
-	} else {
+	} else {	/* Probe response */
 		SSID_IE(pucBuffer)->ucLength = prBssInfo->ucSSIDLen;
 		if (prBssInfo->ucSSIDLen)
 			kalMemCopy(SSID_IE(pucBuffer)->aucSSID, prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
 	}
-#endif
 
 	prMsduInfo->u2FrameLength += IE_SIZE(pucBuffer);
 	pucBuffer += IE_SIZE(pucBuffer);
