@@ -1570,8 +1570,10 @@ int typec_enable(struct typec_hba *hba, int enable)
 			typec_set(hba, W1_TYPE_C_SW_ENT_UNATCH_SNK_CMD, TYPE_C_CC_SW_CTRL);
 			break;
 		case TYPEC_ROLE_SOURCE:
-		case TYPEC_ROLE_DRP:
 			typec_set(hba, W1_TYPE_C_SW_ENT_UNATCH_SRC_CMD, TYPE_C_CC_SW_CTRL);
+			break;
+		case TYPEC_ROLE_DRP:
+			typec_set(hba, W1_TYPE_C_SW_ENT_UNATCH_SNK_CMD, TYPE_C_CC_SW_CTRL);
 			break;
 		default:
 			return 1;
