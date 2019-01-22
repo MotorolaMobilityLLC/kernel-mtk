@@ -131,13 +131,21 @@ static int md1_section_level_3g[SECTION_NUM+1] = { GUARDING_PATTERN,
 						   VAL_MD1_3G_SECTION_5,
 						   VAL_MD1_3G_SECTION_6 };
 
-static int md1_section_level_4g[SECTION_NUM+1] = { GUARDING_PATTERN,
-						   VAL_MD1_4G_SECTION_1,
-						   VAL_MD1_4G_SECTION_2,
-						   VAL_MD1_4G_SECTION_3,
-						   VAL_MD1_4G_SECTION_4,
-						   VAL_MD1_4G_SECTION_5,
-						   VAL_MD1_4G_SECTION_6 };
+static int md1_section_level_4g_upL1[SECTION_NUM+1] = { GUARDING_PATTERN,
+						   VAL_MD1_4G_upL1_SECTION_1,
+						   VAL_MD1_4G_upL1_SECTION_2,
+						   VAL_MD1_4G_upL1_SECTION_3,
+						   VAL_MD1_4G_upL1_SECTION_4,
+						   VAL_MD1_4G_upL1_SECTION_5,
+						   VAL_MD1_4G_upL1_SECTION_6 };
+
+static int md1_section_level_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
+						   VAL_MD1_4G_upL2_SECTION_1,
+						   VAL_MD1_4G_upL2_SECTION_2,
+						   VAL_MD1_4G_upL2_SECTION_3,
+						   VAL_MD1_4G_upL2_SECTION_4,
+						   VAL_MD1_4G_upL2_SECTION_5,
+						   VAL_MD1_4G_upL2_SECTION_6 };
 
 static int md1_section_level_tdd[SECTION_NUM+1] = { GUARDING_PATTERN,
 						   VAL_MD1_TDD_SECTION_1,
@@ -147,24 +155,21 @@ static int md1_section_level_tdd[SECTION_NUM+1] = { GUARDING_PATTERN,
 						   VAL_MD1_TDD_SECTION_5,
 						   VAL_MD1_TDD_SECTION_6 };
 
-static int md3_section_level[SECTION_NUM+1] = { GUARDING_PATTERN,
-						VAL_MD3_SECTION_1,
-						VAL_MD3_SECTION_2,
-						VAL_MD3_SECTION_3,
-						VAL_MD3_SECTION_4,
-						VAL_MD3_SECTION_5,
-						VAL_MD3_SECTION_6 };
+static int md3_section_level_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
+						VAL_MD3_C2K_SECTION_1,
+						VAL_MD3_C2K_SECTION_2,
+						VAL_MD3_C2K_SECTION_3,
+						VAL_MD3_C2K_SECTION_4,
+						VAL_MD3_C2K_SECTION_5,
+						VAL_MD3_C2K_SECTION_6 };
 
-static int md1_scenario_pwr[SCENARIO_NUM] = { PW_CAT6_CA_DATALINK,
-					      PW_NON_CA_DATALINK,
-					      PW_PAGING,
-					      PW_POSITION,
-					      PW_CELL_SEARCH,
-					      PW_CELL_MANAGEMENT,
-					      PW_TALKING_2G,
-					      PW_DATALINK_2G,
-					      PW_TALKING_3G,
-					      PW_DATALINK_3G };
+static int md1_scenario_pwr[SCENARIO_NUM] = { PW_STANDBY,
+					    PW_2G_TALKING_OR_DATALINK,
+					    PW_3G_TALKING,
+					    PW_3G_DATALINK,
+					    PW_4G_DL_1CC,
+					    PW_4G_DL_2CC,
+					    PW_4G_DL_3CC };
 
 static int md1_pa_pwr_2g[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_PA_2G_SECTION_1,
@@ -182,21 +187,29 @@ static int md1_pa_pwr_3g[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_PA_3G_SECTION_5,
 					    PW_MD1_PA_3G_SECTION_6 };
 
-static int md1_pa_pwr_4g[SECTION_NUM+1] = { GUARDING_PATTERN,
-					    PW_MD1_PA_4G_SECTION_1,
-					    PW_MD1_PA_4G_SECTION_2,
-					    PW_MD1_PA_4G_SECTION_3,
-					    PW_MD1_PA_4G_SECTION_4,
-					    PW_MD1_PA_4G_SECTION_5,
-					    PW_MD1_PA_4G_SECTION_6 };
+static int md1_pa_pwr_4g_upL1[SECTION_NUM+1] = { GUARDING_PATTERN,
+					    PW_MD1_PA_4G_upL1_SECTION_1,
+					    PW_MD1_PA_4G_upL1_SECTION_2,
+					    PW_MD1_PA_4G_upL1_SECTION_3,
+					    PW_MD1_PA_4G_upL1_SECTION_4,
+					    PW_MD1_PA_4G_upL1_SECTION_5,
+					    PW_MD1_PA_4G_upL1_SECTION_6 };
 
-static int md3_pa_pwr[SECTION_NUM+1] = { GUARDING_PATTERN,
-					 PW_MD3_PA_SECTION_1,
-					 PW_MD3_PA_SECTION_2,
-					 PW_MD3_PA_SECTION_3,
-					 PW_MD3_PA_SECTION_4,
-					 PW_MD3_PA_SECTION_5,
-					 PW_MD3_PA_SECTION_6 };
+static int md1_pa_pwr_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
+					    PW_MD1_PA_4G_upL2_SECTION_1,
+					    PW_MD1_PA_4G_upL2_SECTION_2,
+					    PW_MD1_PA_4G_upL2_SECTION_3,
+					    PW_MD1_PA_4G_upL2_SECTION_4,
+					    PW_MD1_PA_4G_upL2_SECTION_5,
+					    PW_MD1_PA_4G_upL2_SECTION_6 };
+
+static int md3_pa_pwr_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
+					 PW_MD3_PA_C2K_SECTION_1,
+					 PW_MD3_PA_C2K_SECTION_2,
+					 PW_MD3_PA_C2K_SECTION_3,
+					 PW_MD3_PA_C2K_SECTION_4,
+					 PW_MD3_PA_C2K_SECTION_5,
+					 PW_MD3_PA_C2K_SECTION_6 };
 #endif
 
 int g_dlpt_need_do = 1;
@@ -275,7 +288,7 @@ int hpf_get_power_leakage(void)
 	struct hpf *hpfmgr = &hpf_ctrl;
 	unsigned int leakage_cpu = 0, leakage_gpu = 0;
 
-	leakage_cpu = mt_cpufreq_get_leakage_mw(0);
+	leakage_cpu = mt_ppm_get_leakage_mw(TOTAL_CLUSTER_LKG);
 	leakage_gpu = mt_gpufreq_get_leakage_mw();
 
 	hpfmgr->loading_leakage = leakage_cpu + leakage_gpu;
@@ -323,33 +336,38 @@ unsigned long hpf_get_power_dlpt(void)
 static void init_md1_section_level(void)
 {
 	u32 *share_mem;
-	u32 mem_2g = 0, mem_3g = 0, mem_4g = 0, mem_tdd = 0;
+	u32 mem_2g = 0, mem_3g = 0, mem_4g_upL1 = 0, mem_4g_upL2 = 0, mem_tdd = 0;
 	int section;
 
-	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, 0, NULL);
+	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, SMEM_USER_RAW_DBM, NULL);
 
 	for (section = 1; section <= SECTION_NUM; section++) {
 		mem_2g |= md1_section_level_2g[section] << section_level[section];
 		mem_3g |= md1_section_level_3g[section] << section_level[section];
-		mem_4g |= md1_section_level_4g[section] << section_level[section];
+		mem_4g_upL1 |= md1_section_level_4g_upL1[section] << section_level[section];
+		mem_4g_upL2 |= md1_section_level_4g_upL2[section] << section_level[section];
 		mem_tdd |= md1_section_level_tdd[section] << section_level[section];
 	}
 
 	/* Get 4 byte = 32 bit */
 	mem_2g &= SECTION_LEN;
 	mem_3g &= SECTION_LEN;
-	mem_4g &= SECTION_LEN;
+	mem_4g_upL1 &= SECTION_LEN;
+	mem_4g_upL2 &= SECTION_LEN;
 	mem_tdd &= SECTION_LEN;
 
 	share_mem[SECTION_LEVLE_2G] = mem_2g;
 	share_mem[SECTION_LEVLE_3G] = mem_3g;
-	share_mem[SECTION_LEVLE_4G] = mem_4g;
+	share_mem[SECTION_LEVLE_4G] = mem_4g_upL1;
+	share_mem[SECTION_1_LEVLE_4G] = mem_4g_upL2;
 	share_mem[SECTION_LEVLE_TDD] = mem_tdd;
 
-	pbm_crit("AP2MD1 section level, 2G: 0x%x(0x%x), 3G: 0x%x(0x%x), 4G: 0x%x(0x%x), TDD: 0x%x(0x%x), addr: 0x%p\n",
+	pbm_crit("AP2MD1 section level, 2G: 0x%x(0x%x), 3G: 0x%x(0x%x), ",
 			mem_2g, share_mem[SECTION_LEVLE_2G],
-			mem_3g, share_mem[SECTION_LEVLE_3G],
-			mem_4g, share_mem[SECTION_LEVLE_4G],
+			mem_3g, share_mem[SECTION_LEVLE_3G]);
+	pbm_crit("4G_upL1: 0x%x(0x%x), 4G_upL2: 0x%x(0x%x), TDD: 0x%x(0x%x), addr: 0x%p\n",
+			mem_4g_upL1, share_mem[SECTION_LEVLE_4G],
+			mem_4g_upL2, share_mem[SECTION_1_LEVLE_4G],
 			mem_tdd, share_mem[SECTION_LEVLE_TDD],
 			share_mem);
 }
@@ -360,18 +378,18 @@ static void init_md3_section_level(void)
 	u32 mem_c2k = 0;
 	int section;
 
-	share_mem = (u32 *)get_smem_start_addr(MD_SYS3, 0, NULL);
+	share_mem = (u32 *)get_smem_start_addr(MD_SYS3, SMEM_USER_RAW_DBM, NULL);
 
 	for (section = 1; section <= SECTION_NUM; section++)
-		mem_c2k |= md3_section_level[section] << section_level[section];
+		mem_c2k |= md3_section_level_c2k[section] << section_level[section];
 
 	/* Get 4 byte = 32 bit */
 	mem_c2k &= SECTION_LEN;
 
-	share_mem[SECTION_LEVLE_C2K] = mem_c2k;
+	share_mem[SECTION_1_LEVLE_C2K] = mem_c2k;
 
 	pbm_crit("AP2MD3 section level, C2K: 0x%x(0x%x), addr: 0x%p\n",
-			mem_c2k, share_mem[SECTION_LEVLE_C2K],
+			mem_c2k, share_mem[SECTION_1_LEVLE_C2K],
 			share_mem);
 }
 
@@ -392,6 +410,98 @@ void init_md_section_level(enum pbm_kicker kicker)
 	pbm_crit("MD section level init, MD1: %d, MD3: %d\n", hpfmgr->md1_ccci_ready, hpfmgr->md3_ccci_ready);
 }
 
+static int is_scenario_hit(u32 *share_reg, int scenario)
+{
+	int hit = 0;
+
+	switch (scenario) {
+	case S_STANDBY:
+		/* if bit 2 to bit 11 are not asserted */
+		if ((*share_reg & _BITMASK_(11:2)) == 0)
+			hit = 1;
+		break;
+	case S_2G_TALKING_OR_DATALINK:
+		/* if bit 2 is asserted */
+		if ((*share_reg & _BIT_(2)) == 1)
+			hit = 1;
+		break;
+	case S_3G_TALKING:
+		/* if bit 3 is asserted */
+		if ((*share_reg & _BIT_(3)) == 1)
+			hit = 1;
+		break;
+	case S_3G_DATALINK:
+		/* if bit 4 is asserted */
+		if ((*share_reg & _BIT_(4)) == 1)
+			hit = 1;
+		break;
+	case S_4G_DL_1CC:
+		/* if bit 5 is asserted */
+		if ((*share_reg & _BIT_(5)) == 1)
+			hit = 1;
+		break;
+	case S_4G_DL_2CC:
+		/* if bit 6 or bit 7 is asserted */
+		if ((*share_reg & _BITMASK_(7:6)) != 0)
+			hit = 1;
+		break;
+	case S_4G_DL_3CC:
+		/* if bit 8 or bit 9 is asserted */
+		if ((*share_reg & _BITMASK_(9:8)) != 0)
+			hit = 1;
+		break;
+	default:
+		pbm_crit("[%s] ERROR, unknown scenario [%d]\n", __func__, scenario);
+		WARN_ON_ONCE(1);
+		break;
+	}
+
+	return hit;
+}
+
+#if defined(TEST_MD_POWER)
+static u32 set_fake_share_reg(int scenario)
+{
+	u32 fShareReg = 0;
+
+	switch (scenario) {
+	case S_STANDBY:
+		/* if bit 2 to bit 11 are not asserted */
+		fShareReg = 0;
+		break;
+	case S_2G_TALKING_OR_DATALINK:
+		/* if bit 2 is asserted */
+		fShareReg = _BIT_(2);
+		break;
+	case S_3G_TALKING:
+		/* if bit 3 is asserted */
+		fShareReg = _BIT_(3);
+		break;
+	case S_3G_DATALINK:
+		/* if bit 4 is asserted */
+		fShareReg = _BIT_(4);
+		break;
+	case S_4G_DL_1CC:
+		/* if bit 5 is asserted */
+		fShareReg = _BIT_(5);
+		break;
+	case S_4G_DL_2CC:
+		/* if bit 6 or bit 7 is asserted */
+		fShareReg = _BITMASK_(7:6);
+		break;
+	case S_4G_DL_3CC:
+		/* if bit 8 or bit 9 is asserted */
+		fShareReg = _BITMASK_(9:8);
+		break;
+	default:
+		pbm_crit("[%s] ERROR, unknown scenario [%d]\n", __func__, scenario);
+		break;
+	}
+
+	return fShareReg;
+}
+#endif
+
 static int get_md1_scenario(void)
 {
 #ifndef TEST_MD_POWER
@@ -404,7 +514,7 @@ static int get_md1_scenario(void)
 
 	/* get scenario index when working & max power (bit4 and bit5 no use) */
 	for (i = 0; i < SCENARIO_NUM; i++) {
-		if (share_reg & (1 << i)) {
+		if (is_scenario_hit(&share_reg, i)) {
 			if (md1_scenario_pwr[i] >= pw_scenario) {
 				pw_scenario = md1_scenario_pwr[i];
 				scenario = i;
@@ -412,10 +522,10 @@ static int get_md1_scenario(void)
 		}
 	}
 
-	scenario = (scenario < 0) ? PAGING : scenario;
+	scenario = (scenario < 0) ? S_STANDBY : scenario;
 
 	pbm_debug("MD1 scenario: 0x%x, reg: 0x%x, pw: %d\n",
-			((scenario < 0) ? PAGING : scenario), share_reg, md1_scenario_pwr[scenario]);
+			scenario, share_reg, md1_scenario_pwr[scenario]);
 
 	return scenario;
 #else
@@ -425,15 +535,13 @@ static int get_md1_scenario(void)
 
 	for (j = 0; j < SCENARIO_NUM; j++) {
 
-		share_reg = 0;
+		share_reg = set_fake_share_reg(j);
 		pw_scenario = 0;
 		scenario = -1;
 
-		share_reg |= (1 << j);
-
 		/* get scenario index of working & max power (bit4 and bit5 no use) */
 		for (i = 0; i < SCENARIO_NUM; i++) {
-			if (share_reg & (1 << i)) {
+			if (is_scenario_hit(&share_reg, i)) {
 				if (md1_scenario_pwr[i] >= pw_scenario) {
 					pw_scenario = md1_scenario_pwr[i];
 					scenario = i;
@@ -441,10 +549,10 @@ static int get_md1_scenario(void)
 			}
 		}
 
-		scenario = (scenario < 0) ? PAGING : scenario;
+		scenario = (scenario < 0) ? S_STANDBY : scenario;
 
 		pbm_debug("MD1 scenario: 0x%x, reg: 0x%x, pw: %d\n",
-				((scenario < 0) ? PAGING : scenario), share_reg, md1_scenario_pwr[scenario]);
+				scenario, share_reg, md1_scenario_pwr[scenario]);
 	}
 
 	return scenario;
@@ -470,10 +578,7 @@ static int get_md1_2g_dbm_power(u32 *share_mem)
 			pa_power = md1_pa_pwr_2g[section];
 
 			/* get RF power */
-			if (section == SECTION_NUM)
-				rf_power = PW_MD1_RF_SECTION_2;
-			else
-				rf_power = PW_MD1_RF_SECTION_1;
+			rf_power = PW_MD1_RF_2G;
 
 			pbm_debug("MD1 2G dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_2G_TABLE], bef_share_mem, pa_power, rf_power, section);
@@ -505,10 +610,7 @@ static int get_md1_3g_dbm_power(u32 *share_mem)
 			pa_power = md1_pa_pwr_3g[section];
 
 			/* get RF power */
-			if (section == SECTION_NUM)
-				rf_power = PW_MD1_RF_SECTION_2;
-			else
-				rf_power = PW_MD1_RF_SECTION_1;
+			rf_power = PW_MD1_RF_3G;
 
 			pbm_debug("MD1 3G dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_3G_TABLE], bef_share_mem, pa_power, rf_power, section);
@@ -521,7 +623,7 @@ static int get_md1_3g_dbm_power(u32 *share_mem)
 	return pa_power + rf_power;
 }
 
-static int get_md1_4g_dbm_power(u32 *share_mem)
+static int get_md1_4g_upL1_dbm_power(u32 *share_mem)
 {
 	static u32 bef_share_mem;
 	static int pa_power, rf_power;
@@ -537,18 +639,47 @@ static int get_md1_4g_dbm_power(u32 *share_mem)
 		if (((share_mem[DBM_4G_TABLE] >> section_level[section]) & SECTION_VALUE) !=
 							((bef_share_mem >> section_level[section]) & SECTION_VALUE)) {
 			/* get PA power */
-			pa_power = md1_pa_pwr_4g[section];
+			pa_power = md1_pa_pwr_4g_upL1[section];
 
 			/* get RF power */
-			if (section == SECTION_NUM)
-				rf_power = PW_MD1_RF_SECTION_2;
-			else
-				rf_power = PW_MD1_RF_SECTION_1;
+			rf_power = PW_MD1_RF_4G_UPL1;
 
 			pbm_debug("MD1 4G dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
 					share_mem[DBM_4G_TABLE], bef_share_mem, pa_power, rf_power, section);
 
 			bef_share_mem = share_mem[DBM_4G_TABLE];
+
+			break;
+		}
+	}
+	return pa_power + rf_power;
+}
+
+static int get_md1_4g_upL2_dbm_power(u32 *share_mem)
+{
+	static u32 bef_share_mem;
+	static int pa_power, rf_power;
+	int section;
+
+	if (share_mem[DBM_4G_1_TABLE] == bef_share_mem) {
+		pbm_debug("MD1 4G dBm, no TX power, reg: 0x%x(0x%x) return 0, pa: %d, rf: %d\n",
+					share_mem[DBM_4G_1_TABLE], bef_share_mem, pa_power, rf_power);
+		return 0;
+	}
+
+	for (section = 1; section <= SECTION_NUM; section++) {
+		if (((share_mem[DBM_4G_1_TABLE] >> section_level[section]) & SECTION_VALUE) !=
+							((bef_share_mem >> section_level[section]) & SECTION_VALUE)) {
+			/* get PA power */
+			pa_power = md1_pa_pwr_4g_upL2[section];
+
+			/* get RF power */
+			rf_power = PW_MD1_RF_4G_UPL2;
+
+			pbm_debug("MD1 4G dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
+					share_mem[DBM_4G_1_TABLE], bef_share_mem, pa_power, rf_power, section);
+
+			bef_share_mem = share_mem[DBM_4G_1_TABLE];
 
 			break;
 		}
@@ -568,36 +699,38 @@ static int get_md3_dBm_power(void)
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS3, 0, NULL);
 
 	if (share_mem == NULL) {
-		pbm_debug("MD3 share_mem is NULL, , use max pa and rf power (1956 + 280)\n");
-		return 1956 + 280;
+		pbm_debug("MD3 share_mem is NULL, , use max pa and rf power (%d + %d)\n",
+			md3_pa_pwr_c2k[1], PW_MD3_RF_C2K);
+		return md3_pa_pwr_c2k[1] + PW_MD3_RF_C2K;
 	}
 
+	/* TO-DO:
+	 * Should SHARE_MEM_BLOCK_NUM be the same?
+	 * If the shared memory start addresses of MD1 and MD3 are different.
+	 */
 	pbm_debug("[%s] share mem addr: 0x%p\n", __func__, share_mem);
 	for (i = 0; i < SHARE_MEM_BLOCK_NUM; i++)
 		pbm_debug("section: %d, value: 0x%x\n", i, share_mem[i]);
 
-	if (share_mem[DBM_C2K_TABLE] == bef_share_mem) {
+	if (share_mem[DBM_C2K_1_TABLE] == bef_share_mem) {
 		pbm_debug("MD3 dBm, no TX power, reg: 0x%x(0x%x) return 0, pa: %d, rf: %d\n",
-					share_mem[DBM_C2K_TABLE], bef_share_mem, pa_power, rf_power);
+					share_mem[DBM_C2K_1_TABLE], bef_share_mem, pa_power, rf_power);
 		return 0;
 	}
 
 	for (section = 1; section <= SECTION_NUM; section++) {
-		if (((share_mem[DBM_C2K_TABLE] >> section_level[section]) & SECTION_VALUE) !=
+		if (((share_mem[DBM_C2K_1_TABLE] >> section_level[section]) & SECTION_VALUE) !=
 							((bef_share_mem >> section_level[section]) & SECTION_VALUE)) {
 			/* get PA power */
-			pa_power = md3_pa_pwr[section];
+			pa_power = md3_pa_pwr_c2k[section];
 
 			/* get RF power */
-			if (section == SECTION_NUM)
-				rf_power = PW_MD3_RF_SECTION_2;
-			else
-				rf_power = PW_MD3_RF_SECTION_1;
+			rf_power = PW_MD3_RF_C2K;
 
 			pbm_debug("MD3 dBm update, reg: 0x%x, bef_reg: 0x%x, pa: %d, rf: %d, section: %d\n",
-					share_mem[DBM_C2K_TABLE], bef_share_mem, pa_power, rf_power, section);
+					share_mem[DBM_C2K_1_TABLE], bef_share_mem, pa_power, rf_power, section);
 
-			bef_share_mem = share_mem[DBM_C2K_TABLE];
+			bef_share_mem = share_mem[DBM_C2K_1_TABLE];
 
 			break;
 		}
@@ -611,8 +744,8 @@ static int get_md1_dBm_power(int scenario)
 	int dbm_power;
 	int i;
 
-	if (scenario == PAGING) {
-		pbm_debug("MD1 is paging, dBm pw: 0\n");
+	if (scenario == S_STANDBY) {
+		pbm_debug("MD1 is standby, dBm pw: 0\n");
 		return 0;
 	}
 
@@ -620,22 +753,29 @@ static int get_md1_dBm_power(int scenario)
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, 0, NULL);
 
 	if (share_mem == NULL) {
-		pbm_debug("MD1 share_mem is NULL, use max pa and rf power (1965 + 512)\n");
-		return 1965 + 512;
+		pbm_debug("MD1 share_mem is NULL, use max pa and rf power (%d + %d)\n",
+			md1_pa_pwr_4g_upL1[1] + md1_pa_pwr_4g_upL2[1],
+			PW_MD1_RF_4G_UPL1 + PW_MD1_RF_4G_UPL2);
+		return md1_pa_pwr_4g_upL1[1] + md1_pa_pwr_4g_upL2[1] + PW_MD1_RF_4G_UPL1 + PW_MD1_RF_4G_UPL2;
 	}
 
 	pbm_debug("[%s] share mem addr: 0x%p\n", __func__, share_mem);
 	for (i = 0; i < SHARE_MEM_BLOCK_NUM; i++)
 		pbm_debug("section: %d, value: 0x%x\n", i, share_mem[i]);
 
-	if (scenario == TALKING_2G || scenario == DATALINK_2G)
+	if (scenario == S_2G_TALKING_OR_DATALINK) {
 		dbm_power = get_md1_2g_dbm_power(share_mem);
-	else if (scenario == TALKING_3G || scenario == DATALINK_3G)
+	} else if (scenario == S_3G_TALKING || scenario == S_3G_DATALINK) {
 		dbm_power = get_md1_3g_dbm_power(share_mem);
-	else if (scenario == CAT6_CA_DATALINK || scenario == NON_CA_DATALINK || scenario == POSITION)
-		dbm_power = get_md1_4g_dbm_power(share_mem);
-	else
+	} else if (scenario == S_4G_DL_1CC || scenario == S_4G_DL_2CC || scenario == S_4G_DL_3CC) {
+		/* TO-DO:
+		 * Add one RF power or two RF power?
+		 */
+		dbm_power = get_md1_4g_upL1_dbm_power(share_mem);
+		dbm_power += get_md1_4g_upL2_dbm_power(share_mem);
+	} else {
 		dbm_power = 0;
+	}
 
 	return dbm_power;
 }
