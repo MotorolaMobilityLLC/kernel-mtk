@@ -4653,13 +4653,13 @@ static signed int __init DIP_Init(void)
 	/* FIX-ME: linux-3.10 procfs API changed */
 	proc_create("driver/dip_reg", 0, NULL, &fcameradip_proc_fops);
 
-	dip_p2_dir = proc_mkdir("dip_p2", NULL);
+	dip_p2_dir = proc_mkdir("isp_p2", NULL);
 	if (!dip_p2_dir) {
-		LOG_ERR("[%s]: fail to mkdir /proc/dip_p2\n", __func__);
+		LOG_ERR("[%s]: fail to mkdir /proc/isp_p2\n", __func__);
 		return 0;
 	}
-	proc_entry = proc_create("dip_p2_dump", S_IRUGO, dip_p2_dir, &dip_p2_dump_proc_fops);
-	proc_entry = proc_create("dip_p2_kedump", S_IRUGO, dip_p2_dir, &dip_p2_ke_dump_proc_fops);
+	proc_entry = proc_create("isp_p2_dump", S_IRUGO, dip_p2_dir, &dip_p2_dump_proc_fops);
+	proc_entry = proc_create("isp_p2_kedump", S_IRUGO, dip_p2_dir, &dip_p2_ke_dump_proc_fops);
 	for (j = 0; j < DIP_IRQ_TYPE_AMOUNT; j++) {
 		switch (j) {
 		default:
