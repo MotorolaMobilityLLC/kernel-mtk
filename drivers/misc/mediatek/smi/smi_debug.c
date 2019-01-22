@@ -99,14 +99,11 @@ void smi_dumpCommonDebugMsg(int output_gce_buffer)
 	unsigned long u4Base;
 
 	/* No verify API in CCF, assume clk is always on */
-	int smiCommonClkEnabled = 1;
+	unsigned int smiCommonClkEnabled = 1;
 
-#if !defined(SMI_INTERNAL_CCF_SUPPORT)
-	smiCommonClkEnabled = clock_is_on(MT_CG_DISP0_SMI_COMMON);
-#endif				/* !defined (SMI_INTERNAL_CCF_SUPPORT) */
-
+	smiCommonClkEnabled = get_larb_clock_count(0);
 	/* SMI COMMON dump */
-	if ((!smiCommonClkEnabled)) {
+	if (smiCommonClkEnabled == 0) {
 		SMIMSG3(output_gce_buffer, "===SMI common clock is disabled===\n");
 		return;
 	}
@@ -122,17 +119,15 @@ void smi_dumpLarbDebugMsg(unsigned int u4Index, int output_gce_buffer)
 {
 	unsigned long u4Base = 0;
 	/* No verify API in CCF, assume clk is always on */
-	int larbClkEnabled = 1;
+	unsigned int larbClkEnabled = 1;
 
 	u4Base = get_larb_base_addr(u4Index);
-#if !defined(SMI_INTERNAL_CCF_SUPPORT)
-	larbClkEnabled = smi_larb_clock_is_on(u4Index);
-#endif
+	larbClkEnabled = get_larb_clock_count(u4Index);
 
 	if (u4Base == SMI_ERROR_ADDR) {
 		SMIMSG3(output_gce_buffer, "Doesn't support reg dump for Larb%d\n", u4Index);
 		return;
-	} else if ((larbClkEnabled != 0)) {
+	} else if ((larbClkEnabled > 0)) {
 		SMIMSG3(output_gce_buffer, "===SMI LARB%d reg dump, CLK: %d===\n", u4Index,
 			larbClkEnabled);
 
@@ -216,27 +211,27 @@ int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump)
 }
 
 static int get_status_code(int smi_larb_clk_status, int smi_larb_busy_count,
-			   int smi_common_busy_count)
+			   int smi_common_busy_count, int max_count)
 {
 	int status_code = 0;
 
 	if (smi_larb_clk_status != 0) {
-		if (smi_larb_busy_count == 5) {	/* The larb is always busy */
-			if (smi_common_busy_count == 5)	/* smi common is always busy */
+		if (smi_larb_busy_count == max_count) {	/* The larb is always busy */
+			if (smi_common_busy_count == max_count)	/* smi common is always busy */
 				status_code = 1;
 			else if (smi_common_busy_count == 0)	/* smi common is always idle */
 				status_code = 2;
 			else
 				status_code = 5;	/* smi common is sometimes busy and idle */
 		} else if (smi_larb_busy_count == 0) {	/* The larb is always idle */
-			if (smi_common_busy_count == 5)	/* smi common is always busy */
+			if (smi_common_busy_count == max_count)	/* smi common is always busy */
 				status_code = 3;
 			else if (smi_common_busy_count == 0)	/* smi common is always idle */
 				status_code = 4;
 			else
 				status_code = 6;	/* smi common is sometimes busy and idle */
 		} else {	/* sometime the larb is busy */
-			if (smi_common_busy_count == 5)	/* smi common is always busy */
+			if (smi_common_busy_count == max_count)	/* smi common is always busy */
 				status_code = 7;
 			else if (smi_common_busy_count == 0)	/* smi common is always idle */
 				status_code = 8;
@@ -265,6 +260,7 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 	int dump_time = 0;
 	int is_smi_issue = 0;
 	int status_code = 0;
+	int max_count = 3;
 	/* Keep the dump result */
 	unsigned char smi_common_busy_count = 0;
 	unsigned int u4Index = 0;
@@ -276,7 +272,7 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 	int smi_larb_clk_status[SMI_LARB_NUM] = { 0 };
 
 	/* dump resister and save resgister status */
-	for (dump_time = 0; dump_time < 5; dump_time++) {
+	for (dump_time = 0; dump_time < max_count; dump_time++) {
 		reg_temp = M4U_ReadReg32(get_common_base_addr(), 0x440);
 		if ((reg_temp & (1 << 0)) == 0) {
 			/* smi common is busy */
@@ -289,7 +285,7 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 		for (u4Index = 0; u4Index < SMI_LARB_NUM; u4Index++) {
 			u4Base = get_larb_base_addr(u4Index);
 
-			smi_larb_clk_status[u4Index] = smi_larb_clock_is_on(u4Index);
+			smi_larb_clk_status[u4Index] = get_larb_clock_count(u4Index);
 			/* check larb clk is enable */
 			if (smi_larb_clk_status[u4Index] != 0) {
 				if (u4Base != SMI_ERROR_ADDR) {
@@ -314,7 +310,7 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 			/* larb i has been selected */
 			/* Get status code */
 			status_code = get_status_code(smi_larb_clk_status[i], smi_larb_busy_count[i],
-					smi_common_busy_count);
+					smi_common_busy_count, max_count);
 
 			/* Send the debug message according to the final result */
 			switch (status_code) {
@@ -324,9 +320,9 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 			case 7:
 			case 8:
 				SMIMSG3(output_gce_buffer,
-					"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> Check engine's state first\n",
-					i, smi_larb_busy_count[i], smi_common_busy_count,
-					status_code);
+					"Larb%d Busy=%d/%d, SMI Common Busy=%d/%d, status=%d ==> Check engine's state first\n",
+					i, smi_larb_busy_count[i], max_count,
+					smi_common_busy_count, max_count, status_code);
 				SMIMSG3(output_gce_buffer,
 					"If the engine is waiting for Larb%ds' response, it needs SMI HW's check\n",
 					i);
@@ -334,17 +330,17 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 			case 2:
 				if (smi_larb_mmu_status[i] == 0) {
 					SMIMSG3(output_gce_buffer,
-						"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> Check engine state first\n",
-						i, smi_larb_busy_count[i],
-						smi_common_busy_count, status_code);
+						"Larb%d Busy=%d/%d, SMI Common Busy=%d/%d, status=%d ==> Check engine's state first\n",
+						i, smi_larb_busy_count[i], max_count,
+						smi_common_busy_count, max_count, status_code);
 					SMIMSG3(output_gce_buffer,
 						"If the engine is waiting for Larb%ds' response, it needs SMI HW's check\n",
 						i);
 				} else {
 					SMIMSG3(output_gce_buffer,
-						"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> MMU port config error\n",
-						i, smi_larb_busy_count[i],
-						smi_common_busy_count, status_code);
+						"Larb%d Busy=%d/%d, SMI Common Busy=%d/%d, status=%d ==> Check engine's state first\n",
+						i, smi_larb_busy_count[i], max_count,
+						smi_common_busy_count, max_count, status_code);
 					is_smi_issue = 1;
 				}
 				break;
@@ -352,9 +348,9 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 			case 6:
 			case 9:
 				SMIMSG3(output_gce_buffer,
-					"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> not SMI issue\n",
-					i, smi_larb_busy_count[i], smi_common_busy_count,
-					status_code);
+					"Larb%d Busy=%d/%d, SMI Common Busy=%d/%d, status=%d ==> Check engine's state first\n",
+					i, smi_larb_busy_count[i], max_count,
+					smi_common_busy_count, max_count, status_code);
 				break;
 			case 10:
 				SMIMSG3(output_gce_buffer,
@@ -363,9 +359,9 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 				break;
 			default:
 				SMIMSG3(output_gce_buffer,
-					"Larb%d Busy=%d/5, SMI Common Busy=%d/5, status=%d ==> status unknown\n",
-					i, smi_larb_busy_count[i], smi_common_busy_count,
-					status_code);
+					"Larb%d Busy=%d/%d, SMI Common Busy=%d/%d, status=%d ==> Check engine's state first\n",
+					i, smi_larb_busy_count[i], max_count,
+					smi_common_busy_count, max_count, status_code);
 				break;
 			}
 
@@ -391,11 +387,16 @@ void smi_dump_clk_status(void)
 void smi_dump_larb_m4u_register(int larb)
 {
 	unsigned long u4Base = 0;
+	unsigned int larbClkEnabled = 0;
 
 	u4Base = get_larb_base_addr(larb);
+	larbClkEnabled = get_larb_clock_count(larb);
 
 	if (u4Base == SMI_ERROR_ADDR) {
 		SMIMSG("Doesn't support reg dump for Larb%d\n", larb);
+		return;
+	} else if (larbClkEnabled == 0) {
+		SMIMSG("===SMI LARB%d clock is disabled===\n", larb);
 		return;
 	}
 

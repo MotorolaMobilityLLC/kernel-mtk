@@ -23,6 +23,7 @@
 #include <linux/mm.h>
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
+#include <linux/atomic.h>
 #include <aee.h>
 
 /* Define SMI_INTERNAL_CCF_SUPPORT when CCF needs to be enabled */
@@ -133,6 +134,7 @@ unsigned long gLarbBaseAddr[SMI_LARB_NUM] = { 0 };
 
 static int smi_prepare_count;
 static int smi_enable_count;
+static atomic_t larbs_clock_count[SMI_LARB_NUM];
 
 static unsigned int smi_first_restore = 1;
 char *smi_get_region_name(unsigned int region_indx);
@@ -340,6 +342,13 @@ struct clk *get_smi_clk(char *smi_clk_name)
 		smi_clk_ptr = NULL;
 	}
 	return smi_clk_ptr;
+}
+
+unsigned int get_larb_clock_count(const int larb_id)
+{
+	if (larb_id < SMI_LARB_NUM)
+		return (unsigned int)atomic_read(&(larbs_clock_count[larb_id]));
+	return 0;
 }
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -692,6 +701,8 @@ static int larb_clock_enable(int larb_id, int enable_mtcmos)
 #else
 	SMIMSG("larb_clock_enable is not available\n");
 #endif
+	if (larb_id < SMI_LARB_NUM)
+		atomic_inc(&(larbs_clock_count[larb_id]));
 	return 0;
 }
 
@@ -1088,6 +1099,8 @@ static int larb_clock_disable(int larb_id, int enable_mtcmos)
 #else
 	SMIMSG("larb_clock_disable is not available\n");
 #endif
+	if (larb_id < SMI_LARB_NUM)
+		atomic_dec(&(larbs_clock_count[larb_id]));
 	return 0;
 }
 
@@ -2278,6 +2291,9 @@ static int smi_probe(struct platform_device *pdev)
 	} else {
 		SMIDBG(1, "enable_bw_optimization is disabled\n");
 	}
+
+	for (i = 0; i < SMI_LARB_NUM; i++)
+		atomic_set(&(larbs_clock_count[i]), 0);
 
 	SMIMSG("Execute smi_register\n");
 	if (smi_register()) {
