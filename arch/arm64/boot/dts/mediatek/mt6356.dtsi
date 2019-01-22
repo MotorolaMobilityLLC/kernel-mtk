@@ -15,42 +15,42 @@ mt_pmic_regulator {
 			regulator-name = "vs1";
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <2787500>;
-			egulator-ramp-delay = <12500>;
+			regulator-ramp-delay = <12500>;
 			regulator-enable-ramp-delay = <1000>;
 		};
 		mt_pmic_vmodem_buck_reg: buck_vmodem {
 			regulator-name = "vmodem";
 			regulator-min-microvolt = <500000>;
 			regulator-max-microvolt = <1293750>;
-			egulator-ramp-delay = <6250>;
+			regulator-ramp-delay = <6250>;
 			regulator-enable-ramp-delay = <1000>;
 		};
 		mt_pmic_vcore_buck_reg: buck_vcore {
 			regulator-name = "vcore";
 			regulator-min-microvolt = <500000>;
 			regulator-max-microvolt = <1293750>;
-			egulator-ramp-delay = <6250>;
+			regulator-ramp-delay = <6250>;
 			regulator-enable-ramp-delay = <1000>;
 		};
 		mt_pmic_vproc_buck_reg: buck_vproc {
 			regulator-name = "vproc";
 			regulator-min-microvolt = <500000>;
 			regulator-max-microvolt = <1293750>;
-			egulator-ramp-delay = <6250>;
+			regulator-ramp-delay = <6250>;
 			regulator-enable-ramp-delay = <1000>;
 		};
 		mt_pmic_vs2_buck_reg: buck_vs2 {
 			regulator-name = "vs2";
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <2787500>;
-			egulator-ramp-delay = <12500>;
+			regulator-ramp-delay = <12500>;
 			regulator-enable-ramp-delay = <1000>;
 		};
 		mt_pmic_vpa_buck_reg: buck_vpa {
 			regulator-name = "vpa";
 			regulator-min-microvolt = <500000>;
 			regulator-max-microvolt = <3650000>;
-			egulator-ramp-delay = <50000>;
+			regulator-ramp-delay = <50000>;
 			regulator-enable-ramp-delay = <1000>;
 		};
 	};	/* End of buck_regulators */

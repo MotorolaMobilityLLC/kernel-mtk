@@ -54,28 +54,10 @@ unsigned int __attribute__ ((weak)) pmic_get_vbif28_volt(void)
 {
 	return 0;
 }
-unsigned int wk_auxadc_vsen_tdet_ctrl(unsigned char en_check)
-{
-	if (en_check) {
-		if ((!pmic_get_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN)) &&
-			(pmic_get_register_value(PMIC_BATON_TDET_EN))) {
-			PMICLOG("[%s] vbif non 1th %d\n", __func__, g_pmic_pad_vbif28_vol);
-			return g_pmic_pad_vbif28_vol;
-		}
-		pr_err("[%s] vbif 1th a!\n", __func__);
-	} else {
-		pmic_set_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN, 0);
-		pmic_set_register_value(PMIC_BATON_TDET_EN, 1);
-		pr_err("[%s] vbif 1th b!\n", __func__);
-	}
-	return 0;
-}
 
 void wk_auxadc_bgd_ctrl(unsigned char en)
 {
 	if (en) {
-		/*--Enable BATON TDET EN--*/
-		pmic_set_register_value(PMIC_BATON_TDET_EN, 1);
 		/*--BAT TEMP MAX DET EN--*/
 		pmic_set_register_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MAX, 1);
 		pmic_set_register_value(PMIC_AUXADC_BAT_TEMP_EN_MAX, 1);
@@ -95,8 +77,6 @@ void wk_auxadc_bgd_ctrl(unsigned char en)
 		/*--BAT TEMP DET EN--*/
 		pmic_set_register_value(PMIC_RG_INT_EN_BAT_TEMP_H, 0);
 		pmic_set_register_value(PMIC_RG_INT_EN_BAT_TEMP_L, 0);
-		/*--Disable BATON TDET EN--*/
-		pmic_set_register_value(PMIC_BATON_TDET_EN, 0);
 	}
 }
 
@@ -134,35 +114,46 @@ void pmic_auxadc_unlock(void)
 	wake_unlock(&pmic_auxadc_wake_lock);
 }
 
-struct pmic_auxadc_channel mt6356_auxadc_channel[] = {
-	{15, 3, PMIC_AUXADC_RQST_CH0, /* BATADC */
+struct pmic_auxadc_channel_new {
+	u8 resolution;
+	u8 r_val;
+	u8 ch_num;
+	unsigned int channel_rqst;
+	unsigned int channel_rdy;
+	unsigned int channel_out;
+};
+
+struct pmic_auxadc_channel_new mt6356_auxadc_channel[] = {
+	{15, 3, 0, PMIC_AUXADC_RQST_CH0, /* BATADC */
 		PMIC_AUXADC_ADC_RDY_CH0_BY_AP, PMIC_AUXADC_ADC_OUT_CH0_BY_AP},
-	{12, 1, PMIC_AUXADC_RQST_CH2, /* VCDT */
+	{12, 1, 2, PMIC_AUXADC_RQST_CH2, /* VCDT */
 		PMIC_AUXADC_ADC_RDY_CH2, PMIC_AUXADC_ADC_OUT_CH2},
-	{12, 2, PMIC_AUXADC_RQST_CH3, /* BAT TEMP */
+	{12, 2, 3, PMIC_AUXADC_RQST_CH3, /* BAT TEMP */
 		PMIC_AUXADC_ADC_RDY_CH3, PMIC_AUXADC_ADC_OUT_CH3},
-	{12, 2, PMIC_AUXADC_RQST_BATID, /* BATID */
+	{12, 2, 3, PMIC_AUXADC_RQST_BATID, /* BATID */
 		PMIC_AUXADC_ADC_RDY_BATID, PMIC_AUXADC_ADC_OUT_BATID},
-	{12, 2, PMIC_AUXADC_RQST_CH11, /* VBIF */
+	{12, 2, 11, PMIC_AUXADC_RQST_CH11, /* VBIF */
 		PMIC_AUXADC_ADC_RDY_CH11, PMIC_AUXADC_ADC_OUT_CH11},
-	{12, 1, PMIC_AUXADC_RQST_CH4, /* CHIP TEMP */
+	{12, 1, 4, PMIC_AUXADC_RQST_CH4, /* CHIP TEMP */
 		PMIC_AUXADC_ADC_RDY_CH4, PMIC_AUXADC_ADC_OUT_CH4},
-	{12, 1, PMIC_AUXADC_RQST_CH4, /* DCXO */
+	{12, 1, 4, PMIC_AUXADC_RQST_CH4, /* DCXO */
 		PMIC_AUXADC_ADC_RDY_DCXO_BY_AP, PMIC_AUXADC_ADC_OUT_DCXO_BY_AP},
-	{12, 1, PMIC_AUXADC_RQST_CH5, /* ACCDET MULTI-KEY */
+	{12, 1, 5, PMIC_AUXADC_RQST_CH5, /* ACCDET MULTI-KEY */
 		PMIC_AUXADC_ADC_RDY_CH5, PMIC_AUXADC_ADC_OUT_CH5},
-	{15, 1, PMIC_AUXADC_RQST_CH7, /* TSX */
+	{15, 1, 7, PMIC_AUXADC_RQST_CH7, /* TSX */
 		PMIC_AUXADC_ADC_RDY_CH7_BY_AP, PMIC_AUXADC_ADC_OUT_CH7_BY_AP},
-	{12, 1, PMIC_AUXADC_RQST_CH9, /* HP OFFSET CAL */
+	{12, 1, 9, PMIC_AUXADC_RQST_CH9, /* HP OFFSET CAL */
 		PMIC_AUXADC_ADC_RDY_CH9, PMIC_AUXADC_ADC_OUT_CH9},
+	{15, 3, 1, PMIC_AUXADC_RQST_CH1, /* ISENSE */
+		PMIC_AUXADC_ADC_RDY_CH1_BY_AP, PMIC_AUXADC_ADC_OUT_CH1_BY_AP},
 };
 #define MT6356_AUXADC_CHANNEL_MAX	ARRAY_SIZE(mt6356_auxadc_channel)
 
 int mt6356_get_auxadc_value(u8 channel)
 {
-	int count = 0;
+	int count = 0, tdet_tmp = 0;
 	signed int adc_result = 0, reg_val = 0;
-	struct pmic_auxadc_channel *auxadc_channel;
+	struct pmic_auxadc_channel_new *auxadc_channel;
 
 	if (channel - AUXADC_LIST_MT6356_START < 0 ||
 			channel - AUXADC_LIST_MT6356_END > 0) {
@@ -172,17 +163,19 @@ int mt6356_get_auxadc_value(u8 channel)
 	auxadc_channel =
 		&mt6356_auxadc_channel[channel-AUXADC_LIST_MT6356_START];
 
-	if (channel == AUXADC_LIST_VBIF) {
-		if (wk_auxadc_vsen_tdet_ctrl(1))
-			return g_pmic_pad_vbif28_vol;
-	}
-
 	pmic_auxadc_lock();
 
 	if (channel == AUXADC_LIST_DCXO)
 		pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 1);
 	if (channel == AUXADC_LIST_MT6356_CHIP_TEMP)
 		pmic_set_register_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 0);
+	if (channel == AUXADC_LIST_VBIF) {
+		if (pmic_get_register_value(PMIC_BATON_TDET_EN)) {
+			tdet_tmp = 1;
+			pr_err("pmic auxadc baton_tdet_en should be zero\n");
+			pmic_set_register_value(PMIC_BATON_TDET_EN, 0);
+		}
+	}
 	if (channel == AUXADC_LIST_BATTEMP)
 		mutex_lock(&auxadc_ch3_mutex);
 
@@ -203,9 +196,6 @@ int mt6356_get_auxadc_value(u8 channel)
 
 	pmic_auxadc_unlock();
 
-	if (channel == AUXADC_LIST_VBIF)
-		wk_auxadc_vsen_tdet_ctrl(0);
-
 	if (auxadc_channel->resolution == 12)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 4096;
@@ -213,10 +203,10 @@ int mt6356_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
-				__func__, channel, reg_val, adc_result);
+	pr_info("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n",
+		__func__, channel, auxadc_channel->ch_num, reg_val, adc_result);
 
-	/* Audio request HPOPS to return raw data */
+	/* Audio request HPOFS to return raw data */
 	if (channel == AUXADC_LIST_HPOFS_CAL)
 		return reg_val * auxadc_channel->r_val;
 	else

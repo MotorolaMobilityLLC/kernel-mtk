@@ -80,6 +80,7 @@ const char *pmic_auxadc_channel_name[] = {
 	"ACCDET",
 	"TSX",
 	"HP",
+	"ISENSE",
 #endif
 };
 #define PMIC_AUXADC_CHANNEL_MAX	ARRAY_SIZE(pmic_auxadc_channel_name)

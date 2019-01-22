@@ -319,6 +319,11 @@ static int mt6311_user_space_probe(struct platform_device *dev)
 	return 0;
 }
 
+struct platform_device mt6311_user_space_device = {
+	.name = "mt6311-user",
+	.id = -1,
+};
+
 static struct platform_driver mt6311_user_space_driver = {
 	.probe = mt6311_user_space_probe,
 	.driver = {
@@ -335,9 +340,12 @@ static int __init mt6311_init(void)
 	if (ret != 0)
 		pr_err(MT6311TAG "failed to register mt6311 i2c driver\n");
 
+	ret = platform_device_register(&mt6311_user_space_device);
+	if (ret)
+		pr_err(MT6311TAG "failed to create mt6311_access file(device register fail)\n");
 	ret = platform_driver_register(&mt6311_user_space_driver);
 	if (ret)
-		pr_err(MT6311TAG "failed to create mt6311_access file\n");
+		pr_err(MT6311TAG "failed to create mt6311_access file(driver register fail)\n");
 
 	return ret;
 }
