@@ -168,6 +168,32 @@ static bool ged_dvfs_policy(
 		unsigned long t, long phase, unsigned long ul3DFenceDoneTime, bool bRefreshed);
 unsigned long ged_gas_query_mode(void);
 
+static struct {
+	int freq;
+	int up;
+	int down;
+} loading_ud_table[16];
+
+static void _init_loading_ud_table(void)
+{
+	int i;
+	int num = (int)mt_gpufreq_get_dvfs_table_num();
+
+	for (i = 0; i < num; ++i) {
+		loading_ud_table[i].freq = mt_gpufreq_get_freq_by_idx(i);
+		loading_ud_table[i].up = 90;
+	}
+	for (i = 0; i < num - 1; ++i) {
+		int a = loading_ud_table[i].freq;
+		int b = loading_ud_table[i+1].freq;
+
+		loading_ud_table[i].down = (90 * b) / a;
+	}
+
+	if (num >= 2)
+		loading_ud_table[num-1].down = loading_ud_table[num-2].down;
+}
+
 unsigned long ged_query_info( GED_INFO eType)
 {
 	unsigned int gpu_loading;
@@ -341,8 +367,7 @@ unsigned long get_ns_period_from_fps(unsigned int ui32Fps)
 
 void ged_dvfs_set_tuning_mode(GED_DVFS_TUNING_MODE eMode)
 {
-	g_eTuningMode=eMode;    
-
+	g_eTuningMode = eMode;
 }
 
 void ged_dvfs_set_tuning_mode_wrap(int eMode)
@@ -350,16 +375,10 @@ void ged_dvfs_set_tuning_mode_wrap(int eMode)
 	ged_dvfs_set_tuning_mode( (GED_DVFS_TUNING_MODE) eMode) ;
 }
 
-
-
 GED_DVFS_TUNING_MODE ged_dvfs_get_tuning_mode()
 {
 	return g_eTuningMode;
 }
-
-//g_i32EvenStatus
-
-
 
 GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent, bool bSwitch)
 {
@@ -417,14 +436,14 @@ GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eE
 			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_MHL4K_VID) : (g_ui32EventStatus &= (~GED_EVENT_MHL4K_VID));
 			ret = ged_dvfs_probe_signal(GED_MHL4K_VID_SIGNAL_EVENT);
 			break;
+		case GED_DVFS_VSYNC_OFFSET_VILTE_VID_EVENT:
+			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_VILTE_VID)
+				: (g_ui32EventStatus &= (~GED_EVENT_VILTE_VID));
+			ret = ged_dvfs_probe_signal(GED_VILTE_VID_SIGNAL_EVENT);
+			break;
 		case GED_DVFS_BOOST_HOST_EVENT:
 			ret = ged_dvfs_probe_signal(GED_SIGNAL_BOOST_HOST_EVENT);
 			goto CHECK_OUT;
-		case GED_DVFS_VSYNC_OFFSET_VIDEO_MERGE_MD_EVENT:
-			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_VIDEO_MERGE_MD) :
-				    (g_ui32EventStatus &= (~GED_EVENT_VIDEO_MERGE_MD));
-			ret = ged_dvfs_probe_signal(GED_DVFS_VSYNC_OFFSET_SIGNAL_EVENT);
-			break;
 		default:
 			GED_LOGE("%s: not acceptable event:%u \n", __func__,  eEvent); 
 			ret = GED_ERROR_INVALID_PARAMS;
@@ -474,7 +493,7 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 #endif
 	if(g_gpu_timer_based_emu)
 	{
-		return GED_INTENTIONAL_BLOCK;
+		return GED_ERROR_INTENTIONAL_BLOCK;
 	}
 
 #ifdef GED_DVFS_UM_CAL
@@ -687,15 +706,27 @@ static bool ged_dvfs_policy(
 	}
 	else // vsync-based fallback mode
 	{
+		{
+			static int init;
 
-		if (ui32GPULoading >= 70)
-		{
+			if (init == 0) {
+				init = 1;
+				_init_loading_ud_table();
+			}
+		}
+
+		if (ui32GPULoading >= loading_ud_table[ui32GPUFreq].up)
 			i32NewFreqID -= 1;
-		}
-		else if (ui32GPULoading <= 50)
-		{
+		else if (ui32GPULoading <= loading_ud_table[ui32GPUFreq].down)
 			i32NewFreqID += 1;
-		}
+
+		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K1] rdy gpu_av_loading: %u, %d(%d)-up:%d,%d, new: %d",
+				gpu_loading,
+				ui32GPUFreq,
+				loading_ud_table[ui32GPUFreq].freq,
+				loading_ud_table[ui32GPUFreq].up,
+				loading_ud_table[ui32GPUFreq].down,
+				i32NewFreqID);
 
 		g_CommitType = MTK_GPU_DVFS_TYPE_FALLBACK;
 	}
@@ -821,14 +852,12 @@ static void ged_dvfs_set_bottom_gpu_freq(unsigned int ui32FreqLevel)
 
 }
 
-
 static unsigned int ged_dvfs_get_gpu_freq_level_count(void)
 {
 
 	return mt_gpufreq_get_dvfs_table_num();
 
 }
-
 
 static void ged_dvfs_custom_boost_gpu_freq(unsigned int ui32FreqLevel)
 {
@@ -862,7 +891,6 @@ static void ged_dvfs_custom_boost_gpu_freq(unsigned int ui32FreqLevel)
 	mutex_unlock(&gsDVFSLock);
 
 }
-
 
 static void ged_dvfs_custom_ceiling_gpu_freq(unsigned int ui32FreqLevel)
 {
@@ -1195,10 +1223,7 @@ void set_target_fps(int i32FPS)
 
 unsigned long ged_gas_query_mode()
 {
-	if (g_ui32EventStatus & GED_EVENT_GAS)
-		return GAS_CATEGORY_OTHERS;
-	else
-		return GAS_CATEGORY_GAME;
+	return (g_ui32EventStatus & GED_EVENT_GAS) ? GAS_CATEGORY_GAME : GAS_CATEGORY_OTHERS;
 }
 
 

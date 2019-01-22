@@ -15,91 +15,98 @@
 
 #include <ged_bridge.h>
 
+#include <linux/file.h>
+#include <linux/fs.h>
+#include <linux/list.h>
+#include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
 #include <linux/seq_file.h>
+#include <linux/anon_inodes.h>
 
 #include <ged_debugFS.h>
 
 typedef struct {
-	int ver;
-	int ref;
-	int region_num;
+	uint64_t unique_id;
 
+	struct file *file;
+	int alloc_fd;
+
+	int region_num;
 	void *data;
 	int *region_sizes; /* sub data */
 	uint32_t **region_data; /* sub data */
+
+	struct list_head ge_entry_list;
 } GEEntry;
 
 #define GE_PERR(fmt, ...)   pr_err("[GRALLOC_EXTRA,%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 
-typedef struct {
-	GED_FILE_PRIVATE_BASE base;
-	int16_t ref_table[GE_POOL_ENTRY_SIZE];
-} GED_GE_FILE;
-
 static struct kmem_cache *gPoolCache;
-static uint16_t gver = 1;
-static GEEntry *gPoolEntry[GE_POOL_ENTRY_SIZE];
-static DEFINE_MUTEX(gPoolMutex);
-
 static struct dentry *gDFSEntry;
+static LIST_HEAD(ge_entry_list_head);
+static DEFINE_SPINLOCK(ge_entry_list_lock);
+static int num_entry;
 
-static void *_get_debugfs_seq_nextx(loff_t *pos)
+/* region alloc and free lock */
+static DEFINE_SPINLOCK(ge_raf_lock);
+
+static uint64_t gen_unique_id(void)
 {
-	loff_t n = *pos - 1;
+	/* A collision may occur after 2^44 sec, aka 557,474 years,
+	 * if we do allocate and free in 2^20 times per second.
+	 */
+	static uint64_t serial;
 
-	return (n >= GE_POOL_ENTRY_SIZE) ? NULL : &gPoolEntry[n];
+	unsigned long flags;
+	uint64_t ret;
+
+	spin_lock_irqsave(&ge_raf_lock, flags);
+	ret = serial++;
+	spin_unlock_irqrestore(&ge_raf_lock, flags);
+
+	return ret;
 }
 
 static void *_ge_debugfs_seq_start(struct seq_file *m, loff_t *pos)
 {
-	if (*pos == 0)
-		return SEQ_START_TOKEN;
-
-	return _get_debugfs_seq_nextx(pos);
+	if (*pos == 0) {
+		seq_puts(m, "================================================\n");
+		num_entry = (int)*pos;
+		return list_first_entry(&ge_entry_list_head, GEEntry, ge_entry_list);
+	}
+	return NULL;
 }
 void _ge_debugfs_seq_stop(struct seq_file *m, void *v)
 {
+	seq_puts(m, "================================================\n");
+	seq_printf(m, "Total entries: %d\n", num_entry);
 	/* do nothing */
 }
 void *_ge_debugfs_seq_next(struct seq_file *m, void *v, loff_t *pos)
 {
-	*pos += 1;
-	return _get_debugfs_seq_nextx(pos);
+	struct list_head *next = ((GEEntry *)v)->ge_entry_list.next;
+
+	num_entry = (int)++*pos;
+	return (next != &ge_entry_list_head) ? list_entry(next, GEEntry, ge_entry_list) : NULL;
 }
 int _ge_debugfs_seq_show(struct seq_file *m, void *v)
 {
-	if (v == SEQ_START_TOKEN) {
-		seq_printf(m, "max: %d\n", GE_POOL_ENTRY_SIZE);
-	} else {
-		GEEntry *entry;
+	const GEEntry *entry = v;
+	int memory_size = 0;
+	int memory_ksize = 0;
+	int i;
 
-		mutex_lock(&gPoolMutex);
-		entry = *((GEEntry **)v);
-		if (entry) {
-			int i;
-			int memory_size = 0;
-			int memory_ksize = 0;
-			int regions = 0;
-			int idx = ((char *)v - (char *)&gPoolEntry[0]) / sizeof(GEEntry *);
-
-			memory_size += (sizeof(uint32_t) + sizeof(uint32_t *)) * entry->region_num;
-			memory_ksize += ksize(entry->data);
-			for (i = 0; i < entry->region_num; ++i) {
-				if (entry->region_data[i]) {
-					regions |= (1 << i);
-					memory_size += entry->region_sizes[i];
-					memory_ksize += ksize(entry->region_data[i]);
-				}
-			}
-
-			seq_printf(m, "idx: %03x, ref: %d, region:%x data_size: (%d)%d bytes\n",
-					idx, entry->ref, regions, memory_size, memory_ksize);
+	memory_size += (sizeof(uint32_t) + sizeof(uint32_t *)) * entry->region_num;
+	memory_ksize += ksize(entry->data);
+	for (i = 0; i < entry->region_num; ++i) {
+		if (entry->region_data[i]) {
+			memory_size += entry->region_sizes[i];
+			memory_ksize += ksize(entry->region_data[i]);
 		}
-		mutex_unlock(&gPoolMutex);
 	}
-
+	seq_printf(m, "GEEntry id:0x%llx memory size: %d bytes, ksize: %3d bytes\n",
+			entry->unique_id, memory_size, memory_ksize);
 	return 0;
 }
 static const struct seq_operations gDEFEntryOps = {
@@ -112,6 +119,28 @@ static ssize_t _ge_debugfs_write_entry(const char __user *pszBuffer, size_t uiCo
 {
 	return uiCount;
 }
+
+static int ge_entry_release(struct inode *inode, struct file *file)
+{
+	unsigned long flags;
+	int i;
+	GEEntry *entry = file->private_data;
+
+	spin_lock_irqsave(&ge_entry_list_lock, flags);
+	list_del(&entry->ge_entry_list);
+	spin_unlock_irqrestore(&ge_entry_list_lock, flags);
+
+	/* remove object */
+	for (i = 0; i < entry->region_num; ++i)
+		kfree(entry->region_data[i]);
+	kfree(entry->region_sizes);
+	kmem_cache_free(gPoolCache, entry);
+	return 0;
+}
+
+static const struct file_operations GEEntry_fops = {
+	.release = ge_entry_release,
+};
 
 int ged_ge_init(void)
 {
@@ -140,256 +169,114 @@ int ged_ge_exit(void)
 	return 0;
 }
 
-void ged_ge_context_ref(GED_FILE_PRIVATE_BASE *base, uint32_t ge_hnd)
+int ged_ge_alloc(int region_num, uint32_t *region_sizes)
 {
-	GED_GE_FILE *file = container_of(base, GED_GE_FILE, base);
-	int idx = GE_GEHND2IDX(ge_hnd);
-
-	if (file) {
-		mutex_lock(&gPoolMutex);
-		file->ref_table[idx] += 1;
-		mutex_unlock(&gPoolMutex);
-	}
-}
-void ged_ge_context_deref(GED_FILE_PRIVATE_BASE *base, uint32_t ge_hnd)
-{
-	GED_GE_FILE *file = container_of(base, GED_GE_FILE, base);
-	int idx = GE_GEHND2IDX(ge_hnd);
-
-	if (file) {
-		mutex_lock(&gPoolMutex);
-		file->ref_table[idx] -= 1;
-		mutex_unlock(&gPoolMutex);
-	}
-}
-
-static void _ged_ge_free_entry(GEEntry *entry)
-{
-	int i;
-	/* remove object */
-	for (i = 0; i < entry->region_num; ++i)
-		kfree(entry->region_data[i]);
-	kfree(entry->region_sizes);
-	kmem_cache_free(gPoolCache, entry);
-}
-
-static void _ged_ge_deinit_context(void *base)
-{
-	int i;
-	GED_GE_FILE *file = container_of(base, GED_GE_FILE, base);
-
-	mutex_lock(&gPoolMutex);
-
-	for (i = 0; i < GE_POOL_ENTRY_SIZE; ++i) {
-		int deref = file->ref_table[i];
-		GEEntry *entry = gPoolEntry[i];
-
-		if (deref > 0 && entry) {
-			entry->ref -= deref;
-
-			if (entry->ref == 0) {
-				gPoolEntry[i] = NULL;
-				_ged_ge_free_entry(entry);
-			}
-		}
-	}
-
-	mutex_unlock(&gPoolMutex);
-
-	kfree(file);
-}
-
-int ged_ge_init_context(void **pbase)
-{
-	GED_FILE_PRIVATE_BASE *base = (GED_FILE_PRIVATE_BASE *)*pbase;
-
-	if (!base) {
-		GED_GE_FILE *file = kmalloc(sizeof(GED_GE_FILE), GFP_KERNEL);
-
-		if (!file) {
-			GE_PERR("fail to allocate GE_FILE: size:%zu\n", sizeof(GED_GE_FILE));
-			goto err_pfile;
-		}
-
-		memset(file, 0, sizeof(GED_GE_FILE));
-
-		file->base.free_func = _ged_ge_deinit_context;
-
-		*(GED_FILE_PRIVATE_BASE **)pbase = &file->base;
-	} else {
-		GED_GE_FILE *file = container_of(base, GED_GE_FILE, base);
-
-		if (file->base.free_func != _ged_ge_deinit_context) {
-			GE_PERR("private is not used by GE, please check!!");
-			WARN_ON(1);
-		}
-	}
-
-	return 0;
-
-err_pfile:
-	return 1;
-}
-
-static int _get_unused_idx(void)
-{
-	int i;
-
-	for (i = 0; i < GE_POOL_ENTRY_SIZE; ++i) {
-		if (gPoolEntry[i] == NULL)
-			return i;
-	}
-
-	return -1;
-}
-
-GEEntry *_gehnd2entry(uint32_t ge_hnd)
-{
-	GEEntry *entry = NULL;
-	uint32_t idx = -1;
-
-	/* verify ge_hnd */
-	idx = GE_GEHND2IDX(ge_hnd);
-	if (idx < GE_POOL_ENTRY_SIZE) {
-		entry = gPoolEntry[idx];
-
-		/* check ver */
-		if (entry && entry->ver != GE_GEHND2VER(ge_hnd))
-			entry = NULL;
-	}
-
-	return entry;
-}
-
-uint32_t ged_ge_alloc(int region_num, uint32_t *region_sizes)
-{
+	unsigned long flags;
 	int i;
 	GEEntry *entry = (GEEntry *)kmem_cache_zalloc(gPoolCache, GFP_KERNEL);
-	int idx = -1;
-	uint32_t ge_hnd = GE_INVALID_GEHND;
 
 	if (!entry) {
 		GE_PERR("alloc entry fail, size:%zu\n", sizeof(GEEntry));
 		goto err_entry;
 	}
 
+	entry->alloc_fd = get_unused_fd_flags(O_CLOEXEC);
+
+	if (entry->alloc_fd < 0) {
+		GE_PERR("get_unused_fd_flags() return %d\n", entry->alloc_fd);
+		goto err_fd;
+	}
+
+	entry->file = anon_inode_getfile("gralloc_extra", &GEEntry_fops, entry, 0);
+
+	if (IS_ERR(entry->file)) {
+		GE_PERR("anon_inode_getfile() fail\n");
+		goto err_entry_file;
+	}
+
 	entry->region_num = region_num;
-	entry->data = kmalloc((sizeof(uint32_t) + sizeof(uint32_t *)) * region_num, GFP_KERNEL);
+	entry->data = kzalloc((sizeof(uint32_t) + sizeof(uint32_t *)) * region_num, GFP_KERNEL);
 	if (!entry->data) {
 		GE_PERR("alloc data fail, size:%zu\n", sizeof(void *) * region_num);
 		goto err_kmalloc;
 	}
-	memset(entry->data, 0, (sizeof(uint32_t) + sizeof(uint32_t *)) * region_num);
 
 	entry->region_sizes = (uint32_t *)entry->data;
-	entry->region_data = (uint32_t **)(entry->data + sizeof(uint32_t) * region_num);
+	entry->region_data = (uint32_t **)(entry->region_sizes + region_num);
 	for (i = 0; i < region_num; ++i)
 		entry->region_sizes[i] = region_sizes[i];
 
-	mutex_lock(&gPoolMutex);
+	entry->unique_id = gen_unique_id();
 
-	idx = _get_unused_idx();
-	if (idx < 0) {
-		GE_PERR("pool full!!, PoolLimit: %d\n", GE_POOL_ENTRY_SIZE);
-		mutex_unlock(&gPoolMutex);
-		goto err_unused_idx;
-	}
+	spin_lock_irqsave(&ge_entry_list_lock, flags);
+	list_add_tail(&entry->ge_entry_list, &ge_entry_list_head);
+	spin_unlock_irqrestore(&ge_entry_list_lock, flags);
 
-	entry->ref = 1;
+	fd_install(entry->alloc_fd, entry->file);
 
-	gPoolEntry[idx] = entry;
+	return entry->alloc_fd;
 
-	/* gen ver for check, find a non-zero value */
-	do { entry->ver = gver++; } while (entry->ver == 0);
-
-	mutex_unlock(&gPoolMutex);
-
-	/* encode a user_hnd */
-	ge_hnd = (entry->ver << GE_POOL_ENTRY_SHIFT) | idx;
-
-	return ge_hnd;
-
-err_unused_idx:
-	kfree(entry->data);
 err_kmalloc:
+err_entry_file:
+	put_unused_fd(entry->alloc_fd);
+err_fd:
 	kmem_cache_free(gPoolCache, entry);
 err_entry:
-	return ge_hnd;
-}
-
-int32_t ged_ge_retain(uint32_t ge_hnd)
-{
-	int old_ref = -1;
-	GEEntry *entry = NULL;
-
-	mutex_lock(&gPoolMutex);
-
-	entry = _gehnd2entry(ge_hnd);
-	if (!entry) {
-		GE_PERR("invalid ge_hnd: 0x%x\n", ge_hnd);
-		goto unlock_exit;
-	}
-
-	old_ref = entry->ref;
-	entry->ref += 1;
-
-	mutex_unlock(&gPoolMutex);
-
-	return old_ref;
-
-unlock_exit:
-	mutex_unlock(&gPoolMutex);
 	return -1;
 }
 
-int32_t ged_ge_release(uint32_t ge_hnd)
+static void dump_ge_regions(GEEntry *entry)
 {
-	int old_ref = -1;
-	GEEntry *entry = NULL;
+	int i;
 
-	mutex_lock(&gPoolMutex);
-
-	entry = _gehnd2entry(ge_hnd);
-	if (!entry) {
-		GE_PERR("invalid ge_hnd: 0x%x\n", ge_hnd);
-		goto unlock_exit;
-	}
-
-	old_ref = entry->ref;
-	entry->ref -= 1;
-	if (old_ref == 1) {
-		/* remove from pool first */
-		gPoolEntry[GE_GEHND2IDX(ge_hnd)] = NULL;
-	}
-
-	mutex_unlock(&gPoolMutex);
-
-	if (old_ref == 1)
-		_ged_ge_free_entry(entry);
-
-	return old_ref;
-
-unlock_exit:
-	mutex_unlock(&gPoolMutex);
-	return -1;
+	for (i = 0; i < entry->region_num; ++i)
+		GE_PERR("ged_ge dump, %d/%d, s %d\n", i, entry->region_num, entry->region_sizes[i]);
 }
 
-int ged_ge_get(uint32_t ge_hnd, int region_id, int u32_offset, int u32_size, uint32_t *output_data)
+static int valid_parameters(GEEntry *entry, int region_id, int u32_offset, int u32_size)
 {
+	if (region_id < 0 || region_id >= entry->region_num ||
+		u32_offset < 0 || u32_size < 0 ||
+		u32_offset * sizeof(uint32_t) > entry->region_sizes[region_id] ||
+		(u32_offset + u32_size) * sizeof(uint32_t) > entry->region_sizes[region_id]
+		) {
+
+		GE_PERR("fail, invalid r_id %d, o %d, s %d\n",
+				region_id, u32_offset, u32_size);
+
+		dump_ge_regions(entry);
+
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
+int ged_ge_get(int ge_fd, int region_id, int u32_offset, int u32_size, uint32_t *output_data)
+{
+	unsigned long flags;
+	int err = 0;
 	uint32_t i;
 	GEEntry *entry = NULL;
 	uint32_t *pregion_data = NULL;
+	struct file *file = fget(ge_fd);
 
-	mutex_lock(&gPoolMutex);
-	entry = _gehnd2entry(ge_hnd);
-	mutex_unlock(&gPoolMutex);
-
-	if (!entry) {
-		GE_PERR("ge_hnd invalid 0x%x\n", ge_hnd);
-		return -1;
+	if (file == NULL || file->f_op != &GEEntry_fops) {
+		GE_PERR("fail, invalid ge_fd %d\n", ge_fd);
+		return -EFAULT;
 	}
 
+	entry = file->private_data;
+
+	if (valid_parameters(entry, region_id, u32_offset, u32_size)) {
+		err = -EFAULT;
+		goto err_parameter;
+	}
+
+	spin_lock_irqsave(&ge_raf_lock, flags);
 	pregion_data = entry->region_data[region_id];
+	spin_unlock_irqrestore(&ge_raf_lock, flags);
+
 	if (pregion_data) {
 		for (i = 0; i < u32_size; ++i)
 			output_data[i] = pregion_data[u32_offset + i];
@@ -398,62 +285,82 @@ int ged_ge_get(uint32_t ge_hnd, int region_id, int u32_offset, int u32_size, uin
 			output_data[i] = 0;
 	}
 
-	return 0;
+err_parameter:
+	fput(file);
+
+	return err;
 }
 
-int ged_ge_set(uint32_t ge_hnd, int region_id, int u32_offset, int u32_size, uint32_t *input_data)
+int ged_ge_set(int ge_fd, int region_id, int u32_offset, int u32_size, uint32_t *input_data)
 {
+	unsigned long flags;
+	int err = 0;
 	uint32_t i;
 	GEEntry *entry = NULL;
 	uint32_t *pregion_data = NULL;
+	struct file *file = fget(ge_fd);
 
-	mutex_lock(&gPoolMutex);
-	entry = _gehnd2entry(ge_hnd);
-	mutex_unlock(&gPoolMutex);
-
-	if (!entry) {
-		GE_PERR("ge_hnd invalid 0x%x\n", ge_hnd);
-		return -1;
+	if (file == NULL || file->f_op != &GEEntry_fops) {
+		GE_PERR("fail, invalid ge_fd %d\n", ge_fd);
+		return -EFAULT;
 	}
 
-	if (!entry->region_data[region_id]) {
-		/* lazy allocate */
-		entry->region_data[region_id] = kmalloc(entry->region_sizes[region_id], GFP_KERNEL);
-		memset(entry->region_data[region_id], 0, entry->region_sizes[region_id]);
+	entry = file->private_data;
+
+	if (valid_parameters(entry, region_id, u32_offset, u32_size)) {
+		err = -EFAULT;
+		goto err_parameter;
+	}
+
+	spin_lock_irqsave(&ge_raf_lock, flags);
+	while (!entry->region_data[region_id]) {
+		void *data;
+
+		spin_unlock_irqrestore(&ge_raf_lock, flags);
+		data = kzalloc(entry->region_sizes[region_id], GFP_KERNEL);
+		if (!data) {
+			GE_PERR("kmalloc fail, size: %d\n", entry->region_sizes[region_id]);
+			err = -EFAULT;
+			goto err_parameter;
+		}
+		spin_lock_irqsave(&ge_raf_lock, flags);
+
+		/* Check again.
+		 * Assign data to entry->region_data[region_id] if it still is NULL.
+		 */
+		if (entry->region_data[region_id]) {
+			spin_unlock_irqrestore(&ge_raf_lock, flags);
+			kfree(data);
+			spin_lock_irqsave(&ge_raf_lock, flags);
+			break;
+		}
+
+		entry->region_data[region_id] = data;
 	}
 
 	pregion_data = entry->region_data[region_id];
+	spin_unlock_irqrestore(&ge_raf_lock, flags);
+
 	for (i = 0; i < u32_size; ++i)
 		pregion_data[u32_offset + i] = input_data[i];
 
-	return 0;
+err_parameter:
+	fput(file);
+
+	return err;
 }
 
 int ged_bridge_ge_alloc(GED_BRIDGE_IN_GE_ALLOC *psALLOC_IN,	GED_BRIDGE_OUT_GE_ALLOC *psALLOC_OUT)
 {
-	psALLOC_OUT->ge_hnd = ged_ge_alloc(psALLOC_IN->region_num, psALLOC_IN->region_sizes);
-	psALLOC_OUT->eError = !!(psALLOC_OUT->ge_hnd) ? GED_OK : GED_ERROR_OOM;
-	return 0;
-}
-
-int ged_bridge_ge_retain(GED_BRIDGE_IN_GE_RETAIN *psRETAIN_IN, GED_BRIDGE_OUT_GE_RETAIN *psRETAIN_OUT)
-{
-	psRETAIN_OUT->ref = ged_ge_retain(psRETAIN_IN->ge_hnd);
-	psRETAIN_OUT->eError = (psRETAIN_OUT->ref) ? GED_OK : GED_ERROR_INVALID_PARAMS;
-	return 0;
-}
-
-int ged_bridge_ge_release(GED_BRIDGE_IN_GE_RELEASE *psRELEASE_IN, GED_BRIDGE_OUT_GE_RELEASE *psRELEASE_OUT)
-{
-	psRELEASE_OUT->ref = ged_ge_release(psRELEASE_IN->ge_hnd);
-	psRELEASE_OUT->eError = (psRELEASE_OUT->ref) ? GED_OK : GED_ERROR_INVALID_PARAMS;
+	psALLOC_OUT->ge_fd = ged_ge_alloc(psALLOC_IN->region_num, psALLOC_IN->region_sizes);
+	psALLOC_OUT->eError = !!(psALLOC_OUT->ge_fd) ? GED_OK : GED_ERROR_OOM;
 	return 0;
 }
 
 int ged_bridge_ge_get(GED_BRIDGE_IN_GE_GET *psGET_IN, GED_BRIDGE_OUT_GE_GET *psGET_OUT)
 {
 	psGET_OUT->eError = ged_ge_get(
-			psGET_IN->ge_hnd,
+			psGET_IN->ge_fd,
 			psGET_IN->region_id,
 			psGET_IN->uint32_offset,
 			psGET_IN->uint32_size,
@@ -464,11 +371,28 @@ int ged_bridge_ge_get(GED_BRIDGE_IN_GE_GET *psGET_IN, GED_BRIDGE_OUT_GE_GET *psG
 int ged_bridge_ge_set(GED_BRIDGE_IN_GE_SET *psSET_IN, GED_BRIDGE_OUT_GE_SET *psSET_OUT)
 {
 	psSET_OUT->eError = ged_ge_set(
-			psSET_IN->ge_hnd,
+			psSET_IN->ge_fd,
 			psSET_IN->region_id,
 			psSET_IN->uint32_offset,
 			psSET_IN->uint32_size,
 			psSET_IN->data);
+	return 0;
+}
+
+int ged_bridge_ge_info(GED_BRIDGE_IN_GE_INFO *psINFO_IN, GED_BRIDGE_OUT_GE_INFO *psINFO_OUT)
+{
+	struct file *file = fget(psINFO_IN->ge_fd);
+
+	if (file == NULL || file->f_op != &GEEntry_fops) {
+		GE_PERR("ged_ge fail, invalid ge_fd %d\n", psINFO_IN->ge_fd);
+		return -EFAULT;
+	}
+
+	psINFO_OUT->unique_id = ((GEEntry *)(file->private_data))->unique_id;
+	psINFO_OUT->eError = GED_OK;
+
+	fput(file);
+
 	return 0;
 }
 

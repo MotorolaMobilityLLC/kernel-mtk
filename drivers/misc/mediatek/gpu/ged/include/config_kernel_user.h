@@ -11,4 +11,3 @@
  * GNU General Public License for more details.
  */
 
-#undef GED_DEBUG

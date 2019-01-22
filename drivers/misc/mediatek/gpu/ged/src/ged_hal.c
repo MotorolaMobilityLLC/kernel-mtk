@@ -357,135 +357,58 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
 
 	char acBuffer[GED_HAL_DEBUGFS_SIZE];
 	int aint32Indx[NUM_TOKEN];
-	char* pcCMD;
-	char* pcValue;
+	char *pcCMD;
+	char *pcValue;
+	int value;
 	int i;
 
+	if (uiCount >= GED_HAL_DEBUGFS_SIZE)
+		goto normal_exit;
 
+	if (ged_copy_from_user(acBuffer, pszBuffer, uiCount))
+		goto normal_exit;
 
-	if ((0 < uiCount) && (uiCount < GED_HAL_DEBUGFS_SIZE))
+	acBuffer[uiCount] = '\0';
+	i = tokenizer(acBuffer, uiCount, aint32Indx, NUM_TOKEN);
+	if (i != NUM_TOKEN)
+		goto normal_exit;
+
+	pcCMD = acBuffer + aint32Indx[0];
+	pcValue = acBuffer + aint32Indx[1];
+
+	value = (pcValue[0] - '0');
+
+	if (strcmp(pcCMD, "touch_down") == 0)
 	{
-		if (0 == ged_copy_from_user(acBuffer, pszBuffer, uiCount))
-		{
-			acBuffer[uiCount] = '\0';
-			i=tokenizer(acBuffer, uiCount, aint32Indx, NUM_TOKEN);
-			if(i==NUM_TOKEN)
-			{
-				pcCMD = acBuffer+aint32Indx[0];
+		ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT, !!value);
+#ifdef GED_FDVFS_ENABLE
+		mtk_gpu_touch_hint(!!value ? 1 : 0);
+#endif
+	} else if (strcmp(pcCMD, "enable_WFD") == 0)
+		ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_WFD_EVENT, !!value);
+	else if (strcmp(pcCMD, "enable_debug") == 0) {
+		if (value == 1) {
+			ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_FORCE_OFF, true);
+			bForce = GED_FALSE;
+		} else if (value == 2) {
+			ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_FORCE_ON, true);
+			bForce = GED_TRUE;
+		} else if (value == 0)
+			ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_DEBUG_CLEAR_EVENT, true);
+	} else if (strcmp(pcCMD, "gas") == 0) {
+		ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_GAS_EVENT, !!value);
+		ged_kpi_set_game_hint(!!value ? 1 : 0);
+		mtk_gpu_gas_hint(!!value ? 1 : 0);
+	} else if (strcmp(pcCMD, "enable_VR") == 0)
+		ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_VR_EVENT, !!value);
+	else if (strcmp(pcCMD, "mhl4k-vid") == 0)
+		ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL4K_VID_EVENT, !!value);
+	else if (strcmp(pcCMD, "low-power-mode") == 0)
+		ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, !!value);
+	else
+		GED_LOGE("unknown command:%s %c", pcCMD, *pcValue);
 
-				pcValue = acBuffer+aint32Indx[1];
- 
-				if(strcmp(pcCMD,"touch_down")==0)
-				{
-					/*if ( (*pcValue)=='1'|| (*pcValue) =='0')*/
-					/*{*/
-					if ((*pcValue) - '0' == 0) {
-						ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT,
-						false);
-#ifdef GED_FDVFS_ENABLE
-						mtk_gpu_touch_hint(0);
-#endif
-					} else if ((*pcValue) - '0' == 1) {
-						ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_TOUCH_EVENT,
-						true);
-#ifdef GED_FDVFS_ENABLE
-						mtk_gpu_touch_hint(1);
-#endif
-					}  
-					/*}*/
-				}
-				else if(strcmp(pcCMD,"enable_WFD")==0)
-				{
-					if ( (*pcValue) =='1'|| (*pcValue) =='0')
-					{
-						if( (*pcValue) -'0'==0) // WFD turn-off
-							ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_WFD_EVENT , false);
-						else // WFD turn-on
-							ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_WFD_EVENT , true);
-					}
-				}
-				else if(strcmp(pcCMD,"enable_debug")==0)
-					{
-						if ( (*pcValue) =='1'|| (*pcValue) =='0'||(*pcValue) =='2')
-						{
-							if( (*pcValue) -'0'==1) // force off
-							{
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_FORCE_OFF , true);
-								bForce = GED_FALSE;
-							}
-							else if( (*pcValue) -'0'==2) // force on
-							{
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_FORCE_ON , true);
-								bForce = GED_TRUE;
-							}
-							else // turn-off debug
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_DEBUG_CLEAR_EVENT , true);
-						}
-					}
-					else if(strcmp(pcCMD, "gas") == 0)
-					{
-						if ( (*pcValue) =='1'|| (*pcValue) =='0')
-						{
-							if( (*pcValue) -'0'==0)
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_GAS_EVENT, false);
-							else
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_GAS_EVENT, true);
-						}
-
-						if ((*pcValue) == '1') {
-							ged_kpi_set_game_hint(1);
-#ifdef GED_FDVFS_ENABLE
-							mtk_gpu_gas_hint(1);
-#endif
-						} else {
-							ged_kpi_set_game_hint(0);
-#ifdef GED_FDVFS_ENABLE
-							mtk_gpu_gas_hint(0);
-#endif
-						}
-					}
-					else if(strcmp(pcCMD, "enable_VR") == 0)
-					{
-						if ( (*pcValue) =='1'|| (*pcValue) =='0')
-						{
-							if( (*pcValue) -'0'==0)
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_VR_EVENT, false);
-							else
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_VR_EVENT, true);
-						}
-					}
-					else if (strcmp(pcCMD, "mhl4k-vid") == 0)
-					{
-						if ((*pcValue) == '1'|| (*pcValue) == '0')
-						{
-							if ((*pcValue) -'0' == 0)
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL4K_VID_EVENT, false);
-							else
-								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL4K_VID_EVENT, true);
-						}
-					}
-					else if (strcmp(pcCMD, "low-power-mode") == 0)
-                                        {
-                                                if ((*pcValue) == '1'|| (*pcValue) == '0')
-                                                {
-                                                        if ((*pcValue) -'0' == 0)
-                                                                ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, false);
-                                                        else
-                                                                ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, true);
-                                                }
-					} else if (strcmp(pcCMD, "video-merge-md") == 0) {
-						ged_dvfs_vsync_offset_event_switch(
-							GED_DVFS_VSYNC_OFFSET_VIDEO_MERGE_MD_EVENT,
-							!!((*pcValue) - '0'));
-					}
-					else
-					{
-						GED_LOGE("unknow command:%s %c",pcCMD,*pcValue);
-					}
-			}
-
-		}
-	}
+normal_exit:
 	return uiCount;
 
 }
@@ -540,8 +463,6 @@ static int ged_vsync_offset_enable_seq_show(struct seq_file *psSeqFile, void *pv
 			seq_printf(psSeqFile, "Thermal: %d\n", g_ui32EventStatus&GED_EVENT_THERMAL?1:0 );
 			seq_printf(psSeqFile, "Low power mode: %d\n", g_ui32EventStatus & GED_EVENT_LOW_POWER_MODE ? 1 : 0);
 			seq_printf(psSeqFile, "MHL4K Video: %d\n", g_ui32EventStatus & GED_EVENT_MHL4K_VID ? 1 : 0);
-			seq_printf(psSeqFile, "Video merge MD: %d\n",
-					g_ui32EventStatus & GED_EVENT_VIDEO_MERGE_MD ? 1 : 0);
 		}
 	}
 

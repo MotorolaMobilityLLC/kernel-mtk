@@ -208,7 +208,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	if(g_gpu_timer_based_emu)
 	{
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Vsync ignored (ts=%llu)", temp);
-		return GED_INTENTIONAL_BLOCK;
+		return GED_ERROR_INTENTIONAL_BLOCK;
 	}
 
 
@@ -340,7 +340,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 		}
 #endif
 #endif			///	#ifdef ENABLE_TIMER_BACKUP
-	return GED_INTENTIONAL_BLOCK; // not to do further operations
+	return GED_ERROR_INTENTIONAL_BLOCK;
 #endif
 
 	return GED_OK;
