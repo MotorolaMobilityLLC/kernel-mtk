@@ -92,6 +92,10 @@ static char *scp_B_last_log;
 static wait_queue_head_t scp_A_logwait;
 static wait_queue_head_t scp_B_logwait;
 
+/*global value*/
+unsigned int r_pos_debug;
+unsigned int log_ctl_debug;
+
 /*
  * get log from scp when received a buf full notify
  * @param id:   IPI id
@@ -167,7 +171,7 @@ static size_t scp_A_get_last_log(size_t b_len)
 
 ssize_t scp_A_log_read(char __user *data, size_t len)
 {
-	unsigned long w_pos, r_pos, datalen;
+	unsigned int w_pos, r_pos, datalen;
 	char *buf;
 
 	if (!scp_A_logger_inited)
@@ -190,6 +194,14 @@ ssize_t scp_A_log_read(char __user *data, size_t len)
 
 	if (datalen > len)
 		datalen = len;
+
+	/*debug for logger pos fail*/
+	r_pos_debug = r_pos;
+	log_ctl_debug = SCP_A_log_ctl->buff_ofs;
+	if (r_pos >= DRAM_BUF_LEN) {
+		pr_err("[SCP] %s(): r_pos >= DRAM_BUF_LEN,%x,%x\n", __func__, r_pos_debug, log_ctl_debug);
+		return 0;
+	}
 
 	buf = ((char *) SCP_A_log_ctl) + SCP_A_log_ctl->buff_ofs + r_pos;
 
@@ -420,7 +432,7 @@ DEVICE_ATTR(scp_A_get_last_log, S_IWUSR | S_IRUGO, scp_A_last_log_show, scp_A_la
 #if SCP_LOGGER_UT
 static ssize_t scp_A_mobile_log_UT_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
-	unsigned long w_pos, r_pos, datalen;
+	unsigned int w_pos, r_pos, datalen;
 	char *logger_buf;
 	size_t len = 1024;
 
@@ -583,7 +595,7 @@ static size_t scp_B_get_last_log(size_t b_len)
 
 ssize_t scp_B_log_read(char __user *data, size_t len)
 {
-	unsigned long w_pos, r_pos, datalen;
+	unsigned int w_pos, r_pos, datalen;
 	char *buf;
 
 	if (!scp_B_logger_inited)
@@ -606,6 +618,14 @@ ssize_t scp_B_log_read(char __user *data, size_t len)
 
 	if (datalen > len)
 		datalen = len;
+
+	/*debug for logger pos fail*/
+	r_pos_debug = r_pos;
+	log_ctl_debug = SCP_B_log_ctl->buff_ofs;
+	if (r_pos >= DRAM_BUF_LEN) {
+		pr_err("[SCP] %s(): r_pos >= DRAM_BUF_LEN,%x,%x\n", __func__, r_pos_debug, log_ctl_debug);
+		return 0;
+	}
 
 	buf = ((char *) SCP_B_log_ctl) + SCP_B_log_ctl->buff_ofs + r_pos;
 
@@ -833,7 +853,7 @@ DEVICE_ATTR(scp_B_get_last_log, S_IWUSR | S_IRUGO, scp_B_last_log_show, scp_B_la
 #if SCP_LOGGER_UT
 static ssize_t scp_B_mobile_log_UT_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
-	unsigned long w_pos, r_pos, datalen;
+	unsigned int w_pos, r_pos, datalen;
 	char *logger_buf;
 	size_t len = 1024;
 
