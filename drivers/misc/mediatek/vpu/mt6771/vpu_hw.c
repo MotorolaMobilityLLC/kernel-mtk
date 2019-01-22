@@ -3230,8 +3230,70 @@ void vpu_dump_debug_stack(int core, int size)
 {
 	int i = 0;
 	unsigned int vpu_domain_addr = 0x0;
+	unsigned int vpu_dump_size = 0x0;
+	unsigned int vpu_shift_offset = 0x0;
 
 	vpu_domain_addr = ((DEBUG_STACK_BASE_OFFSET & 0x000fffff) | 0x7FF00000);
+	#if 1
+	LOG_ERR("==============vpu_dump_debug_stack, core_%d==============\n", core);
+	/* dmem 0 */
+	vpu_domain_addr = 0x7FF00000;
+	vpu_shift_offset = 0x0;
+	vpu_dump_size = 0x20000;
+	LOG_WRN("==========dmem0 => 0x%x/0x%x: 0x%x==============\n",
+		vpu_domain_addr, vpu_shift_offset, vpu_dump_size);
+	for (i = 0 ; i < (int)vpu_dump_size / 4 ; i = i + 4) {
+		LOG_WRN("%08X %08X %08X %08X %08X\n", vpu_domain_addr,
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i + 4)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i + 8)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i + 12)));
+		vpu_domain_addr += (4 * 4);
+		mdelay(1);
+	}
+	/* dmem 1 */
+	vpu_domain_addr = 0x7FF20000;
+	vpu_shift_offset = 0x20000;
+	vpu_dump_size = 0x20000;
+	LOG_WRN("==========dmem1 => 0x%x/0x%x: 0x%x==============\n",
+		vpu_domain_addr, vpu_shift_offset, vpu_dump_size);
+	for (i = 0 ; i < (int)vpu_dump_size / 4 ; i = i + 4) {
+		LOG_WRN("%08X %08X %08X %08X %08X\n", vpu_domain_addr,
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i + 4)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i + 8)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i + 12)));
+		vpu_domain_addr += (4 * 4);
+		mdelay(1);
+	}
+	/* imem */
+	vpu_domain_addr = 0x7FF40000;
+	vpu_shift_offset = 0x40000;
+	vpu_dump_size = 0x10000;
+	LOG_WRN("==========imem => 0x%x/0x%x: 0x%x==============\n",
+		vpu_domain_addr, vpu_shift_offset, vpu_dump_size);
+	for (i = 0 ; i < (int)vpu_dump_size / 4 ; i = i + 4) {
+		LOG_WRN("%08X %08X %08X %08X %08X\n", vpu_domain_addr,
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i + 4)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i + 8)),
+			vpu_read_reg32(vpu_service_cores[core].vpu_base,
+			vpu_shift_offset + (4 * i + 12)));
+		vpu_domain_addr += (4 * 4);
+		mdelay(1);
+	}
+	#else
 	LOG_ERR("==============vpu_dump_debug_stack, core_%d==============\n", core);
 	LOG_WRN("==============0x%x/0x%x/0x%x==============\n", vpu_domain_addr,
 		DEBUG_STACK_BASE_OFFSET, DEBUG_STACK_SIZE);
@@ -3263,6 +3325,7 @@ void vpu_dump_debug_stack(int core, int size)
 		#endif
 		vpu_domain_addr += (4 * 4);
 	}
+	#endif
 }
 
 void vpu_dump_code_segment(int core)
@@ -3303,6 +3366,7 @@ void vpu_dump_code_segment(int core)
 		LOG_WRN("%08X %08X %08X %08X %08X\n", dump_addr,
 			value_1, value_2, value_3, value_4);
 		dump_addr += (4 * 4);
+		mdelay(1);
 	}
 
 
@@ -3333,6 +3397,7 @@ void vpu_dump_code_segment(int core)
 		LOG_WRN("%08X %08X %08X %08X %08X\n", dump_addr,
 			value_1, value_2, value_3, value_4);
 		dump_addr += (4 * 4);
+		mdelay(1);
 	}
 
 	LOG_ERR("============== kernel code segment ==============\n");
@@ -3357,6 +3422,7 @@ void vpu_dump_code_segment(int core)
 		LOG_WRN("%08X %08X %08X %08X %08X\n", dump_addr,
 			value_1, value_2, value_3, value_4);
 		dump_addr += (4 * 4);
+		mdelay(1);
 	}
 }
 
@@ -3467,6 +3533,8 @@ int vpu_dump_mesg(struct seq_file *s)
 		/* incase log_a_pos is at end of string */
 		if (ptr >= log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER))
 			break;
+
+		mdelay(1);
 	} while (!jump_out);
 
 	#endif
