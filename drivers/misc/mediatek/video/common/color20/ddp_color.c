@@ -890,7 +890,7 @@ CCORR_COEF : /* ccorr feature */
 	 {0x0, 0x0, 0x400},
 	 },
 	},
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 S_GAIN_BY_Y :
 {
 	{0x80, 0x80, 0x80, 0x80,
@@ -949,7 +949,7 @@ static unsigned int g_split_en;
 static unsigned int g_split_window_x = 0xFFFF0000;
 static unsigned int g_split_window_y = 0xFFFF0000;
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 	static unsigned long g_color_window = 0x40185E57;
 #else
 	static unsigned long g_color_window = 0x40106051;
@@ -992,7 +992,7 @@ static unsigned long g_tdshp1_va;
 static unsigned long g_mdp_color_va;
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(SUPPORT_ULTRA_RESOLUTION)
 #define MDP_RSZ0_PA_BASE 0x14003000
 static unsigned long g_mdp_rsz0_va;
 #define MDP_RSZ1_PA_BASE 0x14004000
@@ -1000,6 +1000,14 @@ static unsigned long g_mdp_rsz1_va;
 #define MDP_RSZ2_PA_BASE 0x14005000
 static unsigned long g_mdp_rsz2_va;
 #endif
+
+#if defined(SUPPORT_HDR)
+#define MDP_RDMA0_PA_BASE 0x14001000
+static unsigned long g_mdp_rdma0_va;
+#define MDP_HDR_OFFSET 0x00000800
+#endif
+
+#define TRANSLATION(origin, shift) ((origin >= shift) ? (origin - shift) : 0)
 
 static unsigned long g_tdshp_va;
 
@@ -1107,7 +1115,7 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 	int offset = C0_OFFSET;
 	struct DISP_PQ_PARAM *pq_param_p = &g_Color_Param[COLOR_ID_0];
 	void *cmdq = __cmdq;
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 	int i, j, reg_index;
 #endif
 	int wide_gamut_en = 0;
@@ -1132,7 +1140,7 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 	/* COLOR_ERR("DpEngine_COLORonConfig(%d)", module); */
 
 	if (g_color_bypass == 0) {
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
 						| (g_Color_Index.LSP_EN << 20)
 						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (wide_gamut_en << 8)
@@ -1143,7 +1151,7 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 #endif
 		_color_reg_mask(cmdq, DISP_COLOR_START + offset, 0x1, 0x3);	/* color start */
 		/* enable R2Y/Y2R in Color Wrapper */
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 		/* RDMA & OVL will enable wide-gamut function*/
 		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
 		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
@@ -1185,15 +1193,16 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 				, 0x00FF00FF);
 	}
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6799)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
 #endif
 
-#if !defined(CONFIG_ARCH_MT6797) /* set cboost_en = 0 for projects before 6755 */
+#if !defined(CONFIG_ARCH_MT6797) && !defined(CONFIG_MACH_MT6799)
+	/* set cboost_en = 0 for projects before 6755 */
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
 #endif
 
@@ -1386,7 +1395,7 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 		_color_reg_set(cmdq, DISP_COLOR_LOCAL_HUE_CD_0 + offset + 4 * index, u4Temp);
 	}
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 	/* S Gain By Y */
 	u4Temp = 0;
 
@@ -1421,7 +1430,7 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 	int index;
 	unsigned char h_series[20] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	unsigned int u4Temp = 0;
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 	int i, j, reg_index;
 #endif
 	int wide_gamut_en = 0;
@@ -1430,7 +1439,7 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 		offset = C1_OFFSET;
 
 	if (g_color_bypass == 0) {
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 21)
 						| (g_Color_Index.LSP_EN << 20)
 						| (g_Color_Index.S_GAIN_BY_Y_EN << 15) | (wide_gamut_en << 8)
@@ -1441,7 +1450,7 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 #endif
 		_color_reg_mask(cmdq, DISP_COLOR_START + offset, 0x1, 0x3);	/* color start */
 		/* enable R2Y/Y2R in Color Wrapper */
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 		/* RDMA & OVL will enable wide-gamut function*/
 		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
 		_color_reg_mask(cmdq, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
@@ -1480,15 +1489,16 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 			(color_reg->PARTIAL_Y[2 * index + 1] << 16)), 0x00FF00FF);
 	}
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6799)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0x80 << 16, 0x00FF0000);
 #endif
 
-#if !defined(CONFIG_ARCH_MT6797) /* set cboost_en = 0 for projects before 6755 */
+#if !defined(CONFIG_ARCH_MT6797) && !defined(CONFIG_MACH_MT6799)
+	/* set cboost_en = 0 for projects before 6755 */
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 	_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
 #endif
 
@@ -1644,7 +1654,7 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 		_color_reg_set(cmdq, DISP_COLOR_LOCAL_HUE_CD_0 + offset + 4 * index, u4Temp);
 	}
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 	/* S Gain By Y */
 	u4Temp = 0;
 
@@ -1693,20 +1703,34 @@ static void ddp_color_bypass_color(enum DISP_MODULE_ENUM module, int bypass, voi
 		_color_reg_mask(cmdq, DISP_COLOR_CFG_MAIN + offset, (0 << 7), 0x000000FF);	/* resume all */
 }
 
-static void ddp_color_set_window(struct DISP_PQ_WIN_PARAM *win_param, void *__cmdq)
+static void ddp_color_set_window(enum DISP_MODULE_ENUM module, struct DISP_PQ_WIN_PARAM *win_param, void *__cmdq)
 {
-	const int offset = C0_OFFSET;
+	int offset = C0_OFFSET;
 	void *cmdq = __cmdq;
+
+	if (module == DISP_MODULE_COLOR1)
+		offset = C1_OFFSET;
 
 	/* save to global, can be applied on following PQ param updating. */
 	if (win_param->split_en) {
 		g_split_en = 1;
 #ifdef LCM_PHYSICAL_ROTATION_180
-		g_split_window_x = ((g_color0_dst_w - win_param->start_x) << 16) | (g_color0_dst_w - win_param->end_x);
+		if (module == DISP_MODULE_COLOR0) {
+			g_split_window_x = ((g_color0_dst_w - win_param->start_x) << 16) |
+								(g_color0_dst_w - win_param->end_x);
+		} else {
+			g_split_window_x = (TRANSLATION((g_color0_dst_w - win_param->start_x), g_color0_dst_w) << 16)
+				| TRANSLATION((g_color0_dst_w - win_param->end_x), g_color0_dst_w);
+		}
 		g_split_window_y = ((g_color0_dst_h - win_param->start_y) << 16) | (g_color0_dst_h - win_param->end_y);
 		COLOR_DBG("ddp_color_set_window(), LCM_PHYSICAL_ROTATION_180\n");
 #else
-		g_split_window_x = (win_param->end_x << 16) | win_param->start_x;
+		if (module == DISP_MODULE_COLOR0) {
+			g_split_window_x = (win_param->end_x << 16) | win_param->start_x;
+		} else {
+			g_split_window_x = (TRANSLATION(win_param->end_x, g_color0_dst_w) << 16)
+								| TRANSLATION(win_param->start_x, g_color0_dst_w);
+		}
 		g_split_window_y = (win_param->end_y << 16) | win_param->start_y;
 #endif
 	} else {
@@ -1715,14 +1739,13 @@ static void ddp_color_set_window(struct DISP_PQ_WIN_PARAM *win_param, void *__cm
 		g_split_window_y = 0xFFFF0000;
 	}
 
-	COLOR_DBG("ddp_color_set_window(), en[%d],  x[0x%x], y[0x%x]\n", g_split_en,
-		  g_split_window_x, g_split_window_y);
+	COLOR_DBG("ddp_color_set_window(),module[%d], en[%d],  x[0x%x], y[0x%x]\n", g_split_en,
+		  offset, g_split_window_x, g_split_window_y);
 
 	_color_reg_mask(cmdq, DISP_COLOR_DBG_CFG_MAIN + offset, (g_split_en << 3), 0x00000008);	/* split enable */
 	_color_reg_set(cmdq, DISP_COLOR_WIN_X_MAIN + offset, g_split_window_x);
 	_color_reg_set(cmdq, DISP_COLOR_WIN_Y_MAIN + offset, g_split_window_y);
 }
-
 
 static unsigned long color_get_TDSHP_VA(void)
 {
@@ -1767,7 +1790,7 @@ static unsigned long color_get_MDP_COLOR_VA(void)
 }
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(SUPPORT_ULTRA_RESOLUTION)
 static unsigned long color_get_MDP_RSZ0_VA(void)
 {
 	unsigned long VA;
@@ -1805,6 +1828,21 @@ static unsigned long color_get_MDP_RSZ2_VA(void)
 }
 #endif
 
+#if defined(SUPPORT_HDR)
+static unsigned long color_get_MDP_RDMA0_VA(void)
+{
+	unsigned long VA;
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_rdma0");
+	VA = (unsigned long)of_iomap(node, 0);
+	COLOR_DBG("MDP_RDMA0 VA: 0x%lx\n", VA);
+
+	return VA;
+}
+#endif
+
+
 static unsigned int color_is_reg_addr_valid(unsigned long addr)
 {
 	unsigned int i = 0;
@@ -1834,7 +1872,7 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 
 
 	/*Check if MDP RSZ base address*/
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(SUPPORT_ULTRA_RESOLUTION)
 		if ((addr >= g_mdp_rsz0_va) && (addr < (g_mdp_rsz0_va + 0x1000))) {			/* MDP RSZ0 */
 			COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "MDP_RSZ0");
 			return 2;
@@ -1846,6 +1884,16 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 			return 2;
 		}
 #endif
+
+	/*Check if MDP HDR base address*/
+#if defined(SUPPORT_HDR)
+		if ((addr >= g_mdp_rdma0_va + MDP_HDR_OFFSET) && (addr < (g_mdp_rdma0_va + 0x1000))) {
+			/* MDP RSZ0 */
+			COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "MDP_RDMA0");
+			return 2;
+		}
+#endif
+
 
 	/* check if TDSHP base address */
 	if ((addr >= g_tdshp_va) && (addr < (g_tdshp_va + 0x1000))) {			/* TDSHP0 */
@@ -1901,8 +1949,8 @@ static unsigned long color_pa2va(unsigned int addr)
 	}
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
-		/* MDP_COLOR */
+#if defined(SUPPORT_ULTRA_RESOLUTION)
+		/* MDP_RSZ */
 		if ((addr >= MDP_RSZ0_PA_BASE) && (addr < (MDP_RSZ0_PA_BASE + 0x1000))) {
 			COLOR_DBG("color_pa2va(), MDP_RSZ0 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
 				  MDP_RSZ0_PA_BASE, g_mdp_rsz0_va);
@@ -1917,6 +1965,16 @@ static unsigned long color_pa2va(unsigned int addr)
 			return g_mdp_rsz2_va + (addr - MDP_RSZ2_PA_BASE);
 		}
 #endif
+
+#if defined(SUPPORT_HDR)
+		/* MDP_HDR */
+		if ((addr >= MDP_RDMA0_PA_BASE + MDP_HDR_OFFSET) && (addr < (MDP_RDMA0_PA_BASE + 0x1000))) {
+			COLOR_DBG("color_pa2va(), MDP_RDMA0 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
+					MDP_RDMA0_PA_BASE, g_mdp_rdma0_va);
+			return g_mdp_rdma0_va + (addr - MDP_RDMA0_PA_BASE);
+		}
+#endif
+
 
 	COLOR_ERR("color_pa2va(), NO FOUND VA!! PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
 		  (unsigned int)ddp_reg_pa_base[0], dispsys_reg[0]);
@@ -2001,13 +2059,21 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 			break;
 		}
 
-#if defined(CONFIG_ARCH_MT6797)
 	case SWREG_RSZ_BASE_ADDRESS:
 		{
+#if defined(SUPPORT_ULTRA_RESOLUTION)
 			ret = MDP_RSZ0_PA_BASE;
+#endif
 			break;
 		}
+
+	case SWREG_MDP_RDMA_BASE_ADDRESS:
+		{
+#if defined(SUPPORT_HDR)
+			ret = MDP_RDMA0_PA_BASE;
 #endif
+			break;
+		}
 
 	case SWREG_TDSHP_TUNING_MODE:
 		{
@@ -2201,10 +2267,14 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 	g_tdshp1_va = color_get_TDSHP1_VA();
 #endif
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(SUPPORT_ULTRA_RESOLUTION)
 	g_mdp_rsz0_va = color_get_MDP_RSZ0_VA();
 	g_mdp_rsz1_va = color_get_MDP_RSZ1_VA();
 	g_mdp_rsz2_va = color_get_MDP_RSZ2_VA();
+#endif
+
+#if defined(SUPPORT_HDR)
+	g_mdp_rdma0_va = color_get_MDP_RDMA0_VA();
 #endif
 
 	return 0;
@@ -2230,9 +2300,9 @@ static int _color_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 	} else {
 		g_color1_dst_w = pConfig->dst_w;
 		g_color1_dst_h = pConfig->dst_h;
+		offset = C1_OFFSET;
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 #ifndef CONFIG_FOR_SOURCE_PQ
-		offset = C1_OFFSET;
 		_color_reg_mask(cmdq, DISP_COLOR_INTERNAL_IP_WIDTH + offset, pConfig->dst_w
 			, 0x00003FFF);  /* wrapper width */
 		_color_reg_mask(cmdq, DISP_COLOR_INTERNAL_IP_HEIGHT + offset, pConfig->dst_h
@@ -2303,7 +2373,7 @@ static int _color_start(enum DISP_MODULE_ENUM module, void *cmdq)
 
 	mutex_lock(&g_color_reg_lock);
 	if (g_color_reg_valid) {
-		color_write_hw_reg(DISP_MODULE_COLOR0, &g_color_reg, cmdq);
+		color_write_hw_reg(module, &g_color_reg, cmdq);
 		mutex_unlock(&g_color_reg_lock);
 	} else {
 		mutex_unlock(&g_color_reg_lock);
@@ -2333,9 +2403,9 @@ static int _color_partial_update(enum DISP_MODULE_ENUM module, void *arg, void *
 	} else {
 		g_color1_dst_w = width;
 		g_color1_dst_h = height;
+		offset = C1_OFFSET;
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 #ifndef CONFIG_FOR_SOURCE_PQ
-		offset = C1_OFFSET;
 		_color_reg_mask(cmdq, DISP_COLOR_INTERNAL_IP_WIDTH + offset, width
 			, 0x00003FFF);  /* wrapper width */
 		_color_reg_mask(cmdq, DISP_COLOR_INTERNAL_IP_HEIGHT + offset, height
@@ -2375,7 +2445,7 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 	struct DISPLAY_PQ_T *pq_index;
 	struct DISPLAY_TDSHP_T *tdshp_index;
 
-	COLOR_DBG("_color_io: msg %x", msg);
+	COLOR_DBG("_color_io: module %d, msg %x", module, msg);
 	/* COLOR_ERR("_color_io: GET_PQPARAM %lx\n", DISP_IOCTL_GET_PQPARAM); */
 	/* COLOR_ERR("_color_io: SET_PQPARAM %lx\n", DISP_IOCTL_SET_PQPARAM); */
 	/* COLOR_ERR("_color_io: READ_REG %lx\n", DISP_IOCTL_READ_REG); */
@@ -2394,10 +2464,10 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 
 		if (ncs_tuning_mode == 0) {
 			/* normal mode */
-			DpEngine_COLORonInit(DISP_MODULE_COLOR0, cmdq);
-			DpEngine_COLORonConfig(DISP_MODULE_COLOR0, cmdq);
+			DpEngine_COLORonInit(module, cmdq);
+			DpEngine_COLORonConfig(module, cmdq);
 
-			color_trigger_refresh(DISP_MODULE_COLOR0);
+			color_trigger_refresh(module);
 
 			COLOR_DBG("SET_PQ_PARAM(0)\n");
 		} else {
@@ -2449,11 +2519,11 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 			return -EFAULT;
 		}
 
-		color_write_hw_reg(DISP_MODULE_COLOR0, &g_color_reg, cmdq);
+		color_write_hw_reg(module, &g_color_reg, cmdq);
 		g_color_reg_valid = 1;
 		mutex_unlock(&g_color_reg_lock);
 
-		color_trigger_refresh(DISP_MODULE_COLOR0);
+		color_trigger_refresh(module);
 
 		break;
 
@@ -2536,7 +2606,7 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 
 			ncs_tuning_mode = 0;
 			COLOR_DBG("ncs_tuning_mode = 0\n");
-			color_trigger_refresh(DISP_MODULE_COLOR0);
+			color_trigger_refresh(module);
 		} else {
 			COLOR_ERR("DISP_IOCTL_MUTEX_CONTROL invalid control\n");
 			return -EFAULT;
@@ -2680,8 +2750,8 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 			return -EFAULT;
 		}
 
-		ddp_color_bypass_color(DISP_MODULE_COLOR0, value, cmdq);
-		color_trigger_refresh(DISP_MODULE_COLOR0);
+		ddp_color_bypass_color(module, value, cmdq);
+		color_trigger_refresh(module);
 
 		break;
 
@@ -2697,8 +2767,8 @@ static int _color_io(enum DISP_MODULE_ENUM module, int msg, unsigned long arg, v
 			COLOR_DBG
 			    ("DISP_IOCTL_PQ_SET_WINDOW, before set... en[%d], x[0x%x], y[0x%x]\n",
 			     g_split_en, g_split_window_x, g_split_window_y);
-			ddp_color_set_window(&win_param, cmdq);
-			color_trigger_refresh(DISP_MODULE_COLOR0);
+			ddp_color_set_window(module, &win_param, cmdq);
+			color_trigger_refresh(module);
 
 			break;
 		}
@@ -2800,7 +2870,7 @@ void set_color_bypass(enum DISP_MODULE_ENUM module, int bypass, void *cmdq_handl
 		_color_reg_mask(cmdq_handle, DISP_COLOR_START + offset, 0x00000001, 0x3);	/* color start */
 
 		/* enable R2Y/Y2R in Color Wrapper */
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 		/* RDMA & OVL will enable wide-gamut function*/
 		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
 		_color_reg_mask(cmdq_handle, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
@@ -2844,7 +2914,7 @@ static int _color_bypass(enum DISP_MODULE_ENUM module, int bypass)
 		_color_reg_mask(NULL, DISP_COLOR_START + offset, 0x00000001, 0x3);	/* color start */
 
 		/* enable R2Y/Y2R in Color Wrapper */
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_2_1)
 		/* RDMA & OVL will enable wide-gamut function*/
 		/* disable rgb clipping function in CM1 to keep the wide-gamut range */
 		_color_reg_mask(NULL, DISP_COLOR_CM1_EN + offset, 0x01, 0x03);
