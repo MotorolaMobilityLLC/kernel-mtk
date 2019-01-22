@@ -809,15 +809,41 @@ void memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
 				pr_warn("Failed to create procfs svp_region file\n");
 		}
 
-#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-		region->use_cache_memory = true;
-		region->cache_page = zmc_cma_alloc(cma, size * SZ_1M >> PAGE_SHIFT,
-				SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
-		svp_usage_count += size * SZ_1M >> PAGE_SHIFT;
-#endif
-
 		region->count = (size * SZ_1M) >> PAGE_SHIFT;
 		region->state = SVP_STATE_ON;
+
+		if (IS_ENABLED(CONFIG_MTK_MEMORY_SSVP_WRAP)) {
+			int ret_map;
+			struct page *page;
+
+			page = zmc_cma_alloc(cma, size * SZ_1M >> PAGE_SHIFT,
+					SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
+			region->use_cache_memory = true;
+			region->cache_page = page;
+			svp_usage_count += region->count >> PAGE_SHIFT;
+			ret_map = pmd_unmapping((unsigned long)__va((page_to_phys(region->cache_page))),
+					region->count << PAGE_SHIFT);
+
+			if (ret_map < 0) {
+				pr_alert("[unmapping fail]: virt:0x%lx, size:0x%lx",
+						(unsigned long)__va((page_to_phys(page))),
+						region->count << PAGE_SHIFT);
+
+				aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
+						| DB_OPT_LOW_MEMORY_KILLER
+						| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
+						| DB_OPT_PROCESS_COREDUMP
+						| DB_OPT_PAGETYPE_INFO
+						| DB_OPT_DUMPSYS_PROCSTATS,
+						"SSVP unmapping fail:\nCRDISPATCH_KEY:SVP_SS1",
+						"[unmapping fail]: virt:0x%lx, size:0x%lx",
+						(unsigned long)__va((page_to_phys(page))),
+						region->count << PAGE_SHIFT);
+
+				region->is_unmapping = false;
+			} else
+				region->is_unmapping = true;
+		}
 
 		pr_alert("%s %d: %s is enable with size: %d mB",
 			__func__, __LINE__, name, size);
