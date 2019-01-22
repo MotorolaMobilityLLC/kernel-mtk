@@ -770,14 +770,15 @@ static ssize_t driver_flag_set(struct device_driver *drv,
 	char *p_token = NULL;
 	char *p_delimiter = " \t";
 
-	BTIF_INFO_FUNC("buffer = %s, count = %zd\n", buffer, count);
 	if (len >= sizeof(buf)) {
 		BTIF_ERR_FUNC("input handling fail!\n");
 		len = sizeof(buf) - 1;
 		return -1;
 	}
 
-	memcpy(buf, buffer, sizeof(buf));
+	strncpy(buf, buffer, count);
+	buf[count] = '\0';
+	BTIF_INFO_FUNC("buffer = %s, count = %zd\n", buf, count);
 	p_buf = buf;
 
 	p_token = strsep(&p_buf, p_delimiter);
