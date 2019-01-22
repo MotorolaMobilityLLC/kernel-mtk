@@ -1406,10 +1406,12 @@ TZ_RESULT KREE_ServReleaseChunkmemPool(u32 op,
 			u8 uparam[REE_SERVICE_BUFFER_SIZE])
 {
 	if (secure_pages != NULL) {
+		phys_addr_t addr = page_to_phys(secure_pages);
+
 		cma_release(tz_cma, secure_pages,
 				cma_get_size(tz_cma)>>PAGE_SHIFT);
-		pr_warn("%s() release @%llx [0x%zx]\n", __func__,
-				page_to_phys(secure_pages), secure_size);
+		pr_warn("%s() release @%pax [0x%zx]\n", __func__,
+				&addr, secure_size);
 		secure_pages = NULL;
 		secure_size = 0;
 		return TZ_RESULT_SUCCESS;

@@ -1757,7 +1757,7 @@ int m4u_do_dma_cache_maint(M4U_MODULE_ID_ENUM eModuleID, const void *va, size_t 
 	else
 		ret = __m4u_cache_sync_kernel(va, size, direction);
 
-	M4UDBG("cache_sync: module=%s, addr=0x%lx, size=0x%lx\n",
+	M4UDBG("cache_sync: module=%s, addr=0x%lx, size=0x%zx\n",
 	       m4u_get_module_name(eModuleID),  (unsigned long)va, size);
 
 	return ret;
