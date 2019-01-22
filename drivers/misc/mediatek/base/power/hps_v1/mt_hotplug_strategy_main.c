@@ -224,7 +224,7 @@ static int __init hps_init(void)
 {
 	int r = 0;
 
-	log_info("hps_init\n");
+	log_info("%s\n", __func__);
 
 	/* hps_cpu_init() must before hps_core_init() */
 	r = hps_cpu_init();
@@ -252,7 +252,7 @@ static void __exit hps_exit(void)
 {
 	int r = 0;
 
-	log_info("hps_exit\n");
+	log_info("%s\n", __func__);
 
 	hps_ctxt.init_state = INIT_STATE_NOT_READY;
 
