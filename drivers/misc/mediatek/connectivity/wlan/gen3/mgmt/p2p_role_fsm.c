@@ -438,6 +438,8 @@ VOID p2pRoleFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_REC
 {
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	UINT_16 u2ReasonCode = 0;
+	P_P2P_INFO_T prP2pInfo;
+	UINT_32 u4CurrentTime;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prSwRfb != NULL));
@@ -457,6 +459,17 @@ VOID p2pRoleFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_REC
 
 		switch (prP2pBssInfo->eCurrentOPMode) {
 		case OP_MODE_INFRASTRUCTURE:
+			prP2pInfo = prAdapter->prP2pInfo;
+			if (prP2pInfo->fgWaitEapFailure) {
+				u4CurrentTime = kalGetTimeTick();
+				if (TIME_BEFORE(u4CurrentTime, prP2pInfo->u4EapWscDoneTxTime + MSEC_TO_SYSTIME(500))) {
+					DBGLOG(P2P, INFO, "Waiting EAP-Failure, ignore Deauth frame\n");
+					break;
+				}
+				DBGLOG(P2P, INFO, "Should ignore Deauth frame while waiting EAP-failure %d:%d\n",
+					u4CurrentTime, prP2pInfo->u4EapWscDoneTxTime + MSEC_TO_SYSTIME(500));
+			}
+
 			if (authProcessRxDeauthFrame(prSwRfb,
 						     prStaRec->aucMacAddr, &u2ReasonCode) == WLAN_STATUS_SUCCESS) {
 				P_WLAN_DEAUTH_FRAME_T prDeauthFrame = (P_WLAN_DEAUTH_FRAME_T) prSwRfb->pvHeader;
@@ -467,8 +480,6 @@ VOID p2pRoleFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_REC
 
 				prStaRec->u2ReasonCode = u2ReasonCode;
 				u2IELength = prSwRfb->u2PacketLen - (WLAN_MAC_HEADER_LEN + REASON_CODE_FIELD_LEN);
-
-				ASSERT(prP2pBssInfo->prStaRecOfAP == prStaRec);
 
 				/* Indicate disconnect to Host. */
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
@@ -515,6 +526,8 @@ VOID p2pRoleFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECOR
 {
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	UINT_16 u2ReasonCode = 0;
+	P_P2P_INFO_T prP2pInfo;
+	UINT_32 u4CurrentTime;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prSwRfb != NULL));
@@ -533,14 +546,23 @@ VOID p2pRoleFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECOR
 
 		switch (prP2pBssInfo->eCurrentOPMode) {
 		case OP_MODE_INFRASTRUCTURE:
+			prP2pInfo = prAdapter->prP2pInfo;
+			if (prP2pInfo->fgWaitEapFailure) {
+				u4CurrentTime = kalGetTimeTick();
+				if (TIME_BEFORE(u4CurrentTime, prP2pInfo->u4EapWscDoneTxTime + MSEC_TO_SYSTIME(500))) {
+					DBGLOG(P2P, INFO, "Waiting EAP-Failure, ignore Disassoc frame\n");
+					break;
+				}
+				DBGLOG(P2P, INFO, "Should ignore disassoc frame while waiting EAP-failure %d:%d\n",
+					u4CurrentTime, prP2pInfo->u4EapWscDoneTxTime + MSEC_TO_SYSTIME(500));
+			}
+
 			if (assocProcessRxDisassocFrame(prAdapter,
 							prSwRfb,
 							prStaRec->aucMacAddr,
 							&prStaRec->u2ReasonCode) == WLAN_STATUS_SUCCESS) {
 				P_WLAN_DISASSOC_FRAME_T prDisassocFrame = (P_WLAN_DISASSOC_FRAME_T) prSwRfb->pvHeader;
 				UINT_16 u2IELength = 0;
-
-				ASSERT(prP2pBssInfo->prStaRecOfAP == prStaRec);
 
 				if (prP2pBssInfo->prStaRecOfAP != prStaRec)
 					break;

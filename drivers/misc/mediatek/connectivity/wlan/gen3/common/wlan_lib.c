@@ -682,6 +682,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			/* System Service Uninitialization */
 			nicUninitSystemService(prAdapter);
 			nicReleaseAdapterMemory(prAdapter);
+			wlanPollingCpupcr(4, 5);
 			break;
 		case RAM_CODE_DOWNLOAD_FAIL:
 			nicRxUninitialize(prAdapter);
@@ -689,6 +690,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			/* System Service Uninitialization */
 			nicUninitSystemService(prAdapter);
 			nicReleaseAdapterMemory(prAdapter);
+			wlanPollingCpupcr(4, 5);
 			break;
 		case INIT_ADAPTER_FAIL:
 			nicReleaseAdapterMemory(prAdapter);
@@ -893,6 +895,44 @@ wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN PVOID pvFwImageMapFile)
 #endif
 #endif
 
+WLAN_STATUS wlanPowerOffInt(IN P_ADAPTER_T prAdapter)
+{
+	UINT_32 u4Value = 0;
+	UINT_32 u4Feedback = 0;
+	UINT_32 u4Loop = 0;
+
+
+	if (!prAdapter)
+		return WLAN_STATUS_SUCCESS;
+
+	DBGLOG(INIT, INFO, "Using INT for Power OFF\n");
+	nicPutMailbox(prAdapter, CFG_MCU_POWER_OFF_MAILBOX_INDEX,
+		CFG_MCU_POWER_OFF_MAGIC_CODE);
+
+	HAL_MCR_WR(prAdapter, MCR_WSICR, BIT(CFG_MCU_POWER_OFF_SOFTINT_BIT));
+
+	for (u4Loop = 0; u4Loop < CFG_MCU_POWER_OFF_POLLING_CNT; u4Loop++) {
+		nicGetMailbox(prAdapter, CFG_MCU_POWER_OFF_MAILBOX_INDEX, &u4Feedback);
+		DBGLOG(INIT, INFO, "INT FeedBack: 0x%x\n", u4Feedback);
+		HAL_MCR_RD(prAdapter, MCR_WCIR, &u4Value);
+
+		if ((u4Value & WCIR_WLAN_READY) == 0) {
+			/* Cleanup MailBox */
+			nicPutMailbox(prAdapter, CFG_MCU_POWER_OFF_MAILBOX_INDEX, 0x0);
+			DBGLOG(INIT, INFO, "Power OFF by INT successfully\n");
+			return WLAN_STATUS_SUCCESS;
+		}
+		u4Feedback = 0;
+		u4Value = 0;
+		kalMsleep(1);
+	}
+	/* Cleanup MailBox */
+	nicPutMailbox(prAdapter, CFG_MCU_POWER_OFF_MAILBOX_INDEX, 0x0);
+
+	DBGLOG(INIT, INFO, "MCR_WCIR: 0x%x\n", u4Value);
+
+	return WLAN_STATUS_FAILURE;
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -948,16 +988,19 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 			while (1) {
 				HAL_MCR_RD(prAdapter, MCR_WCIR, &u4Value);
 
-				if ((u4Value & WCIR_WLAN_READY) == 0)
+				if ((u4Value & WCIR_WLAN_READY) == 0) {
 					break;
-				else if (kalIsCardRemoved(prAdapter->prGlueInfo)
+				} else if (i >= CFG_RESPONSE_CLEAR_RDY_TIMEOUT && i < CFG_RESPONSE_POLLING_TIMEOUT) {
+					if (wlanPowerOffInt(prAdapter) == WLAN_STATUS_SUCCESS)
+						break;
+				} else if (kalIsCardRemoved(prAdapter->prGlueInfo)
 					 || fgIsBusAccessFailed || (i >= CFG_RESPONSE_POLLING_TIMEOUT)) {
 
 					DBGLOG(INIT, WARN,
 				       "%s: Failure to get RDY bit cleared! CardRemoved[%u] BusFailed[%u] Timeout[%u]",
 					__func__,
 					kalIsCardRemoved(prAdapter->prGlueInfo), fgIsBusAccessFailed, i);
-
+					wlanPollingCpupcr(4, 5);
 					break;
 				}
 				i++;

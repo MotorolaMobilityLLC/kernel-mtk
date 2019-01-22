@@ -1395,7 +1395,7 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	nicRxFillRFB(prAdapter, prSwRfb);
 	ucBssIndex = secGetBssIdxByWlanIdx(prAdapter, prSwRfb->ucWlanIdx);
 	GLUE_SET_PKT_BSS_IDX(prSwRfb->pvPacket, ucBssIndex);
-	StatsRxPktInfoDisplay(prSwRfb);
+	StatsRxPktInfoDisplay(prAdapter, prSwRfb);
 
 	prRetSwRfb = qmHandleRxPackets(prAdapter, prSwRfb);
 

@@ -97,4 +97,6 @@ BOOLEAN kalIsResetting(VOID);
 
 BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter);
 
+UINT32 wlanPollingCpupcr(UINT32 u4Times, UINT32 u4Sleep);
+
 #endif /* _GL_RST_H */
