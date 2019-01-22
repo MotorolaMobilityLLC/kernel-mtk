@@ -36,6 +36,7 @@
 #include <linux/uaccess.h>
 #include <linux/ratelimit.h>
 #include <linux/timekeeping.h>
+#include <linux/math64.h>
 
 #include "include/pmic.h"
 #include "include/pmic_auxadc.h"
@@ -105,12 +106,15 @@ static unsigned int g_BGRCALI_EN;
 static int wk_aux_cali(int T_curr, int vbat_out)
 {
 	signed long long coeff_gain_aux = 0;
+	signed long long vbat_cali = 0;
 
 	coeff_gain_aux = (317220 + 11960 * g_GAIN_AUX);
+	vbat_cali = div_s64((vbat_out * (T_curr - 250) * coeff_gain_aux), 255);
+	vbat_cali = div_s64(vbat_cali, 1000000000);
 	if (g_SIGN_AUX == 0)
-		vbat_out += vbat_out * (T_curr - 250) * coeff_gain_aux / 255 / 1000000000;
+		vbat_out += vbat_cali;
 	else
-		vbat_out -= vbat_out * (T_curr - 250) * coeff_gain_aux / 255 / 1000000000;
+		vbat_out -= vbat_cali;
 	return vbat_out;
 }
 
@@ -123,15 +127,15 @@ static int wk_bgr_cali(int T_curr, int vbat_out)
 	if (T_curr < T_L) {
 		coeff_gain_bgr = (127 + 8 * g_GAIN_BGRL);
 		if (g_SIGN_BGRL == 0)
-			vbat_out += vbat_out * (T_curr - T_L) * coeff_gain_bgr / 1000000 / 127;
+			vbat_out += div_s64((vbat_out * (T_curr - T_L) * coeff_gain_bgr), 127000000);
 		else
-			vbat_out -= vbat_out * (T_curr - T_L) * coeff_gain_bgr / 1000000 / 127;
+			vbat_out -= div_s64((vbat_out * (T_curr - T_L) * coeff_gain_bgr), 127000000);
 	} else if (T_curr > T_H) {
 		coeff_gain_bgr = (127 + 8 * g_GAIN_BGRH);
 		if (g_SIGN_BGRH == 0)
-			vbat_out -= vbat_out * (T_curr - T_H) * coeff_gain_bgr / 1000000 / 127;
+			vbat_out -= div_s64((vbat_out * (T_curr - T_H) * coeff_gain_bgr), 127000000);
 		else
-			vbat_out += vbat_out * (T_curr - T_H) * coeff_gain_bgr / 1000000 / 127;
+			vbat_out += div_s64((vbat_out * (T_curr - T_H) * coeff_gain_bgr), 127000000);
 	}
 
 	return vbat_out;
