@@ -120,7 +120,6 @@ struct compat_biometric_threshold {
 #define MSENSOR_IOCTL_READ_FACTORY_SENSORDATA	_IOW(MSENSOR, 0x52, int)
 
 /* IOCTLs for akm09911 device */
-#define ECS_IOCTL_GET_INFO			_IOR(MSENSOR, 0x27, unsigned char[AKM_SENSOR_INFO_SIZE])
 #define ECS_IOCTL_GET_CONF			_IOR(MSENSOR, 0x28, unsigned char[AKM_SENSOR_CONF_SIZE])
 #define ECS_IOCTL_SET_YPR_09911               _IOW(MSENSOR, 0x29, int[26])
 #define ECS_IOCTL_GET_DELAY_09911             _IOR(MSENSOR, 0x30, int64_t[3])
@@ -144,49 +143,36 @@ struct compat_biometric_threshold {
 
 /*COMPAT IOCTLs for AKM library */
 #define COMPAT_ECS_IOCTL_WRITE                 _IOW(MSENSOR, 0x0b, compat_uptr_t)
-#define COMPAT_ECS_IOCTL_READ                  _IOWR(MSENSOR, 0x0c, compat_uptr_t)
 #define COMPAT_ECS_IOCTL_RESET		           _IO(MSENSOR, 0x0d)	/* NOT used in AK8975 */
 #define COMPAT_ECS_IOCTL_SET_MODE              _IOW(MSENSOR, 0x0e, compat_short_t)
 #define COMPAT_ECS_IOCTL_GETDATA               _IOR(MSENSOR, 0x0f, char[SENSOR_DATA_SIZE])
-#define COMPAT_ECS_IOCTL_SET_YPR               _IOW(MSENSOR, 0x10, compat_short_t[12])
 #define COMPAT_ECS_IOCTL_GET_OPEN_STATUS       _IOR(MSENSOR, 0x11, compat_int_t)
 #define COMPAT_ECS_IOCTL_GET_CLOSE_STATUS      _IOR(MSENSOR, 0x12, compat_int_t)
 #define COMPAT_ECS_IOCTL_GET_OSENSOR_STATUS	   _IOR(MSENSOR, 0x13, compat_int_t)
 #define COMPAT_ECS_IOCTL_GET_DELAY             _IOR(MSENSOR, 0x14, compat_short_t)
 #define COMPAT_ECS_IOCTL_GET_PROJECT_NAME      _IOR(MSENSOR, 0x15, char[64])
-#define COMPAT_ECS_IOCTL_GET_MATRIX            _IOR(MSENSOR, 0x16, compat_short_t [4][3][3])
-#define	COMPAT_ECS_IOCTL_GET_LAYOUT			   _IOR(MSENSOR, 0x17, compat_int_t[3])
 
 /*COMPAT IOCTLs for akm09911 device */
 #define COMPAT_ECS_IOCTL_GET_INFO			   _IOR(MSENSOR, 0x27, unsigned char[AKM_SENSOR_INFO_SIZE])
 #define COMPAT_ECS_IOCTL_GET_CONF			   _IOR(MSENSOR, 0x28, unsigned char[AKM_SENSOR_CONF_SIZE])
-#define COMPAT_ECS_IOCTL_SET_YPR_09911         _IOW(MSENSOR, 0x29, compat_int_t[26])
 #define COMPAT_ECS_IOCTL_GET_DELAY_09911       _IOR(MSENSOR, 0x30, int64_t[3])
 #define	COMPAT_ECS_IOCTL_GET_LAYOUT_09911	   _IOR(MSENSOR, 0x31, char)
 #endif
 
 #define ALSPS								0x84
 #define ALSPS_SET_PS_MODE					_IOW(ALSPS, 0x01, int)
-#define ALSPS_GET_PS_MODE				_IOR(ALSPS, 0x02, int)
-#define ALSPS_GET_PS_DATA				_IOR(ALSPS, 0x03, int)
 #define ALSPS_GET_PS_RAW_DATA				_IOR(ALSPS, 0x04, int)
 #define ALSPS_SET_ALS_MODE					_IOW(ALSPS, 0x05, int)
-#define ALSPS_GET_ALS_MODE				_IOR(ALSPS, 0x06, int)
-#define ALSPS_GET_ALS_DATA				_IOR(ALSPS, 0x07, int)
 #define ALSPS_GET_ALS_RAW_DATA				_IOR(ALSPS, 0x08, int)
 
 /*-------------------MTK add-------------------------------------------*/
 #define ALSPS_GET_PS_TEST_RESULT			_IOR(ALSPS, 0x09, int)
-#define ALSPS_GET_ALS_TEST_RESULT		_IOR(ALSPS, 0x0A, int)
 #define ALSPS_GET_PS_THRESHOLD_HIGH			_IOR(ALSPS, 0x0B, int)
 #define ALSPS_GET_PS_THRESHOLD_LOW			_IOR(ALSPS, 0x0C, int)
-#define ALSPS_GET_ALS_THRESHOLD_HIGH	_IOR(ALSPS, 0x0D, int)
-#define ALSPS_GET_ALS_THRESHOLD_LOW		_IOR(ALSPS, 0x0E, int)
 #define ALSPS_IOCTL_CLR_CALI				_IOW(ALSPS, 0x0F, int)
 #define ALSPS_IOCTL_GET_CALI				_IOR(ALSPS, 0x10, int)
 #define ALSPS_IOCTL_SET_CALI				_IOW(ALSPS, 0x11, int)
 #define ALSPS_SET_PS_THRESHOLD				_IOW(ALSPS, 0x12, int)
-#define ALSPS_SET_ALS_THRESHOLD			_IOW(ALSPS, 0x13, int)
 #define AAL_SET_ALS_MODE					_IOW(ALSPS, 0x14, int)
 #define AAL_GET_ALS_MODE					_IOR(ALSPS, 0x15, int)
 #define AAL_GET_ALS_DATA					_IOR(ALSPS, 0x16, int)
@@ -231,8 +217,6 @@ struct compat_biometric_threshold {
 #define GYROSCOPE_IOCTL_GET_CALI			_IOW(GYROSCOPE, 0x05, struct SENSOR_DATA)
 #define GYROSCOPE_IOCTL_CLR_CALI			_IO(GYROSCOPE, 0x06)
 #define GYROSCOPE_IOCTL_READ_SENSORDATA_RAW	_IOR(GYROSCOPE, 0x07, int)
-#define GYROSCOPE_IOCTL_READ_TEMPERATURE	_IOR(GYROSCOPE, 0x08, int)
-#define GYROSCOPE_IOCTL_GET_POWER_STATUS	_IOR(GYROSCOPE, 0x09, int)
 #define GYROSCOPE_IOCTL_ENABLE_CALI			_IO(GYROSCOPE, 0x0A)
 #define GYROSCOPE_IOCTL_SELF_TEST			_IO(GYROSCOPE, 0x0B)
 #ifdef CONFIG_COMPAT
@@ -256,7 +240,6 @@ struct compat_biometric_threshold {
 #define BAROMETER_IOCTL_INIT				_IO(BROMETER, 0x01)
 #define BAROMETER_GET_PRESS_DATA			_IOR(BROMETER, 0x02, int)
 #define BAROMETER_GET_TEMP_DATA				_IOR(BROMETER, 0x03, int)
-#define BAROMETER_IOCTL_READ_CHIPINFO		_IOR(BROMETER, 0x04, int)
 #define BAROMETER_IOCTL_ENABLE_CALI			_IO(BROMETER, 0x05)
 #ifdef CONFIG_COMPAT
 #define COMPAT_BAROMETER_IOCTL_INIT			_IO(BROMETER, 0x01)
