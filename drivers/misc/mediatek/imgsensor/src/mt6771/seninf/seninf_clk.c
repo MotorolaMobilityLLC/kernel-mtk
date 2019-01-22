@@ -19,6 +19,7 @@ static struct SENINF_CLK_CTRL gseninf_mclk_name[SENINF_CLK_IDX_MAX_NUM] = {
 	{"SCP_SYS_DIS"},
 	{"SCP_SYS_CAM"},
 	{"CAMSYS_SENINF_CGPDN"},
+	{"TOP_MUX_SENINF"},
 	{"TOP_MUX_CAMTG"},
 	{"TOP_MUX_CAMTG2"},
 	{"TOP_MUX_CAMTG3"},
@@ -142,6 +143,7 @@ void seninf_clk_open(struct SENINF_CLK *pclk)
 	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_DIS]);
 	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_CAM]);
 	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_CAMSYS_SENINF_CGPDN]);
+	clk_prepare_enable(pclk->mclk_sel[SENINF_CLK_IDX_SYS_TOP_MUX_SENINF]);
 #endif
 }
 
@@ -155,6 +157,7 @@ void seninf_clk_release(struct SENINF_CLK *pclk)
 			atomic_dec(&pclk->enable_cnt[i]);
 		}
 
+	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_TOP_MUX_SENINF]);
 	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_CAMSYS_SENINF_CGPDN]);
 	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_CAM]);
 	clk_disable_unprepare(pclk->mclk_sel[SENINF_CLK_IDX_SYS_SCP_SYS_DIS]);
