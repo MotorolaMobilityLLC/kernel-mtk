@@ -2145,7 +2145,7 @@ BOOLEAN rlmFillScanMsg(P_ADAPTER_T prAdapter, P_MSG_SCN_SCAN_REQ prMsg)
 				ucChnlNum = pucIE[1] - 1;
 				DBGLOG(RLM, INFO, "Channel number in latest AP channel report %d\n", ucChnlNum);
 				while (ucIndex < ucChnlNum &&
-					prMsg->ucChannelListNum <= MAXIMUM_OPERATION_CHANNEL_LIST) {
+					prMsg->ucChannelListNum < MAXIMUM_OPERATION_CHANNEL_LIST) {
 					if (pucChnl[ucIndex] <= 14)
 						prChnlInfo[prMsg->ucChannelListNum].eBand = BAND_2G4;
 					else
