@@ -33,6 +33,16 @@
 		pr_err(MT6336TAG "%s: " fmt, __func__, ##arg); \
 } while (0)
 
+/* MT6336 controller */
+struct mt6336_ctrl {
+	const char *name;
+	unsigned int id;
+	unsigned int state;
+};
+extern struct mt6336_ctrl *mt6336_ctrl_get(const char *name);
+extern unsigned int mt6336_ctrl_enable(struct mt6336_ctrl *ctrl);
+extern unsigned int mt6336_ctrl_disable(struct mt6336_ctrl *ctrl);
+
 /* multi-read register */
 extern unsigned int mt6336_read_bytes(unsigned int reg, unsigned char *returnData, unsigned int len);
 extern int mt6336_write_bytes(unsigned int, unsigned char *, unsigned int);

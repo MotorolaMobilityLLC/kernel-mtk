@@ -56,6 +56,7 @@ static const struct i2c_device_id mt6336_i2c_id[] = { {"mt6336", 0}, {} };
 kal_bool chargin_hw_init_done;
 static DEFINE_MUTEX(mt6336_i2c_access);
 int g_mt6336_hw_exist;
+struct mt6336_ctrl *core_ctrl;
 
 
 /**********************************************************
@@ -332,30 +333,26 @@ static ssize_t store_mt6336_access(struct device *dev, struct device_attribute *
 
 	MT6336LOG("[store_mt6336_access]\n");
 	if (buf != NULL && size != 0) {
-		MT6336LOG("[store_mt6336_access] buf is %s , size is %d\n", buf, (int)size);
+		MT6336LOG("[store_mt6336_access] size is %d, buf is %s\n", (int)size, buf);
 		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
 
 		pvalue = (char *)buf;
-		if (size > 5) {
-			addr = strsep(&pvalue, " ");
+		addr = strsep(&pvalue, " ");
+		val = strsep(&pvalue, " ");
+		if (addr)
 			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
-		} else
-			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
-
-		if (size > 5) {
-			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
-			/*pvalue = (char *)buf + 1;*/
-			val =  strsep(&pvalue, " ");
+		if (val) {
 			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
-
-			MT6336LOG("[store_mt6336_access] write PMU reg 0x%x with value 0x%x !\n",
+			MT6336LOG("[store_mt6336_access] write MT6336 reg 0x%x with value 0x%x\n",
 				reg_address, reg_value);
+			mt6336_ctrl_enable(core_ctrl);
 			ret = mt6336_config_interface(reg_address, reg_value, 0xFF, 0x0);
+			mt6336_ctrl_disable(core_ctrl);
 		} else {
 			ret = mt6336_read_interface(reg_address, &g_reg_value_mt6336, 0xFF, 0x0);
-			MT6336LOG("[store_mt6336_access] read PMU reg 0x%x with value 0x%x !\n",
+			MT6336LOG("[store_mt6336_access] read MT6336 reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value_mt6336);
-			MT6336LOG("[store_mt6336_access] use \"cat pmic_access\" to get value(decimal)\r\n");
+			MT6336LOG("[store_mt6336_access] use \"cat mt6336_access\" to get value\n");
 		}
 	}
 	return size;
@@ -443,11 +440,14 @@ static struct platform_driver mt6336_user_space_driver = {
 
 static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
+
+
 	pr_err(MT6336TAG "[mt6336_driver_probe]\n");
 	new_client = client;
 
-	/* --------------------- */
-	/* Disable LowQ mode*/
+	core_ctrl = mt6336_ctrl_get("mt6336_core");
+	mt6336_ctrl_enable(core_ctrl);
+	/* Disable LowQ mode, need to be removed if MT6336 control ready */
 	mt6336_set_flag_register_value(MT6336_RG_DIS_LOWQ_MODE, 0x1);
 	mt6336_hw_component_detect();
 	mt6336_dump_register();
@@ -462,6 +462,7 @@ static int mt6336_driver_probe(struct i2c_client *client, const struct i2c_devic
 	/* Hook chr_control_interface with battery's interface */
 	battery_charging_control = chr_control_interface;
 #endif
+	mt6336_ctrl_disable(core_ctrl);
 	pr_err(MT6336TAG "[mt6336_driver_probe] Done\n");
 	return 0;
 }
