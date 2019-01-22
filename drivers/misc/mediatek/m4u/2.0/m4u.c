@@ -30,14 +30,15 @@
 #include <linux/slab.h>
 #include <linux/timer.h>
 #include <mt-plat/sync_write.h>
-#include <mach/mt_clkmgr.h>
-#include <mach/irqs.h>
 #include <asm/cacheflush.h>
 #include <linux/mm.h>
 #include <linux/pagemap.h>
 #include <linux/dma-direction.h>
 #include <asm/page.h>
 #include <linux/proc_fs.h>
+#ifndef CONFIG_ARM64
+#include "mm/dma.h"
+#endif
 
 #include "m4u_priv.h"
 #include "m4u.h"
