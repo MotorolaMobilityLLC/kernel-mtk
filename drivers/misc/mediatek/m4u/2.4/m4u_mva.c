@@ -1144,7 +1144,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		s = startIdx;
 	} else {
 		/* alloc a mva region */
-		end = s + mvaGraph[s] - 1;
+		end = s + MVA_GET_NR(s) - 1;
 
 		/*check [startIdx, endIdx] status*/
 		is_in_ccu_region = 0;
@@ -1156,7 +1156,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		if (vpu_region_status == 1)
 			is_in_vpu_region = 1;
 
-		if (unlikely(nr == mvaGraph[s])) {
+		if (unlikely(nr == MVA_GET_NR(s))) {
 			MVA_SET_BUSY(s);
 			MVA_SET_BUSY(end);
 			mvaInfoGraph[s] = priv;
@@ -1169,7 +1169,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 			new_end = s + nr - 1;
 			new_start = new_end + 1;
 			/* note: new_start may equals to end */
-			mvaGraph[new_start] = (mvaGraph[s] - nr);
+			mvaGraph[new_start] = (MVA_GET_NR(s) - nr);
 			mvaGraph[new_end] = nr | MVA_BUSY_MASK;
 			mvaGraph[s] = mvaGraph[new_end];
 			mvaGraph[end] = mvaGraph[new_start];
@@ -1216,9 +1216,12 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	int port;
 	unsigned long irq_flags;
 
+	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_START, mvaGraph[0x2fb], 4);
+	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 	startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
 	if (startIdx == 0 || startIdx > MVA_MAX_BLOCK_NR) {
 		M4UMSG("mvaGraph index is 0. mva=0x%x\n", mva);
+		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 		return -1;
 	}
 	nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
@@ -1226,6 +1229,7 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	p_mva_info = (struct m4u_buf_info_t *)mvaInfoGraph[startIdx];
 
 	if (size == 0 || nr == 0 || p_mva_info == NULL) {
+		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 		M4UMSG("%s error: the input size = %d nr = %d mva_info = %p.\n",
 			__func__, size, nr, p_mva_info);
 		if (p_mva_info)
@@ -1237,15 +1241,14 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 	/*check if reserved region meets free condition.*/
 	ccu_region_status = __check_ccu_mva_region(startIdx, nr, (void *)p_mva_info);
 	vpu_region_status = m4u_check_mva_region(startIdx, nr, (void *)p_mva_info);
-	if (ccu_region_status == -1 && vpu_region_status == -1)
+	if (ccu_region_status == -1 && vpu_region_status == -1) {
+		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 		return -1;
-	else if (ccu_region_status == 1)
+	} else if (ccu_region_status == 1)
 		is_in_ccu_region_flag = 1;
 	else if (vpu_region_status == 1)
 		is_in_vpu_region_flag = 1;
 
-	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_START, mvaGraph[0x2f8], 4);
-	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 	/* -------------------------------- */
 	/* check the input arguments */
 	/* right condition: startIdx is not NULL && region is busy && right module && right size */
