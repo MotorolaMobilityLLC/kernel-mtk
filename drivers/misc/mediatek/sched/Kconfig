@@ -3,8 +3,9 @@ config MTK_CPU_AFFINITY
 	bool "Enhance CPU affinity in hotplug"
 	depends on HOTPLUG_CPU
 	help
-	  The CPU affinity library for Hotplug enhancement is to achieve set CPU
-	  affinity without take care kernel behavior and to avoid affect the original
+	  The CPU affinity library for Hotplug enhancement
+	  is to achieve set CPU affinity without take care
+	  kernel behavior and to avoid affect the original
 	  Linux design.
 
 config MTK_USER_SPACE_GLOBAL_CPUSET
@@ -12,7 +13,10 @@ config MTK_USER_SPACE_GLOBAL_CPUSET
 	depends on CPUSETS
 	default n
 	help
-		Interface for set user space global cpuset
+		Interface for set user space global cpuset:
+		1. User can use user space global cpuset to set
+		   cpuset mask of all child group.
+		2. When unset, child cpuset will restore by cpus.
 
 endmenu
 
@@ -101,7 +105,10 @@ config MTK_SCHED_RQAVG_US
 	bool "Enable runqueue staticsic calculation used in user space operation"
 	depends on SMP && HIGH_RES_TIMERS
 	help
-		TLP estimation for user space CPUfreq governors
+		MTK runqueue staticsic calculation
+		used in user space operation.
+		TLP estimation for user space
+		CPUfreq governors.
 endmenu
 
 menu "MTK Energy Aware Scheduler Plus"
@@ -121,8 +128,9 @@ config MTK_SCHED_EAS_POWER_SUPPORT
 	default n
 	help
 		Power calculation for mtk Soc.
-		According to platform characters(share-buck..etc), return correct power
-		of core and cluster for scheduler to refer.
+		According to platform characters(share-buck..etc),
+		return correct power of core and cluster for
+		scheduler to refer.
 
 config MTK_SCHED_VIP_TASKS
 	bool "Enable VIP task cgroup for special schedule (EXPERIMENTAL)"
@@ -130,6 +138,11 @@ config MTK_SCHED_VIP_TASKS
 	default n
 	help
 		VIP tasks of special cgroup favor use big-core.
+		The user can apply pid to vip group via vip_task_set(set or not).
+		Boost value of vip is synced with foreground for performance request.
+		 1) wake up: higher idle cpu for vip task.
+		 2) idle balance: pull runnable vip task.
+		 3) migrating running vip to higher idle cpu.
 endmenu
 
 menu "MTK Heterogenous MultiProcessor Scheduler"
