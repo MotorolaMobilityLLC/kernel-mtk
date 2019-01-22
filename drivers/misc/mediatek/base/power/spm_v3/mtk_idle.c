@@ -1154,8 +1154,8 @@ static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 #ifndef CONFIG_MACH_MT6759
 	SPM_FLAG_DIS_PERI_PDN |
-	SPM_FLAG_ENABLE_ATF_ABORT |
 #endif
+	SPM_FLAG_ENABLE_ATF_ABORT |
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
@@ -1169,8 +1169,8 @@ static u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_VCORE_DFS |
 #ifndef CONFIG_MACH_MT6759
 	SPM_FLAG_DIS_PERI_PDN |
-	SPM_FLAG_ENABLE_ATF_ABORT |
 #endif
+	SPM_FLAG_ENABLE_ATF_ABORT |
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
@@ -1206,8 +1206,10 @@ u32 slp_spm_deepidle_flags = {
 #endif /* platform difference */
 
 static u32 slp_spm_MCSODI_flags = {
-	SPM_FLAG_RUN_COMMON_SCENARIO |
-	(1U << 26)
+#ifdef CONFIG_MACH_MT6759
+	SPM_FLAG_ENABLE_MCSODI |
+#endif
+	SPM_FLAG_RUN_COMMON_SCENARIO
 };
 
 unsigned int ufs_cb_before_xxidle(void)
