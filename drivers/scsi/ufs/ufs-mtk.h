@@ -46,6 +46,10 @@ struct ufs_cmd_str_struct {
 	char cmd;
 };
 
+/* Hynix device need max 3 seconds to clear fDeviceInit, each fDeviceInit transaction takes */
+/* around 1~2ms to get response from UFS. Max fDeviceInit clear time = 5000*(1~2)ms > 3seconds */
+#define UFS_FDEVICEINIT_RETRIES    (5000)
+
 #define ASCII_STD true
 
 /* return true if s1 is a prefix of s2 */
