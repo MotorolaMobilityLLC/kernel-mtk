@@ -701,6 +701,22 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(OV5645_MIPI_YUV)
+	{
+		SENSOR_DRVNAME_OV5645_MIPI_YUV,
+		{
+			{SensorMCLK, Vol_High, 0},
+			{PDN, Vol_Low, 0},
+			{RST, Vol_Low, 0},
+			{DOVDD, Vol_1800, 0},
+			{AVDD, Vol_2800, 0},
+			{DVDD, Vol_1200, 5},
+			{PDN, Vol_High, 1},
+			{RST, Vol_High, 10}
+		},
+	},
+#endif
+
 	/* add new sensor before this line */
 	{NULL,},
 };
