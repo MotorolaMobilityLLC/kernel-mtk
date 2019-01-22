@@ -2060,6 +2060,7 @@ s32 cmdq_task_create_delay_thread_dram(void **pp_delay_thread_buffer, u32 *buffe
 	}
 
 	cmdq_op_finalize_command(handle, true);
+	*buffer_size = handle->blockSize;
 
 	if (handle->blockSize <= 0 || handle->pBuffer == NULL) {
 		CMDQ_ERR("REC: create delay thread fail, block_size = %d\n", handle->blockSize);
@@ -2079,7 +2080,6 @@ s32 cmdq_task_create_delay_thread_dram(void **pp_delay_thread_buffer, u32 *buffe
 	if (*pp_delay_thread_buffer != NULL)
 		kfree(*pp_delay_thread_buffer);
 	*pp_delay_thread_buffer = p_new_buffer;
-	*buffer_size = handle->blockSize;
 
 	cmdq_task_destroy(handle);
 
