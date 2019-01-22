@@ -220,7 +220,7 @@ struct render_info *fpsgo_search_and_add_render_info(int pid, int force)
 		return NULL;
 
 	mutex_init(&tmp->thr_mlock);
-
+	INIT_LIST_HEAD(&(tmp->bufferid_list));
 	tmp->pid = pid;
 	tmp->tgid = tgid;
 	fpsgo_base2fbt_node_init(tmp);
