@@ -507,6 +507,35 @@ dma_addr_t cmdq_core_task_get_pa_by_offset(const struct TaskStruct *pTask, uint3
 	return 0;
 }
 
+u32 cmdq_core_task_get_offset_by_pa(const struct TaskStruct *pTask, dma_addr_t pa,
+	u32 **va_out)
+{
+	struct CmdBufferStruct *entry = NULL;
+	u32 offset = 0, task_pa = 0;
+
+	if (!pTask || !pa || CMDQ_IS_END_ADDR(pa))
+		return ~0;
+
+	list_for_each_entry(entry, &pTask->cmd_buffer_list, listEntry) {
+		u32 buffer_size = (list_is_last(&entry->listEntry, &pTask->cmd_buffer_list) ?
+			CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : CMDQ_CMD_BUFFER_SIZE);
+
+		task_pa = (u32)entry->MVABase;
+		if (pa >= task_pa && pa < task_pa + buffer_size) {
+			u32 buffer_offset = pa - task_pa;
+
+			offset += buffer_offset;
+			if (va_out)
+				*va_out = (u32 *)((u8 *)entry->pVABase + buffer_offset);
+			return offset;
+		}
+		offset += buffer_size;
+	}
+
+	return ~0;
+}
+
+
 static void cmdq_core_replace_overwrite_instr(struct TaskStruct *pTask, u32 index)
 {
 	/* check if this is overwrite instruction */
@@ -1540,7 +1569,6 @@ static uint32_t *cmdq_core_get_pc(const struct TaskStruct *pTask, uint32_t threa
 {
 	long currPC = 0L;
 	uint8_t *inst_ptr = NULL;
-	struct CmdBufferStruct *cmd_buffer = NULL;
 
 	if (unlikely(pTask == NULL || list_empty(&pTask->cmd_buffer_list) || thread == CMDQ_INVALID_THREAD)) {
 		CMDQ_ERR("get pc failed since invalid param, pTask:0x%p, thread:%d\n", pTask, thread);
@@ -1556,12 +1584,7 @@ static uint32_t *cmdq_core_get_pc(const struct TaskStruct *pTask, uint32_t threa
 
 		inst_ptr = (uint8_t *)pVABase + (currPC - pTask->sram_base) * sizeof(u64);
 	} else {
-		list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
-			if (currPC >= cmd_buffer->MVABase &&
-				currPC < cmd_buffer->MVABase + CMDQ_CMD_BUFFER_SIZE) {
-				inst_ptr = (uint8_t *) cmd_buffer->pVABase + (currPC - cmd_buffer->MVABase);
-			}
-		}
+		cmdq_core_task_get_offset_by_pa(pTask, currPC, (u32 **)&inst_ptr);
 	}
 
 	if (inst_ptr) {
@@ -1583,7 +1606,7 @@ static bool cmdq_core_task_is_valid_pa(const struct TaskStruct *pTask, dma_addr_
 
 	list_for_each_entry(entry, &pTask->cmd_buffer_list, listEntry) {
 		task_pa = (long)entry->MVABase;
-		if (pa >= task_pa && pa <= task_pa +
+		if (pa >= task_pa && pa < task_pa +
 			(list_is_last(&entry->listEntry, &pTask->cmd_buffer_list) ?
 			CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : CMDQ_CMD_BUFFER_SIZE)) {
 			return true;
@@ -4724,6 +4747,44 @@ static void cmdq_core_parse_error(const struct TaskStruct *pTask, uint32_t threa
 
 }
 
+static bool cmdq_core_is_poll(const struct TaskStruct *pTask, dma_addr_t thread_pc_pa)
+{
+	const u32 polling_max_size = 18 * CMDQ_INST_SIZE;
+	u32 begin_offset = 0, jump_offset = 0;
+	u32 *instruction = NULL;
+	bool found = false;
+
+	if (!pTask || !thread_pc_pa || CMDQ_IS_END_ADDR(thread_pc_pa))
+		return false;
+
+	/* get current offset */
+	begin_offset = cmdq_core_task_get_offset_by_pa(pTask, thread_pc_pa, NULL);
+	jump_offset = begin_offset;
+	while (jump_offset < pTask->bufferSize && jump_offset - begin_offset < polling_max_size) {
+		instruction = cmdq_core_task_get_va_by_offset(pTask, jump_offset);
+		if (!instruction)
+			return false;
+		if ((instruction[1] >> 24) == CMDQ_CODE_JUMP_C_ABSOLUTE) {
+			found = true;
+			break;
+		}
+		jump_offset += CMDQ_INST_SIZE;
+	}
+
+	/* cannot find end_do_while in polling */
+	if (!found || jump_offset < CMDQ_INST_SIZE * 2)
+		return false;
+
+	/* try to check wait polling timer */
+	instruction = cmdq_core_task_get_va_by_offset(pTask, jump_offset - CMDQ_INST_SIZE * 2);
+	if (!instruction || (instruction[1] & 0xFFFFFF) != CMDQ_EVENT_TIMER_00 + CMDQ_POLLING_TPR_MASK_BIT) {
+		/* backward 3 instruction should be wait TIMER 10 in polling */
+		return false;
+	}
+
+	return true;
+}
+
 void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct ResourceUnitStruct *pResource = NULL;
@@ -7328,7 +7389,8 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 			cmdq_core_parse_error(pNGTask, thread, &module, &irqFlag, &instA, &instB);
 			status = -ETIMEDOUT;
 
-			if (private->internal && ((instA & 0xFF000000) >> 24) == CMDQ_CODE_WFE) {
+			if (private->internal && (((instA & 0xFF000000) >> 24) == CMDQ_CODE_WFE ||
+				cmdq_core_is_poll(pTask, (dma_addr_t)threadPC))) {
 				/* this is testcase timeout in purpose case, ignore aee and set ignore flag */
 				private->ignore_timeout = true;
 			} else {
