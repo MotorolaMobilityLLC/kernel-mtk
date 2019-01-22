@@ -18,6 +18,7 @@
 #include <linux/wait.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
+#include <linux/spinlock.h>
 #include <linux/types.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
@@ -36,7 +37,7 @@
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
 
-static DEFINE_MUTEX(hrt_table_lock);
+static DEFINE_SPINLOCK(hrt_table_lock);
 static int num_l;
 
 int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
@@ -55,6 +56,8 @@ int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4_FHD_19 */
 	{400, 500, 500, 500},
 };
+
+int emi_bound_t[HRT_LEVEL_NUM] = {0};
 
 int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
@@ -394,15 +397,31 @@ int get_hrt_bound(int is_larb, int hrt_level)
 {
 	if (is_larb)
 		return larb_bound_table[l_rule_info.bound_tb_idx][hrt_level];
-	else
-		return emi_bound_table[l_rule_info.bound_tb_idx][hrt_level];
+	else {
+		int value;
+		unsigned long flags = 0;
+
+		spin_lock_irqsave(&hrt_table_lock, flags);
+		value = emi_bound_table[l_rule_info.bound_tb_idx][hrt_level];
+		spin_unlock_irqrestore(&hrt_table_lock, flags);
+
+		return value;
+	}
 }
 
 static int *get_bound_table(enum DISP_HW_MAPPING_TB_TYPE tb_type)
 {
+	int i = 0;
+	unsigned long flags = 0;
+
 	switch (tb_type) {
 	case DISP_HW_EMI_BOUND_TB:
-		return emi_bound_table[l_rule_info.bound_tb_idx];
+		spin_lock_irqsave(&hrt_table_lock, flags);
+		for (i = 0; i < HRT_LEVEL_NUM; i++)
+			emi_bound_t[i] = emi_bound_table[l_rule_info.bound_tb_idx][i];
+		spin_unlock_irqrestore(&hrt_table_lock, flags);
+
+		return emi_bound_t;
 	case DISP_HW_LARB_BOUND_TB:
 		return larb_bound_table[l_rule_info.bound_tb_idx];
 	default:
@@ -546,15 +565,16 @@ void update_layering_opt_by_disp_opt(enum DISP_HELPER_OPT opt, int value)
 int modify_display_hrt_cb(int num)
 {
 	int i = 0, type = l_rule_info.bound_tb_idx;
+	unsigned long flags = 0;
 
 	/* just modify HRT table for LPDDR3 case now */
 	if (type != HRT_BOUND_TYPE_LP3)
 		return 1;
 
-	mutex_lock(&hrt_table_lock);
+	spin_lock_irqsave(&hrt_table_lock, flags);
 
 	if (num < 0 || num > 150 || num == num_l) {
-		mutex_unlock(&hrt_table_lock);
+		spin_unlock_irqrestore(&hrt_table_lock, flags);
 		return 1;
 	}
 
@@ -565,25 +585,15 @@ int modify_display_hrt_cb(int num)
 	}
 	num_l = num;
 
-	DISPDBG("modify_display_hrt, num:%d\n", num);
+	spin_unlock_irqrestore(&hrt_table_lock, flags);
 
-	mutex_unlock(&hrt_table_lock);
+	DISPDBG("modify_display_hrt, num:%d\n", num);
 
 	/* to gaurantee new HRT table would be applied */
 	/* TODO: add a new enum instead of using REFRESH_FOR_ANTI_LATENCY2 */
 	trigger_repaint(REFRESH_FOR_ANTI_LATENCY2);
 
 	return 0;
-}
-
-inline void hrt_table_locked(void)
-{
-	mutex_lock(&hrt_table_lock);
-}
-
-inline void hrt_table_unlocked(void)
-{
-	mutex_unlock(&hrt_table_lock);
 }
 
 inline int get_hrt_discount(void)
