@@ -15,7 +15,7 @@
  * @brief   Driver for UDI interface
  *
  */
-#define __MT_UDI_C__
+#define __MTK_UDI_C__
 
 /* system includes */
 #ifdef __KERNEL__
@@ -40,7 +40,6 @@
 #endif
 /* local includes */
 #include <mt-plat/sync_write.h>  /* mt_reg_sync_writel */
-#include <mtk_udi.h>
 #include "mtk_udi_internal.h"
 
 static unsigned int func_lv_mask_udi;
@@ -959,4 +958,4 @@ module_exit(udi_exit);
 MODULE_DESCRIPTION("MediaTek UDI Driver v0.1");
 MODULE_LICENSE("GPL");
 #endif /* __KERNEL__ */
-#undef __MT_UDI_C__
+#undef __MTK_UDI_C__
