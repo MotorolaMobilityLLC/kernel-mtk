@@ -50,10 +50,10 @@ static struct mtk_memcfg_info_buf mtk_memcfg_layout_buf = {
 };
 
 static void mtk_memcfg_show_layout_region(struct seq_file *m, char *name,
-		unsigned long end, unsigned long size, int is_end);
+		unsigned long long end, unsigned long long size, int is_end);
 
 static void mtk_memcfg_show_layout_region_gap(struct seq_file *m,
-		unsigned long end, unsigned long size);
+		unsigned long long end, unsigned long long size);
 
 static int mtk_memcfg_layout_phy_count;
 static int mtk_memcfg_layout_debug_count;
@@ -61,8 +61,8 @@ static int sort_layout;
 
 struct mtk_memcfg_layout_info {
 	char name[20];
-	unsigned long start;
-	unsigned long size;
+	unsigned long long start;
+	unsigned long long size;
 };
 
 static struct mtk_memcfg_layout_info mtk_memcfg_layout_info_phy[20];
@@ -221,14 +221,14 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 }
 
 static void mtk_memcfg_show_layout_region(struct seq_file *m, char *name,
-		unsigned long end, unsigned long size, int is_end)
+		unsigned long long end, unsigned long long size, int is_end)
 {
 	int i = 0;
 	int name_length = strlen(name);
 	int padding = (30 - name_length - 2) / 2;
 	int odd = (30 - name_length - 2) % 2;
 
-	seq_printf(m, "------------------------------  0x%08lx\n", end);
+	seq_printf(m, "------------------------------  0x%08llx\n", end);
 	seq_puts(m, "-                            -\n");
 	seq_puts(m, "-");
 	for (i = 0; i < padding; i++)
@@ -236,21 +236,21 @@ static void mtk_memcfg_show_layout_region(struct seq_file *m, char *name,
 	seq_printf(m, "%s", name);
 	for (i = 0; i < padding + odd; i++)
 		seq_puts(m, " ");
-	seq_printf(m, "- size : (0x%0lx)\n", size);
+	seq_printf(m, "-  size : (0x%0llx)\n", size);
 	seq_puts(m, "-                            -\n");
 
 	if (is_end)
-		seq_printf(m, "------------------------------  0x%0lx\n"
+		seq_printf(m, "------------------------------  0x%0llx\n"
 				, end - size);
 }
 
 
 static void mtk_memcfg_show_layout_region_gap(struct seq_file *m,
-		unsigned long end, unsigned long size)
+		unsigned long long end, unsigned long long size)
 {
-	seq_printf(m, "------------------------------  0x%08lx\n", end);
+	seq_printf(m, "------------------------------  0x%08llx\n", end);
 	seq_puts(m, "-                            -\n");
-	seq_printf(m, "-~~~~~~~~~~~~~~~~~~~~~~~~~~~~-  size : (0x%0lx)\n", size);
+	seq_printf(m, "-~~~~~~~~~~~~~~~~~~~~~~~~~~~~-  size : (0x%0llx)\n", size);
 	seq_puts(m, "-                            -\n");
 }
 static int mtk_memcfg_memory_layout_open(struct inode *inode, struct file *file)
