@@ -58,6 +58,12 @@ static u32 in_lowmem;
 #include <mt-plat/mtk_gpu_utility.h>
 #endif
 
+#ifdef CONFIG_64BIT
+#define ENABLE_AMR_RAMSIZE	(0x80000)	/* > 2GB */
+#else
+#define ENABLE_AMR_RAMSIZE	(0x40000)	/* > 1GB */
+#endif
+
 static short lowmem_debug_adj;	/* default: 0 */
 #ifdef CONFIG_MTK_ENG_BUILD
 #ifdef CONFIG_MTK_AEE_FEATURE
@@ -155,9 +161,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
 	int d_state_is_found = 0;
 	int unreclaimable_zones = 0;
-#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#ifdef CONFIG_SWAP
 	int to_be_aggressive = 0;
 	unsigned long swap_pages = 0;
+	short amr_adj = OOM_SCORE_ADJ_MAX + 1;
 #endif
 #ifdef CONFIG_MTK_ENG_BUILD
 	int pid_dump = -1; /* process to be dump */
@@ -246,7 +253,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	}
 #endif
 
-#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#ifdef CONFIG_SWAP
 	swap_pages = atomic_long_read(&nr_swap_pages);
 	/* More than 1/2 swap usage */
 	if (swap_pages * 2 < total_swap_pages)
@@ -254,6 +261,17 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	/* More than 3/4 swap usage */
 	if (swap_pages * 4 < total_swap_pages)
 		to_be_aggressive++;
+
+#ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
+	/* Try to enable AMR when we have enough memory */
+	if (totalram_pages < ENABLE_AMR_RAMSIZE) {
+		to_be_aggressive = 0;
+	} else {
+		i = lowmem_adj_size - 1 - to_be_aggressive;
+		if (to_be_aggressive > 0 && i >= 0)
+			amr_adj = lowmem_adj[i];
+	}
+#endif
 #endif
 
 	if (lowmem_adj_size < array_size)
@@ -263,7 +281,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	for (i = 0; i < array_size; i++) {
 		minfree = lowmem_minfree[i];
 		if (other_free < minfree && other_file < minfree) {
-#if defined(CONFIG_SWAP) && defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#ifdef CONFIG_SWAP
 			if (to_be_aggressive != 0 && i > 3) {
 				i -= to_be_aggressive;
 				if (i < 3)
@@ -274,6 +292,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			break;
 		}
 	}
+
+#if defined(CONFIG_SWAP) && !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+	min_score_adj = min(min_score_adj, amr_adj);
+#endif
 
 	/* Promote its priority */
 	if (unreclaimable_zones > 0)
@@ -454,14 +476,22 @@ log_again:
 		lowmem_print(1, "Killing '%s' (%d), adj %hd, state(%ld)\n"
 				"   to free %ldkB on behalf of '%s' (%d) because\n"
 				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n"
-				"   Free memory is %ldkB above reserved\n",
+				"   Free memory is %ldkB above reserved\n"
+#ifdef CONFIG_SWAP
+				"   (decrease %d level, amr_adj %hd)\n"
+#endif
+				,
 			     selected->comm, selected->pid,
 			     selected_oom_score_adj, selected->state,
 			     selected_tasksize * (long)(PAGE_SIZE / 1024),
 			     current->comm, current->pid,
 			     cache_size, cache_limit,
 			     min_score_adj,
-			     free);
+			     free
+#ifdef CONFIG_SWAP
+			     , to_be_aggressive, amr_adj
+#endif
+			     );
 
 		lowmem_deathpending_timeout = jiffies + LOWMEM_DEATHPENDING_TIMEOUT;
 
