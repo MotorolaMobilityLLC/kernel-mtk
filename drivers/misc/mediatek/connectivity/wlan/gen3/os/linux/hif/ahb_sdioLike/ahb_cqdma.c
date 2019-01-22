@@ -155,6 +155,16 @@ GL_HIF_DMA_OPS_T HifCqdmaOps = {
 
 VOID HifDmaInit(GL_HIF_INFO_T *HifInfo)
 {
+	/*
+	 * CQDMA H/W can access 36-bit physical address, set DMA_MASK to 36 bit
+	 * to avoid bounce buffering when using DMA.
+	 * (If the physical region of allocated DRAM memory is considered not
+	 * reachable by the device, dma_map_single will return a bounce buffer
+	 * from IOTLB, device can only perform DMA to the bounce buffer, kernel
+	 * does the extra copy between bounce buffer and VA is needed.)
+	 */
+	dma_set_mask(HifInfo->Dev, DMA_BIT_MASK(36));
+
 	/* IO remap DMA register memory */
 #ifdef CONFIG_OF
 	HifInfo->DmaRegBaseAddr = (PUINT_8)of_iomap(HifInfo->Dev->of_node, 1);
