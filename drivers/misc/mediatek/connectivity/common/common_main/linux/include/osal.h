@@ -271,6 +271,7 @@ VOID osal_thread_show_stack(P_OSAL_THREAD pThread);
 
 INT32 osal_sleep_ms(UINT32 ms);
 INT32 osal_udelay(UINT32 us);
+INT32 osal_usleep_range(ULONG min, ULONG max);
 INT32 osal_timer_create(P_OSAL_TIMER);
 INT32 osal_timer_start(P_OSAL_TIMER, UINT32);
 INT32 osal_timer_stop(P_OSAL_TIMER);
