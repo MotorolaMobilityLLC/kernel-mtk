@@ -27,16 +27,12 @@
 #include <mtk_spm.h>
 #include <mtk_spm_sleep.h>
 #include <mtk_spm_idle.h>
-/* #include <mach/mtk_clkmgr.h> */
-/* #include <mtk_spm_mtcmos.h> */
 #include <mtk_spm_misc.h>
 #include <mt-plat/mtk_gpio.h>
 
-/* FIXME: */
-/* #define MTK_SUSPEND_AUDIO_SUPPORT */
-#ifdef MTK_SUSPEND_AUDIO_SUPPORT
-#include <mt_soc_afe_control.h>
-#endif /* MTK_SUSPEND_AUDIO_SUPPORT */
+#ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
+#include <mtk-soc-afe-control.h>
+#endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 
 /**************************************
  * only for internal debug
@@ -71,7 +67,6 @@ static wake_reason_t slp_wake_reason = WR_NONE;
 
 static bool slp_ck26m_on;
 bool slp_dump_gpio;
-static bool slp_check_mtcmos_pll = 1;
 
 static u32 slp_spm_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
@@ -85,6 +80,7 @@ static u32 slp_spm_flags = {
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	SPM_FLAG_SUSPEND_OPTION
 };
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if SLP_SLEEP_DPIDLE_EN
 /* sync with mt_idle.c spm_deepidle_flags setting */
 static u32 slp_spm_deepidle_flags = {
@@ -97,6 +93,7 @@ static u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 #endif
+#endif /* CONFIG_FPGA_EARLY_PORTING */
 u32 slp_spm_data;
 
 
@@ -125,7 +122,7 @@ static int slp_suspend_ops_prepare(void)
 	return 0;
 }
 
-#ifdef MTK_SUSPEND_AUDIO_SUPPORT
+#ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 bool __attribute__ ((weak)) ConditionEnterSuspend(void)
 {
 	pr_err("NO %s !!!\n", __func__);
@@ -154,44 +151,44 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	return WR_NONE;
 }
 
+void __attribute__((weak)) subsys_if_on(void)
+{
+	pr_err("NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak)) pll_if_on(void)
+{
+	pr_err("NO %s !!!\n", __func__);
+}
+
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
 	int ret = 0;
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if SLP_SLEEP_DPIDLE_EN
-#ifdef MTK_SUSPEND_AUDIO_SUPPORT
+#ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 	int fm_radio_is_playing = 0;
 
 	if (ConditionEnterSuspend() == true)
 		fm_radio_is_playing = 0;
 	else
 		fm_radio_is_playing = 1;
-#endif /* MTK_SUSPEND_AUDIO_SUPPORT */
+#endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 #endif
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
 	/* legacy log */
 	slp_crit2("@@@@@@@@@@@@@@@@@@@@\tChip_pm_enter\t@@@@@@@@@@@@@@@@@@@@\n");
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (slp_dump_gpio)
 		gpio_dump_regs();
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#if 0 /* need api from ccf */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	pll_if_on();
 	subsys_if_on();
-
-	if (!(spm_cpusys0_can_power_down() || spm_cpusys1_can_power_down())) {
-		slp_error("CANNOT SLEEP DUE TO CPUx PON, PWR_STATUS = 0x%x, PWR_STATUS_2ND = 0x%x\n",
-		     slp_read(PWR_STATUS), slp_read(PWR_STATUS_2ND));
-		/* return -EPERM; */
-		ret = -EPERM;
-		goto LEAVE_SLEEP;
-	}
-#endif
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
 	if (is_infra_pdn(slp_spm_flags) && !is_cpu_pdn(slp_spm_flags)) {
@@ -200,27 +197,29 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		goto LEAVE_SLEEP;
 	}
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!spm_load_firmware_status()) {
 		slp_error("SPM FIRMWARE IS NOT READY\n");
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
-#endif
+#endif /* CONFIG_FPGA_EARLY_PORTING */
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if SLP_SLEEP_DPIDLE_EN
-#ifdef MTK_SUSPEND_AUDIO_SUPPORT
+#ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 	if (slp_ck26m_on | fm_radio_is_playing)
 #else
 	if (slp_ck26m_on)
-#endif /* MTK_SUSPEND_AUDIO_SUPPORT */
+#endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 		slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags, slp_spm_data);
 	else
 #endif
+#endif /* CONFIG_FPGA_EARLY_PORTING */
 		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
 
 LEAVE_SLEEP:
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_SYSTRACKER
 	systracker_enable();
 #endif
@@ -320,6 +319,5 @@ module_param(slp_ck26m_on, bool, 0644);
 module_param(slp_spm_flags, uint, 0644);
 
 module_param(slp_dump_gpio, bool, 0644);
-module_param(slp_check_mtcmos_pll, bool, 0644);
 
 MODULE_DESCRIPTION("Sleep Driver v0.1");

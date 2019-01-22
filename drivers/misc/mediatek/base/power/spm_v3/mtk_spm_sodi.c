@@ -56,6 +56,7 @@
 #define SODI_LOGOUT_TIMEOUT_CRITERIA	(20)
 #define SODI_LOGOUT_INTERVAL_CRITERIA	(5000U)	/* unit:ms */
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #ifdef CONFIG_OF
 #define MCUCFG_BASE		spm_mcucfg
 #else
@@ -67,12 +68,12 @@
 #define CPUCFG					(MCUCFG_BASE + 0x2008)
 #define ACINACTM		(1 << 4)
 #define MP2_ACINACTM	(1 << 0)
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 /* FIXME: update sodi_ctrl */
 static struct pwr_ctrl sodi_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SODI,
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #if SPM_BYPASS_SYSPWREQ
 	.syspwreq_mask = 0,
 #endif
@@ -267,7 +268,6 @@ static struct pwr_ctrl sodi_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* Auto-gen End */
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 };
 
 struct spm_lp_scen __spm_sodi = {
@@ -476,11 +476,9 @@ static wake_reason_t spm_sodi_output_log(
 		} else {
 			int mem_status = 0;
 
-#if 0 /* no more SPM_FLAG_SODI_CG_MODE */
 			if (((spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) != 0) ||
 				((spm_read(DUMMY1_PWR_CON) & DUMMY1_PWR_ISO_LSB) != 0))
 				mem_status = 1;
-#endif
 
 			if (memPllCG_prev_status != mem_status) {
 				memPllCG_prev_status = mem_status;
@@ -571,12 +569,10 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
 
-#if 0 /* no more SPM_FLAG_SODI_CG_MODE */
 	if (spm_get_sodi_mempll() == 1)
 		spm_flags |= SPM_FLAG_SODI_CG_MODE; /* CG mode */
 	else
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE; /* PDN mode */
-#endif
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
@@ -605,7 +601,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_SLEEP);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (request_uart_to_sleep()) {
 		wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
@@ -638,7 +634,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_AWAKE);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	request_uart_to_wakeup();
 #endif
 
@@ -646,7 +642,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_SPM_FLOW);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:
 #endif
 

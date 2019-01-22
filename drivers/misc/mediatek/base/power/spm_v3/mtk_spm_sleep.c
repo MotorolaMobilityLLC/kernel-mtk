@@ -23,9 +23,7 @@
 #include <mt-plat/mtk_secure_api.h>
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
-#ifndef CONFIG_ARM64
-/* #include <mach/irqs.h> */
-#else
+#ifdef CONFIG_ARM64
 #include <linux/irqchip/mtk-gic.h>
 #endif
 #if defined(CONFIG_MTK_SYS_CIRQ)
@@ -67,13 +65,15 @@
 #define SPM_BYPASS_SYSPWREQ     1
 #endif
 
-#define MCUCFG_BASE          spm_mcucfg /* 0x10200600 */
-#define MP0_AXI_CONFIG          (MCUCFG_BASE + 0x2C - 0x600)
-#define MP1_AXI_CONFIG          (MCUCFG_BASE + 0x22C - 0x600)
-#define CPUCFG                  (MCUCFG_BASE + 0x2008 - 0x600)
-#define MP2_AXI_CONFIG          (MCUCFG_BASE + 0x220C - 0x600)
-#define ACINACTM                (1 << 4)
-#define MP2_ACINACTM            (1 << 0)
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
+#define MCUCFG_BASE		spm_mcucfg /* 0x10200000 */
+#define MP0_AXI_CONFIG		(MCUCFG_BASE + 0x2C)
+#define MP1_AXI_CONFIG		(MCUCFG_BASE + 0x22C)
+#define CPUCFG			(MCUCFG_BASE + 0x2008)
+#define MP2_AXI_CONFIG		(MCUCFG_BASE + 0x220C)
+#define ACINACTM		(1 << 4)
+#define MP2_ACINACTM		(1 << 0)
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 static int spm_dormant_sta;
 static int spm_ap_mdsrc_req_cnt;
@@ -385,7 +385,7 @@ struct spm_lp_scen __spm_suspend = {
 
 static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 {
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
 		spm_dormant_sta = mtk_enter_idle_state(MTK_SUSPEND_MODE);
 		if (spm_dormant_sta < 0) {
@@ -424,32 +424,22 @@ static void spm_set_sysclk_settle(void)
 	u32 settle;
 
 	/* SYSCLK settle = MD SYSCLK settle but set it again for MD PDN */
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	spm_write(SPM_CLK_SETTLE, SPM_SYSCLK_SETTLE);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 	settle = spm_read(SPM_CLK_SETTLE);
 
+	/* md_settle is keyword for suspend status */
 	spm_crit2("md_settle = %u, settle = %u\n", SPM_SYSCLK_SETTLE, settle);
 }
 
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
-#if 0
-	unsigned int temp;
-
+	/* FIXME: */
 	/* set PMIC WRAP table for suspend power control */
-	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &temp, 0xFFFF, 0);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
-			IDX_SP_VSRAM_PWR_ON,
-			temp | (1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
-			IDX_SP_VSRAM_SHUTDOWN,
-			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
-#endif
-#if 0
+
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-#endif
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
 }
@@ -457,9 +447,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
-#if 0
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-#endif
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
 }
 
@@ -491,17 +479,13 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 	spm_suspend_pre_process(pwrctrl);
 
 	spm_set_sysclk_settle();
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	__spm_set_cpu_status(cpu);
 	__spm_reset_and_init_pcm(pcmdesc);
 	__spm_kick_im_to_fetch(pcmdesc);
 	__spm_init_pcm_register();
 	__spm_init_event_vector(pcmdesc);
-
-#if 0
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
-#endif
-
 	__spm_set_power_control(pwrctrl);
 	__spm_set_wakeup_event(pwrctrl);
 
@@ -539,7 +523,7 @@ static void spm_suspend_pcm_setup_after_wfi(u32 cpu, struct pwr_ctrl *pwrctrl)
 
 	spm_suspend_post_process(pwrctrl);
 
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #if SPM_PCMWDT_EN
 	if (!pwrctrl->wdt_disable)
 		__spm_set_pcm_wdt(0);
@@ -579,9 +563,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 #endif
 
 	ddr_status = vcorefs_get_curr_ddr();
-#if 0
 	vcore_status = vcorefs_get_curr_vcore();
-#endif
 
 	spm_crit2("suspend dormant state = %d, ddr = %d, vcore = %d, spm_sleep_count = %d\n",
 		  spm_dormant_sta, ddr_status, vcore_status, spm_sleep_count);
@@ -599,7 +581,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	/* } */
 #endif
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_ECCCI_DRIVER
 	if (wakesta->r12 & WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT)
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
@@ -647,10 +629,10 @@ u32 spm_get_sleep_wakesrc(void)
 	return __spm_suspend.pwrctrl->wake_src;
 }
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_PMIC
 /* #include <cust_pmic.h> */
-#ifndef DISABLE_DLPT_FEATURE
+#if !defined(DISABLE_DLPT_FEATURE)
 /* extern int get_dlpt_imix_spm(void); */
 int __attribute__((weak)) get_dlpt_imix_spm(void)
 {
@@ -675,7 +657,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	static wake_reason_t last_wr = WR_NONE;
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl;
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	u32 cpu = smp_processor_id();
 #else
 	u32 cpu = 0;
@@ -684,16 +666,16 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_PMIC
-#ifndef DISABLE_DLPT_FEATURE
+#if !defined(DISABLE_DLPT_FEATURE)
 	get_dlpt_imix_spm();
 #endif
 #endif
 #endif
 
-#ifndef CONFIG_MTK_SPM_IN_ATF
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready) {
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
 	} else {
@@ -743,10 +725,8 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
-#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
-#endif
 
 	spm_crit2("sec = %u, wakesrc = 0x%x (%u)(%u)\n",
 		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags),
@@ -756,7 +736,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_UART_SLEEP);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (request_uart_to_sleep()) {
 		last_wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
@@ -774,7 +754,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_UART_AWAKE);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	request_uart_to_wakeup();
 #endif
 
@@ -782,13 +762,11 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	/* record last wakesta */
 	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc);
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:
 #endif
-#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
-#endif
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&mask);
@@ -860,7 +838,7 @@ void spm_ap_mdsrc_req(u8 set)
 			spm_ap_mdsrc_req_cnt++;
 
 			hw_spin_lock_for_ddrdfs();
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 			spm_write(AP_MDSRC_REQ, spm_read(AP_MDSRC_REQ) | AP_MD1SRC_REQ_LSB);
 #else
 			mt_secure_call(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 1, 0, 0);
@@ -898,7 +876,7 @@ void spm_ap_mdsrc_req(u8 set)
 		} else {
 			if (spm_ap_mdsrc_req_cnt == 0) {
 				hw_spin_lock_for_ddrdfs();
-#ifndef CONFIG_MTK_SPM_IN_ATF
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 				spm_write(AP_MDSRC_REQ, spm_read(AP_MDSRC_REQ) & ~AP_MD1SRC_REQ_LSB);
 #else
 				mt_secure_call(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 0, 0, 0);

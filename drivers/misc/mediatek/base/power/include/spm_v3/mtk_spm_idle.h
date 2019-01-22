@@ -41,7 +41,6 @@
 #define	CPU_8		(1U << 8)
 #define	CPU_9		(1U << 9)
 
-extern unsigned int spm_get_cpu_pwr_status(void);
 extern long int spm_get_current_time_ms(void);
 
 /*

@@ -615,18 +615,20 @@ extern struct spm_lp_scen __spm_mcdi;
 extern struct spm_lp_scen __spm_vcorefs;
 
 extern int __spm_check_opp_level(int ch);
+
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 extern void __spm_set_cpu_status(int cpu);
 extern void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc);
 extern void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc);
-
-extern void __spm_init_pcm_register(void);	/* init r0 and r7 */
+extern void __spm_init_pcm_register(void);
 extern void __spm_init_event_vector(const struct pcm_desc *pcmdesc);
 extern void __spm_set_power_control(const struct pwr_ctrl *pwrctrl);
 extern void __spm_set_wakeup_event(const struct pwr_ctrl *pwrctrl);
 extern void __spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl);
+extern void __spm_clean_after_wakeup(void);
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 extern void __spm_get_wakeup_status(struct wake_status *wakesta);
-extern void __spm_clean_after_wakeup(void);
 extern wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 					      const struct pcm_desc *pcmdesc, bool suspend);
 

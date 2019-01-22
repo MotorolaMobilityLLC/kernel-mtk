@@ -73,6 +73,7 @@
 
 #define reg_read(addr)         __raw_readl(IOMEM(addr))
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #ifdef CONFIG_OF
 #define MCUCFG_BASE             spm_mcucfg
 #else
@@ -82,6 +83,7 @@
 #define MP1_AXI_CONFIG          (MCUCFG_BASE + 0x22C)
 #define MP2_AXI_CONFIG          (MCUCFG_BASE + 0x220C)
 #define ACINACTM                (1 << 4)
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 enum spm_deepidle_step {
 	SPM_DEEPIDLE_ENTER = 0x00000001,
@@ -536,7 +538,6 @@ static struct pcm_desc dpidle_pcm = {
 static struct pwr_ctrl dpidle_ctrl = {
 	.wake_src			= WAKE_SRC_FOR_DPIDLE,
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
 #if SPM_BYPASS_SYSPWREQ
 	.syspwreq_mask = 0,
 #endif
@@ -731,7 +732,6 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* Auto-gen End */
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 };
 
 struct spm_lp_scen __spm_dpidle = {
@@ -1024,7 +1024,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER);
 
 #if !defined(CONFIG_MTK_SPM_IN_ATF)
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
 	else
@@ -1060,7 +1060,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (request_uart_to_sleep()) {
 		wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
@@ -1089,13 +1089,13 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_AWAKE);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	request_uart_to_wakeup();
 #endif
 
 	wr = spm_output_wake_reason(&wakesta, pcmdesc, log_cond);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:
 #if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 	mt_cirq_flush();
@@ -1138,7 +1138,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	struct mtk_irq_mask mask;
 #endif
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	struct wd_api *wd_api;
 	int wd_ret;
@@ -1154,7 +1154,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER);
 
 #if !defined(CONFIG_MTK_SPM_IN_ATF)
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
 	else
@@ -1170,8 +1170,6 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	dpidle_wake_src = pwrctrl->wake_src;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	pwrctrl->pcm_flags &= ~SPM_FLAG_SUSPEND_OPTION;
-	pwrctrl->pcm_flags |= SPM_FLAG_DEEPIDLE_OPTION;
 	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 	/* need be called after set_pwrctrl_pcm_flags1() */
 	spm_set_dummy_read_addr(false);
@@ -1214,7 +1212,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 		is_cpu_pdn(pwrctrl->pcm_flags),
 		is_infra_pdn(pwrctrl->pcm_flags));
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (request_uart_to_sleep()) {
 		last_wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
@@ -1235,13 +1233,13 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_UART_AWAKE);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	request_uart_to_wakeup();
 #endif
 
 	last_wr = __spm_output_wake_reason(&wakesta, pcmdesc, true);
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 RESTORE_IRQ:
 #endif
 #if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
