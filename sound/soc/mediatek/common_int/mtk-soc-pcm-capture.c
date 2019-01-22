@@ -233,7 +233,8 @@ static struct snd_pcm_hardware mtk_capture_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP |
 	SNDRV_PCM_INFO_INTERLEAVED |
 	SNDRV_PCM_INFO_RESUME |
-	SNDRV_PCM_INFO_MMAP_VALID),
+	SNDRV_PCM_INFO_MMAP_VALID |
+	SNDRV_PCM_INFO_NO_PERIOD_WAKEUP),
 	.formats =      SND_SOC_ADV_MT_FMTS,
 	.rates =        SOC_HIGH_USE_RATE,
 	.rate_min =     SOC_HIGH_USE_RATE_MIN,
@@ -307,7 +308,8 @@ static int mtk_capture_alsa_stop(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 
 	irq_user_id = NULL;
-	irq_remove_user(substream, irq_request_number(cap_mem_blk));
+
+	irq_remove_substream_user(substream, irq_request_number(cap_mem_blk));
 
 	SetMemoryPathEnable(cap_mem_blk, false);
 
@@ -462,10 +464,10 @@ static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 
 	/* here to set interrupt */
-	irq_add_user(substream,
-		     irq_request_number(cap_mem_blk),
-		     substream->runtime->rate,
-		     substream->runtime->period_size);
+	irq_add_substream_user(substream,
+			       irq_request_number(cap_mem_blk),
+			       substream->runtime->rate,
+			       substream->runtime->period_size);
 	irq_user_id = substream;
 	/* set memory */
 	SetSampleRate(cap_mem_blk, substream->runtime->rate);
@@ -531,6 +533,7 @@ static struct snd_pcm_ops mtk_afe_capture_ops = {
 	.copy =     mtk_capture_pcm_copy,
 	.silence =  mtk_capture_pcm_silence,
 	.page =     mtk_capture_pcm_page,
+	.mmap =     mtk_pcm_mmap,
 };
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
