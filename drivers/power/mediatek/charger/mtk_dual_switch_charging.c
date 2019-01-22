@@ -244,14 +244,15 @@ done:
 	 * If thermal current limit is larger than charging IC's minimum
 	 * current setting, enable the charger immediately
 	 */
-	if (pdata->input_current_limit > aicr1_min && pdata->charging_current_limit > ichg1_min)
+	if (pdata->input_current_limit > aicr1_min && pdata->charging_current_limit > ichg1_min
+	    && info->can_charging)
 		charger_dev_enable(info->chg1_dev, true);
 
 	if (pdata->thermal_input_current_limit == -1 &&
 	    pdata->thermal_charging_current_limit == -1 &&
 	    pdata2->thermal_input_current_limit == -1 &&
 	    pdata2->thermal_charging_current_limit == -1) {
-		if (!mtk_pe20_get_is_enable(info)) {
+		if (!mtk_pe20_get_is_enable(info) && info->can_charging) {
 			swchgalg->state = CHR_CC;
 			mtk_pe20_set_is_enable(info, true);
 			mtk_pe20_set_to_check_chr_type(info, true);
@@ -355,6 +356,7 @@ static int mtk_dual_switch_charging_plug_in(struct charger_manager *info)
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 
 	swchgalg->state = CHR_CC;
+	info->polling_interval = 10;
 	swchgalg->disable_charging = false;
 	charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
 
@@ -460,7 +462,7 @@ int mtk_dual_switch_chr_full(struct charger_manager *info)
 	 * Reset CV to normal value if temperture is in normal zone
 	 */
 	swchg_select_cv(info);
-
+	info->polling_interval = 20;
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
 	if (!chg_done) {
 		swchgalg->state = CHR_CC;
@@ -468,6 +470,7 @@ int mtk_dual_switch_chr_full(struct charger_manager *info)
 		mtk_pe20_set_to_check_chr_type(info, true);
 		info->enable_dynamic_cv = true;
 		pr_err("battery recharging!\n");
+		info->polling_interval = 10;
 	}
 
 	return 0;
