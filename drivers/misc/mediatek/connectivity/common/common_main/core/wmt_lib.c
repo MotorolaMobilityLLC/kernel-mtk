@@ -1240,6 +1240,7 @@ MTK_WCN_BOOL wmt_lib_put_act_op(P_OSAL_OP pOp)
 				("wait completion timeout, opId(%d), show wmtd_thread stack!\n", pOp->op.opId);
 			/* TODO: how to handle it? retry? */
 			/* wcn_wmtd_timeout_collect_ftrace();*/ /*trigger collect SYS_FTRACE */
+			osal_thread_show_stack(pThread);
 			stp_dbg_trigger_collect_ftrace(pbuf, len);
 		} else {
 			if (pOp->result)
