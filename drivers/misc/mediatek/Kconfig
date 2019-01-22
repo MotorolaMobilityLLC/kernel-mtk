@@ -184,7 +184,7 @@ config MTK_LCM_PHYSICAL_ROTATION_HW
 source "drivers/misc/mediatek/cmdq/Kconfig"
 #source "drivers/misc/mediatek/cqdma/Kconfig"
 source "drivers/misc/mediatek/ext_disp/Kconfig"
-#source "drivers/misc/mediatek/flashlight/Kconfig"
+source "drivers/misc/mediatek/flashlight/Kconfig"
 source "drivers/misc/mediatek/gpu/Kconfig"
 #source "drivers/misc/mediatek/hdmi/Kconfig"
 source "drivers/misc/mediatek/imgsensor/Kconfig"
