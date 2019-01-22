@@ -20,7 +20,7 @@
 #define VPU_MAX_NUM_CODE_SEGMENTS       (50)
 #define VPU_MAX_NUM_ALGOS               (50)
 #define VPU_MAX_NUM_STEPS               (8)
-#define VPU_MAX_NUM_OPPS                (10)
+#define VPU_MAX_NUM_OPPS                (8)
 
 /* MVA */
 #define VPU_MVA_RESET_VECTOR            (0x7DA00000)
