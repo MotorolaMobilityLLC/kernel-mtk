@@ -1256,8 +1256,8 @@ static int mtk_eint_resume(struct device *device)
 }
 
 const struct dev_pm_ops mtk_eint_pm_ops = {
-	.suspend = mtk_eint_suspend,
-	.resume = mtk_eint_resume,
+	.suspend_noirq = mtk_eint_suspend,
+	.resume_noirq = mtk_eint_resume,
 };
 
 #ifndef CONFIG_MTK_EIC
