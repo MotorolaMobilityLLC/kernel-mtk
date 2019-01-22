@@ -18,7 +18,7 @@
 
 #include <linux/of.h>
 #include <linux/rpmb.h>
-
+#include <linux/hie.h>
 #include "ufshcd.h"
 
 #define UPIU_COMMAND_CRYPTO_EN_OFFSET	23
@@ -33,6 +33,32 @@
 #define UFS_DEVICE_QUIRK_LIMITED_RPMB_MAX_RW_SIZE UFS_BIT(30)
 
 #define UFS_RPMB_DEV_MAX_RW_SIZE_LIMITATION (8)
+
+struct ufs_crypto_map {
+	unsigned char flag;
+	unsigned char key;
+};
+
+#define UFS_MAX_LBA ((64 * 1024 * 1024) / 4)
+
+#define UFS_CRYPTO_FLAG_READ          (0x01)
+#define UFS_CRYPTO_FLAG_WRITE         (0x02)
+#define UFS_CRYPTO_FLAG_UNMAP         (0x04)
+
+#define UFS_CRYPTO_FLAG_NON_ENCRYPTED (0x10)
+#define UFS_CRYPTO_FLAG_ENCRYPTED     (0x20)
+#define UFS_CRYPTO_FLAG_VALID         (UFS_CRYPTO_FLAG_ENCRYPTED | UFS_CRYPTO_FLAG_NON_ENCRYPTED)
+
+#define UFS_HIE_PARAM_OFS_CFG_ID         (24)
+#define UFS_HIE_PARAM_OFS_MODE           (16)
+#define UFS_HIE_PARAM_OFS_KEY_TOTAL_BYTE (8)
+#define UFS_HIE_PARAM_OFS_KEY_START_BYTE (0)
+
+enum ufs_crypto_type {
+	UFS_CRYPTO_NON_ENCRYPTED,
+	UFS_CRYPTO_ENCRYPT,
+	UFS_CRYPTO_DECRYPT,
+};
 
 enum ufs_trace_event {
 	UFS_TRACE_SEND,
@@ -183,6 +209,11 @@ struct ufs_crypto {
 	union ufs_cap_cfg cfg;
 };
 
+struct ufs_crypt_info {
+	struct ufs_hba *hba;
+	struct scsi_cmnd *cmd;
+};
+
 #define END_FIX { { 0 }, 0 }
 
 /* add specific device quirk */
@@ -284,6 +315,7 @@ void             ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);
 int              ufs_mtk_auto_hiber8_quirk_handler(struct ufs_hba *hba, bool enable);
 void             ufs_mtk_cache_setup_cmd(struct scsi_cmnd *cmd);
 void             ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu);
+int              ufs_mtk_crypto_sanity_check(struct ufs_hba *hba, struct scsi_cmnd *cmd);
 void             ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
 					u8 lun, u32 transfer_len, sector_t lba, u8 opcode);
 void             ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd, u32 flag);
@@ -293,19 +325,31 @@ int              ufs_mtk_deepidle_hibern8_check(void);
 void             ufs_mtk_deepidle_leave(void);
 int              ufs_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute,
 					u16 gen_select_index, u32 *value, unsigned long retry_ms);
-void             ufs_mtk_hwfde_key_config(struct ufs_hba *hba, struct scsi_cmnd *cmd);
+void             ufs_mtk_hwfde_cfg_cmd(struct ufs_hba *hba,
+					struct scsi_cmnd *cmd);
 int              ufs_mtk_linkup_fail_handler(struct ufs_hba *hba, int left_retry);
 void             ufs_mtk_parse_auto_hibern8_timer(struct ufs_hba *hba);
+void             ufs_mtk_parse_hie(struct ufs_hba *hba);
 void             ufs_mtk_parse_pm_levels(struct ufs_hba *hba);
 int              ufs_mtk_perf_heurisic_if_allow_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd);
 void             ufs_mtk_perf_heurisic_req_done(struct ufs_hba *hba, struct scsi_cmnd *cmd);
 int              ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
 int              ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user);
 int              ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user);
+bool             ufs_mtk_is_data_write_cmd(char cmd_op);
 void             ufs_mtk_rpmb_dump_frame(struct scsi_device *sdev, u8 *data_frame, u32 cnt);
 struct rpmb_dev *ufs_mtk_rpmb_get_raw_dev(void);
 void             ufs_mtk_runtime_pm_init(struct scsi_device *sdev);
 
+#ifdef CONFIG_HIE
+struct hie_dev  *ufs_mtk_hie_get_dev(void);
+#else
+static inline
+struct hie_dev  *ufs_mtk_hie_get_dev(void)
+{
+	return NULL;
+}
+#endif
 
 #endif /* !_UFS_MTK_H */
 

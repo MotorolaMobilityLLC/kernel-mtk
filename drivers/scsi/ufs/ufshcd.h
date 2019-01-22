@@ -179,7 +179,7 @@ struct ufshcd_lrb {
 
 	bool req_abort_skip;
 
-#ifdef CONFIG_MTK_HW_FDE
+#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
 	u32 crypto_en;
 	u32 crypto_cfgid;
 	u32 crypto_dunl;
