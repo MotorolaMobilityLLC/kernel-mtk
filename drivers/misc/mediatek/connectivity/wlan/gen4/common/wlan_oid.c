@@ -8737,14 +8737,10 @@ wlanoidRftestQueryAutoTest(IN P_ADAPTER_T prAdapter,
 		ASSERT(pvQueryBuffer);
 	ASSERT(pu4QueryInfoLen);
 
-	*pu4QueryInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
+	*pu4QueryInfoLen = u4QueryBufferLen;
 
-#if 0 /* PeiHsuan Temp Remove this check for workaround Gen2/Gen3 EM Mode Modification */
-	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
-		DBGLOG(REQ, ERROR, "Invalid data. QueryBufferLen: %ld.\n", u4QueryBufferLen);
-		return WLAN_STATUS_INVALID_LENGTH;
-	}
-#endif
+	if (u4QueryBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T))
+		DBGLOG(RFTEST, INFO, "Invalid data. QueryBufferLen: %ld.\n", u4QueryBufferLen);
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvQueryBuffer;
 
@@ -8791,12 +8787,8 @@ wlanoidRftestSetAutoTest(IN P_ADAPTER_T prAdapter,
 
 	*pu4SetInfoLen = sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T);
 
-#if 0 /* PeiHsuan Temp Remove this check for workaround Gen2/Gen3 EM Mode Modification */
-	if (u4SetBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T)) {
-		DBGLOG(REQ, ERROR, "Invalid data. SetBufferLen: %ld.\n", u4SetBufferLen);
-		return WLAN_STATUS_INVALID_LENGTH;
-	}
-#endif
+	if (u4SetBufferLen != sizeof(PARAM_MTK_WIFI_TEST_STRUCT_T))
+		DBGLOG(RFTEST, INFO, "Invalid data. SetBufferLen: %ld.\n", u4SetBufferLen);
 
 	prRfATInfo = (P_PARAM_MTK_WIFI_TEST_STRUCT_T) pvSetBuffer;
 
@@ -8885,6 +8877,7 @@ rftestQueryATInfo(IN P_ADAPTER_T prAdapter,
 	P_CMD_TEST_CTRL_T pCmdTestCtrl;
 	UINT_8 ucCmdSeqNum;
 	P_EVENT_TEST_STATUS prTestStatus;
+	P_EVENT_TEST_STATUS_EXT prTestStatusExt;
 
 	ASSERT(prAdapter);
 
@@ -8892,11 +8885,25 @@ rftestQueryATInfo(IN P_ADAPTER_T prAdapter,
 
 	if (u4FuncIndex == RF_AT_FUNCID_FW_INFO) {
 		/* driver implementation */
-		prTestStatus = (P_EVENT_TEST_STATUS) pvQueryBuffer;
+		if (u4QueryBufferLen < sizeof(EVENT_TEST_STATUS_EXT)) {
+			prTestStatus = (P_EVENT_TEST_STATUS) pvQueryBuffer;
 
-		prTestStatus->rATInfo.u4FuncData =
-		    (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
-		u4QueryBufferLen = sizeof(EVENT_TEST_STATUS);
+			prTestStatus->rATInfo.u4FuncData =
+				(prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
+		} else {
+			prTestStatusExt = (P_EVENT_TEST_STATUS_EXT) pvQueryBuffer;
+
+			prTestStatusExt->rATInfoExt.u4FuncData =
+			    (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
+
+			/*support FW version extended*/
+			prTestStatusExt->rATInfoExt.u4FuncData2 = prAdapter->rVerInfo.ucFwBuildNumber;
+		}
+
+		DBGLOG(RFTEST, INFO, "Get FW Version : Product[MT%x], Ver[%x], Build_Num[%x]\n",
+			prAdapter->rVerInfo.u2FwProductID,
+			prAdapter->rVerInfo.u2FwOwnVersion,
+			prAdapter->rVerInfo.ucFwBuildNumber);
 
 		return WLAN_STATUS_SUCCESS;
 	} else if (u4FuncIndex == RF_AT_FUNCID_DRV_INFO) {
