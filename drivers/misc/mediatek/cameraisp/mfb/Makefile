@@ -22,6 +22,8 @@ ccflags-y += -I$(srctree)/drivers/staging/android/ion \
              -I$(srctree)/drivers/staging/android/ion/mtk
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
+obj-y := camera_mfb_dummy.o
+
 ifeq ($(CONFIG_MACH_MT6771),y)
   obj-$(CONFIG_MTK_CAMERA_ISP_MFB_SUPPORT) += isp_50/camera_mfb.o
 endif
