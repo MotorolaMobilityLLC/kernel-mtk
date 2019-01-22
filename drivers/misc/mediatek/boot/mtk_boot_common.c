@@ -75,7 +75,7 @@ static int __init dt_get_boot_common(unsigned long node, const char *uname, int 
 #endif
 
 
-void __init init_boot_common(unsigned int line)
+static void __init init_boot_common(unsigned int line)
 {
 #ifdef CONFIG_OF
 	int rc;
