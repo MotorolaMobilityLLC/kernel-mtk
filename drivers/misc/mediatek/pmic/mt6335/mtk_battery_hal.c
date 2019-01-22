@@ -886,9 +886,7 @@ signed int fgauge_set_columb_interrupt_internal1(void *data, int reset)
 	pmic_enable_interrupt(FG_BAT1_INT_H_NO, 1, "GM30");
 	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 1, "GM30");
 
-
-
-	bm_info(
+	bm_notice(
 		"[fgauge_set_columb_interrupt_internal1] low:[0xcae]=0x%x 0x%x   high:[0xcb0]=0x%x 0x%x\r\n",
 		pmic_get_register_value(PMIC_FG_BAT1_LTH_15_14),
 		pmic_get_register_value(PMIC_FG_BAT1_LTH_31_16),
@@ -2737,7 +2735,11 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 		for (i = 0; i < CALI_CAR_TUNE_AVG_NUM; i++) {
 			if (!fgauge_get_AUXADC_current_rawdata(&uvalue16)) {
 				uvalue32 = (unsigned int) uvalue16;
-				if (uvalue32 > 0x8000) {
+				if (uvalue32 <= 0x8000) {
+					Temp_Value1 = (long long)uvalue32;
+					pr_err("[111]uvalue16 %d uvalue32 %d Temp_Value1 %lld\n",
+						uvalue16, uvalue32, Temp_Value1);
+				} else if (uvalue32 > 0x8000) {
 					/*Temp_Value1 = (long long) (uvalue32 - 65535);*/
 					/*Temp_Value1 = 0 - Temp_Value1;*/
 					Temp_Value1 = (long long) (65535 - uvalue32);

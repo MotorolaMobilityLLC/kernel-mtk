@@ -3173,7 +3173,7 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		temp_car_tune = battery_meter_meta_tool_cali_car_tune(adc_in_data[1]);
 
 		/* return car_tune_value to meta tool in adc_out_data[0] */
-		fg_cust_data.car_tune_value = temp_car_tune / 10;
+		fg_cust_data.car_tune_value = temp_car_tune;
 		adc_out_data[0] = temp_car_tune;
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		bm_notice("Set_BAT_CAR_TUNE_VALUE[%d], res=%d, ret=%d\n",
