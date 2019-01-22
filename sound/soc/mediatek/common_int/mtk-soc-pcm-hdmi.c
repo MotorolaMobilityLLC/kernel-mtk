@@ -304,6 +304,7 @@ static int mHdmi_sidegen_control;
 static int mHdmi_display_control;
 static const char *const HDMI_SIDEGEN[] = { "Off", "On" };
 static const char *const HDMI_DISPLAY[] = { "MHL", "SLIMPORT" };
+static bool irq5_user;
 
 static const struct soc_enum Audio_Hdmi_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(HDMI_SIDEGEN), HDMI_SIDEGEN),
@@ -318,13 +319,21 @@ static int Audio_hdmi_SideGen_Get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+bool set_tdm_lrck_inverse_by_channel(int out_channel)
+{
+	if (out_channel > 2)
+		return SetTDMLrckInverse(false);
+	else
+		return SetTDMLrckInverse(true);
+}
+
 static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	AudioHDMIFormat *ptrAudioHDMIFormat;
 	uint32 runsamplerate = 44100;
 	uint32 outchannel = 2;
-	uint32 HDMIchannel = 8;
+	/* uint32 HDMIchannel = 8; */
 	snd_pcm_format_t format  = SNDRV_PCM_FORMAT_S16_LE;
 
 	ptrAudioHDMIFormat = &mAudioHDMIFormat;
@@ -342,76 +351,108 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 		pr_warn("%s(),mHdmi_sidegen_control\n", __func__);
 
+		/* Open */
+		AudDrv_Clk_On();
+
 		mtk_Hdmi_Configuration_Init((void *)ptrAudioHDMIFormat);
 
 		mtk_Hdmi_Clock_Set((void *)ptrAudioHDMIFormat);
 
-		mtk_Hdmi_Configuration_Set((void *)ptrAudioHDMIFormat, runsamplerate, HDMIchannel,
-						format, mHdmi_display_control);
-		AudDrv_Clk_On();
-		SetHDMIAddress();
-		copysinewavetohdmi(HDMIchannel);
-
-		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_HDMI,
-					     ptrAudioHDMIFormat->mMemIfFetchFormatPerSample);
-		SetHDMIdatalength(ptrAudioHDMIFormat->mHDMI_Data_Lens);
-		SetTDMDatalength(ptrAudioHDMIFormat->mTDM_Data_Lens);
-
-		/* set APLL clock setting */
 		EnableApll1(true);
 		EnableApll2(true);
 
 		EnableI2SCLKDiv(ptrAudioHDMIFormat->mI2S_MCKDIV, true);
 		EnableI2SCLKDiv(ptrAudioHDMIFormat->mI2S_BCKDIV, true);
 
+		AudDrv_APLL1Tuner_Clk_On();
+		AudDrv_APLL2Tuner_Clk_On();
+
+		/* Hw params */
+		SetHighAddr(Soc_Aud_Digital_Block_MEM_HDMI, true, HDMI_dma_buf->addr);
+		AudDrv_Emi_Clk_On();
+		SetHDMIAddress();
+
+		/* Prepare */
+		mtk_Hdmi_Configuration_Set((void *)ptrAudioHDMIFormat, runsamplerate, outchannel,
+				format, mHdmi_display_control);
+
 		MclkDiv = SetCLkMclk(ptrAudioHDMIFormat->mI2Snum, runsamplerate);
 
+		/* SET hdmi channels , samplerate and formats */
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_HDMI,
+						 ptrAudioHDMIFormat->mMemIfFetchFormatPerSample);
+		SetHDMIdatalength(ptrAudioHDMIFormat->mHDMI_Data_Lens);
+		SetTDMDatalength(ptrAudioHDMIFormat->mTDM_Data_Lens);
+
+		/*SetCLkBclk(MclkDiv, runtime->rate, runtime->channels, Soc_Aud_I2S_WLEN_WLEN_16BITS); */
 		SetCLkBclk(MclkDiv, runsamplerate, outchannel,
 				   ptrAudioHDMIFormat->mClock_Data_Lens);
-
-		/*SetHDMIsamplerate(hdmi_stream->rate);*/
-		SetHDMIChannels(HDMIchannel);
 
 		SetTDMLrckWidth(ptrAudioHDMIFormat->mTDM_LRCK);
 		SetTDMbckcycle(ptrAudioHDMIFormat->mClock_Data_Lens);
 
-		/*SetTDMChannelsSdata(ptrAudioHDMIFormat->msDATA_Channels);*/
-		SetTDMChannelsSdata(outchannel);
+		SetTDMChannelsSdata(ptrAudioHDMIFormat->msDATA_Channels);
 
 		SetTDMDatalength(ptrAudioHDMIFormat->mTDM_Data_Lens);
+		/* SetTDMLrckInverse(true); */
+		SetTDMBckInverse(false);
+
+		set_tdm_lrck_inverse_by_channel(outchannel);
+
+		/* SetHDMIsamplerate(runtime->rate); */
+		SetHDMIChannels(outchannel);
 
 		SetTDMI2Smode(Soc_Aud_I2S_FORMAT_I2S);
-		SetTDMLrckInverse(false);
-		SetTDMBckInverse(false);
 
 		mtk_Hdmi_Set_Sdata((void *)ptrAudioHDMIFormat);
 
-		SetHDMIClockInverse();	/* must inverse HDMI BCLK */
-
+		SetHDMIClockInverse();
 		mtk_Hdmi_Set_Interconnection((void *)ptrAudioHDMIFormat);
 
-		SetTDMEnable(true);	/* enable TDM */
-
-		AudDrv_TDM_Clk_On();	/* enable HDMI CK */
-
+		/* Start */
 		SetHDMIEnable(true);
+
+		SetTDMEnable(true);
+
+		AudDrv_TDM_Clk_On();
 
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, true);
 
+#ifdef _DEBUG_TDM_KERNEL_
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I00,
+				  Soc_Aud_InterConnectionOutput_O09);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I01,
+				  Soc_Aud_InterConnectionOutput_O10);
+		SetHDMIDebugEnable(true);
+#endif
+
+		copysinewavetohdmi(outchannel);
+
+		if (!irq5_user) {
+			irq_add_user(&irq5_user,
+			irq_request_number(Soc_Aud_Digital_Block_MEM_HDMI),
+			runsamplerate,
+			1024);
+			irq5_user = true;
+		}
 		EnableAfe(true);
-
 		SetHDMIDumpReg();
-
 
 	} else {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI, false);
 		SetHDMIEnable(false);
 		SetTDMEnable(false);
-		EnableApll1(false);
-		EnableApll2(false);
+
+		AudDrv_Emi_Clk_Off();
+
+		AudDrv_APLL1Tuner_Clk_Off();
+		AudDrv_APLL2Tuner_Clk_Off();
 
 		EnableI2SCLKDiv(ptrAudioHDMIFormat->mI2S_MCKDIV, false);
 		EnableI2SCLKDiv(ptrAudioHDMIFormat->mI2S_BCKDIV, false);
+
+		EnableApll1(false);
+		EnableApll2(false);
 
 		EnableAfe(false);
 		AudDrv_TDM_Clk_Off();	/* disable HDMI CK */
