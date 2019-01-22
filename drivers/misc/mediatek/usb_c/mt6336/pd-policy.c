@@ -323,9 +323,6 @@ int allocate_mode(struct typec_hba *hba, uint16_t svid)
 
 	/* Allocate ...  if SVID == 0 enter default supported policy */
 	for (i = 0; i < supported_modes_cnt; i++) {
-		if (!&supported_modes[i])
-			continue;
-
 		for (j = 0; j < pe.svid_cnt; j++) {
 			struct svdm_svid_data *svidp = &pe.svids[j];
 
@@ -627,6 +624,7 @@ int pd_svdm(struct typec_hba *hba, int cnt, uint32_t *payload, uint32_t **rpaylo
 				is_dp_attention = 1;
 			else
 				return 0;
+			break;
 #endif
 		default:
 			dev_err(hba->dev, "ERR:CMD:%d\n", cmd);
@@ -762,10 +760,6 @@ int pd_svdm(struct typec_hba *hba, int cnt, uint32_t *payload, uint32_t **rpaylo
 		}
 		payload[0] |= VDO_CMDT(CMDT_INIT);
 #endif /* CONFIG_USB_PD_ALT_MODE_DFP */
-	} else {
-		dev_err(hba->dev, "ERR:CMDT:%d\n", cmd);
-		/* do not answer */
-		rsize = 0;
 	}
 
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP

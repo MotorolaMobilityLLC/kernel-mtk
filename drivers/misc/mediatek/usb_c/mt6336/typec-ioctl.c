@@ -21,7 +21,7 @@ static ssize_t enable_show(struct device *pdev, struct device_attribute *attr,
 {
 	struct typec_hba *hba = dev_get_drvdata(pdev);
 
-	return sprintf(buf, "%s VBus detection\n", hba->vbus_det_en?"Enable":"Disable");
+	return snprintf(buf, PAGE_SIZE, "%s VBus detection\n", hba->vbus_det_en?"Enable":"Disable");
 }
 
 static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
@@ -59,7 +59,8 @@ static ssize_t mode_show(struct device *pdev, struct device_attribute *attr,
 {
 	struct typec_hba *hba = dev_get_drvdata(pdev);
 
-	return sprintf(buf, "Role=%s, Rp=%s\n", string_typec_role[hba->support_role], string_rp[hba->rp_val]);
+	return snprintf(buf, PAGE_SIZE, "Role=%s, Rp=%s\n",
+			string_typec_role[hba->support_role], string_rp[hba->rp_val]);
 }
 
 static ssize_t mode_store(struct device *pdev, struct device_attribute *attr,
@@ -93,7 +94,7 @@ static ssize_t rp_show(struct device *pdev, struct device_attribute *attr,
 {
 	struct typec_hba *hba = dev_get_drvdata(pdev);
 
-	return sprintf(buf, "Rp=%s\n", string_rp[hba->rp_val]);
+	return snprintf(buf, PAGE_SIZE, "Rp=%s\n", string_rp[hba->rp_val]);
 }
 
 static ssize_t rp_store(struct device *pdev, struct device_attribute *attr,
@@ -129,7 +130,7 @@ static ssize_t dump_show(struct device *pdev, struct device_attribute *attr,
 	const char *divider = "===========================================\n";
 
 	dev_err(pdev, "%s%s", title, divider);
-	sprintf(buf + strlen(buf), "%s%s", title, divider);
+	snprintf(buf + strlen(buf), PAGE_SIZE, "%s%s", title, divider);
 
 	for (addr = 0; addr <= MAX_REG; addr += 0x10) {
 		uint32_t real_addr = addr + CC_REG_BASE;
@@ -140,7 +141,8 @@ static ssize_t dump_show(struct device *pdev, struct device_attribute *attr,
 		val4 = typec_readw(hba, real_addr+14)<<16 | typec_readw(hba, real_addr+12);
 
 		dev_err(pdev, "0x%03x %08X %08X %08X %08X\n", addr, val1, val2, val3, val4);
-		sprintf(buf + strlen(buf), "0x%03x  %08X %08X %08X %08X\n", addr, val1, val2, val3, val4);
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "0x%03x  %08X %08X %08X %08X\n",
+				addr, val1, val2, val3, val4);
 	}
 
 	return strlen(buf);
@@ -153,7 +155,7 @@ static ssize_t read_show(struct device *pdev, struct device_attribute *attr,
 {
 	/*struct typec_hba *hba = dev_get_drvdata(pdev);*/
 
-	return sprintf(buf, "val=0x%x\n", g_read_val);
+	return snprintf(buf, PAGE_SIZE, "val=0x%x\n", g_read_val);
 }
 
 static ssize_t read_store(struct device *pdev, struct device_attribute *attr,
@@ -205,7 +207,7 @@ static ssize_t dbg_lvl_show(struct device *pdev, struct device_attribute *attr,
 {
 	struct typec_hba *hba = dev_get_drvdata(pdev);
 
-	return sprintf(buf, "debug level=%d\n", hba->dbg_lvl);
+	return snprintf(buf, PAGE_SIZE, "debug level=%d\n", hba->dbg_lvl);
 }
 
 static ssize_t dbg_lvl_store(struct device *pdev, struct device_attribute *attr,
@@ -281,40 +283,42 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 		dev_err(pdev, "%s: 0x%x\n", dump[i].name, val[i]);
 	}
 
-	sprintf(buf + strlen(buf), "%s=%s,", dump[0].name, string_typec_state[val[0]]);
-	sprintf(buf + strlen(buf), "%s=%s,", dump[1].name, string_cc_routed[val[1]]);
-	sprintf(buf + strlen(buf), "%s=%s,", dump[2].name, string_sink_power[val[2]]);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "%s=%s,", dump[0].name, string_typec_state[val[0]]);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "%s=%s,", dump[1].name, string_cc_routed[val[1]]);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "%s=%s,", dump[2].name, string_sink_power[val[2]]);
 
-	sprintf(buf + strlen(buf), "support_role=%s\n", string_typec_role[hba->support_role]);
-	sprintf(buf + strlen(buf), "rp_val=%s\n", string_rp[hba->rp_val]);
-	sprintf(buf + strlen(buf), "dbg_lvl=%d\n", hba->dbg_lvl);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "support_role=%s\n",
+							string_typec_role[hba->support_role]);
 
-	sprintf(buf + strlen(buf), "vbus_en=%d\n", hba->vbus_en);
-	sprintf(buf + strlen(buf), "vbus_det_en=%d\n", hba->vbus_det_en);
-	sprintf(buf + strlen(buf), "vbus_present=%d\n", hba->vbus_present);
-	sprintf(buf + strlen(buf), "vconn_en=%d\n", hba->vconn_en);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "rp_val=%s\n", string_rp[hba->rp_val]);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "dbg_lvl=%d\n", hba->dbg_lvl);
 
-	sprintf(buf + strlen(buf), "power_role=%s\n", string_power_role[hba->power_role]);
-	sprintf(buf + strlen(buf), "data_role=%s\n", string_data_role[hba->data_role]);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "vbus_en=%d\n", hba->vbus_en);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "vbus_det_en=%d\n", hba->vbus_det_en);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "vbus_present=%d\n", hba->vbus_present);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "vconn_en=%d\n", hba->vconn_en);
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "power_role=%s\n", string_power_role[hba->power_role]);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "data_role=%s\n", string_data_role[hba->data_role]);
 
 	if (hba->power_role == PD_ROLE_SINK)
-		sprintf(buf + strlen(buf), "Rp=%s\n", SRC_CUR(hba->src_rp));
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "Rp=%s\n", SRC_CUR(hba->src_rp));
 
 	if (hba->cable_flags & PD_FLAGS_CBL_DISCOVERIED_SOP_P)
-		sprintf(buf + strlen(buf), "e-mark cable\n");
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "e-mark cable\n");
 
-	sprintf(buf + strlen(buf), "flags=0x%x\n", hba->flags);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "flags=0x%x\n", hba->flags);
 
-	sprintf(buf + strlen(buf), "task_state=%d\n", hba->task_state);
-	sprintf(buf + strlen(buf), "last_state=%d\n", hba->last_state);
-	sprintf(buf + strlen(buf), "timeout_state=%d\n", hba->timeout_state);
-	sprintf(buf + strlen(buf), "timeout_ms=%lu\n", hba->timeout_ms);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "task_state=%d\n", hba->task_state);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "last_state=%d\n", hba->last_state);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "timeout_state=%d\n", hba->timeout_state);
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "timeout_ms=%lu\n", hba->timeout_ms);
 
 	if (hba->power_role == PD_ROLE_SOURCE)
-		sprintf(buf + strlen(buf), "request pdo=%d\n", hba->requested_idx);
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "request pdo=%d\n", hba->requested_idx);
 
 	if (hba->data_role == PD_ROLE_DFP)
-		sprintf(buf + strlen(buf), "alt_mode_svid=0x%04X\n", hba->alt_mode_svid);
+		snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "alt_mode_svid=0x%04X\n", hba->alt_mode_svid);
 
 	return strlen(buf);
 }
@@ -473,7 +477,7 @@ static ssize_t vbus_show(struct device *pdev, struct device_attribute *attr,
 {
 	struct typec_hba *hba = dev_get_drvdata(pdev);
 
-	return sprintf(buf, "Vbus is %dmV, vbus_en=%d\n", vbus_val(hba), hba->vbus_en);
+	return snprintf(buf, PAGE_SIZE, "Vbus is %dmV, vbus_en=%d\n", vbus_val(hba), hba->vbus_en);
 }
 
 static ssize_t vbus_store(struct device *pdev, struct device_attribute *attr,
@@ -496,7 +500,7 @@ static ssize_t vconn_show(struct device *pdev, struct device_attribute *attr,
 {
 	struct typec_hba *hba = dev_get_drvdata(pdev);
 
-	return sprintf(buf, "vconn_en=%d\n", hba->vconn_en);
+	return snprintf(buf, PAGE_SIZE, "vconn_en=%d\n", hba->vconn_en);
 }
 
 static ssize_t vconn_store(struct device *pdev, struct device_attribute *attr,
@@ -563,54 +567,78 @@ static ssize_t cable_show(struct device *pdev, struct device_attribute *attr,
 	if (hba->cable_flags & PD_FLAGS_CBL_DISCOVERIED_SOP_P)
 		cbl_inf = &hba->sop_p;
 	else {
-		sprintf(buf + strlen(buf), "No cable info\n");
+		snprintf(buf, PAGE_SIZE, "No cable info\n");
 		goto end;
 	}
 
-	sprintf(buf + strlen(buf), "---ID Header---\n");
-	sprintf(buf + strlen(buf), "Data Capable as USB Host:%s\n", PD_IDH_USB_HOST(cbl_inf->id_header)?"YES":"NO");
-	sprintf(buf + strlen(buf), "Data Capable as USB Device:%s\n", PD_IDH_USB_DEVICE(cbl_inf->id_header)?"YES":"NO");
-	sprintf(buf + strlen(buf), "Product Type=%s\n", string_product_type[PD_IDH_PTYPE(cbl_inf->id_header)]);
-	sprintf(buf + strlen(buf), "Modal Operation Supported:%s\n", PD_IDH_MODAL(cbl_inf->id_header)?"YES":"NO");
-	sprintf(buf + strlen(buf), "USB Vendor ID = 0x%04X\n", PD_IDH_VID(cbl_inf->id_header));
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "---ID Header---\n");
 
-	sprintf(buf + strlen(buf), "---Cert Stat---\n");
-	sprintf(buf + strlen(buf), "TID = 0x%05X\n", PD_CSTAT_TID(cbl_inf->cer_stat_vdo));
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "Data Capable as USB Host:%s\n",
+		PD_IDH_USB_HOST(cbl_inf->id_header)?"YES":"NO");
 
-	sprintf(buf + strlen(buf), "---Product---\n");
-	sprintf(buf + strlen(buf), "USB Product ID = 0x%04X\n", PD_PRODUCT_PID(cbl_inf->product_vdo));
-	sprintf(buf + strlen(buf), "bcdDevice = 0x%04X\n", PD_PRODUCT_BCD(cbl_inf->product_vdo));
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "Data Capable as USB Device:%s\n",
+		PD_IDH_USB_DEVICE(cbl_inf->id_header)?"YES":"NO");
 
-	sprintf(buf + strlen(buf), "---Cable---\n");
-	sprintf(buf + strlen(buf), "HW Version = 0x%01X\n", PD_CABLE_HW_VER(cbl_inf->cable_vdo));
-	sprintf(buf + strlen(buf), "FW Version = 0x%01X\n", PD_CABLE_FW_VER(cbl_inf->cable_vdo));
-	sprintf(buf + strlen(buf), "Type-C plug to %s %s\n",
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "Product Type=%s\n",
+		string_product_type[PD_IDH_PTYPE(cbl_inf->id_header)]);
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "Modal Operation Supported:%s\n",
+		PD_IDH_MODAL(cbl_inf->id_header)?"YES":"NO");
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "USB Vendor ID = 0x%04X\n",
+		PD_IDH_VID(cbl_inf->id_header));
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "---Cert Stat---\n");
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "TID = 0x%05X\n",
+		PD_CSTAT_TID(cbl_inf->cer_stat_vdo));
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "---Product---\n");
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "USB Product ID = 0x%04X\n",
+		PD_PRODUCT_PID(cbl_inf->product_vdo));
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "bcdDevice = 0x%04X\n",
+		PD_PRODUCT_BCD(cbl_inf->product_vdo));
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "---Cable---\n");
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "HW Version = 0x%01X\n",
+		PD_CABLE_HW_VER(cbl_inf->cable_vdo));
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "FW Version = 0x%01X\n",
+		PD_CABLE_FW_VER(cbl_inf->cable_vdo));
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "Type-C plug to %s %s\n",
 		string_cable_type[PD_CABLE_CABLE_TYPE(cbl_inf->cable_vdo)],
 		PD_CABLE_PLUG_OR_REC(cbl_inf->cable_vdo)?"Receptacle":"Plug");
 
-	sprintf(buf + strlen(buf), "Cable Latency = 0x%01X\n", PD_CABLE_LATENCY(cbl_inf->cable_vdo));
-	sprintf(buf + strlen(buf), "Cable Termination Type:%s\n",
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "Cable Latency = 0x%01X\n",
+		PD_CABLE_LATENCY(cbl_inf->cable_vdo));
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "Cable Termination Type:%s\n",
 		string_cable_term[PD_CABLE_TERM_TYPE(cbl_inf->cable_vdo)]);
 
-	sprintf(buf + strlen(buf), "SSTX1 Directionality Support : %s\n",
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "SSTX1 Directionality Support : %s\n",
 		PD_CABLE_SSTX1(cbl_inf->cable_vdo)?"Configurable":"Fixed");
 
-	sprintf(buf + strlen(buf), "SSTX2 Directionality Support : %s\n",
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "SSTX2 Directionality Support : %s\n",
 		PD_CABLE_SSTX2(cbl_inf->cable_vdo)?"Configurable":"Fixed");
 
-	sprintf(buf + strlen(buf), "SSRX1 Directionality Support : %s\n",
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "SSRX1 Directionality Support : %s\n",
 		PD_CABLE_SSRX1(cbl_inf->cable_vdo)?"Configurable":"Fixed");
 
-	sprintf(buf + strlen(buf), "SSRX2 Directionality Support : %s\n",
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "SSRX2 Directionality Support : %s\n",
 		PD_CABLE_SSRX2(cbl_inf->cable_vdo)?"Configurable":"Fixed");
 
-	sprintf(buf + strlen(buf), "VBUS Current Handling Capability : %s\n",
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "VBUS Current Handling Capability : %s\n",
 		string_vbus_cap[PD_CABLE_VBUS_CAP(cbl_inf->cable_vdo)]);
 
-	sprintf(buf + strlen(buf), "VBUS through cable : %s\n", PD_CABLE_VBUS_THRO(cbl_inf->cable_vdo)?"YES":"NO");
-	sprintf(buf + strlen(buf), "SOP'' controller present? : %s\n", PD_CABLE_SOP_PP(cbl_inf->cable_vdo)?"YES":"NO");
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "VBUS through cable : %s\n",
+		PD_CABLE_VBUS_THRO(cbl_inf->cable_vdo)?"YES":"NO");
 
-	sprintf(buf + strlen(buf), "USB Superspeed Signaling Support : %s\n",
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "SOP'' controller present? : %s\n",
+		PD_CABLE_SOP_PP(cbl_inf->cable_vdo)?"YES":"NO");
+
+	snprintf(buf + strlen(buf), (PAGE_SIZE - strlen(buf)), "USB Superspeed Signaling Support : %s\n",
 		string_usb_speed[PD_CABLE_USB_SPEED(cbl_inf->cable_vdo)]);
 end:
 	return strlen(buf);

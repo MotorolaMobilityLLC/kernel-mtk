@@ -170,10 +170,7 @@ void pd_execute_data_swap(struct typec_hba *hba, int data_role)
 	 * 5. Attached.SNK
 	 *       UFP
 	 */
-	if (data_role == PD_ROLE_DFP)
-		schedule_work(&hba->usb_work);
-	else
-		schedule_work(&hba->usb_work);
+	schedule_work(&hba->usb_work);
 }
 
 void pd_check_pr_role(struct typec_hba *hba, int pr_role, int flags)
@@ -385,6 +382,7 @@ int pd_custom_vdm(struct typec_hba *hba, int cnt, uint32_t *payload,
 }
 
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
+#ifdef DISPLAYPORT
 static int dp_flags;
 /* DP Status VDM as returned by UFP */
 static uint32_t dp_status;
@@ -474,7 +472,6 @@ static void svdm_dp_post_config(struct typec_hba *hba)
 
 static int svdm_dp_attention(struct typec_hba *hba, uint32_t *payload)
 {
-	int cur_lvl = 0;
 	int lvl = PD_VDO_DPSTS_HPD_LVL(payload[1]);
 	int irq = PD_VDO_DPSTS_HPD_IRQ(payload[1]);
 
@@ -487,9 +484,9 @@ static int svdm_dp_attention(struct typec_hba *hba, uint32_t *payload)
 		return 1;
 	}
 
-	if (irq & cur_lvl) {
+	if (irq) {
 		dev_err(hba->dev, "---\n");
-	} else if (irq & !cur_lvl) {
+	} else {
 		dev_err(hba->dev, "ERR:HPD:IRQ&LOW\n");
 		return 0; /* nak */
 	}
@@ -502,6 +499,7 @@ static void svdm_exit_dp_mode(struct typec_hba *hba)
 {
 	svdm_safe_dp_mode(hba);
 }
+#endif
 
 #ifdef CONFIG_RT7207_ADAPTER
 static int svdm_enter_dc_mode(struct typec_hba *hba, uint32_t mode_caps)
@@ -523,6 +521,7 @@ static void svdm_exit_dc_mode(struct typec_hba *hba)
 #endif
 
 const struct svdm_amode_fx supported_modes[] = {
+#ifdef DISPLAYPORT
 	{
 		.svid = USB_SID_DISPLAYPORT,
 		.enter = &svdm_enter_dp_mode,
@@ -532,6 +531,7 @@ const struct svdm_amode_fx supported_modes[] = {
 		.attention = &svdm_dp_attention,
 		.exit = &svdm_exit_dp_mode,
 	},
+#endif /* NEVER */
 #ifdef CONFIG_RT7207_ADAPTER
 	{
 		.svid = RT7207_SVID,
