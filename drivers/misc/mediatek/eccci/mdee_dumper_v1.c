@@ -17,9 +17,6 @@
 
 #if defined(CONFIG_MTK_AEE_FEATURE)
 #include <mt-plat/aee.h>
-#else
-#define DB_OPT_DEFAULT    (0)	/* Dummy macro define to avoid build error */
-#define DB_OPT_FTRACE   (0)	/* Dummy macro define to avoid build error */
 #endif
 
 #include "ccci_core.h"
@@ -28,6 +25,15 @@
 #include "mdee_ctl.h"
 #include "mdee_dumper_v1.h"
 #include "port_proxy.h"
+
+#ifndef DB_OPT_DEFAULT
+#define DB_OPT_DEFAULT    (0)	/* Dummy macro define to avoid build error */
+#endif
+
+#ifndef DB_OPT_FTRACE
+#define DB_OPT_FTRACE   (0)	/* Dummy macro define to avoid build error */
+#endif
+
 static void ccci_aed_v1(struct md_ee *mdee, unsigned int dump_flag, char *aed_str, int db_opt)
 {
 	void *ex_log_addr = NULL;
@@ -472,9 +478,11 @@ static void mdee_dumper_v1_dump_ee_info(struct md_ee *mdee, MDEE_DUMP_LEVEL leve
 			ccci_aed_v1(mdee, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_EX_MEM, ex_info, DB_OPT_FTRACE);
 		}
 	} else if (level == MDEE_DUMP_LEVEL_TIMER1) {
-		if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
+		if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM)) {
+			CCCI_NORMAL_LOG(md_id, KERN, "Dump MD exp smem_log\n");
 			ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP,
 				smem_layout->ccci_exp_smem_base_vir, smem_layout->ccci_exp_dump_size);
+		}
 	} else if (level == MDEE_DUMP_LEVEL_TIMER2) {
 		mdee_dumper_info_prepare_v1(mdee);
 		mdee_dumper_info_dump_v1(mdee);
