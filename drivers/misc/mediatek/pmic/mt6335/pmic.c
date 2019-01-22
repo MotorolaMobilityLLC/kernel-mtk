@@ -72,9 +72,9 @@ static bool pmic_suspend_state;
 /* For whitney only(set boot voltage in preloader) */
 #define MT6799_BOOT_VOL 1
 
-static unsigned int vmd1_vosel = 0x40;
-static unsigned int vmodem_vosel = 0x48;
-static unsigned int vsram_vmd_vosel = 0x58;
+static unsigned int vmd1_vosel = 0x40;		/* VMD1 0.8V: 0x40 */
+static unsigned int vmodem_vosel = 0x48;	/* VMODEM 0.85V: 0x48 */
+static unsigned int vsram_vmd_vosel = 0x58;	/* VSRAM_VMD 0.95V: 0x58 */
 
 void vmd1_pmic_setting_on(void)
 {
@@ -82,19 +82,10 @@ void vmd1_pmic_setting_on(void)
 	unsigned int vmodem_en = 0;
 	unsigned int vsram_vmd_en = 0;
 
-	/*---VMD1, VMODEM, VSRAM_VMD Voltage Select---*/
-	/*--VMD1 0.8V: 0x40 (0x40*0.00625+0.4 =0.8V)--*/
+	/* VMD1, VMODEM, VSRAM_VMD Voltage Select, the vosel are updated by pmic_mt_probe() */
 	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL, vmd1_vosel);
-	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
-	pmic_set_register_value(PMIC_RG_BUCK_VMD1_VOSEL_SLEEP, 0x10);
-	/*--VMODEM 0.85V: 0x48 (0x48*0.00625+0.4 =0.85V)--*/
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, vmodem_vosel);
-	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL_SLEEP, 0x10);
-	/*--VSRAM_VMD 0.95V: 0x58 (0x58*0.00625+0.4 =0.95V)--*/
 	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL, vsram_vmd_vosel);
-	/*--0x10 (0x10*0.00625+0.4 =0.5V) SLEEP_VOLTAGE & VOSEL_SLEEP need the same --*/
-	pmic_set_register_value(PMIC_RG_VSRAM_VMD_VOSEL_SLEEP, 0x10);
 
 	/* Enable FPFM before enable BUCK, SW workaround to avoid VMD1/VMODEM overshoot */
 	pmic_config_interface(0x0F9C, 0x1, 0x1, 12);	/* 0x0F9C[12] = 1 */
