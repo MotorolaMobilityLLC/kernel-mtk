@@ -1641,6 +1641,11 @@ int m4u_sec_init(void)
 
 	M4UINFO("call m4u_sec_init in normal m4u driver\n");
 
+	if (m4u_tee_en) {
+		M4UMSG("warning: m4u secure has been inited, %d\n", m4u_tee_en);
+		goto m4u_sec_reinit;
+	}
+
 	/* Allocating WSM for DCI */
 	mcRet = mc_malloc_wsm(MC_DEVICE_ID_DEFAULT, 0, sizeof(struct m4u_msg), (uint8_t **) &m4u_dci_msg, 0);
 	if (mcRet != MC_DRV_OK) {
@@ -1679,7 +1684,7 @@ int m4u_sec_init(void)
 	} else {
 		M4UMSG("warning: m4u secure has been inited, %d\n", m4u_tee_en);
 	}
-
+m4u_sec_reinit:
 	ret = __m4u_sec_init();
 	if (ret < 0) {
 		m4u_sec_context_deinit();
