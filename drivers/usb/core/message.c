@@ -640,6 +640,8 @@ int usb_get_descriptor(struct usb_device *dev, unsigned char type,
 	int i;
 	int result;
 
+	dev_info(&dev->dev, "%s type=%d sz=%d\n", __func__, type, size);
+
 	memset(buf, 0, size);	/* Make sure we parse really received data */
 
 	for (i = 0; i < 3; ++i) {
