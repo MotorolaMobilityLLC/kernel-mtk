@@ -18,7 +18,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
 ifeq ($(CONFIG_MTK_HAFG_20),y)
-	obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter_fg_20.o battery_common_fg_20.o fake.o
+	obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter_fg_20.o battery_common_fg_20.o
 else
 	obj-$(CONFIG_MTK_SMART_BATTERY) += battery_meter.o battery_common.o
 endif
