@@ -32,6 +32,7 @@
 #include <linux/atomic.h>
 #include <linux/mutex.h>
 #include <linux/module.h>
+#include <linux/suspend.h>
 
 #include <gyroscope.h>
 #include <cust_gyro.h>
@@ -1178,8 +1179,8 @@ static struct miscdevice bmg_device = {
 	.fops = &bmg_fops,
 };
 
-#ifdef CONFIG_PM_SLEEP
-static int bmg_suspend(struct device *dev)
+#ifdef CONFIG_PM
+static int bmg_suspend(void)
 {
 	struct bmg_gyro_data *obj = obj_data;
 	int err = 0;
@@ -1197,7 +1198,7 @@ static int bmg_suspend(struct device *dev)
 	return err;
 }
 
-static int bmg_resume(struct device *dev)
+static int bmg_resume(void)
 {
 	int err;
 	struct bmg_gyro_data *obj = obj_data;
@@ -1209,7 +1210,26 @@ static int bmg_resume(struct device *dev)
 	atomic_set(&obj->suspend, 0);
 	return 0;
 }
-#endif /* CONFIG_PM_SLEEP */
+
+static int pm_event_handler(struct notifier_block *notifier, unsigned long pm_event,
+			void *unused)
+{
+	switch (pm_event) {
+	case PM_SUSPEND_PREPARE:
+		bmg_suspend();
+		return NOTIFY_DONE;
+	case PM_POST_SUSPEND:
+		bmg_resume();
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block pm_notifier_func = {
+	.notifier_call = pm_event_handler,
+	.priority = 0,
+};
+#endif /* CONFIG_PM */
 
 static int bmi160_gyro_open_report_data(int open)
 {
@@ -1344,6 +1364,14 @@ static int bmg_spi_probe(struct spi_device *spi)
 		goto exit_create_attr_failed;
 	}
 
+#ifdef CONFIG_PM
+	err = register_pm_notifier(&pm_notifier_func);
+	if (err) {
+		GYRO_ERR("Failed to register PM notifier.\n");
+		goto exit_create_attr_failed;
+	}
+#endif /* CONFIG_PM */
+
 	bmi160_gyro_init_flag =0;
 	GYRO_LOG("%s: OK\n", __func__);
 	return 0;
@@ -1383,18 +1411,9 @@ static const struct of_device_id gyro_of_match[] = {
 };
 #endif
 
-#ifdef CONFIG_PM_SLEEP
-static const struct dev_pm_ops bmg_pm_ops = {
-	SET_SYSTEM_SLEEP_PM_OPS(bmg_suspend, bmg_resume)
-};
-#endif
-
 static struct spi_driver bmg_spi_driver = {
 	.driver = {
 		.name = BMG_DEV_NAME,
-#ifdef CONFIG_PM_SLEEP
-		.pm           = &bmg_pm_ops,
-#endif
 #ifdef CONFIG_OF
 		.of_match_table = gyro_of_match,
 #endif
