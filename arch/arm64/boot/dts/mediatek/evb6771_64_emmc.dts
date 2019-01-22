@@ -9,7 +9,7 @@
 	#size-cells = <2>;
 	ranges;
 
-	zmc-temp {
+	zmc-default {
 		compatible = "mediatek,zone_movable_cma";
 		size = <0 0xffc00000>;
 		alignment = <0 0x10000000>;
