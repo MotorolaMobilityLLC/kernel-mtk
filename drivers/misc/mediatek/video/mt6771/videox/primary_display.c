@@ -321,6 +321,15 @@ int primary_display_is_mirror_mode(void)
 	return _is_mirror_mode(pgc->session_mode);
 }
 
+int primary_display_is_OVL_DCM_mode(void)
+{
+	if (disp_helper_get_option(DISP_OPT_OVL_DCM) &&
+		pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE)
+		return 1;
+
+	return 0;
+}
+
 int primary_is_sec(void)
 {
 	return pgc->is_primary_sec;
@@ -2128,6 +2137,208 @@ static int DL_switch_to_DC_fast(int sw_only, int block)
 	return ret;
 }
 
+static int DL_switch_to_OVL_DCM_fast(int sw_only, int block)
+{
+	int ret = 0;
+	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
+	struct RDMA_CONFIG_STRUCT rdma_config = decouple_rdma_config;
+	struct WDMA_CONFIG_STRUCT wdma_config = decouple_wdma_config;
+
+	struct disp_ddp_path_config *data_config_dl = NULL;
+	struct disp_ddp_path_config *data_config_dc = NULL;
+	/* unsigned int mva = pgc->dc_buf[pgc->dc_buf_id]; */ /* mva for 1.ovl->wdma and 2.Rdma->dsi */
+	unsigned int mva;
+	struct ddp_io_golden_setting_arg gset_arg;
+	int i;
+
+	if ((primary_is_sec() == 1)) {
+		init_sec_buf();
+		mva = sec_mva;
+		wdma_config.security = DISP_SECURE_BUFFER;
+	} else {
+		mva = pgc->dc_buf[pgc->dc_buf_id];
+		wdma_config.security = DISP_NORMAL_BUFFER;
+	}
+
+	if (mva == 0) {
+		DISPPR_ERROR("%s, dc buffer does not exist\n", __func__);
+		return -1;
+	}
+	wdma_config.dstAddress = mva;
+	/* wdma_config.security = DISP_NORMAL_BUFFER; */
+
+	/* 1.save a temp frame to intermediate buffer */
+	directlink_path_add_memory(&wdma_config, DISP_MODULE_OVL0);
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 0);
+
+	/* 2.reset primary handle */
+	_cmdq_reset_config_handle();
+	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
+
+	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
+
+	/* 3.modify interface path handle to new scenario(rdma->dsi) */
+	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
+	new_scenario = DDP_SCENARIO_PRIMARY_OVL1_RDMA0_COLOR0_DISP;
+
+	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
+
+	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
+			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
+
+	ddp_get_module_driver(DISP_MODULE_OVL1_2L)->start(DISP_MODULE_OVL1_2L, pgc->cmdq_handle_config);
+
+	/* 4.config ovl1 */
+	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	data_config_dl->dst_dirty = 1;
+	data_config_dl->ovl_config[0].layer = 0;
+	data_config_dl->ovl_config[0].isDirty = 1;
+	data_config_dl->ovl_config[0].layer_en = 1;
+	data_config_dl->ovl_config[0].addr = mva;
+	data_config_dl->ovl_config[0].src_pitch = rdma_config.pitch;
+	data_config_dl->ovl_config[0].src_x = 0;
+	data_config_dl->ovl_config[0].src_y = 0;
+	data_config_dl->ovl_config[0].src_w = primary_display_get_width();
+	data_config_dl->ovl_config[0].src_h = primary_display_get_height();
+	data_config_dl->ovl_config[0].dst_x = 0;
+	data_config_dl->ovl_config[0].dst_y = 0;
+	data_config_dl->ovl_config[0].dst_w = primary_display_get_width();
+	data_config_dl->ovl_config[0].dst_h = primary_display_get_height();
+	data_config_dl->ovl_config[0].security = wdma_config.security;
+	data_config_dl->ovl_config[0].source = OVL_LAYER_SOURCE_MEM;
+	data_config_dl->ovl_config[0].ext_sel_layer = -1;
+	data_config_dl->ovl_config[0].yuv_range = rdma_config.yuv_range;
+	data_config_dl->ovl_config[0].fmt = rdma_config.inputFormat;
+	for (i = 1 ; i < TOTAL_OVL_LAYER_NUM ; i++)
+		data_config_dl->ovl_config[i].layer_en = 0;
+
+	/* no need ioctl because of rdma_dirty */
+	set_is_dc(1);
+
+	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config_dl, pgc->cmdq_handle_config);
+
+	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(DISP_SESSION_DECOUPLE_MODE));
+	dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height, rdma_config.pitch,
+			UFMT_GET_Bpp(rdma_config.inputFormat));
+
+	memset(&gset_arg, 0, sizeof(gset_arg));
+	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
+	gset_arg.is_decouple_mode = 1;
+	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+
+	/* screen_logger_add_message("sess_mode", MESSAGE_REPLACE, session_mode_spy(DISP_SESSION_DECOUPLE_MODE)); */
+	/* dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height, rdma_config.pitch, */
+	/* ovl_get_Bpp_from_dpColorFmt(rdma_config.inputFormat)); */
+
+	/* 5.backup rdma address to slots */
+	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
+	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
+	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
+
+	/* 6.flush to cmdq */
+	_cmdq_set_config_handle_dirty();
+	_cmdq_flush_config_handle(1, NULL, 0);
+	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 0);
+
+	/* Switch to lower gear */
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL0);
+#endif
+	/* ddp_mmp_rdma_layer(&rdma_config, 0, 20, 20); */
+
+	/* 7.reset	cmdq */
+	_cmdq_reset_config_handle();
+	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
+
+	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
+
+	/* 9. create ovl2mem path handle */
+	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
+
+	pgc->ovl2mem_path_handle =
+		dpmgr_create_path(DDP_SCENARIO_PRIMARY_OVL_MEMOUT, pgc->cmdq_handle_ovl1to2_config);
+
+	if (pgc->ovl2mem_path_handle) {
+		DISPDBG("dpmgr create ovl memout path SUCCESS(%p)\n", pgc->ovl2mem_path_handle);
+	} else {
+		DISPPR_ERROR("dpmgr create path FAIL\n");
+		return -1;
+	}
+
+	dpmgr_path_set_video_mode(pgc->ovl2mem_path_handle, 0);
+	dpmgr_path_init(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
+
+	data_config_dc = dpmgr_path_get_last_config(pgc->ovl2mem_path_handle);
+	data_config_dc->dst_w = rdma_config.width;
+	data_config_dc->dst_h = rdma_config.height;
+	data_config_dc->dst_dirty = 1;
+
+	/* move ovl config info from dl to dc */
+	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
+		   sizeof(data_config_dl->ovl_config));
+	data_config_dc->p_golden_setting_context = data_config_dl->p_golden_setting_context;
+	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc,
+				pgc->cmdq_handle_ovl1to2_config);
+
+	memset(&gset_arg, 0, sizeof(gset_arg));
+	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->ovl2mem_path_handle);
+	gset_arg.is_decouple_mode = 1;
+	dpmgr_path_ioctl(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+
+	ret = dpmgr_path_start(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
+
+	/* cmdqRecDumpCommand(pgc->cmdq_handle_ovl1to2_config); */
+	/* cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);*/
+
+	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, block);
+	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
+	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 3, 0);
+
+	/* 11..enable event for new path */
+#if 0
+	dpmgr_enable_event(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_COMPLETE);
+	dpmgr_map_event_to_irq(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_START,
+				   DDP_IRQ_WDMA0_FRAME_COMPLETE);
+	dpmgr_enable_event(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_START);
+#endif
+
+	if (primary_display_is_video_mode()) {
+		if (_need_lfr_check()) {
+			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+						   DDP_IRQ_DSI0_FRAME_DONE);
+		} else {
+			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+						   DDP_IRQ_RDMA0_DONE);
+		}
+	}
+	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
+	/* dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE); */
+	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 4, 0);
+	deinit_sec_buf();
+
+	return ret;
+}
+
+static int DL_switch_to_DCM(int sw_only, int block)
+{
+	int ret = 0;
+
+	if (disp_helper_get_option(DISP_OPT_OVL_DCM))
+		ret = DL_switch_to_OVL_DCM_fast(sw_only, block);
+	else
+		ret = DL_switch_to_DC_fast(sw_only, block);
+
+	return ret;
+}
+
 static int modify_path_power_off_callback(unsigned long userdata)
 {
 	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
@@ -2339,6 +2550,17 @@ static int DC_switch_to_DL_fast(int sw_only, int block)
 	return ret;
 }
 
+static int DCM_switch_to_DL(int sw_only, int block)
+{
+	int ret = 0;
+
+	/* The control flow for switching OVL_DCM to DL
+	 * is same as switching DC to DL.
+	 */
+	ret = DC_switch_to_DL_fast(sw_only, block);
+	return ret;
+}
+
 static int DL_switch_to_rdma_mode(struct cmdqRecStruct *handle, int block)
 {
 	int ret;
@@ -2512,6 +2734,100 @@ static int rdma_mode_switch_to_DC(struct cmdqRecStruct *handle, int block)
 	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 2, 0);
+	return 0;
+}
+
+static int DC_switch_to_OVL_DCM(struct cmdqRecStruct *handle, int block)
+{
+	int ret = 0;
+	enum DDP_SCENARIO_ENUM old_scenario, new_scenario;
+	struct RDMA_CONFIG_STRUCT rdma_config = decouple_rdma_config;
+	struct disp_ddp_path_config *data_config_dl = NULL;
+	struct ddp_io_golden_setting_arg gset_arg;
+	unsigned int mva;
+	int i;
+
+	if ((primary_is_sec() == 1)) {
+		init_sec_buf();
+		mva = sec_mva;
+	} else {
+		mva = pgc->dc_buf[pgc->dc_buf_id];
+	}
+
+	/* clear wdma0 EOF to block next DC configuration */
+	_cmdq_reset_config_handle();
+	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
+
+	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
+
+	/* 3.modify interface path handle to new scenario(rdma->dsi) */
+	old_scenario = dpmgr_get_scenario(pgc->dpmgr_handle);
+	new_scenario = DDP_SCENARIO_PRIMARY_OVL1_RDMA0_COLOR0_DISP;
+
+	dpmgr_modify_path_power_on_new_modules(pgc->dpmgr_handle, new_scenario, 0);
+
+	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
+			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
+
+	ddp_get_module_driver(DISP_MODULE_OVL1_2L)->start(DISP_MODULE_OVL1_2L, pgc->cmdq_handle_config);
+
+	/* 4.config ovl1 */
+	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	data_config_dl->dst_dirty = 1;
+	data_config_dl->ovl_config[0].layer = 0;
+	data_config_dl->ovl_config[0].isDirty = 1;
+	data_config_dl->ovl_config[0].layer_en = 1;
+	data_config_dl->ovl_config[0].addr = mva;
+	data_config_dl->ovl_config[0].src_pitch = rdma_config.pitch;
+	data_config_dl->ovl_config[0].src_x = 0;
+	data_config_dl->ovl_config[0].src_y = 0;
+	data_config_dl->ovl_config[0].src_w = primary_display_get_width();
+	data_config_dl->ovl_config[0].src_h = primary_display_get_height();
+	data_config_dl->ovl_config[0].dst_x = 0;
+	data_config_dl->ovl_config[0].dst_y = 0;
+	data_config_dl->ovl_config[0].dst_w = primary_display_get_width();
+	data_config_dl->ovl_config[0].dst_h = primary_display_get_height();
+	if ((primary_is_sec() == 1))
+		data_config_dl->ovl_config[0].security = DISP_SECURE_BUFFER;
+	else
+		data_config_dl->ovl_config[0].security = DISP_NORMAL_BUFFER;
+	data_config_dl->ovl_config[0].source = OVL_LAYER_SOURCE_MEM;
+	data_config_dl->ovl_config[0].ext_sel_layer = -1;
+	data_config_dl->ovl_config[0].yuv_range = rdma_config.yuv_range;
+	data_config_dl->ovl_config[0].fmt = rdma_config.inputFormat;
+	for (i = 1 ; i < TOTAL_OVL_LAYER_NUM ; i++)
+		data_config_dl->ovl_config[i].layer_en = 0;
+
+	/* 5.config rdma from memory mode to directlink mode */
+	data_config_dl->rdma_config = decouple_rdma_config;
+	data_config_dl->rdma_config.address = 0;
+	data_config_dl->rdma_config.pitch = 0;
+	data_config_dl->rdma_config.security = DISP_NORMAL_BUFFER;
+	data_config_dl->rdma_dirty = 1;
+	data_config_dl->dst_dirty = 1;
+
+	ret = dpmgr_path_config(pgc->dpmgr_handle, data_config_dl, pgc->cmdq_handle_config);
+
+	screen_logger_add_message("sess_mode", MESSAGE_REPLACE, (char *)session_mode_spy(DISP_SESSION_DECOUPLE_MODE));
+	dynamic_debug_msg_print(mva, rdma_config.width, rdma_config.height, rdma_config.pitch,
+			UFMT_GET_Bpp(rdma_config.inputFormat));
+
+	memset(&gset_arg, 0, sizeof(gset_arg));
+	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
+	gset_arg.is_decouple_mode = 1;
+	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+
+	/* 5.backup rdma address to slots */
+	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 0, rdma_config.address);
+	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
+	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
+
+	/* 6.flush to cmdq */
+	_cmdq_set_config_handle_dirty();
+	_cmdq_flush_config_handle(1, NULL, 0);
+	dpmgr_modify_path_power_off_old_modules(old_scenario, new_scenario, 0);
+
+	primary_display_diagnose();
 	return 0;
 }
 
@@ -3165,12 +3481,126 @@ static int _decouple_update_rdma_config_nolock(void)
 	return 0;
 }
 
-static int decouple_update_rdma_config(void)
+void add_round_corner_layers(struct disp_ddp_path_config *cfg, unsigned int w, unsigned int h,
+	unsigned int pitch, unsigned long mva_top, unsigned long mva_bot,
+	enum DISP_MODULE_ENUM module, unsigned int layer, unsigned int phy_layer, unsigned int enable);
+
+static int _decouple_update_ovl1_config_nolock(void)
+{
+	int interface_fence = 0;
+	int layer, i;
+	int ret = 0;
+	static struct cmdqRecStruct *cmdq_handle;
+	unsigned int rdma_pitch_sec;
+	struct disp_ddp_path_config *pconfig;
+	struct RDMA_CONFIG_STRUCT tmpConfig = decouple_rdma_config;
+
+	if (!primary_display_is_decouple_mode())
+		return 0;
+
+	layer = disp_sync_get_output_timeline_id();
+	cmdqBackupReadSlot(pgc->cur_config_fence, layer, &interface_fence);
+
+	if (primary_get_state() != DISP_ALIVE) {
+		/* don't trigger rdma */
+		/* release interface fence */
+		_Interface_fence_release_callback(interface_fence > 1 ? interface_fence - 1 : 0);
+
+		return -1;
+	}
+
+	if (cmdq_handle == NULL) {
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+		if (ret) {
+			DISPPR_ERROR("fail to create cmdq\n");
+			return 0;
+		}
+	}
+
+	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+
+	cmdqRecReset(cmdq_handle);
+	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
+	cmdqBackupReadSlot(pgc->rdma_buff_info, 0, (uint32_t *)(&(tmpConfig.address)));
+
+	/* rdma pitch only use bit[15..0], we use bit[31:30] to store secure information */
+	cmdqBackupReadSlot(pgc->rdma_buff_info, 1, &(rdma_pitch_sec));
+	tmpConfig.pitch = rdma_pitch_sec & ~(3<<30);
+	tmpConfig.security = rdma_pitch_sec >> 30;
+
+	cmdqBackupReadSlot(pgc->rdma_buff_info, 2, &(tmpConfig.inputFormat));
+	tmpConfig.height = primary_display_get_height();
+	tmpConfig.width = primary_display_get_width();
+	tmpConfig.yuv_range = 1; /* BT601 */
+
+	pconfig->ovl_dirty = 1;
+	pconfig->ovl_config[0].layer = 0;
+	pconfig->ovl_config[0].isDirty = 1;
+	pconfig->ovl_config[0].layer_en = 1;
+	pconfig->ovl_config[0].addr = tmpConfig.address;
+	pconfig->ovl_config[0].src_pitch = tmpConfig.pitch;
+	pconfig->ovl_config[0].src_x = 0;
+	pconfig->ovl_config[0].src_y = 0;
+	pconfig->ovl_config[0].src_w = primary_display_get_width();
+	pconfig->ovl_config[0].src_h = primary_display_get_height();
+	pconfig->ovl_config[0].dst_x = 0;
+	pconfig->ovl_config[0].dst_y = 0;
+	pconfig->ovl_config[0].dst_w = primary_display_get_width();
+	pconfig->ovl_config[0].dst_h = primary_display_get_height();
+	pconfig->ovl_config[0].security = tmpConfig.security;
+	pconfig->ovl_config[0].source = OVL_LAYER_SOURCE_MEM;
+	pconfig->ovl_config[0].ext_sel_layer = -1;
+	pconfig->ovl_config[0].yuv_range = tmpConfig.yuv_range;
+	pconfig->ovl_config[0].fmt = tmpConfig.inputFormat;
+	pconfig->ovl_config[0].alpha = 0xFF;
+	for (i = 1 ; i < TOTAL_OVL_LAYER_NUM ; i++)
+		pconfig->ovl_config[i].layer_en = 0;
+#ifdef _DEBUG_DITHER_HANG_
+	if (primary_display_is_video_mode()) {
+		cmdqRecBackupRegisterToSlot(cmdq_handle, pgc->dither_status_info,
+					    0, disp_addr_convert(DISP_REG_DITHER_OUT_CNT));
+	}
+#endif
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	if (lcm_corner_en) {
+		if (disp_helper_get_option(DISP_OPT_ROUND_CORNER))
+			add_round_corner_layers(pconfig, primary_display_get_width(), corner_pattern_height,
+			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL1_2L, TOTAL_OVL_LAYER_NUM, 1, 1);
+		else
+			add_round_corner_layers(pconfig, primary_display_get_width(), corner_pattern_height,
+			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL1_2L, TOTAL_OVL_LAYER_NUM, 1, 0);
+	}
+#endif
+
+	dpmgr_path_config(pgc->dpmgr_handle, pconfig, cmdq_handle);
+	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
+
+	if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1) &&
+	    primary_display_is_video_mode() && dynamic_fps_changed) {
+		change_dsi_vfp(cmdq_handle, pgc->dynamic_fps);
+		dynamic_fps_changed = 0;
+	}
+
+	cmdqRecFlushAsyncCallback(cmdq_handle, _rdma_update_callback,
+			interface_fence > 1 ? interface_fence - 1 : 0);
+
+	dprec_mmp_dump_rdma_layer(&tmpConfig, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_rdma_config,
+			 MMPROFILE_FLAG_PULSE, interface_fence,
+			 tmpConfig.address);
+	return 0;
+}
+
+static int update_dc_dsi_path_config(void)
 {
 	int ret;
 
 	_primary_path_lock(__func__);
-	ret = _decouple_update_rdma_config_nolock();
+	if (disp_helper_get_option(DISP_OPT_OVL_DCM) &&
+		primary_display_is_mirror_mode())
+		ret = _decouple_update_ovl1_config_nolock();
+	else
+		ret = _decouple_update_rdma_config_nolock();
 	_primary_path_unlock(__func__);
 	return ret;
 }
@@ -3287,7 +3717,7 @@ static int decouple_trigger_callback(unsigned long userdata)
 	ret |= _wdma_fence_release_callback(userdata);
 
 #ifdef UPDATE_RDMA_CONFIG_USING_CMDQ_CALLBACK
-	ret |= decouple_update_rdma_config();
+	ret |= update_dc_dsi_path_config();
 #endif
 
 	return ret;
@@ -3337,7 +3767,7 @@ static int decouple_mirror_update_rdma_config_thread(void *data)
 					 atomic_read(&decouple_update_rdma_event));
 		if (ret == 0) {
 			atomic_set(&decouple_update_rdma_event, 0);
-			decouple_update_rdma_config();
+			update_dc_dsi_path_config();
 		} else {
 			DISPPR_ERROR("wait decouple_update_rdma_event interrupted , ret = %d\n", ret);
 		}
@@ -3558,6 +3988,7 @@ static int update_primary_intferface_module(void)
 	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_DISP, interface_module);
 	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP, interface_module);
 	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_RDMA0_DISP, interface_module);
+	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_OVL1_RDMA0_COLOR0_DISP, interface_module);
 
 	ddp_set_dst_module(DDP_SCENARIO_PRIMARY_ALL, interface_module);
 
@@ -6043,7 +6474,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	if (lcm_corner_en) {
-		if (disp_helper_get_option(DISP_OPT_ROUND_CORNER))
+		if (disp_helper_get_option(DISP_OPT_ROUND_CORNER) &&
+			!primary_display_is_OVL_DCM_mode())
 			add_round_corner_layers(data_config, primary_display_get_width(), corner_pattern_height,
 			corner_pattern_width, top_mva, bottom_mva, DISP_MODULE_OVL0_2L, TOTAL_OVL_LAYER_NUM, 1, 1);
 		else
@@ -6423,19 +6855,19 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE &&
 		   sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		/* dl to dc mirror  mirror */
-		ret = DL_switch_to_DC_fast(sw_only, block);
+		ret = DL_switch_to_DCM(sw_only, block);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE &&
 		   sess_mode == DISP_SESSION_DIRECT_LINK_MODE) {
 		/* dc mirror  to dl */
-		ret = DC_switch_to_DL_fast(sw_only, block);
+		ret = DCM_switch_to_DL(sw_only, block);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE &&
 		   sess_mode == DISP_SESSION_DECOUPLE_MODE){
 		/* do nothing */
 		/* just switch mode */
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE &&
 		   sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE){
-		/* do nothing */
-		/* just switch mode */
+		if (disp_helper_get_option(DISP_OPT_OVL_DCM))
+			ret = DC_switch_to_OVL_DCM(handle, block);
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE &&
 		   sess_mode == DISP_SESSION_RDMA_MODE) {
 		ret = DL_switch_to_rdma_mode(handle, block);
@@ -6449,7 +6881,7 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 		if (ret)
 			goto done;
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, pgc->session_mode, 0);
-		ret = DL_switch_to_DC_fast(0, 0);
+		ret = DL_switch_to_DCM(0, 0);
 	} else if (pgc->session_mode == DISP_SESSION_RDMA_MODE && sess_mode == DISP_SESSION_DECOUPLE_MODE) {
 		ret = rdma_mode_switch_to_DC(handle, block);
 	} else {
