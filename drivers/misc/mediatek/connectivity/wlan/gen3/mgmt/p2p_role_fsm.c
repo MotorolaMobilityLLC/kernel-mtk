@@ -1621,21 +1621,17 @@ VOID p2pFsmRunEventBeaconUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 		prBcnUpdateInfo = &(prRoleP2pFsmInfo->rBeaconUpdateInfo);
 
-		p2pFuncBeaconUpdate(prAdapter,
-				    prP2pBssInfo,
-				    prBcnUpdateInfo,
-				    prBcnUpdateMsg->pucBcnHdr,
-				    prBcnUpdateMsg->u4BcnHdrLen,
-				    prBcnUpdateMsg->pucBcnBody, prBcnUpdateMsg->u4BcnBodyLen);
+		p2pFuncProcessBeacon(prAdapter,
+				     prP2pBssInfo,
+				     prBcnUpdateInfo,
+				     prBcnUpdateMsg->pucBcnHdr,
+				     prBcnUpdateMsg->u4BcnHdrLen,
+				     prBcnUpdateMsg->pucBcnBody, prBcnUpdateMsg->u4BcnBodyLen);
 
 		if ((prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) &&
 		    (prP2pBssInfo->eIntendOPMode == OP_MODE_NUM)) {
 			/* AP is created, Beacon Update. */
-			/* nicPmIndicateBssAbort(prAdapter, NETWORK_TYPE_P2P_INDEX); */
-
 			bssUpdateBeaconContent(prAdapter, prRoleP2pFsmInfo->ucBssIndex);
-
-			/* nicPmIndicateBssCreated(prAdapter, NETWORK_TYPE_P2P_INDEX); */
 		}
 
 	} while (FALSE);
