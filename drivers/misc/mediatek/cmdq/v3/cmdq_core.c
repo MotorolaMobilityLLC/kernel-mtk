@@ -4748,8 +4748,12 @@ static void cmdq_core_parse_error(const struct TaskStruct *pTask, uint32_t threa
 	uint32_t insts[4] = { 0 };
 	uint32_t addr = 0;
 	const char *module = NULL;
-	int32_t irqFlag = pTask->irqFlag;
 	int isSMIHang = 0;
+
+	if (unlikely(!pTask)) {
+		CMDQ_ERR("No task to parse error\n");
+		return;
+	}
 
 	do {
 		/* confirm if SMI is hang */
@@ -4803,7 +4807,7 @@ static void cmdq_core_parse_error(const struct TaskStruct *pTask, uint32_t threa
 
 	/* fill output parameter */
 	*moduleName = module;
-	*flag = irqFlag;
+	*flag = pTask->irqFlag;
 	*instA = insts[3];
 	*instB = insts[2];
 
