@@ -20,14 +20,14 @@
 
 
 /* common macro definitions */
-#define F_REG(base, offset)     (*((unsigned int *) (base + offset)))
+#define F_REG(base, offset)     (*((unsigned int *) ((uintptr_t)base + offset)))
 #define F_VAL(val, msb, lsb)    ((msb - lsb > 30) ? val : (((val)&((1<<(msb-lsb+1))-1))<<lsb))
 #define F_MSK(msb, lsb)         F_VAL(0xffffffff, msb, lsb)
 #define F_BIT_SET(bit)          (1<<(bit))
 #define F_BIT_VAL(val, bit)     ((!!(val))<<(bit))
 
-#define VPU_SET_BIT(reg, bit)   ((*(unsigned int *)(reg)) |= (unsigned int)(1 << (bit)))
-#define VPU_CLR_BIT(reg, bit)   ((*(unsigned int *)(reg)) &= ~((unsigned int)(1 << (bit))))
+#define VPU_SET_BIT(reg, bit)   ((*(unsigned int *)((uintptr_t)reg)) |= (unsigned int)(1 << (bit)))
+#define VPU_CLR_BIT(reg, bit)   ((*(unsigned int *)((uintptr_t)reg)) &= ~((unsigned int)(1 << (bit))))
 
 static inline unsigned int vpu_read_reg32(unsigned long vpu_base, unsigned int offset)
 {
