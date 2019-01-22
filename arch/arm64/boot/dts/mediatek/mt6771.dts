@@ -1389,6 +1389,12 @@
 		reg = <0 0x1100d000 0 0x1000>;
 	};
 
+	irtx_pwm:irtx_pwm {
+		compatible = "mediatek,irtx-pwm";
+		pwm_ch = <0>;
+		pwm_data_invert = <0>;
+	};
+
 	disp_pwm0@1100e000 {
 		compatible = "mediatek,disp_pwm0";
 		reg = <0 0x1100e000 0 0x1000>;
