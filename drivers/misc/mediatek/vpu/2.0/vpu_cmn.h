@@ -176,8 +176,9 @@ int vpu_boot_up(int core);
 
 /**
  * vpu_shut_down - shutdown the vpu framework and power
+ * @core: index of device
  */
-int vpu_shut_down(void);
+int vpu_shut_down(int core);
 
 /**
  * vpu_change_power_mode - change power mode
