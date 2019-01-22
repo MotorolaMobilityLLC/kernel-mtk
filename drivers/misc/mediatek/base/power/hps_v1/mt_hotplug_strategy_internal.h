@@ -70,6 +70,10 @@ enum hps_ctxt_state_e {
 	STATE_COUNT
 };
 
+#if !defined(HPS_PERIODICAL_BY_WAIT_QUEUE) && !defined(HPS_PERIODICAL_BY_TIMER)
+#define HPS_PERIODICAL_BY_WAIT_QUEUE	0
+#define HPS_PERIODICAL_BY_TIMER		1
+#endif
 
 /* TODO: verify do you need action? no use now */
 enum hps_ctxt_action_e {
@@ -105,7 +109,15 @@ struct hps_ctxt_struct {
 	/* core */
 	struct mutex lock;		/* Synchronizes accesses */
 	struct task_struct *tsk_struct_ptr;
+
+#if HPS_PERIODICAL_BY_WAIT_QUEUE
 	wait_queue_head_t wait_queue;
+#elif HPS_PERIODICAL_BY_TIMER
+	struct timer_list hps_tmr_dfr;
+	struct timer_list hps_tmr;
+	struct timer_list *active_hps_tmr;
+#endif
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend es_handler;
 #endif
@@ -184,6 +196,7 @@ DECLARE_PER_CPU(struct hps_cpu_ctxt_struct, hps_percpu_ctxt);
 #define HPS_LOG_ACT	BIT(1)
 #define HPS_LOG_ALGO	BIT(2)
 #define HPS_LOG_ALGO2	BIT(3)
+#define HPS_LOG_TMR	BIT(4)
 
 #define log_is_en(mask)		(hps_ctxt.log_mask & mask)
 #define log_if(mask, fmt, args...) \
@@ -192,6 +205,7 @@ DECLARE_PER_CPU(struct hps_cpu_ctxt_struct, hps_percpu_ctxt);
 #define log_act(fmt, args...)	log_if(HPS_LOG_ACT, fmt, ##args)
 #define log_alog(fmt, args...)	log_if(HPS_LOG_ALGO, fmt, ##args)
 #define log_alog2(fmt, args...)	log_if(HPS_LOG_ALGO2, fmt, ##args)
+#define log_tmr(fmt, args...)	log_if(HPS_LOG_TMR, fmt, ##args)
 
 /*
  * mt_hotplug_strategy_main.c
@@ -245,6 +259,12 @@ extern int hps_cpu_is_cpu_little(int cpu);
 extern unsigned int hps_cpu_get_percpu_load(int cpu);
 extern unsigned int hps_cpu_get_nr_heavy_task(void);
 extern void hps_cpu_get_tlp(unsigned int *avg, unsigned int *iowait_avg);
+extern int hps_get_num_possible_cpus(
+		unsigned int *little_cpu_ptr,
+		unsigned int *big_cpu_ptr);
+extern int hps_get_num_online_cpus(
+		unsigned int *little_cpu_ptr,
+		unsigned int *big_cpu_ptr);
 
 /* TODO: remove it, use linux/sched.h instead */
 extern unsigned int sched_get_percpu_load(

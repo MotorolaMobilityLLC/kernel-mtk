@@ -58,7 +58,11 @@ struct hps_ctxt_struct hps_ctxt = {
 	.lock = __MUTEX_INITIALIZER(hps_ctxt.lock),
 		/* Synchronizes accesses to loads statistics */
 	.tsk_struct_ptr = NULL,
+
+#if HPS_PERIODICAL_BY_WAIT_QUEUE
 	.wait_queue = __WAIT_QUEUE_HEAD_INITIALIZER(hps_ctxt.wait_queue),
+#endif
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	.es_handler = {
 		.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 250,
