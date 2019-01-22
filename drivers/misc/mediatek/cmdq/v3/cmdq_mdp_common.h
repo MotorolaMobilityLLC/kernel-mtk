@@ -19,6 +19,12 @@
 
 #include <linux/types.h>
 
+/* runtime pm to probe MDP device */
+typedef s32 (*CmdqMDPProbe) (void);
+
+void mdp_init(void);
+void mdp_deinit(void);
+
 /* dump mmsys config */
 typedef void (*CmdqDumpMMSYSConfig) (void);
 
@@ -74,8 +80,11 @@ typedef const char *(*CmdqPraseErrorModByEngFlag) (const struct TaskStruct *task
 typedef u64 (*CmdqMdpGetEngineGroupBits) (u32 engine_group);
 
 typedef void (*CmdqMdpEnableCommonClock) (bool enable);
+/* meansure task bandwidth for pmqos */
+typedef u32(*CmdqMdpMeansureBandwidth) (u32 bandwidth);
 
 struct cmdqMDPFuncStruct {
+	CmdqMDPProbe mdp_probe;
 	CmdqDumpMMSYSConfig dumpMMSYSConfig;
 	CmdqVEncDumpInfo vEncDumpInfo;
 	CmdqMdpInitModuleBaseVA initModuleBaseVA;
@@ -100,6 +109,30 @@ struct cmdqMDPFuncStruct {
 	CmdqMdpGetEngineGroupBits getEngineGroupBits;
 	CmdqErrorResetCB errorReset;
 	CmdqMdpEnableCommonClock mdpEnableCommonClock;
+	CmdqMdpMeansureBandwidth meansureBandwidth;
+	CmdqBeginTaskCB beginTask;
+	CmdqEndTaskCB endTask;
+	CmdqBeginTaskCB beginISPTask;
+	CmdqEndTaskCB endISPTask;
+	CmdqStartTaskCB_ATOMIC startTask_atomic;
+	CmdqFinishTaskCB_ATOMIC finishTask_atomic;
+};
+
+struct mdp_task {
+	struct list_head entry;
+	struct TaskStruct *cmdq_task;
+	u32 bandwidth;
+};
+
+struct mdp_context {
+	struct list_head mdp_tasks;
+	struct mdp_task *bandwidth_task;
+};
+
+struct mdp_pmqos_record {
+	uint32_t mdp_throughput;
+	struct timeval submit_tm;
+	struct timeval end_tm;
 };
 
 /* track MDP task */
@@ -118,6 +151,9 @@ struct cmdqMDPTaskStruct {
 #ifdef __cplusplus
 extern "C" {
 #endif
+	void cmdq_mdp_init(void);
+	void cmdq_mdp_deinit(void);
+
 	void cmdq_mdp_virtual_function_setting(void);
 	void cmdq_mdp_map_mmsys_VA(void);
 	long cmdq_mdp_get_module_base_VA_MMSYS_CONFIG(void);

@@ -263,6 +263,18 @@ typedef void(*CmdqTrackTaskCB) (const struct TaskStruct *pTask);
 /* finished task can be get by callback */
 typedef void(*CmdqErrorResetCB) (u64 engineFlag);
 
+/* task begin for pmqos */
+typedef void(*CmdqBeginTaskCB) (struct TaskStruct *task, struct TaskStruct *task_list[], u32 size);
+
+/* task end for pmqos */
+typedef void(*CmdqEndTaskCB) (struct TaskStruct *task, struct TaskStruct *task_list[], u32 size);
+
+/* ready to start task can be get by callback in spinlock context*/
+typedef void(*CmdqStartTaskCB_ATOMIC) (const struct TaskStruct *task, u32 instr_size);
+
+/* finished task can be get by callback in irq context*/
+typedef void(*CmdqFinishTaskCB_ATOMIC) (const struct TaskStruct *task, u32 instr_size);
+
 struct CmdqCBkStruct {
 	CmdqClockOnCB clockOn;
 	CmdqDumpInfoCB dumpInfo;
@@ -271,6 +283,10 @@ struct CmdqCBkStruct {
 	CmdqDispatchModuleCB dispatchMod;
 	CmdqTrackTaskCB trackTask;
 	CmdqErrorResetCB errorReset;
+	CmdqBeginTaskCB beginTask;
+	CmdqEndTaskCB endTask;
+	CmdqStartTaskCB_ATOMIC startTask;
+	CmdqFinishTaskCB_ATOMIC finishTask;
 };
 
 struct CmdqDebugCBkStruct {
@@ -487,6 +503,7 @@ struct TaskStruct {
 	uint64_t engineFlag;
 	int32_t commandSize;
 	uint32_t *pCMDEnd;
+	void *user_private;
 	int32_t reorder;
 	int32_t thread;		/* ASYNC: CMDQ_INVALID_THREAD if not running */
 	int32_t exclusive_thread;	/* task must use specific thread */
@@ -499,6 +516,8 @@ struct TaskStruct {
 	atomic_t useWorkQueue;
 	u64 res_engine_flag_acquire;	/* task start use share sram */
 	u64 res_engine_flag_release;	/* task stop use share sram */
+
+	u32 bandwidth;
 
 	/* Output section for "read from reg to mem" */
 	uint32_t regCount;
@@ -539,6 +558,9 @@ struct TaskStruct {
 	char callerName[TASK_COMM_LEN];
 	char *userDebugStr;
 
+	/* task property */
+	void *prop_addr;
+	u32 prop_size;
 	/* Custom profile marker */
 	struct cmdqProfileMarkerStruct profileMarker;
 };
@@ -818,6 +840,12 @@ extern "C" {
 
 	s32 cmdqCoreRegisterErrorResetCB(enum CMDQ_GROUP_ENUM engGroup,
 			CmdqErrorResetCB errorReset);
+
+	s32 cmdqCoreRegisterTaskCycleCB(enum CMDQ_GROUP_ENUM engGroup,
+		CmdqBeginTaskCB beginTask, CmdqEndTaskCB endTask);
+
+	s32 cmdqCoreRegisterMonitorTaskCB(enum CMDQ_GROUP_ENUM engGroup,
+			CmdqStartTaskCB_ATOMIC startTask, CmdqFinishTaskCB_ATOMIC finishTask);
 
 	int32_t cmdqCoreSuspend(void);
 
@@ -1175,6 +1203,9 @@ extern "C" {
 	u32 cmdq_subsys_get_size(void);
 	void cmdq_core_set_spm_mode(enum CMDQ_SPM_MODE mode);
 
+	void cmdq_core_set_cmdq_device(struct device *cmdq_dev);
+	int cmdq_core_runtime_suspend(struct device *dev);
+	int cmdq_core_runtime_resume(struct device *dev);
 #ifdef __cplusplus
 }
 #endif

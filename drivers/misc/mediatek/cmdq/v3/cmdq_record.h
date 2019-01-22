@@ -77,6 +77,9 @@ struct cmdqRecStruct {
 	/* profile marker */
 	struct cmdqProfileMarkerStruct profileMarker;
 
+	/* task property */
+	void *prop_addr;
+	u32 prop_size;
 	struct CmdqRecExtend ext;
 };
 
@@ -948,6 +951,12 @@ extern "C" {
  */
 	int32_t cmdq_op_read_mem(struct cmdqRecStruct *handle, cmdqBackupSlotHandle h_backup_slot,
 				    uint32_t slot_index, CMDQ_VARIABLE *arg_out);
+/**
+ * Hook metadata with task
+ */
+	s32 cmdq_task_update_property(struct cmdqRecStruct *handle, void *prop_addr, u32 prop_size);
+
+
 
 #ifdef __cplusplus
 }
