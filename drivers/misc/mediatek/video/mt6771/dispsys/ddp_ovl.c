@@ -48,13 +48,6 @@ static enum DISP_MODULE_ENUM ovl_index_module[OVL_NUM] = {
 unsigned int gOVLBackground = 0xFF000000;
 unsigned int govldimcolor = 0xFF000000;
 
-/* Only one YUV layer can be config in a OVL engine no matter the YUV layer */
-/* is enabled or disabled. Record the index of YUV layer and set that layer to */
-/* other format if it's disabled in the next ovl_config_l to prevent more than */
-/* one layer is config into YUV. */
-static unsigned long last_yuv_layer_offset[OVL_NUM];
-static unsigned long current_yuv_layer_offset[OVL_NUM];
-
 static inline int is_module_ovl(enum DISP_MODULE_ENUM module)
 {
 	if (module == DISP_MODULE_OVL0 ||
@@ -569,11 +562,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 	unsigned int dst_y = cfg->dst_y;
 	unsigned int dst_w = cfg->dst_w;
 	unsigned int dst_h = cfg->dst_h;
-	unsigned int ovl_idx = ovl_to_index(module);
-
-	/* Check if last YUV layer is enabled */
-	if (layer_offset == last_yuv_layer_offset[ovl_idx])
-		last_yuv_layer_offset[ovl_idx] = 0;
 
 	if (ovl_partial_roi != NULL) {
 		dst_x = layer_partial_roi->x - ovl_partial_roi->x;
@@ -645,11 +633,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 			regval |= REG_FLD_VAL(OVL_L_CLIP_FLD_RIGHT, 1);
 		}
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLIP + layer_offset, regval);
-
-		if (current_yuv_layer_offset[ovl_idx] != 0)
-			DDPPR_ERR("more than one YUV layer\n");
-
-		current_yuv_layer_offset[ovl_idx] = layer_offset;
 	} else {
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLIP + layer_offset, 0);
 	}
@@ -1246,13 +1229,10 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 
 	unsigned long layer_offset_rdma_ctrl;
 	unsigned long ovl_base = ovl_base_addr(module);
-	unsigned int ovl_idx = ovl_to_index(module);
 #if 0
 	unsigned int tb = 0;
 	unsigned int bb = 0;
 #endif
-
-	current_yuv_layer_offset[ovl_idx] = 0;
 
 	if (pConfig->dst_dirty)
 		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
@@ -1334,14 +1314,6 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 	/* ext layer control */
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_DATAPATH_EXT_CON,
 		     enabled_ext_layers | ext_sel_layers);
-
-	/* Check if there is YUV layer at last time. */
-	/* If it's disabled in this time, set it into other format. */
-	/* If it's enabled in this time(check at ovl_layer_config) do nothing. */
-	if (last_yuv_layer_offset[ovl_idx] != 0)
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_CON + last_yuv_layer_offset[ovl_idx], 0);
-
-	last_yuv_layer_offset[ovl_idx] = current_yuv_layer_offset[ovl_idx];
 
 	/* bandwidth report */
 	if (module == DISP_MODULE_OVL0) {
