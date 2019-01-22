@@ -15,7 +15,7 @@
 #include <linux/debugfs.h>
 #include <linux/i2c.h>
 
-/* #define RT_REGMAP_VERSION	"1.1.11_G" */
+/* #define RT_REGMAP_VERSION	"1.1.12_G" */
 
 enum rt_access_mode {
 	RT_1BYTE_MODE = 1,
