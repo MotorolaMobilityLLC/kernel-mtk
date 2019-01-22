@@ -770,11 +770,11 @@ void notify_frame_complete_eas(unsigned long frame_time)
 	fbc_tracer(-5, "frame_info[4][1]", frame_info[4][1]);
 
 
-	if (chase == 1) {
+	if (chase == 1 && frame_time) {
 		avg_boost = (twanted * boost_value
 				+ ((long long)frame_time - twanted) * (chase_boost1))
 				/ (long long)frame_time;
-	} else if (chase == 2) {
+	} else if (chase == 2 && frame_time) {
 		avg_boost = (twanted * boost_value
 				+ ((long long)frame_budget - twanted) * chase_boost1
 				+ ((long long)frame_time - frame_budget) * (chase_boost2))
