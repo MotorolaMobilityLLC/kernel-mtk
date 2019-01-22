@@ -116,6 +116,9 @@ extern int spm_go_to_ddrdfs(u32 spm_flags, u32 spm_data);
 
 /* for Vcore DVFS in MET */
 extern void spm_vcorefs_register_handler(vcorefs_handler_t handler, vcorefs_start_handler_t start_handler);
+#if defined(CONFIG_MACH_MT6757) && !defined(CONFIG_FPGA_EARLY_PORTING)
+extern int vcorefs_get_hw_opp(void);
+#endif
 
 /* for PMIC power settings */
 enum {

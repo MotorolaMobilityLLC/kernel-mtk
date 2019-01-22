@@ -19,15 +19,18 @@
 #include <linux/delay.h>
 #include <linux/of_fdt.h>
 #include <linux/random.h>
-/* #include <mach/mtk_spm_mtcmos_internal.h> */
+/* #include <mach/mtk_spm_mtcmos_internal.h> */ /* TODO */
 #include <asm/setup.h>
 #include "mtk_spm_internal.h"
-/* #include "mtk_vcorefs_governor.h" */
-/* #include "mtk_spm_vcore_dvfs.h" */
+#include "mtk_vcorefs_governor.h"
+#include "mtk_spm_vcore_dvfs.h"
 #include "mtk_spm_misc.h"
 #include <mt-plat/upmu_common.h>
-#include <mt-plat/mtk_lpae.h>
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6757)
+#include <m4u.h>
+#include <mt-plat/mtk_chip.h>
+#endif
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
 #include <camera_isp.h>
 #endif
 #if defined(CONFIG_ARCH_MT6797)
@@ -40,18 +43,6 @@ int __attribute__((weak)) check_scp_resource(void)
 	return 0;
 }
 #endif
-
-unsigned int __attribute__((weak)) pmic_read_interface_nolock
-					(unsigned int p1, unsigned int *p2, unsigned int p3, unsigned int p4)
-{
-	return 0;
-}
-
-unsigned int __attribute__((weak)) pmic_config_interface_nolock
-					(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4)
-{
-	return 0;
-}
 
 /**************************************
  * Config and Parameter
@@ -423,6 +414,32 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 }
 #endif
 
+#if defined(CONFIG_MACH_MT6757)
+int can_spm_pmic_set_vcore_voltage(void)
+{
+	return 1;
+
+	if (mt_get_chip_hw_ver() > 0xCA00)
+		return 1;
+
+#if defined(CONFIG_ARM64)
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES, "k57v1_64_om_lwctg_lp", 20) == 0)
+		return 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES, "k57v1_64_op01_lwctg_lp", 22) == 0)
+		return 1;
+#elif defined(CONFIG_ARM)
+	if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES, "k57v1_om_lwctg_lp", 17) == 0)
+		return 1;
+
+	if (strncmp(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES, "k57v1_op01_lwctg_lp", 19) == 0)
+		return 1;
+#endif
+
+	return 0;
+}
+#endif
+
 void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 {
 	u32 ptr, len, con0;
@@ -582,12 +599,20 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 	spm_write(SW_CRTL_EVENT, (pwrctrl->sw_ctrl_event_on & 0x1) << 0);
 
 	/* SPM_SW_RSV_6 */
-	spm_write(SPM_SW_RSV_6,
-		((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
-		((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
-		((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
-		((pwrctrl->disable_off_load_lpm & 0x1) << 3) |
-		((pwrctrl->en_sdio_dvfs_setting & 0x1) << 4));
+	if (pwrctrl->rsv6_legacy_version == 1)
+		spm_write(SPM_SW_RSV_6,
+			((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
+			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
+			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
+			((pwrctrl->disable_off_load_lpm & 0x1) << 3) |
+			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 4));
+	else
+		spm_write(SPM_SW_RSV_6,
+			((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
+			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
+			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
+			((pwrctrl->disable_off_load_lpm & 0x1) << 16) |
+			((pwrctrl->en_sdio_dvfs_setting & 0x1) << 17));
 
 #if 0
 	/* SPM_WAKEUP_EVENT_MASK */
@@ -1054,6 +1079,7 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	dest_pwr_ctrl->dvfs_up_2d_dvfs_req_mask_b	= src_pwr_ctrl->dvfs_up_2d_dvfs_req_mask_b;
 	dest_pwr_ctrl->disable_off_load_lpm		= src_pwr_ctrl->disable_off_load_lpm;
 	dest_pwr_ctrl->en_sdio_dvfs_setting		= src_pwr_ctrl->en_sdio_dvfs_setting;
+	dest_pwr_ctrl->rsv6_legacy_version		= src_pwr_ctrl->rsv6_legacy_version;
 #else
 	dest_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b	= src_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b;
 	dest_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b	= src_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b;
@@ -1119,10 +1145,9 @@ void __spm_backup_vcore_dvfs_dram_shuffle(void)
 
 int __check_dvfs_halt_source(int enable)
 {
-#if 0
 	u32 val, orig_val;
 	bool is_halt = 1;
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
 	int i;
 #endif
 
@@ -1147,7 +1172,7 @@ int __check_dvfs_halt_source(int enable)
 		pr_err("[VcoreFS]isp_halt[0]:src2_mask=0x%x r6=0x%x r15=0x%x\n",
 				val, spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
 		/* Test bitmask halt_en */
 		for (i = 0; i < ISP_HALT_DMA_AMOUNT; i++) {
 			ISP_Halt_Mask(i);
@@ -1231,14 +1256,12 @@ int __check_dvfs_halt_source(int enable)
 			spm_read(SPM_SRC2_MASK), spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 
 	/* WARN_ON(1); */
-#endif
 
 	return 0;
 }
 
 void spm_set_dummy_read_addr(void)
 {
-#if 0
 	u32 rank0_addr, rank1_addr, dram_rank_num;
 
 	dram_rank_num = g_dram_info_dummy_read->rank_num;
@@ -1259,7 +1282,6 @@ void spm_set_dummy_read_addr(void)
 
 	spm_write(SPM_PASR_DPD_1, rank0_addr);
 	spm_write(SPM_PASR_DPD_2, rank1_addr);
-#endif
 }
 
 void spm_get_twam_table(const char ***table)
