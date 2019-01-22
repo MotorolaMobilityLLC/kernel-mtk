@@ -2755,7 +2755,7 @@ static void cmdq_core_enable_resource_clk_unlock(
 
 static void cmdq_core_release_task_unlocked(struct TaskStruct *pTask)
 {
-	CMDQ_MSG("cmdq_core_release_task_unlocked start\n");
+	CMDQ_MSG("%s task:%p\n", __func__, pTask);
 	pTask->taskState = TASK_STATE_IDLE;
 	pTask->thread = CMDQ_INVALID_THREAD;
 
@@ -2772,37 +2772,14 @@ static void cmdq_core_release_task_unlocked(struct TaskStruct *pTask)
 	list_del_init(&(pTask->listEntry));
 	/* insert into free list. Currently we don't shrink free list. */
 	list_add_tail(&(pTask->listEntry), &gCmdqContext.taskFreeList);
-	CMDQ_MSG("cmdq_core_release_task_unlocked end\n");
+	CMDQ_MSG("%s end\n", __func__);
 }
 
 static void cmdq_core_release_task(struct TaskStruct *pTask)
 {
-	CMDQ_MSG("-->TASK: Release task structure 0x%p begin\n", pTask);
-
 	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_remove);
-
-	pTask->taskState = TASK_STATE_IDLE;
-	pTask->thread = CMDQ_INVALID_THREAD;
-
-#if defined(CMDQ_SECURE_PATH_SUPPORT)
-	kfree(pTask->secStatus);
-	pTask->secStatus = NULL;
-#endif
-
-	/* remove from active/waiting list */
-	list_del_init(&(pTask->listEntry));
+	cmdq_core_release_task_unlocked(pTask);
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, release_task_remove);
-
-	cmdq_core_release_buffer(pTask);
-	kfree(pTask->privateData);
-	pTask->privateData = NULL;
-
-	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, release_task_add);
-	/* insert into free list. Currently we don't shrink free list. */
-	list_add_tail(&(pTask->listEntry), &gCmdqContext.taskFreeList);
-	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, release_task_async);
-
-	CMDQ_MSG("<--TASK: Release task structure end\n");
 }
 
 static void cmdq_core_release_task_in_queue(struct work_struct *workItem)
@@ -5511,8 +5488,65 @@ void cmdq_core_dump_error_instruction(const uint32_t *pcVA, const long pcPA,
 	}
 }
 
+static void cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
+	u32 *va_pc, struct NGTaskInfoStruct **nginfo_out)
+{
+	u8 *buffer = NULL;
+	struct NGTaskInfoStruct *nginfo = NULL;
+	struct CmdBufferStruct *cmd_buffer = NULL;
+
+	buffer = kzalloc(ngtask->bufferSize, GFP_ATOMIC);
+	if (!buffer) {
+		CMDQ_ERR("fail to allocate NG buffer\n");
+		return;
+	}
+
+	nginfo = kzalloc(sizeof(*nginfo), GFP_ATOMIC);
+	if (!nginfo) {
+		CMDQ_ERR("fail to allocate NG info\n");
+		kfree(buffer);
+		return;
+	}
+
+	/* copy ngtask info */
+	cmd_buffer = list_first_entry(&ngtask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+	nginfo->va_start = cmd_buffer->pVABase;
+	nginfo->va_pc = va_pc;
+	nginfo->buffer = (u32 *)buffer;
+	nginfo->engine_flag = ngtask->engineFlag;
+	nginfo->scenario = ngtask->scenario;
+	nginfo->ngtask = ngtask;
+	nginfo->buffer_size = ngtask->bufferSize;
+	*nginfo_out = nginfo;
+
+	list_for_each_entry(cmd_buffer, &ngtask->cmd_buffer_list, listEntry) {
+		u32 buf_size = list_is_last(&cmd_buffer->listEntry, &ngtask->cmd_buffer_list) ?
+			CMDQ_CMD_BUFFER_SIZE - ngtask->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
+
+		memcpy(buffer, cmd_buffer->pVABase, buf_size);
+		if (va_pc >= cmd_buffer->pVABase &&
+			va_pc < (u32 *)((u8 *)cmd_buffer->pVABase + CMDQ_CMD_BUFFER_SIZE)) {
+			buffer += (u8 *)va_pc - (u8 *)cmd_buffer->pVABase;
+			break;
+		}
+
+		buffer += buf_size;
+	}
+
+	/* only dump to pc */
+	nginfo->dump_size = buffer - (u8 *)nginfo->buffer;
+}
+
+static void cmdq_core_release_nginfo(struct NGTaskInfoStruct *nginfo)
+{
+	if (nginfo) {
+		kfree(nginfo->buffer);
+		kfree(nginfo);
+	}
+}
+
 static void cmdq_core_dump_summary(const struct TaskStruct *pTask, int thread,
-	const struct TaskStruct **pOutNGTask)
+	const struct TaskStruct **ngtask_out, struct NGTaskInfoStruct **nginfo_out)
 {
 	uint32_t *pcVA = NULL;
 	uint32_t insts[4] = { 0 };
@@ -5593,7 +5627,14 @@ static void cmdq_core_dump_summary(const struct TaskStruct *pTask, int thread,
 	cmdq_core_dump_error_instruction(pcVA, currPC, insts, thread, __LINE__);
 	cmdq_core_dump_disp_trigger_loop("ERR");
 
-	*pOutNGTask = pNGTask;
+	*ngtask_out = pNGTask;
+	if (nginfo_out) {
+		cmdq_core_create_nginfo(pNGTask, pcVA, nginfo_out);
+		(*nginfo_out)->module = module;
+		(*nginfo_out)->irq_flag = irqFlag;
+		(*nginfo_out)->inst[1] = instA;
+		(*nginfo_out)->inst[0] = instB;
+	}
 }
 
 void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize)
@@ -6369,10 +6410,9 @@ void cmdq_core_dump_thread(s32 thread, const char *tag)
 }
 
 static void cmdq_core_dump_error_task(const struct TaskStruct *pTask,
-	const struct TaskStruct *pNGTask, uint32_t thread, u32 **pc_out, u32 **ngpc_out)
+	const struct TaskStruct *pNGTask, uint32_t thread, u32 **pc_out)
 {
 	uint32_t *hwPC = NULL;
-	uint32_t *hwNGPC = NULL;
 	uint64_t printEngineFlag = 0;
 
 	cmdq_core_dump_thread(thread, "ERR");
@@ -6381,7 +6421,7 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask,
 	if (pNGTask != NULL && pNGTask != pTask) {
 		CMDQ_ERR("== [CMDQ] We have NG task, so engine dumps may more than you think ==\n");
 		CMDQ_ERR("========== [CMDQ] Error Thread PC (NG Task) ==========\n");
-		hwNGPC = cmdq_core_dump_pc(pNGTask, thread, "ERR");
+		cmdq_core_dump_pc(pNGTask, thread, "ERR");
 
 		CMDQ_ERR("========= [CMDQ] Error Task Status (NG Task) =========\n");
 		cmdq_core_dump_task(pNGTask);
@@ -6416,65 +6456,6 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask,
 
 	if (pc_out)
 		*pc_out = hwPC;
-	if (ngpc_out)
-		*ngpc_out = hwNGPC;
-}
-
-static void cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
-	u32 *va_pc, struct NGTaskInfoStruct **nginfo_out)
-{
-	u8 *buffer = NULL;
-	struct NGTaskInfoStruct *nginfo = NULL;
-	struct CmdBufferStruct *cmd_buffer = NULL;
-
-	buffer = kzalloc(ngtask->bufferSize, GFP_ATOMIC);
-	if (!buffer) {
-		CMDQ_ERR("fail to allocate NG buffer\n");
-		return;
-	}
-
-	nginfo = kzalloc(sizeof(*nginfo), GFP_ATOMIC);
-	if (!nginfo) {
-		CMDQ_ERR("fail to allocate NG info\n");
-		kfree(buffer);
-		return;
-	}
-
-	/* copy ngtask info */
-	cmd_buffer = list_first_entry(&ngtask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
-	nginfo->va_start = cmd_buffer->pVABase;
-	nginfo->va_pc = va_pc;
-	nginfo->buffer = (u32 *)buffer;
-	nginfo->engine_flag = ngtask->engineFlag;
-	nginfo->scenario = ngtask->scenario;
-	nginfo->ngtask = ngtask;
-	nginfo->buffer_size = ngtask->bufferSize;
-	*nginfo_out = nginfo;
-
-	list_for_each_entry(cmd_buffer, &ngtask->cmd_buffer_list, listEntry) {
-		u32 buf_size = list_is_last(&cmd_buffer->listEntry, &ngtask->cmd_buffer_list) ?
-			CMDQ_CMD_BUFFER_SIZE - ngtask->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
-
-		memcpy(buffer, cmd_buffer->pVABase, buf_size);
-		if (va_pc >= cmd_buffer->pVABase &&
-			va_pc < (u32 *)((u8 *)cmd_buffer->pVABase + CMDQ_CMD_BUFFER_SIZE)) {
-			buffer += (u8 *)va_pc - (u8 *)cmd_buffer->pVABase;
-			break;
-		}
-
-		buffer += buf_size;
-	}
-
-	/* only dump to pc */
-	nginfo->dump_size = buffer - (u8 *)nginfo->buffer;
-}
-
-static void cmdq_core_release_nginfo(struct NGTaskInfoStruct *nginfo)
-{
-	if (nginfo) {
-		kfree(nginfo->buffer);
-		kfree(nginfo);
-	}
 }
 
 static void cmdq_core_attach_cmdq_error(const struct TaskStruct *task, int32_t thread,
@@ -6483,7 +6464,6 @@ static void cmdq_core_attach_cmdq_error(const struct TaskStruct *task, int32_t t
 	const struct TaskStruct *ngtask = NULL;
 	u64 eng_flag = 0;
 	s32 index = 0;
-	u32 *ngpc = NULL;
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->warning, MMPROFILE_FLAG_PULSE, ((unsigned long)task),
 		thread);
@@ -6510,15 +6490,12 @@ static void cmdq_core_attach_cmdq_error(const struct TaskStruct *task, int32_t t
 	CMDQ_ERR("================= [CMDQ] Begin of Error %d================\n",
 		gCmdqContext.errNum);
 
-	cmdq_core_dump_summary(task, thread, &ngtask);
-	cmdq_core_dump_error_task(task, ngtask, thread, pc_out, &ngpc);
+	cmdq_core_dump_summary(task, thread, &ngtask, nginfo_out);
+	cmdq_core_dump_error_task(task, ngtask, thread, pc_out);
 
 	CMDQ_ERR("================= [CMDQ] End of Error %d ================\n",
 		 gCmdqContext.errNum);
 	gCmdqContext.errNum++;
-
-	if (nginfo_out && ngtask)
-		cmdq_core_create_nginfo(ngtask, ngpc, nginfo_out);
 }
 
 static void cmdq_core_attach_engine_error(const struct TaskStruct *task, int32_t thread,
@@ -6610,8 +6587,9 @@ static void cmdq_core_dump_task_command(const struct TaskStruct *task,
 	cmdq_core_dump_error_buffer(task, pc);
 }
 
-static void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t thread,
-	const struct TaskStruct **ngtask_out)
+static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, int32_t thread,
+	const struct TaskStruct **ngtask_out, const char **module_out, u32 *irq_flag_out,
+	u32 *inst_a_out, u32 *inst_b_out)
 {
 	unsigned long flags = 0L;
 	u32 *pc = NULL;
@@ -6634,6 +6612,13 @@ static void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t t
 	if (ngtask_out && nginfo && nginfo->ngtask)
 		*ngtask_out = nginfo->ngtask;
 
+	if (module_out && irq_flag_out && inst_a_out && inst_b_out) {
+		*module_out = nginfo->module;
+		*irq_flag_out = nginfo->irq_flag;
+		*inst_a_out = nginfo->inst[1];
+		*inst_b_out = nginfo->inst[0];
+	}
+
 	/* skip internal testcase */
 	if (CMDQ_TASK_IS_INTERNAL(task)) {
 		cmdq_core_release_nginfo(nginfo);
@@ -6651,6 +6636,11 @@ static void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t t
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqErrMutex, dump_error);
 
 	cmdq_core_release_nginfo(nginfo);
+}
+
+static void cmdq_core_attach_error_task(const struct TaskStruct *task, int32_t thread)
+{
+	cmdq_core_attach_error_task_detail(task, thread, NULL, NULL, NULL, NULL, NULL);
 }
 
 static void cmdq_core_attach_error_task_unlock(const struct TaskStruct *task, int32_t thread)
@@ -7260,6 +7250,7 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(
 			CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, wait_task_dump);
 			cmdq_core_dump_status("INFO");
 			cmdq_core_dump_pc(pTask, thread, "INFO");
+
 			cmdq_core_dump_thread(thread, "INFO");
 			CMDQ_LOG("Dump thread SPR:0x%08x 0x%08x 0x%08x 0x%08x\n",
 				CMDQ_REG_GET32(CMDQ_THR_SPR0(thread)),
@@ -7371,7 +7362,7 @@ static int32_t cmdq_core_handle_wait_task_result_secure_impl(struct TaskStruct *
 		module = cmdq_get_func()->parseErrorModule(pTask);
 
 		/* module dump */
-		cmdq_core_attach_error_task(pTask, thread, NULL);
+		cmdq_core_attach_error_task(pTask, thread);
 
 		/* module reset */
 		/* TODO: get needReset infor by secure thread PC */
@@ -7423,7 +7414,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 	bool throwAEE = false;
 	const char *module = NULL;
 	uint32_t instA = 0, instB = 0;
-	int32_t irqFlag = 0;
+	int32_t irqFlag = 0, timeoutIrqFlag = 0;
 	dma_addr_t task_pa = 0;
 
 	if (unlikely(pTask->use_sram_buffer)) {
@@ -7437,7 +7428,8 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 
 	if (waitQ == 0) {
 		/* print error log before entering exec lock in timeout case */
-		cmdq_core_attach_error_task(pTask, thread, &pNGTask);
+		cmdq_core_attach_error_task_detail(pTask, thread, &pNGTask, &module,
+			&timeoutIrqFlag, &instA, &instB);
 	}
 
 	/* Note that although we disable IRQ, HW continues to execute */
@@ -7500,7 +7492,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 				CMDQ_ERR("   But pc stays in task 0x%p on thread %d\n", pNGTask,
 					 thread);
 			}
-			cmdq_core_parse_error(pNGTask, thread, &module, &irqFlag, &instA, &instB);
+
 			status = -ETIMEDOUT;
 			throwAEE = !(private && private->internal && private->ignore_timeout);
 		} else if (waitQ < 0) {
@@ -7710,7 +7702,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 		case CMDQ_CODE_WFE:
 			CMDQ_AEE(module,
 				 "%s in CMDQ IRQ:0x%02x, INST:(0x%08x, 0x%08x), OP:WAIT EVENT:%s\n",
-				 module, irqFlag, instA, instB,
+				 module, timeoutIrqFlag, instA, instB,
 				 cmdq_core_get_event_name(instA & (~0xFF000000)));
 			break;
 		default:
@@ -7897,7 +7889,7 @@ static int32_t cmdq_core_exec_task_async_secure_impl(struct TaskStruct *pTask, i
 
 		if (status < 0) {
 			/* config failed case, dump for more detail */
-			cmdq_core_attach_error_task(pTask, thread, NULL);
+			cmdq_core_attach_error_task(pTask, thread);
 			cmdq_core_turnoff_first_dump();
 			cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(pThread, cookie);
 		}

@@ -526,6 +526,9 @@ struct NGTaskInfoStruct {
 	u32 *buffer;
 	u32 buffer_size;
 	u32 dump_size;
+	const char *module;
+	s32 irq_flag;
+	u32 inst[2];
 };
 
 struct CmdqRecExtend {
