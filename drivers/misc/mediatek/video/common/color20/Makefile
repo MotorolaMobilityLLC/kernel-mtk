@@ -14,14 +14,22 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
-             -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
-             -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/base/power/mt6755/ \
              -I$(srctree)/drivers/misc/mediatek/lcm/inc \
              -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/mmp/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
+ccflags-y += \
+		-I$(srctree)/drivers/misc/mediatek/cmdq/v3/ \
+		-I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+else
+ccflags-y += \
+		-I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
+		-I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
+endif
 
 obj-y += ddp_color.o
 
