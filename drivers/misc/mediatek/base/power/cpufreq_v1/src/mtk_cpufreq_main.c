@@ -763,7 +763,7 @@ void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_idx,
 
 		/* Update public table */
 		for (i = 0; i < p->nr_opp_tbl; i++)
-			p->opp_tbl[i].cpufreq_volt = vproc_p->buck_ops->transfer2volt((*volt_tbl)[i]) / 10;
+			p->opp_tbl[i].cpufreq_volt = vproc_p->buck_ops->transfer2volt((*volt_tbl)[i]);
 
 #ifndef CONFIG_HYBRID_CPU_DVFS
 		for_each_cpu_dvfs_only(i, pp) {
