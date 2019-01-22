@@ -416,10 +416,9 @@ int mtk_pinctrl_set_gpio_value(struct mtk_pinctrl *pctl, int pin,
 int mtk_pctrl_get_gpio_chip_base(void);
 
 extern const struct dev_pm_ops mtk_eint_pm_ops;
-
+extern struct mtk_pinctrl *pctl;
 #ifdef CONFIG_MTK_EIC
 void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
 unsigned int mt_gpio_to_irq(unsigned gpio);
-extern struct mtk_pinctrl *pctl;
 #endif
 #endif /* __PINCTRL_MTK_COMMON_H */

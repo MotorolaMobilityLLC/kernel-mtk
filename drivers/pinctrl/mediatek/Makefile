@@ -13,4 +13,5 @@ obj-$(CONFIG_PINCTRL_MT6757)		+= pinctrl-mt6757.o
 obj-$(CONFIG_PINCTRL_MT6758)		+= pinctrl-mt6758.o
 obj-$(CONFIG_PINCTRL_MT6759)		+= pinctrl-mt6759.o
 obj-$(CONFIG_PINCTRL_MT6763)		+= pinctrl-mt6763.o
+obj-$(CONFIG_PINCTRL_MT6775)		+= pinctrl-mt6775.o
 obj-$(CONFIG_PINCTRL_MT6799)		+= pinctrl-mt6799.o
