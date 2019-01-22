@@ -2691,45 +2691,6 @@ static int cgroup_attach_task(struct cgroup *dst_cgrp,
 	return ret;
 }
 
-int subsys_cgroup_allow_attach(struct cgroup_taskset *tset)
-{
-	const struct cred *cred = current_cred(), *tcred;
-	struct task_struct *task;
-	struct cgroup_subsys_state *css;
-
-	if (capable(CAP_SYS_NICE))
-		return 0;
-
-	cgroup_taskset_for_each(task, css, tset) {
-		tcred = __task_cred(task);
-
-		if (current != task && !uid_eq(cred->euid, tcred->uid) &&
-		    !uid_eq(cred->euid, tcred->suid))
-			return -EACCES;
-	}
-
-	return 0;
-}
-
-static int cgroup_allow_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
-{
-	struct cgroup_subsys_state *css;
-	int i;
-	int ret;
-
-	for_each_css(css, i, cgrp) {
-		if (css->ss->allow_attach) {
-			ret = css->ss->allow_attach(tset);
-			if (ret)
-				return ret;
-		} else {
-			return -EACCES;
-		}
-	}
-
-	return 0;
-}
-
 #if defined(CONFIG_CPUSETS) && !defined(CONFIG_MTK_ACAO)
 void store_set_exclusive_task(struct task_struct *p)
 {
@@ -2843,24 +2804,9 @@ static int cgroup_procs_write_permission(struct task_struct *task,
 	 */
 	if (!uid_eq(cred->euid, GLOBAL_ROOT_UID) &&
 	    !uid_eq(cred->euid, tcred->uid) &&
-	    !uid_eq(cred->euid, tcred->suid)) {
-		/*
-		 * if the default permission check fails, give each
-		 * cgroup a chance to extend the permission check
-		 */
-		struct cgroup_taskset tset = {
-			.src_csets = LIST_HEAD_INIT(tset.src_csets),
-			.dst_csets = LIST_HEAD_INIT(tset.dst_csets),
-			.csets = &tset.src_csets,
-		};
-		struct css_set *cset;
-		cset = task_css_set(task);
-		list_add(&cset->mg_node, &tset.src_csets);
-		ret = cgroup_allow_attach(dst_cgrp, &tset);
-		list_del(&tset.src_csets);
-		if (ret)
-			ret = -EACCES;
-	}
+	    !uid_eq(cred->euid, tcred->suid) &&
+	    !ns_capable(tcred->user_ns, CAP_SYS_NICE))
+		ret = -EACCES;
 
 	if (!ret && cgroup_on_dfl(dst_cgrp)) {
 		struct super_block *sb = of->file->f_path.dentry->d_sb;
@@ -5504,6 +5450,12 @@ int __init cgroup_init(void)
 	BUG_ON(percpu_init_rwsem(&cgroup_threadgroup_rwsem));
 	BUG_ON(cgroup_init_cftypes(NULL, cgroup_dfl_base_files));
 	BUG_ON(cgroup_init_cftypes(NULL, cgroup_legacy_base_files));
+
+	/*
+	 * The latency of the synchronize_sched() is too high for cgroups,
+	 * avoid it at the cost of forcing all readers into the slow path.
+	 */
+	rcu_sync_enter_start(&cgroup_threadgroup_rwsem.rss);
 
 	mutex_lock(&cgroup_mutex);
 
