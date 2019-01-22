@@ -48,8 +48,11 @@ bool ufs_mtk_auto_hibern8_enabled;
 bool ufs_mtk_host_deep_stall_enable;
 bool ufs_mtk_host_scramble_enable;
 bool ufs_mtk_tr_cn_used;
+u32  ufs_mtk_qcmd_r_cmd_cnt;
+u32  ufs_mtk_qcmd_w_cmd_cnt;
 struct ufs_hba *ufs_mtk_hba;
 
+static bool ufs_mtk_is_data_cmd(char cmd_op);
 static bool ufs_mtk_is_data_write_cmd(char cmd_op);
 
 void ufs_mtk_dump_reg(struct ufs_hba *hba)
@@ -169,6 +172,72 @@ int ufs_mtk_cfg_unipro_cg(struct ufs_hba *hba, bool enable)
  */
 static void ufs_mtk_advertise_hci_quirks(struct ufs_hba *hba)
 {
+#if defined(CONFIG_MTK_HW_FDE) && defined(UFS_MTK_PLATFORM_UFS_HCI_PERF_HEURISTIC)
+
+	hba->quirks |= UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC;
+
+#endif
+
+	dev_info(hba->dev, "hci quirks: %#x\n", hba->quirks);
+}
+
+int ufs_mtk_perf_heurisic_if_allow_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd)
+{
+	if (!(hba->quirks & UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC))
+		return 0;
+
+	/* Check rw commands only and allow all other commands. */
+	if (ufs_mtk_is_data_cmd(cmd->cmnd[0])) {
+
+		if (!ufs_mtk_qcmd_r_cmd_cnt && !ufs_mtk_qcmd_w_cmd_cnt) {
+
+			/* Case: no on-going r or w commands. */
+
+			if (ufs_mtk_is_data_write_cmd(cmd->cmnd[0]))
+				ufs_mtk_qcmd_w_cmd_cnt++;
+			else
+				ufs_mtk_qcmd_r_cmd_cnt++;
+
+		} else {
+
+			/*
+			 * Case: we have on-going r or w commands.
+			 *
+			 * Do not allow issueing w command if on-going commands are read.
+			 * Do not allow issueing r command if on-going commands are write.
+			 */
+
+			if (ufs_mtk_is_data_write_cmd(cmd->cmnd[0])) {
+
+				if (ufs_mtk_qcmd_r_cmd_cnt)
+					return 1;
+
+				ufs_mtk_qcmd_w_cmd_cnt++;
+
+			} else {
+
+				if (ufs_mtk_qcmd_w_cmd_cnt)
+					return 1;
+
+				ufs_mtk_qcmd_r_cmd_cnt++;
+			}
+		}
+	}
+
+	return 0;
+}
+
+void ufs_mtk_perf_heurisic_req_done(struct ufs_hba *hba, struct scsi_cmnd *cmd)
+{
+	if (!(hba->quirks & UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC))
+		return;
+
+	if (ufs_mtk_is_data_cmd(cmd->cmnd[0])) {
+		if (ufs_mtk_is_data_write_cmd(cmd->cmnd[0]))
+			ufs_mtk_qcmd_w_cmd_cnt--;
+		else
+			ufs_mtk_qcmd_r_cmd_cnt--;
+	}
 }
 
 static enum ufs_pm_level
@@ -1483,6 +1552,16 @@ static bool ufs_mtk_is_data_write_cmd(char cmd_op)
 	return false;
 }
 
+static bool ufs_mtk_is_data_cmd(char cmd_op)
+{
+	if (cmd_op == WRITE_10 || cmd_op == READ_10 ||
+	    cmd_op == WRITE_16 || cmd_op == READ_16 ||
+	    cmd_op == WRITE_6 || cmd_op == READ_6)
+		return true;
+
+	return false;
+}
+
 #ifdef CONFIG_MTK_UFS_DEBUG_QUEUECMD
 
 static struct ufs_cmd_str_struct ufs_mtk_cmd_str_tbl[] = {
@@ -1514,16 +1593,6 @@ static struct ufs_cmd_str_struct ufs_mtk_cmd_str_tbl[] = {
 	{"SECURITY_PROTOCOL_OUT",  0xb5},
 	{"UNKNOWN",                0xFF}
 };
-
-static bool ufs_mtk_is_data_cmd(char cmd_op)
-{
-	if (cmd_op == WRITE_10 || cmd_op == READ_10 ||
-	    cmd_op == WRITE_16 || cmd_op == READ_16 ||
-	    cmd_op == WRITE_6 || cmd_op == READ_6)
-		return true;
-
-	return false;
-}
 
 static int ufs_mtk_get_cmd_str_idx(char cmd)
 {
