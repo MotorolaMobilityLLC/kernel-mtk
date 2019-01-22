@@ -98,6 +98,15 @@ extern int DW9719TAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t
 extern long DW9719TAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int DW9719TAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 
+#ifdef CONFIG_MTK_LENS_DW9800WAF_SUPPORT
+#define DW9800WAF_SetI2Cclient DW9800WAF_SetI2Cclient_Main
+#define DW9800WAF_Ioctl DW9800WAF_Ioctl_Main
+#define DW9800WAF_Release DW9800WAF_Release_Main
+extern int DW9800WAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9800WAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int DW9800WAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
 #define FM50AF_SetI2Cclient FM50AF_SetI2Cclient_Main
 #define FM50AF_Ioctl FM50AF_Ioctl_Main
 #define FM50AF_Release FM50AF_Release_Main
