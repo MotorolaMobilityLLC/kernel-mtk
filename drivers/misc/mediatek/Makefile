@@ -123,7 +123,7 @@ obj-$(CONFIG_MEDIATEK_SOLUTION)  += sched/
 obj-y += cameraisp/src/
 obj-y += imgsensor/src/
 #obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
-#obj-$(CONFIG_MTK_LENS)   += lens/
+obj-$(CONFIG_MTK_LENS)   += lens/
 #obj-$(CONFIG_MTK_FLASHLIGHT)	+= flashlight/src/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met/),)
 obj-$(CONFIG_MTK_MET) += met/
