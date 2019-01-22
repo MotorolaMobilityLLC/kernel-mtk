@@ -4612,7 +4612,7 @@ static void __exit eem_exit(void)
 #ifdef __KERNEL__
 /* module_init(eem_conf); */ /*no record table*/
 arch_initcall(vcore_ptp_init); /* I-Chang */
-module_init(eem_init); /* late_initcall */
+late_initcall(eem_init); /* late_initcall */
 #endif
 #endif /* EN_EEM */
 
@@ -5994,7 +5994,7 @@ static void __exit eem_exit(void)
  */
 #ifdef __KERNEL__
 subsys_initcall(vcore_ptp_init);
-module_init(eem_init);
+late_initcall(eem_init);
 #endif
 #endif/* EEM_ENABLE_TINYSYS_SSPM */
 
