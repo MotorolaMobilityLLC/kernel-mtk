@@ -2702,25 +2702,19 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 	u32 dec_mask;
 	u32 fsm_mask;
 	u32 ECC_DECFSM_IDLE;
-	struct timeval timer_timeout, timer_cur;
-
-	do_gettimeofday(&timer_timeout);
-
-	timer_timeout.tv_usec += 800 * 1000;	/* 500ms */
-	if (timer_timeout.tv_usec >= 1000000) {	/* 1 second */
-		timer_timeout.tv_usec -= 1000000;
-		timer_timeout.tv_sec += 1;
-	}
+	u32 timeout_us = 1000000;
 
 	dec_mask = (1 << (u4SecNum - 1));
 	while (dec_mask != (DRV_Reg(ECC_DECDONE_REG16) & dec_mask)) {
-		do_gettimeofday(&timer_cur);
-		if (timeval_compare(&timer_cur, &timer_timeout) >= 0) {
-			pr_notice("ECC_DECDONE: timeout 0x%x %d\n", DRV_Reg(ECC_DECDONE_REG16),
+		if (!timeout_us) {
+			pr_notice("ECC_DECDONE: timeout1 0x%x %d\n", DRV_Reg(ECC_DECDONE_REG16),
 				u4SecNum);
 			dump_nfi();
 			return false;
 		}
+
+		timeout_us--;
+		udelay(1);
 	}
 
 	if (mtk_nfi_dev_comp->chip_ver == 1) {
@@ -2737,13 +2731,15 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 	}
 
 	while ((DRV_Reg32(ECC_DECFSM_REG32) & fsm_mask) != ECC_DECFSM_IDLE) {
-		do_gettimeofday(&timer_cur);
-		if (timeval_compare(&timer_cur, &timer_timeout) >= 0) {
-			pr_notice("ECC_DECDONE: timeout 0x%x 0x%x %d\n",
+		if (!timeout_us) {
+			pr_notice("ECC_DECDONE: timeout2 0x%x 0x%x %d\n",
 				DRV_Reg32(ECC_DECFSM_REG32), DRV_Reg(ECC_DECDONE_REG16), u4SecNum);
 			dump_nfi();
 			return false;
 		}
+
+		timeout_us--;
+		udelay(1);
 	}
 	return true;
 }
