@@ -114,10 +114,12 @@ static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 
 	if (get_LowLatencyDebug()) {
 		pr_warn("mtk_pcm_dl2_stop - dl2 underflow");
-		aee_kernel_warning_api(__FILE__, __LINE__,
+		if (get_LowLatencyDebug() == 2) {
+			aee_kernel_warning_api(__FILE__, __LINE__,
 							DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE,
 							"mtk_pcm_dl2_stop",
 							"dl2 underflow");
+		}
 	}
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
@@ -157,7 +159,7 @@ static snd_pcm_uframes_t mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2) == true) {
 		HW_Cur_ReadIdx = Afe_Get_Reg(AFE_DL2_CUR);
 		if (HW_Cur_ReadIdx == 0) {
-			PRINTK_AUD_DL2("[Auddrv] HW_Cur_ReadIdx ==0\n");
+			pr_warn("[Auddrv] HW_Cur_ReadIdx ==0\n");
 			HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
 		}
 
@@ -176,19 +178,13 @@ static snd_pcm_uframes_t mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream
 		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
 		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
-		PRINTK_AUD_DL2
-		    ("[Auddrv] HW_Cur_ReadIdx =0x%x HW_memory_index = 0x%x\n",
-		     HW_Cur_ReadIdx, HW_memory_index);
-		PRINTK_AUD_DL2
-		    ("[Auddrv] Afe_consumed_bytes  = %d, u4DataRemained %d\n",
-		     Afe_consumed_bytes, Afe_Block->u4DataRemained);
-		spin_unlock_irqrestore(&pMemControl->substream_lock, flags);
-
+		if (Afe_Block->u4DataRemained < 0)
+			pr_warn("[AudioWarn] u4DataRemained=0x%x\n", Afe_Block->u4DataRemained);
 		Frameidx = audio_bytes_to_frame(substream, Afe_Block->u4DMAReadIdx);
 	} else {
 		Frameidx = audio_bytes_to_frame(substream, Afe_Block->u4DMAReadIdx);
-		spin_unlock_irqrestore(&pMemControl->substream_lock, flags);
 	}
+	spin_unlock_irqrestore(&pMemControl->substream_lock, flags);
 	return Frameidx;
 }
 
