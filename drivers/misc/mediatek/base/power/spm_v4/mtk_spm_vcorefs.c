@@ -237,15 +237,36 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* p += sprintf(p, "(v:%d)(r:%d)(c:%d)\n", plat_chip_ver, plat_lcd_resolution, plat_channel_num); */
 		#if 1
 		/* DVFSRC */
-		p += sprintf(p, "DVFSRC_BASIC_CONTROL   : 0x%x\n", spm_read(DVFSRC_BASIC_CONTROL));
-		p += sprintf(p, "DVFSRC_RECORD_0~3      : 0x%x, 0x%x, 0x%x, 0x%x\n",
+		p += sprintf(p, "DVFSRC_RECORD_COUNT    : 0x%x\n", spm_read(DVFSRC_RECORD_COUNT));
+		p += sprintf(p, "DVFSRC_LAST            : 0x%x\n", spm_read(DVFSRC_LAST));
+		p += sprintf(p, "DVFSRC_RECORD_0_1~3_1  : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(DVFSRC_RECORD_0_1), spm_read(DVFSRC_RECORD_1_1),
 							spm_read(DVFSRC_RECORD_2_1), spm_read(DVFSRC_RECORD_3_1));
-		p += sprintf(p, "DVFSRC_RECORD_4~7      : 0x%x, 0x%x, 0x%x, 0x%x\n",
+		p += sprintf(p, "DVFSRC_RECORD_4_1~7_1  : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(DVFSRC_RECORD_4_1), spm_read(DVFSRC_RECORD_5_1),
 							spm_read(DVFSRC_RECORD_6_1), spm_read(DVFSRC_RECORD_7_1));
+		p += sprintf(p, "DVFSRC_RECORD_0_0~3_0  : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_0_0), spm_read(DVFSRC_RECORD_1_0),
+							spm_read(DVFSRC_RECORD_2_0), spm_read(DVFSRC_RECORD_3_0));
+		p += sprintf(p, "DVFSRC_RECORD_4_0~7_0  : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_4_0), spm_read(DVFSRC_RECORD_5_0),
+							spm_read(DVFSRC_RECORD_6_0), spm_read(DVFSRC_RECORD_7_0));
+		p += sprintf(p, "DVFSRC_RECORD_MD_0~3   : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_MD_0), spm_read(DVFSRC_RECORD_MD_1),
+							spm_read(DVFSRC_RECORD_MD_2), spm_read(DVFSRC_RECORD_MD_3));
+		p += sprintf(p, "DVFSRC_RECORD_MD_4~7   : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_MD_4), spm_read(DVFSRC_RECORD_MD_5),
+							spm_read(DVFSRC_RECORD_MD_6), spm_read(DVFSRC_RECORD_MD_7));
 		/* SPM */
 		p += sprintf(p, "SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
+		p += sprintf(p, "SPM_SW_RSV_9           : 0x%x\n", spm_read(SPM_SW_RSV_9));
+		p += sprintf(p, "SPM_DVFS_EVENT_STA     : 0x%x\n", spm_read(SPM_DVFS_EVENT_STA));
+		p += sprintf(p, "SPM_DVFS_LEVEL         : 0x%x\n", spm_read(SPM_DVFS_LEVEL));
+		p += sprintf(p, "SPM_DFS_LEVEL          : 0x%x\n", spm_read(SPM_DFS_LEVEL));
+		p += sprintf(p, "SPM_DVS_LEVEL          : 0x%x\n", spm_read(SPM_DVS_LEVEL));
+
+		p += sprintf(p, "SPM_DVS_LEVEL          : 0x%x\n", spm_read(SPM_DVS_LEVEL));
+
 		p += sprintf(p, "PCM_REG_DATA_0~3       : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(PCM_REG0_DATA), spm_read(PCM_REG1_DATA),
 							spm_read(PCM_REG2_DATA), spm_read(PCM_REG3_DATA));
@@ -264,15 +285,33 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* spm_vcorefs_warn("(v:%d)(r:%d)(c:%d)\n", plat_chip_ver, plat_lcd_resolution, plat_channel_num); */
 		#if 1
 		/* DVFSRC */
-		spm_vcorefs_warn("DVFSRC_BASIC_CONTROL   : 0x%x\n", spm_read(DVFSRC_BASIC_CONTROL));
-		spm_vcorefs_warn("DVFSRC_RECORD_0~3      : 0x%x, 0x%x, 0x%x, 0x%x\n",
+		spm_vcorefs_warn("DVFSRC_RECORD_COUNT    : 0x%x\n", spm_read(DVFSRC_RECORD_COUNT));
+		spm_vcorefs_warn("DVFSRC_LAST            : 0x%x\n", spm_read(DVFSRC_LAST));
+		spm_vcorefs_warn("DVFSRC_RECORD_0_1~3_1  : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(DVFSRC_RECORD_0_1), spm_read(DVFSRC_RECORD_1_1),
 							spm_read(DVFSRC_RECORD_2_1), spm_read(DVFSRC_RECORD_3_1));
-		spm_vcorefs_warn("DVFSRC_RECORD_4~7      : 0x%x, 0x%x, 0x%x, 0x%x\n",
+		spm_vcorefs_warn("DVFSRC_RECORD_4_1~7_1  : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(DVFSRC_RECORD_4_1), spm_read(DVFSRC_RECORD_5_1),
 							spm_read(DVFSRC_RECORD_6_1), spm_read(DVFSRC_RECORD_7_1));
+		spm_vcorefs_warn("DVFSRC_RECORD_0_0~3_0  : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_0_0), spm_read(DVFSRC_RECORD_1_0),
+							spm_read(DVFSRC_RECORD_2_0), spm_read(DVFSRC_RECORD_3_0));
+		spm_vcorefs_warn("DVFSRC_RECORD_4_0~7_0  : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_4_0), spm_read(DVFSRC_RECORD_5_0),
+							spm_read(DVFSRC_RECORD_6_0), spm_read(DVFSRC_RECORD_7_0));
+		spm_vcorefs_warn("DVFSRC_RECORD_MD_0~3   : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_MD_0), spm_read(DVFSRC_RECORD_MD_1),
+							spm_read(DVFSRC_RECORD_MD_2), spm_read(DVFSRC_RECORD_MD_3));
+		spm_vcorefs_warn("DVFSRC_RECORD_MD_4~7   : 0x%x, 0x%x, 0x%x, 0x%x\n",
+							spm_read(DVFSRC_RECORD_MD_4), spm_read(DVFSRC_RECORD_MD_5),
+							spm_read(DVFSRC_RECORD_MD_6), spm_read(DVFSRC_RECORD_MD_7));
 		/* SPM */
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
+		spm_vcorefs_warn("SPM_SW_RSV_9           : 0x%x\n", spm_read(SPM_SW_RSV_9));
+		spm_vcorefs_warn("SPM_DVFS_EVENT_STA     : 0x%x\n", spm_read(SPM_DVFS_EVENT_STA));
+		spm_vcorefs_warn("SPM_DVFS_LEVEL         : 0x%x\n", spm_read(SPM_DVFS_LEVEL));
+		spm_vcorefs_warn("SPM_DFS_LEVEL          : 0x%x\n", spm_read(SPM_DFS_LEVEL));
+		spm_vcorefs_warn("SPM_DVS_LEVEL          : 0x%x\n", spm_read(SPM_DVS_LEVEL));
 		spm_vcorefs_warn("PCM_REG_DATA_0~3       : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(PCM_REG0_DATA), spm_read(PCM_REG1_DATA),
 							spm_read(PCM_REG2_DATA), spm_read(PCM_REG3_DATA));
@@ -327,17 +366,34 @@ static void spm_dvfsfw_init(int curr_opp)
 
 int spm_vcorefs_pwarp_cmd(void)
 {
-#if 0
+#if 1
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	/* PMIC_WRAP_PHASE_ALLINONE */
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, IDX_ALL_VCORE_LEVEL3, get_vcore_ptp_volt(OPP_0));
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, IDX_ALL_VCORE_LEVEL2, get_vcore_ptp_volt(OPP_1));
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, IDX_ALL_VCORE_LEVEL1, get_vcore_ptp_volt(OPP_2));
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, IDX_ALL_VCORE_LEVEL0, get_vcore_ptp_volt(OPP_3));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, CMD_0, get_vcore_ptp_volt(OPP_3)); /* 0.7 */
+	/* mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, CMD_0, get_vcore_ptp_volt(OPP_2)); */ /* 0.7 */
+	/* mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, CMD_1, get_vcore_ptp_volt(OPP_1)); */ /* 0.8 */
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, CMD_1, get_vcore_ptp_volt(OPP_0)); /* 0.8 */
 
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
-	spm_vcorefs_warn(">>> spm_vcorefs_pwarp_cmd\n");
+	spm_vcorefs_warn("spm_vcorefs_pwarp_cmd: kernel\n");
+
+#else
+	int ret;
+	struct spm_data spm_d;
+
+	memset(&spm_d, 0, sizeof(struct spm_data));
+
+	spm_d.u.vcorefs.vcore_level0 = get_vcore_ptp_volt(OPP_0);
+	spm_d.u.vcorefs.vcore_level1 = get_vcore_ptp_volt(OPP_1);
+	spm_d.u.vcorefs.vcore_level2 = get_vcore_ptp_volt(OPP_2);
+	spm_d.u.vcorefs.vcore_level3 = get_vcore_ptp_volt(OPP_3);
+
+	ret = spm_to_sspm_command(SPM_VCORE_PWARP_CMD, &spm_d);
+	if (ret < 0)
+		spm_crit2("ret %d", ret);
+
+	spm_vcorefs_warn("spm_vcorefs_pwarp_cmd: sspm\n");
 #endif
 #endif
 	return 0;
@@ -387,9 +443,7 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	u32 md_req[NUM_OPP] = {0x0, 0x0, 0x0, 0x0};
 	u32 dvfsrc_level[NUM_OPP] = {0x8, 0x4, 0x2, 0x1};
 
-	/* FIXME */
-	if (0) {
-		/* LP4/LP3 1CH */
+	if (__spm_get_dram_type() == SPMFW_LP4X_1CH || __spm_get_dram_type() == SPMFW_LP3_1CH) {
 		vcore_req[1] = 0x1;
 		emi_req[1] = 0x1;
 	}
@@ -455,8 +509,7 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_LEVEL_LABEL_12_13, 0x04210321);
 	spm_write(DVFSRC_LEVEL_LABEL_14_15, 0x04210421);
 
-	/* FIXME */
-	if (1) {
+	if (__spm_get_dram_type() == SPMFW_LP4X_2CH) {
 		/* LP4 2CH */
 		spm_write(DVFSRC_LEVEL_LABEL_2_3, 0x00210020);
 		spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01200110);
