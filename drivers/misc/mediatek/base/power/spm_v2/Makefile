@@ -70,7 +70,7 @@ obj-y += mtk_sleep.o
 obj-y += mtk_spm_init.o
 obj-y += mtk_spm.o
 obj-y += mtk_spm_internal.o
-#obj-y += mt_spm_pmic_wrap.o
+obj-y += mtk_spm_pmic_wrap.o
 obj-y += mtk_spm_sleep.o
 #obj-y += mt_spm_fs.o
 #obj-y += mt_idle.o
@@ -81,7 +81,7 @@ obj-y += mtk_spm_sleep.o
 #obj-y += mt_spm_sodi.o
 #obj-y += mt_spm_sodi3p0.o
 #obj-y += mt_spm_sodi_cmdq.o
-#obj-y += mt_spm_vcorefs_mt6757.o
+obj-y += mtk_spm_vcorefs_mt6757.o
 endif
 
 #ifeq ($(CONFIG_ARCH_MT6797), y)
