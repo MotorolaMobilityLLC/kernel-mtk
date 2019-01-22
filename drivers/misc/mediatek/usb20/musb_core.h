@@ -126,15 +126,6 @@ extern void musb_bug(void);
 #include "musb_gadget.h"
 #include <linux/usb/hcd.h>
 #include "musb_host.h"
-#ifdef CONFIG_OF
-
-enum {
-	usb0 = 0,
-	usb_sif,
-	usb_acm_temp_device,
-};
-extern struct device_node *dts_np;
-#endif
 
 /* NOTE:  otg and peripheral-only state machines start at B_IDLE.
  * OTG or host-only go to A_IDLE when ID is sensed.
