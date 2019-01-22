@@ -253,6 +253,8 @@ static int mtk_memcfg_reserve_memory_show(struct seq_file *m, void *v)
 		}
 	}
 
+	kfree(reserved_mem);
+
 	memtotal = get_memtotal();
 	dram_size = get_dram_size();
 	vmemmap_actual = (unsigned long)virt_to_page(high_memory) -
