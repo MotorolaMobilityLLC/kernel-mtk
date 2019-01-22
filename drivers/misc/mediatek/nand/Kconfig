@@ -1,7 +1,7 @@
 #nand
 menuconfig MTK_MTD_NAND
 	tristate "MediaTek Nand Support"
-	depends on MTD_NAND
+	depends on MTD
 	help
 	  NAND flash memory, a type of non-volatile storage device,
 	  introduced by Toshiba in 1989. With formal commands,
