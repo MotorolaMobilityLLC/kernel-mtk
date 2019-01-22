@@ -22,8 +22,14 @@ int mem_fault_debug_hook(struct pt_regs *regs)
 	u32 *p;
 
 	if (!copy_from_user(buf, pc, 16)) {
+		pr_alert("pc: %p\n", pc);
+		print_hex_dump(KERN_ALERT, "ddd", DUMP_PREFIX_ADDRESS, 16, 1, buf,
+				16, 1);
 		p = (u32 *)buf;
-		if ((*(p + 1) == 0x75666475) && (*(p + 2) == 0x00006477)) {
+		if ((*(p + 2) == 0x75666475) && (*(p + 3) == 0x00006477)) {
+			regs->ARM_pc += 16;
+			ret = 0;
+		} else if ((*(p + 1) == 0x75666475) && (*(p + 2) == 0x00006477)) {
 			regs->ARM_pc += 12;
 			ret = 0;
 		}
