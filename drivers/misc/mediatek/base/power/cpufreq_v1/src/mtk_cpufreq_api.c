@@ -107,10 +107,16 @@ unsigned int mt_cpufreq_get_cur_volt(enum mt_cpu_dvfs_id id)
 
 	return vproc_p->buck_ops->get_cur_volt(vproc_p);
 #else
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+
+	return cpu_dvfs_get_cur_volt(p);
+#else
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
 	struct buck_ctrl_t *vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
 
 	return vproc_p->cur_volt;
+#endif
 #endif
 }
 EXPORT_SYMBOL(mt_cpufreq_get_cur_volt);
