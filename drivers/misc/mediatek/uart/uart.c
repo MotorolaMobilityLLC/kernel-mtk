@@ -55,9 +55,7 @@
 #include "include/mtk_uart_intf.h"
 #include <linux/version.h>
 #include <linux/suspend.h>
-#ifdef CONFIG_OF
 #include <linux/of.h>
-#endif
 
 #include "include/mtk_uart_internal.h"
 
@@ -74,8 +72,6 @@ struct mtk_uart *bt_port;
 #if defined(ENABLE_VFIFO)
 /*---------------------------------------------------------------------------*/
 static DEFINE_SPINLOCK(mtk_uart_vfifo_port_lock);
-/*---------------------------------------------------------------------------*/
-#ifdef CONFIG_OF
 /*---------------------------------------------------------------------------*/
 #define VFIFO_INIT_RX(c, i, n) \
 	{.ch = (c), .size = (n), .trig = VFF_RX_THRE(n), .type = UART_RX_VFIFO, \
@@ -102,38 +98,6 @@ static struct mtk_uart_vfifo mtk_uart_vfifo_port[] = {
 #endif
 };
 
-/*---------------------------------------------------------------------------*/
-#else
-/*---------------------------------------------------------------------------*/
-#define VFIFO_INIT_RX(c, i, n, id) \
-	{.ch = (c), .size = (n), .trig = VFF_RX_THRE(n), .type = UART_RX_VFIFO, \
-	.base = (void *)VFF_BASE_CH(i), .port = NULL, .addr = NULL,             \
-	.entry = ATOMIC_INIT(0), .reg_cb = ATOMIC_INIT(0), \
-	.iolock = __SPIN_LOCK_UNLOCKED(mtk_uart_vfifo_port[i].lock), \
-	.irq_id = id}
-/*---------------------------------------------------------------------------*/
-#define VFIFO_INIT_TX(c, i, n, id) \
-	{.ch = (c), .size = (n), .trig = VFF_TX_THRE(n), .type = UART_TX_VFIFO, \
-	.base = (void *)VFF_BASE_CH(i), .port = NULL,         \
-	.addr = NULL, .entry = ATOMIC_INIT(0), .reg_cb = ATOMIC_INIT(0), \
-	.iolock = __SPIN_LOCK_UNLOCKED(mtk_uart_vfifo_port[i].lock), \
-	.irq_id = id}
-/*---------------------------------------------------------------------------*/
-static struct mtk_uart_vfifo mtk_uart_vfifo_port[] = {
-	VFIFO_INIT_TX(P_DMA_UART1_TX, 0, C_UART1_VFF_TX_SIZE, UART1_VFF_TX_IRQ_ID),
-	VFIFO_INIT_RX(P_DMA_UART1_RX, 1, C_UART1_VFF_RX_SIZE, UART1_VFF_RX_IRQ_ID),
-	VFIFO_INIT_TX(P_DMA_UART2_TX, 2, C_UART2_VFF_TX_SIZE, UART2_VFF_TX_IRQ_ID),
-	VFIFO_INIT_RX(P_DMA_UART2_RX, 3, C_UART2_VFF_RX_SIZE, UART2_VFF_RX_IRQ_ID),
-	VFIFO_INIT_TX(P_DMA_UART3_TX, 4, C_UART3_VFF_TX_SIZE, UART3_VFF_TX_IRQ_ID),
-	VFIFO_INIT_RX(P_DMA_UART3_RX, 5, C_UART3_VFF_RX_SIZE, UART3_VFF_RX_IRQ_ID),
-#if 0				/*MT6589 only 6 DMA channel for UART */
-	VFIFO_INIT_TX(P_DMA_UART4_TX, 6, C_UART4_VFF_TX_SIZE),
-	VFIFO_INIT_RX(P_DMA_UART4_RX, 7, C_UART4_VFF_RX_SIZE),
-#endif
-};
-
-/*---------------------------------------------------------------------------*/
-#endif				/*CONFIG_OF */
 /*---------------------------------------------------------------------------*/
 #endif				/*ENABLE_VFIFO */
 /*---------------------------------------------------------------------------*/
@@ -1856,13 +1820,10 @@ static int mtk_uart_startup(struct uart_port *port)
 
 	/* allocate irq line */
 	/* ret = request_irq(port->irq, mtk_uart_irq, 0, DRV_NAME, uart); */
-#ifdef CONFIG_OF
+
 	/* [ALPS00142658] Fix incompatible pointer type waning */
 	ret = request_irq(port->irq, (irq_handler_t) mtk_uart_irq, uart->setting->irq_flags, DRV_NAME, uart);
-#else
-	/* [ALPS00142658] Fix incompatible pointer type waning */
-	ret = request_irq(port->irq, (irq_handler_t) mtk_uart_irq, IRQF_LEVEL_TRIGGER_POLARITY, DRV_NAME, uart);
-#endif
+
 	if (ret)
 		return ret;
 
@@ -2294,7 +2255,6 @@ static int mtk_uart_probe(struct platform_device *pdev)
 	struct mtk_uart *uart;
 	int err;
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#if !defined(CONFIG_MTK_CLKMGR)
 	static const char * const clk_uart_name[] = {
 		"uart0-main",
 		"uart1-main",
@@ -2303,14 +2263,12 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		"uart4-main",
 	};
 	struct mtk_uart_setting *uart_setting = NULL;
-#endif
 #if !defined(CONFIG_MTK_LEGACY)
 	/* for GPIO pinctrl */
 	struct pinctrl *ppinctrl = NULL;
 #endif
 #endif /* !defined(CONFIG_FPGA_EARLY_PORTING) */
 
-#ifdef CONFIG_OF
 	if (pdev->dev.of_node) {
 		struct device_node *node = pdev->dev.of_node;
 
@@ -2322,7 +2280,7 @@ static int mtk_uart_probe(struct platform_device *pdev)
 		pr_err("DTS cell ID %d > UART nuber %d\n", pdev->id, UART_NR);
 		return -ENODEV;
 	}
-#endif
+
 	uart = &mtk_uarts[pdev->id];
 	MSG_FUNC_ENTRY();
 
@@ -2567,12 +2525,7 @@ static int mtk_uart_pm_restore(struct device *device)
 
 static int mtk_uart_pm_restore_noirq(struct device *device)
 {
-/* FIXME. not get GIC_DIST_BASE from DTS */
-#ifndef CONFIG_OF
-	unsigned int gic_pending;
-#endif
 	struct mtk_uart *uart;
-	/* pr_warn("calling %s()\n", __func__); */
 
 	uart = dev_get_drvdata(device);
 	if (!uart || !uart->setting) {
@@ -2580,31 +2533,13 @@ static int mtk_uart_pm_restore_noirq(struct device *device)
 		return 0;
 	}
 	mtk_uart_fifo_set_trig(uart, uart->tx_trig, uart->rx_trig);
-#ifdef CONFIG_OF
 	irq_set_irq_type(uart->setting->irq_num, uart->setting->irq_flags);
-#else
-	if (uart->setting->irq_sen == MT_EDGE_SENSITIVE)
-		irq_set_irq_type(uart->setting->irq_num, IRQF_TRIGGER_FALLING);
-	else
-		irq_set_irq_type(uart->setting->irq_num, IRQF_LEVEL_TRIGGER_POLARITY);
-#endif
 
-#define GIC_DIST_PENDING_SET 0x200
 	if (uart->tx_vfifo && uart->tx_mode == UART_TX_VFIFO_DMA) {
 		irq_set_irq_type(uart->tx_vfifo->irq_id, IRQF_LEVEL_TRIGGER_POLARITY);
-/* FIXME. not get GIC_DIST_BASE from DTS */
-#ifndef CONFIG_OF
-		gic_pending = DRV_Reg32(GIC_DIST_BASE + GIC_DIST_PENDING_SET + uart->tx_vfifo->irq_id / 32 * 4);
-		pr_warn("[%s] tx_vfifo(%p) gic_pending_mask(0x%08x)\n", __func__, uart->tx_vfifo->base, gic_pending);
-#endif
 	}
 	if (uart->rx_vfifo && uart->rx_mode == UART_RX_VFIFO_DMA) {
 		irq_set_irq_type(uart->rx_vfifo->irq_id, IRQF_LEVEL_TRIGGER_POLARITY);
-/* FIXME. not get GIC_DIST_BASE from DTS */
-#ifndef CONFIG_OF
-		gic_pending = DRV_Reg32(GIC_DIST_BASE + GIC_DIST_PENDING_SET + uart->rx_vfifo->irq_id / 32 * 4);
-		pr_warn("[%s] rx_vfifo(%p) gic_pending_mask(0x%08x)\n", __func__, uart->rx_vfifo->base, gic_pending);
-#endif
 	}
 	return 0;
 }
@@ -2634,28 +2569,24 @@ const struct dev_pm_ops mtk_uart_pm_ops = {
 static int mtk_uart_init_ports(void)
 {
 	int i;
-#ifdef CONFIG_OF
+
 #if defined(ENABLE_VFIFO)
 	int idx;
 	struct mtk_uart_vfifo *vfifo;
 #endif
 	void __iomem *apdma_uart0_base = 0;
-#endif
 	struct mtk_uart *uart;
 	unsigned long base;
 
 	spin_lock_init(&mtk_console_lock);
 
-#ifdef CONFIG_OF
 	apdma_uart0_base = get_apdma_uart0_base();
-#endif
+
 	for (i = 0; i < UART_NR; i++) {
-#ifdef CONFIG_OF
 		set_uart_default_settings(i);
-#endif
+
 		uart = &mtk_uarts[i];
 		uart->setting = get_uart_default_settings(i);
-#ifdef CONFIG_OF
 #if defined(ENABLE_VFIFO)
 		if (uart->setting->vff) {
 			if (i * 2 < ARRAY_SIZE(mtk_uart_vfifo_port)) {
@@ -2667,14 +2598,10 @@ static int mtk_uart_init_ports(void)
 			}
 		}
 #endif
-#endif
 		base = uart->setting->uart_base;
 		uart->port.iotype = UPIO_MEM;
-#ifdef CONFIG_OF
 		uart->port.mapbase = uart->setting->uart_phys_base;	/* for ioremap */
-#else
-		uart->port.mapbase = IO_VIRT_TO_PHYS(base);	/* for ioremap */
-#endif
+
 		uart->port.membase = (unsigned char __iomem *)base;
 		uart->port.irq = uart->setting->irq_num;
 		uart->port.fifosize = UART_FIFO_SIZE;
@@ -2733,14 +2660,7 @@ static int mtk_uart_init_ports(void)
 		/* mtk_uart_power_up(uart); */
 		mtk_uart_disable_intrs(uart, UART_IER_ALL_INTS);
 
-#ifdef CONFIG_OF
 		irq_set_irq_type(uart->setting->irq_num, uart->setting->irq_flags);
-#else
-		if (uart->setting->irq_sen == MT_EDGE_SENSITIVE)
-			irq_set_irq_type(uart->setting->irq_num, IRQF_EDGE_TRIGGER_POLARITY);
-		else
-			irq_set_irq_type(uart->setting->irq_num, IRQF_LEVEL_TRIGGER_POLARITY);
-#endif
 
 		mtk_uart_fifo_init(uart);
 		mtk_uart_set_mode(uart, uart->dma_mode);
@@ -2758,7 +2678,6 @@ static int mtk_uart_init_ports(void)
 }
 
 /*---------------------------------------------------------------------------*/
-#ifdef CONFIG_OF
 static const struct of_device_id apuart_of_ids[] = {
 	{.compatible = "mediatek,AP_UART0",},
 	{.compatible = "mediatek,AP_UART1",},
@@ -2780,7 +2699,6 @@ static const struct of_device_id apuart_of_ids[] = {
 	{.compatible = "mediatek,mt6758-uart",},
 	{}
 };
-#endif
 
 static struct platform_driver mtk_uart_dev_drv = {
 	.probe = mtk_uart_probe,
@@ -2792,9 +2710,7 @@ static struct platform_driver mtk_uart_dev_drv = {
 	.driver = {
 		   .name = DRV_NAME,
 		   .owner = THIS_MODULE,
-#ifdef CONFIG_OF
 		   .of_match_table = apuart_of_ids,
-#endif
 #ifdef CONFIG_PM
 		   .pm = &mtk_uart_pm_ops,
 #endif
