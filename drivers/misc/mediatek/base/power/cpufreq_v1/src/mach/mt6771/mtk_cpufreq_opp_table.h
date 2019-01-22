@@ -22,7 +22,7 @@
 #define CPU_DVFS_FREQ4_LL_FY		1716000		/* KHz */
 #define CPU_DVFS_FREQ5_LL_FY		1677000		/* KHz */
 #define CPU_DVFS_FREQ6_LL_FY		1625000		/* KHz */
-#define CPU_DVFS_FREQ7_LL_FY		1599000		/* KHz */
+#define CPU_DVFS_FREQ7_LL_FY		1586000		/* KHz */
 #define CPU_DVFS_FREQ8_LL_FY		1508000		/* KHz */
 #define CPU_DVFS_FREQ9_LL_FY		1417000		/* KHz */
 #define CPU_DVFS_FREQ10_LL_FY		1326000		/* KHz */
@@ -40,7 +40,7 @@
 #define CPU_DVFS_FREQ4_L_FY			1716000		/* KHz */
 #define CPU_DVFS_FREQ5_L_FY			1677000		/* KHz */
 #define CPU_DVFS_FREQ6_L_FY			1625000		/* KHz */
-#define CPU_DVFS_FREQ7_L_FY			1599000		/* KHz */
+#define CPU_DVFS_FREQ7_L_FY			1586000		/* KHz */
 #define CPU_DVFS_FREQ8_L_FY			1508000		/* KHz */
 #define CPU_DVFS_FREQ9_L_FY			1417000		/* KHz */
 #define CPU_DVFS_FREQ10_L_FY		1326000		/* KHz */
@@ -112,7 +112,7 @@
 #define CPU_DVFS_FREQ4_LL_FY2		1716000		/* KHz */
 #define CPU_DVFS_FREQ5_LL_FY2		1677000		/* KHz */
 #define CPU_DVFS_FREQ6_LL_FY2		1625000		/* KHz */
-#define CPU_DVFS_FREQ7_LL_FY2		1599000		/* KHz */
+#define CPU_DVFS_FREQ7_LL_FY2		1586000		/* KHz */
 #define CPU_DVFS_FREQ8_LL_FY2		1508000		/* KHz */
 #define CPU_DVFS_FREQ9_LL_FY2		1417000		/* KHz */
 #define CPU_DVFS_FREQ10_LL_FY2		1326000		/* KHz */
@@ -130,7 +130,7 @@
 #define CPU_DVFS_FREQ4_L_FY2		1716000		/* KHz */
 #define CPU_DVFS_FREQ5_L_FY2		1677000		/* KHz */
 #define CPU_DVFS_FREQ6_L_FY2		1625000		/* KHz */
-#define CPU_DVFS_FREQ7_L_FY2		1599000		/* KHz */
+#define CPU_DVFS_FREQ7_L_FY2		1586000		/* KHz */
 #define CPU_DVFS_FREQ8_L_FY2		1508000		/* KHz */
 #define CPU_DVFS_FREQ9_L_FY2		1417000		/* KHz */
 #define CPU_DVFS_FREQ10_L_FY2		1326000		/* KHz */
