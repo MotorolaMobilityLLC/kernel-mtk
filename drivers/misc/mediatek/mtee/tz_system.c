@@ -247,21 +247,22 @@ static u32 tz_service_call(u32 handle, u32 op, u32 arg1, unsigned long arg2)
 		      __asmeq("%0", "r0")
 		      __asmeq("%1", "r1")
 		      __asmeq("%2", "r2")
-		      __asmeq("%3", "r0")
-		      __asmeq("%4", "r1")
-		      __asmeq("%5", "r2")
-		      __asmeq("%6", "r3")
-		      __asmeq("%7", "r4")
-		      __asmeq("%8", "r5")
+		      __asmeq("%3", "r3")
+		      __asmeq("%4", "r0")
+		      __asmeq("%5", "r1")
+		      __asmeq("%6", "r2")
+		      __asmeq("%7", "r3")
+		      __asmeq("%8", "r4")
+		      __asmeq("%9", "r5")
 		      "smc    #0\n" :
-		      "=r"(r0), "=r"(r1), "=r"(r2) :
+		      "=r"(r0), "=r"(r1), "=r"(r2), "=r"(r3) :
 		      "r"(r0), "r"(r1), "r"(r2), "r"(r3), "r"(r4), "r"(r5) :
 		      "memory");
 
 	while (r1 != 0) {
 		/* Need REE service */
-		/* r0 is the command, parameter in param buffer */
-		r1 = tz_ree_service(r0, (u8 *) param);
+		/* r2 is the command, parameter in param buffer */
+		r1 = tz_ree_service(r2, (u8 *) param);
 
 		/* Work complete. Going Back to TZ again */
 		r0 = 0x32003000;
@@ -269,16 +270,17 @@ static u32 tz_service_call(u32 handle, u32 op, u32 arg1, unsigned long arg2)
 			      __asmeq("%0", "r0")
 			      __asmeq("%1", "r1")
 			      __asmeq("%2", "r2")
-			      __asmeq("%3", "r0")
-			      __asmeq("%4", "r1")
-			      __asmeq("%5", "r5")
+			      __asmeq("%3", "r3")
+			      __asmeq("%4", "r0")
+			      __asmeq("%5", "r1")
+			      __asmeq("%6", "r2")
 			      "smc    #0\n" :
-			      "=r"(r0), "=r"(r1), "=r"(r2) :
-			      "r"(r0), "r"(r1), "r"(r5) :
+			      "=r"(r0), "=r"(r1), "=r"(r2), "=r"(r3) :
+			      "r"(r0), "r"(r1), "r"(r2) :
 			      "memory");
 	}
 
-	return r2;
+	return r3;
 #endif
 
 }
