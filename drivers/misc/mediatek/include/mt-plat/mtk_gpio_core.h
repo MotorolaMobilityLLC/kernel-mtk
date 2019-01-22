@@ -30,26 +30,26 @@
 /******************************************************************************
 * MACRO Definition
 ******************************************************************************/
-#define GPIO_DEVICE "mt-gpio"
-#define VERSION     GPIO_DEVICE
+#define GPIO_DEVICE             "mt-gpio"
+#define VERSION                 GPIO_DEVICE
 
-#define GPIOTAG                "[GPIO] "
-#define GPIOLOG(fmt, arg...)   pr_debug(GPIOTAG fmt, ##arg)
-#define GPIOMSG(fmt, arg...)   pr_warn(fmt, ##arg)
-#define GPIOERR(fmt, arg...)   pr_err(GPIOTAG "%5d: " fmt, __LINE__, ##arg)
+#define GPIOTAG                 "[GPIO] "
+#define GPIOLOG(fmt, arg...)    pr_debug(GPIOTAG fmt, ##arg)
+#define GPIOMSG(fmt, arg...)    pr_warn(fmt, ##arg)
+#define GPIOERR(fmt, arg...)    pr_err(GPIOTAG "%5d: " fmt, __LINE__, ##arg)
 #define GPIOFUC(fmt, arg...)	/* printk(GPIOTAG "%s\n", __FUNCTION__) */
 /*----------------------------------------------------------------------------*/
 /* Error Code No. */
 #define RSUCCESS        0
 #define ERACCESS        1
 #define ERINVAL         2
-#define ERWRAPPER		3
+#define ERWRAPPER       3
 
-#define GPIO_RETERR(res, fmt, args...)                                \
-do {                                                                  \
+#define GPIO_RETERR(res, fmt, args...)                                  \
+do {                                                                    \
 	GPIOERR("%s:%04d: " fmt"\n", __func__, __LINE__, ##args);       \
 	return res;                                                     \
-	} while (0)
+} while (0)
 #define GIO_INVALID_OBJ(ptr)   ((ptr) != mt_gpio)
 
 enum {

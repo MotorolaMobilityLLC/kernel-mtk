@@ -79,12 +79,9 @@ static int mtk_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
 	struct mtk_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
 
 	if (pctl->devdata->mt_set_gpio_dir) {
-
-
-
-		pctl->devdata->mt_set_gpio_dir(offset|0x80000000, (!input));
-
-	    return 0;
+		/* Used by smartphone projects */
+		pctl->devdata->mt_set_gpio_dir(offset | 0x80000000, (!input));
+		return 0;
 	}
 
 	reg_addr = mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
@@ -107,12 +104,10 @@ static void mtk_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
 
 	if (pctl->devdata->mt_set_gpio_out) {
-		/* please weiqi to confirm */
-		pctl->devdata->mt_set_gpio_out(offset|0x80000000, value);
+		/* Used by smartphone projects */
+		pctl->devdata->mt_set_gpio_out(offset | 0x80000000, value);
 		return;
 	}
-
-
 
 	reg_addr = mtk_get_port(pctl, offset) + pctl->devdata->dout_offset;
 	bit = BIT(offset & 0xf);
@@ -132,10 +127,11 @@ static int mtk_pconf_set_ies_smt(struct mtk_pinctrl *pctl, unsigned pin,
 	unsigned int bit;
 
 	if (pctl->devdata->mt_set_gpio_ies || pctl->devdata->mt_set_gpio_smt) {
+		/* Used by smartphone projects */
 		if (arg == PIN_CONFIG_INPUT_ENABLE)
-			pctl->devdata->mt_set_gpio_ies(pin|0x80000000, value);
+			pctl->devdata->mt_set_gpio_ies(pin | 0x80000000, value);
 		else if (arg == PIN_CONFIG_INPUT_SCHMITT_ENABLE)
-			pctl->devdata->mt_set_gpio_smt(pin|0x80000000, value);
+			pctl->devdata->mt_set_gpio_smt(pin | 0x80000000, value);
 		return 0;
 	}
 
@@ -236,6 +232,7 @@ static int mtk_pconf_set_driving(struct mtk_pinctrl *pctl,
 	const struct mtk_drv_group_desc *drv_grp;
 
 	if (pctl->devdata->mt_set_gpio_driving) {
+		/* Used by smartphone projects */
 		pctl->devdata->mt_set_gpio_driving(pin | 0x80000000, driving);
 		return 0;
 	}
@@ -336,15 +333,17 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 	 */
 
 	if (pctl->devdata->mt_set_gpio_pull_enable) {
+		/* Used by smartphone projects */
 		if (enable)
 			pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, 1);
-	    else {
+		else {
 			pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, 0);
 			return 0;
 		}
 	}
 
 	if (pctl->devdata->mt_set_gpio_pull_select) {
+		/* Used by smartphone projects */
 		if (isup)
 			pctl->devdata->mt_set_gpio_pull_select(pin | 0x80000000, 1);
 		else
@@ -763,14 +762,14 @@ static int mtk_pmx_set_mode(struct pinctrl_dev *pctldev,
 	unsigned int mask = (1L << GPIO_MODE_BITS) - 1;
 	struct mtk_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
 
-	reg_addr = ((pin / MAX_GPIO_MODE_PER_REG) << pctl->devdata->port_shf)
-			+ pctl->devdata->pinmux_offset;
-
 	if (pctl->devdata->spec_set_gpio_mode) {
-		ret = pctl->devdata->spec_set_gpio_mode(pin|0x80000000, mode);
+		/* Used by smartphone projects */
+		ret = pctl->devdata->spec_set_gpio_mode(pin | 0x80000000, mode);
 		return 0;
 	}
 
+	reg_addr = ((pin / MAX_GPIO_MODE_PER_REG) << pctl->devdata->port_shf)
+			+ pctl->devdata->pinmux_offset;
 	bit = pin % MAX_GPIO_MODE_PER_REG;
 	mask <<= (GPIO_MODE_BITS * bit);
 	val = (mode << (GPIO_MODE_BITS * bit));
@@ -849,11 +848,11 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
 
 	if (pctl->devdata->mt_get_gpio_dir) {
-
-		dir = pctl->devdata->mt_get_gpio_dir(offset|0x80000000);
+		/* Used by smartphone projects */
+		dir = pctl->devdata->mt_get_gpio_dir(offset | 0x80000000);
 		return dir;
-
 	}
+
 	reg_addr =  mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
 	bit = BIT(offset & 0xf);
 	regmap_read(pctl->regmap1, reg_addr, &read_val);
@@ -868,17 +867,17 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
 	int value =  -1;
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
 
-	if (pctl->devdata->mt_get_gpio_out != NULL && pctl->devdata->mt_get_gpio_in != NULL) {
+	if (pctl->devdata->mt_get_gpio_out != NULL
+	 && pctl->devdata->mt_get_gpio_in != NULL) {
+		/* Used by smartphone projects */
 		if (mtk_gpio_get_direction(chip, offset))
-			value = pctl->devdata->mt_get_gpio_out(offset|0x80000000);
+			value = pctl->devdata->mt_get_gpio_out(offset | 0x80000000);
 		else
-			value = pctl->devdata->mt_get_gpio_in(offset|0x80000000);
+			value = pctl->devdata->mt_get_gpio_in(offset | 0x80000000);
 		return value;
 	}
 
-	reg_addr = mtk_get_port(pctl, offset) +
-		pctl->devdata->din_offset;
-
+	reg_addr = mtk_get_port(pctl, offset) + pctl->devdata->din_offset;
 	bit = BIT(offset & 0xf);
 	regmap_read(pctl->regmap1, reg_addr, &read_val);
 	return !!(read_val & bit);
