@@ -56,7 +56,6 @@
 #endif
 
 #include <linux/uaccess.h>
-#include <mtk_cpufreq_api.h>
 
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
@@ -162,6 +161,15 @@ uint32_t __attribute__((weak)) clk_buf_bblpm_enter_cond(void)
 {
 	return -1;
 }
+
+void __attribute__((weak)) idle_refcnt_inc(void)
+{
+}
+
+void __attribute__((weak)) idle_refcnt_dec(void)
+{
+}
+
 #endif
 
 static bool idle_by_pass_secure_cg;

@@ -41,7 +41,7 @@
 #include <mtk_sleep_reg_md_reg_mt6763.h>
 #endif
 #include <mtk_eem.h>
-#include <ext_wd_drv.h>
+/* #include <ext_wd_drv.h> */
 #include "mtk_devinfo.h"
 
 #ifdef CONFIG_MTK_SMI_EXT
@@ -65,8 +65,6 @@ void __iomem *dvfsrc_base;
 u32 plat_channel_num;
 u32 plat_chip_ver;
 u32 dram_issue;
-
-#define VMODEM_VCORE_COBUCK 1
 
 #ifdef CONFIG_MTK_SMI_EXT
 enum mmdvfs_lcd_size_enum plat_lcd_resolution;
@@ -186,7 +184,9 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* SPM */
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("SPM_SW_RSV_5           : 0x%x\n", spm_read(SPM_SW_RSV_5));
+#if !defined(CONFIG_MACH_MT6771)
 		spm_vcorefs_warn("SPM_SW_RSV_11          : 0x%x\n", spm_read(SPM_SW_RSV_11));
+#endif
 		spm_vcorefs_warn("DVFSRC_MD_GEAR         : 0x%x\n", spm_read(DVFSRC_MD_GEAR));
 		spm_vcorefs_warn("MD2SPM_DVFS_CON        : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		spm_vcorefs_warn("SPM_DVFS_EVENT_STA     : 0x%x\n", spm_read(SPM_DVFS_EVENT_STA));
@@ -613,7 +613,7 @@ static void dvfsrc_init(void)
 #endif
 
 
-#if 1
+#if 0
 	mtk_rgu_cfg_dvfsrc(1);
 #endif
 	spin_unlock_irqrestore(&__spm_lock, flags);
