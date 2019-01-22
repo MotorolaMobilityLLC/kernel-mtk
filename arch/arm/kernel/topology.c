@@ -316,41 +316,6 @@ static void parse_dt_cpu_capacity(void)
 	}
 }
 
-/*
- * Look for a customed capacity of a CPU in the cpu_capacity table during the
- * boot. The update of all CPUs is in O(n^2) for heteregeneous system but the
- * function returns directly for SMP systems or if there is no complete set
- * of cpu efficiency, clock frequency data for each cpu.
- */
-static void update_cpu_capacity(unsigned int cpu)
-{
-	u64 capacity = cpu_capacity(cpu);
-
-#ifdef CONFIG_MTK_SCHED_EAS_PLUS
-	if (cpu_core_energy(cpu)) {
-#else
-	if (0) {
-#endif
-		/* if power table is found, get capacity of CPU from it */
-		int max_cap_idx = cpu_core_energy(cpu)->nr_cap_states - 1;
-
-		capacity = cpu_core_energy(cpu)->cap_states[max_cap_idx].cap;
-	} else {
-
-		if (!capacity || !max_cpu_perf) {
-			cpu_capacity(cpu) = 0;
-			return;
-		}
-
-		capacity *= SCHED_CAPACITY_SCALE;
-		capacity = div64_u64(capacity, max_cpu_perf);
-	}
-	set_capacity_scale(cpu, capacity);
-
-	pr_info("CPU%u: update cpu_capacity %lu\n",
-		cpu, arch_scale_cpu_capacity(NULL, cpu));
-}
-
 #else
 static inline void parse_dt_topology(void) {}
 static inline void update_cpu_capacity(unsigned int cpuid) {}
@@ -458,6 +423,333 @@ static void update_siblings_masks(unsigned int cpuid)
 }
 
 /*
+ * MTK static specific energy cost model data. There are no unit requirements for
+ * the data. Data can be normalized to any reference point, but the
+ * normalization must be consistent. That is, one bogo-joule/watt must be the
+ * same quantity for all data, but we don't care what it is.
+ */
+static struct idle_state idle_states_cluster_0[] = {
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+};
+
+static struct idle_state idle_states_cluster_1[] = {
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+};
+
+static struct idle_state idle_states_cluster_2[] = {
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+};
+
+static struct capacity_state cap_states_cluster_0[] = {
+	/* Power per cpu */
+	{ .cap =   80, .power =   13, .leak_power =  0, .volt = 56}, /*  [0] 221 MHz */
+	{ .cap =  108, .power =   18, .leak_power =  0, .volt = 56}, /*  [1] 338 MHz */
+	{ .cap =  129, .power =   22, .leak_power =  0, .volt = 58}, /*  [2] 442 MHz */
+	{ .cap =  151, .power =   29, .leak_power =  0, .volt = 61}, /*  [3] 559 MHz */
+	{ .cap =  172, .power =   36, .leak_power =  0, .volt = 64}, /*  [4] 676 Mhz */
+	{ .cap =  194, .power =   44, .leak_power =  0, .volt = 67}, /*  [5] 806 Mhz */
+	{ .cap =  215, .power =   54, .leak_power =  0, .volt = 70}, /*  [6] 949 Mhz */
+	{ .cap =  231, .power =   61, .leak_power =  0, .volt = 72}, /*  [7] 1.066 Ghz */
+	{ .cap =  249, .power =   72, .leak_power =  0, .volt = 75}, /*  [8] 1.183 Ghz */
+	{ .cap =  265, .power =   81, .leak_power =  0, .volt = 77}, /*  [9] 1.235 Ghz */
+	{ .cap =  283, .power =   92, .leak_power =  0, .volt = 79}, /*  [10] 1.300 Ghz */
+	{ .cap =  298, .power =  102, .leak_power =  0, .volt = 81}, /*  [11] 1.378 Ghz */
+	{ .cap =  314, .power =  114, .leak_power =  0, .volt = 83}, /*  [12] 1.443 Ghz */
+	{ .cap =  329, .power =  126, .leak_power =  0, .volt = 86}, /*  [13] 1.508 Ghz */
+	{ .cap =  341, .power =  136, .leak_power =  0, .volt = 87}, /*  [14] 1.560 Ghz */
+	{ .cap =  357, .power =  149, .leak_power =  0, .volt = 90}, /*  [15] 1.638 Ghz */
+};
+
+static struct capacity_state cap_states_cluster_1[] = {
+	/* Power per cpu */
+	{ .cap =   96, .power =   27, .leak_power =  0, .volt = 56}, /*  [0] 442 MHz */
+	{ .cap =  133, .power =   37, .leak_power =  0, .volt = 56}, /*  [1] 533 MHz */
+	{ .cap =  159, .power =   46, .leak_power =  0, .volt = 58}, /*  [2] 741 MHz */
+	{ .cap =  189, .power =   60, .leak_power =  0, .volt = 61}, /*  [3] 897 MHz */
+	{ .cap =  215, .power =   74, .leak_power =  0, .volt = 64}, /*  [4] 1.040 Mhz */
+	{ .cap =  245, .power =   92, .leak_power =  0, .volt = 67}, /*  [5] 1.248 Mhz */
+	{ .cap =  271, .power =  111, .leak_power =  0, .volt = 70}, /*  [6] 1.456 Mhz */
+	{ .cap =  297, .power =  130, .leak_power =  0, .volt = 72}, /*  [7] 1.638 Ghz */
+	{ .cap =  326, .power =  154, .leak_power =  0, .volt = 75}, /*  [8] 1.794 Ghz */
+	{ .cap =  348, .power =  175, .leak_power =  0, .volt = 77}, /*  [9] 1.872 Ghz */
+	{ .cap =  374, .power =  199, .leak_power =  0, .volt = 79}, /*  [10] 1.963 Ghz */
+	{ .cap =  397, .power =  223, .leak_power =  0, .volt = 81}, /*  [11] 2.067 Ghz */
+	{ .cap =  419, .power =  249, .leak_power =  0, .volt = 83}, /*  [12] 2.132 Ghz */
+	{ .cap =  445, .power =  279, .leak_power =  0, .volt = 86}, /*  [13] 2.197 Ghz */
+	{ .cap =  463, .power =  302, .leak_power =  0, .volt = 87}, /*  [14] 2.262 Ghz */
+	{ .cap =  486, .power =  333, .leak_power =  0, .volt = 90}, /*  [15] 2.340 Ghz */
+};
+
+static struct capacity_state cap_states_cluster_2[] = {
+	/* Power per cpu */
+	{ .cap =  175, .power =   32, .leak_power =  0, .volt = 56},  /*  [0] 442 MHz */
+	{ .cap =  243, .power =   44, .leak_power =  0, .volt = 56}, /*  [1] 533 MHz */
+	{ .cap =  296, .power =   56, .leak_power =  0, .volt = 58}, /*  [2] 741 MHz */
+	{ .cap =  344, .power =   71, .leak_power =  0, .volt = 61}, /*  [3] 897 MHz */
+	{ .cap =  397, .power =   90, .leak_power =  0, .volt = 64}, /*  [4] 1.040 Mhz */
+	{ .cap =  445, .power =  110, .leak_power =  0, .volt = 67}, /*  [5] 1.248 Mhz */
+	{ .cap =  499, .power =  134, .leak_power =  0, .volt = 70}, /*  [6] 1.456 Mhz */
+	{ .cap =  559, .power =  161, .leak_power =  0, .volt = 72}, /*  [7] 1.638 Ghz */
+	{ .cap =  633, .power =  197, .leak_power =  0, .volt = 75}, /*  [8] 1.794 Ghz */
+	{ .cap =  694, .power =  229, .leak_power =  0, .volt = 77}, /*  [9] 1.872 Ghz */
+	{ .cap =  748, .power =  261, .leak_power =  0, .volt = 79}, /*  [10] 1.963 Ghz */
+	{ .cap =  808, .power =  299, .leak_power =  0, .volt = 81}, /*  [11] 2.067 Ghz */
+	{ .cap =  869, .power =  339, .leak_power =  0, .volt = 83}, /*  [12] 2.132 Ghz */
+	{ .cap =  923, .power =  380, .leak_power =  0, .volt = 86}, /*  [13] 2.197 Ghz */
+	{ .cap =  970, .power =  415, .leak_power =  0, .volt = 87}, /*  [14] 2.262 Ghz */
+	{ .cap = 1024, .power =  461, .leak_power =  0, .volt = 90}, /*  [15] 2.340 Ghz */
+};
+
+static struct sched_group_energy energy_cluster_0 = {
+	  .nr_idle_states = ARRAY_SIZE(idle_states_cluster_0),
+	  .idle_states    = idle_states_cluster_0,
+	  .nr_cap_states  = ARRAY_SIZE(cap_states_cluster_0),
+	  .cap_states     = cap_states_cluster_0,
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	  .idle_power     = mtk_idle_power,
+	  .busy_power     = mtk_busy_power,
+#endif
+};
+
+static struct sched_group_energy energy_cluster_1 = {
+	  .nr_idle_states = ARRAY_SIZE(idle_states_cluster_1),
+	  .idle_states    = idle_states_cluster_1,
+	  .nr_cap_states  = ARRAY_SIZE(cap_states_cluster_1),
+	  .cap_states     = cap_states_cluster_1,
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	  .idle_power     = mtk_idle_power,
+	  .busy_power     = mtk_busy_power,
+#endif
+};
+
+static struct sched_group_energy energy_cluster_2 = {
+	.nr_idle_states = ARRAY_SIZE(idle_states_cluster_2),
+	.idle_states    = idle_states_cluster_2,
+	.nr_cap_states  = ARRAY_SIZE(cap_states_cluster_2),
+	.cap_states     = cap_states_cluster_2,
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	.idle_power     = mtk_idle_power,
+	.busy_power     = mtk_busy_power,
+#endif
+};
+
+static struct idle_state idle_states_core_0[] = {
+	{ .power = 0 }, /* 0: active idle = WFI, [P8].leak */
+	{ .power = 0 }, /* 1: disabled */
+	{ .power = 0 }, /* 2: disabled */
+	{ .power = 0 }, /* 3: disabled */
+	{ .power = 0 }, /* 4: MCDI */
+	{ .power = 0 }, /* 5: disabled */
+	{ .power = 0 }, /* 6: WFI/SPARK */
+};
+
+static struct idle_state idle_states_core_1[] = {
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+};
+
+static struct idle_state idle_states_core_2[] = {
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+	{ .power = 0 },
+};
+
+static struct capacity_state cap_states_core_0[] = {
+	/* Power per cpu */
+	{ .cap =   80, .power =   51, .leak_power =  0, .volt = 56}, /*  [0] 221 MHz */
+	{ .cap =  108, .power =   69, .leak_power =  0, .volt = 56}, /*  [1] 338 MHz */
+	{ .cap =  129, .power =   85, .leak_power =  0, .volt = 58}, /*  [2] 442 MHz */
+	{ .cap =  151, .power =  110, .leak_power =  0, .volt = 61}, /*  [3] 559 MHz */
+	{ .cap =  172, .power =  137, .leak_power =  0, .volt = 64}, /*  [4] 676 Mhz */
+	{ .cap =  194, .power =  168, .leak_power =  0, .volt = 67}, /*  [5] 806 Mhz */
+	{ .cap =  215, .power =  203, .leak_power =  0, .volt = 70}, /*  [6] 949 Mhz */
+	{ .cap =  231, .power =  232, .leak_power =  0, .volt = 72}, /*  [7] 1.066 Ghz */
+	{ .cap =  249, .power =  271, .leak_power =  0, .volt = 75}, /*  [8] 1.183 Ghz */
+	{ .cap =  265, .power =  305, .leak_power =  0, .volt = 77}, /*  [9] 1.235 Ghz */
+	{ .cap =  283, .power =  346, .leak_power =  0, .volt = 79}, /*  [10] 1.300 Ghz */
+	{ .cap =  298, .power =  386, .leak_power =  0, .volt = 81}, /*  [11] 1.378 Ghz */
+	{ .cap =  314, .power =  428, .leak_power =  0, .volt = 83}, /*  [12] 1.443 Ghz */
+	{ .cap =  329, .power =  474, .leak_power =  0, .volt = 86}, /*  [13] 1.508 Ghz */
+	{ .cap =  341, .power =  511, .leak_power =  0, .volt = 87}, /*  [14] 1.560 Ghz */
+	{ .cap =  357, .power =  562, .leak_power =  0, .volt = 90}, /*  [15] 1.638 Ghz */
+};
+
+static struct capacity_state cap_states_core_1[] = {
+	/* Power per cpu */
+	{ .cap =   96, .power =   99, .leak_power =  0, .volt = 56}, /*  [0] 442 MHz */
+	{ .cap =  133, .power =  139, .leak_power =  0, .volt = 56}, /*  [1] 533 MHz */
+	{ .cap =  159, .power =  169, .leak_power =  0, .volt = 58}, /*  [2] 741 MHz */
+	{ .cap =  189, .power =  220, .leak_power =  0, .volt = 61}, /*  [3] 897 MHz */
+	{ .cap =  215, .power =  274, .leak_power =  0, .volt = 64}, /*  [4] 1.040 Mhz */
+	{ .cap =  245, .power =  341, .leak_power =  0, .volt = 67}, /*  [5] 1.248 Mhz */
+	{ .cap =  271, .power =  409, .leak_power =  0, .volt = 70}, /*  [6] 1.456 Mhz */
+	{ .cap =  297, .power =  478, .leak_power =  0, .volt = 72}, /*  [7] 1.638 Ghz */
+	{ .cap =  326, .power =  568, .leak_power =  0, .volt = 75}, /*  [8] 1.794 Ghz */
+	{ .cap =  348, .power =  644, .leak_power =  0, .volt = 77}, /*  [9] 1.872 Ghz */
+	{ .cap =  374, .power =  733, .leak_power =  0, .volt = 79}, /*  [10] 1.963 Ghz */
+	{ .cap =  397, .power =  821, .leak_power =  0, .volt = 81}, /*  [11] 2.067 Ghz */
+	{ .cap =  419, .power =  916, .leak_power =  0, .volt = 83}, /*  [12] 2.132 Ghz */
+	{ .cap =  445, .power = 1026, .leak_power =  0, .volt = 86}, /*  [13] 2.197 Ghz */
+	{ .cap =  463, .power = 1111, .leak_power =  0, .volt = 87}, /*  [14] 2.262 Ghz */
+	{ .cap =  486, .power = 1225, .leak_power =  0, .volt = 90}, /*  [15] 2.340 Ghz */
+};
+
+static struct capacity_state cap_states_core_2[] = {
+	/* Power per cpu */
+	{ .cap =  175, .power =  313, .leak_power =  0, .volt = 56},  /*  [0] 442 MHz */
+	{ .cap =  243, .power =  433, .leak_power =  0, .volt = 56}, /*  [1] 533 MHz */
+	{ .cap =  296, .power =  544, .leak_power =  0, .volt = 58}, /*  [2] 741 MHz */
+	{ .cap =  344, .power =  693, .leak_power =  0, .volt = 61}, /*  [3] 897 MHz */
+	{ .cap =  397, .power =  878, .leak_power =  0, .volt = 64}, /*  [4] 1.040 Mhz */
+	{ .cap =  445, .power = 1070, .leak_power =  0, .volt = 67}, /*  [5] 1.248 Mhz */
+	{ .cap =  499, .power = 1303, .leak_power =  0, .volt = 70}, /*  [6] 1.456 Mhz */
+	{ .cap =  559, .power = 1558, .leak_power =  0, .volt = 72}, /*  [7] 1.638 Ghz */
+	{ .cap =  633, .power = 1905, .leak_power =  0, .volt = 75}, /*  [8] 1.794 Ghz */
+	{ .cap =  694, .power = 2215, .leak_power =  0, .volt = 77}, /*  [9] 1.872 Ghz */
+	{ .cap =  748, .power = 2529, .leak_power =  0, .volt = 79}, /*  [10] 1.963 Ghz */
+	{ .cap =  808, .power = 2892, .leak_power =  0, .volt = 81}, /*  [11] 2.067 Ghz */
+	{ .cap =  869, .power = 3283, .leak_power =  0, .volt = 83}, /*  [12] 2.132 Ghz */
+	{ .cap =  923, .power = 3677, .leak_power =  0, .volt = 86}, /*  [13] 2.197 Ghz */
+	{ .cap =  970, .power = 4018, .leak_power =  0, .volt = 87}, /*  [14] 2.262 Ghz */
+	{ .cap = 1024, .power = 4462, .leak_power =  0, .volt = 90}, /*  [15] 2.340 Ghz */
+};
+
+static struct sched_group_energy energy_core_0 = {
+	.nr_idle_states = ARRAY_SIZE(idle_states_core_0),
+	.idle_states    = idle_states_core_0,
+	.nr_cap_states  = ARRAY_SIZE(cap_states_core_0),
+	.cap_states     = cap_states_core_0,
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	.idle_power     = mtk_idle_power,
+	.busy_power     = mtk_busy_power,
+#endif
+};
+
+static struct sched_group_energy energy_core_1 = {
+	.nr_idle_states = ARRAY_SIZE(idle_states_core_1),
+	.idle_states    = idle_states_core_1,
+	.nr_cap_states  = ARRAY_SIZE(cap_states_core_1),
+	.cap_states     = cap_states_core_1,
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	.idle_power     = mtk_idle_power,
+	.busy_power     = mtk_busy_power,
+#endif
+};
+
+static struct sched_group_energy energy_core_2 = {
+	.nr_idle_states = ARRAY_SIZE(idle_states_core_2),
+	.idle_states    = idle_states_core_2,
+	.nr_cap_states  = ARRAY_SIZE(cap_states_core_2),
+	.cap_states     = cap_states_core_2,
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	.idle_power     = mtk_idle_power,
+	.busy_power     = mtk_busy_power,
+#endif
+};
+
+/* sd energy functions */
+inline
+const struct sched_group_energy *cpu_cluster_energy(int cpu)
+{
+	if (cpu_topology[cpu].socket_id == 0)
+		return &energy_cluster_0;
+	else if (cpu_topology[cpu].socket_id == 1)
+		return &energy_cluster_1;
+	else if (cpu_topology[cpu].socket_id == 2)
+		return &energy_cluster_2;
+	else
+		return NULL;
+}
+
+inline
+const struct sched_group_energy *cpu_core_energy(int cpu)
+{
+	if (cpu_topology[cpu].socket_id == 0)
+		return &energy_core_0;
+	else if (cpu_topology[cpu].socket_id == 1)
+		return &energy_core_1;
+	else if (cpu_topology[cpu].socket_id == 2)
+		return &energy_core_2;
+	else
+		return NULL;
+}
+
+static inline int cpu_corepower_flags(void)
+{
+	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN | SD_SHARE_CAP_STATES;
+}
+
+static struct sched_domain_topology_level arm_topology[] = {
+#ifdef CONFIG_SCHED_MC
+	{ cpu_coregroup_mask, cpu_corepower_flags, cpu_core_energy, SD_INIT_NAME(MC) },
+#endif
+	{ cpu_cpu_mask, NULL, cpu_cluster_energy, SD_INIT_NAME(DIE) },
+	{ NULL, },
+};
+
+/*
+ * Look for a customed capacity of a CPU in the cpu_capacity table during the
+ * boot. The update of all CPUs is in O(n^2) for heteregeneous system but the
+ * function returns directly for SMP systems or if there is no complete set
+ * of cpu efficiency, clock frequency data for each cpu.
+ */
+static void update_cpu_capacity(unsigned int cpu)
+{
+	u64 capacity = cpu_capacity(cpu);
+
+#ifdef CONFIG_MTK_SCHED_EAS_PLUS
+	if (cpu_core_energy(cpu)) {
+#else
+	if (0) {
+#endif
+		/* if power table is found, get capacity of CPU from it */
+		int max_cap_idx = cpu_core_energy(cpu)->nr_cap_states - 1;
+
+		capacity = cpu_core_energy(cpu)->cap_states[max_cap_idx].cap;
+	} else {
+
+		if (!capacity || !max_cpu_perf) {
+			cpu_capacity(cpu) = 0;
+			return;
+		}
+
+		capacity *= SCHED_CAPACITY_SCALE;
+		capacity = div64_u64(capacity, max_cpu_perf);
+	}
+	set_capacity_scale(cpu, capacity);
+
+	pr_info("CPU%u: update cpu_capacity %lu\n",
+			cpu, arch_scale_cpu_capacity(NULL, cpu));
+}
+
+/*
  * store_cpu_topology is called at boot when only one cpu is running
  * and with the mutex cpu_hotplug.lock locked, when several cpus have booted,
  * which prevents simultaneous write access to cpu_topology array
@@ -510,242 +802,11 @@ topology_populated:
 	update_cpu_capacity(cpuid);
 
 	pr_info("CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
-		cpuid, cpu_topology[cpuid].thread_id,
-		cpu_topology[cpuid].core_id,
-		cpu_topology[cpuid].socket_id, mpidr);
+			cpuid, cpu_topology[cpuid].thread_id,
+			cpu_topology[cpuid].core_id,
+			cpu_topology[cpuid].socket_id, mpidr);
 }
 
-/*
- * MTK static specific energy cost model data. There are no unit requirements for
- * the data. Data can be normalized to any reference point, but the
- * normalization must be consistent. That is, one bogo-joule/watt must be the
- * same quantity for all data, but we don't care what it is.
- */
-static struct idle_state idle_states_cluster_0[] = {
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-};
-
-static struct idle_state idle_states_cluster_1[] = {
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-};
-
-static struct capacity_state cap_states_cluster_0[] = {
-	/* Power per cluster */
-	{ .cap =   97, .power =   2, .leak_power = 0, .volt = 60}, /*  [0] P15 MHz */
-	{ .cap =  148, .power =   3, .leak_power = 0, .volt = 60}, /*  [1] P14 MHz */
-	{ .cap =  193, .power =   3, .leak_power = 0, .volt = 60}, /*  [2] P13 MHz */
-	{ .cap =  245, .power =   4, .leak_power = 0, .volt = 60}, /*  [3] P12 MHz */
-	{ .cap =  296, .power =   5, .leak_power = 0, .volt = 63}, /*  [4] P11 MHz */
-	{ .cap =  353, .power =   7, .leak_power = 0, .volt = 66}, /*  [5] P10 MHz */
-	{ .cap =  415, .power =   9, .leak_power = 0, .volt = 70}, /*  [6] P09 MHz */
-	{ .cap =  466, .power =  11, .leak_power = 0, .volt = 74}, /*  [7] P08 MHz */
-	{ .cap =  518, .power =  13, .leak_power = 0, .volt = 78}, /*  [8] P07 MHz */
-	{ .cap =  540, .power =  15, .leak_power = 0, .volt = 79}, /*  [9] P06 MHz */
-	{ .cap =  569, .power =  16, .leak_power = 0, .volt = 81}, /*  [10] P05 MHz */
-	{ .cap =  603, .power =  19, .leak_power = 0, .volt = 84}, /*  [11] P04 MHz */
-	{ .cap =  631, .power =  21, .leak_power = 0, .volt = 87}, /*  [12] P03 MHz */
-	{ .cap =  660, .power =  23, .leak_power = 0, .volt = 89}, /*  [13] P02 MHz */
-	{ .cap =  683, .power =  25, .leak_power = 0, .volt = 92}, /*  [14] P01 MHz */
-	{ .cap =  717, .power =  29, .leak_power = 0, .volt = 95}, /*  [15] P00 MHz */
-};
-
-static struct capacity_state cap_states_cluster_1[] = {
-	/* Power per cluster */
-	{ .cap =  193, .power =   5, .leak_power = 0, .volt = 60}, /*  [0] P15 MHz */
-	{ .cap =  233, .power =   6, .leak_power = 0, .volt = 60}, /*  [1] P14 MHz */
-	{ .cap =  324, .power =   8, .leak_power = 0, .volt = 60}, /*  [2] P13 MHz */
-	{ .cap =  393, .power =  10, .leak_power = 0, .volt = 60}, /*  [3] P12 MHz */
-	{ .cap =  455, .power =  12, .leak_power = 0, .volt = 63}, /*  [4] P11 MHz */
-	{ .cap =  546, .power =  15, .leak_power = 0, .volt = 66}, /*  [5] P10 MHz */
-	{ .cap =  637, .power =  20, .leak_power = 0, .volt = 70}, /*  [6] P09 MHz */
-	{ .cap =  717, .power =  25, .leak_power = 0, .volt = 74}, /*  [7] P08 MHz */
-	{ .cap =  785, .power =  30, .leak_power = 0, .volt = 78}, /*  [8] P07 MHz */
-	{ .cap =  819, .power =  33, .leak_power = 0, .volt = 79}, /*  [9] P06 MHz */
-	{ .cap =  859, .power =  36, .leak_power = 0, .volt = 81}, /*  [10] P05 MHz */
-	{ .cap =  905, .power =  42, .leak_power = 0, .volt = 84}, /*  [11] P04 MHz */
-	{ .cap =  933, .power =  46, .leak_power = 0, .volt = 87}, /*  [12] P03 MHz */
-	{ .cap =  961, .power =  50, .leak_power = 0, .volt = 89}, /*  [13] P02 MHz */
-	{ .cap =  990, .power =  54, .leak_power = 0, .volt = 92}, /*  [14] P01 MHz */
-	{ .cap = 1024, .power =  60, .leak_power = 0, .volt = 95}, /*  [15] P00 MHz */
-};
-
-static struct sched_group_energy energy_cluster_0 = {
-	  .nr_idle_states = ARRAY_SIZE(idle_states_cluster_0),
-	  .idle_states    = idle_states_cluster_0,
-	  .nr_cap_states  = ARRAY_SIZE(cap_states_cluster_0),
-	  .cap_states     = cap_states_cluster_0,
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	  .idle_power     = mtk_idle_power,
-	  .busy_power     = mtk_busy_power,
-#endif
-};
-
-static struct sched_group_energy energy_cluster_1 = {
-	  .nr_idle_states = ARRAY_SIZE(idle_states_cluster_1),
-	  .idle_states    = idle_states_cluster_1,
-	  .nr_cap_states  = ARRAY_SIZE(cap_states_cluster_1),
-	  .cap_states     = cap_states_cluster_1,
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	  .idle_power     = mtk_idle_power,
-	  .busy_power     = mtk_busy_power,
-#endif
-};
-
-static struct sched_group_energy energy_cluster_2 = {
-	.nr_idle_states = 0,
-	.idle_states    = NULL,
-	.nr_cap_states  = 0,
-	.cap_states     = NULL,
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	.idle_power     = mtk_idle_power,
-	.busy_power     = mtk_busy_power,
-#endif
-};
-
-static struct idle_state idle_states_core_0[] = {
-	{ .power = 0 }, /* 0: active idle = WFI, [P8].leak */
-	{ .power = 0 }, /* 1: disabled */
-	{ .power = 0 }, /* 2: disabled */
-	{ .power = 0 }, /* 3: disabled */
-	{ .power = 0 }, /* 4: MCDI */
-	{ .power = 0 }, /* 5: disabled */
-	{ .power = 0 }, /* 6: WFI/SPARK */
-};
-
-static struct idle_state idle_states_core_1[] = {
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-	{ .power = 0 },
-};
-
-static struct capacity_state cap_states_core_0[] = {
-	/* Power per cpu */
-	{ .cap =   97, .power =    7, .leak_power =  0, .volt = 60}, /*  [0] 221 MHz */
-	{ .cap =  148, .power =   11, .leak_power =  0, .volt = 60}, /*  [1] 338 MHz */
-	{ .cap =  193, .power =   14, .leak_power =  0, .volt = 60}, /*  [2] 442 MHz */
-	{ .cap =  245, .power =   18, .leak_power =  0, .volt = 60}, /*  [3] 559 MHz */
-	{ .cap =  296, .power =   22, .leak_power =  0, .volt = 63}, /*  [4] 676 Mhz */
-	{ .cap =  353, .power =   29, .leak_power =  0, .volt = 66}, /*  [5] 806 Mhz */
-	{ .cap =  415, .power =   38, .leak_power =  0, .volt = 70}, /*  [6] 949 Mhz */
-	{ .cap =  466, .power =   47, .leak_power =  0, .volt = 74}, /*  [7] 1.066 Ghz */
-	{ .cap =  518, .power =   58, .leak_power =  0, .volt = 78}, /*  [8] 1.183 Ghz */
-	{ .cap =  540, .power =   64, .leak_power =  0, .volt = 79}, /*  [9] 1.235 Ghz */
-	{ .cap =  569, .power =   71, .leak_power =  0, .volt = 81}, /*  [10] 1.300 Ghz */
-	{ .cap =  603, .power =   81, .leak_power =  0, .volt = 84}, /*  [11] 1.378 Ghz */
-	{ .cap =  631, .power =   90, .leak_power =  0, .volt = 87}, /*  [12] 1.443 Ghz */
-	{ .cap =  660, .power =  100, .leak_power =  0, .volt = 89}, /*  [13] 1.508 Ghz */
-	{ .cap =  683, .power =  110, .leak_power =  0, .volt = 92}, /*  [14] 1.560 Ghz */
-	{ .cap =  717, .power =  124, .leak_power =  0, .volt = 95}, /*  [15] 1.638 Ghz */
-};
-
-static struct capacity_state cap_states_core_1[] = {
-	/* Power per cpu */
-	{ .cap =  193, .power =   20, .leak_power = 0, .volt = 60}, /*  [0] 442 MHz */
-	{ .cap =  233, .power =   24, .leak_power = 0, .volt = 60}, /*  [1] 533 MHz */
-	{ .cap =  324, .power =   33, .leak_power = 0, .volt = 60}, /*  [2] 741 MHz */
-	{ .cap =  393, .power =   40, .leak_power = 0, .volt = 60}, /*  [3] 897 MHz */
-	{ .cap =  455, .power =   46, .leak_power = 0, .volt = 63}, /*  [4] 1.040 Mhz */
-	{ .cap =  546, .power =   60, .leak_power = 0, .volt = 66}, /*  [5] 1.248 Mhz */
-	{ .cap =  637, .power =   79, .leak_power = 0, .volt = 70}, /*  [6] 1.456 Mhz */
-	{ .cap =  717, .power =   99, .leak_power = 0, .volt = 74}, /*  [7] 1.638 Ghz */
-	{ .cap =  785, .power =  121, .leak_power = 0, .volt = 78}, /*  [8] 1.794 Ghz */
-	{ .cap =  819, .power =  132, .leak_power = 0, .volt = 79}, /*  [9] 1.872 Ghz */
-	{ .cap =  859, .power =  146, .leak_power = 0, .volt = 81}, /*  [10] 1.963 Ghz */
-	{ .cap =  905, .power =  166, .leak_power = 0, .volt = 84}, /*  [11] 2.067 Ghz */
-	{ .cap =  933, .power =  182, .leak_power = 0, .volt = 87}, /*  [12] 2.132 Ghz */
-	{ .cap =  961, .power =  199, .leak_power = 0, .volt = 89}, /*  [13] 2.197 Ghz */
-	{ .cap =  990, .power =  217, .leak_power = 0, .volt = 92}, /*  [14] 2.262 Ghz */
-	{ .cap = 1024, .power =  241, .leak_power = 0, .volt = 95}, /*  [15] 2.340 Ghz */
-};
-
-static struct sched_group_energy energy_core_0 = {
-	.nr_idle_states = ARRAY_SIZE(idle_states_core_0),
-	.idle_states    = idle_states_core_0,
-	.nr_cap_states  = ARRAY_SIZE(cap_states_core_0),
-	.cap_states     = cap_states_core_0,
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	.idle_power     = mtk_idle_power,
-	.busy_power     = mtk_busy_power,
-#endif
-};
-
-static struct sched_group_energy energy_core_1 = {
-	.nr_idle_states = ARRAY_SIZE(idle_states_core_1),
-	.idle_states    = idle_states_core_1,
-	.nr_cap_states  = ARRAY_SIZE(cap_states_core_1),
-	.cap_states     = cap_states_core_1,
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	.idle_power     = mtk_idle_power,
-	.busy_power     = mtk_busy_power,
-#endif
-};
-
-static struct sched_group_energy energy_core_2 = {
-	.nr_idle_states = 0,
-	.idle_states    = NULL,
-	.nr_cap_states  = 0,
-	.cap_states     = NULL,
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	.idle_power     = mtk_idle_power,
-	.busy_power     = mtk_busy_power,
-#endif
-};
-
-/* sd energy functions */
-inline
-const struct sched_group_energy * const cpu_cluster_energy(int cpu)
-{
-	if (cpu_topology[cpu].socket_id == 0)
-		return &energy_cluster_0;
-	else if (cpu_topology[cpu].socket_id == 1)
-		return &energy_cluster_1;
-	else if (cpu_topology[cpu].socket_id == 2)
-		return &energy_cluster_2;
-	else
-		return NULL;
-}
-
-inline
-const struct sched_group_energy * const cpu_core_energy(int cpu)
-{
-	if (cpu_topology[cpu].socket_id == 0)
-		return &energy_core_0;
-	else if (cpu_topology[cpu].socket_id == 1)
-		return &energy_core_1;
-	else if (cpu_topology[cpu].socket_id == 2)
-		return &energy_core_2;
-	else
-		return NULL;
-}
-
-static inline int cpu_corepower_flags(void)
-{
-	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN | SD_SHARE_CAP_STATES;
-}
-
-static struct sched_domain_topology_level arm_topology[] = {
-#ifdef CONFIG_SCHED_MC
-	{ cpu_coregroup_mask, cpu_corepower_flags, cpu_core_energy, SD_INIT_NAME(MC) },
-#endif
-	{ cpu_cpu_mask, NULL, cpu_cluster_energy, SD_INIT_NAME(DIE) },
-	{ NULL, },
-};
 
 static void __init reset_cpu_topology(void)
 {
