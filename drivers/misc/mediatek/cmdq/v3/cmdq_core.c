@@ -870,7 +870,7 @@ void cmdq_core_unlock_resource(struct work_struct *workItem)
 		/* delay time is reached and unlock resource */
 		if (pResource->availableCB == NULL) {
 			/* print error message */
-			CMDQ_LOG("[Res]: available CB func is NULL, event:%d\n", pResource->lockEvent);
+			CMDQ_LOG("[Res] available CB func is NULL, event:%d\n", pResource->lockEvent);
 		} else {
 			CmdqResourceAvailableCB cb_func = pResource->availableCB;
 
@@ -881,7 +881,7 @@ void cmdq_core_unlock_resource(struct work_struct *workItem)
 
 			if (status < 0) {
 				/* Error status print */
-				CMDQ_ERR("[Res]: available CB (%d) return fail:%d\n",
+				CMDQ_ERR("[Res] available CB (%d) return fail:%d\n",
 							pResource->lockEvent, status);
 			}
 		}
@@ -921,7 +921,7 @@ void cmdq_core_delay_check_unlock(uint64_t engineFlag, const uint64_t enginesNot
 			if (!pResource->used) {
 				/* resource is not used but we got engine is released! */
 				/* log as error and still continue */
-				CMDQ_ERR("[Res]: resource will delay but not used, engine: 0x%016llx\n",
+				CMDQ_ERR("[Res] resource will delay but not used, engine: 0x%016llx\n",
 					pResource->engine_flag);
 			}
 
@@ -932,6 +932,7 @@ void cmdq_core_delay_check_unlock(uint64_t engineFlag, const uint64_t enginesNot
 			}
 
 			/* Start a new delay task */
+			CMDQ_VERBOSE("[Res] queue delay unlock resource\n");
 			queue_delayed_work(gCmdqContext.resourceCheckWQ,
 				&pResource->delayCheckWork, CMDQ_DELAY_RELEASE_RESOURCE_MS);
 			pResource->delay = sched_clock();
@@ -2137,7 +2138,7 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 			seq_printf(m, "[Res]   isUsed:%d, isLend:%d, isDelay:%d\n",
 				pResource->used, pResource->lend, pResource->delaying);
 			if (pResource->releaseCB == NULL)
-				seq_puts(m, "[Res]: release CB func is NULL\n");
+				seq_puts(m, "[Res] release CB func is NULL\n");
 		}
 		mutex_unlock(&gCmdqResourceMutex);
 	}
@@ -2722,11 +2723,10 @@ static void cmdq_core_enable_resource_clk_unlock(
 {
 	struct ResourceUnitStruct *pResource = NULL;
 
-	CMDQ_VERBOSE("resource clock engine:0x%016llx enable:%s\n",
-		engine_flag, enable ? "true" : "false");
-
 	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (pResource->engine_flag & engine_flag) {
+			CMDQ_LOG("[Res] resource clock engine:0x%016llx enable:%s\n",
+				engine_flag, enable ? "true" : "false");
 			cmdq_mdp_get_func()->enableMdpClock(enable, pResource->engine_id);
 			break;
 		}
@@ -3930,12 +3930,13 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 						 const uint64_t engineFlag,
 						 enum CMDQ_SCENARIO_ENUM scenario)
 {
+	CMDQ_VERBOSE("[CLOCK] %s CMDQ(GCE) Clock test=%d SMI %d\n",
+		enable ? "enable" : "disable",
+		atomic_read(&gCmdqThreadUsage), atomic_read(&gSMIThreadUsage));
+
 	/* CMDQ(GCE) clock */
 	if (enable) {
-		CMDQ_VERBOSE("[CLOCK] Enable CMDQ(GCE) Clock test=%d SMI %d\n",
-			     atomic_read(&gCmdqThreadUsage), atomic_read(&gSMIThreadUsage));
-
-		if (atomic_read(&gCmdqThreadUsage) == 0) {
+		if (atomic_inc_return(&gCmdqThreadUsage) == 1) {
 			/* CMDQ init flow: */
 			/* 1. clock-on */
 			/* 2. reset all events */
@@ -3952,25 +3953,18 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			}
 			/* Restore event */
 			cmdq_get_func()->eventRestore();
-
 		}
-		atomic_inc(&gCmdqThreadUsage);
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
 		if (likely(g_delay_thread_inited) && !cmdq_get_func()->isDispScenario(scenario)) {
-			if (atomic_read(&gSMIThreadUsage) == 0) {
+			if (atomic_inc_return(&gSMIThreadUsage) == 1) {
 				CMDQ_VERBOSE("[CLOCK] SMI clock enable %d\n", scenario);
 				cmdq_get_func()->enableCommonClockLocked(enable);
 			}
-			atomic_inc(&gSMIThreadUsage);
 		}
 
 	} else {
-		atomic_dec(&gCmdqThreadUsage);
-
-		CMDQ_VERBOSE("[CLOCK] Disable CMDQ(GCE) Clock test=%d SMI %d\n",
-			     atomic_read(&gCmdqThreadUsage), atomic_read(&gSMIThreadUsage));
-		if (atomic_read(&gCmdqThreadUsage) <= 0) {
+		if (atomic_dec_return(&gCmdqThreadUsage) == 0) {
 			/* Backup event */
 			cmdq_get_func()->eventBackup();
 			/* clock-off */
@@ -3979,9 +3973,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
 		if (likely(g_delay_thread_inited) && !cmdq_get_func()->isDispScenario(scenario)) {
-			atomic_dec(&gSMIThreadUsage);
-
-			if (atomic_read(&gSMIThreadUsage) <= 0) {
+			if (atomic_dec_return(&gSMIThreadUsage) == 0) {
 				CMDQ_VERBOSE("[CLOCK] SMI clock disable %d\n", scenario);
 				cmdq_get_func()->enableCommonClockLocked(enable);
 			}
@@ -4811,7 +4803,7 @@ void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent)
 			CMDQ_ERR("[Res] isUsed:%d, isLend:%d, isDelay:%d\n",
 				pResource->used, pResource->lend, pResource->delaying);
 			if (pResource->releaseCB == NULL)
-				CMDQ_ERR("[Res]: release CB func is NULL\n");
+				CMDQ_ERR("[Res] release CB func is NULL\n");
 			mutex_unlock(&gCmdqResourceMutex);
 			break;
 		}
@@ -9931,13 +9923,13 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 				/* First time used */
 				int32_t status;
 
-				CMDQ_MSG("[Res] Lock resource with engine: 0x%016llx, fromNotify:%d\n",
+				CMDQ_MSG(
+					"[Res] Lock resource with engine:0x%016llx fromNotify:%d callback release\n",
 					engineFlag, fromNotify);
 
 				pResource->used = true;
-				CMDQ_MSG("[Res] Callback to release\n");
 				if (pResource->releaseCB == NULL) {
-					CMDQ_LOG("[Res]: release CB func is NULL, event:%d\n",
+					CMDQ_LOG("[Res] release CB func is NULL, event:%d\n",
 						pResource->lockEvent);
 				} else {
 					CmdqResourceReleaseCB cb_func = pResource->releaseCB;
@@ -9949,7 +9941,7 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 
 					if (status < 0) {
 						/* Error status print */
-						CMDQ_ERR("[Res]: release CB (%d) return fail:%d\n",
+						CMDQ_ERR("[Res] release CB (%d) return fail:%d\n",
 									pResource->lockEvent, status);
 					}
 				}
