@@ -1635,6 +1635,9 @@ struct task_struct {
 	unsigned int policy;
 	int nr_cpus_allowed;
 	cpumask_t cpus_allowed;
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	cpumask_t cpus_allowed_turboed;
+#endif
 
 #ifdef CONFIG_PREEMPT_RCU
 	int rcu_read_lock_nesting;
@@ -2061,7 +2064,20 @@ extern int arch_task_struct_size __read_mostly;
 #endif
 
 /* Future-safe accessor for struct task_struct's cpus_allowed. */
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
+#else
+extern struct cpumask turbo_cpus;
+
+extern int smart_enter_turbo_mode(void);
+static inline struct cpumask *tsk_cpus_allowed(struct task_struct *tsk)
+{
+	if (smart_enter_turbo_mode() & cpumask_and(&(tsk)->cpus_allowed_turboed, &(tsk)->cpus_allowed, &turbo_cpus))
+		return (&(tsk)->cpus_allowed_turboed);
+	else
+		return (&(tsk)->cpus_allowed);
+}
+#endif
 
 #define TNF_MIGRATED	0x01
 #define TNF_NO_GROUP	0x02
