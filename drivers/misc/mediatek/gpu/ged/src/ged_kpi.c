@@ -679,8 +679,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		else if (boost_accum_cpu < 0)
 			boost_accum_cpu = 0;
 
-		boost_value_for_GED_idx(1, boost_accum_cpu);
-		/* perfmgr_kick_fg_boost(KIR_GED, boost_accum_cpu); */
+		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, boost_accum_cpu);
 		psKPI->boost_linear_cpu = boost_linear_cpu;
 		psKPI->boost_real_cpu = boost_real_cpu;
 		psKPI->boost_accum_cpu = boost_accum_cpu;

@@ -18,9 +18,6 @@ static void notify_render_aware_timeout(void);
 static DECLARE_WORK(mt_tt_eas_work, (void *) notify_twanted_timeout_eas);
 static DECLARE_WORK(mt_touch_timeout_work, (void *) notify_touch_up_timeout);
 static DECLARE_WORK(mt_render_aware_timeout_work, (void *) notify_render_aware_timeout);
-static DEFINE_SPINLOCK(tlock);
-static DEFINE_SPINLOCK(tlock1);
-static DEFINE_SPINLOCK(tlock2);
 static struct workqueue_struct *wq;
 static struct mutex notify_lock;
 static struct hrtimer hrt, hrt1, hrt2;
@@ -39,7 +36,7 @@ static int vip_group[10];
 
 struct fbc_operation_locked {
 	void (*ux_enable)(int);
-	void (*frame_cmplt)(unsigned long);
+	void (*frame_cmplt)(long);
 	void (*intended_vsync)(void);
 	void (*no_render)(void);
 	void (*game)(int);
@@ -99,7 +96,7 @@ void boost_touch_core_eas(void)
 	core_limit[2].max = -1;
 #endif
 	update_userlimit_cpu_core(PPM_KIR_FBC, NR_PPM_CLUSTERS, core_limit);
-	perfmgr_kick_fg_boost(EAS_KIR_FBC, 2100);
+	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 2100);
 	fbc_tracer(-3, "boost_value", 100);
 }
 
@@ -108,28 +105,21 @@ void release_eas(void)
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	perfmgr_kick_fg_boost(EAS_KIR_FBC, 0);
+	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
 	fbc_tracer(-3, "boost_value", 0);
 }
 /*--------------------TIMER------------------------*/
 static void enable_touch_up_timer(void)
 {
-	unsigned long flags;
 	ktime_t ktime;
 
-	spin_lock_irqsave(&tlock1, flags);
 	ktime = ktime_set(TOUCH_TIMEOUT_SEC, 0);
 	hrtimer_start(&hrt1, ktime, HRTIMER_MODE_REL);
-	spin_unlock_irqrestore(&tlock1, flags);
 }
 
 static void disable_touch_up_timer(void)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&tlock1, flags);
 	hrtimer_cancel(&hrt1);
-	spin_unlock_irqrestore(&tlock1, flags);
 }
 
 static enum hrtimer_restart mt_touch_timeout(struct hrtimer *timer)
@@ -142,23 +132,10 @@ static enum hrtimer_restart mt_touch_timeout(struct hrtimer *timer)
 
 static void enable_render_aware_timer(void)
 {
-	unsigned long flags;
 	ktime_t ktime;
 
-	spin_lock_irqsave(&tlock2, flags);
 	ktime = ktime_set(0, NSEC_PER_MSEC * RENDER_AWARE_TIMEOUT_MSEC);
 	hrtimer_start(&hrt2, ktime, HRTIMER_MODE_REL);
-	spin_unlock_irqrestore(&tlock2, flags);
-}
-
-static void disable_render_aware_timer(void)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&tlock2, flags);
-	hrtimer_cancel(&hrt2);
-	spin_unlock_irqrestore(&tlock2, flags);
-
 }
 
 static enum hrtimer_restart mt_render_aware_timeout(struct hrtimer *timer)
@@ -171,24 +148,18 @@ static enum hrtimer_restart mt_render_aware_timeout(struct hrtimer *timer)
 
 static void enable_frame_twanted_timer(void)
 {
-	unsigned long flags;
 	ktime_t ktime;
 
 	fbc_tracer(-6, "twanted_timer", 1);
-	spin_lock_irqsave(&tlock, flags);
 	ktime = ktime_set(0, NSEC_PER_MSEC * twanted_ms);
 	hrtimer_start(&hrt, ktime, HRTIMER_MODE_REL);
-	spin_unlock_irqrestore(&tlock, flags);
 }
 
 static void disable_frame_twanted_timer(void)
 {
-	unsigned long flags;
 
 	fbc_tracer(-6, "twanted_timer", 0);
-	spin_lock_irqsave(&tlock, flags);
 	hrtimer_cancel(&hrt);
-	spin_unlock_irqrestore(&tlock, flags);
 }
 
 static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
@@ -295,7 +266,7 @@ static void notify_twanted_timeout_eas(void)
 
 	if (chase_boost1 > 100)
 		chase_boost1 = 100;
-	perfmgr_kick_fg_boost(EAS_KIR_FBC, chase_boost1 + 2000);
+	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, chase_boost1 + 2000);
 	fbc_tracer(-3, "boost_value", chase_boost1);
 
 	boost_flag = 1;
@@ -412,7 +383,7 @@ static void notify_no_render_eas(void)
 	if (i < MAX_THREAD && frame_info[i][0] == -1) {
 		chase = 0;
 		if (!first_frame) {
-			perfmgr_kick_fg_boost(EAS_KIR_FBC, 0);
+			update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
 			fbc_tracer(-3, "boost_value", 0);
 		}
 		disable_frame_twanted_timer();
@@ -422,7 +393,7 @@ static void notify_no_render_eas(void)
 	}
 }
 
-void notify_frame_complete_eas(unsigned long frame_time)
+void notify_frame_complete_eas(long frame_time)
 {
 
 	long boost_linear = 0;
@@ -550,13 +521,13 @@ void notify_frame_complete_eas(unsigned long frame_time)
 	if (has_frame == 0) {
 		disable_frame_twanted_timer();
 		frame_done = 1;
-		perfmgr_kick_fg_boost(EAS_KIR_FBC, 0);
+		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
 		fbc_tracer(-3, "boost_value", 0);
 		boost_flag = 0;
 		chase = 0;
 		fbc_tracer(-3, "chase", chase);
 	} else {
-		perfmgr_kick_fg_boost(EAS_KIR_FBC, boost_value + 2000);
+		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, boost_value + 2000);
 		fbc_tracer(-3, "boost_value", boost_value);
 		boost_flag = 1;
 	}
@@ -608,7 +579,6 @@ void notify_intended_vsync_eas(void)
 	fbc_tracer(-6, "vip8", vip_group[8]);
 	fbc_tracer(-6, "vip9", vip_group[9]);
 
-	disable_render_aware_timer();
 	enable_render_aware_timer();
 	fbc_render_aware_pre = fbc_render_aware;
 	fbc_render_aware = 1;
@@ -642,7 +612,7 @@ void notify_intended_vsync_eas(void)
 	}
 
 	if (chase == 0) {
-		perfmgr_kick_fg_boost(EAS_KIR_FBC, boost_value + 2000);
+		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, boost_value + 2000);
 		fbc_tracer(-3, "boost_value", boost_value);
 		boost_flag = 1;
 	} else {
@@ -655,7 +625,7 @@ void notify_intended_vsync_eas(void)
 
 		if (chase_boost2 > 100)
 			chase_boost2 = 100;
-		perfmgr_kick_fg_boost(EAS_KIR_FBC, chase_boost2 + 2000);
+		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, chase_boost2 + 2000);
 		fbc_tracer(-3, "boost_value", chase_boost2);
 	}
 
@@ -816,7 +786,7 @@ long device_ioctl(struct file *filp,
 	case IOCTL_WRITE_FC:
 		if (!is_ux_fbc_active())
 			goto ret_ioctl;
-		fbc_op->frame_cmplt(arg);
+		fbc_op->frame_cmplt((long)arg);
 		break;
 
 	/*receive Intended-Vsync signal*/
