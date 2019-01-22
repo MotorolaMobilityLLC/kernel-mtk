@@ -1065,7 +1065,7 @@ static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp)
 				err = SCP_sensorHub_report_data(&event);
 				if (err < 0) {
 					usleep_range(2000, 4000);
-					SCP_PR_ERR("event buffer full, so sleep some time\n");
+					pr_err_ratelimited("event buffer full, so sleep some time\n");
 				}
 			} while (err < 0);
 			rp += SENSOR_DATA_SIZE;
@@ -1077,7 +1077,7 @@ static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp)
 				err = SCP_sensorHub_report_data(&event);
 				if (err < 0) {
 					usleep_range(2000, 4000);
-					SCP_PR_ERR("event buffer full, so sleep some time\n");
+					pr_err_ratelimited("event buffer full, so sleep some time\n");
 				}
 			} while (err < 0);
 			rp += SENSOR_DATA_SIZE;
@@ -1089,7 +1089,7 @@ static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp)
 				err = SCP_sensorHub_report_data(&event);
 				if (err < 0) {
 					usleep_range(2000, 4000);
-					SCP_PR_ERR("event buffer full, so sleep some time\n");
+					pr_err_ratelimited("event buffer full, so sleep some time\n");
 				}
 			} while (err < 0);
 			rp += SENSOR_DATA_SIZE;
