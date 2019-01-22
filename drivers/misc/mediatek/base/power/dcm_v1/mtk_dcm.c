@@ -334,7 +334,7 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"***** [mode] is type of DCM to set and retained\n");
 	len += snprintf(buf+len, PAGE_SIZE-len,
-			"init_dcm_type=0x%x, all_dcm_type=0x%x, dcm_debug=%d",
+			"init_dcm_type=0x%x, all_dcm_type=0x%x, dcm_debug=%d, ",
 			init_dcm_type, all_dcm_type, dcm_debug);
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"dcm_cpu_cluster_stat=%d\n",
