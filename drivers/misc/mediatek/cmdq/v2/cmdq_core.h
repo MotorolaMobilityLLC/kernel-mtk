@@ -455,6 +455,11 @@ struct CmdBufferStruct {
 	dma_addr_t MVABase;	/* physical address of command buffer */
 };
 
+struct CmdFreeWorkStruct {
+	struct list_head cmd_buffer_list;
+	struct work_struct free_buffer_work;
+};
+
 struct TaskStruct {
 	struct list_head listEntry;
 
