@@ -1773,43 +1773,6 @@ static void testcase_get_result(void)
 #endif
 }
 
-static void testcase_emergency_buffer(void)
-{
-	/* ensure to define CMDQ_TEST_EMERGENCY_BUFFER in cmdq_core.c */
-
-	const uint32_t longCommandSize = 160 * 1024;
-	const uint32_t submitTaskCount = 4;
-	struct cmdqRecStruct *handle;
-	int32_t i;
-
-	CMDQ_MSG("%s\n", __func__);
-
-	/* force to use emergency buffer */
-	if (cmdq_core_enable_emergency_buffer_test(true) < 0)
-		return;
-
-	/* prepare long command */
-	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
-	cmdq_task_reset(handle);
-	cmdq_task_set_secure(handle, false);
-	for (i = 0; i < (longCommandSize / CMDQ_INST_SIZE); i++)
-		cmdq_op_read_to_data_register(handle, CMDQ_TEST_GCE_DUMMY_PA, CMDQ_DATA_REG_PQ_COLOR);
-
-	/* submit */
-	for (i = 0; i < submitTaskCount; i++) {
-		CMDQ_LOG("async submit large command(size: %d), count:%d\n", longCommandSize, i);
-		cmdq_task_flush_async(handle);
-	}
-
-	msleep_interruptible(1000);
-
-	/* reset to apply normal memory allocation flow */
-	cmdq_core_enable_emergency_buffer_test(false);
-	cmdq_task_destroy(handle);
-
-	CMDQ_MSG("%s END\n", __func__);
-}
-
 static int _testcase_simplest_command_loop_submit(const uint32_t loop, enum CMDQ_SCENARIO_ENUM scenario,
 						  const long long engineFlag,
 						  const bool isSecureTask)
@@ -3934,9 +3897,6 @@ static void testcase_general_handling(int32_t testID)
 	case 77:
 		testcase_thread_dispatch();
 		break;
-	case 76:
-		testcase_emergency_buffer();
-		break;
 	case 75:
 		testcase_full_thread_array();
 		break;
@@ -4015,7 +3975,6 @@ static void testcase_general_handling(int32_t testID)
 		testcase_backup_register();
 		testcase_fire_and_forget();
 		testcase_backup_reg_to_slot();
-		testcase_emergency_buffer();
 		testcase_thread_dispatch();
 		testcase_full_thread_array();
 		break;

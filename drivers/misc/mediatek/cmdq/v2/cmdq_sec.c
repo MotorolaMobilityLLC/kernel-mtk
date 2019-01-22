@@ -308,10 +308,8 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	struct iwcCmdqMessage_t *pIwc;
 	/* cmdqSecDr will insert some instr */
 	const uint32_t reservedCommandSize = 4 * CMDQ_INST_SIZE;
-#ifdef CMDQ_JUMP_MEM
 	struct CmdBufferStruct *cmd_buffer = NULL;
 	uint32_t buffer_index = 0;
-#endif
 
 	/* check task first */
 	if (!pTask) {
@@ -346,7 +344,6 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 		pIwc->command.priority = pTask->priority;
 		pIwc->command.engineFlag = pTask->engineFlag;
 		pIwc->command.hNormalTask = 0LL | ((unsigned long)pTask);
-#ifdef CMDQ_JUMP_MEM
 		pIwc->command.commandSize = pTask->bufferSize;
 
 		buffer_index = 0;
@@ -368,10 +365,6 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 
 			buffer_index++;
 		}
-#else
-		pIwc->command.commandSize = pTask->commandSize;
-		memcpy((pIwc->command.pVABase), (pTask->pVABase), (pTask->commandSize));
-#endif
 
 		/* cookie */
 		pIwc->command.waitCookie = pTask->secData.waitCookie;
