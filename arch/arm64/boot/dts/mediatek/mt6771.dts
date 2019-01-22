@@ -1005,7 +1005,7 @@
 
 	mcucfg_mp2_counter@0c532000 {
 		compatible = "mediatek,mcucfg_mp2_counter";
-		reg = <0 0x0c532700 0 0x1000>;
+		reg = <0 0x0c532000 0 0x1000>;
 	};
 
 	infracfg@1020e000 {

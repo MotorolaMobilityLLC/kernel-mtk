@@ -80,7 +80,7 @@ static unsigned int v2f[CM_MGR_CPU_CLUSTER];
 static unsigned int vcore_power_up;
 static unsigned int vcore_power_down;
 static int cpu_opp_cur[CM_MGR_CPU_CLUSTER];
-static int ratio[CM_MGR_CPU_CLUSTER];
+static int ratio_max[CM_MGR_CPU_CLUSTER];
 static int count[CM_MGR_CPU_CLUSTER];
 static int count_ack[CM_MGR_CPU_CLUSTER];
 static int vcore_dram_opp;
@@ -125,8 +125,8 @@ static void cm_mgr_update_met(void)
 	met_data.cm_mgr_loading[0] = cm_mgr_abs_load;
 	met_data.cm_mgr_loading[1] = cm_mgr_rel_load;
 
-	met_data.cm_mgr_ratio[0] = ratio[0];
-	met_data.cm_mgr_ratio[1] = ratio[1];
+	met_data.cm_mgr_ratio[0] = ratio_max[0];
+	met_data.cm_mgr_ratio[1] = ratio_max[1];
 
 	met_data.cm_mgr_bw = total_bw;
 
@@ -274,8 +274,8 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 
 		for (i = 0; i < CM_MGR_CPU_CLUSTER; i++) {
 			count[i] = cm_mgr_get_cpu_count(i);
-			ratio[i] = cm_mgr_get_max_stall_ratio(i);
-			max_ratio_idx[i] = ratio[i] / 5;
+			ratio_max[i] = cm_mgr_get_max_stall_ratio(i);
+			max_ratio_idx[i] = ratio_max[i] / 5;
 			if (max_ratio_idx[i] > RATIO_COUNT)
 				max_ratio_idx[i] = RATIO_COUNT;
 			cpu_opp_cur[i] = mt_cpufreq_get_cur_freq_idx(i);
