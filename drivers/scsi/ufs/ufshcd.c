@@ -62,8 +62,8 @@
 
 /* NOP OUT retries waiting for NOP IN response */
 #define NOP_OUT_RETRIES    10
-/* Timeout after 30 msecs if NOP OUT hangs without response */
-#define NOP_OUT_TIMEOUT    30 /* msecs */
+/* Timeout after 100 msecs if NOP OUT hangs without response */
+#define NOP_OUT_TIMEOUT    100 /* msecs */
 
 /* Query request retries */
 #define QUERY_REQ_RETRIES 10
@@ -71,8 +71,8 @@
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define QUERY_REQ_TIMEOUT 1000  /* unit: ms, align as BootROM */
 #else
-/* Max Query Req cmd timeout = 1.5s * 32QueueDepth = 48s */
-#define QUERY_REQ_TIMEOUT 48000   /* unit: ms, depend on vendor's requirement */
+/* Max Query Req cmd timeout = 1.7s * 32QueueDepth = 55s */
+#define QUERY_REQ_TIMEOUT 55000   /* unit: ms, depend on vendor's requirement */
 #endif
 
 /* Task management command timeout */
