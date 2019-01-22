@@ -3984,6 +3984,21 @@ static int32_t cmdq_core_find_a_free_HW_thread(
 		}
 		CMDQ_VERBOSE("THREAD: isEngineConflict:%d, thread:%d\n", isEngineConflict, thread);
 
+		/* because all thread are pre-dispatched, there 2 outcome of engine conflict check:
+		 * 1. pre-dispatched secure thread, and no conflict with normal path
+		 * 2. pre-dispatched secure thread, but conflict with normal/anothor secure path
+		 *
+		 * no need to check get normal thread in secure path
+		 */
+
+		/* ensure not dispatch secure thread to normal task */
+		if (!task->secData.is_secure &&
+			cmdq_get_func()->isSecureThread(thread)) {
+			thread = CMDQ_INVALID_THREAD;
+			isEngineConflict = true;
+			break;
+		}
+
 		/* no enfine conflict with running thread, AND used engines have no owner */
 		/* try to find a free thread */
 		if ((isEngineConflict == false) && (thread == CMDQ_INVALID_THREAD)) {
