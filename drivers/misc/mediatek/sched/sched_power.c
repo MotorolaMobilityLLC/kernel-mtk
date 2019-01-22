@@ -482,22 +482,25 @@ int show_cpu_capacity(char *buf, int buf_size)
 		struct sched_capacity_reqs *scr;
 
 		scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
-		len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu limited_freq=%luMHZ ",
+		len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu max=%lu min=%lu ",
 				cpu,
 				cpu_rq(cpu)->cpu_capacity_orig,
 				cpu_online(cpu)?cpu_rq(cpu)->cpu_capacity:0,
 				cpu_online(cpu)?cpu_rq(cpu)->rd->max_cpu_capacity.val:0,
-				/* limited freq */
-				cpu_online(cpu)?arch_scale_get_max_freq(cpu) / 1000 : 0
+				/* limited frequency */
+				cpu_online(cpu)?arch_scale_get_max_freq(cpu) / 1000 : 0,
+				cpu_online(cpu)?arch_scale_get_min_freq(cpu) / 1000 : 0
 				);
 
-		len += snprintf(buf+len, buf_size-len, "cur=%lu cur_freq=%luMHZ util=%lu cfs=%lu rt=%lu (%s)\n",
-				/* current capacity */
-				cpu_online(cpu)?capacity_curr_of(cpu):0,
-				/* frequency info */
+		len += snprintf(buf+len, buf_size-len, "cur_freq=%luMHZ, cur=%lu util=%lu cfs=%lu rt=%lu (%s)\n",
+				/* current frequency */
 				cpu_online(cpu)?capacity_curr_of(cpu) *
 				arch_scale_get_max_freq(cpu) /
 				cpu_rq(cpu)->cpu_capacity_orig / 1000 : 0,
+
+				/* current capacity */
+				cpu_online(cpu)?capacity_curr_of(cpu):0,
+
 				/* cpu utilization */
 				cpu_online(cpu)?cpu_util(cpu):0,
 				scr->cfs,
