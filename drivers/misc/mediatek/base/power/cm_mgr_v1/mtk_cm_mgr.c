@@ -298,6 +298,13 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 #endif
 		count_ack[0] = count_ack[1] = 0;
 
+#ifdef ATF_SECURE_SMC
+		ratio_max[0] = (ret & 0xff);
+		ratio_max[1] = ((ret >> 8) & 0xff);
+		count[0] = (ret >> 24) & 0xf;
+		count[1] = (ret >> 28) & 0xf;
+#endif
+
 		if (total_bw_value)
 			total_bw = total_bw_value;
 		if (total_bw >= VCORE_POWER_ARRAY_SIZE)
@@ -309,8 +316,10 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		}
 
 		for (i = 0; i < CM_MGR_CPU_CLUSTER; i++) {
+#ifndef ATF_SECURE_SMC
 			count[i] = cm_mgr_get_cpu_count(i);
 			ratio_max[i] = cm_mgr_get_max_stall_ratio(i);
+#endif
 			max_ratio_idx[i] = ratio_max[i] / 5;
 			if (max_ratio_idx[i] > RATIO_COUNT)
 				max_ratio_idx[i] = RATIO_COUNT;
@@ -343,6 +352,14 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			idx = CM_MGR_CPU_CLUSTER * level;
 			cpu_power_total = 0;
 #ifdef PER_CPU_STALL_RATIO
+#ifdef ATF_SECURE_SMC
+			ret = mt_secure_call(MTK_SIP_KERNEL_PMU_EVA, 1, idx, cpu_opp_cur[0] || (cpu_opp_cur[1] << 16));
+			cpu_power_up[0] = (ret & 0xffff) * v2f[0] / 100;
+			cpu_power_up[1] = ((ret >> 16) & 0xffff) * v2f[1] / 100;
+
+			for (i = 0; i < CM_MGR_CPU_CLUSTER; i++)
+				cpu_power_total += cpu_power_up[i];
+#else
 			for (i = 0; i < CM_MGR_CPU_COUNT; i++) {
 				if (i < 4)
 					cpu_power_up_array[0] +=
@@ -358,6 +375,7 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 				cpu_power_up[i] = cpu_power_up_array[i] * v2f[i] / 100;
 				cpu_power_total += cpu_power_up[i];
 			}
+#endif
 #else
 			for (i = 0; i < CM_MGR_CPU_CLUSTER; i++) {
 				cpu_power_up_array[i] =
@@ -407,6 +425,14 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			idx = CM_MGR_CPU_CLUSTER * (level - 1);
 			cpu_power_total = 0;
 #ifdef PER_CPU_STALL_RATIO
+#ifdef ATF_SECURE_SMC
+			ret = mt_secure_call(MTK_SIP_KERNEL_PMU_EVA, 2, idx, cpu_opp_cur[0] || (cpu_opp_cur[1] << 16));
+			cpu_power_down[0] = (ret & 0xffff) * v2f[0] / 100;
+			cpu_power_down[1] = ((ret >> 16) & 0xffff) * v2f[1] / 100;
+
+			for (i = 0; i < CM_MGR_CPU_CLUSTER; i++)
+				cpu_power_total += cpu_power_down[i];
+#else
 			for (i = 0; i < CM_MGR_CPU_COUNT; i++) {
 				if (i < 4)
 					cpu_power_down_array[0] +=
@@ -422,6 +448,7 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 				cpu_power_down[i] = cpu_power_down_array[i] * v2f[i] / 100;
 				cpu_power_total += cpu_power_down[i];
 			}
+#endif
 #else
 			for (i = 0; i < CM_MGR_CPU_CLUSTER; i++) {
 				cpu_power_down_array[i] =
@@ -962,6 +989,11 @@ int __init cm_mgr_module_init(void)
 
 #endif /* CM_MGR_IS_LP3 */
 
+#ifdef ATF_SECURE_SMC
+	pr_info("ATF_SECURE_SMC\n");
+#else
+	pr_info("!ATF_SECURE_SMC\n");
+#endif
 	return 0;
 }
 

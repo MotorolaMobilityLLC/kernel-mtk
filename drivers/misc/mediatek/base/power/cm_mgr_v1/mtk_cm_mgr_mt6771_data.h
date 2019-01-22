@@ -69,7 +69,7 @@ static int debounce_times_up_adb[CM_MGR_EMI_OPP] = {0, 3};
 static int debounce_times_down_adb[CM_MGR_EMI_OPP] = {0, 3};
 static int debounce_times_reset_adb;
 static int update;
-static int update_v2f_table;
+static int update_v2f_table = 1;
 static int cm_mgr_opp_enable = 1;
 static int cm_mgr_enable = 1;
 static int is_lp3;
@@ -140,6 +140,7 @@ static unsigned int _v2f_all[][CM_MGR_CPU_CLUSTER] = {
 	{29, 29},
 };
 
+#ifndef ATF_SECURE_SMC
 static unsigned int cpu_power_gain_up_low_1[][CM_MGR_CPU_ARRAY_SIZE] = {
 	{2, 17, 2, 13},
 	{4, 35, 3, 26},
@@ -353,5 +354,6 @@ static int cpu_power_gain_opp(int bw, int is_up, int opp, int ratio_idx, int idx
 	else
 		return cpu_power_gain(cpu_power_gain_down, ratio_idx, idx);
 }
+#endif
 
 #endif	/* __MTK_CM_MGR_MT6771_DATA_H__ */
