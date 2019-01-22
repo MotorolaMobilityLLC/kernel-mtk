@@ -873,6 +873,8 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 					prBssDescWeakestSameSSID = prBssDesc;
 				else if (prBssDesc->ucRCPI < prBssDescWeakestSameSSID->ucRCPI)
 					prBssDescWeakestSameSSID = prBssDesc;
+				if (u4SameSSIDCount < SCN_BSS_DESC_SAME_SSID_THRESHOLD)
+					continue;
 			}
 
 			if (!prBssDescWeakest) {	/* 1st element */
@@ -1335,8 +1337,9 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		}
 	}
 #if 1
-
 	prBssDesc->u2RawLength = prSwRfb->u2PacketLen;
+	if (prBssDesc->u2RawLength > CFG_RAW_BUFFER_SIZE)
+		prBssDesc->u2RawLength = CFG_RAW_BUFFER_SIZE;
 	kalMemCopy(prBssDesc->aucRawBuf, prWlanBeaconFrame, prBssDesc->u2RawLength);
 #endif
 

@@ -1046,7 +1046,14 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				}
 				/* 4 <2.b> If we don't have the matched one */
 				else {
-
+					if (prAisFsmInfo->rJoinReqTime != 0 &&
+						CHECK_FOR_TIMEOUT(kalGetTimeTick(),
+								  prAisFsmInfo->rJoinReqTime,
+								  SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
+						eNextState = AIS_STATE_JOIN_FAILURE;
+						fgIsTransition = TRUE;
+						break;
+					}
 					/* increase connection trial count for infrastructure connection */
 					if (prConnSettings->eOPMode == NET_TYPE_INFRA)
 						prAisFsmInfo->ucConnTrialCount++;
@@ -3055,9 +3062,9 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 		aisFsmStateAbort_JOIN(prAdapter);
 
 		/* 2. Increase Join Failure Count */
-		prAisFsmInfo->prTargetStaRec->ucJoinFailureCount++;
+		prAisFsmInfo->prTargetBssDesc->ucJoinFailureCount++;
 
-		if (prAisFsmInfo->prTargetStaRec->ucJoinFailureCount < JOIN_MAX_RETRY_FAILURE_COUNT) {
+		if (prAisFsmInfo->prTargetBssDesc->ucJoinFailureCount < JOIN_MAX_RETRY_FAILURE_COUNT) {
 			/* 3.1 Retreat to AIS_STATE_SEARCH state for next try */
 			eNextState = AIS_STATE_SEARCH;
 		} else if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
