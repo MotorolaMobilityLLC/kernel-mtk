@@ -272,7 +272,7 @@ static void boost_work(struct work_struct *work_struct)
 	while (1) {
 		int timeout;
 
-		USB_BOOST_NOTICE("id:%d, running of work\n", id);
+		USB_BOOST_DBG("id:%d, running of work\n", id);
 		if (!ptr_inst->para[ATTR_ENABLE]) {
 			/* dump_info(id); */
 			break;

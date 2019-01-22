@@ -1205,12 +1205,12 @@ void mu3d_hal_stop_qmu(DEV_INT32 q_num, USB_DIR dir)
 {
 	if (dir == USB_TX) {
 		if (!(os_readl(USB_QMU_TQCSR(q_num)) & (QMU_Q_ACTIVE))) {
-			qmu_printk(K_INFO, "Tx%d inActive Now!\n", q_num);
+			qmu_printk(K_DEBUG, "Tx%d inActive Now!\n", q_num);
 		} else {
 			os_writel(USB_QMU_TQCSR(q_num), QMU_Q_STOP);
 			mb();
 			if (wait_for_value(USB_QMU_TQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
-				qmu_printk(K_CRIT, "Tx%d stop Now! CSR=0x%x\n",
+				qmu_printk(K_DEBUG, "Tx%d stop Now! CSR=0x%x\n",
 					   q_num, os_readl(USB_QMU_TQCSR(q_num)));
 			else {
 				qmu_printk(K_CRIT, "Tx%d UNSTOPABLE!! CSR=0x%x\n",
@@ -1223,16 +1223,16 @@ void mu3d_hal_stop_qmu(DEV_INT32 q_num, USB_DIR dir)
 		os_writel(U3D_QEMIESR, os_readl(U3D_QEMIESR)&~(QMU_TX_EMPTY(q_num)));
 		os_writel(U3D_TQERRIESR0, os_readl(U3D_TQERRIESR0)
 				  &~(QMU_TX_LEN_ERR(q_num))&~(QMU_TX_CS_ERR(q_num)));
-		qmu_printk(K_INFO, "Stop Tx%d qmu interrupt\n", q_num);
+		qmu_printk(K_DEBUG, "Stop Tx%d qmu interrupt\n", q_num);
 #endif
 	} else if (dir == USB_RX) {
 		if (!(os_readl(USB_QMU_RQCSR(q_num)) & QMU_Q_ACTIVE)) {
-			qmu_printk(K_INFO, "Rx%d inActive Now!\n", q_num);
+			qmu_printk(K_DEBUG, "Rx%d inActive Now!\n", q_num);
 		} else {
 			os_writel(USB_QMU_RQCSR(q_num), QMU_Q_STOP);
 			mb();
 			if (wait_for_value(USB_QMU_RQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
-				qmu_printk(K_CRIT, "Rx%d stop Now! CSR=0x%x\n",
+				qmu_printk(K_DEBUG, "Rx%d stop Now! CSR=0x%x\n",
 					   q_num, os_readl(USB_QMU_RQCSR(q_num)));
 			else {
 				qmu_printk(K_CRIT, "Rx%d UNSTOPABLE!! CSR=0x%x\n",
@@ -1247,7 +1247,7 @@ void mu3d_hal_stop_qmu(DEV_INT32 q_num, USB_DIR dir)
 				  &~(QMU_RX_CS_ERR(q_num))&~(QMU_RX_LEN_ERR(q_num)));
 		os_writel(U3D_RQERRIESR1, os_readl(U3D_RQERRIESR1)
 				  &~(QMU_RX_ZLP_ERR(q_num))&~(QMU_RX_EP_ERR(q_num)));
-		qmu_printk(K_INFO, "Stop Rx%d qmu interrupt\n", q_num);
+		qmu_printk(K_DEBUG, "Stop Rx%d qmu interrupt\n", q_num);
 #endif
 	}
 }
@@ -1313,7 +1313,7 @@ void mu3d_hal_restart_qmu(DEV_INT32 q_num, USB_DIR dir)
  */
 void _ex_mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 {
-	qmu_printk(K_INFO, "%s flush QMU %s-EP[%d]\n", __func__, ((dir == USB_TX) ? "TX" : "RX"),
+	qmu_printk(K_DEBUG, "%s flush QMU %s-EP[%d]\n", __func__, ((dir == USB_TX) ? "TX" : "RX"),
 		   Q_num);
 
 	if (dir == USB_TX) {
@@ -1328,7 +1328,7 @@ void _ex_mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 		/*FIXME: Do not know why... */
 		os_writel(USB_QMU_TQSAR(Q_num),
 			  mu3d_hal_gpd_virt_to_phys(Tx_gpd_last[Q_num], USB_TX, Q_num));
-		qmu_printk(K_INFO, "USB_QMU_TQSAR %x\n", os_readl(USB_QMU_TQSAR(Q_num)));
+		qmu_printk(K_DEBUG, "USB_QMU_TQSAR %x\n", os_readl(USB_QMU_TQSAR(Q_num)));
 	} else if (dir == USB_RX) {
 		/*Stop QMU */
 		mu3d_hal_stop_qmu(Q_num, USB_RX);
@@ -1341,7 +1341,7 @@ void _ex_mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 		/*FIXME: Do not know why... */
 		os_writel(USB_QMU_RQSAR(Q_num),
 			  mu3d_hal_gpd_virt_to_phys(Rx_gpd_end[Q_num], USB_RX, Q_num));
-		qmu_printk(K_INFO, "USB_QMU_RQSAR %x\n", os_readl(USB_QMU_RQSAR(Q_num)));
+		qmu_printk(K_DEBUG, "USB_QMU_RQSAR %x\n", os_readl(USB_QMU_RQSAR(Q_num)));
 	}
 }
 
