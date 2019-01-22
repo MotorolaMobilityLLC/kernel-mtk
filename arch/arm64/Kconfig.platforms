@@ -231,7 +231,6 @@ config MACH_MT6763
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_SEC_DEINT_SUPPORT
-	select MTK_DFD_INTERNAL_DUMP
 	select MTK_FIQ_CACHE
 	help
 	  This enables support for MediaTek MT6763
