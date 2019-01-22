@@ -2430,7 +2430,8 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 
 			prWlanHeader = (P_WLAN_MAC_HEADER_T) prCurrSwRfb->pvHeader;
 			u2FrameCtrl = prWlanHeader->u2FrameCtrl;
-			if (prCurrSwRfb->prStaRec == NULL && RXM_IS_DATA_FRAME(u2FrameCtrl)) {
+			if (prCurrSwRfb->prStaRec == NULL && RXM_IS_DATA_FRAME(u2FrameCtrl)
+				&& (prAdapter->prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED)) {
 				/* rx header translation */
 				DBGLOG(QM, INFO,
 					"RXD Trans: FrameCtrl=0x%02x GVLD=0x%x, StaRecIdx=%d, WlanIdx=%d PktLen=%d\n",
