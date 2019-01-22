@@ -417,7 +417,6 @@ bool InitAfeControl(struct device *pDev)
 	AfeGlobalVarInit();
 	Auddrv_Reg_map(pDev);
 	AudDrv_Clk_Global_Variable_Init();
-	AudDrv_Clk_Power_On();
 	AudDrv_Bus_Init();
 	Auddrv_Read_Efuse_HPOffset();
 	AfeControlMutexLock();
@@ -1183,7 +1182,15 @@ bool SetI2SAdcEnable(bool bEnable)
 		* ADDA UL DL (AFE_ADDA_UL_DL_CON0) ->
 		* ADDA UL SRC (AFE_ADDA_UL_SRC_CON0)
 		*/
-		EnableAfe(true);
+#ifdef CONFIG_FPGA_EARLY_PORTING
+		pr_warn("%s(), enable fpga clock divide by 4", __func__);
+		Afe_Set_Reg(FPGA_CFG0, 0x1 << 1, 0x1 << 1);
+#endif
+		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000)
+			AudDrv_ADC_Hires_Clk_Off();
+		else
+			AudDrv_ADC_Clk_On();
+
 		SetADDAEnable(true);
 		SetULSrcEnable(true);
 	} else {
@@ -1194,10 +1201,10 @@ bool SetI2SAdcEnable(bool bEnable)
 		*/
 		SetULSrcEnable(false);
 		SetADDAEnable(false);
-		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000) {
-			/* power on adc hires */
+		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000)
 			AudDrv_ADC_Hires_Clk_Off();
-		}
+		else
+			AudDrv_ADC_Clk_Off();
 #ifdef CONFIG_FPGA_EARLY_PORTING
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
@@ -1431,8 +1438,6 @@ bool SetI2SDacEnable(bool bEnable)
 		SetDLSrcEnable(false);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
 		SetADDAEnable(false);
-
-		AudDrv_AUD_Sel(0);
 #ifdef CONFIG_FPGA_EARLY_PORTING
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);

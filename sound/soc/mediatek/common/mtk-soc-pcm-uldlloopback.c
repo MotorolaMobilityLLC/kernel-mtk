@@ -140,7 +140,6 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 
 	pr_warn("%s\n", __func__);
 	AudDrv_Clk_On();
-	AudDrv_ADC_Clk_On();	/* TODO: sholud move to later sequence, where can have hires or not info */
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s  with mtk_uldlloopback_open\n", __func__);
 		runtime->rate = 48000;
@@ -181,7 +180,6 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
-		AudDrv_ADC_Clk_Off();
 		AudDrv_Clk_Off();
 		return 0;
 	}
@@ -217,8 +215,6 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 	Afe_Set_Reg(AFE_I2S_CON2, 0x0, 0x1);
 
 	EnableAfe(false);
-
-	AudDrv_ADC_Clk_Off();
 
 	AudDrv_Clk_Off();
 	return 0;

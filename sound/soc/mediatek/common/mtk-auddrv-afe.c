@@ -93,6 +93,8 @@ void *AFE_BASE_ADDRESS;
 void *AFE_SRAM_ADDRESS;
 void *AFE_TOP_ADDRESS;
 void *APMIXEDSYS_ADDRESS;
+void *CLKSYS_ADDRESS;
+
 struct regmap *pregmap;
 
 int Auddrv_Reg_map(struct device *pdev)
@@ -138,8 +140,8 @@ int Auddrv_Reg_map(struct device *pdev)
 
 	/* temp for hardawre code  set 0x1000629c = 0xd */
 	AFE_TOP_ADDRESS = ioremap_nocache(AUDIO_POWER_TOP, 0x1000);
-
 	APMIXEDSYS_ADDRESS = ioremap_nocache(APMIXEDSYS_BASE, 0x1000);
+	CLKSYS_ADDRESS = ioremap_nocache(AUDIO_CLKCFG_PHYSICAL_BASE, 0x1000);
 
 	return ret;
 }
@@ -183,7 +185,7 @@ uint32 GetApmixedCfg(uint32 offset)
 	volatile uint32 *value;
 
 	value = (volatile uint32 *)(address);
-	/* pr_debug("GetClkCfg offset=%x address = %x value = 0x%x\n", offset, address, *value); */
+	/* pr_debug("GetApmixedCfg offset=%x address = %x value = 0x%x\n", offset, address, *value); */
 	return *value;
 }
 
@@ -192,11 +194,45 @@ void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask)
 	volatile long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
 	volatile uint32 *AFE_Register = (volatile uint32 *)address;
 	volatile uint32 val_tmp;
-	/* pr_debug("SetpllCfg offset=%x, value=%x, mask=%x\n",offset,value,mask); */
+	/* pr_debug("SetApmixedCfg offset=%x, value=%x, mask=%x\n",offset,value,mask); */
 	val_tmp = GetApmixedCfg(offset);
 	val_tmp &= (~mask);
 	val_tmp |= (value & mask);
 	mt_reg_sync_writel(val_tmp, AFE_Register);
+}
+
+/* function to access clksys */
+unsigned int clksys_get_reg(unsigned int offset)
+{
+	volatile long address = (long)((char *)CLKSYS_ADDRESS + offset);
+	volatile unsigned int *value;
+
+	if (CLKSYS_ADDRESS == NULL) {
+		pr_err("%s(), CLKSYS_ADDRESS is null\n", __func__);
+		return 0;
+	}
+
+	value = (volatile unsigned int *)(address);
+	pr_aud("%s offset=%x address = %lx value = 0x%x\n", __func__, offset, address, *value);
+	return *value;
+}
+
+void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
+{
+	volatile long address = (long)((char *)CLKSYS_ADDRESS + offset);
+	volatile unsigned int *val_addr = (volatile unsigned int *)address;
+	volatile unsigned int val_tmp;
+
+	if (CLKSYS_ADDRESS == NULL) {
+		pr_err("%s(), CLKSYS_ADDRESS is null\n", __func__);
+		return;
+	}
+
+	pr_aud("%s offset=%x, value=%x, mask=%x\n", __func__, offset, value, mask);
+	val_tmp = clksys_get_reg(offset);
+	val_tmp &= (~mask);
+	val_tmp |= (value & mask);
+	mt_reg_sync_writel(val_tmp, val_addr);
 }
 
 void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask)

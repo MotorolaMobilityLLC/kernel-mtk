@@ -276,7 +276,6 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 
 	AudDrv_Clk_On();
-	AudDrv_ADC_Clk_On();	/* TODO: sholud move to later sequence, where can have hires or not info */
 
 	pr_debug("%s\n", __func__);
 	TDM_VUL_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_VUL);
@@ -312,7 +311,6 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 
 static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 {
-	AudDrv_ADC_Clk_Off();
 	AudDrv_Clk_Off();
 	return 0;
 }
