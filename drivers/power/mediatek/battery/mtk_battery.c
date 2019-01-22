@@ -3513,6 +3513,9 @@ void fg_nafg_monitor(void)
 	if (gDisableGM30 || cmd_disable_nafg || ntc_disable_nafg)
 		return;
 
+	dtime.tv_sec = 0;
+	dtime.tv_nsec = 0;
+
 	gauge_dev_get_nag_cnt(gauge_dev, &nafg_cnt);
 
 	if (last_nafg_cnt != nafg_cnt) {
