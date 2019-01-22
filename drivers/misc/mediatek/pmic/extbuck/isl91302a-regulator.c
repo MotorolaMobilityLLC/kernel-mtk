@@ -42,14 +42,14 @@ struct isl91302a_regulator_info {
 #define ISL91302A_RAMP_RATE	(12500)	/* uV/us */
 
 /* buck 1 */
-#define isl91302a_proc1_vol_reg		(0)
-#define isl91302a_proc1_vol_mask	(0)
-#define isl91302a_proc1_vol_shift	(0)
-#define isl91302a_proc1_enable_reg	ISL91302A_MODECTRL_R
-#define isl91302a_proc1_enable_bit	(0x80)
-#define isl91302a_proc1_min_uV		(ISL91302A_MIN_VOLTAGE)
-#define isl91302a_proc1_max_uV		(ISL91302A_MAX_VOLTAGE)
-#define isl91302a_proc1_id		(0)
+#define isl91302a_gpu_vol_reg		(0)
+#define isl91302a_gpu_vol_mask		(0)
+#define isl91302a_gpu_vol_shift		(0)
+#define isl91302a_gpu_enable_reg	ISL91302A_MODECTRL_R
+#define isl91302a_gpu_enable_bit	(0x80)
+#define isl91302a_gpu_min_uV		(ISL91302A_MIN_VOLTAGE)
+#define isl91302a_gpu_max_uV		(ISL91302A_MAX_VOLTAGE)
+#define isl91302a_gpu_id		(0)
 
 /* buck 2 */
 #define isl91302a_proc2_vol_reg		(0)
@@ -62,14 +62,14 @@ struct isl91302a_regulator_info {
 #define isl91302a_proc2_id		(1)
 
 /* buck 3 */
-#define isl91302a_gpu_vol_reg		(0)
-#define isl91302a_gpu_vol_mask		(0)
-#define isl91302a_gpu_vol_shift		(0)
-#define isl91302a_gpu_enable_reg	ISL91302A_MODECTRL_R
-#define isl91302a_gpu_enable_bit	(0x20)
-#define isl91302a_gpu_min_uV		(ISL91302A_MIN_VOLTAGE)
-#define isl91302a_gpu_max_uV		(ISL91302A_MAX_VOLTAGE)
-#define isl91302a_gpu_id		(2)
+#define isl91302a_proc1_vol_reg		(0)
+#define isl91302a_proc1_vol_mask	(0)
+#define isl91302a_proc1_vol_shift	(0)
+#define isl91302a_proc1_enable_reg	ISL91302A_MODECTRL_R
+#define isl91302a_proc1_enable_bit	(0x20)
+#define isl91302a_proc1_min_uV		(ISL91302A_MIN_VOLTAGE)
+#define isl91302a_proc1_max_uV		(ISL91302A_MAX_VOLTAGE)
+#define isl91302a_proc1_id		(2)
 
 static struct mtk_simple_regulator_control_ops isl91302a_mreg_ctrl_ops = {
 	.register_read = isl91302a_read_byte,
@@ -85,11 +85,11 @@ static int isl91302a_list_voltage(
 }
 
 static struct mtk_simple_regulator_desc isl91302a_desc_table[] = {
-	mreg_decl(isl91302a_proc1, isl91302a_list_voltage,
+	mreg_decl(isl91302a_gpu, isl91302a_list_voltage,
 			1024, &isl91302a_mreg_ctrl_ops),
 	mreg_decl(isl91302a_proc2, isl91302a_list_voltage,
 			1024, &isl91302a_mreg_ctrl_ops),
-	mreg_decl(isl91302a_gpu, isl91302a_list_voltage,
+	mreg_decl(isl91302a_proc1, isl91302a_list_voltage,
 			1024, &isl91302a_mreg_ctrl_ops),
 };
 
@@ -140,8 +140,8 @@ static struct mtk_simple_regulator_desc isl91302a_desc_table[] = {
 
 static struct isl91302a_regulator_info isl91302a_regulator_infos[] = {
 	ISL91302A_REGULATOR_DECL(0), /* GPU */
-	ISL91302A_REGULATOR_DECL(1), /* PROC1 */
-	ISL91302A_REGULATOR_DECL(2), /* PROC2 */
+	ISL91302A_REGULATOR_DECL(1), /* PROC2 */
+	ISL91302A_REGULATOR_DECL(2), /* PROC1 */
 };
 
 static struct isl91302a_regulator_info *isl91302a_find_regulator_info(int id)
@@ -247,7 +247,7 @@ static struct regulator_init_data
 	isl91302a_buck_init_data[ISL91302A_BUCK_MAX] = {
 	{
 		.constraints = {
-			.name = "ext_buck_proc1",
+			.name = "ext_buck_gpu",
 			.min_uV = ISL91302A_MIN_VOLTAGE,
 			.max_uV = ISL91302A_MAX_VOLTAGE,
 			.valid_modes_mask =
@@ -271,7 +271,7 @@ static struct regulator_init_data
 	},
 	{
 		.constraints = {
-			.name = "ext_buck_gpu",
+			.name = "ext_buck_proc1",
 			.min_uV = ISL91302A_MIN_VOLTAGE,
 			.max_uV = ISL91302A_MAX_VOLTAGE,
 			.valid_modes_mask =
