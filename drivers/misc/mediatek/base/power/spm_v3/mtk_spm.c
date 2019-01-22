@@ -601,6 +601,27 @@ void spm_pmic_vcore_setting(int lp_mode)
 	prev_mode = lp_mode;
 }
 
+void spm_pmic_vcore_setting_of_srclken2(int lp_mode)
+{
+	static int prev_mode = -1;
+
+	if (lp_mode == prev_mode)
+		return;
+
+	pr_debug("set vcore low power setting of srclken2: %d -> %d\n", prev_mode, lp_mode);
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
+	pmic_config_interface_nolock(PMIC_RG_BUCK_VCORE_HW2_OP_EN_ADDR,
+				     lp_mode,
+				     PMIC_RG_BUCK_VCORE_HW2_OP_EN_MASK,
+				     PMIC_RG_BUCK_VCORE_HW2_OP_EN_SHIFT);
+#elif defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	pmic_buck_vcore_lp(SRCLKEN2, lp_mode, HW_LP);
+#endif
+
+	prev_mode = lp_mode;
+}
+
 void spm_pmic_power_mode(int mode, int force, int lock)
 {
 	static int prev_mode = -1;
