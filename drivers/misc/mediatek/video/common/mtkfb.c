@@ -967,7 +967,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	DISPFUNC();
 	/* M: dump debug mmprofile log info */
-	MMProfileLogEx(MTKFB_MMP_Events.IOCtrl, MMProfileFlagPulse, _IOC_NR(cmd), arg);
+	mmprofile_log_ex(MTKFB_MMP_Events.IOCtrl, MMPROFILE_FLAG_PULSE, _IOC_NR(cmd), arg);
 	pr_debug("mtkfb_ioctl, info=%p, cmd nr=0x%08x, cmd size=0x%08x\n", info,
 		 (unsigned int)_IOC_NR(cmd), (unsigned int)_IOC_SIZE(cmd));
 
@@ -1238,12 +1238,12 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		struct fb_overlay_layer layerInfo[VIDEO_LAYER_COUNT];
 
 		MTKFB_LOG(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
-		MMProfileLog(MTKFB_MMP_Events.SetOverlayLayers, MMProfileFlagStart);
+		mmprofile_log(MTKFB_MMP_Events.SetOverlayLayers, MMPROFILE_FLAG_START);
 
 		if (copy_from_user(&layerInfo, (void __user *)arg, sizeof(layerInfo))) {
 			MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
-			MMProfileLogMetaString(MTKFB_MMP_Events.SetOverlayLayers,
-					       MMProfileFlagEnd, "Copy_from_user failed!");
+			mmprofile_log_meta_string(MTKFB_MMP_Events.SetOverlayLayers,
+					       MMPROFILE_FLAG_END, "Copy_from_user failed!");
 			r = -EFAULT;
 		} else {
 			int32_t i;
@@ -1268,7 +1268,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			/* atomic_set(&OverlaySettingDirtyFlag, 1); */
 			/* atomic_set(&OverlaySettingApplied, 0); */
 			/* mutex_unlock(&OverlaySettingMutex); */
-			/* MMProfileLogStructure(MTKFB_MMP_Events.SetOverlayLayers, MMProfileFlagEnd,*/
+			/* mmprofile_logStructure(MTKFB_MMP_Events.SetOverlayLayers, MMPROFILE_FLAG_END,*/
 						/* layerInfo, struct mmp_fb_overlay_layers); */
 			primary_display_config_input_multiple(&session_input);
 			primary_display_trigger(1, NULL, 0);
@@ -1280,7 +1280,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 	case MTKFB_TRIG_OVERLAY_OUT:
 	{
 		MTKFB_LOG(" mtkfb_ioctl():MTKFB_TRIG_OVERLAY_OUT\n");
-		MMProfileLog(MTKFB_MMP_Events.TrigOverlayOut, MMProfileFlagPulse);
+		mmprofile_log(MTKFB_MMP_Events.TrigOverlayOut, MMPROFILE_FLAG_PULSE);
 		primary_display_trigger(1, NULL, 0);
 		return 0;
 	}
@@ -1576,7 +1576,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			/* atomic_set(&OverlaySettingDirtyFlag, 1); */
 			/* atomic_set(&OverlaySettingApplied, 0); */
 			/* mutex_unlock(&OverlaySettingMutex); */
-			/* MMProfileLogStructure(MTKFB_MMP_Events.SetOverlayLayers, MMProfileFlagEnd,*/
+			/* mmprofile_logStructure(MTKFB_MMP_Events.SetOverlayLayers, MMPROFILE_FLAG_END,*/
 						 /*layerInfo, struct mmp_fb_overlay_layers); */
 			primary_display_config_input_multiple(&session_input);
 			/* primary_display_trigger(1, NULL, 0); */
