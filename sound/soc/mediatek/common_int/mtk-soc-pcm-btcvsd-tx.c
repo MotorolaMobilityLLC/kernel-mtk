@@ -89,7 +89,7 @@ static int btcvsd_tx_timestamp_get(unsigned int __user *data, unsigned int size)
 
 	get_tx_timestamp(&time_buffer_info_tx);
 
-	LOGBT("%s(), timestamp_us:%llu, data_count_equi_time:%llu, sizeof(time_buffer_info) = %d",
+	LOGBT("%s(), timestamp_us:%llu, data_count_equi_time:%llu, sizeof(time_buffer_info) = %lu",
 	      __func__,
 	      time_buffer_info_tx.timestamp_us, time_buffer_info_tx.data_count_equi_time,
 	      sizeof(struct time_buffer_info));
