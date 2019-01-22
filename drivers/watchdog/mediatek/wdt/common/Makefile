@@ -12,5 +12,5 @@
 #
 
 ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include
-#obj-$(CONFIG_LOCAL_WDT) += mpcore_wdt.o
-obj-y += mtk_wdt.o
+obj-$(CONFIG_MTK_WATCHDOG_COMMON_V1) += wdt_v1/
+obj-$(CONFIG_MTK_WATCHDOG_COMMON_V2) += wdt_v2/
