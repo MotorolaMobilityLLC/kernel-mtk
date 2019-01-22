@@ -7001,6 +7001,51 @@ static struct TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC,
 	return pTask;
 }
 
+static void cmdq_core_reset_dsi(struct TaskStruct *pTask, s32 thread)
+{
+#ifdef CMDQ_DISP_DSI_DEBUG
+	uint32_t *pcVA = NULL, pcPA = 0;
+	uint32_t insts[4] = { 0 };
+	char parsedInstruction[128] = { 0 };
+
+	if (pTask->scenario != CMDQ_SCENARIO_DISP_ESD_CHECK &&
+		pTask->scenario != CMDQ_SCENARIO_PRIMARY_DISP)
+		return;
+
+	CMDQ_MSG("ready to verify pre-dump!!\n");
+
+	pcVA = cmdq_core_get_pc(pTask, thread, insts, &pcPA);
+	if (pcVA) {
+		const uint32_t op = (insts[3] & 0xFF000000) >> 24;
+
+		cmdq_core_parse_instruction(pcVA, parsedInstruction,
+			sizeof(parsedInstruction));
+
+		/* for WFE, we specifically dump the event value */
+		if (op == CMDQ_CODE_WFE) {
+			uint32_t regValue = 0;
+			const uint32_t eventID = 0x3FF & insts[3];
+
+			CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, eventID);
+			regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
+			/* DECLAR_EVENT(CMDQ_EVENT_MUTEX0_STREAM_EOF, stream_done_0) */
+			/* stream_done_0 = <130> */
+			if (eventID == 130) {
+				CMDQ_LOG(
+					"Thread %d PC:0x%p(0x%08x) 0x%08x:0x%08x => %s value:%d",
+					thread, pcVA,
+					pcPA, insts[2],
+					insts[3],
+					parsedInstruction,
+					regValue);
+				CMDQ_LOG("call display to reset dsi\n");
+				ddp_dump_and_reset_dsi0();
+			}
+		}
+	}
+#endif
+}
+
 /* Implementation of wait task done
  * Return:
  *     wait time of wait_event_timeout() kernel API
@@ -7052,6 +7097,9 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(
 
 		CMDQ_LOG("======= [CMDQ] SW timeout Pre-dump(%d) task:0x%p slot:%d =======\n",
 			retry_count, pTask, slot);
+
+		/* reset dsi if primary display or esd thread entered pre-dump */
+		cmdq_core_reset_dsi(pTask, thread);
 
 		tpr_mask = CMDQ_REG_GET32(CMDQ_TPR_MASK);
 		if (retry_count == 0) {

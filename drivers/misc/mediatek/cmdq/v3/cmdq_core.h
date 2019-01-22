@@ -85,6 +85,10 @@ struct DumpFirstErrorStruct {
 };
 #endif
 
+#ifdef CMDQ_DISP_DSI_DEBUG
+extern void ddp_dump_and_reset_dsi0(void);
+#endif
+
 #define CMDQ_LOG(string, args...) \
 do {			\
 	pr_notice("[CMDQ]"string, ##args); \
