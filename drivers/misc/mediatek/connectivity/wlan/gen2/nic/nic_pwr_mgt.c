@@ -105,6 +105,7 @@ VOID nicpmSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 * \return (none)
 */
 /*----------------------------------------------------------------------------*/
+
 UINT_32 u4OriRegValue;
 BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 {
@@ -116,6 +117,7 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 	UINT_32 i, u4CurrTick, u4WriteTick, u4WriteTickTemp;
 	UINT_32 u4RegValue = 0;
 	GL_HIF_INFO_T *HifInfo;
+	BOOLEAN fgWmtCoreDump = FALSE;
 
 	ASSERT(prAdapter);
 
@@ -126,6 +128,7 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 	u4WriteTick = 0;
 	u4CurrTick = kalGetTimeTick();
+
 	STATS_DRIVER_OWN_START_RECORD();
 	i = 0;
 
@@ -170,15 +173,20 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				DBGLOG(NIC, WARN, "<WiFi> [2]MCR_D2HRM2R = 0x%x, ORI_MCR_D2HRM2R = 0x%x\n",
 					u4RegValue, u4OriRegValue);
 				DBGLOG(NIC, WARN,
-					"<WiFi> Fatal error! Driver own fail!!!!!!!!!!!! %d, fgIsBusAccessFailed: %d,OWN retry:%d\n",
-					u4OwnCnt++, fgIsBusAccessFailed, i);
-
+					"<WiFi> Fatal error! Driver own fail!!!! %d, fgIsBusAccessFailed: %d,OWN retry:%d,fgCoreDump:%d\n",
+					u4OwnCnt++, fgIsBusAccessFailed, i, fgWmtCoreDump);
 				DBGLOG(NIC, WARN, "CONNSYS FW CPUINFO:\n");
 				for (u4FwCnt = 0; u4FwCnt < 16; u4FwCnt++)
 					DBGLOG(NIC, WARN, "0x%08x ", MCU_REG_READL(HifInfo, CONN_MCU_CPUPCR));
 				/* CONSYS_REG_READ(CONSYS_CPUPCR_REG) */
-				kalSendAeeWarning("[Fatal error! Driver own fail!]", __func__);
-				glDoChipReset();
+				fgWmtCoreDump = glIsWmtCodeDump();
+				if (fgWmtCoreDump == FALSE) {
+					kalSendAeeWarning("[Fatal error! Driver own fail!]", __func__);
+					glDoChipReset();
+				} else
+					DBGLOG(NIC, WARN,
+						"[Driver own fail!] WMT is code dumping !STOP AEE & chip reset\n");
+
 			}
 			break;
 		}
