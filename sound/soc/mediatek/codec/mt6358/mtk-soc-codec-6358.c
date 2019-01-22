@@ -195,6 +195,9 @@ int (*set_lch_dc_compensation)(int value) = NULL;
 int (*set_rch_dc_compensation)(int value) = NULL;
 int (*set_ap_dmic)(bool enable) = NULL;
 int (*set_hp_impedance_ctl)(bool enable) = NULL;
+#ifdef CONFIG_MTK_VOW_SUPPORT
+static unsigned int MicbiasRef, GetMicbias;
+#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
 
 static int reg_AFE_VOW_CFG0;			/* VOW AMPREF Setting */
 static int reg_AFE_VOW_CFG1;			/* VOW A,B timeout initial value (timer) */
@@ -577,14 +580,14 @@ static void VOW13MCK_Enable(bool enable)
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (VOW13MCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON3_CLR, 0x0040, 0x0040);
-		/* Enable  TOP_CKPDN_CON3 bit7 for enable VOW 13M clock */
+			Ana_Set_Reg(AUD_TOP_CKPDN_CON0_CLR, 0x2000, 0x2000);
+		/* Enable  AUD_TOP_CKPDN_CON0 bit13 for enable VOW 13M clock */
 		VOW13MCKCount++;
 	} else {
 		VOW13MCKCount--;
 		if (VOW13MCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON3_SET, 0x0040, 0x0040);
-		/* disable TOP_CKPDN_CON3 bit7 for enable VOW 13M clock */
+			Ana_Set_Reg(AUD_TOP_CKPDN_CON0_SET, 0x2000, 0x2000);
+		/* disable AUD_TOP_CKPDN_CON0 bit13 for enable VOW 13M clock */
 
 		if (VOW13MCKCount < 0) {
 			pr_debug("VOW13MCKCount <0 =%d\n ", VOW13MCKCount);
@@ -600,14 +603,14 @@ static void VOW32KCK_Enable(bool enable)
 	mutex_lock(&Ana_Clk_Mutex);
 	if (enable == true) {
 		if (VOW32KCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON3_CLR, 0x0020, 0x0020);
-		/* Enable  TOP_CKPDN_CON3 bit5 for enable VOW 32k clock (for periodic on/off use)*/
+			Ana_Set_Reg(AUD_TOP_CKPDN_CON0_CLR, 0x1000, 0x1000);
+		/* Enable  AUD_TOP_CKPDN_CON0 bit12 for enable VOW 32k clock (for periodic on/off use)*/
 		VOW32KCKCount++;
 	} else {
 		VOW32KCKCount--;
 		if (VOW32KCKCount == 0)
-			Ana_Set_Reg(TOP_CKPDN_CON3_SET, 0x0020, 0x0020);
-		/* disable TOP_CKPDN_CON3 bit5 for enable VOW 32k clock */
+			Ana_Set_Reg(AUD_TOP_CKPDN_CON0_SET, 0x1000, 0x1000);
+		/* disable AUD_TOP_CKPDN_CON0 bit12 for enable VOW 32k clock */
 
 		if (VOW32KCKCount < 0) {
 			pr_debug("VOW32KCKCount <0 =%d\n ", VOW32KCKCount);
@@ -4299,9 +4302,12 @@ static void VOW_Pwr_Enable(int MicType, bool enable)
 
 static void VOW_DCC_CLK_Enable(bool enable)
 {
+	unsigned int pmic_version = Ana_Get_Reg(SWCID);
 	if (enable == true) {
 		VOW13MCK_Enable(true); /* 0x0258 VOW13M_CK power on */
-
+		/* DCC mode MT6358 E1 and E2 work around */
+		if ((pmic_version == 0x5810) || (pmic_version == 0x5820))
+			ClsqEnable(true);
 		/* PGA DCC CLK divider */
 		Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2062, 0xFFE0);
 		/* DCC power down control: DCC clk output */
@@ -4317,21 +4323,28 @@ static void VOW_DCC_CLK_Enable(bool enable)
 		Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2062, 0x0002);
 		/* PGA DCC CLK divider */
 		Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2062, 0xFFE0);
-
+		/* DCC mode MT6358 E1 and E2 work around */
+		if ((pmic_version == 0x5810) || (pmic_version == 0x5820))
+			ClsqEnable(false);
 		VOW13MCK_Enable(false); /*VOW clock power down enable*/
 	}
 }
 
 static void VOW_ACC_CLK_Enable(bool enable)
 {
+	unsigned int pmic_version = Ana_Get_Reg(SWCID);
 	if (enable == true) {
 		VOW13MCK_Enable(true); /* VOW13M_CK power on */
-
+		/* DCC mode MT6358 E1 work around */
+		if (pmic_version == 0x5810)
+			ClsqEnable(true);
 		/* VOW source clock power on, vow_1p6m_800k_sel=1.6m */
 		Ana_Set_Reg(AFE_VOW_TOP, 0x4000, 0x8000);
 	} else {
 		Ana_Set_Reg(AFE_VOW_TOP, 0xC000, 0x8000);
-
+		/* DCC mode MT6358 E1 work around */
+		if (pmic_version == 0x5810)
+			ClsqEnable(false);
 		VOW13MCK_Enable(false); /*VOW clock power down enable*/
 	}
 }
@@ -4503,7 +4516,7 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 
 	if (enable) {
 		mIsVOWOn = true;
-		SetVOWStatus(mIsVOWOn);
+		/* SetVOWStatus(mIsVOWOn); */
 
 		if (GetMicbias == 0) {
 			/* save current micbias ref set by accdet */
@@ -4672,7 +4685,7 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		VOW_Pwr_Enable(MicType, false);
 
 		mIsVOWOn = false;
-		SetVOWStatus(mIsVOWOn);
+		/* SetVOWStatus(mIsVOWOn); */
 		GetMicbias = 0;
 	}
 #endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
