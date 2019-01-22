@@ -37,10 +37,10 @@ struct GPIO_PINCTRL gpio_pinctrl_list[GPIO_CTRL_STATE_MAX_NUM] = {
 	{"cam_ldo_sub_vcamio_1"},
 	{"cam_ldo_sub_vcamio_0"},
 	/* Main2 */
-	{"cam2_pnd_1"},
-	{"cam2_pnd_0"},
-	{"cam2_rst_1"},
-	{"cam2_rst_0"},
+	{"cam2_pnd1"},
+	{"cam2_pnd0"},
+	{"cam2_rst1"},
+	{"cam2_rst0"},
 	{"cam_ldo_main2_vcama_1"},
 	{"cam_ldo_main2_vcama_0"},
 	{"cam_ldo_main2_vcamd_1"},
@@ -73,7 +73,6 @@ static enum IMGSENSOR_RETURN gpio_init(
 	void *pinstance,
 	struct IMGSENSOR_HW_DEVICE_COMMON *pcommon)
 {
-#if 0
 	int    i;
 	struct GPIO            *pgpio            = (struct GPIO *)pinstance;
 	struct GPIO_PINCTRL    *pgpio_pinctrl    = gpio_pinctrl_list;
@@ -97,8 +96,6 @@ static enum IMGSENSOR_RETURN gpio_init(
 	}
 
 	return ret;
-#endif
-	return IMGSENSOR_RETURN_SUCCESS;
 }
 
 static enum IMGSENSOR_RETURN gpio_release(void *pinstance)
@@ -112,7 +109,6 @@ static enum IMGSENSOR_RETURN gpio_set(
 	enum IMGSENSOR_HW_PIN       pin,
 	enum IMGSENSOR_HW_PIN_STATE pin_state)
 {
-#if 0
 	struct pinctrl_state  *ppinctrl_state;
 	struct GPIO           *pgpio = (struct GPIO *)pinstance;
 	enum   GPIO_STATE      gpio_state;
@@ -152,8 +148,6 @@ static enum IMGSENSOR_RETURN gpio_set(
 	else
 		PK_PR_ERR("%s : pinctrl err, PinIdx %d, Val %d\n", __func__, pin, pin_state);
 
-	return IMGSENSOR_RETURN_SUCCESS;
-#endif
 	return IMGSENSOR_RETURN_SUCCESS;
 }
 

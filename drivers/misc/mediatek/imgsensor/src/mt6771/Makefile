@@ -21,7 +21,9 @@ IMGSENSOR_DRIVER_PATH  := $(srctree)/drivers/misc/mediatek/imgsensor/src
 COMMON_VERSION := v1_1
 
 subdir-ccflags-y += -I$(IMGSENSOR_DRIVER_PATH)/common/$(COMMON_VERSION) \
-	-I$(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/seninf/
+	-I$(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/seninf/ \
+	-I$(srctree)/drivers/i2c/busses/
+
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_hw.o
