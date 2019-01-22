@@ -1661,10 +1661,8 @@ static VOID stp_sdio_tx_wkr_comp(MTK_WCN_STP_SDIO_HIF_INFO * const p_info)
 						CTMDPCR1, &value, 0);
 				STPSDIO_ERR_FUNC("tx retry: firmware rx buffer is disable CTMDPCR1 value(%x)!\n",
 						value);
-				osal_dbg_assert_aee("<HIF_SDIO> tx retry ERROR",
-						"firmware rx buffer is disable");
 				stp_sdio_issue_fake_coredump
-					("ABT: <HIF_SDIO> tx retry: firmware rx buffer is disable");
+					("ABT: <HIF_SDIO> tx retry ERROR: firmware rx buffer is disable");
 			}
 			idx = p_info->tx_pkt_list.pkt_rd_cnt & STP_SDIO_TX_PKT_LIST_SIZE_MASK;
 			max = p_info->firmware_info.tx_packet_num;
@@ -1691,8 +1689,6 @@ static VOID stp_sdio_tx_wkr_comp(MTK_WCN_STP_SDIO_HIF_INFO * const p_info)
 #if STP_SDIO_DBG_SUPPORT && STP_SDIO_TXDBG
 						stp_sdio_txdbg_dump();
 #endif
-						osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
-								"retry write data by SDIO report error");
 						p_info->tx_retry_count = 0;
 						stp_sdio_issue_fake_coredump
 							("ABT: <HIF_SDIO> write_readsb retry ERROR");
@@ -1882,18 +1878,13 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 					if (ret == -EIO || ret == -EILSEQ || ret == -EBUSY)
 						p_info->tx_retry_flag = STP_SDIO_RETRY_CRC_ERROR;
 					else {
-						osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
-								"retry write data by SDIO report error");
 						p_info->tx_retry_count = 0;
 						p_info->tx_retry_flag = STP_SDIO_RETRY_NONE;
 						stp_sdio_issue_fake_coredump
 							("ABT: <HIF_SDIO> write_readsb retry ERROR");
 					}
-				} else {
-					osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
-							"retry write data by SDIO report error");
+				} else
 					stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> write_readsb retry ERROR");
-				}
 			}
 
 			/* clear rd index entry of Tx ring buffer */
@@ -2075,18 +2066,13 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 					if (ret == -EIO || ret == -EILSEQ || ret == -EBUSY)
 						p_info->tx_retry_flag = STP_SDIO_RETRY_CRC_ERROR;
 					else {
-						osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
-								"retry write data by SDIO report error");
 						p_info->tx_retry_count = 0;
 						p_info->tx_retry_flag = STP_SDIO_RETRY_NONE;
 						stp_sdio_issue_fake_coredump
 							("ABT: <HIF_SDIO> write_readsb retry ERROR");
 					}
-				} else {
-					osal_dbg_assert_aee("<HIF_SDIO> sdio_writesb ERROR",
-							"retry write data by SDIO report error");
+				} else
 					stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> write_readsb retry ERROR");
-				}
 			}
 
 			/* clear rd index entry of Tx ring buffer */
@@ -2220,14 +2206,10 @@ static VOID stp_sdio_rx_wkr(struct work_struct *work)
 				STPSDIO_ERR_FUNC("sdio read buffer happen crc error will be retry(%d)\n", ret);
 				p_info->rx_retry_count++;
 				if (p_info->rx_retry_count > STP_SDIO_RETRY_LIMIT) {
-					osal_dbg_assert_aee("<HIF_SDIO> sdio_readsb ERROR",
-							"retry read data by SDIO report error");
 					p_info->rx_retry_count = 0;
 					stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> sdio_readsb retry ERROR");
 				}
 			} else {
-				osal_dbg_assert_aee("<HIF_SDIO> sdio_readsb ERROR",
-						"retry read data by SDIO report error");
 				p_info->rx_retry_count = 0;
 				stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> sdio_readsb retry ERROR");
 			}
@@ -2255,8 +2237,6 @@ static VOID stp_sdio_rx_wkr(struct work_struct *work)
 	} else {
 		if (ret) {
 			STPSDIO_HINT_FUNC("set to p_info->rx_pkt_len 0\n");
-			osal_dbg_assert_aee("<HIF_SDIO> sdio_readsb ERROR",
-					"retry read data by SDIO report error");
 			stp_sdio_issue_fake_coredump("ABT: <HIF_SDIO> sdio_readsb retry ERROR");
 		}
 	}
