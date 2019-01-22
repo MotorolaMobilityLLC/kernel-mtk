@@ -318,25 +318,6 @@ bool cmdq_virtual_should_enable_prefetch(enum CMDQ_SCENARIO_ENUM scenario)
 	return shouldPrefetch;
 }
 
-bool cmdq_virtual_should_profile(enum CMDQ_SCENARIO_ENUM scenario)
-{
-	bool shouldProfile = false;
-
-#ifdef CMDQ_GPR_SUPPORT
-	switch (scenario) {
-	case CMDQ_SCENARIO_DEBUG_PREFETCH:
-	case CMDQ_SCENARIO_DEBUG:
-		return true;
-	default:
-		break;
-	}
-#else
-	/* note command profile method depends on GPR */
-	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
-#endif
-	return shouldProfile;
-}
-
 int cmdq_virtual_disp_thread(enum CMDQ_SCENARIO_ENUM scenario)
 {
 	switch (scenario) {
@@ -1095,7 +1076,6 @@ void cmdq_virtual_function_setting(void)
 	 */
 	pFunc->isDispScenario = cmdq_virtual_is_disp_scenario;
 	pFunc->shouldEnablePrefetch = cmdq_virtual_should_enable_prefetch;
-	pFunc->shouldProfile = cmdq_virtual_should_profile;
 	pFunc->dispThread = cmdq_virtual_disp_thread;
 	pFunc->getThreadID = cmdq_virtual_get_thread_index;
 	pFunc->priority = cmdq_virtual_priority_from_scenario;

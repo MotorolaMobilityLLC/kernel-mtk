@@ -79,8 +79,6 @@
 #define CMDQ_THR_FIX_END_ADDR(id)    (CMDQ_GCE_END_ADDR_PA | (id << 4))
 #define CMDQ_IS_END_ADDR(addr)       ((addr & 0xFFFFFFC00) == CMDQ_GCE_END_ADDR_PA)
 
-#define CMDQ_APXGPT2_COUNT           (cmdq_dev_get_APXGPT2_count())
-
 #define CMDQ_REG_GET32(addr)         (readl((void *)addr) & 0xFFFFFFFF)
 #define CMDQ_REG_GET16(addr)         (readl((void *)addr) & 0x0000FFFF)
 

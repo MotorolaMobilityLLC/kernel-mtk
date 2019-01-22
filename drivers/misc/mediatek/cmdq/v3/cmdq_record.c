@@ -305,7 +305,6 @@ int cmdq_rec_realloc_cmd_buffer(struct cmdqRecStruct *handle, uint32_t size)
 
 static int32_t cmdq_reset_profile_maker_data(struct cmdqRecStruct *handle)
 {
-#ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	int32_t i = 0;
 
 	if (handle == NULL)
@@ -317,8 +316,6 @@ static int32_t cmdq_reset_profile_maker_data(struct cmdqRecStruct *handle)
 	for (i = 0; i < CMDQ_MAX_PROFILE_MARKER_IN_TASK; i++)
 		handle->profileMarker.tag[i] = (cmdqU32Ptr_t) (unsigned long)(NULL);
 
-	return 0;
-#endif
 	return 0;
 }
 
@@ -1417,7 +1414,6 @@ int32_t cmdq_setup_replace_of_command_desc_by_rec_handle(struct cmdqCommandStruc
 
 int32_t cmdq_rec_setup_profile_marker_data(struct cmdqCommandStruct *pDesc, struct cmdqRecStruct *handle)
 {
-#ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	uint32_t i;
 
 	pDesc->profileMarker.count = handle->profileMarker.count;
@@ -1425,7 +1421,7 @@ int32_t cmdq_rec_setup_profile_marker_data(struct cmdqCommandStruct *pDesc, stru
 
 	for (i = 0; i < CMDQ_MAX_PROFILE_MARKER_IN_TASK; i++)
 		pDesc->profileMarker.tag[i] = handle->profileMarker.tag[i];
-#endif
+
 	return 0;
 }
 
@@ -1747,7 +1743,6 @@ int32_t cmdq_task_get_instruction_count(struct cmdqRecStruct *handle)
 
 int32_t cmdq_op_profile_marker(struct cmdqRecStruct *handle, const char *tag)
 {
-#ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	int32_t status;
 	int32_t index;
 	cmdqBackupSlotHandle hSlot;
@@ -1790,17 +1785,13 @@ int32_t cmdq_op_profile_marker(struct cmdqRecStruct *handle, const char *tag)
 		    ("[REC][PROF_MARKER]inserting profile instr, handle:%p, slot:%pa(0x%llx), index:%d, tag:%s\n",
 		     handle, &hSlot, handle->profileMarker.hSlot, index, tag);
 
-		cmdq_op_read_reg_to_mem(handle, hSlot, index, CMDQ_APXGPT2_COUNT);
+		cmdq_op_backup_TPR(handle, hSlot, index);
 
 		handle->profileMarker.tag[index] = (cmdqU32Ptr_t) (unsigned long)tag;
 		handle->profileMarker.count += 1;
 	} while (0);
 
 	return status;
-#else
-	CMDQ_ERR("func:%s failed since CMDQ doesn't enable profile marker\n", __func__);
-	return -EFAULT;
-#endif
 }
 
 int32_t cmdq_task_dump_command(struct cmdqRecStruct *handle)
@@ -2396,6 +2387,21 @@ s32 cmdq_op_backup_CPR(struct cmdqRecStruct *handle, CMDQ_VARIABLE cpr,
 	cmdq_op_assign(handle, &pa_cpr, (u32)dramAddr);
 	cmdq_append_command(handle, CMDQ_CODE_WRITE_S,
 		(u32)pa_cpr, (u32)cpr, 1, 1);
+
+	return status;
+}
+
+s32 cmdq_op_backup_TPR(struct cmdqRecStruct *handle,
+	cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index)
+{
+	s32 status = 0;
+	CMDQ_VARIABLE pa_cpr = CMDQ_TASK_TEMP_CPR_VAR;
+	const CMDQ_VARIABLE arg_tpr = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) | CMDQ_TPR_ID;
+	const dma_addr_t dramAddr = h_backup_slot + slot_index * sizeof(u32);
+
+	cmdq_op_assign(handle, &pa_cpr, (u32)dramAddr);
+	cmdq_append_command(handle, CMDQ_CODE_WRITE_S,
+		(u32)pa_cpr, (u32)arg_tpr, 1, 1);
 
 	return status;
 }

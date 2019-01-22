@@ -75,9 +75,7 @@ struct cmdqRecStruct {
 	CMDQ_VARIABLE arg_timeout;	/* wait_timeout timeout */
 
 	/* profile marker */
-#ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	struct cmdqProfileMarkerStruct profileMarker;
-#endif
 };
 
 /* typedef dma_addr_t cmdqBackupSlotHandle; */
@@ -516,10 +514,6 @@ extern "C" {
  *
  * Return:
  *     0 for success; else the error code is returned
- *
- * Note:
- *     Please define CMDQ_PROFILE_MARKER_SUPPORT in cmdq_def.h
- *     to enable profile marker.
  */
 	int32_t cmdq_op_profile_marker(struct cmdqRecStruct *handle, const char *tag);
 	int32_t cmdqRecProfileMarker(struct cmdqRecStruct *handle, const char *tag);
@@ -806,6 +800,8 @@ extern "C" {
  */
 	s32 cmdq_op_delay_us(struct cmdqRecStruct *handle, u32 delay_time);
 	s32 cmdq_op_backup_CPR(struct cmdqRecStruct *handle, CMDQ_VARIABLE cpr,
+		cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index);
+	s32 cmdq_op_backup_TPR(struct cmdqRecStruct *handle,
 		cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index);
 
 /**
