@@ -1137,6 +1137,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(ST7789H2_DBI_C_3WIRE)
 	&st7789h2_dbi_c_3wire_lcm_drv,
 #endif
+
+#if defined(SSD2858_KD097D05_QXGA_DSI_VDO)
+	&ssd2858_kd097d05_qxga_dsi_vdo_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {

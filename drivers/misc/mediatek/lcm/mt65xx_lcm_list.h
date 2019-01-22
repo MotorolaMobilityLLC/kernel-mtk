@@ -297,6 +297,7 @@ extern LCM_DRIVER nt36672_fhdp_dsi_vdo_tianma_nt50358_lcm_drv;
 extern LCM_DRIVER jd9365_hd720_dsi_lcm_drv;
 extern LCM_DRIVER otm1901a_fhd_dsi_vdo_tpv_lcm_drv;
 extern LCM_DRIVER st7789h2_dbi_c_3wire_lcm_drv;
+extern LCM_DRIVER ssd2858_kd097d05_qxga_dsi_vdo_lcm_drv;
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif
