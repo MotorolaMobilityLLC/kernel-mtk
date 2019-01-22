@@ -29,7 +29,6 @@
 #include "dciTui.h"
 #include "tui-hal.h"
 #include "build_tag.h"
-
 /*static int tui_dev_major_number = 122; */
 
 /*module_param(tui_dev_major_number, int, 0000); */
