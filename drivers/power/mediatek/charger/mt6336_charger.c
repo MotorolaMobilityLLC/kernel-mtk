@@ -514,9 +514,9 @@ static int mt6336_enable_charging(struct charger_device *chg_dev, bool en)
 
 	if (en) {
 		mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 1);
+		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 		if (info->device_id == MT6336_E2_CID) {
 			mt6336_set_flag_register_value(MT6336_RG_A_LOOP_CLAMP_EN, 0);
-			mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 			mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
 		}
 	} else {
@@ -747,8 +747,8 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 	u32 aicr = 0;
 	unsigned short vcv;
 	unsigned short chg_en;
-	unsigned short chg_state;
-	unsigned short reg;
+	unsigned int chg_state;
+	unsigned int mode;
 	unsigned short pam_state;
 	unsigned short vth_mode;
 	u32 vpam;
@@ -760,14 +760,14 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 	mt6336_get_iterm(chg_dev, &iterm);
 	chg_en = mt6336_get_flag_register_value(MT6336_RG_EN_CHARGE);
 	chg_state = mt6336_get_register_value(MT6336_PMIC_ANA_CORE_DA_RGS13);
-	reg = mt6336_get_register_value(MT6336_PMIC_ANA_CORE_AD_RGS4);
+	mode = mt6336_get_register_value(MT6336_PMIC_ANA_CORE_AD_RGS4);
 	pam_state = mt6336_get_flag_register_value(MT6336_AD_QI_PAM_MODE);
 	vpam = mt6336_get_mivr(chg_dev);
 	vth_mode = mt6336_get_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL);
 
-	pr_info("ICC:%dmA,ICL:%dmA,VCV:%dmV,Iterm:%dmA,VPAM:%dmV,EN=%d,state=%d,reg:0x%x,PAM:%d,mode:%d\n",
+	pr_info("ICC:%dmA,ICL:%dmA,VCV:%dmV,Iterm:%dmA,VPAM:%dmV,EN=%d,state=%d,mode:0x%x,PAM:%d,vth_mode:%d\n",
 		icc * 50 + 500, aicr / 1000, (vcv * 125 + 26000) / 10, iterm / 1000,
-		vpam / 1000, chg_en, chg_state, reg, pam_state, vth_mode);
+		vpam / 1000, chg_en, chg_state, mode, pam_state, vth_mode);
 
 	return 0;
 }
@@ -775,11 +775,13 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 static int mt6336_send_ta_current_pattern(struct charger_device *chg_dev, bool is_increase)
 {
 	int pep_value;
-	unsigned int fastcc_stat;
+	unsigned short fastcc_stat;
+	unsigned int chg_state;
 
 	fastcc_stat = mt6336_get_flag_register_value(MT6336_DA_QI_FASTCC_STAT_MUX);
 	if (fastcc_stat != 1) {
-		pr_err("Not in FASTCC state, cannot use PE+!\n");
+		chg_state = mt6336_get_register_value(MT6336_PMIC_ANA_CORE_DA_RGS13);
+		pr_notice("Not in FASTCC state, cannot use PE+!, state: %d\n", chg_state);
 		return -1;
 	}
 
@@ -830,11 +832,13 @@ int mt6336_set_pe20_efficiency_table(struct charger_device *chg_dev)
 static int mt6336_send_ta20_current_pattern(struct charger_device *chg_dev, u32 uV)
 {
 	int pep_value;
-	unsigned int fastcc_stat;
+	unsigned short fastcc_stat;
+	unsigned int chg_state;
 
 	fastcc_stat = mt6336_get_flag_register_value(MT6336_DA_QI_FASTCC_STAT_MUX);
 	if (fastcc_stat != 1) {
-		pr_err("Not in FASTCC state, cannot use PE+!\n");
+		chg_state = mt6336_get_register_value(MT6336_PMIC_ANA_CORE_DA_RGS13);
+		pr_notice("Not in FASTCC state, cannot use PE+!, state: %d\n", chg_state);
 		return -1;
 	}
 
