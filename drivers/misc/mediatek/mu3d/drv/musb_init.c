@@ -748,10 +748,27 @@ static int mtu3d_probe(struct platform_device *pdev)
 	const struct of_device_id *match;
 	struct platform_device *musb;
 	struct mtu3d_glue *glue;
+	struct device_node *np = pdev->dev.of_node;
+	u32 debug_level_dtsi;
 
 	int ret = -ENOMEM;
 
 	os_printk(K_DEBUG, "%s\n", __func__);
+
+	if (of_property_read_u32(np, "debug_level", (u32 *) &debug_level_dtsi))
+		os_printk(K_WARNIN, "%s, take debug_level:%d\n", __func__, debug_level);
+	else {
+		os_printk(K_WARNIN, "%s, reset debug_level from %d to %d\n", __func__, debug_level, debug_level_dtsi);
+		debug_level = debug_level_dtsi;
+	}
+
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	{
+		if (!of_property_read_u32(np, "fgpa_i2c_physical_base", (u32 *) &i2c_physical_base))
+			os_printk(K_WARNIN, "%s, i2c_physical_base:%x from dtsi\n",  __func__, i2c_physical_base);
+
+	}
+#endif
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 	if (usb2jtag_mode()) {
