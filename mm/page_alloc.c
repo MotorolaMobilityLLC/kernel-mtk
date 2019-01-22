@@ -68,7 +68,7 @@
 #include <asm/div64.h>
 #include "internal.h"
 
-#if defined(CONFIG_DMAUSER_PAGES)
+#if defined(CONFIG_DMAUSER_PAGES) || (defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD))
 #include <mt-plat/aee.h>
 #endif
 
@@ -2884,6 +2884,43 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
 }
 #endif /* CONFIG_COMPACTION */
 
+#ifdef CONFIG_MTK_ENG_BUILD
+static void perform_reclaim_timeout(unsigned long data)
+{
+	struct task_struct *p = (struct task_struct *)data;
+	static DEFINE_RATELIMIT_STATE(prtwarn1, HZ, 1);
+	static DEFINE_RATELIMIT_STATE(prtwarn2, (60 * HZ), 1);
+
+	pr_info_ratelimited("%s: %d(%s)\n++\n", __func__, p->pid, p->comm);
+
+	if (!__ratelimit(&prtwarn1))
+		return;
+
+	show_stack(p, NULL);
+
+	show_free_areas(0);
+
+#ifdef CONFIG_MTK_ION
+	ion_mm_heap_memory_detail();
+#endif
+#ifdef CONFIG_MTK_GPU_SUPPORT
+	mtk_dump_gpu_memory_usage();
+#endif
+
+	if (!__ratelimit(&prtwarn2))
+		return;
+
+#ifdef CONFIG_MTK_AEE_FEATURE
+	aee_kernel_warning_api("PRT", 0,
+			DB_OPT_DEFAULT |
+			DB_OPT_FTRACE |
+			DB_OPT_PAGETYPE_INFO |
+			DB_OPT_LOW_MEMORY_KILLER,
+			"Timeout at memory reclaim", "");
+#endif
+}
+#endif
+
 /* Perform direct synchronous page reclaim */
 static int
 __perform_reclaim(gfp_t gfp_mask, unsigned int order,
@@ -2891,6 +2928,9 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order,
 {
 	struct reclaim_state reclaim_state;
 	int progress;
+#ifdef CONFIG_MTK_ENG_BUILD
+	struct timer_list timeout;
+#endif
 
 	cond_resched();
 
@@ -2901,8 +2941,18 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order,
 	reclaim_state.reclaimed_slab = 0;
 	current->reclaim_state = &reclaim_state;
 
+#ifdef CONFIG_MTK_ENG_BUILD
+	setup_timer_on_stack(&timeout, perform_reclaim_timeout, (unsigned long)current);
+	mod_timer(&timeout, jiffies + 120 * HZ);
+#endif
+
 	progress = try_to_free_pages(ac->zonelist, order, gfp_mask,
 								ac->nodemask);
+
+#ifdef CONFIG_MTK_ENG_BUILD
+	del_timer_sync(&timeout);
+	destroy_timer_on_stack(&timeout);
+#endif
 
 	current->reclaim_state = NULL;
 	lockdep_clear_current_reclaim_state();
