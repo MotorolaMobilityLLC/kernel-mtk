@@ -1675,7 +1675,7 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	struct DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
-	handle = kmalloc(sizeof(struct ddp_path_handle), GFP_KERNEL);
+	handle = kmalloc(sizeof(struct ddp_path_handle), GFP_ATOMIC);
 	if (IS_ERR_OR_NULL(handle)) {
 		DDPERR("%s:%d alloc path handle fail!\n", __func__, __LINE__);
 		return 0;
