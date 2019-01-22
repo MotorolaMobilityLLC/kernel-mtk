@@ -65,6 +65,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x000008C5,	/* INFRA2 */
 		0xFFFFFFFB,	/* MMSYS0 */
 		0x00003FFF,	/* MMSYS1 */
+		0xBEF000B8, /* PWR_STATE */
 	},
 	/* soidle3_condition_mask */
 	[IDLE_TYPE_SO3] = {
@@ -73,6 +74,7 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x000008D1,	/* INFRA2 */
 		0xFFFFFFFB,	/* MMSYS0 */
 		0x00003FFF,	/* MMSYS1 */
+		0xBEF000B0, /* PWR_STATE */
 	},
 	/* soidle_condition_mask */
 	[IDLE_TYPE_SO] = {
@@ -81,10 +83,11 @@ unsigned int idle_condition_mask[NR_TYPES][NR_GRPS] = {
 		0x000008C1,	/* INFRA2 */
 		0x000FFFE0,	/* MMSYS0 */
 		0x00000D70,	/* MMSYS1 */
+		0xBEF000B0, /* PWR_STATE */
 	},
 	/* rgidle_condition_mask */
 	[IDLE_TYPE_RG] = {
-		0, 0, 0, 0, 0},
+		0, 0, 0, 0, 0, 0},
 };
 
 unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
@@ -326,6 +329,7 @@ static const char *cg_group_name[NR_GRPS] = {
 	"INFRA2",
 	"MMSYS0",
 	"MMSYS1",
+	"PWR_STATE",
 };
 
 /*
@@ -416,6 +420,8 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 		clks[CG_MMSYS0] = (~idle_readl(DISP_CG_CON_0));
 		clks[CG_MMSYS1] = (~idle_readl(DISP_CG_CON_1));
 	}
+
+	clks[CG_PWR_STATE] = idle_readl(SPM_PWR_STATUS);
 }
 
 static inline void mtk_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD], int idle_type)
@@ -613,6 +619,9 @@ static void get_all_clkcfg_state(u32 clkcfgs[NF_CLK_CFG])
 		clkcfgs[i] = idle_readl(CLK_CFG(i));
 }
 
+#define MUX_OFF_MASK    0x80
+#define MUX_ON_MASK     0x8F
+
 bool mtk_idle_check_clkmux(
 	int idle_type, unsigned int block_mask[NR_TYPES][NF_CLK_CFG])
 {
@@ -629,6 +638,7 @@ bool mtk_idle_check_clkmux(
 
 	int check_num;
 	u32 check_val;
+	u32 mux_check_mask;
 
 	get_all_clkcfg_state(clkcfgs);
 
@@ -639,13 +649,16 @@ bool mtk_idle_check_clkmux(
 		idx        = i / 4;
 		offset     = i % 4;
 		clkmux_val = ((clkcfgs[idx] & masks[offset]) >> shifts[offset]);
+
 		check_num = clkmux_condition_mask[i][0];
 
 		for (k = 0; k < check_num; k++) {
 
 			check_val  = clkmux_condition_mask[i][1 + k];
 
-			if ((clkmux_val & 0xFF) == check_val) {
+			mux_check_mask = (k == 0) ? MUX_OFF_MASK : MUX_ON_MASK;
+
+			if ((clkmux_val & mux_check_mask) == check_val) {
 				result = true;
 				break;
 			}

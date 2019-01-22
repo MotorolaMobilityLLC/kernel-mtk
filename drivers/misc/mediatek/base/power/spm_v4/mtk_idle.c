@@ -267,7 +267,8 @@ EXPORT_SYMBOL_GPL(mtk_idle_notifier_call_chain);
 /*
  * Check clkmux condition
  *   1. Only in deepidle/SODI3
- *   2. After ufs_cb_before_xxidle()
+ *   2. After mtk_idle_notifier_call_chain()
+ *       - To ensure other subsystem controls its clkmux well
  */
 static unsigned int check_and_update_vcore_lp_mode_cond(int type)
 {
@@ -1478,7 +1479,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
-		mt_idle_log("[%02d]dpidle_condition_mask[%-8s]=0x%08x\t\tdpidle_block_mask[%-8s]=0x%08x\n", i,
+		mt_idle_log("[%02d]dpidle_condition_mask[%-10s]=0x%08x\t\tdpidle_block_mask[%-10s]=0x%08x\n", i,
 				mtk_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_DP][i],
 				mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_DP][i]);
 	}
@@ -1488,7 +1489,7 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("dpidle_blocking_stat=\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
-		mt_idle_log("[%-8s] - ", mtk_get_cg_group_name(i));
+		mt_idle_log("[%-10s] - ", mtk_get_cg_group_name(i));
 
 		for (k = 0; k < 32; k++) {
 			if (dpidle_blocking_stat[i][k] != 0)
@@ -1618,7 +1619,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	mt_idle_log("\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
-		mt_idle_log("[%02d]soidle3_condition_mask[%-8s]=0x%08x\t\tsoidle3_block_mask[%-8s]=0x%08x\n", i,
+		mt_idle_log("[%02d]soidle3_condition_mask[%-10s]=0x%08x\t\tsoidle3_block_mask[%-10s]=0x%08x\n", i,
 			mtk_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_SO3][i],
 			mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SO3][i]);
 	}
@@ -1733,7 +1734,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
-		mt_idle_log("[%02d]soidle_condition_mask[%-8s]=0x%08x\t\tsoidle_block_mask[%-8s]=0x%08x\n", i,
+		mt_idle_log("[%02d]soidle_condition_mask[%-10s]=0x%08x\t\tsoidle_block_mask[%-10s]=0x%08x\n", i,
 			mtk_get_cg_group_name(i), idle_condition_mask[IDLE_TYPE_SO][i],
 			mtk_get_cg_group_name(i), idle_block_mask[IDLE_TYPE_SO][i]);
 	}
