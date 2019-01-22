@@ -5126,10 +5126,6 @@ static int __init battery_probe(struct platform_device *dev)
 
 	wake_unlock(&battery_lock);
 
-#if defined(CONFIG_MACH_MT6771)
-	disable_fg();
-#endif
-
 #if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(CONFIG_POWER_EXT)
 	bm_err("disable GM 3.0\n");
 	disable_fg();

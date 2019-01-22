@@ -1277,7 +1277,7 @@ int fgauge_set_coulomb_interrupt1_ht(struct gauge_device *gauge_dev, int car_val
 	car = div_s64((car * 1000), gauge_dev->fg_cust_data->car_tune_value);
 #endif
 
-	upperbound = value32_CAR >> CAR_TO_REG_SHIFT;
+	upperbound = value32_CAR;
 
 	bm_trace("[fgauge_set_coulomb_interrupt1_ht] upper = 0x%x:%d diff_car=0x%llx:%lld\r\n",
 		 upperbound, upperbound, car, car);
@@ -1296,16 +1296,16 @@ int fgauge_set_coulomb_interrupt1_ht(struct gauge_device *gauge_dev, int car_val
 
 	pmic_enable_interrupt(FG_BAT1_INT_H_NO, 0, "GM30");
 
-	pmic_set_register_value(PMIC_FG_BAT0_HTH_15_00, upperbound_15_00);
-	pmic_set_register_value(PMIC_FG_BAT0_HTH_31_16, upperbound_31_16);
+	pmic_set_register_value(PMIC_FG_BAT1_HTH_15_00, upperbound_15_00);
+	pmic_set_register_value(PMIC_FG_BAT1_HTH_31_16, upperbound_31_16);
 	mdelay(1);
 
 	pmic_enable_interrupt(FG_BAT1_INT_H_NO, 1, "GM30");
 
 	bm_debug(
 		"[fgauge_set_coulomb_interrupt1_ht] high:0x%x 0x%x car_value:%d car:%d\r\n",
-		pmic_get_register_value(PMIC_FG_BAT0_HTH_15_00),
-		pmic_get_register_value(PMIC_FG_BAT0_HTH_31_16),
+		pmic_get_register_value(PMIC_FG_BAT1_HTH_15_00),
+		pmic_get_register_value(PMIC_FG_BAT1_HTH_31_16),
 		car_value, value32_CAR);
 
 	return 0;
@@ -1428,16 +1428,16 @@ int fgauge_set_coulomb_interrupt1_lt(struct gauge_device *gauge_dev, int car_val
 		 lowbound, lowbound_31_16, lowbound_15_00, car);
 
 	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 0, "GM30");
-	pmic_set_register_value(PMIC_FG_BAT0_LTH_15_00, lowbound_15_00);
-	pmic_set_register_value(PMIC_FG_BAT0_LTH_31_16, lowbound_31_16);
+	pmic_set_register_value(PMIC_FG_BAT1_LTH_15_00, lowbound_15_00);
+	pmic_set_register_value(PMIC_FG_BAT1_LTH_31_16, lowbound_31_16);
 	mdelay(1);
 
 	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 1, "GM30");
 
 	bm_debug(
 		"[fgauge_set_coulomb_interrupt1_lt] low:0x%x 0x%x car_value:%d car:%d\r\n",
-		pmic_get_register_value(PMIC_FG_BAT0_LTH_15_00),
-		pmic_get_register_value(PMIC_FG_BAT0_LTH_31_16),
+		pmic_get_register_value(PMIC_FG_BAT1_LTH_15_00),
+		pmic_get_register_value(PMIC_FG_BAT1_LTH_31_16),
 		car_value, value32_CAR);
 
 	return 0;
