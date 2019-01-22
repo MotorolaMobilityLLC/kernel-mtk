@@ -27,17 +27,6 @@
 static struct cmdqMDPTaskStruct gCmdqMDPTask[MDP_MAX_TASK_NUM];
 static int gCmdqMDPTaskIndex;
 
-static const u64 gCmdqEngineGroupBits[CMDQ_MAX_GROUP_COUNT] = {
-	CMDQ_ENG_ISP_GROUP_BITS,
-	CMDQ_ENG_MDP_GROUP_BITS,
-	CMDQ_ENG_DISP_GROUP_BITS,
-	CMDQ_ENG_JPEG_GROUP_BITS,
-	CMDQ_ENG_VENC_GROUP_BITS,
-	CMDQ_ENG_DPE_GROUP_BITS,
-	CMDQ_ENG_RSC_GROUP_BITS,
-	CMDQ_ENG_GEPF_GROUP_BITS
-};
-
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/
 /**************************************************************************************/
@@ -274,7 +263,7 @@ const char *cmdq_mdp_parse_error_module_by_hwflag_virtual(const struct TaskStruc
 
 u64 cmdq_mdp_get_engine_group_bits_virtual(u32 engine_group)
 {
-	return gCmdqEngineGroupBits[engine_group];
+	return 0;
 }
 
 /**************************************************************************************/
@@ -498,7 +487,7 @@ const char *cmdq_mdp_get_rdma_state(uint32_t state)
 
 void cmdq_mdp_dump_rdma(const unsigned long base, const char *label)
 {
-	uint32_t value[15] = { 0 };
+	uint32_t value[16] = { 0 };
 	uint32_t state = 0;
 	uint32_t grep = 0;
 
@@ -516,7 +505,8 @@ void cmdq_mdp_dump_rdma(const unsigned long base, const char *label)
 	value[11] = CMDQ_REG_GET32(base + 0x410);
 	value[12] = CMDQ_REG_GET32(base + 0x420);
 	value[13] = CMDQ_REG_GET32(base + 0x430);
-	value[14] = CMDQ_REG_GET32(base + 0x4D0);
+	value[14] = CMDQ_REG_GET32(base + 0x440);
+	value[15] = CMDQ_REG_GET32(base + 0x4D0);
 
 	CMDQ_ERR("=============== [CMDQ] %s Status ====================================\n", label);
 	CMDQ_ERR
@@ -528,8 +518,10 @@ void cmdq_mdp_dump_rdma(const unsigned long base, const char *label)
 		 value[6], value[7], value[8]);
 	CMDQ_ERR("RDMA_MON_STA_0: 0x%08x, RDMA_MON_STA_1: 0x%08x, RDMA_MON_STA_2: 0x%08x\n",
 		 value[9], value[10], value[11]);
-	CMDQ_ERR("RDMA_MON_STA_4: 0x%08x, RDMA_MON_STA_6: 0x%08x, RDMA_MON_STA_26: 0x%08x\n",
+	CMDQ_ERR("RDMA_MON_STA_4: 0x%08x, RDMA_MON_STA_6: 0x%08x, RDMA_MON_STA_8: 0x%08x\n",
 		 value[12], value[13], value[14]);
+	CMDQ_ERR("RDMA_MON_STA_26: 0x%08x\n",
+		 value[15]);
 
 	/* parse state */
 	CMDQ_ERR("RDMA ack:%d req:%d\n", (value[9] & (1 << 11)) >> 11,
@@ -537,7 +529,7 @@ void cmdq_mdp_dump_rdma(const unsigned long base, const char *label)
 	state = (value[10] >> 8) & 0x7FF;
 	grep = (value[10] >> 20) & 0x1;
 	CMDQ_ERR("RDMA state: 0x%x (%s)\n", state, cmdq_mdp_get_rdma_state(state));
-	CMDQ_ERR("RDMA horz_cnt: %d vert_cnt:%d\n", value[14] & 0xFFF, (value[14] >> 16) & 0xFFF);
+	CMDQ_ERR("RDMA horz_cnt: %d vert_cnt:%d\n", value[15] & 0xFFF, (value[15] >> 16) & 0xFFF);
 
 	CMDQ_ERR("RDMA grep:%d => suggest to ask SMI help:%d\n", grep, grep);
 }
@@ -556,7 +548,7 @@ const char *cmdq_mdp_get_rsz_state(const uint32_t state)
 
 void cmdq_mdp_dump_rot(const unsigned long base, const char *label)
 {
-	uint32_t value[39] = { 0 };
+	uint32_t value[47] = { 0 };
 
 	value[0] = CMDQ_REG_GET32(base + 0x000);
 	value[1] = CMDQ_REG_GET32(base + 0x008);
@@ -624,7 +616,20 @@ void cmdq_mdp_dump_rot(const unsigned long base, const char *label)
 	value[36] = CMDQ_REG_GET32(base + 0x0D0);
 	CMDQ_REG_SET32(base + 0x018, 0x00001C00);
 	value[37] = CMDQ_REG_GET32(base + 0x0D0);
-	value[38] = CMDQ_REG_GET32(base + 0x01C);
+	CMDQ_REG_SET32(base + 0x018, 0x00001D00);
+	value[38] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00001E00);
+	value[39] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00001F00);
+	value[40] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00002000);
+	value[41] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00002100);
+	value[42] = CMDQ_REG_GET32(base + 0x0D0);
+	value[43] = CMDQ_REG_GET32(base + 0x01C);
+	value[44] = CMDQ_REG_GET32(base + 0x07C);
+	value[45] = CMDQ_REG_GET32(base + 0x010);
+	value[46] = CMDQ_REG_GET32(base + 0x014);
 
 	CMDQ_ERR("=============== [CMDQ] %s Status ====================================\n", label);
 	CMDQ_ERR("ROT_CTRL: 0x%08x, ROT_MAIN_BUF_SIZE: 0x%08x, ROT_SUB_BUF_SIZE: 0x%08x\n",
@@ -647,13 +652,18 @@ void cmdq_mdp_dump_rot(const unsigned long base, const char *label)
 		 value[24], value[25], value[26]);
 	CMDQ_ERR("ROT_DEBUG_12: 0x%08x, ROT_DBUGG_13: 0x%08x, ROT_DBUGG_14: 0x%08x\n",
 		 value[27], value[28], value[29]);
-	CMDQ_ERR("ROT_DEBUG_15: 0x%08x, ROT_DEBUG_16: 0x%08x, ROT_DEBUG_17: 0x%08x\n",
+	CMDQ_ERR("ROT_DEBUG_15: 0x%08x, ROT_DBUGG_16: 0x%08x, ROT_DBUGG_17: 0x%08x\n",
 		 value[30], value[31], value[32]);
-	CMDQ_ERR("ROT_DEBUG_18: 0x%08x, ROT_DEBUG_19: 0x%08x, ROT_DEBUG_1A: 0x%08x\n",
+	CMDQ_ERR("ROT_DEBUG_18: 0x%08x, ROT_DBUGG_19: 0x%08x, ROT_DBUGG_1A: 0x%08x\n",
 		 value[33], value[34], value[35]);
-	CMDQ_ERR("ROT_DEBUG_1B: 0x%08x, ROT_DEBUG_1C: 0x%08x\n",
-		 value[36], value[37]);
-	CMDQ_ERR("VIDO_INT: 0x%08x\n", value[38]);
+	CMDQ_ERR("ROT_DEBUG_1B: 0x%08x, ROT_DBUGG_1C: 0x%08x, ROT_DBUGG_1D: 0x%08x\n",
+		 value[36], value[37], value[38]);
+	CMDQ_ERR("ROT_DEBUG_1E: 0x%08x, ROT_DBUGG_1F: 0x%08x, ROT_DBUGG_20: 0x%08x\n",
+		 value[39], value[40], value[41]);
+	CMDQ_ERR("ROT_DEBUG_21: 0x%08x\n",
+		 value[42]);
+	CMDQ_ERR("VIDO_INT: 0x%08x, VIDO_ROT_EN: 0x%08x\n", value[43], value[44]);
+	CMDQ_ERR("VIDO_SOFT_RST: 0x%08x, VIDO_SOFT_RST_STAT: 0x%08x\n", value[45], value[46]);
 }
 
 void cmdq_mdp_dump_color(const unsigned long base, const char *label)
