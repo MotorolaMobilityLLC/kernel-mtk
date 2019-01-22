@@ -785,11 +785,6 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 	u32 retry_cnt = 0;
 
 	if (pmic_is_bif_exist()) {
-		if (!info->enable_dynamic_cv) {
-			_cv = info->data.battery_cv;
-			goto out;
-		}
-
 		do {
 			vbat_auxadc = battery_get_bat_voltage() * 1000;
 			ret = pmic_get_bif_battery_voltage(&vbat_bif);
@@ -814,6 +809,11 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 		vbat_threshold[1] = info->data.bif_threshold1;
 		vbat_threshold[2] = info->data.bif_threshold2;
 		_cv_temp = info->data.bif_cv_under_threshold2;
+
+		if (!info->enable_dynamic_cv && vbat >= vbat_threshold[2]) {
+			_cv = info->data.battery_cv;
+			goto out;
+		}
 
 		if (vbat < vbat_threshold[1])
 			_cv = 4608000;
