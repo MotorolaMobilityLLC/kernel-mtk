@@ -24,6 +24,7 @@
 #include <linux/kdebug.h>
 #include <linux/uaccess.h>
 #include "aed.h"
+#include <mt-plat/mrdump.h>
 #include <mrdump_private.h>
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_ARM64)

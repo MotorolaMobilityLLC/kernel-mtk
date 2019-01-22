@@ -433,6 +433,8 @@ static void aee_save_reg_stack_sram(int cpu)
 	}
 
 	mrdump_mini_per_cpu_regs(cpu, &regs_buffer_bin[cpu].regs, regs_buffer_bin[cpu].tsk);
+
+	mrdump_save_per_cpu_reg(cpu, &regs_buffer_bin[cpu].regs);
 }
 
 void aee_wdt_irq_info(void)
@@ -599,6 +601,10 @@ void notrace aee_wdt_atf_entry(void)
 	aee_rr_rec_exp_type(1);
 #endif
 #endif
+
+	/* for per-cpu control registers */
+	mrdump_save_ctrlreg();
+
 	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
 
 	if (atf_aee_debug_virt_addr) {
