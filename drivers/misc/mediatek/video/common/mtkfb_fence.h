@@ -139,6 +139,8 @@ typedef struct {
 	dprec_logger_event event_release;
 	dprec_logger_event event_waitvsync;
 	dprec_logger_event event_err;
+	dprec_logger_event event_wait_fence;
+	dprec_logger_event event_frame_cfg;
 } disp_session_sync_info;
 
 
@@ -193,6 +195,10 @@ int disp_sync_find_fence_idx_by_addr(unsigned int session_id, unsigned int timel
 unsigned int disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
 				      unsigned int idx, unsigned long *mva,
 				      unsigned int *size);
+unsigned int disp_sync_query_buf_info_nosync(unsigned int session_id, unsigned int timeline_id,
+				      unsigned int idx, unsigned long *mva, unsigned int *size);
+unsigned int disp_sync_buf_cache_sync(unsigned int session_id, unsigned int timeline_id,
+				      unsigned int idx);
 int disp_sync_get_debug_info(char *stringbuf, int buf_len);
 int disp_sync_get_ovl_timeline_id(int layer_id);
 int disp_sync_get_output_timeline_id(void);

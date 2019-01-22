@@ -217,6 +217,8 @@ typedef struct disp_input_config_t {
 	DISP_ORIENTATION video_rotation;
 
 	uint32_t next_buff_idx;
+	uint32_t src_fence_fd;	/* fence to be waited before using this buffer. -1 if invalid */
+	void *src_fence_struct;	/* fence struct of src_fence_fd, used in kernel */
 
 	uint32_t src_color_key;
 	uint32_t frm_sequence;
@@ -257,6 +259,8 @@ typedef struct disp_output_config_t {
 	DISP_BUFFER_TYPE security;
 	unsigned int buff_idx;
 	unsigned int interface_idx;
+	unsigned int src_fence_fd;	/* fence to be waited before using this buffer. -1 if invalid */
+	void *src_fence_struct;		/* fence struct of src_fence_fd, used in kernel */
 	unsigned int frm_sequence;
 } disp_output_config;
 
@@ -297,6 +301,8 @@ struct disp_frame_cfg_t {
 	/* trigger config */
 	DISP_MODE mode;
 	unsigned int present_fence_idx;
+	unsigned int prev_present_fence_fd;
+	void *prev_present_fence_struct;
 	EXTD_TRIGGER_MODE tigger_mode;
 	DISP_SESSION_USER user;
 };
@@ -371,6 +377,7 @@ typedef enum {
 	DISP_FEATURE_TIME_SHARING = 0x00000001,
 	DISP_FEATURE_HRT = 0x00000002,
 	DISP_FEATURE_PARTIAL = 0x00000004,
+	DISP_FEATURE_FENCE_WAIT = 0x00000008,
 } DISP_FEATURE;
 
 typedef struct disp_caps_t {
@@ -449,7 +456,7 @@ struct disp_scenario_config_t {
 #define	DISP_IOCTL_FRAME_CONFIG				DISP_IOW(220, disp_session_output_config)
 #define DISP_IOCTL_QUERY_VALID_LAYER			DISP_IOW(221, disp_layer_info)
 #define	DISP_IOCTL_SET_SCENARIO				DISP_IOW(222, struct disp_scenario_config_t)
-
+#define	DISP_IOCTL_WAIT_ALL_JOBS_DONE			DISP_IOW(220, unsigned int)
 #ifdef __KERNEL__
 
 int disp_mgr_get_session_info(disp_session_info *info);

@@ -1034,14 +1034,14 @@ DISPLAY_TDSHP_T *get_TDSHP_index(void)
 
 static void _color_reg_set(void *__cmdq, unsigned long addr, unsigned int value)
 {
-	struct cmdqRecStruct cmdq = (struct cmdqRecStruct) __cmdq;
+	struct cmdqRecStruct *cmdq = (struct cmdqRecStruct *) __cmdq;
 
 	DISP_REG_SET(cmdq, addr, value);
 }
 
 static void _color_reg_mask(void *__cmdq, unsigned long addr, unsigned int value, unsigned int mask)
 {
-	struct cmdqRecStruct cmdq = (struct cmdqRecStruct) __cmdq;
+	struct cmdqRecStruct *cmdq = (struct cmdqRecStruct *) __cmdq;
 
 	DISP_REG_MASK(cmdq, addr, value, mask);
 }
@@ -1049,7 +1049,7 @@ static void _color_reg_mask(void *__cmdq, unsigned long addr, unsigned int value
 static void _color_reg_set_field(void *__cmdq, unsigned int field_mask, unsigned long addr,
 				 unsigned int value)
 {
-	struct cmdqRecStruct cmdq = (struct cmdqRecStruct) __cmdq;
+	struct cmdqRecStruct *cmdq = (struct cmdqRecStruct *) __cmdq;
 
 	DISP_REG_SET_FIELD(cmdq, field_mask, addr, value);
 }
@@ -1912,7 +1912,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACHMT6757)
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
 #else
-			ret = ddp_reg_pa_base[DISP_REG_GAMMA];
+		/* ret = ddp_reg_pa_base[DISP_REG_GAMMA]; //rogerhsu can't find DISP_REG_GAMMA */
 #endif
 			break;
 		}
