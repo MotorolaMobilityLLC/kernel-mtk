@@ -80,16 +80,20 @@ struct power_tuning_t *get_eas_power_setting(void)
 	return &power_tuning;
 }
 
-void game_hint_notifier(int is_game_mode)
+bool is_game_mode;
+
+void game_hint_notifier(int is_game)
 {
-	if (is_game_mode) {
+	if (is_game) {
 		STUNE_TASK_THRESHOLD = 80;
 		capacity_margin_dvfs = 1024;
 		sodi_limit = 120;
+		is_game_mode = true;
 	} else {
 		STUNE_TASK_THRESHOLD = 0;
 		capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
 		sodi_limit = DEFAULT_SODI_LIMIT;
+		is_game_mode = false;
 	}
 
 	met_tag_oneshot(0, "sched_stune_filter", STUNE_TASK_THRESHOLD);
