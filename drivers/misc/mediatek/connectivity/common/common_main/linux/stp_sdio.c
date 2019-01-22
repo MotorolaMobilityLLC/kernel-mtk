@@ -701,8 +701,8 @@ static INT32 stp_sdio_wait_for_msg(PVOID pvData)
 #if STP_SDIO_NEW_TXRING
 	STPSDIO_LOUD_FUNC
 	    ("len(%u), wr_cnt(%u), rd_cnt(%u), irq_pending(%u), sleep(%u), wakeup(%u)\n",
-	     pInfo->rx_pkt_len, pInfo->pkt_buf.wr_cnt, pInfo->pkt_buf.rd_cnt, pInfo->irq_pending,
-	     pInfo->sleep_flag, pInfo->wakeup_flag);
+	     pInfo->rx_pkt_len, atomic_read(&pInfo->pkt_buf.wr_cnt), atomic_read(&pInfo->pkt_buf.rd_cnt),
+	     pInfo->irq_pending, pInfo->sleep_flag, pInfo->wakeup_flag);
 	osal_ftrace_print("len(%u), txwkr(%u), irq(%u), sleep(%u), wakeup(%u), tx_pkt_num(%u))\n",
 	     pInfo->rx_pkt_len, pInfo->txwkr_flag, pInfo->irq_pending, pInfo->sleep_flag, pInfo->wakeup_flag,
 	     pInfo->firmware_info.tx_packet_num);
@@ -715,8 +715,8 @@ static INT32 stp_sdio_wait_for_msg(PVOID pvData)
 #else
 	STPSDIO_LOUD_FUNC
 	    ("len(%u), rd_idx(%u), wr_idx(%u), irq_pending(%u), sleep(%u), wakeup(%u)\n",
-	     pInfo->rx_pkt_len, pInfo->pkt_buf.rd_idx, pInfo->pkt_buf.wr_idx, pInfo->irq_pending,
-	     pInfo->sleep_flag, pInfo->wakeup_flag);
+	     pInfo->rx_pkt_len, atomic_read(&pInfo->pkt_buf.rd_idx), atomic_read(&pInfo->pkt_buf.wr_idx),
+	     pInfo->irq_pending, pInfo->sleep_flag, pInfo->wakeup_flag);
 	osal_ftrace_print("len(%u), txwkr(%u), irq(%u), sleep(%u), wakeup(%u), tx_pkt_num(%u)\n",
 	     pInfo->rx_pkt_len, pInfo->txwkr_flag, pInfo->irq_pending, pInfo->sleep_flag, pInfo->wakeup_flag,
 	     pInfo->firmware_info.tx_packet_num);
@@ -1080,10 +1080,10 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 	/* Case 1: buffer is empty (No aggregation). Full flag is useless in this
 	 * condition.
 	 */
-	if (pb->rd_cnt == pb->wr_cnt) {
+	if (atomic_read(&pb->rd_cnt) == atomic_read(&pb->wr_cnt)) {
 		spin_unlock_irqrestore(&pb->rd_cnt_lock, pb->rd_irq_flag);
 		/* Set the size in SDIO packet header later in tx_worker, not here */
-		idx = pb->wr_cnt & STP_SDIO_TX_BUF_CNT_MASK;
+		idx = atomic_read(&pb->wr_cnt) & STP_SDIO_TX_BUF_CNT_MASK;
 		pb->tx_buf_ts[idx] = jiffies;
 		pb->tx_buf_sz[idx] = size + STP_SDIO_HDR_SIZE;
 #if KMALLOC_UPDATE
@@ -1092,22 +1092,22 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		pkt_bufp = &pb->tx_buf[idx][STP_SDIO_HDR_SIZE];
 #endif
 		memcpy(pkt_bufp, data, size);
-		++(pb->wr_cnt);
+		atomic_inc(&pb->wr_cnt);
 
 		if (written_size)
 			*written_size = size;
 		STPSDIO_DBG_FUNC("(Empty) Enqueue done\n");
 	}
 	/* Case 2: buffer is neither empty(w != r) nor full (w-r < s) */
-	else if ((pb->wr_cnt - pb->rd_cnt) < STP_SDIO_TX_BUF_CNT) {
-		prev_wr_idx = (pb->wr_cnt - 1) & STP_SDIO_TX_BUF_CNT_MASK;
+	else if ((atomic_read(&pb->wr_cnt) - atomic_read(&pb->rd_cnt)) < STP_SDIO_TX_BUF_CNT) {
+		prev_wr_idx = (atomic_read(&pb->wr_cnt) - 1) & STP_SDIO_TX_BUF_CNT_MASK;
 		prev_size = pb->tx_buf_sz[prev_wr_idx];
 
 		/* Case 2.1 Aggregate if rd_cnt+1 != wr_cnt */
 		/* George: do length check using add instead of sub operation. Compare
 		 * to FIFO size instead of sw entry size.
 		 */
-		if (((pb->rd_cnt + 1) != pb->wr_cnt)
+		if (((atomic_read(&pb->rd_cnt) + 1) != atomic_read(&pb->wr_cnt))
 		    && ((size + prev_size) <= STP_SDIO_TX_FIFO_SIZE)) {
 #if KMALLOC_UPDATE
 			pkt_bufp = pb->tx_buf + prev_wr_idx * STP_SDIO_TX_ENTRY_SIZE + prev_size;
@@ -1127,7 +1127,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		/* Case 2.2 Use next entry w/o aggregation  */
 		else {
 			/* Check the ring buf is full or not */
-			if ((pb->wr_cnt - pb->rd_cnt) == 1)
+			if ((atomic_read(&pb->wr_cnt) - atomic_read(&pb->rd_cnt)) == 1)
 				pb->full_flag = MTK_WCN_BOOL_TRUE;
 			spin_unlock_irqrestore(&pb->rd_cnt_lock, pb->rd_irq_flag);
 
@@ -1136,7 +1136,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			 * empty condition and stop, then being scheduled before end of this
 			 * function. It's safe!
 			 */
-			idx = pb->wr_cnt & STP_SDIO_TX_BUF_CNT_MASK;
+			idx = atomic_read(&pb->wr_cnt) & STP_SDIO_TX_BUF_CNT_MASK;
 			pb->tx_buf_ts[idx] = jiffies;
 			pb->tx_buf_sz[idx] = size + STP_SDIO_HDR_SIZE;
 #if KMALLOC_UPDATE
@@ -1145,7 +1145,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			pkt_bufp = &pb->tx_buf[idx][STP_SDIO_HDR_SIZE];
 #endif
 			memcpy(pkt_bufp, data, size);
-			++(pb->wr_cnt);
+			atomic_inc(&pb->wr_cnt);
 
 			STPSDIO_DBG_FUNC("(Not empty-no aggre) Enqueue done\n");
 			if (written_size)
@@ -1154,12 +1154,12 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 	}
 	/* Case 3: buffer is full (w-r >= s), (try aggregation) */
 	else {
-		if (!((pb->wr_cnt - pb->rd_cnt) >= STP_SDIO_TX_BUF_CNT)) {
+		if (!((atomic_read(&pb->wr_cnt) - atomic_read(&pb->rd_cnt)) >= STP_SDIO_TX_BUF_CNT)) {
 			STPSDIO_ERR_FUNC
 			    ("abnormal condition and flow, wr_cnt(0x%x), rd_cnt(0x%x)\n",
-			     pb->wr_cnt, pb->rd_cnt);
+			     atomic_read(&pb->wr_cnt), atomic_read(&pb->rd_cnt));
 		}
-		prev_wr_idx = (pb->wr_cnt - 1) & STP_SDIO_TX_BUF_CNT_MASK;
+		prev_wr_idx = (atomic_read(&pb->wr_cnt) - 1) & STP_SDIO_TX_BUF_CNT_MASK;
 		prev_size = pb->tx_buf_sz[prev_wr_idx];
 
 		/* George: do length check using add instead of sub operation. Compare
@@ -1170,7 +1170,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		if ((size + prev_size) <= STP_SDIO_TX_FIFO_SIZE) {
 			if (prev_size != 0)
 				STPSDIO_ERR_FUNC("abnormal, wr_cnt(0x%x), rd_cnt(0x%x), prev(%d), prev_size(%d)\n",
-						pb->wr_cnt, pb->rd_cnt,
+						atomic_read(&pb->wr_cnt), atomic_read(&pb->rd_cnt),
 						prev_wr_idx, prev_size);
 #if KMALLOC_UPDATE
 			pkt_bufp = pb->tx_buf + prev_wr_idx * STP_SDIO_TX_ENTRY_SIZE + prev_size;
@@ -1208,12 +1208,12 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 
 			spin_lock_irqsave(&pb->rd_cnt_lock, pb->rd_irq_flag);
 			/* Check if the local buf is free enough */
-			if ((pb->wr_cnt - pb->rd_cnt) == 1)
+			if ((atomic_read(&pb->wr_cnt) - atomic_read(&pb->rd_cnt)) == 1)
 				pb->full_flag = MTK_WCN_BOOL_TRUE;
 			spin_unlock_irqrestore(&pb->rd_cnt_lock, pb->rd_irq_flag);
 
 			/* George: use this new entry w/o protection */
-			idx = pb->wr_cnt & STP_SDIO_TX_BUF_CNT_MASK;
+			idx = atomic(&pb->wr_cnt) & STP_SDIO_TX_BUF_CNT_MASK;
 			pb->tx_buf_ts[idx] = jiffies;
 			pb->tx_buf_sz[idx] = size + STP_SDIO_HDR_SIZE;
 #if KMALLOC_UPDATE
@@ -1223,7 +1223,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 #endif
 			/* Copy data to ring buffer */
 			memcpy(pkt_bufp, data, size);
-			++(pb->wr_cnt);
+			atomic_inc(&pb->wr_cnt);
 
 			if (written_size)
 				*written_size = size;
@@ -1263,43 +1263,43 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 
 	spin_lock_irqsave(&gp_info->pkt_buf.rd_idx_lock, gp_info->pkt_buf.rd_irq_flag);
 	/* Case 1: buffer is empty (Not aggregation) */
-	if ((gp_info->pkt_buf.rd_idx == gp_info->pkt_buf.wr_idx)
+	if ((atomic_read(&gp_info->pkt_buf.rd_idx) == atomic_read(&gp_info->pkt_buf.wr_idx))
 	    && (gp_info->pkt_buf.full_flag == MTK_WCN_BOOL_FALSE)) {
 		spin_unlock_irqrestore(&gp_info->pkt_buf.rd_idx_lock, gp_info->pkt_buf.rd_irq_flag);
 		/* set the size in SDIO packet header */
 #if KMALLOC_UPDATE
-		*(gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 0) =
-		    (UINT8) ((size + STP_SDIO_HDR_SIZE) & 0xff);
-		*(gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 1) =
-		    (UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
+		*(gp_info->pkt_buf.tx_buf + atomic_read(&gp_info->pkt_buf.wr_idx) *
+				STP_SDIO_TX_ENTRY_SIZE + 0) = (UINT8)((size + STP_SDIO_HDR_SIZE) & 0xff);
+		*(gp_info->pkt_buf.tx_buf + atomic_read(&gp_info->pkt_buf.wr_idx) *
+				STP_SDIO_TX_ENTRY_SIZE + 1) = (UINT8)((size + STP_SDIO_HDR_SIZE) >> 8);
 #else
-		gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][0] =
+		gp_info->pkt_buf.tx_buf[atomic_read(&gp_info->pkt_buf.wr_idx)][0] =
 		    (UINT8) ((size + STP_SDIO_HDR_SIZE) & 0xff);
-		gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][1] =
+		gp_info->pkt_buf.tx_buf[atomic_read(&gp_info->pkt_buf.wr_idx)][1] =
 		    (UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
 #endif
-		gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+		gp_info->pkt_buf.tx_buf_ts[atomic_read(&gp_info->pkt_buf.wr_idx)] = jiffies;
 		osal_get_local_time(&ts, &nsec);
-		gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
-		gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
+		gp_info->pkt_buf.tx_buf_local_ts[atomic_read(&gp_info->pkt_buf.wr_idx)] = ts;
+		gp_info->pkt_buf.tx_buf_local_nsec[atomic_read(&gp_info->pkt_buf.wr_idx)] = nsec;
 
 		STPSDIO_DBG_FUNC("(Empty) Enqueue done\n");
 #if KMALLOC_UPDATE
-		pkt_bufp =
-		    gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE +
-		    STP_SDIO_HDR_SIZE;
+		pkt_bufp = gp_info->pkt_buf.tx_buf + atomic_read(&gp_info->pkt_buf.wr_idx) *
+			STP_SDIO_TX_ENTRY_SIZE + STP_SDIO_HDR_SIZE;
 #else
-		pkt_bufp = &gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][STP_SDIO_HDR_SIZE];
+		pkt_bufp = &gp_info->pkt_buf.tx_buf[atomic_read(&gp_info->pkt_buf.wr_idx)][STP_SDIO_HDR_SIZE];
 #endif
 		memcpy(pkt_bufp, data, size);
 		*written_size = size;
 
-		gp_info->pkt_buf.wr_idx = (gp_info->pkt_buf.wr_idx + 1) % STP_SDIO_TX_BUF_CNT;
+		atomic_set(&gp_info->pkt_buf.wr_idx,
+				(atomic_read(&gp_info->pkt_buf.wr_idx) + 1) % STP_SDIO_TX_BUF_CNT);
 	}
 	/* Case 2: buffer is not empty */
-	else if (gp_info->pkt_buf.rd_idx != gp_info->pkt_buf.wr_idx) {
-		prev_wr_idx =
-		    (gp_info->pkt_buf.wr_idx - 1 + STP_SDIO_TX_BUF_CNT) % STP_SDIO_TX_BUF_CNT;
+	else if (atomic_read(&gp_info->pkt_buf.rd_idx) != atomic_read(&gp_info->pkt_buf.wr_idx)) {
+		prev_wr_idx = (atomic_read(&gp_info->pkt_buf.wr_idx) - 1 + STP_SDIO_TX_BUF_CNT) %
+			STP_SDIO_TX_BUF_CNT;
 		/* set the packet size form previous SDIO packet header */
 #if KMALLOC_UPDATE
 		buf_allocation =
@@ -1315,7 +1315,7 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		/* George: do length check using add instead of sub operation. Compare
 		 * to FIFO size instead of sw entry size.
 		 */
-		if ((prev_wr_idx != gp_info->pkt_buf.rd_idx)
+		if ((prev_wr_idx != atomic_read(&gp_info->pkt_buf.rd_idx))
 		    && ((size + buf_allocation) <= STP_SDIO_TX_FIFO_SIZE)) {
 #if KMALLOC_UPDATE
 			pkt_bufp =
@@ -1345,11 +1345,12 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 		/* Case 2.2 Not aggregation */
 		else {
 			/* Check the ring buf is full or not */
-			room = (gp_info->pkt_buf.wr_idx >= gp_info->pkt_buf.rd_idx) ?
-			    (STP_SDIO_TX_BUF_CNT -
-			     (gp_info->pkt_buf.wr_idx -
-			      gp_info->pkt_buf.rd_idx)) : (gp_info->pkt_buf.rd_idx -
-							   gp_info->pkt_buf.wr_idx);
+			room = (atomic_read(&gp_info->pkt_buf.wr_idx) >=
+				atomic_read(&gp_info->pkt_buf.rd_idx)) ? (STP_SDIO_TX_BUF_CNT -
+				(atomic_read(&gp_info->pkt_buf.wr_idx) -
+				 atomic_read(&gp_info->pkt_buf.rd_idx))) :
+				(atomic_read(&gp_info->pkt_buf.rd_idx) -
+				 atomic_read(&gp_info->pkt_buf.wr_idx));
 			if (room == 1)
 				gp_info->pkt_buf.full_flag = MTK_WCN_BOOL_TRUE;
 			spin_unlock_irqrestore(&gp_info->pkt_buf.rd_idx_lock,
@@ -1364,28 +1365,28 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			/* set the size in SDIO packet header */
 #if KMALLOC_UPDATE
 			*(gp_info->pkt_buf.tx_buf +
-			  gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 0) =
+			  atomic_read(&gp_info->pkt_buf.wr_idx) * STP_SDIO_TX_ENTRY_SIZE + 0) =
 				(UINT8) ((size + STP_SDIO_HDR_SIZE) & 0xff);
 			*(gp_info->pkt_buf.tx_buf +
-			gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 1) =
+			atomic_read(&gp_info->pkt_buf.wr_idx) * STP_SDIO_TX_ENTRY_SIZE + 1) =
 				(UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
-			gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+			gp_info->pkt_buf.tx_buf_ts[atomic_read(&gp_info->pkt_buf.wr_idx)] = jiffies;
 			osal_get_local_time(&ts, &nsec);
-			gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
-			gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
+			gp_info->pkt_buf.tx_buf_local_ts[atomic_read(&gp_info->pkt_buf.wr_idx)] = ts;
+			gp_info->pkt_buf.tx_buf_local_nsec[atomic_read(&gp_info->pkt_buf.wr_idx)] = nsec;
 
 			pkt_bufp =
 			    gp_info->pkt_buf.tx_buf +
-			    gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + STP_SDIO_HDR_SIZE;
+			    atomic_read(&gp_info->pkt_buf.wr_idx) * STP_SDIO_TX_ENTRY_SIZE + STP_SDIO_HDR_SIZE;
 #else
-			gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][0] =
+			gp_info->pkt_buf.tx_buf[atomic_read(&gp_info->pkt_buf.wr_idx)][0] =
 			    (UINT8) ((size + STP_SDIO_HDR_SIZE) & 0xff);
-			gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][1] =
+			gp_info->pkt_buf.tx_buf[atomic_read(&gp_info->pkt_buf.wr_idx)][1] =
 			    (UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
-			gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+			gp_info->pkt_buf.tx_buf_ts[atomic_read(&gp_info->pkt_buf.wr_idx)] = jiffies;
 
-			pkt_bufp =
-			    &gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][STP_SDIO_HDR_SIZE];
+			pkt_bufp = &gp_info->pkt_buf.
+				tx_buf[atomic_read(&gp_info->pkt_buf.wr_idx)][STP_SDIO_HDR_SIZE];
 #endif
 			memcpy(pkt_bufp, data, size);
 
@@ -1393,14 +1394,14 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 
 			*written_size = size;
 
-			gp_info->pkt_buf.wr_idx =
-			    (gp_info->pkt_buf.wr_idx + 1) % STP_SDIO_TX_BUF_CNT;
+			atomic_set(&gp_info->pkt_buf.wr_idx,
+					(atomic_read(&gp_info->pkt_buf.wr_idx) + 1) % STP_SDIO_TX_BUF_CNT);
 		}
 	}
 	/* Case 3: buffer is full (Aggregation) */
 	else if (gp_info->pkt_buf.full_flag != MTK_WCN_BOOL_FALSE) {
-		prev_wr_idx =
-		    (gp_info->pkt_buf.wr_idx - 1 + STP_SDIO_TX_BUF_CNT) % STP_SDIO_TX_BUF_CNT;
+		prev_wr_idx = (atomic_read(&gp_info->pkt_buf.wr_idx) - 1 + STP_SDIO_TX_BUF_CNT) %
+			STP_SDIO_TX_BUF_CNT;
 #if KMALLOC_UPDATE
 		buf_allocation =
 		    *(gp_info->pkt_buf.tx_buf + prev_wr_idx * STP_SDIO_TX_ENTRY_SIZE + 1);
@@ -1463,11 +1464,12 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 			spin_lock_irqsave(&gp_info->pkt_buf.rd_idx_lock,
 					  gp_info->pkt_buf.rd_irq_flag);
 			/* Check if the local buf is free enough */
-			room = (gp_info->pkt_buf.wr_idx >= gp_info->pkt_buf.rd_idx) ?
-			    (STP_SDIO_TX_BUF_CNT -
-			     (gp_info->pkt_buf.wr_idx -
-			      gp_info->pkt_buf.rd_idx)) : (gp_info->pkt_buf.rd_idx -
-							   gp_info->pkt_buf.wr_idx);
+			room = (atomic_read(&gp_info->pkt_buf.wr_idx) >=
+				atomic_read(&gp_info->pkt_buf.rd_idx)) ?
+				(STP_SDIO_TX_BUF_CNT - (atomic_read(&gp_info->pkt_buf.wr_idx) -
+				atomic_read(&gp_info->pkt_buf.rd_idx))) :
+				(atomic_read(&gp_info->pkt_buf.rd_idx) -
+				 atomic_read(&gp_info->pkt_buf.wr_idx));
 			if (room == 1)
 				gp_info->pkt_buf.full_flag = MTK_WCN_BOOL_TRUE;
 			spin_unlock_irqrestore(&gp_info->pkt_buf.rd_idx_lock,
@@ -1475,31 +1477,34 @@ INT32 stp_sdio_tx(const PUINT8 data, const UINT32 size, PUINT32 written_size)
 
 			/* George: use this new entry w/o protection */
 #if KMALLOC_UPDATE
-			*(gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 0) =
+			*(gp_info->pkt_buf.tx_buf + atomic_read(&gp_info->pkt_buf.wr_idx) *
+					STP_SDIO_TX_ENTRY_SIZE + 0) =
 				(UINT8) ((size + STP_SDIO_HDR_SIZE) & 0xff);
-			*(gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx * STP_SDIO_TX_ENTRY_SIZE + 1) =
+			*(gp_info->pkt_buf.tx_buf + atomic_read(&gp_info->pkt_buf.wr_idx) *
+					STP_SDIO_TX_ENTRY_SIZE + 1) =
 				(UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
-			gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+			gp_info->pkt_buf.tx_buf_ts[atomic_read(&gp_info->pkt_buf.wr_idx)] = jiffies;
 			osal_get_local_time(&ts, &nsec);
-			gp_info->pkt_buf.tx_buf_local_ts[gp_info->pkt_buf.wr_idx] = ts;
-			gp_info->pkt_buf.tx_buf_local_nsec[gp_info->pkt_buf.wr_idx] = nsec;
+			gp_info->pkt_buf.tx_buf_local_ts[atomic_read(&gp_info->pkt_buf.wr_idx)] = ts;
+			gp_info->pkt_buf.tx_buf_local_nsec[atomic_read(&gp_info->pkt_buf.wr_idx)] = nsec;
 
-			pkt_bufp = gp_info->pkt_buf.tx_buf + gp_info->pkt_buf.wr_idx
+			pkt_bufp = gp_info->pkt_buf.tx_buf + atomic_read(&gp_info->pkt_buf.wr_idx)
 				* STP_SDIO_TX_ENTRY_SIZE + STP_SDIO_HDR_SIZE;
 #else
-			gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][0] =
+			gp_info->pkt_buf.tx_buf[atomic_read(&gp_info->pkt_buf.wr_idx)][0] =
 			    (UINT8) ((size + STP_SDIO_HDR_SIZE) & 0xff);
-			gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][1] =
+			gp_info->pkt_buf.tx_buf[atomic_read(&gp_info->pkt_buf.wr_idx)][1] =
 			    (UINT8) ((size + STP_SDIO_HDR_SIZE) >> 8);
-			gp_info->pkt_buf.tx_buf_ts[gp_info->pkt_buf.wr_idx] = jiffies;
+			gp_info->pkt_buf.tx_buf_ts[atomic_read(&gp_info->pkt_buf.wr_idx)] = jiffies;
 
-			pkt_bufp = &gp_info->pkt_buf.tx_buf[gp_info->pkt_buf.wr_idx][STP_SDIO_HDR_SIZE];
+			pkt_bufp = &gp_info->pkt_buf.
+				tx_buf[atomic_read(&gp_info->pkt_buf.wr_idx)][STP_SDIO_HDR_SIZE];
 #endif
 			/* Copy data to ring buffer */
 			memcpy(pkt_bufp, data, size);
 			*written_size = size;
-			gp_info->pkt_buf.wr_idx =
-			    (gp_info->pkt_buf.wr_idx + 1) % STP_SDIO_TX_BUF_CNT;
+			atomic_set(&gp_info->pkt_buf.wr_idx,
+			    (atomic_read(&gp_info->pkt_buf.wr_idx) + 1) % STP_SDIO_TX_BUF_CNT);
 		}
 	}
 	/* <2> schedule for Tx worker tasklet */
@@ -1748,7 +1753,7 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 		stp_sdio_check_tx_sanity(p_info, 1);
 
 		/* check if Tx ring buffer is empty */
-		if (p_info->pkt_buf.wr_cnt == p_info->pkt_buf.rd_cnt) {
+		if (atomic_read(&p_info->pkt_buf.wr_cnt) == atomic_read(&p_info->pkt_buf.rd_cnt)) {
 			/* full flag is use less in this condition */
 			STPSDIO_DBG_FUNC("Tx entry ring buffer empty\n");
 			break;
@@ -1778,7 +1783,7 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 		/* Access content in rd_cnt is safe because it will not be aggregated
 		 * anymore in sdio_tx(). Check current tx condition with info in rd_cnt.
 		 */
-		idx = pb->rd_cnt & STP_SDIO_TX_BUF_CNT_MASK;
+		idx = atomic(&pb->rd_cnt) & STP_SDIO_TX_BUF_CNT_MASK;
 
 		/* Get Tx packet size from Tx size ring buf */
 		bus_txlen = pb->tx_buf_sz[idx];
@@ -1891,7 +1896,7 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 			/* need clear??? skip it for debugging */
 
 			spin_lock_irqsave(&pb->rd_cnt_lock, pb->rd_irq_flag);
-			++(pb->rd_cnt);
+			atomic_inc(&pb->rd_cnt);
 			/* TODO: [FixMe][George] check if full_flag needed? */
 			if (pb->full_flag != MTK_WCN_BOOL_FALSE) {
 				pb->full_flag = MTK_WCN_BOOL_FALSE;
@@ -1961,7 +1966,7 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 		stp_sdio_check_tx_sanity(p_info, 1);
 
 		/* check if Tx ring buffer is empty */
-		if ((p_info->pkt_buf.wr_idx == p_info->pkt_buf.rd_idx)
+		if ((atomic_read(&p_info->pkt_buf.wr_idx) == atomic_read(&p_info->pkt_buf.rd_idx))
 		    && (p_info->pkt_buf.full_flag == MTK_WCN_BOOL_FALSE)) {
 			STPSDIO_DBG_FUNC("Tx ring buffer is empty\n");
 			break;
@@ -1973,10 +1978,10 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 		 */
 		/* Get Tx packet size from Tx ring buf */
 #if KMALLOC_UPDATE
-		buf_tx =
-		    gp_info->pkt_buf.tx_buf + p_info->pkt_buf.rd_idx * STP_SDIO_TX_ENTRY_SIZE + 0;
+		buf_tx = gp_info->pkt_buf.tx_buf +
+			atomic_read(&p_info->pkt_buf.rd_idx) * STP_SDIO_TX_ENTRY_SIZE + 0;
 #else
-		buf_tx = &p_info->pkt_buf.tx_buf[p_info->pkt_buf.rd_idx][0];
+		buf_tx = &p_info->pkt_buf.tx_buf[atomic_read(&p_info->pkt_buf.rd_idx)][0];
 #endif
 		bus_txlen = buf_tx[1];
 		bus_txlen = (bus_txlen << 8) | buf_tx[0];
@@ -2086,7 +2091,8 @@ static VOID stp_sdio_tx_wkr(struct work_struct *work)
 			spin_lock_irqsave(&p_info->pkt_buf.rd_idx_lock,
 					  p_info->pkt_buf.rd_irq_flag);
 			/* release tx ring buffer */
-			p_info->pkt_buf.rd_idx = (p_info->pkt_buf.rd_idx + 1) % STP_SDIO_TX_BUF_CNT;
+			atomic_set(&p_info->pkt_buf.rd_idx,
+					(atomic_read(&p_info->pkt_buf.rd_idx) + 1) % STP_SDIO_TX_BUF_CNT);
 			/* Set Tx ring buffer is not full */
 			if (p_info->pkt_buf.full_flag != MTK_WCN_BOOL_FALSE) {
 				p_info->pkt_buf.full_flag = MTK_WCN_BOOL_FALSE;
@@ -2604,13 +2610,13 @@ static INT32 stp_sdio_probe(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx,
 
 #if STP_SDIO_NEW_TXRING
 	spin_lock_init(&g_stp_sdio_host_info.pkt_buf.rd_cnt_lock);
-	g_stp_sdio_host_info.pkt_buf.wr_cnt = 0;
-	g_stp_sdio_host_info.pkt_buf.rd_cnt = 0;
+	atomic_set(&g_stp_sdio_host_info.pkt_buf.wr_cnt, 0);
+	atomic_set(&g_stp_sdio_host_info.pkt_buf.rd_cnt, 0);
 #else
 	/*g_stp_sdio_host_info.pkt_buf.rd_idx_lock = SPIN_LOCK_UNLOCKED; */
 	spin_lock_init(&g_stp_sdio_host_info.pkt_buf.rd_idx_lock);
-	g_stp_sdio_host_info.pkt_buf.wr_idx = 0;
-	g_stp_sdio_host_info.pkt_buf.rd_idx = 0;
+	atomic_set(&g_stp_sdio_host_info.pkt_buf.wr_idx, 0);
+	atomic_set(&g_stp_sdio_host_info.pkt_buf.rd_idx, 0);
 #endif
 	g_stp_sdio_host_info.pkt_buf.full_flag = MTK_WCN_BOOL_FALSE;
 
@@ -3103,18 +3109,21 @@ VOID stp_sdio_txdbg_dump(VOID)
 
 #if STP_SDIO_NEW_TXRING
 	STPSDIO_INFO_FUNC("\n\ndump pkt_buf.tx_buf: rd(%d) wr(%d) full(%d)\n",
-			gp_info->pkt_buf.rd_cnt, gp_info->pkt_buf.wr_cnt, gp_info->pkt_buf.full_flag);
+			atomic_read(&gp_info->pkt_buf.rd_cnt), atomic_read(&gp_info->pkt_buf.wr_cnt),
+			gp_info->pkt_buf.full_flag);
 #else
 	STPSDIO_INFO_FUNC("\n\ndump pkt_buf.tx_buf: rdi(%d) wri(%d) full(%d)\n",
-			gp_info->pkt_buf.rd_idx, gp_info->pkt_buf.wr_idx, gp_info->pkt_buf.full_flag);
+			atomic_read(&gp_info->pkt_buf.rd_idx), atomic_read(&gp_info->pkt_buf.wr_idx),
+			gp_info->pkt_buf.full_flag);
 #endif
 
 	for (i = 0; i < STP_SDIO_TX_BUF_CNT; ++i) {
 #if STP_SDIO_NEW_TXRING
-		idx = (gp_info->pkt_buf.wr_cnt - 1 - i) & STP_SDIO_TX_BUF_CNT_MASK;
+		idx = (atomic_read(&gp_info->pkt_buf.wr_cnt) - 1 - i) & STP_SDIO_TX_BUF_CNT_MASK;
 		len = gp_info->pkt_buf.tx_buf_sz[idx];
 #else
-		idx = (gp_info->pkt_buf.wr_idx - 1 - i + STP_SDIO_TX_BUF_CNT) % STP_SDIO_TX_BUF_CNT;
+		idx = (atomic_read(&gp_info->pkt_buf.wr_idx) - 1 - i + STP_SDIO_TX_BUF_CNT) %
+			STP_SDIO_TX_BUF_CNT;
 #if KMALLOC_UPDATE
 		len = *(gp_info->pkt_buf.tx_buf + idx * STP_SDIO_TX_ENTRY_SIZE + 1);
 		len = (len << 8) | *(gp_info->pkt_buf.tx_buf + idx * STP_SDIO_TX_ENTRY_SIZE + 0);
