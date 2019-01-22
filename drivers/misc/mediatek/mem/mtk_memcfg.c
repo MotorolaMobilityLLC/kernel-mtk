@@ -32,6 +32,7 @@
 #include <linux/mm.h>
 #include <linux/memblock.h>
 #include <linux/oom.h>
+#include <linux/swap.h>
 #include "mtk_memcfg_reserve_info.h"
 #ifdef CONFIG_MTK_AEE_FEATURE
 #include <mt-plat/aee.h>
@@ -554,6 +555,38 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 /* end of kenerl out-of-memory(oom) trigger */
 #endif /* end of CONFIG_MTK_ENG_BUILD */
 
+#ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
+static bool vmpressure_no_trigger_warning(void) { return true; }
+#else
+static bool vmpressure_no_trigger_warning(void)
+{
+#define VMPRESSURE_CRITICAL	(40)
+
+	unsigned long memory, memsw;
+
+	memory = global_page_state(NR_INACTIVE_ANON) +
+		 global_page_state(NR_ACTIVE_ANON) +
+		 global_page_state(NR_INACTIVE_FILE) +
+		 global_page_state(NR_ACTIVE_FILE) +
+		 global_page_state(NR_UNEVICTABLE);
+
+	memsw = memory + total_swap_pages -
+		get_nr_swap_pages() -
+		total_swapcache_pages();
+
+	memory *= 100;
+	memsw *= VMPRESSURE_CRITICAL;
+
+	/* should trigger */
+	if (memory < memsw)
+		return false;
+
+	return true;
+
+#undef VMPRESSURE_CRITICAL
+}
+#endif
+
 static unsigned long vmpressure_warn_timeout;
 /* Inform system about vmpressure level */
 void mtk_memcfg_inform_vmpressure(bool to_trigger)
@@ -565,6 +598,9 @@ void mtk_memcfg_inform_vmpressure(bool to_trigger)
 	struct task_struct *task;
 
 	if (!to_trigger)
+		return;
+
+	if (vmpressure_no_trigger_warning())
 		return;
 
 	rcu_read_lock();
