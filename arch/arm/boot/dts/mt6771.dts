@@ -2470,6 +2470,7 @@
 	imgsys: imgsys@15020000 {
 		compatible = "mediatek,imgsys", "syscon";
 		reg = <0 0x15020000 0 0x1000>;
+		#clock-cells = <1>;
 		clocks =
 				<&imgsys IMG_LARB5>,
 				<&imgsys IMG_DIP>;
