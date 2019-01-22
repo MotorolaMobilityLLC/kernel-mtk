@@ -264,8 +264,8 @@ static void verify_m4u_do_mva_alloc_fix(unsigned int test_region_start,
 	}
 }
 
-unsigned int gtest_mva_start_normal[OUT_INDEX_END - OUT_INDEX_START + 1] = {0};
-unsigned int gtest_mva_end_normal[OUT_INDEX_END - OUT_INDEX_START + 1] = {0};
+unsigned int gtest_mva_start_normal[REGION_NR] = {0};
+unsigned int gtest_mva_end_normal[REGION_NR] = {0};
 static void verify_m4u_do_mva_alloc(unsigned int test_region_start,
 					unsigned int test_region_end,
 					unsigned int port_id,
