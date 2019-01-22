@@ -5019,32 +5019,6 @@ static void cmdq_core_dump_thread_pc(const int32_t thread)
 	}
 }
 
-static void cmdq_core_dump_task_with_engine_flag(uint64_t engineFlag)
-{
-	struct TaskStruct *pDumpTask = NULL;
-	struct list_head *p = NULL;
-	uint32_t *pVABase = NULL;
-	dma_addr_t MVABase = 0;
-
-	CMDQ_ERR
-	    ("=============== [CMDQ] All active tasks sharing same engine flag 0x%08llx===============\n",
-	     engineFlag);
-
-	list_for_each(p, &gCmdqContext.taskActiveList) {
-		pDumpTask = list_entry(p, struct TaskStruct, listEntry);
-		if (cmdq_core_is_valid_in_active_list(pDumpTask) == true && (engineFlag & pDumpTask->engineFlag)) {
-			cmdq_core_get_task_first_buffer(pDumpTask, &pVABase, &MVABase);
-			CMDQ_ERR("Thr %d, Task: 0x%p, first VABase: 0x%p, first MVABase: 0x%pa, size: %d\n",
-				(pDumpTask->thread), (pDumpTask), pVABase, &MVABase, pDumpTask->commandSize);
-			CMDQ_ERR("  cont'd: Flag: 0x%08llx, Last Inst 0x%08x:0x%08x, 0x%08x:0x%08x\n",
-				pDumpTask->engineFlag,
-				pDumpTask->pCMDEnd[-2], pDumpTask->pCMDEnd[-3],
-				pDumpTask->pCMDEnd[0], pDumpTask->pCMDEnd[-1]);
-			CMDQ_ERR("** This is SRAM task: sram base:%u", pDumpTask->sram_base);
-		}
-	}
-}
-
 static void cmdq_core_dump_task_in_thread(const int32_t thread,
 					  const bool fullTatskDump, const bool dumpCookie,
 					  const bool dumpCmd)
@@ -5114,6 +5088,24 @@ static void cmdq_core_dump_task_in_thread(const int32_t thread,
 			print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
 					pVABase, (pDumpTask->commandSize), true);
 		}
+	}
+}
+
+static void cmdq_core_dump_task_with_engine_flag(u64 engineFlag, s32 current_thead)
+{
+	s32 thread_idx = 0;
+
+	CMDQ_ERR
+	    ("=============== [CMDQ] All task in thread sharing same engine flag 0x%016llx===============\n",
+	     engineFlag);
+
+	for (thread_idx = 0; thread_idx < CMDQ_MAX_THREAD_COUNT; thread_idx++) {
+		struct ThreadStruct *thread = &gCmdqContext.thread[thread_idx];
+
+		if (thread_idx == current_thead || thread->taskCount <= 0 ||
+			!(thread->engineFlag & engineFlag))
+			continue;
+		cmdq_core_dump_task_in_thread(thread_idx, false, false, false);
 	}
 }
 
@@ -6399,7 +6391,7 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 
 	/* dump tasks in error thread */
 	cmdq_core_dump_task_in_thread(thread, false, false, false);
-	cmdq_core_dump_task_with_engine_flag(printEngineFlag);
+	cmdq_core_dump_task_with_engine_flag(printEngineFlag, thread);
 
 	if (short_log) {
 		CMDQ_ERR("=============== skip detail error dump ===============\n");
@@ -7679,7 +7671,7 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 				/* task may already released, or starved to death */
 				CMDQ_ERR("task 0x%p timeout with invalid thread\n", pTask);
 				cmdq_core_dump_task(pTask);
-				cmdq_core_dump_task_with_engine_flag(pTask->engineFlag);
+				cmdq_core_dump_task_with_engine_flag(pTask->engineFlag, CMDQ_INVALID_THREAD);
 				/* remove from waiting list, */
 				/* so that it won't be consumed in the future */
 				list_del_init(&(pTask->listEntry));
