@@ -388,7 +388,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_SHARE_WDMA0, 1);
 	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 1);
 	disp_helper_set_option(DISP_OPT_ANTILATENCY, 0);
-	disp_helper_set_option(DISP_OPT_DC_BY_HRT, 1);
+	disp_helper_set_option(DISP_OPT_DC_BY_HRT, 0);
 #ifndef CONFIG_MTK_HDMI_SUPPORT
 	disp_helper_set_option(DISP_OPT_OVL_DCM, 1);
 #endif
