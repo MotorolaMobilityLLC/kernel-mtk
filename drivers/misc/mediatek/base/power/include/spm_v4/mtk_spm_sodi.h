@@ -100,7 +100,7 @@ static inline void spm_sodi_aee_init(void)
 
 void spm_trigger_wfi_for_sodi(u32 pcm_flags);
 
-wake_reason_t spm_sodi_output_log(
+unsigned int spm_sodi_output_log(
 	struct wake_status *wakesta, struct pcm_desc *pcmdesc,
 	u32 sodi_flags, u32 operation_cond);
 
