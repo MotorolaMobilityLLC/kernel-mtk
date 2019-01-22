@@ -96,6 +96,15 @@ struct pkt_track_ilm_common_des_t {
 	struct mdt_common_des_t des;
 } __packed;
 
+struct pkt_track_ilm_del_rule_ind_t {
+	u8    ref_count;
+	u8    lp_reserved;
+	u16   msg_len;
+	u32   ipv4_rule_cnt;
+	u32   ipv4_rule_id[128];
+	u32   ipv6_rule_cnt;
+	u32   ipv6_rule_id[128];
+} __packed;
 
 /* Direct Tethering related command structs */
 struct pkt_track_ilm_enable_t {

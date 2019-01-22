@@ -272,9 +272,10 @@ void del_nat_tuple(struct nat_tuple *t)
 	del_timer(&t->timeout_ack);
 #endif
 
-	if (t->state != TUPLE_STATE_DELETING) {
+	if (t->state != TUPLE_STATE_DELETING && t->state != TUPLE_STATE_VALID) {
 		fp_printk(K_ALET, "%s: The state[%d] of nat tuple[%p] is not expected!\n", __func__, t->state, t);
 		WARN_ON(1);
+		return;
 	}
 
 	TUPLE_LOCK(&tuple_lock, flag);
@@ -886,9 +887,10 @@ void del_router_tuple(struct router_tuple *t)
 	del_timer(&t->timeout_ack);
 #endif
 
-	if (t->state != TUPLE_STATE_DELETING) {
+	if (t->state != TUPLE_STATE_DELETING && t->state != TUPLE_STATE_VALID) {
 		fp_printk(K_ALET, "%s: The state[%d] of nat tuple[%p] is not expected!\n", __func__, t->state, t);
 		WARN_ON(1);
+		return;
 	}
 
 	TUPLE_LOCK(&tuple_lock, flag);

@@ -523,16 +523,18 @@ static int pkt_track_ufpm_msg_hdlr(ipc_ilm_t *ilm)
 
 static int pkt_track_mdt_msg_hdlr(ipc_ilm_t *ilm)
 {
-	struct pkt_track_ilm_common_des_t *des = (struct pkt_track_ilm_common_des_t *) ilm->local_para_ptr;
 	void *p;
 
 	pkt_printk(K_INFO, "%s: Handle ilm from MDT about rule.\n", __func__);
 
 	switch (ilm->msg_id) {
 	case IPC_MSG_ID_MDT_DELETE_RULE_RSP:
+	{
+		struct pkt_track_ilm_common_des_t *des = (struct pkt_track_ilm_common_des_t *) ilm->local_para_ptr;
+
 		p = get_tuple_by_md_rule_id(des->des.rule_id);
 		if (!p) {
-			pkt_printk(K_ALET, "%s: Cannot get tupple by id[%d], des[%p].\n",
+			pkt_printk(K_ALET, "%s: Cannot get tuple by id[%d], des[%p].\n",
 						__func__, des->des.rule_id, des);
 			WARN_ON(1);
 			return -1;
@@ -551,14 +553,16 @@ static int pkt_track_mdt_msg_hdlr(ipc_ilm_t *ilm)
 		}
 
 		break;
+	}
 
 	case IPC_MSG_ID_MDT_SYNC_RULE_STATUS:
-		des = (struct pkt_track_ilm_common_des_t *) ilm->local_para_ptr;
+	{
+		struct pkt_track_ilm_common_des_t *des = (struct pkt_track_ilm_common_des_t *) ilm->local_para_ptr;
 
 		if (des->des.action == PKT_TRACK_MDT_ACTION_DELETE) {
 			p = get_tuple_by_md_rule_id(des->des.rule_id);
 			if (!p) {
-				pkt_printk(K_ALET, "%s: Cannot get tupple by id[%d], des[%p].\n",
+				pkt_printk(K_ALET, "%s: Cannot get tuple by id[%d], des[%p].\n",
 							__func__, des->des.rule_id, des);
 				WARN_ON(1);
 				return -1;
@@ -582,6 +586,47 @@ static int pkt_track_mdt_msg_hdlr(ipc_ilm_t *ilm)
 		}
 
 		break;
+	}
+
+	case IPC_MSG_ID_MDT_DELETE_TIMEOUT_RULE_IND:
+	{
+		int i;
+		struct pkt_track_ilm_del_rule_ind_t *des = (struct pkt_track_ilm_del_rule_ind_t *) ilm->local_para_ptr;
+
+		for (i = 0; i < des->ipv4_rule_cnt; i++) {
+			pkt_printk(K_NOTICE, "%s: Conntrack timeout, delete ipv4_id[%d].\n",
+						__func__, des->ipv4_rule_id[i]);
+
+			p = get_tuple_by_md_rule_id(des->ipv4_rule_id[i]);
+			if (!p) {
+				pkt_printk(K_ALET, "%s: Cannot get tuple by id[%d], des[%p].\n",
+							__func__, des->ipv4_rule_id[i], des);
+				WARN_ON(1);
+				return -1;
+			}
+
+			del_nat_tuple(p);
+			delete_md_rule_id(des->ipv4_rule_id[i]);
+		}
+
+		for (i = 0; i < des->ipv6_rule_cnt; i++) {
+			pkt_printk(K_NOTICE, "%s: Conntrack timeout, delete ipv6_id[%d].\n",
+						__func__, des->ipv6_rule_id[i]);
+
+			p = get_tuple_by_md_rule_id(des->ipv6_rule_id[i]);
+			if (!p) {
+				pkt_printk(K_ALET, "%s: Cannot get tuple by id[%d], des[%p].\n",
+							__func__, des->ipv6_rule_id[i], des);
+				WARN_ON(1);
+				return -1;
+			}
+
+			del_router_tuple(p);
+			delete_md_rule_id(des->ipv6_rule_id[i]);
+		}
+
+		break;
+	}
 
 	default:
 		pkt_printk(K_ERR, "%s: Cannot handle MSG_ID[%d] from MDT about rule.\n", __func__, ilm->msg_id);
@@ -725,6 +770,7 @@ int pkt_track_md_msg_hdlr(ipc_ilm_t *ilm)
 
 	case IPC_MSG_ID_MDT_DELETE_RULE_RSP:
 	case IPC_MSG_ID_MDT_SYNC_RULE_STATUS:
+	case IPC_MSG_ID_MDT_DELETE_TIMEOUT_RULE_IND:
 		ret = pkt_track_mdt_msg_hdlr(ilm);
 		break;
 
