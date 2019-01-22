@@ -1410,6 +1410,7 @@ static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *
 	if (flag & DUMP_FLAG_IRQ_STATUS) {
 		CCCI_NORMAL_LOG(md->index, TAG, "Dump AP CCIF IRQ status\n");
 		mt_irq_dump_status(md_ctrl->ccif_irq_id);
+		md_ccif_dump("Dump CCIF SRAM\n", md);
 	}
 	if (flag & DUMP_FLAG_QUEUE_0)
 		md_ccif_dump_queue_history(md, 0);
