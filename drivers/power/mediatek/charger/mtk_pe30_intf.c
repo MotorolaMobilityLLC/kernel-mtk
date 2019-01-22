@@ -191,14 +191,14 @@ static int mtk_pe30_enable_direct_charge(struct charger_manager *info, bool en)
 		ret = mtk_get_ta_charger_status(pe3->tcpc, &pdstat);
 		if ((ret == MTK_VDM_SUCCESS) && pdstat.ping_chk_fail)
 			mtk_clr_ta_pingcheck_fault(pe3->tcpc);
-		/*ret = mtk_enable_ta_dplus_dect(pe3->tcpc, true, 4000);*/
+		ret = mtk_enable_ta_dplus_dect(pe3->tcpc, true, 4000);
 		if (ret != 0)
 			ret2 = ret;
 	} else {
 		ret = mtk_enable_direct_charge(pe3->tcpc, en);
 		if (ret != 0)
 			ret2 = ret;
-		/*ret = mtk_enable_ta_dplus_dect(pe3->tcpc, false, 4000);*/
+		ret = mtk_enable_ta_dplus_dect(pe3->tcpc, false, 4000);
 		if (ret != 0)
 			ret2 = ret;
 		pe30_dc_set_vbus_ov(info, 5500000);
@@ -355,7 +355,6 @@ static void mtk_pe30_start(struct charger_manager *info)
 	wake_up_pe30_thread(info);
 	pe30_dc_enable_chip(info, true);
 	mutex_unlock(&pe3->pe30_mutex);
-
 }
 
 bool mtk_is_TA_support_pe30(struct charger_manager *info)
@@ -420,11 +419,59 @@ void mtk_pe30_plugout_reset(struct charger_manager *info)
 	_wake_up_charger(info);
 }
 
-static void _mtk_pe30_end(struct charger_manager *info, bool reset)
+void mtk_pe30_end(struct charger_manager *info)
 {
 	struct mtk_pe30 *pe3 = &info->pe3;
 
 	mutex_lock(&pe3->pe30_mutex);
+	pr_err("[mtk_pe30_end]state:%d\n",
+		pe3->pe30_charging_state);
+
+	if (pe3->pe30_charging_state != DC_STOP) {
+		mtk_pe30_set_ta_cap(info, 3000, 5000);
+		tcpm_set_direct_charge_en(pe3->tcpc, false);
+		mtk_pe30_enable_direct_charge(info, false);
+		pe3->pe30_charging_state = DC_STOP;
+		_wake_up_charger(info);
+		pe30_dc_enable_chip(info, false);
+		if (wake_lock_active(&pe3->pe30_wakelock) != 0)
+			wake_unlock(&pe3->pe30_wakelock);
+	}
+	mutex_unlock(&pe3->pe30_mutex);
+
+}
+
+bool mtk_pe30_get_is_enable(struct charger_manager *pinfo)
+{
+	return !pinfo->pe3.is_pe30_done;
+}
+
+void mtk_pe30_set_is_enable(struct charger_manager *pinfo, bool enable)
+{
+	struct mtk_pe30 *pe3 = &pinfo->pe3;
+
+	mutex_lock(&pe3->pe30_mutex);
+	if (enable == true)
+		pinfo->pe3.is_pe30_done = false;
+	else
+		pinfo->pe3.is_pe30_done = true;
+	mutex_unlock(&pe3->pe30_mutex);
+}
+
+bool mtk_pe30_check_charger(struct charger_manager *info)
+{
+	if (is_mtk_pe30_rdy(info)) {
+		pe30_chr_enable_charge(info, false);
+		mtk_pe30_start(info);
+		return true;
+	}
+	return false;
+}
+
+static void _mtk_pe30_end(struct charger_manager *info, bool reset)
+{
+	struct mtk_pe30 *pe3 = &info->pe3;
+
 	pr_err("[_mtk_pe30_end]state:%d reset:%d\n",
 		pe3->pe30_charging_state, reset);
 
@@ -440,26 +487,7 @@ static void _mtk_pe30_end(struct charger_manager *info, bool reset)
 		if (wake_lock_active(&pe3->pe30_wakelock) != 0)
 			wake_unlock(&pe3->pe30_wakelock);
 	}
-	mutex_unlock(&pe3->pe30_mutex);
 }
-
-void mtk_pe30_end(struct charger_manager *info, bool retry)
-{
-	_mtk_pe30_end(info, false);
-	if (retry == true)
-		info->pe3.is_pe30_done = false;
-}
-
-bool mtk_pe30_check_charger(struct charger_manager *info)
-{
-	if (is_mtk_pe30_rdy(info)) {
-		pe30_chr_enable_charge(info, false);
-		mtk_pe30_start(info);
-		return true;
-	}
-	return false;
-}
-
 
 static enum hrtimer_restart mtk_charger_pe30_timer_callback(struct hrtimer *timer)
 {
@@ -844,9 +872,7 @@ static void mtk_pe30_DC_cc(struct charger_manager *info)
 		if (pe3->charging_current_limit < CC_END) {
 			pr_err(
 				"[mtk_pe30_DC_cc]cur<%d , reset is_pe30_done\n", CC_END);
-			mutex_lock(&pe3->pe30_mutex);
 			pe3->is_pe30_done = false;
-			mutex_unlock(&pe3->pe30_mutex);
 		}
 		pr_err("[mtk_pe30_DC_CC]pe30 end , current:%d\n", cap_now.cur);
 		reset = false;
@@ -1089,9 +1115,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		pr_err(
 			"[mtk_pe30_set_charging_current_limit]cur<%d , reset is_pe30_done\n", CC_END);
 		_mtk_pe30_end(info, false);
-		mutex_lock(&pe3->pe30_mutex);
 		pe3->is_pe30_done = false;
-		mutex_unlock(&pe3->pe30_mutex);
 	}
 
 	return true;
@@ -1126,13 +1150,15 @@ static int mtk_charger_pe30_thread_handler(void *arg)
 
 		pe3->mtk_charger_pe30_thread_flag = false;
 
+		mutex_lock(&pe3->pe30_mutex);
 		get_monotonic_boottime(&pe3->endTime);
 		time = timespec_sub(pe3->endTime, pe3->startTime);
 
 		pe3->batteryTemperature = battery_meter_get_battery_temperature();
 
-		pr_err("[mtk_charger_pe30_thread_handler]state = %d tmp:%d time:%d\n",
-		pe3->pe30_charging_state, pe3->batteryTemperature, (int)time.tv_sec);
+		pr_err("[mtk_charger_pe30_thread_handler]state = %d tmp:%d time:%d wakelock:%d\n",
+		pe3->pe30_charging_state, pe3->batteryTemperature, (int)time.tv_sec,
+		wake_lock_active(&pe3->pe30_wakelock));
 
 		if (time.tv_sec >= PE30_MAX_CHARGING_TIME) {
 			pr_err("[mtk_charger_pe30_thread_handler]pe30 charging timeout %d:%d\n",
@@ -1168,6 +1194,7 @@ static int mtk_charger_pe30_thread_handler(void *arg)
 			pe30_dc_kick_wdt(info);
 			hrtimer_start(&pe3->mtk_charger_pe30_timer, pe3->ktime, HRTIMER_MODE_REL);
 		}
+		mutex_unlock(&pe3->pe30_mutex);
 	} while (!kthread_should_stop());
 
 	return 0;

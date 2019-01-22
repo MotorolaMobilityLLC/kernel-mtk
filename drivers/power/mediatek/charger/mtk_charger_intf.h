@@ -103,6 +103,7 @@ struct charger_data {
 	int thermal_charging_current_limit;
 	int input_current_limit;
 	int charging_current_limit;
+	int disable_charging_count;
 };
 
 struct charger_manager {
@@ -115,6 +116,7 @@ struct charger_manager {
 	struct charger_device *chg1_dev;
 	struct notifier_block chg1_nb;
 	struct charger_data chg1_data;
+	struct charger_consumer *chg1_consumer;
 
 	struct charger_device *chg2_dev;
 	struct notifier_block chg2_nb;
