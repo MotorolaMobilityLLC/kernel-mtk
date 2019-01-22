@@ -226,12 +226,27 @@ static void hps_get_sysinfo(void)
 		 *  If CPU utilization in system is small or
 		 *  only tiny task is running, a few CPU for it.
 		 */
-		hps_sys.cluster_info[0].up_threshold = 95;
-		hps_sys.cluster_info[0].down_threshold = 85;
+		hps_sys.cluster_info[0].up_threshold = DEF_CPU_UP_THRESHOLD;
+		hps_sys.cluster_info[0].down_threshold = DEF_CPU_DOWN_THRESHOLD;
 	} else {
 		/* for more cores + low frequency policy */
-		hps_sys.cluster_info[0].up_threshold = 20;
-		hps_sys.cluster_info[0].down_threshold = 10;
+		hps_sys.cluster_info[0].up_threshold = DEF_EAS_UP_THRESHOLD_0;
+		hps_sys.cluster_info[0].down_threshold = DEF_EAS_DOWN_THRESHOLD_0;
+
+		/* L: absolute threshold */
+		hps_sys.cluster_info[1].up_threshold = DEF_EAS_UP_THRESHOLD_1;
+		hps_sys.cluster_info[1].down_threshold = DEF_EAS_DOWN_THRESHOLD_1;
+
+		/* B: absolute threshold */
+		hps_sys.cluster_info[2].up_threshold = DEF_EAS_UP_THRESHOLD_2;
+		hps_sys.cluster_info[2].down_threshold = DEF_EAS_DOWN_THRESHOLD_2;
+	}
+
+	if (!hps_ctxt.eas_enabled) {
+		for (idx = 0; idx < hps_sys.cluster_num; idx++) {
+			hps_sys.cluster_info[idx].up_threshold = DEF_CPU_UP_THRESHOLD;
+			hps_sys.cluster_info[idx].down_threshold = DEF_CPU_DOWN_THRESHOLD;
+		}
 	}
 
 	/*Get sys TLP information */

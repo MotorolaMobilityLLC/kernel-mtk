@@ -192,16 +192,16 @@ int hps_cpu_init(void)
 	 * For EAS evaluation
 	 */
 	/* LL: relative threshold, for more cores + low frequency policy */
-	hps_sys.cluster_info[0].up_threshold = 20;
-	hps_sys.cluster_info[0].down_threshold = 10;
+	hps_sys.cluster_info[0].up_threshold = DEF_EAS_UP_THRESHOLD_0;
+	hps_sys.cluster_info[0].down_threshold = DEF_EAS_DOWN_THRESHOLD_0;
 
 	/* L: absolute threshold */
-	hps_sys.cluster_info[1].up_threshold = 70;
-	hps_sys.cluster_info[1].down_threshold = 60;
+	hps_sys.cluster_info[1].up_threshold = DEF_EAS_UP_THRESHOLD_1;
+	hps_sys.cluster_info[1].down_threshold = DEF_EAS_DOWN_THRESHOLD_1;
 
 	/* B: absolute threshold */
-	hps_sys.cluster_info[2].up_threshold = 80;
-	hps_sys.cluster_info[2].down_threshold = 20;
+	hps_sys.cluster_info[2].up_threshold = DEF_EAS_UP_THRESHOLD_2;
+	hps_sys.cluster_info[2].down_threshold = DEF_EAS_DOWN_THRESHOLD_2;
 
 	hps_ops_init();
 
