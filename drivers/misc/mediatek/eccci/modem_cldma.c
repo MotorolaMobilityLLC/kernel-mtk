@@ -1904,7 +1904,8 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 		if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_SEQERR)) != 0) {
 			CCCI_ERROR_LOG(md->index, TAG, "MD found wrong sequence number\n");
 			md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, -1);
-		}
+		} else
+			cldma_dump_register(md);
 		wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
 		ccci_md_exception_notify(md, EX_INIT);
 		/* disable CLDMA except un-stop queues */
