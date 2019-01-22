@@ -64,6 +64,7 @@ enum dcs_status {
 #ifdef CONFIG_MTK_DCS
 extern int dcs_dram_channel_switch(enum dcs_status status);
 extern int dcs_get_dcs_status_lock(int *ch, enum dcs_status *status);
+extern int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *status);
 extern void dcs_get_dcs_status_unlock(void);
 extern bool dcs_initialied(void);
 #else
@@ -72,7 +73,13 @@ static inline int dcs_get_dcs_status_lock(int *ch, enum dcs_status *status)
 {
 	*ch = -1;
 	*status = DCS_BUSY;
-	return -1;
+	return -EBUSY;
+}
+static inline int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *status)
+{
+	*ch = -1;
+	*status = DCS_BUSY;
+	return -EBUSY;
 }
 static inline void dcs_get_dcs_status_unlock(void) {}
 static inline bool dcs_initialied(void) { return true; }
