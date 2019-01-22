@@ -28,6 +28,7 @@
 #include "fpsgo_base.h"
 #include "fbt_cpu.h"
 #include "fstb.h"
+#include "xgf.h"
 #include "mini_top.h"
 
 
@@ -258,12 +259,12 @@ static inline int __init_mr(struct minitop_rec *mr)
 
 static inline int __minitop_is_render(struct minitop_rec *mr)
 {
-	struct render_info *ri;
+	int ret;
 
 	fpsgo_render_tree_lock(__func__);
-	ri = fpsgo_search_and_add_render_info(mr->tid, 0);
+	ret = has_xgf_dep(mr->tid);
 	fpsgo_render_tree_unlock(__func__);
-	return (ri != NULL) ? 1 : 0;
+	return !!ret;
 }
 
 static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
@@ -615,8 +616,7 @@ MINITOP_DEBUGFS_ENTRY(list);
 
 static int minitop_minitop_n_show(struct seq_file *m, void *unused)
 {
-	if (!minitop_if_active_then_lock())
-		return -EAGAIN;
+	minitop_lock(__func__);
 	seq_printf(m, " Top %d is tracked\n", __minitop_n);
 	minitop_unlock(__func__);
 	return 0;
@@ -626,10 +626,9 @@ MINITOP_DEBUGFS_WRITE(minitop_n, 1, nr_cpus);
 
 MINITOP_DEBUGFS_ENTRY(minitop_n);
 
-int minitop_warmup_order_show(struct seq_file *m, void *unused)
+static int minitop_warmup_order_show(struct seq_file *m, void *unused)
 {
-	if (!minitop_if_active_then_lock())
-		return -EAGAIN;
+	minitop_lock(__func__);
 	seq_printf(m, " Slot size is 2^%d=%d tick(s)\n",
 		   __warmup_order, (1 << __warmup_order));
 	minitop_unlock(__func__);
@@ -640,10 +639,9 @@ MINITOP_DEBUGFS_WRITE(warmup_order, 0, 20)
 
 MINITOP_DEBUGFS_ENTRY(warmup_order);
 
-int minitop_cooldn_order_show(struct seq_file *m, void *unused)
+static int minitop_cooldn_order_show(struct seq_file *m, void *unused)
 {
-	if (!minitop_if_active_then_lock())
-		return -EAGAIN;
+	minitop_lock(__func__);
 	seq_printf(m, " Debounce slot is 2^%d=%d\n",
 		   __cooldn_order, (1 << __cooldn_order));
 	minitop_unlock(__func__);
@@ -654,10 +652,9 @@ MINITOP_DEBUGFS_WRITE(cooldn_order, 0, 10)
 
 MINITOP_DEBUGFS_ENTRY(cooldn_order);
 
-int minitop_thrs_heavy_show(struct seq_file *m, void *unused)
+static int minitop_thrs_heavy_show(struct seq_file *m, void *unused)
 {
-	if (!minitop_if_active_then_lock())
-		return -EAGAIN;
+	minitop_lock(__func__);
 	seq_printf(m, " Threshold of heavy is %d\n", __thrs_heavy);
 	minitop_unlock(__func__);
 	return 0;
@@ -666,6 +663,40 @@ int minitop_thrs_heavy_show(struct seq_file *m, void *unused)
 MINITOP_DEBUGFS_WRITE(thrs_heavy, 0, 100)
 
 MINITOP_DEBUGFS_ENTRY(thrs_heavy);
+
+static int minitop_enable_show(struct seq_file *m, void *unused)
+{
+	minitop_lock(__func__);
+	seq_printf(m, " Mini TOP is %s\n",
+		   atomic_read(&__minitop_enable) ? "ON" : "OFF");
+	minitop_unlock(__func__);
+	return 0;
+}
+
+static ssize_t minitop_enable_write(struct file *flip,
+		const char *ubuf, size_t cnt, loff_t *data)
+{
+	int ret;
+	int val;
+
+	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
+	if (ret)
+		return ret;
+
+	if ((val < 0) || (val > 1))
+		return -EINVAL;
+
+	minitop_lock(__func__);
+	atomic_set(&__minitop_enable, val);
+	__minitop_cleanup();
+	minitop_unlock(__func__);
+
+	/* Switch ceiling on for safety */
+	fbt_switch_ceiling(1);
+	return cnt;
+}
+
+MINITOP_DEBUGFS_ENTRY(enable);
 
 void __exit minitop_exit(void)
 {
@@ -730,6 +761,12 @@ int __init minitop_init(void)
 			    debugfs_minitop_dir,
 			    NULL,
 			    &minitop_thrs_heavy_fops);
+
+	debugfs_create_file("enable",
+			    S_IRUGO | S_IWUGO,
+			    debugfs_minitop_dir,
+			    NULL,
+			    &minitop_enable_fops);
 
 	/* once everything is ready, hook into scheduler */
 	fpsgo_sched_nominate_fp = fpsgo_sched_nominate;
