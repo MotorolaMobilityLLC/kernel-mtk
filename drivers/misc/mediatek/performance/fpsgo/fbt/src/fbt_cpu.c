@@ -948,8 +948,8 @@ void fbt_cpu_floor_check(long long t_cpu_cur, long long loading,
 		frame_info[f_iter].mips_diff = mips_diff;
 		frame_info[f_iter].frame_time = frame_time;
 
-		frame_bound = 5ULL * (unsigned long long)t_cpu_target;
-		frame_bound = div64_u64(frame_bound, 2ULL);
+		frame_bound = 21ULL * (unsigned long long)t_cpu_target;
+		frame_bound = div64_u64(frame_bound, 10ULL);
 
 		fpsgo_systrace_c_fbt_gm(-100, frame_bound, "frame_bound");
 
@@ -976,7 +976,7 @@ void fbt_cpu_floor_check(long long t_cpu_cur, long long loading,
 			for (i = 0; i < WINDOW; i++)
 				array[i] = (int)frame_info[i].mips_diff;
 			sort(array, WINDOW, sizeof(int), cmpint, NULL);
-			floor = array[min(kmin - 1, 0)];
+			floor = array[kmin - 1];
 		}
 
 		/*reset floor check*/
@@ -1610,7 +1610,7 @@ int __init fbt_cpu_init(void)
 	variance = 40;
 	floor_bound = 3;
 	floor = 0;
-	kmin = 10;
+	kmin = 1;
 	floor_opp = 2;
 	_gdfrc_fps_limit    = TARGET_UNLIMITED_FPS;
 	_gdfrc_fps_limit_ex = TARGET_UNLIMITED_FPS;
