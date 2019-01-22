@@ -42,9 +42,10 @@
 
 #define MAG_TAG					"<MAGNETIC> "
 #define MAG_FUN(f)				pr_debug(MAG_TAG"%s\n", __func__)
-#define MAG_ERR(fmt, args...)	pr_err(MAG_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define MAG_PR_ERR(fmt, args...)	pr_err(MAG_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define MAG_LOG(fmt, args...)	pr_debug(MAG_TAG fmt, ##args)
 #define MAG_VER(fmt, args...)   pr_debug(MAG_TAG"%s: "fmt, __func__, ##args) /*((void)0)*/
+#define MAG_INFO(fmt, args...)   pr_info(MAG_TAG"%s: "fmt, __func__, ##args)
 
 #define OP_MAG_DELAY	0X01
 #define	OP_MAG_ENABLE	0X02

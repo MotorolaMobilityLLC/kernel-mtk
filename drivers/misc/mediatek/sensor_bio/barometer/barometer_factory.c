@@ -45,7 +45,7 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
 
 	if (err) {
-		BARO_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
+		BARO_PR_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
 		return -EFAULT;
 	}
 
@@ -59,9 +59,9 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 				BARO_LOG("BAROMETER_IOCTL_INIT fail!\n");
 				return -EINVAL;
 			}
-			BARO_ERR("BAROMETER_IOCTL_INIT, enable: %d, sample_period:%dms\n", flag, 200);
+			BARO_LOG("BAROMETER_IOCTL_INIT, enable: %d, sample_period:%dms\n", flag, 200);
 		} else {
-			BARO_LOG("BAROMETER_IOCTL_INIT NULL\n");
+			BARO_PR_ERR("BAROMETER_IOCTL_INIT NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -94,7 +94,7 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 	case BAROMETER_GET_TEMP_DATA:
 		return 0;
 	default:
-		BARO_ERR("unknown IOCTL: 0x%08x\n", cmd);
+		BARO_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;
 	}
 	return 0;
@@ -105,7 +105,7 @@ static long compat_baro_factory_unlocked_ioctl(struct file *filp, unsigned int c
 	unsigned long arg)
 {
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
-		BARO_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		BARO_PR_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
 		return -ENOTTY;
 	}
 
@@ -120,7 +120,7 @@ static long compat_baro_factory_unlocked_ioctl(struct file *filp, unsigned int c
 			(unsigned long)compat_ptr(arg));
 	}
 	default:
-		BARO_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+		BARO_PR_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
 		return -ENOIOCTLCMD;
 	}
 }

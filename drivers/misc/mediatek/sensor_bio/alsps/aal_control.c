@@ -58,8 +58,7 @@ static long AAL_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 
 		err = alsps_aal_enable(enable);
 		if (err) {
-			AAL_LOG("als driver don't support new arch, goto execute old arch: %ld\n", err);
-			AAL_ERR("Enable als driver fail %ld\n", err);
+			AAL_PR_ERR("als driver don't support new arch, goto execute old arch: %ld\n", err);
 		}
 		break;
 
@@ -78,7 +77,7 @@ static long AAL_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		break;
 
 	default:
-		AAL_ERR("%s not supported = 0x%04x", __func__, cmd);
+		AAL_PR_ERR("%s not supported = 0x%04x", __func__, cmd);
 		err = -ENOIOCTLCMD;
 		break;
 	}
@@ -121,7 +120,7 @@ static int __init AAL_init(void)
 
 	err = misc_register(&AAL_device);
 	if (err)
-		AAL_ERR("AAL_device misc_register failed: %d\n", err);
+		AAL_PR_ERR("AAL_device misc_register failed: %d\n", err);
 
 	AAL_LOG("OK!\n");
 	return 0;
@@ -134,7 +133,7 @@ static void __exit AAL_exit(void)
 	/*err = */misc_deregister(&AAL_device);
 #if 0
 	if (err)
-		AAL_ERR("AAL_device misc_deregister fail: %d\n", err);
+		AAL_PR_ERR("AAL_device misc_deregister fail: %d\n", err);
 #endif
 }
 

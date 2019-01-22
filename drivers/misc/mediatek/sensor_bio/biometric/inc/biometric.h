@@ -40,9 +40,10 @@
 
 
 #define BIO_TAG						"<BIOMETRIC> "
-#define BIO_ERR(fmt, args...)		pr_err(BIO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define BIO_LOG(fmt, args...)		pr_err(BIO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define BIO_VER(fmt, args...)		pr_err(BIO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define BIO_PR_ERR(fmt, args...)		pr_err(BIO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define BIO_LOG(fmt, args...)		pr_debug(BIO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define BIO_VER(fmt, args...)		pr_debug(BIO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define BIO_INFO(fmt, args...)		pr_info(BIO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 
 #define BIO_INVALID_VALUE -1
 

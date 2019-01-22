@@ -40,10 +40,10 @@
 
 
 #define STEP_C_TAG					"<STEP_COUNTER> "
-#define STEP_C_FUN(f)				pr_err(STEP_C_TAG"%s\n", __func__)
-#define STEP_C_ERR(fmt, args...)	pr_err(STEP_C_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define STEP_C_LOG(fmt, args...)	pr_err(STEP_C_TAG fmt, ##args)
-#define STEP_C_VER(fmt, args...)	pr_err(STEP_C_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
+#define STEP_C_FUN(f)				pr_debug(STEP_C_TAG"%s\n", __func__)
+#define STEP_C_PR_ERR(fmt, args...)	pr_err(STEP_C_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define STEP_C_LOG(fmt, args...)	pr_debug(STEP_C_TAG fmt, ##args)
+#define STEP_C_VER(fmt, args...)	pr_debug(STEP_C_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
 
 #define	OP_STEP_C_DELAY		0X01
 #define	OP_STEP_C_ENABLE		0X02
