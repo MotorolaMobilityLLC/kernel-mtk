@@ -1248,8 +1248,12 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		tunables->min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
 		tunables->timer_rate = DEFAULT_TIMER_RATE;
 		tunables->boostpulse_duration_val = DEFAULT_MIN_SAMPLE_TIME;
-		tunables->timer_slack_val = DEFAULT_TIMER_SLACK;
 
+#if (!defined(CONFIG_CPU_FREQ_SCHED_ASSIST) && !defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS))
+		tunables->timer_slack_val = DEFAULT_TIMER_SLACK;
+#else
+		tunables->timer_slack_val = -1;
+#endif
 		spin_lock_init(&tunables->target_loads_lock);
 		spin_lock_init(&tunables->above_hispeed_delay_lock);
 
