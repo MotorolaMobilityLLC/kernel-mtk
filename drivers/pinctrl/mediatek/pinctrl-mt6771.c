@@ -22,6 +22,8 @@
 #include "pinctrl-mtk-common.h"
 #include "pinctrl-mtk-mt6771.h"
 #include <mt-plat/mtk_gpio.h>
+#include <linux/irq.h>
+#include <linux/irqdomain.h>
 
 /* #define HAS_PUPD */
 #define HAS_CONTIN_PUPD_R0R1
@@ -332,6 +334,44 @@ int mtk_pinctrl_get_gpio_mode_for_eint(int pin)
 		pctl->devdata->n_pin_mode, pctl->devdata->pin_mode_grps);
 }
 #endif
+static const unsigned int mt6771_debounce_data[] = {
+	128, 256, 512, 1024, 16384,
+	32768, 65536, 131072, 262144, 524288
+};
+
+static unsigned int mt6771_spec_debounce_select(unsigned debounce)
+{
+	return mtk_gpio_debounce_select(mt6771_debounce_data,
+		ARRAY_SIZE(mt6771_debounce_data), debounce);
+}
+
+int mtk_irq_domain_xlate_fourcell(struct irq_domain *d, struct device_node *ctrlr,
+			const u32 *intspec, unsigned int intsize,
+			irq_hw_number_t *out_hwirq, unsigned int *out_type)
+{
+	struct mtk_desc_eint *eint;
+	int gpio, mode;
+
+	if (WARN_ON(intsize < 4))
+		return -EINVAL;
+	*out_hwirq = intspec[0];
+	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
+	gpio = intspec[2];
+	mode = intspec[3];
+
+	eint = &pctl->devdata->pins[gpio].eint;
+	eint->eintmux = mode;
+	eint->eintnum = intspec[0];
+
+	pr_debug("%s: mtk_pin[%d], eint=%d, mode=%d\n", __func__, gpio, eint->eintnum, eint->eintmux);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(mtk_irq_domain_xlate_fourcell);
+
+struct irq_domain_ops mtk_irq_domain_ops = {
+	.xlate = mtk_irq_domain_xlate_fourcell,
+};
 
 static const struct mtk_pinctrl_devdata mtk_pinctrl_data = {
 	.pins = mtk_pins_mt6771,
@@ -382,12 +422,39 @@ static const struct mtk_pinctrl_devdata mtk_pinctrl_data = {
 	.mtk_pctl_set_pull = mtk_pinctrl_set_gpio_pull,
 	.mtk_pctl_get_pull_sel = mtk_pinctrl_get_gpio_pullsel,
 	.mtk_pctl_get_pull_en = mtk_pinctrl_get_gpio_pullen,
+	.spec_debounce_select = mt6771_spec_debounce_select,
+	.mtk_irq_domain_ops = &mtk_irq_domain_ops,
 	.type1_start = 192,
 	.type1_end = 192,
 	.regmap_num = 9,
 	.port_shf = 4,
 	.port_mask = 0xf,
 	.port_align = 4,
+	.eint_offsets = {
+		.name = "mt6771_eint",
+		.stat      = 0x000,
+		.ack       = 0x040,
+		.mask      = 0x080,
+		.mask_set  = 0x0c0,
+		.mask_clr  = 0x100,
+		.sens      = 0x140,
+		.sens_set  = 0x180,
+		.sens_clr  = 0x1c0,
+		.soft      = 0x200,
+		.soft_set  = 0x240,
+		.soft_clr  = 0x280,
+		.pol       = 0x300,
+		.pol_set   = 0x340,
+		.pol_clr   = 0x380,
+		.dom_en    = 0x400,
+		.dbnc_ctrl = 0x500,
+		.dbnc_set  = 0x600,
+		.dbnc_clr  = 0x700,
+		.port_mask = 7,
+		.ports     = 6,
+	},
+	.ap_num = 212,
+	.db_cnt = 13,
 };
 
 static int mtk_pinctrl_probe(struct platform_device *pdev)
@@ -410,6 +477,7 @@ static struct platform_driver mtk_pinctrl_driver = {
 		.name = "mediatek-pinctrl",
 		.owner = THIS_MODULE,
 		.of_match_table = mtk_pctrl_match,
+		.pm = &mtk_eint_pm_ops,
 	},
 };
 
