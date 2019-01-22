@@ -434,7 +434,7 @@ PhysmemCreateNewDmaBufBackedPMR(PVRSRV_DEVICE_NODE *psDevNode,
 {
 	struct dma_buf *psDmaBuf = psAttachment->dmabuf;
 	PMR_DMA_BUF_DATA *psPrivData;
-	PMR_FLAGS_T uiPMRFlags;
+	PMR_FLAGS_T uiPMRFlags = 0;
 	IMG_BOOL bZeroOnAlloc;
 	IMG_BOOL bPoisonOnAlloc;
 	IMG_BOOL bPoisonOnFree;
