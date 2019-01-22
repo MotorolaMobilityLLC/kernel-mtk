@@ -1556,9 +1556,113 @@ get_idle_idx:
 	return idx;
 }
 
+/* Mapping idle_switch to CPUidle C States */
+static int idle_stat_mapping_table[NR_TYPES] = {
+	CPUIDLE_STATE_DP,
+	CPUIDLE_STATE_SO3,
+	CPUIDLE_STATE_SO,
+	CPUIDLE_STATE_MC,
+	CPUIDLE_STATE_SL,
+	CPUIDLE_STATE_RG
+};
+
+int mt_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
+{
+	int i = NR_TYPES - 1;
+	int state = CPUIDLE_STATE_RG;
+	int reason = NR_REASONS;
+
+	/* disable deepidle/SODI3/SODI for bring-up */
+	if (1)
+		return CPUIDLE_STATE_RG;
+
+	dump_idle_cnt_in_interval(cpu);
+
+	if (menu_select_state < 0)
+		return menu_select_state;
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	/* check if firmware loaded or not */
+	if (!spm_load_firmware_status()) {
+		reason = BY_FRM;
+		goto get_idle_idx_2;
+	}
+#endif
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_SMP
+	/* check cpu status */
+	if (!mt_idle_cpu_criteria()) {
+		reason = BY_CPU;
+		goto get_idle_idx_2;
+	}
+#endif
+#endif
+
+	if (cpu % 4) {
+		reason = BY_CPU;
+		goto get_idle_idx_2;
+	}
+
+	/* check idle_spm_lock */
+	if (idle_spm_lock) {
+		reason = BY_VTG;
+		goto get_idle_idx_2;
+	}
+
+	/* FIXME: Bypass following checks due to main core on/off only */
+	goto get_idle_idx_2;
+
+	/* teei ready */
+#ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_MICROTRUST_TEE_SUPPORT
+	if (!is_teei_ready()) {
+		reason = BY_OTH;
+		goto get_idle_idx_2;
+	}
+#endif
+#endif
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	/* cg check */
+	memset(idle_block_mask, 0,
+		NR_TYPES * (NR_GRPS + 1) * sizeof(unsigned int));
+	if (!mt_idle_check_cg(idle_block_mask)) {
+		reason = BY_CLK;
+		goto get_idle_idx_2;
+	}
+#endif
+
+get_idle_idx_2:
+	/* check if criteria check fail in common part */
+	for (i = 0; i < NR_TYPES; i++) {
+		if (idle_switch[i]) {
+			/* call each idle scenario check functions */
+			if (idle_can_enter[i](cpu, reason))
+				break;
+		}
+	}
+
+	/* residency requirement of ALL C state is satisfied */
+	if (menu_select_state == CPUIDLE_STATE_SO3) {
+		state = idle_stat_mapping_table[i];
+	/* SODI3.0 residency requirement does NOT satisfied */
+	} else if (menu_select_state >= CPUIDLE_STATE_SO && menu_select_state <= CPUIDLE_STATE_DP) {
+		if (i == IDLE_TYPE_SO3)
+			i = IDLE_TYPE_SO;
+
+		state = idle_stat_mapping_table[i];
+	/* DPIDLE, SODI3.0, and SODI residency requirement does NOT satisfied */
+	} else {
+		state = CPUIDLE_STATE_RG;
+	}
+
+	return state;
+}
+
 int dpidle_enter(int cpu)
 {
-	int ret = IDLE_TYPE_DP;
+	int ret = CPUIDLE_STATE_DP;
 
 	idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 
@@ -1580,7 +1684,7 @@ EXPORT_SYMBOL(dpidle_enter);
 
 int soidle3_enter(int cpu)
 {
-	int ret = IDLE_TYPE_SO3;
+	int ret = CPUIDLE_STATE_SO3;
 	unsigned long long soidle3_time = 0;
 	static unsigned long long soidle3_residency;
 
@@ -1628,7 +1732,7 @@ EXPORT_SYMBOL(soidle3_enter);
 
 int soidle_enter(int cpu)
 {
-	int ret = IDLE_TYPE_SO;
+	int ret = CPUIDLE_STATE_SO;
 	unsigned long long soidle_time = 0;
 	static unsigned long long soidle_residency;
 
@@ -1672,7 +1776,7 @@ EXPORT_SYMBOL(soidle_enter);
 
 int mcidle_enter(int cpu)
 {
-	int ret = IDLE_TYPE_MC;
+	int ret = CPUIDLE_STATE_MC;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	go_to_mcidle(cpu);
@@ -1685,7 +1789,7 @@ EXPORT_SYMBOL(mcidle_enter);
 
 int slidle_enter(int cpu)
 {
-	int ret = IDLE_TYPE_SL;
+	int ret = CPUIDLE_STATE_SL;
 
 	go_to_slidle(cpu);
 
@@ -1695,7 +1799,7 @@ EXPORT_SYMBOL(slidle_enter);
 
 int rgidle_enter(int cpu)
 {
-	int ret = IDLE_TYPE_RG;
+	int ret = CPUIDLE_STATE_RG;
 
 	idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
 
