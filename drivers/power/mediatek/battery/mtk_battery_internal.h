@@ -120,22 +120,6 @@ enum daemon_req_hw_data {
 	HW_INFO_NCAR = 2,
 };
 
-enum daemon_send_algo_data {
-	ALGO_SOC = 0,
-	ALGO_C_D0_SOC = 1,
-	ALGO_V_D0_SOC = 2,
-	ALGO_C_SOC = 3,
-	ALGO_V_SOC = 4,
-	ALGO_QMAX_T_AGING = 5,
-	ALGO_SAVED_CAR = 6,
-	ALGO_AGING_FACTOR = 7,
-	ALGO_QMAX = 8,
-	ALGO_BAT_CYCLES = 9,
-	ALGO_NCAR = 10,
-	ALGO_OCV_mah = 11,
-	ALGO_OCV_Vtemp = 12,
-	ALGO_OCV_SOC = 13,
-};
 
 enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_PRINT_LOG,
@@ -223,6 +207,7 @@ enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_GET_DISABLE_NAFG,
 	FG_DAEMON_CMD_DUMP_LOG,
 	FG_DAEMON_CMD_SEND_DATA,
+	FG_DAEMON_CMD_COMMUNICATION_INT,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 };
@@ -299,11 +284,46 @@ struct fgd_cmd_param_t_6 {
 	char input[2048];
 };
 
+struct fgd_cmd_param_t_7 {
+	int type;
+	int input;
+	int output;
+	int status;
+};
+
+enum daemon_cmd_int_data {
+	FG_GET_NORETURN = 0,
+	FG_GET_SHUTDOWN_CAR = 1,
+	FG_GET_NCAR = 2,
+	FG_GET_CURR_1 = 3,
+	FG_GET_CURR_2 = 4,
+	FG_GET_REFRESH = 5,
+	FG_GET_MAX,
+	FG_SET_ANCHOR = 999,
+	FG_SET_SOC = FG_SET_ANCHOR + 1,
+	FG_SET_C_D0_SOC = FG_SET_ANCHOR + 2,
+	FG_SET_V_D0_SOC = FG_SET_ANCHOR + 3,
+	FG_SET_C_SOC = FG_SET_ANCHOR + 4,
+	FG_SET_V_SOC = FG_SET_ANCHOR + 5,
+	FG_SET_QMAX_T_AGING = FG_SET_ANCHOR + 6,
+	FG_SET_SAVED_CAR = FG_SET_ANCHOR + 7,
+	FG_SET_AGING_FACTOR = FG_SET_ANCHOR + 8,
+	FG_SET_QMAX = FG_SET_ANCHOR + 9,
+	FG_SET_BAT_CYCLES = FG_SET_ANCHOR + 10,
+	FG_SET_NCAR = FG_SET_ANCHOR + 11,
+	FG_SET_OCV_mah = FG_SET_ANCHOR + 12,
+	FG_SET_OCV_Vtemp = FG_SET_ANCHOR + 13,
+	FG_SET_OCV_SOC = FG_SET_ANCHOR + 14,
+	FG_SET_DATA_MAX,
+};
+
 struct fuel_gauge_custom_data {
 
 	int versionID1;
 	int versionID2;
 	int versionID3;
+	int fg_get_max;
+	int fg_set_max;
 	int hardwareVersion;
 
 	int low_temp_mode;
@@ -493,6 +513,7 @@ struct fuel_gauge_custom_data {
 
 	/* log_level */
 	int daemon_log_level;
+	int record_log;
 
 };
 
