@@ -2099,8 +2099,12 @@ static bool tcp_write_xmit(struct sock *sk, unsigned int mss_now, int nonagle,
 		 * of queued bytes to ensure line rate.
 		 * One example is wifi aggregation (802.11 AMPDU)
 		 */
-		limit = max(2 * skb->truesize, sk->sk_pacing_rate >> 10);
-		limit = min_t(u32, limit, sysctl_tcp_limit_output_bytes);
+
+		/* modify for ALPS02852905  *************************************** */
+		/* limit = max(2 * skb->truesize, sk->sk_pacing_rate >> 10);*/
+		/* limit = min_t(u32, limit, sysctl_tcp_limit_output_bytes);*/
+		limit = max_t(unsigned int, sysctl_tcp_limit_output_bytes, sk->sk_pacing_rate >> 10);
+		/* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
 
 		if (atomic_read(&sk->sk_wmem_alloc) > limit) {
 			set_bit(TSQ_THROTTLED, &tp->tsq_flags);
