@@ -6646,3 +6646,44 @@ wlanTdlsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX
 
 	return WLAN_STATUS_SUCCESS;
 }
+
+VOID wlanReleasePendingCmdById(P_ADAPTER_T prAdapter, UINT_8 ucCid)
+{
+	P_QUE_T prCmdQue;
+	QUE_T rTempCmdQue;
+	P_QUE_T prTempCmdQue = &rTempCmdQue;
+	P_QUE_ENTRY_T prQueueEntry = (P_QUE_ENTRY_T) NULL;
+	P_CMD_INFO_T prCmdInfo = (P_CMD_INFO_T) NULL;
+
+	KAL_SPIN_LOCK_DECLARATION();
+
+	ASSERT(prAdapter);
+	DBGLOG(OID, INFO, "Remove pending Cmd: CID %d\n", ucCid);
+
+	/* 1: Clear Pending OID in prAdapter->rPendingCmdQueue */
+	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_PENDING);
+
+	prCmdQue = &prAdapter->rPendingCmdQueue;
+	QUEUE_MOVE_ALL(prTempCmdQue, prCmdQue);
+
+	QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
+	while (prQueueEntry) {
+		prCmdInfo = (P_CMD_INFO_T) prQueueEntry;
+		if (prCmdInfo->ucCID != ucCid) {
+			QUEUE_INSERT_TAIL(prCmdQue, prQueueEntry);
+			continue;
+		}
+
+		if (prCmdInfo->pfCmdTimeoutHandler) {
+			prCmdInfo->pfCmdTimeoutHandler(prAdapter, prCmdInfo);
+		} else if (prCmdInfo->fgIsOid) {
+			kalOidComplete(prAdapter->prGlueInfo,
+					   prCmdInfo->fgSetQuery, 0, WLAN_STATUS_FAILURE);
+		}
+
+		cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
+		QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
+	}
+
+	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_PENDING);
+}

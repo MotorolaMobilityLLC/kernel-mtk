@@ -180,6 +180,7 @@ typedef struct _CONNECTION_SETTINGS_T {
 #if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
 	BOOLEAN fgSecModeChangeStartTimer;
 #endif
+	struct LINK_MGMT rBlackList;
 } CONNECTION_SETTINGS_T, *P_CONNECTION_SETTINGS_T;
 
 struct _BSS_INFO_T {
@@ -412,6 +413,12 @@ struct _BSS_INFO_T {
 	BOOLEAN fgUnencryptedEapol;
 };
 
+struct ESS_CHNL_INFO {
+	UINT_8 ucChannel;
+	UINT_8 ucUtilization;
+	UINT_8 ucApNum;
+};
+
 struct _AIS_SPECIFIC_BSS_INFO_T {
 	UINT_8 ucRoamingAuthTypes;	/* This value indicate the roaming type used in AIS_JOIN */
 
@@ -473,6 +480,9 @@ struct _AIS_SPECIFIC_BSS_INFO_T {
 	TIMER_T rSaQueryTimer;
 	BOOLEAN fgBipKeyInstalled;
 #endif
+	struct ESS_CHNL_INFO arCurEssChnlInfo[CFG_MAX_NUM_OF_CHNL_INFO];
+	UINT_8 ucCurEssChnlInfoNum;
+	LINK_T rCurEssLink;
 };
 
 struct _BOW_SPECIFIC_BSS_INFO_T {

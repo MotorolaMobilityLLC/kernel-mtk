@@ -2193,6 +2193,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 				}
 
 				aisBssBeaconTimeout(prAdapter);
+				aisRecordBeaconTimeout(prAdapter, prAdapter->prAisBssInfo);
 			}
 #if CFG_ENABLE_WIFI_DIRECT
 			else if (prBssInfo->eNetworkType == NETWORK_TYPE_P2P)
@@ -2469,7 +2470,9 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			nicEventQueryMemDump(prAdapter, prEvent->aucBuffer);
 		}
 		break;
-
+	case EVENT_ID_RSP_CHNL_UTILIZATION:
+		cnmHandleChannelUtilization(prAdapter, (struct EVENT_RSP_CHNL_UTILIZATION *)prEvent->aucBuffer);
+		break;
 	case EVENT_ID_ACCESS_REG:
 	case EVENT_ID_NIC_CAPABILITY:
 		/* case EVENT_ID_MAC_MCAST_ADDR: */
@@ -4007,6 +4010,15 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 			}
 		}
 		break;
+#endif
+#if CFG_SUPPORT_802_11K
+		case CATEGORY_RM_ACTION:
+			switch (prActFrame->ucAction) {
+			case RM_ACTION_REIGHBOR_RESPONSE:
+				rlmProcessNeighborReportResonse(prAdapter, prActFrame, prSwRfb->u2PacketLen);
+				break;
+			}
+			break;
 #endif
 	default:
 		break;
