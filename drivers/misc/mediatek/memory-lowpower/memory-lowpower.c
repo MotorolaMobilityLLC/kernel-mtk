@@ -281,6 +281,21 @@ static int memory_lowpower_init(struct reserved_mem *rmem)
 RESERVEDMEM_OF_DECLARE(memory_lowpower, "mediatek,memory-lowpower",
 			memory_lowpower_init);
 
+/* Return 0 if success, -1 or -2 if fail */
+int __init acquire_buffer_from_memory_lowpower(phys_addr_t *addr)
+{
+#ifdef MEMORY_LOWPOWER_FULLNESS
+	if (grab_lastsize != 0) {
+		*addr = memblock_end_of_DRAM() - PAGE_SIZE;
+		return 0;
+	} else {
+		return -1;
+	}
+#else
+	return -2;
+#endif
+}
+
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 static int __init memory_lowpower_sanity_test(void)
 {
