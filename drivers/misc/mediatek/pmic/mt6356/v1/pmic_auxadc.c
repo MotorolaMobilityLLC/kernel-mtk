@@ -34,8 +34,11 @@
 #include <linux/writeback.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
+#include <linux/ratelimit.h>
 
 #include "include/pmic.h"
+#include "include/pmic_auxadc.h"
+#include "mtk_idle.h"
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_auxadc_intf.h>
 
@@ -78,6 +81,42 @@ void wk_auxadc_bgd_ctrl(unsigned char en)
 		pmic_set_register_value(PMIC_RG_INT_EN_BAT_TEMP_H, 0);
 		pmic_set_register_value(PMIC_RG_INT_EN_BAT_TEMP_L, 0);
 	}
+}
+
+static int pmic_auxadc_notify_call(struct notifier_block *nb, unsigned long id, void *unused)
+{
+	switch (id) {
+	case NOTIFY_DPIDLE_ENTER:
+	case NOTIFY_SOIDLE_ENTER:
+	case NOTIFY_SOIDLE3_ENTER:
+		/* Turn off AUXADC BAT TEMP Background detection, because VBIF28 will be disabled */
+		wk_auxadc_bgd_ctrl(0);
+		break;
+	case NOTIFY_DPIDLE_LEAVE:
+	case NOTIFY_SOIDLE_LEAVE:
+	case NOTIFY_SOIDLE3_LEAVE:
+		/* Turn on AUXADC BAT TEMP Background detection for normal mode */
+		wk_auxadc_bgd_ctrl(1);
+		break;
+	default:
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block pmic_auxadc_nb = {
+	.notifier_call = pmic_auxadc_notify_call,
+};
+
+void pmic_auxadc_suspend(void)
+{
+	wk_auxadc_bgd_ctrl(0);
+}
+
+void pmic_auxadc_resume(void)
+{
+	wk_auxadc_bgd_ctrl(1);
 }
 
 void wk_auxadc_bgd_ctrl_dbg(void)
@@ -158,6 +197,7 @@ int mt6356_get_auxadc_value(u8 channel)
 	int count = 0, tdet_tmp = 0;
 	signed int adc_result = 0, reg_val = 0;
 	struct pmic_auxadc_channel_new *auxadc_channel;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
 
 	if (channel - AUXADC_LIST_MT6356_START < 0 ||
 			channel - AUXADC_LIST_MT6356_END > 0) {
@@ -207,8 +247,10 @@ int mt6356_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	pr_info("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n",
-		__func__, channel, auxadc_channel->ch_num, reg_val, adc_result);
+	if (__ratelimit(&ratelimit)) {
+		pr_err("[%s] ch_idx = %d, channel = %d, reg_val = 0x%x, adc_result = %d\n",
+			__func__, channel, auxadc_channel->ch_num, reg_val, adc_result);
+	}
 
 	/* Audio request HPOFS to return raw data */
 	if (channel == AUXADC_LIST_HPOFS_CAL)
@@ -246,6 +288,7 @@ void mt6356_auxadc_init(void)
 	/* update VBIF28 by AUXADC */
 	g_pmic_pad_vbif28_vol = mt6356_get_auxadc_value(AUXADC_LIST_VBIF);
 	pr_info("****[%s] VBIF28 = %d\n", __func__, pmic_get_vbif28_volt());
+	mtk_idle_notifier_register(&pmic_auxadc_nb);
 }
 EXPORT_SYMBOL(mt6356_auxadc_init);
 
