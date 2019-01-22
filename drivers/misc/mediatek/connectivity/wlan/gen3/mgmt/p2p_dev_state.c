@@ -132,20 +132,14 @@ p2pDevStateInit_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 		prP2pBssInfo->eBand = prChnlReqInfo->eBand;
 		prP2pBssInfo->eBssSCO = prChnlReqInfo->eChnlSco;
 
-		DBGLOG(P2P, INFO, "Start channel on hand timer, Cookie: 0x%llx, Interval: %d, elistenExtend: %d\n",
-			prChnlReqInfo->u8Cookie, prChnlReqInfo->u4MaxInterval, prP2pDevFsmInfo->eListenExted);
+		DBGLOG(P2P, INFO, "Start channel on hand timer, Cookie: 0x%llx, Interval: %d\n",
+			prChnlReqInfo->u8Cookie, prChnlReqInfo->u4MaxInterval);
 
-		if (prP2pDevFsmInfo->eListenExted != P2P_DEV_EXT_LISTEN_ING) {
-			cnmTimerStartTimer(prAdapter, &(prP2pDevFsmInfo->rP2pFsmTimeoutTimer),
-				prChnlReqInfo->u4MaxInterval);
-
+		cnmTimerStartTimer(prAdapter, &(prP2pDevFsmInfo->rP2pFsmTimeoutTimer), prChnlReqInfo->u4MaxInterval);
 		kalP2PIndicateChannelReady(prAdapter->prGlueInfo,
 					   prChnlReqInfo->u8Cookie,
 					   prChnlReqInfo->ucReqChnlNum,
 					   prChnlReqInfo->eBand, prChnlReqInfo->eChnlSco, prChnlReqInfo->u4MaxInterval);
-		} else
-			cnmTimerStartTimer(prAdapter, &(prP2pDevFsmInfo->rP2pFsmTimeoutTimer),
-				(P2P_EXT_LISTEN_TIME_MS - prChnlReqInfo->u4MaxInterval));
 	} while (FALSE);
 
 }				/* p2pDevStateInit_CHNL_ON_HAND */
@@ -166,21 +160,13 @@ p2pDevStateAbort_CHNL_ON_HAND(IN P_ADAPTER_T prAdapter,
 		prP2pBssInfo->eBand = prChnlReqInfo->eOriBand;
 		prP2pBssInfo->eBssSCO = prChnlReqInfo->eOriChnlSco;
 
-		DBGLOG(P2P, TRACE, "p2p state trans abort chann on hand, eListenExted: %d, eNextState: %d\n",
-			prP2pDevFsmInfo->eListenExted, eNextState);
-		if (prP2pDevFsmInfo->eListenExted != P2P_DEV_EXT_LISTEN_ING ||
-			eNextState != P2P_DEV_STATE_CHNL_ON_HAND) {
-			/*
-			 * Here maybe have a bug, when it's extlistening, a new remain_on_channel
-			 * was sent to driver? need to verify
-			 */
-			prP2pDevFsmInfo->eListenExted = P2P_DEV_NOT_EXT_LISTEN;
-		kalP2PIndicateChannelExpired(prAdapter->prGlueInfo,
+		if (eNextState != P2P_DEV_STATE_CHNL_ON_HAND) {
+			kalP2PIndicateChannelExpired(prAdapter->prGlueInfo,
 					     prChnlReqInfo->u8Cookie,
 					     prChnlReqInfo->ucReqChnlNum,
 					     prChnlReqInfo->eBand, prChnlReqInfo->eChnlSco);
 
-		p2pFuncReleaseCh(prAdapter, prP2pDevFsmInfo->ucBssIndex, prChnlReqInfo);
+			p2pFuncReleaseCh(prAdapter, prP2pDevFsmInfo->ucBssIndex, prChnlReqInfo);
 		}
 	} while (FALSE);
 
