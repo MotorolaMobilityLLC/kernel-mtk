@@ -272,7 +272,7 @@ static void sdcardfs_work_handle_mkdir(struct sdcardfs_work_job *pw)
 			goto out;
 		}
 
-		strcpy(nomedia_fullpath, nomedia_dir_name);
+		strncpy(nomedia_fullpath, nomedia_dir_name, fullpath_namelen + 1);
 		free_page((unsigned long)page_buf);
 		strcat(nomedia_fullpath, "/.nomedia");
 		unlock_dir(lower_parent_dentry);
