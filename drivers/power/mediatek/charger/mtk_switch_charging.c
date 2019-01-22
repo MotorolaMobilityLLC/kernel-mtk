@@ -178,7 +178,8 @@ done:
 				mtk_pe20_reset_ta_vchr(info);
 		}
 	}
-	if (pdata->input_current_limit > 0 && pdata->charging_current_limit > 0)
+	if (pdata->input_current_limit > 0 && pdata->charging_current_limit > 0
+		&& info->can_charging)
 		charger_dev_enable(info->chg1_dev, true);
 	mutex_unlock(&swchgalg->ichg_aicr_access_mutex);
 }
