@@ -709,25 +709,40 @@ void mt_power_gs_compare(char *scenario, char *pmic_name,
 	unsigned int i, k, val0, val1, val2, diff;
 	char *p;
 
-	pr_warn("Scenario - PMIC - Addr       - Value      - Mask       - Golden     - Wrong Bit\n");
+	/* dump diff mode */
+	if (slp_chk_golden_diff_mode) {
+		pr_warn("Scenario - PMIC - Addr       - Value      - Mask       - Golden     - Wrong Bit\n");
 
-	for (i = 0; i < pmic_gs_len; i += 3) {
-		val0 = _golden_read_reg(pmic_gs[i]);
-		val1 = val0 & pmic_gs[i + 1];
-		val2 = pmic_gs[i + 2] & pmic_gs[i + 1];
+		for (i = 0; i < pmic_gs_len; i += 3) {
+			val0 = _golden_read_reg(pmic_gs[i]);
+			val1 = val0 & pmic_gs[i + 1];
+			val2 = pmic_gs[i + 2] & pmic_gs[i + 1];
 
-		if (val1 != val2) {
-			p = buf;
-			p += snprintf(p, sizeof(buf), "%s - %s - 0x%08x - 0x%08x - 0x%08x - 0x%08x -",
-				      scenario, pmic_name, pmic_gs[i], val0, pmic_gs[i + 1], pmic_gs[i + 2]);
+			if (val1 != val2) {
+				p = buf;
+				p += snprintf(p, sizeof(buf), "%s - %s - 0x%08x - 0x%08x - 0x%08x - 0x%08x -",
+					      scenario, pmic_name, pmic_gs[i], val0, pmic_gs[i + 1], pmic_gs[i + 2]);
 
-			for (k = 0, diff = val1 ^ val2; diff != 0; k++, diff >>= 1) {
-				if ((diff % 2) != 0)
-					p += snprintf(p, sizeof(buf) - (p - buf), " %d", k);
+				for (k = 0, diff = val1 ^ val2; diff != 0; k++, diff >>= 1) {
+					if ((diff % 2) != 0)
+						p += snprintf(p, sizeof(buf) - (p - buf), " %d", k);
+				}
+				pr_warn("%s\n", buf);
 			}
+		}
+
+	/* dump raw data mode */
+	} else {
+		pr_warn("Scenario - PMIC - Addr       - Value\n");
+
+		for (i = 0; i < pmic_gs_len; i += 3) {
+			val0 = _golden_read_reg(pmic_gs[i]);
+
+			p = buf;
+			p += snprintf(p, sizeof(buf), "%s - %s - 0x%08x - 0x%08x",
+					scenario, pmic_name, pmic_gs[i], val0);
 			pr_warn("%s\n", buf);
 		}
 	}
-
 	pr_warn("Done...\n");
 }

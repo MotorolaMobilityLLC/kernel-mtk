@@ -39,6 +39,7 @@ bool is_already_snap_shot;
 bool slp_chk_golden_suspend = true;
 bool slp_chk_golden_dpidle = true;
 bool slp_chk_golden_sodi3 = true;
+bool slp_chk_golden_diff_mode = true;
 
 void __weak mt_power_gs_sodi_compare(unsigned int dump_flag)
 {
@@ -183,6 +184,7 @@ static int __init mt_power_gs_init(void)
 module_param(slp_chk_golden_suspend, bool, 0644);
 module_param(slp_chk_golden_dpidle, bool, 0644);
 module_param(slp_chk_golden_sodi3, bool, 0644);
+module_param(slp_chk_golden_diff_mode, bool, 0644);
 module_init(mt_power_gs_init);
 module_exit(mt_power_gs_exit);
 
