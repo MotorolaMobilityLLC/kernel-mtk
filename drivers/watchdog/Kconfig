@@ -1626,3 +1626,6 @@ config USBPCWATCHDOG
 	  Most people will say N.
 
 endif # WATCHDOG
+
+#mediatek
+source "drivers/watchdog/mediatek/Kconfig"
