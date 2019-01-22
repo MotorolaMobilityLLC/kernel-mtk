@@ -9,3 +9,7 @@ obj-$(CONFIG_ARM64_PTDUMP)	+= dump.o
 
 obj-$(CONFIG_KASAN)		+= kasan_init.o
 KASAN_SANITIZE_kasan_init.o	:= n
+
+KBUILD_CPPFLAGS += -Werror -I$(srctree)/drivers/misc/mediatek/include
+
+obj-$(CONFIG_MEDIATEK_SOLUTION)	+= cache-mtk-v8.o
