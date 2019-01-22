@@ -64,6 +64,7 @@ static const struct file_operations fname##_fops = {			\
 }
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
+spinlock_t cpudvfs_send_lock;
 spinlock_t cpudvfs_lock;
 static struct task_struct *Ripi_cpu_dvfs_task;
 struct ipi_action ptpod_act;
@@ -147,6 +148,7 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 	unsigned int len = DVFS_D_LEN;
 	int ack_data;
 	unsigned int ret = 0;
+	unsigned long flags;
 
 	/* cpufreq_ver("#@# %s(%d) cmd %x\n", __func__, __LINE__, cmd); */
 
@@ -187,14 +189,11 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		cpufreq_ver("I'd like to set cluster%d ON/OFF state to %d)\n",
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 
-		if (is_in_suspend()) {
-			aee_record_cpu_dvfs_cb(6);
-			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-			cpufreq_ver("Send with IPI_OPT_LOCK_POLLING\n");
-		} else {
-			aee_record_cpu_dvfs_cb(7);
-			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
-		}
+		aee_record_cpu_dvfs_cb(6);
+		spin_lock_irqsave(&cpudvfs_send_lock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
+		spin_unlock_irqrestore(&cpudvfs_send_lock, flags);
+		aee_record_cpu_dvfs_cb(7);
 
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
@@ -280,11 +279,9 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		cpufreq_ver("I'd like to set turbo mode to %d(%d, %d)\n",
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1], cdvfs_d->u.set_fv.arg[2]);
 
-		if (is_in_suspend()) {
-			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-			cpufreq_ver("Send with IPI_OPT_LOCK_POLLING\n");
-		} else
-			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
+		spin_lock_irqsave(&cpudvfs_send_lock, flags);
+		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
+		spin_unlock_irqrestore(&cpudvfs_send_lock, flags);
 
 		if (ret != 0) {
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
@@ -1095,6 +1092,8 @@ int cpuhvfs_module_init(void)
 
 	/* SW Governor Report */
 	spin_lock_init(&cpudvfs_lock);
+	/* ipi send and ack */
+	spin_lock_init(&cpudvfs_send_lock);
 	Ripi_cpu_dvfs_task = kthread_run(Ripi_cpu_dvfs_thread, NULL, "ipi_cpu_dvfs_rtask");
 
 	return 0;
