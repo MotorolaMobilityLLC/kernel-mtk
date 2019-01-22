@@ -1,0 +1,9 @@
+config CRYPTO_DEV_DX_CC63P
+	tristate "Dxcc Crypto driver driver"
+	default n
+	---help---
+	  DXCC is a crypto engine by ARM.
+	  DXCC provides hardware acceleration of AEAD, cipher, hash, etc.
+	  This selects the DXCC crypto driver.
+	  If you want to use DXCC crypto, say Y or M here.
+	  If unsure, say N.
