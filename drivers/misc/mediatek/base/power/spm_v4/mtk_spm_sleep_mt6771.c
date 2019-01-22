@@ -61,27 +61,7 @@
 #include <mtk_hps_internal.h>
 #endif
 
-/**************************************
- * only for internal debug
- **************************************/
-#ifdef CONFIG_MTK_LDVT
-#define SPM_PWAKE_EN            0
-#define SPM_PCMWDT_EN           0
-#define SPM_BYPASS_SYSPWREQ     1
-#else
-#define SPM_PWAKE_EN            1
-#define SPM_PCMWDT_EN           1
-#define SPM_BYPASS_SYSPWREQ     1
-#endif
-
-
-/**************************************
- * SW code for suspend
- **************************************/
-#define SPM_SYSCLK_SETTLE       99	/* 3ms */
-
-#define WAIT_UART_ACK_TIMES     10	/* 10 * 10us */
-
+#include <mtk_spm_sleep_internal.h>
 
 void spm_set_sysclk_settle(void)
 {
@@ -94,21 +74,21 @@ void spm_set_sysclk_settle(void)
 	spm_crit2("md_settle = %u, settle = %u\n", SPM_SYSCLK_SETTLE, settle);
 }
 
-/* #define SPM_PMIC_DEBUG */
-#ifdef SPM_PMIC_DEBUG
+#if SPM_PMIC_DEBUG
 static void spm_dump_pmic_reg(void)
 {
-	unsigned int pmic_reg[] = {0x1020, 0x1062};
+	unsigned int pmic_reg[] = {PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR};
+	unsigned int val = 0;
+	unsigned int ret = 0;
 	int i = 0;
-	unsigned int val;
 
 	for (i = 0; i < ARRAY_SIZE(pmic_reg); i++) {
-		pmic_read_interface_nolock(pmic_reg[i], &val, 0xffff, 0);
+		ret = pmic_read_interface_nolock(pmic_reg[i], &val, 0xffff, 0);
 		spm_crit2("#@# %s(%d) pmic reg(0x%x) = 0x%x\n", __func__, __LINE__,
 				pmic_reg[i], val);
 	}
 }
-#endif
+#endif /* SPM_PMIC_DEBUG */
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static int mt_power_gs_dump_suspend_count = 2;
@@ -135,29 +115,16 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
 	if (ret < 0)
 		spm_crit2("ret %d", ret);
+#if SPM_PMIC_DEBUG
+	spm_dump_pmic_reg();
+#endif /* SPM_PMIC_DEBUG */
 #else
-
-/* FIXME */
-#if 0
-	/* VCORE */
+#if SPM_PMIC_EN
+	/* VCORE 0.55V */
 	pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x8,
 			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
 			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
-	pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x1,
-			PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
-			PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
-	/* VSRAM_OTHERS */
-	pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x10,
-			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
-			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
-	pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x1,
-			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
-			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
-
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
-	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
-#endif
-
+#endif /* SPM_PMIC_EN */
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -167,7 +134,7 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	/* dvfsrc_md_scenario_update(1); */
 
-#ifdef SPM_PMIC_DEBUG
+#if SPM_PMIC_DEBUG
 	spm_dump_pmic_reg();
 #endif /* SPM_PMIC_DEBUG */
 }
@@ -180,7 +147,7 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 
 	/* dvfsrc_md_scenario_update(0); */
 
-#ifdef SPM_PMIC_DEBUG
+#if SPM_PMIC_DEBUG
 	spm_dump_pmic_reg();
 #endif /* SPM_PMIC_DEBUG */
 
@@ -197,28 +164,17 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 #else
 	/* dvfsrc_md_scenario_update(0); */
 
-#ifdef SPM_PMIC_DEBUG
+#if SPM_PMIC_DEBUG
 	spm_dump_pmic_reg();
 #endif /* SPM_PMIC_DEBUG */
 
-#if 0
-
-	/* VCORE */
-	pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x20,
+#if SPM_PMIC_EN
+	/* VCORE 0.6V */
+	pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x10,
 			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
 			PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
-	pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x6,
-			PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
-			PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
-	/* VSRAM_OTHERS */
-	pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x30,
-			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
-			PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
-	pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x4,
-			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
-			PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 
-#endif
+#endif /* SPM_PMIC_EN */
 
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 }
@@ -228,21 +184,25 @@ bool spm_is_md_sleep(void)
 	return !((spm_read(PCM_REG13_DATA) & R13_MD1_SRCCLKENA) |
 		 (spm_read(PCM_REG13_DATA) & R13_MD2_SRCCLKENA));
 }
+EXPORT_SYMBOL(spm_is_md_sleep);
 
 bool spm_is_md1_sleep(void)
 {
 	return !(spm_read(PCM_REG13_DATA) & R13_MD1_SRCCLKENA);
 }
+EXPORT_SYMBOL(spm_is_md1_sleep);
 
 bool spm_is_md2_sleep(void)
 {
 	return !(spm_read(PCM_REG13_DATA) & R13_MD2_SRCCLKENA);
 }
+EXPORT_SYMBOL(spm_is_md2_sleep);
 
 bool spm_is_conn_sleep(void)
 {
 	return !(spm_read(PCM_REG13_DATA) & R13_CONN_SRCCLKENA);
 }
+EXPORT_SYMBOL(spm_is_conn_sleep);
 
 void spm_ap_mdsrc_req(u8 set)
 {

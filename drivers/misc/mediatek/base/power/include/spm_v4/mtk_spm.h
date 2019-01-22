@@ -38,12 +38,19 @@ extern int __spmfw_idx;
 #define SPM_IRQ0_ID		spm_irq_0
 
 #include "mtk_spm_reg.h"
-
+#if defined(CONFIG_MACH_MT6771)
+enum {
+	SPMFW_LP4X_2CH_3733 = 0,
+	SPMFW_LP4X_2CH_3200,
+	SPMFW_LP3_1CH_1866,
+};
+#else
 enum {
 	SPMFW_LP4X_2CH = 0,
 	SPMFW_LP4X_1CH,
 	SPMFW_LP3_1CH,
 };
+#endif
 
 enum {
 	SPM_ARGS_SPMFW_IDX = 0,

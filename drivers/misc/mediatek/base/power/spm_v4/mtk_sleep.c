@@ -39,6 +39,9 @@
 #include <mtk-soc-afe-control.h>
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
 
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+#include <mtk_mcdi_api.h>
+#endif
 /**************************************
  * only for internal debug
  **************************************/
@@ -170,11 +173,24 @@ static u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_ATF_ABORT |
-	SPM_FLAG_SUSPEND_OPTION
+	SPM_FLAG_DEEPIDLE_OPTION
 };
-#endif /* CONFIG_MACH_MT6739 */
-u32 slp_spm_data;
+#endif /* CONFIG_MACH_MT6771 */
 
+#if defined(CONFIG_MACH_MT6771)
+
+static u32 slp_spm_flags1 = {
+	0
+};
+
+static u32 slp_spm_deepidle_flags1 = {
+	0
+};
+
+#else
+static u32 slp_spm_flags1;
+static u32 slp_spm_deepidle_flags1;
+#endif
 
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
@@ -334,6 +350,9 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	}
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	mcdi_task_pause(true);
+#endif
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if SLP_SLEEP_DPIDLE_EN
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
@@ -341,11 +360,14 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #else
 	if (slp_ck26m_on)
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
-		slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags, slp_spm_data);
+		slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags, slp_spm_deepidle_flags1);
 	else
 #endif
 #endif /* CONFIG_FPGA_EARLY_PORTING */
-		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
+		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_flags1);
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	mcdi_task_pause(false);
+#endif
 
 LEAVE_SLEEP:
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
