@@ -93,6 +93,6 @@ int disp_helper_get_option_list(char *stringbuf, int buf_len);
 
 enum DISP_HELPER_STAGE disp_helper_get_stage(void);
 const char *disp_helper_stage_spy(void);
-
+enum DISP_HELPER_OPT disp_helper_name_to_opt(const char *name);
 
 #endif
