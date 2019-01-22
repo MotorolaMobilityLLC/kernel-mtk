@@ -1366,6 +1366,7 @@ unsigned int mtk_gpio_debounce_select(const unsigned int *dbnc_infos,
 	return dbnc;
 }
 
+#ifndef CONFIG_MTK_EIC
 static void mtk_eint_set_sw_debounce(struct irq_data *d,
 				     struct mtk_pinctrl *pctl,
 				     unsigned debounce)
@@ -1375,6 +1376,7 @@ static void mtk_eint_set_sw_debounce(struct irq_data *d,
 	pctl->eint_sw_debounce_en[eint] = 1;
 	pctl->eint_sw_debounce[eint] = debounce;
 }
+#endif
 
 static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
 	unsigned debounce)
