@@ -39,5 +39,6 @@ extern int mtk_idle_notifier_register(struct notifier_block *n);
 extern void mtk_idle_notifier_unregister(struct notifier_block *n);
 
 extern void idle_lock_by_ufs(unsigned int lock);
+extern void idle_lock_by_gpu(unsigned int lock);
 
 #endif

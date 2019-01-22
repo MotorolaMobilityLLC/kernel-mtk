@@ -312,6 +312,7 @@ enum {
 	BY_PWM,
 	BY_DCS,
 	BY_UFS,
+	BY_GPU,
 	NR_REASONS,
 };
 
