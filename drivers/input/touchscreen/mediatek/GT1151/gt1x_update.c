@@ -37,7 +37,7 @@
 #endif
 
 #ifdef CONFIG_GTP_REQUEST_FW_UPDATE
-#define GT1151_DEFAULT_FW              "gt1151_default_fw_v1.img"
+#define GT1151_DEFAULT_FW              "gt1151_default_"
 #endif
 #undef CONFIG_GTP_FOPEN_FW_UPDATE
 
@@ -317,6 +317,7 @@ int gt1x_update_prepare(char *filename)
 	int retry = 5;
 #ifdef CONFIG_GTP_REQUEST_FW_UPDATE
 	const struct firmware *fw_entry;
+	char buf[64];
 #endif
 
 	if (filename == NULL) {
@@ -324,8 +325,9 @@ int gt1x_update_prepare(char *filename)
 		update_info.fw_name = NULL;
 		update_info.update_type = UPDATE_TYPE_HEADER;
 
-		GTP_DEBUG("Request default firmware\n");
-		ret = request_firmware(&fw_entry, GT1151_DEFAULT_FW, &gt1x_i2c_client->dev);
+		sprintf(buf, "%s%s.img", GT1151_DEFAULT_FW, CONFIG_GT1151_FIRMWARE);
+		GTP_INFO("Request default firmware version: %s\n", buf);
+		ret = request_firmware(&fw_entry, buf, &gt1x_i2c_client->dev);
 		if (ret) {
 			GTP_ERROR("load %s fail, error: %d\n", GT1151_DEFAULT_FW, ret);
 			return ret;
