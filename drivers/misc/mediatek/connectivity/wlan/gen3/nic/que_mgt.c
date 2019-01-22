@@ -2565,7 +2565,57 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 				continue;
 			}
 
+		} else {
+			UINT_16 u2FrameCtrl = 0;
+			P_WLAN_MAC_HEADER_T prWlanHeader = NULL;
+			UINT_8 aucTaAddr[MAC_ADDR_LEN];
+
+			prWlanHeader = (P_WLAN_MAC_HEADER_T) prCurrSwRfb->pvHeader;
+			u2FrameCtrl = prWlanHeader->u2FrameCtrl;
+			if (prCurrSwRfb->prStaRec == NULL && RXM_IS_DATA_FRAME(u2FrameCtrl)) {
+				/* rx header translation */
+				DBGLOG(QM, INFO,
+					"RXD Trans: FrameCtrl=0x%02x GVLD=0x%x, StaRecIdx=%d, WlanIdx=%d PktLen=%d\n",
+					u2FrameCtrl, prCurrSwRfb->ucGroupVLD,
+					prCurrSwRfb->ucStaRecIdx, prCurrSwRfb->ucWlanIdx, prCurrSwRfb->u2PacketLen);
+
+				/* search StaRec related info */
+				kalMemCopy(aucTaAddr, prWlanHeader->aucAddr2, MAC_ADDR_LEN); /* use A2 instead */
+				prCurrSwRfb->ucStaRecIdx = secLookupStaRecIndexFromTA(prAdapter, aucTaAddr);
+				if (prCurrSwRfb->ucStaRecIdx < CFG_NUM_OF_STA_RECORD) {
+					prCurrSwRfb->prStaRec =
+					    cnmGetStaRecByIndex(prAdapter, prCurrSwRfb->ucStaRecIdx);
+					DBGLOG(QM, WARN,
+					       "Re-search staRec=%d, mac=" MACSTR ", byteCnt=%d\n",
+						prCurrSwRfb->ucStaRecIdx,
+						MAC2STR(aucTaAddr), HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus));
+				}
+
+				if (prCurrSwRfb->prStaRec != NULL) {
+					UINT_16 u2MACLen = 0;
+
+					if (RXM_IS_QOS_DATA_FRAME(u2FrameCtrl)) /* QoS data, VHT */
+						u2MACLen = sizeof(WLAN_MAC_HEADER_QOS_T);
+					else
+						u2MACLen = sizeof(WLAN_MAC_HEADER_T);
+					u2MACLen += ETH_LLC_LEN + ETH_SNAP_OUI_LEN;
+					u2MACLen -= ETHER_TYPE_LEN_OFFSET;
+
+					prCurrSwRfb->pvHeader += u2MACLen; /* use prWlanHeader think deeply */
+					kalMemCopy(prCurrSwRfb->pvHeader, prWlanHeader->aucAddr1, MAC_ADDR_LEN);
+					kalMemCopy(prCurrSwRfb->pvHeader + MAC_ADDR_LEN, prWlanHeader->aucAddr3,
+						MAC_ADDR_LEN);
+					prCurrSwRfb->u2PacketLen -= u2MACLen;
+
+					prCurrSwRfb->ucWlanIdx = prCurrSwRfb->prStaRec->ucWlanIndex;
+					GLUE_SET_PKT_BSS_IDX(prCurrSwRfb->pvPacket,
+						     secGetBssIdxByWlanIdx(prAdapter, prCurrSwRfb->ucWlanIdx));
+					DBGLOG_MEM8(QM, WARN, (PUINT_8) prCurrSwRfb->pvHeader,
+						(prCurrSwRfb->u2PacketLen > 64) ? 64 : prCurrSwRfb->u2PacketLen);
+				}
+			}
 		}
+
 #if CFG_SUPPORT_WAPI
 		/* Todo:: Move the data class error check here */
 		if (prCurrSwRfb->u2PacketLen > ETHER_HEADER_LEN) {
@@ -2587,6 +2637,7 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 			}
 		}
 #endif
+
 		if (prCurrSwRfb->fgReorderBuffer && !fgIsBMC && fgIsHTran) {
 			/*
 			 *  If this packet should dropped or indicated to the host immediately,
@@ -2599,8 +2650,7 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 
 		} else if (prCurrSwRfb->fgDataFrame) {
 			/* Check Class Error */
-			if (prCurrSwRfb->prStaRec && (secCheckClassError(prAdapter, prCurrSwRfb,
-									prCurrSwRfb->prStaRec) == TRUE)) {
+			if (secCheckClassError(prAdapter, prCurrSwRfb, prCurrSwRfb->prStaRec) == TRUE) {
 				P_RX_BA_ENTRY_T prReorderQueParm = NULL;
 
 				/* Invalid BA aggrement */

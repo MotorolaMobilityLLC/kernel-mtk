@@ -1512,6 +1512,8 @@ int mtk_cfg80211_mgmt_tx(struct wiphy *wiphy,
 
 		*cookie = prGlueInfo->u8Cookie++;
 
+		DBGLOG(REQ, INFO, "%s\n", __func__);
+
 		/* Channel & Channel Type & Wait time are ignored. */
 		prMsgTxReq = cnmMemAlloc(prGlueInfo->prAdapter, RAM_TYPE_MSG, sizeof(MSG_MGMT_TX_REQUEST_T));
 
