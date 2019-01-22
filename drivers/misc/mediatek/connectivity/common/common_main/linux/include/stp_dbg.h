@@ -251,7 +251,8 @@ typedef struct core_dump_t {
 	/* timer for monitor timeout */
 	OSAL_TIMER dmp_timer;
 	UINT32 timeout;
-
+	UINT32 dmp_num;
+	UINT32 count;
 	OSAL_SLEEPABLE_LOCK dmp_lock;
 
 	/* state machine for core dump flow */
@@ -333,7 +334,6 @@ typedef enum _ENUM_ASSERT_INFO_PARSER_TYPE_ {
 	STP_DBG_PARSER_TYPE_MAX
 } ENUM_ASSERT_INFO_PARSER_TYPE, *P_ENUM_ASSERT_INFO_PARSER_TYPE;
 
-INT32 stp_dbg_core_dump_init_gcoredump(UINT32 packet_num, UINT32 timeout);
 INT32 stp_dbg_core_dump_deinit_gcoredump(VOID);
 INT32 stp_dbg_core_dump_flush(INT32 rst, MTK_WCN_BOOL coredump_is_timeout);
 INT32 stp_dbg_core_dump(INT32 dump_sink);
@@ -352,6 +352,7 @@ INT32 stp_dbg_log_pkt(MTKSTP_DBG_T *stp_dbg, INT32 dbg_type,
 		      const PUINT8 body);
 INT32 stp_dbg_log_ctrl(UINT32 on);
 INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd);
+INT32 stp_dbg_dump_num(UINT32 dmp_num);
 INT32 stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len);
 INT32 stp_dbg_dump_send_retry_handler(PINT8 tmp, INT32 len);
 INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd);
