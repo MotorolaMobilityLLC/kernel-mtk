@@ -3854,22 +3854,27 @@ void fg_nafg_monitor(void)
 void fg_update_sw_low_battery_check(unsigned int thd)
 {
 	int vbat;
+	int thd1, thd2, thd3;
+
+	thd1 = fg_cust_data.vbat2_det_voltage1 / 10;
+	thd2 = fg_cust_data.vbat2_det_voltage2 / 10;
+	thd3 = fg_cust_data.vbat2_det_voltage3 / 10;
 
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000)
 		return;
 
 	vbat = pmic_get_battery_voltage() * 10;
-	bm_debug("[fg_update_sw_low_battery_check]vbat:%d ht:%d %d lt:%d %d\n",
+	bm_debug("[fg_update_sw_low_battery_check]vbat:%d ht:%d %d lt:%d %d, thd:%d\n",
 		vbat, sw_low_battery_ht_en, sw_low_battery_ht_threshold,
-		sw_low_battery_lt_en, sw_low_battery_lt_threshold);
+		sw_low_battery_lt_en, sw_low_battery_lt_threshold, thd);
 	mutex_lock(&sw_low_battery_mutex);
-	if (sw_low_battery_ht_en == 1 && vbat >= sw_low_battery_ht_threshold) {
+	if (sw_low_battery_ht_en == 1 && thd == thd3) {
 		sw_low_battery_ht_en = 0;
 		sw_low_battery_lt_en = 0;
 		disable_shutdown_cond(LOW_BAT_VOLT);
 		wakeup_fg_algo(FG_INTR_VBAT2_H);
 	}
-	if (sw_low_battery_lt_en == 1 && vbat <= sw_low_battery_lt_threshold) {
+	if (sw_low_battery_lt_en == 1 && (thd == thd1 || thd == thd2)) {
 		sw_low_battery_ht_en = 0;
 		sw_low_battery_lt_en = 0;
 		wakeup_fg_algo(FG_INTR_VBAT2_L);

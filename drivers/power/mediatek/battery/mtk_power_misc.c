@@ -53,6 +53,7 @@ static struct shutdown_controller sdc;
 static int g_vbat_lt;
 static int g_vbat_lt_lv1;
 static int shutdown_cond_flag;
+static int lbat2_h_count;
 
 static void wake_up_power_misc(struct shutdown_controller *sdd)
 {
@@ -334,12 +335,26 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			polling++;
 		}
 
+		/* escape LOW_BAT_VOLT */
+		if (vbat > 3500)
+			lbat2_h_count++;
+		else
+			lbat2_h_count = 0;
+
+		if (lbat2_h_count >= 3) {
+			bm_err("escape from LOW_BAT_VOLT shutdown_condition:%d\n", lbat2_h_count);
+			disable_shutdown_cond(LOW_BAT_VOLT);
+			wakeup_fg_algo(FG_INTR_VBAT2_H);
+			lbat2_h_count = 0;
+		}
+
 		polling++;
-			bm_err("[shutdown_event_handler][UT] V %d ui_soc %d dur %d [%d:%d:%d:%d] batdata[%d] %d\n",
+			bm_err("[shutdown_event_handler][UT] V %d ui_soc %d dur %d [%d:%d:%d:%d:%d] batdata[%d] %d\n",
 				sdd->avgvbat, current_ui_soc, (int)duraction.tv_sec,
 			down_to_low_bat, ui_zero_time_flag,
 			(int)sdd->pre_time[LOW_BAT_VOLT].tv_sec,
-			sdd->lowbatteryshutdown, sdd->batidx, sdd->batdata[sdd->batidx]);
+			sdd->lowbatteryshutdown, lbat2_h_count,
+			sdd->batidx, sdd->batdata[sdd->batidx]);
 
 		sdd->batidx++;
 		if (sdd->batidx >= AVGVBAT_ARRAY_SIZE)
