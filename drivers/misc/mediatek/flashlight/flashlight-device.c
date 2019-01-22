@@ -14,7 +14,9 @@
 #include "flashlight.h"
 
 #if defined(mt6757)
-	#if defined(evb6757p_dm_64) || defined(k57pv1_dm_64) || defined(k57pv1_64_baymo)
+	#if defined(evb6757p_dm_64) || defined(k57pv1_dm_64) || \
+	defined(k57pv1_64_baymo) || defined(k57pv1_dm_64_bif) || \
+	defined(k57pv1_dm_64_baymo)
 	const struct flashlight_device_id flashlight_id[] = {
 		/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
 		{0, 0, 0, "flashlights-rt5081", 0, 0},
