@@ -130,11 +130,13 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 static int initdrv(void)
 {
 	int i4RetValue = 0;
-
 #if defined(USE_ISRC_MODE_S5K3P8_SENSOR)
+	char puSendCmd2[2] = { 0x01, 0x39 };
+	char puSendCmd3[2] = { 0x05, 0x6f };
 #else
 	char puSendCmd2[2] = { 0x01, 0x39 };
 	char puSendCmd3[2] = { 0x05, 0x07 };
+#endif
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 
@@ -142,7 +144,6 @@ static int initdrv(void)
 		return -1;
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
-#endif
 
 	return i4RetValue;
 }
