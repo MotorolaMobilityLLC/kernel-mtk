@@ -2211,7 +2211,7 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 		 * _HIF_SDIO: bus driver handle
 		 */
 
-		DBGLOG(INIT, INFO, "enter wlanProbe\n");
+		DBGLOG(INIT, TRACE, "enter wlanProbe\n");
 
 		bRet = glBusInit(pvData);
 
@@ -2278,6 +2278,7 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 
 		/* P_REG_INFO_T prRegInfo = (P_REG_INFO_T) kmalloc(sizeof(REG_INFO_T), GFP_KERNEL); */
 		kalMemSet(prRegInfo, 0, sizeof(REG_INFO_T));
+		prRegInfo->u4StartFreq = 2412000;
 
 		/* Trigger the action of switching Pwr state to drv_own */
 		prAdapter->fgIsFwOwn = TRUE;

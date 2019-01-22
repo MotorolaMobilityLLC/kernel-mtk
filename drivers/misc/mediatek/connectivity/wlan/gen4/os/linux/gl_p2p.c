@@ -817,7 +817,7 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, const cha
 		}
 #endif
 		prP2pWdev = gprP2pRoleWdev[i];
-		DBGLOG(INIT, INFO, "glRegisterP2P(%d)\n", i);
+		DBGLOG(INIT, TRACE, "glRegisterP2P(%d)\n", i);
 		/*0. allocate p2pinfo */
 		if (!p2PAllocInfo(prGlueInfo, i)) {
 			DBGLOG(INIT, WARN, "Allocate memory for p2p FAILED\n");

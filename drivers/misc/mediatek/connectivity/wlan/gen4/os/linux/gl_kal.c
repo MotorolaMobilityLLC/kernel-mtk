@@ -1897,7 +1897,7 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 		else {
 			WLAN_GET_FIELD_BE16(&aucLookAheadBuf[5 + ucEapOffset], &u2KeyInfo);
 			/* BIT3 is pairwise key bit */
-			DBGLOG(TX, INFO, "u2KeyInfo=%d\n", u2KeyInfo);
+			DBGLOG(TX, TRACE, "u2KeyInfo=0x%x\n", u2KeyInfo);
 			if (u2KeyInfo & BIT(3))
 				prTxPktInfo->u2Flag |= BIT(ENUM_PKT_NON_PROTECTED_1X);
 		}
@@ -4503,7 +4503,7 @@ kalGetIPv4Address(IN struct net_device *prDev,
 
 	/* 4 <1> Sanity check of netDevice */
 	if (!prDev || !(prDev->ip_ptr) || !((struct in_device *)(prDev->ip_ptr))->ifa_list) {
-		DBGLOG(INIT, INFO, "IPv4 address is not available for dev(0x%p)\n", prDev);
+		DBGLOG(INIT, TRACE, "IPv4 address is not available for dev(0x%p)\n", prDev);
 
 		*pu4NumOfIpv4Addr = 0;
 		return FALSE;
@@ -4538,7 +4538,7 @@ kalGetIPv6Address(IN struct net_device *prDev,
 
 	/* 4 <1> Sanity check of netDevice */
 	if (!prDev || !(prDev->ip6_ptr)) {
-		DBGLOG(INIT, INFO, "IPv6 address is not available for dev(0x%p)\n", prDev);
+		DBGLOG(INIT, TRACE, "IPv6 address is not available for dev(0x%p)\n", prDev);
 
 		*pu4NumOfIpv6Addr = 0;
 		return FALSE;
@@ -5296,7 +5296,7 @@ inline INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo)
 	struct PERF_MONITOR_T *prPerMonitor;
 
 	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
-	DBGLOG(SW4, INFO, "enter %s\n", __func__);
+	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
 	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag))
 		DBGLOG(SW4, WARN, "abnormal, perf monitory already running\n");
 	KAL_CLR_BIT(PERF_MON_RUNNING_BIT, prPerMonitor->ulPerfMonFlag);

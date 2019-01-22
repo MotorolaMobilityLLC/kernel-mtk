@@ -1669,7 +1669,8 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 	prEvent = (P_WIFI_EVENT_T) prSwRfb->pucRecvBuff;
 
-	if (prEvent->ucEID != EVENT_ID_DEBUG_MSG && prEvent->ucEID != EVENT_ID_ASSERT_DUMP) {
+	if (prEvent->ucEID != EVENT_ID_SLEEPY_INFO && prEvent->ucEID != EVENT_ID_BSS_ABSENCE_PRESENCE
+		&& prEvent->ucEID != EVENT_ID_DEBUG_MSG && prEvent->ucEID != EVENT_ID_ASSERT_DUMP) {
 		DBGLOG(RX, EVENT, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
 			prEvent->ucEID, prEvent->ucSeqNum, prEvent->u2PacketLength);
 	}

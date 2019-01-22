@@ -900,7 +900,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 	}
 
 	if (sme->crypto.n_ciphers_pairwise) {
-		DBGLOG(RSN, INFO, "[wlan] cipher pairwise (%x)\n", sme->crypto.ciphers_pairwise[0]);
+		DBGLOG(RSN, TRACE, "[wlan] cipher pairwise (%x)\n", sme->crypto.ciphers_pairwise[0]);
 
 		prGlueInfo->prAdapter->rWifiVar.rConnSettings.rRsnInfo.au4PairwiseKeyCipherSuite[0] =
 		    sme->crypto.ciphers_pairwise[0];
@@ -1018,7 +1018,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 				   wlanoidSetWapiAssocInfo, pucIEStart, sme->ie_len, FALSE, FALSE, FALSE, &u4BufLen);
 
 		if (rStatus != WLAN_STATUS_SUCCESS)
-			DBGLOG(SEC, WARN, "[wapi] set wapi assoc info error:%lx\n", rStatus);
+			DBGLOG(SEC, TRACE, "[wapi] set wapi assoc info error:%lx\n", rStatus);
 #endif
 #if CFG_SUPPORT_WPS2
 		if (wextSrchDesiredWPSIE(pucIEStart, sme->ie_len, 0xDD, (PUINT_8 *) &prDesiredIE)) {
@@ -2504,30 +2504,30 @@ mtk_cfg80211_sched_scan_start(IN struct wiphy *wiphy,
 	P_PARAM_SCHED_SCAN_REQUEST prSchedScanRequest;
 	P_SCAN_INFO_T prScanInfo;
 
-	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
 	/* check if there is any pending scan/sched_scan not yet finished */
 	if (prGlueInfo->prScanRequest != NULL || prGlueInfo->prSchedScanRequest != NULL) {
-		DBGLOG(SCN, INFO, "(prGlueInfo->prScanRequest != NULL || prGlueInfo->prSchedScanRequest != NULL)\n");
+		DBGLOG(SCN, ERROR, "(prGlueInfo->prScanRequest != NULL || prGlueInfo->prSchedScanRequest != NULL)\n");
 		return -EBUSY;
 	} else if (request == NULL || request->n_match_sets > CFG_SCAN_SSID_MATCH_MAX_NUM) {
-		DBGLOG(SCN, INFO, "(request == NULL || request->n_match_sets > CFG_SCAN_SSID_MATCH_MAX_NUM)\n");
+		DBGLOG(SCN, ERROR, "(request == NULL || request->n_match_sets > CFG_SCAN_SSID_MATCH_MAX_NUM)\n");
 		/* invalid scheduled scan request */
 		return -EINVAL;
 	} else if (!request->n_match_sets) {
 		/* invalid scheduled scan request */
 		return -EINVAL;
 	} else if (request->n_match_sets > CFG_SCAN_SSID_MATCH_MAX_NUM) {
-		DBGLOG(SCN, INFO, "request->n_match_sets %d > CFG_SCAN_SSID_MATCH_MAX_NUM\n", request->n_match_sets);
+		DBGLOG(SCN, ERROR, "request->n_match_sets %d > CFG_SCAN_SSID_MATCH_MAX_NUM\n", request->n_match_sets);
 		request->n_match_sets = CFG_SCAN_SSID_MATCH_MAX_NUM;
 	}
 
 	prSchedScanRequest = (P_PARAM_SCHED_SCAN_REQUEST) kalMemAlloc(sizeof(PARAM_SCHED_SCAN_REQUEST), VIR_MEM_TYPE);
 	if (prSchedScanRequest == NULL) {
-		DBGLOG(SCN, INFO, "(prSchedScanRequest == NULL) kalMemAlloc fail\n");
+		DBGLOG(SCN, ERROR, "(prSchedScanRequest == NULL) kalMemAlloc fail\n");
 		return -ENOMEM;
 	}
 
@@ -2586,7 +2586,7 @@ int mtk_cfg80211_sched_scan_stop(IN struct wiphy *wiphy, IN struct net_device *n
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
-	DBGLOG(REQ, INFO, "--> %s()\n", __func__);
+	DBGLOG(REQ, TRACE, "--> %s()\n", __func__);
 
 	/* check if there is any pending scan/sched_scan not yet finished */
 	if (prGlueInfo->prSchedScanRequest == NULL)
