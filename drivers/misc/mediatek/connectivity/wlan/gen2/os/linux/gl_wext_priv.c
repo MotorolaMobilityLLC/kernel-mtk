@@ -4700,7 +4700,7 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 				       pFccTxPwrAdjust->fgFccTxPwrAdjust);
 			else {
 				pcCommand += (strlen(CMD_SET_FCC_CERT) + 1);
-				if (strnicmp(pcCommand, "-1", strlen("-1")) != 0 && *pcCommand != '0')
+				if (kalStrniCmp(pcCommand, "-1", strlen("-1")) != 0 && *pcCommand != '0')
 					DBGLOG(RLM, WARN, "control parameter(%s) is not correct(0 or -1)\n",
 					       pcCommand);
 				else {
