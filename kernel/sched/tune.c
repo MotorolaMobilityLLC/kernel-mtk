@@ -10,7 +10,7 @@
 
 #include "sched.h"
 #include "tune.h"
-#include "cpufreq_sched.h"
+#include "cpufreq_schedplus.h"
 
 #define MET_STUNE_DEBUG 1
 
@@ -64,7 +64,7 @@ bool global_negative_flag;
 
 static struct target_cap schedtune_target_cap[16];
 static int cpu_cluster_nr;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 static char met_dvfs_info2[5][32] = {
 	"sched_dvfs_boostmin_cid0",
 	"sched_dvfs_boostmin_cid1",
@@ -581,7 +581,7 @@ int schedtune_task_boost(struct task_struct *p)
 	return task_boost;
 }
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 static void update_freq_fastpath(void)
 {
 	int cid;
@@ -654,7 +654,7 @@ static void update_freq_fastpath(void)
 }
 #endif
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 void set_min_boost_freq(int boost_value, int cpu_clus)
 {
 	int max_clus_nr = arch_get_nr_clusters();
@@ -680,7 +680,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	bool dvfs_on_demand = false;
 	int idx = 0;
 	int cluster;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	int floor = 0;
 	int i;
 	int c0, c1;
@@ -694,7 +694,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		cluster = (int)boost_value / 100;
 		boost_value = (int)boost_value % 100;
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
 			floor = 1;
 			c0 = cluster & 0x1;
@@ -744,7 +744,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	else if (boost_value <= -100)
 		boost_value = -100;
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	if (!floor) {
 		for (i = 0; i < cpu_cluster_nr; i++)
 			min_boost_freq[i] = 0;
@@ -814,7 +814,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		}
 	}
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	if (dvfs_on_demand)
 		update_freq_fastpath();
 #endif
@@ -937,7 +937,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	int boost_pct;
 	bool dvfs_on_demand = false;
 	int cluster;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	int floor = 0;
 	int i;
 	int c0, c1;
@@ -950,7 +950,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		boost -= 3000;
 		cluster = (int)boost / 100;
 		boost = (int)boost % 100;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
 			floor = 1;
 			c0 = cluster & 0x1;
@@ -998,7 +998,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	if (!floor) {
 		for (i = 0; i < cpu_cluster_nr; i++)
 			min_boost_freq[i] = 0;
@@ -1035,7 +1035,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	/* Update CPU boost */
 	schedtune_boostgroup_update(st->idx, st->boost);
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	if (dvfs_on_demand)
 		update_freq_fastpath();
 #endif
@@ -1519,7 +1519,7 @@ schedtune_init(void)
 		pwr_tlb = cpu_core_energy(first_cpu);
 
 		schedtune_target_cap[i].cap = pwr_tlb->cap_states[pwr_tlb->nr_cap_states - 1].cap;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 		schedtune_target_cap[i].freq = mt_cpufreq_get_freq_by_idx(i, 0);
 #endif
 	}

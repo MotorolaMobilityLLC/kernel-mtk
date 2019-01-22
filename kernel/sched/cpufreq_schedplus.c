@@ -1,24 +1,25 @@
 /*
- *  Copyright (C)  2015 Michael Turquette <mturquette@linaro.org>
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 /*
  * Support multi-type scheduler driven dvfs
  *
- * typeI: (scheduler assist dvfs)
+ * typeI: scheduler assistant
  *   The sched-assist is not a governor. Scheduler can trigger a request
- *   to tiny system  directly. (kconfig: CONFIG_CPU_FREQ_GOV_SCHED,
- *   CONFIG_CPU_FREQ_SCHED_ASSIST, CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
  *
- * typeII: (scheduler governor with tiny system)
- *   (kconfig: CONFIG_CPU_FREQ_GOV_SCHED, CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
+ * typeII: sched+ govder with tiny system
  *
- * typeIII: (scheduler governor wo tiny system)
- *   (kconfig:  CONFIG_CPU_FREQ_GOV_SCHED)
+ * typeIII: sched+ governor
  *
  */
 
@@ -696,7 +697,7 @@ static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 					  "kschedfreq:%d",
 					  cpumask_first(policy->related_cpus));
 		if (IS_ERR_OR_NULL(gd_ptr->task)) {
-			pr_err("%s: failed to create kschedfreq thread\n",
+			pr_debug("%s: failed to create kschedfreq thread\n",
 			       __func__);
 			goto err;
 		}
@@ -704,7 +705,7 @@ static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 		param.sched_priority = 50;
 		ret = sched_setscheduler_nocheck(gd_ptr->task, SCHED_FIFO, &param);
 		if (ret) {
-			pr_warn("%s: failed to set SCHED_FIFO\n", __func__);
+			pr_debug("%s: failed to set SCHED_FIFO\n", __func__);
 			goto err;
 		} else {
 			pr_debug("%s: kthread (%d) set to SCHED_FIFO\n",
@@ -943,7 +944,7 @@ static struct attribute_group sched_attr_group_gov_pol = {
 static
 #endif
 struct cpufreq_governor cpufreq_gov_sched = {
-	.name			= "sched",
+	.name			= "schedplus",
 	.governor		= cpufreq_sched_setup,
 	.owner			= THIS_MODULE,
 };
@@ -999,7 +1000,7 @@ static int __init cpufreq_sched_init(void)
 	return cpufreq_register_governor(&cpufreq_gov_sched);
 }
 
-#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 static int cpufreq_callback(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
