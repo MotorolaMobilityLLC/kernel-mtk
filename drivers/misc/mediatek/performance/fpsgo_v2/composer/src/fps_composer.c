@@ -284,7 +284,7 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 		if (f_render->render_method == GLSURFACE) {
 			xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_START, &slptime);
 			if (xgf_ret != XGF_SLPTIME_OK)
-				pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+				pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
 			f_render->sleep_time = slptime;
 		}
 		fpsgo_comp2fbt_enq_start(f_render, enqueue_start_time);
@@ -306,7 +306,7 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 			"%d_%d-Q2Q_time", pid, f_render->frame_type);
 		xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_START, &slptime);
 			if (xgf_ret != XGF_SLPTIME_OK)
-				pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+				pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
 		fpsgo_comp2fbt_enq_start(f_render, enqueue_start_time);
 		fpsgo_comp2fbt_frame_start(f_render, enqueue_start_time, slptime);
 		fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
@@ -364,8 +364,8 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 			pid, f_render->frame_type, enqueue_end_time, f_render->enqueue_length);
 		if (f_render->render_method == GLSURFACE) {
 			xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_END, NULL);
-			if (xgf_ret != XGF_SLPTIME_OK)
-				pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+			if (xgf_ret != XGF_NOTIFY_OK)
+				pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
 		}
 		fpsgo_comp2fbt_enq_end(f_render, enqueue_end_time);
 		break;
@@ -377,7 +377,7 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 			pid, f_render->frame_type, enqueue_end_time, f_render->enqueue_length);
 		xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_END, NULL);
 		if (xgf_ret != XGF_NOTIFY_OK)
-			pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+			pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
 		fpsgo_comp2fbt_enq_end(f_render, enqueue_end_time);
 		fpsgo_systrace_c_fbt_gm(-300, f_render->enqueue_length,
 			"%d_%d-enqueue_length", pid, f_render->frame_type);
@@ -429,8 +429,8 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 			pid, f_render->frame_type, dequeue_start_time);
 		if (f_render->render_method == GLSURFACE) {
 			xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_DEQUEUE_START, NULL);
-			if (xgf_ret != XGF_SLPTIME_OK)
-				pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+			if (xgf_ret != XGF_NOTIFY_OK)
+				pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
 		}
 		fpsgo_comp2fbt_deq_start(f_render, dequeue_start_time);
 		break;
@@ -440,7 +440,7 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 			pid, f_render->frame_type, dequeue_start_time);
 		xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_DEQUEUE_START, NULL);
 		if (xgf_ret != XGF_NOTIFY_OK)
-			pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+			pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
 		fpsgo_comp2fbt_deq_start(f_render, dequeue_start_time);
 		break;
 	case BY_PASS_TYPE:
@@ -492,8 +492,8 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 			pid, f_render->frame_type, dequeue_end_time, f_render->dequeue_length);
 		if (f_render->render_method == GLSURFACE) {
 			xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_DEQUEUE_END, NULL);
-			if (xgf_ret != XGF_SLPTIME_OK)
-				pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+			if (xgf_ret != XGF_NOTIFY_OK)
+				pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
 		}
 		fpsgo_comp2fbt_deq_end(f_render, dequeue_end_time);
 		break;
@@ -505,7 +505,7 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 			pid, f_render->frame_type, dequeue_end_time, f_render->dequeue_length);
 		xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_DEQUEUE_END, NULL);
 		if (xgf_ret != XGF_NOTIFY_OK)
-			pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+			pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
 		fpsgo_comp2fbt_deq_end(f_render, dequeue_end_time);
 		fpsgo_systrace_c_fbt_gm(-300, f_render->dequeue_length,
 			"%d_%d-dequeue_length", pid, f_render->frame_type);
