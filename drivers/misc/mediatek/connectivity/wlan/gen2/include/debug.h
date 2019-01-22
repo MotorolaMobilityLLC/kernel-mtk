@@ -27,7 +27,6 @@
 #include "gl_typedef.h"
 
 extern UINT_8 aucDebugModule[];
-extern UINT_32 u4DebugModule;
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -172,8 +171,6 @@ typedef enum _ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T {
  * A caller shall not invoke these three macros when DBG=0.
  */
 
-/*LOG_FUNC("[wlan]%s:(" #_Module " " #_Class ") "_Fmt, __func__, ##__VA_ARGS__);*/
-
 #define LOG_FUNC                kalPrint
 
 #if defined(LINUX)
@@ -181,7 +178,7 @@ typedef enum _ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T {
 	do { \
 		if ((aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) == 0) \
 			break; \
-		LOG_FUNC("%s:(" #_Module " " #_Class ")"_Fmt, __func__, ##__VA_ARGS__); \
+		LOG_FUNC("%s:(" #_Module " " #_Class ") " _Fmt, __func__, ##__VA_ARGS__); \
 	} while (0)
 #else
 #define DBGLOG(_Module, _Class, _Fmt)
@@ -195,7 +192,7 @@ typedef enum _ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T {
 extern PINT_16 g_wbuf_p;
 extern PINT_8 g_buf_p;
 
-    /* If __FUNCTION__ is already defined by compiler, we just use it. */
+/* If __FUNCTION__ is already defined by compiler, we just use it. */
 #if defined(__func__)
 #define DEBUGFUNC(_Func)
 #else
@@ -205,24 +202,21 @@ extern PINT_8 g_buf_p;
 
 #define DBGLOG_MEM8(_Module, _Class, _StartAddr, _Length) \
 	{ \
-	    if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
-		LOG_FUNC("%s: (" #_Module " " #_Class ")\n", __func__); \
-		dumpMemory8((PUINT_8) (_StartAddr), (UINT_32) (_Length)); \
-	    } \
+		if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
+			LOG_FUNC("%s:(" #_Module " " #_Class ")\n", __func__); \
+			dumpMemory8((PUINT_8) (_StartAddr), (UINT_32) (_Length)); \
+		} \
 	}
 
 #define DBGLOG_MEM32(_Module, _Class, _StartAddr, _Length) \
 	{ \
-	    if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
-		LOG_FUNC("%s: (" #_Module " " #_Class ")\n", __func__); \
-		dumpMemory32((PUINT_32) (_StartAddr), (UINT_32) (_Length)); \
-	    } \
+		if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
+			LOG_FUNC("%s:(" #_Module " " #_Class ")\n", __func__); \
+			dumpMemory32((PUINT_32) (_StartAddr), (UINT_32) (_Length)); \
+		} \
 	}
-    /*lint -restore */
 
-    /*lint -save -e961 use of '#undef' is discouraged */
 #undef ASSERT
-    /*lint -restore */
 
 #ifdef _lint
 #define ASSERT(_exp) \
@@ -234,20 +228,20 @@ extern PINT_8 g_buf_p;
 #else
 #define ASSERT(_exp) \
 	{ \
-	    if (!(_exp) && !fgIsBusAccessFailed) { \
-		LOG_FUNC("Assertion failed: %s:%d %s\n", __FILE__, __LINE__, #_exp); \
-		kalBreakPoint(); \
-	    } \
+		if (!(_exp) && !fgIsBusAccessFailed) { \
+			LOG_FUNC("Assertion failed: %s:%d %s\n", __FILE__, __LINE__, #_exp); \
+			kalBreakPoint(); \
+		} \
 	}
 #endif /* _lint */
 
 #define ASSERT_REPORT(_exp, _fmt) \
 	{ \
-	    if (!(_exp) && !fgIsBusAccessFailed) { \
-		LOG_FUNC("Assertion failed: %s:%d %s\n", __FILE__, __LINE__, #_exp); \
-		LOG_FUNC _fmt; \
-		kalBreakPoint(); \
-	    } \
+		if (!(_exp) && !fgIsBusAccessFailed) { \
+			LOG_FUNC("Assertion failed: %s:%d %s\n", __FILE__, __LINE__, #_exp); \
+			LOG_FUNC _fmt; \
+			kalBreakPoint(); \
+		} \
 	}
 
 #define DISP_STRING(_str)       _str
@@ -286,60 +280,56 @@ extern PINT_8 g_buf_p;
 #ifdef WINDOWS_CE
 #define UNICODE_TEXT(_msg)  TEXT(_msg)
 #define ASSERT(_exp) \
-		{ \
-		    if (!(_exp) && !fgIsBusAccessFailed) { \
+	{ \
+		if (!(_exp) && !fgIsBusAccessFailed) { \
 			TCHAR rUbuf[256]; \
 			kalBreakPoint(); \
 			_stprintf(rUbuf, TEXT("Assertion failed: %s:%d %s\n"), \
-			    UNICODE_TEXT(__FILE__), \
-			    __LINE__, \
-			    UNICODE_TEXT(#_exp)); \
+				  UNICODE_TEXT(__FILE__), __LINE__, UNICODE_TEXT(#_exp)); \
 			MessageBox(NULL, rUbuf, TEXT("ASSERT!"), MB_OK); \
-		    } \
-		}
+		} \
+	}
 
 #define ASSERT_REPORT(_exp, _fmt) \
-		{ \
-		    if (!(_exp) && !fgIsBusAccessFailed) { \
+	{ \
+		if (!(_exp) && !fgIsBusAccessFailed) { \
 			TCHAR rUbuf[256]; \
 			kalBreakPoint(); \
 			_stprintf(rUbuf, TEXT("Assertion failed: %s:%d %s\n"), \
-			    UNICODE_TEXT(__FILE__), \
-			    __LINE__, \
-			    UNICODE_TEXT(#_exp)); \
+				  UNICODE_TEXT(__FILE__), __LINE__, UNICODE_TEXT(#_exp)); \
 			MessageBox(NULL, rUbuf, TEXT("ASSERT!"), MB_OK); \
-		    } \
-		}
+		} \
+	}
 #else
 #define ASSERT(_exp) \
-		{ \
-		    if (!(_exp) && !fgIsBusAccessFailed) { \
+	{ \
+		if (!(_exp) && !fgIsBusAccessFailed) { \
 			kalBreakPoint(); \
-		    } \
-		}
+		} \
+	}
 
 #define ASSERT_REPORT(_exp, _fmt) \
-		{ \
-		    if (!(_exp) && !fgIsBusAccessFailed) { \
+	{ \
+		if (!(_exp) && !fgIsBusAccessFailed) { \
 			kalBreakPoint(); \
-		    } \
-		}
+		} \
+	}
 #endif /* WINDOWS_CE */
 #endif /* LINUX */
 #else
 #define ASSERT(_exp) \
 	{ \
-	    if (!(_exp) && !fgIsBusAccessFailed) { \
-		LOG_FUNC("Warning at %s:%d (%s)\n", __func__, __LINE__, #_exp); \
-	    } \
+		if (!(_exp) && !fgIsBusAccessFailed) { \
+			LOG_FUNC("Warning at %s:%d (%s)\n", __func__, __LINE__, #_exp); \
+		} \
 	}
 
 #define ASSERT_REPORT(_exp, _fmt) \
 	{ \
-	    if (!(_exp) && !fgIsBusAccessFailed) { \
-		LOG_FUNC("Warning at %s:%d (%s)\n", __func__, __LINE__, #_exp); \
-		LOG_FUNC _fmt; \
-	    } \
+		if (!(_exp) && !fgIsBusAccessFailed) { \
+			LOG_FUNC("Warning at %s:%d (%s)\n", __func__, __LINE__, #_exp); \
+			LOG_FUNC _fmt; \
+		} \
 	}
 #endif /* BUILD_QA_DBG */
 
@@ -374,13 +364,21 @@ VOID dumpMemory8(IN PUINT_8 pucStartAddr, IN UINT_32 u4Length);
 VOID dumpMemory32(IN PUINT_32 pu4StartAddr, IN UINT_32 u4Length);
 
 VOID wlanDebugInit(VOID);
+
 VOID wlanDebugUninit(VOID);
+
 VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_8 aucTxRlsCnt, UINT_8 ucAvailable);
+
 VOID wlanTraceTxCmd(P_ADAPTER_T prAdapter, P_CMD_INFO_T prCmd);
+
 VOID wlanReadFwStatus(P_ADAPTER_T prAdapter);
+
 VOID wlanDumpTxReleaseCount(P_ADAPTER_T prAdapter);
+
 VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen);
+
 VOID wlanDumpCommandFwStatus(VOID);
+
 VOID wlanPktDebugDumpInfo(P_ADAPTER_T prAdapter);
 VOID wlanPktDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpProto, UINT_16 u2IpId);
 VOID wlanPktDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode);
@@ -390,7 +388,6 @@ VOID wlanDebugHifDescriptorDump(P_ADAPTER_T prAdapter, ENUM_AMPDU_TYPE type
 	, ENUM_DEBUG_TRAFFIC_CLASS_INDEX_T tcIndex);
 VOID wlanDebugScanRecord(P_ADAPTER_T prAdapter, ENUM_DBG_SCAN_T recordType);
 VOID wlanDebugScanDump(P_ADAPTER_T prAdapter);
-
 
 
 /*******************************************************************************

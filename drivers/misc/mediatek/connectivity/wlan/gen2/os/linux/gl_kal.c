@@ -21,7 +21,7 @@
 #include "gl_os.h"
 #include "gl_wext.h"
 #include "precomp.h"
-#if defined(CONFIG_MTK_TC1_FEATURE)
+#if CFG_TC1_FEATURE
 #include <tc1_partition.h>
 #endif
 #if CFG_SUPPORT_AGPS_ASSIST
@@ -2370,12 +2370,12 @@ BOOLEAN kalRetrieveNetworkAddress(IN P_GLUE_INFO_T prGlueInfo, IN OUT PARAM_MAC_
 
 	if (prGlueInfo->fgIsMacAddrOverride == FALSE) {
 #if !defined(CONFIG_X86)
-#if !defined(CONFIG_MTK_TC1_FEATURE)
+#if !CFG_TC1_FEATURE
 		UINT_32 i;
 #endif
 		BOOLEAN fgIsReadError = FALSE;
 
-#if !defined(CONFIG_MTK_TC1_FEATURE)
+#if !CFG_TC1_FEATURE
 		for (i = 0; i < MAC_ADDR_LEN; i += 2) {
 			if (kalCfgDataRead16(prGlueInfo,
 					     OFFSET_OF(WIFI_CFG_PARAM_STRUCT, aucMacAddress) + i,

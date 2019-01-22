@@ -553,32 +553,28 @@ BOOLEAN kalSetBowState(IN P_GLUE_INFO_T prGlueInfo, IN ENUM_BOW_DEVICE_STATE eBo
 
 	ASSERT(prGlueInfo);
 
-	DBGLOG(BOW, EVENT, "kalSetBowState.\n");
+#if 0 /* fix me for 32bit project build error */
+	DBGLOG(BOW, EVENT, "prGlueInfo->rBowInfo.arPeerAddr, %x:%x:%x:%x:%x:%x\n",
+	       prGlueInfo->rBowInfo.arPeerAddr[0], prGlueInfo->rBowInfo.arPeerAddr[1],
+	       prGlueInfo->rBowInfo.arPeerAddr[2], prGlueInfo->rBowInfo.arPeerAddr[3],
+	       prGlueInfo->rBowInfo.arPeerAddr[4], prGlueInfo->rBowInfo.arPeerAddr[5]);
+#endif
 
-	DBGLOG1(BOW, EVENT, ("kalSetBowState, prGlueInfo->rBowInfo.arPeerAddr, %x:%x:%x:%x:%x:%x.\n",
-			    prGlueInfo->rBowInfo.arPeerAddr[0],
-			    prGlueInfo->rBowInfo.arPeerAddr[1],
-			    prGlueInfo->rBowInfo.arPeerAddr[2],
-			    prGlueInfo->rBowInfo.arPeerAddr[3],
-			    prGlueInfo->rBowInfo.arPeerAddr[4], prGlueInfo->rBowInfo.arPeerAddr[5]));
-
-	DBGLOG1(BOW, EVENT, ("kalSetBowState, aucPeerAddress, %x:%x:%x:%x:%x:%x.\n",
-			    aucPeerAddress[0],
-			    aucPeerAddress[1],
-			    aucPeerAddress[2], aucPeerAddress[3], aucPeerAddress[4], aucPeerAddress[5]));
+	DBGLOG(BOW, EVENT, "aucPeerAddress, %x:%x:%x:%x:%x:%x\n",
+	       aucPeerAddress[0], aucPeerAddress[1],
+	       aucPeerAddress[2], aucPeerAddress[3],
+	       aucPeerAddress[4], aucPeerAddress[5]);
 
 	for (i = 0; i < CFG_BOW_PHYSICAL_LINK_NUM; i++) {
 		if (EQUAL_MAC_ADDR(prGlueInfo->rBowInfo.arPeerAddr, aucPeerAddress) == 0) {
 			prGlueInfo->rBowInfo.aeState[i] = eBowState;
 
-			DBGLOG1(BOW, EVENT,
-			       ("kalSetBowState, aucPeerAddress %x, %x:%x:%x:%x:%x:%x.\n", i,
-				aucPeerAddress[0], aucPeerAddress[1], aucPeerAddress[2],
-				aucPeerAddress[3], aucPeerAddress[4], aucPeerAddress[5]));
+			DBGLOG(BOW, EVENT, "aucPeerAddress %x, %x:%x:%x:%x:%x:%x\n", i,
+			       aucPeerAddress[0], aucPeerAddress[1], aucPeerAddress[2],
+			       aucPeerAddress[3], aucPeerAddress[4], aucPeerAddress[5]);
 
-			DBGLOG1(BOW, EVENT,
-			       ("kalSetBowState, prGlueInfo->rBowInfo.aeState %x, %x.\n", i,
-				prGlueInfo->rBowInfo.aeState[i]));
+			DBGLOG(BOW, EVENT, "prGlueInfo->rBowInfo.aeState %x, %x.\n", i,
+			       prGlueInfo->rBowInfo.aeState[i]);
 
 			return TRUE;
 		}

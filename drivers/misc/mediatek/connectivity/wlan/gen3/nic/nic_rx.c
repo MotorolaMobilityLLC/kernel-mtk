@@ -2732,17 +2732,14 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 						 RXM_RXD_PKT_TYPE_SW_FRAME) {
 						nicRxProcessMgmtPacket(prAdapter, prSwRfb);
 					} else {
-						DBGLOG(RX, ERROR,
-						       "[%s]ERROR: u2PktTYpe(0x%04X) is OUT OF DEF!!!\n",
-						       __func__,
+						DBGLOG(RX, ERROR, "u2PktTYpe(0x%04X) is OUT OF DEF!!!\n",
 						       prSwRfb->prRxStatus->u2PktTYpe);
-						DBGLOG(RX, ERROR,
-						       "[%s]ERROR: prSwRfb(%p), prRxStatus:(%p), pvHeader(%p)\n",
-						       __func__,
+						DBGLOG(RX, ERROR, "prSwRfb(%p), prRxStatus:(%p), pvHeader(%p)\n",
 						       prSwRfb,
 						       prSwRfb->prRxStatus,
 						       prSwRfb->pvHeader);
-						ASSERT(0);
+						DBGLOG_MEM32(RX, ERROR, (PUINT_32)prSwRfb->prRxStatus,
+							     sizeof(UINT_32));
 					}
 					break;
 
