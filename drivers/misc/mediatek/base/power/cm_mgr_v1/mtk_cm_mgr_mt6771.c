@@ -47,9 +47,11 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <mtk_cm_mgr.h>
+#include <mtk_spm_reg.h>
 
 void __iomem *mcucfg_mp0_counter_base;
 void __iomem *mcucfg_mp2_counter_base;
+void __iomem *spm_sleep_base;
 
 #define diff_value_overflow(diff, a, b) do {\
 	if ((a) >= (b)) \
@@ -150,10 +152,13 @@ int cm_mgr_read_stall(int cpu)
 {
 	int val = 0;
 
-	if (cpu < 4)
-		val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
-	else
-		val = cm_mgr_read(CPU0_STALL_COUNTER + 4 * (cpu - 4));
+	if (cpu < 4) {
+		if (cm_mgr_read(spm_sleep_base + 0x180) & (1 << 8))
+			val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
+	} else {
+		if (cm_mgr_read(spm_sleep_base + 0x180) & (1 << 15))
+			val = cm_mgr_read(CPU0_STALL_COUNTER + 4 * (cpu - 4));
+	}
 
 	return val;
 }
@@ -256,6 +261,15 @@ int cm_mgr_register_init(void)
 	mcucfg_mp2_counter_base = of_iomap(node, 0);
 	if (!mcucfg_mp2_counter_base) {
 		pr_info("base mcucfg_mp2_counter_base failed\n");
+		return -1;
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
+	if (!node)
+		pr_info("find mp2_counter node failed\n");
+	spm_sleep_base = of_iomap(node, 0);
+	if (!spm_sleep_base) {
+		pr_info("base spm_sleep_base failed\n");
 		return -1;
 	}
 
