@@ -83,6 +83,8 @@ enum dcs_sysfs_mode {
 	DCS_SYSFS_EXIT_WFD_KICKER,
 	DCS_SYSFS_VENC_KICKER,
 	DCS_SYSFS_EXIT_VENC_KICKER,
+	DCS_SYSFS_CAMERA_KICKER,
+	DCS_SYSFS_EXIT_CAMERA_KICKER,
 	DCS_SYSFS_NR_MODE,
 };
 
@@ -100,6 +102,8 @@ static char * const dcs_sysfs_mode_name[DCS_SYSFS_NR_MODE] = {
 	"exit wfd", /* DCS_SYSFS_EXIT_WFD_KICKER */
 	"venc", /* DCS_SYSFS_VENC_KICKER */
 	"exit venc", /* DCS_SYSFS_EXIT_VENC_KICKER */
+	"camera", /* DCS_SYSFS_CAMERA_KICKER */
+	"exit camera", /* DCS_SYSFS_EXIT_CAMERA_KICKER */
 };
 
 /*
@@ -507,6 +511,14 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
 		ret = __dcs_exit_perf(DCS_KICKER_VENC);
 		break;
+	case DCS_SYSFS_CAMERA_KICKER:
+		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+		ret = __dcs_enter_perf(DCS_KICKER_CAMERA);
+		break;
+	case DCS_SYSFS_EXIT_CAMERA_KICKER:
+		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+		ret = __dcs_exit_perf(DCS_KICKER_CAMERA);
+		break;
 	default:
 		pr_alert("unknown sysfs mode: %d\n", mode);
 		break;
@@ -738,7 +750,7 @@ static int __dcs_mpu_protection_enable(void)
 			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
 			MPU_ACCESS_PERMISSON_FORBIDDEN);
 
-	pr_info("enable MPU\n");
+	pr_debug("enable MPU\n");
 
 	/* wait for EMI to consume all transactions in the proection range */
 	mdelay(1);
@@ -752,7 +764,7 @@ static int __dcs_mpu_protection_disable(void)
 			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
 			MPU_ACCESS_PERMISSON_NO_PROTECTION);
 
-	pr_info("disable MPU\n");
+	pr_debug("disable MPU\n");
 
 	/* wait for EMI to consume all transactions in the proection range */
 	mdelay(1);
