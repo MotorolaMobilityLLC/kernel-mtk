@@ -2227,6 +2227,7 @@ static struct miscdevice bmi160_acc_device = {
 #ifdef CONFIG_PM
 static int bmi160_acc_suspend(void)
 {
+#if 0
 	int err = 0;
 	u8 op_mode = 0;
 	struct bmi160_acc_data *obj = obj_data;
@@ -2247,10 +2248,15 @@ static int bmi160_acc_suspend(void)
 	BMI160_ACC_power(obj->hw, 0);
 
 	return err;
+#else
+	pr_err("%s\n", __func__);
+	return 0;
+#endif
 }
 
 static int bmi160_acc_resume(void)
 {
+#if 0
 	int err;
 	struct bmi160_acc_data *obj = obj_data;
 	BMI160_ACC_power(obj->hw, 1);
@@ -2261,6 +2267,10 @@ static int bmi160_acc_resume(void)
 	}
 	atomic_set(&obj->suspend, 0);
 	return 0;
+#else
+	pr_err("%s\n", __func__);
+	return 0;
+#endif
 }
 
 static int pm_event_handler(struct notifier_block *notifier, unsigned long pm_event,
