@@ -4724,9 +4724,17 @@ static inline void ufshcd_rpmb_remove(struct ufs_hba *hba)
 	if (!hba->sdev_ufs_rpmb)
 		return;
 
+	rpmb_dev_unregister(hba->dev);
+
+	/*
+	 * MTK Bug Fix:
+	 *
+	 * To prevent calling schedule() with preemption disabled,
+	 * spin_lock_irqsave shall be behind rpmb_dev_unregister().
+	 */
+
 	spin_lock_irqsave(hba->host->host_lock, flags);
 
-	rpmb_dev_unregister(hba->dev);
 	scsi_device_put(hba->sdev_ufs_rpmb);
 	hba->sdev_ufs_rpmb = NULL;
 
