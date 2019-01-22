@@ -189,7 +189,18 @@ static int expand_fdtable(struct files_struct *files, int nr)
 		return -EMFILE;
 	}
 	cur_fdt = files_fdtable(files);
-	BUG_ON(nr < cur_fdt->max_fds);
+
+	/*
+	 * MTK patch:
+	 *
+	 * Skipping BUG_ON if (cur_fdt->max_fds < 128) because
+	 * (nr < cur_fdt->max_fds) may be true if we expand fdtable
+	 * in advance for some apps for better launching performance.
+	 *
+	 * See expand_files() for details.
+	 */
+	WARN_ON((nr < cur_fdt->max_fds && cur_fdt->max_fds >= 128));
+
 	copy_fdtable(new_fdt, cur_fdt);
 	rcu_assign_pointer(files->fdt, new_fdt);
 	if (cur_fdt != &files->fdtab)
@@ -218,7 +229,23 @@ repeat:
 	fdt = files_fdtable(files);
 
 	/* Do we need to expand? */
-	if (nr < fdt->max_fds)
+
+	/*
+	 * MTK patch:
+	 *
+	 *   Expand fdtable in advance for some apps for better launching performance.
+	 *
+	 *   nr < 16       : Usually native app with less fd requirement, say < 16.
+	 *                   Apply origianl expanding logic (return "expanded").
+	 *   128 > nr > 16 : Usually app forked by zygote. We expand fdtable to at
+	 *                   least 128 entries for better app launching performance
+	 *                   (not return "expanded").
+	 *   nr >= 128     : Apply original expanding logic.
+	 */
+	if (nr < 16)
+		return expanded;
+
+	if (nr < fdt->max_fds && fdt->max_fds >= 128)
 		return expanded;
 
 	/* Can we expand? */
