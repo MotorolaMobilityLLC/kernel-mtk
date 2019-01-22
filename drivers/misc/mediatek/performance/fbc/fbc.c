@@ -57,6 +57,22 @@ static int power_ll[16][2];
 static int power_l[16][2];
 static int power_b[16][2];
 
+struct fbc_operation_locked {
+	void (*touch)(int);
+	void (*frame_cmplt)(unsigned long);
+	void (*intended_vsync)(void);
+	void (*no_render)(void);
+};
+
+static struct fbc_operation_locked *fbc_op;
+
+static inline bool is_ux_fbc_active(void)
+{
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	return !(fbc_debug || is_game || !fbc_touch);
+}
 
 
 inline void fbc_tracer(int pid, char *name, int count)
@@ -100,6 +116,9 @@ void update_pwd_tbl(void)
 static void boost_freq(int capacity)
 {
 	int i;
+
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
 
 	if (capacity > 1024)
 		capacity = 1024;
@@ -183,7 +202,7 @@ static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
 static void notify_act_switch(int begin)
 {
 	mutex_lock(&notify_lock);
-	if (fbc_debug || is_game || !fbc_touch) {
+	if (!is_ux_fbc_active()) {
 		mutex_unlock(&notify_lock);
 		return;
 	}
@@ -196,45 +215,42 @@ static void notify_act_switch(int begin)
 
 static void notify_no_render_legacy(void)
 {
-	mutex_lock(&notify_lock);
-	if (fbc_debug || is_game || !fbc_touch) {
-		mutex_unlock(&notify_lock);
-		return;
-	}
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
 	fbc_tracer(-1, "no_render", 1);
 	fbc_tracer(-1, "no_render", 0);
-	mutex_unlock(&notify_lock);
 }
 static void notify_twanted_timeout_legacy(void)
 {
 	mutex_lock(&notify_lock);
-	if (fbc_debug || is_game || !fbc_touch) {
+	if (!is_ux_fbc_active() || frame_done) {
 		mutex_unlock(&notify_lock);
 		return;
 	}
 
-	if (frame_done == 0) {
-		chase_capacity = capacity * (100 + super_boost) / 100;
-		if (chase_capacity > 1024)
-			chase_capacity = 1024;
-
-		boost_freq(chase_capacity);
-		chase = 1;
-		fbc_tracer(-1, "chase", chase);
-	}
+	chase_capacity = capacity * (100 + super_boost) / 100;
+	if (chase_capacity > 1024)
+		chase_capacity = 1024;
+	boost_freq(chase_capacity);
+	chase = 1;
+	fbc_tracer(-1, "chase", chase);
 
 	mutex_unlock(&notify_lock);
 }
 
 void notify_touch_legacy(int touch)
 {
-	mutex_lock(&notify_lock);
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
+
 	fbc_touch_pre = fbc_touch;
 	fbc_touch = touch;
 	fbc_tracer(-1, "touch", fbc_touch);
 
 	if (fbc_touch && fbc_touch_pre == 0) {
 		chase = 0;
+		first_frame = 1;
 
 		if (act_switched) {
 			capacity = touch_capacity = 347;
@@ -271,34 +287,29 @@ void notify_touch_legacy(int touch)
 
 		perfmgr_kick_fg_boost(KIR_FBC, -1);
 	}
-	mutex_unlock(&notify_lock);
 }
 
 void notify_frame_complete_legacy(unsigned long frame_time)
 {
 	long long boost_linear = 0;
 
-	mutex_lock(&notify_lock);
-
-	if (fbc_debug || is_game || !fbc_touch) {
-		mutex_unlock(&notify_lock);
-		return;
-	}
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
 
 	if (chase == 1) {
+		chase = 0;
+		fbc_tracer(-1, "chase", chase);
 		avg_capacity = (Twanted * capacity
 				+ ((long long)frame_time - Twanted) * (chase_capacity))
 			/ (long long)frame_time;
 	} else
 		avg_capacity = capacity;
 
-	chase = 0;
-	fbc_tracer(-1, "chase", chase);
+	/* upon rendering ends, update*/
 	frame_done = 1;
 	disable_frame_twanted_timer();
 	if (first_frame) {
 		avg_frame_time = frame_time;
-		first_frame = 0;
 	} else {
 		avg_frame_time = (ema * frame_time + (10 - ema) * avg_frame_time) / 10;
 	}
@@ -311,7 +322,10 @@ void notify_frame_complete_legacy(unsigned long frame_time)
 	if (capacity <= 0)
 		capacity = 1;
 
-	if (!first_frame)
+	if (first_frame) {
+		current_max_capacity = 0;
+		first_frame = 0;
+	} else
 		current_max_capacity = MAX(current_max_capacity, capacity);
 
 	boost_freq(capacity);
@@ -319,6 +333,7 @@ void notify_frame_complete_legacy(unsigned long frame_time)
 	fbc_tracer(-1, "avg_frame_time", avg_frame_time);
 	fbc_tracer(-1, "frame_time", frame_time);
 	fbc_tracer(-1, "avg_capacity", avg_capacity);
+	fbc_tracer(-1, "current_max_capacity", current_max_capacity);
 
 #if 0
 	pr_crit(TAG" frame complete FT=%lu, avg_frame_time=%lld, boost_linear=%lld, capacity=%d",
@@ -327,24 +342,18 @@ void notify_frame_complete_legacy(unsigned long frame_time)
 		pr_crit(TAG"chase_frame\n");
 #endif
 
-	mutex_unlock(&notify_lock);
 }
 
 void notify_intended_vsync_legacy(void)
 {
-	mutex_lock(&notify_lock);
-	if (fbc_debug || !fbc_touch || is_game) {
-		mutex_unlock(&notify_lock);
-		return;
-	}
+	/* lock is mandatory*/
+	WARN_ON(!mutex_is_locked(&notify_lock));
 
 	frame_done = 0;
 	enable_frame_twanted_timer();
-
-	mutex_unlock(&notify_lock);
 }
 
-void notify_touch_eas(void)
+void notify_touch_eas(int touch)
 {
 #if 0
 	fbc_touch_pre = fbc_touch;
@@ -443,19 +452,33 @@ void notify_intended_vsync_eas(void)
 {
 }
 
+struct fbc_operation_locked fbc_legacy = {
+	.touch		= notify_touch_legacy,
+	.frame_cmplt	= notify_frame_complete_legacy,
+	.intended_vsync	= notify_intended_vsync_legacy,
+	.no_render	= notify_no_render_legacy
+};
+
+struct fbc_operation_locked fbc_eas = {
+	.touch		= notify_touch_eas,
+	.frame_cmplt	= notify_frame_complete_eas,
+	.intended_vsync	= notify_intended_vsync_eas,
+	.no_render	= notify_no_render_eas
+};
+
 
 static ssize_t device_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
 	char buf[32];
-	int arg1;
-	char option[32];
+	int arg;
+	char cmd[32];
 	int i;
 #if 0
 	int boost_value_super;
 #endif
 
-	arg1 = 0;
+	arg = 0;
 
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
@@ -464,48 +487,65 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		return -EFAULT;
 	buf[cnt] = '\0';
 
-	if (sscanf(buf, "%31s %d", option, &arg1) != 2)
+	if (sscanf(buf, "%31s %d", cmd, &arg) != 2)
 		return -EFAULT;
 
-	if (strncmp(option, "debug", 5) == 0) {
-		fbc_debug = arg1;
+	if (strncmp(cmd, "debug", 5) == 0) {
+		mutex_lock(&notify_lock);
+		fbc_debug = arg;
 		boost_value = 0;
 		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
-	} else if (strncmp(option, "touch", 5) == 0) {
+		mutex_unlock(&notify_lock);
+	} else if (strncmp(cmd, "touch", 5) == 0) {
+		mutex_lock(&notify_lock);
+		if (fbc_debug || is_game) {
+			mutex_unlock(&notify_lock);
+			return cnt;
+		}
+		fbc_op->touch(arg);
+		mutex_unlock(&notify_lock);
+	} else if (strncmp(cmd, "act_switch", 5) == 0) {
 		if (fbc_debug || is_game)
 			return cnt;
-		if (boost_method == EAS)
-			notify_touch_eas();
-		else if (boost_method == LEGACY)
-			notify_touch_legacy(arg1);
-	} else if (strncmp(option, "act_switch", 5) == 0) {
-		if (fbc_debug || is_game)
-			return cnt;
-		notify_act_switch(arg1);
-	} else if (strncmp(option, "init", 4) == 0) {
-		touch_boost_value = arg1;
+		notify_act_switch(arg);
+	} else if (strncmp(cmd, "init", 4) == 0) {
+		touch_boost_value = arg;
 		boost_value  = touch_boost_value;
-		touch_capacity = arg1;
-	} else if (strncmp(option, "twanted", 7) == 0) {
-		Twanted = arg1 * 1000000;
-		Twanted_ms = Twanted / 1000000;
-	} else if (strncmp(option, "ema", 3) == 0)
-		ema = arg1;
-	 else if (strncmp(option, "method", 6) == 0)
-		boost_method = arg1;
-	 else if (strncmp(option, "super_boost", 11) == 0)
-		super_boost = arg1;
-	 else if (strncmp(option, "game", 4) == 0)
-		is_game = arg1;
-	 else if (strncmp(option, "30fps", 5) == 0)
-		is_30_fps = arg1;
-	 else if (strncmp(option, "dump_tbl", 8) == 0) {
+		touch_capacity = arg;
+	} else if (strncmp(cmd, "twanted", 7) == 0) {
+		if (arg < 60) {
+			Twanted = arg * 1000000;
+			Twanted_ms = Twanted / 1000000;
+		}
+	} else if (strncmp(cmd, "ema", 3) == 0)
+		ema = arg;
+	 else if (strncmp(cmd, "method", 6) == 0) {
+		mutex_lock(&notify_lock);
+		boost_method = arg;
+		switch (boost_method) {
+		case EAS:
+			fbc_op = &fbc_eas;
+		case LEGACY:
+		default:
+			fbc_op = &fbc_legacy;
+			break;
+		}
+		mutex_unlock(&notify_lock);
+	} else if (strncmp(cmd, "super_boost", 11) == 0)
+		super_boost = arg;
+	 else if (strncmp(cmd, "game", 4) == 0) {
+		mutex_lock(&notify_lock);
+		is_game = arg;
+		mutex_unlock(&notify_lock);
+	 } else if (strncmp(cmd, "30fps", 5) == 0)
+		is_30_fps = arg;
+	 else if (strncmp(cmd, "dump_tbl", 8) == 0) {
 		for (i = 0; i < 16; i++) {
 			pr_crit(TAG"ll freq:%d, cap:%d", power_ll[i][0], power_ll[i][1]);
 			pr_crit(TAG"b freq:%d, cap:%d", power_b[i][0], power_b[i][1]);
 		 }
-	 } else if (strncmp(option, "trace", 5) == 0)
-		fbc_trace = arg1;
+	 } else if (strncmp(cmd, "trace", 5) == 0)
+		fbc_trace = arg;
 
 	return cnt;
 }
@@ -534,61 +574,68 @@ static int device_open(struct inode *inode, struct file *file)
 }
 
 
-ssize_t device_ioctl(struct file *filp,
-	  unsigned int cmd, unsigned long arg)
+static ssize_t ioctl_gaming(unsigned int cmd, unsigned long arg)
 {
-	unsigned long frame_time;
+
+	/* TODO: need to check touch? */
 
 	switch (cmd) {
-
-	/*receive frame_time info*/
-	case IOCTL_WRITE_FC:
-
-		frame_time = arg;
-
-		if (boost_method == EAS)
-			notify_frame_complete_eas(frame_time);
-		else if (boost_method == LEGACY)
-			notify_frame_complete_legacy(frame_time);
-		break;
-
-	/*receive Intended-Vsync signal*/
-	case IOCTL_WRITE_IV:
-
-		if (boost_method == EAS)
-			notify_intended_vsync_eas();
-		else if (boost_method == LEGACY)
-			notify_intended_vsync_legacy();
-		break;
-
-	case IOCTL_WRITE_NR:
-
-		if (boost_method == EAS)
-			notify_no_render_eas();
-		else if (boost_method == LEGACY)
-			notify_no_render_legacy();
-		break;
-
 	case IOCTL_WRITE3:
-		if (!fbc_debug) {
-			if (is_game) {
-				if (arg == ID_EGL) {
-					disable_frame_twanted_timer();
-				} else if (arg == ID_OMR) {
-					if (is_30_fps) {
-						disable_frame_twanted_timer();
-					}
-				}
-			}
-		}
 		break;
 
 	default:
-		return -1;
+			return 0;
 	}
+
 	return 0;
 }
 
+ssize_t device_ioctl(struct file *filp,
+		unsigned int cmd, unsigned long arg)
+{
+	unsigned long frame_time;
+	ssize_t ret = 0;
+
+	mutex_lock(&notify_lock);
+	if (fbc_debug)
+		goto ret_ioctl;
+
+	if (is_game) {
+		ret = ioctl_gaming(cmd, arg);
+		goto ret_ioctl;
+	}
+
+	if (!is_ux_fbc_active())
+		goto ret_ioctl;
+
+
+	/* start of ux fbc */
+	switch (cmd) {
+	/*receive frame_time info*/
+	case IOCTL_WRITE_FC:
+		frame_time = arg;
+		fbc_op->frame_cmplt(frame_time);
+		break;
+
+		/*receive Intended-Vsync signal*/
+	case IOCTL_WRITE_IV:
+		fbc_op->intended_vsync();
+		break;
+
+	case IOCTL_WRITE_NR:
+		fbc_op->no_render();
+		break;
+
+	default:
+		pr_crit(TAG "non-game unknown cmd %u\n", cmd);
+		ret = -1;
+		goto ret_ioctl;
+	}
+
+ret_ioctl:
+	mutex_unlock(&notify_lock);
+	return ret;
+}
 
 #if 1
 static const struct file_operations Fops = {
@@ -609,7 +656,7 @@ static int __init init_fbc(void)
 {
 	struct proc_dir_entry *pe;
 
-	int ret_val;
+	int ret_val = 0;
 
 
 	pr_crit(TAG"init FBC driver start\n");
@@ -638,21 +685,23 @@ static int __init init_fbc(void)
 
 	update_pwd_tbl();
 	mutex_init(&notify_lock);
+	fbc_op = &fbc_legacy;
 
 	wq = create_singlethread_workqueue("mt_tt_legacy_work");
-	if (!wq)
+	if (!wq) {
 		pr_crit(TAG"mt_tt_legacy_work create fail\n");
+		goto out_wq;
+	}
+	hrtimer_init(&hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrt.function = &mt_twanted_timeout;
 
 	ret_val = register_chrdev(DEV_MAJOR, DEV_NAME, &Fops);
 	if (ret_val < 0) {
 		pr_crit(TAG"%s failed with %d\n",
 				"Sorry, registering the character device ",
 				ret_val);
-		return ret_val;
+		goto out_chrdev;
 	}
-
-	hrtimer_init(&hrt, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	hrt.function = &mt_twanted_timeout;
 
 	pe = proc_create("perfmgr/fbc", 0664, NULL, &Fops);
 	if (!pe)
@@ -661,6 +710,12 @@ static int __init init_fbc(void)
 	pr_crit(TAG"init FBC driver end\n");
 
 	return 0;
+
+out_chrdev:
+	unregister_chrdev(DEV_MAJOR, DEV_NAME);
+out_wq:
+	destroy_workqueue(wq);
+	return ret_val;
 }
 late_initcall(init_fbc);
 
