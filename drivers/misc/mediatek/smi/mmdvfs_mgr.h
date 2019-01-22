@@ -131,6 +131,7 @@ extern int force_always_on_mm_clks(void);
 extern int mmdvfs_get_stable_isp_clk(void);
 extern int get_mmdvfs_clk_mux_mask(void);
 extern void mmdvfs_set_disp_hrt_cb(disp_hrt_change_cb change_cb);
+extern void mmdvfs_set_md_on(bool to_on);
 
 #ifdef MMDVFS_STANDALONE
 #define vcorefs_request_dvfs_opp(scen, mode) do { \

@@ -55,6 +55,10 @@ static void mmdvfs_step_util_init(struct mmdvfs_step_util *self);
 static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, s32 step, u32 scenario);
 static int mmdvfs_get_clients_clk_opp(struct mmdvfs_step_util *self, struct mmdvfs_adaptor *adaptor,
 	int clients_mask, int clk_id);
+
+#ifdef DYNAMIC_DISP_HRT
+static void mmdvfs_change_disp_hrt(bool has_camera_scenario);
+#endif
 static bool in_camera_scenario;
 u32 camera_bw_config;
 u32 normal_bw_config;
@@ -62,6 +66,8 @@ static disp_hrt_change_cb g_disp_hrt_change_cb;
 u32 cam_sensor_threshold;
 u32 disp_hrt_decrease_level1;
 u32 disp_hrt_decrease_default;
+static bool g_is_md_on;
+
 
 #if defined(SMI_WHI)
 struct mmdvfs_step_util mmdvfs_step_util_obj = {
@@ -1164,21 +1170,7 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, s32 step, u3
 #endif
 	}
 #ifdef DYNAMIC_DISP_HRT
-	if (cam_sensor_threshold && g_disp_hrt_change_cb) {
-		struct mmdvfs_cam_property cam_setting;
-		u32 cam_sensor_setting;
-
-		mmdvfs_internal_get_cam_setting(&cam_setting);
-		cam_sensor_setting = cam_setting.sensor_size * cam_setting.fps;
-		if (has_camera_scenario &&
-			cam_sensor_setting >= cam_sensor_threshold) {
-			MMDVFSMSG("decrease HRT with %d\n", disp_hrt_decrease_level1);
-			g_disp_hrt_change_cb(disp_hrt_decrease_level1);
-		} else {
-			MMDVFSMSG("decrease HRT with 0\n");
-			g_disp_hrt_change_cb(disp_hrt_decrease_default);
-		}
-	}
+	mmdvfs_change_disp_hrt(has_camera_scenario);
 #endif
 	in_camera_scenario = has_camera_scenario;
 	return final_opp;
@@ -1188,6 +1180,37 @@ void mmdvfs_set_disp_hrt_cb(disp_hrt_change_cb change_cb)
 {
 	g_disp_hrt_change_cb = change_cb;
 }
+
+void mmdvfs_set_md_on(bool to_on)
+{
+	g_is_md_on = to_on;
+#ifdef DYNAMIC_DISP_HRT
+	mmdvfs_change_disp_hrt(in_camera_scenario);
+#endif
+}
+
+#ifdef DYNAMIC_DISP_HRT
+static void mmdvfs_change_disp_hrt(bool has_camera_scenario)
+{
+	if (cam_sensor_threshold && g_disp_hrt_change_cb) {
+		struct mmdvfs_cam_property cam_setting;
+		u32 cam_sensor_setting;
+
+		mmdvfs_internal_get_cam_setting(&cam_setting);
+		cam_sensor_setting = cam_setting.sensor_size * cam_setting.fps;
+		if (has_camera_scenario &&
+			cam_sensor_setting >= cam_sensor_threshold &&
+			g_is_md_on) {
+			MMDVFSMSG("decrease HRT with %d\n", disp_hrt_decrease_level1);
+			g_disp_hrt_change_cb(disp_hrt_decrease_level1);
+		} else {
+			MMDVFSMSG("decrease HRT with 0\n");
+			g_disp_hrt_change_cb(disp_hrt_decrease_default);
+		}
+	}
+}
+#endif
+
 
 static int mmdvfs_get_opp_from_legacy_step(struct mmdvfs_step_util *self, int legacy_step)
 {
