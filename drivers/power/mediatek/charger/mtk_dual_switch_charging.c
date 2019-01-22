@@ -226,7 +226,7 @@ done:
 		charger_dev_set_charging_current(info->chg2_dev,
 					pdata2->charging_current_limit);
 	}
-#if 0 /* FIXME */
+#if 0
 	/* If AICR < 300mA, stop PE+/PE+20 */
 	if (pdata->input_current_limit < 300000) {
 		if (mtk_pe20_get_is_enable(info)) {
@@ -247,18 +247,12 @@ done:
 	if (pdata->input_current_limit > aicr1_min && pdata->charging_current_limit > ichg1_min)
 		charger_dev_enable(info->chg1_dev, true);
 
-#if 0 /* Enable slave charger at PE+2.0 flow */
-	if (pdata2->input_current_limit > 0 && pdata2->charging_current_limit > 0) {
-		if (mtk_pe20_get_is_enable(info) && mtk_pe20_get_is_connect(info))
-			charger_dev_enable(info->chg2_dev, true);
-	}
-#endif
-
 	if (pdata->thermal_input_current_limit == -1 &&
 	    pdata->thermal_charging_current_limit == -1 &&
 	    pdata2->thermal_input_current_limit == -1 &&
 	    pdata2->thermal_charging_current_limit == -1) {
 		if (!mtk_pe20_get_is_enable(info)) {
+			swchgalg->state = CHR_CC;
 			mtk_pe20_set_is_enable(info, true);
 			mtk_pe20_set_to_check_chr_type(info, true);
 		}
@@ -426,7 +420,7 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 	if (info->chg1_data.thermal_input_current_limit != -1 &&
 		info->chg1_data.thermal_input_current_limit < 300000)
 		return 0;
-#if 0 /* FIXME */
+#if 0
 	if (!mtk_pe20_get_is_enable(info)) {
 		mtk_pe20_set_is_enable(info, true);
 		mtk_pe20_set_to_check_chr_type(info, true);
