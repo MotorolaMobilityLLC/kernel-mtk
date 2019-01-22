@@ -449,6 +449,8 @@ int any_core_deepidle_sodi_check(int cpu)
 
 	if (token_get) {
 
+		any_core_cpu_cond_inc(PAUSE_CNT);
+
 		mcdi_task_pause(true);
 		mcdi_task_paused = true;
 
@@ -579,8 +581,6 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 
 	/* Check if any core deepidle/SODI can entered */
 	if (mcdi_feature_stat.any_core && last_core_token_get) {
-
-		any_core_cpu_cond_inc(PAUSE_CNT);
 
 		trace_check_anycore_rcuidle(cpu, 1, -1);
 

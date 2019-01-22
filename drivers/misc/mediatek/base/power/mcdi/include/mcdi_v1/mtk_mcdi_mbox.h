@@ -16,7 +16,7 @@
 
 #define MCDI_MBOX                               3
 #define MCDI_MBOX_SLOT_OFFSET_START             0
-#define MCDI_MBOX_SLOT_OFFSET_END               15
+#define MCDI_MBOX_SLOT_OFFSET_END               16
 
 /* MBOX: AP write, SSPM read */
 #define MCDI_MBOX_CLUSTER_0_CAN_POWER_OFF       0
@@ -35,6 +35,7 @@
 #define MCDI_MBOX_CLUSTER_2_CNT                 12
 #define MCDI_MBOX_PAUSE_ACK                     13
 #define MCDI_MBOX_PENDING_ON_EVENT              14
+#define MCDI_MBOX_PROF_CMD                      15
 
 /* MCDI_MBOX_ACTION_STAT */
 #define MCDI_ACTION_INIT                        0
