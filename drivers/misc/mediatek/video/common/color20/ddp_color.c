@@ -1155,13 +1155,11 @@ static volatile bool g_color_is_clock_on[COLOR_TOTAL_MODULE_NUM];
 
 bool disp_color_reg_get(enum DISP_MODULE_ENUM module, unsigned long addr, unsigned int *value)
 {
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
 	if (COLOR_MODE == 2) {
 		COLOR_DBG("color is not in DISP path");
 		*value = 0;
 		return true;
 	}
-#endif
 
 	if (g_color_is_clock_on[index_of_color(module)] != true) {
 		COLOR_DBG("clock off .. skip reg set");
