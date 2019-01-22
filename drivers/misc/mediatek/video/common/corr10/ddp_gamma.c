@@ -20,7 +20,7 @@
 #else
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -313,6 +313,8 @@ static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_ELBRUS) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
+#elif defined(CONFIG_MACH_MT6759)
+	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
 	if (module == GAMMA0_MODULE_NAMING) {
@@ -339,6 +341,8 @@ static int disp_gamma_power_off(enum DISP_MODULE_ENUM module, void *handle)
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_ELBRUS) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
+#elif defined(CONFIG_MACH_MT6759)
+	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
 	if (module == GAMMA0_MODULE_NAMING) {
@@ -367,8 +371,10 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 	.bypass = disp_gamma_bypass,
 	.set_listener = disp_gamma_set_listener,
 	.cmd = disp_gamma_io,
+#ifndef CONFIG_MACH_MT6759
 	.init = disp_gamma_power_on,
 	.deinit = disp_gamma_power_off,
+#endif
 	.power_on = disp_gamma_power_on,
 	.power_off = disp_gamma_power_off,
 #ifdef GAMMA_SUPPORT_PARTIAL_UPDATE
@@ -777,6 +783,9 @@ static int disp_ccorr_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 static int disp_ccorr_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
+#if defined(CONFIG_MACH_MT6759)
+	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
+#else
 #ifdef ENABLE_CLK_MGR
 	if (module == CCORR0_MODULE_NAMING) {
 #ifdef CONFIG_MTK_CLKMGR
@@ -795,11 +804,16 @@ static int disp_ccorr_power_on(enum DISP_MODULE_ENUM module, void *handle)
 	}
 #endif
 #endif		/* ENABLE_CLK_MGR */
+#endif
 	return 0;
 }
 
 static int disp_ccorr_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
+#if defined(CONFIG_MACH_MT6759)
+	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
+#else
+
 #ifdef ENABLE_CLK_MGR
 	if (module == CCORR0_MODULE_NAMING) {
 #ifdef CONFIG_MTK_CLKMGR
@@ -818,6 +832,7 @@ static int disp_ccorr_power_off(enum DISP_MODULE_ENUM module, void *handle)
 	}
 #endif
 #endif		/* ENABLE_CLK_MGR */
+#endif
 	return 0;
 }
 
@@ -828,8 +843,10 @@ struct DDP_MODULE_DRIVER ddp_driver_ccorr = {
 	.bypass = disp_ccorr_bypass,
 	.set_listener = disp_ccorr_set_listener,
 	.cmd = disp_ccorr_io,
+#ifndef CONFIG_MACH_MT6759
 	.init = disp_ccorr_power_on,
 	.deinit = disp_ccorr_power_off,
+#endif
 	.power_on = disp_ccorr_power_on,
 	.power_off = disp_ccorr_power_off,
 #ifdef CCORR_SUPPORT_PARTIAL_UPDATE

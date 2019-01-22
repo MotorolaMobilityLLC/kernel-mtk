@@ -17,7 +17,7 @@
 #else
 #if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -182,6 +182,8 @@ static int disp_dither_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_MACH_MT6755)
 	/* dither is DCM , do nothing */
+#elif defined(CONFIG_MACH_MT6759)
+	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
 	if (module == DITHER0_MODULE_NAMING) {
@@ -207,6 +209,8 @@ static int disp_dither_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_MACH_MT6755)
 	/* dither is DCM , do nothing */
+#elif defined(CONFIG_MACH_MT6759)
+	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
 	if (module == DITHER0_MODULE_NAMING) {
@@ -255,8 +259,10 @@ static int dither_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 struct DDP_MODULE_DRIVER ddp_driver_dither = {
 	.config = disp_dither_config,
 	.bypass = disp_dither_bypass,
+#ifndef CONFIG_MACH_MT6759
 	.init = disp_dither_power_on,
 	.deinit = disp_dither_power_off,
+#endif
 	.power_on = disp_dither_power_on,
 	.power_off = disp_dither_power_off,
 #ifdef DITHER_SUPPORT_PARTIAL_UPDATE
