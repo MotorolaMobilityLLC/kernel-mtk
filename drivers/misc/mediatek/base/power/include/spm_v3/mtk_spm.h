@@ -113,6 +113,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 void mt_spm_for_gps_only(int enable);
+void mt_spm_dcs_s1_setting(int enable, int flags);
 
 /**************************************
  * Macro and Inline
