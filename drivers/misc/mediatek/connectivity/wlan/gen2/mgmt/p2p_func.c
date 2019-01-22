@@ -2816,28 +2816,19 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 	 *
 	 * total: 0 errors, 1 warnings, 3721 lines checked
 	 */
-				if (rsnParseCheckForWFAInfoElem
-					(prAdapter, pucIEBuf, &ucOuiType, &u2SubTypeVersion)) {
-					if (ucOuiType == VENDOR_OUI_TYPE_WMM)
-						break;
-				}
-				if (p2pFuncParseCheckForP2PInfoElem(prAdapter, pucIEBuf, &ucOuiType) &&
-					(ucOuiType == VENDOR_OUI_TYPE_P2P)) {
-					/* 2 Note(frog): I use WSC IE buffer for Probe Request to
-					* store the P2P IE for Probe Response.
-					*/
-					kalP2PUpdateWSC_IE(prAdapter->prGlueInfo, 1, pucIEBuf,
-						IE_SIZE(pucIEBuf));
-					fgIsP2PIE = TRUE;
-				} else {
-					if ((prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen + IE_SIZE(pucIEBuf)) <
-						1024) {
-						kalMemCopy(prAdapter->prGlueInfo->prP2PInfo->aucVenderIE +
-							prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen, pucIEBuf,
-							IE_SIZE(pucIEBuf));
-						prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen += IE_SIZE(pucIEBuf);
-					}
-				}
+	if (rsnParseCheckForWFAInfoElem
+				    (prAdapter, pucIEBuf, &ucOuiType, &u2SubTypeVersion)) {
+		if (ucOuiType == VENDOR_OUI_TYPE_WMM)
+			break;
+
+		}
+				if ((prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen + IE_SIZE(pucIEBuf)) <
+				    1024) {
+					kalMemCopy(prAdapter->prGlueInfo->prP2PInfo->aucVenderIE +
+						   prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen, pucIEBuf,
+						   IE_SIZE(pucIEBuf));
+					prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen += IE_SIZE(pucIEBuf);
+			}
 #endif
 				break;
 			default:

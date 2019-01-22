@@ -5112,8 +5112,7 @@ TDLS_STATUS TdlsexStaRecIdxGet(ADAPTER_T *prAdapter, MSDU_INFO_T *prMsduInfo)
 				}
 			}
 			prMsduInfo->ucStaRecIndex = prStaRec->ucIndex;
-		} else
-			Status = TDLS_STATUS_FAILURE;
+		}
 	} while (FALSE);
 
 	DBGLOG(TDLS, INFO, "<tdls> %s: (Status=%x) [%pM] ucStaRecIndex = %d!\n",

@@ -1528,12 +1528,6 @@ wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
 		       IN UINT_32 u4SetBufferLen,
 		       OUT PUINT_32 pu4SetInfoLen);
 
-#if CFG_SUPPORT_TDLS
-WLAN_STATUS
-wlanoidDisableTdlsPs(IN P_ADAPTER_T prAdapter,
-			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
-#endif
-
 WLAN_STATUS
 wlanoidPacketKeepAlive(IN P_ADAPTER_T prAdapter,
 		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
