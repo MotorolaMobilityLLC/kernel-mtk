@@ -351,6 +351,9 @@ int mtk_pe_reset_ta_vchr(struct charger_manager *pinfo)
 		retry_cnt++;
 	} while (retry_cnt < 3);
 
+	/* Set aicr to 500 mA after reset TA*/
+	ret = charger_dev_set_input_current(pinfo->chg1_dev, 500000);
+
 	if (pe->is_connect) {
 		pr_err("%s: failed, ret = %d\n", __func__, ret);
 		/*
