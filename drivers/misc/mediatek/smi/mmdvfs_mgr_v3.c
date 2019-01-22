@@ -622,6 +622,13 @@ void mmdvfs_notify_scenario_exit(enum MTK_SMI_BWC_SCEN scen)
 
 }
 
+void mmdvfs_internal_get_cam_setting(struct mmdvfs_cam_property *cam_setting)
+{
+	cam_setting->sensor_size = g_mmdvfs_cmd.sensor_size;
+	cam_setting->fps = g_mmdvfs_cmd.sensor_fps;
+	cam_setting->feature_flag = g_mmdvfs_cmd.camera_mode;
+	cam_setting->preview_size = g_mmdvfs_cmd.preview_size;
+}
 
 void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen)
 {
@@ -672,7 +679,6 @@ void mmdvfs_notify_scenario_enter(enum MTK_SMI_BWC_SCEN scen)
 
 	if (scen == SMI_BWC_SCEN_VP_HIGH_FPS)
 		g_mmdvfs_mgr->is_vp_high_fps_enable = 1;
-
 }
 
 
