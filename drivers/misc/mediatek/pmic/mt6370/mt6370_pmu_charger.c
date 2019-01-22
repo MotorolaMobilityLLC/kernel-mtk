@@ -311,6 +311,9 @@ static int mt6370_get_aicr(struct charger_device *chg_dev, u32 *uA);
 static int mt6370_set_ichg(struct charger_device *chg_dev, u32 uA);
 static int mt6370_get_ichg(struct charger_device *chg_dev, u32 *uA);
 static int mt6370_enable_charging(struct charger_device *chg_dev, bool en);
+#ifdef CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT
+static int mt6370_inform_psy_changed(struct mt6370_pmu_charger_data *chg_data);
+#endif
 
 static inline void mt6370_chg_irq_set_flag(
 	struct mt6370_pmu_charger_data *chg_data, u8 *irq, u8 mask)
@@ -664,6 +667,17 @@ static int mt6370_enable_chgdet_flow(struct mt6370_pmu_charger_data *chg_data,
 	const int max_wait_cnt = 200;
 	enum mt6370_usbsw_state usbsw =
 		en ? MT6370_USBSW_CHG : MT6370_USBSW_USB;
+
+#ifdef CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT
+	if (en && is_meta_mode()) {
+		/* Skip charger type detection to speed up meta boot.*/
+		dev_notice(chg_data->dev, "force Standard USB Host in meta\n");
+		chg_data->pwr_rdy = true;
+		chg_data->chg_type = STANDARD_HOST;
+		mt6370_inform_psy_changed(chg_data);
+		return 0;
+	}
+#endif
 
 	if (en) {
 		/* Workaround for CDP port */
