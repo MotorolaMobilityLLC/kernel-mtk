@@ -1345,6 +1345,34 @@ static int dispatch_ovl_id(struct disp_layer_info *disp_info)
 	return 0;
 }
 
+static int check_layering_result(struct disp_layer_info *disp_info)
+{
+	int disp_idx;
+
+	if (disp_info->layer_num[0] <= 0 && disp_info->layer_num[1] <= 0)
+		return 0;
+
+	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
+		int layer_num, max_ovl_id, ovl_layer_num;
+
+		if (disp_info->layer_num[disp_idx] <= 0)
+			continue;
+
+		if (disp_idx == HRT_PRIMARY)
+			ovl_layer_num = PRIMARY_OVL_LAYER_NUM;
+		else
+			ovl_layer_num = SECONDARY_OVL_LAYER_NUM;
+		layer_num = disp_info->layer_num[disp_idx];
+		max_ovl_id = disp_info->input_config[disp_idx][layer_num - 1].ovl_id;
+
+		if (max_ovl_id >= ovl_layer_num) {
+			DISPERR("Invalid ovl_id:%d, disp_idx:%d\n", max_ovl_id, disp_idx);
+			WARN_ON(1);
+		}
+	}
+	return 0;
+}
+
 int check_disp_info(struct disp_layer_info *disp_info)
 {
 	int disp_idx;
@@ -1569,6 +1597,7 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
  */
 	ret = dispatch_ovl_id(&layering_info);
 	dump_disp_info(&layering_info, DISP_DEBUG_LEVEL_INFO);
+	check_layering_result(&layering_info);
 	HRT_SET_PATH_SCENARIO(layering_info.hrt_num, l_rule_info->disp_path);
 	HRT_SET_SCALE_SCENARIO(layering_info.hrt_num, l_rule_info->scale_rate);
 	HRT_SET_AEE_FLAG(layering_info.hrt_num, l_rule_info->dal_enable);
