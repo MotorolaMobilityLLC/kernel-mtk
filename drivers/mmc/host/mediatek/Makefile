@@ -22,8 +22,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 
-#subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/hibcore
-obj-$(CONFIG_MMC_MTK_PRO) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+#obj-$(CONFIG_MMC_MTK_PRO) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
@@ -34,5 +33,15 @@ endif
 
 ccflags-y += -I$(srctree)
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)/$(MTK_PLATFORM)
+
+ifeq ($(CONFIG_MTK_PLATFORM), "mt6757")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/$(MTK_PLATFORM)
+obj-$(CONFIG_MMC_MTK_PRO) += mt6757/
+endif
+
+ifeq ($(CONFIG_MTK_PLATFORM), "mt6798")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6798/$(MTK_PLATFORM)
+obj-$(CONFIG_MMC_MTK_PRO) += mt6798/
+endif
+
 obj-$(CONFIG_MMC_MTK_PRO) += emmc_rpmb.o
