@@ -326,6 +326,9 @@ static inline struct hmp_domain *hmp_slower_domain(int cpu)
 	struct list_head *pos;
 
 	pos = &hmp_cpu_domain(cpu)->hmp_domains;
+	if (list_is_last(pos, &hmp_domains))
+		return list_entry(pos, struct hmp_domain, hmp_domains);
+
 	return list_entry(pos->next, struct hmp_domain, hmp_domains);
 }
 
@@ -335,6 +338,9 @@ static inline struct hmp_domain *hmp_faster_domain(int cpu)
 	struct list_head *pos;
 
 	pos = &hmp_cpu_domain(cpu)->hmp_domains;
+	if (pos->prev == &hmp_domains)
+		return list_entry(pos, struct hmp_domain, hmp_domains);
+
 	return list_entry(pos->prev, struct hmp_domain, hmp_domains);
 }
 
