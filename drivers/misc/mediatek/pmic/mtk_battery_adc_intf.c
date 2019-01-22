@@ -22,7 +22,11 @@
 int pmic_get_battery_voltage(void)
 {
 	int bat = 0;
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
+	bool is_evb = is_evb_load();
+
+	if (is_evb)
+		bat = 4201;
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 	bat = 4201;
 #else
 
@@ -74,7 +78,13 @@ bool pmic_is_battery_exist(void)
 int pmic_get_vbus(void)
 {
 	int vchr = 0;
-#if defined(CONFIG_POWER_EXT) || (CONFIG_MTK_GAUGE_VERSION != 30) || defined(CONFIG_FPGA_EARLY_PORTING)
+
+	bool is_evb = is_evb_load();
+
+	if (is_evb)
+		vchr = 5001;
+
+#if (CONFIG_MTK_GAUGE_VERSION != 30) || defined(CONFIG_FPGA_EARLY_PORTING)
 	vchr = 5001;
 #else
 	vchr = pmic_get_auxadc_value(AUXADC_LIST_VCDT);
@@ -89,15 +99,16 @@ int pmic_get_vbus(void)
 
 int pmic_get_v_bat_temp(void)
 {
-	int adc;
-#if defined(CONFIG_POWER_EXT)
-	adc = 0;
-#else
+	int adc = 0;
+	bool is_evb = is_evb_load();
+
+	if (is_evb)
+		return adc;
+
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6335
 	adc = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP_35);
 #else
 	adc = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
-#endif
 #endif
 	return adc;
 }
@@ -109,13 +120,19 @@ int pmic_get_ibus(void)
 
 int pmic_get_charging_current(void)
 {
-#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
+	int v_batsns = 0, v_isense = 0;
+	bool is_evb = is_evb_load();
+
+	if (is_evb)
+		return 0;
+
+	v_batsns = 1;
+	v_isense = 1;
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 	return 0;
 #else
 
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6357)
-	int v_batsns = 0, v_isense = 0;
-
 	v_batsns = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
 	v_isense = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 
