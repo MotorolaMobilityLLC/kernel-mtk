@@ -469,8 +469,11 @@ static int vpu_test_set(void *data, u64 val)
 	{
 		int index = val - 60;
 
-		vpu_pop_request_from_queue(test_user[index], &req);
-		vpu_free_request(req);
+		if (vpu_pop_request_from_queue(test_user[index], &req))
+			LOG_ERR("deque failed! user: %d\n", index);
+		else
+			vpu_free_request(req);
+
 		break;
 	}
 	case 70 ... 79: /* flush requests of user X */
@@ -618,19 +621,19 @@ const struct file_operations vpu_debug_user_fops = {
 	.release = seq_release,
 };
 
-int vpu_debug_emmc_show(struct seq_file *s, void *unused)
+int vpu_debug_image_file_show(struct seq_file *s, void *unused)
 {
-	vpu_dump_emmc(s);
+	vpu_dump_image_file(s);
 	return 0;
 }
 
-int vpu_debug_emmc_open(struct inode *inode, struct file *file)
+int vpu_debug_image_file_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, vpu_debug_emmc_show, inode->i_private);
+	return single_open(file, vpu_debug_image_file_show, inode->i_private);
 }
 
-const struct file_operations vpu_debug_emmc_fops = {
-	.open = vpu_debug_emmc_open,
+const struct file_operations vpu_debug_image_file_fops = {
+	.open = vpu_debug_image_file_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = seq_release,
@@ -661,7 +664,7 @@ int vpu_init_debug(struct vpu_device *vpu_dev)
 	if (IS_ERR_OR_NULL(debug_file))
 		LOG_INF("vpu: failed to create debug files 4.\n");
 
-	debug_file = debugfs_create_file("emmc", 0644, vpu_dev->debug_root, NULL, &vpu_debug_emmc_fops);
+	debug_file = debugfs_create_file("image_file", 0644, vpu_dev->debug_root, NULL, &vpu_debug_image_file_fops);
 	if (IS_ERR_OR_NULL(debug_file))
 		LOG_INF("vpu: failed to create debug files 5.\n");
 

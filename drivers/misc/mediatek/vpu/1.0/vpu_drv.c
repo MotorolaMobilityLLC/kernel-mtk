@@ -485,6 +485,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		u_algo = (struct vpu_algo *) arg;
 		ret = copy_from_user(name, u_algo->name, sizeof(vpu_name_t));
 		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] copy_from_user failed, ret=%d\n", ret);
+		name[sizeof(vpu_name_t) - 1] = '\0';
 
 		/* 1. find algo by name */
 		ret = vpu_find_algo_from_pool(0, name, &algo);
@@ -662,16 +663,16 @@ static int vpu_probe(struct platform_device *pdev)
 	vpu_device->vpu_base = (unsigned long) of_iomap(node, 0);
 	/* get physical address of binary data loaded by LK */
 	{
-		uint64_t phy_addr;
+		uint32_t phy_addr;
 		uint32_t phy_size;
 
-		if (of_property_read_u64(node, "bin-phy-addr", &phy_addr) ||
+		if (of_property_read_u32(node, "bin-phy-addr", &phy_addr) ||
 			of_property_read_u32(node, "bin-size", &phy_size)) {
 			LOG_ERR("fail to get physical address of vpu binary!\n");
 			return -ENODEV;
 		}
 
-		LOG_INF("probe 1, phy_addr: 0x%llx, phy_size: 0x%x\n", phy_addr, phy_size);
+		LOG_INF("probe 1, phy_addr: 0x%x, phy_size: 0x%x\n", phy_addr, phy_size);
 		vpu_device->bin_base = (uint64_t)ioremap_wc(phy_addr, phy_size);
 		vpu_device->bin_pa = phy_addr;
 		vpu_device->bin_size = phy_size;
