@@ -487,18 +487,19 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	kal_uint32 u4RegValue;
 	kal_uint32 irq_mcu_en;
 	kal_uint32 irq_scp_en;
+	kal_uint32 irq_temp_enable;
 	unsigned int irqIndex = 0;
 	unsigned int mcu_mask = get_mcu_irq_mask();
 	const struct Aud_RegBitsInfo *irqOnReg, *irqEnReg, *irqStatusReg, *irqMcuEnReg, *irqScpEnReg;
 
 	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS) & mcu_mask;
+	irqMcuEnReg = GetIRQPurposeReg(Soc_Aud_IRQ_MCU);
+	irqScpEnReg = GetIRQPurposeReg(Soc_Aud_IRQ_CM4);
+	irq_mcu_en = Afe_Get_Reg(irqMcuEnReg->reg);
+	irq_scp_en = Afe_Get_Reg(irqScpEnReg->reg);
 
 	/* here is error handle , for interrupt is trigger but not status , clear all interrupt with bit 6 */
 	if (u4RegValue == 0) {
-		irqMcuEnReg = GetIRQPurposeReg(Soc_Aud_IRQ_MCU);
-		irqScpEnReg = GetIRQPurposeReg(Soc_Aud_IRQ_CM4);
-		irq_mcu_en = Afe_Get_Reg(irqMcuEnReg->reg);
-		irq_scp_en = Afe_Get_Reg(irqScpEnReg->reg);
 		pr_warn("%s(), [AudioWarn] u4RegValue = 0x%x, irqcount = %d, AFE_IRQ_MCU_EN = 0x%x irq_scp_en = 0x%x\n",
 			__func__,
 			u4RegValue,
@@ -533,7 +534,14 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 	}
 
 	/* clear irq */
+	/* IRQs need to be enabled before clear */
+	irq_temp_enable = u4RegValue & (~irq_mcu_en);
+	Afe_Set_Reg(irqMcuEnReg->reg, irq_temp_enable, irq_temp_enable);
+
 	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, mcu_mask);
+
+	/* Disable the IRQs are temp enabled */
+	Afe_Set_Reg(irqMcuEnReg->reg, 0, irq_temp_enable);
 
 	/*call each IRQ handler function*/
 	for (irqIndex = 0; irqIndex < Soc_Aud_IRQ_MCU_MODE_NUM; irqIndex++) {
