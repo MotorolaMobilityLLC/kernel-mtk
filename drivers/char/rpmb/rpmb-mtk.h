@@ -51,6 +51,21 @@ struct rpmb_infor {
 	unsigned int size;
 	unsigned char *data_frame;
 };
+#endif /* CONFIG_MICROTRUST_TEE_SUPPORT */
+
+/*
+ * Dummy definition for MAX_RPMB_TRANSFER_BLK.
+ *
+ * For UFS RPMB driver, MAX_RPMB_TRANSFER_BLK will be always
+ * used however it will NOT be defined in projects w/o Security
+ * OS. Thus we add a dummy definition here to avoid build errors.
+ *
+ * For eMMC RPMB driver, MAX_RPMB_TRANSFER_BLK will be used
+ * only if RPMB_MULTI_BLOCK_ACCESS is defined. thus
+ * build error will not happen on projects w/o Security OS.
+ */
+#ifndef MAX_RPMB_TRANSFER_BLK
+#define MAX_RPMB_TRANSFER_BLK (1)
 #endif
 
 struct rpmb_ioc_param {
