@@ -87,11 +87,7 @@ static inline unsigned long ovl_layer_num(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_OVL0:
 		return 4;
 	case DISP_MODULE_OVL0_2L:
-#ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
 		return 2;
-#else
-		return 1;
-#endif
 	case DISP_MODULE_OVL1_2L:
 		return 2;
 	default:
@@ -1206,7 +1202,7 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 
 	/* for Assert_layer config special case, do it specially */
 	if (is_DAL_Enabled() && module == DISP_MODULE_OVL0) {
-		ovl_cfg = &pConfig->ovl_config[TOTAL_OVL_LAYER_NUM - 1];
+		ovl_cfg = &pConfig->ovl_config[TOTAL_REAL_OVL_LAYER_NUM - 1];
 		ovl_cfg->ovl_index = DISP_MODULE_OVL0;
 		ovl_cfg->phy_layer = ovl_layer_num(DISP_MODULE_OVL0) - 1;
 		ovl_cfg->ext_sel_layer = -1;
