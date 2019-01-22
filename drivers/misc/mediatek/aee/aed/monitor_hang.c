@@ -71,6 +71,11 @@ static int dump_bt_done;
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_start_wait);
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
 
+#ifdef CONFIG_MNTL_SUPPORT
+typedef void (*io_hang_detect_dump)(void);
+io_hang_detect_dump mntl_dbg_hang_detect_dump;
+EXPORT_SYMBOL(mntl_dbg_hang_detect_dump);
+#endif
 
 
 /* bleow code is added by QHQ  for hang detect */
@@ -755,6 +760,16 @@ static void show_state_filter_local(void)
 	} while_each_thread(g, p);
 }
 
+static void show_storage_status(void)
+{
+#if 0
+	ufs_mtk_dbg_hang_detect_dump();
+#endif
+#ifdef CONFIG_MNTL_SUPPORT
+	if (mntl_dbg_hang_detect_dump)
+		mntl_dbg_hang_detect_dump();
+#endif
+}
 
 static void ShowStatus(void)
 {
@@ -784,6 +799,7 @@ static void ShowStatus(void)
 
 	show_state_filter_local();
 
+	show_storage_status();
 	/* debug_locks = 1; */
 	debug_show_all_locks();
 
