@@ -1654,7 +1654,7 @@ enum PVRSRV_ERROR pvr_sync_create_fence (const char *fence_name, PVRSRV_TIMELINE
 		pr_err("pvr_sync2: %s: Failed to open supplied timeline fd (%d)\n",
 			__func__, new_fence_timeline);
 		err = PVRSRV_ERROR_HANDLE_NOT_FOUND;
-		goto err_put_timeline;
+		goto err_put_fd;
 	}
 
 	//pr_err("pvr_sync2: %s: validating timeline \n",__func__);
