@@ -431,13 +431,12 @@ scanSearchRoamBssDescBySsid(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
 	/* Search BSS Desc from current SCAN result list. */
 	LINK_FOR_EACH_ENTRY(prRoamBssDesc, prRoamBSSDescList, rLinkEntry, ROAM_BSS_DESC_T) {
 		if (EQUAL_SSID(prRoamBssDesc->aucSSID, prRoamBssDesc->ucSSIDLen,
-				      prBssDesc->aucSSID, prBssDesc->ucSSIDLen)) {
+				prBssDesc->aucSSID, prBssDesc->ucSSIDLen)) {
 			return prRoamBssDesc;
 		}
 	}
 
 	return NULL;
-
 }
 
 P_ROAM_BSS_DESC_T scanAllocateRoamBssDesc(IN P_ADAPTER_T prAdapter)

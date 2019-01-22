@@ -67,6 +67,13 @@ extern void upmu_set_vcn33_on_ctrl_wifi(UINT_32 val);
 #define CONN_MCU_REG_LENGTH              0x0200
 #define CONN_MCU_CPUPCR                  0x0160
 
+#define AP_MCU_DRV_BASE                  0x18090000
+#define AP_MCU_TX_RX_LENGTH              0x10100
+#define AP_MCU_TX_DESC_ADDR              0x0000
+#define AP_MUC_RX_DESC_ADDR              0x8080
+#define AP_MUC_BANK_OFFSET               0x1010
+
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -123,6 +130,7 @@ typedef struct _GL_HIF_INFO_T {
 	/* HIF related */
 	UINT_8 *HifRegBaseAddr;	/* HIF register base */
 	UINT_8 *McuRegBaseAddr;	/* CONN MCU register base */
+	UINT_8 *APMcuRegBaseAddr;	/* APMcu register base */
 
 #if (CONF_HIF_LOOPBACK_AUTO == 1)
 	struct timer_list HifTmrLoopbkFn;	/* HIF loopback test trigger timer */
