@@ -33,29 +33,28 @@
 extern
 #endif
 
-#define K_EMERG	(1<<7)
-#define K_QMU	(1<<7)
-#define K_ALET		(1<<6)
-#define K_CRIT		(1<<5)
-#define K_ERR		(1<<4)
-#define K_WARNIN	(1<<3)
-#define K_NOTICE	(1<<2)
-#define K_INFO		(1<<1)
-#define K_DEBUG	(1<<0)
+#define K_EMERG		0
+#define K_ALET		1
+#define K_CRIT		2
+#define K_ERR		3
+#define K_WARNIN	4
+#define K_NOTICE	5
+#define K_INFO		6
+#define K_DEBUG		7
 
 /*Set the debug level at musb_core.c*/
 extern u32 debug_level;
 
 #ifdef USE_SSUSB_QMU
 #define qmu_printk(level, fmt, args...) do { \
-		if (debug_level & (level|K_QMU)) { \
+		if (debug_level >= level) { \
 			pr_err("[U3D][Q]" fmt, ## args); \
 		} \
 	} while (0)
 #endif
 
 #define os_printk(level, fmt, args...) do { \
-		if (debug_level & level) { \
+		if (debug_level >= level) { \
 			pr_err("[U3D]" fmt, ## args); \
 		} \
 	} while (0)
