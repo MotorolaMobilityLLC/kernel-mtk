@@ -28,7 +28,7 @@
 #include <mtk_dramc.h>
 
 #ifdef CONFIG_MTK_DCS
-#include <mtk_vcorefs_manager.h>
+#include <mt_vcorefs_manager.h>
 #include <mt-plat/mtk_meminfo.h>
 #endif
 
@@ -345,9 +345,34 @@ static ssize_t enable_store(struct device *dev, struct device_attribute *attr, c
 	return len;
 }
 
+/* MTKPASR status */
+static int show_pasr_status(char *buf)
+{
+	int len;
+
+	len = sprintf(buf, "Triggered [%lu]times :: Last PASR[0x%lx]\n", mtkpasr_triggered, mtkpasr_on);
+
+#ifdef CONFIG_MTK_DCS
+	if (mtkpasr_vec) {
+		int i, tmp;
+
+		buf += len;
+		tmp = sprintf(buf, "Channel-based PASR, max channel number[%d]\n", max_channel_num);
+		buf += tmp;
+		len += tmp;
+		for (i = 0; i < max_channel_num; i++) {
+			tmp = sprintf(buf, "ch[%d] :: PASR-masked[0x%lx]\n", i, mtkpasr_vec[i].pasr_on);
+			buf += tmp;
+			len += tmp;
+		}
+	}
+#endif
+	return len;
+}
+
 static ssize_t mtkpasr_status_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "Triggered [%lu]times :: Last PASR[0x%lx]\n", mtkpasr_triggered, mtkpasr_on);
+	return show_pasr_status(buf);
 }
 
 static ssize_t srmask_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -384,7 +409,7 @@ static ssize_t execstate_show(struct device *dev, struct device_attribute *attr,
 	len += tmp;
 
 	/* MTKPASR status */
-	tmp = sprintf(buf, "Triggered [%lu]times :: Last PASR[0x%lx]\n", mtkpasr_triggered, mtkpasr_on);
+	tmp = show_pasr_status(buf);
 	buf += tmp;
 	len += tmp;
 
