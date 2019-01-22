@@ -266,6 +266,7 @@ static int conn_md_thread(void *p_data)
 	struct list_head *p_user_pos = NULL;
 	struct conn_md_user_list *p_user_list = &p_conn_md->user_list;
 	struct ipc_ilm *p_cur_ilm = NULL;
+	static DEFINE_RATELIMIT_STATE(_rs, HZ, 20);
 
 	while (1) {
 		wait_for_completion_interruptible(&p_conn_md->tx_comp);
@@ -375,6 +376,10 @@ static int conn_md_thread(void *p_data)
 					 p_cur_ilm, &p_cur_ilm->local_para_ptr, p_cur_ilm->local_para_ptr->msg_len);
 			CONN_MD_DBG_FUNC("sending message to user id (0x%08x)\n", p_cur_ilm->dest_mod_id);
 			/*send package to dest module by call corresponding rx callback function */
+			if (p_cur_ilm->dest_mod_id == MD_MOD_EL1 && __ratelimit(&_rs)) {
+				CONN_MD_INFO_FUNC("send message to user(0x%08x), ilm(0x%08x)\n",
+					p_cur_ilm->dest_mod_id, p_cur_ilm);
+			}
 			(*(p_user->ops.rx_cb)) (p_cur_ilm);
 			CONN_MD_DBG_FUNC("message sent to user id (0x%08x) done\n", p_cur_ilm->dest_mod_id);
 			mutex_unlock(&p_user_list->lock);
