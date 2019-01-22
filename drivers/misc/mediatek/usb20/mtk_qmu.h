@@ -106,6 +106,7 @@ typedef struct _GPD_RANGE {
 
 extern int mtk_host_qmu_concurrent;
 extern int mtk_host_qmu_pipe_msk;
+extern int mtk_host_qmu_force_isoc_restart;
 extern int mtk_host_active_dev_cnt;
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 extern unsigned int low_power_timer_total_trigger_cnt;

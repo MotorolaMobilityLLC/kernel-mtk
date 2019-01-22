@@ -123,9 +123,11 @@ module_param(musb_host_dynamic_fifo_usage_msk, int, 0644);
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;
+int mtk_host_qmu_force_isoc_restart = 1;
 int mtk_host_active_dev_cnt;
 module_param(mtk_host_qmu_concurrent, int, 0644);
 module_param(mtk_host_qmu_pipe_msk, int, 0644);
+module_param(mtk_host_qmu_force_isoc_restart, int, 0644);
 module_param(mtk_host_active_dev_cnt, int, 0644);
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 unsigned int low_power_timer_total_trigger_cnt;
