@@ -21,11 +21,11 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
+#include <linux/of_address.h>
 #include <linux/platform_device.h>
 #include <linux/platform_data/spi-mt65xx.h>
 #include <linux/pm_runtime.h>
 #include <linux/spi/spi.h>
-#include <linux/of_address.h>
 
 #define SPI_CFG0_REG                      0x0000
 #define SPI_CFG1_REG                      0x0004
@@ -99,6 +99,7 @@ struct mtk_spi_compatible {
 
 struct mtk_spi {
 	void __iomem *base;
+	void __iomem *peri_regs;
 	u32 state;
 	int pad_num;
 	u32 *pad_sel;
@@ -108,7 +109,6 @@ struct mtk_spi {
 	struct scatterlist *tx_sgl, *rx_sgl;
 	u32 tx_sgl_len, rx_sgl_len;
 	const struct mtk_spi_compatible *dev_comp;
-	void __iomem *peri_regs;
 	u32 dram_8gb_offset;
 };
 
@@ -369,21 +369,21 @@ static void mtk_spi_setup_dma_addr(struct spi_master *master,
 	u32 addr_ext = 0;
 	struct mtk_spi *mdata = spi_master_get_devdata(master);
 
-	if (mdata->dev_comp->dma_8gb_v1 == true) {
+	if (mdata->dev_comp->dma_8gb_v1) {
 		if (mdata->tx_sgl)
 			addr_ext = readl(mdata->peri_regs + mdata->dram_8gb_offset);
 			addr_ext = ((addr_ext & (ADDRSHIFT_W_MASK)) |
-				(u32)((cpu_to_le64(xfer->tx_dma)/SPI_1G_SIZE)
+				(u32)((cpu_to_le64(xfer->tx_dma) / SPI_1G_SIZE)
 				<< ADDRSHIFT_W_OFFSET));
 			writel(addr_ext, mdata->dram_8gb_offset + mdata->peri_regs);
-			writel((u32)(cpu_to_le64(xfer->tx_dma)%SPI_1G_SIZE),
+			writel((u32)(cpu_to_le64(xfer->tx_dma) % SPI_1G_SIZE),
 				mdata->base + SPI_TX_SRC_REG);
 		if (mdata->rx_sgl)
 			addr_ext = readl(mdata->peri_regs + mdata->dram_8gb_offset);
 			addr_ext = ((addr_ext & (ADDRSHIFT_R_MASK)) |
-				(u32)(cpu_to_le64(xfer->rx_dma)/SPI_1G_SIZE));
+				(u32)(cpu_to_le64(xfer->rx_dma) / SPI_1G_SIZE));
 			writel(addr_ext, mdata->dram_8gb_offset + mdata->peri_regs);
-			writel((u32)(cpu_to_le64(xfer->rx_dma)%SPI_1G_SIZE),
+			writel((u32)(cpu_to_le64(xfer->rx_dma) % SPI_1G_SIZE),
 				mdata->base + SPI_RX_DST_REG);
 	} else {
 		if (mdata->tx_sgl)
@@ -736,19 +736,17 @@ static int mtk_spi_probe(struct platform_device *pdev)
 		}
 	}
 
-	if (mdata->dev_comp->dma_8gb_v1 == true) {
+	if (mdata->dev_comp->dma_8gb_v1) {
 		node_pericfg = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
-
-		if (node_pericfg) {
-			mdata->peri_regs = of_iomap(node_pericfg, 0);
-			if (IS_ERR(*(void **)&(mdata->peri_regs))) {
-				ret = PTR_ERR(*(void **)&mdata->peri_regs);
-				dev_err(&pdev->dev, "error: ms->peri_regs init fail\n");
-				mdata->peri_regs = NULL;
-				goto err_disable_runtime_pm;
-			}
-		} else {
+		if (!node_pericfg) {
 			dev_err(&pdev->dev, "error: node_pericfg init fail\n");
+			goto err_disable_runtime_pm;
+		}
+		mdata->peri_regs = of_iomap(node_pericfg, 0);
+		if (IS_ERR(*(void **)&(mdata->peri_regs))) {
+			ret = PTR_ERR(*(void **)&mdata->peri_regs);
+			dev_err(&pdev->dev, "error: ms->peri_regs init fail\n");
+			mdata->peri_regs = NULL;
 			goto err_disable_runtime_pm;
 		}
 		if (of_property_read_u32(pdev->dev.of_node, "mediatek,dram-8gb-offset",
