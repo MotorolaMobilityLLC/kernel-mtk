@@ -462,7 +462,7 @@ struct cmdq_controller {
 	void (*dump_err_buffer)(const struct TaskStruct *task, u32 *hwpc);
 	void (*dump_summary)(const struct TaskStruct *task, s32 thread,
 		const struct TaskStruct **ngtask_out,
-		struct NGTaskInfoStruct **nginfo_out);
+		struct NGTaskInfoStruct *nginfo_out);
 
 	bool change_jump;
 };
