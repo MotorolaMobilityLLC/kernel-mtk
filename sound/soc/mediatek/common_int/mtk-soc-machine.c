@@ -192,7 +192,7 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 {
 #define MAX_DEBUG_WRITE_INPUT 256
 	int ret = 0;
-	char InputString[MAX_DEBUG_WRITE_INPUT];
+	char InputBuf[MAX_DEBUG_WRITE_INPUT];
 	char *token1 = NULL;
 	char *token2 = NULL;
 	char *token3 = NULL;
@@ -213,13 +213,16 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	if (count > MAX_DEBUG_WRITE_INPUT)
 		count = MAX_DEBUG_WRITE_INPUT;
 
-	memset_io((void *)InputString, 0, MAX_DEBUG_WRITE_INPUT);
+	memset_io((void *)InputBuf, 0, MAX_DEBUG_WRITE_INPUT);
 
-	if (copy_from_user((InputString), buf, count))
-		pr_warn("%s(), copy_from_user fail, mt_soc_debug_write count = %zu, temp = %s\n",
-			__func__, count, InputString);
+	if (copy_from_user((InputBuf), buf, count)) {
+		pr_debug("%s(), copy_from_user fail, mt_soc_debug_write count = %zu\n",
+			 __func__, count);
+		goto exit;
+	}
 
-	str_begin = kstrndup(InputString, MAX_DEBUG_WRITE_INPUT - 1, GFP_KERNEL);
+	str_begin = kstrndup(InputBuf, MAX_DEBUG_WRITE_INPUT - 1,
+			     GFP_KERNEL);
 	if (!str_begin) {
 		pr_warn("%s(), kstrdup fail\n", __func__);
 		goto exit;
@@ -227,18 +230,14 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 	temp = str_begin;
 
 	pr_debug("copy_from_user mt_soc_debug_write count = %zu, temp = %s, pointer = %p\n",
-		count, InputString, InputString);
+		count, str_begin, str_begin);
 	token1 = strsep(&temp, delim);
-	pr_debug("token1 = %s\n", token1);
 	token2 = strsep(&temp, delim);
-	pr_debug("token2 = %s\n", token2);
 	token3 = strsep(&temp, delim);
-	pr_debug("token3 = %s\n", token3);
 	token4 = strsep(&temp, delim);
-	pr_debug("token4 = %s\n", token4);
 	token5 = strsep(&temp, delim);
-	pr_debug("token5 = %s\n", token5);
-
+	pr_debug("token1 = %s token2 = %s token3 = %s token4 = %s token5 = %s\n",
+		token1, token2, token3, token4, token5);
 	AudDrv_Clk_On();
 	if (strcmp(token1, ParSetkeyAfe) == 0) {
 		pr_debug("strcmp(token1, ParSetkeyAfe)\n");
