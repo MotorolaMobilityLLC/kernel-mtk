@@ -259,7 +259,7 @@
 		reg = <0 0x11e10000 0 0x1000>;
 	};
 
-	reserved-memory {
+	reserved_memory: reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
