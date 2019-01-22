@@ -20,7 +20,6 @@ extern "C" {
 
 #include "val_types_private.h"
 #include "val_api_public.h"
-#include "libmtk_cipher_export.h"
 
 
 VAL_RESULT_T eValInit(VAL_HANDLE_T *a_phHalHandle);
@@ -51,7 +50,6 @@ VAL_RESULT_T eVideoVCodecCoreNumber(int *CPUNums);
 VAL_RESULT_T eVideoConfigMCIPort(VAL_UINT32_T u4PortConfig, VAL_UINT32_T *pu4PortResult, VAL_MEM_CODEC_T eMemCodec);
 
 VAL_UINT32_T eVideoHwM4UEnable(VAL_BOOL_T bEnable); /* MTK_SEC_VIDEO_PATH_SUPPORT */
-VAL_UINT32_T eVideoLibDecrypt(VIDEO_ENCRYPT_CODEC_T a_eVIDEO_ENCRYPT_CODEC);
 
 /* for DirectLink Meta Mode + */
 VAL_RESULT_T eVideoAllocMetaHandleList(VAL_HANDLE_T *a_MetaHandleList);
