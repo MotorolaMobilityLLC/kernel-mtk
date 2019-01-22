@@ -133,7 +133,7 @@
 
 static const flashdev_info_t gen_FlashTable_p[] = {
 	{{0x45, 0x4C, 0x98, 0xA3, 0x76, 0x00}, 5, 5, IO_8BIT, 0x10F2000, 6144, 16384, 1952, 0x10401011,
-	 0xC03222, 0x101, 80, VEND_SANDISK, 1024, "SDTNSIAMA016G ", 0/*MULTI_PLANE*/,
+	 0xC03222, 0x101, 80, VEND_SANDISK, 1024, "SDTNSIAMA016G ", MULTI_PLANE,
 	 {PPTBL_NONE,
 	  {0xEF, 0xEE, 0x5D, 46, 0x11, 0, 0, RTYPE_SANDISK_TLC_1ZNM, {0x80, 0x00}, {0x80, 0x01} },
 	  {RAND_TYPE_SAMSUNG, {0x2D2D, 1, 1, 1, 1, 1} } },
@@ -2684,7 +2684,9 @@ static bool mtk_nand_ready_for_write(struct nand_chip *nand, u32 u4RowAddr, u32 
 	}
 
 	prg_cmd = NAND_CMD_SEQIN;
-	if ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) && devinfo.two_phyplane && tlc_snd_phyplane)
+	if ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER)
+		&& (devinfo.two_phyplane || (devinfo.advancedmode & MULTI_PLANE))
+		&& tlc_snd_phyplane)
 		prg_cmd = PLANE_INPUT_DATA_CMD;
 	if (!mtk_nand_set_command(prg_cmd)) {
 		pr_err("[Bean]mtk_nand_ready_for_write (mtk_nand_set_command) fail!\n");
@@ -5523,7 +5525,7 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 		PL_TIME_RAND_PROG(chip, u4RowAddr, time);
 		if (g_i4Interrupt) {
 			DRV_Reg16(NFI_INTR_REG16);
-			if (((devinfo.two_phyplane) && (!tlc_snd_phyplane))
+			if (((devinfo.two_phyplane || (devinfo.advancedmode & MULTI_PLANE)) && (!tlc_snd_phyplane))
 				|| tlc_cache_program
 				|| ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
 					&& ((tlc_wl_info.wl_pre != WL_HIGH_PAGE)
@@ -5540,7 +5542,7 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 				/*printk("[xl] program 1\n");*/
 			} else {
 				if (devinfo.tlcControl.slcopmodeEn) {
-					if (devinfo.two_phyplane && (!tlc_snd_phyplane)) {
+					if ((devinfo.two_phyplane) && (!tlc_snd_phyplane)) {
 						mtk_nand_set_command(PROGRAM_LEFT_PLANE_CMD);
 						/*printk("[xl] program 2\n");*/
 					} else {
@@ -5548,7 +5550,8 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 						/*printk("[xl] program 3\n");*/
 					}
 				} else if (tlc_wl_info.wl_pre == WL_HIGH_PAGE) {
-					if (devinfo.two_phyplane && (!tlc_snd_phyplane)) {
+					if ((devinfo.two_phyplane || (devinfo.advancedmode & MULTI_PLANE))
+					    && (!tlc_snd_phyplane)) {
 						mtk_nand_set_command(PROGRAM_LEFT_PLANE_CMD);
 						/*printk("[xl] program 4\n");*/
 					} else {
@@ -5561,7 +5564,8 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 					}
 					}
 				} else {
-					if (devinfo.two_phyplane && (!tlc_snd_phyplane)) {
+					if ((devinfo.two_phyplane || (devinfo.advancedmode & MULTI_PLANE))
+					    && (!tlc_snd_phyplane)) {
 						mtk_nand_set_command(PROGRAM_LEFT_PLANE_CMD);
 						/*printk("[xl] program 7\n");*/
 					} else {
@@ -5575,7 +5579,8 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 		} else
 #endif
 		if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) {
-			if ((devinfo.two_phyplane) && (!tlc_snd_phyplane))
+			if ((devinfo.two_phyplane || (devinfo.advancedmode & MULTI_PLANE))
+			    && (!tlc_snd_phyplane))
 				mtk_nand_set_command(PROGRAM_LEFT_PLANE_CMD);
 			else if (tlc_cache_program)
 				mtk_nand_set_command(NAND_CMD_CACHEDPROG);
@@ -5584,7 +5589,9 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 		} else
 			(void)mtk_nand_set_command(NAND_CMD_PAGEPROG);
 		PL_NAND_RESET(time);
-		if ((!g_i4Interrupt) || ((devinfo.two_phyplane) && (!tlc_snd_phyplane)) || tlc_cache_program
+		if ((!g_i4Interrupt)
+			|| ((devinfo.two_phyplane || (devinfo.advancedmode & MULTI_PLANE)) && (!tlc_snd_phyplane))
+			|| tlc_cache_program
 			|| ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
 				&& ((tlc_wl_info.wl_pre != WL_HIGH_PAGE)
 					|| ((devinfo.tlcControl.pPlaneEn) && tlc_lg_left_plane)))) {
@@ -6753,6 +6760,8 @@ int mtk_chip_erase_blocks(struct mtd_info *mtd, int page, int page1)
 	PL_NAND_BEGIN(pl_time_write);
 	PL_TIME_RAND_ERASE(chip, page, time);
 	if ((devinfo.advancedmode & MULTI_PLANE) && snd_real_row_addr) {
+		pr_debug("%s multi-plane real_row_addr:0x%x snd_real_row_addr:0x%x\n",
+			__func__, real_row_addr, snd_real_row_addr);
 		mtk_nand_set_mode(CNFG_OP_CUST);
 		mtk_nand_set_command(NAND_CMD_ERASE1);
 		mtk_nand_set_address(0, real_row_addr, 0, devinfo.addr_cycle - 2);
