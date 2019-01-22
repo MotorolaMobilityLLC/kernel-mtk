@@ -366,7 +366,7 @@ CONFIG_MTK_AB_OTA_UPDATER,PROJECT,haohsiang.hsu,,X,X,X,X,X,,,X,,X
 CONFIG_MTK_ENG_BUILD,USER,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_FM_50KHZ_SUPPORT,PROJECT,xueqin.wang,,,,,,,,,,,
 CONFIG_MTK_DTBO_FEATURE,PROJECT,chia-hao.hsu,,X,X,X,X,X,,,X,,X
-CONFIG_MTK_SCHED_CPULOAD,PLATFORM,michael.jiang,,X,X,X,X,X,y,y,y,y,X
+CONFIG_MTK_SCHED_CPULOAD,PLATFORM,michael.jiang,,X,X,X,X,X,y,y,y,y,y
 CONFIG_MTK_SCHED_BOOST,PLATFORM,Jian-Min.Liu,,X,X,X,X,X,X,y,y,X,y
 CONFIG_MTK_SCHED_EAS_PLUS,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,y,y,y
 CONFIG_MTK_SCHED_EAS_POWER_SUPPORT,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,y,y,y
@@ -665,7 +665,7 @@ CONFIG_MTK_SELINUX_AEE_WARNING,USER;PROJECT,colin.lee,new config in this commit 
 CONFIG_MTK_SENSOR_HUB_SUPPORT,PROJECT,yue.wu,,,,,,,,,,,
 CONFIG_MTK_SENSOR_SUPPORT,PROJECT,qiangming.xia,,,,,,,,,,,
 CONFIG_MTK_SHARED_SDCARD,PROJECT,sophie.wang,,,,,,,,,,,
-CONFIG_MTK_SIB_USB_SWITCH,PLATFORM,Yu-Chang.Wang,new config in this commit 4e7b3b33656594a05148a103f8e6a83ee5ad25f7,y,y,y,X,X,X,y,y,X,X
+CONFIG_MTK_SIB_USB_SWITCH,PLATFORM,eddie.hung,Modem signal throug USB 3.0 pin,y,y,y,X,X,X,y,y,X,X
 CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT,PROJECT,yanbin.ren,new config in this commit 6ebd8f9b343a9925e51161cef20c78c0c797d19c,,,,,,,,,,
 CONFIG_MTK_SLC_BUFFER_SUPPORT,PROJECT,isaac.lee,new config in this commit ae5dc71d9ef6ebac8e6d05c6ce48ba26c40e4f7d,,,,,,,,,,
 CONFIG_MTK_SM100,PROJECT,qiyuan.song,new config in this commit 3d29631334b2361b7b4596ebe73e6414b64907dc,,,,,,,,,,
@@ -1121,7 +1121,7 @@ CONFIG_DEBUG_OBJECTS_TIMERS,USER;PLATFORM,stanley.chu,new config in this commit 
 CONFIG_TASKSTATS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASK_XACCT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASK_IO_ACCOUNTING,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_MTK_TIMER_TIMESYNC,PLATFORM,stanley.chu,new config in this commit 59a62d14e9bca322dd0498b6da8fdad698e7733a,X,X,X,y,X,X,y,y,y,y
+CONFIG_MTK_TIMER_TIMESYNC,PLATFORM,hongxu.zhao,timer,X,X,X,y,X,X,y,y,y,y
 CONFIG_MTK_AKM09918,PROJECT,jy.lan,,y,y,y,,,,,,,
 CONFIG_ARM64_ERRATUM_858921,PLATFORM,hongxu.zhao,timer,X,X,X,X,X,X,X,y,X,y
 CONFIG_ARM_ERRATA_858921,PLATFORM,stanley.chu,new config in this commit fec2807bf7ea34ddd06cdc7c7641416360058d7b,X,X,X,X,X,X,y,X,y,X
