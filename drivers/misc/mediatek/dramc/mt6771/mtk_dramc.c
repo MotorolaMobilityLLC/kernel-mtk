@@ -31,12 +31,12 @@
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/dma.h>
 #include <mt-plat/sync_write.h>
+#include "mtk_dramc.h"
+#include "dramc.h"
 #ifdef DVFS_READY
 #include <mtk_spm_vcore_dvfs.h>
 #endif
 
-#include "mtk_dramc.h"
-#include "dramc.h"
 #ifdef EMI_READY
 #include <mt_emi_api.h>
 #endif
@@ -69,9 +69,9 @@ static unsigned int mr19_cur;
 
 static DEFINE_MUTEX(dram_dfs_mutex);
 unsigned char No_DummyRead;
-unsigned int DRAM_TYPE;
-unsigned int CH_NUM;
-unsigned int CBT_MODE;
+static unsigned int DRAM_TYPE;
+static unsigned int CH_NUM;
+static unsigned int CBT_MODE;
 unsigned int lp4_highfreq_3600;
 
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
