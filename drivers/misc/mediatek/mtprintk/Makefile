@@ -11,4 +11,4 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MT_PRINTK_UART_CONSOLE) += mt_printk_ctrl.o
+obj-$(CONFIG_MT_PRINTK_UART_CONSOLE) += mtk_printk_ctrl.o
