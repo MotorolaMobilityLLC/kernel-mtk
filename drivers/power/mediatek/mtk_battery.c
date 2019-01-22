@@ -2345,8 +2345,9 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int daemon_soc;
 
 		memcpy(&daemon_soc, &msg->fgd_data[0], sizeof(daemon_soc));
-		FG_status.soc = daemon_soc;
-		bm_debug("[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d\n", daemon_soc);
+		FG_status.soc = (daemon_soc + 50) / 100;
+		bm_debug("[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d\n",
+			daemon_soc, FG_status.soc);
 	}
 	break;
 
@@ -2355,10 +2356,11 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int daemon_ui_soc;
 
 		memcpy(&daemon_ui_soc, &msg->fgd_data[0], sizeof(daemon_ui_soc));
-		FG_status.ui_soc = daemon_ui_soc;
-		bm_debug("[fg_res] FG_DAEMON_CMD_SET_KERNEL_UISOC = %d\n", daemon_ui_soc);
+		FG_status.ui_soc = (daemon_ui_soc + 50) / 100;
+		bm_debug("[fg_res] FG_DAEMON_CMD_SET_KERNEL_UISOC = %d %d\n",
+			daemon_ui_soc, FG_status.ui_soc);
 
-		battery_main.BAT_CAPACITY = (daemon_ui_soc + 50) / 100;
+		battery_main.BAT_CAPACITY = FG_status.ui_soc;
 		/* ac_update(&ac_main); */
 		battery_update(&battery_main);
 	}
