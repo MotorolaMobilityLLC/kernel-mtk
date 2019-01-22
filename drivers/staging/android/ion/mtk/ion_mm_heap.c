@@ -203,6 +203,8 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 		/*for va-->mva case, align is used for va value*/
 		table = m4u_create_sgtable(align, (unsigned int)size);
 		user_va = align;
+		if (size % PAGE_SIZE != 0)
+			IONMSG("%s va(0x%lx)size(%ld) not align page.\n", __func__, user_va, size);
 		goto map_mva_exit;
 	}
 #endif
