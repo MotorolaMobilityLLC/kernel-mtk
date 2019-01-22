@@ -440,9 +440,11 @@ u32 spm_get_last_wakeup_src(void)
 {
 	return spm_wakesta.r12;
 }
+EXPORT_SYMBOL(spm_get_last_wakeup_src);
 
 u32 spm_get_last_wakeup_misc(void)
 {
 	return spm_wakesta.wake_misc;
 }
+EXPORT_SYMBOL(spm_get_last_wakeup_misc);
 MODULE_DESCRIPTION("SPM-Sleep Driver v0.1");
