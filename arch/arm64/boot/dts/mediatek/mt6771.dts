@@ -1385,7 +1385,7 @@
 		clock-names = "uart1-main";
 	};
 
-	apuart2: apuart1@11004000 {
+	apuart2: apuart2@11004000 {
 		cell-index = <2>;
 		compatible = "mediatek,mtk-uart";
 		reg = <0 0x11004000 0 0x1000>, /* UART base */
