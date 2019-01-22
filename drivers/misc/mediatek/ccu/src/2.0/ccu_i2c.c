@@ -356,11 +356,18 @@ static int i2c_query_dma_buffer_addr(enum CCU_I2C_CHANNEL i2c_controller_id, voi
 	/*i2c_get_dma_buffer_addr_imp(pClient->adapter ,va);*/
 	*va = i2c->dma_buf.vaddr + PAGE_SIZE;
 	*va_l = i2c->dma_buf.paddr + PAGE_SIZE;
+	*va_h = 0;
+#ifdef CONFIG_COMPAT
 	*va_h = ((i2c->dma_buf.paddr + PAGE_SIZE) >> 32);
+#endif
 	*i2c_id = i2c->id;
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 	LOG_DBG_MUST("$$pa(%lld), va(%d), i2c-id(%d)\n", i2c->dma_buf.paddr + PAGE_SIZE,
 		*(i2c->dma_buf.vaddr + PAGE_SIZE), (uint32_t)i2c->id);
-
+#else
+	LOG_DBG_MUST("$$pa(%ld), va(%d), i2c-id(%d)\n", i2c->dma_buf.paddr + PAGE_SIZE,
+		*(i2c->dma_buf.vaddr + PAGE_SIZE), (uint32_t)i2c->id);
+#endif
 	return 0;
 }
 

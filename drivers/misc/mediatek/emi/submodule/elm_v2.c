@@ -80,7 +80,11 @@ void elm_init(struct platform_driver *emi_ctrl, struct platform_device *pdev)
 	if (readl(IOMEM(LAST_EMI_DECS_CTRL)) == 0xDECDDECD) {
 		mbw_buf_l = readl(IOMEM(LAST_EMI_MBW_BUF_L));
 		mbw_buf_h = readl(IOMEM(LAST_EMI_MBW_BUF_H));
+#ifdef CONFIG_PHYS_ADDR_T_64BIT
 		mbw_buf_start = ((phys_addr_t)mbw_buf_h << 32) + mbw_buf_l;
+#else
+		mbw_buf_start = (phys_addr_t)mbw_buf_l;
+#endif
 		mbw_dram_buf = ioremap_wc(mbw_buf_start, MBW_BUF_LEN);
 		elm_enabled = true;
 		pr_info("[ELM] enable mbw_buf dump\n");
