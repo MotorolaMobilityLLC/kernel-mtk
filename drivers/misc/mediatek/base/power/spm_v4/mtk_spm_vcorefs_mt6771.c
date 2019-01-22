@@ -410,7 +410,7 @@ void dvfsrc_hw_policy_mask(bool mask)
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 5));
 	} else {
 		spm_write(DVFSRC_EMI_REQUEST, 0x00209209);
-		spm_write(DVFSRC_EMI_REQUEST2, 0x00009999);
+		spm_write(DVFSRC_EMI_REQUEST2, 0);
 		/* spm_write(DVFSRC_EMI_REQUEST3, 0x29292929); */
 		spm_write(DVFSRC_VCORE_REQUEST, 0x00150000);
 		/* spm_write(DVFSRC_VCORE_REQUEST2, 0x29292929); */
@@ -644,7 +644,7 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_INT_EN, 0x2);
 
 	spm_write(DVFSRC_EMI_REQUEST, 0x00290209);
-	spm_write(DVFSRC_EMI_REQUEST2, 0x00009999);
+	spm_write(DVFSRC_EMI_REQUEST2, 0);
 
 	spm_write(DVFSRC_VCORE_REQUEST, 0x00150000);
 	/* spm_write(DVFSRC_VCORE_REQUEST2, 0x29000000); */
@@ -802,7 +802,7 @@ void spm_vcorefs_init(void)
 	dvfsrc_register_init();
 	vcorefs_module_init();
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
-	helio_dvfsrc_sspm_ipi_init();
+	helio_dvfsrc_sspm_ipi_init(is_vcorefs_feature_enable(), __spm_get_dram_type());
 #endif
 	plat_info_init();
 	vcore_opp_init();

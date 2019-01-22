@@ -80,12 +80,13 @@ extern u32 spm_vcorefs_get_md_srcclkena(void);
 extern void dvfsrc_md_scenario_update(bool);
 extern void dvfsrc_set_scp_vcore_request(unsigned int val);
 extern void dvfsrc_set_power_model_ddr_request(unsigned int level);
-extern void helio_dvfsrc_sspm_ipi_init(void);
+extern void helio_dvfsrc_sspm_ipi_init(int dvfs_en, int dram_type);
 extern void dvfsrc_hw_policy_mask(bool mask);
 extern int spm_get_vcore_opp(unsigned int opp);
 extern int spm_vcorefs_get_dvfs_opp(void);
 extern void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv);
 extern void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz);
+extern void dvfsrc_update_sspm_qos_enable(int dvfs_en, unsigned int dram_type);
 
 /* met profile function */
 extern int vcorefs_get_opp_info_num(void);
