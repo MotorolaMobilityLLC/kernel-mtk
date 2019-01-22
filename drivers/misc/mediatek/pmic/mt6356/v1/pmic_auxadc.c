@@ -82,6 +82,12 @@ unsigned int __attribute__ ((weak)) pmic_get_vbif28_volt(void)
 	return 0;
 }
 
+bool is_isense_supported(void)
+{
+	/* PMIC MT6356 supports ISENSE */
+	return true;
+}
+
 void wk_auxadc_bgd_ctrl(unsigned char en)
 {
 	if (en) {

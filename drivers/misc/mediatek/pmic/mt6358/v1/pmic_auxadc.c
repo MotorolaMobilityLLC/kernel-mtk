@@ -87,6 +87,11 @@ unsigned int __attribute__ ((weak)) pmic_get_vbif28_volt(void)
 	return 0;
 }
 
+bool is_isense_supported(void)
+{
+	/* PMIC MT6358 supports ISENSE */
+	return false;
+}
 
 static unsigned int g_DEGC;
 static unsigned int g_O_VTS;
