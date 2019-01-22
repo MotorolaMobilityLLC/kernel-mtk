@@ -81,12 +81,14 @@ static char const *dfrc_mode_string[DFRC_DRV_MODE_MAXIMUM] = {
 	"DEFAULT",
 	"FRR",
 	"ARR",
+	"INTERNAL_SW_VSYNC",
 };
 
 struct DFRC_DRV_EXPECTED_POLICY {
 	int mode;
 	struct DFRC_DRV_POLICY *arr_policy;
 	struct DFRC_DRV_POLICY_STATISTICS_SET *frr_statistics;
+	struct DFRC_DRV_POLICY *isw_policy;
 };
 
 struct DFRC_DRV_POLICY_NODE {
@@ -530,6 +532,9 @@ static int rrc_fps_is_invalid_fps_locked(int fps, int mode)
 	if (mode == DFRC_DRV_MODE_FRR) {
 		if (fps >= 20 && fps <= 60)
 			res = 0;
+	} else if (mode == DFRC_DRV_MODE_INTERNAL_SW) {
+		if (fps > 0 && fps <= 60)
+			res = 0;
 	} else {
 		for (i = 0; i < g_fps_info.num; i++) {
 			if (g_fps_info.range[i].min_fps <= fps && fps <= g_fps_info.range[i].max_fps) {
@@ -679,6 +684,10 @@ long dfrc_get_frr_config(int pid, unsigned long long gl_context_id, int *fps, in
 		*fps = g_request_notified.fps;
 		if (g_request_policy != NULL)
 			*api = g_request_policy->api;
+	} else if (*mode == DFRC_DRV_MODE_INTERNAL_SW) {
+		*fps = g_request_notified.fps;
+		if (g_request_policy != NULL)
+			*api = g_request_policy->api;
 	} else if (*mode == DFRC_DRV_MODE_FRR) {
 		num = g_request_notified.num_policy;
 		for (i = 0; i < num; i++) {
@@ -730,6 +739,8 @@ static long dfrc_find_pid_setting(int pid, int *fps, int *mode)
 	if (*mode == DFRC_DRV_MODE_DEFAULT)
 		*fps = DFRC_DRV_FPS_NON_ASSIGN;
 	else if (*mode == DFRC_DRV_MODE_ARR)
+		*fps = g_request_notified.fps;
+	else if (*mode == DFRC_DRV_MODE_INTERNAL_SW)
 		*fps = g_request_notified.fps;
 	mutex_unlock(&g_mutex_request);
 
@@ -1137,13 +1148,16 @@ static void dfrc_select_policy_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_
 {
 	struct DFRC_DRV_POLICY_STATISTICS_SET *arr_statistics;
 	struct DFRC_DRV_POLICY_STATISTICS_SET *frr_statistics;
+	struct DFRC_DRV_POLICY_STATISTICS_SET *isw_statistics;
 	struct DFRC_DRV_POLICY_NODE *node;
 
 	expected_policy->mode = DFRC_DRV_MODE_DEFAULT;
 	expected_policy->arr_policy = NULL;
+	expected_policy->isw_policy = NULL;
 
 	arr_statistics = &g_pss[DFRC_DRV_MODE_ARR];
 	frr_statistics = &g_pss[DFRC_DRV_MODE_FRR];
+	isw_statistics = &g_pss[DFRC_DRV_MODE_INTERNAL_SW];
 	if (frr_statistics->statistics[DFRC_DRV_API_THERMAL].num_valid_policy) {
 		expected_policy->mode = DFRC_DRV_MODE_FRR;
 		expected_policy->frr_statistics = frr_statistics;
@@ -1154,6 +1168,11 @@ static void dfrc_select_policy_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_
 		node = dfrc_find_min_fps(&arr_statistics->statistics[DFRC_DRV_API_THERMAL]);
 		expected_policy->arr_policy = &node->policy;
 		dfrc_rdump("choose thermal config with arr\n");
+	} else if (isw_statistics->statistics[DFRC_DRV_API_THERMAL].num_valid_policy) {
+		expected_policy->mode = DFRC_DRV_MODE_INTERNAL_SW;
+		node = dfrc_find_min_fps(&isw_statistics->statistics[DFRC_DRV_API_THERMAL]);
+		expected_policy->isw_policy = &node->policy;
+		dfrc_rdump("choose thermal config with isw\n");
 	}
 
 	if (frr_statistics->statistics[DFRC_DRV_API_LOADING].num_valid_policy &&
@@ -1172,6 +1191,16 @@ static void dfrc_select_policy_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_
 		else if (expected_policy->arr_policy->fps > node->policy.fps)
 			expected_policy->arr_policy = &node->policy;
 		dfrc_rdump("choose loading config with arr\n");
+	} else if (isw_statistics->statistics[DFRC_DRV_API_LOADING].num_valid_policy &&
+			(expected_policy->mode == DFRC_DRV_MODE_DEFAULT ||
+			expected_policy->mode == DFRC_DRV_MODE_INTERNAL_SW)) {
+		expected_policy->mode = DFRC_DRV_MODE_INTERNAL_SW;
+		node = dfrc_find_min_fps(&isw_statistics->statistics[DFRC_DRV_API_LOADING]);
+		if (expected_policy->isw_policy == NULL)
+			expected_policy->isw_policy = &node->policy;
+		else if (expected_policy->isw_policy->fps > node->policy.fps)
+			expected_policy->isw_policy = &node->policy;
+		dfrc_rdump("choose loading config with isw\n");
 	}
 
 	if (frr_statistics->statistics[DFRC_DRV_API_WHITELIST].num_valid_policy &&
@@ -1190,6 +1219,16 @@ static void dfrc_select_policy_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_
 		else if (expected_policy->arr_policy->fps > node->policy.fps)
 			expected_policy->arr_policy = &node->policy;
 		dfrc_rdump("choose whitelist config with arr\n");
+	} else if (isw_statistics->statistics[DFRC_DRV_API_WHITELIST].num_valid_policy &&
+			(expected_policy->mode == DFRC_DRV_MODE_DEFAULT ||
+			expected_policy->mode == DFRC_DRV_MODE_INTERNAL_SW)) {
+		expected_policy->mode = DFRC_DRV_MODE_INTERNAL_SW;
+		node = dfrc_find_min_fps(&arr_statistics->statistics[DFRC_DRV_API_WHITELIST]);
+		if (expected_policy->isw_policy == NULL)
+			expected_policy->isw_policy = &node->policy;
+		else if (expected_policy->isw_policy->fps > node->policy.fps)
+			expected_policy->isw_policy = &node->policy;
+		dfrc_rdump("choose whitelist config with isw\n");
 	}
 
 	if (frr_statistics->statistics[DFRC_DRV_API_GIFT].num_valid_policy &&
@@ -1202,7 +1241,7 @@ static void dfrc_select_policy_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_
 			return;
 		}
 	}
-	if (arr_statistics->statistics[DFRC_DRV_MODE_ARR].num_valid_policy &&
+	if (arr_statistics->statistics[DFRC_DRV_API_GIFT].num_valid_policy &&
 			(expected_policy->mode == DFRC_DRV_MODE_DEFAULT ||
 			expected_policy->mode == DFRC_DRV_MODE_ARR)) {
 		if (dfrc_have_appointed_mode(&arr_statistics->statistics[DFRC_DRV_API_GIFT],
@@ -1214,6 +1253,20 @@ static void dfrc_select_policy_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_
 			else if (expected_policy->arr_policy->fps > node->policy.fps)
 				expected_policy->arr_policy = &node->policy;
 			dfrc_rdump("choose gift config with arr\n");
+		}
+	}
+	if (isw_statistics->statistics[DFRC_DRV_API_GIFT].num_valid_policy &&
+			(expected_policy->mode == DFRC_DRV_MODE_DEFAULT ||
+			expected_policy->mode == DFRC_DRV_MODE_INTERNAL_SW)) {
+		if (dfrc_have_appointed_mode(&isw_statistics->statistics[DFRC_DRV_API_GIFT],
+				g_fg_window_info.pid, DFRC_DRV_MODE_INTERNAL_SW)) {
+			expected_policy->mode = DFRC_DRV_MODE_INTERNAL_SW;
+			node = dfrc_find_min_fps(&isw_statistics->statistics[DFRC_DRV_API_GIFT]);
+			if (expected_policy->isw_policy == NULL)
+				expected_policy->isw_policy = &node->policy;
+			else if (expected_policy->isw_policy->fps > node->policy.fps)
+				expected_policy->isw_policy = &node->policy;
+			dfrc_rdump("choose gift config with isw\n");
 		}
 	}
 }
@@ -1282,7 +1335,8 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY) * size);
 		dfrc_pack_choosed_frr_policy(size, new_policy, expected_policy->frr_statistics);
-	} else if (expected_policy->mode == DFRC_DRV_MODE_ARR && g_forbid_vsync) {
+	} else if ((expected_policy->mode == DFRC_DRV_MODE_ARR ||
+			expected_policy->mode == DFRC_DRV_MODE_INTERNAL_SW) && g_forbid_vsync) {
 		dfrc_rdump("use default mode, because forbid adjusting vsync\n");
 		fps = -1;
 		sw_mode = DFRC_DRV_SW_MODE_CALIBRATED_SW;
@@ -1316,6 +1370,21 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY));
 		*new_policy = *expected_policy->arr_policy;
+	} else if (expected_policy->mode == DFRC_DRV_MODE_INTERNAL_SW) {
+		dfrc_rdump("use isw mode\n");
+		fps = expected_policy->isw_policy->fps;
+		sw_mode = DFRC_DRV_SW_MODE_INTERNAL_SW;
+		hw_mode = DFRC_DRV_HW_MODE_DEFAULT;
+		new_request.fps = expected_policy->isw_policy->fps;
+		new_request.mode = DFRC_DRV_MODE_INTERNAL_SW;
+		new_request.sw_fps = expected_policy->isw_policy->fps;
+		new_request.sw_mode = DFRC_DRV_SW_MODE_INTERNAL_SW;
+		new_request.valid_info = true;
+		new_request.transient_state = false;
+		new_request.num_policy = 1;
+
+		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY));
+		*new_policy = *expected_policy->isw_policy;
 	}
 
 	if (memcmp(&new_request, &g_request_notified, sizeof(g_request_notified))) {
