@@ -1868,32 +1868,30 @@ static void __init mtk_topckgen_init(struct device_node *node)
 
 	clk_writel(CLK_SCP_CFG_0, clk_readl(CLK_SCP_CFG_0) | 0x3FF);
 	clk_writel(CLK_SCP_CFG_1, clk_readl(CLK_SCP_CFG_1) | 0x11);
-#if 0
-	/* PWM7, MFG31 MUX PDN */
-	clk_writel(cksys_base + CK_CFG_1_CLR, 0x00000080);
-	clk_writel(cksys_base + CK_CFG_1_SET, 0x00000080);
 
-	/* msdc50_0_hclk15, msdc50_023 MUX PDN */
-	clk_writel(cksys_base + CK_CFG_3_CLR, 0x00808000);
-	clk_writel(cksys_base + CK_CFG_3_SET, 0x00808000);
+	clk_writel(cksys_base + CK_CFG_1_CLR, 0x80808080);
+	clk_writel(cksys_base + CK_CFG_1_SET, 0x80808080);
 
-	/* msdc30_2 7, msdc30_3 15 MUX PDN */
-	clk_writel(cksys_base + CK_CFG_4_CLR, 0x00008080);
-	clk_writel(cksys_base + CK_CFG_4_SET, 0x00008080);
+	clk_writel(cksys_base + CK_CFG_2_CLR, 0x00008000);
+	clk_writel(cksys_base + CK_CFG_2_SET, 0x00008000);
 
-	/* scp15, atb23 MUX PDN */
-	clk_writel(cksys_base + CK_CFG_5_CLR, 0x00808000);
-	clk_writel(cksys_base + CK_CFG_5_SET, 0x00808000);
+	clk_writel(cksys_base + CK_CFG_3_CLR, 0x00808080);
+	clk_writel(cksys_base + CK_CFG_3_SET, 0x00808080);
 
-	/* dpi0 7, scam 15 MUX PDN */
-	clk_writel(cksys_base + CK_CFG_6_CLR, 0x00008080);
-	clk_writel(cksys_base + CK_CFG_6_SET, 0x00008080);
+	clk_writel(cksys_base + CK_CFG_4_CLR, 0x80808080);
+	clk_writel(cksys_base + CK_CFG_4_SET, 0x80808080);
 
-	/* ssusb_top_sys 15, ssusb_top_xhci 23 MUX PDN */
+	clk_writel(cksys_base + CK_CFG_6_CLR, 0x00800080);
+	clk_writel(cksys_base + CK_CFG_6_SET, 0x00800080);
+
 	clk_writel(cksys_base + CK_CFG_7_CLR, 0x00808000);
 	clk_writel(cksys_base + CK_CFG_7_SET, 0x00808000);
-#endif
 
+	clk_writel(cksys_base + CK_CFG_8_CLR, 0x00008000);
+	clk_writel(cksys_base + CK_CFG_8_SET, 0x00008000);
+
+	clk_writel(cksys_base + CK_CFG_9_CLR, 0x80000000);
+	clk_writel(cksys_base + CK_CFG_9_SET, 0x80000000);
 }
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,topckgen", mtk_topckgen_init);
 
