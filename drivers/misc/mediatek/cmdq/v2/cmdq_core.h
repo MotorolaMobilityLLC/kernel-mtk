@@ -111,6 +111,10 @@ else								\
 #define CMDQ_THREAD_SEC_SUB_DISP		13
 #define CMDQ_THREAD_SEC_MDP				14
 
+/* max count of regs */
+#define CMDQ_MAX_DUMP_REG_COUNT		(2048)
+#define CMDQ_MAX_WRITE_ADDR_COUNT	(PAGE_SIZE / sizeof(u32))
+
 #ifdef CMDQ_DUMP_FIRSTERROR
 #ifdef CMDQ_LARGE_MAX_FIRSTERROR_BUFFER
 #define CMDQ_MAX_FIRSTERROR	(64*1024)
