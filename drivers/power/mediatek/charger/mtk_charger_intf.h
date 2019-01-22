@@ -153,6 +153,7 @@ struct charger_manager {
 	/* pe 3.0 */
 	bool enable_pe_3;
 	struct mtk_pe30 pe3;
+	struct charger_device *dc_chg;
 
 	/* thread related */
 	struct hrtimer charger_kthread_timer;

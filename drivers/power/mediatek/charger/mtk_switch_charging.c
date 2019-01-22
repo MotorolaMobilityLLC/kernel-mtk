@@ -276,6 +276,9 @@ int mtk_switch_chr_err(struct charger_manager *info)
 	}
 	charger_dev_disable(info->primary_chg);
 
+	if (mtk_is_pe30_running(info))
+		mtk_pe30_end(info, true);
+
 	if (mtk_pe20_get_is_enable(info)) {
 		mtk_pe20_set_is_enable(info, false);
 		if (mtk_pe20_get_is_connect(info))
@@ -307,7 +310,15 @@ int mtk_switch_chr_full(struct charger_manager *info)
 	return 0;
 }
 
+int mtk_switch_pe30(struct charger_manager *info)
+{
+	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 
+	if (mtk_is_pe30_running(info) == false)
+		swchgalg->state = CHR_CC;
+
+	return 0;
+}
 
 static int mtk_switch_charging_run(struct charger_manager *info)
 {
@@ -316,6 +327,10 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 
 	pr_err("mtk_switch_charging_run [%d]\n", swchgalg->state);
 
+	if (mtk_pe30_check_charger(info) == true)
+		swchgalg->state = CHR_PE30;
+
+	if (mtk_is_TA_support_pe30(info) == false)
 	mtk_pe20_check_charger(info);
 
 	switch (swchgalg->state) {
@@ -331,7 +346,8 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 		ret = mtk_switch_chr_err(info);
 		break;
 
-	case CHR_PEP30:
+	case CHR_PE30:
+		ret = mtk_switch_pe30(info);
 		break;
 	}
 
