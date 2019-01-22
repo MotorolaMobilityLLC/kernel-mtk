@@ -365,7 +365,7 @@ void update_cpu_freq_quick(int cpu, int freq)
 		return;
 #endif
 
-	gd->thro_type = freq_new <= cur_freq ?
+	gd->thro_type = freq_new < cur_freq ?
 			DVFS_THROTTLE_DOWN : DVFS_THROTTLE_UP;
 
 	cpufreq_sched_try_driver_target(cpu, NULL, freq_new, -1);
@@ -450,6 +450,23 @@ static void cpufreq_sched_irq_work(struct irq_work *irq_work)
 	gd = container_of(irq_work, struct gov_data, irq_work);
 
 	wake_up_process(gd->task);
+}
+
+static inline bool is_cur(int new_freq, int cur_freq, int cid)
+{
+	if (is_sched_assist())
+		return false;
+
+	if (new_freq == cur_freq) {
+		if (!cpufreq_driver_slow) {
+			if (new_freq == mt_cpufreq_get_cur_freq(cid))
+				return true;
+		} else {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 static void update_fdomain_capacity_request(int cpu, int type)
@@ -590,21 +607,19 @@ static void update_fdomain_capacity_request(int cpu, int type)
 #endif
 
 	/* get throttling type */
-	throttle = freq_new <= cur_freq ?
+	throttle = freq_new < cur_freq ?
 			gd->down_throttle : gd->up_throttle;
 
-	gd->thro_type = freq_new <= cur_freq ?
+	gd->thro_type = freq_new < cur_freq ?
 			DVFS_THROTTLE_DOWN : DVFS_THROTTLE_UP;
 
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 	/*
 	 * W/O co-working governor:
 	 * if no change in frequency, bail and return current capacity.
 	 * to decrease overhead of freq swtich.
 	 */
-	if (freq_new == cur_freq)
+	if (is_cur(freq_new, cur_freq, cid))
 		goto out;
-#endif
 
 	/* No throttling in time? Bail and return. */
 	if (ktime_before(now, throttle))
