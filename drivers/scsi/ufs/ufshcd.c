@@ -44,9 +44,9 @@
 #include "ufshcd.h"
 #include "unipro.h"
 #include "ufs-mtk.h"
+#include "ufs-mtk-platform.h"
 #include "ufs-mtk-block.h"
 #include <scsi/ufs/ufs-mtk-ioctl.h>
-#include "mtk_spm_resource_req.h"
 
 #define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
 				 UTP_TASK_REQ_COMPL |\
@@ -831,7 +831,7 @@ void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 	/* MTK patch for Deepidle & SODI */
 	/* Only get resources at first outstanding reqs&&tasks */
 	if (!hba->outstanding_reqs && !hba->outstanding_tasks)
-		ufshcd_vops_deepidle_resource_req(hba, SPM_RESOURCE_MAINPLL | SPM_RESOURCE_DRAM | SPM_RESOURCE_CK_26M);
+		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_DMA_OP);
 
 	__set_bit(task_tag, &hba->outstanding_reqs);
 	ufs_mtk_biolog_check(hba->outstanding_reqs);
@@ -949,7 +949,7 @@ ufshcd_dispatch_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd)
 	/* If get resource when outstanding tasks&reqs exists, DRAM will be released which is not correct. */
 	/* Notice: the resource of UIC cmds only released in SODI callback when entering H8 */
 	if (!hba->outstanding_tasks && !hba->outstanding_reqs)
-		ufshcd_vops_deepidle_resource_req(hba, SPM_RESOURCE_MAINPLL | SPM_RESOURCE_CK_26M);
+		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_MPHY_NON_H8);
 
 	hba->active_uic_cmd = uic_cmd;
 
@@ -3174,7 +3174,7 @@ static int ufshcd_task_req_compl(struct ufs_hba *hba, u32 index, u8 *resp)
 	/* MAINPLL and 26M will be released in Deepidle callback */
 	/* Because they are still resources required to enter H8 */
 	if (!hba->outstanding_tasks && !hba->outstanding_reqs)
-		ufshcd_vops_deepidle_resource_req(hba, SPM_RESOURCE_MAINPLL | SPM_RESOURCE_CK_26M);
+		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_MPHY_NON_H8);
 
 	task_req_descp = hba->utmrdl_base_addr;
 	ocs_value = ufshcd_get_tmr_ocs(&task_req_descp[index]);
@@ -3435,7 +3435,7 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 	/* MAINPLL and 26M will be released in Deepidle callback */
 	/* Because they are still resources required to enter H8 */
 	if (!hba->outstanding_reqs && !hba->outstanding_tasks)
-		ufshcd_vops_deepidle_resource_req(hba, SPM_RESOURCE_MAINPLL | SPM_RESOURCE_CK_26M);
+		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_MPHY_NON_H8);
 
 	ufshcd_clk_scaling_update_busy(hba);
 
@@ -4074,7 +4074,7 @@ static int ufshcd_issue_tm_cmd(struct ufs_hba *hba, int lun_id, int task_id,
 	/* MTK patch for Deepidle & SODI */
 	/* Only get resources at first outstanding tasks&&reqs */
 	if (!hba->outstanding_tasks && !hba->outstanding_reqs)
-		ufshcd_vops_deepidle_resource_req(hba, SPM_RESOURCE_MAINPLL | SPM_RESOURCE_DRAM | SPM_RESOURCE_CK_26M);
+		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_DMA_OP);
 
 	/* send command to the controller */
 	__set_bit(free_slot, &hba->outstanding_tasks);
@@ -4250,7 +4250,7 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	/* MAINPLL and 26M will be released in Deepidle callback */
 	/* Because they are still resources required to enter H8 */
 	if (!hba->outstanding_reqs && !hba->outstanding_tasks)
-		ufshcd_vops_deepidle_resource_req(hba, SPM_RESOURCE_MAINPLL | SPM_RESOURCE_CK_26M);
+		ufs_mtk_pltfrm_res_req(hba, UFS_MTK_RESREQ_MPHY_NON_H8);
 
 	spin_unlock_irqrestore(host->host_lock, flags);
 
