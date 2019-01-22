@@ -72,4 +72,6 @@ extern int gpt_get_cnt(unsigned int id, unsigned int *ptr);
 extern int gpt_check_irq(unsigned int id);
 extern int gpt_check_and_ack_irq(unsigned int id);
 
+extern void mt_gpt_clkevt_aee_dump(void);
+
 #endif
