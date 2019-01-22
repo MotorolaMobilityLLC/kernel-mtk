@@ -394,10 +394,9 @@ static int mtk_voice_pm_ops_suspend(struct device *device)
 	*	return 0;
 	*/
 
-	AudDrv_Clk_On();/* should enable clk for access reg */
-	b_modem1_speech_on = (bool)(Afe_Get_Reg(PCM2_INTF_CON) & 0x1);
-	b_modem2_speech_on = (bool)(Afe_Get_Reg(PCM_INTF_CON1) & 0x1);
-	AudDrv_Clk_Off();/* should enable clk for access reg */
+	b_modem1_speech_on = GetMemoryPathEnable(Soc_Aud_Digital_Block_MODEM_PCM_1_O);
+	b_modem2_speech_on = GetMemoryPathEnable(Soc_Aud_Digital_Block_MODEM_PCM_2_O);
+
 	pr_warn("%s(), b_modem1_speech_on=%d, b_modem2_speech_on=%d, speech_md_usage_control=%d\n",
 		__func__, b_modem1_speech_on, b_modem2_speech_on, speech_md_usage_control);
 
@@ -421,10 +420,9 @@ static int mtk_voice_pm_ops_resume(struct device *device)
 	  *	return 0;
 	*/
 
-	AudDrv_Clk_On();/* should enable clk for access reg */
-	b_modem1_speech_on = (bool)(Afe_Get_Reg(PCM2_INTF_CON) & 0x1);
-	b_modem2_speech_on = (bool)(Afe_Get_Reg(PCM_INTF_CON1) & 0x1);
-	AudDrv_Clk_Off();
+	b_modem1_speech_on = GetMemoryPathEnable(Soc_Aud_Digital_Block_MODEM_PCM_1_O);
+	b_modem2_speech_on = GetMemoryPathEnable(Soc_Aud_Digital_Block_MODEM_PCM_2_O);
+
 	if (b_modem1_speech_on == true ||
 	    b_modem2_speech_on == true ||
 	    speech_md_usage_control == true ||
