@@ -18,7 +18,7 @@
 
 #include "mt_spm_dpidle_mt6755.h"
 
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 
 #include "mtk_spm_dpidle_mt6757.h"
 

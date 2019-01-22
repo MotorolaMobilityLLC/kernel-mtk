@@ -48,7 +48,7 @@
 #include "mt_vcorefs_governor.h"
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include "mtk_dramc.h"
 #include "mtk_spm_dpidle_mt6757.h"
 #endif
@@ -300,7 +300,7 @@ static struct pcm_desc dpidle_pcm = {
 };
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static struct pwr_ctrl dpidle_ctrl = {
 	.wake_src = WAKE_SRC_FOR_DPIDLE,
 	.wake_src_md32 = WAKE_SRC_FOR_MD32,
@@ -529,7 +529,7 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 #endif
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	#ifdef POWER_DOWN_VPROC_VSRAM
 		mt_cpu_dormant(CPU_SHUTDOWN_MODE);
 	#else
@@ -654,7 +654,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (wakesta->r12 == 0) {
 		int i;
 
@@ -697,7 +697,7 @@ void rekick_dpidle_common_scenario(struct pcm_desc *pcmdesc, struct pwr_ctrl *pw
 #endif
 }
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define DPIDLE_ACTIVE_TIME	1 /* sec */
 static struct timeval pre_dpidle_time;
 
@@ -731,7 +731,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	aee_rr_rec_deepidle_val(SPM_DEEPIDLE_ENTER);
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (get_ddr_type() == TYPE_LPDDR3)
 		pcm_index = DYNA_LOAD_PCM_DEEPIDLE + cpu / 4;
 	else
@@ -765,7 +765,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	aee_rr_rec_deepidle_val(SPM_DEEPIDLE_ENTER_UART_SLEEP);
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	snapshot_golden_setting(__func__, 0);
 #endif
 	/* Temporary: Fix build, implicit declaration of function */
@@ -786,7 +786,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 #endif
 
@@ -849,7 +849,7 @@ RESTORE_IRQ:
 	if (wr != WR_UART_BUSY)
 		rekick_dpidle_common_scenario(pcmdesc, pwrctrl);
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	do_gettimeofday(&pre_dpidle_time);
 #endif
 
@@ -885,7 +885,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	int cpu = smp_processor_id();
 	int pcm_index;
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (get_ddr_type() == TYPE_LPDDR3)
 		pcm_index = DYNA_LOAD_PCM_DEEPIDLE + cpu / 4;
 	else
@@ -951,7 +951,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	__spm_init_event_vector(pcmdesc);
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 #endif
 

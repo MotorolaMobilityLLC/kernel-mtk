@@ -44,13 +44,13 @@
  **************************************/
 #define PCM_SEC_TO_TICK(sec)	(sec * 32768)
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define SPM_SODI3_PCMWDT_EN		(0)
 #else
 #define SPM_SODI3_PCMWDT_EN		(1)
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 static struct pwr_ctrl sodi3_ctrl = {
 	.wake_src			= WAKE_SRC_FOR_SODI3,
 	.wake_src_md32		= WAKE_SRC_FOR_MD32,
@@ -284,7 +284,7 @@ static void spm_sodi3_pre_process(void)
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
 
-#elif defined(CONFIG_MACH_MT6757)
+#elif defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #ifdef SODI_VSRAM_VPROC_SHUTDOWN
 	pmic_read_interface_nolock(MT6351_PMIC_RG_VSRAM_PROC_EN_ADDR, &val, 0xFFFF, 0);
 	mt_spm_pmic_wrap_set_cmd_full(PMIC_WRAP_PHASE_DEEPIDLE,
@@ -351,7 +351,7 @@ static void spm_sodi3_post_process(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_pmic_low_iq_mode(0);
 #endif
 
@@ -403,7 +403,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	u32 cpu = spm_data;
 	u32 sodi_idx;
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	vcore_status = 0;
 #else
 	vcore_status = vcorefs_get_curr_ddr();
