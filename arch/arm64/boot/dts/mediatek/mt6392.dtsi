@@ -11,6 +11,8 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/pinctrl/mt6392-pinfunc.h>
+
 &pwrap {
 	status = "okay";
 
@@ -232,6 +234,13 @@
 				regulator-max-microvolt = <2000000>;
 				regulator-enable-ramp-delay = <264>;
 			};
+		};
+
+		pio6392: pinctrl@c000 {
+			compatible = "mediatek,mt6392-pinctrl";
+			pins-are-numbered;
+			gpio-controller;
+			#gpio-cells = <2>;
 		};
 	};
 };
