@@ -1183,7 +1183,7 @@ static void ccmni_dump(int md_id, int ccmni_idx, unsigned int flag)
 			dev->state, dev->flags, dev_queue->state);
 }
 
-static void ccmni_dump_rx_status(int md_id, int ccmni_idx, unsigned long long *status)
+static void ccmni_dump_rx_status(int md_id, unsigned long long *status)
 {
 	ccmni_ctl_block_t *ctlb = ccmni_ctl_blk[md_id];
 

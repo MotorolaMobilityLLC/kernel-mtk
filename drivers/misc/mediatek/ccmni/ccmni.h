@@ -113,7 +113,7 @@ struct ccmni_dev_ops {
 	void (*md_state_callback)(int md_id, int ccmni_idx, MD_STATE state, int is_ack);
 	void (*exit)(int md_id);
 	void (*dump)(int md_id, int ccmni_idx, unsigned int flag);
-	void (*dump_rx_status)(int md_id, int ccmni_idx, unsigned long long *status);
+	void (*dump_rx_status)(int md_id, unsigned long long *status);
 	struct ccmni_ch *(*get_ch)(int md_id, int ccmni_idx);
 	int (*is_ack_skb)(int md_id, struct sk_buff *skb);
 };
