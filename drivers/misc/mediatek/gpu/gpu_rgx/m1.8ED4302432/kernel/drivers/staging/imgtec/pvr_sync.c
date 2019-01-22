@@ -76,6 +76,7 @@ static IMG_PID MTKGetCurrentProcessIDKM(void)
 #endif
 }
 
+#undef CONFIG_SW_SYNC_USER
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0))
 #include <linux/sync.h>
