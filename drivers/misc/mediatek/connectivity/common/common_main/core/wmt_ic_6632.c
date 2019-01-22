@@ -182,6 +182,9 @@ static UINT8 WMT_COEX_EXT_ELAN_GAIN_P1_EVT[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
 static UINT8 WMT_SET_STP_CMD[] = { 0x01, 0x04, 0x05, 0x00, 0x03, 0xDF, 0x0E, 0x68, 0x01 };
 static UINT8 WMT_SET_STP_EVT[] = { 0x02, 0x04, 0x02, 0x00, 0x00, 0x03 };
 
+static UINT8 WMT_SET_SDIO_RETRY_CMD[] = { 0x01, 0x02, 0x02, 0x00, 0x18, 0x01 };
+static UINT8 WMT_SET_SDIO_RETRY_EVT[] = { 0x02, 0x02, 0x01, 0x00, 0x01 };
+
 /* to get full dump when f/w assert */
 static UINT8 WMT_CORE_DUMP_LEVEL_04_CMD[] = {
 	0x1, 0x0F, 0x07, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -419,6 +422,10 @@ static struct init_script set_crystal_timing_script[] = {
 
 static struct init_script init_table_4[] = {
 	INIT_CMD(WMT_SET_STP_CMD, WMT_SET_STP_EVT, "set stp"),
+};
+
+static struct init_script set_sdio_retry_script[] = {
+	INIT_CMD(WMT_SET_SDIO_RETRY_CMD, WMT_SET_SDIO_RETRY_EVT, "set sdio retry"),
 };
 
 static struct init_script init_table_5[] = {
@@ -794,6 +801,17 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	if (iRet) {
 		WMT_ERR_FUNC("close clock rate promote fail(%d)\n", iRet);
 		return -31;
+	}
+
+	/* SDIO data patch retry feature enable/disable */
+	mtk_stp_sdio_retry_flag_ctrl(1);
+	if (mtk_stp_sdio_retry_flag_get()) {
+		iRet = wmt_core_init_script(set_sdio_retry_script, ARRAY_SIZE(set_sdio_retry_script));
+
+		if (iRet) {
+			WMT_ERR_FUNC("set_sdio_retry_script fail(%d)\n", iRet);
+			mtk_stp_sdio_retry_flag_ctrl(0);
+		}
 	}
 
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
