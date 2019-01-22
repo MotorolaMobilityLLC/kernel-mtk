@@ -616,7 +616,7 @@ int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
 		if (tune != 0) {
 			ret = pe20_set_ta_vchr(pinfo, pe20->vbus);
 			if (ret == 0)
-				pe20_set_mivr(pinfo, pe20->vbus - 1000000);
+				pe20_set_mivr(pinfo, pe20->vbus - 500000);
 			else
 				pe20_leave(pinfo);
 		}
