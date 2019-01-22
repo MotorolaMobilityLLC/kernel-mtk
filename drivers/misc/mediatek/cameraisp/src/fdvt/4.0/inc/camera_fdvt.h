@@ -25,22 +25,23 @@
 #include <linux/compat.h>
 #endif
 
-typedef struct {
+struct FDVTRegIO {
 	unsigned int  *pAddr;
 	unsigned int  *pData;
 	unsigned int  u4Count;
-} FDVTRegIO;
+};
+#define FDVTRegIO struct FDVTRegIO
 
 #ifdef CONFIG_COMPAT
 
-typedef struct {
+struct compat_FDVTRegIO {
 	compat_uptr_t pAddr;
 	compat_uptr_t pData;
 	unsigned int  u4Count;
-} compat_FDVTRegIO;
+};
+#define compat_FDVTRegIO struct compat_FDVTRegIO
 
 #endif
-
 
 /*below is control message*/
 #define FDVT_IOC_INIT_SETPARA_CMD       _IO(FDVT_IOC_MAGIC, 0x00)
