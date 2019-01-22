@@ -1267,7 +1267,6 @@ int smi_common_init(void)
 	smi_bus_optimization_clock_control(bus_optimization, SMI_ENABLE_CLK);
 
 	/* apply mmu setting -- enable bit1 */
-
 	smi_apply_mmu_setting();
 	smi_apply_basic_setting();
 
@@ -2127,7 +2126,7 @@ static void smi_apply_common_basic_setting(void)
 	unsigned int DCM_val = M4U_ReadReg32(mmsys_reg, 0x130);
 
 	SMIMSG("before setting, DCM_val = 0x%x\n", DCM_val);
-	DCM_val |= 0x3fb0;
+	DCM_val |= 0x3fc0;
 	M4U_WriteReg32(mmsys_reg, 0x130, DCM_val);
 	SMIMSG("after setting, DCM_val = 0x%x\n", M4U_ReadReg32(mmsys_reg, 0x130));
 #endif
