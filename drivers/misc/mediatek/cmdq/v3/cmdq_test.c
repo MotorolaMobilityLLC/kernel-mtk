@@ -5626,6 +5626,9 @@ static int _testcase_gen_task_thread(void *data)
 				(random_context->inst_count - 4) * CMDQ_INST_SIZE)) {
 				CMDQ_ERR("%s error during append random instructions\n", __func__);
 				atomic_set(&thread_data->stop, 1);
+				cmdq_free_mem(random_context->slot);
+				kfree(random_context->slot_expect_values);
+				kfree(random_context);
 				break;
 			}
 		}
@@ -5647,12 +5650,18 @@ static int _testcase_gen_task_thread(void *data)
 		if (status < 0) {
 			CMDQ_ERR("Fail to finalize round: %u status: %d\n",
 				task_count, status);
+			cmdq_free_mem(random_context->slot);
+			kfree(random_context->slot_expect_values);
+			kfree(random_context);
 			break;
 		}
 		status = _test_submit_async(handle, &random_context->task);
 		if (status < 0) {
 			CMDQ_ERR("Fail to submit round: %u status: %d\n",
 				task_count, status);
+			cmdq_free_mem(random_context->slot);
+			kfree(random_context->slot_expect_values);
+			kfree(random_context);
 			break;
 		}
 
