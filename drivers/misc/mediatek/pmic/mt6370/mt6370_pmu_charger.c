@@ -2102,6 +2102,12 @@ static int mt6370_set_pep20_reset(struct charger_device *chg_dev)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: disable psk mode fail\n", __func__);
 
+	/* Select IINLMTSEL to use AICR */
+	ret = mt6370_select_input_current_limit(chg_data,
+		MT6370_IINLMTSEL_AICR);
+	if (ret < 0)
+		goto out;
+
 	ret = mt6370_set_aicr(chg_dev, 100000);
 	if (ret < 0)
 		goto out;
