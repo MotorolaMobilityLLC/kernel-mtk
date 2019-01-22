@@ -1596,6 +1596,9 @@ enum cpu_dvfs_sched_type {
 	SCHE_INVALID,
 	SCHE_VALID,
 	SCHE_ONESHOT,
+	SCHE_IOWAIT,
+	SCHE_RT,
+	SCHE_DL,
 
 	NUM_SCHE_TYPE
 };
@@ -1626,6 +1629,7 @@ static inline void set_cfs_cpu_capacity(int cpu, bool request,
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).cfs != capacity) {
 #endif
 		per_cpu(cpu_sched_capacity_reqs, cpu).cfs = capacity;
+
 		update_cpu_capacity_request(cpu, request, type);
 	}
 }
@@ -1640,7 +1644,7 @@ static inline void set_rt_cpu_capacity(int cpu, bool request,
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).rt != capacity) {
 #endif
 		per_cpu(cpu_sched_capacity_reqs, cpu).rt = capacity;
-		update_cpu_capacity_request(cpu, request, type);
+		update_cpu_capacity_request(cpu, request, SCHE_RT);
 	}
 }
 
@@ -1654,7 +1658,7 @@ static inline void set_dl_cpu_capacity(int cpu, bool request,
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).dl != capacity) {
 #endif
 		per_cpu(cpu_sched_capacity_reqs, cpu).dl = capacity;
-		update_cpu_capacity_request(cpu, request, type);
+		update_cpu_capacity_request(cpu, request, SCHE_DL);
 	}
 }
 #else

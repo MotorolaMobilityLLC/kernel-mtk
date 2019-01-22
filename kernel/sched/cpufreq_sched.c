@@ -13,6 +13,7 @@
 #include <linux/irq_work.h>
 #include <linux/delay.h>
 #include <linux/string.h>
+#include <trace/events/sched.h>
 
 #include "sched.h"
 #include "cpufreq_sched.h"
@@ -60,11 +61,54 @@ static DEFINE_PER_CPU(unsigned long, freq_scale) = SCHED_CAPACITY_SCALE;
 
 #include <mt-plat/met_drv.h>
 
+struct sugov_cpu {
+	struct sugov_policy *sg_policy;
+
+	unsigned int cached_raw_freq;
+	unsigned long iowait_boost;
+	unsigned long iowait_boost_max;
+	u64 last_update;
+
+	/* The fields below are only needed when sharing a policy. */
+	unsigned long util;
+	unsigned long max;
+	unsigned int flags;
+	int idle;
+};
+
+static DEFINE_PER_CPU(struct sugov_cpu, sugov_cpu);
+
+static void sugov_set_iowait_boost(struct sugov_cpu *sg_cpu, u64 time,
+		unsigned int flags)
+{
+	if (flags == SCHE_IOWAIT)
+		sg_cpu->iowait_boost = sg_cpu->iowait_boost_max;
+	else if (sg_cpu->iowait_boost) {
+		s64 delta_ns = time - sg_cpu->last_update;
+
+		/* Clear iowait_boost if the CPU apprears to have been idle. */
+		if (delta_ns > TICK_NSEC)
+			sg_cpu->iowait_boost = 0;
+	}
+}
 
 static char met_dvfs_info[5][16] = {
 	"sched_dvfs_cid0",
 	"sched_dvfs_cid1",
 	"sched_dvfs_cid2",
+	"NULL",
+	"NULL"
+};
+
+static char met_iowait_info[10][32] = {
+	"sched_ioboost_cpu0",
+	"sched_ioboost_cpu1",
+	"sched_ioboost_cpu2",
+	"sched_ioboost_cpu3",
+	"sched_ioboost_cpu4",
+	"sched_ioboost_cpu5",
+	"sched_ioboost_cpu6",
+	"sched_ioboost_cpu7",
 	"NULL",
 	"NULL"
 };
@@ -109,6 +153,7 @@ struct gov_data {
 	int target_cpu;
 	int cid;
 	enum throttle_type thro_type; /* throttle up or down */
+	u64 last_freq_update_time;
 };
 
 void show_freq_kernel_log(int dbg_id, int cid, unsigned int freq)
@@ -318,7 +363,10 @@ static void update_fdomain_capacity_request(int cpu, int type)
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	int cid = arch_get_cluster_id(cpu);
 	struct cpumask cls_cpus;
+	s64 delta_ns;
+	unsigned long arch_max_freq = arch_scale_get_max_freq(cpu);
 #endif
+	u64 time = cpu_rq(cpu)->clock;
 	struct cpufreq_policy *policy = NULL;
 	ktime_t throttle, now;
 	unsigned int cur_freq;
@@ -342,15 +390,62 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	/* find max capacity requested by cpus in this policy */
 	for_each_cpu(cpu_tmp, &cls_cpus) {
 		struct sched_capacity_reqs *scr;
+		unsigned long boosted_util = 0;
+		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu_tmp);
 
 		if (!cpu_online(cpu_tmp))
 			continue;
 
+		/* convert IO boosted freq to capacity */
+		boosted_util = (sg_cpu->iowait_boost << SCHED_CAPACITY_SHIFT) /
+					arch_max_freq;
+
+		/* iowait boost */
+		if (cpu_tmp == cpu) {
+			/* IO boosting only for CFS */
+			if (type != SCHE_RT && type != SCHE_DL) {
+
+				/* update iowait_boost */
+				sugov_set_iowait_boost(sg_cpu, time, type);
+
+				 /* convert IO boosted freq to capacity */
+				boosted_util = (sg_cpu->iowait_boost << SCHED_CAPACITY_SHIFT) /
+							arch_max_freq;
+
+				met_tag_oneshot(0, met_iowait_info[cpu_tmp], sg_cpu->iowait_boost);
+
+				/* the boost is reduced by half during each following update */
+				sg_cpu->iowait_boost >>= 1;
+			}
+			sg_cpu->last_update = time;
+		}
 		scr = &per_cpu(cpu_sched_capacity_reqs, cpu_tmp);
-		capacity = max(capacity, scr->total);
+
+		/*
+		 * If the CPU utilization was last updated before the previous
+		 * frequency update and the time elapsed between the last update
+		 * of the CPU utilization and the last frequency update is long
+		 * enough, don't take the CPU into account as it probably is
+		 * idle now (and clear iowait_boost for it).
+		 */
+		delta_ns = gd->last_freq_update_time - cpu_rq(cpu_tmp)->clock;
+		if (delta_ns > TICK_NSEC * 2) {/* 2tick */
+			sg_cpu->iowait_boost = 0;
+			sg_cpu->idle = 1;
+			continue;
+		}
+
+		sg_cpu->idle = 0;
+
+		/* check if IO boosting */
+		if (boosted_util > scr->total)
+			capacity = max(capacity, boosted_util);
+		else
+			capacity = max(capacity, scr->total);
 	}
 
-	freq_new = capacity * arch_scale_get_max_freq(cpu) >> SCHED_CAPACITY_SHIFT;
+	freq_new = capacity * arch_max_freq >> SCHED_CAPACITY_SHIFT;
+
 #else
 	if (likely(cpu_online(cpu)))
 		policy = cpufreq_cpu_get(cpu);
@@ -396,6 +491,8 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	if (ktime_before(now, throttle))
 		goto out;
 
+	gd->last_freq_update_time = time;
+
 	/*
 	 * Throttling is not yet supported on platforms with fast cpufreq
 	 * drivers.
@@ -431,7 +528,7 @@ void update_cpu_capacity_request(int cpu, bool request, int type)
 #endif
 
 	scr->total = new_capacity;
-	if (request)
+	if (request || type == SCHE_IOWAIT)
 		update_fdomain_capacity_request(cpu, type);
 }
 
@@ -447,14 +544,13 @@ static inline void clear_sched_freq(void)
 
 static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 {
+
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	return 0;
 #else
 	struct gov_data *gd_ptr;
 	int cpu;
-	int cid;
-
-	cid = arch_get_cluster_id(policy->cpu);
+	int cid = arch_get_cluster_id(policy->cpu);
 
 	/* if kthread is created, return */
 	if (g_inited[cid]) {
@@ -663,8 +759,20 @@ static int __init cpufreq_sched_init(void)
 	int i;
 
 	for_each_cpu(cpu, cpu_possible_mask) {
+		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
+		int cid = arch_get_cluster_id(cpu);
+
 		memset(&per_cpu(cpu_sched_capacity_reqs, cpu), 0,
 				sizeof(struct sched_capacity_reqs));
+
+		sg_cpu->util = 0;
+		sg_cpu->max = 0;
+		sg_cpu->flags = 0;
+		sg_cpu->last_update = 0;
+		sg_cpu->cached_raw_freq = 0;
+		sg_cpu->iowait_boost = 0;
+		sg_cpu->iowait_boost_max = mt_cpufreq_get_freq_by_idx(cid, 0);
+		sg_cpu->iowait_boost_max >>= 1; /* limit max to half */
 	}
 
 	for (i = 0; i < MAX_CLUSTER_NR; i++) {
@@ -676,7 +784,7 @@ static int __init cpufreq_sched_init(void)
 		g_gd[i]->up_throttle_nsec = THROTTLE_UP_NSEC;
 		g_gd[i]->down_throttle_nsec = THROTTLE_DOWN_NSEC;
 		g_gd[i]->throttle_nsec = THROTTLE_NSEC;
-
+		g_gd[i]->last_freq_update_time = 0;
 		/* keep cid needed */
 		g_gd[i]->cid = i;
 	}
