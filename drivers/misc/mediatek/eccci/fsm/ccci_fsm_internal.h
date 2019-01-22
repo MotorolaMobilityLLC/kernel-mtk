@@ -160,6 +160,7 @@ enum ccci_ipi_op_id {
 #define MD_EX_REC_OK_TIMEOUT 10000
 #define MD_EX_PASS_TIMEOUT 10000
 #define EE_DONE_TIMEOUT 30 /* s */
+#define SCP_BOOT_TIMEOUT (30*1000)
 
 #define GET_OTHER_MD_ID(a) (a == MD_SYS1 ? MD_SYS3 : MD_SYS1)
 
