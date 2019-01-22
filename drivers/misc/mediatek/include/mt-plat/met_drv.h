@@ -465,17 +465,17 @@ void __attribute__((weak)) met_mmsys_event_isp_pass1_end(int sensor_id);
 /* ====================== MMSYS Platform Depend ================================ */
 #if defined(CONFIG_MTK_MET)
 	#if defined(CONFIG_MACH_MT6757)
-		#pragma message("MET MMSYS 6757 include")
+/*		#pragma message("MET MMSYS 6757 include") */
 		#include "../met/mt6757/platform/mt6757/met_drv_udtl.h"
 	#elif defined(CONFIG_MACH_MT6799)
-		#pragma message("MET MMSYS 6799 include")
+/*		#pragma message("MET MMSYS 6799 include") */
 		#include "../met/mt6799/platform/mt6799/met_drv_udtl.h"
 	#else
-		#pragma message("MET MMSYS include not found!")
+/*		#pragma message("MET MMSYS include not found!") */
 		#include "met_drv_udtl_null.h"
 	#endif
 #else
-	#pragma message("MET MMSYS Null include")
+/*	#pragma message("MET MMSYS Null include") */
 	#include "met_drv_udtl_null.h"
 #endif
 
