@@ -85,11 +85,15 @@ bool is_game_mode;
 void game_hint_notifier(int is_game)
 {
 	if (is_game) {
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
 		capacity_margin_dvfs = 1024;
+#endif
 		sodi_limit = 120;
 		is_game_mode = true;
 	} else {
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
 		capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
+#endif
 		sodi_limit = DEFAULT_SODI_LIMIT;
 		is_game_mode = false;
 	}
@@ -479,9 +483,11 @@ int show_cpu_capacity(char *buf, int buf_size)
 	int len = 0;
 
 	for_each_possible_cpu(cpu) {
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
 		struct sched_capacity_reqs *scr;
 
 		scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
+#endif
 		len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu max=%lu min=%lu ",
 				cpu,
 				cpu_rq(cpu)->cpu_capacity_orig,
@@ -503,8 +509,12 @@ int show_cpu_capacity(char *buf, int buf_size)
 
 				/* cpu utilization */
 				cpu_online(cpu)?cpu_util(cpu):0,
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
 				scr->cfs,
 				scr->rt,
+#else
+				0UL, 0UL,
+#endif
 				cpu_online(cpu)?"on":"off"
 				);
 	}
@@ -666,10 +676,12 @@ __ATTR(info, S_IRUSR, show_eas_info_attr, NULL);
 static ssize_t store_cap_margin_knob(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
 {
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
 	int val = 0;
 
 	if (sscanf(buf, "%iu", &val) != 0)
 		capacity_margin_dvfs = val;
+#endif
 
 	return count;
 }
@@ -678,9 +690,11 @@ static ssize_t show_cap_margin_knob(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
 	unsigned int len = 0;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
 	unsigned int max_len = 4096;
 
 	len += snprintf(buf, max_len, "capacity_margin_dvfs=%d\n", capacity_margin_dvfs);
+#endif
 
 	return len;
 }
