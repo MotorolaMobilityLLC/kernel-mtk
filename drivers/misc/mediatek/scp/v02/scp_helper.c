@@ -1341,7 +1341,6 @@ void scp_register_feature(feature_id_t id)
 {
 	uint32_t i;
 	int ret = 0;
-	unsigned long spin_flags;
 
 	/*prevent from access when scp is down*/
 #if defined(CONFIG_MACH_MT6759)
@@ -1363,10 +1362,12 @@ void scp_register_feature(feature_id_t id)
 			feature_table[i].enable = 1;
 	}
 	scp_expected_freq = scp_get_freq();
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+
+	/*SCP keep awake */
+	scp_awake_lock(SCP_A_ID);
+
 	scp_current_freq = readl(CURRENT_FREQ_REG);
 	writel(scp_expected_freq, EXPECTED_FREQ_REG);
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	/* send request only when scp is not down */
 	if (scp_ready[SCP_A_ID]) {
@@ -1382,6 +1383,10 @@ void scp_register_feature(feature_id_t id)
 		pr_err("[SCP]Not send SCP DVFS request because SCP is down\n");
 		WARN_ON(1);
 	}
+
+	/*SCP release awake */
+	scp_awake_unlock(SCP_A_ID);
+
 	mutex_unlock(&scp_feature_mutex);
 }
 
@@ -1389,7 +1394,6 @@ void scp_deregister_feature(feature_id_t id)
 {
 	uint32_t i;
 	int ret = 0;
-	unsigned long spin_flags;
 
 	/* prevent from access when scp is down */
 #if defined(CONFIG_MACH_MT6759)
@@ -1405,10 +1409,12 @@ void scp_deregister_feature(feature_id_t id)
 			feature_table[i].enable = 0;
 	}
 	scp_expected_freq = scp_get_freq();
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+
+	/*SCP keep awake */
+	scp_awake_lock(SCP_A_ID);
+
 	scp_current_freq = readl(CURRENT_FREQ_REG);
 	writel(scp_expected_freq, EXPECTED_FREQ_REG);
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	/* send request only when scp is not down */
 	if (scp_ready[SCP_A_ID]) {
@@ -1424,6 +1430,10 @@ void scp_deregister_feature(feature_id_t id)
 		pr_err("[SCP]Not send SCP DVFS request because SCP is down\n");
 		WARN_ON(1);
 	}
+
+	/*SCP release awake */
+	scp_awake_unlock(SCP_A_ID);
+
 	mutex_unlock(&scp_feature_mutex);
 }
 int scp_check_resource(void)
