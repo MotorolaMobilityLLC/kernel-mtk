@@ -43,6 +43,12 @@ void scp_A_ipi_handler(void)
 	} else if (scp_ipi_desc[scp_A_rcv_obj->id].handler) {
 		memcpy_from_scp(scp_A_recv_buff, (void *)scp_A_rcv_obj->share_buf, scp_A_rcv_obj->len);
 		scp_ipi_desc[scp_A_rcv_obj->id].handler(scp_A_rcv_obj->id, scp_A_recv_buff, scp_A_rcv_obj->len);
+		/* After SCP IPI handler,
+		 * send a awake ipi to avoid
+		 * SCP keeping in ipi busy idle state
+		 */
+		/* WE1: set a direct IPI to awake SCP */
+		writel((1 << SCP_A_IPI_AWAKE_NUM), SCP_GIPC_REG);
 	} else {
 		/* scp_ipi_handler is null or ipi id abnormal */
 		pr_err("[SCP] scp A ipi handler is null or abnormal, id = %d\n", scp_A_rcv_obj->id);
@@ -83,6 +89,12 @@ void scp_B_ipi_handler(void)
 	} else if (scp_ipi_desc[scp_B_rcv_obj->id].handler) {
 		memcpy_from_scp(scp_B_recv_buff, (void *)scp_B_rcv_obj->share_buf, scp_B_rcv_obj->len);
 		scp_ipi_desc[scp_B_rcv_obj->id].handler(scp_B_rcv_obj->id, scp_B_recv_buff, scp_B_rcv_obj->len);
+		/* After SCP IPI handler,
+		 * send a awake ipi to avoid
+		 * SCP keeping in ipi busy idle state
+		 */
+		/* WE1: set a direct IPI to awake SCP */
+		writel((1 << SCP_B_IPI_AWAKE_NUM), SCP_GIPC_REG);
 	} else {
 		/* scp_ipi_handler is null or ipi id abnormal */
 		pr_err("[SCP] scp B ipi handler is null or abnormal, id = %d\n", scp_B_rcv_obj->id);
