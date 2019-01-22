@@ -868,7 +868,7 @@ void cmdq_core_unlock_resource(struct work_struct *workItem)
 
 	mutex_lock(&gCmdqResourceMutex);
 
-	CMDQ_MSG("[Res] unlock resource with engine: 0x%016llx\n", pResource->engine);
+	CMDQ_MSG("[Res] unlock resource with engine: 0x%016llx\n", pResource->engine_flag);
 	if (pResource->used && pResource->delaying) {
 		pResource->unlock = sched_clock();
 		pResource->used = false;
@@ -895,13 +895,14 @@ void cmdq_core_unlock_resource(struct work_struct *workItem)
 	mutex_unlock(&gCmdqResourceMutex);
 }
 
-void cmdq_core_init_resource(uint32_t engineFlag, enum CMDQ_EVENT_ENUM resourceEvent)
+void cmdq_core_init_resource(uint32_t engine_id, enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct ResourceUnitStruct *pResource;
 
 	pResource = kzalloc(sizeof(struct ResourceUnitStruct), GFP_KERNEL);
 	if (pResource) {
-		pResource->engine = (1LL << engineFlag);
+		pResource->engine_id = engine_id;
+		pResource->engine_flag = (1LL << engine_id);
 		pResource->lockEvent = resourceEvent;
 		INIT_DELAYED_WORK(&pResource->delayCheckWork, cmdq_core_unlock_resource);
 		INIT_LIST_HEAD(&(pResource->list_entry));
@@ -920,14 +921,14 @@ void cmdq_core_delay_check_unlock(uint64_t engineFlag, const uint64_t enginesNot
 		return;
 
 	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
-		if (enginesNotUsed & pResource->engine) {
+		if (enginesNotUsed & pResource->engine_flag) {
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched engine become not used*/
 			if (!pResource->used) {
 				/* resource is not used but we got engine is released! */
 				/* log as error and still continue */
 				CMDQ_ERR("[Res]: resource will delay but not used, engine: 0x%016llx\n",
-					pResource->engine);
+					pResource->engine_flag);
 			}
 
 			/* Cancel previous delay task if existed */
@@ -8977,7 +8978,7 @@ void cmdq_core_dump_dts_setting(void)
 		CMDQ_LOG("	Thread[%d]=%d\n", index, g_dts_setting.prefetch_size[index]);
 	CMDQ_LOG("[DTS] SRAM Sharing Config:\n");
 	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
-		CMDQ_LOG("	Engine=0x%016llx,, event=%d\n", pResource->engine, pResource->lockEvent);
+		CMDQ_LOG("	Engine=0x%016llx,, event=%d\n", pResource->engine_flag, pResource->lockEvent);
 	}
 }
 
@@ -9753,7 +9754,7 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 		return;
 
 	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
-		if (engineFlag & pResource->engine) {
+		if (engineFlag & pResource->engine_flag) {
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched engine */
 			if (fromNotify)
@@ -9799,26 +9800,10 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 	}
 }
 
-static void cmdq_core_enable_resource_clk_unlock(struct ResourceUnitStruct *resource, bool enable)
+static void cmdq_core_enable_resource_clk_unlock(
+	struct ResourceUnitStruct *resource, bool enable)
 {
-	struct CmdqCBkStruct *group_cb = &gCmdqGroupCallback[CMDQ_GROUP_MDP];
-
-	if (enable) {
-		if (group_cb->clockOn) {
-			/* enable related clock for this engine */
-			group_cb->clockOn(resource->engine);
-		} else {
-			/* print error to notify share may fail */
-			CMDQ_ERR("Fail to clock on for resource engine:0x%016llx\n", resource->engine);
-		}
-	} else {
-		if (group_cb->clockOff) {
-			/* enable related clock for this engine */
-			group_cb->clockOff(resource->engine);
-		} else {
-			CMDQ_ERR("Fail to clock off for resource engine:0x%016llx\n", resource->engine);
-		}
-	}
+	cmdq_mdp_get_func()->enableMdpClock(enable, resource->engine_id);
 }
 
 
@@ -9837,7 +9822,7 @@ bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent)
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched resource */
 			result = !pResource->used;
-			if (result) {
+			if (result && !pResource->lend) {
 				CMDQ_MSG("[Res] Acquire successfully, event: %d\n", resourceEvent);
 				cmdqCoreClearEvent(resourceEvent);
 				pResource->acquire = sched_clock();
@@ -9865,9 +9850,11 @@ void cmdqCoreReleaseResource(enum CMDQ_EVENT_ENUM resourceEvent)
 			CMDQ_PROF_MUTEX_LOCK(gCmdqClockMutex, acquire_resource_clock);
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched resource */
-			pResource->release = sched_clock();
-			pResource->lend = false;
-			cmdq_core_enable_resource_clk_unlock(pResource, false);
+			if (pResource->lend) {
+				pResource->release = sched_clock();
+				pResource->lend = false;
+				cmdq_core_enable_resource_clk_unlock(pResource, false);
+			}
 			mutex_unlock(&gCmdqResourceMutex);
 			CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, acquire_resource_clock);
 			break;
