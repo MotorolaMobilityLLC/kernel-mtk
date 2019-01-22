@@ -31,7 +31,6 @@ static int gmagrotvec_get_data(int *x, int *y, int *z, int *scalar, int *status)
 	int err = 0;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_GEOMAGNETIC_ROTATION_VECTOR, &data);
 	if (err < 0) {
@@ -39,15 +38,11 @@ static int gmagrotvec_get_data(int *x, int *y, int *z, int *scalar, int *status)
 		return -1;
 	}
 	time_stamp		= data.time_stamp;
-	time_stamp_gpt	= data.time_stamp_gpt;
 	*x				= data.magnetic_t.azimuth;
 	*y				= data.magnetic_t.pitch;
 	*z				= data.magnetic_t.roll;
 	*scalar				= data.magnetic_t.scalar;
 	*status		= data.magnetic_t.status;
-	/* GMAGROTVEC_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n",
-	 *	time_stamp, time_stamp_gpt, *x, *y, *z);
-	*/
 	return 0;
 }
 static int gmagrotvec_open_report_data(int open)
@@ -91,7 +86,7 @@ static int gmagrotvec_recv_data(struct data_unit_t *event, void *reserved)
 	if (event->flush_action == DATA_ACTION)
 		err = gmrv_data_report(event->magnetic_t.x, event->magnetic_t.y, event->magnetic_t.z,
 			event->magnetic_t.scalar, event->magnetic_t.status,
-			(int64_t)(event->time_stamp + event->time_stamp_gpt));
+			(int64_t)event->time_stamp);
 	else if (event->flush_action == FLUSH_ACTION)
 		err = gmrv_flush_report();
 

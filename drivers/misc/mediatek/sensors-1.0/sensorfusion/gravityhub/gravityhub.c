@@ -27,7 +27,6 @@ static int grav_get_data(int *x, int *y, int *z, int *scalar, int *status)
 	int err = 0;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_GRAVITY, &data);
 	if (err < 0) {
@@ -35,7 +34,6 @@ static int grav_get_data(int *x, int *y, int *z, int *scalar, int *status)
 		return -1;
 	}
 	time_stamp				= data.time_stamp;
-	time_stamp_gpt			= data.time_stamp_gpt;
 	*x = data.accelerometer_t.x;
 	*y = data.accelerometer_t.y;
 	*z = data.accelerometer_t.z;
@@ -81,7 +79,7 @@ static int gravity_recv_data(struct data_unit_t *event, void *reserved)
 
 	if (event->flush_action == DATA_ACTION)
 		err = grav_data_report(event->accelerometer_t.x, event->accelerometer_t.y, event->accelerometer_t.z,
-			event->accelerometer_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
+			event->accelerometer_t.status, (int64_t)event->time_stamp);
 	else if (event->flush_action == FLUSH_ACTION)
 		err = grav_flush_report();
 

@@ -232,7 +232,6 @@ static int step_counter_get_data(uint32_t *counter, int *status)
 	int err = 0;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_STEP_COUNTER, &data);
 	if (err < 0) {
@@ -240,10 +239,9 @@ static int step_counter_get_data(uint32_t *counter, int *status)
 		return -1;
 	}
 	time_stamp = data.time_stamp;
-	time_stamp_gpt = data.time_stamp_gpt;
 	*counter = data.step_counter_t.accumulated_step_count;
-	STEP_CDS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, counter: %d!\n", time_stamp,
-		     time_stamp_gpt, *counter);
+	STEP_CDS_LOG("recv ipi: timestamp: %lld, counter: %d!\n", time_stamp,
+		     *counter);
 	return 0;
 }
 
@@ -272,7 +270,6 @@ static int floor_counter_get_data(uint32_t *counter, int *status)
 	int err = 0;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 
 	err = sensor_get_data_from_hub(ID_FLOOR_COUNTER, &data);
 	if (err < 0) {
@@ -280,10 +277,9 @@ static int floor_counter_get_data(uint32_t *counter, int *status)
 		return -1;
 	}
 	time_stamp = data.time_stamp;
-	time_stamp_gpt = data.time_stamp_gpt;
 	*counter = data.floor_counter_t.accumulated_floor_count;
-	STEP_CDS_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, counter: %d!\n", time_stamp,
-		     time_stamp_gpt, *counter);
+	STEP_CDS_LOG("recv ipi: timestamp: %lld, counter: %d!\n", time_stamp,
+		     *counter);
 	return 0;
 }
 
