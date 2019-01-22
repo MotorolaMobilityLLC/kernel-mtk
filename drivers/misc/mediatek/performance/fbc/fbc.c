@@ -32,11 +32,12 @@ static unsigned long __read_mostly mark_addr;
 static int fbc_debug, fbc_ux_state, fbc_ux_state_pre, fbc_render_aware, fbc_render_aware_pre;
 static int fbc_game, fbc_trace;
 static long long frame_budget, twanted, twanted_ms, avg_frame_time;
-static int  ema, boost_method, super_boost, boost_flag, big_enable;
+static int ema, boost_method, super_boost, boost_flag, big_enable;
 static int boost_value, touch_boost_value, current_max_bv, avg_boost, chase_boost;
 static int first_frame, frame_done, chase, last_frame_done_in_budget, act_switched;
 static long long capacity, touch_capacity, current_max_capacity, avg_capacity, chase_capacity;
 static long long his_cap[2];
+static long long frame_info[MAX_THREAD][2]; /*0:current id, 1: frametime, if no render -1*/
 static int his_bv[2];
 static int power_ll[16][2], power_l[16][2], power_b[16][2];
 
@@ -439,6 +440,8 @@ static void notify_twanted_timeout_legacy(void)
 
 void notify_fbc_enable_legacy(int enable)
 {
+	int i;
+
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
@@ -466,7 +469,12 @@ void notify_fbc_enable_legacy(int enable)
 
 		sched_scheduler_switch(SCHED_HMP_LB);
 		boost_flag = 0;
-	} else if (!enable) {
+	} else {
+		for (i = 0; i < MAX_THREAD; i++) {
+			frame_info[i][0] = -1;
+			frame_info[i][1] = -2;
+		}
+
 		release_core();
 		sched_scheduler_switch(SCHED_HYBRID_LB);
 		if (boost_flag) {
@@ -617,6 +625,7 @@ static void notify_twanted_timeout_eas(void)
 
 void notify_fbc_enable_eas(int enable)
 {
+	int i;
 
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
@@ -638,7 +647,12 @@ void notify_fbc_enable_eas(int enable)
 		boost_touch_core_eas();
 
 		boost_flag = 0;
-	} else if (!enable) {
+	} else {
+		for (i = 0; i < MAX_THREAD; i++) {
+			frame_info[i][0] = -1;
+			frame_info[i][1] = -2;
+		}
+
 		release_core();
 		if (boost_flag) {
 			release_eas();
@@ -649,26 +663,104 @@ void notify_fbc_enable_eas(int enable)
 
 static void notify_no_render_eas(void)
 {
+	int i;
+
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
-	last_frame_done_in_budget = 1;
-	perfmgr_kick_fg_boost(KIR_FBC, -1);
-	fbc_tracer(-3, "boost_value", 0);
-	disable_frame_twanted_timer();
+	/* check if current pid is in frame_info */
+	for (i = 0; i < MAX_THREAD &&
+			frame_info[i][0] != -1 &&
+			current->tgid != frame_info[i][0]; i++)
+		;
 
-	fbc_tracer(-3, "no_render", 1);
-	fbc_tracer(-3, "no_render", 0);
+	/* if not in frame_info, add it*/
+	if (i < MAX_THREAD && current->tgid == frame_info[i][0])
+		frame_info[i][1] = 0;
+
+	fbc_tracer(-5, "frame_info[0][0]", frame_info[0][0]);
+	fbc_tracer(-5, "frame_info[0][1]", frame_info[0][1]);
+	fbc_tracer(-5, "frame_info[1][0]", frame_info[1][0]);
+	fbc_tracer(-5, "frame_info[1][1]", frame_info[1][1]);
+	fbc_tracer(-5, "frame_info[2][0]", frame_info[2][0]);
+	fbc_tracer(-5, "frame_info[2][1]", frame_info[2][1]);
+	fbc_tracer(-5, "frame_info[3][0]", frame_info[3][0]);
+	fbc_tracer(-5, "frame_info[3][1]", frame_info[3][1]);
+	fbc_tracer(-5, "frame_info[4][0]", frame_info[4][0]);
+	fbc_tracer(-5, "frame_info[4][1]", frame_info[4][1]);
+
+	/* if all other threads are done */
+	for (i = 0; i < MAX_THREAD &&
+			frame_info[i][0] != -1 &&
+			frame_info[i][1] == 0; i++)
+		;
+
+	if (i < MAX_THREAD && frame_info[i][0] == -1) {
+		last_frame_done_in_budget = 1;
+		perfmgr_kick_fg_boost(KIR_FBC, -1);
+		fbc_tracer(-3, "boost_value", 0);
+		disable_frame_twanted_timer();
+
+		fbc_tracer(-3, "no_render", 1);
+		fbc_tracer(-3, "no_render", 0);
+	}
 }
 
 void notify_frame_complete_eas(unsigned long frame_time)
 {
 
 	long long boost_linear = 0;
-	int boost_real = 0;
+	int boost_real = 0, i;
 
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
+
+	/* check if current pid is in frame_info */
+	for (i = 0; i < MAX_THREAD &&
+			frame_info[i][0] != -1 &&
+			current->tgid != frame_info[i][0]; i++)
+		;
+
+	if (i < MAX_THREAD && current->tgid == frame_info[i][0])
+		frame_info[i][1] = frame_time;
+
+	fbc_tracer(-5, "frame_info[0][0]", frame_info[0][0]);
+	fbc_tracer(-5, "frame_info[0][1]", frame_info[0][1]);
+	fbc_tracer(-5, "frame_info[1][0]", frame_info[1][0]);
+	fbc_tracer(-5, "frame_info[1][1]", frame_info[1][1]);
+	fbc_tracer(-5, "frame_info[2][0]", frame_info[2][0]);
+	fbc_tracer(-5, "frame_info[2][1]", frame_info[2][1]);
+	fbc_tracer(-5, "frame_info[3][0]", frame_info[3][0]);
+	fbc_tracer(-5, "frame_info[3][1]", frame_info[3][1]);
+	fbc_tracer(-5, "frame_info[4][0]", frame_info[4][0]);
+	fbc_tracer(-5, "frame_info[4][1]", frame_info[4][1]);
+
+	/* check if every thread done */
+	for (i = 0; i < MAX_THREAD &&
+			frame_info[i][0] != -1 &&
+			frame_info[i][1] >= 0; i++)
+		;
+	/* if someone not done */
+	if (i < MAX_THREAD && frame_info[i][1] == -1)
+		return;
+
+	/* evaluate overall frame_time */
+	frame_time = 0;
+	for (i = 0; i < MAX_THREAD && frame_info[i][0] != -1; i++) {
+		frame_time = MAX(frame_time, frame_info[i][1]);
+		frame_info[i][1] = 0;
+	}
+
+	fbc_tracer(-5, "frame_info[0][0]", frame_info[0][0]);
+	fbc_tracer(-5, "frame_info[0][1]", frame_info[0][1]);
+	fbc_tracer(-5, "frame_info[1][0]", frame_info[1][0]);
+	fbc_tracer(-5, "frame_info[1][1]", frame_info[1][1]);
+	fbc_tracer(-5, "frame_info[2][0]", frame_info[2][0]);
+	fbc_tracer(-5, "frame_info[2][1]", frame_info[2][1]);
+	fbc_tracer(-5, "frame_info[3][0]", frame_info[3][0]);
+	fbc_tracer(-5, "frame_info[3][1]", frame_info[3][1]);
+	fbc_tracer(-5, "frame_info[4][0]", frame_info[4][0]);
+	fbc_tracer(-5, "frame_info[4][1]", frame_info[4][1]);
 
 	disable_render_aware_timer();
 	enable_render_aware_timer();
@@ -738,7 +830,7 @@ void notify_frame_complete_eas(unsigned long frame_time)
 
 #if 0
 	pr_crit(TAG" pid:%d, frame complete FT=%lu, boost_linear=%lld, boost_real=%d, boost_value=%d\n",
-			current->pid, frame_time, boost_linear, boost_real, boost_value);
+			current->tgid, frame_time, boost_linear, boost_real, boost_value);
 	pr_crit(TAG" frame complete FT=%lu", frame_time);
 #endif
 
@@ -754,10 +846,26 @@ void notify_frame_complete_eas(unsigned long frame_time)
 
 void notify_intended_vsync_eas(void)
 {
+	int i;
+
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
 	frame_done = 0;
+
+	/* check if current pid is in frame_info */
+	for (i = 0; i < MAX_THREAD &&
+			frame_info[i][0] != -1 &&
+			current->tgid != frame_info[i][0]; i++)
+		;
+
+	/* if not in frame_info, add it*/
+	if (i < MAX_THREAD && frame_info[i][0] == -1) {
+		frame_info[i][0] = current->tgid;
+		frame_info[i][1] = -1;
+	}
+	if (i < MAX_THREAD && frame_info[i][0] == current->tgid)
+		frame_info[i][1] = -1;
 
 	enable_frame_twanted_timer();
 	if (last_frame_done_in_budget) {
@@ -767,6 +875,16 @@ void notify_intended_vsync_eas(void)
 	}
 
 	fbc_tracer(-3, "last_frame_done_in_budget", last_frame_done_in_budget);
+	fbc_tracer(-5, "frame_info[0][0]", frame_info[0][0]);
+	fbc_tracer(-5, "frame_info[0][1]", frame_info[0][1]);
+	fbc_tracer(-5, "frame_info[1][0]", frame_info[1][0]);
+	fbc_tracer(-5, "frame_info[1][1]", frame_info[1][1]);
+	fbc_tracer(-5, "frame_info[2][0]", frame_info[2][0]);
+	fbc_tracer(-5, "frame_info[2][1]", frame_info[2][1]);
+	fbc_tracer(-5, "frame_info[3][0]", frame_info[3][0]);
+	fbc_tracer(-5, "frame_info[3][1]", frame_info[3][1]);
+	fbc_tracer(-5, "frame_info[4][0]", frame_info[4][0]);
+	fbc_tracer(-5, "frame_info[4][1]", frame_info[4][1]);
 }
 
 struct fbc_operation_locked fbc_legacy = {
