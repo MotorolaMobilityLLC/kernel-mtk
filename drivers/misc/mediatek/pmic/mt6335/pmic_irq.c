@@ -339,8 +339,8 @@ void vpa_oc_int_handler(void)
 /*****************************************************************************
  * Chrdet Int Handler
  ******************************************************************************/
-#if (CONFIG_MTK_GAUGE_VERSION != 30)
-void chrdet_int_handler(void)
+#if (CONFIG_MTK_GAUGE_VERSION != 30) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT)
+static void chrdet_int_handler(void)
 {
 	pr_err(PMICTAG "[chrdet_int_handler]CHRDET status = plug-%s\n",
 		pmic_get_register_value(PMIC_RGS_CHRDET)?"in":"out");
@@ -359,8 +359,10 @@ void chrdet_int_handler(void)
 	}
 #endif
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
+#if (CONFIG_MTK_GAUGE_VERSION != 30)
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	do_chrdet_int_task();
+#endif
 #endif
 }
 #endif
@@ -684,6 +686,27 @@ int pmic_thread_kthread(void *x)
 	return 0;
 }
 
+void pmic_enable_chrdet(unsigned char en)
+{
+#if (CONFIG_MTK_GAUGE_VERSION != 30)
+	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
+	pmic_enable_interrupt(INT_CHRDET_EDGE, en, "PMIC");
+#else
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	int boot_mode = get_boot_mode();
+
+	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+		pr_err(PMICTAG "pmic_enable_chrdet @KPOC\n");
+		pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
+		pmic_enable_interrupt(INT_CHRDET_EDGE, en, "PMIC");
+	}
+#endif
+#endif
+#endif
+}
+
 void PMIC_EINT_SETTING(void)
 {
 	struct device_node *node = NULL;
@@ -719,9 +742,7 @@ void PMIC_EINT_SETTING(void)
 	pmic_register_interrupt_callback(INT_HOMEKEY, homekey_int_handler);
 	pmic_register_interrupt_callback(INT_PWRKEY_R, pwrkey_int_handler_r);
 	pmic_register_interrupt_callback(INT_HOMEKEY_R, homekey_int_handler_r);
-#if (CONFIG_MTK_GAUGE_VERSION != 30)
-	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
-#endif
+
 	pmic_register_interrupt_callback(INT_BAT_L, bat_l_int_handler);
 	pmic_register_interrupt_callback(INT_BAT_H, bat_h_int_handler);
 
@@ -732,9 +753,8 @@ void PMIC_EINT_SETTING(void)
 	pmic_enable_interrupt(INT_HOMEKEY, 1, "PMIC");
 	pmic_enable_interrupt(INT_PWRKEY_R, 1, "PMIC");
 	pmic_enable_interrupt(INT_HOMEKEY_R, 1, "PMIC");
-#if (CONFIG_MTK_GAUGE_VERSION != 30)
-	pmic_enable_interrupt(INT_CHRDET_EDGE, 1, "PMIC");
-#endif
+
+	pmic_enable_chrdet(1);
 
 #if ENABLE_ALL_OC_IRQ
 	register_all_oc_interrupts();
