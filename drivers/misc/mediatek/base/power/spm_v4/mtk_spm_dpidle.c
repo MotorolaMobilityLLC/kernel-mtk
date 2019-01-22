@@ -928,6 +928,10 @@ RESTORE_IRQ:
 		rekick_vcorefs_scenario();
 #endif
 
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
+	do_gettimeofday(&pre_dpidle_time);
+#endif
+
 	return wr;
 }
 
