@@ -25,7 +25,7 @@
 
 #define MAX_CAP 100
 #define MAX_RECORD_COUNT 16
-#define TIME_MS_TO_NS  1000000
+#define TIME_MS_TO_NS  1000000ULL
 #define TIME_1S  1000000000
 
 #define FPSGO_FTEH_DEBUG
@@ -338,7 +338,7 @@ int fpsgo_fbt2fteh_judge_ceiling(struct render_info *thread_info, unsigned int b
 		fteh_render_task_changed(thread_info->pid);
 
 	if (cur_time <= g_load_ts ||
-		(g_load_ts && cur_time - g_load_ts < sampling_period_MS * TIME_MS_TO_NS)) {
+		(g_load_ts && cur_time - g_load_ts < (unsigned long long)sampling_period_MS * TIME_MS_TO_NS)) {
 		if (g_fteh_state == FTEH_ACTIVE)
 			return FTEH_LESS_HEADROOM;
 		else
