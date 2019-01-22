@@ -260,6 +260,10 @@ void check_cm_mgr_status_internal(void)
 		int cpu_power_total;
 
 		vcore_dram_opp_cur = get_cur_ddr_opp();
+		if (vcore_dram_opp_cur > CM_MGR_EMI_OPP) {
+			spin_unlock(&cm_mgr_lock);
+			return;
+		}
 
 		if (--cm_mgr_loop > 0) {
 			cm_mgr_update_met();
@@ -350,6 +354,8 @@ void check_cm_mgr_status_internal(void)
 			total_bw = total_bw_value;
 		if (total_bw >= vcore_power_array_size(cm_mgr_get_idx()))
 			total_bw = vcore_power_array_size(cm_mgr_get_idx()) - 1;
+		if (total_bw < 0)
+			total_bw = 0;
 
 		if (update_v2f_table == 1) {
 			update_v2f(1, 0);
