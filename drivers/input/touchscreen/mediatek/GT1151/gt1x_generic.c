@@ -164,12 +164,13 @@ static ssize_t gt1x_debug_write_proc(struct file *file, const char __user *buffe
 {
 	s32 ret = 0;
 	u8 buf[GTP_CONFIG_MAX_LENGTH] = { 0 };
-	char mode_str[50] = { 0 };
-	int mode;
-	char arg1[50] = { 0 };
+	char mode_str[50];
+	int mode = 0;
+	char arg1[50];
 
 	GTP_DEBUG("write count %ld\n", (unsigned long)count);
 
+	memset(mode_str, 0, sizeof(mode_str));
 	if (count > GTP_CONFIG_MAX_LENGTH) {
 		GTP_ERROR("Too much data, buffer size: %d, data:%ld", GTP_CONFIG_MAX_LENGTH, (unsigned long)count);
 		return -EFAULT;
@@ -192,7 +193,7 @@ static ssize_t gt1x_debug_write_proc(struct file *file, const char __user *buffe
 		return count;
 	}
 
-	ret = sscanf(buf, "%s %d", (char *)&mode_str, &mode);
+	ret = sscanf(buf, "%49s %d", mode_str, &mode);
 	if (ret < 0) {
 		GTP_ERROR("Sscanf buf ERROR1");
 		return ret;
@@ -249,7 +250,8 @@ static ssize_t gt1x_debug_write_proc(struct file *file, const char __user *buffe
 		return count;
 	}
 #endif
-	ret = sscanf(buf, "%s %s", (char *)&mode_str, (char *)&arg1);
+	memset(arg1, 0, sizeof(arg1));
+	ret = sscanf(buf, "%49s %49s", mode_str, arg1);
 	if (ret < 0) {
 		GTP_ERROR("Sscanf buf ERROR2");
 		return ret;
