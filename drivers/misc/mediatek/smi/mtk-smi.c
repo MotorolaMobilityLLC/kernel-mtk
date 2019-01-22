@@ -877,7 +877,7 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4Lo
 	static enum MTK_SMI_BWC_SCEN ePreviousFinalScen = SMI_BWC_SCEN_CNT;
 
 	if ((p_conf->scenario >= SMI_BWC_SCEN_CNT) || (p_conf->scenario < 0)) {
-		SMIERR("Incorrect SMI BWC config : 0x%x, how could this be...\n", p_conf->scenario);
+		SMIMSG("Incorrect SMI BWC config : 0x%x, how could this be...\n", p_conf->scenario);
 		return -1;
 	}
 
