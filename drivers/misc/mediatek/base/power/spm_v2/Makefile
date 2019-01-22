@@ -66,11 +66,11 @@ ifeq ($(CONFIG_MACH_MT6757), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/mt6757/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
 
-#obj-y += mt_sleep.o
+obj-y += mtk_sleep.o
 obj-y += mtk_spm.o
 obj-y += mtk_spm_internal.o
 #obj-y += mt_spm_pmic_wrap.o
-#obj-y += mt_spm_sleep.o
+obj-y += mtk_spm_sleep.o
 #obj-y += mt_spm_fs.o
 #obj-y += mt_idle.o
 #obj-y += mt_idle_profile.o
