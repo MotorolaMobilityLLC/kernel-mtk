@@ -14,6 +14,7 @@
 #ifndef __MTK_MEMINFO_H__
 #define __MTK_MEMINFO_H__
 #include <linux/cma.h>
+#include <linux/of_reserved_mem.h>
 
 /* physical offset */
 extern phys_addr_t get_phys_offset(void);
@@ -50,6 +51,7 @@ struct single_cma_registration {
 	phys_addr_t align;
 	unsigned long flag;
 	const char *name;
+	int (*preinit)(struct reserved_mem *rmem);
 	void (*init)(struct cma *);
 	enum zmc_prio prio;
 };
