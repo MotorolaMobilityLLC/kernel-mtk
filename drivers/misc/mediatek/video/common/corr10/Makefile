@@ -32,7 +32,7 @@ ccflags-y += \
                                 -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6739)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6739) $(CONFIG_MACH_MT6771)))
 ccflags-y += -DGAMMA_LIGHT
 endif
 
