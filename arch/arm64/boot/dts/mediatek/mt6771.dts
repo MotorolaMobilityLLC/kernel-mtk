@@ -1518,6 +1518,8 @@
 		compatible = "mediatek,therm_ctrl";
 		reg = <0 0x1100b000 0 0x1000>;
 		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infracfg_ao INFRACFG_AO_THERM_CG>;
+		clock-names = "therm-main";
 	};
 
 	eem_fsm@1100b000 {
