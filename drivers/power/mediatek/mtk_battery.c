@@ -51,6 +51,7 @@
 
 #include <linux/vmalloc.h>
 
+#include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_charger.h>
 #include <mt-plat/mtk_battery.h>
 #include <mach/mtk_battery_property.h>
@@ -117,6 +118,7 @@ bool fg_time_en;
 struct fgtimer tracking_timer;
 
 static bool gDisableGM30;
+CHARGER_TYPE pre_chr_type;
 
 int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
 int reset_fg_bat_int;
@@ -2921,6 +2923,19 @@ void fg_bat_plugout_int_handler(void)
 		kernel_power_off();
 }
 
+void fg_charger_in_handler(void)
+{
+	CHARGER_TYPE chr_type;
+
+	chr_type = mt_get_charger_type();
+	bm_err("mtk_is_charger_on %d %d\n", chr_type, pre_chr_type);
+	if (chr_type != CHARGER_UNKNOWN && pre_chr_type == CHARGER_UNKNOWN) {
+		bm_debug("[fg_charger_in_handler] notify daemon\n");
+		wakeup_fg_algo(FG_INTR_CHARGER_IN);
+	}
+
+	fg_bat_temp_int_sw_check();
+}
 
 void fg_vbat2_l_int_handler(void)
 {
