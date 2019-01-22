@@ -358,6 +358,15 @@ int scp_awake_lock(scp_core_id scp_id)
 		return ret;
 	}
 
+	/* scp unlock awake */
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+	if (*scp_awake_count > 0) {
+		*scp_awake_count = *scp_awake_count + 1;
+		spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+		return 0;
+	}
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+
 	if (mutex_trylock(scp_awake_mutex) == 0) {
 		/*avoid scp ipi send log print too much*/
 		pr_err("scp_awake_lock: %s mutex_trylock busy..\n", core_id);
@@ -368,7 +377,7 @@ int scp_awake_lock(scp_core_id scp_id)
 	ret = get_scp_semaphore(scp_semaphore_flag);
 	if (ret == -1) {
 		*scp_awake_count = *scp_awake_count + 1;
-		pr_err("scp_awake_lock: %s already hold lock,%d\n", core_id, *scp_awake_count);
+		pr_err("scp_awake_lock: %s get sema fail, scp_awake_count=%d\n", core_id, *scp_awake_count);
 		mutex_unlock(scp_awake_mutex);
 		return ret;
 	}
@@ -404,6 +413,10 @@ int scp_awake_lock(scp_core_id scp_id)
 		count++;
 	}
 
+	/* scp lock awake success*/
+	if (ret != -1)
+		*scp_awake_count = *scp_awake_count + 1;
+
 	/* spinlock context safe */
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
@@ -413,7 +426,6 @@ int scp_awake_lock(scp_core_id scp_id)
 	}
 
 	/* scp awake */
-	*scp_awake_count = *scp_awake_count + 1;
 	mutex_unlock(scp_awake_mutex);
 	/*pr_debug("scp_awake_lock: %s lock, count=%d\n", core_id, *scp_awake_count);*/
 	return ret;
@@ -452,31 +464,30 @@ int scp_awake_unlock(scp_core_id scp_id)
 		return ret;
 	}
 
+	/* scp unlock awake */
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+	if (*scp_awake_count > 1) {
+		*scp_awake_count = *scp_awake_count - 1;
+		spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+		return 0;
+	}
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+
 	if (mutex_trylock(scp_awake_mutex) == 0) {
 		/*avoid scp ipi send log print too much*/
 		pr_err("scp_awake_unlock: %s mutex_trylock busy..\n", core_id);
 		return ret;
 	}
 
-	if (*scp_awake_count > 1)
-		pr_err("scp_awake_unlock: %s awake count=%d, NOT sync!!\n", core_id, *scp_awake_count);
-
 	/* get scp sema to keep scp awake*/
 	ret = release_scp_semaphore(scp_semaphore_flag);
 	if (ret == -1) {
-		if (*scp_awake_count > 0)
-			*scp_awake_count = *scp_awake_count - 1;
-
-		pr_err("scp_awake_unlock: %s release sema. fail\n", core_id);
+		pr_err("scp_awake_unlock: %s release sema. fail, scp_awake_count=%d\n", core_id, *scp_awake_count);
 		mutex_unlock(scp_awake_mutex);
 		WARN_ON(1);
 		return ret;
 	}
 	ret = 0;
-
-	/* release lock */
-	if (*scp_awake_count > 0)
-		*scp_awake_count = *scp_awake_count - 1;
 
 	/* spinlock context safe */
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
@@ -484,6 +495,13 @@ int scp_awake_unlock(scp_core_id scp_id)
 	/* WE1: set a direct IPI to awake SCP */
 	/*pr_debug("scp_awake_unlock: try to awake %s\n", core_id);*/
 	writel((1 << scp_ipi_awake_num), SCP_GIPC_REG);
+
+	/* scp unlock awake success*/
+	if (ret != -1) {
+		*scp_awake_count = *scp_awake_count - 1;
+		if (*scp_awake_count < 0)
+			pr_err("scp_awake_unlock:%s scp_awake_count=%d NOT SYNC!\n", core_id, *scp_awake_count);
+	}
 
 	/* spinlock context safe */
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
@@ -1052,7 +1070,7 @@ static inline ssize_t scp_ipi_test_show(struct device *kobj, struct device_attri
 
 	if (scp_ready[SCP_A_ID]) {
 		ret = scp_ipi_send(IPI_TEST1, &value, sizeof(value), 0, SCP_A_ID);
-		return scnprintf(buf, PAGE_SIZE, "SCP A ipi send ret=%u\n", ret);
+		return scnprintf(buf, PAGE_SIZE, "SCP A ipi send ret=%d\n", ret);
 	} else
 		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
 }
@@ -1066,7 +1084,7 @@ static inline ssize_t scp_B_ipi_test_show(struct device *kobj, struct device_att
 
 	if (scp_ready[SCP_B_ID]) {
 		ret = scp_ipi_send(IPI_TEST1, &value, sizeof(value), 0, SCP_B_ID);
-		return scnprintf(buf, PAGE_SIZE, "SCP B ipi send ret=%u\n", ret);
+		return scnprintf(buf, PAGE_SIZE, "SCP B ipi send ret=%d\n", ret);
 	} else
 		return scnprintf(buf, PAGE_SIZE, "SCP B is not ready\n");
 }
@@ -1424,11 +1442,13 @@ void scp_register_feature(feature_id_t id)
 
 	/* send request only when scp is not down */
 	if (scp_ready[SCP_A_ID]) {
-		/* set scp freq. */
-		ret = scp_request_freq();
-		if (ret == -1) {
-			pr_err("[SCP]scp_register_feature request_freq fail\n");
-			WARN_ON(1);
+		if (scp_current_freq != scp_expected_freq) {
+			/* set scp freq. */
+			ret = scp_request_freq();
+			if (ret == -1) {
+				pr_err("[SCP]scp_register_feature request_freq fail\n");
+				WARN_ON(1);
+			}
 		}
 	} else {
 		pr_err("[SCP]Not send SCP DVFS request because SCP is down\n");
@@ -1459,11 +1479,13 @@ void scp_deregister_feature(feature_id_t id)
 
 	/* send request only when scp is not down */
 	if (scp_ready[SCP_A_ID]) {
-		/* set scp freq. */
-		ret = scp_request_freq();
-		if (ret == -1) {
-			pr_err("[SCP]scp_register_feature request_freq fail\n");
-			WARN_ON(1);
+		if (scp_current_freq != scp_expected_freq) {
+			/* set scp freq. */
+			ret = scp_request_freq();
+			if (ret == -1) {
+				pr_err("[SCP]scp_register_feature request_freq fail\n");
+				WARN_ON(1);
+			}
 		}
 	} else {
 		pr_err("[SCP]Not send SCP DVFS request because SCP is down\n");
