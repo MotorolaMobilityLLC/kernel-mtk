@@ -1558,8 +1558,6 @@ int rgidle_enter(int cpu)
 	int ret = CPUIDLE_STATE_RG;
 
 #ifdef CONFIG_MTK_ACAO_SUPPORT
-	mtk_idle_dump_cnt_in_interval();
-	mcdi_heart_beat_log_dump();
 #endif
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
