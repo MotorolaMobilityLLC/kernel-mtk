@@ -35,6 +35,7 @@
 #include <mach/mtk_pmic_wrap.h>
 #include "pwrap_hal.h"
 #include <mt-plat/aee.h>
+#include <mt-plat/mtk_ccci_common.h>
 #include <linux/ratelimit.h>
 #undef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -1613,19 +1614,12 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 	if ((int0_flg & 0xffffffff) != 0) {
 		PWRAPLOG("[PWRAP]INT0 error:0x%x\n", int0_flg);
 		WRAP_WR32(PMIC_WRAP_INT0_CLR, 0xffffffff);
-
+#if 0
+		/* trigger MD ASSERT when CRC fail*/
 		if ((int0_flg & 0x02) == 0x02) {
-			/* Clear spislv CRC sta */
-			ret = pwrap_write_nochk(PMIC_DEW_CRC_SWRST_ADDR, 0x1);
-			if (ret != 0)
-				PWRAPLOG("clear crc fail, ret=%x\n", ret);
-			ret = pwrap_write_nochk(PMIC_DEW_CRC_SWRST_ADDR, 0x0);
-			if (ret != 0)
-				PWRAPLOG("clear crc fail, ret=%x\n", ret);
-			pwrap_write_nochk(PMIC_DEW_CRC_EN_ADDR, 0x0);
-			WRAP_WR32(PMIC_WRAP_CRC_EN, 0x0);
-			WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0xf4);
+			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_FORCE_MD_ASSERT, NULL, 0);
 		}
+#endif
 	}
 	int1_flg = WRAP_RD32(PMIC_WRAP_INT1_FLG);
 	if ((int1_flg & 0xffffffff) != 0) {
@@ -1646,6 +1640,17 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 		pwrap_logging_at_isr();
 		pwrap_reenable_pmic_logging();
 		WRAP_WR32(PMIC_WRAP_INT0_EN, 0xfffffff9);
+
+		/* Clear spislv CRC sta */
+		ret = pwrap_write_nochk(PMIC_DEW_CRC_SWRST_ADDR, 0x1);
+		if (ret != 0)
+			PWRAPLOG("clear crc fail, ret=%x\n", ret);
+		ret = pwrap_write_nochk(PMIC_DEW_CRC_SWRST_ADDR, 0x0);
+		if (ret != 0)
+			PWRAPLOG("clear crc fail, ret=%x\n", ret);
+		pwrap_write_nochk(PMIC_DEW_CRC_EN_ADDR, 0x0);
+		WRAP_WR32(PMIC_WRAP_CRC_EN, 0x0);
+		WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0xf4);
 	} else {
 		g_case_flag = 1;
 	}
