@@ -109,6 +109,7 @@ extern unsigned int upower_get_power(enum upower_bank bank, unsigned int opp, en
 upower_dtype type);
 /* EAS */
 extern struct upower_tbl_info **upower_get_tbl(void);
+extern struct upower_tbl *upower_get_core_tbl(unsigned int cpu);
 /* EEM */
 extern void upower_update_volt_by_eem(enum upower_bank bank, unsigned int *volt, unsigned int opp_num);
 extern void upower_update_degree_by_eem(enum upower_bank bank, int deg);
