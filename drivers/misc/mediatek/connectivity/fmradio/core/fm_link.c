@@ -28,7 +28,7 @@ static struct fm_trace_fifo_t *cmd_fifo;
 
 static struct fm_trace_fifo_t *evt_fifo;
 
-static fm_s32 (*reset)(fm_s32 sta);
+static fm_s32 (*whole_chip_reset)(fm_s32 sta);
 
 static void WCNfm_wholechip_rst_cb(ENUM_WMTDRV_TYPE_T src,
 				   ENUM_WMTDRV_TYPE_T dst, ENUM_WMTMSG_TYPE_T type, void *buf, unsigned int sz)
@@ -44,15 +44,19 @@ static void WCNfm_wholechip_rst_cb(ENUM_WMTDRV_TYPE_T src,
 
 		if ((src == WMTDRV_TYPE_WMT) && (dst == WMTDRV_TYPE_FM)
 		    && (type == WMTMSG_TYPE_RESET)) {
+
 			if (rst_msg == WMTRSTMSG_RESET_START) {
 				WCN_DBG(FM_WAR | LINK, "FM restart start!\n");
-				if (reset)
-					reset(1);
-
+				if (whole_chip_reset)
+					whole_chip_reset(1);
+			} else if (rst_msg == WMTRSTMSG_RESET_END_FAIL) {
+				WCN_DBG(FM_WAR | LINK, "FM restart end fail!\n");
+				if (whole_chip_reset)
+					whole_chip_reset(2);
 			} else if (rst_msg == WMTRSTMSG_RESET_END) {
 				WCN_DBG(FM_WAR | LINK, "FM restart end!\n");
-				if (reset)
-					reset(0);
+				if (whole_chip_reset)
+					whole_chip_reset(0);
 			}
 		}
 	} else {
@@ -97,7 +101,7 @@ fm_s32 fm_link_setup(void *data)
 		goto failed;
 	}
 
-	reset = data;		/* get whole chip reset cb */
+	whole_chip_reset = data;		/* get whole chip reset cb */
 	mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_FM, WCNfm_wholechip_rst_cb);
 	return 0;
 
