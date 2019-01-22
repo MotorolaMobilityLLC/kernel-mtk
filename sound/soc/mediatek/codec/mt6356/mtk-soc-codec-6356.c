@@ -3491,8 +3491,8 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 				Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0xffff);
 			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* headset mic */
-				/* Disable MICBIAS1, MISBIAS1 = 1P7V */
-				Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0xffff);
+				/* Disable MICBIAS1 */
+				Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x0001);
 			}
 
 			/* LCLDO_ENC remote sense off */
@@ -3799,11 +3799,8 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 				Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0xffff);
 			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* headset mic */
-				/* Disable MICBIAS1, MISBIAS1 = 1P7V */
-				if (ECMmode == 2)
-					Ana_Set_Reg(AUDENC_ANA_CON10, 0x0100, 0xffff);
-				else
-					Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0xffff);
+				/* Disable MICBIAS1 */
+				Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x0001);
 			}
 
 			/* dcclk_gen_on=1'b0 */
