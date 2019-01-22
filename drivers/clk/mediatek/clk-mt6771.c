@@ -1949,11 +1949,11 @@ CLK_OF_DECLARE(mtk_infracfg_ao, "mediatek,infracfg_ao",
 
 static const struct mtk_pll_data plls[] = {
 	/* FIXME: need to fix flags/div_table/tuner_reg/table */
-#if 0
-	PLL(APMIXED_MAINPLL, "mainpll", 0x0220, 0x022C, 0x00000001, BIT(24), HAVE_RST_BAR,
+#if 1
+	PLL(APMIXED_MAINPLL, "mainpll", 0x0220, 0x022C, 0x00000001, HAVE_RST_BAR, BIT(24),
 		22, 0x0224, 24, 0x0, 0x0224, 0),
 #endif
-	PLL(APMIXED_UNIVPLL, "univpll", 0x0230, 0x023C, 0x00000001, BIT(24), HAVE_RST_BAR,
+	PLL(APMIXED_UNIVPLL, "univpll", 0x0230, 0x023C, 0x00000001, HAVE_RST_BAR, BIT(24),
 		22, 0x0234, 24, 0x0, 0x0234, 0),
 
 	PLL(APMIXED_MFGPLL, "mfgpll", 0x0240, 0x024C, 0x00000001, 0, 0,
@@ -1964,8 +1964,8 @@ static const struct mtk_pll_data plls[] = {
 
 	PLL(APMIXED_TVDPLL, "tvdpll", 0x0260, 0x026C, 0x00000001, 0, 0,
 		22, 0x0264, 24, 0x0, 0x0264, 0),
-#if 0
-	PLL(APMIXED_MMPLL, "mmpll", 0x0270, 0x027C, 0x00000001, BIT(23), HAVE_RST_BAR,
+#if 1
+	PLL(APMIXED_MMPLL, "mmpll", 0x0270, 0x027C, 0x00000001, HAVE_RST_BAR, BIT(23),
 		22, 0x0274, 24, 0x0, 0x0274, 0),
 #endif
 	PLL(APMIXED_APLL1, "apll1", 0x02A0, 0x02B0, 0x00000001, 0, 0,
