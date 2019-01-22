@@ -287,51 +287,82 @@ void dump_multi_core_state_ftrace(int cpu)
 	trace_mcdi_multi_core_rcuidle(cpu, on_off_stat, check_mask);
 }
 
-#define NF_CHECK_MCDI_CONTROLLER_TOKEN          50
-#define CHECK_MCDI_CONTROLLER_TOKEN_DELAY_US    100
+#define CHECK_MCDI_CONTROLLER_TOKEN_DELAY_US        2000
 
-bool mcdi_controller_token_get(int cpu)
+bool is_match_cpu_cluster_criteria(int cpu)
 {
-	/* Try to get token from MCDI controller, which means only 1 CPU power ON */
-	bool token_get = false;
-	bool last_core_in_mcusys = false;
-	int cnt = 0;
+	bool match = true;
+
+	match = mcdi_cpu_cluster_on_off_stat_check(cpu) && !is_cpu_pwr_on_event_pending();
+
+	return match;
+}
+
+bool is_last_core_in_mcusys(void)
+{
 	unsigned long flags;
+	bool last_core_in_mcusys = false;
 
-	mcdi_task_pause(true);
+	/* if other CPU(s) leave MCDI, means more than 1 CPU powered ON */
+	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
 
-	for (cnt = 0; cnt < NF_CHECK_MCDI_CONTROLLER_TOKEN; cnt++) {
+	last_core_in_mcusys
+		= (mcdi_gov_data.num_mcusys == mcdi_gov_data.avail_cnt_mcusys);
+
+	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
+
+	return last_core_in_mcusys;
+}
+
+bool mcdi_controller_token_get_no_pause(int cpu)
+{
+	bool token_get = false;
+	unsigned long long loop_delay_start_us = 0;
+	unsigned long long loop_delay_curr_us = 0;
+
+	/* Try to get token from MCDI controller, which means only 1 CPU power ON */
+
+	loop_delay_start_us = idle_get_current_time_us();
+
+	/* wait until other CPUs powered OFF */
+	while (true) {
 
 		if (is_cpu_pwr_on_event_pending()) {
 			token_get = false;
 			break;
 		}
 
-		if (mcdi_cpu_cluster_on_off_stat_check(cpu)) {
-			token_get = true;
-			break;
-		}
-
-		/* if other CPU(s) leave MCDI, means more than 1 CPU powered ON */
-		spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
-
-		last_core_in_mcusys
-			= (mcdi_gov_data.num_mcusys == mcdi_gov_data.avail_cnt_mcusys);
-
-		spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
-
-		if (!last_core_in_mcusys) {
+		if (!is_last_core_in_mcusys()) {
 			token_get = false;
 			break;
 		}
 
-		/* Resume MCDI task and wait for a while, then re-check */
-		mcdi_task_pause(false);
+		if (is_match_cpu_cluster_criteria(cpu)) {
+			token_get = true;
+			break;
+		}
 
-		udelay(CHECK_MCDI_CONTROLLER_TOKEN_DELAY_US);
+		loop_delay_curr_us = idle_get_current_time_us();
 
-		mcdi_task_pause(true);
+		if ((loop_delay_curr_us - loop_delay_start_us) > 2000)
+			break;
 	}
+
+	return token_get;
+}
+
+bool mcdi_controller_token_get(int cpu)
+{
+	bool token_get = false;
+
+	if (is_cpu_pwr_on_event_pending())
+		token_get = false;
+
+	if (!is_last_core_in_mcusys())
+		token_get = false;
+
+	if (is_match_cpu_cluster_criteria(cpu))
+		token_get = true;
 
 	return token_get;
 }
@@ -372,10 +403,18 @@ int any_core_deepidle_sodi_check(int cpu)
 #ifdef ANY_CORE_DPIDLE_SODI
 	int mtk_idle_state = IDLE_TYPE_RG;
 #endif
-
 	bool token_get = false;
+	bool mcdi_task_paused = false;
 
-	token_get = mcdi_controller_token_get(cpu);
+	token_get = mcdi_controller_token_get_no_pause(cpu);
+
+	if (token_get) {
+
+		mcdi_task_pause(true);
+		mcdi_task_paused = true;
+
+		token_get = mcdi_controller_token_get(cpu);
+	}
 
 	if (!token_get) {
 
@@ -414,7 +453,14 @@ int any_core_deepidle_sodi_check(int cpu)
 		);
 	}
 #endif
+
 end:
+
+#ifdef ANY_CORE_DPIDLE_SODI
+	if (!(state == MCDI_STATE_SODI || state == MCDI_STATE_DPIDLE || state == MCDI_STATE_SODI3) && mcdi_task_paused)
+		mcdi_task_pause(false);
+#endif
+
 	return state;
 }
 
@@ -503,7 +549,6 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 
 		/* Resume MCDI task if anycore deepidle/SODI check failed */
 		if (!is_anycore_dpidle_sodi_state(select_state)) {
-			mcdi_task_pause(false);
 
 			spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
 
