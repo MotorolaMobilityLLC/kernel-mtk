@@ -191,7 +191,7 @@ int32_t cmdq_append_addr_metadata(struct cmdqRecStruct *handle,
 
 		CMDQ_ERR("Metadata idx = %d reach the max allowed number = %d.\n",
 			 handle->secData.addrMetadataCount, maxMetaDataCount);
-		CMDQ_MSG("ADDR: type:%d, baseHandle:%x, offset:%d, size:%d, port:%d\n",
+		CMDQ_MSG("ADDR: type:%d, baseHandle:0x%llx, offset:%d, size:%d, port:%d\n",
 			 pMetadata->type, pMetadata->baseHandle, pMetadata->offset, pMetadata->size,
 			 pMetadata->port);
 		status = -EFAULT;
@@ -581,7 +581,7 @@ int32_t cmdq_op_write_reg(struct cmdqRecStruct *handle, uint32_t addr,
 }
 
 int32_t cmdq_op_write_reg_secure(struct cmdqRecStruct *handle, uint32_t addr,
-			   enum CMDQ_SEC_ADDR_METADATA_TYPE type, uint32_t baseHandle,
+			   enum CMDQ_SEC_ADDR_METADATA_TYPE type, uint64_t baseHandle,
 			   uint32_t offset, uint32_t size, uint32_t port)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
@@ -1646,7 +1646,7 @@ int32_t cmdqRecWrite(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value
 
 int32_t cmdqRecWriteSecure(struct cmdqRecStruct *handle, uint32_t addr,
 			   enum CMDQ_SEC_ADDR_METADATA_TYPE type,
-			   uint32_t baseHandle, uint32_t offset, uint32_t size, uint32_t port)
+			   uint64_t baseHandle, uint32_t offset, uint32_t size, uint32_t port)
 {
 	return cmdq_op_write_reg_secure(handle, addr, type, baseHandle, offset, size, port);
 }
