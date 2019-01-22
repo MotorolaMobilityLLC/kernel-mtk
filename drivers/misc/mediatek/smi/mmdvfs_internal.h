@@ -19,15 +19,17 @@
 #define MMDVFS_LOG_TAG	"MMDVFS"
 
 #define MMDVFSMSG(string, args...) pr_warn("[pid=%d]"string, current->tgid, ##args)
-#ifdef MMDVFS_DEBUG_MODE
-#define MMDVFSDEBUG(string, args...) pr_debug("[pid=%d]"string, current->tgid, ##args)
+
+#define MMDVFSDEBUG(level, x...)            \
+		do {                        \
+			if (g_mmvfs_debug_level && (*g_mmvfs_debug_level) >= (level))    \
+				MMDVFSMSG(x);            \
+		} while (0)
+
 #define MMDVFSMSG2(string, args...) pr_debug(string, ##args)
-#else
-	#define MMDVFSDEBUG(string, args...)
-	#define MMDVFSMSG2(string, args...)
-#endif /* MMDVFS_DEBUG_MODE */
 
 #define MMDVFSTMP(string, args...) pr_debug("[pid=%d]"string, current->tgid, ##args)
+
 #define MMDVFSERR(string, args...) \
 		do {\
 			pr_debug("error: "string, ##args); \
@@ -36,5 +38,6 @@
 
 extern void mmdvfs_internal_handle_state_change(struct mmdvfs_state_change_event *event);
 extern void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event *event);
+extern unsigned int *g_mmvfs_debug_level;
 
 #endif				/* __MMDVFS_INTERNAL_H__ */
