@@ -27,6 +27,7 @@
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/workqueue.h>
+#include <linux/delay.h>
 
 #include "timed_output.h"
 
@@ -42,6 +43,7 @@
 
 #include <vibrator.h>
 #include <vibrator_hal.h>
+#include <mt-plat/upmu_common.h>
 
 #define VERSION					        "v 0.1"
 #define VIB_DEVICE				"mtk_vibrator"
@@ -69,6 +71,8 @@ static int debug_enable_vib_hal = 1;
 #define DBG_EVT_TASKLET		0x00000002	/* Tasklet related event */
 
 #define DBG_EVT_ALL			0xffffffff
+
+#define OC_INTR_INIT_DELAY		(3)
 
 #define DBG_EVT_MASK		(DBG_EVT_TASKLET)
 
@@ -101,6 +105,8 @@ static int vibr_Enable(void)
 {
 	if (!ldo_state) {
 		vibr_Enable_HW();
+		mdelay(OC_INTR_INIT_DELAY);
+		pmic_enable_interrupt(INT_VIBR_OC, 1, "vibr");
 		ldo_state = 1;
 	}
 	return 0;
@@ -109,6 +115,7 @@ static int vibr_Enable(void)
 static int vibr_Disable(void)
 {
 	if (ldo_state) {
+		pmic_enable_interrupt(INT_VIBR_OC, 0, "vibr");
 		vibr_Disable_HW();
 		ldo_state = 0;
 	}
@@ -167,6 +174,12 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 	}
 	spin_unlock_irqrestore(&vibe_lock, flags);
 	queue_work(vibrator_queue, &vibrator_work);
+}
+
+static void vibrator_oc_handler(void)
+{
+	VIB_DEBUG("vibrator_oc_handler: disable vibr due to oc intr happened\n");
+	vibrator_enable(NULL, 0);
 }
 
 static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
@@ -310,6 +323,8 @@ static int vib_mod_init(void)
 	ret = device_create_file(mtk_vibrator.dev, &dev_attr_vibr_on);
 	if (ret)
 		VIB_DEBUG("device_create_file vibr_on fail!\n");
+
+	pmic_register_interrupt_callback(INT_VIBR_OC, vibrator_oc_handler);
 
 	VIB_DEBUG("vib_mod_init Done\n");
 
