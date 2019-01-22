@@ -35,14 +35,6 @@
 #include <backend/gpu/mali_kbase_js_affinity.h>
 #include <backend/gpu/mali_kbase_jm_internal.h>
 
-#ifdef ENABLE_MTK_DEBUG
-#include <mtk_gpufreq.h>
-#include <mtk_gpu_log.h>
-#else
-#define GPULOG(...) do { } while (0)
-#define GPULOG2(...) do { } while (0)
-#endif
-
 #define beenthere(kctx, f, a...) \
 			dev_dbg(kctx->kbdev->dev, "%s:" f, __func__, ##a)
 
@@ -51,39 +43,6 @@ static void kbasep_try_reset_gpu_early(struct kbase_device *kbdev);
 static void kbasep_reset_timeout_worker(struct work_struct *data);
 static enum hrtimer_restart kbasep_reset_timer_callback(struct hrtimer *timer);
 #endif /* KBASE_GPU_RESET_EN */
-
-#ifdef ENABLE_MTK_DEBUG
-#include "mtk_gpufreq.h"
-static unsigned int need_reset_MFG_wrapper;
-#endif
-
-/* DEBUG ONLY! Send debug command to GPU and get relavant status */
-void kbase_try_dump_gpu_debug_info(struct kbase_device *kbdev)
-{
-	unsigned int dbg_lo, dbg_hi;
-	int counter = 0;
-
-#define DBG_SEND_L2_GROUP 0xDEB00760
-#define DBG_ACTIVE_BIT (1 << 31)
-#define GPU_DBG_LO 0x0FE8
-#define GPU_DBG_HI 0x0FEC
-
-	GPULOG("Send debug command to GPU and get relavant status....");
-
-	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), DBG_SEND_L2_GROUP, NULL);
-	while ((kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_STATUS), NULL) & DBG_ACTIVE_BIT)) {
-		counter++;
-		if (counter >= 10000) {
-			GPULOG("DEBUG INFO : counter timeout (> %d)", counter);
-			break;
-		}
-	}
-
-	dbg_lo = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_LO), NULL);
-	dbg_hi = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_HI), NULL);
-
-	GPULOG("DEBUG INFO : LO 0x%x, HI 0x%x, counter %d", dbg_lo, dbg_hi, counter);
-}
 
 static inline int kbasep_jm_is_js_free(struct kbase_device *kbdev, int js,
 						struct kbase_context *kctx)
@@ -207,12 +166,6 @@ void kbase_job_hw_submit(struct kbase_device *kbdev,
 						sizeof(js_string)),
 				ktime_to_ns(katom->start_timestamp),
 				(u32)katom->kctx->id, 0, katom->work_id);
-#ifdef ENABLE_MTK_DEBUG
-		GPULOG("gpu_name=%s next_ctx_id=%lu next_job_id=%lu",
-				js_string,
-				(unsigned long)katom->kctx->id,
-				(unsigned long)katom->work_id);
-#endif
 		kbdev->hwaccess.backend.slot_rb[js].last_context = katom->kctx;
 	}
 #endif
@@ -352,7 +305,6 @@ void kbase_job_done(struct kbase_device *kbdev, u32 done)
 							kbase_exception_name
 							(kbdev,
 							completion_code));
-					kbase_try_dump_gpu_debug_info(kbdev);
 				}
 
 				kbase_gpu_irq_evict(kbdev, i);
@@ -1236,11 +1188,6 @@ static void kbasep_reset_timeout_worker(struct work_struct *data)
 	 * we'll kill it when we reset the GPU */
 
 	if (!silent) {
-#ifdef ENABLE_MTK_DEBUG
-		mfg_latency_debug_stopRead();
-		if (mt_gpufreq_check_GPU_non_idle_infra_idle() == 1)
-			need_reset_MFG_wrapper = 1;
-#endif
 		dev_err(kbdev->dev, "Resetting GPU (allowing up to %d ms)",
 								RESET_TIMEOUT);
 	}
@@ -1280,12 +1227,6 @@ static void kbasep_reset_timeout_worker(struct work_struct *data)
 	wake_up(&kbdev->hwaccess.backend.reset_wait);
 	if (!silent) {
 		dev_err(kbdev->dev, "Reset complete");
-#ifdef ENABLE_MTK_DEBUG
-		if (need_reset_MFG_wrapper == 1) {
-			mt_gpufreq_reset_MFG_wrapper();
-			need_reset_MFG_wrapper = 0;
-		}
-#endif
 	}
 
 	if (js_devdata->nr_contexts_pullable > 0 && !kbdev->poweroff_pending)

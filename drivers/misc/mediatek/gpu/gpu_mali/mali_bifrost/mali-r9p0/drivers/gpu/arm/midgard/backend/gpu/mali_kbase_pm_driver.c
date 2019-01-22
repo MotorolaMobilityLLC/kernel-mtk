@@ -46,14 +46,6 @@
 #define MOCKABLE(function) function
 #endif				/* MALI_MOCK_TEST */
 
-#ifdef ENABLE_MTK_DEBUG
-#include <mtk_gpufreq.h>
-#include <mtk_gpu_log.h>
-#else
-#define GPULOG(...) do { } while (0)
-#define GPULOG2(...) do { } while (0)
-#endif
-
 /**
  * enum kbasep_pm_action - Actions that can be performed on a core.
  *
@@ -1403,9 +1395,6 @@ static int kbase_pm_do_reset(struct kbase_device *kbdev)
 
 	KBASE_TLSTREAM_JD_GPU_SOFT_RESET(kbdev);
 
-	GPULOG("dump_gpu_debug_reg, before issue GPU_COMMAND_SOFT_RESET");
-	kbase_try_dump_gpu_debug_info(kbdev);
-
 	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
 						GPU_COMMAND_SOFT_RESET, NULL);
 
@@ -1446,17 +1435,10 @@ static int kbase_pm_do_reset(struct kbase_device *kbdev)
 		return -EINVAL;
 	}
 
-	GPULOG2("dump_gpu_debug_reg, before issue GPU_COMMAND_HARD_RESET");
-	kbase_try_dump_gpu_debug_info(kbdev);
-
 	/* The GPU doesn't seem to be responding to the reset so try a hard
 	 * reset */
 	dev_err(kbdev->dev, "Failed to soft-reset GPU (timed out after %d ms), now attempting a hard reset\n",
 								RESET_TIMEOUT);
-
-#ifdef ENABLE_MTK_DEBUG
-	mt_gpufreq_dump_reg();
-#endif
 
 	KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
 	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
