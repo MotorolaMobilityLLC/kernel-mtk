@@ -39,13 +39,13 @@
 #include "slimport_edid_3d_api.h"
 
 /*#include "mach/eint.h"*/
-#include "mach/irqs.h"
+/*#include "mach/irqs.h"*/
 #ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_gpio.h>
 #include <cust_gpio_usage.h>
 #endif
 /*#include <cust_eint.h>*/
-#include <mt-plat/mt_gpio.h>
+/*#include <mt-plat/mt_gpio.h>*/
 /* #include <cust_gpio_usage.h> */
 
 
