@@ -979,6 +979,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		}
 		break;
 	case SPM_VCORE_PWARP_CMD:
+		#if 0
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, SPM_VCOREFS_D_LEN, &ack_data);
 		if (ret != 0) {
@@ -987,6 +988,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 			ret = ack_data;
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
+		#endif
 		break;
 	case SPM_SUSPEND_PREPARE:
 	case SPM_POST_SUSPEND:
