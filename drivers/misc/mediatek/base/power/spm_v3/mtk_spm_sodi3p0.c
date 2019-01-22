@@ -54,7 +54,7 @@
 #define sodi3_debug(fmt, args...)	pr_debug(SODI3_TAG fmt, ##args)
 
 #define SPM_PCMWDT_EN               1
-#define SPM_BYPASS_SYSPWREQ         0
+#define SPM_BYPASS_SYSPWREQ         1
 
 #define LOG_BUF_SIZE					(256)
 #define SODI3_LOGOUT_TIMEOUT_CRITERIA	(20)
@@ -100,7 +100,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.reg_spm_cksel3_req = 0,
 
 	/* SPM_SRC_MASK */
-	.reg_csyspwreq_mask = 0,
+	.reg_csyspwreq_mask = 1,
 	.reg_md_srcclkena_0_infra_mask_b = 1,
 	.reg_md_srcclkena_1_infra_mask_b = 0,
 	.reg_md_apsrc_req_0_infra_mask_b = 0,
