@@ -318,7 +318,7 @@ struct fuel_gauge_custom_data {
 	int difference_fullocv_vth;
 	int difference_fullocv_ith;
 	int charge_pseudo_full_level;
-
+	int over_discharge_level;
 
 	/* threshold */
 	int hwocv_swocv_diff;	/* 0.1 mv */
