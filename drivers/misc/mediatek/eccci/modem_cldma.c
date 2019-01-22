@@ -1722,7 +1722,10 @@ void wdt_disable_irq(struct ccci_modem *md)
 
 int md_cd_op_is_epon_set(struct ccci_modem *md)
 {
-#ifdef MD_UMOLY_EE_SUPPORT
+#if defined(MD_EE_V3_SUPPORT)
+	if (*((int *)(md->smem_layout.ccci_exp_smem_base_vir +
+		CCCI_SMEM_OFFSET_MDSS_DEBUG + CCCI_SMEM_OFFSET_EPON_V3)) == 0xBAEBAE10)
+#elif defined(MD_UMOLY_EE_SUPPORT)
 	if (*((int *)(md->mem_layout.smem_region_vir +
 		CCCI_SMEM_OFFSET_MDSS_DEBUG + CCCI_SMEM_OFFSET_EPON_UMOLY)) == 0xBAEBAE10)
 #else
@@ -3198,7 +3201,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 							APCCIF_CHDATA + (sram_size - length) +
 							i * sizeof(unsigned int));
 		}
-		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF SRAM (last 16bytes)\n");
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF SRAM (last %d bytes)\n", length);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dest_buff, length);
 	}
 	if (flag & DUMP_FLAG_CLDMA) {

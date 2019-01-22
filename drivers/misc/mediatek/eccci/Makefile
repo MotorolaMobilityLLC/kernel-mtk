@@ -38,7 +38,7 @@ ccci-y += port_char.o port_net.o port_ipc.o port_cfg.o port_smem.o \
 	port_rpc.o port_sysmsg.o port_poller.o port_ctlmsg.o port_proxy.o
 
 # md ee routines
-ccci-y += mdee_ctl.o mdee_dumper_v1.o mdee_dumper_v2.o
+ccci-y += mdee_ctl.o mdee_dumper_v1.o mdee_dumper_v2.o mdee_dumper_v3.o
 
 # modem drivers
 ifeq ($(CONFIG_MTK_ECCCI_CCIF), y)
