@@ -93,6 +93,8 @@
 #define LP_OWN_BACK_FAILED_RESET_CNT    5
 #define LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND	5
 #define LP_DBGCR_POLL_ROUND				1
+#define LP_OWN_BACK_LOOP_DELAY_MIN_US   900
+#define LP_OWN_BACK_LOOP_DELAY_MAX_US   1000
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
