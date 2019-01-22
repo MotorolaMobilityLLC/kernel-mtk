@@ -2604,9 +2604,9 @@
 		clock-names = "MFB_CLK_IMG_MFB";
 	};
 
-	tsf@1a0b1c00 {
+	tsf@1a0a1000 {
 		compatible = "mediatek,tsf";
-		reg = <0 0x1a0b1c00 0 0x1000>;
+		reg = <0 0x1a0a1000 0 0x1000>;
 		interrupts = <GIC_SPI 265 IRQ_TYPE_LEVEL_LOW>;
 
 		clocks = <&camsys CAMSYS_CCU_CGPDN>;
