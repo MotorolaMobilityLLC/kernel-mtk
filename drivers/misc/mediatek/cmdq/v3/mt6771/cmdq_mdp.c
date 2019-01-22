@@ -362,7 +362,7 @@ void cmdq_mdp_init_module_base_VA(void)
 	gCmdqMdpModuleBaseVA.MDP_RSZ0 = cmdq_dev_alloc_reference_VA_by_name("mdp_rsz0");
 	gCmdqMdpModuleBaseVA.MDP_RSZ1 = cmdq_dev_alloc_reference_VA_by_name("mdp_rsz1");
 	gCmdqMdpModuleBaseVA.MDP_WROT0 = cmdq_dev_alloc_reference_VA_by_name("mdp_wrot0");
-	gCmdqMdpModuleBaseVA.MDP_WDMA = cmdq_dev_alloc_reference_VA_by_name("mdp_wdma");
+	gCmdqMdpModuleBaseVA.MDP_WDMA = cmdq_dev_alloc_reference_VA_by_name("mdp_wdma0");
 	gCmdqMdpModuleBaseVA.MDP_TDSHP = cmdq_dev_alloc_reference_VA_by_name("mdp_tdshp0");
 	gCmdqMdpModuleBaseVA.MDP_COLOR = cmdq_dev_alloc_reference_VA_by_name("mdp_color0");
 	gCmdqMdpModuleBaseVA.MDP_AAL = cmdq_dev_alloc_reference_VA_by_name("mdp_aal0");
