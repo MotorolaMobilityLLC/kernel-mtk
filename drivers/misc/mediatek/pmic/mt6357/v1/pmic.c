@@ -42,9 +42,9 @@ void vmd1_pmic_setting_on(void)
 {
 	unsigned int vcore_vosel = 0;
 	unsigned int vmodem_vosel = 0;
-	unsigned int segment = get_devinfo_with_index(29);
-	unsigned char vcore_segment = (unsigned char)((segment & 0x000C0000) >> 18);
-	unsigned char vmodem_segment = (unsigned char)((segment & 0x00002000) >> 13);
+	unsigned int segment = get_devinfo_with_index(28);
+	unsigned char vcore_segment = (unsigned char)((segment & 0xC0000000) >> 30);
+	unsigned char vmodem_segment = (unsigned char)((segment & 0x08000000) >> 27);
 
 	if ((vcore_segment & 0x3) == 0x1 ||
 	    (vcore_segment & 0x3) == 0x2) {
