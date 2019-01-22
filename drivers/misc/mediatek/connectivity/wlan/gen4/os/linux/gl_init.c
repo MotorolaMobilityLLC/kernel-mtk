@@ -1833,10 +1833,8 @@ static VOID wlanNetDestroy(struct wireless_dev *prWdev)
 VOID wlanSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 {
 	struct net_device *prDev = NULL;
-#if CFG_SUPPORT_DROP_MC_PACKET
 	UINT_32 u4PacketFilter = 0;
 	UINT_32 u4SetInfoLen = 0;
-#endif
 
 	if (!prGlueInfo)
 		return;
@@ -1845,16 +1843,52 @@ VOID wlanSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 	if (!prDev)
 		return;
 
-#if CFG_SUPPORT_DROP_MC_PACKET
 	/* new filter should not include p2p mask */
-#if CFG_ENABLE_WIFI_DIRECT_CFG_80211
 	u4PacketFilter = prGlueInfo->prAdapter->u4OsPacketFilter & (~PARAM_PACKET_FILTER_P2P_MASK);
-#endif
+
 	if (kalIoctl(prGlueInfo,
 		wlanoidSetCurrentPacketFilter,
 		&u4PacketFilter,
 		sizeof(u4PacketFilter), FALSE, FALSE, TRUE, &u4SetInfoLen) != WLAN_STATUS_SUCCESS)
 		DBGLOG(INIT, ERROR, "set packet filter failed.\n");
+
+#if !CFG_SUPPORT_DROP_ALL_MC_PACKET
+	if (u4PacketFilter & PARAM_PACKET_FILTER_MULTICAST) {
+		if (fgEnable) {
+			/* Prepare IPv6 RA packet when suspend */
+			UINT_8 MC_address[ETH_ALEN] = {0x33, 0x33, 0, 0, 0, 1};
+
+			kalIoctl(prGlueInfo,
+				 wlanoidSetMulticastList, MC_address, ETH_ALEN, FALSE, FALSE, TRUE, &u4SetInfoLen);
+		} else {
+			/* Prepare multicast address list when resume */
+			struct netdev_hw_addr *ha;
+			PUINT_8 prMCAddrList = NULL;
+			UINT_32 i = 0;
+
+			down(&g_halt_sem);
+			if (g_u4HaltFlag) {
+				up(&g_halt_sem);
+				return;
+			}
+
+			prMCAddrList = kalMemAlloc(MAX_NUM_GROUP_ADDR * ETH_ALEN, VIR_MEM_TYPE);
+
+			netdev_for_each_mc_addr(ha, prDev) {
+				if ((i < MAX_NUM_GROUP_ADDR) && (ha != NULL)) {
+					kalMemCopy((prMCAddrList + i * ETH_ALEN), ha->addr, ETH_ALEN);
+					i++;
+				}
+			}
+
+			up(&g_halt_sem);
+
+			kalIoctl(prGlueInfo, wlanoidSetMulticastList,
+				 prMCAddrList, (i * ETH_ALEN), FALSE, FALSE, TRUE, &u4SetInfoLen);
+
+			kalMemFree(prMCAddrList, VIR_MEM_TYPE, MAX_NUM_GROUP_ADDR * ETH_ALEN);
+		}
+	}
 #endif
 	kalSetNetAddressFromInterface(prGlueInfo, prDev, fgEnable);
 	wlanNotifyFwSuspend(prGlueInfo, prDev, fgEnable);
