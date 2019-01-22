@@ -351,6 +351,9 @@
  */
 #define CFG_NUM_OF_QM_RX_PKT_NUM                646
 
+/*! Maximum number of concurrent bubble timeout event */
+#define CFG_NUM_OF_BUBBLE_TIMEOUT_EVENT         1
+
 /*! Maximum number of SW RX packet buffer */
 #define CFG_RX_MAX_PKT_NUM                      ((CFG_NUM_OF_RX0_HIF_DESC + CFG_NUM_OF_RX1_HIF_DESC) * 3 \
 						+ CFG_NUM_OF_QM_RX_PKT_NUM)

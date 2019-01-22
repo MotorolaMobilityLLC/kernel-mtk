@@ -3198,7 +3198,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			u4CurrAvailFreeRfbCnt = prRxCtrl->rFreeSwRfbList.u4NumElem;
 
 			/* if SwRfb is not enough, abort reading this time */
-			if (u4CurrAvailFreeRfbCnt < u2RxPktNum) {
+			if (u4CurrAvailFreeRfbCnt < (u2RxPktNum + CFG_NUM_OF_BUBBLE_TIMEOUT_EVENT)) {
 #if CFG_HIF_RX_STARVATION_WARNING
 				DbgPrint("FreeRfb is not enough: %d available, need %d\n",
 					 u4CurrAvailFreeRfbCnt, u2RxPktNum);
@@ -3214,9 +3214,8 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 #else
 			u4RxAvailAggLen = CFG_RX_COALESCING_BUFFER_SIZE;
 #endif
-			u4RxAggCount = 0;
 
-			for (i = 0; i < u2RxPktNum; i++) {
+			for (i = 0, u4RxAggCount = 0; i < u2RxPktNum; i++) {
 				PUINT_8 pucZeroArray = NULL;
 
 restart:
@@ -3230,17 +3229,9 @@ restart:
 				}
 
 				if (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN) < u4RxAvailAggLen) {
-					if (u4RxAggCount < u4CurrAvailFreeRfbCnt) {
-						u4RxAvailAggLen -= ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN);
-						u4RxAggCount++;
-						continue;
-					}
-					/* no FreeSwRfb for rx packet */
-					DBGLOG(RX, ERROR,
-					       "[%s] RxAggCount(%d) is greater than AvailableFreeCount(%d)\n",
-					       __func__, u4RxAggCount, u4CurrAvailFreeRfbCnt);
-					ASSERT(0);
-					break;
+					u4RxAvailAggLen -= ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN);
+					u4RxAggCount++;
+					continue;
 				}
 
 				/* CFG_RX_COALESCING_BUFFER_SIZE is not large enough */
