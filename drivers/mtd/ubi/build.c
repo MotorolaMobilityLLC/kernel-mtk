@@ -89,17 +89,13 @@ struct mtd_dev_param {
 };
 
 /* Numbers of elements set in the @mtd_dev_param array */
-static int __initdata mtd_devs;
+static int mtd_devs __initdata;
 
 /* MTD devices specification parameters */
-static struct mtd_dev_param __initdata mtd_dev_param[UBI_MAX_DEVICES];
+static struct mtd_dev_param mtd_dev_param[UBI_MAX_DEVICES] __initdata;
 #ifdef CONFIG_MTD_UBI_FASTMAP
 /* UBI module parameter to enable fastmap automatically on non-fastmap images */
-#ifdef CONFIG_MTK_NAND_UBIFS_FASTMAP_SUPPORT
-static bool fm_autoconvert = 1;
-#else
 static bool fm_autoconvert;
-#endif
 static bool fm_debug;
 #endif
 
@@ -578,6 +574,30 @@ static struct attribute *ubi_dev_attrs[] = {
 	&dev_min_io_size.attr,
 	&dev_bgt_enabled.attr,
 	&dev_mtd_num.attr,
+	/*MTK start*/
+	&dev_lbb.attr,
+	&dev_move_retry.attr,
+	&dev_ec_count.attr,
+	&dev_mean_ec.attr,
+	&dev_ec_sum.attr,
+	&dev_min_ec.attr,
+	&dev_wl_count.attr,
+	&dev_wl_size.attr,
+	&dev_scrub_count.attr,
+	&dev_scrub_size.attr,
+	&dev_wl_th.attr,
+#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
+	&dev_wl_archive_count.attr,
+	&dev_tlc_ec_count.attr,
+	&dev_tlc_mean_ec.attr,
+	&dev_tlc_ec_sum.attr,
+	&dev_tlc_min_ec.attr,
+	&dev_tlc_max_ec.attr,
+	&dev_mtbl_slots.attr,
+	&dev_tlc_wl_th.attr,
+#endif
+	&dev_torture.attr,
+	/*MTK end*/
 	NULL
 };
 ATTRIBUTE_GROUPS(ubi_dev);
@@ -612,102 +632,7 @@ static int ubi_sysfs_init(struct ubi_device *ubi, int *ref)
 		return err;
 
 	*ref = 1;
-	err = device_create_file(&ubi->dev, &dev_eraseblock_size);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_avail_eraseblocks);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_total_eraseblocks);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_volumes_count);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_max_ec);
-	if (err)
-		return err;
-/*MTK start*/
-	err = device_create_file(&ubi->dev, &dev_lbb);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_move_retry);
-	if (err)
-		return err;
-#ifdef CONFIG_MTK_SLC_BUFFER_SUPPORT
-	err = device_create_file(&ubi->dev, &dev_wl_archive_count);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_tlc_ec_count);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_tlc_mean_ec);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_tlc_ec_sum);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_tlc_min_ec);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_tlc_max_ec);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_mtbl_slots);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_tlc_wl_th);
-	if (err)
-		return err;
-#endif
-	err = device_create_file(&ubi->dev, &dev_ec_count);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_mean_ec);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_ec_sum);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_min_ec);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_wl_count);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_wl_size);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_scrub_count);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_scrub_size);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_wl_th);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_torture);
-	if (err)
-		return err;
-/*MTK end*/
-	err = device_create_file(&ubi->dev, &dev_reserved_for_bad);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_bad_peb_count);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_max_vol_count);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_min_io_size);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_bgt_enabled);
-	if (err)
-		return err;
-	err = device_create_file(&ubi->dev, &dev_mtd_num);
-	return err;
+	return 0;
 }
 
 /**
@@ -716,17 +641,6 @@ static int ubi_sysfs_init(struct ubi_device *ubi, int *ref)
  */
 static void ubi_sysfs_close(struct ubi_device *ubi)
 {
-	device_remove_file(&ubi->dev, &dev_mtd_num);
-	device_remove_file(&ubi->dev, &dev_bgt_enabled);
-	device_remove_file(&ubi->dev, &dev_min_io_size);
-	device_remove_file(&ubi->dev, &dev_max_vol_count);
-	device_remove_file(&ubi->dev, &dev_bad_peb_count);
-	device_remove_file(&ubi->dev, &dev_reserved_for_bad);
-	device_remove_file(&ubi->dev, &dev_max_ec);
-	device_remove_file(&ubi->dev, &dev_volumes_count);
-	device_remove_file(&ubi->dev, &dev_total_eraseblocks);
-	device_remove_file(&ubi->dev, &dev_avail_eraseblocks);
-	device_remove_file(&ubi->dev, &dev_eraseblock_size);
 	device_unregister(&ubi->dev);
 }
 
@@ -1436,7 +1350,8 @@ int ubi_detach_mtd_dev(int ubi_num, int anyway)
 	/* If we don't write a new fastmap at detach time we lose all
 	 * EC updates that have been made since the last written fastmap.
 	 * In case of fastmap debugging we omit the update to simulate an
-	 * unclean shutdown. */
+	 * unclean shutdown.
+	 */
 	if (!ubi_dbg_chk_fastmap(ubi))
 		ubi_update_fastmap(ubi);
 #endif

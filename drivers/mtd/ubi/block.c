@@ -42,7 +42,6 @@
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/slab.h>
-#include <linux/vmalloc.h>
 #include <linux/mtd/ubi.h>
 #include <linux/workqueue.h>
 #include <linux/blkdev.h>
@@ -92,10 +91,8 @@ struct ubiblock {
 	struct request_queue *rq;
 
 	struct workqueue_struct *wq;
-	struct work_struct work;
 
 	struct mutex dev_mutex;
-	spinlock_t queue_lock;
 	struct list_head list;
 	struct blk_mq_tag_set tag_set;
 };
