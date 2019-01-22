@@ -69,6 +69,8 @@
 #include "mtk_charger_intf.h"
 #include <mt6336.h>
 
+static struct mt6336_ctrl *lowq_ctrl;
+
 static int mt6336_get_mivr(struct charger_device *chg_dev);
 
 struct mt6336_charger {
@@ -348,9 +350,10 @@ int mt6336_plug_in_setting(struct charger_device *chg_dev)
 	mt6336_config_interface(0x455, 0x01, 0xFF, 0);
 	mt6336_config_interface(0x3C9, 0x10, 0xFF, 0);
 	mt6336_config_interface(0x3CF, 0x03, 0xFF, 0);
-	mt6336_config_interface(0x402, 0x03, 0xFF, 0);
 	/* ICC/ICL status bias current setting */
 	mt6336_config_interface(0x529, 0x88, 0xFF, 0);
+	/* Enable RG_EN_TERM */
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 
 	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
 	mt6336_unmask_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
@@ -363,6 +366,21 @@ int mt6336_plug_in_setting(struct charger_device *chg_dev)
 	mt6336_enable_interrupt(MT6336_INT_STATE_BUCK_EOC, "mt6336 charger");
 	/* mt6336_enable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger"); */
 	mt6336_enable_interrupt(MT6336_INT_SAFETY_TIMEOUT, "mt6336 charger");
+
+	return 0;
+}
+
+int mt6336_plug_out_setting(struct charger_device *chg_dev)
+{
+	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
+	mt6336_ctrl_enable(lowq_ctrl);
+
+	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
+
+	/* enter low power mode */
+	mt6336_ctrl_disable(lowq_ctrl);
 
 	return 0;
 }
@@ -629,6 +647,8 @@ void mt6336_eoc_callback(void)
 {
 	pr_err("mt6336_eoc_callback\n");
 
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 1);
+	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 1);
 	mt6336_enable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
 
 	if (info != NULL) {
@@ -644,6 +664,8 @@ void mt6336_rechg_callback(void)
 {
 	pr_err("mt6336_rechg_callback\n");
 	mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
 
 	if (info != NULL) {
 		pr_err("call chain\n");
@@ -672,7 +694,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.suspend = NULL,
 	.resume = NULL,
 	.plug_in = mt6336_plug_in_setting,
-	.plug_out = NULL,
+	.plug_out = mt6336_plug_out_setting,
 	.enable = mt6336_enable_charging,
 	.disable = mt6336_disable_charging,
 	.enable_powerpath = mt6336_enable_powerpath,
@@ -739,8 +761,11 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 		goto err_register_charger_dev;
 	}
 
-	/* Enable RG_EN_TERM */
-	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
+	lowq_ctrl = mt6336_ctrl_get("mt6336_charger");
+
+	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
+	mt6336_ctrl_enable(lowq_ctrl);
+
 	mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 1);
 
 	mt6336_set_mivr(info->charger_dev, 4500000);
@@ -751,6 +776,8 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_BAT_RECHG, mt6336_rechg_callback);
 	mt6336_register_interrupt_callback(MT6336_INT_SAFETY_TIMEOUT, mt6336_safety_timeout_callback);
 
+	/* enter low power mode */
+	mt6336_ctrl_disable(lowq_ctrl);
 
 	return 0;
 
