@@ -223,6 +223,22 @@ struct mtk_eint_offsets {
  * @port_mask: The mask of register.
  * @port_align: Provide clear register and set register step.
  */
+
+extern int mt_set_gpio_mode(unsigned long pin, unsigned long mode);
+extern int mt_set_gpio_driving(unsigned long pin, unsigned long strength);
+extern int mt_set_gpio_dir(unsigned long pin, unsigned long dir);
+extern int mt_get_gpio_dir(unsigned long pin);
+extern int mt_get_gpio_out(unsigned long pin);
+extern int mt_set_gpio_out(unsigned long pin, unsigned long output);
+extern int mt_get_gpio_in(unsigned long pin);
+extern int mt_set_gpio_ies(unsigned long pin, unsigned long enable);
+extern int mt_set_gpio_smt(unsigned long pin, unsigned long enable);
+extern int mt_set_gpio_slew_rate(unsigned long pin, unsigned long enable);
+extern int mt_set_gpio_pull_enable(unsigned long pin, unsigned long enable);
+extern int mt_set_gpio_pull_select(unsigned long pin, unsigned long select);
+extern int mt_set_gpio_pull_resistor(unsigned long pin, unsigned long resistors);
+
+
 struct mtk_pinctrl_devdata {
 	const struct mtk_desc_pin	*pins;
 	unsigned int				npins;
@@ -234,6 +250,25 @@ struct mtk_pinctrl_devdata {
 			unsigned char align, bool isup, unsigned int arg);
 	int (*spec_ies_smt_set)(struct regmap *reg, unsigned int pin,
 			unsigned char align, int value, enum pin_config_param arg);
+	void (*spec_pinmux_set)(struct regmap *reg, unsigned int pin,
+			unsigned int mode);
+	void (*spec_dir_set)(unsigned int *reg_addr, unsigned int pin);
+	int (*spec_pull_get)(struct regmap *reg, unsigned int pin);
+	int (*spec_ies_get)(struct regmap *reg, unsigned int pin);
+	int (*spec_smt_get)(struct regmap *reg, unsigned int pin);
+	int (*spec_set_gpio_mode)(unsigned long pin, unsigned long mode);
+	int (*mt_set_gpio_dir)(unsigned long pin, unsigned long dir);
+	int (*mt_get_gpio_dir)(unsigned long pin);
+	int (*mt_get_gpio_out)(unsigned long pin);
+	int (*mt_set_gpio_out)(unsigned long pin, unsigned long output);
+	int (*mt_set_gpio_driving)(unsigned long pin, unsigned long strength);
+	int (*mt_get_gpio_in)(unsigned long pin);
+	int (*mt_set_gpio_ies)(unsigned long pin, unsigned long enable);
+	int (*mt_set_gpio_smt)(unsigned long pin, unsigned long enable);
+	int (*mt_set_gpio_slew_rate)(unsigned long pin, unsigned long enable);
+	int (*mt_set_gpio_pull_enable)(unsigned long pin, unsigned long enable);
+	int (*mt_set_gpio_pull_select)(unsigned long pin, unsigned long select);
+	int (*mt_set_gpio_pull_resistor)(unsigned long pin, unsigned long resistors);
 	unsigned int dir_offset;
 	unsigned int ies_offset;
 	unsigned int smt_offset;
