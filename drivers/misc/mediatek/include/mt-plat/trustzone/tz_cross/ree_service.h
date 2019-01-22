@@ -52,6 +52,9 @@ enum ReeServiceCommand {
 	REE_SERV_SEMAPHORE_DOWNINT,     /* interruptible down */
 	REE_SERV_GET_CHUNK_MEMPOOL,
 	REE_SERV_REL_CHUNK_MEMPOOL,
+
+	REE_SERV_PM_GET,		/* pm runtime support */
+	REE_SERV_PM_PUT,
 };
 
 /* //////// Param structure for commands */
