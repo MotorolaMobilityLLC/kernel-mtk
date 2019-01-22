@@ -670,7 +670,8 @@ static int clkdbg_clkop_int_ckname(int (*clkop)(struct clk *clk),
 	char *clk_name;
 	int r = 0;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	clk_name = strsep(&c, " ");
@@ -724,7 +725,8 @@ static int clkdbg_clkop_void_ckname(void (*clkop)(struct clk *clk),
 	char *ign;
 	char *clk_name;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	clk_name = strsep(&c, " ");
@@ -794,8 +796,12 @@ void prepare_enable_provider(const char *pvd)
 
 	for (; pvdck->ck; pvdck++) {
 		if (allpvd || (pvdck->provider_name &&
-				strcmp(pvd, pvdck->provider_name) == 0))
-			clk_prepare_enable(pvdck->ck);
+				strcmp(pvd, pvdck->provider_name) == 0)) {
+			int r = clk_prepare_enable(pvdck->ck);
+
+			if (r)
+				clk_err("clk_prepare_enable(): %d\n", r);
+		}
 	}
 }
 
@@ -819,7 +825,8 @@ static void clkpvdop(void (*pvdop)(const char *), const char *clkpvdop_name,
 	char *ign;
 	char *pvd_name;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	pvd_name = strsep(&c, " ");
@@ -854,7 +861,8 @@ static int clkdbg_set_parent(struct seq_file *s, void *v)
 	struct clk *parent;
 	int r;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	clk_name = strsep(&c, " ");
@@ -902,7 +910,8 @@ static int clkdbg_set_rate(struct seq_file *s, void *v)
 	unsigned long rate;
 	int r;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	clk_name = strsep(&c, " ");
@@ -989,7 +998,8 @@ static int parse_reg_val_from_cmd(void __iomem **preg, unsigned long *pval)
 	char *val_str;
 	int r = 0;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	reg_str = strsep(&c, " ");
@@ -1082,7 +1092,8 @@ static int parse_val_from_cmd(unsigned long *pval)
 	char *val_str;
 	int r = 0;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	val_str = strsep(&c, " ");
@@ -1393,7 +1404,8 @@ static int clkdbg_pm_runtime_enable(struct seq_file *s, void *v)
 	char *dev_name;
 	struct platform_device *pdev;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	dev_name = strsep(&c, " ");
@@ -1422,7 +1434,8 @@ static int clkdbg_pm_runtime_disable(struct seq_file *s, void *v)
 	char *dev_name;
 	struct platform_device *pdev;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	dev_name = strsep(&c, " ");
@@ -1451,7 +1464,8 @@ static int clkdbg_pm_runtime_get_sync(struct seq_file *s, void *v)
 	char *dev_name;
 	struct platform_device *pdev;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	dev_name = strsep(&c, " ");
@@ -1481,7 +1495,8 @@ static int clkdbg_pm_runtime_put_sync(struct seq_file *s, void *v)
 	char *dev_name;
 	struct platform_device *pdev;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	dev_name = strsep(&c, " ");
@@ -1514,7 +1529,8 @@ static int genpd_op(const char *gpd_op_name, struct seq_file *s)
 	int (*gpd_op)(struct generic_pm_domain *);
 	int r = 0;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	pd_name = strsep(&c, " ");
@@ -1681,7 +1697,8 @@ static int clkdbg_reg_pdrv(struct seq_file *s, void *v)
 	char *ign;
 	char *pd_name;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	pd_name = strsep(&c, " ");
@@ -1701,7 +1718,8 @@ static int clkdbg_unreg_pdrv(struct seq_file *s, void *v)
 	char *ign;
 	char *pd_name;
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	ign = strsep(&c, " ");
 	pd_name = strsep(&c, " ");
@@ -2067,7 +2085,8 @@ static int clkdbg_show(struct seq_file *s, void *v)
 	const struct cmd_fn *cf;
 	char cmd[sizeof(last_cmd)];
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(cmd));
+	cmd[sizeof(cmd) - 1] = 0;
 
 	for (cf = custom_cmds; cf && cf->cmd; cf++) {
 		char *c = cmd;
