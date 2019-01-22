@@ -460,6 +460,13 @@ static void ShowStatus(void)
 			LOGE("[Hang_Detect] mtk_dump_gpu_memory_usage not support\n");
 		LOGE("[Hang_Detect] dump gpu mm usage end\n");
 	#endif
+
+	LOGE("[Hang_Detect] dump msdc info\n");
+	#ifdef CONFIG_MACH_MT6763
+		msdc_hang_detect_dump(0);
+		msdc_hang_detect_dump(1);
+	#endif
+
 	LOGE("[Hang_Detect] show status end\n");
 	system_server_pid = 0;
 	surfaceflinger_pid = 0;
