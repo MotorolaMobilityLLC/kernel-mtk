@@ -82,5 +82,6 @@ void mtk_trigger_emi_report(u64 pa);
 
 int mtk_kbase_is_gpu_always_on(void);
 int mtk_kbase_gpu_debug_log(void);
+unsigned long mtk_get_ged_dvfs_last_commit_idx(void);
 
 #endif /* __MTK_PLATFORM_COMMON_H__ */

@@ -79,8 +79,8 @@ static void _mtk_pm_callback_power_off(void)
 	ged_dvfs_gpu_clock_switch_notify(0);
 #endif
 
-	g_curFreqID = mt_gpufreq_get_cur_freq_index();
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
+	g_curFreqID = mtk_get_ged_dvfs_last_commit_idx();
 
 	_mtk_check_MFG_idle();
 
@@ -113,13 +113,12 @@ static int _mtk_pm_callback_power_on(void)
 	/* Enable clock gating */
 	mt_gpufreq_enable_CG();
 
-	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
-
 	/* Write 1 into 0x13000130 bit 0 to enable timestamp register (TIMESTAMP).*/
 	/* TIMESTAMP will be used by clGetEventProfilingInfo.*/
 	writel(0x00000001, g_MFG_base + 0x130);
 
 	/* Resume frequency before power off */
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
 	mtk_set_mt_gpufreq_target(g_curFreqID);
 
 #ifdef ENABLE_COMMON_DVFS
