@@ -634,7 +634,7 @@ PROC_FOPS_RW(scp_dvfs_ctrl);
 static int mt_scp_dvfs_create_procfs(void)
 {
 	struct proc_dir_entry *dir = NULL;
-	int i;
+	int i, ret = 0;
 
 	struct pentry {
 		const char *name;
@@ -655,13 +655,14 @@ static int mt_scp_dvfs_create_procfs(void)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
-		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops))
+		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops)) {
 			pr_notice(SCP_DVFS_TAG "ERROR: %s: create /proc/scp_dvfs/%s failed\n",
 						__func__, entries[i].name);
-		return -ENOMEM;
+			ret = -ENOMEM;
+		}
 	}
 
-	return 0;
+	return ret;
 }
 #endif /* CONFIG_PROC_FS */
 
