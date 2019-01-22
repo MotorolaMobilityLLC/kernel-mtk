@@ -552,8 +552,11 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	int i;
 	int c0, c1;
 #endif
-	if (boost_value >= 3000) { /* dvfs floor */
+	int ctl_no = div64_s64(boost_value, 1000);
 
+	switch (ctl_no) {
+	case 3:
+		/* dvfs floor */
 		boost_value -= 3000;
 		cluster = (int)boost_value / 100;
 		boost_value = (int)boost_value % 100;
@@ -577,18 +580,27 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 				min_boost_freq[1] = 0;
 		}
 #endif
-
 		stune_task_threshold = default_stune_threshold;
-	} else if (boost_value >= 2000) { /* dvfs short cut */
+		break;
+	case 2:
+		/* dvfs short cut */
 		boost_value -= 2000;
 		stune_task_threshold = default_stune_threshold;
 
 		dvfs_on_demand = true;
-	} else if (boost_value >= 1000) { /* boost all tasks */
+		break;
+	case 1:
+		/* boost all tasks */
 		boost_value -= 1000;
 		stune_task_threshold = 0;
-	} else { /* boost big task only */
+		break;
+	case 0:
+		/* boost big task only */
 		stune_task_threshold = default_stune_threshold;
+		break;
+	default:
+		printk_deferred("warning: perf ctrl no should be 0~3\n");
+		return -EINVAL;
 	}
 
 	if (boost_value < -100 || boost_value > 100)
@@ -791,12 +803,14 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	int i;
 	int c0, c1;
 #endif
-	if (boost >= 3000) { /* dvfs floor */
+	int ctl_no = div64_s64(boost, 1000);
 
+	switch (ctl_no) {
+	case 3:
+		/* dvfs floor */
 		boost -= 3000;
 		cluster = (int)boost / 100;
 		boost = (int)boost % 100;
-
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
 		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
 			floor = 1;
@@ -816,21 +830,32 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 				min_boost_freq[1] = 0;
 		}
 #endif
-
 		stune_task_threshold = default_stune_threshold;
-	} else if (boost >= 2000) { /* dvfs short cut */
+		break;
+	case 2:
+		/* dvfs short cut */
 		boost -= 2000;
 		stune_task_threshold = default_stune_threshold;
 
 		dvfs_on_demand = true;
-	} else if (boost >= 1000) {
+		break;
+	case 1:
+		/* boost all tasks */
 		boost -= 1000;
 		stune_task_threshold = 0;
-	} else
+		break;
+	case 0:
+		/* boost big tasks only */
 		stune_task_threshold = default_stune_threshold;
+		break;
+	default:
+		printk_deferred("warning: perf ctrl no should be 0~3\n");
+		return -EINVAL;
+	}
 
 	if (boost < -100 || boost > 100) {
 		stune_task_threshold = default_stune_threshold;
+		printk_deferred("warning: perf boost value should be -100~100\n");
 		return -EINVAL;
 	}
 
