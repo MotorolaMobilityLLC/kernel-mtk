@@ -119,6 +119,7 @@ config MACH_MT6758
 	select MTK_EIC
 	select MTK_SYSTRACKER_V2
 	select MTK_USB2JTAG_SUPPORT
+	select MTK_FIQ_CACHE
 	help
 	  This enables support for MediaTek MT6758
 	  Support for aarch64 Architecture
