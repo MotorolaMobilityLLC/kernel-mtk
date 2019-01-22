@@ -23,7 +23,8 @@
 
 /* RT5081 Private RegMap */
 
-#define RT5081_REG_HIDDEN_CTRL				(0x82)
+#define RT5081_REG_PHY_CTRL1				(0x80)
+#define RT5081_REG_PHY_CTRL3				(0x82)
 #define RT5081_REG_CLK_CTRL2				(0x87)
 #define RT5081_REG_CLK_CTRL3				(0x88)
 
