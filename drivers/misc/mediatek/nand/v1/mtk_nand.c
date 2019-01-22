@@ -64,6 +64,7 @@
 #include <asm/div64.h>
 #include <linux/regulator/consumer.h>
 #include "mtk_nand_fs.h"
+#include <mtk_meminfo.h>
 
 #ifdef CONFIG_MNTL_SUPPORT
 #include "mtk_nand_ops.h"
@@ -7988,6 +7989,12 @@ static struct platform_driver mtk_nand_driver = {
 
 static int __init mtk_nand_init(void)
 {
+#ifdef CONFIG_MNTL_SUPPORT
+	int err;
+	void __iomem *va;
+	u64 base, size;
+#endif
+
 	g_i4Interrupt = 0;
 	g_i4InterruptRdDMA = 0;
 
@@ -8020,7 +8027,19 @@ static int __init mtk_nand_init(void)
 	init_profile_system();
 #endif
 
-	return platform_driver_register(&mtk_nand_driver);
+	err = platform_driver_register(&mtk_nand_driver);
+
+#ifdef CONFIG_MNTL_SUPPORT
+	get_mntl_buf(&base, &size);
+	if (base != 0) {
+		va = ioremap(base, size);
+	pr_debug("load ko %p\n", va);
+	init_module_mem((void *)va, size);
+	} else
+		pr_debug("mntl mem buffer is NULL\n");
+#endif
+
+	return err;
 }
 
 /******************************************************************************
