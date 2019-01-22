@@ -805,7 +805,7 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 				first_task = false;
 				pre_throughput = max_throughput;
 			} else {
-				if (pre_throughput)
+				if (!pre_throughput)
 					continue;
 				DP_TIMER_GET_DURATION_IN_US(
 							pmqos_curr_record->submit_tm,
