@@ -370,7 +370,7 @@ static int disp_aal_wait_hist(unsigned long timeout)
 }
 
 #ifdef CONFIG_MTK_AAL_SUPPORT
-static void disp_aal_clear_irq_only(enum DISP_MODULE_ENUM module)
+static void disp_aal_clear_irq_only(enum DISP_MODULE_ENUM module, bool cleared)
 {
 	unsigned int intsta;
 	unsigned long flags;
@@ -386,14 +386,24 @@ static void disp_aal_clear_irq_only(enum DISP_MODULE_ENUM module)
 
 		/* Allow to disable interrupt */
 		g_aal_dirty_frame_retrieved[index] = 1;
+		/* Check current irq status */
+		intsta = DISP_REG_GET(DISP_AAL_INTSTA + offset) & 0x3;
+		if (intsta != 0) {
+			/* print error message */
+			AAL_ERR("intsta error:(0x%08x), Module(%d), process:(%d), in (%s)",
+				intsta, module, cleared, __func__);
+		}
 		aal_index_hist_spin_unlock(index, flags);
 
 		/*
 		 * no need per-frame wakeup.
 		 * We stop interrupt until next frame dirty.
 		 */
-		disp_aal_set_interrupt_by_module(module, 0);
+		if (cleared == true)
+			disp_aal_set_interrupt_by_module(module, 0);
 	}
+
+	AAL_NOTICE("disp_aal_clear_irq_only, Module(%d), process:(%d)", module, cleared);
 }
 
 static void disp_aal_single_pipe_hist_update(enum DISP_MODULE_ENUM module)
@@ -408,7 +418,7 @@ static void disp_aal_single_pipe_hist_update(enum DISP_MODULE_ENUM module)
 	do {
 		/* Only process AAL0 in single module state */
 		if (module != AAL0_MODULE_NAMING) {
-			disp_aal_clear_irq_only(module);
+			disp_aal_clear_irq_only(module, true);
 			break;
 		}
 
@@ -427,11 +437,15 @@ static void disp_aal_single_pipe_hist_update(enum DISP_MODULE_ENUM module)
 
 		/* Allow to disable interrupt */
 		g_aal_dirty_frame_retrieved[index] = 1;
+		/* Check current irq status */
+		intsta = DISP_REG_GET(DISP_AAL_INTSTA + offset) & 0x3;
+		if (intsta != 0) {
+			/* print error message */
+			AAL_ERR("intsta error:(0x%08x), Module(%d), in (%s)", intsta, module, __func__);
+		}
 		aal_index_hist_spin_unlock(index, flags);
 
 		if (spin_trylock_irqsave(&g_aal_hist_lock, flags)) {
-			DISP_CPU_REG_SET(DISP_AAL_INTSTA + offset, (intsta & ~0x3));
-
 			for (i = 0; i < AAL_HIST_BIN; i++)
 				g_aal_hist.maxHist[i] = DISP_REG_GET(DISP_AAL_STATUS_00 + (i << 2));
 			g_aal_hist.colorHist = DISP_REG_GET(DISP_COLOR_TWO_D_W1_RESULT);
@@ -506,13 +520,15 @@ static void disp_aal_multiple_pipe_hist_update(enum DISP_MODULE_ENUM module)
 		/* Allow to disable interrupt */
 		g_aal_dirty_frame_retrieved[index] = 1;
 
-		if (g_aal_module_hist_count[index] < AAL_MAX_HIST_COUNT)
-			g_aal_module_hist_count[index]++;
-		else
-			g_aal_module_hist_count[index] = 0;
+		g_aal_module_hist_count[index] = (g_aal_module_hist_count[index] + 1) & AAL_MAX_HIST_COUNT;
 
 		hist_count = g_aal_module_hist_count[index];
-
+		/* Check current irq status */
+		intsta = DISP_REG_GET(DISP_AAL_INTSTA + offset) & 0x3;
+		if (intsta != 0) {
+			/* print error message */
+			AAL_ERR("intsta error:(0x%08x), Module(%d), in (%s)", intsta, module, __func__);
+		}
 		aal_index_hist_spin_unlock(index, flags);
 
 		if (spin_trylock_irqsave(&g_aal_hist_lock, flags)) {
@@ -572,14 +588,16 @@ void disp_aal_on_end_of_frame_by_module(disp_aal_id_t id)
 #if defined(CONFIG_MACH_MT6799)
 	int pipe_status = primary_display_get_pipe_status();
 
-	AAL_DBG("pipe_status(%d), Module(%d) disp_aal_on_end_of_frame_by_module", pipe_status, module);
-
-	if (pipe_status == SINGLE_PIPE)
+	if (pipe_status == SINGLE_PIPE) {
 		update_method = UPDATE_SINGLE;
-	else if (pipe_status == DUAL_PIPE)
+		AAL_DBG("single mode,  process Module(%d) in irq_handler", module);
+	} else if (pipe_status == DUAL_PIPE) {
 		update_method = UPDATE_MULTIPLE;
-	else
+		AAL_DBG("dual mode,  process Module(%d) in irq_handler", module);
+	} else {
 		update_method = UPDATE_NONE;
+		AAL_DBG("pipe_status (%d), process Module(%d) in irq_handler", pipe_status, module);
+	}
 #endif
 
 	if (id < DISP_AAL0 || id >= DISP_AAL0 + AAL_TOTAL_MODULE_NUM)
@@ -594,7 +612,7 @@ void disp_aal_on_end_of_frame_by_module(disp_aal_id_t id)
 			disp_aal_reset_count();
 		disp_aal_multiple_pipe_hist_update(module);
 	} else {
-		disp_aal_clear_irq_only(module);
+		disp_aal_clear_irq_only(module, false);
 	}
 
 	g_aal_prev_pipe = update_method;
@@ -705,7 +723,7 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		else
 			backlight_brightness_set(bl_1024);
 	}
-	AAL_NOTICE("led_mode=%d", g_led_mode);
+	AAL_DBG("led_mode=%d", g_led_mode);
 
 	spin_lock_irqsave(&g_aal_hist_lock, flags);
 	g_aal_hist.backlight = bl_1024;
