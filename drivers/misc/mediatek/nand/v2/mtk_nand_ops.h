@@ -42,6 +42,8 @@
 /* #define MTK_FORCE_SYNC_OPS */
 /* #define MTK_FORCE_READ_FULL_PAGE */
 
+#define MTK_NAND_OPS_BG_CTRL
+
 /* UNIT TEST RELATED */
 /* #define MTK_NAND_CHIP_TEST */
 #define MTK_NAND_CHIP_DUMP_DATA_TEST
@@ -186,7 +188,9 @@ struct mtk_nand_data_info {
 
 	struct worklist_ctrl elist_ctrl;
 	struct worklist_ctrl wlist_ctrl;
-
+#ifdef MTK_NAND_OPS_BG_CTRL
+	struct completion ops_ctrl;
+#endif
 	struct task_struct *nand_bgt;
 
 	struct mtd_info *mtd;
