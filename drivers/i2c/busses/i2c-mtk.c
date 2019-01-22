@@ -1423,7 +1423,7 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	of_property_read_u32(np, "ch_offset_default", &i2c->ch_offset_default);
 	of_property_read_u32(np, "dma_ch_offset_default", &i2c->dma_ch_offset_default);
 	of_property_read_u32(np, "aed", &i2c->aed);
-	ret = of_property_read_s32(np, "scp-ch", &i2c->scp_ch);
+	ret = of_property_read_u32(np, "scp-ch", &i2c->scp_ch);
 	if (ret >= 0)
 		i2c->have_scp = true;
 
