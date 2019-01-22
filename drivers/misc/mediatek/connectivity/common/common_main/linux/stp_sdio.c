@@ -93,7 +93,7 @@ struct stp_sdio_txdbg {
 };
 #define STP_SDIO_TXDBG_MAX_SIZE (0x20)
 #endif
-
+OSAL_SLEEPABLE_LOCK fake_coredump_lock;
 /*******************************************************************************
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -402,6 +402,7 @@ INT32 stp_sdio_issue_fake_coredump(UINT8 *str)
 	UINT8 AssertStr[4 + MAX_STRING_LENGTH + 1 + 2] = { 0 };
 	UINT32 length = strlen(str) >= MAX_STRING_LENGTH ? MAX_STRING_LENGTH : strlen(str);
 	/*pack str into STP SDIO packet format */
+	osal_lock_sleepable_lock(&fake_coredump_lock);
 	/*STP header */
 	AssertStr[0] = 0x80;
 	AssertStr[1] = 0x50;
@@ -431,6 +432,7 @@ INT32 stp_sdio_issue_fake_coredump(UINT8 *str)
 	AssertStr[4 + length + 2] = 0x0;
 	AssertStr[4 + length + 3] = 0x0;
 	mtk_wcn_stp_parser_data(&AssertStr[0], 4 + length + 2 + 2);
+	osal_unlock_sleepable_lock(&fake_coredump_lock);
 
 	STPSDIO_ERR_FUNC("trigger fake coredump with str:[%s] finished\n", str);
 
@@ -2593,6 +2595,7 @@ static INT32 stp_sdio_probe(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx,
 		       sizeof(g_stp_sdio_host_info.pkt_buf.tx_buf[i]));
 #endif
 	}
+	osal_sleepable_lock_init(&fake_coredump_lock);
 
 #if STP_SDIO_NEW_TXRING
 	spin_lock_init(&g_stp_sdio_host_info.pkt_buf.rd_cnt_lock);
@@ -2788,6 +2791,7 @@ static INT32 stp_sdio_remove(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx)
 		STPSDIO_ERR_FUNC("sdio_cltctx(%d) not found\n", clt_ctx);
 		return -1;
 	}
+	osal_sleepable_lock_deinit(&fake_coredump_lock);
 	if (g_stp_sdio_host_count > 0)
 		--g_stp_sdio_host_count;
 	/* 4 <0> disable irq flag in HIF-SDIO */
