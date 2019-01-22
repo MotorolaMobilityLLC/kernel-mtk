@@ -309,11 +309,12 @@ static inline bool vpu_other_core_idle_check(int core)
 			mutex_lock(&(vpu_service_cores[i].state_mutex));
 			switch (vpu_service_cores[i].state) {
 			case VCT_SHUTDOWN:
+			case VCT_BOOTUP:
 			case VCT_IDLE:
 				break;
-			case VCT_BOOTUP:
 			case VCT_EXECUTING:
 			case VCT_NONE:
+			case VCT_VCORE_CHG:
 				idle = false;
 				mutex_unlock(&(vpu_service_cores[i].state_mutex));
 				goto out;
@@ -368,6 +369,7 @@ static inline bool vpu_opp_change_idle_check(int core)
 	int i = 0;
 	bool idle = true;
 
+	#if 0
 	mutex_lock(&opp_mutex);
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 		if (i == core) {
@@ -381,6 +383,31 @@ static inline bool vpu_opp_change_idle_check(int core)
 	}
 	mutex_unlock(&opp_mutex);
 	LOG_DBG("opp_idle_check %d, %d/%d\n", idle, force_change_vcore_opp[0], force_change_vcore_opp[1]);
+	#else
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		if (i == core) {
+			continue;
+		} else {
+			LOG_DBG("vpu test %d/%d/%d\n", core, i, vpu_service_cores[i].state);
+			mutex_lock(&(vpu_service_cores[i].state_mutex));
+			switch (vpu_service_cores[i].state) {
+			case VCT_SHUTDOWN:
+			case VCT_BOOTUP:
+			case VCT_IDLE:
+			case VCT_EXECUTING:
+			case VCT_NONE:
+				break;
+			case VCT_VCORE_CHG:
+				idle = false;
+				mutex_unlock(&(vpu_service_cores[i].state_mutex));
+				goto out;
+				/*break;*/
+			}
+			mutex_unlock(&(vpu_service_cores[i].state_mutex));
+		}
+	}
+	#endif
+out:
 	return idle;
 }
 
@@ -564,8 +591,11 @@ static bool vpu_change_opp(int core, int type)
 	case OPPTYPE_VCORE:
 		LOG_INF("[vpu_%d] wait for changing vcore opp", core);
 		ret = wait_to_do_change_vcore_opp(core);
-		CHECK_RET("[vpu_%d] ..fail to wait_to_do_change_vcore_opp, ret=%d\n", core, ret);
+		CHECK_RET("[vpu_%d] ..timeout to wait_to_do_change_vcore_opp, ret=%d\n", core, ret);
 		LOG_DBG("[vpu_%d] to do vcore opp change", core);
+		mutex_lock(&(vpu_service_cores[core].state_mutex));
+		vpu_service_cores[core].state = VCT_VCORE_CHG;
+		mutex_unlock(&(vpu_service_cores[core].state_mutex));
 		mutex_lock(&opp_mutex);
 		vpu_trace_begin("vcore:request");
 		#ifdef ENABLE_PMQOS
@@ -582,6 +612,9 @@ static bool vpu_change_opp(int core, int type)
 		ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, opps.vcore.index);
 		#endif
 		vpu_trace_end();
+		mutex_lock(&(vpu_service_cores[core].state_mutex));
+		vpu_service_cores[core].state = VCT_BOOTUP;
+		mutex_unlock(&(vpu_service_cores[core].state_mutex));
 		CHECK_RET("[vpu_%d]fail to request vcore, step=%d\n", core, opps.vcore.index);
 		LOG_INF("[vpu_%d] cgopp vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 		force_change_vcore_opp[core] = false;
@@ -790,8 +823,13 @@ static int vpu_enable_regulator_and_clock(int core)
 	if (adjust_vcore) {
 		LOG_DBG("[vpu_%d] en_rc wait for changing vcore opp", core);
 		ret = wait_to_do_change_vcore_opp(core);
-		CHECK_RET("[vpu_%d] .fail to wait_to_do_change_vcore_opp(%d/%d), ret=%d\n",
-			core, opps.vcore.index, get_vcore_opp, ret);
+		if (ret) {
+			/* skip change vcore in these time */
+			LOG_WRN("[vpu_%d] .timeout to wait_to_do_change_vcore_opp(%d/%d), ret=%d\n",
+				core, opps.vcore.index, get_vcore_opp, ret);
+			ret = 0;
+			goto clk_on;
+		}
 		LOG_DBG("[vpu_%d] en_rc to do vcore opp change", core);
 #ifdef ENABLE_PMQOS
 		switch (opps.vcore.index) {
@@ -813,6 +851,7 @@ static int vpu_enable_regulator_and_clock(int core)
 		adjust_vcore, opps.vcore.index, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 	LOG_DBG("[vpu_%d] en_rc setmmdvfs(%d) done\n", core, opps.vcore.index);
 
+clk_on:
 #define ENABLE_VPU_MTCMOS(clk) \
 	{ \
 		if (clk != NULL) { \
@@ -1099,7 +1138,6 @@ static bool common_pool_is_empty(void)
 
 static int vpu_service_routine(void *arg)
 {
-	int ret = 0;
 	struct vpu_user *user = NULL;
 	struct vpu_request *req = NULL;
 	struct vpu_algo *algo = NULL;
@@ -1208,12 +1246,12 @@ static int vpu_service_routine(void *arg)
 				dsp_freq_index, opps.dspcore[service_core].index);
 
 			/*  prevent the worker shutdown vpu first, and current enque use the same algo_id */
-			ret = wait_to_do_vpu_running(service_core);
-			CHECK_RET("[vpu_%d] fail to wait_to_do_vpu_running!, ret = %d\n", service_core, ret);
-			mutex_lock(&(vpu_service_cores[service_core].state_mutex));
-			vpu_service_cores[service_core].state = VCT_EXECUTING;
+			/*ret = wait_to_do_vpu_running(service_core);*/
+			/*CHECK_RET("[vpu_%d] fail to wait_to_do_vpu_running!, ret = %d\n", service_core, ret);*/
+			/*mutex_lock(&(vpu_service_cores[service_core].state_mutex));*/
+			/*vpu_service_cores[service_core].state = VCT_PWRON;*/
 			if (req->algo_id[service_core] != vpu_service_cores[service_core].current_algo) {
-				mutex_unlock(&(vpu_service_cores[service_core].state_mutex));
+				/*mutex_unlock(&(vpu_service_cores[service_core].state_mutex));*/
 
 				if (vpu_find_algo_by_id(service_core, req->algo_id[service_core], &algo)) {
 					req->status = VPU_REQ_STATUS_INVALID;
@@ -1226,7 +1264,7 @@ static int vpu_service_routine(void *arg)
 					goto out;
 				}
 			} else {
-				mutex_unlock(&(vpu_service_cores[service_core].state_mutex));
+				/*mutex_unlock(&(vpu_service_cores[service_core].state_mutex));*/
 			}
 			LOG_DBG("[vpu] flag - 4: hw_enque_request\n");
 			vpu_hw_enque_request(service_core, req);
@@ -2046,11 +2084,19 @@ int vpu_boot_up(int core)
 	LOG_DBG("[vpu_%d] is_power_on(%d)\n", core, is_power_on[core]);
 	if (is_power_on[core]) {
 		mutex_unlock(&power_mutex[core]);
+		mutex_lock(&(vpu_service_cores[core].state_mutex));
+		vpu_service_cores[core].state = VCT_BOOTUP;
+		mutex_unlock(&(vpu_service_cores[core].state_mutex));
+		wake_up_interruptible(&waitq_change_vcore);
 		return POWER_ON_MAGIC;
 	}
 	LOG_DBG("[vpu_%d] boot_up flag2\n", core);
 
 	vpu_trace_begin("vpu_boot_up");
+	mutex_lock(&(vpu_service_cores[core].state_mutex));
+	vpu_service_cores[core].state = VCT_BOOTUP;
+	mutex_unlock(&(vpu_service_cores[core].state_mutex));
+	wake_up_interruptible(&waitq_change_vcore);
 
 	ret = vpu_enable_regulator_and_clock(core);
 	CHECK_RET("[vpu_%d]fail to enable regulator or clock\n", core);
@@ -2062,8 +2108,6 @@ int vpu_boot_up(int core)
 	ret = vpu_hw_set_debug(core);
 	CHECK_RET("[vpu_%d]fail to set debug\n", core);
 	LOG_DBG("[vpu_%d] vpu_hw_set_debug done\n", core);
-
-	/*vpu_service_cores[core].state = VCT_BOOTUP;*/
 
 out:
 
@@ -2120,6 +2164,7 @@ int vpu_shut_down(int core)
 		break;
 	case VCT_BOOTUP:
 	case VCT_EXECUTING:
+	case VCT_VCORE_CHG:
 		mutex_unlock(&(vpu_service_cores[core].state_mutex));
 		goto out;
 		/*break;*/
@@ -2129,6 +2174,7 @@ int vpu_shut_down(int core)
 	vpu_trace_begin("vpu_shut_down");
 	ret = vpu_disable_regulator_and_clock(core);
 	CHECK_RET("[vpu_%d]fail to disable regulator and clock\n", core);
+	wake_up_interruptible(&waitq_change_vcore);
 out:
 	vpu_trace_end();
 	mutex_unlock(&power_mutex[core]);
@@ -2150,8 +2196,11 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 	CHECK_RET("[vpu_%d]fail to get power!\n", core);
 	LOG_DBG("[vpu_%d] vpu_get_power done\n", core);
 
-	/*ret = wait_to_do_vpu_running(core);*/
-	/*CHECK_RET("[vpu_%d]fail to wait_to_do_vpu_running!, ret = %d\n", core, ret);*/
+	ret = wait_to_do_vpu_running(core);
+	CHECK_RET("[vpu_%d]load_algo fail to wait_to_do_vpu_running!, ret = %d\n", core, ret);
+	mutex_lock(&(vpu_service_cores[core].state_mutex));
+	vpu_service_cores[core].state = VCT_EXECUTING;
+	mutex_unlock(&(vpu_service_cores[core].state_mutex));
 
 	lock_command(core);
 	LOG_DBG("start to load algo\n");
@@ -2209,8 +2258,11 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	ret = vpu_get_power(core);
 	CHECK_RET("[vpu_%d]fail to get power!\n", core);
 
-	/*ret = wait_to_do_vpu_running(core);*/
-	/*CHECK_RET("[vpu_%d] fail to wait_to_do_vpu_running!, ret = %d\n", core, ret);*/
+	ret = wait_to_do_vpu_running(core);
+	CHECK_RET("[vpu_%d] enq fail to wait_to_do_vpu_running!, ret = %d\n", core, ret);
+	mutex_lock(&(vpu_service_cores[core].state_mutex));
+	vpu_service_cores[core].state = VCT_EXECUTING;
+	mutex_unlock(&(vpu_service_cores[core].state_mutex));
 
 	lock_command(core);
 	LOG_DBG("start to enque request\n");
