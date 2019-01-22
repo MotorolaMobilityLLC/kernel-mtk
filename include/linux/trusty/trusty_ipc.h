@@ -48,6 +48,7 @@ struct tipc_dn_chan {
 	struct list_head rx_msg_queue;
 #if defined(CONFIG_MTK_GZ_KREE)
 	u32 session;
+	struct mutex sess_lock;
 #endif
 };
 
