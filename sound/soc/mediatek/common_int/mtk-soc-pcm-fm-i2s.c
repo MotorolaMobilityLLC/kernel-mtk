@@ -164,7 +164,7 @@ static int mtk_pcm_fm_i2s_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 	AudDrv_I2S_Clk_On();
 
-	pr_warn("mtk_pcm_fm_i2s_open\n");
+	pr_debug("%s()\n", __func__);
 	runtime->hw = mtk_fm_i2s_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_fm_i2s_hardware,
 	       sizeof(struct snd_pcm_hardware));
@@ -182,7 +182,7 @@ static int mtk_pcm_fm_i2s_open(struct snd_pcm_substream *substream)
 	}
 
 	SetFMEnableFlag(true);
-	pr_warn("mtk_pcm_fm_i2s_open return\n");
+	pr_debug("%s(), return\n", __func__);
 	return 0;
 }
 

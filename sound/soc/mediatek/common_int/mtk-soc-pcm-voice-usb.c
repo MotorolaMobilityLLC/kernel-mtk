@@ -559,7 +559,7 @@ static int mtk_voice_usb_open(struct snd_pcm_substream *substream)
 		return err;
 	}
 
-	pr_warn("%s(), return\n", __func__);
+	pr_aud("%s(), return\n", __func__);
 	return 0;
 }
 

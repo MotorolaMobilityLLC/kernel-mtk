@@ -214,7 +214,8 @@ static int mtk_mrgrx_awb_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-	pr_warn("mtk_mrgrx_awb_pcm_open\n");
+	pr_debug("%s\n", __func__);
+
 	Mrgrx_AWB_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_AWB);
 	runtime->hw = mtk_mgrrx_awb_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_mgrrx_awb_hardware,
@@ -227,13 +228,14 @@ static int mtk_mrgrx_awb_pcm_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
-	pr_warn("mtk_mrgrx_awb_pcm_open runtime rate = %d channels = %d\n",
-	       runtime->rate, runtime->channels);
+	pr_debug("%s, runtime rate = %d channels = %d\n",
+		__func__, runtime->rate, runtime->channels);
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE\n");
+		pr_debug("%s, SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 	else
 		return -1;
+
 	/* here open audio clocks */
 	AudDrv_Clk_On();
 	AudDrv_Emi_Clk_On();
@@ -243,7 +245,8 @@ static int mtk_mrgrx_awb_pcm_open(struct snd_pcm_substream *substream)
 		mtk_mrgrx_awb_pcm_close(substream);
 		return ret;
 	}
-	pr_warn("mtk_mrgrx_awb_pcm_open return\n");
+	pr_aud("%s return\n", __func__);
+
 	return 0;
 }
 

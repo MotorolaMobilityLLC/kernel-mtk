@@ -4662,8 +4662,6 @@ static int get_pcb_id_state(int pcd_id)
 	int gpionum;
 	int ret = -1;
 
-	pr_debug("%s\n", __func__);
-
 	node = of_find_compatible_node(NULL, NULL,
 				       "mediatek,mt_soc_codec_63xx");
 
@@ -4685,8 +4683,6 @@ static int get_pcb_id_state(int pcd_id)
 	}
 
 	ret = gpio_get_value(gpionum);
-	pr_debug("%s(), gpio(%d) value = %d\n", __func__, gpionum, ret);
-
 	gpio_free(gpionum);
 
 	return ret;
@@ -4765,7 +4761,6 @@ static int Audio_MIC_Mode_Get(struct snd_kcontrol *kcontrol,
 {
 	int mic_mode = AUDIO_MIC_MODE_ACC;
 
-	pr_debug("%s()\n", __func__);
 	mic_mode = get_mic_mode();
 
 	if (mic_mode != -1)
@@ -6660,14 +6655,12 @@ static int Audio_Vow_Cfg0_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 {
 	int value = reg_AFE_VOW_CFG0;
 
-	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg0_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %d\n", __func__, (int)(ucontrol->value.integer.value[0]));
 	reg_AFE_VOW_CFG0 = ucontrol->value.integer.value[0];
 	return 0;
 }
@@ -6676,14 +6669,12 @@ static int Audio_Vow_Cfg1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 {
 	int value = reg_AFE_VOW_CFG1;
 
-	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG1 = ucontrol->value.integer.value[0];
 	return 0;
 }
@@ -6692,14 +6683,12 @@ static int Audio_Vow_Cfg2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 {
 	int value = reg_AFE_VOW_CFG2;
 
-	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG2 = ucontrol->value.integer.value[0];
 	return 0;
 }
@@ -6708,14 +6697,12 @@ static int Audio_Vow_Cfg3_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 {
 	int value = reg_AFE_VOW_CFG3;
 
-	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg3_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG3 = ucontrol->value.integer.value[0];
 	return 0;
 }
@@ -6724,14 +6711,12 @@ static int Audio_Vow_Cfg4_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 {
 	int value = reg_AFE_VOW_CFG4;
 
-	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg4_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG4 = ucontrol->value.integer.value[0];
 	return 0;
 }
@@ -6740,14 +6725,12 @@ static int Audio_Vow_Cfg5_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 {
 	int value = reg_AFE_VOW_CFG5;
 
-	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Cfg5_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_CFG5 = ucontrol->value.integer.value[0];
 	return 0;
 }
@@ -6772,14 +6755,12 @@ static int Audio_Vow_Periodic_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_
 {
 	int value = reg_AFE_VOW_PERIODIC;
 
-	pr_debug("%s()  = %d\n", __func__, value);
 	ucontrol->value.integer.value[0] = value;
 	return 0;
 }
 
 static int Audio_Vow_Periodic_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
 	reg_AFE_VOW_PERIODIC = ucontrol->value.integer.value[0];
 	return 0;
 }

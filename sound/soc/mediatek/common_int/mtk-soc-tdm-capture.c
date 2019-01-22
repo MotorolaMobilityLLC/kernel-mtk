@@ -285,7 +285,6 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 	runtime->hw = mtk_capture_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_capture_hardware,
 	       sizeof(struct snd_pcm_hardware));
-	pr_debug("runtime->hw->rates = 0x%x\n ", runtime->hw.rates);
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &constraints_sample_rates);
@@ -293,8 +292,9 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_err("snd_pcm_hw_constraint_integer failed\n");
 
-	pr_debug("mtk_capture_pcm_open runtime rate = %d channels = %d\n", runtime->rate,
-	       runtime->channels);
+	pr_debug("%s, runtime hw->rates = 0x%x, rate = %d, channels = %d\n", __func__,
+		 runtime->hw.rates, runtime->rate, runtime->channels);
+
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_MMAP_VALID;
@@ -307,7 +307,7 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 		mtk_capture_pcm_close(substream);
 		return ret;
 	}
-	pr_debug("mtk_capture_pcm_open return\n");
+	pr_aud("%s return\n", __func__);
 	return 0;
 }
 
