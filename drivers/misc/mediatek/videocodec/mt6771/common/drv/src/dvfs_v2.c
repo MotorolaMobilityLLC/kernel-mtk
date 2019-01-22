@@ -14,6 +14,9 @@
 #include <linux/time.h>
 #include <linux/ktime.h>
 #include <linux/timekeeping.h>
+#if !IS_ENABLED(64BIT)
+#include <asm/div64.h>
+#endif
 #include <linux/slab.h>
 #include "dvfs_v2.h"
 
@@ -24,6 +27,19 @@
 #else
 #define AL_INFO(...)
 #endif
+
+long long div_64(long long a, long long b)
+{
+#if IS_ENABLED(64BIT)
+	return (a/b);
+#else
+	long long rem = 0;
+
+	rem = do_div(a, b);
+	return a;
+#endif
+}
+
 
 /**
  * get_time_us - Get current time in us
@@ -233,8 +249,8 @@ long long est_next_submit(struct codec_history *hist)
 	if (hist->cur_cnt == 1)
 		return (hist->submit[prev_idx] + MIN_SUBMIT_GAP * 2);
 
-	return hist->submit[prev_idx] +
-		((hist->submit[prev_idx] - hist->submit[first_idx]) * 2 /
+	return hist->submit[prev_idx] + div_64(
+		(hist->submit[prev_idx] - hist->submit[first_idx]) * 2,
 		(hist->cur_cnt - 1));
 }
 
@@ -285,11 +301,14 @@ int est_next_job(long long now_us, long long *t_us, int *kcy, int *min_mhz,
 			*t_us = now_us;
 		else {
 			if (deadline > now_us) {
-				new_mhz = (*kcy) * 1000LL / (deadline - now_us);
+				new_mhz = div_64((*kcy) * 1000LL,
+						 (deadline - now_us));
 				if (new_mhz > *min_mhz)
 					*min_mhz = (int)new_mhz;
 
-				*t_us = now_us + ((*kcy) * 1000LL / (*min_mhz));			} else {
+				*t_us = now_us + div_64((*kcy) * 1000LL,
+							(*min_mhz));
+		} else {
 				/**
 				 * Overdue, set *t_us = now_us to signal full
 				 * speed
@@ -339,7 +358,8 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 		memset(hist->start, 0, sizeof(long long)*MAX_HISTORY);
 		memset(hist->end, 0, sizeof(long long)*MAX_HISTORY);
 
-		hist->kcy[0] = (int)(job->mhz * (job->end - job->start)/1000);
+		hist->kcy[0] = (int)div_64(job->mhz * (job->end - job->start),
+					1000LL);
 		hist->submit[0] = job->submit;
 		hist->start[0] = job->start;
 		hist->end[0] = job->end;
@@ -354,7 +374,7 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 	/* Update history */
 	if (hist->cur_cnt == MAX_HISTORY) {
 		hist->tot_kcy = hist->tot_kcy - hist->kcy[hist_idx] +
-			(int)(job->mhz * (job->end - job->start)/1000);
+			(int)div_64(job->mhz * (job->end - job->start), 1000);
 		hist->tot_time = hist->tot_time -
 				(hist->end[hist_idx] - hist->start[hist_idx]) +
 				(job->end - job->start);
@@ -363,13 +383,14 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 	} else {
 		hist->cur_cnt++;
 		hist->tot_kcy = hist->tot_kcy +
-			(int)(job->mhz * (job->end - job->start)/1000);
+			(int)div_64(job->mhz * (job->end - job->start), 1000);
 		hist->tot_time = hist->tot_time + (job->end - job->start);
 		AL_INFO("update_hist_item 2 kcy %d, time %llu, cnt %d\n",
 			hist->tot_kcy, hist->tot_time, hist->cur_cnt);
 	}
 
-	hist->kcy[hist_idx] = (int)(job->mhz * (job->end - job->start)/1000);
+	hist->kcy[hist_idx] = (int)div_64(job->mhz * (job->end - job->start),
+					1000LL);
 	hist->submit[hist_idx] = job->submit;
 	hist->start[hist_idx] = job->start;
 	hist->end[hist_idx] = job->end;
