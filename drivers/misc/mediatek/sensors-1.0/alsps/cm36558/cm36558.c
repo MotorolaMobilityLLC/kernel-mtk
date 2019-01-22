@@ -1900,7 +1900,7 @@ static int CM36558_i2c_suspend(struct device *dev)
 	struct CM36558_priv *obj = i2c_get_clientdata(client);
 	int err = 0;
 
-	APS_FUN();
+	/* APS_FUN(); */
 	if (!obj) {
 		APS_PR_ERR("null pointer!!\n");
 		return 0;
@@ -1919,7 +1919,7 @@ static int CM36558_i2c_resume(struct device *dev)
 	struct CM36558_priv *obj = i2c_get_clientdata(client);
 	int err = 0;
 
-	APS_FUN();
+	/* APS_FUN(); */
 	if (!obj) {
 		APS_PR_ERR("null pointer!!\n");
 		return 0;
