@@ -34,6 +34,8 @@ obj-$(CONFIG_MACH_MT6775) += legacy_controller/
 
 obj-$(CONFIG_MACH_MT6739) += cpu_loading/
 
+obj-$(CONFIG_MTK_LOAD_TRACKER) += load_track/
+
 ifeq ($(CONFIG_MTK_FPSGO), y)
 	ifeq ($(CONFIG_MACH_MT6771), y)
 		ccflags-y += -DCONFIG_MTK_FPSGO_V2
