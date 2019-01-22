@@ -239,9 +239,11 @@ VOID glBusFreeIrq(PVOID pvData, PVOID pvCookie);
 VOID glSetPowerState(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 ePowerMode);
 
 #if defined(MT6797)
-VOID glDumpConnSysCpuInfo(P_GLUE_INFO_T prGlueInfo);
+
 PUINT_8 glRemapConnsysAddr(P_GLUE_INFO_T prGlueInfo, UINT_32 consysAddr, UINT_32 remapLength);
+
 VOID glUnmapConnsysAddr(P_GLUE_INFO_T prGlueInfo, PUINT_8 remapAddr, UINT_32 consysAddr);
+
 #endif
 
 VOID HifDmaInit(GL_HIF_INFO_T *HifInfo);
