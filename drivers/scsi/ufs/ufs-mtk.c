@@ -747,6 +747,13 @@ static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		ret = ufshcd_make_hba_operational(hba);
 		if (ret)
 			return ret;
+
+#ifdef CONFIG_MTK_HW_FDE
+
+		/* HW FDE related resume operation */
+		mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_INIT, 0, 0, 0);
+
+#endif
 	}
 
 	return ret;
@@ -1585,6 +1592,15 @@ void ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu)
 		*dunl = (lba & 0x7FFFF) << 12;   /* byte address for lower 32 bit */
 		*dunu = (lba >> (32-12)) << 12;  /* byte address for higher 32 bit */
 	}
+}
+
+bool ufs_mtk_is_data_cmd(char cmd_op)
+{
+	if (cmd_op == WRITE_6 || cmd_op == WRITE_10 || cmd_op == WRITE_16 ||
+	    cmd_op == READ_6 || cmd_op == READ_10 || cmd_op == READ_16)
+		return true;
+
+	return false;
 }
 
 /**
