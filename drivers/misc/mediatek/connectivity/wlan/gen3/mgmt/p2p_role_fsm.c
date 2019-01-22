@@ -631,7 +631,7 @@ VOID p2pRoleFsmRunEventBeaconTimeout(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T p
 			/* Indicate disconnect to Host. */
 			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 							 prP2pRoleFsmInfo->ucRoleIndex,
-							 NULL, NULL, 0, REASON_CODE_DISASSOC_INACTIVITY,
+							 NULL, NULL, 0, REASON_CODE_DEAUTH_LEAVING_BSS,
 							 WLAN_STATUS_MEDIA_DISCONNECT);
 
 			if (prP2pBssInfo->prStaRecOfAP != NULL) {
