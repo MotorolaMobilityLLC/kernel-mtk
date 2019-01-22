@@ -122,7 +122,6 @@ static struct cpuidle_driver mt81xx_v2_cpuidle_driver = {
 		.exit_latency     = 2000,            /* 2 ms */
 		.target_residency = 1,
 #if USING_TICK_BROADCAST
-		.flags            = CPUIDLE_FLAG_TIMER_STOP,
 #else
 		.flags            = CPUIDLE_FLAG_TIME_VALID,
 #endif
@@ -134,7 +133,6 @@ static struct cpuidle_driver mt81xx_v2_cpuidle_driver = {
 		.exit_latency     = 2000,            /* 2 ms */
 		.target_residency = 1,
 #if USING_TICK_BROADCAST
-		.flags            = CPUIDLE_FLAG_TIMER_STOP,
 #else
 		.flags            = CPUIDLE_FLAG_TIME_VALID,
 #endif
