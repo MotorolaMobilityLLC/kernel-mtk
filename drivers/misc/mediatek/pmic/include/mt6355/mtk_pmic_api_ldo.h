@@ -11,19 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef _PMIC_API_H_
-#define _PMIC_API_H_
+#ifndef _MT_PMIC_API_LDO_H_
+#define _MT_PMIC_API_LDO_H_
 
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
-#include "mt6353/mtk_pmic_api.h"
-#endif
 
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
-#include "mt6335/mtk_pmic_api.h"
-#endif
-
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
-#include "mt6355/mtk_pmic_api.h"
-#endif
-
-#endif				/* _PMIC_API_H_ */
+#endif				/* _MT_PMIC_API_LDO_H_ */
