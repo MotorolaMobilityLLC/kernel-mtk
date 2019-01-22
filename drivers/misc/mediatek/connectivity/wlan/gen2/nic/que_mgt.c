@@ -1475,10 +1475,9 @@ qmDequeueTxPacketsFromPerStaQueues(IN P_ADAPTER_T prAdapter,
 #if CFG_ENABLE_WIFI_DIRECT
 			/* XXX The PHASE 2: decrease from  aucFreeQuotaPerQueue[] */
 			if (prStaRec->fgIsInPS && (ucTC != TC4_INDEX)) {
-				ASSERT(pucFreeQuota);
-				ASSERT(*pucFreeQuota > 0);
-				if (*pucFreeQuota > 0)
+				if ((pucFreeQuota) && (*pucFreeQuota > 0))
 					*pucFreeQuota = *pucFreeQuota - 1;
+
 			}
 #endif /* CFG_ENABLE_WIFI_DIRECT */
 
@@ -3331,6 +3330,11 @@ VOID qmHandleNoNeedWaitPktList(IN P_RX_BA_ENTRY_T prReorderQueParm)
 	P_NO_NEED_WAIT_PKT_T prNoNeedWaitNextPkt;
 	UINT_16 u2SSN, u2WinStart, u2WinEnd, u2AheadPoint;
 
+	if (prReorderQueParm == NULL) {
+		DBGLOG(QM, ERROR, "qmHandleNoNeedWaitPktList for a NULL prReorderQueParm\n");
+		return;
+	}
+
 	prNoNeedWaitQue = &(prReorderQueParm->rNoNeedWaitQue);
 
 	if (QUEUE_IS_NOT_EMPTY(prNoNeedWaitQue)) {
@@ -3523,6 +3527,11 @@ VOID qmProcessIndepentReorderQueue(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 {
 	P_RX_BA_ENTRY_T prRxBaEntry;
 
+	if ((prSwRfb == NULL) || (prSwRfb->prHifRxHdr == NULL)) {
+		ASSERT(FALSE);
+		return;
+	}
+
 	prSwRfb->u2SSN = HIF_RX_HDR_GET_SN(prSwRfb->prHifRxHdr);
 	prSwRfb->ucTid = (UINT_8) (HIF_RX_HDR_GET_TID(prSwRfb->prHifRxHdr));
 
@@ -3531,6 +3540,11 @@ VOID qmProcessIndepentReorderQueue(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 
 	/* handle NoNeedWaitPkt queue*/
 	prRxBaEntry = qmLookupRxBaEntry(prAdapter, prSwRfb->ucStaRecIdx, prSwRfb->ucTid);
+
+	if (!(prRxBaEntry) || !(prRxBaEntry->fgIsValid)) {
+		DBGLOG(QM, ERROR, "qmProcessIndepentReorderQueue for a NULL prRxBaEntry\n");
+		return;
+	}
 	qmHandleNoNeedWaitPktList(prRxBaEntry);
 
 }
@@ -4504,11 +4518,15 @@ qmGetFrameAction(IN P_ADAPTER_T prAdapter,
 			u2TxFrameCtrl = (prWlanFrame->u2FrameCtrl) & MASK_FRAME_TYPE;	/* Optimized for ARM */
 
 			if (u2TxFrameCtrl == MAC_FRAME_BEACON) {
-				if (prBssInfo->fgIsNetAbsent)
+				if (prBssInfo->fgIsNetAbsent &&
+					!(prAdapter->rWifiVar.prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND)) {
 					return FRAME_ACTION_DROP_PKT;
+				}
 			} else if (u2TxFrameCtrl == MAC_FRAME_PROBE_RSP) {
-				if (prBssInfo->fgIsNetAbsent)
+				if (prBssInfo->fgIsNetAbsent &&
+					!(prAdapter->rWifiVar.prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND)) {
 					return FRAME_ACTION_DROP_PKT;
+				}
 			} else if (u2TxFrameCtrl == MAC_FRAME_DEAUTH) {
 				if (prBssInfo->fgIsNetAbsent)
 					break;

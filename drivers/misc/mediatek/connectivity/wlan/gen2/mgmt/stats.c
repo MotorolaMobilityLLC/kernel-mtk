@@ -184,13 +184,21 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 		}
 
 		if (prInfo->u4TxDataCntErr == 0) {
-			DBGLOG(RX, INFO, "<stats> TOS(%u) OK(%u %u)\n",
+			DBGLOG(RX, INFO, "<stats> TOS(%u) OK(%u %u) PendingPKT Num(%u %u %u %u)\n",
 					    (UINT32) prGlueInfo->rNetDevStats.tx_packets,
-					    prInfo->u4TxDataCntAll, prInfo->u4TxDataCntOK);
+					    prInfo->u4TxDataCntAll, prInfo->u4TxDataCntOK,
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][0],
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][1],
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][2],
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][4]);
 		} else {
-			DBGLOG(RX, INFO, "<stats> TOS(%u) OK(%u %u) ERR(%u)\n",
+			DBGLOG(RX, INFO, "<stats> TOS(%u) OK(%u %u) ERR(%u) PendingPKT Num(%u %u %u %u)\n",
 					    (UINT32) prGlueInfo->rNetDevStats.tx_packets,
-					    prInfo->u4TxDataCntAll, prInfo->u4TxDataCntOK, prInfo->u4TxDataCntErr);
+					    prInfo->u4TxDataCntAll, prInfo->u4TxDataCntOK, prInfo->u4TxDataCntErr,
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][0],
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][1],
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][2],
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][4]);
 			DBGLOG(RX, INFO, "<stats> ERR type(%u %u %u %u %u %u)\n",
 					    prInfo->u4TxDataCntErrType[0], prInfo->u4TxDataCntErrType[1],
 					    prInfo->u4TxDataCntErrType[2], prInfo->u4TxDataCntErrType[3],

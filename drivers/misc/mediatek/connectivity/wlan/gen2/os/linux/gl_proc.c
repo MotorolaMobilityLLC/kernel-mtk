@@ -39,10 +39,13 @@
 #define PROC_TX_STATISTICS                      "tx_statistics"
 #define PROC_DBG_LEVEL_NAME						"dbgLevel"
 #define PROC_NEED_TX_DONE						"TxDoneCfg"
-#define PROC_AUTO_PER_CFG						"autoPerCfg"
+#define PROC_AUTO_PERF_CFG						"autoPerfCfg"
 #define PROC_ROOT_NAME			"wlan"
 #define PROC_CMD_DEBUG_NAME		"cmdDebug"
 #define PROC_CFG_NAME			"cfg"
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+#define PROC_SET_CAM							"setCAM"
+#endif
 
 #define PROC_MCR_ACCESS_MAX_USER_INPUT_LEN      20
 #define PROC_RX_STATISTICS_MAX_USER_INPUT_LEN   10
@@ -74,6 +77,24 @@ static P_GLUE_INFO_T g_prGlueInfo_proc;
 #if FW_CFG_SUPPORT
 static P_GLUE_INFO_T gprGlueInfo;
 #endif
+struct proc_dir_entry *prEntry;
+typedef struct _PROC_CFG_ENTRY {
+	struct proc_dir_entry *prEntryWlanThermo;
+	struct proc_dir_entry *prEntryCountry;
+	struct proc_dir_entry *prEntryStatus;
+	struct proc_dir_entry *prEntryRxStatis;
+	struct proc_dir_entry *prEntryTxStatis;
+	struct proc_dir_entry *prEntryDbgLevel;
+	struct proc_dir_entry *prEntryTxDoneCfg;
+	struct proc_dir_entry *prEntryAutoPerCfg;
+	struct proc_dir_entry *prEntryCmdDbg;
+	struct proc_dir_entry *prEntryCfg;
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+	struct proc_dir_entry *prEntrySetCAM;
+#endif
+} PROC_CFG_ENTRY, *P_PROC_CFG_ENTRY;
+static P_PROC_CFG_ENTRY gprProcCfgEntry;
+
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -592,7 +613,7 @@ static const struct file_operations proc_txdone_ops = {
 	.write = procTxDoneCfgWrite,
 };
 
-static ssize_t procAutoPerCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+static ssize_t procAutoPerfCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	UINT_8 *temp = &aucProcBuf[0];
 	UINT_32 u4CopySize = 0;
@@ -601,7 +622,7 @@ static ssize_t procAutoPerCfgRead(struct file *filp, char __user *buf, size_t co
 	if (*f_pos > 0)
 		return 0;
 
-	SPRINTF(temp, ("Auto Performance Configure:\nperiod\tL1\nL2\tL3\n"));
+	SPRINTF(temp, ("Auto Performance Configure:\ncore_num:frequence\n"));
 
 	u4CopySize = kalStrLen(aucProcBuf);
 	if (u4CopySize > count)
@@ -615,16 +636,42 @@ static ssize_t procAutoPerCfgRead(struct file *filp, char __user *buf, size_t co
 	return (ssize_t)u4CopySize;
 }
 
-static ssize_t procAutoPerCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
+static ssize_t procAutoPerfCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
+	UINT_32 u4CoreNum = 0;
+	UINT_32 u4CoreFreq = 0;
+	UINT_8 *temp = &aucProcBuf[0];
+	UINT_32 u4CopySize = count;
+
 	DBGLOG(INIT, WARN, "%s\n", __func__);
-	return 0;
+
+	if (u4CopySize >= sizeof(aucProcBuf))
+		u4CopySize = sizeof(aucProcBuf) - 1;
+
+	kalMemSet(aucProcBuf, 0, u4CopySize);
+
+	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
+		kalPrint("error of copy from user\n");
+		return -EFAULT;
+	}
+
+	aucProcBuf[u4CopySize] = '\0';
+
+	if (sscanf(temp, "%d:%d", &u4CoreNum, &u4CoreFreq) != 2)  {
+		DBGLOG(INIT, WARN, "parameter format should be u4CoreNum:u4CoreFreq\n");
+		return -EFAULT;
+	}
+	DBGLOG(INIT, WARN, "u4CoreNum:%d, u4CoreFreq:%d\n", u4CoreNum, u4CoreFreq);
+
+	kalSetCpuNumFreq(u4CoreNum, u4CoreFreq);
+
+	return u4CopySize;
 }
 
-static const struct file_operations auto_per_ops = {
+static const struct file_operations auto_perf_ops = {
 	.owner = THIS_MODULE,
-	.read = procAutoPerCfgRead,
-	.write = procAutoPerCfgWrite,
+	.read = procAutoPerfCfgRead,
+	.write = procAutoPerfCfgWrite,
 };
 
 
@@ -654,6 +701,7 @@ static const struct file_operations proc_CmdDebug_ops = {
 	.owner = THIS_MODULE,
 	.read = procCmdDebug,
 };
+
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -903,6 +951,59 @@ static const struct file_operations country_ops = {
 	.write = procCountryWrite,
 };
 
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+static ssize_t procSetCamCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
+{
+#define MODULE_NAME_LEN_1 5
+
+	UINT_32 u4CopySize = sizeof(aucProcBuf);
+	UINT_8 *temp = &aucProcBuf[0];
+	BOOLEAN fgSetCamCfg = FALSE;
+	UINT_8 aucModule[MODULE_NAME_LEN_1];
+	UINT_32 u4Enabled;
+	UINT_8 aucModuleArray[MODULE_NAME_LEN_1] = "CAM";
+
+	kalMemSet(aucProcBuf, 0, u4CopySize);
+	if (u4CopySize >= count + 1)
+		u4CopySize = count;
+
+	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
+		pr_err("error of copy from user\n");
+		return -EFAULT;
+	}
+	aucProcBuf[u4CopySize] = '\0';
+	temp = &aucProcBuf[0];
+	while (temp) {
+		/* pick up a string and teminated after meet : */
+		if (sscanf(temp, "%s %d", aucModule, &u4Enabled) != 2)  {
+			pr_info("read param fail, aucModule=%s\n", aucModule);
+			break;
+		}
+
+		if (kalStrnCmp(aucModule, aucModuleArray, MODULE_NAME_LEN_1) == 0) {
+			if (u4Enabled)
+				fgSetCamCfg = TRUE;
+			else
+				fgSetCamCfg = FALSE;
+			break;
+		}
+		temp = kalStrChr(temp, ',');
+		if (!temp)
+			break;
+		temp++; /* skip ',' */
+	}
+
+	nicConfigProcSetCamCfgWrite(fgSetCamCfg);
+
+	return count;
+}
+
+static const struct file_operations proc_set_cam_ops = {
+	.owner = THIS_MODULE,
+	.write = procSetCamCfgWrite,
+};
+#endif
+
 INT_32 procInitFs(VOID)
 {
 	struct proc_dir_entry *prEntry;
@@ -937,7 +1038,7 @@ INT_32 procInitFs(VOID)
 	}
 	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
-	prEntry = proc_create(PROC_AUTO_PER_CFG, 0664, gprProcRoot, &auto_per_ops);
+	prEntry = proc_create(PROC_AUTO_PERF_CFG, 0664, gprProcRoot, &auto_perf_ops);
 	if (prEntry == NULL) {
 		kalPrint("Unable to create /proc entry autoPerCfg\n\r");
 		return -1;
@@ -956,7 +1057,7 @@ INT_32 procUninitProcFs(VOID)
 {
 	remove_proc_entry(PROC_DBG_LEVEL_NAME, gprProcRoot);
 	remove_proc_subtree(PROC_ROOT_NAME, init_net.proc_net);
-	remove_proc_entry(PROC_AUTO_PER_CFG, gprProcRoot);
+	remove_proc_entry(PROC_AUTO_PERF_CFG, gprProcRoot);
 	return 0;
 }
 
@@ -976,6 +1077,15 @@ INT_32 procRemoveProcfs(VOID)
 	/* remove_proc_entry(pucDevName, init_net.proc_net); */
 	remove_proc_entry(PROC_WLAN_THERMO, gprProcRoot);
 	remove_proc_entry(PROC_CMD_DEBUG_NAME, gprProcRoot);
+
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+	if (gprProcCfgEntry->prEntrySetCAM) {
+		remove_proc_entry(PROC_SET_CAM, gprProcRoot);
+		gprProcCfgEntry->prEntrySetCAM = NULL;
+	} else
+		DBGLOG(INIT, ERROR, "%s PROC_SET_CAM is null\n", __func__);
+#endif
+
 #if CFG_SUPPORT_THERMO_THROTTLING
 	g_prGlueInfo_proc = NULL;
 #endif
@@ -1006,6 +1116,19 @@ INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 		return -1;
 	}
 	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+	if (gprProcCfgEntry->prEntrySetCAM)
+		DBGLOG(INIT, WARN, "proc entry %s is exist\n", PROC_SET_CAM);
+
+	gprProcCfgEntry->prEntrySetCAM = proc_create(PROC_SET_CAM, 0664, gprProcRoot, &proc_set_cam_ops);
+	if (gprProcCfgEntry->prEntrySetCAM == NULL) {
+		DBGLOG(INIT, WARN, "Unable to create /proc entry %s\n", PROC_SET_CAM);
+		return -1;
+	}
+	proc_set_user(gprProcCfgEntry->prEntrySetCAM, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+#endif
+
 	return 0;
 }
 
@@ -1105,18 +1228,12 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 		, aucCfgBuf, token_num, count);
 
 	if (token_num == 1) {
-		/*set cfg Query key*/
-		kalMemSet(aucCfgQueryKey, '\0', sizeof(aucCfgQueryKey));
-
-		if (u4CopySize > (MAX_CMD_NAME_MAX_LENGTH - 1))
-			u4CopySize = MAX_CMD_NAME_MAX_LENGTH - 1;
-
+		kalMemSet(aucCfgQueryKey, 0, sizeof(aucCfgQueryKey));
+		u4CopySize = ((u4CopySize > sizeof(aucCfgQueryKey)) ? sizeof(aucCfgQueryKey) : u4CopySize);
 		memcpy(aucCfgQueryKey, aucCfgBuf, u4CopySize);
-
 		/*replace Carriage Return (0x0a) to string end of terminal */
 		if ((u4CopySize > 0) && (aucCfgQueryKey[u4CopySize - 1] == 0x0a))
 			aucCfgQueryKey[u4CopySize - 1] = '\0';
-
 	} else {
 		if (u4CopySize)
 			wlanFwCfgParse(gprGlueInfo->prAdapter, aucCfgBuf);

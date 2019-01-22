@@ -1614,6 +1614,14 @@ WLAN_STATUS nicPmIndicateBssAbort(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE
 				   sizeof(CMD_INDICATE_PM_BSS_ABORT), (PUINT_8)&rCmdIndicatePmBssAbort, NULL, 0);
 }
 
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+static BOOLEAN fgForceSetCAM = FALSE;
+VOID nicForceSetCAM(BOOLEAN enabled)
+{
+	fgForceSetCAM = enabled;
+}
+#endif
+
 WLAN_STATUS
 nicConfigPowerSaveProfile(IN P_ADAPTER_T prAdapter,
 			  ENUM_NETWORK_TYPE_INDEX_T eNetTypeIndex, PARAM_POWER_MODE ePwrMode, BOOLEAN fgEnCmdEvent)
@@ -1632,6 +1640,11 @@ nicConfigPowerSaveProfile(IN P_ADAPTER_T prAdapter,
 /* prAdapter->rWlanInfo.ePowerSaveMode.ucPsProfile = (UINT_8)ePwrMode; */
 	prAdapter->rWlanInfo.arPowerSaveMode[eNetTypeIndex].ucNetTypeIndex = eNetTypeIndex;
 	prAdapter->rWlanInfo.arPowerSaveMode[eNetTypeIndex].ucPsProfile = (UINT_8) ePwrMode;
+
+#if CFG_SUPPORT_SET_CAM_BY_PROC
+	if (fgForceSetCAM && (eNetTypeIndex == NETWORK_TYPE_AIS_INDEX))
+		return WLAN_STATUS_SUCCESS;
+#endif
 
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_POWER_SAVE_MODE,

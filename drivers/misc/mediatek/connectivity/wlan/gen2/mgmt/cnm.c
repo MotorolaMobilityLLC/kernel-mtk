@@ -25,6 +25,9 @@
 ********************************************************************************
 */
 
+/* Be able to allow HT40 with different connection type concurrently */
+#define CONCURRENT_HT40_NOT_ALLOW	0
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -512,18 +515,22 @@ BOOLEAN cnmBowIsPermitted(P_ADAPTER_T prAdapter)
 /*----------------------------------------------------------------------------*/
 BOOLEAN cnmBss40mBwPermitted(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetTypeIdx)
 {
+	P_BSS_DESC_T    prBssDesc = NULL;
+#if CONCURRENT_HT40_NOT_ALLOW
 	P_BSS_INFO_T prBssInfo;
 	UINT_8 i;
-	P_BSS_DESC_T    prBssDesc = NULL;
+#endif
 #if CFG_SUPPORT_CFG_FILE
 		P_WIFI_VAR_T prWifiVar = &(prAdapter->rWifiVar);
 #endif
 
-	/* Note: To support real-time decision instead of current activated-time,
+	 /* Note: To support real-time decision instead of current activated-time,
 	 *       the STA roaming case shall be considered about synchronization
 	 *       problem. Another variable fgAssoc40mBwAllowed is added to
 	 *       represent HT capability when association
 	 */
+
+#if CONCURRENT_HT40_NOT_ALLOW
 	for (i = 0; i < NETWORK_TYPE_INDEX_NUM; i++) {
 		if (i != (UINT_8) eNetTypeIdx) {
 			prBssInfo = &prAdapter->rWifiVar.arBssInfo[i];
@@ -532,6 +539,7 @@ BOOLEAN cnmBss40mBwPermitted(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eN
 				return FALSE;
 		}
 	}
+#endif
 
 	if (eNetTypeIdx == NETWORK_TYPE_AIS_INDEX)
 		prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;

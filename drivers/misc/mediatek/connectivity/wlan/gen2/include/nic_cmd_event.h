@@ -136,6 +136,9 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_ALWAYS_SCAN_PARAM = 0x73,/*0x73(set)*/
 	CMD_ID_SET_RX_BA_WIN_SIZE = 0x74,	/* 0x74 (Set) */
 	CMD_ID_TDLS_PS = 0x75,	/* 0x75 (Set) */
+#if CFG_SUPPORT_EMI_DEBUG
+	CMD_ID_DRIVER_DUMP_EMI_LOG = 0x76,      /* 0x76 (Set) */
+#endif
 	CMD_ID_GET_NIC_CAPABILITY = 0x80,	/* 0x80 (Query) */
 	CMD_ID_GET_LINK_QUALITY,	/* 0x81 (Query) */
 	CMD_ID_GET_STATISTICS,	/* 0x82 (Query) */
@@ -253,7 +256,9 @@ typedef enum _ENUM_EVENT_ID_T {
 #endif
 
 	EVENT_ID_RSP_CHNL_UTILIZATION = 0x59, /* 0x59 (Query - CMD_ID_REQ_CHNL_UTILIZATION) */
-
+#if CFG_SUPPORT_EMI_DEBUG
+	EVENT_ID_DRIVER_DUMP_LOG = 0x76, /*request driver to dump EMI message*/
+#endif
 	EVENT_ID_TDLS = 0x80,
 	EVENT_ID_STATS_ENV = 0x81,
 	EVENT_ID_RSSI_MONITOR = 0xa1,
@@ -1604,6 +1609,16 @@ struct CMD_REQ_CHNL_UTILIZATION {
 	UINT_8 aucChannelList[48];
 	UINT_8 aucReserved[13];
 };
+
+#if CFG_SUPPORT_EMI_DEBUG
+typedef struct _CMD_DRIVER_DUMP_EMI_LOG_T {
+	BOOLEAN fgIsDriverDumpEmiLogEnable; /* TRUE: notify to FW Driver supoort*/
+} CMD_DRIVER_DUMP_EMI_LOG_T, *P_CMD_DRIVER_DUMP_EMI_LOG_T;
+
+typedef struct _EVENT_DRIVER_DUMP_EMI_LOG_T {
+	UINT_32 u4RequestDriverDumpAddr; /*EMI dump end page num */
+} EVENT_DRIVER_DUMP_EMI_LOG_T, *P_EVENT_DRIVER_DUMP_EMI_LOG_T;
+#endif
 
 struct EVENT_RSP_CHNL_UTILIZATION {
 	UINT_8 ucChannelNum;
