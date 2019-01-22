@@ -2363,7 +2363,6 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 
 	CCCI_NORMAL_LOG(md->index, TAG, "Reset when MD state: %d\n",
 			md->md_state);
-	ccci_md_broadcast_state(md, WAITING_TO_STOP);	/* to block port's write operation */
 	return 0;
 }
 
