@@ -334,8 +334,9 @@ static void smi_prepare_clk(struct clk *smi_clk, char *name)
 		if (ret) {
 			SMIMSG("clk_prepare return error %d, %s\n", ret, name);
 		} else {
+			smi_prepare_count++;
 			SMIDBG(3, "clk:%s prepare done.\n", name);
-			SMIDBG(3, "smi_prepare_count=%d\n", ++smi_prepare_count);
+			SMIDBG(3, "smi_prepare_count=%d\n", smi_prepare_count);
 		}
 	} else {
 		SMIMSG("clk_prepare error, smi_clk can't be NULL, %s\n", name);
@@ -351,8 +352,9 @@ static void smi_enable_clk(struct clk *smi_clk, char *name)
 		if (ret) {
 			SMIMSG("clk_enable return error %d, %s\n", ret, name);
 		} else {
+			smi_enable_count++;
 			SMIDBG(3, "clk:%s enable done.\n", name);
-			SMIDBG(3, "smi_enable_count=%d\n", ++smi_enable_count);
+			SMIDBG(3, "smi_enable_count=%d\n", smi_enable_count);
 		}
 	} else {
 		SMIMSG("clk_enable error, smi_clk can't be NULL, %s\n", name);
@@ -363,8 +365,9 @@ static void smi_unprepare_clk(struct clk *smi_clk, char *name)
 {
 	if (smi_clk) {
 		clk_unprepare(smi_clk);
+		smi_prepare_count--;
 		SMIDBG(3, "clk:%s unprepare done.\n", name);
-		SMIDBG(3, "smi_prepare_count=%d\n", --smi_prepare_count);
+		SMIDBG(3, "smi_prepare_count=%d\n", smi_prepare_count);
 	} else {
 		SMIMSG("smi_unprepare error, smi_clk can't be NULL, %s\n", name);
 	}
@@ -374,8 +377,9 @@ static void smi_disable_clk(struct clk *smi_clk, char *name)
 {
 	if (smi_clk) {
 		clk_disable(smi_clk);
+		smi_enable_count--;
 		SMIDBG(3, "clk:%s disable done.\n", name);
-		SMIDBG(3, "smi_enable_count=%d\n", --smi_enable_count);
+		SMIDBG(3, "smi_enable_count=%d\n", smi_enable_count);
 	} else {
 		SMIMSG("smi_disable error, smi_clk can't be NULL, %s\n", name);
 	}
@@ -437,8 +441,8 @@ static void smi_common_clk_operation(enum smi_clk_operation op)
 		smi_disable_clk(smi_dev->smi_common_gals_comm0_clk, "smi_common_gals_comm0_clk");
 #endif
 		break;
-#if defined(SMI_WHI)
 	case SMI_UNPREPARE_CLK:
+#if defined(SMI_WHI)
 		smi_unprepare_clk(smi_dev->smi_common_2x_clk, "smi_common_2x_clk");
 		smi_unprepare_clk(smi_dev->smi_common_clk, "smi_common_clk");
 		smi_unprepare_clk(smi_dev->smi_common_upsz1_clk, "smi_common_upsz1_clk");
@@ -2009,7 +2013,7 @@ static int smi_probe(struct platform_device *pdev)
 	struct device *smiDevice = NULL;
 	int prev_smi_debug_level = smi_debug_level;
 
-	smi_debug_level = 1;
+	smi_debug_level = 3;
 	SMIMSG("Enter smi_probe\n");
 	/* Debug only */
 	if (smi_probe_cnt != 0) {
