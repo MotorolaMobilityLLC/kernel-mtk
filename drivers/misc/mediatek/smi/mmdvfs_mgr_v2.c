@@ -574,15 +574,8 @@ int mmdvfs_set_step(enum MTK_SMI_BWC_SCEN scenario, enum mmdvfs_voltage_enum ste
 #ifdef MMDVFS_O1
 static int get_venc_step(int venc_resolution)
 {
-	int lpm_size_limit = 0;
+	int lpm_size_limit = 4096 * 1716;
 	int venc_step = MMDVFS_VOLTAGE_LOW_LOW;
-
-	if (mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_WQHD)
-		/* initialize the venc_size_limit */
-		lpm_size_limit = 4096 * 1716;
-	else
-		/* initialize the venc_size_limit */
-		lpm_size_limit = 4096 * 1716;
 
 	/* Check recording video resoltuion */
 	if (venc_resolution >= lpm_size_limit)
