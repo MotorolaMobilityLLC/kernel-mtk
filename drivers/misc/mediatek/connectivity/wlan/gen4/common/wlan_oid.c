@@ -11500,12 +11500,13 @@ wlanoidNotifyFwSuspend(
 		IN UINT_32 u4SetBufferLen,
 		OUT PUINT_32 pu4SetInfoLen)
 {
-	CMD_SUSPEND_MODE_SETTING_T rSuspendCmd;
+	P_CMD_SUSPEND_MODE_SETTING_T prSuspendCmd;
 
 	if (!prAdapter || !pvSetBuffer)
 		return WLAN_STATUS_INVALID_DATA;
 
-	rSuspendCmd.ucEnableSuspendMode = *(PBOOLEAN)pvSetBuffer;
+	prSuspendCmd = (P_CMD_SUSPEND_MODE_SETTING_T)pvSetBuffer;
+
 	return wlanSendSetQueryCmd(prAdapter,
 					CMD_ID_SET_SUSPEND_MODE,
 					TRUE,
@@ -11513,8 +11514,8 @@ wlanoidNotifyFwSuspend(
 					TRUE,
 					nicCmdEventSetCommon,
 					nicOidCmdTimeoutCommon,
-					sizeof(BOOLEAN),
-					(PUINT_8)&rSuspendCmd,
+					sizeof(CMD_SUSPEND_MODE_SETTING_T),
+					(PUINT_8)prSuspendCmd,
 					NULL,
 					0);
 }

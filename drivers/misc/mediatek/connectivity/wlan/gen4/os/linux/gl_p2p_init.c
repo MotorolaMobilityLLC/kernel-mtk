@@ -133,7 +133,7 @@ VOID p2pSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 	}
 
 	kalSetNetAddressFromInterface(prGlueInfo, prDev, fgEnable);
-	wlanNotifyFwSuspend(prGlueInfo, fgEnable);
+	wlanNotifyFwSuspend(prGlueInfo, prDev, fgEnable);
 }
 
 /*----------------------------------------------------------------------------*/

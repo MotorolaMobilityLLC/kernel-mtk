@@ -4933,8 +4933,10 @@ UINT_32 qmDumpQueueStatus(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_3
 #endif
 
 	LOGBUF(pucBuf, u4Max, u4Len, "BMC or unknown TxQueue Len[%u]\n", prQM->arTxQueue[0].u4NumElem);
-	LOGBUF(pucBuf, u4Max, u4Len, "Pending QLen Normal[%u] Sec[%u]\n",
-		prGlueInfo->i4TxPendingFrameNum, prGlueInfo->i4TxPendingSecurityFrameNum);
+	LOGBUF(pucBuf, u4Max, u4Len, "Pending QLen Normal[%u] Sec[%u] Cmd[%u]\n",
+		GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingFrameNum),
+		GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingSecurityFrameNum),
+		GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingCmdNum));
 
 #if defined(LINUX)
 	for (i = 0; i < HW_BSSID_NUM; i++) {

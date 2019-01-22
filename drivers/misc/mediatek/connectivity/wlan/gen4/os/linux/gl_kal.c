@@ -705,7 +705,7 @@ VOID kalPacketFree(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket)
 /*----------------------------------------------------------------------------*/
 PVOID kalPacketAlloc(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Size, OUT PUINT_8 *ppucData)
 {
-	struct sk_buff *prSkb = alloc_skb(u4Size, GFP_KERNEL);
+	struct sk_buff *prSkb = dev_alloc_skb(u4Size);
 
 	if (prSkb) {
 		*ppucData = (PUINT_8) (prSkb->data);
@@ -2116,6 +2116,7 @@ VOID kalClearSecurityFrames(IN P_GLUE_INFO_T prGlueInfo)
 			else
 				wlanReleaseCommand(prGlueInfo->prAdapter, prCmdInfo, TX_RESULT_QUEUE_CLEARANCE);
 			cmdBufFreeCmdInfo(prGlueInfo->prAdapter, prCmdInfo);
+			GLUE_DEC_REF_CNT(prGlueInfo->i4TxPendingCmdNum);
 		} else {
 			QUEUE_INSERT_TAIL(prReturnCmdQue, prQueueEntry);
 		}
@@ -2180,6 +2181,7 @@ VOID kalClearSecurityFramesByBssIdx(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucBss
 			else
 				wlanReleaseCommand(prGlueInfo->prAdapter, prCmdInfo, TX_RESULT_QUEUE_CLEARANCE);
 			cmdBufFreeCmdInfo(prGlueInfo->prAdapter, prCmdInfo);
+			GLUE_DEC_REF_CNT(prGlueInfo->i4TxPendingCmdNum);
 		} else
 			QUEUE_INSERT_TAIL(prReturnCmdQue, prQueueEntry);
 
@@ -2229,6 +2231,7 @@ VOID kalClearMgmtFrames(IN P_GLUE_INFO_T prGlueInfo)
 		if (prCmdInfo->eCmdType == COMMAND_TYPE_MANAGEMENT_FRAME) {
 			wlanReleaseCommand(prGlueInfo->prAdapter, prCmdInfo, TX_RESULT_QUEUE_CLEARANCE);
 			cmdBufFreeCmdInfo(prGlueInfo->prAdapter, prCmdInfo);
+			GLUE_DEC_REF_CNT(prGlueInfo->i4TxPendingCmdNum);
 		} else {
 			QUEUE_INSERT_TAIL(prReturnCmdQue, prQueueEntry);
 		}
@@ -2288,6 +2291,7 @@ VOID kalClearMgmtFramesByBssIdx(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucBssInde
 		if (fgFree) {
 			wlanReleaseCommand(prGlueInfo->prAdapter, prCmdInfo, TX_RESULT_QUEUE_CLEARANCE);
 			cmdBufFreeCmdInfo(prGlueInfo->prAdapter, prCmdInfo);
+			GLUE_DEC_REF_CNT(prGlueInfo->i4TxPendingCmdNum);
 		} else {
 			QUEUE_INSERT_TAIL(prReturnCmdQue, prQueueEntry);
 		}
@@ -2341,6 +2345,7 @@ VOID kalClearCommandQueue(IN P_GLUE_INFO_T prGlueInfo)
 			wlanReleaseCommand(prGlueInfo->prAdapter, prCmdInfo, TX_RESULT_QUEUE_CLEARANCE);
 
 		cmdBufFreeCmdInfo(prGlueInfo->prAdapter, prCmdInfo);
+		GLUE_DEC_REF_CNT(prGlueInfo->i4TxPendingCmdNum);
 
 		QUEUE_REMOVE_HEAD(prTempCmdQue, prQueueEntry, P_QUE_ENTRY_T);
 	}
@@ -3148,6 +3153,7 @@ VOID kalOidCmdClearance(IN P_GLUE_INFO_T prGlueInfo)
 
 		prGlueInfo->u4OidCompleteFlag = 1;
 		cmdBufFreeCmdInfo(prGlueInfo->prAdapter, prCmdInfo);
+		GLUE_DEC_REF_CNT(prGlueInfo->i4TxPendingCmdNum);
 	}
 }
 
@@ -3180,6 +3186,7 @@ VOID kalEnqueueCommand(IN P_GLUE_INFO_T prGlueInfo, IN P_QUE_ENTRY_T prQueueEntr
 
 	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_CMD_QUE);
 	QUEUE_INSERT_TAIL(prCmdQue, prQueueEntry);
+	GLUE_INC_REF_CNT(prGlueInfo->i4TxPendingCmdNum);
 	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_CMD_QUE);
 }
 
@@ -3241,12 +3248,9 @@ UINT_32 kalGetTxPendingFrameCount(IN P_GLUE_INFO_T prGlueInfo)
 /*----------------------------------------------------------------------------*/
 UINT_32 kalGetTxPendingCmdCount(IN P_GLUE_INFO_T prGlueInfo)
 {
-	P_QUE_T prCmdQue;
-
 	ASSERT(prGlueInfo);
-	prCmdQue = &prGlueInfo->rCmdQueue;
 
-	return prCmdQue->u4NumElem;
+	return (UINT_32)GLUE_GET_REF_CNT(prGlueInfo->i4TxPendingCmdNum);
 }
 
 /*----------------------------------------------------------------------------*/

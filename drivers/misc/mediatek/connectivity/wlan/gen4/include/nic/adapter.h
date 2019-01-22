@@ -788,6 +788,13 @@ typedef struct _WIFI_VAR_T {
 	UINT_32 u4WakeLockThreadWakeup;
 	UINT_32 u4RegP2pIfAtProbe; /* register p2p interface during probe */
 	UINT_8 ucSmartRTS;
+
+	UINT_32 u4UapsdAcBmp;
+	UINT_32 u4MaxSpLen;
+	UINT_32 fgDisOnlineScan;	/* 0: enable online scan, non-zero: disable online scan */
+	UINT_32 fgDisBcnLostDetection;
+	UINT_32 fgDisRoaming;		/* 0:enable roaming 1:disable */
+	UINT_32 fgEnArpFilter;
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */
