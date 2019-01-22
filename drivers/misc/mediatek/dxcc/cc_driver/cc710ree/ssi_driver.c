@@ -56,7 +56,6 @@
 #include <linux/sched.h>
 #include <linux/random.h>
 #include <linux/of.h>
-#include <linux/clk.h>
 
 #include "ssi_config.h"
 #include "ssi_driver.h"
@@ -74,7 +73,7 @@
 #define DX_CACHE_PARAMS_SET_MASK 0x80000000
 #define DX_CACHE_PARAMS_SET_TIMEOUT_MS 100
 
-static struct clk *dxcc_pub_clock;
+struct clk *dxcc_pub_clock;
 
 #ifdef DX_DUMP_BYTES
 void dump_byte_array(const char *name, const uint8_t *the_array, unsigned long size)

@@ -22,11 +22,10 @@
 
 #include "ssi_config.h"
 #include "ssi_driver.h"
-#include <linux/clk.h>
 
-void ssi_pm_ext_hw_suspend(struct device *dev, struct clk *dxcc_pub_clk);
+void ssi_pm_ext_hw_suspend(struct device *dev);
 
-void ssi_pm_ext_hw_resume(struct device *dev, struct clk *dxcc_pub_clk);
+void ssi_pm_ext_hw_resume(struct device *dev);
 
 
 #endif /*__POWER_MGR_H__*/

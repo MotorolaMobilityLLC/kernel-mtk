@@ -36,6 +36,9 @@
 #include <crypto/hash.h>
 #include <linux/version.h>
 
+#include <linux/clk.h>
+extern struct clk *dxcc_pub_clock;
+
 #ifndef INT32_MAX /* Missing in Linux kernel */
 #define INT32_MAX 0x7FFFFFFFL
 #endif

@@ -11,6 +11,10 @@ $(MODULE_NAME)-objs := ssi_driver.o ssi_sysfs.o ssi_buffer_mgr.o ssi_request_mgr
 ifeq ($(DX_CONFIG_SUPPORT_FIPS),1)
 EXTRA_CFLAGS += -DSSI_SUPPORT_FIPS
 $(MODULE_NAME)-objs += ssi_fips.o ssi_fips_ll.o ssi_fips_ext.o ssi_fips_local.o
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+EXTRA_CFLAGS += -DTRUSTONIC_FIPS_SUPPORT
+EXTRA_CFLAGS += -I$(srctree)/drivers/misc/mediatek/gud/$(CONFIG_TRUSTONIC_TEE_VERSION)/gud/MobiCoreDriver/public
+endif
 endif
 
 EXTRA_CFLAGS += -DDX_CC_REE #-DCOMP_IN_WQ
@@ -38,8 +42,6 @@ $(foreach obj,$(MODULE_NAME)-objs,$(eval $(call remove_o2,$(obj))))
 EXTRA_CFLAGS += -DDEBUG -O1
 endif
 
-
 EXTRA_CFLAGS += -Wall
 
 $(info $(if $(DEBUG),DEBUG=$(DEBUG)))
-

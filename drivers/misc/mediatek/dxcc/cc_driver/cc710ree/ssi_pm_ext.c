@@ -22,14 +22,13 @@
 #include <linux/pm_runtime.h>
 #include "ssi_driver.h"
 #include "ssi_sram_mgr.h"
-#include <linux/clk.h>
 
 /*
 This function should suspend the HW (if possiable), It should be implemented by
 the driver user.
 The reference code clears the internal SRAM to imitate lose of state.
 */
-void ssi_pm_ext_hw_suspend(struct device *dev, struct clk *dxcc_pub_clk)
+void ssi_pm_ext_hw_suspend(struct device *dev)
 {
 	struct ssi_drvdata *drvdata =
 		(struct ssi_drvdata *)dev_get_drvdata(dev);
@@ -50,7 +49,8 @@ void ssi_pm_ext_hw_suspend(struct device *dev, struct clk *dxcc_pub_clk)
 		} while (!(val &0x1));
 	}
 
-	clk_disable(dxcc_pub_clk);
+	SSI_LOG_DEBUG("Disable dxcc pub clock...\n");
+	clk_disable(dxcc_pub_clock);
 }
 
 /*
@@ -59,7 +59,7 @@ the driver user.
 this function forces a Crypto Cell reset to simulate a SEP reset (kind of SEP Power Up).
 Probably, in real implementation you will remove the reset function.
 */
-void ssi_pm_ext_hw_resume(struct device *dev, struct clk *dxcc_pub_clk)
+void ssi_pm_ext_hw_resume(struct device *dev)
 {
 	struct ssi_drvdata *drvdata =
 	(struct ssi_drvdata *)dev_get_drvdata(dev);
@@ -67,7 +67,8 @@ void ssi_pm_ext_hw_resume(struct device *dev, struct clk *dxcc_pub_clk)
 
 	int ret;
 
-	ret = clk_enable(dxcc_pub_clk);
+	SSI_LOG_DEBUG("Enable dxcc pub clock...\n");
+	ret = clk_enable(dxcc_pub_clock);
 	if (ret != 0)
 		SSI_LOG_ERR("Enable dxcc pub clock failed.\n");
 
