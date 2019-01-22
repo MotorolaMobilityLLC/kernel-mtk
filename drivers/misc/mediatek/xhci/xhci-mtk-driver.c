@@ -179,8 +179,12 @@ static int usbotg_boost_manager_probe(struct platform_device *pdev)
 	if (!info)
 		return -ENOMEM;
 
+	if (of_property_read_u32(node, "boost_period", (u32 *) &info->polling_interval))
+		info->polling_interval = 30;
+
 	platform_set_drvdata(pdev, info);
 	info->pdev = pdev;
+
 	info->primary_charger = get_charger_by_name("primary_chg");
 	if (!info->primary_charger) {
 		pr_info("%s: get primary charger device failed\n", __func__);
@@ -189,10 +193,7 @@ static int usbotg_boost_manager_probe(struct platform_device *pdev)
 
 	gtimer_init(&info->otg_kthread_gtimer, &info->pdev->dev, "otg_boost");
 	info->otg_kthread_gtimer.callback = usbotg_gtimer_func;
-	if (of_property_read_u32(node, "boost_period", (u32 *) &info->polling_interval))
-		return -EINVAL;
 
-	info->polling_interval = 30;
 	info->otg_boost_workq = create_singlethread_workqueue("otg_boost_workq");
 	INIT_WORK(&info->kick_work, usbotg_boost_kick_work);
 	g_info = info;
