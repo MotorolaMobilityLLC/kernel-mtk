@@ -1571,7 +1571,7 @@ INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd)
 	return ret;
 }
 
-INT32 stp_dbg_dump_num(UINT32 dmp_num)
+INT32 stp_dbg_dump_num(INT32 dmp_num)
 {
 	g_core_dump->dmp_num = dmp_num;
 	return 0;

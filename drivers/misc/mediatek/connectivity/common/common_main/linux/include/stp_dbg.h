@@ -251,7 +251,7 @@ typedef struct core_dump_t {
 	/* timer for monitor timeout */
 	OSAL_TIMER dmp_timer;
 	UINT32 timeout;
-	UINT32 dmp_num;
+	INT32 dmp_num;
 	UINT32 count;
 	OSAL_SLEEPABLE_LOCK dmp_lock;
 
@@ -352,7 +352,7 @@ INT32 stp_dbg_log_pkt(MTKSTP_DBG_T *stp_dbg, INT32 dbg_type,
 		      const PUINT8 body);
 INT32 stp_dbg_log_ctrl(UINT32 on);
 INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd);
-INT32 stp_dbg_dump_num(UINT32 dmp_num);
+INT32 stp_dbg_dump_num(INT32 dmp_num);
 INT32 stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len);
 INT32 stp_dbg_dump_send_retry_handler(PINT8 tmp, INT32 len);
 VOID stp_dbg_set_coredump_timer_state(CORE_DUMP_STA state);
