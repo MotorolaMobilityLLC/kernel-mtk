@@ -113,10 +113,10 @@ static PUINT_8 apucFwPath[] = {
 	NULL
 };
 
-#if defined(MT6797)
+#if defined(MT6631)	/* MT6631 A-D die chip */
 
 static PUINT_8 apucFwName[] = {
-	(PUINT_8) CFG_FW_FILENAME "_6797",
+	(PUINT_8) CFG_FW_FILENAME "_",
 	NULL
 };
 
@@ -124,7 +124,7 @@ static PPUINT_8 appucFwNameTable[] = {
 	apucFwName
 };
 
-#else
+#else	/* MT6630 */
 /* E2 */
 static PUINT_8 apucFwNameE2[] = {
 	(PUINT_8) CFG_FW_FILENAME "_MT6630_E2",
@@ -155,6 +155,7 @@ static PPUINT_8 appucFwNameTable[] = {
 	apucFwNameE3,
 };
 #endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This function is provided by GLUE Layer for internal driver stack to
@@ -173,6 +174,9 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 	PPUINT_8 apucNameTable;
 	UINT_8 ucMaxEcoVer = (sizeof(appucFwNameTable) / sizeof(PPUINT_8));
 	UINT_8 ucCurEcoVer = wlanGetEcoVersion(prGlueInfo->prAdapter);
+#if defined(MT6631)
+	UINT_16 u2ChipID = nicGetChipID(prGlueInfo->prAdapter);
+#endif
 	UINT_8 aucFwName[128];
 	BOOLEAN fgResult = FALSE;
 
@@ -207,14 +211,17 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 		for (ucNameIdx = 0; apucNameTable[ucNameIdx]; ucNameIdx++) {
 
 			kalSprintf(aucFwName, "%s%s", apucFwPath[ucPathIdx], apucNameTable[ucNameIdx]);
+#if defined(MT6631)
+			kalSprintf(aucFwName + strlen(aucFwName), "%x", u2ChipID);
+#endif
 
 			filp = filp_open(aucFwName, O_RDONLY, 0);
 			if (IS_ERR(filp)) {
-				DBGLOG(INIT, TRACE, "Open FW image: %s failed, errno[%d]\n",
-						     aucFwName, ERR_PTR((LONG) filp));
+				DBGLOG(INIT, TRACE, "Open FW image %s failed, filp[%p]\n",
+				       aucFwName, filp);
 				continue;
 			} else {
-				DBGLOG(INIT, TRACE, "Open FW image: %s done\n", aucFwName);
+				DBGLOG(INIT, INFO, "Open FW image %s success\n", aucFwName);
 				fgResult = TRUE;
 				break;
 			}
@@ -225,26 +232,9 @@ WLAN_STATUS kalFirmwareOpen(IN P_GLUE_INFO_T prGlueInfo)
 	}
 
 	/* Check result */
-	if (fgResult) {
-		DBGLOG(INIT, INFO, "Open FW image: %s done\n", aucFwName);
-	} else {
-		DBGLOG(INIT, ERROR, "Open FW image failed! Cur/Max ECO Ver[E%u/E%u]\n", ucCurEcoVer, ucMaxEcoVer);
-
-		/* Dump tried FW path/name */
-		for (ucPathIdx = 0; apucFwPath[ucPathIdx]; ucPathIdx++) {
-			for (ucNameIdx = 0; apucNameTable[ucNameIdx]; ucNameIdx++) {
-
-				kalSprintf(aucFwName, "%s%s", apucFwPath[ucPathIdx], apucNameTable[ucNameIdx]);
-
-				filp = filp_open(aucFwName, O_RDONLY, 0);
-				if (IS_ERR(filp)) {
-					DBGLOG(INIT, INFO, "Open FW image: %s failed, errno[%d]\n",
-							    aucFwName, ERR_PTR((LONG) filp));
-				} else {
-					DBGLOG(INIT, INFO, "Open FW image: %s done\n", aucFwName);
-				}
-			}
-		}
+	if (!fgResult) {
+		DBGLOG(INIT, ERROR, "Open FW image failed! Cur/Max ECO Ver[E%u/E%u]\n",
+		       ucCurEcoVer, ucMaxEcoVer);
 		goto error_open;
 	}
 
@@ -2548,7 +2538,7 @@ int hif_thread(void *data)
 
 		/* Release to FW own */
 		wlanReleasePowerControl(prGlueInfo->prAdapter);
-#if defined(MT6797)
+#if defined(MT6631)
 		nicEnableInterrupt(prGlueInfo->prAdapter);
 #endif
 	}

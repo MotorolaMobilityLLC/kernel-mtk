@@ -24,8 +24,6 @@
 int do_wlan_drv_init(int chip_id)
 {
 	int i_ret = 0;
-
-#ifdef CONFIG_MTK_COMBO_WIFI
 	int ret = 0;
 
 	WMT_DETECT_INFO_FUNC("start to do wlan module init 0x%x\n", chip_id);
@@ -41,23 +39,22 @@ int do_wlan_drv_init(int chip_id)
 		/* WLAN driver init */
 		ret = mtk_wcn_wlan_gen4_init();
 		WMT_DETECT_INFO_FUNC("WLAN-GEN4 driver init, ret:%d\n", ret);
-		i_ret += ret;
 #else
 		WMT_DETECT_ERR_FUNC("WLAN-GEN4 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
-		i_ret = -1;
+		ret = -1;
 #endif
 		break;
 
 	case 0x6630:
 	case 0x6797:
+	case 0x6759:
 #ifdef MTK_WCN_WLAN_GEN3
 		/* WLAN driver init */
 		ret = mtk_wcn_wlan_gen3_init();
 		WMT_DETECT_INFO_FUNC("WLAN-GEN3 driver init, ret:%d\n", ret);
-		i_ret += ret;
 #else
 		WMT_DETECT_ERR_FUNC("WLAN-GEN3 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
-		i_ret = -1;
+		ret = -1;
 #endif
 		break;
 
@@ -66,21 +63,16 @@ int do_wlan_drv_init(int chip_id)
 		/* WLAN driver init */
 		ret = mtk_wcn_wlan_gen2_init();
 		WMT_DETECT_INFO_FUNC("WLAN-GEN2 driver init, ret:%d\n", ret);
-		i_ret += ret;
 #else
 		WMT_DETECT_ERR_FUNC("WLAN-GEN2 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
-		i_ret = -1;
+		ret = -1;
 #endif
 		break;
 	}
 
+	i_ret += ret;
+
 	WMT_DETECT_INFO_FUNC("finish wlan module init\n");
-
-#else
-
-	WMT_DETECT_INFO_FUNC("CONFIG_MTK_COMBO_WIFI is not defined\n");
-
-#endif
 
 	return i_ret;
 }

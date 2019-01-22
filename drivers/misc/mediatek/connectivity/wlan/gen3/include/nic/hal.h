@@ -114,7 +114,6 @@ do { \
 
 #define HAL_PORT_RD(_prAdapter, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
 { \
-	/*fgResult = FALSE; */\
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
@@ -140,7 +139,6 @@ do { \
 
 #define HAL_PORT_WR(_prAdapter, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
 { \
-	/*fgResult = FALSE; */\
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
@@ -263,7 +261,11 @@ do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
-	kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
+	if (_prAdapter->fgIsFwOwn == TRUE) { \
+		DBGLOG(HAL, ERROR, "Power control is FW own!! ignore HAL_PORT_RD access!!\n"); \
+	} else { \
+		kalDevPortRead(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
+	} \
 } while (0)
 
 #define HAL_PORT_WR(_prAdapter, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
@@ -271,7 +273,11 @@ do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
-	kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
+	if (_prAdapter->fgIsFwOwn == TRUE) { \
+		DBGLOG(HAL, ERROR, "Power control is FW own!! ignore HAL_PORT_WR access!!\n"); \
+	} else { \
+		kalDevPortWrite(_prAdapter->prGlueInfo, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize); \
+	} \
 } while (0)
 
 #endif /* #if defined(_HIF_SDIO) */
@@ -288,8 +294,9 @@ do { \
 
 #define HAL_WRITE_TX_PORT(_prAdapter, _u4Len, _pucBuf, _u4ValidBufSize) \
 { \
-	if ((_u4ValidBufSize - _u4Len) >= sizeof(UINT_32)) { \
-		/* fill with single dword of zero as TX-aggregation termination */ \
+	if ((_u4ValidBufSize - ALIGN_4(_u4Len)) >= sizeof(UINT_32)) { \
+		/* Fill with single dword of zero as TX-aggregation termination */ \
+		/* for block mode transaction that Tx-aggregation length may be less than block size */ \
 		*(PUINT_32) (&((_pucBuf)[ALIGN_4(_u4Len)])) = 0; \
 	} \
 	HAL_PORT_WR(_prAdapter, \
@@ -338,14 +345,14 @@ do { \
 		} while (u4Count); \
 	}
 
-#define HAL_GET_CHIP_ID_VER(_prAdapter, pu2ChipId, pu2Version) \
+#define HAL_GET_CHIP_ID_VER(_prAdapter, pu2ChipId, pucRevId) \
 { \
 	UINT_32 u4Value; \
 	HAL_MCR_RD(_prAdapter, \
 		MCR_WCIR, \
 		&u4Value); \
 	*pu2ChipId = (UINT_16)(u4Value & WCIR_CHIP_ID); \
-	*pu2Version = (UINT_16)(u4Value & WCIR_REVISION_ID) >> 16; \
+	*pucRevId = (UINT_8)(u4Value & WCIR_REVISION_ID) >> 16; \
 }
 
 #define HAL_WAIT_WIFI_FUNC_READY(_prAdapter) \

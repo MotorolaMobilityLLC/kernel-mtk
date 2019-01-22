@@ -801,7 +801,8 @@ struct PERF_MONITOR_T {
  * Major data structure for driver operation
  */
 struct _ADAPTER_T {
-	UINT_8 ucRevID;
+	UINT_16 u2ChipID;
+	UINT_8  ucRevID;
 	BOOLEAN fgIsReadRevID;
 
 	UINT_16 u2NicOpChnlNum;

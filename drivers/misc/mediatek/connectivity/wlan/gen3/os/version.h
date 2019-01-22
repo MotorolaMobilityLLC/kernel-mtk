@@ -48,26 +48,17 @@
 #ifndef NIC_NAME
 #if defined(MT6630)
 #define NIC_NAME            "MT6630"
-#define NIC_DEVICE_ID       "MT6630"
-#define NIC_DEVICE_ID_LOW   "mt6630"
+#elif defined(MT6631)
+#define NIC_NAME            "MT6631"
 #endif
-
-#if defined(MT6797)
-#define NIC_NAME            "MT6797"
-#define NIC_DEVICE_ID       "MT6797"
-#define NIC_DEVICE_ID_LOW   "MT6797"
-#endif
-
 #endif
 
 /* NIC driver information */
 #define NIC_VENDOR                      "MediaTek Inc."
 #define NIC_VENDOR_OUI                  {0x00, 0x0C, 0xE7}
 
-#if defined(MT6630)
-#define NIC_PRODUCT_NAME                "MediaTek Inc. MT6630 Wireless LAN Adapter"
-#define NIC_DRIVER_NAME                 "MediaTek Inc. MT6630 Wireless LAN Adapter Driver"
-#endif
+#define NIC_PRODUCT_NAME                NIC_VENDOR " " NIC_NAME " Wireless LAN Adapter"
+#define NIC_DRIVER_NAME                 NIC_VENDOR " " NIC_NAME " Wireless LAN Adapter Driver"
 
 /* Define our driver version */
 #define NIC_DRIVER_MAJOR_VERSION        2

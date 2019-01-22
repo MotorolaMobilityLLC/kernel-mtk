@@ -2813,7 +2813,6 @@ WLAN_STATUS nicRxReadBuffer(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	P_HW_MAC_RX_DESC_T prRxStatus;
 	UINT_32 u4PktLen = 0, u4ReadBytes;
 	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
-	BOOL fgResult = TRUE;
 	UINT_32 u4RegValue;
 	UINT_32 rxNum;
 
@@ -2835,10 +2834,7 @@ WLAN_STATUS nicRxReadBuffer(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	do {
 		/* Read the RFB DW length and packet length */
 		HAL_MCR_RD(prAdapter, MCR_WRPLR, &u4RegValue);
-		if (!fgResult) {
-			DBGLOG(RX, ERROR, "Read RX Packet Lentgh Error\n");
-			return WLAN_STATUS_FAILURE;
-		}
+
 		/* 20091021 move the line to get the HIF RX header (for RX0/1) */
 		if (u4RegValue == 0) {
 			DBGLOG(RX, ERROR, "No RX packet\n");
@@ -2879,11 +2875,7 @@ WLAN_STATUS nicRxReadBuffer(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 		prSwRfb->ucStaRecIdx =
 		    secGetStaIdxByWlanIdx(prAdapter, (UINT_8) HAL_RX_STATUS_GET_WLAN_IDX(prRxStatus));
 
-		/* fgResult will be updated in MACRO */
-		if (!fgResult)
-			return WLAN_STATUS_FAILURE;
-
-		DBGLOG(RX, TRACE, "Dump RX buffer, length = 0x%x\n", u4ReadBytes);
+		DBGLOG(RX, TRACE, "Dump RX buffer, length = %u\n", u4ReadBytes);
 		DBGLOG_MEM8(RX, TRACE, pucBuf, u4ReadBytes);
 	} while (FALSE);
 
@@ -2975,7 +2967,6 @@ nicRxEnhanceReadBuffer(IN P_ADAPTER_T prAdapter,
 	P_HW_MAC_RX_DESC_T prRxStatus;
 	UINT_32 u4PktLen = 0;
 	WLAN_STATUS u4Status = WLAN_STATUS_FAILURE;
-	BOOL fgResult = TRUE;
 
 	DEBUGFUNC("nicRxEnhanceReadBuffer");
 
@@ -2997,11 +2988,6 @@ nicRxEnhanceReadBuffer(IN P_ADAPTER_T prAdapter,
 		/* 4 <1> Read RFB frame from MCR_WRDR0, include HW appended DW */
 		HAL_READ_RX_PORT(prAdapter,
 				 u4DataPort, ALIGN_4(u2RxLength + HIF_RX_HW_APPENDED_LEN), pucBuf, CFG_RX_MAX_PKT_SIZE);
-
-		if (!fgResult) {
-			DBGLOG(RX, ERROR, "Read RX Packet Lentgh Error\n");
-			break;
-		}
 
 		u4PktLen = (UINT_32) (HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus));
 		/* DBGLOG(RX, TRACE, ("u4PktLen = %d\n", u4PktLen)); */
@@ -3136,7 +3122,6 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 	UINT_32 u4RxAvailAggLen, u4CurrAvailFreeRfbCnt;
 	PUINT_8 pucSrcAddr;
 	P_HW_MAC_RX_DESC_T prRxStatus;
-	BOOL fgResult = TRUE;
 	BOOLEAN fgIsRxEnhanceMode;
 	UINT_16 u2RxPktNum;
 #if CFG_SDIO_RX_ENHANCE
@@ -3283,10 +3268,6 @@ restart:
 			HAL_READ_RX_PORT(prAdapter,
 					 rxNum,
 					 u4RxAggLength, prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-			if (!fgResult) {
-				DBGLOG(RX, ERROR, "Read RX Agg Packet Error\n");
-				continue;
-			}
 
 			pucSrcAddr = prRxCtrl->pucRxCoalescingBufPtr;
 			for (i = 0; i < u4RxAggCount; i++) {
@@ -3660,9 +3641,8 @@ WLAN_STATUS
 nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 		  IN UINT_8 ucPortIdx, OUT PUINT_8 pucRspBuffer, IN UINT_32 u4MaxRespBufferLen, OUT PUINT_32 pu4Length)
 {
-	UINT_32 u4Value = 0, u4PktLen = 0, i = 0;
+	UINT_32 u4Value = 0, u4PktLen = 0;
 	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
-	BOOL fgResult = TRUE;
 	UINT_32 u4Time, u4Current;
 	P_RX_CTRL_T prRxCtrl;
 	P_WIFI_EVENT_T prEvent;
@@ -3681,17 +3661,10 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 		/* Read the packet length */
 		HAL_MCR_RD(prAdapter, MCR_WRPLR, &u4Value);
 
-		if (!fgResult) {
-			DBGLOG(RX, ERROR, "Read Response Packet Error\n");
-			return WLAN_STATUS_FAILURE;
-		}
-
 		if (ucPortIdx == 0)
 			u4PktLen = u4Value & 0xFFFF;
 		else
 			u4PktLen = (u4Value >> 16) & 0xFFFF;
-
-		DBGLOG(RX, TRACE, "i = %u, u4PktLen = %u\n", i, u4PktLen);
 
 		if (u4PktLen == 0) {
 			/* timeout exceeding check */
@@ -3705,7 +3678,6 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 			/* Response packet is not ready */
 			kalUdelay(50);
 
-			i++;
 		} else {
 
 			if (u4PktLen > u4MaxRespBufferLen) {
@@ -3713,41 +3685,29 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 				UINT_32 u4MailBox1;
 
 				nicGetMailbox(prAdapter, 0, &u4MailBox0);
-				nicGetMailbox(prAdapter, 0, &u4MailBox1);
-				DBGLOG(RX, WARN,
-			       "Not enough Event Buffer: required length = 0x%x, available buffer length = %u\n",
-			       u4PktLen, u4MaxRespBufferLen);
-				DBGLOG(RX, WARN, "Firmware Mailbox 0x%lx, 0x%lx\n", u4MailBox0, u4MailBox1);
+				nicGetMailbox(prAdapter, 1, &u4MailBox1);
+				DBGLOG(RX, WARN, "Not enough buffer length: required %u, available %u\n",
+				       u4PktLen, u4MaxRespBufferLen);
+				DBGLOG(RX, WARN, "Device to Host Mailbox 0x%lx, 0x%lx\n", u4MailBox0, u4MailBox1);
 
 				return WLAN_STATUS_FAILURE;
 			}
 
-#if (CFG_ENABLE_READ_EXTRA_4_BYTES == 1)
 #if CFG_SDIO_RX_AGG
 			HAL_PORT_RD(prAdapter,
 				    ucPortIdx == 0 ? MCR_WRDR0 : MCR_WRDR1,
-				    ALIGN_4(u4PktLen + 4),
+				    ALIGN_4(u4PktLen) + 4,
 				    prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
 			kalMemCopy(pucRspBuffer, prRxCtrl->pucRxCoalescingBufPtr, u4PktLen);
 #else
 #error "Please turn on RX coalescing"
 #endif
-#else
-			HAL_PORT_RD(prAdapter,
-				    ucPortIdx == 0 ? MCR_WRDR0 : MCR_WRDR1, u4PktLen, pucRspBuffer, u4MaxRespBufferLen);
-#endif
 
-			/* fgResult will be updated in MACRO */
-			if (!fgResult) {
-				DBGLOG(RX, ERROR, "Read Response Packet Error\n");
-				return WLAN_STATUS_FAILURE;
-			}
-
-			DBGLOG(RX, TRACE, "Dump Response buffer, length = 0x%x\n", u4PktLen);
-			DBGLOG_MEM8(RX, TRACE, pucRspBuffer, u4PktLen);
+			DBGLOG(RX, LOUD, "Dump Response buffer, length = %u\n", u4PktLen);
+			DBGLOG_MEM8(RX, LOUD, pucRspBuffer, u4PktLen);
 
 			prEvent = (P_WIFI_EVENT_T) pucRspBuffer;
-			DBGLOG(INIT, TRACE, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
+			DBGLOG(RX, TRACE, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
 			       prEvent->ucEID, prEvent->ucSeqNum, prEvent->u2PacketLength);
 
 			*pu4Length = u4PktLen;

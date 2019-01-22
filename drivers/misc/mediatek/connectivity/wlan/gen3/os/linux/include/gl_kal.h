@@ -629,7 +629,7 @@ struct KAL_HALT_CTRL_T {
 #define kalGetTimeTick()                            jiffies_to_msecs(jiffies)
 
 #define WLAN_TAG                                    "[wlan]"
-#define kalPrint(_Fmt...)                           pr_debug(WLAN_TAG _Fmt)
+#define kalPrint(_Fmt...)                           pr_info(WLAN_TAG _Fmt)
 
 #define kalBreakPoint() \
 do { \
@@ -998,38 +998,6 @@ BOOLEAN kalSetSdioTestPattern(IN P_GLUE_INFO_T prGlueInfo, IN BOOLEAN fgEn, IN B
 VOID kalSchedScanResults(IN P_GLUE_INFO_T prGlueInfo);
 
 VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo, BOOLEAN fgDriverTriggerd);
-
-#if CFG_MULTI_ECOVER_SUPPORT
-
-#if 0
-typedef enum _ENUM_WMTHWVER_TYPE_T {
-	WMTHWVER_E1 = 0x0,
-	WMTHWVER_E2 = 0x1,
-	WMTHWVER_E3 = 0x2,
-	WMTHWVER_E4 = 0x3,
-	WMTHWVER_E5 = 0x4,
-	WMTHWVER_E6 = 0x5,
-	WMTHWVER_MAX,
-	WMTHWVER_INVALID = 0xff
-} ENUM_WMTHWVER_TYPE_T, *P_ENUM_WMTHWVER_TYPE_T;
-
-extern ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID);
-
-#else
-
-typedef enum _ENUM_WMTCHIN_TYPE_T {
-	WMTCHIN_CHIPID = 0x0,
-	WMTCHIN_HWVER = WMTCHIN_CHIPID + 1,
-	WMTCHIN_MAPPINGHWVER = WMTCHIN_HWVER + 1,
-	WMTCHIN_FWVER = WMTCHIN_MAPPINGHWVER + 1,
-	WMTCHIN_MAX
-} ENUM_WMT_CHIPINFO_TYPE_T, *P_ENUM_WMT_CHIPINFO_TYPE_T;
-
-UINT_32 mtk_wcn_wmt_ic_info_get(ENUM_WMT_CHIPINFO_TYPE_T type);
-
-#endif
-
-#endif
 
 VOID kalSetFwOwnEvent2Hif(P_GLUE_INFO_T pr);
 

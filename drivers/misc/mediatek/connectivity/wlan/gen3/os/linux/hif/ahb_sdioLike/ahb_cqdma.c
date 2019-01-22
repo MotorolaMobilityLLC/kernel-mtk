@@ -79,7 +79,7 @@
 
 #include "gl_os.h"
 #include "hif.h"
-#include "hif_pdma.h"
+#include "hif_cqdma.h"
 
 
 /*******************************************************************************
@@ -89,7 +89,7 @@
 /* #define DMA_DEBUG_SUP */
 
 #ifdef DMA_DEBUG_SUP
-#define DMA_TAG             "PDMA> "
+#define DMA_TAG             "CQDMA> "
 #define DMA_DBG(_fmt, ...)  pr_info(DMA_TAG _fmt, ##__VA_ARGS__)
 #else
 #define DMA_DBG(_fmt, ...)
@@ -109,23 +109,23 @@
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-static VOID HifPdmaConfig(IN GL_HIF_INFO_T *HifInfo, IN MTK_WCN_HIF_DMA_CONF *Conf);
+static VOID HifCqdmaConfig(IN GL_HIF_INFO_T *HifInfo, IN MTK_WCN_HIF_DMA_CONF *Conf);
 
-static VOID HifPdmaStart(IN GL_HIF_INFO_T *HifInfo);
+static VOID HifCqdmaStart(IN GL_HIF_INFO_T *HifInfo);
 
-static VOID HifPdmaStop(IN GL_HIF_INFO_T *HifInfo);
+static VOID HifCqdmaStop(IN GL_HIF_INFO_T *HifInfo);
 
-static BOOL HifPdmaPollStart(IN GL_HIF_INFO_T *HifInfo);
+static BOOL HifCqdmaPollStart(IN GL_HIF_INFO_T *HifInfo);
 
-static BOOL HifPdmaPollIntr(IN GL_HIF_INFO_T *HifInfo);
+static BOOL HifCqdmaPollIntr(IN GL_HIF_INFO_T *HifInfo);
 
-static VOID HifPdmaAckIntr(IN GL_HIF_INFO_T *HifInfo);
+static VOID HifCqdmaAckIntr(IN GL_HIF_INFO_T *HifInfo);
 
-static VOID HifPdmaClockCtrl(IN GL_HIF_INFO_T *HifInfo, IN BOOL fgEnable);
+static VOID HifCqdmaClockCtrl(IN GL_HIF_INFO_T *HifInfo, IN BOOL fgEnable);
 
-static VOID HifPdmaRegDump(IN GL_HIF_INFO_T *HifInfo);
+static VOID HifCqdmaRegDump(IN GL_HIF_INFO_T *HifInfo);
 
-static VOID HifPdmaReset(IN GL_HIF_INFO_T *HifInfo);
+static VOID HifCqdmaReset(IN GL_HIF_INFO_T *HifInfo);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -136,16 +136,16 @@ static VOID HifPdmaReset(IN GL_HIF_INFO_T *HifInfo);
 *                           P R I V A T E   D A T A
 ********************************************************************************
 */
-GL_HIF_DMA_OPS_T HifPdmaOps = {
-	.DmaConfig = HifPdmaConfig,
-	.DmaStart = HifPdmaStart,
-	.DmaStop = HifPdmaStop,
-	.DmaPollStart = HifPdmaPollStart,
-	.DmaPollIntr = HifPdmaPollIntr,
-	.DmaAckIntr = HifPdmaAckIntr,
-	.DmaClockCtrl = HifPdmaClockCtrl,
-	.DmaRegDump = HifPdmaRegDump,
-	.DmaReset = HifPdmaReset
+GL_HIF_DMA_OPS_T HifCqdmaOps = {
+	.DmaConfig = HifCqdmaConfig,
+	.DmaStart = HifCqdmaStart,
+	.DmaStop = HifCqdmaStop,
+	.DmaPollStart = HifCqdmaPollStart,
+	.DmaPollIntr = HifCqdmaPollIntr,
+	.DmaAckIntr = HifCqdmaAckIntr,
+	.DmaClockCtrl = HifCqdmaClockCtrl,
+	.DmaRegDump = HifCqdmaRegDump,
+	.DmaReset = HifCqdmaReset
 };
 
 /*******************************************************************************
@@ -159,11 +159,10 @@ VOID HifDmaInit(GL_HIF_INFO_T *HifInfo)
 #ifdef CONFIG_OF
 	HifInfo->DmaRegBaseAddr = (PUINT_8)of_iomap(HifInfo->Dev->of_node, 1);
 #else
-	HifInfo->DmaRegBaseAddr = ioremap(AP_DMA_HIF_BASE, AP_DMA_HIF_0_LENGTH);
+	HifInfo->DmaRegBaseAddr = ioremap(CQ_DMA_HIF_BASE, CQ_DMA_HIF_LENGTH);
 #endif
-
 	/* Assign DMA operators */
-	HifInfo->DmaOps = &HifPdmaOps;
+	HifInfo->DmaOps = &HifCqdmaOps;
 
 	/* Enable DMA mode */
 	HifInfo->fgDmaEnable = TRUE;
@@ -196,7 +195,7 @@ VOID HifDmaUnInit(GL_HIF_INFO_T *HifInfo)
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Config PDMA TX/RX behavior.
+* \brief Config CQDMA TX/RX behavior.
 *
 * \param[in] HifInfo            Pointer to the GL_HIF_INFO_T structure.
 * \param[in] Param              Pointer to the settings.
@@ -204,90 +203,117 @@ VOID HifDmaUnInit(GL_HIF_INFO_T *HifInfo)
 * \retval NONE
 */
 /*----------------------------------------------------------------------------*/
-static VOID HifPdmaConfig(IN GL_HIF_INFO_T *HifInfo, IN MTK_WCN_HIF_DMA_CONF *Conf)
+static VOID HifCqdmaConfig(IN GL_HIF_INFO_T *HifInfo, IN MTK_WCN_HIF_DMA_CONF *Conf)
 {
 	UINT_32 RegVal;
+	ULONG addr_h;
 
 	/* Assign fixed value */
-	Conf->Burst = HIF_PDMA_BURST_4_4;	/* vs. HIF_BURST_4DW */
+	Conf->Burst = HIF_CQDMA_BURST_8_8;
 	Conf->Fix_en = FALSE;
+	Conf->Connect = HIF_CQDMA_CONNECT_SET1;
 
-	/* AP_DMA_HIF_0_CON */
+	/* CQ_DMA_HIF_CON */
 	DMA_DBG("Conf->Dir = %d\n", Conf->Dir);
 
-	/* AP_DMA_HIF_0_CON */
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_CON);
-	RegVal &= ~(ADH_CR_BURST_INCR | ADH_CR_BURST_LEN | ADH_CR_FIX_EN | ADH_CR_DIR);
-	RegVal |= (((Conf->Burst << ADH_CR_BURST_LEN_OFFSET) & ADH_CR_BURST_LEN) |
-		   (Conf->Fix_en << ADH_CR_FIX_EN_OFFSET) | (Conf->Dir));
-	RegVal |= ADH_CR_BURST_INCR;
+	RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_CON);
+	RegVal &= ~(CDH_CR_FIX8 | CDH_CR_BURST_LEN | CDH_CR_WRAP_EN | CDH_CR_WADDR_FIX_EN |
+		    CDH_CR_RADDR_FIX_EN | CDH_CR_FIX_EN | CDH_CR_RESIDUE);
+	RegVal |= CDH_CR_FIX8;
+	RegVal |= (((Conf->Burst << CDH_CR_BURST_LEN_OFFSET) & CDH_CR_BURST_LEN) |
+		   ((Conf->Fix_en << CDH_CR_FIX_EN_OFFSET) & CDH_CR_FIX_EN));
+	if (Conf->Dir == HIF_DMA_DIR_RX)
+		RegVal |= CDH_CR_RESIDUE; /* CQDMA fix length 8 byte align to 4 byte align */
 
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_CON, RegVal);
-	DMA_DBG("AP_DMA_HIF_0_CON = 0x%08x\n", RegVal);
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_CON, RegVal);
+	DMA_DBG("CQ_DMA_HIF_CON = 0x%08x\n", RegVal);
 
-	/* AP_DMA_HIF_0_SRC_ADDR */
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_SRC_ADDR, Conf->Src);
-	DMA_DBG("AP_DMA_HIF_0_SRC_ADDR = 0x%08lx\n", Conf->Src);
+	/* CQ_DMA_HIF_CONNECT */
+	RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_CONNECT);
+	RegVal &= ~(CDH_CR_DIR | CDH_CR_CONNECT);
+	RegVal |= (((Conf->Dir << CDH_CR_DIR_OFFSET) & CDH_CR_DIR) |
+		   ((Conf->Connect) & CDH_CR_CONNECT));
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_CONNECT, RegVal);
+	DMA_DBG("CQ_DMA_HIF_CONNECT = 0x%08x\n", RegVal);
 
-	/* AP_DMA_HIF_0_DST_ADDR */
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_DST_ADDR, Conf->Dst);
-	DMA_DBG("AP_DMA_HIF_0_DST_ADDR = 0x%08lx\n", Conf->Dst);
+	/* CQ_DMA_HIF_SRC_ADDR2 */
+	/* ulong is 32 bit on ILP32, and 64 bit on LP64. So on 32-bit OS platform,
+	 * right shift 32 to ulong is forbidden, we just right shift 16 twice to replace.
+	 * For 32-bit address, it should be 0 to fill in ADDR2 register.
+	 */
+	addr_h = Conf->Src >> 16;
+	addr_h = addr_h >> 16;
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_SRC_ADDR2, (UINT_32)addr_h);
+	DMA_DBG("CQ_DMA_HIF_SRC_ADDR2 = 0x%08x\n", (UINT_32)addr_h);
 
-	/* AP_DMA_HIF_0_LEN */
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_LEN, (Conf->Count & ADH_CR_LEN));
-	DMA_DBG("AP_DMA_HIF_0_LEN = %u\n", Conf->Count & ADH_CR_LEN);
+	/* CQ_DMA_HIF_SRC_ADDR */
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_SRC_ADDR, (UINT_32)Conf->Src);
+	DMA_DBG("CQ_DMA_HIF_SRC_ADDR = 0x%08x\n", (UINT_32)Conf->Src);
+
+	/* CQ_DMA_HIF_DST_ADDR2 */
+	/* ulong is 32 bit on ILP32, and 64 bit on LP64. So on 32-bit OS platform,
+	 * right shift 32 to ulong is forbidden, we just right shift 16 twice to replace.
+	 * For 32-bit address, it should be 0 to fill in ADDR2 register.
+	 */
+	addr_h = Conf->Dst >> 16;
+	addr_h = addr_h >> 16;
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_DST_ADDR2, (UINT_32)addr_h);
+	DMA_DBG("CQ_DMA_HIF_DST_ADDR2 = 0x%08x\n", (UINT_32)addr_h);
+
+	/* CQ_DMA_HIF_DST_ADDR */
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_DST_ADDR, (UINT_32)Conf->Dst);
+	DMA_DBG("CQ_DMA_HIF_DST_ADDR = 0x%08x\n", (UINT_32)Conf->Dst);
+
+	/* CQ_DMA_HIF_LEN1 */
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_LEN1, (UINT_32)(Conf->Count & CDH_CR_LEN));
+	DMA_DBG("CQ_DMA_HIF_LEN1 = %u\n", (UINT_32)(Conf->Count & CDH_CR_LEN));
 }
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Start PDMA TX/RX.
+* \brief Start CQDMA TX/RX.
 *
 * \param[in] HifInfo            Pointer to the GL_HIF_INFO_T structure.
 *
 * \retval NONE
 */
 /*----------------------------------------------------------------------------*/
-static VOID HifPdmaStart(IN GL_HIF_INFO_T *HifInfo)
+static VOID HifCqdmaStart(IN GL_HIF_INFO_T *HifInfo)
 {
 	UINT_32 RegVal;
 
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_SRC_ADDR2);
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_SRC_ADDR2, (RegVal | ADH_CR_SRC_ADDR2));
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_DST_ADDR2);
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_DST_ADDR2, (RegVal | ADH_CR_DST_ADDR2));
-
 	/* Enable interrupt */
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_INT_EN);
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_INT_EN, (RegVal | ADH_CR_INTEN_FLAG_0));
+	RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_INT_EN);
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_INT_EN, (RegVal | CDH_CR_INTEN_FLAG));
 
 	/* Start DMA */
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_EN);
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_EN, (RegVal | ADH_CR_EN));
+	RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_EN);
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_EN, (RegVal | CDH_CR_EN));
 
 	DMA_DBG("HIF DMA start...\n");
 }
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Stop PDMA TX/RX.
+* \brief Stop CQDMA TX/RX.
 *
 * \param[in] HifInfo            Pointer to the GL_HIF_INFO_T structure.
 *
 * \retval NONE
 */
 /*----------------------------------------------------------------------------*/
-static VOID HifPdmaStop(IN GL_HIF_INFO_T *HifInfo)
+static VOID HifCqdmaStop(IN GL_HIF_INFO_T *HifInfo)
 {
 	UINT_32 RegVal, LoopCnt;
 
 	/* Disable interrupt */
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_INT_EN);
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_INT_EN, (RegVal & ~(ADH_CR_INTEN_FLAG_0)));
+	RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_INT_EN);
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_INT_EN, (RegVal & ~(CDH_CR_INTEN_FLAG)));
 
 	/* Confirm DMA is stopped */
 	if (HifCqdmaPollStart(HifInfo)) {
-		RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_STOP);
-		HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_STOP, (RegVal | ADH_CR_STOP));
+		RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_STOP);
+		HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_STOP, (RegVal | CDH_CR_STOP));
 
 		/* Polling START bit turn to 0 */
 		LoopCnt = 0;
@@ -303,7 +329,7 @@ static VOID HifPdmaStop(IN GL_HIF_INFO_T *HifInfo)
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Poll PDMA enable bit.
+* \brief Poll CQDMA enable bit.
 *
 * \param[in] HifInfo            Pointer to the GL_HIF_INFO_T structure.
 *
@@ -311,17 +337,17 @@ static VOID HifPdmaStop(IN GL_HIF_INFO_T *HifInfo)
 *         FALSE   DMA is stopped
 */
 /*----------------------------------------------------------------------------*/
-static BOOL HifPdmaPollStart(IN GL_HIF_INFO_T *HifInfo)
+static BOOL HifCqdmaPollStart(IN GL_HIF_INFO_T *HifInfo)
 {
 	UINT_32 RegVal;
 
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_EN);
-	return ((RegVal & ADH_CR_EN) != 0) ? TRUE : FALSE;
+	RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_EN);
+	return ((RegVal & CDH_CR_EN) != 0) ? TRUE : FALSE;
 }
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Poll PDMA interrupt flag.
+* \brief Poll CQDMA interrupt flag.
 *
 * \param[in] HifInfo            Pointer to the GL_HIF_INFO_T structure.
 *
@@ -329,35 +355,35 @@ static BOOL HifPdmaPollStart(IN GL_HIF_INFO_T *HifInfo)
 *         FALSE
 */
 /*----------------------------------------------------------------------------*/
-static BOOL HifPdmaPollIntr(IN GL_HIF_INFO_T *HifInfo)
+static BOOL HifCqdmaPollIntr(IN GL_HIF_INFO_T *HifInfo)
 {
 	UINT_32 RegVal;
 
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_INT_FLAG);
-	return ((RegVal & ADH_CR_FLAG_0) != 0) ? TRUE : FALSE;
+	RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_INT_FLAG);
+	return ((RegVal & CDH_CR_INT_FLAG) != 0) ? TRUE : FALSE;
 }
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Acknowledge PDMA interrupt flag.
+* \brief Acknowledge CQDMA interrupt flag.
 *
 * \param[in] HifInfo            Pointer to the GL_HIF_INFO_T structure.
 *
 * \retval NONE
 */
 /*----------------------------------------------------------------------------*/
-static VOID HifPdmaAckIntr(IN GL_HIF_INFO_T *HifInfo)
+static VOID HifCqdmaAckIntr(IN GL_HIF_INFO_T *HifInfo)
 {
 	UINT_32 RegVal;
 
 	/* Write 0 to clear interrupt */
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_INT_FLAG);
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_INT_FLAG, (RegVal & ~ADH_CR_FLAG_0));
+	RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_INT_FLAG);
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_INT_FLAG, (RegVal & ~CDH_CR_INT_FLAG));
 }
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Enable/disable PDMA clock.
+* \brief Enable/disable CQDMA clock.
 *
 * \param[in] HifInfo            Pointer to the GL_HIF_INFO_T structure.
 * \param[in] fgEnable           TRUE: enable; FALSE: disable
@@ -365,7 +391,7 @@ static VOID HifPdmaAckIntr(IN GL_HIF_INFO_T *HifInfo)
 * \retval NONE
 */
 /*----------------------------------------------------------------------------*/
-static VOID HifPdmaClockCtrl(IN GL_HIF_INFO_T *HifInfo, IN BOOL fgEnable)
+static VOID HifCqdmaClockCtrl(IN GL_HIF_INFO_T *HifInfo, IN BOOL fgEnable)
 {
 #if defined(CONFIG_MTK_CLKMGR)
 	if (fgEnable == TRUE)
@@ -393,25 +419,25 @@ static VOID HifPdmaClockCtrl(IN GL_HIF_INFO_T *HifInfo, IN BOOL fgEnable)
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Dump PDMA related registers when abnormal, such as DMA timeout.
+* \brief Dump CQDMA related registers when abnormal, such as DMA timeout.
 *
 * \param[in] HifInfo            Pointer to the GL_HIF_INFO_T structure.
 *
 * \retval NONE
 */
 /*----------------------------------------------------------------------------*/
-static VOID HifPdmaRegDump(IN GL_HIF_INFO_T *HifInfo)
+static VOID HifCqdmaRegDump(IN GL_HIF_INFO_T *HifInfo)
 {
 	UINT_32 RegVal[4], RegOffset, Length;
 	UINT_32 idx = 0;
 
-	Length = ((AP_DMA_HIF_0_LENGTH + 15) & ~15u); /* Dump 16 bytes alignment length */
+	Length = ((CQ_DMA_HIF_LENGTH + 15) & ~15u); /* Dump 16 bytes alignment length */
 
 	for (RegOffset = 0; RegOffset < Length; RegOffset += 4) {
 		RegVal[idx] = HIF_DMAR_READL(HifInfo, RegOffset);
 
 		if (idx++ >= 3) {
-			DBGLOG(INIT, INFO, "PDMA> DUMP32 ADDRESS: 0x%08x\n", AP_DMA_HIF_BASE + RegOffset - 12);
+			DBGLOG(INIT, INFO, "CQDMA> DUMP32 ADDRESS: 0x%08x\n", CQ_DMA_HIF_BASE + RegOffset - 12);
 			DBGLOG(INIT, INFO, "\t%08x %08x %08x %08x\n", RegVal[0], RegVal[1], RegVal[2], RegVal[3]);
 			idx = 0;
 		}
@@ -420,36 +446,36 @@ static VOID HifPdmaRegDump(IN GL_HIF_INFO_T *HifInfo)
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief Reset PDMA.
+* \brief Reset CQDMA.
 *
 * \param[in] HifInfo            Pointer to the GL_HIF_INFO_T structure.
 *
 * \retval NONE
 */
 /*----------------------------------------------------------------------------*/
-static VOID HifPdmaReset(IN GL_HIF_INFO_T *HifInfo)
+static VOID HifCqdmaReset(IN GL_HIF_INFO_T *HifInfo)
 {
 	UINT_32 RegVal, LoopCnt;
 
 	/* Do warm reset: DMA will wait for current transaction finished */
-	DBGLOG(INIT, INFO, "PDMA> do warm reset...\n");
+	DBGLOG(INIT, INFO, "CQDMA> do warm reset...\n");
 
-	/* Normally, we need to make sure that bit0 of AP_DMA_HIF_0_EN is 1 here */
+	/* Normally, we need to make sure that bit0 of CQ_DMA_HIF_EN is 1 here */
 
-	RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_RST);
-	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_RST, (RegVal | ADH_CR_WARM_RST));
+	RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_RST);
+	HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_RST, (RegVal | CDH_CR_WARM_RST));
 
 	for (LoopCnt = 0; LoopCnt < 10000; LoopCnt++) {
-		if (!HifPdmaPollStart(HifInfo))
+		if (!HifCqdmaPollStart(HifInfo))
 			break;	/* reset ok */
 	}
 
-	if (HifPdmaPollStart(HifInfo)) {
+	if (HifCqdmaPollStart(HifInfo)) {
 		/* Do hard reset if warm reset fails */
-		DBGLOG(INIT, INFO, "PDMA> do hard reset...\n");
-		RegVal = HIF_DMAR_READL(HifInfo, AP_DMA_HIF_0_RST);
-		HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_RST, (RegVal | ADH_CR_HARD_RST));
-		HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_RST, (RegVal & ~ADH_CR_HARD_RST));
+		DBGLOG(INIT, INFO, "CQDMA> do hard reset...\n");
+		RegVal = HIF_DMAR_READL(HifInfo, CQ_DMA_HIF_RST);
+		HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_RST, (RegVal | CDH_CR_HARD_RST));
+		HIF_DMAR_WRITEL(HifInfo, CQ_DMA_HIF_RST, (RegVal & ~CDH_CR_HARD_RST));
 	}
 }
 

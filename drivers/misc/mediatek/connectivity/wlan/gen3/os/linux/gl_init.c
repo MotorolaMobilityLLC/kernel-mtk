@@ -1921,6 +1921,8 @@ static INT_32 wlanProbe(PVOID pvData)
 		prAdapter->u4CSUMFlags = (CSUM_OFFLOAD_EN_TX_TCP | CSUM_OFFLOAD_EN_TX_UDP | CSUM_OFFLOAD_EN_TX_IP);
 #endif
 
+		prAdapter->fgIsReadRevID = FALSE;
+
 #if CFG_SUPPORT_CFG_FILE
 		wlanCfgInit(prAdapter, NULL, 0, 0);
 #ifdef ENABLED_IN_ENGUSERDEBUG
@@ -1952,14 +1954,28 @@ static INT_32 wlanProbe(PVOID pvData)
 #if CFG_ENABLE_FW_DOWNLOAD
 		/* before start adapter, we need to open and load firmware */
 		{
-			UINT_32 u4FwSize = 0;
 			PVOID prFwBuffer = NULL;
+			UINT_32 u4FwSize = 0;
+			UINT_32 u4FwLoadAddr = CFG_FW_LOAD_ADDRESS;
+			UINT_32 u4FwStartAddr = CFG_FW_START_ADDRESS;
 			P_REG_INFO_T prRegInfo = &prGlueInfo->rRegInfo;
 
-			/* P_REG_INFO_T prRegInfo = (P_REG_INFO_T) kmalloc(sizeof(REG_INFO_T), GFP_KERNEL); */
 			kalMemSet(prRegInfo, 0, sizeof(REG_INFO_T));
-			prRegInfo->u4StartAddress = CFG_FW_START_ADDRESS;
-			prRegInfo->u4LoadAddress = CFG_FW_LOAD_ADDRESS;
+
+#if defined(MT6631)
+#ifdef CONFIG_OF
+			if (prGlueInfo->rHifInfo.Dev) {
+				if (of_property_read_u32_index(prGlueInfo->rHifInfo.Dev->of_node,
+							       "hardware-values", 1, &u4FwLoadAddr) ||
+				    of_property_read_u32_index(prGlueInfo->rHifInfo.Dev->of_node,
+							       "hardware-values", 2, &u4FwStartAddr))
+					DBGLOG(INIT, ERROR, "Failed to get hardware-values from DT!\n");
+			}
+#endif
+#endif
+
+			prRegInfo->u4LoadAddress = u4FwLoadAddr;
+			prRegInfo->u4StartAddress = u4FwStartAddr;
 
 			/* Trigger the action of switching Pwr state to drv_own */
 			prAdapter->fgIsFwOwn = TRUE;
@@ -2439,8 +2455,6 @@ static VOID exitWlan(void)
 
 #ifdef MTK_WCN_BUILT_IN_DRIVER
 
-#if (MTK_WCN_HIF_SDIO == 1)
-
 int mtk_wcn_wlan_gen3_init(void)
 {
 	return initWlan();
@@ -2452,22 +2466,6 @@ void mtk_wcn_wlan_gen3_exit(void)
 	return exitWlan();
 }
 EXPORT_SYMBOL(mtk_wcn_wlan_gen3_exit);
-
-#elif (MTK_WCN_HIF_SDIO == 0)
-
-int mtk_wcn_wlan_gen3_init(void)
-{
-	return initWlan();
-}
-EXPORT_SYMBOL(mtk_wcn_wlan_gen3_init);
-
-void mtk_wcn_wlan_gen3_exit(void)
-{
-	return exitWlan();
-}
-EXPORT_SYMBOL(mtk_wcn_wlan_gen3_exit);
-
-#endif
 
 #else
 
