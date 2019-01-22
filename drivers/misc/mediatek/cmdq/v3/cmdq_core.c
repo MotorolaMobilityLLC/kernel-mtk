@@ -407,7 +407,12 @@ static s32 cmdq_delay_thread_init(void)
 	u32 cpr_offset = 0;
 	u32 free_sram_size = cmdq_core_get_free_sram_size();
 
-	memset(&(g_delay_thread_cmd), 0x0, sizeof(g_delay_thread_cmd));
+	if (g_delay_thread_cmd.mva_base && g_delay_thread_cmd.p_va_base &&
+		g_delay_thread_cmd.buffer_size) {
+		/* delay thread already initialized */
+		CMDQ_LOG("[DelayThread][warn]try to init delay thread again\n");
+		return 0;
+	}
 
 	if (!sram_task_size) {
 		if (cmdq_task_create_delay_thread_sram(&p_delay_thread_buffer, &sram_task_size, &cpr_offset) < 0) {
@@ -553,7 +558,8 @@ static int32_t cmdq_delay_thread_stop(void)
 static void cmdq_delay_thread_deinit(void)
 {
 	cmdq_core_free_hw_buffer(cmdq_dev_get(), g_delay_thread_cmd.buffer_size,
-						 g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.mva_base);
+		g_delay_thread_cmd.p_va_base, g_delay_thread_cmd.mva_base);
+	memset(&g_delay_thread_cmd, 0x0, sizeof(g_delay_thread_cmd));
 }
 
 void cmdq_delay_dump_thread(bool dump_sram)
@@ -8489,10 +8495,11 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 	int32_t status = 0;
 	CMDQ_TIME alloc_cost = 0;
 
-	if (!gCmdqSuspended && !g_delay_thread_inited
-		&& pCommandDesc->scenario != CMDQ_SCENARIO_MOVE) {
+	if (!gCmdqSuspended && !g_delay_thread_inited &&
+		pCommandDesc->scenario != CMDQ_SCENARIO_MOVE) {
 		if (cmdq_delay_thread_init() < 0) {
-			CMDQ_ERR("delay init failed!\n");
+			CMDQ_ERR("delay init failed! inited:%s\n",
+				g_delay_thread_inited ? "true" : "false");
 			return -EFAULT;
 		}
 	}
