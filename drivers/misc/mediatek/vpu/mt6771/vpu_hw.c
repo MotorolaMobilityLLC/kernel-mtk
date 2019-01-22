@@ -562,7 +562,7 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 	struct sg_table *sg;
 	const uint64_t size_algos = VPU_SIZE_ALGO_AREA + VPU_SIZE_ALGO_AREA + VPU_SIZE_ALGO_AREA;
 
-	LOG_INF("vpu_map_mva_of_bin, bin_pa(0x%lx)\n", (unsigned long)bin_pa);
+	LOG_DBG("vpu_map_mva_of_bin, bin_pa(0x%lx)\n", (unsigned long)bin_pa);
 
 	switch (core) {
 	case 0:
@@ -588,32 +588,32 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 		binpa_iram_data = bin_pa + VPU_OFFSET_MAIN_PROGRAM_IMEM + (VPU_DDR_SHIFT_IRAM_DATA << 2);
 		break;
 	}
-	LOG_INF("vpu_map_mva_of_bin(core:%d), pa resvec/mainpro(0x%lx/0x%lx)\n", core,
+	LOG_DBG("vpu_map_mva_of_bin(core:%d), pa resvec/mainpro(0x%lx/0x%lx)\n", core,
 		(unsigned long)binpa_reset_vector, (unsigned long)binpa_main_program);
 
 	/* 1. map reset vector */
 	sg = &(vpu_service_cores[core].sg_reset_vector);
 	ret = sg_alloc_table(sg, 1, GFP_KERNEL);
 	CHECK_RET("fail to allocate sg table[reset]!\n");
-	LOG_INF("vpu...sg_alloc_table ok\n");
+	LOG_DBG("vpu...sg_alloc_table ok\n");
 
 	sg_dma_address(sg->sgl) = binpa_reset_vector;
-	LOG_INF("vpu...sg_dma_address ok, bin_pa(0x%x)\n", (unsigned int)binpa_reset_vector);
+	LOG_DBG("vpu...sg_dma_address ok, bin_pa(0x%x)\n", (unsigned int)binpa_reset_vector);
 	sg_dma_len(sg->sgl) = VPU_SIZE_RESET_VECTOR;
-	LOG_INF("vpu...sg_dma_len ok, VPU_SIZE_RESET_VECTOR(0x%x)\n", VPU_SIZE_RESET_VECTOR);
+	LOG_DBG("vpu...sg_dma_len ok, VPU_SIZE_RESET_VECTOR(0x%x)\n", VPU_SIZE_RESET_VECTOR);
 	ret = m4u_alloc_mva(m4u_client, VPU_PORT_OF_IOMMU,
 			0, sg,
 			VPU_SIZE_RESET_VECTOR,
 			M4U_PROT_READ | M4U_PROT_WRITE,
 			M4U_FLAGS_START_FROM/*M4U_FLAGS_FIX_MVA*/, &mva_reset_vector);
 	CHECK_RET("fail to allocate mva of reset vecter!\n");
-	LOG_INF("vpu...m4u_alloc_mva ok\n");
+	LOG_DBG("vpu...m4u_alloc_mva ok\n");
 
 	/* 2. map main program */
 	sg = &(vpu_service_cores[core].sg_main_program);
 	ret = sg_alloc_table(sg, 1, GFP_KERNEL);
 	CHECK_RET("fail to allocate sg table[main]!\n");
-	LOG_INF("vpu...sg_alloc_table main_program ok\n");
+	LOG_DBG("vpu...sg_alloc_table main_program ok\n");
 
 	sg_dma_address(sg->sgl) = binpa_main_program;
 	sg_dma_len(sg->sgl) = VPU_SIZE_MAIN_PROGRAM;
@@ -627,7 +627,7 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 		m4u_dealloc_mva(m4u_client, VPU_PORT_OF_IOMMU, mva_main_program);
 		goto out;
 	}
-	LOG_INF("vpu...m4u_alloc_mva main_program ok, (0x%x/0x%x)\n",
+	LOG_DBG("vpu...m4u_alloc_mva main_program ok, (0x%x/0x%x)\n",
 		(unsigned int)(binpa_main_program), (unsigned int)VPU_SIZE_MAIN_PROGRAM);
 
 	/* 3. map all algo binary data(src addr for dps to copy) */
@@ -636,7 +636,7 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 		sg = &(vpu_service_cores[core].sg_algo_binary_data);
 		ret = sg_alloc_table(sg, 1, GFP_KERNEL);
 		CHECK_RET("fail to allocate sg table[reset]!\n");
-		LOG_INF("vpu...sg_alloc_table algo_data ok, mva_algo_binary_data = 0x%x\n",
+		LOG_DBG("vpu...sg_alloc_table algo_data ok, mva_algo_binary_data = 0x%x\n",
 			mva_algo_binary_data);
 
 		sg_dma_address(sg->sgl) = bin_pa + VPU_OFFSET_ALGO_AREA;
@@ -648,8 +648,8 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 				M4U_FLAGS_SG_READY, &mva_algo_binary_data);
 		CHECK_RET("fail to allocate mva of reset vecter!\n");
 		vpu_service_cores[core].algo_data_mva = mva_algo_binary_data;
-		LOG_INF("a vpu va_algo_data pa: 0x%x\n", (unsigned int)(bin_pa + VPU_OFFSET_ALGO_AREA));
-		LOG_INF("a vpu va_algo_data: 0x%x/0x%x, size: 0x%x\n", mva_algo_binary_data,
+		LOG_DBG("a vpu va_algo_data pa: 0x%x\n", (unsigned int)(bin_pa + VPU_OFFSET_ALGO_AREA));
+		LOG_DBG("a vpu va_algo_data: 0x%x/0x%x, size: 0x%x\n", mva_algo_binary_data,
 			(unsigned int)(vpu_service_cores[core].algo_data_mva), (unsigned int)size_algos);
 	} else {
 		vpu_service_cores[core].algo_data_mva = vpu_service_cores[0].algo_data_mva;
@@ -660,8 +660,8 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 	sg = &(vpu_service_cores[core].sg_iram_data);
 	ret = sg_alloc_table(sg, 1, GFP_KERNEL);
 	CHECK_RET("fail to allocate sg table[reset]!\n");
-	LOG_INF("vpu...sg_alloc_table iram_data ok, mva_iram_data = 0x%x\n", mva_iram_data);
-	LOG_INF("a vpu iram pa: 0x%lx\n", (unsigned long)(binpa_iram_data));
+	LOG_DBG("vpu...sg_alloc_table iram_data ok, mva_iram_data = 0x%x\n", mva_iram_data);
+	LOG_DBG("a vpu iram pa: 0x%lx\n", (unsigned long)(binpa_iram_data));
 	sg_dma_address(sg->sgl) = binpa_iram_data;
 	sg_dma_len(sg->sgl) = VPU_SIZE_MAIN_PROGRAM_IMEM;
 	ret = m4u_alloc_mva(m4u_client, VPU_PORT_OF_IOMMU,
@@ -671,7 +671,7 @@ static int vpu_map_mva_of_bin(int core, uint64_t bin_pa)
 			M4U_FLAGS_SG_READY, &mva_iram_data);
 	CHECK_RET("fail to allocate mva of iram data!\n");
 	vpu_service_cores[core].iram_data_mva = (uint64_t)(mva_iram_data);
-	LOG_INF("a vpu va_iram_data: 0x%x, iram_data_mva: 0x%lx\n",
+	LOG_DBG("a vpu va_iram_data: 0x%x, iram_data_mva: 0x%lx\n",
 		mva_iram_data, (unsigned long)(vpu_service_cores[core].iram_data_mva));
 
 out:
@@ -784,7 +784,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 			mem_param.size = VPU_SIZE_WORK_BUF;
 			mem_param.fixed_addr = 0;
 			ret = vpu_alloc_shared_memory(&(vpu_service_cores[i].work_buf), &mem_param);
-			LOG_INF("core(%d):work_buf va (0x%lx),pa(0x%x)",
+			LOG_DBG("core(%d):work_buf va (0x%lx),pa(0x%x)",
 				i, (unsigned long)(vpu_service_cores[i].work_buf->va),
 				vpu_service_cores[i].work_buf->pa);
 			CHECK_RET("fail to allocate working buffer!\n");
@@ -808,7 +808,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 			}
 
 			ret = vpu_alloc_shared_memory(&(vpu_service_cores[i].exec_kernel_lib), &mem_param);
-			LOG_INF("core(%d):kernel_lib va (0x%lx),pa(0x%x)",
+			LOG_DBG("core(%d):kernel_lib va (0x%lx),pa(0x%x)",
 				i, (unsigned long)(vpu_service_cores[i].exec_kernel_lib->va),
 				vpu_service_cores[i].exec_kernel_lib->pa);
 			CHECK_RET("fail to allocate kernel_lib buffer!\n");
@@ -821,7 +821,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		mem_param.size = VPU_SIZE_SHARED_DATA;
 		mem_param.fixed_addr = VPU_MVA_SHARED_DATA;
 		ret = vpu_alloc_shared_memory(&(core_shared_data), &mem_param);
-		LOG_INF("shared_data va (0x%lx),pa(0x%x)",
+		LOG_DBG("shared_data va (0x%lx),pa(0x%x)",
 			(unsigned long)(core_shared_data->va), core_shared_data->pa);
 		CHECK_RET("fail to allocate working buffer!\n");
 
@@ -1605,7 +1605,7 @@ int vpu_alloc_shared_memory(struct vpu_shared_memory **shmem, struct vpu_shared_
 	CHECK_RET("fail to config ion buffer, ret=%d\n", ret);
 
 	/* map pa */
-	LOG_INF("vpu param->require_pa(%d)\n", param->require_pa);
+	LOG_DBG("vpu param->require_pa(%d)\n", param->require_pa);
 	if (param->require_pa) {
 		sys_data.sys_cmd = ION_SYS_GET_PHYS;
 		sys_data.get_phys_param.kernel_handle = handle;

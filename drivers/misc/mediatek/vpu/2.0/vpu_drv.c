@@ -951,7 +951,7 @@ static int vpu_probe(struct platform_device *pdev)
 
 	node = pdev->dev.of_node;
 	vpu_device->dev[vpu_num_devs] = &pdev->dev;
-	LOG_INF("probe 0, pdev id = %d name = %s, name = %s\n", pdev->id, pdev->name, pdev->dev.of_node->name);
+	LOG_DBG("probe 0, pdev id = %d name = %s, name = %s\n", pdev->id, pdev->name, pdev->dev.of_node->name);
 
 #ifdef MTK_VPU_EMULATOR
 	/* emulator will fill vpu_base and bin_base */
@@ -982,7 +982,7 @@ static int vpu_probe(struct platform_device *pdev)
 				return -ENODEV;
 			}
 
-			LOG_INF("probe core:%d, phy_addr: 0x%x, phy_size: 0x%x\n",
+			LOG_DBG("probe core:%d, phy_addr: 0x%x, phy_size: 0x%x\n",
 				core, phy_addr, phy_size);
 			vpu_device->bin_base = (uint64_t)ioremap_wc(phy_addr, phy_size);
 			vpu_device->bin_pa = phy_addr;
@@ -995,7 +995,7 @@ static int vpu_probe(struct platform_device *pdev)
 
 	if (vpu_num_devs > 2) {
 		vpu_device->irq_num[core] = irq_of_parse_and_map(node, 0);
-		LOG_INF("probe 2, [%d/%d] vpu_base: 0x%lx, bin_base: 0x%lx, irq_num: %d, pdev: %p\n",
+		LOG_DBG("probe 2, [%d/%d] vpu_base: 0x%lx, bin_base: 0x%lx, irq_num: %d, pdev: %p\n",
 			 vpu_num_devs, core, vpu_device->vpu_base[core],  vpu_device->bin_base,
 			 vpu_device->irq_num[core], vpu_device->dev[vpu_num_devs]);
 		if (vpu_device->irq_num[core] > 0) {
@@ -1011,13 +1011,13 @@ static int vpu_probe(struct platform_device *pdev)
 		}
 
 		vpu_init_algo(vpu_device);
-		LOG_INF("[probe] [%d] init_algo done\n", core);
+		LOG_DBG("[probe] [%d] init_algo done\n", core);
 		vpu_init_hw(core, vpu_device);
-		LOG_INF("[probe] [%d] init_hw done\n", core);
+		LOG_DBG("[probe] [%d] init_hw done\n", core);
 		vpu_init_reg(core, vpu_device);
-		LOG_INF("[probe] [%d] init_reg done\n", core);
+		LOG_DBG("[probe] [%d] init_reg done\n", core);
 	}
-	LOG_INF("probe 2, vpu_syscfg_base: 0x%lx, vpu_adlctrl_base: 0x%lx vpu_vcorecfg_base: 0x%lx\n",
+	LOG_DBG("probe 2, vpu_syscfg_base: 0x%lx, vpu_adlctrl_base: 0x%lx vpu_vcorecfg_base: 0x%lx\n",
 			 vpu_device->vpu_syscfg_base,  vpu_device->vpu_adlctrl_base,  vpu_device->vpu_vcorecfg_base);
 
 
@@ -1053,7 +1053,7 @@ out:
 			vpu_unreg_chardev();
 	}
 
-	LOG_INF("probe vpu driver\n");
+	LOG_DBG("probe vpu driver\n");
 
 	return ret;
 }

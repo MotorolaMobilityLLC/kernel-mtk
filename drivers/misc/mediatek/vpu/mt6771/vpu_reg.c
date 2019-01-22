@@ -268,9 +268,9 @@ int vpu_init_reg(int core, struct vpu_device *device)
 
 #ifdef CHRIS_WORK_AROUND /*MTK_VPU_FPGA_PORTING*/
 	/* enable clock */
-	LOG_INF("vpu_init_reg vpu_conn_base value(0x%x)\n",
+	LOG_DBG("vpu_init_reg vpu_conn_base value(0x%x)\n",
 		vpu_read_reg32(device->vpu_syscfg_base, 0x0));
-	LOG_INF("vpu_init_reg vpu_vcore_base value(0x%x)\n",
+	LOG_DBG("vpu_init_reg vpu_vcore_base value(0x%x)\n",
 		vpu_read_reg32(device->vpu_vcorecfg_base, 0x0));
 
 	if (core == 0) {
@@ -282,16 +282,16 @@ int vpu_init_reg(int core, struct vpu_device *device)
 		vpu_write_reg32(device->vpu_syscfg_base, 0xC, 0xfffffffe);
 		vpu_write_reg32(device->vpu_syscfg_base, 0xC, 0x0);
 
-		LOG_INF("after.. vpu_init_reg vpu_conn_base value(0x%x)\n",
+		LOG_DBG("after.. vpu_init_reg vpu_conn_base value(0x%x)\n",
 			vpu_read_reg32(device->vpu_syscfg_base, 0x0));
-		LOG_INF("after.. vpu_init_reg vpu_vcore_base value(0x%x)\n",
+		LOG_DBG("after.. vpu_init_reg vpu_vcore_base value(0x%x)\n",
 			vpu_read_reg32(device->vpu_vcorecfg_base, 0x0));
 	}
 	vpu_write_reg32(device->vpu_base[core], CTRL_BASE_OFFSET + 0x8, 0xffffffff);
 
-	LOG_INF("after vpu_init_reg vpu_conn_base value(0x%x)\n",
+	LOG_DBG("after vpu_init_reg vpu_conn_base value(0x%x)\n",
 		vpu_read_reg32(device->vpu_syscfg_base, 0x0));
-	LOG_INF("after vpu_init_reg vpu_vcore_base value(0x%x)\n",
+	LOG_DBG("after vpu_init_reg vpu_vcore_base value(0x%x)\n",
 		vpu_read_reg32(device->vpu_vcorecfg_base, 0x0));
 
 #endif
