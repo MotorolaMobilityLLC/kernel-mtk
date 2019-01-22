@@ -976,6 +976,14 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35595_fhd_dsi_cmd_truly_nt50358_720p_extern_lcm_drv,
 #endif
 
+#if defined(NT35695_FHD_DSI_CMD_AUO_NT50358_LANESWAP)
+	&nt35695_fhd_dsi_cmd_auo_nt50358_laneswap_lcm_drv,
+#endif
+
+#if defined(NT35695_FHD_DSI_VDO_AUO_NT50358_LANESWAP)
+	&nt35695_fhd_dsi_vdo_auo_nt50358_laneswap_lcm_drv,
+#endif
+
 #if defined(NT35695_FHD_DSI_CMD_AUO_NT50358_LANESWAP_MT6799)
 	&nt35695_fhd_dsi_cmd_auo_nt50358_laneswap_mt6799_lcm_drv,
 #endif
