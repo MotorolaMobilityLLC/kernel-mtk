@@ -453,9 +453,6 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	if (enable == 1) {
 		/* Turn on GPU Bucks */
 		__mt_gpufreq_bucks_enable();
-		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
-		/* ensure time interval of buck_on -> buck_off is at least 1ms */
-		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
 		/* Turn on GPU MTCMOS */
 		__mt_gpufreq_enable_MTCMOS();
 		/* enable Clock Gating */
@@ -468,6 +465,9 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		__mt_gpufreq_disable_CG();
 		/* Turn off GPU MTCMOS */
 		__mt_gpufreq_disable_MTCMOS();
+		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
+		/* ensure time interval of buck_on -> buck_off is at least 1ms */
+		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
 		/* Turn off GPU Bucks */
 		__mt_gpufreq_bucks_disable();
 		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
