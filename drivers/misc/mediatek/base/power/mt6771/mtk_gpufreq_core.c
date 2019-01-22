@@ -271,17 +271,17 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 		return -1;
 	}
 
+#ifdef MT_GPUFREQ_OPP_STRESS_TEST
+	/* for DEMO, set freq from GED to max freq */
+	if (!g_opp_stress_test_state)
+		idx = 0;
+#endif /* ifdef MT_GPUFREQ_OPP_STRESS_TEST */
+
 	/* look up for the target OPP table */
 	target_freq = g_opp_table[idx].gpufreq_khz;
 	target_volt = g_opp_table[idx].gpufreq_volt;
 	target_idx = g_opp_table[idx].gpufreq_idx;
 	target_cond_idx = idx;
-
-	/* for DEMO, set freq from GED to max freq */
-	target_freq = g_opp_table[0].gpufreq_khz;
-	target_volt = g_opp_table[0].gpufreq_volt;
-	target_idx = g_opp_table[0].gpufreq_idx;
-	target_cond_idx = 0;
 
 	gpufreq_pr_debug("@%s: receive freq: %d, index: %d\n", __func__, target_freq, target_idx);
 
@@ -1031,7 +1031,7 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
  */
 static int mt_gpufreq_opp_stress_test_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "g_opp_stress_test_state = %d\n", g_batt_oc_limited_ignore_state);
+	seq_printf(m, "g_opp_stress_test_state = %d\n", g_opp_stress_test_state);
 	return 0;
 }
 
