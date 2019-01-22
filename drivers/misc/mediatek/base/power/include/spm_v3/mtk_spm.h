@@ -37,6 +37,7 @@ extern int spm_for_gps_flag;
 
 enum {
 	SPM_ARGS_SPMFW_IDX = 0,
+	SPM_ARGS_SPMFW_INIT,
 	SPM_ARGS_PCM_WDT,
 	SPM_ARGS_NUM,
 };
