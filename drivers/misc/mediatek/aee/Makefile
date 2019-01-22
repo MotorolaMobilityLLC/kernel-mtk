@@ -26,6 +26,7 @@ ifdef CONFIG_MTK_GPU_SUPPORT
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 endif
 
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 
 obj-y	+= common/
 obj-$(CONFIG_MTK_AEE_FEATURE)	+= aed/

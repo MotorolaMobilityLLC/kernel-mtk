@@ -127,7 +127,7 @@ static int MMProfileRegisterStaticEvents(int sync);
 
 static void MMProfileForceStart(int start);
 
-unsigned int MMProfileGetDumpSize(void)
+unsigned int mmprofile_get_dump_size(void)
 {
 	unsigned int size;
 
@@ -143,49 +143,49 @@ unsigned int MMProfileGetDumpSize(void)
 	return size;
 }
 
-static unsigned int MMProfileFillDumpBlock(void *pSrc, void *pDst,
-					   unsigned int *pSrcPos, unsigned int *pDstPos,
-					   unsigned int SrcSize, unsigned int DstSize)
+static unsigned int mmprofile_fill_dump_block(void *p_src, void *p_dst,
+					      unsigned int *p_src_pos, unsigned int *p_dst_pos,
+					      unsigned int src_size, unsigned int dst_size)
 {
-	unsigned int SrcLeft = SrcSize - *pSrcPos;
-	unsigned int DstLeft = DstSize - *pDstPos;
+	unsigned int src_left = src_size - *p_src_pos;
+	unsigned int dst_left = dst_size - *p_dst_pos;
 
-	if ((SrcLeft == 0) || (DstLeft == 0))
+	if ((src_left == 0) || (dst_left == 0))
 		return 0;
-	if (SrcLeft < DstLeft) {
-		memcpy(((unsigned char *)pDst) + *pDstPos, ((unsigned char *)pSrc) + *pSrcPos,
-		       SrcLeft);
-		*pSrcPos += SrcLeft;
-		*pDstPos += SrcLeft;
-		return SrcLeft;
+	if (src_left < dst_left) {
+		memcpy(((unsigned char *)p_dst) + *p_dst_pos, ((unsigned char *)p_src) + *p_src_pos,
+		       src_left);
+		*p_src_pos += src_left;
+		*p_dst_pos += src_left;
+		return src_left;
 	}
 
-	memcpy(((unsigned char *)pDst) + *pDstPos, ((unsigned char *)pSrc) + *pSrcPos,
-	       DstLeft);
-	*pSrcPos += DstLeft;
-	*pDstPos += DstLeft;
-	return DstLeft;
+	memcpy(((unsigned char *)p_dst) + *p_dst_pos, ((unsigned char *)p_src) + *p_src_pos,
+	       dst_left);
+	*p_src_pos += dst_left;
+	*p_dst_pos += dst_left;
+	return dst_left;
 }
 
-void MMProfileGetDumpBuffer(unsigned int Start, unsigned long *pAddr, unsigned int *pSize)
+void mmprofile_get_dump_buffer(unsigned int start, unsigned long *p_addr, unsigned int *p_size)
 {
-	unsigned int total_pos = Start;
+	unsigned int total_pos = start;
 	unsigned int region_pos;
 	unsigned int block_pos = 0;
 	unsigned int region_base = 0;
 	unsigned int copy_size;
-	*pAddr = (unsigned long)MMProfileDumpBlock;
-	*pSize = MMProfileDumpBlockSize;
+	*p_addr = (unsigned long)MMProfileDumpBlock;
+	*p_size = MMProfileDumpBlockSize;
 	if (!bMMProfileInitBuffer) {
 		MMP_LOG(ANDROID_LOG_DEBUG, "Ringbuffer is not initialized");
-		*pSize = 0;
+		*p_size = 0;
 		return;
 	}
 	if (total_pos < (region_base + sizeof(MMProfile_Global_t))) {
 		/* Global structure */
 		region_pos = total_pos;
 		copy_size =
-		    MMProfileFillDumpBlock(&MMProfileGlobals, MMProfileDumpBlock, &region_pos,
+		    mmprofile_fill_dump_block(&MMProfileGlobals, MMProfileDumpBlock, &region_pos,
 					   &block_pos, sizeof(MMProfile_Global_t),
 					   MMProfileDumpBlockSize);
 		if (block_pos == MMProfileDumpBlockSize)
@@ -195,7 +195,7 @@ void MMProfileGetDumpBuffer(unsigned int Start, unsigned long *pAddr, unsigned i
 	region_base += sizeof(MMProfile_Global_t);
 	if (MMProfileRegisterStaticEvents(0) == 0) {
 		MMP_LOG(ANDROID_LOG_DEBUG, "static event not register");
-		*pSize = 0;
+		*p_size = 0;
 		return;
 	}
 	if (total_pos <
@@ -211,7 +211,7 @@ void MMProfileGetDumpBuffer(unsigned int Start, unsigned long *pAddr, unsigned i
 		region_pos = total_pos - region_base;
 		if (mutex_trylock(&MMProfile_RegTableMutex) == 0) {
 			MMP_LOG(ANDROID_LOG_DEBUG, "fail to get reg lock");
-			*pSize = 0;
+			*p_size = 0;
 			return;
 		}
 		if (Pos + sizeof(MMProfile_EventInfo_t) > region_pos) {
@@ -220,7 +220,7 @@ void MMProfileGetDumpBuffer(unsigned int Start, unsigned long *pAddr, unsigned i
 			else
 				SrcPos = 0;
 			copy_size =
-			    MMProfileFillDumpBlock(&EventInfoDummy, MMProfileDumpBlock, &SrcPos,
+			    mmprofile_fill_dump_block(&EventInfoDummy, MMProfileDumpBlock, &SrcPos,
 						   &block_pos, sizeof(MMProfile_EventInfo_t),
 						   MMProfileDumpBlockSize);
 			if (block_pos == MMProfileDumpBlockSize) {
@@ -237,7 +237,7 @@ void MMProfileGetDumpBuffer(unsigned int Start, unsigned long *pAddr, unsigned i
 				else
 					SrcPos = 0;
 				copy_size =
-				    MMProfileFillDumpBlock(&(pRegTable->event_info),
+				    mmprofile_fill_dump_block(&(pRegTable->event_info),
 							   MMProfileDumpBlock, &SrcPos, &block_pos,
 							   sizeof(MMProfile_EventInfo_t),
 							   MMProfileDumpBlockSize);
@@ -259,17 +259,17 @@ void MMProfileGetDumpBuffer(unsigned int Start, unsigned long *pAddr, unsigned i
 		/* Primary buffer */
 		region_pos = total_pos - region_base;
 		copy_size =
-		    MMProfileFillDumpBlock(pMMProfileRingBuffer, MMProfileDumpBlock, &region_pos,
+		    mmprofile_fill_dump_block(pMMProfileRingBuffer, MMProfileDumpBlock, &region_pos,
 					   &block_pos, MMProfileGlobals.buffer_size_bytes,
 					   MMProfileDumpBlockSize);
 		if (block_pos == MMProfileDumpBlockSize)
 			return;
 	} else {
-		*pSize = 0;
+		*p_size = 0;
 	}
 	MMP_LOG(ANDROID_LOG_DEBUG, "end t=%u,r =%u,block_pos=%u", total_pos, region_base,
 		block_pos);
-	*pSize = block_pos;
+	*p_size = block_pos;
 }
 
 static void MMProfileInitBuffer(void)
@@ -1233,7 +1233,7 @@ static ssize_t mmprofile_dbgfs_buffer_read(struct file *file, char __user *buf, 
 		MMProfileForceStart(0);
 	}
 	while (size > 0) {
-		MMProfileGetDumpBuffer(*ppos, &Addr, &copy_size);
+		mmprofile_get_dump_buffer(*ppos, &Addr, &copy_size);
 		if (copy_size == 0) {
 			if (backup_state)
 				MMProfileForceStart(1);

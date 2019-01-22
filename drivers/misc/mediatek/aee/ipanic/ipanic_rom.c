@@ -28,6 +28,7 @@
 #include <linux/reboot.h>
 #include "ipanic.h"
 #include <asm/system_misc.h>
+#include <mmprofile.h>
 
 static u32 ipanic_iv = 0xaabbccdd;
 static spinlock_t ipanic_lock;
@@ -133,7 +134,6 @@ static int ipanic_current_task_info(void *data, unsigned char *buffer, size_t sz
 	return mrdump_task_info(buffer, sz_buf);
 }
 
-/*#ifdef CONFIG_MTK_MMPROFILE_SUPPORT*/
 #ifdef CONFIG_MMPROFILE
 static int ipanic_mmprofile(void *data, unsigned char *buffer, size_t sz_buf)
 {
@@ -144,14 +144,14 @@ static int ipanic_mmprofile(void *data, unsigned char *buffer, size_t sz_buf)
 	unsigned int bufsize = 0;
 
 	if (mmprofile_dump_size == 0) {
-		mmprofile_dump_size = MMProfileGetDumpSize();
+		mmprofile_dump_size = mmprofile_get_dump_size();
 		if (mmprofile_dump_size == 0 || mmprofile_dump_size > IPANIC_MMPROFILE_LIMIT) {
 			LOGE("%s: INVALID MMProfile size[%x]", __func__, mmprofile_dump_size);
 			return -3;
 		}
 	}
 
-	MMProfileGetDumpBuffer(index, (unsigned long *)&pbuf, &bufsize);
+	mmprofile_get_dump_buffer(index, (unsigned long *)&pbuf, &bufsize);
 	if (bufsize == 0) {
 		errno = 0;
 	} else if (bufsize > sz_buf) {
@@ -175,7 +175,6 @@ const struct ipanic_dt_op ipanic_dt_ops[] = {
 	{"PROC_CUR_TSK", sizeof(struct aee_process_info), ipanic_current_task_info},
 	{"_exp_detail.txt", OOPS_LOG_LEN, ipanic_klog_buffer},
 	{"SYS_MINI_RDUMP", MRDUMP_MINI_BUF_SIZE, NULL},	/* 8 */
-/*#ifdef CONFIG_MTK_MMPROFILE_SUPPORT*/
 #ifdef CONFIG_MMPROFILE
 	{"SYS_MMPROFILE", IPANIC_MMPROFILE_LIMIT, ipanic_mmprofile},
 #else
