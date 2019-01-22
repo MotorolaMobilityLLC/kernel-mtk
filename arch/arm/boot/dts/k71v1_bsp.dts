@@ -646,27 +646,67 @@ initcall_debug=1";
 	};
 
 	gpio_redriver_c1_init: c1_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO18__FUNC_GPIO18>;
+			slew-rate = <1>;
+			output-low;
+		};
 	};
 
 	gpio_redriver_c1_low: c1_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO18__FUNC_GPIO18>;
+			slew-rate = <1>;
+			output-low;
+		};
 	};
 
 	gpio_redriver_c1_hiz: c1_highz {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO18__FUNC_GPIO18>;
+			slew-rate= <0>;
+			bias-disable;
+		};
 	};
 
 	gpio_redriver_c1_high: c1_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO18__FUNC_GPIO18>;
+			slew-rate = <1>;
+			output-high;
+		};
 	};
 
 	gpio_redriver_c2_init: c2_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO17__FUNC_GPIO17>;
+			slew-rate = <1>;
+			output-low;
+		};
 	};
 
 	gpio_redriver_c2_low: c2_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO17__FUNC_GPIO17>;
+			slew-rate = <1>;
+			output-low;
+		};
 	};
 
-	gpio_redriver_c2_hiz: gc2_highz {
+	gpio_redriver_c2_hiz: c2_highz {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO17__FUNC_GPIO17>;
+			slew-rate= <0>;
+			bias-disable;
+		};
 	};
 
 	gpio_redriver_c2_high: c2_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO17__FUNC_GPIO17>;
+			slew-rate = <1>;
+			output-high;
+		};
 	};
 
 	gpio_u3_switch_sel1: u3_sw_sel1 {
@@ -727,10 +767,10 @@ initcall_debug=1";
 		en_pin_val = <0>; /*DISABLE=0 ENABLE=1*/
 		sel_pin_num = <177>;
 		sel_pin_val = <1>; /*CC1=1, CC2=2*/
-		c1_pin_num = <0>;
-		c1_pin_val = <0>; /*Low=0, HighZ=1, High=2*/
-		c2_pin_num = <0>;
-		c2_pin_val = <0>;
+		c1_pin_num = <18>;
+		c1_pin_val = <2>; /*Low=0, HighZ=1, High=2*/
+		c2_pin_num = <17>;
+		c2_pin_val = <1>;
 	};
 };
 /* USB TYPEC GPIO end */
