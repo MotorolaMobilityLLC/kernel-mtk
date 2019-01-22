@@ -44,6 +44,8 @@
 #include <mtk_spm_dpidle.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
+#include <mtk_spm_resource_req.h>
+#include <mtk_spm_resource_req_internal.h>
 
 #include <mt-plat/mtk_io.h>
 
@@ -796,12 +798,17 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 		struct pwr_ctrl *pwrctrl, bool sleep_dpidle)
 {
+	unsigned int resource_usage = 0;
+
 	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle);
 
 	spm_dpidle_pre_process();
 
-	/* TODO */
-	mt_secure_call(MTK_SIP_KERNEL_SPM_DPIDLE_ARGS, pwrctrl->pcm_flags, pwrctrl->pcm_flags1, pwrctrl->timer_val);
+	/* Get SPM resource request and update reg_spm_xxx_req */
+	resource_usage = (!sleep_dpidle) ? spm_get_resource_usage() : 0;
+
+	mt_secure_call(MTK_SIP_KERNEL_SPM_DPIDLE_ARGS, pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS, SPM_PWR_CTRL_DPIDLE, PWR_OPP_LEVEL, pwrctrl->opp_level);
 }
 
 static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle)
@@ -846,6 +853,8 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 		struct pwr_ctrl *pwrctrl, bool sleep_dpidle)
 {
+	unsigned int resource_usage = 0;
+
 	__spm_set_cpu_status(cpu);
 
 	__spm_reset_and_init_pcm(pcmdesc);
@@ -857,6 +866,16 @@ static void spm_dpidle_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 	__spm_init_event_vector(pcmdesc);
 
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
+
+	/* Get SPM resource request and update reg_spm_xxx_req */
+	if (!sleep_dpidle) {
+		resource_usage = spm_get_resource_usage();
+
+		pwrctrl->reg_spm_vrf18_req = (resource_usage & SPM_RESOURCE_MAINPLL) ? 1 : 0;
+		pwrctrl->reg_spm_apsrc_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
+		pwrctrl->reg_spm_ddren_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
+		pwrctrl->reg_spm_f26m_req  = (resource_usage & SPM_RESOURCE_CK_26M)  ? 1 : 0;
+	}
 
 	__spm_set_power_control(pwrctrl);
 
