@@ -6983,7 +6983,7 @@ VOID wlanCfgSetCountryCode(IN P_ADAPTER_T prAdapter)
 
 		/* Force to re-search country code in country domains */
 		prAdapter->prDomainInfo = NULL;
-		rlmDomainSendCmd(prAdapter, TRUE);
+		rlmDomainSendCmd(prAdapter, FALSE);
 
 		/* Update supported channel list in channel table based on current country domain */
 		wlanUpdateChannelTable(prAdapter->prGlueInfo);
