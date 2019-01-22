@@ -38,6 +38,5 @@ void mcdi_status_init(void);
 void mcdi_of_init(void);
 unsigned int get_pwr_stat_check_map(int type, int idx);
 bool mcdi_pause(bool paused);
-void mcdi_mcupm_debug_sram_init(void);
 
 #endif /* __MTK_MCDI_H__ */
