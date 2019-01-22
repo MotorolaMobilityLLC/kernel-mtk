@@ -44,7 +44,9 @@
 
 #ifdef CONFIG_ARM64
 #ifdef CONFIG_MTK_MEMCFG
+#ifndef CONFIG_RANDOMIZE_BASE
 #define MTK_COMPACT_SLUB_TRACK
+#endif
 #endif
 #endif
 
@@ -194,7 +196,12 @@ static struct notifier_block slab_notifier;
 /*
  * Tracking user of a slab.
  */
+#ifdef CONFIG_RANDOMIZE_BASE
+#define TRACK_ADDRS_COUNT 4
+#else
 #define TRACK_ADDRS_COUNT 8
+#endif
+
 
 #ifdef MTK_COMPACT_SLUB_TRACK
 struct track {
