@@ -552,6 +552,10 @@ again:
 			req->data_buffer_ptr_saved =
 				dma_map_single(ccci_md_get_dev_by_id(md_ctrl->md_id), new_skb->data,
 					skb_data_size(new_skb), DMA_FROM_DEVICE);
+			if (dma_mapping_error(ccci_md_get_dev_by_id(md_ctrl->md_id), req->data_buffer_ptr_saved)) {
+				CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "error dma mapping\n");
+				return -1;
+			}
 			cldma_rgpd_set_data_ptr(rgpd, req->data_buffer_ptr_saved);
 			cldma_write16(&rgpd->data_buff_len, 0, 0);
 			/* set HWO, no need to hold ring_lock as no racer */
@@ -980,6 +984,10 @@ static void cldma_rx_ring_init(struct md_cd_ctrl *md_ctrl, struct cldma_ring *ri
 			memset(gpd, 0, sizeof(struct cldma_rgpd));
 			item->data_buffer_ptr_saved = dma_map_single(ccci_md_get_dev_by_id(md_ctrl->md_id),
 				item->skb->data, skb_data_size(item->skb), DMA_FROM_DEVICE);
+			if (dma_mapping_error(ccci_md_get_dev_by_id(md_ctrl->md_id), item->data_buffer_ptr_saved)) {
+				CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "error dma mapping\n");
+				return;
+			}
 			cldma_rgpd_set_data_ptr(gpd, item->data_buffer_ptr_saved);
 			gpd->data_allow_len = ring->pkt_size;
 			gpd->gpd_flags = 0x81;	/* IOC|HWO */
@@ -1698,6 +1706,11 @@ void md_cd_clear_all_queue(unsigned char hif_id, DIRECTION dir)
 					req->data_buffer_ptr_saved =
 						dma_map_single(ccci_md_get_dev_by_id(md_ctrl->md_id), req->skb->data,
 								skb_data_size(req->skb), DMA_FROM_DEVICE);
+					if (dma_mapping_error(ccci_md_get_dev_by_id(md_ctrl->md_id),
+						req->data_buffer_ptr_saved)) {
+						CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "error dma mapping\n");
+						return;
+					}
 					cldma_rgpd_set_data_ptr(rgpd, req->data_buffer_ptr_saved);
 				}
 			}
@@ -1946,6 +1959,10 @@ static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue, struct cldm
 		/* update BD */
 		tx_req_bd->data_buffer_ptr_saved =
 		    dma_map_single(ccci_md_get_dev_by_id(md_ctrl->md_id), frag_addr, frag_len, DMA_TO_DEVICE);
+		if (dma_mapping_error(ccci_md_get_dev_by_id(md_ctrl->md_id), tx_req_bd->data_buffer_ptr_saved)) {
+			CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "error dma mapping\n");
+			return -1;
+		}
 		cldma_tbd_set_data_ptr(tbd, tx_req_bd->data_buffer_ptr_saved);
 		cldma_write16(&tbd->data_buff_len, 0, frag_len);
 		tbd->non_used = 1;
@@ -1997,6 +2014,10 @@ static int cldma_gpd_handle_tx_request(struct md_cd_queue *queue, struct cldma_r
 #endif
 	tx_req->data_buffer_ptr_saved =
 	    dma_map_single(ccci_md_get_dev_by_id(md_ctrl->md_id), skb->data, skb->len, DMA_TO_DEVICE);
+	if (dma_mapping_error(ccci_md_get_dev_by_id(md_ctrl->md_id), tx_req->data_buffer_ptr_saved)) {
+		CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "error dma mapping\n");
+		return -1;
+	}
 	cldma_tgpd_set_data_ptr(tgpd, tx_req->data_buffer_ptr_saved);
 	cldma_write16(&tgpd->data_buff_len, 0, skb->len);
 #if MD_GENERATION >= (6293)
