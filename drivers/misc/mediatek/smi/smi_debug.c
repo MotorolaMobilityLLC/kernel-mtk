@@ -269,23 +269,18 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 
 	int i = 0;
 	int dump_time = 0;
-	int is_smi_issue = 0;
 	int status_code = 0;
 	int max_count = 5;
 	/* Keep the dump result */
-	unsigned char smi_common_busy_count = 0;
 	unsigned int u4Index = 0;
 	unsigned long u4Base = 0;
-
+	unsigned char smi_common_busy_count = 0;
 	unsigned char smi_larb_busy_count[SMI_LARB_NUM] = { 0 };
 
 	/* dump resister and save resgister status */
-	smi_dumpRegDebugMsg(output_gce_buffer);
+	if (show_dump)
+		smi_dumpRegDebugMsg(output_gce_buffer);
 
-	smi_bus_enable(SMI_LARB0_REG_INDX, "SMI_DEBUG");
-#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_VIN)
-	smi_bus_enable(SMI_LARB1_REG_INDX, "SMI_DEBUG");
-#endif
 	for (dump_time = 0; dump_time < max_count; dump_time++) {
 		u4Base = get_common_base_addr();
 		/* check smi common busy register */
@@ -309,10 +304,6 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 			}
 		}
 	}
-#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_VIN)
-	smi_bus_disable(SMI_LARB1_REG_INDX, "SMI_DEBUG");
-#endif
-	smi_bus_disable(SMI_LARB0_REG_INDX, "SMI_DEBUG");
 	/* Show the checked result */
 	for (i = 0; i < SMI_LARB_NUM; i++) {	/* Check each larb */
 		if (SMI_DGB_LARB_SELECT(larbs, i)) {
@@ -337,7 +328,7 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 		SMIMSG("call m4u API for m4u register dump\n");
 		m4u_dump_reg_for_smi_hang_issue();
 	}
-	return is_smi_issue;
+	return 0;
 }
 void smi_dump_clk_status(void)
 {
