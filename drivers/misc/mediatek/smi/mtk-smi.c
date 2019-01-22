@@ -2148,13 +2148,10 @@ static void smi_driver_setting(void)
 static void smi_apply_common_basic_setting(void)
 {
 #if defined(SMI_WHI)
-	/* disable DCM for prevent memory transaction fail */
-	unsigned int DCM_val = M4U_ReadReg32(mmsys_reg, 0x130);
-
-	SMIMSG("before setting, DCM_val = 0x%x\n", DCM_val);
-	DCM_val |= 0x3fc0;
-	M4U_WriteReg32(mmsys_reg, 0x130, DCM_val);
-	SMIMSG("after setting, DCM_val = 0x%x\n", M4U_ReadReg32(mmsys_reg, 0x130));
+	/* disable mmsys DCM for prevent memory transaction fail */
+	SMIDBG(1, "before setting, DCM_val = 0x%x\n", M4U_ReadReg32(mmsys_reg, 0x130));
+	M4U_WriteReg32(mmsys_reg, 0x134, 0x3fc0);
+	SMIDBG(1, "after setting, DCM_val = 0x%x\n", M4U_ReadReg32(mmsys_reg, 0x130));
 #endif
 	SMIDBG(1, "start to apply common basic setting.\n");
 	smi_common_setting(&smi_basic_setting_config);
