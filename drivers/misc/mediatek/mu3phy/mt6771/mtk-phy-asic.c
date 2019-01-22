@@ -462,7 +462,7 @@ bool u3_loop_back_test(void)
 							USB30_PHYD_RX0);
 	mdelay(100);
 
-	reg = U3PhyReadReg32((phys_addr_t)SSUSB_SIFSLV_U3PHYD_BASE+0xb4);
+	reg = U3PhyReadReg32((phys_addr_t) (uintptr_t) (SSUSB_SIFSLV_U3PHYD_BASE+0xb4));
 	os_printk(K_INFO, "read back             : 0x%x\n", reg);
 	os_printk(K_INFO, "read back t2rlb_lock  : %d\n", (reg>>2)&0x01);
 	os_printk(K_INFO, "read back t2rlb_pass  : %d\n", (reg>>3)&0x01);
@@ -1031,7 +1031,7 @@ void usb_phy_recover(unsigned int clk_on)
 		evalue = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
 		if (evalue) {
 			os_printk(K_INFO, "apply efuse setting, RG_USB20_INTR_CAL=0x%x\n", evalue);
-			U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR1, RG_USB20_INTR_CAL_OFST,
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_INTR_CAL_OFST,
 					RG_USB20_INTR_CAL, evalue);
 		} else
 			os_printk(K_DEBUG, "!evalue\n");
@@ -1040,7 +1040,7 @@ void usb_phy_recover(unsigned int clk_on)
 		evalue = (get_devinfo_with_index(107) & (0x3f << 16)) >> 16;
 		if (evalue) {
 			os_printk(K_INFO, "apply efuse setting, RG_SSUSB_IEXT_INTR_CTRL=0x%x\n", evalue);
-			U3PhyWriteField32((phys_addr_t) U3D_USB30_PHYA_REG0, 10,
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG0, 10,
 					(0x3f<<10), evalue);
 		} else
 			os_printk(K_DEBUG, "!evalue\n");
@@ -1049,7 +1049,7 @@ void usb_phy_recover(unsigned int clk_on)
 		evalue = (get_devinfo_with_index(107) & (0x1f << 8)) >> 8;
 		if (evalue) {
 			os_printk(K_INFO, "apply efuse setting, rg_ssusb_rx_impsel=0x%x\n", evalue);
-			U3PhyWriteField32((phys_addr_t) U3D_PHYD_IMPCAL1, RG_SSUSB_RX_IMPSEL_OFST,
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYD_IMPCAL1, RG_SSUSB_RX_IMPSEL_OFST,
 					RG_SSUSB_RX_IMPSEL, evalue);
 		} else
 			os_printk(K_DEBUG, "!evalue\n");
@@ -1058,7 +1058,7 @@ void usb_phy_recover(unsigned int clk_on)
 		evalue = (get_devinfo_with_index(107) & (0x1f << 0)) >> 0;
 		if (evalue) {
 			os_printk(K_INFO, "apply efuse setting, rg_ssusb_tx_impsel=0x%x\n", evalue);
-			U3PhyWriteField32((phys_addr_t) U3D_PHYD_IMPCAL0, RG_SSUSB_TX_IMPSEL_OFST,
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYD_IMPCAL0, RG_SSUSB_TX_IMPSEL_OFST,
 					RG_SSUSB_TX_IMPSEL, evalue);
 
 		} else
