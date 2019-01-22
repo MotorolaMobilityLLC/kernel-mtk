@@ -196,6 +196,8 @@ typedef struct {
 	spinlock_t SpinLockIrqCnt[CCU_IRQ_TYPE_AMOUNT];
 	spinlock_t SpinLockRTBC;
 	spinlock_t SpinLockClock;
+	spinlock_t SpinLockI2cPower;
+	unsigned int IsI2cPoweredOn;
 
 	wait_queue_head_t WaitQueueHead;
 	volatile wait_queue_head_t WaitQHeadList[SUPPORT_MAX_IRQ];
