@@ -145,6 +145,7 @@ out:
 	mutex_unlock(&lbat_mutex);
 	return ret;
 }
+EXPORT_SYMBOL(lbat_user_register);
 
 void lbat_min_en_setting(int en_val)
 {
