@@ -12,12 +12,16 @@
  */
 
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
+#define CONFIG_MTKDCS_DEBUG
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/printk.h>
+#include <linux/debugfs.h>
+#include <linux/uaccess.h>
 #include <mt-plat/mtk_meminfo.h>
 
 /* Memory lowpower private header file */
@@ -128,8 +132,16 @@ static int __init mtkdcs_init(void)
 	sys_dcs_status = dummy_ipi_read_dcs_status();
 	/* read number of dram channels */
 	normal_channel_num = dummy_dram_channel_num();
-	lowpower_channel_num = (normal_channel_num / 2) ?
-		(normal_channel_num / 2) : normal_channel_num;
+
+	/* the channel number must be multiple of 2 */
+	if (normal_channel_num % 2) {
+		pr_err("%s fail, incorrect normal channel num=%d\n",
+				__func__, normal_channel_num);
+		dcs_initialized = false;
+		return -EINVAL;
+	}
+
+	lowpower_channel_num = (normal_channel_num / 2);
 
 	dcs_initialized = true;
 
@@ -142,3 +154,62 @@ static void __exit mtkdcs_exit(void)
 
 device_initcall(mtkdcs_init);
 module_exit(mtkdcs_exit);
+
+#ifdef CONFIG_MTKDCS_DEBUG
+static int mtkdcs_show(struct seq_file *m, void *v)
+{
+	return 0;
+}
+
+static int mtkdcs_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, &mtkdcs_show, NULL);
+}
+
+static ssize_t mtkdcs_write(struct file *file, const char __user *buffer,
+		size_t count, loff_t *ppos)
+{
+	static char state;
+
+	if (count > 0) {
+		if (get_user(state, buffer))
+			return -EFAULT;
+		state -= '0';
+
+		if (state)
+			/* low power to normal */
+			pr_alert("state=%d\n", state);
+		else
+			/* normal to low power */
+			pr_alert("state=%d\n", state);
+	}
+
+	return count;
+}
+
+static const struct file_operations mtkdcs_fops = {
+	.open		= mtkdcs_open,
+	.write		= mtkdcs_write,
+	.read		= seq_read,
+	.release	= single_release,
+};
+
+static int __init mtkdcs_debug_init(void)
+{
+	struct dentry *dentry;
+
+	if (!dcs_initialied()) {
+		pr_err("mtkdcs is not inited\n");
+		return 1;
+	}
+
+	dentry = debugfs_create_file("mtkdcs", S_IRUGO, NULL, NULL,
+			&mtkdcs_fops);
+	if (!dentry)
+		pr_warn("Failed to create debugfs mtkdcs file\n");
+
+	return 0;
+}
+
+late_initcall(mtkdcs_debug_init);
+#endif /* CONFIG_MTKDCS_DEBUG */
