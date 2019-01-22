@@ -47,12 +47,15 @@ obj-$(CONFIG_MACH_MT6759) += upower_v2/
 obj-$(CONFIG_MACH_MT6763) += upower_v2/
 obj-$(CONFIG_MACH_MT6758) += upower_v2/
 endif
+ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6757) += pbm_v1/
 obj-$(CONFIG_MACH_KIBOPLUS) += pbm_v1/
 obj-$(CONFIG_MACH_MT6799) += pbm_v2/
 obj-$(CONFIG_MACH_MT6758) += pbm_v2/
 obj-$(CONFIG_MACH_MT6759) += pbm_v2/
 obj-$(CONFIG_MACH_MT6763) += pbm_v3/
+obj-$(CONFIG_MACH_MT6739) += pbm_v3/
+endif
 obj-$(CONFIG_MACH_MT6757) += spm_v2/
 obj-$(CONFIG_MACH_MT6757) += vcorefs_v1/
 obj-$(CONFIG_MACH_MT6799) += vcorefs_v3/

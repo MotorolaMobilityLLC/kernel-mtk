@@ -29,6 +29,7 @@
 #include <linux/vmalloc.h>
 #include <linux/suspend.h>
 #include <linux/proc_fs.h>
+#include <linux/uaccess.h>
 
 #include <mach/mtk_pbm.h>
 #include <mach/upmu_sw.h>
@@ -146,6 +147,7 @@ static int md1_section_level_4g_upL1[SECTION_NUM+1] = { GUARDING_PATTERN,
 						   VAL_MD1_4G_upL1_SECTION_5,
 						   VAL_MD1_4G_upL1_SECTION_6 };
 
+#if defined(CONFIG_MACH_MT6763)
 static int md1_section_level_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
 						   VAL_MD1_4G_upL2_SECTION_1,
 						   VAL_MD1_4G_upL2_SECTION_2,
@@ -153,6 +155,7 @@ static int md1_section_level_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
 						   VAL_MD1_4G_upL2_SECTION_4,
 						   VAL_MD1_4G_upL2_SECTION_5,
 						   VAL_MD1_4G_upL2_SECTION_6 };
+#endif
 
 static int md1_section_level_tdd[SECTION_NUM+1] = { GUARDING_PATTERN,
 						   VAL_MD1_TDD_SECTION_1,
@@ -170,12 +173,15 @@ static int md1_section_level_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
 						VAL_MD1_C2K_SECTION_5,
 						VAL_MD1_C2K_SECTION_6 };
 
-static int md1_scenario_pwr[SCENARIO_NUM] = { PW_STANDBY,
-					    PW_2G_TALKING_OR_DATALINK,
-					    PW_3G_TALKING,
-					    PW_3G_DATALINK,
-					    PW_4G_DL_1CC,
-					    PW_4G_DL_2CC };
+static int md1_scenario_pwr[SCENARIO_NUM] = {	PW_STANDBY,
+						PW_2G_TALKING_OR_DATALINK,
+						PW_3G_TALKING,
+						PW_3G_DATALINK,
+						PW_4G_DL_1CC,
+#if defined(CONFIG_MACH_MT6763)
+						PW_4G_DL_2CC
+#endif
+						};
 
 static int md1_pa_pwr_2g[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_PA_2G_SECTION_1,
@@ -201,6 +207,7 @@ static int md1_pa_pwr_4g_upL1[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_PA_4G_upL1_SECTION_5,
 					    PW_MD1_PA_4G_upL1_SECTION_6 };
 
+#if defined(CONFIG_MACH_MT6763)
 static int md1_pa_pwr_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_PA_4G_upL2_SECTION_1,
 					    PW_MD1_PA_4G_upL2_SECTION_2,
@@ -208,6 +215,7 @@ static int md1_pa_pwr_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_PA_4G_upL2_SECTION_4,
 					    PW_MD1_PA_4G_upL2_SECTION_5,
 					    PW_MD1_PA_4G_upL2_SECTION_6 };
+#endif
 
 static int md1_pa_pwr_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
 					 PW_MD1_PA_C2K_SECTION_1,
@@ -241,6 +249,7 @@ static int md1_rf_pwr_4g_upL1[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_RF_4G_upL1_SECTION_5,
 					    PW_MD1_RF_4G_upL1_SECTION_6 };
 
+#if defined(CONFIG_MACH_MT6763)
 static int md1_rf_pwr_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_RF_4G_upL2_SECTION_1,
 					    PW_MD1_RF_4G_upL2_SECTION_2,
@@ -248,6 +257,7 @@ static int md1_rf_pwr_4g_upL2[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    PW_MD1_RF_4G_upL2_SECTION_4,
 					    PW_MD1_RF_4G_upL2_SECTION_5,
 					    PW_MD1_RF_4G_upL2_SECTION_6 };
+#endif
 
 static int md1_rf_pwr_c2k[SECTION_NUM+1] = { GUARDING_PATTERN,
 					 PW_MD1_RF_C2K_SECTION_1,
@@ -272,27 +282,27 @@ static atomic_t kthread_nreq = ATOMIC_INIT(0);
 int __attribute__ ((weak))
 tscpu_get_min_cpu_pwr(void)
 {
-	pbm_crit("%s not ready\n", __func__);
+	pbm_warn_limit("%s not ready\n", __func__);
 	return 0;
 }
 
 unsigned int __attribute__ ((weak))
 mt_gpufreq_get_leakage_mw(void)
 {
-	pbm_crit("%s not ready\n", __func__);
+	pbm_warn_limit("%s not ready\n", __func__);
 	return 0;
 }
 
 void __attribute__ ((weak))
 mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 {
-	pbm_crit("%s not ready\n", __func__);
+	pbm_warn_limit("%s not ready\n", __func__);
 }
 
 u32 __attribute__ ((weak))
 spm_vcorefs_get_MD_status(void)
 {
-	pbm_crit("%s not ready\n", __func__);
+	pbm_warn_limit("%s not ready\n", __func__);
 	return 0;
 }
 
@@ -343,7 +353,6 @@ int hpf_get_power_leakage(void)
 
 	leakage_cpu = mt_ppm_get_leakage_mw(TOTAL_CLUSTER_LKG);
 	leakage_gpu = mt_gpufreq_get_leakage_mw();
-
 	hpfmgr->loading_leakage = leakage_cpu + leakage_gpu;
 
 	pbm_debug("[%s] %ld=%d+%d\n", __func__, hpfmgr->loading_leakage, leakage_cpu, leakage_gpu);
@@ -389,7 +398,10 @@ unsigned long hpf_get_power_dlpt(void)
 static void init_md1_section_level(void)
 {
 	u32 *share_mem;
-	u32 mem_2g = 0, mem_3g = 0, mem_4g_upL1 = 0, mem_4g_upL2 = 0, mem_tdd = 0, mem_c2k = 0;
+	u32 mem_2g = 0, mem_3g = 0, mem_4g_upL1 = 0, mem_tdd = 0, mem_c2k = 0;
+#if defined(CONFIG_MACH_MT6763)
+	u32 mem_4g_upL2 = 0;
+#endif
 	int section;
 
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, SMEM_USER_RAW_DBM, NULL);
@@ -398,7 +410,9 @@ static void init_md1_section_level(void)
 		mem_2g |= md1_section_level_2g[section] << section_level[section];
 		mem_3g |= md1_section_level_3g[section] << section_level[section];
 		mem_4g_upL1 |= md1_section_level_4g_upL1[section] << section_level[section];
+#if defined(CONFIG_MACH_MT6763)
 		mem_4g_upL2 |= md1_section_level_4g_upL2[section] << section_level[section];
+#endif
 		mem_tdd |= md1_section_level_tdd[section] << section_level[section];
 		mem_c2k |= md1_section_level_c2k[section] << section_level[section];
 	}
@@ -407,25 +421,36 @@ static void init_md1_section_level(void)
 	mem_2g &= SECTION_LEN;
 	mem_3g &= SECTION_LEN;
 	mem_4g_upL1 &= SECTION_LEN;
+#if defined(CONFIG_MACH_MT6763)
 	mem_4g_upL2 &= SECTION_LEN;
+#endif
 	mem_tdd &= SECTION_LEN;
 	mem_c2k &= SECTION_LEN;
 
 	share_mem[SECTION_LEVLE_2G] = mem_2g;
 	share_mem[SECTION_LEVLE_3G] = mem_3g;
 	share_mem[SECTION_LEVLE_4G] = mem_4g_upL1;
+#if defined(CONFIG_MACH_MT6763)
 	share_mem[SECTION_1_LEVLE_4G] = mem_4g_upL2;
+#endif
 	share_mem[SECTION_LEVLE_TDD] = mem_tdd;
 	share_mem[SECTION_1_LEVLE_C2K] = mem_c2k;
 
 	pbm_crit("AP2MD1 section level, 2G: 0x%x(0x%x), 3G: 0x%x(0x%x), ",
 			mem_2g, share_mem[SECTION_LEVLE_2G],
 			mem_3g, share_mem[SECTION_LEVLE_3G]);
+#if defined(CONFIG_MACH_MT6763)
 	pbm_crit("4G_upL1: 0x%x(0x%x), 4G_upL2: 0x%x(0x%x), TDD: 0x%x(0x%x), addr: 0x%p\n",
 			mem_4g_upL1, share_mem[SECTION_LEVLE_4G],
 			mem_4g_upL2, share_mem[SECTION_1_LEVLE_4G],
 			mem_tdd, share_mem[SECTION_LEVLE_TDD],
 			share_mem);
+#else
+	pbm_crit("4G_upL1: 0x%x(0x%x), TDD: 0x%x(0x%x), addr: 0x%p\n",
+		mem_4g_upL1, share_mem[SECTION_LEVLE_4G],
+		mem_tdd, share_mem[SECTION_LEVLE_TDD],
+		share_mem);
+#endif
 	pbm_crit("C2K section level, C2K: 0x%x(0x%x), addr: 0x%p\n",
 			mem_c2k, share_mem[SECTION_1_LEVLE_C2K],
 			share_mem);
@@ -475,11 +500,13 @@ static int is_scenario_hit(u32 share_reg, int scenario)
 		if ((share_reg & _BIT_(5)) != 0)
 			hit = 1;
 		break;
+#if defined(CONFIG_MACH_MT6763)
 	case S_4G_DL_2CC:
 		/* if bit 6 or bit 7 is asserted */
 		if ((share_reg & _BITMASK_(7:6)) != 0)
 			hit = 1;
 		break;
+#endif /* CONFIG_MACH_MT6763 */
 	default:
 		pbm_crit("[%s] ERROR, unknown scenario [%d]\n", __func__, scenario);
 		WARN_ON_ONCE(1);
@@ -515,10 +542,12 @@ static u32 set_fake_share_reg(int scenario)
 		/* if bit 5 is asserted */
 		fShareReg = _BIT_(5);
 		break;
+#if defined(CONFIG_MACH_MT6763)
 	case S_4G_DL_2CC:
 		/* if bit 6 or bit 7 is asserted */
 		fShareReg = _BITMASK_(7:6);
 		break;
+#endif /* CONFIG_MACH_MT6763 */
 	default:
 		pbm_crit("[%s] ERROR, unknown scenario [%d]\n", __func__, scenario);
 		break;
@@ -681,6 +710,8 @@ static int get_md1_4g_upL1_dbm_power(u32 *share_mem)
 	return pa_power + rf_power;
 }
 
+#if defined(CONFIG_MACH_MT6763)
+/* only MT6763 has 4G_CH2 dbm power */
 static int get_md1_4g_upL2_dbm_power(u32 *share_mem)
 {
 	static u32 bef_share_mem;
@@ -712,6 +743,7 @@ static int get_md1_4g_upL2_dbm_power(u32 *share_mem)
 	}
 	return pa_power + rf_power;
 }
+#endif
 
 static int get_md1_c2k_dbm_power(u32 *share_mem)
 {
@@ -760,10 +792,16 @@ static int get_md1_dBm_power(int scenario)
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, 0, NULL);
 
 	if (share_mem == NULL) {
+#if defined(CONFIG_MACH_MT6763)
 		pbm_debug("MD1 share_mem is NULL, use max pa and rf power (%d + %d)\n",
 			md1_pa_pwr_4g_upL1[1] + md1_pa_pwr_4g_upL2[1],
 			md1_rf_pwr_4g_upL1[1] + md1_rf_pwr_4g_upL2[1]);
 		return md1_pa_pwr_4g_upL1[1] + md1_pa_pwr_4g_upL2[1] + md1_rf_pwr_4g_upL1[1] + md1_rf_pwr_4g_upL2[1];
+#else
+		pbm_debug("MD1 share_mem is NULL, use max pa and rf power (%d + %d)\n",
+			md1_pa_pwr_4g_upL1[1], md1_rf_pwr_4g_upL1[1]);
+		return md1_pa_pwr_4g_upL1[1] + md1_rf_pwr_4g_upL1[1];
+#endif
 	}
 
 	pbm_debug("[%s] share mem addr: 0x%p\n", __func__, share_mem);
@@ -789,15 +827,19 @@ static int get_md1_dBm_power(int scenario)
 		 * Add one RF power or two RF power?
 		 */
 		dbm_power = get_md1_4g_upL1_dbm_power(share_mem);
+#if defined(CONFIG_MACH_MT6763)
 		dbm_power += get_md1_4g_upL2_dbm_power(share_mem);
+#endif
 		dbm_power_max = get_md1_c2k_dbm_power(share_mem);
 		dbm_power_max = MAX(dbm_power, dbm_power_max);
+#if defined(CONFIG_MACH_MT6763)
 	} else if (scenario == S_4G_DL_2CC) {
 		/* TO-DO:
 		 * Add one RF power or two RF power?
 		 */
 		dbm_power_max = get_md1_4g_upL1_dbm_power(share_mem);
 		dbm_power_max += get_md1_4g_upL2_dbm_power(share_mem);
+#endif /* CONFIG_MACH_MT6763 */
 	} else {
 		dbm_power_max = 0;
 	}
@@ -872,7 +914,9 @@ static void test_md_dbm_power(void)
 			/* re-assign the value from y to section table */
 			section[DBM_4G_TABLE] |= y;
 			dbm_power = get_md1_4g_upL1_dbm_power(section);
+#if defined(CONFIG_MACH_MT6763)
 			dbm_power += get_md1_4g_upL2_dbm_power(section);
+#endif
 			dbm_power_max = get_md1_c2k_dbm_power(section);
 			dbm_power_max = MAX(dbm_power, dbm_power_max);
 			pbm_debug("4G section=%d dbm_power_max=%d\n", i, dbm_power_max);
@@ -893,7 +937,9 @@ static void test_md_dbm_power(void)
 			/* re-assign the value from y to section table */
 			section[DBM_4G_1_TABLE] |= y;
 			dbm_power = get_md1_4g_upL1_dbm_power(section);
+#if defined(CONFIG_MACH_MT6763)
 			dbm_power += get_md1_4g_upL2_dbm_power(section);
+#endif
 			dbm_power_max = get_md1_c2k_dbm_power(section);
 			dbm_power_max = MAX(dbm_power, dbm_power_max);
 			pbm_debug("4G section=%d dbm_power_max=%d\n", i, dbm_power_max);
@@ -1033,7 +1079,6 @@ static void pbm_allocate_budget_manager(void)
 		mt_ppm_dlpt_set_limit_by_pbm(tocpu);
 
 		mt_gpufreq_set_power_limit_by_pbm(togpu);
-
 	}
 
 	if (mt_pbm_debug) {
@@ -1269,7 +1314,6 @@ static int pbm_thread_handle(void *data)
 					mt_ppm_dlpt_set_limit_by_pbm(0);
 
 					mt_gpufreq_set_power_limit_by_pbm(0);
-
 					g_dlpt_state_sync = 1;
 					pbm_err("Release DLPT limit\n");
 				}
