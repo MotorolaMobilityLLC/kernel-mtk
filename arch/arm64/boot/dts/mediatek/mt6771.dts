@@ -1455,6 +1455,8 @@
 		msdc0 = <&msdc0>;
 		audio = <&audio>;
 		uart = <&apuart0>;
+		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>, <&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
+		clock-names = "GCE", "GCE_TIMER";
 	};
 
 	gic@1023a000 {
