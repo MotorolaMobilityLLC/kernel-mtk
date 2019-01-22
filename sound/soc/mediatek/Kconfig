@@ -185,6 +185,7 @@ config MTK_SND_SOC_NEW_ARCH
 
 config MTK_AUDIO_TUNNELING_SUPPORT
 	bool "Audio playback through dsp"
+	select SND_SOC_COMPRESS
 	help
 	  Only enable this when we have DSP.
 	  This makes audio output pass bitstream without any post processing.

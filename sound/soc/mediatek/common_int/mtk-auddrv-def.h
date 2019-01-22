@@ -59,6 +59,7 @@
 /* #define DEBUG_AUD_DL1 */
 /* #define DEBUG_AUD_DL2 */
 /* #define DEBUG_AUD_DAI */
+/* #define DEBUG_AUD_OFFLOAD */
 
 #ifdef DEBUG_AUDDRV
 #define PRINTK_AUDDRV(format, args...) pr_debug(format, ##args)
@@ -153,6 +154,12 @@
 #define PRINTK_AUD_MODDAI(format, args...)
 #endif
 
+#ifdef DEBUG_AUD_OFFLOAD
+#define PRINTK_AUD_OFFLOAD(format, args...)  pr_debug(format, ##args)
+#else
+#define PRINTK_AUD_OFFLOAD(format, args...)
+#endif
+
 /* if need assert , use AUDIO_ASSERT(true) */
 #define AUDIO_ASSERT(value) WARN_ON(value)
 
@@ -237,6 +244,7 @@
 #define MT_SOC_MOD_DAI_NAME "mt-soc-moddai-driver"
 #define MT_SOC_ANC_NAME "mt-soc-anc-driver"
 #define MT_SOC_ANC_RECORD_DAI_NAME "mt-soc-anc-record-dai-driver"
+#define MT_SOC_OFFLOAD_PLAYBACK_DAI_NAME "mt-soc-offload-playback-dai-driver"
 
 /* platform name */
 #define MT_SOC_DL1_PCM   "mt-soc-dl1-pcm"
@@ -281,6 +289,7 @@
 #define MT_SOC_BTCVSD_TX_PCM   "mt-soc-btcvsd-tx-pcm"
 #define MT_SOC_MOD_DAI_PCM   "mt-soc-MODDAI-pcm"
 #define MT_SOC_ANC_PCM   "mt-soc-anc-pcm"
+#define MT_SOC_PLAYBACK_OFFLOAD  "mt-soc-playback-offload"
 
 /* codec dai name */
 #define MT_SOC_CODEC_TXDAI_NAME "mt-soc-codec-tx-dai"
@@ -333,6 +342,7 @@
 #define MT_SOC_HEADPHONE_STREAM_NAME "Headphone_PLayback"
 #define MT_SOC_DL1DATA2_STREAM_NAME "MultiMedia1data2_PLayback"
 #define MT_SOC_DL2_STREAM_NAME "MultiMedia2_PLayback"
+#define MT_SOC_DL3_STREAM_NAME "MultiMedia3_PLayback"
 #define MT_SOC_VOICE_MD1_STREAM_NAME "Voice_MD1_PLayback"
 #define MT_SOC_VOICE_MD2_STREAM_NAME "Voice_MD2_PLayback"
 #define MT_SOC_VOICE_MD1_BT_STREAM_NAME "Voice_MD1_BT_Playback"
