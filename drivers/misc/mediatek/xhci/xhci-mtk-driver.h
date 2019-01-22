@@ -38,8 +38,8 @@ extern struct xhci_hcd *mtk_xhci;
 
 extern int xhci_mtk_register_plat(void);
 extern void xhci_mtk_unregister_plat(void);
-extern int mtk_xhci_driver_load(void);
-extern void mtk_xhci_driver_unload(void);
+extern int mtk_xhci_driver_load(bool vbus_on);
+extern void mtk_xhci_driver_unload(bool vbus_off);
 
 extern bool mtk_is_host_mode(void);
 extern bool musb_check_ipo_state(void);

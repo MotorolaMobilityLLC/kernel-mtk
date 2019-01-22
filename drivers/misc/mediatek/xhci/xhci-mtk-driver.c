@@ -33,6 +33,11 @@
 #ifdef CONFIG_PROJECT_PHY
 #include <mtk-phy-asic.h>
 #endif
+
+#ifdef CONFIG_USB_C_SWITCH
+#include <typec.h>
+#endif
+
 #include <mt-plat/battery_meter.h>
 
 #define RET_SUCCESS 0
@@ -89,6 +94,27 @@ static int mtk_xhci_hcd_init(void)
 	return 0;
 }
 
+
+#ifdef CONFIG_USB_C_SWITCH
+static int typec_otg_enable(void *data)
+{
+	return mtk_xhci_driver_load(false);
+}
+
+static int typec_otg_disable(void *data)
+{
+	mtk_xhci_driver_unload(false);
+	return 0;
+}
+
+static struct typec_switch_data typec_host_driver = {
+	.name = "xhci-mtk",
+	.type = HOST_TYPE,
+	.enable = typec_otg_enable,
+	.disable = typec_otg_disable,
+};
+#endif
+
 static void mtk_xhci_wakelock_init(void)
 {
 	wake_lock_init(&mtk_xhci_wakelock, WAKE_LOCK_SUSPEND, "xhci.wakelock");
@@ -117,7 +143,7 @@ static void mtk_xhci_hcd_cleanup(void)
 	xhci_mtk_unregister_plat();
 }
 
-int mtk_xhci_driver_load(void)
+int mtk_xhci_driver_load(bool vbus_on)
 {
 	int ret = 0;
 
@@ -136,7 +162,9 @@ int mtk_xhci_driver_load(void)
 	switch_set_state(&mtk_otg_state, 1);
 #endif
 	mtk_dualrole_stat = DUALROLE_HOST;
-	mtk_enable_otg_mode();
+
+	if (vbus_on)
+		mtk_enable_otg_mode();
 
 	return 0;
 
@@ -151,13 +179,16 @@ _err:
 
 static void mtk_xhci_disPortPower(void)
 {
-	mtk_disable_otg_mode();
 	/* TODO IT */
 }
 
-void mtk_xhci_driver_unload(void)
+void mtk_xhci_driver_unload(bool vbus_off)
 {
 	mtk_xhci_hcd_cleanup();
+
+	if (vbus_off)
+		mtk_disable_otg_mode();
+
 	mtk_xhci_disPortPower();
 	/* close clock/power setting and assert reset bit of mac */
 #ifdef CONFIG_PROJECT_PHY
