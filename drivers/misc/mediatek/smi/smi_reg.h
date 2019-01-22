@@ -350,6 +350,18 @@
 #define SMI_LARB7_PORT_NUM  17
 #define SMI_LARB8_PORT_NUM  4
 
+#elif defined(SMI_ALA)
+#define SMI_LARB_NUM     8
+
+#define SMI_LARB0_PORT_NUM  7
+#define SMI_LARB1_PORT_NUM  6
+#define SMI_LARB2_PORT_NUM  3
+#define SMI_LARB3_PORT_NUM  5
+#define SMI_LARB4_PORT_NUM  10
+#define SMI_LARB5_PORT_NUM  12
+#define SMI_LARB6_PORT_NUM  19
+#define SMI_LARB7_PORT_NUM  11
+
 #elif defined(SMI_DUMMY)
 #define SMI_LARB_NUM     1
 #endif
