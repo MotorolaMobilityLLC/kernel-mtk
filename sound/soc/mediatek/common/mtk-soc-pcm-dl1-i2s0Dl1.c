@@ -316,14 +316,15 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 			pr_warn("%s mI2S0dl1_hdoutput_control == %d\n", __func__,
 			       mI2S0dl1_hdoutput_control);
 			/* here to open APLL */
-			DisableALLbySampleRate(substream->runtime->rate);
-			#if 0
+			if (!mtk_soc_always_hd)
+				DisableALLbySampleRate(substream->runtime->rate);
+#if 0
 			EnableI2SDivPower(AUDIO_APLL12_DIV1, false);
 			EnableI2SDivPower(AUDIO_APLL12_DIV3, false);
-			#else
+#else
 			EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, false);
 			EnableI2SCLKDiv(Soc_Aud_I2S3_MCKDIV, false);
-			#endif
+#endif
 		}
 		mPrepareDone = false;
 	}
@@ -379,7 +380,8 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 			pr_warn("%s mI2S0dl1_hdoutput_control == %d\n", __func__,
 			       mI2S0dl1_hdoutput_control);
 			/* here to open APLL */
-			EnableALLbySampleRate(runtime->rate);
+			if (!mtk_soc_always_hd)
+				EnableALLbySampleRate(runtime->rate);
 			SetCLkMclk(Soc_Aud_I2S1, runtime->rate); /* select I2S */
 			SetCLkMclk(Soc_Aud_I2S3, runtime->rate);
 #if 0
