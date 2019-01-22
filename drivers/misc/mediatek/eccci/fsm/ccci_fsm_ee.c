@@ -200,7 +200,7 @@ void fsm_ee_message_handler(struct ccci_fsm_ee *ee_ctl, struct sk_buff *skb)
 	struct ccci_fsm_ctl *ctl = container_of(ee_ctl, struct ccci_fsm_ctl, ee_ctl);
 	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
 	unsigned long flags;
-	MD_STATE md_state = ccci_fsm_get_md_state(ee_ctl->md_id);
+	enum MD_STATE md_state = ccci_fsm_get_md_state(ee_ctl->md_id);
 
 	if (md_state != EXCEPTION) {
 		CCCI_ERROR_LOG(ee_ctl->md_id, FSM, "receive invalid MD_EX %x when MD state is %d\n",

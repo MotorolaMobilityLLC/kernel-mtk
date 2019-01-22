@@ -224,7 +224,7 @@ struct ccci_fsm_monitor {
 
 struct ccci_fsm_ctl {
 	int md_id;
-	MD_STATE md_state;
+	enum MD_STATE md_state;
 
 	unsigned int curr_state;
 	unsigned int last_state;

@@ -65,7 +65,7 @@ static int fsm_poll_main(void *data)
 	struct ccci_fsm_poller *poller_ctl = (struct ccci_fsm_poller *)data;
 	struct ccci_fsm_ctl *ctl = container_of(poller_ctl, struct ccci_fsm_ctl, poller_ctl);
 	int ret, assert_md_type, count;
-	MD_STATE md_state;
+	enum MD_STATE md_state;
 
 	while (1) {
 		md_state = ccci_fsm_get_md_state(poller_ctl->md_id);

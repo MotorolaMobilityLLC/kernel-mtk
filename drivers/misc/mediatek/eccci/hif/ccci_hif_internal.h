@@ -55,7 +55,7 @@ struct ccci_hif_ops {
 	int (*write_room)(unsigned char hif_id, unsigned char qno);
 	int (*start_queue)(unsigned char hif_id, unsigned char qno, DIRECTION dir);
 	int (*stop_queue)(unsigned char hif_id, unsigned char qno, DIRECTION dir);
-	int (*broadcast_state)(unsigned char hif_id, MD_STATE state);
+	int (*broadcast_state)(unsigned char hif_id, enum MD_STATE state);
 	int (*dump_status)(unsigned char hif_id, MODEM_DUMP_FLAG dump_flag, int length);
 };
 

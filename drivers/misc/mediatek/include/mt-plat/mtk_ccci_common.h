@@ -20,17 +20,17 @@
 /*
  * all code owned by CCCI should use modem index starts from ZERO
  */
-typedef enum {
+enum MD_SYS {
 	MD_SYS1 = 0, /* MD SYS name counts from 1, but internal index counts from 0 */
 	MD_SYS2,
 	MD_SYS3,
 	MD_SYS4,
 	MD_SYS5 = 4,
 	MAX_MD_NUM
-} MD_SYS;
+};
 
 /* MD type defination */
-typedef enum {
+enum MD_LOAD_TYPE {
 	md_type_invalid = 0,
 	modem_2g = 1,
 	modem_3g,
@@ -54,7 +54,7 @@ typedef enum {
 	modem_ulftg,
 	modem_ulfctg,
 	MAX_IMG_NUM = modem_ulfctg /* this enum starts from 1 */
-} MD_LOAD_TYPE;
+};
 
 /* MD logger configure file */
 #define MD1_LOGGER_FILE_PATH "/data/mdlog/mdlog1_config"
@@ -242,14 +242,14 @@ enum{
 #define CCCI_ERR_LOAD_IMG_NOT_FOUND			(CCCI_ERR_LOAD_IMG_START_ID+13)
 
 /* export to other kernel modules, better not let other module include ECCCI header directly (except IPC...) */
-typedef enum {
+enum MD_STATE_FOR_USER {
 	MD_STATE_INVALID = 0,
 	MD_STATE_BOOTING = 1,
 	MD_STATE_READY = 2,
 	MD_STATE_EXCEPTION = 3
-} MD_STATE_FOR_USER;
+};
 
-typedef enum {
+enum KERN_FUNC_ID {
 	ID_GET_MD_WAKEUP_SRC,   /* for SPM */
 	ID_GET_TXPOWER,		/* for thermal */
 	ID_PAUSE_LTE,		/* for DVFS */
@@ -261,7 +261,7 @@ typedef enum {
 	ID_MD_MPU_ASSERT,	/* for EMI MPU */
 	ID_LWA_CONTROL_MSG,	/* for Wi-Fi driver */
 	ID_UPDATE_TX_POWER,	/* for SWTP */
-} KERN_FUNC_ID;
+};
 
 /* AP<->MD messages on control or system channel */
 enum {
@@ -346,7 +346,7 @@ enum {
 	MODEM_CAP_DIRECT_TETHERING = (1<<22),
 };
 
-typedef enum {
+enum MD_STATE {
 	INVALID = 0, /* no traffic */
 	GATED, /* no traffic */
 	BOOT_WAITING_FOR_HS1,
@@ -355,30 +355,30 @@ typedef enum {
 	EXCEPTION,
 	RESET, /* no traffic */
 	WAITING_TO_STOP,
-} MD_STATE; /* for CCCI and CCMNI, broadcast FSM */
+}; /* for CCCI and CCMNI, broadcast FSM */
 
-typedef enum {
+enum HIF_STATE {
 	RX_IRQ, /* broadcast by HIF, only for NAPI! */
 	RX_FLUSH, /* broadcast by HIF only for GRO! */
 	TX_IRQ, /* broadcast by HIF, only for network! */
 	TX_FULL, /* broadcast by HIF, only for network! */
-} HIF_STATE;
+};
 
 /* ================================================================================= */
 /* Image type and header defination part */
 /* ================================================================================= */
-typedef enum {
+enum MD_IMG_TYPE {
 	IMG_MD = 0,
 	IMG_DSP,
 	IMG_ARMV7,
 	IMG_NUM,
-} MD_IMG_TYPE;
+};
 
-typedef enum{
+enum PRODUCT_VER_TYPE {
 	INVALID_VARSION = 0,
 	DEBUG_VERSION,
 	RELEASE_VERSION
-} PRODUCT_VER_TYPE;
+};
 
 #define IMG_NAME_LEN 32
 #define IMG_POSTFIX_LEN 16
@@ -392,7 +392,7 @@ struct IMG_CHECK_INFO {
 	char *build_ver;	/* project version, ex:11A_MD.W11.28 */
 	unsigned int mem_size; /*md rom+ram mem size*/
 	unsigned int md_img_size; /*modem image actual size, exclude head size*/
-	PRODUCT_VER_TYPE version;
+	enum PRODUCT_VER_TYPE version;
 	unsigned int header_verno;  /* header structure version number */
 };
 
@@ -403,7 +403,7 @@ struct IMG_REGION_INFO {
 };
 
 struct ccci_image_info {
-	MD_IMG_TYPE type;
+	enum MD_IMG_TYPE type;
 	char file_name[IMG_PATH_LEN];
 	phys_addr_t address; /* phy memory address to load this image */
 	unsigned int size; /* image size without signature, cipher and check header, read form check header */
@@ -422,7 +422,7 @@ struct ccci_image_info {
 typedef int (*get_status_func_t)(int, char*, int);
 typedef int (*boot_md_func_t)(int);
 
-typedef enum {
+enum SMEM_USER_ID {
 	SMEM_USER_RAW_DBM = 0, /* this should remain to be 0 for backward compatibility */
 
 	/* sequence in CCB users matters, must align with ccb_configs[]  */
@@ -453,18 +453,18 @@ typedef enum {
 	SMEM_USER_RAW_MD_CONSYS,
 	SMEM_USER_RAW_PHY_CAP,
 	SMEM_USER_MAX,
-} SMEM_USER_ID;
+};
 
-typedef enum {
+enum SYS_CB_ID {
 	ID_GET_FDD_THERMAL_DATA = 0,
 	ID_GET_TDD_THERMAL_DATA,
-} SYS_CB_ID;
+};
 
 typedef int (*ccci_sys_cb_func_t)(int, int);
-typedef struct{
-	SYS_CB_ID		id;
+struct ccci_sys_cb_func_info {
+	enum SYS_CB_ID		id;
 	ccci_sys_cb_func_t	func;
-} ccci_sys_cb_func_info_t;
+};
 
 #define MAX_KERN_API 64
 
@@ -494,7 +494,7 @@ unsigned int get_md_smem_cachable_offset(int md_id);
 unsigned long ccci_get_md_boot_count(int md_id); /* Export by ccci fsm */
 int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned int len); /* Export by ccci core */
 int register_ccci_sys_call_back(int md_id, unsigned int id, ccci_sys_cb_func_t func); /* Export by ccci port */
-void __iomem *get_smem_start_addr(int md_id, SMEM_USER_ID user_id, int *size_o); /* Export by ccci port */
+void __iomem *get_smem_start_addr(int md_id, enum SMEM_USER_ID user_id, int *size_o); /* Export by ccci port */
 int switch_sim_mode(int id, char *buf, unsigned int len); /* Export by SIM switch */
 unsigned int get_sim_switch_type(void); /* Export by SIM switch */
 

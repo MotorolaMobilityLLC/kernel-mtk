@@ -47,7 +47,7 @@ int mtk_conn_md_bridge_unreg(uint32 u_id)
 	return 0;
 }
 EXPORT_SYMBOL(mtk_conn_md_bridge_unreg);
-int mtk_conn_md_bridge_send_msg(ipc_ilm_t *ilm)
+int mtk_conn_md_bridge_send_msg(struct ipc_ilm *ilm)
 {
 	int i_ret = -1;
 	/*sanity check */

@@ -380,7 +380,7 @@ static void cldma_dump_queue_history(struct md_cd_ctrl *md_ctrl, unsigned int qn
 	ccci_md_dump_log_history(md_ctrl->md_id, &md_ctrl->traffic_info, 0, qno, qno);
 }
 
-static int cldma_queue_broadcast_state(struct md_cd_ctrl *md_ctrl, MD_STATE state, DIRECTION dir, int index)
+static int cldma_queue_broadcast_state(struct md_cd_ctrl *md_ctrl, enum MD_STATE state, DIRECTION dir, int index)
 {
 	ccci_port_queue_status_notify(md_ctrl->md_id, md_ctrl->hif_id, index, dir, state);
 	return 0;
@@ -1791,7 +1791,7 @@ static int md_cd_start_queue(unsigned char hif_id, unsigned char qno, DIRECTION 
 	struct cldma_request *req = NULL;
 	struct cldma_rgpd *rgpd;
 	unsigned long flags;
-	MD_STATE md_state;
+	enum MD_STATE md_state;
 
 	if (dir == OUT && qno >= QUEUE_LEN(md_ctrl->txq))
 		return -CCCI_ERR_INVALID_QUEUE_INDEX;

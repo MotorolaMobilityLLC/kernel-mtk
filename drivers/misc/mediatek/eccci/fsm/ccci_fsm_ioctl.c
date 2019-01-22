@@ -319,7 +319,7 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 {
 	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(md_id);
 	int ret = 0;
-	MD_STATE_FOR_USER state_for_user;
+	enum MD_STATE_FOR_USER state_for_user;
 	struct siginfo sig_info;
 	unsigned int data, sig, pid;
 

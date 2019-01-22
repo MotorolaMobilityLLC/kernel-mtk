@@ -36,9 +36,9 @@ struct conn_md_user {
 };
 
 struct conn_md_msg {
-	ipc_ilm_t ilm;
+	struct ipc_ilm ilm;
 	struct list_head entry;
-	local_para_struct local_para;
+	struct local_para local_para;
 };
 
 struct conn_md_queue {
@@ -64,7 +64,7 @@ struct conn_md_struct {
 	struct conn_md_dmp_msg_log *p_msg_dmp_sys;
 };
 
-extern int conn_md_send_msg(ipc_ilm_t *ilm);
+extern int conn_md_send_msg(struct ipc_ilm *ilm);
 extern int conn_md_del_user(uint32 u_id);
 extern int conn_md_add_user(uint32 u_id, struct conn_md_bridge_ops *p_ops);
 extern int conn_md_dmp_msg_logged(uint32 src_id, uint32 dst_id);

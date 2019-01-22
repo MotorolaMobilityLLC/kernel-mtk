@@ -31,7 +31,7 @@ enum CONN_MD_ERR_CODE {
 };
 
 /*For IDC test*/
-typedef int (*conn_md_msg_rx_cb) (ipc_ilm_t *ilm);
+typedef int (*conn_md_msg_rx_cb) (struct ipc_ilm *ilm);
 
 struct conn_md_bridge_ops {
 	conn_md_msg_rx_cb rx_cb;
@@ -39,6 +39,6 @@ struct conn_md_bridge_ops {
 
 extern int mtk_conn_md_bridge_reg(uint32 u_id, struct conn_md_bridge_ops *p_ops);
 extern int mtk_conn_md_bridge_unreg(uint32 u_id);
-extern int mtk_conn_md_bridge_send_msg(ipc_ilm_t *ilm);
+extern int mtk_conn_md_bridge_send_msg(struct ipc_ilm *ilm);
 
 #endif /*__CONN_MD_EXP_H_*/

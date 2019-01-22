@@ -587,7 +587,7 @@ static MTK_WCN_BOOL wmt_lib_ps_action(MTKSTP_PSM_ACTION_T action)
 }
 
 #if CFG_WMT_LTE_COEX_HANDLING
-MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor)
+MTK_WCN_BOOL wmt_lib_handle_idc_msg(struct ipc_ilm *idc_infor)
 {
 	P_OSAL_OP lxop;
 	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
@@ -606,7 +606,7 @@ MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor)
 		WMT_ERR_FUNC("--->lock idc_lock failed, ret=%d\n", ret);
 		return MTK_WCN_BOOL_FALSE;
 	}
-	msg_len = idc_infor->local_para_ptr->msg_len - osal_sizeof(local_para_struct);
+	msg_len = idc_infor->local_para_ptr->msg_len - osal_sizeof(struct local_para);
 	osal_memcpy(&msg_local_buffer[0], &msg_len, osal_sizeof(msg_len));
 	osal_memcpy(&msg_local_buffer[osal_sizeof(msg_len)],
 			&(idc_infor->local_para_ptr->data[0]), msg_len - 1);

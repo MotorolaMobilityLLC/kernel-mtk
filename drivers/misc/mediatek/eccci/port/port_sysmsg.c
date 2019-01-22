@@ -48,12 +48,12 @@ static inline int port_sys_echo_test_l1core(struct port_t *port, int data)
 }
 #endif
 /* for backward compatibility */
-ccci_sys_cb_func_info_t ccci_sys_cb_table_100[MAX_MD_NUM][MAX_KERN_API];
-ccci_sys_cb_func_info_t ccci_sys_cb_table_1000[MAX_MD_NUM][MAX_KERN_API];
+struct ccci_sys_cb_func_info ccci_sys_cb_table_100[MAX_MD_NUM][MAX_KERN_API];
+struct ccci_sys_cb_func_info ccci_sys_cb_table_1000[MAX_MD_NUM][MAX_KERN_API];
 int register_ccci_sys_call_back(int md_id, unsigned int id, ccci_sys_cb_func_t func)
 {
 	int ret = 0;
-	ccci_sys_cb_func_info_t *info_ptr;
+	struct ccci_sys_cb_func_info *info_ptr;
 
 	if (md_id >= MAX_MD_NUM) {
 		CCCI_ERROR_LOG(md_id, SYS, "register_sys_call_back fail: invalid md id\n");
@@ -84,7 +84,7 @@ void exec_ccci_sys_call_back(int md_id, int cb_id, int data)
 {
 	ccci_sys_cb_func_t func;
 	int id;
-	ccci_sys_cb_func_info_t *curr_table;
+	struct ccci_sys_cb_func_info *curr_table;
 
 	if (md_id >= MAX_MD_NUM) {
 		CCCI_ERROR_LOG(md_id, SYS, "exec_sys_cb fail: invalid md id\n");
