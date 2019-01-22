@@ -365,7 +365,6 @@ struct musb {
 	struct semaphore musb_lock;
 	/* device lock */
 	spinlock_t lock;
-	enum usb_otg_state	state;
 	const struct musb_platform_ops *ops;
 	struct musb_context_registers context;
 
