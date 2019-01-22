@@ -2407,11 +2407,9 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_M
 #ifdef CONFIG_MTK_ECCCI_C2K
 		exec_ccci_kern_func_by_md_id(MD_SYS3, ID_RESET_MD, NULL, 0);
 #else
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT
+#if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
 		if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* CONFIG_MTK_SVLTE_SUPPORT */
 			c2k_reset_modem();
-#endif
 #endif
 #endif
 		break;
@@ -2419,11 +2417,9 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_M
 #ifdef CONFIG_MTK_ECCCI_C2K
 		exec_ccci_kern_func_by_md_id(MD_SYS3, ID_STOP_MD, NULL, 0);
 #else
-#ifdef CONFIG_MTK_MD3_SUPPORT
-#if CONFIG_MTK_MD3_SUPPORT
+#if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
 		if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* CONFIG_MTK_SVLTE_SUPPORT */
 			c2k_reset_modem();
-#endif
 #endif
 #endif
 		break;
@@ -3144,10 +3140,10 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int tx_ch, un
 	c2k_flags |= (1 << 0);
 #endif
 
-	if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* SVLTE_MODE */
+	if (ccci_get_opt_val("opt_c2k_lte_mode") == 1) /* CONFIG_MTK_SVLTE_SUPPORT */
 		c2k_flags |= (1 << 1);
 
-	if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* SRLTE_MODE */
+	if (ccci_get_opt_val("opt_c2k_lte_mode") == 2) /* CONFIG_MTK_SRLTE_SUPPORT */
 		c2k_flags |= (1 << 2);
 
 #ifdef CONFIG_MTK_C2K_OM_SOLUTION1

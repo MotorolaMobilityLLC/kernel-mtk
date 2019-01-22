@@ -392,13 +392,13 @@ static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct sk_buff *s
 	};
 }
 
-static int ccif_check_flow_ctrl(struct ccci_modem *md, unsigned int qno, struct ccci_ringbuf *rx_buf)
+static int ccif_check_flow_ctrl(struct ccci_modem *md, struct md_ccif_queue *queue, struct ccci_ringbuf *rx_buf)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	int is_busy, buf_size = 0;
 	int ret = 0;
 
-	is_busy = ccif_is_md_queue_busy(md_ctrl, qno);
+	is_busy = ccif_is_md_queue_busy(md_ctrl, queue->index);
 	if (is_busy < 0) {
 		CCCI_DEBUG_LOG(md->index, TAG, "ccif flow ctrl: check modem return %d\n", is_busy);
 		return 0;
@@ -407,16 +407,22 @@ static int ccif_check_flow_ctrl(struct ccci_modem *md, unsigned int qno, struct 
 		buf_size = rx_buf->rx_control.write - rx_buf->rx_control.read;
 		if (buf_size < 0)
 			buf_size += rx_buf->rx_control.length;
-		if (buf_size < rx_buf->rx_control.length / 2) {
+		if (buf_size <= rx_buf->rx_control.length / (2 << (queue->resume_cnt * 2))) {
 			if (md->md_state == READY) {
-				ret = ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_FLOW_CTRL_MSG, qno, 0);
+				ret = ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_FLOW_CTRL_MSG, queue->index, 0);
 				if (ret < 0)
-					CCCI_ERROR_LOG(md->index, TAG, "fail to resume md Q%d, ret0x%x\n", qno, ret);
-				else
-					CCCI_NORMAL_LOG(md->index, TAG, "flow ctrl: notify md resume Q%d\n", qno);
+					CCCI_ERROR_LOG(md->index, TAG, "fail to resume md Q%d, ret0x%x\n",
+						queue->index, ret);
+				else {
+					queue->resume_cnt++;
+					CCCI_NORMAL_LOG(md->index, TAG, "flow ctrl: resume Q%d, buf %d, cnt %d\n",
+						queue->index, buf_size, queue->resume_cnt);
+				}
 			}
 		}
-	}
+	} else
+		queue->resume_cnt = 0;
+
 	return ret;
 }
 
@@ -559,7 +565,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 			ccci_ringbuf_move_rpointer(md->index, rx_buf, pkg_size);
 			spin_unlock_irqrestore(&queue->rx_lock, flags);
 			if (likely(md->capability & MODEM_CAP_TXBUSY_STOP))
-				ccif_check_flow_ctrl(md, queue->index, rx_buf);
+				ccif_check_flow_ctrl(md, queue, rx_buf);
 
 			if (ccci_h->channel == CCCI_MD_LOG_RX) {
 				rx_data_cnt += pkg_size - 16;
@@ -703,6 +709,7 @@ static void md_ccif_reset_queue(struct ccci_modem *md)
 		spin_lock_irqsave(&md_ctrl->rxq[i].rx_lock, flags);
 		ccci_ringbuf_reset(md->index, md_ctrl->rxq[i].ringbuf, 0);
 		spin_unlock_irqrestore(&md_ctrl->rxq[i].rx_lock, flags);
+		md_ctrl->rxq[i].resume_cnt = 0;
 
 		spin_lock_irqsave(&md_ctrl->txq[i].tx_lock, flags);
 		ccci_ringbuf_reset(md->index, md_ctrl->txq[i].ringbuf, 1);
@@ -851,6 +858,7 @@ static inline void md_ccif_queue_struct_init(struct md_ccif_queue *queue,
 	atomic_set(&queue->rx_on_going, 0);
 	queue->debug_id = 0;
 	queue->wakeup = 0;
+	queue->resume_cnt = 0;
 	queue->budget = RX_BUGDET;
 }
 

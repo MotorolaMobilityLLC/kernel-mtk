@@ -45,9 +45,10 @@ struct ccif_sram_layout {
 struct md_ccif_queue {
 	DIRECTION dir;
 	unsigned char index;
-	atomic_t rx_on_going;
+	unsigned char resume_cnt;
 	unsigned char debug_id;
 	unsigned char wakeup;
+	atomic_t rx_on_going;
 	int budget;
 	unsigned int ccif_ch;
 	struct ccci_modem *modem;
