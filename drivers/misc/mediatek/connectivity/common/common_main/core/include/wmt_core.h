@@ -310,7 +310,6 @@ typedef MTK_WCN_BOOL(*IS_QUICK_SLEEP_SUPPORT) (VOID);
 typedef MTK_WCN_BOOL(*IS_AEE_DUMP_SUPPORT) (VOID);
 typedef MTK_WCN_BOOL(*TRIGGER_STP_ASSERT) (VOID);
 typedef MTK_WCN_BOOL(*DEEP_SLEEP_CONTROL) (INT32 value);
-typedef MTK_WCN_BOOL(*DEEP_SLEEP_FLAG_GET)(VOID);
 
 
 typedef struct _WMT_IC_OPS_ {
@@ -324,7 +323,6 @@ typedef struct _WMT_IC_OPS_ {
 	IS_AEE_DUMP_SUPPORT is_aee_dump_support;
 	TRIGGER_STP_ASSERT trigger_stp_assert;
 	DEEP_SLEEP_CONTROL deep_sleep_ctrl;
-	DEEP_SLEEP_FLAG_GET deep_sleep_flag_get;
 } WMT_IC_OPS, *P_WMT_IC_OPS;
 
 typedef struct _WMT_CTX_ {
@@ -445,7 +443,6 @@ extern MTK_WCN_BOOL wmt_core_get_aee_dump_flag(VOID);
 extern MTK_WCN_BOOL wmt_core_trigger_stp_assert(VOID);
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 extern MTK_WCN_BOOL wmt_core_deep_sleep_ctrl(INT32 value);
-extern MTK_WCN_BOOL wmt_core_deep_sleep_flag_get(VOID);
 #endif
 extern VOID wmt_core_set_coredump_state(ENUM_DRV_STS state);
 

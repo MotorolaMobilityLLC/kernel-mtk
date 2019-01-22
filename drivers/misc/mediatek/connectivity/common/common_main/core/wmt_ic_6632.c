@@ -604,7 +604,6 @@ static struct init_script sdio_driving_table[] = {
 static MTK_WCN_BOOL mt6632_trigger_stp_assert(VOID);
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 static MTK_WCN_BOOL mt6632_deep_sleep_ctrl(INT32 value);
-static MTK_WCN_BOOL mt6632_deep_sleep_flag_get(VOID);
 static INT32 wmt_stp_get_chip_deep_sleep(VOID);
 #endif
 
@@ -631,10 +630,8 @@ WMT_IC_OPS wmt_ic_ops_mt6632 = {
 	.trigger_stp_assert = mt6632_trigger_stp_assert,
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 	.deep_sleep_ctrl = mt6632_deep_sleep_ctrl,
-	.deep_sleep_flag_get = mt6632_deep_sleep_flag_get,
 #else
 	.deep_sleep_ctrl = NULL,
-	.deep_sleep_flag_get = NULL,
 #endif
 
 };
@@ -824,6 +821,7 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			return -20;
 		}
 		WMT_INFO_FUNC("chip deep sleep feature is enable\n");
+		wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_TRUE);
 	} else {
 		WMT_DEEP_SLEEP_CMD[5] = 0;
 		iRet = wmt_core_init_script(init_deep_sleep_script, ARRAY_SIZE(init_deep_sleep_script));
@@ -832,6 +830,7 @@ static INT32 mt6632_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			return -21;
 		}
 		WMT_INFO_FUNC("chip deep sleep feature is disable\n");
+		wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_FALSE);
 	}
 #endif
 	iRet = wmt_stp_init_coex();
@@ -1166,14 +1165,6 @@ static MTK_WCN_BOOL mt6632_deep_sleep_ctrl(INT32 value)
 		return MTK_WCN_BOOL_FALSE;
 }
 
-static MTK_WCN_BOOL mt6632_deep_sleep_flag_get(VOID)
-{
-	if (g_deep_sleep_flag)
-		return MTK_WCN_BOOL_TRUE;
-	else
-		return MTK_WCN_BOOL_FALSE;
-}
-
 static INT32 wmt_stp_get_chip_deep_sleep(VOID)
 {
 	WMT_GEN_CONF *pWmtGenConf;
@@ -1228,6 +1219,10 @@ static INT32 mt6632_ver_check(VOID)
 	ULONG ctrlPa1;
 	ULONG ctrlPa2;
 
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+	WMT_INFO_FUNC("close deep sleep featrue before the first command to firmware");
+	wmt_lib_deep_sleep_flag_set(MTK_WCN_BOOL_FALSE);
+#endif
 	/* 1. identify chip versions: HVR(HW_VER) and FVR(FW_VER) */
 	WMT_LOUD_FUNC("MT6632: before read hw_ver (hw version)\n");
 	iret = wmt_core_reg_rw_raw(0, GEN_HVR, &hw_ver, GEN_VER_MASK);

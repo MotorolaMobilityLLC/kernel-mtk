@@ -597,7 +597,6 @@ WMT_IC_OPS wmt_ic_ops_mt6630 = {
 	.is_aee_dump_support = mt6630_aee_dump_flag_get,
 	.trigger_stp_assert = mt6630_trigger_stp_assert,
 	.deep_sleep_ctrl = NULL,
-	.deep_sleep_flag_get = NULL,
 };
 
 /*******************************************************************************

@@ -51,11 +51,7 @@
 
 #define mmc_power_up_ext(x)
 #define mmc_power_off_ext(x)
-#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
-MTK_WCN_BOOL g_hif_deep_sleep_flag = MTK_WCN_BOOL_TRUE;
-#else
 MTK_WCN_BOOL g_hif_deep_sleep_flag = MTK_WCN_BOOL_FALSE;
-#endif
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -463,21 +459,21 @@ static INT32 _hif_sdio_wake_up_ctrl(VOID)
 		gpio_state =
 			gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_DEEP_SLEEP_PIN].gpio_num);
 		osal_gettimeofday(&sec, &usec);
-		if (gpio_state == 1) {
-			HIF_SDIO_DBG_FUNC("wmt_gpio:Polling GPIO_CHIP_DEEP_SLEEP_PIN high success!\n");
-			if ((usec - usec_old) >= 6000)
+		if (gpio_state == 0) {
+			HIF_SDIO_DBG_FUNC("wmt_gpio:Polling GPIO_CHIP_DEEP_SLEEP_PIN low success!\n");
+			if ((usec - usec_old) >= 10000)
 				HIF_SDIO_WARN_FUNC
-					("polling [GPIO_CHIP_DEEP_SLEEP_PIN] high success but over 6ms, time=(%d)us\n",
+					("polling [GPIO_CHIP_DEEP_SLEEP_PIN] low success but over 10ms, time=(%d)us\n",
 					(usec - usec_old));
 			polling_counter = 0;
 			break;
 		}
 		polling_counter++;
 		osal_gettimeofday(&sec, &usec);
-		if ((usec - usec_old) >= 15000) {
+		if ((usec - usec_old) >= 30000) {
 			HIF_SDIO_ERR_FUNC
-				("polling [GPIO_CHIP_DEEP_SLEEP_PIN] high over 15ms, timing: %dus,counter:%d\n",
-				usec - usec_old, polling_counter);
+				("wake up fail!, polling [GPIO_CHIP_DEEP_SLEEP_PIN] high over 30ms, timing:%dus\n",
+				usec - usec_old);
 			ret = -11;
 			break;
 		}
@@ -548,7 +544,6 @@ INT32 mtk_wcn_hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 	return ret;
 }
 EXPORT_SYMBOL(mtk_wcn_hif_sdio_wake_up_ctrl);
-
 
 /*!
  * \brief MTK hif sdio client registration function
