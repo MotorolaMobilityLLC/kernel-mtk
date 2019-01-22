@@ -154,7 +154,11 @@ void AFRegulatorCtrl(int Stage)
 				kd_node = lens_device->of_node;
 				lens_device->of_node = node;
 
-				regVCAMAF = regulator_get(lens_device, "vcamaf");
+				if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k71v1_64_bsp_fhdp", 17) == 0)
+					regVCAMAF = regulator_get(lens_device, "vldo28");
+				else
+					regVCAMAF = regulator_get(lens_device, "vcamaf");
+
 				LOG_INF("[Init] regulator_get %p\n", regVCAMAF);
 
 				lens_device->of_node = kd_node;
