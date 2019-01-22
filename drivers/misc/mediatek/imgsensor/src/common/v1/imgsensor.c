@@ -76,6 +76,7 @@ static struct cdev *gpimgsensor_cdev;
 static struct class *gpimgsensor_class;
 
 static DEFINE_MUTEX(gimgsensor_mutex);
+DEFINE_MUTEX(pinctrl_mutex);
 
 struct IMGSENSOR  gimgsensor;
 struct IMGSENSOR *pgimgsensor = &gimgsensor;
@@ -1159,6 +1160,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
 	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+	case SENSOR_FEATURE_SET_SENSOR_SYNC_MODE:
 		if (copy_from_user((void *)pFeaturePara,
 							(void *) pFeatureCtrl->pFeaturePara,
 							FeatureParaLen)) {
@@ -1207,6 +1209,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_SINGLE_FOCUS_MODE:
 	case SENSOR_FEATURE_CANCEL_AF:
 	case SENSOR_FEATURE_CONSTANT_AF:
+	case SENSOR_FEATURE_GET_SENSOR_SYNC_MODE_CAPACITY:
+	case SENSOR_FEATURE_GET_SENSOR_SYNC_MODE:
 	default:
 	    break;
 	}
@@ -1254,6 +1258,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_GET_SENSOR_N3D_STREAM_TO_VSYNC_TIME:
 	case SENSOR_FEATURE_GET_PERIOD:
 	case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ:
+	case SENSOR_FEATURE_GET_SENSOR_SYNC_MODE_CAPACITY:
+	case SENSOR_FEATURE_GET_SENSOR_SYNC_MODE:
 	{
 		ret = imgsensor_sensor_feature_control(psensor,
 								pFeatureCtrl->FeatureId,
@@ -1698,6 +1704,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_SET_PDAF_REG_SETTING:
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
 	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+	case SENSOR_FEATURE_SET_SENSOR_SYNC_MODE:
 	    break;
 	/* copy to user */
 	case SENSOR_FEATURE_SET_DRIVER:
@@ -1745,6 +1752,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_SET_PDAF:
 	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
 	case SENSOR_FEATURE_SET_PDFOCUS_AREA:
+	case SENSOR_FEATURE_GET_SENSOR_SYNC_MODE_CAPACITY:
+	case SENSOR_FEATURE_GET_SENSOR_SYNC_MODE:
 		if (copy_to_user((void __user *) pFeatureCtrl->pFeaturePara,
 							(void *)pFeaturePara, FeatureParaLen)) {
 			kfree(pFeaturePara);
