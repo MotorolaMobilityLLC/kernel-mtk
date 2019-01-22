@@ -39,11 +39,11 @@ else ifeq ($(strip $(CONFIG_MTK_PQ_COLOR_MODE)),"OFF")
     ccflags-y += -DDISP_COLOR_OFF
 endif
 
-ifeq (y, $(filter y, $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_MT6757)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6755) $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6757)))
     ccflags-y += -DCCORR_SUPPORT
 endif
 
-ifeq (y, $(filter y, $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_MT6799)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6799)))
     ccflags-y += -DCOLOR_2_1
 endif
 
@@ -51,7 +51,7 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
     ccflags-y += -DSUPPORT_HDR
 endif
 
-ifeq (y, $(filter y, $(CONFIG_ARCH_MT6797) $(CONFIG_MACH_MT6799)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6799)))
     ccflags-y += -DSUPPORT_ULTRA_RESOLUTION
 endif
 

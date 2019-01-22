@@ -27,9 +27,9 @@ enum vsync_src {
 
 #define MTKFB_VSYNC_IOCTL     _IOW(MTKFB_VSYNC_IOCTL_MAGIC, 1, enum vsync_src)
 
-#if defined(CONFIG_ARCH_MT6735)
-	|| defined(CONFIG_ARCH_MT6735M)
-	|| defined(CONFIG_ARCH_MT6753)
+#if defined(CONFIG_MACH_MT6735)
+	|| defined(CONFIG_MACH_MT6735M)
+	|| defined(CONFIG_MACH_MT6753)
 	|| defined(CONFIG_MACH_MT8167)
 void mtkfb_vsync_log_enable(int enable);
 #endif

@@ -307,8 +307,8 @@ struct fb_post_video_buffer {
 	unsigned int width, height;
 };
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
-	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_MACH_MT8167)
+#if defined(CONFIG_MACH_MT6735) || defined(CONFIG_MACH_MT6735M)\
+	|| defined(CONFIG_MACH_MT6753) || defined(CONFIG_MACH_MT8167)
 extern unsigned int EnableVSyncLog;
 
 void mtkfb_log_enable(int enable);
@@ -316,7 +316,7 @@ int mtkfb_set_backlight_mode(unsigned int mode);
 int mtkfb_get_debug_state(char *stringbuf, int buf_len);
 unsigned int mtkfb_fm_auto_test(void);
 void mtkfb_clear_lcm(void);
-#endif /* CONFIG_ARCH_MT6735 */
+#endif /* CONFIG_MACH_MT6735 */
 
 int mtkfb_set_backlight_level(unsigned int level);
 
@@ -385,12 +385,12 @@ struct mtkfb_device {
 
 extern long hdmi_handle_cmd(unsigned int cmd, unsigned long arg);
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6797)
 extern unsigned int vramsize;
 #endif
 
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)\
-	|| defined(CONFIG_ARCH_MT6753) || defined(CONFIG_MACH_MT8167)
+#if defined(CONFIG_MACH_MT6735) || defined(CONFIG_MACH_MT6735M)\
+	|| defined(CONFIG_MACH_MT6753) || defined(CONFIG_MACH_MT8167)
 extern bool is_early_suspended;
 extern void mtkfb_waitVsync(void);
 extern bool is_ipoh_bootup;
@@ -402,7 +402,7 @@ extern unsigned int vramsize;
 #else
 extern char *saved_command_line;
 #endif
-#endif /* CONFIG_ARCH_MT6735 */
+#endif /* CONFIG_MACH_MT6735 */
 
 
 #endif				/* __MTKFB_H */
