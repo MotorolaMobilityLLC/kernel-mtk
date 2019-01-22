@@ -101,7 +101,6 @@ pvrsrvkm-y += \
  services/server/devices/rgx/rgxstartstop.o \
  services/server/devices/rgx/rgxtimecorr.o \
  services/server/devices/rgx/rgxcompute.o \
- services/server/devices/rgx/rgxsignals.o \
  services/shared/common/devicemem.o \
  services/shared/common/hash.o \
  services/shared/common/ra.o \
@@ -150,9 +149,19 @@ pvrsrvkm-y += \
  generated/cacherangebased_bridge/server_cacherangebased_bridge.o \
  generated/dmabuf_bridge/server_dmabuf_bridge.o \
  generated/rgxcmp_bridge/server_rgxcmp_bridge.o \
- generated/rgxinit_bridge/client_rgxinit_direct_bridge.o \
+ generated/rgxinit_bridge/client_rgxinit_direct_bridge.o
+
+ifeq ($(MTK_PLATFORM),mt6799)
+pvrsrvkm-y += \
+ services/server/devices/rgx/rgxsignals.o \
  generated/rgxsignals_bridge/server_rgxsignals_bridge.o
- 
+endif
+
+ifeq ($(MTK_PLATFORM),mt8167)
+pvrsrvkm-y += \
+ services/server/devices/rgx/rgxmipsmmuinit.o
+endif
+
 ifeq ($(MTK_DDK_DEBUG),y)
 pvrsrvkm-y += \
  services/server/common/ri_server.o \
@@ -168,10 +177,14 @@ pvrsrvkm-$(CONFIG_EVENT_TRACING) += services/server/env/linux/trace_events.o
 
 ccflags-y += \
  -I$(srctree)/drivers/staging/android/ion \
+ -I$(srctree)/drivers/staging/android/ion/mtk \
  -I$(srctree)/drivers/misc/mediatek/gpu/ged/include \
- -I$(srctree)/drivers/misc/mediatek/pmic \
- -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335 
+ -I$(srctree)/drivers/misc/mediatek/pmic
 
+ifeq ($(MTK_PLATFORM),mt6799)
+ccflags-y += \
+ -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335
+endif
 
 ccflags-y += \
  -I$(RGX_TOP)/generated/breakpoint_bridge \
@@ -193,7 +206,6 @@ ccflags-y += \
  -I$(RGX_TOP)/generated/srvcore_bridge \
  -I$(RGX_TOP)/generated/sync_bridge \
  -I$(RGX_TOP)/generated/timerquery_bridge \
- -I$(RGX_TOP)/generated/rgxsignals_bridge \
  -I$(RGX_TOP)/hwdefs \
  -I$(RGX_TOP)/hwdefs/km \
  -I$(RGX_TOP)/hwdefs/km/configs \
@@ -215,6 +227,12 @@ ccflags-y += \
  -I$(RGX_TOP)/services/srvinit/include \
  -I$(RGX_TOP)/services/system/include \
  -I$(RGX_TOP)/services/system/rgx_$(MTK_PLATFORM)
+
+ifeq ($(MTK_PLATFORM),mt6799)
+ccflags-y += \
+ -I$(RGX_TOP)/generated/rgxsignals_bridge
+endif
+
 
 ifeq ($(MTK_DDK_DEBUG),y)
 ccflags-y += \
