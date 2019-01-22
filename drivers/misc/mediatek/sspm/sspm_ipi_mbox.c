@@ -392,6 +392,9 @@ int sspm_ipi_send_async_wait_ex(int mid, int opts, void *retbuf, int retlen)
 
 			ret = sspm_mbox_polling(mbno, mid - mbox->start, pin->slot,
 					retbuf, retlen, 0x0000fffff);
+
+			if (ret < 0)
+				ret = IPI_TIMEOUT_ACK;
 		}
 	}
 
