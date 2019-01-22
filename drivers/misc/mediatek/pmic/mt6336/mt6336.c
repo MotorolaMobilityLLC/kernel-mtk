@@ -94,14 +94,22 @@ unsigned int mt6336_read_byte(unsigned int reg, unsigned char *returnData)
 unsigned int mt6336_read_bytes(unsigned int reg, unsigned char *returnData, unsigned int len)
 {
 	int ret = 0;
-	unsigned char *returnData_more = NULL;
+	unsigned char buffer[64] = {0};
+	unsigned char *returnData_more = buffer;
 
 	mutex_lock(&mt6336_i2c_access);
 	if (g_mt6336_hwcid == 0x20) {
 		/* MT6336 E2, burst read not ready */
-		returnData_more = kmalloc_array(len + 2, sizeof(unsigned char), GFP_KERNEL);
-		ret = mt6336_read_device(reg - 0x2, returnData_more, len + 2);
-		memcpy(returnData, returnData_more + 2, len);
+		if (len <= 62) {
+			ret = mt6336_read_device(reg - 0x2, returnData_more, len + 2);
+			memcpy(returnData, returnData_more + 2, len);
+		} else {
+			returnData_more = kmalloc_array(len + 2, sizeof(unsigned char), GFP_KERNEL);
+			ret = mt6336_read_device(reg - 0x2, returnData_more, len + 2);
+			memcpy(returnData, returnData_more + 2, len);
+			kfree(returnData_more);
+			returnData_more = NULL;
+		}
 	} else {
 		/* Other chip version */
 		ret = mt6336_read_device(reg, returnData, len);
