@@ -67,7 +67,7 @@
 #define PFX "GPS: "
 #else
 #define GPS_DBG_NONE(fmt, arg...)    do {} while (0)
-#define GPS_DBG pr_debug
+#define GPS_DBG GPS_DBG_NONE
 #define GPS_TRC GPS_DBG_NONE
 #define GPS_VER pr_debug
 #define GPS_ERR pr_err
