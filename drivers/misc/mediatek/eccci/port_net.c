@@ -319,17 +319,8 @@ struct ccmni_ccci_ops eccci_cc3mni_ops = {
 	.ccmni_ver = CCMNI_DRV_V0,
 	.ccmni_num = 8,
 	.name = "cc3mni",
-#if defined CONFIG_MTK_IRAT_SUPPORT
-#if defined CONFIG_MTK_C2K_SLOT2_SUPPORT
-	.md_ability = MODEM_CAP_CCMNI_IRAT | MODEM_CAP_TXBUSY_STOP | MODEM_CAP_WORLD_PHONE,
-#else
 	.md_ability = MODEM_CAP_CCMNI_IRAT | MODEM_CAP_TXBUSY_STOP,
-#endif
 	.irat_md_id = MD_SYS1,
-#else
-	.md_ability = MODEM_CAP_TXBUSY_STOP,
-	.irat_md_id = -1,
-#endif
 	.napi_poll_weigh = 0,
 	.send_pkt = ccmni_send_pkt,
 	.napi_poll = ccmni_napi_poll,
@@ -374,7 +365,7 @@ static int port_net_init(struct ccci_port *port)
 		atomic_set(&mbim_ccmni_index[port->md_id], -1);
 
 		eccci_ccmni_ops.md_ability |= port_proxy_get_capability(port->port_proxy);
-#if defined CONFIG_MTK_IRAT_SUPPORT
+#if defined CONFIG_MTK_MD3_SUPPORT
 		CCCI_INIT_LOG(port->md_id, NET, "clear MODEM_CAP_SGIO flag for IRAT enable\n");
 		eccci_ccmni_ops.md_ability &= (~(MODEM_CAP_SGIO));
 #endif
