@@ -124,7 +124,7 @@ static unsigned int hdmi_resolution_param_table[][3] = {
 	{1920, 1080, 60},
 };
 
-static DEFINE_SEMAPHORE(hdmi_update_mutex);
+DEFINE_SEMAPHORE(hdmi_update_mutex);
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~the gloable variable~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
