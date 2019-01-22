@@ -122,10 +122,11 @@ pr_debug("[Thermal/TZ/BTS]" fmt, ##args)
 *    return sys_open(fname, flag, 0);
 *}
 */
-typedef struct {
+
+struct BTS_TEMPERATURE {
 	__s32 BTS_Temp;
 	__s32 TemperatureR;
-} BTS_TEMPERATURE;
+};
 
 static int g_RAP_pull_up_R = BTS_RAP_PULL_UP_R;
 static int g_TAP_over_critical_low = BTS_TAP_OVER_CRITICAL_LOW;
@@ -135,7 +136,7 @@ static int g_RAP_ADC_channel = BTS_RAP_ADC_CHANNEL;
 static int g_AP_TemperatureR;
 /* BTS_TEMPERATURE BTS_Temperature_Table[] = {0}; */
 
-static BTS_TEMPERATURE BTS_Temperature_Table[] = {
+static struct BTS_TEMPERATURE BTS_Temperature_Table[] = {
 	{0, 0},
 	{0, 0},
 	{0, 0},
@@ -174,7 +175,7 @@ static BTS_TEMPERATURE BTS_Temperature_Table[] = {
 
 
 /* AP_NTC_BL197 */
-BTS_TEMPERATURE BTS_Temperature_Table1[] = {
+static struct BTS_TEMPERATURE BTS_Temperature_Table1[] = {
 	{-40, 74354},		/* FIX_ME */
 	{-35, 74354},		/* FIX_ME */
 	{-30, 74354},		/* FIX_ME */
@@ -212,7 +213,7 @@ BTS_TEMPERATURE BTS_Temperature_Table1[] = {
 };
 
 /* AP_NTC_TSM_1 */
-BTS_TEMPERATURE BTS_Temperature_Table2[] = {
+static struct BTS_TEMPERATURE BTS_Temperature_Table2[] = {
 	{-40, 70603},		/* FIX_ME */
 	{-35, 70603},		/* FIX_ME */
 	{-30, 70603},		/* FIX_ME */
@@ -250,7 +251,7 @@ BTS_TEMPERATURE BTS_Temperature_Table2[] = {
 };
 
 /* AP_NTC_10_SEN_1 */
-BTS_TEMPERATURE BTS_Temperature_Table3[] = {
+static struct BTS_TEMPERATURE BTS_Temperature_Table3[] = {
 	{-40, 74354},		/* FIX_ME */
 	{-35, 74354},		/* FIX_ME */
 	{-30, 74354},		/* FIX_ME */
@@ -289,7 +290,7 @@ BTS_TEMPERATURE BTS_Temperature_Table3[] = {
 
 #if 0
 /* AP_NTC_10 */
-BTS_TEMPERATURE BTS_Temperature_Table4[] = {
+static struct BTS_TEMPERATURE BTS_Temperature_Table4[] = {
 	{-20, 68237},
 	{-15, 53650},
 	{-10, 42506},
@@ -310,7 +311,7 @@ BTS_TEMPERATURE BTS_Temperature_Table4[] = {
 };
 #else
 /* AP_NTC_10(TSM0A103F34D1RZ) */
-BTS_TEMPERATURE BTS_Temperature_Table4[] = {
+static struct BTS_TEMPERATURE BTS_Temperature_Table4[] = {
 	{-40, 188500},
 	{-35, 144290},
 	{-30, 111330},
@@ -349,7 +350,7 @@ BTS_TEMPERATURE BTS_Temperature_Table4[] = {
 #endif
 
 /* AP_NTC_47 */
-BTS_TEMPERATURE BTS_Temperature_Table5[] = {
+static struct BTS_TEMPERATURE BTS_Temperature_Table5[] = {
 	{-40, 483954},		/* FIX_ME */
 	{-35, 483954},		/* FIX_ME */
 	{-30, 483954},		/* FIX_ME */
@@ -388,7 +389,7 @@ BTS_TEMPERATURE BTS_Temperature_Table5[] = {
 
 
 /* NTCG104EF104F(100K) */
-BTS_TEMPERATURE BTS_Temperature_Table6[] = {
+static struct BTS_TEMPERATURE BTS_Temperature_Table6[] = {
 	{-40, 4251000},
 	{-35, 3005000},
 	{-30, 2149000},
@@ -426,7 +427,7 @@ BTS_TEMPERATURE BTS_Temperature_Table6[] = {
 };
 
 /* NCP15WF104F03RC(100K) */
-BTS_TEMPERATURE BTS_Temperature_Table7[] = {
+static struct BTS_TEMPERATURE BTS_Temperature_Table7[] = {
 	{-40, 4397119},
 	{-35, 3088599},
 	{-30, 2197225},
@@ -472,7 +473,7 @@ static __s16 mtkts_bts_thermistor_conver_temp(__s32 Res)
 	__s32 RES1 = 0, RES2 = 0;
 	__s32 TAP_Value = -200, TMP1 = 0, TMP2 = 0;
 
-	asize = (sizeof(BTS_Temperature_Table) / sizeof(BTS_TEMPERATURE));
+	asize = (sizeof(BTS_Temperature_Table) / sizeof(struct BTS_TEMPERATURE));
 	/* mtkts_bts_dprintk("mtkts_bts_thermistor_conver_temp() : asize = %d, Res = %d\n",asize,Res); */
 	if (Res >= BTS_Temperature_Table[0].TemperatureR) {
 		TAP_Value = -40;	/* min */
@@ -911,12 +912,12 @@ static ssize_t mtkts_bts_write(struct file *file, const char __user *buffer, siz
 }
 
 
-void mtkts_bts_copy_table(BTS_TEMPERATURE *des, BTS_TEMPERATURE *src)
+void mtkts_bts_copy_table(struct BTS_TEMPERATURE *des, struct BTS_TEMPERATURE *src)
 {
 	int i = 0;
 	int j = 0;
 
-	j = (sizeof(BTS_Temperature_Table) / sizeof(BTS_TEMPERATURE));
+	j = (sizeof(BTS_Temperature_Table) / sizeof(struct BTS_TEMPERATURE));
 	/* mtkts_bts_dprintk("mtkts_bts_copy_table() : j = %d\n",j); */
 	for (i = 0; i < j; i++)
 		des[i] = src[i];
@@ -965,7 +966,7 @@ void mtkts_bts_prepare_table(int table_num)
 	{
 		int i = 0;
 
-		for (i = 0; i < (sizeof(BTS_Temperature_Table) / sizeof(BTS_TEMPERATURE)); i++) {
+		for (i = 0; i < (sizeof(BTS_Temperature_Table) / sizeof(struct BTS_TEMPERATURE)); i++) {
 			mtkts_bts_dprintk("BTS_Temperature_Table[%d].APteryTemp =%d\n", i,
 					  BTS_Temperature_Table[i].BTS_Temp);
 			mtkts_bts_dprintk("BTS_Temperature_Table[%d].TemperatureR=%d\n", i,

@@ -549,7 +549,7 @@ static ssize_t tz ## num ## _proc_write(struct file *file, const char __user *bu
 	pTempD->desc[len] = '\0';\
 \
 	i = sscanf(pTempD->desc,	\
-		"%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",\
+"%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",\
 		&pTempD->num_trip,	\
 		&pTempD->trip[0], &pTempD->t_type[0], pTempD->bind[0],	\
 		&pTempD->trip[1], &pTempD->t_type[1], pTempD->bind[1],	\
