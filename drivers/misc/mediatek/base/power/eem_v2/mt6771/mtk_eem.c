@@ -1238,6 +1238,7 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_L_MONEN;
 		det->MTDES	= devinfo->CPU_L_MTDES;
 		det->SPEC	= devinfo->CPU_L_SPEC;
+		det->volt_offset = MARGIN_ADD_OFF;
 		if (mt_cpufreq_get_cpu_level() > 0)
 			det->DVTFIXED = 0x9;
 
@@ -1309,7 +1310,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->GPU_MONEN;
 		det->MTDES	= devinfo->GPU_MTDES;
 		det->SPEC       = devinfo->GPU_SPEC;
-
+		if (eem_devinfo.FT_PGM >= 2) {
+			det->max_freq_khz = 800000;
+			det->DVTFIXED = 2;
+		}
 		break;
 
 	default:
@@ -1448,7 +1452,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 					(det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
 				det->ops->eem_2_pmic(det, det->VMIN),
 				det->ops->eem_2_pmic(det, det->VMAX))),
-				det->volt_tbl_orig[i]);
+				det->volt_tbl_orig[i] + MARGIN_CLAMP_OFF);
 
 #if 0
 			if (eem_log_en)

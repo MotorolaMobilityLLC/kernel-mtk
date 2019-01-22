@@ -21,7 +21,7 @@
 #define EARLY_PORTING		(0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE		(1)
 #define EEM_ENABLE		(1) /* enable; after pass HPT mini-SQC */
-#define EEM_FAKE_EFUSE		(1)
+#define EEM_FAKE_EFUSE		(0)
 /* FIX ME */
 #define UPDATE_TO_UPOWER	(1)
 #define EEM_LOCKTIME_LIMIT	(3000)
@@ -181,7 +181,10 @@ enum mt_cpu_dvfs_id {
 #define INVERT_TEMP_VAL (25000)
 #define OVER_INV_TEM_VAL (27000)
 
-#define LOW_TEMP_OFF_DEFAULT (0)
+#define LOW_TEMP_OFF_DEFAULT	(0)
+#define MARGIN_ADD_OFF			(5)
+#define MARGIN_CLAMP_OFF		(8)
+
 
 #if ENABLE_EEMCTL0
 #define EEM_CTL0_2L (0x00010001)
