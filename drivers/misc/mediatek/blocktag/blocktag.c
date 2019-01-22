@@ -145,7 +145,8 @@ void mtk_btag_pidlog_map_sg(struct request_queue *q, struct bio *bio, struct bio
 	if (!mtk_btag_pagelogger || !bio || !bvec)
 		return;
 
-	page_offset = (unsigned long)(__page_to_pfn(bvec->bv_page)) - PHYS_PFN_OFFSET;
+	page_offset = (unsigned long)(__page_to_pfn(bvec->bv_page)) -
+		(memblock_start_of_DRAM() >> PAGE_SHIFT);
 	spin_lock_irqsave(&mtk_btag_pagelogger_lock, flags);
 	ppl = ((struct page_pid_logger *)mtk_btag_pagelogger) + page_offset;
 	tmp.pid1 = ppl->pid1;
@@ -173,7 +174,8 @@ void mtk_btag_pidlog_submit_bio(struct bio *bio)
 		if (bvec.bv_page) {
 			unsigned long page_index;
 
-			page_index = (unsigned long)(__page_to_pfn(bvec.bv_page)) - PHYS_PFN_OFFSET;
+			page_index = (unsigned long)(__page_to_pfn(bvec.bv_page)) -
+				(memblock_start_of_DRAM() >> PAGE_SHIFT);
 			ppl = ((struct page_pid_logger *)mtk_btag_pagelogger) + page_index;
 			spin_lock_irqsave(&mtk_btag_pagelogger_lock, flags);
 			if (page_index < (mtk_btag_system_dram_size >> PAGE_SHIFT)) {
@@ -198,7 +200,8 @@ void mtk_btag_pidlog_write_begin(struct page *p)
 	if (!mtk_btag_pagelogger || !p)
 		return;
 
-	page_index = (unsigned long)(__page_to_pfn(p)) - PHYS_PFN_OFFSET;
+	page_index = (unsigned long)(__page_to_pfn(p)) -
+		(memblock_start_of_DRAM() >> PAGE_SHIFT);
 	ppl = ((struct page_pid_logger *)mtk_btag_pagelogger) + page_index;
 	spin_lock_irqsave(&mtk_btag_pagelogger_lock, flags);
 	if (page_index < (mtk_btag_system_dram_size >> PAGE_SHIFT)) {
