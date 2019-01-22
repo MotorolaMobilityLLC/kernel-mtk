@@ -50,6 +50,13 @@ unsigned int sspm_mbox_size(int mbox)
 	return sspmmbox[mbox].size / MBOX_SLOT_SIZE;
 }
 
+uint32_t *sspm_mbox_addr(unsigned int mbox, unsigned int slot)
+{
+	struct sspm_mbox *desc = &sspmmbox[mbox];
+
+	return (uint32_t *)(desc->base + (MBOX_SLOT_SIZE * slot));
+}
+
 int sspm_mbox_read(unsigned int mbox, unsigned int slot, void *data, unsigned int len)
 {
 	struct sspm_mbox *desc = &sspmmbox[mbox];
