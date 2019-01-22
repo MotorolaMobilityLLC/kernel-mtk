@@ -100,21 +100,13 @@
 struct device_node *dts_np;
 #endif
 
-int musb_connect_legacy = 1;
-int musb_is_shutting;
-int musb_fake_disc;
 int musb_fake_CDP;
-int musb_removed;
 /* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
 int kernel_init_done;
 int musb_force_on;
 int musb_host_dynamic_fifo = 1;
 int musb_host_dynamic_fifo_usage_msk;
-module_param(musb_connect_legacy, int, 0644);
-module_param(musb_is_shutting, int, 0644);
-module_param(musb_fake_disc, int, 0644);
 module_param(musb_fake_CDP, int, 0644);
-module_param(musb_removed, int, 0644);
 module_param(kernel_init_done, int, 0644);
 module_param(musb_host_dynamic_fifo, int, 0644);
 module_param(musb_host_dynamic_fifo_usage_msk, int, 0644);
@@ -1278,19 +1270,7 @@ void musb_start(struct musb *musb)
 	DBG(0, "set ignore babble MUSB_ULPI_REG_DATA=%x\n",
 			musb_readb(regs, MUSB_ULPI_REG_DATA));
 
-	if (musb_connect_legacy) {
-		if (musb_speed) {
-			/* put into basic highspeed mode and start session */
-			musb_writeb(regs, MUSB_POWER, MUSB_POWER_SOFTCONN | MUSB_POWER_HSENAB
-					/* ENSUSPEND wedges tusb */
-					| MUSB_POWER_ENSUSPEND);
-		} else {
-			/* put into basic fullspeed mode and start session */
-			musb_writeb(regs, MUSB_POWER, MUSB_POWER_SOFTCONN
-					/* ENSUSPEND wedges tusb */
-					| MUSB_POWER_ENSUSPEND);
-		}
-	} else {
+	{
 		u8 val = MUSB_POWER_ENSUSPEND;
 
 		if (musb_speed)
@@ -1343,14 +1323,12 @@ static void gadget_stop(struct musb *musb)
 		if (musb->gadget_driver && musb->gadget_driver->disconnect) {
 			DBG(0, "musb->gadget_driver->disconnect:%p\n", musb->gadget_driver->disconnect);
 			/* align musb_g_disconnect */
-			if (!musb_connect_legacy)
-				spin_unlock(&musb->lock);
+			spin_unlock(&musb->lock);
 
 			musb->gadget_driver->disconnect(&musb->g);
 
 			/* align musb_g_disconnect */
-			if (!musb_connect_legacy)
-				spin_lock(&musb->lock);
+			spin_lock(&musb->lock);
 		}
 		musb->g.speed = USB_SPEED_UNKNOWN;
 	}
@@ -1394,10 +1372,8 @@ static void musb_shutdown(struct platform_device *pdev)
 	/* musb_gadget_cleanup(musb); */
 
 	spin_lock_irqsave(&musb->lock, flags);
-	musb_is_shutting = 1;
 	musb_generic_disable(musb);
 	musb_platform_disable(musb);
-	musb_is_shutting = 0;
 	spin_unlock_irqrestore(&musb->lock, flags);
 
 	if (musb->is_host) {
@@ -2433,8 +2409,6 @@ static int musb_probe(struct platform_device *pdev)
 	unsigned long usb_phy_base;
 
 	pr_info("musb probe\n");
-	DBG(0, "musb_removed to 0\n");
-	musb_removed = 0;
 	if (dts_np) {
 		DBG(0, "dts node from dts_np\n");
 		pdev->dev.of_node = dts_np;
@@ -2485,8 +2459,6 @@ static int musb_remove(struct platform_device *pdev)
 	 *  - Peripheral mode: peripheral is deactivated (or never-activated)
 	 *  - OTG mode: both roles are deactivated (or never-activated)
 	 */
-	DBG(0, "musb_removed to 1\n");
-	musb_removed = 1;
 	musb_exit_debugfs(musb);
 	musb_shutdown(pdev);
 
