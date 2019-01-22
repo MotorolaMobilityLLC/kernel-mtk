@@ -263,6 +263,8 @@ void jpeg_drv_dec_power_on(void)
 		JPEG_ERR("enable clk_scp_sys_mm0 fail!");
 
 	#ifdef JPEG_DRV_MT6799
+	if (clk_prepare_enable(gJpegClk.clk_mm_larb7))
+		JPEG_ERR("enable clk_mm_larb7 fail!");
 	if (clk_prepare_enable(gJpegClk.clk_gals_m0_2x))
 		JPEG_ERR("enable clk_gals_m0_2x fail!");
 	if (clk_prepare_enable(gJpegClk.clk_gals_m1_2x))
@@ -318,6 +320,7 @@ void jpeg_drv_dec_power_off(void)
 	clk_disable_unprepare(gJpegClk.clk_upsz0);
 	clk_disable_unprepare(gJpegClk.clk_gals_m1_2x);
 	clk_disable_unprepare(gJpegClk.clk_gals_m0_2x);
+	clk_disable_unprepare(gJpegClk.clk_mm_larb7);
 	#endif
 
 	clk_disable_unprepare(gJpegClk.clk_scp_sys_mm0);
@@ -347,6 +350,8 @@ void jpeg_drv_enc_power_on(void)
 		JPEG_ERR("enable clk_scp_sys_mm0 fail!");
 
 #ifdef JPEG_DRV_MT6799
+	if (clk_prepare_enable(gJpegClk.clk_mm_larb7))
+		JPEG_ERR("enable clk_mm_larb7 fail!");
 	if (clk_prepare_enable(gJpegClk.clk_gals_m0_2x))
 		JPEG_ERR("enable clk_gals_m0_2x fail!");
 	if (clk_prepare_enable(gJpegClk.clk_gals_m1_2x))
@@ -410,6 +415,7 @@ void jpeg_drv_enc_power_off(void)
 	clk_disable_unprepare(gJpegClk.clk_upsz0);
 	clk_disable_unprepare(gJpegClk.clk_gals_m1_2x);
 	clk_disable_unprepare(gJpegClk.clk_gals_m0_2x);
+	clk_disable_unprepare(gJpegClk.clk_mm_larb7);
 	#endif
 
 	clk_disable_unprepare(gJpegClk.clk_scp_sys_mm0);
@@ -1378,6 +1384,9 @@ static int jpeg_probe(struct platform_device *pdev)
 	if (IS_ERR(gJpegClk.clk_scp_sys_ven))
 		JPEG_ERR("get MT_CG_SCP_SYS_VEN clk error!");
 	#ifdef JPEG_DRV_MT6799
+	gJpegClk.clk_mm_larb7 = of_clk_get_by_name(node, "MT_CG_MM_LARB7");
+	if (IS_ERR(gJpegClk.clk_mm_larb7))
+		JPEG_ERR("get clk_mm_larb7 clk error!");
 	gJpegClk.clk_gals_m0_2x = of_clk_get_by_name(node, "MT_CG_GALS_M0_2X");
 	if (IS_ERR(gJpegClk.clk_gals_m0_2x))
 		JPEG_ERR("get MT_CG_GALS_M0_2X clk error!");
