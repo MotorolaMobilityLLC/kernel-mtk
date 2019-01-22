@@ -406,6 +406,7 @@ int cmdq_virtual_get_thread_index(enum CMDQ_SCENARIO_ENUM scenario, const bool s
 		return CMDQ_THREAD_SEC_SUB_DISP;
 	case CMDQ_SCENARIO_USER_MDP:
 	case CMDQ_SCENARIO_USER_SPACE:
+	case CMDQ_SCENARIO_KERNEL_CONFIG_GENERAL:
 	case CMDQ_SCENARIO_DEBUG:
 		/* because there is one input engine for MDP, reserve one secure thread is enough */
 		return CMDQ_THREAD_SEC_MDP;
