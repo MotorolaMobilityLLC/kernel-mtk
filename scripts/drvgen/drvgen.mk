@@ -48,15 +48,15 @@ $(DRVGEN_OUT)/cust.dtsi: $(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_FIG)
 	$(python) $(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
 
 ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
-DTB_OVERLAY_IMAGE_TAGERT := $(DTBO_OUT)/dtbo.img
+DTB_OVERLAY_IMAGE_TAGERT := $(DTBO_OUT)/odmdtbo.img
 $(DTB_OVERLAY_IMAGE_TAGERT) : PRIVATE_DTB_OVERLAY_OBJ:=$(basename $(DTS_OVERLAY)).dtb
 $(DTB_OVERLAY_IMAGE_TAGERT) : PRIVATE_DTB_OVERLAY_HDR:=$(srctree)/scripts/dtbo.cfg
 $(DTB_OVERLAY_IMAGE_TAGERT) : PRIVATE_MKIMAGE_TOOL:=$(srctree)/scripts/mkimage
 $(DTB_OVERLAY_IMAGE_TAGERT) : $(PRIVATE_DTB_OVERLAY_OBJ) dtbs $(PRIVATE_DTB_OVERLAY_HDR) | $(PRIVATE_MKIMAGE_TOOL)
 	@echo Singing the generated overlay dtbo.
 	$(PRIVATE_MKIMAGE_TOOL) $(PRIVATE_DTB_OVERLAY_OBJ) $(PRIVATE_DTB_OVERLAY_HDR)  > $@
-.PHONY: dtboimage
-dtboimage : $(DTB_OVERLAY_IMAGE_TAGERT) dtbs
+.PHONY: odmdtboimage
+odmdtboimage : $(DTB_OVERLAY_IMAGE_TAGERT) dtbs
 endif
 
 endif#MTK_PLATFORM
