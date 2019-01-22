@@ -134,7 +134,7 @@ static int rt5509_calib_choosen_db(struct rt5509_chip *chip, int choose)
 	ret = snd_soc_write(codec, RT5509_REG_CALIB_CTRL, data);
 	if (ret < 0)
 		return ret;
-	mdelay(100);
+	mdelay(120);
 	data &= ~(0x80);
 	ret = snd_soc_write(codec, RT5509_REG_CALIB_CTRL, data);
 	if (ret < 0)
@@ -189,6 +189,10 @@ static int rt5509_calib_write_otp(struct rt5509_chip *chip)
 	ret = snd_soc_write(codec, RT5509_REG_CALIB_DCR, chip->param_put);
 	if (ret < 0)
 		return ret;
+	ret = snd_soc_update_bits(codec, RT5509_REG_OTPDIN,
+				  0xff0000, 0xc50000);
+	if (ret < 0)
+		return ret;
 	ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x81);
 	if (ret < 0)
 		return ret;
@@ -206,6 +210,9 @@ static int rt5509_calib_write_otp(struct rt5509_chip *chip)
 	ret = snd_soc_write(codec, RT5509_REG_CALIB_DCR, 0x00);
 	if (ret < 0)
 		return ret;
+	ret = snd_soc_write(codec, RT5509_REG_OTPDIN, 0x00);
+	if (ret < 0)
+		return ret;
 	ret = snd_soc_write(codec, RT5509_REG_OTPCONF, 0x82);
 	if (ret < 0)
 		return ret;
@@ -218,6 +225,11 @@ static int rt5509_calib_write_otp(struct rt5509_chip *chip)
 		 chip->param_put);
 	if (param_store != chip->param_put)
 		return -EINVAL;
+	ret = snd_soc_read(codec, RT5509_REG_OTPDIN);
+	dev_info(chip->dev, "otp_din = 0x%08x\n", ret);
+	if ((ret & 0xff0000) != 0xc50000)
+		return -EINVAL;
+	chip->calibrated = 1;
 	return 0;
 }
 
@@ -374,11 +386,24 @@ static ssize_t chip_rev_file_read(struct file *filp, char __user *buf,
 
 #define chip_rev_file_write NULL
 
+static ssize_t calibrated_file_read(struct file *filp, char __user *buf,
+			       size_t cnt, loff_t *ppos)
+{
+	struct rt5509_chip *chip = get_chip_data(filp);
+	char tmp[100] = {0};
+
+	snprintf(tmp, 100, "%d\n", chip->calibrated);
+	return simple_read_from_buffer(buf, cnt, ppos, tmp, strlen(tmp));
+}
+
+#define calibrated_file_write NULL
+
 static const struct rt5509_proc_file_t rt5509_proc_file[] = {
 	rt5509_proc_file_m(calib, S_IRUGO | S_IWUSR),
 	rt5509_proc_file_m(param, S_IRUGO | S_IWUSR),
 	rt5509_proc_file_m(calib_data, S_IRUGO),
 	rt5509_proc_file_m(chip_rev, S_IRUGO),
+	rt5509_proc_file_m(calibrated, S_IRUGO),
 };
 
 void rt5509_calib_destroy(struct rt5509_chip *chip)
@@ -399,9 +424,13 @@ int rt5509_calib_create(struct rt5509_chip *chip)
 {
 	struct proc_dir_entry *entry;
 	char proc_name[100] = {0};
-	int i = 0;
+	int i = 0, ret = 0;
 
 	dev_dbg(chip->dev, "%s\n", __func__);
+	ret = snd_soc_read(chip->codec, RT5509_REG_OTPDIN);
+	ret &= 0xff0000;
+	if (ret == 0xc50000)
+		chip->calibrated = 1;
 	snprintf(proc_name, 100, "rt5509_calib.%d", chip->pdev->id);
 	entry = proc_mkdir(proc_name, NULL);
 	if (!entry) {
