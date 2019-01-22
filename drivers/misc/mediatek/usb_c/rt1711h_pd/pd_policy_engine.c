@@ -391,16 +391,10 @@ typedef struct __pe_state_actions {
 #define PE_STATE_ACTIONS(state) { .entry_action = state##_entry, }
 
 
-
-
 /*
  * Policy Engine General State Activity
  */
 
-/*
-extern int rt1711_set_bist_carrier_mode(
-	struct tcpc_device *tcpc_dev, uint8_t pattern);
-*/
 static void pe_idle_reset_data(pd_port_t *pd_port)
 {
 	pd_reset_pe_timer(pd_port);
@@ -492,6 +486,16 @@ void pe_power_ready_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	else
 		pd_set_rx_enable(pd_port, PD_RX_CAP_PE_READY_DFP);
 
+#ifdef CONFIG_USB_PD_UFP_FLOW_DELAY
+	if (pd_port->data_role == PD_ROLE_UFP &&
+		(!pd_port->dpm_ufp_flow_delay_done)) {
+		DPM_DBG("Delay UFP Flow\r\n");
+		pd_restart_timer(pd_port, PD_TIMER_UFP_FLOW_DELAY);
+		pd_free_pd_event(pd_port, pd_event);
+		return;
+	}
+#endif	/* CONFIG_USB_PD_UFP_FLOW_DELAY */
+
 	pd_dpm_notify_pe_ready(pd_port, pd_event);
 	pd_free_pd_event(pd_port, pd_event);
 }
@@ -523,7 +527,7 @@ static const pe_state_actions_t pe_state_actions[] = {
 	PE_STATE_ACTIONS(pe_src_vdm_identity_request),
 	PE_STATE_ACTIONS(pe_src_vdm_identity_acked),
 	PE_STATE_ACTIONS(pe_src_vdm_identity_naked),
-#endif
+#endif	/* CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID */
 
 	/* snk activity */
 	PE_STATE_ACTIONS(pe_snk_startup),
@@ -682,7 +686,7 @@ static const pe_state_actions_t pe_state_actions[] = {
 	PE_STATE_ACTIONS(pe_idle2),
 };
 
-static void pe_exit_action_disable_sender_response(
+static inline void pe_exit_action_disable_sender_response(
 		pd_port_t *pd_port, pd_event_t *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
@@ -795,8 +799,8 @@ static void pd_pe_state_change(
 	uint8_t old_state = pd_port->pe_state_curr;
 	uint8_t new_state = pd_port->pe_state_next;
 
-	BUG_ON(old_state >= PD_NR_PE_STATES);
-	BUG_ON(new_state >= PD_NR_PE_STATES);
+	PD_BUG_ON(old_state >= PD_NR_PE_STATES);
+	PD_BUG_ON(new_state >= PD_NR_PE_STATES);
 
 	if ((new_state == PE_IDLE1) || (new_state == PE_IDLE2))
 		prev_exit_action = NULL;
@@ -860,37 +864,90 @@ static inline int pd_put_dpm_ack_immediately(
 	return 1;
 }
 
+static inline bool pd_try_get_tcp_deferred_event(
+	struct tcpc_device *tcpc_dev, pd_event_t *pd_event, bool *vdm_evt)
+{
+	int ret = false;
+	pd_port_t *pd_port = &tcpc_dev->pd_port;
+
+	switch (pd_port->pe_pd_state) {
+	case PE_SNK_READY:
+	case PE_SRC_READY:
+
+#ifdef CONFIG_USB_PD_CUSTOM_DBGACC
+	case PE_DBG_READY:
+#endif	/* CONFIG_USB_PD_CUSTOM_DBGACC */
+		ret = true;
+	}
+
+	if (!ret)
+		return ret;
+
+	if (!pd_get_deferred_tcp_event(tcpc_dev, &pd_port->tcp_event))
+		return false;
+
+	pd_event->event_type = PD_EVT_TCP_MSG;
+	pd_event->msg = pd_port->tcp_event.event_id;
+	pd_event->msg_sec = PD_TCP_FROM_TCPM;
+	pd_event->pd_msg = NULL;
+
+	if (pd_event->msg >= TCP_DPM_EVT_VDM_COMMAND) {
+		*vdm_evt = true;
+		pd_port->reset_vdm_state = true;
+	}
+
+	return true;
+}
+
+static inline bool pd_try_get_vdm_event(
+	struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
+{
+	bool vdm_evt = false;
+	pd_port_t *pd_port = &tcpc_dev->pd_port;
+
+	switch (pd_port->pe_pd_state) {
+	case PE_SNK_READY:
+	case PE_SRC_READY:
+	case PE_SRC_STARTUP:
+	case PE_SRC_DISCOVERY:
+
+#ifdef CONFIG_USB_PD_CUSTOM_DBGACC
+	case PE_DBG_READY:
+#endif	/* CONFIG_USB_PD_CUSTOM_DBGACC */
+		vdm_evt = pd_get_vdm_event(tcpc_dev, pd_event);
+		break;
+	}
+
+	return vdm_evt;
+}
+
+static inline bool pd_try_get_next_event(
+	struct tcpc_device *tcpc_dev, pd_event_t *pd_event, bool *vdm_evt)
+{
+	*vdm_evt = false;
+
+	if (pd_get_event(tcpc_dev, pd_event))
+		return true;
+
+	if (pd_try_get_vdm_event(tcpc_dev, pd_event)) {
+		*vdm_evt = true;
+		return true;
+	}
+
+	if (pd_try_get_tcp_deferred_event(tcpc_dev, pd_event, vdm_evt))
+		return true;
+
+	return false;
+}
+
 int pd_policy_engine_run(struct tcpc_device *tcpc_dev)
 {
 	bool vdm_evt = false;
 	pd_event_t pd_event;
 	pd_port_t *pd_port = &tcpc_dev->pd_port;
 
-	if (!pd_get_event(tcpc_dev, &pd_event)) {
-
-		switch (pd_port->pe_pd_state) {
-		case PE_SNK_READY:
-			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
-			break;
-		case PE_SRC_READY:
-			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
-			break;
-		case PE_SRC_STARTUP:
-			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
-			break;
-		case PE_SRC_DISCOVERY:
-			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
-			break;
-#ifdef CONFIG_USB_PD_CUSTOM_DBGACC
-		case PE_DBG_READY:
-#endif	/* CONFIG_USB_PD_CUSTOM_DBGACC */
-			vdm_evt = pd_get_vdm_event(tcpc_dev, &pd_event);
-			break;
-		}
-
-		if (!vdm_evt)
-			return 0;
-	}
+	if (!pd_try_get_next_event(tcpc_dev, &pd_event, &vdm_evt))
+		return false;
 
 #ifdef CONFIG_TCPC_IDLE_MODE
 	tcpci_idle_poll_ctrl(tcpc_dev, true, 1);

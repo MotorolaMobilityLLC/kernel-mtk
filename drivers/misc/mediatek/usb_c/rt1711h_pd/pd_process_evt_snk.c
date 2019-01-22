@@ -51,9 +51,6 @@ DECL_PE_STATE_REACTION(PD_CTRL_MSG_PS_RDY);
 
 DECL_PE_STATE_TRANSITION(PD_CTRL_MSG_GET_SINK_CAP) = {
 	{ PE_SNK_READY, PE_SNK_GIVE_SINK_CAP },
-
-	{ PE_SNK_GET_SOURCE_CAP, PE_SNK_GIVE_SINK_CAP },
-	{ PE_DR_SNK_GET_SINK_CAP, PE_SNK_GIVE_SINK_CAP },
 };
 DECL_PE_STATE_REACTION(PD_CTRL_MSG_GET_SINK_CAP);
 
@@ -169,15 +166,8 @@ static inline bool pd_process_ctrl_msg_good_crc(
 static inline bool pd_process_ctrl_msg_get_source_cap(
 		pd_port_t *pd_port, pd_event_t *pd_event)
 {
-	switch (pd_port->pe_state_curr) {
-	case PE_SNK_READY:
-	case PE_DR_SNK_GET_SINK_CAP:
-	case PE_SNK_GET_SOURCE_CAP:
-		break;
-
-	default:
+	if (pd_port->pe_state_curr != PE_SNK_READY)
 		return false;
-	}
 
 	if (pd_port->dpm_caps & DPM_CAP_LOCAL_DR_POWER) {
 		PE_TRANSIT_STATE(pd_port, PE_DR_SNK_GIVE_SOURCE_CAP);
@@ -192,6 +182,21 @@ static inline bool pd_process_ctrl_msg(
 	pd_port_t *pd_port, pd_event_t *pd_event)
 {
 	bool ret = false;
+
+#ifdef CONFIG_USB_PD_PARTNER_CTRL_MSG_FIRST
+	switch (pd_port->pe_state_curr) {
+	case PE_SNK_GET_SOURCE_CAP:
+	case PE_DR_SNK_GET_SINK_CAP:
+		if (pd_event->msg >= PD_CTRL_GET_SOURCE_CAP &&
+			pd_event->msg <= PD_CTRL_VCONN_SWAP) {
+			PE_DBG("Port Partner Request First\r\n");
+			pd_port->pe_state_curr = PE_SNK_READY;
+			pd_disable_timer(
+				pd_port, PD_TIMER_SENDER_RESPONSE);
+		}
+		break;
+	}
+#endif	/* CONFIG_USB_PD_PARTNER_CTRL_MSG_FIRST */
 
 	switch (pd_event->msg) {
 	case PD_CTRL_GOOD_CRC:
@@ -317,9 +322,6 @@ static inline bool pd_process_dpm_msg(
 	case PD_DPM_NAK:
 		ret = PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_NAK);
 		break;
-	case PD_DPM_ERROR_RECOVERY:
-		PE_TRANSIT_STATE(pd_port, PE_ERROR_RECOVERY);
-		return true;
 	}
 
 	return ret;
@@ -434,15 +436,6 @@ static inline bool pd_process_timer_msg(
 		}
 		break;
 
-#ifdef CONFIG_USB_PD_FAST_RESP_TYPEC_SRC
-	case PD_TIMER_SRC_RECOVER:
-		if (pd_port->pe_state_curr == PE_SNK_STARTUP) {
-			pd_disable_timer(pd_port, PD_TIMER_NO_RESPONSE);
-			pd_report_typec_only_charger(pd_port);
-		}
-		break;
-#endif	/* CONFIG_USB_PD_FAST_RESP_TYPEC_SRC */
-
 	case PD_TIMER_NO_RESPONSE:
 		if (!pd_dpm_check_vbus_valid(pd_port)) {
 			PE_DBG("NoResp&VBUS=0\r\n");
@@ -472,6 +465,12 @@ static inline bool pd_process_timer_msg(
 		break;
 #endif	/* CONFIG_USB_PD_DFP_FLOW_DELAY */
 
+#ifdef CONFIG_USB_PD_UFP_FLOW_DELAY
+	case PD_TIMER_UFP_FLOW_DELAY:
+		if (pd_port->pe_state_curr == PE_SNK_READY)
+			pd_dpm_notify_ufp_delay_done(pd_port, pd_event);
+		break;
+#endif	/* CONFIG_USB_PD_UFP_FLOW_DELAY */
 	}
 
 	return ret;

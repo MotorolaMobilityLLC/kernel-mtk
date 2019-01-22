@@ -150,6 +150,7 @@ static inline bool pd_process_ctrl_msg(
 	case PD_CTRL_WAIT:
 	case PD_CTRL_REJECT:
 		pd_notify_pe_cancel_pr_swap(pd_port);
+		pd_port->dpm_flags &= ~DPM_FLAGS_CHECK_PR_ROLE;
 		return PE_MAKE_STATE_TRANSIT(PD_CTRL_MSG_REJECT_WAIT);
 
 	case PD_CTRL_PS_RDY:
@@ -159,7 +160,6 @@ static inline bool pd_process_ctrl_msg(
 		return false;
 	}
 }
-
 
 /*
  * [BLOCK] Porcess DPM MSG

@@ -27,10 +27,8 @@
 #include <linux/usb/class-dual-role.h>
 #endif /* CONFIG_DUAL_ROLE_USB_INTF */
 
-#include "tcpci_event.h"
-#include "tcpci_timer.h"
 #include "tcpci_core.h"
-#include "tcpm.h"
+
 
 #ifdef CONFIG_PD_DBG_INFO
 #include "pd_dbg_info.h"
@@ -44,6 +42,8 @@
 
 /* provide to TCPC interface */
 extern int tcpci_report_usb_port_changed(struct tcpc_device *tcpc);
+extern int tcpci_set_wake_lock(
+	struct tcpc_device *tcpc, bool pd_lock, bool user_lock);
 extern int tcpci_report_power_control(struct tcpc_device *tcpc, bool en);
 extern int tcpc_typec_init(struct tcpc_device *tcpc, uint8_t typec_role);
 extern void tcpc_typec_deinit(struct tcpc_device *tcpc);
@@ -150,6 +150,7 @@ static inline int tcpci_get_cc(struct tcpc_device *tcpc)
 
 	tcpc->typec_remote_cc[0] = cc1;
 	tcpc->typec_remote_cc[1] = cc2;
+
 	return 1;
 }
 
@@ -160,16 +161,18 @@ static inline int tcpci_set_cc(struct tcpc_device *tcpc, int pull)
 		pull = tcpc->typec_local_rp_level;
 #endif /* CONFIG_USB_PD_DBG_ALWAYS_LOCAL_RP */
 
+#ifdef CONFIG_TYPEC_CHECK_LEGACY_CABLE
+	if (pull == TYPEC_CC_DRP && tcpc->typec_legacy_cable) {
+		pull = TYPEC_CC_RP_1_5;
+		TCPC_DBG("LC->Toggling\r\n");
+	}
+#endif /* CONFIG_TYPEC_CHECK_LEGACY_CABLE */
+
 	if (pull & TYPEC_CC_DRP) {
 		tcpc->typec_remote_cc[0] =
 		tcpc->typec_remote_cc[1] =
 			TYPEC_CC_DRP_TOGGLING;
 	}
-
-#ifdef CONFIG_TYPEC_CHECK_LEGACY_CABLE
-	if ((pull == TYPEC_CC_DRP) && (tcpc->typec_legacy_cable))
-		pull = TYPEC_CC_RP_1_5;
-#endif /* CONFIG_TYPEC_CHECK_LEGACY_CABLE */
 
 	tcpc->typec_local_cc = pull;
 	return tcpc->ops->set_cc(tcpc, pull);
@@ -198,7 +201,7 @@ static inline int tcpci_set_low_power_mode(
 
 #ifdef CONFIG_TCPC_LOW_POWER_MODE
 	rv = tcpc->ops->set_low_power_mode(tcpc, en, pull);
-#endif
+#endif	/* CONFIG_TCPC_LOW_POWER_MODE */
 	return rv;
 }
 
@@ -206,6 +209,7 @@ static inline int tcpci_idle_poll_ctrl(
 		struct tcpc_device *tcpc, bool en, bool lock)
 {
 	int rv = 0;
+
 #ifdef CONFIG_TCPC_IDLE_MODE
 	bool update_mode = false;
 
@@ -221,14 +225,18 @@ static inline int tcpci_idle_poll_ctrl(
 			TCPC_DBG("tcpc_busy_cnt<=0\r\n");
 		else
 			tcpc->tcpc_busy_cnt--;
+
 		if (tcpc->tcpc_busy_cnt == 0)
 			update_mode = true;
 	}
+
 	if (lock)
 		mutex_unlock(&tcpc->access_lock);
+
 	if (update_mode)
 		rv = tcpc->ops->set_idle_mode(tcpc, !en);
 #endif
+
 	return rv;
 }
 
@@ -324,6 +332,41 @@ static inline int tcpci_notify_pd_state(
 		&tcpc->evt_nh, TCP_NOTIFY_PD_STATE, &tcp_noti);
 }
 
+static inline int tcpci_set_intrst(struct tcpc_device *tcpc, bool en)
+{
+#ifdef CONFIG_TCPC_INTRST_EN
+	if (tcpc->ops->set_intrst)
+		tcpc->ops->set_intrst(tcpc, en);
+#endif	/* CONFIG_TCPC_INTRST_EN */
+
+	return 0;
+}
+
+static inline int tcpci_enable_watchdog(struct tcpc_device *tcpc, bool en)
+{
+	TCPC_DBG("enable_WG: %d\r\n", en);
+
+#ifdef CONFIG_TCPC_WATCHDOG_EN
+	if (tcpc->typec_watchdog == en)
+		return 0;
+
+	mutex_lock(&tcpc->access_lock);
+	tcpc->typec_watchdog = en;
+
+	if (tcpc->ops->set_watchdog)
+		tcpc->ops->set_watchdog(tcpc, en);
+
+#ifdef CONFIG_TCPC_INTRST_EN
+	if (!en || wake_lock_active(&tcpc->attach_wake_lock))
+		tcpci_set_intrst(tcpc, en);
+#endif	/* CONFIG_TCPC_INTRST_EN */
+
+	mutex_unlock(&tcpc->access_lock);
+#endif	/* CONFIG_TCPC_WATCHDOG_EN */
+
+	return 0;
+}
+
 static inline int tcpci_source_vbus(
 	struct tcpc_device *tcpc, uint8_t type, int mv, int ma)
 {
@@ -332,7 +375,7 @@ static inline int tcpci_source_vbus(
 #ifdef CONFIG_USB_POWER_DELIVERY
 	if (type >= TCP_VBUS_CTRL_PD && tcpc->pd_port.pd_prev_connected)
 		type |= TCP_VBUS_CTRL_PD_DETECT;
-#endif
+#endif	/* CONFIG_USB_POWER_DELIVERY */
 
 	if (ma < 0) {
 		if (mv != 0) {
@@ -345,7 +388,7 @@ static inline int tcpci_source_vbus(
 				break;
 			default:
 			case TYPEC_CC_RP_DFT:
-				ma = 500;
+				ma = CONFIG_TYPEC_SRC_CURR_DFT;
 				break;
 			}
 		} else
@@ -356,6 +399,7 @@ static inline int tcpci_source_vbus(
 	tcp_noti.vbus_state.mv = mv;
 	tcp_noti.vbus_state.type = type;
 
+	tcpci_enable_watchdog(tcpc, mv != 0);
 	TCPC_DBG("source_vbus: %d mV, %d mA\r\n", mv, ma);
 	return srcu_notifier_call_chain(&tcpc->evt_nh,
 				TCP_NOTIFY_SOURCE_VBUS, &tcp_noti);
@@ -369,7 +413,7 @@ static inline int tcpci_sink_vbus(
 #ifdef CONFIG_USB_POWER_DELIVERY
 	if (type >= TCP_VBUS_CTRL_PD && tcpc->pd_port.pd_prev_connected)
 		type |= TCP_VBUS_CTRL_PD_DETECT;
-#endif
+#endif	/* CONFIG_USB_POWER_DELIVERY */
 
 	if (ma < 0) {
 		if (mv != 0) {
@@ -382,9 +426,13 @@ static inline int tcpci_sink_vbus(
 				break;
 			default:
 			case TYPEC_CC_VOLT_SNK_DFT:
-				ma = 500;
+				ma = tcpc->typec_usb_sink_curr;
 				break;
 			}
+#if CONFIG_TYPEC_SNK_CURR_LIMIT > 0
+		if (ma > CONFIG_TYPEC_SNK_CURR_LIMIT)
+			ma = CONFIG_TYPEC_SNK_CURR_LIMIT;
+#endif	/* CONFIG_TYPEC_SNK_CURR_LIMIT */
 		} else
 			ma = 0;
 	}
@@ -404,13 +452,83 @@ static inline int tcpci_disable_vbus_control(struct tcpc_device *tcpc)
 	struct tcp_notify tcp_noti;
 
 	TCPC_DBG("disable_vbus\r\n");
+	tcpci_enable_watchdog(tcpc, false);
 	return srcu_notifier_call_chain(
 		&tcpc->evt_nh, TCP_NOTIFY_DIS_VBUS_CTRL, &tcp_noti);
 #else
 	tcpci_sink_vbus(tcpc, TCP_VBUS_CTRL_REMOVE, TCPC_VBUS_SINK_0V, 0);
 	tcpci_source_vbus(tcpc, TCP_VBUS_CTRL_REMOVE, TCPC_VBUS_SOURCE_0V, 0);
 	return 0;
-#endif
+#endif	/* CONFIG_TYPEC_USE_DIS_VBUS_CTRL */
+}
+
+static inline int tcpci_notify_attachwait_state(
+	struct tcpc_device *tcpc, bool as_sink)
+{
+#ifdef CONFIG_TYPEC_NOTIFY_ATTACHWAIT
+	uint8_t notify = 0;
+	struct tcp_notify tcp_noti;
+
+#ifdef CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK
+	if (as_sink)
+		notify = TCP_NOTIFY_ATTACHWAIT_SNK;
+#endif	/* CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK */
+
+#ifdef CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SRC
+	if (!as_sink)
+		notify = TCP_NOTIFY_ATTACHWAIT_SRC;
+#endif	/* CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SRC */
+
+	if (notify == 0)
+		return 0;
+
+	return srcu_notifier_call_chain(&tcpc->evt_nh, notify, &tcp_noti);
+#else
+	return 0;
+#endif	/* CONFIG_TYPEC_NOTIFY_ATTACHWAIT */
+
+}
+
+static inline int tcpci_enable_ext_discharge(
+	struct tcpc_device *tcpc, bool en)
+{
+	int ret = 0;
+
+#ifdef CONFIG_TCPC_EXT_DISCHARGE
+	struct tcp_notify tcp_noti;
+
+	mutex_lock(&tcpc->access_lock);
+
+	if (tcpc->typec_ext_discharge != en) {
+		tcpc->typec_ext_discharge = en;
+		tcp_noti.en_state.en = en;
+		TCPC_DBG("EXT-Discharge: %d\r\n", en);
+		ret = srcu_notifier_call_chain(
+			&tcpc->evt_nh, TCP_NOTIFY_EXT_DISCHARGE, &tcp_noti);
+	}
+
+	mutex_unlock(&tcpc->access_lock);
+#endif	/* CONFIG_TCPC_EXT_DISCHARGE */
+
+	return ret;
+}
+
+static inline int tcpci_enable_auto_discharge(
+	struct tcpc_device *tcpc, bool en)
+{
+	int ret = 0;
+
+#ifdef CONFIG_TYPEC_CAP_AUTO_DISCHARGE
+#ifdef CONFIG_TCPC_AUTO_DISCHARGE_IC
+	if (tcpc->typec_auto_discharge != en) {
+		tcpc->typec_auto_discharge = en;
+		if (tcpc->ops->set_auto_discharge)
+			ret = tcpc->ops->set_auto_discharge(tcpc, en);
+	}
+#endif	/* CONFIG_TCPC_AUTO_DISCHARGE_IC */
+#endif	/* CONFIG_TYPEC_CAP_AUTO_DISCHARGE */
+
+	return ret;
 }
 
 #ifdef CONFIG_USB_POWER_DELIVERY
@@ -534,7 +652,8 @@ static inline int tcpci_dp_notify_config_done(struct tcpc_device *tcpc,
 	uint32_t local_cfg, uint32_t remote_cfg, bool ack)
 {
 	/* DFP_U : If DP success,
-	 * internal flow will enter this function finally */
+	 * internal flow will enter this function finally
+	 */
 	DP_INFO("ConfigDone, L:0x%x, R:0x%x, ack=%d\r\n",
 		local_cfg, remote_cfg, ack);
 
@@ -566,6 +685,50 @@ static inline int tcpci_notify_uvdm(struct tcpc_device *tcpc, bool ack)
 	return 0;
 }
 #endif	/* CONFIG_USB_PD_UVDM */
+
+static inline int tcpci_enable_force_discharge(
+	struct tcpc_device *tcpc, int mv)
+{
+	int ret = 0;
+
+#ifdef CONFIG_USB_PD_SRC_FORCE_DISCHARGE
+#ifdef CONFIG_TCPC_FORCE_DISCHARGE_IC
+	if (!tcpc->pd_force_discharge) {
+		tcpc->pd_force_discharge = true;
+		if (tcpc->ops->set_force_discharge)
+			ret = tcpc->ops->set_force_discharge(tcpc, true, mv);
+	}
+#endif	/* CONFIG_TCPC_FORCE_DISCHARGE_IC */
+
+#ifdef CONFIG_TCPC_FORCE_DISCHARGE_EXT
+	ret = tcpci_enable_ext_discharge(tcpc, true);
+#endif	/* CONFIG_TCPC_FORCE_DISCHARGE_EXT */
+#endif	/* CONFIG_USB_PD_SRC_FORCE_DISCHARGE */
+
+	return ret;
+}
+
+static inline int tcpci_disable_force_discharge(
+	struct tcpc_device *tcpc)
+{
+	int ret = 0;
+
+#ifdef CONFIG_USB_PD_SRC_FORCE_DISCHARGE
+#ifdef CONFIG_TCPC_FORCE_DISCHARGE_IC
+	if (tcpc->pd_force_discharge) {
+		tcpc->pd_force_discharge = false;
+		if (tcpc->ops->set_force_discharge)
+			ret = tcpc->ops->set_force_discharge(tcpc, false, 0);
+	}
+#endif	/* CONFIG_TCPC_FORCE_DISCHARGE_IC */
+
+#ifdef CONFIG_TCPC_FORCE_DISCHARGE_EXT
+	ret = tcpci_enable_ext_discharge(tcpc, false);
+#endif	/* CONFIG_TCPC_FORCE_DISCHARGE_EXT */
+#endif	/* CONFIG_USB_PD_SRC_FORCE_DISCHARGE */
+
+	return ret;
+}
 
 #ifdef CONFIG_USB_PD_ALT_MODE_RTDC
 static inline int tcpci_dc_notify_en_unlock(struct tcpc_device *tcpc)

@@ -16,9 +16,11 @@
 #define TCPC_EVENT_BUF_H_INCLUDED
 
 #include "tcpci_timer.h"
+#include "tcpm.h"
 
 #define PD_MSG_BUF_SIZE		(4*2)
 #define PD_EVENT_BUF_SIZE	(8*2)
+#define TCP_EVENT_BUF_SIZE	(2*2)
 
 struct tcpc_device;
 typedef struct __pd_port pd_port_t;
@@ -44,7 +46,6 @@ bool pd_get_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event);
 bool pd_put_event(struct tcpc_device *tcpc_dev,
 		const pd_event_t *pd_event, bool from_port_partner);
 void pd_free_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event);
-void pd_event_buf_reset(struct tcpc_device *tcpc_dev);
 
 bool pd_get_vdm_event(struct tcpc_device *tcpc_dev, pd_event_t *pd_event);
 bool pd_put_vdm_event(struct tcpc_device *tcpc_dev,
@@ -52,8 +53,17 @@ bool pd_put_vdm_event(struct tcpc_device *tcpc_dev,
 
 bool pd_put_last_vdm_event(struct tcpc_device *tcpc_dev);
 
+bool pd_get_deferred_tcp_event(
+	struct tcpc_device *tcpc_dev, tcp_dpm_event_t *tcp_event);
+bool pd_put_deferred_tcp_event(
+	struct tcpc_device *tcpc_dev, const tcp_dpm_event_t *tcp_event);
+
+void pd_notify_tcp_event_result(
+	struct tcpc_device *tcpc_dev, int ret, tcp_dpm_event_t *tcp_event);
+
 extern int tcpci_event_init(struct tcpc_device *tcpc_dev);
 extern int tcpci_event_deinit(struct tcpc_device *tcpc_dev);
+extern void pd_event_buf_reset(struct tcpc_device *tcpc_dev);
 
 void pd_put_cc_detached_event(struct tcpc_device *tcpc_dev);
 void pd_put_recv_hard_reset_event(struct tcpc_device *tcpc_dev);
@@ -74,6 +84,8 @@ enum pd_event_type {
 	PD_EVT_HW_MSG,
 	PD_EVT_PE_MSG,
 	PD_EVT_TIMER_MSG,
+
+	PD_EVT_TCP_MSG,
 };
 
 /* Control Message type */
@@ -137,15 +149,7 @@ enum pd_dpm_msg_type {
 	PD_DPM_NOTIFIED = 0,
 	PD_DPM_ACK = PD_DPM_NOTIFIED,
 	PD_DPM_NAK,
-
-	PD_DPM_PD_REQUEST,
-	PD_DPM_VDM_REQUEST,
-
-	PD_DPM_DISCOVER_CABLE_ID,
 	PD_DPM_CAP_CHANGED,
-
-	PD_DPM_ERROR_RECOVERY,
-
 	PD_DPM_MSG_NR,
 };
 
@@ -160,21 +164,9 @@ enum pd_dpm_nak_type {
 	PD_DPM_NAK_REJECT_INVALID = 2,
 };
 
-enum pd_dpm_pd_request_type {
-	PD_DPM_PD_REQUEST_PR_SWAP = 0,
-	PD_DPM_PD_REQUEST_DR_SWAP,
-	PD_DPM_PD_REQUEST_VCONN_SWAP,
-	PD_DPM_PD_REQUEST_GOTOMIN,
-
-	PD_DPM_PD_REQUEST_SOFTRESET,
-	PD_DPM_PD_REQUEST_HARDRESET,
-
-	PD_DPM_PD_REQUEST_GET_SOURCE_CAP,
-	PD_DPM_PD_REQUEST_GET_SINK_CAP,
-
-	PD_DPM_PD_REQUEST_PW_REQUEST,
-	PD_DPM_PD_REQUEST_BIST_CM2,
-	PD_DPM_PD_REQUEST_NR,
+enum pd_tcp_sec_msg_type {
+	PD_TCP_FROM_TCPM = 0,
+	PD_TCP_FROM_PE = 1,
 };
 
 enum pd_tx_transmit_state {

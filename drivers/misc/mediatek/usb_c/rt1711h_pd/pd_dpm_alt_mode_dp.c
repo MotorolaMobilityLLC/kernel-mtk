@@ -73,43 +73,6 @@ static inline bool dp_update_dp_connected_both(
 
 /* DP : DFP_U */
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
-enum pd_dfp_u_state {
-	DP_DFP_U_NONE = 0,
-	DP_DFP_U_DISCOVER_ID,
-	DP_DFP_U_DISCOVER_SVIDS,
-	DP_DFP_U_DISCOVER_MODES,
-	DP_DFP_U_ENTER_MODE,
-	DP_DFP_U_STATUS_UPDATE,
-	DP_DFP_U_WAIT_ATTENTION,
-	DP_DFP_U_CONFIGURE,
-	DP_DFP_U_OPERATION,
-	DP_DFP_U_STATE_NR,
-
-	DP_DFP_U_ERR = 0X10,
-
-	DP_DFP_U_ERR_DISCOVER_ID_TYPE,
-	DP_DFP_U_ERR_DISCOVER_ID_NAK_TIMEOUT,
-
-	DP_DFP_U_ERR_DISCOVER_SVID_DP_SID,
-	DP_DFP_U_ERR_DISCOVER_SVID_NAK_TIMEOUT,
-
-	DP_DFP_U_ERR_DISCOVER_MODE_DP_SID,
-	DP_DFP_U_ERR_DISCOVER_MODE_CAP,	/* NO SUPPORT UFP-D */
-	DP_DFP_U_ERR_DISCOVER_MODE_NAK_TIMEROUT,
-
-	DP_DFP_U_ERR_ENTER_MODE_DP_SID,
-	DP_DFP_U_ERR_ENTER_MODE_NAK_TIMEOUT,
-
-	DP_DFP_U_ERR_EXIT_MODE_DP_SID,
-	DP_DFP_U_ERR_EXIT_MODE_NAK_TIMEOUT,
-
-	DP_DFP_U_ERR_STATUS_UPDATE_DP_SID,
-	DP_DFP_U_ERR_STATUS_UPDATE_NAK_TIMEOUT,
-	DP_DFP_U_ERR_STATUS_UPDATE_ROLE,
-
-	DP_DFP_U_ERR_CONFIGURE_SELECT_MODE,
-};
-
 #if DP_DBG_ENABLE
 static const char * const dp_dfp_u_state_name[] = {
 	"dp_dfp_u_none",
@@ -149,16 +112,26 @@ int dp_dfp_u_notify_pe_ready(
 	pd_port_t *pd_port, svdm_svid_data_t *svid_data, pd_event_t *pd_event)
 {
 	DPM_DBG("dp_dfp_u_notify_pe_ready\r\n");
-	BUG_ON(pd_port->data_role != PD_ROLE_DFP);
+	PD_BUG_ON(pd_port->data_role != PD_ROLE_DFP);
 
 	if (pd_port->dp_dfp_u_state != DP_DFP_U_DISCOVER_MODES)
 		return 0;
 
 	/* Check Cable later */
 	pd_port->mode_svid = USB_SID_DISPLAYPORT;
-	vdm_put_dpm_vdm_request_event(
-		pd_port, PD_DPM_VDM_REQUEST_DISCOVER_MODES);
+	pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_DISCOVER_MODES);
 	return 1;
+}
+
+bool dp_notify_pe_shutdown(
+	pd_port_t *pd_port, svdm_svid_data_t *svid_data)
+{
+	if (svid_data->active_mode) {
+		pd_send_vdm_enter_mode(pd_port, TCPC_TX_SOP,
+			svid_data->svid, svid_data->active_mode);
+	}
+
+	return true;
 }
 
 bool dp_dfp_u_notify_discover_id(pd_port_t *pd_port,
@@ -386,11 +359,11 @@ static inline uint8_t dp_dfp_u_select_mode(
 	}
 
 	/*
-	dp_mode = svid_data->remote_mode.mode_vdo[0];
-	dp_local_mode = svid_data->local_mode.mode_vdo[0];
-
-	cap_match = DP_DFP_U_CHECK_ROLE_CAP_MATCH(dp_mode, dp_local_mode);
-	return cap_match ? 1 : 0;*/
+	 * dp_mode = svid_data->remote_mode.mode_vdo[0];
+	 * dp_local_mode = svid_data->local_mode.mode_vdo[0];
+	 * cap_match = DP_DFP_U_CHECK_ROLE_CAP_MATCH(dp_mode, dp_local_mode),
+	 * return cap_match ? 1 : 0;
+	 */
 	return remote_index + 1;
 }
 
@@ -420,8 +393,7 @@ bool dp_dfp_u_notify_discover_modes(
 	}
 
 	dp_dfp_u_set_state(pd_port, DP_DFP_U_ENTER_MODE);
-	vdm_put_dpm_vdm_request_event(
-			pd_port, PD_DPM_VDM_REQUEST_ENTRY_MODE);
+	pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_ENTER_MODE);
 	return true;
 }
 
@@ -445,9 +417,7 @@ bool dp_dfp_u_notify_enter_mode(pd_port_t *pd_port,
 	dp_dfp_u_set_state(pd_port, DP_DFP_U_STATUS_UPDATE);
 
 	pd_port->dp_status = pd_port->dp_first_connected;
-	vdm_put_dpm_vdm_request_event(
-		pd_port, PD_DPM_VDM_REQUEST_DP_STATUS_UPDATE);
-
+	pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_DP_STATUS_UPDATE);
 	return true;
 }
 
@@ -549,9 +519,7 @@ void dp_dfp_u_request_dp_configuration(
 	tcpci_dp_notify_config_start(pd_port->tcpc_dev);
 
 	dp_dfp_u_set_state(pd_port, DP_DFP_U_CONFIGURE);
-
-	vdm_put_dpm_vdm_request_event(
-		pd_port, PD_DPM_VDM_REQUEST_DP_CONFIG);
+	pd_put_tcp_vdm_event(pd_port, TCP_DPM_EVT_DP_CONFIG);
 }
 
 static inline bool dp_dfp_u_update_dp_connected(
@@ -569,9 +537,10 @@ static inline bool dp_dfp_u_update_dp_connected(
 		valid_connected = dp_update_dp_connected_one(
 			pd_port, dp_connected, dp_local_connected);
 
-		if (!valid_connected)
+		if (!valid_connected) {
 			dp_dfp_u_set_state(pd_port,
 				DP_DFP_U_ERR_STATUS_UPDATE_ROLE);
+		}
 		break;
 
 	case DPSTS_DISCONNECT:
@@ -583,8 +552,8 @@ static inline bool dp_dfp_u_update_dp_connected(
 				dp_connected, dp_local_connected);
 
 		if (pd_port->dp_dfp_u_state == DP_DFP_U_STATUS_UPDATE) {
-			vdm_put_dpm_vdm_request_event(
-				pd_port, PD_DPM_VDM_REQUEST_DP_STATUS_UPDATE);
+			pd_put_tcp_vdm_event(pd_port,
+				TCP_DPM_EVT_DP_STATUS_UPDATE);
 		} else {
 			valid_connected = true;
 		}
@@ -693,7 +662,7 @@ static const char * const dp_ufp_u_state_name[] = {
 	"dp_ufp_u_none",
 	"dp_ufp_u_startup",
 	"dp_ufp_u_wait",
-	"dp_dfp_u_operation",
+	"dp_ufp_u_operation",
 };
 #endif /* DPM_DBG_ENABLE */
 
@@ -762,7 +731,7 @@ int dp_ufp_u_request_dp_status(pd_port_t *pd_port, pd_event_t *pd_event)
 	bool ack = true;
 	uint32_t dp_status;
 
-	BUG_ON(pd_event->pd_msg == NULL);
+	PD_BUG_ON(pd_event->pd_msg == NULL);
 	dp_status = pd_event->pd_msg->payload[1];
 
 	switch (pd_port->dp_ufp_u_state) {
@@ -833,7 +802,7 @@ int dp_ufp_u_request_dp_config(pd_port_t *pd_port, pd_event_t *pd_event)
 	bool ack = false;
 	uint32_t dp_config;
 
-	BUG_ON(pd_event->pd_msg == NULL);
+	PD_BUG_ON(pd_event->pd_msg == NULL);
 	dp_config = pd_event->pd_msg->payload[1];
 
 	DPM_DBG("dp_config: 0x%x\r\n", dp_config);
@@ -865,7 +834,7 @@ void dp_ufp_u_send_dp_attention(pd_port_t *pd_port, pd_event_t *pd_event)
 	case DP_UFP_U_OPERATION:
 		svid_data = dpm_get_svdm_svid_data(
 				pd_port, USB_SID_DISPLAYPORT);
-		BUG_ON(svid_data == NULL);
+		PD_BUG_ON(svid_data == NULL);
 
 		pd_send_vdm_dp_attention(pd_port, TCPC_TX_SOP,
 			svid_data->active_mode, pd_port->dp_status);
@@ -922,7 +891,8 @@ void pd_dpm_dfp_inform_dp_configuration(pd_port_t *pd_port,
 
 bool dp_reset_state(pd_port_t *pd_port, svdm_svid_data_t *svid_data)
 {
-	/* TODO: */
+	pd_port->dp_ufp_u_state = DP_UFP_U_NONE;
+	pd_port->dp_dfp_u_state = DP_DFP_U_NONE;
 	return true;
 }
 
