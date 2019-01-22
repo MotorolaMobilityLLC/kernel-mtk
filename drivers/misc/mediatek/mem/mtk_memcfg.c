@@ -560,6 +560,7 @@ void mtk_memcfg_inform_vmpressure(bool to_trigger)
 {
 #define OOM_SCORE_ADJ_NO_TRIGGER	(0)
 
+	bool all_native = true;
 	struct task_struct *p;
 	struct task_struct *task;
 
@@ -586,9 +587,15 @@ void mtk_memcfg_inform_vmpressure(bool to_trigger)
 			return;
 		}
 
+		if (task->signal->oom_score_adj == OOM_SCORE_ADJ_NO_TRIGGER)
+			all_native = false;
+
 		task_unlock(task);
 	}
 	rcu_read_unlock();
+
+	if (all_native)
+		return;
 
 	if (time_before_eq(jiffies, vmpressure_warn_timeout))
 		return;
