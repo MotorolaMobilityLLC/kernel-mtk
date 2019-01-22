@@ -292,6 +292,17 @@ config SM_FTL
 	  If you only need R/O access, you can use older R/O driver
 	  (CONFIG_SSFDC)
 
+config MTK_FTL
+	tristate "MTK new translation layer"
+	depends on BLOCK
+	select MTD_BLKDEVS
+	select MTD_NAND_ECC
+	help
+	  This provides R/W support for MTK FTL (Flash translation layer).
+	  Which is developed by MTK and used on MTK NAND chipsets
+	  It emulates NAND devices as block devices and be able to mount
+	  on ext3/ext4/fat/....
+
 config MTD_OOPS
 	tristate "Log panic/oops to an MTD buffer"
 	help
