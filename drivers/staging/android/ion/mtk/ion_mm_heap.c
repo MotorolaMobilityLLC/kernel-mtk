@@ -843,16 +843,21 @@ void ion_mm_heap_memory_detail(void)
 	if (need_dev_lock)
 		up_read(&dev->lock);
 
-	ION_PRINT_LOG_OR_SEQ(NULL, "----------------------------------------------------\n");
+	ION_PRINT_LOG_OR_SEQ(NULL, "------------ion_mm_heap buffer info------------\n");
 
 skip_client_entry:
 
 	ION_PRINT_LOG_OR_SEQ(NULL,
-			     "%18.s %8.s %3.s %3.s %s %s %4.s %4.s %4.s %4.s %s\n",
-			     "buffer", "size", "ref", "hdl",
+			     "%18.s %8.s %s %s %4.s %4.s %4.s %4.s %s\n",
+			     "buffer", "size",
 			     "pid(alloc_pid)", "comm(client)", "v1", "v2", "v3", "v4", "dbg_name");
 
 	if (mutex_trylock(&dev->buffer_lock)) {
+		char seq_log[384];
+		int seq_log_count = 0;
+		char seq_fmt[] = "0x%p %10zu %5d(%5d) %16s 0x%x 0x%x 0x%x 0x%x %48s ";
+
+		memset(seq_log, 0, 384);
 		for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
 			struct ion_buffer
 			*buffer = rb_entry(n, struct ion_buffer, node);
@@ -867,15 +872,24 @@ skip_client_entry:
 					has_orphaned = true;
 				}
 
-			ION_PRINT_LOG_OR_SEQ(NULL,
-					     "0x%p %8zu %3d %3d %5d(%5d) %16s %d %d %d %d  %s\n",
-					     buffer, buffer->size,
-					     atomic_read(&buffer->ref.refcount), buffer->handle_count,
-					     buffer->pid, bug_info->pid, buffer->task_comm,
-					     pdbg->value1, pdbg->value2, pdbg->value3,
-					     pdbg->value4, pdbg->dbg_name);
+				if (strstr(pdbg->dbg_name, "nothing"))
+					continue;
+
+				seq_log_count++;
+				sprintf(seq_log + strlen(seq_log), seq_fmt,
+					buffer, buffer->size,
+					buffer->pid, bug_info->pid, buffer->task_comm,
+					pdbg->value1, pdbg->value2, pdbg->value3,
+					pdbg->value4, pdbg->dbg_name);
+
+				if ((seq_log_count % 2) == 0) {
+					ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
+					memset(seq_log, 0, 384);
+				}
 			}
 		}
+
+		ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
 
 		if (has_orphaned) {
 			ION_PRINT_LOG_OR_SEQ(NULL, "-----orphaned buffer list:------------------\n");
