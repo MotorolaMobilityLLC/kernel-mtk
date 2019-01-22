@@ -24,7 +24,9 @@
 #include "m4u.h"
 #endif
 #include "smi_public.h"
+#include "smi_debug.h"
 #include <linux/uaccess.h>
+#include <linux/delay.h>
 
 
 #define CREATE_TRACE_POINTS
@@ -486,8 +488,6 @@ bool cmdq_mdp_clock_is_on(enum CMDQ_ENG_ENUM engine)
 }
 void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 {
-	uint32_t regValue;
-
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
 		cmdq_mdp_enable_clock_CAM_MDP_TX(enable);
@@ -499,13 +499,6 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 		break;
 	case CMDQ_ENG_MDP_RDMA0:
 		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
-		/* check smi larb */
-		regValue =
-			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x298);
-		if (regValue)
-			CMDQ_LOG(
-				"[MDP][Abnormal]Job Unfinish, larb 0:(0x298, 6, 0x%x)\n",
-				regValue);
 		break;
 	case CMDQ_ENG_MDP_RSZ0:
 		cmdq_mdp_enable_clock_MDP_RSZ0(enable);
@@ -523,23 +516,9 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 			smi_bus_disable(SMI_LARB_MMSYS0, "MDPSRAM");
 			atomic_dec(&g_mdp_wrot0_usage);
 		}
-		/* check smi larb */
-		regValue =
-			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x29C);
-		if (regValue)
-			CMDQ_LOG(
-				"[MDP][Abnormal] Job Unfinish, larb 0:(0x29C, 7, 0x%x)\n",
-				regValue);
 		break;
 	case CMDQ_ENG_MDP_WDMA:
 		cmdq_mdp_enable_clock_MDP_WDMA(enable);
-		/* check smi larb */
-		regValue =
-			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x2A0);
-		if (regValue)
-			CMDQ_LOG(
-				"[MDP][Abnormal] Job Unfinish, larb 0:(0x2A0, 8, 0x%x)\n",
-				regValue);
 		break;
 	case CMDQ_ENG_MDP_TDSHP0:
 		cmdq_mdp_enable_clock_MDP_TDSHP0(enable);
@@ -899,12 +878,50 @@ int32_t cmdqMdpResetEng(uint64_t engineFlag)
 int32_t cmdqMdpClockOff(uint64_t engineFlag)
 {
 #ifdef CMDQ_PWR_AWARE
+	uint32_t regValue;
+
 	CMDQ_MSG("Disable MDP(0x%llx) clock begin\n", engineFlag);
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_WDMA)) {
+		/* check smi larb */
+		regValue =
+			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x2A0);
+		if (regValue) {
+			CMDQ_LOG(
+				"[MDP][Abnormal] Job Unfinish, larb 0:(0x2A0, 8, 0x%x)\n",
+				regValue);
+		}
+		msleep_interruptible(1);
+		regValue =
+			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x2A0);
+		if (regValue) {
+			smi_debug_bus_hanging_detect_ext2(0x1ff, 1, 0, 1);
+			CMDQ_AEE("MDP",
+				"[MDP][Abnormal] Job Unfinish, larb 0:(0x2A0, 8, 0x%x)\n",
+				regValue);
+		}
+
 		cmdq_mdp_loop_off(CMDQ_ENG_MDP_WDMA,
 				  MDP_WDMA_BASE + 0x00C, MDP_WDMA_BASE + 0X0A0, 0x3FF, 0x1, false);
 	}
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_WROT0)) {
+		/* check smi larb */
+		regValue =
+			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x29C);
+		if (regValue) {
+			CMDQ_LOG(
+				"[MDP][Abnormal] Job Unfinish, larb 0:(0x29C, 7, 0x%x)\n",
+				regValue);
+		}
+		msleep_interruptible(1);
+		regValue =
+			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x29C);
+		if (regValue) {
+			smi_debug_bus_hanging_detect_ext2(0x1ff, 1, 0, 1);
+			CMDQ_AEE("MDP",
+				"[MDP][Abnormal] Job Unfinish, larb 0:(0x29C, 7, 0x%x)\n",
+				regValue);
+		}
+
 		cmdq_mdp_loop_off(CMDQ_ENG_MDP_WROT0,
 				  MDP_WROT0_BASE + 0X010, MDP_WROT0_BASE + 0X014, 0x1, 0x1, true);
 	}
@@ -948,6 +965,23 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 		}
 	}
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RDMA0)) {
+		/* check smi larb */
+		regValue =
+			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x298);
+		if (regValue) {
+			CMDQ_LOG(
+				"[MDP][Abnormal]Job Unfinish, larb 0:(0x298, 6, 0x%x)\n",
+				regValue);
+		}
+		msleep_interruptible(1);
+		regValue =
+			CMDQ_REG_GET32(gCmdqMdpModuleBaseVA.SMI_LARB0 + 0x298);
+		if (regValue) {
+			smi_debug_bus_hanging_detect_ext2(0x1ff, 1, 0, 1);
+			CMDQ_AEE("MDP",
+				"[MDP][Abnormal]Job Unfinish, larb 0:(0x298, 6, 0x%x)\n",
+				regValue);
+		}
 		cmdq_mdp_loop_off(CMDQ_ENG_MDP_RDMA0,
 				  MDP_RDMA0_BASE + 0x008,
 				  MDP_RDMA0_BASE + 0x408, 0x7FF00, 0x100, false);
