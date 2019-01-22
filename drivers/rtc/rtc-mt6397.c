@@ -235,7 +235,7 @@ static void _rtc_set_pwron_alarm_time(struct rtc_time *tm)
 	dev_err(mt_rtc->dev, "rtc_save_pwron_time!!!\n");
 	/*RTC_PWRON_YEAR == RTC_PWRON_MTH==PDN2 */
 	ret = regmap_read(mt_rtc->regmap,
-			mt_rtc->addr_base + RTC_PWRON_YEA, &pdn2);
+			mt_rtc->addr_base + RTC_PDN2, &pdn2);
 	if (ret < 0)
 		goto exit;
 
@@ -247,7 +247,7 @@ static void _rtc_set_pwron_alarm_time(struct rtc_time *tm)
 		goto exit;
 
 	ret = regmap_read(mt_rtc->regmap,
-			mt_rtc->addr_base + RTC_PWRON_SEC, &spar0);
+			mt_rtc->addr_base + RTC_SPAR0, &spar0);
 	if (ret < 0)
 		goto exit;
 
@@ -260,14 +260,19 @@ static void _rtc_set_pwron_alarm_time(struct rtc_time *tm)
 
 	tm_year |= pdn2 & ~(RTC_PWRON_YEA_MASK);
 	ret = regmap_write(mt_rtc->regmap,
-			mt_rtc->addr_base + RTC_PWRON_YEA, tm_year);
+			mt_rtc->addr_base + RTC_PDN2, tm_year);
 	if (ret < 0)
 		goto exit;
 	mtk_rtc_write_trigger(mt_rtc);
 
+	ret = regmap_read(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_PDN2, &pdn2);
+	if (ret < 0)
+		goto exit;
+
 	tm_mon |= pdn2 & ~(RTC_PWRON_MTH_MASK);
 	ret = regmap_write(mt_rtc->regmap,
-			mt_rtc->addr_base + RTC_PWRON_YEA, tm_mon);
+			mt_rtc->addr_base + RTC_PDN2, tm_mon);
 	if (ret < 0)
 		goto exit;
 	mtk_rtc_write_trigger(mt_rtc);
@@ -279,12 +284,22 @@ static void _rtc_set_pwron_alarm_time(struct rtc_time *tm)
 		goto exit;
 	mtk_rtc_write_trigger(mt_rtc);
 
+	ret = regmap_read(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_SPAR1, &spar1);
+	if (ret < 0)
+		goto exit;
+
 	tm_hour |= spar1 & ~(RTC_PWRON_HOU_MASK);
 	ret = regmap_write(mt_rtc->regmap,
 			mt_rtc->addr_base + RTC_SPAR1, tm_hour);
 	if (ret < 0)
 		goto exit;
 	mtk_rtc_write_trigger(mt_rtc);
+
+	ret = regmap_read(mt_rtc->regmap,
+			mt_rtc->addr_base + RTC_SPAR1, &spar1);
+	if (ret < 0)
+		goto exit;
 
 	tm_min |= spar1 & ~(RTC_PWRON_MIN_MASK);
 	ret = regmap_write(mt_rtc->regmap,
@@ -296,7 +311,7 @@ static void _rtc_set_pwron_alarm_time(struct rtc_time *tm)
 
 	tm_sec |= spar0 & ~(RTC_PWRON_SEC_MASK);
 	ret = regmap_write(mt_rtc->regmap,
-			mt_rtc->addr_base + RTC_PWRON_SEC, tm_sec);
+			mt_rtc->addr_base + RTC_SPAR0, tm_sec);
 	if (ret < 0)
 		goto exit;
 	mtk_rtc_write_trigger(mt_rtc);
