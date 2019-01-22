@@ -46,7 +46,9 @@
 #include "smi_debug.h"
 #include "smi_configuration.h"
 #include "smi_public.h"
+#ifdef CONFIG_MTK_M4U
 #include "m4u.h"
+#endif
 
 #define SMI_LOG_TAG "smi"
 
@@ -324,10 +326,12 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 		}
 	}
 
+#ifdef CONFIG_MTK_M4U
 	if (enable_m4u_reg_dump) {
 		SMIMSG("call m4u API for m4u register dump\n");
 		m4u_dump_reg_for_smi_hang_issue();
 	}
+#endif
 	return 0;
 }
 void smi_dump_clk_status(void)

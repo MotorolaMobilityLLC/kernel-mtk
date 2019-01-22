@@ -34,7 +34,7 @@ enum mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
 #endif	/* CONFIG_LCM_WIDTH, CONFIG_LCM_HEIGHT */
 
 	if (convert_err) {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_MTK_FB)
 		lcd_w = DISP_GetScreenWidth();
 		lcd_h = DISP_GetScreenHeight();
 #else
