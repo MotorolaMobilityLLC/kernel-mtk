@@ -556,7 +556,7 @@ static void dvfsrc_init(void)
 
 	spm_write(DVFSRC_EMI_HRT, 0x00000010);
 	spm_write(DVFSRC_VCORE_HRT, 0x00000010);
-	spm_write(DVFSRC_EMI_MD2SPM0, 0x00000001);
+	spm_write(DVFSRC_EMI_MD2SPM0, 0x00000000);
 	spm_write(DVFSRC_EMI_MD2SPM1, 0x00000000);
 	spm_write(DVFSRC_MD_VMD_REMAP, 0x00000000);
 	spm_write(DVFSRC_DEBOUNCE_FOUR, 0x0);
