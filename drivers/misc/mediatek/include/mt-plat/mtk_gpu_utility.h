@@ -81,6 +81,16 @@ bool mtk_get_vsync_offset_debug_status(unsigned int *pui32DebugStatus);
 /* MET */
 bool mtk_enable_gpu_perf_monitor(bool enable);
 
+/* GPU PMU should be implemented by GPU IP-dep code */
+typedef struct {
+	int id;
+	const char *name;
+	unsigned int value;
+	int overflow;
+} GPU_PMU;
+bool mtk_get_gpu_pmu_init(GPU_PMU *pmus, int pmu_size, int *ret_size);
+bool mtk_get_gpu_pmu_swapnreset(GPU_PMU *pmus, int pmu_size);
+
 #ifdef __cplusplus
 }
 #endif
