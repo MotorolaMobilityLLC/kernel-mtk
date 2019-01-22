@@ -1114,6 +1114,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(OPPO_TIANMA_TD4310_FHDP_DSI_VDO_NT50358)
 	&oppo_tianma_td4310_fhdp_dsi_vdo_nt50358_lcm_drv,
 #endif
+
+#if defined(JD9365_HD720_DSI)
+	&jd9365_hd720_dsi_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
