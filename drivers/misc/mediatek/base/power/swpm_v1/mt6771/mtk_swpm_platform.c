@@ -230,7 +230,7 @@ static struct dram_pwr_conf dram_def_pwr_conf[] = {
 /***************************************************************************
  *  API
  ***************************************************************************/
-int swpm_platform_init(struct platform_device *pdev)
+int swpm_platform_init(void)
 {
 	int ret = 0;
 

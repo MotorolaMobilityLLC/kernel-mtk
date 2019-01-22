@@ -105,10 +105,10 @@ struct swpm_rec_data {
 	/* 4(int) * 3(pwr_type) * 7 = 84 bytes */
 	struct dram_pwr_conf dram_conf[NR_DRAM_PWR_TYPE];
 
-	/* remaining size = 276 bytes */
-
 	/* reserv for emi_idx in SSPM = 1024 bytes */
 	unsigned char reserv[1024];
+
+	/* remaining size = 276 bytes */
 };
 
 extern struct swpm_rec_data *swpm_info_ref;

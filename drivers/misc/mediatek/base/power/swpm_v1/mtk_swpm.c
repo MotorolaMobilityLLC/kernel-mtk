@@ -79,15 +79,6 @@ static unsigned long long rec_size;
 #endif
 static bool swpm_enable = true;
 static unsigned char avg_window = DEFAULT_AVG_WINDOW;
-static int swpm_probe(struct platform_device *pdev);
-static struct platform_driver swpm_drv = {
-	.probe = swpm_probe,
-	.driver = {
-		.name = "swpm",
-		.bus = &platform_bus_type,
-		.owner = THIS_MODULE,
-	},
-};
 
 /****************************************************************************
  *  Global Variables
@@ -282,6 +273,9 @@ static int create_procfs(void)
 static void get_rec_addr(void)
 {
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	int i;
+	unsigned char *ptr;
+
 	/* get sspm reserved mem */
 	rec_phys_addr = sspm_reserve_mem_get_phys(SWPM_MEM_ID);
 	rec_virt_addr = sspm_reserve_mem_get_virt(SWPM_MEM_ID);
@@ -292,23 +286,17 @@ static void get_rec_addr(void)
 		(unsigned long long)rec_virt_addr,
 		rec_size);
 
+	/* clear */
+	ptr = (unsigned char *)(uintptr_t)rec_virt_addr;
+	for (i = 0; i < rec_size; i++)
+		ptr[i] = 0x0;
+
 	swpm_info_ref = (struct swpm_rec_data *)(uintptr_t)rec_virt_addr;
 #endif
 }
 
-static int swpm_probe(struct platform_device *pdev)
-{
-	int ret;
-
-	ret = swpm_platform_init(pdev);
-
-	return ret;
-}
-
 static int __init swpm_init(void)
 {
-	int ret;
-
 	if (swpm_enable == false) {
 		swpm_err("swpm is disabled\n");
 		return 0;
@@ -321,11 +309,7 @@ static int __init swpm_init(void)
 	}
 	create_procfs();
 
-	ret = platform_driver_register(&swpm_drv);
-	if (ret) {
-		swpm_err("Register swpm plat_drv failed\n");
-		return ret;
-	}
+	swpm_platform_init();
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #ifdef CONFIG_MTK_DRAMC
