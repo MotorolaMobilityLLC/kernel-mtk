@@ -2750,7 +2750,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	/*this function will get fb_heap base address to ion for management frame buffer */
 #ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
-	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
+	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size() - DAL_GetLayerSize());
 #endif
 	fbdev->state = MTKFB_ACTIVE;
 
