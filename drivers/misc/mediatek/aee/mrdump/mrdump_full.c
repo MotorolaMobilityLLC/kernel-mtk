@@ -337,9 +337,8 @@ int __init mrdump_platform_init(const struct mrdump_platform *plat)
 	}
 
 	/* move default enable MT-RAMDUMP to late_init (this function) */
-	if (mrdump_enable) {
+	if (mrdump_enable)
 		mrdump_plat->hw_enable(mrdump_enable);
-	}
 
 	pr_info("%s: done.\n", __func__);
 
