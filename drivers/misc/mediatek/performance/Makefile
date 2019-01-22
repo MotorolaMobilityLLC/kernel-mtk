@@ -29,7 +29,18 @@ obj-$(CONFIG_MACH_MT6739) += legacy_controller/
 obj-$(CONFIG_MACH_MT6758) += legacy_controller/
 obj-$(CONFIG_MACH_MT6771) += legacy_controller/
 
-obj-$(CONFIG_MTK_FPSGO) += fpsgo/
+
+ifeq ($(CONFIG_MTK_FPSGO), y)
+	ifeq ($(CONFIG_MACH_MT6771), y)
+		ccflags-y += -DCONFIG_MTK_FPSGO_V2
+		obj-y += fpsgo_v2/
+	else
+		obj-y += fpsgo/
+	endif
+endif
+
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/performance/perfmgr/$(MTK_PLATFORM)/),)
-   obj-y += fbc/
+	ifneq ($(CONFIG_MACH_MT6771), y)
+		obj-y += fbc/
+	endif
 endif

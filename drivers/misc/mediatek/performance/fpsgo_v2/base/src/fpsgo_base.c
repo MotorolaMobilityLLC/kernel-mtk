@@ -1,0 +1,213 @@
+/*
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "fpsgo_base.h"
+#include <asm/page.h>
+#include <linux/version.h>
+#include <linux/vmalloc.h>
+#include <linux/slab.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+
+#include <linux/uaccess.h>
+
+#include "fpsgo_common.h"
+#include "fpsgo_v2_common.h"
+#include <linux/preempt.h>
+#include <linux/trace_events.h>
+#include <linux/fs.h>
+#include <linux/debugfs.h>
+
+void *fpsgo_alloc_atomic(int i32Size)
+{
+	void *pvBuf;
+
+	if (i32Size <= PAGE_SIZE)
+		pvBuf = kmalloc(i32Size, GFP_ATOMIC);
+	else
+		pvBuf = vmalloc(i32Size);
+
+	return pvBuf;
+}
+
+void fpsgo_free(void *pvBuf, int i32Size)
+{
+	if (!pvBuf)
+		return;
+
+	if (i32Size <= PAGE_SIZE)
+		kfree(pvBuf);
+	else
+		vfree(pvBuf);
+}
+
+unsigned long long fpsgo_get_time(void)
+{
+	unsigned long long temp;
+
+	preempt_disable();
+	temp = cpu_clock(smp_processor_id());
+	preempt_enable();
+
+	return temp;
+}
+
+uint32_t fpsgo_systrace_mask;
+struct dentry *fpsgo_debugfs_dir;
+
+static unsigned long __read_mostly mark_addr;
+static struct dentry *debugfs_common_dir;
+
+#define GENERATE_STRING(name, unused) #name
+static const char * const mask_string[] = {
+	FPSGO_SYSTRACE_LIST(GENERATE_STRING)
+};
+
+#define FPSGO_DEBUGFS_ENTRY(name) \
+static int fpsgo_##name##_open(struct inode *i, struct file *file) \
+{ \
+	return single_open(file, fpsgo_##name##_show, i->i_private); \
+} \
+\
+static const struct file_operations fpsgo_##name##_fops = { \
+	.owner = THIS_MODULE, \
+	.open = fpsgo_##name##_open, \
+	.read = seq_read, \
+	.write = fpsgo_##name##_write, \
+	.llseek = seq_lseek, \
+	.release = single_release, \
+}
+
+void __fpsgo_systrace_c(pid_t pid, int val, const char *fmt, ...)
+{
+	char log[256];
+	va_list args;
+
+	memset(log, ' ', sizeof(log));
+	va_start(args, fmt);
+	vsnprintf(log, sizeof(log), fmt, args);
+	va_end(args);
+
+	preempt_disable();
+	event_trace_printk(mark_addr, "C|%d|%s|%d\n", pid, log, val);
+	preempt_enable();
+}
+
+void __fpsgo_systrace_b(pid_t tgid, const char *fmt, ...)
+{
+	char log[256];
+	va_list args;
+
+	memset(log, ' ', sizeof(log));
+	va_start(args, fmt);
+	vsnprintf(log, sizeof(log), fmt, args);
+	va_end(args);
+
+	preempt_disable();
+	event_trace_printk(mark_addr, "B|%d|%s\n", tgid, log);
+	preempt_enable();
+}
+
+void __fpsgo_systrace_e(void)
+{
+	preempt_disable();
+	event_trace_printk(mark_addr, "E\n");
+	preempt_enable();
+}
+
+static int fpsgo_systrace_mask_show(struct seq_file *m, void *unused)
+{
+	int i;
+
+	seq_puts(m, " Current enabled systrace:\n");
+	for (i = 0; (1U << i) < FPSGO_DEBUG_MAX; i++)
+		seq_printf(m, "  %-*s ... %s\n", 12, mask_string[i],
+			   fpsgo_systrace_mask & (1U << i) ?
+			     "On" : "Off");
+	return 0;
+}
+
+static ssize_t fpsgo_systrace_mask_write(struct file *flip,
+			const char *ubuf, size_t cnt, loff_t *data)
+{
+	uint32_t val;
+	int ret;
+
+	ret = kstrtou32_from_user(ubuf, cnt, 0, &val);
+	if (ret)
+		return ret;
+
+	fpsgo_systrace_mask = val & (FPSGO_DEBUG_MAX - 1U);
+	return cnt;
+}
+
+FPSGO_DEBUGFS_ENTRY(systrace_mask);
+
+static int fpsgo_benchmark_hint_show(struct seq_file *m, void *unused)
+{
+	seq_printf(m, "%d\n", fpsgo_is_enable());
+	return 0;
+}
+
+static ssize_t fpsgo_benchmark_hint_write(struct file *flip,
+			const char *ubuf, size_t cnt, loff_t *data)
+{
+	int val;
+	int ret;
+
+	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
+	if (ret)
+		return ret;
+
+	if (val > 1 || val < 0)
+		return cnt;
+
+	fpsgo_switch_enable(val);
+
+	return cnt;
+}
+
+FPSGO_DEBUGFS_ENTRY(benchmark_hint);
+
+int init_fpsgo_common(void)
+{
+	fpsgo_debugfs_dir = debugfs_create_dir("fpsgo", NULL);
+	if (!fpsgo_debugfs_dir)
+		return -ENODEV;
+
+	debugfs_common_dir = debugfs_create_dir("common",
+						fpsgo_debugfs_dir);
+	if (!debugfs_common_dir)
+		return -ENODEV;
+
+	debugfs_create_file("systrace_mask",
+			    S_IRUGO | S_IWUSR,
+			    debugfs_common_dir,
+			    NULL,
+			    &fpsgo_systrace_mask_fops);
+
+	debugfs_create_file("fpsgo_enable",
+			    S_IRUGO | S_IWUSR,
+			    debugfs_common_dir,
+			    NULL,
+			    &fpsgo_benchmark_hint_fops);
+
+	mark_addr = kallsyms_lookup_name("tracing_mark_write");
+	fpsgo_systrace_mask = FPSGO_DEBUG_MANDATORY;
+
+	return 0;
+}
+
