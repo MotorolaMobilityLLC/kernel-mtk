@@ -257,6 +257,8 @@ int mt6355_get_auxadc_value(u8 channel)
 			pr_err("[baton] vsen_mux_en = %d, tdet_en = %d\n",
 				pmic_get_register_value(PMIC_RG_ADCIN_VSEN_MUX_EN),
 				pmic_get_register_value(PMIC_BATON_TDET_EN));
+			if (adc_result < 200 && wk_auxadc_ch3_bif_on(2) && wk_auxadc_vsen_tdet_ctrl(1))
+				adc_result = mt6355_auxadc_recv_batmp();
 		}
 	}
 
@@ -267,11 +269,67 @@ int mt6355_get_auxadc_value(u8 channel)
 	/*--Monitor MTS Thread--*/
 	if (channel == AUXADC_LIST_BATADC)
 		wake_up_auxadc_detect();
+
 	/* Audio request HPOPS to return raw data */
 	if (channel == AUXADC_LIST_HPOFS_CAL)
 		return reg_val * auxadc_channel->r_val;
 	else
 		return adc_result;
+}
+
+static int mt6355_auxadc_get_auxadc_value_batmp(void)
+{
+	int count = 0;
+	signed int adc_result = 0, reg_val = 0;
+	struct pmic_auxadc_channel *auxadc_channel;
+	u8 channel = AUXADC_LIST_BATTEMP;
+
+	auxadc_channel =
+		&mt6355_auxadc_channel[channel-AUXADC_LIST_MT6355_START];
+
+	mt6355_auxadc_lock();
+	mutex_lock(&auxadc_ch3_mutex);
+
+	pmic_set_register_value(auxadc_channel->channel_rqst, 1);
+	udelay(10);
+
+	while (pmic_get_register_value(auxadc_channel->channel_rdy) != 1) {
+		usleep_range(1300, 1500);
+		if ((count++) > count_time_out) {
+			pr_err("[%s] (%d) Time out!\n", __func__, channel);
+			break;
+		}
+	}
+	reg_val = pmic_get_register_value(auxadc_channel->channel_out);
+
+	mutex_unlock(&auxadc_ch3_mutex);
+	mt6355_auxadc_unlock();
+
+	adc_result = (reg_val * auxadc_channel->r_val *
+				VOLTAGE_FULL_RANGE) / 4096;
+
+	pr_err("reg_val = 0x%x, adc_result = %d\n", reg_val, adc_result);
+
+	return adc_result;
+}
+
+int mt6355_auxadc_recv_batmp(void)
+{
+	int count = 0;
+	signed int adc_result = 0, all_adc_result = 0;
+
+	for (count = 0; count < 5; count++)
+		all_adc_result += mt6355_auxadc_get_auxadc_value_batmp();
+
+	if (all_adc_result < 1000) {
+		pr_err("adc_recv_batmp\n");
+		pmic_set_register_value(PMIC_RG_STRUP_AUXADC_RSTB_SW, 0);
+		pmic_set_register_value(PMIC_RG_STRUP_AUXADC_RSTB_SW, 1);
+		adc_result = mt6355_auxadc_get_auxadc_value_batmp();
+		pr_err("adc_recv_batmp %d\n", adc_result);
+		return adc_result;
+	} else
+		return (all_adc_result/5);
 }
 
 static unsigned int mts_count;

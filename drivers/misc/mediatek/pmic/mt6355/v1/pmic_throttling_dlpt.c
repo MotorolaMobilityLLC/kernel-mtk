@@ -198,7 +198,7 @@ void low_battery_protect_init(void)
 	/*default setting */
 	pmic_set_register_value(PMIC_AUXADC_LBAT_DEBT_MIN, 0);
 	pmic_set_register_value(PMIC_AUXADC_LBAT_DEBT_MAX, 0);
-	pmic_set_register_value(PMIC_AUXADC_LBAT_DET_PRD_15_0, 1);
+	pmic_set_register_value(PMIC_AUXADC_LBAT_DET_PRD_15_0, 15);
 	pmic_set_register_value(PMIC_AUXADC_LBAT_DET_PRD_19_16, 0);
 
 	pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MAX, BAT_HV_THD);
@@ -641,7 +641,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 0);
 #endif
 	/*pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 1);*//*Peter-SW:55,56*/
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CNT, 3);
+	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CNT, 1);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_MODE, 1);
 
 	while (pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS) == 0) {

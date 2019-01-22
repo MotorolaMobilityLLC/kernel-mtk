@@ -569,6 +569,7 @@ int pmic_thread_kthread(void *x)
 
 	/* Run on a process content */
 	while (1) {
+		set_current_state(TASK_RUNNING);
 		mutex_lock(&pmic_mutex);
 #ifdef IPIMB
 #else
