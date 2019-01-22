@@ -183,6 +183,10 @@ typedef struct {
 	int32_t state;		/* 0,1 */
 } in_pocket_event_t;
 
+typedef struct {
+	uint32_t state;  /* geofence [source, result, operation_mode] */
+} geofence_event_t;
+
 typedef enum {
 	STILL,
 	STANDING,
@@ -238,6 +242,7 @@ struct data_unit_t {
 		fall_t fall_data_t;
 		tilt_event_t tilt_event;
 		in_pocket_event_t inpocket_event;
+		geofence_event_t geofence_data_t;
 		int32_t data[7];
 	};
 } __packed;
@@ -698,6 +703,10 @@ typedef struct {
 	int32_t state;		/* 0,1 */
 } in_pocket_event_t;
 
+typedef struct {
+	uint32_t state;  /* geofence [source, result, operation_mode] */
+} geofence_event_t;
+
 typedef enum {
 	STILL,
 	STANDING,
@@ -753,6 +762,7 @@ struct data_unit_t {
 		fall_t fall_data_t;
 		tilt_event_t tilt_event;
 		in_pocket_event_t inpocket_event;
+		geofence_event_t geofence_data_t;
 		int32_t data[7];
 	};
 } __packed;
