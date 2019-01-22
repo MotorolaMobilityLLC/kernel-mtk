@@ -427,6 +427,8 @@ PUINT8 stp_dbg_soc_id_to_task(UINT32 id)
 
 	switch (chip_id) {
 	case 0x6797:
+	case 0x6759:
+	case 0x6758:
 		task_id_indx = SOC_TASK_ID_GEN3;
 		if (id >= SOC_GEN3_TASK_ID_MAX)
 			task_id_flag = SOC_GEN3_TASK_ID_MAX;
