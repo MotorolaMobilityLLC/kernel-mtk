@@ -183,7 +183,7 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	 * don't attempt to dump non-kernel addresses or
 	 * values that are probably just small negative numbers
 	 */
-	if (addr < PAGE_OFFSET || addr > -256UL)
+	if (!pfn_valid(__pa(addr) >> PAGE_SHIFT) || addr > -256UL)
 		return;
 
 	printk("\n%s: %#lx:\n", name, addr);
