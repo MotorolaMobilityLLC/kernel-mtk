@@ -2896,7 +2896,7 @@ VOID qmPopOutDueToFallWithin(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReor
 	P_SW_RFB_T prReorderedSwRfb;
 	P_QUE_T prReorderQue;
 	BOOLEAN fgDequeuHead, fgMissing;
-	OS_SYSTIME rCurrentTime, rMissTimeout;
+	OS_SYSTIME rCurrentTime, *prMissTimeout;
 	P_HW_MAC_RX_DESC_T prRxStatus;
 	UINT_8 fgIsAmsduSubframe;/* RX reorder for one MSDU in AMSDU issue */
 
@@ -2904,8 +2904,8 @@ VOID qmPopOutDueToFallWithin(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReor
 
 	fgMissing = FALSE;
 	rCurrentTime = 0;
-	rMissTimeout = g_arMissTimeout[prReorderQueParm->ucStaRecIdx][prReorderQueParm->ucTid];
-	if (rMissTimeout) {
+	prMissTimeout = &g_arMissTimeout[prReorderQueParm->ucStaRecIdx][prReorderQueParm->ucTid];
+	if (*prMissTimeout) {
 		fgMissing = TRUE;
 		GET_CURRENT_SYSTIME(&rCurrentTime);
 	}
@@ -2963,7 +2963,7 @@ VOID qmPopOutDueToFallWithin(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReor
 					prReorderQueParm->u2WinEnd);
 			}
 
-			if (fgMissing && CHECK_FOR_TIMEOUT(rCurrentTime, rMissTimeout,
+			if (fgMissing && CHECK_FOR_TIMEOUT(rCurrentTime, *prMissTimeout,
 				MSEC_TO_SYSTIME(QM_RX_BA_ENTRY_MISS_TIMEOUT_MS))) {
 
 				DBGLOG(QM, TRACE, "QM:RX BA Timout Next Tid %d SSN %d\n", prReorderQueParm->ucTid,
@@ -2996,10 +2996,10 @@ VOID qmPopOutDueToFallWithin(IN P_ADAPTER_T prAdapter, IN P_RX_BA_ENTRY_T prReor
 	}
 
 	if (QUEUE_IS_EMPTY(prReorderQue))
-		rMissTimeout = 0;
+		*prMissTimeout = 0;
 	else {
 		if (fgMissing == FALSE)
-			GET_CURRENT_SYSTIME(&rMissTimeout);
+			GET_CURRENT_SYSTIME(prMissTimeout);
 	}
 
 	/* After WinStart has been determined, update the WinEnd */
@@ -3180,6 +3180,7 @@ VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 	QUE_T rReturnedQue;
 	P_QUE_T prReturnedQue = &rReturnedQue;
 	P_SW_RFB_T prReorderedSwRfb, prSwRfb;
+	OS_SYSTIME *prMissTimeout;
 
 	prCheckReorderEvent = (P_EVENT_CHECK_REORDER_BUBBLE_T) (prEvent->aucBuffer);
 
@@ -3272,6 +3273,14 @@ VOID qmHandleEventCheckReorderBubble(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 		       prReorderQueParm->u2FirstBubbleSn, prReorderQueParm->u2WinStart, prReorderQueParm->u2WinEnd);
 	}
 
+	prMissTimeout = &g_arMissTimeout[prReorderQueParm->ucStaRecIdx][prReorderQueParm->ucTid];
+	if (QUEUE_IS_EMPTY(prReorderQue)) {
+		DBGLOG(QM, TRACE, "QM:(Bub Check) Reset prMissTimeout to zero\n");
+		*prMissTimeout = 0;
+	} else {
+		DBGLOG(QM, TRACE, "QM:(Bub Check) Reset prMissTimeout to current time\n");
+		GET_CURRENT_SYSTIME(prMissTimeout);
+	}
 }
 
 BOOLEAN qmCompareSnIsLessThan(IN UINT_32 u4SnLess, IN UINT_32 u4SnGreater)
