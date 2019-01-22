@@ -250,6 +250,14 @@ unsigned int mt_ppm_userlimit_cpu_freq(unsigned int cluster_num, struct ppm_limi
 	return 0;
 }
 
+unsigned int mt_ppm_userlimit_freq_limit_by_others(unsigned int cluster)
+{
+	if (cluster >= NR_PPM_CLUSTERS)
+		return 0;
+	else
+		return ppm_main_info.cluster_info[cluster].max_freq_except_userlimit;
+}
+
 static int ppm_userlimit_min_cpu_freq_proc_show(struct seq_file *m, void *v)
 {
 	int i;
@@ -450,9 +458,23 @@ out:
 	free_page((unsigned long)buf);
 	return count;
 }
+
+static int ppm_userlimit_freq_limit_by_others_proc_show(struct seq_file *m, void *v)
+{
+	int i;
+
+	for_each_ppm_clusters(i) {
+		seq_printf(m, "cluster %d max_freq_limit = %d\n",
+			i, mt_ppm_userlimit_freq_limit_by_others(i));
+	}
+
+	return 0;
+}
+
 PROC_FOPS_RW(userlimit_min_cpu_freq);
 PROC_FOPS_RW(userlimit_max_cpu_freq);
 PROC_FOPS_RW(userlimit_cpu_freq);
+PROC_FOPS_RO(userlimit_freq_limit_by_others);
 
 static int __init ppm_userlimit_policy_init(void)
 {
@@ -467,6 +489,7 @@ static int __init ppm_userlimit_policy_init(void)
 		PROC_ENTRY(userlimit_min_cpu_freq),
 		PROC_ENTRY(userlimit_max_cpu_freq),
 		PROC_ENTRY(userlimit_cpu_freq),
+		PROC_ENTRY(userlimit_freq_limit_by_others),
 	};
 
 	FUNC_ENTER(FUNC_LV_POLICY);

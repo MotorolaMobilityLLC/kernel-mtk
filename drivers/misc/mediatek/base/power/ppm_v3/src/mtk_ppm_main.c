@@ -48,6 +48,7 @@ static unsigned int log_cnt;
 static unsigned int filter_cnt;
 /* force update limit to HPS since it's not ready at previous round */
 static bool force_update_to_hps;
+static bool is_in_game;
 
 /*==============================================================*/
 /* Local function declarition					*/
@@ -344,6 +345,7 @@ static void ppm_main_calc_new_limit(void)
 {
 	struct ppm_policy_data *pos;
 	int i;
+	unsigned int max_freq_limit[NR_PPM_CLUSTERS] = {0};
 	bool is_ptp_activate = false, is_all_cluster_zero = true;
 	struct ppm_client_req *c_req = &(ppm_main_info.client_req);
 	struct ppm_client_req *last_req = &(ppm_main_info.last_req);
@@ -366,6 +368,10 @@ static void ppm_main_calc_new_limit(void)
 				ppm_ver("@%s: applying policy %s cluster %d limit...\n", __func__, pos->name, i);
 				ppm_main_update_limit(pos,
 					&c_req->cpu_limit[i], &pos->req.limit[i]);
+
+				/* calculate max freq limit except userlimit for perfd */
+				if (pos->policy != PPM_POLICY_USER_LIMIT)
+					max_freq_limit[i] = MAX(max_freq_limit[i], pos->req.limit[i].max_cpufreq_idx);
 			}
 
 			is_ptp_activate = (pos->policy == PPM_POLICY_PTPOD) ? true : false;
@@ -386,6 +392,9 @@ static void ppm_main_calc_new_limit(void)
 
 		ppm_unlock(&pos->lock);
 	}
+
+	for_each_ppm_clusters(i)
+		ppm_main_info.cluster_info[i].max_freq_except_userlimit = max_freq_limit[i];
 
 	/* set freq idx to previous limit if nr_cpu in the cluster is 0 */
 	for (i = 0; i < c_req->cluster_num; i++) {
@@ -510,6 +519,11 @@ end:
 	FUNC_EXIT(FUNC_LV_MAIN);
 }
 
+void ppm_game_mode_change_cb(int is_game_mode)
+{
+	is_in_game = is_game_mode;
+}
+
 static void ppm_main_log_print(unsigned int policy_mask, unsigned int min_power_budget,
 	unsigned int root_cluster, char *msg)
 {
@@ -520,7 +534,11 @@ static void ppm_main_log_print(unsigned int policy_mask, unsigned int min_power_
 	delta1 = ktime_to_ms(ktime_sub(cur_time, prev_check_time));
 	delta2 = ktime_to_ms(ktime_sub(cur_time, prev_log_time));
 
-	if (delta1 >= LOG_CHECK_INTERVAL || delta2 >= LOG_MAX_DIFF_INTERVAL) {
+	if (is_in_game) {
+		/* filter log */
+		filter_log = true;
+		filter_cnt++;
+	} else if (delta1 >= LOG_CHECK_INTERVAL || delta2 >= LOG_MAX_DIFF_INTERVAL) {
 		prev_check_time = cur_time;
 		filter_log = false;
 		log_cnt = 1;
@@ -821,6 +839,7 @@ static int ppm_main_data_init(void)
 		ppm_main_info.cluster_info[i].cluster_id = i;
 		/* OPP num will update after DVFS set table */
 		ppm_main_info.cluster_info[i].dvfs_opp_num = DVFS_OPP_NUM;
+		ppm_main_info.cluster_info[i].max_freq_except_userlimit = 0;
 
 		/* get topology info */
 		arch_get_cluster_cpus(&cpu_mask, i);

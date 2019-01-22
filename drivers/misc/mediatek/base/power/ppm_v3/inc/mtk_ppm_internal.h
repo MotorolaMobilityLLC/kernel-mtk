@@ -150,6 +150,7 @@ enum {
 	COBRA_ALGO = 1 << 6,
 	SYS_BOOST = 1 << 7,
 	IPI	= 1 << 8,
+	CPI	= 1 << 9,
 };
 
 enum ppm_policy {
@@ -210,6 +211,7 @@ struct ppm_cluster_info {
 	unsigned int core_num;
 	unsigned int cpu_id;	/* cpu id of the dvfs policy owner */
 	unsigned int dvfs_opp_num;
+	unsigned int max_freq_except_userlimit;
 	struct cpufreq_frequency_table *dvfs_tbl;	/* from DVFS driver */
 };
 
@@ -265,6 +267,7 @@ struct ppm_userlimit_data {
 extern struct ppm_data ppm_main_info;
 extern struct proc_dir_entry *policy_dir;
 extern struct proc_dir_entry *profile_dir;
+extern struct proc_dir_entry *cpi_dir;
 extern unsigned int ppm_func_lv_mask;
 extern unsigned int ppm_debug;
 

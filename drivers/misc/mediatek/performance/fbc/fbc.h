@@ -12,7 +12,6 @@
  */
 #include <linux/ring_buffer.h>
 #include <linux/trace_events.h>
-#include <trace.h>
 #include <linux/jiffies.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
@@ -37,6 +36,7 @@
 #include <linux/ioctl.h>
 #include "legacy_controller.h"
 #include "eas_controller.h"
+#include "fpsgo_common.h"
 #include <uapi/linux/fpsgo.h>
 
 #define DEV_MAJOR 121

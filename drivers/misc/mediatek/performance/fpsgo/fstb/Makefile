@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017 MediaTek Inc.
+# Copyright (C) 2015 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,8 +11,14 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6799) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6763) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6758) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6739) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-y += fstb.o
+
+MTK_TOP = $(srctree)/drivers/misc/mediatek/
+
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/video/include
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/dfrc/
+ccflags-y  += -I$(srctree)/kernel/trace/
+ccflags-y  += -I$(MTK_TOP)/base/power/include/
+ccflags-y  += -I$(MTK_TOP)/base/power/$(MTK_PLATFORM)/
+

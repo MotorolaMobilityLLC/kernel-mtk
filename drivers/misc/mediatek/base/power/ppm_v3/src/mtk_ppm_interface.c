@@ -23,6 +23,7 @@
 /* procfs dir for policies */
 struct proc_dir_entry *policy_dir;
 struct proc_dir_entry *profile_dir;
+struct proc_dir_entry *cpi_dir;
 unsigned int ppm_debug;
 #if 0
 unsigned int ppm_func_lv_mask = (FUNC_LV_MODULE  | FUNC_LV_API | FUNC_LV_MAIN | FUNC_LV_POLICY);
@@ -498,6 +499,12 @@ int ppm_procfs_init(void)
 	profile_dir = proc_mkdir("profile", dir);
 	if (!profile_dir) {
 		ppm_err("@%s: fail to create /proc/ppm/profile dir\n", __func__);
+		return -ENOMEM;
+	}
+
+	cpi_dir = proc_mkdir("cpi", dir);
+	if (!cpi_dir) {
+		ppm_err("@%s: fail to create /proc/ppm/cpi dir\n", __func__);
 		return -ENOMEM;
 	}
 

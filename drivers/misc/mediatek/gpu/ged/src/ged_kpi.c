@@ -49,6 +49,9 @@
 #include <../drivers/staging/android/sync.h>
 #endif
 
+int (*ged_kpi_push_app_self_fc_fp_fbt)(int is_game_control_frame_rate, pid_t pid);
+EXPORT_SYMBOL(ged_kpi_push_app_self_fc_fp_fbt);
+
 #ifdef MTK_GED_KPI
 
 #define GED_TAG "[GED_KPI]"
@@ -150,6 +153,8 @@ typedef struct GED_KPI_TAG {
 	int t_cpu_target;
 	int t_gpu_target;
 	int if_fallback_to_ft;
+
+	unsigned long long t_cpu_slptime;
 } GED_KPI;
 
 typedef struct GED_TIMESTAMP_TAG {
@@ -266,6 +271,30 @@ module_param(enable_game_self_frc_detect, int, S_IRUGO|S_IWUSR);
 module_param(gx_game_mode, int, S_IRUGO|S_IWUSR);
 module_param(gx_3D_benchmark_on, int, S_IRUGO|S_IWUSR);
 
+int (*ged_kpi_push_game_frame_time_fp_fbt)(
+	pid_t pid,
+	unsigned long long last_TimeStamp,
+	unsigned long long curr_TimeStamp,
+	unsigned long long *pRunningTime,
+	unsigned long long *pSleepTime);
+EXPORT_SYMBOL(ged_kpi_push_game_frame_time_fp_fbt);
+
+void (*ged_kpi_cpu_boost_fp_fbt)(
+	long long t_cpu_cur,
+	long long t_cpu_target,
+	unsigned long long t_cpu_slptime,
+	unsigned int target_fps);
+EXPORT_SYMBOL(ged_kpi_cpu_boost_fp_fbt);
+
+void (*ged_kpi_cpu_boost_check_01)(
+	int gx_game_mode,
+	int gx_force_cpu_boost,
+	int enable_cpu_boost,
+	int ismainhead);
+EXPORT_SYMBOL(ged_kpi_cpu_boost_check_01);
+
+void (*ged_kpi_output_gfx_info_fp)(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq);
+EXPORT_SYMBOL(ged_kpi_output_gfx_info_fp);
 
 /* ----------------------------------------------------------------------------- */
 #ifdef GED_ENABLE_FB_DVFS
@@ -728,7 +757,15 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		else if (boost_accum_cpu < 0)
 			boost_accum_cpu = 0;
 
-		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, boost_accum_cpu);
+		if (ged_kpi_cpu_boost_fp_fbt)
+			ged_kpi_cpu_boost_fp_fbt(
+				t_cpu_cur,
+				t_cpu_target,
+				psKPI->t_cpu_slptime,
+				psHead->target_fps);
+		else
+			update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, boost_accum_cpu);
+
 		psKPI->boost_linear_cpu = boost_linear_cpu;
 		psKPI->boost_real_cpu = boost_real_cpu;
 		psKPI->boost_accum_cpu = boost_accum_cpu;
@@ -1061,6 +1098,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 	GED_KPI_HEAD *psHead;
 	GED_KPI *psKPI = NULL;
 	unsigned long ulID;
+	unsigned long long phead_last1;
 
 #ifdef GED_KPI_DEBUG
 	GED_LOGE("[GED_KPI] ts type = %d, pid = %d, wnd = %llu, frame = %lu\n",
@@ -1187,6 +1225,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			psHead->i32DebugQedBuffer_length += 1;
 			psKPI->i32DebugQedBuffer_length = psHead->i32DebugQedBuffer_length;
 			/* recording cpu time per frame and boost CPU if needed */
+			phead_last1 = psHead->last_TimeStamp1;
 			psHead->t_cpu_latest =
 				psKPI->ullTimeStamp1 - psHead->last_TimeStamp1 - psHead->last_QedBufferDelay;
 			psKPI->t_cpu = psHead->t_cpu_latest;
@@ -1195,7 +1234,31 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			psHead->last_QedBufferDelay = 0;
 			psHead->last_TimeStamp1 = psKPI->ullTimeStamp1;
 #ifdef GED_KPI_CPU_BOOST
+			if (ged_kpi_cpu_boost_check_01)
+				ged_kpi_cpu_boost_check_01(
+					gx_game_mode,
+					gx_force_cpu_boost,
+					enable_cpu_boost,
+					psHead == main_head);
+
 			if ((gx_game_mode == 1 || gx_force_cpu_boost == 1) && enable_cpu_boost == 1) {
+
+				if (ged_kpi_push_game_frame_time_fp_fbt && psHead == main_head) {
+					unsigned long long vRunningTime = psHead->t_cpu_latest;
+					unsigned long long vSleepTime = 0;
+
+					ged_kpi_push_game_frame_time_fp_fbt(psHead->pid, phead_last1,
+									psKPI->ullTimeStamp1,
+									&vRunningTime,
+									&vSleepTime);
+					psHead->t_cpu_latest = vRunningTime;
+					psKPI->t_cpu = psHead->t_cpu_latest;
+					psKPI->t_cpu_slptime = vSleepTime;
+				}
+
+				if (ged_kpi_push_app_self_fc_fp_fbt && psHead == main_head)
+					ged_kpi_push_app_self_fc_fp_fbt(1, psHead->pid);
+
 				/* is_EAS_boost_off = 0; */
 				ged_kpi_cpu_boost(psHead, psKPI);
 			}
@@ -1261,7 +1324,6 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			}
 
 			if (psKPI) {
-				psKPI->ulMask |= GED_TIMESTAMP_TYPE_2;
 				psKPI->ulMask |= GED_TIMESTAMP_TYPE_2;
 				psKPI->ullTimeStamp2 = psTimeStamp->ullTimeStamp;
 				/* calculate gpu time */
@@ -1872,6 +1934,9 @@ EXPORT_SYMBOL(ged_kpi_set_game_hint_value_fp);
 void (*ged_kpi_set_game_hint_value_fp_2)(int is_game_mode);
 EXPORT_SYMBOL(ged_kpi_set_game_hint_value_fp_2);
 
+void (*ged_kpi_set_game_hint_value_fp_fbt)(int is_game_mode);
+EXPORT_SYMBOL(ged_kpi_set_game_hint_value_fp_fbt);
+
 bool ged_kpi_set_game_hint_value(int is_game_mode)
 {
 	bool ret = false;
@@ -1884,6 +1949,17 @@ bool ged_kpi_set_game_hint_value(int is_game_mode)
 		ged_kpi_set_game_hint_value_fp_2(is_game_mode);
 		ret = true;
 	}
+
+	if (ged_kpi_set_game_hint_value_fp_fbt) {
+		ged_kpi_set_game_hint_value_fp_fbt(is_game_mode);
+		ret = true;
+	}
+
+	if (ged_kpi_push_app_self_fc_fp_fbt && is_game_mode == 0) {
+		ged_kpi_push_app_self_fc_fp_fbt(0, -1);
+		ret = true;
+	}
+
 	return ret;
 }
 /* ----------------------------------------------------------------------------- */
