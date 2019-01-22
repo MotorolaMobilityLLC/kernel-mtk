@@ -187,13 +187,6 @@ bypass_dcs:
 		for (chid = 0; chid < max_channel_num; chid++)
 			enter_dcs_pasr_dpd_config(mtkpasr_vec[chid].pasr_on & 0xFF,
 						mtkpasr_vec[chid].pasr_on >> 0x8, chid);
-
-		/* Step3 - Turn off DDRPHY */
-		/* if (mtkpasr_vec[chconfig].pasr_on ==
-				query_channel_segment_bits()) {
-			dcs_mpu_protection(1);
-		}
-		*/
 	} else {
 		pr_warn("%s: should not be here\n", __func__);
 		goto err;
@@ -214,12 +207,6 @@ static void disable_dcs_pasr(void)
 
 	if (!dcs_acquired)
 		return;
-
-	/* Turn on DDRPHY */
-	/* if ((dcs_status == DCS_LOWPOWER)) {
-		dcs_mpu_protection(0);
-	}
-	*/
 
 	/* Restore PASR */
 	if (dcs_status == DCS_NORMAL)
