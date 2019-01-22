@@ -2569,7 +2569,7 @@ void mtk_idle_set_clkmux_addr(void)
 #endif
 }
 
-void mtk_cpuidle_framework_init(void)
+void __init mtk_cpuidle_framework_init(void)
 {
 	idle_pr_ver("[%s]entry!!\n", __func__);
 
