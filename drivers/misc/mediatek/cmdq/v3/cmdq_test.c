@@ -826,7 +826,8 @@ static void testcase_prefetch_scenarios(void)
 
 	/* make sure each scenario runs properly with 248+ commands */
 	for (scn = 0; scn < CMDQ_MAX_SCENARIO_COUNT; ++scn) {
-		if (cmdq_core_is_request_from_user_space(scn))
+		if (cmdq_core_is_request_from_user_space(scn) ||
+			scn == CMDQ_SCENARIO_TIMER_LOOP)
 			continue;
 
 		CMDQ_MSG("testcase_prefetch_scenarios scenario:%d\n", scn);
