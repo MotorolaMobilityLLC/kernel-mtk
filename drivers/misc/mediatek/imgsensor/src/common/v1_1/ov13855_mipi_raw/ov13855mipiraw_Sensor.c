@@ -43,7 +43,6 @@
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
-#include "kd_imgsensor_errcode.h"
 #include "ov13855mipiraw_Sensor.h"
 
 /****************************Modify Following Strings for Debug****************************/
@@ -56,8 +55,6 @@
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-/* int ov13855_chip_ver = OV13855_R2A; */
-/* for test */
 int m_bpc_select;
 /* sensor otp
  * attention
@@ -68,7 +65,7 @@ int m_bpc_select;
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = OV13855_SENSOR_ID,	/* record sensor id defined in Kd_imgsensor.h */
 
-	.checksum_value = 0xd6650427,	/*0xf86cfdf4, checksum value for Camera Auto Test */
+	.checksum_value = 0x78779e1c,	/*0xf86cfdf4, checksum value for Camera Auto Test */
 	.pre = {
 		.pclk = 108000000,	/*record different mode's pclk */
 		.linelength = 1122,	/*record different mode's linelength */
@@ -162,7 +159,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.hs_video_delay_frame = 2,	/* enter high speed video  delay frame num */
 	.slim_video_delay_frame = 2,	/* enter slim video delay frame num */
 
-	.isp_driving_current = ISP_DRIVING_8MA,	/* mclk driving current */
+	.isp_driving_current = ISP_DRIVING_4MA,	/* mclk driving current */
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,	/* sensor_interface_type */
 	.mipi_sensor_type = MIPI_OPHY_NCSI2,	/* 0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2 */
 	.mipi_settle_delay_mode = 1,	/* 0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL */
@@ -562,7 +559,9 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0304, 0x00);
 	write_cmos_sensor(0x0305, 0x01);
 	write_cmos_sensor(0x3022, 0x01);
-	write_cmos_sensor(0x3013, 0x12);
+	/* Update MIPI output timing R3012 and R3013 when stream off and then on within one frame */
+	write_cmos_sensor(0x3012, 0x40);
+	write_cmos_sensor(0x3013, 0x72);
 	write_cmos_sensor(0x3016, 0x72);
 	write_cmos_sensor(0x301b, 0xF0);
 	write_cmos_sensor(0x301f, 0xd0);
@@ -795,6 +794,10 @@ static void preview_setting(void)
 	write_cmos_sensor(0x4051, 0x0b);
 	write_cmos_sensor(0x4837, 0x1c);
 	write_cmos_sensor(0x4902, 0x01);
+
+	/*update sensor PLL1 clock*/
+	write_cmos_sensor(0x0302, 0x5e);/*MIP_PCLK:70.5M MIPI_PHY_CLK:564Mbps SCLK:56.4M*/
+	write_cmos_sensor(0x4837, 0x1c);
 	/* write_cmos_sensor(0x0100, 0x01); */
 }				/*    preview_setting  */
 
@@ -853,6 +856,9 @@ static void capture_setting(kal_uint16 currefps)
 			write_cmos_sensor(0x4837, 0x0e);
 			write_cmos_sensor(0x4902, 0x01);
 
+			/*update sensor PLL1 clock*/
+			write_cmos_sensor(0x0302, 0x5e);/*MIP_PCLK:141M MIPI_PHY_CLK:1128Mbps SCLK:112.8M*/
+			write_cmos_sensor(0x4837, 0x0e);
 
 		} else {	/* full size 15fps for PIP */
 
@@ -895,6 +901,10 @@ static void capture_setting(kal_uint16 currefps)
 			write_cmos_sensor(0x4051, 0x0b);
 			write_cmos_sensor(0x4837, 0x1c);
 			write_cmos_sensor(0x4902, 0x01);
+
+			/*update sensor PLL1 clock*/
+			write_cmos_sensor(0x0302, 0x5e);/*MIP_PCLK:141M MIPI_PHY_CLK:1128Mbps SCLK:112.8M*/
+			write_cmos_sensor(0x4837, 0x0e);
 
 			if (imgsensor.ihdr_en)
 				LOG_INF("imgsensor ihdr enable\n");
@@ -957,6 +967,10 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x4902, 0x01);
 	/* write_cmos_sensor(0x0100, 0x01); */
 
+	/*update sensor PLL1 clock*/
+	write_cmos_sensor(0x0302, 0x5e);/*MIP_PCLK:141M MIPI_PHY_CLK:1128Mbps SCLK:112.8M*/
+	write_cmos_sensor(0x4837, 0x0e);
+
 	if (imgsensor.ihdr_en)
 		LOG_INF("imgsensor ihdr enable\n");
 		/* no implementation */
@@ -1009,6 +1023,10 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x4051, 0x05);
 	write_cmos_sensor(0x4837, 0x38);
 	write_cmos_sensor(0x4902, 0x02);
+
+	/*update sensor PLL1 clock*/
+	write_cmos_sensor(0x0302, 0x5e);/*MIP_PCLK:35.25M MIPI_PHY_CLK:282Mbps SCLK:28.2M*/
+	write_cmos_sensor(0x4837, 0x39);
 
 	if (imgsensor.ihdr_en)
 		LOG_INF("imgsensor ihdr enable\n");
@@ -1063,6 +1081,10 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x4051, 0x0b);
 	write_cmos_sensor(0x4837, 0x1c);
 	write_cmos_sensor(0x4902, 0x01);
+
+	/*update sensor PLL1 clock*/
+	write_cmos_sensor(0x0302, 0x5e);/*MIP_PCLK:70.5M MIPI_PHY_CLK:564Mbps SCLK:56.4M*/
+	write_cmos_sensor(0x4837, 0x1c);
 
 	if (imgsensor.ihdr_en)
 		LOG_INF("imgsensor ihdr enable\n");
@@ -1693,7 +1715,9 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
 		    imgsensor_info.hs_video.linelength;
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.dummy_line =
-		    imgsensor.frame_length =
+		    (frame_length > imgsensor_info.hs_video.framelength) ? (frame_length -
+			imgsensor_info.hs_video.framelength) : 0;
+		imgsensor.frame_length =
 		    imgsensor_info.hs_video.framelength + imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
@@ -1767,10 +1791,13 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	/* check,power+volum+ */
 	LOG_INF("enable: %d\n", enable);
 
-	if (enable)
-		write_cmos_sensor(0x4503, 0x80);
-	else
-		write_cmos_sensor(0x4503, 0x00);
+	if (enable) {
+		write_cmos_sensor(0x5000, 0x81);
+		write_cmos_sensor(0x5080, 0x80);
+	} else {
+		write_cmos_sensor(0x5000, 0xff);
+		write_cmos_sensor(0x5080, 0x00);
+	}
 
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
