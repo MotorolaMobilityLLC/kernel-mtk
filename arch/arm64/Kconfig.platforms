@@ -283,6 +283,7 @@ config MACH_MT6771
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_SYS_CIRQ
 	select FAST_CIRQ_CLONE_FLUSH
+	select MTK_CACHE_FLUSH_BY_SF
 	help
 	  This enables support for MediaTek MT6771
 	  Support for aarch64 Architecture

@@ -1,0 +1,3 @@
+config MTK_CACHE_FLUSH_BY_SF
+	bool "cache flush by mtk SF"
+	default n
