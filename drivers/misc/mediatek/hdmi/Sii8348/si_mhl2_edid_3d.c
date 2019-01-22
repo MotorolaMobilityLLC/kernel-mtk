@@ -2490,7 +2490,7 @@ static uint8_t parse_861_short_descriptors (
 				   			update_av_info_edid(true, HDMI_4k30_DSC, 0);
 				   		else if( (MHL_4k_VIC[i] == 3) || (MHL_4k_VIC[i] == 4))	
 				   			update_av_info_edid(true, HDMI_4k24_DSC, 0);
-						printk("MHL_4k_VIC[%d]=%d\n", i, MHL_4k_VIC[i]);
+						pr_info("MHL_4k_VIC[%d]=%d\n", i, MHL_4k_VIC[i]);
 					}
 			    }
 

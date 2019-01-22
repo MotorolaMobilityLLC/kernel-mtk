@@ -3295,9 +3295,9 @@ static	int	g2wb_isr(struct drv_hw_context *hw_context, uint8_t intr_stat)
 			memset(hw_context->write_burst_data, 0, sizeof(hw_context->write_burst_data));
 			memcpy(hw_context->write_burst_data, &gen2_buffer[1], GEN2_WRITE_BURST_LENGTH);
 			for(i = 0; i <= length; i++) {
-				printk("0x%x @@",gen2_buffer[i+1]);
+				pr_info("0x%x @@", gen2_buffer[i+1]);
 				if(i==length)
-					printk("\n");
+					pr_info("\n");
 			}
 			MHL_TX_DBG_INFO(hw_context, "got HAWB data in FIFO end \n");
 			/* Signal upper layer of this arrival */
@@ -4065,9 +4065,9 @@ static void mhl2_em_request(struct drv_hw_context *hw_context, bool em)
 	memcpy(req_pkt + MHL2_EM_PACKET_FRAME_LEN, req_msg, MHL2_EM_CMD_REQ_MODE_MSG_LEN);
 	req_pkt[4] = calculate_generic_checksum(req_pkt, 0, MHL2_EM_PACKET_FRAME_LEN + MHL2_EM_CMD_REQ_MODE_MSG_LEN);
 	for(i = 0; i <= 8; i++) {
-		printk("0x%x @@", req_pkt[i]);
+		pr_info("0x%x @@", req_pkt[i]);
 		if(i==8)
-			printk("\n");
+			pr_info("\n");
 		}
 
 	// The Packet is small enough to be put in one single HAWB slot

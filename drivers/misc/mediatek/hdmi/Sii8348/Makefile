@@ -14,7 +14,9 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/inc  \
              -I$(srctree)/drivers/misc/mediatek/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
-             -I$(srctree)/drivers/misc/mediatek/ext_disp/$(MTK_PLATFORM)/
+             -I$(srctree)/drivers/misc/mediatek/ext_disp/$(MTK_PLATFORM)/ \
+             -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6336/ \
+             -I$(srctree)/drivers/misc/mediatek/pmic/include/
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 
 obj-y	+= hdmi_drv.o mhl_linux_tx.o mhl_rcp_inputdev.o mhl_supp.o platform.o si_8348_drv.o si_mdt_inputdev.o si_mhl2_edid_3d.o
