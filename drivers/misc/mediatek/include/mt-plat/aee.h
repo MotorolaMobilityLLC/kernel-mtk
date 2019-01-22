@@ -103,7 +103,7 @@ struct aee_user_thread_maps {
 };
 
 #ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
-extern bool printk_disable_uart;
+extern int printk_disable_uart;
 #endif
 
 struct aee_oops {

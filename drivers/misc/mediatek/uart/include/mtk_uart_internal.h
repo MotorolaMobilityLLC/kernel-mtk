@@ -41,7 +41,7 @@ ssize_t mtk_uart_history_store(struct kobject *kobj, const char *page, size_t si
 */
 #ifndef CONFIG_FIQ_DEBUGGER
 #ifdef CONFIG_MTK_PRINTK_UART_CONSOLE
-extern bool printk_disable_uart;
+extern int printk_disable_uart;
 extern int mt_need_uart_console;
 #endif
 #endif
