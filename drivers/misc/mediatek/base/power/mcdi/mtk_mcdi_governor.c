@@ -15,6 +15,8 @@
 #include <linux/spinlock.h>
 #include <linux/timekeeping.h>
 
+#include <mtk_idle_mcdi.h>
+
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_mbox.h>
 #include <mtk_mcdi_state.h>
@@ -25,11 +27,14 @@
 
 #define CHECK_CLUSTER_RESIDENCY     0
 
+/* #define ANY_CORE_DPIDLE_SODI */
+
 static DEFINE_SPINLOCK(mcdi_enabled_spin_lock);
 static bool mcdi_enabled;
 static bool mcdi_paused;
 static bool any_core_dpidle_sodi_enabled;
 static int boot_time_check;
+static bool any_core_dpidle_sodi_enabled = true;
 
 struct mcdi_status {
 	bool valid;
@@ -165,8 +170,8 @@ bool cluster_residency_check(int cpu)
 bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
 {
 	int cluster_idx           = cluster_idx_get(cpu);
-	unsigned int cluster_val  = (CLUSTER_PWR_STAT_MASK & ~(1 << cluster_idx));
-	unsigned int cpu_val      = (CPU_PWR_STAT_MASK & ~(1 << cpu));
+	unsigned int cluster_val  = (CLUSTER_PWR_STAT_MASK & ~(1 << (cluster_idx + 16)));
+	unsigned int cpu_val      = (CPU_PWR_STAT_MASK     & ~(1 << (cpu         +  0)));
 	unsigned int on_off_stat  = 0;
 	bool         ret          = false;
 
@@ -179,17 +184,37 @@ bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
 	return ret;
 }
 
+#ifdef ANY_CORE_DPIDLE_SODI
+static int mtk_idle_state_mapping[NR_TYPES] = {
+	MCDI_STATE_DPIDLE,		/* IDLE_TYPE_DP */
+	MCDI_STATE_SODI3,		/* IDLE_TYPE_SO3 */
+	MCDI_STATE_SODI,		/* IDLE_TYPE_SO */
+	MCDI_STATE_CLUSTER_OFF,	/* IDLE_TYPE_MC */
+	MCDI_STATE_CLUSTER_OFF,	/* IDLE_TYPE_SL */
+	MCDI_STATE_CLUSTER_OFF	/* IDLE_TYPE_RG */
+};
+#endif
+
 int any_core_deepidle_sodi_check(int cpu)
 {
-	int state = MCDI_STATE_WFI;
+	int state = MCDI_STATE_CPU_OFF;
+#ifdef ANY_CORE_DPIDLE_SODI
+	int mtk_idle_state = IDLE_TYPE_RG;
+#endif
 
 	/* Check power ON CPU status from SSPM */
 	if (!mcdi_cpu_cluster_on_off_stat_check(cpu))
 		goto end;
 
-	/* Check other deepidle/SODI criteria */
-	/* TODO */
+	state = MCDI_STATE_CLUSTER_OFF;
 
+#ifdef ANY_CORE_DPIDLE_SODI
+	/* Check other deepidle/SODI criteria */
+	mtk_idle_state = mtk_idle_select(cpu);
+
+	if (state >= 0 && state < NR_TYPES)
+		state = mtk_idle_state_mapping[mtk_idle_state];
+#endif
 end:
 	return state;
 }
