@@ -39,6 +39,9 @@
 /* Max length for buffers */
 #define BUFFER_LENGTH_MAX		0x100000
 
+/* Max length for objects */
+#define OBJECT_LENGTH_MAX		0x8000000
+
 /* Flags for buffers to map (aligned on GP) */
 #define MC_IO_MAP_INPUT			BIT(0)
 #define MC_IO_MAP_OUTPUT		BIT(1)
