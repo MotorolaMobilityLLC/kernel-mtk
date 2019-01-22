@@ -524,6 +524,9 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_3]	= MIPITX_PHY_LANE_0;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK]	= MIPITX_PHY_LANE_3;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX]	= MIPITX_PHY_LANE_3;
+	/* for ARR 2.0 */
+	params->max_refresh_rate = 60;
+	params->min_refresh_rate = 30;
 }
 
 #ifdef BUILD_LK
