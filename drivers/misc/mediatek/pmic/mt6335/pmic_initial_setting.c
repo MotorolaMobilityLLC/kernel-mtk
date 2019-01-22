@@ -169,7 +169,6 @@ int PMIC_POWER_HOLD(unsigned int hold)
 void PMIC_LP_INIT_SETTING(void)
 {
 	int ret = 0;
-
 	/*--suspend--*/
 	ret = pmic_buck_vcore_lp(SRCLKEN0, 1, HW_LP);
 	ret = pmic_buck_vdram_lp(SRCLKEN0, 1, HW_LP);
@@ -262,6 +261,7 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vibr_lp(SW, 1, SW_OFF);
 	ret = pmic_ldo_vxo22_lp(SRCLKEN2, 1, HW_LP);
 	ret = pmic_ldo_vfe28_lp(SRCLKEN1, 1, HW_OFF);
+
 }
 
 void PMIC_INIT_SETTING_V1(void)

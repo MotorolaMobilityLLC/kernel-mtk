@@ -44,6 +44,36 @@ static int count_time_out = 100;
 static struct wake_lock  mt6335_auxadc_wake_lock;
 static struct mutex mt6335_adc_mutex;
 
+void wk_auxadc_bgd_ctrl(unsigned char en)
+{
+	if (en) {
+		/*--BAT TEMP MAX DET EN--*/
+		pmic_config_interface_nolock(MT6335_AUXADC_BAT_TEMP_4, 0x3, 0x3, 12);
+		/*--BAT TEMP MIN DET EN--*/
+		pmic_config_interface_nolock(MT6335_AUXADC_BAT_TEMP_5, 0x3, 0x3, 12);
+		/*--BAT TEMP DET EN--*/
+		pmic_config_interface_nolock(MT6335_INT_CON1_SET, 0x00C0, 0xffff, 0);
+	} else {
+		/*--BAT TEMP DET EN--*/
+		pmic_config_interface_nolock(MT6335_INT_CON1_CLR, 0x00C0, 0xffff, 0);
+		/*--BAT TEMP MAX DET EN--*/
+		pmic_config_interface_nolock(MT6335_AUXADC_BAT_TEMP_4, 0x0, 0x3, 12);
+		/*--BAT TEMP MIN DET EN--*/
+		pmic_config_interface_nolock(MT6335_AUXADC_BAT_TEMP_5, 0x0, 0x3, 12);
+	}
+}
+
+void wk_auxadc_bgd_ctrl_dbg(void)
+{
+	pr_err("EN_BAT_TEMP_L: %d\n", pmic_get_register_value(PMIC_RG_INT_EN_BAT_TEMP_L));
+	pr_err("EN_BAT_TEMP_H: %d\n", pmic_get_register_value(PMIC_RG_INT_EN_BAT_TEMP_H));
+	pr_err("BAT_TEMP_IRQ_EN_MAX: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MAX));
+	pr_err("BAT_TEMP_IRQ_EN_MIN: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MIN));
+	pr_err("BAT_TEMP_EN_MAX: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_EN_MAX));
+	pr_err("BAT_TEMP_EN_MIN: %d\n", pmic_get_register_value(PMIC_AUXADC_BAT_TEMP_EN_MIN));
+	/*pr_err("BATON_TDET_EN: %d\n", pmic_get_register_value(PMIC_BATON_TDET_EN);*/
+}
+
 void mt6335_auxadc_lock(void)
 {
 	wake_lock(&mt6335_auxadc_wake_lock);
