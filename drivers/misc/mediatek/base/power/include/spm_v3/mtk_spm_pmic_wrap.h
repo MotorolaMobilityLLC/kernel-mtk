@@ -49,7 +49,7 @@ extern int mt_spm_pmic_wrap_init(void);
 extern void mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id phase);
 extern void mt_spm_pmic_wrap_set_cmd(enum pmic_wrap_phase_id phase, int idx,
 				     unsigned int cmd_wdata);
-#if 0
+#if 1
 extern void mt_spm_pmic_wrap_get_cmd_full(enum pmic_wrap_phase_id phase, int idx,
 					  unsigned int *p_cmd_addr, unsigned int *p_cmd_wdata);
 extern void mt_spm_pmic_wrap_set_cmd_full(enum pmic_wrap_phase_id phase, int idx,
