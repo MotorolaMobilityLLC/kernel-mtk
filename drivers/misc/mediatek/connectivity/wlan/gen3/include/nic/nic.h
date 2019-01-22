@@ -130,7 +130,7 @@ VOID nicSDIOInit(IN P_ADAPTER_T prAdapter);
 VOID nicSDIOReadIntStatus(IN P_ADAPTER_T prAdapter, OUT PUINT_32 pu4IntStatus);
 #endif
 
-VOID nicPmTriggerDriverOwn(IN P_ADAPTER_T prAdapter);
+VOID nicpmCheckAndTriggerDriverOwn(IN P_ADAPTER_T prAdapter);
 
 BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter);
 
