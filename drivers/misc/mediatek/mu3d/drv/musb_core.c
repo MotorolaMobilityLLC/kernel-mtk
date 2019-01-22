@@ -1719,6 +1719,13 @@ irqreturn_t musb_interrupt(struct musb *musb)
 		  (devctl & USB_DEVCTL_HOSTMODE) ? "host" : "peripheral",
 		  musb->int_usb, musb->int_tx, musb->int_rx);
 
+	if (unlikely(!musb->softconnect)) {
+		os_printk(K_WARNIN, "!softconnect, IRQ %s usb%04x tx%04x rx%04x\n",
+				(devctl & USB_DEVCTL_HOSTMODE) ? "host" : "peripheral",
+				musb->int_usb, musb->int_tx, musb->int_rx);
+		return IRQ_HANDLED;
+	}
+
 	/* the core can interrupt us for multiple reasons; docs have
 	 * a generic interrupt flowchart to follow
 	 */
