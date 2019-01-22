@@ -2418,6 +2418,7 @@ static int rt9467_enable_charging(struct charger_device *chg_dev, bool en)
 static int rt9467_enable_safety_timer(struct charger_device *chg_dev, bool en)
 {
 	struct rt9467_info *info = dev_get_drvdata(&chg_dev->dev);
+
 	return __rt9467_enable_safety_timer(info, en);
 }
 
@@ -2692,6 +2693,7 @@ static int rt9467_set_mivr(struct charger_device *chg_dev, u32 mivr)
 static int rt9467_set_cv(struct charger_device *chg_dev, u32 cv)
 {
 	struct rt9467_info *info = dev_get_drvdata(&chg_dev->dev);
+
 	return __rt9467_set_cv(info, cv);
 }
 
@@ -2934,6 +2936,7 @@ static int rt9467_is_safety_timer_enable(struct charger_device *chg_dev,
 	bool *en)
 {
 	struct rt9467_info *info = dev_get_drvdata(&chg_dev->dev);
+
 	return rt9467_i2c_test_bit(info, RT9467_REG_CHG_CTRL12,
 		RT9467_SHIFT_TMR_EN, en);
 }
@@ -3227,6 +3230,7 @@ static int rt9467_plug_out(struct charger_device *chg_dev)
 static int rt9467_is_charging_enable(struct charger_device *chg_dev, bool *en)
 {
 	struct rt9467_info *info = dev_get_drvdata(&chg_dev->dev);
+
 	return __rt9467_is_charging_enable(info, en);
 }
 
