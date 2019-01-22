@@ -1950,7 +1950,7 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
 		debug_block.process = current->comm;
 		debug_block.when = jiffies;
 		debug_block.sk = sk; /*Mark sk info*/
-		init_timer(&debug_timer);
+		init_timer_on_stack(&debug_timer);
 		debug_timer.function = print_block_sock_info;
 		debug_timer.expires = jiffies + 10 * HZ;
 		debug_timer.data = (unsigned long)&debug_block;
