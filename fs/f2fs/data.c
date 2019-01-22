@@ -20,6 +20,7 @@
 #include <linux/prefetch.h>
 #include <linux/uio.h>
 #include <linux/cleancache.h>
+#include <linux/hie.h>
 
 #include "f2fs.h"
 #include "node.h"
@@ -119,6 +120,9 @@ static void bio_post_read_processing(struct bio_post_read_ctx *ctx)
 
 static bool f2fs_bio_post_read_required(struct bio *bio)
 {
+	if (bio_encrypted(bio))
+		return false;
+
 	return bio->bi_private && !bio->bi_error;
 }
 
@@ -312,6 +316,7 @@ static void __submit_merged_bio(struct f2fs_bio_info *io)
 	else
 		trace_f2fs_prepare_write_bio(io->sbi->sb, fio->type, io->bio);
 
+	f2fs_set_bio_ctx_fio(fio, io->bio);
 	__submit_bio(io->sbi, io->bio, fio->type);
 	io->bio = NULL;
 }
@@ -452,12 +457,59 @@ int f2fs_submit_page_bio(struct f2fs_io_info *fio)
 	}
 	bio_set_op_attrs(bio, fio->op, fio->op_flags);
 
+	f2fs_set_bio_ctx_fio(fio, bio);
 	__submit_bio(fio->sbi, bio, fio->type);
 
 	if (!is_read_io(fio->op))
 		inc_page_count(fio->sbi, WB_DATA_TYPE(fio->page));
 	return 0;
 }
+
+
+#ifdef CONFIG_F2FS_FS_ENCRYPTION
+static int f2fs_crypt_bio_not_mergeable(struct bio *bio, struct page *nxt)
+{
+	struct address_space *bio_mapping;
+	struct address_space *nxt_mapping;
+	struct page *p;
+
+	if (!hie_is_ready() || !bio || !nxt)
+		return 0;
+
+	p = bio_page(bio);
+
+	if (!p)
+		return 0;
+
+	bio_mapping = page_mapping(p);
+	nxt_mapping = page_mapping(nxt);
+
+	if (bio_mapping && nxt_mapping) {
+		if (!bio_mapping->host || !nxt_mapping->host)
+			return 0;
+
+		/* both not hw encrypted => don't care */
+		if (!fscrypt_is_hw_encrypt(bio_mapping->host) &&
+		    !fscrypt_is_hw_encrypt(nxt_mapping->host))
+			return 0;
+
+		/* different file => don't merge */
+		if (bio_mapping->host->i_ino != nxt_mapping->host->i_ino)
+			return 1;
+
+		/* discontiguous page index => don't merge */
+		if ((p->index + bio_segments(bio)) != (nxt->index))
+			return 1;
+	}
+
+	return 0;
+}
+#else
+static int f2fs_crypt_bio_not_mergeable(struct bio *bio struct page *nxt)
+{
+	return 0;
+}
+#endif
 
 int f2fs_submit_page_write(struct f2fs_io_info *fio)
 {
@@ -498,6 +550,10 @@ next:
 	    (io->fio.op != fio->op || io->fio.op_flags != fio->op_flags) ||
 			!__same_bdev(sbi, fio->new_blkaddr, io->bio)))
 		__submit_merged_bio(io);
+
+	if (f2fs_crypt_bio_not_mergeable(io->bio, bio_page))
+		__submit_merged_bio(io);
+
 alloc_new:
 	if (io->bio == NULL) {
 		if ((fio->type == DATA || fio->type == NODE) &&
@@ -547,6 +603,11 @@ static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
 	bio->bi_end_io = f2fs_read_end_io;
 	bio_set_op_attrs(bio, REQ_OP_READ, 0);
 
+	if (fscrypt_is_hw_encrypt(inode)) {
+		f2fs_wait_on_block_writeback(sbi, blkaddr);
+		return bio;
+	}
+
 	if (f2fs_encrypted_file(inode))
 		post_read_steps |= 1 << STEP_DECRYPT;
 	if (post_read_steps) {
@@ -579,6 +640,8 @@ static int f2fs_submit_page_read(struct inode *inode, struct page *page,
 		bio_put(bio);
 		return -EFAULT;
 	}
+
+	f2fs_set_bio_ctx(inode, bio);
 	__submit_bio(F2FS_I_SB(inode), bio, DATA);
 	return 0;
 }
@@ -1507,9 +1570,14 @@ got_it:
 		if (bio && (last_block_in_bio != block_nr - 1 ||
 			!__same_bdev(F2FS_I_SB(inode), block_nr, bio))) {
 submit_and_realloc:
+			f2fs_set_bio_ctx(inode, bio);
 			__submit_bio(F2FS_I_SB(inode), bio, DATA);
 			bio = NULL;
 		}
+
+		if (f2fs_crypt_bio_not_mergeable(bio, page))
+			goto submit_and_realloc;
+
 		if (bio == NULL) {
 			bio = f2fs_grab_read_bio(inode, block_nr, nr_pages);
 			if (IS_ERR(bio)) {
@@ -1530,6 +1598,7 @@ set_error_page:
 		goto next_page;
 confused:
 		if (bio) {
+			f2fs_set_bio_ctx(inode, bio);
 			__submit_bio(F2FS_I_SB(inode), bio, DATA);
 			bio = NULL;
 		}
@@ -1539,8 +1608,10 @@ next_page:
 			put_page(page);
 	}
 	BUG_ON(pages && !list_empty(pages));
-	if (bio)
+	if (bio) {
+		f2fs_set_bio_ctx(inode, bio);
 		__submit_bio(F2FS_I_SB(inode), bio, DATA);
+	}
 	return 0;
 }
 
@@ -1581,6 +1652,9 @@ static int encrypt_one_page(struct f2fs_io_info *fio)
 	gfp_t gfp_flags = GFP_NOFS;
 
 	if (!f2fs_encrypted_file(inode))
+		return 0;
+
+	if (fscrypt_is_hw_encrypt(inode))
 		return 0;
 
 	/* wait for GCed page writeback via META_MAPPING */
