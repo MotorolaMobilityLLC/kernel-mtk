@@ -426,7 +426,8 @@ int vpu_get_request_from_queue(struct vpu_user *user, uint64_t request_id, struc
 		list_for_each(head, &user->deque_list)
 		{
 			req = vlist_node_of(head, struct vpu_request);
-			LOG_DBG("[vpu] req->request_id = 0x%lx\n", (unsigned long)req->request_id);
+			LOG_DBG("[vpu] req->request_id = 0x%lx, 0x%lx\n", (unsigned long)req->request_id,
+				(unsigned long)request_id);
 			if ((unsigned long)req->request_id == (unsigned long)request_id) {
 				get = true;
 				LOG_DBG("[vpu] get = true\n");
@@ -435,8 +436,9 @@ int vpu_get_request_from_queue(struct vpu_user *user, uint64_t request_id, struc
 		}
 
 		LOG_DBG("[vpu] testtest...\n");
+		if (get)
+			list_del_init(vlist_link(req, struct vpu_request));
 
-		list_del_init(vlist_link(req, struct vpu_request));
 		mutex_unlock(&user->data_mutex);
 	} while (!get);
 
