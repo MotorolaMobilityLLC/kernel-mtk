@@ -1,5 +1,6 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(CONFIG_MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
 
 ifeq ($(CONFIG_MACH_MT6757), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
@@ -15,7 +16,7 @@ obj-y += pmic_ipi.o
 endif
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-obj-$(CONFIG_MTK_SMART_BATTERY) += mtk_battery_hal.o pmic_timer_service.o
+obj-$(CONFIG_MTK_SMART_BATTERY) += mt6355_gauge.o
 endif
 
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6355)	+= pmic.o pmic_irq.o pmic_common.o \
