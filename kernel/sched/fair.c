@@ -76,11 +76,17 @@ static struct cpumask under_util_isolated_cpus;
 unsigned int sysctl_sched_latency = 6000000ULL;
 unsigned int normalized_sysctl_sched_latency = 6000000ULL;
 
+/*
+ * Enable/disable honoring sync flag in energy-aware wakeups.
+ */
+unsigned int sysctl_sched_sync_hint_enable = 1;
+
 unsigned int sysctl_sched_isolation_hint_enable; /* default off */
 int sys_boosted;
 #ifdef CONFIG_SCHED_WALT
-unsigned int sysctl_sched_use_walt_cpu_util = 1;
-unsigned int sysctl_sched_use_walt_task_util = 1;
+static int sched_use_walt_nice = 101;
+unsigned int sysctl_sched_use_walt_cpu_util;
+unsigned int sysctl_sched_use_walt_task_util;
 __read_mostly unsigned int sysctl_sched_walt_cpu_high_irqload =
 	(10 * NSEC_PER_MSEC);
 #endif
@@ -159,7 +165,7 @@ unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
  */
 static bool system_overutil;
 
-static inline bool system_overutilized(int cpu)
+inline bool system_overutilized(int cpu)
 {
 	return system_overutil;
 }
@@ -4976,7 +4982,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
 static inline unsigned long task_util(struct task_struct *p)
 {
 #ifdef CONFIG_SCHED_WALT
-	if (!walt_disabled && sysctl_sched_use_walt_task_util) {
+	if (!walt_disabled && (sysctl_sched_use_walt_task_util || p->prio < sched_use_walt_nice)) {
 		unsigned long demand = p->ravg.demand;
 		return (demand << 10) / walt_ravg_window;
 	}
@@ -5021,7 +5027,7 @@ static bool cpu_overutilized(int cpu)
 	return (capacity_of(cpu) * 1024) < (cpu_util(cpu) * capacity_margin);
 }
 
-static inline bool energy_aware(void)
+inline bool energy_aware(void)
 {
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	return is_eas_enabled() && sched_feat(ENERGY_AWARE);
@@ -5046,8 +5052,8 @@ static inline unsigned long __src_cpu_util(int cpu, int delta, unsigned long tas
 
 #ifdef CONFIG_SCHED_WALT
 	if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
-		util = (cpu_rq(cpu)->prev_runnable_sum << SCHED_LOAD_SHIFT) /
-			walt_ravg_window;
+		util = div64_u64((cpu_rq(cpu)->prev_runnable_sum << SCHED_LOAD_SHIFT),
+			walt_ravg_window);
 #endif
 	util = max(util, task_delta);
 	delta += util;
@@ -5162,21 +5168,25 @@ long group_norm_util(struct energy_env *eenv, struct sched_group *sg)
 static int find_new_capacity(struct energy_env *eenv,
 	const struct sched_group_energy *const sge)
 {
-	int idx;
 	unsigned long util = group_max_util(eenv);
 	unsigned long new_capacity = util;
+	int idx, max_idx = sge->nr_cap_states - 1;
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	/* OPP idx to refer capacity margin */
 	new_capacity = util * capacity_margin_dvfs >> SCHED_CAPACITY_SHIFT;
 #endif
 
-	for (idx = 0; idx < sge->nr_cap_states; idx++) {
-		if (sge->cap_states[idx].cap >= new_capacity)
-			break;
-	}
+	/* default is max_cap if we don't find a match */
+	eenv->cap_idx = max_idx;
 
-	eenv->cap_idx = idx;
+	for (idx = 0; idx < sge->nr_cap_states; idx++) {
+		if (sge->cap_states[idx].cap >= new_capacity) {
+			/* Keep track of SG's capacity index */
+			eenv->cap_idx = idx;
+			break;
+		}
+	}
 
 	return idx;
 }
@@ -5321,7 +5331,7 @@ static int sched_group_energy(struct energy_env *eenv)
 							sg_busy_energy, sg_idle_energy, total_energy);
 
 				if (!sd->child)
-					cpumask_xor(&visit_cpus, &visit_cpus, sched_group_cpus(sg));
+					cpumask_andnot(&visit_cpus, &visit_cpus, sched_group_cpus(sg));
 
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 				/*
@@ -5441,7 +5451,7 @@ schedtune_task_margin(struct task_struct *task)
 unsigned long
 boosted_cpu_util(int cpu)
 {
-	unsigned long util = cpu_util(cpu);
+	unsigned long util = cpu_util_freq(cpu);
 	long margin = schedtune_cpu_margin(util, cpu);
 
 	trace_sched_boost_cpu(cpu, util, margin);
@@ -5464,10 +5474,13 @@ boosted_task_util(struct task_struct *task)
 		return util;
 }
 
-unsigned long
-get_boosted_task_util(struct task_struct *task)
+void get_task_util(struct task_struct *p, unsigned long *util,
+	unsigned long *boost_util)
 {
-	return boosted_task_util(task);
+	/* heavytask: using pelt */
+	*util = p->se.avg.util_avg;
+
+	*boost_util = boosted_task_util(p);
 }
 
 /*
@@ -5972,6 +5985,12 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int sync = wake_flags & WF_SYNC;
 	int policy = 0;
 	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	bool prefer_idle = schedtune_prefer_idle(p) > 0;
+#else
+	bool prefer_idle = 0;
+#endif
+
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
 	/* mtk: If task is VIP task, prefer most efficiency idle cpu */
 	if (is_vip_task(p)) {
@@ -5979,19 +5998,37 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 
 		vip_idle_cpu = find_idle_vip_cpu(p);
 		if (vip_idle_cpu >= 0) {
-			trace_sched_select_task_rq(p, (LB_VIP | vip_idle_cpu), prev_cpu, vip_idle_cpu);
+			trace_sched_select_task_rq(p, (LB_VIP | vip_idle_cpu), prev_cpu, vip_idle_cpu,
+					task_util(p), boosted_task_util(p), prefer_idle);
 			return vip_idle_cpu;
 		}
 	}
 #endif
+
+	if (!system_overutilized(cpu) &&
+	     sysctl_sched_sync_hint_enable && sync) {
+		int sync_cpu = smp_processor_id();
+		cpumask_t search_cpus;
+
+		cpumask_and(&search_cpus, tsk_cpus_allowed(p), cpu_online_mask);
+		if (cpumask_test_cpu(sync_cpu, &search_cpus))
+			return sync_cpu;
+	}
 
 	/*
 	 *  Consider EAS if only EAS enabled, but HMP
 	 *  if hybrid enabled and system is over-utilized.
 	 */
 	if ((energy_aware() && !hybrid_support()) ||
-			(hybrid_support() && !system_overutilized(cpu)))
-		goto CONSIDER_EAS;
+			(hybrid_support() && !system_overutilized(cpu))) {
+		new_cpu =  select_energy_cpu_plus(p, prev_cpu, prefer_idle);
+
+#ifdef CONFIG_MTK_SCHED_TRACERS
+		trace_sched_select_task_rq(p, (LB_EAS | new_cpu), prev_cpu, new_cpu,
+				task_util(p), boosted_task_util(p), prefer_idle);
+#endif
+		return new_cpu;
+	}
 
 	/* HMP fork balance:
 	 * always put non-kernel forking tasks on a big domain
@@ -6004,13 +6041,12 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			new_cpu = prev_cpu;
 		else {
 #ifdef CONFIG_MTK_SCHED_TRACERS
-			trace_sched_select_task_rq(p, (LB_FORK | new_cpu), prev_cpu, new_cpu);
+			trace_sched_select_task_rq(p, (LB_FORK | new_cpu), prev_cpu, new_cpu,
+					task_util(p), boosted_task_util(p), prefer_idle);
 #endif
 			return new_cpu;
 		}
 	}
-
-CONSIDER_EAS:
 
 	if (sd_flag & SD_BALANCE_WAKE)
 		want_affine = (!wake_wide(p) && task_fits_max(p, cpu) &&
@@ -6046,19 +6082,18 @@ CONSIDER_EAS:
 
 	if (!sd) {
 		if (energy_aware() && !system_overutilized(cpu)) {
-			new_cpu = select_energy_cpu_plus(p, prev_cpu);
+			new_cpu = select_energy_cpu_plus(p, prev_cpu, prefer_idle);
 			policy |= LB_EAS;
 		}
 		else if (sd_flag & SD_BALANCE_WAKE) { /* XXX always ? */
 			if (true) {
-#ifdef CONFIG_CGROUP_SCHEDTUNE
-				bool prefer_idle = schedtune_prefer_idle(p) > 0;
-#else
-				bool prefer_idle = true;
-#endif
 				int idle_cpu;
 
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 				idle_cpu = find_best_idle_cpu(p, prefer_idle);
+#else
+				idle_cpu = find_best_idle_cpu(p, true);
+#endif
 				if (idle_cpu >= 0) {
 					new_cpu = idle_cpu;
 					policy |= LB_IDLEST;
@@ -6124,7 +6159,7 @@ CONSIDER_EAS:
 	}
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
-	trace_sched_select_task_rq(p, policy, prev_cpu, new_cpu);
+	trace_sched_select_task_rq(p, policy, prev_cpu, new_cpu, task_util(p), boosted_task_util(p), prefer_idle);
 #endif
 
 	return new_cpu;
@@ -8592,6 +8627,11 @@ static int idle_balance(struct rq *this_rq)
 			update_next_balance(sd, 0, &next_balance);
 		rcu_read_unlock();
 
+		if (!this_rq->rd->overload) {
+			raw_spin_unlock(&this_rq->lock);
+			goto hinted_idle_pull;
+		}
+
 		goto out;
 	}
 
@@ -8654,6 +8694,7 @@ static int idle_balance(struct rq *this_rq)
 	}
 	rcu_read_unlock();
 
+hinted_idle_pull:
 	/* We could not pull task to this_cpu when this_rq offline */
 	if (this_rq->online) {
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
@@ -8662,7 +8703,7 @@ static int idle_balance(struct rq *this_rq)
 #endif
 
 #ifdef CONFIG_SCHED_HMP_PLUS
-		if ((!energy_aware() || system_overutilized(this_cpu)) && !pulled_task)
+		if (!pulled_task)
 			pulled_task = hmp_idle_pull(this_cpu);
 #endif
 	}
