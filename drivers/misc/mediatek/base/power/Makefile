@@ -58,6 +58,7 @@ obj-$(CONFIG_MACH_MT6758) += pbm_v2/
 obj-$(CONFIG_MACH_MT6759) += pbm_v2/
 obj-$(CONFIG_MACH_MT6763) += pbm_v3/
 obj-$(CONFIG_MACH_MT6739) += pbm_v3/
+obj-$(CONFIG_MACH_MT6771) += pbm_v3/
 endif
 obj-$(CONFIG_MACH_MT6757) += spm_v2/
 obj-$(CONFIG_MACH_MT6757) += vcorefs_v1/
