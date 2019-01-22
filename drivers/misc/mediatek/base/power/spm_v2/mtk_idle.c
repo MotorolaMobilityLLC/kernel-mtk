@@ -1506,7 +1506,7 @@ static void go_to_slidle(int cpu)
 {
 	slidle_before_wfi(cpu);
 
-	mb();
+	mb();	/* memory barrier */
 	__asm__ __volatile__("wfi" : : : "memory");
 
 	slidle_after_wfi(cpu);
@@ -1530,7 +1530,7 @@ static noinline void go_to_rgidle(int cpu)
 {
 	rgidle_before_wfi(cpu);
 	isb();
-	mb();
+	mb();	/* memory barrier */
 	__asm__ __volatile__("wfi" : : : "memory");
 
 	rgidle_after_wfi(cpu);
