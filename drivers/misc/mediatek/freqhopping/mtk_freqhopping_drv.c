@@ -388,7 +388,7 @@ static ssize_t freqhopping_status_proc_write(struct file *file, const char *buff
 /* static int freqhopping_debug_proc_read(char *page, char **start, off_t off, int count, int *eof, void *data) */
 static int freqhopping_debug_proc_read(struct seq_file *m, void *v)
 {
-	FH_IO_PROC_READ_T arg;
+	struct FH_IO_PROC_READ_T arg;
 
 	arg.m = m;
 	arg.v = v;
