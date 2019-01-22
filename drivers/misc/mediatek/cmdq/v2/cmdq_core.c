@@ -2002,6 +2002,11 @@ static void cmdq_core_release_task_unlocked(struct TaskStruct *pTask)
 	pTask->taskState = TASK_STATE_IDLE;
 	pTask->thread = CMDQ_INVALID_THREAD;
 
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
+	kfree(pTask->secStatus);
+	pTask->secStatus = NULL;
+#endif
+
 	cmdq_core_release_buffer(pTask);
 
 	/* remove from active/waiting list */
@@ -2017,6 +2022,11 @@ static void cmdq_core_release_task(struct TaskStruct *pTask)
 
 	pTask->taskState = TASK_STATE_IDLE;
 	pTask->thread = CMDQ_INVALID_THREAD;
+
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
+	kfree(pTask->secStatus);
+	pTask->secStatus = NULL;
+#endif
 
 	cmdq_core_release_buffer(pTask);
 
@@ -2918,6 +2928,9 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 		pTask->durRelease = 0;
 		pTask->dumpAllocTime = false;
 		atomic_set(&pTask->useWorkQueue, 0);
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
+		pTask->secStatus = NULL;
+#endif
 
 		/* secure exec data */
 		pTask->secData.is_secure = pCommandDesc->secData.is_secure;
@@ -4308,6 +4321,22 @@ static void cmdq_core_dump_summary(const struct TaskStruct *pTask, int thread,
 	}
 
 	if (true == pTask->secData.is_secure) {
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
+		if (pTask->secStatus) {
+			/* secure status may contains debug information */
+			CMDQ_ERR("Secure status: %d step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x task: 0x%p\n",
+				pTask->secStatus->status,
+				pTask->secStatus->step,
+				pTask->secStatus->args[0], pTask->secStatus->args[1],
+				pTask->secStatus->args[2], pTask->secStatus->args[3],
+				pTask);
+			for (index = 0; index < pTask->secStatus->inst_index; index += 2) {
+				CMDQ_ERR("Secure instruction %d: 0x%08x:%08x\n", (index / 2),
+					pTask->secStatus->sec_inst[index],
+					pTask->secStatus->sec_inst[index+1]);
+			}
+		}
+#endif
 		CMDQ_ERR("Summary dump does not support secure now.\n");
 		pNGTask = pTask;
 		return;

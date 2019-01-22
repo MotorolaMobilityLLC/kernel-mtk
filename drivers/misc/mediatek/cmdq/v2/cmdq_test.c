@@ -3469,6 +3469,67 @@ static void testcase_mmsys_performance(int32_t test_id)
 	}
 }
 
+int32_t _testcase_secure_handle(uint32_t secHandle)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	cmdqRecHandle hReqMDP;
+	const uint32_t PATTERN_MDP = (1 << 0) | (1 << 2) | (1 << 16);
+	int32_t status;
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &hReqMDP);
+	cmdq_task_reset(hReqMDP);
+	cmdq_task_set_secure(hReqMDP, true);
+
+	/* specify use MDP engine */
+	hReqMDP->engineFlag = (1LL << CMDQ_ENG_MDP_RDMA0) | (1LL << CMDQ_ENG_MDP_WROT0);
+
+	/* enable secure test */
+	cmdq_task_secure_enable_dapc(hReqMDP,
+		(1LL << CMDQ_ENG_MDP_RDMA0) | (1LL << CMDQ_ENG_MDP_WROT0));
+	cmdq_task_secure_enable_port_security(hReqMDP,
+		(1LL << CMDQ_ENG_MDP_RDMA0) | (1LL << CMDQ_ENG_MDP_WROT0));
+
+	/* record command */
+	cmdq_op_write_reg(hReqMDP, CMDQ_TEST_MMSYS_DUMMY_PA, PATTERN_MDP, ~0);
+	cmdq_op_write_reg_secure(hReqMDP, CMDQ_TEST_MMSYS_DUMMY_PA, CMDQ_SAM_H_2_MVA,
+		secHandle, 0xf000, 0x100, 0);
+	cmdq_append_command(hReqMDP, CMDQ_CODE_EOC, 0, 1);
+	cmdq_append_command(hReqMDP, CMDQ_CODE_JUMP, 0, 8);
+
+	status = cmdq_task_flush(hReqMDP);
+	cmdq_task_destroy(hReqMDP);
+
+	CMDQ_MSG("%s end\n", __func__);
+
+	return status;
+#else
+	return 0;
+#endif
+}
+
+void testcase_invalid_handle(void)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	int32_t status;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* In this case we use an invalid secure handle to check error handling */
+	status = _testcase_secure_handle(0xdeaddead);
+	if (status >= 0)
+		CMDQ_ERR("TEST FAIL: should not success with invalid handle, status: %d\n", status);
+
+	/* Handle 0 will make SW do not translate to PA. */
+	status = _testcase_secure_handle(0x0);
+	if (status >= 0)
+		CMDQ_ERR("TEST FAIL: should not success with handle 0, status: %d\n", status);
+
+	CMDQ_MSG("%s END\n", __func__);
+#else
+	CMDQ_ERR("%s failed since not support secure path\n", __func__);
+#endif
+}
+
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -3486,6 +3547,9 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 139:
+		testcase_invalid_handle();
+		break;
 	case 121:
 		testcase_prefetch_from_DTS();
 		break;

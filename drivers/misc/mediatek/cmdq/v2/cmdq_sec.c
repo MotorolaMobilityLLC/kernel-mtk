@@ -541,6 +541,47 @@ int32_t cmdq_sec_setup_context_session(struct cmdqSecContextStruct *handle)
 	return status;
 }
 
+void cmdq_sec_handle_attach_status(struct TaskStruct *pTask, const iwcCmdqMessage_t *pIwc,
+	int32_t sec_status_code)
+{
+	int index = 0;
+	const struct iwcCmdqSecStatus_t *secStatus = NULL;
+
+	if (!pIwc)
+		return;
+
+	/* assign status ptr to print without task */
+	secStatus = &pIwc->secStatus;
+
+	if (pTask) {
+		if (pTask->secStatus) {
+			CMDQ_AEE("CMDQ", "Last secure status still exists, task: 0x%p\n", pTask);
+			kfree(pTask->secStatus);
+			pTask->secStatus = NULL;
+		}
+
+		pTask->secStatus = kzalloc(sizeof(struct iwcCmdqSecStatus_t), GFP_KERNEL);
+		if (pTask->secStatus) {
+			memcpy(pTask->secStatus, &pIwc->secStatus, sizeof(struct iwcCmdqSecStatus_t));
+			secStatus = pTask->secStatus;
+		}
+	}
+
+	if (secStatus->status != 0 || sec_status_code != 0) {
+		/* secure status may contains debug information */
+		CMDQ_ERR("Secure status: %d (%d) step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x task: 0x%p\n",
+			secStatus->status, sec_status_code, secStatus->step,
+			secStatus->args[0], secStatus->args[1],
+			secStatus->args[2], secStatus->args[3],
+			pTask);
+		for (index = 0; index < secStatus->inst_index; index += 2) {
+			CMDQ_ERR("Secure instruction %d: 0x%08x:%08x\n", (index / 2),
+				secStatus->sec_inst[index],
+				secStatus->sec_inst[index+1]);
+		}
+	}
+}
+
 int32_t cmdq_sec_handle_session_reply_unlocked(const struct iwcCmdqMessage_t *pIwc,
 					       const int32_t iwcCommand, struct TaskStruct *pTask,
 					       void *data)
@@ -548,10 +589,13 @@ int32_t cmdq_sec_handle_session_reply_unlocked(const struct iwcCmdqMessage_t *pI
 	int32_t status;
 	int32_t iwcRsp;
 	struct cmdqSecCancelTaskResultStruct *pCancelResult = NULL;
+	int index;
 
 	/* get secure task execution result */
 	iwcRsp = (pIwc)->rsp;
 	status = iwcRsp;
+
+	cmdq_sec_handle_attach_status(pTask, pIwc, status);
 
 	if (iwcCommand == CMD_CMDQ_TL_CANCEL_TASK) {
 		pCancelResult = (struct cmdqSecCancelTaskResultStruct *) data;
@@ -775,6 +819,8 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 				   " tgid[%d:%d], config_duration_ms[%d], cmdId[%d]\n",
 				   tgid, pid, duration, iwcCommand);
 
+		cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status);
+
 		if (msgOffset > 0) {
 			/* print message */
 			if (throwAEE) {
@@ -792,6 +838,15 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 				   status, pTask, thread, tgid, pid);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 				   " config_duration_ms[%d], cmdId[%d]\n", duration, iwcCommand);
+
+		if (handle) {
+			/* try to print out secure status if handle exist. */
+			cmdq_sec_handle_attach_status(pTask, handle->iwcMessage, status);
+		} else {
+			/* handle does not exist, output message */
+			CMDQ_ERR("[SEC] No secure handle for error attach, task: 0x%p status: %d\n",
+				pTask, status);
+		}
 
 		if (msgOffset > 0) {
 			/* print message */
