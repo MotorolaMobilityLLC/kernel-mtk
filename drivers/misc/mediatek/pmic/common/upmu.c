@@ -441,6 +441,7 @@ void pmic_ftm_init(void)
 unsigned short is_battery_remove;
 unsigned short is_wdt_reboot_pmic;
 unsigned short is_wdt_reboot_pmic_chk;
+unsigned short g_vmodem_vosel;
 
 unsigned short is_battery_remove_pmic(void)
 {
@@ -462,11 +463,17 @@ void __attribute__ ((weak)) pmic_auxadc_resume(void)
 {
 }
 
+void __attribute__ ((weak)) record_md_vosel(void)
+{
+}
+
 static int pmic_mt_probe(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver probe!! ********\n");
 	/*get PMIC CID */
 	PMICLOG("PMIC CID = 0x%x\n", pmic_get_register_value(PMIC_SWCID));
+
+	record_md_vosel();
 
 	PMIC_INIT_SETTING_V1();
 	PMICLOG("[PMIC_INIT_SETTING_V1] Done\n");

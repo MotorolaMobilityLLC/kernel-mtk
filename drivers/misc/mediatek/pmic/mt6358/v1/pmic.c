@@ -34,27 +34,37 @@
 #include <mt-plat/mtk_auxadc_intf.h>
 #endif /* CONFIG_MTK_AUXADC_INTF */
 
-#ifdef CONFIG_MTK_PMIC_WRAP_HAL
-#include "pwrap_hal.h"
-#endif
+void record_md_vosel(void)
+{
+	g_vmodem_vosel = pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL);
+	pr_info("[%s] vmodem_vosel = 0x%x\n", __func__, g_vmodem_vosel);
+}
 
 void vmd1_pmic_setting_on(void)
 {
-	unsigned int vmodem_vosel = 0x2C;
 #if 0 /*TBD*/
 	unsigned int segment = get_devinfo_with_index(28);
 	unsigned char vmodem_segment = (unsigned char)((segment & 0x08000000) >> 27);
 
 	if (!vmodem_segment)
-		vmodem_vosel = 0x6F;/* VMODEM 1.19375V: 0x6F */
+		g_vmodem_vosel = 0x6F;/* VMODEM 1.19375V: 0x6F */
 	else
-		vmodem_vosel = 0x68;/* VMODEM 1.15V: 0x68 */
+		g_vmodem_vosel = 0x68;/* VMODEM 1.15V: 0x68 */
 #endif
-
 	/* 1.Call PMIC driver API configure VMODEM voltage */
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, vmodem_vosel);
-	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != vmodem_vosel)
-		pr_info("vmd1_pmic_setting_on vmodem vosel = 0x%x, da_vosel = 0x%x",
+	if (g_vmodem_vosel != 0) {
+		pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL,
+			g_vmodem_vosel);
+	} else {
+		pr_notice("[%s] vmodem vosel has not recorded!\n", __func__);
+		g_vmodem_vosel =
+			pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL);
+		pr_info("[%s] vmodem_vosel = 0x%x\n",
+			__func__, g_vmodem_vosel);
+	}
+	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != g_vmodem_vosel)
+		pr_notice("[%s] vmodem vosel = 0x%x, da_vosel = 0x%x",
+			__func__,
 			pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL),
 			pmic_get_register_value(PMIC_DA_VMODEM_VOSEL));
 }
