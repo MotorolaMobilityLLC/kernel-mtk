@@ -191,19 +191,19 @@ static inline int c2k_dbg_level(unsigned level)
 #define C2K_USB_DBG_ON
 #ifdef C2K_USB_DBG_ON
 #define C2K_ERR(format, args...) do {if (c2k_dbg_level(C2K_LOG_ERR)) \
-	pr_warn("C2K_USB_ERR,<%s %d>, " format, __func__, __LINE__, ## args);  } \
+	pr_notice("C2K_USB_ERR,<%s %d>, " format, __func__, __LINE__, ## args);  } \
 while (0)
 #define C2K_WARN(format, args...) do {if (c2k_dbg_level(C2K_LOG_WARN)) \
-	pr_warn("C2K_USB_WARN,<%s %d>, " format, __func__, __LINE__, ## args);  } \
+	pr_notice("C2K_USB_WARN,<%s %d>, " format, __func__, __LINE__, ## args);  } \
 while (0)
 #define C2K_NOTE(format, args...) do {if (c2k_dbg_level(C2K_LOG_NOTICE)) \
-	pr_warn("C2K_USB_NOTE,<%s %d>, " format, __func__, __LINE__, ## args);  } \
+	pr_notice("C2K_USB_NOTE,<%s %d>, " format, __func__, __LINE__, ## args);  } \
 while (0)
 #define C2K_INFO(format, args...) do {if (c2k_dbg_level(C2K_LOG_INFO)) \
-	pr_warn("C2K_USB_INFO,<%s %d>, " format, __func__, __LINE__, ## args);  } \
+	pr_notice("C2K_USB_INFO,<%s %d>, " format, __func__, __LINE__, ## args);  } \
 while (0)
 #define C2K_DBG(format, args...) do {if (c2k_dbg_level(C2K_LOG_DBG)) \
-	pr_warn("C2K_USB_DBG,<%s %d>, " format, __func__, __LINE__, ## args);  } \
+	pr_notice("C2K_USB_DBG,<%s %d>, " format, __func__, __LINE__, ## args);  } \
 while (0)
 #else
 #define C2K_ERR(format, args...) do {} while (0)
