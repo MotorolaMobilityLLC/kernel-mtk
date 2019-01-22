@@ -3359,8 +3359,7 @@ static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl
 /*
 * Temp solution, query gpio of PCB_ID of board
 */
-#define MT6771_QUERY_PCB_ID
-#ifdef MT6771_QUERY_PCB_ID
+#ifdef CONFIG_MT6771_QUERY_PCB_ID
 
 enum AUDIO_MIC_MODE {
 	AUDIO_MIC_MODE_ACC = 1,
@@ -3608,7 +3607,7 @@ static const struct snd_kcontrol_new mt6358_snd_controls[] = {
 		       hp_impedance_get, hp_impedance_set),
 	SOC_ENUM_EXT("Headphone Plugged In", Audio_DL_Enum[0],
 		     hp_plugged_in_get, hp_plugged_in_set),
-#ifdef MT6771_QUERY_PCB_ID
+#ifdef CONFIG_MT6771_QUERY_PCB_ID
 	SOC_SINGLE_EXT("Audio_MIC_Mode", SND_SOC_NOPM, 0, 6, 0,
 		       Audio_MIC_Mode_Get, Audio_MIC_Mode_Set),
 #endif
