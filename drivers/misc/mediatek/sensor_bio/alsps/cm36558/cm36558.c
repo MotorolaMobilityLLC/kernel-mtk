@@ -1020,6 +1020,7 @@ int CM36558_setup_eint(struct i2c_client *client)
 	return 0;
 }
 
+#if 0
 /*-------------------------------MISC device related------------------------------------------*/
 
 /************************************************************/
@@ -1042,6 +1043,7 @@ static int CM36558_release(struct inode *inode, struct file *file)
 }
 
 /************************************************************/
+#endif
 static int set_psensor_threshold(struct i2c_client *client)
 {
 	struct CM36558_priv *obj = i2c_get_clientdata(client);
@@ -1070,6 +1072,7 @@ static int set_psensor_threshold(struct i2c_client *client)
 
 }
 
+#if 0
 static long CM36558_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct i2c_client *client = (struct i2c_client *)file->private_data;
@@ -1266,7 +1269,6 @@ static long CM36558_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 		}
 		break;
 			/*------------------------------------------------------------------------------------------*/
-
 	default:
 		APS_ERR("%s not supported = 0x%04x", __func__, cmd);
 		err = -ENOIOCTLCMD;
@@ -1303,6 +1305,7 @@ static struct miscdevice CM36558_device = {
 	.name = "als_ps",
 	.fops = &CM36558_fops,
 };
+#endif
 /*--------------------------------------------------------------------------------------*/
 static int CM36558_init_client(struct i2c_client *client)
 {
@@ -1450,7 +1453,7 @@ static int als_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportL
 
 static int als_flush(void)
 {
-	return 0;
+	return als_flush_report();
 }
 
 static int als_get_data(int *value, int *status)
@@ -1508,6 +1511,15 @@ static int ps_set_delay(u64 ns)
 {
 	return 0;
 }
+static int ps_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+{
+	return 0;
+}
+
+static int ps_flush(void)
+{
+	return ps_flush_report();
+}
 
 static int ps_get_data(int *value, int *status)
 {
@@ -1528,6 +1540,163 @@ static int ps_get_data(int *value, int *status)
 	return 0;
 }
 
+static int cm36558_als_factory_enable_sensor(bool enable_disable, int64_t sample_periods_ms)
+{
+	int err = 0;
+
+	err = als_enable_nodata(enable_disable ? 1 : 0);
+	if (err) {
+		APS_ERR("%s:%s failed\n", __func__, enable_disable ? "enable" : "disable");
+		return -1;
+	}
+	err = als_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		APS_ERR("%s set_batch failed\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+static int cm36558_als_factory_get_data(int32_t *data)
+{
+	int status;
+
+	return als_get_data(data, &status);
+}
+static int cm36558_als_factory_get_raw_data(int32_t *data)
+{
+	int status;
+
+	return als_get_data(data, &status);
+}
+static int cm36558_als_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int cm36558_als_factory_clear_cali(void)
+{
+	return 0;
+}
+static int cm36558_als_factory_set_cali(int32_t offset)
+{
+	return 0;
+}
+static int cm36558_als_factory_get_cali(int32_t *offset)
+{
+	return 0;
+}
+static int cm36558_ps_factory_enable_sensor(bool enable_disable, int64_t sample_periods_ms)
+{
+	int err = 0;
+
+	err = ps_enable_nodata(enable_disable ? 1 : 0);
+	if (err) {
+		APS_ERR("%s:%s failed\n", __func__, enable_disable ? "enable" : "disable");
+		return -1;
+	}
+	err = ps_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		APS_ERR("%s set_batch failed\n", __func__);
+		return -1;
+	}
+	return err;
+}
+static int cm36558_ps_factory_get_data(int32_t *data)
+{
+	int err = 0, status = 0;
+
+	err = ps_get_data(data, &status);
+	if (err < 0)
+		return -1;
+	return 0;
+}
+static int cm36558_ps_factory_get_raw_data(int32_t *data)
+{
+	int err = 0;
+	struct CM36558_priv *obj = CM36558_obj;
+
+	err = CM36558_read_ps(obj->client, &obj->ps);
+	if (err) {
+		APS_ERR("%s failed\n", __func__);
+		return -1;
+	}
+	*data = CM36558_obj->ps;
+	return 0;
+}
+static int cm36558_ps_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int cm36558_ps_factory_clear_cali(void)
+{
+	struct CM36558_priv *obj = CM36558_obj;
+
+	obj->ps_cali = 0;
+	return 0;
+}
+static int cm36558_ps_factory_set_cali(int32_t offset)
+{
+	struct CM36558_priv *obj = CM36558_obj;
+
+	obj->ps_cali = offset;
+	return 0;
+}
+static int cm36558_ps_factory_get_cali(int32_t *offset)
+{
+	struct CM36558_priv *obj = CM36558_obj;
+
+	*offset = obj->ps_cali;
+	return 0;
+}
+static int cm36558_ps_factory_set_threashold(int32_t threshold[2])
+{
+	int err = 0;
+	struct CM36558_priv *obj = CM36558_obj;
+
+	APS_ERR("%s set threshold high: 0x%x, low: 0x%x\n", __func__, threshold[0], threshold[1]);
+	atomic_set(&obj->ps_thd_val_high, (threshold[0] + obj->ps_cali));
+	atomic_set(&obj->ps_thd_val_low, (threshold[1] + obj->ps_cali));
+	err = set_psensor_threshold(obj->client);
+
+	if (err < 0) {
+		APS_ERR("set_psensor_threshold fail\n");
+		return -1;
+	}
+	return 0;
+}
+static int cm36558_ps_factory_get_threashold(int32_t threshold[2])
+{
+	struct CM36558_priv *obj = CM36558_obj;
+
+	threshold[0] = atomic_read(&obj->ps_thd_val_high) - obj->ps_cali;
+	threshold[1] = atomic_read(&obj->ps_thd_val_low) - obj->ps_cali;
+	return 0;
+}
+
+static struct alsps_factory_fops cm36558_factory_fops = {
+	.als_enable_sensor = cm36558_als_factory_enable_sensor,
+	.als_get_data = cm36558_als_factory_get_data,
+	.als_get_raw_data = cm36558_als_factory_get_raw_data,
+	.als_enable_calibration = cm36558_als_factory_enable_calibration,
+	.als_clear_cali = cm36558_als_factory_clear_cali,
+	.als_set_cali = cm36558_als_factory_set_cali,
+	.als_get_cali = cm36558_als_factory_get_cali,
+
+	.ps_enable_sensor = cm36558_ps_factory_enable_sensor,
+	.ps_get_data = cm36558_ps_factory_get_data,
+	.ps_get_raw_data = cm36558_ps_factory_get_raw_data,
+	.ps_enable_calibration = cm36558_ps_factory_enable_calibration,
+	.ps_clear_cali = cm36558_ps_factory_clear_cali,
+	.ps_set_cali = cm36558_ps_factory_set_cali,
+	.ps_get_cali = cm36558_ps_factory_get_cali,
+	.ps_set_threashold = cm36558_ps_factory_set_threashold,
+	.ps_get_threashold = cm36558_ps_factory_get_threashold,
+};
+
+static struct alsps_factory_public cm36558_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &cm36558_factory_fops,
+};
 /*-----------------------------------i2c operations----------------------------------*/
 static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -1602,7 +1771,8 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	if (err)
 		goto exit_init_failed;
 	APS_LOG("CM36558_init_client() OK!\n");
-	err = misc_register(&CM36558_device);
+	/* err = misc_register(&CM36558_device); */
+	err = alsps_factory_device_register(&cm36558_factory_device);
 	if (err) {
 		APS_ERR("CM36558_device register failed\n");
 		goto exit_misc_device_register_failed;
@@ -1644,7 +1814,9 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ps_ctl.open_report_data = ps_open_report_data;
 	ps_ctl.enable_nodata = ps_enable_nodata;
 	ps_ctl.set_delay = ps_set_delay;
-	ps_ctl.is_report_input_direct = false;
+	ps_ctl.batch = ps_batch;
+	ps_ctl.flush = ps_flush;
+	ps_ctl.is_report_input_direct = true;
 	ps_ctl.is_support_batch = false;
 
 	err = ps_register_control_path(&ps_ctl);
@@ -1681,7 +1853,7 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 exit_create_attr_failed:
 exit_sensor_obj_attach_fail:
 exit_misc_device_register_failed:
-	misc_deregister(&CM36558_device);
+	/* misc_deregister(&CM36558_device); */
 exit_init_failed:
 	kfree(obj);
 exit:
@@ -1702,7 +1874,8 @@ static int CM36558_i2c_remove(struct i2c_client *client)
 	if (err)
 		APS_ERR("CM36558_delete_attr fail: %d\n", err);
 	/*----------------------------------------------------------------------------------------*/
-	misc_deregister(&CM36558_device);
+	/* misc_deregister(&CM36558_device); */
+	alsps_factory_device_deregister(&cm36558_factory_device);
 
 	CM36558_i2c_client = NULL;
 	i2c_unregister_device(client);

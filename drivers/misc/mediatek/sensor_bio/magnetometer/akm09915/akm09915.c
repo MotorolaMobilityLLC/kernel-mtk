@@ -61,19 +61,12 @@ static int mEnabled;
 static int akm09915_init_flag;
 static struct i2c_client *this_client;
 
-struct akm09915_mag_data {
-	bool power;
-	int64_t samplingPeriodNs;
-};
-
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id akm09915_i2c_id[] = { {AKM09915_DEV_NAME, 0}, {} };
 
 /* Maintain  cust info here */
 struct mag_hw mag_cust;
 static struct mag_hw *hw = &mag_cust;
-struct akm09915_mag_data data;
-static struct akm09915_mag_data *obj_data = &data;
 
 /* For  driver get cust info */
 struct mag_hw *get_cust_mag(void)
@@ -2754,53 +2747,34 @@ static int akm09915_i2c_detect(struct i2c_client *client, struct i2c_board_info 
 	return 0;
 }
 
-static int akm09915_mag_enable_and_batch(void)
-{
-	int err = 0;
-	int value = 0;
-
-	value = (int)obj_data->samplingPeriodNs / 1000 / 1000;
-
-	if (value <= 10)
-		akmd_delay = 10;
-	else
-		akmd_delay = value;
-
-	if (obj_data->power && obj_data->samplingPeriodNs) {
-		err = AKECS_SetMode(AK09915_MODE_SNG_MEASURE);
-		if (err < 0)
-			goto power_failed;
-	} else if (obj_data->power == false) {
-		err = AKECS_SetMode(AK09915_MODE_POWERDOWN);
-		if (err < 0)
-			goto power_failed;
-		obj_data->samplingPeriodNs = 0;
-	}
-	return err;
-power_failed:
-	MAG_ERR("%s:AKECS_SetMode Error.\n", __func__);
-	return -1;
-}
 
 static int akm09915_enable(int en)
 {
+	int value = 0;
 	int err = 0;
 
+	value = en;
 	factory_mode = 1;
-	if (en == 1) {
+	if (value == 1) {
 		atomic_set(&m_flag, 1);
 		atomic_set(&open_flag, 1);
-		obj_data->power = true;
+
+		err = AKECS_SetMode(AK09915_MODE_SNG_MEASURE);
+		if (err < 0) {
+			MAG_ERR("%s:AKECS_SetMode Error.\n", __func__);
+			return err;
+		}
 	} else {
 		atomic_set(&m_flag, 0);
 		if (atomic_read(&o_flag) == 0) {
 			atomic_set(&open_flag, 0);
-			obj_data->power = false;
+			err = AKECS_SetMode(AK09915_MODE_POWERDOWN);
+			if (err < 0) {
+				MAG_ERR("%s:AKECS_SetMode Error.\n", __func__);
+				return err;
+			}
 		}
 	}
-
-	err = akm09915_mag_enable_and_batch();
-	MAG_LOG("akm09915_enable ok!\n");
 	wake_up(&open_wq);
 	return err;
 }
@@ -2821,8 +2795,7 @@ static int akm09915_set_delay(u64 ns)
 
 static int akm09915_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
-	obj_data->samplingPeriodNs = samplingPeriodNs;
-	return akm09915_mag_enable_and_batch();
+	return 0;
 }
 
 static int akm09915_flush(void)

@@ -120,11 +120,13 @@ struct baro_context {
 	struct baro_data drv_data;
 	struct baro_control_path baro_ctl;
 	struct baro_data_path baro_data;
-	bool is_active_nodata;
-	bool is_active_data;
 	bool is_first_data_after_enable;
 	bool is_polling_run;
 	bool is_batch_enable;
+	int power;
+	int enable;
+	int64_t delay_ns;
+	int64_t latency_ns;
 };
 
 extern int baro_driver_add(struct baro_init_info *obj);

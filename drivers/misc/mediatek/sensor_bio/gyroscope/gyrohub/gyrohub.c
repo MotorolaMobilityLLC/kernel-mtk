@@ -419,14 +419,24 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
+	struct gyro_data data;
+
+	data.x = event->gyroscope_t.x;
+	data.y = event->gyroscope_t.y;
+	data.z = event->gyroscope_t.z;
+	data.status = event->gyroscope_t.status;
+	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
+	data.reserved[0] = event->reserve[0];
 
 	if (event->flush_action == FLUSH_ACTION)
 		err = gyro_flush_report();
 	else if (event->flush_action == DATA_ACTION)
-		err = gyro_data_report(event->gyroscope_t.x, event->gyroscope_t.y, event->gyroscope_t.z,
-			event->gyroscope_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
+		err = gyro_data_report(&data);
 	else if (event->flush_action == BIAS_ACTION) {
-		err = gyro_bias_report(event->gyroscope_t.x_bias, event->gyroscope_t.y_bias, event->gyroscope_t.z_bias);
+		data.x = event->gyroscope_t.x_bias;
+		data.y = event->gyroscope_t.y_bias;
+		data.z = event->gyroscope_t.z_bias;
+		err = gyro_bias_report(&data);
 		obj->dynamic_cali[GYROHUB_AXIS_X] = event->gyroscope_t.x_bias;
 		obj->dynamic_cali[GYROHUB_AXIS_Y] = event->gyroscope_t.y_bias;
 		obj->dynamic_cali[GYROHUB_AXIS_Z] = event->gyroscope_t.z_bias;

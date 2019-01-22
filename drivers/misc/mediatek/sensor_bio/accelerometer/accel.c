@@ -140,8 +140,10 @@ static void acc_work_func(struct work_struct *work)
 	/* cxt->drv_data.acc_data.values[1],cxt->drv_data.acc_data.values[2]); */
 
 	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
+		struct acc_data tmp_data = cxt->drv_data;
 		pre_ns += delay_ms*1000000LL;
-		acc_data_report(&cxt->drv_data);
+		tmp_data.timestamp = pre_ns;
+		acc_data_report(&tmp_data);
 	}
 
 	acc_data_report(&cxt->drv_data);
@@ -182,6 +184,8 @@ static struct acc_context *acc_context_alloc_object(void)
 		return NULL;
 	}
 	initTimer(&obj->hrTimer, acc_poll);
+	obj->is_active_nodata = false;
+	obj->is_active_data = false;
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;
 	mutex_init(&obj->acc_op_mutex);
@@ -189,112 +193,129 @@ static struct acc_context *acc_context_alloc_object(void)
 	obj->cali_sw[ACC_AXIS_X] = 0;
 	obj->cali_sw[ACC_AXIS_Y] = 0;
 	obj->cali_sw[ACC_AXIS_Z] = 0;
+	obj->power = 0;
+	obj->enable = 0;
+	obj->delay_ns = -1;
+	obj->latency_ns = -1;
 	ACC_LOG("acc_context_alloc_object----\n");
 	return obj;
 }
 
-static int acc_real_enable(int enable)
+static int acc_enable_and_batch(void)
 {
-	int err = 0;
-	struct acc_context *cxt = NULL;
+	struct acc_context *cxt = acc_context_obj;
+	int err;
 
-	cxt = acc_context_obj;
-	if (enable == 1) {
+	/* power on -> power off */
+	if (cxt->power == 1 && cxt->enable == 0) {
+		ACC_LOG("ACC disable\n");
+		/* stop polling firstly, if needed */
+		if (cxt->is_active_data == false &&
+			cxt->acc_ctl.is_report_input_direct == false &&
+			cxt->is_polling_run == true) {
+			smp_mb();/* for memory barrier */
+			stopTimer(&cxt->hrTimer);
+			smp_mb();/* for memory barrier */
+			cancel_work_sync(&cxt->report);
+			cxt->drv_data.x = ACC_INVALID_VALUE;
+			cxt->drv_data.y = ACC_INVALID_VALUE;
+			cxt->drv_data.z = ACC_INVALID_VALUE;
+			cxt->is_polling_run = false;
+			ACC_LOG("acc stop polling done\n");
+		}
+		/* turn off the power */
+		if (cxt->is_active_data == false && cxt->is_active_nodata == false) {
+			err = cxt->acc_ctl.enable_nodata(0);
+			if (err) {
+				ACC_ERR("acc turn off power err = %d\n", err);
+				return -1;
+			}
+			ACC_LOG("acc turn off power done\n");
+		}
 
+		cxt->power = 0;
+		cxt->delay_ns = -1;
+		ACC_LOG("ACC disable done\n");
+		return 0;
+	}
+	/* power off -> power on */
+	if (cxt->power == 0 && cxt->enable == 1) {
+		ACC_LOG("ACC power on\n");
 		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
 			err = cxt->acc_ctl.enable_nodata(1);
 			if (err) {
-				err = cxt->acc_ctl.enable_nodata(1);
-				if (err) {
-					err = cxt->acc_ctl.enable_nodata(1);
-					if (err)
-						ACC_ERR("acc enable(%d) err 3 timers = %d\n",
-							enable, err);
-				}
+				ACC_ERR("acc turn on power err = %d\n", err);
+				return -1;
 			}
-			ACC_LOG("acc real enable\n");
+			ACC_LOG("acc turn on power done\n");
 		}
-
+		cxt->power = 1;
+		ACC_LOG("ACC power on done\n");
 	}
-	if (enable == 0) {
-		if (false == cxt->is_active_data && false == cxt->is_active_nodata) {
-			err = cxt->acc_ctl.enable_nodata(0);
-			if (err)
-				ACC_ERR("acc enable(%d) err = %d\n", enable, err);
-			ACC_LOG("acc real disable\n");
+	/* rate change */
+	if (cxt->power == 1 && cxt->delay_ns >= 0) {
+		ACC_LOG("ACC set batch\n");
+		/* set ODR, fifo timeout latency */
+		if (cxt->acc_ctl.is_support_batch)
+			err = cxt->acc_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+		else
+			err = cxt->acc_ctl.batch(0, cxt->delay_ns, 0);
+		if (err) {
+			ACC_ERR("acc set batch(ODR) err %d\n", err);
+			return -1;
 		}
+		ACC_LOG("acc set ODR, fifo latency done\n");
+		/* start polling, if needed */
+		if (cxt->is_active_data == true
+			&& cxt->acc_ctl.is_report_input_direct == false) {
+			int mdelay = cxt->delay_ns;
 
-	}
-
-	return err;
-}
-
-static int acc_enable_data(int enable)
-{
-	struct acc_context *cxt = NULL;
-
-	cxt = acc_context_obj;
-	if (cxt->acc_ctl.open_report_data == NULL) {
-		ACC_ERR("no acc control path\n");
-		return -1;
-	}
-
-	if (enable == 1) {
-		ACC_LOG("ACC enable data\n");
-		cxt->is_active_data = true;
-		cxt->is_first_data_after_enable = true;
-		cxt->acc_ctl.open_report_data(1);
-	acc_real_enable(enable);
-		if (false == cxt->is_polling_run && cxt->is_batch_enable == false) {
-			if (false == cxt->acc_ctl.is_report_input_direct) {
+			do_div(mdelay, 1000000);
+			atomic_set(&cxt->delay, mdelay);
+			/* the first sensor start polling timer */
+			if (cxt->is_polling_run == false) {
 				startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 				cxt->is_polling_run = true;
+				cxt->is_first_data_after_enable = true;
 			}
+			ACC_LOG("acc set polling delay %d ms\n", atomic_read(&cxt->delay));
 		}
+		ACC_LOG("ACC batch done\n");
 	}
-	if (enable == 0) {
-		ACC_LOG("ACC disable\n");
+	/* just for debug, remove it when everything is ok */
+	if (cxt->power == 0 && cxt->delay_ns >= 0)
+		ACC_ERR("batch will call firstly in API1.3, do nothing\n");
 
-		cxt->is_active_data = false;
-		cxt->acc_ctl.open_report_data(0);
-		if (true == cxt->is_polling_run) {
-			if (false == cxt->acc_ctl.is_report_input_direct) {
-				cxt->is_polling_run = false;
-				smp_mb();/* for memory barrier */
-				stopTimer(&cxt->hrTimer);
-				smp_mb();/* for memory barrier */
-				cancel_work_sync(&cxt->report);
-				cxt->drv_data.x = ACC_INVALID_VALUE;
-				cxt->drv_data.y = ACC_INVALID_VALUE;
-				cxt->drv_data.z = ACC_INVALID_VALUE;
-			}
-		}
-	acc_real_enable(enable);
-	}
 	return 0;
 }
 
-
-
-int acc_enable_nodata(int enable)
+static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribute *attr,
+				       const char *buf, size_t count)
 {
-	struct acc_context *cxt = NULL;
+#if !defined(CONFIG_MTK_SCP_SENSORHUB_V1) && !defined(CONFIG_NANOHUB)
+	struct acc_context *cxt = acc_context_obj;
+	int err = 0;
 
-	cxt = acc_context_obj;
-	if (cxt->acc_ctl.enable_nodata == NULL) {
-		ACC_ERR("acc_enable_nodata:acc ctl path is NULL\n");
-		return -1;
-	}
-
-	if (enable == 1)
+	ACC_LOG("acc_store_enable nodata buf=%s\n", buf);
+	mutex_lock(&acc_context_obj->acc_op_mutex);
+	if (!strncmp(buf, "1", 1)) {
+		cxt->enable = 1;
 		cxt->is_active_nodata = true;
-
-	if (enable == 0)
+	} else if (!strncmp(buf, "0", 1)) {
+		cxt->enable = 0;
 		cxt->is_active_nodata = false;
-	acc_real_enable(enable);
-	return 0;
+	} else {
+		ACC_ERR(" acc_store enable nodata cmd error !!\n");
+		err = -1;
+		goto err_out;
+	}
+	err = acc_enable_and_batch();
+err_out:
+	mutex_unlock(&acc_context_obj->acc_op_mutex);
+	return err;
+#endif
+	return count;
 }
-
 
 static ssize_t acc_show_enable_nodata(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -304,116 +325,42 @@ static ssize_t acc_show_enable_nodata(struct device *dev, struct device_attribut
 	return len;
 }
 
-static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribute *attr,
-				       const char *buf, size_t count)
-{
-#if !defined(CONFIG_MTK_SCP_SENSORHUB_V1) && !defined(CONFIG_NANOHUB)
-	struct acc_context *cxt = NULL;
-
-	ACC_LOG("acc_store_enable nodata buf=%s\n", buf);
-	mutex_lock(&acc_context_obj->acc_op_mutex);
-	cxt = acc_context_obj;
-	if (cxt->acc_ctl.enable_nodata == NULL) {
-		ACC_LOG("acc_ctl enable nodata NULL\n");
-		mutex_unlock(&acc_context_obj->acc_op_mutex);
-		return count;
-	}
-	if (!strncmp(buf, "1", 1)) {
-		/* cxt->acc_ctl.enable_nodata(1); */
-		acc_enable_nodata(1);
-	} else if (!strncmp(buf, "0", 1)) {
-		/* cxt->acc_ctl.enable_nodata(0); */
-		acc_enable_nodata(0);
-	} else {
-		ACC_ERR(" acc_store enable nodata cmd error !!\n");
-	}
-	mutex_unlock(&acc_context_obj->acc_op_mutex);
-#endif
-	return count;
-}
-
 static ssize_t acc_store_active(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
-	struct acc_context *cxt = NULL;
+	struct acc_context *cxt = acc_context_obj;
+	int err = 0;
 
 	ACC_LOG("acc_store_active buf=%s\n", buf);
 	mutex_lock(&acc_context_obj->acc_op_mutex);
-	cxt = acc_context_obj;
-	if (cxt->acc_ctl.open_report_data == NULL) {
-		ACC_LOG("acc_ctl enable NULL\n");
-		mutex_unlock(&acc_context_obj->acc_op_mutex);
-		return count;
-	}
 	if (!strncmp(buf, "1", 1)) {
-		/* cxt->acc_ctl.enable(1); */
-		acc_enable_data(1);
-
+		cxt->enable = 1;
+		cxt->is_active_data = true;
 	} else if (!strncmp(buf, "0", 1)) {
-
-		/* cxt->acc_ctl.enable(0); */
-		acc_enable_data(0);
+		cxt->enable = 0;
+		cxt->is_active_data = false;
 	} else {
 		ACC_ERR(" acc_store_active error !!\n");
+		err = -1;
+		goto err_out;
 	}
+	err = acc_enable_and_batch();
+err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	ACC_LOG(" acc_store_active done\n");
-	return count;
+	return err;
 }
 
 /*----------------------------------------------------------------------------*/
 static ssize_t acc_show_active(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	struct acc_context *cxt = NULL;
+	struct acc_context *cxt = acc_context_obj;
 	int div = 0;
 
-	cxt = acc_context_obj;
 	div = cxt->acc_data.vender_div;
 	ACC_LOG("acc vender_div value: %d\n", div);
 	return snprintf(buf, PAGE_SIZE, "%d\n", div);
 }
 
-static ssize_t acc_store_delay(struct device *dev, struct device_attribute *attr,
-			       const char *buf, size_t count)
-{
-	int64_t delay = 0;
-	int64_t mdelay = 0;
-	int ret = 0;
-	struct acc_context *cxt = NULL;
-
-	mutex_lock(&acc_context_obj->acc_op_mutex);
-	cxt = acc_context_obj;
-	if (cxt->acc_ctl.set_delay == NULL) {
-		ACC_LOG("acc_ctl set_delay NULL\n");
-		mutex_unlock(&acc_context_obj->acc_op_mutex);
-		return count;
-	}
-
-	ret = kstrtoll(buf, 10, &delay);
-	if (ret != 0) {
-		ACC_ERR("invalid format!!\n");
-		mutex_unlock(&acc_context_obj->acc_op_mutex);
-		return count;
-	}
-
-	if (false == cxt->acc_ctl.is_report_input_direct) {
-		mdelay = delay;
-		do_div(mdelay, 1000000);
-		atomic_set(&acc_context_obj->delay, mdelay);
-	}
-	cxt->acc_ctl.set_delay(delay);
-	ACC_LOG(" acc_delay %lld ns\n", delay);
-	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	return count;
-}
-
-static ssize_t acc_show_delay(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	ACC_LOG(" not support now\n");
-	return len;
-}
 /* need work around again */
 static ssize_t acc_show_sensordevnum(struct device *dev,
 				 struct device_attribute *attr, char *buf)
@@ -424,37 +371,21 @@ static ssize_t acc_show_sensordevnum(struct device *dev,
 static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	struct acc_context *cxt = NULL;
+	struct acc_context *cxt = acc_context_obj;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
-	int64_t mdelay = 0;
 
-	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
-	if (err != 4)
+	ACC_LOG(" acc_store_batch %s\n", buf);
+	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
+		&cxt->delay_ns, &cxt->latency_ns);
+	if (err != 4) {
 		ACC_ERR("acc_store_batch param error: err = %d\n", err);
+		return -1;
+	}
 
-	ACC_LOG("acc_store_batch param: handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
-			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&acc_context_obj->acc_op_mutex);
-	cxt = acc_context_obj;
-	if (false == cxt->acc_ctl.is_report_input_direct) {
-		mdelay = samplingPeriodNs;
-		do_div(mdelay, 1000000);
-		atomic_set(&acc_context_obj->delay, mdelay);
-	}
-	if (!cxt->acc_ctl.is_support_batch) {
-		maxBatchReportLatencyNs = 0;
-		ACC_LOG("acc_store_batch not supported\n");
-	}
-	if (cxt->acc_ctl.batch != NULL)
-		err = cxt->acc_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
-	else
-		ACC_ERR("ACC DRIVER OLD ARCHITECTURE DON'T SUPPORT ACC COMMON VERSION BATCH\n");
-	if (err < 0)
-		ACC_ERR("acc enable batch err %d\n", err);
+	err = acc_enable_and_batch();
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	/* ACC_LOG(" acc_store_batch done: %d\n", cxt->is_batch_enable); */
-	return count;
+	return err;
 }
 static ssize_t acc_show_batch(struct device *dev,
 				 struct device_attribute *attr, char *buf)
@@ -656,7 +587,6 @@ static int acc_misc_init(struct acc_context *cxt)
 
 DEVICE_ATTR(accenablenodata, S_IWUSR | S_IRUGO, acc_show_enable_nodata, acc_store_enable_nodata);
 DEVICE_ATTR(accactive, S_IWUSR | S_IRUGO, acc_show_active, acc_store_active);
-DEVICE_ATTR(accdelay, S_IWUSR | S_IRUGO, acc_show_delay, acc_store_delay);
 DEVICE_ATTR(accbatch,		S_IWUSR | S_IRUGO, acc_show_batch,  acc_store_batch);
 DEVICE_ATTR(accflush,		S_IWUSR | S_IRUGO, acc_show_flush,  acc_store_flush);
 DEVICE_ATTR(acccali,		S_IWUSR | S_IRUGO, acc_show_cali,  acc_store_cali);
@@ -665,7 +595,6 @@ DEVICE_ATTR(accdevnum,		S_IWUSR | S_IRUGO, acc_show_sensordevnum,  NULL);
 static struct attribute *acc_attributes[] = {
 	&dev_attr_accenablenodata.attr,
 	&dev_attr_accactive.attr,
-	&dev_attr_accdelay.attr,
 	&dev_attr_accbatch.attr,
 	&dev_attr_accflush.attr,
 	&dev_attr_acccali.attr,
@@ -699,8 +628,6 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	int err = 0;
 
 	cxt = acc_context_obj;
-	cxt->acc_ctl.set_delay = ctl->set_delay;
-	cxt->acc_ctl.open_report_data = ctl->open_report_data;
 	cxt->acc_ctl.enable_nodata = ctl->enable_nodata;
 	cxt->acc_ctl.batch = ctl->batch;
 	cxt->acc_ctl.flush = ctl->flush;
@@ -708,8 +635,8 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	cxt->acc_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->acc_ctl.is_report_input_direct = ctl->is_report_input_direct;
 
-	if (NULL == cxt->acc_ctl.batch || NULL == cxt->acc_ctl.open_report_data
-	    || NULL == cxt->acc_ctl.enable_nodata) {
+	if (cxt->acc_ctl.enable_nodata == NULL || cxt->acc_ctl.batch == NULL
+	    || cxt->acc_ctl.flush == NULL) {
 		ACC_LOG("acc register control path fail\n");
 		return -1;
 	}

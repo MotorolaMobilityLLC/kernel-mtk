@@ -70,35 +70,31 @@ static void mag_work_func(struct work_struct *work)
 		MAG_ERR("get data fails!!\n");
 		return;
 	}
-	cxt->drv_data.mag_data.values[0] = x;
-	cxt->drv_data.mag_data.values[1] = y;
-	cxt->drv_data.mag_data.values[2] = z;
-	cxt->drv_data.mag_data.status = status;
-	m_pre_ns = cxt->drv_data.mag_data.time;
-	cxt->drv_data.mag_data.time = cur_ns;
+	cxt->drv_data.x = x;
+	cxt->drv_data.y = y;
+	cxt->drv_data.z = z;
+	cxt->drv_data.status = status;
+	m_pre_ns = cxt->drv_data.timestamp;
+	cxt->drv_data.timestamp = cur_ns;
 	if (true ==  cxt->is_first_data_after_enable) {
 		m_pre_ns = cur_ns;
 		cxt->is_first_data_after_enable = false;
 		/* filter -1 value */
-		if (cxt->drv_data.mag_data.values[0] == MAG_INVALID_VALUE ||
-			cxt->drv_data.mag_data.values[1] == MAG_INVALID_VALUE ||
-			cxt->drv_data.mag_data.values[2] == MAG_INVALID_VALUE) {
+		if (cxt->drv_data.x == MAG_INVALID_VALUE ||
+			cxt->drv_data.y == MAG_INVALID_VALUE ||
+			cxt->drv_data.z == MAG_INVALID_VALUE) {
 			MAG_LOG(" read invalid data\n");
 			goto mag_loop;
 		}
 	}
 	while ((cur_ns - m_pre_ns) >= delay_ms*1800000LL) {
+		struct mag_data tmp_data = cxt->drv_data;
 		m_pre_ns += delay_ms*1000000LL;
-		mag_data_report(cxt->drv_data.mag_data.values[0],
-			cxt->drv_data.mag_data.values[1],
-			cxt->drv_data.mag_data.values[2],
-			cxt->drv_data.mag_data.status, m_pre_ns);
+		tmp_data.timestamp = m_pre_ns;
+		mag_data_report(&tmp_data);
 	}
 
-	mag_data_report(cxt->drv_data.mag_data.values[0],
-		cxt->drv_data.mag_data.values[1],
-		cxt->drv_data.mag_data.values[2],
-		cxt->drv_data.mag_data.status, cxt->drv_data.mag_data.time);
+	mag_data_report(&cxt->drv_data);
 
 mag_loop:
 		/* MAG_LOG("mag_type(%d) data[%d,%d,%d]\n" ,i,cxt->drv_data[i].mag_data.values[0], */
@@ -139,65 +135,98 @@ static struct mag_context *mag_context_alloc_object(void)
 	initTimer(&obj->hrTimer, mag_poll);
 	obj->is_first_data_after_enable = false;
 	obj->is_polling_run = false;
-	obj->active_data_sensor = 0;
-	obj->active_nodata_sensor = 0;
 	obj->is_batch_enable = false;
 	mutex_init(&obj->mag_op_mutex);
+	obj->power = 0;
+	obj->enable = 0;
+	obj->delay_ns = -1;
+	obj->latency_ns = -1;
 	MAG_LOG("mag_context_alloc_object----\n");
 	return obj;
 }
-static int mag_enable_data(int enable)
+
+static int mag_enable_and_batch(void)
 {
-	struct mag_context *cxt = NULL;
+	struct mag_context *cxt = mag_context_obj;
+	int err;
 
-	cxt = mag_context_obj;
-	if (cxt->mag_ctl.enable == NULL) {
-		MAG_ERR("no real mag driver\n");
-		return -1;
+	/* power on -> power off */
+	if (cxt->power == 1 && cxt->enable == 0) {
+		MAG_LOG("MAG disable\n");
+		/* stop polling firstly, if needed */
+		if (cxt->mag_ctl.is_report_input_direct == false
+			&& cxt->is_polling_run == true) {
+			smp_mb();/* for memory barrier */
+			stopTimer(&cxt->hrTimer);
+			smp_mb();/* for memory barrier */
+			cancel_work_sync(&cxt->report);
+			cxt->drv_data.x = MAG_INVALID_VALUE;
+			cxt->drv_data.y = MAG_INVALID_VALUE;
+			cxt->drv_data.z = MAG_INVALID_VALUE;
+			cxt->is_polling_run = false;
+			MAG_LOG("mag stop polling done\n");
+		}
+		/* turn off the power */
+		err = cxt->mag_ctl.enable(0);
+		if (err) {
+			MAG_ERR("mag turn off power err = %d\n", err);
+			return -1;
+		}
+		MAG_LOG("mag turn off power done\n");
+
+		cxt->power = 0;
+		cxt->delay_ns = -1;
+		MAG_LOG("MAG disable done\n");
+		return 0;
 	}
+	/* power off -> power on */
+	if (cxt->power == 0 && cxt->enable == 1) {
+		MAG_LOG("MAG power on\n");
+		err = cxt->mag_ctl.enable(1);
+		if (err) {
+			MAG_ERR("mag turn on power err = %d\n", err);
+			return -1;
+		}
+		MAG_LOG("mag turn on power done\n");
 
-	if (enable == 1) {
-		MAG_LOG("MAG enable\n");
-		cxt->is_first_data_after_enable = true;
-		cxt->active_data_sensor = true;
-		cxt->mag_ctl.enable(1);
-		cxt->mag_ctl.open_report_data(1);
+		cxt->power = 1;
+		MAG_LOG("MAG power on done\n");
+	}
+	/* rate change */
+	if (cxt->power == 1 && cxt->delay_ns >= 0) {
+		MAG_LOG("MAG set batch\n");
+		/* set ODR, fifo timeout latency */
+		if (cxt->mag_ctl.is_support_batch)
+			err = cxt->mag_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
+		else
+			err = cxt->mag_ctl.batch(0, cxt->delay_ns, 0);
+		if (err) {
+			MAG_ERR("mag set batch(ODR) err %d\n", err);
+			return -1;
+		}
+		MAG_LOG("mag set ODR, fifo latency done\n");
+		/* start polling, if needed */
+		if (cxt->mag_ctl.is_report_input_direct == false) {
+			int mdelay = cxt->delay_ns;
 
-		if ((cxt->active_data_sensor != 0) && (cxt->is_polling_run == false) &&
-			(cxt->is_batch_enable == false)) {
-			if (false == cxt->mag_ctl.is_report_input_direct) {
-				MAG_LOG("MAG mod timer\n");
+			do_div(mdelay, 1000000);
+			atomic_set(&cxt->delay, mdelay);
+			/* the first sensor start polling timer */
+			if (cxt->is_polling_run == false) {
 				startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 				cxt->is_polling_run = true;
+				cxt->is_first_data_after_enable = true;
 			}
+			MAG_LOG("mag set polling delay %d ms\n", atomic_read(&cxt->delay));
 		}
+		MAG_LOG("MAG batch done\n");
 	}
-
-	if (enable == 0) {
-		MAG_LOG("MAG disable\n");
-		cxt->active_data_sensor = false;
-		cxt->mag_ctl.enable(0);
-		cxt->mag_ctl.open_report_data(0);
-
-		if (cxt->active_data_sensor == 0 && cxt->is_polling_run == true) {
-			if (false == cxt->mag_ctl.is_report_input_direct) {
-				MAG_LOG("MAG del timer\n");
-				cxt->is_polling_run = false;
-				smp_mb();/*fo memory barrier*/
-				stopTimer(&cxt->hrTimer);
-				smp_mb();/*for memory barrier*/
-				cancel_work_sync(&cxt->report);
-				cxt->drv_data.mag_data.values[0] = MAG_INVALID_VALUE;
-				cxt->drv_data.mag_data.values[1] = MAG_INVALID_VALUE;
-				cxt->drv_data.mag_data.values[2] = MAG_INVALID_VALUE;
-			}
-		}
-
-	}
+	/* just for debug, remove it when everything is ok */
+	if (cxt->power == 0 && cxt->delay_ns >= 0)
+		MAG_ERR("batch will call firstly in API1.3, do nothing\n");
 
 	return 0;
 }
-
 /*----------------------------------------------------------------------------*/
 static ssize_t mag_show_magdev(struct device *dev,
 				 struct device_attribute *attr, char *buf)
@@ -210,27 +239,26 @@ static ssize_t mag_show_magdev(struct device *dev,
 static ssize_t mag_store_active(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	struct mag_context *cxt = NULL;
+	struct mag_context *cxt = mag_context_obj;
+	int err = 0;
 
 	MAG_LOG("mag_store_active buf=%s\n", buf);
 	mutex_lock(&mag_context_obj->mag_op_mutex);
-	cxt = mag_context_obj;
-	if (cxt->mag_ctl.enable == NULL) {
-		mutex_unlock(&mag_context_obj->mag_op_mutex);
-		MAG_LOG("mag_ctl path is NULL\n");
-		return count;
-	}
 
 	if (!strncmp(buf, "1", 1))
-		mag_enable_data(1);
+		cxt->enable = 1;
 	else if (!strncmp(buf, "0", 1))
-		mag_enable_data(0);
-	else
+		cxt->enable = 0;
+	else {
 		MAG_ERR(" mag_store_active error !!\n");
-
+		err = -1;
+		goto err_out;
+	}
+	err = mag_enable_and_batch();
+err_out:
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
 	MAG_LOG(" mag_store_active done\n");
-	return count;
+	return err;
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t mag_show_active(struct device *dev,
@@ -244,85 +272,26 @@ static ssize_t mag_show_active(struct device *dev,
 	MAG_LOG("mag mag_dev_data m_div value: %d\n", div);
 	return snprintf(buf, PAGE_SIZE, "%d\n", div);
 }
-static ssize_t mag_store_delay(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
-{
-	int64_t delay = 0;
-	int64_t mdelay = 0;
-	int ret = 0;
-	struct mag_context *cxt = NULL;
-
-	mutex_lock(&mag_context_obj->mag_op_mutex);
-	cxt = mag_context_obj;
-	if (cxt->mag_ctl.set_delay == NULL) {
-		mutex_unlock(&mag_context_obj->mag_op_mutex);
-		MAG_LOG("mag_ctl m_delay NULL\n");
-		return count;
-	}
-
-	MAG_LOG(" mag_delay ++\n");
-
-	ret = kstrtoll(buf, 10, &delay);
-	if (ret != 0) {
-		mutex_unlock(&mag_context_obj->mag_op_mutex);
-		MAG_ERR("invalid format!!\n");
-		return count;
-	}
-
-	if (false == cxt->mag_ctl.is_report_input_direct) {
-		mdelay = delay;
-		do_div(mdelay, 1000000);
-		atomic_set(&mag_context_obj->delay, mdelay);
-	}
-	cxt->mag_ctl.set_delay(delay);
-	mutex_unlock(&mag_context_obj->mag_op_mutex);
-	MAG_LOG(" mag_delay %lld ns done\n", delay);
-	return count;
-}
-
-static ssize_t mag_show_delay(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	MAG_LOG(" not support now\n");
-	return len;
-}
 
 static ssize_t mag_store_batch(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	struct mag_context *cxt = NULL;
+	struct mag_context *cxt = mag_context_obj;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0, mdelay = 0;
 
-	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
-	if (err != 4)
+	MAG_LOG(" acc_store_batch %s\n", buf);
+	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
+		&cxt->delay_ns, &cxt->latency_ns);
+	if (err != 4) {
 		MAG_ERR("mag_store_batch param error: err = %d\n", err);
-
-	MAG_LOG("mag_store_batch param: handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
-			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+		return -1;
+	}
 
 	mutex_lock(&mag_context_obj->mag_op_mutex);
-	cxt = mag_context_obj;
-	if (false == cxt->mag_ctl.is_report_input_direct) {
-		mdelay = samplingPeriodNs;
-		do_div(mdelay, 1000000);
-		atomic_set(&mag_context_obj->delay, mdelay);
-	}
-	if (!cxt->mag_ctl.is_support_batch) {
-		maxBatchReportLatencyNs = 0;
-		MAG_LOG("mag_store_batch not supported\n");
-	}
-	if (cxt->mag_ctl.batch != NULL)
-		err = cxt->mag_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
-	else
-		MAG_ERR("MAG DRIVER OLD ARCHITECTURE DON'T SUPPORT ACC COMMON VERSION BATCH\n");
-	if (err < 0)
-		MAG_ERR("mag enable batch err %d\n", err);
+	err = mag_enable_and_batch();
 	mutex_unlock(&mag_context_obj->mag_op_mutex);
 	MAG_LOG(" mag_store_batch done: %d\n", cxt->is_batch_enable);
-	return count;
+	return err;
 }
 
 
@@ -539,7 +508,6 @@ static int mag_misc_init(struct mag_context *cxt)
 
 DEVICE_ATTR(magdev,		S_IWUSR | S_IRUGO, mag_show_magdev, NULL);
 DEVICE_ATTR(magactive,	 S_IWUSR | S_IRUGO, mag_show_active, mag_store_active);
-DEVICE_ATTR(magdelay,	  S_IWUSR | S_IRUGO, mag_show_delay,  mag_store_delay);
 DEVICE_ATTR(magbatch,	S_IWUSR | S_IRUGO, mag_show_batch,  mag_store_batch);
 DEVICE_ATTR(magflush,		S_IWUSR | S_IRUGO, mag_show_flush,  mag_store_flush);
 DEVICE_ATTR(magcali,		S_IWUSR | S_IRUGO, mag_show_cali,  mag_store_cali);
@@ -548,7 +516,6 @@ DEVICE_ATTR(magdevnum,	S_IWUSR | S_IRUGO, mag_show_sensordevnum,  NULL);
 static struct attribute *mag_attributes[] = {
 	&dev_attr_magdev.attr,
 	&dev_attr_magactive.attr,
-	&dev_attr_magdelay.attr,
 	&dev_attr_magbatch.attr,
 	&dev_attr_magflush.attr,
 	&dev_attr_magcali.attr,
@@ -651,20 +618,21 @@ static int check_abnormal_data(int x, int y, int z, int status)
 	return 0;
 }
 
-int mag_data_report(int x, int y, int z, int status, int64_t nt)
+int mag_data_report(struct mag_data *data)
 {
 	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
 	struct sensor_event event;
 	int err = 0;
 
-	check_repeat_data(x, y, z);
-	check_abnormal_data(x, y, z, status);
+	check_repeat_data(data->x, data->y, data->z);
+	check_abnormal_data(data->x, data->y, data->z, data->status);
 	event.flush_action = DATA_ACTION;
-	event.status = status;
-	event.time_stamp = nt;
-	event.word[0] = x;
-	event.word[1] = y;
-	event.word[2] = z;
+	event.status = data->status;
+	event.time_stamp = data->timestamp;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
+	event.reserved = data->reserved[0];
 
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
@@ -672,16 +640,16 @@ int mag_data_report(int x, int y, int z, int status, int64_t nt)
 	return err;
 }
 
-int mag_bias_report(int x, int y, int z)
+int mag_bias_report(struct mag_data *data)
 {
 	/* MAG_LOG("update!valus: %d, %d, %d, %d\n" , x, y, z, status); */
 	struct sensor_event event;
 	int err = 0;
 
 	event.flush_action = BIAS_ACTION;
-	event.word[0] = x;
-	event.word[1] = y;
-	event.word[2] = z;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
 
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)

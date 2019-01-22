@@ -234,190 +234,132 @@ static struct alsps_context *alsps_context_alloc_object(void)
 	mutex_init(&obj->alsps_op_mutex);
 	obj->is_als_batch_enable = false;/* for batch mode init */
 	obj->is_ps_batch_enable = false;/* for batch mode init */
+	obj->als_power = 0;
+	obj->als_enable = 0;
+	obj->als_delay_ns = -1;
+	obj->als_latency_ns = -1;
+	obj->ps_power = 0;
+	obj->ps_enable = 0;
+	obj->ps_delay_ns = -1;
+	obj->ps_latency_ns = -1;
 
 	ALSPS_LOG("alsps_context_alloc_object----\n");
 	return obj;
 }
 
-static int als_real_enable(int enable)
+static int als_enable_and_batch(void)
 {
-	int err = 0;
-	struct alsps_context *cxt = NULL;
+	struct alsps_context *cxt = alsps_context_obj;
+	int err;
 
-	cxt = alsps_context_obj;
-	if (enable == 1) {
-		if (true == cxt->is_als_active_data || true == cxt->is_als_active_nodata) {
-			err = cxt->als_ctl.enable_nodata(1);
-			if (err) {
-				err = cxt->als_ctl.enable_nodata(1);
-				if (err) {
-					err = cxt->als_ctl.enable_nodata(1);
-					if (err)
-						ALSPS_ERR("alsps enable(%d) err 3 timers = %d\n", enable, err);
-				}
-			}
+	/* als_power on -> power off */
+	if (cxt->als_power == 1 && cxt->als_enable == 0) {
+		ALSPS_LOG("ALSPS disable\n");
+		/* stop polling firstly, if needed */
+		if (cxt->als_ctl.is_report_input_direct == false
+			&& cxt->is_als_polling_run == true) {
+			smp_mb();/* for memory barrier */
+			del_timer_sync(&cxt->timer_als);
+			smp_mb();/* for memory barrier */
+			cancel_work_sync(&cxt->report_als);
+			cxt->drv_data.als_data.values[0] = ALSPS_INVALID_VALUE;
+			cxt->is_als_polling_run = false;
+			ALSPS_LOG("als stop polling done\n");
 		}
-		ALSPS_LOG("alsps real enable\n");
-	}
-
-	if (enable == 0) {
-		if (false == cxt->is_als_active_data && false == cxt->is_als_active_nodata) {
-			ALSPS_LOG("AAL status is %d\n", aal_use);
-			if (aal_use == 0) {
-				err = cxt->als_ctl.enable_nodata(0);
-				if (err)
-					ALSPS_ERR("alsps enable(%d) err = %d\n", enable, err);
-
-			} else {
-				err = cxt->als_ctl.batch(0, AAL_DELAY, 0);
-			}
-			ALSPS_LOG("alsps real disable\n");
+		/* turn off the als_power */
+		ALSPS_LOG("AAL status is %d\n", aal_use);
+		if (aal_use == 0)
+			err = cxt->als_ctl.enable_nodata(0);
+		else
+			err = cxt->als_ctl.batch(0, AAL_DELAY, 0);
+		if (err) {
+			ALSPS_ERR("als turn off als_power err = %d\n", err);
+			return -1;
 		}
+		ALSPS_LOG("als turn off als_power done\n");
+
+		cxt->als_power = 0;
+		cxt->als_delay_ns = -1;
+		ALSPS_LOG("ALSPS disable done\n");
+		return 0;
 	}
+	/* als_power off -> power on */
+	if (cxt->als_power == 0 && cxt->als_enable == 1) {
+		ALSPS_LOG("ALSPS als_power on\n");
+		err = cxt->als_ctl.enable_nodata(1);
+		if (err) {
+			ALSPS_ERR("als turn on als_power err = %d\n", err);
+			return -1;
+		}
+		ALSPS_LOG("als turn on als_power done\n");
 
-	return err;
-}
-
-static int als_enable_data(int enable)
-{
-	struct alsps_context *cxt = NULL;
-
-	cxt = alsps_context_obj;
-	if (cxt->als_ctl.open_report_data == NULL) {
-		ALSPS_ERR("no als control path\n");
-		return -1;
+		cxt->als_power = 1;
+		ALSPS_LOG("ALSPS als_power on done\n");
 	}
+	/* rate change */
+	if (cxt->als_power == 1 && cxt->als_delay_ns >= 0) {
+		ALSPS_LOG("ALSPS set batch\n");
+		/* set ODR, fifo timeout latency */
+		if (cxt->als_ctl.is_support_batch)
+			err = cxt->als_ctl.batch(0, cxt->als_delay_ns, cxt->als_latency_ns);
+		else
+			err = cxt->als_ctl.batch(0, cxt->als_delay_ns, 0);
+		if (err) {
+			ALSPS_ERR("als set batch(ODR) err %d\n", err);
+			return -1;
+		}
+		ALSPS_LOG("als set ODR, fifo latency done\n");
+		/* start polling, if needed */
+		if (cxt->als_ctl.is_report_input_direct == false) {
+			int mdelay = cxt->als_delay_ns;
 
-	if (enable == 1) {
-		ALSPS_LOG("ALSPS enable data\n");
-		cxt->is_als_active_data = true;
-		cxt->is_als_first_data_after_enable = true;
-		cxt->als_ctl.open_report_data(1);
-		als_real_enable(enable);
-		if (false == cxt->is_als_polling_run && cxt->is_als_batch_enable == false) {
-			if (false == cxt->als_ctl.is_report_input_direct) {
-				cxt->is_get_valid_als_data_after_enable = false;
+			do_div(mdelay, 1000000);
+			/* defaut max polling delay */
+			if (mdelay < 10)
+				mdelay = 10;
+			atomic_set(&cxt->delay_als, mdelay);
+			/* the first sensor start polling timer */
+			if (cxt->is_als_polling_run == false) {
 				mod_timer(&cxt->timer_als, jiffies + atomic_read(&cxt->delay_als)/(1000/HZ));
 				cxt->is_als_polling_run = true;
+				cxt->is_als_first_data_after_enable = true;
 			}
+			ALSPS_LOG("als set polling delay %d ms\n", atomic_read(&cxt->delay_als));
 		}
+		ALSPS_LOG("ALSPS batch done\n");
 	}
+	/* just for debug, remove it when everything is ok */
+	if (cxt->als_power == 0 && cxt->als_delay_ns >= 0)
+		ALSPS_ERR("batch will call firstly in API1.3, do nothing\n");
 
-	if (enable == 0) {
-		ALSPS_LOG("ALSPS disable\n");
-		cxt->is_als_active_data = false;
-		cxt->als_ctl.open_report_data(0);
-		if (true == cxt->is_als_polling_run) {
-			if (false == cxt->als_ctl.is_report_input_direct) {
-				cxt->is_als_polling_run = false;
-				smp_mb();/* for memory barrier */
-				del_timer_sync(&cxt->timer_als);
-				smp_mb();/* for memory barrier */
-				cancel_work_sync(&cxt->report_als);
-				cxt->drv_data.als_data.values[0] = ALSPS_INVALID_VALUE;
-			}
-		}
-		als_real_enable(enable);
-	}
-	return 0;
-}
-
-static int ps_real_enable(int enable)
-{
-	int err = 0;
-	struct alsps_context *cxt = NULL;
-
-	cxt = alsps_context_obj;
-	if (enable == 1) {
-		if (true == cxt->is_ps_active_data || true == cxt->is_ps_active_nodata) {
-			err = cxt->ps_ctl.enable_nodata(1);
-			if (err) {
-				err = cxt->ps_ctl.enable_nodata(1);
-				if (err) {
-					err = cxt->ps_ctl.enable_nodata(1);
-					if (err)
-						ALSPS_ERR("ps enable(%d) err 3 timers = %d\n", enable, err);
-				}
-			}
-			ALSPS_LOG("ps real enable\n");
-		}
-	}
-
-	if (enable == 0) {
-		if (false == cxt->is_ps_active_data && false == cxt->is_ps_active_nodata) {
-			err = cxt->ps_ctl.enable_nodata(0);
-			if (err)
-				ALSPS_ERR("ps enable(%d) err = %d\n", enable, err);
-			ALSPS_LOG("ps real disable\n");
-		}
-	}
-
-	return err;
-}
-
-static int ps_enable_data(int enable)
-{
-	struct alsps_context *cxt = NULL;
-
-	cxt = alsps_context_obj;
-	if (cxt->ps_ctl.open_report_data == NULL) {
-		ALSPS_ERR("no ps control path\n");
-		return -1;
-	}
-
-	if (enable == 1) {
-		ALSPS_LOG("PS enable data\n");
-		cxt->is_ps_active_data = true;
-		cxt->is_ps_first_data_after_enable = true;
-		cxt->ps_ctl.open_report_data(1);
-		ps_real_enable(enable);
-		if (false == cxt->is_ps_polling_run && cxt->is_ps_batch_enable == false) {
-			if (false == cxt->ps_ctl.is_report_input_direct) {
-				mod_timer(&cxt->timer_ps, jiffies + atomic_read(&cxt->delay_ps)/(1000/HZ));
-				cxt->is_ps_polling_run = true;
-				cxt->is_get_valid_ps_data_after_enable = false;
-			}
-		}
-	}
-
-	if (enable == 0) {
-		ALSPS_LOG("PS disable\n");
-		cxt->is_ps_active_data = false;
-		cxt->ps_ctl.open_report_data(0);
-		if (true == cxt->is_ps_polling_run) {
-			if (false == cxt->ps_ctl.is_report_input_direct) {
-				cxt->is_ps_polling_run = false;
-				smp_mb();/* for memory barrier*/
-				del_timer_sync(&cxt->timer_ps);
-				smp_mb();/* for memory barrier*/
-				cancel_work_sync(&cxt->report_ps);
-				cxt->drv_data.ps_data.values[0] = ALSPS_INVALID_VALUE;
-			}
-		}
-		ps_real_enable(enable);
-	}
 	return 0;
 }
 
 static ssize_t als_store_active(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	struct alsps_context *cxt = NULL;
+	struct alsps_context *cxt = alsps_context_obj;
+	int err = 0;
 
 	ALSPS_LOG("als_store_active buf=%s\n", buf);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
-	cxt = alsps_context_obj;
 
-	if (!strncmp(buf, "1", 1))
-		als_enable_data(1);
-	else if (!strncmp(buf, "0", 1))
-		als_enable_data(0);
-	else
+	if (!strncmp(buf, "1", 1)) {
+		cxt->als_enable = 1;
+		cxt->is_als_active_data = true;
+	} else if (!strncmp(buf, "0", 1)) {
+		cxt->als_enable = 0;
+		cxt->is_als_active_data = false;
+	} else {
 		ALSPS_ERR(" alsps_store_active error !!\n");
-
+		err = -1;
+		goto err_out;
+	}
+	err = als_enable_and_batch();
+err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	ALSPS_LOG(" alsps_store_active done\n");
-	return count;
+	ALSPS_LOG(" als_store_active done\n");
+	return err;
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t als_show_active(struct device *dev,
@@ -432,90 +374,26 @@ static ssize_t als_show_active(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", div);
 }
 
-static ssize_t als_store_delay(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
-{
-	int delay;
-	int mdelay = 0;
-	int ret = 0;
-	struct alsps_context *cxt = NULL;
-
-	mutex_lock(&alsps_context_obj->alsps_op_mutex);
-	cxt = alsps_context_obj;
-	if (cxt->als_ctl.set_delay == NULL) {
-		ALSPS_LOG("als_ctl set_delay NULL\n");
-		mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-		return count;
-	}
-
-	ret = kstrtoint(buf, 10, &delay);
-	if (ret != 0) {
-		ALSPS_ERR("invalid format!!\n");
-		mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-		return count;
-	}
-
-	if (aal_use)
-		delay = delay < AAL_DELAY ? delay : AAL_DELAY;
-
-	if (false == cxt->als_ctl.is_report_input_direct) {
-		mdelay = (int)delay/1000/1000;
-		atomic_set(&alsps_context_obj->delay_als, mdelay);
-	}
-	cxt->als_ctl.set_delay(delay);
-	ALSPS_LOG(" als_delay %d ns\n", delay);
-	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	return count;
-}
-
-static ssize_t als_show_delay(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	ALSPS_LOG(" not support now\n");
-	return len;
-}
-
-
 static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	struct alsps_context *cxt = NULL;
+	struct alsps_context *cxt = alsps_context_obj;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0, delay = 0;
-	int mdelay = 0;
 
-	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
+	ALSPS_LOG("als_store_batch %s\n", buf);
+	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
+			&cxt->als_delay_ns, &cxt->als_latency_ns);
 	if (err != 4)
 		ALSPS_ERR("als_store_batch param error: err = %d\n", err);
 
 	if (aal_use)
-		samplingPeriodNs = samplingPeriodNs < AAL_DELAY ? samplingPeriodNs : AAL_DELAY;
+		cxt->als_delay_ns = cxt->als_delay_ns < AAL_DELAY ? cxt->als_delay_ns : AAL_DELAY;
 
-	ALSPS_LOG("als_store_batch param: handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
-			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
-	cxt = alsps_context_obj;
-	if (aal_use)
-		delay = samplingPeriodNs < AAL_DELAY ? samplingPeriodNs : AAL_DELAY;
-	if (false == cxt->als_ctl.is_report_input_direct) {
-		mdelay = (int)(delay / 1000 / 1000);
-		atomic_set(&alsps_context_obj->delay_als, mdelay);
-	}
-	if (!cxt->als_ctl.is_support_batch) {
-		maxBatchReportLatencyNs = 0;
-		ALSPS_LOG("als_store_batch not supported\n");
-	}
-	if (cxt->als_ctl.batch != NULL)
-		err = cxt->als_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
-	else
-		ALSPS_ERR("ALS DRIVER OLD ARCHITECTURE DON'T SUPPORT ALS COMMON VERSION BATCH\n");
-	if (err < 0)
-		ALSPS_ERR("als enable batch err %d\n", err);
+	err = als_enable_and_batch();
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" als_store_batch done: %d\n", cxt->is_als_batch_enable);
-	return count;
+	return err;
 }
 
 static ssize_t als_show_batch(struct device *dev,
@@ -559,25 +437,114 @@ static ssize_t als_show_devnum(struct device *dev,
 {
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
+
+static int ps_enable_and_batch(void)
+{
+	struct alsps_context *cxt = alsps_context_obj;
+	int err;
+
+	/* ps_power on -> power off */
+	if (cxt->ps_power == 1 && cxt->ps_enable == 0) {
+		ALSPS_LOG("PS disable\n");
+		/* stop polling firstly, if needed */
+		if (cxt->ps_ctl.is_report_input_direct == false
+			&& cxt->is_ps_polling_run == true) {
+			smp_mb();/* for memory barrier */
+			del_timer_sync(&cxt->timer_ps);
+			smp_mb();/* for memory barrier */
+			cancel_work_sync(&cxt->report_ps);
+			cxt->drv_data.ps_data.values[0] = ALSPS_INVALID_VALUE;
+			cxt->is_ps_polling_run = false;
+			ALSPS_LOG("ps stop polling done\n");
+		}
+		/* turn off the ps_power */
+		err = cxt->ps_ctl.enable_nodata(0);
+		if (err) {
+			ALSPS_ERR("ps turn off ps_power err = %d\n", err);
+			return -1;
+		}
+		ALSPS_LOG("ps turn off ps_power done\n");
+
+		cxt->ps_power = 0;
+		cxt->ps_delay_ns = -1;
+		ALSPS_LOG("PS disable done\n");
+		return 0;
+	}
+	/* ps_power off -> power on */
+	if (cxt->ps_power == 0 && cxt->ps_enable == 1) {
+		ALSPS_LOG("PS ps_power on\n");
+		err = cxt->ps_ctl.enable_nodata(1);
+		if (err) {
+			ALSPS_ERR("ps turn on ps_power err = %d\n", err);
+			return -1;
+		}
+		ALSPS_LOG("ps turn on ps_power done\n");
+
+		cxt->ps_power = 1;
+		ALSPS_LOG("PS ps_power on done\n");
+	}
+	/* rate change */
+	if (cxt->ps_power == 1 && cxt->ps_delay_ns >= 0) {
+		ALSPS_LOG("PS set batch\n");
+		/* set ODR, fifo timeout latency */
+		if (cxt->ps_ctl.is_support_batch)
+			err = cxt->ps_ctl.batch(0, cxt->ps_delay_ns, cxt->ps_latency_ns);
+		else
+			err = cxt->ps_ctl.batch(0, cxt->ps_delay_ns, 0);
+		if (err) {
+			ALSPS_ERR("ps set batch(ODR) err %d\n", err);
+			return -1;
+		}
+		ALSPS_LOG("ps set ODR, fifo latency done\n");
+		/* start polling, if needed */
+		if (cxt->ps_ctl.is_report_input_direct == false) {
+			int mdelay = cxt->ps_delay_ns;
+
+			do_div(mdelay, 1000000);
+			atomic_set(&cxt->delay_ps, mdelay);
+			/* the first sensor start polling timer */
+			if (cxt->is_ps_polling_run == false) {
+				mod_timer(&cxt->timer_ps, jiffies + atomic_read(&cxt->delay_ps)/(1000/HZ));
+				cxt->is_ps_polling_run = true;
+				cxt->is_ps_first_data_after_enable = true;
+			}
+			ALSPS_LOG("ps set polling delay %d ms\n", atomic_read(&cxt->delay_ps));
+		} else {
+			/* report an default value firstly */
+			ps_data_report(1, 3);
+		}
+		ALSPS_LOG("PS batch done\n");
+	}
+	/* just for debug, remove it when everything is ok */
+	if (cxt->ps_power == 0 && cxt->ps_delay_ns >= 0)
+		ALSPS_ERR("batch will call firstly in API1.3, do nothing\n");
+
+	return 0;
+}
+
 static ssize_t ps_store_active(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	struct alsps_context *cxt = NULL;
+	struct alsps_context *cxt = alsps_context_obj;
+	int err = 0;
 
 	ALSPS_LOG("ps_store_active buf=%s\n", buf);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
-	cxt = alsps_context_obj;
 
 	if (!strncmp(buf, "1", 1))
-		ps_enable_data(1);
+		cxt->ps_enable = 1;
 	else if (!strncmp(buf, "0", 1))
-		ps_enable_data(0);
-	else
+		cxt->ps_enable = 0;
+	else {
 		ALSPS_ERR(" ps_store_active error !!\n");
-
+		err = -1;
+		goto err_out;
+	}
+	err = ps_enable_and_batch();
+err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" ps_store_active done\n");
-	return count;
+	return err;
 }
 /*----------------------------------------------------------------------------*/
 static ssize_t ps_show_active(struct device *dev,
@@ -592,84 +559,23 @@ static ssize_t ps_show_active(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", div);
 }
 
-static ssize_t ps_store_delay(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
-{
-	int delay;
-	int mdelay = 0;
-	int ret = 0;
-	struct alsps_context *cxt = NULL;
-
-	mutex_lock(&alsps_context_obj->alsps_op_mutex);
-	cxt = alsps_context_obj;
-	if (cxt->ps_ctl.set_delay == NULL) {
-		ALSPS_LOG("ps_ctl set_delay NULL\n");
-		mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-		return count;
-	}
-
-	ret = kstrtoint(buf, 10, &delay);
-	if (ret != 0) {
-		ALSPS_ERR("invalid format!!\n");
-		mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-		return count;
-	}
-
-	if (false == cxt->ps_ctl.is_report_input_direct) {
-		mdelay = (int)delay/1000/1000;
-		atomic_set(&alsps_context_obj->delay_ps, mdelay);
-	}
-
-	cxt->ps_ctl.set_delay(delay);
-	ALSPS_LOG(" ps_delay %d ns\n", delay);
-	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-
-	return count;
-}
-
-static ssize_t ps_show_delay(struct device *dev,
-				 struct device_attribute *attr, char *buf)
-{
-	int len = 0;
-
-	ALSPS_LOG(" not support now\n");
-	return len;
-}
-
-
 static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	struct alsps_context *cxt = NULL;
+	struct alsps_context *cxt = alsps_context_obj;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
-	int mdelay = 0;
 
-	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
+	ALSPS_LOG("ps_store_batch %s\n", buf);
+	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
+			&cxt->ps_delay_ns, &cxt->ps_latency_ns);
 	if (err != 4)
 		ALSPS_ERR("ps_store_batch param error: err = %d\n", err);
 
-	ALSPS_LOG("ps_store_batch param: handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
-			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
-	cxt = alsps_context_obj;
-	if (false == cxt->ps_ctl.is_report_input_direct) {
-		mdelay = (int)(samplingPeriodNs / 1000 / 1000);
-		atomic_set(&alsps_context_obj->delay_ps, mdelay);
-	}
-	if (!cxt->ps_ctl.is_support_batch) {
-		maxBatchReportLatencyNs = 0;
-		ALSPS_LOG("ps_store_batch not supported\n");
-	}
-	if (cxt->ps_ctl.batch != NULL)
-		err = cxt->ps_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
-	else
-		ALSPS_ERR("PS DRIVER OLD ARCHITECTURE DON'T SUPPORT PS COMMON VERSION BATCH\n");
-	if (err < 0)
-		ALSPS_ERR("ps enable batch err %d\n", err);
+	err = ps_enable_and_batch();
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG("ps_store_batch done: %d\n", cxt->is_ps_batch_enable);
-	return count;
+	return err;
 }
 
 static ssize_t ps_show_batch(struct device *dev,
@@ -833,19 +739,16 @@ int ps_report_interrupt_data(int value)
 /*----------------------------------------------------------------------------*/
 EXPORT_SYMBOL_GPL(ps_report_interrupt_data);
 DEVICE_ATTR(alsactive,		S_IWUSR | S_IRUGO, als_show_active, als_store_active);
-DEVICE_ATTR(alsdelay,		S_IWUSR | S_IRUGO, als_show_delay,  als_store_delay);
 DEVICE_ATTR(alsbatch,		S_IWUSR | S_IRUGO, als_show_batch,  als_store_batch);
 DEVICE_ATTR(alsflush,		S_IWUSR | S_IRUGO, als_show_flush,  als_store_flush);
 DEVICE_ATTR(alsdevnum,		S_IWUSR | S_IRUGO, als_show_devnum,  NULL);
 DEVICE_ATTR(psactive,		S_IWUSR | S_IRUGO, ps_show_active, ps_store_active);
-DEVICE_ATTR(psdelay,		S_IWUSR | S_IRUGO, ps_show_delay,  ps_store_delay);
 DEVICE_ATTR(psbatch,		S_IWUSR | S_IRUGO, ps_show_batch,  ps_store_batch);
 DEVICE_ATTR(psflush,		S_IWUSR | S_IRUGO, ps_show_flush,  ps_store_flush);
 DEVICE_ATTR(psdevnum,		S_IWUSR | S_IRUGO, ps_show_devnum,  NULL);
 
 static struct attribute *als_attributes[] = {
 	&dev_attr_alsactive.attr,
-	&dev_attr_alsdelay.attr,
 	&dev_attr_alsbatch.attr,
 	&dev_attr_alsflush.attr,
 	&dev_attr_alsdevnum.attr,
@@ -854,7 +757,6 @@ static struct attribute *als_attributes[] = {
 
 static struct attribute *ps_attributes[] = {
 	&dev_attr_psactive.attr,
-	&dev_attr_psdelay.attr,
 	&dev_attr_psbatch.attr,
 	&dev_attr_psflush.attr,
 	&dev_attr_psdevnum.attr,
@@ -998,8 +900,8 @@ int als_register_control_path(struct als_control_path *ctl)
 	cxt->als_ctl.is_report_input_direct = ctl->is_report_input_direct;
 	cxt->als_ctl.is_use_common_factory = ctl->is_use_common_factory;
 
-	if (NULL == cxt->als_ctl.set_delay || NULL == cxt->als_ctl.open_report_data
-		|| NULL == cxt->als_ctl.enable_nodata) {
+	if (cxt->als_ctl.enable_nodata == NULL || cxt->als_ctl.batch == NULL ||
+			cxt->als_ctl.flush == NULL) {
 		ALSPS_LOG("als register control path fail\n");
 		return -1;
 	}
@@ -1038,8 +940,8 @@ int ps_register_control_path(struct ps_control_path *ctl)
 	cxt->ps_ctl.is_use_common_factory = ctl->is_use_common_factory;
 	cxt->ps_ctl.is_polling_mode = ctl->is_polling_mode;
 
-	if (NULL == cxt->ps_ctl.set_delay || NULL == cxt->ps_ctl.open_report_data
-		|| NULL == cxt->ps_ctl.enable_nodata) {
+	if (cxt->ps_ctl.enable_nodata == NULL || cxt->ps_ctl.batch == NULL ||
+			cxt->ps_ctl.flush == NULL) {
 		ALSPS_LOG("ps register control path fail\n");
 		return -1;
 	}
