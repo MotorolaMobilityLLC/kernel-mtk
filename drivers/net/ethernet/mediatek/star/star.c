@@ -17,15 +17,15 @@
 #include <linux/of_address.h>
 #include <linux/mii.h>
 #include <linux/ethtool.h>
+#include <linux/of_net.h>
 
 #include "star.h"
 #include "star_procfs.h"
+#include "mtk_spm_sleep.h"
 
 #define STAR_DRV_NAME	"star-eth"
 #define STAR_DRV_VERSION "version-1.0"
 #define ETH_WOL_NAME "WOL"
-
-static u8 DEFAULT_MAC_ADDRESS[] = { 0x00, 0x0C, 0xE7, 0x06, 0x00, 0x00 };
 
 static void star_finish_xmit(struct net_device *dev);
 
@@ -72,7 +72,7 @@ static int alloc_rx_skbs(star_dev *star_dev)
 		struct sk_buff *skb = get_skb(star_prv->dev);
 
 		if (!skb) {
-			STAR_MSG(STAR_ERR, "Error! No momory for rx sk_buff\n");
+			STAR_PR_ERR("Error! No momory for rx sk_buff\n");
 			return -ENOMEM;
 		}
 
@@ -87,14 +87,13 @@ static int alloc_rx_skbs(star_dev *star_dev)
 					skb_tailroom(skb),
 					DMA_FROM_DEVICE);
 		if (dma_mapping_error(star_dev->dev, dmaBuf)) {
-			STAR_MSG(STAR_ERR, "dma_mapping_error error\n");
+			STAR_PR_ERR("dma_mapping_error error\n");
 			return -ENOMEM;
 		}
 
 		retval = star_dma_rx_set(star_dev, dmaBuf,
 					 skb_tailroom(skb), (uintptr_t)skb);
-		STAR_MSG(STAR_VERB, "rx descriptor idx(%d) for skb(%p)\n",
-			 retval, skb);
+		STAR_PR_DEBUG("rx descriptor idx(%d) for skb(%p)\n", retval, skb);
 		if (retval < 0) {
 			dma_unmap_single(star_dev->dev, dmaBuf,
 					 skb_tailroom(skb), DMA_FROM_DEVICE);
@@ -119,7 +118,7 @@ static void free_tx_skbs(star_dev *star_dev)
 			len = star_dma_tx_length(ctrl_len);
 			dma_unmap_single(star_dev->dev, dmaBuf,
 					 len, DMA_TO_DEVICE);
-			STAR_MSG(STAR_DBG,
+			STAR_PR_INFO(
 				 "get tx desc index(%d) for skb(0x%lx)\n",
 				 retval, extBuf);
 			dev_kfree_skb((struct sk_buff *)extBuf);
@@ -142,7 +141,7 @@ static void free_rx_skbs(star_dev *star_dev)
 					 skb_tailroom((struct sk_buff *)
 						      extBuf),
 						      DMA_FROM_DEVICE);
-			STAR_MSG(STAR_DBG,
+			STAR_PR_INFO(
 				 "get tx desc index(%d) for skb(0x%lx)\n",
 				 retval, extBuf);
 			dev_kfree_skb((struct sk_buff *)extBuf);
@@ -167,9 +166,9 @@ static int receive_one_packet(star_dev *star_dev, bool napi)
 	curr_skb = (struct sk_buff *)extBuf;
 	dma_unmap_single(star_dev->dev, dmaBuf,
 			 skb_tailroom(curr_skb), DMA_FROM_DEVICE);
-	STAR_MSG(STAR_VERB, "%s(%s):rx des %d for skb(0x%lx)/length(%d)\n",
-		 __func__, ndev->name, retval, extBuf,
-		 star_dma_rx_length(ctrl_len));
+	STAR_PR_DEBUG("%s(%s):rx des %d for skb(0x%lx)/length(%d)\n",
+		      __func__, ndev->name, retval, extBuf,
+		      star_dma_rx_length(ctrl_len));
 
 	if (star_dma_rx_valid(ctrl_len)) {
 		len = star_dma_rx_length(ctrl_len);
@@ -238,7 +237,7 @@ static void star_dsr(unsigned long data)
 	star_dev *star_dev;
 	struct net_device *ndev = (struct net_device *)data;
 
-	STAR_MSG(STAR_VERB, "%s(%s)\n", __func__, ndev->name);
+	STAR_PR_DEBUG("%s(%s)\n", __func__, ndev->name);
 
 	star_prv = netdev_priv(ndev);
 	star_dev = &star_prv->star_dev;
@@ -260,23 +259,24 @@ static irqreturn_t star_isr(int irq, void *dev_id)
 	intr_clr_msk &= ~STAR_INT_STA_RXC;
 
 	if (!dev) {
-		STAR_MSG(STAR_ERR, "star_isr - unknown device\n");
+		STAR_PR_ERR("star_isr - unknown device\n");
 		return IRQ_NONE;
 	}
 
-	STAR_MSG(STAR_VERB, "star_isr(%s)\n", dev->name);
+	STAR_PR_DEBUG("star_isr(%s)\n", dev->name);
 
 	star_prv = netdev_priv(dev);
 	star_dev = &star_prv->star_dev;
 
+	star_intr_disable(star_dev);
 	intrStatus = star_intr_status(star_dev);
 	star_intr_clear(star_dev, intrStatus & intr_clr_msk);
 
 	do {
-		STAR_MSG(STAR_VERB,
+		STAR_PR_DEBUG(
 			 "star_isr:interrupt status(0x%08x)\n", intrStatus);
 		if (intrStatus & STAR_INT_STA_RXC) {
-			STAR_MSG(STAR_VERB, "rx complete\n");
+			STAR_PR_DEBUG("rx complete\n");
 			/* Disable rx interrupts */
 			star_intr_rx_disable(star_dev);
 			/* Clear rx interrupt */
@@ -285,32 +285,32 @@ static irqreturn_t star_isr(int irq, void *dev_id)
 		}
 
 		if (intrStatus & STAR_INT_STA_RXQF)
-			STAR_MSG(STAR_VERB, "rx queue full\n");
+			STAR_PR_DEBUG("rx queue full\n");
 
 		if (intrStatus & STAR_INT_STA_RXFIFOFULL)
-			STAR_MSG(STAR_WARN, "rx fifo full\n");
+			STAR_PR_INFO("rx fifo full\n");
 
 		if (intrStatus & STAR_INT_STA_TXC) {
-			STAR_MSG(STAR_VERB, " tx complete\n");
+			STAR_PR_DEBUG(" tx complete\n");
 			star_prv->tsk_tx = true;
 		}
 
 		if (intrStatus & STAR_INT_STA_TXQE)
-			STAR_MSG(STAR_VERB, "tx queue empty\n");
+			STAR_PR_DEBUG("tx queue empty\n");
 
 		if (intrStatus & STAR_INT_STA_RX_PCODE)
-			STAR_MSG(STAR_DBG, "Rx PCODE\n");
+			STAR_PR_INFO("Rx PCODE\n");
 
 		if (intrStatus & STAR_INT_STA_MAGICPKT)
-			STAR_MSG(STAR_WARN, "magic packet received\n");
+			STAR_PR_INFO("magic packet received\n");
 
 		if (intrStatus & STAR_INT_STA_MIBCNTHALF) {
-			STAR_MSG(STAR_VERB, " mib counter reach 2G\n");
+			STAR_PR_DEBUG(" mib counter reach 2G\n");
 			star_mib_init(star_dev);
 		}
 
 		if (intrStatus & STAR_INT_STA_PORTCHANGE) {
-			STAR_MSG(STAR_DBG, "port status change\n");
+			STAR_PR_INFO("port status change\n");
 			star_link_status_change(star_dev);
 		}
 
@@ -319,10 +319,11 @@ static irqreturn_t star_isr(int irq, void *dev_id)
 		star_intr_clear(star_dev, intrStatus & intr_clr_msk);
 	} while ((intrStatus & intr_clr_msk) != 0);
 
+	star_intr_enable(star_dev);
 	if (star_prv->tsk_tx)
 		tasklet_schedule(&star_prv->dsr);
 
-	STAR_MSG(STAR_VERB, "star_isr return\n");
+	STAR_PR_DEBUG("star_isr return\n");
 
 	return IRQ_HANDLED;
 }
@@ -330,7 +331,7 @@ static irqreturn_t star_isr(int irq, void *dev_id)
 #ifdef CONFIG_STAR_USE_RMII_MODE
 static irqreturn_t star_eint_isr(int irq, void *dev_id)
 {
-	STAR_MSG(STAR_DBG, "enter star_eint_isr\n");
+	STAR_PR_INFO("enter star_eint_isr\n");
 
 	return IRQ_HANDLED;
 }
@@ -354,7 +355,7 @@ static int star_mac_enable(struct net_device *ndev)
 	star_private *star_prv = netdev_priv(ndev);
 	star_dev *star_dev = &star_prv->star_dev;
 
-	STAR_MSG(STAR_DBG, "%s(%s)\n", __func__, ndev->name);
+	STAR_PR_INFO("%s(%s)\n", __func__, ndev->name);
 
 	/* Start RX FIFO receive */
 	star_nic_pdset(star_dev, false);
@@ -374,22 +375,22 @@ static int star_mac_enable(struct net_device *ndev)
 	star_phyctrl_init(star_dev, 1, star_prv->phy_addr);
 
 	if (alloc_rx_skbs(star_dev)) {
-		STAR_MSG(STAR_ERR, "rx bufs init fail\n");
+		STAR_PR_ERR("rx bufs init fail\n");
 		return -ENOMEM;
 	}
 
-	STAR_MSG(STAR_DBG, "request interrupt vector=%d\n", ndev->irq);
+	STAR_PR_INFO("request interrupt vector=%d\n", ndev->irq);
 	if (request_irq(ndev->irq, star_isr, IRQF_TRIGGER_FALLING,
 			ndev->name, ndev) != 0) {
-		STAR_MSG(STAR_ERR, "interrupt %d request fail\n", ndev->irq);
+		STAR_PR_ERR("interrupt %d request fail\n", ndev->irq);
 		return -ENODEV;
 	}
 
 #ifdef CONFIG_STAR_USE_RMII_MODE
-	STAR_MSG(STAR_DBG, "request eint_irq vector=%d\n", star_prv->eint_irq);
+	STAR_PR_INFO("request eint_irq vector=%d\n", star_prv->eint_irq);
 	if (request_irq(star_prv->eint_irq, star_eint_isr,
 			IRQ_TYPE_EDGE_FALLING, ndev->name, ndev) != 0) {
-		STAR_MSG(STAR_ERR,
+		STAR_PR_ERR(
 			 "eint_irq %d request fail\n", star_prv->eint_irq);
 		return -ENODEV;
 	}
@@ -418,7 +419,7 @@ static void star_mac_disable(struct net_device *ndev)
 	star_private *star_prv = netdev_priv(ndev);
 	star_dev *star_dev = &star_prv->star_dev;
 
-	STAR_MSG(STAR_DBG, "%s(%s)\n", __func__, ndev->name);
+	STAR_PR_INFO("%s(%s)\n", __func__, ndev->name);
 
 	netif_stop_queue(ndev);
 
@@ -447,17 +448,17 @@ static int star_open(struct net_device *ndev)
 	int ret;
 	star_private *star_prv = netdev_priv(ndev);
 
-	STAR_MSG(STAR_DBG, "star_open(%s)\n", ndev->name);
+	STAR_PR_INFO("star_open(%s)\n", ndev->name);
 
 	if (star_prv->opened) {
-		STAR_MSG(STAR_DBG, "%s(%s) is already open\n",
-			 __func__, ndev->name);
+		STAR_PR_INFO("%s(%s) is already open\n",
+			     __func__, ndev->name);
 		return 0;
 	}
 
 	ret = star_mac_enable(ndev);
 	if (ret) {
-		STAR_MSG(STAR_DBG, "star_mac_enable(%s) fail\n", ndev->name);
+		STAR_PR_INFO("star_mac_enable(%s) fail\n", ndev->name);
 		return ret;
 	}
 
@@ -470,10 +471,10 @@ static int star_stop(struct net_device *ndev)
 {
 	star_private *star_prv = netdev_priv(ndev);
 
-	STAR_MSG(STAR_DBG, "enter %s\n", __func__);
+	STAR_PR_INFO("enter %s\n", __func__);
 	if (!star_prv->opened) {
-		STAR_MSG(STAR_DBG, "%s(%s) is already close\n", __func__,
-			 ndev->name);
+		STAR_PR_INFO("%s(%s) is already close\n",
+			     __func__, ndev->name);
 		return 0;
 	}
 
@@ -495,15 +496,20 @@ static int star_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 
 	/* If frame size > Max frame size, drop this packet */
 	if (skb->len > ETH_MAX_FRAME_SIZE) {
-		STAR_MSG(STAR_WARN, "%s:Tx frame len is oversized(%d bytes)\n",
-			 ndev->name, skb->len);
+		STAR_PR_INFO("%s:Tx frame len is oversized(%d bytes)\n",
+			     ndev->name, skb->len);
 		dev_kfree_skb(skb);
 		star_dev->stats.tx_dropped++;
 		return NETDEV_TX_OK;
 	}
 
 	dmaBuf = dma_map_single(star_dev->dev,
-				skb->data, skb->len, DMA_TO_DEVICE);
+				skb->data, skb_headlen(skb), DMA_TO_DEVICE);
+	if (unlikely(dma_mapping_error(star_dev->dev, dmaBuf))) {
+		STAR_PR_ERR("%s,dma_mapping_error error\n", __func__);
+		return -ENOMEM;
+	}
+
 	spin_lock_irqsave(&star_prv->lock, flags);
 	star_dma_tx_set(star_dev, dmaBuf, skb->len, (uintptr_t)skb);
 	/* Tx descriptor ring full */
@@ -541,7 +547,7 @@ static void star_finish_xmit(struct net_device *ndev)
 			len = star_dma_tx_length(ctrl_len);
 			dma_unmap_single(star_dev->dev,
 					 dmaBuf, len, DMA_TO_DEVICE);
-			STAR_MSG(STAR_VERB,
+			STAR_PR_DEBUG(
 				 "%s get tx desc(%d) for skb(0x%lx), len(%08x)\n",
 				 __func__, retval, extBuf, len);
 
@@ -562,7 +568,7 @@ static struct net_device_stats *star_get_stats(struct net_device *ndev)
 	star_private *star_prv;
 	star_dev *star_dev;
 
-	STAR_MSG(STAR_VERB, "enter %s\n", __func__);
+	STAR_PR_DEBUG("enter %s\n", __func__);
 
 	star_prv = netdev_priv(ndev);
 	star_dev = &star_prv->star_dev;
@@ -579,7 +585,7 @@ static void star_set_multicast_list(struct net_device *ndev)
 	star_private *star_prv;
 	star_dev *star_dev;
 
-	STAR_MSG(STAR_VERB, "enter %s\n", __func__);
+	STAR_PR_DEBUG("enter %s\n", __func__);
 
 	star_prv = netdev_priv(ndev);
 	star_dev = &star_prv->star_dev;
@@ -587,8 +593,8 @@ static void star_set_multicast_list(struct net_device *ndev)
 	spin_lock_irqsave(&star_prv->lock, flags);
 
 	if (ndev->flags & IFF_PROMISC) {
-		STAR_MSG(STAR_WARN, "%s: Promiscuous mode enabled.\n",
-			 ndev->name);
+		STAR_PR_INFO("%s: Promiscuous mode enabled.\n",
+			     ndev->name);
 		star_arl_promisc_enable(star_dev);
 	} else if ((netdev_mc_count(ndev) > STAR_HTABLE_SIZE_LIMIT) ||
 				(ndev->flags & IFF_ALLMULTI)) {
@@ -627,6 +633,21 @@ static int star_ioctl(struct net_device *dev, struct ifreq *req, int cmd)
 	return rc;
 }
 
+static void star_tx_timeout(struct net_device *ndev)
+{
+	bool state;
+	int ret;
+
+	STAR_PR_INFO("%s tx timeout\n", __func__);
+	STAR_PR_DEBUG("request interrupt vector=%d\n", ndev->irq);
+	ret = irq_get_irqchip_state(ndev->irq, IRQCHIP_STATE_MASKED, &state);
+	STAR_PR_DEBUG("irq mask status(ret=%d)=0x%x\n", ret, state);
+	ret = irq_get_irqchip_state(ndev->irq, IRQCHIP_STATE_PENDING, &state);
+	STAR_PR_DEBUG("irq pending status(ret=%d)=0x%x\n", ret, state);
+	ret = irq_get_irqchip_state(ndev->irq, IRQCHIP_STATE_ACTIVE, &state);
+	STAR_PR_DEBUG("irq active status(ret=%d)=0x%x\n", ret, state);
+}
+
 static int mdcmdio_read(struct net_device *dev, int phy_id, int location)
 {
 	star_private *star_prv;
@@ -656,6 +677,7 @@ const struct net_device_ops star_netdev_ops = {
 	.ndo_get_stats = star_get_stats,
 	.ndo_set_rx_mode = star_set_multicast_list,
 	.ndo_do_ioctl = star_ioctl,
+	.ndo_tx_timeout	= star_tx_timeout,
 #ifdef CONFIG_NET_POLL_CONTROLLER
 	.ndo_poll_controller = star_netpoll,
 #endif
@@ -714,7 +736,7 @@ static u32 starmac_get_link(struct net_device *ndev)
 	spin_lock_irqsave(&star_prv->lock, flags);
 	ret = mii_link_ok(&star_prv->mii);
 	spin_unlock_irqrestore(&star_prv->lock, flags);
-	STAR_MSG(STAR_DBG, "ETHTOOL_TEST is called\n");
+	STAR_PR_INFO("ETHTOOL_TEST is called\n");
 
 	return ret;
 }
@@ -759,24 +781,28 @@ static int  star_suspend(struct platform_device *pdev, pm_message_t state)
 	star_private *star_prv = netdev_priv(netdev);
 	star_dev *star_dev = &star_prv->star_dev;
 
-	STAR_MSG(STAR_DBG, "entered %s, line(%d)\n", __func__, __LINE__);
+	STAR_PR_INFO("entered %s, line(%d)\n", __func__, __LINE__);
 
-#ifdef CONFIG_STAR_USE_RMII_MODE
 	if (star_prv->opened) {
-		if (star_dev->phy_ops->wol_enable)
-			star_dev->phy_ops->wol_enable(netdev);
-		enable_irq_wake(star_prv->eint_pin);
+		if (star_prv->wol == WOL_NONE) {
+			STAR_PR_INFO("Not support wol.\n");
+			star_mac_disable(netdev);
+			clk_disable_unprepare(star_prv->core_clk);
+			clk_disable_unprepare(star_prv->reg_clk);
+			clk_disable_unprepare(star_prv->trans_clk);
+			regulator_disable(star_prv->phy_regulator);
+		} else if (star_prv->wol == MAC_WOL) {
+			STAR_PR_INFO("support mac wol.\n");
+			spm_set_sleep_26m_req(1);
+			star_config_wol(star_dev, true);
+		} else if (star_prv->wol == PHY_WOL) {
+			STAR_PR_INFO("support phy wol.\n");
+			star_mac_disable(netdev);
+			if (star_dev->phy_ops->wol_enable)
+				star_dev->phy_ops->wol_enable(netdev);
+			enable_irq_wake(star_prv->eint_irq);
+		}
 	}
-		return 0;
-#else
-	if (star_prv->opened && star_prv->support_wol) {
-		star_config_wol(star_dev, true);
-		return 0;
-	}
-#endif
-
-	if (star_prv->opened)
-		star_mac_disable(netdev);
 
 	return 0;
 }
@@ -786,29 +812,43 @@ static int star_resume(struct platform_device *pdev)
 	struct net_device *netdev = platform_get_drvdata(pdev);
 	star_private *star_prv = netdev_priv(netdev);
 	star_dev *star_dev = &star_prv->star_dev;
+	int ret;
 
-	STAR_MSG(STAR_DBG, "entered %s(%s)\n", __func__, netdev->name);
+	STAR_PR_INFO("entered %s(%s)\n", __func__, netdev->name);
 
-#ifdef CONFIG_STAR_USE_RMII_MODE
 	if (star_prv->opened) {
-		if (star_prv->opened) {
+		if (star_prv->wol == WOL_NONE) {
+			STAR_PR_INFO("Not support wol.\n");
+			ret = regulator_enable(star_prv->phy_regulator);
+			if (ret != 0)
+				STAR_PR_ERR("failed to regulator_enable(%d)\n", ret);
+
+			ret = clk_prepare_enable(star_prv->core_clk);
+			if (ret < 0)
+				STAR_PR_ERR("failed to enable core-clk (%d)\n", ret);
+
+			ret = clk_prepare_enable(star_prv->reg_clk);
+			if (ret < 0)
+				STAR_PR_ERR("failed to enable reg-clk (%d)\n", ret);
+
+			ret = clk_prepare_enable(star_prv->trans_clk);
+			if (ret < 0)
+				STAR_PR_ERR("failed to enable trans-clk (%d)\n", ret);
+
+			star_hw_init(star_dev);
+			star_mac_enable(netdev);
+		} else if (star_prv->wol == MAC_WOL) {
+			STAR_PR_INFO("support mac wol.\n");
+			star_config_wol(star_dev, false);
+			spm_set_sleep_26m_req(0);
+		} else if (star_prv->wol == PHY_WOL) {
+			STAR_PR_INFO("support phy wol.\n");
 			if (star_dev->phy_ops->wol_disable)
 				star_dev->phy_ops->wol_disable(netdev);
+			disable_irq_wake(star_prv->eint_irq);
+			star_hw_init(star_dev);
+			star_mac_enable(netdev);
 		}
-	}
-
-#else
-	if (star_prv->opened && star_prv->support_wol) {
-		star_config_wol(star_dev, false);
-		return 0;
-	}
-#endif
-
-	if (star_prv->opened) {
-		star_hw_init(star_dev);
-		star_mb();
-		star_mac_enable(netdev);
-		star_mb();
 	}
 
 	return 0;
@@ -821,8 +861,9 @@ static int star_probe(struct platform_device *pdev)
 	star_dev *star_dev;
 	struct net_device *netdev;
 	struct device_node *np;
+	const char *mac_addr;
 
-	STAR_MSG(STAR_DBG, "%s entered\n", __func__);
+	STAR_PR_INFO("%s entered\n", __func__);
 
 	netdev = alloc_etherdev(sizeof(star_private));
 	if (!netdev)
@@ -840,7 +881,7 @@ static int star_probe(struct platform_device *pdev)
 	star_prv->opened = false;
 
 #ifdef ETH_SUPPORT_WOL
-	STAR_MSG(STAR_ERR, "%s() support WOL\n", __func__);
+	STAR_PR_INFO("%s() support WOL\n", __func__);
 	star_prv->support_wol = true;
 #endif
 	star_dev = &star_prv->star_dev;
@@ -848,7 +889,7 @@ static int star_probe(struct platform_device *pdev)
 
 	np = of_find_compatible_node(NULL, NULL, "mediatek,mt8516-ethernet");
 	if (!np) {
-		STAR_MSG(STAR_ERR, "%s, fail to find node\n", __func__);
+		STAR_PR_ERR("%s, fail to find node\n", __func__);
 		ret = -EINVAL;
 		goto err_free_netdev;
 	}
@@ -856,67 +897,67 @@ static int star_probe(struct platform_device *pdev)
 	star_prv->core_clk = devm_clk_get(&pdev->dev, "core");
 	if (IS_ERR(star_prv->core_clk)) {
 		ret = PTR_ERR(star_prv->core_clk);
-		STAR_MSG(STAR_ERR, "failed to get core-clk: %d\n", ret);
+		STAR_PR_ERR("failed to get core-clk: %d\n", ret);
 		goto err_free_netdev;
 	}
 	ret = clk_prepare_enable(star_prv->core_clk);
 	if (ret < 0) {
-		STAR_MSG(STAR_ERR, "failed to enable core-clk (%d)\n", ret);
+		STAR_PR_ERR("failed to enable core-clk (%d)\n", ret);
 		goto err_free_netdev;
 	}
 
 	star_prv->reg_clk = devm_clk_get(&pdev->dev, "reg");
 	if (IS_ERR(star_prv->reg_clk)) {
 		ret = PTR_ERR(star_prv->reg_clk);
-		STAR_MSG(STAR_ERR, "failed to get reg-clk: %d\n", ret);
+		STAR_PR_ERR("failed to get reg-clk: %d\n", ret);
 		goto err_free_netdev;
 	}
 	ret = clk_prepare_enable(star_prv->reg_clk);
 	if (ret < 0) {
-		STAR_MSG(STAR_ERR, "failed to enable reg-clk (%d)\n", ret);
+		STAR_PR_ERR("failed to enable reg-clk (%d)\n", ret);
 		goto err_free_netdev;
 	}
 
 	star_prv->trans_clk = devm_clk_get(&pdev->dev, "trans");
 	if (IS_ERR(star_prv->trans_clk)) {
 		ret = PTR_ERR(star_prv->trans_clk);
-		STAR_MSG(STAR_ERR, "failed to get trans-clk: %d\n", ret);
+		STAR_PR_ERR("failed to get trans-clk: %d\n", ret);
 		goto err_free_netdev;
 	}
 	ret = clk_prepare_enable(star_prv->trans_clk);
 	if (ret < 0) {
-		STAR_MSG(STAR_ERR, "failed to enable trans-clk (%d)\n", ret);
+		STAR_PR_ERR("failed to enable trans-clk (%d)\n", ret);
 		goto err_free_netdev;
 	}
 
 	star_prv->phy_regulator = devm_regulator_get(&pdev->dev, "eth-regulator");
 	ret = regulator_set_voltage(star_prv->phy_regulator, 3300000, 3300000);
 	if (ret != 0) {
-		STAR_MSG(STAR_ERR, "failed to regulator_set_voltage(%d)\n", ret);
+		STAR_PR_ERR("failed to regulator_set_voltage(%d)\n", ret);
 		return ret;
 	}
 	ret = regulator_enable(star_prv->phy_regulator);
 	if (ret != 0) {
-		STAR_MSG(STAR_ERR, "failed to regulator_enable(%d)\n", ret);
+		STAR_PR_ERR("failed to regulator_enable(%d)\n", ret);
 		return ret;
 	}
 
 	star_dev->base = of_iomap(np, 0);
 	if (!star_dev->base) {
-		STAR_MSG(STAR_ERR, "fail to ioremap eth!\n");
+		STAR_PR_ERR("fail to ioremap eth!\n");
 		ret = -ENOMEM;
 		goto err_free_netdev;
 	}
 
 	star_dev->pericfg_base = of_iomap(np, 1);
 	if (!star_dev->pericfg_base) {
-		STAR_MSG(STAR_ERR, "fail to ioremap pericfg_base!\n");
+		STAR_PR_ERR("fail to ioremap pericfg_base!\n");
 		ret = -ENOMEM;
 		goto err_free_netdev;
 	}
 
-	STAR_MSG(STAR_DBG, "BASE: mac(0x%p), clk(0x%p)\n",
-		 star_dev->base, star_dev->pericfg_base);
+	STAR_PR_INFO("BASE: mac(0x%p), clk(0x%p)\n",
+		     star_dev->base, star_dev->pericfg_base);
 
 #ifdef CONFIG_STAR_USE_RMII_MODE
 	star_switch_to_rmii_mode(star_dev);
@@ -934,14 +975,14 @@ static int star_probe(struct platform_device *pdev)
 					      &star_prv->desc_dma_addr,
 					      GFP_KERNEL | GFP_DMA);
 	if (!star_prv->desc_vir_addr) {
-		STAR_MSG(STAR_ERR, "fail to dma_alloc_coherent!!\n");
+		STAR_PR_ERR("fail to dma_alloc_coherent!!\n");
 		ret = -ENOMEM;
 		goto alloc_desc_fail;
 	}
 
 	star_dev->star_prv = star_prv;
 
-	STAR_MSG(STAR_ERR, "Ethernet disable powerdown!\n");
+	STAR_PR_INFO("Ethernet disable powerdown!\n");
 	star_nic_pdset(star_dev, false);
 
 	star_hw_init(star_dev);
@@ -949,12 +990,12 @@ static int star_probe(struct platform_device *pdev)
 	/* Get PHY ID */
 	star_prv->phy_addr = star_detect_phyid(star_dev);
 	if (star_prv->phy_addr == 32) {
-		STAR_MSG(STAR_ERR, "can't detect phy_addr,default to %d\n",
-			 star_prv->phy_addr);
+		STAR_PR_ERR("can't detect phy_addr,default to %d\n",
+			    star_prv->phy_addr);
 		ret = -ENODEV;
 		goto phy_detect_fail;
 	} else {
-		STAR_MSG(STAR_WARN, "PHY addr = 0x%04x\n", star_prv->phy_addr);
+		STAR_PR_INFO("PHY addr = 0x%04x\n", star_prv->phy_addr);
 	}
 
 	star_prv->mii.phy_id = star_prv->phy_addr;
@@ -965,27 +1006,39 @@ static int star_probe(struct platform_device *pdev)
 	star_prv->mii.reg_num_mask = 0x1f;
 
 	/* Set MAC address */
-	netdev->addr_len = sizeof(DEFAULT_MAC_ADDRESS);
-	memcpy(netdev->dev_addr, DEFAULT_MAC_ADDRESS, netdev->addr_len);
+	mac_addr = of_get_mac_address(np);
+	if (mac_addr)
+		ether_addr_copy(netdev->dev_addr, mac_addr);
+
+	STAR_PR_INFO("default netdev->dev_addr(%pM).\n", netdev->dev_addr);
+	/* If the mac address is invalid, use random mac address  */
+	if (!is_valid_ether_addr(netdev->dev_addr)) {
+		random_ether_addr(netdev->dev_addr);
+		STAR_PR_INFO("generated random MAC address %pM\n",
+			     netdev->dev_addr);
+		netdev->addr_assign_type = NET_ADDR_RANDOM;
+	}
 
 	netdev->irq = platform_get_irq(pdev, 0);
 	if (netdev->irq < 0) {
-		STAR_MSG(STAR_ERR, "no IRQ resource found\n");
+		STAR_PR_ERR("no IRQ resource found\n");
 		goto phy_detect_fail;
 	}
-	STAR_MSG(STAR_ERR, "eth irq (%d)\n", netdev->irq);
+	STAR_PR_INFO("eth irq (%d)\n", netdev->irq);
 
 #ifdef CONFIG_STAR_USE_RMII_MODE
 	star_prv->eint_pin = of_get_named_gpio(np, "eth-gpios", 0);
 	if (star_prv->eint_pin < 0)
-		STAR_MSG(STAR_DBG, "not find eth-gpio\n");
+		STAR_PR_INFO("not find eth-gpio\n");
 	star_prv->eint_irq = gpio_to_irq(star_prv->eint_pin);
 #endif
+	star_prv->wol = WOL_NONE;
+	star_prv->wol_flag = false;
 
 	netdev->base_addr = (unsigned long)star_dev->base;
 	netdev->netdev_ops = &star_netdev_ops;
 
-	STAR_MSG(STAR_DBG, "EthTool installed\n");
+	STAR_PR_INFO("EthTool installed\n");
 	netdev->ethtool_ops = &starmac_ethtool_ops;
 
 	netif_napi_add(netdev, &star_prv->napi, star_poll, STAR_NAPI_WEIGHT);
@@ -998,9 +1051,9 @@ static int star_probe(struct platform_device *pdev)
 
 	ret = star_init_procfs();
 	if (ret)
-		STAR_MSG(STAR_WARN, "star_init_procfs fail\n");
+		STAR_PR_INFO("star_init_procfs fail\n");
 
-	STAR_MSG(STAR_WARN, "star_probe success.\n");
+	STAR_PR_INFO("star_probe success.\n");
 
 	return 0;
 
@@ -1014,7 +1067,7 @@ alloc_desc_fail:
 	free_netdev(netdev);
 err_free_netdev:
 	unregister_netdev(netdev);
-	STAR_MSG(STAR_ERR, "Star MAC init fail\n");
+	STAR_PR_ERR("Star MAC init fail\n");
 	return ret;
 }
 
@@ -1061,13 +1114,13 @@ static int __init star_init(void)
 {
 	int err;
 
-	STAR_MSG(STAR_WARN, "enter %s\n", __func__);
+	STAR_PR_INFO("enter %s\n", __func__);
 
 	err = platform_driver_register(&star_pdrv);
 	if (err)
 		return err;
 
-	STAR_MSG(STAR_WARN, "%s success.\n", __func__);
+	STAR_PR_INFO("%s success.\n", __func__);
 	return 0;
 }
 
@@ -1075,7 +1128,7 @@ static void __exit star_exit(void)
 {
 	platform_device_unregister(star_pdev);
 	platform_driver_unregister(&star_pdrv);
-	STAR_MSG(STAR_WARN, "%s ...\n", __func__);
+	STAR_PR_INFO("%s ...\n", __func__);
 }
 
 module_init(star_init);
