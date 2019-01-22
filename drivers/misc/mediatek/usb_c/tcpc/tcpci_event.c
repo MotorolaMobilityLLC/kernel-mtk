@@ -969,6 +969,7 @@ int tcpci_event_init(struct tcpc_device *tcpc_dev)
 	tcpc_dev->event_loop_thead_stop = false;
 
 	init_waitqueue_head(&tcpc_dev->event_loop_wait_que);
+	tcpc_dev->tcpc_event_init_done = true;
 	atomic_set(&tcpc_dev->pending_event, 0);
 	wake_up_process(tcpc_dev->event_task);
 
@@ -978,6 +979,8 @@ int tcpci_event_init(struct tcpc_device *tcpc_dev)
 int tcpci_event_deinit(struct tcpc_device *tcpc_dev)
 {
 	tcpc_dev->event_loop_thead_stop = true;
+	if (tcpc_dev->tcpc_event_init_done != true)
+		return 0;
 	wake_up_interruptible(&tcpc_dev->event_loop_wait_que);
 	kthread_stop(tcpc_dev->event_task);
 	return 0;
