@@ -95,7 +95,7 @@ static bool TurnOnVOWDigitalHW(bool enable);
 static void TurnOffDacPower(void);
 static void TurnOnDacPower(void);
 static void setDlMtkifSrc(bool enable);
-static void SetDcCompenSation(void);
+static void SetDcCompenSation(bool enable);
 static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
 static bool TurnOnVOWADcPower(int MicType, bool enable);
@@ -1210,40 +1210,6 @@ static int calOffsetToDcComp(int TrimOffset)
 	return (TrimOffset * 2804225 + (32768 / 2)) / 32768;
 }
 
-static void SetDcCompHpr(void)
-{
-	int dcCompValue = 0;
-	unsigned short dcCompRchHigh = 0, dcCompRchLow = 0;
-
-	dcCompValue = calOffsetToDcComp(mHprTrimOffset);
-	dcCompRchHigh = (unsigned short)(dcCompValue >> 8) & 0x0000ffff;
-	dcCompRchLow = (unsigned short)(dcCompValue << 8) & 0x0000ffff;
-
-	pr_aud("%s mHprTrimOffset = %d, dcCompRchHigh = 0x%x , dcCompRchLow = 0x%x\n",
-		__func__, mHprTrimOffset, dcCompRchHigh, dcCompRchLow);
-	Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, dcCompRchHigh, 0xffff);
-	Ana_Set_Reg(AFE_DL_DC_COMP_CFG4, dcCompRchLow, 0xffff);
-
-	return;
-}
-
-static void SetDcCompHpl(void)
-{
-	int dcCompValue = 0;
-	unsigned short dcCompLchHigh = 0, dcCompLchLow = 0;
-
-	dcCompValue = calOffsetToDcComp(mHplTrimOffset);
-	dcCompLchHigh = (unsigned short)(dcCompValue >> 8) & 0x0000ffff;
-	dcCompLchLow = (unsigned short)(dcCompValue << 8) & 0x0000ffff;
-
-	pr_aud("%s mHplTrimOffset = %d, dcCompLchHigh = 0x%x , dcCompLchLow = 0x%x\n",
-		__func__, mHplTrimOffset, dcCompLchHigh, dcCompLchLow);
-	Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, dcCompLchHigh, 0xffff);
-	Ana_Set_Reg(AFE_DL_DC_COMP_CFG3, dcCompLchLow, 0xffff);
-
-	return;
-}
-
 static void EnableDcCompensation(bool bEnable)
 {
 #ifndef EFUSE_HP_TRIM
@@ -1251,19 +1217,59 @@ static void EnableDcCompensation(bool bEnable)
 #endif
 }
 
-static void SetDcCompenSation(void)
+static void SetDcCompenSation(bool enable)
 {
-#ifndef EFUSE_HP_TRIM
-	SetDcCompHpr();
-	SetDcCompHpl();
-	EnableDcCompensation(true);
-#else				/* use efuse trim */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0800, 0x0800);	/* Enable trim circuit of HP */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, RG_AUDHPLTRIM_VAUDP15 << 3, 0x0078);	/* Trim offset voltage of HPL */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, RG_AUDHPRTRIM_VAUDP15 << 7, 0x0780);	/* Trim offset voltage of HPR */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, RG_AUDHPLFINETRIM_VAUDP15 << 12, 0x3000);	/* Fine trim offset voltage of HPL */
-	Ana_Set_Reg(AUDDEC_ANA_CON2, RG_AUDHPRFINETRIM_VAUDP15 << 14, 0xC000);	/* Fine trim offset voltage of HPR */
-#endif
+	int lch_value = 0, rch_value = 0, tmp_ramp = 0;
+	int times = 0, i = 0;
+	unsigned short dcCompRchHigh = 0, dcCompRchLow = 0;
+	unsigned short dcCompLchHigh = 0, dcCompLchLow = 0;
+
+	lch_value = calOffsetToDcComp(mHplTrimOffset);
+	rch_value = calOffsetToDcComp(mHprTrimOffset);
+	times = lch_value > rch_value ? (lch_value >> 10) + 1 : (rch_value >> 10) + 1;
+	pr_aud("%s times = %d, lch_value= 0x%x, rch_value= 0x%x\n", __func__, times, lch_value, rch_value);
+	if (enable) {
+		EnableDcCompensation(true);
+		for (i = 0; i < times; i++) {
+			tmp_ramp = i << 10;
+			if (tmp_ramp < lch_value) {
+				dcCompLchHigh = (unsigned short)(tmp_ramp >> 8) & 0x0000ffff;
+				Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, dcCompLchHigh, 0xffff);
+			}
+			if (tmp_ramp < rch_value) {
+				dcCompRchHigh = (unsigned short)(tmp_ramp >> 8) & 0x0000ffff;
+				Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, dcCompRchHigh, 0xffff);
+			}
+			udelay(100);
+		}
+		dcCompLchHigh = (unsigned short)(lch_value >> 8) & 0x0000ffff;
+		dcCompLchLow = (unsigned short)(lch_value << 8) & 0x0000ffff;
+		dcCompRchHigh = (unsigned short)(rch_value >> 8) & 0x0000ffff;
+		dcCompRchLow = (unsigned short)(rch_value << 8) & 0x0000ffff;
+
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, dcCompLchHigh, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG3, dcCompLchLow, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, dcCompRchHigh, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG4, dcCompRchLow, 0xffff);
+	} else {
+		for (i = times - 1; i >= 0; i--) {
+			tmp_ramp = i << 10;
+			if (tmp_ramp < lch_value) {
+				dcCompLchHigh = (unsigned short)(tmp_ramp >> 8) & 0x0000ffff;
+				Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, dcCompLchHigh, 0xffff);
+			}
+			if (tmp_ramp < rch_value) {
+				dcCompRchHigh = (unsigned short)(tmp_ramp >> 8) & 0x0000ffff;
+				Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, dcCompRchHigh, 0xffff);
+			}
+			udelay(100);
+		}
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, 0, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG3, 0, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, 0, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG4, 0, 0xffff);
+		EnableDcCompensation(false);
+	}
 }
 #if 0
 static void SetDCcoupleNP(int MicBias, int mode)
@@ -1888,6 +1894,43 @@ static void HeadsetVoloumeSet(void)
 	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
 }
 
+static void headset_volume_ramp(int source, int target)
+{
+	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx = 0;
+	/* pr_warn("%s\n", __func__); */
+	if (!is_valid_hp_pga_idx(reg_idx) || !is_valid_hp_pga_idx(reg_idx))
+		pr_warn("%s, volume index is not valid, source=%d, target=%d\n",
+			__func__, source, target);
+
+	oldindex = source == 63 ? 45 : source;
+	index = target == 63 ? 45 : target;
+	if (index > oldindex) {
+		pr_aud("%s, index = %d oldindex = %d\n", __func__, index, oldindex);
+		offset = index - oldindex;
+		while (offset > 0) {
+			reg_idx = oldindex + count;
+			reg_idx = reg_idx == 45 ? 63 : reg_idx;
+			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
+			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
+			offset--;
+			count++;
+			udelay(200);
+		}
+	} else {
+		pr_aud("%s, index = %d oldindex = %d\n", __func__, index, oldindex);
+		offset = oldindex - index;
+		while (offset > 0) {
+			reg_idx = oldindex - count;
+			reg_idx = reg_idx == 45 ? 63 : reg_idx;
+			Ana_Set_Reg(AFE_DL_NLE_L_CFG0, reg_idx, 0x003f);
+			Ana_Set_Reg(AFE_DL_NLE_R_CFG0, reg_idx, 0x003f);
+			offset--;
+			count++;
+			udelay(200);
+		}
+	}
+}
+
 static void hp_main_output_ramp(bool up)
 {
 	int i = 0, stage = 0;
@@ -2057,7 +2100,7 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			usleep_range(100, 150);
 
 			/* Apply digital DC compensation value to DAC */
-			SetDcCompenSation();
+			SetDcCompenSation(true);
 
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
 			/* No Pull-down HPL/R to AVSS30_AUD for de-pop noise */
@@ -2079,7 +2122,7 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0xf200, 0xff00);
 			/* Set HP status as power-down */
 
-			EnableDcCompensation(false);
+			SetDcCompenSation(false);
 
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00);
 			/* HPR/HPL mux to open */
@@ -3127,6 +3170,7 @@ static int Headset_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	int index = ucontrol->value.integer.value[0];
+	int oldindex = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL];
 
 	if (index >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
 		pr_err("return -EINVAL\n");
@@ -3136,8 +3180,9 @@ static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	if (index == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
 		index = 0x3f;
 
-	Ana_Set_Reg(AFE_DL_NLE_L_CFG0, index, 0x003f);
+	headset_volume_ramp(oldindex, index);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = index;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = index;
 	return 0;
 }
 
@@ -3154,6 +3199,7 @@ static int Headset_PGAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	int index = ucontrol->value.integer.value[0];
+	int oldindex = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 
 	pr_aud("%s(), index = %d\n", __func__, index);
 
@@ -3165,7 +3211,8 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	if (index == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
 		index = 0x3f;
 
-	Ana_Set_Reg(AFE_DL_NLE_R_CFG0, index, 0x003f);
+	headset_volume_ramp(oldindex, index);
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = index;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = index;
 	return 0;
 }
@@ -7040,8 +7087,8 @@ void InitCodecDefault(void)
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP3] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4] = 3;
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = 12;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 12;
 
 	mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_LCH_MUX] = AUDIO_UL_ARRAY_ADC1;
 	mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_RCH_MUX] = AUDIO_UL_ARRAY_ADC2;
