@@ -168,7 +168,7 @@ typedef struct mrdump_rsvmem_block {
 int mrdump_init(void);
 void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs, const char *msg,
 			       ...);
-#if defined(CONFIG_MTK_AEE_IPANIC)
+#if defined(CONFIG_MTK_AEE_IPANIC) || defined(CONFIG_MTK_AEE_MRDUMP)
 void mrdump_rsvmem(void);
 #else
 static inline void mrdump_rsvmem(void)
