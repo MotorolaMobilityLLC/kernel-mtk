@@ -80,6 +80,7 @@ struct charger_ops {
 	/* PE+ 20*/
 	int (*send_ta20_current_pattern)(struct charger_device *, u32 uV);
 	int (*set_ta20_reset)(struct charger_device *);
+	int (*enable_cable_drop_comp)(struct charger_device *, bool en);
 
 	int (*set_mivr)(struct charger_device *, u32 uV);
 	int (*get_mivr_state)(struct charger_device *, bool *in_loop);
@@ -103,6 +104,14 @@ struct charger_ops {
 	int (*kick_direct_charging_wdt)(struct charger_device *);
 	int (*set_direct_charging_ibusoc)(struct charger_device *, u32 uA);
 	int (*set_direct_charging_vbusov)(struct charger_device *, u32 uV);
+
+	/* OTG */
+	int (*enable_otg)(struct charger_device *, bool en);
+	int (*enable_discharge)(struct charger_device *, bool en);
+	int (*set_boost_current_limit)(struct charger_device *, u32 uA);
+
+	/* charger type detection */
+	int (*enable_chg_type_det)(struct charger_device *, bool en);
 
 	/* run AICL */
 	int (*run_aicl)(struct charger_device *);
@@ -158,12 +167,23 @@ extern int charger_dev_enable_vbus_ovp(struct charger_device *charger_dev, bool 
 extern int charger_dev_set_mivr(struct charger_device *charger_dev, u32 uV);
 extern int charger_dev_get_mivr_state(struct charger_device *charger_dev, bool *in_loop);
 extern int charger_dev_do_event(struct charger_device *charger_dev, u32 event, u32 args);
+extern int charger_dev_is_powerpath_enabled(struct charger_device *charger_dev, bool *en);
+extern int charger_dev_is_safety_timer_enabled(struct charger_device *charger_dev, bool *en);
+extern int charger_dev_enable_termination(struct charger_device *charger_dev, bool en);
+extern int charger_dev_is_charging_done(struct charger_device *charger_dev, bool *done);
+extern int charger_dev_enable_powerpath(struct charger_device *charger_dev, bool en);
+extern int charger_dev_enable_safety_timer(struct charger_device *charger_dev, bool en);
+extern int charger_dev_enable_chg_type_det(struct charger_device *charger_dev, bool en);
+extern int charger_dev_enable_otg(struct charger_device *charger_dev, bool en);
+extern int charger_dev_enable_discharge(struct charger_device *charger_dev, bool en);
+extern int charger_dev_set_boost_current_limit(struct charger_device *charger_dev, u32 uA);
 
 
 /* PE 2.0 */
 extern int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, u32 uV);
 extern int charger_dev_set_ta20_reset(struct charger_device *charger_dev);
 extern int charger_dev_set_pe20_efficiency_table(struct charger_device *charger_dev);
+extern int charger_dev_enable_cable_drop_comp(struct charger_device *charger_dev, bool en);
 
 /* PE 3.0 */
 extern int charger_dev_enable_chip(struct charger_device *charger_dev, bool en);
@@ -181,12 +201,6 @@ extern int register_charger_device_notifier(struct charger_device *charger_dev,
 extern int unregister_charger_device_notifier(struct charger_device *charger_dev,
 				struct notifier_block *nb);
 extern int charger_dev_notify(struct charger_device *charger_dev, int event);
-extern int charger_dev_is_powerpath_enabled(struct charger_device *charger_dev, bool *en);
-extern int charger_dev_is_safety_timer_enabled(struct charger_device *charger_dev, bool *en);
-extern int charger_dev_enable_termination(struct charger_device *charger_dev, bool en);
-extern int charger_dev_is_charging_done(struct charger_device *charger_dev, bool *done);
-extern int charger_dev_enable_powerpath(struct charger_device *charger_dev, bool en);
-extern int charger_dev_enable_safety_timer(struct charger_device *charger_dev, bool en);
 
 
 #endif /*LINUX_POWER_CHARGER_CLASS_H*/
