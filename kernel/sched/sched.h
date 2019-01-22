@@ -1552,7 +1552,10 @@ enum cpu_dvfs_sched_type {
 	NUM_SCHE_TYPE
 };
 
+#define DEFAULT_CAP_MARGIN_DVFS 1280 /* ~20% margin */
+
 extern unsigned int capacity_margin;
+extern unsigned int capacity_margin_dvfs;
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
 #define capacity_max SCHED_CAPACITY_SCALE
