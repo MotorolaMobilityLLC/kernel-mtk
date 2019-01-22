@@ -1165,7 +1165,7 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se, kal_uint16 lv)
 	write_cmos_sensor(0x0222, ratio);
 }
 
-#define MULTI_WRITE 0
+#define MULTI_WRITE 1
 
 #if MULTI_WRITE
 #define I2C_BUFFER_LEN 765	/* trans# max is 255, each 3 bytes */
