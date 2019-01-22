@@ -341,7 +341,7 @@ VOID wlanPktStatusDebugTraceInfo(UINT_8 status, UINT_8 eventType
 				for (index = 0; index < PKT_STATUS_BUF_MAX_NUM; index++) {
 					if (grPktStaRec.pTxPkt[index].u2IpId == u2IpId) {
 						grPktStaRec.pTxPkt[index].status = status;
-						DBGLOG(TX, INFO, "Status: PKT_TX_DONE match\n");
+						DBGLOG(TX, TRACE, "Status: PKT_TX_DONE match\n");
 						break;
 					}
 				}
