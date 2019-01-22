@@ -22,7 +22,7 @@
 #define PMIC6356_E3_CID_CODE    0x5630
 
 
-/*#define IPIMB*/
+#define IPIMB
 
 extern unsigned int pmic_ipi_test_code(void);
 
