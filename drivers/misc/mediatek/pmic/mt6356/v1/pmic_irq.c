@@ -437,12 +437,15 @@ void auxadc_imp_int_handler_r(void)
 /* General OC Int Handler */
 void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 {
+	char oc_str[30] = "";
+
 	PMICLOG("[%s] int name=%s\n", __func__, int_name);
 	switch (intNo) {
 	default:
 		/* issue AEE exception and disable OC interrupt */
 		kernel_dump_exception_reg();
-		aee_kernel_warning("PMIC OC", "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
+		snprintf(oc_str, 30, "PMIC OC:%s", int_name);
+		aee_kernel_warning(oc_str, "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
 		pmic_enable_interrupt(intNo, 0, "PMIC");
 		pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
 		break;
@@ -616,6 +619,7 @@ void register_all_oc_interrupts(void)
 	/* LDO OC */
 	for (oc_interrupt = INT_VFE28_OC; oc_interrupt <= INT_VBIF28_OC; oc_interrupt++) {
 		switch (oc_interrupt) {
+		case INT_VBIF28_OC:
 		case INT_VSIM1_OC:
 		case INT_VSIM2_OC:
 		case INT_VMCH_OC:
