@@ -147,7 +147,6 @@ config MACH_MT6799
 	select MTK_GIC_V3_EXT
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_EIC_HISTORY_DUMP
-	select MTK_TIMER
 	select MTK_EIC
 	help
 	  This enables support for MediaTek MT6799
