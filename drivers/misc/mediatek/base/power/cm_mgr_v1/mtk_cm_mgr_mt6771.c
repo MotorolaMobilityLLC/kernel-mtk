@@ -57,13 +57,18 @@
 #ifdef CM_MGR_USE_PM_NOTIFY
 #include <linux/cpu_pm.h>
 static atomic_t cm_mgr_idle_mask;
-#else
+#endif /* CM_MGR_USE_PM_NOTIFY */
 #include <mtk_spm_reg.h>
 void __iomem *spm_sleep_base;
-#endif /* CM_MGR_USE_PM_NOTIFY */
+
+#define SPM_PWR_STATUS                     (0x180)
+#define SPM_MP0_CPUTOP_PWR_CON             (0x204)
+#define SPM_MP1_CPUTOP_PWR_CON             (0x218)
 
 void __iomem *mcucfg_mp0_counter_base;
 void __iomem *mcucfg_mp2_counter_base;
+
+spinlock_t cm_mgr_cpu_mask_lock;
 
 #define diff_value_overflow(diff, a, b) do {\
 	if ((a) >= (b)) \
@@ -162,30 +167,31 @@ int cm_mgr_get_cpu_count(int cluster)
 	return pstall_all->cpu_count[cluster];
 }
 
-int cm_mgr_read_stall(int cpu)
+static int cm_mgr_read_stall(int cpu)
 {
 	int val = 0;
 
-#define SPM_PWR_STATUS                     (0x180)
-#define SPM_MP0_CPUTOP_PWR_CON             (0x204)
-#define SPM_MP1_CPUTOP_PWR_CON             (0x218)
+	if (spin_trylock(&cm_mgr_cpu_mask_lock)) {
 
-	if (cpu < 4) {
+		if (cpu < 4) {
 #ifdef CM_MGR_USE_PM_NOTIFY
-		if (atomic_read(&cm_mgr_idle_mask) & 0x0f)
+			if (atomic_read(&cm_mgr_idle_mask) & 0x0f)
 #else
-		if ((cm_mgr_read(spm_sleep_base + SPM_PWR_STATUS) & (1 << 8)) &&
-			(cm_mgr_read(spm_sleep_base + SPM_MP0_CPUTOP_PWR_CON) & (1 << 2)))
+			if ((cm_mgr_read(spm_sleep_base + SPM_PWR_STATUS) & (1 << 8)) &&
+					(cm_mgr_read(spm_sleep_base + SPM_MP0_CPUTOP_PWR_CON) & (1 << 2)))
 #endif /* CM_MGR_USE_PM_NOTIFY */
-			val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
-	} else {
+
+				val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
+		} else {
 #ifdef CM_MGR_USE_PM_NOTIFY
-		if (atomic_read(&cm_mgr_idle_mask) & 0xf0)
+			if (atomic_read(&cm_mgr_idle_mask) & 0xf0)
 #else
-		if ((cm_mgr_read(spm_sleep_base + SPM_PWR_STATUS) & (1 << 15)) &&
-			(cm_mgr_read(spm_sleep_base + SPM_MP0_CPUTOP_PWR_CON) & (1 << 2)))
+			if ((cm_mgr_read(spm_sleep_base + SPM_PWR_STATUS) & (1 << 15)) &&
+					(cm_mgr_read(spm_sleep_base + SPM_MP0_CPUTOP_PWR_CON) & (1 << 2)))
 #endif /* CM_MGR_USE_PM_NOTIFY */
-			val = cm_mgr_read(CPU0_STALL_COUNTER + 4 * (cpu - 4));
+				val = cm_mgr_read(CPU0_STALL_COUNTER + 4 * (cpu - 4));
+		}
+		spin_unlock(&cm_mgr_cpu_mask_lock);
 	}
 
 	return val;
@@ -277,10 +283,14 @@ static int cm_mgr_sched_pm_notifier(struct notifier_block *self,
 {
 	unsigned int cur_cpu = smp_processor_id();
 
+	spin_lock(&cm_mgr_cpu_mask_lock);
+
 	if (cmd == CPU_PM_EXIT)
 		atomic_or(1 << cur_cpu, &cm_mgr_idle_mask);
 	else if (cmd == CPU_PM_ENTER)
 		atomic_and(~(1 << cur_cpu), &cm_mgr_idle_mask);
+
+	spin_unlock(&cm_mgr_cpu_mask_lock);
 
 	return NOTIFY_OK;
 }
@@ -299,6 +309,37 @@ static inline void cm_mgr_sched_pm_init(void) { }
 #endif /* CONFIG_CPU_PM */
 #else
 #endif /* CM_MGR_USE_PM_NOTIFY */
+
+static int cm_mgr_cpu_callback(struct notifier_block *nfb,
+				   unsigned long action, void *hcpu)
+{
+	unsigned int cur_cpu = smp_processor_id();
+
+	spin_lock(&cm_mgr_cpu_mask_lock);
+
+	switch (action) {
+	case CPU_ONLINE:
+		atomic_or(1 << cur_cpu, &cm_mgr_idle_mask);
+		break;
+	case CPU_DOWN_PREPARE:
+		atomic_and(~(1 << cur_cpu), &cm_mgr_idle_mask);
+		break;
+	}
+
+	spin_unlock(&cm_mgr_cpu_mask_lock);
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cm_mgr_cpu_notifier = {
+	.notifier_call = cm_mgr_cpu_callback,
+	.priority = CPU_PRI_PERF + 1,
+};
+
+static void cm_mgr_hotplug_cb_init(void)
+{
+	register_cpu_notifier(&cm_mgr_cpu_notifier);
+}
 
 static int cm_mgr_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
@@ -373,8 +414,6 @@ int cm_mgr_register_init(void)
 		return -1;
 	}
 
-#ifdef CM_MGR_USE_PM_NOTIFY
-#else
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 	if (!node)
 		pr_info("find mp2_counter node failed\n");
@@ -383,7 +422,6 @@ int cm_mgr_register_init(void)
 		pr_info("base spm_sleep_base failed\n");
 		return -1;
 	}
-#endif /* CM_MGR_USE_PM_NOTIFY */
 
 	return 0;
 }
@@ -410,6 +448,10 @@ int cm_mgr_platform_init(void)
 		pr_info("FAILED TO REGISTER FB CLIENT (%d)\n", r);
 		return r;
 	}
+
+	spin_lock_init(&cm_mgr_cpu_mask_lock);
+
+	cm_mgr_hotplug_cb_init();
 
 	if (cm_mgr_is_lp_flavor())
 		cm_mgr_enable = 1;
