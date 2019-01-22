@@ -399,6 +399,7 @@ class MT6771(ChipObj):
 
     def init_objs(self):
         ChipObj.init_objs(self)
+        ChipObj.replace_obj(self, 'pmic', PmicObj_MT6758())
         ChipObj.replace_obj(self, 'gpio', GpioObj_MT6771())
         ChipObj.replace_obj(self, 'eint', EintObj_MT6739(ChipObj.get_gpioObj(self)))
         ChipObj.replace_obj(self, 'md1_eint', Md1EintObj_MT6739())
