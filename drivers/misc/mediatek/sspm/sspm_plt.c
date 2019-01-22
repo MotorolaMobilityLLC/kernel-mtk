@@ -235,7 +235,9 @@ int __init sspm_plt_init(void)
 #if SSPM_TIMESYNC_SUPPORT
 	sspm_timesync_init_done();
 #endif
+#if SSPM_COREDUMP_SUPPORT
 	sspm_coredump_init_done();
+#endif
 #if SSPM_LOGGER_SUPPORT
 	sspm_logger_init_done();
 #endif
