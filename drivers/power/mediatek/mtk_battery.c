@@ -783,6 +783,8 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.difference_fgc_fgv_th_soc2 = DIFFERENCE_FGC_FGV_TH_SOC2;
 	fg_cust_data.nafg_time_setting = NAFG_TIME_SETTING;
 	fg_cust_data.nafg_ratio = NAFG_RATIO;
+	fg_cust_data.nafg_ratio_en = NAFG_RATIO_EN;
+	fg_cust_data.nafg_resistance = NAFG_RESISTANCE;
 
 	/* ADC resistor  */
 	fg_cust_data.r_charger_1 = R_CHARGER_1;

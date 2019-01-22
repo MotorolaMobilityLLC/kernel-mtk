@@ -561,6 +561,8 @@ struct fuel_gauge_custom_data {
 	int difference_fgc_fgv_th_soc2;
 	int nafg_time_setting;
 	int nafg_ratio;
+	int nafg_ratio_en;
+	int nafg_resistance;
 
 	/* mode select */
 	int pmic_shutdown_current;
