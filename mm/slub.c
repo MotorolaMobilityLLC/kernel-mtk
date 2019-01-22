@@ -2631,21 +2631,11 @@ redo:
 
 	object = c->freelist;
 	page = c->page;
-
-	if (object && !virt_addr_valid(object)) {
-		pr_info("ERROR: Freelist in kmem_cache_cpu is invalid!");
-		BUG();
-	}
-
 	if (unlikely(!object || !node_match(page, node))) {
 		object = __slab_alloc(s, gfpflags, node, addr, c);
 		stat(s, ALLOC_SLOWPATH);
 	} else {
 		void *next_object = get_freepointer_safe(s, object);
-		if (next_object && !virt_addr_valid(next_object)) {
-			pr_info("ERROR: Freelist in object is invalid!");
-			BUG();
-		}
 
 		/*
 		 * The cmpxchg will only match if there was no additional
