@@ -47,11 +47,12 @@ struct vpu_user {
 	bool running;
 	bool flush;
 	bool locked;
-	uint8_t power_mode;
 	/* list of vlist_type(struct vpu_request) */
 	struct list_head enque_list;
 	struct list_head deque_list;
 	wait_queue_head_t deque_wait;
+	uint8_t power_mode;
+	uint8_t power_opp;
 };
 
 struct vpu_shared_memory_param {
@@ -66,6 +67,12 @@ struct vpu_shared_memory {
 	uint64_t va;
 	uint32_t pa;
 	uint32_t length;
+};
+
+enum vpu_power_param {
+	VPU_POWER_PARAM_DYNAMIC,
+	VPU_POWER_PARAM_DVFS_DEBUG,
+	VPU_POWER_PARAM_JTAG,
 };
 
 #define DECLARE_VLIST(type) \
@@ -155,10 +162,18 @@ int vpu_boot_up(void);
 int vpu_shut_down(void);
 
 /**
- * vpu_set_power_dynamic - enable or disable dynamic power mode
- * @enabled	    enable dynamic mode or not
+ * vpu_change_power_mode - change power mode
+ * @mode        the power mode
  */
-int vpu_set_power_dynamic(bool enabled);
+int vpu_change_power_mode(uint8_t mode);
+
+/**
+ * vpu_change_power_opp - change the opp.
+ * @index       the OPP index
+ *
+ * May not be changed immediately, depended on the hardware capability.
+ */
+int vpu_change_power_opp(uint8_t index);
 
 /**
  * vpu_hw_load_algo - call vpu program to load algo, by specifying the start address
@@ -238,6 +253,26 @@ int vpu_dump_image_file(struct seq_file *s);
  * @s:          the pointer to seq_file.
  */
 int vpu_dump_mesg(struct seq_file *s);
+
+/**
+ * vpu_dump_opp_table - dump the OPP table
+ * @s:          the pointer to seq_file.
+ */
+int vpu_dump_opp_table(struct seq_file *s);
+
+/**
+ * vpu_dump_power - dump the power parameters
+ * @s:          the pointer to seq_file.
+ */
+int vpu_dump_power(struct seq_file *s);
+
+/**
+ * vpu_set_power_parameter - set the specific power parameter
+ * @param:      the sepcific parameter to update
+ * @argc:       the number of arguments
+ * @args:       the pointer of arryf of arguments
+ */
+int vpu_set_power_parameter(uint8_t param, int argc, int *args);
 
 /* =============================== define in vpu_drv.c  =============================== */
 
