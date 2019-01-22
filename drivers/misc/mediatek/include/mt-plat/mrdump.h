@@ -171,7 +171,7 @@ void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 #if defined(CONFIG_MTK_AEE_IPANIC)
 void mrdump_rsvmem(void);
 #else
-static inline void mrdumpo_rsvmem(void)
+static inline void mrdump_rsvmem(void)
 {
 }
 #endif
