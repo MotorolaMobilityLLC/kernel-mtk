@@ -495,15 +495,22 @@ static int xgf_get_proc(pid_t rpid, struct xgf_proc **ret, int force)
 		return -ENOMEM;
 
 	{
-		struct task_struct *tsk, *gtsk;
+		struct task_struct *tsk;
 
 		rcu_read_lock();
 		tsk = find_task_by_vpid(rpid);
-		gtsk = find_task_by_vpid(tsk->tgid);
+		if (tsk)
+			get_task_struct(tsk);
 		rcu_read_unlock();
 
-		iter->parent = gtsk->pid;
+		if (!tsk) {
+			kfree(iter);
+			return -EINVAL;
+		}
+
+		iter->parent = tsk->tgid;
 		iter->render = rpid;
+		put_task_struct(tsk);
 	}
 
 	INIT_HLIST_HEAD(&iter->timer_head);
@@ -589,21 +596,27 @@ void fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd)
 	struct xgf_proc *iter;
 	int proc_cnt = 0;
 	int timer_cnt = 0;
-	struct task_struct *tsk, *gtsk;
-			unsigned long long dur;
-			struct xgf_timer *timer_iter;
+	struct task_struct *tsk;
+	unsigned long long dur;
+	struct xgf_timer *timer_iter;
 
 	/* filter out main thread to queue/dequeue */
 	rcu_read_lock();
 	tsk = find_task_by_vpid(rpid);
-	gtsk = find_task_by_vpid(tsk->tgid);
+	if (tsk)
+		get_task_struct(tsk);
 	rcu_read_unlock();
 
-	if (tsk->pid == gtsk->pid) {
+	if (!tsk)
+		return;
+
+	if (tsk->pid == tsk->tgid) {
+		put_task_struct(tsk);
 		fpsgo_systrace_c_xgf(rpid, 1,
 				"qudeq filtered");
 		return;
 	}
+	put_task_struct(tsk);
 
 	xgf_lock(__func__);
 	if (!xgf_is_enable()) {
