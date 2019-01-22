@@ -7,6 +7,7 @@ import xml.dom.minidom
 
 from GpioObj import GpioObj
 from GpioObj import GpioObj_whitney
+from GpioObj import GpioObj_MT6759
 from EintObj import EintObj
 from AdcObj import AdcObj
 from ClkObj import ClkObj
@@ -32,7 +33,7 @@ para_map = {'adc':['adc_h', 'adc_dtsi'],\
                     'pinctrl_h', 'gpio_usage_mapping_dtsi'],\
             'md1_eint':['md1_eint_h', 'md1_eint_dtsi'],\
             'kpd':['kpd_h', 'kpd_dtsi'],\
-            'pmic':['pmic_drv_h', 'pmic_drv_c', 'pmic_dtsi'],\
+            'pmic':['pmic_drv_h', 'pmic_drv_c', 'pmic_h', 'pmic_c', 'pmic_dtsi'],\
             'power':['power_h']}
 
 class ChipObj:
@@ -278,6 +279,36 @@ class MT6759(ChipObj):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'gpio', GpioObj_whitney())
         ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
+        ChipObj.refresh_eintGpioMap(self)
+
+    def parse(self):
+        return ChipObj.parse(self)
+
+    def generate(self, paras):
+        return ChipObj.generate(self, paras)
+
+class MT6763(ChipObj):
+    def __init__(self, dws_path, gen_path):
+        ChipObj.__init__(self, dws_path, gen_path)
+
+    def init_objs(self):
+        ChipObj.init_objs(self)
+        ChipObj.replace_obj(self, 'gpio', GpioObj_MT6759())
+        ChipObj.refresh_eintGpioMap(self)
+
+    def parse(self):
+        return ChipObj.parse(self)
+
+    def generate(self, paras):
+        return ChipObj.generate(self, paras)
+
+class MT6750S(ChipObj):
+    def __init__(self, dws_path, gen_path):
+        ChipObj.__init__(self, dws_path, gen_path)
+
+    def init_objs(self):
+        ChipObj.init_objs(self)
+        ChipObj.replace_obj(self, 'clk', ClkObj_Olympus())
         ChipObj.refresh_eintGpioMap(self)
 
     def parse(self):
