@@ -561,7 +561,8 @@ static inline bool pm_suspended_storage(void)
 }
 #endif /* CONFIG_PM_SLEEP */
 
-extern int free_reserved_memory(unsigned long long start_phys, unsigned long long end_phys);
+extern int free_reserved_memory(phys_addr_t start_phys, phys_addr_t end_phys);
+
 #ifdef CONFIG_CMA
 
 /* The below functions must be run on a range from a single zone. */
