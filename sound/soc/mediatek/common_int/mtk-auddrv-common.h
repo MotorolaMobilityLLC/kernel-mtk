@@ -164,7 +164,7 @@ typedef struct {
 	kal_uint32 u4BufferSize;
 	kal_uint32 u4BufferSizeMax;
 
-	kal_uint32 u4IsrConsumeSize;
+	kal_int32 u4IsrConsumeSize;
 } AFE_DL_ISR_COPY_T;
 
 #endif
