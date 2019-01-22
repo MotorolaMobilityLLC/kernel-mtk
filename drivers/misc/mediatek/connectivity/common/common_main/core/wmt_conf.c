@@ -130,6 +130,13 @@ static const struct parse_data wmtcfg_fields[] = {
 
 	INT(sdio_driving_cfg),
 
+	SHORT(coex_wmt_wifi_path),
+
+	CHAR(coex_wmt_ext_elna_gain_p1_support),
+	INT(coex_wmt_ext_elna_gain_p1_D0),
+	INT(coex_wmt_ext_elna_gain_p1_D1),
+	INT(coex_wmt_ext_elna_gain_p1_D2),
+	INT(coex_wmt_ext_elna_gain_p1_D3),
 };
 
 #define NUM_WMTCFG_FIELDS (osal_sizeof(wmtcfg_fields) / osal_sizeof(wmtcfg_fields[0]))

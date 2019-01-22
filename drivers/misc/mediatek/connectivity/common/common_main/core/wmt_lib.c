@@ -2186,3 +2186,31 @@ UINT32 wmt_lib_co_clock_flag_get(VOID)
 {
 	return wmt_plat_soc_co_clock_flag_get();
 }
+
+INT32 wmt_lib_wifi_fem_cfg_report(PVOID pvInfoBuf)
+{
+	INT32 iRet = 0;
+	ULONG addr;
+	WMT_GEN_CONF *pWmtGenConf;
+
+	/* sanity check */
+	ASSERT(pvInfoBuf);
+
+	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
+
+	if (iRet) {
+		WMT_ERR_FUNC("ctrl GET_WMT_CONF fail(%d)\n", iRet);
+		return -2;
+	}
+
+	pWmtGenConf = (P_WMT_GEN_CONF) addr;
+
+	WMT_DBG_FUNC("pWmtGenConf->coex_wmt_wifi_path=0x%x\n", pWmtGenConf->coex_wmt_wifi_path);
+
+	/* Memory copy */
+	osal_memcpy((PUINT8)(pvInfoBuf), &pWmtGenConf->coex_wmt_wifi_path,
+		osal_sizeof(pWmtGenConf->coex_wmt_wifi_path));
+	return iRet;
+}
+
+

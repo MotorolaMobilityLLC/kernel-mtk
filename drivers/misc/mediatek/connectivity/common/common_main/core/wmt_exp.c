@@ -724,3 +724,11 @@ VOID mtk_wcn_wmt_set_wifi_ver(UINT32 Value)
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_set_wifi_ver);
 
+INT32 mtk_wcn_wmt_wifi_fem_cfg_report(PVOID pvInfoBuf)
+{
+	INT32 iRet = -1;
+
+	iRet = wmt_lib_wifi_fem_cfg_report(pvInfoBuf);
+	return iRet;
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_wifi_fem_cfg_report);
