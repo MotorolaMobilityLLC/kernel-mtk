@@ -281,7 +281,7 @@ static void sdcardfs_work_handle_mkdir(struct sdcardfs_work_job *pw)
 
 		strncpy(nomedia_fullpath, nomedia_dir_name, fullpath_namelen + 1);
 		free_page((unsigned long)page_buf);
-		strcat(nomedia_fullpath, "/.nomedia");
+		strncat(nomedia_fullpath, "/.nomedia", 9);
 		unlock_dir(lower_parent_dentry);
 		touch_err = touch(nomedia_fullpath, 0664);
 		if (touch_err) {
