@@ -61,7 +61,6 @@ struct mtk_codec_ops {
 };
 
 void audckbufEnable(bool enable);
-void OpenClassAB(void);
 void OpenAnalogTrimHardware(bool bEnable);
 void setOffsetTrimMux(unsigned int Mux);
 void setOffsetTrimBufferGain(unsigned int gain);
@@ -80,7 +79,6 @@ void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param);
 int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff);
 
 void SetAnalogSuspend(bool bEnable);
-void OpenTrimBufferHardware(bool enable, bool buffer_on);
 
 bool hasHpDepopHw(void);
 bool hasHp33Ohm(void);
