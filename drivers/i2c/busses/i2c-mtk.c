@@ -60,6 +60,7 @@ void __iomem *cg_base;
 s32 map_cg_regs(struct mt_i2c *i2c)
 {
 	struct device_node *cg_node;
+	int ret = -1;
 
 	if (!cg_base && i2c->dev_comp->clk_compatible[0]) {
 		cg_node = of_find_compatible_node(NULL, NULL,
@@ -73,9 +74,10 @@ s32 map_cg_regs(struct mt_i2c *i2c)
 			pr_err("cg_base iomap failed\n");
 			return -ENOMEM;
 		}
+		ret = 0;
 	}
 
-	return 0;
+	return ret;
 }
 
 void dump_cg_regs(struct mt_i2c *i2c)
@@ -89,7 +91,7 @@ void dump_cg_regs(struct mt_i2c *i2c)
 		"name %s, offset 0x%x: value = 0x%08x\n",
 		i2c->dev_comp->clk_compatible,
 		i2c->dev_comp->clk_sta_offset,
-		readw(cg_base + i2c->dev_comp->clk_sta_offset));
+		readl(cg_base + i2c->dev_comp->clk_sta_offset));
 }
 
 s32 check_cg_sta(struct mt_i2c *i2c)
@@ -109,11 +111,11 @@ s32 check_cg_sta(struct mt_i2c *i2c)
 
 	id = i2c->id;
 	cg_bit = i2c->dev_comp->cg_bit[id];
-	cg_reg = readw(cg_base + i2c->dev_comp->clk_sta_offset);
+	cg_reg = readl(cg_base + i2c->dev_comp->clk_sta_offset);
 	/* 1:clk off, 0:clk on */
 	if (cg_reg & (0x1 << cg_bit)) {
-		dev_err(i2c->dev, "addr: %x, err irq cg bit%d = %d\n", i2c->addr,
-			cg_bit, cg_reg & (0x1 << cg_bit) ? 1 : 0);
+		dev_err(i2c->dev, "addr: %x, err irq cg bit%d = %d, cg_reg = 0x%x\n", i2c->addr,
+			cg_bit, cg_reg & (0x1 << cg_bit) ? 1 : 0, cg_reg);
 		err++;
 	}
 
