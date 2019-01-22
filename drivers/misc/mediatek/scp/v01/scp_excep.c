@@ -236,17 +236,11 @@ uint32_t scp_dump_pc(void)
 void scp_A_dump_regs(void)
 {
 	if (is_scp_ready(SCP_A_ID)) {
-		pr_err_ratelimited("[SCP} SCP A is alive\n");
-		pr_err_ratelimited("[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
-		pr_err_ratelimited("[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
-		pr_err_ratelimited("[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
-		pr_err_ratelimited("[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
+		pr_debug("[SCP] SCP ready PC:0x%x,LR:0x%x,PSP:0x%x,SP:0x%x\n"
+		, SCP_A_DEBUG_PC_REG, SCP_A_DEBUG_LR_REG, SCP_A_DEBUG_PSP_REG, SCP_A_DEBUG_SP_REG);
 	} else {
-		pr_err_ratelimited("[SCP} SCP A is dead\n");
-		pr_err_ratelimited("[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
-		pr_err_ratelimited("[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
-		pr_err_ratelimited("[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
-		pr_err_ratelimited("[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
+		pr_debug("[SCP] SCP not ready PC:0x%x,LR:0x%x,PSP:0x%x,SP:0x%x\n"
+		, SCP_A_DEBUG_PC_REG, SCP_A_DEBUG_LR_REG, SCP_A_DEBUG_PSP_REG, SCP_A_DEBUG_SP_REG);
 	}
 }
 
@@ -356,7 +350,7 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed, scp_cor
 
 	char *scp_A_log = NULL;
 
-	pr_debug("scp_prepare_aed_dump: %s\n", aed_str);
+	pr_debug("scp_prepare_aed_dump:%s\n", aed_str);
 	scp_aee_last_reg();
 
 	scp_A_log = scp_get_last_log(SCP_A_ID);
