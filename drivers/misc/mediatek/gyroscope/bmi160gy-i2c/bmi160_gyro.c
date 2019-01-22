@@ -709,6 +709,58 @@ static int bmg_init_client(struct i2c_client *client, int reset_cali)
 	return 0;
 }
 
+/*!
+ *	@brief This API reads the temperature of the sensor
+ *	from the register 0x21 bit 0 to 7
+ *
+ *
+ *
+ *  @param v_temp_s16 : The value of temperature
+ *
+ *
+ *
+ *	@return results of bus communication function
+ *	@retval 0 -> Success
+ *	@retval -1 -> Error
+ *
+ *
+*/
+static int bmi160_get_temp(struct i2c_client *client, s16 *v_temp_s16)
+{
+	/* variable used to return the status of communication result*/
+	int err = 0;
+	struct bmg_i2c_data *priv = obj_i2c_data;
+	/* Array contains the temperature LSB and MSB data
+	 * v_data_u8[0] - LSB
+	 * v_data_u8[1] - MSB
+	 */
+	u8 v_data_u8[BMI160_TEMP_DATA_SIZE] = {0, 0};
+
+#ifdef BMI160_ACCESS_BY_GSE_I2C
+	err = bmi_i2c_read_wrapper(0, BMI160_USER_TEMP_LSB_VALUE__REG, v_data_u8, 2);
+#else
+	err = bmg_i2c_read_block(client, BMI160_USER_TEMP_LSB_VALUE__REG,
+				v_data_u8, 2);
+#endif
+	if (err) {
+		GYRO_ERR("read gyro temperature data failed.\n");
+		return err;
+	}
+
+	*v_temp_s16 =
+		(s16)(((s32)((s8) (v_data_u8[1]) <<
+		BMI160_SHIFT_8_POSITION)) | v_data_u8[0]);
+
+	if (atomic_read(&priv->trace) & GYRO_TRC_RAWDATA) {
+		GYRO_LOG("[%s][16bit temperature][%08X] => [%5d]\n",
+		priv->sensor_name,
+		*v_temp_s16,
+		*v_temp_s16);
+	}
+
+	return err;
+}
+
 /*
 *Returns compensated and mapped value. unit is :degree/second
 */
@@ -1479,6 +1531,19 @@ static int bmi160_gyro_get_data(int* x ,int* y,int* z, int* status)
 	return 0;
 }
 
+static int bmi160_gyro_get_temperature(int *temperature)
+{
+	int err = 0;
+	s16 data = 0;
+
+	err = bmi160_get_temp(obj_i2c_data->client, &data);
+	if (err)
+		return err;
+
+	*temperature = (int)data;
+	return 0;
+}
+
 static int bmg_i2c_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
@@ -1552,6 +1617,7 @@ static int bmg_i2c_probe(struct i2c_client *client,
 	}
 
 	data.get_data = bmi160_gyro_get_data;
+	data.get_temperature = bmi160_gyro_get_temperature;
 	data.vender_div = DEGREE_TO_RAD;
 	err = gyro_register_data_path(&data);
 	if(err) {
