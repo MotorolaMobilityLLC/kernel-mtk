@@ -194,7 +194,7 @@ int vpu_create_algo(char *name, struct vpu_algo **ralgo)
 	ret = vpu_alloc_algo(&algo);
 	CHECK_RET("vpu_alloc_algo failed!\n");
 
-	strlcpy(algo->name, name, sizeof(vpu_name_t));
+	strlcpy(algo->name, name, sizeof(char[VPU_NAME_SIZE]));
 	algo->id = id;
 	algo->bin_ptr = mva;
 	algo->bin_length = length;
