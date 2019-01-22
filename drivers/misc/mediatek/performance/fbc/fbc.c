@@ -76,8 +76,10 @@ void release_core(void)
 	core_limit[0].max = -1;
 	core_limit[1].min = -1;
 	core_limit[1].max = -1;
+#if NR_PPM_CLUSTERS == 3
 	core_limit[2].min = -1;
 	core_limit[2].max = -1;
+#endif
 	update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
 
 	fbc_tracer(-4, "b_enable", 0);
@@ -92,9 +94,10 @@ void boost_touch_core_eas(void)
 	core_limit[0].max = -1;
 	core_limit[1].min = -1;
 	core_limit[1].max = -1;
+#if NR_PPM_CLUSTERS == 3
 	core_limit[2].min = -1;
 	core_limit[2].max = -1;
-
+#endif
 	update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
 	perfmgr_kick_fg_boost(KIR_FBC, 2100);
 	fbc_tracer(-3, "boost_value", 100);
@@ -435,7 +438,7 @@ void notify_frame_complete_eas(unsigned long frame_time)
 
 	for (i = 0; i < 10 && vip_group[i] != -1 && vip_group[i] != current->pid; i++)
 		;
-	if (vip_group[i] == -1) {
+	if (i < 10 && vip_group[i] == -1) {
 		vip_group[i] = current->pid;
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
 		vip_task_set(vip_group[i], 1);
@@ -588,7 +591,7 @@ void notify_intended_vsync_eas(void)
 
 	for (i = 0; i < 10 && vip_group[i] != -1 && vip_group[i] != current->pid; i++)
 		;
-	if (vip_group[i] == -1) {
+	if (i < 10 && vip_group[i] == -1) {
 		vip_group[i] = current->pid;
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
 		vip_task_set(vip_group[i], 1);
