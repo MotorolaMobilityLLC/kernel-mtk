@@ -289,13 +289,9 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 	aee_record_cpu_dvfs_step(4);
 
 #ifdef DCM_ENABLE
-	/* DCM (freq: high -> low) */
-	if (cur_khz > target_khz) {
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_CCI))
-			pll_p->pll_ops->set_sync_dcm(0);
-		else
-			pll_p->pll_ops->set_sync_dcm(target_khz/1000);
-	}
+	/* Set DCM to 0 (decrease freq: high -> low) */
+	if (cur_khz > target_khz)
+		pll_p->pll_ops->set_sync_dcm(0);
 #endif
 
 	aee_record_cpu_dvfs_step(5);
@@ -341,9 +337,8 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 		max[SET_FREQ] = delta[SET_FREQ];
 
 #ifdef DCM_ENABLE
-	/* DCM (freq: low -> high)*/
-	if (cur_khz < target_khz)
-		pll_p->pll_ops->set_sync_dcm(target_khz/1000);
+	/* Always set DCM after frequency change */
+	pll_p->pll_ops->set_sync_dcm(target_khz/1000);
 #endif
 
 	new_opp_idx = _search_available_freq_idx(p, target_khz, CPUFREQ_RELATION_L);
