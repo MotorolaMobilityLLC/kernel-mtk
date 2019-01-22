@@ -68,6 +68,12 @@ static inline int arch_better_capacity(unsigned int cpu) { return 0; }
 void arch_build_cpu_topology_domain(void);
 #endif
 
+extern
+const struct sched_group_energy * const cpu_core_energy(int cpu);
+
+extern
+const struct sched_group_energy * const cpu_cluster_energy(int cpu);
+
 #include <asm-generic/topology.h>
 
 #endif /* _ASM_ARM_TOPOLOGY_H */
