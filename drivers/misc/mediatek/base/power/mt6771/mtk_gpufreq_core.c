@@ -47,6 +47,10 @@
 #include "mtk_dramc.h"
 #include "mtk_gpufreq.h"
 
+#ifdef CONFIG_MTK_QOS_SUPPORT
+#include "mtk_gpu_bw.h"
+#endif
+
 #ifdef MT_GPUFREQ_OPP_STRESS_TEST
 #include <linux/random.h>
 #endif /* ifdef MT_GPUFREQ_OPP_STRESS_TEST */
@@ -2350,6 +2354,10 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 			"PMIC SRCLKEN_HIGH time: %d us\n"
 			, __func__, g_vgpu_sfchg_rrate, g_vgpu_sfchg_frate,
 			g_vsram_sfchg_rrate, g_vsram_sfchg_frate, PMIC_SRCLKEN_HIGH_TIME_US);
+
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	mt_gpu_bw_init();
+#endif
 
 	return 0;
 }

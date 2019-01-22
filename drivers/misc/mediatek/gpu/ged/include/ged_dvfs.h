@@ -86,6 +86,13 @@ typedef struct GED_DVFS_FREQ_DATA_TAG {
 	unsigned long ulFreq;
 } GED_DVFS_FREQ_DATA;
 
+struct GED_DVFS_BW_DATA {
+	unsigned int ui32MaxBW;
+	unsigned int ui32AvgBW;
+};
+
+#define MAX_BW_PROFILE 5
+
 bool ged_dvfs_cal_gpu_utilization(unsigned int *pui32Loading,
 	unsigned int *pui32Block, unsigned int *pui32Idle);
 void ged_dvfs_cal_gpu_utilization_force(void);

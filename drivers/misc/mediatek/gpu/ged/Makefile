@@ -89,7 +89,7 @@ ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
 ccflags-y += -DENABLE_COMMON_DVFS \
              -DENABLE_TIMER_BACKUP \
-			 -DGED_DVFS_ENABLE
+             -DGED_DVFS_ENABLE
 else
 ccflags-y += -DGED_FDVFS_ENABLE
 endif
