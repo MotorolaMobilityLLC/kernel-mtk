@@ -1319,9 +1319,6 @@ static int __mt_gpufreq_create_procfs(void)
 static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new, unsigned int volt_old, unsigned int volt_new,
 		unsigned int vsram_volt_old, unsigned int vsram_volt_new)
 {
-	gpufreq_pr_info("@%s: freq: %d ---> %d, volt: %d ---> %d, vsram_volt: %d ---> %d\n",
-			__func__, freq_old, freq_new, volt_old, volt_new, vsram_volt_old, vsram_volt_new);
-
 	if (freq_new > freq_old) {
 		if (vsram_volt_new > (volt_old + BUCK_VARIATION_MAX)) {
 			__mt_gpufreq_volt_switch(volt_old, g_opp_table[g_opp_springboard_idx].gpufreq_volt,
@@ -1345,12 +1342,12 @@ static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new, unsig
 		}
 	}
 
-	gpufreq_pr_debug("@%s: real_freq = %d, real_volt = %d, real_vsram_volt = %d\n", __func__,
-			mt_get_ckgen_freq(9), __mt_gpufreq_get_cur_volt(), __mt_gpufreq_get_cur_vsram_volt());
-
 	g_cur_opp_freq = freq_new;
 	g_cur_opp_volt = volt_new;
 	g_cur_opp_vsram_volt = vsram_volt_new;
+
+	gpufreq_pr_info("@%s: done, freq: %d ---> %d, volt: %d ---> %d, vsram_volt: %d ---> %d\n",
+			__func__, freq_old, mt_get_ckgen_freq(9), volt_old, volt_new, vsram_volt_old, vsram_volt_new);
 
 	__mt_gpufreq_kick_pbm(1);
 }
