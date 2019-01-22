@@ -54,9 +54,6 @@
 #include <mtk_spm_misc.h>
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
-#include <mtk_clkbuf_ctl.h>
-#endif
 #include <trace/events/mtk_idle_event.h>
 
 #include "ufs-mtk.h"
@@ -66,9 +63,6 @@
 #endif
 
 #include <linux/uaccess.h>
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
-#include <mtk_cpufreq_api.h>
-#endif
 
 #define IDLE_TAG     "Power/swap "
 #define idle_pr_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
@@ -265,6 +259,12 @@ void __attribute__((weak)) idle_refcnt_inc(void)
 
 void __attribute__((weak)) idle_refcnt_dec(void)
 {
+}
+
+int __attribute__((weak)) univpll_is_used(void)
+{
+	/* when the function is not implemented, return 1 to block sodi3. */
+	return 1;
 }
 
 #endif
@@ -681,12 +681,10 @@ static bool soidle3_can_enter(int cpu, int reason)
 		}
 
 		/* check if univpll is used (sspm not included) */
-		#if !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
 		if (univpll_is_used()) {
 			reason = BY_PLL;
 			goto out;
 		}
-		#endif
 	}
 	#endif
 
@@ -1186,15 +1184,11 @@ static noinline void go_to_rgidle(int cpu)
 {
 	rgidle_before_wfi(cpu);
 
-#if 0 && !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
 	trace_rgidle_rcuidle(cpu, 1);
-#endif
 
 	go_to_wfi();
 
-#if 0 && !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
 	trace_rgidle_rcuidle(cpu, 0);
-#endif
 
 	rgidle_after_wfi(cpu);
 }

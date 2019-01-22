@@ -487,7 +487,7 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 ope
 
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_SLEEP);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+#if defined(CONFIG_MTK_SERIAL)
 	if (!(sodi_flags & SODI_FLAG_DUMP_LP_GS)) {
 		if (request_uart_to_sleep()) {
 			wr = WR_UART_BUSY;
@@ -502,19 +502,15 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 ope
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3();
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	trace_sodi_rcuidle(cpu, 1);
-#endif
 
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	trace_sodi_rcuidle(cpu, 0);
-#endif
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_WFI);
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
+#if defined(CONFIG_MTK_SERIAL)
 	if (!(sodi_flags & SODI_FLAG_DUMP_LP_GS))
 		request_uart_to_wakeup();
 RESTORE_IRQ:
