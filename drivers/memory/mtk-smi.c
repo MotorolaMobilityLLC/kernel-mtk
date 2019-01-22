@@ -108,9 +108,19 @@ int mtk_smi_larb_get(struct device *larbdev)
 	if (!larb->mmu)
 		return 0;
 
+#ifdef M4U_TEE_SERVICE_ENABLE
+		{
+			int i;
+
+			for (i = 0; i < 32; i++)
+				if (BIT(i) & (*larb->mmu))
+					pseudo_config_port_tee(i + (larb->larbid << 5));
+
+		}
+#else
 	/* Configure the iommu info for this larb */
 	writel(*larb->mmu, larb->base + larb->mt_plat->mmu_offset);
-
+#endif
 	return 0;
 }
 
