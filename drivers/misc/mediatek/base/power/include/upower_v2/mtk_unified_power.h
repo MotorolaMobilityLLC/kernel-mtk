@@ -94,6 +94,8 @@ extern void upower_update_degree_by_eem(enum upower_bank bank, int deg);
 /* platform part */
 extern int upower_bank_to_spower_bank(int upower_bank);
 extern void get_original_table(void);
+extern void upower_update_L_plus_cap(void);
+extern void upower_update_L_plus_lkg_pwr(void);
 
 #ifdef UPOWER_RCU_LOCK
 extern void upower_read_lock(void);
