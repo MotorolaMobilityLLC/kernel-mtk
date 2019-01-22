@@ -638,19 +638,20 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	case VPU_IOCTL_DEQUE_REQUEST:
 	{
 		struct vpu_request *req;
+		uint64_t kernel_request_id;
 		struct vpu_request *u_req;
 
 		LOG_DBG("[vpu] VPU_IOCTL_DEQUE_REQUEST + ");
 
 		u_req = (struct vpu_request *) arg;
-		#if 0
-		ret = copy_from_user(&req->request_id, &u_req->request_id, sizeof(uintptr_t));
-		CHECK_RET("[REG] copy 'req id' failed,%d\n", ret);
+		#if 1
+		ret = get_user(kernel_request_id, &u_req->request_id);
+		CHECK_RET("[REG] get 'req id' failed,%d\n", ret);
 
 		LOG_DBG("[vpu] deque test: user_id_0x%lx, request_id_0x%lx", (unsigned long)user,
-			(unsigned long)(req->request_id));
+			(unsigned long)(kernel_request_id));
 
-		ret = vpu_get_request_from_queue(user, req->request_id, &req);
+		ret = vpu_get_request_from_queue(user, kernel_request_id, &req);
 		#else
 		LOG_DBG("[vpu] dequee test: user_id_0x%lx, request_id_0x%lx", (unsigned long)user,
 			(unsigned long)(u_req->request_id));
