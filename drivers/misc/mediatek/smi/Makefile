@@ -118,6 +118,7 @@ obj-y += smi_configuration_mt6771.o
 SUPPORT_USE_DDR_TYPE := true
 SUPPORT_MET_SMI := true
 SUPPORT_QOS := true
+SUPPORT_MMP := true
 
 else
 ccflags-y += -DSMI_DUMMY
@@ -128,6 +129,13 @@ endif
 ifeq ($(CONFIG_MTK_QOS_SUPPORT),y)
 ifeq (true, $(SUPPORT_QOS))
 obj-y += mmdvfs_pmqos.o
+endif
+endif
+
+ifeq ($(CONFIG_MMPROFILE),y)
+ifeq (true, $(SUPPORT_MMP))
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
+ccflags-y += -DMMDVFS_MMP
 endif
 endif
 

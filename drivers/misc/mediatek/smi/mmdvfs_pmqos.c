@@ -24,12 +24,29 @@
 #include "mmdvfs_config_util.h"
 #include "mmdvfs_pmqos.h"
 
+#ifdef MMDVFS_MMP
+#include "mmprofile.h"
+#endif
+
 #undef pr_fmt
 #define pr_fmt(fmt) "[mmdvfs]" fmt
 
 #define CLK_TYPE_NONE 0
 #define CLK_TYPE_MUX 1
 #define CLK_TYPE_PLL 2
+
+#ifdef MMDVFS_MMP
+struct mmdvfs_mmp_events_t {
+	mmp_event mmdvfs;
+	mmp_event freq_change;
+};
+static struct mmdvfs_mmp_events_t mmdvfs_mmp_events;
+#endif
+
+static u32 log_level;
+enum mmdvfs_log_level {
+	mmdvfs_log_freq_change = 0,
+};
 
 #define STEP_UNREQUEST -1
 struct mm_freq_step_config {
@@ -139,6 +156,16 @@ static s32 mm_apply_clk(struct mm_freq_config *config, u32 step)
 	if (step_config.clk_type == CLK_TYPE_NONE) {
 		pr_notice("No need to change clk of %s\n", config->prop_name);
 		return 0;
+	}
+
+	if (config->pm_qos_class == PM_QOS_DISP_FREQ) {
+		u64 freq = config->freq_steps[step];
+
+#ifdef MMDVFS_MMP
+		mmprofile_log_ex(mmdvfs_mmp_events.freq_change, MMPROFILE_FLAG_PULSE, step, freq);
+#endif
+		if (log_level & 1 << mmdvfs_log_freq_change)
+			pr_notice("mmdvfs freq change: step (%u), freq: %llu MHz", step, freq);
 	}
 
 	if (step_config.clk_type == CLK_TYPE_MUX) {
@@ -355,6 +382,17 @@ static int mmdvfs_probe(struct platform_device *pdev)
 	struct mm_freq_config *mm_freq;
 	const __be32 *p;
 
+#ifdef MMDVFS_MMP
+	mmprofile_enable(1);
+	if (mmdvfs_mmp_events.mmdvfs == 0) {
+		mmdvfs_mmp_events.mmdvfs = mmprofile_register_event(MMP_ROOT_EVENT, "MMDVFS");
+		mmdvfs_mmp_events.freq_change =
+		    mmprofile_register_event(mmdvfs_mmp_events.mmdvfs, "freq_change");
+		mmprofile_enable_event_recursive(mmdvfs_mmp_events.mmdvfs, 1);
+	}
+	mmprofile_start(1);
+#endif
+
 	mmdvfs_enable = true;
 	pm_qos_add_request(&vcore_request, PM_QOS_VCORE_OPP,
 		PM_QOS_VCORE_OPP_DEFAULT_VALUE);
@@ -552,6 +590,9 @@ static struct kernel_param_ops mmdvfs_enable_ops = {
 };
 module_param_cb(mmdvfs_enable, &mmdvfs_enable_ops, &mmdvfs_enable, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(mmdvfs_enable, "enable or disable mmdvfs");
+
+module_param(log_level, uint, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(log_level, "mmdvfs log level");
 
 arch_initcall(mmdvfs_pmqos_init);
 module_exit(mmdvfs_pmqos_exit);
