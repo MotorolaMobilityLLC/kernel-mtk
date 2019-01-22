@@ -50,9 +50,9 @@
 #ifdef MT_GPUFREQ_OPP_STRESS_TEST
 #include <linux/random.h>
 #endif /* ifdef MT_GPUFREQ_OPP_STRESS_TEST */
-#undef MT_GPUFREQ_STATIC_PWR_READY2USE
 #ifdef MT_GPUFREQ_STATIC_PWR_READY2USE
 #include "mtk_static_power.h"
+#include "mtk_static_power_mt6771.h"
 #endif /* ifdef MT_GPUFREQ_STATIC_PWR_READY2USE */
 
 /**
@@ -665,7 +665,7 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 #endif /* ifdef CONFIG_THERMAL */
 
 #ifdef MT_GPUFREQ_STATIC_PWR_READY2USE
-	leak_power = mt_spower_get_leakage(MT_SPOWER_GPU, cur_vcore, temp);
+	leak_power = mt_spower_get_leakage(MTK_SPOWER_GPU, cur_vcore, temp);
 	if (g_volt_enable_state && leak_power > 0)
 		return leak_power;
 	else
@@ -1695,7 +1695,7 @@ static void __mt_gpufreq_calculate_power(unsigned int idx, unsigned int freq,
 			((volt * 100) / ref_volt) * ((volt * 100) / ref_volt) / (100 * 100 * 100);
 
 #ifdef MT_GPUFREQ_STATIC_PWR_READY2USE
-	p_leakage = mt_spower_get_leakage(MT_SPOWER_GPU, (volt / 100), temp);
+	p_leakage = mt_spower_get_leakage(MTK_SPOWER_GPU, (volt / 100), temp);
 	if (!g_volt_enable_state || p_leakage < 0)
 		p_leakage = 0;
 #else
