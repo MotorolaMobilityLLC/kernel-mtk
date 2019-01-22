@@ -174,6 +174,9 @@ static int pe_increase_ta_vchr(struct charger_manager *pinfo, u32 vchr_target)
 	u32 retry_cnt = 0;
 
 	do {
+		if (pinfo->chg2_dev)
+			charger_dev_enable(pinfo->chg2_dev, false);
+
 		vchr_before = pe_get_vbus();
 		__pe_increase_ta_vchr(pinfo);
 		vchr_after = pe_get_vbus();
@@ -299,6 +302,9 @@ int mtk_pe_reset_ta_vchr(struct charger_manager *pinfo)
 	aicr = 70000;
 
 	do {
+		if (pinfo->chg2_dev)
+			charger_dev_enable(pinfo->chg2_dev, false);
+
 		ret = charger_dev_set_input_current(pinfo->chg1_dev, aicr);
 
 		msleep(500);
