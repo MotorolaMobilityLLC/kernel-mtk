@@ -1722,6 +1722,11 @@ static int  bmp_local_init(void)
 	struct baro_hw *hw = get_cust_baro();
 	/* pr_debug("fwq loccal init+++\n"); */
 
+	BAR_FUN();
+	if (!hw) {
+		BAR_ERR("get cust fail\n");
+		return 0;
+	}
 	bmp_power(hw, 1);
 	if (i2c_add_driver(&bmp_i2c_driver)) {
 		BAR_ERR("add driver error\n");
@@ -1736,7 +1741,7 @@ static int  bmp_local_init(void)
 
 #ifdef CONFIG_OF
 static const struct of_device_id baro_of_match[] = {
-	{.compatible = "mediatek,PRESSURE"},
+	{.compatible = "mediatek,barometer"},
 	{},
 };
 #endif

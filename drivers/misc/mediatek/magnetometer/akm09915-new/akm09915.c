@@ -1336,7 +1336,7 @@ static ssize_t show_daemon_name(struct device_driver *ddri, char *buf)
 		#ifdef AKM_Device_AK09911
 	sprintf(strbuf, "akmd09911");
 		#else
-	sprintf(strbuf, "akmd09916");
+	sprintf(strbuf, "akmd09915");
 		#endif
 	#endif
 	return sprintf(buf, "%s", strbuf);
