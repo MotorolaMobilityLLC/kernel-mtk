@@ -53,12 +53,12 @@
 #define BMLOG_DEBUG_LEVEL   7
 #define BMLOG_TRACE_LEVEL   8
 #else
-#define BMLOG_ERROR_LEVEL   3
-#define BMLOG_WARNING_LEVEL 8
-#define BMLOG_NOTICE_LEVEL  8
-#define BMLOG_INFO_LEVEL    8
-#define BMLOG_DEBUG_LEVEL   8
-#define BMLOG_TRACE_LEVEL   8
+#define BMLOG_ERROR_LEVEL   7
+#define BMLOG_WARNING_LEVEL 7
+#define BMLOG_NOTICE_LEVEL  7
+#define BMLOG_INFO_LEVEL    7
+#define BMLOG_DEBUG_LEVEL   7
+#define BMLOG_TRACE_LEVEL   7
 #endif
 
 #define bm_err(fmt, args...)   \
