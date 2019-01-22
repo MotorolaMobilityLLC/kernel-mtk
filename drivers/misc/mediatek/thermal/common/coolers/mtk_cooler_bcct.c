@@ -204,6 +204,16 @@ static int chrlmt_unregister(struct chrlmt_handle *handle)
 	return -1;
 }
 
+int clbcct_get_chr_curr_limit(void)
+{
+	return chrlmt_bat_chr_curr_limit;
+}
+
+int clbcct_get_input_curr_limit(void)
+{
+	return chrlmt_chr_input_curr_limit;
+}
+
 static void chrlmt_set_limit_handler(struct work_struct *work)
 {
 
@@ -851,7 +861,9 @@ static int _cl_abcct_read(struct seq_file *m, void *v)
 {
 	mtk_cooler_bcct_dprintk("%s\n", __func__);
 
-	seq_printf(m, "%d\n", abcct_cur_bat_chr_curr_limit);
+	seq_printf(m, "%d %ld %ld %ld %ld %d %d\n",
+		abcct_cur_bat_chr_curr_limit, abcct_target_temp, abcct_kp, abcct_ki, abcct_kd,
+		abcct_max_bat_chr_curr_limit, abcct_min_bat_chr_curr_limit);
 	seq_printf(m, "abcct_cur_bat_chr_curr_limit %d\n", abcct_cur_bat_chr_curr_limit);
 	seq_printf(m, "abcct_cur_chr_input_curr_limit %d\n", abcct_cur_chr_input_curr_limit);
 	seq_printf(m, "abcct_target_temp %ld\n", abcct_target_temp);

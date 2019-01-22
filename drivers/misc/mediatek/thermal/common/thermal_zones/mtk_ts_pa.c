@@ -120,6 +120,11 @@ static unsigned long get_tx_bytes(void)
 	return tx_bytes;
 }
 
+int tspa_get_MD_tx_tput(void)
+{
+	return tx_throughput;
+}
+
 static int pa_cal_stats(unsigned long data)
 {
 	struct pa_stats *stats_info = (struct pa_stats *) data;

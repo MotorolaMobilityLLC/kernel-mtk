@@ -1010,6 +1010,20 @@ static int phpb_calc_delta(int curr_temp, int prev_temp)
 	return delta;
 }
 
+/* get current power from current opp, real value, does not set minimum */
+int clatm_get_curr_opp_power(void)
+{
+	int cpu_power = 0, gpu_power = 0;
+
+	cpu_power = (int) mt_ppm_thermal_get_cur_power();
+	gpu_power = _get_current_gpu_power();
+
+	tscpu_dprintk("%s cpu power=%d gpu power=%d\n",
+		__func__, cpu_power, gpu_power);
+
+	return cpu_power + gpu_power;
+}
+
 /* calculated total power based on current opp */
 static int get_total_curr_power(void)
 {
@@ -1629,6 +1643,10 @@ static ssize_t tscpu_write_atm_setting(struct file *file, const char __user *buf
 
 			active_adp_cooler = i_id;
 
+			/* --- SPA parameters --- */
+			thermal_spa_t.t_spa_Tpolicy_info.min_cpu_power[i_id] = MINIMUM_CPU_POWERS[i_id];
+			thermal_spa_t.t_spa_Tpolicy_info.min_gpu_power[i_id] = MINIMUM_GPU_POWERS[i_id];
+
 			tscpu_printk("tscpu_write_dtm_setting applied %d %d %d %d %d %d %d %d %d\n",
 				     i_id, FIRST_STEP_TOTAL_POWER_BUDGETS[i_id],
 				     PACKAGE_THETA_JA_RISES[i_id], PACKAGE_THETA_JA_FALLS[i_id],
@@ -1935,6 +1953,10 @@ static ssize_t tscpu_write_ctm(struct file *file, const char __user *buffer, siz
 			catmplus_update_params();
 		}
 		/* --- cATM+ parameters --- */
+
+		/* --- SPA parameters --- */
+		thermal_spa_t.t_spa_Tpolicy_info.steady_target_tj = STEADY_TARGET_TJ;
+		thermal_spa_t.t_spa_Tpolicy_info.steady_exit_tj = STEADY_EXIT_TJ;
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
