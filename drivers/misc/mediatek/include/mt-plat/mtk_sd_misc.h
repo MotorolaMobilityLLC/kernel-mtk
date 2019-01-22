@@ -76,7 +76,7 @@ extern  int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl);
 #define MSDC_ERASE_SELECTED_AREA        (0x20)
 #define MSDC_CARD_DUNM_FUNC             (0xff)
 
-typedef enum {
+enum PARTITON_ACCESS_T {
 	USER_PARTITION = 0,
 	BOOT_PARTITION_1,
 	BOOT_PARTITION_2,
@@ -85,9 +85,9 @@ typedef enum {
 	GP_PARTITION_2,
 	GP_PARTITION_3,
 	GP_PARTITION_4,
-} PARTITON_ACCESS_T;
+};
 
-typedef enum {
+enum SD3_MODE {
 	SDHC_HIGHSPEED = 0, /* 0 Host supports HS mode */
 	UHS_SDR12,          /* 1 Host supports UHS SDR12 mode */
 	UHS_SDR25,          /* 2 Host supports UHS SDR25 mode */
@@ -96,42 +96,41 @@ typedef enum {
 	UHS_DDR50,          /* 5 Host supports UHS DDR50 mode */
 	EMMC_HS400,         /* 6 Host supports EMMC HS400 mode */
 	CAPS_SPEED_NULL,
-} SD3_MODE;
+};
 
-typedef enum {
+enum SD3_DRIVE {
 	DRIVER_TYPE_A = 0,  /* 0 Host supports Driver Type A */
 	DRIVER_TYPE_B,      /* 1 Host supports Driver Type B */
 	DRIVER_TYPE_C,      /* 2 Host supports Driver Type C */
 	DRIVER_TYPE_D,      /* 3 Host supports Driver Type D */
 	CAPS_DRIVE_NULL
-} SD3_DRIVE;
+};
 
-typedef enum {
+enum SD3_MAX_CURRENT {
 	MAX_CURRENT_200 = 0,/* 0 Host max current limit is 200mA */
-	MAX_CURRENT_400,    /* 1 Host max current limit is 400mA */
 	MAX_CURRENT_600,    /* 2 Host max current limit is 600mA */
 	MAX_CURRENT_800,    /* 3 Host max current limit is 800mA */
-} SD3_MAX_CURRENT;
+};
 
-typedef enum {
+enum SD3_POWER_CONTROL {
 	SDXC_NO_POWER_CONTROL = 0,
 	/* Host does not supports >150mA current */
 	SDXC_POWER_CONTROL,
 	/* Host supports >150mA current */
-} SD3_POWER_CONTROL;
+};
 
-typedef enum {
+enum DUMP_STORAGE_TYPE {
 	DUMP_INTO_BOOT_CARD_IPANIC = 0,
 	DUMP_INTO_BOOT_CARD_KDUMP = 1,
 	DUMP_INTO_EXTERN_CARD = 2,
-} DUMP_STORAGE_TYPE;
+};
 
-typedef enum {
+enum STORAGE_TPYE {
 	EMMC_CARD_BOOT = 0,
 	SD_CARD_BOOT,
 	EMMC_CARD,
 	SD_CARD,
-} STORAGE_TPYE;
+};
 
 #define EXT_CSD_BOOT_SIZE_MULT          (226) /* R */
 #define EXT_CSD_HC_WP_GPR_SIZE          (221) /* RO */
@@ -144,16 +143,16 @@ typedef enum {
 #define EXT_CSD_CACHE_FLUSH             (32)
 #define CAPACITY_2G                     (2 * 1024 * 1024 * 1024ULL)
 
-typedef enum {
+enum BOOT_PARTITION_EN {
 	EMMC_BOOT_NO_EN = 0,
 	EMMC_BOOT1_EN,
 	EMMC_BOOT2_EN,
 	EMMC_BOOT_USER = 7,
 	EMMC_BOOT_END
-} BOOT_PARTITION_EN;
+};
 
 #ifdef CONFIG_MTK_GPT_SCHEME_SUPPORT
-typedef enum {
+enum Region {
 	EMMC_PART_UNKNOWN = 0,
 	EMMC_PART_BOOT1,
 	EMMC_PART_BOOT2,
@@ -164,16 +163,16 @@ typedef enum {
 	EMMC_PART_GP4,
 	EMMC_PART_USER,
 	EMMC_PART_END,
-} Region;
+};
 #endif
 
-typedef enum {
+enum GET_STORAGE_INFO {
 	CARD_INFO = 0,
 	DISK_INFO,
 	EMMC_USER_CAPACITY,
 	EMMC_CAPACITY,
 	EMMC_RESERVE,
-} GET_STORAGE_INFO;
+};
 
 struct storage_info {
 	struct mmc_card *card;
@@ -184,7 +183,7 @@ struct storage_info {
 };
 
 /* used by dumchar */
-int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type,
+int msdc_get_info(enum STORAGE_TPYE storage_type, enum GET_STORAGE_INFO info_type,
 	struct storage_info *info);
 
 #endif              /* end of SD_MISC_H */
