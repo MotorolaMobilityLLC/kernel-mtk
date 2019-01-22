@@ -353,13 +353,13 @@ static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LE
 	struct layer_config *layer_info;
 
 	if (debug_level < DISP_DEBUG_LEVEL_INFO) {
-		DISPMSG("HRT hrt_num:%d/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d\n",
+		DISPMSG("HRT hrt_num:0x%x/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d\n",
 			disp_info->hrt_num, l_rule_info->primary_fps, l_rule_info->dal_enable,
 			HRT_GET_PATH_ID(l_rule_info->disp_path), get_scale_name(l_rule_info->scale_rate),
 			l_rule_info->layer_tb_idx, l_rule_info->bound_tb_idx);
 
 		for (i = 0 ; i < 2 ; i++) {
-			DISPMSG("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)\n",
+			DISPMSG("HRT D%d/M%d/LN%d/hrt_num:0x%x/G(%d,%d)\n",
 				i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
 				disp_info->gles_head[i], disp_info->gles_tail[i]);
 
@@ -374,13 +374,13 @@ static void dump_disp_info(struct disp_layer_info *disp_info, enum DISP_DEBUG_LE
 			}
 		}
 	} else {
-		DISPINFO("HRT hrt_num:%d/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d\n",
+		DISPINFO("HRT hrt_num:0x%x/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bound_tb:%d\n",
 			disp_info->hrt_num, l_rule_info->primary_fps, l_rule_info->dal_enable,
 			HRT_GET_PATH_ID(l_rule_info->disp_path), get_scale_name(l_rule_info->scale_rate),
 			l_rule_info->layer_tb_idx, l_rule_info->bound_tb_idx);
 
 		for (i = 0 ; i < 2 ; i++) {
-			DISPINFO("HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)\n",
+			DISPINFO("HRT D%d/M%d/LN%d/hrt_num:0x%x/G(%d,%d)\n",
 				i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
 				disp_info->gles_head[i], disp_info->gles_tail[i]);
 
@@ -1634,11 +1634,14 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
  *
  */
 	ret = dispatch_ovl_id(&layering_info);
-	dump_disp_info(&layering_info, DISP_DEBUG_LEVEL_INFO);
 	check_layering_result(&layering_info);
+
 	HRT_SET_PATH_SCENARIO(layering_info.hrt_num, l_rule_info->disp_path);
 	HRT_SET_SCALE_SCENARIO(layering_info.hrt_num, l_rule_info->scale_rate);
 	HRT_SET_AEE_FLAG(layering_info.hrt_num, l_rule_info->dal_enable);
+	HRT_SET_WROT_SRAM_FLAG(layering_info.hrt_num, l_rule_info->wrot_sram);
+
+	dump_disp_info(&layering_info, DISP_DEBUG_LEVEL_INFO);
 
 	ret = copy_layer_info_to_user(disp_info_user, debug_mode);
 	return ret;

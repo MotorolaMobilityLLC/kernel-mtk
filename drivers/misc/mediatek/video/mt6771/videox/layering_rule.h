@@ -92,5 +92,6 @@ enum HRT_DRAMC_TYPE {
 
 void layering_rule_init(void);
 int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level);
+void antilatency_config_hrt(void);
 
 #endif

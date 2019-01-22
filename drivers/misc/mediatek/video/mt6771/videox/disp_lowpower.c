@@ -41,6 +41,7 @@
 #include "disp_utils.h"
 #include "disp_session.h"
 #include "primary_display.h"
+#include "mtk_disp_mgr.h"
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 #include "external_display.h"
 #endif
@@ -90,6 +91,22 @@ static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LEVEL0);
 #endif
 static int register_share_sram;
 
+/*---------------- variable for anti-latency2 start ------------------*/
+/* When ovl_fence_release_callback find the previous frame is with wrot_sram
+ * and current is not, we could set this flag into 1 and unblock releasing
+ * process
+ */
+atomic_t wrot_sram_available = ATOMIC_INIT(0);
+DECLARE_WAIT_QUEUE_HEAD(release_wrot_sram_wq);
+
+/* When we are releasing wrot_sram, we need to set it to 1 which informs HRT
+ * we cannot use wrot_sram anymore
+ */
+atomic_t wrot_sram_freeable = ATOMIC_INIT(0);
+
+/* This flag indicates if we need trigger repaint when release wrot_sram */
+atomic_t antilatency_need_repaint = ATOMIC_INIT(0);
+/*---------------- variable for anti-latency2 end ------------------*/
 
 /* Local API */
 /*********************************************************************************************************************/
@@ -225,6 +242,11 @@ static void set_share_sram(unsigned int is_share_sram)
 static unsigned int use_wrot_sram(void)
 {
 	return golden_setting_pgc->is_wrot_sram;
+}
+
+int is_wrot_sram_available(void)
+{
+	return atomic_read(&wrot_sram_available);
 }
 
 static void set_mmsys_clk(unsigned int clk)
@@ -367,6 +389,9 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	/* set rdma golden setting parameters*/
 	set_share_sram(1);
 
+	atomic_set(&wrot_sram_available, 1);
+	atomic_set(&antilatency_need_repaint, 0);
+
 	/* add instr for modification rdma fifo regs */
 	/* dpmgr_handle can cover both dc & dl */
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
@@ -391,6 +416,20 @@ static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 	return 0;
 }
 
+/*---------------- functions for anti-latency2 start ------------------*/
+void unblock_release_wrot_sram(void)
+{
+	atomic_set(&wrot_sram_freeable, 1);
+	wake_up_interruptible(&release_wrot_sram_wq);
+}
+
+void set_antilatency_need_repaint(void)
+{
+	atomic_set(&antilatency_need_repaint, 1);
+}
+/*---------------- functions for anti-latency2 end ------------------*/
+
+
 void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct cmdqRecStruct *handle;
@@ -401,6 +440,32 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	if (use_wrot_sram() == 0)
 		return;
+
+	/* anti-latency 2.0, call repaint & block function until it's safe to
+	 * release wrot sram
+	 */
+	if (disp_helper_get_option(DISP_OPT_ANTILATENCY) &&
+		atomic_read(&antilatency_need_repaint)) {
+		long ret;
+
+		atomic_set(&wrot_sram_freeable, 0);
+		atomic_set(&wrot_sram_available, 0);
+		trigger_repaint(REFRESH_FOR_ANTI_LATENCY2);
+		primary_display_manual_unlock();
+
+		/* wait up to 100 ms to prevent the unblock logic fails
+		 * 100ms > 5 frame * 16ms should be a safe margin
+		 */
+		ret = wait_event_interruptible_timeout(release_wrot_sram_wq,
+			atomic_read(&wrot_sram_freeable) == 1, HZ/10);
+		primary_display_manual_lock();
+
+		if (ret <= 0)
+			DISPERR("[disp_lowpower] wait unblock release_wrot_sram failed\n");
+		else
+			DISPINFO("[disp_lowpower] unblock release_wrot_sram\n");
+	} else
+		atomic_set(&wrot_sram_available, 0);
 
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);

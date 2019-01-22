@@ -119,6 +119,7 @@ static struct {
 	{DISP_OPT_DUAL_PIPE, 0, "DISP_OPT_DUAL_PIPE"},
 	{DISP_OPT_SHARE_WDMA0, 0, "DISP_OPT_SHARE_WDMA0"},
 	{DISP_OPT_ROUND_CORNER, 0, "DISP_OPT_ROUND_CORNER"},
+	{DISP_OPT_ANTILATENCY, 0, "DISP_OPT_ANTILATENCY"},
 
 };
 
@@ -385,6 +386,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 0);
 	disp_helper_set_option(DISP_OPT_SHARE_WDMA0, 1);
 	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 0);
+	disp_helper_set_option(DISP_OPT_ANTILATENCY, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

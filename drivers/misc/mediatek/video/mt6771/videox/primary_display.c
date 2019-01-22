@@ -3082,7 +3082,8 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 {
 	int i = 0;
 	int ret = 0;
-	int real_hrt_level = 0;
+	int real_hrt_level = 0, wrot_sram = 0, backup = 0;
+	static int prev_wrot_sram;
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	unsigned int bandwidth;
 	unsigned int hwc_fps = 60;
@@ -3092,8 +3093,16 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	mmprofile_log_ex(ddp_mmp_get_events()->session_release, MMPROFILE_FLAG_START, 1, userdata);
 
 	/* check overlap layer */
-	cmdqBackupReadSlot(pgc->subtractor_when_free, 0, &real_hrt_level);
-	real_hrt_level >>= 16;
+	cmdqBackupReadSlot(pgc->subtractor_when_free, 0, &backup);
+	DISPINFO("[FENCE_RELEASE] hrt_num:0x%x\n", backup);
+
+	wrot_sram = (backup >> 20);
+	if (disp_helper_get_option(DISP_OPT_ANTILATENCY) &&
+		prev_wrot_sram == 1 && wrot_sram == 0)
+		unblock_release_wrot_sram();
+
+	prev_wrot_sram = wrot_sram;
+	real_hrt_level = (backup & 0xF0000);
 
 	_primary_path_lock(__func__);
 
@@ -5462,7 +5471,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	struct disp_ddp_path_config *data_config = NULL;
 	int max_layer_id_configed = 0;
 	int bypass = 0, bypass_layer_id = 0;
-	int hrt_level;
+	int hrt_level, wrot_sram;
 	struct disp_rect total_dirty_roi = {0, 0, 0, 0};
 
 #ifdef DEBUG_OVL_CONFIG_TIME
@@ -5524,6 +5533,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 
 	hrt_level = HRT_GET_DVFS_LEVEL(cfg->overlap_layer_num);
+	wrot_sram = HRT_GET_WROT_SRAM_FLAG(cfg->overlap_layer_num);
 	data_config->overlap_layer_num = hrt_level;
 
 #ifdef MTK_FB_MMDVFS_SUPPORT
@@ -5717,8 +5727,10 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			sub = 1;
 
 		/* store overlap layer to layer0's subtractor_when_free: bit[31:16] */
-		if (layer == 0)
+		if (layer == 0) {
 			sub |= hrt_level << 16;
+			sub |= wrot_sram << 20;
+		}
 		cmdqRecBackupUpdateSlot(cmdq_handle, pgc->subtractor_when_free, layer, sub);
 	}
 
