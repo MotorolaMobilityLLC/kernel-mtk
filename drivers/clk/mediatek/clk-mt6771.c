@@ -76,6 +76,9 @@ void __iomem *ipu_core1_base;
 
 /* CKSYS */
 #define CLK_CFG_0		(cksys_base + 0x040)
+#define CLK_CFG_5		(cksys_base + 0x090)
+#define CLK_CFG_5_SET		(cksys_base + 0x094)
+#define CLK_CFG_5_CLR		(cksys_base + 0x098)
 #define CLK_CFG_8		(cksys_base + 0x0c0)
 #define CLK_CFG_9		(cksys_base + 0x0d0)
 #define CLK_MISC_CFG_0		(cksys_base + 0x104)
@@ -2724,6 +2727,13 @@ void check_seninf_clk_sts(void)
 		__clk_get_enable_count(c));
 	/* confirm seninf clk */
 	pr_notice("CLK_CFG_8 = 0x%08x\r\n", clk_readl(CLK_CFG_8));
+}
+
+void aud_intbus_mux_sel(unsigned int aud_idx)
+{
+	clk_writel(CLK_CFG_5_CLR, 0x00000300);
+	clk_writel(CLK_CFG_5_SET, aud_idx << 8);
+	pr_notice("CLK_CFG_5 = 0x%08x\r\n", clk_readl(CLK_CFG_5));
 }
 
 static int __init clk_mt6771_init(void)
