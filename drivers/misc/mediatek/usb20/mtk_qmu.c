@@ -289,9 +289,9 @@ int gpd_switch_to_sram(struct device *dev)
 	}
 
 	memset_io(ptr, 0, size);
-	io_ptr = (TGPD *) (dma_handle);
 
 	/* setup Tx_gpd_Offset & Tx_gpd_List */
+	io_ptr = (TGPD *) (dma_handle);
 	init_gpd_list(TXQ, index, ptr, io_ptr, Tx_gpd_max_count[index]);
 
 	Tx_gpd_end[index] = Tx_gpd_last[index] = Tx_gpd_head[index] = ptr;
@@ -320,10 +320,23 @@ void gpd_switch_to_dram(struct device *dev)
 
 	ptr = Tx_gpd_head_dram;
 	memset_io(ptr, 0, size);
-	io_ptr = Tx_gpd_head_dram - Tx_gpd_Offset_dram;
 
-	/* setup Tx_gpd_Offset & Tx_gpd_List */
+	/* setup Tx_gpd_Offset & Tx_gpd_List, careful about type casting */
+	io_ptr = (TGPD *)((u64)Tx_gpd_head_dram - Tx_gpd_Offset_dram);
 	init_gpd_list(TXQ, index, ptr, io_ptr, Tx_gpd_max_count[index]);
+
+	if (Tx_gpd_Offset[index] != Tx_gpd_Offset_dram) {
+		static char string[64];
+
+		sprintf(string, "offset<%p, %p>\n",
+				(void *)Tx_gpd_Offset[index], (void *)Tx_gpd_Offset_dram);
+		QMU_ERR("%s\n", string);
+#ifdef CONFIG_MEDIATEK_SOLUTION
+		aee_kernel_warning(string, string);
+#else
+		musb_bug();
+#endif
+	}
 
 	Tx_gpd_end[index] = Tx_gpd_last[index] = Tx_gpd_head[index] = ptr;
 	Tx_gpd_free_count[index] = Tx_gpd_max_count[index] - 1; /* one must be for tail */
