@@ -21,7 +21,7 @@
 #include "ccci_config.h"
 #include <linux/clk.h>
 #include <mach/mtk_pbm.h>
-#include <mach/emi_mpu.h>
+/*#include <mtk_clkbuf_ctl.h>*/
 #ifdef CONFIG_MTK_EMI_BWL
 #include <emi_mbw.h>
 #endif
@@ -34,7 +34,6 @@
 #include <mt-plat/upmu_common.h>
 #include <mtk_spm_sleep.h>
 #include <mtk_vcorefs_manager.h>
-#include <mtk_spm_vcore_dvfs.h>
 #include "ccci_core.h"
 #include "ccci_platform.h"
 
@@ -177,11 +176,6 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 		}
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		hw_info->ap_mixed_base = (unsigned long)of_iomap(node, 0);
-		node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
-		if (node)
-			hw_info->ap_topclkgen_base = of_iomap(node, 0);
-		else
-			hw_info->ap_topclkgen_base = ioremap_nocache(0x10000000, 4);
 
 		break;
 	default:
@@ -558,7 +552,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		CCCI_MEM_LOG_TAG(md->index, TAG, "ap2md dummy reg 0x%X: 0x%X\n", INFRA_AP2MD_DUMMY_REG,
 			cldma_read32(infra_ao_base, INFRA_AP2MD_DUMMY_REG));
 		/*disable MD to AP*/
-		ROr2W(infra_ao_base, INFRA_MD2PERI_PROT_EN, (0x1 << INFRA_MD2PERI_PROT_BIT));
+		cldma_write32(infra_ao_base, INFRA_MD2PERI_PROT_SET, (0x1 << INFRA_MD2PERI_PROT_BIT));
 		while ((cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY) & (0x1 << INFRA_MD2PERI_PROT_BIT))
 				!= (0x1 << INFRA_MD2PERI_PROT_BIT))
 			;
@@ -566,7 +560,7 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 			cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_EN),
 			cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY));
 		/*make sure AP to MD is enabled*/
-		RAnd2W(infra_ao_base, INFRA_PERI2MD_PROT_EN, (~(0x1 << INFRA_PERI2MD_PROT_BIT)));
+		cldma_write32(infra_ao_base, INFRA_PERI2MD_PROT_CLR, (0x1 << INFRA_PERI2MD_PROT_BIT));
 		while ((cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY) & (0x1 << INFRA_PERI2MD_PROT_BIT)))
 			;
 		CCCI_MEM_LOG_TAG(md->index, TAG, "peri2md: en[0x%X], rdy[0x%X]\n",
@@ -765,7 +759,7 @@ static void md1_pre_access_md_reg(struct ccci_modem *md)
 	CCCI_BOOTUP_LOG(md->index, TAG, "pre: ap2md dummy reg 0x%X: 0x%X\n", INFRA_AP2MD_DUMMY_REG,
 		cldma_read32(infra_ao_base, INFRA_AP2MD_DUMMY_REG));
 	/*disable MD to AP*/
-	ROr2W(infra_ao_base, INFRA_MD2PERI_PROT_EN, (0x1 << INFRA_MD2PERI_PROT_BIT));
+	cldma_write32(infra_ao_base, INFRA_MD2PERI_PROT_SET, (0x1 << INFRA_MD2PERI_PROT_BIT));
 	while ((cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY) & (0x1 << INFRA_MD2PERI_PROT_BIT))
 			!= (0x1 << INFRA_MD2PERI_PROT_BIT))
 		;
@@ -777,7 +771,7 @@ static void md1_pre_access_md_reg(struct ccci_modem *md)
 static void md1_post_access_md_reg(struct ccci_modem *md)
 {
 	/*disable AP to MD*/
-	ROr2W(infra_ao_base, INFRA_PERI2MD_PROT_EN, (0x1 << INFRA_PERI2MD_PROT_BIT));
+	cldma_write32(infra_ao_base, INFRA_PERI2MD_PROT_SET, (0x1 << INFRA_PERI2MD_PROT_BIT));
 	while ((cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY) & (0x1 << INFRA_PERI2MD_PROT_BIT))
 			!= (0x1 << INFRA_PERI2MD_PROT_BIT))
 		;
@@ -786,7 +780,7 @@ static void md1_post_access_md_reg(struct ccci_modem *md)
 		cldma_read32(infra_ao_base, INFRA_PERI2MD_PROT_RDY));
 
 	/*enable MD to AP*/
-	RAnd2W(infra_ao_base, INFRA_MD2PERI_PROT_EN, (~(0x1 << INFRA_MD2PERI_PROT_BIT)));
+	cldma_write32(infra_ao_base, INFRA_MD2PERI_PROT_CLR, (0x1 << INFRA_MD2PERI_PROT_BIT));
 	while ((cldma_read32(infra_ao_base, INFRA_MD2PERI_PROT_RDY) & (0x1 << INFRA_MD2PERI_PROT_BIT)))
 		;
 	CCCI_BOOTUP_LOG(md->index, TAG, "md2peri: en[0x%X], rdy[0x%X]\n",
@@ -894,11 +888,13 @@ int md_cd_vcore_config(unsigned int md_id, unsigned int hold_req)
 
 int md_cd_soft_power_off(struct ccci_modem *md, unsigned int mode)
 {
+	/*clk_buf_set_by_flightmode(true);*/
 	return 0;
 }
 
 int md_cd_soft_power_on(struct ccci_modem *md, unsigned int mode)
 {
+	/*clk_buf_set_by_flightmode(false);*/
 	return 0;
 }
 
@@ -907,14 +903,6 @@ int md_cd_power_on(struct ccci_modem *md)
 	int ret = 0;
 	unsigned int reg_value;
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
-	struct md_hw_info *hw_info = md->hw_info;
-
-	/* step 1: modem clock setting */
-	reg_value = ccci_read32(hw_info->ap_topclkgen_base, 0);
-	reg_value &= ~(0x300);
-	ccci_write32(hw_info->ap_topclkgen_base, 0, reg_value);
-	CCCI_BOOTUP_LOG(md->index, CORE, "md_cd_power_on: set md1_clk_mod =0x%x\n",
-		     ccci_read32(hw_info->ap_topclkgen_base, 0));
 
 	/* step 2: PMIC setting */
 	md1_pmic_setting_on();
@@ -922,6 +910,7 @@ int md_cd_power_on(struct ccci_modem *md)
 	/* steip 3: power on MD_INFRA and MODEM_TOP */
 	switch (md->index) {
 	case MD_SYS1:
+		/*clk_buf_set_by_flightmode(false);*/
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk\n");
 		ret = clk_prepare_enable(clk_table[0].clk_ref);
 		CCCI_BOOTUP_LOG(md->index, TAG, "enable md sys clk done,ret = %d\n", ret);
@@ -933,9 +922,6 @@ int md_cd_power_on(struct ccci_modem *md)
 		return ret;
 
 	md1_pre_access_md_reg(md);
-
-	/*md1_pcore_sram_on(md);*/
-	dvfsrc_mdsrclkena_control(1);
 
 	/* step 4: MD srcclkena setting */
 	reg_value = ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA);
@@ -984,7 +970,6 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0;
 	unsigned int reg_value;
-	struct md_hw_info *hw_info = md->hw_info;
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 	/* notify NFC */
@@ -1004,15 +989,10 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 		CCCI_BOOTUP_LOG(md->index, CORE, "md_cd_power_off: set md1_srcclkena=0x%x\n",
 			     ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA));
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");
-		dvfsrc_mdsrclkena_control(0);
+
+		/*clk_buf_set_by_flightmode(true);*/
 		/* 3. PMIC off */
 		md1_pmic_setting_off();
-		/* 4. gating md related clock */
-		reg_value = ccci_read32(hw_info->ap_topclkgen_base, 0);
-		reg_value |= (0x300);
-		ccci_write32(hw_info->ap_topclkgen_base, 0, reg_value);
-		CCCI_BOOTUP_LOG(md->index, CORE, "md_cd_power_on: set md1_clk_mod =0x%x\n",
-			     ccci_read32(hw_info->ap_topclkgen_base, 0));
 		/* 5. DLPT */
 		kicker_pbm_by_md(KR_MD1, false);
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call end kicker_pbm_by_md(0,false)\n");
