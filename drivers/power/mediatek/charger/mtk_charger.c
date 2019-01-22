@@ -1565,6 +1565,15 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	}
 	info->data.max_charger_voltage_setting = info->data.max_charger_voltage;
 
+	if (of_property_read_u32(np, "min_charger_voltage", &val) >= 0) {
+		info->data.min_charger_voltage = val;
+	} else {
+		chr_err(
+			"use default V_CHARGER_MIN:%d\n",
+			V_CHARGER_MIN);
+		info->data.min_charger_voltage = V_CHARGER_MIN;
+	}
+
 	/* charging current */
 	if (of_property_read_u32(np, "usb_charger_current_suspend", &val) >= 0) {
 		info->data.usb_charger_current_suspend = val;

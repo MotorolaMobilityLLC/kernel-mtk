@@ -258,8 +258,8 @@ static int pe_detect_ta(struct charger_manager *pinfo)
 	/* Enable OVP */
 	pe_enable_vbus_ovp(pinfo, true);
 
-	/* Set MIVR to 4.5V for vbus 5V */
-	pe_set_mivr(pinfo, 4500000);
+	/* Set MIVR to 4.6V for vbus 5V */
+	pe_set_mivr(pinfo, pinfo->data.min_charger_voltage);
 
 _err:
 	pr_err("%s: failed, is_connect = %d\n",
@@ -366,7 +366,7 @@ int mtk_pe_reset_ta_vchr(struct charger_manager *pinfo)
 
 	/* Enable OVP */
 	ret = pe_enable_vbus_ovp(pinfo, true);
-	pe_set_mivr(pinfo, 4500000);
+	pe_set_mivr(pinfo, pinfo->data.min_charger_voltage);
 	pr_err("%s: OK\n", __func__);
 
 	return ret;

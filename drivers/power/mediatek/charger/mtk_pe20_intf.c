@@ -86,7 +86,7 @@ int mtk_pe20_reset_ta_vchr(struct charger_manager *pinfo)
 		return ret;
 	}
 
-	pe20_set_mivr(pinfo, 4500000);
+	pe20_set_mivr(pinfo, pinfo->data.min_charger_voltage);
 
 	/* Measure VBAT */
 	pe20->vbat_orig = pe20_get_vbat();
@@ -162,7 +162,7 @@ static int pe20_leave(struct charger_manager *pinfo)
 	}
 
 	pe20_enable_vbus_ovp(pinfo, true);
-	pe20_set_mivr(pinfo, 4500000);
+	pe20_set_mivr(pinfo, pinfo->data.min_charger_voltage);
 	pr_err("%s: OK\n", __func__);
 	return ret;
 }
@@ -275,7 +275,7 @@ static int pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 		else
 			sw_retry_cnt++;
 
-		pe20_set_mivr(pinfo, 4500000);
+		pe20_set_mivr(pinfo, pinfo->data.min_charger_voltage);
 
 		pr_err("%s: retry_cnt = (%d, %d), vchr = (%d, %d), vchr_target = %dmV\n",
 			__func__, sw_retry_cnt, retry_cnt, vchr_before / 1000,
@@ -322,10 +322,10 @@ static void mtk_pe20_check_cable_impedance(struct charger_manager *pinfo)
 
 	get_monotonic_boottime(&ptime[0]);
 
-	/* Set ichg = 2500mA, set MIVR=4.5V */
+	/* Set ichg = 2500mA, set MIVR=4.6V */
 	charger_dev_set_charging_current(pinfo->chg1_dev, 2500000);
 	mdelay(240);
-	pe20_set_mivr(pinfo, 4500000);
+	pe20_set_mivr(pinfo, pinfo->data.min_charger_voltage);
 	/* pe20_set_mivr(pinfo, 4300000); */
 
 	get_monotonic_boottime(&ptime[1]);
@@ -479,8 +479,8 @@ int mtk_pe20_plugout_reset(struct charger_manager *pinfo)
 	if (ret < 0)
 		goto err;
 
-	/* Set MIVR to 4.5V for vbus 5V */
-	ret = pe20_set_mivr(pinfo, 4500000); /* uV */
+	/* Set MIVR to 4.6V for vbus 5V */
+	ret = pe20_set_mivr(pinfo, pinfo->data.min_charger_voltage); /* uV */
 	if (ret < 0)
 		goto err;
 
