@@ -2469,9 +2469,8 @@ void wake_up_new_task(struct task_struct *p)
 	 */
 	set_task_cpu(p, select_task_rq(p, task_cpu(p), SD_BALANCE_FORK, 0));
 #endif
-	rq = __task_rq_lock(p);
-	post_init_entity_util_avg(&p->se);
 
+	rq = __task_rq_lock(p);
 	walt_mark_task_starting(p);
 	activate_task(rq, p, ENQUEUE_WAKEUP_NEW);
 	p->on_rq = TASK_ON_RQ_QUEUED;
@@ -5836,6 +5835,7 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
 		walt_set_window_start(rq);
 		raw_spin_unlock_irqrestore(&rq->lock, flags);
 		rq->calc_load_update = calc_load_update;
+		account_reset_rq(rq);
 		break;
 
 	case CPU_ONLINE:
@@ -5982,6 +5982,9 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
 
 	if (!(sd->flags & SD_LOAD_BALANCE)) {
 		printk("does not load-balance\n");
+		if (sd->parent)
+			printk(KERN_ERR "ERROR: !SD_LOAD_BALANCE domain"
+					" has parent");
 		return -1;
 	}
 
@@ -6074,12 +6077,8 @@ static inline bool sched_debug(void)
 
 static int sd_degenerate(struct sched_domain *sd)
 {
-	if (cpumask_weight(sched_domain_span(sd)) == 1) {
-		if (sd->groups->sge)
-			sd->flags &= ~SD_LOAD_BALANCE;
-		else
-			return 1;
-	}
+	if (cpumask_weight(sched_domain_span(sd)) == 1)
+		return 1;
 
 	/* Following flags need at least 2 groups */
 	if (sd->flags & (SD_LOAD_BALANCE |
@@ -6087,7 +6086,6 @@ static int sd_degenerate(struct sched_domain *sd)
 			 SD_BALANCE_FORK |
 			 SD_BALANCE_EXEC |
 			 SD_SHARE_CPUCAPACITY |
-			 SD_ASYM_CPUCAPACITY |
 			 SD_SHARE_PKG_RESOURCES |
 			 SD_SHARE_POWERDOMAIN |
 			 SD_SHARE_CAP_STATES)) {
@@ -6119,16 +6117,11 @@ sd_parent_degenerate(struct sched_domain *sd, struct sched_domain *parent)
 				SD_BALANCE_NEWIDLE |
 				SD_BALANCE_FORK |
 				SD_BALANCE_EXEC |
-				SD_ASYM_CPUCAPACITY |
 				SD_SHARE_CPUCAPACITY |
 				SD_SHARE_PKG_RESOURCES |
 				SD_PREFER_SIBLING |
 				SD_SHARE_POWERDOMAIN |
 				SD_SHARE_CAP_STATES);
-		if (parent->groups->sge) {
-			parent->flags &= ~SD_LOAD_BALANCE;
-			return 0;
-		}
 		if (nr_node_ids == 1)
 			pflags &= ~SD_SERIALIZE;
 	}
@@ -6209,9 +6202,6 @@ static int init_rootdomain(struct root_domain *rd)
 		goto free_rto_mask;
 
 	init_max_cpu_capacity(&rd->max_cpu_capacity);
-
-	rd->max_cap_orig_cpu = rd->min_cap_orig_cpu = -1;
-
 	return 0;
 
 free_rto_mask:
@@ -6433,9 +6423,6 @@ enum s_alloc {
  * Build an iteration mask that can exclude certain CPUs from the upwards
  * domain traversal.
  *
- * Only CPUs that can arrive at this group should be considered to continue
- * balancing.
- *
  * Asymmetric node setups can result in situations where the domain tree is of
  * unequal depth, make sure to skip domains that already cover the entire
  * range.
@@ -6447,31 +6434,18 @@ enum s_alloc {
  */
 static void build_group_mask(struct sched_domain *sd, struct sched_group *sg)
 {
-	const struct cpumask *sg_span = sched_group_cpus(sg);
+	const struct cpumask *span = sched_domain_span(sd);
 	struct sd_data *sdd = sd->private;
 	struct sched_domain *sibling;
 	int i;
 
-	for_each_cpu(i, sg_span) {
+	for_each_cpu(i, span) {
 		sibling = *per_cpu_ptr(sdd->sd, i);
-
-		/*
-		 * Can happen in the asymmetric case, where these siblings are
-		 * unused. The mask will not be empty because those CPUs that
-		 * do have the top domain _should_ span the domain.
-		 */
-		if (!sibling->child)
-			continue;
-
-		/* If we would not end up here, we can't continue from here */
-		if (!cpumask_equal(sg_span, sched_domain_span(sibling->child)))
+		if (!cpumask_test_cpu(i, sched_domain_span(sibling)))
 			continue;
 
 		cpumask_set_cpu(i, sched_group_mask(sg));
 	}
-
-	/* We must not have empty masks here */
-	WARN_ON_ONCE(cpumask_empty(sched_group_mask(sg)));
 }
 
 /*
@@ -6823,19 +6797,11 @@ static int sched_domains_curr_level;
 /*
  * SD_flags allowed in topology descriptions.
  *
- * These flags are purely descriptive of the topology and do not prescribe
- * behaviour. Behaviour is artificial and mapped in the below sd_init()
- * function:
- *
- *   SD_SHARE_CPUCAPACITY   - describes SMT topologies
- *   SD_SHARE_PKG_RESOURCES - describes shared caches
- *   SD_NUMA                - describes NUMA topologies
- *   SD_SHARE_POWERDOMAIN   - describes shared power domain
- *   SD_ASYM_CPUCAPACITY    - describes mixed capacity topologies
- *   SD_SHARE_CAP_STATES    - describes shared capacity states
- *
- * Odd one out, which beside describing the topology has a quirk also
- * prescribes the desired behaviour that goes along with it:
+ * SD_SHARE_CPUCAPACITY      - describes SMT topologies
+ * SD_SHARE_PKG_RESOURCES - describes shared caches
+ * SD_NUMA                - describes NUMA topologies
+ * SD_SHARE_POWERDOMAIN   - describes shared power domain
+ * SD_SHARE_CAP_STATES    - describes shared capacity states
  *
  * Odd one out:
  * SD_ASYM_PACKING        - describes SMT quirks
@@ -6845,13 +6811,11 @@ static int sched_domains_curr_level;
 	 SD_SHARE_PKG_RESOURCES |	\
 	 SD_NUMA |			\
 	 SD_ASYM_PACKING |		\
-	 SD_ASYM_CPUCAPACITY |		\
 	 SD_SHARE_POWERDOMAIN |		\
 	 SD_SHARE_CAP_STATES)
 
 static struct sched_domain *
-sd_init(struct sched_domain_topology_level *tl,
-	struct sched_domain *child, int cpu)
+sd_init(struct sched_domain_topology_level *tl, int cpu)
 {
 	struct sched_domain *sd = *per_cpu_ptr(tl->data.sd, cpu);
 	int sd_weight, sd_flags = 0;
@@ -6903,7 +6867,6 @@ sd_init(struct sched_domain_topology_level *tl,
 		.smt_gain		= 0,
 		.max_newidle_lb_cost	= 0,
 		.next_decay_max_lb_cost	= jiffies,
-		.child			= child,
 #ifdef CONFIG_SCHED_DEBUG
 		.name			= tl->name,
 #endif
@@ -6912,13 +6875,6 @@ sd_init(struct sched_domain_topology_level *tl,
 	/*
 	 * Convert topological properties into behaviour.
 	 */
-
-	if (sd->flags & SD_ASYM_CPUCAPACITY) {
-		struct sched_domain *t = sd;
-
-		for_each_lower_domain(t)
-			t->flags |= SD_BALANCE_WAKE;
-	}
 
 	if (sd->flags & SD_SHARE_CPUCAPACITY) {
 		sd->flags |= SD_PREFER_SIBLING;
@@ -7366,13 +7322,16 @@ struct sched_domain *build_sched_domain(struct sched_domain_topology_level *tl,
 		const struct cpumask *cpu_map, struct sched_domain_attr *attr,
 		struct sched_domain *child, int cpu)
 {
-	struct sched_domain *sd = sd_init(tl, child, cpu);
+	struct sched_domain *sd = sd_init(tl, cpu);
+	if (!sd)
+		return child;
 
 	cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
 	if (child) {
 		sd->level = child->level + 1;
 		sched_domain_level_max = max(sched_domain_level_max, sd->level);
 		child->parent = sd;
+		sd->child = child;
 
 		if (!cpumask_subset(sched_domain_span(child),
 				    sched_domain_span(sd))) {
@@ -7403,6 +7362,7 @@ static int build_sched_domains(const struct cpumask *cpu_map,
 	enum s_alloc alloc_state;
 	struct sched_domain *sd;
 	struct s_data d;
+	struct rq *rq = NULL;
 	int i, ret = -ENOMEM;
 
 	alloc_state = __visit_domain_allocation_hell(&d, cpu_map);
@@ -7420,6 +7380,8 @@ static int build_sched_domains(const struct cpumask *cpu_map,
 				*per_cpu_ptr(d.sd, i) = sd;
 			if (tl->flags & SDTL_OVERLAP || sched_feat(FORCE_SD_OVERLAP))
 				sd->flags |= SD_OVERLAP;
+			if (cpumask_equal(cpu_map, sched_domain_span(sd)))
+				break;
 		}
 	}
 
@@ -7454,19 +7416,8 @@ static int build_sched_domains(const struct cpumask *cpu_map,
 	/* Attach the domains */
 	rcu_read_lock();
 	for_each_cpu(i, cpu_map) {
-		int max_cpu = READ_ONCE(d.rd->max_cap_orig_cpu);
-		int min_cpu = READ_ONCE(d.rd->min_cap_orig_cpu);
-
-		if ((max_cpu < 0) || (cpu_rq(i)->cpu_capacity_orig >
-		    cpu_rq(max_cpu)->cpu_capacity_orig))
-			WRITE_ONCE(d.rd->max_cap_orig_cpu, i);
-
-		if ((min_cpu < 0) || (cpu_rq(i)->cpu_capacity_orig <
-		    cpu_rq(min_cpu)->cpu_capacity_orig))
-			WRITE_ONCE(d.rd->min_cap_orig_cpu, i);
-
+		rq = cpu_rq(i);
 		sd = *per_cpu_ptr(d.sd, i);
-
 		cpu_attach_domain(sd, d.rd, i);
 	}
 	rcu_read_unlock();
@@ -7884,7 +7835,6 @@ void __init sched_init(void)
 #ifdef CONFIG_FAIR_GROUP_SCHED
 		root_task_group.shares = ROOT_TASK_GROUP_LOAD;
 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
-		rq->tmp_alone_branch = &rq->leaf_cfs_rq_list;
 		/*
 		 * How much cpu bandwidth does root_task_group get?
 		 *
@@ -8675,18 +8625,9 @@ cpu_cgroup_css_alloc(struct cgroup_subsys_state *parent_css)
 	if (IS_ERR(tg))
 		return ERR_PTR(-ENOMEM);
 
+	sched_online_group(tg, parent);
+
 	return &tg->css;
-}
-
-/* Expose task group only after completing cgroup initialization */
-static int cpu_cgroup_css_online(struct cgroup_subsys_state *css)
-{
-	struct task_group *tg = css_tg(css);
-	struct task_group *parent = css_tg(css->parent);
-
-	if (parent)
-		sched_online_group(tg, parent);
-	return 0;
 }
 
 static void cpu_cgroup_css_released(struct cgroup_subsys_state *css)
@@ -9063,7 +9004,6 @@ static struct cftype cpu_files[] = {
 
 struct cgroup_subsys cpu_cgrp_subsys = {
 	.css_alloc	= cpu_cgroup_css_alloc,
-	.css_online	= cpu_cgroup_css_online,
 	.css_released	= cpu_cgroup_css_released,
 	.css_free	= cpu_cgroup_css_free,
 	.fork		= cpu_cgroup_fork,
