@@ -309,6 +309,7 @@ int tz_load_drv_by_str(const char *buf)
 {
 	struct TEEC_UUID uuid;
 	size_t len = strlen(buf);
+	int res;
 
 	if (len < UUID_STRING_LENGTH) {
 		IMSG_ERROR("bad UUID length, buf '%s' len %zd\n",
@@ -319,7 +320,12 @@ int tz_load_drv_by_str(const char *buf)
 	str_to_uuid(&uuid, buf);
 	print_uuid(&uuid);
 
-	return load_ut_drv(&uuid);
+	res = load_ut_drv(&uuid);
+	if (res)
+		IMSG_ERROR("load secure driver failed(uuid: %s)\n",
+				buf);
+
+	return res;
 }
 
 static ssize_t load_ut_drv_store(struct device *dev,
