@@ -588,7 +588,9 @@ static struct cpuidle_governor mtk_governor = {
 static int __init init_mtk_governor(void)
 {
 	/* TODO: check if debugfs_create_file() failed */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	mtk_cpuidle_framework_init();
+#endif
 	return cpuidle_register_governor(&mtk_governor);
 }
 
