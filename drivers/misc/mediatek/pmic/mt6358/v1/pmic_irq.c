@@ -302,6 +302,8 @@ void homekey_int_handler_r(void)
 }
 
 #if ENABLE_ALL_OC_IRQ
+static unsigned int vio18_oc_times;
+
 /* General OC Int Handler */
 static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
@@ -312,6 +314,28 @@ static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 	case INT_VCN33_OC:
 		/* keep OC interrupt and keep tracking */
 		pr_notice(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
+		break;
+	case INT_VIO18_OC:
+		pr_notice("LDO_DEGTD_SEL=0x%x\n",
+			pmic_get_register_value(PMIC_LDO_DEGTD_SEL));
+		pr_notice("RG_INT_EN_VIO18_OC=0x%x\n",
+			pmic_get_register_value(PMIC_RG_INT_EN_VIO18_OC));
+		pr_notice("RG_INT_MASK_VIO18_OC=0x%x\n",
+			pmic_get_register_value(PMIC_RG_INT_MASK_VIO18_OC));
+		pr_notice("RG_INT_STATUS_VIO18_OC=0x%x\n",
+			pmic_get_register_value(PMIC_RG_INT_STATUS_VIO18_OC));
+		pr_notice("RG_INT_RAW_STATUS_VIO18_OC=0x%x\n",
+			pmic_get_register_value(PMIC_RG_INT_RAW_STATUS_VIO18_OC));
+		pr_notice("DA_VIO18_OCFB_EN=0x%x\n",
+			pmic_get_register_value(PMIC_DA_VIO18_OCFB_EN));
+		pr_notice("RG_LDO_VIO18_OCFB_EN=0x%x\n",
+			pmic_get_register_value(PMIC_RG_LDO_VIO18_OCFB_EN));
+		vio18_oc_times++;
+		if (vio18_oc_times >= 2) {
+			pmic_enable_interrupt(INT_VIO18_OC, 0, "PMIC");
+			pr_notice("VIO18 OC and trigger KE\n");
+			BUG_ON(1);
+		}
 		break;
 	default:
 		/* issue AEE exception and disable OC interrupt */
@@ -700,6 +724,8 @@ void PMIC_EINT_SETTING(void)
 	int ret = 0;
 	unsigned int spNo, sp_conNo;
 	unsigned int enable_reg;
+
+	pmic_set_register_value(PMIC_LDO_DEGTD_SEL, 0);
 
 	/* unmask PMIC TOP interrupt */
 	pmic_set_register_value(PMIC_TOP_INT_MASK_CON0_CLR, 0x1FF);
