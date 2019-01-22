@@ -31,6 +31,7 @@ extern struct single_cma_registration memory_lowpower_registration;
 #endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
 
 #ifdef CONFIG_ZONE_MOVABLE_CMA
+#define ZMC_MAX_ZONE_DMA_PHYS (0xc0000000)
 #define ZMC_ALLOC_ALL 0x01 /* allocate all memory reserved from dts */
 
 /* Priority of ZONE_MOVABLE_CMA users */
@@ -48,9 +49,10 @@ struct single_cma_registration {
 	const char *name;
 	void (*init)(struct cma *);
 	enum zmc_prio prio;
-	bool reserve_fail;
 };
 
+extern bool is_zmc_inited(void);
+extern void zmc_get_range(phys_addr_t *base, phys_addr_t *size);
 extern phys_addr_t zmc_base(void);
 extern struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align, struct single_cma_registration *p);
 extern bool zmc_cma_release(struct cma *cma, struct page *pages, int count);

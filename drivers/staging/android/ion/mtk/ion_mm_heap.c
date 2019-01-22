@@ -788,7 +788,7 @@ struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *unused)
 			gfp_flags = high_order_gfp_flags;
 
 		if (unused->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)
-			gfp_flags |= (__GFP_CMA | __GFP_HIGHMEM);
+			gfp_flags |= __GFP_HIGHMEM | __GFP_MOVABLE;
 
 		pool = ion_page_pool_create(gfp_flags, orders[i]);
 		if (!pool)
@@ -1171,9 +1171,8 @@ void shrink_ion_by_scenario(int need_lock)
 							     need_lock);
 
 	do {
-		nr_to_reclaim = ion_mm_heap_shrink(movable_ion_heap, __GFP_CMA | __GFP_HIGHMEM, 0);
-		nr_reclaimed = ion_mm_heap_shrink(movable_ion_heap,
-						  __GFP_CMA | __GFP_HIGHMEM, nr_to_reclaim);
+		nr_to_reclaim = ion_mm_heap_shrink(movable_ion_heap, __GFP_HIGHMEM | __GFP_MOVABLE, 0);
+		nr_reclaimed = ion_mm_heap_shrink(movable_ion_heap, __GFP_HIGHMEM | __GFP_MOVABLE, nr_to_reclaim);
 
 		if (nr_to_reclaim == nr_reclaimed)
 			break;

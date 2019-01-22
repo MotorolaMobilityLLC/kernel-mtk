@@ -68,15 +68,16 @@ phys_addr_t memory_lowpower_cma_base(void)
 	return cma_get_base(cma);
 }
 
+struct single_cma_registration memory_lowpower_registration;
 /*
  * memory_lowpower_cma_size - query the cma's size
  */
 phys_addr_t memory_lowpower_cma_size(void)
 {
 #ifndef MEMORY_LOWPOWER_FULLNESS
-	return (phys_addr_t)cma_get_size(cma);
+	return memory_lowpower_registration.size;
 #else
-	return (phys_addr_t)cma_get_size(cma) + grab_lastsize;
+	return memory_lowpower_registration.size + grab_lastsize;
 #endif
 }
 
@@ -242,7 +243,7 @@ static void zmc_memory_lowpower_init(struct cma *zmc_cma)
 	/* try to grab the last pageblock */
 	pr_info("%s: memory-lowpower-fullness\n", __func__);
 	if (cma != NULL)
-		memory_lowpower_fullness(cma_get_base(cma), cma_get_size(cma));
+		memory_lowpower_fullness(memory_lowpower_cma_base(), memory_lowpower_cma_size());
 #endif
 }
 

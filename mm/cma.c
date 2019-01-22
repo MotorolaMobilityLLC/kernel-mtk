@@ -171,12 +171,6 @@ err:
 }
 
 #ifdef CONFIG_ZONE_MOVABLE_CMA
-void cma_resize_front(struct cma *cma, unsigned long nr_pfn)
-{
-	cma->base_pfn += nr_pfn;
-	cma->count    -= nr_pfn;
-}
-
 int cma_alloc_range_ok(struct cma *cma, int count, int align)
 {
 	unsigned long mask, offset;

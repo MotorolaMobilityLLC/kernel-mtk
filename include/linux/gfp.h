@@ -373,6 +373,18 @@ static inline bool gfpflags_allow_blocking(const gfp_t gfp_flags)
 	| 1 << (___GFP_MOVABLE | ___GFP_DMA32 | ___GFP_DMA | ___GFP_HIGHMEM)  \
 )
 
+#ifdef CONFIG_MTK_MEMORY_LOWPOWER
+#define OPT_ZONE_MOVABLE_CMA	ZONE_NORMAL
+#else
+#define OPT_ZONE_MOVABLE_CMA	ZONE_MOVABLE
+#endif
+
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+#define IS_ZONE_MOVABLE_CMA_ZONE_IDX(z)		(z >= OPT_ZONE_MOVABLE_CMA)
+#else
+#define IS_ZONE_MOVABLE_CMA_ZONE_IDX(z)		(false)
+#endif
+
 static inline enum zone_type gfp_zone(gfp_t flags)
 {
 	enum zone_type z;
@@ -381,12 +393,13 @@ static inline enum zone_type gfp_zone(gfp_t flags)
 	z = (GFP_ZONE_TABLE >> (bit * ZONES_SHIFT)) &
 		((1 << ZONES_SHIFT) - 1);
 	VM_BUG_ON((GFP_ZONE_BAD >> bit) & 1);
-	/* used for limit - only the flags with __GFP_CMA can go into ZONE_MOVABLE */
 
-	/* do not allocate at ZONE_MOVABLE without __GFP_CMA */
+	if (!(flags & __GFP_MOVABLE) && IS_ZONE_MOVABLE_CMA_ZONE_IDX(z))
+		z = OPT_ZONE_DMA;
 	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA))
 		if (z == ZONE_MOVABLE && !(flags & __GFP_CMA))
 			z -= 1;
+
 	return z;
 }
 
