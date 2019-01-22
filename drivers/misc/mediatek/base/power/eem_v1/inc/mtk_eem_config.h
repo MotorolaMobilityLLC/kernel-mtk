@@ -27,7 +27,6 @@
 #define EEM_ENABLE         (0)
 #define UPDATE_TO_UPOWER   (0)
 #define EEM_LOCKTIME_LIMIT (3000)
-#define E1
 /* #define SET_VOLT */
 /* #define EEM_LOG_TIMER */
 /* #define EEM_LOCK_TOO_LONG */
@@ -45,7 +44,7 @@
 #define EARLY_PORTING_GPU
 #define EARLY_PORTING_PPM
 /* #define EARLY_PORTING_PMIC */
-#define EARLY_PORTING_VCORE
+/* #define EARLY_PORTING_VCORE */
 /* because thermal still have bug */
 #define EARLY_PORTING_THERMAL
 
@@ -110,8 +109,10 @@
 /* for voltage bin vcore dvfs */
 #define VCORE_PMIC_BASE (40000)
 #define VCORE_PMIC_STEP (625)
+#if 0
 #define VOLT_2_VCORE_PMIC(volt)   ((((volt) - VCORE_PMIC_BASE) + VCORE_PMIC_STEP - 1) / VCORE_PMIC_STEP)
 #define VCORE_PMIC_2_VOLT(pmic) (((pmic) * VCORE_PMIC_STEP) + VCORE_PMIC_BASE)
+#endif
 
 /* CPU */
 #define CPU_PMIC_BASE       (0)
