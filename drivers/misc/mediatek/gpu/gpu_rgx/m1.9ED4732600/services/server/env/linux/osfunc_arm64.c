@@ -73,7 +73,10 @@ static void per_cpu_cache_flush(void *arg)
 	*/
 	if (bLog)
 	{
-		PVR_LOG(("No d-cache global flush implementation, using range flush for large buffers"));
+		/* PVR_LOG(("No d-cache global flush implementation, using range flush for large buffers")); */
+#if defined(CONFIG_MACH_MT6799)
+		__inner_flush_dcache_all();
+#endif
 		bLog = IMG_FALSE;
 	}
 #else
@@ -136,7 +139,11 @@ PVRSRV_ERROR OSCPUOperation(PVRSRV_CACHE_OP uiCacheOp)
 		case PVRSRV_CACHE_OP_INVALIDATE:
 			on_each_cpu(per_cpu_cache_flush, NULL, 1);
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0))
+#if defined(CONFIG_MACH_MT6799)
+			/* do nothing */;
+#else
 			eError = PVRSRV_ERROR_NOT_IMPLEMENTED;
+#endif
 #endif
 			break;
 
