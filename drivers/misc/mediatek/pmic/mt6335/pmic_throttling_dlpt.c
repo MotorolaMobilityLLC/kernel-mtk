@@ -2105,10 +2105,6 @@ void pmic_throttling_dlpt_debug_init(struct platform_device *dev, struct dentry 
 
 int pmic_throttling_dlpt_init(void)
 {
-#ifdef DLPT_FEATURE_SUPPORT
-	const int *pimix = NULL;
-	int len = 0;
-#endif
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	struct device_node *np;
 	u32 val;
@@ -2144,18 +2140,7 @@ int pmic_throttling_dlpt_init(void)
 	}
 	#endif
 #endif
-#ifdef DLPT_FEATURE_SUPPORT
-	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
-		pimix = of_get_flat_dt_prop(pmic_node, "atag,imix_r", &len);
-	if (pimix == NULL) {
-		pr_err(" pimix == NULL len = %d\n", len);
-	} else {
-		pr_err(" pimix = %d\n", *pimix);
-		ptim_rac_val_avg = *pimix;
-	}
 
-	PMICLOG("******** MT pmic driver probe!! ********%d\n", ptim_rac_val_avg);
-#endif /* #ifdef DLPT_FEATURE_SUPPORT */
 #if !defined CONFIG_HAS_WAKELOCKS
 	wakeup_source_init(&bat_percent_notify_lock, "bat_percent_notify_lock wakelock");
 	wakeup_source_init(&dlpt_notify_lock, "dlpt_notify_lock wakelock");
@@ -2205,6 +2190,28 @@ int pmic_throttling_dlpt_init(void)
 #endif
 	return 0;
 }
+
+static int __init pmic_throttling_dlpt_rac_init(void)
+{
+#ifdef DLPT_FEATURE_SUPPORT
+	const int *pimix = NULL;
+	int len = 0;
+
+	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
+		pimix = of_get_flat_dt_prop(pmic_node, "atag,imix_r", &len);
+	if (pimix == NULL) {
+		pr_notice(" pimix == NULL len = %d\n", len);
+	} else {
+		pr_info(" pimix = %d\n", *pimix);
+		ptim_rac_val_avg = *pimix;
+	}
+
+	PMICLOG("******** MT pmic driver probe!! ********%d\n", ptim_rac_val_avg);
+#endif /* #ifdef DLPT_FEATURE_SUPPORT */
+	return 0;
+}
+
+fs_initcall(pmic_throttling_dlpt_rac_init);
 
 MODULE_AUTHOR("Argus Lin");
 MODULE_DESCRIPTION("MT PMIC Device Driver");
