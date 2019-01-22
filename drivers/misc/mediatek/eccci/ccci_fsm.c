@@ -202,7 +202,7 @@ static void ccci_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command
 	}
 	spin_unlock_irqrestore(&md->fsm.event_lock, flags);
 	/* 3. action and poll event queue */
-	ret = md->ops->start(md);
+	ret = ccci_md_start(md);
 	if (ret)
 		goto fail;
 	count = 0;
@@ -291,7 +291,7 @@ static void ccci_routine_stop(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command 
 		ccci_routine_exception(ctl, ee_cmd, EXCEPTION_EE);
 	ccci_md_check_ee_done(md, EE_DONE_TIMEOUT);
 	/* 4. hardware stop */
-	ccci_md_stop(md, 100);
+	ccci_md_stop(md, cmd->flag & CCCI_CMD_FLAG_FLIGHT_MODE ? MD_FLIGHT_MODE_ENTER : MD_FLIGHT_MODE_NONE);
 	/* 5. clear event queue */
 	spin_lock_irqsave(&md->fsm.event_lock, flags);
 	list_for_each_entry_safe(event, next, &ctl->event_queue, entry) {
