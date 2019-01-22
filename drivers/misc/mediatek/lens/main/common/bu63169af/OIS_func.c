@@ -23,16 +23,16 @@
 /* ***************************************************** */
 /* **** Program Download Function */
 /* ***************************************************** */
-ADJ_STS func_PROGRAM_DOWNLOAD(void)
+short int func_PROGRAM_DOWNLOAD(void)
 {
-	OIS_UWORD sts;		/* RHM_HT 2013/04/15    Change "typedef". */
+	unsigned short int sts;		/* RHM_HT 2013/04/15    Change "typedef". */
 
 	download(0, 0);		/* Program Download */
 	sts = I2C_OIS_mem__read(_M_OIS_STS);	/* Check Status */
 
 	if ((sts & 0x0004) == 0x0004) {
 		/* ==> RHM_HT 2013/07/10        Added */
-		OIS_UWORD u16_dat;
+		unsigned short int u16_dat;
 
 		u16_dat = I2C_OIS_mem__read(_M_FIRMVER);
 
@@ -50,16 +50,16 @@ ADJ_STS func_PROGRAM_DOWNLOAD(void)
 /* ***************************************************** */
 /* **** COEF Download function */
 /* ***************************************************** */
-OIS_UWORD INTG__INPUT;		/* Integral Input value szx_2014/12/24_2 */
-OIS_UWORD KGNTG_VALUE;		/* KgxTG / KgyTG                szx_2014/12/24_2 */
-OIS_UWORD GYRSNS;		/* RHM_HT 2015/01/16    Added */
+unsigned short int INTG__INPUT;		/* Integral Input value szx_2014/12/24_2 */
+unsigned short int KGNTG_VALUE;		/* KgxTG / KgyTG                szx_2014/12/24_2 */
+unsigned short int GYRSNS;		/* RHM_HT 2015/01/16    Added */
 
-void func_COEF_DOWNLOAD(OIS_UWORD u16_coef_type)
+void func_COEF_DOWNLOAD(unsigned short int u16_coef_type)
 {
 	download(1, u16_coef_type);	/* COEF Download */
 
 	{
-		OIS_UWORD u16_dat;
+		unsigned short int u16_dat;
 
 		/* Coef type */
 		u16_dat = I2C_OIS_mem__read(_M_CEFTYP);
@@ -80,17 +80,17 @@ void func_COEF_DOWNLOAD(OIS_UWORD u16_coef_type)
 /* ***************************************************** */
 /* **** Download the data */
 /* ***************************************************** */
-void download(OIS_UWORD u16_type, OIS_UWORD u16_coef_type)
+void download(unsigned short int u16_type, unsigned short int u16_coef_type)
 {
 	/* Data Transfer Size per one I2C access */
 #define		DWNLD_TRNS_SIZE		(7)
 
-	OIS_UBYTE temp[DWNLD_TRNS_SIZE + 1];
-	OIS_UWORD block_cnt;
-	OIS_UWORD total_cnt;
-	OIS_UWORD lp;
-	OIS_UWORD n;
-	OIS_UWORD u16_i;
+	unsigned char temp[DWNLD_TRNS_SIZE + 1];
+	unsigned short int block_cnt;
+	unsigned short int total_cnt;
+	unsigned short int lp;
+	unsigned short int n;
+	unsigned short int u16_i;
 
 	if (u16_type == 0)
 		n = DOWNLOAD_BIN_LEN;
@@ -186,35 +186,35 @@ void SET_FADJ_PARAM(const struct _FACT_ADJ *param)
 /* ***************************************************** */
 /* **** Scence parameter */
 /* ***************************************************** */
-#define	ANGLE_LIMIT	(OIS_UWORD)(GYRSNS * 11 / 10)	/* GYRSNS * limit[deg] */
+#define	ANGLE_LIMIT	(unsigned short int)(GYRSNS * 11 / 10)	/* GYRSNS * limit[deg] */
 #define	G_SENSE		131	/* [LSB/dps] */
 
-ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-			     OIS_UBYTE filter, OIS_UBYTE range, const struct _FACT_ADJ *param)
+short int func_SET_SCENE_PARAM(unsigned char u16_scene, unsigned char u16_mode,
+			     unsigned char filter, unsigned char range, const struct _FACT_ADJ *param)
 {
-	OIS_UWORD u16_i;
-	OIS_UWORD u16_dat;
-	OIS_UWORD *u16_dat_SCENE_;
-	OIS_UBYTE size_SCENE_tbl;
+	unsigned short int u16_i;
+	unsigned short int u16_dat;
+	unsigned short int *u16_dat_SCENE_;
+	unsigned char size_SCENE_tbl;
 
 	/* ==> RHM_HT 2013/11/25        Modified */
-	OIS_UBYTE u16_adr_target[3] = {
+	unsigned char u16_adr_target[3] = {
 		_M_Kgxdr, _M_X_LMT, _M_X_TGT,
 	};
 
-	OIS_UWORD u16_dat_SCENE_NIGHT_1[3] = { 0x7FFE, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, };
-	OIS_UWORD u16_dat_SCENE_NIGHT_2[3] = { 0x7FFC, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, };
-	OIS_UWORD u16_dat_SCENE_NIGHT_3[3] = { 0x7FFA, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, };
+	unsigned short int u16_dat_SCENE_NIGHT_1[3] = { 0x7FFE, 0, G_SENSE * 16, };
+	unsigned short int u16_dat_SCENE_NIGHT_2[3] = { 0x7FFC, 0, G_SENSE * 16, };
+	unsigned short int u16_dat_SCENE_NIGHT_3[3] = { 0x7FFA, 0, G_SENSE * 16, };
 
-	OIS_UWORD u16_dat_SCENE_D_A_Y_1[3] = { 0x7FFE, 0 /*ANGLE_LIMIT */ , G_SENSE * 40, };
-	OIS_UWORD u16_dat_SCENE_D_A_Y_2[3] = { 0x7FFA, 0 /*ANGLE_LIMIT */ , G_SENSE * 40, };
-	OIS_UWORD u16_dat_SCENE_D_A_Y_3[3] = { 0x7FF0, 0 /*ANGLE_LIMIT */ , G_SENSE * 40, };
+	unsigned short int u16_dat_SCENE_D_A_Y_1[3] = { 0x7FFE, 0, G_SENSE * 40, };
+	unsigned short int u16_dat_SCENE_D_A_Y_2[3] = { 0x7FFA, 0, G_SENSE * 40, };
+	unsigned short int u16_dat_SCENE_D_A_Y_3[3] = { 0x7FF0, 0, G_SENSE * 40, };
 
-	OIS_UWORD u16_dat_SCENE_SPORT_1[3] = { 0x7FFE, 0 /*ANGLE_LIMIT */ , G_SENSE * 60, };
-	OIS_UWORD u16_dat_SCENE_SPORT_2[3] = { 0x7FF0, 0 /*ANGLE_LIMIT */ , G_SENSE * 60, };
-	OIS_UWORD u16_dat_SCENE_SPORT_3[3] = { 0x7FE0, 0 /*ANGLE_LIMIT */ , G_SENSE * 60, };
+	unsigned short int u16_dat_SCENE_SPORT_1[3] = { 0x7FFE, 0, G_SENSE * 60, };
+	unsigned short int u16_dat_SCENE_SPORT_2[3] = { 0x7FF0, 0, G_SENSE * 60, };
+	unsigned short int u16_dat_SCENE_SPORT_3[3] = { 0x7FE0, 0, G_SENSE * 60, };
 
-	OIS_UWORD u16_dat_SCENE_TEST___[3] = { 0x7FF0, 0x7FFF, 0x7FFF, };	/* Limmiter OFF */
+	unsigned short int u16_dat_SCENE_TEST___[3] = { 0x7FF0, 0x7FFF, 0x7FFF, };	/* Limmiter OFF */
 	/* <== RHM_HT 2013/11/25        Modified */
 
 	u16_dat_SCENE_NIGHT_1[1] = ANGLE_LIMIT;
@@ -228,7 +228,7 @@ ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 	u16_dat_SCENE_SPORT_3[1] = ANGLE_LIMIT;
 
 
-	size_SCENE_tbl = sizeof(u16_dat_SCENE_NIGHT_1) / sizeof(OIS_UWORD);
+	size_SCENE_tbl = sizeof(u16_dat_SCENE_NIGHT_1) / sizeof(unsigned short int);
 
 	/* Disable OIS ( position Servo is not disable ) */
 	u16_dat = I2C_OIS_mem__read(_M_EQCTL);
@@ -349,35 +349,35 @@ ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
 }
 
 
-ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-					     OIS_UBYTE filter, OIS_UBYTE range,
+short int func_SET_SCENE_PARAM_for_NewGYRO_Fil(unsigned char u16_scene, unsigned char u16_mode,
+					     unsigned char filter, unsigned char range,
 					     const struct _FACT_ADJ *param)
 {
-	OIS_UWORD u16_i;
-	OIS_UWORD u16_dat;
-	OIS_UWORD *u16_dat_SCENE_;
-	OIS_UBYTE size_SCENE_tbl;
+	unsigned short int u16_i;
+	unsigned short int u16_dat;
+	unsigned short int *u16_dat_SCENE_;
+	unsigned char size_SCENE_tbl;
 
 	/* szx_2014/09/19 ---> Modified */
 	/* ==> RHM_HT 2013/11/25        Modified */
-	OIS_UBYTE u16_adr_target[4] = {
+	unsigned char u16_adr_target[4] = {
 		_M_Kgxdr, _M_X_LMT, _M_X_TGT, 0x1B,
 	};
 
-	OIS_UWORD u16_dat_SCENE_NIGHT_1[4] = { 0x7FE0, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, 0x0300, };
-	OIS_UWORD u16_dat_SCENE_NIGHT_2[4] = { 0x7FFF, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, 0x0080, };
-	OIS_UWORD u16_dat_SCENE_NIGHT_3[4] = { 0x7FF0, 0 /*ANGLE_LIMIT */ , G_SENSE * 16, 0x0300, };
+	unsigned short int u16_dat_SCENE_NIGHT_1[4] = { 0x7FE0, 0, G_SENSE * 16, 0x0300, };
+	unsigned short int u16_dat_SCENE_NIGHT_2[4] = { 0x7FFF, 0, G_SENSE * 16, 0x0080, };
+	unsigned short int u16_dat_SCENE_NIGHT_3[4] = { 0x7FF0, 0, G_SENSE * 16, 0x0300, };
 
-	OIS_UWORD u16_dat_SCENE_D_A_Y_1[4] = { 0x7FE0, 0 /*ANGLE_LIMIT */ , G_SENSE * 40, 0x0300, };
-	OIS_UWORD u16_dat_SCENE_D_A_Y_2[4] = { 0x7F80, 0 /*ANGLE_LIMIT */ , G_SENSE * 40, 0x0140, };
-	OIS_UWORD u16_dat_SCENE_D_A_Y_3[4] = { 0x7F00, 0 /*ANGLE_LIMIT */ , G_SENSE * 40, 0x0300, };
+	unsigned short int u16_dat_SCENE_D_A_Y_1[4] = { 0x7FE0, 0, G_SENSE * 40, 0x0300, };
+	unsigned short int u16_dat_SCENE_D_A_Y_2[4] = { 0x7F80, 0, G_SENSE * 40, 0x0140, };
+	unsigned short int u16_dat_SCENE_D_A_Y_3[4] = { 0x7F00, 0, G_SENSE * 40, 0x0300, };
 
-	OIS_UWORD u16_dat_SCENE_SPORT_1[4] = { 0x7FE0, 0 /*ANGLE_LIMIT */ , G_SENSE * 60, 0x0300, };
+	unsigned short int u16_dat_SCENE_SPORT_1[4] = { 0x7FE0, 0, G_SENSE * 60, 0x0300, };
 	/* szx_2014/12/24 ===> */
-	OIS_UWORD u16_dat_SCENE_SPORT_2[4] = { 0x7F80, 0 /*ANGLE_LIMIT */ , G_SENSE * 60, 0x0000, };
-	OIS_UWORD u16_dat_SCENE_SPORT_3[4] = { 0x7FF0, 0 /*ANGLE_LIMIT */ , G_SENSE * 60, 0x0300, };
+	unsigned short int u16_dat_SCENE_SPORT_2[4] = { 0x7F80, 0, G_SENSE * 60, 0x0000, };
+	unsigned short int u16_dat_SCENE_SPORT_3[4] = { 0x7FF0, 0, G_SENSE * 60, 0x0300, };
 	/* szx_2014/12/24 <=== */
-	OIS_UWORD u16_dat_SCENE_TEST___[4] = { 0x7FFF, 0x7FFF, 0x7FFF, 0x0080, };	/* Limmiter OFF */
+	unsigned short int u16_dat_SCENE_TEST___[4] = { 0x7FFF, 0x7FFF, 0x7FFF, 0x0080, };	/* Limmiter OFF */
 	/* <== RHM_HT 2013/11/25        Modified */
 	/* szx_2014/09/19 <--- */
 	u16_dat_SCENE_NIGHT_1[1] = ANGLE_LIMIT;
@@ -391,7 +391,7 @@ ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_
 	u16_dat_SCENE_SPORT_3[1] = ANGLE_LIMIT;
 
 
-	size_SCENE_tbl = sizeof(u16_dat_SCENE_NIGHT_1) / sizeof(OIS_UWORD);
+	size_SCENE_tbl = sizeof(u16_dat_SCENE_NIGHT_1) / sizeof(unsigned short int);
 
 	/* Disable OIS ( position Servo is not disable ) */
 	u16_dat = I2C_OIS_mem__read(_M_EQCTL);
@@ -511,7 +511,7 @@ ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_
 /* ***************************************************** */
 void HalfShutterOn(void)
 {
-	OIS_UWORD u16_dat = 0;
+	unsigned short int u16_dat = 0;
 
 	u16_dat = I2C_OIS_mem__read(_M_EQCTL);
 	u16_dat = (u16_dat | 0x1101);
@@ -524,12 +524,12 @@ void HalfShutterOn(void)
 /* ***************************************************** */
 /* **** Write to the Peripheral register < 82h > */
 /* **** ------------------------------------------------ */
-/* **** OIS_UBYTE      adr     Peripheral Address */
-/* **** OIS_UWORD      dat     Write data */
+/* **** unsigned char      adr     Peripheral Address */
+/* **** unsigned short int      dat     Write data */
 /* ***************************************************** */
-void I2C_OIS_per_write(OIS_UBYTE u08_adr, OIS_UWORD u16_dat)
+void I2C_OIS_per_write(unsigned char u08_adr, unsigned short int u16_dat)
 {
-	OIS_UBYTE out[4];
+	unsigned char out[4];
 
 	out[0] = _OP_Periphe_RW;
 	out[1] = u08_adr;
@@ -542,12 +542,12 @@ void I2C_OIS_per_write(OIS_UBYTE u08_adr, OIS_UWORD u16_dat)
 /* ***************************************************** */
 /* **** Write to the Memory register < 84h > */
 /* **** ------------------------------------------------ */
-/* **** OIS_UBYTE      adr     Memory Address */
-/* **** OIS_UWORD      dat     Write data */
+/* **** unsigned char      adr     Memory Address */
+/* **** unsigned short int      dat     Write data */
 /* ***************************************************** */
-void I2C_OIS_mem_write(OIS_UBYTE u08_adr, OIS_UWORD u16_dat)
+void I2C_OIS_mem_write(unsigned char u08_adr, unsigned short int u16_dat)
 {
-	OIS_UBYTE out[4];
+	unsigned char out[4];
 
 	out[0] = _OP_Memory__RW;
 	out[1] = u08_adr;
@@ -560,12 +560,12 @@ void I2C_OIS_mem_write(OIS_UBYTE u08_adr, OIS_UWORD u16_dat)
 /* ***************************************************** */
 /* **** Read from the Peripheral register < 82h > */
 /* **** ------------------------------------------------ */
-/* **** OIS_UBYTE      adr     Peripheral Address */
-/* **** OIS_UWORD      dat     Read data */
+/* **** unsigned char      adr     Peripheral Address */
+/* **** unsigned short int      dat     Read data */
 /* ***************************************************** */
-OIS_UWORD I2C_OIS_per__read(OIS_UBYTE u08_adr)
+unsigned short int I2C_OIS_per__read(unsigned char u08_adr)
 {
-	OIS_UBYTE u08_dat[2];
+	unsigned char u08_dat[2];
 
 	u08_dat[0] = _OP_Periphe_RW;	/* Op-code */
 	u08_dat[1] = u08_adr;	/* target address */
@@ -576,12 +576,12 @@ OIS_UWORD I2C_OIS_per__read(OIS_UBYTE u08_adr)
 /* ***************************************************** */
 /* **** Read from the Memory register < 84h > */
 /* **** ------------------------------------------------ */
-/* **** OIS_UBYTE      adr     Memory Address */
-/* **** OIS_UWORD      dat     Read data */
+/* **** unsigned char      adr     Memory Address */
+/* **** unsigned short int      dat     Read data */
 /* ***************************************************** */
-OIS_UWORD I2C_OIS_mem__read(OIS_UBYTE u08_adr)
+unsigned short int I2C_OIS_mem__read(unsigned char u08_adr)
 {
-	OIS_UBYTE u08_dat[2];
+	unsigned char u08_dat[2];
 
 	u08_dat[0] = _OP_Memory__RW;	/* Op-code */
 	u08_dat[1] = u08_adr;	/* target address */
@@ -595,11 +595,12 @@ OIS_UWORD I2C_OIS_mem__read(OIS_UBYTE u08_adr)
 /* _cmd_8C_EI                      0       // 0x0001 */
 /* _cmd_8C_DI                      1       // 0x0002 */
 /* ***************************************************** */
-void I2C_OIS_spcl_cmnd(OIS_UBYTE u08_on, OIS_UBYTE u08_dat)
+void I2C_OIS_spcl_cmnd(unsigned char u08_on, unsigned char u08_dat)
 {
 	if ((u08_dat == _cmd_8C_EI) || (u08_dat == _cmd_8C_DI)) {
 
-		OIS_UBYTE out[2];
+		unsigned char out[2];
+
 		out[0] = _OP_SpecialCMD;
 		out[1] = u08_dat;
 
@@ -611,9 +612,9 @@ void I2C_OIS_spcl_cmnd(OIS_UBYTE u08_on, OIS_UBYTE u08_dat)
 /* ***************************************************** */
 /* **** F0-F3h Command NonAssertClockStretch Function */
 /* ***************************************************** */
-void I2C_OIS_F0123_wr_(OIS_UBYTE u08_dat0, OIS_UBYTE u08_dat1, OIS_UWORD u16_dat2)
+void I2C_OIS_F0123_wr_(unsigned char u08_dat0, unsigned char u08_dat1, unsigned short int u16_dat2)
 {
-	OIS_UBYTE out[5];
+	unsigned char out[5];
 
 	out[0] = 0xF0;
 	out[1] = u08_dat0;
@@ -624,9 +625,9 @@ void I2C_OIS_F0123_wr_(OIS_UBYTE u08_dat0, OIS_UBYTE u08_dat1, OIS_UWORD u16_dat
 	WR_I2C(_SLV_OIS_, 5, out);
 }
 
-OIS_UWORD I2C_OIS_F0123__rd(void)
+unsigned short int I2C_OIS_F0123__rd(void)
 {
-	OIS_UBYTE u08_dat;
+	unsigned char u08_dat;
 
 	u08_dat = 0xF0;		/* Op-code */
 
