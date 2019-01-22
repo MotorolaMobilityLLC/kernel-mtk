@@ -65,22 +65,6 @@
 static bool overflow_info_flag;
 static u64 overflow_gap;
 
-/* ****************************************
-*
-*Console lock duration timer
-*
-******************************************/
-#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-u64 con_dura_time;
-/* for console access logbuf_lock */
-u64 accum_t0;
-/* for console write  */
-u64 accum_t1;
-u64 accum_t2;
-size_t len_1;
-size_t len_2;
-#endif
-
 int printk_too_much_enable;
 
 #if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
@@ -1692,23 +1676,6 @@ static void call_console_drivers(int level,
 {
 	struct console *con;
 
-	/* For console write rate stat */
-#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-	int cnt = 0;
-	char con_name[64];
-	int index = 0;
-
-	u64 tmp1 = 0, tmp2 = 0, differ;
-
-	unsigned long rem_nsec;
-	u64 quot;
-	char aee_str[80];
-	char cur_time[32];
-	int idx = 0;
-
-	char dump_uart[64];
-#endif
-
 	trace_console(text, len);
 
 	if (level >= console_loglevel && !ignore_loglevel)
@@ -1730,67 +1697,9 @@ static void call_console_drivers(int level,
 			continue;
 		if (con->flags & CON_EXTENDED)
 			con->write(con, ext_text, ext_len);
-		else {
-		/* Accumulates console writing length and time */
-#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-			tmp1 = local_clock();
+		else
 			con->write(con, text, len);
-			tmp2 = local_clock();
-
-			differ = tmp2 - tmp1;
-			if (!strcmp(con->name, "ttyMT")) {
-				len_1 += len;
-				accum_t1 += differ;
-			} else if (!strcmp(con->name, "pstore")) {
-				len_2 += len;
-				accum_t2 += differ;
-			}
-#else
-				con->write(con, text, len);
-#endif
-		}
 	}
-
-#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-	/* console duration over 15 seconds, Calc console write rate recently */
-	if ((local_clock() - con_dura_time) > 15000000000) {
-#ifdef CONFIG_MTK_SERIAL
-		/* dump uart regs */
-		memset(dump_uart, 0x00, sizeof(dump_uart));
-		/* mtk_uart_dump_reg(dump_uart); */
-#endif
-		/* stat console list */
-		memset(con_name, 0x00, sizeof(con_name));
-		for_each_console(con) {
-			index += scnprintf(con_name + index, sizeof(con_name) - index, "%s, ", con->name);
-			cnt++;
-		}
-
-		memset(aee_str, 0x00, sizeof(aee_str));
-		quot = accum_t1;
-		rem_nsec = do_div(quot, 1000000000);
-		idx += scnprintf(aee_str + idx, sizeof(aee_str) - idx, "uart: %llu.%06lu, %lu ",
-							quot, rem_nsec/1000, (unsigned long)len_1);
-		quot = accum_t2;
-		rem_nsec = do_div(quot, 1000000000);
-		idx += scnprintf(aee_str + idx, sizeof(aee_str) - idx, "pstore: %llu.%06lu, %lu ",
-							quot, rem_nsec/1000, (unsigned long)len_2);
-		quot = accum_t0;
-		rem_nsec = do_div(quot, 1000000000);
-		idx += scnprintf(aee_str + idx, sizeof(aee_str) - idx, "spin: %llu.%06lu ",
-							quot, rem_nsec/1000);
-
-		memset(cur_time, 0x00, sizeof(cur_time));
-		rem_nsec = do_div(tmp2, 1000000000);
-		scnprintf(cur_time, sizeof(cur_time), "[%llu.%06lu]", tmp2, rem_nsec/1000);
-
-		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_FTRACE,
-			"Console Lock dur over 15 seconds", "%s %s%s, cpu: %d, ConList(%d): %s\n",
-			cur_time, dump_uart, aee_str, smp_processor_id(), cnt, con_name);
-
-		con_dura_time = local_clock();
-	}
-#endif
 }
 
 /*
@@ -2666,14 +2575,8 @@ void console_unlock(void)
 	unsigned long rem_nsec;
 #endif
 #ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-	u64 tmp1 = 0, tmp2 = 0;
-
-	con_dura_time = local_clock();
-	accum_t0 = 0;
-	accum_t1 = 0;
-	accum_t2 = 0;
-	len_1 = 0;
-	len_2 = 0;
+	bool block_overtime = false;
+	u64 con_dura_time = local_clock();
 #endif
 	if (console_suspended) {
 		up_console_sem();
@@ -2701,9 +2604,6 @@ again:
 		size_t ext_len = 0;
 		size_t len;
 		int level;
-#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-		tmp1 = local_clock();
-#endif
 		raw_spin_lock_irqsave(&logbuf_lock, flags);
 		if (seen_seq != log_next_seq) {
 			wake_klogd = true;
@@ -2724,6 +2624,14 @@ again:
 skip:
 		if (console_seq == log_next_seq)
 			break;
+
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+		/* console_unlock block time over 1 second */
+		if ((local_clock() - con_dura_time) > 1000000000ULL) {
+			block_overtime = true;
+			break;
+		}
+#endif
 
 		msg = log_from_idx(console_idx);
 		if (msg->flags & LOG_NOCONS) {
@@ -2759,10 +2667,6 @@ skip:
 		console_seq++;
 		console_prev = msg->flags;
 		raw_spin_unlock(&logbuf_lock);
-#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
-		tmp2 = local_clock();
-		accum_t0 += tmp2 - tmp1;
-#endif
 		stop_critical_timings();	/* don't trace print latency */
 #if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
 		if (flag_toomuch == true) {
@@ -2804,7 +2708,11 @@ skip:
 	 * flush, no worries.
 	 */
 	raw_spin_lock(&logbuf_lock);
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+	retry = !block_overtime && (console_seq != log_next_seq);
+#else
 	retry = console_seq != log_next_seq;
+#endif
 	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
 
 	if (retry && console_trylock())
