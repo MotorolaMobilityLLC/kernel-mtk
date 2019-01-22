@@ -1510,7 +1510,7 @@ static int __m4u_sec_init(void)
 	m4u_get_pgd(NULL, 0, &pgd_va, (void *)&pt_pa_nonsec, &size);
 #ifdef CONFIG_MACH_MT6771
 	for (i = 0; i < SMI_LARB_NR; i++)
-		arb_clock_on(i, 1);
+		larb_clock_on(i, 1);
 #endif
 	ctx->m4u_msg->cmd = CMD_M4UTL_INIT;
 	ctx->m4u_msg->init_param.nonsec_pt_pa = pt_pa_nonsec;
