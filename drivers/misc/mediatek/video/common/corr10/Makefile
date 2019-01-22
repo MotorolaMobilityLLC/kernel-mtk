@@ -32,6 +32,10 @@ ccflags-y += \
                                 -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 endif
 
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6763)))
+ccflags-y += -DGAMMA_LIGHT
+endif
+
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6799)))
 ccflags-y += -DCCORR_TRANSITION
 endif
