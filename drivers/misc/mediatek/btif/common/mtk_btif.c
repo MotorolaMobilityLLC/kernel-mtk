@@ -2382,7 +2382,7 @@ static int _btif_tx_ctx_init(p_mtk_btif p_btif)
 		}
 
 		i_ret = kfifo_alloc(p_btif->p_tx_fifo,
-				    BTIF_TX_FIFO_SIZE, GFP_ATOMIC);
+				    BTIF_TX_BUFFER_FIFO_SIZE, GFP_ATOMIC);
 		if (i_ret != 0) {
 			BTIF_ERR_FUNC("kfifo_alloc failed, errno(%d)\n", i_ret);
 			i_ret = -ENOMEM;

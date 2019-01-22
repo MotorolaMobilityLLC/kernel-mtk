@@ -47,7 +47,7 @@
 #else
 #define BTIF_RX_BUFFER_SIZE (1024 * 64)
 #endif
-#define BTIF_TX_FIFO_SIZE (1024 * 4)
+#define BTIF_TX_BUFFER_FIFO_SIZE (1024 * 4)
 
 /*------------Register Defination End ----------------*/
 
