@@ -385,7 +385,7 @@ struct M4U_DMA_STRUCT {
 
 #define MTK_M4U_T_SEC_INIT	    _IOW(MTK_M4U_MAGICNO, 50, int)
 
-#ifdef CONFIG_MACH_MT6763
+#ifdef CONFIG_MACH_MT6771
 int larb_clock_on(int larb, bool config_mtcmos);
 int larb_clock_off(int larb, bool config_mtcmos);
 #endif

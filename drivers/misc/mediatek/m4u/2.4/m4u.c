@@ -1500,16 +1500,18 @@ static int __m4u_sec_init(void)
 	unsigned long pt_pa_nonsec;
 	unsigned int size;
 	struct m4u_sec_context *ctx;
+#ifdef CONFIG_MACH_MT6771
 	unsigned int i;
-
+#endif
 	ctx = m4u_sec_ctx_get(CMD_M4UTL_INIT);
 	if (!ctx)
 		return -EFAULT;
 
 	m4u_get_pgd(NULL, 0, &pgd_va, (void *)&pt_pa_nonsec, &size);
+#ifdef CONFIG_MACH_MT6771
 	for (i = 0; i < SMI_LARB_NR; i++)
-		larb_clock_on(i, 1);
-
+		arb_clock_on(i, 1);
+#endif
 	ctx->m4u_msg->cmd = CMD_M4UTL_INIT;
 	ctx->m4u_msg->init_param.nonsec_pt_pa = pt_pa_nonsec;
 	ctx->m4u_msg->init_param.l2_en = gM4U_L2_enable;
@@ -1521,10 +1523,10 @@ static int __m4u_sec_init(void)
 		M4UERR("m4u exec command fail\n");
 		goto out;
 	}
-
+#ifdef CONFIG_MACH_MT6771
 	for (i = 0; i < SMI_LARB_NR; i++)
 		larb_clock_off(i, 1);
-
+#endif
 	ret = ctx->m4u_msg->rsp;
 out:
 	m4u_sec_ctx_put(ctx);
