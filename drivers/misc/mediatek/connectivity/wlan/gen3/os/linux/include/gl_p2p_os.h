@@ -63,6 +63,7 @@ extern const struct net_device_ops p2p_netdev_ops;
 *                                 M A C R O S
 ********************************************************************************
 */
+#define OID_SET_GET_STRUCT_LENGTH		4096	/* For SET_STRUCT/GET_STRUCT */
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -151,7 +152,7 @@ struct _GL_P2P_INFO_T {
 	UINT_32 u4InvStatus;
 
 	/* For SET_STRUCT/GET_STRUCT */
-	UINT_8 aucOidBuf[4096];
+	UINT_8 aucOidBuf[OID_SET_GET_STRUCT_LENGTH];
 
 #if 1				/* CFG_SUPPORT_ANTI_PIRACY */
 	UINT_8 aucSecCheck[256];
