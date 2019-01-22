@@ -13,3 +13,4 @@
 
 obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6799) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_MACH_MT6759) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
