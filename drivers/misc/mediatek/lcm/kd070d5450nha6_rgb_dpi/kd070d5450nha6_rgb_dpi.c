@@ -47,15 +47,8 @@
 #ifndef BUILD_LK
 static struct regulator *lcm_vgp;
 static unsigned int GPIO_LCD_PWR;
+static unsigned int GPIO_LCD_RST;
 
-void lcm_request_gpio_control(struct device *dev)
-{
-	/* LCM_BIAS_EN GPIO50*/
-	GPIO_LCD_PWR = of_get_named_gpio(dev->of_node, "gpio_lcd_pwr", 0);
-
-	gpio_request(GPIO_LCD_PWR, "GPIO_LCD_PWR");
-	pr_debug("[KE/LCM] GPIO_LCD_PWR = 0x%x\n", GPIO_LCD_PWR);
-}
 
 /* get LDO supply */
 static int lcm_get_vgp_supply(struct device *dev)
@@ -63,7 +56,7 @@ static int lcm_get_vgp_supply(struct device *dev)
 	int ret;
 	struct regulator *lcm_vgp_ldo;
 
-	pr_debug("LCM: lcm_get_vgp_supply is going\n");
+	/* printk("LCM: lcm_get_vgp_supply is going\n"); */
 
 	lcm_vgp_ldo = devm_regulator_get(dev, "reg-lcm");
 	if (IS_ERR(lcm_vgp_ldo)) {
@@ -74,7 +67,6 @@ static int lcm_get_vgp_supply(struct device *dev)
 
 	pr_debug("LCM: lcm get supply ok.\n");
 
-	ret = regulator_enable(lcm_vgp_ldo);
 	/* get current voltage settings */
 	ret = regulator_get_voltage(lcm_vgp_ldo);
 	pr_debug("lcm LDO voltage = %d in LK stage\n", ret);
@@ -89,13 +81,13 @@ int lcm_vgp_supply_enable(void)
 	int ret;
 	unsigned int volt;
 
-	pr_debug("LCM: lcm_vgp_supply_enable\n");
+	/* printk("LCM: lcm_vgp_supply_enable\n"); */
 
 	if (lcm_vgp == NULL)
 		return 0;
 
-	pr_debug("LCM: set regulator voltage lcm_vgp voltage to 3.3V\n");
-	/* set voltage to 3.3V */
+	/* printk("LCM: set regulator voltage lcm_vgp voltage to 3.3V\n"); */
+	/* set voltage to 1.8V */
 	ret = regulator_set_voltage(lcm_vgp, 3300000, 3300000);
 	if (ret != 0) {
 		pr_err("LCM: lcm failed to set lcm_vgp voltage: %d\n", ret);
@@ -104,11 +96,12 @@ int lcm_vgp_supply_enable(void)
 
 	/* get voltage settings again */
 	volt = regulator_get_voltage(lcm_vgp);
+	/*
 	if (volt == 3300000)
-		pr_err("LCM: check regulator voltage=3300000 pass!\n");
+		printk("LCM: check regulator voltage=3300000 pass!\n");
 	else
-		pr_err("LCM: check regulator voltage=3300000 fail! (voltage: %d)\n", volt);
-
+		printk("LCM: check regulator voltage=3300000 fail! (voltage: %d)\n", volt);
+	*/
 	ret = regulator_enable(lcm_vgp);
 	if (ret != 0) {
 		pr_err("LCM: Failed to enable lcm_vgp: %d\n", ret);
@@ -129,7 +122,7 @@ int lcm_vgp_supply_disable(void)
 	/* disable regulator */
 	isenable = regulator_is_enabled(lcm_vgp);
 
-	pr_debug("LCM: lcm query regulator enable status[0x%x]\n", isenable);
+	/* printk("LCM: lcm query regulator enable status[%d]\n", isenable); */
 
 	if (isenable) {
 		ret = regulator_disable(lcm_vgp);
@@ -146,36 +139,61 @@ int lcm_vgp_supply_disable(void)
 	return ret;
 }
 
-static int lcm_probe(struct device *dev)
+void lcm_request_gpio_control(struct device *dev)
 {
-	lcm_get_vgp_supply(dev);
+	GPIO_LCD_PWR = of_get_named_gpio(dev->of_node, "gpio_lcd_pwr", 0);
+	gpio_request(GPIO_LCD_PWR, "GPIO_LCD_PWR");
+
+	GPIO_LCD_RST = of_get_named_gpio(dev->of_node, "gpio_lcd_rst", 0);
+	gpio_request(GPIO_LCD_RST, "GPIO_LCD_RST");
+}
+
+static int lcm_driver_probe(struct device *dev, void const *data)
+{
+	/* printk("LCM: lcm_driver_probe\n"); */
+
 	lcm_request_gpio_control(dev);
+	lcm_get_vgp_supply(dev);
 	lcm_vgp_supply_enable();
 
 	return 0;
 }
 
-static const struct of_device_id lcm_of_ids[] = {
-	{.compatible = "mediatek,lcm",},
-	{}
+static const struct of_device_id lcm_platform_of_match[] = {
+	{
+		.compatible = "kd,kd070d5450nha6",
+		.data = 0,
+	}, {
+		/* sentinel */
+	}
 };
 
+MODULE_DEVICE_TABLE(of, platform_of_match);
+
+static int lcm_platform_probe(struct platform_device *pdev)
+{
+	const struct of_device_id *id;
+
+	id = of_match_node(lcm_platform_of_match, pdev->dev.of_node);
+	if (!id)
+		return -ENODEV;
+
+	return lcm_driver_probe(&pdev->dev, id->data);
+}
+
 static struct platform_driver lcm_driver = {
+	.probe = lcm_platform_probe,
 	.driver = {
-		   .name = "mtk_lcm",
+		   .name = "kd070d5450nha6_rgb_dpi",
 		   .owner = THIS_MODULE,
-		   .probe = lcm_probe,
-#ifdef CONFIG_OF
-		   .of_match_table = lcm_of_ids,
-#endif
+		   .of_match_table = lcm_platform_of_match,
 		   },
 };
 
 static int __init lcm_init(void)
 {
-	pr_notice("LCM: Register lcm driver\n");
 	if (platform_driver_register(&lcm_driver)) {
-		pr_err("LCM: failed to register disp driver\n");
+		pr_err("LCM: failed to register this driver!\n");
 		return -ENODEV;
 	}
 
@@ -185,12 +203,11 @@ static int __init lcm_init(void)
 static void __exit lcm_exit(void)
 {
 	platform_driver_unregister(&lcm_driver);
-	pr_notice("LCM: Unregister lcm driver done\n");
 }
 late_initcall(lcm_init);
 module_exit(lcm_exit);
 MODULE_AUTHOR("mediatek");
-MODULE_DESCRIPTION("Display subsystem Driver");
+MODULE_DESCRIPTION("LCM display subsystem driver");
 MODULE_LICENSE("GPL");
 #endif
 /* --------------------------------------------------------------------------- */
@@ -259,6 +276,9 @@ static void lcm_suspend_power(void)
 	SET_RESET_PIN(0);
 	MDELAY(20);
 
+	lcm_set_gpio_output(GPIO_LCD_RST, GPIO_OUT_ZERO);
+	MDELAY(20);
+
 	lcm_set_gpio_output(GPIO_LCD_PWR, GPIO_OUT_ZERO);
 	MDELAY(20);
 
@@ -276,6 +296,9 @@ static void lcm_resume_power(void)
 	MDELAY(20);
 
 	lcm_vgp_supply_enable();
+	MDELAY(20);
+
+	lcm_set_gpio_output(GPIO_LCD_RST, GPIO_OUT_ONE);
 	MDELAY(20);
 
 	SET_RESET_PIN(1);
@@ -305,8 +328,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dpi.clk_pol = LCM_POLARITY_RISING;
 	params->dpi.de_pol = LCM_POLARITY_RISING;
-	params->dpi.vsync_pol = LCM_POLARITY_FALLING;
-	params->dpi.hsync_pol = LCM_POLARITY_FALLING;
+	params->dpi.vsync_pol = LCM_POLARITY_RISING;
+	params->dpi.hsync_pol = LCM_POLARITY_RISING;
 
 	params->dpi.hsync_pulse_width = 48;
 	params->dpi.hsync_back_porch = 112;
@@ -323,6 +346,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dpi.ssc_disable = 1;
 
 	params->dpi.lvds_tx_en = 0;
+
+	params->dpi.io_driving_current = LCM_DRIVING_CURRENT_8MA;
 }
 
 static void lcm_init_lcm(void)
