@@ -2262,7 +2262,9 @@ static void addrconf_add_mroute(struct net_device *dev)
 		.fc_flags = RTF_UP,
 		.fc_nlinfo.nl_net = dev_net(dev),
 	};
-
+	/*MTK_PATCH For Fix ALPS02811266*/
+	if (strncmp(dev->name, "wlan0", 4) == 0)
+		cfg.fc_metric -= 2;
 	ipv6_addr_set(&cfg.fc_dst, htonl(0xFF000000), 0, 0, 0);
 
 	ip6_route_add(&cfg);
