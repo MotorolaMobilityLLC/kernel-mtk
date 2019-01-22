@@ -2293,7 +2293,7 @@
         <module name="kpd">
             <row>8</row>
             <column>9</column>
-            <keyMatrix>VOLUMEUP VOLUMEDOWN NC NC NC NC NC NC NC
+            <keyMatrix>VOLUMEDOWN VOLUMEUP NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
