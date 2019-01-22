@@ -178,6 +178,12 @@ int coulomb_test1_handler(struct gauge_consumer *consumer)
 static struct gtimer g1, g2, g3, g4, g5;
 #endif
 
+/*notify battery user*/
+struct srcu_notifier_head gm_notify;
+static DEFINE_MUTEX(gm_notify_mutex);
+
+
+
 static bool gDisableGM30;
 static bool cmd_disable_nafg;
 static bool ntc_disable_nafg;
@@ -501,6 +507,32 @@ int gauge_enable_iavg_interrupt(bool ht_en, int ht_th,
 	return gauge_dev_enable_iavg_interrupt(gauge_dev, ht_en, ht_th, lt_en, lt_th);
 }
 
+int register_battery_notifier(struct notifier_block *nb)
+{
+	int ret = 0;
+
+	mutex_lock(&gm_notify_mutex);
+	ret = srcu_notifier_chain_register(&gm_notify, nb);
+	mutex_unlock(&gm_notify_mutex);
+
+	return ret;
+}
+
+int unregister_battery_notifier(struct notifier_block *nb)
+{
+	int ret = 0;
+
+	mutex_lock(&gm_notify_mutex);
+	ret = srcu_notifier_chain_unregister(&gm_notify, nb);
+	mutex_unlock(&gm_notify_mutex);
+
+	return ret;
+}
+
+int battery_notifier(int event)
+{
+	return srcu_notifier_call_chain(&gm_notify, event, NULL);
+}
 
 /* ============================================================ */
 /* external interface */
@@ -3996,6 +4028,7 @@ void fg_bat_plugout_int_handler(void)
 	}
 
 	if (is_bat_exist == 0) {
+		battery_notifier(EVENT_BATTERY_PLUG_OUT);
 		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
 		wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
 		battery_update(&battery_main);
@@ -5207,6 +5240,8 @@ static int __init battery_probe(struct platform_device *dev)
 	const char *boot_voltage = NULL;
 	char boot_voltage_tmp[10];
 	int boot_voltage_len = 0;
+
+	srcu_init_notifier_head(&gm_notify);
 
 /********* adc_cdev **********/
 	ret = alloc_chrdev_region(&adc_cali_devno, 0, 1, ADC_CALI_DEVNAME);
