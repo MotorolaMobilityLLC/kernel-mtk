@@ -60,6 +60,10 @@ struct ccci_smem_region md1_6293_noncacheable_fat[] = {
 {SMEM_USER_RAW_AUDIO,		108*1024,	52*1024,	SMF_NCLR_FIRST, },
 {SMEM_USER_CCISM_MCU,		160*1024,	(704+1)*1024,	0, },
 {SMEM_USER_CCISM_MCU_EXP,	865*1024,	(120+1)*1024,	0, },
+/* for SIB */
+{SMEM_USER_RAW_LWA,		1*1024*1024,	0*1024*1024,	0, },
+{SMEM_USER_RAW_MD_CONSYS,	1*1024*1024,	0*1024*1024,	0, },
+{SMEM_USER_RAW_PHY_CAP,		1*1024*1024,	0*1024*1024,	SMF_NCLR_FIRST, },
 {SMEM_USER_MAX, }, /* tail guard */
 };
 
@@ -74,9 +78,6 @@ struct ccci_smem_region md1_6293_cacheable[] = {
 {SMEM_USER_CCB_META,		0*1024*1024,	2*1024*1024,	0, },
 {SMEM_USER_RAW_DHL,		2*1024*1024,	20*1024*1024,	0, },
 {SMEM_USER_RAW_MDM,		2*1024*1024,	20*1024*1024,	0, },
-{SMEM_USER_RAW_LWA,		32*1024*1024,	0*1024*1024,	0, },
-{SMEM_USER_RAW_MD_CONSYS,	32*1024*1024,	0*1024*1024,	0, },
-{SMEM_USER_RAW_PHY_CAP,		32*1024*1024,	0*1024*1024,	SMF_NCLR_FIRST, },
 {SMEM_USER_MAX, },
 };
 
@@ -317,13 +318,21 @@ void ccci_md_config(struct ccci_modem *md)
 		CCCI_ERROR_LOG(md->index, TAG, "get ccb info base:%lx size:%x\n",
 			(unsigned long)md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
 			md->mem_layout.md_bank4_cacheable_total.size);
-
+#if (MD_GENERATION >= 6293)
+	if (md->index == MD_SYS1) {
+		md->mem_layout.md_bank4_cacheable_total.base_md_view_phy = 0x40000000
+			+ (224 * 1024 * 1024)
+			+ md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy -
+			round_down(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy, 0x00100000);
+	}
+#else
 	if (md->index == MD_SYS1) {
 		md->mem_layout.md_bank4_cacheable_total.base_md_view_phy = 0x40000000
 			+ get_md_smem_cachable_offset(MD_SYS1)
 			+ md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy -
 			round_down(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy, 0x00100000);
 	}
+#endif
 #endif
 	CCCI_BOOTUP_LOG(md->index, TAG, "smem info: (%lx %lx %p %d) (%lx %lx %p %d)\n",
 			(unsigned long)md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy,
@@ -365,10 +374,11 @@ void ccci_md_config(struct ccci_modem *md)
 			/* Runtime adjust md_phy_capture size */
 			unsigned int i;
 
-			for (i = 0; i < (sizeof(md1_6293_cacheable)/sizeof(struct ccci_smem_region)); i++) {
-				if (md1_6293_cacheable[i].id == SMEM_USER_RAW_PHY_CAP) {
-					md1_6293_cacheable[i].size = get_md_resv_phy_cap_size(MD_SYS1);
-					CCCI_BOOTUP_LOG(md->index, TAG, "PHY size:%d\n", md1_6293_cacheable[i].size);
+			for (i = 0; i < (sizeof(md1_6293_noncacheable_fat)/sizeof(struct ccci_smem_region)); i++) {
+				if (md1_6293_noncacheable_fat[i].id == SMEM_USER_RAW_PHY_CAP) {
+					md1_6293_noncacheable_fat[i].size = get_md_resv_phy_cap_size(MD_SYS1);
+					CCCI_BOOTUP_LOG(md->index, TAG, "PHY size:%d\n",
+							md1_6293_noncacheable_fat[i].size);
 					break;
 				}
 			}
