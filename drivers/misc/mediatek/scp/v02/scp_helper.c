@@ -1132,6 +1132,7 @@ static inline ssize_t scp_B_ipi_test_show(struct device *kobj, struct device_att
 
 DEVICE_ATTR(scp_B_ipi_test, 0444, scp_B_ipi_test_show, NULL);
 
+#ifdef CFG_RECOVERY_SUPPORT
 void scp_wdt_reset(scp_core_id cpu_id)
 {
 	switch (cpu_id) {
@@ -1158,7 +1159,20 @@ static ssize_t scp_wdt_trigger(struct device *dev, struct device_attribute *attr
 	return count;
 }
 
-DEVICE_ATTR(wdt_reset, S_IWUSR | S_IRUGO, NULL, scp_wdt_trigger);
+DEVICE_ATTR(wdt_reset, S_IWUSR, NULL, scp_wdt_trigger);
+
+/*
+ * trigger wdt manually
+ * debug use
+ */
+static ssize_t scp_B_wdt_trigger(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	pr_debug("scp_B_wdt_trigger: %s\n", buf);
+	scp_wdt_reset(SCP_B_ID);
+	return count;
+}
+struct device_attribute dev_attr_scp_B_wdt_reset = __ATTR(wdt_reset, S_IWUSR, NULL, scp_B_wdt_trigger);
+#endif
 #endif
 
 static struct miscdevice scp_device = {
@@ -1254,10 +1268,15 @@ static int create_files(void)
 	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_awake_unlock);
 	if (unlikely(ret != 0))
 		return ret;
-
+#ifdef CFG_RECOVERY_SUPPORT
 	ret = device_create_file(scp_device.this_device, &dev_attr_wdt_reset);
 	if (unlikely(ret != 0))
 		return ret;
+
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_wdt_reset);
+	if (unlikely(ret != 0))
+		return ret;
+#endif
 	/* SCP IPI Debug sysfs*/
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_ipi_test);
 	if (unlikely(ret != 0))
