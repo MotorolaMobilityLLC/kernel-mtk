@@ -248,10 +248,10 @@ extern void __iomem *i2c1_base;
 #endif
 
 enum {
-	USB_SPM_MODE_NONE = 0,
-	USB_SPM_MODE_DRAM,
-	USB_SPM_MODE_SRAM
+	USB_DPIDLE_FORBIDDEN = 0,
+	USB_DPIDLE_ALLOWED,
+	USB_DPIDLE_SRAM
 };
-extern int usb_hal_spm_mode_req(int mode);
+extern void usb_hal_dpidle_request(int mode);
 /***********************************/
 #endif
