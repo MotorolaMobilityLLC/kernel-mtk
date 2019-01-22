@@ -138,7 +138,7 @@ struct RSC_CLK_STRUCT rsc_clk;
 #endif
 
 #define RSC_DEV_NAME                "camera-rsc"
-#define EP_NO_CLKMGR
+/* #define EP_NO_CLKMGR */
 #define BYPASS_REG         (0)
 /* #define RSC_WAITIRQ_LOG  */
 #define RSC_USE_GCE

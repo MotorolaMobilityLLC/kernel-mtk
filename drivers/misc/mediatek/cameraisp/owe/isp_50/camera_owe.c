@@ -49,7 +49,7 @@
 #include <cmdq_core.h>
 #include <cmdq_record.h>
 
-#define __OWE_EP_NO_CLKMGR__
+/* #define __OWE_EP_NO_CLKMGR__ */
 /* #define BYPASS_REG */
 /* Measure the kernel performance */
 /* #define __OWE_KERNEL_PERFORMANCE_MEASURE__ */
