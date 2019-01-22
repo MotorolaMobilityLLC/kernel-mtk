@@ -86,9 +86,12 @@ static int layer_mapping_table[HRT_TB_NUM][TOTAL_OVL_LAYER_NUM] = {
 	/* HRT_TB_TYPE_GENERAL */
 	{0x00010001, 0x00030003, 0x00030007, 0x0003000F, 0x0003001F, 0x0003003F,
 	0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F},
-	/* HRT_TB_TYPE_PARTIAL_RESIZE */
+	/* HRT_TB_TYPE_RPO */
 	{0x00010001, 0x00030005, 0x0003000D, 0x0003001D, 0x0003003D, 0x0003003D,
 	0x0003003D, 0x0003003D, 0x0003003D, 0x0003003D, 0x0003003D, 0x0003003D},
+	/* HRT_TB_TYPE_RPO_DIM_L0 */
+	{0x00010001, 0x00030003, 0x00030007, 0x0003000F, 0x0003001F, 0x0003003F,
+	0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F},
 };
 
 #else
@@ -96,16 +99,19 @@ static int layer_mapping_table[HRT_TB_NUM][TOTAL_OVL_LAYER_NUM] = {
 	/* HRT_TB_TYPE_GENERAL */
 	{0x00010001, 0x00030003, 0x00030007, 0x0003000F, 0x0003001F, 0x0003001F,
 	0x0003001F, 0x0003001F, 0x0003001F, 0x0003001F},
-	/* HRT_TB_TYPE_PARTIAL_RESIZE */
+	/* HRT_TB_TYPE_RPO */
 	{0x00010001, 0x00030005, 0x0003000D, 0x0003001D, 0x0003001D, 0x0003001D,
 	0x0003001D, 0x0003001D, 0x0003001D, 0x0003001D},
+	/* HRT_TB_TYPE_RPO_DIM_L0 */
+	{0x00010001, 0x00030003, 0x00030007, 0x0003000F, 0x0003001F, 0x0003001F,
+	0x0003001F, 0x0003001F, 0x0003001F, 0x0003001F},
 };
 #endif
 /**
  * The larb mapping table represent the relation between LARB and OVL.
  */
 static int larb_mapping_table[HRT_TB_NUM] = {
-	0x00010010, 0x00010010,
+	0x00010010, 0x00010010, 0x00010010,
 };
 
 /**
@@ -114,11 +120,11 @@ static int larb_mapping_table[HRT_TB_NUM] = {
  */
 #ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
 static int ovl_mapping_table[HRT_TB_NUM] = {
-	0x00020022, 0x00020022,
+	0x00020022, 0x00020022, 0x00020022,
 };
 #else
 static int ovl_mapping_table[HRT_TB_NUM] = {
-	0x00020012, 0x00020012,
+	0x00020012, 0x00020012, 0x00020012,
 };
 #endif
 #define GET_SYS_STATE(sys_state) ((l_rule_info.hrt_sys_state >> sys_state) & 0x1)
@@ -143,31 +149,43 @@ static bool has_rsz_layer(struct disp_layer_info *disp_info, int disp_idx)
 }
 
 static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
-		   int *scale_ratio)
+		   int *rsz_idx)
 {
 	int i = 0;
 	struct layer_config *c = NULL;
 	int gpu_rsz_idx = 0;
 
-	if (disp_info->gles_head[disp_idx] == 0 ||
-	    disp_info->layer_num[disp_idx] <= 0)
+	if (disp_info->layer_num[disp_idx] <= 0)
 		return false;
 
-	c = &disp_info->input_config[disp_idx][0];
+	for (*rsz_idx = 0; *rsz_idx < 2; (*rsz_idx)++) {
+		c = &disp_info->input_config[disp_idx][*rsz_idx];
 
-	if (c->src_width == c->dst_width && c->src_height == c->dst_height)
+		if (*rsz_idx == 0 && c->src_fmt == DISP_FORMAT_DIM)
+			continue;
+
+		if (disp_info->gles_head[disp_idx] >= 0 &&
+		    disp_info->gles_head[disp_idx] <= *rsz_idx)
+			return false;
+		if (c->src_width == c->dst_width &&
+		    c->src_height == c->dst_height)
+			return false;
+		if (c->src_width > c->dst_width ||
+		    c->src_height > c->dst_height)
+			return false;
+		if (c->src_width > RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN ||
+		    c->src_height > RSZ_IN_MAX_HEIGHT)
+			return false;
+
+		c->layer_caps |= DISP_RSZ_LAYER;
+		break;
+	}
+	if (*rsz_idx == 2) {
+		DISPERR("%s:error: rsz layer idx >= 2\n", __func__);
 		return false;
+	}
 
-	if (c->src_width > c->dst_width || c->src_height > c->dst_height)
-		return false;
-
-	if (c->src_width > RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN ||
-	    c->src_height > RSZ_IN_MAX_HEIGHT)
-		return false;
-
-	c->layer_caps |= DISP_RSZ_LAYER;
-
-	for (i = 1; i < disp_info->layer_num[disp_idx]; i++) {
+	for (i = *rsz_idx + 1; i < disp_info->layer_num[disp_idx]; i++) {
 		c = &disp_info->input_config[disp_idx][i];
 		if (c->src_width != c->dst_width ||
 		    c->src_height != c->dst_height) {
@@ -190,12 +208,13 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 static bool lr_rsz_layout(struct disp_layer_info *disp_info)
 {
 	int disp_idx;
-	int ratio = HRT_SCALE_UNKNOWN;
 
 	if (is_ext_path(disp_info))
 		rollback_all_resize_layer_to_GPU(disp_info, HRT_SECONDARY);
 
 	for (disp_idx = 0; disp_idx < 2; disp_idx++) {
+		int rsz_idx = 0;
+
 		if (disp_info->layer_num[disp_idx] <= 0)
 			continue;
 
@@ -206,8 +225,14 @@ static bool lr_rsz_layout(struct disp_layer_info *disp_info)
 		if (!has_rsz_layer(disp_info, disp_idx)) {
 			l_rule_info.scale_rate = HRT_SCALE_NONE;
 			l_rule_info.disp_path = HRT_PATH_UNKNOWN;
-		} else if (is_RPO(disp_info, disp_idx, &ratio)) {
-			l_rule_info.disp_path = HRT_PATH_RESIZE_PARTIAL;
+		} else if (is_RPO(disp_info, disp_idx, &rsz_idx)) {
+			if (rsz_idx == 0)
+				l_rule_info.disp_path = HRT_PATH_RPO;
+			else if (rsz_idx == 1)
+				l_rule_info.disp_path = HRT_PATH_RPO_DIM_L0;
+			else
+				DISPERR("%s:RPO but rsz_idx(%d) error\n",
+					__func__, rsz_idx);
 		} else {
 			rollback_all_resize_layer_to_GPU(disp_info,
 								HRT_PRIMARY);
@@ -224,7 +249,7 @@ lr_unset_disp_rsz_attr(struct disp_layer_info *disp_info, int disp_idx)
 {
 	struct layer_config *lc = &disp_info->input_config[disp_idx][0];
 
-	if (l_rule_info.disp_path == HRT_PATH_RESIZE_PARTIAL &&
+	if (l_rule_info.disp_path == HRT_PATH_RPO &&
 	    has_layer_cap(lc, MDP_RSZ_LAYER) &&
 	    has_layer_cap(lc, DISP_RSZ_LAYER)) {
 		lc->layer_caps &= ~DISP_RSZ_LAYER;
@@ -249,8 +274,10 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 		/* layer_tb_idx = HRT_TB_TYPE_MULTI_WINDOW_TUI;*/
 		l_rule_info.layer_tb_idx = HRT_TB_TYPE_GENERAL;
 	} else {
-		if (l_rule_info.disp_path == HRT_PATH_RESIZE_PARTIAL) {
-			l_rule_info.layer_tb_idx = HRT_TB_TYPE_PARTIAL_RESIZE;
+		if (l_rule_info.disp_path == HRT_PATH_RPO) {
+			l_rule_info.layer_tb_idx = HRT_TB_TYPE_RPO;
+		} else if (l_rule_info.disp_path == HRT_PATH_RPO_DIM_L0) {
+			l_rule_info.layer_tb_idx = HRT_TB_TYPE_RPO_DIM_L0;
 		} else {
 			l_rule_info.layer_tb_idx = HRT_TB_TYPE_GENERAL;
 			l_rule_info.disp_path = HRT_PATH_GENERAL;

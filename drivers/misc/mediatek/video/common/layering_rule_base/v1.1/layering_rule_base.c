@@ -182,7 +182,8 @@ static inline bool is_extended_layer(struct layer_config *layer_info)
 
 static bool is_extended_base_layer_valid(struct layer_config *configs, int layer_idx)
 {
-	if (layer_idx == 0 && has_layer_cap(configs, DISP_RSZ_LAYER))
+	if ((layer_idx == 0 && configs->src_fmt == DISP_FORMAT_DIM) ||
+	    has_layer_cap(configs, DISP_RSZ_LAYER))
 		return false;
 
 	/**
@@ -1740,7 +1741,7 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
 	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_PULSE,
 		layering_info.hrt_num,
 		(layering_info.gles_head[0] << 24) | (layering_info.gles_tail[0] << 16) |
-		(layering_info.layer_num[1] << 16) | (layering_info.layer_num[0] << 16));
+		(layering_info.layer_num[0] << 8) | layering_info.layer_num[1]);
 
 	ret = copy_layer_info_to_user(disp_info_user, debug_mode);
 	return ret;

@@ -489,11 +489,27 @@ static int _ovl_get_rsz_layer_roi(const struct OVL_CONFIG_STRUCT * const oc,
 	return 0;
 }
 
+static u32 _get_valid_rsz_idx(struct disp_ddp_path_config *pconfig)
+{
+	int i = 0;
+	struct OVL_CONFIG_STRUCT *c = NULL;
+
+	c = &pconfig->ovl_config[i];
+	if (i == 0 && c->layer_en && c->source == OVL_LAYER_SOURCE_RESERVED)
+		i++;
+
+	return i;
+}
+
 static int _ovl_get_rsz_roi(enum DISP_MODULE_ENUM module,
 			    struct disp_ddp_path_config *pconfig,
 			    u32 *bg_w, u32 *bg_h)
 {
-	struct OVL_CONFIG_STRUCT *oc = &pconfig->ovl_config[0];
+	u32 rsz_idx = 0;
+	struct OVL_CONFIG_STRUCT *oc = NULL;
+
+	rsz_idx = _get_valid_rsz_idx(pconfig);
+	oc = &pconfig->ovl_config[rsz_idx];
 
 	if (oc->src_w > oc->dst_w || oc->src_h > oc->dst_h) {
 		DDPERR("%s:L%u:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
@@ -530,13 +546,16 @@ static int _ovl_set_rsz_roi(enum DISP_MODULE_ENUM module,
 static int _ovl_lc_config(enum DISP_MODULE_ENUM module,
 			  struct disp_ddp_path_config *pconfig, void *handle)
 {
+	u32 rsz_idx = 0;
 	unsigned long ovl_base = ovl_base_addr(module);
-	struct OVL_CONFIG_STRUCT *oc = &pconfig->ovl_config[0];
+	struct OVL_CONFIG_STRUCT *oc = NULL;
 	u32 lc_x = 0;
 	u32 lc_y = 0;
 	u32 lc_w = pconfig->dst_w;
 	u32 lc_h = pconfig->dst_h;
 
+	rsz_idx = _get_valid_rsz_idx(pconfig);
+	oc = &pconfig->ovl_config[rsz_idx];
 	if (oc->layer_en) {
 		if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
 			lc_x = oc->dst_x;
@@ -555,6 +574,27 @@ static int _ovl_lc_config(enum DISP_MODULE_ENUM module,
 			   ovl_base + DISP_REG_OVL_LC_SRC_SIZE, lc_h);
 
 	return 0;
+}
+
+/* only disable L0 dim layer if RPO */
+static void _rpo_disable_dim_L0(enum DISP_MODULE_ENUM module,
+				struct disp_ddp_path_config *pconfig,
+				int *en_layers)
+{
+	struct OVL_CONFIG_STRUCT *c = NULL;
+
+	c = &pconfig->ovl_config[0];
+	if (c->ovl_index != module)
+		return;
+	if (!(c->layer_en && c->source == OVL_LAYER_SOURCE_RESERVED))
+		return;
+
+	c = &pconfig->ovl_config[1];
+	if (!(c->layer_en && ((c->src_w < c->dst_w) || (c->src_h < c->dst_h))))
+		return;
+
+	c = &pconfig->ovl_config[0];
+	*en_layers &= ~(c->layer_en << c->phy_layer);
 }
 
 int disable_ovl_layers(enum DISP_MODULE_ENUM module, void *handle)
@@ -1387,6 +1427,8 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_confi
 
 	if (!pConfig->ovl_partial_dirty)
 		_ovl_lc_config(module, pConfig, handle);
+
+	_rpo_disable_dim_L0(module, pConfig, &enabled_layers);
 
 	DDPDBG("%s bw:%llu\n", ddp_get_module_name(module), ovl_bw);
 	DDPDBG("%s: enabled_layers=0x%01x, enabled_ext_layers=0x%01x, ext_sel_layers=0x%04x\n",
