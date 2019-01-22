@@ -772,8 +772,6 @@ static int rdma_config(enum DISP_MODULE_ENUM module, enum RDMA_MODE mode,
 				   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, 0);
 	}
 
-	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_MODE_SEL,
-			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, mode);
 	/* FORMAT & SWAP only works when RDMA memory mode, set both to 0 when RDMA direct link mode. */
 	DISP_REG_SET_FIELD(handle, MEM_CON_FLD_MEM_MODE_INPUT_FORMAT,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_CON,
@@ -816,6 +814,9 @@ static int rdma_config(enum DISP_MODULE_ENUM module, enum RDMA_MODE mode,
 	regval = REG_FLD_VAL(RDMA_BG_CON_1_TOP, bg_ctrl->top);
 	regval |= REG_FLD_VAL(RDMA_BG_CON_1_BOTTOM, bg_ctrl->bottom);
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_BG_CON_1, regval);
+
+	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_MODE_SEL,
+			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, mode);
 
 	set_rdma_width_height(width, height);
 	rdma_set_ultra_l(idx, bpp, handle, p_golden_setting);
