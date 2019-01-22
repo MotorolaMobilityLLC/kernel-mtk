@@ -71,7 +71,8 @@
 #include "disp_recovery.h"
 #include "disp_partial.h"
 #include "ddp_dsi.h"
-
+#include "mtk_disp_mgr.h"
+#include "mtk_ovl.h"
 
 static struct task_struct *primary_display_check_task; /* For abnormal check */
 static struct task_struct *primary_recovery_thread;
@@ -706,9 +707,9 @@ int primary_display_rdma_recovery(void)
 
 	primary_display_idlemgr_kick((char *)__func__, 0);
 
-	DISPINFO("[disp path recovery]cmdq trigger loop stop[begin]\n");
+	DISPDBG("[disp path recovery]cmdq trigger loop stop[begin]\n");
 	_cmdq_stop_trigger_loop();
-	DISPINFO("[disp path recovery]cmdq trigger loop stop[end]\n");
+	DISPCHECK("[disp path recovery]cmdq trigger loop stop[end]\n");
 
 	DISPDBG("[disp path recovery]stop dpmgr path[begin]\n");
 	dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
@@ -779,40 +780,61 @@ int primary_display_wdma_recovery(void)
 {
 	enum DISP_STATUS ret = DISP_STATUS_OK;
 	struct disp_ddp_path_config *pconfig;
+	bool wdma_in_main_disp = true;
 
 	DISPFUNC();
 	DISPCHECK("[disp wdma recovery]begin\n");
 
+	/* Lock main display frame update and DISP PATH */
 	primary_display_manual_lock();
 
-	if (primary_get_state() == DISP_SLEPT) {
-		DISPCHECK("disp wdma recovery but primary display path is slept??\n");
-		goto done;
-	}
+	if (!primary_get_ovl2mem_handle() && disp_mgr_has_mem_session())
+		wdma_in_main_disp = false;
 
-	if (!primary_get_ovl2mem_handle()) {
-		DISPCHECK("ovl2mem_handle is NULL, cancel wdma recovery\n");
-		goto done;
-	}
-	primary_display_idlemgr_kick((char *)__func__, 0);
+	if (wdma_in_main_disp) {
+		DISPCHECK("[disp wdma recovery]wdma in main display\n");
+		if (primary_get_state() == DISP_SLEPT) {
+			DISPCHECK("disp wdma recovery but primary display path is slept??\n");
+			goto done;
+		}
 
+		if (!primary_get_ovl2mem_handle()) {
+			DISPCHECK("ovl2mem_handle is NULL, cancel wdma recovery\n");
+			goto done;
+		}
+
+		pconfig = dpmgr_path_get_last_config(primary_get_ovl2mem_handle());
+	} else {
+		DISPCHECK("[disp wdma recovery]wdma in virtual display\n");
+		/* Lock memory out path frame update. */
+		ovl2mem_path_lock(__func__);
+		if (!mtk_ovl_get_dpmgr_handle()) {
+			DISPCHECK("mtk_ovl_handle is NULL, cancel wdma recovery\n");
+			goto done;
+		}
+		pconfig = dpmgr_path_get_last_config(mtk_ovl_get_dpmgr_handle());
+	}
 	/* Since we expect the ovl->wdma is hang if run to this path,
 	 * so do the reset directly without wait idle.
 	 */
-	DISPDBG("[disp wdma recovery]reset display path[begin]\n");
-	dpmgr_path_reset(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
-	ddp_path_mmsys_sw_reset(DISP_MODULE_WDMA0);
-	DISPCHECK("[disp wdma recovery]reset display path[end]\n");
-
-	pconfig = dpmgr_path_get_last_config(primary_get_ovl2mem_handle());
 	pconfig->wdma_dirty = 1;
-	ret = dpmgr_path_config(primary_get_ovl2mem_handle(), pconfig, NULL);
+	DISPDBG("[disp wdma recovery]reset wdma engine[begin]\n");
+	ddp_get_module_driver(DISP_MODULE_WDMA0)->reset(DISP_MODULE_WDMA0, NULL);
+	ddp_path_mmsys_sw_reset(DISP_MODULE_WDMA0);
+	DISPCHECK("[disp wdma recovery]reset wdma engine[end]\n");
 
-	DISPDBG("[disp wdma recovery]start dpmgr path[begin]\n");
-	dpmgr_path_start(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
-	DISPCHECK("[disp wdma recovery]start dpmgr path[end]\n");
+	DISPDBG("[disp wdma recovery]config wdma engine[begin]\n");
+	ddp_get_module_driver(DISP_MODULE_WDMA0)->config(DISP_MODULE_WDMA0,
+		pconfig, NULL);
+	DISPCHECK("[disp wdma recovery]config wdma engine[end]\n");
+
+	DISPDBG("[disp wdma recovery]start wdma engine[begin]\n");
+	ddp_get_module_driver(DISP_MODULE_WDMA0)->start(DISP_MODULE_WDMA0, NULL);
+	DISPCHECK("[disp wdma recovery]start dpmgr engine[end]\n");
 
 done:
+	if (!wdma_in_main_disp)
+		ovl2mem_path_unlock(__func__);
 	primary_display_manual_unlock();
 	DISPCHECK("[disp wdma recovery] end\n");
 	return ret;

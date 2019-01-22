@@ -29,6 +29,7 @@ int ovl2mem_get_max_layer(void);
 void ovl2mem_suspend(void);
 void ovl2mem_resume(void);
 void *mtk_ovl_get_dpmgr_handle(void);
-
+void ovl2mem_path_lock(const char *caller);
+void ovl2mem_path_unlock(const char *caller);
 
 #endif
