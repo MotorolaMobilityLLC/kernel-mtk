@@ -1737,15 +1737,24 @@ int set_memif_pbuf_size(int aud_blk, enum memif_pbuf_size pbuf_size)
 	return 0;
 }
 
-bool set_general_asrc(enum audio_general_asrc_id id, unsigned int sample_rate_in,
+bool set_general_asrc_enable(enum audio_general_asrc_id id, bool enable)
+{
+	bool ret = false;
+
+	if (s_afe_platform_ops->set_general_asrc_enable != NULL)
+		ret = s_afe_platform_ops->set_general_asrc_enable(id, enable);
+
+	return ret;
+}
+
+bool set_general_asrc_parameter(enum audio_general_asrc_id id, unsigned int sample_rate_in,
 			  unsigned int sample_rate_out)
 {
 	bool ret = false;
 
-	if (s_afe_platform_ops->set_general_asrc != NULL) {
-		s_afe_platform_ops->set_general_asrc(id, sample_rate_in, sample_rate_out);
-		ret = true;
-	}
+	if (s_afe_platform_ops->set_general_asrc_parameter != NULL)
+		ret = s_afe_platform_ops->set_general_asrc_parameter(id, sample_rate_in, sample_rate_out);
+
 	return ret;
 }
 
