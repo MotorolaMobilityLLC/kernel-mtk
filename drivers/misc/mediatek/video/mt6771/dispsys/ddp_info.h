@@ -354,6 +354,7 @@ enum DDP_IOCTL_NAME {
 	DDP_DSI_MIPI_POWER_ON,
 	DDP_OVL_MVA_REPLACEMENT,
 	DDP_DSI_ENABLE_TE,
+	DDP_DBI_SW_INIT,
 };
 
 struct ddp_io_golden_setting_arg {
@@ -405,8 +406,12 @@ struct DDP_MODULE_DRIVER {
 extern struct DDP_MODULE_DRIVER ddp_driver_dsi0;
 extern struct DDP_MODULE_DRIVER ddp_driver_dsi1;
 extern struct DDP_MODULE_DRIVER ddp_driver_dsidual;
+
 /* dpi */
 extern struct DDP_MODULE_DRIVER ddp_driver_dpi;
+
+/* dbi  */
+extern struct DDP_MODULE_DRIVER ddp_driver_dbi;
 
 /* ovl */
 extern struct DDP_MODULE_DRIVER ddp_driver_ovl;

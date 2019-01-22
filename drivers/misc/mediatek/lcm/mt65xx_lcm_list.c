@@ -1126,6 +1126,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(OTM1901A_FHD_DSI_VDO_TPV)
 	&otm1901a_fhd_dsi_vdo_tpv_lcm_drv,
 #endif
+
+#if defined(ST7789H2_DBI_C_3WIRE)
+	&st7789h2_dbi_c_3wire_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
@@ -1179,6 +1183,10 @@ unsigned char lcm_name_list[][128] = {
 
 #if defined(NT36380_WQHD_VDO_OK)
 	"nt36380_wqhd_vdo_lcm_drv",
+#endif
+
+#if defined(ST7789H2_DBI_C_3WIRE)
+	"st7789h2_dbi_c_3wire",
 #endif
 };
 

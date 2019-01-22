@@ -1102,6 +1102,8 @@ enum DISP_MODULE_ENUM _get_dst_module_by_lcm(struct disp_lcm_handle *plcm)
 			return DISP_MODULE_DSI0;
 	} else if (plcm->params->type == LCM_TYPE_DPI) {
 		return DISP_MODULE_DPI;
+	} else if (plcm->params->type == LCM_TYPE_DBI) {
+		return DISP_MODULE_DBI;
 	}
 
 	DISPPR_ERROR("can't find primary path dst module\n");
@@ -3626,6 +3628,13 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 			data_config->lcm_bpp = 16;
 		if (lcm_param->dpi.format == LCM_DPI_FORMAT_RGB666)
 			data_config->lcm_bpp = 18;
+	} else if (lcm_param->type == LCM_TYPE_DBI) {
+		if (lcm_param->dbi.data_format.format == LCM_DBI_FORMAT_RGB888)
+			data_config->lcm_bpp = 24;
+		else if (lcm_param->dbi.data_format.format == LCM_DBI_FORMAT_RGB565)
+			data_config->lcm_bpp = 16;
+		else if (lcm_param->dbi.data_format.format == LCM_DBI_FORMAT_RGB666)
+			data_config->lcm_bpp = 18;
 	}
 
 	data_config->fps = lcm_fps;
@@ -4656,6 +4665,11 @@ int primary_display_resume(void)
 			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
+
+		if (_get_dst_module_by_lcm(pgc->plcm) == DISP_MODULE_DBI)
+			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+								   DDP_IRQ_DBI_EXT_TE);
+
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
 		if (primary_display_get_power_mode_nolock() == FB_RESUME && !skip_update) {
