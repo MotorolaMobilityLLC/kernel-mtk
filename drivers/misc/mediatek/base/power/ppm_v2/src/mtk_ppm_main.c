@@ -473,7 +473,7 @@ static enum ppm_power_state ppm_main_hica_state_decision(void)
 
 	ppm_main_info.min_power_budget = ~0;
 
-#ifdef CONFIG_ARCH_MT6757
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (setup_max_cpus == 4) {
 		final_state = PPM_POWER_STATE_LL_ONLY;
 		goto skip_pwr_check;
@@ -579,7 +579,7 @@ int mt_ppm_main(void)
 
 	ppm_lock(&ppm_main_info.lock);
 	/* atomic_set(&ppm_main_info.ppm_event, 0); */
-#ifdef CONFIG_ARCH_MT6757
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (setup_max_cpus == 4) {
 		ppm_info("@%s: Disable PPM!\n", __func__);
 		ppm_main_info.is_enabled = false;
