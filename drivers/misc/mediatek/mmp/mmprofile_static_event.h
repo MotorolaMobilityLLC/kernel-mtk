@@ -14,12 +14,6 @@
 #ifndef __MMPROFILE_STATIC_EVENT_H__
 #define __MMPROFILE_STATIC_EVENT_H__
 
-#define MMP_InvalidEvent MMP_INVALID_EVENT
-#define MMP_RootEvent MMP_ROOT_EVENT
-#define MMP_TouchPanelEvent MMP_TOUCH_PANEL_EVENT
-#define MMP_MaxStaticEvent MMP_MAX_STATIC_EVENT
-#define MMP_StaticEvents mmp_static_events
-
 typedef enum {
 	MMP_INVALID_EVENT = 0,
 	MMP_ROOT_EVENT = 1,
@@ -30,15 +24,12 @@ typedef enum {
 } mmp_static_events;
 
 #ifdef MMPROFILE_INTERNAL
-#define MMP_StaticEvent_t mmp_static_event_t
 
 typedef struct {
 	mmp_static_events event;
 	char *name;
 	mmp_static_events parent;
 } mmp_static_event_t;
-
-#define MMProfileStaticEvents mmprofile_static_events
 
 static mmp_static_event_t mmprofile_static_events[] = {
 	{MMP_ROOT_EVENT, "Root_Event", MMP_INVALID_EVENT},
