@@ -1254,12 +1254,14 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 		{
 			P_BSS_DESC_T prBssDesc = prGlueInfo->prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
 
-			DBGLOG(INIT, INFO, "JOIN Failure: u2JoinStatus=%d", prBssDesc->u2JoinStatus);
+			if (prBssDesc)
+				DBGLOG(INIT, INFO, "JOIN Failure: u2JoinStatus=%d", prBssDesc->u2JoinStatus);
 			if (prBssDesc)
 				COPY_MAC_ADDR(arBssid, prBssDesc->aucBSSID);
 			else
 				COPY_MAC_ADDR(arBssid, prGlueInfo->prAdapter->rWifiVar.rConnSettings.aucBSSID);
-			if (prBssDesc->u2JoinStatus && prBssDesc->u2JoinStatus != STATUS_CODE_AUTH_TIMEOUT
+			if (prBssDesc && prBssDesc->u2JoinStatus
+				&& prBssDesc->u2JoinStatus != STATUS_CODE_AUTH_TIMEOUT
 				&& prBssDesc->u2JoinStatus != STATUS_CODE_ASSOC_TIMEOUT)
 				cfg80211_connect_result(prGlueInfo->prDevHandler,
 						arBssid,
