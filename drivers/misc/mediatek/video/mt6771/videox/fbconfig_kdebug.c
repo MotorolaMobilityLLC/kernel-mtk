@@ -463,7 +463,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			return -EFAULT;
 		}
 
-		if (esd_para.para_num > 100) {
+		if (esd_para.para_num > 100 || esd_para.para_num <= 0) {
 			pr_debug("[LCM_GET_ESD]: para_num overflow! line:%d\n",
 				 __LINE__);
 			return -EFAULT;
