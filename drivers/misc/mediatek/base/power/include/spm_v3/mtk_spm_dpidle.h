@@ -17,6 +17,18 @@
 #include <mtk_spm.h>
 #include "mtk_spm_internal.h"
 
+#if defined(CONFIG_MACH_MT6759)
+#ifdef CONFIG_CPU_IDLE
+/* return 0: non-active, 1:active */
+int dpidle_active_status(void);
+#else
+int dpidle_active_status(void)
+{
+	return 0;
+}
+#endif
+#endif
+
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #define WAKE_SRC_FOR_DPIDLE \
 	(WAKE_SRC_R12_PCMTIMER | \
