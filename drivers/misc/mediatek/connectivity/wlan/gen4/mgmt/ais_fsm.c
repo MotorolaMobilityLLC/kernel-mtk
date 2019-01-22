@@ -840,6 +840,107 @@ VOID aisFsmStateAbort_IBSS(IN P_ADAPTER_T prAdapter)
 
 /*----------------------------------------------------------------------------*/
 /*!
+* @brief Change array index to channel number.
+*
+* @param[in] ucIndex            array index.
+*
+* @retval ucChannelNum           ucChannelNum
+*/
+/*----------------------------------------------------------------------------*/
+UINT_8 aisIndex2ChannelNum(IN UINT_8 ucIndex)
+{
+	UINT_8 ucChannel;
+
+	/* Full2Partial */
+	if (ucIndex >= 1 && ucIndex <= 14)
+		/* 1---14 */
+		ucChannel = ucIndex;
+		/* 1---14 */
+	else if (ucIndex >= 15 && ucIndex <= 22)
+		/* 15---22 */
+		ucChannel = (ucIndex - 6) << 2;
+		/* 36---64 */
+	else if (ucIndex >= 23 && ucIndex <= 34)
+		/* 23---34 */
+		ucChannel = (ucIndex + 2) << 2;
+		/* 100---144 */
+	else if (ucIndex >= 35 && ucIndex <= 39) {
+		/* 35---39 */
+		ucIndex = ucIndex + 2;
+		ucChannel = (ucIndex << 2) + 1;
+		/* 149---164 */
+	} else {
+		/* error */
+		ucChannel = 0;
+	}
+	return ucChannel;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief Full2Partial Process full scan channel info
+*
+* @param (none)
+*
+* @return (none)
+*/
+/*----------------------------------------------------------------------------*/
+
+VOID aisGetAndSetScanChannel(IN P_ADAPTER_T prAdapter)
+{
+	P_PARTIAL_SCAN_INFO prPartialScanChannel = NULL;
+	UINT_8 *pucChannel;
+	UINT_8 ucChannelNum;
+	int i = 1;
+	int t = 0;
+	/* Full2Partial */
+
+	if (prAdapter->prGlueInfo->u4LastFullScanTime == 0) {
+		/* there is full scan before this time */
+		DBGLOG(AIS, TRACE, "Full2Partial u4LastFullScanTime=0\n");
+		return;
+	}
+
+	if (prAdapter->prGlueInfo->pucFullScan2PartialChannel != NULL) {
+		DBGLOG(AIS, TRACE, "Full2Partial pucFullScan2PartialChannel not null\n");
+		return;
+	}
+
+	/* at here set channel info */
+	prPartialScanChannel = &(prAdapter->prGlueInfo->rFullScanApChannel);
+	kalMemSet(prPartialScanChannel, 0, sizeof(PARTIAL_SCAN_INFO));
+
+	pucChannel = prAdapter->prGlueInfo->aucChannelNum;
+	while (i < FULL_SCAN_MAX_CHANNEL_NUM) {
+		if (pucChannel[i] != 0) {
+			ucChannelNum = aisIndex2ChannelNum(i);
+			DBGLOG(AIS, TRACE, "Full2Partial i=%d, channel value=%d\n", i, ucChannelNum);
+			if (ucChannelNum != 0) {
+				if ((ucChannelNum >= 1) && (ucChannelNum <= 14))
+					prPartialScanChannel->arChnlInfoList[t].eBand = BAND_2G4;
+				else
+					prPartialScanChannel->arChnlInfoList[t].eBand = BAND_5G;
+
+				prPartialScanChannel->arChnlInfoList[t].ucChannelNum = ucChannelNum;
+				t++;
+			}
+		}
+		i++;
+	}
+	DBGLOG(AIS, INFO, "Full2Partial channel num=%d\n", t);
+	if (t > 0) {
+		prPartialScanChannel->ucChannelListNum = t;
+		prAdapter->prGlueInfo->pucFullScan2PartialChannel = (PUINT_8)prPartialScanChannel;
+	} else {
+		DBGLOG(AIS, INFO, "Full2Partial channel num great %d max channel number\n",
+				MAXIMUM_OPERATION_CHANNEL_LIST);
+	}
+
+}
+
+
+/*----------------------------------------------------------------------------*/
+/*!
 * @brief The Core FSM engine of AIS(Ad-hoc, Infra STA)
 *
 * @param[in] eNextState Enum value of next AIS STATE
@@ -1281,6 +1382,33 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 				prScanReqMsg->ucChannelListNum = 1;
 				prScanReqMsg->arChnlInfoList[0].eBand = eBand;
 				prScanReqMsg->arChnlInfoList[0].ucChannelNum = ucChannel;
+			} else if ((prAisFsmInfo->eCurrentState != AIS_STATE_LOOKING_FOR) &&
+				(prAdapter->prGlueInfo != NULL) &&
+				(prAdapter->prGlueInfo->pucScanChannel != NULL)) {
+				/* handle partial scan channel info */
+				P_PARTIAL_SCAN_INFO channel_t;
+				UINT_32	u4size;
+
+				channel_t = (P_PARTIAL_SCAN_INFO)prAdapter->prGlueInfo->pucScanChannel;
+
+				/* set partial scan */
+				prScanReqMsg->ucChannelListNum = channel_t->ucChannelListNum;
+				u4size = sizeof(channel_t->arChnlInfoList);
+
+				DBGLOG(AIS, TRACE, "SCAN: channel num = %d, total size=%d\n",
+						prScanReqMsg->ucChannelListNum, u4size);
+
+				kalMemCopy(prScanReqMsg->arChnlInfoList, channel_t->arChnlInfoList,
+						u4size);
+
+				/* clear prGlueInfo partial scan info */
+				kalMemSet(channel_t, 0, sizeof(PARTIAL_SCAN_INFO));
+				prAdapter->prGlueInfo->pucScanChannel = NULL;
+				DBGLOG(AIS, TRACE, "partial scan clear and reset puScanChannel\n");
+
+				/* set scan channel type for partial scan */
+				prScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
+
 			} else if (prAisFsmInfo->eCurrentState == AIS_STATE_LOOKING_FOR &&
 					prAisFsmInfo->aucNeighborAPChnl[0] != 0) {
 				PUINT_8 pucChnl = &prAisFsmInfo->aucNeighborAPChnl[0];
@@ -1307,6 +1435,65 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 			} else {
 				prScanReqMsg->eScanChannel = SCAN_CHANNEL_FULL;
 				ASSERT(0);
+			}
+
+			/*Full2Partial at here, chech sould update full scan to partial scan or not*/
+			if ((prAisFsmInfo->eCurrentState == AIS_STATE_ONLINE_SCAN) &&
+				(prScanReqMsg->eScanChannel == SCAN_CHANNEL_FULL) &&
+				(prScanReqMsg->ucSSIDType == SCAN_REQ_SSID_WILDCARD) &&
+				(prScanReqMsg->ucSSIDNum == 0)) {
+				/*this is a full scan*/
+				OS_SYSTIME rCurrentTime;
+				P_PARTIAL_SCAN_INFO channel_t;
+				P_GLUE_INFO_T prGlueinfo;
+				UINT_32 u4size;
+
+				DBGLOG(AIS, TRACE, "Full2Partial eScanChannel = %d, ucSSIDNum=%d\n",
+						prScanReqMsg->eScanChannel, prScanReqMsg->ucSSIDNum);
+				prGlueinfo = prAdapter->prGlueInfo;
+				GET_CURRENT_SYSTIME(&rCurrentTime);
+				DBGLOG(AIS, TRACE, "Full2Partial LastFullST= %lld,CurrentT=%lld\n",
+						prGlueinfo->u4LastFullScanTime, rCurrentTime);
+				if ((prGlueinfo->u4LastFullScanTime == 0) ||
+					(CHECK_FOR_TIMEOUT(rCurrentTime, prGlueinfo->u4LastFullScanTime,
+					SEC_TO_SYSTIME(UPDATE_FULL_TO_PARTIAL_SCAN_TIMEOUT)))) {
+					/* first full scan during connected */
+					/* or time over 60s from last full scan */
+					DBGLOG(AIS, INFO, "Full2Partial not update full scan\n");
+					prGlueinfo->u4LastFullScanTime = rCurrentTime;
+					prGlueinfo->ucTrScanType = 1;
+					kalMemSet(prGlueinfo->aucChannelNum, 0, FULL_SCAN_MAX_CHANNEL_NUM);
+					if (prGlueinfo->pucFullScan2PartialChannel != NULL) {
+						kalMemSet(prGlueinfo->pucFullScan2PartialChannel, 0,
+								sizeof(PARTIAL_SCAN_INFO));
+						prGlueinfo->pucFullScan2PartialChannel = NULL;
+					}
+				} else {
+					DBGLOG(AIS, INFO, "Full2Partial update full scan to partial scan\n");
+
+					/* at here, we should update full scan to partial scan */
+					/*this should remove*/
+					aisGetAndSetScanChannel(prAdapter);
+
+					if (prGlueinfo->pucFullScan2PartialChannel != NULL) {
+						PUINT_8 pChanneltmp;
+						/* update full scan to partial scan */
+						pChanneltmp = prGlueinfo->pucFullScan2PartialChannel;
+						channel_t = (P_PARTIAL_SCAN_INFO)pChanneltmp;
+
+						/* set partial scan */
+						prScanReqMsg->ucChannelListNum = channel_t->ucChannelListNum;
+						u4size = sizeof(channel_t->arChnlInfoList);
+
+						DBGLOG(AIS, TRACE, "Full2Partial ChList=%d,u4size=%d\n",
+							channel_t->ucChannelListNum, u4size);
+
+						kalMemCopy(prScanReqMsg->arChnlInfoList,
+								channel_t->arChnlInfoList, u4size);
+						/* set scan channel type for partial scan */
+						prScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
+					}
+				}
 			}
 
 			if (prAisFsmInfo->u4ScanIELength > 0) {
@@ -3440,8 +3627,8 @@ VOID aisFsmScanRequest(IN P_ADAPTER_T prAdapter, IN P_PARAM_SSID_T prSsid, IN PU
 */
 /*----------------------------------------------------------------------------*/
 VOID
-aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter,
-		     IN UINT_8 ucSsidNum, IN P_PARAM_SSID_T prSsid, IN PUINT_8 pucIe, IN UINT_32 u4IeLength)
+aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter, IN UINT_8 ucSsidNum, IN P_PARAM_SSID_T prSsid, IN PUINT_8 pucIe,
+		IN UINT_32 u4IeLength, IN UINT_8 ucSetChannel)
 {
 	UINT_32 i;
 	P_CONNECTION_SETTINGS_T prConnSettings;
@@ -3484,6 +3671,11 @@ aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter,
 			prAisFsmInfo->u4ScanIELength = 0;
 		}
 
+		/* save and set partial scan info */
+		if (ucSetChannel) {
+			prAdapter->prGlueInfo->pucScanChannel = (PUINT_8)&(prAdapter->prGlueInfo->rScanChannelInfo);
+			DBGLOG(AIS, TRACE, "partial scan set puScanChannel\n");
+		}
 		if (prAisFsmInfo->eCurrentState == AIS_STATE_NORMAL_TR) {
 			if (prAisBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE
 			    && prAisFsmInfo->fgIsInfraChannelFinished == FALSE) {
@@ -3507,6 +3699,11 @@ aisFsmScanRequestAdv(IN P_ADAPTER_T prAdapter,
 			aisFsmInsertRequest(prAdapter, AIS_REQUEST_SCAN);
 		}
 	} else {
+		if (ucSetChannel) {
+			/*need reset pucScanChannel and memset rScanChannelInfo*/
+			kalMemSet(&(prAdapter->prGlueInfo->rScanChannelInfo), 0, sizeof(PARTIAL_SCAN_INFO));
+			prAdapter->prGlueInfo->pucScanChannel = NULL;
+		}
 		DBGLOG(AIS, WARN, "Scan Request dropped. (state: %d)\n", prAisFsmInfo->eCurrentState);
 	}
 
@@ -3937,7 +4134,13 @@ BOOLEAN aisFsmIsRequestPending(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYP
 			if (bRemove == TRUE) {
 				LINK_REMOVE_KNOWN_ENTRY(&(prAisFsmInfo->rPendingReqList),
 							&(prPendingReqHdr->rLinkEntry));
-
+				if (eReqType == AIS_REQUEST_SCAN) {
+					if (prPendingReqHdr->pucChannelInfo != NULL) {
+						DBGLOG(AIS, INFO, "partial scan req pu8ChannelInfo no NULL\n");
+						prAdapter->prGlueInfo->pucScanChannel = prPendingReqHdr->pucChannelInfo;
+						prPendingReqHdr->pucChannelInfo = NULL;
+					}
+				}
 				cnmMemFree(prAdapter, prPendingReqHdr);
 			}
 
@@ -3966,7 +4169,17 @@ P_AIS_REQ_HDR_T aisFsmGetNextRequest(IN P_ADAPTER_T prAdapter)
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 
 	LINK_REMOVE_HEAD(&(prAisFsmInfo->rPendingReqList), prPendingReqHdr, P_AIS_REQ_HDR_T);
+	/* save partial scan puScanChannel info to prGlueInfo */
+	if ((prPendingReqHdr != NULL) && (prAdapter->prGlueInfo != NULL)) {
+		if (prAdapter->prGlueInfo->pucScanChannel != NULL)
+			DBGLOG(INIT, TRACE, "partial scan prGlueInfo error puScanChannel=%p",
+				prAdapter->prGlueInfo->pucScanChannel);
 
+		if (prPendingReqHdr->pucChannelInfo != NULL) {
+			prAdapter->prGlueInfo->pucScanChannel = prPendingReqHdr->pucChannelInfo;
+			prPendingReqHdr->pucChannelInfo = NULL;
+		}
+	}
 	return prPendingReqHdr;
 }
 
@@ -3997,6 +4210,14 @@ BOOLEAN aisFsmInsertRequest(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYPE_T
 	}
 
 	prAisReq->eReqType = eReqType;
+	prAisReq->pucChannelInfo = NULL;
+	/* save partial scan puScanChannel info to pending scan */
+	if ((prAdapter->prGlueInfo != NULL) &&
+		(prAdapter->prGlueInfo->pucScanChannel != NULL)) {
+		DBGLOG(AIS, TRACE, "partial scan insert req\n");
+		prAisReq->pucChannelInfo = prAdapter->prGlueInfo->pucScanChannel;
+		prAdapter->prGlueInfo->pucScanChannel = NULL;
+	}
 
 	/* attach request into pending request list */
 	LINK_INSERT_TAIL(&prAisFsmInfo->rPendingReqList, &prAisReq->rLinkEntry);
@@ -4022,8 +4243,14 @@ VOID aisFsmFlushRequest(IN P_ADAPTER_T prAdapter)
 
 	ASSERT(prAdapter);
 
-	while ((prAisReq = aisFsmGetNextRequest(prAdapter)) != NULL)
+	while ((prAisReq = aisFsmGetNextRequest(prAdapter)) != NULL) {
+		/* for partial scan, if channel infor exist, free channel info */
+		if (prAisReq->pucChannelInfo != NULL) {
+			DBGLOG(AIS, TRACE, "partial scan flush req\n");
+			kalMemSet(prAisReq->pucChannelInfo, 0, sizeof(PARTIAL_SCAN_INFO));
+		}
 		cnmMemFree(prAdapter, prAisReq);
+	}
 }
 
 VOID aisFsmRunEventRemainOnChannel(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)

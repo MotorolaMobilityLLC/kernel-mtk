@@ -586,6 +586,7 @@ wlanoidSetBssidListScan(IN P_ADAPTER_T prAdapter,
 	return WLAN_STATUS_SUCCESS;
 }				/* wlanoidSetBssidListScan */
 
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to request the driver to perform
@@ -750,7 +751,8 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 	if (prAdapter->prGlueInfo->rRegInfo.u4RddTestMode) {
 		if ((prAdapter->fgEnOnlineScan == TRUE) && (prAdapter->ucRddStatus)) {
 			if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED)
-				aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
+				aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength,
+						     prScanRequest->ucSetChannel);
 			else
 				return WLAN_STATUS_FAILURE;
 		} else
@@ -758,10 +760,13 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 	} else
 #endif
 	{
-		if (prAdapter->fgEnOnlineScan == TRUE)
-			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
-		else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED)
-			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
+		if (prAdapter->fgEnOnlineScan == TRUE) {
+			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength,
+					     prScanRequest->ucSetChannel);
+		} else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
+			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength,
+					     prScanRequest->ucSetChannel);
+		}
 		else
 			return WLAN_STATUS_FAILURE;
 	}

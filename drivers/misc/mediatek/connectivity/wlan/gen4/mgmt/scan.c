@@ -1989,6 +1989,38 @@ BOOLEAN scanCheckBssIsLegal(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
 	return fgAddToScanResult;
 
 }
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief Parse channel number to array index.
+*
+* @param[in] u4ChannelNum            channel number.
+*
+* @retval index           array index
+*/
+/*----------------------------------------------------------------------------*/
+UINT_8 nicChannelNum2Index(IN UINT_8 ucChannelNum)
+{
+	UINT_8 ucindex;
+
+	/* Full2Partial */
+	if (ucChannelNum >= 1 && ucChannelNum <= 14)
+		/* 1---14 */
+		ucindex = ucChannelNum;
+	else if (ucChannelNum >= 36 && ucChannelNum <= 64)
+		/* 15---22 */
+		ucindex = 6 + (ucChannelNum >> 2);
+	else if (ucChannelNum >= 100 && ucChannelNum <= 144)
+		/* 23---34 */
+		ucindex = (ucChannelNum >> 2) - 2;
+	else if (ucChannelNum >= 149 && ucChannelNum <= 165) {
+		/* 35---39 */
+		ucChannelNum = ucChannelNum - 1;
+		ucindex = (ucChannelNum >> 2) - 2;
+	} else
+		ucindex = 0;
+
+		return ucindex;
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -2047,6 +2079,17 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 	prAdapter->rWlanInfo.u4ScanDbgTimes1++;
 
 	if (prBssDesc) {
+
+		/* Full2Partial at here, we should save channel info */
+		if (prAdapter->prGlueInfo->ucTrScanType == 1) {
+			UINT_8	ucindex;
+
+			ucindex = nicChannelNum2Index(prBssDesc->ucChannelNum);
+			DBGLOG(SCN, TRACE, "Full2Partial ucChannelNum=%d, ucindex=%d\n",
+					prBssDesc->ucChannelNum, ucindex);
+
+			prAdapter->prGlueInfo->aucChannelNum[ucindex] = 1;
+		}
 
 		/* 4 <1.1> Beacon Change Detection for Connected BSS */
 		if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED &&

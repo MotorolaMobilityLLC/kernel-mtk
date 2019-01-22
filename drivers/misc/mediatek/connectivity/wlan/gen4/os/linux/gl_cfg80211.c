@@ -625,6 +625,104 @@ int mtk_cfg80211_get_link_statistics(struct wiphy *wiphy, struct net_device *nde
 
 /*----------------------------------------------------------------------------*/
 /*!
+* \brief
+*
+* \param[in]
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+int mtk_cfg80211_get_channel_info(P_GLUE_INFO_T prGlueInfo, struct cfg80211_scan_request *request)
+{
+	struct ieee80211_channel *prchannelinfo;
+	P_PARTIAL_SCAN_INFO prPartialScanChannel = NULL;
+	ENUM_BAND_T eBand;
+	UINT_8 ucChannel;
+	P_ADAPTER_T prAdapter;
+	UINT_8 i = 0;
+	UINT_8 j = 0;
+	UINT_8 channel_num = 0;
+	UINT_8 channel_counts = 0;
+
+	if (prGlueInfo == NULL)
+		return 0;
+	prAdapter = prGlueInfo->prAdapter;
+	if (prAdapter == NULL)
+		return 0;
+
+	prPartialScanChannel = (P_PARTIAL_SCAN_INFO)&prGlueInfo->rScanChannelInfo;
+
+
+	if (cnmAisInfraChannelFixed(prAdapter, &eBand, &ucChannel) == TRUE) {
+		DBGLOG(REQ, TRACE, "partial scan not normal scan\n");
+		return 0;
+	}
+
+	channel_counts = request->n_channels;
+	DBGLOG(REQ, TRACE, "partial scan channel_counts=%d\n", channel_counts);
+	/* 1. partial scan, max channels is 6
+	 * 2. some scan case, it will set band info to driver and not set channel info
+	 *    so, supplicant will set all channel with this scan
+	 *    for this case, partial scan must to check to avoid this scan
+	 *    channel num is MAXIMUM_OPERATION_CHANNEL_LIST
+	 * 3. some scan case, it will set band info to supplicant, not to driver,
+	 *    partial scan should handle this case.
+	 *    for this cse, band info include 2.4G and 5G band.
+	 *    channel num is channel num(2.4G or 5G band)
+	 *
+	 *    so, for partial scan limit channel num less MAXIMUM_OPERATION_CHANNEL_LIST
+	 */
+	 if (channel_counts > 25)
+		return 0;
+
+	while (j < channel_counts) {
+
+		prchannelinfo = request->channels[j];
+		DBGLOG(REQ, TRACE, "partial scan set channel band=%d\n", prchannelinfo->band);
+
+		switch (prchannelinfo->band) {
+		case IEEE80211_BAND_2GHZ:
+			prPartialScanChannel->arChnlInfoList[i].eBand = BAND_2G4;
+			break;
+
+		case IEEE80211_BAND_5GHZ:
+			prPartialScanChannel->arChnlInfoList[i].eBand = BAND_5G;
+			break;
+
+		default:
+			j++;
+			continue;
+		}
+
+		DBGLOG(REQ, TRACE, "set channel channel_center_freq =%d\n",
+				prchannelinfo->center_freq);
+
+		channel_num = (UINT_8)nicFreq2ChannelNum(
+			prchannelinfo->center_freq * 1000);
+
+		DBGLOG(REQ, TRACE, "partial scan set channel channel_num=%d\n",
+				channel_num);
+		prPartialScanChannel->arChnlInfoList[i].ucChannelNum = channel_num;
+
+		j++;
+		i++;
+	}
+
+	DBGLOG(REQ, INFO, "partial scan set channel i=%d\n", i);
+	if (i > 0) {
+		prPartialScanChannel->ucChannelListNum = i;
+		/*prGlueInfo->pucScanChannel = (PUINT_8)prPartialScanChannel;*/
+		DBGLOG(REQ, TRACE, "partial scan set puScanChannel\n");
+		return 1;
+	}
+
+	kalMemSet(prPartialScanChannel, 0, sizeof(PARTIAL_SCAN_INFO));
+	prGlueInfo->pucScanChannel = NULL;
+	return 0;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
  * @brief This routine is responsible for requesting to do a scan
  *
  * @param
@@ -638,6 +736,7 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	WLAN_STATUS rStatus;
 	UINT_32 i, u4BufLen;
+	UINT_8 ucSetChannelFlag = 0;
 	PARAM_SCAN_REQUEST_ADV_T rScanRequest;
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
@@ -676,6 +775,18 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 		rScanRequest.pucIE = (PUINT_8) (request->ie);
 	}
 
+	/* temp get request ieee80211_channel info */
+	if ((prGlueInfo->pucScanChannel == NULL) &&
+		(prGlueInfo->rScanChannelInfo.ucChannelListNum == 0)) {
+		DBGLOG(REQ, TRACE, "there is not any partial scan\n");
+		if ((request->n_channels > 0) && (request->n_channels < MAXIMUM_OPERATION_CHANNEL_LIST)) {
+			ucSetChannelFlag = mtk_cfg80211_get_channel_info(prGlueInfo, request);
+			rScanRequest.ucSetChannel = ucSetChannelFlag;
+			DBGLOG(REQ, TRACE, "partial scan get channel return %d\n", ucSetChannelFlag);
+		}
+
+	}
+
 	prGlueInfo->prScanRequest = request;
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetBssidListScanAdv,
@@ -684,6 +795,13 @@ int mtk_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request
 	if (rStatus != WLAN_STATUS_SUCCESS) {
 		prGlueInfo->prScanRequest = NULL;
 		DBGLOG(REQ, ERROR, "scan error:%x\n", rStatus);
+		if (ucSetChannelFlag) {
+			/*need reset pucScanChannel and memset rScanChannelInfo*/
+			kalMemSet(&(prGlueInfo->rScanChannelInfo), 0, sizeof(PARTIAL_SCAN_INFO));
+			prGlueInfo->pucScanChannel = NULL;
+
+		}
+
 		return -EINVAL;
 	}
 
