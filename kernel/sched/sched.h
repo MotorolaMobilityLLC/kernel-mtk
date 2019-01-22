@@ -1552,9 +1552,10 @@ enum cpu_dvfs_sched_type {
 	NUM_SCHE_TYPE
 };
 
+extern unsigned int capacity_margin;
+
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
 #define capacity_max SCHED_CAPACITY_SCALE
-extern unsigned int capacity_margin;
 extern struct static_key __sched_freq;
 
 static inline bool sched_freq(void)
