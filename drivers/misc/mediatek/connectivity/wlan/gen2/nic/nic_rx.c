@@ -1588,9 +1588,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 {
 	UINT_8 ucSubtype;
-#if CFG_SUPPORT_802_11W
-	BOOLEAN fgMfgDrop = FALSE;
-#endif
+
 	ASSERT(prAdapter);
 	ASSERT(prSwRfb);
 
@@ -1623,8 +1621,13 @@ VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	if ((prAdapter->fgTestMode == FALSE) && (prAdapter->prGlueInfo->fgIsRegistered == TRUE)) {
 #if CFG_MGMT_FRAME_HANDLING
 #if CFG_SUPPORT_802_11W
+		P_RX_CTRL_T prRxCtrl;
+		BOOLEAN fgMfgDrop = FALSE;
+
 		fgMfgDrop = rsnCheckRxMgmt(prAdapter, prSwRfb, ucSubtype);
 		if (fgMfgDrop) {
+			prRxCtrl = &prAdapter->rRxCtrl;
+			ASSERT(prRxCtrl);
 #if DBG
 			LOG_FUNC("QM RX MGT: Drop Unprotected Mgmt frame!!!\n");
 #endif
@@ -2850,10 +2853,11 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 			if ((HIF_RX_HDR_GET_NETWORK_IDX(prHifRxHdr) == NETWORK_TYPE_AIS_INDEX)
 					&& prAdapter->rWifiVar.rAisSpecificBssInfo.fgMgmtProtection	/* Use MFP */) {
 				if (!(prHifRxHdr->ucReserved & CONTROL_FLAG_UC_MGMT_NO_ENC)) {
+					DBGLOG(RSN, INFO, "Rx SA Query\n");
 					/* MFP test plan 5.3.3.4 */
 					rsnSaQueryAction(prAdapter, prSwRfb);
 				} else {
-					DBGLOG(RSN, TRACE, "Un-Protected SA Query, do nothing\n");
+					DBGLOG(RSN, WARN, "Un-Protected SA Query, do nothing\n");
 				}
 			}
 		}

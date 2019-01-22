@@ -416,6 +416,7 @@ VOID glClearHifInfo(GLUE_INFO_T *GlueInfo)
 	iounmap(GlueInfo->rHifInfo.DmaRegBaseAddr);
 	iounmap(GlueInfo->rHifInfo.McuRegBaseAddr);
 	iounmap(GlueInfo->rHifInfo.APMcuRegBaseAddr);
+
 	GlueInfo->rHifInfo.HifRegBaseAddr = NULL;
 	GlueInfo->rHifInfo.DmaRegBaseAddr = NULL;
 	GlueInfo->rHifInfo.McuRegBaseAddr = NULL;
