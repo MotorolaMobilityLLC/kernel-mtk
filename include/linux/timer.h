@@ -63,6 +63,7 @@ struct timer_list {
 #define TIMER_BASEMASK		(TIMER_CPUMASK | TIMER_MIGRATING)
 #define TIMER_DEFERRABLE	0x00100000
 #define TIMER_IRQSAFE		0x00200000
+#define TIMER_PINNED_ON_CPU	0x00400000
 
 #define __TIMER_INITIALIZER(_function, _expires, _data, _flags) { \
 		.entry = { .next = TIMER_ENTRY_STATIC },	\
@@ -258,3 +259,4 @@ unsigned long round_jiffies_up(unsigned long j);
 unsigned long round_jiffies_up_relative(unsigned long j);
 
 #endif
+extern void timer_quiesce_cpu(void *cpup);

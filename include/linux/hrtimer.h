@@ -72,6 +72,8 @@ enum hrtimer_restart {
  */
 #define HRTIMER_STATE_INACTIVE	0x00
 #define HRTIMER_STATE_ENQUEUED	0x01
+#define HRTIMER_PINNED_SHIFT	1
+#define HRTIMER_STATE_PINNED	(1 << HRTIMER_PINNED_SHIFT)
 
 /**
  * struct hrtimer - the basic hrtimer structure
@@ -495,3 +497,4 @@ extern void __init hrtimers_init(void);
 extern void sysrq_timer_list_show(void);
 
 #endif
+extern void hrtimer_quiesce_cpu(void *cpup);
