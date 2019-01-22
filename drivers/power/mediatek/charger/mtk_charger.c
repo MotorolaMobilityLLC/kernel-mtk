@@ -763,6 +763,8 @@ static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_ty
 	info->safety_timeout = false;
 	info->chg1_data.thermal_charging_current_limit = -1;
 	info->chg1_data.thermal_input_current_limit = -1;
+	info->chg2_data.thermal_charging_current_limit = -1;
+	info->chg2_data.thermal_input_current_limit = -1;
 
 	pr_err("mtk_is_charger_on plug in, tyupe:%d\n", chr_type);
 	if (info->plug_in != NULL)

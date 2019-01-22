@@ -59,7 +59,6 @@ static void _disable_all_charging(struct charger_manager *info)
 	}
 }
 
-/* TODO: Separate charging current into 2 chargers */
 static void dual_swchg_select_charging_current_limit(struct charger_manager *info)
 {
 	struct charger_data *pdata, *pdata2;
@@ -76,7 +75,6 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 			pdata->input_current_limit = 500000;
 		} else {
 			pdata->input_current_limit = info->data.ac_charger_input_current;
-			pdata->charging_current_limit = info->data.ac_charger_current;
 		}
 		goto done;
 	}
@@ -156,9 +154,17 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 		if (pdata->thermal_charging_current_limit < pdata->charging_current_limit)
 			pdata->charging_current_limit = pdata->thermal_charging_current_limit;
 
+	if (pdata2->thermal_charging_current_limit != -1)
+		if (pdata2->thermal_charging_current_limit < pdata2->charging_current_limit)
+			pdata2->charging_current_limit = pdata2->thermal_charging_current_limit;
+
 	if (pdata->thermal_input_current_limit != -1)
 		if (pdata->thermal_input_current_limit < pdata->input_current_limit)
 			pdata->input_current_limit = pdata->thermal_input_current_limit;
+
+	if (pdata2->thermal_input_current_limit != -1)
+		if (pdata2->thermal_input_current_limit < pdata2->input_current_limit)
+			pdata2->input_current_limit = pdata2->thermal_input_current_limit;
 done:
 	pr_err("force:%d thermal:%d %d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d\n",
 		pdata->force_charging_current,
@@ -168,6 +174,12 @@ done:
 		pdata->charging_current_limit,
 		info->chr_type, info->usb_unlimited,
 		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state);
+	pr_err("2nd force:%d thermal:%d %d setting:%d %d\n",
+		pdata2->force_charging_current,
+		pdata2->thermal_input_current_limit,
+		pdata2->thermal_charging_current_limit,
+		pdata2->input_current_limit,
+		pdata2->charging_current_limit);
 
 	charger_dev_set_input_current(info->chg1_dev, pdata->input_current_limit);
 	charger_dev_set_charging_current(info->chg1_dev, pdata->charging_current_limit);
@@ -189,6 +201,10 @@ done:
 	}
 	if (pdata->input_current_limit > 0 && pdata->charging_current_limit > 0)
 		charger_dev_enable(info->chg1_dev, true);
+	if (pdata2->input_current_limit > 0 && pdata2->charging_current_limit > 0) {
+		if (mtk_pe20_get_is_enable(info) && mtk_pe20_get_is_connect(info))
+			charger_dev_enable(info->chg2_dev, true);
+	}
 	mutex_unlock(&swchgalg->ichg_aicr_access_mutex);
 }
 
@@ -248,6 +264,7 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 				charger_dev_enable_termination(info->chg1_dev, true);
 			}
 		} else {
+			charger_dev_enable(info->chg2_dev, false);
 			charger_dev_set_eoc_current(info->chg1_dev, 150000);
 			charger_dev_enable_termination(info->chg1_dev, true);
 		}
@@ -315,7 +332,6 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 	dual_swchg_turn_on_charging(info);
 
 	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
-	/* TODO: It should consider whether slave charger is enabled */
 	if (chg_done) {
 		swchgalg->state = CHR_BATFULL;
 		charger_dev_do_event(info->chg1_dev, EVENT_EOC, 0);
@@ -373,7 +389,6 @@ int mtk_dual_switch_chr_full(struct charger_manager *info)
 	if (!chg_done) {
 		swchgalg->state = CHR_CC;
 		charger_dev_do_event(info->chg1_dev, EVENT_RECHARGE, 0);
-
 		mtk_pe20_set_to_check_chr_type(info, true);
 		info->enable_dynamic_cv = true;
 		pr_err("battery recharging!\n");
@@ -443,7 +458,8 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 		if (!chg_en) {
 			swchgalg->state = CHR_BATFULL;
 			charger_manager_notifier(info, CHARGER_NOTIFY_EOC);
-			/* _wake_up_charger(info); */
+			if (info->chg1_dev->is_polling_mode == false)
+				_wake_up_charger(info);
 		} else {
 			charger_dev_get_charging_current(info->chg2_dev,
 							 &ichg2);
@@ -454,19 +470,23 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 				swchgalg->state = CHR_POSTCC;
 			} else {
 				swchgalg->state = CHR_TUNING;
+				mutex_lock(&swchgalg->ichg_aicr_access_mutex);
 				if (pdata2->charging_current_limit >= 500000)
 					pdata2->charging_current_limit -= 500000;
 				else
 					pdata2->charging_current_limit = 0;
-				charger_dev_set_charging_current(info->chg2_dev,
-						pdata2->charging_current_limit);
+				mutex_unlock(&swchgalg->ichg_aicr_access_mutex);
 			}
-
+			_wake_up_charger(info);
 		}
-		/* TODO: Only when slave charger is disabled and master is full */
-		/* charger_manager_notifier(info, CHARGER_NOTIFY_EOC); */
-		/* _wake_up_charger(info); */
 	}
+
+	if (event == CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT) {
+		info->safety_timeout = true;
+		if (info->chg1_dev->is_polling_mode == false)
+			_wake_up_charger(info);
+	}
+
 	return NOTIFY_DONE;
 }
 
