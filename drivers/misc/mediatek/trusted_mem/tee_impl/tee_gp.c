@@ -49,17 +49,15 @@ struct TEE_GP_SESSION_DATA {
 	struct TEEC_Context context;
 	struct TEEC_Session session;
 	struct TEEC_SharedMemory wsm;
-	struct mutex lock;
 };
 
-#define LOCK_BY_CALLEE (0)
-#if LOCK_BY_CALLEE
-#define TEE_SESSION_LOCK() mutex_lock(&sess_data->lock)
-#define TEE_SESSION_UNLOCK() mutex_unlock(&sess_data->lock)
-#else
-#define TEE_SESSION_LOCK()
-#define TEE_SESSION_UNLOCK()
-#endif
+static struct TEE_GP_SESSION_DATA *g_sess_data;
+static bool is_sess_ready;
+static unsigned int sess_ref_cnt;
+
+#define TEE_SESSION_LOCK() mutex_lock(&g_sess_lock)
+#define TEE_SESSION_UNLOCK() mutex_unlock(&g_sess_lock)
+static DEFINE_MUTEX(g_sess_lock);
 
 static struct TEE_GP_SESSION_DATA *tee_gp_create_session_data(void)
 {
@@ -70,52 +68,54 @@ static struct TEE_GP_SESSION_DATA *tee_gp_create_session_data(void)
 		return NULL;
 
 	memset(data, 0x0, sizeof(struct TEE_GP_SESSION_DATA));
-	mutex_init(&data->lock);
 	return data;
 }
 
-static void tee_gp_destroy_session_data(struct TEE_GP_SESSION_DATA *sess_data)
+static void tee_gp_destroy_session_data(void)
 {
-	if (VALID(sess_data))
-		mld_kfree(sess_data);
+	if (VALID(g_sess_data)) {
+		mld_kfree(g_sess_data);
+		g_sess_data = NULL;
+	}
 }
 
-int tee_session_open(void **tee_data, void *priv)
+static int tee_session_open_single_session_unlocked(void)
 {
-	int ret = 0;
+	int ret = TMEM_OK;
 	struct TEEC_UUID destination = SECMEM_TL_GP_UUID;
-	struct TEE_GP_SESSION_DATA *sess_data;
 
-	UNUSED(priv);
+	if (is_sess_ready) {
+		pr_debug("UT_SUITE:Session is already created!\n");
+		return TMEM_OK;
+	}
 
-	sess_data = tee_gp_create_session_data();
-	if (INVALID(sess_data)) {
+	g_sess_data = tee_gp_create_session_data();
+	if (INVALID(g_sess_data)) {
 		pr_err("Create session data failed: out of memory!\n");
 		return TMEM_TEE_CREATE_SESSION_DATA_FAILED;
 	}
 
-	TEE_SESSION_LOCK();
-
 	ret = TEEC_InitializeContext(SECMEM_TL_GP_UUID_STRING,
-				     &sess_data->context);
+				     &g_sess_data->context);
 	if (ret != TEEC_SUCCESS) {
 		pr_err("TEEC_InitializeContext failed: %x\n", ret);
 		goto err_initialize_context;
 	}
 
-	sess_data->wsm.buffer =
+	g_sess_data->wsm.buffer =
 		mld_kmalloc(sizeof(struct secmem_ta_msg_t), GFP_KERNEL);
-	sess_data->wsm.size = sizeof(struct secmem_ta_msg_t);
-	sess_data->wsm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
-	memset(sess_data->wsm.buffer, 0, sess_data->wsm.size);
+	g_sess_data->wsm.size = sizeof(struct secmem_ta_msg_t);
+	g_sess_data->wsm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
+	memset(g_sess_data->wsm.buffer, 0, g_sess_data->wsm.size);
 
-	ret = TEEC_RegisterSharedMemory(&sess_data->context, &sess_data->wsm);
+	ret = TEEC_RegisterSharedMemory(&g_sess_data->context,
+					&g_sess_data->wsm);
 	if (ret != TEEC_SUCCESS) {
 		pr_err("TEEC_RegisterSharedMemory failed: %x\n", ret);
 		goto err_register_shared_memory;
 	}
 
-	ret = TEEC_OpenSession(&sess_data->context, &sess_data->session,
+	ret = TEEC_OpenSession(&g_sess_data->context, &g_sess_data->session,
 			       &destination, TEEC_LOGIN_PUBLIC, NULL, NULL,
 			       NULL);
 	if (ret != TEEC_SUCCESS) {
@@ -123,59 +123,93 @@ int tee_session_open(void **tee_data, void *priv)
 		goto err_open_session;
 	}
 
-	*tee_data = (void *)sess_data;
-	TEE_SESSION_UNLOCK();
+	is_sess_ready = true;
 	return TMEM_OK;
 
 err_open_session:
 	pr_err("TEEC_ReleaseSharedMemory\n");
-	TEEC_ReleaseSharedMemory(&sess_data->wsm);
+	TEEC_ReleaseSharedMemory(&g_sess_data->wsm);
 
 err_register_shared_memory:
 	pr_err("TEEC_FinalizeContext\n");
-	mld_kfree(sess_data->wsm.buffer);
-	TEEC_FinalizeContext(&sess_data->context);
+	mld_kfree(g_sess_data->wsm.buffer);
+	TEEC_FinalizeContext(&g_sess_data->context);
 
 err_initialize_context:
-	TEE_SESSION_UNLOCK();
-	tee_gp_destroy_session_data(sess_data);
+	tee_gp_destroy_session_data();
 
 	return TMEM_TEE_CREATE_SESSION_FAILED;
 }
 
-int tee_session_close(void *tee_data, void *priv)
+static int tee_session_close_single_session_unlocked(void)
 {
-	struct TEE_GP_SESSION_DATA *sess_data =
-		(struct TEE_GP_SESSION_DATA *)tee_data;
+	if (!is_sess_ready) {
+		pr_debug("Session is already closed!\n");
+		return TMEM_OK;
+	}
 
-	UNUSED(priv);
-	TEE_SESSION_LOCK();
-
-	TEEC_CloseSession(&sess_data->session);
-	TEEC_ReleaseSharedMemory(&sess_data->wsm);
-	mld_kfree(sess_data->wsm.buffer);
-	TEEC_FinalizeContext(&sess_data->context);
-
-	TEE_SESSION_UNLOCK();
-
-	tee_gp_destroy_session_data(sess_data);
+	TEEC_CloseSession(&g_sess_data->session);
+	TEEC_ReleaseSharedMemory(&g_sess_data->wsm);
+	mld_kfree(g_sess_data->wsm.buffer);
+	TEEC_FinalizeContext(&g_sess_data->context);
+	tee_gp_destroy_session_data();
+	is_sess_ready = false;
 	return TMEM_OK;
 }
 
-static int secmem_execute(struct TEEC_Session *session,
-			  struct TEEC_SharedMemory *sess_wsm,
-			  struct TEE_GP_SESSION_DATA *sess_data, u32 cmd,
-			  struct secmem_param *param)
+int tee_session_open(void **tee_data, void *priv)
+{
+	UNUSED(tee_data);
+	UNUSED(priv);
+
+	TEE_SESSION_LOCK();
+
+	if (tee_session_open_single_session_unlocked() == TMEM_OK)
+		sess_ref_cnt++;
+
+	TEE_SESSION_UNLOCK();
+	return TMEM_OK;
+}
+
+int tee_session_close(void *tee_data, void *priv)
+{
+	UNUSED(tee_data);
+	UNUSED(priv);
+
+	TEE_SESSION_LOCK();
+
+	if (sess_ref_cnt == 0) {
+		pr_err("Session is already closed!\n");
+		TEE_SESSION_UNLOCK();
+		return TMEM_OK;
+	}
+
+	sess_ref_cnt--;
+	if (sess_ref_cnt == 0) {
+		pr_debug("Try closing session!\n");
+		tee_session_close_single_session_unlocked();
+	}
+
+	TEE_SESSION_UNLOCK();
+	return TMEM_OK;
+}
+
+static int secmem_execute(u32 cmd, struct secmem_param *param)
 {
 	int ret = TEEC_SUCCESS;
 	struct TEEC_Operation op;
 	struct secmem_ta_msg_t *msg;
 
 	TEE_SESSION_LOCK();
-	;
 
-	memset(sess_wsm->buffer, 0, sess_wsm->size);
-	msg = sess_wsm->buffer;
+	if (!is_sess_ready) {
+		pr_err("Session is not ready!\n");
+		TEE_SESSION_UNLOCK();
+		return TMEM_TEE_SESSION_IS_NOT_READY;
+	}
+
+	memset(g_sess_data->wsm.buffer, 0, g_sess_data->wsm.size);
+	msg = g_sess_data->wsm.buffer;
 	msg->sec_handle = param->sec_handle;
 	msg->alignment = param->alignment;
 	msg->size = param->size;
@@ -184,11 +218,11 @@ static int secmem_execute(struct TEEC_Session *session,
 	memset(&op, 0, sizeof(struct TEEC_Operation));
 	op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INOUT, TEEC_NONE,
 					 TEEC_NONE, TEEC_NONE);
-	op.params[0].memref.parent = sess_wsm;
+	op.params[0].memref.parent = &g_sess_data->wsm;
 	op.params[0].memref.offset = 0;
-	op.params[0].memref.size = sess_wsm->size;
+	op.params[0].memref.size = g_sess_data->wsm.size;
 
-	ret = TEEC_InvokeCommand(session, cmd, &op, NULL);
+	ret = TEEC_InvokeCommand(&g_sess_data->session, cmd, &op, NULL);
 	if (ret != TEEC_SUCCESS) {
 		pr_err("TEEC_InvokeCommand failed! cmd:%d, ret:0x%x\n", cmd,
 		       ret);
@@ -214,11 +248,10 @@ int tee_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
 {
 	int ret;
 	struct secmem_param param = {0};
-	struct TEE_GP_SESSION_DATA *sess_data =
-		(struct TEE_GP_SESSION_DATA *)tee_data;
 	u32 tee_ta_cmd = (clean ? get_tee_cmd(TEE_OP_ALLOC_ZERO, priv)
 				: get_tee_cmd(TEE_OP_ALLOC, priv));
 
+	UNUSED(tee_data);
 	UNUSED(owner);
 	UNUSED(id);
 	UNUSED(priv);
@@ -231,8 +264,7 @@ int tee_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
 	param.refcount = 0;
 	param.sec_handle = 0;
 
-	ret = secmem_execute(&sess_data->session, &sess_data->wsm, sess_data,
-			     tee_ta_cmd, &param);
+	ret = secmem_execute(tee_ta_cmd, &param);
 	if (ret)
 		return TMEM_TEE_ALLOC_CHUNK_FAILED;
 
@@ -246,18 +278,16 @@ int tee_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
 int tee_free(u32 sec_handle, u8 *owner, u32 id, void *tee_data, void *priv)
 {
 	struct secmem_param param = {0};
-	struct TEE_GP_SESSION_DATA *sess_data =
-		(struct TEE_GP_SESSION_DATA *)tee_data;
 	u32 tee_ta_cmd = get_tee_cmd(TEE_OP_FREE, priv);
 
+	UNUSED(tee_data);
 	UNUSED(owner);
 	UNUSED(id);
 	UNUSED(priv);
 
 	param.sec_handle = sec_handle;
 
-	if (secmem_execute(&sess_data->session, &sess_data->wsm, sess_data,
-			   tee_ta_cmd, &param))
+	if (secmem_execute(tee_ta_cmd, &param))
 		return TMEM_TEE_FREE_CHUNK_FAILED;
 
 	return TMEM_OK;
@@ -266,16 +296,14 @@ int tee_free(u32 sec_handle, u8 *owner, u32 id, void *tee_data, void *priv)
 int tee_mem_reg_add(u64 pa, u32 size, void *tee_data, void *priv)
 {
 	struct secmem_param param = {0};
-	struct TEE_GP_SESSION_DATA *sess_data =
-		(struct TEE_GP_SESSION_DATA *)tee_data;
 	u32 tee_ta_cmd = get_tee_cmd(TEE_OP_REGION_ENABLE, priv);
 
+	UNUSED(tee_data);
 	UNUSED(priv);
 	param.sec_handle = pa;
 	param.size = size;
 
-	if (secmem_execute(&sess_data->session, &sess_data->wsm, sess_data,
-			   tee_ta_cmd, &param))
+	if (secmem_execute(tee_ta_cmd, &param))
 		return TMEM_TEE_APPEND_MEMORY_FAILED;
 
 	return TMEM_OK;
@@ -284,14 +312,12 @@ int tee_mem_reg_add(u64 pa, u32 size, void *tee_data, void *priv)
 int tee_mem_reg_remove(void *tee_data, void *priv)
 {
 	struct secmem_param param = {0};
-	struct TEE_GP_SESSION_DATA *sess_data =
-		(struct TEE_GP_SESSION_DATA *)tee_data;
 	u32 tee_ta_cmd = get_tee_cmd(TEE_OP_REGION_DISABLE, priv);
 
+	UNUSED(tee_data);
 	UNUSED(priv);
 
-	if (secmem_execute(&sess_data->session, &sess_data->wsm, sess_data,
-			   tee_ta_cmd, &param))
+	if (secmem_execute(tee_ta_cmd, &param))
 		return TMEM_TEE_RELEASE_MEMORY_FAILED;
 
 	return TMEM_OK;
@@ -305,9 +331,8 @@ static int tee_invoke_command(struct trusted_driver_cmd_params *invoke_params,
 			      void *tee_data, void *priv)
 {
 	struct secmem_param param = {0};
-	struct TEE_GP_SESSION_DATA *sess_data =
-		(struct TEE_GP_SESSION_DATA *)tee_data;
 
+	UNUSED(tee_data);
 	UNUSED(priv);
 
 	if (INVALID(invoke_params))
@@ -332,8 +357,7 @@ static int tee_invoke_command(struct trusted_driver_cmd_params *invoke_params,
 	param.refcount = (u32)invoke_params->param2;
 	param.sec_handle = invoke_params->param3;
 
-	if (secmem_execute(&sess_data->session, &sess_data->wsm, sess_data,
-			   invoke_params->cmd, &param))
+	if (secmem_execute(invoke_params->cmd, &param))
 		return TMEM_TEE_INVOKE_COMMAND_FAILED;
 
 	invoke_params->param0 = param.alignment;
