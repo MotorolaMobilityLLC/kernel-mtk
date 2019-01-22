@@ -140,6 +140,9 @@ static int drm_addmap_core(struct drm_device * dev, resource_size_t offset,
 	unsigned long user_token;
 	int ret;
 
+	if (!dev)
+		return -EINVAL;
+
 	map = kmalloc(sizeof(*map), GFP_KERNEL);
 	if (!map)
 		return -ENOMEM;
