@@ -17,6 +17,30 @@
 
 #define TLOG_SIZE       (256 * 1024)
 
+#define MICROTRUST_DRM_SUPPORT
+
+#ifdef MICROTRUST_DRM_SUPPORT
+
+#define TOTAL_DRM_DRIVER_NUM (8)
+enum drm_dcih_buf_mode {
+	DRM_DCIH_BUF_MODE_FORWARD = 0x0,
+	DRM_DCIH_BUF_MODE_BACKWARD = 0x1,
+
+	DRM_DCIH_BUF_MODE_INVALID = 0xFF
+};
+struct drm_dcih_info {
+	unsigned char buf_mode;			/* buf mode, 0 for forward, 1 for backward */
+	unsigned char is_inited;		/* DCIH driver inited or not */
+	unsigned char is_shared;		/* DCIH driver shared with secure driver or not */
+	unsigned int dcih_id;			/* DCIH driver id */
+	unsigned int buf_size;			/* DCIH driver allocated buf size */
+	unsigned long virt_addr;		/* DCIH driver allocated virtual buf addr */
+	unsigned long phy_addr;			/* DCIH driver allocated phy buf addr */
+	struct completion tee_signal;	/* Wait for the signal from TEE driver (DCIH of TEE->REE) */
+	struct completion ree_signal;	/* Notify to REE driver (DCIH of TEE->REE) */
+};
+#endif
+
 extern int create_nq_buffer(void);
 extern unsigned long create_fp_fdrv(int buff_size);
 extern unsigned long create_keymaster_fdrv(int buff_size);
@@ -73,6 +97,8 @@ extern long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_
 extern int add_work_entry(int work_type, unsigned long buff);
 extern long create_utgate_log_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
 extern void init_sched_work_ent(void);
+extern void *__teei_client_map_mem(int dev_file_id, unsigned long size, unsigned long user_addr);
+extern long __teei_client_open_dev(void);
 
 struct semaphore api_lock;
 extern unsigned long fp_buff_addr;

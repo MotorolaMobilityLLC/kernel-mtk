@@ -38,6 +38,7 @@
 #define TEEI_CONFIG_IOCTL_INIT_TEEI             _IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
 #define SOTER_TUI_ENTER                         _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x70, int)
 #define SOTER_TUI_LEAVE                         _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x71, int)
+#define TEEI_VFS_NOTIFY_DRM			_IOWR(TEEI_CONFIG_IOC_MAGIC, 0x75, int)
 
 static int vfs_major = VFS_MAJOR;
 static struct class *driver_class;
@@ -60,6 +61,7 @@ extern void mt_deint_restore(void);
 extern int tui_i2c_enable_clock(void);
 extern int tui_i2c_disable_clock(void);
 #endif
+extern int tz_sec_drv_notification(unsigned int driver_id);
 
 #ifdef VFS_RDWR_SEM
 struct semaphore VFS_rd_sem;
@@ -103,6 +105,7 @@ static long tz_vfs_ioctl(struct file *filp,
                          unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
+	unsigned int drm_driver_id;
 
 	switch (cmd) {
 #ifdef MICROTRUST_TUI_DRIVER
@@ -136,6 +139,18 @@ static long tz_vfs_ioctl(struct file *filp,
 
 			break;
 #endif
+		case TEEI_VFS_NOTIFY_DRM:
+			pr_debug("***************TEEI_VFS_NOTIFY_DRM\n");
+			if (copy_from_user((void *)&drm_driver_id, (void *)arg, sizeof(unsigned int)))
+				return -EFAULT;
+			pr_debug("get notification from secure driver 0x%x\n", drm_driver_id);
+
+			/* notify drm driver */
+			ret = tz_sec_drv_notification(drm_driver_id);
+			pr_debug("get notification done 0x%x, ret %d\n", drm_driver_id, ret);
+			if (copy_to_user((void *)arg, (void *)&ret, sizeof(unsigned int)))
+				return -EFAULT;
+			break;
 		default:
 			return -EINVAL;
 	}
