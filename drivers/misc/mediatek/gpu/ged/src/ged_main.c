@@ -45,6 +45,7 @@
 #include "ged_fdvfs.h"
 
 #include "ged_ge.h"
+#include "ged_gpu_tuner.h"
 
 #define GED_DRIVER_DEVICE_NAME "ged"
 #ifndef GED_BUFFER_LOG_DISABLE
@@ -195,6 +196,10 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 			break;
 		case GED_BRIDGE_COMMAND_GPU_TIMESTAMP:
 			SET_FUNC_AND_CHECK(ged_bridge_gpu_timestamp, GPU_TIMESTAMP);
+			break;
+		case GED_BRIDGE_COMMAND_GPU_TUNER_STATUS:
+			SET_FUNC_AND_CHECK(ged_bridge_gpu_tuner_status,
+				GPU_TUNER_STATUS);
 			break;
 		default:
 			GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
@@ -352,6 +357,8 @@ static void ged_exit(void)
 
 	ged_ge_exit();
 
+	ged_gpu_tuner_exit();
+
 	remove_proc_entry(GED_DRIVER_DEVICE_NAME, NULL);
 
 }
@@ -461,6 +468,12 @@ static int ged_init(void)
 	ghLogBuf_ged_srv =  ged_log_buf_alloc(32, 32*80, GED_LOG_BUF_TYPE_RINGBUFFER, "ged_srv_Log", "ged_srv_debug");
 #endif
 #endif
+
+	err = ged_gpu_tuner_init();
+	if (unlikely(err != GED_OK)) {
+		GED_LOGE("ged: failed to init GPU Tuner!\n");
+		goto ERROR;
+	}
 
 	return 0;
 
