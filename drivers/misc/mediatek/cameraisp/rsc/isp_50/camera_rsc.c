@@ -3050,10 +3050,6 @@ static signed int RSC_open(struct inode *pInode, struct file *pFile)
 	set_engine_ops(&rsc_reqs, &rsc_ops);
 #endif
 
-#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
-	pm_qos_add_request(&rsc_pm_qos_request, PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
-	cmdqCoreRegisterTaskCycleCB(CMDQ_GROUP_RSC, cmdq_pm_qos_start, cmdq_pm_qos_stop);
-#endif
 
 EXIT:
 
@@ -3106,9 +3102,6 @@ static signed int RSC_release(struct inode *pInode, struct file *pFile)
 	unregister_requests(&rsc_reqs);
 #endif
 
-#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
-	pm_qos_remove_request(&rsc_pm_qos_request);
-#endif
 
 EXIT:
 
@@ -3462,6 +3455,11 @@ static signed int RSC_probe(struct platform_device *pDev)
 		/*  */
 		RSCInfo.IrqInfo.Mask[RSC_IRQ_TYPE_INT_RSC_ST] = INT_ST_MASK_RSC;
 
+#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
+		pm_qos_add_request(&rsc_pm_qos_request, PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+		cmdqCoreRegisterTaskCycleCB(CMDQ_GROUP_RSC, cmdq_pm_qos_start, cmdq_pm_qos_stop);
+#endif
+
 	}
 
 EXIT:
@@ -3536,6 +3534,11 @@ static signed int RSC_remove(struct platform_device *pDev)
 	class_destroy(pRSCClass);
 	pRSCClass = NULL;
 	/*  */
+
+#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
+	pm_qos_remove_request(&rsc_pm_qos_request);
+#endif
+
 	return 0;
 }
 
