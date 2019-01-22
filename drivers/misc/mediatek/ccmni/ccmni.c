@@ -53,6 +53,14 @@
 
 struct ccmni_ctl_block *ccmni_ctl_blk[MAX_MD_NUM];
 
+/* Time in nano seconds. This number must be less than a second. */
+#ifdef ENABLE_WQ_GRO
+long int gro_flush_timer __read_mostly = 1000000L;
+#else
+long int gro_flush_timer;
+#endif
+
+
 /********************internal function*********************/
 static void ccmni_make_etherframe(int md_id, struct net_device *dev, void *_eth_hdr, unsigned char *mac_addr,
 				  unsigned int packet_type)
@@ -191,6 +199,42 @@ static inline int arp_reply(int md_id, struct net_device *dev, struct ethhdr *et
  not_arp_req:
 	return 1;
 }
+
+#ifdef ENABLE_WQ_GRO
+static int is_skb_gro(struct sk_buff *skb)
+{
+	u32 packet_type;
+
+	packet_type = skb->data[0] & 0xF0;
+	if (packet_type == IPV4_VERSION &&
+		ip_hdr(skb)->protocol == IPPROTO_TCP)
+		return 1;
+	else if (packet_type == IPV6_VERSION &&
+		ipv6_hdr(skb)->nexthdr == IPPROTO_TCP)
+		return 1;
+	else
+		return 0;
+}
+
+static void ccmni_gro_flush(struct ccmni_instance *ccmni)
+{
+	struct timespec curr_time, diff;
+
+	if (!gro_flush_timer)
+		return;
+
+	if (unlikely(ccmni->flush_time.tv_sec == 0)) {
+		getnstimeofday(&ccmni->flush_time);
+	} else {
+		getnstimeofday(&(curr_time));
+		diff = timespec_sub(curr_time, ccmni->flush_time);
+		if ((diff.tv_sec > 0) || (diff.tv_nsec > gro_flush_timer)) {
+			napi_gro_flush(ccmni->napi, false);
+			getnstimeofday(&ccmni->flush_time);
+		}
+	}
+}
+#endif
 
 static inline int ccmni_forward_rx(struct ccmni_instance *ccmni, struct sk_buff *skb)
 {
@@ -331,9 +375,10 @@ static int ccmni_open(struct net_device *dev)
 		atomic_set(&ccmni_tmp->usage, usage_cnt);
 	}
 
-	CCMNI_INF_MSG(ccmni->md_id, "%s_Open: cnt=(%d,%d), md_ab=0x%X\n",
+	CCMNI_INF_MSG(ccmni->md_id, "%s_Open:cnt=(%d,%d), md_ab=0x%X, gro=(%llx, %ld), flt_cnt=%d\n",
 		      dev->name, atomic_read(&ccmni->usage),
-		      atomic_read(&ccmni_tmp->usage), ccmni_ctl->ccci_ops->md_ability);
+		      atomic_read(&ccmni_tmp->usage), ccmni_ctl->ccci_ops->md_ability,
+		      dev->features, gro_flush_timer, ccmni->flt_cnt);
 	return 0;
 }
 
@@ -361,7 +406,7 @@ static int ccmni_close(struct net_device *dev)
 	if (unlikely(ccmni_ctl->ccci_ops->md_ability & MODEM_CAP_NAPI))
 		napi_disable(ccmni->napi);
 
-	CCMNI_INF_MSG(ccmni->md_id, "%s_Close: cnt=(%d, %d)\n",
+	CCMNI_INF_MSG(ccmni->md_id, "%s_Close:cnt=(%d, %d)\n",
 		dev->name, atomic_read(&ccmni->usage), atomic_read(&ccmni_tmp->usage));
 
 	return 0;
@@ -1089,11 +1134,16 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb, void
 #endif
 	} else {
 #ifdef ENABLE_WQ_GRO
-		preempt_disable();
-		spin_lock_bh(ccmni->spinlock);
-		napi_gro_receive(ccmni->napi, skb);
-		spin_unlock_bh(ccmni->spinlock);
-		preempt_enable();
+		if (is_skb_gro(skb)) {
+			preempt_disable();
+			spin_lock_bh(ccmni->spinlock);
+			napi_gro_receive(ccmni->napi, skb);
+			ccmni_gro_flush(ccmni);
+			spin_unlock_bh(ccmni->spinlock);
+			preempt_enable();
+		} else {
+			netif_rx_ni(skb);
+		}
 #else
 		if (!in_interrupt())
 			netif_rx_ni(skb);
