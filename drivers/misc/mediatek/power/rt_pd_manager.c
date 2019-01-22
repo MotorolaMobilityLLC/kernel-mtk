@@ -39,6 +39,11 @@
 #include "musb_core.h"
 #define RT_PD_MANAGER_VERSION	"1.0.5_MTK"
 
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+#include "usb_switch.h"
+#include "typec.h"
+#endif
+
 static DEFINE_MUTEX(param_lock);
 
 static struct tcpc_device *tcpc_dev;
