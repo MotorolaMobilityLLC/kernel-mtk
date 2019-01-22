@@ -3654,6 +3654,61 @@ static struct charger_ops mt6370_ls_ops = {
 	.get_ibus_adc = mt6370_get_ibus,
 };
 
+static ssize_t shipping_mode_store(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	struct mt6370_pmu_charger_data *chg_data = dev_get_drvdata(dev);
+	int32_t tmp = 0;
+	int ret = 0;
+
+	if (kstrtoint(buf, 10, &tmp) < 0) {
+		dev_notice(dev, "parsing number fail\n");
+		return -EINVAL;
+	}
+	if (tmp != 5526789)
+		return -EINVAL;
+	mutex_lock(&chg_data->adc_access_lock);
+	ret = mt6370_pmu_reg_write(chg_data->chip,
+				   MT6370_PMU_REG_RSTPASCODE1, 0xA9);
+	if (ret < 0) {
+		dev_notice(dev, "set passcode1 fail\n");
+		return ret;
+	}
+	ret = mt6370_pmu_reg_write(chg_data->chip,
+				   MT6370_PMU_REG_RSTPASCODE2, 0x96);
+	if (ret < 0) {
+		dev_notice(dev, "set passcode2 fail\n");
+		return ret;
+	}
+	/* reset all chg/fled/ldo/rgb/bl/db reg and logic */
+	ret = mt6370_pmu_reg_write(chg_data->chip,
+				     MT6370_PMU_REG_CORECTRL2, 0x7F);
+	if (ret < 0) {
+		dev_notice(dev, "set reset bits fail\n");
+		return ret;
+	}
+	/* disable chg auto sensing */
+	mt6370_enable_hidden_mode(chg_data, true);
+	ret = mt6370_pmu_reg_clr_bit(chg_data->chip,
+		MT6370_PMU_REG_CHGHIDDENCTRL15, 0x01);
+	if (ret < 0) {
+		dev_notice(dev, "set auto sensing disable\n");
+		return ret;
+	}
+	mt6370_enable_hidden_mode(chg_data, false);
+	mdelay(50);
+	/* enter shipping mode */
+	ret = mt6370_pmu_reg_set_bit(chg_data->chip,
+				     MT6370_PMU_REG_CHGCTRL2, 0x80);
+	if (ret < 0) {
+		dev_notice(dev, "enter shipping mode\n");
+		return ret;
+	}
+	return count;
+}
+
+static const DEVICE_ATTR_WO(shipping_mode);
+
 static int mt6370_pmu_charger_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -3756,6 +3811,12 @@ static int mt6370_pmu_charger_probe(struct platform_device *pdev)
 
 	mt6370_pmu_charger_irq_register(pdev);
 
+	ret = device_create_file(chg_data->dev, &dev_attr_shipping_mode);
+	if (ret < 0) {
+		dev_notice(&pdev->dev, "create shipping attr fail\n");
+		goto err_register_ls_dev;
+	}
+
 	/* Schedule work for microB's BC1.2 */
 #if defined(CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT) && !defined(CONFIG_TCPC_CLASS)
 	schedule_work(&chg_data->chgdet_work);
@@ -3788,6 +3849,7 @@ static int mt6370_pmu_charger_remove(struct platform_device *pdev)
 	struct mt6370_pmu_charger_data *chg_data = platform_get_drvdata(pdev);
 
 	if (chg_data) {
+		device_remove_file(chg_data->dev, &dev_attr_shipping_mode);
 		charger_device_unregister(chg_data->ls_dev);
 		charger_device_unregister(chg_data->chg_dev);
 		mutex_destroy(&chg_data->ichg_access_lock);
