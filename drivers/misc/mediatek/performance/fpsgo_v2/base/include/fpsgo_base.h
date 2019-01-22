@@ -83,6 +83,14 @@ struct fbt_boost_info {
 	/* APP self-control*/
 	int sf_check;
 	int sf_bound;
+
+	int keep_loading;
+};
+
+struct frame_id_info {
+	unsigned long long id;
+	int draw;
+	int complete;
 };
 
 struct render_info {
@@ -99,6 +107,7 @@ struct render_info {
 	int frame_type;
 	int render_method;	/* HWUI/SWUI/GLSurface */
 	int render;	/* vsync aligned render info 1 or 0 */
+	struct frame_id_info frame_id[2];
 
 	/*render queue/dequeue/frame time info*/
 	unsigned long long t_enqueue_start;
