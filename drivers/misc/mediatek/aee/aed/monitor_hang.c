@@ -754,8 +754,8 @@ static void show_state_filter_local(void)
 		 * console might take a lot of time:
 		 *discard wdtk-* for it always stay in D state
 		 */
-		if ((Hang_Detect_first || p->state == TASK_RUNNING || p->state & TASK_UNINTERRUPTIBLE)
-			&& !strstr(p->comm, "wdtk"))
+		if ((Hang_Detect_first || p->state == TASK_RUNNING || p->state & TASK_UNINTERRUPTIBLE
+			|| (strcmp(p->comm, "watchdog") == 0)) && !strstr(p->comm, "wdtk"))
 			sched_show_task_local(p);
 	} while_each_thread(g, p);
 }
@@ -777,12 +777,15 @@ static void ShowStatus(void)
 	int dumppids[DUMP_PROCESS_NUM];
 	int dump_count = 0;
 	int i = 0;
-	struct task_struct *task;
+	struct task_struct *task, *system_server_task = NULL;
 
 	read_lock(&tasklist_lock);
 	for_each_process(task) {
 		if (dump_count >= DUMP_PROCESS_NUM)
 			break;
+
+		if (strcmp(task->comm, "system_server") == 0)
+			system_server_task = task;
 
 		if ((strcmp(task->comm, "surfaceflinger") == 0) || (strcmp(task->comm, "init") == 0) ||
 			(strcmp(task->comm, "system_server") == 0) || (strcmp(task->comm, "mmcqd/0") == 0) ||
@@ -794,10 +797,17 @@ static void ShowStatus(void)
 	}
 	read_unlock(&tasklist_lock);
 
+	if (Hang_Detect_first == false)
+		show_state_filter_local();
+
 	for (i = 0; i < dump_count; i++)
 		show_bt_by_pid(dumppids[i]);
 
-	show_state_filter_local();
+	if (Hang_Detect_first == true)
+		show_state_filter_local();
+
+	if (system_server_task != NULL)
+		do_send_sig_info(SIGQUIT, SEND_SIG_FORCED, system_server_task, true);
 
 	show_storage_status();
 	/* debug_locks = 1; */
