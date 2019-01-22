@@ -116,8 +116,8 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	else
 		final_boost_value = 0;
 
-	if (final_boost_value > 4000)
-		current_boost_value[cgroup_idx] = 4000;
+	if (final_boost_value > 5000)
+		current_boost_value[cgroup_idx] = 5000;
 	else if (final_boost_value < -100)
 		current_boost_value[cgroup_idx] = -100;
 	else
@@ -130,7 +130,7 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 
 
 	if (!debug) {
-		if (current_boost_value[cgroup_idx] >= -100 && current_boost_value[cgroup_idx] < 4000) {
+		if (current_boost_value[cgroup_idx] >= -100 && current_boost_value[cgroup_idx] < 5000) {
 			boost_write_for_perf_idx(cgroup_idx, current_boost_value[cgroup_idx]);
 			reduce_stall_wrapper(current_boost_value[cgroup_idx]);
 		}
