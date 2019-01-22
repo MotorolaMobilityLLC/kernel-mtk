@@ -250,7 +250,7 @@ static void spm_register_init(void)
 static int local_spm_load_firmware_status = -1;
 int spm_load_firmware_status(void)
 {
-	if (local_spm_load_firmware_status != -1)
+	if (local_spm_load_firmware_status == -1)
 		local_spm_load_firmware_status =
 			mt_secure_call(MTK_SIP_KERNEL_SPM_FIRMWARE_STATUS, 0, 0, 0);
 	return local_spm_load_firmware_status;
