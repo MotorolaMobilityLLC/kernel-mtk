@@ -400,7 +400,7 @@ int ccu_i2c_buf_mode_en(int enable)
 	return ret;
 }
 
-int i2c_get_dma_buffer_addr(void **va, uint32_t *pa_h, uint32_t *pa_l)
+int i2c_get_dma_buffer_addr(void **va, uint32_t *pa_h, uint32_t *pa_l, uint32_t *i2c_id)
 {
 	struct i2c_client *pClient = NULL;
 	struct mt_i2c *i2c;
@@ -418,7 +418,8 @@ int i2c_get_dma_buffer_addr(void **va, uint32_t *pa_h, uint32_t *pa_l)
 	*va = i2c->dma_buf.vaddr;
 	*pa_l = i2c->dma_buf.paddr;
 	*pa_h = (i2c->dma_buf.paddr >> 32);
-	LOG_DBG("got i2c buf va: %p\n", *va);
+	*i2c_id = i2c->id;
+	LOG_DBG_MUST("got i2c buf: %p %d %d %d\n", *va, *pa_l, *pa_h, *i2c_id);
 
 	return 0;
 }
