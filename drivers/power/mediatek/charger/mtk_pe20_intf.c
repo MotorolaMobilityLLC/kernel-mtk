@@ -242,6 +242,8 @@ static int pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 		else
 			sw_retry_cnt++;
 
+		pe20_set_mivr(pinfo, 4500000);
+
 		pr_err("%s: retry_cnt = (%d, %d), vchr = (%d, %d), vchr_target = %dmV\n",
 			__func__, sw_retry_cnt, retry_cnt, vchr_before / 1000,
 			vchr_after / 1000, chr_volt / 1000);
