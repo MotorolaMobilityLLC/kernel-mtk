@@ -216,6 +216,15 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 		, kernel_reserve_meminfo.highmem
 #endif
 		);
+	seq_puts(m, "\n");
+
+#ifdef CONFIG_SPARSEMEM_VMEMMAP
+	seq_printf(m, "vmemmap : 0x%16lx - 0x%16lx   (%6ld MB actual)\n",
+			(unsigned long)virt_to_page(PAGE_OFFSET),
+			(unsigned long)virt_to_page(high_memory),
+			((unsigned long)virt_to_page(high_memory) -
+			 (unsigned long)virt_to_page(PAGE_OFFSET)) >> 20);
+#endif
 
 	return 0;
 }
