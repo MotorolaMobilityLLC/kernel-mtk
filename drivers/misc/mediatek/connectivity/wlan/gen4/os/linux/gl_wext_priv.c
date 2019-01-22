@@ -2236,6 +2236,7 @@ reqExtSetAcpiDevicePowerState(IN P_GLUE_INFO_T prGlueInfo,
 #define CMD_GET_QUE_INFO	"GET_QUE"
 #define CMD_GET_MEM_INFO	"GET_MEM"
 #define CMD_GET_HIF_INFO	"GET_HIF"
+#define CMD_GET_TP_INFO	"GET_TP"
 #define CMD_GET_STA_KEEP_CNT    "KEEPCOUNTER"
 #define CMD_STAT_RESET_CNT      "RESETCOUNTER"
 
@@ -6113,6 +6114,16 @@ static int priv_driver_get_hif_info(IN struct net_device *prNetDev, IN char *pcC
 	return halDumpHifStatus(prGlueInfo->prAdapter, pcCommand, i4TotalLen);
 }
 
+static int priv_driver_get_tp_info(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+
+	ASSERT(prNetDev);
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	return kalPerMonGetInfo(prGlueInfo->prAdapter, pcCommand, i4TotalLen);
+}
+
 #if defined(_HIF_USB)
 static int priv_driver_get_usb_info(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
 {
@@ -6322,6 +6333,8 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 			i4BytesWritten = priv_driver_get_mem_info(prNetDev, pcCommand, i4TotalLen);
 		else if (strnicmp(pcCommand, CMD_GET_HIF_INFO, strlen(CMD_GET_HIF_INFO)) == 0)
 			i4BytesWritten = priv_driver_get_hif_info(prNetDev, pcCommand, i4TotalLen);
+		else if (strnicmp(pcCommand, CMD_GET_TP_INFO, strlen(CMD_GET_TP_INFO)) == 0)
+			i4BytesWritten = priv_driver_get_tp_info(prNetDev, pcCommand, i4TotalLen);
 #if defined(_HIF_USB)
 		else if (strnicmp(pcCommand, CMD_USB_INFO, strlen(CMD_USB_INFO)) == 0)
 			i4BytesWritten = priv_driver_get_usb_info(prNetDev, pcCommand, i4TotalLen);
