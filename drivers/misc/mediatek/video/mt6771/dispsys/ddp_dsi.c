@@ -2396,8 +2396,8 @@ UINT32 DSI_dcs_read_lcm_reg_v3(enum DISP_MODULE_ENUM module,
 
 	/* illegal parameters */
 
-	if (buffer == NULL || buffer_size == 0) {
-		DDPPR_ERR("DSI Read Fail: buffer=%p and buffer_size=%d\n", buffer,
+	if (usr_buffer == NULL || buffer_size == 0) {
+		DDPPR_ERR("DSI Read Fail: usr_buffer=%p and buffer_size=%d\n", usr_buffer,
 			  (unsigned int)buffer_size);
 		return 0;
 	}
