@@ -446,17 +446,23 @@ static int mtk_memcfg_oom_open(struct inode *inode, struct file *file)
 	return single_open(file, mtk_memcfg_oom_show, NULL);
 }
 
+static void oom_reboot(unsigned long data)
+{
+	BUG();
+}
+
 static ssize_t
 mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 		      size_t count, loff_t *pos)
 {
 	static char state;
-	int cnt = 0;
-	struct sched_param param = {
-		.sched_priority = MAX_RT_PRIO - 1,
-	};
+	struct timer_list timer;
 
-	sched_setscheduler(current, SCHED_FIFO, &param);
+	/* oom may cause system hang, reboot after 60 sec */
+	init_timer(&timer);
+	timer.function = oom_reboot;
+	timer.expires = jiffies + 300 * HZ;
+	add_timer(&timer);
 
 	if (count > 0) {
 		if (get_user(state, buffer))
@@ -466,14 +472,8 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 		if (state) {
 			pr_alert("oom test, trying to kill system under oom scenario\n");
 			/* exhaust all memory */
-			for (;;) {
-				if (!alloc_pages(GFP_HIGHUSER_MOVABLE, 0))
-					cnt++;
-				if (!alloc_pages(GFP_KERNEL, 0))
-					cnt++;
-				if (cnt > 100)
-					BUG();
-			}
+			for (;;)
+				alloc_pages(GFP_HIGHUSER_MOVABLE, 0);
 		}
 	}
 	return count;
