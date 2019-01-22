@@ -26,10 +26,13 @@
 #include <mt-plat/mtk_auxadc_intf.h>
 #include <linux/topology.h>
 #include "mtk_hps_internal.h"
+#ifdef CONFIG_MACH_MT6799
 #include "include/pmic_regulator.h"
 #include "mtk_pmic_regulator.h"
 #include "mach/mtk_freqhopping.h"
+#endif
 #define CPU_BUCK_CTRL	(0)
+
 static struct notifier_block cpu_hotplug_nb;
 
 static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
@@ -78,20 +81,17 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #if CPU_BUCK_CTRL
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 					/*1. Power ON VSram*/
+#ifdef CONFIG_MACH_MT6799
 					buck_enable(VSRAM_DVFS2, 1);
-
 					/*2. Set the stttle time to 3000us*/
 					mdelay(3);
-
 					/*3. Power ON Vproc2*/
 					hps_power_on_vproc2();
-
+#endif
 					/*4. Turn on ARM PLL*/
 					armpll_control(2, 1);
-
 					/*5. Non-pause FQHP function*/
 					mt_pause_armpll(FH_PLL1, 0);
-
 					/*6. Switch to HW mode*/
 					mp_enter_suspend(1, 1);
 				}
@@ -138,8 +138,12 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				mp_enter_suspend(1, 0);/*1. Switch to SW mode*/
 				mt_pause_armpll(FH_PLL1, 1);/*2. Pause FQHP function*/
 				armpll_control(2, 0);/*3. Turn off ARM PLL*/
-				hps_power_off_vproc2(); /*4. Power off Vproc2*/
-				buck_enable(VSRAM_DVFS2, 0);/*5. Turn off VSram*/
+#ifdef CONFIG_MACH_MT6799
+				if (hps_ctxt.init_state == INIT_STATE_DONE) {
+					hps_power_off_vproc2(); /*4. Power off Vproc2*/
+					buck_enable(VSRAM_DVFS2, 0);/*5. Turn off VSram*/
+				}
+#endif
 				break;
 			case 2:
 				mt_pause_armpll(FH_PLL2, 1);/*1. Pause FQHP function*/
