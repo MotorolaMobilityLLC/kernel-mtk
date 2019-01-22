@@ -28,6 +28,7 @@
 #include <linux/timer.h>
 #include <linux/types.h>
 #include <linux/workqueue.h>
+#include <linux/math64.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mtk_sys_timer.h>
 #include <mtk_sys_timer_mbox.h>
@@ -53,12 +54,16 @@ static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
 
 void sys_timer_timesync_print_base(void)
 {
+	u64 temp_u64[2];
+
 	pr_info("timebase:\n");
 	pr_info(" enabled  : %d\n", timesync_cxt.enabled);
 	pr_info(" base_tick: 0x%llx\n", timesync_cxt.base_tick);
-	pr_info(" base_ts  : %llu.%llu\n",
-		timesync_cxt.base_ts / NSEC_PER_SEC,
-		timesync_cxt.base_ts % NSEC_PER_SEC);
+
+	temp_u64[0] = timesync_cxt.base_ts;
+	temp_u64[1] = do_div(temp_u64[0], NSEC_PER_SEC);
+
+	pr_info(" base_ts  : %llu.%llu\n", temp_u64[0], temp_u64[1]);
 	pr_info(" base_fz  : %d\n", timesync_cxt.base_fz);
 	pr_info(" base_ver : %d\n", timesync_cxt.base_ver);
 }
@@ -139,7 +144,7 @@ void sys_timer_timesync_verify_sspm(void)
 	struct plt_ipi_data_s ipi_data;
 	int ackdata = 0;
 	u32 ts_h, ts_l;
-	u64 ts_sspm, ts_ap1, ts_ap2;
+	u64 ts_sspm, ts_ap1, ts_ap2, temp_u64[2];
 
 	/* reset debug mbox before test */
 	sys_timer_mbox_write(SYS_TIMER_MBOX_DEBUG_TS_L, 0);
@@ -147,7 +152,9 @@ void sys_timer_timesync_verify_sspm(void)
 
 	ts_ap1 = sched_clock();
 
-	pr_info("verify-sspm:ts-ap-1=%llu.%llu\n", ts_ap1 / 1000000000, ts_ap1 % 1000000000);
+	temp_u64[0] = ts_ap1;
+	temp_u64[1] = do_div(temp_u64[0], NSEC_PER_SEC);
+	pr_info("verify-sspm:ts-ap-1=%llu.%llu\n", temp_u64[0], temp_u64[1]);
 
 	/* send ipi to sspm to trigger test */
 	ipi_data.cmd = PLT_TIMESYNC_SRAM_TEST;
@@ -170,9 +177,14 @@ void sys_timer_timesync_verify_sspm(void)
 	ts_ap2 = sched_clock();
 
 	ts_sspm = ((u64)ts_h << 32) | (u64)ts_l;
-	pr_info("verify-sspm:ts-sspm=%llu.%llu\n", ts_sspm / 1000000000, ts_sspm % 1000000000);
 
-	pr_info("verify-sspm:ts-ap-2=%llu.%llu\n", ts_ap2 / 1000000000, ts_ap2 % 1000000000);
+	temp_u64[0] = ts_sspm;
+	temp_u64[1] = do_div(temp_u64[0], NSEC_PER_SEC);
+	pr_info("verify-sspm:ts-sspm=%llu.%llu\n", temp_u64[0], temp_u64[1]);
+
+	temp_u64[0] = ts_ap2;
+	temp_u64[1] = do_div(temp_u64[0], NSEC_PER_SEC);
+	pr_info("verify-sspm:ts-ap-2=%llu.%llu\n", temp_u64[0], temp_u64[1]);
 
 	if (ts_ap1 >= ts_sspm || ts_ap2 <= ts_sspm)
 		pr_info("verify-sspm:ERROR!");
