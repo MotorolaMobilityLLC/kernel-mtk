@@ -1,8 +1,7 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * drivers/misc/mediatek/pd/pd_dbg_info.c
- * Power Delvery Debug Information
+ * Power Delivery Debug Information
  *
  * Author: Sakya <jeff_chang@richtek.com>
  * This program is free software: you can redistribute it and/or modify

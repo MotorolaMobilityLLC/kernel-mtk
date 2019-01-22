@@ -14,7 +14,6 @@
   * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
   */
 
-
 #include <linux/err.h>
 #include <linux/delay.h>
 #include <linux/wakelock.h>
@@ -26,8 +25,8 @@
 #include "inc/mtk_direct_charge_vdm.h"
 #include "inc/tcpm.h"
 
-#define MTK_VDM_COUNT	(10)
-#define MTK_VDM_DELAY	(50)
+#define MTK_VDM_COUNT	(20)
+#define MTK_VDM_DELAY	(10)
 
 #define RT7207_VDM_HDR	(0x29CF << 16)
 
@@ -54,8 +53,10 @@ static int vdm_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&vdm_par_lock);
 			if (noti->uvdm_msg.ack) {
 				vdm_success = true;
-				for (i = 0; i < 7; i++)
-					vdm_payload[i] = noti->uvdm_msg.uvdm_data[i];
+				for (i = 0; i < 7; i++) {
+					vdm_payload[i] =
+						noti->uvdm_msg.uvdm_data[i];
+				}
 			} else
 				vdm_success = false;
 			mutex_unlock(&vdm_par_lock);
@@ -91,6 +92,11 @@ int mtk_get_ta_id(struct tcpc_device *tcpc)
 		return -EINVAL;
 	}
 
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
+		return -EINVAL;
+	}
+
 	data[0] = RT7207_VDM_HDR | 0x1012;
 	mtk_vdm_lock();
 	atomic_inc(&vdm_event_flag); /* set flag = 1 */
@@ -110,10 +116,14 @@ int mtk_get_ta_id(struct tcpc_device *tcpc)
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return -1;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
 int mtk_get_ta_charger_status(struct tcpc_device *tcpc, struct pd_ta_stat *ta)
@@ -124,6 +134,10 @@ int mtk_get_ta_charger_status(struct tcpc_device *tcpc, struct pd_ta_stat *ta)
 
 	if (!vdm_inited) {
 		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
 		return -EINVAL;
 	}
 
@@ -138,12 +152,26 @@ int mtk_get_ta_charger_status(struct tcpc_device *tcpc, struct pd_ta_stat *ta)
 			if (vdm_success) {
 				ta->chg_mode = (vdm_payload[1]&0x80000000) ?
 					RT7207_CC_MODE : RT7207_CV_MODE;
-				ta->dc_en = (vdm_payload[1]&0x40000000) ? 1 : 0;
-				ta->dpc_en = (vdm_payload[1]&0x20000000) ? 1 : 0;
-				ta->pc_en = (vdm_payload[1]&0x10000000) ? 1 : 0;
-				pr_err("%s mode = %s, dc(%d), pdc(%d), pc(%d)\n",
+				ta->dc_en =
+					(vdm_payload[1]&0x40000000) ? 1 : 0;
+				ta->dpc_en =
+					(vdm_payload[1]&0x20000000) ? 1 : 0;
+				ta->pc_en =
+					(vdm_payload[1]&0x10000000) ? 1 : 0;
+				ta->ovp =
+					(vdm_payload[1]&0x00000001) ? 1 : 0;
+				ta->otp =
+					(vdm_payload[1]&0x00000002) ? 1 : 0;
+				ta->uvp =
+					(vdm_payload[1]&0x00000004) ? 1 : 0;
+				ta->rvs_cur =
+					(vdm_payload[1]&0x00000008) ? 1 : 0;
+				ta->ping_chk_fail =
+					(vdm_payload[1]&0x00000010) ? 1 : 0;
+				pr_err("%s %s), dc(%d), pdc(%d), pc(%d) ovp(%d), otp(%d) uvp(%d) rc(%d), pf(%d)\n",
 					__func__, ta->chg_mode > 0 ? "CC Mode" : "CV Mode",
-					ta->dc_en, ta->dpc_en, ta->pc_en);
+					ta->dc_en, ta->dpc_en, ta->pc_en, ta->ovp, ta->otp,
+					ta->uvp, ta->rvs_cur, ta->ping_chk_fail);
 				status = MTK_VDM_SUCCESS;
 			} else {
 				pr_err("%s Failed\n", __func__);
@@ -156,10 +184,14 @@ int mtk_get_ta_charger_status(struct tcpc_device *tcpc, struct pd_ta_stat *ta)
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
 int mtk_get_ta_current_cap(struct tcpc_device *tcpc,
@@ -171,6 +203,10 @@ int mtk_get_ta_current_cap(struct tcpc_device *tcpc,
 
 	if (!vdm_inited) {
 		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
 		return -EINVAL;
 	}
 
@@ -198,13 +234,17 @@ int mtk_get_ta_current_cap(struct tcpc_device *tcpc,
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
-int mtk_enable_direct_charge(struct tcpc_device *tcpc, bool en)
+int mtk_monitor_ta_inform(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
 {
 	int count = MTK_VDM_COUNT;
 	int status = MTK_VDM_FAIL;
@@ -213,6 +253,79 @@ int mtk_enable_direct_charge(struct tcpc_device *tcpc, bool en)
 	if (!vdm_inited) {
 		pr_err("%s vdm not inited\n", __func__);
 		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
+		return -EINVAL;
+	}
+
+	data[0] = RT7207_VDM_HDR | 0x101f;
+	mtk_vdm_lock();
+	atomic_inc(&vdm_event_flag); /* set flag = 1 */
+	tcpm_send_uvdm(tcpc, 1, data, true);
+	while (count) {
+		if (atomic_read(&vdm_event_flag) == 0) {
+			mutex_lock(&vdm_par_lock);
+			if (vdm_success) {
+				status = MTK_VDM_SUCCESS;
+				cap->vol = (vdm_payload[1]&0x0000ffff)*5*2700/1023;
+				cap->cur = (vdm_payload[1]&0xffff0000)>>16;
+				cap->temp = vdm_payload[2];
+				pr_err("%s VOL(%d),CUR(%d),TEMP(%d)\n",
+					__func__, cap->vol, cap->cur, cap->temp);
+			} else {
+				pr_err("%s Failed\n", __func__);
+				status = MTK_VDM_FAIL;
+			}
+			mutex_unlock(&vdm_par_lock);
+			mtk_vdm_unlock();
+			return status;
+		}
+		count--;
+		mdelay(MTK_VDM_DELAY);
+	}
+	atomic_dec(&vdm_event_flag);
+	mtk_vdm_unlock();
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
+}
+
+int mtk_enable_direct_charge(struct tcpc_device *tcpc, bool en)
+{
+	struct pd_ta_stat stat;
+	int count = MTK_VDM_COUNT, ret;
+	int status = MTK_VDM_FAIL;
+	uint32_t data[7] = {0};
+
+	if (!vdm_inited) {
+		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
+		return -EINVAL;
+	}
+
+	ret = mtk_get_ta_charger_status(tcpc, &stat);
+	if (ret < 0) {
+		pr_err("%s get ta charger status fail\n", __func__);
+		return -EINVAL;
+	}
+
+	if (en) {
+		if (stat.dc_en) {
+			pr_err("%s DC already enable\n", __func__);
+			return MTK_VDM_SUCCESS;
+		}
+	} else {
+		if (!stat.dc_en) {
+			pr_err("%s DC already disable\n", __func__);
+			return MTK_VDM_SUCCESS;
+		}
 	}
 
 	data[0] = RT7207_VDM_HDR | 0x2020;
@@ -225,10 +338,10 @@ int mtk_enable_direct_charge(struct tcpc_device *tcpc, bool en)
 		if (atomic_read(&vdm_event_flag) == 0) {
 			mutex_lock(&vdm_par_lock);
 			if (vdm_success) {
-				pr_info("%s Success\n", __func__);
+				pr_info("%s (%d)Success\n", __func__, en);
 				status = MTK_VDM_SUCCESS;
 			} else {
-				pr_err("%s Failed\n", __func__);
+				pr_err("%s (%d)Failed\n", __func__, en);
 				status = MTK_VDM_FAIL;
 			}
 			mutex_unlock(&vdm_par_lock);
@@ -238,10 +351,14 @@ int mtk_enable_direct_charge(struct tcpc_device *tcpc, bool en)
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s (%d)Sw Busy Time out\n", __func__, en);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s (%d)Time out\n", __func__, en);
+	return MTK_VDM_FAIL;
 }
 
 int mtk_enable_ta_dplus_dect(struct tcpc_device *tcpc, bool en, int time)
@@ -252,14 +369,18 @@ int mtk_enable_ta_dplus_dect(struct tcpc_device *tcpc, bool en, int time)
 	int ret;
 	uint32_t data[7] = {0};
 
-	ret = mtk_get_ta_charger_status(tcpc, &stat);
-	if (ret < 0) {
-		pr_err("%s get ta charger status fail\n", __func__);
+	if (!vdm_inited) {
+		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
 		return -EINVAL;
 	}
 
-	if (!vdm_inited) {
-		pr_err("%s vdm not inited\n", __func__);
+	ret = mtk_get_ta_charger_status(tcpc, &stat);
+	if (ret < 0) {
+		pr_err("%s get ta charger status fail\n", __func__);
 		return -EINVAL;
 	}
 
@@ -305,10 +426,14 @@ int mtk_enable_ta_dplus_dect(struct tcpc_device *tcpc, bool en, int time)
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
 int mtk_get_ta_setting_dac(struct tcpc_device *tcpc,
@@ -322,6 +447,10 @@ int mtk_get_ta_setting_dac(struct tcpc_device *tcpc,
 		pr_err("%s vdm not inited\n", __func__);
 		return -EINVAL;
 	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
+		return -EINVAL;
+	}
 
 	data[0] = RT7207_VDM_HDR | 0x101c;
 	mtk_vdm_lock();
@@ -332,7 +461,8 @@ int mtk_get_ta_setting_dac(struct tcpc_device *tcpc,
 			mutex_lock(&vdm_par_lock);
 			if (vdm_success) {
 				cap->vol = (vdm_payload[1]&0x0000ffff) * 26;
-				cap->cur = ((vdm_payload[1]&0xffff0000)>>16) * 26;
+				cap->cur =
+					((vdm_payload[1]&0xffff0000)>>16) * 26;
 				status = MTK_VDM_SUCCESS;
 				pr_err("%s mv = %dmv,ma = %dma\n",
 					__func__, cap->vol, cap->cur);
@@ -347,18 +477,17 @@ int mtk_get_ta_setting_dac(struct tcpc_device *tcpc,
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
-int mtk_get_ta_temperature(struct tcpc_device *tcpc)
-{
-	return -1;
-}
-
-int mtk_show_ta_info(struct tcpc_device *tcpc)
+int mtk_set_ta_output_switch(struct tcpc_device *tcpc, bool on_off)
 {
 	int count = MTK_VDM_COUNT;
 	int status = MTK_VDM_FAIL;
@@ -368,20 +497,71 @@ int mtk_show_ta_info(struct tcpc_device *tcpc)
 		pr_err("%s vdm not inited\n", __func__);
 		return -EINVAL;
 	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
+		return -EINVAL;
+	}
 
-	data[0] = RT7207_VDM_HDR | 0x101f;
+	data[0] = RT7207_VDM_HDR | 0x101d;
+	data[1] = on_off ? 1 : 0;
 	mtk_vdm_lock();
-	atomic_inc(&vdm_event_flag);
+	atomic_inc(&vdm_event_flag); /* set flag = 1 */
 	tcpm_send_uvdm(tcpc, 2, data, true);
 	while (count) {
 		if (atomic_read(&vdm_event_flag) == 0) {
 			mutex_lock(&vdm_par_lock);
 			if (vdm_success) {
-				pr_err("%s CUR(%d), VOL(%d), T(%d)\n", __func__,
-					(vdm_payload[1]&0xffff0000)>>16,
-					(vdm_payload[1]&0x0000ffff),
-					vdm_payload[2]),
 				status = MTK_VDM_SUCCESS;
+				pr_err("%s %s Success\n", __func__,
+							on_off ? "on" : "off");
+			} else {
+				pr_err("%s %s Failed\n", __func__,
+							on_off ? "on" : "off");
+				status = MTK_VDM_FAIL;
+			}
+			mutex_unlock(&vdm_par_lock);
+			mtk_vdm_unlock();
+			return status;
+		}
+		count--;
+		mdelay(MTK_VDM_DELAY);
+	}
+	atomic_dec(&vdm_event_flag);
+	mtk_vdm_unlock();
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
+}
+
+int mtk_get_ta_temperature(struct tcpc_device *tcpc, int *temp)
+{
+	int count = MTK_VDM_COUNT;
+	int status = MTK_VDM_FAIL;
+	uint32_t data[7] = {0};
+
+	if (!vdm_inited) {
+		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
+		return -EINVAL;
+	}
+
+	data[0] = RT7207_VDM_HDR | 0x101d;
+	mtk_vdm_lock();
+	atomic_inc(&vdm_event_flag); /* set flag = 1 */
+	tcpm_send_uvdm(tcpc, 1, data, true);
+	while (count) {
+		if (atomic_read(&vdm_event_flag) == 0) {
+			mutex_lock(&vdm_par_lock);
+			if (vdm_success) {
+				*temp = vdm_payload[1]&0x0000ffff;
+				status = MTK_VDM_SUCCESS;
+				pr_err("%s temperatue = %d\n", __func__, *temp);
 			} else {
 				pr_err("%s Failed\n", __func__);
 				status = MTK_VDM_FAIL;
@@ -393,9 +573,14 @@ int mtk_show_ta_info(struct tcpc_device *tcpc)
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
-	return status;
+	mtk_vdm_unlock();
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
 int mtk_set_ta_boundary_cap(struct tcpc_device *tcpc,
@@ -407,6 +592,10 @@ int mtk_set_ta_boundary_cap(struct tcpc_device *tcpc,
 
 	if (!vdm_inited) {
 		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
 		return -EINVAL;
 	}
 
@@ -438,11 +627,14 @@ int mtk_set_ta_boundary_cap(struct tcpc_device *tcpc,
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
-
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
 int mtk_get_ta_boundary_cap(struct tcpc_device *tcpc,
@@ -454,6 +646,10 @@ int mtk_get_ta_boundary_cap(struct tcpc_device *tcpc,
 
 	if (!vdm_inited) {
 		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
 		return -EINVAL;
 	}
 
@@ -481,10 +677,14 @@ int mtk_get_ta_boundary_cap(struct tcpc_device *tcpc,
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
 int mtk_set_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
@@ -497,9 +697,10 @@ int mtk_set_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
 		pr_err("%s vdm not inited\n", __func__);
 		return -EINVAL;
 	}
-
-	pr_err("%s set mv = %dmv,ma = %dma\n",
-		__func__, cap->vol, cap->cur);
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
+		return -EINVAL;
+	}
 
 	data[0] = RT7207_VDM_HDR | 0x2022;
 	data[1] = (cap->cur<<16)|cap->vol;
@@ -526,10 +727,14 @@ int mtk_set_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
 int mtk_get_ta_cap(struct tcpc_device *tcpc,
@@ -541,6 +746,10 @@ int mtk_get_ta_cap(struct tcpc_device *tcpc,
 
 	if (!vdm_inited) {
 		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
 		return -EINVAL;
 	}
 
@@ -569,10 +778,14 @@ int mtk_get_ta_cap(struct tcpc_device *tcpc,
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
+	}
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
 int mtk_set_ta_uvlo(struct tcpc_device *tcpc, int mv)
@@ -583,6 +796,10 @@ int mtk_set_ta_uvlo(struct tcpc_device *tcpc, int mv)
 
 	if (!vdm_inited) {
 		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+	if (!mtk_is_pep30_en_unlock()) {
+		pr_err("%s pep30 is not ready\n", __func__);
 		return -EINVAL;
 	}
 
@@ -609,41 +826,14 @@ int mtk_set_ta_uvlo(struct tcpc_device *tcpc, int mv)
 		count--;
 		mdelay(MTK_VDM_DELAY);
 	}
-	pr_err("%s Time out\n", __func__);
 	atomic_dec(&vdm_event_flag);
 	mtk_vdm_unlock();
-	return status;
-}
-
-int mtk_vdm_config_dfp(void)
-{
-	int ret = 0;
-	unsigned int val;
-
-	ret = dual_role_get_property(dr_usb, DUAL_ROLE_PROP_MODE, &val);
-	if (ret < 0) {
-		pr_err("%s get property mode fail\n", __func__);
-		return -EINVAL;
+	if (!tcpm_get_uvdm_handle_flag(tcpc)) {
+		pr_err("%s Sw Busy Time out\n", __func__);
+		return MTK_VDM_SW_BUSY;
 	}
-	if (val == DUAL_ROLE_PROP_MODE_DFP) {
-		pr_info("%s Already DFP Mode\n", __func__);
-		return ret;
-	}
-
-	tcpm_data_role_swap(tcpc);
-	mdelay(50);
-	ret = dual_role_get_property(dr_usb,
-			DUAL_ROLE_PROP_MODE, &val);
-	if (ret < 0) {
-		pr_err("%s get property mode fail\n", __func__);
-		return -EINVAL;
-	}
-	if (val == DUAL_ROLE_PROP_MODE_DFP) {
-		pr_info("%s config DFP Mode Success\n", __func__);
-		return ret;
-	}
-	pr_err("%s config DFP Mode Fail\n", __func__);
-	return -EINVAL;
+	pr_err("%s Time out\n", __func__);
+	return MTK_VDM_FAIL;
 }
 
 #ifdef CONFIG_DEBUG_FS
@@ -670,10 +860,32 @@ static ssize_t de_read(struct file *file,
 {
 	struct rt_debug_st *db = file->private_data;
 	char tmp[200] = {0};
+#if 0
+	unsigned char val;
+	int ret;
+	struct mtk_vdm_ta_cap cap;
+	struct pd_ta_stat stat;
+#endif
 
 	switch (db->id) {
 	case RT7207_VDM_TEST:
 		sprintf(tmp, "RT7207 VDM API Test\n");
+#if 0
+		tcpm_get_cable_capability(tcpc, &val);
+		pr_info("cable capability = %d\n", val);
+		pr_info("mtk_get is pd chg ready (%d), is pe30 ready (%d)\n",
+			mtk_is_pd_chg_ready(), mtk_is_pep30_en_unlock());
+		mtk_get_ta_id(tcpc);
+		mtk_enable_direct_charge(tcpc, true);
+		mtk_get_ta_charger_status(tcpc, &stat);
+		mtk_get_ta_current_cap(tcpc, &cap);
+		mtk_get_ta_temperature(tcpc, &ret);
+		mtk_get_ta_cap(tcpc, &cap);
+		cap.vol = 5000;
+		cap.cur = 3000;
+		mtk_set_ta_cap(tcpc, &cap);
+		mtk_monitor_ta_inform(tcpc, &cap);
+#endif
 		break;
 	default:
 		break;
@@ -695,12 +907,6 @@ static ssize_t de_write(struct file *file,
 	simple_write_to_buffer(buf, sizeof(buf), position, user_buffer, count);
 	ret = kstrtoul(buf, 16, &yo);
 
-	mtk_direct_charge_vdm_init();
-	if (mtk_vdm_config_dfp()) {
-		pr_err("%s cannot config DFP mode\n", __func__);
-		return count;
-	}
-
 	switch (db->id) {
 	case RT7207_VDM_TEST:
 		if (yo == 1)
@@ -710,7 +916,7 @@ static ssize_t de_write(struct file *file,
 		else if (yo == 3)
 			mtk_get_ta_current_cap(tcpc, &cap);
 		else if (yo == 4)
-			mtk_get_ta_temperature(tcpc);
+			mtk_get_ta_temperature(tcpc, &ret);
 		else if (yo == 5)
 			tcpm_set_direct_charge_en(tcpc, true);
 		else if (yo == 6)
@@ -725,8 +931,6 @@ static ssize_t de_write(struct file *file,
 			mtk_set_ta_cap(tcpc, &cap);
 		} else if (yo == 9)
 			mtk_set_ta_uvlo(tcpc, 3000);
-		else if (yo == 10)
-			mtk_show_ta_info(tcpc);
 		break;
 	default:
 		break;

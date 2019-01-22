@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Power Delvery Process Event For SRC
+ * Power Delivery Process Event For SRC
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -176,7 +176,6 @@ static inline bool pd_process_ctrl_msg_good_crc(
 #endif	/* CONFIG_USB_PD_RECV_HRESET_COUNTER */
 		pd_notify_pe_hard_reset_completed(pd_port);
 		pd_enable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
-		/* pd_set_cc_res(pd_port, TYPEC_CC_RP_1_5); */
 		return false;
 
 	case PE_SRC_CAPABILITY_RESPONSE:
@@ -209,6 +208,7 @@ static inline bool pd_process_ctrl_msg_get_sink_cap(
 		PE_TRANSIT_STATE(pd_port, PE_DR_SRC_GIVE_SINK_CAP);
 		return true;
 	}
+
 	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_REJECT);
 	return false;
 }
@@ -272,6 +272,7 @@ static inline bool pd_process_ctrl_msg(
 
 	if (ret == false)
 		ret = pd_process_protocol_error(pd_port, pd_event);
+
 	return ret;
 }
 
@@ -443,6 +444,7 @@ static inline bool pd_process_pe_msg(
 		ret = PE_MAKE_STATE_TRANSIT(PD_PE_MSG_IDLE);
 		break;
 	}
+
 	return ret;
 }
 
@@ -526,12 +528,19 @@ static inline bool pd_process_timer_msg(
 	case PD_TIMER_DISCOVER_ID:
 		vdm_put_dpm_discover_cable_event(pd_port);
 		break;
-#endif
+#endif	/* CONFIG_PD_DISCOVER_CABLE_ID */
 
 	case PD_TIMER_SRC_RECOVER:
 		pd_dpm_source_vbus(pd_port, true);
 		pd_enable_vbus_valid_detection(pd_port, true);
 		break;
+
+#ifdef CONFIG_USB_PD_DFP_FLOW_DELAY
+	case PD_TIMER_DFP_FLOW_DELAY:
+		if (pd_port->pe_state_curr == PE_SRC_READY)
+			pd_dpm_notify_dfp_delay_done(pd_port, pd_event);
+		break;
+#endif	/* CONFIG_USB_PD_DFP_FLOW_DELAY */
 	}
 
 	return false;

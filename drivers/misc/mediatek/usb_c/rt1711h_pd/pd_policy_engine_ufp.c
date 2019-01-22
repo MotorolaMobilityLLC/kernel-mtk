@@ -1,10 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Power Delvery Core Driver
- * Power Delvery Policy Engine for UFP
+ * Power Delivery Policy Engine for UFP
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -166,15 +165,18 @@ void pe_ufp_vdm_dp_configure_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-#endif
+#endif	/* CONFIG_USB_PD_ALT_MODE */
 
 /*
  * UVDM
  */
+
 #ifdef CONFIG_USB_PD_UVDM
+
 void pe_ufp_uvdm_recv_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 {
 	pd_dpm_ufp_recv_uvdm(pd_port, pd_event);
 	pd_free_pd_event(pd_port, pd_event);
 }
-#endif
+
+#endif	/* CONFIG_USB_PD_UVDM */

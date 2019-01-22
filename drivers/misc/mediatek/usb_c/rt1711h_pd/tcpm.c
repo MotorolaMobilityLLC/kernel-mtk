@@ -1,9 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * Power Delvery Managert Driver
+ * Power Delivery Managert Driver
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -284,6 +284,22 @@ int tcpm_get_sink_cap(
 }
 EXPORT_SYMBOL(tcpm_get_sink_cap);
 
+int tcpm_bist_cm2(struct tcpc_device *tcpc_dev)
+{
+	bool ret;
+	pd_port_t *pd_port = &tcpc_dev->pd_port;
+
+	ret = pd_put_dpm_pd_request_event(pd_port,
+				PD_DPM_PD_REQUEST_BIST_CM2);
+	if (!ret)
+		return TCPM_ERROR_PUT_EVENT;
+
+	/* TODO: Finish it later */
+
+	return TCPM_SUCCESS;
+}
+EXPORT_SYMBOL(tcpm_bist_cm2);
+
 int tcpm_request(struct tcpc_device *tcpc_dev, int mv, int ma)
 {
 	bool ret;
@@ -428,6 +444,16 @@ EXPORT_SYMBOL(tcpm_dp_configuration);
 #endif	/* CONFIG_USB_PD_ALT_MODE */
 
 #ifdef CONFIG_USB_PD_UVDM
+void tcpm_set_uvdm_handle_flag(struct tcpc_device *tcpc_dev, unsigned char en)
+{
+	tcpc_dev->uvdm_handle_flag = en ? 1 : 0;
+}
+
+bool tcpm_get_uvdm_handle_flag(struct tcpc_device *tcpc_dev)
+{
+	return tcpc_dev->uvdm_handle_flag;
+}
+
 int tcpm_send_uvdm(struct tcpc_device *tcpc_dev,
 	uint8_t cnt, uint32_t *data, bool wait_resp)
 {
@@ -481,9 +507,28 @@ int tcpm_get_remote_power_cap(struct tcpc_device *tcpc_dev,
 	for (i = 0; i < cap->nr; i++) {
 		pd_extract_pdo_power(tcpc_dev->pd_port.remote_src_cap.pdos[i],
 				&vmin, &vmax, &ioper);
-		cap->mv[i] = vmax;
+		cap->max_mv[i] = vmax;
+		cap->min_mv[i] = vmin;
 		cap->ma[i] = ioper;
 	}
+	return TCPM_SUCCESS;
+}
+
+int tcpm_get_cable_capability(struct tcpc_device *tcpc_dev,
+					unsigned char *capability)
+{
+	pd_port_t *pd_port = &tcpc_dev->pd_port;
+	unsigned char limit = 0;
+
+	if (pd_port->power_cable_present) {
+		limit =  PD_VDO_CABLE_CURR(
+				pd_port->cable_vdos[VDO_INDEX_CABLE])+1;
+		pr_info("%s limit = %d\n", __func__, limit);
+		limit = (limit > 3) ? 0 : limit;
+		*capability = limit;
+	} else
+		pr_info("%s it's not power cable\n", __func__);
+
 	return TCPM_SUCCESS;
 }
 
@@ -497,6 +542,38 @@ int tcpm_set_direct_charge_en(struct tcpc_device *tcpc_dev, bool en)
 			tcpc_dev->rt7207_direct_charge_flag);
 	return 0;
 }
+
+void tcpm_reset_pe30_ta(struct tcpc_device *tcpc_dev)
+{
+	tcpc_dev->rt7207_sup_flag = 0;
+}
+
+int tcpm_get_pe30_ta_sup(struct tcpc_device *tcpc_dev)
+{
+	int ret = 0;
+
+	ret = tcpc_dev->rt7207_sup_flag;
+	pd_dbg_info("%s (%d)\n", __func__, ret);
+	return ret;
+}
 #endif /* CONFIG_RT7207_ADAPTER */
+
+bool tcpm_get_boot_check_flag(struct tcpc_device *tcpc)
+{
+	return tcpc->boot_check_flag ? true : false;
+}
+
+void tcpm_set_boot_check_flag(struct tcpc_device *tcpc, unsigned char en)
+{
+	tcpc->boot_check_flag = en ? 1 : 0;
+}
+
+bool tcpm_get_ta_hw_exist(struct tcpc_device *tcpc)
+{
+	uint16_t data;
+
+	tcpci_get_power_status(tcpc, &data);
+	return (data & TCPC_REG_POWER_STATUS_VBUS_PRES);
+}
 
 #endif /* CONFIG_USB_POWER_DELIVERY */

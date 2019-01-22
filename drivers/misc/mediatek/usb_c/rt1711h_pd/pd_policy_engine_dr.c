@@ -1,10 +1,9 @@
 /*
  * Copyright (C) 2016 Richtek Technology Corp.
  *
- * drivers/misc/mediatek/pd/pd_policy_engine_dr.c
- * Power Delvery Policy Engine for DR
+ * Power Delivery Policy Engine for DR
  *
- * Author: TH <tsunghan_tasi@richtek.com>
+ * Author: TH <tsunghan_tsai@richtek.com>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
