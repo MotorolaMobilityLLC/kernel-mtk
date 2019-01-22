@@ -83,6 +83,7 @@ void __iomem *ipu_core1_base;
 #define CLK26CALI_1		(cksys_base + 0x224)
 #define CLK_SCP_CFG_0		(cksys_base + 0x0200)
 #define CLK_SCP_CFG_1		(cksys_base + 0x0204)
+#define CLK_CFG_20_SET		(cksys_base + 0x0644)
 /* CG */
 #define INFRA_PDN_SET0		(infracfg_base + 0x0080)
 #define INFRA_PDN_CLR0		(infracfg_base + 0x0084)
@@ -1874,6 +1875,8 @@ static void __init mtk_topckgen_init(struct device_node *node)
 		pr_notice("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	cksys_base = base;
+
+	clk_writel(CLK_CFG_20_SET, 0x00030000);
 
 	clk_writel(CLK_SCP_CFG_0, clk_readl(CLK_SCP_CFG_0) | 0x3FF);
 	clk_writel(CLK_SCP_CFG_1, clk_readl(CLK_SCP_CFG_1) | 0x11);
