@@ -246,7 +246,7 @@ static int CATMP_STEADY_TTJ_DELTA = 10000; /* magic number decided by experience
 #ifdef FAST_RESPONSE_ATM
 #define TS_MS_TO_NS(x) (x * 1000 * 1000)
 static struct hrtimer atm_hrtimer;
-static int atm_hrtimer_polling_delay = TS_MS_TO_NS(CLATM_INIT_HRTIMER_POLLING_DELAY);
+static unsigned long atm_hrtimer_polling_delay = TS_MS_TO_NS(CLATM_INIT_HRTIMER_POLLING_DELAY);
 static int atm_curr_maxtj;
 static int atm_prev_maxtj;
 static int krtatm_curr_maxtj;
@@ -2315,11 +2315,18 @@ void atm_restart_hrtimer(void)
 #endif
 }
 
-static int atm_get_timeout_time(int curr_temp)
+static unsigned long atm_get_timeout_time(int curr_temp)
 {
+
 #ifdef ATM_CFG_PROFILING
 	return atm_hrtimer_polling_delay;
 #else
+	/*
+	* curr_temp can't smaller than -30'C
+	*/
+	curr_temp = (curr_temp < -30000) ? -30000 : curr_temp;
+
+
 	if (curr_temp >= 65000)
 		return atm_hrtimer_polling_delay;
 	else
@@ -2333,6 +2340,9 @@ static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 	int temp;
 	static int hasDisabled;
 	char buffer[128];
+	unsigned long polling_time;
+	unsigned long polling_time_s;
+	unsigned long polling_time_ns;
 
 	tscpu_workqueue_start_timer();
 
@@ -2387,12 +2397,25 @@ static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 
 	wake_up_process(krtatm_thread_handle);
 
+
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
 exit:
 #endif
 #endif
-	ktime = ktime_set(0, atm_get_timeout_time(atm_curr_maxtj));
+
+	polling_time = atm_get_timeout_time(atm_curr_maxtj);
+
+	/*avoid overflow*/
+	if (polling_time > (1000000000-1)) {
+		polling_time_s = polling_time / 1000000000;
+		polling_time_ns = polling_time % 1000000000;
+		ktime = ktime_set(polling_time_s, polling_time_ns);
+		/*tscpu_warn("%s polling_time_s=%ld  polling_time_ns=%ld\n", __func__,polling_time_s,polling_time_ns);*/
+	} else {
+		ktime = ktime_set(0, polling_time);
+	}
+
 	hrtimer_forward_now(timer, ktime);
 
 	return HRTIMER_RESTART;
@@ -2403,6 +2426,10 @@ static void atm_hrtimer_init(void)
 	ktime_t ktime;
 
 	tscpu_dprintk("%s\n", __func__);
+
+	/*100000000 = 100 ms,polling delay can't larger than 100ms*/
+	atm_hrtimer_polling_delay = (atm_hrtimer_polling_delay < 100000000) ?
+		atm_hrtimer_polling_delay : 100000000;
 
 	ktime = ktime_set(0, atm_hrtimer_polling_delay);
 
