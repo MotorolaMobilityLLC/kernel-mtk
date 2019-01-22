@@ -824,7 +824,6 @@ void mt_sched_monitor_switch(int on)
 {
 	int cpu;
 
-	preempt_disable_notrace();
 	mutex_lock(&mt_sched_mon_lock);
 	for_each_possible_cpu(cpu) {
 		pr_emerg("[mtprof] sched monitor on CPU#%d switch from %d to %d\n", cpu,
@@ -832,7 +831,6 @@ void mt_sched_monitor_switch(int on)
 		per_cpu(mtsched_mon_enabled, cpu) = on;	/* 0x1 || 0x2, IRQ & Preempt */
 	}
 	mutex_unlock(&mt_sched_mon_lock);
-	preempt_enable_notrace();
 }
 
 static ssize_t mt_sched_monitor_write(struct file *filp, const char *ubuf,
