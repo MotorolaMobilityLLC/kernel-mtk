@@ -1419,8 +1419,9 @@ int ufsh_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_ind
 /**
  * ufs_mtk_deepidle_hibern8_check - callback function for Deepidle & SODI.
  * Release all resources: DRAM/26M clk/Main PLL and dsiable 26M ref clk if in H8.
+ * @return: 0 for success, negative/postive error code otherwise
  */
-void ufs_mtk_deepidle_hibern8_check(void)
+int ufs_mtk_deepidle_hibern8_check(void)
 {
 	int ret = 0;
 	u32 tmp;
@@ -1428,7 +1429,7 @@ void ufs_mtk_deepidle_hibern8_check(void)
 	ret = ufsh_mtk_generic_read_dme(UIC_CMD_DME_GET, VENDOR_POWERSTATE, 0, &tmp, 100);
 	if (ret) {
 		dev_err(g_ufs_hba->dev, "ufshcd_dme_get 0x%x fail, ret = %d!\n", VENDOR_POWERSTATE, ret);
-		return;
+		return ret;
 	}
 	if (tmp == VENDOR_POWERSTATE_HIBERNATE) {
 		/* Disable MPHY 26MHz ref clock in H8 mode */
@@ -1437,7 +1438,9 @@ void ufs_mtk_deepidle_hibern8_check(void)
 		clk_buf_ctrl(CLK_BUF_UFS, false);
 		#endif
 		spm_resource_req(SPM_RESOURCE_USER_UFS, 0);
+		return 0;
 	}
+	return -1;
 }
 
 /**
