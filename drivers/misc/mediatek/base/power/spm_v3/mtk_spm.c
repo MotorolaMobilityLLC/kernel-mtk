@@ -418,9 +418,7 @@ int __init spm_module_init(void)
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
-#ifndef CONFIG_MACH_MT6759
 	spm_vcorefs_init();
-#endif
 	return 0;
 }
 

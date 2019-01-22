@@ -23,22 +23,15 @@
  */
 
 #if defined(CONFIG_MACH_MT6799)          /* PMIC MT6335 */
-#define VCORE_BASE_UV           400000
+#define VOLT_TO_PMIC_VAL(volt)  (((volt) - 40000 + 625 - 1) / 625)
+#define PMIC_VAL_TO_VOLT(pmic)  (((pmic) * 625) + 40000)
 #elif defined(CONFIG_MACH_MT6763)        /* PMIC MT6356 */
-#define VCORE_BASE_UV           500000
+#define VOLT_TO_PMIC_VAL(volt)  (((volt) - 50000 + 625 - 1) / 625)
+#define PMIC_VAL_TO_VOLT(pmic)  (((pmic) * 625) + 50000)
 #elif defined(CONFIG_MACH_MT6759)        /* PMIC MT6355 */
-#define VCORE_BASE_UV           406250
-#else
-#error "Not set pmic config properly!"
+#define VOLT_TO_PMIC_VAL(volt)  (((volt) - 40625 + 625 - 1) / 625)
+#define PMIC_VAL_TO_VOLT(pmic)  (((pmic) * 625) + 40625)
 #endif
-#define VCORE_STEP_UV           6250
-#define VCORE_INVALID           0x80
-
-#define VOLT_TO_PMIC_VAL(volt) \
-	((((volt) - VCORE_BASE_UV) + (VCORE_STEP_UV - 1)) / VCORE_STEP_UV)
-
-#define PMIC_VAL_TO_VOLT(pmic)	\
-	(((pmic) * VCORE_STEP_UV) + VCORE_BASE_UV)
 
 
 enum pmic_wrap_phase_id {
