@@ -7,3 +7,5 @@ obj-y += mtk_cpuidle.o
 
 obj-$(CONFIG_MACH_MT6757) += mtk_cpuidle_mt6757.o
 obj-$(CONFIG_MACH_MT6799) += mtk_cpuidle_mt6799.o
+obj-$(CONFIG_MACH_MT6759) += mtk_cpuidle_mt6759.o
+obj-$(CONFIG_MACH_MT6763) += mtk_cpuidle_mt6763.o
