@@ -123,7 +123,7 @@ static int pl_bat_vol;
 static int pl_shutdown_time;
 static u32 pl_two_sec_reboot;
 static int g_plug_miss_count;
-
+static bool g_disable_plug_int;
 
 static struct gtimer tracking_timer;
 static struct gtimer one_percent_timer;
@@ -3602,38 +3602,6 @@ int fg_get_battery_temperature_for_zcv(void)
 	return battery_main.BAT_batt_temp;
 }
 
-
-void fg_nafg_int_handler(void)
-{
-	int nafg_en = 0;
-	signed int nafg_cnt = 0;
-	signed int nafg_dltv = 0;
-	signed int nafg_c_dltv = 0;
-
-	if (fg_interrupt_check() == false)
-		return;
-
-	/* 1. Get SW Car value */
-	gauge_dev_get_nag_cnt(gauge_dev, &nafg_cnt);
-	gauge_dev_get_nag_dltv(gauge_dev, &nafg_dltv);
-	gauge_dev_get_nag_c_dltv(gauge_dev, &nafg_c_dltv);
-
-	FG_status.sw_car_nafg_cnt = nafg_cnt;
-	FG_status.sw_car_nafg_dltv = nafg_dltv;
-	FG_status.sw_car_nafg_c_dltv = nafg_c_dltv;
-
-	bm_err("[fg_nafg_int_handler][fg_bat_nafg] [%d:%d:%d]\n", nafg_cnt, nafg_dltv, nafg_c_dltv);
-	/* battery_dump_nag(); */
-
-	/* 2. Stop HW interrupt*/
-	gauge_set_nag_en(nafg_en);
-
-	/* 3. Notify fg daemon */
-	wakeup_fg_algo(FG_INTR_NAG_C_DLTV);
-
-	get_monotonic_boottime(&last_nafg_update_time);
-}
-
 void fg_bat_temp_int_init(void)
 {
 	int tmp = 0;
@@ -3751,6 +3719,58 @@ void fg_bat_temp_int_sw_check(void)
 		fg_bat_sw_temp_int_h_handler();
 	else if (tmp <= fg_bat_tmp_lt)
 		fg_bat_sw_temp_int_l_handler();
+}
+
+void swcheck_bat_plugout(void)
+{
+	int is_bat_exist;
+
+	if (g_disable_plug_int && is_fg_disable() != true) {
+		is_bat_exist = pmic_is_battery_exist();
+		/* fg_bat_plugout_int_handler(); */
+		if (is_bat_exist == 0) {
+			bm_err("[swcheck_bat_plugout]g_disable_plug_int=%d, is_bat_exist %d, is_fg_disable %d\n",
+				g_disable_plug_int, is_bat_exist, is_fg_disable());
+
+			battery_notifier(EVENT_BATTERY_PLUG_OUT);
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
+			wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
+			battery_update(&battery_main);
+			kernel_power_off();
+		}
+	}
+}
+
+void fg_nafg_int_handler(void)
+{
+	int nafg_en = 0;
+	signed int nafg_cnt = 0;
+	signed int nafg_dltv = 0;
+	signed int nafg_c_dltv = 0;
+
+	if (fg_interrupt_check() == false)
+		return;
+
+	/* 1. Get SW Car value */
+	gauge_dev_get_nag_cnt(gauge_dev, &nafg_cnt);
+	gauge_dev_get_nag_dltv(gauge_dev, &nafg_dltv);
+	gauge_dev_get_nag_c_dltv(gauge_dev, &nafg_c_dltv);
+
+	FG_status.sw_car_nafg_cnt = nafg_cnt;
+	FG_status.sw_car_nafg_dltv = nafg_dltv;
+	FG_status.sw_car_nafg_c_dltv = nafg_c_dltv;
+
+	bm_err("[fg_nafg_int_handler][fg_bat_nafg] [%d:%d:%d]\n", nafg_cnt, nafg_dltv, nafg_c_dltv);
+	/* battery_dump_nag(); */
+
+	/* 2. Stop HW interrupt*/
+	gauge_set_nag_en(nafg_en);
+
+	fg_bat_temp_int_sw_check();
+	/* 3. Notify fg daemon */
+	wakeup_fg_algo(FG_INTR_NAG_C_DLTV);
+
+	get_monotonic_boottime(&last_nafg_update_time);
 }
 
 static void sw_iavg_init(void)
@@ -3925,6 +3945,7 @@ void fg_iavg_int_ht_handler(void)
 	wakeup_fg_algo(FG_INTR_IAVG);
 
 	fg_bat_temp_int_sw_check();
+	swcheck_bat_plugout();
 }
 
 void fg_iavg_int_lt_handler(void)
@@ -3939,6 +3960,7 @@ void fg_iavg_int_lt_handler(void)
 	wakeup_fg_algo(FG_INTR_IAVG);
 
 	fg_bat_temp_int_sw_check();
+	swcheck_bat_plugout();
 }
 
 void fg_cycle_int_handler(void)
@@ -3948,6 +3970,7 @@ void fg_cycle_int_handler(void)
 	pmic_enable_interrupt(FG_N_CHARGE_L_NO, 0, "GM30");
 	wakeup_fg_algo(FG_INTR_BAT_CYCLE);
 	fg_bat_temp_int_sw_check();
+	swcheck_bat_plugout();
 }
 
 int fg_bat_int1_h_handler(struct gauge_consumer *consumer)
@@ -3965,9 +3988,10 @@ int fg_bat_int1_h_handler(struct gauge_consumer *consumer)
 	bm_err("[fg_bat_int1_h_handler] car:%d ht:%d lt:%d gap:%d\n",
 		fg_coulomb, fg_bat_int1_ht, fg_bat_int1_lt, fg_bat_int1_gap);
 
-	wakeup_fg_algo(FG_INTR_BAT_INT1_HT);
-
 	fg_bat_temp_int_sw_check();
+
+	wakeup_fg_algo(FG_INTR_BAT_INT1_HT);
+	swcheck_bat_plugout();
 	return 0;
 }
 
@@ -3985,9 +4009,12 @@ int fg_bat_int1_l_handler(struct gauge_consumer *consumer)
 
 	bm_err("[fg_bat_int1_l_handler] car:%d ht:%d lt:%d gap:%d\n",
 		fg_coulomb, fg_bat_int1_ht, fg_bat_int1_lt, fg_bat_int1_gap);
-	wakeup_fg_algo(FG_INTR_BAT_INT1_LT);
 
 	fg_bat_temp_int_sw_check();
+
+	wakeup_fg_algo(FG_INTR_BAT_INT1_LT);
+	swcheck_bat_plugout();
+
 	return 0;
 }
 
@@ -3999,9 +4026,10 @@ int fg_bat_int2_h_handler(struct gauge_consumer *consumer)
 	bm_err("[fg_bat_int2_h_handler] car:%d ht:%d\n",
 		fg_coulomb, fg_bat_int2_ht);
 
-	wakeup_fg_algo(FG_INTR_BAT_INT2_HT);
-
 	fg_bat_temp_int_sw_check();
+	wakeup_fg_algo(FG_INTR_BAT_INT2_HT);
+	swcheck_bat_plugout();
+
 	return 0;
 }
 
@@ -4013,9 +4041,10 @@ int fg_bat_int2_l_handler(struct gauge_consumer *consumer)
 	bm_err("[fg_bat_int2_l_handler] car:%d lt:%d\n",
 		fg_coulomb, fg_bat_int2_lt);
 
-	wakeup_fg_algo(FG_INTR_BAT_INT2_LT);
-
 	fg_bat_temp_int_sw_check();
+	wakeup_fg_algo(FG_INTR_BAT_INT2_LT);
+	swcheck_bat_plugout();
+
 	return 0;
 }
 
@@ -4042,6 +4071,7 @@ void fg_zcv_int_handler(void)
 	}
 
 	fg_bat_temp_int_sw_check();
+	swcheck_bat_plugout();
 }
 
 void fg_bat_plugout_int_handler(void)
@@ -4079,6 +4109,7 @@ void fg_bat_plugout_int_handler(void)
 		if (g_plug_miss_count >= 3) {
 			pmic_enable_interrupt(FG_BAT_PLUGOUT_NO, 0, "GM30");
 			bm_err("[fg_bat_plugout_int_handler]disable FG_BAT_PLUGOUT\n");
+			g_disable_plug_int = 1;
 		}
 	}
 
@@ -4121,6 +4152,7 @@ void fg_vbat2_l_int_handler(void)
 	wakeup_fg_algo(FG_INTR_VBAT2_L);
 
 	fg_bat_temp_int_sw_check();
+	swcheck_bat_plugout();
 }
 
 void fg_vbat2_h_int_handler(void)
@@ -4136,6 +4168,7 @@ void fg_vbat2_h_int_handler(void)
 	wakeup_fg_algo(FG_INTR_VBAT2_H);
 
 	fg_bat_temp_int_sw_check();
+	swcheck_bat_plugout();
 }
 
 void fg_chr_full_int_handler(void)
