@@ -21,6 +21,7 @@
 #include <linux/sched/rt.h>	/* MAX_RT_PRIO */
 
 #include <mach/mtk_ppm_api.h>
+#include <mtk_idle_profile.h>
 
 /*
  * CONFIG - compile time
@@ -57,7 +58,7 @@
 #define DEF_EAS_DOWN_THRESHOLD_1          (60)
 #define DEF_EAS_UP_THRESHOLD_2            (80)
 #define DEF_EAS_DOWN_THRESHOLD_2          (20)
-
+#define DEF_CPU_IDLE_THRESHOLD		(40)
 
 #define EN_CPU_INPUT_BOOST		(1)
 #define DEF_CPU_INPUT_BOOST_CPU_NUM	(2)
@@ -151,6 +152,7 @@ typedef enum {
 	HPS_FUNC_CTRL_PPM_INIT,	/* big  4, 0x0010 */
 	HPS_FUNC_CTRL_EFUSE,	/* big  5, 0x0020 */
 	HPS_FUNC_CTRL_EAS,	/* big  6, 0x0040 */
+	HPS_FUNC_CTRL_IDLE_DET,	/* big  7 0x0080 */
 	HPS_FUNC_CTRL_COUNT
 } hps_ctxt_func_ctrl_e;
 
@@ -218,6 +220,11 @@ typedef struct hps_ctxt_struct {
 	unsigned int stats_dump_enabled;
 	unsigned int power_mode;
 	unsigned int ppm_power_mode;
+
+	unsigned int idle_det_enabled;
+	unsigned int idle_ratio;
+	unsigned int idle_threshold;
+	unsigned int is_idle;
 
 	unsigned int heavy_task_enabled;
 	unsigned int big_task_enabled;
@@ -314,6 +321,8 @@ typedef struct hps_ctxt_struct {
 typedef struct hps_cpu_ctxt_struct {
 	unsigned int load;
 } hps_cpu_ctxt_t;
+
+typedef struct mtk_idle_recent_ratio hps_idle_ratio_t;
 
 /*=============================================================*/
 /* Global variable declaration */

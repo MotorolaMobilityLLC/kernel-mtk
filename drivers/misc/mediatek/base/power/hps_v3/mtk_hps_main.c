@@ -75,7 +75,7 @@ hps_ctxt_t hps_ctxt = {
 	.suspend_enabled = 1,
 	.cur_dump_enabled = 0,
 	.stats_dump_enabled = 0,
-
+	.idle_det_enabled = 1,
 	.is_ppm_init = 1,
 	.heavy_task_enabled = 0,
 	.big_task_enabled = 1,
@@ -121,6 +121,7 @@ hps_ctxt_t hps_ctxt = {
 	.down_threshold_H = DEF_CPU_DOWN_THRESHOLD,
 	.up_threshold_L = DEF_CPU_UP_THRESHOLD,
 	.down_threshold_L = DEF_CPU_DOWN_THRESHOLD,
+	.idle_threshold = DEF_CPU_IDLE_THRESHOLD,
 	/* algo bound */
 	/* .little_num_base_perf_serv = 1, */
 	/* .little_num_limit_thermal = NR_CPUS, */
