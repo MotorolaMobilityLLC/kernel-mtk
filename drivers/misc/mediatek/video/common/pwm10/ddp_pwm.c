@@ -40,26 +40,48 @@
 #include <ddp_drv.h>
 #include <ddp_pwm.h>
 
-
 #define PWM_DEFAULT_DIV_VALUE 0x0
 
+#if defined(CONFIG_MACH_MT6799)
+#define PWM0_CLK_NAMING (DISP_CLK_PWM0)
+#else
+#define PWM0_CLK_NAMING (DISP_PWM)
+#endif
+
+static int pwm_dbg_en;
 #define PWM_ERR(fmt, arg...) pr_err("[PWM] " fmt "\n", ##arg)
 #define PWM_NOTICE(fmt, arg...) pr_warn("[PWM] " fmt "\n", ##arg)
 #define PWM_MSG(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
+#define PWM_DBG(fmt, arg...) \
+	do { if (pwm_dbg_en) pr_warn("[PWM] " fmt "\n", ##arg); } while (0)
 
-#define pwm_get_reg_base(id) (DISPSYS_PWM0_BASE)
-
-#define index_of_pwm(id) (0)
 #define PWM_LOG_BUFFER_SIZE 8
 
-
 static disp_pwm_id_t g_pwm_main_id = DISP_PWM0;
-static atomic_t g_pwm_backlight[1] = { ATOMIC_INIT(-1) };
-static int g_pwm_max_backlight[1] = { 1023 };
 static ddp_module_notify g_ddp_notify;
-static volatile bool g_pwm_is_power_on;
-static volatile unsigned int g_pwm_value_before_power_off;
+
+#if defined(CONFIG_MACH_MT6799)
+#define pwm_get_reg_base(id) ((id) == DISP_PWM0 ? DISPSYS_PWM0_BASE : DISPSYS_PWM1_BASE)
+#define PWM_TOTAL_MODULE_NUM (2)
+
+static atomic_t g_pwm_backlight[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1), ATOMIC_INIT(-1) };
+static atomic_t g_pwm_en[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1), ATOMIC_INIT(-1) };
+static int g_pwm_max_backlight[PWM_TOTAL_MODULE_NUM] = { 1023, 1023 };
+#else
+#define pwm_get_reg_base(id) (DISPSYS_PWM0_BASE)
+#define PWM_TOTAL_MODULE_NUM (1)
+
+static atomic_t g_pwm_backlight[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1) };
+static atomic_t g_pwm_en[PWM_TOTAL_MODULE_NUM] = { ATOMIC_INIT(-1) };
+static int g_pwm_max_backlight[PWM_TOTAL_MODULE_NUM] = { 1023 };
+#endif
+
+#define pwm_get_id_from_module(module) (module == DISP_MODULE_PWM0 ? DISP_PWM0 : DISP_PWM1)
+#define index_of_pwm(id) ((id == DISP_PWM0) ? 0 : 1)
+
 static int g_pwm_led_mode = MT65XX_LED_MODE_NONE;
+static volatile bool g_pwm_is_power_on[PWM_TOTAL_MODULE_NUM];
+static volatile unsigned int g_pwm_value_before_power_off[PWM_TOTAL_MODULE_NUM];
 
 typedef struct {
 	int value;
@@ -76,17 +98,16 @@ enum PWM_LOG_TYPE {
 #define PWM_USE_HIGH_ULPOSC_FQ
 #endif
 
-static volatile bool g_pwm_is_change_state;
+static volatile bool g_pwm_is_change_state[PWM_TOTAL_MODULE_NUM];
 #ifndef CONFIG_FPGA_EARLY_PORTING
 static DEFINE_SPINLOCK(g_pwm_log_lock);
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
 #if defined(PWM_USE_HIGH_ULPOSC_FQ)
-static bool g_pwm_first_config;
-#endif
-#endif
+static bool g_pwm_first_config[PWM_TOTAL_MODULE_NUM];
+#endif		/* PWM_USE_HIGH_ULPOSC_FQ */
+#endif		/* CONFIG_FPGA_EARLY_PORTING */
 static int g_pwm_log_num = PWM_LOG_BUFFER_SIZE;
-static volatile bool g_pwm_force_backlight_update;
 
 int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 {
@@ -128,10 +149,11 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 	return ret;
 }
 
-static void disp_pwm_backlight_status(bool is_power_on)
+static void disp_pwm_backlight_status(disp_pwm_id_t id, bool is_power_on)
 {
+	int index = index_of_pwm(id);
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
+	const unsigned long reg_base = pwm_get_reg_base(id);
 	unsigned int high_width;
 
 	if (g_pwm_led_mode == MT65XX_LED_MODE_CUST_BLS_PWM) {
@@ -146,19 +168,19 @@ static void disp_pwm_backlight_status(bool is_power_on)
 	}
 
 	if (is_power_on == true && high_width > 0) {
-		PWM_NOTICE("backlight is on (%d), ddp_pwm power:(%d)",
-			high_width, is_power_on);
+		PWM_NOTICE("backlight is on (%d), ddp_pwm power:(%d), pwm id: (%d)",
+			high_width, is_power_on, index);
 		/* Change status when backlight turns on */
-		g_pwm_is_power_on = is_power_on;
+		g_pwm_is_power_on[index] = is_power_on;
 	} else if (is_power_on == false) {
-		PWM_NOTICE("backlight is off, ddp_pwm power:(%d)",
-			is_power_on);
+		PWM_NOTICE("backlight is off, ddp_pwm power:(%d), pwm id: (%d)",
+			is_power_on, index);
 		/* Save vlaue before clock off */
-		g_pwm_value_before_power_off = high_width;
-		g_pwm_is_power_on = is_power_on;
+		g_pwm_value_before_power_off[index] = high_width;
+		g_pwm_is_power_on[index] = is_power_on;
 	}
 #else
-	g_pwm_is_power_on = is_power_on;
+	g_pwm_is_power_on[index] = is_power_on;
 #endif
 }
 
@@ -168,9 +190,10 @@ static void disp_pwm_query_backlight(char *debug_output)
 	char *temp_buf = debug_output;
 	const size_t buf_max_len = 100;
 	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
+	int index = index_of_pwm(DISP_PWM0);
 	unsigned int high_width;
 
-	if (g_pwm_is_power_on == true) {
+	if (g_pwm_is_power_on[index] == true) {
 		if (g_pwm_led_mode == MT65XX_LED_MODE_CUST_BLS_PWM) {
 			/* Read PWM value from register */
 			high_width = DISP_REG_GET(reg_base + DISP_PWM_CON_1_OFF) >> 16;
@@ -180,34 +203,29 @@ static void disp_pwm_query_backlight(char *debug_output)
 		}
 	} else {
 		/* Read vlaue before clock off */
-		high_width = g_pwm_value_before_power_off;
+		high_width = g_pwm_value_before_power_off[index];
 	}
 
 	if (high_width > 0) {
 		/* print backlight status */
 		snprintf(temp_buf, buf_max_len, "backlight is on (%d), ddp_pwm power:(%d)",
-			high_width, g_pwm_is_power_on);
+			high_width, g_pwm_is_power_on[index]);
 	} else {
 		snprintf(temp_buf, buf_max_len, "backlight is off, ddp_pwm power:(%d)",
-			g_pwm_is_power_on);
+			g_pwm_is_power_on[index]);
 	}
 
 	PWM_NOTICE("%s", temp_buf);
 #endif
 }
 
-void disp_pwm_set_force_update_flag(void)
-{
-	g_pwm_force_backlight_update = true;
-	PWM_NOTICE("disp_pwm_set_force_update_flag (%d)", g_pwm_force_backlight_update);
-}
-
 static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	unsigned int pwm_div, pwm_src;
-	/* disp_pwm_id_t id = DISP_PWM0; */
-	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
+	disp_pwm_id_t id = pwm_get_id_from_module(module);
+	unsigned long reg_base = pwm_get_reg_base(id);
+	int index = index_of_pwm(id);
 	int ret;
 	bool config_instantly = false;
 
@@ -225,15 +243,15 @@ static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_pa
 			/* add PWM clock division, due to ULPOSC frequency is too high in some chip */
 			pwm_div += 1;
 		}
-		if (g_pwm_first_config == false) {
+		if (g_pwm_first_config[index] == false) {
 			config_instantly = true;
-			g_pwm_first_config = true;
+			g_pwm_first_config[index] = true;
 		}
 #endif
 		PWM_MSG("disp_pwm_init : PWM config data (%d,%d)", pwm_src, pwm_div);
 	}
 
-	g_pwm_is_change_state = true;
+	g_pwm_is_change_state[index] = true;
 
 	if (config_instantly == true) {
 		/* Set PWM clock division instantly to avoid frequency change dramaticly */
@@ -298,14 +316,6 @@ disp_pwm_id_t disp_pwm_get_main(void)
 }
 
 
-int disp_pwm_is_enabled(disp_pwm_id_t id)
-{
-	unsigned long reg_base = pwm_get_reg_base(id);
-
-	return DISP_REG_GET(reg_base + DISP_PWM_EN_OFF) & 0x1;
-}
-
-
 #ifndef CONFIG_FPGA_EARLY_PORTING
 static void disp_pwm_set_drverIC_en(disp_pwm_id_t id, int enabled)
 {
@@ -325,27 +335,35 @@ static void disp_pwm_set_drverIC_en(disp_pwm_id_t id, int enabled)
 static void disp_pwm_set_enabled(struct cmdqRecStruct *cmdq, disp_pwm_id_t id, int enabled)
 {
 	unsigned long reg_base = pwm_get_reg_base(id);
+	int index = index_of_pwm(id);
+	int old_en;
 
-	if (enabled) {
-		if (!disp_pwm_is_enabled(id)) {
+	old_en = atomic_xchg(&g_pwm_en[index], enabled);
+	if (old_en != enabled) {
+		if (enabled) {
 #if defined(CONFIG_MACH_MT6799)
 			disp_dts_gpio_select_state(DTS_GPIO_STATE_DISP_PWM_TRANSPARENT);
 #endif
-			DISP_REG_MASK(cmdq, reg_base + DISP_PWM_EN_OFF, 0x1, 0x1);
-			PWM_MSG("disp_pwm_set_enabled: PWN_EN = 0x1");
+			/* Always use CPU to config DISP_PWM EN to avoid race condition */
+			DISP_REG_MASK(NULL, reg_base + DISP_PWM_EN_OFF, 0x1, 0x1);
+			PWM_MSG("disp_pwm_set_enabled: PWN_EN (by CPU) = 0x1");
+
+			disp_pwm_set_drverIC_en(id, enabled);
+		} else {
+#if defined(CONFIG_MACH_MT6799)
+			disp_dts_gpio_select_state(DTS_GPIO_STATE_DISP_PWM_GPIO_LOW);
+			/* Always use CPU to config DISP_PWM EN to avoid race condition */
+			DISP_REG_MASK(NULL, reg_base + DISP_PWM_EN_OFF, 0x0, 0x1);
+			DISP_REG_SET(NULL, reg_base + DISP_PWM_RST_RX, 0x1);
+			DISP_REG_SET(NULL, reg_base + DISP_PWM_RST_RX, 0x0);
+#else
+			/* Always use CPU to config DISP_PWM EN to avoid race condition */
+			DISP_REG_MASK(NULL, reg_base + DISP_PWM_EN_OFF, 0x0, 0x1);
+#endif
+			PWM_MSG("disp_pwm_set_enabled: PWN_EN (by CPU) = 0x0");
 
 			disp_pwm_set_drverIC_en(id, enabled);
 		}
-	} else {
-#if defined(CONFIG_MACH_MT6799)
-		disp_dts_gpio_select_state(DTS_GPIO_STATE_DISP_PWM_GPIO_LOW);
-		DISP_REG_MASK(cmdq, reg_base + DISP_PWM_EN_OFF, 0x0, 0x1);
-		DISP_REG_SET(cmdq, reg_base + DISP_PWM_RST_RX, 0x1);
-		DISP_REG_SET(cmdq, reg_base + DISP_PWM_RST_RX, 0x0);
-#else
-		DISP_REG_MASK(cmdq, reg_base + DISP_PWM_EN_OFF, 0x0, 0x1);
-#endif
-		disp_pwm_set_drverIC_en(id, enabled);
 	}
 }
 
@@ -433,7 +451,7 @@ int disp_pwm_set_max_backlight(disp_pwm_id_t id, unsigned int level_1024)
 
 	PWM_MSG("disp_pwm_set_max_backlight(id = 0x%x, level = %u)", id, level_1024);
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	g_pwm_is_change_state = true;
+	g_pwm_is_change_state[index] = true;
 #endif
 	disp_pwm_set_backlight(id, atomic_read(&g_pwm_backlight[index]));
 
@@ -487,20 +505,13 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 		return -EFAULT;
 	}
 
-	/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
-	if (g_pwm_force_backlight_update == true && cmdq != NULL) {
-		g_pwm_force_backlight_update = false;
-		force_update = true;
-		PWM_NOTICE("PWM force set backlight to 0 again\n");
-	}
+	index = index_of_pwm(id);
 
 	/* we have to change backlight after config init or max backlight changed */
-	if (g_pwm_is_change_state == true) {
-		g_pwm_is_change_state = false;
+	if (g_pwm_is_change_state[index] == true) {
+		g_pwm_is_change_state[index] = false;
 		force_update = true;
 	}
-
-	index = index_of_pwm(id);
 
 	old_pwm = atomic_xchg(&g_pwm_backlight[index], level_1024);
 	if (old_pwm != level_1024 || force_update) {
@@ -540,9 +551,11 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 		g_pwm_duplicate_count = (g_pwm_duplicate_count + 1) & 63;
 	}
 
-	/* print backlight once after device resumed */
-	if (g_pwm_led_mode == MT65XX_LED_MODE_CUST_BLS_PWM && g_pwm_is_power_on == false && level_1024 > 0)
-		disp_pwm_backlight_status(true);
+	if (g_pwm_led_mode == MT65XX_LED_MODE_CUST_BLS_PWM &&
+		g_pwm_is_power_on[index] == false && level_1024 > 0) {
+		/* print backlight once after device resumed */
+		disp_pwm_backlight_status(id, true);
+	}
 #endif
 	return 0;
 }
@@ -551,6 +564,7 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int pwm_div = 0;
 	unsigned int pwm_src = 0;
+	disp_pwm_id_t id = pwm_get_id_from_module(module);
 	int ret = -1;
 
 #ifdef ENABLE_CLK_MGR
@@ -565,16 +579,26 @@ static int ddp_pwm_power_on(enum DISP_MODULE_ENUM module, void *handle)
 		enable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");
 #endif
 #else /* Common Clock Framework */
-		ddp_clk_enable(DISP_PWM);
+		ddp_clk_enable(PWM0_CLK_NAMING);
+#endif
+	}
+#if defined(CONFIG_MACH_MT6799)
+	else if (module == DISP_MODULE_PWM1) {
+#ifndef CONFIG_MTK_CLKMGR /* Common Clock Framework */
+		ddp_clk_enable(DISP_CLK_PWM1);
+#else
+		/* MTK Clock Manager implementation */
 #endif
 	}
 #endif
+#endif	/* ENABLE_CLK_MGR */
+
 	ret = disp_pwm_get_cust_led(&pwm_src, &pwm_div);
 	if (!ret)
 		disp_pwm_clksource_enable(pwm_src);
 
 	if (g_pwm_led_mode != MT65XX_LED_MODE_CUST_BLS_PWM)
-		disp_pwm_backlight_status(true);
+		disp_pwm_backlight_status(id, true);
 
 	return 0;
 }
@@ -583,9 +607,10 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int pwm_div = 0;
 	unsigned int pwm_src = 0;
+	disp_pwm_id_t id = pwm_get_id_from_module(module);
 	int ret = -1;
 
-	disp_pwm_backlight_status(false);
+	disp_pwm_backlight_status(id, false);
 
 #ifdef ENABLE_CLK_MGR
 	if (module == DISP_MODULE_PWM0) {
@@ -600,10 +625,20 @@ static int ddp_pwm_power_off(enum DISP_MODULE_ENUM module, void *handle)
 		disable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");
 #endif
 #else /* Common Clock Framework */
-		ddp_clk_disable(DISP_PWM);
+		ddp_clk_disable(PWM0_CLK_NAMING);
+#endif
+	}
+#if defined(CONFIG_MACH_MT6799)
+	else if (module == DISP_MODULE_PWM1) {
+#ifndef CONFIG_MTK_CLKMGR /* Common Clock Framework */
+		ddp_clk_disable(DISP_CLK_PWM1);
+#else
+		/* MTK Clock Manager implementation */
 #endif
 	}
 #endif
+#endif	/* ENABLE_CLK_MGR */
+
 	ret = disp_pwm_get_cust_led(&pwm_src, &pwm_div);
 	if (!ret)
 		disp_pwm_clksource_disable(pwm_src);
@@ -869,6 +904,11 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 		PWM_MSG("combine %lu backlight change log in one line", log_num);
 	} else if (strncmp(cmd, "queryBL", 7) == 0) {
 		disp_pwm_query_backlight(debug_output);
+	} else if (strncmp(cmd, "pwm_dbg:", 8) == 0) {
+		if (cmd[8] == '0')
+			pwm_dbg_en = 0;
+		else
+			pwm_dbg_en = 1;
 	}
 #if defined(PWM_USE_HIGH_ULPOSC_FQ)
 	else if (strncmp(cmd, "query_osc", 9) == 0) {
