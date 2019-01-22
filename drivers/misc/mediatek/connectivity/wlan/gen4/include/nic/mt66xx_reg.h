@@ -656,6 +656,7 @@ typedef struct _ENHANCE_MODE_DATA_STRUCT_T {
 /* 3 WHISR 0x0010 */
 #define WHISR_D2H_SW_INT                BITS(8, 31)
 #define WHISR_D2H_SW_ASSERT_INFO_INT    BIT(31)
+#define WHISR_D2H_WKUP_BY_RX_PACKET	BIT(30)
 #define WHISR_D2H_SW_RD_MAILBOX_INT     BIT(29)
 #define WHISR_FW_OWN_BACK_INT           BIT(7)
 #define WHISR_ABNORMAL_INT              BIT(6)

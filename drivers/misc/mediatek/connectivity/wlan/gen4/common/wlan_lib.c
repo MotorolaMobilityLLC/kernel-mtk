@@ -2270,17 +2270,16 @@ WLAN_STATUS wlanSendNicPowerCtrlCmd(IN P_ADAPTER_T prAdapter, IN UINT_8 ucPowerM
 				prAdapter->fgIsChipNoAck = TRUE;
 				break;
 			}
-				continue;
-
+			continue;
 		}
-		/* 3.2 Send CMD Info Packet */
-		if (nicTxCmd(prAdapter, prCmdInfo, ucTC) != WLAN_STATUS_SUCCESS) {
-			DBGLOG(INIT, ERROR, "Fail to transmit CMD_NIC_POWER_CTRL command\n");
-			status = WLAN_STATUS_FAILURE;
-		}
-
 		break;
 	};
+
+	/* 3.2 Send CMD Info Packet */
+	if (nicTxCmd(prAdapter, prCmdInfo, ucTC) != WLAN_STATUS_SUCCESS) {
+		DBGLOG(INIT, ERROR, "Fail to transmit CMD_NIC_POWER_CTRL command\n");
+		status = WLAN_STATUS_FAILURE;
+	}
 
 	/* 4. Free CMD Info Packet. */
 	cmdBufFreeCmdInfo(prAdapter, prCmdInfo);
