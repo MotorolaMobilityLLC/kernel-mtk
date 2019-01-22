@@ -2132,7 +2132,7 @@ int pd_task(void *data)
 
 #ifdef CONFIG_USBC_VCONN
 					/* drive Vconn ONLY when there is Ra */
-					if (typec_readw(hba, TYPE_C_PWR_STATUS) & RO_TYPE_C_DRIVE_VCONN_CAPABLE) {
+					if (hba->ra) {
 						typec_drive_vconn(hba, 1);
 						hba->flags |= PD_FLAGS_VCONN_ON;
 					}
