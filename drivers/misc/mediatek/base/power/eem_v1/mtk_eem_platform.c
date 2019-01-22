@@ -28,6 +28,7 @@
 #endif
 #include "mtk_eem_internal.h"
 #include "mt-plat/mt6799/include/mach/mtk_cpufreq_api.h"
+#include "mtk_gpufreq.h"
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6335)
 	#include "include/pmic_regulator.h"
 	#include "mtk_pmic_regulator.h"
@@ -61,6 +62,14 @@ struct eem_det_ops gpu_det_ops = {
 	.set_volt		= set_volt_gpu,
 	.restore_default_volt	= restore_default_volt_gpu,
 	.get_freq_table		= get_freq_table_gpu,
+	.get_orig_volt_table = NULL,
+};
+
+struct eem_det_ops dmy_det_ops = {
+	.get_volt		= NULL,
+	.set_volt		= NULL,
+	.restore_default_volt	= NULL,
+	.get_freq_table		= NULL,
 	.get_orig_volt_table = NULL,
 };
 
@@ -157,7 +166,7 @@ int set_volt_cpu(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	/* eem_debug("init02_vop_30 = 0x%x\n", det->vop30[EEM_PHASE_INIT02]); */
-	#ifndef EARLY_PORTING_CPUDVFS
+	#if SET_PMIC_VOLT_TO_DVFS
 	#ifdef __KERNEL__
 	mutex_lock(&record_mutex);
 	#endif
@@ -189,14 +198,14 @@ int set_volt_cpu(struct eem_det *det)
 	mutex_unlock(&record_mutex);
 	#endif
 	FUNC_EXIT(FUNC_LV_HELP);
-	#endif
+	#endif /*if SET_PMIC_VOLT_TO_DVFS*/
 	return value;
 
 }
 
 void restore_default_volt_cpu(struct eem_det *det)
 {
-	#ifndef EARLY_PORTING_CPUDVFS
+	#if SET_PMIC_VOLT_TO_DVFS
 	int value = 0;
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -220,7 +229,7 @@ void restore_default_volt_cpu(struct eem_det *det)
 	}
 
 	FUNC_EXIT(FUNC_LV_HELP);
-	#endif
+	#endif /*if SET_PMIC_VOLT_TO_DVFS*/
 }
 
 void get_freq_table_cpu(struct eem_det *det)
@@ -250,9 +259,8 @@ void get_freq_table_cpu(struct eem_det *det)
 	det->max_freq_khz = mt_cpufreq_get_freq_by_idx(cpu_id, 0);
 	for (i = 0; i < NR_FREQ_CPU; i++) {
 		det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu_id, i), det->max_freq_khz);
-		/*eem_debug("freq[%d]=%d, det->max_freq_khz=%d, freq_tbl[%d]=%d 0x%0x\n",
-		*			i, freq[i], det->max_freq_khz, i, det->freq_tbl[i], det->freq_tbl[i]);
-		*/
+		/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]); */
+
 		if (det->freq_tbl[i] == 0)
 			break;
 	}
@@ -283,7 +291,7 @@ void get_orig_volt_table_cpu(struct eem_det *det)
 			(det_id == EEM_DET_2L) ? mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_LL, i) :
 			(det_id == EEM_DET_L) ?  mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_L, i) :
 			mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_CCI, i));
-		/* eem_debug("volt_tbl_orig[%d] = %d\n", i, det->volt_tbl_orig[i]);*/
+		/* eem_debug("volt_tbl_orig[%d] = %d\n", i, det->volt_tbl_orig[i]); */
 	}
 	FUNC_EXIT(FUNC_LV_HELP);
 }
@@ -310,8 +318,6 @@ int set_volt_gpu(struct eem_det *det)
 	int i;
 	unsigned int output[NR_FREQ_GPU];
 
-	FUNC_ENTER(FUNC_LV_HELP);
-
 	/*
 	*eem_error("set_volt_gpu= ");
 	*for (i = 0; i < 15; i++)
@@ -326,7 +332,6 @@ int set_volt_gpu(struct eem_det *det)
 	#else
 		return mt_gpufreq_update_volt(output, NR_FREQ_GPU);
 	#endif
-	FUNC_EXIT(FUNC_LV_HELP);
 }
 
 void restore_default_volt_gpu(struct eem_det *det)
@@ -355,14 +360,18 @@ void get_freq_table_gpu(struct eem_det *det)
 	#else
 	#ifndef EARLY_PORTING_GPU
 	det->max_freq_khz = mt_gpufreq_get_freq_by_idx(0);
-	for (i = 0; i < NR_FREQ_GPU; i++)
-		det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i), det->max_freq_khz);
+	for (i = 0; i < NR_FREQ_GPU; i++) {
+		/* det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx(i), det->max_freq_khz); */
+		det->freq_tbl[i] = freq[i];
+		eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]);
+	}
 	#endif
 	#endif
 
 	det->num_freq_tbl = i;
+	eem_debug("[%s] freq_num:%d, max_freq=%d\n", det->name+8, det->num_freq_tbl, det->max_freq_khz);
 
-	eem_debug("[%s] freq num:%d\n", det->name+8, det->num_freq_tbl);
+	/* eem_debug("[%s] freq num:%d\n", det->name+8, det->num_freq_tbl); */
 	/*
 	*for (i = 0; i < NR_FREQ; i++)
 	*	eem_debug("%d\n", det->freq_tbl[i]);
@@ -376,8 +385,10 @@ int set_volt_vcore(struct eem_det *det)
 {
 	int i = 0;
 
-	for (i = 0; i < VCORE_NR_FREQ; i++)
+	for (i = 0; i < VCORE_NR_FREQ; i++) {
 		eem_vcore[i] = det->volt_tbl_pmic[i];
+		eem_debug("eem_vcore = 0x%x\n", eem_vcore[i]);
+	}
 	return 0;
 }
 
@@ -414,13 +425,15 @@ void get_freq_table_vcore(struct eem_det *det)
 	det->max_freq_khz = vcore_freq[0];
 	for (i = 0; i < VCORE_NR_FREQ; i++) {
 		det->freq_tbl[i] = PERCENT(vcore_freq[i], det->max_freq_khz);
+		eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]);
 		if (det->freq_tbl[i] == 0)
 			break;
 	}
 	#endif
 
-	eem_debug("NR_FREQ=%d\n", i);
+	/* eem_debug("NR_FREQ=%d\n", i); */
 	det->num_freq_tbl = i;
+	eem_debug("[%s] freq_num:%d, max_freq=%d\n", det->name+8, det->num_freq_tbl, det->max_freq_khz);
 	FUNC_EXIT(FUNC_LV_HELP);
 
 }
@@ -430,10 +443,10 @@ int get_volt_vcore(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_HELP);
 	FUNC_EXIT(FUNC_LV_HELP);
 
-	#ifdef EARLY_PORTING
+	#if EARLY_PORTING
 	return 0;
 	#else
-	eem_debug("get_volt_vcore=%d\n", buck_get_voltage(VCORE)/10);
+	/* eem_debug("get_volt_vcore=%d\n", buck_get_voltage(VCORE)/10); */
 	return buck_get_voltage(VCORE)/10; /* unit = 10 uv */
 	#endif
 }

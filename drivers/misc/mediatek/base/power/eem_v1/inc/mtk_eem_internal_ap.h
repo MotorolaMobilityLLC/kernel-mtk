@@ -198,7 +198,7 @@ struct eem_devinfo {
 	unsigned int CPU_L_DCBDET:8;
 	unsigned int CPU_L_DCMDET:8;
 
-	/* M_HW_RES8 0x102A05A4 */
+	/* M_HW_RES9 0x102A05A4 */
 	unsigned int CPU_L_INITEN:1;
 	unsigned int CPU_L_MONEN:1;
 	unsigned int CPU_L_DVFS_LOW:2;
@@ -208,13 +208,13 @@ struct eem_devinfo {
 	unsigned int CPU_L_MTDES:8;
 	unsigned int CPU_L_AGEDELTA:8;
 
-	/* M_HW_RES9 0x102A05B0 */
+	/* M_HW_RES10 0x102A05B0 */
 	unsigned int SOC_BDES:8;
 	unsigned int SOC_MDES:8;
 	unsigned int SOC_DCBDET:8;
 	unsigned int SOC_DCMDET:8;
 
-	/* M_HW_RES8 0x102A05B4 */
+	/* M_HW_RES11 0x102A05B4 */
 	unsigned int SOC_INITEN:1;
 	unsigned int SOC_MONEN:1;
 	unsigned int SOC_DVFS_LOW:2;
@@ -252,6 +252,7 @@ extern struct eem_det_ops soc_det_ops;
 extern struct eem_det_ops little_det_ops;
 extern struct eem_det_ops dual_little_det_ops;
 extern struct eem_det_ops cci_det_ops;
+extern struct eem_det_ops dmy_det_ops;
 
 extern int get_volt_cpu(struct eem_det *det);
 extern int set_volt_cpu(struct eem_det *det);
