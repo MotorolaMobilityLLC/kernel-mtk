@@ -1104,6 +1104,7 @@ static int detect_impedance(void)
 	return impedance;
 }
 
+static int dctrim_calibrated;
 static int hpl_dc_offset, hpr_dc_offset;
 static int last_lch_comp_value, last_rch_comp_value;
 
@@ -1300,6 +1301,15 @@ static int get_hp_trim_offset(int channel)
 #else
 	return 0;
 #endif
+}
+
+static void get_hp_lr_trim_offset(void)
+{
+	pr_debug("%s(), Start DCtrim Calibrating", __func__);
+	hpl_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
+	hpr_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
+	dctrim_calibrated = 2;
+	pr_debug("%s(), End DCtrim Calibrating", __func__);
 }
 
 static int mt63xx_codec_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
@@ -3102,7 +3112,6 @@ static int pmic_dc_offset_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	return 0;
 }
 
-static int dctrim_calibrated;
 static const char * const dctrim_control_state[] = { "Not_Yet", "Calibrating", "Calibrated"};
 
 static int pmic_dctrim_control_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
@@ -3119,15 +3128,11 @@ static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl
 		return -EINVAL;
 	}
 
-	if (ucontrol->value.integer.value[0] == 1) {
-		pr_debug("%s(), Start DCtrim Calibrating", __func__);
-		hpl_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPL);
-		hpr_dc_offset = get_hp_trim_offset(AUDIO_OFFSET_TRIM_MUX_HPR);
-		dctrim_calibrated = 2;
-		pr_debug("%s(), End DCtrim Calibrating", __func__);
-	} else {
+	if (ucontrol->value.integer.value[0] == 1)
+		get_hp_lr_trim_offset();
+	else
 		dctrim_calibrated = ucontrol->value.integer.value[0];
-	}
+
 	return 0;
 }
 
@@ -4709,6 +4714,8 @@ static int mt6356_codec_probe(struct snd_soc_codec *codec)
 	InitCodecDefault();
 	efuse_current_calibrate = read_efuse_hp_impedance_current_calibration();
 	mInitCodec = true;
+
+	get_hp_lr_trim_offset();
 
 	return 0;
 }
