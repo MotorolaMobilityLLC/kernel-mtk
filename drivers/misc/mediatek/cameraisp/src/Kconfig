@@ -54,3 +54,12 @@ config MTK_CAMERA_ISP_WPE_SUPPORT
 	  Electronic Image Stabilization 2.0 (EIS 2.0), and Lens
 	  Distortion Compensation (LDC). The function of WPE is
 	  dedicated for real-time image warping.
+
+config MTK_CAMERA_ISP_EAF_SUPPORT
+	bool "[EAF]Filter"
+	default n
+	depends on MTK_CAMERA_ISP
+	help
+	  Edge Aware Filter. Enable to use segment target foreground object
+	  in video sequences.
+	  Disable if it is not supported or not wanted.
