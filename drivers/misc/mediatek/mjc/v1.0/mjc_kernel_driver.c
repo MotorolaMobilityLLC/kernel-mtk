@@ -49,7 +49,7 @@
 /* LOG */
 #define MJC_ASSERT(x) {if (!(x)) pr_error("MJC assert fail, file:%s, line:%d", __FILE__, __LINE__); }
 
-/*#define MTK_MJC_DBG */
+#define MTK_MJC_DBG
 #ifdef MTK_MJC_DBG
 #define MJCDBG(string, args...)       pr_debug("MJC [pid=%d]"string, current->tgid, ##args)
 #else
@@ -77,6 +77,8 @@
 #define MTK_MJC_DEV_MAJOR_NUMBER 168
 #define MJC_FORCE_REG_NUM 100
 
+#undef CONFIG_MTK_SMI_EXT
+
 /* variable */
 static DEFINE_SPINLOCK(ContextLock);
 static DEFINE_SPINLOCK(HWLock);
@@ -96,10 +98,12 @@ static struct clk *clk_MT_CG_FIFO0;           /* MM_CG_FIFO0 */
 static struct clk *clk_MT_CG_FIFO1;           /* MM_CG_FIFO1 */
 static struct clk *clk_MT_CG_SMI_COMMON;      /* MM_DISP0_SMI_COMMON */
 static struct clk *clk_MT_CG_SMI_COMMON_2X;   /* MM_DISP0_SMI_COMMON_2X */
+static struct clk *clk_MT_CG_LARB8;           /* MM_CG_LARB8 */
 static struct clk *clk_MJC_SMI_LARB;          /* SMI MJC larb */
 static struct clk *clk_MJC_TOP_CLK_0;
 static struct clk *clk_MJC_TOP_CLK_1;
 static struct clk *clk_MJC_TOP_CLK_2;
+static struct clk *clk_MJC_GALS_AXI;
 static struct clk *clk_MJC_METER;
 static struct clk *clk_SCP_SYS_MM0;
 static struct clk *clk_SCP_SYS_MJC;
@@ -413,6 +417,12 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
 		MJCMSG("[ERROR] mjc_open() clk_MT_CG_SMI_COMMON_2X is not enabled, ret = %d\n", ret);
 	}
 
+	ret = clk_prepare_enable(clk_MT_CG_LARB8);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_MT_CG_LARB8 is not enabled, ret = %d\n", ret);
+	}
+
 	ret = clk_prepare_enable(clk_MJC_SMI_LARB);
 	if (ret) {
 		/* print error log & error handling */
@@ -437,14 +447,14 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
 		MJCMSG("[ERROR] mjc_open() clk_MJC_TOP_CLK_2 is not enabled, ret = %d\n", ret);
 	}
 
-	ret = clk_prepare_enable(clk_MJC_METER);
+	ret = clk_prepare_enable(clk_MJC_GALS_AXI);
 	if (ret) {
 		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MJC_METER is not enabled, ret = %d\n", ret);
+		MJCMSG("[ERROR] mjc_open() clk_MJC_GALS_AXI is not enabled, ret = %d\n", ret);
 	}
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mjc_config-v1");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mjc_config");
 	gulCGRegister = (unsigned long)of_iomap(node, 0);
 	MJC_WriteReg32((gulCGRegister+8), 0xffffffff);
 #endif
@@ -514,6 +524,7 @@ static int mjc_release(struct inode *pInode, struct file *pFile)
 	m4u_unregister_fault_callback(M4U_PORT_MJC_DMA_RD);
 	m4u_unregister_fault_callback(M4U_PORT_MJC_DMA_WR);
 
+	clk_disable_unprepare(clk_MT_CG_LARB8);
 	clk_disable_unprepare(clk_MT_CG_SMI_COMMON_2X);
 	clk_disable_unprepare(clk_MT_CG_SMI_COMMON);
 	clk_disable_unprepare(clk_MT_CG_FIFO1);
@@ -526,7 +537,7 @@ static int mjc_release(struct inode *pInode, struct file *pFile)
 	clk_disable_unprepare(clk_MJC_TOP_CLK_0);
 	clk_disable_unprepare(clk_MJC_TOP_CLK_1);
 	clk_disable_unprepare(clk_MJC_TOP_CLK_2);
-	clk_disable_unprepare(clk_MJC_METER);
+	clk_disable_unprepare(clk_MJC_GALS_AXI);
 	clk_disable_unprepare(clk_SCP_SYS_MJC);
 	clk_disable_unprepare(clk_SCP_SYS_MM0);
 
@@ -650,7 +661,6 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 				spin_unlock_irqrestore(&HWLock, ulFlags);
 
 				disable_irq_nosync(gi4IrqID);
-
 				return -2;
 			}
 		}
@@ -1056,6 +1066,12 @@ static int mjc_probe(struct platform_device *pDev)
 		return PTR_ERR(clk_MT_CG_SMI_COMMON_2X);
 	}
 
+	clk_MT_CG_LARB8 = devm_clk_get(&pDev->dev, "MT_CG_LARB8");
+	if (IS_ERR(clk_MT_CG_LARB8)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get MT_CG_LARB8\n");
+		return PTR_ERR(clk_MT_CG_LARB8);
+	}
+
 	clk_MJC_SMI_LARB = devm_clk_get(&pDev->dev, "mjc-smi-larb");
 	if (IS_ERR(clk_MJC_SMI_LARB)) {
 		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
@@ -1078,6 +1094,12 @@ static int mjc_probe(struct platform_device *pDev)
 	if (IS_ERR(clk_MJC_TOP_CLK_2)) {
 		MJCMSG("[ERROR] Unable to devm_clk_get MJC_TOP_CLK_2\n");
 		return PTR_ERR(clk_MJC_TOP_CLK_2);
+	}
+
+	clk_MJC_GALS_AXI = devm_clk_get(&pDev->dev, "mjc-gals-axi");
+	if (IS_ERR(clk_MJC_GALS_AXI)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get clk_MJC_GALS_AXI\n");
+		return PTR_ERR(clk_MJC_GALS_AXI);
 	}
 
 	clk_MJC_METER = devm_clk_get(&pDev->dev, "mjc-meter");
