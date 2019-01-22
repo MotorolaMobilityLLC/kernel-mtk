@@ -1459,9 +1459,8 @@ static int emmc_rpmb_open(struct inode *inode, struct file *file)
 {
 	MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__);
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
-	rpmb_buffer = kzalloc(RPMB_DATA_BUFF_SIZE, 0);
 	if (rpmb_buffer == NULL) {
-		MSG(ERR, "%s, rpmb kzalloc memory fail!!!\n", __func__);
+		MSG(ERR, "%s, rpmb buffer is null!!!\n", __func__);
 		return -1;
 	}
 	MSG(INFO, "%s, rpmb kzalloc memory done!!!\n", __func__);
@@ -1600,9 +1599,8 @@ static int emmc_rpmb_close(struct inode *inode, struct file *file)
 	MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__);
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
-	kfree(rpmb_buffer);
-	rpmb_buffer = NULL;
-	MSG(INFO, "%s, rpmb free memory done!!!\n", __func__);
+	if (rpmb_buffer)
+		memset(rpmb_buffer, 0x0, RPMB_DATA_BUFF_SIZE);
 #endif
 	return ret;
 }
@@ -1655,6 +1653,15 @@ static int __init emmc_rpmb_init(void)
 	open_th = kthread_run(emmc_rpmb_thread, NULL, "rpmb_open");
 	if (IS_ERR(open_th))
 		MSG(ERR, "%s, init kthread_run failed!\n", __func__);
+#endif
+
+#if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
+	rpmb_buffer = kzalloc(RPMB_DATA_BUFF_SIZE, 0);
+	if (rpmb_buffer == NULL) {
+		MSG(ERR, "%s, rpmb kzalloc memory fail!!!\n", __func__);
+		return -1;
+	}
+	MSG(INFO, "%s, rpmb kzalloc memory done!!!\n", __func__);
 #endif
 
 	MSG(INFO, "emmc_rpmb_init end!!!!\n");
