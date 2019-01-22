@@ -310,7 +310,8 @@ static inline int _rt9750_i2c_write_byte(struct rt9750_info *info, u8 cmd,
 		pr_err("%s: I2CW[0x%02X] = 0x%02X failed\n", __func__,
 			cmd, data);
 	else
-		pr_debug("%s: I2CW[0x%02X] = 0x%02X\n", __func__, cmd, data);
+		pr_debug_ratelimited("%s: I2CW[0x%02X] = 0x%02X\n", __func__,
+			cmd, data);
 
 	return ret;
 }
@@ -350,7 +351,8 @@ static inline int _rt9750_i2c_read_byte(struct rt9750_info *info, u8 cmd)
 
 	ret_val = ret_val & 0xFF;
 
-	pr_debug("%s: I2CR[0x%02X] = 0x%02X\n", __func__, cmd, ret_val);
+	pr_debug_ratelimited("%s: I2CR[0x%02X] = 0x%02X\n", __func__, cmd,
+		ret_val);
 
 	return ret_val;
 }

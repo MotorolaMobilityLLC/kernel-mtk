@@ -298,7 +298,8 @@ static inline int _rt9465_i2c_write_byte(struct rt9465_info *info, u8 cmd,
 		pr_err("%s: I2CW[0x%02X] = 0x%02X failed\n",
 			__func__, cmd, data);
 	else
-		pr_debug("%s: I2CW[0x%02X] = 0x%02X\n", __func__, cmd, data);
+		pr_debug_ratelimited("%s: I2CW[0x%02X] = 0x%02X\n",
+			__func__, cmd, data);
 
 	return ret;
 }
@@ -336,7 +337,8 @@ static inline int _rt9465_i2c_read_byte(struct rt9465_info *info, u8 cmd)
 
 	ret_val = ret_val & 0xFF;
 
-	pr_debug("%s: I2CR[0x%02X] = 0x%02X\n", __func__, cmd, ret_val);
+	pr_debug_ratelimited("%s: I2CR[0x%02X] = 0x%02X\n", __func__, cmd,
+		ret_val);
 
 	return ret_val;
 }
@@ -858,6 +860,7 @@ static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 	desc = devm_kzalloc(dev, sizeof(struct rt9465_desc), GFP_KERNEL);
 	if (!desc)
 		return -ENOMEM;
+	memcpy(desc, &rt9465_default_desc, sizeof(struct rt9465_desc));
 
 	/*
 	 * The following is how gpio is uesed on MTK's platform, "GPIO pinctrl"
@@ -891,63 +894,41 @@ static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 #endif
 
 	if (of_property_read_u32(np, "regmap_represent_slave_addr",
-		&(desc->regmap_represent_slave_addr)) < 0) {
+		&(desc->regmap_represent_slave_addr)) < 0)
 		pr_err("%s: no regmap represent slave addr\n", __func__);
-		desc->regmap_represent_slave_addr =
-			rt9465_default_desc.regmap_represent_slave_addr;
-	}
 
-	if (of_property_read_string(np, "regmap_name",
-		&desc->regmap_name) < 0) {
+	if (of_property_read_string(np, "regmap_name", &desc->regmap_name) < 0)
 		pr_err("%s: no regmap name\n", __func__);
-		desc->regmap_name = rt9465_default_desc.regmap_name;
-	}
 
 	if (of_property_read_string(np, "alias_name",
-		&info->chg_props.alias_name) < 0) {
+		&info->chg_props.alias_name) < 0)
 		pr_err("%s: no alias name\n", __func__);
-		info->chg_props.alias_name = rt9465_default_desc.alias_name;
-	}
 
-	if (of_property_read_string(np, "eint_name", &desc->eint_name) < 0) {
+	if (of_property_read_string(np, "eint_name", &desc->eint_name) < 0)
 		pr_err("%s: no eint name\n", __func__);
-		desc->eint_name = rt9465_default_desc.eint_name;
-	}
 
 	/*
 	 * For dual charger, one is PrimarySWCHG;
 	 * another one will be SecondarySWCHG
 	 */
 	if (of_property_read_string(np, "charger_name",
-		&desc->chg_dev_name) < 0) {
+		&desc->chg_dev_name) < 0)
 		pr_err("%s: no charger name\n", __func__);
-		desc->chg_dev_name = rt9465_default_desc.chg_dev_name;
-	}
 
-	if (of_property_read_u32(np, "ichg", &desc->ichg) < 0) {
+	if (of_property_read_u32(np, "ichg", &desc->ichg) < 0)
 		pr_err("%s: no ichg\n", __func__);
-		desc->ichg = rt9465_default_desc.ichg;
-	}
 
-	if (of_property_read_u32(np, "mivr", &desc->mivr) < 0) {
+	if (of_property_read_u32(np, "mivr", &desc->mivr) < 0)
 		pr_err("%s: no mivr\n", __func__);
-		desc->mivr = rt9465_default_desc.mivr;
-	}
 
-	if (of_property_read_u32(np, "cv", &desc->cv) < 0) {
+	if (of_property_read_u32(np, "cv", &desc->cv) < 0)
 		pr_err("%s: no cv\n", __func__);
-		desc->cv = rt9465_default_desc.cv;
-	}
 
-	if (of_property_read_u32(np, "ieoc", &desc->ieoc) < 0) {
+	if (of_property_read_u32(np, "ieoc", &desc->ieoc) < 0)
 		pr_err("%s: no ieoc\n", __func__);
-		desc->ieoc = rt9465_default_desc.ieoc;
-	}
 
-	if (of_property_read_u32(np, "safety_timer", &desc->safety_timer) < 0) {
+	if (of_property_read_u32(np, "safety_timer", &desc->safety_timer) < 0)
 		pr_err("%s: no safety timer\n", __func__);
-		desc->safety_timer = rt9465_default_desc.safety_timer;
-	}
 
 	desc->enable_te = of_property_read_bool(np, "enable_te");
 	desc->enable_wdt = of_property_read_bool(np, "enable_wdt");
@@ -1470,6 +1451,10 @@ MODULE_VERSION("1.0.3_MTK");
 
 /*
  * Version Note
+ * 1.0.4
+ * (1) Modify some pr_debug to pr_debug_ratelimited
+ * (2) Modify the way to parse dt
+ *
  * 1.0.3
  * (1) Modify rt9465_is_hw_exist to support all version
  * (2) Correct chip version
