@@ -56,9 +56,11 @@ GED_LOG_BUF_HANDLE ghLogBuf_GED = 0;
 #endif
 
 #define GED_LOG_BUF_COMMON_HWC "HWC"
-static GED_LOG_BUF_HANDLE ghLogBuf_HWC = 0;
+static GED_LOG_BUF_HANDLE ghLogBuf_HWC;
+#define GED_LOG_BUF_COMMON_HWC_ERR "HWC_err"
+static GED_LOG_BUF_HANDLE ghLogBuf_HWC_ERR;
 #define GED_LOG_BUF_COMMON_FENCE "FENCE"
-static GED_LOG_BUF_HANDLE ghLogBuf_FENCE = 0;
+static GED_LOG_BUF_HANDLE ghLogBuf_FENCE;
 static GED_LOG_BUF_HANDLE ghLogBuf_FWTrace;
 static GED_LOG_BUF_HANDLE ghLogBuf_ftrace;
 
@@ -474,7 +476,10 @@ static int ged_init(void)
 	ghLogBuf_GLES = ged_log_buf_alloc(160, 128 * 160, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_GLES, NULL);
 	ghLogBuf_GED = ged_log_buf_alloc(32, 64 * 32, GED_LOG_BUF_TYPE_RINGBUFFER, "GED internal", NULL);
 #endif
-	ghLogBuf_HWC = ged_log_buf_alloc(4096, 128 * 4096, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC, NULL);
+	ghLogBuf_HWC_ERR = ged_log_buf_alloc(2048, 2048 * 128,
+			GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC_ERR, NULL);
+	ghLogBuf_HWC = ged_log_buf_alloc(4096, 128 * 4096,
+			GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC, NULL);
 	ghLogBuf_FENCE = ged_log_buf_alloc(256, 128 * 256, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_FENCE, NULL);
 	ghLogBuf_ftrace = ged_log_buf_alloc(1024*32, 1024*1024, GED_LOG_BUF_TYPE_RINGBUFFER,
 						"fence_trace", "fence_trace");
