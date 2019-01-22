@@ -16,6 +16,9 @@
 #include <linux/regulator/driver.h>
 #include <linux/regulator/of_regulator.h>
 #include <linux/regulator/mediatek/mtk_regulator_core.h>
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include <mach/mtk_pmic_ipi.h>
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 #define ISL91302A_BUCK_DRV_VERSION	"1.0.0_MTK"
 
@@ -160,6 +163,10 @@ static struct isl91302a_regulator_info *isl91302a_find_regulator_info(int id)
 static int isl91302a_set_voltage_sel(
 		struct mtk_simple_regulator_desc *mreg_desc, unsigned selector)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_err("%s not support for sspm\n", __func__);
+	return 0;
+#else
 	struct isl91302a_regulator_info *info =
 		isl91302a_find_regulator_info(mreg_desc->rdesc.id);
 	uint32_t data = 0;
@@ -176,11 +183,16 @@ static int isl91302a_set_voltage_sel(
 	ret |= isl91302a_assign_bit(mreg_desc->client, info->vol_lo_reg,
 			info->vol_lo_mask, data << info->vol_lo_shift);
 	return ret;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 }
 
 static int isl91302a_get_voltage_sel(
 			struct mtk_simple_regulator_desc *mreg_desc)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_err("%s not support for sspm\n", __func__);
+	return 0;
+#else
 	struct isl91302a_regulator_info *info =
 		isl91302a_find_regulator_info(mreg_desc->rdesc.id);
 	uint32_t regval[2] = {0};
@@ -194,11 +206,16 @@ static int isl91302a_get_voltage_sel(
 		return ret;
 	ret = (regval[0]<<2) | ((regval[1]>>6)&0x03);
 	return ret;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 }
 
 static int isl91302a_set_mode(
 		struct mtk_simple_regulator_desc *mreg_desc, unsigned int mode)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_err("%s not support for sspm\n", __func__);
+	return 0;
+#else
 	struct isl91302a_regulator_info *info =
 		isl91302a_find_regulator_info(mreg_desc->rdesc.id);
 	int ret;
@@ -215,11 +232,16 @@ static int isl91302a_set_mode(
 		break;
 	}
 	return ret;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 }
 
 static unsigned int isl91302a_get_mode(
 		struct mtk_simple_regulator_desc *mreg_desc)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	pr_err("%s not support for sspm\n", __func__);
+	return 0;
+#else
 	struct isl91302a_regulator_info *info =
 		isl91302a_find_regulator_info(mreg_desc->rdesc.id);
 	int ret;
@@ -234,9 +256,53 @@ static unsigned int isl91302a_get_mode(
 	if (regval & info->mode_bit)
 		return REGULATOR_MODE_FAST;
 	return REGULATOR_MODE_NORMAL;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 }
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+static int isl91302a_enable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
+{
+	unsigned int ret = 0;
+	unsigned char buck_id;
+
+	buck_id = mreg_desc->rdesc.id;
+	pr_err("isl91302a_enable_ipi [%s] buck_id = %d\n",
+					mreg_desc->rdesc.name, buck_id);
+	ret = extbuck_ipi_enable(buck_id, 1);
+	return ret;
+}
+
+static int isl91302a_disable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
+{
+	unsigned int ret = 0;
+	unsigned char buck_id;
+
+	buck_id = mreg_desc->rdesc.id;
+	pr_err("isl91302a_disable_ipi [%s] buck_id = %d\n",
+					mreg_desc->rdesc.name, buck_id);
+	ret = extbuck_ipi_enable(buck_id, 0);
+	return ret;
+}
+
+static int isl91302a_is_enabled_ipi(struct mtk_simple_regulator_desc *mreg_desc)
+{
+	unsigned int ret = 0;
+	unsigned char buck_id;
+
+	buck_id = mreg_desc->rdesc.id;
+	ret = extbuck_ipi_enable(buck_id, 0xF);
+	pr_err("isl91302a_is_enabled_ipi [%s] buck_id = %d, ret = %d\n",
+			mreg_desc->rdesc.name, buck_id, ret);
+	return ret;
+}
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
 static struct mtk_simple_regulator_ext_ops isl91302a_regulator_ext_ops = {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	.enable = isl91302a_enable_ipi,
+	.disable = isl91302a_disable_ipi,
+	.is_enabled = isl91302a_is_enabled_ipi,
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	.set_voltage_sel = isl91302a_set_voltage_sel,
 	.get_voltage_sel = isl91302a_get_voltage_sel,
 	.get_mode = isl91302a_get_mode,

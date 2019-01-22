@@ -20,7 +20,8 @@
 #include <linux/regulator/mediatek/mtk_regulator.h>
 #include <linux/regulator/mediatek/mtk_regulator_core.h>
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+/* #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#if 0
 int mtk_regulator_get(struct device *dev, const char *id,
 	struct mtk_regulator *mreg)
 {
