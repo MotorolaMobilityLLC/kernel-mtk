@@ -960,6 +960,10 @@ int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 	switch (cmd) {
 	case SPM_DPIDLE_ENTER:
 	case SPM_DPIDLE_LEAVE:
+	case SPM_ENTER_SODI:
+	case SPM_LEAVE_SODI:
+	case SPM_ENTER_SODI3:
+	case SPM_LEAVE_SODI3:
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_async(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN);
 		if (ret != 0)
@@ -981,6 +985,10 @@ int spm_to_sspm_command_async_wait(u32 cmd)
 	switch (cmd) {
 	case SPM_DPIDLE_ENTER:
 	case SPM_DPIDLE_LEAVE:
+	case SPM_ENTER_SODI:
+	case SPM_LEAVE_SODI:
+	case SPM_ENTER_SODI3:
+	case SPM_LEAVE_SODI3:
 		ret = sspm_ipi_send_async_wait(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, &ack_data);
 
 		if (ret != 0) {
