@@ -224,6 +224,7 @@ obj-$(CONFIG_MTK_VOW_SUPPORT)	+= vow/
 obj-$(CONFIG_USB)	+= usb_boost/
 #obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= cmo/
+obj-$(CONFIG_MTK_SMARTPA_SOUND)	+= smartpa/
 obj-$(CONFIG_PCIE_MTK_UNIT)	+= pcie_ut/
 obj-y += mtprintk/
 obj-$(CONFIG_MTK_ICCS_SUPPORT)+= iccs/
