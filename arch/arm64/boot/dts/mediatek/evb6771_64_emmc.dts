@@ -53,7 +53,7 @@ initcall_debug=1";
 	};
 	accdet_pins_eint_as_int: accdeteint@0 {
 		pins_cmd_dat {
-			/*pins = <PINMUX_GPIO11__FUNC_GPIO11>;*/
+			/*pins = <PINMUX_GPIO7__FUNC_GPIO7>;*/
 			slew-rate = <0>;
 			bias-disable;
 		};
