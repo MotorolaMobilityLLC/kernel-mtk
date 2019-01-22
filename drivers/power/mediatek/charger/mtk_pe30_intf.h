@@ -11,10 +11,10 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <mtk_direct_charge_vdm.h>
-
 #ifndef __MTK_PE_30_INTF_H
 #define __MTK_PE_30_INTF_H
+
+#include <mtk_direct_charge_vdm.h>
 
 /* pe3.0 */
 #define CV_LIMIT 6000	/* vbus upper bound */
@@ -62,7 +62,6 @@ struct mtk_pe30_cap {
 };
 
 struct mtk_pe30 {
-
 	struct mutex pe30_mutex;
 	struct wake_lock pe30_wakelock;
 	struct hrtimer mtk_charger_pe30_timer;

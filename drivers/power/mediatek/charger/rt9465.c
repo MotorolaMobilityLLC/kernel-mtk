@@ -35,6 +35,7 @@
 #include "mtk_charger_intf.h"
 #include "rt9465.h"
 #define I2C_ACCESS_MAX_RETRY	5
+#define RT9465_DRV_VERSION	"1.0.5_MTK"
 
 /* ======================= */
 /* RT9465 Parameter        */
@@ -87,7 +88,7 @@ static struct rt9465_desc rt9465_default_desc = {
 	.enable_wdt = true,
 	.regmap_represent_slave_addr = RT9465_SLAVE_ADDR,
 	.regmap_name = "rt9465",
-	.chg_dev_name = "SecondarySWCHG",
+	.chg_dev_name = "secondary_chg",
 	.alias_name = "rt9465",
 	.eint_name = "rt9465_slave_chr",
 };
@@ -908,8 +909,8 @@ static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 		pr_err("%s: no eint name\n", __func__);
 
 	/*
-	 * For dual charger, one is PrimarySWCHG;
-	 * another one will be SecondarySWCHG
+	 * For dual charger, one is primary_chg;
+	 * another one will be secondary_chg
 	 */
 	if (of_property_read_string(np, "charger_name",
 		&desc->chg_dev_name) < 0)
@@ -1256,7 +1257,7 @@ static int rt9465_probe(struct i2c_client *i2c,
 	int ret = 0;
 	struct rt9465_info *info = NULL;
 
-	pr_info("%s\n", __func__);
+	pr_info("%s (%s)\n", __func__, RT9465_DRV_VERSION);
 
 	info = devm_kzalloc(&i2c->dev, sizeof(struct rt9465_info), GFP_KERNEL);
 	if (!info)
@@ -1446,11 +1447,14 @@ module_exit(rt9465_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9465 Charger Driver");
-MODULE_VERSION("1.0.3_MTK");
+MODULE_VERSION(RT9465_DRV_VERSION);
 
 
 /*
  * Version Note
+ * 1.0.5
+ * (1) Modify charger name to secondary_chg
+ *
  * 1.0.4
  * (1) Modify some pr_debug to pr_debug_ratelimited
  * (2) Modify the way to parse dt

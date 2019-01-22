@@ -362,7 +362,7 @@ static int mtk_switch_charging_current(struct charger_manager *info)
 static int mtk_switch_charging_run(struct charger_manager *info)
 {
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
-	int ret = 10;
+	int ret = 0;
 
 	pr_err("mtk_switch_charging_run [%d]\n", swchgalg->state);
 
@@ -370,7 +370,7 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 		swchgalg->state = CHR_PE30;
 
 	if (mtk_is_TA_support_pe30(info) == false)
-	mtk_pe20_check_charger(info);
+		mtk_pe20_check_charger(info);
 
 	switch (swchgalg->state) {
 	case CHR_CC:
@@ -425,11 +425,11 @@ int mtk_switch_charging_init(struct charger_manager *info)
 	if (!swch_alg)
 		return -ENOMEM;
 
-	info->chg1_dev = get_charger_by_name("PrimarySWCHG");
+	info->chg1_dev = get_charger_by_name("primary_chg");
 	if (info->chg1_dev)
 		pr_err("Found primary charger [%s]\n", info->chg1_dev->props.alias_name);
 	else
-		pr_err("*** Error : can't find primary charger [%s]***\n", "PrimarySWCHG");
+		pr_err("*** Error : can't find primary charger [%s]***\n", "primary_chg");
 
 	mutex_init(&swch_alg->ichg_aicr_access_mutex);
 

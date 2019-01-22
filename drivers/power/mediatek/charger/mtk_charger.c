@@ -90,7 +90,8 @@ void BATTERY_SetUSBState(int usb_state_value)
 		} else {
 			pr_err("[BATTERY] BAT_SetUSBState Success! Set %d\r\n",
 					usb_state_value);
-			pinfo->usb_state = usb_state_value;
+			if (pinfo)
+				pinfo->usb_state = usb_state_value;
 		}
 	}
 }
@@ -224,6 +225,21 @@ struct charger_consumer *charger_manager_get_by_name(struct device *dev,
 	mutex_unlock(&consumer_mutex);
 
 	return puser;
+}
+
+int charger_manager_enable_high_voltage_charging(struct charger_consumer *consumer,
+	bool en)
+{
+	struct charger_manager *info = consumer->cm;
+
+	if (!info)
+		return -EINVAL;
+
+	pr_info("%s: enable = %d\n", __func__, en);
+	info->enable_hv_charging = en;
+	_wake_up_charger(info);
+
+	return 0;
 }
 
 static int _charger_manager_enable_charging(struct charger_consumer *consumer,
@@ -434,7 +450,7 @@ int register_charger_manager_notifier(struct charger_consumer *consumer,
 	return ret;
 }
 
-int unregister_charger_manager__notifier(struct charger_consumer *consumer,
+int unregister_charger_manager_notifier(struct charger_consumer *consumer,
 				struct notifier_block *nb)
 {
 	int ret = 0;
@@ -670,7 +686,7 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 	if (pmic_is_bif_exist()) {
 		if (!info->enable_dynamic_cv) {
 			_cv = info->data.battery_cv;
-			goto _out;
+			goto out;
 		}
 
 		do {
@@ -706,7 +722,7 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 			_cv = info->data.battery_cv;
 			info->enable_dynamic_cv = false;
 		}
-_out:
+out:
 		*cv = _cv;
 		pr_err("%s: CV = %duV, enable_dynamic_cv = %d\n",
 			__func__, _cv, info->enable_dynamic_cv);
@@ -1034,9 +1050,8 @@ static void mtk_charger_start_timer(struct charger_manager *info)
 
 void mtk_charger_stop_timer(struct charger_manager *info)
 {
-	if (IS_ENABLED(USE_FG_TIMER)) {
+	if (IS_ENABLED(USE_FG_TIMER))
 		fgtimer_stop(&info->charger_kthread_fgtimer);
-	}
 }
 
 static int charger_routine_thread(void *arg)
@@ -1118,6 +1133,9 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->enable_pe_plus = of_property_read_bool(np, "enable_pe_plus");
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
 	info->enable_pe_3 = of_property_read_bool(np, "enable_pe_3");
+
+	/* Current only pe20 is HV charging */
+	info->enable_hv_charging = info->enable_pe_2;
 
 	/* common */
 	if (of_property_read_u32(np, "battery_cv", &val) >= 0) {
@@ -1846,7 +1864,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		}
 	}
 	mutex_unlock(&consumer_mutex);
-	info->chg1_consumer = charger_manager_get_by_name(&pdev->dev, "charger1");
+	info->chg1_consumer = charger_manager_get_by_name(&pdev->dev, "charger_port1");
 	info->init_done = true;
 	_wake_up_charger(info);
 
