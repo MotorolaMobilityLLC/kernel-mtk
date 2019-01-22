@@ -494,6 +494,7 @@ static int fbt_list_bypass_is_empty(void)
 static struct fbt_thread_loading *fbt_list_loading_add(int pid)
 {
 	struct fbt_thread_loading *obj;
+	unsigned long flags;
 
 	obj = kzalloc(sizeof(struct fbt_thread_loading), GFP_KERNEL);
 	if (!obj) {
@@ -503,7 +504,10 @@ static struct fbt_thread_loading *fbt_list_loading_add(int pid)
 
 	INIT_LIST_HEAD(&obj->entry);
 	obj->pid = pid;
+
+	spin_lock_irqsave(&loading_slock, flags);
 	list_add_tail(&obj->entry, &loading_list);
+	spin_unlock_irqrestore(&loading_slock, flags);
 
 	return obj;
 }
@@ -514,8 +518,9 @@ static void fbt_list_loading_del(struct fbt_thread_loading *obj)
 
 	spin_lock_irqsave(&loading_slock, flags);
 	list_del(&obj->entry);
-	kfree(obj);
 	spin_unlock_irqrestore(&loading_slock, flags);
+
+	kfree(obj);
 }
 
 static inline void fbt_init_jerk(struct fbt_jerk *jerk, int id);
@@ -544,7 +549,6 @@ static struct fbt_thread_info *fbt_list_add(int pid)
 	struct fbt_thread_info *obj;
 	struct fbt_boost_info *boost;
 	struct fbt_thread_loading *link;
-	unsigned long flags;
 
 	obj = kzalloc(sizeof(struct fbt_thread_info), GFP_KERNEL);
 	if (!obj)
@@ -562,10 +566,8 @@ static struct fbt_thread_info *fbt_list_add(int pid)
 	fbt_init_jerk(&(boost->proc.jerks[0]), 0);
 	fbt_init_jerk(&(boost->proc.jerks[1]), 1);
 
-	spin_lock_irqsave(&loading_slock, flags);
 	link = fbt_list_loading_add(pid);
 	obj->pLoading = link;
-	spin_unlock_irqrestore(&loading_slock, flags);
 
 	list_add_tail(&obj->entry, &active_list);
 
