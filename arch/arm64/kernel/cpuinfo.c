@@ -202,7 +202,7 @@ const struct seq_operations cpuinfo_op = {
 
 static void cpuinfo_detect_icache_policy(struct cpuinfo_arm64 *info)
 {
-	unsigned int cpu = smp_processor_id();
+	/* unsigned int cpu = smp_processor_id(); */
 	u32 l1ip = CTR_L1IP(info->reg_ctr);
 
 	if (l1ip != ICACHE_POLICY_PIPT) {
@@ -220,7 +220,7 @@ static void cpuinfo_detect_icache_policy(struct cpuinfo_arm64 *info)
 	if (l1ip == ICACHE_POLICY_AIVIVT)
 		set_bit(ICACHEF_AIVIVT, &__icache_flags);
 
-	/*pr_info("Detected %s I-cache on CPU%d\n", icache_policy_str[l1ip], cpu);*/
+	/* pr_info("Detected %s I-cache on CPU%d\n", icache_policy_str[l1ip], cpu); */
 }
 
 static void __cpuinfo_store_cpu(struct cpuinfo_arm64 *info)
