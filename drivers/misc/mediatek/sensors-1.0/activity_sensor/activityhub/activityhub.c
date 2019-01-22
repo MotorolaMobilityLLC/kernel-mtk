@@ -37,11 +37,6 @@ struct acthub_ipi_data {
 
 static struct acthub_ipi_data obj_ipi_data;
 
-static ssize_t show_activity_value(struct device_driver *ddri, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%s\n", buf);
-}
-
 static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, size_t count)
 {
 	struct acthub_ipi_data *obj = &obj_ipi_data;
@@ -61,11 +56,9 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 	return count;
 }
 
-static DRIVER_ATTR(activity, S_IRUGO, show_activity_value, NULL);
 static DRIVER_ATTR(trace, S_IWUSR | S_IRUGO, NULL, store_trace_value);
 
 static struct driver_attribute *activityhub_attr_list[] = {
-	&driver_attr_activity,
 	&driver_attr_trace,
 };
 
