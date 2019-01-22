@@ -34,7 +34,8 @@
 #endif
 
 #ifdef GED_ENABLE_FB_DVFS
-#define GED_DVFS_TIMER_TIMEOUT 100000000
+#define GED_DVFS_FB_TIMER_TIMEOUT 100000000
+#define GED_DVFS_TIMER_TIMEOUT g_fallback_time_out
 #else
 #define GED_DVFS_TIMER_TIMEOUT 25000000
 #endif
@@ -42,13 +43,16 @@
 #ifndef ENABLE_TIMER_BACKUP
 #undef GED_DVFS_TIMER_TIMEOUT
 #ifdef GED_ENABLE_FB_DVFS
-#define GED_DVFS_TIMER_TIMEOUT 100000000
+#define GED_DVFS_FB_TIMER_TIMEOUT 100000000
+#define GED_DVFS_TIMER_TIMEOUT g_fallback_time_out
 #else
 #define GED_DVFS_TIMER_TIMEOUT 25000000
 #endif
 #endif
 
-
+#ifdef GED_ENABLE_FB_DVFS
+static u64 g_fallback_time_out = GED_DVFS_FB_TIMER_TIMEOUT;
+#endif
 static struct hrtimer g_HT_hwvsync_emu;
 
 #include "ged_dvfs.h"
@@ -201,6 +205,13 @@ extern unsigned long g_ulPreCalResetTS_us; // previous calculate loading reset t
 extern unsigned long g_ulWorkingPeriod_us; // last frame half, t0
 
 #ifdef GED_ENABLE_FB_DVFS
+void ged_set_backup_timer_timeout(u64 time_out)
+{
+	if (time_out != 0)
+		g_fallback_time_out = time_out;
+	else
+		g_fallback_time_out = GED_DVFS_FB_TIMER_TIMEOUT;
+}
 void ged_cancel_backup_timer(void)
 {
 	unsigned long long temp;

@@ -206,6 +206,9 @@ static unsigned int enable_cpu_boost = 1;
 static unsigned int enable_gpu_boost = 1;
 static unsigned int is_GED_KPI_enabled = 1;
 static unsigned int ap_self_frc_detection_rate = 20;
+#ifdef GED_ENABLE_FB_DVFS
+static unsigned int g_force_gpu_dvfs_fallback;
+#endif
 module_param(gx_dfps, uint, S_IRUGO|S_IWUSR);
 module_param(gx_frc_mode, uint, S_IRUGO|S_IWUSR);
 #ifdef GED_KPI_CPU_BOOST
@@ -307,12 +310,12 @@ static void ged_kpi_output_gfx_info(long long t_gpu, unsigned int cur_freq, unsi
 
 /* ----------------------------------------------------------------------------- */
 #ifdef GED_ENABLE_FB_DVFS
-int (*ged_kpi_gpu_dvfs_fp)(int t_gpu, int t_gpu_target);
+int (*ged_kpi_gpu_dvfs_fp)(int t_gpu, int t_gpu_target, unsigned int force_fallback);
 
-static int ged_kpi_gpu_dvfs(int t_gpu, int t_gpu_target)
+static int ged_kpi_gpu_dvfs(int t_gpu, int t_gpu_target, unsigned int force_fallback)
 {
 	if (ged_kpi_gpu_dvfs_fp)
-		return ged_kpi_gpu_dvfs_fp(t_gpu, t_gpu_target);
+		return ged_kpi_gpu_dvfs_fp(t_gpu, t_gpu_target, force_fallback);
 	return 0;
 }
 EXPORT_SYMBOL(ged_kpi_gpu_dvfs_fp);
@@ -1297,7 +1300,15 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				} else {
 					time_spent = 0;
 				}
-				gpu_freq_pre = ged_kpi_gpu_dvfs(time_spent/100000, psKPI->t_gpu_target/100000);
+				/* Detect if there are multi renderers by */
+				/* checking if there is GED_KPI info resource monopoly */
+				if (main_head && main_head->i32Count * 100 / GED_KPI_TOTAL_ITEMS > 80)
+					g_force_gpu_dvfs_fallback = 0;
+				else
+					g_force_gpu_dvfs_fallback = 1;
+
+				gpu_freq_pre = ged_kpi_gpu_dvfs(time_spent, psKPI->t_gpu_target
+						, g_force_gpu_dvfs_fallback);
 				last_3D_done = cur_3D_done;
 #endif
 
@@ -1467,7 +1478,7 @@ static GED_ERROR ged_kpi_push_timestamp(
 		if (eTimeStampType == GED_TIMESTAMP_TYPE_2) {
 #ifdef GED_ENABLE_FB_DVFS
 			spin_lock_irqsave(&gsGpuUtilLock, ui32IRQFlags);
-			if (!ged_kpi_check_if_fallback_mode()) {
+			if (!ged_kpi_check_if_fallback_mode() && !g_force_gpu_dvfs_fallback) {
 				ged_kpi_trigger_fb_dvfs();
 				ged_dvfs_cal_gpu_utilization(&(psTimeStamp->i32GPUloading), &pui32Block, &pui32Idle);
 			} else {

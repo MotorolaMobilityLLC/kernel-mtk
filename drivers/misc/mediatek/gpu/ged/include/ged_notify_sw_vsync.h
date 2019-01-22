@@ -26,6 +26,7 @@ GED_ERROR ged_notify_sw_vsync_system_init(void);
 
 void ged_notify_sw_vsync_system_exit(void);
 #ifdef GED_ENABLE_FB_DVFS
+void ged_set_backup_timer_timeout(u64 time_out);
 void ged_cancel_backup_timer(void);
 #endif
 
