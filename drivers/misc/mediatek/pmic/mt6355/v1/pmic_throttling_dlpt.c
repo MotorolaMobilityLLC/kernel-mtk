@@ -590,7 +590,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 	/*PMICLOG("[do_ptim] start\n"); */
 
 
-	pmic_set_register_value(PMIC_AUXADC_SPL_NUM_LARGE, 0x0006);
+	/* pmic_set_register_value(PMIC_AUXADC_SPL_NUM_LARGE, 0x0006); */
 
 	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_PRD, 6);
 #if 0				/* default use hw control, no need to set CK_PDN_HWEN to sw mode */

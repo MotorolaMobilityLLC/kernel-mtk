@@ -14,6 +14,9 @@
 #ifndef _PMIC_THROTTLING_DLPT_H_
 #define _PMIC_THROTTLING_DLPT_H_
 
+#include <linux/dcache.h>
+#include <linux/platform_device.h>
+
 /* just use in suspend flow for important log due to console suspend */
 #if defined PMIC_DEBUG_PR_DBG
 #define pmic_spm_crit2(fmt, args...)		\
