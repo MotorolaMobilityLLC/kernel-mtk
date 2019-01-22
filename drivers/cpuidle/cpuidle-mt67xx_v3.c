@@ -19,6 +19,9 @@
 
 #include "dt_idle_states.h"
 
+#define CREATE_TRACE_POINTS
+#include <trace/events/mtk_idle_event.h>
+
 void __attribute__((weak)) mt_cpuidle_framework_init(void) { }
 
 int __attribute__((weak)) rgidle_enter(int cpu)
