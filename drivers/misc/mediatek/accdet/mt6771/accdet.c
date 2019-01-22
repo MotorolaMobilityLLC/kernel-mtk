@@ -306,6 +306,7 @@ static int accdet_get_dts_data(void)
 	#else
 	int three_key[4] = { 0 };
 	#endif
+	int ret = 0;
 
 	ACCDET_INFO("[accdet_get_dts_data]Start..");
 	node = of_find_matching_node(node, accdet_of_match);
@@ -319,31 +320,36 @@ static int accdet_get_dts_data(void)
 #if defined(CONFIG_MOISTURE_EXTERNAL_SUPPORT) || defined(CONFIG_MOISTURE_INTERNAL_SUPPORT)
 		of_property_read_u32(node, "moisture-water-r", &water_r);
 #endif
-		of_property_read_u32_array(node, "headset-mode-setting", debounce, ARRAY_SIZE(debounce));
 		of_property_read_u32(node, "accdet-mic-vol", &headset_dts_data.mic_bias_vol);
 		/* for GPIO debounce */
 		of_property_read_u32(node, "accdet-plugout-debounce", &headset_dts_data.accdet_plugout_deb);
 		of_property_read_u32(node, "accdet-mic-mode", &headset_dts_data.accdet_mic_mode);
 		of_property_read_u32(node, "accdet-eint-level-pol", &headset_dts_data.eint_level_pol);
 #ifdef CONFIG_FOUR_KEY_HEADSET
-		of_property_read_u32_array(node, "headset-four-key-threshold", four_key, ARRAY_SIZE(four_key));
-		memcpy(&headset_dts_data.four_key, four_key+1, sizeof(struct four_key_threshold));
+		ret = of_property_read_u32_array(node, "headset-four-key-threshold", four_key, ARRAY_SIZE(four_key));
+		if (!ret)
+			memcpy(&headset_dts_data.four_key, four_key+1, sizeof(struct four_key_threshold));
 		ACCDET_INFO("[accdet_get_dts_data]mid-Key = %d, voice = %d, up_key = %d, down_key = %d\n",
 		     headset_dts_data.four_key.mid_key_four, headset_dts_data.four_key.voice_key_four,
 		     headset_dts_data.four_key.up_key_four, headset_dts_data.four_key.down_key_four);
 #else
 		#ifdef CONFIG_HEADSET_TRI_KEY_CDD
-		of_property_read_u32_array(node, "headset-three-key-threshold-CDD", three_key, ARRAY_SIZE(three_key));
+		ret = of_property_read_u32_array(node, "headset-three-key-threshold-CDD",
+				three_key, ARRAY_SIZE(three_key));
 		#else
-		of_property_read_u32_array(node, "headset-three-key-threshold", three_key, ARRAY_SIZE(three_key));
+		ret = of_property_read_u32_array(node, "headset-three-key-threshold",
+				three_key, ARRAY_SIZE(three_key));
 		#endif
-		memcpy(&headset_dts_data.three_key, three_key+1, sizeof(struct three_key_threshold));
+		if (!ret)
+			memcpy(&headset_dts_data.three_key, three_key+1, sizeof(struct three_key_threshold));
 		ACCDET_INFO("[accdet_get_dts_data]mid-Key = %d, up_key = %d, down_key = %d\n",
 		     headset_dts_data.three_key.mid_key, headset_dts_data.three_key.up_key,
 		     headset_dts_data.three_key.down_key);
 #endif
 		/* debounce8(auxadc debounce) is default, needn't get from dts */
-		memcpy(&headset_dts_data.cfg_cust_accdet, debounce, sizeof(debounce));
+		ret = of_property_read_u32_array(node, "headset-mode-setting", debounce, ARRAY_SIZE(debounce));
+		if (!ret)
+			memcpy(&headset_dts_data.cfg_cust_accdet, debounce, sizeof(debounce));
 		/* for discharge:0xB00 about 86ms */
 		s_button_press_debounce = (headset_dts_data.cfg_cust_accdet.debounce0 >> 1);
 		accdet_cust_setting = &headset_dts_data.cfg_cust_accdet;
