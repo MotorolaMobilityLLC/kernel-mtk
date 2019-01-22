@@ -90,7 +90,6 @@ static unsigned int ctrl_EEM_Enable = 1;
 static unsigned long long eem_pTime_us, eem_cTime_us, eem_diff_us;
 
 /* for setting pmic pwm mode and auto mode */
-struct regulator *eem_regulator_ext_vproc;
 struct regulator *eem_regulator_vproc;
 
 static void eem_set_eem_volt(struct eem_det *det);
@@ -103,7 +102,7 @@ static struct hrtimer eem_log_timer;
 static DEFINE_SPINLOCK(eem_spinlock);
 
 /******************************************
-* common variables for legacy and sspm ptp
+* common variables for legacy ptp
 *******************************************
 */
 static int eem_log_en;
@@ -118,7 +117,7 @@ static u32 eem_irq_number;
 #endif
 
 /*=============================================================
-* common functions for both ap and sspm eem
+* common functions for both ap and eem
 *=============================================================
 */
 unsigned int mt_eem_is_enabled(void)
@@ -171,7 +170,6 @@ static int get_devinfo(void)
 	val[7] = DEVINFO_7;
 	val[8] = DEVINFO_8;
 	val[9] = DEVINFO_9;
-	val[10] = DEVINFO_10;
 #endif
 
 #if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
@@ -185,7 +183,6 @@ static int get_devinfo(void)
 			aee_rr_rec_ptp_e7((unsigned int)val[7]);
 			aee_rr_rec_ptp_e8((unsigned int)val[8]);
 			aee_rr_rec_ptp_e9((unsigned int)val[9]);
-			aee_rr_rec_ptp_e10((unsigned int)val[10]);
 #endif
 
 	/* Update MTDES/BDES/MDES if they are modified by PICACHU. */
@@ -213,7 +210,6 @@ static int get_devinfo(void)
 	eem_debug("M_HW_RES7 = 0x%08X\n", val[7]);
 	eem_debug("M_HW_RES8 = 0x%08X\n", val[8]);
 	eem_debug("M_HW_RES9 = 0x%08X\n", val[9]);
-	eem_debug("M_HW_RES10 = 0x%08X\n", val[10]);
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
@@ -956,7 +952,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_2L_MONEN;
 		det->MTDES	= devinfo->CPU_2L_MTDES;
 		det->SPEC	= devinfo->CPU_2L_SPEC;
-		det->pmic_base = CPU_PMIC_BASE_6358;
 
 		break;
 
@@ -969,7 +964,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_L_MONEN;
 		det->MTDES	= devinfo->CPU_L_MTDES;
 		det->SPEC	= devinfo->CPU_L_SPEC;
-		det->pmic_base = CPU_PMIC_BASE_6358;
 
 		break;
 
@@ -982,7 +976,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CCI_MONEN;
 		det->MTDES	= devinfo->CCI_MTDES;
 		det->SPEC       = devinfo->CCI_SPEC;
-		det->pmic_base = CPU_PMIC_BASE_6358;
 
 		break;
 

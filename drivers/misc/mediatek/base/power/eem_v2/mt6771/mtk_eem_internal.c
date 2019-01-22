@@ -84,7 +84,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_2L] = {
 		.name		= __stringify(EEM_DET_2L),
 		.ops		= &cpu_det_ops,
-#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
+#ifdef EEM_OFFSET_PROC_SHOW
 		.volt_offset	= 0,
 #endif
 		.ctrl_id	= EEM_CTRL_2L,
@@ -119,7 +119,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_L] = {
 		.name		= __stringify(EEM_DET_L),
 		.ops		= &cpu_det_ops,
-#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
+#ifdef EEM_OFFSET_PROC_SHOW
 		.volt_offset	= 0,
 #endif
 		.ctrl_id	= EEM_CTRL_L,
@@ -130,7 +130,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step	= EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE_6311,
+		.pmic_base	= CPU_PMIC_BASE_6358,
 		.pmic_step	= CPU_PMIC_STEP,
 #if EEM_FAKE_EFUSE
 		.DETWINDOW	= DETWINDOW_VAL_FAKE,
@@ -154,7 +154,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_CCI] = {
 		.name		= __stringify(EEM_DET_CCI),
 		.ops		= &cci_det_ops,
-#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
+#ifdef EEM_OFFSET_PROC_SHOW
 		.volt_offset = 0,
 #endif
 		.ctrl_id	= EEM_CTRL_CCI,
@@ -189,7 +189,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 	[EEM_DET_GPU] = {
 		.name		= __stringify(EEM_DET_GPU),
 		.ops		= &gpu_det_ops,
-#if (!(EEM_ENABLE_TINYSYS_SSPM) || defined EEM_OFFSET_PROC_SHOW)
+#ifdef EEM_OFFSET_PROC_SHOW
 		.volt_offset	= 0,
 #endif
 		.ctrl_id	= EEM_CTRL_GPU,

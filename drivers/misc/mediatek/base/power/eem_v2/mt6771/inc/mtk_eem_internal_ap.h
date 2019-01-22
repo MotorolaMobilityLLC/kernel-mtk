@@ -229,10 +229,6 @@ struct eem_devinfo {
 */
 extern unsigned int freq[NR_FREQ];
 
-/* for setting pmic pwm mode and auto mode */
-extern struct regulator *eem_regulator_proc1;
-extern struct regulator *eem_regulator_proc2;
-extern struct regulator *eem_regulator_gpu;
 extern struct mutex record_mutex;
 extern unsigned int record_tbl_locked[NR_FREQ]; /* table used to apply to dvfs at final */
 
