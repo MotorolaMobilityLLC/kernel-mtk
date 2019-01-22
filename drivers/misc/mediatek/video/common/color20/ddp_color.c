@@ -2351,6 +2351,11 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 static unsigned long color_pa2va(unsigned int addr)
 {
 	unsigned int i = 0;
+	/* check base is not zero */
+	if ((addr & 0xFFFF0000) == 0) {
+		COLOR_ERR("invalid address! addr=0x%x!\n", addr);
+		return 0;
+	}
 
 	_color_get_VA();
 
