@@ -833,7 +833,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 }
 #endif
 
-#define MULTI_WRITE 1
+#define MULTI_WRITE 0
 #if MULTI_WRITE
 #define I2C_BUFFER_LEN 225
 #else
