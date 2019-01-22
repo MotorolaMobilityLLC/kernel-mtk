@@ -109,11 +109,11 @@ int ccci_get_ccmni_channel(int md_id, int ccmni_idx, struct ccmni_ch *channel)
 		channel->multiq = md_id == MD_SYS1 ? 1 : 0;
 		break;
 	case 8: /* a replica for ccmni-lan, so should not be used */
-		channel->rx = CCCI_CCMNILAN_RX;
+		channel->rx = CCCI_INVALID_CH_ID;
 		channel->rx_ack = 0xFF;
-		channel->tx = CCCI_CCMNILAN_TX;
+		channel->tx = CCCI_INVALID_CH_ID;
 		channel->tx_ack = 0xFF;
-		channel->dl_ack = CCCI_CCMNILAN_TX;
+		channel->dl_ack = CCCI_INVALID_CH_ID;
 		channel->multiq = 0;
 		break;
 	case 9:
@@ -194,7 +194,7 @@ int ccci_get_ccmni_channel(int md_id, int ccmni_idx, struct ccmni_ch *channel)
 		channel->rx_ack = 0xFF;
 		channel->tx = CCCI_CCMNILAN_TX;
 		channel->tx_ack = 0xFF;
-		channel->dl_ack = CCCI_CCMNILAN_TX;
+		channel->dl_ack = CCCI_CCMNILAN_DLACK_RX;
 		channel->multiq = 0;
 		break;
 #endif
