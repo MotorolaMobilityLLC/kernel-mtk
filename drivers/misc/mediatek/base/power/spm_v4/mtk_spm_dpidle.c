@@ -108,7 +108,7 @@ static u32 cpu_footprint;
 static inline void spm_dpidle_footprint(enum spm_deepidle_step step)
 {
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_deepidle_val(step | cpu_footprint);
+	aee_rr_rec_deepidle_val(aee_rr_curr_deepidle_val() | step | cpu_footprint);
 #endif
 }
 
