@@ -48,9 +48,26 @@ struct mcdi_gov {
 	int num_mcusys;
 	int num_cluster[NF_CLUSTER];
 	unsigned int avail_cpu_mask;
+	unsigned int avail_cluster_mask;
 	int avail_cnt_mcusys;
 	int avail_cnt_cluster[NF_CLUSTER];
 	struct mcdi_status status[NF_CPU];
+};
+
+static unsigned int all_cpu_in_cluster_pwr_off_mask[NF_CLUSTER] = {
+	0x000F,     /* Cluster 0 */
+	0x00F0      /* Cluster 1 */
+};
+
+static unsigned int cpu_cluster_pwr_stat_table[NF_CPU] = {
+	0x200FE,     /* Only CPU 0 */
+	0x200FD,     /* Only CPU 1 */
+	0x200FB,
+	0x200F7,
+	0x100EF,
+	0x100DF,
+	0x100BF,
+	0x1007F      /* Only CPU 7 */
 };
 
 static unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
@@ -200,6 +217,7 @@ bool cluster_residency_check(int cpu)
 
 bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
 {
+#if 0
 	int cluster_idx           = cluster_idx_get(cpu);
 	unsigned int cluster_val  = (CLUSTER_PWR_STAT_MASK & ~(1 << (cluster_idx + 16)));
 	unsigned int cpu_val      = (CPU_PWR_STAT_MASK     & ~(1 << (cpu         +  0)));
@@ -213,6 +231,21 @@ bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
 		ret = true;
 
 	return ret;
+#else
+	bool ret = false;
+	unsigned int on_off_stat  = 0;
+
+	unsigned int check_mask =
+		(cpu_cluster_pwr_stat_table[cpu]
+			& ((mcdi_gov_data.avail_cluster_mask << 16) | mcdi_gov_data.avail_cpu_mask));
+
+	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
+
+	if (on_off_stat == check_mask)
+		ret = true;
+
+	return ret;
+#endif
 }
 
 #ifdef ANY_CORE_DPIDLE_SODI
@@ -230,9 +263,21 @@ bool any_core_deepidle_sodi_residency_check(int cpu)
 {
 	bool ret = true;
 	int  i   = 0;
+	unsigned int cpu_mask = 0;
+	unsigned long flags;
 
+	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
+
+	cpu_mask = mcdi_gov_data.avail_cpu_mask;
+
+	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
+
+	/* Check each CPU available controlled by MCDI */
 	for (i = 0; i < NF_CPU; i++) {
 		if (i == cpu)
+			continue;
+
+		if (!(cpu_mask & (1 << i)))
 			continue;
 
 		if (get_residency_latency_result(i) <= MCDI_STATE_CPU_OFF) {
@@ -438,11 +483,13 @@ void mcdi_avail_cpu_cluster_update(void)
 {
 	unsigned long flags;
 	int i, cpu, cluster_idx;
+	unsigned int cpu_mask = 0;
 
 	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
 
 	mcdi_gov_data.avail_cnt_mcusys = num_online_cpus();
 	mcdi_gov_data.avail_cpu_mask = 0;
+	mcdi_gov_data.avail_cluster_mask = 0;
 
 	for (i = 0; i < NF_CLUSTER; i++)
 		mcdi_gov_data.avail_cnt_cluster[i] = 0;
@@ -457,15 +504,26 @@ void mcdi_avail_cpu_cluster_update(void)
 		}
 	}
 
+	for (cluster_idx = 0; cluster_idx < NF_CLUSTER; cluster_idx++) {
+		if ((mcdi_gov_data.avail_cpu_mask & (all_cpu_in_cluster_pwr_off_mask[cluster_idx])))
+			mcdi_gov_data.avail_cluster_mask |= (1 << cluster_idx);
+	}
+
+
+	cpu_mask = mcdi_gov_data.avail_cpu_mask;
+
 	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 
-#if 0
-	pr_warn("online = %d, avail_cnt_mcusys = %d, avail_cnt_cluster[0] = %d, [1] = %d, avail_cpu_mask = %04x\n",
+	update_avail_cpu_mask_to_mcdi_controller(cpu_mask);
+
+#if 1
+	pr_warn("online = %d, avail: mcusys = %d, cluster[0] = %d, [1] = %d, cpu_mask = %04x, cluster_mask = %04x\n",
 		num_online_cpus(),
 		mcdi_gov_data.avail_cnt_mcusys,
 		mcdi_gov_data.avail_cnt_cluster[0],
 		mcdi_gov_data.avail_cnt_cluster[1],
-		mcdi_gov_data.avail_cpu_mask
+		mcdi_gov_data.avail_cpu_mask,
+		mcdi_gov_data.avail_cluster_mask
 	);
 #endif
 }
@@ -511,6 +569,18 @@ void get_mcdi_enable_status(bool *enabled, bool *paused)
 	*paused = mcdi_paused;
 
 	spin_unlock_irqrestore(&mcdi_enabled_spin_lock, flags);
+}
+
+void get_mcdi_avail_mask(unsigned int *cpu_mask, unsigned int *cluster_mask)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
+
+	*cpu_mask     = mcdi_gov_data.avail_cpu_mask;
+	*cluster_mask = mcdi_gov_data.avail_cluster_mask;
+
+	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 }
 
 void mcdi_state_pause(bool pause)

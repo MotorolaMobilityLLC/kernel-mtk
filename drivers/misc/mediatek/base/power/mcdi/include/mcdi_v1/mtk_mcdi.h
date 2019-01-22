@@ -24,5 +24,6 @@ unsigned int get_menu_predict_us(void);
 bool mcdi_task_pause(bool paused);
 unsigned int mcdi_mbox_read(int id);
 void mcdi_mbox_write(int id, unsigned int val);
+void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask);
 
 #endif /* __MTK_MCDI_H__ */
