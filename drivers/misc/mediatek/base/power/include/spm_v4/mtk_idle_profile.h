@@ -67,12 +67,12 @@ bool mtk_idle_select_state(int type, int reason);
 void mtk_idle_block_setting(int type, unsigned long *cnt, unsigned long *block_cnt, unsigned int *block_mask);
 void mtk_idle_twam_init(void);
 
-static inline long int idle_get_current_time_ms(void)
+static inline u64 idle_get_current_time_ms(void)
 {
-	struct timeval t;
+	u64 idle_current_time = sched_clock();
 
-	do_gettimeofday(&t);
-	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
+	do_div(idle_current_time, 1000000);
+	return idle_current_time;
 }
 
 void mtk_idle_recent_ratio_get(int *window_length_ms, struct mtk_idle_recent_ratio *ratio);

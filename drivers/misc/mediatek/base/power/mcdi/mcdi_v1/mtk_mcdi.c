@@ -123,14 +123,6 @@ int __attribute__((weak)) soidle3_enter(int cpu)
 	return 1;
 }
 
-static inline long int get_current_time_ms(void)
-{
-	struct timeval t;
-
-	do_gettimeofday(&t);
-	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
-}
-
 static int cluster_idx_map[NF_CPU] = {
 	0,
 	0,
@@ -635,7 +627,7 @@ void mcdi_heart_beat_log_dump(void)
 
 	spin_lock_irqsave(&mcdi_heart_beat_spin_lock, flags);
 
-	mcdi_heart_beat_log_curr = get_current_time_ms();
+	mcdi_heart_beat_log_curr = idle_get_current_time_ms();
 
 	if (mcdi_heart_beat_log_prev == 0)
 		mcdi_heart_beat_log_prev = mcdi_heart_beat_log_curr;
