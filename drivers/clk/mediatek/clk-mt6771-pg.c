@@ -3239,9 +3239,6 @@ static void pg_disable(struct clk_hw *hw)
 static int pg_is_enabled(struct clk_hw *hw)
 {
 	struct mt_power_gate *pg = to_power_gate(hw);
-#if MT_CCF_BRINGUP
-	return 1;
-#endif				/* MT_CCF_BRINGUP */
 
 	return subsys_is_on(pg->pd_id);
 }
