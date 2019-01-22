@@ -3551,8 +3551,12 @@ static void addrconf_rs_timer(unsigned long data)
 			goto put;
 
 		write_lock(&idev->lock);
+#ifdef CONFIG_MTK_IPV6_VZW
+		idev->rs_interval = idev->cnf.rtr_solicit_interval;
+#else
 		idev->rs_interval = rfc3315_s14_backoff_update(
 			idev->rs_interval, idev->cnf.rtr_solicit_max_interval);
+#endif
 		/* The wait after the last probe can be shorter */
 		addrconf_mod_rs_timer(idev, (idev->rs_probes ==
 					     idev->cnf.rtr_solicits) ?
@@ -3813,8 +3817,12 @@ static void addrconf_dad_completed(struct inet6_ifaddr *ifp)
 
 		write_lock_bh(&ifp->idev->lock);
 		spin_lock(&ifp->lock);
+#ifdef CONFIG_MTK_IPV6_VZW
+		ifp->idev->rs_interval = ifp->idev->cnf.rtr_solicit_interval;
+#else
 		ifp->idev->rs_interval = rfc3315_s14_backoff_init(
 			ifp->idev->cnf.rtr_solicit_interval);
+#endif
 		ifp->idev->rs_probes = 1;
 		ifp->idev->if_flags |= IF_RS_SENT;
 		addrconf_mod_rs_timer(ifp->idev, ifp->idev->rs_interval);
@@ -5061,8 +5069,12 @@ static int inet6_set_iftoken(struct inet6_dev *idev, struct in6_addr *token)
 
 	if (update_rs) {
 		idev->if_flags |= IF_RS_SENT;
+#ifdef CONFIG_MTK_IPV6_VZW
+		idev->rs_interval = idev->cnf.rtr_solicit_interval;
+#else
 		idev->rs_interval = rfc3315_s14_backoff_init(
 			idev->cnf.rtr_solicit_interval);
+#endif
 		idev->rs_probes = 1;
 		addrconf_mod_rs_timer(idev, idev->rs_interval);
 	}
