@@ -598,11 +598,11 @@ static void cpufreq_interactive_adjust_cpu(unsigned int cpu,
 	}
 
 	if (policy->cpu < 4)
-		met_tag_oneshot(0, "interactive_LL", max_freq);
+		met_tag_oneshot(0, "LL", max_freq);
 	else if (policy->cpu >= 4)
-		met_tag_oneshot(0, "interactive_L", max_freq);
+		met_tag_oneshot(0, "L", max_freq);
 	else if (policy->cpu >= 8)
-		met_tag_oneshot(0, "interactive_B", max_freq);
+		met_tag_oneshot(0, "B", max_freq);
 
 	trace_cpufreq_interactive_setspeed(cpu, max_freq, policy->cur);
 }
