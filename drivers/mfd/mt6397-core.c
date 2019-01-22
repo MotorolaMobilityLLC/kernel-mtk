@@ -99,7 +99,7 @@ static const struct mfd_cell mt6397_devs[] = {
 
 static const struct mfd_cell mt6392_devs[] = {
 	{
-		.name = "mt6397-pmic",
+		.name = "mt6392-pmic",
 		.of_compatible = "mediatek,mt6392-pmic",
 	}, {
 		.name = "mt6392-regulator",
