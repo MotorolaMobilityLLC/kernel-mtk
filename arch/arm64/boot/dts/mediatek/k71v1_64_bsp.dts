@@ -2,9 +2,6 @@
 /plugin/;
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
-#if 0
-/*#include "mt6771.dts"*/
-#endif
 
 /* chosen */
 &chosen {
