@@ -858,7 +858,8 @@ int dump_emit(struct coredump_params *cprm, const void *addr, int nr)
 					pr_info("%s: retry fail: %zd\n", __func__, n);
 					return 0;
 				}
-			}
+			} else
+				return 0;
 #else
 			return 0;
 #endif
