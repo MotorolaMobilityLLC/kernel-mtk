@@ -1069,7 +1069,10 @@ int m4u_cache_sync_by_range(unsigned long va, unsigned int size,
 	int ret = 0;
 
 	if (va < PAGE_OFFSET) {	/* from user space */
-		ret = __m4u_cache_sync_user(va, size, sync_type);
+		if (va >= VMALLOC_START && va <= VMALLOC_END) /* vmalloc */
+			ret = __m4u_cache_sync_kernel((void *)va, size, sync_type);
+		else
+			ret = __m4u_cache_sync_user(va, size, sync_type);
 	} else {
 		ret = __m4u_cache_sync_kernel((void *)va, size, sync_type);
 	}
