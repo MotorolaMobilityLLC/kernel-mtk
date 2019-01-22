@@ -565,8 +565,11 @@ static void __spm_check_dram_type(void)
 
 int __spm_get_dram_type(void)
 {
-	if (__spmfw_idx == -1)
+	if (__spmfw_idx == -1) {
+		__spmfw_idx++;
 		__spm_check_dram_type();
+	}
+
 	return __spmfw_idx;
 }
 
