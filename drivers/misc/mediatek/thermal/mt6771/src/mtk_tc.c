@@ -58,6 +58,13 @@
 #define __MT_MTK_TS_CPU_C__
 
 #include <mt-plat/mtk_devinfo.h>
+
+#define DEBUG_THERMAL_SSPM 0
+
+#if DEBUG_THERMAL_SSPM
+#include "mtk_thermal_ipi.h"
+#endif
+
 /*=============================================================
  * Local variable definition
  *=============================================================
@@ -525,6 +532,12 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 {
 	__s32 format[TS_ENUM_MAX] = { 0 };
 	int i = 0;
+#if DEBUG_THERMAL_SSPM
+#if THERMAL_ENABLE_TINYSYS_SSPM
+	int count = 0, offset = 0;
+	struct thermal_ipi_data thermal_data;
+#endif
+#endif
 
 	/* tscpu_printk("tscpu_thermal_cal_prepare_2\n"); */
 	g_ge = ((g_adc_ge_t - 512) * 10000) / 4096;	/* ge * 10000 */
@@ -547,6 +560,39 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 
 	for (i = 0; i < TS_ENUM_MAX; i++)
 		tscpu_printk("[T_De][cal] g_x_roomt%d   = %d\n", i, g_x_roomt[i]);
+
+#if DEBUG_THERMAL_SSPM
+#if THERMAL_ENABLE_TINYSYS_SSPM
+	thermal_data.u.data.arg[0] = g_degc_cali;
+	thermal_data.u.data.arg[1] = g_o_slope_sign;
+	thermal_data.u.data.arg[2] = g_o_slope;
+	while (thermal_to_sspm(THERMAL_IPI_INIT_GRP1, &thermal_data) != 0)
+		udelay(100);
+
+	thermal_data.u.data.arg[0] = g_oe;
+	thermal_data.u.data.arg[1] = g_gain;
+	thermal_data.u.data.arg[2] = g_x_roomt[0];
+	while (thermal_to_sspm(THERMAL_IPI_INIT_GRP2, &thermal_data) != 0)
+		udelay(100);
+
+	for (i = 1 ; i < TS_ENUM_MAX; i++) {
+		thermal_data.u.data.arg[count] = g_x_roomt[i];
+		if (count == (THERMAL_SLOT_NUM - 2)) {
+			while (thermal_to_sspm(THERMAL_IPI_INIT_GRP3 + offset,
+						&thermal_data) != 0)
+				udelay(100);
+			offset++;
+		}
+		count = (count + 1) % (THERMAL_SLOT_NUM - 1);
+	}
+
+	if (count != 0) {
+		while (thermal_to_sspm(THERMAL_IPI_INIT_GRP3 + offset,
+					&thermal_data) != 0)
+			udelay(100);
+	}
+#endif
+#endif
 }
 
 #if THERMAL_CONTROLLER_HW_TP
@@ -1311,7 +1357,11 @@ void tscpu_reset_thermal(void)
 int tscpu_read_temperature_info(struct seq_file *m, void *v)
 {
 	int i;
-
+#if DEBUG_THERMAL_SSPM
+#if THERMAL_ENABLE_TINYSYS_SSPM
+	struct thermal_ipi_data thermal_data;
+#endif
+#endif
 	seq_printf(m, "current temp:%d\n", tscpu_curr_max_ts_temp);
 	seq_printf(m, "[cal] g_adc_ge_t      = %d\n", g_adc_ge_t);
 	seq_printf(m, "[cal] g_adc_oe_t      = %d\n", g_adc_oe_t);
@@ -1338,6 +1388,15 @@ int tscpu_read_temperature_info(struct seq_file *m, void *v)
 	seq_printf(m, "calefuse2:0x%x\n", calefuse2);
 	seq_printf(m, "calefuse3:0x%x\n", calefuse3);
 
+#if DEBUG_THERMAL_SSPM
+#if THERMAL_ENABLE_TINYSYS_SSPM
+	thermal_data.u.data.arg[0] = 0;
+	thermal_data.u.data.arg[1] = 0;
+	thermal_data.u.data.arg[2] = 0;
+	while (thermal_to_sspm(THERMAL_IPI_GET_TEMP, &thermal_data) != 0)
+		udelay(500);
+#endif
+#endif
 	return 0;
 }
 
