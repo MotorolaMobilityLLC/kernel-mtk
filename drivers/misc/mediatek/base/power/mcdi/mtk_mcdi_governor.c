@@ -287,29 +287,6 @@ void dump_multi_core_state_ftrace(int cpu)
 	trace_mcdi_multi_core_rcuidle(cpu, on_off_stat, check_mask);
 }
 
-#ifdef ANY_CORE_DPIDLE_SODI
-#if defined(CONFIG_MACH_MT6763)
-static int mtk_idle_state_mapping[NR_TYPES] = {
-	MCDI_STATE_DPIDLE,		/* IDLE_TYPE_DP */
-	MCDI_STATE_SODI3,		/* IDLE_TYPE_SO3 */
-	MCDI_STATE_SODI,		/* IDLE_TYPE_SO */
-	MCDI_STATE_CLUSTER_OFF,	/* IDLE_TYPE_MC */
-	MCDI_STATE_CLUSTER_OFF,	/* IDLE_TYPE_SL */
-	MCDI_STATE_CLUSTER_OFF	/* IDLE_TYPE_RG */
-};
-#elif defined(CONFIG_MACH_MT6758)
-static int mtk_idle_state_mapping[NR_TYPES] = {
-	MCDI_STATE_DPIDLE,		/* IDLE_TYPE_DP */
-	MCDI_STATE_SODI3,		/* IDLE_TYPE_SO3 */
-	MCDI_STATE_SODI,		/* IDLE_TYPE_SO */
-	MCDI_STATE_CLUSTER_OFF,		/* IDLE_TYPE_MCSO */
-	MCDI_STATE_CLUSTER_OFF,		/* IDLE_TYPE_MC */
-	MCDI_STATE_CLUSTER_OFF,		/* IDLE_TYPE_SL */
-	MCDI_STATE_CLUSTER_OFF		/* IDLE_TYPE_RG */
-};
-#endif
-#endif
-
 #define NF_CHECK_MCDI_CONTROLLER_TOKEN          50
 #define CHECK_MCDI_CONTROLLER_TOKEN_DELAY_US    100
 
@@ -428,7 +405,7 @@ int any_core_deepidle_sodi_check(int cpu)
 	mtk_idle_state = mtk_idle_select(cpu);
 
 	if (state >= 0 && state < NR_TYPES)
-		state = mtk_idle_state_mapping[mtk_idle_state];
+		state = mcdi_get_mcdi_idle_state(mtk_idle_state);
 
 	if (!(state == MCDI_STATE_SODI || state == MCDI_STATE_DPIDLE || state == MCDI_STATE_SODI3)) {
 		trace_mtk_idle_select_rcuidle(
@@ -722,7 +699,8 @@ void mcdi_governor_init(void)
 
 	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 
-	set_mcdi_enable_status(true);
+	mcdi_status_init();
+
 	set_mcdi_s_state(MCDI_STATE_SODI3);
 }
 

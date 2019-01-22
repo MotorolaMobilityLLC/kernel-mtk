@@ -36,6 +36,7 @@
 #include <sspm_mbox.h>
 
 #include <trace/events/mtk_idle_event.h>
+
 /* #define USING_TICK_BROADCAST */
 
 #define MCDI_CPU_OFF        1
@@ -104,6 +105,21 @@ struct mtk_mcdi_buf {
 #define get_mcdi_buf(mcdi)   ((mcdi).buf)
 #define mcdi_buf_append(mcdi, fmt, args...) \
 	((mcdi).p_idx += snprintf((mcdi).p_idx, LOG_BUF_LEN - strlen((mcdi).buf), fmt, ##args))
+
+int __attribute__((weak)) soidle_enter(int cpu)
+{
+	return 1;
+}
+
+int __attribute__((weak)) dpidle_enter(int cpu)
+{
+	return 1;
+}
+
+int __attribute__((weak)) soidle3_enter(int cpu)
+{
+	return 1;
+}
 
 static inline long int get_current_time_ms(void)
 {
@@ -464,14 +480,18 @@ unsigned int mcdi_mbox_read(int id)
 {
 	unsigned int val = 0;
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	sspm_mbox_read(MCDI_MBOX, id, &val, 1);
+#endif
 
 	return val;
 }
 
 void mcdi_mbox_write(int id, unsigned int val)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	sspm_mbox_write(MCDI_MBOX, id, (void *)&val, 1);
+#endif
 }
 
 void mcdi_sysram_init(void)
@@ -811,26 +831,6 @@ static int mcdi_hotplug_cb_init(void)
 	register_cpu_notifier(&mcdi_cpu_notifier);
 
 	return 0;
-}
-
-static const char mcdi_node_name[] = "mediatek,mt6763-mcdi";
-
-static void mcdi_of_init(void)
-{
-	struct device_node *node = NULL;
-
-	/* MCDI sysram base */
-	node = of_find_compatible_node(NULL, NULL, mcdi_node_name);
-
-	if (!node)
-		pr_err("node '%s' not found!\n", mcdi_node_name);
-
-	mcdi_sysram_base = of_iomap(node, 0);
-
-	if (!mcdi_sysram_base)
-		pr_err("node '%s' can not iomap!\n", mcdi_node_name);
-
-	pr_info("mcdi_sysram_base = %p\n", mcdi_sysram_base);
 }
 
 static void __init mcdi_pm_qos_init(void)

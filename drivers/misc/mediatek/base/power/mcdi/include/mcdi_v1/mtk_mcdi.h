@@ -28,5 +28,8 @@ unsigned int mcdi_mbox_read(int id);
 void mcdi_mbox_write(int id, unsigned int val);
 void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask);
 bool is_cpu_pwr_on_event_pending(void);
+int mcdi_get_mcdi_idle_state(int idx);
+void mcdi_status_init(void);
+void mcdi_of_init(void);
 
 #endif /* __MTK_MCDI_H__ */
