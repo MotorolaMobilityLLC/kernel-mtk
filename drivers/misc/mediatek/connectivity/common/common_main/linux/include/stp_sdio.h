@@ -316,5 +316,7 @@ INT32 stp_sdio_retry_flag_get(VOID);
 INT32 stp_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
 VOID stp_sdio_dump_register(VOID);
 INT32 stp_sdio_issue_fake_coredump(UINT8 *str);
+VOID stp_sdio_dump_info(MTK_WCN_STP_SDIO_HIF_INFO *p_info);
+
 
 #endif				/* _STP_SDIO_H */
