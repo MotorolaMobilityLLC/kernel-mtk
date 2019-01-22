@@ -6,12 +6,7 @@ ifeq ($(CONFIG_MACH_MT6757), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)
 endif
-ifeq ($(CONFIG_MACH_MT6759), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
-endif
-ifeq ($(CONFIG_MACH_MT6758), y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
-endif
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
