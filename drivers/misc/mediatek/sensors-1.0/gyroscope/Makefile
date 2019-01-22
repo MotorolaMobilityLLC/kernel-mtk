@@ -5,3 +5,4 @@ obj-y   +=  gyroscope.o gyro_factory.o
 
 
 obj-$(CONFIG_MTK_GYROHUB)      +=  gyrohub/
+obj-$(CONFIG_MTK_LSM6DS3HGY)   +=  lsm6ds3hgy/
