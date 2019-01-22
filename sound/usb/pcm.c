@@ -525,7 +525,7 @@ static int set_format(struct snd_usb_substream *subs, struct audioformat *fmt)
 				fmt->iface, fmt->altsetting, err);
 			return -EIO;
 		}
-		dev_dbg(&dev->dev, "setting usb interface %d:%d\n",
+		dev_info_ratelimited(&dev->dev, "setting usb interface %d:%d\n",
 			fmt->iface, fmt->altsetting);
 		subs->interface = fmt->iface;
 		subs->altset_idx = fmt->altset_idx;
