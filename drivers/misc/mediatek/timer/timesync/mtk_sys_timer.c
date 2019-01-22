@@ -11,13 +11,13 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/module.h>
 #if defined(CONFIG_MTK_TIMER_TIMESYNC) && !defined(CONFIG_FPGA_EARLY_PORTING)
 
 #include <linux/kernel.h>
 #include <linux/clocksource.h>
 #include <linux/debugfs.h>
 #include <linux/io.h>
-#include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/platform_device.h>
