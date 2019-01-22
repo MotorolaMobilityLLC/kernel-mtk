@@ -152,8 +152,6 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "SPM_DFS_LEVEL          : 0x%x\n", spm_read(SPM_DFS_LEVEL));
 		p += sprintf(p, "SPM_DVS_LEVEL          : 0x%x\n", spm_read(SPM_DVS_LEVEL));
 
-		p += sprintf(p, "SPM_DVS_LEVEL          : 0x%x\n", spm_read(SPM_DVS_LEVEL));
-
 		p += sprintf(p, "PCM_REG_DATA_0~3       : 0x%x, 0x%x, 0x%x, 0x%x\n",
 							spm_read(PCM_REG0_DATA), spm_read(PCM_REG1_DATA),
 							spm_read(PCM_REG2_DATA), spm_read(PCM_REG3_DATA));
@@ -389,12 +387,18 @@ void dvfsrc_hw_policy_mask(bool mask)
 		spm_write(DVFSRC_EMI_REQUEST3, 0);
 		spm_write(DVFSRC_VCORE_REQUEST, 0);
 		spm_write(DVFSRC_VCORE_REQUEST2, 0);
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 3));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 0));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 5));
 	} else {
 		spm_write(DVFSRC_EMI_REQUEST, 0x00209209);
 		spm_write(DVFSRC_EMI_REQUEST2, 0x00009999);
-		spm_write(DVFSRC_EMI_REQUEST3, 0x29292929);
+		/* spm_write(DVFSRC_EMI_REQUEST3, 0x29292929); */
 		spm_write(DVFSRC_VCORE_REQUEST, 0x00150000);
 		/* spm_write(DVFSRC_VCORE_REQUEST2, 0x29292929); */
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 3));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 0));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 5));
 	}
 }
 
