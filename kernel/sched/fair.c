@@ -76,6 +76,11 @@ static struct cpumask under_util_isolated_cpus;
 unsigned int sysctl_sched_latency = 6000000ULL;
 unsigned int normalized_sysctl_sched_latency = 6000000ULL;
 
+/*
+ * Enable/disable honoring sync flag in energy-aware wakeups.
+ */
+unsigned int sysctl_sched_sync_hint_enable = 1;
+
 unsigned int sysctl_sched_isolation_hint_enable; /* default off */
 int sys_boosted;
 #ifdef CONFIG_SCHED_WALT
@@ -5997,6 +6002,16 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		}
 	}
 #endif
+
+	if (!system_overutilized(cpu) &&
+	     sysctl_sched_sync_hint_enable && sync) {
+		int sync_cpu = smp_processor_id();
+		cpumask_t search_cpus;
+
+		cpumask_and(&search_cpus, tsk_cpus_allowed(p), cpu_online_mask);
+		if (cpumask_test_cpu(sync_cpu, &search_cpus))
+			return sync_cpu;
+	}
 
 	/*
 	 *  Consider EAS if only EAS enabled, but HMP
