@@ -48,6 +48,8 @@ int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	{750, 750, 750, 750},
 	/* HRT_BOUND_TYPE_LP4_HD */
 	{900, 900, 900, 1350},
+	/* HRT_BOUND_TYPE_LP4_FHD_19 */
+	{400, 500, 500, 500},
 };
 
 int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
@@ -62,6 +64,8 @@ int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP3_HD */
 	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP4_HD */
+	{1200, 1200, 1200, 1200},
+	/* HRT_BOUND_TYPE_LP4_FHD_19 */
 	{1200, 1200, 1200, 1200},
 };
 
@@ -315,9 +319,13 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 			else
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3_HD;
 		} else {
-			if (get_emi_ch_num() == 2)
-				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4;
+			if (primary_display_get_height() * 10 /
+					primary_display_get_width() > 20)
+				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_FHD_19;
 			else
+				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4;
+
+			if (get_emi_ch_num() != 2)
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_1CH;
 		}
 	}
