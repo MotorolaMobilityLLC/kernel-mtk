@@ -941,7 +941,7 @@ static int ext_disp_init_hdmi(unsigned int session)
 		data_config->p_golden_setting_context->ext_dst_height = data_config->dst_h;
 
 		init_roi = 0;
-		ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, CMDQ_DISABLE);
+		ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, NULL);
 		EXTDMSG("ext_disp_init roi w:%d, h:%d\n", data_config->dst_w, data_config->dst_h);
 	} else
 		EXTDERR("allocate buffer failed!!!\n");
