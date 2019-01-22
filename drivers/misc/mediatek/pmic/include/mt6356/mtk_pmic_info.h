@@ -21,6 +21,13 @@
 #define PMIC6356_E2_CID_CODE    0x5620
 #define PMIC6356_E3_CID_CODE    0x5630
 
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#define IPIMB
+#endif
+
+extern unsigned int pmic_ipi_test_code(void);
+
 /*
  * Debugfs
  */
