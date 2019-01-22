@@ -188,6 +188,15 @@ static int mtk_voice_close(struct snd_pcm_substream *substream)
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_warn("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
+		/* 3-mic setting */
+		if (substream->runtime->channels > 2) {
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH3);
+
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, false);
+			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false)
+				set_adc2_enable(false);
+		}
 		AudDrv_Clk_Off();
 		return 0;
 	}
@@ -209,16 +218,6 @@ static int mtk_voice_close(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, false);
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL) == false)
 		set_adc_enable(false);
-
-	/* 3-mic setting */
-	if (substream->runtime->channels > 2) {
-		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH3);
-
-		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, false);
-		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false)
-			set_adc2_enable(false);
-	}
 
 	EnableAfe(false);
 	AudDrv_Clk_Off();
@@ -276,6 +275,19 @@ static int mtk_voice1_prepare(struct snd_pcm_substream *substream)
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_warn("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
+		/* 3-mic setting */
+		if (substream->runtime->channels > 2) {
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH3);
+
+			if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false) {
+				SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+				set_adc2_in(substream->runtime->rate);
+				set_adc2_enable(true);
+			} else {
+				SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
+			}
+		}
 		return 0;
 	}
 	/* here start digital part */
@@ -297,20 +309,6 @@ static int mtk_voice1_prepare(struct snd_pcm_substream *substream)
 		set_adc_enable(true);
 	} else {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL, true);
-	}
-
-	/* 3-mic setting */
-	if (substream->runtime->channels > 2) {
-		SetIntfConnection(Soc_Aud_InterCon_Connection,
-				  Soc_Aud_AFE_IO_Block_ADDA_UL2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH3);
-
-		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2) == false) {
-			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
-			set_adc2_in(substream->runtime->rate);
-			set_adc2_enable(true);
-		} else {
-			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_UL2, true);
-		}
 	}
 
 	EnableAfe(true);
