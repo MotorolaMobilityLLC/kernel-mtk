@@ -195,7 +195,7 @@ typedef struct mtkstp_dbg_t {
 
 /* extern void aed_combo_exception(const int *, int, const int *, int, const char *); */
 
-#define STP_CORE_DUMP_TIMEOUT (5*60*1000)	/* default 5minutes */
+#define STP_CORE_DUMP_TIMEOUT (1*60*1000)	/* default 1 minutes */
 #define STP_OJB_NAME_SZ 20
 #define STP_CORE_DUMP_INFO_SZ 500
 #define STP_CORE_DUMP_INIT_SIZE 512
