@@ -88,7 +88,6 @@ static struct dump_work_t dump_work[NUM_DUMP_DATA];
 static struct workqueue_struct *dump_workqueue[NUM_DUMP_DATA];
 static wait_queue_head_t wq_dump_pcm;
 static struct wake_lock bargein_pcm_dump_wake_lock;
-static struct wake_lock bargein_wake_lock;
 static bool dump_info_flag;
 struct pcm_dump_t {
 	char decode_pcm[FRAME_BUF_SIZE];
@@ -418,7 +417,6 @@ static void vow_service_Init(void)
 		dump_info_flag = false;
 		vowserv.bargein_pcmdump = false;
 		vow_bargein_dump_init();
-		wake_lock_init(&bargein_wake_lock, WAKE_LOCK_SUSPEND, "bargein wakelock");
 #endif  /* #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT */
 	} else {
 		vowserv.vow_info_dsp[0] = vowserv.voicedata_scp_addr;
@@ -712,6 +710,7 @@ static void vow_service_ReadVoiceData(void)
 
 					/*VOWDRV_DEBUG("TX_len:%d, idx:%d\n", vowserv.transfer_length,*/
 					/*				    vowserv.voicedata_idx);*/
+					VOWDRV_DEBUG("TX_len:%d\n", vowserv.transfer_length);
 					ret = copy_to_user((void __user *)(vowserv.voicedata_user_return_size_addr),
 							   &vowserv.transfer_length,
 							   4);
@@ -1465,7 +1464,6 @@ static bool VowDrv_SetBargeIn(unsigned int set)
 	VOWDRV_DEBUG("VowDrv_Debug_SetBargeIn = %d\n", set);
 	if (set == 1) {
 		scp_register_feature(VOW_BARGEIN_FEATURE_ID);
-		wake_lock(&bargein_wake_lock);
 		ret = vow_IPICmd_Send(AUDIO_IPI_MSG_ONLY,
 				      AUDIO_IPI_MSG_BYPASS_ACK, IPIMSG_VOW_SET_BARGEIN_ON,
 				      0, 0,
@@ -1475,7 +1473,6 @@ static bool VowDrv_SetBargeIn(unsigned int set)
 				      AUDIO_IPI_MSG_NEED_ACK, IPIMSG_VOW_SET_BARGEIN_OFF,
 				      0, 0,
 				      NULL);
-		wake_unlock(&bargein_wake_lock);
 		scp_deregister_feature(VOW_BARGEIN_FEATURE_ID);
 	} else {
 		VOWDRV_DEBUG("Adb comment error\n\r");
