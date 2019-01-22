@@ -20,6 +20,7 @@
 #include <linux/of_irq.h>
 #include <linux/printk.h>
 
+#include <mt_emi.h>
 #include "elm_v1.h"
 
 static bool elm_enabled;
@@ -84,11 +85,9 @@ static irqreturn_t elm_isr(int irq, void *dev_id)
 /* the interface of CCCI for MD EE */
 void dump_last_bm(char *buf, unsigned int leng)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&elm_lock, flags);
+	spin_lock(&elm_lock);
 	dump_elm(buf, leng);
-	spin_unlock_irqrestore(&elm_lock, flags);
+	spin_unlock(&elm_lock);
 }
 
 static ssize_t elm_ctrl_show(struct device_driver *driver, char *buf)
@@ -126,7 +125,7 @@ void elm_init(struct platform_driver *emi_ctrl, struct platform_device *pdev)
 		ret = request_irq(elm_irq, (irq_handler_t)elm_isr,
 			IRQF_TRIGGER_NONE, "elm", emi_ctrl);
 		if (ret != 0) {
-			pr_info("[ELM] fail to request IRQ (%d)\n", ret);
+			pr_err("[ELM] fail to request IRQ (%d)\n", ret);
 			return;
 		}
 
@@ -135,14 +134,17 @@ void elm_init(struct platform_driver *emi_ctrl, struct platform_device *pdev)
 
 	ret = driver_create_file(&emi_ctrl->driver, &driver_attr_elm_ctrl);
 	if (ret)
-		pr_info("[ELM] fail to create elm_ctrl\n");
+		pr_err("[ELM] fail to create elm_ctrl\n");
 }
 
 void suspend_elm(void)
 {
+	int emi_dcm_status;
+
 	if (is_elm_enabled()) {
-		disable_elm();
-		elm_enabled = true;
+		emi_dcm_status = disable_emi_dcm();
+		turn_off_elm();
+		restore_emi_dcm(emi_dcm_status);
 	}
 }
 

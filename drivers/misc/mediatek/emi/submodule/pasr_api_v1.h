@@ -14,8 +14,6 @@
 #ifndef __PASR_API_H__
 #define __PASR_API_H__
 
-#include <mt_emi.h>
-
 struct basic_dram_setting {
 	unsigned channel_nr;
 	/* per-channel information */

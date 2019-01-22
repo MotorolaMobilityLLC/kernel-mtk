@@ -9,6 +9,8 @@ subdir-ccflags-y += \
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/submodule
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/$(MTK_PLATFORM)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eemcs/
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/conn_md/include
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/core

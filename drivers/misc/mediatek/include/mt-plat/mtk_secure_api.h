@@ -47,7 +47,6 @@
 #define MTK_SIP_KERNEL_EMIMPU_READ          (0x82000208 | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_EMIMPU_SET           (0x82000209 | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_EMIMPU_CLEAR         (0x8200020A | MTK_SIP_SMC_AARCH_BIT)
-#define MTK_SIP_KERNEL_EMI_MPU_PROTECT      (0x82000239 | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_SCP_RESET            (0x8200020B | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_DISABLE_DFD	    (0x8200020F | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_ICACHE_DUMP          (0x82000210 | MTK_SIP_SMC_AARCH_BIT)
@@ -194,7 +193,7 @@ mt_mpu_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, apc8, apc0)
 mt_secure_call(MTK_SIP_KERNEL_EMIMPU_CLEAR, region, 0, 0)
 
 #define emi_mpu_smc_protect(start, end, apc) \
-mt_secure_call(MTK_SIP_KERNEL_EMI_MPU_PROTECT, start, end, apc)
+mt_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, apc)
 
 #define lpdma_smc_write(offset, val) \
 mt_secure_call(MTK_SIP_KERNEL_LPDMA_WRITE, offset, val, 0)
