@@ -41,6 +41,7 @@ struct sspm_mbox {
 
 struct sspm_mbox sspmmbox[SSPM_MBOX_MAX];
 static unsigned int sspm_mbox_cnt;
+static spinlock_t lock_mbox[SSPM_MBOX_MAX];
 
 unsigned int sspm_mbox_size(int mbox)
 {
@@ -83,12 +84,15 @@ int sspm_mbox_polling(unsigned int mbox, unsigned int irq, unsigned int slot,
 	struct sspm_mbox *desc;
 	void __iomem *out_irq;
 	unsigned int irqs = 0;
+	unsigned long flags = 0;
 
 	desc = &sspmmbox[mbox];
 
 	irq = 0x1 << irq;
 
 	out_irq = desc->in_out + MBOX_OUT_IRQ_OFS;
+
+	spin_lock_irqsave(&lock_mbox[mbox], flags);
 #if 0
 	while (retries-- > 0) {
 		irqs = readl(out_irq);
@@ -103,14 +107,16 @@ int sspm_mbox_polling(unsigned int mbox, unsigned int irq, unsigned int slot,
 #endif
 
 	if (irqs & irq) {
+		writel(irq, out_irq);
+		spin_unlock_irqrestore(&lock_mbox[mbox], flags);
+
 		if (retdata)
 			memcpy_from_sspm(retdata, desc->base + (MBOX_SLOT_SIZE * slot), MBOX_SLOT_SIZE*retlen);
-
-		writel(irq, out_irq);
 
 		return 0;
 	}
 
+	spin_unlock_irqrestore(&lock_mbox[mbox], flags);
 	return -1;
 }
 
@@ -163,12 +169,14 @@ static irqreturn_t sspm_mbox_irq_handler(int irq, void *dev_id)
 	void __iomem *out_irq;
 
 	out_irq = desc->in_out + MBOX_OUT_IRQ_OFS;
-	irqs = readl(out_irq);
 
+	spin_lock(&lock_mbox[desc->id]);
+	irqs = readl(out_irq);
 	writel(irqs, out_irq);
+	spin_unlock(&lock_mbox[desc->id]);
+
 	if (desc->isr)
 		desc->isr(desc->id, desc->base, irqs);
-
 
 	return IRQ_HANDLED;
 }
@@ -242,6 +250,9 @@ unsigned int sspm_mbox_init(unsigned int mode, unsigned int count, sspm_ipi_isr 
 	}
 
 	for (mbox = 0; mbox < count; mbox++) {
+
+		spin_lock_init(&lock_mbox[mbox]);
+
 		if (sspm_mbox_group_activate(mbox, mode & 0x1, isr))
 			goto fail;
 
