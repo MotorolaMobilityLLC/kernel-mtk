@@ -2438,6 +2438,7 @@ static int DL_switch_to_OVL_DCM_fast(int sw_only, int block)
 	data_config_dl->ovl_config[0].ext_sel_layer = -1;
 	data_config_dl->ovl_config[0].yuv_range = rdma_config.yuv_range;
 	data_config_dl->ovl_config[0].fmt = rdma_config.inputFormat;
+	data_config_dl->ovl_config[0].alpha = 0xFF;
 	for (i = 1 ; i < TOTAL_OVL_LAYER_NUM ; i++)
 		data_config_dl->ovl_config[i].layer_en = 0;
 
