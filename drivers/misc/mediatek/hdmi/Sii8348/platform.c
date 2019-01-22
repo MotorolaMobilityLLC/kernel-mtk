@@ -1102,6 +1102,22 @@ void dpi_gpio_ctrl(int enable)
 			HDMI_REG_SET_FIELD(0xF00, (iocfg_1_base + 0xB0), 0x0);
 	}
 #endif
+
+#ifdef CONFIG_MACH_MT6771
+	node = of_find_compatible_node(NULL, NULL, "mediatek,pctl-1-syscfg");
+	if (!node)
+		pr_debug("[IOCFG_1] find node failed\n");
+
+	iocfg_1_base = of_iomap(node, 0);
+	if (!iocfg_1_base)
+		pr_debug("[IOCFG_1] base failed\n");
+	else {
+		if (enable)
+			HDMI_REG_SET_FIELD(0xF00000, (iocfg_1_base + 0xA0), 0x400000);
+		else
+			HDMI_REG_SET_FIELD(0xF00000, (iocfg_1_base + 0xA0), 0x0);
+	}
+#endif
 #endif
 }
 
