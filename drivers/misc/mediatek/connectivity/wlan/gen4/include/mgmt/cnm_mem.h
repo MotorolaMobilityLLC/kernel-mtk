@@ -452,9 +452,15 @@ struct _STA_RECORD_T {
 #if CFG_ENABLE_PKT_LIFETIME_PROFILE && CFG_ENABLE_PER_STA_STATISTICS
 	UINT_32 u4TotalTxPktsNumber;
 	UINT_32 u4TotalTxPktsTime;
+	UINT_32 u4TotalTxPktsHifTxTime;
+
 	UINT_32 u4TotalRxPktsNumber;
 	UINT_32 u4MaxTxPktsTime;
+	UINT_32 u4MaxTxPktsHifTime;
+
 	UINT_32 u4ThresholdCounter;
+	UINT_32 u4EnqueueCounter;
+	UINT_32 u4DeqeueuCounter;
 #endif
 
 #if 1

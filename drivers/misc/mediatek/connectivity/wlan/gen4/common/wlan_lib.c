@@ -6128,9 +6128,13 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 		prQueryStaStatistics->u4RxTotalCount = prStaRec->u4TotalRxPktsNumber;
 		prQueryStaStatistics->u4TxExceedThresholdCount = prStaRec->u4ThresholdCounter;
 		prQueryStaStatistics->u4TxMaxTime = prStaRec->u4MaxTxPktsTime;
+		prQueryStaStatistics->u4TxMaxHifTime = prStaRec->u4MaxTxPktsHifTime;
+
 		if (prStaRec->u4TotalTxPktsNumber) {
 			prQueryStaStatistics->u4TxAverageProcessTime =
 			    (prStaRec->u4TotalTxPktsTime / prStaRec->u4TotalTxPktsNumber);
+			prQueryStaStatistics->u4TxAverageHifTime =
+				prStaRec->u4TotalTxPktsHifTxTime / prStaRec->u4TotalTxPktsNumber;
 		} else
 			prQueryStaStatistics->u4TxAverageProcessTime = 0;
 
@@ -6149,15 +6153,58 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 			    prQM->au4QmTcResourceEmptyCounter[prStaRec->ucBssIndex][ucIdx];
 			/* Reset */
 			prQM->au4QmTcResourceEmptyCounter[prStaRec->ucBssIndex][ucIdx] = 0;
+			prQueryStaStatistics->au4TcResourceBackCount[ucIdx] =
+				prQM->au4QmTcResourceBackCounter[ucIdx];
+			prQM->au4QmTcResourceBackCounter[ucIdx] = 0;
+			prQueryStaStatistics->au4DequeueNoTcResource[ucIdx] =
+				prQM->au4DequeueNoTcResourceCounter[ucIdx];
+			prQM->au4DequeueNoTcResourceCounter[ucIdx] = 0;
+			prQueryStaStatistics->au4TcResourceUsedPageCount[ucIdx] =
+				prQM->au4QmTcUsedPageCounter[ucIdx];
+			prQM->au4QmTcUsedPageCounter[ucIdx] = 0;
+			prQueryStaStatistics->au4TcResourceWantedPageCount[ucIdx] =
+				prQM->au4QmTcWantedPageCounter[ucIdx];
+			prQM->au4QmTcWantedPageCounter[ucIdx] = 0;
 		}
+
+		prQueryStaStatistics->u4EnqueueCounter = prQM->u4EnqueueCounter;
+		prQueryStaStatistics->u4EnqueueStaCounter = prStaRec->u4EnqueueCounter;
+
+		prQueryStaStatistics->u4DequeueCounter = prQM->u4DequeueCounter;
+		prQueryStaStatistics->u4DequeueStaCounter = prStaRec->u4DeqeueuCounter;
+
+		prQueryStaStatistics->IsrCnt = prAdapter->prGlueInfo->IsrCnt;
+		prQueryStaStatistics->IsrPassCnt = prAdapter->prGlueInfo->IsrPassCnt;
+		prQueryStaStatistics->TaskIsrCnt = prAdapter->prGlueInfo->TaskIsrCnt;
+
+		prQueryStaStatistics->IsrAbnormalCnt = prAdapter->prGlueInfo->IsrAbnormalCnt;
+		prQueryStaStatistics->IsrSoftWareCnt = prAdapter->prGlueInfo->IsrSoftWareCnt;
+		prQueryStaStatistics->IsrRxCnt = prAdapter->prGlueInfo->IsrRxCnt;
+		prQueryStaStatistics->IsrTxCnt = prAdapter->prGlueInfo->IsrTxCnt;
 
 		/* 4 4.1 Reset statistics */
 		if (prQueryStaStatistics->ucReadClear) {
 			prStaRec->u4ThresholdCounter = 0;
 			prStaRec->u4TotalTxPktsNumber = 0;
+			prStaRec->u4TotalTxPktsHifTxTime = 0;
+
 			prStaRec->u4TotalTxPktsTime = 0;
 			prStaRec->u4TotalRxPktsNumber = 0;
 			prStaRec->u4MaxTxPktsTime = 0;
+			prStaRec->u4MaxTxPktsHifTime = 0;
+			prQM->u4EnqueueCounter = 0;
+			prQM->u4DequeueCounter = 0;
+			prStaRec->u4EnqueueCounter = 0;
+			prStaRec->u4DeqeueuCounter = 0;
+
+			prAdapter->prGlueInfo->IsrCnt = 0;
+			prAdapter->prGlueInfo->IsrPassCnt = 0;
+			prAdapter->prGlueInfo->TaskIsrCnt = 0;
+
+			prAdapter->prGlueInfo->IsrAbnormalCnt = 0;
+			prAdapter->prGlueInfo->IsrSoftWareCnt = 0;
+			prAdapter->prGlueInfo->IsrRxCnt = 0;
+			prAdapter->prGlueInfo->IsrTxCnt = 0;
 		}
 		/*link layer statistics */
 		if (prQueryStaStatistics->ucLlsReadClear) {
@@ -8278,6 +8325,7 @@ VOID wlanTxLifetimeUpdateStaStats(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 {
 	P_STA_RECORD_T prStaRec;
 	UINT_32 u4DeltaTime;
+	UINT_32 u4DeltaHifTxTime;
 	P_QUE_MGT_T prQM = &prAdapter->rQM;
 	P_PKT_PROFILE_T prPktProfile = &prMsduInfo->rPktProfile;
 	UINT_32 u4PktPrintPeriod = 0;
@@ -8286,21 +8334,27 @@ VOID wlanTxLifetimeUpdateStaStats(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prM
 
 	if (prStaRec) {
 		u4DeltaTime = (UINT_32) (prPktProfile->rHifTxDoneTimestamp - prPktProfile->rHardXmitArrivalTimestamp);
+		u4DeltaHifTxTime = (UINT_32) (prPktProfile->rHifTxDoneTimestamp - prPktProfile->rDequeueTimestamp);
 
 		/* Update StaRec statistics */
 		prStaRec->u4TotalTxPktsNumber++;
 		prStaRec->u4TotalTxPktsTime += u4DeltaTime;
+		prStaRec->u4TotalTxPktsHifTxTime += u4DeltaHifTxTime;
 
 		if (u4DeltaTime > prStaRec->u4MaxTxPktsTime)
 			prStaRec->u4MaxTxPktsTime = u4DeltaTime;
+
+		if (u4DeltaHifTxTime > prStaRec->u4MaxTxPktsHifTime)
+			prStaRec->u4MaxTxPktsHifTime = u4DeltaHifTxTime;
+
 		if (u4DeltaTime >= NIC_TX_TIME_THRESHOLD)
 			prStaRec->u4ThresholdCounter++;
 
 		if (u4PktPrintPeriod && (prStaRec->u4TotalTxPktsNumber >= u4PktPrintPeriod)) {
-			DBGLOG(TX, TRACE, "[%u]N[%4lu]A[%5lu]M[%4lu]T[%4lu]E[%4lu]\n",
+			DBGLOG(TX, INFO, "[%u]N[%lu]A[%lu]M[%lu]T[%u]E[%4u]\n",
 			       prStaRec->ucIndex,
 			       prStaRec->u4TotalTxPktsNumber,
-			       (prStaRec->u4TotalTxPktsTime / prStaRec->u4TotalTxPktsNumber),
+			       prStaRec->u4TotalTxPktsTime,
 			       prStaRec->u4MaxTxPktsTime,
 			       prStaRec->u4ThresholdCounter,
 			       prQM->au4QmTcResourceEmptyCounter[prStaRec->ucBssIndex][TC2_INDEX]);
@@ -8361,6 +8415,71 @@ BOOLEAN wlanTxLifetimeIsTargetMsdu(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T pr
 	return fgResult;
 }
 
+VOID wlanTxLifetimeTagPacketQue(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfoListHead,
+		IN ENUM_TX_PROFILING_TAG_T eTag)
+{
+	P_MSDU_INFO_T prMsduInfo = prMsduInfoListHead, prNextMsduInfo;
+	P_PKT_PROFILE_T prPktProfile = NULL;
+
+	if (!wlanTxLifetimeIsProfilingEnabled(prAdapter))
+		return;
+
+	while (prMsduInfo) {
+		prPktProfile = &prMsduInfo->rPktProfile;
+		prNextMsduInfo = (P_MSDU_INFO_T) QUEUE_GET_NEXT_ENTRY((P_QUE_ENTRY_T) prMsduInfo);
+
+		switch (eTag) {
+		case TX_PROF_TAG_OS_TO_DRV:
+			/* arrival time is tagged in wlanProcessTxFrame */
+			break;
+
+		case TX_PROF_TAG_DRV_ENQUE:
+			/* Reset packet profile */
+			prPktProfile->fgIsValid = FALSE;
+			if (wlanTxLifetimeIsTargetMsdu(prAdapter, prMsduInfo)) {
+				/* Enable packet lifetime profiling */
+				prPktProfile->fgIsValid = TRUE;
+
+				/* Packet arrival time at kernel Hard Xmit */
+				prPktProfile->rHardXmitArrivalTimestamp =
+					GLUE_GET_PKT_ARRIVAL_TIME(prMsduInfo->prPacket);
+
+				/* Packet enqueue time */
+				prPktProfile->rEnqueueTimestamp = (OS_SYSTIME) kalGetTimeTick();
+			}
+			break;
+
+		case TX_PROF_TAG_DRV_DEQUE:
+			if (prPktProfile->fgIsValid)
+				prPktProfile->rDequeueTimestamp = (OS_SYSTIME) kalGetTimeTick();
+			break;
+
+		case TX_PROF_TAG_DRV_TX_DONE:
+			if (prPktProfile->fgIsValid) {
+				BOOLEAN fgPrintCurPkt = FALSE;
+
+				prPktProfile->rHifTxDoneTimestamp = (OS_SYSTIME) kalGetTimeTick();
+
+				if (fgPrintCurPkt)
+					PRINT_PKT_PROFILE(prPktProfile, "C");
+
+#if CFG_ENABLE_PER_STA_STATISTICS
+				wlanTxLifetimeUpdateStaStats(prAdapter, prMsduInfo);
+#endif
+			}
+			break;
+
+		case TX_PROF_TAG_MAC_TX_DONE:
+			break;
+
+		default:
+			break;
+		}
+
+		prMsduInfo = prNextMsduInfo;
+	};
+}
+
 VOID wlanTxLifetimeTagPacket(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_PROFILING_TAG_T eTag)
 {
 	P_PKT_PROFILE_T prPktProfile = &prMsduInfo->rPktProfile;
@@ -8398,7 +8517,6 @@ VOID wlanTxLifetimeTagPacket(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduIn
 			BOOLEAN fgPrintCurPkt = FALSE;
 
 			prPktProfile->rHifTxDoneTimestamp = (OS_SYSTIME) kalGetTimeTick();
-
 			if (fgPrintCurPkt)
 				PRINT_PKT_PROFILE(prPktProfile, "C");
 

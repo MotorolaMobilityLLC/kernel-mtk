@@ -2646,6 +2646,7 @@ int hif_thread(void *data)
 				DBGLOG(INIT, INFO, "ignore pending interrupt\n");
 			} else {
 				/* DBGLOG(INIT, INFO, ("HIF Interrupt!\n")); */
+				prGlueInfo->TaskIsrCnt++;
 				wlanIST(prGlueInfo->prAdapter);
 			}
 		}
@@ -2912,6 +2913,7 @@ int main_thread(void *data)
 				/* Should stop now... skip pending interrupt */
 				DBGLOG(INIT, INFO, "ignore pending interrupt\n");
 			} else {
+				prGlueInfo->TaskIsrCnt++;
 				wlanIST(prGlueInfo->prAdapter);
 			}
 		}

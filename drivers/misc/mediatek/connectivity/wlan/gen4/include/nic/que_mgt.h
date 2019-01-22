@@ -427,6 +427,19 @@ typedef struct _QUE_MGT_T {	/* Queue Management Control Info */
 
 #if QM_TC_RESOURCE_EMPTY_COUNTER
 	UINT_32 au4QmTcResourceEmptyCounter[MAX_BSS_INDEX][TC_NUM];
+	UINT_32 au4DequeueNoTcResourceCounter[TC_NUM];
+	/*
+	 * how many page count back during statistics intervals
+	 */
+	UINT_32 au4QmTcResourceBackCounter[TC_NUM];
+	/*
+	 * how many page count used to TX frame during statistics intervals
+	 */
+	UINT_32 au4QmTcUsedPageCounter[TC_NUM];
+	UINT_32 au4QmTcWantedPageCounter[TC_NUM];
+
+	UINT_32 u4EnqueueCounter;
+	UINT_32 u4DequeueCounter;
 #endif
 
 	UINT_32 u4MaxForwardBufferCount;
