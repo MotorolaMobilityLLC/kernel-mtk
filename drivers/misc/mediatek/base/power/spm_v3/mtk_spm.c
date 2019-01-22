@@ -887,7 +887,6 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 {
 	unsigned int ret = 0;
 	/* struct spm_data _spm_d; */
-#if !defined(CONFIG_MACH_MT6775)
 
 	int ack_data;
 
@@ -921,6 +920,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		}
 #endif
 		break;
+#if !defined(CONFIG_MACH_MT6775)
 	case SPM_SUSPEND_PREPARE:
 	case SPM_POST_SUSPEND:
 		spm_d->cmd = cmd;
@@ -965,11 +965,11 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		} else
 			ret = ack_data;
 		break;
+#endif
 	default:
 		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-#endif
 	return ret;
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */

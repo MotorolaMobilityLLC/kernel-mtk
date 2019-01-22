@@ -87,6 +87,7 @@ obj-$(CONFIG_MACH_MT6759) += vcorefs_v3/
 obj-$(CONFIG_MACH_MT6758) += vcorefs_v3/
 obj-$(CONFIG_MACH_MT6739) += vcorefs_v3/
 obj-$(CONFIG_MACH_MT6771) += vcorefs_v3/
+obj-$(CONFIG_MACH_MT6775) += vcorefs_v3/
 obj-$(CONFIG_MACH_KIBOPLUS) += vcorefs_v1/
 obj-$(CONFIG_MACH_KIBOPLUS) += spm_v2/
 obj-$(CONFIG_MACH_MT6757) += cpuidle_v2/

@@ -18,6 +18,7 @@
 #include <mt-plat/mtk_meminfo.h>
 
 #include "mtk_vcorefs_manager.h"
+#include "mtk_vcorefs_governor.h"
 #include "mtk_spm_vcore_dvfs.h"
 #include "mmdvfs_mgr.h"
 
@@ -470,6 +471,12 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 		mutex_lock(&vcorefs_mutex);
 		pwrctrl->kr_log_mask = val;
 		mutex_unlock(&vcorefs_mutex);
+#if defined(CONFIG_MACH_MT6775)
+	} else if (!strcmp(cmd, "force")) {
+		mutex_lock(&vcorefs_mutex);
+		dvfsrc_force_opp(val);
+		mutex_unlock(&vcorefs_mutex);
+#endif
 	}  else {
 		/* set kicker opp and do DVFS */
 		kicker = vcorefs_output_kicker_id(cmd);
