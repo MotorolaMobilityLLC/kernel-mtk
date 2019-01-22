@@ -484,17 +484,20 @@ static int log_store(int facility, int level,
 	int this_cpu = smp_processor_id();
 	char state = this_cpu_read(printk_state);
 	char tbuf[50];
-	unsigned tlen;
+	unsigned int tlen = 0;
 #endif
 #ifdef CONFIG_PRINTK_MT_PREFIX
 	if (state == 0) {
 		this_cpu_write(printk_state, ' ');
 		state = ' ';
 	}
-	if (console_suspended == 0)
-		tlen = snprintf(tbuf, sizeof(tbuf), "%c(%x)[%d:%s]", state, this_cpu, current->pid, current->comm);
-	else
-		tlen = snprintf(tbuf, sizeof(tbuf), "%c%x)", state, this_cpu);
+	if (!(flags & LOG_CONT)) {
+		if (console_suspended == 0)
+			tlen = snprintf(tbuf, sizeof(tbuf), "%c(%x)[%d:%s]", state, this_cpu,
+								current->pid, current->comm);
+		else
+			tlen = snprintf(tbuf, sizeof(tbuf), "%c(%x)", state, this_cpu);
+	}
 #endif
 
 	/* number of '\0' padding bytes to next message */
