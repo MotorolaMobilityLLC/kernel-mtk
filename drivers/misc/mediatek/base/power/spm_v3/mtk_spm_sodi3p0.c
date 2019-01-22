@@ -305,7 +305,6 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 o
 	/* update pcm_flags with dcs flag */
 	__spm_update_pcm_flags_dcs_workaround(pwrctrl, ch);
 
-	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
 #ifdef CONFIG_MTK_ICCS_SUPPORT
@@ -382,7 +381,6 @@ RESTORE_IRQ:
 #endif
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
-	lockdep_on();
 
 	/* need be called after spin_unlock_irqrestore() */
 	get_channel_unlock();
