@@ -91,22 +91,18 @@ extern struct mutex cpufreq_para_mutex;
 /* Debugging */
 extern unsigned int func_lv_mask;
 #define DEBUG 1
-#undef TAG
-#define TAG     "[Power/cpufreq] "
 
-#define cpufreq_err(fmt, args...)		\
-	pr_err(TAG"[ERROR]"fmt, ##args)
-#define cpufreq_warn(fmt, args...)		\
-	pr_warn(TAG"[WARNING]"fmt, ##args)
-#define cpufreq_info(fmt, args...)		\
-	pr_warn(TAG""fmt, ##args)
-#define cpufreq_dbg(fmt, args...)		\
-	pr_debug(TAG""fmt, ##args)
+#define TAG	"[Power/cpufreq] "
+#define tag_pr_err(fmt, args...)	pr_err(TAG fmt, ##args)
+#define tag_pr_notice(fmt, args...)	pr_notice(TAG fmt, ##args)
+#define tag_pr_info(fmt, args...)	pr_info(TAG fmt, ##args)
+#define tag_pr_debug(fmt, args...)	pr_debug(TAG fmt, ##args)
+
 #define cpufreq_ver(fmt, args...)		\
-	do {					\
-		if (func_lv_mask)		\
-			cpufreq_info(TAG""fmt, ##args);	\
-	} while (0)
+do {						\
+	if (func_lv_mask)			\
+		tag_pr_info(fmt, ##args);	\
+} while (0)
 
 #define GEN_DB_ON(condition, fmt, args...)			\
 ({								\
@@ -129,9 +125,9 @@ extern unsigned int func_lv_mask;
 */
 #ifdef CONFIG_CPU_DVFS_SHOWLOG
 #define FUNC_ENTER(lv) \
-	do { if ((lv) & func_lv_mask) cpufreq_dbg(">> %s()\n", __func__); } while (0)
+	do { if ((lv) & func_lv_mask) tag_pr_debug(">> %s()\n", __func__); } while (0)
 #define FUNC_EXIT(lv) \
-	do { if ((lv) & func_lv_mask) cpufreq_dbg("<< %s():%d\n", __func__, __LINE__); } while (0)
+	do { if ((lv) & func_lv_mask) tag_pr_debug("<< %s():%d\n", __func__, __LINE__); } while (0)
 #else
 #define FUNC_ENTER(lv)
 #define FUNC_EXIT(lv)

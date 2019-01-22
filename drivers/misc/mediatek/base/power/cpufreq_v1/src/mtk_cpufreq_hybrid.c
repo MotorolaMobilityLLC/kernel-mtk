@@ -133,24 +133,24 @@ int Ripi_cpu_dvfs_thread(void *data)
 	unsigned long long tf_sum, t_diff, avg_f;
 	int j;
 
-	/* cpufreq_info("CPU DVFS received thread\n"); */
+	/* tag_pr_info("CPU DVFS received thread\n"); */
 	cpufreq_act.data = (void *)cpufreq_buf;
 	ret = sspm_ipi_recv_registration_ex(IPI_ID_CPU_DVFS, &cpudvfs_lock, &cpufreq_act);
 
 	if (ret != 0) {
-		cpufreq_err("Error: ipi_recv_registration CPU DVFS error: %d\n", ret);
+		tag_pr_notice("Error: ipi_recv_registration CPU DVFS error: %d\n", ret);
 		do {
 			msleep(1000);
 		} while (!kthread_should_stop());
 		return (-1);
 	}
-	/* cpufreq_info("sspm_ipi_recv_registration IPI_ID_CPU_DVFS pass!!(%d)\n", ret); */
+	/* tag_pr_info("sspm_ipi_recv_registration IPI_ID_CPU_DVFS pass!!(%d)\n", ret); */
 
 	/* an endless loop in which we are doing our work */
 	do {
-		/* cpufreq_info("sspm_ipi_recv_wait IPI_ID_CPU_DVFS\n"); */
+		/* tag_pr_info("sspm_ipi_recv_wait IPI_ID_CPU_DVFS\n"); */
 		sspm_ipi_recv_wait(IPI_ID_CPU_DVFS);
-		/* cpufreq_info("Info: CPU DVFS thread received ID=%d, i=%d\n", cpufreq_act.id, i); */
+		/* tag_pr_info("Info: CPU DVFS thread received ID=%d, i=%d\n", cpufreq_act.id, i); */
 		spin_lock_irqsave(&cpudvfs_lock, flags);
 		memcpy(pwdata, cpufreq_buf, sizeof(pwdata));
 		spin_unlock_irqrestore(&cpudvfs_lock, flags);
@@ -308,13 +308,13 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		ret = sspm_ipi_send_sync_new(IPI_ID_CPU_DVFS, IPI_OPT_POLLING, cdvfs_d, len, &ack_data, 1);
 		aee_record_cpu_dvfs_cb(7);
 		if (ret != 0) {
-			cpufreq_err("ret = %d, set cluster%d ON/OFF state to %d\n",
+			tag_pr_notice("ret = %d, set cluster%d ON/OFF state to %d\n",
 				ret, cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 #if 0
 			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 #endif
 		} else if (ack_data < 0) {
-			cpufreq_err("ret = %d, set cluster%d ON/OFF state to %d\n",
+			tag_pr_notice("ret = %d, set cluster%d ON/OFF state to %d\n",
 				ret, cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 #if 0
 			ret = ack_data;
@@ -795,7 +795,7 @@ void cpuhvfs_pvt_tbl_create(void)
 	unsigned int lv = _mt_cpufreq_get_cpu_level();
 
 	recordRef = ioremap_nocache(DBG_REPO_TBL_S, PVT_TBL_SIZE);
-	cpufreq_info("DVFS - @(Record)%s----->(%p)\n", __func__, recordRef);
+	tag_pr_info("DVFS - @(Record)%s----->(%p)\n", __func__, recordRef);
 	memset_io((u8 *)recordRef, 0x00, PVT_TBL_SIZE);
 
 	recordTbl = xrecordTbl[lv];
@@ -894,13 +894,13 @@ int cpuhvfs_module_init(void)
 	int r;
 
 	if (!log_repo) {
-		cpufreq_err("FAILED TO PRE-INIT CPUHVFS\n");
+		tag_pr_notice("FAILED TO PRE-INIT CPUHVFS\n");
 		return -ENODEV;
 	}
 
 	r = create_cpuhvfs_debug_fs();
 	if (r) {
-		cpufreq_err("FAILED TO CREATE DEBUG FILESYSTEM (%d)\n", r);
+		tag_pr_notice("FAILED TO CREATE DEBUG FILESYSTEM (%d)\n", r);
 		return r;
 	}
 
@@ -917,10 +917,10 @@ static int dvfsp_module_init(void)
 
 	r = platform_driver_register(&_mt_dvfsp_pdrv);
 	if (r)
-		cpufreq_err("fail to register sspm driver @ %s()\n", __func__);
+		tag_pr_notice("fail to register sspm driver @ %s()\n", __func__);
 
 	if (!dvfsp_probe_done) {
-		cpufreq_err("FAILED TO PROBE SSPM DEVICE\n");
+		tag_pr_notice("FAILED TO PROBE SSPM DEVICE\n");
 		return -ENODEV;
 	}
 
@@ -967,7 +967,7 @@ static int cpuhvfs_pre_module_init(void)
 
 	r = dvfsp_module_init();
 	if (r) {
-		cpufreq_err("FAILED TO INIT DVFS SSPM (%d)\n", r);
+		tag_pr_notice("FAILED TO INIT DVFS SSPM (%d)\n", r);
 		return r;
 	}
 
@@ -981,4 +981,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.1");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.1.1");
