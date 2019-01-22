@@ -291,7 +291,7 @@ static unsigned int scp_A_log_enable_set(unsigned int enable)
 				break;
 			retrytimes--;
 			udelay(100);
-		} while ((ret == BUSY) && retrytimes > 0);
+		} while (retrytimes > 0);
 		/*
 		 *disable/enable logger flag
 		 */
@@ -332,7 +332,7 @@ static unsigned int scp_A_log_wakeup_set(unsigned int enable)
 				break;
 			retrytimes--;
 			udelay(100);
-		} while ((ret == BUSY) && retrytimes > 0);
+		} while (retrytimes > 0);
 		/*
 		 *disable/enable logger flag
 		 */
@@ -716,7 +716,7 @@ static unsigned int scp_B_log_enable_set(unsigned int enable)
 				break;
 			retrytimes--;
 			udelay(100);
-		} while ((ret == BUSY) && retrytimes > 0);
+		} while (retrytimes > 0);
 		/*
 		 *disable/enable logger flag
 		 */
@@ -757,7 +757,7 @@ static unsigned int scp_B_log_wakeup_set(unsigned int enable)
 				break;
 			retrytimes--;
 			udelay(100);
-		} while ((ret == BUSY) && retrytimes > 0);
+		} while (retrytimes > 0);
 		/*
 		 *disable/enable logger flag
 		 */
@@ -979,7 +979,7 @@ static void scp_logger_notify_ws(struct work_struct *ws)
 			break;
 		retrytimes--;
 		udelay(100);
-	} while ((ret == BUSY) && retrytimes > 0);
+	} while (retrytimes > 0);
 
 	/*enable logger flag*/
 	if (ret == DONE) {
@@ -988,7 +988,7 @@ static void scp_logger_notify_ws(struct work_struct *ws)
 		else
 			SCP_B_log_ctl->enable = 1;
 	} else {
-		pr_err("[SCP]logger initial fail, ipi ret=%u\n", ret);
+		pr_err("[SCP]logger initial fail, ipi ret=%d\n", ret);
 	}
 
 }
