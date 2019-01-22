@@ -909,6 +909,20 @@ prefer_idle_read(struct cgroup_subsys_state *css, struct cftype *cft)
 	return st->prefer_idle;
 }
 
+int prefer_idle_for_perf_idx(int idx, int prefer_idle)
+{
+	struct schedtune *ct = allocated_group[idx];
+
+	if (!ct)
+		return -EINVAL;
+
+	rcu_read_lock();
+	ct->prefer_idle = prefer_idle;
+	rcu_read_unlock();
+
+	return 0;
+}
+
 static int
 prefer_idle_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	    u64 prefer_idle)
