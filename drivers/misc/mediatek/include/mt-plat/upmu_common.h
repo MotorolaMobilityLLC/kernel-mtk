@@ -223,5 +223,8 @@ extern int pmic_force_vcore_pwm(bool enable);
 
 extern int is_ext_buck_exist(void);
 extern int is_ext_buck2_exist(void);
+extern int is_ext_buck_gpio_exist(void);
+extern int is_ext_vbat_boost_exist(void);
+extern int is_ext_swchr_exist(void);
 
 #endif				/* _MT_PMIC_COMMON_H_ */
