@@ -22,7 +22,7 @@
 #endif
 
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev);
-
+extern int g_mtk_gpu_total_memory_usage_in_pages_debugfs;
 
 #ifdef ENABLE_MTK_MEMINFO
 #define MTK_MEMINFO_SIZE 150
