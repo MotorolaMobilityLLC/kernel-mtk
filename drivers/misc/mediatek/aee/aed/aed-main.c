@@ -1560,6 +1560,57 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			break;
 		}
 
+	case AEEIOCTL_GET_AEE_SIGINFO:
+		{
+			struct aee_siginfo aee_si;
+
+			LOGD("%s: get aee_siginfo ioctl\n", __func__);
+
+			if (copy_from_user
+			    (&aee_si, (struct aee_siginfo __user *)arg,
+			     sizeof(aee_si))) {
+				ret = -EFAULT;
+				goto EXIT;
+			}
+
+			if (aee_si.tid > 0) {
+				struct task_struct *task;
+				siginfo_t *psi = NULL;
+
+				rcu_read_lock();
+				task = find_task_by_vpid(aee_si.tid);
+				if (task == NULL) {
+					rcu_read_unlock();
+					ret = -EINVAL;
+					goto EXIT;
+				}
+				rcu_read_unlock();
+
+				psi = task->last_siginfo;
+				if (psi) {
+					aee_si.si_signo = psi->si_signo;
+					aee_si.si_errno = psi->si_errno;
+					if (psi->si_code >= 0)  /* debuggerd original_si_code */
+						aee_si.si_code = psi->si_code & ~__SI_MASK;
+					else
+						aee_si.si_code = psi->si_code;
+					aee_si.fault_addr = (uintptr_t)psi->si_addr;
+					if (copy_to_user
+						((struct aee_siginfo __user *)arg, &aee_si,
+						sizeof(aee_si))) {
+						ret = -EFAULT;
+						goto EXIT;
+					}
+				}
+			} else {
+				LOGD("%s: get aee_siginfo ioctl tid invalid\n", __func__);
+				ret = -EINVAL;
+				goto EXIT;
+			}
+
+			break;
+		}
+
 	default:
 		ret = -EINVAL;
 	}
