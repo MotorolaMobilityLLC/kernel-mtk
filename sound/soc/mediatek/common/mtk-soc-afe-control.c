@@ -351,17 +351,21 @@ void OpenAfeDigitaldl1(bool bEnable)
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
 			SetI2SDacOut(44100, false, Soc_Aud_I2S_WLEN_WLEN_16BITS);
 			SetI2SDacEnable(true);
+			EnableAfe(true);
+			SetI2SADDAEnable(true);
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+			EnableAfe(true);
 		}
 
-		EnableAfe(true);
 	} else {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
-		if (GetI2SDacEnable() == false)
+		if (GetI2SDacEnable() == false) {
+			SetI2SADDAEnable(false);
 			SetI2SDacEnable(false);
+		}
 
 		EnableAfe(false);
 	}
@@ -1526,15 +1530,9 @@ bool SetI2SDacEnable(bool bEnable)
 	pr_aud("%s bEnable = %d", __func__, bEnable);
 
 	if (bEnable) {
-		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
-		SetADDAEnable(true);
 	} else {
-		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
-
-		SetADDAEnable(false);
-
 		AudDrv_AUD_Sel(0);
 #ifdef CONFIG_FPGA_EARLY_PORTING
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
@@ -1547,6 +1545,23 @@ bool SetI2SDacEnable(bool bEnable)
 	return true;
 }
 
+bool SetI2SADDAEnable(bool bEnable)
+{
+	/* pr_warn("%s bEnable = %d", __func__, bEnable); */
+
+	if (bEnable) {
+		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
+		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
+	} else {
+		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false
+		    && mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false) {
+			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
+		}
+	}
+
+	return true;
+}
 
 bool GetI2SDacEnable(void)
 {
