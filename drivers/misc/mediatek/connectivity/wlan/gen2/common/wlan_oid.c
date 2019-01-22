@@ -1600,6 +1600,8 @@ wlanoidSetAuthMode(IN P_ADAPTER_T prAdapter,
 	case AUTH_MODE_WPA_PSK:
 	case AUTH_MODE_WPA2:
 	case AUTH_MODE_WPA2_PSK:
+	case AUTH_MODE_WPA2_FT:
+	case AUTH_MODE_WPA2_FT_PSK:
 		/* infrastructure mode only */
 		if (prAdapter->rWifiVar.rConnSettings.eOPMode != NET_TYPE_INFRA)
 			return WLAN_STATUS_NOT_ACCEPTED;
@@ -1683,6 +1685,13 @@ wlanoidSetAuthMode(IN P_ADAPTER_T prAdapter,
 			u4AkmSuite = WFA_AKM_SUITE_OSEN;
 			break;
 #endif
+		case AUTH_MODE_WPA2_FT:
+			u4AkmSuite = RSN_AKM_SUITE_FT_802_1X;
+			break;
+
+		case AUTH_MODE_WPA2_FT_PSK:
+			u4AkmSuite = RSN_AKM_SUITE_FT_PSK;
+			break;
 
 		default:
 			u4AkmSuite = 0;
@@ -2424,10 +2433,21 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 
 	/* Exception check, pairwise key must with transmit bit enabled */
 	if ((prNewKey->u4KeyIndex & BITS(30, 31)) == BITS(30, 31)) {
-		if (((prNewKey->u4KeyLength == CCMP_KEY_LEN || prNewKey->u4KeyLength == TKIP_KEY_LEN) &&
-			(prNewKey->u4KeyIndex & 0xff) != 0) ||
-			EQUAL_MAC_ADDR(prNewKey->arBSSID, "\xff\xff\xff\xff\xff\xff")) {
+		if (EQUAL_MAC_ADDR(prNewKey->arBSSID, "\xff\xff\xff\xff\xff\xff"))
 			return WLAN_STATUS_INVALID_DATA;
+		if (prNewKey->u4KeyLength == CCMP_KEY_LEN || prNewKey->u4KeyLength == TKIP_KEY_LEN) {
+			if ((prNewKey->u4KeyIndex & 0xff) != 0)
+				return WLAN_STATUS_INVALID_DATA;
+#if 0
+			else {
+				P_STA_RECORD_T prStaRec =
+					cnmGetStaRecByAddress(prAdapter, NETWORK_TYPE_AIS_INDEX, prNewKey->arBSSID);
+				if (!prStaRec || prStaRec->ucStaState != STA_STATE_3) {
+					DBGLOG(OID, WARN, "station record is null[%d] or state is not 3\n", !prStaRec);
+					return WLAN_STATUS_INVALID_DATA;
+				}
+			}
+#endif
 		}
 	} else if ((prNewKey->u4KeyIndex & BITS(30, 31)) == IS_UNICAST_KEY)
 		return WLAN_STATUS_INVALID_DATA;
@@ -4800,7 +4820,16 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 		}
 		break;
 #endif
-
+	case 0x1003: /* for debug switches */
+		switch (u2SubId) {
+		case 1:
+			DBGLOG(OID, INFO, "Enable VoE 5.7 Packet Jitter test\n");
+			prAdapter->rDebugInfo.fgVoE5_7Test = !!u4Data;
+			break;
+		default:
+			break;
+		}
+		break;
 #if CFG_SUPPORT_802_11W
 	case 0x2000:
 		DBGLOG(RSN, TRACE, "802.11w test 0x%x\n", u2SubId);
@@ -10694,4 +10723,438 @@ wlanoidSetEnableDumpEMILog(IN P_ADAPTER_T prAdapter,
 	return WLAN_STATUS_SUCCESS;
 }
 #endif
+
+WLAN_STATUS
+wlanoidUpdateFtIes(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen,
+						  PUINT_32 pu4SetInfoLen)
+{
+	struct FT_IES *prFtIes = NULL;
+	UINT_32 u4IeLen = 0;
+	PUINT_8 pucIEStart = NULL;
+	struct cfg80211_update_ft_ies_params *ftie = NULL;
+	P_STA_RECORD_T prStaRec = NULL;
+	struct MSG_SAA_FT_CONTINUE *prFtContinueMsg = NULL;
+
+	if (!pvSetBuffer || u4SetBufferLen == 0) {
+		DBGLOG(OID, ERROR, "pvSetBuffer is Null %d, Buffer Len %u\n", !pvSetBuffer, u4SetBufferLen);
+		return WLAN_STATUS_INVALID_DATA;
+	}
+	prStaRec = prAdapter->rWifiVar.rAisFsmInfo.prTargetStaRec;
+	ftie = (struct cfg80211_update_ft_ies_params *)pvSetBuffer;
+	prFtIes = &prAdapter->prGlueInfo->rFtIeForTx;
+	if (ftie->ie_len == 0) {
+		DBGLOG(OID, WARN, "FT Ies length is 0\n");
+		return WLAN_STATUS_SUCCESS;
+	}
+	if (prFtIes->u4IeLength != ftie->ie_len) {
+		kalMemFree(prFtIes->pucIEBuf, VIR_MEM_TYPE, prFtIes->u4IeLength);
+		prFtIes->pucIEBuf = kalMemAlloc(ftie->ie_len, VIR_MEM_TYPE);
+		prFtIes->u4IeLength = ftie->ie_len;
+	}
+	pucIEStart = prFtIes->pucIEBuf;
+	u4IeLen = prFtIes->u4IeLength;
+	prFtIes->u2MDID = ftie->md;
+	prFtIes->prFTIE = NULL;
+	prFtIes->prMDIE = NULL;
+	prFtIes->prRsnIE = NULL;
+	prFtIes->prTIE = NULL;
+	if (u4IeLen)
+		kalMemCopy(pucIEStart, ftie->ie, u4IeLen);
+	while (u4IeLen >= 2) {
+		UINT_32 u4InfoElemLen = IE_SIZE(pucIEStart);
+
+		if (u4InfoElemLen > u4IeLen)
+			break;
+		switch (pucIEStart[0]) {
+		case ELEM_ID_MOBILITY_DOMAIN:
+			prFtIes->prMDIE = (struct IE_MOBILITY_DOMAIN_T *)pucIEStart;
+			break;
+		case ELEM_ID_FAST_TRANSITION:
+			prFtIes->prFTIE = (struct IE_FAST_TRANSITION_T *)pucIEStart;
+			break;
+		case ELEM_ID_RESOURCE_INFO_CONTAINER:
+			break;
+		case ELEM_ID_TIMEOUT_INTERVAL:
+			prFtIes->prTIE = (IE_TIMEOUT_INTERVAL_T *)pucIEStart;
+			break;
+		case ELEM_ID_RSN:
+			prFtIes->prRsnIE = (P_RSN_INFO_ELEM_T)pucIEStart;
+			break;
+		}
+		u4IeLen -= u4InfoElemLen;
+		pucIEStart += u4InfoElemLen;
+	}
+	DBGLOG(OID, INFO, "MdId %d IesLen %u, MDIE %d FTIE %d RSN %d TIE %d\n", ftie->md, prFtIes->u4IeLength,
+		!!prFtIes->prMDIE, !!prFtIes->prFTIE, !!prFtIes->prRsnIE, !!prFtIes->prTIE);
+	/* check if SAA is waiting to send Reassoc req */
+	if (!prStaRec || prStaRec->ucAuthTranNum != AUTH_TRANSACTION_SEQ_2 ||
+		!prStaRec->fgIsReAssoc || prStaRec->ucStaState != STA_STATE_1)
+		return WLAN_STATUS_SUCCESS;
+
+	prFtContinueMsg = (struct MSG_SAA_FT_CONTINUE *) cnmMemAlloc(prAdapter, RAM_TYPE_MSG,
+					sizeof(struct MSG_SAA_FT_CONTINUE));
+	if (!prFtContinueMsg) {
+		DBGLOG(OID, WARN, "failed to allocate Join Req Msg\n");
+		return WLAN_STATUS_FAILURE;
+	}
+	prFtContinueMsg->rMsgHdr.eMsgId = MID_OID_SAA_FSM_CONTINUE;
+	prFtContinueMsg->prStaRec = prStaRec;
+	/* ToDo: for Resource Request Protocol, we need to check if RIC request is included. */
+	if (prFtIes->prMDIE && (prFtIes->prMDIE->ucBitMap & BIT(1)))
+		prFtContinueMsg->fgFTRicRequest = TRUE;
+	else
+		prFtContinueMsg->fgFTRicRequest = FALSE;
+	DBGLOG(OID, INFO, "continue to do auth/assoc, Ft Request %d\n", prFtContinueMsg->fgFTRicRequest);
+	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prFtContinueMsg, MSG_SEND_METHOD_BUF);
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanoidSendNeighborRequest(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen,
+									   PUINT_32 pu4SetInfoLen)
+{
+	struct SUB_ELEMENT_LIST *prSSIDIE = NULL;
+	P_BSS_INFO_T prAisBssInfo = NULL;
+	UINT_8 ucSSIDIELen = 0;
+	PUINT_8 pucSSID = (PUINT_8)pvSetBuffer;
+
+	if (!prAdapter)
+		return WLAN_STATUS_INVALID_DATA;
+	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+	if (prAisBssInfo->eConnectionState != PARAM_MEDIA_STATE_CONNECTED) {
+		DBGLOG(OID, ERROR, "didn't connected any Access Point\n");
+		return WLAN_STATUS_FAILURE;
+	}
+	if (u4SetBufferLen == 0 || !pucSSID) {
+		rlmTxNeighborReportRequest(prAdapter, prAisBssInfo->prStaRecOfAP, NULL);
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	ucSSIDIELen = (UINT_8)(u4SetBufferLen + sizeof(*prSSIDIE));
+	prSSIDIE = kalMemAlloc(ucSSIDIELen, PHY_MEM_TYPE);
+	if (!prSSIDIE) {
+		DBGLOG(OID, ERROR, "No Memory\n");
+		return WLAN_STATUS_FAILURE;
+	}
+	prSSIDIE->prNext = NULL;
+	prSSIDIE->rSubIE.ucSubID = ELEM_ID_SSID;
+	prSSIDIE->rSubIE.ucLength = (UINT_8)u4SetBufferLen;
+	kalMemCopy(&prSSIDIE->rSubIE.aucOptInfo[0], pucSSID, (UINT_8)u4SetBufferLen);
+	DBGLOG(OID, INFO, "Send Neighbor Request, SSID=%s\n", pucSSID);
+	rlmTxNeighborReportRequest(prAdapter, prAisBssInfo->prStaRecOfAP, prSSIDIE);
+	kalMemFree(prSSIDIE, PHY_MEM_TYPE, ucSSIDIELen);
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanoidSync11kCapbilities(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen,
+								   PUINT_32 pu4SetInfoLen)
+{
+	struct CMD_SET_RRM_CAPABILITY rCmdRrmCapa;
+
+	kalMemZero(&rCmdRrmCapa, sizeof(rCmdRrmCapa));
+	rCmdRrmCapa.ucDot11RadioMeasurementEnabled = 1;
+	rlmFillRrmCapa(&rCmdRrmCapa.aucCapabilities[0]);
+	return wlanSendSetQueryCmd(prAdapter,
+					  CMD_ID_SET_RRM_CAPABILITY,
+					  TRUE,
+					  FALSE,
+					  TRUE,
+					  nicCmdEventSetCommon,
+					  nicOidCmdTimeoutCommon,
+					  sizeof(struct CMD_SET_RRM_CAPABILITY),
+					  (PUINT_8) &rCmdRrmCapa, pvSetBuffer, u4SetBufferLen);
+}
+
+WLAN_STATUS
+wlanoidSendBTMQuery(P_ADAPTER_T prAdapter, PVOID pvSetBuffer, UINT_32 u4SetBufferLen,
+							   PUINT_32 pu4SetInfoLen)
+{
+	P_STA_RECORD_T prStaRec = prAdapter->rWifiVar.rAisFsmInfo.prTargetStaRec;
+	struct BSS_TRANSITION_MGT_PARAM_T *prBtmMgt = NULL;
+
+	if (prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX].eConnectionState !=
+		PARAM_MEDIA_STATE_CONNECTED || !prStaRec) {
+		DBGLOG(OID, INFO, "Didn't Connect, Target StaRec is NULL %d\n", !prStaRec);
+		return WLAN_STATUS_FAILURE;
+	}
+	if (!prStaRec->fgSupportBTM) {
+		DBGLOG(OID, INFO, "Target BSS didn't support Bss Transition Management\n");
+		return WLAN_STATUS_FAILURE;
+	}
+	prBtmMgt = &prAdapter->rWifiVar.rAisSpecificBssInfo.rBTMParam;
+	prBtmMgt->ucDialogToken = wnmGetBtmToken();
+	prBtmMgt->ucQueryReason = pvSetBuffer ? (*(PUINT_8)pvSetBuffer - '0'):BSS_TRANSITION_LOW_RSSI;
+	DBGLOG(OID, INFO, "Send BssTransitionManagementQuery, Reason %d\n", prBtmMgt->ucQueryReason);
+	wnmSendBTMQueryFrame(prAdapter, prStaRec);
+	return WLAN_STATUS_SUCCESS;
+}
+
+/*
+ * This func is mainly from bionic's strtok.c
+ */
+static CHAR *strtok_r(CHAR *s, const CHAR *delim, CHAR **last)
+{
+	char *spanp;
+	int c, sc;
+	char *tok;
+
+
+	if (s == NULL) {
+		s = *last;
+		if (s == 0)
+			return NULL;
+	}
+cont:
+	c = *s++;
+	for (spanp = (char *)delim; (sc = *spanp++) != 0;) {
+		if (c == sc)
+			goto cont;
+	}
+
+	if (c == 0) {		/* no non-delimiter characters */
+		*last = NULL;
+		return NULL;
+	}
+	tok = s - 1;
+
+	for (;;) {
+		c = *s++;
+		spanp = (char *)delim;
+		do {
+			sc = *spanp++;
+			if (sc == c) {
+				if (c == 0)
+					s = NULL;
+				else
+					s[-1] = 0;
+				*last = s;
+				return tok;
+			}
+		} while (sc != 0);
+	}
+}
+
+WLAN_STATUS wlanoidTspecOperation(P_ADAPTER_T prAdapter, PVOID pvBuffer, UINT_32 u4BufferLen,
+										   PUINT_32 pu4InfoLen)
+{
+	P_PARAM_QOS_TSPEC prTspecParam = NULL;
+	struct MSG_TS_OPERATE *prMsgTsOperate = NULL;
+	PUINT_8 pucCmd = (PUINT_8)pvBuffer;
+	PUINT_8 pucSavedPtr = NULL;
+	PUINT_8 pucItem = NULL;
+	UINT_32 u4Ret = 1;
+	UINT_8 ucApsdSetting = 2; /* 0: legacy; 1: u-apsd; 2: not set yet */
+	enum TSPEC_OP_CODE eTsOp;
+
+#if !CFG_SUPPORT_WMM_AC
+	DBGLOG(OID, INFO, "WMM AC is not supported\n");
+	return WLAN_STATUS_FAILURE;
+#endif
+	if (kalStrniCmp(pucCmd, "dumpts", 6) == 0) {
+		*pu4InfoLen = kalSnprintf(pucCmd, u4BufferLen, "%s", "\nAll Active Tspecs:\n");
+		u4BufferLen -= *pu4InfoLen;
+		pucCmd += *pu4InfoLen;
+		*pu4InfoLen += wmmDumpActiveTspecs(prAdapter, pucCmd, u4BufferLen);
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	if (kalStrniCmp(pucCmd, "addts", 5) == 0)
+		eTsOp = TX_ADDTS_REQ;
+	else if (kalStrniCmp(pucCmd, "delts", 5) == 0)
+		eTsOp = TX_DELTS_REQ;
+	else {
+		DBGLOG(OID, INFO, "wrong operation %s\n", pucCmd);
+		return WLAN_STATUS_FAILURE;
+	}
+	/* addts token n,tid n,dir n,psb n,up n,fixed n,size n,maxsize n,maxsrvint n, minsrvint n,
+	** inact n, suspension n, srvstarttime n, minrate n,meanrate n,peakrate n,burst n,delaybound n,
+	** phyrate n,SBA n,mediumtime n
+	*/
+	prMsgTsOperate = (struct MSG_TS_OPERATE *)cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(struct MSG_TS_OPERATE));
+	if (!prMsgTsOperate)
+		return WLAN_STATUS_FAILURE;
+
+	kalMemZero(prMsgTsOperate, sizeof(struct MSG_TS_OPERATE));
+	prMsgTsOperate->rMsgHdr.eMsgId = MID_OID_WMM_TSPEC_OPERATE;
+	prMsgTsOperate->eOpCode = eTsOp;
+	prTspecParam = &prMsgTsOperate->rTspecParam;
+	pucCmd += 6;
+	pucItem = (PUINT_8)strtok_r((CHAR *)pucCmd, ",", (CHAR **)&pucSavedPtr);
+	while (pucItem) {
+		if (kalStrniCmp(pucItem, "token ", 6) == 0)
+			u4Ret = kstrtou8(pucItem+6, 0, &prTspecParam->ucDialogToken);
+		else if (kalStrniCmp(pucItem, "tid ", 4) == 0) {
+			u4Ret = kstrtou8(pucItem+4, 0, &prMsgTsOperate->ucTid);
+			prTspecParam->rTsInfo.ucTid = prMsgTsOperate->ucTid;
+		} else if (kalStrniCmp(pucItem, "dir ", 4) == 0)
+			u4Ret = kstrtou8(pucItem+4, 0, &prTspecParam->rTsInfo.ucDirection);
+		else if (kalStrniCmp(pucItem, "psb ", 4) == 0)
+			u4Ret = kstrtou8(pucItem+4, 0, &ucApsdSetting);
+		else if (kalStrniCmp(pucItem, "up ", 3) == 0)
+			u4Ret = kstrtou8(pucItem+3, 0, &prTspecParam->rTsInfo.ucuserPriority);
+		else if (kalStrniCmp(pucItem, "size ", 5) == 0) {
+			UINT_16 u2Size = 0;
+
+			u4Ret = kstrtou16(pucItem+5, 0, &u2Size);
+			prTspecParam->u2NominalMSDUSize |= u2Size;
+		} else if (kalStrniCmp(pucItem, "fixed ", 6) == 0) {
+			UINT_8 ucFixed = 0;
+
+			u4Ret = kstrtou8(pucItem+6, 0, &ucFixed);
+			if (ucFixed)
+				prTspecParam->u2NominalMSDUSize |= BIT(15);
+		} else if (kalStrniCmp(pucItem, "maxsize ", 8) == 0)
+			u4Ret = kstrtou16(pucItem+8, 0, &prTspecParam->u2MaxMSDUsize);
+		else if (kalStrniCmp(pucItem, "maxsrvint ", 10) == 0)
+			u4Ret = kalkStrtou32(pucItem+10, 0, &prTspecParam->u4MaxSvcIntv);
+		else if (kalStrniCmp(pucItem, "minsrvint ", 10) == 0)
+			u4Ret = kalkStrtou32(pucItem+10, 0, &prTspecParam->u4MinSvcIntv);
+		else if (kalStrniCmp(pucItem, "inact ", 6) == 0)
+			u4Ret = kalkStrtou32(pucItem+6, 0, &prTspecParam->u4InactIntv);
+		else if (kalStrniCmp(pucItem, "suspension ", 11) == 0)
+			u4Ret = kalkStrtou32(pucItem+11, 0, &prTspecParam->u4SpsIntv);
+		else if (kalStrniCmp(pucItem, "srvstarttime ", 13) == 0)
+			u4Ret = kalkStrtou32(pucItem+13, 0, &prTspecParam->u4SvcStartTime);
+		else if (kalStrniCmp(pucItem, "minrate ", 8) == 0)
+			u4Ret = kalkStrtou32(pucItem+8, 0, &prTspecParam->u4MinDataRate);
+		else if (kalStrniCmp(pucItem, "meanrate ", 9) == 0)
+			u4Ret = kalkStrtou32(pucItem+9, 0, &prTspecParam->u4MeanDataRate);
+		else if (kalStrniCmp(pucItem, "peakrate ", 9) == 0)
+			u4Ret = kalkStrtou32(pucItem+9, 0, &prTspecParam->u4PeakDataRate);
+		else if (kalStrniCmp(pucItem, "burst ", 6) == 0)
+			u4Ret = kalkStrtou32(pucItem+6, 0, &prTspecParam->u4MaxBurstSize);
+		else if (kalStrniCmp(pucItem, "delaybound ", 11) == 0)
+			u4Ret = kalkStrtou32(pucItem+11, 0, &prTspecParam->u4DelayBound);
+		else if (kalStrniCmp(pucItem, "phyrate ", 8) == 0)
+			u4Ret = kalkStrtou32(pucItem+8, 0, &prTspecParam->u4MinPHYRate);
+		else if (kalStrniCmp(pucItem, "sba ", 4) == 0)
+			u4Ret = wlanDecimalStr2Hexadecimals(pucItem+4, &prTspecParam->u2Sba);
+		else if (kalStrniCmp(pucItem, "mediumtime ", 11) == 0)
+			u4Ret = kstrtou16(pucItem+11, 0, &prTspecParam->u2MediumTime);
+
+		if (u4Ret) {
+			DBGLOG(OID, ERROR, "Parse %s error\n", pucItem);
+			cnmMemFree(prAdapter, prMsgTsOperate);
+			return WLAN_STATUS_FAILURE;
+		}
+		pucItem = (PUINT_8)strtok_r(NULL, ",", (CHAR **)&pucSavedPtr);
+	}
+	/* if APSD is not set in addts request, use global wmmps settings */
+	if (ucApsdSetting == 2) {
+		P_PM_PROFILE_SETUP_INFO_T prPmProf =
+			&prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX].rPmProfSetupInfo;
+		ENUM_ACI_T eAc = aucUp2ACIMap[prTspecParam->rTsInfo.ucuserPriority];
+
+		switch (prTspecParam->rTsInfo.ucDirection) {
+		case UPLINK_TS: /* UpLink*/
+			if (prPmProf->ucBmpTriggerAC & BIT(eAc))
+				prTspecParam->rTsInfo.ucApsd = 1;
+			break;
+		case DOWNLINK_TS:/* DownLink */
+			if (prPmProf->ucBmpDeliveryAC & BIT(eAc))
+				prTspecParam->rTsInfo.ucApsd = 1;
+			break;
+		case BI_DIR_TS: /* Bi-directional */
+			if ((prPmProf->ucBmpTriggerAC & BIT(eAc)) &&
+				(prPmProf->ucBmpDeliveryAC & BIT(eAc)))
+				prTspecParam->rTsInfo.ucApsd = 1;
+			break;
+		}
+	} else
+		prTspecParam->rTsInfo.ucApsd = ucApsdSetting;
+	*(--pucCmd) = 0;
+	pucCmd -= 5;
+	DBGLOG(OID, INFO, "%s %d %d %d %d %d %d %d %u %u %u %u %u %u %u %u %u %u %u 0x%04x %d\n", pucCmd,
+		prTspecParam->ucDialogToken, prTspecParam->rTsInfo.ucTid, prTspecParam->rTsInfo.ucDirection,
+		prTspecParam->rTsInfo.ucApsd, prTspecParam->rTsInfo.ucuserPriority, prTspecParam->u2NominalMSDUSize,
+		prTspecParam->u2MaxMSDUsize, prTspecParam->u4MaxSvcIntv, prTspecParam->u4MinSvcIntv,
+		prTspecParam->u4InactIntv, prTspecParam->u4SpsIntv, prTspecParam->u4SvcStartTime,
+		prTspecParam->u4MinDataRate, prTspecParam->u4MeanDataRate, prTspecParam->u4PeakDataRate,
+		prTspecParam->u4MaxBurstSize, prTspecParam->u4DelayBound, prTspecParam->u4MinPHYRate,
+		prTspecParam->u2Sba, prTspecParam->u2MediumTime);
+	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgTsOperate, MSG_SEND_METHOD_BUF);
+	return WLAN_STATUS_SUCCESS;
+}
+
+/* It's a Integretion Test function for RadioMeasurement. If you found errors during doing Radio Measurement,
+** you can run this IT function with iwpriv wlan0 set_str_cmd \"31 RM-IT xx,xx,xx, xx\"
+** xx,xx,xx,xx is the RM request frame data
+*/
+WLAN_STATUS
+wlanoidRadioMeasurementIT(P_ADAPTER_T prAdapter, PVOID pvBuffer, UINT_32 u4BufferLen,
+									  PUINT_32 pu4InfoLen)
+{
+	SW_RFB_T rSwRfb;
+	UINT_8 aucPacket[200] = {0,};
+	PUINT_8 pucSavedPtr = NULL;
+	PUINT_8 pucItem = NULL;
+	UINT_8 j = 0;
+	INT_8 i = 0;
+	UINT_8 ucByte;
+
+	if (!pvBuffer) {
+		DBGLOG(OID, ERROR, "pvBuffer is NULL\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
+	pucItem = strtok_r((CHAR *)pvBuffer, ",", (CHAR **)&pucSavedPtr);
+	while (pucItem) {
+		ucByte = *pucItem;
+		i = 0;
+		while (ucByte) {
+			if (i > 1) {
+				DBGLOG(OID, ERROR, "more than 2 char for one byte\n");
+				return WLAN_STATUS_FAILURE;
+			} else if (i == 1)
+				aucPacket[j] <<= 4;
+			if (ucByte >= '0' && ucByte <= '9')
+				aucPacket[j] |= ucByte - '0';
+			else if (ucByte >= 'a' && ucByte <= 'f')
+				aucPacket[j] |= ucByte - 'a' + 10;
+			else if (ucByte >= 'A' && ucByte <= 'F')
+				aucPacket[j] |= ucByte - 'A' + 10;
+			else {
+				DBGLOG(OID, ERROR, "not a hex char %c\n", ucByte);
+				return WLAN_STATUS_FAILURE;
+			}
+			ucByte = *(++pucItem);
+			i++;
+		}
+		j++;
+		pucItem = strtok_r(NULL, ",", (CHAR **)&pucSavedPtr);
+	}
+	DBGLOG(OID, INFO, "Dump RadioMeasurement IT packet, len %d\n", j);
+	dumpMemory8(aucPacket, j);
+	if (j < WLAN_MAC_MGMT_HEADER_LEN) {
+		DBGLOG(OID, ERROR, "packet length %d less than mac header 24\n", j);
+		return WLAN_STATUS_FAILURE;
+	}
+	rSwRfb.pvHeader = (PVOID)&aucPacket[0];
+	rSwRfb.u2PacketLen = j;
+	rSwRfb.u2HeaderLen = WLAN_MAC_MGMT_HEADER_LEN;
+	rlmProcessRadioMeasurementRequest(prAdapter, &rSwRfb);
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanoidDumpUapsdSetting(P_ADAPTER_T prAdapter, PVOID pvBuffer, UINT_32 u4BufferLen,
+									  PUINT_32 pu4InfoLen)
+{
+	PUINT_8 pucCmd = (PUINT_8)pvBuffer;
+	UINT_8 ucFinalSetting = 0;
+	UINT_8 ucStaticSetting = 0;
+	P_PM_PROFILE_SETUP_INFO_T prPmProf = NULL;
+
+	if (!pvBuffer) {
+		DBGLOG(OID, ERROR, "pvBuffer is NULL\n");
+		return WLAN_STATUS_FAILURE;
+	}
+	prPmProf = &prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX].rPmProfSetupInfo;
+	ucStaticSetting = (prPmProf->ucBmpDeliveryAC << 4) | prPmProf->ucBmpTriggerAC;
+	ucFinalSetting = wmmCalculateUapsdSetting(prAdapter);
+	*pu4InfoLen = kalSnprintf(pucCmd, u4BufferLen,
+		"\nStatic Uapsd Setting:0x%02x\nFinal Uapsd Setting:0x%02x", ucStaticSetting, ucFinalSetting);
+	return WLAN_STATUS_SUCCESS;
+}
 

@@ -1179,7 +1179,8 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 			cfg80211_disconnected(prGlueInfo->prDevHandler, u2DeauthReason, NULL, 0,
 				eStatus == WLAN_STATUS_MEDIA_DISCONNECT_LOCALLY ? true : false, GFP_KERNEL);
 		}
-
+		kalMemFree(prGlueInfo->rFtIeForTx.pucIEBuf, VIR_MEM_TYPE, prGlueInfo->rFtIeForTx.u4IeLength);
+		kalMemZero(&prGlueInfo->rFtIeForTx, sizeof(prGlueInfo->rFtIeForTx));
 		prGlueInfo->eParamMediaStateIndicated = PARAM_MEDIA_STATE_DISCONNECTED;
 
 		break;
@@ -1286,7 +1287,9 @@ kalIndicateStatusAndComplete(IN P_GLUE_INFO_T prGlueInfo, IN WLAN_STATUS eStatus
 					}
 				}
 				break;
-
+			case ENUM_STATUS_TYPE_FT_AUTH_STATUS:
+				cfg80211_ft_event(prGlueInfo->prDevHandler, &prGlueInfo->rFtEventParam);
+				break;
 			default:
 				/* case ENUM_STATUS_TYPE_MEDIA_STREAM_MODE */
 				/*
@@ -2474,6 +2477,10 @@ BOOLEAN kalRetrieveNetworkAddress(IN P_GLUE_INFO_T prGlueInfo, IN OUT PARAM_MAC_
 		BOOLEAN fgIsReadError = FALSE;
 
 #if !CFG_TC1_FEATURE
+		if (!EQUAL_MAC_ADDR(&prGlueInfo->rRegInfo.aucMacAddr, "\x00\x00\x00\x00\x00\x00")) {
+			COPY_MAC_ADDR(prMacAddr, &prGlueInfo->rRegInfo.aucMacAddr);
+			return TRUE;
+		}
 		for (i = 0; i < MAC_ADDR_LEN; i += 2) {
 			if (kalCfgDataRead16(prGlueInfo,
 					     OFFSET_OF(WIFI_CFG_PARAM_STRUCT, aucMacAddress) + i,

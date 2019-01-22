@@ -122,6 +122,8 @@ VOID saaFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 VOID saaSendDisconnectMsgHandler(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec,
 				IN P_BSS_INFO_T prAisBssInfo, IN ENUM_AA_FRM_TYPE_T eFrmType);
+
+VOID saaFsmRunEventFTContinue(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 /*----------------------------------------------------------------------------*/
 /* Routines in aaa_fsm.c                                                      */
 /*----------------------------------------------------------------------------*/

@@ -131,16 +131,20 @@ VOID secInit(IN P_ADAPTER_T prAdapter, IN UINT_8 ucNetTypeIdx)
 	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[5].dot11RSNAConfigAuthenticationSuite =
 	    RSN_AKM_SUITE_PSK;
 
-#if CFG_SUPPORT_802_11W
 	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[6].dot11RSNAConfigAuthenticationSuite =
-	    RSN_AKM_SUITE_802_1X_SHA256;
+		RSN_AKM_SUITE_FT_802_1X;
 	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[7].dot11RSNAConfigAuthenticationSuite =
-	    RSN_AKM_SUITE_PSK_SHA256;
+		RSN_AKM_SUITE_FT_PSK;
 	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[8].dot11RSNAConfigAuthenticationSuite =
-	    WFA_AKM_SUITE_OSEN;
+		WFA_AKM_SUITE_OSEN;
+
+#if CFG_SUPPORT_802_11W
+	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[9].dot11RSNAConfigAuthenticationSuite =
+	    RSN_AKM_SUITE_802_1X_SHA256;
+	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[10].dot11RSNAConfigAuthenticationSuite =
+	    RSN_AKM_SUITE_PSK_SHA256;
 #else
-	prAdapter->rMib.dot11RSNAConfigAuthenticationSuitesTable[6].dot11RSNAConfigAuthenticationSuite =
-	    WFA_AKM_SUITE_OSEN;
+
 #endif
 
 	for (i = 0; i < MAX_NUM_SUPPORTED_AKM_SUITES; i++) {
