@@ -538,7 +538,8 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 		if (command.regRequest.count > CMDQ_MAX_DUMP_REG_COUNT ||
 			!command.blockSize ||
-			command.blockSize > CMDQ_MAX_COMMAND_SIZE)
+			command.blockSize > CMDQ_MAX_COMMAND_SIZE ||
+			command.prop_size > CMDQ_MAX_USER_PROP_SIZE)
 			return -EINVAL;
 
 		/* copy from user again if property is given */
@@ -576,7 +577,8 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		if (copy_from_user(&job, (void *)param, sizeof(struct cmdqJobStruct)))
 			return -EFAULT;
 
-		if (job.command.blockSize > CMDQ_MAX_COMMAND_SIZE)
+		if (job.command.blockSize > CMDQ_MAX_COMMAND_SIZE ||
+			job.command.prop_size > CMDQ_MAX_USER_PROP_SIZE)
 			return -EINVAL;
 
 		/* copy from user again if property is given */
