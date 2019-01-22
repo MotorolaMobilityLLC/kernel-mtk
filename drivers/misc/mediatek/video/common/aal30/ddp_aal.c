@@ -39,7 +39,7 @@
 #else
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799) || \
-	defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
+	defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6763)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -1776,7 +1776,7 @@ static int aal_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* aal is DCM , do nothing */
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6763)
 	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
@@ -1826,7 +1826,7 @@ static int aal_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* aal is DCM , do nothing */
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6763)
 	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 #else
 #ifdef ENABLE_CLK_MGR
@@ -1859,7 +1859,7 @@ static int aal_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	if (disp_aal_check_module(module, __func__, __LINE__) == false)
 		return 0;
 
-#if !defined(CONFIG_MACH_MT6759)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 	aal_clock_on(module, cmq_handle);
 #endif
 #if defined(CONFIG_MACH_MT6799)
@@ -1887,7 +1887,7 @@ static int aal_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 static int aal_deinit(enum DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if !defined(CONFIG_MACH_MT6759)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 	aal_clock_off(module, cmq_handle);
 #endif
 	return 0;

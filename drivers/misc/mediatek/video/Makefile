@@ -33,6 +33,7 @@ else
 	obj-$(CONFIG_MACH_ELBRUS) += common/
 	obj-$(CONFIG_MACH_MT8167) += common/
 	obj-$(CONFIG_MACH_MT6799) += common/
-  obj-$(CONFIG_MACH_MT6759) += common/
+	obj-$(CONFIG_MACH_MT6759) += common/
+	obj-$(CONFIG_MACH_MT6758) += common/
 endif
 
