@@ -987,7 +987,7 @@ static unsigned int fbt_get_max_userlimit_freq(void)
 static unsigned long long fbt_get_t2wnt(long long t_cpu_target,
 		unsigned long long queue_start)
 {
-	unsigned long long next_vsync, queue_end;
+	unsigned long long next_vsync, queue_end, rescue_length;
 	unsigned long long t2wnt = 0ULL;
 
 	mutex_lock(&fbt_mlock);
@@ -1000,13 +1000,16 @@ static unsigned long long fbt_get_t2wnt(long long t_cpu_target,
 		return 0ULL;
 	}
 
-	if (next_vsync - queue_start < g_rescue_distance) {
+	rescue_length = t_cpu_target * (unsigned long long)rescue_percent;
+	rescue_length = div64_u64(rescue_length, 100ULL);
+
+	if (next_vsync - queue_start < rescue_length) {
 		FPSGO_LOGI("ERROR %d\n", __LINE__);
 		mutex_unlock(&fbt_mlock);
 		return 0ULL;
 	}
 
-	t2wnt = next_vsync - g_rescue_distance - queue_start;
+	t2wnt = next_vsync - rescue_length - queue_start;
 
 	mutex_unlock(&fbt_mlock);
 
