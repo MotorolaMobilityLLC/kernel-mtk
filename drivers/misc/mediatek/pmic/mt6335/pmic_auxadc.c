@@ -163,7 +163,7 @@ int mt6335_get_auxadc_value(u8 channel)
 		adc_result = (reg_val * auxadc_channel->r_val *
 					VOLTAGE_FULL_RANGE) / 32768;
 
-	pr_info("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
+	PMICLOG("[%s] ch = %d, reg_val = 0x%x, adc_result = %d\n",
 				__func__, channel, reg_val, adc_result);
 	return adc_result;
 }
@@ -194,11 +194,11 @@ void mt6335_auxadc_init(void)
 	pmic_set_register_value(PMIC_AUXADC_DATA_REUSE_EN, 1);
 	pmic_set_register_value(PMIC_AUXADC_TRIM_CH0_SEL, 0);
 
-	pr_info("****[%s] DONE\n", __func__);
+	pr_err("****[%s] DONE\n", __func__);
 
 	/* update VBIF28 by AUXADC */
 	g_pmic_pad_vbif28_vol = mt6335_get_auxadc_value(AUXADC_LIST_VBIF);
-	pr_info("****[%s] VBIF28 = %d\n", __func__, pmic_get_vbif28_volt());
+	pr_err("****[%s] VBIF28 = %d\n", __func__, pmic_get_vbif28_volt());
 }
 EXPORT_SYMBOL(mt6335_auxadc_init);
 

@@ -4434,7 +4434,7 @@ const PMU_FLAG_TABLE_ENTRY pmu_flags_table[] = {
 unsigned short pmic_set_register_value(PMU_FLAGS_LIST_ENUM flagname, unsigned int val)
 {
 	const PMU_FLAG_TABLE_ENTRY *pFlag = &pmu_flags_table[flagname];
-	unsigned short ret = 0;
+	unsigned int ret = 0;
 
 	if (pFlag->flagname != flagname) {
 		pr_err("[%s]pmic flag idx error\n", __func__);
@@ -4444,7 +4444,8 @@ unsigned short pmic_set_register_value(PMU_FLAGS_LIST_ENUM flagname, unsigned in
 	ret = pmic_config_interface((pFlag->offset), (unsigned int)(val),
 		(unsigned int)(pFlag->mask), (unsigned int)(pFlag->shift));
 	if (ret != 0) {
-		pr_err("[%s] error ret: %d when set register value: %d\n", __func__, ret, val);
+		pr_err("[%s] error ret: %d when set Reg[0x%x]=0x%x\n", __func__,
+			 ret, (pFlag->offset), val);
 		return ret;
 	}
 
@@ -4456,12 +4457,13 @@ unsigned short pmic_get_register_value(PMU_FLAGS_LIST_ENUM flagname)
 {
 	const PMU_FLAG_TABLE_ENTRY *pFlag = &pmu_flags_table[flagname];
 	unsigned int val;
-	unsigned short ret;
+	unsigned int ret;
 
 	ret = pmic_read_interface((unsigned int)pFlag->offset, &val,
 		(unsigned int)(pFlag->mask), (unsigned int)(pFlag->shift));
 	if (ret != 0) {
-		pr_err("[%s] error ret: %d\n", __func__, ret);
+		pr_err("[%s] error ret: %d when get Reg[0x%x]\n", __func__,
+			ret, (pFlag->offset));
 		return ret;
 	}
 
