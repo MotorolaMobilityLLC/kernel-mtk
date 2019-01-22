@@ -38,5 +38,6 @@ extern int smi_clk_disable(enum SMI_MASTER_ID master_id, char *user_name, int en
 extern void smi_common_ostd_setting(int enable);
 extern unsigned long get_larb_base_addr(int larb_id);
 extern unsigned long get_common_base_addr(void);
+extern unsigned int smi_clk_get_ref_count(const unsigned int reg_indx);
 #endif
 #endif

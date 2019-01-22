@@ -45,6 +45,7 @@
 #include "smi_reg.h"
 #include "smi_debug.h"
 #include "smi_configuration.h"
+#include "smi_public.h"
 #include "m4u.h"
 
 #define SMI_LOG_TAG "smi"
@@ -111,7 +112,7 @@ void smi_dumpCommonDebugMsg(int output_gce_buffer)
 	unsigned int smiCommonClkEnabled = 1;
 
 	u4Base = get_common_base_addr();
-	smiCommonClkEnabled = get_larb_clock_count(0);
+	smiCommonClkEnabled = smi_clk_get_ref_count(SMI_COMMON_REG_INDX);
 	/* SMI COMMON dump */
 	if (u4Base == SMI_ERROR_ADDR) {
 		SMIMSG3(output_gce_buffer, "Doesn't support reg dump for SMI common\n");
@@ -134,7 +135,7 @@ void smi_dumpLarbDebugMsg(unsigned int u4Index, int output_gce_buffer)
 	unsigned int larbClkEnabled = 1;
 
 	u4Base = get_larb_base_addr(u4Index);
-	larbClkEnabled = get_larb_clock_count(u4Index);
+	larbClkEnabled = smi_clk_get_ref_count(u4Index);
 	if (u4Base == SMI_ERROR_ADDR) {
 		SMIMSG3(output_gce_buffer, "Doesn't support reg dump for Larb%d\n", u4Index);
 		return;
@@ -277,41 +278,47 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 	unsigned long u4Base = 0;
 
 	unsigned char smi_larb_busy_count[SMI_LARB_NUM] = { 0 };
-	int smi_larb_clk_status[SMI_LARB_NUM] = { 0 };
 
 	/* dump resister and save resgister status */
 	smi_dumpRegDebugMsg(output_gce_buffer);
+
+	smi_bus_enable(SMI_LARB0_REG_INDX, "SMI_DEBUG");
+#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_VIN)
+	smi_bus_enable(SMI_LARB1_REG_INDX, "SMI_DEBUG");
+#endif
 	for (dump_time = 0; dump_time < max_count; dump_time++) {
 		u4Base = get_common_base_addr();
-
 		/* check smi common busy register */
-		if (u4Base != SMI_ERROR_ADDR && get_larb_clock_count(0) != 0 &&
-			(M4U_ReadReg32(u4Base, 0x440) & (1 << 0)) == 0)
-			smi_common_busy_count++;
-		if (show_dump != 0)
-			smi_dumpCommonDebugMsg(output_gce_buffer);
+		if (u4Base != SMI_ERROR_ADDR && smi_clk_get_ref_count(SMI_COMMON_REG_INDX) != 0) {
+			if ((M4U_ReadReg32(u4Base, 0x440) & (1 << 0)) == 0)
+				smi_common_busy_count++;
+			if (show_dump != 0)
+				smi_dumpCommonDebugMsg(output_gce_buffer);
+		}
 
 		for (u4Index = 0; u4Index < SMI_LARB_NUM; u4Index++) {
-			smi_larb_clk_status[u4Index] = get_larb_clock_count(u4Index);
-
 			u4Base = get_larb_base_addr(u4Index);
 			/* check smi larb busy register */
-			if (u4Base != SMI_ERROR_ADDR && smi_larb_clk_status[u4Index] != 0 &&
-				M4U_ReadReg32(u4Base, 0x0) != 0)
-				smi_larb_busy_count[u4Index]++;
-
-			if (show_dump != 0 && get_larb_clock_count(u4Index) != 0) {
-				smi_dumpLarbDebugMsg(u4Index, output_gce_buffer);
-				smi_dump_larb_m4u_register(u4Index);
+			if (u4Base != SMI_ERROR_ADDR && smi_clk_get_ref_count(u4Index) != 0) {
+				if (M4U_ReadReg32(u4Base, 0x0) != 0)
+					smi_larb_busy_count[u4Index]++;
+				if (show_dump != 0) {
+					smi_dumpLarbDebugMsg(u4Index, output_gce_buffer);
+					smi_dump_larb_m4u_register(u4Index);
+				}
 			}
 		}
 	}
+#if defined(SMI_WHI) || defined(SMI_ALA) || defined(SMI_VIN)
+	smi_bus_disable(SMI_LARB1_REG_INDX, "SMI_DEBUG");
+#endif
+	smi_bus_disable(SMI_LARB0_REG_INDX, "SMI_DEBUG");
 	/* Show the checked result */
 	for (i = 0; i < SMI_LARB_NUM; i++) {	/* Check each larb */
 		if (SMI_DGB_LARB_SELECT(larbs, i)) {
 			/* larb i has been selected */
 			/* Get status code */
-			status_code = get_status_code(smi_larb_clk_status[i], smi_larb_busy_count[i],
+			status_code = get_status_code(smi_clk_get_ref_count(i), smi_larb_busy_count[i],
 					smi_common_busy_count, max_count);
 
 			/* Send the debug message according to the final result */
@@ -347,7 +354,7 @@ void smi_dump_larb_m4u_register(int larb)
 	unsigned int larbClkEnabled = 0;
 
 	u4Base = get_larb_base_addr(larb);
-	larbClkEnabled = get_larb_clock_count(larb);
+	larbClkEnabled = smi_clk_get_ref_count(larb);
 
 	if (u4Base == SMI_ERROR_ADDR) {
 		SMIMSG("Doesn't support reg dump for Larb%d\n", larb);

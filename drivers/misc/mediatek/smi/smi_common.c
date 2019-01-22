@@ -140,18 +140,7 @@ static struct device *smiDeviceUevent;
 
 static struct cdev *pSmiDev;
 
-#define SMI_COMMON_REG_INDX 0
-#define SMI_LARB0_REG_INDX 1
-#define SMI_LARB1_REG_INDX 2
-#define SMI_LARB2_REG_INDX 3
-#define SMI_LARB3_REG_INDX 4
-#define SMI_LARB4_REG_INDX 5
-#define SMI_LARB5_REG_INDX 6
-#define SMI_LARB6_REG_INDX 7
-
 #if defined(SMI_D2)
-#define SMI_REG_REGION_MAX 4
-
 static const unsigned int larb_port_num[SMI_LARB_NUM] = { SMI_LARB0_PORT_NUM,
 	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM
 };
@@ -167,8 +156,6 @@ static unsigned short int *larb_port_backup[SMI_LARB_NUM] = {
 
 
 #elif defined(SMI_D1)
-#define SMI_REG_REGION_MAX 5
-
 static const unsigned int larb_port_num[SMI_LARB_NUM] = { SMI_LARB0_PORT_NUM,
 	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM, SMI_LARB3_PORT_NUM
 };
@@ -183,8 +170,6 @@ static unsigned short int *larb_port_backup[SMI_LARB_NUM] = {
 
 
 #elif defined(SMI_D3)
-#define SMI_REG_REGION_MAX 5
-
 static const unsigned int larb_port_num[SMI_LARB_NUM] = { SMI_LARB0_PORT_NUM,
 	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM, SMI_LARB3_PORT_NUM
 };
@@ -199,9 +184,6 @@ static unsigned short int *larb_port_backup[SMI_LARB_NUM] = {
 	larb0_port_backup, larb1_port_backup, larb2_port_backup, larb3_port_backup
 };
 #elif defined(SMI_R)
-
-#define SMI_REG_REGION_MAX 3
-
 static const unsigned int larb_port_num[SMI_LARB_NUM] = { SMI_LARB0_PORT_NUM,
 	SMI_LARB1_PORT_NUM
 };
@@ -215,9 +197,6 @@ static unsigned short int *larb_port_backup[SMI_LARB_NUM] = {
 };
 
 #elif defined(SMI_J)
-#define SMI_REG_REGION_MAX 5
-
-
 static const unsigned int larb_port_num[SMI_LARB_NUM] = { SMI_LARB0_PORT_NUM,
 	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM, SMI_LARB3_PORT_NUM
 };
@@ -233,9 +212,6 @@ static unsigned short int *larb_port_backup[SMI_LARB_NUM] = { larb0_port_backup,
 };
 
 #elif defined(SMI_EV)
-#define SMI_REG_REGION_MAX 8
-
-
 static const unsigned int larb_port_num[SMI_LARB_NUM] = { SMI_LARB0_PORT_NUM,
 	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM, SMI_LARB3_PORT_NUM, SMI_LARB4_PORT_NUM,
 	SMI_LARB5_PORT_NUM, SMI_LARB6_PORT_NUM
@@ -256,17 +232,12 @@ static unsigned short int *larb_port_backup[SMI_LARB_NUM] = { larb0_port_backup,
 };
 
 #elif defined(SMI_OLY)
-#define SMI_REG_REGION_MAX 7
-
-
 static const unsigned int larb_port_num[SMI_LARB_NUM] = { SMI_LARB0_PORT_NUM,
 	SMI_LARB1_PORT_NUM, SMI_LARB2_PORT_NUM, SMI_LARB3_PORT_NUM, SMI_LARB4_PORT_NUM,
 	SMI_LARB5_PORT_NUM
 };
 
 #elif defined(SMI_DUMMY)
-#define SMI_REG_REGION_MAX 1
-
 static const unsigned int larb_port_num[SMI_LARB_NUM] = {0};
 static unsigned short int *larb_port_backup[SMI_LARB_NUM] = {0};
 
@@ -432,10 +403,10 @@ struct clk *get_smi_clk(char *smi_clk_name)
 	return smi_clk_ptr;
 }
 
-unsigned int get_larb_clock_count(const int larb_id)
+unsigned int smi_clk_get_ref_count(const unsigned int reg_indx)
 {
-	if (larb_id < SMI_LARB_NUM)
-		return (unsigned int)atomic_read(&(larbs_clock_count[larb_id]));
+	if (reg_indx < SMI_REG_REGION_MAX)
+		return (unsigned int)atomic_read(&(larbs_clock_count[reg_indx]));
 	return 0;
 }
 
@@ -2119,9 +2090,10 @@ static int smi_probe(struct platform_device *pdev)
 
 char *smi_get_region_name(unsigned int region_indx)
 {
-	switch (region_indx) {
-	case SMI_COMMON_REG_INDX:
+	if (region_indx == SMI_COMMON_REG_INDX)
 		return "smi_common";
+
+	switch (region_indx) {
 	case SMI_LARB0_REG_INDX:
 		return "larb0";
 	case SMI_LARB1_REG_INDX:
