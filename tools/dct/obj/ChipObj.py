@@ -21,6 +21,7 @@ from GpioObj import GpioObj_whitney
 from GpioObj import GpioObj_MT6759
 from GpioObj import GpioObj_MT6739
 from GpioObj import GpioObj_MT6771
+from GpioObj import GpioObj_MT6763
 from EintObj import EintObj
 from EintObj import EintObj_MT6750S
 from EintObj import EintObj_MT6739
@@ -334,7 +335,7 @@ class MT6763(ChipObj):
 
     def init_objs(self):
         ChipObj.init_objs(self)
-        ChipObj.replace_obj(self, 'gpio', GpioObj_MT6759())
+        ChipObj.replace_obj(self, 'gpio', GpioObj_MT6763())
         ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
         ChipObj.refresh_eintGpioMap(self)
 
