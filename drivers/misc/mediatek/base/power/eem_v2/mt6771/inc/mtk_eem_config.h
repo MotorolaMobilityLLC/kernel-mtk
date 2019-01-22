@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2016 MediaTek Inc.
  *
@@ -15,12 +14,7 @@
 #define _MTK_EEM_CONFIG_H_
 
 /* CONFIG (SW related) */
-<<<<<<< HEAD
-/* FIX me */
-#define EEM_NOT_READY	(0)
-=======
 /* #define EEM_NOT_READY	(0) */
->>>>>>> e6dee05... [ALPS03593845] EEM: Add 2line ptp support
 #define CONFIG_EEM_SHOWLOG	(0)
 #define EN_ISR_LOG		(0)
 #define EEM_BANK_SOC		(0) /* use voltage bin, so disable it */
@@ -33,7 +27,7 @@
 #define EEM_LOCKTIME_LIMIT	(3000)
 #define ENABLE_EEMCTL0		(1)
 #define ENABLE_LOO			(0)
-#define ENABLE_INIT1_STRESS	(0)
+#define ENABLE_INIT1_STRESS	(1)
 
 #define EEM_OFFSET
 #define SET_PMIC_VOLT (1)
