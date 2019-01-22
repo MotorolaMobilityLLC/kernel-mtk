@@ -27,7 +27,7 @@
 /*#include <mach/mt_typedefs.h>*/
 #endif
 
-#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 #include "port_ipc.h"
 #include "ccci_ipc_task_ID.h"
 #include "ccci_ipc_msg_id.h"
@@ -767,7 +767,7 @@ ssize_t musb_sib_enable_store(struct device *dev, struct device_attribute *attr,
 }
 #endif
 
-#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 u8 musb_get_usb_addr(void)
 {
 	if (_mu3d_musb != NULL && _mu3d_musb->set_address == true)
@@ -788,44 +788,6 @@ int musb_md_msg_hdlr(ipc_ilm_t *ilm)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(musb_md_msg_hdlr);
-
-int musb_notify_md_bus_event(struct musb *musb, u32 bus_event)
-{
-	int ret = 0;
-	/* skip notify md bus event */
-	#if 0
-	os_printk(K_NOTICE, "%s\n", __func__);
-	if (musb->gadget_driver->md_status_qry(&musb->g)) {
-		ipc_ilm_t ilm;
-		local_para_struct *p_local_para = NULL;
-
-		p_local_para = kzalloc(sizeof(local_para_struct) + sizeof(u32), GFP_KERNEL);
-		if (p_local_para != NULL) {
-			memset(&ilm, 0, sizeof(ilm));
-			memset(p_local_para, 0, sizeof(local_para_struct) + sizeof(u32));
-			p_local_para->msg_len = sizeof(local_para_struct) + sizeof(u32);
-			memcpy(p_local_para->data, &bus_event, sizeof(u32));
-
-			os_printk(K_NOTICE, "%s, bus_event(%u)\n", __func__, bus_event);
-
-			ilm.src_mod_id = AP_MOD_USB;
-			ilm.dest_mod_id = MD_MOD_UFPM;
-			ilm.msg_id = IPC_MSG_ID_UFPM_NOTIFY_MD_BUS_EVENT_REQ;
-			ilm.local_para_ptr = p_local_para;
-
-			ret = ccci_ipc_send_ilm(0, &ilm);
-			kfree(p_local_para);
-		} else {
-			os_printk(K_ERR, "%s alloc fail!!\n", __func__);
-			ret = -ENOMEM;
-		}
-	}
-
-	os_printk(K_NOTICE, "%s ret=%d\n", __func__, ret);
-	#endif
-	return ret;
-}
-EXPORT_SYMBOL_GPL(musb_notify_md_bus_event);
 
 int musb_enable_md_fast_path(u32 mode)
 {

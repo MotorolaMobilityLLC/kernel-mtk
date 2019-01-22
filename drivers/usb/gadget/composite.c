@@ -2275,7 +2275,7 @@ void composite_resume(struct usb_gadget *gadget)
 	cdev->suspended = 0;
 }
 
-#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 static int
 composite_md_msg_hdlr(struct usb_gadget *gadget, int msg_id, void *data)
 {
@@ -2327,7 +2327,7 @@ static const struct usb_gadget_driver composite_driver_template = {
 
 	.suspend	= composite_suspend,
 	.resume		= composite_resume,
-#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 	.md_msg_hdlr = composite_md_msg_hdlr,
 	.md_status_qry = composite_md_status_qry,
 #endif
