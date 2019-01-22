@@ -65,10 +65,10 @@ enum {
 };
 
 enum mtk_afe_tdm_ch_start {
-	AFE_TDM_CH_START_O30_O31 = 0,
+	AFE_TDM_CH_START_O28_O29 = 0,
+	AFE_TDM_CH_START_O30_O31,
 	AFE_TDM_CH_START_O32_O33,
 	AFE_TDM_CH_START_O34_O35,
-	AFE_TDM_CH_START_O36_O37,
 	AFE_TDM_CH_ZERO,
 };
 
@@ -102,6 +102,11 @@ enum {
 	MTK_AFE_DEBUGFS_NUM,
 };
 
+enum {
+	MTK_AFE_TDM_OUT_HDMI = 0,
+	MTK_AFE_TDM_OUT_I2S,
+	MTK_AFE_TDM_OUT_TDM,
+};
 
 struct snd_pcm_substream;
 
@@ -168,6 +173,7 @@ struct mtk_afe {
 	int daibt_on_ref_cnt;
 	int irq_mode_ref_cnt[MTK_AFE_IRQ_NUM];
 	int top_cg_ref_cnt[MTK_AFE_CG_NUM];
+	unsigned int tdm_out_mode;
 	/* locks */
 	spinlock_t afe_ctrl_lock;
 #ifdef IDLE_TASK_DRIVER_API

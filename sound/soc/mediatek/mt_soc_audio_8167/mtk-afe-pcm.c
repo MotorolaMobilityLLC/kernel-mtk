@@ -1199,51 +1199,78 @@ static int mtk_afe_hdmi_prepare(struct snd_pcm_substream *substream,
 
 	val = AFE_TDM_CON1_BCK_INV |
 	      AFE_TDM_CON1_1_BCK_DELAY |
-	      AFE_TDM_CON1_MSB_ALIGNED | /* I2S mode */
-	      AFE_TDM_CON1_WLEN_32BIT |
-	      AFE_TDM_CON1_32_BCK_CYCLES |
-	      AFE_TDM_CON1_LRCK_WIDTH(32);
+	      AFE_TDM_CON1_MSB_ALIGNED;
+
+	/* bit width related */
+	if ((afe->tdm_out_mode == MTK_AFE_TDM_OUT_HDMI) ||
+	    (snd_pcm_format_width(runtime->format) > 16)) {
+		val |= AFE_TDM_CON1_WLEN_32BIT |
+		       AFE_TDM_CON1_32_BCK_CYCLES |
+		       AFE_TDM_CON1_LRCK_WIDTH(32);
+	} else {
+		val |= AFE_TDM_CON1_WLEN_16BIT |
+		       AFE_TDM_CON1_16_BCK_CYCLES |
+		       AFE_TDM_CON1_LRCK_WIDTH(16);
+	}
+
+	/* channel per sdata */
+	if ((afe->tdm_out_mode == MTK_AFE_TDM_OUT_TDM) && (runtime->channels > 4))
+		val |= AFE_TDM_CON1_8CH_PER_SDATA;
+	else if ((afe->tdm_out_mode == MTK_AFE_TDM_OUT_TDM) && (runtime->channels > 2))
+		val |= AFE_TDM_CON1_4CH_PER_SDATA;
+	else
+		val |= AFE_TDM_CON1_2CH_PER_SDATA;
 
 	regmap_update_bits(afe->regmap, AFE_TDM_CON1, ~(u32)AFE_TDM_CON1_EN, val);
 
 	/* set tdm2 config */
-	switch (runtime->channels) {
-	case 1:
-	case 2:
-		val = AFE_TDM_CH_START_O30_O31;
+	if ((afe->tdm_out_mode == MTK_AFE_TDM_OUT_HDMI) ||
+	    (afe->tdm_out_mode == MTK_AFE_TDM_OUT_I2S)) {
+		switch (runtime->channels) {
+		case 1:
+		case 2:
+			val = AFE_TDM_CH_START_O28_O29;
+			val |= (AFE_TDM_CH_ZERO << 4);
+			val |= (AFE_TDM_CH_ZERO << 8);
+			val |= (AFE_TDM_CH_ZERO << 12);
+			break;
+		case 3:
+		case 4:
+			val = AFE_TDM_CH_START_O28_O29;
+			val |= (AFE_TDM_CH_START_O30_O31 << 4);
+			val |= (AFE_TDM_CH_ZERO << 8);
+			val |= (AFE_TDM_CH_ZERO << 12);
+			break;
+		case 5:
+		case 6:
+			val = AFE_TDM_CH_START_O28_O29;
+			val |= (AFE_TDM_CH_START_O30_O31 << 4);
+			val |= (AFE_TDM_CH_START_O32_O33 << 8);
+			val |= (AFE_TDM_CH_ZERO << 12);
+			break;
+		case 7:
+		case 8:
+			val = AFE_TDM_CH_START_O28_O29;
+			val |= (AFE_TDM_CH_START_O30_O31 << 4);
+			val |= (AFE_TDM_CH_START_O32_O33 << 8);
+			val |= (AFE_TDM_CH_START_O34_O35 << 12);
+			break;
+		default:
+			val = 0;
+		}
+	} else {
+		/* MTK_AFE_TDM_OUT_TDM */
+		val = AFE_TDM_CH_START_O28_O29;
 		val |= (AFE_TDM_CH_ZERO << 4);
 		val |= (AFE_TDM_CH_ZERO << 8);
 		val |= (AFE_TDM_CH_ZERO << 12);
-		break;
-	case 3:
-	case 4:
-		val = AFE_TDM_CH_START_O30_O31;
-		val |= (AFE_TDM_CH_START_O32_O33 << 4);
-		val |= (AFE_TDM_CH_ZERO << 8);
-		val |= (AFE_TDM_CH_ZERO << 12);
-		break;
-	case 5:
-	case 6:
-		val = AFE_TDM_CH_START_O30_O31;
-		val |= (AFE_TDM_CH_START_O32_O33 << 4);
-		val |= (AFE_TDM_CH_START_O34_O35 << 8);
-		val |= (AFE_TDM_CH_ZERO << 12);
-		break;
-	case 7:
-	case 8:
-		val = AFE_TDM_CH_START_O30_O31;
-		val |= (AFE_TDM_CH_START_O32_O33 << 4);
-		val |= (AFE_TDM_CH_START_O34_O35 << 8);
-		val |= (AFE_TDM_CH_START_O36_O37 << 12);
-		break;
-	default:
-		val = 0;
 	}
 
-	regmap_update_bits(afe->regmap, AFE_TDM_CON2, 0x0000ffff, val);
+	regmap_update_bits(afe->regmap, AFE_TDM_CON2,
+			   AFE_TDM_CON2_SOUT_MASK, val);
 
 	regmap_update_bits(afe->regmap, AFE_HDMI_OUT_CON0,
-			   0x000000f0, runtime->channels << 4);
+			   AFE_HDMI_OUT_CON0_CH_MASK, runtime->channels << 4);
 	return 0;
 }
 
@@ -1258,14 +1285,22 @@ static int mtk_afe_hdmi_trigger(struct snd_pcm_substream *substream, int cmd,
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
+		/* TODO: remove PDN_SPDF */
 		regmap_update_bits(afe->regmap, AUDIO_TOP_CON0,
 				   AUD_TCON0_PDN_HDMI | AUD_TCON0_PDN_SPDF, 0);
 
 		/* TODO: align the connection logic with HDMI Tx */
 		/* set connections:  O28~O35: L/R/LFE/C/LS/RS/CH7/CH8 */
-		regmap_write(afe->regmap, AFE_HDMI_CONN0,
+		if (afe->tdm_out_mode == MTK_AFE_TDM_OUT_HDMI)
+			regmap_write(afe->regmap, AFE_HDMI_CONN0,
 			     AFE_HDMI_CONN0_O28_I28 | AFE_HDMI_CONN0_O29_I29 |
 			     AFE_HDMI_CONN0_O30_I31 | AFE_HDMI_CONN0_O31_I30 |
+			     AFE_HDMI_CONN0_O32_I32 | AFE_HDMI_CONN0_O33_I33 |
+			     AFE_HDMI_CONN0_O34_I34 | AFE_HDMI_CONN0_O35_I35);
+		else
+			regmap_write(afe->regmap, AFE_HDMI_CONN0,
+			     AFE_HDMI_CONN0_O28_I28 | AFE_HDMI_CONN0_O29_I29 |
+			     AFE_HDMI_CONN0_O30_I30 | AFE_HDMI_CONN0_O31_I31 |
 			     AFE_HDMI_CONN0_O32_I32 | AFE_HDMI_CONN0_O33_I33 |
 			     AFE_HDMI_CONN0_O34_I34 | AFE_HDMI_CONN0_O35_I35);
 
@@ -2474,6 +2509,9 @@ static int mtk_afe_pcm_dev_probe(struct platform_device *pdev)
 		goto err_platform;
 
 	mtk_afe_init_debugfs(afe);
+
+	/* TODO: parse tdm out mode from dts */
+	afe->tdm_out_mode = MTK_AFE_TDM_OUT_HDMI;
 
 	dev_info(&pdev->dev, "MTK AFE driver initialized.\n");
 	return 0;
