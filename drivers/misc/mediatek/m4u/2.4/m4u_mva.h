@@ -45,12 +45,6 @@
 #define END_ALIGNED(mva, nr) (GET_END_INDEX(mva, nr) | MVA_BLOCK_ALIGN_MASK)
 #define MVA_GRAPH_BLOCK_NR_ALIGNED(size) ((size + MVA_BLOCK_ALIGN_MASK) >> MVA_BLOCK_SIZE_ORDER)
 
-/*if requeired size isn't aligned to block size, the actual requeired block nr should
- *be equal to the nr of requeired size aligned to block size plus 1.
- */
-#define MVA_FIX_REGION_BLOCK_NR(size) \
-		((size % MVA_BLOCK_SIZE == 0) ? \
-		(size >> MVA_BLOCK_SIZE_ORDER) : ((size + MVA_BLOCK_ALIGN_MASK)>>MVA_BLOCK_SIZE_ORDER))
 #define MVA_GRAPH_NR_TO_SIZE(nr) (nr << MVA_BLOCK_SIZE_ORDER)
 
 /*reserved mva region for vpu exclusive use*/
@@ -71,4 +65,5 @@ int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv);
 unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv);
 unsigned int m4u_do_mva_alloc_fix(unsigned long va, unsigned int mva, unsigned int size, void *priv);
 unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, unsigned int size, void *priv);
+unsigned int get_last_free_graph_idx_in_stage1_region(void);
 #endif

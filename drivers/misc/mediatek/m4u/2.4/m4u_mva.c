@@ -485,14 +485,18 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	* Or, all graph in grap region is busy.
 	*/
 	if (s == fix_index1) {
-		/* stage 3: jump vpu reserved region and find it in graph range [0x800-0xFFF ]
+		/* stage 3: jump vpu reserved region and find it in graph range [VPU_FIX_MVA_END + 1-0xFFF ]
 		 * allocate from common region directly.
 		 */
 stage3:
 		M4UINFO("stage 3: stopped cursor(%d) on stage 2\n", s);
 		/*workaround for disp fb*/
+#ifdef WORKAROUND_FOR_DISPLAY_FB
 		s = MVAGRAPH_INDEX(VPU_FIX_MVA_END + 1) +
 			(mvaGraph[MVAGRAPH_INDEX(VPU_FIX_MVA_END + 1)] & MVA_BLOCK_NR_MASK);
+#else
+		s = MVAGRAPH_INDEX(VPU_FIX_MVA_END + 1);
+#endif
 		for (; (s < (MVA_MAX_BLOCK_NR + 1)) && (mvaGraph[s] < nr);
 			s += (mvaGraph[s] & MVA_BLOCK_NR_MASK))
 			;
@@ -1004,4 +1008,18 @@ int m4u_do_mva_free(unsigned int mva, unsigned int size)
 		M4UMSG("check_reserved_region_integrity error when free mva(0x%x)\n", mva);
 
 	return 0;
+}
+
+/*for debug*/
+unsigned int get_last_free_graph_idx_in_stage1_region(void)
+{
+	unsigned int index, nr;
+	unsigned long irq_flags;
+
+	index = MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START) - 1;
+	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
+	nr = MVA_GET_NR(index);
+	index = GET_START_INDEX(index, nr);
+	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+	return index;
 }
