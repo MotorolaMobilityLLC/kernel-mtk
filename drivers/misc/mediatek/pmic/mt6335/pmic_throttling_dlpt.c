@@ -176,14 +176,14 @@ void exec_low_battery_callback(LOW_BATTERY_LEVEL low_battery_level)
 	}
 }
 
-void lbat_min_en_setting(int en_val)
+static void lbat_min_en_setting(int en_val)
 {
 	pmic_set_register_value(PMIC_AUXADC_LBAT_EN_MIN, en_val);
 	pmic_set_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MIN, en_val);
 	pmic_enable_interrupt(INT_BAT_L, en_val, "pmic_throttling_dlpt");
 }
 
-void lbat_max_en_setting(int en_val)
+static void lbat_max_en_setting(int en_val)
 {
 	pmic_set_register_value(PMIC_AUXADC_LBAT_EN_MAX, en_val);
 	pmic_set_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MAX, en_val);
