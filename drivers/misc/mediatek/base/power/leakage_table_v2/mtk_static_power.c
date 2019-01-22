@@ -533,7 +533,7 @@ int mt_spower_get_efuse_lkg(int dev)
 {
 	int id = 0;
 
-	if (dev > MTK_SPOWER_MAX)
+	if (dev >= MTK_SPOWER_MAX)
 		return 0;
 
 	id = spower_raw[dev].leakage_id;
