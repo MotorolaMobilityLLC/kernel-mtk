@@ -14,7 +14,7 @@
 #ifndef __CMDQ_CORE_VIRTUAL_H__
 #define __CMDQ_CORE_VIRTUAL_H__
 
-#include "cmdq_def.h"
+#include "cmdq_mdp_common.h"
 
 /* get subsys LSB in arg_a */
 typedef uint32_t(*CmdqGetSubsysLSBArgA) (void);
@@ -80,7 +80,7 @@ typedef void (*CmdqEnableGCEClockLocked) (bool enable);
 typedef const char *(*CmdqParseErrorModule) (const struct TaskStruct *pTask);
 
 /* dump mmsys config */
-typedef void (*CmdqDumpMMSYSConfig) (void);
+/* typedef void (*CmdqDumpMMSYSConfig) (void); */
 
 /* dump clock gating */
 typedef void (*CmdqDumpClockGating) (void);
