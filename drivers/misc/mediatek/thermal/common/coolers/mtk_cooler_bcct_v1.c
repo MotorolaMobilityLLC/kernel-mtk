@@ -54,13 +54,13 @@ mt_get_charger_type(void)
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 int __attribute__ ((weak))
-charger_manager_set_charging_current_limit(struct charger_consumer *consumer, int idx, int charging_current)
+charger_manager_set_charging_current_limit(struct charger_consumer *consumer, int idx, int charging_current_uA)
 {
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
 int __attribute__ ((weak))
-charger_manager_set_input_current_limit(struct charger_consumer *consumer, int idx, int input_current)
+charger_manager_set_input_current_limit(struct charger_consumer *consumer, int idx, int input_current_uA)
 {
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
@@ -119,14 +119,15 @@ charger_manager_get_current_charging_type(struct charger_consumer *consumer)
 	return -1;
 }
 int __attribute__ ((weak))
-charger_manager_get_pe30_input_current_limit(struct charger_consumer *consumer, int idx, int *input_current)
+charger_manager_get_pe30_input_current_limit(struct charger_consumer *consumer, int idx, int *input_current_uA,
+			int *min_current_uA, int *max_current_uA)
 {
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return -1;
 }
 
 int __attribute__ ((weak))
-charger_manager_set_pe30_input_current_limit(struct charger_consumer *consumer, int idx, int input_current)
+charger_manager_set_pe30_input_current_limit(struct charger_consumer *consumer, int idx, int input_current_uA)
 {
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return -1;
@@ -325,7 +326,8 @@ static void chrlmt_set_limit_handler(struct work_struct *work)
 		mtk_cooler_bcct_dprintk_always("%s %d\n", __func__
 				, chrlmt_pep30_input_curr_limit);
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
-		charger_manager_set_pe30_input_current_limit(pthermal_consumer, 0, chrlmt_pep30_input_curr_limit);
+		charger_manager_set_pe30_input_current_limit(pthermal_consumer, 0,
+			chrlmt_pep30_input_curr_limit * 1000);
 #else
 		mtk_pep30_set_charging_current_limit(chrlmt_pep30_input_curr_limit);
 #endif
@@ -334,8 +336,8 @@ static void chrlmt_set_limit_handler(struct work_struct *work)
 				, chrlmt_chr_input_curr_limit, chrlmt_bat_chr_curr_limit);
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
-		charger_manager_set_input_current_limit(pthermal_consumer, 0, chrlmt_chr_input_curr_limit);
-		charger_manager_set_charging_current_limit(pthermal_consumer, 0, chrlmt_bat_chr_curr_limit);
+		charger_manager_set_input_current_limit(pthermal_consumer, 0, chrlmt_chr_input_curr_limit * 1000);
+		charger_manager_set_charging_current_limit(pthermal_consumer, 0, chrlmt_bat_chr_curr_limit * 1000);
 #else
 #ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 		set_chr_input_current_limit(chrlmt_chr_input_curr_limit);
@@ -532,6 +534,9 @@ static void bat_chg_info_update(void)
 	int ret = 0;
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
+	int pep30_max_input_curr_limit_uA = 0;
+	int pep30_min_input_curr_limit_uA = 0;
+
 		bat_info_soc = battery_get_bat_soc();
 		bat_info_uisoc = battery_get_bat_uisoc();
 	if (cl_bcct_klog_on == 1) {
@@ -542,7 +547,11 @@ static void bat_chg_info_update(void)
 		if (ret)
 			mtk_cooler_bcct_dprintk("bat_info_aicr: %d err: %d\n", bat_info_aicr, ret);
 	}
-		charger_manager_get_pe30_input_current_limit(pthermal_consumer, 0, &bat_info_pep30_curr_limit);
+		charger_manager_get_pe30_input_current_limit(pthermal_consumer, 0, &bat_info_pep30_curr_limit,
+			&pep30_min_input_curr_limit_uA, &pep30_max_input_curr_limit_uA);
+
+		abcct_pep30_max_input_curr_limit = pep30_max_input_curr_limit_uA / 1000;
+		abcct_pep30_min_input_curr_limit = pep30_min_input_curr_limit_uA / 1000;
 #else
 		ret = mtk_chr_get_soc(&bat_info_soc);
 		if (ret)
