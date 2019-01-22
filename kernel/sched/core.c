@@ -2918,7 +2918,7 @@ static void sched_freq_tick(int cpu)
 	 */
 	scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 	if (capacity_curr < sum_capacity_reqs(cpu_util(cpu), scr))
-		set_cfs_cpu_capacity(cpu, true, capacity_max);
+		set_cfs_cpu_capacity(cpu, true, capacity_max, SCHE_ONESHOT);
 }
 #else
 static inline void sched_freq_tick(int cpu) { }

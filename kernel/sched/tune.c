@@ -672,7 +672,7 @@ schedtune_add_cluster_nrg(
 		 cpumask_pr_args(cluster_cpus));
 
 	min_pwr = sg->sge->idle_states[sg->sge->nr_idle_states - 1].power;
-	max_pwr = sg->sge->cap_states[sg->sge->nr_cap_states - 1].power;
+	max_pwr = sg->sge->cap_states[sg->sge->nr_cap_states - 1].dyn_pwr;
 	pr_info("schedtune: %-17s min_pwr: %5lu max_pwr: %5lu\n",
 		str, min_pwr, max_pwr);
 
@@ -690,7 +690,7 @@ schedtune_add_cluster_nrg(
 			/* Get the CPU group */
 			sg2 = sd2->groups;
 			min_pwr = sg2->sge->idle_states[sg2->sge->nr_idle_states - 1].power;
-			max_pwr = sg2->sge->cap_states[sg2->sge->nr_cap_states - 1].power;
+			max_pwr = sg2->sge->cap_states[sg2->sge->nr_cap_states - 1].dyn_pwr;
 
 			ste->min_power += min_pwr;
 			ste->max_power += max_pwr;

@@ -1538,6 +1538,16 @@ static inline unsigned long capacity_curr_of(int cpu)
 
 #endif
 
+#define MET_SCHED_DEBUG 0
+
+enum cpu_dvfs_sched_type {
+	SCHE_INVALID,
+	SCHE_VALID,
+	SCHE_ONESHOT,
+
+	NUM_SCHE_TYPE
+};
+
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
 #define capacity_max SCHED_CAPACITY_SCALE
 extern unsigned int capacity_margin;
@@ -1549,44 +1559,49 @@ static inline bool sched_freq(void)
 }
 
 DECLARE_PER_CPU(struct sched_capacity_reqs, cpu_sched_capacity_reqs);
-void update_cpu_capacity_request(int cpu, bool request);
+void update_cpu_capacity_request(int cpu, bool request, int type);
 
 static inline void set_cfs_cpu_capacity(int cpu, bool request,
-					unsigned long capacity)
+					unsigned long capacity, int type)
 {
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).cfs != capacity) {
 		per_cpu(cpu_sched_capacity_reqs, cpu).cfs = capacity;
-		update_cpu_capacity_request(cpu, request);
+		update_cpu_capacity_request(cpu, request, type);
 	}
 }
 
 static inline void set_rt_cpu_capacity(int cpu, bool request,
-				       unsigned long capacity)
+				       unsigned long capacity,
+					int type)
 {
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).rt != capacity) {
 		per_cpu(cpu_sched_capacity_reqs, cpu).rt = capacity;
-		update_cpu_capacity_request(cpu, request);
+		update_cpu_capacity_request(cpu, request, type);
 	}
 }
 
 static inline void set_dl_cpu_capacity(int cpu, bool request,
-				       unsigned long capacity)
+				       unsigned long capacity,
+					int type)
 {
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).dl != capacity) {
 		per_cpu(cpu_sched_capacity_reqs, cpu).dl = capacity;
-		update_cpu_capacity_request(cpu, request);
+		update_cpu_capacity_request(cpu, request, type);
 	}
 }
 #else
 static inline bool sched_freq(void) { return false; }
 static inline void set_cfs_cpu_capacity(int cpu, bool request,
-					unsigned long capacity)
+					unsigned long capacity,
+					int type)
 { }
 static inline void set_rt_cpu_capacity(int cpu, bool request,
-				       unsigned long capacity)
+				       unsigned long capacity,
+					int type)
 { }
 static inline void set_dl_cpu_capacity(int cpu, bool request,
-				       unsigned long capacity)
+				       unsigned long capacity,
+					int type)
 { }
 #endif
 
