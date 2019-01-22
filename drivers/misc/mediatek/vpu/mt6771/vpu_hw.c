@@ -1957,7 +1957,7 @@ out:
 
 int vpu_shut_down(int core)
 {
-	int ret;
+	int ret = 0;
 	/*int i = 0;*/
 	/*bool shut_down = true;*/
 
