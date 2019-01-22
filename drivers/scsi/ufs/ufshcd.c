@@ -4653,7 +4653,10 @@ static inline void ufshcd_rpmb_add(struct ufs_hba *hba)
 
 	ufshcd_rpmb_dev_ops.reliable_wr_cnt = rw_size;
 
-	scsi_device_get(hba->sdev_ufs_rpmb);
+	/* MTK Patch: Add handling for scsi_device_get */
+	if (unlikely(scsi_device_get(hba->sdev_ufs_rpmb)))
+		goto out_put_dev;
+
 	rdev = rpmb_dev_register(hba->dev, &ufshcd_rpmb_dev_ops);
 	if (IS_ERR(rdev)) {
 		dev_warn(hba->dev, "%s: cannot register to rpmb %ld\n",
