@@ -20,6 +20,7 @@
 #ifdef CONFIG_ARM64
 #include <asm/cpu_ops.h>
 #endif
+#include <mt-plat/mtk_devinfo.h>
 
 #include "mtk_hps_internal.h"
 
@@ -184,6 +185,26 @@ int hps_cpu_init(void)
 	}
 	hps_ops_init();
 	/*========================================================================================================*/
+
+#if TURBO_CORE_SUPPORT
+#ifdef CONFIG_MACH_MT6757
+	switch ((get_devinfo_with_index(30) & 0x000000E0) >> 5) {
+	case 3:
+	case 7:
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+		hps_sys.turbo_core_supp = 1;
+#else
+		hps_sys.turbo_core_supp = 0;
+#endif
+		break;
+	case 0:
+	case 1:
+	default:
+		hps_sys.turbo_core_supp = 0;
+		break;
+	}
+#endif
+#endif	/* TURBO_CORE_SUPPORT */
 
 	return r;
 }

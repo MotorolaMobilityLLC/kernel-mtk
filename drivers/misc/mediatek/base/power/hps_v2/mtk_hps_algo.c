@@ -274,8 +274,6 @@ int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val)
 	int i, cpu, root_cluster;
 
 	mutex_lock(&hps_ctxt.para_lock);
-	if (core_val == 0)
-		goto out;
 	for (i = 0; i < hps_sys->cluster_num; i++)
 		hps_sys->cluster_info[i].target_core_num = 0;
 
@@ -307,12 +305,28 @@ int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val)
 out:				/* Add base value of per-cluster by default */
 	for (i = 0; i < hps_sys->cluster_num; i++)
 		hps_sys->cluster_info[i].target_core_num += hps_sys->cluster_info[i].base_value;
+
+#if TURBO_CORE_SUPPORT
+	if (hps_sys->turbo_core_supp && root_cluster == 1 &&
+	    hps_sys->cluster_info[1].target_core_num > hps_sys->cluster_info[1].base_value &&
+	    hps_sys->cluster_info[1].target_core_num == hps_sys->cluster_info[1].core_num &&
+	    hps_sys->cluster_info[0].target_core_num < hps_sys->cluster_info[0].limit_value) {
+		/* move 1 core from L to LL */
+		hps_sys->cluster_info[1].target_core_num--;
+		hps_sys->cluster_info[0].target_core_num++;
+	}
+#endif
 	mutex_unlock(&hps_ctxt.para_lock);
 	return 0;
 }
 
 void hps_define_root_cluster(struct hps_sys_struct *hps_sys)
 {
+#if ROOT_CLUSTER_FROM_PPM
+	mutex_lock(&hps_ctxt.para_lock);
+	hps_sys->root_cluster_id = hps_sys->ppm_root_cluster;
+	mutex_unlock(&hps_ctxt.para_lock);
+#else
 	int i;
 
 	mutex_lock(&hps_ctxt.para_lock);
@@ -328,6 +342,7 @@ void hps_define_root_cluster(struct hps_sys_struct *hps_sys)
 		}
 	}
 	mutex_unlock(&hps_ctxt.para_lock);
+#endif
 }
 
 void hps_set_funct_ctrl(void)
@@ -344,6 +359,11 @@ void hps_set_funct_ctrl(void)
 		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_HVY_TSK);
 	else
 		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_HVY_TSK);
+
+	if (!hps_sys.turbo_core_supp)
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_EFUSE);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_EFUSE);
 }
 
 void hps_algo_main(void)
@@ -382,19 +402,6 @@ void hps_algo_main(void)
 	/*Back up limit and base value for check */
 
 	mutex_lock(&hps_ctxt.para_lock);
-	if ((hps_sys.cluster_info[0].base_value == 0) &&
-		(hps_sys.cluster_info[1].base_value == 0) &&
-		(hps_sys.cluster_info[2].base_value == 0) &&
-		(hps_sys.cluster_info[0].limit_value == 0) &&
-		(hps_sys.cluster_info[1].limit_value == 0) &&
-		(hps_sys.cluster_info[2].limit_value == 0)) {
-		hps_sys.cluster_info[0].base_value = hps_sys.cluster_info[0].ref_base_value = 1;
-		hps_sys.cluster_info[1].base_value = hps_sys.cluster_info[1].ref_base_value = 0;
-		hps_sys.cluster_info[2].base_value = hps_sys.cluster_info[2].ref_base_value = 0;
-		hps_sys.cluster_info[0].limit_value = hps_sys.cluster_info[0].ref_limit_value = 4;
-		hps_sys.cluster_info[1].limit_value = hps_sys.cluster_info[1].ref_limit_value = 4;
-		hps_sys.cluster_info[2].limit_value = hps_sys.cluster_info[2].ref_limit_value = 2;
-	}
 	for (i = 0; i < hps_sys.cluster_num; i++) {
 		hps_sys.cluster_info[i].base_value = hps_sys.cluster_info[i].ref_base_value;
 		hps_sys.cluster_info[i].limit_value = hps_sys.cluster_info[i].ref_limit_value;
@@ -407,7 +414,6 @@ void hps_algo_main(void)
 		    hps_get_cluster_cpus(hps_sys.cluster_info[i].cluster_id);
 		hps_sys.total_online_cores += hps_sys.cluster_info[i].online_core_num;
 	}
-
 
 	mutex_unlock(&hps_ctxt.para_lock);
 	/* Determine root cluster */
@@ -579,13 +585,11 @@ HPS_END:
 				 str_criteria_limit, str_criteria_base, hps_sys.up_load_avg,
 				 hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
 				 str_target);
-#ifdef _TRACE_
 				trace_hps_update(hps_sys.action_id, str_online, hps_ctxt.cur_loads,
 						 hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk,
 						 str_criteria_limit, str_criteria_base,
 						 hps_sys.up_load_avg, hps_sys.down_load_avg,
 						 hps_sys.tlp_avg, hps_sys.rush_cnt, str_target);
-#endif
 			}
 			hps_ctxt_reset_stas_nolock();
 		}
