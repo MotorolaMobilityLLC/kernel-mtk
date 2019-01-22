@@ -508,6 +508,12 @@ static int mtk_deep_buffer_dl_ack(struct snd_pcm_substream *substream)
 			size_1 = word_size_align((afe_block_t->u4BufferSize - u4WriteIdx));
 			size_2 = word_size_align((copy_size - size_1));
 
+			if (size_1 < 0 || size_2 < 0) {
+				pr_debug("%s, copy size error!!\n", __func__);
+				pr_debug("u4BufferSize %d, u4WriteIdx %d\n", afe_block_t->u4BufferSize, u4WriteIdx);
+				return 0;
+			}
+
 			memset_io(afe_block_t->pucVirtBufAddr + u4WriteIdx, 0, size_1);
 			memset_io(afe_block_t->pucVirtBufAddr, 0, size_2);
 			/*
