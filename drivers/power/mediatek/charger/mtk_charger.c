@@ -81,10 +81,17 @@ static DEFINE_MUTEX(consumer_mutex);
 
 /*=============== fix me==================*/
 
+bool __attribute__((weak)) is_power_ext(void)
+{
+	if (IS_ENABLED(CONFIG_POWER_EXT))
+		return true;
+	else
+		return false;
+}
 
 void BATTERY_SetUSBState(int usb_state_value)
 {
-	if (IS_ENABLED(CONFIG_POWER_EXT)) {
+	if (is_power_ext()) {
 		chr_err("[BATTERY_SetUSBState] in FPGA/EVB, no service\r\n");
 	} else {
 		if ((usb_state_value < USB_SUSPEND) || ((usb_state_value > USB_CONFIGURED))) {
@@ -1424,12 +1431,14 @@ static int charger_routine_thread(void *arg)
 		charger_update_data(info);
 		charger_check_status(info);
 		kpoc_power_off_check(info);
-#ifndef CONFIG_POWER_EXT
-		if (is_charger_on == true) {
-			if (info->do_algorithm)
-				info->do_algorithm(info);
+
+		if (is_power_ext() == false) {
+			if (is_charger_on == true) {
+				if (info->do_algorithm)
+					info->do_algorithm(info);
+			}
 		}
-#endif
+
 		spin_lock_irqsave(&info->slock, flags);
 		wake_unlock(&info->charger_wakelock);
 		spin_unlock_irqrestore(&info->slock, flags);
