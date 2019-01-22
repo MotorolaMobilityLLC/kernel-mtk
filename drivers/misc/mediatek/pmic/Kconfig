@@ -99,6 +99,15 @@ config MTK_EXTBUCK
 	  Set y to support this driver.
 	  Set n and choose other chip.
 
+config EXTBUCK_MT6311
+	bool "MediaTek I2C Ext Buck MT6311"
+	depends on MTK_EXTBUCK
+	default n
+	---help---
+	  MediaTek(R) I2C interface External BUCK MT6311 driver.
+	  External Buck for PROC1.
+	  Regulator Driver.
+
 if MTK_LDVT
 config MTK_LDVT_PMIC
 	bool "MediaTek PMIC driver for LDVT"
