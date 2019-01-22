@@ -184,6 +184,7 @@ static bool bis_evb;
 static int g_disable_mtkbattery;
 
 static struct gauge_device *gauge_dev;
+static void disable_fg(void);
 
 bool is_fg_disable(void)
 {
@@ -207,9 +208,10 @@ bool check_isevb_dtsi(struct platform_device *dev)
 
 bool is_evb_load(void)
 {
-	if (IS_ENABLED(CONFIG_POWER_EXT) || (g_disable_mtkbattery == 1))
+	if (IS_ENABLED(CONFIG_POWER_EXT) || (g_disable_mtkbattery == 1)) {
+		disable_fg();
 		return true;
-	else
+	} else
 		return false;
 }
 
