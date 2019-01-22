@@ -27,6 +27,7 @@
 #define EEM_ENABLE         (0)
 #define UPDATE_TO_UPOWER   (0)
 #define EEM_LOCKTIME_LIMIT (3000)
+/* #define EEM_CUR_VOLT_PROC_SHOW */
 /* #define SET_VOLT */
 /* #define EEM_LOG_TIMER */
 /* #define EEM_LOCK_TOO_LONG */
@@ -50,7 +51,7 @@
 
 /* only used for ap ptp */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	#define EEM_ENABLE_TINYSYS_SSPM (0)
+	#define EEM_ENABLE_TINYSYS_SSPM (1)
 #else
 	#define EEM_ENABLE_TINYSYS_SSPM (0)
 #endif
@@ -58,6 +59,26 @@
 #define SET_PMIC_VOLT_TO_DVFS (0)
 #define LOG_INTERVAL	(2LL * NSEC_PER_SEC)
 #define ITurbo (0)
+
+/* fake devinfo for early verification */
+/* big */
+#define DEVINFO_0 0x10E0660C
+#define DEVINFO_1 0x004E0061
+/* cci */
+#define DEVINFO_2 0x10E077F1
+#define DEVINFO_3 0x004E0061
+/* gpu */
+#define DEVINFO_4 0x10C856E1
+#define DEVINFO_5 0x00240061
+/* LL */
+#define DEVINFO_6 0x10E097C0
+#define DEVINFO_7 0x004E0061
+/* L */
+#define DEVINFO_8 0x10E081E2
+#define DEVINFO_9 0x004E0061
+/* soc */
+#define DEVINFO_10 0x00000000
+#define DEVINFO_11 0x00000000
 
 /*****************************************
 * eem sw setting
