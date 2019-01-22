@@ -760,6 +760,7 @@ void fg_custom_init(void)
 	fg_cust_data.loading_2_en = LOADING_2_EN;
 	fg_cust_data.diff_iavg_th = DIFF_IAVG_TH;
 
+	fg_cust_data.shutdown_gauge0 = SHUTDOWN_GAUGE0;
 	fg_cust_data.shutdown_1_time = SHUTDOWN_1_TIME;
 	fg_cust_data.shutdown_gauge1_xmins = SHUTDOWN_GAUGE1_XMINS;
 
@@ -971,7 +972,7 @@ int BattVoltToTemp(int dwVolt)
 	long long TRes;
 	int sBaTTMP = -100;
 	/*int vbif28 = pmic_get_auxadc_value(AUXADC_LIST_VBIF);*/
-	int vbif28 = 2800;	/* 2 side: BattVoltToTemp, TempToBattVolt */
+	int vbif28 = RBAT_PULL_UP_VOLT;	/* 2 side: BattVoltToTemp, TempToBattVolt */
 
 	/* TRes_temp = ((long long)RBAT_PULL_UP_R*(long long)dwVolt) / (RBAT_PULL_UP_VOLT-dwVolt); */
 	/* TRes = (TRes_temp * (long long)RBAT_PULL_DOWN_R)/((long long)RBAT_PULL_DOWN_R - TRes_temp); */
@@ -1215,6 +1216,19 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			bm_debug("[fg_res] BATTERY_METER_CMD_GET_BOOT_BATTERY_PLUG_STATUS = %d\n", is_bat_plugout);
 		}
 		break;
+	case FG_DAEMON_CMD_IS_BAT_EXIST:
+		{
+			int is_bat_exist = 0;
+
+			battery_meter_ctrl(BATTERY_METER_CMD_GET_IS_BAT_EXIST, &is_bat_exist);
+
+			ret_msg->fgd_data_len += sizeof(is_bat_exist);
+			memcpy(ret_msg->fgd_data, &is_bat_exist, sizeof(is_bat_exist));
+
+			bm_debug("[fg_res] FG_DAEMON_CMD_IS_BAT_EXIST = %d\n", is_bat_exist);
+		}
+		break;
+
 	case FG_DAEMON_CMD_IS_BAT_CHARGING:
 		{
 			int is_bat_charging = 0;
@@ -1477,14 +1491,21 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 		memcpy(&fg_bat_tmp_int_gap, &msg->fgd_data[0], sizeof(fg_bat_tmp_int_gap));
 
-		fg_bat_tmp_int_ht = TempToBattVolt(tmp + fg_bat_tmp_int_gap, 1);
-		fg_bat_tmp_int_lt = TempToBattVolt(tmp - fg_bat_tmp_int_gap, 0);
+		fg_bat_tmp_ht = tmp + fg_bat_tmp_int_gap;
+		fg_bat_tmp_lt = tmp - fg_bat_tmp_int_gap;
+#if 0
+		fg_bat_tmp_int_ht = TempToBattVolt(fg_bat_tmp_ht, 1);
+		fg_bat_tmp_int_lt = TempToBattVolt(fg_bat_tmp_lt, 0);
 
 		battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_LT, &fg_bat_tmp_int_lt);
 		battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_HT, &fg_bat_tmp_int_ht);
 
 		bm_warn("[fg_res][FG_TEMP_INT] FG_DAEMON_CMD_SET_FG_BAT_TMP_GAP = %d ht:%d lt:%d\n", fg_bat_tmp_int_gap,
 			fg_bat_tmp_int_ht, fg_bat_tmp_int_lt);
+#endif
+		bm_warn("[fg_res][FG_TEMP_INT] FG_DAEMON_CMD_SET_FG_BAT_TMP_GAP = %d ht:%d lt:%d\n", fg_bat_tmp_int_gap,
+			fg_bat_tmp_ht, fg_bat_tmp_lt);
+
 	}
 	break;
 
@@ -1883,9 +1904,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 		memcpy(&intr_no, &msg->fgd_data[0], sizeof(intr_no));
 
-
 		battery_meter_ctrl(BATTERY_METER_CMD_GET_FG_HW_INFO, &intr_no);
-
 		ret_msg->fgd_data_len += sizeof(intr_no);
 		memcpy(ret_msg->fgd_data, &intr_no, sizeof(intr_no));
 		pr_err("[fg_res] FG_DAEMON_CMD_GET_HW_INFO = %d\n", intr_no);
@@ -2172,22 +2191,29 @@ void fg_bat_temp_int_init(void)
 	battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_HT, &fg_bat_new_ht);
 }
 
-void fg_bat_temp_int_h_handler(void)
+void fg_bat_temp_int_internal(int sw_intr)
 {
 	int tmp = force_get_tbat(true);
 	int fg_bat_temp_int_en;
 	int fg_bat_new_ht, fg_bat_new_lt;
 
-	pr_err("[fg_bat_temp_int_h_handler][FG_TEMP_INT]%d %d %d\n",
+	pr_err("[fg_bat_temp_int_internal][FG_TEMP_INT]%d %d %d\n",
 		tmp, fg_bat_tmp_ht, fg_bat_tmp_lt);
 
 	fg_bat_temp_int_en = 0;
 	battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_EN, &fg_bat_temp_int_en);
 
-	if (tmp >= fg_bat_tmp_ht)
-		wakeup_fg_algo(FG_INTR_BAT_TMP_HT);
-	else if (tmp <= fg_bat_tmp_lt)
-		wakeup_fg_algo(FG_INTR_BAT_TMP_LT);
+	if (sw_intr == 1) {
+		if (tmp >= fg_bat_tmp_ht)
+			wakeup_fg_algo(FG_INTR_BAT_SW_TMP_HT);
+		else if (tmp <= fg_bat_tmp_lt)
+			wakeup_fg_algo(FG_INTR_BAT_SW_TMP_LT);
+	} else {
+		if (tmp >= fg_bat_tmp_ht)
+			wakeup_fg_algo(FG_INTR_BAT_TMP_HT);
+		else if (tmp <= fg_bat_tmp_lt)
+			wakeup_fg_algo(FG_INTR_BAT_TMP_LT);
+	}
 
 	fg_bat_new_ht = TempToBattVolt(tmp + 1, 1);
 	fg_bat_new_lt = TempToBattVolt(tmp - 1, 0);
@@ -2201,29 +2227,38 @@ void fg_bat_temp_int_h_handler(void)
 
 void fg_bat_temp_int_l_handler(void)
 {
+	pr_err("[fg_bat_temp_int_l_handler]\n");
+	fg_bat_temp_int_internal(0);
+}
+
+void fg_bat_temp_int_h_handler(void)
+{
+	pr_err("[fg_bat_temp_int_h_handler]\n");
+	fg_bat_temp_int_internal(0);
+}
+
+void fg_bat_sw_temp_int_l_handler(void)
+{
+	pr_err("[fg_bat_sw_temp_int_l_handler]\n");
+	fg_bat_temp_int_internal(1);
+}
+
+void fg_bat_sw_temp_int_h_handler(void)
+{
+	pr_err("[fg_bat_sw_temp_int_h_handler]\n");
+	fg_bat_temp_int_internal(1);
+}
+
+void fg_bat_temp_int_sw_check(void)
+{
 	int tmp = force_get_tbat(true);
-	int fg_bat_temp_int_en;
-	int fg_bat_new_ht, fg_bat_new_lt;
 
-	pr_err("[fg_bat_temp_int_l_handler][FG_TEMP_INT]%d %d %d\n",
-		tmp, fg_bat_tmp_ht, fg_bat_tmp_lt);
-
-	fg_bat_temp_int_en = 0;
-	battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_EN, &fg_bat_temp_int_en);
+	pr_err("[fg_bat_temp_int_sw_check] tmp %d lt %d ht %d\n", tmp, fg_bat_tmp_lt, fg_bat_tmp_ht);
 
 	if (tmp >= fg_bat_tmp_ht)
-		wakeup_fg_algo(FG_INTR_BAT_TMP_HT);
+		fg_bat_sw_temp_int_h_handler();
 	else if (tmp <= fg_bat_tmp_lt)
-		wakeup_fg_algo(FG_INTR_BAT_TMP_LT);
-
-	fg_bat_new_ht = TempToBattVolt(tmp + 1, 1);
-	fg_bat_new_lt = TempToBattVolt(tmp - 1, 0);
-
-	battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_LT, &fg_bat_new_lt);
-	battery_meter_ctrl(BATTERY_METER_CMD_SET_FG_BAT_TMP_INT_HT, &fg_bat_new_ht);
-
-	battery_main.BAT_batt_temp = tmp;
-	battery_update(&battery_main);
+		fg_bat_sw_temp_int_l_handler();
 }
 
 void fg_drv_update_hw_status(void)
@@ -2242,7 +2277,9 @@ void fg_drv_update_hw_status(void)
 	battery_meter_ctrl(BATTERY_METER_CMD_GET_FG_HW_CAR, &fg_coulomb_new);
 	battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_BAT_SENSE, &bat_vol_new);
 	battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_CHARGER, &chr_vol_new);
-	battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &hwocv_new);
+/*	battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &hwocv_new);*/
+	hwocv_new = 1234;
+
 	battery_meter_ctrl(BATTERY_METER_CMD_GET_BOOT_BATTERY_PLUG_STATUS, &plugout_status_new);
 	battery_meter_ctrl(BATTERY_METER_CMD_GET_TIME, &time);
 
@@ -2303,6 +2340,8 @@ void fg_iavg_int_ht_handler(void)
 		FG_status.iavg_intr_flag);
 
 	wakeup_fg_algo(FG_INTR_IAVG);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_iavg_int_lt_handler(void)
@@ -2316,6 +2355,8 @@ void fg_iavg_int_lt_handler(void)
 		FG_status.iavg_intr_flag);
 
 	wakeup_fg_algo(FG_INTR_IAVG);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_cycle_int_handler(void)
@@ -2340,6 +2381,7 @@ void fg_cycle_int_handler(void)
 	battery_meter_ctrl(BATTERY_METER_CMD_SET_CYCLE_INTERRUPT, &bat_cycle_thr);
 #endif
 	wakeup_fg_algo(FG_INTR_BAT_CYCLE);
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_bat_int1_h_handler(void)
@@ -2358,6 +2400,8 @@ void fg_bat_int1_h_handler(void)
 
 	wakeup_fg_algo(FG_INTR_BAT_INT1_HT);
 	battery_update_psd(&battery_main);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_bat_int1_l_handler(void)
@@ -2376,6 +2420,8 @@ void fg_bat_int1_l_handler(void)
 	wakeup_fg_algo(FG_INTR_BAT_INT1_LT);
 
 	battery_update_psd(&battery_main);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_bat_int2_h_handler(void)
@@ -2403,6 +2449,8 @@ void fg_bat_int2_h_handler(void)
 
 
 	wakeup_fg_algo(FG_INTR_BAT_INT2_HT);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_bat_int2_l_handler(void)
@@ -2428,6 +2476,8 @@ void fg_bat_int2_l_handler(void)
 		upmu_get_reg_value(0x2020));
 
 	wakeup_fg_algo(FG_INTR_BAT_INT2_LT);
+
+	fg_bat_temp_int_sw_check();
 }
 
 
@@ -2439,6 +2489,8 @@ void fg_zcv_int_handler(void)
 
 	pr_err("[fg_zcv_int_handler] car:%d\n",	fg_coulomb);
 	wakeup_fg_algo(FG_INTR_FG_ZCV);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_bat_plugout_int_handler(void)
@@ -2447,12 +2499,16 @@ void fg_bat_plugout_int_handler(void)
 	battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
 	wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
 	battery_update(&battery_main);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_charger_in_handler(void)
 {
 	pr_err("[fg_charger_in_handler]\n");
 	wakeup_fg_algo(FG_INTR_CHARGER_IN);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_vbat2_l_int_handler(void)
@@ -2463,6 +2519,8 @@ void fg_vbat2_l_int_handler(void)
 	battery_meter_ctrl(BATTERY_METER_CMD_ENABLE_FG_VBAT_H_INT, &lt_ht_en);
 	battery_meter_ctrl(BATTERY_METER_CMD_ENABLE_FG_VBAT_L_INT, &lt_ht_en);
 	wakeup_fg_algo(FG_INTR_VBAT2_L);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_vbat2_h_int_handler(void)
@@ -2473,12 +2531,16 @@ void fg_vbat2_h_int_handler(void)
 	battery_meter_ctrl(BATTERY_METER_CMD_ENABLE_FG_VBAT_H_INT, &lt_ht_en);
 	battery_meter_ctrl(BATTERY_METER_CMD_ENABLE_FG_VBAT_L_INT, &lt_ht_en);
 	wakeup_fg_algo(FG_INTR_VBAT2_H);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_chr_full_int_handler(void)
 {
 	pr_err("[fg_chr_full_int_handler]\n");
 	wakeup_fg_algo(FG_INTR_CHR_FULL);
+
+	fg_bat_temp_int_sw_check();
 }
 
 void fg_shutdown_int_handler(void)
