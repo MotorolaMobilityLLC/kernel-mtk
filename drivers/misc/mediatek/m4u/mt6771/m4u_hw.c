@@ -2366,7 +2366,7 @@ int m4u_dump_reg_for_smi_hang_issue(void)
 		M4U_WriteReg32(dbgmem_addr, 0x44, val | (1 << 0));
 
 		val = M4U_ReadReg32(scpsysbaseaddr, 0x90);
-		if ((!(val << 24) & 0x1))
+		if (!((val >> 24) & 0x1))
 			M4U_WriteReg32(scpsysbaseaddr, 0x90, val | (1 << 24));
 
 		val = M4U_ReadReg32(dbgmem_addr, 0x44);
