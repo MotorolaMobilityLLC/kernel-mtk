@@ -440,10 +440,26 @@ VOID roamingFsmRunEventDiscovery(IN P_ADAPTER_T prAdapter, IN P_ROAMING_PARAM_T 
 	if (eNextState != prRoamingFsmInfo->eCurrentState) {
 		P_BSS_INFO_T prAisBssInfo;
 		P_BSS_DESC_T prBssDesc;
+		PARAM_MAC_ADDRESS arBssid;
+		PARAM_SSID_T rSsid;
+		P_AIS_FSM_INFO_T prAisFsmInfo;
+		P_CONNECTION_SETTINGS_T prConnSettings;
+
+		kalMemZero(&rSsid, sizeof(PARAM_SSID_T));
+		prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+		prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
 
 		/* sync. rcpi with firmware */
 		prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
-		prBssDesc = scanSearchBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+		prBssDesc = prAisFsmInfo->prTargetBssDesc;
+		if (prBssDesc) {
+			COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen, prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
+			COPY_MAC_ADDR(arBssid, prBssDesc->aucBSSID);
+		} else  {
+			COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen, prConnSettings->aucSSID, prConnSettings->ucSSIDLen);
+			COPY_MAC_ADDR(arBssid, prConnSettings->aucBSSID);
+		}
+		prBssDesc = scanSearchBssDescByBssidAndSsid(prAdapter, arBssid, TRUE, &rSsid);
 		if (prBssDesc) {
 			prBssDesc->ucRCPI = (UINT_8) (prParam->u2Data & 0xff);
 			DBGLOG(ROAMING, INFO, "RCPI %u\n", prBssDesc->ucRCPI);
