@@ -1075,20 +1075,28 @@ unsigned int lpDram_Register_Read(unsigned int Reg_base, unsigned int Offset)
 {
 	if ((Reg_base == DRAMC_NAO_CHA) && (Offset < 0x1000))
 		return readl(IOMEM(DRAMC_NAO_CHA_BASE_ADDR + Offset));
+
 	else if ((Reg_base == DRAMC_NAO_CHB) && (Offset < 0x1000))
 		return readl(IOMEM(DRAMC_NAO_CHB_BASE_ADDR + Offset));
-	else if ((Reg_base == DRAMC_AO_CHA) && (Offset < 0x1000))
+
+	else if ((Reg_base == DRAMC_AO_CHA) && (Offset < 0x2000))
 		return readl(IOMEM(DRAMC_AO_CHA_BASE_ADDR + Offset));
-	else if ((Reg_base == DRAMC_AO_CHB) && (Offset < 0x1000))
+
+	else if ((Reg_base == DRAMC_AO_CHB) && (Offset < 0x2000))
 		return readl(IOMEM(DRAMC_AO_CHB_BASE_ADDR + Offset));
+
 	else if ((Reg_base == PHY_NAO_CHA) && (Offset < 0x1000))
 		return readl(IOMEM(DDRPHY_NAO_CHA_BASE_ADDR + Offset));
+
 	else if ((Reg_base == PHY_NAO_CHB) && (Offset < 0x1000))
 		return readl(IOMEM(DDRPHY_NAO_CHB_BASE_ADDR + Offset));
-	else if ((Reg_base == PHY_AO_CHA) && (Offset < 0x1000))
+
+	else if ((Reg_base == PHY_AO_CHA) && (Offset < 0x2000))
 		return readl(IOMEM(DDRPHY_AO_CHA_BASE_ADDR + Offset));
-	else if ((Reg_base == PHY_AO_CHB) && (Offset < 0x1000))
+
+	else if ((Reg_base == PHY_AO_CHB) && (Offset < 0x2000))
 		return readl(IOMEM(DDRPHY_AO_CHB_BASE_ADDR + Offset));
+
 	else
 		return 0;
 }
