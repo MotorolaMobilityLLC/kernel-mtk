@@ -15,7 +15,7 @@
 #define _MTK_THERMAL_PLATFORM_H
 
 #include <linux/thermal.h>
-#include <mtk_thermal_typedefs.h>
+#include <mt-plat/charging.h>
 
 extern
 int mtk_thermal_get_cpu_info(int *nocores, int **cpufreq, int **cpuloading);
