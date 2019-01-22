@@ -583,9 +583,8 @@ void test_m4u_do_mva_alloc_start_from_V2p4(void)
 
 	M4UMSG("start to test_m4u_do_mva_alloc_start_from_V2_4\n");
 	pinfo = vmalloc(sizeof(struct m4u_buf_info_t));
-	if (pinfo == NULL) {
-		M4UMSG("pinfo == NULL\n");
-		vfree(pinfo);
+	if (!pinfo) {
+		M4UMSG("alloc info fail\n");
 		return;
 	}
 	pinfo->port = 0;
@@ -634,9 +633,14 @@ void test_m4u_do_mva_alloc_start_from_V2p4_case1(void)
 
 	M4UMSG("start to test_m4u_do_mva_alloc_start_from_V2p4_case1\n");
 	pinfo = vmalloc(sizeof(struct m4u_buf_info_t));
+<<<<<<< HEAD
 	if (pinfo == NULL) {
 		M4UMSG("pinfo == NULL\n");
 		vfree(pinfo);
+=======
+	if (!pinfo) {
+		M4UMSG("alloc info fail\n");
+>>>>>>> 380097a... [ALPS03618853] m4u:fixed printk too much
 		return;
 	}
 	pinfo->port = 0;
