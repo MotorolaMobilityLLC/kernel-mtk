@@ -1459,21 +1459,21 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 #ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 	/* dual charger */
 	if (of_property_read_u32(np, "ta_ac_master_charging_current", &val) >= 0) {
-		info->data.ta_ac_master_charging_current = val;
+		info->data.chg1_ta_ac_charger_current = val;
 	} else {
 		pr_err(
 			"use default TA_AC_MASTER_CHARGING_CURRENT:%d\n",
 			TA_AC_MASTER_CHARGING_CURRENT);
-		info->data.ta_ac_master_charging_current = TA_AC_MASTER_CHARGING_CURRENT;
+		info->data.chg1_ta_ac_charger_current = TA_AC_MASTER_CHARGING_CURRENT;
 	}
 
 	if (of_property_read_u32(np, "ta_ac_slave_charging_current", &val) >= 0) {
-		info->data.ta_ac_slave_charging_current = val;
+		info->data.chg2_ta_ac_charger_current = val;
 	} else {
 		pr_err(
 			"use default TA_AC_SLAVE_CHARGING_CURRENT:%d\n",
 			TA_AC_SLAVE_CHARGING_CURRENT);
-		info->data.ta_ac_slave_charging_current = TA_AC_SLAVE_CHARGING_CURRENT;
+		info->data.chg2_ta_ac_charger_current = TA_AC_SLAVE_CHARGING_CURRENT;
 	}
 #endif
 
