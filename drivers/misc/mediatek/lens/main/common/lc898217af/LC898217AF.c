@@ -53,6 +53,11 @@ static unsigned int  g_MotorResolution;
 #define Min_Pos		0
 #define Max_Pos		1023
 
+#if defined(CONFIG_MACH_MT6771)
+static unsigned int g_ACKErrorCnt = 5;
+#else
+static unsigned int g_ACKErrorCnt = 100;
+#endif
 
 #define VCM_STEP 10
 
@@ -60,12 +65,21 @@ static int s4AF_ReadReg(u8 a_uAddr, u8 *a_uData)
 {
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR) >> 1;
 
+	if (g_ACKErrorCnt == 0)
+		return 0;
+
 	if (i2c_master_send(g_pstAF_I2Cclient, &a_uAddr, 1) < 0) {
+		if (g_ACKErrorCnt > 0)
+			g_ACKErrorCnt--;
+
 		LOG_INF("ReadI2C send failed!!\n");
 		return -1;
 	}
 
 	if (i2c_master_recv(g_pstAF_I2Cclient, a_uData, 1) < 0) {
+		if (g_ACKErrorCnt > 0)
+			g_ACKErrorCnt--;
+
 		LOG_INF("ReadI2C recv failed!!\n");
 		return -1;
 	}
@@ -80,17 +94,28 @@ static int s4AF_WriteReg(u8 a_uLength, u8 a_uAddr, u16 a_u2Data)
 	u8 puSendCmd[2] = { a_uAddr, (u8) (a_u2Data & 0xFF) };
 	u8 puSendCmd2[3] = { a_uAddr, (u8) ((a_u2Data >> 8) & 0xFF), (u8) (a_u2Data & 0xFF) };
 
+	if (g_ACKErrorCnt == 0)
+		return 0;
+
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR) >> 1;
 
 	/* LOG_INF("WRI2C 0x%04x, 0x%x\n", a_uAddr, a_u2Data); */
 
 	if (a_uLength == 0) {
 		if (i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2) < 0) {
+
+			if (g_ACKErrorCnt > 0)
+				g_ACKErrorCnt--;
+
 			LOG_INF("WriteI2C failed!!\n");
 			return -1;
 		}
 	} else if (a_uLength == 1) {
 		if (i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 3) < 0) {
+
+			if (g_ACKErrorCnt > 0)
+				g_ACKErrorCnt--;
+
 			LOG_INF("WriteI2C 2 failed!!\n");
 			return -1;
 		}
@@ -372,6 +397,12 @@ int LC898217AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
 
+	#if defined(CONFIG_MACH_MT6771)
+	g_ACKErrorCnt = 5;
+	#else
+	g_ACKErrorCnt = 100;
+	#endif
+
 	/* mt6739 */
 	g_MotorDirection = 0;
 	g_MotorResolution = 0;
@@ -383,6 +414,12 @@ int LC898217AFA_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	#if defined(CONFIG_MACH_MT6771)
+	g_ACKErrorCnt = 5;
+	#else
+	g_ACKErrorCnt = 100;
+	#endif
 
 	/* mt6775, mt6771 - single camera */
 	g_MotorDirection = 1;
@@ -396,6 +433,12 @@ int LC898217AFB_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
 
+	#if defined(CONFIG_MACH_MT6771)
+	g_ACKErrorCnt = 5;
+	#else
+	g_ACKErrorCnt = 100;
+	#endif
+
 	/* mt6775, mt6771 - dual camera W + T */
 	g_MotorDirection = 0;
 	g_MotorResolution = 1;
@@ -407,6 +450,12 @@ int LC898217AFC_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	#if defined(CONFIG_MACH_MT6771)
+	g_ACKErrorCnt = 5;
+	#else
+	g_ACKErrorCnt = 100;
+	#endif
 
 	g_MotorDirection = 1;
 	g_MotorResolution = 1;
