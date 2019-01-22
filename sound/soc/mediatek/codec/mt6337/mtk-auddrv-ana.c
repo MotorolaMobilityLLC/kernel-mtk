@@ -93,8 +93,8 @@ void Ana_Set_Reg(uint32 offset, uint32 value, uint32 mask)
 
 	Reg_Value = Ana_Get_Reg(offset);
 	if ((Reg_Value & mask) != (value & mask))
-		pr_warn("Ana_Set_Reg  mask = 0x%x ret = %d Reg_Value = 0x%x\n", mask, ret,
-			 Reg_Value);
+		pr_warn("%s, ret = %d offset = 0x%x, w_value = 0x%x, mask = 0x%x  r_value = 0x%x\n",
+			__func__, ret, offset, value, mask, Reg_Value);
 #endif
 }
 EXPORT_SYMBOL(Ana_Set_Reg);

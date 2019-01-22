@@ -1319,8 +1319,8 @@ uint32 ULSampleRateTransform(uint32 SampleRate)
 static int mtk_codec_dai_1_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_aud("mtk_codec_dai_1_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
-		       substream->runtime->rate);
+		pr_aud("mtk_codec_dai_1_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d, channel = %d\n",
+		       substream->runtime->rate, substream->runtime->channels);
 		mBlockSampleRate[AUDIO_DAI_UL1] = substream->runtime->rate;
 		/* If 4-ch record set UL1/UL2 same sampleRate */
 		if (substream->runtime->channels > 2)
@@ -1336,8 +1336,8 @@ static int mtk_codec_dai_1_prepare(struct snd_pcm_substream *substream, struct s
 static int mtk_codec_dai_2_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_aud("mtk_codec_dai_2_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d\n",
-		       substream->runtime->rate);
+		pr_aud("mtk_codec_dai_2_prepare set up SNDRV_PCM_STREAM_CAPTURE rate = %d, channel = %d\n",
+		       substream->runtime->rate, substream->runtime->channels);
 		mBlockSampleRate[AUDIO_DAI_UL2] = substream->runtime->rate;
 		/* If 4-ch record set UL1/UL2 same sampleRate */
 		if (substream->runtime->channels > 2)
@@ -1377,7 +1377,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 .capture = {
 		     .stream_name = MT_SOC_UL1_STREAM_NAME,
 		     .channels_min = 1,
-		     .channels_max = 2,
+		     .channels_max = 4,
 		     .rates = SOC_HIGH_USE_RATE,
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
@@ -1445,7 +1445,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 	 .capture = {
 		     .stream_name = MT_SOC_VOICE_MD2_STREAM_NAME,
 		     .channels_min = 1,
-		     .channels_max = 2,
+		     .channels_max = 4,
 		     .rates = SNDRV_PCM_RATE_8000_48000,
 		     .formats = SND_SOC_ADV_MT_FMTS,
 		     },
@@ -5514,12 +5514,22 @@ static int audio_ul1_lch_in_set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
 	int *lch_in = &mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_LCH_MUX];
+	int device = 0;
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_ul_array_in)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	*lch_in = ucontrol->value.integer.value[0];
+	device = channel_map_to_device(*lch_in);
+
+	if (is_amic(device))
+		Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, amic_array_status(), 0x0003);
+	else if (is_dmic(device))
+		Ana_Set_Reg(AFE_DMIC_ARRAY_CFG, dmic_array_status(), 0x0007);
+	else
+		pr_warn("%s is not uplink device %d", __func__, device);
+
 	pr_aud("%s() lch_in = %d\n", __func__, *lch_in);
 	return 0;
 }
@@ -5538,12 +5548,22 @@ static int audio_ul1_rch_in_set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
 	int *rch_in = &mCodec_data->mAudio_Ana_Mux[AUDIO_UL1_RCH_MUX];
+	int device = 0;
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_ul_array_in)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	*rch_in = ucontrol->value.integer.value[0];
+	device = channel_map_to_device(*rch_in);
+
+	if (is_amic(device))
+		Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, amic_array_status(), 0x000c);
+	else if (is_dmic(device))
+		Ana_Set_Reg(AFE_DMIC_ARRAY_CFG, dmic_array_status(), 0x0070);
+	else
+		pr_warn("%s is not uplink device %d", __func__, device);
+
 	pr_aud("%s() rch_in = %d\n", __func__, *rch_in);
 	return 0;
 }
@@ -5562,12 +5582,22 @@ static int audio_ul2_lch_in_set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
 	int *lch_in = &mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_LCH_MUX];
+	int device = 0;
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_ul_array_in)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	*lch_in = ucontrol->value.integer.value[0];
+	device = channel_map_to_device(*lch_in);
+
+	if (is_amic(device))
+		Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, amic_array_status(), 0x0030);
+	else if (is_dmic(device))
+		Ana_Set_Reg(AFE_DMIC_ARRAY_CFG, dmic_array_status(), 0x0700);
+	else
+		pr_warn("%s is not uplink device %d", __func__, device);
+
 	pr_aud("%s() lch_in = %d\n", __func__, *lch_in);
 	return 0;
 }
@@ -5586,12 +5616,22 @@ static int audio_ul2_rch_in_set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
 	int *rch_in = &mCodec_data->mAudio_Ana_Mux[AUDIO_UL2_RCH_MUX];
+	int device = 0;
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_ul_array_in)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	*rch_in = ucontrol->value.integer.value[0];
+	device = channel_map_to_device(*rch_in);
+
+	if (is_amic(device))
+		Ana_Set_Reg(AFE_AMIC_ARRAY_CFG, amic_array_status(), 0x00c0);
+	else if (is_dmic(device))
+		Ana_Set_Reg(AFE_DMIC_ARRAY_CFG, dmic_array_status(), 0x7000);
+	else
+		pr_warn("%s is not uplink device %d", __func__, device);
+
 	pr_aud("%s() rch_in = %d\n", __func__, *rch_in);
 	return 0;
 }
