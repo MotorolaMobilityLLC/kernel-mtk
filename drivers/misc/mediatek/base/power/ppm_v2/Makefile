@@ -11,10 +11,6 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6757) += pbm_v1/
-obj-$(CONFIG_MACH_MT6757) += spm_v2/
-obj-$(CONFIG_MACH_MT6757) += cpuidle_v2/
-obj-$(CONFIG_MACH_MT6757) += power_gs_v1/
-obj-$(CONFIG_MACH_MT6757) += hps_v2/
-obj-$(CONFIG_MACH_MT6757) += ppm_v2/
+export PPM_ROOT_DIR ?= $(srctree)/drivers/misc/mediatek/base/power/ppm_v2
+
+obj-y += src/
