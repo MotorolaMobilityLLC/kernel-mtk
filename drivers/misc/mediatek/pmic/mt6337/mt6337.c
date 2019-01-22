@@ -361,6 +361,8 @@ void MT6337_INIT_SETTING(void)
 	ret = mt6337_config_interface(0x9008, 0x1, 0x1, 1);
 	/* [1:1]: RG_VA18_HW0_OP_CFG; Joseph/LDO LP wi SRCLKEN */
 	ret = mt6337_config_interface(0x900E, 0x1, 0x1, 1);
+	/* [15:15]: AUXADC_CK_AON; Juinn-Ting. Move from golden settings to initial settings as MT6335 */
+	ret = mt6337_config_interface(0x9434, 0x0, 0x1, 15);
 	/* [5:3]: AUXADC_AVG_NUM_LARGE; Jyun-Jia/256 average */
 	ret = mt6337_config_interface(0x943A, 0x7, 0x7, 3);
 	/* [7:6]: AUXADC_TRIM_CH3_SEL; Jyun-Jia/ efuse ch0 */
