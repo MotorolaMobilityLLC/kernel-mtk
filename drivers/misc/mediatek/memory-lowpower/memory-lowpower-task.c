@@ -125,8 +125,18 @@ void set_memory_lowpower_aligned(int aligned)
 	/* Check whether size is a multiple of num */
 	size = (memory_lowpower_size() >> PAGE_SHIFT);
 	num = size >> aligned;
-	if (size != (num << aligned))
-		return;
+	if (size != (num << aligned)) {
+		/**********************************************************
+		 * based on -						  *
+		 * 1. zone-movable-cma-memory in dts with 4MB unoccupied. *
+		 *    ex. size = <0 0xffc00000>;			  *
+		 * 2. grab_lastsize is 0, when no/failed fullness in mlp. *
+		 **********************************************************/
+		if (memory_lowpower_get_grab_lastsize() == 0)
+			size = num << aligned;
+		else
+			return;
+	}
 
 	/* Update aligned allocation */
 	get_cma_aligned = aligned;

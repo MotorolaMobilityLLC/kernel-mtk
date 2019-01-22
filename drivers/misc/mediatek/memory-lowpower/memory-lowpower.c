@@ -52,6 +52,15 @@ static DEFINE_MUTEX(memory_lowpower_mutex);
 static phys_addr_t grab_lastsize;
 #endif
 
+phys_addr_t memory_lowpower_get_grab_lastsize(void)
+{
+#ifdef MEMORY_LOWPOWER_FULLNESS
+	return grab_lastsize;
+#else
+	return 0;
+#endif
+}
+
 /*
  * Check whether memory_lowpower is initialized
  */
@@ -216,9 +225,12 @@ static void memory_lowpower_fullness(phys_addr_t base, phys_addr_t size)
 {
 	phys_addr_t pageblock_size = 1 << (pageblock_order + PAGE_SHIFT);
 	phys_addr_t expected_lastaddr, got_lastaddr = (phys_addr_t)ULLONG_MAX;
+	phys_addr_t expected_hole_size;
 
+	expected_hole_size = memblock_end_of_DRAM() - (base + size);
 	/* If the hole is not the size of 1 pageblock, just return */
-	if (memblock_end_of_DRAM() - (base + size) != pageblock_size) {
+	if (expected_hole_size != pageblock_size &&
+			expected_hole_size != (pageblock_size - PAGE_SIZE)) {
 		pr_alert("%s, no need to do fullness\n", __func__);
 		return;
 	}
