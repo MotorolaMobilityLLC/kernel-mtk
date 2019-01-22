@@ -21,6 +21,8 @@
 
 #include "sched_power.h"
 
+#include <mt-plat/met_drv.h>
+
 /*
  * V1.04 support hybrid(EAS+HMP)
  * V1.05 if system is balanced, select CPU with max sparse capacity when wakeup
@@ -89,6 +91,8 @@ void game_hint_notifier(int is_game_mode)
 		capacity_margin = 1280;
 		sodi_limit = DEFAULT_SODI_LIMIT;
 	}
+
+	met_tag_oneshot(0, "sched_stune_filter", STUNE_TASK_THRESHOLD);
 }
 
 bool is_eas_enabled(void)
@@ -630,6 +634,8 @@ static ssize_t store_stune_task_thresh_knob(struct kobject *kobj,
 			STUNE_TASK_THRESHOLD = val;
 	}
 
+	met_tag_oneshot(0, "sched_stune_filter", STUNE_TASK_THRESHOLD);
+
 	return count;
 }
 
@@ -640,6 +646,8 @@ static ssize_t show_stune_task_thresh_knob(struct kobject *kobj,
 	unsigned int max_len = 4096;
 
 	len += snprintf(buf, max_len, "stune_task_thresh=%d\n", STUNE_TASK_THRESHOLD);
+
+	met_tag_oneshot(0, "sched_stune_filter", STUNE_TASK_THRESHOLD);
 
 	return len;
 }

@@ -27,6 +27,8 @@
 #include <mt-plat/met_drv.h>
 
 
+#include <mt-plat/met_drv.h>
+
 /*
  * static
  */
@@ -121,7 +123,7 @@ static void hps_get_sysinfo(void)
 	int max_idx1 = 0;
 	unsigned int big_task_L, big_task_B;
 	/* sched-assist hotplug: */
-	int dev_util = 0;
+	int sched_util = 0;
 	int max_task_util;
 	unsigned int rel_load, abs_load;
 
@@ -133,11 +135,12 @@ static void hps_get_sysinfo(void)
 		unsigned long util, cap;
 
 		sched_get_cluster_util(idx, &util, &cap);
-		dev_util += util;
+		sched_util += util;
 
 		hps_sys.cluster_info[idx].loading = 0;
 		hps_sys.cluster_info[idx].rel_load = 0;
 		hps_sys.cluster_info[idx].abs_load = 0;
+		hps_sys.cluster_info[idx].sched_load = util;
 	}
 	/*for_each_possible_cpu(cpu) {*/
 	for_each_online_cpu(cpu) {
@@ -173,6 +176,21 @@ static void hps_get_sysinfo(void)
 	/*Get heavy task information */
 	/*hps_ctxt.cur_nr_heavy_task = hps_cpu_get_nr_heavy_task(); */
 	for (idx = 0; idx < hps_sys.cluster_num; idx++) {
+
+		if (idx == 0) {
+			met_tag_oneshot(0, "sched_util_cid0", hps_sys.cluster_info[idx].sched_load);
+			met_tag_oneshot(0, "sched_load_rel0", hps_sys.cluster_info[idx].rel_load);
+			met_tag_oneshot(0, "sched_load_abs0", hps_sys.cluster_info[idx].abs_load);
+		} else if (idx == 1) {
+			met_tag_oneshot(0, "sched_util_cid1", hps_sys.cluster_info[idx].sched_load);
+			met_tag_oneshot(0, "sched_load_rel1", hps_sys.cluster_info[idx].rel_load);
+			met_tag_oneshot(0, "sched_load_abs1", hps_sys.cluster_info[idx].abs_load);
+		} else if (idx == 2) {
+			met_tag_oneshot(0, "sched_util_cid2", hps_sys.cluster_info[idx].sched_load);
+			met_tag_oneshot(0, "sched_load_rel2", hps_sys.cluster_info[idx].rel_load);
+			met_tag_oneshot(0, "sched_load_abs2", hps_sys.cluster_info[idx].abs_load);
+		}
+
 		if (hps_ctxt.heavy_task_enabled)
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 		{
@@ -234,7 +252,7 @@ static void hps_get_sysinfo(void)
 	sched_max_util_task(NULL, NULL, &max_task_util, NULL);
 
 	/* LL: relative threshold */
-	if ((int)dev_util < sodi_limit || max_task_util < 10) {
+	if ((int)sched_util < sodi_limit || max_task_util < 10) {
 		/*
 		 *  If CPU utilization in system is small or
 		 *  only tiny task is running, a few CPU for it.
@@ -276,6 +294,11 @@ static void hps_get_sysinfo(void)
 	 * To pick max of scaled_tlp and avg_tlp.
 	 */
 	hps_ctxt.cur_tlp = max_t(int, scaled_tlp, (int)avg_tlp);
+
+
+	/* [MET] debug for geekbench */
+	met_tag_oneshot(0, "sched_tlp_cur", hps_ctxt.cur_tlp);
+
 	mt_sched_printf(sched_log, "[heavy_task] :%s, scaled_tlp:%d, avg_tlp:%d, max:%d",
 			__func__, scaled_tlp, (int)avg_tlp, (int)hps_ctxt.cur_tlp);
 }

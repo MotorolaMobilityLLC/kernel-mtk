@@ -11,7 +11,9 @@
 #include "sched.h"
 #include "tune.h"
 
-#if MET_SCHED_DEBUG
+#define MET_STUNE_DEBUG 1
+
+#if MET_STUNE_DEBUG
 #include <mt-plat/met_drv.h>
 #endif
 
@@ -111,17 +113,6 @@ __schedtune_accept_deltas(int nrg_delta, int cap_delta,
 
 	return payoff;
 }
-
-#if MET_SCHED_DEBUG
-static
-void met_stune_boost(int idx, int boost)
-{
-	char boost_str[64] = {0};
-
-	snprintf(boost_str, sizeof(boost_str), "sched_boost_idx%d", idx);
-	met_tag_oneshot(0, boost_str, boost);
-}
-#endif
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 
@@ -464,8 +455,10 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 
 	trace_sched_tune_config(ct->boost);
 
-#if MET_SCHED_DEBUG
-	met_stune_boost(ct->idx, ct->boost);
+#if MET_STUNE_DEBUG
+	/* GED: foreground with pid */
+	if (ct->idx == 1)
+		met_tag_oneshot(0, "sched_boost_ged", ct->boost);
 #endif
 
 	rcu_read_unlock();
@@ -522,8 +515,10 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 
 	trace_sched_tune_config(ct->boost);
 
-#if MET_SCHED_DEBUG
-	met_stune_boost(ct->idx, ct->boost);
+#if MET_STUNE_DEBUG
+	/* GED: foreground */
+	if (ct->idx == 1)
+		met_tag_oneshot(0, "sched_boost_ged", ct->boost);
 #endif
 
 	return 0;
@@ -633,8 +628,10 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 
 	trace_sched_tune_config(st->boost);
 
-#if MET_SCHED_DEBUG
-	met_stune_boost(st->idx, st->boost);
+#if MET_STUNE_DEBUG
+	/* user: foreground */
+	if (st->idx == 1)
+		met_tag_oneshot(0, "sched_boost_user", st->boost);
 #endif
 
 	return 0;
