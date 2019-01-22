@@ -474,7 +474,7 @@ static int send_sysenv_msg(int pid, int seq, void *payload, int payload_len)
 {
 	struct sk_buff *skb;
 	struct nlmsghdr *nlh;
-	int size = payload_len+1;
+	int size = payload_len;
 	int len = NLMSG_SPACE(size);
 	void *data;
 	int ret;
