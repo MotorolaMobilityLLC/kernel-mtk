@@ -53,5 +53,5 @@ extern int smi_larb_clock_is_on(unsigned int larb_index);
 extern unsigned short smi_subsys_larb_mapping_table[SMI_SUBSYS_NUM];
 
 extern void smi_dump_clk_status(void);
-extern void smi_dump_larb_m4u_register(int larb, int output_gce_buffer);
+extern void smi_dump_larb_m4u_register(int larb);
 #endif				/* _SMI_DEBUG_H__ */
