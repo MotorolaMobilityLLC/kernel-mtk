@@ -22,6 +22,8 @@
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
 #include <linux/module.h>
+#include "ged_kpi.h"
+#include "ged.h"
 
 static unsigned int ged_boost_enable = 1;
 //-----------------------------------------------------------------------------
@@ -151,5 +153,33 @@ int ged_bridge_event_notify(
 
 	return 0;
 }
-
+/* ----------------------------------------------------------------------------- */
+int ged_bridge_gpu_timestamp(
+	GED_BRIDGE_IN_GPU_TIMESTAMP * psGpuBeginINT,
+	GED_BRIDGE_OUT_GPU_TIMESTAMP *psGpuBeginOUT)
+{
+	if (psGpuBeginINT->QedBuffer_length != -1)
+		psGpuBeginOUT->eError =
+			ged_kpi_queue_buffer_ts(psGpuBeginINT->pid,
+									psGpuBeginINT->ullWnd,
+									psGpuBeginINT->i32FrameID,
+									psGpuBeginINT->fence_fd,
+									psGpuBeginINT->QedBuffer_length,
+									psGpuBeginINT->isSF);
+	else
+		psGpuBeginOUT->eError =
+			ged_kpi_acquire_buffer_ts(psGpuBeginINT->pid,
+									psGpuBeginINT->ullWnd,
+									psGpuBeginINT->i32FrameID);
+	return 0;
+}
+/* ----------------------------------------------------------------------------- */
+int ged_bridge_target_fps(
+	GED_BRIDGE_IN_TARGET_FPS * in,
+	GED_BRIDGE_OUT_TARGET_FPS *out)
+{
+	ged_set_target_fps(in->fps);
+	return 0;
+}
+/* ----------------------------------------------------------------------------- */
 module_param(ged_boost_enable, uint, 0644);

@@ -30,6 +30,7 @@
 #include "ged_dvfs.h"
 
 #include "ged_notify_sw_vsync.h"
+#include "ged_kpi.h"
 
 static struct dentry* gpsHALDir = NULL;
 static struct dentry* gpsTotalGPUFreqLevelCountEntry = NULL;
@@ -348,6 +349,12 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
 								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_GAS_EVENT, false);
 							else
 								ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_GAS_EVENT, true);
+						}
+
+						if ((*pcValue) == '1') {
+							ged_kpi_set_game_hint(1);
+						} else {
+							ged_kpi_set_game_hint(0);
 						}
 					}
 					else if(strcmp(pcCMD, "enable_VR") == 0)
@@ -852,7 +859,64 @@ static struct seq_operations gsIntegrationReportReadOps =
 	.show = ged_dvfs_integration_report_seq_show,
 };
 //-----------------------------------------------------------------------------
+#ifdef MTK_GED_KPI
+static struct dentry *gpsGedInfoKPIEntry;
+/* ----------------------------------------------------------------------------- */
+static void *ged_kpi_info_seq_start(struct seq_file *psSeqFile, loff_t *puiPosition)
+{
+	if (*puiPosition == 0)
+		return SEQ_START_TOKEN;
 
+	return NULL;
+}
+/* ----------------------------------------------------------------------------- */
+static void ged_kpi_info_seq_stop(struct seq_file *psSeqFile, void *pvData)
+{
+
+}
+/* ----------------------------------------------------------------------------- */
+static void *ged_kpi_info_seq_next(struct seq_file *psSeqFile, void *pvData, loff_t *puiPosition)
+{
+	return NULL;
+}
+/* ----------------------------------------------------------------------------- */
+
+static int ged_kpi_info_seq_show(struct seq_file *psSeqFile, void *pvData)
+{
+	if (pvData != NULL) {
+		unsigned int fps;
+		unsigned int cpu_time;
+		unsigned int gpu_time;
+		unsigned int response_time;
+		unsigned int gpu_remained_time;
+		unsigned int cpu_remained_time;
+		unsigned int gpu_freq;
+
+		fps = ged_kpi_get_cur_fps();
+		cpu_time = ged_kpi_get_cur_avg_cpu_time();
+		gpu_time = ged_kpi_get_cur_avg_gpu_time();
+		response_time = ged_kpi_get_cur_avg_response_time();
+		cpu_remained_time = ged_kpi_get_cur_avg_cpu_remained_time();
+		gpu_remained_time = ged_kpi_get_cur_avg_gpu_remained_time();
+		gpu_freq = ged_kpi_get_cur_avg_gpu_freq();
+
+		seq_printf(psSeqFile, "%u,%u,%u,%u,%u,%u,%u\n"
+								, fps, cpu_time, gpu_time
+								, response_time
+								, cpu_remained_time, gpu_remained_time
+								, gpu_freq);
+	}
+	return 0;
+}
+/* ----------------------------------------------------------------------------- */
+static const struct seq_operations gsKpi_info_ReadOps = {
+	.start = ged_kpi_info_seq_start,
+	.stop = ged_kpi_info_seq_stop,
+	.next = ged_kpi_info_seq_next,
+	.show = ged_kpi_info_seq_show,
+};
+#endif
+/* ----------------------------------------------------------------------------- */
 GED_ERROR ged_hal_init(void)
 {
 	GED_ERROR err = GED_OK;
@@ -951,8 +1015,8 @@ GED_ERROR ged_hal_init(void)
 	err = ged_debugFS_create_entry(
 			"current_freqency",
 			gpsHALDir,
-			&gsDvfs_cur_freq_ReadOps, 
-			NULL, 
+			&gsDvfs_cur_freq_ReadOps,
+			NULL,
 			NULL,
 			&gpsDvfsCurFreqEntry);
 
@@ -992,6 +1056,17 @@ GED_ERROR ged_hal_init(void)
 		goto ERROR;
 	}
 
+	/* Get KPI info */
+#ifdef MTK_GED_KPI
+	err = ged_debugFS_create_entry(
+			"ged_kpi",
+			gpsHALDir,
+			&gsKpi_info_ReadOps,
+			NULL,
+			NULL,
+			&gpsGedInfoKPIEntry);
+#endif
+
 	/* Report Integration Status */
 	err = ged_debugFS_create_entry(
 			"integration_report",
@@ -1028,6 +1103,9 @@ void ged_hal_exit(void)
 	ged_debugFS_remove_entry(gpsDvfsCurFreqEntry);
 	ged_debugFS_remove_entry(gpsDvfsPreFreqEntry);
 	ged_debugFS_remove_entry(gpsDvfsGpuUtilizationEntry);
+#ifdef MTK_GED_KPI
+	ged_debugFS_remove_entry(gpsGedInfoKPIEntry);
+#endif
 	ged_debugFS_remove_entry_dir(gpsHALDir);
 }
 //-----------------------------------------------------------------------------
