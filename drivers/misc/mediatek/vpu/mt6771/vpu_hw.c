@@ -1238,10 +1238,10 @@ static int vpu_service_routine(void *arg)
 			LOG_DBG("[vpu_%d] run, opp(%d/%d/%d)\n", service_core, req->power_param.opp_step,
 				vcore_opp_index, dsp_freq_index);
 			vpu_opp_check(service_core, vcore_opp_index, dsp_freq_index);
-			LOG_INF("[vpu_%d <- 0x%x] run, algo_id(%d->%d_%d), opp(%d,%d/%d->%d, %d->%d)\n",
+			LOG_INF("[vpu_%d <- 0x%x] run, algo_id(0x%lx_%d, %d->%d), opp(%d,%d/%d->%d, %d->%d)\n",
 				service_core, req->requested_core,
+				(unsigned long)req->request_id, req->frame_magic,
 				vpu_service_cores[service_core].current_algo, (int)(req->algo_id[service_core]),
-				req->frame_magic,
 				req->power_param.opp_step, req->power_param.freq_step,
 				vcore_opp_index, opps.vcore.index,
 				dsp_freq_index, opps.dspcore[service_core].index);
@@ -2518,8 +2518,9 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 
 	if (g_vpu_log_level > 4)
 		vpu_dump_buffer_mva(request);
-	LOG_INF("[vpu_%d] start d2d, id/frm (%d/%d)\n", core,
-		request->algo_id[core], request->frame_magic);
+	LOG_INF("[vpu_%d] start d2d, id/frm (%d/%d), bw(%d)\n", core,
+		request->algo_id[core], request->frame_magic,
+		request->power_param.bw);
 	/* 1. write register */
 	/* command: d2d */
 	vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_DO_D2D);

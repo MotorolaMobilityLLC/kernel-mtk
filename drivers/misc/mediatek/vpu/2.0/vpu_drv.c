@@ -376,9 +376,11 @@ int vpu_get_request_from_queue(struct vpu_user *user, uint64_t request_id, struc
 		/* ret == -ERESTARTSYS, if signal interrupt */
 		if (ret < 0) {
 			LOG_ERR("interrupt by signal, while pop a request, ret=%d\n", ret);
-			if (retry < 3) {
+			if (retry < 5) {
 				LOG_ERR("retry=%d\n", retry);
 				retry += 1;
+				get = false;
+				continue;
 			} else {
 				LOG_ERR("retry %d times fail, return FAIL\n", retry);
 				*rreq = NULL;
