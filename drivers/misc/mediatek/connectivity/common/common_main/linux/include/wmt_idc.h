@@ -79,7 +79,7 @@ typedef enum {
 
 typedef struct _MTK_WCN_WMT_IDC_INFO_ {
 	ipc_ilm_t iit;
-	CONN_MD_BRIDGE_OPS ops;
+	struct conn_md_bridge_ops ops;
 	UINT8 buffer[LTE_IDC_BUFFER_MAX_SIZE];
 } MTK_WCN_WMT_IDC_INFO, *P_MTK_WCN_WMT_IDC_INFO;
 
