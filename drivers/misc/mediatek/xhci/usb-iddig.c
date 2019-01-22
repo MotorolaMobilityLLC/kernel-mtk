@@ -85,7 +85,7 @@ static enum idpin_state mtk_idpin_cur_stat = IDPIN_OUT;
 static struct delayed_work mtk_xhci_delaywork;
 
 int mtk_iddig_debounce = 50;
-module_param(mtk_iddig_debounce, int, 0644);
+module_param(mtk_iddig_debounce, int, 0400);
 
 void switch_int_to_host_and_mask(void)
 {

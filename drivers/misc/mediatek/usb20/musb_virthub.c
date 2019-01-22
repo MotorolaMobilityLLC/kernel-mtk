@@ -40,7 +40,7 @@
 #include "musb_core.h"
 
 static int h_pre_disable = 1;
-module_param(h_pre_disable, int, 0644);
+module_param(h_pre_disable, int, 0400);
 
 static void musb_port_suspend(struct musb *musb, bool do_suspend)
 {
