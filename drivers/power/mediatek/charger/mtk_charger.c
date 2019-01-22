@@ -1900,6 +1900,14 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->data.power_path_support = of_property_read_bool(np, "power_path_support");
 	chr_debug("%s: power_path_support: %d\n", __func__, info->data.power_path_support);
 
+	if (of_property_read_u32(np, "max_charging_time", &val) >= 0) {
+		info->data.max_charging_time = val;
+		chr_debug("%s: max_charging_time: %d\n", __func__, info->data.max_charging_time);
+	} else {
+		chr_err("use default MAX_CHARGING_TIME:%d\n", MAX_CHARGING_TIME);
+		info->data.max_charging_time = MAX_CHARGING_TIME;
+	}
+
 	chr_err("algorithm name:%s\n", info->algorithm_name);
 
 	return 0;
@@ -2091,7 +2099,7 @@ static ssize_t mtk_charger_en_power_path_write(struct file *file, const char *bu
 static int mtk_charger_en_safety_timer_show(struct seq_file *m, void *data)
 {
 	struct charger_manager *pinfo = m->private;
-	bool safety_timer_en;
+	bool safety_timer_en = false;
 
 	charger_dev_is_safety_timer_enabled(pinfo->chg1_dev, &safety_timer_en);
 	seq_printf(m, "%d\n", safety_timer_en);
@@ -2117,6 +2125,13 @@ static ssize_t mtk_charger_en_safety_timer_write(struct file *file, const char *
 	if (ret == 0) {
 		charger_dev_enable_safety_timer(info->chg1_dev, enable);
 		pr_debug("%s: enable safety timer = %d\n", __func__, enable);
+
+		/* SW safety timer */
+		if (enable)
+			info->enable_sw_safety_timer = true;
+		else
+			info->enable_sw_safety_timer = false;
+
 		return count;
 	}
 
