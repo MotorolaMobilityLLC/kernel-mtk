@@ -117,7 +117,6 @@
 
 static int mtk_anc_probe(struct platform_device *pdev);
 static int mtk_anc_close(struct snd_pcm_substream *substream);
-static int mtk_anc_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_anc_platform_probe(struct snd_soc_platform *platform);
 
 static DEFINE_MUTEX(to_md32_ipc_lock);
@@ -175,8 +174,6 @@ typedef enum {
 	M2A_EnableDebugAck,
 
 } MD32_IPC_MSG;
-
-static struct snd_soc_pcm_runtime *pruntimepcm;
 
 static void memcpy_md32(void __iomem *trg, const void *src, int size)
 {
@@ -1013,7 +1010,6 @@ static struct snd_pcm_ops mtk_afe_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_anc_platform = {
 	.ops		= &mtk_afe_ops,
-	.pcm_new	= mtk_anc_new,
 	.probe	  = mtk_anc_platform_probe,
 };
 
@@ -1050,7 +1046,6 @@ static int mtk_anc_probe(struct platform_device *pdev)
 
 	dump_analog = 0;
 	IPC_wait_queue_flag = 0;
-	pruntimepcm = NULL;
 
 	pr_debug("mtk_anc_probe\n");
 
@@ -1072,15 +1067,6 @@ static int mtk_anc_probe(struct platform_device *pdev)
 
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_anc_platform);
-}
-
-static int mtk_anc_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pruntimepcm  = rtd;
-	pr_debug("%s\n", __func__);
-	return ret;
 }
 
 static int mtk_anc_platform_probe(struct snd_soc_platform *platform)

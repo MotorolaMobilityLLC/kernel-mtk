@@ -68,7 +68,6 @@
 
 static int mtk_voice_bt_probe(struct platform_device *pdev);
 static int mtk_voice_bt_close(struct snd_pcm_substream *substream);
-static int mtk_soc_voice_bt_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_voice_bt_platform_probe(struct snd_soc_platform *platform);
 static bool  SetModemSpeechDAIBTAttribute(int sample_rate);
 
@@ -307,7 +306,6 @@ static struct snd_pcm_ops mtk_voice_bt_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_voice_bt_platform = {
 	.ops        = &mtk_voice_bt_ops,
-	.pcm_new    = mtk_soc_voice_bt_new,
 	.probe      = mtk_voice_bt_platform_probe,
 };
 
@@ -321,28 +319,20 @@ static int mtk_voice_bt_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_VOICE_MD1_BT);
 
-	pr_warn("%s(), dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s(), dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_voice_bt_platform);
 }
 
-static int mtk_soc_voice_bt_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pr_warn("%s()\n", __func__);
-	return ret;
-}
-
 static int mtk_voice_bt_platform_probe(struct snd_soc_platform *platform)
 {
-	pr_warn("%s()\n", __func__);
+	pr_debug("%s()\n", __func__);
 	return 0;
 }
 
 static int mtk_voice_bt_remove(struct platform_device *pdev)
 {
-	pr_warn("%s()\n", __func__);
+	pr_debug("%s()\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -374,7 +364,7 @@ static int __init mtk_soc_voice_bt_platform_init(void)
 {
 	int ret = 0;
 
-	pr_warn("%s()\n", __func__);
+	pr_debug("%s()\n", __func__);
 #ifndef CONFIG_OF
 	soc_mtk_voice_bt_dev = platform_device_alloc(MT_SOC_VOICE_MD1_BT, -1);
 
@@ -397,7 +387,7 @@ module_init(mtk_soc_voice_bt_platform_init);
 static void __exit mtk_soc_voice_bt_platform_exit(void)
 {
 
-	pr_warn("%s()\n", __func__);
+	pr_debug("%s()\n", __func__);
 	platform_driver_unregister(&mtk_voice_bt_driver);
 }
 module_exit(mtk_soc_voice_bt_platform_exit);

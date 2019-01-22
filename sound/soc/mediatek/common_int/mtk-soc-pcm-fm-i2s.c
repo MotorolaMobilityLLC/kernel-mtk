@@ -68,7 +68,6 @@
 
 static int mtk_fm_i2s_probe(struct platform_device *pdev);
 static int mtk_pcm_fm_i2s_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_fm_i2s_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_fm_i2s_probe(struct snd_soc_platform *platform);
 
 static uint32 mfm_i2s_Volume = 0x10000;
@@ -95,41 +94,9 @@ static int Audio_fm_i2s_Volume_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-const char * const wcn_stub_audio_ctr[] = {
-	"CMB_STUB_AIF_0", "CMB_STUB_AIF_1", "CMB_STUB_AIF_2", "CMB_STUB_AIF_3"};
-
-static const struct soc_enum wcn_stub_audio_ctr_Enum[] = {
-	/* speaker class setting */
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(wcn_stub_audio_ctr), wcn_stub_audio_ctr),
-};
-
-/* static int mAudio_Wcn_Cmb = CMB_STUB_AIF_3;//temp mark for early porting */
-static int Audio_Wcn_Cmb_Get(struct snd_kcontrol *kcontrol,
-			     struct snd_ctl_elem_value *ucontrol)
-{
-#if 0/* temp mark for early porting */
-	pr_warn("Audio_Wcn_Cmb_Get = %d\n", mAudio_Wcn_Cmb);
-	ucontrol->value.integer.value[0] = mAudio_Wcn_Cmb;
-#endif
-	return 0;
-}
-
-static int Audio_Wcn_Cmb_Set(struct snd_kcontrol *kcontrol,
-			     struct snd_ctl_elem_value *ucontrol)
-{
-#if 0/* temp mark for early porting */
-	mAudio_Wcn_Cmb = ucontrol->value.integer.value[0];
-	pr_warn("%s mAudio_Wcn_Cmb = 0x%x\n", __func__, mAudio_Wcn_Cmb);
-	/* mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)mAudio_Wcn_Cmb);//temp mark for early porting */
-#endif
-	return 0;
-}
-
 static const struct snd_kcontrol_new Audio_snd_fm_i2s_controls[] = {
 	SOC_SINGLE_EXT("Audio FM I2S Volume", SND_SOC_NOPM, 0, 0x80000, 0,
 		Audio_fm_i2s_Volume_Get, Audio_fm_i2s_Volume_Set),
-	SOC_ENUM_EXT("cmb stub Audio Control", wcn_stub_audio_ctr_Enum[0],
-	Audio_Wcn_Cmb_Get, Audio_Wcn_Cmb_Set),
 };
 
 static struct snd_pcm_hardware mtk_fm_i2s_hardware = {
@@ -372,7 +339,6 @@ static struct snd_pcm_ops mtk_fm_i2s_ops = {
 
 static struct snd_soc_platform_driver mtk_fm_i2s_soc_platform = {
 	.ops        = &mtk_fm_i2s_ops,
-	.pcm_new    = mtk_asoc_pcm_fm_i2s_new,
 	.probe      = mtk_afe_fm_i2s_probe,
 };
 
@@ -386,15 +352,6 @@ static int mtk_fm_i2s_probe(struct platform_device *pdev)
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_fm_i2s_soc_platform);
 }
-
-static int mtk_asoc_pcm_fm_i2s_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pr_warn("%s\n", __func__);
-	return ret;
-}
-
 
 static int mtk_afe_fm_i2s_probe(struct snd_soc_platform *platform)
 {

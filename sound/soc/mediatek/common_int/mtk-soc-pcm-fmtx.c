@@ -74,7 +74,6 @@ static struct device *mDev;
 
 static int mtk_fmtx_probe(struct platform_device *pdev);
 static int mtk_pcm_fmtx_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_fmtx_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_fmtx_probe(struct snd_soc_platform *platform);
 
 static int fmtx_hdoutput_control = true;
@@ -400,7 +399,6 @@ static struct snd_pcm_ops mtk_fmtx_ops = {
 
 static struct snd_soc_platform_driver mtk_fmtx_soc_platform = {
 	.ops        = &mtk_fmtx_ops,
-	.pcm_new    = mtk_asoc_pcm_fmtx_new,
 	.probe      = mtk_afe_fmtx_probe,
 };
 
@@ -422,14 +420,6 @@ static int mtk_fmtx_probe(struct platform_device *pdev)
 
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_fmtx_soc_platform);
-}
-
-static int mtk_asoc_pcm_fmtx_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	PRINTK_AUD_FMTX("%s\n", __func__);
-	return ret;
 }
 
 static int mtk_afe_fmtx_probe(struct snd_soc_platform *platform)

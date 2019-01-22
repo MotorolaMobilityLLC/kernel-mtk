@@ -70,7 +70,6 @@ static struct device *mDev;
 
 static int mtk_i2s0_probe(struct platform_device *pdev);
 static int mtk_pcm_i2s0_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_i2s0_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_i2s0_probe(struct snd_soc_platform *platform);
 
 int mtk_soc_always_hd;
@@ -603,7 +602,6 @@ static struct snd_pcm_ops mtk_i2s0_ops = {
 
 static struct snd_soc_platform_driver mtk_i2s0_soc_platform = {
 	.ops = &mtk_i2s0_ops,
-	.pcm_new = mtk_asoc_pcm_i2s0_new,
 	.probe = mtk_afe_i2s0_probe,
 };
 
@@ -624,15 +622,6 @@ static int mtk_i2s0_probe(struct platform_device *pdev)
 
 	return snd_soc_register_platform(&pdev->dev, &mtk_i2s0_soc_platform);
 }
-
-static int mtk_asoc_pcm_i2s0_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	pr_debug("%s\n", __func__);
-	return ret;
-}
-
 
 static int mtk_afe_i2s0_probe(struct snd_soc_platform *platform)
 {

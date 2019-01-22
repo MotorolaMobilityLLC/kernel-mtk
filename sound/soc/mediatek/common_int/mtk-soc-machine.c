@@ -480,7 +480,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 	{
 		.name = "PLATOFRM_CONTROL",
 		.stream_name = MT_SOC_ROUTING_STREAM_NAME,
-		.cpu_dai_name   = MT_SOC_ROUTING_DAI_NAME,
+		.cpu_dai_name   = "snd-soc-dummy-dai",
 		.platform_name  = MT_SOC_ROUTING_PCM,
 		.codec_dai_name = MT_SOC_CODEC_DUMMY_DAI_NAME,
 		.codec_name = MT_SOC_CODEC_DUMMY_NAME,

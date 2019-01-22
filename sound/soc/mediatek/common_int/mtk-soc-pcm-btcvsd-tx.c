@@ -346,14 +346,6 @@ static int mtk_pcm_btcvsd_tx_silence(struct snd_pcm_substream *substream,
 	return 0; /* do nothing */
 }
 
-static int mtk_asoc_pcm_btcvsd_tx_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	LOGBT("%s\n", __func__);
-	return ret;
-}
-
 static int mtk_asoc_pcm_btcvsd_tx_platform_probe(struct snd_soc_platform *platform)
 {
 	pr_warn("%s\n", __func__);
@@ -379,7 +371,6 @@ static struct snd_pcm_ops mtk_btcvsd_tx_ops = {
 
 static struct snd_soc_platform_driver mtk_btcvsd_tx_soc_platform = {
 	.ops        = &mtk_btcvsd_tx_ops,
-	.pcm_new    = mtk_asoc_pcm_btcvsd_tx_new,
 	.probe      = mtk_asoc_pcm_btcvsd_tx_platform_probe,
 };
 
@@ -448,7 +439,6 @@ static int __init mtk_btcvsd_tx_soc_platform_init(void)
 {
 	int ret;
 
-	pr_warn("+%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_mtk_btcvsd_tx_dev = platform_device_alloc(MT_SOC_BTCVSD_TX_PCM, -1);
 	if (!soc_mtk_btcvsd_tx_dev) {

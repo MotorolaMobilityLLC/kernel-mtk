@@ -423,7 +423,6 @@ static struct snd_pcm_ops mtk_usb_echoref_ops = {
 
 static int mtk_usb_echoref_platform_probe(struct snd_soc_platform *platform)
 {
-	pr_warn("mtk_voice_platform_probe\n");
 	snd_soc_add_platform_controls(platform, speech_usb_controls,
 				      ARRAY_SIZE(speech_usb_controls));
 	return 0;
@@ -455,8 +454,6 @@ static struct snd_soc_platform_driver mtk_soc_usb_echoref_platform = {
 
 static int mtk_usb_echoref_probe(struct platform_device *pdev)
 {
-	pr_warn("%s()\n", __func__);
-
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 
 	if (!pdev->dev.dma_mask)
@@ -465,7 +462,7 @@ static int mtk_usb_echoref_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_VOICE_USB_ECHOREF);
 
-	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_usb_echoref_platform);
 }

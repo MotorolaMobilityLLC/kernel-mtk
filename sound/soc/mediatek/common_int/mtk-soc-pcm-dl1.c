@@ -118,7 +118,6 @@ static struct device *mDev;
 /*void StopAudioPcmHardware(void);*/
 static int mtk_soc_dl1_probe(struct platform_device *pdev);
 static int mtk_soc_pcm_dl1_close(struct snd_pcm_substream *substream);
-static int mtk_asoc_pcm_dl1_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_asoc_dl1_probe(struct snd_soc_platform *platform);
 
 static bool mPrepareDone;
@@ -540,19 +539,8 @@ static struct snd_pcm_ops mtk_afe_ops = {
 
 static struct snd_soc_platform_driver mtk_soc_platform = {
 	.ops = &mtk_afe_ops,
-	.pcm_new = mtk_asoc_pcm_dl1_new,
 	.probe = mtk_asoc_dl1_probe,
 };
-
-
-static int mtk_asoc_pcm_dl1_new(struct snd_soc_pcm_runtime *rtd)
-{
-	int ret = 0;
-
-	PRINTK_AUDDRV("%s\n", __func__);
-	return ret;
-}
-
 
 static int mtk_asoc_dl1_probe(struct snd_soc_platform *platform)
 {

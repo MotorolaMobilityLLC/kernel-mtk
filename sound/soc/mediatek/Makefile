@@ -49,8 +49,8 @@ subdir-ccflags-y += -Werror -I$(src)/vendor
 
 # Update pmic built flow to avoid codec init later than codec probe
 obj-y += codec/$(MTK_CODEC)/
-obj-y += common_int/
 obj-y += vendor/
+obj-y += common_int/
 
 ifeq ($(MTK_PLATFORM),mt6758)
   obj-y += mt6758_int/

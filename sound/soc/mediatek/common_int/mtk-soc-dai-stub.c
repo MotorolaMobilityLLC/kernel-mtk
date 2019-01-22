@@ -615,46 +615,6 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		.ops = &mtk_dai_anc_record_ops,
 	},
 	{
-		.capture = {
-			.stream_name = MT_SOC_MODADCI2S_STREAM_NAME,
-			.rates = SNDRV_PCM_RATE_8000_48000,
-			.formats = SNDRV_PCM_FMTBIT_S16_LE,
-			.channels_min = 1,
-			.channels_max = 2,
-			.rate_min = 8000,
-			.rate_max = 48000,
-		},
-		.name = MT_SOC_MODADCI2SDAI_NAME,
-		.ops = &mtk_dai_stub_ops,
-	},
-
-	{
-		.capture = {
-			.stream_name = MT_SOC_ADC2AWB_STREAM_NAME,
-			.rates = SNDRV_PCM_RATE_8000_192000,
-			.formats = SNDRV_PCM_FMTBIT_S16_LE,
-			.channels_min = 1,
-			.channels_max = 2,
-			.rate_min = 8000,
-			.rate_max = 192000,
-		},
-		.name = MT_SOC_ADC2AWBDAI_NAME,
-		.ops = &mtk_dai_stub_ops,
-	},
-	{
-		.capture = {
-			.stream_name = MT_SOC_IO2DAI_STREAM_NAME,
-			.rates = SNDRV_PCM_RATE_8000_48000,
-			.formats = SNDRV_PCM_FMTBIT_S16_LE,
-			.channels_min = 1,
-			.channels_max = 2,
-			.rate_min = 8000,
-			.rate_max = 48000,
-		},
-		.name = MT_SOC_IO2DAIDAI_NAME,
-		.ops = &mtk_dai_stub_ops,
-	},
-	{
 		.playback = {
 			.stream_name = MT_SOC_HP_IMPEDANCE_STREAM_NAME,
 			.rates = SNDRV_PCM_RATE_8000_192000,
