@@ -363,7 +363,7 @@ int get_target_tj(void)
 #if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
 /* ATM in SSPM requires ATM, PPB, CATM */
 static int atm_sspm_enabled;
-static int atm_prev_active_atm_cl_id = -1;
+static int atm_prev_active_atm_cl_id = -100;
 
 static int atm_update_atm_param_to_sspm(void)
 {
