@@ -16,7 +16,8 @@
 		compatible = "richtek,rt9466";
 		reg = <0x53>;
 		rt,ceb_gpio_num = <160>;
-		rt,intr_gpio_num = <173>; /* direct defined GPIO num */
+		rt,intr_gpio_num = <25>; /* direct defined GPIO num */
+		rt,intr_gpio = <&pio 25 0x0>;
 		status = "okay";
 		/*
 		 * Charger name
@@ -32,8 +33,10 @@
 		safety_timer = <12>;  /* hour */
 		ircmp_resistor = <80000>; /* uohm */
 		ircmp_vclamp = <224000>;  /* uV */
-		enable_te;
-		/* enable_wdt; */
+		en_te;
+		/* en_wdt; */
+		/* en_jeita; */
+		/* en_irq_pulse; */
 		ceb_invert;
 	};
 };
@@ -43,7 +46,9 @@
 		compatible = "richtek,rt9466";
 		reg = <0x53>;
 		/* rt,ceb_gpio_num = <160>; */
-		rt,intr_gpio_num = <101>; /* direct defined GPIO num */
+		rt,intr_gpio = <&pio 25 0x0>;
+		rt,intr_gpio_num = <25>; /* direct defined GPIO num */
+		interrupt-names = "wdtmri", "chg_mivr", "chg_aiclmeasi", "chg_statci";
 		status = "okay";
 		/*
 		 * Charger name
@@ -59,8 +64,10 @@
 		safety_timer = <12>;  /* hour */
 		ircmp_resistor = <80000>; /* uohm */
 		ircmp_vclamp = <224000>;  /* uV */
-		enable_te;
-		/* enable_wdt; */
+		en_te;
+		en_wdt;
+		/* en_jeita; */
+		/* en_irq_pulse; */
 		/* ceb_invert; */
 	};
 };
