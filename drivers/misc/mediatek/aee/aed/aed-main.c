@@ -1453,7 +1453,7 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 				rcu_read_lock();
 				task = find_task_by_vpid(tmp->tid);
-				if (task == NULL) {
+				if (task == NULL || task->stack == NULL) {
 					kfree(tmp);
 					rcu_read_unlock();
 					ret = -EINVAL;
