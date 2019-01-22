@@ -521,8 +521,12 @@ void sdio_execute_dvfs_autok_mode(struct msdc_host *host, bool ddr208)
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, i) != 0)
 			pr_notice("vcorefs_request_dvfs_opp@LEVEL%d fail!\n", i);
+#ifdef POWER_READY
 		pmic_read_interface(REG_VCORE_VOSEL, &vcore_step2,
 			MASK_VCORE_VOSEL, SHIFT_VCORE_VOSEL);
+#else
+		vcore_step2 = 0;
+#endif /* POWER_READY */
 		if (vcore_step2 == vcore_step1) {
 			pr_info("skip duplicated vcore autok\n");
 			memcpy(host->autok_res[i], host->autok_res[i-1],

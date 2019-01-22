@@ -15,7 +15,7 @@
 #define _MSDC_CUST_MT6771_H_
 
 #include <dt-bindings/mmc/mt6771-msdc.h>
-#include <dt-bindings/clock/mt6771-clk.h>
+/* #include <dt-bindings/clock/mt6771-clk.h> */
 
 #include <spm_v4/mtk_spm_resource_req.h>
 
@@ -38,6 +38,8 @@
 /**************************************************************/
 /* Section 2: Power                                           */
 /**************************************************************/
+/* #define POWER_READY */
+#ifdef POWER_READY
 #if !defined(FPGA_PLATFORM)
 #include <mt-plat/upmu_common.h>
 
@@ -99,20 +101,21 @@
 #define SHIFT_VMCH_OC_STATUS    PMIC_RG_INT_STATUS_VMCH_OC_SHIFT
 #define FIELD_VMCH_OC_STATUS    (MASK_VMCH_OC_STATUS << SHIFT_VMCH_OC_STATUS)
 
-#define VEMC_VOSEL_CAL_mV(cal)  ((cal <= 0) ? (0) : ((cal)/10))
+#define VEMC_VOSEL_CAL_mV(cal)  ((cal >= 0) ? ((cal)/10) : 0)
 #define VEMC_VOSEL_2V9          (0xa)
 #define VEMC_VOSEL_3V           (0xb)
 #define VEMC_VOSEL_3V3          (0xd)
-#define VMC_VOSEL_CAL_mV(cal)   ((cal <= 0) ? (0) : ((cal)/10))
+#define VMC_VOSEL_CAL_mV(cal)   ((cal >= 0) ? ((cal)/10) : 0)
 #define VMC_VOSEL_1V8           (0x4)
 #define VMC_VOSEL_2V9           (0xa)
 #define VMC_VOSEL_3V            (0xb)
 #define VMC_VOSEL_3V3           (0xd)
-#define VMCH_VOSEL_CAL_mV(cal)  ((cal <= 0) ? (0) : ((cal)/10))
+#define VMCH_VOSEL_CAL_mV(cal)  ((cal >= 0) ? ((cal)/10) : 0)
 #define VMCH_VOSEL_2V9          (0xa)
 #define VMCH_VOSEL_3V           (0xb)
 #define VMCH_VOSEL_3V3          (0xd)
 #endif
+#endif /* POWER_READY */
 
 #define REG_VCORE_VOSEL         0xBE8
 #define MASK_VCORE_VOSEL        0x7F
@@ -465,4 +468,13 @@
 #define CFG_DEV_SDIO                    2
 #endif
 
-#endif /* _MSDC_CUST_MT6763_H_ */
+/**************************************************************/
+/* Section 8: ECO Variation                                   */
+/**************************************************************/
+#if !defined(FPGA_PLATFORM)
+#include <mt-plat/mtk_chip.h>
+#else
+#define mt_get_chip_hw_ver()            0
+#endif
+
+#endif /* _MSDC_CUST_MT6771_H_ */
