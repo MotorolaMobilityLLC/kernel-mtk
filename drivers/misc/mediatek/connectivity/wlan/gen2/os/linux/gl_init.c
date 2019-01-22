@@ -578,7 +578,7 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 	if ((!prGlueInfo) || (!prRegInfo))
 		return;
 
-	if (kalCfgDataRead16(prGlueInfo, sizeof(WIFI_CFG_PARAM_STRUCT) - sizeof(UINT_16), (PUINT_16) aucTmp) == TRUE) {
+	if (kalCfgDataRead16(prGlueInfo, 0, (PUINT_16) aucTmp) == TRUE) {
 		prGlueInfo->fgNvramAvailable = TRUE;
 
 		/* load MAC Address */
