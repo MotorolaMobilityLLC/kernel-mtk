@@ -275,14 +275,16 @@ static int ufs_mtk_pre_pwr_change(struct ufs_hba *hba,
 #if 0 /* standard way: use the maximum speed supported by device */
 	memcpy(final, desired, sizeof(struct ufs_pa_layer_attr));
 #else /* for compatibility, use assigned speed temporarily */
-	final->gear_rx = 1; /* Use HS-G1B in pre-silicon and bring-up stage */
-	final->gear_tx = 1; /* Use HS-G1B in pre-silicon and bring-up stage */
+	final->gear_rx = 3;
+	final->gear_tx = 3;
 	final->lane_rx = 1;
 	final->lane_tx = 1;
 	final->hs_rate = PA_HS_MODE_B;
 	final->pwr_rx = FAST_MODE;
 	final->pwr_tx = FAST_MODE;
 #endif
+
+	ufs_mtk_pltfrm_pwr_change_final_gear(hba, final);
 
 	return err;
 }
