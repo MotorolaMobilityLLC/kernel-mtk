@@ -367,7 +367,7 @@ CONFIG_MTK_ENG_BUILD,USER,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_FM_50KHZ_SUPPORT,PROJECT,xueqin.wang,,,,,,,,,,,
 CONFIG_MTK_DTBO_FEATURE,PROJECT,chia-hao.hsu,,X,X,X,X,X,,,X,,X
 CONFIG_MTK_SCHED_CPULOAD,PLATFORM,michael.jiang,,X,X,X,X,X,y,y,y,y,X
-CONFIG_MTK_SCHED_BOOST,PLATFORM,jing-ting.wu,,X,X,X,X,X,X,X,y,X,X
+CONFIG_MTK_SCHED_BOOST,PLATFORM,jing-ting.wu,,X,X,X,X,X,X,y,y,X,X
 CONFIG_MTK_SCHED_EAS_PLUS,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,y,y,y
 CONFIG_MTK_SCHED_EAS_POWER_SUPPORT,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,y,y,y
 CONFIG_MTK_SCHED_VIP_TASKS,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,y,y,y
@@ -460,7 +460,7 @@ CONFIG_MTK_COMBO_WIFI,COMMON,sarah-cp.yang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CONN_LTE_IDC_SUPPORT,PLATFORM,Alonso.Hsu,new config in this commit 3413d51500ed33e5696cbfe6286d5b8617867b35,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT,PROJECT,weiguo.li,new config in this commit 13be5de93e0cafaa0c3fc5f5dc16aa86e0422208,,,,,,,,,,
 CONFIG_MTK_ROUND_CORNER_SUPPORT,PROJECT,k.zhang,,,,,,,,,,,
-CONFIG_MTK_CPU_AFFINITY,COMMON,jing-ting.wu,,y,y,y,y,y,y,y,y,y,y
+CONFIG_MTK_CPU_AFFINITY,PLATFORM,jing-ting.wu,,y,y,y,y,y,y,X,X,X,X
 CONFIG_MTK_CPU_TOPOLOGY,PLATFORM,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CQDMA,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_DEBUG_TRACER,PLATFORM,,,y,y,y,y,y,y,y,y,y,y
@@ -692,7 +692,7 @@ CONFIG_MTK_UART_USB_SWITCH,PROJECT,yu-chang.wang,,,,,,,,,,,
 CONFIG_MTK_UNCALI_GYROHUB,PROJECT,weiqi.fu,new config in this commit 6cf72299191fe832dffff96cd9233bcf981b52a0,,,,,,,,,,
 CONFIG_MTK_UNCALI_MAGHUB,PROJECT,weiqi.fu,new config in this commit 6cf72299191fe832dffff96cd9233bcf981b52a0,,,,,,,,,,
 CONFIG_MTK_USB2JTAG_SUPPORT,PLATFORM,shun-chih.yu,only D1 support,X,X,X,X,X,X,X,X,X,X
-CONFIG_MTK_USER_SPACE_GLOBAL_CPUSET,PLATFORM,jing-ting.wu,,X,X,X,y,y,X,X,y,X,y
+CONFIG_MTK_USER_SPACE_GLOBAL_CPUSET,PLATFORM,jing-ting.wu,,X,X,X,y,y,X,y,y,y,y
 CONFIG_MTK_VIBRATOR,COMMON,chang-an.chen,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_VIDEOCODEC_DRIVER,COMMON,Tofar.Huang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_VIDEOX,PLATFORM,Tai-Hua.Tseng,,X,X,y,X,X,X,X,X,X,X
