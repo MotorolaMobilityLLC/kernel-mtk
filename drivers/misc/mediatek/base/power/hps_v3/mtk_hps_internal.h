@@ -435,4 +435,6 @@ extern unsigned char iccs_get_target_power_state_bitmask(void);
 extern void iccs_set_target_power_state_bitmask(unsigned char value);
 extern void iccs_enter_low_power_state(void);
 #endif
+void __weak armpll_control(int id, int on) { }
+void __weak mp_enter_suspend(int id, int suspend) { }
 #endif
