@@ -86,7 +86,10 @@ typedef enum _REGISTER_GROUP_T {
 	VDEC_VP6_VLD,       /* /< VDEC_VP6_VLD */
 	VDEC_VP8_VLD2,      /* /< VDEC_VP8_VLD2 */
 	VENC_HW_BASE,       /* /< VENC_HW_BASE */
+	VENC_LT_HW_BASE,    /* /< VENC_HW_LT_BASE */
 	VENC_MP4_HW_BASE,   /* /< VENC_MP4_HW_BASE */
+	VDEC_VP9_VLD,       /* /< VDEC_VP9_VLD*/
+	VDEC_UFO,           /* /< VDEC_UFO*/
 	VCODEC_MAX          /* /< VCODEC_MAX */
 } REGISTER_GROUP_T;
 
