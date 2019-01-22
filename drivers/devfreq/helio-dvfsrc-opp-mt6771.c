@@ -39,11 +39,11 @@ static unsigned int vcore_opp_L3_1CH[VCORE_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 };
 
 int vcore_dvfs_to_vcore_opp[] = {
-	VCORE_OPP_0, VCORE_OPP_1, VCORE_OPP_1, VCORE_OPP_1
+	VCORE_OPP_0, VCORE_OPP_1, VCORE_OPP_1, VCORE_OPP_1, VCORE_OPP_NUM
 };
 
 int vcore_dvfs_to_ddr_opp[]   = {
-	DDR_OPP_0, DDR_OPP_0, DDR_OPP_1, DDR_OPP_2
+	DDR_OPP_0, DDR_OPP_0, DDR_OPP_1, DDR_OPP_2, DDR_OPP_NUM
 };
 
 /* ptr that points to v1 or v2 opp table */
@@ -63,6 +63,28 @@ unsigned int get_cur_vcore_opp(void)
 unsigned int get_cur_ddr_opp(void)
 {
 	return vcore_dvfs_to_ddr_opp[spm_vcorefs_get_dvfs_opp()];
+}
+
+unsigned int get_min_opp_for_vcore(int vcore_opp)
+{
+	int i = VCORE_OPP_NUM;
+
+	for (i = VCORE_OPP_NUM; i >= 0 ; i--) {
+		if (vcore_dvfs_to_vcore_opp[i] == vcore_opp)
+			break;
+	}
+	return i;
+}
+
+unsigned int get_min_opp_for_ddr(int ddr_opp)
+{
+	int i = DDR_OPP_NUM;
+
+	for (i = DDR_OPP_NUM; i >= 0; i--) {
+		if (vcore_dvfs_to_ddr_opp[i] == ddr_opp)
+			break;
+	}
+	return i;
 }
 
 unsigned int get_vcore_opp_volt(unsigned int opp)

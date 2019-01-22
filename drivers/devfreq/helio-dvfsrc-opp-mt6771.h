@@ -18,6 +18,8 @@ extern int vcore_opp_init(void);
 extern unsigned int get_vcore_opp_volt(unsigned int opp);
 extern unsigned int get_cur_vcore_opp(void);
 extern unsigned int get_cur_ddr_opp(void);
+extern unsigned int get_min_opp_for_vcore(int vcore_opp);
+extern unsigned int get_min_opp_for_ddr(int ddr_opp);
 
 enum ddr_opp {
 	DDR_OPP_UNREQ = -1,
