@@ -211,7 +211,7 @@ extern int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step);
 extern int mmdvfs_is_default_step_need_perf(void);
 extern void mmdvfs_mm_clock_switch_notify(int is_before, int is_to_high);
 
-#ifdef CONFIG_MTK_SMI_VARIANT
+#if defined(CONFIG_MTK_SMI_VARIANT) || defined(CONFIG_MTK_PSEUDO_M4U)
 /* Enable the power-domain and the clocks of the larb.
  *
  * larb: larb id
