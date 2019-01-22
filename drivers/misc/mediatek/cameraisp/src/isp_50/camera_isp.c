@@ -3344,14 +3344,25 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			LOG_NOTICE("get ISP_SET_SEC_DAPC_REG from user fail\n");
 			Ret = -EFAULT;
 		} else {
-			sec_on = Dapc_Reg[1];
-			lock_reg.CAM_REG_CTL_EN[Dapc_Reg[0]] = Dapc_Reg[2];
-			lock_reg.CAM_REG_CTL_DMA_EN[Dapc_Reg[0]] = Dapc_Reg[3];
-			lock_reg.CAM_REG_CTL_SEL[Dapc_Reg[0]] = Dapc_Reg[4];
-			lock_reg.CAM_REG_CTL_EN2[Dapc_Reg[0]] = Dapc_Reg[5];
-			LOG_INF("[DAPC]CAM_CTL_EN:0x%x CAM_CTL_DMA_EN:0x%x CAM_CTL_SEL:0x%x CAM_CTL_EN2:0x%x",
-				lock_reg.CAM_REG_CTL_EN[Dapc_Reg[0]], lock_reg.CAM_REG_CTL_DMA_EN[Dapc_Reg[0]],
-				lock_reg.CAM_REG_CTL_SEL[Dapc_Reg[0]], lock_reg.CAM_REG_CTL_EN2[Dapc_Reg[0]]);
+			if (Dapc_Reg[0] < ISP_CAMSYS_CONFIG_IDX || Dapc_Reg[0] >= ISP_DEV_NODE_NUM) {
+				LOG_NOTICE("module index(0x%x) error\n", Dapc_Reg[0]);
+				Ret = -EFAULT;
+				break;
+			}
+
+			if (Dapc_Reg[1] == MTRUE) {
+				sec_on = Dapc_Reg[1];
+				lock_reg.CAM_REG_CTL_EN[Dapc_Reg[0]] = Dapc_Reg[2];
+				lock_reg.CAM_REG_CTL_DMA_EN[Dapc_Reg[0]] = Dapc_Reg[3];
+				lock_reg.CAM_REG_CTL_SEL[Dapc_Reg[0]] = Dapc_Reg[4];
+				lock_reg.CAM_REG_CTL_EN2[Dapc_Reg[0]] = Dapc_Reg[5];
+				LOG_INF("[DAPC REG]CTL_EN:0x%x CTL_DMA_EN:0x%x CTL_SEL:0x%x CTL_EN2:0x%x",
+					lock_reg.CAM_REG_CTL_EN[Dapc_Reg[0]], lock_reg.CAM_REG_CTL_DMA_EN[Dapc_Reg[0]],
+					lock_reg.CAM_REG_CTL_SEL[Dapc_Reg[0]], lock_reg.CAM_REG_CTL_EN2[Dapc_Reg[0]]);
+			} else {
+				LOG_NOTICE("get wrong sec status (0x%x)\n", Dapc_Reg[1]);
+				Ret = -EFAULT;
+			}
 		}
 		break;
 	default:
