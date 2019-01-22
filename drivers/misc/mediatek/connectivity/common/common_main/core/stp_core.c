@@ -18,6 +18,7 @@
 #include "stp_dbg.h"
 #include "stp_sdio.h"
 #include "stp_btif.h"
+#include "wmt_lib.h"
 
 #define PFX                         "[STP] "
 #define STP_LOG_DBG                  4
@@ -95,15 +96,12 @@ static mtkstp_context_struct stp_core_ctx = { 0 };
 #define STP_ENABLE_FW_COREDUMP(x, v)  ((x).en_coredump = (v))
 #define STP_ENABLE_FW_COREDUMP_FLAG(x)  ((x).en_coredump)
 
-#define STP_FW_COREDUMP_RECEIVE_FLAG(x)  ((x).r_coredump)
-#define STP_SET_FW_COREDUMP_RECEIVE_FLAG(x, v)  ((x).r_coredump = (v))
-
 
 #define STP_WMT_LAST_CLOSE(x)       ((x).f_wmt_last_close)
 #define STP_SET_WMT_LAST_CLOSE(x, v) ((x).f_wmt_last_close = (v))
 
-#define STP_EVT_ERR_ASSERT(x)		((x).f_evt_err_assert)
-#define STP_SET_EVT_ERR_ASSERT(x, v)	((x).f_evt_err_assert = (v))
+#define STP_ASSERT(x)		((x).f_evt_err_assert)
+#define STP_SET_ASSERT(x, v)	((x).f_evt_err_assert = (v))
 
 /*[PatchNeed]Need to calculate the timeout value*/
 static UINT32 mtkstp_tx_timeout = MTKSTP_TX_TIMEOUT;
@@ -332,11 +330,11 @@ static VOID stp_trace32_dump(VOID)
 				}
 				stp_core_ctx.assert_info_cnt++;
 			}
-			STP_INFO_FUNC("++ start to read paged dump and paged trace ++\n");
+			STP_DBG_FUNC("++ start to read paged dump and paged trace ++\n");
 			stp_btm_notify_wmt_dmp_wq(stp_core_ctx.btm);
-			STP_INFO_FUNC("++ start to read paged dump and paged trace --\n");
+			STP_DBG_FUNC("++ start to read paged dump and paged trace --\n");
 		}
-		STP_INFO_FUNC("[len=%d][type=%d]\n%s\n", stp_core_ctx.rx_counter,
+		STP_INFO_FUNC("[len=%d][type=%d]%s\n", stp_core_ctx.rx_counter,
 					stp_core_ctx.parser.type, stp_core_ctx.rx_buf);
 	}
 	/*Runtime FW Log */
@@ -350,7 +348,6 @@ static VOID stp_trace32_dump(VOID)
 	else {
 		/*Aee Kernel Warning Message Shown First */
 		/* (*sys_dbg_assert_aee)("[MT662x]f/w Assert", stp_core_ctx.rx_buf); */
-		mtk_wcn_stp_coredump_start_ctrl(0);
 		mtk_wcn_stp_dbg_dump_package();
 
 		osal_dbg_assert_aee(stp_core_ctx.rx_buf, stp_core_ctx.rx_buf);
@@ -439,8 +436,6 @@ static VOID stp_sdio_trace32_dump(VOID)
 				osal_strlen("coredump end") - 2, osal_strlen("coredump end")) == 0) {
 			STP_INFO_FUNC("%d coredump packets received\n", stp_core_ctx.assert_info_cnt);
 			STP_ERR_FUNC("coredump end\n");
-			/*mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);*/
-			/*mtk_wcn_stp_coredump_start_ctrl(0);*/
 			mtk_wcn_stp_ctx_restore();
 		}
 	}
@@ -454,8 +449,6 @@ static VOID stp_sdio_trace32_dump(VOID)
 	else {
 		/*Aee Kernel Warning Message Shown First */
 		/* (*sys_dbg_assert_aee)("[MT662x]f/w Assert", stp_core_ctx.rx_buf); */
-		mtk_wcn_stp_coredump_start_ctrl(0);
-		mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
 		mtk_wcn_stp_dbg_dump_package();
 		if (mtk_wcn_stp_coredump_flag_get() == 0) {
 			osal_err_print("[len=%d][type=%d]\n%s\n", stp_core_ctx.rx_counter,
@@ -692,9 +685,7 @@ VOID stp_do_tx_timeout(VOID)
 {
 	UINT32 seq;
 	UINT32 ret;
-	ENUM_STP_FW_ISSUE_TYPE issue_type;
 	UINT8 resync[4];
-	INT32 iRet = -1;
 
 	STP_WARN_FUNC
 	    ("==============================================================================\n");
@@ -776,36 +767,12 @@ VOID stp_do_tx_timeout(VOID)
 
 			STP_ERR_FUNC("TX retry limit = %d\n", MTKSTP_RETRY_LIMIT);
 			osal_assert(0);
-			mtk_wcn_stp_dbg_dump_package();
 			stp_notify_btm_dump(STP_BTM_CORE(stp_core_ctx));
 
 			/*Whole Chip Reset Procedure Invoke */
-			/*if(STP_NOT_ENABLE_DBG(stp_core_ctx)) */
-			if (mtk_wcn_stp_get_wmt_evt_err_trg_assert() == 0) {
-				stp_psm_disable(STP_PSM_CORE(stp_core_ctx));
-				mtk_wcn_stp_set_wmt_evt_err_trg_assert(1);
-				stp_dbg_set_host_assert_info(4, 36, 1);
-				STP_INFO_FUNC("**STP NoAck trigger firmware assert**\n");
-				iRet = stp_notify_btm_do_fw_assert(STP_BTM_CORE(stp_core_ctx));
-
-				if (iRet) {
-					STP_ERR_FUNC("host tigger fw assert fail(%d), do noack handle flow\n", iRet);
-					mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
-					issue_type = STP_FW_NOACK_ISSUE;
-					iRet = stp_dbg_set_fw_info("STP NoAck", osal_strlen("STP NoAck"), issue_type);
-
-					osal_dbg_assert_aee("[SOC_CONNSYS]NoAck",
-						"**[WCN_ISSUE_INFO]STP Tx Timeout**\n F/W has NO any RESPONSE. Please check F/W status first\n");
-					if (STP_IS_ENABLE_RST(stp_core_ctx)) {
-						STP_SET_READY(stp_core_ctx, 0);
-						stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
-					} else {
-						STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
-					}
-				}
-			} else {
-				STP_INFO_FUNC("do trigger assert & chip reset in wmt\n");
-			}
+			stp_psm_disable(STP_PSM_CORE(stp_core_ctx));
+			STP_INFO_FUNC("**STP NoAck trigger firmware assert**\n");
+			wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 36);
 			return;
 		}
 	}
@@ -1339,7 +1306,6 @@ static VOID stp_process_packet(VOID)
 	MTK_WCN_BOOL b;
 	MTK_WCN_BOOL is_function_active = 0;
 	static INT32 stp_process_packet_fail_count;
-	INT32 iRet = -1;
 
 	stp_dbg_pkt_log(stp_core_ctx.parser.type,
 			stp_core_ctx.parser.ack,
@@ -1503,23 +1469,8 @@ static VOID stp_process_packet(VOID)
 	if (stp_process_packet_fail_count > MTKSTP_RETRY_LIMIT) {
 		stp_process_packet_fail_count = 0;
 		STP_ERR_FUNC("The process packet fail count > 10 lastly, host trigger assert\n");
-		mtk_wcn_stp_dbg_dump_package();
 		/*Whole Chip Reset Procedure Invoke */
-		/*if(STP_NOT_ENABLE_DBG(stp_core_ctx)) */
-		if (mtk_wcn_stp_get_wmt_evt_err_trg_assert() == 0) {
-			iRet = mtk_wcn_wmt_assert_timeout(WMTDRV_TYPE_STP, 37, 0);
-			if (iRet) {
-				osal_dbg_assert_aee("[SOC_CONSYS]stp process packet fail",
-							"**[WCN_ISSUE_INFO]STP process packet fail**\n");
-
-				if (STP_IS_ENABLE_RST(stp_core_ctx)) {
-					STP_SET_READY(stp_core_ctx, 0);
-					stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
-				} else {
-					STP_INFO_FUNC("No to launch whole chip reset! for debugging purpose\n");
-				}
-			}
-		}
+		wmt_lib_trigger_assert(WMTDRV_TYPE_WMT, 37);
 	}
 
 }
@@ -1577,9 +1528,8 @@ INT32 mtk_wcn_stp_init(const mtkstp_callback * const cb_func)
 	STP_SET_PSM_CORE(stp_core_ctx, stp_psm_init());
 	STP_SET_FW_COREDUMP_FLAG(stp_core_ctx, 0);
 	STP_ENABLE_FW_COREDUMP(stp_core_ctx, 0);
-	STP_SET_FW_COREDUMP_RECEIVE_FLAG(stp_core_ctx, 0);
 	STP_SET_WMT_LAST_CLOSE(stp_core_ctx, 0);
-	STP_SET_EVT_ERR_ASSERT(stp_core_ctx, 0);
+	STP_SET_ASSERT(stp_core_ctx, 0);
 
 	if (!STP_PSM_CORE(stp_core_ctx)) {
 		ret = (-3);
@@ -1981,7 +1931,9 @@ static INT32 stp_parser_data_in_mand_mode(UINT32 length, UINT8 *p_data)
 				}
 				continue;
 			}
-			mtk_wcn_stp_re_coredump_set(1);
+			mtk_wcn_stp_coredump_start_ctrl(1);
+			if (mtk_wcn_stp_get_wmt_trg_assert() == 1)
+				stp_btm_stop_trigger_assert_timer(STP_BTM_CORE(stp_core_ctx));
 			if (STP_IS_READY(stp_core_ctx)) {
 				mtk_wcn_stp_dbg_dump_package();
 				stp_notify_btm_dump(STP_BTM_CORE(stp_core_ctx));
@@ -2311,7 +2263,9 @@ static INT32 stp_parser_data_in_full_mode(UINT32 length, UINT8 *p_data)
 			if (wmt_plat_dump_BGF_irq_status() == MTK_WCN_BOOL_TRUE)
 				wmt_plat_BGF_irq_dump_status();
 #endif
-			mtk_wcn_stp_re_coredump_set(1);
+			mtk_wcn_stp_coredump_start_ctrl(1);
+			if (mtk_wcn_stp_get_wmt_trg_assert() == 1)
+				stp_btm_stop_trigger_assert_timer(STP_BTM_CORE(stp_core_ctx));
 			if (STP_IS_READY(stp_core_ctx))
 				mtk_wcn_stp_dbg_dump_package();
 
@@ -2500,7 +2454,7 @@ INT32 mtk_wcn_stp_enable(INT32 value)
 	else {
 /* g_block_tx = 0; */
 		mtk_wcn_stp_coredump_start_ctrl(0);
-		mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
+		mtk_wcn_stp_set_wmt_trg_assert(0);
 	}
 	return 0;
 }
@@ -2513,7 +2467,9 @@ INT32 mtk_wcn_stp_dbg_dump_package(VOID)
 	else {
 		STP_INFO_FUNC("STP dbg mode is on\n");
 		/* if (0 == g_block_tx) */
-		if (mtk_wcn_stp_coredump_start_get() == 0) {
+		if (mtk_wcn_stp_coredump_start_get() == 0 ||
+				(mtk_wcn_stp_coredump_start_get() == 1 &&
+				 mtk_wcn_stp_get_wmt_trg_assert() == 0)) {
 			if (mtk_wcn_stp_is_btif_fullset_mode()) {
 				mtk_wcn_consys_stp_btif_logger_ctrl(BTIF_DUMP_LOG);
 				mtk_wcn_consys_stp_btif_logger_ctrl(BTIF_DUMP_BTIF_REG);
@@ -2599,17 +2555,6 @@ INT32 mtk_wcn_stp_coredump_start_get(VOID)
 #ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
 EXPORT_SYMBOL(mtk_wcn_stp_coredump_start_get);
 #endif
-
-INT32 mtk_wcn_stp_re_coredump_get(VOID)
-{
-	return STP_FW_COREDUMP_RECEIVE_FLAG(stp_core_ctx);
-}
-
-INT32 mtk_wcn_stp_re_coredump_set(UINT32 value)
-{
-	return STP_SET_FW_COREDUMP_RECEIVE_FLAG(stp_core_ctx, value);
-}
-
 
 /* mtk_wcn_stp_set_wmt_last_close -- set the state of link(UART or SDIO)
  * @ value - 1, link already be closed; 0, link is open
@@ -3473,15 +3418,15 @@ INT32 mtk_wcn_stp_notify_sleep_for_thermal(VOID)
 	return stp_psm_sleep_for_thermal(STP_PSM_CORE(stp_core_ctx));
 }
 
-VOID mtk_wcn_stp_set_wmt_evt_err_trg_assert(UINT32 value)
+VOID mtk_wcn_stp_set_wmt_trg_assert(UINT32 value)
 {
 	STP_DBG_FUNC("set evt err tigger assert flag to %d\n", value);
-	STP_SET_EVT_ERR_ASSERT(stp_core_ctx, value);
+	STP_SET_ASSERT(stp_core_ctx, value);
 }
 
-UINT32 mtk_wcn_stp_get_wmt_evt_err_trg_assert(VOID)
+UINT32 mtk_wcn_stp_get_wmt_trg_assert(VOID)
 {
-	return STP_EVT_ERR_ASSERT(stp_core_ctx);
+	return STP_ASSERT(stp_core_ctx);
 }
 
 /*****************************************************************************
@@ -3517,7 +3462,6 @@ INT32 mtk_wcn_stp_logger_ctrl(ENUM_BTIF_DBG_ID flag)
 VOID mtk_wcn_stp_ctx_save(void)
 {
 	STP_DBG_FUNC("start ++\n");
-	mtk_wcn_stp_coredump_start_ctrl(1);
 	stp_psm_set_sleep_disable(stp_core_ctx.psm);
 	STP_DBG_FUNC("exit --\n");
 }
@@ -3537,7 +3481,7 @@ VOID mtk_wcn_stp_ctx_restore(void)
 #endif
 }
 
-INT32 mtk_wcn_stp_wmt_evt_err_trg_assert(VOID)
+INT32 mtk_wcn_stp_wmt_trg_assert(VOID)
 {
 	INT32 ret = -1;
 
@@ -3548,8 +3492,7 @@ INT32 mtk_wcn_stp_wmt_evt_err_trg_assert(VOID)
 	ret = stp_notify_btm_do_fw_assert(STP_BTM_CORE(stp_core_ctx));
 
 	if (ret) {
-		STP_ERR_FUNC("evt err trigger assert fail,do chip reset to recovery\n");
-		mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
+		STP_ERR_FUNC("trigger assert fail,do chip reset to recovery\n");
 		if (STP_IS_ENABLE_RST(stp_core_ctx))
 			stp_btm_notify_wmt_rst_wq(STP_BTM_CORE(stp_core_ctx));
 		else
@@ -3562,9 +3505,6 @@ INT32 mtk_wcn_stp_wmt_evt_err_trg_assert(VOID)
 INT32 mtk_wcn_stp_coredump_timeout_handle(VOID)
 {
 	stp_core_ctx.assert_info_cnt = 0;
-	mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
-	mtk_wcn_stp_coredump_start_ctrl(0);
-	mtk_wcn_stp_re_coredump_set(0);
 	stp_psm_set_sleep_enable(stp_core_ctx.psm);
 	stp_btm_reset_btm_wq(STP_BTM_CORE(stp_core_ctx));
 	if (STP_IS_ENABLE_RST(stp_core_ctx))

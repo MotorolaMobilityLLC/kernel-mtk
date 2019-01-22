@@ -307,11 +307,6 @@ INT32 wmt_func_bt_on(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 		ctrlPa2 = PALDO_OFF;
 		wmt_core_ctrl(WMT_CTRL_SOC_PALDO_CTRL, &ctrlPa1, &ctrlPa2);
 
-		/*do coredump when bt on fail */
-		wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
-		ctrlPa1 = WMTDRV_TYPE_BT;
-		ctrlPa2 = 32;
-		wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlPa1, &ctrlPa2);
 		return -2;
 	}
 	osal_set_bit(WMT_BT_ON, &gBtWifiGpsState);
@@ -344,14 +339,8 @@ INT32 wmt_func_bt_off(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 	if (iRet2)
 		WMT_ERR_FUNC("wmt-func: wmt_ctrl_soc_paldo_ctrl(bt_off) failed(%d)\n", iRet2);
 
-	if (iRet1 + iRet2) {
-		/*do coredump when bt off fail */
-		wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
-		ctrlPa1 = WMTDRV_TYPE_BT;
-		ctrlPa2 = 32;
-		wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlPa1, &ctrlPa2);
+	if (iRet1 + iRet2)
 		return -1;
-	}
 
 	osal_clear_bit(WMT_BT_ON, &gBtWifiGpsState);
 	if ((!osal_test_bit(WMT_WIFI_ON, &gBtWifiGpsState)) && (osal_test_bit(WMT_GPS_ON, &gBtWifiGpsState))) {

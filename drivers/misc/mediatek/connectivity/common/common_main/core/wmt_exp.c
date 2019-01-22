@@ -377,81 +377,11 @@ EXPORT_SYMBOL(mtk_wcn_stp_wmt_sdio_host_awake);
 
 MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type, UINT32 reason, INT32 timeout)
 {
-	P_OSAL_OP pOp = NULL;
-	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
-	P_OSAL_SIGNAL pSignal;
+	MTK_WCN_BOOL bRet;
 
-	pOp = wmt_lib_get_free_op();
-	if (!pOp) {
-		WMT_DBG_FUNC("get_free_lxop fail\n");
-		return MTK_WCN_BOOL_FALSE;
-	}
+	bRet = wmt_lib_trigger_assert(type, reason);
 
-	pSignal = &pOp->signal;
-
-	pOp->op.opId = WMT_OPID_TRIGGER_STP_ASSERT;
-	pSignal->timeoutValue = timeout;
-	/*this test command should be run with usb cable connected, so no host awake is needed */
-	/* wmt_lib_host_awake_get(); */
-	pOp->op.au4OpData[0] = 0;
-	/*wake up chip first */
-	if (DISABLE_PSM_MONITOR()) {
-		WMT_ERR_FUNC("wake up failed\n");
-		wmt_lib_put_op_to_free_queue(pOp);
-		return MTK_WCN_BOOL_FALSE;
-	}
-
-	bRet = wmt_lib_put_act_op(pOp);
-	ENABLE_PSM_MONITOR();
-
-	/* wmt_lib_host_awake_put(); */
-	WMT_INFO_FUNC("STP_ASSERT, opid (%d), par(%zu, %zu), ret(%d), result(%s)\n",
-		      pOp->op.opId,
-		      pOp->op.au4OpData[0],
-		      pOp->op.au4OpData[1],
-		      bRet, MTK_WCN_BOOL_FALSE == bRet ? "failed" : "succeed");
-	/*If trigger stp assert succeed, just return; trigger WMT level assert if failed */
-	if (bRet == MTK_WCN_BOOL_TRUE) {
-		wmt_lib_set_host_assert_info(type, reason, 1);
-		return bRet;
-	}
-	pOp = wmt_lib_get_free_op();
-	if (!pOp) {
-		WMT_DBG_FUNC("get_free_lxop fail\n");
-		return MTK_WCN_BOOL_FALSE;
-	}
-
-	pSignal = &pOp->signal;
-
-	pOp->op.opId = WMT_OPID_CMD_TEST;
-
-	pSignal->timeoutValue = timeout;
-	/*this test command should be run with usb cable connected, so no host awake is needed */
-	/* wmt_lib_host_awake_get(); */
-	pOp->op.au4OpData[0] = 0;
-
-	/*wake up chip first */
-	if (DISABLE_PSM_MONITOR()) {
-		WMT_ERR_FUNC("wake up failed\n");
-		wmt_lib_put_op_to_free_queue(pOp);
-		return MTK_WCN_BOOL_FALSE;
-	}
-
-	bRet = wmt_lib_put_act_op(pOp);
-	ENABLE_PSM_MONITOR();
-
-	/* wmt_lib_host_awake_put(); */
-	WMT_INFO_FUNC("CMD_TEST, opid (%d), par(%zu, %zu), ret(%d), result(%s)\n",
-		      pOp->op.opId,
-		      pOp->op.au4OpData[0],
-		      pOp->op.au4OpData[1],
-		      bRet, MTK_WCN_BOOL_FALSE == bRet ? "failed" : "succeed");
-	if (bRet == MTK_WCN_BOOL_TRUE) {
-		wmt_lib_set_host_assert_info(type, reason, 1);
-		return bRet;
-	}
-
-	return bRet;
+	return bRet == 0 ? MTK_WCN_BOOL_TRUE : MTK_WCN_BOOL_FALSE;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_assert_timeout);
 
