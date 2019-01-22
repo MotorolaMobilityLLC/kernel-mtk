@@ -363,7 +363,7 @@ static void init_devinfo_exclusive(void)
 	of_scan_flat_dt(devinfo_parse_dt, NULL);
 }
 
-static int __init devinfo_of_init(void)
+static int devinfo_of_init(void)
 {
 	init_devinfo_exclusive();
 	return 0;
