@@ -759,9 +759,6 @@ extern int tcpm_notify_vbus_stable(struct tcpc_device *tcpc_dev);
 /* mtk only start */
 extern void tcpm_set_uvdm_handle_flag(struct tcpc_device *tcpc_dev, unsigned char en);
 extern bool tcpm_get_uvdm_handle_flag(struct tcpc_device *tcpc_dev);
-extern bool tcpm_get_boot_check_flag(struct tcpc_device *tcpc);
-extern void tcpm_set_boot_check_flag(struct tcpc_device *tcpc, unsigned char en);
-extern bool tcpm_get_ta_hw_exist(struct tcpc_device *tcpc);
 /* mtk only end */
 
 
@@ -852,5 +849,8 @@ extern bool tcpm_inquire_during_direct_charge(struct tcpc_device *tcpc);
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
 
 #endif	/* CONFIG_USB_POWER_DELIVERY */
+extern bool tcpm_get_boot_check_flag(struct tcpc_device *tcpc);
+extern void tcpm_set_boot_check_flag(struct tcpc_device *tcpc, unsigned char en);
+extern bool tcpm_get_ta_hw_exist(struct tcpc_device *tcpc);
 
 #endif /* TCPM_H_ */

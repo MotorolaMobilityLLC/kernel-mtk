@@ -940,6 +940,7 @@ int tcpm_get_pe30_ta_sup(struct tcpc_device *tcpc_dev)
 	return ret;
 }
 #endif /* CONFIG_RT7207_ADAPTER */
+#endif /* CONFIG_USB_POWER_DELIVERY */
 
 bool tcpm_get_boot_check_flag(struct tcpc_device *tcpc)
 {
@@ -959,4 +960,3 @@ bool tcpm_get_ta_hw_exist(struct tcpc_device *tcpc)
 	return (data & TCPC_REG_POWER_STATUS_VBUS_PRES);
 }
 
-#endif /* CONFIG_USB_POWER_DELIVERY */
