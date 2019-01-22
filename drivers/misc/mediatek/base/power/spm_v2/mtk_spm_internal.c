@@ -19,11 +19,11 @@
 #include <linux/delay.h>
 #include <linux/of_fdt.h>
 #include <linux/random.h>
-/* #include <mach/mt_spm_mtcmos_internal.h> */
+/* #include <mach/mtk_spm_mtcmos_internal.h> */
 #include <asm/setup.h>
 #include "mtk_spm_internal.h"
-/* #include "mt_vcorefs_governor.h" */
-/* #include "mt_spm_vcore_dvfs.h" */
+/* #include "mtk_vcorefs_governor.h" */
+/* #include "mtk_spm_vcore_dvfs.h" */
 #include "mtk_spm_misc.h"
 #include <mt-plat/upmu_common.h>
 #if defined(CONFIG_ARCH_MT6797)
@@ -939,6 +939,9 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		return WR_PCM_ASSERT;
 	}
 
+	if (wakesta->r12 == 0)
+		strcat(buf, " Unknown_Reason");
+
 	if (wakesta->r12 & WAKE_SRC_R12_PCM_TIMER) {
 		if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER) {
 			strcat(buf, " PCM_TIMER");
@@ -1380,7 +1383,29 @@ void __spm_pmic_pg_force_off(void)
 
 void __spm_pmic_low_iq_mode(int en)
 {
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6757)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	if (en) {
+		pmic_config_interface_nolock(MT6351_PMIC_RG_VGPU_VDIFF_ENLOWIQ_ADDR,
+					     0x1,
+					     MT6351_PMIC_RG_VGPU_VDIFF_ENLOWIQ_MASK,
+					     MT6351_PMIC_RG_VGPU_VDIFF_ENLOWIQ_SHIFT);
+		pmic_config_interface_nolock(MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_ADDR,
+					     0x1,
+					     MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_MASK,
+					     MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT);
+	} else {
+		pmic_config_interface_nolock(MT6351_PMIC_RG_VGPU_VDIFF_ENLOWIQ_ADDR,
+					     0x0,
+					     MT6351_PMIC_RG_VGPU_VDIFF_ENLOWIQ_MASK,
+					     MT6351_PMIC_RG_VGPU_VDIFF_ENLOWIQ_SHIFT);
+		pmic_config_interface_nolock(MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_ADDR,
+					     0x0,
+					     MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_MASK,
+					     MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT);
+	}
+#endif
+#elif defined(CONFIG_ARCH_MT6797)
 	if (en)
 		pmic_config_interface_nolock(MT6351_VGPU_ANA_CON7, 1, 0x1, 1);
 	else

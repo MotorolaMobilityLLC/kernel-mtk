@@ -18,17 +18,17 @@
 #include <linux/smp.h>
 #include <linux/delay.h>
 #include <linux/atomic.h>
-/* #include "mt_spm_idle.h" */
+/* #include "mtk_spm_idle.h" */
 /* #include <mach/irqs.h> */
 #include <mt-plat/upmu_common.h>
-/* #include "mt_spm_vcore_dvfs.h" */
-/* #include "mt_vcorefs_governor.h" */
+/* #include "mtk_spm_vcore_dvfs.h" */
+/* #include "mtk_vcorefs_governor.h" */
 #include "mtk_spm_internal.h"
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/of_reserved_mem.h>
-/* #include <linux/irqchip/mt-eic.h> */
+#include <linux/irqchip/mtk-eic.h>
 /* #include <mach/eint.h> */
 /* #include <mach/mt_boot.h> */
 #ifdef CONFIG_MTK_WD_KICKER
@@ -44,7 +44,7 @@
 #include <linux/debugfs.h>
 #include <linux/dcache.h>
 #include <asm/cacheflush.h>
-/* #include <asm/uaccess.h> */
+#include <linux/uaccess.h>
 #include <linux/dma-direction.h>
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
@@ -54,7 +54,7 @@
 #include <cust_gpio_usage.h>
 #endif
 #if defined(CONFIG_MACH_MT6757)
-/* #include "mt_dramc.h" */
+/* #include "mtk_dramc.h" */
 #endif
 #if defined(CONFIG_ARCH_MT6797)
 #include <mt_spm_pmic_wrap.h>
@@ -264,6 +264,21 @@ unsigned int __attribute__((weak)) pmic_read_interface_nolock
 {
 	return 0;
 }
+
+unsigned int __attribute__((weak)) pmic_config_interface
+					(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4)
+{
+	return 0;
+}
+
+int __attribute__((weak)) get_ddr_type(void)
+{
+	return 0;
+}
+
+#ifndef TYPE_LPDDR3
+#define TYPE_LPDDR3 1
+#endif
 
 /**************************************
  * Init and IRQ Function
@@ -1434,7 +1449,6 @@ EXPORT_SYMBOL(spm_twam_disable_monitor);
  * SPM Golden Seting API(MEMPLL Control, DRAMC)
  **************************************/
 #if defined(CONFIG_MACH_MT6757)
-#if 0
 struct ddrphy_golden_cfg {
 	u32 addr;
 	u32 value;
@@ -1451,11 +1465,9 @@ static struct ddrphy_golden_cfg ddrphy_setting[] = {
 	{0x278, 0x0},
 	{0x27c, 0xfe3fffff},
 };
-#endif
 
 int spm_golden_setting_cmp(bool en)
 {
-#if 0
 	u32 val;
 	int i, ddrphy_num, r = 0;
 
@@ -1533,9 +1545,6 @@ int spm_golden_setting_cmp(bool en)
 		pr_err("SPM Notice: dram golden setting comparison is pass\n");
 
 	return r;
-#else
-	return 0;
-#endif
 }
 #else
 struct ddrphy_golden_cfg {
@@ -1581,7 +1590,6 @@ int spm_golden_setting_cmp(bool en)
 }
 #endif
 
-#if 0
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 /* for PMIC power settings */
 #define VCORE_VOSEL_SLEEP_0P6	0x00	/* 7'b0000000 */
@@ -1831,6 +1839,147 @@ static void spm_pmic_set_osc_mode(int mode)
 }
 #endif
 
+#if defined(CONFIG_MACH_MT6757)
+static void spm_pmic_set_extra_low_power_mode(int lock)
+{
+	if (lock == 0) {
+		/*
+		 * BUCK_VCORE_CON9(0x612):
+		 * BUCK_VCORE_R2R_PDN[10], BUCK_VCORE_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VCORE_R2R_PDN_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VCORE_R2R_PDN_MASK,
+					     MT6351_PMIC_BUCK_VCORE_R2R_PDN_SHIFT);
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VCORE_VSLEEP_SEL_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VCORE_VSLEEP_SEL_MASK,
+					     MT6351_PMIC_BUCK_VCORE_VSLEEP_SEL_SHIFT);
+		/*
+		 * BUCK_VGPU_CON9(0x626):
+		 * BUCK_VGPU_R2R_PDN[10], BUCK_VGPU_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VGPU_R2R_PDN_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VGPU_R2R_PDN_MASK,
+					     MT6351_PMIC_BUCK_VGPU_R2R_PDN_SHIFT);
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VGPU_VSLEEP_SEL_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VGPU_VSLEEP_SEL_MASK,
+					     MT6351_PMIC_BUCK_VGPU_VSLEEP_SEL_SHIFT);
+		/*
+		 * BUCK_VMODEM_CON9(0x63A):
+		 * BUCK_VMODEM_R2R_PDN[10], BUCK_VMODEM_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VMODEM_R2R_PDN_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VMODEM_R2R_PDN_MASK,
+					     MT6351_PMIC_BUCK_VMODEM_R2R_PDN_SHIFT);
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VMODEM_VSLEEP_SEL_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VMODEM_VSLEEP_SEL_MASK,
+					     MT6351_PMIC_BUCK_VMODEM_VSLEEP_SEL_SHIFT);
+		/*
+		 * BUCK_VMD1_CON9(0x64E):
+		 * BUCK_VMD1_R2R_PDN[10], BUCK_VMD1_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VMD1_R2R_PDN_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VMD1_R2R_PDN_MASK,
+					     MT6351_PMIC_BUCK_VMD1_R2R_PDN_SHIFT);
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_MASK,
+					     MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_SHIFT);
+		/*
+		 * BUCK_VSRAM_MD_CON9(0x662):
+		 * BUCK_VSRAM_MD_R2R_PDN[10], BUCK_VSRAM_MD_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VSRAM_MD_R2R_PDN_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VSRAM_MD_R2R_PDN_MASK,
+					     MT6351_PMIC_BUCK_VSRAM_MD_R2R_PDN_SHIFT);
+		pmic_config_interface_nolock(MT6351_PMIC_BUCK_VSRAM_MD_VSLEEP_SEL_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_MASK,
+					     MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_SHIFT);
+
+		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1?™b1) */
+		pmic_config_interface_nolock(MT6351_PMIC_RG_VXO22_MODE_CTRL_ADDR,
+					     0x1,
+					     MT6351_PMIC_RG_VXO22_MODE_CTRL_MASK,
+					     MT6351_PMIC_RG_VXO22_MODE_CTRL_SHIFT);
+	} else {
+		/*
+		 * BUCK_VCORE_CON9(0x612):
+		 * BUCK_VCORE_R2R_PDN[10], BUCK_VCORE_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface(MT6351_PMIC_BUCK_VCORE_R2R_PDN_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VCORE_R2R_PDN_MASK,
+					     MT6351_PMIC_BUCK_VCORE_R2R_PDN_SHIFT);
+		pmic_config_interface(MT6351_PMIC_BUCK_VCORE_VSLEEP_SEL_ADDR,
+					     0x1,
+					     MT6351_PMIC_BUCK_VCORE_VSLEEP_SEL_MASK,
+					     MT6351_PMIC_BUCK_VCORE_VSLEEP_SEL_SHIFT);
+		/*
+		 * BUCK_VGPU_CON9(0x626):
+		 * BUCK_VGPU_R2R_PDN[10], BUCK_VGPU_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface(MT6351_PMIC_BUCK_VGPU_R2R_PDN_ADDR,
+				      0x1,
+				      MT6351_PMIC_BUCK_VGPU_R2R_PDN_MASK,
+				      MT6351_PMIC_BUCK_VGPU_R2R_PDN_SHIFT);
+		pmic_config_interface(MT6351_PMIC_BUCK_VGPU_VSLEEP_SEL_ADDR,
+				      0x1,
+				      MT6351_PMIC_BUCK_VGPU_VSLEEP_SEL_MASK,
+				      MT6351_PMIC_BUCK_VGPU_VSLEEP_SEL_SHIFT);
+		/*
+		 * BUCK_VMODEM_CON9(0x63A):
+		 * BUCK_VMODEM_R2R_PDN[10], BUCK_VMODEM_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface(MT6351_PMIC_BUCK_VMODEM_R2R_PDN_ADDR,
+				      0x1,
+				      MT6351_PMIC_BUCK_VMODEM_R2R_PDN_MASK,
+				      MT6351_PMIC_BUCK_VMODEM_R2R_PDN_SHIFT);
+		pmic_config_interface(MT6351_PMIC_BUCK_VMODEM_VSLEEP_SEL_ADDR,
+				      0x1,
+				      MT6351_PMIC_BUCK_VMODEM_VSLEEP_SEL_MASK,
+				      MT6351_PMIC_BUCK_VMODEM_VSLEEP_SEL_SHIFT);
+		/*
+		 * BUCK_VMD1_CON9(0x64E):
+		 * BUCK_VMD1_R2R_PDN[10], BUCK_VMD1_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface(MT6351_PMIC_BUCK_VMD1_R2R_PDN_ADDR,
+				      0x1,
+				      MT6351_PMIC_BUCK_VMD1_R2R_PDN_MASK,
+				      MT6351_PMIC_BUCK_VMD1_R2R_PDN_SHIFT);
+		pmic_config_interface(MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_ADDR,
+				      0x1,
+				      MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_MASK,
+				      MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_SHIFT);
+		/*
+		 * BUCK_VSRAM_MD_CON9(0x662):
+		 * BUCK_VSRAM_MD_R2R_PDN[10], BUCK_VSRAM_MD_VSLEEP_SEL[11] should both set to 1
+		 */
+		pmic_config_interface(MT6351_PMIC_BUCK_VSRAM_MD_R2R_PDN_ADDR,
+				      0x1,
+				      MT6351_PMIC_BUCK_VSRAM_MD_R2R_PDN_MASK,
+				      MT6351_PMIC_BUCK_VSRAM_MD_R2R_PDN_SHIFT);
+		pmic_config_interface(MT6351_PMIC_BUCK_VSRAM_MD_VSLEEP_SEL_ADDR,
+				      0x1,
+				      MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_MASK,
+				      MT6351_PMIC_BUCK_VMD1_VSLEEP_SEL_SHIFT);
+
+		/* LDO_VXO22_CON0(0xA64): RG_VXO22_MODE_CTRL set to be 1 (0xA64[2] = 1?™b1) */
+		pmic_config_interface(MT6351_PMIC_RG_VXO22_MODE_CTRL_ADDR,
+				      0x1,
+				      MT6351_PMIC_RG_VXO22_MODE_CTRL_MASK,
+				      MT6351_PMIC_RG_VXO22_MODE_CTRL_SHIFT);
+	}
+}
+#endif
+
 #define PMIC_SW_MODE (0)
 #define PMIC_HW_MODE (1)
 
@@ -1842,11 +1991,9 @@ static void spm_pmic_set_osc_mode(int mode)
 #define PMIC_LDO_SRCLKEN0	0
 #define PMIC_LDO_SRCLKEN2	2
 #endif
-#endif
 
 void spm_pmic_power_mode(int mode, int force, int lock)
 {
-#if 0
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	static int prev_mode = -1;
 
@@ -1984,8 +2131,11 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+		spm_pmic_set_ldo(MT6351_LDO_VXO22_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		/* TODO: do not hardcode pmic operation */
-		pmic_config_interface_nolock(0xA6E, 0x020E, 0xffff, 0);
+		pmic_config_interface_nolock(0xA6E, 0x020E, 0xffff, 0); /* LDO_VA10_CON0 */
+
+		spm_pmic_set_extra_low_power_mode(lock);
 #elif defined(CONFIG_ARCH_MT6797)
 		spm_vcore_overtemp_ctrl(lock);
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
@@ -2008,7 +2158,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	}
 
 	prev_mode = mode;
-#endif
 #endif
 }
 
