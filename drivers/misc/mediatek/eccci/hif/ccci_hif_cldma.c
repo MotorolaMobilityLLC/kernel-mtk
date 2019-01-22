@@ -2323,7 +2323,10 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 				CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "tx busy: dump CLDMA and GPD status\n");
 				CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "tx busy: dump CLDMA and GPD status\n");
 				md_ctrl->ops->dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, -1);
-				aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "cldma", "TX busy debug");
+				/*
+				* aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT,
+				* "cldma", "TX busy debug");
+				*/
 			}
 			/* resume channel */
 			spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
