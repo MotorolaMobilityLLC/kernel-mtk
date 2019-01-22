@@ -226,8 +226,9 @@ static int mt6311_i2c_probe(struct i2c_client *client,
 
 #endif
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef IPIMB_MT6311
 	pr_err(MT6311TAG "regulator not support for SSPM\n");
+	return 0;
 #else
 	ret = mt6311_regulator_init(&client->dev);
 #endif
@@ -243,7 +244,7 @@ static int mt6311_i2c_probe(struct i2c_client *client,
 
 static int mt6311_i2c_remove(struct i2c_client *client)
 {
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef IPIMB_MT6311
 	pr_err(MT6311TAG "regulator not support for SSPM\n");
 #else
 	mt6311_regulator_deinit();
