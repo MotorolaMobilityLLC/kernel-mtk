@@ -3743,8 +3743,9 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	u32 gpu_id;
 	const struct list_head *dev_list;
 	int err = 0;
+	unsigned long flags;
 
-    pr_warn("[MALI] GPU probe function starts.\n");
+	pr_warn("[MALI] GPU probe function starts.\n");
 #ifdef CONFIG_OF
 	err = kbase_platform_early_init();
 	if (err) {
@@ -3981,6 +3982,11 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 			"Probed as %s\n", dev_name(kbdev->mdev.this_device));
 
 	kbase_dev_nr++;
+
+	spin_lock_irqsave(&kbdev->hwaccess_lock, flags);
+	kbase_pm_set_debug_core_mask(kbdev, 1, 1, 1);
+	spin_unlock_irqrestore(&kbdev->hwaccess_lock, flags);
+
 
     pr_warn("[MALI] GPU probe function end. err(%d)\n", err);
 	return err;
