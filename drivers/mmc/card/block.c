@@ -1326,7 +1326,7 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 		if ((!card->ext_csd.cmdq_mode_en)
 		 && (md->part_type <= PART_CMDQ_EN)) {
 			mmc_claim_host(card->host);
-			mmc_blk_cmdq_switch(card, 1);
+			(void)mmc_blk_cmdq_switch(card, 1);
 			/* do not return error,
 			 * just work without command queue
 			 */
