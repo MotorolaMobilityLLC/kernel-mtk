@@ -476,6 +476,14 @@ int charger_dev_reset_eoc_state(struct charger_device *charger_dev)
 }
 EXPORT_SYMBOL(charger_dev_reset_eoc_state);
 
+int charger_dev_safety_check(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->safety_check)
+		return charger_dev->ops->safety_check(charger_dev);
+
+	return -ENOTSUPP;
+}
+
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(

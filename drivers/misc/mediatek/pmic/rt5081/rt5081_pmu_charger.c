@@ -1657,6 +1657,35 @@ err:
 	return ret;
 }
 
+static int rt5081_safety_check(struct charger_device *chg_dev)
+{
+	int ret = 0;
+	int adc_ibat = 0;
+	static int counter;
+	struct rt5081_pmu_charger_data *chg_data =
+		dev_get_drvdata(&chg_dev->dev);
+
+	ret = rt5081_get_adc(chg_data, RT5081_ADC_IBAT, &adc_ibat);
+	if (ret < 0) {
+		dev_info(chg_data->dev, "%s: get adc failed\n", __func__);
+		return ret;
+	}
+
+	if (adc_ibat <= 300000)
+		counter++;
+	else
+		counter = 0;
+
+	/* If IBAT is less than 300mA for 3 times, trigger EOC event */
+	if (counter >= 3) {
+		dev_info(chg_data->dev, "%s: true, ibat = %d\n", __func__, adc_ibat);
+		charger_dev_notify(chg_data->chg_dev, CHARGER_DEV_NOTIFY_EOC);
+		counter = 0;
+	}
+
+	return ret;
+}
+
 static int rt5081_is_safety_timer_enable(struct charger_device *chg_dev,
 	bool *en)
 {
@@ -3579,6 +3608,7 @@ static struct charger_ops rt5081_chg_ops = {
 	.set_eoc_current = rt5081_set_ieoc,
 	.enable_termination = rt5081_enable_te,
 	.reset_eoc_state = rt5081_reset_eoc_state,
+	.safety_check = rt5081_safety_check,
 	.get_min_charging_current = rt5081_get_min_ichg,
 	.get_min_input_current = rt5081_get_min_aicr,
 
