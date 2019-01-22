@@ -290,27 +290,30 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 	u32 r;
 
-	if (readl(pll->pwr_addr) & CON0_PWR_ON) {
-		if (pll->data->flags & HAVE_RST_BAR) {
+	if (!strcmp(__clk_get_name(hw->clk), "univpll")) {
+	} else {
+		if (readl(pll->pwr_addr) & CON0_PWR_ON) {
+			if (pll->data->flags & HAVE_RST_BAR) {
+				r = readl(pll->base_addr + REG_CON0);
+				r &= ~pll->data->rst_bar_mask;
+				writel(r, pll->base_addr + REG_CON0);
+			}
+
+			if (pll->tuner_addr) {
+				r = readl(pll->tuner_addr) & ~AUDPLL_TUNER_EN;
+				writel(r, pll->tuner_addr);
+			}
+
 			r = readl(pll->base_addr + REG_CON0);
-			r &= ~pll->data->rst_bar_mask;
+			r &= ~CON0_BASE_EN;
 			writel(r, pll->base_addr + REG_CON0);
+
+			r = readl(pll->pwr_addr) | CON0_ISO_EN;
+			writel(r, pll->pwr_addr);
+
+			r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
+			writel(r, pll->pwr_addr);
 		}
-
-		if (pll->tuner_addr) {
-			r = readl(pll->tuner_addr) & ~AUDPLL_TUNER_EN;
-			writel(r, pll->tuner_addr);
-		}
-
-		r = readl(pll->base_addr + REG_CON0);
-		r &= ~CON0_BASE_EN;
-		writel(r, pll->base_addr + REG_CON0);
-
-		r = readl(pll->pwr_addr) | CON0_ISO_EN;
-		writel(r, pll->pwr_addr);
-
-		r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
-		writel(r, pll->pwr_addr);
 	}
 }
 #else
@@ -416,6 +419,16 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 }
 #endif
 
+#if defined(CONFIG_MACH_MT6799)
+static const struct clk_ops mtk_pll_ops = {
+	.is_enabled	= mtk_pll_is_prepared,
+	.enable		= mtk_pll_prepare,
+	.disable	= mtk_pll_unprepare,
+	.recalc_rate	= mtk_pll_recalc_rate,
+	.round_rate	= mtk_pll_round_rate,
+	.set_rate	= mtk_pll_set_rate,
+};
+#else
 static const struct clk_ops mtk_pll_ops = {
 	.is_prepared	= mtk_pll_is_prepared,
 	.prepare	= mtk_pll_prepare,
@@ -424,6 +437,7 @@ static const struct clk_ops mtk_pll_ops = {
 	.round_rate	= mtk_pll_round_rate,
 	.set_rate	= mtk_pll_set_rate,
 };
+#endif
 
 static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
 		void __iomem *base)
