@@ -580,10 +580,10 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 	int bat_flag = 0;
 	int is_charger_exist;
 
-	/* TODO debug for bat plugout */
-	/* set BATON_DEBOUNCE_THD to 1/8s, set BATON_DEBOUNCE_WND to 183us */
-	pmic_set_register_value(PMIC_RG_BATON_DEBOUNCE_THD, 3);
-	pmic_set_register_value(PMIC_RG_BATON_DEBOUNCE_WND, 0);
+	/* for bat plugout */
+	/* set BATON_DEBOUNCE_THD to 0x0, set BATON_DEBOUNCE_WND to 0x10 */
+	pmic_set_register_value(PMIC_RG_BATON_DEBOUNCE_THD, 0);
+	pmic_set_register_value(PMIC_RG_BATON_DEBOUNCE_WND, 2);
 
 
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, 10);
