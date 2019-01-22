@@ -72,6 +72,7 @@ extern void aee_rr_rec_hps_cb_enter_times(unsigned long long val);
 extern void aee_rr_rec_hps_cb_cpu_bitmask(unsigned int val);
 extern void aee_rr_rec_hps_cb_footprint(unsigned int val);
 extern void aee_rr_rec_hps_cb_fp_times(unsigned long long val);
+extern void aee_rr_rec_drcc_dbg_info(uint32_t ret, uint32_t off, uint64_t ts);
 extern void aee_rr_rec_last_init_func(unsigned long val);
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 extern void last_kmsg_store_to_emmc(void);
@@ -140,6 +141,11 @@ static inline void aee_rr_rec_last_irq_exit(int cpu, int irq, u64 j)
 }
 
 static inline void aee_rr_rec_last_sched_jiffies(int cpu, u64 j, const char *comm)
+{
+}
+
+static inline void aee_rr_rec_drcc_dbg_info(uint32_t ret, uint32_t off,
+								uint64_t ts)
 {
 }
 
