@@ -545,7 +545,7 @@ static const char * const camtg4_parents[] __initconst = {
 
 static const char * const uart_parents[] __initconst = {
 	"clk26m",
-	"univpll2_d8"
+	"univpll_d3_d8"
 };
 
 static const char * const spi_parents[] __initconst = {
@@ -1113,13 +1113,13 @@ static const struct mtk_gate_regs infra3_cg_regs = {
 static const struct mtk_gate infra_clks[] __initconst = {
 	/* INFRA0 */
 	GATE_INFRA0(INFRACFG_AO_PMIC_CG_TMR, "infra_pmic_tmr",
-		"f_f26m_ck", 0),
+		"axi_sel", 0),
 	GATE_INFRA0(INFRACFG_AO_PMIC_CG_AP, "infra_pmic_ap",
-		"f_f26m_ck", 1),
+		"axi_sel", 1),
 	GATE_INFRA0(INFRACFG_AO_PMIC_CG_MD, "infra_pmic_md",
-		"f_f26m_ck", 2),
+		"axi_sel", 2),
 	GATE_INFRA0(INFRACFG_AO_PMIC_CG_CONN, "infra_pmic_conn",
-		"f_f26m_ck", 3),
+		"axi_sel", 3),
 	GATE_INFRA0(INFRACFG_AO_SCPSYS_CG, "infra_scp",
 		"axi_sel", 4),
 	GATE_INFRA0(INFRACFG_AO_SEJ_CG, "infra_sej",
@@ -1141,7 +1141,7 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_INFRA0(INFRACFG_AO_I2C3_CG, "infra_i2c3",
 		"i2c_sel", 14),
 	GATE_INFRA0(INFRACFG_AO_PWM_HCLK_CG, "infra_pwm_hclk",
-		"i2c_sel", 15),
+		"axi_sel", 15),
 	GATE_INFRA0(INFRACFG_AO_PWM1_CG, "infra_pwm1",
 		"i2c_sel", 16),
 	GATE_INFRA0(INFRACFG_AO_PWM2_CG, "infra_pwm2",
@@ -1241,19 +1241,19 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_INFRA2(INFRACFG_AO_SPI3_CG, "infra_spi3",
 		"spi_sel", 10),
 	GATE_INFRA2(INFRACFG_AO_UNIPRO_SCK_CG, "infra_unipro_sck",
-		"spi_sel", 11),
+		"ssusb_top_xhci_sel", 11),
 	GATE_INFRA2(INFRACFG_AO_UNIPRO_TICK_CG, "infra_unipro_tick",
-		"spi_sel", 12),
+		"fufs_sel", 12),
 	GATE_INFRA2(INFRACFG_AO_UFS_MP_SAP_BCLK_CG, "infra_ufs_mp_sap_bck",
-		"spi_sel", 13),
+		"fufs_sel", 13),
 	GATE_INFRA2(INFRACFG_AO_MD32_BCLK_CG, "infra_md32_bclk",
-		"spi_sel", 14),
+		"axi_sel", 14),
 	GATE_INFRA2(INFRACFG_AO_SSPM_CG, "infra_sspm",
-		"spi_sel", 15),
+		"sspm_sel", 15),
 	GATE_INFRA2(INFRACFG_AO_UNIPRO_MBIST_CG, "infra_unipro_mbist",
-		"spi_sel", 16),
+		"axi_sel", 16),
 	GATE_INFRA2(INFRACFG_AO_SSPM_BUS_HCLK_CG, "infra_sspm_bus_hclk",
-		"spi_sel", 17),
+		"axi_sel", 17),
 	GATE_INFRA2(INFRACFG_AO_I2C5_CG, "infra_i2c5",
 		"i2c_sel", 18),
 	GATE_INFRA2(INFRACFG_AO_I2C5_ARBITER_CG, "infra_i2c5_arbiter",
@@ -1277,7 +1277,7 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_INFRA2(INFRACFG_AO_UFS_CG, "infra_ufs",
 		"fufs_sel", 28),
 	GATE_INFRA2(INFRACFG_AO_AES_UFSFDE_CG, "infra_aes_ufsfde",
-		"spi_sel", 29),
+		"faes_ufsfde_sel", 29),
 	GATE_INFRA2(INFRACFG_AO_UFS_TICK_CG, "infra_ufs_tick",
 		"fufs_sel", 30),
 	/* INFRA3 */
