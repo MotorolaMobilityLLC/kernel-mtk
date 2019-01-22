@@ -1071,8 +1071,8 @@ b_host:
 			break;
 		default:
 			/* bypass VBUS check due to MTK HACK VBUS control
-			if ((devctl & MUSB_DEVCTL_VBUS)
-			    == (3 << MUSB_DEVCTL_VBUS_SHIFT))
+			 * if ((devctl & MUSB_DEVCTL_VBUS)
+			 *  == (3 << MUSB_DEVCTL_VBUS_SHIFT))
 			 */
 			{
 				musb->xceiv->otg->state = OTG_STATE_A_HOST;

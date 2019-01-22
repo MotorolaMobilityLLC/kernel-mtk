@@ -106,6 +106,7 @@ static void low_power_timer_wakeup_func(unsigned long data)
 	/* deep idle forbidd here */
 	if (low_power_timer_mode == 1)
 		usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
+	/* make sure all global status sync to memory */
 	mb();
 
 	if (low_power_timer_trigger_cnt >= 2)
@@ -279,6 +280,7 @@ int musb_qmu_init(struct musb *musb)
 	/* debug variable to check qmu_base issue */
 	qmu_base_2 = (void __iomem *)(mtk_musb->mregs + MUSB_QMUBASE);
 #endif
+	/* finish all hw op before init qmu */
 	mb();
 
 	if (qmu_init_gpd_pool(musb->controller)) {
