@@ -58,6 +58,8 @@ config MACH_MT6757
 	select MTK_TIMER
 	select POWER_SUPPLY
 	select COMMON_CLK if !MTK_CLKMGR
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
 	help
 	  This enables support for MediaTek Helio P20 - MT6757
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
