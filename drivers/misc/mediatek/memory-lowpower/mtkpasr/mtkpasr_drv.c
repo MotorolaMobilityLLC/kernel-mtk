@@ -131,6 +131,7 @@ retry:
 static void enable_dcs_pasr(void)
 {
 	int chconfig, ret;
+	int chid;
 
 	if (!dcs_initialied()) {
 		dcs_status = DCS_NORMAL;
@@ -175,8 +176,12 @@ bypass_dcs:
 			pr_warn("%s: failed to configure PASR, error (%d)\n", __func__, ret);
 			goto err;
 		}
-		enter_dcs_pasr_dpd_config(mtkpasr_vec[chconfig].pasr_on & 0xFF,
-					mtkpasr_vec[chconfig].pasr_on >> 0x8);
+
+		/* Configure DRAMC */
+		for (chid = 0; chid < max_channel_num; chid++)
+			enter_dcs_pasr_dpd_config(mtkpasr_vec[chid].pasr_on & 0xFF,
+						mtkpasr_vec[chid].pasr_on >> 0x8, chid);
+
 		/* Step3 - Turn off DDRPHY */
 		if (mtkpasr_vec[chconfig].pasr_on == query_channel_segment_bits())
 			dram_dcs_turn_on_off_ch(0);
