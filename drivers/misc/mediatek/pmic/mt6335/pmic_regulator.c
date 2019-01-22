@@ -81,7 +81,9 @@ static ssize_t store_buck_api(struct device *dev, struct device_attribute *attr,
 		pvalue = (char *)buf;
 		if (size > 5) {
 			addr = strsep(&pvalue, " ");
-			ret = kstrtou32(addr, 10, (unsigned int *)&buck_type);
+			if (addr)
+				ret = kstrtou32(addr, 10,
+						(unsigned int *)&buck_type);
 		} else
 			ret = kstrtou32(pvalue, 10, (unsigned int *)&buck_type);
 
@@ -92,7 +94,9 @@ static ssize_t store_buck_api(struct device *dev, struct device_attribute *attr,
 		} else {
 			if (size > 5) {
 				val =  strsep(&pvalue, " ");
-				ret = kstrtou32(val, 10, (unsigned int *)&buck_uV);
+				if (val)
+					ret = kstrtou32(val, 10,
+						(unsigned int *)&buck_uV);
 
 				pr_err("[store_buck_api] write buck_type[%d] with voltgae %d !\n",
 					buck_type, buck_uV);

@@ -582,7 +582,8 @@ static ssize_t store_pmic_regulator_prof(struct device *dev, struct device_attri
 
 		pvalue = (char *)buf;
 		type = strsep(&pvalue, " ");
-		ret = kstrtou32(type, 16, (unsigned int *)&ret_type);
+		if (type)
+			ret = kstrtou32(type, 16, (unsigned int *)&ret_type);
 
 		pr_err("[pmic_regulator_profiling] = %d\n", ret_type);
 		g_ret_type = ret_type;
