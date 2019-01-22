@@ -48,6 +48,11 @@
 #include <linux/of_address.h>
 #include <mtk_cm_mgr.h>
 
+#include <linux/fb.h>
+#include <linux/notifier.h>
+
+#include <mtk_spm_vcore_dvfs.h>
+
 /* #define CM_MGR_USE_PM_NOTIFY */
 #ifdef CM_MGR_USE_PM_NOTIFY
 #include <linux/cpu_pm.h>
@@ -309,6 +314,37 @@ static inline void cm_mgr_sched_pm_init(void) { }
 #else
 #endif /* CM_MGR_USE_PM_NOTIFY */
 
+static int cm_mgr_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		pr_info("#@# %s(%d) SCREEN ON\n", __func__, __LINE__);
+		cm_mgr_blank_status = 0;
+		break;
+	case FB_BLANK_POWERDOWN:
+		pr_info("#@# %s(%d) SCREEN OFF\n", __func__, __LINE__);
+		cm_mgr_blank_status = 1;
+		dvfsrc_set_power_model_ddr_request(0);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block cm_mgr_fb_notifier = {
+	.notifier_call = cm_mgr_fb_notifier_callback,
+};
+
 int cm_mgr_register_init(void)
 {
 	struct device_node *node;
@@ -362,6 +398,12 @@ int cm_mgr_platform_init(void)
 #else
 	pr_info(" !CM_MGR_USE_PM_NOTIFY (%d)\n", r);
 #endif /* CM_MGR_USE_PM_NOTIFY */
+
+	r = fb_register_client(&cm_mgr_fb_notifier);
+	if (r) {
+		pr_info("FAILED TO REGISTER FB CLIENT (%d)\n", r);
+		return r;
+	}
 
 	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
 

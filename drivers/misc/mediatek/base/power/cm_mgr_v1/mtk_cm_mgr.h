@@ -27,6 +27,10 @@
 #include <linux/kernel.h>
 #include <mtk_cpufreq_internal.h>
 
+extern spinlock_t cm_mgr_lock;
+extern int cm_mgr_disable_fb;
+extern int cm_mgr_blank_status;
+
 extern void check_cm_mgr_status(unsigned int cluster, unsigned int freq);
 
 enum mt_cpu_dvfs_id;

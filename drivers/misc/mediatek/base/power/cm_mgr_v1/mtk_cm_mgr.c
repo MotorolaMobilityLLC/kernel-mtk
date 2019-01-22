@@ -217,6 +217,9 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 	if (cm_mgr_enable == 0)
 		return;
 
+	if (cm_mgr_disable_fb == 1 && cm_mgr_blank_status == 1)
+		return;
+
 	if (freq_idx == prev_freq_idx[cluster]) {
 		/* pr_debug("same index of cluster %d! skip it...\n", cluster); */
 		return;
@@ -550,6 +553,7 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 
 	seq_printf(m, "cm_mgr_opp_enable %d\n", cm_mgr_opp_enable);
 	seq_printf(m, "cm_mgr_enable %d\n", cm_mgr_enable);
+	seq_printf(m, "cm_mgr_disable_fb %d\n", cm_mgr_disable_fb);
 	seq_printf(m, "light_load_cps %d\n", light_load_cps);
 	seq_printf(m, "total_bw_value %d\n", total_bw_value);
 	seq_printf(m, "cm_mgr_loop_count %d\n", cm_mgr_loop_count);
@@ -697,6 +701,10 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	} else if (!strcmp(cmd, "cm_mgr_enable")) {
 		cm_mgr_enable = val_1;
 		if (!cm_mgr_enable)
+			dvfsrc_set_power_model_ddr_request(0);
+	} else if (!strcmp(cmd, "cm_mgr_disable_fb")) {
+		cm_mgr_disable_fb = val_1;
+		if (cm_mgr_disable_fb == 1 && cm_mgr_blank_status == 1)
 			dvfsrc_set_power_model_ddr_request(0);
 	} else if (!strcmp(cmd, "light_load_cps")) {
 		light_load_cps = val_1;
