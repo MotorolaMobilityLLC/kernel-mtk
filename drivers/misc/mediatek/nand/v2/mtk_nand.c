@@ -8088,6 +8088,45 @@ int mtk_nand_block_markbad_hw(struct mtd_info *mtd, loff_t offset)
 	return ret;
 }
 
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+static int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset, const uint8_t *buf)
+{
+	struct nand_chip *chip = mtd->priv;
+	int page_per_block = gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize;
+	u32 block; /*  = (u32)(offset  / (gn_devinfo.blocksize * 1024)); */
+	int page; /* = block * (gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize); */
+	u32 mapped_block;
+	int ret;
+	loff_t temp;
+
+	temp = offset;
+	do_div(temp, ((gn_devinfo.blocksize * 1024) & 0xFFFFFFFF));
+	block = (u32) temp;
+	page = block * (gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize);
+
+	nand_get_device(mtd, FL_WRITING);
+
+	page = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
+
+	if (buf != NULL) {
+		MSG(INIT, "write fail at block: 0x%x, page: 0x%x\n", mapped_block, page);
+		if (update_bmt
+			((u64) ((u64) page + (u64) mapped_block * page_per_block) << chip->page_shift,
+			UPDATE_WRITE_FAIL, (u8 *) buf, chip->oob_poi)) {
+			pr_info("Update BMT success\n");
+		} else {
+			pr_info("Update BMT fail\n");
+			nand_release_device(mtd);
+			return -EIO;
+		}
+	}
+	ret = mtk_nand_block_markbad_hw(mtd, mapped_block * (gn_devinfo.blocksize * 1024));
+
+	nand_release_device(mtd);
+
+	return ret;
+}
+#else
 static int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset)
 {
 	struct nand_chip *chip = mtd->priv;
@@ -8111,6 +8150,7 @@ static int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset)
 
 	return ret;
 }
+#endif
 
 int mtk_nand_read_oob_hw(struct mtd_info *mtd, struct nand_chip *chip, int page)
 {
