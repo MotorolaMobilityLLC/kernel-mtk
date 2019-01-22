@@ -9,7 +9,7 @@
 
 #elif defined(CONFIG_ARCH_MT6580)
 
-#elif defined(CONFIG_ARCH_ELBRUS)
+#elif defined(CONFIG_MACH_MT6799)
 
 #include "spm_v3/mtk_spm_resource_req.h"
 
