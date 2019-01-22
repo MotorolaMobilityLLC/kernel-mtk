@@ -23,21 +23,32 @@
 #include <linux/slab.h>
 #include <linux/swap.h>
 #include "ion_priv.h"
+#ifdef CONFIG_MTK_SCHED_CPULOAD
+#include <mt-plat/mtk_sched.h>
+#endif
 
 static unsigned long long last_alloc_ts;
 static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
 {
 	unsigned long long start, end;
 	struct page *page;
+#ifdef CONFIG_MTK_SCHED_CPULOAD
+	unsigned int cpu = 0;
+#endif
 
 	start = sched_clock();
 	page = alloc_pages(pool->gfp_mask, pool->order);
 	end = sched_clock();
 
 	if ((end - start > 10000000ULL) &&
-	    (end - last_alloc_ts > 500000000ULL))	{
-		IONMSG("warn: page pool alloc pages order: %d time: %lld ns\n", pool->order,
-		       end - start);
+	    (end - last_alloc_ts > 500000000ULL)) { /* unit is ns, 10ms */
+		IONMSG("warn: ion page pool alloc pages order: %d time: %lld ns\n",
+		       pool->order, end - start);
+#ifdef CONFIG_MTK_SCHED_CPULOAD
+		for_each_online_cpu(cpu) {
+			IONMSG("cpu %d, loading %d\n", cpu, sched_get_cpu_load(cpu));
+		}
+#endif
 		show_free_areas(0);
 		last_alloc_ts = end;
 	}
