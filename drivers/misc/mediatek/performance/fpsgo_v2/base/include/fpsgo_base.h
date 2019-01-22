@@ -24,12 +24,7 @@
 #include <linux/workqueue.h>
 
 #define WINDOW 20
-
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-#define RESCUE_TIMER_NUM 4
-#else
 #define RESCUE_TIMER_NUM 2
-#endif
 
 struct fbt_jerk {
 	int id;

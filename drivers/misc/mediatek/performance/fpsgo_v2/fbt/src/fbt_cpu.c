@@ -97,11 +97,6 @@ static int vsync_percent;
 static int rescue_opp_f;
 static int rescue_opp_c;
 static int rescue_percent;
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-static int rescue_first_opp_f;
-static int rescue_first_opp_c;
-static int rescue_first_percent;
-#endif
 static int vsync_period;
 static int deqtime_bound;
 static int variance;
@@ -170,14 +165,6 @@ static int _gdfrc_cpu_target;
 
 static unsigned long long g_rescue_distance;
 static unsigned long long g_vsync_distance;
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-static unsigned long long g_rescue_first_distance;
-#endif
-
-/* lpp - should move to per-thread struct*/
-static unsigned int lpp_max_cap;
-static unsigned int lpp_fps;
-static unsigned int *lpp_clus_max_freq;
 
 static int nsec_to_100usec(unsigned long long nsec)
 {
@@ -310,49 +297,7 @@ void fbt_cpu_vag_set_fps(unsigned int fps)
 	mutex_lock(&fbt_mlock);
 	vag_fps = fps;
 	mutex_unlock(&fbt_mlock);
-	fpsgo_systrace_c_fbt_gm(-100, vag_fps, "vag_fps");
-}
-
-void fbt_cpu_lpp_set_fps(unsigned int fps)
-{
-	mutex_lock(&fbt_mlock);
-	lpp_fps = fps;
-	mutex_unlock(&fbt_mlock);
-	fpsgo_systrace_c_fbt_gm(-100, lpp_fps, "lpp_fps");
-}
-
-void fbt_cpu_lppcap_update(unsigned int llpcap)
-{
-	int cluster;
-
-	mutex_lock(&fbt_mlock);
-
-	if (llpcap)
-		lpp_max_cap = llpcap;
-	else
-		lpp_max_cap = 100;
-
-	if (lpp_max_cap < 100) {
-		unsigned int lpp_max_freq;
-		int i;
-
-		lpp_max_freq = (min(lpp_max_cap, 100U) * cpu_max_freq);
-		do_div(lpp_max_freq, 100U);
-
-		for (cluster = 0 ; cluster < cluster_num; cluster++) {
-			for (i = (NR_FREQ_CPU - 1); i > 0; i--) {
-				if (cpu_dvfs[cluster].power[i] >= lpp_max_freq)
-					break;
-			}
-			lpp_clus_max_freq[cluster] =
-				cpu_dvfs[cluster].power[min((i+1), (NR_FREQ_CPU - 1))];
-		}
-
-	} else {
-		for (cluster = 0 ; cluster < cluster_num; cluster++)
-			lpp_clus_max_freq[cluster] = cpu_dvfs[cluster].power[0];
-	}
-	mutex_unlock(&fbt_mlock);
+	fpsgo_systrace_c_fbt_gm(-100, fps, "vag_fps");
 }
 
 static int fbt_is_enable(void)
@@ -560,37 +505,13 @@ static unsigned int fbt_get_new_base_blc(struct ppm_limit_data *pld, int jerkid)
 	for (cluster = 0 ; cluster < cluster_num; cluster++) {
 		pld[cluster].min = -1;
 		if (bypass_flag == 0 && suppress_ceiling) {
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-			if (jerkid < 2) {
-				int min_ceiling = 0;
-
-				pld[cluster].max =
-					cpu_dvfs[cluster].power[max((int)(base_opp[cluster] - rescue_first_opp_c), 0)];
-				if (cluster == fbt_get_L_cluster_num()) {
-					min_ceiling = fbt_get_L_min_ceiling();
-					if (min_ceiling && pld[cluster].max < min_ceiling)
-						pld[cluster].max = min_ceiling;
-				}
-			} else
-#endif
-				pld[cluster].max =
-					cpu_dvfs[cluster].power[max((int)(base_opp[cluster] - rescue_opp_c), 0)];
-			pld[cluster].max = min_t(unsigned int, pld[cluster].max, lpp_clus_max_freq[cluster]);
+			pld[cluster].max =
+				cpu_dvfs[cluster].power[max((int)(base_opp[cluster] - rescue_opp_c), 0)];
 		} else
 			pld[cluster].max = -1;
 	}
 
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-	if (jerkid < 2)
-		blc_wt = fbt_enhance_floor(max_blc, rescue_first_opp_f);
-	else
-		blc_wt = fbt_enhance_floor(max_blc, rescue_opp_f);
-#else
 	blc_wt = fbt_enhance_floor(max_blc, rescue_opp_f);
-#endif
-/*lpp
-*	blc_freq[cluster] = min_t(unsigned int, blc_freq[cluster], lpp_clus_max_freq[cluster]);
-*/
 
 	mutex_unlock(&fbt_mlock);
 
@@ -633,23 +554,13 @@ static void fbt_do_jerk(struct work_struct *work)
 	fpsgo_render_tree_lock(__func__);
 	fpsgo_thread_lock(&(thr->thr_mlock));
 
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-	if ((jerk->id % 2) == proc->active_jerk_id
-#else
 	if (jerk->id == proc->active_jerk_id
-#endif
 		&& thr->linger == 0) {
 
 		unsigned int blc_wt = 0U;
 		struct ppm_limit_data *pld;
 		int temp_blc = 0;
 
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-		if (jerk->id >= 2 &&
-			thr->boost_info.proc.jerks[proc->active_jerk_id].jerking == 1) {
-			xgf_trace("rescue overlap timer %d\n", jerk->id);
-		} else {
-#endif
 		mutex_lock(&blc_mlock);
 		if (thr->p_blc)
 			temp_blc = thr->p_blc->blc;
@@ -673,19 +584,12 @@ static void fbt_do_jerk(struct work_struct *work)
 			}
 			kfree(pld);
 		}
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-		}
-#endif
 	}
 
 	jerk->jerking = 0;
 
 	if (thr->boost_info.proc.jerks[0].jerking == 0 &&
 		thr->boost_info.proc.jerks[1].jerking == 0 &&
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-		thr->boost_info.proc.jerks[2].jerking == 0 &&
-		thr->boost_info.proc.jerks[3].jerking == 0 &&
-#endif
 		thr->linger > 0)
 		tofree = 1;
 
@@ -989,8 +893,6 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 		if (bypass_flag == 0 && suppress_ceiling) {
 			pld[cluster].max =
 				max(mbhr, cpu_dvfs[cluster].power[mbhr_opp]);
-			pld[cluster].max =
-				min_t(unsigned int, pld[cluster].max, lpp_clus_max_freq[cluster]);
 
 			if (cluster == fbt_get_L_cluster_num()) {
 				min_ceiling = fbt_get_L_min_ceiling();
@@ -1082,49 +984,6 @@ static unsigned int fbt_get_max_userlimit_freq(void)
 	return limited_cap;
 }
 
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-static int fbt_get_t2wnt(long long t_cpu_target,
-		unsigned long long queue_start,
-		unsigned long long *first_t2wnt,
-		unsigned long long *t2wnt)
-{
-	unsigned long long next_vsync, queue_end, temp;
-	int ret = 0;
-
-	if (!first_t2wnt || !t2wnt)
-		return 0;
-
-	mutex_lock(&fbt_mlock);
-
-	queue_end = queue_start + t_cpu_target;
-	next_vsync = fbt_get_next_vsync_locked(queue_end);
-
-	if (next_vsync == 0ULL)
-		goto exit;
-
-	temp = next_vsync - queue_start;
-
-	if (temp < g_rescue_first_distance) {
-		FPSGO_LOGI("ERROR %d\n", __LINE__);
-		goto exit;
-	}
-
-	ret = 1;
-
-	*first_t2wnt = temp - g_rescue_first_distance;
-
-	if (temp < g_rescue_distance) {
-		FPSGO_LOGI("ERROR %d\n", __LINE__);
-		goto exit;
-	}
-
-	*t2wnt = temp - g_rescue_distance;
-
-exit:
-	mutex_unlock(&fbt_mlock);
-	return ret;
-}
-#else
 static unsigned long long fbt_get_t2wnt(long long t_cpu_target,
 		unsigned long long queue_start)
 {
@@ -1153,7 +1012,6 @@ static unsigned long long fbt_get_t2wnt(long long t_cpu_target,
 
 	return t2wnt;
 }
-#endif
 
 int (*fpsgo_fbt2fstb_cpu_capability_fp)(
 	int pid, int frame_type,
@@ -1200,11 +1058,8 @@ static int fbt_boost_policy(
 
 	mutex_lock(&fbt_mlock);
 
-	if (lpp_fps || vag_fps) {
-		if (lpp_fps)
-			target_fps = lpp_fps;
-		else
-			target_fps = vag_fps;
+	if (vag_fps) {
+		target_fps = vag_fps;
 		target_time = (unsigned long long)(FBTCPU_SEC_DIVIDER / target_fps);
 		boost_info->middle_enable = 0;
 	} else if (frame_type == NON_VSYNC_ALIGNED_TYPE) {
@@ -1253,13 +1108,11 @@ static int fbt_boost_policy(
 	xgf_trace("perf_index=%d aa=%lld t_cpu_cur=%llu target=%llu sleep=%llu",
 		blc_wt, aa, t1, t2, t_sleep);
 
-	if (!lpp_fps)
-		fbt_check_var(aa, target_fps, nsec_to_usec(target_time),
+	fbt_check_var(aa, target_fps, nsec_to_usec(target_time),
 		&(boost_info->f_iter), &(boost_info->frame_info[0]), &(boost_info->floor),
 		&(boost_info->floor_count), &(boost_info->reset_floor_bound));
 	fpsgo_systrace_c_fbt(pid, boost_info->floor, "variance");
 
-	blc_wt = min(blc_wt, lpp_max_cap);
 	blc_wt = clamp(blc_wt, 1U, 100U);
 
 	blc_wt = fbt_set_limit(blc_wt, boost_info->floor, pid);
@@ -1274,56 +1127,7 @@ static int fbt_boost_policy(
 	fpsgo_systrace_c_fbt(pid, blc_wt, "perf idx");
 
 	/*disable rescue frame for vag*/
-	if (!lpp_fps || !vag_fps) {
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-		u64 first_t2wnt = 0ULL;
-		int ret = 0;
-
-		if (thread_info->frame_type == VSYNC_ALIGNED_TYPE &&
-			(thread_info->render_method == HWUI || thread_info->render_method == SWUI)) {
-			unsigned long long cur_ts = fpsgo_get_time();
-			long long diff = ts + vsync_period * (100 - rescue_percent) / 100 - cur_ts;
-
-			if (diff > 0)
-				t2wnt = diff;
-
-			diff = ts + vsync_period * (100 - rescue_first_percent) / 100 - cur_ts;
-			if (diff > 0)
-				first_t2wnt = diff;
-
-			ret = 1;
-		} else
-			ret = fbt_get_t2wnt(target_time, ts, &first_t2wnt, &t2wnt);
-		xgf_trace("first_t2wnt %llu, t2wnt %llu", first_t2wnt, t2wnt);
-
-		if (ret) {
-			boost_info->proc.active_jerk_id ^= 1;
-			active_jerk_id = boost_info->proc.active_jerk_id;
-
-			if (first_t2wnt) {
-				timer = &(boost_info->proc.jerks[active_jerk_id].timer);
-				if (timer) {
-					if (boost_info->proc.jerks[active_jerk_id].jerking == 0) {
-						boost_info->proc.jerks[active_jerk_id].jerking = 1;
-						hrtimer_start(timer, ns_to_ktime(first_t2wnt), HRTIMER_MODE_REL);
-					}
-				} else
-					FPSGO_LOGE("ERROR timer\n");
-			}
-
-			if (t2wnt) {
-				active_jerk_id = active_jerk_id + 2;
-				timer = &(boost_info->proc.jerks[active_jerk_id].timer);
-				if (timer) {
-					if (boost_info->proc.jerks[active_jerk_id].jerking == 0) {
-						boost_info->proc.jerks[active_jerk_id].jerking = 1;
-						hrtimer_start(timer, ns_to_ktime(t2wnt), HRTIMER_MODE_REL);
-					}
-				} else
-					FPSGO_LOGE("ERROR timer\n");
-			}
-		}
-#else
+	if (!vag_fps) {
 		if (thread_info->frame_type == VSYNC_ALIGNED_TYPE &&
 			(thread_info->render_method == HWUI || thread_info->render_method == SWUI)) {
 			unsigned long long cur_ts = fpsgo_get_time();
@@ -1348,7 +1152,6 @@ static int fbt_boost_policy(
 			} else
 				FPSGO_LOGE("ERROR timer\n");
 		}
-#endif
 	}
 
 	return blc_wt;
@@ -1390,7 +1193,7 @@ static void fbt_check_max_blc_locked(void)
 	fpsgo_systrace_c_fbt_gm(-100, max_blc_pid, "max_blc_pid");
 
 	if (max_blc == 0 && max_blc_pid == 0) {
-		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
+		fbt_clear_boost_value();
 		fbt_free_bhr();
 		memset(base_opp, 0, cluster_num * sizeof(unsigned int));
 	} else
@@ -1505,7 +1308,7 @@ void fpsgo_ctrl2fbt_cpufreq_cb(int cid, unsigned long freq)
 
 	if (clus_obv[cid] != curr_obv) {
 		clus_obv[cid] = curr_obv;
-		fpsgo_systrace_c_fbt_gm(-100, curr_obv, "curr_obv[%d]", cid);
+		fpsgo_systrace_c_fbt_gm(-100, freq, "curr_freq[%d]", cid);
 	}
 
 	if ((cid != last_cid && curr_obv <= last_obv) ||
@@ -1667,7 +1470,7 @@ void fpsgo_comp2fbt_frame_complete(struct render_info *thr, unsigned long long t
 		fpsgo_systrace_c_fbt_gm(-100, max_blc, "max_blc");
 		fpsgo_systrace_c_fbt_gm(-100, max_blc_pid, "max_blc_pid");
 
-		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
+		fbt_clear_boost_value();
 		fpsgo_systrace_c_fbt(thr->pid, 0, "perf idx");
 
 		fbt_free_bhr();
@@ -1869,11 +1672,6 @@ void fpsgo_ctrl2fbt_dfrc_fps(int fps_limit)
 	g_rescue_distance = _gdfrc_cpu_target * (unsigned long long)rescue_percent;
 	g_rescue_distance = div64_u64(g_rescue_distance, 100ULL);
 
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-	g_rescue_first_distance = _gdfrc_cpu_target * (unsigned long long)rescue_first_percent;
-	g_rescue_first_distance = div64_u64(g_rescue_first_distance, 100ULL);
-#endif
-
 	g_vsync_distance = _gdfrc_cpu_target * (unsigned long long)vsync_percent;
 	g_vsync_distance = div64_u64(g_vsync_distance, 100ULL);
 
@@ -1899,10 +1697,6 @@ void fpsgo_base2fbt_node_init(struct render_info *obj)
 	boost->fstb_target_fps = TARGET_UNLIMITED_FPS;
 	fbt_init_jerk(&(boost->proc.jerks[0]), 0);
 	fbt_init_jerk(&(boost->proc.jerks[1]), 1);
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-	fbt_init_jerk(&(boost->proc.jerks[2]), 2);
-	fbt_init_jerk(&(boost->proc.jerks[3]), 3);
-#endif
 
 	link = fbt_list_loading_add(obj->pid);
 	obj->pLoading = link;
@@ -1975,7 +1769,7 @@ void fpsgo_base2fbt_no_one_render(void)
 	fpsgo_systrace_c_fbt_gm(-100, max_blc_pid, "max_blc_pid");
 
 	fbt_set_idleprefer_locked(0);
-	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
+	fbt_clear_boost_value();
 	fbt_free_bhr();
 	fbt_filter_ppm_log_locked(0);
 
@@ -2050,7 +1844,7 @@ static void fbt_setting_exit(void)
 	max_blc_pid = 0;
 
 	fbt_set_walt_locked(0);
-	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
+	fbt_clear_boost_value();
 	fbt_set_idleprefer_locked(0);
 	fbt_free_bhr();
 }
@@ -2188,60 +1982,6 @@ static ssize_t fbt_switch_idleprefer_write(struct file *flip,
 
 FBT_DEBUGFS_ENTRY(switch_idleprefer);
 
-static int fbt_switch_ceiling_show(struct seq_file *m, void *unused)
-{
-	mutex_lock(&fbt_mlock);
-	SEQ_printf(m, "suppress_ceiling:%d\n", suppress_ceiling);
-	mutex_unlock(&fbt_mlock);
-	return 0;
-}
-
-static ssize_t fbt_switch_ceiling_write(struct file *flip,
-		const char *ubuf, size_t cnt, loff_t *data)
-{
-	int val;
-	int ret;
-
-	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
-	if (ret)
-		return ret;
-
-	fbt_switch_ceiling(val);
-
-	return cnt;
-}
-
-FBT_DEBUGFS_ENTRY(switch_ceiling);
-
-static int fbt_force_walt_show(struct seq_file *m, void *unused)
-{
-	mutex_lock(&fbt_mlock);
-	SEQ_printf(m, "force_walt_off:%d\n", force_walt_off);
-	SEQ_printf(m, "walt_enable:%d\n", walt_enable);
-	mutex_unlock(&fbt_mlock);
-	return 0;
-}
-
-static ssize_t fbt_force_walt_write(struct file *flip,
-			const char *ubuf, size_t cnt, loff_t *data)
-{
-	int val;
-	int ret;
-
-	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
-	if (ret)
-		return ret;
-
-	if (val > 1 || val < 0)
-		return cnt;
-
-	fbt_switch_force_walt_off(val);
-
-	return cnt;
-}
-
-FBT_DEBUGFS_ENTRY(force_walt);
-
 static int fbt_thread_info_show(struct seq_file *m, void *unused)
 {
 	struct fbt_thread_blc *pos, *next;
@@ -2277,27 +2017,17 @@ void fbt_cpu_exit(void)
 	kfree(cpu_dvfs);
 	kfree(clus_max_freq);
 	kfree(cpu_capacity_ratio);
-	kfree(lpp_clus_max_freq);
 }
 
 int fbt_cpu_init(void)
 {
-	int cluster;
-
 	bhr = 5;
 	bhr_opp = 1;
 	migrate_bound = 10;
 	vsync_percent = 50;
 	rescue_opp_c = (NR_FREQ_CPU - 1);
 	rescue_opp_f = 5;
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-	rescue_percent = 25;
-	rescue_first_opp_c = 4;
-	rescue_first_opp_f = 2;
-	rescue_first_percent = 50;
-#else
 	rescue_percent = 33;
-#endif
 	sf_bound_max = 10;
 	sf_bound_min = 3;
 	deqtime_bound = TIME_3MS;
@@ -2310,10 +2040,6 @@ int fbt_cpu_init(void)
 	_gdfrc_cpu_target = GED_VSYNC_MISS_QUANTUM_NS;
 	g_rescue_distance = _gdfrc_cpu_target * (unsigned long long)rescue_percent;
 	g_rescue_distance = div64_u64(g_rescue_distance, 100ULL);
-#ifdef CONFIG_MTK_FPSGO_MULTI_STAGE_RESCUE
-	g_rescue_first_distance = _gdfrc_cpu_target * (unsigned long long)rescue_first_percent;
-	g_rescue_first_distance = div64_u64(g_rescue_first_distance, 100ULL);
-#endif
 	g_vsync_distance = _gdfrc_cpu_target * (unsigned long long)vsync_percent;
 	g_vsync_distance = div64_u64(g_vsync_distance, 100ULL);
 	vsync_period = GED_VSYNC_MISS_QUANTUM_NS;
@@ -2355,29 +2081,11 @@ int fbt_cpu_init(void)
 					fbt_debugfs_dir,
 					NULL,
 					&fbt_switch_idleprefer_fops);
-			debugfs_create_file("suppress_ceiling",
-					S_IRUGO | S_IWUSR | S_IWGRP,
-					fbt_debugfs_dir,
-					NULL,
-					&fbt_switch_ceiling_fops);
-			debugfs_create_file("disable_walt",
-					S_IRUGO | S_IWUSR | S_IWGRP,
-					fbt_debugfs_dir,
-					NULL,
-					&fbt_force_walt_fops);
 		}
 	}
 
 	INIT_LIST_HEAD(&loading_list);
 	INIT_LIST_HEAD(&blc_list);
-
-	update_lppcap = fbt_cpu_lppcap_update;
-
-	lpp_max_cap = 100;
-	lpp_clus_max_freq =
-		kzalloc(cluster_num * sizeof(int), GFP_KERNEL);
-	for (cluster = 0 ; cluster < cluster_num; cluster++)
-		lpp_clus_max_freq[cluster] = cpu_dvfs[cluster].power[0];
 
 	return 0;
 }
