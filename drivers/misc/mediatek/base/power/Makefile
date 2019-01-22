@@ -68,7 +68,7 @@ ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6757) += pbm_v1/
 obj-$(CONFIG_MACH_KIBOPLUS) += pbm_v1/
 obj-$(CONFIG_MACH_MT6799) += pbm_v2/
-#obj-$(CONFIG_MACH_MT6775) += pbm_v2/
+obj-$(CONFIG_MACH_MT6775) += pbm_v2/
 obj-$(CONFIG_MACH_MT6758) += pbm_v2/
 obj-$(CONFIG_MACH_MT6759) += pbm_v2/
 obj-$(CONFIG_MACH_MT6763) += pbm_v3/
