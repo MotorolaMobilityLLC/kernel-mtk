@@ -346,11 +346,12 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 	uint32 u32AudioI2S = 0;
 	bool mI2SWLen;
 
-	pr_warn("%s, mPrepareDone = %d format = %d SNDRV_PCM_FORMAT_S32_LE = %d SNDRV_PCM_FORMAT_U32_LE = %d\n",
+	pr_warn("%s: mPrepareDone = %d, format = %d, SNDRV_PCM_FORMAT_S32_LE = %d, SNDRV_PCM_FORMAT_U32_LE = %d, sample rate = %d\n",
 			       __func__,
 			       mPrepareDone,
 			       runtime->format,
-			       SNDRV_PCM_FORMAT_S32_LE, SNDRV_PCM_FORMAT_U32_LE);
+			       SNDRV_PCM_FORMAT_S32_LE, SNDRV_PCM_FORMAT_U32_LE,
+			       substream->runtime->rate);
 
 	if (mPrepareDone == false) {
 		SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
@@ -384,13 +385,13 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 			EnableALLbySampleRate(runtime->rate);
 			SetCLkMclk(Soc_Aud_I2S1, runtime->rate); /* select I2S */
 			SetCLkMclk(Soc_Aud_I2S3, runtime->rate);
-			#if 0
+#if 0
 			EnableI2SDivPower(AUDIO_APLL12_DIV1, true);
 			EnableI2SDivPower(AUDIO_APLL12_DIV3, true);
-			#else
+#else
 			EnableI2SCLKDiv(Soc_Aud_I2S1_MCKDIV, true);
 			EnableI2SCLKDiv(Soc_Aud_I2S3_MCKDIV, true);
-			#endif
+#endif
 			u32AudioI2S |= Soc_Aud_LOW_JITTER_CLOCK << 12; /* Low jitter mode */
 
 		} else {
