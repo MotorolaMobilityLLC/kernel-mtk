@@ -145,6 +145,8 @@ VOID cnmInit(P_ADAPTER_T prAdapter)
 					(PFN_MGMT_TIMEOUT_FUNC)cnmDbdcDecision,
 					(ULONG)DBDC_DECISION_TIMER_DISABLE_COUNT_DOWN);
 #endif /*CFG_SUPPORT_DBDC*/
+	cnmTimerInitTimer(prAdapter, &prCnmInfo->rReqChnlUtilTimer,
+				  (PFN_MGMT_TIMEOUT_FUNC)cnmRunEventReqChnlUtilTimeout, (ULONG) NULL);
 }				/* end of cnmInit()*/
 
 /*----------------------------------------------------------------------------*/
@@ -158,6 +160,11 @@ VOID cnmInit(P_ADAPTER_T prAdapter)
 /*----------------------------------------------------------------------------*/
 VOID cnmUninit(P_ADAPTER_T prAdapter)
 {
+#if CFG_SUPPORT_DBDC
+	cnmTimerStopTimer(prAdapter, &prAdapter->rWifiVar.rDBDCSwitchGuardTimer);
+	cnmTimerStopTimer(prAdapter, &prAdapter->rWifiVar.rDBDCDisableCountdownTimer);
+#endif /*CFG_SUPPORT_DBDC*/
+	cnmTimerStopTimer(prAdapter, &prAdapter->rCnmInfo.rReqChnlUtilTimer);
 }				/* end of cnmUninit()*/
 
 /*----------------------------------------------------------------------------*/
@@ -1353,3 +1360,93 @@ VOID cnmDbdcDecision(IN P_ADAPTER_T prAdapter, IN ULONG plParamPtr)
 
 #endif /*CFG_SUPPORT_DBDC*/
 
+VOID cnmRunEventReqChnlUtilTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
+{
+	P_CNM_INFO_T prCnmInfo = &prAdapter->rCnmInfo;
+	struct MSG_CH_UTIL_RSP *prMsgChUtil = NULL;
+	P_MSG_SCN_SCAN_REQ prScanReqMsg = NULL;
+
+	DBGLOG(CNM, INFO, "Request Channel Utilization timeout\n");
+	wlanReleasePendingCmdById(prAdapter, CMD_ID_REQ_CHNL_UTILIZATION);
+	prMsgChUtil = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prMsgChUtil));
+	kalMemZero(prMsgChUtil, sizeof(*prMsgChUtil));
+	prMsgChUtil->rMsgHdr.eMsgId = prCnmInfo->u2ReturnMID;
+	prMsgChUtil->ucChnlNum = 0;
+	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgChUtil, MSG_SEND_METHOD_BUF);
+	/* tell scan_fsm to continue to process scan request, if there's any pending */
+	prScanReqMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prScanReqMsg));
+	kalMemZero(prScanReqMsg, sizeof(*prScanReqMsg));
+	prScanReqMsg->rMsgHdr.eMsgId = MID_MNY_CNM_SCAN_CONTINUE;
+	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prScanReqMsg, MSG_SEND_METHOD_BUF);
+}
+
+VOID cnmHandleChannelUtilization(P_ADAPTER_T prAdapter,
+	struct EVENT_RSP_CHNL_UTILIZATION *prChnlUtil)
+{
+	P_CNM_INFO_T prCnmInfo = &prAdapter->rCnmInfo;
+	struct MSG_CH_UTIL_RSP *prMsgChUtil = NULL;
+	P_MSG_SCN_SCAN_REQ prScanReqMsg = NULL;
+
+	if (!timerPendingTimer(&prCnmInfo->rReqChnlUtilTimer))
+		return;
+	prMsgChUtil = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prMsgChUtil));
+	if (!prMsgChUtil) {
+		DBGLOG(CNM, ERROR, "No memory!");
+		return;
+	}
+	DBGLOG(CNM, INFO, "Receive Channel Utilization response\n");
+	cnmTimerStopTimer(prAdapter, &prCnmInfo->rReqChnlUtilTimer);
+	kalMemZero(prMsgChUtil, sizeof(*prMsgChUtil));
+	prMsgChUtil->rMsgHdr.eMsgId = prCnmInfo->u2ReturnMID;
+	prMsgChUtil->ucChnlNum = prChnlUtil->ucChannelNum;
+	kalMemCopy(prMsgChUtil->aucChnlList, prChnlUtil->aucChannelMeasureList, prChnlUtil->ucChannelNum);
+	kalMemCopy(prMsgChUtil->aucChUtil, prChnlUtil->aucChannelUtilization, prChnlUtil->ucChannelNum);
+	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgChUtil, MSG_SEND_METHOD_BUF);
+	prScanReqMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prScanReqMsg));
+	kalMemZero(prScanReqMsg, sizeof(*prScanReqMsg));
+	prScanReqMsg->rMsgHdr.eMsgId = MID_MNY_CNM_SCAN_CONTINUE;
+	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prScanReqMsg, MSG_SEND_METHOD_BUF);
+}
+
+VOID cnmRequestChannelUtilization(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	P_CNM_INFO_T prCnmInfo = &prAdapter->rCnmInfo;
+	struct MSG_REQ_CH_UTIL *prMsgReqChUtil = (struct MSG_REQ_CH_UTIL *)prMsgHdr;
+	struct CMD_REQ_CHNL_UTILIZATION rChnlUtilCmd;
+
+	if (!prMsgReqChUtil)
+		return;
+	if (timerPendingTimer(&prCnmInfo->rReqChnlUtilTimer)) {
+		cnmMemFree(prAdapter, prMsgReqChUtil);
+		return;
+	}
+	DBGLOG(CNM, INFO, "Request Channel Utilization, channel count %d\n", prMsgReqChUtil->ucChnlNum);
+	kalMemZero(&rChnlUtilCmd, sizeof(rChnlUtilCmd));
+	prCnmInfo->u2ReturnMID = prMsgReqChUtil->u2ReturnMID;
+	rChnlUtilCmd.u2MeasureDuration = prMsgReqChUtil->u2Duration;
+	if (prMsgReqChUtil->ucChnlNum > 9)
+		prMsgReqChUtil->ucChnlNum = 9;
+	rChnlUtilCmd.ucChannelNum = prMsgReqChUtil->ucChnlNum;
+	kalMemCopy(rChnlUtilCmd.aucChannelList, prMsgReqChUtil->aucChnlList, rChnlUtilCmd.ucChannelNum);
+	cnmMemFree(prAdapter, prMsgReqChUtil);
+	rStatus = wlanSendSetQueryCmd(
+				prAdapter,                  /* prAdapter */
+				CMD_ID_REQ_CHNL_UTILIZATION,/* ucCID */
+				TRUE,                       /* fgSetQuery */
+				FALSE,                      /* fgNeedResp */
+				FALSE,                       /* fgIsOid */
+				nicCmdEventSetCommon,		/* pfCmdDoneHandler*/
+				nicOidCmdTimeoutCommon,		/* pfCmdTimeoutHandler */
+				sizeof(rChnlUtilCmd),/* u4SetQueryInfoLen */
+				(PUINT_8)&rChnlUtilCmd,      /* pucInfoBuffer */
+				NULL,                       /* pvSetQueryBuffer */
+				0                           /* u4SetQueryBufferLen */
+				);
+	cnmTimerStartTimer(prAdapter, &prCnmInfo->rReqChnlUtilTimer, 1000);
+}
+
+BOOLEAN cnmChUtilIsRunning(P_ADAPTER_T prAdapter)
+{
+	return timerPendingTimer(&prAdapter->rCnmInfo.rReqChnlUtilTimer);
+}

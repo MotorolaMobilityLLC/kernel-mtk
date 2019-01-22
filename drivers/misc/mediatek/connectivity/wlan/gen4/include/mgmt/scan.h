@@ -225,6 +225,7 @@ typedef enum _ENUM_PSCAN_STATE_T {
 /*----------------------------------------------------------------------------*/
 struct _BSS_DESC_T {
 	LINK_ENTRY_T rLinkEntry;
+	LINK_ENTRY_T rLinkEntryEss;
 
 	UINT_8 aucBSSID[MAC_ADDR_LEN];
 	UINT_8 aucSrcAddr[MAC_ADDR_LEN];	/* For IBSS, the SrcAddr is different from BSSID */
@@ -338,6 +339,16 @@ struct _BSS_DESC_T {
 	UINT_8 aucIEBuf[CFG_IE_BUFFER_SIZE];
 	UINT_8 ucJoinFailureCount;
 	OS_SYSTIME rJoinFailTime;
+	struct AIS_BLACKLIST_ITEM *prBlack;
+	UINT_16 u2StaCnt;
+	UINT_16 u2AvaliableAC; /* Available Admission Capacity */
+	UINT_8 ucChnlUtilization;
+	UINT_8 ucSNR;
+	BOOLEAN fgSeenProbeResp;
+	BOOLEAN fgExsitBssLoadIE;
+	BOOLEAN fgMultiAnttenaAndSTBC;
+	BOOLEAN fgDeauthLastTime;
+	UINT_32 u4UpdateIdx;
 };
 
 #if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
@@ -461,6 +472,7 @@ typedef struct _SCAN_INFO_T {
 	UINT_8			aucChannelFlag[64];
 	UINT_8			aucChannelMDRDYCnt[64];
 
+	UINT_32 u4ScanUpdateIdx;
 } SCAN_INFO_T, *P_SCAN_INFO_T;
 
 /* Incoming Mailbox Messages */
@@ -776,5 +788,7 @@ BOOLEAN scnFsmGSCNResults(IN P_ADAPTER_T prAdapter, IN P_EVENT_GSCAN_RESULT_T pr
 
 VOID scanLogEssResult(P_ADAPTER_T prAdapter);
 VOID scanInitEssResult(P_ADAPTER_T prAdapter);
+P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter);
+VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter);
 
 #endif /* _SCAN_H */

@@ -521,6 +521,8 @@ struct _STA_RECORD_T {
 	UINT_8 ucSmDialogToken;	/* Spectrum Mngt Dialog Token */
 	UINT_8 ucSmMsmtRequestMode; /* Measurement Request Mode */
 	UINT_8 ucSmMsmtToken; /* Measurement Request Token */
+	UINT_16 u2MaxIdlePeriod;
+	UINT_8 ucIdleOption;
 };
 
 #if 0

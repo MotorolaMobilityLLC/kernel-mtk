@@ -239,6 +239,7 @@ typedef struct _CONNECTION_SETTINGS_T {
 
 	/* for RSN info store, when upper layer set rsn info */
 	RSN_INFO_T rRsnInfo;
+	struct LINK_MGMT rBlackList;
 } CONNECTION_SETTINGS_T, *P_CONNECTION_SETTINGS_T;
 
 struct _BSS_INFO_T {
@@ -476,6 +477,11 @@ struct _BSS_INFO_T {
 
 	UINT_32 u4CoexPhyRateLimit;
 
+#if CFG_SUPPORT_RN
+	OS_SYSTIME rConnTime;
+	BOOLEAN	fgDisConnReassoc;
+#endif
+
 #if CFG_SUPPORT_ROAMING_SKIP_ONE_AP
 	UINT_8	ucRoamSkipTimes;
 	BOOLEAN fgGoodRcpiArea;
@@ -485,6 +491,12 @@ struct _BSS_INFO_T {
 	BOOLEAN fgIsGranted;
 	ENUM_BAND_T eBandGranted;
 	UINT_8 ucPrimaryChannelGranted;
+};
+
+struct ESS_CHNL_INFO {
+	UINT_8 ucChannel;
+	UINT_8 ucUtilization;
+	UINT_8 ucApNum;
 };
 
 struct _AIS_SPECIFIC_BSS_INFO_T {
@@ -547,6 +559,9 @@ struct _AIS_SPECIFIC_BSS_INFO_T {
 	TIMER_T rSaQueryTimer;
 	BOOLEAN fgBipKeyInstalled;
 #endif
+	struct ESS_CHNL_INFO arCurEssChnlInfo[CFG_MAX_NUM_OF_CHNL_INFO];
+	UINT_8 ucCurEssChnlInfoNum;
+	LINK_T rCurEssLink;
 };
 
 struct _BOW_SPECIFIC_BSS_INFO_T {
