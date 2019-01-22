@@ -15,6 +15,7 @@
 #define __MTK_STATIC_POWER_H__
 
 #include <linux/types.h>
+#include <linux/bitops.h>
 
 /* #define MTK_SPOWER_UT */
 #if defined(CONFIG_MACH_MT6759)
@@ -44,9 +45,6 @@
 /*
  * bit operation
  */
-#undef  BIT
-#define BIT(bit)	(1U << (bit))
-
 #define MSB(range)	(1 ? range)
 #define LSB(range)	(0 ? range)
 /**
