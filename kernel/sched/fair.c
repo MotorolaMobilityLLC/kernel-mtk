@@ -4616,7 +4616,7 @@ static unsigned long capacity_of(int cpu)
 	return cpu_rq(cpu)->cpu_capacity;
 }
 
-static unsigned long capacity_orig_of(int cpu)
+unsigned long capacity_orig_of(int cpu)
 {
 	return cpu_rq(cpu)->cpu_capacity_orig;
 }
@@ -4818,7 +4818,6 @@ static inline bool task_fits_max(struct task_struct *p, int cpu)
 	return __task_fits(p, cpu, 0);
 }
 
-static unsigned long cpu_util(int cpu);
 
 static inline bool task_fits_spare(struct task_struct *p, int cpu)
 {
@@ -4879,7 +4878,7 @@ static unsigned long __cpu_util(int cpu, int delta)
 	return (delta >= capacity) ? capacity : delta;
 }
 
-static unsigned long cpu_util(int cpu)
+unsigned long cpu_util(int cpu)
 {
 	return __cpu_util(cpu, 0);
 }

@@ -1472,6 +1472,9 @@ static inline void sched_rt_avg_update(struct rq *rq, u64 rt_delta) { }
 static inline void sched_avg_update(struct rq *rq) { }
 #endif
 
+unsigned long capacity_orig_of(int cpu);
+unsigned long cpu_util(int cpu);
+
 /*
  * __task_rq_lock - lock the rq @p resides on.
  */
