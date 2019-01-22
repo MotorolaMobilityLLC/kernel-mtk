@@ -261,6 +261,7 @@ static struct regulator *mtk_nand_regulator;
 
 #define NFI_TIMEOUT_MS (1000)
 
+bool is_raw_part = FALSE;
 /* #define MANUAL_CORRECT */
 
 #if (defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT))
@@ -1401,6 +1402,8 @@ u32 mtk_nand_page_transform(struct mtd_info *mtd, struct nand_chip *chip, u32 pa
 		else
 			raw_part = FALSE;
 	}
+
+	is_raw_part = raw_part;
 	if (init_pmt_done != TRUE  && devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
 		devinfo.tlcControl.slcopmodeEn = TRUE;
 
@@ -5585,10 +5588,13 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 		if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) {
 			if ((devinfo.two_phyplane || (devinfo.advancedmode & MULTI_PLANE))
 			    && (!tlc_snd_phyplane)) {
-				if ((devinfo.tlcControl.slcopmodeEn) && (devinfo.advancedmode & MULTI_PLANE))
+				if (((devinfo.tlcControl.slcopmodeEn) && (devinfo.advancedmode & MULTI_PLANE))
+				    || (is_raw_part == TRUE)) {
 					mtk_nand_set_command(NAND_CMD_PAGEPROG);
-				else
+					is_raw_part = FALSE;
+				} else {
 					mtk_nand_set_command(PROGRAM_LEFT_PLANE_CMD);
+				}
 			} else if (tlc_cache_program)
 				mtk_nand_set_command(NAND_CMD_CACHEDPROG);
 			else
