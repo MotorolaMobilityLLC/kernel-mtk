@@ -92,6 +92,8 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 {
 	struct charger_data *pdata;
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+	u32 ichg1_min = 0, aicr1_min = 0;
+	int ret = 0;
 
 	pdata = &info->chg1_data;
 	mutex_lock(&swchgalg->ichg_aicr_access_mutex);
@@ -198,6 +200,14 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		if (pdata->input_current_limit_by_aicl < pdata->input_current_limit)
 			pdata->input_current_limit = pdata->input_current_limit_by_aicl;
 done:
+	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
+	if (ret != -ENOTSUPP && pdata->charging_current_limit < ichg1_min)
+		pdata->charging_current_limit = 0;
+
+	ret = charger_dev_get_min_input_current(info->chg1_dev, &aicr1_min);
+	if (ret != -ENOTSUPP && pdata->input_current_limit < aicr1_min)
+		pdata->input_current_limit = 0;
+
 	chr_err("force:%d thermal:%d %d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d\n",
 		pdata->force_charging_current,
 		pdata->thermal_input_current_limit, pdata->thermal_charging_current_limit,
@@ -223,8 +233,13 @@ done:
 				mtk_pe_reset_ta_vchr(info);
 		}
 	}
-	if (pdata->input_current_limit > 0 && pdata->charging_current_limit > 0
-		&& info->can_charging)
+
+	/*
+	 * If thermal current limit is larger than charging IC's minimum
+	 * current setting, enable the charger immediately
+	 */
+	if (pdata->input_current_limit > aicr1_min && pdata->charging_current_limit > ichg1_min
+	    && info->can_charging)
 		charger_dev_enable(info->chg1_dev, true);
 	mutex_unlock(&swchgalg->ichg_aicr_access_mutex);
 }
