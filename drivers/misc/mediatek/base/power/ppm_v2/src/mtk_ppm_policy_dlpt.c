@@ -57,6 +57,7 @@ static struct ppm_policy_data dlpt_policy = {
 
 };
 
+void __attribute__((weak)) kicker_pbm_by_cpu(unsigned int loading, int core, int voltage) { }
 
 void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned int cluster_num)
 {
