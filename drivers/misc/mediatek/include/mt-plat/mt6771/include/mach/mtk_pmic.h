@@ -15,11 +15,12 @@
 #define _CUST_PMIC_H_
 
 /*#define PMIC_VDVFS_CUST_ENABLE*/
+
 #define LOW_POWER_LIMIT_LEVEL_1 15
 
-#define PT_DLPT_BRINGUP
+#define PT_DLPT_BRINGUP 1
 
-#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(PT_DLPT_BRINGUP)
+#if defined(CONFIG_FPGA_EARLY_PORTING) || PT_DLPT_BRINGUP
 /*Define for disable low battery protect feature, default no define for enable low battery protect.*/
 #define DISABLE_LOW_BATTERY_PROTECT
 
@@ -31,7 +32,7 @@
 
 /*Define for DLPT*/
 #define DISABLE_DLPT_FEATURE
-#endif /* defined(CONFIG_FPGA_EARLY_PORTING) || defined(PT_DLPT_BRINGUP) */
+#endif /* defined(CONFIG_FPGA_EARLY_PORTING) || PT_DLPT_BRINGUP */
 
 #define POWER_UVLO_VOLT_LEVEL 2600
 #define IMAX_MAX_VALUE 5500

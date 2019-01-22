@@ -27,6 +27,8 @@
 #define VOLT_TO_THD(volt) ((volt) * 4096 / 5400)
 #define USER_SIZE 16
 
+#define LBAT_SERVICE_DBG 0
+
 static DEFINE_MUTEX(lbat_mutex);
 static struct list_head lbat_hv_list = LIST_HEAD_INIT(lbat_hv_list);
 static struct list_head lbat_lv_list = LIST_HEAD_INIT(lbat_lv_list);
@@ -188,8 +190,10 @@ static void bat_h_int_handler(void)
 			cur_lv_ptr = thd_t;
 			is_set = true;
 		}
+#if LBAT_SERVICE_DBG
 		pr_info("[%s] lv_thd=%d, active=%d\n",
 			__func__, thd_t->thd, thd_t->active);
+#endif
 	}
 	pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MIN,
 		VOLT_TO_THD(cur_lv_ptr->thd));
@@ -207,8 +211,10 @@ static void bat_h_int_handler(void)
 			cur_hv_ptr = thd_t;
 			is_set = true;
 		}
+#if LBAT_SERVICE_DBG
 		pr_info("[%s] hv_thd=%d, active=%d\n",
 			__func__, thd_t->thd, thd_t->active);
+#endif
 	}
 	pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MAX,
 		VOLT_TO_THD(cur_hv_ptr->thd));
@@ -248,8 +254,10 @@ static void bat_l_int_handler(void)
 			cur_hv_ptr = thd_t;
 			is_set = true;
 		}
+#if LBAT_SERVICE_DBG
 		pr_info("[%s] hv_thd=%d, active=%d\n",
 			__func__, thd_t->thd, thd_t->active);
+#endif
 	}
 	pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MAX,
 		VOLT_TO_THD(cur_hv_ptr->thd));
@@ -267,8 +275,10 @@ static void bat_l_int_handler(void)
 			cur_lv_ptr = thd_t;
 			is_set = true;
 		}
+#if LBAT_SERVICE_DBG
 		pr_info("[%s] lv_thd=%d, active=%d\n",
 			__func__, thd_t->thd, thd_t->active);
+#endif
 	}
 	pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MIN,
 		VOLT_TO_THD(cur_lv_ptr->thd));
@@ -518,3 +528,4 @@ int lbat_debug_init(struct dentry *debug_dir)
 
 	return 0;
 }
+

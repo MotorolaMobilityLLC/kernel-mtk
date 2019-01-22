@@ -2957,5 +2957,6 @@
 	};
 };
 
+#include "mt6358.dtsi"
 #include "cust_mt6771_msdc.dtsi"
 
