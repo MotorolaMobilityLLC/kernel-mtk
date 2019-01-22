@@ -1365,10 +1365,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 
 				last_3D_done = cur_3D_done;
 
-				if (gx_game_mode)
+				if (!g_force_gpu_dvfs_fallback)
 					ged_set_backup_timer_timeout(0);
 				else
-					ged_set_backup_timer_timeout(psKPI->t_gpu_target);
+					ged_set_backup_timer_timeout(
+						psKPI->t_gpu_target << 1);
 #endif
 
 				if (psHead->last_TimeStamp1 != psKPI->ullTimeStamp1) {
