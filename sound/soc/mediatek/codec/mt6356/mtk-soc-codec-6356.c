@@ -1572,16 +1572,36 @@ static void Audio_Amp_Change(int channels, bool enable)
 	} else {
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false) {
+			/* Pull-down HPL/R to AVSS28_AUD */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc033, 0xffff);
+
+			EnableDcCompensation(false);
+
 			/* HPR/HPL mux to open */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00);
+
+			/* Disable low-noise mode of DAC */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0x0001);
+
 			/* Disable Audio DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x000f);
 
 			/* Disable AUD_CLK */
 			Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0, 0x1);
 
+			/* Short HP main output to HP aux output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3fc3, 0xffff);
+			/* Enable HP aux output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3fcf, 0xffff);
+
 			/* decrease HPL/R gain to normal gain step by step */
 			HeadsetVoloumeRestore();
+
+			/* Enable HP aux feedback loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x3fff, 0xffff);
+
+			/* Reduce HP aux feedback loop gain */
+			hp_aux_feedback_loop_gain_ramp(false);
 
 			/* decrease HPR/L main output stage step by step */
 			hp_main_output_ramp(false);
@@ -1589,23 +1609,39 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Disable HP main output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3);
 
+			/* Enable HP aux CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0e00, 0xffff);
+
+			/* Disable HP main CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0c00, 0xffff);
+
+			/* Unshort HP main output to HP aux output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3 << 6);
+
 			/* Disable HP driver core circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0, 0x3 << 4);
 
 			/* Disable HP driver bias circuits */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0, 0x3 << 6);
 
-			/* Disable HP aux CMFB loop */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0, 0xff << 8);
+			/* Disable HP aux CMFB loop, Enable HP main CMFB for HP off state */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
 
-			/* Enable HP main CMFB Switch */
-			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x2 << 8, 0xff << 8);
+			/* Disable HP aux feedback loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3 << 4);
+
+			/* Disable HP aux output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3 << 2);
 
 			/* Pull-down HPL/R, HS, LO to AVSS28_AUD */
 			Ana_Set_Reg(AUDDEC_ANA_CON10, 0xa8, 0xff);
 
 			/* Disable IBIST */
 			Ana_Set_Reg(AUDDEC_ANA_CON12, 0x1 << 8, 0x1 << 8);
+
+			/* Disable AUD_ZCD */
+			Hp_Zcd_Enable(false);
+
 			/* Disable NV regulator (-1.2V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON15, 0x0, 0x1);
 			/* Disable cap-less LDOs (1.5V) */
@@ -1613,11 +1649,12 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Disable NCP */
 			Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x1, 0x1);
 
-			EnableDcCompensation(false);
-		}
+			/* Disable Pull-down HPL/R to AVSS28_AUD */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4033, 0xffff);
 
-		if (GetDLStatus() == false)
-			TurnOffDacPower();
+			if (GetDLStatus() == false)
+				TurnOffDacPower();
+		}
 	}
 }
 
