@@ -123,6 +123,7 @@ static void hw_bc12_init(void)
 static unsigned int hw_bc12_step_1(void)
 {
 	unsigned int wChargerAvail = 0;
+	unsigned int tmp = 0;
 
 	/* RG_A_BC12_VSRC_EN[1:0] = 00 */
 	bc12_set_register_value(MT6336_RG_A_BC12_VSRC_EN, 0);
@@ -137,8 +138,11 @@ static unsigned int hw_bc12_step_1(void)
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
 	/**/
-	if (check_rdm_dwm_requirement())
-		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 1);
+	if (check_rdm_dwm_requirement()) {
+		tmp = bc12_get_register_value(MT6336_RG_A_ANABASE_RSV);
+		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, (tmp | 0x1));
+	}
+
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
 
@@ -149,8 +153,11 @@ static unsigned int hw_bc12_step_1(void)
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
 	/**/
-	if (check_rdm_dwm_requirement())
-		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 0);
+	if (check_rdm_dwm_requirement()) {
+		tmp = bc12_get_register_value(MT6336_RG_A_ANABASE_RSV);
+		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, (tmp & ~0x1));
+	}
+
 
 	/* Delay 10ms */
 	usleep_range(10000, 20000);
@@ -161,6 +168,8 @@ static unsigned int hw_bc12_step_1(void)
 static unsigned int hw_bc12_step_2a(void)
 {
 	unsigned int wChargerAvail = 0;
+	unsigned int tmp = 0;
+
 	/* RG_A_BC12_VSRC_EN[1:0] = 10 */
 	bc12_set_register_value(MT6336_RG_A_BC12_VSRC_EN, 2);
 	/* RG_A_BC12_VREF_VTH_EN[1:0] = 00 */
@@ -174,8 +183,11 @@ static unsigned int hw_bc12_step_2a(void)
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
 	/**/
-	if (check_rdm_dwm_requirement())
-		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 1);
+	if (check_rdm_dwm_requirement()) {
+		tmp = bc12_get_register_value(MT6336_RG_A_ANABASE_RSV);
+		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, (tmp | 0x1));
+	}
+
 	/* Delay 40ms */
 	msleep(40);
 
@@ -186,8 +198,11 @@ static unsigned int hw_bc12_step_2a(void)
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
 	/**/
-	if (check_rdm_dwm_requirement())
-		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 0);
+	if (check_rdm_dwm_requirement()) {
+		tmp = bc12_get_register_value(MT6336_RG_A_ANABASE_RSV);
+		bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, (tmp & ~0x1));
+	}
+
 
 	/* Delay 20ms */
 	msleep(20);
