@@ -23,20 +23,15 @@ static int tcpc_check_notify_time(struct tcpc_device *tcpc,
 #ifdef CONFIG_PD_BEGUG_ON
 	struct timeval begin, end;
 	int timeval = 0;
-#endif
 
-#ifdef CONFIG_PD_BEGUG_ON
 	do_gettimeofday(&begin);
-#endif
-
 	ret = srcu_notifier_call_chain(&tcpc->evt_nh[type], state, tcp_noti);
-
-#ifdef CONFIG_PD_BEGUG_ON
 	do_gettimeofday(&end);
 	timeval = (timeval_to_ns(end) - timeval_to_ns(begin))/1000/1000;
 	PD_BUG_ON(timeval > TCPC_NOTIFY_OVERTIME);
+#else
+	ret = srcu_notifier_call_chain(&tcpc->evt_nh[type], state, tcp_noti);
 #endif
-
 	return ret;
 }
 
