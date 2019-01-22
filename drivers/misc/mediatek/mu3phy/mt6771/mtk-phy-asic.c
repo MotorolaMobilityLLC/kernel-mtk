@@ -311,40 +311,51 @@ void usb_phy_switch_to_uart(void)
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_BC11_SW_EN_OFST,
 			  RG_USB20_BC11_SW_EN, 0);
 
-	/* Set RG_SUSPENDM to 1 */
+	/* RG_SUSPENDM to 1'b1 */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_SUSPENDM_OFST, RG_SUSPENDM, 1);
 
-	/* force suspendm = 1 */
+	/* force suspendm = 1'b1 */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM, 1);
 
-	/* Set ru_uart_mode to 2'b01 */
+	/* rg_uart_mode = 2'b01 */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_UART_MODE_OFST, RG_UART_MODE, 1);
 
-	/* Set RG_UART_EN to 1 */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 1);
+	/* force_uart_i = 1'b0 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_I_OFST, FORCE_UART_I, 0);
 
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 1);
+	/* force_uart_bias_en = 1'b1 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_BIAS_EN_OFST, FORCE_UART_BIAS_EN, 1);
 
+	/* force_uart_tx_oe = 1'b1 */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_TX_OE_OFST, FORCE_UART_TX_OE, 1);
 
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_BIAS_EN_OFST, FORCE_UART_BIAS_EN,
-			  1);
+	/* force_uart_en = 1'b1 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 1);
 
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 1);
-
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_TX_OE_OFST, RG_UART_TX_OE, 1);
-
+	/* RG_UART_BIAS_EN = 1'b1 */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_BIAS_EN_OFST, RG_UART_BIAS_EN, 1);
 
-	/* Set RG_USB20_DM_100K_EN to 1 */
+	/* RG_UART_TX_OE = 1'b1 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_TX_OE_OFST, RG_UART_TX_OE, 1);
+
+	/* RG_UART_EN = 1'b1 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 1);
+
+	/* RG_USB20_DM_100K_EN = 1'b1 */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_DM_100K_EN_OFST,
 			  RG_USB20_DM_100K_EN, 1);
+
+	/* force_linestate = 1'b1 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, FORCE_LINESTATE_OFST, FORCE_LINESTATE, 1);
+
+	/* RG_LINESTATE = 2'b01 (J State) */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_LINESTATE_OFST, RG_LINESTATE, 0x1);
 
 	/* f_fusb30_ck:125MHz */
 	usb_enable_clock(false);
 
-	/* SET UART_USB_SEL to UART0 */
-	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) | (1<<25)));
+	/* SET USB to UART GPIO to UART0 */
+	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) | (1<<20)));
 
 	in_uart_mode = true;
 }
@@ -354,14 +365,49 @@ void usb_phy_switch_to_usb(void)
 {
 	in_uart_mode = false;
 
-	/* CLEAR UART_USB_SEL to UART0 */
-	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) & ~(1<<25)));
+	/* force_uart_i = 1'b1 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_I_OFST, FORCE_UART_I, 1);
 
-	/* clear force_uart_en */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
+	/* force_uart_en = 1'b1 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 1);
 
-	/* clear ru_uart_mode to 2'b00 */
+	/* RG_UART_EN = 1'b0 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, RG_UART_EN_OFST, RG_UART_EN, 0);
+
+	/* RG_USB20_DM_100K_EN = 1'b0 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYACR4, RG_USB20_DM_100K_EN_OFST,
+			  RG_USB20_DM_100K_EN, 0);
+
+	/* rg_uart_mode = 2'b00 */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_UART_MODE_OFST, RG_UART_MODE, 0);
+
+	/* force_dp_pulldown     1'b0 */
+	/* U3D_U2PHYDTM0 FORCE_DP_PULLDOWN */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_DP_PULLDOWN_OFST, FORCE_DP_PULLDOWN,
+			  0);
+
+	/* force_dm_pulldown     1'b0 */
+	/* U3D_U2PHYDTM0 FORCE_DM_PULLDOWN */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_DM_PULLDOWN_OFST, FORCE_DM_PULLDOWN,
+			  0);
+
+	/* force_xcversel        1'b0 */
+	/* U3D_U2PHYDTM0 FORCE_XCVRSEL */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_XCVRSEL_OFST, FORCE_XCVRSEL, 0);
+
+	/* force_termsel 1'b0 */
+	/* U3D_U2PHYDTM0 FORCE_TERMSEL */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_TERMSEL_OFST, FORCE_TERMSEL, 0);
+
+	/* force_datain  1'b0 */
+	/* U3D_U2PHYDTM0 FORCE_DATAIN */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_DATAIN_OFST, FORCE_DATAIN, 0);
+
+	/* force_linestate = 1'b0 */
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM1, FORCE_LINESTATE_OFST, FORCE_LINESTATE, 0);
+
+	/* CLEAR USB to UART GPIO to UART0 */
+	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) & ~(1<<20)));
 
 	phy_init_soc(u3phy);
 

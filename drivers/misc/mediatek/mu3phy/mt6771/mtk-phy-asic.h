@@ -286,14 +286,14 @@ struct u2phy_reg_e {
 #define RG_UART_BIAS_EN                    (0x1<<18)	/* 18:18 */
 #define RG_UART_TX_OE                      (0x1<<17)	/* 17:17 */
 #define RG_UART_EN                         (0x1<<16)	/* 16:16 */
-#define RG_IP_U2_PORT_POWER                (0x1<<15)	/* 15:15 */
-#define FORCE_IP_U2_PORT_POWER             (0x1<<14)	/* 14:14 */
+#define FORCE_LINESTATE                    (0x1<<14)	/* 14:14 */
 #define FORCE_VBUSVALID                    (0x1<<13)	/* 13:13 */
 #define FORCE_SESSEND                      (0x1<<12)	/* 12:12 */
 #define FORCE_BVALID                       (0x1<<11)	/* 11:11 */
 #define FORCE_AVALID                       (0x1<<10)	/* 10:10 */
 #define FORCE_IDDIG                        (0x1<<9)	/* 9:9 */
 #define FORCE_IDPULLUP                     (0x1<<8)	/* 8:8 */
+#define RG_LINESTATE                       (0x3<<6)	/* 7:6 */
 #define RG_VBUSVALID                       (0x1<<5)	/* 5:5 */
 #define RG_SESSEND                         (0x1<<4)	/* 4:4 */
 #define RG_BVALID                          (0x1<<3)	/* 3:3 */
@@ -544,14 +544,14 @@ struct u2phy_reg_e {
 #define RG_UART_BIAS_EN_OFST               (18)
 #define RG_UART_TX_OE_OFST                 (17)
 #define RG_UART_EN_OFST                    (16)
-#define RG_IP_U2_PORT_POWER_OFST           (15)
-#define FORCE_IP_U2_PORT_POWER_OFST        (14)
+#define FORCE_LINESTATE_OFST               (14)
 #define FORCE_VBUSVALID_OFST               (13)
 #define FORCE_SESSEND_OFST                 (12)
 #define FORCE_BVALID_OFST                  (11)
 #define FORCE_AVALID_OFST                  (10)
 #define FORCE_IDDIG_OFST                   (9)
 #define FORCE_IDPULLUP_OFST                (8)
+#define RG_LINESTATE_OFST                  (6)
 #define RG_VBUSVALID_OFST                  (5)
 #define RG_SESSEND_OFST                    (4)
 #define RG_BVALID_OFST                     (3)
