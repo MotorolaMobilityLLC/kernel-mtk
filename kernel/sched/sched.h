@@ -1366,7 +1366,7 @@ extern void init_entity_runnable_average(struct sched_entity *se);
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
 extern void sched_update_nr_prod(int cpu, unsigned long nr_running, int inc);
-extern void sched_max_util_task(int *cpu, int *pid, int *util);
+extern void sched_max_util_task(int *cpu, int *pid, int *util, int *boost);
 #endif
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
@@ -1526,7 +1526,6 @@ static inline unsigned long cpu_util(int cpu)
 	return __cpu_util(cpu, 0);
 }
 
-extern
 unsigned long boosted_cpu_util(int cpu);
 
 /*

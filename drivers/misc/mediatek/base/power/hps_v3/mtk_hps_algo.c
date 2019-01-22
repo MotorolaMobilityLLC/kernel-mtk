@@ -575,6 +575,17 @@ HPS_ALGO_END:
 	/*
 	 * algo - end
 	 */
+	/* [FIXME] postpone big core online time in booting 20s */
+	if ((u64) ktime_to_ms(ktime_get()) <= 20000) {
+		hps_sys.cluster_info[1].target_core_num +=
+			hps_sys.cluster_info[2].target_core_num;
+
+		if (hps_sys.cluster_info[1].target_core_num > 4)
+			hps_sys.cluster_info[1].target_core_num = 4;
+
+		hps_sys.cluster_info[2].target_core_num = 0;
+	}
+
 	/*Base and limit check */
 	hps_check_base_limit(&hps_sys);
 
@@ -700,22 +711,45 @@ HPS_END:
 				     hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
 				     str_target);
 			else {
-				hps_warn
-("(0x%X)%s action end (%u)(%u)(%u) %s %s %s %s%s (%u)(%u)(%u)(%u)[%u,%u|%u,%u|%u,%u][%u,%u,%u][ut:%u, dt:%u] %s\n",
-				((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
-				str_online, hps_ctxt.cur_loads,
-				hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk, str_bigtsk, str_pwrseq,
-				str_criteria_limit, str_criteria_base, hps_sys.up_load_avg,
-				hps_sys.down_load_avg, hps_sys.tlp_avg, hps_sys.rush_cnt,
-				hps_sys.cluster_info[0].up_threshold,
-				hps_sys.cluster_info[0].down_threshold,
-				hps_sys.cluster_info[1].up_threshold,
-				hps_sys.cluster_info[1].down_threshold,
-				hps_sys.cluster_info[2].up_threshold,
-				hps_sys.cluster_info[2].down_threshold,
-				hps_sys.cluster_info[0].loading, hps_sys.cluster_info[1].loading,
-				hps_sys.cluster_info[2].loading, hps_ctxt.up_times, hps_ctxt.down_times,
-				str_target);
+				unsigned long clus_util[3];
+				char str1[256];
+				char str2[256];
+
+				/* sched-assist hotplug: for debug */
+				sched_get_cluster_util(0, &clus_util[0], NULL);
+				sched_get_cluster_util(1, &clus_util[1], NULL);
+				sched_get_cluster_util(2, &clus_util[2], NULL);
+
+
+				snprintf(str1, sizeof(str1),
+	"(0x%X)%s action end (%u)(%u)(%u) %s %s %s %s%s (%u)(%u)(%u)(%u)",
+						((hps_ctxt.hps_func_control << 12) | hps_sys.action_id),
+						str_online, hps_ctxt.cur_loads,
+						hps_ctxt.cur_tlp, hps_ctxt.cur_iowait,
+						str_hvytsk, str_bigtsk, str_pwrseq,
+						str_criteria_limit, str_criteria_base,
+						hps_sys.up_load_avg,
+						hps_sys.down_load_avg,
+						hps_sys.tlp_avg, hps_sys.rush_cnt);
+
+				snprintf(str2, sizeof(str2),
+	"[%u,%u|%u,%u|%u,%u][%u,%u,%u][%lu,%lu,%lu][ut:%u, dt:%u] %s",
+						hps_sys.cluster_info[0].up_threshold,
+						hps_sys.cluster_info[0].down_threshold,
+						hps_sys.cluster_info[1].up_threshold,
+						hps_sys.cluster_info[1].down_threshold,
+						hps_sys.cluster_info[2].up_threshold,
+						hps_sys.cluster_info[2].down_threshold,
+						hps_sys.cluster_info[0].loading,
+						hps_sys.cluster_info[1].loading,
+						hps_sys.cluster_info[2].loading,
+						clus_util[0],
+						clus_util[1],
+						clus_util[2],
+						hps_ctxt.up_times, hps_ctxt.down_times,
+						str_target);
+
+				hps_warn("%s%s\n", str1, str2);
 #ifdef _TRACE_
 				trace_hps_update(hps_sys.action_id, str_online, hps_ctxt.cur_loads,
 						hps_ctxt.cur_tlp, hps_ctxt.cur_iowait, str_hvytsk,

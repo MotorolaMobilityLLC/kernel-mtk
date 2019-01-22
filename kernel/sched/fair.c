@@ -5314,6 +5314,12 @@ boosted_task_util(struct task_struct *task)
 		return util;
 }
 
+unsigned long
+get_boosted_task_util(struct task_struct *task)
+{
+	return boosted_task_util(task);
+}
+
 #ifdef CONFIG_SCHED_TUNE
 static int energy_diff_evaluate(struct energy_env *eenv)
 {
