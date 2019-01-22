@@ -339,6 +339,71 @@ void show_state_filter_local(unsigned long state_filter)
 	} while_each_thread(g, p);
 }
 
+void sched_show_task_local_all(struct task_struct *p)
+{
+	unsigned long free = 0;
+	int ppid;
+	unsigned long state = p->state;
+	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
+
+	if (state)
+		state = __ffs(state) + 1;
+	LOGE("%-15.15s %c", p->comm,
+		state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+#if BITS_PER_LONG == 32
+	if (state == TASK_RUNNING)
+		LOGE(" running  ");
+	else
+		LOGE(" %08lx ", thread_saved_pc(p));
+#else
+	if (state == TASK_RUNNING)
+		LOGE("  running task    ");
+	else
+		LOGE(" %016lx ", thread_saved_pc(p));
+#endif
+#ifdef CONFIG_DEBUG_STACK_USAGE
+	free = stack_not_used(p);
+#endif
+	ppid = 0;
+	rcu_read_lock();
+	if (pid_alive(p))
+		ppid = task_pid_nr(rcu_dereference(p->real_parent));
+	rcu_read_unlock();
+	LOGE("%5lu %5d %6d 0x%08lx\n", free,
+		task_pid_nr(p), ppid,
+		(unsigned long)task_thread_info(p)->flags);
+
+	print_worker_info("6", p);
+	show_stack(p, NULL);
+}
+
+void show_state_filter_local_all(void)
+{
+	struct task_struct *g, *p;
+	int count = 0;
+
+#if BITS_PER_LONG == 32
+	LOGE("  task                PC stack   pid father\n");
+#else
+	LOGE("  task                        PC stack   pid father\n");
+#endif
+	rcu_read_lock();
+	for_each_process_thread(g, p) {
+		/*
+		 * reset the NMI-timeout, listing all files on a slow
+		 * console might take a lot of time:
+		 * Also, reset softlockup watchdogs on all CPUs, because
+		 * another CPU might be blocked waiting for us to process
+		 * an IPI.
+		 */
+		sched_show_task_local_all(p);
+		if ((++count)%5 == 4)
+			msleep(20);
+	}
+	rcu_read_unlock();
+
+}
+
 static void show_bt_by_pid(int task_pid)
 {
 	struct task_struct *t, *p;
@@ -364,28 +429,15 @@ static void ShowStatus(void)
 {
 	InDumpAllStack = 1;
 
-	LOGE("[Hang_Detect] dump system_ui all thread bt\n");
-	if (system_ui_pid)
-		show_bt_by_pid(system_ui_pid);
-
-	/* show all kbt in surfaceflinger */
-	LOGE("[Hang_Detect] dump surfaceflinger all thread bt\n");
-	if (surfaceflinger_pid)
-		show_bt_by_pid(surfaceflinger_pid);
-
 	/* show all kbt in system_server */
 	LOGE("[Hang_Detect] dump system_server all thread bt\n");
 	if (system_server_pid)
 		show_bt_by_pid(system_server_pid);
 
-	/* show all D state thread kbt */
-	LOGE("[Hang_Detect] dump all D thread bt\n");
-		show_state_filter_local(TASK_UNINTERRUPTIBLE);
-
-	/* show all kbt in init */
-	LOGE("[Hang_Detect] dump init all thread bt\n");
-	if (init_pid)
-		show_bt_by_pid(init_pid);
+	/* show all thread bt */
+	LOGE("[Hang_Detect] dump all thread bt start\n");
+	show_state_filter_local_all();
+	LOGE("[Hang_Detect] dump all thread bt end\n");
 
 	/* show all kbt in mmcqd/0 */
 	LOGE("[Hang_Detect] dump mmcqd/0 all thread bt\n");
