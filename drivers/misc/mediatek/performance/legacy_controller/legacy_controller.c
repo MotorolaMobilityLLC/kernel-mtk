@@ -331,7 +331,7 @@ static ssize_t perfmgr_log_write(struct file *filp, const char __user *ubuf,
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
-	if (copy_from_user(&buf, ubuf, cnt))
+	if (copy_from_user(buf, ubuf, cnt))
 		return -EFAULT;
 	buf[cnt] = 0;
 	ret = kstrtoul(buf, 10, &val);
