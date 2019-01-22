@@ -75,6 +75,12 @@
 
 #endif
 
+#define SENSOR_SETTING_NONE     0
+#define SENSOR_SETTING_PREVIEW  1
+#define SENSOR_SETTING_CAPTURE  2
+
+static int sensorSettingState = SENSOR_SETTING_NONE;
+
 /*******************************************************************************
  * Proifling
  ********************************************************************************/
@@ -951,6 +957,9 @@ static void sensor_init_11_new(void)
 
 static void preview_setting_11_new(void)
 {
+	if (sensorSettingState == SENSOR_SETTING_PREVIEW)
+		return;
+
 	LOG_INF("E S5k2L7 preview setting (%d)\n", pdaf_sensor_mode);
 
 	if (is_module_v2() != FALSE) {
@@ -970,6 +979,7 @@ static void preview_setting_11_new(void)
 		else
 			_S5K2L7_MODE3_PREVIEW_;
 	}
+	sensorSettingState = SENSOR_SETTING_PREVIEW;
 }
 
 #ifdef CAPTURE_WDR
@@ -999,6 +1009,9 @@ static void capture_setting_WDR(kal_uint16 currefps)
 
 static void capture_setting(void)
 {
+	if (sensorSettingState == SENSOR_SETTING_CAPTURE)
+		return;
+
 	LOG_INF("E S5k2L7 capture setting (%d)\n", pdaf_sensor_mode);
 
 	if (is_module_v2() != FALSE) {
@@ -1018,6 +1031,7 @@ static void capture_setting(void)
 		else
 			_S5K2L7_MODE3_CAPTURE_;
 	}
+	sensorSettingState = SENSOR_SETTING_CAPTURE;
 }
 
 #if 0
@@ -1201,6 +1215,7 @@ static kal_uint32 open(void)
 
 	LOG_1;
 	/* LOG_2; */
+	sensorSettingState = SENSOR_SETTING_NONE;
 #if 1
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1298,6 +1313,7 @@ static kal_uint32 open(void)
 static kal_uint32 close(void)
 {
 	LOG_INF("E\n");
+	sensorSettingState = SENSOR_SETTING_NONE;
 
 	/*No Need to implement this function */
 
