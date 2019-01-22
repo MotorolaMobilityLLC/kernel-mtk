@@ -49,6 +49,8 @@ extern struct delayed_work sched_workq;
 #define NL80211_DRIVER_TESTMODE_VERSION 2
 #endif
 
+#define GL_CFG80211_SCAN_SSID_MAX_NUM 2
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************

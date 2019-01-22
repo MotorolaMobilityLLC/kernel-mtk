@@ -8769,6 +8769,41 @@ wlanoidSetPta(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBu
 
 #endif
 
+
+WLAN_STATUS
+wlanoidSetRxPacketFilterPriv(
+	IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32	pu4SetInfoLen)
+{
+
+	WLAN_STATUS rStatus;
+
+	DEBUGFUNC("wlanoidSetPacketFilter");
+
+	ASSERT(prAdapter);
+	ASSERT(pvSetBuffer);
+
+	DBGLOG(OID, TRACE, "wlanoidSetRxPacketFilterPriv\n");
+
+	rStatus = wlanSendSetQueryCmd(
+				prAdapter,					/* prAdapter */
+				CMD_ID_SET_DROP_PACKET_CFG,	/* ucCID */
+				TRUE,						/* fgSetQuery */
+				FALSE,						/* fgNeedResp */
+				TRUE,						/* fgIsOid */
+				nicCmdEventSetCommon,		/* pfCmdDoneHandler*/
+				nicOidCmdTimeoutCommon,		/* pfCmdTimeoutHandler */
+				u4SetBufferLen,				/* u4SetQueryInfoLen */
+				(PUINT_8) pvSetBuffer,		/* pucInfoBuffer */
+				NULL,						/* pvSetQueryBuffer */
+				0							/* u4SetQueryBufferLen */
+				);
+
+	ASSERT(rStatus == WLAN_STATUS_PENDING);
+
+	return rStatus;
+
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to set Tx power profile.

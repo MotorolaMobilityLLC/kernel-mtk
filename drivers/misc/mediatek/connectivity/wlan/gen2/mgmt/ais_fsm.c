@@ -2218,8 +2218,8 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 				/* clear rJoinReqTime if there is no more framework roaming connect request */
 				if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_ROAMING_CONNECT, FALSE) == FALSE)
 					prAisFsmInfo->rJoinReqTime = 0;
-					prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 
+				prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 				/* 4 <1.7> Set the Next State of AIS FSM */
 				eNextState = AIS_STATE_NORMAL_TR;
 			}
