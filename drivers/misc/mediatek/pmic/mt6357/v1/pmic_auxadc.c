@@ -140,13 +140,21 @@ void wk_auxadc_dbg_dump(void)
 		}
 		for (j = 0; adc_dbg_addr[j] != 0; j++) {
 			if (j % 43 == 0) {
-				HKLOG("%d %s\n", pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
+				pr_notice("%d %s\n"
+				      , pmic_adc_dbg[dbg_stamp].ktime_sec
+				      , reg_log);
 				strncpy(reg_log, "", 860);
 			}
-			snprintf(reg_str, 20, "Reg[0x%x]=0x%x, ", adc_dbg_addr[j], pmic_adc_dbg[dbg_stamp].reg[j]);
+			snprintf(reg_str, 20, "Reg[0x%x]=0x%x, "
+				 , adc_dbg_addr[j]
+				 , pmic_adc_dbg[dbg_stamp].reg[j]);
 			strncat(reg_log, reg_str, 860);
 		}
-		pr_notice("[%s] %d %d %s\n", __func__, dbg_stamp, pmic_adc_dbg[dbg_stamp].ktime_sec, reg_log);
+		pr_notice("[%s] %d %d %s\n"
+			  , __func__
+			  , dbg_stamp
+			  , pmic_adc_dbg[dbg_stamp].ktime_sec
+			  , reg_log);
 		strncpy(reg_log, "", 860);
 		dbg_stamp++;
 		if (dbg_stamp >= 4)
