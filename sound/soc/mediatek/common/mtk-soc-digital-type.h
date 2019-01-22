@@ -243,6 +243,7 @@ typedef enum {
 	Soc_Aud_InterConnectionInput_I37,
 } Soc_Aud_Hdmi_InterConnectionInput;
 
+#if 0
 typedef enum {
 	Soc_Aud_InterConnectionOutput_O30,
 	Soc_Aud_InterConnectionOutput_O31,
@@ -253,6 +254,7 @@ typedef enum {
 	Soc_Aud_InterConnectionOutput_O36,
 	Soc_Aud_InterConnectionOutput_O37,
 } Soc_Aud_Hdmi_InterConnectionOutput;
+#endif
 #endif
 
 typedef enum {
