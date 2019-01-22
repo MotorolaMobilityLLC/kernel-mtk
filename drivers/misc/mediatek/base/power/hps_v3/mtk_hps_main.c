@@ -582,10 +582,12 @@ static int __init hps_init(void)
 	if (r)
 		hps_error("hps_cpu_init fail(%d)\n", r);
 
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	r = hps_procfs_init();
 	if (r)
 		hps_error("hps_procfs_init fail(%d)\n", r);
 
+#endif
 
 	r = platform_device_register(&hotplug_strategy_pdev);
 	if (r)
