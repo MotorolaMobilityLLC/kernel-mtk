@@ -7,12 +7,14 @@
  */
 
 / {
-mt_pmic_regulator {
+mt-pmic {
 	compatible = "mediatek,mt_pmic";
 	/*reg = <0x01>*/
+	mt6351_pmic: pmic_irq {
+		interrupt-controller;
+	};
 
 	buck_regulators {
-		compatible = "mediatek,mt_pmic_buck_regulators";
 		mt_pmic_vcore_buck_reg: buck_vcore {
 			regulator-name = "vcore";
 			regulator-min-microvolt = <600000>;
@@ -94,7 +96,6 @@ mt_pmic_regulator {
 		};
 	};	/* End of buck_regulators */
 	ldo_regulators {
-		compatible = "mediatek,mt_pmic_ldo_regulators";
 		mt_pmic_va18_ldo_reg: ldo_va18 {
 			regulator-name = "va18";
 			regulator-min-microvolt = <1800000>;
