@@ -3829,6 +3829,10 @@
 	};
 
 	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {
+		compatible = "mediatek,pmic_clock_buffer";
+		mediatek,clkbuf-quantity = <7>;
+		mediatek,clkbuf-config = <2 1 1 2 0 0 1>;
+		mediatek,clkbuf-driving-current = <(1) (1) (1) (1) (1) (1) (1)>;
 	};
 
 	msdc1_ins: msdc1_ins {
