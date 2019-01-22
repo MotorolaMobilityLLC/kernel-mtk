@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/module.h>
@@ -14,9 +28,9 @@
 #include <linux/slab.h>
 #include "TEEI.h"
 #include "socketFun.h"
-#define SOCKET_SIZE	0x80000
-#define MEM_CLEAR	0x1
-#define SOCKET_MAJOR	253
+#define SOCKET_SIZE     0x80000
+#define MEM_CLEAR       0x1
+#define SOCKET_MAJOR    253
 #define SHMEM_ENABLE    0
 #define SHMEM_DISABLE   1
 
@@ -50,29 +64,29 @@ int socket_release(struct inode *inode, struct file *filp)
 }
 
 static long socket_ioctl(struct file *filp,
-			unsigned int cmd, unsigned long arg)
+                         unsigned int cmd, unsigned long arg)
 {
 	struct socket_dev *dev = filp->private_data;
 
 	switch (cmd) {
-	case MEM_CLEAR:
-		if (down_interruptible(&dev->sem))
-			return -ERESTARTSYS;
+		case MEM_CLEAR:
+			if (down_interruptible(&dev->sem))
+				return -ERESTARTSYS;
 
-		memset(dev->mem, 0, SOCKET_SIZE);
-		up(&dev->sem);
-		pr_info(KERN_INFO "Socket is set to zero.\n");
-		break;
+			memset(dev->mem, 0, SOCKET_SIZE);
+			up(&dev->sem);
+			pr_info(KERN_INFO "Socket is set to zero.\n");
+			break;
 
-	default:
-		return -EINVAL;
+		default:
+			return -EINVAL;
 	}
 
 	return 0;
 }
 
 static ssize_t socket_read(struct file *filp, char __user *buf,
-			size_t size, loff_t *ppos)
+                           size_t size, loff_t *ppos)
 {
 	struct TEEI_socket_command *socket_p = NULL;
 	int length = 0;
@@ -96,7 +110,7 @@ static ssize_t socket_read(struct file *filp, char __user *buf,
 }
 
 static ssize_t socket_write(struct file *filp, const char __user *buf,
-				size_t size, loff_t *ppos)
+                            size_t size, loff_t *ppos)
 {
 
 	if (daulOS_shmem_flags == SHMEM_DISABLE) {
@@ -120,55 +134,55 @@ static loff_t socket_llseek(struct file *filp, loff_t offset, int orig)
 	loff_t ret = 0;
 
 	switch (orig) {
-	case 0:
-		if (offset < 0) {
+		case 0:
+			if (offset < 0) {
+				ret = -EINVAL;
+				break;
+			}
+
+			if ((unsigned int)offset > SOCKET_SIZE) {
+				ret = -EINVAL;
+				break;
+			}
+
+			filp->f_pos = (unsigned int)offset;
+			ret = filp->f_pos;
+			break;
+
+		case 1:
+			if ((filp->f_pos + offset) > SOCKET_SIZE) {
+				ret = -EINVAL;
+				break;
+			}
+
+			if ((filp->f_pos + offset) < 0) {
+				ret = -EINVAL;
+				break;
+			}
+
+			filp->f_pos += offset;
+			ret = filp->f_pos;
+			break;
+
+		default:
 			ret = -EINVAL;
 			break;
-		}
-
-		if ((unsigned int)offset > SOCKET_SIZE) {
-			ret = -EINVAL;
-			break;
-		}
-
-		filp->f_pos = (unsigned int)offset;
-		ret = filp->f_pos;
-		break;
-
-	case 1:
-		if ((filp->f_pos + offset) > SOCKET_SIZE) {
-			ret = -EINVAL;
-			break;
-		}
-
-		if ((filp->f_pos + offset) < 0) {
-			ret = -EINVAL;
-			break;
-		}
-
-		filp->f_pos += offset;
-		ret = filp->f_pos;
-		break;
-
-	default:
-		ret = -EINVAL;
-		break;
 	}
 
 	return ret;
 }
 
 static const struct file_operations socket_fops = {
-	.owner =		THIS_MODULE,
-	.llseek =		socket_llseek,
-	.read =			socket_read,
-	.write =		socket_write,
+	.owner =                THIS_MODULE,
+	.llseek =               socket_llseek,
+	.read =                 socket_read,
+	.write =                socket_write,
 	.unlocked_ioctl = socket_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl   = socket_ioctl,
 #endif
-	.open =			socket_open,
-	.release =		socket_release,
+	.open =                 socket_open,
+	.release =              socket_release,
 };
 
 static void socket_setup_cdev(struct socket_dev *dev, int index)
