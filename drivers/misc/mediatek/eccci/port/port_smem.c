@@ -251,7 +251,7 @@ long port_smem_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 		break;
 	case CCCI_IOC_SMEM_BASE:
 		smem_port = (struct ccci_smem_port *)port->private_data;
-		CCCI_NORMAL_LOG(md_id, TAG, "smem_port->addr_phy=%llx\n", smem_port->addr_phy);
+		CCCI_NORMAL_LOG(md_id, TAG, "smem_port->addr_phy=%lx\n", (unsigned long)smem_port->addr_phy);
 		ret = put_user((unsigned int)smem_port->addr_phy,
 				(unsigned int __user *)arg);
 		break;
