@@ -192,7 +192,7 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][0],
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][1],
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][2],
-					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][4]);
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][3]);
 		} else {
 			DBGLOG(RX, INFO, "<stats> TOS(%u) OK(%u %u) ERR(%u) PendingPKT(%u) SE(%u) Num(%u %u %u %u)\n",
 					    (UINT32) prGlueInfo->rNetDevStats.tx_packets,
@@ -202,7 +202,7 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][0],
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][1],
 					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][2],
-					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][4]);
+					prGlueInfo->ai4TxPendingFrameNumPerQueue[NETWORK_TYPE_AIS_INDEX][3]);
 			DBGLOG(RX, INFO, "<stats> ERR type(%u %u %u %u %u %u)\n",
 					    prInfo->u4TxDataCntErrType[0], prInfo->u4TxDataCntErrType[1],
 					    prInfo->u4TxDataCntErrType[2], prInfo->u4TxDataCntErrType[3],
@@ -764,8 +764,10 @@ statsInfoEnvRequest(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4SetBuffer
 	WLAN_STATUS rStatus;
 
 	/* sanity check */
-	if (fgIsUnderSuspend == true)
+	if (fgIsUnderSuspend == true) {
+		DBGLOG(TX, INFO, "%s fgIsUnderSuspend = true.\n", __func__);
 		return WLAN_STATUS_SUCCESS;	/* do not request stats after early suspend */
+	}
 
 	/* init command buffer */
 	prCmdContent = (STATS_CMD_CORE_T *) pvSetBuffer;
@@ -852,15 +854,19 @@ VOID statsEnvReportDetect(ADAPTER_T *prAdapter, UINT8 ucStaRecIndex)
 	STA_RECORD_T *prStaRec;
 	OS_SYSTIME rCurTime;
 	STATS_CMD_CORE_T rCmd;
-
 	prStaRec = cnmGetStaRecByIndex(prAdapter, ucStaRecIndex);
-	if (prStaRec == NULL)
+
+	if (prStaRec == NULL) {
+		DBGLOG(TX, WARN, "%s : prStaRec[%d] is null!", __func__, ucStaRecIndex);
 		return;
+	}
 
 	prStaRec->u4StatsEnvTxCnt++;
 	GET_CURRENT_SYSTIME(&rCurTime);
+	prAdapter->rStasEnvReportDetectTime = rCurTime;
 
 	if (prStaRec->rStatsEnvTxPeriodLastTime == 0) {
+		DBGLOG(TX, WARN, "%s : rStatsEnvTxPeriodLastTime is 0!", __func__);
 		prStaRec->rStatsEnvTxLastTime = rCurTime;
 		prStaRec->rStatsEnvTxPeriodLastTime = rCurTime;
 		return;

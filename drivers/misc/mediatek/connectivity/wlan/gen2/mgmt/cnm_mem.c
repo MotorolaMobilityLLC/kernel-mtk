@@ -587,9 +587,10 @@ P_STA_RECORD_T cnmGetStaRecByIndex(P_ADAPTER_T prAdapter, UINT_8 ucIndex)
 
 	prStaRec = (ucIndex < CFG_STA_REC_NUM) ? &prAdapter->arStaRec[ucIndex] : NULL;
 
-	if (prStaRec && prStaRec->fgIsInUse == FALSE)
+	if (prStaRec && prStaRec->fgIsInUse == FALSE) {
+		DBGLOG(CNM, INFO, "[%pM] prStaRec->fgIsInUse = FALSE!\n", prStaRec->aucMacAddr);
 		prStaRec = NULL;
-
+	}
 	return prStaRec;
 }
 

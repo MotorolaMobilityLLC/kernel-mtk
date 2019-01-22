@@ -945,6 +945,8 @@ struct _ADAPTER_T {
 	TIMER_T rScanNloTimeoutTimer;
 
 	struct WLAN_DEBUG_INFO rDebugInfo;
+
+	OS_SYSTIME rStasEnvReportDetectTime;
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************
