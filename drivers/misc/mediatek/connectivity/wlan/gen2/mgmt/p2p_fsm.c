@@ -346,14 +346,10 @@ VOID p2pFsmRunEventSwitchOPMode(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prSwitchOpMode != NULL));
 
-
 		DBGLOG(P2P, TRACE, "p2pFsmRunEventSwitchOPMode\n");
 
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 		prP2pConnSettings = prAdapter->rWifiVar.prP2PConnSettings;
-
-		if (prSwitchOpMode == NULL)
-			break;
 
 		if (prSwitchOpMode->eOpMode >= OP_MODE_NUM) {
 			ASSERT(FALSE);
@@ -1930,9 +1926,6 @@ VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T *prExtListenMsg = NULL;
 
 	ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
-
-	if (prMsgHdr == NULL)  /* for coverity issue */
-		return;
 
 	prExtListenMsg = (struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T *) prMsgHdr;
 

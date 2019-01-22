@@ -1034,12 +1034,8 @@ int mtk_cfg80211_vendor_set_rssi_monitoring(struct wiphy *wiphy, struct wireless
 		goto nla_put_failure;
 	kalMemZero(attr, sizeof(struct nlattr *) * (WIFI_ATTRIBUTE_RSSI_MONITOR_START + 1));
 
-	if (nla_parse_nested(attr, WIFI_ATTRIBUTE_RSSI_MONITOR_START,
-		(struct nlattr *)(data - NLA_HDRLEN), nla_parse_wifi_policy) < 0) {
-		DBGLOG(REQ, ERROR, "%s nla_parse_nested failed\n", __func__);
-		goto nla_put_failure;
-	}
-
+	nla_parse_nested(attr, WIFI_ATTRIBUTE_RSSI_MONITOR_START,
+		(struct nlattr *)(data - NLA_HDRLEN), nla_parse_wifi_policy);
 	for (i = WIFI_ATTRIBUTE_MAX_RSSI; i <= WIFI_ATTRIBUTE_RSSI_MONITOR_START; i++) {
 		if (attr[i]) {
 			switch (i) {
@@ -1098,12 +1094,8 @@ int mtk_cfg80211_vendor_packet_keep_alive_start(struct wiphy *wiphy, struct wire
 	kalMemZero(attr, sizeof(struct nlattr *) * (MKEEP_ALIVE_ATTRIBUTE_PERIOD_MSEC + 1));
 
 	prPkt->enable = TRUE; /*start packet keep alive*/
-	if (nla_parse_nested(attr, MKEEP_ALIVE_ATTRIBUTE_PERIOD_MSEC,
-		(struct nlattr *)(data - NLA_HDRLEN), nla_parse_offloading_policy) < 0) {
-		DBGLOG(REQ, ERROR, "%s nla_parse_nested failed\n", __func__);
-		goto nla_put_failure;
-	}
-
+	nla_parse_nested(attr, MKEEP_ALIVE_ATTRIBUTE_PERIOD_MSEC,
+		(struct nlattr *)(data - NLA_HDRLEN), nla_parse_offloading_policy);
 	for (i = MKEEP_ALIVE_ATTRIBUTE_ID; i <= MKEEP_ALIVE_ATTRIBUTE_PERIOD_MSEC; i++) {
 		if (attr[i]) {
 			switch (i) {

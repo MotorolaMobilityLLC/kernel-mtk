@@ -661,10 +661,6 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 					    NULL, NULL, sizeof(CMD_SW_DBG_CTRL_T), (PUINT_8) (&rCmdSwCtrl), NULL, 0);
 		}
 #endif
-#if (CFG_SRAM_SIZE_OPTION == 1 || CFG_SRAM_SIZE_OPTION == 0)
-		/* ALPS02494017 for DIR-635/DIR-655 IOT issue (BA size must be power of 2) */
-		nicQmSetRxBASize(prAdapter, true, IOT_RX_BA_SIZE);
-#endif
 
 #if 0
 		/* Update Auto rate parameters in FW */
@@ -3552,9 +3548,6 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 #if CFG_SUPPORT_RDD_TEST_MODE
 	CMD_RDD_CH_T rRddParam;
 #endif
-#if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
-	CMD_FCC_TX_PWR_ADJUST FccTxPwrAdjust = {0x00};
-#endif
 
 	ASSERT(prAdapter);
 
@@ -3584,27 +3577,6 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 			nicUpdateTxPower(prAdapter, (P_CMD_TX_PWR_T) (&(prRegInfo->rTxPwr)));
 		}
 	}
-
-#if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
-	/* Tx Power Adjust for FCC/CE Certification */
-	FccTxPwrAdjust.fgFccTxPwrAdjust = 1;	/* 1:enable; 0:disable */
-	FccTxPwrAdjust.Offset_CCK = 14;		/* drop 7dB */
-	FccTxPwrAdjust.Offset_HT20 = 16;	/* drop 8dB */
-	FccTxPwrAdjust.Offset_HT40 = 14;	/* drop 7dB*/
-	FccTxPwrAdjust.Channel_CCK[0] = 11;	/* [0] for start channel */
-	FccTxPwrAdjust.Channel_CCK[1] = 13;	/* [1] for ending channel */
-	FccTxPwrAdjust.Channel_HT20[0] = 11;	/* [0] for start channel */
-	FccTxPwrAdjust.Channel_HT20[1] = 13;	/* [1] for ending channel */
-	FccTxPwrAdjust.Channel_HT40[0] = 7;	/* [0] for start channel,engineer mode ch9(2452) */
-	FccTxPwrAdjust.Channel_HT40[1] = 9;	/* [1] for ending channel,engineer mode ch11(2462) */
-
-	wlanSendSetQueryCmd(prAdapter,
-			    CMD_ID_SET_FCC_TX_PWR_CERT,
-			    TRUE,
-			    FALSE,
-			    FALSE, NULL, NULL, sizeof(CMD_FCC_TX_PWR_ADJUST), (PUINT_8) (&FccTxPwrAdjust), NULL, 0);
-
-#endif
 
 	/* 3. Check if needs to support 5GHz */
 	/* if(prRegInfo->ucEnable5GBand) { // Frank workaround */
@@ -4374,7 +4346,7 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 	P_QUE_MGT_T prQM = &prAdapter->rQM;
 	CMD_GET_STA_STATISTICS_T rQueryCmdStaStatistics;
 	UINT_8 ucIdx;
-	P_GLUE_INFO_T prGlueInfo;
+	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 
 	do {
 		ASSERT(pvQueryBuffer);
@@ -4391,10 +4363,6 @@ wlanoidQueryStaStatistics(IN P_ADAPTER_T prAdapter,
 			rResult = WLAN_STATUS_BUFFER_TOO_SHORT;
 			break;
 		}
-
-		prGlueInfo = prAdapter->prGlueInfo;
-		if (prGlueInfo == NULL)
-			break;
 
 		prQueryStaStatistics = (P_PARAM_GET_STA_STATISTICS) pvQueryBuffer;
 		*pu4QueryInfoLen = sizeof(PARAM_GET_STA_STA_STATISTICS);
