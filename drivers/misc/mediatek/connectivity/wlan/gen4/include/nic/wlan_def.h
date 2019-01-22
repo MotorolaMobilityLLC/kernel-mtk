@@ -248,7 +248,8 @@
 #define RATE_SET_BIT_36M        BIT(RATE_36M_SW_INDEX)	/* Bit 11: 36M */
 #define RATE_SET_BIT_48M        BIT(RATE_48M_SW_INDEX)	/* Bit 12: 48M */
 #define RATE_SET_BIT_54M        BIT(RATE_54M_SW_INDEX)	/* Bit 13: 54M */
-#define RATE_SET_BIT_HT_PHY     BIT(RATE_HT_PHY_SW_INDEX)	/* Bit 14: BSS Selector */
+#define RATE_SET_BIT_VHT_PHY    BIT(RATE_VHT_PHY_SW_INDEX)	/* Bit 14: BSS Selector */
+#define RATE_SET_BIT_HT_PHY     BIT(RATE_HT_PHY_SW_INDEX)	/* Bit 15: BSS Selector */
 
 /* Rate set definitions */
 #define RATE_SET_HR_DSSS            (RATE_SET_BIT_1M | \
@@ -476,8 +477,9 @@ typedef enum _ENUM_SW_RATE_INDEX_T {
 	RATE_36M_SW_INDEX,	/* 36M */
 	RATE_48M_SW_INDEX,	/* 48M */
 	RATE_54M_SW_INDEX,	/* 54M */
+	RATE_VHT_PHY_SW_INDEX,	/* BSS Selector - VHT PHY */
 	RATE_HT_PHY_SW_INDEX,	/* BSS Selector - HT PHY */
-	RATE_NUM_SW		/* 15 */
+	RATE_NUM_SW		/* 16 */
 } ENUM_SW_RATE_INDEX_T, *P_ENUM_SW_RATE_INDEX_T;
 
 typedef enum _ENUM_CCK_RATE_INDEX_T {
