@@ -586,6 +586,9 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 	int ext_cnt = 0, cur_phy_cnt = 0;
 	struct layer_config *layer_info;
 
+	if (disp_info->layer_num[disp_idx] <= 0)
+		return 0;
+
 	_filter_by_ovl_cnt(disp_info, disp_idx);
 	phy_ovl_cnt = get_phy_ovl_layer_cnt(disp_info, disp_idx);
 	if (phy_ovl_cnt > MAX_PHY_OVL_CNT) {
@@ -965,6 +968,9 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp_index,
 	int overlap_w, layer_idx, phy_layer_idx, ovl_cnt;
 	bool has_gles = false;
 	struct layer_config *layer_info;
+
+	if (!has_hrt_limit(disp_info, disp_index))
+		return 0;
 
 /* 1.Initial overlap conditions. */
 	sum_overlap_w = 0;
