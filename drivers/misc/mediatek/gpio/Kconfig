@@ -22,5 +22,6 @@ config MTK_GPIOLIB_STAND
 	default n
 	---help---
 	  This selects the MediaTek(R) GPIO driver code.
+	  This selects to use GPIO Upstream Code or not.
 	  If you want to use MediaTek(R) GPIO Upstream Code, say Y or M here.
 	  If unsurem say N.

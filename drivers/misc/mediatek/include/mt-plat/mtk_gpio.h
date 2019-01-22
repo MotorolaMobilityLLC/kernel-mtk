@@ -26,7 +26,7 @@ extern struct mt_gpio_vbase gpio_vbase;
 * Enumeration for GPIO pin
 ******************************************************************************/
 /* GPIO MODE CONTROL VALUE*/
-typedef enum {
+enum enum_GPIO_MODE {
 	GPIO_MODE_UNSUPPORTED = -1,
 	GPIO_MODE_GPIO = 0,
 	GPIO_MODE_00 = 0,
@@ -47,19 +47,21 @@ typedef enum {
 	GPIO_MODE_15 = 15,
 	GPIO_MODE_MAX,
 	GPIO_MODE_DEFAULT = GPIO_MODE_01,
-} GPIO_MODE;
+};
+#define GPIO_MODE enum enum_GPIO_MODE
 /*----------------------------------------------------------------------------*/
 /* GPIO DIRECTION */
-typedef enum {
+enum enum_GPIO_DIR {
 	GPIO_DIR_UNSUPPORTED = -1,
 	GPIO_DIR_IN = 0,
 	GPIO_DIR_OUT = 1,
 	GPIO_DIR_MAX,
 	GPIO_DIR_DEFAULT = GPIO_DIR_IN,
-} GPIO_DIR;
+};
+#define GPIO_DIR enum enum_GPIO_DIR
 /*----------------------------------------------------------------------------*/
 /* GPIO PULL ENABLE*/
-typedef enum {
+enum enum_GPIO_PULL_EN {
 	GPIO_PULL_EN_UNSUPPORTED = -1,
 	GPIO_NOPULLUP		= -4,
 	GPIO_NOPULLDOWN		= -5,
@@ -70,27 +72,30 @@ typedef enum {
 	GPIO_PULL_ENABLE_R0R1 = 4,
 	GPIO_PULL_EN_MAX,
 	GPIO_PULL_EN_DEFAULT = GPIO_PULL_ENABLE,
-} GPIO_PULL_EN;
+};
+#define GPIO_PULL_EN enum enum_GPIO_PULL_EN
 /*----------------------------------------------------------------------------*/
 /* GPIO SMT*/
-typedef enum {
+enum enum_GPIO_SMT {
 	GPIO_SMT_UNSUPPORTED = -1,
 	GPIO_SMT_DISABLE = 0,
 	GPIO_SMT_ENABLE  = 1,
 
 	GPIO_SMT_MAX,
 	GPIO_SMT_DEFAULT = GPIO_SMT_ENABLE,
-} GPIO_SMT;
+};
+#define GPIO_SMT enum enum_GPIO_SMT
 /*----------------------------------------------------------------------------*/
 /* GPIO IES*/
-typedef enum {
+enum enum_GPIO_IES {
 	GPIO_IES_UNSUPPORTED = -1,
 	GPIO_IES_DISABLE = 0,
 	GPIO_IES_ENABLE = 1,
 
 	GPIO_IES_MAX,
 	GPIO_IES_DEFAULT = GPIO_IES_ENABLE,
-} GPIO_IES;
+};
+#define GPIO_IES enum enum_GPIO_IES
 /*----------------------------------------------------------------------------*/
 /* GPIO slew rate*/
 enum GPIO_SLEW_RATE {
@@ -103,14 +108,15 @@ enum GPIO_SLEW_RATE {
 };
 /*----------------------------------------------------------------------------*/
 /* GPIO PULL-UP/PULL-DOWN*/
-typedef enum {
+enum enum_GPIO_PULL {
 	GPIO_PULL_UNSUPPORTED = -1,
 	GPIO_PULL_DOWN  = 0,
 	GPIO_PULL_UP    = 1,
 	GPIO_NO_PULL = 2,
 	GPIO_PULL_MAX,
 	GPIO_PULL_DEFAULT = GPIO_PULL_DOWN
-} GPIO_PULL;
+};
+#define GPIO_PULL enum enum_GPIO_PULL
 /*----------------------------------------------------------------------------*/
 /* GPIO PULL RESISTOR */
 enum GPIO_PULL_RESISTOR {
@@ -123,17 +129,18 @@ enum GPIO_PULL_RESISTOR {
 };
 /*----------------------------------------------------------------------------*/
 /* GPIO INVERSION */
-typedef enum {
+enum enum_GPIO_INVERSION {
 	GPIO_DATA_INV_UNSUPPORTED = -1,
 	GPIO_DATA_UNINV = 0,
 	GPIO_DATA_INV = 1,
 
 	GPIO_DATA_INV_MAX,
 	GPIO_DATA_INV_DEFAULT = GPIO_DATA_UNINV
-} GPIO_INVERSION;
+};
+#define GPIO_INVERSION enum enum_GPIO_INVERSION
 /*----------------------------------------------------------------------------*/
 /* GPIO OUTPUT */
-typedef enum {
+enum enum_GPIO_OUT {
 	GPIO_OUT_UNSUPPORTED = -1,
 	GPIO_OUT_ZERO = 0,
 	GPIO_OUT_ONE = 1,
@@ -141,17 +148,18 @@ typedef enum {
 	GPIO_OUT_MAX,
 	GPIO_OUT_DEFAULT = GPIO_OUT_ZERO,
 	GPIO_DATA_OUT_DEFAULT = GPIO_OUT_ZERO,	/*compatible with DCT */
-} GPIO_OUT;
+};
+#define GPIO_OUT enum enum_GPIO_OUT
 /*----------------------------------------------------------------------------*/
 /* GPIO INPUT */
-typedef enum {
+enum enum_GPIO_IN {
 	GPIO_IN_UNSUPPORTED = -1,
 	GPIO_IN_ZERO = 0,
 	GPIO_IN_ONE = 1,
 
 	GPIO_IN_MAX,
-} GPIO_IN;
-
+};
+#define GPIO_IN enum enum_GPIO_IN
 /******************************************************************************
 * GPIO Driver interface
 ******************************************************************************/
