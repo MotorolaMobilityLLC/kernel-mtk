@@ -244,6 +244,8 @@ static ssize_t gt1x_tool_write(struct file *filp, const char __user *buff, size_
 	   GTP_DEBUG("len:%d.", (s32)len);
 	   GTP_DEBUG("buf[20]:0x%02x.", buff[CMD_HEAD_LENGTH]);
 	 */
+	if (cmd_head.data_len > DATA_LENGTH)
+		cmd_head.data_len = DATA_LENGTH;
 
 	if (1 == cmd_head.wr) {
 		u16 addr, data_len, pos;
@@ -371,6 +373,9 @@ static ssize_t gt1x_tool_read(struct file *filp, char __user *buffer, size_t cou
 		*ppos = 0;
 		return 0;
 	}
+
+	if (cmd_head.data_len > DATA_LENGTH)
+		cmd_head.data_len = DATA_LENGTH;
 
 	if (cmd_head.wr % 2) {
 		GTP_ERROR("[READ] invaild operator fail!");
