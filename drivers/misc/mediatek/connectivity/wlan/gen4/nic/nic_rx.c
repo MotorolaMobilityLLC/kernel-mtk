@@ -1827,22 +1827,15 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 	if (!prRxStatus)
 		return;
 
+	prSwRfb->ucGroupVLD = (UINT_8) HAL_RX_STATUS_GET_GROUP_VLD(prRxStatus);
+
 	switch (prSwRfb->ucPacketType) {
 	case RX_PKT_TYPE_RX_DATA:
 	{
 		UINT_16 u2Temp = 0;
 
 		u2PktLen = HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus);
-		if (!prSwRfb->fgReorderBuffer && !prSwRfb->fgDataFrame) {
-			P_WLAN_MAC_HEADER_T prWlanMacHeader = (P_WLAN_MAC_HEADER_T)pvHeader;
 
-			if ((prWlanMacHeader->u2FrameCtrl & MASK_FRAME_TYPE) ==
-				MAC_FRAME_BLOCK_ACK_REQ) {
-				DBGLOG(RX, INFO, "BAR frame[SSN:%d, TID:%d] wakeup host\n",
-					prSwRfb->u2SSN, prSwRfb->ucTid);
-				break;
-			}
-		}
 		u4HeaderOffset = (UINT_32) (HAL_RX_STATUS_GET_HEADER_OFFSET(prRxStatus));
 		u2Temp = sizeof(HW_MAC_RX_DESC_T);
 		if (prSwRfb->ucGroupVLD & BIT(RX_GROUP_VLD_4))
@@ -1859,6 +1852,18 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 			DBGLOG(RX, ERROR, "data packet but pvHeader is NULL!\n");
 			break;
 		}
+		if ((prRxStatus->u2StatusFlag & (RXS_DW2_RX_nERR_BITMAP | RXS_DW2_RX_nDATA_BITMAP)) ==
+			RXS_DW2_RX_nDATA_VALUE) {
+			P_WLAN_MAC_HEADER_T prWlanMacHeader = (P_WLAN_MAC_HEADER_T)pvHeader;
+
+			if ((prWlanMacHeader->u2FrameCtrl & MASK_FRAME_TYPE) ==
+				MAC_FRAME_BLOCK_ACK_REQ) {
+				DBGLOG(RX, INFO, "BAR frame[SSN:%d, TID:%d] wakeup host\n",
+					prSwRfb->u2SSN, prSwRfb->ucTid);
+				break;
+			}
+		}
+
 		u2Temp = (pvHeader[ETH_TYPE_LEN_OFFSET] << 8) | (pvHeader[ETH_TYPE_LEN_OFFSET + 1]);
 
 		switch (u2Temp) {
