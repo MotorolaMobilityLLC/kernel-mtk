@@ -696,89 +696,28 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 /* ----------------------------------------------------------------------------- */
 static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
-	long long cpu_target_loss, cpu_target_loss_4_rt;
-	int boost_real_cpu, boost_linear_cpu;
 	long long t_cpu_cur, t_gpu_cur, t_cpu_target;
 	long long t_cpu_rem_cur = 0;
-	int is_gpu_bound;
-	int temp_boost_accum_cpu;
-	static int num_over_boost, num_monitored;
 
 	if (psHead->pid == gx_top_app_pid) {
-		boost_linear_cpu = 0;
-		boost_real_cpu = 0;
-
 		t_cpu_cur = psHead->t_cpu_latest;
 		t_gpu_cur = psHead->t_gpu_latest;
 
 		if ((long long)psHead->t_cpu_target > t_gpu_cur) {
 			t_cpu_target = (long long)psKPI->t_cpu_target;
-			is_gpu_bound = 0;
 		} else {
 			/* when GPU bound, chase GPU frame time as target */
 			t_cpu_target = t_gpu_cur + 2000000; /* 2 ms buffer*/
-			is_gpu_bound = 1;
 		}
 
-		cpu_target_loss = t_cpu_cur - t_cpu_target;
-
-		cpu_target_loss_4_rt = cpu_target_loss;
-			/* ARR mode and default mode with GED_KPI_MAX_FPS FPS */
 		if (psHead->target_fps == GED_KPI_MAX_FPS) {
 			t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
-			if (cpu_target_loss_4_rt < 0 && t_cpu_rem_cur < target_t_cpu_remained && !if_fallback_to_ft) {
-				cpu_target_loss_4_rt = 0;
-			}
 		} else {  /* FRR mode or (default mode && FPS != GED_KPI_MAX_FPS) */
 			t_cpu_rem_cur = psKPI->t_cpu_target;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - (long long)psHead->last_TimeStampS);
 		}
 		psKPI->t_cpu_remained_pred = (long long)t_cpu_rem_cur;
-
-		if (!is_gpu_bound)
-			cpu_target_loss = cpu_target_loss_4_rt;
-
-		boost_linear_cpu = (int)cpu_target_loss * 100 / (int)t_cpu_target;
-
-		if (boost_linear_cpu < 0)
-			boost_real_cpu = (-1)*linear_real_boost((-1)*boost_linear_cpu);
-		else
-			boost_real_cpu = linear_real_boost(boost_linear_cpu);
-
-		if (boost_real_cpu >= 0)
-			boost_real_cpu = boost_real_cpu * (100 + boost_amp) / 100;
-		else
-			boost_real_cpu = boost_real_cpu * (100 - deboost_reduce) / 100;
-
-		if (boost_real_cpu != 0) {
-			if (boost_accum_cpu <= 0) {
-				boost_accum_cpu += boost_linear_cpu;
-				if (boost_real_cpu > 0 && boost_accum_cpu > boost_real_cpu)
-					boost_accum_cpu = boost_real_cpu;
-			} else {
-				int temp;
-
-				temp = (100 + boost_real_cpu) * (100 + boost_accum_cpu) / 100 - 100;
-				if (temp <= 0 && boost_real_cpu < 0)
-					boost_accum_cpu = boost_accum_cpu >> 1;
-				else
-					boost_accum_cpu = temp;
-			}
-		}
-
-		if (boost_accum_cpu > boost_upper_bound)
-			boost_accum_cpu = boost_upper_bound;
-		else if (boost_accum_cpu < 0)
-			boost_accum_cpu = 0;
-
-		temp_boost_accum_cpu = boost_accum_cpu;
-		boost_accum_cpu += boost_extra;
-
-		if (boost_accum_cpu > 100)
-			boost_accum_cpu = 100;
-		else if (boost_accum_cpu < 0)
-			boost_accum_cpu = 0;
 
 		if (ged_kpi_cpu_boost_fp_fbt)
 			ged_kpi_cpu_boost_fp_fbt(
@@ -786,14 +725,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 				t_cpu_target,
 				psKPI->t_cpu_slptime,
 				psHead->target_fps);
-		else
-			update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, boost_accum_cpu);
 
-		psKPI->boost_linear_cpu = boost_linear_cpu;
-		psKPI->boost_real_cpu = boost_real_cpu;
-		psKPI->boost_accum_cpu = boost_accum_cpu;
-		psKPI->if_fallback_to_ft = if_fallback_to_ft;
-		boost_accum_cpu = temp_boost_accum_cpu;
 		psKPI->cpu_max_freq_LL = arch_scale_get_max_freq(0);
 #ifndef GED_KPI_CPU_SINGLE_CLUSTER
 		psKPI->cpu_max_freq_L = arch_scale_get_max_freq(4);
@@ -801,9 +733,9 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		psKPI->cpu_max_freq_B = arch_scale_get_max_freq(8);
 #endif
 #endif
-		psKPI->cpu_cur_freq_LL = psKPI->cpu_max_freq_LL * cpufreq_scale_freq_capacity(NULL, 0) / 1024;
+		/* psKPI->cpu_cur_freq_LL = psKPI->cpu_max_freq_LL * cpufreq_scale_freq_capacity(NULL, 0) / 1024; */
 #ifndef GED_KPI_CPU_SINGLE_CLUSTER
-		psKPI->cpu_cur_freq_L = psKPI->cpu_max_freq_L * cpufreq_scale_freq_capacity(NULL, 4) / 1024;
+		/* psKPI->cpu_cur_freq_L = psKPI->cpu_max_freq_L * cpufreq_scale_freq_capacity(NULL, 4) / 1024; */
 #ifdef GED_KPI_CPU_TRI_CLUSTER
 		psKPI->cpu_cur_freq_B = psKPI->cpu_max_freq_B * cpufreq_scale_freq_capacity(NULL, 8) / 1024;
 #endif
@@ -811,28 +743,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 
 		ged_kpi_check_if_fallback_is_needed(boost_accum_cpu, psKPI->t_cpu);
 
-		if (t_cpu_cur < (int)psHead->t_cpu_target + 2000000 && boost_accum_cpu > 30)
-			num_over_boost++;
-		num_monitored++;
-
-		if (num_monitored == GED_KPI_FALLBACK_VOTE_NUM) {
-			if (num_over_boost * 100 / num_monitored > 85)
-				boost_accum_cpu = 0;
-			num_over_boost = 0;
-			num_monitored = 0;
-		}
-
 #ifdef GED_KPI_MET_DEBUG
-		met_tag_oneshot(0, "ged_pframeb_boost_accum_cpu", boost_accum_cpu);
-
-		if (boost_real_cpu < 100)
-			met_tag_oneshot(0, "ged_pframeb_boost_real_cpu", boost_real_cpu);
-		else
-			met_tag_oneshot(0, "ged_pframeb_boost_real_cpu", 100);
-
-		met_tag_oneshot(0, "ged_pframebc_boost_linear_cpu", boost_linear_cpu);
-		met_tag_oneshot(0, "ged_pframebg_boost_accum_gpu", boost_accum_gpu);
-
 		if (psHead->t_cpu_latest < 100*1000*1000)
 			met_tag_oneshot(0, "ged_pframe_t_cpu",
 				(long long)((int)psHead->t_cpu_latest + 999999)/GED_KPI_MSEC_DIVIDER);
@@ -1371,11 +1282,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					(long long)psKPI->gpu_freq, psTimeStamp->pid, psTimeStamp->i32FrameID);
 				psHead->last_TimeStamp2 = psTimeStamp->ullTimeStamp;
 				psHead->i32Gpu_uncompleted--;
-				ged_log_perf_trace_counter("gpu_loading",
-					(long long)psKPI->gpu_loading, psTimeStamp->pid, psTimeStamp->i32FrameID);
 				psKPI->gpu_loading = psTimeStamp->i32GPUloading;
 				if (psKPI->gpu_loading == 0)
 					mtk_get_gpu_loading(&psKPI->gpu_loading);
+				ged_log_perf_trace_counter("gpu_loading",
+					(long long)psKPI->gpu_loading, psTimeStamp->pid, psTimeStamp->i32FrameID);
 #ifdef GED_ENABLE_FB_DVFS
 				cur_3D_done = psKPI->ullTimeStamp2;
 				if (psTimeStamp->i32GPUloading) { /* not fallback mode */
