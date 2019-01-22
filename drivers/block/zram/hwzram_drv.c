@@ -66,6 +66,7 @@
 #include <linux/string.h>
 #include <linux/vmalloc.h>
 #include <linux/err.h>
+#include <linux/delay.h>
 
 #include "hwzram_drv.h"
 
@@ -445,6 +446,9 @@ static int hwzram_bvec_read(struct hwzram *hwzram, struct bio_vec *bvec,
 		cmpl->data = bio;
 		cmpl->compr_size = hwzram_get_obj_size(meta, index);
 		cmpl->callback = hwzram_impl_decompr_cb;
+#ifdef CONFIG_MTK_ENG_BUILD
+		cmpl->hash = meta->table[index].hash;
+#endif
 		memcpy(cmpl->dma_bufs, meta->table[index].compressed_buffers,
 		       sizeof(phys_addr_t) * HWZRAM_MAX_BUFFERS_USED);
 		ret = hwzram_impl_decompress_page(hwzram->hwz, page, cmpl);
@@ -497,6 +501,9 @@ static void hwzram_impl_compr_cb(struct hwzram_impl_completion *cmpl)
 	memcpy(meta->table[index].compressed_buffers, cmpl->buffers,
 	       sizeof(phys_addr_t) * HWZRAM_MAX_BUFFERS_USED);
 
+#ifdef CONFIG_MTK_ENG_BUILD
+	meta->table[index].hash = cmpl->hash;
+#endif
 	if (cmpl->compr_status == HWZRAM_COMPRESSED)
 		hwzram_set_obj_size(meta, index, compr_size);
 
