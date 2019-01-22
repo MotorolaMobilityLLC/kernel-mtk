@@ -213,14 +213,14 @@ config HIGH_BATTERY_VOLTAGE_SUPPORT
 	  Set No to config if 4.2V battery is
 	  used.
 
-config MTK_HAFG_20
-	bool "MediaTek Fuel Gauge 2.0"
-	default n
+config MTK_GAUGE_VERSION
+	int "MediaTek Fuel Gauge version"
+	default 20
 	help
-	  fuel gauge 2.0
-	  to achive better battery percentage.
-	  Set Yes to support Fuel Gauge 2.0 feature.
-	  Set No to disable Fuel Gauge 2.0.
+	  Select MTK Gauge Master version
+	  10: Gauge Master 1.0
+	  20: Gauge Master 2.0
+	  30: Gauge Master 3.0
 
 config MTK_PUMP_EXPRESS_SUPPORT
 	bool "MediaTek PUMP EXPRESS"
