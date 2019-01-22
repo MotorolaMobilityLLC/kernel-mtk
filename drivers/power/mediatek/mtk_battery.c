@@ -965,6 +965,10 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 	unsigned int val_0, val_1, val_2, val_3;
 	int ret, ret0, ret1, ret2, ret3;
 	int bat_id;
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+	unsigned int val_4;
+	int ret4;
+#endif
 
 	fgauge_get_profile_id();
 	bat_id = g_fg_battery_id;
@@ -1171,30 +1175,45 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 			ret1 = !of_property_read_u32(np, "battery0_profile_t1_num", &val_1);
 			ret2 = !of_property_read_u32(np, "battery0_profile_t2_num", &val_2);
 			ret3 = !of_property_read_u32(np, "battery0_profile_t3_num", &val_3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = !of_property_read_u32(np, "battery0_profile_t4_num", &val_4);
+#endif
 			break;
 		case 1:
 			ret0 = !of_property_read_u32(np, "battery1_profile_t0_num", &val_0);
 			ret1 = !of_property_read_u32(np, "battery1_profile_t1_num", &val_1);
 			ret2 = !of_property_read_u32(np, "battery1_profile_t2_num", &val_2);
 			ret3 = !of_property_read_u32(np, "battery1_profile_t3_num", &val_3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = !of_property_read_u32(np, "battery1_profile_t4_num", &val_4);
+#endif
 			break;
 		case 2:
 			ret0 = !of_property_read_u32(np, "battery2_profile_t0_num", &val_0);
 			ret1 = !of_property_read_u32(np, "battery2_profile_t1_num", &val_1);
 			ret2 = !of_property_read_u32(np, "battery2_profile_t2_num", &val_2);
 			ret3 = !of_property_read_u32(np, "battery2_profile_t3_num", &val_3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = !of_property_read_u32(np, "battery2_profile_t4_num", &val_4);
+#endif
 			break;
 		case 3:
 			ret0 = !of_property_read_u32(np, "battery3_profile_t0_num", &val_0);
 			ret1 = !of_property_read_u32(np, "battery3_profile_t1_num", &val_1);
 			ret2 = !of_property_read_u32(np, "battery3_profile_t2_num", &val_2);
 			ret3 = !of_property_read_u32(np, "battery3_profile_t3_num", &val_3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = !of_property_read_u32(np, "battery3_profile_t4_num", &val_4);
+#endif
 			break;
 		default:
 			ret0 = 0;
 			ret1 = 0;
 			ret2 = 0;
 			ret3 = 0;
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = 0;
+#endif
 			break;
 		}
 	if (ret0) {
@@ -1204,22 +1223,30 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_err("Get battery%d_profile_t0_num failed\n", bat_id);
 
 	if (ret1) {
-		bm_debug("Get battery%d_profile_t1_num: %d\n", bat_id, val_0);
-		fg_table_cust_data.fg_profile_t1_size = val_0;
+		bm_debug("Get battery%d_profile_t1_num: %d\n", bat_id, val_1);
+		fg_table_cust_data.fg_profile_t1_size = val_1;
 	} else
 		bm_err("Get battery%d_profile_t1_num failed\n", bat_id);
 
 	if (ret2) {
-		bm_debug("Get battery%d_profile_t2_num: %d\n", bat_id, val_0);
-		fg_table_cust_data.fg_profile_t2_size = val_0;
+		bm_debug("Get battery%d_profile_t2_num: %d\n", bat_id, val_2);
+		fg_table_cust_data.fg_profile_t2_size = val_2;
 	} else
 		bm_err("Get battery%d_profile_t2_num failed\n", bat_id);
 
 	if (ret3) {
-		bm_debug("Get battery%d_profile_t3_num: %d\n", bat_id, val_0);
-		fg_table_cust_data.fg_profile_t3_size = val_0;
+		bm_debug("Get battery%d_profile_t3_num: %d\n", bat_id, val_3);
+		fg_table_cust_data.fg_profile_t3_size = val_3;
 	} else
 		bm_err("Get battery%d_profile_t3_num failed\n", bat_id);
+
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+	if (ret4) {
+		bm_debug("Get battery%d_profile_t4_num: %d\n", bat_id, val_4);
+		fg_table_cust_data.fg_profile_t4_size = val_4;
+	} else
+		bm_err("Get battery%d_profile_t4_num failed\n", bat_id);
+#endif
 
 		switch (bat_id) {
 		case 0:
@@ -1231,6 +1258,10 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 				fg_table_cust_data.fg_profile_t2);
 			fg_custom_parse_table(np, "battery0_profile_t3",
 				fg_table_cust_data.fg_profile_t3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			fg_custom_parse_table(np, "battery0_profile_t4",
+				fg_table_cust_data.fg_profile_t4);
+#endif
 			break;
 
 		case 1:
@@ -1242,6 +1273,10 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 				fg_table_cust_data.fg_profile_t2);
 			fg_custom_parse_table(np, "battery1_profile_t3",
 				fg_table_cust_data.fg_profile_t3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			fg_custom_parse_table(np, "battery1_profile_t4",
+				fg_table_cust_data.fg_profile_t4);
+#endif
 			break;
 
 		case 2:
@@ -1253,6 +1288,10 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 				fg_table_cust_data.fg_profile_t2);
 			fg_custom_parse_table(np, "battery2_profile_t3",
 				fg_table_cust_data.fg_profile_t3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			fg_custom_parse_table(np, "battery2_profile_t4",
+				fg_table_cust_data.fg_profile_t4);
+#endif
 			break;
 
 		case 3:
@@ -1264,6 +1303,10 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 				fg_table_cust_data.fg_profile_t2);
 			fg_custom_parse_table(np, "battery3_profile_t3",
 				fg_table_cust_data.fg_profile_t3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			fg_custom_parse_table(np, "battery3_profile_t4",
+				fg_table_cust_data.fg_profile_t4);
+#endif
 			break;
 
 		default:
