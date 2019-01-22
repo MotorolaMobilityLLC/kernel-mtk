@@ -75,6 +75,12 @@ unsigned int scp_enable[SCP_CORE_TOTAL];
 unsigned int scp_expected_freq;
 unsigned int scp_current_freq;
 
+#ifdef CFG_RECOVERY_SUPPORT
+unsigned int scp_recovery_flag[SCP_CORE_TOTAL];
+#define SCP_A_RECOVERY_OK	0x44
+#define SCP_B_RECOVERY_OK	0x45
+#endif
+
 phys_addr_t scp_mem_base_phys;
 phys_addr_t scp_mem_base_virt;
 phys_addr_t scp_mem_size;
@@ -593,10 +599,12 @@ static void scp_A_notify_ws(struct work_struct *ws)
 	unsigned int scp_notify_flag = sws->flags;
 
 	scp_ready[SCP_A_ID] = scp_notify_flag;
+
 	if (scp_notify_flag) {
 #ifdef CFG_RECOVERY_SUPPORT
 		/* release pll lock after scp ulposc calibration */
 		scp_pll_ctrl_set(0, 0);
+		scp_recovery_flag[SCP_A_ID] = SCP_A_RECOVERY_OK;
 #endif
 		mutex_lock(&scp_A_notify_mutex);
 		blocking_notifier_call_chain(&scp_A_notifier_list, SCP_EVENT_READY, NULL);
@@ -619,13 +627,19 @@ static void scp_B_notify_ws(struct work_struct *ws)
 	struct scp_work_struct *sws = container_of(ws, struct scp_work_struct, work);
 	unsigned int scp_notify_flag = sws->flags;
 
+	scp_ready[SCP_B_ID] = scp_notify_flag;
+
 	if (scp_notify_flag) {
+#ifdef CFG_RECOVERY_SUPPORT
+		/* release pll lock after scp ulposc calibration */
+		scp_pll_ctrl_set(0, 0);
+		scp_recovery_flag[SCP_B_ID] = SCP_B_RECOVERY_OK;
+#endif
 		mutex_lock(&scp_B_notify_mutex);
 		blocking_notifier_call_chain(&scp_B_notifier_list, SCP_EVENT_READY, NULL);
 		mutex_unlock(&scp_B_notify_mutex);
 	}
 
-	scp_ready[SCP_B_ID] = scp_notify_flag;
 
 	if (!scp_ready[SCP_B_ID])
 		scp_aed(EXCEP_RESET, SCP_B_ID);
@@ -790,6 +804,21 @@ int reset_scp(int reset)
 			int timeout = 50; /* max wait 1s */
 
 			while (--timeout) {
+#ifdef CFG_RECOVERY_SUPPORT
+				if (*(unsigned int *)SCP_GPR_CM4_B_REBOOT == 0x35) {
+					if (SCP_SLEEP_STATUS_REG & SCP_B_IS_SLEEP) {
+						/* reset */
+						*(unsigned int *)reg = 0x0;
+						scp_ready[SCP_B_ID] = 0;
+						*(unsigned int *)SCP_GPR_CM4_B_REBOOT = 2;
+						/* lock pll for ulposc calibration */
+						 /* do it only in reset */
+						scp_pll_ctrl_set(1, 0);
+						dsb(SY);
+						break;
+					}
+				}
+#else
 				if (SCP_SLEEP_STATUS_REG & SCP_B_IS_SLEEP) {
 					/* reset */
 					*(unsigned int *)reg = 0x0;
@@ -797,6 +826,7 @@ int reset_scp(int reset)
 					dsb(SY);
 					break;
 				}
+#endif
 				msleep(20);
 				if (timeout == 0)
 					pr_debug("[SCP] wait scp B reset timeout, skip\n");
@@ -1097,10 +1127,10 @@ void scp_wdt_reset(scp_core_id cpu_id)
 {
 	switch (cpu_id) {
 	case SCP_A_ID:
-		SCP_A_WDT_REG = 0x8000000f;
+		writel(0x8000000f, SCP_A_WDT_REG);
 		break;
 	case SCP_B_ID:
-		SCP_B_WDT_REG = 0x8000000f;
+		writel(0x8000000f, SCP_B_WDT_REG);
 		break;
 	default:
 		break;
@@ -1132,6 +1162,44 @@ static ssize_t scp_B_wdt_trigger(struct device *dev, struct device_attribute *at
 	return count;
 }
 struct device_attribute dev_attr_scp_B_wdt_reset = __ATTR(wdt_reset, S_IWUSR, NULL, scp_B_wdt_trigger);
+
+static ssize_t scp_recovery_flag_r(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", scp_recovery_flag[SCP_A_ID]);
+}
+static ssize_t scp_recovery_flag_w(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	int ret, tmp;
+
+	ret = kstrtoint(buf, 10, &tmp);
+	if (kstrtoint(buf, 10, &tmp) < 0) {
+		pr_debug("scp_recovery_flag error\n");
+		return count;
+	}
+	scp_recovery_flag[SCP_A_ID] = tmp;
+	return count;
+}
+
+DEVICE_ATTR(recovery_flag, S_IRUSR|S_IWUSR, scp_recovery_flag_r, scp_recovery_flag_w);
+
+static ssize_t scp_B_recovery_flag_r(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", scp_recovery_flag[SCP_B_ID]);
+}
+static ssize_t scp_B_recovery_flag_w(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	int ret, tmp;
+
+	ret = kstrtoint(buf, 10, &tmp);
+	if (kstrtoint(buf, 10, &tmp) < 0) {
+		pr_debug("scp_recovery_flag error\n");
+		return count;
+	}
+	scp_recovery_flag[SCP_B_ID] = tmp;
+	return count;
+}
+struct device_attribute dev_attr_scp_B_recovery_flag =
+__ATTR(recovery_flag, S_IRUSR|S_IWUSR, scp_B_recovery_flag_r, scp_B_recovery_flag_w);
 #endif
 
 static struct miscdevice scp_device = {
@@ -1242,6 +1310,14 @@ static int create_files(void)
 		return ret;
 
 	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_wdt_reset);
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_device.this_device, &dev_attr_recovery_flag);
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_recovery_flag);
 	if (unlikely(ret != 0))
 		return ret;
 #endif
