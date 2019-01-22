@@ -435,6 +435,27 @@ UINT_16 kalP2PCalWSC_IELen(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucType)
 
 /*----------------------------------------------------------------------------*/
 /*!
+* \brief to get the p2p ie length
+*
+* \param[in]
+*           prGlueInfo
+*
+*
+* \return
+*           The P2P IE length
+*/
+/*----------------------------------------------------------------------------*/
+UINT_16 kalP2PCalP2P_IELen(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucIndex)
+{
+	ASSERT(prGlueInfo);
+
+	ASSERT(ucIndex < MAX_P2P_IE_SIZE);
+
+	return prGlueInfo->prP2PInfo->u2P2PIELen[ucIndex];
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
 * \brief to copy the wsc ie setting from p2p supplicant
 *
 * \param[in]
@@ -480,6 +501,61 @@ VOID kalP2PUpdateWSC_IE(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucType, IN PUINT_
 		kalMemCopy(prGlP2pInfo->aucWSCIE[ucType], pucBuffer, u2BufferLength);
 
 		prGlP2pInfo->u2WSCIELen[ucType] = u2BufferLength;
+
+	} while (FALSE);
+
+}				/* kalP2PUpdateWSC_IE */
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief to copy the p2p ie setting from p2p supplicant
+*
+* \param[in]
+*           prGlueInfo
+*
+* \return
+*
+*/
+/*----------------------------------------------------------------------------*/
+VOID kalP2PGenP2P_IE(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucIndex, IN PUINT_8 pucBuffer)
+{
+	P_GL_P2P_INFO_T prGlP2pInfo = (P_GL_P2P_INFO_T) NULL;
+
+	do {
+		if ((prGlueInfo == NULL) || (ucIndex >= MAX_P2P_IE_SIZE) || (pucBuffer == NULL))
+			break;
+
+		prGlP2pInfo = prGlueInfo->prP2PInfo;
+
+		kalMemCopy(pucBuffer, prGlP2pInfo->aucP2PIE[ucIndex], prGlP2pInfo->u2P2PIELen[ucIndex]);
+
+	} while (FALSE);
+
+}
+
+VOID kalP2PUpdateP2P_IE(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucIndex, IN PUINT_8 pucBuffer, IN UINT_16 u2BufferLength)
+{
+	P_GL_P2P_INFO_T prGlP2pInfo = (P_GL_P2P_INFO_T) NULL;
+
+	do {
+		if ((prGlueInfo == NULL) ||
+			(ucIndex >= MAX_P2P_IE_SIZE) ||
+			((u2BufferLength > 0) && (pucBuffer == NULL)))
+			break;
+
+		if (u2BufferLength > 400) {
+			DBGLOG(P2P, ERROR,
+			       "kalP2PUpdateP2P_IE > Buffer length is not enough, GLUE only 400 bytes but %d received\n",
+					u2BufferLength);
+			ASSERT(FALSE);
+			break;
+		}
+
+		prGlP2pInfo = prGlueInfo->prP2PInfo;
+
+		kalMemCopy(prGlP2pInfo->aucP2PIE[ucIndex], pucBuffer, u2BufferLength);
+
+		prGlP2pInfo->u2P2PIELen[ucIndex] = u2BufferLength;
 
 	} while (FALSE);
 
@@ -1115,7 +1191,11 @@ BOOLEAN kalP2pFuncGetChannelType(IN ENUM_CHNL_EXT_T rChnlSco, OUT enum nl80211_c
 
 			switch (rChnlSco) {
 			case CHNL_EXT_SCN:
+#if CFG_SUPPORT_P2P_ECSA
+				*channel_type = NL80211_CHAN_HT20;
+#else
 				*channel_type = NL80211_CHAN_NO_HT;
+#endif
 				break;
 			case CHNL_EXT_SCA:
 				*channel_type = NL80211_CHAN_HT40MINUS;
@@ -1183,7 +1263,58 @@ struct ieee80211_channel *kalP2pFuncGetChannelEntry(IN P_GL_P2P_INFO_T prP2pInfo
 
 	return prTargetChannelEntry;
 }				/* kalP2pFuncGetChannelEntry */
+#if CFG_SUPPORT_P2P_ECSA
+VOID kalP2pUpdateECSA(IN P_ADAPTER_T prAdapter, IN P_EVENT_ECSA_RESULT prECSA)
+{
+	P_BSS_INFO_T prBssInfo = &(prAdapter->rWifiVar.arBssInfo[prECSA->ucNetTypeIndex]);
 
+	struct cfg80211_chan_def chandef;
+	RF_CHANNEL_INFO_T rChannelInfo;
+	enum nl80211_channel_type chantype;
+	struct ieee80211_channel *channel;
+
+
+	UINT_32 u4Freq = nicChannelNum2Freq(prECSA->ucPrimaryChannel);
+
+	if (!u4Freq) {
+		DBGLOG(P2P, INFO, "channel number invalid: %d\n", prECSA->ucPrimaryChannel);
+		return;
+	}
+
+	rChannelInfo.ucChannelNum = prECSA->ucPrimaryChannel;
+	rChannelInfo.eBand = prECSA->ucPrimaryChannel > 14 ? BAND_5G : BAND_2G4;
+
+	channel = kalP2pFuncGetChannelEntry(prAdapter->prGlueInfo->prP2PInfo, &rChannelInfo);
+	if (!channel) {
+		DBGLOG(P2P, ERROR, "invalid channel:band %d:%d\n",
+				rChannelInfo.ucChannelNum,
+				rChannelInfo.eBand);
+		return;
+	}
+	kalP2pFuncGetChannelType(prECSA->ucRfSco, &chantype);
+	prBssInfo->ucPrimaryChannel = prECSA->ucPrimaryChannel;
+	prBssInfo->eBssSCO = prECSA->ucRfSco;
+	prBssInfo->eBand = prBssInfo->ucPrimaryChannel > 14 ? BAND_5G : BAND_2G4;
+	prBssInfo->fgChanSwitching = FALSE;
+
+	/* sync with firmware */
+	nicUpdateBss(prAdapter, prECSA->ucNetTypeIndex);
+
+	/* only indicate to host when we AP/GO */
+	if (prBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT) {
+		DBGLOG(P2P, INFO, "Do not indicate to host\n");
+		return;
+	}
+
+	if (prBssInfo->ucPrimaryChannel == 14)
+		chantype = NL80211_CHAN_NO_HT;
+
+	cfg80211_chandef_create(&chandef, channel, chantype);
+	/* indicate to host */
+	cfg80211_ch_switch_notify(prAdapter->prGlueInfo->prP2PInfo->prDevHandler,
+			&chandef);
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief to set/clear the MAC address to/from the black list of Hotspot

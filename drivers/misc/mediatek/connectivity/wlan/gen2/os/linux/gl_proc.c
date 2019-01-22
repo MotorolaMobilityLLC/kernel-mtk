@@ -77,6 +77,7 @@ static P_GLUE_INFO_T g_prGlueInfo_proc;
 #if FW_CFG_SUPPORT
 static P_GLUE_INFO_T gprGlueInfo;
 #endif
+
 struct proc_dir_entry *prEntry;
 typedef struct _PROC_CFG_ENTRY {
 	struct proc_dir_entry *prEntryWlanThermo;
@@ -1006,10 +1007,8 @@ static const struct file_operations proc_set_cam_ops = {
 
 INT_32 procInitFs(VOID)
 {
-	struct proc_dir_entry *prEntry;
-
 	if (init_net.proc_net == (struct proc_dir_entry *)NULL) {
-		kalPrint("init proc fs fail: proc_net == NULL\n");
+		DBGLOG(INIT, ERROR, "init proc fs fail: proc_net == NULL\n");
 		return -ENOENT;
 	}
 
@@ -1019,45 +1018,66 @@ INT_32 procInitFs(VOID)
 
 	gprProcRoot = proc_mkdir(PROC_ROOT_NAME, init_net.proc_net);
 	if (!gprProcRoot) {
-		kalPrint("gprProcRoot == NULL\n");
+		DBGLOG(INIT, ERROR, "gprProcRoot == NULL\n");
 		return -ENOENT;
 	}
 	proc_set_user(gprProcRoot, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
-	prEntry = proc_create(PROC_DBG_LEVEL_NAME, 0664, gprProcRoot, &dbglevel_ops);
-	if (prEntry == NULL) {
-		kalPrint("Unable to create /proc entry dbgLevel\n\r");
-		return -1;
-	}
-	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+	gprProcCfgEntry = kalMemAlloc(sizeof(PROC_CFG_ENTRY), PHY_MEM_TYPE);
+	kalMemZero(gprProcCfgEntry, sizeof(PROC_CFG_ENTRY));
 
-	prEntry = proc_create(PROC_NEED_TX_DONE, 0664, gprProcRoot, &proc_txdone_ops);
-	if (prEntry == NULL) {
-		kalPrint("Unable to create /proc entry dbgLevel\n\r");
-		return -1;
-	}
-	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+	gprProcCfgEntry->prEntryDbgLevel = proc_create(PROC_DBG_LEVEL_NAME, 0664, gprProcRoot, &dbglevel_ops);
 
-	prEntry = proc_create(PROC_AUTO_PERF_CFG, 0664, gprProcRoot, &auto_perf_ops);
-	if (prEntry == NULL) {
-		kalPrint("Unable to create /proc entry autoPerCfg\n\r");
+	if (gprProcCfgEntry->prEntryDbgLevel == NULL) {
+		DBGLOG(INIT, ERROR, "Unable to create /proc entry %s/n", PROC_DBG_LEVEL_NAME);
 		return -1;
 	}
-	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+	proc_set_user(gprProcCfgEntry->prEntryDbgLevel, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
-	prEntry = proc_create(PROC_COUNTRY, 0664, gprProcRoot, &country_ops);
-	if (prEntry == NULL) {
-		DBGLOG(INIT, ERROR, "Unable to create /proc entry\n\r");
+	gprProcCfgEntry->prEntryTxDoneCfg = proc_create(PROC_NEED_TX_DONE, 0664, gprProcRoot, &proc_txdone_ops);
+	if (gprProcCfgEntry->prEntryTxDoneCfg == NULL) {
+		DBGLOG(INIT, ERROR, "Unable to create /proc entry %s/n", PROC_NEED_TX_DONE);
 		return -1;
 	}
+	proc_set_user(gprProcCfgEntry->prEntryTxDoneCfg, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
+	gprProcCfgEntry->prEntryAutoPerCfg = proc_create(PROC_AUTO_PERF_CFG, 0664, gprProcRoot, &auto_perf_ops);
+	if (gprProcCfgEntry->prEntryAutoPerCfg == NULL) {
+		DBGLOG(INIT, ERROR, "Unable to create /proc entry %s/n", PROC_AUTO_PERF_CFG);
+		return -1;
+	}
+	proc_set_user(gprProcCfgEntry->prEntryAutoPerCfg, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
+	gprProcCfgEntry->prEntryCountry = proc_create(PROC_COUNTRY, 0664, gprProcRoot, &country_ops);
+	if (gprProcCfgEntry->prEntryCountry == NULL) {
+		DBGLOG(INIT, ERROR, "Unable to create /proc entry %s/n", PROC_COUNTRY);
+		return -1;
+	}
+
 	return 0;
 }				/* end of procInitProcfs() */
 
 INT_32 procUninitProcFs(VOID)
 {
-	remove_proc_entry(PROC_DBG_LEVEL_NAME, gprProcRoot);
-	remove_proc_subtree(PROC_ROOT_NAME, init_net.proc_net);
-	remove_proc_entry(PROC_AUTO_PERF_CFG, gprProcRoot);
+	if (gprProcRoot) {
+		if (gprProcCfgEntry->prEntryDbgLevel)
+			remove_proc_entry(PROC_DBG_LEVEL_NAME, gprProcRoot);
+		else
+			DBGLOG(INIT, ERROR, "%s PROC_DBG_LEVEL_NAME is null/n", __func__);
+
+		if (gprProcCfgEntry->prEntryAutoPerCfg)
+			remove_proc_entry(PROC_AUTO_PERF_CFG, gprProcRoot);
+		else
+			DBGLOG(INIT, ERROR, "%s PROC_AUTO_PERF_CFG is null/n", __func__);
+
+		remove_proc_subtree(PROC_ROOT_NAME, init_net.proc_net);
+
+		if (gprProcCfgEntry)
+			kalMemFree(gprProcCfgEntry, sizeof(PROC_CFG_ENTRY), PHY_MEM_TYPE);
+
+	} else {
+		DBGLOG(INIT, ERROR, "%s gprProcRoot ist null/n", __func__);
+	}
 	return 0;
 }
 
@@ -1075,8 +1095,17 @@ INT_32 procRemoveProcfs(VOID)
 {
 	/* remove root directory (proc/net/wlan0) */
 	/* remove_proc_entry(pucDevName, init_net.proc_net); */
-	remove_proc_entry(PROC_WLAN_THERMO, gprProcRoot);
-	remove_proc_entry(PROC_CMD_DEBUG_NAME, gprProcRoot);
+	if (gprProcCfgEntry->prEntryWlanThermo) {
+		remove_proc_entry(PROC_WLAN_THERMO, gprProcRoot);
+		gprProcCfgEntry->prEntryWlanThermo = NULL;
+	} else
+		DBGLOG(INIT, ERROR, "%s PROC_WLAN_THERMO is null\n", __func__);
+
+	if (gprProcCfgEntry->prEntryCmdDbg) {
+		remove_proc_entry(PROC_CMD_DEBUG_NAME, gprProcRoot);
+		gprProcCfgEntry->prEntryCmdDbg = NULL;
+	} else
+		DBGLOG(INIT, ERROR, "%s PROC_CMD_DEBUG_NAME is null\n", __func__);
 
 #if CFG_SUPPORT_SET_CAM_BY_PROC
 	if (gprProcCfgEntry->prEntrySetCAM) {
@@ -1094,7 +1123,6 @@ INT_32 procRemoveProcfs(VOID)
 
 INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 {
-	struct proc_dir_entry *prEntry;
 
 	DBGLOG(INIT, TRACE, "[%s]\n", __func__);
 
@@ -1103,19 +1131,24 @@ INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 #endif
 
 	prGlueInfo->pProcRoot = gprProcRoot;
+	if (gprProcCfgEntry->prEntryWlanThermo)
+		DBGLOG(INIT, WARN, "proc entry %s is exist\n", PROC_WLAN_THERMO);
 
-	prEntry = proc_create(PROC_WLAN_THERMO, 0664, gprProcRoot, &proc_fops);
-	if (prEntry == NULL) {
-		DBGLOG(INIT, ERROR, "Unable to create /proc entry\n\r");
+	gprProcCfgEntry->prEntryWlanThermo = proc_create(PROC_WLAN_THERMO, 0664, gprProcRoot, &proc_fops);
+	if (gprProcCfgEntry->prEntryWlanThermo == NULL) {
+		DBGLOG(INIT, WARN, "Unable to create /proc entry %s\n", PROC_WLAN_THERMO);
 		return -1;
 	}
 
-	prEntry = proc_create(PROC_CMD_DEBUG_NAME, 0444, gprProcRoot, &proc_CmdDebug_ops);
-	if (prEntry == NULL) {
-		kalPrint("Unable to create /proc entry dbgLevel\n\r");
+	if (gprProcCfgEntry->prEntryCmdDbg)
+		DBGLOG(INIT, WARN, "proc entry %s is exist\n", PROC_CMD_DEBUG_NAME);
+
+	gprProcCfgEntry->prEntryCmdDbg = proc_create(PROC_CMD_DEBUG_NAME, 0444, gprProcRoot, &proc_CmdDebug_ops);
+	if (gprProcCfgEntry->prEntryCmdDbg == NULL) {
+		DBGLOG(INIT, WARN, "Unable to create /proc entry %s\n", PROC_CMD_DEBUG_NAME);
 		return -1;
 	}
-	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+	proc_set_user(gprProcCfgEntry->prEntryCmdDbg, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
 #if CFG_SUPPORT_SET_CAM_BY_PROC
 	if (gprProcCfgEntry->prEntrySetCAM)
@@ -1250,23 +1283,26 @@ static const struct file_operations cfg_ops = {
 
 INT_32 cfgRemoveProcEntry(void)
 {
-	remove_proc_entry(PROC_CFG_NAME, gprProcRoot);
+	if (gprProcCfgEntry->prEntryCfg) {
+		remove_proc_entry(PROC_CFG_NAME, gprProcRoot);
+		gprProcCfgEntry->prEntryCfg = NULL;
+	} else
+		DBGLOG(INIT, ERROR, "%s PROC_CFG_NAME is null\n", __func__);
 	return 0;
 }
 
 INT_32 cfgCreateProcEntry(P_GLUE_INFO_T prGlueInfo)
 {
-	struct proc_dir_entry *prEntry;
-
 	prGlueInfo->pProcRoot = gprProcRoot;
 	gprGlueInfo = prGlueInfo;
 
-	prEntry = proc_create(PROC_CFG_NAME, 0664, gprProcRoot, &cfg_ops);
-	if (prEntry == NULL) {
+	gprProcCfgEntry->prEntryCfg = proc_create(PROC_CFG_NAME, 0664, gprProcRoot, &cfg_ops);
+
+	if (gprProcCfgEntry->prEntryCfg == NULL) {
 		DBGLOG(INIT, ERROR, "Unable to create /proc entry cfg\n\r");
 		return -1;
 	}
-	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+	proc_set_user(gprProcCfgEntry->prEntryCfg, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
 	return 0;
 }

@@ -555,7 +555,13 @@ static VOID rlmFillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 
 	if (prBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE)
 		prHsExtCap->aucCapabilities[0] &= ~ELEM_EXT_CAP_PSMP_CAP;
-
+#if CFG_SUPPORT_P2P_ECSA
+	/* Only set Extended Channel Switch support bit when as GO */
+	if (prBssInfo->ucNetTypeIndex == NETWORK_TYPE_P2P_INDEX &&
+	    prBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT &&
+	    !prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode)
+		prHsExtCap->aucCapabilities[0] |= ELEM_EXT_CAP_ECS_SUPPORT;
+#endif
 	if (prAdapter->prGlueInfo->fgConnectHS20AP == TRUE) {
 		SET_EXT_CAP(prHsExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_INTERWORKING_BIT);
 		SET_EXT_CAP(prHsExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_QOSMAPSET_BIT);
@@ -592,6 +598,14 @@ static VOID rlmFillExtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 
 #if CFG_SUPPORT_802_11V_BSS_TRANSITION_MGT
 	SET_EXT_CAP(prExtCap->aucCapabilities, ELEM_MAX_LEN_EXT_CAP, ELEM_EXT_CAP_BSS_TRANSITION_BIT);
+#endif
+
+#if CFG_SUPPORT_P2P_ECSA
+	/* Only set Extended Channel Switch support bit when as GO */
+	if (prBssInfo->ucNetTypeIndex == NETWORK_TYPE_P2P_INDEX &&
+	    prBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT &&
+	    !prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode)
+		prExtCap->aucCapabilities[0] |= ELEM_EXT_CAP_ECS_SUPPORT;
 #endif
 
 	ASSERT(IE_SIZE(prExtCap) <= (ELEM_HDR_LEN + ELEM_MAX_LEN_EXT_CAP));
@@ -717,7 +731,205 @@ static VOID rlmFillHtOpIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSDU_
 	prMsduInfo->u2FrameLength += IE_SIZE(prHtOp);
 #endif
 }
+#if CFG_SUPPORT_P2P_ECSA
+VOID rlmGenerateCSAIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
+{
+	P_IE_CHANNEL_SWITCH_T prCsaIe;
+	P_BSS_INFO_T prBssInfo;
 
+	prBssInfo = &prAdapter->rWifiVar.arBssInfo[prMsduInfo->ucNetworkType];
+
+	prCsaIe = (P_IE_CHANNEL_SWITCH_T)
+	    (((PUINT_8) prMsduInfo->prPacket) + prMsduInfo->u2FrameLength);
+
+	/* Add CSA IE */
+	prCsaIe->ucId = ELEM_ID_CH_SW_ANNOUNCEMENT;
+	prCsaIe->ucLength = 3;
+	prCsaIe->ucChannelSwitchCount = prBssInfo->ucSwitchCount;
+	prCsaIe->ucChannelSwitchMode = prBssInfo->ucSwitchMode;
+	prCsaIe->ucNewChannelNum = prBssInfo->ucEcsaChannel;
+	prMsduInfo->u2FrameLength += IE_SIZE(prCsaIe);
+}
+
+VOID rlmGenerateECSAIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
+{
+	P_IE_EXT_CHANNEL_SWITCH_T prEcsaIe;
+	P_BSS_INFO_T prBssInfo;
+
+	prBssInfo = &prAdapter->rWifiVar.arBssInfo[prMsduInfo->ucNetworkType];
+
+	prEcsaIe = (P_IE_EXT_CHANNEL_SWITCH_T)
+	    (((PUINT_8) prMsduInfo->prPacket) + prMsduInfo->u2FrameLength);
+
+	/* Add ECSA IE */
+	prEcsaIe->ucId = ELEM_ID_CH_ESW_ANNOUNCEMENT;
+	prEcsaIe->ucLength = 4;
+	prEcsaIe->ucOpClass = prBssInfo->ucOpClass;
+	prEcsaIe->ucChannelSwitchCount = prBssInfo->ucSwitchCount;
+	prEcsaIe->ucChannelSwitchMode = prBssInfo->ucSwitchMode;
+	prEcsaIe->ucNewChannelNum = prBssInfo->ucEcsaChannel;
+	prMsduInfo->u2FrameLength += IE_SIZE(prEcsaIe);
+}
+
+VOID  rlmFreqToChannelExt(unsigned int freq,
+						   int sec_channel,
+						   u8 *op_class, u8 *channel)
+{
+	/* TODO: more operating classes */
+	if (sec_channel > 1 || sec_channel < -1 || !op_class || !channel)
+		return;
+
+	if (freq >= 2412 && freq <= 2472) {
+		if ((freq - 2407) % 5)
+			return;
+		/* 2.407 GHz, channels 1..13 */
+		if (sec_channel == 1)
+			*op_class = 83;
+		else if (sec_channel == -1)
+			*op_class = 84;
+		else
+			*op_class = 81;
+		*channel = (freq - 2407) / 5;
+		return;
+	}
+
+	if (freq == 2484) {
+		if (sec_channel)
+			return;
+		*op_class = 82; /* channel 14 */
+		*channel = 14;
+		return;
+	}
+
+	if (freq >= 4900 && freq < 5000) {
+		if ((freq - 4000) % 5)
+			return;
+		*channel = (freq - 4000) / 5;
+		*op_class = 0; /* TODO */
+		return;
+	}
+
+	/* 5 GHz, channels 36..48 */
+	if (freq >= 5180 && freq <= 5240) {
+		if ((freq - 5000) % 5)
+			return;
+		if (sec_channel == 1)
+			*op_class = 116;
+		else if (sec_channel == -1)
+			*op_class = 117;
+		else
+			*op_class = 115;
+		*channel = (freq - 5000) / 5;
+		return;
+	}
+
+	/* 5 GHz, channels 149..169 */
+	if (freq >= 5745 && freq <= 5845) {
+		if ((freq - 5000) % 5)
+			return;
+
+		if (sec_channel == 1)
+			*op_class = 126;
+		else if (sec_channel == -1)
+			*op_class = 127;
+		else if (freq <= 5805)
+			*op_class = 124;
+		else
+			*op_class = 125;
+		*channel = (freq - 5000) / 5;
+		return;
+	}
+
+	/* 5 GHz, channels 100..140 */
+	if (freq >= 5000 && freq <= 5700) {
+		if ((freq - 5000) % 5)
+			return;
+		if (sec_channel == 1)
+			*op_class = 122;
+		else if (sec_channel == -1)
+			*op_class = 123;
+		else
+			*op_class = 121;
+		*channel = (freq - 5000) / 5;
+		return;
+	}
+
+	if (freq >= 5000 && freq < 5900) {
+		if ((freq - 5000) % 5)
+			return;
+		*channel = (freq - 5000) / 5;
+		*op_class = 0; /* TODO */
+		return;
+	}
+
+	/* 56.16 GHz, channel 1..4 */
+	if (freq >= 56160 + 2160 * 1 && freq <= 56160 + 2160 * 4) {
+		if (sec_channel)
+			return;
+		*channel = (freq - 56160) / 2160;
+		*op_class = 180;
+		return;
+	}
+}
+
+
+/*
+ * generate channel switch Action frame header
+ */
+void rlmGenActionCSHdr(u8 *buf,
+			u8 *da, u8 *sa, u8 *bssid,
+			u8 category, u8 action)
+{
+	P_ACTION_CHANNEL_SWITCH_FRAME p = (P_ACTION_CHANNEL_SWITCH_FRAME)buf;
+
+	if (!buf || !da || !sa || !bssid)
+		return;
+
+	/* build MAC header */
+	p->u2FrameCtrl = MAC_FRAME_ACTION;
+	p->u2Duration = 0;
+	p->u2SeqCtrl = 0;
+	COPY_MAC_ADDR(p->aucDestAddr, da);
+	COPY_MAC_ADDR(p->aucSrcAddr, sa);
+	COPY_MAC_ADDR(p->aucBSSID, bssid);
+
+	p->ucCategory = category;
+	p->ucAction = action;
+}
+
+void rlmGenActionCSA(u8 *buf,
+			u8 mode,
+			u8 channel,
+			u8 count,
+			u8 sco)
+{
+	P_ACTION_CSA_T p = (P_ACTION_CSA_T)buf;
+
+	p->csa_id = ELEM_ID_CH_SW_ANNOUNCEMENT;
+	p->clen = 3;
+	p->mode = mode;
+	p->new_ch_num = channel;
+	p->count = count;
+
+	p->sco_id = ELEM_ID_SCO;
+	p->slen = 1;
+	p->sco = sco;
+}
+
+void rlmGenActionECSA(u8 *buf,
+			u8 mode,
+			u8 channel,
+			u8 count,
+			u8 op_class)
+{
+	P_ACTION_ECSA_T p = (P_ACTION_ECSA_T)buf;
+
+	p->mode = mode;
+	p->new_operating_class = op_class;
+	p->new_ch_num = channel;
+	p->count = count;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This function should be invoked to update parameters of associated AP.
@@ -2120,6 +2332,7 @@ VOID rlmProcessRadioMeasurementRequest(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb
 *}
 */
 
+
 VOID rlmProcessNeighborReportResonse(
 	P_ADAPTER_T prAdapter, P_WLAN_ACTION_FRAME prAction, UINT_16 u2PacketLen)
 {
@@ -2276,18 +2489,18 @@ VOID rlmSetMaxTxPwrLimit(IN P_ADAPTER_T prAdapter, INT_8 cLimit, UINT_8 ucEnable
 	rTxPwrLimit.ucMaxTxPwrLimitEnable = ucEnable;
 	if (ucEnable) {
 		if (cLimit > RLM_MAX_TX_PWR) {
-			DBGLOG(RLM, INFO, "Target MaxPwr %d Higher than Capability, reset to capability\n", cLimit);
+			DBGLOG(RLM, TRACE, "Target MaxPwr %d Higher than Capability, reset to capability\n", cLimit);
 			cLimit = RLM_MAX_TX_PWR;
 		}
 		if (cLimit < RLM_MIN_TX_PWR) {
-			DBGLOG(RLM, INFO, "Target MinPwr %d Lower than Capability, reset to capability\n", cLimit);
+			DBGLOG(RLM, TRACE, "Target MinPwr %d Lower than Capability, reset to capability\n", cLimit);
 			cLimit = RLM_MIN_TX_PWR;
 		}
-		DBGLOG(RLM, INFO, "Set Max Tx Power Limit %d, Min Limit %d\n", cLimit, RLM_MIN_TX_PWR);
+		DBGLOG(RLM, TRACE, "Set Max Tx Power Limit %d, Min Limit %d\n", cLimit, RLM_MIN_TX_PWR);
 		rTxPwrLimit.cMaxTxPwr = cLimit * 2; /* unit of cMaxTxPwr is 0.5 dBm */
 		rTxPwrLimit.cMinTxPwr = RLM_MIN_TX_PWR * 2;
 	} else
-		DBGLOG(RLM, INFO, "Disable Tx Power Limit\n");
+		DBGLOG(RLM, TRACE, "Disable Tx Power Limit\n");
 
 	wlanSendSetQueryCmd(prAdapter,
 					  CMD_ID_SET_MAX_TXPWR_LIMIT,
@@ -2336,7 +2549,9 @@ static VOID rlmCalibrationRepetions(struct RADIO_MEASUREMENT_REQ_PARAMS *prRmReq
 
 VOID rlmRunEventProcessNextRm(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 {
-	cnmMemFree(prAdapter, prMsgHdr);
+	ASSERT(prAdapter);
+	if (prMsgHdr)
+		cnmMemFree(prAdapter, prMsgHdr);
 	rlmStartNextMeasurement(prAdapter, FALSE);
 }
 
@@ -2345,6 +2560,10 @@ VOID rlmScheduleNextRm(P_ADAPTER_T prAdapter)
 	P_MSG_HDR_T prMsg = NULL;
 
 	prMsg = cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(*prMsg));
+	if (prMsg) {
+		ASSERT(0);	/* Can't send  Msg */
+		return;
+	}
 	prMsg->eMsgId = MID_RLM_RM_SCHEDULE;
 	mboxSendMsg(prAdapter, MBOX_ID_0, prMsg, MSG_SEND_METHOD_BUF);
 }

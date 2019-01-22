@@ -77,6 +77,10 @@ wextSrchDesiredWPSIE(IN PUINT_8 pucIEStart,
 BOOLEAN kalP2pFuncGetChannelType(IN ENUM_CHNL_EXT_T rChnlSco, OUT enum nl80211_channel_type *channel_type);
 struct ieee80211_channel *kalP2pFuncGetChannelEntry(IN P_GL_P2P_INFO_T prP2pInfo, IN P_RF_CHANNEL_INFO_T prChannelInfo);
 
+#if CFG_SUPPORT_P2P_ECSA
+VOID kalP2pUpdateECSA(IN P_ADAPTER_T prAdapter, IN P_EVENT_ECSA_RESULT prECSA);
+#endif
+
 /* Service Discovery */
 VOID kalP2PIndicateSDRequest(IN P_GLUE_INFO_T prGlueInfo, IN PARAM_MAC_ADDRESS rPeerAddr, IN UINT_8 ucSeqNum);
 
@@ -122,6 +126,13 @@ UINT_16 kalP2PCalWSC_IELen(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucType);
 VOID kalP2PGenWSC_IE(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucType, IN PUINT_8 pucBuffer);
 
 VOID kalP2PUpdateWSC_IE(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucType, IN PUINT_8 pucBuffer, IN UINT_16 u2BufferLength);
+
+UINT_16 kalP2PCalP2P_IELen(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucIndex);
+
+VOID kalP2PGenP2P_IE(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucIndex, IN PUINT_8 pucBuffer);
+
+VOID kalP2PUpdateP2P_IE(IN P_GLUE_INFO_T prGlueInfo,
+		IN UINT_8 ucIndex, IN PUINT_8 pucBuffer, IN UINT_16 u2BufferLength);
 
 BOOLEAN kalP2PIndicateFound(IN P_GLUE_INFO_T prGlueInfo);
 

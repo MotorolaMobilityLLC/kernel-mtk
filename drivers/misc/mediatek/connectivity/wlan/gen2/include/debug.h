@@ -264,7 +264,14 @@ extern PINT_8 g_buf_p;
 #define ERRORLOG(_Fmt)
 #define WARNLOG(_Fmt)
 
-#define DBGLOG_MEM8(_Module, _Class, _StartAddr, _Length)
+#define DBGLOG_MEM8(_Module, _Class, _StartAddr, _Length) \
+	{ \
+		if (aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) { \
+			LOG_FUNC("%s: (" #_Module " " #_Class ")\n", __func__); \
+			dumpMemory8((PUINT_8) (_StartAddr), (UINT_32) (_Length)); \
+		} \
+	}
+
 #define DBGLOG_MEM32(_Module, _Class, _StartAddr, _Length)
 
 #undef ASSERT

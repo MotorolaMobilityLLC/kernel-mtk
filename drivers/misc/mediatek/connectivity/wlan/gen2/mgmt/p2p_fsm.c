@@ -108,6 +108,9 @@ VOID p2pFsmInit(IN P_ADAPTER_T prAdapter)
 		cnmTimerInitTimer(prAdapter,
 				  &(prAdapter->rP2pFsmTimeoutTimer),
 				  (PFN_MGMT_TIMEOUT_FUNC) p2pFsmRunEventFsmTimeout, (ULONG) prP2pFsmInfo);
+		cnmTimerInitTimer(prAdapter,
+				  &(prAdapter->rTdlsStateTimer),
+				  (PFN_MGMT_TIMEOUT_FUNC) p2pFsmRunEventTdlsTimeout, (ULONG) NULL);
 
 		/* 4 <2> Initiate BSS_INFO_T - common part */
 		BSS_INFO_INIT(prAdapter, NETWORK_TYPE_P2P_INDEX);
@@ -829,7 +832,7 @@ VOID p2pFsmRunEventFsmTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
 			case P2P_CNN_DEV_DISC_REQ:
 			case P2P_CNN_PROV_DISC_REQ:
 				DBGLOG(P2P, INFO, "P2P: waiting response, re-enter channel on hand state\n");
-				p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_CHNL_ON_HAND);
+				p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_REQING_CHANNEL);
 				break;
 
 			case P2P_CNN_NORMAL:
@@ -852,10 +855,70 @@ VOID p2pFsmRunEventFsmTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
 
 }				/* p2pFsmRunEventFsmTimeout */
 
+
+/*
+ * TDLS link monitor function
+ * teardown link if setup failed or
+ * no data traffic for 4s
+ */
+VOID p2pFsmRunEventTdlsTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
+{
+	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
+	struct ksta_info *prTargetSta = prGlueInfo->prStaHash[STA_HASH_SIZE];
+
+	if (!prTargetSta) {
+		DBGLOG(TDLS, INFO, "TDLS: No target station, return\n");
+		return;
+	}
+
+	if (prTargetSta->eTdlsRole == MTK_TDLS_ROLE_RESPONDER) {
+		prTargetSta->u4Throughput = (prTargetSta->ulRxBytes * HZ) / TDLS_MONITOR_UT;
+
+		if (prTargetSta->u4Throughput < TDLS_TEARDOWN_RX_THD) {
+			switch (prTargetSta->eTdlsStatus) {
+			case MTK_TDLS_LINK_ENABLE:
+				MTKTdlsTearDown(prGlueInfo, prTargetSta, "Low RX Throughput");
+			default:
+				return;
+			}
+		}
+		DBGLOG(TDLS, INFO, "TDLS: Rx data stream OK\n");
+		prTargetSta->ulRxBytes = 0;
+		goto start_timer;
+	}
+
+	switch (prTargetSta->eTdlsStatus) {
+	case MTK_TDLS_NOT_SETUP:
+		DBGLOG(TDLS, INFO, "Last TDLS monitor timer\n");
+		return;
+	case MTK_TDLS_SETUP_INPROCESS:
+		DBGLOG(TDLS, INFO, "TDLS: setup timeout\n");
+		if (prTargetSta->u4SetupFailCount++ > TDLS_SETUP_COUNT)
+			MTKTdlsTearDown(prAdapter->prGlueInfo, prTargetSta, "Setup Failed");
+		break;
+	case MTK_TDLS_LINK_ENABLE:
+		/* go through as we need restart timer to monitor tdls link */
+	default:
+		if (time_after(jiffies, prGlueInfo->ulLastUpdate + 2 * SAMPLING_UT)) {
+			MTKTdlsTearDown(prAdapter->prGlueInfo, prTargetSta, "No Traffic");
+			return;
+		}
+		DBGLOG(TDLS, INFO, "TDLS: TX data stream OK\n");
+		break;
+	}
+
+start_timer:
+	DBGLOG(TDLS, TRACE, "Restart tdls monitor timer\n");
+	cnmTimerStartTimer(prAdapter, &(prAdapter->rTdlsStateTimer),
+			   SEC_TO_MSEC(TDLS_MONITOR_UT));
+}
+
+
 VOID p2pFsmRunEventMgmtFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 {
 	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T) NULL;
 	P_MSG_P2P_MGMT_TX_REQUEST_T prMgmtTxMsg = (P_MSG_P2P_MGMT_TX_REQUEST_T) NULL;
+	P_MSDU_INFO_T prMgmtFrame = (P_MSDU_INFO_T) NULL;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
@@ -868,9 +931,10 @@ VOID p2pFsmRunEventMgmtFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 			break;
 
 		prMgmtTxMsg = (P_MSG_P2P_MGMT_TX_REQUEST_T) prMsgHdr;
+		prMgmtFrame = prMgmtTxMsg->prMgmtMsduInfo;
 
 		p2pFuncTxMgmtFrame(prAdapter,
-				   &prP2pFsmInfo->rMgmtTxInfo, prMgmtTxMsg->prMgmtMsduInfo, prMgmtTxMsg->u8Cookie);
+				   &prP2pFsmInfo->rMgmtTxInfo, prMgmtFrame, prMgmtFrame->u8Cookie);
 
 	} while (FALSE);
 
@@ -962,6 +1026,9 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 				P_P2P_CHNL_REQ_INFO_T prChnlReqInfo = &prP2pFsmInfo->rChnlReqInfo;
 				P_P2P_SCAN_REQ_INFO_T prScanReqInfo = &(prP2pFsmInfo->rScanReqInfo);
 
+#if 1
+				/* 2012-01-27: frog - Channel set from upper layer is the first priority. */
+				/* Because the channel & beacon is decided by p2p_supplicant. */
 				/* Channel set from upper layer is the first priority */
 				if (prP2pConnSettings->ucOperatingChnl != 0) {
 					prP2pSpecificBssInfo->ucPreferredChannel = prP2pConnSettings->ucOperatingChnl;
@@ -971,7 +1038,7 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 					prP2pSpecificBssInfo->ucPreferredChannel = ucPreferedChnl;
 					prP2pSpecificBssInfo->eRfBand = eBand;
 				}
-
+#endif
 				prChnlReqInfo->ucReqChnlNum = prP2pSpecificBssInfo->ucPreferredChannel;
 				prChnlReqInfo->eBand = prP2pSpecificBssInfo->eRfBand;
 				prChnlReqInfo->eChannelReqType = CHANNEL_REQ_TYPE_GO_START_BSS;
@@ -990,7 +1057,6 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			}
 
 			prP2pFsmInfo->eCNNState = P2P_CNN_NORMAL;
-			/* If channel is specified, use active scan to shorten the scan time. */
 			p2pFsmStateTransition(prAdapter, prP2pFsmInfo, eNextState);
 
 		}
@@ -1250,6 +1316,7 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T) NULL;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	P_MSG_P2P_CONNECTION_ABORT_T prDisconnMsg = (P_MSG_P2P_CONNECTION_ABORT_T) NULL;
+	STA_RECORD_T *prStaRec = (P_STA_RECORD_T)NULL;
 	/* P_STA_RECORD_T prTargetStaRec = (P_STA_RECORD_T)NULL; */
 
 	do {
@@ -1266,6 +1333,18 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 
 		prDisconnMsg = (P_MSG_P2P_CONNECTION_ABORT_T) prMsgHdr;
+
+		prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) NETWORK_TYPE_P2P_INDEX, prDisconnMsg->aucTargetID);
+
+		/*
+		 * Do nothing as TDLS disable operation will free this STA REC
+		 * when this is TDLS peer.
+		 * This operation will go through when as GO/HP.
+		 */
+		if (prStaRec && prStaRec->eStaType == STA_TYPE_TDLS_PEER) {
+			DBGLOG(P2P, INFO, "TDLS peer, do nothing\n");
+			return;
+		}
 
 		switch (prP2pBssInfo->eCurrentOPMode) {
 		case OP_MODE_INFRASTRUCTURE:
@@ -1452,12 +1531,12 @@ p2pFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 			fgIsSuccess = TRUE;
 
 		DBGLOG(P2P, INFO, "Mgmt Frame : Status: %d, seq NO. %d, Cookie: 0x%llx\n",
-				rTxDoneStatus, prMsduInfo->ucTxSeqNum, prMgmtTxReqInfo->u8Cookie);
+				rTxDoneStatus, prMsduInfo->ucTxSeqNum, prMsduInfo->u8Cookie);
 
 
 		if (prMgmtTxReqInfo->prMgmtTxMsdu == prMsduInfo) {
 			kalP2PIndicateMgmtTxStatus(prAdapter->prGlueInfo,
-						   prMgmtTxReqInfo->u8Cookie,
+						   prMsduInfo->u8Cookie,
 						   fgIsSuccess,
 						   prMsduInfo->prPacket, (UINT_32) prMsduInfo->u2FrameLength);
 
@@ -1473,6 +1552,27 @@ p2pFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 
 }				/* p2pFsmRunEventMgmtFrameTxDone */
 
+#if CFG_SUPPORT_P2P_ECSA
+WLAN_STATUS
+p2pFsmRunEventMgmtEcsaTxDone(IN P_ADAPTER_T prAdapter,
+			      IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	do {
+		ASSERT_BREAK((prAdapter != NULL) && (prMsduInfo != NULL));
+
+		if (rTxDoneStatus != TX_RESULT_SUCCESS) {
+			DBGLOG(P2P, INFO, "Mgmt ECSA Frame TX Fail, Status: %d, seq NO. %d\n",
+				rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+		} else {
+			DBGLOG(P2P, INFO, "Mgmt ECSA Frame TX Done.\n");
+		}
+
+	} while (FALSE);
+
+	return WLAN_STATUS_SUCCESS;
+
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief    This function is called when JOIN complete message event is received from SAA.
@@ -1537,6 +1637,8 @@ VOID p2pFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 				/* 4 <1.4> Activate current AP's STA_RECORD_T in Driver. */
 				cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_3);
+				/* fire the update jiffies */
+				prAdapter->prGlueInfo->ulLastUpdate = jiffies;
 				DBGLOG(P2P, INFO, "P2P GC Join Success\n");
 
 #if CFG_SUPPORT_P2P_RSSI_QUERY
@@ -1922,9 +2024,8 @@ VOID p2pFsmRunEventBeaconTimeout(IN P_ADAPTER_T prAdapter)
 		if (prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {
 			/* Indicate disconnect to Host. */
 			kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
-							 NULL, NULL, 0, REASON_CODE_DISASSOC_INACTIVITY,
+							 NULL, NULL, 0, REASON_CODE_DEAUTH_LEAVING_BSS,
 							 WLAN_STATUS_MEDIA_DISCONNECT);
-
 			if (prP2pBssInfo->prStaRecOfAP != NULL) {
 				P_STA_RECORD_T prStaRec = prP2pBssInfo->prStaRecOfAP;
 
@@ -1977,6 +2078,116 @@ VOID p2pFsmRunEventExtendListen(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 	if (prMsgHdr)
 		cnmMemFree(prAdapter, prMsgHdr);
 }				/* p2pFsmRunEventUpdateMgmtFrame */
+#if CFG_SUPPORT_P2P_ECSA
+VOID p2pFsmRunEventSendCSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	MSDU_INFO_T *prMsduInfoMgmtCSA;
+
+	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
+	P_MSG_P2P_ECSA_T prMsgCSA = NULL;
+
+	UINT_8 aucBcMac[] = BC_MAC_ADDR;
+
+	if (prMsgHdr == NULL)
+		return;
+	prMsgCSA = (P_MSG_P2P_ECSA_T)prMsgHdr;
+
+	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+
+	prMsduInfoMgmtCSA = (MSDU_INFO_T *)
+		cnmMgtPktAlloc(prAdapter, PUBLIC_ACTION_MAX_LEN);
+
+	if (prMsduInfoMgmtCSA == NULL) {
+		DBGLOG(P2P, ERROR, "<ECSA> %s: allocate mgmt pkt fail\n", __func__);
+		return;
+	}
+
+	rlmGenActionCSHdr((u8 *)prMsduInfoMgmtCSA->prPacket,
+			aucBcMac,
+			prP2pBssInfo->aucBSSID,
+			prP2pBssInfo->aucBSSID, CATEGORY_SPEC_MGT, 4);
+
+
+	rlmGenActionCSA((u8 *)prMsduInfoMgmtCSA->prPacket,
+			prMsgCSA->rP2pECSA.mode,
+			prMsgCSA->rP2pECSA.channel,
+			prMsgCSA->rP2pECSA.count,
+			prMsgCSA->rP2pECSA.sco);
+
+	prMsduInfoMgmtCSA->eSrc = TX_PACKET_MGMT;
+	prMsduInfoMgmtCSA->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;
+	prMsduInfoMgmtCSA->ucStaRecIndex = STA_REC_INDEX_BMCAST;
+	prMsduInfoMgmtCSA->ucNetworkType = NETWORK_TYPE_P2P_INDEX;
+	prMsduInfoMgmtCSA->ucMacHeaderLength = WLAN_MAC_MGMT_HEADER_LEN;
+	prMsduInfoMgmtCSA->fgIs802_1x = FALSE;
+	prMsduInfoMgmtCSA->fgIs802_11 = TRUE;
+	prMsduInfoMgmtCSA->u2FrameLength = 34; /* header len + payload */
+	prMsduInfoMgmtCSA->ucTxSeqNum = nicIncreaseTxSeqNum(prAdapter);
+	prMsduInfoMgmtCSA->pfTxDoneHandler = p2pFsmRunEventMgmtEcsaTxDone;
+	prMsduInfoMgmtCSA->fgIsBasicRate = TRUE;	/* use basic rate */
+
+	/* Send them to HW queue */
+	nicTxEnqueueMsdu(prAdapter, prMsduInfoMgmtCSA);
+	cnmMemFree(prAdapter, prMsgHdr);
+}
+
+
+VOID p2pFsmRunEventSendECSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	MSDU_INFO_T *prMsduInfoMgmtECSA;
+	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
+	P_MSG_P2P_ECSA_T prMsgECSA = NULL;
+
+	UINT_8 aucBcMac[] = BC_MAC_ADDR;
+
+	if (prMsgHdr == NULL)
+		return;
+	prMsgECSA = (P_MSG_P2P_ECSA_T)prMsgHdr;
+
+	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+
+	prMsduInfoMgmtECSA = (MSDU_INFO_T *)
+		cnmMgtPktAlloc(prAdapter, PUBLIC_ACTION_MAX_LEN);
+
+	if (prMsduInfoMgmtECSA == NULL) {
+		DBGLOG(P2P, ERROR, "<ECSA> %s: allocate mgmt pkt fail\n", __func__);
+		return;
+	}
+
+	rlmGenActionCSHdr((u8 *)prMsduInfoMgmtECSA->prPacket,
+			aucBcMac,
+			prP2pBssInfo->aucBSSID,
+			prP2pBssInfo->aucBSSID, CATEGORY_PUBLIC_ACTION, 4);
+
+	rlmGenActionECSA((u8 *)prMsduInfoMgmtECSA->prPacket,
+			prMsgECSA->rP2pECSA.mode,
+			prMsgECSA->rP2pECSA.channel,
+			prMsgECSA->rP2pECSA.count,
+			prMsgECSA->rP2pECSA.op_class);
+
+	prP2pBssInfo->ucOpClass = prMsgECSA->rP2pECSA.op_class;
+	prP2pBssInfo->ucSwitchCount = prMsgECSA->rP2pECSA.count;
+	prP2pBssInfo->ucSwitchMode = prMsgECSA->rP2pECSA.mode;
+	prP2pBssInfo->ucEcsaChannel = prMsgECSA->rP2pECSA.channel;
+	prP2pBssInfo->fgChanSwitching = TRUE;
+
+	prMsduInfoMgmtECSA->eSrc = TX_PACKET_MGMT;
+	prMsduInfoMgmtECSA->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;
+	prMsduInfoMgmtECSA->ucStaRecIndex = STA_REC_INDEX_BMCAST;
+	prMsduInfoMgmtECSA->ucNetworkType = NETWORK_TYPE_P2P_INDEX;
+	prMsduInfoMgmtECSA->ucMacHeaderLength = WLAN_MAC_MGMT_HEADER_LEN;
+	prMsduInfoMgmtECSA->fgIs802_1x = FALSE;
+	prMsduInfoMgmtECSA->fgIs802_11 = TRUE;
+	prMsduInfoMgmtECSA->u2FrameLength = 30; /* header len + payload */
+	prMsduInfoMgmtECSA->ucTxSeqNum = nicIncreaseTxSeqNum(prAdapter);
+	prMsduInfoMgmtECSA->pfTxDoneHandler = p2pFsmRunEventMgmtEcsaTxDone;
+	prMsduInfoMgmtECSA->fgIsBasicRate = TRUE;	/* use basic rate */
+
+	/* Send them to HW queue */
+	nicTxEnqueueMsdu(prAdapter, prMsduInfoMgmtECSA);
+	cnmMemFree(prAdapter, prMsgHdr);
+}
+#endif
 
 #if CFG_SUPPORT_WFD
 VOID p2pFsmRunEventWfdSettingUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
@@ -2265,6 +2476,15 @@ WLAN_STATUS p2pRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 	return rWlanStatus;
 }				/* p2pRxActionFrame */
+#if CFG_SUPPORT_P2P_ECSA
+WLAN_STATUS p2pUpdateBeaconEcsaIE(IN P_ADAPTER_T prAdapter, IN UINT_8 ucNetTypeIndex)
+{
+	if (!prAdapter)
+		return WLAN_STATUS_FAILURE;
+
+	return bssUpdateBeaconContent(prAdapter, ucNetTypeIndex);
+}
+#endif
 
 VOID
 p2pProcessEvent_UpdateNOAParam(IN P_ADAPTER_T prAdapter,

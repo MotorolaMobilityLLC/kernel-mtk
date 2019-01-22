@@ -19,6 +19,7 @@
 ********************************************************************************
 */
 #include "precomp.h"
+#include "fwcfg.h"
 static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -35,6 +36,8 @@ static VOID aisFsmSetOkcTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 #define AIS_JOIN_TIMEOUT                    7
 #define AIS_DEFAULT_ROAMING_THRESHOLD       -75 /* dbm */
 
+#define AIS_DEFAULT_ROAMING_THRESHOLD       -75 /* dbm */
+#define AIS_DRT_ROAMING_THRESHOLD           -85 /* DRT=Dynamic Roaming Threshold, dbm */
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -85,7 +88,9 @@ static VOID aisRemoveDisappearedBlacklist(P_ADAPTER_T prAdapter);
 
 static VOID
 aisSendNeighborRequest(P_ADAPTER_T prAdapter);
-
+#if CFG_SUPPORT_DYNAMOC_ROAM
+static VOID aisFsmSetRoamingThreshold(P_ADAPTER_T prAdapter, INT_8 cThreshold);
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
@@ -245,7 +250,11 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 #endif /* CFG_SUPPORT_ROAMING */
 	prAisFsmInfo->fgIsChannelRequested = FALSE;
 	prAisFsmInfo->fgIsChannelGranted = FALSE;
+
 	prAisFsmInfo->ucJoinFailCntAfterScan = 0;
+#if CFG_SUPPORT_DYNAMOC_ROAM
+	prAisFsmInfo->cRoamTriggerThreshold = 0;
+#endif
 
 	/* 4 <1.1> Initiate FSM - Timer INIT */
 	cnmTimerInitTimer(prAdapter,
@@ -1625,6 +1634,30 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 
 				/* set scan channel type for partial scan */
 				prScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
+#if CFG_SUPPORT_NCHO
+			} else if (prAdapter->rNchoInfo.fgECHOEnabled &&
+				prAdapter->rNchoInfo.u4RoamScanControl == TRUE &&
+				prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED &&
+				prAdapter->rWifiVar.rRoamingInfo.eCurrentState == ROAMING_STATE_DISCOVERY) {
+				/* handle NCHO scan channel info */
+				UINT_32	u4size = 0;
+				PCFG_NCHO_SCAN_CHNL_T prRoamScnChnl = NULL;
+
+				prRoamScnChnl = &prAdapter->rNchoInfo.rRoamScnChnl;
+				/* set partial scan */
+				prScanReqMsg->ucChannelListNum = prRoamScnChnl->ucChannelListNum;
+				u4size = sizeof(prRoamScnChnl->arChnlInfoList);
+
+				DBGLOG(AIS, TRACE,
+					"NCHO SCAN channel num = %d, total size=%d\n",
+					prScanReqMsg->ucChannelListNum, u4size);
+
+				kalMemCopy(&(prScanReqMsg->arChnlInfoList), &(prRoamScnChnl->arChnlInfoList),
+					u4size);
+
+				/* set scan channel type for NCHO scan */
+				prScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;
+#endif
 			} else if (prAdapter->aePreferBand[NETWORK_TYPE_AIS_INDEX] == BAND_NULL) {
 				if (prAdapter->fgEnable5GBand == TRUE &&
 					prAdapter->rWifiVar.rRoamingInfo.eCurrentState == ROAMING_STATE_DISCOVERY) {
@@ -2214,6 +2247,7 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 
 	/* 4 <1> Save information of Abort Message and then free memory. */
 	prAisBssInfo->ucReasonOfDisconnect = ucReasonOfDisconnect;
+
 	if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED &&
 		prAisFsmInfo->eCurrentState != AIS_STATE_DISCONNECTING &&
 		ucReasonOfDisconnect != DISCONNECT_REASON_CODE_REASSOCIATION &&
@@ -2470,6 +2504,9 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 			prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 			/* 4 <1.7> Set the Next State of AIS FSM */
 			eNextState = AIS_STATE_NORMAL_TR;
+#if CFG_SUPPORT_DYNAMOC_ROAM
+			aisFsmSetRoamingThreshold(prAdapter, AIS_DEFAULT_ROAMING_THRESHOLD);
+#endif
 		}
 			/* 4 <2> JOIN was not successful */
 		else {
@@ -2495,22 +2532,22 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 				if (prBssDesc == NULL) {
 					/* it maybe NULL when wlanRemove */
 					/*
-					*(1) UI does wifi off during SAA does auth/assoc procedure.
-					*(2) We will do LINK_INITIALIZE(&prScanInfo->rBSSDescList);
-					*in nicUninitMGMT().
-					*(3) We will handle prMsduInfo->pfTxDoneHandler
-					*in nicTxRelease().
-					*(4) prMsduInfo->pfTxDoneHandler will point to
-					*saaFsmRunEventTxDone().
-					*(5) Then jump to saaFsmSteps() -> saaFsmSendEventJoinComplete()
-					*(6) Finally mboxSendMsg() -> aisFsmRunEventJoinComplete().
-					*(7) In aisFsmRunEventJoinComplete(), we will check
-					*"prBssDesc = scanSearchBssDescByBssid(prAdapter,
-					*prStaRec->aucMacAddr);"
-					*(8) And prBssDesc will be NULL and hangs in
-					*"ASSERT(prBssDesc->fgIsConnecting);" when DBG=0.
-					*ASSERT(prBssDesc);
-					*ASSERT(prBssDesc->fgIsConnecting);
+					(1) UI does wifi off during SAA does auth/assoc procedure.
+					(2) We will do LINK_INITIALIZE(&prScanInfo->rBSSDescList);
+					in nicUninitMGMT().
+					(3) We will handle prMsduInfo->pfTxDoneHandler
+					in nicTxRelease().
+					(4) prMsduInfo->pfTxDoneHandler will point to
+					saaFsmRunEventTxDone().
+					(5) Then jump to saaFsmSteps() -> saaFsmSendEventJoinComplete()
+					(6) Finally mboxSendMsg() -> aisFsmRunEventJoinComplete().
+					(7) In aisFsmRunEventJoinComplete(), we will check
+					"prBssDesc = scanSearchBssDescByBssid(prAdapter,
+					prStaRec->aucMacAddr);"
+					(8) And prBssDesc will be NULL and hangs in
+					"ASSERT(prBssDesc->fgIsConnecting);" when DBG=0.
+					ASSERT(prBssDesc);
+					ASSERT(prBssDesc->fgIsConnecting);
 					*/
 					aisFsmStateAbort(prAdapter,
 						DISCONNECT_REASON_CODE_DEAUTHENTICATED, FALSE);
@@ -2562,7 +2599,6 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 								 WLAN_STATUS_MEDIA_DISCONNECT, NULL, 0);
 					/* restore tx power control */
 					rlmSetMaxTxPwrLimit(prAdapter, 0, 0);
-
 					eNextState = AIS_STATE_IDLE;
 #endif
 				} else if (prAisFsmInfo->rJoinReqTime != 0 &&
@@ -2598,13 +2634,14 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 					aisFsmInsertRequest(prAdapter, AIS_REQUEST_RECONNECT);
 					eNextState = AIS_STATE_IDLE;
 				}
+
 #if CFG_SUPPORT_ROAMING_RETRY
 				if (fgIsUnderRoaming == TRUE &&
 					prEssLink->u4NumElem > AIS_ROAMING_RETRY_BSS_THRESHOLD) {
-						/*Under roaming case : After candidate BSS joined fail.*/
-						/*STA will re-try other BSS.*/
-						/*if roaming failure was over then AIS_ROAMING_CONNECTION_TRIAL_LIMIT */
-						/*ROAM_FSM was stopped and AIS_FSM was transferred to NORMAL_TR.*/
+					/*Under roaming case : After candidate BSS joined fail.*/
+					/*STA will re-try other BSS.*/
+					/*if roaming failure was over then AIS_ROAMING_CONNECTION_TRIAL_LIMIT */
+					/*ROAM_FSM was stopped and AIS_FSM was transferred to NORMAL_TR.*/
 					DBGLOG(AIS, INFO,
 						"Under roamming %pM join fail and STA will re-try other AP :%d\n"
 						, prBssDesc->aucBSSID
@@ -4223,6 +4260,15 @@ VOID aisFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 		/* 2. channel privilege has been approved */
 		prAisFsmInfo->u4ChGrantedInterval = u4GrantInterval;
 
+#if CFG_SUPPORT_NCHO
+		if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE &&
+			prAdapter->rNchoInfo.fgIsSendingAF == TRUE &&
+			prAdapter->rNchoInfo.fgChGranted == FALSE) {
+			DBGLOG(INIT, TRACE, "NCHO complete rAisChGrntComp trace time is %u\n", kalGetTimeTick());
+			prAdapter->rNchoInfo.fgChGranted = TRUE;
+			complete(&prAdapter->prGlueInfo->rAisChGrntComp);
+		}
+#endif
 		/* 3.1 set timeout timer in cases upper layer cancel_remain_on_channel never comes */
 		cnmTimerStartTimer(prAdapter, &prAisFsmInfo->rChannelTimeoutTimer, prAisFsmInfo->u4ChGrantedInterval);
 
@@ -4864,6 +4910,67 @@ VOID aisFsmRunEventMgmtFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr
 
 }				/* aisFsmRunEventMgmtFrameTx */
 
+#if CFG_SUPPORT_NCHO
+VOID aisFsmRunEventNchoActionFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	P_AIS_FSM_INFO_T prAisFsmInfo;
+	P_BSS_INFO_T prAisBssInfo = (P_BSS_INFO_T) NULL;
+	P_MSG_MGMT_TX_REQUEST_T prMgmtTxMsg = (P_MSG_MGMT_TX_REQUEST_T) NULL;
+	P_MSDU_INFO_T prMgmtFrame = (P_MSDU_INFO_T) NULL;
+	P_ACTION_VENDOR_SPEC_FRAME_T prVendorSpec = NULL;
+	PUINT_8 pucFrameBuf = (PUINT_8) NULL;
+	P_NCHO_INFO prNchoInfo = NULL;
+	UINT_16 u2PktLen = 0;
+
+	do {
+		ASSERT_BREAK((prAdapter != NULL) && (prMsgHdr != NULL));
+		DBGLOG(REQ, TRACE, "NCHO in aisFsmRunEventNchoActionFrameTx\n");
+
+		prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+		prNchoInfo = &(prAdapter->rNchoInfo);
+		prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+
+		if (prAisFsmInfo == NULL)
+			break;
+
+		prMgmtTxMsg = (P_MSG_MGMT_TX_REQUEST_T) prMsgHdr;
+		u2PktLen = (UINT_16) OFFSET_OF(ACTION_VENDOR_SPEC_FRAME_T, aucElemInfo[0]) +
+				  prNchoInfo->rParamActionFrame.i4len +
+				  MAC_TX_RESERVED_FIELD;
+		prMgmtFrame = cnmMgtPktAlloc(prAdapter, u2PktLen);
+		if (prMgmtFrame == NULL) {
+			ASSERT(FALSE);
+			DBGLOG(REQ, ERROR, "NCHO there is no memory for prMgmtFrame\n");
+			break;
+		}
+		prMgmtTxMsg->prMgmtMsduInfo = prMgmtFrame;
+
+		pucFrameBuf = (PUINT_8) ((ULONG) prMgmtFrame->prPacket + MAC_TX_RESERVED_FIELD);
+		prVendorSpec = (P_ACTION_VENDOR_SPEC_FRAME_T)pucFrameBuf;
+		prVendorSpec->u2FrameCtrl = MAC_FRAME_ACTION;
+		prVendorSpec->u2Duration = 0;
+		prVendorSpec->u2SeqCtrl = 0;
+		COPY_MAC_ADDR(prVendorSpec->aucDestAddr, prNchoInfo->rParamActionFrame.aucBssid);
+		COPY_MAC_ADDR(prVendorSpec->aucSrcAddr, prAisBssInfo->aucOwnMacAddr);
+		COPY_MAC_ADDR(prVendorSpec->aucBSSID, prAisBssInfo->aucBSSID);
+
+		kalMemCopy(prVendorSpec->aucElemInfo,
+			   prNchoInfo->rParamActionFrame.aucData,
+			   prNchoInfo->rParamActionFrame.i4len);
+
+		prMgmtFrame->u2FrameLength = u2PktLen;
+
+		aisFuncTxMgmtFrame(prAdapter,
+				   &prAisFsmInfo->rMgmtTxInfo, prMgmtTxMsg->prMgmtMsduInfo, prMgmtTxMsg->u8Cookie);
+
+	} while (FALSE);
+
+	if (prMsgHdr)
+		cnmMemFree(prAdapter, prMsgHdr);
+
+}				/* aisFsmRunEventNchoActionFrameTx */
+#endif
+
 VOID aisFsmRunEventChannelTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 {
 	P_AIS_FSM_INFO_T prAisFsmInfo;
@@ -4943,6 +5050,14 @@ aisFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 			DBGLOG(AIS, ERROR, "Mgmt Frame TX Fail, Status:%d.\n", rTxDoneStatus);
 		} else {
 			fgIsSuccess = TRUE;
+#if CFG_SUPPORT_NCHO
+			if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE &&
+				prAdapter->rNchoInfo.fgIsSendingAF == TRUE &&
+				prAdapter->rNchoInfo.fgChGranted == TRUE) {
+				prAdapter->rNchoInfo.fgIsSendingAF = FALSE;
+				DBGLOG(AIS, TRACE, "NCHO action frame tx done");
+			}
+#endif
 			/* printk("Mgmt Frame TX Done.\n"); */
 		}
 
@@ -5430,4 +5545,27 @@ VOID aisRunEventChnlUtilRsp(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 	cnmMemFree(prAdapter, prChUtilRsp);
 	aisFsmSteps(prAdapter, AIS_STATE_SEARCH);
 }
+#if CFG_SUPPORT_DYNAMOC_ROAM
+static VOID aisFsmSetRoamingThreshold(P_ADAPTER_T prAdapter, INT_8 cThreshold)
+{
+	P_AIS_FSM_INFO_T prAisFsmInfo = &prAdapter->rWifiVar.rAisFsmInfo;
+	UINT_8 aucRoamingCfgBuf[64];
+	UINT_8 ucRCPI;
 
+	DBGLOG(AIS, INFO, "cThreshold %d, cRoamTriggerThreshold %d\n",
+		cThreshold, prAisFsmInfo->cRoamTriggerThreshold);
+
+#if CFG_SUPPORT_NCHO
+	if (prAdapter->rNchoInfo.fgECHOEnabled)
+		return;
+#endif
+	if (prAisFsmInfo->cRoamTriggerThreshold == cThreshold)
+		return;
+	prAisFsmInfo->cRoamTriggerThreshold = cThreshold;
+	ucRCPI = dBm_TO_RCPI(cThreshold);
+	kalMemZero(aucRoamingCfgBuf, sizeof(aucRoamingCfgBuf));
+	kalSprintf(aucRoamingCfgBuf, "RoamingRCPIGoodValue %d\nRoamingRCPIPoorValue %d", ucRCPI, ucRCPI);
+	if (wlanFwCfgParse(prAdapter, aucRoamingCfgBuf) != WLAN_STATUS_SUCCESS)
+		DBGLOG(AIS, INFO, "set cfg parse failed\n");
+}
+#endif
