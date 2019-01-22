@@ -1582,10 +1582,10 @@ static kal_uint32 get_sensor_temperature(void)
 	temperature = read_cmos_sensor_byte(0x4d13);
 	mutex_unlock(&get_temperature_mutex);
 
-	if (temperature <= 0xc0)
+	if (temperature < 0xc0)
 		temperature_convert = temperature;
 	else
-		temperature_convert = (INT8)temperature;
+		temperature_convert = 192 - temperature;
 
 	LOG_INF("temp_c(%d), read_reg(%d)\n", temperature_convert, temperature);
 
