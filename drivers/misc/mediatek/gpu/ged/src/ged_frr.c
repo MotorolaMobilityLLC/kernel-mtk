@@ -63,7 +63,7 @@ static void ged_frr_fence2context_table_dump(void)
 				fence2ContextTable[i].fid,
 				fence2ContextTable[i].createTime);
 
-		strcat(buf, temp);
+		strncat(buf, temp, 1023);
 	}
 
 	ged_frr_debug_fence2context_table = buf;
