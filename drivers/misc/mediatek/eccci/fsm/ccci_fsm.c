@@ -216,6 +216,7 @@ static void fsm_routine_start(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command 
 	}
 	spin_unlock_irqrestore(&ctl->event_lock, flags);
 	/* 3. action and poll event queue */
+	ccci_md_pre_start(ctl->md_id);
 	ret = ccci_md_start(ctl->md_id);
 	fsm_broadcast_state(ctl, BOOT_WAITING_FOR_HS1);
 	if (ret)
@@ -287,6 +288,7 @@ fail_ee:
 success:
 	ctl->last_state = ctl->curr_state;
 	ctl->curr_state = CCCI_FSM_READY;
+	ccci_md_post_start(ctl->md_id);
 	fsm_finish_command(ctl, cmd, 1);
 	wake_unlock(&ctl->wakelock);
 	wake_lock_timeout(&ctl->wakelock, 10 * HZ);
