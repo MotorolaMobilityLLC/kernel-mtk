@@ -1429,11 +1429,12 @@ int nfc_wait_busy(struct nfc_handler *handler, int timeout,
 		if (info->mode.irq_en && type == IRQ_WAIT_RB) {
 			nfi_writew(info, 0, NFI_INTR_EN);
 			/* workaround busy2return */
-			reg = nfi_readl(info, NFI_STA);
-			if (reg & STA_BUSY2READY) {
-				ret = 0;
+			ret = readl_poll_timeout_atomic(
+					nfi_regs + NFI_STA, reg,
+					reg & STA_BUSY2READY, 2,
+					timeout);
+			if (!ret)
 				goto done;
-			}
 		}
 		pr_err("wait busy(%d) timeout!\n", type);
 		nfc_dump_register(info);
