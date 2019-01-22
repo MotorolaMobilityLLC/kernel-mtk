@@ -35,3 +35,21 @@ extern struct power_tuning_t *get_eas_power_setting(void);
 
 /* Game Hint */
 extern void (*ged_kpi_set_game_hint_value_fp)(int is_game_mode);
+
+/* MTK DVFS */
+#ifdef CONFIG_CPU_FREQ
+enum mt_cpu_dvfs_id {
+	MT_CPU_DVFS_LL,
+};
+
+extern unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx);
+#else
+static int mt_cpufreq_get_freq_by_idx(int id, int idx) { return 0; }
+#endif
+
+/* Stune */
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+extern int group_boost_read(int group_idx);
+#else
+static int group_boost_read(int group_idx) { return 0; }
+#endif

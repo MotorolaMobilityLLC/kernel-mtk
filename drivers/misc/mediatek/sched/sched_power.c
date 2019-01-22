@@ -450,10 +450,16 @@ int show_cpu_capacity(char *buf, int buf_size)
 	int len = 0;
 
 	for_each_possible_cpu(cpu)
-		len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu util=%lu\n",
+	len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu cur=%lu freq=%luHZ util=%lu\n",
 				cpu, cpu_rq(cpu)->cpu_capacity_orig,
 				cpu_online(cpu)?cpu_rq(cpu)->cpu_capacity:0,
 				cpu_online(cpu)?cpu_rq(cpu)->rd->max_cpu_capacity.val:0,
+				cpu_online(cpu)?capacity_curr_of(cpu):0,
+				/* frequency info */
+				cpu_online(cpu)?capacity_curr_of(cpu) *
+				mt_cpufreq_get_freq_by_idx(arch_get_cluster_id(cpu), 0) /
+				cpu_rq(cpu)->cpu_capacity_orig / 1000 : 0,
+				/* cpu utilization */
 				cpu_online(cpu)?cpu_util(cpu):0);
 
 	return len;
@@ -543,6 +549,7 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 	unsigned int len = 0;
 	unsigned int max_len = 4096;
 	int max_cpu = -1, max_pid = 0, max_util = 0, boost;
+	struct task_struct *task = NULL;
 
 	len += snprintf(buf, max_len, "version=%d.%d(%s)\n\n", ver_major, ver_minor, module_name);
 	len += show_cpu_capacity(buf+len, max_len - len);
@@ -556,8 +563,13 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
 	sched_max_util_task(&max_cpu, &max_pid, &max_util, &boost);
 #endif
-	len += snprintf(buf+len, max_len - len, "\nheaviest task pid=%d util=%d boost=%d run in cpu%d\n\n",
-				max_pid, max_util, boost, max_cpu);
+
+	task = find_task_by_vpid(max_pid);
+
+	len += snprintf(buf+len, max_len - len, "\nheaviest task pid=%d (%s) util=%d boost=%d run in cpu%d\n\n",
+				max_pid, (task)?task->comm:"NULL", max_util, boost, max_cpu);
+
+	len += snprintf(buf+len, max_len - len, "foreground boost=%d\n", group_boost_read(1));
 
 	return len;
 }
