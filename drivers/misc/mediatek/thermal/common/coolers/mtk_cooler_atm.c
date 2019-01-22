@@ -41,6 +41,8 @@
 #include <linux/sched.h>
 #include <linux/kthread.h>
 #endif
+#include "clatm_initcfg.h"
+
 /*=============================================================
  *Local variable definition
  *=============================================================
@@ -230,7 +232,7 @@ static int CATMP_STEADY_TTJ_DELTA = 10000; /* magic number decided by experience
 #ifdef FAST_RESPONSE_ATM
 #define TS_MS_TO_NS(x) (x * 1000 * 1000)
 static struct hrtimer atm_hrtimer;
-static int atm_hrtimer_polling_delay = TS_MS_TO_NS(20); /* default 20ms*/
+static int atm_hrtimer_polling_delay = TS_MS_TO_NS(CLATM_INIT_HRTIMER_POLLING_DELAY);
 static int atm_curr_maxtj;
 static int atm_prev_maxtj;
 static int krtatm_curr_maxtj;
