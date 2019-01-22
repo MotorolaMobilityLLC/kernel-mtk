@@ -450,13 +450,24 @@ static ssize_t sys_timer_dbgfs_debug_write(struct file *filp,
 		return ret;
 	}
 
-	if (val == 1)
+	if (val == 1) {
+		/* send IPI to request SSPM to write its timestamp in SRAM for verification */
 		sys_timer_timesync_verify_sspm();
-	else if (val == 2)
+	} else if (val == 2) {
+		/* synchronous timesync test */
 		sys_timer_timesync_sync_base(SYS_TIMER_TIMESYNC_FLAG_SYNC);
-	else if (val == 3)
+	} else if (val == 3) {
+		/* synchronous timesync test with suspend flag set */
+		sys_timer_timesync_sync_base(SYS_TIMER_TIMESYNC_FLAG_SYNC |
+			SYS_TIMER_TIMESYNC_FLAG_FREEZE);
+	} else if (val == 4) {
+		/* asynchronous timesync test */
 		sys_timer_timesync_sync_base(SYS_TIMER_TIMESYNC_FLAG_ASYNC);
-	else
+	} else if (val == 5) {
+		/* asynchronous timesync test with suspend flag set */
+		sys_timer_timesync_sync_base(SYS_TIMER_TIMESYNC_FLAG_ASYNC |
+			SYS_TIMER_TIMESYNC_FLAG_FREEZE);
+	} else
 		pr_info("unsupported value %d\n", val);
 
 	return cnt;
