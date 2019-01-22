@@ -113,10 +113,8 @@ unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
  **************************************/
 void __spm_set_cpu_status(int cpu)
 {
-	spm_write(COMMON_TOP_PWR_ADDR, 0x108C0210);
-	spm_write(COMMON_CPU_PWR_ADDR, 0x108C0220);
-	spm_write(SPM_SW_NONSERSV_0, 1 << cpu);
-	spm_write(SPM_SW_NONSERSV_1, 1 << (cpu + 12));
+	spm_write(COMMON_TOP_PWR_ADDR, 0x10b0021C);
+	spm_write(COMMON_CPU_PWR_ADDR, 0x10b00220);
 	if (cpu >= 0 && cpu < 4) {
 		spm_write(ARMPLL_CLK_CON,
 				(spm_read(ARMPLL_CLK_CON) & ~(MUXSEL_SC_ARMPLL2_LSB | MUXSEL_SC_ARMPLL3_LSB)) |

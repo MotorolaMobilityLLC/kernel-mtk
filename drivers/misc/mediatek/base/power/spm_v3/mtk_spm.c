@@ -248,6 +248,10 @@ static void spm_register_init(void)
 	spm_write(PCM_PWR_IO_EN, PCM_RF_SYNC_R7);
 	spm_write(PCM_PWR_IO_EN, 0);
 
+	spm_write(DDR_EN_DBC_LEN, 0x82 | (0x82 << 10) | (0x82 << 20));
+	spm_write(SRCCLKENI2PWRAP_MASK_B, 0x21);
+	spm_write(SPM_PC_TRACE_CON, 0x8 | (1 << 31));
+
 	spin_unlock_irqrestore(&__spm_lock, flags);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 }
