@@ -22,17 +22,17 @@
 /* ============================================================ */
 /* typedef */
 /* ============================================================ */
-typedef struct {
+struct FUELGAUGE_TEMPERATURE {
 	signed int BatteryTemp;
 	signed int TemperatureR;
-} FUELGAUGE_TEMPERATURE;
+};
 
-typedef struct _FUELGAUGE_PROFILE_STRUCT {
+struct FUELGAUGE_PROFILE_STRUCT {
 	unsigned short mah;
 	unsigned short voltage;
 	unsigned short resistance; /* Ohm*/
 	unsigned short percentage;
-} FUELGAUGE_PROFILE_STRUCT, *FUELGAUGE_PROFILE_STRUCT_P;
+};
 
 
 /* coulomb service */

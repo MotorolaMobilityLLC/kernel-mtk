@@ -872,7 +872,7 @@ static int fgauge_get_coulomb(struct gauge_device *gauge_dev, int *data)
 
 static int fgauge_reset_hw(struct gauge_device *gauge_dev)
 {
-	volatile unsigned int val_car = 1;
+	unsigned int val_car = 1;
 	unsigned int val_car_temp = 1;
 	unsigned int ret = 0;
 
