@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_SPOWER_DATA_H_
+#ifndef __MTK_SPOWER_DATA_H__
 #define __MTK_SPOWER_DATA_H__
 
 #include "mtk_static_power.h"
