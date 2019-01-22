@@ -257,6 +257,9 @@ typedef struct _WMT_GEN_CONF {
 	UINT32 coex_wmt_ext_elna_gain_p1_D2;
 	UINT32 coex_wmt_ext_elna_gain_p1_D3;
 
+	UINT8 bt_tssi_from_wifi;
+	UINT16 bt_tssi_target;
+
 } WMT_GEN_CONF, *P_WMT_GEN_CONF;
 
 typedef enum _ENUM_DRV_STS_ {
@@ -479,6 +482,8 @@ extern WMT_IC_OPS wmt_ic_ops_mt6632;
 #if CFG_CORE_SOC_SUPPORT
 extern WMT_IC_OPS wmt_ic_ops_soc;
 #endif
+
+extern P_WMT_GEN_CONF wmt_get_gen_conf_pointer(VOID);
 
 /*******************************************************************************
 *                              F U N C T I O N S

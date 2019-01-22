@@ -139,6 +139,10 @@ static const struct parse_data wmtcfg_fields[] = {
 	INT(coex_wmt_ext_elna_gain_p1_D1),
 	INT(coex_wmt_ext_elna_gain_p1_D2),
 	INT(coex_wmt_ext_elna_gain_p1_D3),
+
+	CHAR(bt_tssi_from_wifi),
+	SHORT(bt_tssi_target),
+
 };
 
 #define NUM_WMTCFG_FIELDS (osal_sizeof(wmtcfg_fields) / osal_sizeof(wmtcfg_fields[0]))

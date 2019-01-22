@@ -3117,3 +3117,12 @@ UINT32 wmt_core_get_flag_for_test(VOID)
 }
 
 #endif
+
+P_WMT_GEN_CONF wmt_get_gen_conf_pointer(VOID)
+{
+	P_WMT_GEN_CONF pWmtGenConf = NULL;
+
+	pWmtGenConf = wmt_conf_get_cfg();
+	return pWmtGenConf;
+}
+
