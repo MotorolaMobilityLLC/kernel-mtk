@@ -88,6 +88,10 @@ static int mmc_queue_thread(void *d)
 	unsigned int tmo;
 #endif
 	bool part_cmdq_en = false;
+	struct sched_param scheduler_params = {0};
+
+	scheduler_params.sched_priority = 1;
+	sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
 
 	current->flags |= PF_MEMALLOC;
 
