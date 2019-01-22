@@ -41,12 +41,12 @@
 #define CMDQ_AREG_TO_PHYS(addr) ((addr) | 0L)
 /* Always set 33 bit to 1 under 4GB special mode */
 #ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-#define CMDQ_GET_HIGH_ADDR(addr, highAddr) \
-{									\
+#define CMDQ_GET_HIGH_ADDR(addr, highAddr)		\
+{							\
 if (enable_4G())					\
 	highAddr = 0x1;					\
-else								\
-	highAddr = ((addr >> 32) & 0xffff);\
+else							\
+	highAddr = ((addr >> 32) & 0xffff);		\
 }
 #else
 #define CMDQ_GET_HIGH_ADDR(addr, highAddr) { highAddr = 0; }
@@ -106,6 +106,7 @@ else								\
 #define CMDQ_ENG_JPEG_GROUP_BITS                ((1LL << CMDQ_ENG_JPEG_ENC) | \
 						 (1LL << CMDQ_ENG_JPEG_REMDC) | \
 						 (1LL << CMDQ_ENG_JPEG_DEC))
+
 
 #define CMDQ_ENG_DPE_GROUP_BITS		(1LL << CMDQ_ENG_DPE)
 #define CMDQ_ENG_RSC_GROUP_BITS		(1LL << CMDQ_ENG_RSC)
@@ -702,7 +703,7 @@ struct cmdqSecSharedMemoryStruct {
  * resource unit between each module
  */
 struct ResourceUnitStruct {
-	struct list_head listEntry;
+	struct list_head list_entry;
 	CMDQ_TIME notify;			/* notify time from module prepare */
 	CMDQ_TIME lock;			/* lock time from module lock */
 	CMDQ_TIME unlock;			/* unlock time from module unlock*/
@@ -1133,7 +1134,7 @@ extern "C" {
 	void cmdq_core_dump_feature(void);
 	void cmdq_core_set_feature(enum CMDQ_FEATURE_TYPE_ENUM featureOption, uint32_t value);
 	uint32_t cmdq_core_get_feature(enum CMDQ_FEATURE_TYPE_ENUM featureOption);
-	bool cmdq_core_is_feature_off(enum CMDQ_FEATURE_TYPE_ENUM featureOption);
+	bool cmdq_core_is_feature_on(enum CMDQ_FEATURE_TYPE_ENUM featureOption);
 	void cmdq_core_set_mem_monitor(bool enable);
 	void cmdq_core_dump_mem_monitor(void);
 
