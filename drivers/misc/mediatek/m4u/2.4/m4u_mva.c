@@ -474,7 +474,7 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	/*if we didn't find the proper graph on stage 1, we will come to stage 2.
 	* in the case, all graph in [0x1-0x4FF ] is busy.
 	*/
-	if (gap_nr > 0 && s == fix_index0) {
+	if (s == fix_index0 && gap_nr >= 1) {
 		/* stage 2: jump vpu reserved region and find it in graph range [0x501-0x5FF ]
 		 * MUST check if block number of gap region is enough to alloc.
 		 * if not, we need to alloc from common region
