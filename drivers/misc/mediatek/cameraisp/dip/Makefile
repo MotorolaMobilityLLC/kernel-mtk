@@ -14,10 +14,10 @@
 obj-y := cameradip_dummy.o
 
 ifeq ($(CONFIG_MACH_MT6775),y)
-  obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+  obj-y += $(subst ",,isp_50)/
 endif
 
 ifeq ($(CONFIG_MACH_MT6771),y)
-  obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+  obj-y += $(subst ",,isp_50)/
 endif
 
