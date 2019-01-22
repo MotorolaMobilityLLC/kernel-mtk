@@ -286,12 +286,12 @@ static void aee_wdt_dump_stack_bin(unsigned int cpu, unsigned long bottom, unsig
 		aee_wdt_percpu_printf(cpu, "%s bottom unaligned %08lx\n", __func__, bottom);
 		return;
 	}
-	if (!((bottom >= (PAGE_OFFSET + THREAD_SIZE)) && virt_addr_valid(bottom))) {
+	if (!((bottom >= (PAGE_OFFSET + THREAD_SIZE)) && mrdump_virt_addr_valid(bottom))) {
 		aee_wdt_percpu_printf(cpu, "%s bottom out of kernel addr space %08lx\n", __func__,
 				      bottom);
 		return;
 	}
-	if (!((top >= (PAGE_OFFSET + THREAD_SIZE)) && virt_addr_valid(bottom))) {
+	if (!((top >= (PAGE_OFFSET + THREAD_SIZE)) && mrdump_virt_addr_valid(bottom))) {
 		aee_wdt_percpu_printf(cpu, "%s top out of kernel addr space %08lx\n", __func__,
 				      top);
 		return;
@@ -327,7 +327,7 @@ static void aee_wdt_dump_backtrace(unsigned int cpu, struct pt_regs *regs)
 	struct pt_regs *excp_regs;
 
 	bottom = regs->reg_sp;
-	if (!virt_addr_valid(bottom)) {
+	if (!mrdump_virt_addr_valid(bottom)) {
 		aee_wdt_percpu_printf(cpu, "invalid sp[%lx]\n", bottom);
 		return;
 	}
@@ -339,16 +339,15 @@ static void aee_wdt_dump_backtrace(unsigned int cpu, struct pt_regs *regs)
 	for (i = 1; i < MAX_EXCEPTION_FRAME; i++) {
 		fp = cur_frame.fp;
 		if ((fp < bottom) || (fp >= (high + THREAD_SIZE))) {
-			/* aee_wdt_percpu_printf(cpu, "i=%d, fp=%lx, bottom=%lx\n", i, fp, bottom); */
+			aee_wdt_percpu_printf(cpu, "i=%d, fp=%lx, bottom=%lx\n", i, fp, bottom);
 			break;
 		}
 		if (unwind_frame(&cur_frame) < 0) {
 			aee_wdt_percpu_printf(cpu, "unwind_frame < 0\n");
 			break;
 		}
-		if (!((cur_frame.pc >= (PAGE_OFFSET + THREAD_SIZE))
-		      && virt_addr_valid(cur_frame.pc))) {
-			aee_wdt_percpu_printf(cpu, "virt_addr_valid fail\n");
+		if (!mrdump_virt_addr_valid(cur_frame.pc)) {
+			aee_wdt_percpu_printf(cpu, "i=%d, mrdump_virt_addr_valid fail\n", i);
 			break;
 		}
 		if (in_exception_text(cur_frame.pc)) {
