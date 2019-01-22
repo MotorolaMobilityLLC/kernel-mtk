@@ -111,6 +111,7 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 		},	\
 	},	\
 	.en_att = __ATTR(_type##_##_name##_status, 0664, show_regulator_status, store_regulator_status),	\
+	.voltage_att = __ATTR(_type##_##_name##_voltage, 0664, show_regulator_voltage, store_regulator_voltage),\
 	.en_cb = mt6335_upmu_set_rg_##_name##_sw_en,	\
 	.da_en_cb = mt6335_upmu_get_da_qi_##_name##_en,	\
 	.isUsedable = (use),	\
