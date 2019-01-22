@@ -77,11 +77,7 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
     BUILT_KERNEL_TARGET := $(KERNEL_ZIMAGE_OUT).bin
     INSTALLED_KERNEL_TARGET := $(PRODUCT_OUT)/kernel
     INSTALLED_DTB_OVERLAY_TARGET := $(PRODUCT_OUT)/odmdtbo.img
-ifeq ($(strip $(MTK_K64_SUPPORT)), yes)
-    BUILT_DTB_OVERLAY_TARGET := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/dts/mediatek/odmdtbo.img
-else
     BUILT_DTB_OVERLAY_TARGET := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/dts/odmdtbo.img
-endif
     TARGET_KERNEL_CONFIG := $(KERNEL_OUT)/.config
     KERNEL_HEADERS_INSTALL := $(KERNEL_OUT)/usr
     KERNEL_CONFIG_FILE := $(KERNEL_DIR)/arch/$(TARGET_ARCH)/configs/$(KERNEL_DEFCONFIG)
