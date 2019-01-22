@@ -51,7 +51,7 @@ bool mt_usb_is_device(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_USB_XHCI_MTK)
 	bool tmp = mtk_is_host_mode();
 
-	os_printk(K_INFO, "%s mode\n", tmp ? "HOST" : "DEV");
+	os_printk(K_DEBUG, "%s mode\n", tmp ? "HOST" : "DEV");
 	return !tmp;
 #else
 	return true;
@@ -102,22 +102,26 @@ void connection_work(struct work_struct *data)
 	/* delay 100ms if user space is not ready to set usb function */
 	if (!is_usb_rdy()) {
 		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
-		int delay = 50, to_off_state = 1;
+		int delay = 50;
 
 		if (__ratelimit(&ratelimit))
 			os_printk(K_INFO, "%s, !is_usb_rdy, delay %d ms\n", __func__, delay);
 
 		/* to DISCONNECT stage to avoid stage transition while usb is ready */
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-		if (usb_phy_check_in_uart_mode())
-			to_off_state = 0;
+		if (in_uart_mode) {
+			os_printk(K_INFO, "%s, Uart mode. directly return\n", __func__);
+			return;
+		}
 #endif
 #ifndef CONFIG_FPGA_EARLY_PORTING
-		if (!mt_usb_is_device())
-			to_off_state = 0;
+		if (!mt_usb_is_device()) {
+			os_printk(K_INFO, "%s, Host mode. directly return\n", __func__);
+			return;
+		}
 #endif
 
-		if (to_off_state && connection_work_dev_status != OFF) {
+		if (connection_work_dev_status != OFF) {
 			connection_work_dev_status = OFF;
 #ifndef CONFIG_USBIF_COMPLIANCE
 			clr_connect_timestamp();
