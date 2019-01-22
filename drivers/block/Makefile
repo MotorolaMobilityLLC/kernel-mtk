@@ -15,10 +15,10 @@ obj-$(CONFIG_ATARI_FLOPPY)	+= ataflop.o
 obj-$(CONFIG_AMIGA_Z2RAM)	+= z2ram.o
 obj-$(CONFIG_BLK_DEV_RAM)	+= brd.o
 
-ifeq ($(CONFIG_MTK_ACAO_SUPPORT),y)
-obj-$(CONFIG_BLK_DEV_LOOP)	+= loop.o
-else
+ifeq ($(CONFIG_MEDIATEK_SOLUTION),y)
 obj-$(CONFIG_BLK_DEV_LOOP)	+= loop-mtk.o
+else
+obj-$(CONFIG_BLK_DEV_LOOP)	+= loop.o
 endif
 obj-$(CONFIG_BLK_CPQ_DA)	+= cpqarray.o
 obj-$(CONFIG_BLK_CPQ_CISS_DA)  += cciss.o
