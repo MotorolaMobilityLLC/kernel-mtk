@@ -3556,8 +3556,8 @@ static DEVICE_ATTR(FG_daemon_log_level, 0664, show_FG_daemon_log_level, store_FG
 
 static ssize_t show_shutdown_cond_enable(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	bm_trace("[FG] show_shutdown_cond_enable : %d\n", is_shutdown_cond_enabled());
-	return sprintf(buf, "%d\n", is_shutdown_cond_enabled());
+	bm_trace("[FG] show_shutdown_cond_enable : %d\n", get_shutdown_cond_flag());
+	return sprintf(buf, "%d\n", get_shutdown_cond_flag());
 }
 
 static ssize_t store_shutdown_cond_enable(struct device *dev, struct device_attribute *attr,
@@ -3574,12 +3574,10 @@ static ssize_t store_shutdown_cond_enable(struct device *dev, struct device_attr
 			bm_err("[store_shutdown_cond_enable] val is %d ??\n", (int)val);
 			val = 0;
 		}
-		if (val == 0)
-			enable_shutdown_cond(false);
-		else
-			enable_shutdown_cond(true);
 
-		bm_err("[store_shutdown_cond_enable] shutdown_cond_enabled=%d\n", is_shutdown_cond_enabled());
+		set_shutdown_cond_flag(val);
+
+		bm_err("[store_shutdown_cond_enable] shutdown_cond_enabled=%d\n", get_shutdown_cond_flag());
 	}
 
 	return size;
