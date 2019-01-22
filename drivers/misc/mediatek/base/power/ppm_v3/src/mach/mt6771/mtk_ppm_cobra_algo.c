@@ -129,6 +129,9 @@ static short get_delta_eff(enum ppm_cluster cluster, unsigned int core, unsigned
 		return 0;
 
 	delta_pwr = get_delta_pwr(cluster, core, opp);
+	if (delta_pwr <= 0)
+		return 0;
+
 	delta_perf = get_delta_perf(cluster, core, opp);
 
 	if (opp == COBRA_OPP_NUM - 1)
