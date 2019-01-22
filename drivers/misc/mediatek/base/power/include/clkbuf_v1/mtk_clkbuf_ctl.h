@@ -46,6 +46,7 @@ typedef enum {
 	CLK_BUF_SW_ENABLE  = 1,
 } CLK_BUF_SWCTRL_STATUS_T;
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
 /* clk_buf_id: users of clock buffer */
 enum clk_buf_id {
 	CLK_BUF_BB_MD		= 0,
@@ -77,6 +78,39 @@ enum {
 	BBLPM_COND_WCN,
 	BBLPM_COND_EXT,
 };
+#else /* for MT6335 */
+/* clk_buf_id: users of clock buffer */
+enum clk_buf_id {
+	CLK_BUF_BB_MD		= 0,
+	CLK_BUF_CONN,
+	CLK_BUF_NFC,
+	CLK_BUF_RF,
+	CLK_BUF_AUDIO,
+	CLK_BUF_CHG,
+	CLK_BUF_UFS,
+	CLK_BUF_INVALID
+};
+
+/* xo_id: clock buffer list */
+enum xo_id {
+	XO_SOC	= 0,
+	XO_WCN,
+	XO_NFC,
+	XO_CEL,
+	XO_AUD,		/* Disabled */
+	XO_PD,		/* AUDIO_CHG */
+	XO_EXT,		/* UFS */
+	XO_NUMBER
+};
+
+enum {
+	BBLPM_COND_SKIP = 1,
+	BBLPM_COND_CEL,
+	BBLPM_COND_NFC,
+	BBLPM_COND_WCN,
+	BBLPM_COND_EXT,
+};
+#endif
 
 #define CLKBUF_NUM      XO_NUMBER
 

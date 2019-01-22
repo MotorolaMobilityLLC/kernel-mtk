@@ -86,7 +86,7 @@ static void __iomem *pwrap_base;
 #define PWRAP_REG(ofs)		(pwrap_base + ofs)
 
 /* PMICWRAP Reg */
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 #define DCXO_ENABLE		PWRAP_REG(0x18C)
 #define DCXO_CONN_ADR0		PWRAP_REG(0x190)
 #define DCXO_CONN_WDATA0	PWRAP_REG(0x194)
@@ -110,6 +110,58 @@ static void __iomem *pwrap_base;
 #error NO corresponding project can be found!!!
 #endif
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#define PMIC_DCXO_CW00		MT6355_DCXO_CW00
+#define PMIC_DCXO_CW00_SET	MT6355_DCXO_CW00_SET
+#define PMIC_DCXO_CW00_CLR	MT6355_DCXO_CW00_CLR
+#define PMIC_DCXO_CW01		MT6355_DCXO_CW01
+#define PMIC_DCXO_CW02		MT6355_DCXO_CW02
+#define PMIC_DCXO_CW03		MT6355_DCXO_CW03
+#define PMIC_DCXO_CW04		MT6355_DCXO_CW04
+#define PMIC_DCXO_CW05		MT6355_DCXO_CW05
+#define PMIC_DCXO_CW06		MT6355_DCXO_CW06
+#define PMIC_DCXO_CW07		MT6355_DCXO_CW07
+#define PMIC_DCXO_CW08		MT6355_DCXO_CW08
+#define PMIC_DCXO_CW09		MT6355_DCXO_CW09
+#define PMIC_DCXO_CW10		MT6355_DCXO_CW10
+#define PMIC_DCXO_CW11		MT6355_DCXO_CW11
+#define PMIC_DCXO_CW11_SET	MT6355_DCXO_CW11_SET
+#define PMIC_DCXO_CW11_CLR	MT6355_DCXO_CW11_CLR
+#define PMIC_DCXO_CW12		MT6355_DCXO_CW12
+#define PMIC_DCXO_CW13		MT6355_DCXO_CW13
+#define PMIC_DCXO_CW14		MT6355_DCXO_CW14
+#define PMIC_DCXO_CW15		MT6355_DCXO_CW15
+#define PMIC_DCXO_CW16		MT6355_DCXO_CW16
+#define PMIC_DCXO_CW17		MT6355_DCXO_CW17
+#define PMIC_DCXO_CW18		MT6355_DCXO_CW18
+#define PMIC_DCXO_CW19		MT6355_DCXO_CW19
+#else /* for MT6335 */
+#define PMIC_DCXO_CW00		MT6335_DCXO_CW00
+#define PMIC_DCXO_CW00_SET	MT6335_DCXO_CW00_SET
+#define PMIC_DCXO_CW00_CLR	MT6335_DCXO_CW00_CLR
+#define PMIC_DCXO_CW01		MT6335_DCXO_CW01
+#define PMIC_DCXO_CW02		MT6335_DCXO_CW02
+#define PMIC_DCXO_CW03		MT6335_DCXO_CW03
+#define PMIC_DCXO_CW04		MT6335_DCXO_CW04
+#define PMIC_DCXO_CW05		MT6335_DCXO_CW05
+#define PMIC_DCXO_CW06		MT6335_DCXO_CW06
+#define PMIC_DCXO_CW07		MT6335_DCXO_CW07
+#define PMIC_DCXO_CW08		MT6335_DCXO_CW08
+#define PMIC_DCXO_CW09		MT6335_DCXO_CW09
+#define PMIC_DCXO_CW10		MT6335_DCXO_CW10
+#define PMIC_DCXO_CW11		MT6335_DCXO_CW11
+#define PMIC_DCXO_CW11_SET	MT6335_DCXO_CW11_SET
+#define PMIC_DCXO_CW11_CLR	MT6335_DCXO_CW11_CLR
+#define PMIC_DCXO_CW12		MT6335_DCXO_CW12
+#define PMIC_DCXO_CW13		MT6335_DCXO_CW13
+#define PMIC_DCXO_CW14		MT6335_DCXO_CW14
+#define PMIC_DCXO_CW15		MT6335_DCXO_CW15
+#define PMIC_DCXO_CW16		MT6335_DCXO_CW16
+#define PMIC_DCXO_CW17		MT6335_DCXO_CW17
+#define PMIC_DCXO_CW18		MT6335_DCXO_CW18
+#define PMIC_DCXO_CW19		MT6335_DCXO_CW19
+#endif
+
 #define	DCXO_CONN_ENABLE	(0x1 << 1)
 #define	DCXO_NFC_ENABLE		(0x1 << 0)
 
@@ -120,7 +172,9 @@ static void __iomem *pwrap_base;
 #define PMIC_CW11_INIT_VAL			0xA400
 
 /* TODO: marked this after driver is ready */
-/* #define CLKBUF_BRINGUP */
+#if defined(CONFIG_MACH_MT6759)
+#define CLKBUF_BRINGUP
+#endif
 
 /* Debug only */
 /* #define CLKBUF_TWAM_DEBUG */
@@ -218,6 +272,8 @@ static void pmic_clk_buf_ctrl_nfc(short on)
 
 static void pmic_clk_buf_ctrl_aud(short on)
 {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#else /* for MT6335 */
 	if (on)
 		pmic_config_interface(PMIC_DCXO_CW11_SET_ADDR, 0x1,
 				      PMIC_XO_EXTBUF5_EN_M_MASK,
@@ -226,6 +282,7 @@ static void pmic_clk_buf_ctrl_aud(short on)
 		pmic_config_interface(PMIC_DCXO_CW11_CLR_ADDR, 0x1,
 				      PMIC_XO_EXTBUF5_EN_M_MASK,
 				      PMIC_XO_EXTBUF5_EN_M_SHIFT);
+#endif
 }
 
 static void pmic_clk_buf_ctrl_pd(short on)
@@ -281,9 +338,9 @@ static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 	pmic_clk_buf_ctrl_pd(status[XO_PD] % 2);
 	pmic_clk_buf_ctrl_ext(status[XO_EXT] % 2);
 
-	pmic_read_interface(MT6335_DCXO_CW00, &pmic_cw00,
+	pmic_read_interface(PMIC_DCXO_CW00, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW11, &pmic_cw11,
+	pmic_read_interface(PMIC_DCXO_CW11, &pmic_cw11,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	clk_buf_warn("%s DCXO_CW00=0x%x, CW11=0x%x, clk_buf_swctrl=[%u %u %u %u %u %u %u]\n",
 		     __func__, pmic_cw00, pmic_cw11, status[0], status[1],
@@ -308,7 +365,7 @@ void clk_buf_control_bblpm(bool on)
 				      PMIC_XO_BB_LPM_EN_MASK,
 				      PMIC_XO_BB_LPM_EN_SHIFT);
 
-	pmic_read_interface_nolock(MT6335_DCXO_CW00, &cw00,
+	pmic_read_interface_nolock(PMIC_DCXO_CW00, &cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 
 	clk_buf_dbg("%s(%u): CW00=0x%x\n", __func__, (on ? 1 : 0), cw00);
@@ -374,7 +431,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 	switch (id) {
 	case CLK_BUF_CONN:
 		if (onoff) {
-			pmic_config_interface(MT6335_DCXO_CW00_SET, 0x3,
+			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x3,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
 					      PMIC_XO_EXTBUF2_MODE_SHIFT);
 			pmic_clk_buf_ctrl_wcn(1);
@@ -386,7 +443,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 			pwrap_dcxo_en_flag &= ~DCXO_CONN_ENABLE;
 			clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en_flag);
 
-			pmic_config_interface(MT6335_DCXO_CW00_CLR, 0x3,
+			pmic_config_interface(PMIC_DCXO_CW00_CLR, 0x3,
 					      PMIC_XO_EXTBUF2_MODE_MASK,
 					      PMIC_XO_EXTBUF2_MODE_SHIFT);
 			pmic_clk_buf_ctrl_wcn(0);
@@ -398,7 +455,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 		break;
 	case CLK_BUF_NFC:
 		if (onoff) {
-			pmic_config_interface(MT6335_DCXO_CW00_SET, 0x3,
+			pmic_config_interface(PMIC_DCXO_CW00_SET, 0x3,
 					      PMIC_XO_EXTBUF3_MODE_MASK,
 					      PMIC_XO_EXTBUF3_MODE_SHIFT);
 			pmic_clk_buf_ctrl_nfc(1);
@@ -410,7 +467,7 @@ static void clk_buf_ctrl_internal(enum clk_buf_id id, bool onoff)
 			pwrap_dcxo_en_flag &= ~DCXO_NFC_ENABLE;
 			clkbuf_writel(DCXO_ENABLE, pwrap_dcxo_en_flag);
 
-			pmic_config_interface(MT6335_DCXO_CW00_CLR, 0x3,
+			pmic_config_interface(PMIC_DCXO_CW00_CLR, 0x3,
 					      PMIC_XO_EXTBUF3_MODE_MASK,
 					      PMIC_XO_EXTBUF3_MODE_SHIFT);
 			pmic_clk_buf_ctrl_nfc(0);
@@ -631,10 +688,10 @@ static void clk_buf_calc_drv_curr_auxout(void)
 {
 	u32 pmic_cw19 = 0;
 
-	pmic_config_interface(MT6335_DCXO_CW18, 42,
+	pmic_config_interface(PMIC_DCXO_CW18, 42,
 			      PMIC_XO_STATIC_AUXOUT_SEL_MASK,
 			      PMIC_XO_STATIC_AUXOUT_SEL_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW19, &pmic_cw19,
+	pmic_read_interface(PMIC_DCXO_CW19, &pmic_cw19,
 			    PMIC_XO_STATIC_AUXOUT_MASK,
 			    PMIC_XO_STATIC_AUXOUT_SHIFT);
 	clk_buf_dbg("%s: pmic_cw19=0x%x, flag_swbufldok=%u\n", __func__,
@@ -642,30 +699,30 @@ static void clk_buf_calc_drv_curr_auxout(void)
 	if (((pmic_cw19 & (0x3 << 2)) >> 2) != 3)
 		return;
 
-	pmic_config_interface(MT6335_DCXO_CW18, 5,
+	pmic_config_interface(PMIC_DCXO_CW18, 5,
 			      PMIC_XO_STATIC_AUXOUT_SEL_MASK,
 			      PMIC_XO_STATIC_AUXOUT_SEL_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW19, &pmic_cw19,
+	pmic_read_interface(PMIC_DCXO_CW19, &pmic_cw19,
 			    PMIC_XO_STATIC_AUXOUT_MASK,
 			    PMIC_XO_STATIC_AUXOUT_SHIFT);
 	clk_buf_dbg("%s: sel io_dbg4: pmic_cw19=0x%x\n", __func__, pmic_cw19);
 	clkbuf_drv_curr_auxout[XO_SOC] = (pmic_cw19 & (0x3 << 1)) >> 1;
 	clkbuf_drv_curr_auxout[XO_WCN] = (pmic_cw19 & (0x3 << 7)) >> 7;
 
-	pmic_config_interface(MT6335_DCXO_CW18, 6,
+	pmic_config_interface(PMIC_DCXO_CW18, 6,
 			      PMIC_XO_STATIC_AUXOUT_SEL_MASK,
 			      PMIC_XO_STATIC_AUXOUT_SEL_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW19, &pmic_cw19,
+	pmic_read_interface(PMIC_DCXO_CW19, &pmic_cw19,
 			    PMIC_XO_STATIC_AUXOUT_MASK,
 			    PMIC_XO_STATIC_AUXOUT_SHIFT);
 	clk_buf_dbg("%s: sel io_dbg5: pmic_cw19=0x%x\n", __func__, pmic_cw19);
 	clkbuf_drv_curr_auxout[XO_NFC] = (pmic_cw19 & (0x3 << 1)) >> 1;
 	clkbuf_drv_curr_auxout[XO_CEL] = (pmic_cw19 & (0x3 << 7)) >> 7;
 
-	pmic_config_interface(MT6335_DCXO_CW18, 7,
+	pmic_config_interface(PMIC_DCXO_CW18, 7,
 			      PMIC_XO_STATIC_AUXOUT_SEL_MASK,
 			      PMIC_XO_STATIC_AUXOUT_SEL_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW19, &pmic_cw19,
+	pmic_read_interface(PMIC_DCXO_CW19, &pmic_cw19,
 			    PMIC_XO_STATIC_AUXOUT_MASK,
 			    PMIC_XO_STATIC_AUXOUT_SHIFT);
 	clk_buf_dbg("%s: sel io_dbg6: pmic_cw19=0x%x\n", __func__, pmic_cw19);
@@ -800,15 +857,15 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	len += snprintf(buf+len, PAGE_SIZE-len, "clkbuf_ctrl_stat=0x%x, pwrap_dcxo_en_flag=0x%x\n",
 			clkbuf_ctrl_stat, pwrap_dcxo_en_flag);
 
-	pmic_read_interface_nolock(MT6335_DCXO_CW00, &pmic_cw00,
+	pmic_read_interface_nolock(PMIC_DCXO_CW00, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface_nolock(MT6335_DCXO_CW02, &pmic_cw02,
+	pmic_read_interface_nolock(PMIC_DCXO_CW02, &pmic_cw02,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface_nolock(MT6335_DCXO_CW11, &pmic_cw11,
+	pmic_read_interface_nolock(PMIC_DCXO_CW11, &pmic_cw11,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface_nolock(MT6335_DCXO_CW14, &pmic_cw14,
+	pmic_read_interface_nolock(PMIC_DCXO_CW14, &pmic_cw14,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface_nolock(MT6335_DCXO_CW16, &pmic_cw16,
+	pmic_read_interface_nolock(PMIC_DCXO_CW16, &pmic_cw16,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CW00/CW02/CW11/CW14/CW16=0x%x/0x%x/0x%x/0x%x/0x%x\n",
 			pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
@@ -825,9 +882,13 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 		     clkbuf_readl(DCXO_NFC_ADR1),
 		     clkbuf_readl(DCXO_NFC_WDATA1));
 
+#if defined(CONFIG_MACH_MT6759)
+	len += snprintf(buf+len, PAGE_SIZE-len, "bblpm_cnt=%u\n", bblpm_cnt);
+#else
 	len += snprintf(buf+len, PAGE_SIZE-len, "bblpm_cnt=%u, MD1/C2K_PWR_CON=0x%x/%x\n",
 			bblpm_cnt, clkbuf_readl(MD1_PWR_CON),
 			clkbuf_readl(C2K_PWR_CON));
+#endif
 
 	return len;
 }
@@ -995,44 +1056,44 @@ static void clk_buf_pmic_wrap_init(void)
 	    pmic_cw16 = 0;
 
 	/* Dump registers before setting */
-	pmic_read_interface(MT6335_DCXO_CW00, &pmic_cw00,
+	pmic_read_interface(PMIC_DCXO_CW00, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW02, &pmic_cw02,
+	pmic_read_interface(PMIC_DCXO_CW02, &pmic_cw02,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW11, &pmic_cw11,
+	pmic_read_interface(PMIC_DCXO_CW11, &pmic_cw11,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW14, &pmic_cw14,
+	pmic_read_interface(PMIC_DCXO_CW14, &pmic_cw14,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW16, &pmic_cw16,
+	pmic_read_interface(PMIC_DCXO_CW16, &pmic_cw16,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	clk_buf_warn("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x\n",
 		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
 
 #ifndef __KERNEL__
 	/* Setup initial PMIC clock buffer setting */
-	pmic_config_interface(MT6335_DCXO_CW02, 0,
+	pmic_config_interface(PMIC_DCXO_CW02, 0,
 			    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
 	udelay(100);
-	pmic_config_interface(MT6335_DCXO_CW02, 1,
+	pmic_config_interface(PMIC_DCXO_CW02, 1,
 			    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
 	mdelay(1);
-	pmic_config_interface(MT6335_DCXO_CW00, PMIC_CW00_INIT_VAL,
+	pmic_config_interface(PMIC_DCXO_CW00, PMIC_CW00_INIT_VAL,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_config_interface(MT6335_DCXO_CW11, PMIC_CW11_INIT_VAL,
+	pmic_config_interface(PMIC_DCXO_CW11, PMIC_CW11_INIT_VAL,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_config_interface(MT6335_DCXO_CW14, 0x4,
+	pmic_config_interface(PMIC_DCXO_CW14, 0x4,
 			    PMIC_RG_XO_RESERVED0_MASK, PMIC_RG_XO_RESERVED0_SHIFT);
 
 	/* Check if the setting is ok */
-	pmic_read_interface(MT6335_DCXO_CW00, &pmic_cw00,
+	pmic_read_interface(PMIC_DCXO_CW00, &pmic_cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW02, &pmic_cw02,
+	pmic_read_interface(PMIC_DCXO_CW02, &pmic_cw02,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW11, &pmic_cw11,
+	pmic_read_interface(PMIC_DCXO_CW11, &pmic_cw11,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW14, &pmic_cw14,
+	pmic_read_interface(PMIC_DCXO_CW14, &pmic_cw14,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_read_interface(MT6335_DCXO_CW16, &pmic_cw16,
+	pmic_read_interface(PMIC_DCXO_CW16, &pmic_cw16,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	clk_buf_warn("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x\n",
 		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
@@ -1111,7 +1172,7 @@ int clk_buf_init(void)
 	INIT_DELAYED_WORK(&clkbuf_twam_dbg_work, clkbuf_twam_dbg_worker);
 #endif
 
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 	/* no need to use XO_CONN in this platform */
 	clk_buf_ctrl_internal(CLK_BUF_CONN, false);
 #ifndef CONFIG_MTK_NFC_SUPPORT
