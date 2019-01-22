@@ -15,10 +15,17 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/base/power/include/ \
 	-I$(srctree)/drivers/misc/mediatek/base/power/include/leakage_table_v2/ \
 
+# MT6759
 obj-$(CONFIG_MACH_MT6759) += mtk_static_power.o
 
 obj-$(CONFIG_MACH_MT6759) += mtk_static_power_mt6759.o
 
+# MT6763
 obj-$(CONFIG_MACH_MT6763) += mtk_static_power.o
 
 obj-$(CONFIG_MACH_MT6763) += mtk_static_power_mt6763.o
+
+# MT6758
+obj-$(CONFIG_MACH_MT6758) += mtk_static_power.o
+
+obj-$(CONFIG_MACH_MT6758) += mtk_static_power_mt6758.o

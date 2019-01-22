@@ -24,6 +24,10 @@
 #if defined(CONFIG_MACH_MT6763)
 #include "mtk_static_power_mt6763.h"
 #endif
+
+#if defined(CONFIG_MACH_MT6758)
+#include "mtk_static_power_mt6758.h"
+#endif
 /*
  * bit operation
  */
