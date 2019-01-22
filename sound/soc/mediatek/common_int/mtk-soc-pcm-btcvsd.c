@@ -720,10 +720,9 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 
 	/* Save current timestamp & buffer time in bt_rx_timestamp and bt_rx_bufdata_equivalent_time */
 	bt_rx_timestamp = sched_clock();
-	bt_rx_bufdata_equivalent_time =
-			(unsigned long long)(btsco.pRX->iPacket_w - btsco.pRX->iPacket_r) * (SCO_RX_PLC_SIZE)
-			* 16 * 1000  / 2 / 64;
-	bt_rx_bufdata_equivalent_time += read_count * SCO_RX_PLC_SIZE * 16 * 1000
+	bt_rx_bufdata_equivalent_time = ((kal_uint64)(btsco.pRX->iPacket_w - btsco.pRX->iPacket_r)) * (SCO_RX_PLC_SIZE)
+					* 16 * 1000  / 2 / 64;
+	bt_rx_bufdata_equivalent_time += ((kal_uint64)read_count) * SCO_RX_PLC_SIZE * 16 * 1000
 					 / (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE) / 2 / 64;
 	bt_rx_bufdata_equivalent_time *= 1000;  /* return equivalent time(us) to data count */
 
@@ -753,9 +752,8 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 
 	/* Save current timestamp & buffer time in bt_tx_timestamp and bt_tx_bufdata_equivalent_time */
 	bt_tx_timestamp = sched_clock();
-	bt_tx_bufdata_equivalent_time =
-			(unsigned long long)(btsco.pTX->iPacket_w - btsco.pTX->iPacket_r) * (SCO_TX_ENCODE_SIZE)
-			* 16 * 1000  / 2 / 64;
+	bt_tx_bufdata_equivalent_time = ((kal_uint64)(btsco.pTX->iPacket_w - btsco.pTX->iPacket_r))
+					* (SCO_TX_ENCODE_SIZE) * 16 * 1000  / 2 / 64;
 	bt_tx_bufdata_equivalent_time *= 1000; /* return equivalent time(us) to data count */
 	LOGBT("bt_tx_timestamp:%llu,bt_tx_bufdata_equivalent_time:%llu, iPacket_w:%d, iPacket_r:%d ",
 	      bt_tx_timestamp, bt_tx_bufdata_equivalent_time, btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);
@@ -765,7 +763,7 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 				__func__, btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);
 		spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
 		/*	free space of TX packet buffer */
-		copy_size = btsco.pTX->u4BufferSize - (btsco.pTX->iPacket_w - btsco.pTX->iPacket_r)
+		copy_size = btsco.pTX->u4BufferSize - ((kal_uint64)(btsco.pTX->iPacket_w - btsco.pTX->iPacket_r))
 		* SCO_TX_ENCODE_SIZE;
 		spin_unlock_irqrestore(&auddrv_btcvsd_tx_lock, flags);
 
@@ -786,7 +784,8 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 
 		if (copy_size != 0) {
 			spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
-			BTSCOTX_WriteIdx = (btsco.pTX->iPacket_w & SCO_TX_PACKET_MASK) * SCO_TX_ENCODE_SIZE;
+			BTSCOTX_WriteIdx = ((kal_uint64)(btsco.pTX->iPacket_w & SCO_TX_PACKET_MASK))
+					   * SCO_TX_ENCODE_SIZE;
 			spin_unlock_irqrestore(&auddrv_btcvsd_tx_lock, flags);
 
 			if (BTSCOTX_WriteIdx + copy_size < btsco.pTX->u4BufferSize) /* copy once */ {
