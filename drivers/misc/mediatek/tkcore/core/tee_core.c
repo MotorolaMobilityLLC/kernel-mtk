@@ -85,14 +85,22 @@ static struct class *misc_class;
 
 static int device_match(struct device *device, const void *devname)
 {
+	int ret;
 	struct tee *tee = dev_get_drvdata(device);
-	int ret = strncmp(devname, tee->name, sizeof(tee->name));
 
 	WARN_ON(!tee);
-	if (ret == 0)
-		return 1;
-	else
+
+	/*
+	 * It shall always return
+	 * 0 if tee is a null
+	 * ptr
+	 */
+	if (tee == NULL)
 		return 0;
+
+	ret = strncmp(devname,
+		tee->name, sizeof(tee->name));
+	return ret == 0;
 }
 
 /*
