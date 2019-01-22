@@ -254,11 +254,10 @@ static ssize_t do_read_log_to_usr(char __user *buf, size_t count)
 
 static int atf_log_fix_reader(void)
 {
-	if (atf_buf_vir_ctl->info.atf_write_seq < atf_log_len) {
+	if (atf_buf_vir_ctl->info.atf_write_seq < atf_log_len)
 		atf_buf_vir_ctl->info.atf_read_pos = 0;
-	} else {
+	else
 		atf_buf_vir_ctl->info.atf_read_pos = atf_buf_vir_ctl->info.atf_write_pos;
-	}
 	return 0;
 }
 
@@ -324,9 +323,8 @@ start:
 	if (ret)
 		return ret;
 
-	if (unlikely(write_pos == read_pos)) {
+	if (unlikely(write_pos == read_pos))
 		goto start;
-	}
 
 	atf_log_lock();
 	ret = do_read_log_to_usr(buf, count);
