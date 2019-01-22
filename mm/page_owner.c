@@ -29,6 +29,15 @@ static BtEntry memory_base[BOOT_ENTRIES];
 
 static DEFINE_SPINLOCK(page_owner_spin_lock);
 
+int minidump_page_owner_memory_info(unsigned long *addr, int *size)
+{
+	if (addr)
+		*addr = (unsigned long)memory_base;
+	if (size)
+		*size = sizeof(memory_base);
+	return 0;
+}
+
 static inline size_t get_hash(unsigned long *backtrace, size_t nr_entries)
 {
 	size_t hash = 0;
