@@ -675,7 +675,6 @@ static void lcm_init(void)
 
 static void lcm_suspend(void)
 {
-	push_table(lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 #ifdef CONFIG_MTK_LEGACY
 	mt_set_gpio_mode(GPIO_65132_EN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_65132_EN, GPIO_DIR_OUT);
@@ -683,6 +682,7 @@ static void lcm_suspend(void)
 #else
 	set_gpio_lcd_enp(0);
 #endif
+	push_table(lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
 static void lcm_resume(void)
