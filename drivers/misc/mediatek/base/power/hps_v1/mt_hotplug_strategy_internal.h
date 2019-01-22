@@ -12,9 +12,9 @@
  */
 
 /**
-* @file    mt_hotplug_strategy_internal.h
-* @brief   hotplug strategy(hps) - internal header file
-*/
+ * @file    mt_hotplug_strategy_internal.h
+ * @brief   hotplug strategy(hps) - internal header file
+ */
 
 #ifndef __MT_HOTPLUG_STRATEGY_INTERNAL_H__
 #define __MT_HOTPLUG_STRATEGY_INTERNAL_H__

@@ -12,15 +12,14 @@
  */
 
 /**
-* @file    mt_hotplug_strategy_algo.c
-* @brief   hotplug strategy(hps) - algo
-*/
+ * @file    mt_hotplug_strategy_algo.c
+ * @brief   hotplug strategy(hps) - algo
+ */
 
 #include <linux/kernel.h>	/* printk */
 #include <linux/module.h>	/* MODULE_DESCRIPTION, MODULE_LICENSE */
 #include <linux/init.h>		/* module_init, module_exit */
 #include <linux/kthread.h>	/* kthread_create */
-#include <linux/wakelock.h>	/* wake_lock_init */
 #include <linux/delay.h>	/* msleep */
 #include <asm-generic/bug.h>	/* WARN_ON */
 

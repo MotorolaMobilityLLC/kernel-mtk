@@ -12,16 +12,15 @@
  */
 
 /**
-* @file    mt_hotplug_strategy_core.c
-* @brief   hotplug strategy(hps) - core
-*/
+ * @file    mt_hotplug_strategy_core.c
+ * @brief   hotplug strategy(hps) - core
+ */
 
 #include <linux/kernel.h>	/* printk */
 #include <linux/module.h>	/* MODULE_DESCRIPTION, MODULE_LICENSE */
 #include <linux/init.h>		/* module_init, module_exit */
 #include <linux/cpu.h>		/* cpu_up */
 #include <linux/kthread.h>	/* kthread_create */
-#include <linux/wakelock.h>	/* wake_lock_init */
 #include <asm-generic/bug.h>	/* BUG_ON */
 
 #include "mt_hotplug_strategy_internal.h"
