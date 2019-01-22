@@ -533,11 +533,13 @@ static void _cmdq_set_config_handle_dirty(void)
 	}
 }
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 static void _cmdq_handle_clear_dirty(struct cmdqRecStruct *cmdq_handle)
 {
 	if (!ext_disp_is_video_mode())
 		cmdqRecClearEventToken(cmdq_handle, CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY);
 }
+#endif
 
 static void _cmdq_reset_config_handle(void)
 {
@@ -797,6 +799,7 @@ static int _ext_disp_trigger_EPD(int blocking, void *callback, unsigned int user
 	return 0;
 }
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 static int _ext_disp_trigger_LCM(int blocking, void *callback, unsigned int userdata)
 {
 	EXTDFUNC();
@@ -830,6 +833,7 @@ static int _ext_disp_trigger_LCM(int blocking, void *callback, unsigned int user
 	EXTDINFO("_ext_disp_trigger_LCM done\n");
 	return 0;
 }
+#endif
 
 static int init_cmdq_slots(cmdqBackupSlotHandle *pSlot, int count, int init_val)
 {
@@ -964,6 +968,7 @@ static int ext_disp_init_hdmi(unsigned int session)
 	return ret;
 }
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 static int ext_disp_init_lcm(char *lcm_name, unsigned int session)
 {
 	int ret = 0;
@@ -1075,6 +1080,7 @@ done:
 	EXTDMSG("ext_disp_init_lcm done\n");
 	return ret;
 }
+#endif
 
 void ext_disp_esd_check_lock(void)
 {
@@ -1230,8 +1236,11 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 	/* Register external session cmdq dump callback */
 	dpmgr_register_cmdq_dump_callback(ext_disp_cmdq_dump);
 
-	if (DISP_SESSION_DEV(session) == DEV_LCM)
+	if (DISP_SESSION_DEV(session) == DEV_LCM) {
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 		ret = ext_disp_init_lcm(lcm_name, session);
+#endif
+	}
 	else
 		ret = ext_disp_init_hdmi(session);
 
@@ -1259,6 +1268,7 @@ int ext_disp_deinit(unsigned int session)
 		loop_cnt++;
 	}
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	if (DISP_SESSION_DEV(session) == DEV_LCM) {
 		external_display_esd_check_enable(0);
 		if (pgc->state == EXTD_RESUME) {
@@ -1267,6 +1277,7 @@ int ext_disp_deinit(unsigned int session)
 			_ext_disp_path_lock(__func__);
 		}
 	}
+#endif
 
 	if (pgc->state == EXTD_SUSPEND)
 		dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -1336,6 +1347,7 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 	return ret;
 }
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 static int ext_disp_suspend_release_fence(unsigned int session)
 {
 	unsigned int i = 0;
@@ -1350,6 +1362,7 @@ static int ext_disp_suspend_release_fence(unsigned int session)
 	EXTDINFO("ext_disp_suspend_release_fence done\n");
 	return 0;
 }
+#endif
 
 int ext_disp_suspend(unsigned int session)
 {
@@ -1386,6 +1399,7 @@ int ext_disp_suspend(unsigned int session)
 
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	if (DISP_SESSION_DEV(session) == DEV_LCM) {
 		external_display_esd_check_enable(0);
 		EXTDMSG("lcm suspend[begin]\n");
@@ -1394,6 +1408,7 @@ int ext_disp_suspend(unsigned int session)
 		pgc->lcm_state = EXTD_LCM_SUSPEND;
 		ext_disp_suspend_release_fence(session);
 	}
+#endif
 
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 
@@ -1479,6 +1494,7 @@ int ext_disp_resume(unsigned int session)
 			ret = EXT_DISP_STATUS_ERROR;
 		}
 
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 		if (DISP_SESSION_DEV(session) == DEV_LCM) {
 			EXTDMSG("[POWER]lcm resume[begin]\n");
 			disp_lcm_resume(pgc->plcm);
@@ -1486,6 +1502,7 @@ int ext_disp_resume(unsigned int session)
 			external_display_esd_check_enable(1);
 			pgc->lcm_state = EXTD_LCM_RESUME;
 		}
+#endif
 
 		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
 
@@ -1628,8 +1645,10 @@ int ext_disp_trigger(int blocking, void *callback, unsigned int userdata, unsign
 		ret = _ext_disp_trigger(blocking, callback, atomic_read(&g_extd_trigger_ticket));
 	else if (DISP_SESSION_TYPE(session) == DISP_SESSION_EXTERNAL && DISP_SESSION_DEV(session) == DEV_EINK + 1)
 		ret = _ext_disp_trigger_EPD(blocking, callback, atomic_read(&g_extd_trigger_ticket));
+#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	else if (DISP_SESSION_TYPE(session) == DISP_SESSION_EXTERNAL && DISP_SESSION_DEV(session) == DEV_LCM)
 		ret = _ext_disp_trigger_LCM(blocking, callback, atomic_read(&g_extd_trigger_ticket));
+#endif
 	else
 		goto done;
 
@@ -2002,7 +2021,7 @@ int ext_disp_switch_cmdq(enum CMDQ_SWITCH use_cmdq)
 void ext_disp_get_curr_addr(unsigned long *input_curr_addr, int module)
 {
 	if (module == 1)
-		ovl_get_address(DISP_MODULE_OVL1, input_curr_addr);
+		ovl_get_address(DISP_MODULE_OVL1_2L, input_curr_addr);
 	else
 		dpmgr_get_input_address(pgc->dpmgr_handle, input_curr_addr);
 }

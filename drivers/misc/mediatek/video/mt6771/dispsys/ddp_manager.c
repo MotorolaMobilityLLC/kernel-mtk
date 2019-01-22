@@ -84,7 +84,7 @@ static bool ddp_valid_engine[DISP_MODULE_NUM] = {
 	1, /* DISP_MODULE_OVL0_2L */
 	1, /* DISP_MODULE_OVL1_2L */
 	1, /* DISP_MODULE_RDMA0 */
-	0, /* DISP_MODULE_RDMA1 */
+	1, /* DISP_MODULE_RDMA1 */
 
 	0, /* DISP_MODULE_RDMA_VIRTUAL0 */
 	1, /* DISP_MODULE_WDMA0 */

@@ -128,7 +128,7 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 
 #define MHL_WARN(fmt, arg...) \
 	do { \
-		pr_debug("[hdmi-platform]"fmt, ##arg); \
+		pr_debug("[HDMI_Platform]"fmt, ##arg); \
 	}while (0)
 
 static struct i2c_adapter	*i2c_bus_adapter = NULL;
@@ -1046,7 +1046,7 @@ void dpi_gpio_ctrl(int enable)
     MHL_DBG("dpi_gpio_ctrl+  %ld !!\n",sizeof(dpi_gpio_name)); 
     if (IS_ERR(mhl_pinctrl)) {
         ret = PTR_ERR(mhl_pinctrl);
-        MHL_WARN("Cannot find MHL RST pinctrl for dpi_gpio_ctrl!\n");
+		MHL_WARN("Cannot find MHL GPIO pinctrl for dpi_gpio_ctrl!\n");
         return;
     }  
     
@@ -1114,7 +1114,7 @@ void i2s_gpio_ctrl(int enable)
     
     if (IS_ERR(mhl_pinctrl)) {
         ret = PTR_ERR(mhl_pinctrl);
-        MHL_WARN("Cannot find MHL RST pinctrl for i2s_gpio_ctrl!\n");
+		MHL_WARN("Cannot find MHL I2S pinctrl for i2s_gpio_ctrl!\n");
         return;
     }  
     
@@ -1399,8 +1399,8 @@ int HalOpenI2cDevice(char const *DeviceName, char const *DriverName)
     retVal = strnlen(DeviceName, I2C_NAME_SIZE);
     if (retVal >= I2C_NAME_SIZE)
     {
-	MHL_WARN("I2c device name too long!\n");
-	return HAL_RET_PARAMETER_ERROR;
+		MHL_WARN("I2c device name too long!\n");
+		return HAL_RET_PARAMETER_ERROR;
     }
 
     /*i2c_register_board_info(get_hdmi_i2c_channel(), &i2c_mhl, 1);*/
@@ -1414,14 +1414,13 @@ int HalOpenI2cDevice(char const *DeviceName, char const *DriverName)
     retVal = i2c_add_driver(&mhl_i2c_driver);
     if (retVal != 0)
     {
-	MHL_WARN("I2C driver add failed, retVal=%d\n", retVal);
-	retStatus = HAL_RET_FAILURE;
+		MHL_WARN("I2C driver add failed, retVal=%d\n", retVal);
+		retStatus = HAL_RET_FAILURE;
     }
     else
     {
-    	{
-    		retStatus = HAL_RET_SUCCESS; 
-    	}
+		MHL_DBG("I2C driver add success\n");
+		retStatus = HAL_RET_SUCCESS;
     }
 
     mhl_mutex_init(&mhl_lock);
