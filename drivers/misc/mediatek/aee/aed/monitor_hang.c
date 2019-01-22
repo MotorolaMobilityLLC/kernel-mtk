@@ -37,6 +37,8 @@
 #include <asm/stacktrace.h>
 #include <asm/traps.h>
 #include "aed.h"
+#include "../common/aee-common.h"
+#include "../mrdump/mrdump_mini.h"
 #include <linux/pid.h>
 #ifdef CONFIG_MTK_BOOT
 #include <mt-plat/mtk_boot_common.h>
@@ -47,6 +49,10 @@
 #ifdef CONFIG_MTK_GPU_SUPPORT
 #include <mt-plat/mtk_gpu_utility.h>
 #endif
+#ifdef CONFIG_MTK_RAM_CONSOLE
+#include <mt-plat/mtk_ram_console.h>
+#endif
+
 
 static DEFINE_SPINLOCK(pwk_hang_lock);
 static int wdt_kick_status;
@@ -1496,7 +1502,6 @@ static int hang_detect_warn_thread(void *arg)
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	snprintf(string_tmp, 30, "hang_detect:[pid:%d]\n", system_server_pid);
-	sched_setscheduler(current, SCHED_FIFO, &param);
 	pr_notice("hang_detect create warning api: %s.", string_tmp);
 #ifdef __aarch64__
 		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_PROCESS_COREDUMP | DB_OPT_AARCH64 | DB_OPT_FTRACE,
@@ -1583,9 +1588,18 @@ static int hang_detect_thread(void *arg)
 						aee_rr_rec_hang_detect_timeout_count(COUNT_ANDROID_REBOOT);
 #endif
 #ifdef CONFIG_MTK_ENG_BUILD
-					if (monit_hang_flag == 1)
+					if (monit_hang_flag == 1) {
+				/* eng load can detect whether KE*/
 #endif
-					BUG();
+					/* BUG(); */
+					aee_rr_rec_exp_type(5);
+					aee_rr_rec_fiq_step(AEE_FIQ_STEP_HANG_DETECT);
+					mrdump_mini_add_hang_raw((unsigned long)Hang_Info, MaxHangInfoSize);
+					mrdump_mini_add_extra_misc();
+					aee_exception_reboot();
+#ifdef CONFIG_MTK_ENG_BUILD
+						}
+#endif
 				} else
 					Hang_Detect_first = true;
 			}
