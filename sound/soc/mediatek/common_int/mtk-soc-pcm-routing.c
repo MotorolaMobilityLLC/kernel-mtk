@@ -137,6 +137,7 @@ static int mHplOffset;
 static bool mHprCalibrated;
 static int mHprOffset;
 static bool AudDrvSuspend_ipoh_Status;
+static int audio_dpd_switch;
 
 int Get_Audio_Mode(void)
 {
@@ -641,6 +642,34 @@ static int Audio_Mode_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 	return 0;
 }
 
+static int audio_dpd_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_aud("%s()\n", __func__);
+	ucontrol->value.integer.value[0] = audio_dpd_switch;
+	return 0;
+}
+
+static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	int enable = ucontrol->value.integer.value[0];
+
+	pr_aud("%s(), enable = %d\n", __func__, enable);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_Debug_Setting)) {
+		pr_err("%s(), return -EINVAL\n", __func__);
+		return -EINVAL;
+	}
+
+	if (get_afe_platform_ops()->set_dpd_module == NULL) {
+		pr_warn("%s(), set_dpd_module not implement\n", __func__);
+		return 0;
+	}
+
+	get_afe_platform_ops()->set_dpd_module(enable);
+	audio_dpd_switch = enable;
+
+	return 0;
+}
+
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
 
 static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
@@ -801,10 +830,12 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 		     AudioI2S1_Setting_Get, AudioI2S1_Setting_Set),
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
 	SOC_DOUBLE_EXT("Audio_DL2_DataTransfer", SND_SOC_NOPM, 0, 1, 65536, 0,
-	NULL, Audio_DL2_DataTransfer),
+		       NULL, Audio_DL2_DataTransfer),
 #endif
 	SOC_SINGLE_EXT("Audio_LowLatency_Debug", SND_SOC_NOPM, 0, 0x20000, 0,
-	Audio_LowLatencyDebug_Get, Audio_LowLatencyDebug_Set),
+		       Audio_LowLatencyDebug_Get, Audio_LowLatencyDebug_Set),
+	SOC_ENUM_EXT("Audio_DPD_Switch", Audio_Routing_Enum[6],
+		     audio_dpd_get, audio_dpd_set),
 };
 
 

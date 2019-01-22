@@ -78,9 +78,6 @@ static const unsigned short HpImpedanceAuxCable = 5000;
 static struct snd_dma_buffer *Dl1_Hp_Playback_dma_buf;
 static int EfuseCurrentCalibration;
 
-static int audio_dpd_switch;
-static const char * const switch_function[] = { "Off", "On" };
-
 #define AUXADC_BIT_RESOLUTION (1 << 12)
 #define AUXADC_VOLTAGE_RANGE 1800
 
@@ -596,46 +593,9 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int audio_dpd_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_aud("%s\n", __func__);
-	ucontrol->value.integer.value[0] = audio_dpd_switch;
-	return 0;
-}
-
-static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	int enable = ucontrol->value.integer.value[0];
-	int dpd_impedance = DPD_DEFAULT_IMPEDANCE;
-
-	pr_warn("%s() enable = %d, mhp_impedance = %d\n", __func__, enable, mhp_impedance);
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(switch_function)) {
-		pr_err("return -EINVAL\n");
-		return -EINVAL;
-	}
-
-	if (get_afe_platform_ops()->set_dpd_module == NULL) {
-		pr_warn("%s() ,set_dpd_module not implement\n", __func__);
-		return 0;
-	}
-
-	if (mhp_impedance != 0)
-		dpd_impedance = mhp_impedance;
-
-	get_afe_platform_ops()->set_dpd_module(enable, dpd_impedance);
-	audio_dpd_switch = enable;
-	return 0;
-}
-
-static const struct soc_enum hp_impedance_enum[] = {
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(switch_function), switch_function),
-};
-
 static const struct snd_kcontrol_new Audio_snd_hp_impedance_controls[] = {
 	SOC_SINGLE_EXT("Audio HP ImpeDance Setting", SND_SOC_NOPM,
 		0, 65536, 0, Audio_HP_ImpeDance_Get, Audio_HP_ImpeDance_Set),
-	SOC_ENUM_EXT("Audio_DPD_Switch", hp_impedance_enum[0], audio_dpd_get,
-		     audio_dpd_set),
 };
 
 
@@ -686,16 +646,18 @@ static int mtk_asoc_pcm_hp_impedance_new(struct snd_soc_pcm_runtime *rtd)
 static int mtk_asoc_dhp_impedance_probe(struct snd_soc_platform *platform)
 {
 	PRINTK_AUDDRV("mtk_asoc_dhp_impedance_probe\n");
+#ifndef PMIC_HPIMP_DETECT
 	/* add  controls */
 	snd_soc_add_platform_controls(platform, Audio_snd_hp_impedance_controls,
 				      ARRAY_SIZE(Audio_snd_hp_impedance_controls));
+
+	/* Read calibration from Efuse */
+	EfuseCurrentCalibration = read_efuse_hp_impedance_current_calibration();
+#endif
 	/* allocate dram */
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
 				   Dl1_MAX_BUFFER_SIZE);
 	Dl1_Hp_Playback_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
-
-	/* Read calibration from Efuse */
-	EfuseCurrentCalibration = Audio_Read_Efuse_HP_Impedance_Current_Calibration();
 
 	return 0;
 }

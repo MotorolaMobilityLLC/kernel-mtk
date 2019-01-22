@@ -47,7 +47,6 @@ bool get_voice_md2_status(void);
 bool get_voice_ultra_status(void);
 bool get_voice_usb_status(void);
 void Auddrv_Read_Efuse_HPOffset(void);
-int Audio_Read_Efuse_HP_Impedance_Current_Calibration(void);
 bool get_internalmd_status(void);
 
 /* for AUDIO_DL2_ISR_COPY_SUPPORT */

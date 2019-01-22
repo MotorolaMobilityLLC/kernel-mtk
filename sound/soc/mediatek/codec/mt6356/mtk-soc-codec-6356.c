@@ -4169,7 +4169,7 @@ static const struct snd_kcontrol_new mt6356_UL_Codec_controls[] = {
 		     Audio_UL_LR_Swap_Set),
 };
 
-int Audio_Read_Efuse_HP_Impedance_Current_Calibration(void)
+int read_efuse_hp_impedance_current_calibration(void)
 {
 	int ret = 0;
 	int value, sign;
@@ -4221,7 +4221,6 @@ int Audio_Read_Efuse_HP_Impedance_Current_Calibration(void)
 	pr_warn("-%s(), efuse: %d\n", __func__, value);
 	return value;
 }
-EXPORT_SYMBOL(Audio_Read_Efuse_HP_Impedance_Current_Calibration);
 
 static const struct snd_soc_dapm_widget mt6356_dapm_widgets[] = {
 	/* Outputs */

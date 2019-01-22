@@ -74,6 +74,7 @@ void CalculateDCCompenForEachdB_R(void);
 void set_hp_impedance(int impedance);
 
 /* headphone impedance detection function*/
+int read_efuse_hp_impedance_current_calibration(void);
 bool OpenHeadPhoneImpedanceSetting(bool bEnable);
 void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param);
 int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff);

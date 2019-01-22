@@ -312,7 +312,7 @@ struct mtk_afe_platform_ops {
 	bool (*set_smartpa_i2s)(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
 				int mtk_soc_always_hd);
 	bool (*set_smartpa_echo_ref)(int sample_rate, int extcodec_echoref_control, int enable);
-	bool (*set_dpd_module)(bool enable, int impedance);
+	bool (*set_dpd_module)(bool enable);
 	bool (*handle_suspend)(bool suspend);
 };
 
