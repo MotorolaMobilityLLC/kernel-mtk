@@ -1847,24 +1847,30 @@ EXPORT_SYMBOL(mt_gpio_to_eint);
 static int gpio_to_eint(unsigned int gpio)
 {
 	struct pin_node *p;
+#ifdef CONFIG_MTK_GPIO
 	int i = 0;
+#endif
 	int eint = -1;
 
+#ifdef CONFIG_MTK_GPIO
 	/*
 	 * check if this gpio configured as builtin eint
 	 */
 	if (builtin_entry > 0) {
 		for (i = 0; i < builtin_entry; ++i) {
 			if (gpio == builtin_mapping[i].gpio) {
-				if (mt_get_gpio_mode(gpio) ==
-					builtin_mapping[i].func_mode) {
+#ifdef CONFIG_MTK_GPIOLIB_STAND
+				if (mtk_pinctrl_get_gpio_mode_for_eint(gpio) == builtin_mapping[i].func_mode) {
+#else
+				if (mt_get_gpio_mode(gpio) == builtin_mapping[i].func_mode) {
+#endif
 					eint = builtin_mapping[i].builtin_eint;
 					goto done;
 				}
 			}
 		}
 	}
-
+#endif
 	/*
 	 * if not builtin eint, just find the mapping from normal mapping table,
 	 * or just linear map with gpio if no mapping table
