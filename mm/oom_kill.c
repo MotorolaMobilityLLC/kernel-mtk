@@ -523,6 +523,7 @@ void oom_kill_process(struct oom_control *oc, struct task_struct *p,
 		      struct mem_cgroup *memcg, const char *message)
 {
 	struct task_struct *victim = p;
+	struct task_struct *hold = p;
 	struct task_struct *child;
 	struct task_struct *t;
 	struct mm_struct *mm;
@@ -555,6 +556,7 @@ void oom_kill_process(struct oom_control *oc, struct task_struct *p,
 	 * parent.  This attempts to lose the minimal amount of work done while
 	 * still freeing memory.
 	 */
+	get_task_struct(hold);
 	read_lock(&tasklist_lock);
 	for_each_thread(p, t) {
 		list_for_each_entry(child, &t->children, sibling) {
@@ -580,12 +582,14 @@ void oom_kill_process(struct oom_control *oc, struct task_struct *p,
 	p = find_lock_task_mm(victim);
 	if (!p) {
 		put_task_struct(victim);
+		put_task_struct(hold);
 		return;
 	} else if (victim != p) {
 		get_task_struct(p);
 		put_task_struct(victim);
 		victim = p;
 	}
+	put_task_struct(hold);
 
 	/* Get a reference to safely compare mm after task_unlock(victim) */
 	mm = victim->mm;
