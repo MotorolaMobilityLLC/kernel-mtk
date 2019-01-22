@@ -984,6 +984,7 @@ typedef struct {
 		int32_t		int32_Data[0];
 		uint32_t	currWp;
 	} data;
+	uint64_t   arch_counter;
 } SCP_SENSOR_HUB_NOTIFY_RSP;
 
 typedef union {
