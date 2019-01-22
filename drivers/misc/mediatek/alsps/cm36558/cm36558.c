@@ -840,7 +840,7 @@ static struct driver_attribute *CM36558_attr_list[] = {
 static int CM36558_create_attr(struct device_driver *driver)
 {
 	int idx = 0, err = 0;
-	int num = (int)(sizeof(CM36558_attr_list) / sizeof(CM36558_attr_list[0]));
+	int num = ARRAY_SIZE(CM36558_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -859,7 +859,7 @@ static int CM36558_create_attr(struct device_driver *driver)
 static int CM36558_delete_attr(struct device_driver *driver)
 {
 	int idx = 0, err = 0;
-	int num = (int)(sizeof(CM36558_attr_list) / sizeof(CM36558_attr_list[0]));
+	int num = ARRAY_SIZE(CM36558_attr_list);
 
 	if (!driver)
 		return -EINVAL;
@@ -1319,7 +1319,7 @@ static int CM36558_init_client(struct i2c_client *client)
 
 	APS_FUN();
 	databuf[0] = CM36558_REG_ALS_UV_CONF;
-	if (1 == obj->hw->polling_mode_als)
+	if (obj->hw->polling_mode_als == 1)
 		databuf[1] = 0x01;
 	else
 		databuf[1] = 0x03;
@@ -1333,7 +1333,7 @@ static int CM36558_init_client(struct i2c_client *client)
 
 	databuf[0] = CM36558_REG_PS_CONF1_2;
 	databuf[1] = 0x01;
-	if (1 == obj->hw->polling_mode_ps)
+	if (obj->hw->polling_mode_ps == 1)
 		databuf[2] = 0x00;
 	else
 		databuf[2] = 0x03;
