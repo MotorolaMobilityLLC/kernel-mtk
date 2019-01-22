@@ -71,6 +71,7 @@ static const WMT_IC_PIN_STATE cmb_aif2pin_stat[] = {
 	[CMB_STUB_AIF_1] = WMT_IC_AIF_1,
 	[CMB_STUB_AIF_2] = WMT_IC_AIF_2,
 	[CMB_STUB_AIF_3] = WMT_IC_AIF_3,
+	[CMB_STUB_AIF_4] = WMT_IC_PIN_STATE_MAX,
 };
 
 #if CFG_WMT_PS_SUPPORT
