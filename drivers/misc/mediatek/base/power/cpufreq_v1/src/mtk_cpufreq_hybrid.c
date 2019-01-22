@@ -734,9 +734,9 @@ int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 u32 *recordRef;
 static unsigned int *recordTbl;
 
-#ifdef EEM_AP2SSPM
 int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl, char nr_volt_tbl)
 {
+#ifdef EEM_AP_SIDE
 	int i;
 	int index;
 
@@ -746,10 +746,11 @@ int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl, char nr
 			(recordRef[index] & 0xFFFF);
 	}
 	csram_write((OFFS_EEM_S + (cluster_id * 4)), 1);
+#endif
 
 	return 0;
 }
-#endif
+
 
 /*
 * Module driver
