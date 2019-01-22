@@ -368,8 +368,6 @@ char *spm_load_firmware(char *name)
 	struct spm_fw_header *header;
 	char *addr;
 
-	pr_info("#@# %s(%d) use spmfw partition for %s\n", __func__, __LINE__, name);
-
 	addr = 0;
 	header = (struct spm_fw_header *) local_buf;
 
@@ -446,6 +444,9 @@ int spm_load_pcm_firmware(void)
 		pdesc->version = dyna_load_pcm[i].version;
 		pdesc->base = (u32 *) dyna_load_pcm[i].buf;
 		pdesc->base_dma = dyna_load_pcm[i].buf_dma;
+
+		pr_info("#@# %s(%d) use spmfw partition for %s - %s\n", __func__, __LINE__,
+				dyna_load_pcm_path[i], pdesc->version);
 
 		dyna_load_pcm[i].ready = 1;
 		spm_fw_count++;
