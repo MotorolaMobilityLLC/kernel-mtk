@@ -156,7 +156,7 @@ struct dma_controller {
 extern void musbfsh_dma_completion(struct musbfsh *musb, u8 epnum, u8 transmit);
 
 
-extern struct dma_controller *__init
+extern struct dma_controller *
 musbfsh_dma_controller_create(struct musbfsh *, void __iomem *);
 
 extern void musbfsh_dma_controller_destroy(struct dma_controller *);
