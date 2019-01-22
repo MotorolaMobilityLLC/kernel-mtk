@@ -18,6 +18,7 @@
 /* list of vlist_type(struct vpu_algo) */
 static struct list_head vpu_algo_pool[MTK_VPU_CORE];
 static uint32_t prop_info_data_length;
+static int debug_algo_id;
 
 const size_t g_vpu_prop_type_size[VPU_NUM_PROP_TYPES] = {
 	[VPU_PROP_TYPE_CHAR]     = sizeof(char),
@@ -233,16 +234,16 @@ int vpu_create_algo(int core, char *name, struct vpu_algo **ralgo, bool needload
 	if (needload) {
 		ret = vpu_hw_load_algo(core, algo);
 		CHECK_RET("vpu_hw_load_algo failed!\n");
-		LOG_DBG("[vpu] vpu_hw_load_algo done\n");
+		LOG_DBG("[vpu_%d] vpu_hw_load_algo done\n", core);
 		ret = vpu_hw_get_algo_info(core, algo);
 		CHECK_RET("vpu_hw_get_algo_info failed!\n");
-		LOG_DBG("[vpu] vpu_hw_get_algo_info done\n");
+		LOG_INF("[vpu_%d] vpu_hw_get_algo_info done\n", core);
 		ret = vpu_calc_prop_offset(algo->info_descs, algo->info_desc_count, &algo->info_length);
 		CHECK_RET("vpu_calc_prop_offset[info] failed!\n");
-		LOG_DBG("[vpu] vpu_calc_prop_offset done,algo->info_length(0x%x)\n", algo->info_length);
+		LOG_INF("[vpu_%d] vpu_calc_prop_offset done,algo->info_length(0x%x)\n", core, algo->info_length);
 		ret = vpu_calc_prop_offset(algo->sett_descs, algo->sett_desc_count, &algo->sett_length);
 		CHECK_RET("vpu_calc_prop_offset[sett] failed!\n");
-		LOG_DBG("[vpu] vpu_calc_prop_offset done,algo->sett_length(0x%x)\n", algo->sett_length);
+		LOG_INF("[vpu_%d] vpu_calc_prop_offset done,algo->sett_length(0x%x)\n", core, algo->sett_length);
 	}
 	*ralgo = algo;
 	return 0;
@@ -306,30 +307,33 @@ int vpu_free_request(struct vpu_request *req)
 
 int vpu_dump_algo(struct seq_file *s)
 {
-	struct vpu_algo *algo;
+	struct vpu_algo *debug_algo;
 	struct vpu_prop_desc *prop_desc;
 	struct vpu_port *port;
-	struct list_head *head;
+	char *debug_algo_name;
 	uint32_t i, j;
 	uint32_t data_length;
 	char line_buffer[24 + 1] = {0};
 	unsigned char *info_data;
-	/* CHRISTODO */
-	int TEMP_CORE = 0;
+	int debug_core = 0;
 
-	list_for_each(head, &vpu_algo_pool[TEMP_CORE])
-	{
-		algo = vlist_node_of(head, struct vpu_algo);
-		vpu_print_seq(s, "[Algo: id=%d name=%s, address=0x%llx, length=%d]\n",
-					  algo->id[TEMP_CORE], algo->name, algo->bin_ptr, algo->bin_length);
+	if (vpu_get_name_of_algo(debug_core, debug_algo_id, &debug_algo_name)) {
+		vpu_print_seq(s, "vpu_get_name_of_algo fail, id=%d\n", debug_algo_id);
+		goto err;
+	}
+
+	if (vpu_create_algo(debug_core, debug_algo_name, &debug_algo, true) == 0) {
+		vpu_print_seq(s, "[Algo: id=%d name=%s, address=0x%llx, length=0x%x]\n",
+					  debug_algo_id, debug_algo->name,
+					  debug_algo->bin_ptr, debug_algo->bin_length);
 
 #define LINE_BAR "  +-----+---------------+-------+-------+\n"
 		vpu_print_seq(s, LINE_BAR);
 		vpu_print_seq(s, "  |%-5s|%-15s|%-7s|%-7s|\n", "Port", "Name", "Dir", "Usage");
 		vpu_print_seq(s, LINE_BAR);
 
-		for (i = 0; i < algo->port_count; i++) {
-			port = &algo->ports[i];
+		for (i = 0; i < debug_algo->port_count; i++) {
+			port = &debug_algo->ports[i];
 			vpu_print_seq(s, "  |%-5d|%-15s|%-7s|%-7s|\n",
 						  port->id, port->name,
 						  g_vpu_port_dir_names[port->dir],
@@ -340,14 +344,14 @@ int vpu_dump_algo(struct seq_file *s)
 #undef LINE_BAR
 
 #define LINE_BAR "  +-----+---------------+-------+-------+------------------------------+\n"
-		if (algo->info_desc_count) {
+		if (debug_algo->info_desc_count) {
 			vpu_print_seq(s, LINE_BAR);
 			vpu_print_seq(s, "  |%-5s|%-15s|%-7s|%-7s|%-30s|\n", "Info", "Name", "Type", "Count", "Value");
 			vpu_print_seq(s, LINE_BAR);
 		}
 
-		for (i = 0; i < algo->info_desc_count; i++) {
-			prop_desc = &algo->info_descs[i];
+		for (i = 0; i < debug_algo->info_desc_count; i++) {
+			prop_desc = &debug_algo->info_descs[i];
 			data_length = prop_desc->count * g_vpu_prop_type_size[prop_desc->type];
 
 			vpu_print_seq(s, "  |%-5d|%-15s|%-7s|%-7d|%04XH ",
@@ -357,7 +361,7 @@ int vpu_dump_algo(struct seq_file *s)
 						  prop_desc->count,
 						  0);
 
-			info_data = (unsigned char *) ((uintptr_t)algo->info_ptr + prop_desc->offset);
+			info_data = (unsigned char *) ((uintptr_t)debug_algo->info_ptr + prop_desc->offset);
 			memset(line_buffer, ' ', 24);
 			for (j = 0; j < data_length; j++, info_data++) {
 				int pos = j % 8;
@@ -373,21 +377,21 @@ int vpu_dump_algo(struct seq_file *s)
 			}
 		}
 
-		if (algo->info_desc_count) {
+		if (debug_algo->info_desc_count) {
 			vpu_print_seq(s, LINE_BAR);
 			vpu_print_seq(s, "\n");
 		}
 #undef LINE_BAR
 
 #define LINE_BAR "  +-----+---------------+-------+-------+-------+\n"
-		if (algo->sett_desc_count < 1)
-			continue;
+		if (debug_algo->sett_desc_count < 1)
+			goto out;
 
 		vpu_print_seq(s, LINE_BAR);
 		vpu_print_seq(s, "  |%-5s|%-15s|%-7s|%-7s|%-7s|\n", "Sett", "Name", "Offset", "Type", "Count");
 		vpu_print_seq(s, LINE_BAR);
-		for (i = 0; i < algo->sett_desc_count; i++) {
-			prop_desc = &algo->sett_descs[i];
+		for (i = 0; i < debug_algo->sett_desc_count; i++) {
+			prop_desc = &debug_algo->sett_descs[i];
 			data_length = prop_desc->count * g_vpu_prop_type_size[prop_desc->type];
 
 			vpu_print_seq(s, "  |%-5d|%-15s|%-7d|%-7s|%-7d|\n",
@@ -400,7 +404,35 @@ int vpu_dump_algo(struct seq_file *s)
 		vpu_print_seq(s, LINE_BAR);
 		vpu_print_seq(s, "\n");
 #undef LINE_BAR
-
+out:
+		vpu_free_algo(debug_algo);
+		vpu_debug_func_core_state(debug_core, VCT_IDLE);
+		vpu_shut_down(debug_core);
+	} else {
+		vpu_print_seq(s, "create algo fail, id=%d\n", debug_algo_id);
+		LOG_ERR("create algo fail\n");
 	}
+err:
 	return 0;
 }
+
+int vpu_set_algo_parameter(uint8_t param, int argc, int *args)
+{
+	int ret = 0;
+
+	switch (param) {
+	case VPU_DEBUG_ALGO_PARAM_DUMP_ALGO:
+		ret = (argc == 1) ? 0 : -EINVAL;
+		CHECK_RET("invalid argument, expected:1, received:%d\n", argc);
+
+		debug_algo_id = args[0];
+
+		break;
+	default:
+		LOG_ERR("unsupport the power parameter:%d\n", param);
+		break;
+	}
+out:
+	return ret;
+}
+
