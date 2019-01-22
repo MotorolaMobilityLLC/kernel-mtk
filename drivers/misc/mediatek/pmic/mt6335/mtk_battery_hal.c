@@ -2680,12 +2680,18 @@ static signed int fg_get_rtc_ui_soc(void *data)
 static signed int fg_set_rtc_ui_soc(void *data)
 {
 	int spare3_reg = get_rtc_spare_fg_value();
-	int rtc_ui_soc;
+	int rtc_ui_soc = *(signed int *) (data);
+	int spare3_reg_valid;
+	int new_spare3_reg;
 
-	rtc_ui_soc = (spare3_reg & 0x7f);
+	spare3_reg_valid = (spare3_reg & 0x80);
+	new_spare3_reg = spare3_reg_valid + rtc_ui_soc;
 
-	*(signed int *) (data) = rtc_ui_soc;
-	bm_notice("[fg_get_rtc_ui_soc] rtc_ui_soc %d spare3_reg 0x%x\n", rtc_ui_soc, spare3_reg);
+	/* set spare3 0x7f */
+	set_rtc_spare_fg_value(new_spare3_reg);
+
+	bm_notice("[fg_set_rtc_ui_soc] rtc_ui_soc %d spare3_reg 0x%x new_spare3_reg 0x%x\n",
+		rtc_ui_soc, spare3_reg, new_spare3_reg);
 
 	return STATUS_OK;
 }
