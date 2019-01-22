@@ -88,7 +88,7 @@ static int mmc_queue_thread(void *d)
 	unsigned int tmo;
 #endif
 	bool io_boost_done = false;
-	bool part_cmdq_en = mmc_blk_part_cmdq_en(mq);
+	bool part_cmdq_en = false;
 
 	current->flags |= PF_MEMALLOC;
 
@@ -107,16 +107,15 @@ static int mmc_queue_thread(void *d)
 		set_current_state(TASK_INTERRUPTIBLE);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (part_cmdq_en) {
-			req = blk_peek_request(q);
-			if (!req)
-				goto fetch_done;
+		req = blk_peek_request(q);
+		if (!req)
+			goto fetch_done;
 
-			if (mmc_is_cmdq_full(mq, req)) {
-				req = NULL;
-				cmdq_full = 1;
-				goto fetch_done;
-			}
+		part_cmdq_en = mmc_blk_part_cmdq_en(mq);
+		if (part_cmdq_en && mmc_is_cmdq_full(mq, req)) {
+			req = NULL;
+			cmdq_full = 1;
+			goto fetch_done;
 		}
 #endif
 		req = blk_fetch_request(q);
