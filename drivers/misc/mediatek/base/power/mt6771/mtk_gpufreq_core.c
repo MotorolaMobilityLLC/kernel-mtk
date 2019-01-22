@@ -516,7 +516,7 @@ void mt_gpufreq_disable_by_ptpod(void)
 	mt_gpufreq_voltage_enable_set(1);
 
 	/* Turn on GPU MTCMOS */
-	/* mt_gpufreq_enable_MTCMOS(); */
+	mt_gpufreq_enable_MTCMOS();
 
 	/* Pause GPU DVFS */
 	g_DVFS_is_paused_by_ptpod = true;

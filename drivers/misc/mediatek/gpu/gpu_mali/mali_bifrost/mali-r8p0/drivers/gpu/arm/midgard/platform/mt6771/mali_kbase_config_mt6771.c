@@ -145,7 +145,7 @@ static int _mtk_pm_callback_power_on(void)
 	mt_gpufreq_voltage_enable_set(1);
 
 	/* Turn on GPU MTCMOS by sequence */
-	/* mt_gpufreq_enable_MTCMOS(); */
+	mt_gpufreq_enable_MTCMOS();
 
 	/* Enable clock gating */
 	mt_gpufreq_enable_CG();
