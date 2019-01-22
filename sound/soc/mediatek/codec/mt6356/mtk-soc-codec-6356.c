@@ -4202,62 +4202,57 @@ static const struct snd_kcontrol_new mt6356_UL_Codec_controls[] = {
 		     Audio_UL_LR_Swap_Set),
 };
 
-/* Verify in muse6753 phone for LGE HP impedance requirement (2016/02) */
 int Audio_Read_Efuse_HP_Impedance_Current_Calibration(void)
 {
-	int ret;
+	int ret = 0;
+	int value, sign;
 
-	/* Initialize to zero*/
-	ret = 0;
-
-#ifdef EFUSE_HP_IMPEDANCE
-	pr_warn("+%s\n", __func__);
+	pr_warn("+%s()\n", __func__);
 
 	/* 1. enable efuse ctrl engine clock */
-	Ana_Set_Reg(TOP_CKHWEN_CON0_CLR, 0x0040, 0x0040);
-	Ana_Set_Reg(TOP_CKPDN_CON3_CLR, 0x0004, 0x0004);
+	Ana_Set_Reg(TOP_CKHWEN_CON0_CLR, 0x1 << 2, 0x1 << 2);
+	Ana_Set_Reg(TOP_CKPDN_CON0_CLR, 0x1 << 4, 0x1 << 4);
 
 	/* 2. set RG_OTP_RD_SW */
-	Ana_Set_Reg(0x0C16, 0x0001, 0x0001);
+	Ana_Set_Reg(OTP_CON11, 0x0001, 0x0001);
 
-	/* 3. Select which row to read in MACRO_1 */
-	/* set RG_OTP_PA for bit#786 ~ #793*/
-	Ana_Set_Reg(0x0C00, 0x0022, 0x003F);
+	/* 3. set EFUSE addr */
+	/* HPDET_COMP[6:0] @ efuse bit 1696 ~ 1702 */
+	/* HPDET_COMP_SIGN @ efuse bit 1703 */
+	/* 1696 / 8 = 212 --> 0xd4 */
+	Ana_Set_Reg(OTP_CON0, 0xd4, 0xff);
 
 	/* 4. Toggle RG_OTP_RD_TRIG */
-	ret = Ana_Get_Reg(0x0C10);
+	ret = Ana_Get_Reg(OTP_CON8);
 	if (ret == 0)
-		Ana_Set_Reg(0x0C10, 0x0001, 0x0001);
+		Ana_Set_Reg(OTP_CON8, 0x0001, 0x0001);
 	else
-		Ana_Set_Reg(0x0C10, 0x0000, 0x0001);
+		Ana_Set_Reg(OTP_CON8, 0x0000, 0x0001);
 
 	/* 5. Polling RG_OTP_RD_BUSY */
-	ret = 1;
-	while (ret == 1) {
+	do {
+		ret = Ana_Get_Reg(OTP_CON13) & 0x0001;
 		usleep_range(100, 200);
-		ret = Ana_Get_Reg(0x0C1A);
-		ret = ret & 0x0001;
-		pr_warn("%s polling 0xC1A=0x%x\n", __func__, ret);
-	}
+		pr_warn("%s(), polling OTP_CON13 = 0x%x\n", __func__, ret);
+	} while (ret == 1);
 
 	/* Need to delay at least 1ms for 0xC1A and than can read */
 	usleep_range(500, 1000);
 
 	/* 6. Read RG_OTP_DOUT_SW */
-	/* BIT#786 ~ #793 */
-	ret = Ana_Get_Reg(0x0C18);
-	pr_warn("%s HPoffset : efuse=0x%x\n", __func__, ret);
-	ret = (ret >> 2) & 0x00FF;
-	if (ret >= 64)
-		ret = ret - 128;
+	ret = Ana_Get_Reg(OTP_CON12);
+	pr_warn("%s(), efuse = 0x%x\n", __func__, ret);
+	sign = (ret >> 7) & 0x1;
+	value = ret & 0x7f;
+	value = sign ? -value : value;
 
 	/* 7. Disables efuse_ctrl egine clock */
-	Ana_Set_Reg(TOP_CKPDN_CON3_SET, 0x0004, 0x0004);
-	Ana_Set_Reg(TOP_CKHWEN_CON0_SET, 0x0040, 0x0040);
-#endif
+	Ana_Set_Reg(OTP_CON11, 0x0000, 0x0001);
+	Ana_Set_Reg(TOP_CKPDN_CON0_SET, 0x1 << 4, 0x1 << 4);
+	Ana_Set_Reg(TOP_CKHWEN_CON0_SET, 0x1 << 2, 0x1 << 2);
 
-	pr_warn("-%s EFUSE: %d\n", __func__, ret);
-	return ret;
+	pr_warn("-%s(), efuse: %d\n", __func__, value);
+	return value;
 }
 EXPORT_SYMBOL(Audio_Read_Efuse_HP_Impedance_Current_Calibration);
 

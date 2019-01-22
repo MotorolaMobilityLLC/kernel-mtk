@@ -217,9 +217,23 @@ typedef	int64 kal_int64;
 #define ACCDET_ELR1                   ((UINT32)(PMIC_REG_BASE + 0x1704))
 #define ACCDET_ELR2                   ((UINT32)(PMIC_REG_BASE + 0x1706))
 
+#define TOP_CKPDN_CON0      ((UINT32)(PMIC_REG_BASE + 0x10a))
+#define TOP_CKPDN_CON0_SET  ((UINT32)(PMIC_REG_BASE + 0x10c))
+#define TOP_CKPDN_CON0_CLR  ((UINT32)(PMIC_REG_BASE + 0x10e))
+
+#define TOP_CKHWEN_CON0     ((UINT32)(PMIC_REG_BASE + 0x128))
+#define TOP_CKHWEN_CON0_SET ((UINT32)(PMIC_REG_BASE + 0x12a))
+#define TOP_CKHWEN_CON0_CLR ((UINT32)(PMIC_REG_BASE + 0x12c))
+
 #define TOP_CLKSQ           ((UINT32)(PMIC_REG_BASE + 0x132))
 #define TOP_CLKSQ_SET       ((UINT32)(PMIC_REG_BASE + 0x134))
 #define TOP_CLKSQ_CLR       ((UINT32)(PMIC_REG_BASE + 0x136))
+
+#define OTP_CON0            ((UINT32)(PMIC_REG_BASE + 0x1a2))
+#define OTP_CON8            ((UINT32)(PMIC_REG_BASE + 0x1b2))
+#define OTP_CON11           ((UINT32)(PMIC_REG_BASE + 0x1b8))
+#define OTP_CON12           ((UINT32)(PMIC_REG_BASE + 0x1ba))
+#define OTP_CON13           ((UINT32)(PMIC_REG_BASE + 0x1bc))
 
 #define DRV_CON3            ((UINT32)(PMIC_REG_BASE + 0x3a))
 #define GPIO_DIR0           ((UINT32)(PMIC_REG_BASE + 0x4c))
