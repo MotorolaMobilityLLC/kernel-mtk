@@ -1822,11 +1822,14 @@
 
 		clocks =
 			<&infracfg_ao INFRACFG_AO_UFS_CG>,
+			<&infracfg_ao INFRACFG_AO_UNIPRO_SCK_CG>,
 			<&infracfg_ao INFRACFG_AO_UFS_MP_SAP_BCLK_CG>;
 		clock-names =
 			"ufs0-clock",
+			"ufs0-unipro-clk",
 			"ufs0-mp-clk";
 		freq-table-hz =
+			<0 0>,
 			<0 0>,
 			<0 0>;
 

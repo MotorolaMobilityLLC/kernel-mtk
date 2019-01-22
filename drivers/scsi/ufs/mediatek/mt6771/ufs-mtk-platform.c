@@ -77,12 +77,22 @@ void wdt_pmic_full_reset(struct ufs_hba *hba)
 }
 #endif
 
-/* #include <mt-plat/upmu_common.h> */
+#include <mt-plat/upmu_common.h>
 #define PMIC_REG_MASK (0xFFFF)
 #define PMIC_REG_SHIFT (0)
 void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba)
 {
-	/* Need porting for UFS Debug */
+	int vcc_enabled, vcc_value, vccq2_enabled, va09_enabled;
+
+	vcc_enabled = pmic_get_register_value(PMIC_DA_VEMC_EN);
+	vcc_value = pmic_get_register_value(PMIC_RG_VEMC_VOSEL);
+	vccq2_enabled = pmic_get_register_value(PMIC_DA_EXT_PMIC_EN1);
+	va09_enabled = pmic_get_register_value(PMIC_DA_EXT_PMIC_EN1);
+	/* dump vcc, vccq2 and va09 info */
+	dev_info(hba->dev, "vcc_enabled:%d, vcc_value:%d, vccq2_enabled:%d, va09:%d!!!\n",
+				vcc_enabled, vcc_value, vccq2_enabled, va09_enabled);
+	/* dump clock buffer */
+	clk_buf_dump_clkbuf_log();
 }
 
 #ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
