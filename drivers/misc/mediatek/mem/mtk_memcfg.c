@@ -31,6 +31,7 @@
 #include <linux/sort.h>
 #include <linux/mm.h>
 #include <linux/memblock.h>
+#include "mtk_memcfg_reserve_info.h"
 #ifdef CONFIG_MTK_AEE_FEATURE
 #include <mt-plat/aee.h>
 #endif
@@ -755,6 +756,9 @@ static int __init mtk_memcfg_late_init(void)
 			pr_err("create slabtrace proc entry failed\n");
 #endif
 	}
+
+	mtk_memcfg_reserve_info_init(mtk_memcfg_dir);
+
 	return 0;
 }
 
