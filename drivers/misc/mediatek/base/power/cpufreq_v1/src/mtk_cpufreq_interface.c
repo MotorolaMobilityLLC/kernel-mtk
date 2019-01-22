@@ -365,6 +365,38 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file, const char __use
 	return count;
 }
 
+int sched_assist_is_disable;
+/* cpufreq_sched_disable */
+static int cpufreq_sched_disable_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "cpufreq_sched_disable = %d\n", sched_assist_is_disable);
+
+	return 0;
+}
+
+static ssize_t cpufreq_sched_disable_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+{
+	unsigned int sched_disable;
+	int rc;
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+	rc = kstrtoint(buf, 10, &sched_disable);
+	if (rc < 0)
+		cpufreq_err("echo 0/1 > /proc/cpufreq/cpufreq_sched_disable\n");
+	else {
+		sched_assist_is_disable = sched_disable;
+#ifdef CONFIG_HYBRID_CPU_DVFS
+		cpuhvfs_set_sched_dvfs_disable(sched_disable);
+#endif
+	}
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
 static int cpufreq_up_threshold_ll_proc_show(struct seq_file *m, void *v)
 {
 	release_dvfs = 1;
@@ -511,6 +543,7 @@ PROC_FOPS_RW(cpufreq_oppidx);
 PROC_FOPS_RW(cpufreq_freq);
 PROC_FOPS_RW(cpufreq_volt);
 PROC_FOPS_RW(cpufreq_turbo_mode);
+PROC_FOPS_RW(cpufreq_sched_disable);
 PROC_FOPS_RW(cpufreq_dvfs_time_profile);
 PROC_FOPS_RW(cpufreq_up_threshold_ll);
 PROC_FOPS_RW(cpufreq_up_threshold_l);
@@ -543,6 +576,7 @@ int cpufreq_procfs_init(void)
 		PROC_ENTRY(cpufreq_freq),
 		PROC_ENTRY(cpufreq_volt),
 		PROC_ENTRY(cpufreq_turbo_mode),
+		PROC_ENTRY(cpufreq_sched_disable),
 	};
 
 	dir = proc_mkdir("cpufreq", NULL);
