@@ -183,6 +183,14 @@ static int mtk_cpuidle_dts_map(void)
 	return 0;
 }
 
+static void mtk_switch_armpll(int cpu, int hw_mode)
+{
+	if (cpu < 4)
+		switch_armpll_ll_hwmode(hw_mode);
+	else if (cpu < 8)
+		switch_armpll_l_hwmode(hw_mode);
+}
+
 static void mtk_dbg_save_restore(int cpu, int save)
 {
 	unsigned int cpu_idle_sta;
@@ -199,10 +207,12 @@ static void mtk_dbg_save_restore(int cpu, int save)
 		if (!save)
 			mt_copy_dbg_regs(cpu, __builtin_ffs(~cpu_idle_sta) - 1);
 	}
+	mtk_switch_armpll(cpu, 0);
 }
 
 static void mtk_platform_save_context(int cpu, int idx)
 {
+	mtk_switch_armpll(cpu, 1);
 	mtk_dbg_save_restore(cpu, 1);
 }
 
@@ -226,14 +236,8 @@ int mtk_enter_idle_state(int idx)
 	mtk_cpuidle_footprint_log(cpu, 0);
 	mtk_cpuidle_timestamp_log(cpu, 0);
 	ret = cpu_pm_enter();
+	mtk_cpuidle_footprint_log(cpu, 1);
 	if (!ret) {
-		mtk_cpuidle_footprint_log(cpu, 1);
-
-		if (cpu < 4)
-			switch_armpll_ll_hwmode(1);
-		else if (cpu < 8)
-			switch_armpll_l_hwmode(1);
-
 		mtk_cpuidle_footprint_log(cpu, 2);
 		mtk_platform_save_context(cpu, idx);
 
@@ -251,13 +255,6 @@ int mtk_enter_idle_state(int idx)
 		mtk_platform_restore_context(cpu, idx);
 
 		mtk_cpuidle_footprint_log(cpu, 13);
-
-		if (cpu < 4)
-			switch_armpll_ll_hwmode(0);
-		else if (cpu < 8)
-			switch_armpll_l_hwmode(0);
-
-		mtk_cpuidle_footprint_log(cpu, 14);
 
 		cpu_pm_exit();
 
