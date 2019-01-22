@@ -4297,6 +4297,13 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	init_cmdq_slots(&(pgc->dsi_vfp_line), 1, 0);
 	init_cmdq_slots(&(pgc->night_light_params), 17, 0);
 
+	mem_config.m_ccorr_config.is_dirty = 1;
+	mem_config.m_ccorr_config.mode = 1;
+	mem_config.m_ccorr_config.color_matrix[0] = 1024;
+	mem_config.m_ccorr_config.color_matrix[5] = 1024;
+	mem_config.m_ccorr_config.color_matrix[10] = 1024;
+	mem_config.m_ccorr_config.color_matrix[15] = 1024;
+
 	mutex_init(&(pgc->capture_lock));
 	mutex_init(&(pgc->lock));
 	mutex_init(&(pgc->switch_dst_lock));
@@ -6896,13 +6903,14 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	primary_get_path_handles(&disp_handle, &cmdq_handle);
 
 	/* handle night light in DL, DC separately */
-	if (!primary_display_is_decouple_mode()) {
-		if (m_ccorr_config.is_dirty)
+	if (m_ccorr_config.is_dirty) {
+		if (!primary_display_is_decouple_mode())
 			disp_ccorr_set_color_matrix(cmdq_handle,
 				m_ccorr_config.color_matrix,
 				m_ccorr_config.mode);
-	} else
-		mem_config.m_ccorr_config = m_ccorr_config;
+		else
+			mem_config.m_ccorr_config = m_ccorr_config;
+	}
 
 	if (primary_display_is_decouple_mode() && !primary_display_is_mirror_mode()) {
 		struct WDMA_CONFIG_STRUCT wdma_config;
