@@ -764,7 +764,7 @@ DEVICE_ATTR(scp_A_db_test, 0444, scp_A_db_test_show, NULL);
 
 static struct miscdevice scp_device = {
 	.minor = MISC_DYNAMIC_MINOR,
-	.name = "scp_A",
+	.name = "scp",
 	.fops = &scp_A_log_file_ops
 };
 
@@ -806,6 +806,10 @@ static int create_files(void)
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_mobile_log_UT);
 	if (unlikely(ret != 0))
 		return ret;
+
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_get_last_log);
+	if (unlikely(ret != 0))
+		return ret;
 #endif
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_status);
 
@@ -839,6 +843,10 @@ static int create_files(void)
 		return ret;
 
 	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_mobile_log_UT);
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_B_device.this_device, &dev_attr_scp_B_get_last_log);
 	if (unlikely(ret != 0))
 		return ret;
 #endif
@@ -996,14 +1004,29 @@ void set_scp_mpu(void)
 uint32_t scp_get_freq(void)
 {
 	uint32_t i;
+	uint32_t sum_core_1 = 0;
+	uint32_t sum_core_2 = 0;
 	uint32_t sum = 0;
 	uint32_t return_freq = 0;
 
 	mutex_lock(&scp_feature_mutex);
+	/*
+	 * calculate scp frequence
+	 */
 	for (i = 0; i < NUM_FEATURE_ID; i++) {
-		if (feature_table[i].enable == 1)
-			sum += feature_table[i].freq;
+		if (feature_table[i].enable == 1 && feature_table[i].core == SCP_A_ID)
+			sum_core_1 += feature_table[i].freq;
+		}
+
+	for (i = 0; i < NUM_FEATURE_ID; i++) {
+		if (feature_table[i].enable == 1 && feature_table[i].core == SCP_B_ID)
+			sum_core_2 += feature_table[i].freq;
 	}
+	if (sum_core_1 < sum_core_2)
+		sum = sum_core_2;
+	else
+		sum = sum_core_1;
+
 	mutex_unlock(&scp_feature_mutex);
 	/*pr_debug("[SCP] needed freq sum:%d\n",sum);*/
 	if (sum > FREQ_330MHZ)
