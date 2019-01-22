@@ -540,8 +540,10 @@ static int rndis_md_msg_hdlr(struct usb_function *f, int msg_id, void *data)
 						rndis_activate_direct_tethering(f, true);
 					}
 				} else {
+					rndis->network_type = RNDIS_NETWORK_TYPE_NON_MOBILE;
 					rndis->direct_state = DIRECT_STATE_NONE;
-					pr_info("%s, switch to state: %d\n", __func__, rndis->direct_state);
+					pr_info("%s, switch to state: %d, network_type to: %d\n", __func__,
+						rndis->direct_state, rndis->network_type);
 				}
 			}
 			handled = 1;
