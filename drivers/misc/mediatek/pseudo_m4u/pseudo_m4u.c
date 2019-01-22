@@ -618,6 +618,13 @@ static int __m4u_alloc_mva(M4U_PORT_ID port, unsigned long va, unsigned int size
 		dma_addr = sg_dma_address(table->sgl);
 	}
 
+	if (dma_addr == DMA_ERROR_CODE) {
+		M4UERR("%s, %d alloc mva failed, port is %s, dma_address is 0x%lx, size is 0x%x\n",
+			__func__, __LINE__, m4u_get_port_name(port), (unsigned long)dma_addr, size);
+		M4UERR("SUSPECT that iova have been all exhaust, maybe there's someone hold too much mva\n");
+		goto err;
+	}
+
 	*retmva = dma_addr;
 
 	mva_sg = kzalloc(sizeof(*mva_sg), GFP_KERNEL);
@@ -636,6 +643,10 @@ err_free_iova:
 	M4UMSG("iommu_map_sg failed\n");
 #endif
 err:
+	if (table) {
+		sg_free_table(table);
+		kfree(table);
+	}
 	*retmva = 0;
 	return -EINVAL;
 }
@@ -2171,6 +2182,60 @@ retry:
 }
 #endif
 
+/*
+ * reserve the iova for direct mapping.
+ * without this, the direct mapping iova maybe allocated to other users,
+ * and the armv7s iopgtable may assert warning and return error.
+ * We reserve those iova to avoid this iova been allocated by other users.
+ */
+static int pseudo_reserve_dm(void)
+{
+	struct iommu_dm_region *entry;
+	struct list_head mappings;
+	struct device *dev = m4u_get_larbdev(0);
+	struct iommu_domain *domain;
+	struct iova_domain *iovad;
+	struct iova *iova;
+	unsigned long pg_size = SZ_4K, limit, shift;
+
+	INIT_LIST_HEAD(&mappings);
+
+	iommu_get_dm_regions(dev, &mappings);
+
+	/* We need to consider overlapping regions for different devices */
+	list_for_each_entry(entry, &mappings, list) {
+		dma_addr_t start;
+
+		start = ALIGN(entry->start, pg_size);
+retry:
+		domain = iommu_get_domain_for_dev(dev);
+		if (!domain) {
+			M4UMSG("%s, %d, get iommu_domain failed\n", __func__, __LINE__);
+			domain = iommu_get_domain_for_dev(dev);
+			cond_resched();
+			goto retry;
+		}
+
+		iovad = domain->iova_cookie;
+		shift = iova_shift(iovad);
+		limit = (start + entry->length) >> shift;
+		/* add plus one page for the size of allocation or there maybe overlap */
+		iova = alloc_iova(iovad, (entry->length >> shift) + 1, limit, false);
+		if (!iova) {
+			dev_err(dev, "pseudo alloc_iova failed %s, %d, dm->start 0x%lx, dm->length 0x%lx\n",
+				__func__, __LINE__, (unsigned long)entry->start, entry->length);
+			return -1;
+		}
+
+		M4UMSG("reserve iova for dm success, dm->start 0x%lx, dm->length 0x%lx, start 0x%lx, end 0x%lx\n",
+			(unsigned long)entry->start, entry->length,
+			iova->pfn_lo << shift, iova->pfn_hi << shift);
+
+	}
+
+	return 0;
+}
+
 static const struct file_operations g_stMTK_M4U_fops = {
 	.owner = THIS_MODULE,
 	.open = MTK_M4U_open,
@@ -2228,7 +2293,7 @@ static int pseudo_probe(struct platform_device *pdev)
 	__reserve_iova_sec(dev, 0, sec_mem_size);
 }
 #endif
-
+	pseudo_reserve_dm();
 	gM4uDev = kzalloc(sizeof(struct m4u_device), GFP_KERNEL);
 	if (!gM4uDev) {
 		M4UMSG("kmalloc for m4u_device fail\n");
