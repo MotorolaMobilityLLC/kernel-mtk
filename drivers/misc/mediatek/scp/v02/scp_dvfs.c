@@ -197,20 +197,20 @@ short  scp_set_pmic_vcore(unsigned int cur_freq)
 	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_ON, 0);
 	pmic_set_register_value(PMIC_RG_VSRAM_VCORE_SSHUB_MODE, 0);
 	if (cur_freq > CLK_OPP3) {
-		ret_vc = pmic_scp_set_vcore(850000);
-		ret_vs = pmic_scp_set_vsram_vcore(950000);
+		ret_vc = pmic_scp_set_vcore(900000);
+		ret_vs = pmic_scp_set_vsram_vcore(1000000);
 		scp_cur_volt = 0;
 	} else if (cur_freq <= CLK_OPP3 && cur_freq > CLK_OPP2) {
-		ret_vc = pmic_scp_set_vcore(850000);
-		ret_vs = pmic_scp_set_vsram_vcore(950000);
+		ret_vc = pmic_scp_set_vcore(900000);
+		ret_vs = pmic_scp_set_vsram_vcore(1000000);
 		scp_cur_volt = 1;
 	} else if (cur_freq <= CLK_OPP2 && cur_freq > CLK_OPP1) {
-		ret_vc = pmic_scp_set_vcore(850000);
-		ret_vs = pmic_scp_set_vsram_vcore(950000);
+		ret_vc = pmic_scp_set_vcore(800000);
+		ret_vs = pmic_scp_set_vsram_vcore(900000);
 		scp_cur_volt = 2;
 	}  else if (cur_freq <= CLK_OPP1 && cur_freq > CLK_OPP0) {
-		ret_vc = pmic_scp_set_vcore(750000);
-		ret_vs = pmic_scp_set_vsram_vcore(850000);
+		ret_vc = pmic_scp_set_vcore(800000);
+		ret_vs = pmic_scp_set_vsram_vcore(900000);
 		scp_cur_volt = 3;
 	} else {
 		ret_vc = pmic_scp_set_vcore(800000);
@@ -242,7 +242,7 @@ short  scp_set_pmic_vcore(unsigned int cur_freq)
 		ret_vs = pmic_scp_set_vsram_vcore(800000);
 		scp_cur_volt = 3;
 	} else {
-		ret_vc = pmic_scp_set_vcore(600000);
+		ret_vc = pmic_scp_set_vcore(568000);
 		ret_vs = pmic_scp_set_vsram_vcore(800000);
 	}
 #endif
@@ -264,12 +264,13 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 {
 	int ret = 0;
 
-	ret = clk_prepare_enable(mt_scp_pll->clk_mux);
-	if (ret)
-		scp_dvfs_err("scp dvfs cannot enable clk mux, %d", ret);
 	/* scp_dvfs_info("flag = %d, sel = %d\n", pll_ctrl_flag, pll_sel); */
 #if 1
 	if (pll_ctrl_flag == PLL_ENABLE) {
+		ret = clk_prepare_enable(mt_scp_pll->clk_mux);
+		if (ret)
+			scp_dvfs_err("scp dvfs cannot enable clk mux, %d\n", ret);
+		scp_dvfs_err("[dvfs]clk pll set, (%d %d)", pll_ctrl_flag, pll_sel);
 		switch (pll_sel) {
 		case CLK_OPP0:
 			ret = clk_set_parent(mt_scp_pll->clk_mux, mt_scp_pll->clk_pll0);
@@ -289,9 +290,9 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 		default:
 			break;
 		}
-	} else {
+	} else if (pll_ctrl_flag == PLL_DISABLE && pll_sel != CLK_OPP4)
 		clk_disable_unprepare(mt_scp_pll->clk_mux);
-	}
+
 #endif
 	return ret;
 }
@@ -417,27 +418,33 @@ unsigned int get_clk_div_select(void)
 	return i;
 }
 
-freq_enum get_cur_clk(void)
+clk_opp_enum get_cur_clk(void)
 {
-	unsigned int cur_clk, cur_div, clk_enable;
+	int cur_clk, ret;
 
-	cur_clk = get_clk_sw_select();
-	cur_div = get_clk_div_select();
-
-	clk_enable = CLK_ENABLE;
-	scp_dvfs_info("cur_clk = %d, cur_div = %d, clk_enable = 0x%x\n", cur_clk, cur_div, clk_enable);
-#if 0
-	if (cur_clk == CLK_SEL_SYS && cur_div == CLK_DIV_1 && (clk_enable & (1 << CLK_SYS_EN_BIT)) != 0)
-		return CLK_354M;
-	else if (cur_clk == CLK_SEL_HIGH && cur_div == CLK_DIV_1 && (clk_enable & (1 << CLK_HIGH_EN_BIT)) != 0)
-		return CLK_224M;
-	else if (cur_clk == CLK_SEL_HIGH && cur_div == CLK_DIV_2 && (clk_enable & (1 << CLK_HIGH_EN_BIT)) != 0)
-		return CLK_112M;
-	else if (cur_clk == CLK_SEL_32K)
-		return CLK_32K;
-#endif
-	scp_dvfs_err("clk setting error (%d, %d)\n", cur_clk, cur_div);
-	return FREQ_UNKNOWN;
+	cur_clk = scp_get_dvfs_opp();
+	switch (cur_clk) {
+	case 0:
+		ret = CLK_OPP4;
+		break;
+	case 1:
+		ret = CLK_OPP3;
+		break;
+	case 2:
+		ret = CLK_OPP2;
+		break;
+	case 3:
+		ret = CLK_OPP1;
+		break;
+	case -1:
+		ret = CLK_OPP0;
+		break;
+	default:
+		ret = CLK_OPP0;
+		break;
+	}
+	scp_dvfs_info("clk setting (%d, %d)\n", cur_clk, ret);
+	return ret;
 }
 
 #ifdef CONFIG_PROC_FS
@@ -463,9 +470,9 @@ static int mt_scp_dvfs_debug_proc_show(struct seq_file *m, void *v)
  ************************/
 static ssize_t mt_scp_dvfs_debug_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {
-	int debug = 0;
+	unsigned int debug = 0;
 
-	if (kstrtoint(buffer, 0, &debug) == 0) {
+	if (kstrtouint(buffer, 0, &debug) == 0) {
 		if (debug == 0)
 			mt_scp_dvfs_debug = 0;
 		else if (debug == 1)
@@ -537,16 +544,15 @@ static ssize_t mt_scp_dvfs_limited_opp_on_proc_write(struct file *file,
  *****************************/
 static int mt_scp_dvfs_cur_opp_proc_show(struct seq_file *m, void *v)
 {
-	freq_enum cur_clk = FREQ_UNKNOWN;
+	clk_opp_enum cur_clk = FREQ_UNKNOWN;
 
 	cur_clk = get_cur_clk();
 	seq_printf(m, "current opp = %s\n",
-		(cur_clk == FREQ_104MHZ) ? "CLK_104M, Voltage = 0.8V"
-		: (cur_clk == FREQ_187MHZ) ? "CLK_187M, Voltage = 0.9V"
-		: (cur_clk == FREQ_286MHZ) ? "CLK_286M, Volt = 1.0V"
-		: (cur_clk == FREQ_330MHZ) ? "CLK_330M, Volt = 1.0V"
-		: (cur_clk == FREQ_416MHZ) ? "CLK_416M, Volt = 1.0V"
-		: (cur_clk == FREQ_32KHZ) ? "CLK_32K, Volt = 0.6V"
+		(cur_clk == CLK_OPP0) ? "CLK_104M, Voltage = 0.8V"
+		: (cur_clk == CLK_OPP1) ? "CLK_187M, Voltage = 0.8V"
+		: (cur_clk == CLK_OPP2) ? "CLK_286M, Volt = 0.8V"
+		: (cur_clk == CLK_OPP3) ? "CLK_330M, Volt = 0.9V"
+		: (cur_clk == CLK_OPP4) ? "CLK_416M, Volt = 0.9V"
 		: "state error");
 	return 0;
 }
@@ -895,7 +901,6 @@ static const struct of_device_id scpdvfs_of_ids[] = {
 static int mt_scp_dvfs_suspend(struct device *dev)
 {
 #if 1
-	_set_state(scp_state_name[SCP_DTS_VREQ_ON]);
 	scp_dvfs_dbg("set scp gpio to audio clk on\n");
 #endif
 	return 0;
@@ -904,7 +909,6 @@ static int mt_scp_dvfs_suspend(struct device *dev)
 static int mt_scp_dvfs_resume(struct device *dev)
 {
 #if 1
-	_set_state(scp_state_name[SCP_DTS_VREQ_OFF]);
 	scp_dvfs_dbg("set scp gpio to audio clk off\n");
 #endif
 	return 0;
@@ -980,6 +984,7 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 		goto exit;
 	}
 #endif
+	_set_state(scp_state_name[SCP_DTS_VREQ_ON]);
 	return 0;
 #if 1
 exit:
