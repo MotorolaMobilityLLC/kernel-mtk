@@ -23,7 +23,9 @@
 #include <linux/cdev.h>
 #include <linux/platform_device.h>
 
-#include <ged_frr.h>
+#ifdef PLATFORM_SUPPORT_ARR
+#include <primary_display_arr.h>
+#endif
 
 #include "dfrc_drv.h"
 
@@ -1307,9 +1309,11 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 		vfree(new_policy);
 	}
 
+#ifdef PLATFORM_SUPPORT_ARR
 	if (fps != g_current_fps || hw_mode != g_current_hw_mode) {
-		/* adjust hw vsync */
+		primary_display_arr20_set_refresh_rate(fps);
 	}
+#endif
 
 	if (change) {
 		DFRC_INFO("adjust vsync: [%d|%d|%d] -> [%d|%d|%d]\n",
@@ -1524,12 +1528,15 @@ static int dfrc_probe(struct platform_device *pdev)
 	g_init_done = 1;
 	g_fps_info.support_120 = 0;
 	g_fps_info.support_90 = 0;
-	g_fps_info.num = 2;
+	g_fps_info.num = 1;
 	g_fps_info.range = vmalloc(sizeof(struct DFRC_DRV_REFRESH_RANGE) * g_fps_info.num);
-	g_fps_info.range[0].min_fps = 30;
+#ifdef PLATFORM_SUPPORT_ARR
+	g_fps_info.range[0].min_fps = primary_display_arr20_get_min_refresh_rate(0);
+	g_fps_info.range[0].max_fps = primary_display_arr20_get_max_refresh_rate(0);
+#else
+	g_fps_info.range[0].min_fps = 60;
 	g_fps_info.range[0].max_fps = 60;
-	g_fps_info.range[1].min_fps = 15;
-	g_fps_info.range[1].max_fps = 30;
+#endif
 
 	dfrc_init_kernel_policy();
 
