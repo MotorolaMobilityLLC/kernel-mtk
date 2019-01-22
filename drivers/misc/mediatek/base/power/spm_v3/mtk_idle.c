@@ -43,6 +43,7 @@
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
 #include <mtk_spm_reg.h>
+#include <mtk_spm_misc.h>
 
 #include "ufs-mtk.h"
 
@@ -294,6 +295,7 @@ static bool             soidle3_by_pass_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
 static u32              sodi3_flags = SODI_FLAG_REDUCE_LOG;
+static bool             sodi3_force_vcore_lp_mode;
 #ifdef SPM_SODI3_PROFILE_TIME
 unsigned int            soidle3_profile[4];
 #endif
@@ -617,6 +619,12 @@ static bool soidle3_can_enter(int cpu, int reason)
 
 	if (soidle3_by_pass_pll == 0) {
 		if (!mtk_idle_check_pll(soidle3_pll_condition_mask, soidle3_pll_block_mask)) {
+			reason = BY_PLL;
+			goto out;
+		}
+
+		/* check if univpll is used (sspm not included) */
+		if (univpll_is_used()) {
 			reason = BY_PLL;
 			goto out;
 		}
@@ -1640,8 +1648,10 @@ int soidle3_enter(int cpu)
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-
 	operation_cond |= clkmux_cond[IDLE_TYPE_SO3] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0x0;
+
+	if (sodi3_force_vcore_lp_mode)
+		operation_cond |= DEEPIDLE_OPT_VCORE_LP_MODE;
 
 	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags, operation_cond);
 
@@ -1692,6 +1702,9 @@ int soidle_enter(int cpu)
 #endif /* DEFAULT_MMP_ENABLE */
 
 	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags, operation_cond);
+
+	/* Clear SODI_FLAG_DUMP_LP_GS in sodi_flags */
+	sodi_flags &= (~SODI_FLAG_DUMP_LP_GS);
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
@@ -2118,6 +2131,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	mt_idle_log("soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
 	mt_idle_log("soidle3_bypass_en=%u\n", soidle3_by_pass_en);
 	mt_idle_log("sodi3_flags=0x%x\n", sodi3_flags);
+	mt_idle_log("sodi3_force_vcore_lp_mode=%d\n", sodi3_force_vcore_lp_mode);
 
 	mt_idle_log("\n*********** soidle3 command help  ************\n");
 	mt_idle_log("soidle3 help:  cat /sys/kernel/debug/cpuidle/soidle3_state\n");
@@ -2172,6 +2186,9 @@ static ssize_t soidle3_state_write(struct file *filp,
 		} else if (!strcmp(cmd, "sodi3_flags")) {
 			sodi3_flags = param;
 			idle_dbg("sodi3_flags = 0x%x\n", sodi3_flags);
+		} else if (!strcmp(cmd, "sodi3_force_vcore_lp_mode")) {
+			sodi3_force_vcore_lp_mode = param ? true : false;
+			idle_dbg("sodi3_force_vcore_lp_mode = %d\n", sodi3_force_vcore_lp_mode);
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
