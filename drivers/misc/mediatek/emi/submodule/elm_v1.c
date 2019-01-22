@@ -85,9 +85,11 @@ static irqreturn_t elm_isr(int irq, void *dev_id)
 /* the interface of CCCI for MD EE */
 void dump_last_bm(char *buf, unsigned int leng)
 {
-	spin_lock(&elm_lock);
+	unsigned long flags;
+
+	spin_lock_irqsave(&elm_lock, flags);
 	dump_elm(buf, leng);
-	spin_unlock(&elm_lock);
+	spin_unlock_irqrestore(&elm_lock, flags);
 }
 
 static ssize_t elm_ctrl_show(struct device_driver *driver, char *buf)
