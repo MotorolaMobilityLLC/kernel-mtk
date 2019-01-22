@@ -1216,11 +1216,13 @@ s32 gt1x_touch_event_handler(u8 *data, struct input_dev *dev, struct input_dev *
 #ifdef CONFIG_GTP_ICS_SLOT_REPORT
 		int cycles = pre_index < 3 ? 3 : GTP_MAX_TOUCH;
 
+		input_report_key(tpd->dev, BTN_TOUCH, 0);
 		for (i = 0; i < cycles; i++) {
 			if (pre_index >> i & 0x01)
 				gt1x_touch_up(i);
 		}
 #else
+		input_report_key(tpd->dev, BTN_TOUCH, 0);
 		gt1x_touch_up(0);
 #endif
 		GTP_DEBUG("Released Touch.");
