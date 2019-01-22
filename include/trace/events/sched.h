@@ -928,6 +928,27 @@ TRACE_EVENT(sched_heavy_task,
 		TP_printk("%s", __get_str(s))
 );
 
+TRACE_EVENT(sched_heavy_task_draw,
+
+		TP_PROTO(struct task_struct *tsk),
+
+		TP_ARGS(tsk),
+
+		TP_STRUCT__entry(
+			__array(char, comm, TASK_COMM_LEN)
+			__field(pid_t, pid)
+		),
+
+		TP_fast_assign(
+			memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+			__entry->pid	= tsk->pid;
+		),
+
+		TP_printk("%s, %d",
+			__entry->comm, __entry->pid)
+);
+
+
 #ifdef CONFIG_MTK_SCHED_TRACE
 #define sched_trace(event) \
 TRACE_EVENT(event,                      \
@@ -1483,6 +1504,28 @@ TRACE_EVENT(sched_dynamic_threshold,
 				__entry->L_load_avg,
 				__entry->B_load_avg,
 				__entry->comm)
+		);
+
+TRACE_EVENT(sched_dynamic_threshold_draw,
+
+		TP_PROTO(unsigned int B_threshold, unsigned int L_threshold),
+
+		TP_ARGS(B_threshold, L_threshold),
+
+		TP_STRUCT__entry(
+			__field(unsigned int, up_threshold)
+			__field(unsigned int, down_threshold)
+			),
+
+		TP_fast_assign(
+				__entry->up_threshold	= B_threshold;
+				__entry->down_threshold	= L_threshold;
+			),
+
+		TP_printk(
+				"%4u, %4u",
+				__entry->up_threshold,
+				__entry->down_threshold)
 		);
 
 /*

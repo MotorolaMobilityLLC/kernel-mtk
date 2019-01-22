@@ -749,6 +749,7 @@ trace:
 	trace_sched_hmp_stats(&hmp_stats);
 	trace_sched_dynamic_threshold(task_of(se), B->threshold, check->status,
 			curr_cpu, *target_cpu, se_load(se), B, L);
+	trace_sched_dynamic_threshold_draw(B->threshold, L->threshold);
 #endif
 out:
 	return check->result;
@@ -858,6 +859,7 @@ trace:
 	trace_sched_hmp_stats(&hmp_stats);
 	trace_sched_dynamic_threshold(task_of(se), L->threshold, check->status,
 			curr_cpu, *target_cpu, se_load(se), B, L);
+	trace_sched_dynamic_threshold_draw(B->threshold, L->threshold);
 #endif
 out:
 	return check->result;
