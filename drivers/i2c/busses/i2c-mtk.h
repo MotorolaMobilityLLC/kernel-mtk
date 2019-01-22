@@ -342,10 +342,10 @@ struct mt_i2c {
 	const struct mtk_i2c_compatible *dev_comp;
 	int rec_idx; /* next record idx */
 	struct i2c_info rec_info[I2C_RECORD_LEN];
-	u16 ch_offset_default;
-	u16 ch_offset;
-	u16 dma_ch_offset_default;
-	u16 dma_ch_offset;
+	int ch_offset_default;
+	int ch_offset;
+	int dma_ch_offset_default;
+	int dma_ch_offset;
 };
 
 #if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)

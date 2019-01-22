@@ -616,9 +616,10 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	pr_err("I2C structure:\n"
 	       I2CTAG "Clk=%d,Id=%d,Op=%x,Irq_stat=%x,Total_len=%x\n"
 	       I2CTAG "Trans_len=%x,Trans_num=%x,Trans_auxlen=%x,speed=%d\n"
-	       I2CTAG "Trans_stop=%u,cg_cnt=%d,hs_only=%d\n",
+	       I2CTAG "Trans_stop=%u,cg_cnt=%d,hs_only=%d, ch_offset=%d,ch_offset_default=%d\n",
 	       15600, i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
-			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop, i2c->cg_cnt, i2c->hs_only);
+			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop, i2c->cg_cnt,
+			i2c->hs_only, i2c->ch_offset, i2c->ch_offset_default);
 
 	pr_info_ratelimited("base address 0x%p\n", i2c->base);
 	pr_info_ratelimited("I2C register:\n"
@@ -1381,8 +1382,8 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	of_property_read_u32(np, "clock-frequency", &i2c->speed_hz);
 	of_property_read_u32(np, "clock-div", &i2c->clk_src_div);
 	of_property_read_u32(np, "id", (u32 *)&i2c->id);
-	of_property_read_u16(np, "ch_offset_default", (u16 *)&i2c->ch_offset_default);
-	of_property_read_u16(np, "dma_ch_offset_default", (u16 *)&i2c->dma_ch_offset_default);
+	of_property_read_u32(np, "ch_offset_default", &i2c->ch_offset_default);
+	of_property_read_u32(np, "dma_ch_offset_default", &i2c->dma_ch_offset_default);
 	of_property_read_u32(np, "aed", &i2c->aed);
 	i2c->have_pmic = of_property_read_bool(np, "mediatek,have-pmic");
 	i2c->have_dcm = of_property_read_bool(np, "mediatek,have-dcm");
@@ -1391,7 +1392,9 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	i2c->gpupm = of_property_read_bool(np, "mediatek,gpupm_used");
 	i2c->buffermode = of_property_read_bool(np, "mediatek,buffermode_used");
 	i2c->hs_only = of_property_read_bool(np, "mediatek,hs_only");
-	pr_err("[I2C] id : %d, freq : %d, div : %d.\n", i2c->id, i2c->speed_hz, i2c->clk_src_div);
+	pr_info("[I2C] id : %d, freq : %d, div : %d, ch_offset: %d, dma_ch_offset: %d\n",
+		i2c->id, i2c->speed_hz, i2c->clk_src_div, i2c->ch_offset_default,
+		i2c->dma_ch_offset_default);
 	if (i2c->clk_src_div == 0)
 		return -EINVAL;
 	return 0;
