@@ -58,6 +58,8 @@
 #include "clk-mt6739-pg.h"
 #elif defined(SMI_CAN)
 #include "clk-mt6775-pg.h"
+#elif defined(SMI_SYL)
+#include "clk-mt6771-pg.h"
 #endif
 
 #include "mtk_smi.h"
@@ -280,6 +282,22 @@ static char **smi_clk_name[SMI_REG_REGION_MAX] = {
 	smi_clk_name_larb0, smi_clk_name_larb1, smi_clk_name_larb2, smi_clk_name_larb3,
 	smi_clk_name_larb4, smi_clk_name_larb5, smi_clk_name_larb6, smi_clk_name_larb7,
 	smi_clk_name_common
+};
+#elif defined(SMI_SYL)
+static const unsigned int nr_mtcmos_clks[SMI_REG_REGION_MAX] = {2, 3, 3, 3, 4, 3, 3, 4};
+static char *smi_clk_name_larb0[] = {"mtcmos-mm", "mm-larb0"};
+static char *smi_clk_name_larb1[] = {"mtcmos-vde", "vdec-vdec", "vdec-larb1"};
+static char *smi_clk_name_larb2[] = {"mtcmos-isp", "gals-ipu2mm", "img-larb2"};
+static char *smi_clk_name_larb3[] = {"mtcmos-cam", "gals-ipu12mm", "cam-larb3"};
+static char *smi_clk_name_larb4[] = {"mtcmos-ven", "venc-larb4", "venc-venc", "venc-jpgenc"};
+static char *smi_clk_name_larb5[] = {"mtcmos-isp", "gals-img2mm", "img-larb5"};
+static char *smi_clk_name_larb6[] = {"mtcmos-cam", "gals-cam2mm", "cam-larb6"};
+static char *smi_clk_name_common[] = {
+	"mtcmos-mm", "smi-common-gals-comm0", "smi-common-gals-comm1", "smi-common"
+};
+static char **smi_clk_name[SMI_REG_REGION_MAX] = {
+	smi_clk_name_larb0, smi_clk_name_larb1, smi_clk_name_larb2, smi_clk_name_larb3,
+	smi_clk_name_larb4, smi_clk_name_larb5, smi_clk_name_larb6, smi_clk_name_common
 };
 #endif
 
@@ -657,6 +675,26 @@ static unsigned int smiclk_subsys_2_larb(enum subsys_id sys)
 		break;
 	case SYS_ISP:
 		i4larbid = 0x4;   /* larb2 */
+		break;
+	default:
+		break;
+	}
+#elif defined(SMI_SYL)
+	switch (sys) {
+	case SYS_DIS:
+		i4larbid = 0x1;    /* larb0 */
+		break;
+	case SYS_VDE:
+		i4larbid = 0x2;   /* larb1 */
+		break;
+	case SYS_ISP:
+		i4larbid = 0x24;   /* larb2/5 */
+		break;
+	case SYS_VEN:
+		i4larbid = 0x10;   /* larb4 */
+	break;
+	case SYS_CAM:
+		i4larbid = 0x48;   /* larb3/6 */
 		break;
 	default:
 		break;
