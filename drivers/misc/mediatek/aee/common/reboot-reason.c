@@ -100,19 +100,23 @@ EXPORT_SYMBOL(aee_rr_proc_done);
 /* define /sys/bootinfo/powerup_reason */
 static ssize_t powerup_reason_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	int g_boot_reason = 0;
+	char boot_reason[64];
 	char *br_ptr;
+	char *br_ptr_e;
 
-	br_ptr = strstr(saved_command_line, "boot_reason=");
+	br_ptr = strstr(saved_command_line, "androidboot.bootreason=");
 	if (br_ptr != 0) {
+		br_ptr_e = strstr(br_ptr, " ");
 		/* get boot reason */
-		g_boot_reason = br_ptr[12] - '0';
-		LOGE("g_boot_reason=%d\n", g_boot_reason);
+		if (br_ptr_e != 0) {
+			strncpy(boot_reason, br_ptr + 23, br_ptr_e - br_ptr - 23);
+			boot_reason[br_ptr_e - br_ptr - 23] = '\0';
+		}
 #ifdef CONFIG_MTK_RAM_CONSOLE
 		if (aee_rr_last_fiq_step() != 0)
-			g_boot_reason = BR_KERNEL_PANIC;
+			strncpy(boot_reason, "kpanic", 7);
 #endif
-		return snprintf(buf, REBOOT_REASON_LEN - 1, "%s\n", boot_reason[g_boot_reason]);
+		return snprintf(buf, sizeof(boot_reason), "%s\n", boot_reason);
 	} else
 		return 0;
 
