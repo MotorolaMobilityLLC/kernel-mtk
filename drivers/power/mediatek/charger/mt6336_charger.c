@@ -896,6 +896,82 @@ static int mt6336_enable_term(struct charger_device *chg_dev, bool en)
 	return 0;
 }
 
+static int mt6336_enable_otg(struct charger_device *chg_dev, bool en)
+{
+	int ret = 0;
+	unsigned short flash_sta, vbus_plugin;
+
+	pr_debug("%s: en = %d\n", __func__, en);
+
+	flash_sta = mt6336_get_flag_register_value(MT6336_DA_QI_FLASH_MODE_MUX);
+	if (flash_sta) {
+		pr_err("At Flash mode, cannot turn on OTG\n");
+		return -EBUSY;
+	}
+
+	vbus_plugin = mt6336_get_flag_register_value(MT6336_DA_QI_VBUS_PLUGIN_MUX);
+
+	if (vbus_plugin) {
+		pr_err("VBUS present, cannot turn on OTG\n");
+		return -EBUSY;
+	}
+
+	/* Enable ctrl to lock power, keeping MT6336 in normal mode */
+	mt6336_ctrl_enable(lowq_ctrl);
+
+	if (en) {
+		mt6336_config_interface(0x519, 0x0D, 0xFF, 0);
+		mt6336_config_interface(0x520, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x55A, 0x01, 0xFF, 0);
+		mt6336_config_interface(0x455, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x3C9, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x3CF, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x553, 0x14, 0xFF, 0);
+		mt6336_config_interface(0x55F, 0xE6, 0xFF, 0);
+		mt6336_config_interface(0x53D, 0x47, 0xFF, 0);
+		mt6336_config_interface(0x529, 0x8E, 0xFF, 0);
+		mt6336_config_interface(0x560, 0x0C, 0xFF, 0);
+		mt6336_config_interface(0x40F, 0x04, 0xFF, 0);
+
+		mt6336_set_flag_register_value(MT6336_RG_EN_OTG, 1);
+	} else {
+		mt6336_config_interface(0x52A, 0x88, 0xFF, 0);
+		mt6336_config_interface(0x553, 0x14, 0xFF, 0);
+		mt6336_config_interface(0x519, 0x3F, 0xFF, 0);
+		mt6336_config_interface(0x51E, 0x02, 0xFF, 0);
+		mt6336_config_interface(0x520, 0x04, 0xFF, 0);
+		mt6336_config_interface(0x55A, 0x00, 0xFF, 0);
+		mt6336_config_interface(0x455, 0x01, 0xFF, 0);
+		mt6336_config_interface(0x3C9, 0x10, 0xFF, 0);
+		mt6336_config_interface(0x3CF, 0x03, 0xFF, 0);
+		/* mt6336_config_interface(0x5AF, 0x02, 0xFF, 0); */
+		/* mt6336_config_interface(0x64E, 0x02, 0xFF, 0); */
+		mt6336_config_interface(0x402, 0x03, 0xFF, 0);
+		mt6336_config_interface(0x529, 0x88, 0xFF, 0);
+
+		mt6336_set_flag_register_value(MT6336_RG_EN_OTG, 0);
+	}
+
+	/* enter low power mode */
+	mt6336_ctrl_disable(lowq_ctrl);
+
+	return ret;
+}
+
+static int mt6336_set_boost_current_limit(struct charger_device *chg_dev, u32 uA)
+{
+	int ret = 0;
+	u32 array_size = 0;
+	u32 boost_ilimit = 0, boost_reg = 0;
+
+	array_size = ARRAY_SIZE(BOOST_CURRENT_LIMIT);
+	boost_ilimit = bmt_find_closest_level(BOOST_CURRENT_LIMIT, array_size, uA);
+	boost_reg = charging_parameter_to_value(BOOST_CURRENT_LIMIT, array_size, boost_ilimit);
+	mt6336_set_flag_register_value(MT6336_RG_OTG_IOLP, boost_reg);
+
+	return ret;
+}
+
 void mt6336_buck_power_on_callback(void)
 {
 	pr_err("mt6336_buck_power_on_callback\n");
@@ -1051,6 +1127,8 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.is_safety_timer_enabled = mt6336_is_safety_timer_enabled,
 	.enable_termination = mt6336_enable_term,
 	.event = mt6336_event,
+	.enable_otg = mt6336_enable_otg,
+	.set_boost_current_limit = mt6336_set_boost_current_limit,
 };
 
 static int mt6336_charger_probe(struct platform_device *pdev)
