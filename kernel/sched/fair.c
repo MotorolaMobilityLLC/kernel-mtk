@@ -5999,8 +5999,15 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	 *  if hybrid enabled and system is over-utilized.
 	 */
 	if ((energy_aware() && !hybrid_support()) ||
-			(hybrid_support() && !system_overutilized(cpu)))
-		goto CONSIDER_EAS;
+			(hybrid_support() && !system_overutilized(cpu))) {
+		new_cpu =  select_energy_cpu_plus(p, prev_cpu, prefer_idle);
+
+#ifdef CONFIG_MTK_SCHED_TRACERS
+		trace_sched_select_task_rq(p, (LB_EAS | new_cpu), prev_cpu, new_cpu,
+				task_util(p), boosted_task_util(p), prefer_idle);
+#endif
+		return new_cpu;
+	}
 
 	/* HMP fork balance:
 	 * always put non-kernel forking tasks on a big domain
@@ -6019,8 +6026,6 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			return new_cpu;
 		}
 	}
-
-CONSIDER_EAS:
 
 	if (sd_flag & SD_BALANCE_WAKE)
 		want_affine = (!wake_wide(p) && task_fits_max(p, cpu) &&
