@@ -5937,6 +5937,12 @@ static int mtk_memcfg_slabtrace_show(struct seq_file *m, void *p)
 
 	mutex_lock(&slab_mutex);
 	list_for_each_entry(s, &slab_caches, list) {
+		/* We only want to know the backtraces of kmalloc-*
+		 * Backtraces of other kmem_cache can be find easily
+		 */
+		if (!strstr(s->name, "kmalloc-"))
+			continue;
+
 		seq_printf(m, "========== kmem_cache: %s alloc_calls ==========\n", s->name);
 		if (!(s->flags & SLAB_STORE_USER))
 			continue;
