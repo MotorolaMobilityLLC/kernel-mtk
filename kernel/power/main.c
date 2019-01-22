@@ -364,6 +364,9 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 	suspend_state_t state;
 	int error;
 
+	/* force check wakelock after echo mem > /sys/power/state */
+	events_check_enabled = true;
+
 	error = pm_autosleep_lock();
 	if (error)
 		return error;
