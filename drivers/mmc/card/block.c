@@ -996,6 +996,7 @@ cmd_err:
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
 #define MMC_SEND_WRITE_PROT_TYPE        31
 #define EXT_CSD_USR_WP                  171     /* R/W */
+#define US_PERM_WP_EN			4
 
 int mmc_otp_ops_check_bdev(struct block_device *bdev)
 {
@@ -1013,14 +1014,21 @@ int mmc_otp_ops_check(struct block_device *bdev,
 	 || (idata->ic.opcode == MMC_SEND_WRITE_PROT_TYPE)) {
 		if (idata->ic.arg >= bdev->bd_part->nr_sects)
 			return -EFAULT;
+		idata->ic.arg += bdev->bd_part->start_sect;
 	} else if (idata->ic.opcode == MMC_SWITCH) {
 		if (((idata->ic.arg >> 16) & 0xFF) != EXT_CSD_USR_WP)
 			return -EPERM;
+#ifndef CONFIG_MTK_EMMC_SUPPORT_OTP_FOR_CUSTOMER
+		/* prevent users' permanent writ protect in sqc */
+		if (((idata->ic.arg >> 8) & US_PERM_WP_EN)
+			&& ((((idata->ic.arg >> 24) & 0x3) == MMC_SWITCH_MODE_SET_BITS)
+				|| (((idata->ic.arg >> 24) & 0x3) == MMC_SWITCH_MODE_WRITE_BYTE))) {
+			return -EPERM;
+		}
+#endif
 	} else {
 		return -EPERM;
 	}
-
-	idata->ic.arg += bdev->bd_part->start_sect;
 
 	return 0;
 
