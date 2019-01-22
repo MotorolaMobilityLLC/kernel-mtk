@@ -8684,15 +8684,18 @@ static int idle_balance(struct rq *this_rq)
 	}
 	rcu_read_unlock();
 
+	/* We could not pull task to this_cpu when this_rq offline */
+	if (this_rq->online) {
 #ifdef CONFIG_MTK_SCHED_VIP_TASKS
-	if (!pulled_task)
-		pulled_task = vip_idle_pull(this_cpu);
+		if (!pulled_task)
+			pulled_task = vip_idle_pull(this_cpu);
 #endif
 
 #ifdef CONFIG_SCHED_HMP_PLUS
-	if ((!energy_aware() || system_overutilized(this_cpu)) && !pulled_task)
-		pulled_task = hmp_idle_pull(this_cpu);
+		if ((!energy_aware() || system_overutilized(this_cpu)) && !pulled_task)
+			pulled_task = hmp_idle_pull(this_cpu);
 #endif
+	}
 	raw_spin_lock(&this_rq->lock);
 
 	if (curr_cost > this_rq->max_idle_balance_cost)
