@@ -151,6 +151,25 @@ static int __init memory_ssvp_init(struct reserved_mem *rmem)
 RESERVEDMEM_OF_DECLARE(memory_ssvp, "mediatek,memory-ssvp",
 			memory_ssvp_init);
 
+static int __init dedicate_tui_memory(struct reserved_mem *rmem)
+{
+	struct SSVP_Region *region;
+
+	region = &_svpregs[SSVP_TUI];
+
+	pr_info("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
+		 __func__, rmem->name,
+		 &rmem->base, &rmem->size);
+
+	region->use_cache_memory = true;
+	region->is_unmapping = true;
+	region->count = rmem->size / PAGE_SIZE;
+	region->cache_page = phys_to_page(rmem->base);
+
+	return 0;
+}
+RESERVEDMEM_OF_DECLARE(tui_memory, "mediatek,memory-tui",
+			dedicate_tui_memory);
 /*
  * Check whether memory_ssvp is initialized
  */
@@ -805,64 +824,74 @@ out:
 }
 
 
-void memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
+int memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
 		const struct file_operations *entry_fops)
 {
 	struct proc_dir_entry *procfs_entry;
 
-	if (size > 0) {
-		if (entry_fops) {
-			procfs_entry = proc_create(name, 0, NULL, entry_fops);
+	if (size <= 0) {
+		region->state = SVP_STATE_DISABLED;
+		return -1;
+	}
 
-			if (!procfs_entry)
-				pr_warn("Failed to create procfs svp_region file\n");
+	if (entry_fops) {
+		procfs_entry = proc_create(name, 0, NULL, entry_fops);
+		if (!procfs_entry) {
+			pr_info("Failed to create procfs svp_region file\n");
+			return -1;
 		}
+	}
 
-		region->count = (size * SZ_1M) >> PAGE_SHIFT;
-		region->state = SVP_STATE_ON;
 
-		if (is_pre_reserve_memory) {
-			int ret_map;
-			struct page *page;
+	if (region->use_cache_memory) {
+		pr_info("[%s]:Use dedicate memory as cached memory\n", name);
+		goto region_init_done;
+	}
 
-			page = zmc_cma_alloc(cma, region->count,
-					SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
-			region->use_cache_memory = true;
-			region->cache_page = page;
-			svp_usage_count += region->count;
-			ret_map = pmd_unmapping((unsigned long)__va((page_to_phys(region->cache_page))),
+	region->count = (size * SZ_1M) >> PAGE_SHIFT;
+
+	if (is_pre_reserve_memory) {
+		int ret_map;
+		struct page *page;
+
+		page = zmc_cma_alloc(cma, region->count,
+				SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
+		region->use_cache_memory = true;
+		region->cache_page = page;
+		svp_usage_count += region->count;
+		ret_map = pmd_unmapping((unsigned long)__va((page_to_phys(region->cache_page))),
+				region->count << PAGE_SHIFT);
+
+		if (ret_map < 0) {
+			pr_info("[unmapping fail]: virt:0x%lx, size:0x%lx",
+					(unsigned long)__va((page_to_phys(page))),
 					region->count << PAGE_SHIFT);
 
-			if (ret_map < 0) {
-				pr_alert("[unmapping fail]: virt:0x%lx, size:0x%lx",
-						(unsigned long)__va((page_to_phys(page))),
-						region->count << PAGE_SHIFT);
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
+					| DB_OPT_LOW_MEMORY_KILLER
+					| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
+					| DB_OPT_PROCESS_COREDUMP
+					| DB_OPT_PAGETYPE_INFO
+					| DB_OPT_DUMPSYS_PROCSTATS,
+					"\nCRDISPATCH_KEY:SVP_SS1\n",
+					"[unmapping fail]: virt:0x%lx, size:0x%lx",
+					(unsigned long)__va((page_to_phys(page))),
+					region->count << PAGE_SHIFT);
 
-				aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
-						| DB_OPT_LOW_MEMORY_KILLER
-						| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
-						| DB_OPT_PROCESS_COREDUMP
-						| DB_OPT_PAGETYPE_INFO
-						| DB_OPT_DUMPSYS_PROCSTATS,
-						"\nCRDISPATCH_KEY:SVP_SS1\n",
-						"[unmapping fail]: virt:0x%lx, size:0x%lx",
-						(unsigned long)__va((page_to_phys(page))),
-						region->count << PAGE_SHIFT);
+			region->is_unmapping = false;
+		} else
+			region->is_unmapping = true;
+	}
 
-				region->is_unmapping = false;
-			} else
-				region->is_unmapping = true;
-		}
-
-		pr_alert("%s %d: %s is enable with size: %d mB",
+region_init_done:
+	region->state = SVP_STATE_ON;
+	pr_info("%s %d: %s is enable with size: %d mB\n",
 			__func__, __LINE__, name, size);
-	} else
-		region->state = SVP_STATE_DISABLED;
+	return 0;
 }
 
 static int __init memory_ssvp_debug_init(void)
 {
-	int ret = 0;
 	struct dentry *dentry;
 
 	if (ssvp_sanity() < 0) {
@@ -879,6 +908,6 @@ static int __init memory_ssvp_debug_init(void)
 	memory_ssvp_init_region("svp_region", SVP_MBSIZE, &_svpregs[SSVP_SVP], &svp_cma_fops);
 	memory_ssvp_init_region("tui_region", TUI_MBSIZE, &_svpregs[SSVP_TUI], NULL);
 
-	return ret;
+	return 0;
 }
 late_initcall(memory_ssvp_debug_init);
