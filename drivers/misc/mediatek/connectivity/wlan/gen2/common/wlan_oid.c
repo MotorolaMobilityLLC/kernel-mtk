@@ -1095,6 +1095,8 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 
 	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prAisAbortMsg, MSG_SEND_METHOD_BUF);
 
+	cnmTimerStopTimer(prAdapter, &prAdapter->rScanNloTimeoutTimer);
+
 	DBGLOG(OID, INFO, "ssid %s, bssid %pM, conn policy %d, disc reason %d\n",
 			     prConnSettings->aucSSID, prConnSettings->aucBSSID,
 			     prConnSettings->eConnectionPolicy, prAisAbortMsg->ucReasonOfDisconnect);

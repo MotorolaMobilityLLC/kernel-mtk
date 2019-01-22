@@ -1120,6 +1120,16 @@ BOOLEAN scnQuerySparseChannel(IN P_ADAPTER_T prAdapter, P_ENUM_BAND_T prSparseBa
 	}
 }
 
+VOID scnFsmRunEventNloConReqTimeOut(IN P_ADAPTER_T prAdapter)
+{
+	P_SCAN_INFO_T prScanInfo;
+
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prScanInfo->fgNloScanning = TRUE;
+	DBGLOG(SCN, INFO, "scnFsmNloConReqTimeOut\n");
+	scnPSCNFsm(prAdapter, PSCN_RESET);
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief        Event handler for NLO done event
@@ -1149,6 +1159,18 @@ VOID scnEventNloDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_NLO_DONE_T prNloDone)
 
 		kalMemZero(&prNloParam->aprPendingBssDescToInd[0],
 					CFG_SCAN_SSID_MATCH_MAX_NUM * sizeof(P_BSS_DESC_T));
+
+		cnmTimerStopTimer(prAdapter, &prAdapter->rScanNloTimeoutTimer);
+
+		cnmTimerInitTimer(prAdapter,
+				  &prAdapter->rScanNloTimeoutTimer,
+				  (PFN_MGMT_TIMEOUT_FUNC) scnFsmRunEventNloConReqTimeOut,
+				  (ULONG) NULL);
+
+		cnmTimerStartTimer(prAdapter,
+				   &prAdapter->rScanNloTimeoutTimer,
+				   5000);
+
 	} else {
 		DBGLOG(SCN, INFO, "Unexpected NLO-DONE event\n");
 	}
@@ -1755,11 +1777,6 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 		switch (prScanInfo->eCurrentPSCNState) {
 		case PSCN_IDLE:
 			DBGLOG(SCN, TRACE, "PSCN_IDLE.... PSCAN_ACT_DISABLE\n");
-			if (IS_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX)) {
-				UNSET_NET_ACTIVE(prAdapter, NETWORK_TYPE_AIS_INDEX);
-
-				DBGLOG(SCN, TRACE, "DEACTIVATE AIS to disable PSCN\n");
-			}
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			eNextPSCNState = PSCN_IDLE;
 			break;
