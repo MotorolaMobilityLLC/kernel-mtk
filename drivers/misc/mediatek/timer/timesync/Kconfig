@@ -42,3 +42,16 @@ config MTK_TIMER_TIMESYNC
 	  as kernel in AP.
 
 	  If unsure, say N.
+
+config MTK_ARCHCOUNTER_TIMESYNC
+	tristate "Time synchronization between archcounter time and monotonic time"
+	default y
+	help
+	  This selects the support for time synchronization between archcounter time
+	  and monotonic time.
+
+	  Time synchronization may be required in some sub-systems, for example,
+	  camera ...etc, to have ability to get the same monotonic time as kernel
+	  in AP.
+
+	  If unsure, say N.
