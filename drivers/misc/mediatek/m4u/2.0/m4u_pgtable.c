@@ -523,10 +523,13 @@ int m4u_map_16M(m4u_domain_t *m4u_domain, unsigned int mva, phys_addr_t pa, unsi
 	}
 
 	mva &= F_PGD_PA_SUPERSECTION_MSK;
-	if (pa > 0xffffffffL)
-		padscpt = (((unsigned int)pa & F_PTE_PA_SMALL_MSK) | F_PGD_BIT32_BIT);
-	else
-		padscpt = ((unsigned int)pa & F_PGD_PA_SUPERSECTION_MSK);
+	padscpt = ((unsigned int)pa & F_PGD_PA_SUPERSECTION_MSK);
+	if (pa > 0xffffffffL) {
+		if (!!(pa & 0x100000000LL))
+			padscpt = padscpt | F_PTE_BIT32_BIT;
+		if (!!(pa & 0x200000000LL))
+			padscpt = padscpt | F_PTE_BIT33_BIT;
+	}
 
 	pgprot = __m4u_get_pgd_attr_16M(prot);
 
@@ -574,10 +577,13 @@ int m4u_map_1M(m4u_domain_t *m4u_domain, unsigned int mva, phys_addr_t pa, unsig
 	}
 
 	mva &= F_PGD_PA_SECTION_MSK;
-	if (pa > 0xffffffffL)
-		padscpt = (((unsigned int)pa & F_PTE_PA_SMALL_MSK) | F_PGD_BIT32_BIT);
-	else
-		padscpt = (unsigned int)pa & F_PGD_PA_SECTION_MSK;
+	padscpt = (unsigned int)(pa & F_PGD_PA_SECTION_MSK);
+	if (pa > 0xffffffffL) {
+		if (!!(pa & 0x100000000LL))
+			padscpt = padscpt | F_PTE_BIT32_BIT;
+		if (!!(pa & 0x200000000LL))
+			padscpt = padscpt | F_PTE_BIT33_BIT;
+	}
 
 	pgprot = __m4u_get_pgd_attr_1M(prot);
 
