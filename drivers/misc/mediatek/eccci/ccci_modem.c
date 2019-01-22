@@ -533,6 +533,35 @@ void ccci_md_clear_smem(int md_id, int first_boot)
 	}
 }
 
+void __attribute__((weak)) mmdvfs_set_md_on(bool to_on)
+{
+	CCCI_NORMAL_LOG(-1, TAG, "call weak mmdvfs_set_md_on with %d\n", (int)to_on);
+}
+
+void notify_md_on(int md_id)
+{
+	if (md_id == MD_SYS1)
+		mmdvfs_set_md_on(1);
+}
+
+void notify_md_off(int md_id, int off_level)
+{
+	if (md_id != MD_SYS1)
+		return;
+
+	switch (off_level) {
+	case MD_OFF_LVL_0:
+		mmdvfs_set_md_on(0);
+		break;
+	case MD_OFF_LVL_1:
+		mmdvfs_set_md_on(0);
+		break;
+	default:
+		CCCI_NORMAL_LOG(-1, TAG, "invalid off lvl %d\n", off_level);
+		break;
+	}
+}
+
 int ccci_md_pre_stop(unsigned char md_id, unsigned int stop_type)
 {
 	struct ccci_modem *md = ccci_md_get_modem_by_id(md_id);
@@ -567,6 +596,8 @@ int ccci_md_post_start(unsigned char md_id)
 {
 	return md_cd_vcore_config(md_id, 0);
 }
+
+
 int ccci_md_soft_stop(unsigned char md_id, unsigned int sim_mode)
 {
 	struct ccci_modem *md = ccci_md_get_modem_by_id(md_id);

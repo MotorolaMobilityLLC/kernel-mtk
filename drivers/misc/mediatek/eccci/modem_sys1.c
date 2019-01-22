@@ -384,6 +384,7 @@ static int md_cd_start(struct ccci_modem *md)
 
 	md_cldma_hw_reset(md->index);
 
+	notify_md_on(md->index);
 	ret = md_cd_power_on(md);
 	if (ret) {
 		CCCI_BOOTUP_LOG(md->index, TAG, "power on MD fail %d\n", ret);
@@ -437,11 +438,14 @@ static int check_power_off_en(struct ccci_modem *md)
 
 static int md_cd_soft_start(struct ccci_modem *md, unsigned int mode)
 {
+	notify_md_on(md->index);
 	return md_cd_soft_power_on(md, mode);
 }
 
+
 static int md_cd_soft_stop(struct ccci_modem *md, unsigned int mode)
 {
+	notify_md_off(md->index, MD_OFF_LVL_1);
 	return md_cd_soft_power_off(md, mode);
 }
 
@@ -537,6 +541,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int stop_type)
 	md_cd_check_emi_state(md, 1);	/* Check EMI before */
 
 	/* power off MD */
+	notify_md_off(md->index, MD_OFF_LVL_0);
 	ret = md_cd_power_off(md, stop_type == MD_FLIGHT_MODE_ENTER ? 100 : 0);
 	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off done, %d\n", ret);
 
