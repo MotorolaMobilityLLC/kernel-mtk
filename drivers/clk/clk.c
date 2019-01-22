@@ -174,7 +174,7 @@ static bool clk_core_is_enabled(struct clk_core *core)
 
 #if (!defined(CONFIG_MACH_MT6799) && !defined(CONFIG_MACH_MT6763) &&	\
 	!defined(CONFIG_MACH_MT6758) && !defined(CONFIG_MACH_MT6739) && \
-	!defined(CONFIG_MACH_MT6775))
+	!defined(CONFIG_MACH_MT6775) && !defined(CONFIG_MACH_MT6771))
 static void clk_unprepare_unused_subtree(struct clk_core *core)
 {
 	struct clk_core *child;
@@ -249,7 +249,7 @@ static int clk_disable_unused(void)
 {
 #if (!defined(CONFIG_MACH_MT6799) && !defined(CONFIG_MACH_MT6763) &&	\
 	!defined(CONFIG_MACH_MT6758) && !defined(CONFIG_MACH_MT6739) && \
-	!defined(CONFIG_MACH_MT6775))
+	!defined(CONFIG_MACH_MT6775) && !defined(CONFIG_MACH_MT6771))
 	struct clk_core *core;
 #endif
 
@@ -259,7 +259,7 @@ static int clk_disable_unused(void)
 	}
 #if (!defined(CONFIG_MACH_MT6799) && !defined(CONFIG_MACH_MT6763) &&	\
 	!defined(CONFIG_MACH_MT6758) && !defined(CONFIG_MACH_MT6739) && \
-	!defined(CONFIG_MACH_MT6775))
+	!defined(CONFIG_MACH_MT6775) && !defined(CONFIG_MACH_MT6771))
 	clk_prepare_lock();
 
 	hlist_for_each_entry(core, &clk_root_list, child_node)
