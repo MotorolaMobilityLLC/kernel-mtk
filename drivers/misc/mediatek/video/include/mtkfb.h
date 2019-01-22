@@ -229,7 +229,7 @@ struct fb_overlay_decouple {
 };
 struct fb_overlay_buffer {
 	/* Input */
-	int layer_id;
+	unsigned int layer_id;
 	unsigned int layer_en;
 	int ion_fd;
 	unsigned int cache_sync;
