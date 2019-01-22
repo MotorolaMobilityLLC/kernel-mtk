@@ -233,7 +233,6 @@ bool mtk_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask);
 void __init iomap_init(void);
 
 bool mtk_idle_disp_is_pwm_rosc(void);
-bool mtk_idle_auxadc_is_released(void);
 
 #endif /* __MTK_IDLE_INTERNAL_H__ */
 

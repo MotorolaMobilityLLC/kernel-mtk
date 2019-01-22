@@ -46,8 +46,8 @@ obj-y += mtk_spm_pmic_wrap.o
 endif
 obj-y += mtk_spm_resource_req.o
 obj-y += mtk_spm_sleep.o
-#obj-y += mtk_spm_sodi.o
-#obj-y += mtk_spm_sodi3p0.o
+obj-y += mtk_spm_sodi.o
+obj-y += mtk_spm_sodi3p0.o
 #obj-y += mtk_spm_sodi_cmdq.o
 obj-y += mtk_spm_vcorefs.o
 endif
