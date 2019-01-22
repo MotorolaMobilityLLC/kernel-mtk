@@ -28,6 +28,7 @@
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_dramc.h>
 #include <mtk_eem.h>
+#include "mmdvfs_mgr.h"
 
 __weak int emmc_autok(void)
 {
@@ -57,6 +58,7 @@ static DEFINE_MUTEX(governor_mutex);
 struct governor_profile {
 	bool vcore_dvs;
 	bool ddr_dfs;
+	bool isr_debug;
 
 	int curr_vcore_uv;
 	int curr_ddr_khz;
@@ -70,6 +72,7 @@ struct governor_profile {
 static struct governor_profile governor_ctrl = {
 	.vcore_dvs = SPM_VCORE_DVS_EN,
 	.ddr_dfs = SPM_DDR_DFS_EN,
+	.isr_debug = 0,
 
 	.late_init_opp = LATE_INIT_OPP,
 
@@ -151,6 +154,29 @@ bool vcorefs_dram_dfs_en(void)
 	struct governor_profile *gvrctrl = &governor_ctrl;
 
 	return gvrctrl->ddr_dfs;
+}
+
+int vcorefs_enable_debug_isr(bool enable)
+{
+	int flag;
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	vcorefs_crit("enable_debug_isr: %d\n", enable);
+
+	mutex_lock(&governor_mutex);
+
+	gvrctrl->isr_debug = enable;
+
+	flag = spm_dvfs_flag_init();
+
+	if (enable)
+		flag |= SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS;
+
+	spm_go_to_vcorefs(flag);
+
+	mutex_unlock(&governor_mutex);
+
+	return 0;
 }
 
 int vcorefs_get_num_opp(void)
@@ -287,6 +313,8 @@ int governor_debug_store(const char *buf)
 	} else if (!strcmp(cmd, "ddr_dfs")) {
 		gvrctrl->ddr_dfs = val;
 		set_vcorefs_en();
+	} else if (!strcmp(cmd, "isr_debug")) {
+		vcorefs_enable_debug_isr(val);
 	} else {
 		r = -EPERM;
 	}
@@ -306,6 +334,7 @@ char *governor_get_dvfs_info(char *p)
 
 	p += snprintf(p, buff_end - p, "[vcore_dvs]: %d\n", gvrctrl->vcore_dvs);
 	p += snprintf(p, buff_end - p, "[ddr_dfs  ]: %d\n", gvrctrl->ddr_dfs);
+	p += snprintf(p, buff_end - p, "[isr_debug]: %d\n", gvrctrl->isr_debug);
 	p += snprintf(p, buff_end - p, "\n");
 
 	p += snprintf(p, buff_end - p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
@@ -421,6 +450,10 @@ int vcorefs_module_init(void)
 void governor_autok_manager(void)
 {
 	int r;
+	struct mmdvfs_prepare_action_event evt_from_vcore = {MMDVFS_EVENT_PREPARE_CALIBRATION_START};
+
+	/* notify MM DVFS for msdc autok start */
+	mmdvfs_notify_prepare_action(&evt_from_vcore);
 
 	r = emmc_autok();
 	vcorefs_crit("EMMC autok done: %s\n", (r == 0) ? "Yes" : "No");
