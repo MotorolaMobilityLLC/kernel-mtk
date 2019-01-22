@@ -113,6 +113,7 @@ extern int PMIC_check_pwrhold_status(void);
 extern void PMIC_LP_INIT_SETTING(void);
 extern int PMIC_MD_INIT_SETTING_V1(void);
 extern void PMIC_PWROFF_SEQ_SETTING(void);
+extern int pmic_tracking_init(void);
 #endif
 /*---------------------------------------------------*/
 
