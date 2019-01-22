@@ -6293,7 +6293,7 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, in
 		return;
 	}
 
-	if (((nginfo->inst[1] & 0xFF000000) >> 24) == CMDQ_CODE_WFE) {
+	if (nginfo && ((nginfo->inst[1] & 0xFF000000) >> 24) == CMDQ_CODE_WFE) {
 		const u32 event = nginfo->inst[1] & ~0xFF000000;
 
 		if (event >= CMDQ_SYNC_RESOURCE_WROT0)
