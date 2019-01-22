@@ -239,11 +239,10 @@ void cmdq_dev_init_MDP_PA(struct device_node *node)
 
 	module_pa_start = cmdq_dev_get_reference_PA("mm_mutex", 0);
 
-	if (module_pa_start == 0) {
+	if (!module_pa_start)
 		CMDQ_ERR("DEV: init mm_mutex PA fail!!\n");
-	} else {
+	else
 		pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX] = module_pa_start;
-	}
 	CMDQ_MSG("MM_MUTEX PA: start = 0x%x\n", pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX]);
 }
 

@@ -2,11 +2,16 @@ config MTK_CMDQ
 	bool "build CMDQ driver"
 	default n
 	help
-	  enable this config to build CMDQ
-	  This CMDQ module is used for Display/MDP to write HW register
+	  This CMDQ module is used for help multi-media driver,
+          to control HW engine register in specific timing,
+          and notify caller configuration is done.
+          Especially for display/MDP.
 
 config MTK_CMDQ_TAB
 	bool "enable CMDQ Tablet compatibility"
 	help
 	  enable this config to be compatible with Tablet architecture
 	  especially SVP path
+          This CMDQ module is used for help multi-media driver,
+          to control HW engine register in specific timing,
+          and notify caller configuration is done.
