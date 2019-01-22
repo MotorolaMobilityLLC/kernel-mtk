@@ -212,10 +212,12 @@ static long AKI2C_RxData(char *rxData, int length)
 #ifndef CONFIG_MTK_I2C_EXTENSION
 	struct i2c_client *client = this_client;
 	int res = 0;
-	char addr = rxData[0];
+	char addr = 0;
 
 	if ((rxData == NULL) || (length < 1))
 		return -EINVAL;
+
+	addr = rxData[0];
 	res = mag_i2c_read_block(client, addr, rxData, length);
 	if (res < 0)
 		return -1;
@@ -267,11 +269,14 @@ static long AKI2C_TxData(char *txData, int length)
 #ifndef CONFIG_MTK_I2C_EXTENSION
 	struct i2c_client *client = this_client;
 	int res = 0;
-	char addr = txData[0];
-	u8 *buff = &txData[1];
+	char addr = 0;
+	u8 *buff = NULL;
 
 	if ((txData == NULL) || (length < 2))
 		return -EINVAL;
+
+	addr = txData[0];
+	buff = &txData[1];
 	res = mag_i2c_write_block(client, addr, buff, (length - 1));
 	if (res < 0)
 		return -1;
