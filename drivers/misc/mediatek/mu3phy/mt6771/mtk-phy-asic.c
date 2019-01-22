@@ -380,11 +380,13 @@ void usb_phy_switch_to_usb(void)
 bool u3_loop_back_test(void)
 {
 	int reg;
-
 	bool loop_back_ret = false;
 
 	VA09_operation(VA09_OP_ON, true);
 	usb_enable_clock(true);
+
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB09_ON_OFST,
+				RG_SSUSB_VUSB09_ON, 1);
 
 	/*SSUSB_IP_SW_RST = 0*/
 	writel(0x00031000, U3D_SSUSB_IP_PW_CTRL0);
@@ -473,9 +475,6 @@ bool u3_loop_back_test(void)
 }
 #endif
 
-#define RG_SSUSB_VUSB10_ON (1<<29)
-#define RG_SSUSB_VUSB10_ON_OFST (29)
-
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 #include <linux/wakelock.h>
 static struct wake_lock sib_wakelock;
@@ -493,8 +492,9 @@ void usb_phy_sib_enable_switch(bool enable)
 	usb_enable_clock(true);
 	udelay(250);
 
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
-			  RG_SSUSB_VUSB10_ON, 1);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB09_ON_OFST,
+			  RG_SSUSB_VUSB09_ON, 1);
+
 	/* SSUSB_IP_SW_RST = 0 */
 	U3PhyWriteReg32((phys_addr_t) (uintptr_t) (u3_ippc_base + 0x0), 0x00031000);
 	/* SSUSB_IP_HOST_PDN = 0 */
@@ -534,8 +534,8 @@ bool usb_phy_sib_enable_switch_status(void)
 	usb_enable_clock(true);
 	udelay(250);
 
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
-			  RG_SSUSB_VUSB10_ON, 1);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB09_ON_OFST,
+			  RG_SSUSB_VUSB09_ON, 1);
 
 	reg = U3PhyReadReg32((phys_addr_t) (uintptr_t) SSUSB_SIFSLV_CHIP_BASE);
 	if (reg == 0x62910008)
@@ -647,8 +647,8 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/*Wait 50 usec */
 	udelay(250);
 
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
-			  RG_SSUSB_VUSB10_ON, 1);
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB09_ON_OFST,
+			  RG_SSUSB_VUSB09_ON, 1);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode)
@@ -905,8 +905,8 @@ reg_done:
 	 * Turn off SSUSB reference clock (26MHz)
 	 */
 	if (clk_on) {
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
-				RG_SSUSB_VUSB10_ON, 0);
+		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB09_ON_OFST,
+				RG_SSUSB_VUSB09_ON, 0);
 
 		/* Wait 10 usec. */
 		udelay(10);
@@ -933,8 +933,8 @@ void usb_phy_recover(unsigned int clk_on)
 		/* Wait 50 usec. (PHY 3.3v & 1.8v power stable time) */
 		udelay(250);
 
-		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB10_ON_OFST,
-				RG_SSUSB_VUSB10_ON, 1);
+		U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USB30_PHYA_REG1, RG_SSUSB_VUSB09_ON_OFST,
+				RG_SSUSB_VUSB09_ON, 1);
 	}
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode)
