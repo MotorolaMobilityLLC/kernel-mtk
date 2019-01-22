@@ -99,9 +99,6 @@ int mt_usb_dual_role_init(struct musb *musb)
 {
 	struct dual_role_phy_desc *dual_desc;
 
-	musb->dr_usb = devm_kzalloc(musb->controller, sizeof(*musb->dr_usb),
-				GFP_KERNEL);
-
 	dual_desc = devm_kzalloc(musb->controller, sizeof(*dual_desc),
 				GFP_KERNEL);
 
