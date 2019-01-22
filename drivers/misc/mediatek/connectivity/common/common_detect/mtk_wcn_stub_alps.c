@@ -86,14 +86,12 @@ struct work_struct *g_sdio_1v_autok_wk;
 #endif
 int gConnectivityChipId = -1;
 
-#ifdef MTK_WCN_COMBO_CHIP_SUPPORT
 /*
 * current used uart port name, default is "ttyMT2",
 * will be changed when wmt driver init
 */
 char *wmt_uart_port_desc = "ttyMT2";
 EXPORT_SYMBOL(wmt_uart_port_desc);
-#endif
 
 static void mtk_wcn_cmb_sdio_request_eirq(msdc_sdio_irq_handler_t irq_handler, void *data);
 static void mtk_wcn_cmb_sdio_enable_eirq(void);
