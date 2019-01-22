@@ -61,7 +61,7 @@ static kal_uint32 BTCVSD_read_wait_queue_flag;
 static kal_uint32 writeToBT_cnt;
 static kal_uint32 readFromBT_cnt;
 
-
+static bool rx_timeout;
 
 /*=============================================================================================
 *     BT SCO Internal Function
@@ -228,6 +228,8 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 
 	if (isRX == 1) {
 		readFromBT_cnt = 0;
+		rx_timeout = false;
+
 		BT_CVSD_Mem.u4RXBufferSize = sizeof(BT_SCO_RX_T);
 
 		if ((BT_CVSD_Mem.pucRXVirtBufAddr == NULL)
@@ -651,14 +653,13 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 
 			if (ret < 0) {
 				/* error, -ERESTARTSYS if it was interrupted by a signal */
-				max_timeout_trial--;
 				pr_err("%s(), error, trial left %d, read_count %zd\n",
 				       __func__,
 				       max_timeout_trial,
 				       read_count);
 
-				if (max_timeout_trial <= 0)
-					return read_count;
+				rx_timeout = true;
+				return read_count;
 			} else if (ret == 0) {
 				/* conidtion is false after timeout */
 				max_timeout_trial--;
@@ -667,8 +668,10 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 				       max_timeout_trial,
 				       read_count);
 
-				if (max_timeout_trial <= 0)
+				if (max_timeout_trial <= 0) {
+					rx_timeout = true;
 					return read_count;
+				}
 			} else if (ret == 1) {
 				/* condition is true after timeout */
 				pr_debug("%s(), timeout, condition is true\n", __func__);
@@ -896,6 +899,16 @@ void Set_BTCVSD_State(unsigned long arg)
 bool btcvsd_rx_irq_received(void)
 {
 	return readFromBT_cnt;
+}
+
+bool btcvsd_rx_timeout(void)
+{
+	return rx_timeout;
+}
+
+void btcvsd_rx_reset_timeout(void)
+{
+	rx_timeout = false;
 }
 
 unsigned long btcvsd_frame_to_bytes(struct snd_pcm_substream *substream,
