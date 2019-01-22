@@ -20,3 +20,5 @@ obj-y += mmprofile.o
 ifeq ($(CONFIG_MTK_GMO_RAM_OPTIMIZE),y)
 ccflags-y += -DFORBID_MMP_START
 endif
+
+ccflags-$(CONFIG_MACH_MT8167) += -DFORBID_MMP_START
