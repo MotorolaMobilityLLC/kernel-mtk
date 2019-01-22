@@ -515,42 +515,51 @@ void disp_ccorr_multiply_3x3(unsigned int ccorrCoef[3][3], int color_matrix[3][3
 {
 	int temp_Result;
 
-	temp_Result = (int)((ccorrCoef[0][0]*color_matrix[0][0] + ccorrCoef[0][1]*color_matrix[1][0] +
-		ccorrCoef[0][2]*color_matrix[2][0]) / 1024);
+	temp_Result = (int)(((int)ccorrCoef[0][0]*color_matrix[0][0] +
+		(int)ccorrCoef[0][1]*color_matrix[1][0] +
+		(int)ccorrCoef[0][2]*color_matrix[2][0]) / 1024);
 	resultCoef[0][0] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
 
-	temp_Result = (int)((ccorrCoef[0][0]*color_matrix[0][1] + ccorrCoef[0][1]*color_matrix[1][1] +
-		ccorrCoef[0][2]*color_matrix[2][1]) / 1024);
+	temp_Result = (int)(((int)ccorrCoef[0][0]*color_matrix[0][1] +
+		(int)ccorrCoef[0][1]*color_matrix[1][1] +
+		(int)ccorrCoef[0][2]*color_matrix[2][1]) / 1024);
 	resultCoef[0][1] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
 
-	temp_Result = (int)((ccorrCoef[0][0]*color_matrix[0][2] + ccorrCoef[0][1]*color_matrix[1][2] +
-		ccorrCoef[0][2]*color_matrix[2][2]) / 1024);
+	temp_Result = (int)(((int)ccorrCoef[0][0]*color_matrix[0][2] +
+		(int)ccorrCoef[0][1]*color_matrix[1][2] +
+		(int)ccorrCoef[0][2]*color_matrix[2][2]) / 1024);
 	resultCoef[0][2] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
 
 
-	temp_Result = (int)((ccorrCoef[1][0]*color_matrix[0][0] + ccorrCoef[1][1]*color_matrix[1][0] +
-		ccorrCoef[1][2]*color_matrix[2][0]) / 1024);
+	temp_Result = (int)(((int)ccorrCoef[1][0]*color_matrix[0][0] +
+		(int)ccorrCoef[1][1]*color_matrix[1][0] +
+		(int)ccorrCoef[1][2]*color_matrix[2][0]) / 1024);
 	resultCoef[1][0] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
 
-	temp_Result = (int)((ccorrCoef[1][0]*color_matrix[0][1] + ccorrCoef[1][1]*color_matrix[1][1] +
-		ccorrCoef[1][2]*color_matrix[2][1]) / 1024);
+	temp_Result = (int)(((int)ccorrCoef[1][0]*color_matrix[0][1] +
+		(int)ccorrCoef[1][1]*color_matrix[1][1] +
+		(int)ccorrCoef[1][2]*color_matrix[2][1]) / 1024);
 	resultCoef[1][1] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
 
-	temp_Result = (int)((ccorrCoef[1][0]*color_matrix[0][2] + ccorrCoef[1][1]*color_matrix[1][2] +
-		ccorrCoef[1][2]*color_matrix[2][2]) / 1024);
+	temp_Result = (int)(((int)ccorrCoef[1][0]*color_matrix[0][2] +
+		(int)ccorrCoef[1][1]*color_matrix[1][2] +
+		(int)ccorrCoef[1][2]*color_matrix[2][2]) / 1024);
 	resultCoef[1][2] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
 
 
-	temp_Result = (int)((ccorrCoef[2][0]*color_matrix[0][0] + ccorrCoef[2][1]*color_matrix[1][0] +
-		ccorrCoef[2][2]*color_matrix[2][0]) / 1024);
+	temp_Result = (int)(((int)ccorrCoef[2][0]*color_matrix[0][0] +
+		(int)ccorrCoef[2][1]*color_matrix[1][0] +
+		(int)ccorrCoef[2][2]*color_matrix[2][0]) / 1024);
 	resultCoef[2][0] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
 
-	temp_Result = (int)((ccorrCoef[2][0]*color_matrix[0][1] + ccorrCoef[2][1]*color_matrix[1][1] +
-		ccorrCoef[2][2]*color_matrix[2][1]) / 1024);
-	resultCoef[2][0] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
+	temp_Result = (int)(((int)ccorrCoef[2][0]*color_matrix[0][1] +
+		(int)ccorrCoef[2][1]*color_matrix[1][1] +
+		(int)ccorrCoef[2][2]*color_matrix[2][1]) / 1024);
+	resultCoef[2][1] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
 
-	temp_Result = (int)((ccorrCoef[2][0]*color_matrix[0][2] + ccorrCoef[2][1]*color_matrix[1][2] +
-		ccorrCoef[2][2]*color_matrix[2][2]) / 1024);
+	temp_Result = (int)(((int)ccorrCoef[2][0]*color_matrix[0][2] +
+		(int)ccorrCoef[2][1]*color_matrix[1][2] +
+		(int)ccorrCoef[2][2]*color_matrix[2][2]) / 1024);
 	resultCoef[2][2] = CCORR_CLIP(temp_Result, -2048, 2047) & 0xFFF;
 }
 
@@ -829,7 +838,11 @@ int disp_ccorr_set_color_matrix(void *cmdq, int32_t matrix[16], int32_t hint)
 	for (i = 0; i < 3; i++) {
 		for (j = 0; j < 3; j++) {
 			/* Copy Color Matrix */
-			g_disp_ccorr_color_matrix[i][j] = matrix[i*4 + j];
+			g_disp_ccorr_color_matrix[i][j] = matrix[j*4 + i];
+
+			/* early jump out */
+			if (ccorr_without_gamma == 1)
+				continue;
 
 			if (i == j && g_disp_ccorr_color_matrix[i][j] != 1024)
 				ccorr_without_gamma = 1;
