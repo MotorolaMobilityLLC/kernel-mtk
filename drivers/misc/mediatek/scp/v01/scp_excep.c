@@ -22,6 +22,7 @@
 #include <mt-plat/sync_write.h>
 #include <linux/sched_clock.h>
 #include <linux/ratelimit.h>
+#include <linux/delay.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
@@ -56,6 +57,7 @@ static struct scp_work_struct scp_aed_work;
 static struct scp_status_reg scp_A_aee_status;
 static struct mutex scp_excep_mutex;
 static struct mutex scp_A_excep_dump_mutex;
+int scp_ee_force_ke_enable;
 
 /* An ELF note in memory */
 struct memelfnote {
@@ -516,7 +518,11 @@ void scp_aed_reset_inplace(enum scp_excep_id type, enum scp_core_id id)
 		return;
 	}
 #endif
-
+	if (scp_ee_force_ke_enable == 1) {
+		/* wait scp ee dump finish */
+		msleep(20000);
+		BUG_ON(1);
+	}
 	pr_debug("[SCP] SCP_A_REBOOT\n");
 	reset_scp(SCP_A_REBOOT);
 
