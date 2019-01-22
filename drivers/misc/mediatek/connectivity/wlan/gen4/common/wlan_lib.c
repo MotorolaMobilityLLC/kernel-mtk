@@ -8624,61 +8624,27 @@ WLAN_STATUS wlanTriggerStatsLog(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DurationI
 }
 
 WLAN_STATUS
-wlanDhcpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+wlanPktTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(TX, INFO, "DHCP PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-	       prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+	PUINT_8 apucPktType[ENUM_PKT_FLAG_NUM] = {
+		(PUINT_8) DISP_STRING("INVALID"),
+		(PUINT_8) DISP_STRING("802_3"),
+		(PUINT_8) DISP_STRING("1X"),
+		(PUINT_8) DISP_STRING("PROTECTED_1X"),
+		(PUINT_8) DISP_STRING("NON_PROTECTED_1X"),
+		(PUINT_8) DISP_STRING("VLAN_EXIST"),
+		(PUINT_8) DISP_STRING("DHCP"),
+		(PUINT_8) DISP_STRING("ARP"),
+		(PUINT_8) DISP_STRING("ICMP"),
+		(PUINT_8) DISP_STRING("TDLS"),
+		(PUINT_8) DISP_STRING("DNS")
+	};
+	if (prMsduInfo->ucPktType >= ENUM_PKT_FLAG_NUM)
+		prMsduInfo->ucPktType = 0;
+
+	DBGLOG(TX, INFO, "TX DONE, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+	       apucPktType[prMsduInfo->ucPktType], prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
 	       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
-
-	return WLAN_STATUS_SUCCESS;
-}
-
-WLAN_STATUS wlanArpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
-{
-	DBGLOG(TX, INFO, "ARP PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-	       prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
-	       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
-
-	return WLAN_STATUS_SUCCESS;
-}
-
-WLAN_STATUS
-wlanIcmpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
-{
-	DBGLOG(TX, INFO, "ICMP PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-			prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
-			prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
-
-	return WLAN_STATUS_SUCCESS;
-}
-
-WLAN_STATUS
-wlanTdlsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
-{
-	DBGLOG(TX, INFO, "TDLS PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-			prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
-			prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
-
-	return WLAN_STATUS_SUCCESS;
-}
-
-WLAN_STATUS
-wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
-		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
-{
-	DBGLOG(TX, INFO, "DNS PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-			prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
-			prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
-
-	return WLAN_STATUS_SUCCESS;
-}
-
-WLAN_STATUS wlan1xTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
-	IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
-{
-	DBGLOG(TX, INFO, "1x PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-		prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
-		prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }
