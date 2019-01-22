@@ -23,8 +23,7 @@
 #include "include/pmic_api_buck.h"
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_internal.h>
-/* 20170407 Owen fix build error */
-#ifndef CONFIG_MACH_MT6758
+#ifdef CONFIG_MTK_DRAMC
 #include <mtk_dramc.h>
 #endif
 #include <linux/of.h>
@@ -93,7 +92,7 @@ void __attribute__((weak)) spm_vcorefs_init(void)
 	pr_err("NO %s !!!\n", __func__);
 }
 
-void __attribute__((weak)) mt_power_gs_dump_suspend(void)
+void __attribute__((weak)) mt_power_gs_t_dump_suspend(int count, ...)
 {
 	pr_err("NO %s !!!\n", __func__);
 }
@@ -390,8 +389,8 @@ int __spm_get_dram_type(void)
 {
 	return __spmfw_idx;
 }
-
 #endif /* CONFIG_MACH_MT6758 */
+
 int __init spm_module_init(void)
 {
 	int r = 0;

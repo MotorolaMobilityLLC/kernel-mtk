@@ -11,10 +11,10 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_MCDI_H__
-#define __MTK_MCDI_H__
+#ifndef __MTK_MCDI_API_H__
+#define __MTK_MCDI_API_H__
 
 unsigned int mcdi_get_curr_cpu_status(void);
 void mcdi_heart_beat_log_dump(void);
 
-#endif /* __MTK_MCDI_H__ */
+#endif /* __MTK_MCDI_API_H__ */

@@ -91,6 +91,10 @@ enum spm_deepidle_step {
 
 static int spm_dormant_sta;
 
+void __attribute__((weak)) mt_power_gs_t_dump_dpidle(int count, ...)
+{
+}
+
 static inline void spm_dpidle_footprint(enum spm_deepidle_step step)
 {
 #ifdef CONFIG_MTK_RAM_CONSOLE
@@ -1240,11 +1244,9 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	spm_dpidle_notify_spm_before_wfi_async_wait();
 
 	/* Dump low power golden setting */
-	/* 20170407 Owen fix build error */
-	#if 0
 	if (operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)
 		mt_power_gs_dump_dpidle();
-	#endif
+
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)

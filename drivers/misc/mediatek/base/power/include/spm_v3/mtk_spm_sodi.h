@@ -20,116 +20,35 @@
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 
-#if defined(CONFIG_MACH_MT6799)
-#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
-#define WAKE_SRC_FOR_SODI \
-	(WAKE_SRC_R12_PCMTIMER | \
-	WAKE_SRC_R12_SSPM_WDT_EVENT_B | \
-	WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_APXGPT1_EVENT_B | \
-	WAKE_SRC_R12_SYS_TIMER_EVENT_B | \
-	WAKE_SRC_R12_EINT_EVENT_B | \
-	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
-	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_SSPM_SPM_IRQ_B | \
-	WAKE_SRC_R12_SCP_IPC_MD2SPM_B | \
-	WAKE_SRC_R12_SCP_WDT_EVENT_B | \
-	WAKE_SRC_R12_USBX_CDSC_B | \
-	WAKE_SRC_R12_USBX_POWERDWN_B | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_AFE_IRQ_MCU_B | \
-	WAKE_SRC_R12_SCP_CIRQ_IRQ_B | \
-	WAKE_SRC_R12_MD1_WDT_B | \
-	WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT)
-#else
-#define WAKE_SRC_FOR_SODI \
-	(WAKE_SRC_R12_PCMTIMER | \
-	WAKE_SRC_R12_SSPM_WDT_EVENT_B | \
-	WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_APXGPT1_EVENT_B | \
-	WAKE_SRC_R12_SYS_TIMER_EVENT_B | \
-	WAKE_SRC_R12_EINT_EVENT_B | \
-	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
-	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_SSPM_SPM_IRQ_B | \
-	WAKE_SRC_R12_SCP_IPC_MD2SPM_B | \
-	WAKE_SRC_R12_SCP_WDT_EVENT_B | \
-	WAKE_SRC_R12_USBX_CDSC_B | \
-	WAKE_SRC_R12_USBX_POWERDWN_B | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_AFE_IRQ_MCU_B | \
-	WAKE_SRC_R12_SCP_CIRQ_IRQ_B | \
-	WAKE_SRC_R12_MD1_WDT_B | \
-	WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT | \
-	WAKE_SRC_R12_SEJ_EVENT_B)
-#endif /* CONFIG_MICROTRUST_TEE_SUPPORT */
-
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
-#define WAKE_SRC_FOR_COMMON_SODI (         \
-	WAKE_SRC_R12_PCMTIMER            | \
-	WAKE_SRC_R12_SSPM_WDT_EVENT_B    | \
-	WAKE_SRC_R12_KP_IRQ_B            | \
-	WAKE_SRC_R12_APXGPT1_EVENT_B     | \
-	WAKE_SRC_R12_SYS_TIMER_EVENT_B   | \
-	WAKE_SRC_R12_EINT_EVENT_B        | \
-	WAKE_SRC_R12_C2K_WDT_IRQ_B       | \
-	WAKE_SRC_R12_CCIF0_EVENT_B       | \
-	WAKE_SRC_R12_SSPM_SPM_IRQ_B      | \
-	WAKE_SRC_R12_SCP_IPC_MD2SPM_B    | \
-	WAKE_SRC_R12_SCP_WDT_EVENT_B     | \
-	WAKE_SRC_R12_USBX_CDSC_B         | \
-	WAKE_SRC_R12_USBX_POWERDWN_B     | \
-	WAKE_SRC_R12_CONN2AP_WAKEUP_B    | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B       | \
-	WAKE_SRC_R12_AFE_IRQ_MCU_B       | \
-	WAKE_SRC_R12_SCP_CIRQ_IRQ_B      | \
-	WAKE_SRC_R12_CONN2AP_WDT_IRQ_B   | \
-	WAKE_SRC_R12_MD1_WDT_B           | \
-	WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT)
-
-#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
-#define WAKE_SRC_FOR_SODI WAKE_SRC_FOR_COMMON_SODI
-#else
-#define WAKE_SRC_FOR_SODI (WAKE_SRC_FOR_COMMON_SODI | WAKE_SRC_R12_SEJ_EVENT_B)
-
-#endif /* CONFIG_MICROTRUST_TEE_SUPPORT */
-
-#else
-#error "Does not support!"
-#endif
-
-
-#ifdef SPM_SODI_PROFILE_TIME
-extern unsigned int	soidle_profile[4];
-#endif
-
 #define SODI_TAG     "[SODI] "
 #define SODI3_TAG    "[SODI3] "
 
-#define sodi_err(fmt, args...)     pr_err(SODI_TAG fmt, ##args)
-#define sodi_warn(fmt, args...)    pr_warn(SODI_TAG fmt, ##args)
-#define sodi_debug(fmt, args...)   pr_debug(SODI_TAG fmt, ##args)
-#define sodi3_err(fmt, args...)    pr_err(SODI3_TAG fmt, ##args)
-#define sodi3_warn(fmt, args...)   pr_warn(SODI3_TAG fmt, ##args)
-#define sodi3_debug(fmt, args...)  pr_debug(SODI3_TAG fmt, ##args)
-#define so_err(fg, fmt, args...)   ((fg&SODI_FLAG_3P0)?pr_err(SODI3_TAG fmt, ##args):pr_err(SODI_TAG fmt, ##args))
-#define so_warn(fg, fmt, args...)  ((fg&SODI_FLAG_3P0)?pr_warn(SODI3_TAG fmt, ##args):pr_warn(SODI_TAG fmt, ##args))
-#define so_debug(fg, fmt, args...)				\
-	do {							\
-		if (fg&SODI_FLAG_3P0)				\
-			pr_debug(SODI3_TAG fmt, ##args);	\
-		else						\
-			pr_debug(SODI_TAG fmt, ##args);		\
-	} while (0)
+#define sodi_pr_err(fmt, args...)     pr_err(SODI_TAG fmt, ##args)
+#define sodi_pr_warn(fmt, args...)    pr_warn(SODI_TAG fmt, ##args)
+#define sodi_pr_debug(fmt, args...)   pr_debug(SODI_TAG fmt, ##args)
+#define sodi_pr_notice(fmt, args...)  pr_notice(SODI3_TAG fmt, ##args)
+#define sodi_pr_info(fmt, args...)    pr_info(SODI3_TAG fmt, ##args)
+#define sodi3_pr_err(fmt, args...)    pr_err(SODI3_TAG fmt, ##args)
+#define sodi3_pr_warn(fmt, args...)   pr_warn(SODI3_TAG fmt, ##args)
+#define sodi3_pr_notice(fmt, args...) pr_notice(SODI3_TAG fmt, ##args)
+#define sodi3_pr_info(fmt, args...)   pr_info(SODI3_TAG fmt, ##args)
+#define sodi3_pr_debug(fmt, args...)  pr_debug(SODI3_TAG fmt, ##args)
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
-#define SPM_BYPASS_SYSPWREQ     1
-#else
-#define SPM_BYPASS_SYSPWREQ     0
-#endif
+#define so_pr_err(fg, fmt, args...)     \
+		((fg&SODI_FLAG_3P0)?pr_err(SODI3_TAG fmt, ##args):pr_err(SODI_TAG fmt, ##args))
+#define so_pr_warn(fg, fmt, args...)    \
+		((fg&SODI_FLAG_3P0)?pr_warn(SODI3_TAG fmt, ##args):pr_warn(SODI_TAG fmt, ##args))
+#define so_pr_notice(fg, fmt, args...)  \
+		((fg&SODI_FLAG_3P0)?pr_notice(SODI3_TAG fmt, ##args):pr_notice(SODI_TAG fmt, ##args))
+#define so_pr_info(fg, fmt, args...)    \
+		((fg&SODI_FLAG_3P0)?pr_info(SODI3_TAG fmt, ##args):pr_info(SODI_TAG fmt, ##args))
+#define so_pr_debug(fg, fmt, args...)					\
+		do {							\
+			if (fg&SODI_FLAG_3P0)				\
+				pr_debug(SODI3_TAG fmt, ##args);	\
+			else						\
+				pr_debug(SODI_TAG fmt, ##args);		\
+		} while (0)
 
 enum spm_sodi_step {
 	SPM_SODI_ENTER = 0,
@@ -169,7 +88,7 @@ u32 __attribute__((weak)) aee_rr_curr_sodi_val(void)
 }
 #endif
 
-void __attribute__((weak)) mt_power_gs_dump_sodi3(void)
+void __attribute__((weak)) mt_power_gs_t_dump_sodi3(int count, ...)
 {
 }
 

@@ -34,8 +34,7 @@
 #endif
 #include <mt-plat/upmu_common.h>
 #include <mtk_spm_misc.h>
-/* 20170407 Owen fix build error */
-#ifndef CONFIG_MACH_MT6758
+#ifdef CONFIG_MTK_DRAMC
 #include <mtk_dramc.h>
 #endif
 
@@ -452,11 +451,8 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #endif
 
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
-	/* 20170407 Owen fix build error */
-	#if 0
 	if (slp_dump_golden_setting)
 		mt_power_gs_dump_suspend();
-	#endif
 #endif
 }
 
