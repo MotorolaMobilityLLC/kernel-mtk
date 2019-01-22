@@ -679,7 +679,7 @@ void PMIC_EINT_SETTING(void)
 	register_irq_handlers();
 	enable_pmic_irqs();
 
-#if defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 	node = of_find_compatible_node(NULL, NULL, "mediatek, mt6355_pmic");
 #else
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6355-pmic");

@@ -37,6 +37,9 @@
 #define RT5738_REG_CTRL2	(0x06)
 #define RT5738_REG_CTRL3	(0x07)
 #define RT5738_REG_CTRL4	(0x08)
+/* Hidden mode */
+/* #define RT5738_REG_CTRL5	(0x09) */
+
 
 enum {
 	RT5738_A,
@@ -253,6 +256,7 @@ static int rt5738_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	struct regulator_chip *chip = info->reg_chip;
 	int ret;
 
+	/* TODO: after SB, add rt5738_ipi_set_mode */
 	switch (mode) {
 	case REGULATOR_MODE_FAST: /* force pwm mode */
 		ret = rt5738_set_bit(info->i2c, chip->mode_reg, chip->mode_bit);
@@ -453,11 +457,19 @@ static int rt5738_i2c_remove(struct i2c_client *i2c)
 	return 0;
 }
 
+#if defined(CONFIG_MACH_MT6775)
+static const struct of_device_id rt_match_table[] = {
+	{ .compatible = "mediatek,ext_buck_vpu", },
+	{ .compatible = "mediatek,ext_buck_cpul", },
+	{ },
+};
+#else
 static const struct of_device_id rt_match_table[] = {
 	{ .compatible = "mediatek,ext_buck_lp4", },
 	{ .compatible = "mediatek,ext_buck_lp4x", },
 	{ },
 };
+#endif
 
 static const struct i2c_device_id rt_dev_id[] = {
 	{"rt5738", 0},
