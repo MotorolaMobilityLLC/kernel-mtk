@@ -1828,7 +1828,8 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 						   NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
 
 	/* Device can help us to save at most 3000 packets, after we stopped queue */
-	prGlueInfo->prDevHandler->tx_queue_len = 3000;
+	if (prGlueInfo->prDevHandler != NULL)
+		prGlueInfo->prDevHandler->tx_queue_len = 3000;
 #endif
 	if (!prGlueInfo->prDevHandler) {
 		DBGLOG(INIT, ERROR, "Allocating memory to net_device context failed\n");
