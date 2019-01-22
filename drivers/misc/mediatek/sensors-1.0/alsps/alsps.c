@@ -641,6 +641,7 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 	err = ps_enable_and_batch();
 #endif
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
+	ps_data_report(1, SENSOR_STATUS_ACCURACY_HIGH);
 	ALSPS_LOG("ps_store_batch done: %d\n", cxt->is_ps_batch_enable);
 	if (err)
 		return err;
