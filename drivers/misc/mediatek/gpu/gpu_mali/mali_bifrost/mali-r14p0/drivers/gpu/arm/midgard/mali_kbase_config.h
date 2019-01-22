@@ -209,6 +209,12 @@ struct kbase_pm_callback_conf {
 	 * suspeneded by runtime PM, else OS error code
 	 */
 	int (*power_runtime_idle_callback)(struct kbase_device *kbdev);
+
+#if defined(CONFIG_MACH_MT6763)
+	void (*mtk_power_suspend_callback)(struct kbase_device *kbdev);
+
+	void (*mtk_power_resume_callback)(struct kbase_device *kbdev);
+#endif
 };
 
 #ifdef CONFIG_OF
