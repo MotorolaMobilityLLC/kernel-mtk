@@ -666,7 +666,6 @@ static int mtk_arch_reset_handle(struct notifier_block *this, unsigned long mode
 static int __init mtk_arch_reset_init(void)
 {
 	int ret;
-	pm_power_off = mt_power_off;
 	mtk_restart_handler.notifier_call = mtk_arch_reset_handle;
 	mtk_restart_handler.priority = 128;
 	pr_alert("\n register_restart_handler- 0x%p, Notify call: - 0x%p\n",
