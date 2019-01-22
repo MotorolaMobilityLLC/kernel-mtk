@@ -1035,8 +1035,7 @@ RESTORE_IRQ:
 
 	spm_dpidle_footprint(0);
 
-	/* FIXME: */
-#if 0
+#if 1
 	if (wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
 #endif
@@ -1207,8 +1206,7 @@ RESTORE_IRQ:
 
 	spm_dpidle_footprint(0);
 
-	/* FIXME: */
-#if 0
+#if 1
 	if (last_wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
 #endif

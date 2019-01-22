@@ -22,6 +22,11 @@
 #include "mtk_spm_vcore_dvfs.h"
 #include "mmdvfs_mgr.h"
 
+__weak void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *event)
+{
+	vcorefs_crit("NOT SUPPORT MM DVFS NOTIFY\n");
+}
+
 static DEFINE_MUTEX(vcorefs_mutex);
 
 #define DEFINE_ATTR_RO(_name)			\
