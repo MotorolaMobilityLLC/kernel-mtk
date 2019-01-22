@@ -536,7 +536,7 @@ static int ppm_cobra_limit_to_budget_proc_show(struct seq_file *m, void *v)
 static ssize_t ppm_cobra_limit_to_budget_proc_write(struct file *file, const char __user *buffer,
 					size_t count, loff_t *pos)
 {
-	char *tok;
+	char *tok, *tmp;
 	unsigned int i = 0, data;
 
 	char *buf = ppm_copy_from_user_for_proc(buffer, count);
@@ -544,7 +544,8 @@ static ssize_t ppm_cobra_limit_to_budget_proc_write(struct file *file, const cha
 	if (!buf)
 		return -EINVAL;
 
-	while ((tok = strsep(&buf, " ")) != NULL) {
+	tmp = buf;
+	while ((tok = strsep(&tmp, " ")) != NULL) {
 		if (i == NR_PPM_CLUSTERS * 2) {
 			ppm_err("@%s: number of arguments > %d!\n", __func__, NR_PPM_CLUSTERS * 2);
 			goto out;
