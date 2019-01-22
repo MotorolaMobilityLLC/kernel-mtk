@@ -27,7 +27,6 @@ obj-y += base/
 #obj-$(CONFIG_MTK_POWER_GS) += power_gs/
 obj-$(CONFIG_MEDIATEK_SOLUTION) += sched/
 #obj-$(CONFIG_MEDIATEK_SOLUTION) += mach/
-#obj-$(CONFIG_MTK_GPT_COMMON) += gpt/
 obj-$(CONFIG_MTK_SERIAL)	+= uart/
 obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/
 obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
