@@ -54,6 +54,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/slab.h>
 #include <linux/dma-buf.h>
 #include <linux/scatterlist.h>
+#include <linux/mutex.h>
+#include <linux/sched.h>
 
 #include "img_types.h"
 #include "pvr_debug.h"
@@ -69,6 +71,233 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(PVR_RI_DEBUG)
 #include "ri_server.h"
+#endif
+
+/* store the last 128 records */
+#define PHYSMEMDMA_HASH_RECORD_MAX (1<<7)
+
+typedef struct _PHYSMEMDMA_HASH_RECORD_ {
+	IMG_UINT32 uiOp;
+	IMG_UINT32 uiFuncNum;
+	IMG_UINT64 uiTimestampUs;
+	IMG_UINT32 uiProcessId;
+	IMG_UINT32 uiThreadId;
+	IMG_UINT32 uiBridgeProcessId;
+	IMG_UINT32 uiBridgeThreadId;
+	uintptr_t uiAddr;
+} PHYSMEMDMA_HASH_RECORD;
+
+typedef struct _PHYSMEMDMA_HASH_HISTORY_ {
+	POS_LOCK hRecordLock;
+	volatile IMG_UINT32 uiHead;
+	PHYSMEMDMA_HASH_RECORD asRecord[PHYSMEMDMA_HASH_RECORD_MAX];
+} PHYSMEMDMA_HASH_HISTORY;
+
+typedef enum {
+	PHYSMEMDMA_HASH_OP_INVALID = 0,
+	PHYSMEMDMA_HASH_OP_CREATE,
+	PHYSMEMDMA_HASH_OP_DELETE,
+	PHYSMEMDMA_HASH_OP_INSERT,
+	PHYSMEMDMA_HASH_OP_RETRIEVE,
+	PHYSMEMDMA_HASH_OP_REMOVE,
+	PHYSMEMDMA_HASH_OP_DONE,
+	PHYSMEMDMA_HASH_OP_MAX
+} PHYSMEMDMA_HASH_OP;
+
+typedef enum {
+	PHYSMEMDMA_FUNCNUM_INVALID = 0,
+	PHYSMEMDMA_FUNCNUM_PHYSMEMDESTROYDMABUF,
+	PHYSMEMDMA_FUNCNUM_PHYSMEMIMPORTSPARSEDMABUF,
+	PHYSMEMDMA_FUNCNUM_MAX
+} PHYSMEMDMA_FUNCNUM;
+
+enum { HIST_ENTRIES, HIST_TABLE, HIST_MAX };
+
+static PHYSMEMDMA_HASH_HISTORY *gapsDmaBufHashHistory[HIST_MAX] = {0};
+
+static const char *aszPhysmemDmaHashOps[] = {
+	"Invalid",
+	"Create",
+	"Delete",
+	"Insert",
+	"Retrieve",
+	"Remove",
+	"Done"
+};
+
+static const char *aszPhysmemDmaFuncs[] = {
+	"Invalid",
+	"DestroyDmaBuf",
+	"ImportSparseDmaBuf"
+};
+
+static const char *
+_lookupHashFunc(IMG_UINT32 i)
+{
+	if (i >= PHYSMEMDMA_HASH_OP_MAX)
+	{
+		i = 0;
+	}
+
+	return aszPhysmemDmaHashOps[i];
+}
+
+static const char *
+_lookupPhysmemDmaFunc(IMG_UINT32 i)
+{
+	if (i >= PHYSMEMDMA_FUNCNUM_MAX)
+	{
+		i = 0;
+	}
+
+	return aszPhysmemDmaFuncs[i];
+}
+
+static void
+_PhysmemDmaHashHistoryRecordPrint(PHYSMEMDMA_HASH_RECORD *r)
+{
+	if (r->uiOp < PHYSMEMDMA_HASH_OP_MAX && PHYSMEMDMA_HASH_OP_INVALID != r->uiOp)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%016llu: %-8u(%-8u) %-8u(%-8u) %18s %8s %016llx",
+			r->uiTimestampUs,
+			r->uiProcessId,
+			r->uiBridgeProcessId,
+			r->uiThreadId,
+			r->uiBridgeThreadId,
+			_lookupPhysmemDmaFunc(r->uiFuncNum),
+			_lookupHashFunc(r->uiOp),
+			(unsigned long long)r->uiAddr
+		));
+	}
+}
+
+static void
+_PhysmemDmaHashHistoryTablePrint(PHYSMEMDMA_HASH_HISTORY *psHistory)
+{
+	IMG_UINT32 uiHeadCopy = psHistory->uiHead;
+	IMG_UINT32 uiHead = uiHeadCopy;
+
+	do {
+		do {
+			_PhysmemDmaHashHistoryRecordPrint(&psHistory->asRecord[uiHead]);
+			uiHead = (uiHead+1) & (PHYSMEMDMA_HASH_RECORD_MAX-1);
+		} while (uiHead != uiHeadCopy);
+		uiHeadCopy = psHistory->uiHead;
+	} while (uiHead != uiHeadCopy);
+}
+
+#if 0
+static void
+_PhysmemDmaHashHistoryPokeAddr(PHYSMEMDMA_HASH_HISTORY *psHistory,
+                        IMG_UINT32 uiRecordNum,
+                        IMG_UINT64 uiAddr)
+{
+	psHistory->asRecord[uiRecordNum].uiAddr = uiAddr;
+}
+#endif
+
+extern struct task_struct *BridgeLockGetOwner(void);
+
+static IMG_UINT32
+_PhysmemDmaHashHistoryAdd(PHYSMEMDMA_HASH_HISTORY *psHistory,
+                        PHYSMEMDMA_FUNCNUM uiFuncNum,
+                        PHYSMEMDMA_HASH_OP uiOp,
+                        uintptr_t uiAddr)
+{
+	IMG_UINT64 uiTs;
+	IMG_UINT32 uiRecordNum;
+	pid_t uiPid, uiTid;
+	PHYSMEMDMA_HASH_RECORD *r;
+	struct task_struct * bridge = BridgeLockGetOwner();
+
+	if (!psHistory)
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s: psHistory not initialised", __func__));
+		return 0;
+	}
+
+	OSLockAcquire(psHistory->hRecordLock);
+	uiTs = OSClockus64();
+	uiRecordNum = psHistory->uiHead;
+	r = &psHistory->asRecord[psHistory->uiHead];
+	psHistory->uiHead = (psHistory->uiHead+1) & (PHYSMEMDMA_HASH_RECORD_MAX-1);
+	OSLockRelease(psHistory->hRecordLock);
+
+	uiPid = OSGetCurrentProcessID();
+	uiTid = OSGetCurrentThreadID();
+
+	*r = (PHYSMEMDMA_HASH_RECORD){
+		.uiOp = uiOp,
+		.uiFuncNum = uiFuncNum,
+		.uiTimestampUs = uiTs,
+		.uiProcessId = uiPid,
+		.uiThreadId = uiTid,
+		.uiBridgeProcessId = (bridge? bridge->tgid : 0),
+		.uiBridgeThreadId = (bridge? bridge->pid : 0),
+		.uiAddr = uiAddr};
+
+	/* check bridge owner here */
+	if (!bridge || (bridge && bridge->pid != uiTid))
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s: Bridge Warning", __func__));
+		_PhysmemDmaHashHistoryRecordPrint(r);
+	}
+
+	return uiRecordNum;
+}
+
+/* OSAlloc history and return address (repeatedly) */
+static void
+_PhysmemDmaHashHistoryPrintAddress(IMG_UINT32 uiTable)
+{
+	PVR_LOG(("PhysmemDmaHashHistory for table %d allocated at: %p",
+		uiTable, gapsDmaBufHashHistory[uiTable]));
+}
+
+static PHYSMEMDMA_HASH_HISTORY *
+_PhysmemDmaHashHistoryInit(IMG_UINT32 uiTable)
+{
+	PVRSRV_ERROR eReturn;
+	PHYSMEMDMA_HASH_HISTORY *psHistory;
+
+	if (uiTable >= HIST_MAX)
+	{
+		return NULL;
+	}
+
+	psHistory = OSAllocMem(sizeof(*psHistory));
+	if (!psHistory)
+	{
+		return NULL;
+	}
+
+	OSDeviceMemSet(psHistory, 0, sizeof(*psHistory));
+
+	eReturn = OSLockCreate(&psHistory->hRecordLock, LOCK_TYPE_PASSIVE);
+	if (eReturn != PVRSRV_OK)
+	{
+		OSFreeMem(psHistory);
+		return NULL;
+	}
+
+	gapsDmaBufHashHistory[uiTable] = psHistory;
+	_PhysmemDmaHashHistoryPrintAddress(uiTable);
+	return psHistory;
+}
+
+#if 0
+static void
+_PhysmemDmaHashHistoryDestroy(IMG_UINT32 uiTable)
+{
+	if (uiTable >= HIST_MAX)
+	{
+		return;
+	}
+
+	OSLockDestroy(gapsDmaBufHashHistory[uiTable]->hRecordLock);
+	OSFreeMem(gapsDmaBufHashHistory[uiTable]);
+	gapsDmaBufHashHistory[uiTable] = NULL;
+}
 #endif
 
 #include "kernel_compatibility.h"
@@ -149,6 +378,7 @@ typedef struct _PMR_DMA_BUF_DATA_
 /* Start size of the g_psDmaBufHash hash table */
 #define DMA_BUF_HASH_SIZE 20
 
+static DEFINE_MUTEX(g_DmaBufMutex);
 static HASH_TABLE *g_psDmaBufHash = NULL;
 static IMG_UINT32 g_ui32HashRefCount = 0;
 
@@ -198,8 +428,12 @@ static PVRSRV_ERROR PMRFinalizeDmaBuf(PMR_IMPL_PRIVDATA pvPriv)
 
 	psPrivData->ui32PhysPageCount = 0;
 
-	dma_buf_unmap_attachment(psAttachment, psSgTable, DMA_BIDIRECTIONAL);
+	/* MTK: since ion will not fill sg table for secbuf */
+	/* check if psSgTable is null, then skip unmapping.*/
+	if (!psSgTable)
+		goto exit;
 
+	dma_buf_unmap_attachment(psAttachment, psSgTable, DMA_BIDIRECTIONAL);
 
 	if (psPrivData->bPoisonOnFree)
 	{
@@ -656,14 +890,30 @@ static PVRSRV_ERROR PhysmemDestroyDmaBuf(PHYS_HEAP *psHeap,
 {
 	struct dma_buf *psDmaBuf = psAttachment->dmabuf;
 
+	_PhysmemDmaHashHistoryAdd(gapsDmaBufHashHistory[HIST_ENTRIES],
+		PHYSMEMDMA_FUNCNUM_PHYSMEMDESTROYDMABUF,
+		PHYSMEMDMA_HASH_OP_REMOVE,
+		(uintptr_t)psDmaBuf);
 	HASH_Remove(g_psDmaBufHash, (uintptr_t) psDmaBuf);
 	g_ui32HashRefCount--;
 
+	mutex_lock(&g_DmaBufMutex);
 	if (g_ui32HashRefCount == 0)
 	{
+		_PhysmemDmaHashHistoryAdd(gapsDmaBufHashHistory[HIST_TABLE],
+			PHYSMEMDMA_FUNCNUM_PHYSMEMDESTROYDMABUF,
+			PHYSMEMDMA_HASH_OP_DELETE,
+			(uintptr_t)g_psDmaBufHash);
 		HASH_Delete(g_psDmaBufHash);
 		g_psDmaBufHash = NULL;
+		_PhysmemDmaHashHistoryAdd(gapsDmaBufHashHistory[HIST_TABLE],
+			PHYSMEMDMA_FUNCNUM_PHYSMEMDESTROYDMABUF,
+			PHYSMEMDMA_HASH_OP_DONE,
+			(uintptr_t)g_psDmaBufHash);
+		_PhysmemDmaHashHistoryTablePrint(gapsDmaBufHashHistory[HIST_TABLE]);
+		_PhysmemDmaHashHistoryTablePrint(gapsDmaBufHashHistory[HIST_ENTRIES]);
 	}
+	mutex_unlock(&g_DmaBufMutex);
 
 	PhysHeapRelease(psHeap);
 
@@ -853,6 +1103,10 @@ PhysmemImportSparseDmaBuf(CONNECTION_DATA *psConnection,
 	}
 	else if (g_psDmaBufHash)
 	{
+		_PhysmemDmaHashHistoryAdd(gapsDmaBufHashHistory[HIST_ENTRIES],
+			PHYSMEMDMA_FUNCNUM_PHYSMEMIMPORTSPARSEDMABUF,
+			PHYSMEMDMA_HASH_OP_RETRIEVE,
+			(uintptr_t)psDmaBuf);
 		/* We have a hash table so check if we've seen this dmabuf before */
 		psPMR = (PMR *) HASH_Retrieve(g_psDmaBufHash, (uintptr_t) psDmaBuf);
 	}
@@ -967,21 +1221,44 @@ PhysmemImportSparseDmaBuf(CONNECTION_DATA *psConnection,
 		goto errHeapRelease;
 	}
 
+	mutex_lock(&g_DmaBufMutex);
 	if (!g_psDmaBufHash)
 	{
+		if (!gapsDmaBufHashHistory[HIST_TABLE])
+		{
+			_PhysmemDmaHashHistoryInit(HIST_TABLE);
+		}
+		if (!gapsDmaBufHashHistory[HIST_ENTRIES])
+		{
+			_PhysmemDmaHashHistoryInit(HIST_ENTRIES);
+		}
+
 		/*
 		 * As different processes may import the same dmabuf we need to
 		 * create a hash table so we don't generate a duplicate PMR but
 		 * rather just take a reference on an existing one.
 		 */
+		_PhysmemDmaHashHistoryAdd(gapsDmaBufHashHistory[HIST_TABLE],
+			PHYSMEMDMA_FUNCNUM_PHYSMEMIMPORTSPARSEDMABUF,
+			PHYSMEMDMA_HASH_OP_CREATE,
+			0);
 		g_psDmaBufHash = HASH_Create(DMA_BUF_HASH_SIZE);
 		if (!g_psDmaBufHash)
 		{
 			eError = PVRSRV_ERROR_OUT_OF_MEMORY;
 			goto errUnrefPMR;
 		}
+		_PhysmemDmaHashHistoryAdd(gapsDmaBufHashHistory[HIST_TABLE],
+			PHYSMEMDMA_FUNCNUM_PHYSMEMIMPORTSPARSEDMABUF,
+			PHYSMEMDMA_HASH_OP_DONE,
+			(uintptr_t)g_psDmaBufHash);
 	}
+	mutex_unlock(&g_DmaBufMutex);
 
+	_PhysmemDmaHashHistoryAdd(gapsDmaBufHashHistory[HIST_ENTRIES],
+		PHYSMEMDMA_FUNCNUM_PHYSMEMIMPORTSPARSEDMABUF,
+		PHYSMEMDMA_HASH_OP_INSERT,
+		(uintptr_t)psDmaBuf);
 	/* First time we've seen this dmabuf so store it in the hash table */
 	HASH_Insert(g_psDmaBufHash, (uintptr_t) psDmaBuf, (uintptr_t) psPMR);
 	g_ui32HashRefCount++;

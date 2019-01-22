@@ -282,6 +282,15 @@ static void RGXInitMipsProcWrapper(const void *hPrivate)
 	                   ~RGX_CR_MIPS_ADDR_REMAP1_CONFIG2_ADDR_OUT_CLRMSK,
 	                   ui64RemapSettings);
 
+	RGXCommentLogPower(hPrivate, "RGXStart: WA for the delay slot prefetch with TLB miss issue.");
+	RGXCodeRemapConfig(hPrivate,
+					RGX_CR_MIPS_ADDR_REMAP5_CONFIG1,
+					0x0 | RGX_CR_MIPS_ADDR_REMAP5_CONFIG1_MODE_ENABLE_EN,
+					RGX_CR_MIPS_ADDR_REMAP5_CONFIG2,
+					sPhyAddr.uiAddr,
+					~RGX_CR_MIPS_ADDR_REMAP5_CONFIG2_ADDR_OUT_CLRMSK,
+					ui64RemapSettings);
+
 	/*
 	 * Data remap setup
 	 */
@@ -493,7 +502,7 @@ static void __RGXInitSLC(const void *hPrivate)
 		 *       32bits (RGX_CR_SLC_CTRL_MISC_SCRAMBLE_BITS) unchanged from the HW default.
 		 */
 		ui32Reg = RGX_CR_SLC_CTRL_MISC;
-		ui32RegVal = (RGXReadReg32(hPrivate, ui32Reg) & RGX_CR_SLC_CTRL_MISC_ENABLE_PSG_HAZARD_CHECK_EN) |		
+		ui32RegVal = (RGXReadReg32(hPrivate, ui32Reg) & RGX_CR_SLC_CTRL_MISC_ENABLE_PSG_HAZARD_CHECK_EN) |
 		             RGX_CR_SLC_CTRL_MISC_ADDR_DECODE_MODE_PVR_HASH1;
 		if (RGXDeviceHasErnBrnPower(hPrivate, FIX_HW_BRN_60084_BIT_MASK))
 		{

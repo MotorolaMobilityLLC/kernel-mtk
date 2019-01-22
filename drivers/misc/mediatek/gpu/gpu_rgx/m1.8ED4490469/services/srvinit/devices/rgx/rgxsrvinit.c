@@ -380,7 +380,7 @@ static INLINE void GetApphints(RGX_SRVINIT_APPHINTS *psHints, IMG_UINT64 ui64Ern
 	{
 		SrvInitParamGetBOOL(pvParamState, EnableTrustedDeviceAceConfig, psHints->bEnableTrustedDeviceAceConfig);
 	}
-#endif	
+#endif
 
 	SrvInitParamGetUINT32(pvParamState,  UseMETAT1, ui32ParamTemp);
 	psHints->eUseMETAT1 = ui32ParamTemp & RGXFWIF_INICFG_METAT1_MASK;
@@ -426,7 +426,7 @@ static INLINE void GetApphints(RGX_SRVINIT_APPHINTS *psHints, IMG_UINT64 ui64Ern
 
 	}
 #endif
-	
+
 	if (psHints->bEnableHWPerfHost)
 	{
 		if (psHints->ui32HWPerfHostFilter == 0)
@@ -906,7 +906,7 @@ static IMG_BOOL PrepareDebugScript(RGX_SCRIPT_BUILD* psDbgInitScript,
 	DBG_READ64(RGX_CR_BIF_PM_CAT_BASE_VCE1,				"BIF_PM_CAT_BASE_VCE1            ");
 	DBG_READ64(RGX_CR_BIF_PM_CAT_BASE_TE1,				"BIF_PM_CAT_BASE_TE1             ");
 	DBG_READ64(RGX_CR_BIF_PM_CAT_BASE_ALIST1,			"BIF_PM_CAT_BASE_ALIST1          ");
-	
+
 	DBG_READ32(RGX_CR_PERF_TA_PHASE,					"PERF_TA_PHASE                   ");
 	DBG_READ32(RGX_CR_PERF_TA_CYCLE,					"PERF_TA_CYCLE                   ");
 	DBG_READ32(RGX_CR_PERF_3D_PHASE,					"PERF_3D_PHASE                   ");
@@ -1340,7 +1340,7 @@ static PVRSRV_ERROR InitFirmware(SHARED_DEV_CONNECTION hServices,
 	IMG_DEVMEM_SIZE_T uiFWCorememCodeAllocSize;
 	IMG_DEV_VIRTADDR  sFWCorememDevVAddrBase;
 
-	/* 
+	/*
 	 * Only declare psFWCorememHostMemDesc where used (PVR_UNREFERENCED_PARAMETER doesn't
 	 * help for local vars when using certain compilers)
 	 */
@@ -1476,7 +1476,7 @@ static PVRSRV_ERROR InitFirmware(SHARED_DEV_CONNECTION hServices,
 		PVR_DPF((PVR_DBG_ERROR, "InitFirmware: PVRSRVRGXInitFirmware failed (%d)", eError));
 		goto cleanup_initfw;
 	}
-	PVR_DPF((PVR_DBG_ERROR, "InitFirmware: PVRSRVRGXInitFirmware completed!! (%d)", eError));
+	PVR_LOG(("InitFirmware: PVRSRVRGXInitFirmware completed!"));
 
 	/*
 	 * Acquire pointers to Firmware allocations
@@ -1699,7 +1699,7 @@ static void InitialiseHWPerfCounters(SHARED_DEV_CONNECTION hServices, DEVMEM_MEM
 			/* Assert to check for HWPerf block mis-configuration */
 			PVR_ASSERT(psHWPerfInitBlkData);
 
-			psHWPerfInitBlkData->bValid = IMG_TRUE;	
+			psHWPerfInitBlkData->bValid = IMG_TRUE;
 			SRVINITPDumpComment(hServices, "bValid: This specifies if the layout block is valid for the given BVNC.");
 			DevmemPDumpLoadMemValue32(psHWPerfDataMemDesc,
 							(size_t)&(psHWPerfInitBlkData->bValid) - (size_t)(psHWPerfInitDataInt),

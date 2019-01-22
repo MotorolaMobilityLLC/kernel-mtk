@@ -2826,12 +2826,12 @@ static void _RGXDumpFWHWRInfo(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 		return;
 	}
 
-	ui32LineSize = sizeof(IMG_CHAR) * (	ui32MsgHeaderSize + 
+	ui32LineSize = sizeof(IMG_CHAR) * (	ui32MsgHeaderSize +
 			(psDevInfo->sDevFeatureCfg.ui32MAXDMCount*(	4/*DM name + left parenthesis*/ +
-								10/*UINT32 max num of digits*/ + 
-								1/*slash*/ + 
-								10/*UINT32 max num of digits*/ + 
-								3/*right parenthesis + comma + space*/)) + 
+								10/*UINT32 max num of digits*/ +
+								1/*slash*/ +
+								10/*UINT32 max num of digits*/ +
+								3/*right parenthesis + comma + space*/)) +
 			7 + (psDevInfo->sDevFeatureCfg.ui32MAXDMCount*6)/* FALSE() + (UINT16 max num + comma) per DM */ +
 			1/* \0 */);
 
@@ -3651,7 +3651,7 @@ void RGXDebugRequestProcess(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 		return;
 	}
 #if defined(CONFIG_MACH_MT6799)
-	MTKQueryPowerState(2);
+	MTKQueryPowerState(3);
 #endif
 
 	if (!pfnDumpDebugPrintf)
@@ -3754,7 +3754,7 @@ void RGXDebugRequestProcess(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 							IMG_UINT32 ui32Idx;
 
 							PVR_DUMPDEBUG_LOG("TLB                     :");
-							for (ui32Idx = 0; 
+							for (ui32Idx = 0;
 								 ui32Idx < IMG_ARR_NUM_ELEMS(sMIPSState.asTLB);
 								 ++ui32Idx)
 							{
@@ -3990,7 +3990,7 @@ void RGXDebugRequestProcess(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 				{
 					CheckForStalledComputeCtxt(psDevInfo, pfnDumpDebugPrintf, pvDumpDebugFile);
 				}
-				
+
 				if(psDevInfo->sDevFeatureCfg.ui64Features & RGX_FEATURE_RAY_TRACING_BIT_MASK)
 				{
 					CheckForStalledRayCtxt(psDevInfo, pfnDumpDebugPrintf, pvDumpDebugFile);

@@ -76,9 +76,6 @@ static IMG_PID MTKGetCurrentProcessIDKM(void)
 #endif
 }
 
-/* MTK */
-#undef CONFIG_SW_SYNC_USER
-
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0))
 #include <linux/sync.h>
 #ifndef CONFIG_SW_SYNC_USER
@@ -779,6 +776,7 @@ static void pvr_sync_destroy_timeline(struct kref *kref)
 static void pvr_sync_release_timeline(struct sync_timeline *obj)
 {
 	struct pvr_sync_timeline *timeline = get_timeline(obj);
+	unsigned long flags;
 
 	/* If pvr_sync_open failed after calling sync_timeline_create, this
 	 * can be called with a timeline that has not got a timeline sync
@@ -787,7 +785,6 @@ static void pvr_sync_release_timeline(struct sync_timeline *obj)
 	 */
 	if (!timeline)
 		return;
-
 	DPF("%s: # %s", __func__, debug_info_timeline(timeline));
 
 	wait_for_sync(timeline->kernel->fence_sync);
@@ -796,7 +793,9 @@ static void pvr_sync_release_timeline(struct sync_timeline *obj)
 	 * after this function returns, so remove our back reference
 	 * to it.
 	 */
+	mutex_lock(&timeline_list_mutex);
 	timeline->obj = NULL;
+	mutex_unlock(&timeline_list_mutex);
 
 	/* This might be the last reference to the timeline object.
 	 * If so, we'll go ahead and delete it now.
@@ -1098,7 +1097,7 @@ pvr_sync_create_waiter_for_foreign_sync(int fd)
 
 	sync_fence_waiter_init(&waiter->waiter,
 			       pvr_sync_foreign_sync_pt_signaled);
-                   
+
     MTKPP_LOG(MTKPP_ID_SYNC, "[%p] wait tid:%d", fence, MTKGetCurrentProcessIDKM());
 
 	err = sync_fence_wait_async(fence, &waiter->waiter);
@@ -1793,6 +1792,7 @@ static int pvr_sync_close(struct inode *inode, struct file *file)
 {
 	struct sync_timeline *obj = file->private_data;
 
+	pr_debug("pvr_sync_close: obj = 0x%p\n", obj);
 	if (is_pvr_timeline(obj)) {
 		DPF("%s: # %s", __func__,
 		    debug_info_timeline(get_timeline(obj)));

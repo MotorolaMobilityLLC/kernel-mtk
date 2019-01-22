@@ -72,7 +72,7 @@ static void ged_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *wait
 
 	ged_monitor_3D_fence_notify();
 #ifdef GED_DVFS_ENABLE
-#if defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT8167)
 	/* FIX-ME: IMG's loading API requires mutext lock which is not suitable here */;
 #else
 	ged_dvfs_cal_gpu_utilization_force();
