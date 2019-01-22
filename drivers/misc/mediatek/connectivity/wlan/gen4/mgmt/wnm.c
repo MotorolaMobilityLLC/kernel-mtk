@@ -69,7 +69,7 @@
 */
 #include "precomp.h"
 
-#if CFG_SUPPORT_802_11V
+#if (CFG_SUPPORT_802_11V || CFG_SUPPORT_PPR2)
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -94,7 +94,6 @@
 ********************************************************************************
 */
 
-static UINT_8 ucTimingMeasToken;
 
 /*******************************************************************************
 *                                 M A C R O S
@@ -105,16 +104,6 @@ static UINT_8 ucTimingMeasToken;
 *                   F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
-
-static WLAN_STATUS
-wnmRunEventTimgingMeasTxDone(IN P_ADAPTER_T prAdapter,
-			     IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
-
-static VOID
-wnmComposeTimingMeasFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec, IN PFN_TX_DONE_HANDLER pfTxDoneHandler);
-
-static VOID wnmTimingMeasRequest(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
-
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
@@ -139,14 +128,20 @@ VOID wnmWNMAction(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 	prRxFrame = (P_WLAN_ACTION_FRAME) prSwRfb->pvHeader;
 
+	switch (prRxFrame->ucAction) {
 #if CFG_SUPPORT_802_11V_TIMING_MEASUREMENT
-	if (prRxFrame->ucAction == ACTION_WNM_TIMING_MEASUREMENT_REQUEST) {
+	case ACTION_WNM_TIMING_MEASUREMENT_REQUEST:
 		wnmTimingMeasRequest(prAdapter, prSwRfb);
 		return;
-	}
 #endif
 
-	DBGLOG(WNM, TRACE, "Unsupport WNM action frame: %d\n", prRxFrame->ucAction);
+	case ACTION_WNM_NOTIFICATION_REQUEST:
+	default:
+		DBGLOG(RX, INFO, "WNM action frame: %d, try to send to supplicant\n", prRxFrame->ucAction);
+		if (prSwRfb->ucStaRecIdx == KAL_NETWORK_TYPE_AIS_INDEX)
+			aisFuncValidateRxActionFrame(prAdapter, prSwRfb);
+		break;
+	}
 }
 
 #if CFG_SUPPORT_802_11V_TIMING_MEASUREMENT

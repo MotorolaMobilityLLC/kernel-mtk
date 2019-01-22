@@ -72,6 +72,7 @@
 */
 #include "precomp.h"
 #include "que_mgt.h"
+#include "wnm.h"
 
 #ifndef LINUX
 #include <limits.h>
@@ -2408,10 +2409,14 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 		}
 		break;
 #endif
-#if CFG_SUPPORT_802_11V
+#if (CFG_SUPPORT_802_11V || CFG_SUPPORT_PPR2)
 	case CATEGORY_WNM_ACTION:
 		{
-			wnmWNMAction(prAdapter, prSwRfb);
+			if (prSwRfb->ucStaRecIdx == KAL_NETWORK_TYPE_AIS_INDEX) {
+				DBGLOG(RX, INFO, "WNM action frame: %d\n", __LINE__);
+				wnmWNMAction(prAdapter, prSwRfb);
+			} else
+				DBGLOG(RX, INFO, "WNM action frame: %d\n", __LINE__);
 		}
 		break;
 #endif
