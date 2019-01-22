@@ -25,7 +25,7 @@ DECL_PE_STATE_TRANSITION(PD_PE_MSG_IDLE) = {
 };
 DECL_PE_STATE_REACTION(PD_PE_MSG_IDLE);
 
-bool pd_process_event_dbg(struct __pd_port *pd_port, struct __pd_event *pd_event)
+bool pd_process_event_dbg(struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	if (pd_event->event_type == PD_EVT_HW_MSG) {
 		switch (pd_event->msg) {

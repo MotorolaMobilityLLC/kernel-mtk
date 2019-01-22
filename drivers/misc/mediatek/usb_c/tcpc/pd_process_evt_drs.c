@@ -61,7 +61,7 @@ DECL_PE_STATE_REACTION(PD_TIMER_SENDER_RESPONSE);
  */
 
 static inline bool pd_process_ctrl_msg_good_crc(
-		struct __pd_port *pd_port, struct __pd_event *pd_event)
+		struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_port->pe_state_curr) {
 	case PE_DRS_DFP_UFP_REJECT_DR_SWAP:
@@ -77,18 +77,13 @@ static inline bool pd_process_ctrl_msg_good_crc(
 		PE_TRANSIT_STATE(pd_port, PE_DRS_UFP_DFP_CHANGE_TO_DFP);
 		return true;
 
-	case PE_DRS_DFP_UFP_SEND_DR_SWAP:
-	case PE_DRS_UFP_DFP_SEND_DR_SWAP:
-		pd_enable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
-		return false;
-
 	default:
 		return false;
 	}
 }
 
 static inline bool pd_process_ctrl_msg(
-	struct __pd_port *pd_port, struct __pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_event->msg) {
 	case PD_CTRL_GOOD_CRC:
@@ -112,7 +107,7 @@ static inline bool pd_process_ctrl_msg(
  */
 
 static inline bool pd_process_dpm_msg(
-	struct __pd_port *pd_port, struct __pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	bool ret = false;
 
@@ -133,7 +128,7 @@ static inline bool pd_process_dpm_msg(
  */
 
 static inline bool pd_process_timer_msg(
-	struct __pd_port *pd_port, struct __pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	bool ret = false;
 
@@ -150,7 +145,7 @@ static inline bool pd_process_timer_msg(
  * [BLOCK] Process Policy Engine's DRS Message
  */
 
-bool pd_process_event_drs(struct __pd_port *pd_port, struct __pd_event *pd_event)
+bool pd_process_event_drs(struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_event->event_type) {
 	case PD_EVT_CTRL_MSG:

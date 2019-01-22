@@ -24,31 +24,31 @@
 
 struct tcpc_device;
 
-struct __pd_msg {
+struct pd_msg {
 	uint8_t frame_type;
 	uint16_t msg_hdr;
 	uint32_t payload[7];
 	unsigned long time_stamp;
 };
 
-struct __pd_event {
+struct pd_event {
 	uint8_t event_type;
 	uint8_t msg;
 	uint8_t msg_sec;
-	struct __pd_msg *pd_msg;
+	struct pd_msg *pd_msg;
 };
 
-struct __pd_msg *pd_alloc_msg(struct tcpc_device *tcpc_dev);
-void pd_free_msg(struct tcpc_device *tcpc_dev, struct __pd_msg *pd_msg);
+struct pd_msg *pd_alloc_msg(struct tcpc_device *tcpc_dev);
+void pd_free_msg(struct tcpc_device *tcpc_dev, struct pd_msg *pd_msg);
 
-bool pd_get_event(struct tcpc_device *tcpc_dev, struct __pd_event *pd_event);
+bool pd_get_event(struct tcpc_device *tcpc_dev, struct pd_event *pd_event);
 bool pd_put_event(struct tcpc_device *tcpc_dev,
-		const struct __pd_event *pd_event, bool from_port_partner);
-void pd_free_event(struct tcpc_device *tcpc_dev, struct __pd_event *pd_event);
+		const struct pd_event *pd_event, bool from_port_partner);
+void pd_free_event(struct tcpc_device *tcpc_dev, struct pd_event *pd_event);
 
-bool pd_get_vdm_event(struct tcpc_device *tcpc_dev, struct __pd_event *pd_event);
+bool pd_get_vdm_event(struct tcpc_device *tcpc_dev, struct pd_event *pd_event);
 bool pd_put_vdm_event(struct tcpc_device *tcpc_dev,
-			struct __pd_event *pd_event, bool from_port_partner);
+			struct pd_event *pd_event, bool from_port_partner);
 
 bool pd_put_last_vdm_event(struct tcpc_device *tcpc_dev);
 
@@ -57,9 +57,6 @@ bool pd_get_deferred_tcp_event(
 bool pd_put_deferred_tcp_event(
 	struct tcpc_device *tcpc_dev, const struct tcp_dpm_event *tcp_event);
 
-void pd_notify_tcp_event_result(
-	struct tcpc_device *tcpc_dev, int ret, struct tcp_dpm_event *tcp_event);
-
 extern int tcpci_event_init(struct tcpc_device *tcpc_dev);
 extern int tcpci_event_deinit(struct tcpc_device *tcpc_dev);
 extern void pd_event_buf_reset(struct tcpc_device *tcpc_dev);
@@ -67,7 +64,7 @@ extern void pd_event_buf_reset(struct tcpc_device *tcpc_dev);
 void pd_put_cc_detached_event(struct tcpc_device *tcpc_dev);
 void pd_put_recv_hard_reset_event(struct tcpc_device *tcpc_dev);
 void pd_put_sent_hard_reset_event(struct tcpc_device *tcpc_dev);
-bool pd_put_pd_msg_event(struct tcpc_device *tcpc_dev, struct __pd_msg *pd_msg);
+bool pd_put_pd_msg_event(struct tcpc_device *tcpc_dev, struct pd_msg *pd_msg);
 void pd_put_hard_reset_completed_event(struct tcpc_device *tcpc_dev);
 void pd_put_vbus_changed_event(struct tcpc_device *tcpc_dev, bool from_ic);
 void pd_put_vbus_safe0v_event(struct tcpc_device *tcpc_dev);
@@ -79,6 +76,9 @@ enum pd_event_type {
 	PD_EVT_CTRL_MSG,
 	PD_EVT_DATA_MSG,
 
+#ifdef CONFIG_USB_PD_REV30
+	PD_EVT_EXT_MSG,
+#endif	/* CONFIG_USB_PD_REV30 */
 	PD_EVT_DPM_MSG,
 	PD_EVT_HW_MSG,
 	PD_EVT_PE_MSG,
@@ -104,6 +104,15 @@ enum pd_ctrl_msg_type {
 	PD_CTRL_WAIT = 12,
 	PD_CTRL_SOFT_RESET = 13,
 	/* 14-15 Reserved */
+
+#ifdef CONFIG_USB_PD_REV30
+	PD_CTRL_NOT_SUPPORTED = 0x10 + 0,
+	PD_CTRL_GET_SOURCE_CAP_EXT = 0x10 + 1,
+	PD_CTRL_GET_STATUS = 0x10 + 2,
+	PD_CTRL_FR_SWAP = 0x10 + 3,
+	PD_CTRL_GET_PPS_STATUS = 0x10 + 4,
+#endif	/* CONFIG_USB_PD_REV30 */
+
 	PD_CTRL_MSG_NR,
 };
 
@@ -114,10 +123,43 @@ enum pd_data_msg_type {
 	PD_DATA_REQUEST = 2,
 	PD_DATA_BIST = 3,
 	PD_DATA_SINK_CAP = 4,
-	/* 5-14 Reserved */
+
+#ifdef CONFIG_USB_PD_REV30
+	PD_DATA_BAT_STATUS = 5,
+	PD_DATA_ALERT = 6,
+#endif	/* CONFIG_USB_PD_REV30 */
+
+	/* 7-14 Reserved */
 	PD_DATA_VENDOR_DEF = 15,
 	PD_DATA_MSG_NR,
 };
+
+/* Extended message type */
+#ifdef CONFIG_USB_PD_REV30
+enum pd_ext_msg_type {
+	/* 0 Reserved */
+	PD_EXT_SOURCE_CAP_EX = 1,
+	PD_EXT_STATUS = 2,
+
+	PD_EXT_GET_BAT_CAPS = 3,
+	PD_EXT_GET_BAT_STATUS = 4,
+	PD_EXT_BAT_CAPS = 5,
+
+	PD_EXT_GET_MFR_INFO = 6,
+	PD_EXT_MFR_INFO = 7,
+
+	PD_EXT_SEC_REQUEST = 8,
+	PD_EXT_SEC_RESPONSE = 9,
+
+	PD_EXT_FW_UPDATE_REQUEST = 10,
+	PD_EXT_FW_UPDATE_RESPONSE = 11,
+
+	PD_EXT_PPS_STATUS = 12,
+
+	/* 13-15 Reserved */
+	PD_EXT_MSG_NR,
+};
+#endif	/* CONFIG_USB_PD_REV30 */
 
 /* HW Message type */
 enum pd_hw_msg_type {
@@ -139,6 +181,7 @@ enum pd_pe_msg_type {
 	PD_PE_POWER_ROLE_AT_DEFAULT,
 	PD_PE_HARD_RESET_COMPLETED,
 	PD_PE_IDLE,
+	PD_PE_VDM_RESET,
 	PD_PE_MSG_NR,
 };
 
@@ -181,13 +224,23 @@ enum pd_tx_transmit_state {
 	PD_TX_STATE_WAIT_HARD_RESET,
 };
 
-static inline bool pd_event_msg_match(struct __pd_event *pd_event,
+static inline bool pd_event_msg_match(struct pd_event *pd_event,
 					uint8_t type, uint8_t msg)
 {
 	if (pd_event->event_type != type)
 		return false;
 
-	return (pd_event->msg == msg);
+	return pd_event->msg == msg;
 }
+
+#ifdef CONFIG_USB_PD_REV30
+
+static inline bool pd_event_ext_msg_match(
+			struct pd_event *pd_event, uint8_t msg)
+{
+	return pd_event_msg_match(pd_event, PD_EVT_EXT_MSG, msg);
+}
+
+#endif	/* CONFIG_USB_PD_REV30 */
 
 #endif /* TCPC_EVENT_BUF_H_INCLUDED */

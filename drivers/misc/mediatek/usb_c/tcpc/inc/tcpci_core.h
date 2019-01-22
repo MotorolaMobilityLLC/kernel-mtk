@@ -33,17 +33,20 @@
 
 /* The switch of log message */
 #define TYPEC_INFO_ENABLE	1
+#define TYPEC_INFO2_ENABLE	1
 #define PE_EVENT_DBG_ENABLE	1
 #define PE_STATE_INFO_ENABLE	1
 #define TCPC_INFO_ENABLE	1
 #define TCPC_TIMER_DBG_EN	1
-#define TCPC_TIMER_INFO_EN	1
+#define TCPC_TIMER_INFO_EN	0
 #define PE_INFO_ENABLE		1
 #define TCPC_DBG_ENABLE		1
+#define TCPC_DBG2_ENABLE	0
+#define DPM_INFO_ENABLE		1
 #define DPM_DBG_ENABLE		1
 #define PD_ERR_ENABLE		1
 #define PE_DBG_ENABLE		1
-#define TYPEC_DBG_ENABLE	1
+#define TYPEC_DBG_ENABLE	0
 
 #define DP_INFO_ENABLE		1
 #define DP_DBG_ENABLE		1
@@ -56,14 +59,16 @@
 #define DC_DBG_ENABLE			1
 #endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
 
-#define TCPC_ENABLE_ANYMSG	(TCPC_DBG_ENABLE | DPM_DBG_ENABLE|\
-		PD_ERR_ENABLE|PE_INFO_ENABLE|TCPC_TIMER_INFO_EN\
-		|PE_DBG_ENABLE|PE_EVENT_DBG_ENABLE|\
-		PE_STATE_INFO_ENABLE|TCPC_INFO_ENABLE|\
-		TCPC_TIMER_DBG_EN|TYPEC_DBG_ENABLE|\
-		TYPEC_INFO_ENABLE|\
-		DP_INFO_ENABLE|DP_DBG_ENABLE|\
-		UVDM_INFO_ENABLE|TCPM_DBG_ENABLE)
+#define TCPC_ENABLE_ANYMSG	\
+		((TCPC_DBG_ENABLE)|(TCPC_DBG2_ENABLE)|\
+		(DPM_DBG_ENABLE)|\
+		(PD_ERR_ENABLE)|(PE_INFO_ENABLE)|(TCPC_TIMER_INFO_EN)|\
+		(PE_DBG_ENABLE)|(PE_EVENT_DBG_ENABLE)|\
+		(PE_STATE_INFO_ENABLE)|(TCPC_INFO_ENABLE)|\
+		(TCPC_TIMER_DBG_EN)|(TYPEC_DBG_ENABLE)|\
+		(TYPEC_INFO_ENABLE)|\
+		(DP_INFO_ENABLE)|(DP_DBG_ENABLE)|\
+		(UVDM_INFO_ENABLE)|(TCPM_DBG_ENABLE))
 
 /* Disable VDM DBG Msg */
 #define PE_STATE_INFO_VDM_DIS	0
@@ -77,6 +82,7 @@ struct tcpc_device;
 struct tcpc_desc {
 	uint8_t role_def;
 	uint8_t rp_lvl;
+	uint8_t vconn_supply;
 	int notifier_supply_num;
 	char *name;
 };
@@ -217,7 +223,7 @@ struct tcpc_ops {
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 	int (*set_msg_header)(struct tcpc_device *tcpc,
-					int power_role, int data_role);
+			int power_role, int data_role, uint8_t pd_rev);
 	int (*set_rx_enable)(struct tcpc_device *tcpc, uint8_t enable);
 	int (*get_message)(struct tcpc_device *tcpc, uint32_t *payload,
 			uint16_t *head, enum tcpm_transmit_type *type);
@@ -340,6 +346,10 @@ struct tcpc_device {
 	bool typec_ext_discharge;
 #endif	/* CONFIG_TCPC_EXT_DISCHARGE */
 
+#ifdef CONFIG_TCPC_VCONN_SUPPLY_MODE
+	uint8_t tcpc_vconn_supply;
+#endif	/* CONFIG_TCPC_VCONN_SUPPLY_MODE */
+
 	uint8_t tcpc_flags;
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
@@ -359,14 +369,15 @@ struct tcpc_device {
 
 	uint8_t pd_last_vdm_msg_id;
 	bool pd_pending_vdm_event;
+	bool pd_pending_vdm_reset;
 	bool pd_pending_vdm_good_crc;
 	bool pd_postpone_vdm_timeout;
 
-	struct __pd_msg pd_last_vdm_msg;
-	struct __pd_event pd_vdm_event;
+	struct pd_msg pd_last_vdm_msg;
+	struct pd_event pd_vdm_event;
 
-	struct __pd_msg pd_msg_buffer[PD_MSG_BUF_SIZE];
-	struct __pd_event pd_event_ring_buffer[PD_EVENT_BUF_SIZE];
+	struct pd_msg pd_msg_buffer[PD_MSG_BUF_SIZE];
+	struct pd_event pd_event_ring_buffer[PD_EVENT_BUF_SIZE];
 
 	uint8_t tcp_event_count;
 	uint8_t tcp_event_head_index;
@@ -383,9 +394,9 @@ struct tcpc_device {
 	uint8_t pd_transmit_state;
 	int pd_wait_vbus_once;
 
-#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
+#ifdef CONFIG_USB_PD_DIRECT_CHARGE
 	bool pd_during_direct_charge;
-#endif	/* CONFIG_USB_PD_ALT_MODE_RTDC */
+#endif	/* CONFIG_USB_PD_DIRECT_CHARGE */
 
 #ifdef CONFIG_USB_PD_RETRY_CRC_DISCARD
 	bool pd_discard_pending;
@@ -397,7 +408,7 @@ struct tcpc_device {
 #endif	/* CONFIG_TCPC_FORCE_DISCHARGE_IC */
 #endif	/* CONFIG_TYPEC_CAP_FORCE_DISCHARGE */
 
-	struct __pd_port pd_port;
+	struct pd_port pd_port;
 	u8 uvdm_handle_flag:1;
 #endif /* CONFIG_USB_POWER_DELIVERY */
 	u8 vbus_level:2;
@@ -427,6 +438,13 @@ struct tcpc_device {
 #define TYPEC_DBG(format, args...)
 #endif /* TYPEC_DBG_ENABLE */
 
+#if TYPEC_INFO2_ENABLE
+#define TYPEC_INFO2(format, args...)	\
+	RT_DBG_INFO(CONFIG_TCPC_DBG_PRESTR "TYPEC:" format, ##args)
+#else
+#define TYPEC_INFO2(format, args...)
+#endif /* TYPEC_INFO2_ENABLE */
+
 #if TYPEC_INFO_ENABLE
 #define TYPEC_INFO(format, args...)	\
 	RT_DBG_INFO(CONFIG_TCPC_DBG_PRESTR "TYPEC:" format, ##args)
@@ -448,11 +466,25 @@ struct tcpc_device {
 #define TCPC_DBG(format, args...)
 #endif /* TCPC_DBG_ENABLE */
 
+#if TCPC_DBG2_ENABLE
+#define TCPC_DBG2(format, args...)	\
+	RT_DBG_INFO(CONFIG_TCPC_DBG_PRESTR "TCPC:" format, ##args)
+#else
+#define TCPC_DBG2(format, args...)
+#endif /* TCPC_DBG2_ENABLE */
+
 #define TCPC_ERR(format, args...)	\
 	RT_DBG_INFO(CONFIG_TCPC_DBG_PRESTR "TCPC-ERR:" format, ##args)
 
 #define DP_ERR(format, args...)	\
 	RT_DBG_INFO(CONFIG_TCPC_DBG_PRESTR "DP-ERR:" format, ##args)
+
+#if DPM_INFO_ENABLE
+#define DPM_INFO(format, args...)	\
+	RT_DBG_INFO(CONFIG_TCPC_DBG_PRESTR "DPM:" format, ##args)
+#else
+#define DPM_INFO(format, args...)
+#endif /* DPM_INFO_ENABLE */
 
 #if DPM_DBG_ENABLE
 #define DPM_DBG(format, args...)	\
