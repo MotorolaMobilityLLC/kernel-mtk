@@ -633,8 +633,10 @@ void test_m4u_do_mva_alloc_start_from_V2p4_case1(void)
 
 	M4UMSG("start to test_m4u_do_mva_alloc_start_from_V2p4_case1\n");
 	pinfo = vmalloc(sizeof(struct m4u_buf_info_t));
-	if (!pinfo) {
-		M4UMSG("alloc info fail\n");
+
+	if (pinfo == NULL) {
+		M4UMSG("pinfo == NULL\n");
+		vfree(pinfo);
 		kfree(ret_mva);
 		return;
 	}
