@@ -5804,6 +5804,10 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 		target_cpu = select_max_spare_capacity_cpu(p, group_first_cpu(sg_target));
 	else
 		for_each_cpu_and(i, tsk_cpus_allowed(p), sched_group_cpus(sg_target)) {
+
+			if (!cpu_online(i))
+				continue;
+
 			/*
 			 * p's blocked utilization is still accounted for on prev_cpu
 			 * so prev_cpu will receive a negative bias due to the double
@@ -7095,7 +7099,15 @@ static unsigned long scale_rt_capacity(int cpu)
 	 * we read them once before doing sanity checks on them.
 	 */
 	age_stamp = READ_ONCE(rq->age_stamp);
+#ifdef CONFIG_MTK_SCHED_INTEROP
+	if (is_rt_throttle(cpu) || !(rq->rt.rt_nr_running)) {
+		avg = 0; /* mtk: don't reduce capacity when rt task throttle or sleep*/
+		mt_sched_printf(sched_lb, "%s: cpu=%d, rq->rt.rt_nr_running=%d",
+				__func__, cpu, rq->rt.rt_nr_running);
+	} else
+#endif
 	avg = READ_ONCE(rq->rt_avg);
+
 	avg += READ_ONCE(rq->dl_avg);
 	delta = __rq_clock_broken(rq) - age_stamp;
 

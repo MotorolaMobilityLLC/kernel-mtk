@@ -2013,3 +2013,7 @@ static inline void account_reset_rq(struct rq *rq)
 	rq->prev_steal_time_rq = 0;
 #endif
 }
+
+#ifdef CONFIG_MTK_SCHED_INTEROP
+extern bool is_rt_throttle(int cpu);
+#endif
