@@ -578,5 +578,5 @@ static void __exit mtktspmic_exit(void)
 	mtktspmic_unregister_cooler();
 	mtkTTimer_unregister("mtktspmic");
 }
-module_init(mtktspmic_init);
+late_initcall(mtktspmic_init);
 module_exit(mtktspmic_exit);
