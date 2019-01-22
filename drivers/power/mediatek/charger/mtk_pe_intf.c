@@ -44,7 +44,6 @@ static int pe_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
 static int pe_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
 {
 	int ret = 0;
-	u32 sw_ovp = (enable ? V_CHARGER_MAX : 15000000);
 
 	/* Enable/Disable HW(PMIC) OVP */
 	ret = pe_enable_hw_vbus_ovp(pinfo, enable);
@@ -52,9 +51,6 @@ static int pe_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
 		pr_err("%s: failed, ret = %d\n", __func__, ret);
 		return ret;
 	}
-
-	/* Enable/Disable SW OVP status */
-	pinfo->data.max_charger_voltage = sw_ovp;
 
 	return ret;
 }
