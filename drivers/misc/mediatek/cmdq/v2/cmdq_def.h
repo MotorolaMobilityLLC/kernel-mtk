@@ -398,6 +398,8 @@ struct cmdqCommandStruct {
 #ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	struct cmdqProfileMarkerStruct profileMarker;
 #endif
+	cmdqU32Ptr_t userDebugStr;
+	uint32_t userDebugStrLen;
 };
 
 enum CMDQ_CAP_BITS {

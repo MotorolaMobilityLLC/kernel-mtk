@@ -513,6 +513,7 @@ struct TaskStruct {
 
 	pid_t callerPid;
 	char callerName[TASK_COMM_LEN];
+	char *userDebugStr;
 
 	/* Custom profile marker */
 #ifdef CMDQ_PROFILE_MARKER_SUPPORT
