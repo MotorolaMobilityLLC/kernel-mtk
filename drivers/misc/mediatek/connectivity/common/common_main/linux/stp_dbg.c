@@ -166,19 +166,14 @@ static struct genl_ops stp_dbg_gnl_ops_array[] = {
  */
 static VOID stp_dbg_core_dump_timeout_handler(ULONG data)
 {
-	P_WCN_CORE_DUMP_T dmp = (P_WCN_CORE_DUMP_T) data;
 
 	STP_DBG_INFO_FUNC(" start\n");
 
+	stp_dbg_set_coredump_timer_state(CORE_DUMP_TIMEOUT);
 	stp_btm_notify_coredump_timeout_wq(g_stp_dbg->btm);
+	STP_DBG_WARN_FUNC(" coredump timer timeout, coredump maybe not finished successfully\n");
 
 	STP_DBG_INFO_FUNC(" end\n");
-
-	if (dmp) {
-		STP_DBG_WARN_FUNC
-		    (" coredump timer timeout, coredump maybe not finished successfully\n");
-		dmp->sm = CORE_DUMP_TIMEOUT;
-	}
 }
 
 /* stp_dbg_core_dump_init - create core dump sys
@@ -2058,6 +2053,12 @@ INT32 stp_dbg_set_host_assert_info(UINT32 drv_type, UINT32 reason, UINT32 en)
 UINT32 stp_dbg_get_host_trigger_assert(VOID)
 {
 	return g_stp_dbg_cpupcr->host_assert_info.assert_from_host;
+}
+
+VOID stp_dbg_set_coredump_timer_state(CORE_DUMP_STA state)
+{
+	if (g_core_dump)
+		g_core_dump->sm = state;
 }
 
 INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE issue_type)
