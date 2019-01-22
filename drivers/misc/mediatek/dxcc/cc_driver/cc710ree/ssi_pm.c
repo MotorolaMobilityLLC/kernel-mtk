@@ -70,16 +70,10 @@ int ssi_power_mgr_runtime_resume(struct device *dev)
 
 	//check sep initialization is done (when gpr7 is different from 0)
 	timeout = wait_for_completion_timeout(&((struct ssi_power_mgr_handle*)drvdata->power_mgr_handle)->sep_ready_compl, msecs_to_jiffies(5000));
-	SSI_LOG_DEBUG("after wait_for_completion_interruptible_timeout.\n");
+	SSI_LOG_DEBUG("after wait_for_completion_interruptible_timeout .\n");
 
 	if (timeout ==0) {
-		SSI_LOG_DEBUG("wait_for_completion_interruptible_timeout reached timeout.\n");
-
-		regVal = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_SEP_SW_MONITOR));
-		SSI_LOG_ERR("HOST_SEP_SW_MONITOR = %x\n", regVal);
-		regVal = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_SEP_HOST_GPR7));
-		SSI_LOG_ERR("HOST_SEP_HOST_GPR7 = %x\n", regVal);
-
+		SSI_LOG_ERR("wait_for_completion_interruptible_timeout reached timeout.\n");
 		rc = -EFAULT;
 		return rc;
 	}
@@ -96,11 +90,6 @@ int ssi_power_mgr_runtime_resume(struct device *dev)
 	if ( (regVal& CC_SEP_HOST_GPR7_CKSUM_ERROR_FLAG) != 0) {
 		SSI_FIPS_SET_CKSUM_ERROR();
 		SSI_LOG_ERR("SEP ROM chesum error detected when PM runtime resume. \n");
-
-		regVal = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_SEP_SW_MONITOR));
-		SSI_LOG_ERR("HOST_SEP_SW_MONITOR = %x\n", regVal);
-		regVal = READ_REGISTER(cc_base + SASI_REG_OFFSET(HOST_RGF, HOST_SEP_HOST_GPR7));
-		SSI_LOG_ERR("HOST_SEP_HOST_GPR7 = %x\n", regVal);
 	}
 
 	rc = ssi_request_mgr_runtime_resume_queue(drvdata);
