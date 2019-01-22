@@ -30,7 +30,7 @@
 #include "../internal.h"
 
 static enum dcs_status sys_dcs_status = DCS_NORMAL;
-static int dcs_initialized;
+static bool dcs_initialized;
 static int normal_channel_num;
 static int lowpower_channel_num;
 static DEFINE_MUTEX(dcs_mutex);
@@ -141,7 +141,11 @@ static int dcs_ipi_register(void)
 	return 0;
 }
 #else /* !CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status) { return 0; }
+static int dcs_get_status_ipi(enum dcs_status *status)
+{
+	*status = DCS_BUSY;
+	return 0;
+}
 static int dcs_ipi_register(void) { return 0; }
 static int dcs_migration_ipi(enum migrate_dir dir) { return 0; }
 static int dcs_set_dummy_write_ipi(void) { return 0; }
@@ -160,49 +164,44 @@ static int dcs_dump_reg_ipi(void) { return 0; }
  */
 int dcs_dram_channel_switch(enum dcs_status status)
 {
-	if (!mutex_trylock(&dcs_mutex))
-		return -EBUSY;
+	mutex_trylock(&dcs_mutex);
 
 	if ((sys_dcs_status < DCS_BUSY) &&
 		(status < DCS_BUSY) &&
 		(sys_dcs_status != status)) {
 		dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
-		sys_dcs_status = DCS_BUSY;
+		sys_dcs_status = status;
+		pr_info("sys_dcs_status=%s\n", dcs_status_name[sys_dcs_status]);
 		mutex_unlock(&dcs_mutex);
 	} else {
 		pr_info("sys_dcs_status not changed\n");
 		mutex_unlock(&dcs_mutex);
 		return 0;
 	}
-	/*
-	 * assume we success doing channel switch, the sys_dcs_status
-	 * should be updated in the ISR
-	 */
-	mutex_lock(&dcs_mutex);
-	sys_dcs_status = status;
-	pr_info("sys_dcs_status=%s\n", dcs_status_name[sys_dcs_status]);
-	mutex_unlock(&dcs_mutex);
+
 	return 0;
 }
 
 /*
- * dcs_get_channel_num_trylock
- * return the number of DRAM channels and get the dcs lock
- * @num: address storing the number of DRAM channels.
+ * dcs_get_dcs_status_lock
+ * return the number of DRAM channels and status and get the dcs lock
+ * @ch: address storing the number of DRAM channels.
+ * @dcs_status: address storing the system dcs status
  *
  * return 0 on success or error code
  */
-int dcs_get_channel_num_trylock(int *num)
+int dcs_get_dcs_status_lock(int *ch, enum dcs_status *dcs_status)
 {
-	if (!mutex_trylock(&dcs_mutex))
-		goto BUSY;
+	mutex_trylock(&dcs_mutex);
+
+	*dcs_status = sys_dcs_status;
 
 	switch (sys_dcs_status) {
 	case DCS_NORMAL:
-		*num = normal_channel_num;
+		*ch = normal_channel_num;
 		break;
 	case DCS_LOWPOWER:
-		*num = lowpower_channel_num;
+		*ch = lowpower_channel_num;
 		break;
 	default:
 		mutex_unlock(&dcs_mutex);
@@ -210,15 +209,15 @@ int dcs_get_channel_num_trylock(int *num)
 	}
 	return 0;
 BUSY:
-	*num = -1;
+	*ch = -1;
 	return -EBUSY;
 }
 
 /*
- * dcs_get_channel_num_unlock
+ * dcs_get_dcs_status_unlock
  * unlock the dcs lock
  */
-void dcs_get_channel_num_unlock(void)
+void dcs_get_dcs_status_unlock(void)
 {
 	mutex_unlock(&dcs_mutex);
 }
@@ -252,7 +251,6 @@ static int __init mtkdcs_init(void)
 	if (normal_channel_num % 2) {
 		pr_err("%s fail, incorrect normal channel num=%d\n",
 				__func__, normal_channel_num);
-		dcs_initialized = false;
 		return -EINVAL;
 	}
 
@@ -276,14 +274,16 @@ module_exit(mtkdcs_exit);
 #ifdef CONFIG_MTKDCS_DEBUG
 static int mtkdcs_show(struct seq_file *m, void *v)
 {
-	int num = 0, ret = -1;
+	int ch = 0, ret = -1;
+	enum dcs_status dcs_status;
 
-	ret = dcs_get_channel_num_trylock(&num);
+	ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
 	if (!ret) {
-		pr_info("dcs currnet channel number=%d\n", num);
-		dcs_get_channel_num_unlock();
+		seq_printf(m, "dcs currnet channel number=%d, status=%s\n",
+				ch, dcs_status_name[sys_dcs_status]);
+		dcs_get_dcs_status_unlock();
 	} else {
-		pr_info("dcs_get_channel_num_trylock busy\n");
+		seq_puts(m, "dcs_get_dcs_status_lock busy\n");
 	}
 
 	/* call debug ipi */
