@@ -33,6 +33,7 @@ struct ipi_action {
 #define IPI_REG_SEMAPHORE_FAIL -3
 
 #define IPI_SERVICE_NOT_AVAILABLE -100
+#define IPI_SERVICE_NOT_INITED -101
 
 /* ipi_send() return code */
 #define IPI_DONE             0
@@ -64,6 +65,7 @@ extern int sspm_ipi_send_ack_ex(int mid, void *data, int retlen);
 #define IPI_OPT_NOLOCK          (IPI_OPT_REDEF_MASK)
 #define IPI_OPT_LOCK_BUSY       (IPI_OPT_REDEF_MASK|IPI_OPT_LOCK_MASK)
 #define IPI_OPT_LOCK_POLLING    (IPI_OPT_REDEF_MASK|IPI_OPT_LOCK_MASK|IPI_OPT_POLLING_MASK)
+extern int sspm_ipi_is_inited(void);
 extern int sspm_ipi_send_sync(int mid, int opts, void *buffer, int len, void *retbuf);
 extern int sspm_ipi_send_sync_ex(int mid, int opts, void *buffer, int len,
 								 void *retbuf, int retlen);
