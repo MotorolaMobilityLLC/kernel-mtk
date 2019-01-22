@@ -23,6 +23,7 @@ BASE_TOP = $(FPSGO_TOP)/base
 ccflags-y += -DNR_FREQ_CPU=16
 
 obj-$(CONFIG_MACH_MT6771) += platform/mt6771/fbt_cpu_platform.o
+obj-$(CONFIG_MACH_MT6775) += platform/mt6775/fbt_cpu_platform.o
 
 obj-$(CONFIG_MTK_FPSGO_FBT_GAME) += \
 	src/fbt_cpu.o \
