@@ -312,7 +312,7 @@ static unsigned int charging_value_to_parameter(const unsigned int *parameter,
 	if (val < array_size)
 		return parameter[val];
 
-	pr_err("Can't find the parameter\n");
+	chr_debug("Can't find the parameter\n");
 	return parameter[0];
 
 }
@@ -734,10 +734,15 @@ static int mt6336_set_iterm(struct charger_device *chg_dev, u32 iterm)
 static int mt6336_get_eoc(struct charger_device *chr_dev, bool *is_eoc)
 {
 	unsigned short vth_mode;
+	unsigned int icl_flag, level;
 
 	*is_eoc = mt6336_get_flag_register_value(MT6336_DA_QI_EOC_STAT_MUX);
 	vth_mode = mt6336_get_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL);
-	pr_err_ratelimited("mt6336_get_eoc: %d %d\n", *is_eoc, vth_mode);
+	icl_flag = mt6336_get_register_value(MT6336_PMIC_CORE_ANA_CON38);
+	level = mt6336_get_register_value(MT6336_PMIC_CORE_ANA_CON42);
+
+	chr_info("%s: %d %d 0x%x 0x%x\n", __func__, *is_eoc, vth_mode,
+		icl_flag, level);
 	return 0;
 }
 
@@ -1083,7 +1088,7 @@ static void mt6336_chr_suspend_callback(void)
 		mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
 	}
 }
-
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 static void mt6336_chr_iterm_callback(void)
 {
 	pr_err("mt6336_chr_iterm_callback\n");
@@ -1093,7 +1098,7 @@ static void mt6336_chr_iterm_callback(void)
 	else
 		pr_err("do not call chain\n");
 }
-
+#endif
 static void mt6336_vbat_ovp_callback(void)
 {
 	pr_err("mt6336_vbat_ovp_callback\n");
@@ -1105,9 +1110,15 @@ static void mt6336_vbat_ovp_callback(void)
 
 static void mt6336_vbus_ovp_callback(void)
 {
+	struct chgdev_notify *noti;
+
 	pr_err("mt6336_vbus_ovp_callback\n");
-	if (info != NULL)
+
+	if (info != NULL) {
+		noti = &(info->charger_dev->noti);
+		noti->vbusov_stat = true;
 		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_VBUS_OVP);
+	}
 }
 
 static void mt6336_eoc_callback(void)
@@ -1177,7 +1188,9 @@ static void mt6336_charger_irq_setting(void)
 	mt6336_register_interrupt_callback(MT6336_INT_DD_SWCHR_BUCK_MODE, mt6336_buck_power_on_callback);
 	mt6336_register_interrupt_callback(MT6336_INT_DD_SWCHR_BUCK_PROTECT_STATE, mt6336_buck_protect_callback);
 	mt6336_register_interrupt_callback(MT6336_INT_DD_SWCHR_CHR_SUSPEND_STATE, mt6336_chr_suspend_callback);
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_ICHR_ITERM, mt6336_chr_iterm_callback);
+#endif
 
 	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
 	mt6336_unmask_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
@@ -1189,7 +1202,9 @@ static void mt6336_charger_irq_setting(void)
 	mt6336_unmask_interrupt(MT6336_INT_DD_SWCHR_BUCK_MODE, "mt6336 charger");
 	mt6336_unmask_interrupt(MT6336_INT_DD_SWCHR_BUCK_PROTECT_STATE, "mt6336 charger");
 	mt6336_unmask_interrupt(MT6336_INT_DD_SWCHR_CHR_SUSPEND_STATE, "mt6336 charger");
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 	mt6336_unmask_interrupt(MT6336_INT_CHR_ICHR_ITERM, "mt6336 charger");
+#endif
 
 	mt6336_enable_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
 	mt6336_enable_interrupt(MT6336_INT_CHR_VBUS_OVP, "mt6336 charger");
@@ -1201,7 +1216,9 @@ static void mt6336_charger_irq_setting(void)
 	mt6336_enable_interrupt(MT6336_INT_DD_SWCHR_BUCK_MODE, "mt6336 charger");
 	mt6336_enable_interrupt(MT6336_INT_DD_SWCHR_BUCK_PROTECT_STATE, "mt6336 charger");
 	mt6336_enable_interrupt(MT6336_INT_DD_SWCHR_CHR_SUSPEND_STATE, "mt6336 charger");
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 	mt6336_disable_interrupt(MT6336_INT_CHR_ICHR_ITERM, "mt6336 charger");
+#endif
 }
 
 int mt6336_event(struct charger_device *chg_dev, u32 event, u32 args)
