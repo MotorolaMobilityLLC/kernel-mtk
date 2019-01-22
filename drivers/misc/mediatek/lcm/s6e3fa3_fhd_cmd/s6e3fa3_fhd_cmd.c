@@ -57,6 +57,7 @@
 
 #define PHYSICAL_WIDTH  (68)/* mm */
 #define PHYSICAL_HEIGHT (122)/* mm */
+#define LCM_DENSITY											(480)
 
 #ifndef TRUE
  #define TRUE 1
@@ -173,6 +174,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width  = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->density            = LCM_DENSITY;
 
 	params->lcm_if = LCM_INTERFACE_DSI0;
 	params->lcm_cmd_if = LCM_INTERFACE_DSI0;
