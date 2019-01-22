@@ -707,7 +707,7 @@ ssize_t mtk_rgu_pause_wdt_store(struct kobject *kobj, const char *buffer, size_t
 {
 	char pause_wdt;
 	int pause_wdt_b;
-	int res = sscanf(buffer, "%s", &pause_wdt);
+	int res = sscanf(buffer, "%c", &pause_wdt);
 
 	pause_wdt_b = pause_wdt;
 
