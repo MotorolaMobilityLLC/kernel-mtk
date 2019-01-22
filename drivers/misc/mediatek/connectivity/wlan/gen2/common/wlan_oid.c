@@ -9596,10 +9596,17 @@ wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
 
 	if (prCmdPscnAction) {
 		DBGLOG(SCN, TRACE, "ucPscanAct=[%d]\n", prCmdPscnAction->ucPscanAct);
-		if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_ENABLE)
+		if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_ENABLE) {
+			prAdapter->rWifiVar.rScanInfo.fgGScnAction = TRUE;
 			scnPSCNFsm(prAdapter, PSCN_SCANNING);
-		else if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_DISABLE)
-			scnPSCNFsm(prAdapter, PSCN_IDLE);
+		} else if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_DISABLE) {
+			scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, NULL, NULL, FALSE, FALSE, TRUE);
+			if (prAdapter->rWifiVar.rScanInfo.prPscnParam->fgNLOScnEnable
+				|| prAdapter->rWifiVar.rScanInfo.prPscnParam->fgBatchScnEnable)
+				scnPSCNFsm(prAdapter, PSCN_RESET); /* in case there is any PSCN */
+			else
+				scnPSCNFsm(prAdapter, PSCN_IDLE);
+		}
 	}
 
 	return WLAN_STATUS_SUCCESS;

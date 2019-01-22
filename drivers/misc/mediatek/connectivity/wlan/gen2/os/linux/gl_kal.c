@@ -1402,16 +1402,15 @@ VOID kalSendCompleteAndAwakeQueue(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket
 	u2QueueIdx = skb_get_queue_mapping(prSkb);
 	ASSERT(u2QueueIdx < CFG_MAX_TXQ_NUM);
 
-	if (GLUE_GET_PKT_IS_PAL(prSkb)) {
-		ucNetworkType = NETWORK_TYPE_BOW_INDEX;
-	} else if (GLUE_GET_PKT_IS_P2P(prSkb)) {
+	if (GLUE_GET_PKT_IS_P2P(prSkb)) {
 		ucNetworkType = NETWORK_TYPE_P2P_INDEX;
-
 #if CFG_ENABLE_WIFI_DIRECT
 		/* in case packet was sent after P2P device is unregistered */
 		if (prGlueInfo->prAdapter->fgIsP2PRegistered == FALSE)
 			fgIsValidDevice = FALSE;
 #endif
+	} else if (GLUE_GET_PKT_IS_PAL(prSkb)) {
+		ucNetworkType = NETWORK_TYPE_BOW_INDEX;
 	} else {
 		ucNetworkType = NETWORK_TYPE_AIS_INDEX;
 	}
@@ -2435,7 +2434,6 @@ VOID kalFlushPendingTxPackets(IN P_GLUE_INFO_T prGlueInfo)
 				break;
 
 			prPacket = GLUE_GET_PKT_DESCRIPTOR(prQueueEntry);
-
 			kalSendComplete(prGlueInfo, prPacket, WLAN_STATUS_NOT_ACCEPTED);
 		}
 	}

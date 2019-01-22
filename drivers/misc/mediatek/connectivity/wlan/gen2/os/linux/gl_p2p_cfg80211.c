@@ -966,7 +966,8 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 	UINT_32 u4OriRegValue = 0;
 	UINT_32 u4NextRegValue = 0;
 
-	DBGLOG(P2P, INFO, "--> %s()\n", __func__);
+	DBGLOG(P2P, INFO, "--> %s() ext list,wait :%d\n"
+		, __func__, params->wait);
 
 	do {
 		if ((wiphy == NULL) || (wdev == NULL) || (params == 0) || (cookie == NULL))
@@ -993,7 +994,7 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 		if (prMsgExtListenReq) {
 			prMsgExtListenReq->rMsgHdr.eMsgId = MID_MNY_P2P_EXTEND_LISTEN_INTERVAL;
 			prMsgExtListenReq->wait = params->wait;
-			DBGLOG(P2P, INFO, "ext listen, wait: %d\n", prMsgExtListenReq->wait);
+			DBGLOG(P2P, TRACE, "ext listen, wait: %d\n", prMsgExtListenReq->wait);
 			mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgExtListenReq,
 				MSG_SEND_METHOD_BUF);
 		}

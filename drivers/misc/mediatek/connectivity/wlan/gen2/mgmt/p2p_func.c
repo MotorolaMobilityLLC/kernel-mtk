@@ -1111,7 +1111,7 @@ VOID p2pFuncTagActionActionP2PFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 			IN P_WLAN_ACTION_FRAME prActFrame,
 			IN UINT_8 ucP2pAction, IN UINT_64 u8Cookie)
 {
-	DBGLOG(P2P, INFO, "Found P2P_%s, SA: %pM - DA: %pM, cookie: 0x%llx, SeqNO: %d\n",
+	DBGLOG(P2P, TRACE, "Found P2P_%s, SA: %pM - DA: %pM, cookie: 0x%llx, SeqNO: %d\n",
 		p2p_to_string(ucP2pAction),
 		prActFrame->aucSrcAddr,
 		prActFrame->aucDestAddr,
@@ -1119,40 +1119,49 @@ VOID p2pFuncTagActionActionP2PFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 		prMgmtTxMsdu->ucTxSeqNum);
 }
 
+#define P2P_INFO_MSG_LENGTH 200
 VOID p2pFuncTagActionActionFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
 			IN P_WLAN_ACTION_FRAME prActFrame,
 			IN UINT_8 ucAction, IN UINT_64 u8Cookie)
 {
 	PUINT_8 pucVendor = NULL;
+	UINT_32 offsetMsg;
+	UINT8 aucMsg[P2P_INFO_MSG_LENGTH];
 
-	DBGLOG(P2P, INFO, "Found WLAN_%s, SA: %pM - DA: %pM, cookie: 0x%llx, SeqNo: %d\n",
-		pa_to_string(ucAction),
-		prActFrame->aucSrcAddr,
-		prActFrame->aucDestAddr,
-		u8Cookie,
-		prMgmtTxMsdu->ucTxSeqNum);
+	offsetMsg = 0;
+	offsetMsg += kalSnprintf((aucMsg + offsetMsg), sizeof(aucMsg), "WLAN_%s, ",
+			  pa_to_string(ucAction));
+
+
 
 	if (ucAction == WLAN_PA_VENDOR_SPECIFIC) {
 		pucVendor = (PUINT_8)prActFrame + 26;
 		if (*(pucVendor + 0) == 0x50 &&
 		    *(pucVendor + 1) == 0x6f &&
 		    *(pucVendor + 2) == 0x9a) {
-			if (*(pucVendor + 3) == 0x09)
+			if (*(pucVendor + 3) == 0x09) {
 				/* found p2p IE */
 				p2pFuncTagActionActionP2PFrame(prMgmtTxMsdu,
 					prActFrame, *(pucVendor + 4), u8Cookie);
-			else if (*(pucVendor + 3) == 0x0a)
+				offsetMsg += kalSnprintf((aucMsg + offsetMsg), sizeof(aucMsg), "P2P_%s, ",
+					  p2p_to_string(*(pucVendor + 4)));
+			} else if (*(pucVendor + 3) == 0x0a) {
 				/* found WFD IE */
-				DBGLOG(P2P, INFO, "Found WFD IE, SA: %pM - DA: %pM\n",
+				DBGLOG(P2P, TRACE, "Found WFD IE, SA: %pM - DA: %pM\n",
 					prActFrame->aucSrcAddr,
 					prActFrame->aucDestAddr);
-			else
-				DBGLOG(P2P, INFO, "Found Other vendor 0x%x, SA: %pM - DA: %pM\n",
+				offsetMsg += kalSnprintf((aucMsg + offsetMsg), sizeof(aucMsg), "WFD IE%s, ", "");
+			} else {
+				DBGLOG(P2P, TRACE, "Found Other vendor 0x%x, SA: %pM - DA: %pM\n",
 					*(pucVendor + 3),
 					prActFrame->aucSrcAddr,
 					prActFrame->aucDestAddr);
+				offsetMsg += kalSnprintf((aucMsg + offsetMsg), sizeof(aucMsg), "Other vendor 0x%x, ",
+					  *(pucVendor + 3));
+			}
 		}
 	}
+	DBGLOG(P2P, INFO, "Found :%s\n", aucMsg);
 }
 
 VOID p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,

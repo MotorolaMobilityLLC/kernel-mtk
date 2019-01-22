@@ -48,7 +48,7 @@ statsInfoEnvRequest(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4SetBuffer
 UINT_64 u8DrvOwnStart, u8DrvOwnEnd;
 UINT32 u4DrvOwnMax;
 #define CFG_USER_LOAD 0
-static UINT_16 su2TxDoneCfg = CFG_DHCP | CFG_ICMP | CFG_EAPOL;
+static UINT_16 su2TxDoneCfg = CFG_DHCP | CFG_ICMP | CFG_EAPOL | CFG_ARP;
 /*******************************************************************************
 *						P R I V A T E  F U N C T I O N S
 ********************************************************************************
@@ -1019,7 +1019,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 		switch (eventType) {
 		case EVENT_RX:
 			if (u2OpCode == ARP_PRO_REQ)
-				DBGLOG(RX, INFO, "<RX> Arp Req From IP: %d.%d.%d.%d\n",
+				DBGLOG(RX, TRACE, "<RX> Arp Req From IP: %d.%d.%d.%d\n",
 					pucEthBody[14], pucEthBody[15], pucEthBody[16], pucEthBody[17]);
 			else if (u2OpCode == ARP_PRO_RSP)
 				DBGLOG(RX, INFO, "<RX> Arp Rsp from IP: %d.%d.%d.%d\n",
@@ -1027,10 +1027,10 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 			break;
 		case EVENT_TX:
 			if (u2OpCode == ARP_PRO_REQ)
-				DBGLOG(TX, INFO, "<TX> Arp Req to IP: %d.%d.%d.%d\n",
+				DBGLOG(TX, TRACE, "<TX> Arp Req to IP: %d.%d.%d.%d\n",
 					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
 			else if (u2OpCode == ARP_PRO_RSP)
-				DBGLOG(TX, INFO, "<TX> Arp Rsp to IP: %d.%d.%d.%d\n",
+				DBGLOG(TX, TRACE, "<TX> Arp Rsp to IP: %d.%d.%d.%d\n",
 					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
 			prMsduInfo->fgNeedTxDoneStatus = TRUE;
 			break;
@@ -1039,7 +1039,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 				DBGLOG(TX, INFO, "<TX status:%d> Arp Req to IP: %d.%d.%d.%d\n", status,
 					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
 			else if (u2OpCode == ARP_PRO_RSP)
-				DBGLOG(TX, INFO, "<TX status:%d> Arp Rsp to IP: %d.%d.%d.%d\n", status,
+				DBGLOG(TX, TRACE, "<TX status:%d> Arp Rsp to IP: %d.%d.%d.%d\n", status,
 					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
 			break;
 		}
