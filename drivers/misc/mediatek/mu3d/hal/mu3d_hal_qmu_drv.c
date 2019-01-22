@@ -1209,7 +1209,7 @@ void mu3d_hal_stop_qmu(int q_num, enum USB_DIR dir)
 		} else {
 			os_writel(USB_QMU_TQCSR(q_num), QMU_Q_STOP);
 			mb(); /* avoid context switch */
-			if (wait_for_value(USB_QMU_TQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
+			if (wait_for_value_us(USB_QMU_TQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
 				qmu_printk(K_DEBUG, "Tx%d stop Now! CSR=0x%x\n",
 					   q_num, os_readl(USB_QMU_TQCSR(q_num)));
 			else {
@@ -1231,7 +1231,7 @@ void mu3d_hal_stop_qmu(int q_num, enum USB_DIR dir)
 		} else {
 			os_writel(USB_QMU_RQCSR(q_num), QMU_Q_STOP);
 			mb(); /* avoid context switch */
-			if (wait_for_value(USB_QMU_RQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
+			if (wait_for_value_us(USB_QMU_RQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
 				qmu_printk(K_DEBUG, "Rx%d stop Now! CSR=0x%x\n",
 					   q_num, os_readl(USB_QMU_RQCSR(q_num)));
 			else {
