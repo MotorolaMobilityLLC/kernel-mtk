@@ -32,6 +32,8 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/clk.h>
+#include <linux/clk-provider.h>
+
 #include <mtk_cpufreq_hybrid.h>
 #ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 #include <mtk_kbase_spm.h>
@@ -53,37 +55,72 @@ static inline u16 i2c_readw(struct mt_i2c *i2c, u8 offset)
 	return readw(i2c->base + offset);
 }
 
-void __iomem *infra_base;
+void __iomem *cg_base;
 
-s32 map_cg_regs(void)
+s32 map_cg_regs(struct mt_i2c *i2c)
 {
-	struct device_node *infrasys_node;
+	struct device_node *cg_node;
 
-	infrasys_node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
-	if (!infrasys_node) {
-		pr_err("Cannot find infrasys_node\n");
-		return -ENODEV;
+	if (!cg_base && i2c->dev_comp->clk_compatible[0]) {
+		cg_node = of_find_compatible_node(NULL, NULL,
+			i2c->dev_comp->clk_compatible);
+		if (!cg_node) {
+			pr_err("Cannot find cg_node\n");
+			return -ENODEV;
+		}
+		cg_base = of_iomap(cg_node, 0);
+		if (!cg_base) {
+			pr_err("cg_base iomap failed\n");
+			return -ENOMEM;
+		}
 	}
-	infra_base = of_iomap(infrasys_node, 0);
-	if (!infra_base) {
-		pr_err("infra_base iomap failed\n");
-		return -ENOMEM;
-	}
+
 	return 0;
 }
 
-void dump_cg_regs(void)
+void dump_cg_regs(struct mt_i2c *i2c)
 {
-	if (!infra_base) {
-		pr_err("infra_base NULL\n");
+	if (!cg_base) {
+		pr_err("cg_base NULL\n");
 		return;
 	}
 
 	pr_err("[I2C] cg regs dump:\n"
-		"%8s : 0x%08x 0x%08x 0x%08x\n%8s : 0x%08x 0x%08x 0x%08x\n",
-		"Address", 0x10001090, 0x10001094, 0x100010b0,
-		"Values", readw(infra_base + 0x90), readw(infra_base + 0x94),
-		readw(infra_base + 0xb0));
+		"name %s, offset 0x%x: value = 0x%08x\n",
+		i2c->dev_comp->clk_compatible,
+		i2c->dev_comp->clk_sta_offset,
+		readw(cg_base + i2c->dev_comp->clk_sta_offset));
+}
+
+s32 check_cg_sta(struct mt_i2c *i2c)
+{
+	int  id, cg_cnt, cg_bit, err = 0;
+	unsigned int cg_reg;
+
+	cg_cnt = __clk_get_enable_count(i2c->clk_main);
+	if (cg_cnt <= 0) {
+		dev_err(i2c->dev, "addr: %x, err irq w/o clk ccf %d(local %d)\n",
+			i2c->addr, cg_cnt, i2c->cg_cnt);
+		err++;
+	}
+
+	if (!cg_base)
+		return err;
+
+	id = i2c->id;
+	cg_bit = i2c->dev_comp->cg_bit[id];
+	cg_reg = readw(cg_base + i2c->dev_comp->clk_sta_offset);
+	/* 1:clk off, 0:clk on */
+	if (cg_reg & (0x1 << cg_bit)) {
+		dev_err(i2c->dev, "addr: %x, err irq cg bit%d = %d\n", i2c->addr,
+			cg_bit, cg_reg & (0x1 << cg_bit) ? 1 : 0);
+		err++;
+	}
+
+	if (err)
+		return -1;
+
+	return 0;
 }
 
 void __iomem *dma_base;
@@ -179,6 +216,7 @@ static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 		if (ret)
 			goto err_pmic;
 	}
+	i2c->cg_cnt++;
 	return 0;
 
 err_pmic:
@@ -202,6 +240,7 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 		clk_disable_unprepare(i2c->clk_arb);
 
 	clk_disable_unprepare(i2c->clk_dma);
+	i2c->cg_cnt--;
 #endif
 }
 
@@ -433,9 +472,9 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	pr_err("I2C structure:\n"
 	       I2CTAG "Clk=%d,Id=%d,Op=%x,Irq_stat=%x,Total_len=%x\n"
 	       I2CTAG "Trans_len=%x,Trans_num=%x,Trans_auxlen=%x,speed=%d\n"
-	       I2CTAG "Trans_stop=%u\n",
+	       I2CTAG "Trans_stop=%u,cg_cnt=%d\n",
 	       15600, i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
-			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop);
+			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop, i2c->cg_cnt);
 
 	pr_err("base address 0x%p\n", i2c->base);
 	pr_err("I2C register:\n"
@@ -672,7 +711,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		dev_err(i2c->dev, "addr: %x, transfer timeout\n", i2c->addr);
 		i2c_dump_info(i2c);
 		mt_irq_dump_status(i2c->irqnr);
-		dump_cg_regs();
+		dump_cg_regs(i2c);
 		mt_i2c_init_hw(i2c);
 		return -ETIMEDOUT;
 	}
@@ -1063,6 +1102,8 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 {
 	struct mt_i2c *i2c = dev_id;
 
+	check_cg_sta(i2c);
+
 	/* Clear interrupt mask */
 	i2c_writew(~(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP),
 		i2c, OFFSET_INTR_MASK);
@@ -1140,6 +1181,18 @@ static const struct mtk_i2c_compatible mt6799_compat = {
 	.set_dt_div = 1,
 	.check_max_freq = 0,
 	.ext_time_config = 0,
+	.clk_compatible = "mediatek,mt6799-pericfg",
+	.clk_sta_offset = 0x278,
+	.cg_bit[0] = 16,
+	.cg_bit[1] = 17,
+	.cg_bit[2] = 24,
+	.cg_bit[3] = 25,
+	.cg_bit[4] = 20,
+	.cg_bit[5] = 21,
+	.cg_bit[6] = 22,
+	.cg_bit[7] = 23,
+	.cg_bit[8] = 18,
+	.cg_bit[9] = 19,
 };
 
 static const struct mtk_i2c_compatible elbrus_compat = {
@@ -1288,6 +1341,10 @@ static int mt_i2c_probe(struct platform_device *pdev)
 		return ret;
 	}
 	platform_set_drvdata(pdev, i2c);
+
+	if (!map_cg_regs(i2c))
+		pr_warn("Map cg regs successfully.\n");
+
 	return 0;
 }
 
@@ -1347,8 +1404,6 @@ static s32 __init mt_i2c_init(void)
 		return ret;
 	}
 #endif
-	if (!map_cg_regs())
-		pr_warn("Mapp cg regs successfully.\n");
 
 	if (!map_dma_regs())
 		pr_warn("Mapp dma regs successfully.\n");
