@@ -709,7 +709,7 @@ void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
 			return;
 
 		mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, id, emi_req[opp]);
-		spm_vcorefs_warn("DRAM ZQTX tracking request: %d\n", opp);
+		/* spm_vcorefs_warn("DRAM ZQTX tracking request: %d\n", opp); */
 		break;
 	default:
 		break;
