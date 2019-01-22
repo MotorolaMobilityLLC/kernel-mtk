@@ -3301,17 +3301,29 @@ static void testcase_while_test_mmsys_bus(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+struct thread_set_event_config {
+	enum CMDQ_EVENT_ENUM event;
+	u32 sleep_ms;
+	bool loop;
+};
+
 static int testcase_set_gce_event(void *data)
 {
+	struct thread_set_event_config config;
+
 	CMDQ_MSG("%s\n", __func__);
 
-	while (1) {
+	config = *((struct thread_set_event_config *) data);
+	do {
 		if (kthread_should_stop())
 			break;
 
-		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
-		msleep_interruptible(150);
-	}
+		if (config.sleep_ms > 10)
+			msleep_interruptible(config.sleep_ms);
+		else
+			mdelay(config.sleep_ms);
+		cmdqCoreSetEvent(config.event);
+	} while (config.loop);
 
 	CMDQ_MSG("%s END\n", __func__);
 
@@ -3364,9 +3376,9 @@ struct task_struct *set_event_config_th;
 struct task_struct *busy_mmsys_config_th[CMDQ_TEST_MAX_THREAD] = {NULL};
 struct task_struct *busy_non_mmsys_config_th[CMDQ_TEST_MAX_THREAD] = {NULL};
 
-static void testcase_run_set_gce_event_loop(void)
+static void testcase_run_set_gce_event(void *data)
 {
-	set_event_config_th = kthread_run(testcase_set_gce_event, NULL, "set_cmdq_event_loop");
+	set_event_config_th = kthread_run(testcase_set_gce_event, data, "set_cmdq_event_loop");
 	if (IS_ERR(set_event_config_th)) {
 		/* print error log */
 		CMDQ_LOG("%s, init kthread_run failed!\n", __func__);
@@ -3374,7 +3386,7 @@ static void testcase_run_set_gce_event_loop(void)
 	}
 }
 
-static void testcase_stop_set_gce_event_loop(void)
+static void testcase_stop_set_gce_event(void)
 {
 	if (set_event_config_th == NULL)
 		return;
@@ -3457,7 +3469,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic assign */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_assign(handle, &result, test_var);
 	cmdq_op_write_reg(handle, result_reg_pa, result, ~0x0);
@@ -3475,7 +3487,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic add */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_add(handle, &result, get_value, test_var);
@@ -3494,7 +3506,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic subtract */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_subtract(handle, &result, get_value, test_var);
@@ -3513,7 +3525,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic multiply */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_multiply(handle, &result, get_value, test_var);
@@ -3532,7 +3544,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic exclusive or */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_xor(handle, &result, get_value, test_var);
@@ -3551,7 +3563,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic not */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_not(handle, &result, get_value);
@@ -3570,7 +3582,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic or */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_or(handle, &result, get_value, test_var);
@@ -3589,7 +3601,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic and */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_and(handle, &result, get_value, test_var);
@@ -3608,7 +3620,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic left shift */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_left_shift(handle, &result, get_value, test_var);
@@ -3627,7 +3639,7 @@ static void testcase_basic_logic(void)
 
 	/* test logic right shift */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&result);
+	cmdq_op_init_variable(&result);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_right_shift(handle, &result, get_value, test_var);
@@ -3670,10 +3682,10 @@ static void testcase_basic_jump_c(void)
 
 	/* test logic assign */
 	cmdq_task_reset(handle);
-	cmdq_init_op_variable(&cmdq_row);
-	cmdq_init_op_variable(&cmdq_col);
-	cmdq_init_op_variable(&cmdq_temp_sum);
-	cmdq_init_op_variable(&cmdq_result);
+	cmdq_op_init_variable(&cmdq_row);
+	cmdq_op_init_variable(&cmdq_col);
+	cmdq_op_init_variable(&cmdq_temp_sum);
+	cmdq_op_init_variable(&cmdq_result);
 
 	cmdq_op_read_reg(handle, row_in_reg_pa, &cmdq_row, ~0x0);
 	cmdq_op_assign(handle, &cmdq_result, 0);
@@ -3974,20 +3986,97 @@ static void testcase_wait_event_timeout(u32 max_round)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+/* Simulate DISP use case */
+static void testcase_disp_simulate(void)
+{
+	/*
+	* int a = 0;
+	* int b = 5;
+	* int c;
+	* while (a++ <= b) {
+	*   c = wait_event_timeout(event, 10ms);
+	*   if (c > 0)
+	*     break;
+	*   sleep(30ms);
+	* }
+	*/
+	CMDQ_VARIABLE a_var = CMDQ_TASK_CPR_INITIAL_VALUE,
+				  b_var = CMDQ_TASK_CPR_INITIAL_VALUE,
+				  c_var = CMDQ_TASK_CPR_INITIAL_VALUE;
+	struct cmdqRecStruct *handle;
+	cmdqBackupSlotHandle slot_handle;
+	u32 begin_time, end_time, duration_time_ms;
+	struct thread_set_event_config config;
+
+	config = (struct thread_set_event_config){.event = CMDQ_SYNC_TOKEN_USER_0,
+			  .loop = false, .sleep_ms = 100};
+
+	CMDQ_MSG("%s\n", __func__);
+
+	cmdq_alloc_mem(&slot_handle, 2);
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+
+	cmdq_op_read_reg_to_mem(handle, slot_handle, 0, CMDQ_APXGPT2_COUNT);
+	cmdq_op_assign(handle, &a_var, 1);
+	cmdq_op_assign(handle, &b_var, 5);
+	cmdq_op_while(handle, a_var, CMDQ_LESS_THAN_AND_EQUAL, b_var);
+		cmdq_op_add(handle, &a_var, a_var, 1);
+		cmdq_op_wait_event_timeout(handle, &c_var, CMDQ_SYNC_TOKEN_USER_0, 10000);
+		cmdq_op_if(handle, c_var, CMDQ_GREATER_THAN, 0);
+			cmdq_op_break(handle);
+		cmdq_op_end_if(handle);
+		cmdq_op_delay_us(handle, 30000);
+	cmdq_op_end_while(handle);
+	cmdq_op_read_reg_to_mem(handle, slot_handle, 1, CMDQ_APXGPT2_COUNT);
+
+	/* test round 1: expect event got early*/
+	cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_USER_0);
+	testcase_run_set_gce_event((void *)(&config));
+
+	cmdq_task_flush(handle);
+
+	cmdq_cpu_read_mem(slot_handle, 0, &begin_time);
+	cmdq_cpu_read_mem(slot_handle, 1, &end_time);
+	duration_time_ms = (end_time - begin_time) * 76 / 1000000;
+
+	CMDQ_LOG("%s expect wait: 50~150ms, real wait: %dms\n", __func__, duration_time_ms);
+	if (duration_time_ms > 100)
+		CMDQ_TEST_FAIL("%s wait valid event failed: %dms (100)\n", __func__, duration_time_ms);
+
+	/* test round 2: expect event not got and timeout*/
+	cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_USER_0);
+
+	cmdq_task_flush(handle);
+
+	cmdq_cpu_read_mem(slot_handle, 0, &begin_time);
+	cmdq_cpu_read_mem(slot_handle, 1, &end_time);
+	duration_time_ms = (end_time - begin_time) * 76 / 1000000;
+
+	CMDQ_LOG("%s expect timeout: 200ms, real wait: %dms\n", __func__, duration_time_ms);
+	if (duration_time_ms > 202 || duration_time_ms < 198)
+		CMDQ_TEST_FAIL("%s wait valid event failed: %dms (200)\n", __func__, duration_time_ms);
+
+	cmdq_task_destroy(handle);
+}
+
 static void testcase_mmsys_performance(int32_t test_id)
 {
+	struct thread_set_event_config config = {.event = CMDQ_SYNC_TOKEN_USER_0,
+											.loop = true, .sleep_ms = 150};
+
 	switch (test_id) {
 	case 0:
 		/* test GCE config only in bus idle situation */
-		testcase_run_set_gce_event_loop();
+		testcase_run_set_gce_event((void *)(&config));
 		msleep_interruptible(500);
 		testcase_while_test_mmsys_bus();
 		msleep_interruptible(500);
-		testcase_stop_set_gce_event_loop();
+		testcase_stop_set_gce_event();
 		break;
 	case 1:
 		/* test GCE config only when CPU busy configure MMSYS situation */
-		testcase_run_set_gce_event_loop();
+		testcase_run_set_gce_event((void *)(&config));
 		msleep_interruptible(500);
 		testcase_run_busy_mmsys_config_loop();
 		msleep_interruptible(500);
@@ -3995,11 +4084,11 @@ static void testcase_mmsys_performance(int32_t test_id)
 		msleep_interruptible(500);
 		testcase_stop_busy_mmsys_config_loop();
 		msleep_interruptible(500);
-		testcase_stop_set_gce_event_loop();
+		testcase_stop_set_gce_event();
 		break;
 	case 2:
 		/* test GCE config only when CPU busy configure non-MMSYS situation */
-		testcase_run_set_gce_event_loop();
+		testcase_run_set_gce_event((void *)(&config));
 		msleep_interruptible(500);
 		testcase_run_busy_non_mmsys_config_loop();
 		msleep_interruptible(500);
@@ -4007,7 +4096,7 @@ static void testcase_mmsys_performance(int32_t test_id)
 		msleep_interruptible(500);
 		testcase_stop_busy_non_mmsys_config_loop();
 		msleep_interruptible(500);
-		testcase_stop_set_gce_event_loop();
+		testcase_stop_set_gce_event();
 		break;
 	default:
 		CMDQ_LOG("[TESTCASE] mmsys performance testcase Not Found: test_id: %d\n", test_id);
@@ -4502,6 +4591,9 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 146:
+		testcase_disp_simulate();
+		break;
 	case 145:
 		testcase_wait_event_timeout(5);
 		break;
