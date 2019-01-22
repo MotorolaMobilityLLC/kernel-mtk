@@ -1139,7 +1139,7 @@ static void mtk_battery_notify_VCharger_check(struct charger_manager *info)
 #if defined(BATTERY_NOTIFY_CASE_0001_VCHARGER)
 	int vchr = 0;
 
-	vchr = pmic_get_vbus();
+	vchr = pmic_get_vbus() * 1000; /* uV */
 	if (vchr > info->data.max_charger_voltage) {
 		info->notify_code |= 0x0001;
 		chr_err("[BATTERY] charger_vol(%d) > %d mV\n",
