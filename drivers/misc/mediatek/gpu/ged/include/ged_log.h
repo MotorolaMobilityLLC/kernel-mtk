@@ -68,4 +68,8 @@ void ged_log_perf_trace_counter(char *name, long long count, int pid, unsigned l
 
 void ged_log_dump(GED_LOG_BUF_HANDLE hLogBuf);
 
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173) || defined(CONFIG_MACH_MT6739)
+extern void ged_dump_fw(void);
+#endif
+
 #endif

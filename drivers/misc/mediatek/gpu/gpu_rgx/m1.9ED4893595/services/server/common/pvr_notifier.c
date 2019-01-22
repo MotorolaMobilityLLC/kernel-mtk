@@ -397,6 +397,22 @@ PVRSRVUnregisterDbgRequestNotify(IMG_HANDLE hNotify)
 	return PVRSRV_OK;
 }
 
+IMG_BOOL bQuiet;
+IMG_BOOL MTK_PVRSRVDebugRequestGetSilence(void)
+{
+	return bQuiet;
+}
+
+void
+MTK_PVRSRVDebugRequestSetSilence(IMG_BOOL bEnable)
+{
+	bQuiet = bEnable;
+	if (bQuiet == IMG_TRUE)
+		g_use_id = MTKPP_ID_SHOT_FW;
+	else
+		g_use_id = MTKPP_ID_FW;
+}
+
 void
 PVRSRVDebugRequest(PVRSRV_DEVICE_NODE *psDevNode,
 				   IMG_UINT32 ui32VerbLevel,
@@ -437,7 +453,7 @@ PVRSRVDebugRequest(PVRSRV_DEVICE_NODE *psDevNode,
 
 	if (!pfnDumpDebugPrintf)
 	{
-		MTKPP_LOGTIME(MTKPP_ID_FW, "Dump Debug Data");
+		MTKPP_LOGTIME(g_use_id, "Dump Debug Data");
 	}
 
 	switch (psPVRSRVData->eServicesState)

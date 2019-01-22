@@ -54,6 +54,9 @@ extern void (*mtk_gpu_sodi_exit_fp)(void);
 
 
 static struct workqueue_struct* g_psNotifyWorkQueue = NULL;
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173) || defined(CONFIG_MACH_MT6739)
+static struct workqueue_struct *g_psDumpFW;
+#endif
 
 static struct mutex gsVsyncStampLock;
 
@@ -65,6 +68,12 @@ typedef struct GED_NOTIFY_SW_SYNC_TAG
 	long phase;
 	unsigned long ul3DFenceDoneTime;
 } GED_NOTIFY_SW_SYNC;
+
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173) || defined(CONFIG_MACH_MT6739)
+struct GED_DUMP_FW {
+	struct work_struct	sWork;
+};
+#endif
 
 extern GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
 int (*ged_sw_vsync_event_fp)(bool bMode) = NULL;
@@ -533,6 +542,31 @@ void ged_sodi_stop(void)
 }
 
 
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173) || defined(CONFIG_MACH_MT6739)
+static void ged_dump_fw_handle(struct work_struct *psWork)
+{
+	struct GED_DUMP_FW *psNotify = GED_CONTAINER_OF(psWork, struct GED_DUMP_FW, sWork);
+
+	if (psNotify) {
+		MTKFWDump();
+		ged_free(psNotify, sizeof(struct GED_DUMP_FW));
+	}
+}
+
+void ged_dump_fw(void)
+{
+	struct GED_DUMP_FW *psNotify;
+
+	psNotify = (struct GED_DUMP_FW *)ged_alloc_atomic(sizeof(struct GED_DUMP_FW));
+	if (psNotify) {
+		INIT_WORK(&psNotify->sWork, ged_dump_fw_handle);
+		queue_work(g_psDumpFW, &psNotify->sWork);
+	}
+}
+EXPORT_SYMBOL(ged_dump_fw);
+#endif
+
+
 GED_ERROR ged_notify_sw_vsync_system_init(void)
 {
 	g_psNotifyWorkQueue = create_workqueue("ged_notify_sw_vsync");
@@ -541,6 +575,15 @@ GED_ERROR ged_notify_sw_vsync_system_init(void)
 	{
 		return GED_ERROR_OOM;
 	}
+
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173) || defined(CONFIG_MACH_MT6739)
+	g_psDumpFW = NULL;
+	g_psDumpFW = create_workqueue("ged_dump_fw_log");
+
+	if (g_psDumpFW == NULL)
+		return GED_ERROR_OOM;
+#endif
+
 	mutex_init(&gsVsyncStampLock);
 	mutex_init(&gsVsyncModeLock);
 	
@@ -563,6 +606,16 @@ void ged_notify_sw_vsync_system_exit(void)
 
 		g_psNotifyWorkQueue = NULL;
 	}
+
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173) || defined(CONFIG_MACH_MT6739)
+	if (g_psDumpFW != NULL) {
+		flush_workqueue(g_psDumpFW);
+
+		destroy_workqueue(g_psDumpFW);
+
+		g_psDumpFW = NULL;
+	}
+#endif
 #ifdef ENABLE_COMMON_DVFS			 
 	hrtimer_cancel( &g_HT_hwvsync_emu );
 #endif	

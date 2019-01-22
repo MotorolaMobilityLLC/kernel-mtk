@@ -142,8 +142,14 @@ Debug Notifier Interface
 #include "mtk_pp.h"
 
 #if defined(MTK_DEBUG_PROC_PRINT)
-#define _MTKPP_GPULOG_FW(...) MTKPP_LOG(MTKPP_ID_FW, __VA_ARGS__)
-#define PVR_DUMPDEBUG_LOG(...)  do { if (pfnDumpDebugPrintf) {pfnDumpDebugPrintf(pvDumpDebugFile, __VA_ARGS__);} else {MTKPP_LOG(MTKPP_ID_FW, __VA_ARGS__);} } while(0)
+#define _MTKPP_GPULOG_FW(...) MTKPP_LOG(g_use_id, __VA_ARGS__)
+#define PVR_DUMPDEBUG_LOG(...)\
+	do {\
+		if (pfnDumpDebugPrintf)\
+			pfnDumpDebugPrintf(pvDumpDebugFile, __VA_ARGS__);\
+		else\
+			MTKPP_LOG(g_use_id, __VA_ARGS__);\
+	} while (0)
 #else
 #define PVR_DUMPDEBUG_LOG(...)                                            \
 	do                                                                \
@@ -251,5 +257,12 @@ PVRSRVDebugRequest(struct _PVRSRV_DEVICE_NODE_ *psDevNode,
 				   IMG_UINT32 ui32VerbLevel,
 				   DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 				   void *pvDumpDebugFile);
+
+/* MTK{ */
+IMG_BOOL
+MTK_PVRSRVDebugRequestGetSilence(void);
+void
+MTK_PVRSRVDebugRequestSetSilence(IMG_BOOL bEnable);
+/* }MTK */
 
 #endif /* !defined(__PVR_NOTIFIER_H__) */
