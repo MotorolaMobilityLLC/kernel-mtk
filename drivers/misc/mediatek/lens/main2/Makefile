@@ -51,5 +51,6 @@ else
 
 obj-y      += main2_lens.o
 obj-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT)  += common/lc898212xdaf_f/
+obj-$(CONFIG_MTK_LENS_AK7371AF_SUPPORT)    += common/ak7371af/
 
 endif
