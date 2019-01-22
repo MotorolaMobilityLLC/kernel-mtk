@@ -57,6 +57,7 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define HPS_LATENCY 20000000
 #define TOUCH_TIMEOUT_SEC 5
+#define RENDER_AWARE_TIMEOUT_MSEC 300
 
 #define EAS 1
 #define LEGACY 2
