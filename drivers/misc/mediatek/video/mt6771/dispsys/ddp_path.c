@@ -930,6 +930,28 @@ bool ddp_path_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
 			return true;
 		else
 			return false;
+	} else if ((module == DISP_MODULE_OVL0) || (module == DISP_MODULE_OVL0_2L) ||
+				(module == DISP_MODULE_OVL1_2L)) {
+		int ovl_smi_busy = 0, ovl_state, smi_common_ostd, smi_larb_ostd;
+		int i, ovl_reg_value;
+		unsigned long ovl_base = ovl_base_addr(module);
+
+		ovl_state = DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG + ovl_base);
+		for (i = 0 ; i < ovl_layer_num_for_debug(module) ; i++)	{
+			ovl_reg_value =	DISP_REG_GET(DISP_REG_OVL_RDMA0_DBG + ovl_base + 0x4 * i);
+			ovl_smi_busy |= (ovl_reg_value >> 30) & 0x1;
+		}
+		smi_common_ostd = DISP_REG_GET_FIELD(FLD_SMI_DEBUG_M0,
+			DISP_REG_SMI_COMMON_SMI_DEBUG_M0);
+		smi_larb_ostd = DISP_REG_GET_FIELD(FLD_OSTD_MON_PORT,
+			DISP_REG_SMI_LARB0_SMI_LARB_OSTD_MON_PORT0 + ovl_to_index(module) * 4);
+		DDPMSG("%s, module:%d, ovl_state:%x, ovl_smi_busy:%d, smi_common_ostd:%d, smi_larb_ostd:%d\n",
+			__func__, module, ovl_state, ovl_smi_busy, smi_common_ostd, smi_larb_ostd);
+		if (ovl_state != 1 && ovl_smi_busy != 0 &&
+			smi_common_ostd == 0 && smi_common_ostd == 0)
+			return true;
+		else
+			return false;
 	} else if (module == DISP_MODULE_WDMA0) {
 		int wdma_smi_busy, wdma_state, smi_common_ostd, smi_larb_ostd;
 

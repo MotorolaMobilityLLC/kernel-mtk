@@ -246,6 +246,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 4))
 			DDPPR_ERR("IRQ: %s hw reset done\n", ddp_get_module_name(module));
 
+#if 0
 		if (reg_val & (1 << 5))
 			DDPPR_ERR("IRQ: %s-L0 not complete until EOF!\n",
 			       ddp_get_module_name(module));
@@ -261,7 +262,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 8))
 			DDPPR_ERR("IRQ: %s-L3 not complete until EOF!\n",
 			       ddp_get_module_name(module));
-#if 0
+
 		/* we don't care ovl underflow, it's not error */
 		if (reg_val & (1 << 9))
 			DDPPR_ERR("IRQ: %s-L0 fifo underflow!\n", ddp_get_module_name(module));
@@ -275,9 +276,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 
 		if (reg_val & (1 << 12))
 			DDPPR_ERR("IRQ: %s-L3 fifo underflow!\n", ddp_get_module_name(module));
-#endif
+
 		if (reg_val & (1 << 13))
 			DDPPR_ERR("IRQ: %s abnormal SOF!\n", ddp_get_module_name(module));
+#endif
 
 		mmprofile_log_ex(ddp_mmp_get_events()->OVL_IRQ[index], MMPROFILE_FLAG_PULSE, reg_val,
 			       0);

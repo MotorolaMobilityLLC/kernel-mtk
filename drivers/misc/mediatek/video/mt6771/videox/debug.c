@@ -1360,12 +1360,15 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 		govldimcolor = dimcolor;
-	} else if (strncmp(opt, "disp_recovery", 13) == 0) {
-		DISPMSG("disp_recovery\n");
-		primary_display_rdma_recovery();
+	} else if (strncmp(opt, "disp_rdma_recovery", 18) == 0) {
+		DISPMSG("disp_rdma_recovery\n");
+		primary_display_recovery(DISP_MODULE_RDMA0);
 	} else if (strncmp(opt, "disp_wdma_recovery", 18) == 0) {
 		DISPMSG("disp_wdma_recovery\n");
 		primary_display_wdma_recovery();
+	} else if (strncmp(opt, "disp_ovl_recovery", 17) == 0) {
+		DISPMSG("disp_ovl_recovery\n");
+		primary_display_recovery(DISP_MODULE_OVL0);
 	}
 }
 

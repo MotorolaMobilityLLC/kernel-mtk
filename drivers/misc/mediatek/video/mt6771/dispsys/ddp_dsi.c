@@ -450,6 +450,8 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 			recovery_retry_cnt = 100;
 			if (g_dsi_ddp_notify != NULL) {
 				primary_display_set_recovery_module(DISP_MODULE_RDMA0);
+				primary_display_set_recovery_module(DISP_MODULE_OVL0);
+				primary_display_set_recovery_module(DISP_MODULE_OVL0_2L);
 				g_dsi_ddp_notify(DISP_MODULE_DSI0, DISP_PATH_EVENT_DISP_RECOVERY);
 			}
 		}
