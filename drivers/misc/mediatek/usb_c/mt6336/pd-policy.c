@@ -463,6 +463,8 @@ int pd_dfp_exit_mode(struct typec_hba *hba, uint16_t svid, int opos)
 	struct svdm_amode_data *modep;
 	int idx;
 
+	hba->alt_mode_svid = 0;
+
 	/*
 	 * Empty svid signals we should reset DFP VDM state by exiting all
 	 * entered modes then clearing state.  This occurs when we've
@@ -682,6 +684,7 @@ int pd_svdm(struct typec_hba *hba, int cnt, uint32_t *payload, uint32_t **rpaylo
 					pd_dfp_enter_mode(hba, 0, 0);
 
 				if (modep->opos) {
+					hba->alt_mode_svid = modep->fx->svid;
 #ifdef CONFIG_RT7207_ADAPTER
 					if (modep->fx->svid == RT7207_SVID) {
 						start_dc_auth(hba->dc);

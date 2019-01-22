@@ -22,7 +22,7 @@
 #include "mtk_direct_charge_vdm.h"
 #endif
 
-#define PDO_FIXED_FLAGS (PDO_FIXED_DATA_SWAP | PDO_FIXED_EXTERNAL)
+#define PDO_FIXED_FLAGS (0)
 
 /* TODO: fill in correct source and sink capabilities */
 uint32_t pd_src_pdo[] = {
@@ -324,7 +324,6 @@ int pd_custom_vdm(struct typec_hba *hba, int cnt, uint32_t *payload,
 
 #ifdef CONFIG_RT7207_ADAPTER
 	if (svid == RT7207_SVID) {
-		dev_err(hba->dev, "RT7207_SVID\n");
 		if (DC_VDO_ACTION(payload[0]) == OP_ACK &&
 			DC_VDO_CMD(payload[0]) == CMD_AUTH) {
 			len = handle_dc_auth(hba->dc, cnt, payload, rpayload);

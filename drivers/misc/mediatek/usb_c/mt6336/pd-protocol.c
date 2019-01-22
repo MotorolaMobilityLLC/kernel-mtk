@@ -762,9 +762,9 @@ int send_source_cap(struct typec_hba *hba)
 	for (i = 0; i < pd_src_pdo_cnt; i++) {
 		if ((pd_src_pdo[i] & PDO_TYPE_MASK) == PDO_TYPE_FIXED) {
 			if (hba->support_role == TYPEC_ROLE_DRP)
-				pd_src_pdo[i] |= PDO_FIXED_DUAL_ROLE;
+				pd_src_pdo[i] |= (PDO_FIXED_DUAL_ROLE | PDO_FIXED_DATA_SWAP);
 			else
-				pd_src_pdo[i] &= ~PDO_FIXED_DUAL_ROLE;
+				pd_src_pdo[i] &= ~(PDO_FIXED_DUAL_ROLE | PDO_FIXED_DATA_SWAP);
 		}
 	}
 
@@ -990,6 +990,7 @@ void pd_execute_hard_reset(struct typec_hba *hba)
 
 	hba->vdm_state = VDM_STATE_DONE;
 	hba->flags &= ~PD_FLAGS_EXPLICIT_CONTRACT;
+	hba->flags &= ~PD_FLAGS_SNK_CAP_RECVD;
 
 #ifdef CONFIG_USB_PD_DUAL_ROLE
 	/*
@@ -1506,7 +1507,7 @@ void handle_ctrl_request(struct typec_hba *hba, uint16_t head,
 		if (pd_check_power_swap(hba)) {
 			dev_err(hba->dev, "power_role=%d ext=%d partner_ext=%d\n",
 				hba->power_role,
-				pd_src_pdo[hba->requested_idx] && PDO_FIXED_EXTERNAL,
+				pd_src_pdo[hba->requested_idx-1] & PDO_FIXED_EXTERNAL,
 				hba->flags & PD_FLAGS_PARTNER_EXTPOWER);
 			/*
 			 * 8.2.6.2 Battery Supplies
@@ -1515,7 +1516,8 @@ void handle_ctrl_request(struct typec_hba *hba, uint16_t head,
 			 * using external sources ("Externally Powered" bit cleared).
 			 */
 			if (hba->power_role == PD_ROLE_SOURCE &&
-				(pd_src_pdo[hba->requested_idx] && PDO_FIXED_EXTERNAL) &&
+				(pd_src_pdo[hba->requested_idx-1] & PDO_FIXED_EXTERNAL) &&
+				(hba->flags & PD_FLAGS_SNK_CAP_RECVD) &&
 				!(hba->flags & PD_FLAGS_PARTNER_EXTPOWER)) {
 				send_control(hba, PD_CTRL_REJECT);
 			} else {
@@ -1852,7 +1854,7 @@ int pd_task(void *data)
 	hba->data_role = PD_NO_ROLE;
 	hba->flags = 0;
 	hba->vdm_state = VDM_STATE_DONE;
-
+	hba->alt_mode_svid = 0;
 	hba->timeout_user = 0;
 	set_state(hba, PD_STATE_DISABLED);
 

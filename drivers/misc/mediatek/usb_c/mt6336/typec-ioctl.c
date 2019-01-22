@@ -453,6 +453,12 @@ static ssize_t stat_show(struct device *pdev, struct device_attribute *attr,
 	sprintf(buf + strlen(buf), "timeout_state=%d\n", hba->timeout_state);
 	sprintf(buf + strlen(buf), "timeout_ms=%lu\n", hba->timeout_ms);
 
+	if (hba->power_role == PD_ROLE_SOURCE)
+		sprintf(buf + strlen(buf), "request pdo=%d\n", hba->requested_idx);
+
+	if (hba->data_role == PD_ROLE_DFP)
+		sprintf(buf + strlen(buf), "alt_mode_svid=0x%04X\n", hba->alt_mode_svid);
+
 	return strlen(buf);
 }
 

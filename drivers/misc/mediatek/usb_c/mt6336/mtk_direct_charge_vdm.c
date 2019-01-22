@@ -465,7 +465,7 @@ int start_dc_auth(struct pd_direct_chrg *dc)
 
 	ret = pd_send_vdm(dc->hba, RT7207_SVID, (OP_WRITE|CMD_AUTH), data, 2);
 
-	pr_err("%s auth code auth_code=0x%04x 0x%04x 0x%04X\n", __func__, dc->auth_code, data[0], data[1]);
+	/*pr_err("%s auth code auth_code=0x%04x 0x%04x 0x%04X\n", __func__, dc->auth_code, data[0], data[1]);*/
 
 	return ret;
 }
@@ -494,8 +494,10 @@ int handle_dc_auth(struct pd_direct_chrg *dc, int cnt, uint32_t *payload, uint32
 
 			len = 3;
 
-			pr_err("%s auth code auth_code=0x%04x 0x%04x 0x%04X\n",
-							__func__, dc->auth_code, payload[1], payload[2]);
+			/*
+			 * pr_err("%s auth code auth_code=0x%04x 0x%04x 0x%04X\n",
+			 *				__func__, dc->auth_code, payload[1], payload[2]);
+			*/
 
 			dc->auth_pass = 0;
 		} else {
@@ -504,6 +506,7 @@ int handle_dc_auth(struct pd_direct_chrg *dc, int cnt, uint32_t *payload, uint32
 	} else if (dc->auth_pass == 0) {
 		if (data[0] == 0x1) {
 			dc->auth_pass = 1;
+			pr_err("%s Pass RT7207 Auth\n", __func__);
 		} else {
 			dc->auth_pass = -1;
 			pr_err("%s auth fail @ step2 0x%04x 0x%04x\n", __func__, dc->auth_code, data[0]);
