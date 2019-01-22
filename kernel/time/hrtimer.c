@@ -351,6 +351,7 @@ static int hrtimer_fixup_init(void *addr, enum debug_obj_state state)
 
 	switch (state) {
 	case ODEBUG_STATE_ACTIVE:
+		debug_object_mtk_aee_warning("re-init active hrtimer");
 		hrtimer_cancel(timer);
 		debug_object_init(timer, &hrtimer_debug_descr);
 		return 1;
@@ -374,6 +375,7 @@ static int hrtimer_fixup_activate(void *addr, enum debug_obj_state state)
 
 	case ODEBUG_STATE_ACTIVE:
 		WARN_ON(1);
+		debug_object_mtk_aee_warning("activate an active hrtimer");
 
 	default:
 		return 0;
@@ -392,6 +394,7 @@ static int hrtimer_fixup_free(void *addr, enum debug_obj_state state)
 	case ODEBUG_STATE_ACTIVE:
 		hrtimer_cancel(timer);
 		debug_object_free(timer, &hrtimer_debug_descr);
+		debug_object_mtk_aee_warning("free an active hrtimer");
 		return 1;
 	default:
 		return 0;

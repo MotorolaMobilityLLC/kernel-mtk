@@ -17,6 +17,7 @@
 #include <linux/debugfs.h>
 #include <linux/slab.h>
 #include <linux/hash.h>
+#include <mt-plat/aee.h>
 
 #define ODEBUG_HASH_BITS	14
 #define ODEBUG_HASH_SIZE	(1 << ODEBUG_HASH_BITS)
@@ -27,6 +28,22 @@
 #define ODEBUG_CHUNK_SHIFT	PAGE_SHIFT
 #define ODEBUG_CHUNK_SIZE	(1 << ODEBUG_CHUNK_SHIFT)
 #define ODEBUG_CHUNK_MASK	(~(ODEBUG_CHUNK_SIZE - 1))
+
+#define ODEBUG_MTK_AEE_MOD             "debugobject"
+#define ODEBUG_MTK_AEE_PRINT_BUF_LEN   100
+
+void debug_object_mtk_aee_warning(char *msg)
+{
+#ifdef CONFIG_MTK_AEE_FEATURE
+	char printbuf[ODEBUG_MTK_AEE_PRINT_BUF_LEN] = { '\0' };
+
+	snprintf(printbuf, ODEBUG_MTK_AEE_PRINT_BUF_LEN - 1,
+		"\n[DebugObject Warning]\n%s\n", msg);
+
+	aee_kernel_warning_api(__FILE__, __LINE__,
+		DB_OPT_DEFAULT, ODEBUG_MTK_AEE_MOD "%s", printbuf);
+#endif
+}
 
 struct debug_bucket {
 	struct hlist_head	list;
@@ -281,17 +298,17 @@ debug_object_fixup(int (*fixup)(void *addr, enum debug_obj_state state),
 	return fixed;
 }
 
-static void debug_object_is_on_stack(void *addr, int onstack)
+static int debug_object_is_on_stack(void *addr, int onstack)
 {
 	int is_on_stack;
 	static int limit;
 
 	if (limit > 4)
-		return;
+		return 0;
 
 	is_on_stack = object_is_on_stack(addr);
 	if (is_on_stack == onstack)
-		return;
+		return 0;
 
 	limit++;
 	if (is_on_stack)
@@ -299,6 +316,7 @@ static void debug_object_is_on_stack(void *addr, int onstack)
 	else
 		pr_warn("object is not on stack, but annotated\n");
 	WARN_ON(1);
+	return 1;
 }
 
 static void
@@ -308,6 +326,7 @@ __debug_object_init(void *addr, struct debug_obj_descr *descr, int onstack)
 	struct debug_bucket *db;
 	struct debug_obj *obj;
 	unsigned long flags;
+	int on_stack_err = 0;
 
 	fill_pool();
 
@@ -324,7 +343,7 @@ __debug_object_init(void *addr, struct debug_obj_descr *descr, int onstack)
 			debug_objects_oom();
 			return;
 		}
-		debug_object_is_on_stack(addr, onstack);
+		on_stack_err = debug_object_is_on_stack(addr, onstack);
 	}
 
 	switch (obj->state) {
@@ -339,7 +358,7 @@ __debug_object_init(void *addr, struct debug_obj_descr *descr, int onstack)
 		state = obj->state;
 		raw_spin_unlock_irqrestore(&db->lock, flags);
 		debug_object_fixup(descr->fixup_init, addr, state);
-		return;
+		goto out;
 
 	case ODEBUG_STATE_DESTROYED:
 		debug_print_object(obj, "init");
@@ -349,6 +368,10 @@ __debug_object_init(void *addr, struct debug_obj_descr *descr, int onstack)
 	}
 
 	raw_spin_unlock_irqrestore(&db->lock, flags);
+
+out:
+	if (on_stack_err)
+		debug_object_mtk_aee_warning("wrong object location");
 }
 
 /**
