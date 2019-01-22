@@ -1019,7 +1019,7 @@ static bool ConfigWMFERequest(signed int ReqIdx)
 static signed int ConfigOCCHW(struct OWE_OCCConfig *pOccConfig)
 {
 	struct cmdqRecStruct *handle;
-	uint64_t engineFlag = (1L << CMDQ_ENG_OWE);
+	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_OWE);
 
 	if (OWE_DBG_DBGLOG == (OWE_DBG_DBGLOG & OWEInfo.DebugMask)) {
 		LOG_DBG("ConfigOCCHW Start!\n");
@@ -1164,7 +1164,7 @@ static bool UpdateWMFE(pid_t *ProcessID)
 static signed int ConfigWMFEHW(struct OWE_WMFEConfig *pWmfeCfg)
 {
 	struct cmdqRecStruct *handle;
-	uint64_t engineFlag = (1L << CMDQ_ENG_OWE);
+	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_OWE);
 	unsigned int i = 0;
 
 	if (OWE_DBG_DBGLOG == (OWE_DBG_DBGLOG & OWEInfo.DebugMask)) {

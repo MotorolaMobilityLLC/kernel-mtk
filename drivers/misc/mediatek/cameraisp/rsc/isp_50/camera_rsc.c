@@ -1217,7 +1217,7 @@ signed int CmdqRSCHW(struct frame *frame)
 	struct RSC_Config *pRscConfig;
 #if 1
 	struct cmdqRecStruct *handle;
-	uint64_t engineFlag = (1L << CMDQ_ENG_RSC);
+	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_RSC);
 #endif
 	if (frame == NULL)
 		return -1;
@@ -1316,7 +1316,7 @@ static signed int ConfigRSCHW(struct RSC_Config *pRscConfig)
 {
 #ifdef RSC_USE_GCE
 		struct cmdqRecStruct *handle;
-		uint64_t engineFlag = (1L << CMDQ_ENG_RSC);
+		uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_RSC);
 #endif
 
 	if (RSC_DBG_DBGLOG == (RSC_DBG_DBGLOG & RSCInfo.DebugMask)) {
