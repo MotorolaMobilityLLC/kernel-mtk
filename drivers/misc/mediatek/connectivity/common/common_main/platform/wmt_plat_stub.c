@@ -10,6 +10,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+/*! \file
+*    \brief  Declaration of library functions
+*
+*    Any definitions in this file will be shared among GLUE Layer and internal Driver Stack.
+*/
+
+
 
 
 
@@ -50,7 +57,7 @@
 #include "wmt_plat_stub.h"
 #include "wmt_exp.h"
 #include "wmt_lib.h"
-#include "osal_typedef.h"
+#include "osal.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S

@@ -77,11 +77,6 @@ const PINT8 g_btm_op_name[] = {
 	"STP_OPID_BTM_EXIT"
 };
 
-UINT32 __weak wmt_plat_force_trigger_assert(ENUM_FORCE_TRG_ASSERT_T type)
-{
-	return 0;
-}
-
 static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 {
 	INT32 ret = -1;

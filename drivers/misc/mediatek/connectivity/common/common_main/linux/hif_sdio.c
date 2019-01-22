@@ -249,12 +249,14 @@ UINT32 gHifSdioDbgLvl = HIF_SDIO_LOG_INFO;
 ********************************************************************************
 */
 
+#if 0
 INT32 __weak mtk_wcn_sdio_irq_flag_set(INT32 falg)
 {
 	HIF_SDIO_INFO_FUNC("mtk_wcn_sdio_irq_flag_set is not define!!!!!\n");
 
 	return 0;
 }
+#endif
 
 INT32 mtk_wcn_hif_sdio_irq_flag_set(INT32 flag)
 {

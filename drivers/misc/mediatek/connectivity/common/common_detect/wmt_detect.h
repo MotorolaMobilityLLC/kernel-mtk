@@ -101,9 +101,7 @@ extern int wmt_detect_ext_chip_detect(void);
 extern int wmt_detect_ext_chip_pwr_on(void);
 extern int wmt_detect_ext_chip_pwr_off(void);
 
-#ifdef MTK_WCN_SOC_CHIP_SUPPORT
 extern unsigned int wmt_plat_get_soc_chipid(void);
-#endif
 
 #ifdef MTK_WCN_COMBO_CHIP_SUPPORT
 /* mtk_uart_pdn_enable -- request uart port enter/exit deep idle mode, this API is defined in uart driver
