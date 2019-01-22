@@ -4848,6 +4848,12 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 			DBGLOG(OID, INFO, "Enable VoE 5.7 Packet Jitter test\n");
 			prAdapter->rDebugInfo.fgVoE5_7Test = !!u4Data;
 			break;
+		case 0x02:
+			if (prAdapter->prGlueInfo != NULL) {
+				DBGLOG(OID, INFO, "usleep 0x1003002 cmd received: %d\n", u4Data);
+				prAdapter->prGlueInfo->rHifInfo.fgDmaUsleepEnable = (BOOLEAN) u4Data;
+		    }
+		    break;
 		default:
 			break;
 		}
