@@ -2573,21 +2573,15 @@ void eem_init02(const char *str)
 	/* For share cci bank, run init02 except cci, waiting for cci init02 isr */
 	/* Add wait time to receive cci isr, then proceed BIG-H init02 */
 	while (1) {
-		if ((timeout % 1000 == 0) && (timeout != 0))
-			eem_debug("waiting for CCI init02 isr finish time is %d, cci_init02_done:0x%x\n",
-			timeout, cci_init02_done);
-
 		if (cci_init02_done == 1)
 			break;
 
 		udelay(100);
 		timeout++;
 
-		if (timeout % 300 == 1) {
+		if (timeout % 300 == 0)
 			eem_error("CCI init02 isr not received, waiting time is %d, cci_init02_done:0x%x\n",
 			timeout, cci_init02_done);
-			break;
-		}
 	}
 
 	det = id_to_eem_det(EEM_CTRL_L_HI);
