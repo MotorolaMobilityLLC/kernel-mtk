@@ -142,17 +142,19 @@ unsigned int mtk_pdc_get_max_watt(struct charger_manager *info)
 
 int mtk_pdc_setup(struct charger_manager *info, int idx)
 {
-	int ret;
+	int ret = -100;
+	static int idx_now = -1;
 	struct mtk_pdc *pd = &info->pdc;
 
 	if (info->pdc.tcpc == NULL)
 		return -1;
 
+	if (idx_now != idx)
 	ret = tcpm_set_remote_power_cap(pd->tcpc, pd->cap.max_mv[idx], pd->cap.ma[idx]);
 
-	chr_err("[%s]idx:%d vbus:%d cur:%d ret:%d\n", __func__,
-		idx, pd->cap.max_mv[idx], pd->cap.ma[idx], ret);
-
+	chr_err("[%s]idx:%d:%d vbus:%d cur:%d ret:%d\n", __func__,
+		idx_now, idx, pd->cap.max_mv[idx], pd->cap.ma[idx], ret);
+	idx_now = idx;
 
 	return ret;
 }
@@ -201,7 +203,7 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *vbus, int *cur, int *
 				pd->cap.selected_cap_idx);
 
 		} else {
-			if (pd->cap.min_mv[i] < pd->cap.maxwatt[min_vbus_idx] &&
+			if (pd->cap.min_mv[i] < pd->cap.min_mv[min_vbus_idx] &&
 				pd->cap.maxwatt[i] >= max_watt) {
 				*vbus = pd->cap.max_mv[i];
 				*cur = pd->cap.ma[i];
