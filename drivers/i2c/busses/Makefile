@@ -121,6 +121,7 @@ obj-$(CONFIG_I2C_XGENE_SLIMPRO) += i2c-xgene-slimpro.o
 obj-$(CONFIG_SCx200_ACB)	+= scx200_acb.o
 
 ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(CONFIG_MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/gpu/gpu_mali/mali_midgard/mali-r7p0/drivers/gpu/arm/midgard/platform/$(CONFIG_MTK_PLATFORM)/
