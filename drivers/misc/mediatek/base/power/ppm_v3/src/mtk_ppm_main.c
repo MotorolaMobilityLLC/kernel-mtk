@@ -271,6 +271,7 @@ static void ppm_main_update_limit(struct ppm_policy_data *p,
 	case PPM_POLICY_PTPOD:
 		c_limit->has_advise_freq = true;
 		c_limit->advise_cpufreq_idx = p_limit->max_cpufreq_idx;
+		c_limit->min_cpufreq_idx = c_limit->max_cpufreq_idx = p_limit->max_cpufreq_idx;
 		break;
 	/* fix freq and core */
 	case PPM_POLICY_UT:
