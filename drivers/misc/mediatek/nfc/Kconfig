@@ -1,0 +1,8 @@
+config MTK_NFC_SUPPORT
+	tristate "MediaTek NFC driver"
+	default n
+	help
+	  Y means NFC_MT6605 define if use Mediatek NFC Function to provide reader
+	  Card emulation or P2P function. If you are not sure about this, set n.
+	  Y means NFC_MT6605 define if use Mediatek NFC Function to provide reader
+	  Card emulation or P2P function. If you are not sure about this, set n.
