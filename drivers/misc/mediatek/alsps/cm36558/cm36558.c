@@ -996,7 +996,11 @@ int CM36558_setup_eint(struct i2c_client *client)
 	pinctrl_select_state(pinctrl, pins_cfg);
 /* eint request */
 	if (CM36558_obj->irq_node) {
-		of_property_read_u32_array(CM36558_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
+		ret = of_property_read_u32_array(CM36558_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
+		if (ret) {
+			APS_ERR("of_property_read_u32_array fail, ret = %d\n", ret);
+			return ret;
+		}
 		gpio_set_debounce(ints[0], ints[1]);
 		APS_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
 
