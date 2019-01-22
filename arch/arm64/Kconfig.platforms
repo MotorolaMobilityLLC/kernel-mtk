@@ -280,6 +280,7 @@ config MACH_MT6775
 	select PINCTRL
 	select PINCTRL_MT6775
 	select MFD_SYSCON
+	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
 	help
 	  This enables support for MediaTek MT6775
