@@ -86,6 +86,8 @@ typedef void (*CmdqMdpEnableCommonClock) (bool enable);
 /* meansure task bandwidth for pmqos */
 typedef u32(*CmdqMdpMeansureBandwidth) (u32 bandwidth);
 
+typedef u64(*CmdqMdpGetSecEngine) (u64 engine_flag);
+
 struct cmdqMDPFuncStruct {
 	CmdqMDPProbe mdp_probe;
 	CmdqDumpMMSYSConfig dumpMMSYSConfig;
@@ -119,6 +121,7 @@ struct cmdqMDPFuncStruct {
 	CmdqEndTaskCB endISPTask;
 	CmdqStartTaskCB_ATOMIC startTask_atomic;
 	CmdqFinishTaskCB_ATOMIC finishTask_atomic;
+	CmdqMdpGetSecEngine mdpGetSecEngine;
 };
 
 struct mdp_task {

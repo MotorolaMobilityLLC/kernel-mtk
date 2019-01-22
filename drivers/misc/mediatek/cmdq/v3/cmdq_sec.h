@@ -69,6 +69,8 @@ struct cmdqSecContextStruct {
 #endif
 };
 
+extern const u32 isp_iwc_buf_size[];
+
 int32_t cmdq_sec_init_allocate_resource_thread(void *data);
 
 s32 cmdq_sec_task_copy_to_buffer(struct TaskStruct *task,

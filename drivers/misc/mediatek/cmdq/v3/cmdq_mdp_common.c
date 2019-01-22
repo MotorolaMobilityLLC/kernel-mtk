@@ -947,6 +947,12 @@ void cmdq_mdp_start_task_atomic_virtual(const struct TaskStruct *task, u32 instr
 void cmdq_mdp_finish_task_atomic_virtual(const struct TaskStruct *task, u32 instr_size)
 {
 }
+
+u64 cmdq_mdp_get_secure_engine_virtual(u64 engine_flag)
+{
+	return 0;
+}
+
 /**************************************************************************************/
 /************************                      Common Code                      ************************/
 /**************************************************************************************/
@@ -1018,6 +1024,7 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->endISPTask = cmdq_mdp_isp_end_task_virtual;
 	pFunc->startTask_atomic = cmdq_mdp_start_task_atomic_virtual;
 	pFunc->finishTask_atomic = cmdq_mdp_finish_task_atomic_virtual;
+	pFunc->mdpGetSecEngine = cmdq_mdp_get_secure_engine_virtual;
 }
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)

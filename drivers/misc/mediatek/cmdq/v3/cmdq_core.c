@@ -6271,7 +6271,7 @@ static void cmdq_core_attach_cmdq_error(const struct TaskStruct *task, int32_t t
 	CMDQ_ERR("================= [CMDQ] Begin of Error %d================\n",
 		gCmdqContext.errNum);
 
-	cmdq_core_dump_summary(task, thread, &ngtask, nginfo_out);
+	task->ctrl->dump_summary(task, thread, &ngtask, nginfo_out);
 	cmdq_core_dump_error_task(task, ngtask, thread, pc_out);
 
 	CMDQ_ERR("================= [CMDQ] End of Error %d ================\n",

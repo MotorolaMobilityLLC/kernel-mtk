@@ -19,6 +19,7 @@
 #include "cmdq_virtual.h"
 #include "cmdq_device.h"
 #include "cmdq_reg.h"
+#include "cmdq_mdp_common.h"
 #ifdef CMDQ_MET_READY
 #include <linux/met_drv.h>
 #endif
@@ -41,6 +42,18 @@ static struct list_head gCmdqSecContextList;	/* secure context list. note each p
 #endif
 
 static struct cmdqSecContextStruct *gCmdqSecContextHandle;	/* secure context to cmdqSecTL */
+
+const u32 isp_iwc_buf_size[] = {
+	CMDQ_SEC_ISP_CQ_SIZE,
+	CMDQ_SEC_ISP_VIRT_SIZE,
+	CMDQ_SEC_ISP_TILE_SIZE,
+	CMDQ_SEC_ISP_BPCI_SIZE,
+	CMDQ_SEC_ISP_LSCI_SIZE,
+	CMDQ_SEC_ISP_LCEI_SIZE,
+	CMDQ_SEC_ISP_DEPI_SIZE,
+	CMDQ_SEC_ISP_DMGI_SIZE,
+};
+
 
 /* internal control */
 
@@ -174,11 +187,16 @@ static u64 cmdq_sec_get_secure_engine(u64 engine_flags)
 {
 	u64 engine_flags_sec = 0;
 
+	/* MDP engines */
 	CMDQ_ENGINE_TRANS(engine_flags, engine_flags_sec, MDP_RDMA0);
 	CMDQ_ENGINE_TRANS(engine_flags, engine_flags_sec, MDP_RDMA1);
 	CMDQ_ENGINE_TRANS(engine_flags, engine_flags_sec, MDP_WDMA);
 	CMDQ_ENGINE_TRANS(engine_flags, engine_flags_sec, MDP_WROT0);
 	CMDQ_ENGINE_TRANS(engine_flags, engine_flags_sec, MDP_WROT1);
+
+	engine_flags_sec |= cmdq_mdp_get_func()->mdpGetSecEngine(engine_flags);
+
+	/* DISP engines */
 	CMDQ_ENGINE_TRANS(engine_flags, engine_flags_sec, DISP_RDMA0);
 	CMDQ_ENGINE_TRANS(engine_flags, engine_flags_sec, DISP_RDMA1);
 	CMDQ_ENGINE_TRANS(engine_flags, engine_flags_sec, DISP_WDMA0);
@@ -213,6 +231,72 @@ static void cmdq_sec_dump_v3_replace_inst(struct TaskStruct *task,
 
 		CMDQ_ERR("idx:%u,%u cmd:0x%08x:%08x\n",
 			i, p_instr_position[i], cmd[0], cmd[1]);
+	}
+}
+
+#define CMDQ_ISP_BUFS(iwc, name) \
+{ \
+	.va = iwc->command.name, \
+	.sz = &(iwc->command.name##_size), \
+}
+
+static void cmdq_sec_fill_isp_meta(struct TaskStruct *task,
+	struct iwcCmdqMessage_t *iwc)
+{
+	u32 i;
+	struct iwc_meta_buf {
+		u32 *va;
+		u32 *sz;
+	} bufs[ARRAY_SIZE(task->secData.ispMeta.ispBufs)] = {
+		CMDQ_ISP_BUFS(iwc, isp_cq_desc),
+		CMDQ_ISP_BUFS(iwc, isp_cq_virt),
+		CMDQ_ISP_BUFS(iwc, isp_tile),
+		CMDQ_ISP_BUFS(iwc, isp_bpci),
+		CMDQ_ISP_BUFS(iwc, isp_lsci),
+		CMDQ_ISP_BUFS(iwc, isp_lcei),
+		CMDQ_ISP_BUFS(iwc, isp_depi),
+		CMDQ_ISP_BUFS(iwc, isp_dmgi),
+	};
+
+	if (!task->secData.ispMeta.ispBufs[0].size ||
+		!task->secData.ispMeta.ispBufs[1].size ||
+		!task->secData.ispMeta.ispBufs[2].size) {
+		memset(&iwc->command.isp_metadata, 0,
+			sizeof(iwc->command.isp_metadata));
+		for (i = 0; i < ARRAY_SIZE(bufs); i++)
+			*bufs[i].sz = 0;
+		return;
+	}
+
+	if (sizeof(iwc->command.isp_metadata) !=
+		sizeof(task->secData.ispMeta)) {
+		CMDQ_AEE("CMDQ",
+			"isp meta struct not match %zu to %zu\n",
+			sizeof(iwc->command.isp_metadata),
+			sizeof(task->secData.ispMeta));
+		return;
+	}
+
+	/* copy isp meta */
+	memcpy(&iwc->command.isp_metadata, &task->secData.ispMeta,
+		sizeof(iwc->command.isp_metadata));
+
+	for (i = 0; i < ARRAY_SIZE(task->secData.ispMeta.ispBufs); i++) {
+		if (!task->secData.ispMeta.ispBufs[i].va ||
+			!task->secData.ispMeta.ispBufs[i].size)
+			continue;
+		if (task->secData.ispMeta.ispBufs[i].size > isp_iwc_buf_size[i]) {
+			CMDQ_ERR("isp buf %u size:%llu max:%u\n",
+				i, task->secData.ispMeta.ispBufs[i].size,
+				isp_iwc_buf_size[i]);
+			*bufs[i].sz = 0;
+			continue;
+		}
+
+		*bufs[i].sz = task->secData.ispMeta.ispBufs[i].size;
+		memcpy(bufs[i].va, CMDQ_U32_PTR(
+			task->secData.ispMeta.ispBufs[i].va),
+			task->secData.ispMeta.ispBufs[i].size);
 	}
 }
 
@@ -251,6 +335,8 @@ s32 cmdq_sec_fill_iwc_command_msg_unlocked(s32 iwc_cmd, void *task_ptr,
 	iwc->command.metadata.enginesNeedPortSecurity =
 		cmdq_sec_get_secure_engine(
 		task->secData.enginesNeedPortSecurity);
+
+	cmdq_sec_fill_isp_meta(task, iwc);
 
 	if (thread != CMDQ_INVALID_THREAD) {
 		/* basic data */
@@ -627,7 +713,7 @@ void cmdq_sec_track_task_record(const uint32_t iwcCommand,
 	pTask->trigger = *pEntrySec;
 }
 
-static void cmdq_core_dump_secure_metadata(struct cmdqSecDataStruct *pSecData)
+static void cmdq_core_dump_secure_metadata(const struct cmdqSecDataStruct *pSecData)
 {
 	uint32_t i = 0;
 	struct cmdqSecAddrMetadataStruct *pAddr = NULL;
@@ -646,9 +732,11 @@ static void cmdq_core_dump_secure_metadata(struct cmdqSecDataStruct *pSecData)
 		return;
 
 	for (i = 0; i < pSecData->addrMetadataCount; i++) {
-		CMDQ_LOG("idx:%d, type:%d, baseHandle:0x%016llx, blockOffset:%u, offset:%u, size:%u, port:%u\n",
-			 i, pAddr[i].type, (u64)pAddr[i].baseHandle, pAddr[i].blockOffset, pAddr[i].offset,
-			 pAddr[i].size, pAddr[i].port);
+		CMDQ_LOG(
+			"idx:%d:%u type:%d baseHandle:0x%016llx blockOffset:%u offset:%u size:%u port:%u\n",
+			 i, pAddr[i].instrIndex, pAddr[i].type,
+			 (u64)pAddr[i].baseHandle, pAddr[i].blockOffset,
+			 pAddr[i].offset, pAddr[i].size, pAddr[i].port);
 	}
 }
 
@@ -768,7 +856,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 			CMDQ_AEE(dispatch_mod, "%s", long_msg);
 
 		cmdq_core_turnon_first_dump(pTask);
-		CMDQ_ERR("%s", long_msg);
+		CMDQ_LOG("[WARN]%s", long_msg);
 
 		/* dump metadata first */
 		if (pTask)
@@ -1035,6 +1123,7 @@ static s32 cmdq_sec_task_compose(struct cmdqCommandStruct *desc,
 	struct TaskStruct *task)
 {
 	s32 status;
+	u32 i;
 
 	CMDQ_MSG("compose secure task:0x%p\n", task);
 
@@ -1045,6 +1134,14 @@ static s32 cmdq_sec_task_compose(struct cmdqCommandStruct *desc,
 	task->secData.enginesNeedPortSecurity =
 	    desc->secData.enginesNeedPortSecurity;
 	task->secData.addrMetadataCount = desc->secData.addrMetadataCount;
+
+	/* copy isp meta */
+	task->secData.ispMeta = desc->secData.ispMeta;
+
+	/* clear isp buf since free in task destroy */
+	for (i = 0; i < ARRAY_SIZE(desc->secData.ispMeta.ispBufs); i++)
+		desc->secData.ispMeta.ispBufs[i].va = 0;
+
 	if (task->secData.addrMetadataCount > 0) {
 		u32 metadata_length;
 		void *p_metadatas;
@@ -1299,16 +1396,16 @@ static s32 cmdq_sec_handle_wait_result(struct TaskStruct *task,
 
 static void cmdq_sec_free_buffer_impl(struct TaskStruct *task)
 {
+	u32 i;
+
 	if (!task->is_client_buffer && task->cmd_buffer_va) {
 		/* allocated kernel buffer for secure must free */
 		kfree(task->cmd_buffer_va);
 	}
 
-	/* TODO: check if we need reset more in secData */
-	if (!task->secData.addrMetadatas) {
-		kfree(CMDQ_U32_PTR(task->secData.addrMetadatas));
-		task->secData.addrMetadatas = 0;
-	}
+	kfree(CMDQ_U32_PTR(task->secData.addrMetadatas));
+	for (i = 0; i < ARRAY_SIZE(task->secData.ispMeta.ispBufs); i++)
+		vfree(CMDQ_U32_PTR(task->secData.ispMeta.ispBufs[i].va));
 
 	kfree(task->secStatus);
 	task->secStatus = NULL;
@@ -1334,24 +1431,64 @@ static void cmdq_sec_dump_summary(const struct TaskStruct *task, s32 thread,
 	struct NGTaskInfoStruct *nginfo_out)
 {
 	u32 i;
+	u32 insta, instb, irq_flag;
+	const char *module = "CMDQ";
+	int smi_hang;
 
 	if (!task->secStatus)
 		return;
 
 	/* secure status may contains debug information */
 	CMDQ_ERR(
-		"Secure status: %d step: 0x%08x args: 0x%08x 0x%08x 0x%08x 0x%08x task: 0x%p\n",
+		"Secure status:%d step:0x%08x args:0x%08x 0x%08x 0x%08x 0x%08x task:0x%p thread:%d\n",
 		task->secStatus->status,
 		task->secStatus->step,
 		task->secStatus->args[0], task->secStatus->args[1],
 		task->secStatus->args[2], task->secStatus->args[3],
-		task);
+		task, thread);
 	for (i = 0; i < task->secStatus->inst_index; i += 2) {
 		CMDQ_ERR("Secure instruction %d: 0x%08x:%08x\n",
 			i / 2,
 			task->secStatus->sec_inst[i],
 			task->secStatus->sec_inst[i+1]);
 	}
+
+	CMDQ_ERR("dapc:0x%llx sec port:0x%llx\n",
+		task->secData.enginesNeedDAPC,
+		task->secData.enginesNeedPortSecurity);
+
+	if (!nginfo_out)
+		return;
+
+	*ngtask_out = task;
+	insta = task->secStatus->sec_inst[1];
+	instb = task->secStatus->sec_inst[0];
+
+	do {
+		smi_hang = cmdq_get_func()->dumpSMI(0);
+		if (smi_hang) {
+			module = "SMI";
+			break;
+		}
+
+		/* quick exam by hwflag first */
+		module = cmdq_get_func()->parseErrorModule(task);
+		if (module)
+			break;
+		/* rollback to cmdq */
+		module = "CMDQ";
+	} while (0);
+
+	nginfo_out->engine_flag = task->engineFlag;
+	nginfo_out->scenario = task->scenario;
+	nginfo_out->ngtask = task;
+	nginfo_out->buffer_size = 0;
+	nginfo_out->module = module;
+	nginfo_out->irq_flag = irq_flag;
+	nginfo_out->inst[1] = insta;
+	nginfo_out->inst[0] = instb;
+
+	cmdq_core_dump_secure_metadata(&task->secData);
 }
 
 /* core controller for secure function */
@@ -1490,7 +1627,7 @@ int32_t cmdq_sec_allocate_path_resource_unlocked(bool throwAEE)
 							   CMDQ_INVALID_THREAD, NULL, throwAEE);
 	if (status < 0) {
 		/* Error status print */
-		CMDQ_ERR("%s[%d] reset context\n", __func__, status);
+		CMDQ_LOG("[WARN]%s[%d] reset context\n", __func__, status);
 
 		/* in fail case, we want function alloc again */
 		atomic_set(&gCmdqSecPathResource, 0);
