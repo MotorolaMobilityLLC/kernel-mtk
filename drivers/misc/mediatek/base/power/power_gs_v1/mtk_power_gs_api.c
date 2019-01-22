@@ -455,6 +455,9 @@ static ssize_t golden_test_proc_write(struct file *file, const char __user *buff
 	unsigned int mask;
 	unsigned int golden_val;
 
+	if (!buf)
+		return -EINVAL;
+
 	/* set golden setting (hex mode) */
 	if (sscanf(buf, "0x%x 0x%x 0x%x", &addr, &mask, &golden_val) == 3)
 		_golden_setting_add(&_golden, addr, mask, golden_val);
