@@ -212,6 +212,7 @@ static void hps_get_sysinfo(void)
 
 #if 1 /*For workaround solution*/
 	sched_big_task_nr(&big_task_L, &big_task_B);
+	hps_sys.cluster_info[0].bigTsk_value = 0;
 	hps_sys.cluster_info[1].bigTsk_value = big_task_L;
 	hps_sys.cluster_info[2].bigTsk_value = big_task_B;
 #endif
@@ -268,6 +269,8 @@ static void hps_get_sysinfo(void)
 static int _hps_task_main(void *data)
 {
 	int cnt = 0;
+	int idx;
+	unsigned int total_big_task = 0;
 	void (*algo_func_ptr)(void);
 
 	hps_ctxt_print_basic(1);
@@ -301,6 +304,8 @@ static int _hps_task_main(void *data)
 		/*Get sys status */
 		mutex_lock(&hps_ctxt.lock);
 		hps_get_sysinfo();
+		for (idx = 0; idx < hps_sys.cluster_num; idx++)
+			total_big_task += hps_sys.cluster_info[idx].bigTsk_value;
 		mutex_unlock(&hps_ctxt.lock);
 		if (!hps_ctxt.is_interrupt ||
 		    ((u64) ktime_to_ms(ktime_sub(ktime_get(),
@@ -308,7 +313,7 @@ static int _hps_task_main(void *data)
 				       HPS_TIMER_INTERVAL_MS) {
 
 			mt_ppm_hica_update_algo_data(hps_ctxt.cur_loads, 0, hps_ctxt.cur_tlp);
-
+			mt_smart_update_sysinfo(hps_ctxt.cur_loads, hps_ctxt.cur_tlp, total_big_task);
 			/*Execute PPM main function */
 			mt_ppm_main();
 

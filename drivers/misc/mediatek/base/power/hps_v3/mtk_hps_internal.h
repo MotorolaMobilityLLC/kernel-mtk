@@ -413,4 +413,6 @@ extern unsigned int sched_get_nr_heavy_task(void);
 extern void armpll_control(int id, int on);
 extern void mp_enter_suspend(int id, int suspend);
 extern void sched_big_task_nr(int *L_nr, int *B_nr);
+extern void __attribute__((weak))
+mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsigned int btask);
 #endif
