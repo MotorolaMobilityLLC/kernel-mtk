@@ -28,7 +28,7 @@
 #include <linux/uidgid.h>
 #include <linux/slab.h>
 #if defined(CONFIG_MTK_GM_30)
-#include <mt-plat/mtk_charger.h>ss
+#include <mt-plat/mtk_charger.h>
 #else
 #include <charging.h>
 #endif
@@ -38,7 +38,6 @@ static kgid_t gid = KGIDT_INIT(1000);
 
 static unsigned int interval;	/* seconds, 0 : no auto polling */
 static int trip_temp[10] = { 125000, 110000, 100000, 90000, 80000, 70000, 65000, 60000, 55000, 50000 };
-static int pre_temp = 60000;
 static unsigned int cl_dev_sysrst_state;
 static struct thermal_zone_device *thz_dev;
 
@@ -51,7 +50,9 @@ static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static int num_trip;
 
-static char g_bind0[20] = "mtktscharger-sysrst"; /* ??? */
+static unsigned long prev_temp = 30000;
+
+static char g_bind0[20] = "mtktscharger-sysrst";
 static char g_bind1[20] = "";
 static char g_bind2[20] = "";
 static char g_bind3[20] = "";
@@ -64,11 +65,10 @@ static char g_bind9[20] = "";
 
 #define mtktscharger_TEMP_CRIT 150000	/* 150.000 degree Celsius */
 
-#define mtktscharger_dprintk(fmt, args...)   \
-do {                                    \
-	if (mtktscharger_debug_log) {                \
-		pr_debug("Power/charger_Thermal" fmt, ##args); \
-	}                                   \
+#define mtktscharger_dprintk(fmt, args...)			\
+do {								\
+	if (mtktscharger_debug_log)					\
+		pr_debug("[Power/charger_Thermal]" fmt, ##args);	\
 } while (0)
 
 
@@ -76,7 +76,7 @@ do {                                    \
 int __attribute__ ((weak))
 mtk_chr_get_tchr(int *min_tchr, int *max_tchr)
 {
-	return 0;
+	return -1;
 }
 
 static int mtktscharger_get_temp(struct thermal_zone_device *thermal, int *t)
@@ -85,39 +85,17 @@ static int mtktscharger_get_temp(struct thermal_zone_device *thermal, int *t)
 	int ret = 0;
 	int min_temp = 0, max_temp = 0;
 
-	mtktscharger_dprintk("[mtktscharger_get_temp]\n");
+	mtktscharger_dprintk("[mtktscharger_get_temp] ~~~~\n");
 	*t = 0;
 
 	ret = mtk_chr_get_tchr(&min_temp, &max_temp);
+	if (ret >= 0) {
+		*t = max_temp * 1000;
+		prev_temp = *t;
+	} else
+		*t = prev_temp;
 
-/*
-*	if (da9214_read_interface(0x51, &val, 3, 2) == 1) {
-*		switch (val) {
-*		case 0:
-*			< 125
-*			*t = 60000;
-*			break;
-*		case 1:
-*			125 ~ 140
-*			*t = 125000;
-*			break;
-*		case 2:
-*		case 3:
-*			140 ~ 150
-*			*t = 140000;
-*			break;
-*		default:
-*			mtktscharger_dprintk("Error, use the previous temperature\n");
-*			*t = pre_temp;
-*		}
-*	} else {
-*		mtktscharger_dprintk("Error, use the previous temperature\n");
-*		*t = pre_temp;
-*	}
-*/
-
-	pre_temp = *t;
-	mtktscharger_dprintk("temp =%u\n", *t);
+	mtktscharger_dprintk("temp =%d min=%d max=%d ret=%d ~~~~\n", *t, min_temp, max_temp, ret);
 	return 0;
 }
 
@@ -337,7 +315,7 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 
 	if (sscanf
 	    (ptr_mtktscharger_data->desc,
-	     "%d %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d %d %s %d",
+	     "%d %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d %d %19s %d",
 		&num_trip,
 		&ptr_mtktscharger_data->trip[0], &ptr_mtktscharger_data->t_type[0], ptr_mtktscharger_data->bind0,
 		&ptr_mtktscharger_data->trip[1], &ptr_mtktscharger_data->t_type[1], ptr_mtktscharger_data->bind1,
@@ -352,6 +330,14 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 		&ptr_mtktscharger_data->time_msec) == 32) {
 		mtktscharger_dprintk("[mtktscharger_write] mtktscharger_unregister_thermal\n");
 		mtktscharger_unregister_thermal();
+
+		if (num_trip < 0 || num_trip > 10) {
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "mtktscharger_write",
+					"Bad argument");
+			mtktscharger_dprintk("[mtktscharger_write] bad argument\n");
+			kfree(ptr_mtktscharger_data);
+			return -EINVAL;
+		}
 
 		for (i = 0; i < num_trip; i++)
 			g_THERMAL_TRIP[i] = ptr_mtktscharger_data->t_type[i];
@@ -467,14 +453,6 @@ static int __init mtktscharger_init(void)
 
 	mtktscharger_dprintk("mtktscharger_init: Start\n");
 
-	/* return 1 means with 6311, else return 0 */
-	/* ??? */
-/*
-*	if (is_da9214_exist() == 0) {
-*		mtktscharger_dprintk("mtktscharger_init: Buck is not exist\n");
-*		return err;
-*	}
-*/
 
 	err = mtktscharger_register_cooler();
 	if (err)
