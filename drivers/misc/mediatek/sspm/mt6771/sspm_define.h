@@ -27,7 +27,19 @@
 #define SSPM_PLT_SERV_SUPPORT       (1)
 #define SSPM_LOGGER_SUPPORT         (1)
 #define SSPM_LASTK_SUPPORT          (0)
+
+/*
+ * TimeSync v2
+ *   - Enabled if CONFIG_MTK_TIMER_TIMESYNC is defined.
+ *   - Timesync shall be trigered by timer module only, thus
+ *     SSPM_TIMESYNC_SUPPORT shall be disabled.
+ */
+#ifdef CONFIG_MTK_TIMER_TIMESYNC
+#define SSPM_TIMESYNC_SUPPORT       (0)
+#else
 #define SSPM_TIMESYNC_SUPPORT       (1)
+#endif
+
 #define SSPM_COREDUMP_SUPPORT       (0)
 #define SSPM_EMI_PROTECTION_SUPPORT (0)
 
