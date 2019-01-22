@@ -502,9 +502,12 @@ static int mtk_pctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
 
 	pins = of_find_property(node, "pinmux", NULL);
 	if (!pins) {
+		pins = of_find_property(node, "pins", NULL);
+		if (!pins) {
 		dev_err(pctl->dev, "missing pins property in node %s .\n",
 				node->name);
 		return -EINVAL;
+	}
 	}
 
 	err = pinconf_generic_parse_dt_config(node, pctldev, &configs,
@@ -533,9 +536,12 @@ static int mtk_pctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
 	for (i = 0; i < num_pins; i++) {
 		err = of_property_read_u32_index(node, "pinmux",
 				i, &pinfunc);
+		if (err) {
+			err = of_property_read_u32_index(node, "pins",
+				i, &pinfunc);
 		if (err)
 			goto fail;
-
+		}
 		pin = MTK_GET_PIN_NO(pinfunc);
 		func = MTK_GET_PIN_FUNC(pinfunc);
 
