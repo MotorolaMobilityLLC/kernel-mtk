@@ -42,13 +42,6 @@
 #include "vpu_algo.h"
 #include "vpu_dbg.h"
 
-/* MET: define to enable MET */
-#define VPU_MET_READY
-#if defined(VPU_MET_READY)
-#define CREATE_TRACE_POINTS
-#include "met_vpusys_events.h"
-#endif
-
 /* #define ENABLE_PMQOS */
 #ifdef ENABLE_PMQOS
 #include "helio-dvfsrc-opp.h"
@@ -288,9 +281,9 @@ void MET_Events_Trace(bool enter, int core, int algo_id)
 		dsp1_freq = Map_DSP_Freq_Table(opps.dspcore[0].index);
 		dsp2_freq = Map_DSP_Freq_Table(opps.dspcore[1].index);
 		mutex_unlock(&opp_mutex);
-		trace_VPU__D2D_enter(core, algo_id, vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq);
+		vpu_met_event_enter(core, algo_id, vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq);
 	} else {
-		trace_VPU__D2D_leave(core, algo_id, 0);
+		vpu_met_event_leave(core, algo_id);
 	}
 }
 #endif
@@ -830,8 +823,11 @@ static int vpu_enable_regulator_and_clock(int core)
 	int get_vcore_opp = 0;
 	bool adjust_vcore = false;
 
-	LOG_INF("[vpu_%d] en_rc +\n", core);
+	LOG_INF("[vpu_%d] en_rc + (%d)\n", core, is_power_debug_lock);
 	vpu_trace_begin("vpu_enable_regulator_and_clock");
+
+	if (is_power_debug_lock)
+		goto clk_on;
 
 	get_vcore_opp = vpu_get_hw_vcore_opp(core);
 	if (opps.vcore.index != get_vcore_opp)
@@ -2209,6 +2205,11 @@ int vpu_boot_up(int core)
 	CHECK_RET("[vpu_%d]fail to set debug\n", core);
 	LOG_DBG("[vpu_%d] vpu_hw_set_debug done\n", core);
 
+#ifdef MET_POLLING_MODE
+	ret = vpu_profile_state_set(core, 1);
+	CHECK_RET("[vpu_%d] fail to vpu_profile_state_set 1\n", core);
+#endif
+
 out:
 #if 0 /* control on/off outside the via get_power/put_power */
 	if (ret) {
@@ -2270,6 +2271,11 @@ int vpu_shut_down(int core)
 		/*break;*/
 	}
 	#endif
+
+#ifdef MET_POLLING_MODE
+	ret = vpu_profile_state_set(core, 0);
+	CHECK_RET("[vpu_%d] fail to vpu_profile_state_set 0\n", core);
+#endif
 
 	vpu_trace_begin("vpu_shut_down");
 	ret = vpu_disable_regulator_and_clock(core);
@@ -2545,9 +2551,10 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 
 	if (g_vpu_log_level > 4)
 		vpu_dump_buffer_mva(request);
-	LOG_INF("[vpu_%d] start d2d, id/frm (%d/%d), bw(%d)\n", core,
+	LOG_INF("[vpu_%d] start d2d, id/frm (%d/%d), bw(%d), algo(%d->%d, %d)\n", core,
 		request->algo_id[core], request->frame_magic,
-		request->power_param.bw);
+		request->power_param.bw,
+		vpu_service_cores[core].current_algo, request->algo_id[core], need_reload);
 	/* 1. write register */
 	/* command: d2d */
 	vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_DO_D2D);

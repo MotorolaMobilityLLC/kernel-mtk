@@ -17,7 +17,7 @@
 #include <sync_write.h>
 
 #define CTRL_BASE_OFFSET 0x80000
-
+#define DEBUG_BASE_OFFSET 0x90000
 
 /* common macro definitions */
 #define F_REG(base, offset)     (*((unsigned int *) ((uintptr_t)base + offset)))
