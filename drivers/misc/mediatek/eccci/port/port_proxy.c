@@ -873,7 +873,7 @@ static inline int proxy_send_msg_to_md(struct port_proxy *proxy_p, int ch, unsig
 static inline int proxy_dispatch_recv_skb(struct port_proxy *proxy_p, int hif_id, struct sk_buff *skb,
 	unsigned int flag)
 {
-	struct ccci_header *ccci_h;
+	struct ccci_header *ccci_h = NULL;
 	struct lhif_header *lhif_h;
 	struct ccmni_ch ccmni;
 	struct port_t *port = NULL;
@@ -935,7 +935,8 @@ static inline int proxy_dispatch_recv_skb(struct port_proxy *proxy_p, int hif_id
 
  err_exit:
 	if (ret < 0 && ret != -CCCI_ERR_PORT_RX_FULL) {
-		/* CCCI_ERROR_LOG(md_id, CORE, "drop on channel %d\n", ccci_h->channel); */ /* Fix me, mask temp */
+		if (channel == CCCI_CONTROL_RX)
+			CCCI_ERROR_LOG(md_id, CORE, "drop on channel %d, ret %d\n", channel, ret);
 		ccci_free_skb(skb);
 		ret = -CCCI_ERR_DROP_PACKET;
 	}
