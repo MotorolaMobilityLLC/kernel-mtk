@@ -18,7 +18,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 ccflags-y += -I$(srctree)/arch/arm/
 
-ifeq ($(CONFIG_MT_ENG_BUILD), y)
+ifeq ($(CONFIG_MTK_ENG_BUILD), y)
 ccflags-y += -DION_RUNTIME_DEBUGGER=1
 #ccflags-y += -DION_HISTORY_RECORD
 #obj-$(CONFIG_ION_MTK) += ion_history.o
