@@ -992,10 +992,10 @@ static VOID saaAutoReConnect(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRe
 
 			aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
 		} else if (!CHECK_FOR_TIMEOUT(rCurrentTime, prAisBssInfo->rConnTime,
-				  SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL - 10))) {
+				  SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL + 10))) {
 
 			DBGLOG(SAA, INFO, "<drv> AP deauth ok under reassoc 0x%x %x %x\n",
-				rCurrentTime, prAisBssInfo->rConnTime, SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL - 10));
+				rCurrentTime, prAisBssInfo->rConnTime, SEC_TO_SYSTIME(AIS_AUTORN_MIN_INTERVAL + 10));
 
 			prAisBssInfo->fgDisConnReassoc = FALSE;
 			saaSendDisconnectMsgHandler(prAdapter, prStaRec, prAisBssInfo, eFrmType);
