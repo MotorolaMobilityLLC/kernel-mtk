@@ -1510,7 +1510,7 @@ static void wlanCreateWirelessDevice(void)
 	prWdev->iftype = NL80211_IFTYPE_STATION;
 	prWiphy->iface_combinations = p_mtk_iface_combinations_sta;
 	prWiphy->n_iface_combinations = mtk_iface_combinations_sta_num;
-	prWiphy->max_scan_ssids = 1;	/* FIXME: for combo scan */
+	prWiphy->max_scan_ssids = SCN_SSID_MAX_NUM + 1; /* include one wildcard ssid */
 	prWiphy->max_scan_ie_len = 512;
 	prWiphy->max_sched_scan_ssids     = CFG_SCAN_SSID_MAX_NUM;
 	prWiphy->max_match_sets           = CFG_SCAN_SSID_MATCH_MAX_NUM;
