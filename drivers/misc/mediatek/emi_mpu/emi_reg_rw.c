@@ -33,7 +33,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include "mach/emi_mpu.h"
-#include "mach/mtk_secure_api.h"
+#include <mt-plat/mtk_secure_api.h>
 
 static void __iomem *emi_base;
 

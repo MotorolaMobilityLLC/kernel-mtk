@@ -18,7 +18,7 @@
 #include <linux/delay.h>
 #include <linux/of_fdt.h>
 #ifdef CONFIG_MTK_SPM_IN_ATF
-#include <mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #endif
 
 #ifdef CONFIG_OF

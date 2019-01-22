@@ -34,7 +34,7 @@
 #include <mtk_clkmgr.h>
 #include <mtk_cpuidle.h>
 #if defined(CONFIG_MTK_RAM_CONSOLE) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
-#include <mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 #endif
 #include <mtk_spm.h>
 #include <mtk_spm_misc.h>

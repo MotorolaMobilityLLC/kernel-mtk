@@ -25,7 +25,7 @@
 #endif
 
 #include <mach/mtk_gpt.h>
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 
 #include <mt-plat/mtk_boot.h>
 #if defined(CONFIG_MTK_SYS_CIRQ)

@@ -880,7 +880,7 @@ EXPORT_SYMBOL(secmem_api_unref);
 
 #if defined(CONFIG_MTK_ENG_BUILD) || defined(CONFIG_MT_ENG_BUILD)
 #include <mach/emi_mpu.h>
-#include <mach/mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t count, loff_t *data)
 {
 	char desc[32];
