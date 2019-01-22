@@ -42,7 +42,52 @@ __weak int spm_dvfs_flag_init(void) { return 0; }
 __weak int vcore_opp_init(void) { return 0; }
 
 static struct opp_profile opp_table[VCORE_DVFS_OPP_NUM];
-static struct helio_dvfsrc *dvfsrc;
+struct helio_dvfsrc *dvfsrc;
+
+int dvfsrc_get_bw(int type)
+{
+	int ret = 0;
+	int i;
+
+	switch (type) {
+	case QOS_TOTAL:
+		ret = dvfsrc_sram_read(dvfsrc, QOS_TOTAL_BW);
+		break;
+	case QOS_CPU:
+		ret = dvfsrc_sram_read(dvfsrc, QOS_CPU_BW);
+		break;
+	case QOS_MM:
+		ret = dvfsrc_sram_read(dvfsrc, QOS_MM_BW);
+		break;
+	case QOS_GPU:
+		ret = dvfsrc_sram_read(dvfsrc, QOS_GPU_BW);
+		break;
+	case QOS_MD_PERI:
+		ret = dvfsrc_sram_read(dvfsrc, QOS_MD_PERI_BW);
+		break;
+	case QOS_TOTAL_AVE:
+		for (i = 0; i < QOS_TOTAL_BW_BUF_SIZE; i++)
+			ret += dvfsrc_sram_read(dvfsrc, QOS_TOTAL_BW_BUF(i));
+		ret /= QOS_TOTAL_BW_BUF_SIZE;
+		break;
+	default:
+		break;
+	}
+
+	return ret;
+}
+
+int get_cur_vcore_dvfs_opp(void)
+{
+	int dvfsrc_level_bit = dvfsrc_read(dvfsrc, DVFSRC_LEVEL) >> 16;
+	int dvfsrc_level = 0;
+
+	for (dvfsrc_level = 0; dvfsrc_level < VCORE_DVFS_OPP_NUM - 1; dvfsrc_level++)
+		if ((dvfsrc_level_bit & (1 << dvfsrc_level)) > 0)
+			break;
+
+	return VCORE_DVFS_OPP_NUM - dvfsrc_level - 1;
+}
 
 void dvfsrc_update_opp_table(void)
 {

@@ -83,17 +83,11 @@ extern u32 vcore_dvfs_to_vcore_dvfs_level[];
 extern void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv);
 extern void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz);
 
+extern int dvfsrc_get_bw(int type);
+extern int get_cur_vcore_dvfs_opp(void);
+
 #define DVFSRC_REG(dvfsrc, offset) (dvfsrc->regs + offset)
 #define DVFSRC_SRAM_REG(dvfsrc, offset) (dvfsrc->sram_regs + offset)
-
-#define QOS_TOTAL_BW_BUF_SIZE	8
-
-#define QOS_TOTAL_BW_BUF(idx)		(idx * 4)
-#define QOS_CPU_BW			(QOS_TOTAL_BW_BUF_SIZE * 4 + 0x0)
-#define QOS_GPU_BW			(QOS_TOTAL_BW_BUF_SIZE * 4 + 0x4)
-#define QOS_MM_BW			(QOS_TOTAL_BW_BUF_SIZE * 4 + 0x8)
-#define QOS_MD_PERI_BW			(QOS_TOTAL_BW_BUF_SIZE * 4 + 0xc)
-#define QOS_TOTAL_BW			(QOS_TOTAL_BW_BUF_SIZE * 4 + 0x10)
 
 #define DVFSRC_TIMEOUT		1000
 
@@ -131,5 +125,25 @@ extern void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz);
 
 #define dvfsrc_sram_read(dvfsrc, offset) \
 	readl(DVFSRC_SRAM_REG(dvfsrc, offset))
+
+#define QOS_TOTAL_BW_BUF_SIZE 8
+
+#define QOS_TOTAL_BW_BUF(idx) (idx * 4)
+#define QOS_TOTAL_BW          (QOS_TOTAL_BW_BUF_SIZE * 4)
+#define QOS_CPU_BW            (QOS_TOTAL_BW_BUF_SIZE * 4 + 0x4)
+#define QOS_MM_BW             (QOS_TOTAL_BW_BUF_SIZE * 4 + 0x8)
+#define QOS_GPU_BW            (QOS_TOTAL_BW_BUF_SIZE * 4 + 0xC)
+#define QOS_MD_PERI_BW        (QOS_TOTAL_BW_BUF_SIZE * 4 + 0x10)
+
+enum {
+	QOS_TOTAL = 0,
+	QOS_CPU,
+	QOS_MM,
+	QOS_GPU,
+	QOS_MD_PERI,
+	QOS_TOTAL_AVE
+};
+
+extern struct helio_dvfsrc *dvfsrc;
 
 #endif /* __HELIO_DVFSRC_H */
