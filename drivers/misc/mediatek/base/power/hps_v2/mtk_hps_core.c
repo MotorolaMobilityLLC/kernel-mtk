@@ -34,6 +34,9 @@
 
 static unsigned long long hps_cancel_time;
 static ktime_t ktime;
+static unsigned int hps_cpu_load_info[10];
+static int hps_load_cnt[10];
+static DEFINE_SPINLOCK(load_info_lock);
 
 /*
  * hps timer callback
@@ -68,6 +71,22 @@ unsigned int hps_get_hvytsk(unsigned int cluster_id)
 		return hps_sys.cluster_info[cluster_id].hvyTsk_value;
 }
 
+unsigned int hps_get_per_cpu_load(int cpu, int isReset)
+{
+	unsigned int ret;
+
+	spin_lock(&load_info_lock);
+	if (hps_load_cnt[cpu])
+		ret = hps_cpu_load_info[cpu] / hps_load_cnt[cpu];
+	else
+		ret = hps_cpu_load_info[cpu];
+	if (isReset) {
+		hps_cpu_load_info[cpu] = 0;
+		hps_load_cnt[cpu] = 0;
+	}
+	spin_unlock(&load_info_lock);
+	return ret;
+}
 
 static void hps_get_sysinfo(void)
 {
@@ -101,6 +120,11 @@ static void hps_get_sysinfo(void)
 	for_each_possible_cpu(cpu) {
 		per_cpu(hps_percpu_ctxt, cpu).load = hps_cpu_get_percpu_load(cpu);
 		hps_ctxt.cur_loads += per_cpu(hps_percpu_ctxt, cpu).load;
+
+		spin_lock(&load_info_lock);
+		hps_cpu_load_info[cpu] +=  per_cpu(hps_percpu_ctxt, cpu).load;
+		hps_load_cnt[cpu]++;
+		spin_unlock(&load_info_lock);
 
 		if (hps_ctxt.cur_dump_enabled) {
 			if (cpu_online(cpu))
