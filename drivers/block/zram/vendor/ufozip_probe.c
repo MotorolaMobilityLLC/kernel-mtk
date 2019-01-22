@@ -34,7 +34,7 @@
 #include <linux/atomic.h>
 #include <asm/irqflags.h>
 
-/* nclude <mt_vcorefs_manager.h> */
+/* #include <mt_vcorefs_manager.h> */
 
 /* hwzram impl header file */
 #include "../hwzram_impl.h"
@@ -527,7 +527,7 @@ static int mt_ufozip_suspend(struct device *dev)
 {
 	struct hwzram_impl *hwz = dev_get_drvdata(dev);
 
-	pr_info("%mt_ufozip_suspend\n");
+	pr_info("%s\n", __func__);
 
 	if (enable_ufozip_clock())
 		pr_warn("%s: failed to enable clock\n", __func__);
@@ -544,7 +544,7 @@ static int mt_ufozip_resume(struct device *dev)
 {
 	struct hwzram_impl *hwz = dev_get_drvdata(dev);
 
-	pr_info("%mt_ufozip_resume\n");
+	pr_info("%s\n", __func__);
 
 	if (enable_ufozip_clock())
 		pr_warn("%s: failed to enable clock\n", __func__);
