@@ -37,6 +37,7 @@
 #include "../../drivers/misc/mediatek/include/mt-plat/mtk_ccci_common.h"
 /*if kernel version is 3.18, Use this one*/
 /*#include "../../drivers/misc/mediatek/include/mt-plat/mt_ccci_common.h"*/
+#define ENABLE_MDT_DATAUSAGE_DEBUG 0
 #endif
 #include <linux/netfilter/xt_socket.h>
 #include "xt_qtaguid_internal.h"
@@ -708,19 +709,19 @@ static int get_mdtethering_data(char *iface_name, struct mdt_data_t **mdt_sm_dat
 	int index = -1;
 
 	if (strncmp(iface_name, "ccmni", 4) != 0) {
-		pr_info("[mtk_net][mdt]Interface name Error %s\n", iface_name);
+		pr_debug("[mtk_net][mdt]Interface name Error %s\n", iface_name);
 		return -1;
 	}
 	index = get_ccmni_interface_index(iface_name);
 	if (index < 0 || index > 8) {
-		pr_info("[mtk_net][mdt]getCcmniInterfaceIndex Error %d\n", index);
-		return -1;
+		pr_debug("[mtk_net][mdt]getCcmniInterfaceIndex Error %d\n", index);
+		return -2;
 	}
-	pr_info("[mtk_net][mdt]getCcmniInterfaceIndex:%s index : %d\n", iface_name, index);
+	pr_debug("[mtk_net][mdt]getCcmniInterfaceIndex:%s index : %d\n", iface_name, index);
 	sm_addr = (unsigned char *)get_smem_start_addr(MD_SYS1, SMEM_USER_RAW_NETD, &len);
 	if (!sm_addr) {
-		pr_info("[mtk_net][mdt]get shareMemory Error\n");
-		return -1;
+		pr_debug("[mtk_net][mdt]get shareMemory Error\n");
+		return -3;
 	}
 	*mdt_sm_data = (struct mdt_data_t *)(sm_addr) + index;
 	return 0;
@@ -736,6 +737,9 @@ static void pp_iface_stat_line(struct seq_file *m,
 
 	cnts = &iface_entry->totals_via_skb;
 	res = get_mdtethering_data(iface_entry->ifname, &mdt_sm_data);
+#if ENABLE_MDT_DATAUSAGE_DEBUG
+	if (res < 0)
+		pr_info("[mtk_net][mdt]get_mdtethering_data fail %d\n", res);
 	if (mdt_sm_data) {
 		pr_info("[mtk_net][mdt]%s %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu\n",
 			iface_entry->ifname,
@@ -756,7 +760,7 @@ static void pp_iface_stat_line(struct seq_file *m,
 			mdt_sm_data->tx_others_bytes,
 			mdt_sm_data->tx_others_pkts);
 	}
-
+#endif
 	if (!mdt_sm_data) {
 		seq_printf(m, "%s %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu\n",
 			   iface_entry->ifname,
