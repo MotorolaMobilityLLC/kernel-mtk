@@ -218,6 +218,7 @@ static inline void cpuhvfs_dump_dvfsp_info(void)	{}
 
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
 extern void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback);
+extern void cpuhvfs_trigger_dvfs_notify(void);
 
 extern void cpuhvfs_set_power_mode(enum power_mode mode);
 extern void cpuhvfs_hint_mmc_event(unsigned int start);
@@ -226,6 +227,7 @@ extern int cpuhvfs_enable_hw_governor(struct init_sta *sta);
 extern int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta);
 #else
 static inline void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)	{}
+static inline void cpuhvfs_trigger_dvfs_notify(void)			{}
 
 static inline void cpuhvfs_set_power_mode(enum power_mode mode)		{}
 static inline void cpuhvfs_hint_mmc_event(unsigned int start)		{}
