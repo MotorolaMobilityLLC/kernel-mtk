@@ -3718,8 +3718,13 @@ static ssize_t rsc_reg_write(struct file *file, const char __user *buffer, size_
 		pszTmp = strstr(addrSzBuf, "0x");
 		if (pszTmp == NULL) {
 			/*if (1 != sscanf(addrSzBuf, "%d", &addr))*/
+#if 0
 			if (kstrtoint(addrSzBuf, 0, &addr) != 0)
 				LOG_ERR("scan decimal addr is wrong !!:%s", addrSzBuf);
+#else
+				LOG_ERR("Only address in HEX is allowed:%s", addrSzBuf);
+#endif
+
 		} else {
 			if (strlen(addrSzBuf) > 2) {
 				if (sscanf(addrSzBuf + 2, "%x", &addr) != 1)
@@ -3732,8 +3737,12 @@ static ssize_t rsc_reg_write(struct file *file, const char __user *buffer, size_
 		pszTmp = strstr(valSzBuf, "0x");
 		if (pszTmp == NULL) {
 			/*if (1 != sscanf(valSzBuf, "%d", &val))*/
+#if 0
 			if (kstrtoint(valSzBuf, 0, &val) != 0)
 				LOG_ERR("scan decimal value is wrong !!:%s", valSzBuf);
+#else
+				LOG_ERR("Only address in HEX is allowed:%s", valSzBuf);
+#endif
 		} else {
 			if (strlen(valSzBuf) > 2) {
 				if (sscanf(valSzBuf + 2, "%x", &val) != 1)
@@ -3756,8 +3765,12 @@ static ssize_t rsc_reg_write(struct file *file, const char __user *buffer, size_
 		pszTmp = strstr(addrSzBuf, "0x");
 		if (pszTmp == NULL) {
 			/*if (1 != sscanf(addrSzBuf, "%d", &addr))*/
+#if 0
 			if (kstrtoint(addrSzBuf, 0, &addr) != 0)
 				LOG_ERR("scan decimal addr is wrong !!:%s", addrSzBuf);
+#else
+				LOG_ERR("Only address in HEX is allowed:%s", addrSzBuf);
+#endif
 		} else {
 			if (strlen(addrSzBuf) > 2) {
 				if (sscanf(addrSzBuf + 2, "%x", &addr) != 1)
