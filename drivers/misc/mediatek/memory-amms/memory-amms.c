@@ -37,28 +37,8 @@
 #include <linux/module.h>
 #include <linux/workqueue.h>
 #include <linux/slab.h>
+#include <mt-plat/mtk_secure_api.h>
 
-#ifdef CONFIG_ARM64
-#define MTK_SIP_SMC_AARCH_BIT			0x40000000
-static noinline unsigned long long mt_secure_call_ret(u64 function_id,
-	u64 arg0, u64 arg1, u64 arg2)
-{
-	register u64 reg0 __asm__("x0") = function_id;
-	register u64 reg1 __asm__("x1") = arg0;
-	register u64 reg2 __asm__("x2") = arg1;
-	register u64 reg3 __asm__("x3") = arg2;
-	unsigned long long ret = 0;
-
-	asm volatile ("smc    #0\n" : "+r" (reg0) :
-		"r"(reg1), "r"(reg2), "r"(reg3));
-
-	ret = reg0;
-	return ret;
-}
-/* AMMS related SMC call */
-#define MTK_SIP_KERNEL_AMMS_GET_FREE_ADDR (0x82000271 | MTK_SIP_SMC_AARCH_BIT)
-#define MTK_SIP_KERNEL_AMMS_GET_FREE_LENGTH (0x82000272 | MTK_SIP_SMC_AARCH_BIT)
-/* SIP SMC Call 64 */
 
 struct work_struct *amms_work;
 bool amms_static_free;
@@ -80,14 +60,14 @@ static irqreturn_t amms_irq_handler(int irq, void *dev_id)
 static void amms_work_handler(struct work_struct *work)
 {
 
-	unsigned long long addr = 0, length = 0;
+	phys_addr_t addr = 0, length = 0;
 
 	/*below part is for staic memory free */
 	if (!amms_static_free) {
-		addr = mt_secure_call_ret(MTK_SIP_KERNEL_AMMS_GET_FREE_ADDR, 0, 0, 0);
-		length = mt_secure_call_ret(MTK_SIP_KERNEL_AMMS_GET_FREE_LENGTH, 0, 0, 0);
+		addr = mt_secure_call(MTK_SIP_KERNEL_AMMS_GET_FREE_ADDR, 0, 0, 0);
+		length = mt_secure_call(MTK_SIP_KERNEL_AMMS_GET_FREE_LENGTH, 0, 0, 0);
 		if (pfn_valid(__phys_to_pfn(addr)) && pfn_valid(__phys_to_pfn(addr + length - 1))) {
-			pr_info("%s:addr = 0x%llx length=0x%llx\n", __func__, addr, length);
+			pr_info("%s:addr = 0x%pa length=0x%pa\n", __func__, &addr, &length);
 			free_reserved_memory(addr, addr+length);
 			amms_static_free = true;
 		} else {
@@ -171,4 +151,3 @@ module_exit(amms_exit);
 
 MODULE_DESCRIPTION("MEDIATEK Module AMMS Driver");
 MODULE_AUTHOR("<chun.fan@mediatek.com>");
-#endif
