@@ -37,7 +37,11 @@
 
 /* if use ISRC mode, should modify variables in init_setting */
 /* #define USE_ISRC_MODE_S5K2P8_SENSOR */
+#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
+#define USE_ISRC_MODE_S5K3P8_SENSOR
+#else
 #define USE_ISRC_MODE_IMX386_SENSOR
+#endif
 
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
@@ -78,6 +82,8 @@ static int s4AF_WriteReg(u16 a_u2Data)
 
 	#if defined(USE_ISRC_MODE_S5K2P8_SENSOR) || defined(USE_ISRC_MODE_IMX386_SENSOR)
 	char puSendCmd[2] = {(char)(((a_u2Data >> 8) & 0x03) | 0xC4), (char)(a_u2Data & 0xFF)};
+	#elif defined(USE_ISRC_MODE_S5K3P8_SENSOR)
+	char puSendCmd[2] = {(char)(((a_u2Data >> 8) & 0x03) | 0xF4), (char)(a_u2Data & 0xff)};
 	#else
 	char puSendCmd[2] = {(char)(((a_u2Data >> 8) & 0x03) | 0xC0), (char)(a_u2Data & 0xFF)};
 	#endif
@@ -97,9 +103,10 @@ static int s4AF_WriteReg(u16 a_u2Data)
 	return 0;
 }
 
-#ifdef USE_ISRC_MODE_S5K2P8_SENSOR
+
 static int init_setting(void)
 {
+#if defined(USE_ISRC_MODE_S5K2P8_SENSOR)
 	int  i4RetValue;
 	char puSendCmd[2];
 
@@ -193,9 +200,66 @@ static int init_setting(void)
 		return -1;
 	}
 
+#elif defined(USE_ISRC_MODE_S5K3P8_SENSOR)
+	int  i4RetValue;
+	char puSendCmd[2];
+
+	/* step 1: set A point 010:0x22 */
+	puSendCmd[0] = 0x94;
+	puSendCmd[1] = 0x22;
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send failed!!\n");
+		return -1;
+	}
+
+	/* step 2: set B point 011:0x64 */
+	puSendCmd[0] = 0x9C;
+	puSendCmd[1] = 0x64;
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send failed!!\n");
+		return -1;
+	}
+
+	/* step 3: set step mode 100:0x84 */
+	puSendCmd[0] = 0xA4;
+	puSendCmd[1] = 0x84;
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send failed!!\n");
+		return -1;
+	}
+
+	/* step 4: set Actuator frequency  001:0x42,  85hz */
+	puSendCmd[0] = 0x8C;
+	puSendCmd[1] = 0x42;
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send failed!!\n");
+		return -1;
+	}
+
+#elif defined(USE_ISRC_MODE_IMX386_SENSOR)
+	char puSendCmd[2];
+
+	puSendCmd[0] = (char)(0xD0);
+	puSendCmd[1] = (char)(0xC8);
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+
+	puSendCmd[0] = (char)(0xC8);
+	puSendCmd[1] = (char)(0x01);
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+
+	puSendCmd[0] = (char)(0xC6);
+	puSendCmd[1] = (char)(0x00);
+	i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+
+#endif
+
 	return 0;
 }
-#endif
+
 
 static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
@@ -234,26 +298,13 @@ static inline int moveAF(unsigned long a_u4Position)
 	if (*g_pAF_Opened == 1) {
 		unsigned short InitPos;
 
-		#ifdef USE_ISRC_MODE_IMX386_SENSOR
-		char puSendCmd[2];
-
-		puSendCmd[0] = (char)(0xD0);
-		puSendCmd[1] = (char)(0xC8);
-		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
-
-		puSendCmd[0] = (char)(0xC8);
-		puSendCmd[1] = (char)(0x01);
-		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
-
-		puSendCmd[0] = (char)(0xC6);
-		puSendCmd[1] = (char)(0x00);
-		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
-		#endif
-
 		ret = s4AF_ReadReg(&InitPos);
-		#ifdef USE_ISRC_MODE_S5K2P8_SENSOR
-		init_setting();
-		#endif
+
+		if (init_setting() == 0) {
+			spin_lock(g_pAF_SpinLock);
+			*g_pAF_Opened = 2;
+			spin_unlock(g_pAF_SpinLock);
+		}
 
 		if (ret == 0) {
 			LOG_INF("Init Pos %6d\n", InitPos);
@@ -267,10 +318,6 @@ static inline int moveAF(unsigned long a_u4Position)
 			g_u4CurrPosition = 0;
 			spin_unlock(g_pAF_SpinLock);
 		}
-
-		spin_lock(g_pAF_SpinLock);
-		*g_pAF_Opened = 2;
-		spin_unlock(g_pAF_SpinLock);
 	}
 
 	if (g_u4CurrPosition == a_u4Position)
