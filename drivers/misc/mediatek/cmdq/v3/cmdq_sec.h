@@ -19,22 +19,22 @@
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 #include "tee_client_api.h"
 #include "cmdq_sec_iwc_common.h"
-
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
-#include "mobicore_driver_api.h"
-#endif /* CONFIG_TRUSTONIC_TEE_SUPPORT */
-
+#if defined(CMDQ_GP_SUPPORT)
+#include "cmdq_sec_gp.h"
+#else
+#include "cmdq_sec_trustonic.h"
+#endif
 #endif /* CMDQ_SECURE_PATH_SUPPORT */
 
-/**
+
+/*
  * error code for CMDQ
  */
-
 #define CMDQ_ERR_NULL_SEC_CTX_HANDLE (6000)
 #define CMDQ_ERR_SEC_CTX_SETUP (6001)
 #define CMDQ_ERR_SEC_CTX_TEARDOWN (6002)
 
-/**
+/*
  * inter-world communication state
  */
 enum CMDQ_IWC_STATE_ENUM {
@@ -48,9 +48,7 @@ enum CMDQ_IWC_STATE_ENUM {
 	IWC_END_OF_ENUM = 7,
 };
 
-
-/**
- * CMDQ secure context struct
+/* CMDQ secure context struct
  * note it is not global data, each process has its own CMDQ sec context
  */
 struct cmdqSecContextStruct {
@@ -65,28 +63,20 @@ struct cmdqSecContextStruct {
 
 	/* iwc information */
 	void *iwcMessage;	/* message buffer */
-#if defined(CMDQ_SECURE_PATH_SUPPORT)
-#if defined(CMDQ_GP_SUPPORT)
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
-	struct TEEC_UUID uuid;	/* Universally Unique Identifier of secure tl/dr */
-#else
-	TEEC_UUID uuid;	/* Universally Unique Identifier of secure tl/dr */
-#endif
-	struct TEEC_Context gp_context; /* basic context */
-	struct TEEC_Session sessionHandle; /* session handle */
-	struct TEEC_SharedMemory shared_mem; /* shared memory */
-#else
-	struct mc_uuid_t uuid;	/* Universally Unique Identifier of secure tl/dr */
-	struct mc_session_handle sessionHandle;	/* session handle */
-	uint32_t openMobicoreByOther;	/* true if someone has opened mobicore device in this prpocess context */
-#endif
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
+	struct cmdq_sec_tee_context tee;	/* trustzone parameters */
 #endif
 };
 
 int32_t cmdq_sec_init_allocate_resource_thread(void *data);
 
-/**
+s32 cmdq_sec_task_copy_to_buffer(struct TaskStruct *task,
+	struct cmdqCommandStruct *desc);
+
+const struct cmdq_controller *cmdq_sec_get_controller(void);
+
+/*
  * Create and destroy non-cachable shared memory,
  * used to share data for CMDQ driver between NWd and SWd
  *
@@ -95,7 +85,7 @@ int32_t cmdq_sec_init_allocate_resource_thread(void *data);
 int32_t cmdq_sec_create_shared_memory(struct cmdqSecSharedMemoryStruct **pHandle, const uint32_t size);
 int32_t cmdq_sec_destroy_shared_memory(struct cmdqSecSharedMemoryStruct *handle);
 
-/**
+/*
  * Callback to fill message buffer for secure task
  *
  * Params:
@@ -109,21 +99,24 @@ int32_t cmdq_sec_destroy_shared_memory(struct cmdqSecSharedMemoryStruct *handle)
 typedef int32_t(*CmdqSecFillIwcCB) (int32_t, void *, int32_t, void *);
 
 
-/**
-  * Entry secure world to handle secure path jobs
-  * .submit task
-  * .cancel error task
-  */
+/*
+ * Entry secure world to handle secure path jobs
+ * .submit task
+ * .cancel error task
+ */
 
 int32_t cmdq_sec_exec_task_async_unlocked(struct TaskStruct *pTask, int32_t thread);
 int32_t cmdq_sec_cancel_error_task_unlocked(struct TaskStruct *pTask, int32_t thread,
 					    struct cmdqSecCancelTaskResultStruct *pResult);
 int32_t cmdq_sec_allocate_path_resource_unlocked(bool throwAEE);
+s32 cmdq_sec_get_secure_thread_exec_counter(const s32 thread);
 
+/* function declaretion */
+struct cmdqSecContextStruct *cmdq_sec_context_handle_create(uint32_t tgid);
 
-/**
-  * secure path control
-  */
+/*
+ * secure path control
+ */
 void cmdq_sec_lock_secure_path(void);
 void cmdq_sec_unlock_secure_path(void);
 
@@ -132,7 +125,27 @@ void cmdqSecDeInitialize(void);
 
 void cmdqSecEnableProfile(const bool enable);
 
-/* function declaretion */
-struct cmdqSecContextStruct *cmdq_sec_context_handle_create(uint32_t tgid);
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
+/*
+ * tee vendor interface
+ */
+void cmdq_sec_setup_tee_context(struct cmdq_sec_tee_context *tee);
+
+s32 cmdq_sec_init_context(struct cmdq_sec_tee_context *tee);
+
+s32 cmdq_sec_deinit_context(struct cmdq_sec_tee_context *tee);
+
+s32 cmdq_sec_allocate_wsm(struct cmdq_sec_tee_context *tee, void **wsm_buffer,
+	u32 size);
+
+s32 cmdq_sec_free_wsm(struct cmdq_sec_tee_context *tee, void **wsm_buffer);
+
+s32 cmdq_sec_open_session(struct cmdq_sec_tee_context *tee, void *wsm_buffer);
+
+s32 cmdq_sec_close_session(struct cmdq_sec_tee_context *tee);
+
+s32 cmdq_sec_execute_session(struct cmdq_sec_tee_context *tee,
+	u32 cmd, s32 timeout_ms);
+#endif	/* CMDQ_SECURE_PATH_SUPPORT */
 
 #endif				/* __DDP_CMDQ_SEC_H__ */
