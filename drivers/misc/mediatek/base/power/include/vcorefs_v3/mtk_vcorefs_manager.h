@@ -18,10 +18,15 @@
 
 extern int is_vcorefs_can_work(void);
 extern bool is_vcorefs_request(void);
+extern int vcorefs_each_kicker_request(enum dvfs_kicker kicker);
 extern int vcorefs_request_dvfs_opp(enum dvfs_kicker, enum dvfs_opp);
 extern void vcorefs_drv_init(int plat_init_opp);
 extern int init_vcorefs_sysfs(void);
 extern u32 log_mask(void);
+
+/* MET */
+typedef void (*vcorefs_req_handler_t) (enum dvfs_kicker kicker, enum dvfs_opp opp);
+extern void vcorefs_register_req_notify(vcorefs_req_handler_t handler);
 
 /* AEE */
 extern void aee_rr_rec_vcore_dvfs_opp(u32 val);
