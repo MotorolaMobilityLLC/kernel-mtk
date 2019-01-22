@@ -72,6 +72,7 @@ static uint64_t gpt_time_clkevt_set_next_event_entry;
 static uint64_t gpt_time_clkevt_set_next_event_exit;
 static uint64_t gpt_time_int_handler_entry;
 static uint64_t gpt_time_int_handler_exit;
+static unsigned int gpt_time_clkevt_set_next_event_cpu;
 
 #define _MTK_TIMER_DBG_AEE_DUMP
 
@@ -245,20 +246,14 @@ void mt_gpt_clkevt_aee_dump(void)
 	 */
 
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
+	int cpu_bound;
 
-	/* interrupt time */
-
-	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
-	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
-		"[GPT] int handler entry: %llu\n", gpt_time_int_handler_entry);
-	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+	/* interrupt, clkevt handler and set next time */
 
 	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
 	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
-		"[GPT] int handler exit: %llu\n", gpt_time_int_handler_exit);
+		"[GPT] int handler entry:    %llu\n", gpt_time_int_handler_entry);
 	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
-
-	/* clkevt handler time */
 
 	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
 	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
@@ -267,19 +262,27 @@ void mt_gpt_clkevt_aee_dump(void)
 
 	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
 	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
-		"[GPT] clkevt handler exit: %llu\n", gpt_time_clkevt_handler_exit);
-	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
-
-	/* set next event */
-
-	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
-	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
 		"[GPT] set next event entry: %llu\n", gpt_time_clkevt_set_next_event_entry);
 	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
 
 	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
 	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
-		"[GPT] set next event exit: %llu\n", gpt_time_clkevt_set_next_event_exit);
+		"[GPT] set next event exit:  %llu\n", gpt_time_clkevt_set_next_event_exit);
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT] clkevt handler exit:  %llu\n", gpt_time_clkevt_handler_exit);
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT] int handler exit:     %llu\n", gpt_time_int_handler_exit);
+	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
+
+	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
+	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
+		"[GPT] set next event cpu:   %u\n", gpt_time_clkevt_set_next_event_cpu);
 	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
 
 	/* global gpt status */
@@ -316,9 +319,12 @@ void mt_gpt_clkevt_aee_dump(void)
 		"[GPT1] CMP: 0x%x\n", __raw_readl(dev->base_addr + GPT_CMP));
 	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
 
+	cpu_bound = mt_irq_dump_cpu(gpt_clockevent.irq);
+
 	memset(gpt_clkevt_aee_dump_buf, 0, sizeof(gpt_clkevt_aee_dump_buf));
 	snprintf(gpt_clkevt_aee_dump_buf, sizeof(gpt_clkevt_aee_dump_buf),
-		"[GPT1] irq affinity: %d\n", gpt_clockevent.irq_affinity_on);
+		"[GPT1] irq affinity (bc, gic): %d, %d\n",
+		gpt_clockevent.irq_affinity_on, cpu_bound);
 	aee_sram_fiq_log(gpt_clkevt_aee_dump_buf);
 
 	/*
@@ -622,6 +628,7 @@ static int mt_gpt_clkevt_next_event(unsigned long cycles,
 
 #ifdef _MTK_TIMER_DBG_AEE_DUMP
 	gpt_time_clkevt_set_next_event_exit = sched_clock();
+	gpt_time_clkevt_set_next_event_cpu = smp_processor_id();
 #endif
 
 	return 0;
@@ -691,13 +698,10 @@ static void clkevt_handler(unsigned long data)
 {
 	struct clock_event_device *evt = (struct clock_event_device *)data;
 
-#ifdef _MTK_TIMER_DBG_AEE_DUMP
-	gpt_time_clkevt_handler_entry = sched_clock();
-#endif
-
 #if defined(CONFIG_MTK_TIMER_DEBUG) && !defined(CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0)
-	int cpu;
-	int err = 0;
+	int cpu, err;
+
+	err = 0;
 
 	cpu = mt_irq_dump_cpu(evt->irq);
 
@@ -718,8 +722,12 @@ static void clkevt_handler(unsigned long data)
 		}
 	}
 
-	if (!err)
+	if (err)
 		mt_irq_dump_status(evt->irq);
+#endif
+
+#ifdef _MTK_TIMER_DBG_AEE_DUMP
+	gpt_time_clkevt_handler_entry = sched_clock();
 #endif
 
 	evt->event_handler(evt);
