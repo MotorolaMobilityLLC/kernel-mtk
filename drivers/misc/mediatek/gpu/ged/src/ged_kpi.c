@@ -153,6 +153,9 @@ typedef struct GED_KPI_TAG {
 	unsigned long cpu_cur_freq_LL;
 	unsigned long cpu_cur_freq_L;
 	unsigned long cpu_cur_freq_B;
+	unsigned int cpu_cur_avg_load_LL;
+	unsigned int cpu_cur_avg_load_L;
+	unsigned int cpu_cur_avg_load_B;
 	long long t_cpu;
 	long long t_gpu;
 	int t_cpu_target;
@@ -679,7 +682,7 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 
 	/* statistics */
 	ged_log_buf_print(ghLogBuf,
-		"%d,%llu,%lu,%lu,%lu,%llu,%llu,%llu,%llu,%llu,%llu,%lu,%d,%d,%lld,%d,%lld,%lld,%llu,%lu,%lu,%lu,%lu,%lu,%lu",
+		"%d,%llu,%lu,%lu,%lu,%llu,%llu,%llu,%llu,%llu,%llu,%lu,%d,%d,%lld,%d,%lld,%lld,%llu,%lu,%lu,%lu,%lu,%lu,%lu,%u,%u,%u",
 		psHead->pid,
 		psHead->ullWnd,
 		psKPI->i32QueueID,
@@ -704,7 +707,10 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		psKPI->cpu_max_freq_B,
 		psKPI->cpu_cur_freq_LL,
 		psKPI->cpu_cur_freq_L,
-		psKPI->cpu_cur_freq_B
+		psKPI->cpu_cur_freq_B,
+		psKPI->cpu_cur_avg_load_LL,
+		psKPI->cpu_cur_avg_load_L,
+		psKPI->cpu_cur_avg_load_B
 		);
 }
 #ifdef GED_KPI_CPU_BOOST
@@ -740,21 +746,6 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 				t_cpu_target,
 				psKPI->t_cpu_slptime,
 				psHead->target_fps);
-
-		psKPI->cpu_max_freq_LL = arch_scale_get_max_freq(0);
-#ifndef GED_KPI_CPU_SINGLE_CLUSTER
-		psKPI->cpu_max_freq_L = arch_scale_get_max_freq(4);
-#ifdef GED_KPI_CPU_TRI_CLUSTER
-		psKPI->cpu_max_freq_B = arch_scale_get_max_freq(8);
-#endif
-#endif
-		/* psKPI->cpu_cur_freq_LL = psKPI->cpu_max_freq_LL * cpufreq_scale_freq_capacity(NULL, 0) / 1024; */
-#ifndef GED_KPI_CPU_SINGLE_CLUSTER
-		/* psKPI->cpu_cur_freq_L = psKPI->cpu_max_freq_L * cpufreq_scale_freq_capacity(NULL, 4) / 1024; */
-#ifdef GED_KPI_CPU_TRI_CLUSTER
-		psKPI->cpu_cur_freq_B = psKPI->cpu_max_freq_B * cpufreq_scale_freq_capacity(NULL, 8) / 1024;
-#endif
-#endif
 
 		ged_kpi_check_if_fallback_is_needed(boost_accum_cpu, psKPI->t_cpu);
 
@@ -1178,6 +1169,28 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			psKPI->QedBufferDelay = psHead->last_QedBufferDelay;
 			psHead->last_QedBufferDelay = 0;
 			psHead->last_TimeStamp1 = psKPI->ullTimeStamp1;
+
+#ifdef GED_KPI_CPU_INFO
+			psKPI->cpu_max_freq_LL = arch_scale_get_max_freq(0);
+			psKPI->cpu_cur_freq_LL = psKPI->cpu_max_freq_LL * cpufreq_scale_freq_capacity(NULL, 0) / 1024;
+			psKPI->cpu_cur_avg_load_LL =
+				(sched_get_cpu_load(0) + sched_get_cpu_load(1) +
+				sched_get_cpu_load(2) + sched_get_cpu_load(3)) / 4;
+#ifndef GED_KPI_CPU_SINGLE_CLUSTER
+			psKPI->cpu_max_freq_L = arch_scale_get_max_freq(4);
+			psKPI->cpu_cur_freq_L = psKPI->cpu_max_freq_L * cpufreq_scale_freq_capacity(NULL, 4) / 1024;
+			psKPI->cpu_cur_avg_load_L =
+				(sched_get_cpu_load(4) + sched_get_cpu_load(5) +
+				sched_get_cpu_load(6) + sched_get_cpu_load(7)) / 4;
+#ifdef GED_KPI_CPU_TRI_CLUSTER
+			psKPI->cpu_max_freq_B = arch_scale_get_max_freq(8);
+			psKPI->cpu_cur_freq_B = psKPI->cpu_max_freq_B * cpufreq_scale_freq_capacity(NULL, 8) / 1024;
+			psKPI->cpu_cur_avg_load_B =
+				(sched_get_cpu_load(8) + sched_get_cpu_load(9)) / 2;
+#endif /* ifdef GED_KPI_CPU_TRI_CLUSTER */
+#endif /* ifndef GED_KPI_CPU_SINGLE_CLUSTER */
+#endif /* ifdef GED_KPI_CPU_INFO */
+
 #ifdef GED_KPI_CPU_BOOST
 			if (ged_kpi_cpu_boost_check_01)
 				ged_kpi_cpu_boost_check_01(
@@ -1950,7 +1963,9 @@ void ged_kpi_set_game_hint(int mode)
 /* ----------------------------------------------------------------------------- */
 void ged_kpi_set_target_FPS(u64 ulID, int target_FPS)
 {
+#ifdef MTK_GED_KPI
 	ged_kpi_push_timestamp(GED_SET_TARGET_FPS, 0, -1,
 							ulID, target_FPS, -1, -1, NULL);
+#endif
 }
 EXPORT_SYMBOL(ged_kpi_set_target_FPS);
