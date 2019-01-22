@@ -2345,12 +2345,15 @@ static int accdet_create_attr(struct device_driver *driver)
 }
 #endif
 
+#ifdef CONFIG_MT6771_QUERY_PCB_ID
 #define AUDIO_MIC_MODE_ACC  1
-#define AUDIO_MIC_MODE_DCC   2
+#define AUDIO_MIC_MODE_DCC  2
+#endif
 
 /* just be called by audio module for DC trim */
 void accdet_late_init(unsigned long a)
 {
+#ifdef CONFIG_MT6771_QUERY_PCB_ID
 	switch (a) {
 	case AUDIO_MIC_MODE_ACC:
 		headset_dts_data.accdet_mic_mode = HEADSET_MODE_1;
@@ -2364,6 +2367,7 @@ void accdet_late_init(unsigned long a)
 		ACCDET_INFO("[accdet_late_init]invalid parameter=0x%lx Use default DCC mode!\n", a);
 		break;
 	}
+#endif
 
 	if (atomic_cmpxchg(&s_accdet_first, 1, 0)) {
 		del_timer_sync(&accdet_init_timer);
