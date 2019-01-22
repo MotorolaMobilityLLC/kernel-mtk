@@ -43,6 +43,7 @@
 #include "mtk_smi.h"
 #include "mmdvfs_config_util.h"
 #endif
+#include "smi_public.h"
 
 #include "linux/clk.h"
 
@@ -92,15 +93,6 @@ static struct cdev *g_mjc_cdev;
 static struct class *pMjcClass;
 static struct device *mjcDevice;
 
-static struct clk *clk_MT_CG_GALS_M0_2X;      /* MM_CG_GALS_M0_2X */
-static struct clk *clk_MT_CG_GALS_M1_2X;      /* MM_CG_GALS_M1_2X */
-static struct clk *clk_MT_CG_UPSZ0;           /* MM_CG_UPSZ0 */
-static struct clk *clk_MT_CG_UPSZ1;           /* MM_CG_UPSZ1 */
-static struct clk *clk_MT_CG_FIFO0;           /* MM_CG_FIFO0 */
-static struct clk *clk_MT_CG_FIFO1;           /* MM_CG_FIFO1 */
-static struct clk *clk_MT_CG_SMI_COMMON;      /* MM_DISP0_SMI_COMMON */
-static struct clk *clk_MT_CG_SMI_COMMON_2X;   /* MM_DISP0_SMI_COMMON_2X */
-static struct clk *clk_MT_CG_LARB8;           /* MM_CG_LARB8 */
 static struct clk *clk_MJC_SMI_LARB;          /* SMI MJC larb */
 static struct clk *clk_MJC_TOP_CLK_0;
 static struct clk *clk_MJC_TOP_CLK_1;
@@ -371,58 +363,10 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
 		MJCMSG("[ERROR] mjc_open() clk_SCP_SYS_MJC is not enabled, ret = %d\n", ret);
 	}
 
-	ret = clk_prepare_enable(clk_MT_CG_GALS_M0_2X);
+	ret = smi_bus_enable(SMI_LARB_MJCSYS, "mjc-larb");
 	if (ret) {
 		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MT_CG_GALS_M0_2X is not enabled, ret = %d\n", ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_GALS_M1_2X);
-	if (ret) {
-		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MT_CG_GALS_M1_2X is not enabled, ret = %d\n", ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_UPSZ0);
-	if (ret) {
-		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MT_CG_UPSZ0 is not enabled, ret = %d\n", ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_UPSZ1);
-	if (ret) {
-		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MT_CG_UPSZ1 is not enabled, ret = %d\n", ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_FIFO0);
-	if (ret) {
-		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MT_CG_FIFO0 is not enabled, ret = %d\n", ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_FIFO1);
-	if (ret) {
-		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MT_CG_FIFO1 is not enabled, ret = %d\n", ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON);
-	if (ret) {
-		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MT_CG_SMI_COMMON is not enabled, ret = %d\n", ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON_2X);
-	if (ret) {
-		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MT_CG_SMI_COMMON_2X is not enabled, ret = %d\n", ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_LARB8);
-	if (ret) {
-		/* print error log & error handling */
-		MJCMSG("[ERROR] mjc_open() clk_MT_CG_LARB8 is not enabled, ret = %d\n", ret);
+		MJCMSG("[ERROR] mjc_open() smi_bus_enable is failed, ret = %d\n", ret);
 	}
 
 	ret = clk_prepare_enable(clk_MJC_SMI_LARB);
@@ -526,15 +470,7 @@ static int mjc_release(struct inode *pInode, struct file *pFile)
 	m4u_unregister_fault_callback(M4U_PORT_MJC_DMA_RD);
 	m4u_unregister_fault_callback(M4U_PORT_MJC_DMA_WR);
 
-	clk_disable_unprepare(clk_MT_CG_LARB8);
-	clk_disable_unprepare(clk_MT_CG_SMI_COMMON_2X);
-	clk_disable_unprepare(clk_MT_CG_SMI_COMMON);
-	clk_disable_unprepare(clk_MT_CG_FIFO1);
-	clk_disable_unprepare(clk_MT_CG_FIFO0);
-	clk_disable_unprepare(clk_MT_CG_UPSZ1);
-	clk_disable_unprepare(clk_MT_CG_UPSZ0);
-	clk_disable_unprepare(clk_MT_CG_GALS_M1_2X);
-	clk_disable_unprepare(clk_MT_CG_GALS_M0_2X);
+	smi_bus_disable(SMI_LARB_MJCSYS, "mjc-larb");
 	clk_disable_unprepare(clk_MJC_SMI_LARB);
 	clk_disable_unprepare(clk_MJC_TOP_CLK_0);
 	clk_disable_unprepare(clk_MJC_TOP_CLK_1);
@@ -1019,60 +955,6 @@ static int mjc_probe(struct platform_device *pDev)
 		MJCDBG("mjc_probe() success to request mjc irq\n");
 	}
 	disable_irq(gi4IrqID);
-
-	clk_MT_CG_GALS_M0_2X = devm_clk_get(&pDev->dev, "MT_CG_GALS_M0_2X");
-	if (IS_ERR(clk_MT_CG_GALS_M0_2X)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
-		return PTR_ERR(clk_MT_CG_GALS_M0_2X);
-	}
-
-	clk_MT_CG_GALS_M1_2X = devm_clk_get(&pDev->dev, "MT_CG_GALS_M1_2X");
-	if (IS_ERR(clk_MT_CG_GALS_M1_2X)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
-		return PTR_ERR(clk_MT_CG_GALS_M1_2X);
-	}
-
-	clk_MT_CG_UPSZ0 = devm_clk_get(&pDev->dev, "MT_CG_UPSZ0");
-	if (IS_ERR(clk_MT_CG_UPSZ0)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
-		return PTR_ERR(clk_MT_CG_UPSZ0);
-	}
-
-	clk_MT_CG_UPSZ1 = devm_clk_get(&pDev->dev, "MT_CG_UPSZ1");
-	if (IS_ERR(clk_MT_CG_UPSZ1)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
-		return PTR_ERR(clk_MT_CG_UPSZ1);
-	}
-
-	clk_MT_CG_FIFO0 = devm_clk_get(&pDev->dev, "MT_CG_FIFO0");
-	if (IS_ERR(clk_MT_CG_FIFO0)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
-		return PTR_ERR(clk_MT_CG_FIFO0);
-	}
-
-	clk_MT_CG_FIFO1 = devm_clk_get(&pDev->dev, "MT_CG_FIFO1");
-	if (IS_ERR(clk_MT_CG_FIFO1)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
-		return PTR_ERR(clk_MT_CG_FIFO1);
-	}
-
-	clk_MT_CG_SMI_COMMON = devm_clk_get(&pDev->dev, "MT_CG_SMI_COMMON");
-	if (IS_ERR(clk_MT_CG_SMI_COMMON)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
-		return PTR_ERR(clk_MT_CG_SMI_COMMON);
-	}
-
-	clk_MT_CG_SMI_COMMON_2X = devm_clk_get(&pDev->dev, "MT_CG_SMI_COMMON_2X");
-	if (IS_ERR(clk_MT_CG_SMI_COMMON_2X)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get MJC_SMI_LARB\n");
-		return PTR_ERR(clk_MT_CG_SMI_COMMON_2X);
-	}
-
-	clk_MT_CG_LARB8 = devm_clk_get(&pDev->dev, "MT_CG_LARB8");
-	if (IS_ERR(clk_MT_CG_LARB8)) {
-		MJCMSG("[ERROR] Unable to devm_clk_get MT_CG_LARB8\n");
-		return PTR_ERR(clk_MT_CG_LARB8);
-	}
 
 	clk_MJC_SMI_LARB = devm_clk_get(&pDev->dev, "mjc-smi-larb");
 	if (IS_ERR(clk_MJC_SMI_LARB)) {
