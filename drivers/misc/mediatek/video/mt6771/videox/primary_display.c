@@ -163,7 +163,7 @@ DECLARE_WAIT_QUEUE_HEAD(decouple_trigger_wq);
 wait_queue_head_t primary_display_present_fence_wq;
 atomic_t primary_display_present_fence_update_event = ATOMIC_INIT(0);
 static unsigned int _need_lfr_check(void);
-
+static int primary_display_trigger_nolock(int blocking, void *callback, int need_merge);
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 static int od_need_start;
 #endif
@@ -2767,9 +2767,8 @@ static int __primary_check_trigger(void)
 		_cmdq_set_config_handle_dirty_mira(handle);
 		_cmdq_flush_config_handle_mira(handle, 0);
 	} else {
-		dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_TRIGGER);
 		DISPMSG("Force Trigger Display Path\n");
-		primary_display_trigger(1, NULL, 0);
+		primary_display_trigger_nolock(1, NULL, 0);
 	}
 
 	atomic_set(&delayed_trigger_kick, 1);
