@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __SPM_V3__MTK_SPM_RESOURCE_REQ_H__
-#define __SPM_V3__MTK_SPM_RESOURCE_REQ_H__
+#ifndef __SPM_V4__MTK_SPM_RESOURCE_REQ_H__
+#define __SPM_V4__MTK_SPM_RESOURCE_REQ_H__
 
 /* SPM resource request APIs: public */
 
@@ -41,4 +41,4 @@ enum {
 
 bool spm_resource_req(unsigned int user, unsigned int req_mask);
 
-#endif /* __SPM_V3__MTK_SPM_RESOURCE_REQ_H__ */
+#endif /* __SPM_V4__MTK_SPM_RESOURCE_REQ_H__ */

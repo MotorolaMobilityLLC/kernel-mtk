@@ -147,8 +147,7 @@ static ssize_t resource_req_read(struct file *filp,
 	p[0] = '\0';
 
 	for (i = 0; i < NF_SPM_RESOURCE; i++) {
-		p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
-			"resource_req_bypass_stat[%s] = %x %x, usage %x %x\n",
+		p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "resource_req_bypass_stat[%s] = %x %x, usage %x %x\n",
 						spm_resource_name[i],
 						~resc_desc[i].user_usage_mask[1],
 						~resc_desc[i].user_usage_mask[0],
