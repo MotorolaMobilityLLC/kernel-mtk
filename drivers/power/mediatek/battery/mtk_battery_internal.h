@@ -597,6 +597,7 @@ struct battery_data {
 	/* Add for Battery Service */
 	int BAT_batt_vol;
 	int BAT_batt_temp;
+#if 0
 	/* Add for EM */
 	int BAT_TemperatureR;
 	int BAT_TempBattVoltage;
@@ -610,6 +611,7 @@ struct battery_data {
 	int capacity_smb;
 	int present_smb;
 	int adjust_power;
+#endif
 };
 
 struct BAT_EC_Struct {
