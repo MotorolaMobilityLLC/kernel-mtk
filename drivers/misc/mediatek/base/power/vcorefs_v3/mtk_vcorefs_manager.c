@@ -169,12 +169,14 @@ static int _get_dvfs_opp(struct vcorefs_profile *pwrctrl, enum dvfs_kicker kicke
 			dvfs_opp = kicker_table[i];
 	}
 
-	/* if have no request, set to init OPP */
-	if (dvfs_opp == UINT_MAX) {
-		dvfs_opp = pwrctrl->plat_init_opp;
-		pwrctrl->dvfs_request = false;
-	} else {
-		pwrctrl->dvfs_request = true;
+	if (group == 1) {
+		/* if have no request, set to init OPP */
+		if (dvfs_opp == UINT_MAX) {
+			dvfs_opp = pwrctrl->plat_init_opp;
+			pwrctrl->dvfs_request = false;
+		} else {
+			pwrctrl->dvfs_request = true;
+		}
 	}
 
 	for (i = 0; i < NUM_KICKER; i++)

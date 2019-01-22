@@ -391,14 +391,18 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct opp_profile *opp_ctrl_table = opp_table;
 	int r = 0;
+	int idx = krconf->dvfs_opp;
 
 	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
 
+	if (idx < OPP_0)
+		idx = gvrctrl->late_init_opp;
+
 	vcorefs_crit_mask(log_mask(), krconf->kicker, "opp: %d, vcore: %u <= %u, fddr: %u <= %u %s%s\n",
 			krconf->dvfs_opp,
-			opp_ctrl_table[krconf->dvfs_opp].vcore_uv, gvrctrl->curr_vcore_uv,
-			opp_ctrl_table[krconf->dvfs_opp].ddr_khz, gvrctrl->curr_ddr_khz,
+			opp_ctrl_table[idx].vcore_uv, gvrctrl->curr_vcore_uv,
+			opp_ctrl_table[idx].ddr_khz, gvrctrl->curr_ddr_khz,
 			(gvrctrl->vcore_dvs) ? "[O]" : "[X]",
 			(gvrctrl->ddr_dfs) ? "[O]" : "[X]");
 
@@ -409,8 +413,13 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 
 	r = spm_set_vcore_dvfs(krconf);
 
-	gvrctrl->curr_vcore_uv = opp_ctrl_table[krconf->dvfs_opp].vcore_uv;
-	gvrctrl->curr_ddr_khz = opp_ctrl_table[krconf->dvfs_opp].ddr_khz;
+#if defined(CONFIG_MACH_MT6759)
+	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
+	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
+#else
+	gvrctrl->curr_vcore_uv = opp_ctrl_table[idx].vcore_uv;
+	gvrctrl->curr_ddr_khz = opp_ctrl_table[idx].ddr_khz;
+#endif
 
 	return r;
 }
