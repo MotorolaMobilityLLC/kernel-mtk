@@ -64,6 +64,8 @@ static spinlock_t lock_monitor;
 static int err_pin;
 static unsigned long long err_ts;
 #endif /* IPI_MONITOR_TIMESTAMP */
+
+
 static void ipi_monitor_dump_timeout(int mid, int opts)
 {
 	int i;
@@ -111,6 +113,9 @@ static void ipi_monitor_dump_timeout(int mid, int opts)
 #endif /* IPI_MONITOR_TIMESTAMP */
 	spin_unlock_irqrestore(&lock_monitor, flags);
 	pr_err("Error: SSPM IPI=%d timeout\n", mid);
+
+	sspm_ipi_timeout_cb(mid);
+
 	BUG_ON(1);
 }
 #endif
