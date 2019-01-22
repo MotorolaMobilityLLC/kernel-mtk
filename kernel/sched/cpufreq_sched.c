@@ -55,7 +55,7 @@ static bool g_inited[MAX_CLUSTER_NR] = {false};
 #define printk_dbg(f, a...) do {} while (0)
 #endif
 
-#if DEBUG
+#if MET_SCHED_DEBUG
 #include <mt-plat/met_drv.h>
 #endif
 
@@ -94,8 +94,10 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 
 	cid = arch_get_cluster_id(target_cpu);
 
-	if (cid >= MAX_CLUSTER_NR || cid < 0)
+	if (cid >= MAX_CLUSTER_NR || cid < 0) {
 		WARN_ON(1);
+		return;
+	}
 
 	/* policy is NOT trusted!!! here??? */
 	gd = g_gd[cid];
@@ -277,8 +279,11 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	freq_new = policy->freq_table[index_new].frequency;
 #endif
 
+
+#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 	if (freq_new == gd->requested_freq)
 		goto out;
+#endif
 
 	gd->requested_freq = freq_new;
 	gd->target_cpu = cpu;
@@ -551,7 +556,7 @@ static int cpu_hotplug_handler(struct notifier_block *nb,
 static
 void met_cpu_dvfs(int cid, int freq, int flag)
 {
-#if DEBUG
+#if MET_SCHED_DEBUG
 	char string[64] = {0};
 
 	snprintf(string, sizeof(string), "sched_dvfs_%d_cid%d", flag, cid);
