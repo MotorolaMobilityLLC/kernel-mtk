@@ -383,7 +383,7 @@ void ccci_free_skb(struct sk_buff *skb)
 		policy = buf_ctrl->policy;
 		memset(buf_ctrl, 0, sizeof(*buf_ctrl));
 	}
-	if (policy != RECYCLE)
+	if (policy != RECYCLE || skb->dev != NULL || skb_size(skb) < NET_SKB_PAD + SKB_16)
 		policy = FREE;
 
 	CCCI_DEBUG_LOG(-1, BM, "%ps free skb %p, policy=%d, skb->data = %p, len=%d\n",
