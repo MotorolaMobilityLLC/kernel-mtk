@@ -309,7 +309,6 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	/* cmdqSecDr will insert some instr */
 	const uint32_t reservedCommandSize = 4 * CMDQ_INST_SIZE;
 	struct CmdBufferStruct *cmd_buffer = NULL;
-	uint32_t buffer_index = 0;
 
 	/* check task first */
 	if (!pTask) {
@@ -338,23 +337,22 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	pIwc->command.metadata.enginesNeedPortSecurity = pTask->secData.enginesNeedPortSecurity;
 
 	if (thread != CMDQ_INVALID_THREAD) {
+		u8 *current_va = (u8 *)pIwc->command.pVABase;
+
 		/* basic data */
 		pIwc->command.scenario = pTask->scenario;
 		pIwc->command.thread = thread;
 		pIwc->command.priority = pTask->priority;
 		pIwc->command.engineFlag = pTask->engineFlag;
 		pIwc->command.hNormalTask = 0LL | ((unsigned long)pTask);
-		pIwc->command.commandSize = pTask->bufferSize;
 
-		buffer_index = 0;
 		list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
 			uint32_t copy_size = list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list) ?
-				CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
-			uint32_t *start_va = (pIwc->command.pVABase +
-				buffer_index * CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE * 2);
-			uint32_t *end_va = start_va + copy_size / sizeof(uint32_t);
+				CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size :
+				CMDQ_CMD_BUFFER_SIZE - CMDQ_INST_SIZE;
+			uint32_t *end_va = (u32 *)(current_va + copy_size);
 
-			memcpy(start_va, (cmd_buffer->pVABase), (copy_size));
+			memcpy(current_va, (cmd_buffer->pVABase), (copy_size));
 
 			/* we must reset the jump inst since now buffer is continues */
 			if (((end_va[-1] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
@@ -363,8 +361,10 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 				end_va[-2] = 0x8;
 			}
 
-			buffer_index++;
+			current_va += copy_size;
 		}
+
+		pIwc->command.commandSize = (u32)(current_va - (u8 *)pIwc->command.pVABase);
 
 		/* cookie */
 		pIwc->command.waitCookie = pTask->secData.waitCookie;
