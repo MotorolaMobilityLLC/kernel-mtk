@@ -30,7 +30,7 @@ typedef enum {
 #if defined(CONFIG_ARCH_MT6735)
 	|| defined(CONFIG_ARCH_MT6735M)
 	|| defined(CONFIG_ARCH_MT6753)
-	|| defined(CONFIG_ARCH_MT8160)
+	|| defined(CONFIG_MACH_MT8167)
 void mtkfb_vsync_log_enable(int enable);
 #endif
 

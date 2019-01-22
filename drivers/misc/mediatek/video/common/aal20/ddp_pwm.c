@@ -58,9 +58,9 @@ static volatile int g_pwm_max_backlight[1] = { 1023 };
 static ddp_module_notify g_ddp_notify;
 static volatile bool g_pwm_is_power_on;
 static volatile unsigned int g_pwm_value_before_power_off;
-
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static DEFINE_SPINLOCK(g_pwm_log_lock);
-
+#endif
 
 typedef struct {
 	int value;
@@ -73,8 +73,10 @@ enum PWM_LOG_TYPE {
 	MSG_LOG,
 };
 
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
+#endif
 static int g_pwm_log_num = PWM_LOG_BUFFER_SIZE;
 static volatile bool g_pwm_force_backlight_update;
 
@@ -115,6 +117,7 @@ void disp_pwm_set_force_update_flag(void)
 
 static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	unsigned int pwm_div, pwm_src;
 	/* disp_pwm_id_t id = DISP_PWM0; */
 	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
@@ -140,7 +143,7 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 
 	DISP_REG_MASK(cmdq, reg_base + DISP_PWM_CON_1_OFF, 1023, 0x3ff);	/* 1024 levels */
 	/* We don't init the backlight here until AAL/Android give */
-
+#endif
 	return 0;
 }
 
@@ -196,10 +199,10 @@ int disp_pwm_is_enabled(disp_pwm_id_t id)
 }
 
 
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static void disp_pwm_set_drverIC_en(disp_pwm_id_t id, int enabled)
 {
 #ifdef GPIO_LCM_LED_EN
-#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (id == DISP_PWM0) {
 		mt_set_gpio_mode(GPIO_LCM_LED_EN, GPIO_MODE_00);
 		mt_set_gpio_dir(GPIO_LCM_LED_EN, GPIO_DIR_OUT);
@@ -209,7 +212,6 @@ static void disp_pwm_set_drverIC_en(disp_pwm_id_t id, int enabled)
 		else
 			mt_set_gpio_out(GPIO_LCM_LED_EN, GPIO_OUT_ZERO);
 	}
-#endif
 #endif
 }
 
@@ -230,7 +232,7 @@ static void disp_pwm_set_enabled(struct cmdqRecStruct *cmdq, disp_pwm_id_t id, i
 		disp_pwm_set_drverIC_en(id, enabled);
 	}
 }
-
+#endif
 
 int disp_bls_set_max_backlight(unsigned int level_1024)
 {
@@ -283,15 +285,21 @@ int disp_bls_set_backlight(int level_1024)
  * Returns:
  *  PWM duty in [0, 1023]
  */
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static int disp_pwm_level_remap(disp_pwm_id_t id, int level_1024)
 {
 	return level_1024;
 }
+#endif
+
 
 int disp_pwm_set_backlight(disp_pwm_id_t id, int level_1024)
 {
 	int ret;
-
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	/* PWM is excluded from bitfile */
+	return 0;
+#endif
 #ifdef MTK_DISP_IDLE_LP
 	disp_exit_idle_ex("disp_pwm_set_backlight");
 #endif
@@ -308,6 +316,7 @@ int disp_pwm_set_backlight(disp_pwm_id_t id, int level_1024)
 }
 
 
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static volatile int g_pwm_duplicate_count;
 #define LOGBUFFERSIZE 384
 static void disp_pwm_log(int level_1024, int log_type)
@@ -356,6 +365,7 @@ static void disp_pwm_log(int level_1024, int log_type)
 	}
 
 }
+#endif
 
 int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 {
