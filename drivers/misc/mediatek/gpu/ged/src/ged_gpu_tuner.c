@@ -143,7 +143,7 @@ static struct GED_GPU_TUNER_ITEM *_ged_gpu_tuner_find_item_by_package_name(
 				struct GED_GPU_TUNER_ITEM, List);
 			if (item &&
 			!(strncmp(item->status.packagename, packagename,
-			strlen(item->status.packagename)))) {
+			strlen(packagename)))) {
 				GPU_TUNER_DEBUG(
 				"[%s] package_name(%s) feature(%08x) value(%d)\n",
 				__func__, item->status.packagename,
@@ -187,7 +187,7 @@ static int _ged_gpu_tuner_dump_status_seq_show(
 
 		seq_puts(psSeqFile, "========================================\n");
 		seq_puts(psSeqFile, "[Global Status]\n");
-		sprintf(buf, "feature(%08x)\n",
+		snprintf(buf, sizeof(buf), "feature(%08x)\n",
 			gpu_tuner_status.status.feature);
 		seq_puts(psSeqFile, buf);
 		seq_puts(psSeqFile, "========================================\n");
@@ -195,9 +195,9 @@ static int _ged_gpu_tuner_dump_status_seq_show(
 			item =
 			list_entry(listentry, struct GED_GPU_TUNER_ITEM, List);
 			if (item) {
-				sprintf(buf, " [%d]\n", cnt++);
+				snprintf(buf, sizeof(buf), " [%d]\n", cnt++);
 				seq_puts(psSeqFile, buf);
-				sprintf(buf,
+				snprintf(buf, sizeof(buf),
 				" pkgname(%s) cmd(%s) feature(%08x)\n",
 				item->status.packagename,
 				(*item->status.cmd) ? item->status.cmd : "N/A",
@@ -240,6 +240,7 @@ static ssize_t _ged_custom_hint_set_write_entry(
 	if (!((uiCount > 0) && (uiCount < BUF_LEN - 1)))
 		return GED_ERROR_INVALID_PARAMS;
 
+	memset(acBuffer, 0, BUF_LEN);
 	if (ged_copy_from_user(acBuffer, pszBuffer, uiCount))
 		return GED_ERROR_FAIL;
 
@@ -269,14 +270,11 @@ static ssize_t _ged_custom_hint_set_write_entry(
 		else
 			ret = ged_gpu_tuner_hint_restore(packagename, feature);
 
-		len =
-		(strlen(packagename) > BUF_LEN) ? BUF_LEN : strlen(packagename);
+		len = strlen(packagename);
 		strncpy(gpu_tuner_last_custom_hint.packagename,
 			packagename, len);
-		gpu_tuner_last_custom_hint.packagename[len] = '\0';
 		strncpy(gpu_tuner_last_custom_hint.cmd, cmd, strlen(cmd));
 
-		gpu_tuner_last_custom_hint.cmd[strlen(cmd)] = '\0';
 		gpu_tuner_last_custom_hint.feature = feature;
 		gpu_tuner_last_custom_hint.value = value;
 
@@ -324,12 +322,14 @@ static int _ged_gpu_tuner_custom_hint_set_seq_show(
 	char buf[BUF_LEN];
 
 	seq_puts(psSeqFile, "support cmd list\n");
-	seq_puts(psSeqFile, "anisotropic_disable => MTK_GPU_TUNER_ANISOTROPIC_DISABLE\n");
+	seq_puts(psSeqFile,
+	"anisotropic_disable => MTK_GPU_TUNER_ANISOTROPIC_DISABLE\n");
 	seq_puts(psSeqFile, "trilinear_disable => MTK_GPU_TUNER_TRILINEAR_DISABLE\n");
 	seq_puts(psSeqFile, "========================================\n");
 	if (gpu_tuner_last_custom_hint.packagename[0]) {
 
-		sprintf(buf, " name(%s) cmd(%s) feature(%d) value(%d)\n",
+		snprintf(buf, sizeof(buf),
+		" name(%s) cmd(%s) feature(%d) value(%d)\n",
 				gpu_tuner_last_custom_hint.packagename,
 				gpu_tuner_last_custom_hint.cmd,
 				gpu_tuner_last_custom_hint.feature,
@@ -410,7 +410,7 @@ static int _ged_gpu_tuner_debug_seq_show(
 {
 	char buf[BUF_LEN];
 
-	sprintf(buf, "debug(%d)\n", debug);
+	snprintf(buf, sizeof(buf), "debug(%d)\n", debug);
 	seq_puts(psSeqFile, buf);
 
 	return 0;
@@ -468,7 +468,7 @@ GED_ERROR ged_gpu_tuner_hint_set(
 	bool find = false;
 	char *p = packagename;
 
-	if (!packagename) {
+	if (!packagename || (strlen(packagename) > (BUF_LEN - 1))) {
 		GPU_TUNER_ERROR("[%s] invalid parameter\n", __func__);
 		return GED_ERROR_INVALID_PARAMS;
 	}
@@ -500,13 +500,10 @@ GED_ERROR ged_gpu_tuner_hint_set(
 				goto ERROR;
 			}
 
-			if (strlen(packagename) > BUF_LEN)
-				len = BUF_LEN;
-			else
+			memset(item->status.packagename, 0, BUF_LEN);
 				len = strlen(packagename);
 
 			strncpy(item->status.packagename, packagename, len);
-			item->status.packagename[len] = '\0';
 			item->status.feature = item->status.value = 0;
 			memset(item->status.cmd, 0, BUF_LEN);
 		}
