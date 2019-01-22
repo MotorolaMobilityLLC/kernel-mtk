@@ -1131,6 +1131,80 @@ int mt6336_event(struct charger_device *chg_dev, u32 event, u32 args)
 	return 0;
 }
 
+#ifndef CONFIG_POWER_EXT
+#define VOLTAGE_FULL_RANGE 1800
+#define R_VAL_TEMP_3 3
+#define ADC_PRECISE 32768 /* 12 bits */
+
+static int REG_to_MV_value(int _reg)
+{
+	long long _reg64 = _reg;
+	int ret;
+
+	_reg64 = (_reg64 * VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3) / ADC_PRECISE;
+	ret = _reg64;
+
+	pr_debug_ratelimited("[%s] %lld => %d\n", __func__, _reg64, ret);
+	return ret;
+}
+#endif
+
+static int mt6336_read_hw_ocv(struct charger_device *chg_dev, u32 *uV)
+{
+#if defined(CONFIG_POWER_EXT)
+	*uV = 3700000;
+#else
+	int zcv_36_low, zcv_36_high, zcv_36_rdy;
+	int zcv_chrgo_1_lo, zcv_chrgo_1_hi, zcv_chrgo_1_rdy;
+	int zcv_fgadc1_lo, zcv_fgadc1_hi, zcv_fgadc1_rdy;
+	int hw_ocv_36_reg1 = 0;
+	int hw_ocv_36_reg2 = 0;
+	int hw_ocv_36_reg3 = 0;
+	int hw_ocv_36_1 = 0;
+	int hw_ocv_36_2 = 0;
+	int hw_ocv_36_3 = 0;
+
+	zcv_36_rdy = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_RDY_WAKEUP1);
+	zcv_chrgo_1_rdy = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_RDY_CHRGO1);
+	zcv_fgadc1_rdy = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_RDY_FGADC1);
+
+	zcv_36_low = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_WAKEUP1_L);
+	zcv_36_high = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_WAKEUP1_H);
+	hw_ocv_36_reg1 = (zcv_36_high << 8) + zcv_36_low;
+	hw_ocv_36_1 = REG_to_MV_value(hw_ocv_36_reg1);
+	pr_err("[%s] zcv_36_rdy %d hw_ocv_36_1 %d [0x%x:0x%x]\n", __func__,
+		zcv_36_rdy, hw_ocv_36_1, zcv_36_low, zcv_36_high);
+
+	mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
+	mdelay(1);
+	mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
+
+	zcv_chrgo_1_lo = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_CHRGO1_L);
+	zcv_chrgo_1_hi = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_CHRGO1_H);
+	hw_ocv_36_reg2 = (zcv_chrgo_1_hi << 8) + zcv_chrgo_1_lo;
+	hw_ocv_36_2 = REG_to_MV_value(hw_ocv_36_reg2);
+	pr_err("[%s] zcv_chrgo_1_rdy %d hw_ocv_36_2 %d [0x%x:0x%x]\n", __func__,
+		zcv_chrgo_1_rdy, hw_ocv_36_2, zcv_chrgo_1_lo, zcv_chrgo_1_hi);
+	mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_CHRGO_CLR, 1);
+	mdelay(1);
+	mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_CHRGO_CLR, 0);
+
+	zcv_fgadc1_lo = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_FGADC1_L);
+	zcv_fgadc1_hi = mt6336_get_flag_register_value(MT6336_AUXADC_ADC_OUT_FGADC1_H);
+	hw_ocv_36_reg3 = (zcv_fgadc1_hi << 8) + zcv_fgadc1_lo;
+	hw_ocv_36_3 = REG_to_MV_value(hw_ocv_36_reg3);
+	pr_err("[%s] FGADC1 %d hw_ocv_36_3 %d [0x%x:0x%x]\n", __func__,
+		zcv_fgadc1_rdy, hw_ocv_36_3, zcv_fgadc1_lo, zcv_fgadc1_hi);
+	mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_FGADC_CLR, 1);
+	mdelay(1);
+	mt6336_set_flag_register_value(MT6336_AUXADC_ADC_RDY_FGADC_CLR, 0);
+
+	*uV = hw_ocv_36_2 * 100;
+#endif
+
+	return 0;
+}
+
 static struct charger_ops mt6366_charger_dev_ops = {
 	.suspend = NULL,
 	.resume = NULL,
@@ -1166,6 +1240,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.event = mt6336_event,
 	.enable_otg = mt6336_enable_otg,
 	.set_boost_current_limit = mt6336_set_boost_current_limit,
+	.get_zcv = mt6336_read_hw_ocv,
 };
 
 static int mt6336_charger_probe(struct platform_device *pdev)
