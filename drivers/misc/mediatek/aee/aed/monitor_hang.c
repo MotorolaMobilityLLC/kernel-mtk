@@ -68,7 +68,7 @@ static int hd_detect_enabled;
 static int hd_timeout = 0x7fffffff;
 static int hang_detect_counter = 0x7fffffff;
 static int dump_bt_done;
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 static int hang_aee_warn = 1;
 #endif
 static int system_server_pid;
@@ -834,7 +834,7 @@ void reset_hang_info(void)
 	memset(&Hang_Info, 0, MaxHangInfoSize);
 	Hang_Info_Size = 0;
 }
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 static int hang_detect_warn_thread(void *arg)
 {
 
@@ -856,7 +856,7 @@ static int hang_detect_warn_thread(void *arg)
 #endif
 static int hang_detect_dump_thread(void *arg)
 {
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 	struct task_struct *hd_thread;
 #endif
 
@@ -870,7 +870,7 @@ static int hang_detect_dump_thread(void *arg)
 	dump_bt_done = 1;
 	while (1) {
 		wait_event_interruptible(dump_bt_start_wait, dump_bt_done == 0);
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 		if (hang_aee_warn == 1) {
 			hd_thread = kthread_create(hang_detect_warn_thread, NULL, "hang_detect2");
 			if (hd_thread != NULL)
@@ -907,8 +907,8 @@ static int hang_detect_thread(void *arg)
 #ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
 #endif
-#ifdef CONFIG_MT_ENG_BUILD
-			if (hang_detect_counter == 1 && hang_aee_warn == 1) {
+#ifdef CONFIG_MTK_ENG_BUILD
+			if (hang_detect_counter == 1 && hang_aee_warn == 1 && hd_timeout != 11) {
 				hang_detect_counter = hd_timeout / 2;
 				dump_bt_done = 0;
 				wake_up_interruptible(&dump_bt_start_wait);
