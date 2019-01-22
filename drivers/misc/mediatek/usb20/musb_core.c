@@ -130,7 +130,7 @@ module_param(mtk_host_active_dev_cnt, int, 0644);
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 unsigned int low_power_timer_total_trigger_cnt;
 unsigned int low_power_timer_total_wake_cnt;
-int low_power_timer_mode;
+int low_power_timer_mode = 1;
 int low_power_timer_mode2_option;
 int usb_on_sram;
 int audio_on_sram;
@@ -149,11 +149,11 @@ u32 dma_burst_setting, qmu_ioc_setting;
 struct musb_hw_ep *qmu_isoc_ep;
 int mtk_qmu_dbg_level = LOG_WARN;
 int mtk_qmu_max_gpd_num;
-int isoc_ep_start_idx = 6;
+int isoc_ep_end_idx = 3;
 int isoc_ep_gpd_count = 260;
 module_param(mtk_qmu_dbg_level, int, 0644);
 module_param(mtk_qmu_max_gpd_num, int, 0644);
-module_param(isoc_ep_start_idx, int, 0644);
+module_param(isoc_ep_end_idx, int, 0644);
 module_param(isoc_ep_gpd_count, int, 0644);
 #endif
 
