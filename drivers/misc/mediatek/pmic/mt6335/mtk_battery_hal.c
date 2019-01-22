@@ -3110,7 +3110,9 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 		bm_err("[555]Temp_Value2 %lld current_from_ADC %lld UNIT_FGCURRENT %d\n",
 			Temp_Value2, current_from_ADC, UNIT_FGCURRENT);
 
-		do_div(Temp_Value2, 1000000);
+		/* Move 100 from denominator to cali_car_tune's numerator */
+		/*do_div(Temp_Value2, 1000000);*/
+		do_div(Temp_Value2, 10000);
 
 		bm_err("[666]Temp_Value2 %lld current_from_ADC %lld UNIT_FGCURRENT %d\n",
 			Temp_Value2, current_from_ADC, UNIT_FGCURRENT);
@@ -3123,7 +3125,9 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 
 		bm_err("[666]dvalue %d fg_cust_data.r_fg_value %d\n", dvalue, fg_cust_data.r_fg_value);
 
-		cali_car_tune = g_meta_input_cali_current * 1000 / dvalue;	/* 1000 base, so multiple by 1000*/
+		/* Move 100 from denominator to cali_car_tune's numerator */
+		/*cali_car_tune = g_meta_input_cali_current * 1000 / dvalue;*/
+		cali_car_tune = g_meta_input_cali_current * 1000 * 100 / dvalue;
 
 		bm_err("[777]dvalue %d fg_cust_data.r_fg_value %d cali_car_tune %d\n",
 			dvalue, fg_cust_data.r_fg_value, cali_car_tune);
