@@ -1014,6 +1014,7 @@ int read_hw_ocv_6336_charger_in2(void)
 static int read_hw_ocv_6355_power_on_rdy(void)
 {
 	signed int pon_rdy = 0;
+
 	pon_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_PWRON_PCHR);
 	bm_err("[read_hw_ocv_6355_power_on_rdy] pon_rdy %d\n", pon_rdy);
 
