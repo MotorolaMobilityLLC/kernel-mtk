@@ -403,7 +403,7 @@ static int process_message_in_queue(msg_queue_t *msg_queue, ipi_msg_t *p_ipi_msg
 	unsigned long flags = 0;
 	int retval = 0;
 
-	AUD_LOG_D("%s(+)\n", __func__);
+	AUD_LOG_V("%s(+)\n", __func__);
 
 	/* error handling */
 	if (msg_queue == NULL) {
@@ -480,7 +480,7 @@ static int process_message_in_queue(msg_queue_t *msg_queue, ipi_msg_t *p_ipi_msg
 		wake_up_interruptible(&msg_queue->element[msg_queue->idx_r].wq);
 
 
-	AUD_LOG_D("%s(-)\n", __func__);
+	AUD_LOG_V("%s(-)\n", __func__);
 	return retval;
 }
 
@@ -567,10 +567,10 @@ inline int push_msg(msg_queue_t *msg_queue, ipi_msg_t *p_ipi_msg)
 	if (msg_queue->idx_w == msg_queue->k_element_size)
 		msg_queue->idx_w = 0;
 
-	AUD_LOG_D("task %d, push msg: 0x%x, idx_msg = %d, idx_r = %d, idx_w = %d\n",
+	AUD_LOG_V("task %d, push msg: 0x%x, idx_msg = %d, idx_r = %d, idx_w = %d\n",
 		  p_ipi_msg->task_scene, p_ipi_msg->msg_id,
 		  idx_msg, msg_queue->idx_r, msg_queue->idx_w);
-	AUD_LOG_D("=> queue status(%d/%d)\n",
+	AUD_LOG_V("=> queue status(%d/%d)\n",
 		  get_num_messages_in_queue(msg_queue), msg_queue->k_element_size);
 
 	return idx_msg;
@@ -610,10 +610,10 @@ inline int pop_msg(msg_queue_t *msg_queue, ipi_msg_t **pp_ipi_msg)
 		return -1;
 	}
 
-	AUD_LOG_D("task %d, pop msg: 0x%x, idx_r = %d, idx_w = %d\n",
+	AUD_LOG_V("task %d, pop msg: 0x%x, idx_r = %d, idx_w = %d\n",
 		  (*pp_ipi_msg)->task_scene, (*pp_ipi_msg)->msg_id,
 		  msg_queue->idx_r, msg_queue->idx_w);
-	AUD_LOG_D("=> queue status(%d/%d)\n",
+	AUD_LOG_V("=> queue status(%d/%d)\n",
 		  get_num_messages_in_queue(msg_queue), msg_queue->k_element_size);
 
 	return msg_queue->idx_r;
