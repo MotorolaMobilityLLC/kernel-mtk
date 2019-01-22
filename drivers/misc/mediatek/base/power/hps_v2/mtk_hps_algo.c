@@ -323,25 +323,19 @@ out:				/* Add base value of per-cluster by default */
 void hps_define_root_cluster(struct hps_sys_struct *hps_sys)
 {
 #if ROOT_CLUSTER_FROM_PPM
-	mutex_lock(&hps_ctxt.para_lock);
 	hps_sys->root_cluster_id = hps_sys->ppm_root_cluster;
-	mutex_unlock(&hps_ctxt.para_lock);
 #else
 	int i;
 
-	mutex_lock(&hps_ctxt.para_lock);
 	/*Determine root cluster. */
-	if (hps_sys->cluster_info[hps_sys->root_cluster_id].limit_value > 0) {
-		mutex_unlock(&hps_ctxt.para_lock);
+	if (hps_sys->cluster_info[hps_sys->root_cluster_id].limit_value > 0)
 		return;
-	}
 	for (i = 0; i < hps_sys->cluster_num; i++) {
 		if (hps_sys->cluster_info[i].limit_value > 0) {
 			hps_sys->root_cluster_id = i;
 			break;
 		}
 	}
-	mutex_unlock(&hps_ctxt.para_lock);
 #endif
 }
 
@@ -368,7 +362,7 @@ void hps_set_funct_ctrl(void)
 
 void hps_algo_main(void)
 {
-	unsigned int i, val, base_val, action_print, origin_root, action_break;
+	unsigned int i, val, action_print, origin_root, action_break;
 	char str_online[64], str_ref_limit[64], str_ref_base[64], str_criteria_limit[64],
 	    str_criteria_base[64], str_target[64], str_hvytsk[64];
 	char *online_ptr = str_online;
@@ -380,7 +374,7 @@ void hps_algo_main(void)
 	char *target_ptr = str_target;
 	static unsigned int hrtbt_dbg;
 	/* Initial value */
-	base_val = action_print = action_break = hps_sys.total_online_cores = 0;
+	action_print = action_break = hps_sys.total_online_cores = 0;
 	hps_sys.up_load_avg = hps_sys.down_load_avg = hps_sys.tlp_avg = hps_sys.rush_cnt = 0;
 	hps_sys.action_id = origin_root = 0;
 	/*
@@ -405,22 +399,19 @@ void hps_algo_main(void)
 	for (i = 0; i < hps_sys.cluster_num; i++) {
 		hps_sys.cluster_info[i].base_value = hps_sys.cluster_info[i].ref_base_value;
 		hps_sys.cluster_info[i].limit_value = hps_sys.cluster_info[i].ref_limit_value;
-	}
-	for (i = 0; i < hps_sys.cluster_num; i++) {
-		base_val += hps_sys.cluster_info[i].base_value;
-		hps_sys.cluster_info[i].target_core_num = hps_sys.cluster_info[i].online_core_num =
-		    0;
+
+		hps_sys.cluster_info[i].target_core_num = 0;
 		hps_sys.cluster_info[i].online_core_num =
 		    hps_get_cluster_cpus(hps_sys.cluster_info[i].cluster_id);
 		hps_sys.total_online_cores += hps_sys.cluster_info[i].online_core_num;
 	}
 
-	mutex_unlock(&hps_ctxt.para_lock);
 	/* Determine root cluster */
 	origin_root = hps_sys.root_cluster_id;
 	hps_define_root_cluster(&hps_sys);
 	if (origin_root != hps_sys.root_cluster_id)
 		hps_sys.action_id = HPS_SYS_CHANGE_ROOT;
+	mutex_unlock(&hps_ctxt.para_lock);
 
 	/*
 	 * update history - tlp
