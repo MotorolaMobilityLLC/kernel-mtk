@@ -99,5 +99,6 @@ extern int dcs_mpu_protection(int enable);
 /* DO _NOT_ USE APIS below UNLESS YOU KNOW HOW TO USE THEM */
 extern int __dcs_get_dcs_status(int *ch, enum dcs_status *dcs_status);
 extern int dcs_switch_to_lowpower(void);
+extern int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned long event, void *data);
 #endif /* end CONFIG_MTK_DCS */
 #endif /* end __MTK_MEMINFO_H__ */

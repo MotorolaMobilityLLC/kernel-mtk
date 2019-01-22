@@ -586,7 +586,7 @@ static int periodic_dc_entry(void *p)
 
 #ifdef CONFIG_PM
 /* FB event notifier */
-static int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned long event, void *data)
+int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned long event, void *data)
 {
 	struct fb_event *fb_event = data;
 	int new_status;
