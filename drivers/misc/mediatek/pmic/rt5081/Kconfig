@@ -18,6 +18,16 @@ config RT5081_PMU_CHARGER
 	  supprot for RT5081
 	  charger device.
 
+config RT5081_PMU_CHARGER_TYPE_DETECT
+	bool "RT5081 PMU Charger Type Detect"
+	depends on RT5081_PMU_CHARGER
+	depends on MTK_EXTERNAL_CHARGER_TYPE_DETECT
+	help
+	  Say Y here
+	  to enable
+	  supprot for RT5081
+	  charger type detect.
+
 config RT5081_PMU_FLED
 	bool "RT5081 PMU FLED Part"
 	depends on LEDS_CLASS && MFD_RT5081_PMU

@@ -449,6 +449,15 @@ int charger_dev_get_zcv(struct charger_device *charger_dev, u32 *uV)
 }
 EXPORT_SYMBOL(charger_dev_get_zcv);
 
+int charger_dev_run_aicl(struct charger_device *charger_dev, u32 *uA)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->run_aicl)
+		return charger_dev->ops->run_aicl(charger_dev, uA);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_run_aicl);
+
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(

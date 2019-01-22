@@ -41,10 +41,6 @@
 
 #define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.18_MTK"
 
-#if defined(CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT)
-#define RT5081_CHARGER_DETECT_SUPPORT
-#endif
-
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, S_IRUGO | S_IWUSR);
 
@@ -116,8 +112,6 @@ struct rt5081_pmu_charger_data {
 	struct device *dev;
 	struct power_supply *psy;
 	wait_queue_head_t wait_queue;
-	struct work_struct aicl_work;
-	struct workqueue_struct *aicl_wq;
 	CHARGER_TYPE chg_type;
 	bool pwr_rdy;
 	u8 irq_flag[RT5081_CHG_IRQIDX_MAX];
@@ -129,7 +123,9 @@ struct rt5081_pmu_charger_data {
 	u32 hidden_mode_cnt;
 	u32 ieoc;
 	bool ieoc_wkard;
-#ifndef CONFIG_TCPC_CLASS
+#ifdef CONFIG_TCPC_CLASS
+	atomic_t tcpc_usb_connected;
+#else
 	struct work_struct chgdet_work;
 #endif
 };
@@ -405,6 +401,21 @@ static u32 rt5081_find_closest_real_value(u32 min, u32 max, u32 step,
 	return ret_val;
 }
 
+static inline void rt5081_enable_irq(struct rt5081_pmu_charger_data *chg_data,
+	const char *name, bool en)
+{
+	struct resource *res = NULL;
+	struct platform_device *pdev = to_platform_device(chg_data->dev);
+
+	dev_info(chg_data->dev, "%s: (%s) en = %d", __func__, name, en);
+
+	res = platform_get_resource_byname(pdev, IORESOURCE_IRQ, name);
+	if (res)
+		(en ? enable_irq : disable_irq)(res->start);
+	else
+		dev_err(chg_data->dev, "%s: get plat res fail\n", __func__);
+}
+
 static int rt5081_set_fast_charge_timer(
 	struct rt5081_pmu_charger_data *chg_data, u32 hour)
 {
@@ -432,7 +443,7 @@ static int rt5081_set_fast_charge_timer(
 	return ret;
 }
 
-#ifdef RT5081_CHARGER_DETECT_SUPPORT
+#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
 static int rt5081_set_usbsw_state(struct rt5081_pmu_charger_data *chg_data,
 	int state)
 {
@@ -448,9 +459,10 @@ static int rt5081_set_usbsw_state(struct rt5081_pmu_charger_data *chg_data,
 			Charger_Detect_Release();
 	}
 #endif
+
 	return 0;
 }
-#endif
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 static int rt5081_enable_hidden_mode(struct rt5081_pmu_charger_data *chg_data,
 	bool en)
@@ -643,11 +655,11 @@ out:
 	return ret;
 }
 
+#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
 static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	bool en)
 {
 	int ret = 0;
-#ifdef RT5081_CHARGER_DETECT_SUPPORT
 	int i = 0, vbus = 0;
 	const int max_wait_cnt = 200;
 	enum rt5081_usbsw_state usbsw =
@@ -683,10 +695,10 @@ static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	if (ret >= 0)
 		chg_data->bc12_en = en;
 	mutex_unlock(&chg_data->bc12_access_lock);
-#endif
 
 	return ret;
 }
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 /* Hardware pin current limit */
 static int rt5081_enable_ilim(struct rt5081_pmu_charger_data *chg_data, bool en)
@@ -701,10 +713,10 @@ static int rt5081_enable_ilim(struct rt5081_pmu_charger_data *chg_data, bool en)
 	return ret;
 }
 
+#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
 static int rt5081_inform_psy_changed(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
-#ifdef RT5081_CHARGER_DETECT_SUPPORT
 	union power_supply_propval propval;
 
 	dev_info(chg_data->dev, "%s: pwr_rdy = %d, type = %d\n", __func__,
@@ -724,13 +736,11 @@ static int rt5081_inform_psy_changed(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: psy type failed, ret = %d\n",
 			__func__, ret);
-#endif
 
 	return ret;
 }
 
-static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data,
-	bool force_pwr_rdy)
+static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
 	bool pwr_rdy = false;
@@ -738,7 +748,7 @@ static int __rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data,
 
 	dev_info(chg_data->dev, "%s\n", __func__);
 #ifdef CONFIG_TCPC_CLASS
-	pwr_rdy = force_pwr_rdy;
+	pwr_rdy = atomic_read(&chg_data->tcpc_usb_connected);
 #else
 	/* Check UVP_D_STAT & OTG mode */
 	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_OVPCTRLSTAT,
@@ -805,16 +815,16 @@ out:
 	return ret;
 }
 
-static int rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data,
-	bool force_pwr_rdy)
+static int rt5081_chgdet_handler(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
 
 	mutex_lock(&chg_data->chgdet_lock);
-	ret = __rt5081_chgdet_handler(chg_data, force_pwr_rdy);
+	ret = __rt5081_chgdet_handler(chg_data);
 	mutex_unlock(&chg_data->chgdet_lock);
 	return ret;
 }
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 /* Select IINLMTSEL */
 static int rt5081_select_input_current_limit(
@@ -1037,6 +1047,8 @@ static int __rt5081_set_ieoc(struct rt5081_pmu_charger_data *chg_data, u32 ieoc)
 		RT5081_MASK_IEOC,
 		reg_ieoc << RT5081_SHIFT_IEOC
 	);
+	if (ret < 0)
+		dev_err(chg_data->dev, "%s: set ieoc fail\n", __func__);
 
 	/* Store IEOC */
 	ret = rt5081_get_ieoc(chg_data, &chg_data->ieoc);
@@ -1189,12 +1201,25 @@ static int __rt5081_set_aicr(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 	return ret;
 }
 
-static int rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
+static int __rt5081_run_aicl(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
 	u32 mivr = 0, aicl_vth = 0, aicr = 0;
+	bool mivr_stat = false;
 
 	dev_info(chg_data->dev, "%s\n", __func__);
+
+	ret = rt5081_pmu_reg_test_bit(chg_data->chip, RT5081_PMU_REG_CHGSTAT1,
+		RT5081_SHIFT_MIVR_STAT, &mivr_stat);
+	if (ret < 0) {
+		dev_err(chg_data->dev, "%s: read mivr stat failed\n", __func__);
+		goto out;
+	}
+
+	if (!mivr_stat) {
+		dev_info(chg_data->dev, "%s: mivr stat not act\n", __func__);
+		goto out;
+	}
 
 	ret = rt5081_get_mivr(chg_data, &mivr);
 	if (ret < 0)
@@ -1256,35 +1281,7 @@ out:
 	return ret;
 }
 
-static void rt5081_aicl_work_handler(struct work_struct *work)
-{
-	int ret = 0;
-	struct rt5081_pmu_charger_data *chg_data =
-		(struct rt5081_pmu_charger_data *)container_of(work,
-		struct rt5081_pmu_charger_data, aicl_work);
-	struct charger_manager *chg_mgr = NULL;
-
-	chg_mgr = charger_dev_get_drvdata(chg_data->chg_dev);
-	if (!chg_mgr)
-		goto out;
-
-	if (mtk_is_pe30_running(chg_mgr) || mtk_pe20_get_is_connect(chg_mgr)) {
-		rt_dbg(chg_data->dev, "%s: in PE, stop AICL\n", __func__);
-		goto out;
-	}
-
-	ret = rt5081_run_aicl(chg_data);
-	if (ret < 0)
-		dev_err(chg_data->dev, "%s: run aicl failed\n", __func__);
-out:
-	/* Enable MIVR IRQ */
-	ret = rt5081_pmu_reg_clr_bit(chg_data->chip,
-		RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
-	if (ret < 0)
-		dev_err(chg_data->dev, "%s: en MIVR IRQ failed\n", __func__);
-}
-
-#ifndef CONFIG_TCPC_CLASS
+#if defined(CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT) && !defined(CONFIG_TCPC_CLASS)
 static void rt5081_chgdet_work_handler(struct work_struct *work)
 {
 	int ret = 0;
@@ -1326,7 +1323,7 @@ static void rt5081_chgdet_work_handler(struct work_struct *work)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: en bc12 fail\n", __func__);
 }
-#endif /* CONFIG_TCPC_CLASS */
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT && !CONFIG_TCPC_CLASS */
 
 static int __rt5081_set_ichg(struct rt5081_pmu_charger_data *chg_data, u32 uA)
 {
@@ -1532,14 +1529,12 @@ static int rt5081_enable_power_path(struct charger_device *chg_dev, bool en)
 	 * mask mivr irq -> disable power path
 	 */
 	if (!en)
-		ret = rt5081_pmu_reg_set_bit(chg_data->chip,
-			RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
+		rt5081_enable_irq(chg_data, "chg_mivr", false);
 
 	ret = __rt5081_set_mivr(chg_data, mivr);
 
 	if (en)
-		ret = rt5081_pmu_reg_clr_bit(chg_data->chip,
-			RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
+		rt5081_enable_irq(chg_data, "chg_mivr", true);
 
 	return ret;
 }
@@ -1750,10 +1745,12 @@ static int rt5081_enable_otg(struct charger_device *chg_dev, bool en)
 
 	/* Turn off USB charger detection/Enable WDT */
 	if (en) {
+#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
 		ret = rt5081_enable_chgdet_flow(chg_data, false);
 		if (ret < 0)
 			dev_err(chg_data->dev, "%s: disable usb chrdet fail\n",
 				__func__);
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 		if (chg_data->chg_desc->en_wdt) {
 			ret = rt5081_enable_wdt(chg_data, true);
@@ -1776,9 +1773,9 @@ static int rt5081_enable_otg(struct charger_device *chg_dev, bool en)
 			dev_err(chg_data->dev, "%s: fail(%d)\n", __func__, ret);
 			goto err_en_otg;
 		}
-#if defined(CONFIG_TCPC_CLASS) && defined(RT5081_CHARGER_DETECT_SUPPORT)
+#if defined(CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT) && defined(CONFIG_TCPC_CLASS)
 		rt5081_set_usbsw_state(chg_data, RT5081_USBSW_USB);
-#endif
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT && CONFIG_TCPC_CLASS */
 	}
 
 	/*
@@ -2086,11 +2083,7 @@ static int rt5081_enable_direct_charge(struct charger_device *chg_dev, bool en)
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
 
 	if (en) {
-		ret = rt5081_pmu_reg_set_bit(chg_data->chip,
-			RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
-		if (ret < 0)
-			dev_err(chg_data->dev, "%s: mask MIVR IRQ failed\n",
-				__func__);
+		rt5081_enable_irq(chg_data, "chg_mivr", false);
 
 		/* Enable bypass mode */
 		ret = rt5081_pmu_reg_set_bit(chg_data->chip,
@@ -2129,12 +2122,7 @@ disable_bypass:
 			__func__);
 
 out:
-	/* Unmask MIVR IRQ */
-	ret = rt5081_pmu_reg_clr_bit(chg_data->chip,
-		RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
-	if (ret < 0)
-		dev_err(chg_data->dev, "%s: unmask MIVR IRQ failed\n",
-			__func__);
+	rt5081_enable_irq(chg_data, "chg_mivr", true);
 	return ret;
 }
 
@@ -2296,6 +2284,19 @@ static int rt5081_plug_in(struct charger_device *chg_dev)
 	return ret;
 }
 
+static int rt5081_run_aicl(struct charger_device *chg_dev, u32 *uA)
+{
+	int ret = 0;
+	struct rt5081_pmu_charger_data *chg_data =
+		dev_get_drvdata(&chg_dev->dev);
+
+	ret = __rt5081_run_aicl(chg_data);
+	if (ret >= 0)
+		*uA = chg_data->aicr_limit;
+
+	return ret;
+}
+
 static int rt5081_dump_register(struct charger_device *chg_dev)
 {
 	int i = 0, ret = 0;
@@ -2353,16 +2354,17 @@ static int rt5081_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 {
 	int ret = 0;
 
-#ifdef CONFIG_TCPC_CLASS
+#if defined(CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT) && defined(CONFIG_TCPC_CLASS)
 	struct rt5081_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
 
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
 
+	atomic_set(&chg_data->tcpc_usb_connected, en);
 
 	/* TypeC detach */
 	if (!en) {
-		ret = rt5081_chgdet_handler(chg_data, false);
+		ret = rt5081_chgdet_handler(chg_data);
 		return ret;
 	}
 
@@ -2370,7 +2372,7 @@ static int rt5081_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 	ret = rt5081_enable_chgdet_flow(chg_data, true);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: en bc12 fail(%d)\n", __func__, ret);
-#endif
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT && CONFIG_TCPC_CLASS */
 
 	return ret;
 }
@@ -2622,19 +2624,6 @@ static irqreturn_t rt5081_pmu_chg_mivr_irq_handler(int irq, void *data)
 				__func__);
 		goto out;
 	}
-
-	/* Disable MIVR IRQ */
-	ret = rt5081_pmu_reg_set_bit(chg_data->chip,
-		RT5081_PMU_CHGMASK1, RT5081_MASK_CHG_MIVRM);
-	if (ret < 0) {
-		dev_err(chg_data->dev, "%s: disable mivr IRQ failed\n",
-			__func__);
-		goto out;
-	}
-
-	if (!queue_work(chg_data->aicl_wq, &chg_data->aicl_work))
-		dev_err(chg_data->dev, "%s: queue aicl work failed\n",
-			__func__);
 
 out:
 	return IRQ_HANDLED;
@@ -2977,7 +2966,7 @@ static irqreturn_t rt5081_pmu_bst_olpi_irq_handler(int irq, void *data)
 
 static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 {
-#ifdef RT5081_CHARGER_DETECT_SUPPORT
+#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
 	struct rt5081_pmu_charger_data *chg_data =
 		(struct rt5081_pmu_charger_data *)data;
 
@@ -2992,8 +2981,8 @@ static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 		return IRQ_HANDLED;
 	}
 	mutex_unlock(&chg_data->bc12_access_lock);
-	rt5081_chgdet_handler(chg_data, true);
-#endif
+	rt5081_chgdet_handler(chg_data);
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 	return IRQ_HANDLED;
 }
@@ -3108,7 +3097,7 @@ static irqreturn_t rt5081_pmu_ovpctrl_swon_evt_irq_handler(int irq, void *data)
 
 static irqreturn_t rt5081_pmu_ovpctrl_uvp_d_evt_irq_handler(int irq, void *data)
 {
-#ifndef CONFIG_TCPC_CLASS
+#if defined(CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT) && !defined(CONFIG_TCPC_CALSS)
 	int ret = 0;
 	bool uvp_d = false, otg_mode = false;
 	struct rt5081_pmu_charger_data *chg_data =
@@ -3152,10 +3141,10 @@ static irqreturn_t rt5081_pmu_ovpctrl_uvp_d_evt_irq_handler(int irq, void *data)
 	}
 
 	/* not power good */
-	ret = rt5081_chgdet_handler(chg_data, false);
+	ret = rt5081_chgdet_handler(chg_data);
 
 out:
-#endif /* CONFIG_TCPC_CLASS */
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT && !CONFIG_TCPC_CLASS */
 
 	return IRQ_HANDLED;
 }
@@ -3427,11 +3416,13 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 		dev_err(chg_data->dev,
 			"%s: set IR compensation vclamp failed\n", __func__);
 
+#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
 	/* Disable USB charger type detection */
 	ret = rt5081_enable_chgdet_flow(chg_data, false);
 	if (ret < 0)
 		dev_err(chg_data->dev,
 			"%s: disable usb chrdet failed\n", __func__);
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 	return ret;
 }
@@ -3453,6 +3444,7 @@ static struct charger_ops rt5081_chg_ops = {
 	.set_mivr = rt5081_set_mivr,
 	.is_charging_done = rt5081_is_charging_done,
 	.get_zcv = rt5081_get_zcv,
+	.run_aicl = rt5081_run_aicl,
 	.set_eoc_current = rt5081_set_ieoc,
 	.enable_termination = rt5081_enable_te,
 
@@ -3528,6 +3520,9 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	chg_data->hidden_mode_cnt = 0;
 	chg_data->ieoc_wkard = false;
 	chg_data->ieoc = 250000; /* register default value 250mA */
+#ifdef CONFIG_TCPC_CLASS
+	atomic_set(&chg_data->tcpc_usb_connected, 0);
+#endif
 
 	if (use_dt) {
 		ret = rt_parse_dt(&pdev->dev, chg_data);
@@ -3540,18 +3535,9 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	/* Init wait queue head */
 	init_waitqueue_head(&chg_data->wait_queue);
 
-	/* Create single thread workqueue */
-	chg_data->aicl_wq = create_singlethread_workqueue("aicl_wq");
-	if (!chg_data->aicl_wq) {
-		ret = -ENOMEM;
-		goto err_create_wq;
-	}
-
-	/* Init AICL workqueue */
-	INIT_WORK(&chg_data->aicl_work, rt5081_aicl_work_handler);
-#ifndef CONFIG_TCPC_CLASS
+#if defined(CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT) && !defined(CONFIG_TCPC_CLASS)
 	INIT_WORK(&chg_data->chgdet_work, rt5081_chgdet_work_handler);
-#endif
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT && !CONFIG_TCPC_CLASS */
 
 	chg_data->usb_switch = switch_dev_get_by_name("usb_switch");
 	if (!chg_data->usb_switch)
@@ -3604,9 +3590,9 @@ static int rt5081_pmu_charger_probe(struct platform_device *pdev)
 	rt5081_pmu_charger_irq_register(pdev);
 
 	/* Schedule work for microB's BC1.2 */
-#ifndef CONFIG_TCPC_CLASS
+#if defined(CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT) && !defined(CONFIG_TCPC_CLASS)
 	schedule_work(&chg_data->chgdet_work);
-#endif
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT && !CONFIG_TCPC_CLASS */
 
 	dev_info(&pdev->dev, "%s successfully\n", __func__);
 
@@ -3618,8 +3604,6 @@ err_register_chg_dev:
 err_chg_sw_workaround:
 err_chg_init_setting:
 err_no_psy:
-	destroy_workqueue(chg_data->aicl_wq);
-err_create_wq:
 	mutex_destroy(&chg_data->ichg_access_lock);
 	mutex_destroy(&chg_data->adc_access_lock);
 	mutex_destroy(&chg_data->irq_access_lock);
@@ -3639,7 +3623,6 @@ static int rt5081_pmu_charger_remove(struct platform_device *pdev)
 	if (chg_data) {
 		charger_device_unregister(chg_data->ls_dev);
 		charger_device_unregister(chg_data->chg_dev);
-		destroy_workqueue(chg_data->aicl_wq);
 		mutex_destroy(&chg_data->ichg_access_lock);
 		mutex_destroy(&chg_data->adc_access_lock);
 		mutex_destroy(&chg_data->irq_access_lock);
@@ -3686,6 +3669,14 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.18_MTK
+ * (1) Move AICL work from MIVR IRQ handler to charger thread
+ * (2) Keep IEOC setting which is modified in set_ichg
+ * (3) Add enable_te & set_ieoc ops
+ * (4) Add enable_irq function to enable/disable irq usage
+ * (5) Use atomic to represent tcpc usb connected
+ * (6) Move definition of rt5081 charger type detect to Kconfig
+ *
  * 1.1.17_MTK
  * (1) Remove delay after Disable TS auto sensing for speed up
  * (2) Remove dump register in probe for speed up

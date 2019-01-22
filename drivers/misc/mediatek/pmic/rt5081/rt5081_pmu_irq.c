@@ -146,7 +146,7 @@ static void rt5081_pmu_irq_bus_sync_unlock(struct irq_data *data)
 		dev_err(chip->dev, "%s: write irq mask fail\n", __func__);
 }
 
-static void rt5081_pmu_irq_mask(struct irq_data *data)
+static void rt5081_pmu_irq_disable(struct irq_data *data)
 {
 	struct rt5081_pmu_chip *chip = data->chip_data;
 
@@ -155,7 +155,7 @@ static void rt5081_pmu_irq_mask(struct irq_data *data)
 	rt5081_pmu_curr_irqmask[data->hwirq / 8] |= (1 << (data->hwirq % 8));
 }
 
-static void rt5081_pmu_irq_unmask(struct irq_data *data)
+static void rt5081_pmu_irq_enable(struct irq_data *data)
 {
 	struct rt5081_pmu_chip *chip = data->chip_data;
 
@@ -168,8 +168,8 @@ static struct irq_chip rt5081_pmu_irq_chip = {
 	.name = "rt5081_pmu_irq",
 	.irq_bus_lock = rt5081_pmu_irq_bus_lock,
 	.irq_bus_sync_unlock = rt5081_pmu_irq_bus_sync_unlock,
-	.irq_mask = rt5081_pmu_irq_mask,
-	.irq_unmask = rt5081_pmu_irq_unmask,
+	.irq_enable = rt5081_pmu_irq_enable,
+	.irq_disable = rt5081_pmu_irq_disable,
 };
 
 static int rt5081_pmu_irq_domain_map(struct irq_domain *d, unsigned int virq,

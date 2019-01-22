@@ -926,6 +926,7 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	info->charger_thread_polling = false;
 
 	pdata1->disable_charging_count = 0;
+	pdata1->input_current_limit_by_aicl = -1;
 	pdata2->disable_charging_count = 0;
 
 	if (info->plug_out != NULL)
@@ -2019,6 +2020,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	info->chg1_data.thermal_charging_current_limit = -1;
 	info->chg1_data.thermal_input_current_limit = -1;
+	info->chg1_data.input_current_limit_by_aicl = -1;
 	info->chg2_data.thermal_charging_current_limit = -1;
 	info->chg2_data.thermal_input_current_limit = -1;
 
