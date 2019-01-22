@@ -29,6 +29,11 @@ enum mt_dvfs_debug_id {
 	DEBUG_FREQ_DISABLED = 100,
 };
 
+enum throttle_type {
+	DVFS_THROTTLE_UP,
+	DVFS_THROTTLE_DOWN,
+};
+
 /*
  * extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu,
  *		enum cpu_dvfs_sched_type state, unsigned int freq);

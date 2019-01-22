@@ -2939,12 +2939,25 @@ unsigned long long task_sched_runtime(struct task_struct *p)
 }
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHED
+/*
+ *  space for head room
+ *  2048 : 50%
+ *  1862 : 45%
+ *  1707 : 40%
+ *  1576 : 35%
+ *  1463 : 30%
+ *  1366 : 25%
+ *  1280 : 20% <=
+ *  1205 : 15%
+ *  1137 : 10%
+ */
+
 static unsigned long sum_capacity_reqs(unsigned long cfs_cap,
 				       struct sched_capacity_reqs *scr)
 {
 	unsigned long total = cfs_cap + scr->rt;
 
-	total = total * 1126; /*capacity_margin ~10%, 1126/1024=1.09 */
+	total = total * 1280; /* head room: 20% */
 	total /= SCHED_CAPACITY_SCALE;
 	total += scr->dl;
 	return total;
