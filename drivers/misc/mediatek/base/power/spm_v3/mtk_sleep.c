@@ -372,8 +372,7 @@ void slp_set_infra_on(bool infra_on)
 
 void slp_module_init(void)
 {
-#if defined(CONFIG_MACH_MT6758) \
-	|| defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MACH_MT6758)
 	slp_suspend_ops_valid_on = false;
 #else
 	slp_suspend_ops_valid_on = true;
