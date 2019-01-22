@@ -810,7 +810,7 @@ void InitHDMITX(void)
 /* "Init HDMITX\n" */
 /* "-----------------------------------------------------\n"); */
 
-	DumpHDMITXReg();
+	/*DumpHDMITXReg();*/
 }
 
 bool getHDMITX_LinkStatus(void)
