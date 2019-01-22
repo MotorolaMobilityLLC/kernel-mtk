@@ -16,7 +16,11 @@
 
 #include "secmem_plat.h"
 
-#define SECMEM_NAME     "secmem"
+#ifdef SECMEM_64BIT_PHYS_SUPPORT
+#define SECMEM_NAME     "secmem64"
+#else
+#define SECMEM_NAME     "secmem32"
+#endif
 
 #define MAX_NAME_SIZE   32
 
@@ -60,6 +64,7 @@ struct secmem_param {
 extern int svp_region_offline(phys_addr_t *pa, unsigned long *size);
 extern int svp_region_offline64(phys_addr_t *pa, unsigned long *size);
 extern int svp_region_online(void);
+extern void spm_enable_sodi(bool);
 #endif
 
 #ifdef SECMEM_KERNEL_API
