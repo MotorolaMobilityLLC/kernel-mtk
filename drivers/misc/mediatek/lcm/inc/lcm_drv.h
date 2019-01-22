@@ -677,8 +677,10 @@ typedef struct {
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	unsigned int round_corner_en;
+	unsigned int full_content;
 	unsigned int corner_pattern_width;
 	unsigned int corner_pattern_height;
+	unsigned int corner_pattern_height_bot;
 #endif
 } LCM_PARAMS;
 
