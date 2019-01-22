@@ -47,7 +47,7 @@ const struct dev_pm_ops hps_dev_pm_ops = {
 	.thaw = hps_restore,
 };
 
-hps_sys_t hps_sys = {
+struct hps_sys_struct hps_sys = {
 	.cluster_num = 0,
 	.func_num = 0,
 	.is_set_root_cluster = 0,
@@ -60,7 +60,7 @@ hps_sys_t hps_sys = {
 	.action_id = 0,
 };
 
-hps_ctxt_t hps_ctxt = {
+struct hps_ctxt_struct hps_ctxt = {
 	/* state */
 	.init_state = INIT_STATE_NOT_READY,
 	.state = STATE_LATE_RESUME,
@@ -154,7 +154,7 @@ hps_ctxt_t hps_ctxt = {
 	.test1 = 0,
 };
 
-DEFINE_PER_CPU(hps_cpu_ctxt_t, hps_percpu_ctxt);
+DEFINE_PER_CPU(struct hps_cpu_ctxt_struct, hps_percpu_ctxt);
 
 /*
  * hps hps_ctxt_t control interface
@@ -405,10 +405,8 @@ static int hps_suspend(struct device *dev)
 
 suspend_end:
 	hps_ctxt.state = STATE_SUSPEND;
-#ifndef CONFIG_MTK_ACAO_SUPPORT
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER)
 		hps_del_timer();
-#endif
 	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
 		 hps_ctxt.state, hps_ctxt.enabled,
 		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled);
@@ -428,8 +426,6 @@ suspend_end:
  */
 static int hps_resume(struct device *dev)
 {
-	int cpu = 0;
-
 	hps_warn("%s\n", __func__);
 
 	if (!hps_ctxt.suspend_enabled)
@@ -438,7 +434,7 @@ static int hps_resume(struct device *dev)
 	mutex_lock(&hps_ctxt.lock);
 	hps_ctxt.enabled = hps_ctxt.enabled_backup;
 	mutex_unlock(&hps_ctxt.lock);
-#if 1
+#if 0
 	/*In order to fast screen on, power on extra little CPU to serve system resume. */
 	for (cpu = hps_ctxt.little_cpu_id_min; cpu <= hps_ctxt.little_cpu_id_max; cpu++) {
 		if (!cpu_online(cpu))
@@ -447,12 +443,10 @@ static int hps_resume(struct device *dev)
 #endif
 resume_end:
 	hps_ctxt.state = STATE_EARLY_SUSPEND;
-#ifndef CONFIG_MTK_ACAO_SUPPORT
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER) {
 		/*hps_task_wakeup();*/
 		hps_restart_timer();
 	}
-#endif
 	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
 		 hps_ctxt.state, hps_ctxt.enabled,
 		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled);
