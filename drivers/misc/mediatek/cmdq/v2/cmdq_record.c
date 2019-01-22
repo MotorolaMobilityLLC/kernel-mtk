@@ -111,6 +111,13 @@ int32_t cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct 
 {
 	struct cmdqRecStruct *handle = NULL;
 
+	if (pHandle == NULL) {
+		CMDQ_ERR("Invalid empty handle\n");
+		return -EINVAL;
+	}
+
+	*pHandle = NULL;
+
 	if (scenario < 0 || scenario >= CMDQ_MAX_SCENARIO_COUNT) {
 		CMDQ_ERR("Unknown scenario type %d\n", scenario);
 		return -EINVAL;
