@@ -16,6 +16,8 @@ static int select_prefer_idle_cpu(struct task_struct *p);
 static int select_max_spare_capacity_cpu(struct task_struct *p, int target);
 static int select_energy_cpu_plus(struct task_struct *p, int target,  bool prefer_idle);
 static int __energy_diff(struct energy_env *eenv);
+int idle_prefer_mode;
+
 #ifdef CONFIG_SCHED_TUNE
 static inline int energy_diff(struct energy_env *eenv);
 #else

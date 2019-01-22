@@ -78,7 +78,6 @@ unsigned int normalized_sysctl_sched_latency = 6000000ULL;
 
 unsigned int sysctl_sched_isolation_hint_enable; /* default off */
 int sys_boosted;
-int idle_prefer_mode;
 #ifdef CONFIG_SCHED_WALT
 static int sched_use_walt_nice = 101;
 unsigned int sysctl_sched_use_walt_cpu_util;
