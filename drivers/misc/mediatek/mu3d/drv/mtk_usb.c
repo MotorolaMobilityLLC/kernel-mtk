@@ -417,20 +417,9 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 			}
 #ifdef CONFIG_USB_MTK_DUALMODE
 			if (cmode == CABLE_MODE_CHRG_ONLY) {
-#ifdef CONFIG_USB_C_SWITCH
-				;
-#else
-				/* mask ID pin interrupt even if A-cable is not plugged in */
-				switch_int_to_host_and_mask();
-				if (mtk_is_host_mode() == true)
-					mtk_unload_xhci_on_ipo();
-#endif
+				mtk_disable_host();
 			} else {
-#ifdef CONFIG_USB_C_SWITCH
-				;
-#else
-				switch_int_to_host();	/* resotre ID pin interrupt */
-#endif
+				mtk_enable_host();
 			}
 #endif
 			if (_mu3d_musb)
