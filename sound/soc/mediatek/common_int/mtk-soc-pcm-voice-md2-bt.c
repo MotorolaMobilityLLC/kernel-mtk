@@ -95,8 +95,8 @@ static AudioDigitalPCM  voice_md2_btPcm = {
 };
 
 static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
-	.count = ARRAY_SIZE(soc_voice_supported_sample_rates),
-	.list = soc_voice_supported_sample_rates,
+	.count = ARRAY_SIZE(soc_btdai_supported_sample_rates),
+	.list = soc_btdai_supported_sample_rates,
 	.mask = 0,
 };
 
