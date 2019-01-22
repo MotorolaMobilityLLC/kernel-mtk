@@ -573,6 +573,24 @@ source "drivers/misc/mediatek/es_reg/Kconfig"
 source "drivers/misc/mediatek/cmo/Kconfig"
 source "drivers/misc/mediatek/tkcore/Kconfig"
 source "drivers/misc/mediatek/Kconfig.default"
+
+config MTK_FD_LEAK_DETECT
+	bool "Enable MTK fd leak detection"
+	help
+	  This feature is for detecting fd leak.
+	  When kernel can not alloc fd, will print error information.
+	  This feature should be enbled only on Engineer load; User/Userdebug
+	  load should be enabled by demand.
+
+config MTK_FD_LEAK_SPECIFIC_DEBUG
+	bool "Specific demand in fd leak debug"
+	default n
+	help
+	  Specific demand in fd leak debug.
+	  Eg,
+	  For some specific processes, may need backtrace, coredump
+	  and other debug information.
+
 config MTK_DM_VERITY_OFF
 	bool "Disable dm-verity"
 	default n

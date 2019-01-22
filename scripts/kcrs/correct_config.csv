@@ -462,6 +462,8 @@ CONFIG_MTK_EXTBUCK,PROJECT,vend_jeff_chang001,,X,X,X,,,,,,,
 CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT,PROJECT,marvin.lin,,,,,,,,,,,
 CONFIG_MTK_FAT_ON_NAND,PROJECT,chienwei.chang,,,,,,,,,,,
 CONFIG_MTK_FB,COMMON,,,y,y,y,y,y,y,y,y,y,y
+CONFIG_MTK_FD_LEAK_DETECT,USER;PROJECT,yuxian.xu,,O,O,O,O,O,O,O,O,O,O
+CONFIG_MTK_FD_LEAK_SPECIFIC_DEBUG,PROJECT,yuxian.xu,,O,O,O,O,O,O,O,O,O,O
 CONFIG_MTK_FINGERPRINT_SELECT,PROJECT,luhua.xu,new config in this commit ff5fd1753a830032f4c8a5d075c4b2de17e563bc,,,,,,,,,,
 CONFIG_MTK_FINGERPRINT_SUPPORT,PROJECT,luhua.xu,new config in this commit ff5fd1753a830032f4c8a5d075c4b2de17e563bc,,,,,,,,,,
 CONFIG_MTK_FIQ_CACHE,PLATFORM,mars.cheng,,X,X,y,X,X,X,X,X,X,X
