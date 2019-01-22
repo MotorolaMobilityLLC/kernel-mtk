@@ -54,7 +54,7 @@ static unsigned int  g_MotorResolution;
 #define Max_Pos		1023
 
 
-#define VCM_STEP 30
+#define VCM_STEP 10
 
 static int s4AF_ReadReg(u8 a_uAddr, u8 *a_uData)
 {
@@ -222,7 +222,7 @@ static inline int moveAF(unsigned long a_u4Position)
 				while (Step < a_u4Position) {
 					Step += (a_u4Position / VCM_STEP);
 					setPosition((unsigned short)Step);
-					mdelay(10);
+					mdelay(5);
 				}
 			}
 			spin_lock(g_pAF_SpinLock);
