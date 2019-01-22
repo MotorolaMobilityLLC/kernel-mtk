@@ -267,8 +267,11 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		}
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
-		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
-		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC) {
+		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
+			(noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+			noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
+			noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
+			charger_ignore_usb(false);
 #if CONFIG_MTK_GAUGE_VERSION == 30
 			charger_dev_enable_chg_type_det(primary_charger, true);
 #else
@@ -294,8 +297,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #endif
 #endif
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
-			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC) &&
-			noti->typec_state.new_state == TYPEC_UNATTACHED) {
+			noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
+			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC)
+			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			if (tcpc_kpoc) {
 				vbus = battery_meter_get_charger_voltage();
 				pr_info("%s KPOC Plug out, vbus = %d\n",
@@ -304,6 +308,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				break;
 			}
 			pr_info("%s USB Plug out\n", __func__);
+			charger_ignore_usb(false);
 #if CONFIG_MTK_GAUGE_VERSION == 20
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 			mutex_lock(&pd_chr_mutex);
@@ -333,6 +338,19 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				}
 			}
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
+		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
+			/* source to sink */
+			pr_info("%s: Source_to_Sink\n", __func__);
+			charger_ignore_usb(true);
+			charger_dev_enable_chg_type_det(primary_charger, true);
+
+		}  else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
+			/* sink to source */
+			pr_info("%s: Sink_to_Source\n", __func__);
+			charger_ignore_usb(true);
+			charger_dev_enable_chg_type_det(primary_charger, false);
 		}
 		break;
 	case TCP_NOTIFY_PD_STATE:
