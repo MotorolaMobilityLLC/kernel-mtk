@@ -467,8 +467,11 @@ int sdcardfs_work_dispatch_syncjob(int operation,
 		goto out;
 	}
 
-	if (wait_event_interruptible(sdcardfs_work_waitq, pw->operation == SDCARDFS_WQOP_DONE))
+	if (wait_event_interruptible(sdcardfs_work_waitq, pw->operation == SDCARDFS_WQOP_DONE)) {
+		pr_warn("sdcardfs: %s: cancel work %d\n", __func__, operation);
+		cancel_work_sync(&pw->work);
 		ret = -EINTR;
+	}
 	else
 		ret = pw->result;
 out:
