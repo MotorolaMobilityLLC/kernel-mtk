@@ -5911,43 +5911,44 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 			/*digital MIC need to config bit13 and bit6, (bit7 need to check)  0x6840*/
 
 			/* VowDrv_SetDmicLowPower(false); */
-			VowDrv_SetMtkifType(2);  /* 2: DMIC */
+			/*VowDrv_SetMtkifType(2);*/  /* 2: DMIC */
 
 			Ana_Set_Reg(AFE_VOW_TOP, 0x20C0, 0x20C0);   /*VOW enable, with bit7*/
 		} else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K) {
 
 			/* VowDrv_SetDmicLowPower(true); */
-			VowDrv_SetMtkifType(3);  /* 3: DMIC_LP */
+			/*VowDrv_SetMtkifType(3);*/  /* 3: DMIC_LP */
 
 			Ana_Set_Reg(AFE_VOW_TOP, 0x20C0, 0x20C0);   /*VOW enable, with bit7*/
-		} else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01) {
+		}
+		/*} else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01) {*/
 			/* same as AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K */
-			VowDrv_SetMtkifType(3);  /* 3: DMIC_LP */
-		} else {
+			/*VowDrv_SetMtkifType(3);*/  /* 3: DMIC_LP */
+		/*} else {*/
 			/* Normal */
 			/* VowDrv_SetDmicLowPower(false); */
-			VowDrv_SetMtkifType(1);  /* 1: AMIC */
-		}
+			/*VowDrv_SetMtkifType(1);*/  /* 1: AMIC */
+		/*}*/
 #endif /* #ifndef VOW_STANDALONE_CONTROL */
 
 
 		/*VOW enable, set AFE_VOW_TOP in VOW kernel driver*/
 		/*need to inform VOW driver mic type*/
-		VowDrv_EnableHW(true);
-		VowDrv_ChangeStatus();
+		/*VowDrv_EnableHW(true);*/
+		/*VowDrv_ChangeStatus();*/
 
 	} else { /* disable VOW */
 
 		TurnOnVOWPeriodicOnOff(MicType, reg_AFE_VOW_PERIODIC, false);
 
 		/*Set VOW driver disable, vow driver will do close all digital part setting*/
-		VowDrv_EnableHW(false);
-		VowDrv_ChangeStatus();
+		/*VowDrv_EnableHW(false);*/
+		/*VowDrv_ChangeStatus();*/
 		msleep(20);
 
 		VOW_GPIO_Enable(false);
 
-		VowDrv_SetMtkifType(0);  /* 0: NONE */
+		/*VowDrv_SetMtkifType(0);*/  /* 0: NONE */
 		if ((MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
 		 || (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)) {
 			/* VowDrv_SetDmicLowPower(false); */

@@ -710,7 +710,6 @@ static void vow_service_ReadVoiceData(void)
 
 					/*VOWDRV_DEBUG("TX_len:%d, idx:%d\n", vowserv.transfer_length,*/
 					/*				    vowserv.voicedata_idx);*/
-					VOWDRV_DEBUG("TX_len:%d\n", vowserv.transfer_length);
 					ret = copy_to_user((void __user *)(vowserv.voicedata_user_return_size_addr),
 							   &vowserv.transfer_length,
 							   4);
@@ -1242,6 +1241,11 @@ int VowDrv_EnableHW(int status)
 	} else {
 		pwr_status = (status == 0)?VOW_PWR_OFF : VOW_PWR_ON;
 
+		if (pwr_status == VOW_PWR_OFF) {
+			/* reset the transfer limitation to avoid obstructing phase2.5 transferring */
+			if (vowserv.tx_keyword_start == true)
+				vowserv.tx_keyword_start = false;
+		}
 		if (pwr_status == VOW_PWR_ON) {
 			scp_register_feature(VOW_FEATURE_ID);
 			/* clear enter_phase3_cnt */
@@ -1655,6 +1659,8 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 			VOWDRV_DEBUG("VOW_SET_CONTROL VOWControlCmd_DisableDebug");
 			VowDrv_SetFlag(VOW_FLAG_DEBUG, false);
 			vowserv.recording_flag = false;
+			/* force stop vow_service_ReadVoiceData() 20180906 */
+			vow_service_getVoiceData();
 			if (vowserv.suspend_lock == 1) {
 				vowserv.suspend_lock = 0;
 				wake_unlock(&VOW_suspend_lock); /* Let AP will suspend */
