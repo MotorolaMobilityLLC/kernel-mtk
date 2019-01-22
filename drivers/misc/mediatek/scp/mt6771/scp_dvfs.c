@@ -108,12 +108,10 @@ static int g_scp_dvfs_init_flag = -1;
 
 static unsigned int pre_feature_req = 0xff;
 
-#if 0 /* TBD */
-static unsigned long gpio_base;
-#define RG_GPIO159_MODE		(gpio_base + 0x430)
-#define GPIO159_BIT			28
-#define GPIO159_MASK		0x7
-#endif
+static void __iomem *gpio_base;
+#define RG_GPIO154_MODE		(gpio_base + 0x430)
+#define GPIO154_BIT			8
+#define GPIO154_MASK		0xf
 
 unsigned int scp_get_dvfs_opp(void)
 {
@@ -713,9 +711,7 @@ static int mt_scp_dvfs_pm_restore_early(struct device *dev)
 static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 {
 	struct device_node *node;
-#if 0 /* TBD */
 	unsigned int gpio_mode;
-#endif
 
 	pr_info("%s()\n", __func__);
 
@@ -780,7 +776,6 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	_set_state(scp_state_name[SCP_DTS_VREQ_ON]);
 #endif
 
-#if 0 /* TBD */
 	/* get GPIO base address */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,gpio");
 	if (!node) {
@@ -789,7 +784,7 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 		return 0;
 	}
 
-	gpio_base = (unsigned long)of_iomap(node, 0);
+	gpio_base = of_iomap(node, 0);
 	if (!gpio_base) {
 		pr_notice(SCP_DVFS_TAG "error: iomap fail for GPIO\n");
 		WARN_ON(1);
@@ -797,12 +792,11 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	}
 
 	/* check if v_req pin is configured correctly  */
-	gpio_mode = (DRV_Reg32(RG_GPIO159_MODE)>>GPIO159_BIT)&GPIO159_MASK;
+	gpio_mode = (DRV_Reg32(RG_GPIO154_MODE)>>GPIO154_BIT)&GPIO154_MASK;
 	if (gpio_mode == 1)
 		pr_info(SCP_DVFS_TAG "V_REQ muxpin setting is correct\n");
 	else
 		pr_notice(SCP_DVFS_TAG "error: V_REQ muxpin setting is wrong - %d\n", gpio_mode);
-#endif
 
 	g_scp_dvfs_init_flag = 1;
 
