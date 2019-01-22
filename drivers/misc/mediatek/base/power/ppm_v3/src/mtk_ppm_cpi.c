@@ -394,7 +394,7 @@ static int ppm_cpi_pmu_probe(void)
 	int ret = 0, cpu;
 
 	for_each_online_cpu(cpu) {
-		if (cpu >= num_possible_cpus())
+		if (cpu >= num_possible_cpus() || cpu >= TOTAL_CORE_NUM)
 			break;
 
 		ret = ppm_cpi_pmu_probe_cpu(cpu);
@@ -456,7 +456,7 @@ static void ppm_cpi_pmu_remove(void)
 	unregister_cpu_notifier(&ppm_cpi_nb);
 
 	for_each_online_cpu(cpu) {
-		if (cpu >= num_possible_cpus())
+		if (cpu >= num_possible_cpus() || cpu >= TOTAL_CORE_NUM)
 			break;
 
 		ppm_cpi_pmu_remove_cpu(cpu);
@@ -495,7 +495,7 @@ void stall_pmu_enable(int enable)
 	ppm_lock(&cpi_lock);
 
 	for_each_online_cpu(cpu) {
-		if (cpu >= num_possible_cpus())
+		if (cpu >= num_possible_cpus() || cpu >= TOTAL_CORE_NUM)
 			break;
 
 		p1_event = per_cpu(pmu_e1_events, cpu);
