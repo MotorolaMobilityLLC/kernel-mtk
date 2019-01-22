@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #ifndef UT_MM_H
 #define UT_MM_H
 
@@ -37,12 +38,14 @@ extern int rmqueue_bulk(struct zone *zone, unsigned int order,
 
 extern int prep_new_page(struct page *page, int order, gfp_t gfp_flags);
 
-extern int zlc_zone_worth_trying(struct zonelist *zonelist, struct zoneref *z,
-	nodemask_t *allowednodes);
+extern int zlc_zone_worth_trying(struct zonelist *zonelist,
+				struct zoneref *z, nodemask_t *allowednodes);
 
 extern nodemask_t *zlc_setup(struct zonelist *zonelist, int alloc_flags);
-extern bool zone_allows_reclaim(struct zone *local_zone, struct zone *zone);
-extern void zlc_mark_zone_full(struct zonelist *zonelist, struct zoneref *z);
+extern bool zone_allows_reclaim(struct zone *local_zone,
+				struct zone *zone);
+extern void zlc_mark_zone_full(struct zonelist *zonelist,
+				struct zoneref *z);
 
 unsigned long ut_get_free_pages(gfp_t gfp_mask, unsigned int order);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #ifndef TEEI_CAPI_H
 #define TEEI_CAPI_H
 
@@ -23,7 +24,8 @@ extern struct teei_context *teei_create_context(int dev_count);
 extern struct teei_session *teei_create_session(struct teei_context *cont);
 extern struct teei_contexts_head_t teei_contexts_head;
 
-int teei_client_close_session_for_service(void *private_data, struct teei_session *temp_ses);
+int teei_client_close_session_for_service(void *private_data,
+			struct teei_session *temp_ses);
 int teei_client_service_exit(void *private_data);
 int teei_client_context_init(void *private_data, void *argp);
 int teei_client_context_close(void *private_data, void *argp);

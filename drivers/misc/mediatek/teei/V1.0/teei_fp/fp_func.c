@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -12,18 +12,18 @@
  * GNU General Public License for more details.
  */
 
-#include<linux/kernel.h>
+#include <linux/kernel.h>
 #include <linux/platform_device.h>
-#include<linux/module.h>
-#include<linux/types.h>
-#include<linux/fs.h>
-#include<linux/errno.h>
-#include<linux/mm.h>
-#include<linux/sched.h>
-#include<linux/init.h>
-#include<linux/cdev.h>
-#include<asm/io.h>
-#include<asm/uaccess.h>
+#include <linux/module.h>
+#include <linux/types.h>
+#include <linux/fs.h>
+#include <linux/errno.h>
+#include <linux/mm.h>
+#include <linux/sched.h>
+#include <linux/init.h>
+#include <linux/cdev.h>
+#include <linux/io.h>
+#include <linux/uaccess.h>
 #include <asm/cacheflush.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
@@ -63,15 +63,18 @@ int fp_open(struct inode *inode, struct file *filp)
 	int ret = -1;
 
 	if (wait_teei_config_flag_count != 1 && teei_config_flag == 0) {
-		ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1), msecs_to_jiffies(1000*20));
-		IMSG_ERROR("[TEE] open wait for %u msecs in first time\n", (1000*20-jiffies_to_msecs(ret)));
+		ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1),
+						msecs_to_jiffies(1000*20));
+		IMSG_ERROR("[TEE] open wait for %u msecs in first time\n",
+						(1000*20-jiffies_to_msecs(ret)));
 	}
 
 	wait_teei_config_flag_count = 1;
-	ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1), msecs_to_jiffies(1000*20));
+	ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1),
+						msecs_to_jiffies(1000*20));
 
 	if (ret <= 0) {
-		IMSG_INFO("[TEE] error , tee load not finished yet , and wait timeout\n");
+		IMSG_INFO("[TEE] error, tee load not finished yet,and wait timeout\n");
 		return -1;
 	}
 
@@ -96,15 +99,15 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 
 	if (_IOC_TYPE(cmd) != TEEI_IOC_MAGIC)
 		return -ENOTTY;
-
 	if (_IOC_NR(cmd) > TEEI_IOC_MAXNR)
 		return -ENOTTY;
-
 	down(&fp_api_lock);
 #ifdef FP_DEBUG
 	IMSG_DEBUG("##################################\n");
-	IMSG_DEBUG("fp ioctl received received cmd is: %x arg is %x\n", cmd, (unsigned int)arg);
-	IMSG_DEBUG("CMD_MEM_CLEAR is: %x CMD_FP_CMD is %x\n", CMD_MEM_CLEAR, CMD_FP_CMD);
+	IMSG_DEBUG("fp ioctl received received cmd is: %x arg is %x\n",
+					cmd, (unsigned int)arg);
+	IMSG_DEBUG("CMD_MEM_CLEAR is: %x CMD_FP_CMD is %x\n",
+				CMD_MEM_CLEAR, CMD_FP_CMD);
 #endif
 	switch (cmd) {
 	case CMD_MEM_CLEAR:
@@ -116,8 +119,8 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
-		/*TODO compute args length*/
-		/*[11-15] is the length of data*/
+		/* TODO compute args length */
+		/* [11-15] is the length of data */
 		args_len = *((unsigned int *)(args + 12));
 		if (args_len > FP_LEN_MAX || (args_len <= FP_LEN_MIN)) {
 			IMSG_ERROR("args_len is invalid %d !\n", args_len);
@@ -125,9 +128,9 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 			return -EFAULT;
 		}
 		buff_len = args_len + FP_BUFFER_OFFSET;
-		/*[0-3] is cmd id*/
+		/* [0-3] is cmd id */
 		fp_cid = *((unsigned int *)(args));
-		/*[4-7] is fuction id*/
+		/* [4-7] is function id */
 		fp_fid = *((unsigned int *)(args + 4));
 #ifdef FP_DEBUG
 		IMSG_DEBUG("invoke fp cmd CMD_FP_CMD: arg's address is %x, args's length %d\n",
@@ -155,8 +158,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		IMSG_DEBUG("[%s][%d] fp_buff_addr 88 - 91 = %d\n",
 					__func__, args_len, *((unsigned int *)(fp_buff_addr + 88)));
 #endif
-
-		if (copy_to_user((void *)arg, (void *)fp_buff_addr, (args_len + 16))) {
+		if (copy_to_user((void *)arg, (void *)fp_buff_addr, buff_len)) {
 			IMSG_ERROR("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;

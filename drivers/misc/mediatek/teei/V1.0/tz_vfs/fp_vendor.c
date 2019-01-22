@@ -13,14 +13,16 @@
  */
 
 #include "fp_vendor.h"
-#include<linux/types.h>
+#include <linux/types.h>
 #include "../tz_driver/include/nt_smc_call.h"
-#include<linux/kernel.h>
+#include <linux/kernel.h>
 #include <linux/mutex.h>
-
+#include <linux/sched.h>
+#include <imsg_log.h>
 
 #define FPC_VENDOR_ID       0x1b
 #define GOODIX_VENDOR_ID    0x13
+
 
 int fp_vendor_active;
 int fp_vendor = FP_VENDOR_INVALID;
@@ -44,9 +46,7 @@ int get_fp_vendor(void)
 	p_temp = (uint32_t *)&fp_vendor_id_64;
 	fp_vendor_id_32 = *p_temp;
 	fp_vendor_id_32 = (fp_vendor_id_32 >> 8) & 0xff;
-
-	pr_err("%s:%d->0x%x\n", __func__, __LINE__, fp_vendor_id_32);
-
+	IMSG_INFO("%s:%d->0x%x\n", __func__, __LINE__, fp_vendor_id_32);
 	switch (fp_vendor_id_32) {
 	case FPC_VENDOR_ID:
 		fp_vendor = FPC_VENDOR;

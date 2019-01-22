@@ -46,7 +46,8 @@ static void add_tz_log_counter(unsigned int num_chars)
 	received_tz_log_lines++;
 }
 
-static void measure_log_perf(const char *tag, int log_len, uint32_t log_prefix)
+static void measure_log_perf(const char *tag, int log_len,
+			uint32_t log_prefix)
 {
 	if (log_len > 0) {
 		if (log_prefix == LOG_MEASURE_START) {
@@ -65,11 +66,15 @@ static void measure_log_perf(const char *tag, int log_len, uint32_t log_prefix)
 				end_log_timer_counter = read_cntvct();
 				tz_log_timer_started = false;
 
-				IMSG_PRINTK("%s[RLOG] Received Log chars (%u) bytes, Log lines (%u)\n",
-						tag, received_tz_log_chars, received_tz_log_lines);
-				IMSG_PRINTK("%s[RLOG] Log Time: start (%llu) end (%llu) diff(%llu)\n",
-						tag, start_log_timer_counter, end_log_timer_counter,
-						end_log_timer_counter - start_log_timer_counter);
+				IMSG_PRINTK("%s[RLOG] Received Log chars (%u) bytes\n",
+						tag, received_tz_log_chars);
+				IMSG_PRINTK("%s[RLOG] Received Log lines (%u)\n",
+						tag, received_tz_log_lines);
+				IMSG_PRINTK("%s[RLOG] Log Time:start(%llu) end(%llu)\n",
+				tag, start_log_timer_counter, end_log_timer_counter);
+
+				IMSG_PRINTK("%s[RLOG] Log Time: diff(%llu)\n", tag,
+					end_log_timer_counter - start_log_timer_counter);
 			}
 		}
 	}

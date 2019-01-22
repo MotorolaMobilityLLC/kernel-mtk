@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/sched.h>
@@ -110,18 +111,7 @@ int __teei_smc_call(unsigned long local_smc_cmd,
 	struct teei_shared_mem *temp_shared_mem = NULL;
 	struct teei_context *temp_cont = NULL;
 
-#if 0
-	smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL);
-
-	if (!smc_cmd) {
-		IMSG_ERROR("tz_malloc failed for smc command");
-		ret = -ENOMEM;
-		goto out;
-	}
-
-#else
 	smc_cmd = (struct teei_smc_cmd *)local_smc_cmd;
-#endif
 
 	if (ret_resp_len)
 		*ret_resp_len = 0;

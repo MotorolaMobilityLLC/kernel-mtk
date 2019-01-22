@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #ifndef __TEEI_SMC_STRUCT_H__
 #define __TEEI_SMC_STRUCT_H__
 
@@ -44,19 +45,19 @@ struct teei_context {
 	unsigned long cont_id;                  /* ID */
 	char tee_name[TEE_NAME_SIZE];           /* Name */
 	unsigned long sess_cnt;                 /* session counter */
-	unsigned long shared_mem_cnt;           /* share memory counter */
-	struct list_head link;                  /* link list for teei_context */
-	struct list_head sess_link;                     /* link list for the sessions of this context */
-	struct list_head shared_mem_list;       /* link list for the share memory of this context */
+	unsigned long shared_mem_cnt;
+	struct list_head link;
+	struct list_head sess_link;
+	struct list_head shared_mem_list;
 	struct semaphore cont_lock;
 };
 
 struct teei_session {
-	int sess_id;                    /* ID */
-	struct teei_context *parent_cont;       /* the teei_context pointer of this session */
-	struct list_head link;          /* link list for teei_session */
-	struct list_head encode_list;   /* link list for the encode of this session */
-	struct list_head shared_mem_list;       /* link list for the share memory of this session */
+	int sess_id;
+	struct teei_context *parent_cont;
+	struct list_head link;
+	struct list_head encode_list;
+	struct list_head shared_mem_list;
 };
 
 #endif

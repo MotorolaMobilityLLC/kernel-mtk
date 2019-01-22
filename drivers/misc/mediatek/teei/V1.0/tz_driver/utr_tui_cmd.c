@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,6 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/semaphore.h>
@@ -80,9 +81,8 @@ unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 	msg_body.fdrv_size = buff_size;
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
-	memcpy((void *)message_buff, (void *)&msg_head, sizeof(struct message_head));
-	memcpy((void *)message_buff + sizeof(struct message_head), (void *)&msg_body,
-			sizeof(struct create_fdrv_struct));
+	memcpy((void *)message_buff, &msg_head, sizeof(struct message_head));
+	memcpy((void *)(message_buff + sizeof(struct message_head)), &msg_body, sizeof(struct create_fdrv_struct));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	/* Call the smc_fast_call */
@@ -93,9 +93,8 @@ unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 	/* put_online_cpus(); */
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
-	memcpy((void *)&msg_head, (void *)message_buff, sizeof(struct message_head));
-	memcpy((void *)&msg_ack, (void *)message_buff + sizeof(struct message_head),
-			sizeof(struct ack_fast_call_struct));
+	memcpy(&msg_head, (void *)message_buff, sizeof(struct message_head));
+	memcpy(&msg_ack, (void *)(message_buff + sizeof(struct message_head)), sizeof(struct ack_fast_call_struct));
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
@@ -105,9 +104,8 @@ unsigned long create_tui_buff(int buff_size, unsigned int fdrv_type)
 			IMSG_ERROR("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
 			return temp_addr;
 		}
-	} else {
+	} else
 		retVal = 0;
-	}
 
 	/* Release the resource and return. */
 	free_pages(temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
@@ -126,7 +124,6 @@ int try_send_tui_command(void)
 	}
 
 	result = down_trylock(&fdrv_lock);
-
 	if (result == 0) {
 		up(&fdrv_lock);
 		return 2;
@@ -134,6 +131,7 @@ int try_send_tui_command(void)
 
 	return 0;
 }
+
 
 void set_tui_display_command(unsigned long type)
 {
@@ -147,7 +145,7 @@ void set_tui_display_command(unsigned long type)
 		fdrv_msg_head.driver_type = TUI_DISPLAY_SYS_NO;
 
 	fdrv_msg_head.fdrv_param_length = sizeof(unsigned int);
-	memcpy((void *)fdrv_message_buff, (void *)&fdrv_msg_head, sizeof(struct fdrv_message_head));
+	memcpy((void *)fdrv_message_buff, &fdrv_msg_head, sizeof(struct fdrv_message_head));
 	Flush_Dcache_By_Area((unsigned long)fdrv_message_buff, (unsigned long)fdrv_message_buff + MESSAGE_SIZE);
 }
 
@@ -159,13 +157,13 @@ int __send_tui_display_command(unsigned long type)
 	set_tui_display_command(type);
 
 	if (type == TUI_NOTICE_SYS_NO) {
-		memcpy((void *)&datalen, (void *) tui_notice_message_buff, sizeof(uint32_t));
+		memcpy(&datalen, (void *) tui_notice_message_buff, sizeof(uint32_t));
 		Flush_Dcache_By_Area((unsigned long)tui_notice_message_buff,
-							tui_notice_message_buff +  sizeof(uint32_t) + datalen);
+			tui_notice_message_buff +  sizeof(uint32_t) + datalen);
 	} else {
-		memcpy((void *)&datalen, (void *) tui_display_message_buff, sizeof(uint32_t));
+		memcpy(&datalen, (void *) tui_display_message_buff, sizeof(uint32_t));
 		Flush_Dcache_By_Area((unsigned long)tui_display_message_buff,
-							tui_display_message_buff + sizeof(uint32_t)+datalen);
+			tui_display_message_buff + sizeof(uint32_t)+datalen);
 	}
 
 	fp_call_flag = GLSCH_HIGH;
@@ -187,7 +185,7 @@ void set_tui_notice_command(unsigned long memory_size)
 	msg_head.message_type = STANDARD_CALL_TYPE;
 	msg_head.child_type = TUI_NOTICE_SYS_NO;
 
-	memcpy((void *)message_buff, (void *)&msg_head, sizeof(struct message_head));
+	memcpy((void *)message_buff, &msg_head, sizeof(struct message_head));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 }
 
@@ -197,9 +195,9 @@ int __send_tui_notice_command(unsigned long share_memory_size)
 	uint32_t datalen = 0;
 
 	set_tui_notice_command(share_memory_size);
-	memcpy((void *)&datalen, (void *) tui_notice_message_buff, sizeof(uint32_t));
+	memcpy(&datalen, (void *) tui_notice_message_buff, sizeof(uint32_t));
 	Flush_Dcache_By_Area((unsigned long)tui_notice_message_buff,
-						tui_notice_message_buff +  sizeof(uint32_t) + datalen);
+		tui_notice_message_buff +  sizeof(uint32_t) + datalen);
 
 	forward_call_flag = GLSCH_LOW;
 	n_invoke_t_nq((uint64_t *)(&smc_type), 0, 0);
@@ -241,19 +239,19 @@ int send_tui_display_command(unsigned long type)
 	/* with a rmb() */
 	rmb();
 
-	if (type == TUI_NOTICE_SYS_NO) {
+	if (type == TUI_NOTICE_SYS_NO)
 		Invalidate_Dcache_By_Area((unsigned long)tui_notice_message_buff,
-									tui_notice_message_buff + TUI_NOTICE_BUFFER);
-	} else {
+			tui_notice_message_buff + TUI_NOTICE_BUFFER);
+	else
 		Invalidate_Dcache_By_Area((unsigned long)tui_display_message_buff,
-									tui_display_message_buff + TUI_DISPLAY_BUFFER);
-	}
+			tui_display_message_buff + TUI_DISPLAY_BUFFER);
 
 	ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);
 
 	return fdrv_ent.retVal;
 }
+
 
 int send_tui_notice_command(unsigned long share_memory_size)
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@ struct sockaddr {
 };
 
 struct in_addr {
-	unsigned long s_addr; /* that’s a 32-bit long, or 4 bytes */
+	unsigned long s_addr; /* that's a 32-bit long, or 4 bytes */
 };
 
 struct sockaddr_in {
@@ -103,7 +103,6 @@ struct TEEI_socket_command {
 	} args;
 
 };
-
 
 union TEEI_socket_response_type {
 	int value;

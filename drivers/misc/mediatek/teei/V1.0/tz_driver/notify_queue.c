@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * Copyright (c) 2015-2017 MICROTRUST Incorporated
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -40,7 +40,8 @@ unsigned long t_nt_buffer;
 * return value:
 *     EINVAL  invalid argument
 *     ENOMEM  no enough memory
-*     EAGAIN  The command ID in the response is NOT accordant to the request.
+*     EAGAIN  The command ID in the response
+*	  is NOT accordant to the request.
 *
  */
 
