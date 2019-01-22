@@ -80,6 +80,7 @@ static struct {
 	{DISP_OPT_IDLE_MGR, 0, "DISP_OPT_IDLE_MGR"}, /* low power */
 	{DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 0, "DISP_OPT_IDLEMGR_SWTCH_DECOUPLE"}, /* low power */
 	{DISP_OPT_IDLEMGR_ENTER_ULPS, 0, "DISP_OPT_IDLEMGR_ENTER_ULPS"}, /* low power */
+	{DISP_OPT_IDLEMGR_KEEP_LP11, 0, "DISP_OPT_IDLEMGR_KEEP_LP11"}, /* low power */
 	{DISP_OPT_SHARE_SRAM, 0, "DISP_OPT_SHARE_SRAM"}, /* low power */
 	{DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0, "DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK"}, /* low power */
 	{DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 0, "DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING"}, /* low power */
@@ -334,6 +335,7 @@ void disp_helper_option_init(void)
 
 	/* 2. cmd mode + screen idle(need idlemgr) */
 	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,	1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_KEEP_LP11,	1);
 
 	/* 3. cmd mode + vdo mode */
 	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0);

@@ -194,6 +194,7 @@ unsigned int data_lane3[2] = { 0 }; /* MIPITX_DSI_DATA_LANE3 */
 unsigned int mipitx_impedance_backup[5];
 
 atomic_t PMaster_enable = ATOMIC_INIT(0);
+atomic_t release_sw_lp11 = ATOMIC_INIT(0);
 static ddp_module_notify g_dsi_ddp_notify;
 
 static void _init_condition_wq(struct t_condition_wq *waitq)
@@ -1200,6 +1201,53 @@ int MIPITX_IsEnabled(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 }
 
+int dsi_sw_control_lp11(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, bool on)
+{
+	int i;
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D2_SW_CTL_EN, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D0_SW_CTL_EN, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_CK_SW_CTL_EN, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D1_SW_CTL_EN, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D3_SW_CTL_EN, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D2_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D2C_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D0_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D0C_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_CK_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_CKC_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D1_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D1C_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D3_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D3C_SW_LPTX_PRE_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D2_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D2C_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D0_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D0C_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_CK_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_CKC_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D1_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D1C_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D3_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D3C_SW_LPTX_OE, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D2_SW_LPTX_DP, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D2_SW_LPTX_DN, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D0_SW_LPTX_DP, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D0_SW_LPTX_DN, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_CK_SW_LPTX_DP, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_CK_SW_LPTX_DN, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D1_SW_LPTX_DP, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D1_SW_LPTX_DN, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D3_SW_LPTX_DP, on);
+		DISP_REG_SET(cmdq, DSI_PHY_REG[i]+MIPITX_D3_SW_LPTX_DN, on);
+	}
+	udelay(20);
+
+	return 0;
+}
+
+
 unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -1222,6 +1270,215 @@ unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module)
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 	return 0;
 }
+
+static void _DSI_PHY_clk_leave_idle(enum DISP_MODULE_ENUM module,
+			struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
+{
+	int i = 0;
+	unsigned int j = 0;
+	unsigned int data_Rate = dsi_params->data_rate != 0 ? dsi_params->data_rate : dsi_params->PLL_CLOCK * 2;
+	unsigned int pcw_ratio = 0;
+	unsigned int pcw = 0;
+	unsigned int posdiv = 0;
+	unsigned int prediv = 0;
+	unsigned int delta1 = 2; /* Delta1 is SSC range, default is 0%~-5% */
+	unsigned int pdelta1 = 0;
+	unsigned long addr = 0;
+	unsigned int pad_mapping[MIPITX_PHY_LANE_NUM] = {PAD_D0P_V, PAD_D1P_V,
+					PAD_D2P_V, PAD_D3P_V, PAD_CKP_V, PAD_CKP_V};
+
+	DISPFUNC();
+	data_Rate = def_data_rate ? def_data_rate : data_Rate;
+
+	/* DPHY SETTING */
+
+	/* MIPITX lane swap setting */
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		/* step 0 MIPITX lane swap setting */
+		if (unlikely(dsi_params->lane_swap_en)) {
+			DISPINFO("MIPITX Lane Swap Enabled for DSI Port %d\n", i);
+			DISPINFO("MIPITX Lane Swap mapping: %d|%d|%d|%d|%d|%d\n",
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_0],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_1],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_2],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_3],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK],
+				dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]);
+
+			/* CKMODE_EN */
+			for (j = MIPITX_PHY_LANE_0; j < MIPITX_PHY_LANE_CK; j++) {
+				if (dsi_params->lane_swap[i][j] == MIPITX_PHY_LANE_CK)
+					break;
+			}
+			switch (j) {
+			case MIPITX_PHY_LANE_0:
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_D0_CKMODE_EN, FLD_DSI_D0_CKMODE_EN, 1);
+				break;
+			case MIPITX_PHY_LANE_1:
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_D1_CKMODE_EN, FLD_DSI_D1_CKMODE_EN, 1);
+				break;
+			case MIPITX_PHY_LANE_2:
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_D2_CKMODE_EN, FLD_DSI_D2_CKMODE_EN, 1);
+				break;
+			case MIPITX_PHY_LANE_3:
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_D3_CKMODE_EN, FLD_DSI_D3_CKMODE_EN, 1);
+				break;
+			case MIPITX_PHY_LANE_CK:
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_CK_CKMODE_EN, FLD_DSI_CK_CKMODE_EN, 1);
+				break;
+			default:
+				break;
+			}
+
+			/* LANE_0 */
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL0, FLD_MIPI_TX_PHY0_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_0]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL0, FLD_MIPI_TX_PHY1AB_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_0]] + 1);
+
+			/* LANE_1 */
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL0, FLD_MIPI_TX_PHY1_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_1]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL1, FLD_MIPI_TX_PHY2BC_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_1]] + 1);
+
+			/* LANE_2 */
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL0, FLD_MIPI_TX_PHY2_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_2]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL0, FLD_MIPI_TX_CPHY0BC_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_2]] + 1);
+
+			/* LANE_3 */
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL1, FLD_MIPI_TX_PHY3_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_3]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL1, FLD_MIPI_TX_CPHYXXX_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_3]] + 1);
+
+			/* CK LANE */
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL0, FLD_MIPI_TX_PHYC_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL0, FLD_MIPI_TX_CPHY1CA_SEL,
+				pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK]] + 1);
+
+			/* LPRX SETTING */
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL1, FLD_MIPI_TX_LPRX0AB_SEL,
+				 pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL1, FLD_MIPI_TX_LPRX0BC_SEL,
+				 pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]] + 1);
+
+			/* HS_DATA SETTING */
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL2, FLD_MIPI_TX_PHY2_HSDATA_SEL,
+				 pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_2]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL2, FLD_MIPI_TX_PHY0_HSDATA_SEL,
+				 pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_0]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL2, FLD_MIPI_TX_PHYC_HSDATA_SEL,
+				 pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL2, FLD_MIPI_TX_PHY1_HSDATA_SEL,
+				 pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_1]]);
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PHY_SEL3, FLD_MIPI_TX_PHY3_HSDATA_SEL,
+				 pad_mapping[dsi_params->lane_swap[i][MIPITX_PHY_LANE_3]]);
+		} else {
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_CK_CKMODE_EN, FLD_DSI_CK_CKMODE_EN, 1);
+		}
+	}
+
+	/* re-fill mipitx impendance */
+	addr = DSI_PHY_REG[0]+0x100;
+	for (i = 0; i < 5; i++) {
+		for (j = 0; j < 10; j++) {
+			MIPITX_OUTREG32(addr, ((mipitx_impedance_backup[i])>>j)&0x1);
+			addr += 0x4;
+		}
+		/* 0xD8 = 0x300 - 0x228*/
+		addr += 0xD8;
+	}
+
+	/* MIPI INIT */
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if (data_Rate != 0) {
+			unsigned int tmp = 0;
+
+			if (data_Rate > 2500) {
+				DDPPR_ERR("mipitx Data Rate exceed limitation(%d)\n", data_Rate);
+				ASSERT(0);
+			} else if (data_Rate >= 2000) { /* 2G ~ 2.5G */
+				pcw_ratio = 1;
+				posdiv    = 0;
+				prediv    = 0;
+			} else if (data_Rate >= 1000) { /* 1G ~ 2G */
+				pcw_ratio = 2;
+				posdiv    = 1;
+				prediv    = 0;
+			} else if (data_Rate >= 500) { /* 500M ~ 1G */
+				pcw_ratio = 4;
+				posdiv    = 2;
+				prediv    = 0;
+			} else if (data_Rate > 250) { /* 250M ~ 500M */
+				pcw_ratio = 8;
+				posdiv    = 3;
+				prediv    = 0;
+			} else if (data_Rate >= 125) { /* 125M ~ 250M */
+				pcw_ratio = 16;
+				posdiv    = 4;
+				prediv    = 0;
+			} else {
+				DDPPR_ERR("dataRate is too low(%d)\n", data_Rate);
+				ASSERT(0);
+			}
+
+			/* step 3 */
+			/* PLL PCW config */
+			/**
+			 * PCW bit 24~30 = floor(pcw)
+			 * PCW bit 16~23 = (pcw - floor(pcw))*256
+			 * PCW bit 8~15 = (pcw*256 - floor(pcw)*256)*256
+			 * PCW bit 8~15 = (pcw*256*256 - floor(pcw)*256*256)*256
+			 */
+			/* pcw = data_Rate*4*txdiv/(26*2);//Post DIV =4, so need data_Rate*4 */
+
+			pcw = data_Rate * pcw_ratio / 26;
+			tmp = ((pcw & 0xFF) << 24) | (((256 * (data_Rate * pcw_ratio % 26) / 26) & 0xFF) << 16) |
+				(((256 * (256 * (data_Rate * pcw_ratio % 26) % 26) / 26) & 0xFF) << 8) |
+				((256 * (256 * (256 * (data_Rate * pcw_ratio % 26) % 26) % 26) / 26) & 0xFF);
+			MIPITX_OUTREG32(DSI_PHY_REG[i] + MIPITX_PLL_CON0, tmp);
+
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON1, FLD_RG_DSI_PLL_POSDIV, posdiv);
+
+			/* SSC config */
+			if (dsi_params->ssc_disable != 1) {
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON2, FLD_RG_DSI_PLL_SDM_SSC_PH_INIT, 1);
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON2, FLD_RG_DSI_PLL_SDM_SSC_PRD, 0x1B1);
+
+				delta1 = (dsi_params->ssc_range == 0) ? delta1 : dsi_params->ssc_range;
+				ASSERT(delta1 <= 8);
+				pdelta1 = (delta1 * (data_Rate / 2) * pcw_ratio * 262144 + 281664) / 563329;
+
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON3,
+						 FLD_RG_DSI_PLL_SDM_SSC_DELTA, pdelta1);
+				MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON3,
+						 FLD_RG_DSI_PLL_SDM_SSC_DELTA1, pdelta1);
+				DDPMSG("PLL config:data_rate=%d,pcw_ratio=%d,delta1=%d,pdelta1=0x%x\n",
+					data_Rate, pcw_ratio, delta1, pdelta1);
+			}
+		}
+	}
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if ((data_Rate != 0) && (dsi_params->ssc_disable != 1))
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON2, FLD_RG_DSI_PLL_SDM_SSC_EN, 1);
+		else
+			MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON2, FLD_RG_DSI_PLL_SDM_SSC_EN, 0);
+	}
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		/* PLL EN */
+		mdelay(1);
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON1, FLD_RG_DSI_PLL_EN, 1);
+
+		mdelay(1);
+	}
+}
+
 
 static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, LCM_DSI_PARAMS *dsi_params)
 {
@@ -1862,6 +2119,26 @@ void DSI_PHY_clk_switch(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 		MIPITX_OUTREG32(DSI_PHY_REG[i]+MIPITX_LANE_CON, 0x3FFF0100); /* BG_CORE_EN=0 */
 
 		/* mdelay(1); */
+	}
+}
+
+void DSI_PHY_clk_idle(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, int on)
+{
+	int i = 0;
+
+	/* can't use cmdq for this */
+	ASSERT(cmdq == NULL);
+
+	if (on) {
+		_DSI_PHY_clk_setting(module, cmdq, &(_dsi_context[i].dsi_params));
+		return;
+	}
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		/* disable mipi clock */
+		/* step 0: PLL DISABLE */
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON1, FLD_RG_DSI_PLL_EN, 0);
+
 	}
 }
 
@@ -3685,6 +3962,11 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *co
 	if (dsi_config->clk_lp_per_line_enable)
 		DSI_PHY_CLK_LP_PerLine_config(module, cmdq, dsi_config);
 
+	if (atomic_read(&release_sw_lp11) == 1) {
+		dsi_sw_control_lp11(module, cmdq, 0);
+		atomic_set(&release_sw_lp11, 0);
+	}
+
 	return 0;
 }
 
@@ -4437,6 +4719,66 @@ int ddp_dsi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 
 	_set_power_on_status(module, 0);
+	return DSI_STATUS_OK;
+}
+
+int ddp_dsi_enter_idle(enum DISP_MODULE_ENUM module, void *cmdq_handle)
+{
+	int i;
+
+	DISPFUNC();
+	if (!_is_power_on_status(module))
+		return DSI_STATUS_OK;
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
+		MIPITX_OUTREG32(DSI_PHY_REG[i]+MIPITX_LANE_CON, 0x3FFF0080);
+	udelay(1);
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
+		MIPITX_OUTREG32(DSI_PHY_REG[i]+MIPITX_LANE_CON, 0x3FFF00C0);
+	dsi_sw_control_lp11(module, cmdq_handle, 1);
+	udelay(20);
+
+#ifdef ENABLE_CLK_MGR
+	if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
+		ddp_clk_disable_unprepare(DISP1_DSI0_MM_CLOCK);
+		ddp_clk_disable_unprepare(DISP1_DSI0_INTERFACE_CLOCK);
+	}
+#endif
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		/* disable mipi clock */
+		/* step 0: PLL DISABLE */
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON1, FLD_RG_DSI_PLL_EN, 0);
+	}
+
+#ifdef ENABLE_CLK_MGR
+	ddp_set_mipi26m(module, 0);
+#endif
+
+	_set_power_on_status(module, 0);
+	return DSI_STATUS_OK;
+}
+
+int ddp_dsi_leave_idle(enum DISP_MODULE_ENUM module, void *cmdq_handle)
+{
+	DISPFUNC();
+	if (_is_power_on_status(module))
+		return DSI_STATUS_OK;
+
+	ddp_set_mipi26m(module, 1);
+
+	_DSI_PHY_clk_leave_idle(module, cmdq_handle, &(_dsi_context[0].dsi_params));
+	atomic_set(&release_sw_lp11, 1);
+
+	if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
+		ddp_clk_prepare_enable(DISP1_DSI0_MM_CLOCK);
+		ddp_clk_prepare_enable(DISP1_DSI0_INTERFACE_CLOCK);
+	}
+
+	/* DSI_RestoreRegisters(module, NULL); */
+	DSI_Reset(module, NULL);
+	_set_power_on_status(module, 1);
+
 	return DSI_STATUS_OK;
 }
 
