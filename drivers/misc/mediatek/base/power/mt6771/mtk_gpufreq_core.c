@@ -2021,8 +2021,8 @@ static void __mt_gpufreq_kick_pbm(int enable)
 					power = g_power_table[i].gpufreq_power;
 					found = 1;
 					kicker_pbm_by_gpu(true, power, cur_volt / 100);
-					gpufreq_pr_debug("@%s: request GPU power = %d, cur_volt = %d, cur_freq = %d\n",
-							__func__, power, cur_volt / 100, cur_freq);
+					gpufreq_pr_debug("@%s: request GPU power = %d, cur_volt = %d uV, cur_freq = %d KHz\n",
+							__func__, power, cur_volt * 10, cur_freq);
 					return;
 				}
 			}
@@ -2034,11 +2034,11 @@ static void __mt_gpufreq_kick_pbm(int enable)
 				/* use freq to found corresponding power budget */
 				power = g_power_table[tmp_idx].gpufreq_power;
 				kicker_pbm_by_gpu(true, power, cur_volt / 100);
-				gpufreq_pr_debug("@%s: request GPU power = %d, cur_volt = %d, cur_freq = %d\n",
-						__func__, power, cur_volt / 100, cur_freq);
+				gpufreq_pr_debug("@%s: request GPU power = %d, cur_volt = %d uV, cur_freq = %d KHz\n",
+						__func__, power, cur_volt * 10, cur_freq);
 			} else {
-				gpufreq_pr_err("@%s: Cannot found request power in power table, cur_freq = %d KHz, cur_volt = %d mV\n",
-						__func__, cur_freq, cur_volt / 100);
+				gpufreq_pr_debug("@%s: Cannot found request power in power table, cur_freq = %d KHz, cur_volt = %d uV\n",
+						__func__, cur_freq, cur_volt * 10);
 			}
 		}
 	} else {
