@@ -168,12 +168,6 @@
 		ranges;
 
 		/*TODO: add reserved memory node here*/
-		/* atf-reserved-memory for ATF image, xlat tab, bss, or ATF DRAM extension */
-		atf-reserved-memory@54600000 {
-			compatible = "mediatek,atf-reserved-memory";
-			no-map;
-			reg = <0 0x54600000 0 0x40000>;
-		};
 	};
 
 	gic: interrupt-controller@0c000000 {
