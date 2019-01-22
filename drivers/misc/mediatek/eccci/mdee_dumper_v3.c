@@ -294,7 +294,7 @@ static int mdee_set_core_name(int md_id, char *core_name, EX_OVERVIEW_T *ex_over
 		temp_sys_inf_1 = brief_info->system_info1;
 		temp_sys_inf_2 = brief_info->system_info2;
 		snprintf(core_name, MD_CORE_NAME_DEBUG, "%s_core%d,vpe%d,tc%d(VPE%d)", core_name,
-			(temp_sys_inf_1>>2), (temp_sys_inf_1&0x1), temp_sys_inf_2, temp_sys_inf_1);
+			(temp_sys_inf_1>>1), (temp_sys_inf_1&0x1), temp_sys_inf_2, temp_sys_inf_1);
 	}
 	CCCI_NORMAL_LOG(md_id, KERN, "brief_info: core_name = %s", core_name);
 	return core_id;
