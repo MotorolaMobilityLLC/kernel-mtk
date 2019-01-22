@@ -37,7 +37,7 @@
 #include <linux/ioctl.h>
 #include "legacy_controller.h"
 #include "eas_controller.h"
-#include "mtk_unified_power.h"
+#include "mtk_upower.h"
 
 #define DEV_MAJOR 121
 #define DEV_NAME "debug"
