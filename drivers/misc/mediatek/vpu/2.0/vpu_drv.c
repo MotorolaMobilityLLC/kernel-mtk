@@ -773,12 +773,20 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	}
 	case VPU_IOCTL_LOCK:
 	{
+		#if 0
 		vpu_hw_lock(user);
+		#else
+		LOG_WRN("DO NOT SUPPORT VPU_IOCTL_LOCK\n");
+		#endif
 		break;
 	}
 	case VPU_IOCTL_UNLOCK:
 	{
+		#if 0
 		vpu_hw_unlock(user);
+		#else
+		LOG_WRN("DO NOT SUPPORT VPU_IOCTL_LOCK\n");
+		#endif
 		break;
 	}
 	case VPU_IOCTL_LOAD_ALG_TO_POOL:
