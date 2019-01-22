@@ -37,4 +37,8 @@ config MTK_TIMER_TIMESYNC
 	  This selects the support for time synchronization between kernel
 	  sched_clock and sys_timer tick.
 
+	  Time synchronization may be required in some sub-systems, for example,
+	  sspm and scp ...etc, to have ability to get the same sched_clock
+	  as kernel in AP.
+
 	  If unsure, say N.
