@@ -152,6 +152,13 @@ typedef struct _P2P_CONNECTION_REQ_INFO_T {
 	UINT_8 aucIEBuf[MAX_IE_LENGTH];
 } P2P_CONNECTION_REQ_INFO_T, *P_P2P_CONNECTION_REQ_INFO_T;
 
+typedef struct _P2P_GC_DISCONNECTION_REQ_INFO_T {
+	P_STA_RECORD_T prTargetStaRec;
+	UINT_32 u4RetryCount;
+	UINT_16 u2ReasonCode;
+	BOOLEAN fgSendDeauth;
+} P2P_GC_DISCONNECTION_REQ_INFO_T, *P_P2P_GC_DISCONNECTION_REQ_INFO_T;
+
 typedef struct _P2P_MGMT_TX_REQ_INFO_T {
 	BOOLEAN fgIsMgmtTxRequested;
 	P_MSDU_INFO_T prMgmtTxMsdu;
@@ -258,6 +265,9 @@ struct _P2P_FSM_INFO_T {
 
 	/* Connection related. */
 	P2P_CONNECTION_REQ_INFO_T rConnReqInfo;
+
+	/* Disconnection related. */
+	P2P_GC_DISCONNECTION_REQ_INFO_T rGcDisConnReqInfo;
 
 	/* Mgmt tx related. */
 	P2P_MGMT_TX_REQ_INFO_T rMgmtTxInfo;
@@ -743,6 +753,8 @@ VOID p2pFsmRunEventSendECSA(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 #define CFG_DISABLE_DELAY_PROVISION_DISCOVERY      0
 
 #define CFG_CONNECTION_POLICY_2_0                            0
+
+#define MAX_GC_DEAUTH_RETRY_COUNT                  1
 
 /* Device Password ID */
 enum wps_dev_password_id {
