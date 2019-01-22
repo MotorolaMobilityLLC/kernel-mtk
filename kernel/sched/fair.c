@@ -676,6 +676,7 @@ static u64 sched_vslice(struct cfs_rq *cfs_rq, struct sched_entity *se)
 
 #ifdef CONFIG_SMP
 static int select_idle_sibling(struct task_struct *p, int cpu);
+static int select_max_spare_capacity_cpu(struct task_struct *p, int target);
 static unsigned long task_h_load(struct task_struct *p);
 
 /*
@@ -5823,9 +5824,12 @@ CONSIDER_EAS:
 	if (!sd) {
 		if (energy_aware() && !cpu_rq(cpu)->rd->overutilized)
 			new_cpu = energy_aware_wake_cpu(p, prev_cpu);
-		else if (sd_flag & SD_BALANCE_WAKE) /* XXX always ? */
-			new_cpu = select_idle_sibling(p, new_cpu);
-
+		else if (sd_flag & SD_BALANCE_WAKE) { /* XXX always ? */
+			if (true)
+				new_cpu = select_max_spare_capacity_cpu(p, prev_cpu);
+			else
+				new_cpu = select_idle_sibling(p, new_cpu);
+		}
 	} else while (sd) {
 		struct sched_group *group;
 		int weight;
@@ -9353,4 +9357,56 @@ void met_cpu_util(int cpu)
 	met_tag_oneshot(0, util_str, cpu_online(cpu) ? _cpu_util:0);
 	met_tag_oneshot(0, boost_str, cpu_online(cpu) ? boosted_cpu_util:0);
 #endif
+}
+
+/* To find a CPU with max spare capacity in the same cluster with target */
+static
+int select_max_spare_capacity_cpu(struct task_struct *p, int target)
+{
+	unsigned long int max_spare_capacity = 0;
+	int max_spare_cpu = -1;
+	struct cpumask cls_cpus;
+	int cid = arch_get_cluster_id(target); /* cid of target CPU */
+	int cpu = task_cpu(p);
+
+	/* idle prefer */
+	if (idle_cpu(target))
+		return target;
+
+	/* If the prevous cpu is cache affine and idle, choose it first. */
+	if (cpu != target && cpus_share_cache(cpu, target) && idle_cpu(cpu))
+		return cpu;
+
+	arch_get_cluster_cpus(&cls_cpus, cid);
+
+	/* Otherwise, find a CPU with max spare-capacity in cluster */
+	for_each_cpu_and(cpu, tsk_cpus_allowed(p), &cls_cpus) {
+		unsigned long int new_usage;
+		unsigned long int spare_cap;
+
+		if (!cpu_online(cpu))
+			continue;
+
+		if (idle_cpu(cpu))
+			return cpu;
+
+		new_usage = cpu_util(cpu) + task_util(p);
+
+		if (new_usage >= capacity_of(cpu))
+			spare_cap = 0;
+		else    /* consider RT/IRQ capacity reduction */
+			spare_cap = (capacity_of(cpu) - new_usage);
+
+		/* update CPU with max spare capacity */
+		if ((long int)spare_cap > (long int)max_spare_capacity) {
+			max_spare_cpu = cpu;
+			max_spare_capacity = spare_cap;
+		}
+	}
+
+	/* if max_spare_cpu exist, choose it. */
+	if (max_spare_cpu > -1)
+		return max_spare_cpu;
+	else
+		return target;
 }
