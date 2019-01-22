@@ -69,6 +69,10 @@ ccflags-y += -DMTK_GED_KPI
 ccflags-y += -DMTK_FRR20
 endif
 
+ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt8167)
+ccflags-y += -DMTK_FRR20
+endif
+
 ccflags-y += \
 	-include $(GED_TOP)/include/config_kernel_$(VER).h
 
