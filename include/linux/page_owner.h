@@ -10,16 +10,6 @@ extern void __set_page_owner(struct page *page,
 			unsigned int order, gfp_t gfp_mask);
 extern gfp_t __get_page_owner_gfp(struct page *page);
 
-extern int __dump_pfn_backtrace(unsigned long pfn);
-
-static inline int dump_pfn_backtrace(unsigned long pfn)
-{
-	if (likely(!page_owner_inited))
-		return -1;
-
-	return __dump_pfn_backtrace(pfn);
-}
-
 static inline void reset_page_owner(struct page *page, unsigned int order)
 {
 	if (likely(!page_owner_inited))
@@ -71,11 +61,6 @@ static inline void set_page_owner(struct page *page,
 static inline gfp_t get_page_owner_gfp(struct page *page)
 {
 	return 0;
-}
-
-static inline int dump_pfn_backtrace(unsigned long pfn)
-{
-	return -1;
 }
 
 #endif /* CONFIG_PAGE_OWNER */

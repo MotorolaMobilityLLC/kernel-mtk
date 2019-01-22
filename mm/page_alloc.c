@@ -6951,44 +6951,8 @@ int alloc_contig_range(unsigned long start, unsigned long end,
 
 	/* Make sure the range is really isolated. */
 	if (test_pages_isolated(outer_start, end, false)) {
-#if defined(CONFIG_CMA_DEBUG) && defined(CONFIG_PAGE_OWNER)
-		struct page *page;
-		unsigned long pfn;
-		int bt_per_fail = 32;
-#endif
 		pr_info_ratelimited("%s: [%lx, %lx) PFNs busy\n",
 			__func__, outer_start, end);
-#if defined(CONFIG_CMA_DEBUG) && defined(CONFIG_PAGE_OWNER)
-		pr_info("========\n");
-		pfn = start;
-		while (pfn < end && bt_per_fail) {
-			int dump_ret;
-
-			if (!pfn_valid_within(pfn)) {
-				pfn++;
-				continue;
-			}
-			page = pfn_to_page(pfn);
-			if (PageBuddy(page))
-				/*
-				 * If the page is on a free list, it has to be on
-				 * the correct MIGRATE_ISOLATE freelist. There is no
-				 * simple way to verify that as VM_BUG_ON(), though.
-				 */
-				pfn += 1 << page_order(page);
-			else if (PageHWPoison(page))
-				/* A HWPoisoned page cannot be also PageBuddy */
-				pfn++;
-			else {
-				dump_ret = dump_pfn_backtrace(pfn);
-				if (dump_ret < 0)
-					pr_info("[page_owner]: dump PFN %lu fail, err: %d\n", pfn, dump_ret);
-				else
-					bt_per_fail--;
-				pfn++;
-			}
-		}
-#endif
 		ret = -EBUSY;
 		goto done;
 	}
