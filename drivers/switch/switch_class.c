@@ -54,8 +54,8 @@ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
 	return sprintf(buf, "%s\n", sdev->name);
 }
 
-static DEVICE_ATTR(state, S_IRUGO | S_IWUSR, state_show, NULL);
-static DEVICE_ATTR(name, S_IRUGO | S_IWUSR, name_show, NULL);
+static DEVICE_ATTR(state, S_IRUGO, state_show, NULL);
+static DEVICE_ATTR(name, S_IRUGO, name_show, NULL);
 
 void switch_set_state(struct switch_dev *sdev, int state)
 {
@@ -68,6 +68,8 @@ void switch_set_state(struct switch_dev *sdev, int state)
 
 	if (sdev->state != state) {
 		sdev->state = state;
+		if (sdev->set_state)
+			sdev->set_state(sdev, state);
 
 		prop_buf = (char *)get_zeroed_page(GFP_KERNEL);
 		if (prop_buf) {
@@ -109,6 +111,23 @@ static int create_switch_class(void)
 
 	return 0;
 }
+
+
+static int swdev_match_device_by_name(struct device *dev, const void *data)
+{
+	const char *name = data;
+	struct switch_dev *sdev = dev_get_drvdata(dev);
+
+	return strcmp(sdev->name, name) == 0;
+}
+
+struct switch_dev *switch_dev_get_by_name(const char *name)
+{
+	struct device *dev = class_find_device(switch_class,
+			NULL, (const char *)name, swdev_match_device_by_name);
+	return dev ? dev_get_drvdata(dev) : NULL;
+}
+EXPORT_SYMBOL_GPL(switch_dev_get_by_name);
 
 int switch_dev_register(struct switch_dev *sdev)
 {
@@ -166,7 +185,7 @@ static void __exit switch_class_exit(void)
 	class_destroy(switch_class);
 }
 
-module_init(switch_class_init);
+subsys_initcall(switch_class_init);
 module_exit(switch_class_exit);
 
 MODULE_AUTHOR("Mike Lockwood <lockwood@android.com>");

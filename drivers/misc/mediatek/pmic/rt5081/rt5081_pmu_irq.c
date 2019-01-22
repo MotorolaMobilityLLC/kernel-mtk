@@ -60,11 +60,6 @@ static const struct irq_mapping_tbl rt5081_pmu_irq_mapping_tbl[] = {
 	RT5081_PMU_IRQ_MAPPING(chg_rechgi, 37),
 	RT5081_PMU_IRQ_MAPPING(chg_termi, 38),
 	RT5081_PMU_IRQ_MAPPING(chg_ieoci, 39),
-	RT5081_PMU_IRQ_MAPPING(adc_donei, 40),
-	RT5081_PMU_IRQ_MAPPING(pumpx_donei, 41),
-	RT5081_PMU_IRQ_MAPPING(bst_batuvi, 45),
-	RT5081_PMU_IRQ_MAPPING(bst_vbusovi, 46),
-	RT5081_PMU_IRQ_MAPPING(bst_olpi, 47),
 	RT5081_PMU_IRQ_MAPPING(attachi, 48),
 	RT5081_PMU_IRQ_MAPPING(detachi, 49),
 	RT5081_PMU_IRQ_MAPPING(qc30stpdone, 51),
@@ -113,6 +108,16 @@ static const struct irq_mapping_tbl rt5081_pmu_irq_mapping_tbl[] = {
 	RT5081_PMU_IRQ_MAPPING(dsv_bst_ocp, 125),
 	RT5081_PMU_IRQ_MAPPING(dsv_vneg_scp, 126),
 	RT5081_PMU_IRQ_MAPPING(dsv_vpos_scp, 127),
+};
+
+static const uint8_t rt5081_irqr_filter[16] = {
+	0xF1, 0xF8, 0xF0, 0xF8, 0xFF, 0xE3, 0xFB, 0xF8,
+	0xF8, 0xCF, 0x3F, 0xE0, 0x80, 0xFF, 0xC0, 0xF8,
+};
+
+static const uint8_t rt5081_irqf_filter[16] = {
+	0xF1, 0xF8, 0xF0, 0x80, 0x00, 0x00, 0x00, 0x00,
+	0xF8, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
 static uint8_t rt5081_pmu_curr_irqmask[16];
@@ -205,6 +210,8 @@ static irqreturn_t rt5081_pmu_irq_handler(int irq, void *priv)
 {
 	struct rt5081_pmu_chip *chip = (struct rt5081_pmu_chip *)priv;
 	u8 irq_ind = 0, data[16] = {0}, mask[16] = {0};
+	u8 stat_chg[16] = {0}, stat_old[16] = {0}, stat_new[16] = {0};
+	u8 valid_chg[16] = {0};
 	int i = 0, j = 0, ret = 0;
 
 	dev_dbg(chip->dev, "%s\n", __func__);
@@ -220,10 +227,33 @@ static irqreturn_t rt5081_pmu_irq_handler(int irq, void *priv)
 		goto out_irq_handler;
 	}
 	irq_ind = ret;
+
+	/* read stat before reading irq evt */
 	ret = rt5081_pmu_reg_block_read(chip,
-					RT5081_PMU_REG_CHGIRQ1, 16, data);
+					RT5081_PMU_REG_CHGSTAT1, 16, stat_old);
 	if (ret < 0) {
-		dev_err(chip->dev, "read irq event fail\n");
+		dev_err(chip->dev, "read prev irq stat fail\n");
+		goto out_irq_handler;
+	}
+	/* workaround for irq, divided irq event into upper and lower */
+	ret = rt5081_pmu_reg_block_read(chip,
+					RT5081_PMU_REG_CHGIRQ1, 5, data);
+	if (ret < 0) {
+		dev_err(chip->dev, "read upper irq event fail\n");
+		goto out_irq_handler;
+	}
+	ret = rt5081_pmu_reg_block_read(chip,
+					RT5081_PMU_REG_QCIRQ, 10, data + 6);
+	if (ret < 0) {
+		dev_err(chip->dev, "read lower irq event fail\n");
+		goto out_irq_handler;
+	}
+
+	/* read stat after reading irq evt */
+	ret = rt5081_pmu_reg_block_read(chip,
+					RT5081_PMU_REG_CHGSTAT1, 16, stat_new);
+	if (ret < 0) {
+		dev_err(chip->dev, "read post irq stat fail\n");
 		goto out_irq_handler;
 	}
 	ret = rt5081_pmu_reg_block_read(chip,
@@ -238,6 +268,10 @@ static irqreturn_t rt5081_pmu_irq_handler(int irq, void *priv)
 		goto out_irq_handler;
 	}
 	for (i = 0; i < 16; i++) {
+		stat_chg[i] = stat_old[i] ^ stat_new[i];
+		valid_chg[i] = (stat_new[i] & rt5081_irqr_filter[i]) |
+				(~stat_new[i] & rt5081_irqf_filter[i]);
+		data[i] |= (stat_chg[i] & valid_chg[i]);
 		data[i] &= ~mask[i];
 		if (!data[i])
 			continue;
@@ -347,7 +381,6 @@ int rt5081_pmu_irq_register(struct rt5081_pmu_chip *chip)
 	if (ret < 0)
 		goto out_pmu_irq;
 	device_init_wakeup(chip->dev, true);
-	pr_info("%s successfully\n", __func__);
 	return 0;
 out_pmu_irq:
 	gpio_free(pdata->intr_gpio);

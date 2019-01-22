@@ -1288,7 +1288,7 @@ static int rt5081_pmu_rgbled_probe(struct platform_device *pdev)
 	for (i = 0; i < ARRAY_SIZE(rt5081_pmu_led_trigger); i++) {
 		ret = led_trigger_register(&rt5081_pmu_led_trigger[i]);
 		if (ret < 0) {
-			dev_err(&pdev->dev, "register %d trigger fai\n", i);
+			dev_err(&pdev->dev, "register %d trigger fail\n", i);
 			goto out_led_trigger;
 		}
 	}

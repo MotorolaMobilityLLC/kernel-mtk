@@ -12,4 +12,10 @@ config SWITCH_GPIO
 	help
 	  Say Y here to enable GPIO based switch support.
 
+config SWITCH_USB_RT8973
+	bool "RT8973 USB Switch Driver"
+	default n
+	help
+	  Say Y here to enable RT8973 usb switch support.
+
 endif # SWITCH

@@ -302,7 +302,7 @@ static const struct i2c_device_id rt5081_pmu_id_table[] = {
 MODULE_DEVICE_TABLE(i2c, rt5081_pmu_id_table);
 
 static const struct of_device_id rt5081_pmu_ofid_table[] = {
-	{.compatible = "richtek,rt5081_pmu",},
+	{.compatible = "mediatek,rt5081_pmu",},
 	{},
 };
 MODULE_DEVICE_TABLE(of, rt5081_pmu_ofid_table);

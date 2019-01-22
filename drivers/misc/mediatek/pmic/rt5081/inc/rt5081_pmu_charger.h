@@ -13,6 +13,9 @@
 #ifndef __LINUX_MFD_RT5081_PMU_CHARGER_H
 #define __LINUX_MFD_RT5081_PMU_CHARGER_H
 
+/* Define this macro if detecting apple samsung TA is needed */
+/* #define RT5081_APPLE_SAMSUNG_TA_SUPPORT */
+
 /* Parameter */
 /* uA */
 #define RT5081_ICHG_NUM		64

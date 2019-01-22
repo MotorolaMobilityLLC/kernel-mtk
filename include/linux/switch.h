@@ -26,6 +26,7 @@ struct switch_dev {
 
 	ssize_t	(*print_name)(struct switch_dev *sdev, char *buf);
 	ssize_t	(*print_state)(struct switch_dev *sdev, char *buf);
+	int (*set_state)(struct switch_dev *sdev, int state);
 };
 
 struct gpio_switch_platform_data {
@@ -49,5 +50,8 @@ static inline int switch_get_state(struct switch_dev *sdev)
 }
 
 extern void switch_set_state(struct switch_dev *sdev, int state);
+
+extern struct switch_dev
+		*switch_dev_get_by_name(const char *name);
 
 #endif /* __LINUX_SWITCH_H__ */
