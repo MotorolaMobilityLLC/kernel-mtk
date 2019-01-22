@@ -34,6 +34,7 @@
 #include "ddp_mmp.h"
 #include "disp_helper.h"
 #include "ddp_reg.h"
+#include "smi_debug.h"
 
 #ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_gpio.h>
@@ -437,6 +438,8 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module, unsigned int
 		if (dsi_underflow == 0) {
 			DDPPR_ERR("%s:buffer underrun\n", ddp_get_module_name(module));
 			primary_display_diagnose();
+			smi_debug_bus_hanging_detect_ext2(SMI_DBG_DISPSYS | SMI_DBG_VDEC | SMI_DBG_IMGSYS |
+				SMI_DBG_VENC | SMI_DBG_MJC, 1, 0, 1);
 			dsi_underflow = 1;
 			disp_aee_print("DSI buffer underrun\n");
 		}
