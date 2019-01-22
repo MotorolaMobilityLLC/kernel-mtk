@@ -48,7 +48,6 @@
 ********************************************************************************
 */
 extern phys_addr_t gConEmiPhyBase;
-extern BOOLEAN fgIsResetting;
 
 extern INT_32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT_32 enable);
 

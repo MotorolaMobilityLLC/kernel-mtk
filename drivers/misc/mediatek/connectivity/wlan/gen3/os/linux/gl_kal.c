@@ -37,6 +37,7 @@
 #include "gl_kal.h"
 #include "gl_wext.h"
 #include "precomp.h"
+#include "gl_rst.h"
 #if CFG_SUPPORT_AGPS_ASSIST
 #include <net/netlink.h>
 #endif
@@ -2005,7 +2006,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	P_GL_IO_REQ_T prIoReq = NULL;
 	WLAN_STATUS ret = WLAN_STATUS_SUCCESS;
 
-	if (fgIsResetting == TRUE)
+	if (kalIsResetting())
 		return WLAN_STATUS_SUCCESS;
 
 	/* GLUE_SPIN_LOCK_DECLARATION(); */

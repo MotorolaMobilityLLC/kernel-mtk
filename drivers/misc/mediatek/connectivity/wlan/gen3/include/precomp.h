@@ -217,7 +217,6 @@
 #include "gl_qa_agent.h"
 #endif
 
-extern BOOLEAN fgIsResetting;
 #include "gl_rst.h"
 
 /*******************************************************************************

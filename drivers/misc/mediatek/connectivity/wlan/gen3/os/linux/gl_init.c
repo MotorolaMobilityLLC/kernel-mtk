@@ -1936,7 +1936,7 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 	rSetP2P.u4Enable = p2pmode.u4Enable;
 	rSetP2P.u4Mode = p2pmode.u4Mode;
 
-	if ((!rSetP2P.u4Enable) && (fgIsResetting == FALSE))
+	if ((!rSetP2P.u4Enable) && !kalIsResetting())
 		p2pNetUnregister(prGlueInfo, FALSE);
 
 	rStatus = kalIoctl(prGlueInfo,
@@ -1947,7 +1947,7 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 		return -1;
 	}
 
-	if ((rSetP2P.u4Enable) && (fgIsResetting == FALSE))
+	if ((rSetP2P.u4Enable) && !kalIsResetting())
 		p2pNetRegister(prGlueInfo, FALSE);
 
 	return 0;
