@@ -120,10 +120,23 @@
 #define WTBL_ALLOC_FAIL                 WTBL_RESERVED_ENTRY
 #define WTBL_DEFAULT_ENTRY              0
 
+#define SEC_TX_KEY_COMMAND		1
+#define SEC_QUEUE_KEY_COMMAND	0
+#define SEC_DROP_KEY_COMMAND	2
+
 /*******************************************************************************
  *                         D A T A   T Y P E S
  ********************************************************************************
  */
+enum EAPOL_KEY_TYPE {
+	EAPOL_KEY_NOT_KEY = 0,
+	EAPOL_KEY_1_OF_4 = 1,
+	EAPOL_KEY_2_OF_4 = 2,
+	EAPOL_KEY_3_OF_4 = 3,
+	EAPOL_KEY_4_OF_4 = 4,
+	EAPOL_KEY_1_OF_2 = 5,
+	EAPOL_KEY_2_OF_2 = 6,
+};
 
 typedef struct _IEEE_802_1X_HDR {
 	UINT_8 ucVersion;
@@ -210,6 +223,12 @@ BOOL secPrivacySeekForEntry(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prSta);
 VOID secPrivacyFreeForEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucEntry);
 
 VOID secPrivacyFreeSta(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec);
+
+enum EAPOL_KEY_TYPE secGetEapolKeyType(PUINT_8 pucPacket);
+
+UINT_8 secGetBssIdxByNetType(P_ADAPTER_T prAdapter);
+
+VOID secSetKeyCmdAction(P_BSS_INFO_T prBssInfo, UINT_8 ucEapolKeyType, UINT_8 ucAction);
 
 VOID secRemoveBssBcEntry(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN BOOL fgRoam);
 
