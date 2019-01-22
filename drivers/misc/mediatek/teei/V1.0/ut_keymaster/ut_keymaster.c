@@ -12,40 +12,39 @@
  * GNU General Public License for more details.
  */
 
-#include<linux/kernel.h>
-#include<linux/platform_device.h>
-#include<linux/module.h>
-#include<linux/types.h>
-#include<linux/fs.h>
-#include<linux/errno.h>
-#include<linux/mm.h>
-#include<linux/sched.h>
-#include<linux/init.h>
-#include<linux/cdev.h>
-#include<asm/io.h>
-#include<asm/uaccess.h>
-#include<asm/cacheflush.h>
-#include<linux/semaphore.h>
-#include<linux/slab.h>
 
+
+#include <linux/kernel.h>
+#include <linux/platform_device.h>
+#include <linux/module.h>
+#include <linux/types.h>
+#include <linux/fs.h>
+#include <linux/errno.h>
+#include <linux/mm.h>
+#include <linux/sched.h>
+#include <linux/init.h>
+#include <linux/cdev.h>
+#include <asm/io.h>
+#include <asm/uaccess.h>
+#include <asm/cacheflush.h>
+#include <linux/semaphore.h>
+#include <linux/slab.h>
+#include <imsg_log.h>
 #include "../tz_driver/include/teei_id.h"
 #include "../tz_driver/include/tz_service.h"
 #include "../tz_driver/include/nt_smc_call.h"
-/* #include "../tz_driver/include/teei_keymaster.h" */
-#define KEYMASTER_DRIVER_ID             101
-#define KEYMASTER_MAJOR                 254
-#define KEYMASTER_SIZE                  (128 * 1024)
-#define DEV_NAME                        "ut_keymaster"
+#include "../tz_driver/include/teei_keymaster.h"
+#include "../tz_driver/include/teei_client_main.h"
 
-#define CMD_MEM_CLEAR                   _IO(0x775B777E, 0x1)
-#define CMD_MEM_SEND                    _IO(0x775B777E, 0x2)
-#define CMD_NOTIFY_UTD                  _IO(0x775B777E, 0x3)
-#define CMD_FIRST_TIME_BOOT             _IO(0x775B777E, 0x4)
+#define KEYMASTER_DRIVER_ID            101
+#define KEYMASTER_MAJOR	               254
+#define KEYMASTER_SIZE		           (128 * 1024)
+#define DEV_NAME                       "ut_keymaster"
+#define CMD_MEM_CLEAR	               _IO(0x5B777E, 0x1)
+#define CMD_MEM_SEND                   _IO(0x5B777E, 0x2)
+#define CMD_NOTIFY_UTD	               _IO(0x5B777E, 0x3)
+#define CMD_FIRST_TIME_BOOT            _IO(0x5B777E, 0x4)
 
-extern char *keymaster_buff_addr;
-extern struct semaphore boot_decryto_lock;
-
-#define UT_KEYMASTER_BUF_SIZE           (512 * 1024)
 
 static int keymaster_major = KEYMASTER_MAJOR;
 static struct class *driver_class;
@@ -62,139 +61,112 @@ struct keymaster_dev *keymaster_devp;
 
 int keymaster_open(struct inode *inode, struct file *filp)
 {
+	IMSG_DEBUG("!!!!!microtrust kernel open keymaster dev operation!!!\n");
 
-	pr_debug("!!!!!microtrust kernel open keymaster dev operation!!!\n");
-
-	if (keymaster_devp != NULL)
+	if (keymaster_devp != NULL) {
 		filp->private_data = keymaster_devp;
-	else {
-		pr_err("microtrust keymaster_devp is NULL\n");
+	} else {
+		IMSG_ERROR("microtrust keymaster_devp is NULL\n");
 		return -EINVAL;
 	}
 
 	return 0;
 }
+
 int keymaster_release(struct inode *inode, struct file *filp)
 {
 	filp->private_data = NULL;
 	return 0;
 }
+
 static long keymaster_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	down(&keymaster_api_lock);
 
-	/*
-	unsigned int args_len = 1;
-	unsigned int fp_cid;
-	unsigned int fp_fid = 3;
-	tciMessage_t keymaster_msg;
-	*/
 	switch (cmd) {
-		case CMD_MEM_CLEAR:
-			pr_info("microtrust keymaster mem clear. \n");
-			break;
+	case CMD_MEM_CLEAR:
+		IMSG_DEBUG("microtrust keymaster mem clear. \n");
+		break;
 
-		case CMD_MEM_SEND:
-
-			/* pr_debug("microturst ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"); */
-			/* pr_debug("microtrust kernel keymaster CMD_MEM_SEND\n"); */
-			/*
-			fp_cid = virt_to_phys(&fp_fid);
-			pr_debug("chx share mem: fp_fid = %d,fp_cid = %d, len = %d\n",fp_fid, fp_cid,sizeof(unsigned int));
-			memset((void *)keymaster_buff_addr, 0, args_len + 16);
-			memcpy((void *)keymaster_buff_addr, &fp_fid, sizeof(unsigned int));
-			memcpy((void *)(keymaster_buff_addr + sizeof(unsigned int)), &fp_cid, sizeof(unsigned int));
-			*/
-			if (!keymaster_buff_addr) {
-				pr_err("microtrust keymaster fp_buiff_addr is invalid!. \n");
-				up(&keymaster_api_lock);
-				return -EFAULT;
-			}
-
-			memset((void *)keymaster_buff_addr, 0, KEYMASTER_SIZE);
-
-			if (copy_from_user((void *)keymaster_buff_addr, (void *)arg, KEYMASTER_SIZE)) {
-				pr_err("microturst keymaster copy from user failed. \n");
-				up(&keymaster_api_lock);
-				return -EFAULT;
-			}
-
-			/* memcpy(&keymaster_msg, (void *)keymaster_buff_addr, sizeof(tciMessage_t)); */
-			/* pr_debug("microtrust keymaster cmd is:id = %d, type = %d\n", keymaster_msg.command.commandId, keymaster_msg.rsa_gen_key.type); */
-			Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + KEYMASTER_SIZE);
-
-
-			/* this para 'KEYMASTER_DRIVER_ID' is not used */
-			send_keymaster_command(KEYMASTER_DRIVER_ID);
-
-			if (copy_to_user((void *)arg, (void *)keymaster_buff_addr,
-				KEYMASTER_SIZE)) {
-				pr_err("microtrust keymaster copy from user failed. \n");
-				up(&keymaster_api_lock);
-				return -EFAULT;
-			}
-
-			/* pr_debug("microtrust keymaster ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~end\n"); */
-			break;
-
-		case CMD_NOTIFY_UTD:
-
-			up(&(boot_decryto_lock));
-			break;
-
-		case CMD_FIRST_TIME_BOOT:
-
-			/* pr_debug("teei daemon tell the keymaster this is first time boot start\n"); */
-
-			if (!keymaster_buff_addr) {
-				pr_err("microtrust keymaster fp_buiff_addr is invalid!. \n");
-				up(&keymaster_api_lock);
-				return -EFAULT;
-			}
-
-			memset((void *)keymaster_buff_addr, 0, 8);
-
-			if (copy_from_user((void *)keymaster_buff_addr, (void *)arg, 8)) {
-				pr_err("microturst keymaster copy from user failed.\n");
-				up(&keymaster_api_lock);
-				return -EFAULT;
-			}
-
-			/* memcpy(&keymaster_msg, (void *)keymaster_buff_addr, sizeof(tciMessage_t)); */
-			/* pr_debug("microtrust keymaster cmd is:id=%d,type=%d\n",keymaster_msg.command.commandId,keymaster_msg.rsa_gen_key.type); */
-			Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + 8);
-
-
-			/* this para 'KEYMASTER_DRIVER_ID' is not used */
-			send_keymaster_command(KEYMASTER_DRIVER_ID);
-
-			if (copy_to_user((void *)arg, (void *)keymaster_buff_addr,
-				8)) {
-				pr_debug("microtrust keymaster copy from user failed. \n");
-				up(&keymaster_api_lock);
-				return -EFAULT;
-			}
-
-			/* pr_debug("teei daemon tell the keymaster this is first time boot end\n"); */
-			break;
-
-		default:
+	case CMD_MEM_SEND:
+		if (!keymaster_buff_addr) {
+			IMSG_ERROR("microtrust keymaster fp_buiff_addr is invalid!. \n");
 			up(&keymaster_api_lock);
-			return -EINVAL;
+			return -EFAULT;
+		}
+
+		memset((void *)keymaster_buff_addr, 0, KEYMASTER_SIZE);
+
+		if (copy_from_user((void *)keymaster_buff_addr, (void *)arg, KEYMASTER_SIZE)) {
+			IMSG_ERROR(KERN_ERR "microturst keymaster copy from user failed. \n");
+			up(&keymaster_api_lock);
+			return -EFAULT;
+		}
+
+		Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + KEYMASTER_SIZE);
+
+		/*this para 'KEYMASTER_DRIVER_ID' is not used*/
+		send_keymaster_command(KEYMASTER_DRIVER_ID);
+
+		if (copy_to_user((void *)arg, (void *)keymaster_buff_addr, KEYMASTER_SIZE)) {
+			IMSG_ERROR("microtrust keymaster copy from user failed. \n");
+			up(&keymaster_api_lock);
+			return -EFAULT;
+		}
+
+		break;
+
+	case CMD_NOTIFY_UTD:
+
+		up(&(boot_decryto_lock));
+		break;
+
+	case CMD_FIRST_TIME_BOOT:
+
+		if (!keymaster_buff_addr) {
+			IMSG_ERROR("microtrust keymaster fp_buiff_addr is invalid!. \n");
+			up(&keymaster_api_lock);
+			return -EFAULT;
+		}
+
+		memset((void *)keymaster_buff_addr, 0, 8);
+
+		if (copy_from_user((void *)keymaster_buff_addr, (void *)arg, 8)) {
+			IMSG_ERROR(KERN_ERR "microturst keymaster copy from user failed. \n");
+			up(&keymaster_api_lock);
+			return -EFAULT;
+		}
+
+		Flush_Dcache_By_Area((unsigned long)keymaster_buff_addr, (unsigned long)keymaster_buff_addr + 8);
+
+		/*this para 'KEYMASTER_DRIVER_ID' is not used*/
+		send_keymaster_command(KEYMASTER_DRIVER_ID);
+
+		if (copy_to_user((void *)arg, (void *)keymaster_buff_addr, 8)) {
+			IMSG_ERROR("microtrust keymaster copy from user failed. \n");
+			up(&keymaster_api_lock);
+			return -EFAULT;
+		}
+
+		break;
+
+	default:
+		up(&keymaster_api_lock);
+		return -EINVAL;
 	}
 
 	up(&keymaster_api_lock);
 	return 0;
 }
 static ssize_t keymaster_read(struct file *filp, char __user *buf,
-                              size_t size, loff_t *ppos)
+	size_t size, loff_t *ppos)
 {
 	int ret = 0;
 	return ret;
 }
 
 static ssize_t keymaster_write(struct file *filp, const char __user *buf,
-                               size_t size, loff_t *ppos)
+	size_t size, loff_t *ppos)
 {
 	return 0;
 }
@@ -226,7 +198,7 @@ static void keymaster_setup_cdev(struct keymaster_dev *dev, int index)
 	err = cdev_add(&dev->cdev, devno, 1);
 
 	if (err) {
-		pr_err("Error %d adding keymaster %d.\n", err, index);
+		IMSG_ERROR("Error %d adding keymaster %d.\n", err, index);
 	}
 }
 
@@ -234,8 +206,8 @@ int keymaster_init(void)
 {
 	int result = 0;
 	struct device *class_dev = NULL;
-	devno = MKDEV(keymaster_major, 0);
 
+	devno = MKDEV(keymaster_major, 0);
 	result = alloc_chrdev_region(&devno, 0, 1, DEV_NAME);
 	keymaster_major = MAJOR(devno);
 	sema_init(&(keymaster_api_lock), 0);
@@ -249,7 +221,7 @@ int keymaster_init(void)
 
 	if (IS_ERR(driver_class)) {
 		result = -ENOMEM;
-		pr_err("ut_keymaster class_create failed %d.\n", result);
+		IMSG_ERROR("ut_keymaster class_create failed %d.\n", result);
 		goto unregister_chrdev_region;
 	}
 
@@ -257,7 +229,7 @@ int keymaster_init(void)
 
 	if (!class_dev) {
 		result = -ENOMEM;
-		pr_err("ut_keymaster class_device_create failed %d.\n", result);
+		IMSG_ERROR("ut_keymaster class_device_create failed %d.\n", result);
 		goto class_destroy;
 	}
 
@@ -274,7 +246,7 @@ int keymaster_init(void)
 	sema_init(&keymaster_devp->sem, 1);
 
 
-	pr_debug("[%s][%d]create the ut_keymaster device node successfully!\n", __func__, __LINE__);
+	IMSG_DEBUG("[%s][%d]create the ut_keymaster device node successfully!\n", __func__, __LINE__);
 	goto return_fn;
 
 class_device_destroy:
@@ -300,4 +272,3 @@ MODULE_AUTHOR("Microtrust");
 MODULE_LICENSE("Dual BSD/GPL");
 module_init(keymaster_init);
 module_exit(keymaster_exit);
-

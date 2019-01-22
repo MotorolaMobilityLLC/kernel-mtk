@@ -21,29 +21,40 @@
 #include<linux/mm.h>
 #include<linux/sched.h>
 #include<linux/init.h>
-#include<linux/cdev.h>
-#include<asm/io.h>
-#include<asm/uaccess.h>
-#include<linux/semaphore.h>
-#include<linux/slab.h>
-#include"TEEI.h"
-#include"teei_id.h"
+#include <linux/cdev.h>
+#include <asm/io.h>
+#include <asm/uaccess.h>
+#include <linux/semaphore.h>
+#include <linux/slab.h>
+#include "TEEI.h"
+#include "teei_id.h"
+#include "fp_vendor.h"
+#include <asm/uaccess.h>
+#include "../tz_driver/include/backward_driver.h"
+#include "../tz_driver/include/teei_client_main.h"
+#include <imsg_log.h>
 
-#define VFS_SIZE        0x80000
-#define MEM_CLEAR       0x1
-#define VFS_MAJOR       253
+#define VFS_SIZE	0x80000
+#define MEM_CLEAR	0x1
+#define VFS_MAJOR	253
 
-#define TEEI_CONFIG_IOC_MAGIC 0x775B777E
+#define TEEI_CONFIG_IOC_MAGIC 0x5B777E
 
-#define TEEI_CONFIG_IOCTL_INIT_TEEI             _IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
-#define SOTER_TUI_ENTER                         _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x70, int)
-#define SOTER_TUI_LEAVE                         _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x71, int)
-#define TEEI_VFS_NOTIFY_DRM			_IOWR(TEEI_CONFIG_IOC_MAGIC, 0x75, int)
+#define TEEI_CONFIG_IOCTL_INIT_TEEI		_IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
+#ifdef CONFIG_MICROTRUST_TUI_DRIVER
+#define SOTER_TUI_ENTER				    _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x70, int)
+#define SOTER_TUI_LEAVE				    _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x71, int)
+int enter_tui_flag;
+#else
+int enter_tui_flag = 1;
+#endif
+
+#define GET_FP_VENDOR_CMD				  _IOWR(TEEI_CONFIG_IOC_MAGIC, 0x80, int)
 
 static int vfs_major = VFS_MAJOR;
 static struct class *driver_class;
 static dev_t devno;
-int enter_tui_flag = 0;
+
 
 struct vfs_dev {
 	struct cdev cdev;
@@ -51,7 +62,6 @@ struct vfs_dev {
 	struct semaphore sem;
 };
 
-extern struct completion global_down_lock;
 
 #ifdef CONFIG_MICROTRUST_TUI_DRIVER
 extern int display_enter_tui(void);
@@ -62,9 +72,7 @@ extern void mt_deint_restore(void);
 extern int tui_i2c_enable_clock(void);
 extern int tui_i2c_disable_clock(void);
 #endif
-#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
-extern int tz_sec_drv_notification(unsigned int driver_id);
-#endif
+
 #ifdef VFS_RDWR_SEM
 struct semaphore VFS_rd_sem;
 EXPORT_SYMBOL_GPL(VFS_rd_sem);
@@ -80,18 +88,21 @@ DECLARE_COMPLETION(VFS_wr_comp);
 EXPORT_SYMBOL_GPL(VFS_wr_comp);
 #endif
 
-struct vfs_dev *vfs_devp = NULL;
+struct vfs_dev *vfs_devp;
 
 int tz_vfs_open(struct inode *inode, struct file *filp)
 {
-	if (vfs_devp == NULL)
+	if (vfs_devp == NULL) {
 		return -EINVAL;
+	}
 
-	if (filp == NULL)
+	if (filp == NULL) {
 		return -EINVAL;
+	}
 
-	if (strcmp("teei_daemon", current->comm) != 0)
+	if (strcmp("teei_daemon", current->comm) != 0) {
 		return -EINVAL;
+	}
 
 	filp->private_data = vfs_devp;
 	return 0;
@@ -103,132 +114,133 @@ int tz_vfs_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static long tz_vfs_ioctl(struct file *filp,
-                         unsigned int cmd, unsigned long arg)
+static long tz_vfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
-	unsigned int drm_driver_id;
-#endif
+	int fp_vendor;
 
 	switch (cmd) {
-#ifdef MICROTRUST_TUI_DRIVER
-		case SOTER_TUI_ENTER:
-			pr_debug("***************SOTER_TUI_ENTER\n");
+#ifdef CONFIG_MICROTRUST_TUI_DRIVER
+
+	case SOTER_TUI_ENTER:
+		IMSG_DEBUG("***************SOTER_TUI_ENTER\n");
 		enter_tui_flag = 1;
-			ret = tui_i2c_enable_clock();
-			if (ret)
-				pr_err("tui_i2c_enable_clock failed!!\n");
+		ret = tui_i2c_enable_clock();
 
-			mt_deint_leave();
+		if (ret) {
+			IMSG_ERROR("tui_i2c_enable_clock failed!!\n");
+		}
 
-			ret = display_enter_tui();
-			if (ret)
-				pr_err("display_enter_tui failed!!\n");
+		mt_deint_leave();
 
-			break;
+		ret = display_enter_tui();
 
-		case SOTER_TUI_LEAVE:
-			pr_debug("***************SOTER_TUI_LEAVE\n");
-			/*
-			ret = tui_i2c_disable_clock();
-			if(ret)
-			        pr_err("tui_i2c_disable_clock failed!!\n");
-			*/
-			mt_deint_restore();
+		if (ret) {
+			IMSG_ERROR("display_enter_tui failed!!\n");
+		}
 
-			ret = display_exit_tui();
-			if (ret)
-				pr_err("display_exit_tui failed!!\n");
-			/* primary_display_trigger(0, NULL, 0); */
+		break;
+
+	case SOTER_TUI_LEAVE:
+		IMSG_DEBUG("***************SOTER_TUI_LEAVE\n");
+		ret = tui_i2c_disable_clock();
+
+		if (ret) {
+			IMSG_ERROR("tui_i2c_disable_clock failed!!\n");
+		}
+
+		ret = display_exit_tui();
+
+		if (ret) {
+			IMSG_ERROR("display_exit_tui failed!!\n");
+		}
+		mt_deint_restore();
+		/* primary_display_trigger(0, NULL, 0); */
 		enter_tui_flag = 0;
-			break;
+		break;
 #endif
-#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
-		case TEEI_VFS_NOTIFY_DRM:
-			pr_debug("***************TEEI_VFS_NOTIFY_DRM\n");
-			if (copy_from_user((void *)&drm_driver_id, (void *)arg, sizeof(unsigned int)))
-				return -EFAULT;
-			pr_debug("get notification from secure driver 0x%x\n", drm_driver_id);
 
-			/* notify drm driver */
-			ret = tz_sec_drv_notification(drm_driver_id);
-			pr_debug("get notification done 0x%x, ret %d\n", drm_driver_id, ret);
-			if (copy_to_user((void *)arg, (void *)&ret, sizeof(unsigned int)))
-				return -EFAULT;
-			break;
-#endif
-		default:
-			return -EINVAL;
-	}
+	case GET_FP_VENDOR_CMD:
+		fp_vendor = get_fp_vendor();
+		ret = copy_to_user((void *)arg, &fp_vendor, sizeof(int));
+		break;
+
+	default:
+		return -EINVAL;
+      }
 
 	return ret;
 }
 
-static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
-                           size_t size, loff_t *ppos)
+static ssize_t tz_vfs_read(struct file *filp, char __user *buf, size_t size, loff_t *ppos)
 {
 	struct TEEI_vfs_command *vfs_p = NULL;
 	int length = 0;
 	int ret = 0;
 
-	if (buf == NULL)
+	if (buf == NULL) {
 		return -EINVAL;
+	}
 
-	if (daulOS_VFS_share_mem == NULL)
+	if (daulOS_VFS_share_mem == NULL) {
 		return -EINVAL;
+	}
 
-	if ((0 > size) || (size > VFS_SIZE))
+	if ((size > VFS_SIZE)) {
 		return -EINVAL;
+	}
 
-	/*pr_debug("read begin cpu[%d]\n",cpu_id);*/
+	/*IMSG_DEBUG("read begin cpu[%d]\n",cpu_id);*/
 #ifdef VFS_RDWR_SEM
 	down_interruptible(&VFS_rd_sem);
 #else
 	ret = wait_for_completion_interruptible(&VFS_rd_comp);
 
 	if (ret == -ERESTARTSYS) {
-		pr_debug("[%s][%d] ----------------wait_for_completion_interruptible_timeout interrupt----------------------- \n", __func__, __LINE__);
+		IMSG_DEBUG("[%s][%d] ----------------wait_for_completion_interruptible_timeout interrupt----------------------- \n", __func__, __LINE__);
 		complete(&global_down_lock);
 		return ret;
 	}
+
 #endif
 
 	vfs_p = (struct TEEI_vfs_command *)daulOS_VFS_share_mem;
 
-#if 1
-
-	if (vfs_p->cmd_size > size)
+	if (vfs_p->cmd_size > size) {
 		length = size;
-	else
+	} else {
 		length = vfs_p->cmd_size;
-
-#endif
+	}
 
 	length = size;
 
-	if (copy_to_user(buf, (void *)vfs_p, length))
+	if (copy_to_user(buf, (void *)vfs_p, length)) {
 		ret = -EFAULT;
-	else
+	} else {
 		ret = length;
+	}
+
 	return ret;
 }
 
-static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,
-                            size_t size, loff_t *ppos)
+static ssize_t tz_vfs_write(struct file *filp, const char __user *buf, size_t size, loff_t *ppos)
 {
-	if (buf == NULL)
+	if (buf == NULL) {
 		return -EINVAL;
+	}
 
-	if (daulOS_VFS_share_mem == NULL)
+	if (daulOS_VFS_share_mem == NULL) {
 		return -EINVAL;
+	}
 
-	if ((0 > size) || (size > VFS_SIZE))
+	if ((size > VFS_SIZE)) {
 		return -EINVAL;
+	}
 
-	/*pr_debug("write begin cpu_id[%d]\n",cpu_id);*/
-	if (copy_from_user((void *)daulOS_VFS_share_mem, buf, size))
+	/*IMSG_DEBUG("write begin cpu_id[%d]\n",cpu_id);*/
+	if (copy_from_user((void *)daulOS_VFS_share_mem, buf, size)) {
 		return -EFAULT;
+	}
 
 	Flush_Dcache_By_Area((unsigned long)daulOS_VFS_share_mem, (unsigned long)daulOS_VFS_share_mem + size);
 
@@ -245,55 +257,55 @@ static loff_t tz_vfs_llseek(struct file *filp, loff_t offset, int orig)
 	loff_t ret = 0;
 
 	switch (orig) {
-		case 0:
-			if (offset < 0) {
-				ret = -EINVAL;
-				break;
-			}
-
-			if ((unsigned int)offset > VFS_SIZE) {
-				ret = -EINVAL;
-				break;
-			}
-
-			filp->f_pos = (unsigned int)offset;
-			ret = filp->f_pos;
-			break;
-
-		case 1:
-			if ((filp->f_pos + offset) > VFS_SIZE) {
-				ret = -EINVAL;
-				break;
-			}
-
-			if ((filp->f_pos + offset) < 0) {
-				ret = -EINVAL;
-				break;
-			}
-
-			filp->f_pos += offset;
-			ret = filp->f_pos;
-			break;
-
-		default:
+	case 0:
+		if (offset < 0) {
 			ret = -EINVAL;
 			break;
+		}
+
+		if ((unsigned int)offset > VFS_SIZE) {
+			ret = -EINVAL;
+			break;
+		}
+
+		filp->f_pos = (unsigned int)offset;
+		ret = filp->f_pos;
+		break;
+
+	case 1:
+		if ((filp->f_pos + offset) > VFS_SIZE) {
+			ret = -EINVAL;
+			break;
+		}
+
+		if ((filp->f_pos + offset) < 0) {
+			ret = -EINVAL;
+			break;
+		}
+
+		filp->f_pos += offset;
+		ret = filp->f_pos;
+		break;
+
+	default:
+		ret = -EINVAL;
+		break;
 	}
 
 	return ret;
 }
 
 static const struct file_operations vfs_fops = {
-	.owner =                THIS_MODULE,
-	.llseek =               tz_vfs_llseek,
-	.read =                 tz_vfs_read,
-	.write =                tz_vfs_write,
+	.owner =		THIS_MODULE,
+	.llseek =		tz_vfs_llseek,
+	.read =			tz_vfs_read,
+	.write =		tz_vfs_write,
 	.unlocked_ioctl = tz_vfs_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl   = tz_vfs_ioctl,
 #endif
-	.open =                 tz_vfs_open,
-	.release =              tz_vfs_release,
+	.open =			tz_vfs_open,
+	.release =		tz_vfs_release,
 };
 
 static void vfs_setup_cdev(struct vfs_dev *dev, int index)
@@ -305,14 +317,15 @@ static void vfs_setup_cdev(struct vfs_dev *dev, int index)
 	dev->cdev.owner = vfs_fops.owner;
 	err = cdev_add(&dev->cdev, devno, 1);
 
-	if (err)
-		pr_err("Error %d adding socket %d.\n", err, index);
+	if (err) {
+		IMSG_ERROR("Error %d adding socket %d.\n", err, index);
+	}
 }
 
 
 
 
-int vfs_init(void)
+static int vfs_init(void)
 {
 	int result = 0;
 	struct device *class_dev = NULL;
@@ -321,14 +334,15 @@ int vfs_init(void)
 	result = alloc_chrdev_region(&devno, 0, 1, "tz_vfs");
 	vfs_major = MAJOR(devno);
 
-	if (result < 0)
+	if (result < 0) {
 		return result;
+	}
 
 	driver_class = class_create(THIS_MODULE, "tz_vfs");
 
 	if (IS_ERR(driver_class)) {
 		result = -ENOMEM;
-		pr_err("class_create failed %d.\n", result);
+		IMSG_ERROR("class_create failed %d.\n", result);
 		goto unregister_chrdev_region;
 	}
 
@@ -336,7 +350,7 @@ int vfs_init(void)
 
 	if (!class_dev) {
 		result = -ENOMEM;
-		pr_err("class_device_create failed %d.\n", result);
+		IMSG_ERROR("class_device_create failed %d.\n", result);
 		goto class_destroy;
 	}
 

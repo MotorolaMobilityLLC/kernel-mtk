@@ -15,122 +15,73 @@
 #ifndef __TEEI_CLIENT_MAIN_H__
 #define __TEEI_CLIENT_MAIN_H__
 
-#include "teei_smc_struct.h"
+#ifdef TUI_SUPPORT
+#define POWER_DOWN		"power-detect"
+#endif
+/* #define UT_DEBUG */
+#define CANCEL_BUFF_SIZE		(4096)
+#define TEEI_CONFIG_FULL_PATH_DEV_NAME "/dev/teei_config"
+#define TEEI_CONFIG_DEV "teei_config"
+#define TEEI_CONFIG_IOC_MAGIC 0x5B777E /* "TEEI Client" */
+#define TEEI_CONFIG_IOCTL_INIT_TEEI _IOWR(TEEI_CONFIG_IOC_MAGIC, 3, int)
+#define MIN_BC_NUM              (4)
+#define MAX_LC_NUM              (3)
 
-#define TLOG_SIZE       (256 * 1024)
+extern void log_boot(char *str);
+#define TEEI_BOOT_FOOTPRINT(str) log_boot(str)
+
+enum {
+	TEEI_BOOT_OK = 0,
+	TEEI_BOOT_ERROR_CREATE_TLOG_BUF = 1,
+	TEEI_BOOT_ERROR_CREATE_TLOG_THREAD = 2,
+	TEEI_BOOT_ERROR_CREATE_VFS_ADDR = 3,
+	TEEI_BOOT_ERROR_LOAD_SOTER_FAILED = 4,
+	TEEI_BOOT_ERROR_INIT_CMD_BUFF_FAILED = 5,
+	TEEI_BOOT_ERROR_INIT_UTGATE_FAILED = 6,
+	TEEI_BOOT_ERROR_INIT_SERVICE1_FAILED = 7,
+	TEEI_BOOT_ERROR_INIT_SERVICE2_FAILED = 8,
+	TEEI_BOOT_ERROR_LOAD_TA_FAILED = 9,
+};
+
 extern struct semaphore api_lock;
 extern struct semaphore fp_api_lock;
 extern struct semaphore keymaster_api_lock;
+extern struct workqueue_struct *secure_wq;
+extern struct workqueue_struct *bdrv_wq;
+extern unsigned long fdrv_message_buff;
+extern unsigned long bdrv_message_buff;
+extern unsigned long message_buff;
+extern struct semaphore fdrv_sema;
+extern unsigned long tlog_message_buff;
+extern struct semaphore boot_sema;
+extern struct semaphore fdrv_lock;
+extern struct completion global_down_lock;
+extern unsigned long teei_config_flag;
+extern struct semaphore smc_lock;
+extern int fp_call_flag;
+extern int forward_call_flag;
+extern struct smc_call_struct smc_call_entry;
+extern int irq_call_flag;
+extern unsigned int soter_error_flag;
+extern unsigned long boot_vfs_addr;
+extern unsigned long boot_soter_flag;
+extern int keymaster_call_flag;
+extern struct semaphore boot_decryto_lock;
+extern struct task_struct *teei_switch_task;
+extern struct kthread_worker ut_fastcall_worker;
+extern struct mutex pm_mutex;
 
-#ifdef CONFIG_MICROTRUST_DCIH_SUPPORT
-
-#define TOTAL_DRM_DRIVER_NUM (8)
-enum drm_dcih_buf_mode {
-	DRM_DCIH_BUF_MODE_FORWARD = 0x0,
-	DRM_DCIH_BUF_MODE_BACKWARD = 0x1,
-
-	DRM_DCIH_BUF_MODE_INVALID = 0xFF
-};
-struct drm_dcih_info {
-	unsigned char buf_mode;			/* buf mode, 0 for forward, 1 for backward */
-	unsigned char is_inited;		/* DCIH driver inited or not */
-	unsigned char is_shared;		/* DCIH driver shared with secure driver or not */
-	unsigned int dcih_id;			/* DCIH driver id */
-	unsigned int buf_size;			/* DCIH driver allocated buf size */
-	unsigned long virt_addr;		/* DCIH driver allocated virtual buf addr */
-	unsigned long phy_addr;			/* DCIH driver allocated phy buf addr */
-	struct completion tee_signal;	/* Wait for the signal from TEE driver (DCIH of TEE->REE) */
-	struct completion ree_signal;	/* Notify to REE driver (DCIH of TEE->REE) */
-};
-#endif
-
-
-extern int create_nq_buffer(void);
-extern unsigned long create_fp_fdrv(int buff_size);
-extern unsigned long create_keymaster_fdrv(int buff_size);
-extern unsigned long create_gatekeeper_fdrv(int buff_size);
-extern unsigned long create_cancel_fdrv(int buff_size);
-#ifdef TUI_SUPPORT
-unsigned long create_tui_buff(int buff_size,unsigned int fdrv_type);
-int wait_for_power_down(void);
-int tui_notify_reboot(struct notifier_block* this,unsigned long code,void *x);
-#endif
-extern long init_all_service_handlers(void);
-extern int register_sched_irq_handler(void);
-extern int register_soter_irq_handler(int irq);
-extern int register_error_irq_handler(void);
-extern int register_fp_ack_handler(void);
-extern int register_keymaster_ack_handler(void);
-extern int register_bdrv_handler(void);
-extern int register_tlog_handler(void);
-extern int register_boot_irq_handler(void);
-extern int register_switch_irq_handler(void);
-
-extern int register_ut_irq_handler(int irq);
-
-extern struct teei_context *teei_create_context(int dev_count);
-extern struct teei_session *teei_create_session(struct teei_context *cont);
-extern int teei_client_context_init(void *private_data, void *argp);
-extern int teei_client_context_close(void *private_data, void *argp);
-extern int teei_client_session_init(void *private_data, void *argp);
-extern int teei_client_session_open(void *private_data, void *argp);
-extern int teei_client_session_close(void *private_data, void *argp);
-extern int teei_client_send_cmd(void *private_data, void *argp);
-extern int teei_client_operation_release(void *private_data, void *argp);
-extern int teei_client_prepare_encode(void *private_data,
-                                      struct teei_client_encode_cmd *enc,
-                                      struct teei_encode **penc_context,
-                                      struct teei_session **psession);
-extern int teei_client_encode_uint32(void *private_data, void *argp);
-extern int teei_client_encode_array(void *private_data, void *argp);
-extern int teei_client_encode_mem_ref(void *private_data, void *argp);
-extern int teei_client_encode_uint32_64bit(void *private_data, void *argp);
-extern int teei_client_encode_array_64bit(void *private_data, void *argp);
-extern int teei_client_encode_mem_ref_64bit(void *private_data, void *argp);
-extern int teei_client_prepare_decode(void *private_data,
-                                      struct teei_client_encode_cmd *dec,
-                                      struct teei_encode **pdec_context);
-extern int teei_client_decode_uint32(void *private_data, void *argp);
-extern int teei_client_decode_array_space(void *private_data, void *argp);
-extern int teei_client_get_decode_type(void *private_data, void *argp);
-extern int teei_client_shared_mem_alloc(void *private_data, void *argp);
-extern int teei_client_shared_mem_free(void *private_data, void *argp);
-extern int teei_client_close_session_for_service(
-        void *private_data,
-        struct teei_session *temp_ses);
-extern int teei_client_service_exit(void *private_data);
-extern void init_tlog_entry(void);
-extern int global_fn(void);
-
-extern long create_tlog_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
-extern int add_work_entry(int work_type, unsigned char *buff);
-extern long create_utgate_log_thread(unsigned long tlog_virt_addr, unsigned long buff_size);
-extern void init_sched_work_ent(void);
-extern void *__teei_client_map_mem(int dev_file_id, unsigned long size, unsigned long user_addr);
-extern long __teei_client_open_dev(void);
-
-struct semaphore api_lock;
-#ifdef TUI_SUPPORT
-struct semaphore tui_notify_sema;
-#endif
-extern unsigned long fp_buff_addr;
-extern unsigned long cancel_message_buff;
-extern unsigned long keymaster_buff_addr;
-extern unsigned long gatekeeper_buff_addr;
-
-extern struct semaphore fp_api_lock;
-extern struct semaphore keymaster_api_lock;
-
-#ifdef TUI_SUPPORT
-extern unsigned long tui_display_message_buff;
-extern unsigned long tui_notice_message_buff;
-#endif
-struct workqueue_struct *secure_wq;
-struct workqueue_struct *bdrv_wq;
-
-unsigned long fdrv_message_buff;
-unsigned long bdrv_message_buff;
-unsigned long tlog_message_buff;
-unsigned long message_buff;
+void ut_pm_mutex_lock(struct mutex *lock);
+void ut_pm_mutex_unlock(struct mutex *lock);
+void tz_free_shared_mem(void *addr, size_t size);
+int get_current_cpuid(void);
+void *tz_malloc_shared_mem(size_t size, int flags);
+void secondary_init_cmdbuf(void *info);
+void secondary_boot_stage2(void *info);
+int handle_switch_core(int cpu);
+void *tz_malloc(size_t size, int flags);
+void secondary_load_tee(void *info);
+void secondary_load_tee(void *info);
+void secondary_boot_stage1(void *info);
 
 #endif /* __TEEI_CLIENT_MAIN_H__ */

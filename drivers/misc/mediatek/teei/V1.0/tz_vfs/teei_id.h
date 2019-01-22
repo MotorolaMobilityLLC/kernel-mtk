@@ -1,6 +1,6 @@
+#ifndef __VFS_TEEI_ID_H_
+#define __VFS_TEEI_ID_H_
 
-#ifndef __TEEI_ID_H_
-#define __TEEI_ID_H_
 #include <asm/cacheflush.h>
 
 #define SMC_ENOMEM          7
@@ -83,22 +83,22 @@ static inline void Flush_Dcache_By_Area(unsigned long start, unsigned long end)
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 
 	__asm__ __volatile__ (
-		"1:  mcr p15, 0, %[i], c7, c14, 1\n" /* Clean and Invalidate Data Cache Line (using MVA) Register */
-		"    add %[i], %[i], %[clsz]\n"
-		"    cmp %[i], %[end]\n"
-		"    blo 1b\n"
-		:
-		[i]    "=&r" (start)
-		:        "0"   ((unsigned long)start & ~(Cache_line_size - 1)),
-		[end]  "r"   (end),
-		[clsz] "i"   (Cache_line_size)
-		: "memory");
+	    "1:  mcr p15, 0, %[i], c7, c14, 1\n" /* Clean and Invalidate Data Cache Line (using MVA) Register */
+	    "    add %[i], %[i], %[clsz]\n"
+	    "    cmp %[i], %[end]\n"
+	    "    blo 1b\n"
+	    :
+	    [i]    "=&r" (start)
+	    :        "0"   ((unsigned long)start & ~(Cache_line_size - 1)),
+	    [end]  "r"   (end),
+	    [clsz] "i"   (Cache_line_size)
+	    : "memory");
 
 	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0) : "memory"); /* invalidate btc */
 
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 #endif
-//	__flush_dcache_area((void *)start, (end - start));
+	/* __flush_dcache_area((void *)start, (end - start)); */
 }
 /******************************************************************
  * @brief:
@@ -113,16 +113,16 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 #if 0
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
 	__asm__ __volatile__ (
-		"1:  mcr p15, 0, %[i], c7, c6, 1\n" /* Invalidate Data Cache Line (using MVA) Register */
-		"    add %[i], %[i], %[clsz]\n"
-		"    cmp %[i], %[end]\n"
-		"    blo 1b\n"
-		:
-		[i]    "=&r" (start)
-		:        "0"   ((unsigned long)start & (~(Cache_line_size - 1))),
-		[end]  "r"   (end),
-		[clsz] "i"   (Cache_line_size)
-		: "memory");
+	    "1:  mcr p15, 0, %[i], c7, c6, 1\n" /* Invalidate Data Cache Line (using MVA) Register */
+	    "    add %[i], %[i], %[clsz]\n"
+	    "    cmp %[i], %[end]\n"
+	    "    blo 1b\n"
+	    :
+	    [i]    "=&r" (start)
+	    :        "0"   ((unsigned long)start & (~(Cache_line_size - 1))),
+	    [end]  "r"   (end),
+	    [clsz] "i"   (Cache_line_size)
+	    : "memory");
 
 	asm volatile ("mcr p15, 0, %0, c7, c5, 0" : : "r" (0) : "memory"); /* invalidate btc */
 	__asm__ __volatile__ ("dsb" : : : "memory"); /* dsb */
@@ -130,24 +130,24 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 
 #if 0
 	__asm__ volatile(
-		"mrs	x3, ctr_el0\n\t"
-		"lsr	x3, x3, #16\n\t"
-		"and	x3, x3, #0xf\n\t"
-		"mov	x2, #4\n\t"
-		"lsl	x2, x2, x3\n\t"
-		"sub	x3, x2, #1\n\t"
-		"bic	%[start], %[start], x3\n\t"
-		"1:	dc	ivac, %[start]\n\t"			/* invalidate D line / unified line */
-		"add	%[start],%[start] , x2\n\t"
-		"cmp	%[start], %[end]\n\t"
-		"b.lo	1b\n\t"
-		"dsb	sy\n\t"
-		: :
-		[start]  "r" (start),
-		[end]  "r"  (end)
-		: "memory");
+	    "mrs	x3, ctr_el0\n\t"
+	    "lsr	x3, x3, #16\n\t"
+	    "and	x3, x3, #0xf\n\t"
+	    "mov	x2, #4\n\t"
+	    "lsl	x2, x2, x3\n\t"
+	    "sub	x3, x2, #1\n\t"
+	    "bic	%[start], %[start], x3\n\t"
+	    "1:	dc	ivac, %[start]\n\t"			/* invalidate D line / unified line */
+	    "add	%[start],%[start] , x2\n\t"
+	    "cmp	%[start], %[end]\n\t"
+	    "b.lo	1b\n\t"
+	    "dsb	sy\n\t"
+	    : :
+	    [start]  "r" (start),
+	    [end]  "r"  (end)
+	    : "memory");
 #endif
 }
 
 /* add end */
-#endif /* __OPEN_OTZ_ID_H_ */
+#endif /* __VFS_TEEI_ID_H_ */

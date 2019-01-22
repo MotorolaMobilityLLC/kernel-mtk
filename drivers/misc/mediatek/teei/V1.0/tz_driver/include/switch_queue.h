@@ -11,9 +11,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+#ifndef SWITCH_QUEUE_H
+#define SWITCH_QUEUE_H
 
-#define fp_buffer_size 2048
+int add_work_entry(int work_type, unsigned char *buff);
 
-#define ARGS_BLOCK_SIZE 1024
-
-int send_fp_command(unsigned long share_memory_size);
+#endif  /* end of SWITCH_QUEUE_H*/

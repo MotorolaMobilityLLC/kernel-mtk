@@ -17,7 +17,6 @@ ccflags-y += -I$(srctree)/arch/arm/mach-$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)/touc
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek/GT9XX_hotknot/
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/teei/V1.0/tz_driver/include/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/teei/V1.0/public/
 
 
 teei-objs += teei_client_main.o
@@ -31,6 +30,6 @@ endif
 
 obj-$(CONFIG_MICROTRUST_TZ_DRIVER) += teei.o
 
-ccflags-y += -D DEBUG_DO
-ccflags-y += -Wno-error
-ccflags-y += -D UT_DMA_ZONE
+ccflags-y += -DDEBUG_DO -DIMSG_TAG='"[tz_driver]"'
+ccflags-y += -Wall -Werror
+ccflags-y += -DUT_DMA_ZONE

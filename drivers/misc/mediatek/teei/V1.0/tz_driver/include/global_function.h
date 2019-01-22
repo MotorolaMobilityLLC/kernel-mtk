@@ -11,13 +11,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+#ifndef GLOBAL_FUNCTION_H
+#define GLOBAL_FUNCTION_H
 
-extern struct semaphore smc_lock;
-extern int forward_call_flag;
-extern int irq_call_flag;
-extern int fp_call_flag;
-extern int keymaster_call_flag;
-extern struct completion global_down_lock;
-extern unsigned long teei_config_flag;
+void nt_sched_t_call(void);
 
-extern int get_current_cpuid(void);
+#endif /* end  of GLOBAL_FUNCTION_H */
