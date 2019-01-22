@@ -100,12 +100,6 @@
 #include <mt-plat/met_drv.h>
 #endif
 
-/*#define MMDVFS_PM_QOS_READY*/
-#ifdef MMDVFS_PM_QOS_READY
-#include "mmdvfs_mgr.h" /* wait for mmdvfs ready */
-/* Use this qos request to control camera dynamic frequency change */
-struct mmdvfs_pm_qos_request dip_qos;
-#endif
 
 #define CAMSV_DBG
 #ifdef CAMSV_DBG
@@ -248,6 +242,7 @@ static struct IspWorkqueTable dip_workque[DIP_IRQ_TYPE_AMOUNT] = {
 };
 #endif
 
+static DEFINE_MUTEX(gDipMutex);
 
 #ifdef CONFIG_OF
 
@@ -520,7 +515,6 @@ struct DIP_INFO_STRUCT {
 	signed int							IrqNum;
 	struct DIP_IRQ_INFO_STRUCT			IrqInfo;
 	struct DIP_IRQ_ERR_WAN_CNT_STRUCT		IrqCntInfo;
-	struct DIP_BUF_INFO_STRUCT			BufInfo;
 	struct DIP_TIME_LOG_STRUCT             TimeLog;
 };
 
@@ -2984,14 +2978,6 @@ static signed int DIP_open(
 	g_regScen = 0xa5a5a5a5;
 	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 	/*  */
-	IspInfo.BufInfo.Read.pData = kmalloc(DIP_BUF_SIZE, GFP_ATOMIC);
-	IspInfo.BufInfo.Read.Size = DIP_BUF_SIZE;
-	IspInfo.BufInfo.Read.Status = DIP_BUF_STATUS_EMPTY;
-	if (IspInfo.BufInfo.Read.pData == NULL) {
-		LOG_DBG("ERROR: BufRead kmalloc failed\n");
-		Ret = -ENOMEM;
-		goto EXIT;
-	}
 	g_bIonBufferAllocated = MFALSE;
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
 	g_dip_p2_imem_buf.handle = NULL;
@@ -3008,6 +2994,7 @@ static signed int DIP_open(
 	if (dip_allocbuf(&g_dip_p2_imem_buf) >= 0)
 		g_bIonBufferAllocated = MTRUE;
 #endif
+	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
 
 	if (g_bIonBufferAllocated == MTRUE) {
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
@@ -3050,41 +3037,32 @@ static signed int DIP_open(
 	g_CmdqBaseAddrInfo.MemVa = NULL;
 	g_CmdqBaseAddrInfo.MemSizeDiff = 0x0;
 
+	mutex_unlock(&gDipMutex);
 	/*  */
 	for (i = 0; i < DIP_IRQ_TYPE_AMOUNT; i++) {
 		for (q = 0; q < IRQ_USER_NUM_MAX; q++)
 			IspInfo.IrqInfo.Status[i][q] = 0;
 	}
 
+	/* Enable clock */
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&dip_wake_lock);
+#else
+	wake_lock(&dip_wake_lock);
+#endif
+	DIP_EnableClock(MTRUE);
+	g_u4DipCnt = 0;
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&dip_wake_lock);
+#else
+	wake_unlock(&dip_wake_lock);
+#endif
+	LOG_DBG("dip open G_u4DipEnClkCnt: %d\n", G_u4DipEnClkCnt);
 #ifdef KERNEL_LOG
 	IspInfo.DebugMask = (DIP_DBG_INT);
 #endif
 	/*  */
 EXIT:
-	if (Ret < 0) {
-		if (IspInfo.BufInfo.Read.pData != NULL) {
-			kfree(IspInfo.BufInfo.Read.pData);
-			IspInfo.BufInfo.Read.pData = NULL;
-		}
-	} else {
-		/* Enable clock */
-#ifdef CONFIG_PM_WAKELOCKS
-		__pm_stay_awake(&dip_wake_lock);
-#else
-		wake_lock(&dip_wake_lock);
-#endif
-		DIP_EnableClock(MTRUE);
-		g_u4DipCnt = 0;
-#ifdef CONFIG_PM_WAKELOCKS
-		__pm_relax(&dip_wake_lock);
-#else
-		wake_unlock(&dip_wake_lock);
-#endif
-#ifdef MMDVFS_PM_QOS_READY
-		mmdvfs_pm_qos_add_request(&dip_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, 0);
-#endif
-		LOG_DBG("dip open G_u4DipEnClkCnt: %d\n", G_u4DipEnClkCnt);
-	}
 
 
 	LOG_INF("- X. Ret: %d. UserCount: %d, G_u4DipEnClkCnt: %d.\n", Ret, IspInfo.UserCount, G_u4DipEnClkCnt);
@@ -3149,12 +3127,7 @@ static signed int DIP_release(
 		strncpy((void *)IrqUserKey_UserInfo[i].userName, "DefaultUserNametoAllocMem", USERKEY_STR_LEN);
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
-	if (IspInfo.BufInfo.Read.pData != NULL) {
-		kfree(IspInfo.BufInfo.Read.pData);
-		IspInfo.BufInfo.Read.pData = NULL;
-		IspInfo.BufInfo.Read.Size = 0;
-		IspInfo.BufInfo.Read.Status = DIP_BUF_STATUS_EMPTY;
-	}
+	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
 	if (g_bIonBufferAllocated == MFALSE) {
 		/* Native Exception */
 		if (g_pPhyDIPBuffer != NULL) {
@@ -3210,6 +3183,7 @@ static signed int DIP_release(
 		g_pKWVirDIPBuffer = NULL;
 #endif
 	}
+	mutex_unlock(&gDipMutex);
 
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
 	if (dip_p2_ion_client != NULL) {
@@ -3220,19 +3194,6 @@ static signed int DIP_release(
 	}
 #endif
 
-	/* LOG_DBG("Before spm_enable_sodi()."); */
-	/* Enable sodi (Multi-Core Deep Idle). */
-
-#if 0 /* _mt6593fpga_dvt_use_ */
-	spm_enable_sodi();
-#endif
-
-EXIT:
-
-	/* Disable clock.
-	*  1. clkmgr: G_u4DipEnClkCnt=0, call clk_enable/disable
-	*  2. CCF: call clk_enable/disable every time
-	*/
 #ifdef CONFIG_PM_WAKELOCKS
 	__pm_stay_awake(&dip_wake_lock);
 #else
@@ -3244,11 +3205,8 @@ EXIT:
 #else
 	wake_unlock(&dip_wake_lock);
 #endif
-
-#ifdef MMDVFS_PM_QOS_READY
-	mmdvfs_pm_qos_remove_request(&dip_qos);
-#endif
 	LOG_DBG("dip release G_u4DipEnClkCnt: %d", G_u4DipEnClkCnt);
+EXIT:
 
 	LOG_INF("- X. UserCount: %d. G_u4DipEnClkCnt: %d", IspInfo.UserCount, G_u4DipEnClkCnt);
 	return 0;
@@ -3761,185 +3719,6 @@ static struct platform_driver DipDriver = {
 /*******************************************************************************
 *
 ********************************************************************************/
-/*
-* ssize_t (*read) (struct file *, char __user *, size_t, loff_t *)
-*/
-#define USE_OLD_STYPE_11897 0
-#if USE_OLD_STYPE_11897
-static signed int DIP_DumpRegToProc(
-	char *pPage,
-	char **ppStart,
-	off_t off,
-	signed int Count,
-	signed int *pEof,
-	void *pData)
-#else /* new file_operations style */
-static ssize_t DIP_DumpRegToProc(
-	struct file *pFile,
-	char *pStart,
-	size_t off,
-	loff_t *Count)
-#endif
-{
-#if USE_OLD_STYPE_11897
-	char *p = pPage;
-	signed int Length = 0;
-	unsigned int i = 0;
-	signed int ret = 0;
-	/*  */
-	LOG_DBG("- E. pPage: %p. off: %d. Count: %d.", pPage, (unsigned int)off, Count);
-	/*  */
-	p += sprintf(p, " MT6593 DIP Register\n");
-	p += sprintf(p, "====== top ====\n");
-	for (i = 0x0; i <= 0x1AC; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	p += sprintf(p, "====== dma ====\n");
-	for (i = 0x200; i <= 0x3D8; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n\r", (unsigned int)(DIP_ADDR + i),
-			(unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	p += sprintf(p, "====== tg ====\n");
-	for (i = 0x400; i <= 0x4EC; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	p += sprintf(p, "====== cdp (including EIS) ====\n");
-	for (i = 0xB00; i <= 0xDE0; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	p += sprintf(p, "====== seninf ====\n");
-	for (i = 0x4000; i <= 0x40C0; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	for (i = 0x4100; i <= 0x41BC; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	for (i = 0x4200; i <= 0x4208; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	for (i = 0x4300; i <= 0x4310; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	for (i = 0x43A0; i <= 0x43B0; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	for (i = 0x4400; i <= 0x4424; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	for (i = 0x4500; i <= 0x4520; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	for (i = 0x4600; i <= 0x4608; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	for (i = 0x4A00; i <= 0x4A08; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	p += sprintf(p, "====== 3DNR ====\n");
-	for (i = 0x4F00; i <= 0x4F38; i += 4)
-		p += sprintf(p, "+0x%08x 0x%08x\n", (unsigned int)(DIP_ADDR + i), (unsigned int)DIP_RD32(DIP_ADDR + i));
-
-	/*  */
-	*ppStart = pPage + off;
-	/*  */
-	Length = p - pPage;
-	if (Length > off)
-		Length -= off;
-	else
-		Length = 0;
-
-	/*  */
-
-	ret = Length < Count ? Length : Count;
-
-	LOG_DBG("- X. ret: %d.", ret);
-
-	return ret;
-#else /* new file_operations style */
-	LOG_ERR("DIP_DumpRegToProc: Not implement");
-	return 0;
-#endif
-}
-
-/*******************************************************************************
-*
-********************************************************************************/
-/*
-* ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *)
-*/
-#define USE_OLD_STYPE_12011 0
-#if USE_OLD_STYPE_12011
-static signed int  DIP_RegDebug(
-	struct file *pFile,
-	const char *pBuffer,
-	unsigned long   Count,
-	void *pData)
-#else /* new file_operations style */
-static ssize_t DIP_RegDebug(
-	struct file *pFile,
-	const char *pBuffer,
-	size_t Count,
-	loff_t *pData)
-#endif
-{
-	LOG_ERR("DIP_RegDebug: Not implement");
-	return 0;
-}
-
-/*
-* ssize_t (*read) (struct file *, char __user *, size_t, loff_t *)
-*/
-#define USE_OLD_STYPE_12061 0
-#if USE_OLD_STYPE_12061
-static unsigned int proc_regOfst;
-static signed int CAMIO_DumpRegToProc(
-	char *pPage,
-	char **ppStart,
-	off_t   off,
-	signed int  Count,
-	signed int *pEof,
-	void *pData)
-#else /* new file_operations style */
-static ssize_t CAMIO_DumpRegToProc(
-	struct file *pFile,
-	char *pStart,
-	size_t off,
-	loff_t *Count)
-#endif
-{
-	LOG_ERR("CAMIO_DumpRegToProc: Not implement");
-	return 0;
-}
-
-
-/*******************************************************************************
-*
-********************************************************************************/
-/*
-* ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *)
-*/
-#define USE_OLD_STYPE_12112 0
-#if USE_OLD_STYPE_12112
-static signed int  CAMIO_RegDebug(
-	struct file *pFile,
-	const char *pBuffer,
-	unsigned long   Count,
-	void *pData)
-#else /* new file_operations style */
-static ssize_t CAMIO_RegDebug(
-	struct file *pFile,
-	const char *pBuffer,
-	size_t Count,
-	loff_t *pData)
-#endif
-{
-	LOG_ERR("CAMIO_RegDebug: Not implement");
-	return 0;
-}
-
-/*******************************************************************************
-*
-********************************************************************************/
 static int dip_p2_ke_dump_read(struct seq_file *m, void *v)
 {
 #ifdef AEE_DUMP_REDUCE_MEMORY
@@ -3955,6 +3734,7 @@ static int dip_p2_ke_dump_read(struct seq_file *m, void *v)
 	seq_puts(m, "===dip p2 hw physical register===\n");
 	if (g_bDumpPhyDIPBuf == MFALSE)
 		return 0;
+	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
 	if (g_pPhyDIPBuffer != NULL) {
 		for (i = 0; i < (DIP_REG_RANGE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
@@ -3996,6 +3776,7 @@ static int dip_p2_ke_dump_read(struct seq_file *m, void *v)
 					DIP_A_BASE_HW+4*(i+3), (unsigned int)g_pKWVirDIPBuffer[i+3]);
 		}
 	}
+	mutex_unlock(&gDipMutex);
 	seq_puts(m, "============ dip p2 ke dump debug ============\n");
 	LOG_INF("dip p2 ke dump end\n");
 #endif
@@ -4030,6 +3811,7 @@ static int dip_p2_dump_read(struct seq_file *m, void *v)
 	seq_puts(m, "===dip p2 hw physical register===\n");
 	if (g_bUserBufIsReady == MFALSE)
 		return 0;
+	mutex_lock(&gDipMutex);  /* Protect the Multi Process */
 	if (g_pPhyDIPBuffer != NULL) {
 		for (i = 0; i < (DIP_REG_RANGE >> 2); i = i + 4) {
 			seq_printf(m, "(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)(0x%08X,0x%08X)\n",
@@ -4081,6 +3863,7 @@ static int dip_p2_dump_read(struct seq_file *m, void *v)
 					DIP_A_BASE_HW+4*(i+3), (unsigned int)g_pTuningBuffer[i+3]);
 		}
 	}
+	mutex_unlock(&gDipMutex);
 	seq_puts(m, "============ dip p2 ne dump debug ============\n");
 	LOG_INF("dip p2 ne dump end\n");
 #endif
@@ -4100,13 +3883,70 @@ static const struct file_operations dip_p2_dump_proc_fops = {
 /*******************************************************************************
 *
 ********************************************************************************/
-static const struct file_operations fcameradip_proc_fops = {
-	.read = DIP_DumpRegToProc,
-	.write = DIP_RegDebug,
-};
-static const struct file_operations fcameraio_proc_fops = {
-	.read = CAMIO_DumpRegToProc,
-	.write = CAMIO_RegDebug,
+static int dip_dump_read(struct seq_file *m, void *v)
+{
+
+	int i;
+
+	seq_puts(m, "\n============ dip dump register============\n");
+	seq_puts(m, "dip top control\n");
+	for (i = 0; i < 0xFC; i = i + 4) {
+		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DIP_A_BASE_HW + i),
+			   (unsigned int)DIP_RD32(DIP_A_BASE + i));
+	}
+
+	seq_puts(m, "dma error\n");
+	for (i = 0x744; i < 0x7A4; i = i + 4) {
+		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DIP_A_BASE_HW + i),
+			   (unsigned int)DIP_RD32(DIP_A_BASE + i));
+	}
+
+	seq_puts(m, "dma setting\n");
+	for (i = 0x304; i < 0x6D8; i = i + 4) {
+		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DIP_A_BASE_HW + i),
+			   (unsigned int)DIP_RD32(DIP_A_BASE + i));
+	}
+
+	seq_puts(m, "cq info\n");
+	for (i = 0x204; i < 0x218; i = i + 4) {
+		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DIP_A_BASE_HW + i),
+			   (unsigned int)DIP_RD32(DIP_A_BASE + i));
+	}
+
+	seq_puts(m, "crz setting\n");
+	for (i = 0x5300; i < 0x5334; i = i + 4) {
+		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DIP_A_BASE_HW + i),
+			   (unsigned int)DIP_RD32(DIP_A_BASE + i));
+	}
+
+	seq_puts(m, "mdp crop1\n");
+	for (i = 0x5500; i < 0x5508; i = i + 4) {
+		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DIP_A_BASE_HW + i),
+			   (unsigned int)DIP_RD32(DIP_A_BASE + i));
+	}
+
+	seq_puts(m, "mdp crop2\n");
+	for (i = 0x2B80; i < 0x2B88; i = i + 4) {
+		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DIP_A_BASE_HW + i),
+			   (unsigned int)DIP_RD32(DIP_A_BASE + i));
+	}
+
+	seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DIP_IMGSYS_BASE_HW),
+		   (unsigned int)DIP_RD32(DIP_IMGSYS_CONFIG_BASE));
+
+	seq_puts(m, "\n============ dip dump debug ============\n");
+
+	return 0;
+}
+static int proc_dip_dump_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, dip_dump_read, NULL);
+}
+
+static const struct file_operations dip_dump_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_dip_dump_open,
+	.read = seq_read,
 };
 /*******************************************************************************
 *
@@ -4150,13 +3990,12 @@ static signed int __init DIP_Init(void)
 #endif
 
 	/* FIX-ME: linux-3.10 procfs API changed */
-	proc_create("driver/dip_reg", 0, NULL, &fcameradip_proc_fops);
-
 	dip_p2_dir = proc_mkdir("isp_p2", NULL);
 	if (!dip_p2_dir) {
 		LOG_ERR("[%s]: fail to mkdir /proc/isp_p2\n", __func__);
 		return 0;
 	}
+	proc_entry = proc_create("dip_dump", S_IRUGO, dip_p2_dir, &dip_dump_proc_fops);
 	proc_entry = proc_create("isp_p2_dump", S_IRUGO, dip_p2_dir, &dip_p2_dump_proc_fops);
 	proc_entry = proc_create("isp_p2_kedump", S_IRUGO, dip_p2_dir, &dip_p2_ke_dump_proc_fops);
 	for (j = 0; j < DIP_IRQ_TYPE_AMOUNT; j++) {
