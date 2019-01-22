@@ -1025,6 +1025,10 @@ unsigned char lcm_name_list[][128] = {
 #if defined(R63419_WQHD_TRULY_PHANTOM_2K_CMD_OK)
 	"r63419_wqhd_truly_phantom_2k_cmd_ok",
 #endif
+
+#if defined(NT35695_FHD_DSI_CMD_TRULY_NT50358)
+	"nt35695_fhd_dsi_cmd_truly_nt50358_drv",
+#endif
 };
 
 #define LCM_COMPILE_ASSERT(condition) LCM_COMPILE_ASSERT_X(condition, __LINE__)

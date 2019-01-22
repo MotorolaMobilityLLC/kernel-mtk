@@ -663,7 +663,7 @@ typedef struct {
 #define MIN(x, y)   (((x) <= (y)) ? (x) : (y))
 #endif				/* MIN */
 
-#define INIT_SIZE			(512)
+#define INIT_SIZE			(640)
 #define COMPARE_ID_SIZE	(32)
 #define SUSPEND_SIZE		(32)
 #define BACKLIGHT_SIZE		(32)
