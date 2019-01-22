@@ -20,7 +20,7 @@ obj-y += mtk-auddrv-devtree-parser.o
 obj-y += mtk-auddrv-underflow-mach.o
 
 # btcvsd
-obj-$(CONFIG_MTK_BTCVSD_ALSA) += mtk-soc-pcm-btcvsd.o mtk-soc-pcm-btcvsd-rx.o mtk-soc-pcm-btcvsd-tx.o
+obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += mtk-soc-pcm-btcvsd.o mtk-soc-pcm-btcvsd-rx.o mtk-soc-pcm-btcvsd-tx.o
 obj-$(CONFIG_MTK_HDMI_TDM) += mtk-soc-pcm-hdmi.o
 
 # New kernel architecture

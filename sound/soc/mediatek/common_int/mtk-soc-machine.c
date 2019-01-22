@@ -490,7 +490,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_TXDAI2_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
-#ifdef CONFIG_MTK_BTCVSD_ALSA
+#ifdef CONFIG_SND_SOC_MTK_BTCVSD
 	{
 		.name = "BTCVSD_RX",
 		.stream_name = MT_SOC_BTCVSD_CAPTURE_STREAM_NAME,
