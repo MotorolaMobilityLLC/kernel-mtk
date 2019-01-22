@@ -294,6 +294,7 @@ typedef enum {
 	OTHER_MD_NONE,
 	OTHER_MD_STOP,
 	OTHER_MD_RESET,
+	OTHER_MD_ENTER_FLIGHT_MODE,
 } OTHER_MD_OPS;
 
 struct ccci_force_assert_shm_fmt {
@@ -547,6 +548,10 @@ int swtp_init(int md_id);
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */
 #define CCCI_IOC_DL_TRAFFIC_CONTROL		_IOW(CCCI_IOC_MAGIC, 119, unsigned int) /* mdlogger */
+
+#define CCCI_IOC_ENTER_DEEP_FLIGHT_ENHANCED     _IO(CCCI_IOC_MAGIC,  123) /* RILD  factory */
+#define CCCI_IOC_LEAVE_DEEP_FLIGHT_ENHANCED     _IO(CCCI_IOC_MAGIC,  124) /* RILD  factory */
+
 
 #define CCCI_IPC_MAGIC 'P' /* only for IPC user */
 /* CCCI == EEMCS */
