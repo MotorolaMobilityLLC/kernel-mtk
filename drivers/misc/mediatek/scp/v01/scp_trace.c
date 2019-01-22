@@ -31,14 +31,14 @@
 
 MODULE_LICENSE("GPL");
 
-typedef struct {
+struct met_trace_info_t {
 	uint32_t MARKER1;
 	uint32_t MARKER2;
 	uint32_t trace_data_start;
 	uint32_t trace_data_end;
 	uint32_t cpu_id;
 	uint32_t configuration;
-} met_trace_info_t;
+};
 
 static met_trace_info_t met_trace_info[SCP_CORE_TOTAL];
 
@@ -49,15 +49,18 @@ unsigned int trace_r_pos[SCP_CORE_TOTAL] = {0, 0};
 unsigned int sram_offset[SCP_CORE_TOTAL] = {0, 0};
 static void scp_met_handler(int id, void *data, unsigned int len)
 {
-	met_trace_info_t *tmp = (met_trace_info_t *)data;
+	struct met_trace_info_t *tmp = (met_trace_info_t *)data;
 
-	memcpy((void *)&met_trace_info[tmp->cpu_id], data, sizeof(met_trace_info_t));
-	pr_err("[scp_trace] cpu_id:0x%x\n", tmp->cpu_id);
-	pr_err("[scp_trace] start addr:0x%x\n", met_trace_info[tmp->cpu_id].trace_data_start);
-	pr_err("[scp_trace] end addr:0x%x\n", met_trace_info[tmp->cpu_id].trace_data_end);
+	memcpy((void *)&met_trace_info[tmp->cpu_id], data
+			, sizeof(met_trace_info_t));
+	pr_notice("[scp_trace] cpu_id:0x%x start addr:0x%x end addr:0x%x\n"
+			, tmp->cpu_id
+			, met_trace_info[tmp->cpu_id].trace_data_start
+			, met_trace_info[tmp->cpu_id].trace_data_end);
 }
 
-static ssize_t scp_trace_run_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t scp_trace_run_show(struct device *dev
+			, struct device_attribute *attr, char *buf)
 {
 	int sz;
 
@@ -73,7 +76,8 @@ static ssize_t scp_trace_run_show(struct device *dev, struct device_attribute *a
 #define FUNC_BIT_SHIF       18
 #define MET_OP            (1 << FUNC_BIT_SHIF)
 
-static ssize_t scp_trace_run_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t scp_trace_run_store(struct device *dev
+		, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int prev_run_state;
 	unsigned int value;
@@ -86,11 +90,12 @@ static ssize_t scp_trace_run_store(struct device *dev, struct device_attribute *
 	if (kstrtoint(buf, 10, &scp_trace_run_flag) != 0)
 		return -EINVAL;
 
-	pr_err("[scp_trace] status:%d\n", scp_trace_run_flag);
+	pr_notice("[scp_trace] status:%d\n", scp_trace_run_flag);
 	if (prev_run_state == 0 && scp_trace_run_flag == 1) {
 		value = MET_OP|MET_OP_START;
 		if (scp_trace_run_command & (1<<SCP_A_ID))
-			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_A_ID);
+			ret = scp_ipi_send(IPI_MET_SCP,
+				&value, sizeof(value), 0, SCP_A_ID);
 		udelay(1000);
 
 		trace_r_pos[SCP_A_ID] = 0;
@@ -99,10 +104,12 @@ static ssize_t scp_trace_run_store(struct device *dev, struct device_attribute *
 	} else if (prev_run_state == 1 && scp_trace_run_flag == 0) {
 		if (scp_trace_run_command & (1<<SCP_A_ID)) {
 			value = MET_OP|MET_OP_STOP;
-			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_A_ID);
+			ret = scp_ipi_send(IPI_MET_SCP,
+				&value, sizeof(value), 0, SCP_A_ID);
 			udelay(1000);
 			value = MET_OP|MET_OP_EXTRACT;
-			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_A_ID);
+			ret = scp_ipi_send(IPI_MET_SCP,
+				&value, sizeof(value), 0, SCP_A_ID);
 		}
 		udelay(1000);
 	}
@@ -112,8 +119,10 @@ static ssize_t scp_trace_run_store(struct device *dev, struct device_attribute *
 	return count;
 }
 
-static DEVICE_ATTR(scp_trace_run, 0660, scp_trace_run_show, scp_trace_run_store);
-static ssize_t scp_trace_setup_show(struct device *dev, struct device_attribute *attr, char *buf)
+static DEVICE_ATTR(scp_trace_run, 0660, scp_trace_run_show,
+						scp_trace_run_store);
+static ssize_t scp_trace_setup_show(struct device *dev
+			, struct device_attribute *attr, char *buf)
 {
 	int sz;
 
@@ -122,7 +131,8 @@ static ssize_t scp_trace_setup_show(struct device *dev, struct device_attribute 
 	mutex_unlock(&dev->mutex);
 	return sz;
 }
-static ssize_t scp_trace_setup_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t scp_trace_setup_store(struct device *dev
+		, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int prev_run_state;
 
@@ -133,15 +143,17 @@ static ssize_t scp_trace_setup_store(struct device *dev, struct device_attribute
 	if (kstrtoint(buf, 10, &scp_trace_run_command) != 0)
 		return -EINVAL;
 
-	pr_err("[scp_trace] command:%d\n", scp_trace_run_command);
+	pr_notice("[scp_trace] command:%d\n", scp_trace_run_command);
 
 	mutex_unlock(&dev->mutex);
 
 	return count;
 }
-static DEVICE_ATTR(scp_trace_setup, 0660, scp_trace_setup_show, scp_trace_setup_store);
+static DEVICE_ATTR(scp_trace_setup, 0660,
+		 scp_trace_setup_show, scp_trace_setup_store);
 
-static ssize_t scp_trace_select_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t scp_trace_select_show(struct device *dev
+		, struct device_attribute *attr, char *buf)
 {
 	int sz;
 
@@ -150,7 +162,8 @@ static ssize_t scp_trace_select_show(struct device *dev, struct device_attribute
 	mutex_unlock(&dev->mutex);
 	return sz;
 }
-static ssize_t scp_trace_select_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t scp_trace_select_store(struct device *dev
+		, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int prev_run_state;
 
@@ -161,13 +174,15 @@ static ssize_t scp_trace_select_store(struct device *dev, struct device_attribut
 	if (kstrtoint(buf, 10, &trace_data_selected_id) != 0)
 		return -EINVAL;
 
-	pr_err("[scp_trace] trace_data_selected_id:%d\n", trace_data_selected_id);
+	pr_notice("[scp_trace] trace_data_selected_id:%d\n"
+					, trace_data_selected_id);
 
 	mutex_unlock(&dev->mutex);
 
 	return count;
 }
-static DEVICE_ATTR(scp_trace_select, 0660, scp_trace_select_show, scp_trace_select_store);
+static DEVICE_ATTR(scp_trace_select, 0660, scp_trace_select_show
+						, scp_trace_select_store);
 
 ssize_t scp_trace_read(char __user *data, size_t len)
 {
@@ -177,7 +192,7 @@ ssize_t scp_trace_read(char __user *data, size_t len)
 	unsigned int *reg;
 
 
-	pr_err("[scp_trace] selected id:%d\n", trace_data_selected_id);
+	pr_notice("[scp_trace] selected id:%d\n", trace_data_selected_id);
 	reg = (unsigned int *) (scpreg.cfg + SCP_LOCK_OFS);
 	lock = *reg;
 	*reg &= ~SCP_TCM_LOCK_BIT;
@@ -195,7 +210,7 @@ ssize_t scp_trace_read(char __user *data, size_t len)
 		- met_trace_info[trace_data_selected_id].trace_data_start
 		- trace_r_pos[trace_data_selected_id];
 
-	pr_err("[scp_trace] len:%d\n", (int) len);
+	pr_notice("[scp_trace] len:%d\n", (int) len);
 	scp_base = (unsigned int *) buf;
 	/*SCP keep awake */
 	scp_awake_lock(trace_data_selected_id);
@@ -210,7 +225,8 @@ ssize_t scp_trace_read(char __user *data, size_t len)
 
 }
 
-static ssize_t scp_trace_if_read(struct file *file, char __user *data, size_t len, loff_t *ppos)
+static ssize_t scp_trace_if_read(struct file *file
+			, char __user *data, size_t len, loff_t *ppos)
 {
 	ssize_t ret;
 #if 0
@@ -226,13 +242,14 @@ static ssize_t scp_trace_if_read(struct file *file, char __user *data, size_t le
 #if 0
 	buff = (unsigned int *)data;
 	for (i = 0; i < 0x1000; i++)
-		pr_err("0x%x\n", buff[i]);
+		pr_notice("0x%x\n", buff[i]);
 #endif
 
 	return ret;
 }
 
-static ssize_t scp_trace_if_write(struct file *file, const char __user *data, size_t len, loff_t *ppos)
+static ssize_t scp_trace_if_write(struct file *file
+			, const char __user *data, size_t len, loff_t *ppos)
 {
 	ssize_t ret;
 
@@ -240,7 +257,7 @@ static ssize_t scp_trace_if_write(struct file *file, const char __user *data, si
 	if (kstrtoint(data, 10, &trace_data_selected_id) != 0)
 		return -EINVAL;
 
-	pr_err("[scp_trace] selected id:%d\n", trace_data_selected_id);
+	pr_notice("[scp_trace] selected id:%d\n", trace_data_selected_id);
 
 	return ret;
 }
@@ -273,19 +290,22 @@ static int __init init_scp_trace(void)
 		return ret;
 	}
 
-	ret = device_create_file(scp_trace_device.this_device, &dev_attr_scp_trace_run);
+	ret = device_create_file(scp_trace_device.this_device,
+					&dev_attr_scp_trace_run);
 	if (unlikely(ret != 0)) {
 		pr_err("[SCP] misc register failed\n");
 		return ret;
 	}
 
-	ret = device_create_file(scp_trace_device.this_device, &dev_attr_scp_trace_setup);
+	ret = device_create_file(scp_trace_device.this_device,
+					&dev_attr_scp_trace_setup);
 	if (unlikely(ret != 0)) {
 		pr_err("[SCP] misc register failed\n");
 		return ret;
 	}
 
-	ret = device_create_file(scp_trace_device.this_device, &dev_attr_scp_trace_select);
+	ret = device_create_file(scp_trace_device.this_device,
+					&dev_attr_scp_trace_select);
 	if (unlikely(ret != 0)) {
 		pr_err("[SCP] misc register failed\n");
 		return ret;
