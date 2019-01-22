@@ -264,6 +264,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* SPM */
 		p += sprintf(p, "SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "SPM_SW_RSV_9           : 0x%x\n", spm_read(SPM_SW_RSV_9));
+		p += sprintf(p, "MD2SPM_DVFS_CON        : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		p += sprintf(p, "SPM_DVFS_EVENT_STA     : 0x%x\n", spm_read(SPM_DVFS_EVENT_STA));
 		p += sprintf(p, "SPM_DVFS_LEVEL         : 0x%x\n", spm_read(SPM_DVFS_LEVEL));
 		p += sprintf(p, "SPM_DFS_LEVEL          : 0x%x\n", spm_read(SPM_DFS_LEVEL));
@@ -316,6 +317,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* SPM */
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("SPM_SW_RSV_9           : 0x%x\n", spm_read(SPM_SW_RSV_9));
+		spm_vcorefs_warn("MD2SPM_DVFS_CON        : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		spm_vcorefs_warn("SPM_DVFS_EVENT_STA     : 0x%x\n", spm_read(SPM_DVFS_EVENT_STA));
 		spm_vcorefs_warn("SPM_DVFS_LEVEL         : 0x%x\n", spm_read(SPM_DVFS_LEVEL));
 		spm_vcorefs_warn("SPM_DFS_LEVEL          : 0x%x\n", spm_read(SPM_DFS_LEVEL));
