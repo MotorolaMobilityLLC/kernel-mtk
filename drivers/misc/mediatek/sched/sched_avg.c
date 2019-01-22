@@ -996,6 +996,57 @@ OUT:
 }
 EXPORT_SYMBOL(sched_update_nr_heavy_prod);
 
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+int enter_isolation;
+struct cpumask cpu_all_masks;
+struct cpumask *iso_cpus_ptr = &cpu_all_masks;
+enum iso_prio_t iso_prio = ISO_UNSET;
+
+void iso_cpumask_init(void)
+{
+	cpumask_copy(&cpu_all_masks, cpu_possible_mask);
+	enter_isolation = 0;
+}
+
+static DEFINE_SPINLOCK(iso_cpus_spinlock);
+
+int set_cpu_isolation(enum iso_prio_t prio, struct cpumask *cpumask_ptr)
+{
+	unsigned long irq_flags;
+
+	if (prio > iso_prio)
+		return -1;
+
+	if (!cpumask_ptr)
+		return -1;
+
+	spin_lock_irqsave(&iso_cpus_spinlock, irq_flags);
+	iso_prio = prio;
+	iso_cpus_ptr = cpumask_ptr;
+	enter_isolation = 1;
+	spin_unlock_irqrestore(&iso_cpus_spinlock, irq_flags);
+
+	return 0;
+}
+
+int unset_cpu_isolation(enum iso_prio_t prio)
+{
+	unsigned long irq_flags;
+
+	if (prio != iso_prio)
+		return -1;
+
+	spin_lock_irqsave(&iso_cpus_spinlock, irq_flags);
+	enter_isolation = 0;
+	iso_prio = ISO_UNSET;
+	iso_cpus_ptr = &cpu_all_masks;
+	spin_unlock_irqrestore(&iso_cpus_spinlock, irq_flags);
+
+	return 0;
+}
+
+#endif
+
 static struct timer_list tracker_timer;
 
 static void tracker_isr(unsigned long data)

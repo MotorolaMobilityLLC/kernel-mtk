@@ -7719,28 +7719,13 @@ LIST_HEAD(task_groups);
 
 DECLARE_PER_CPU(cpumask_var_t, load_balance_mask);
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-struct cpumask turbo_cpus;
-static inline void turbo_cpumask_init(void)
-{
-	cpumask_clear(&turbo_cpus);
-
-	cpumask_set_cpu(0, &turbo_cpus);
-	cpumask_set_cpu(1, &turbo_cpus);
-	cpumask_set_cpu(2, &turbo_cpus);
-	cpumask_set_cpu(3, &turbo_cpus);
-
-	cpumask_set_cpu(7, &turbo_cpus);
-}
-#endif
-
 void __init sched_init(void)
 {
 	int i, j;
 	unsigned long alloc_size = 0, ptr;
 
 #ifdef CONFIG_MTK_ACAO_SUPPORT
-	turbo_cpumask_init();
+	iso_cpumask_init();
 #endif
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
