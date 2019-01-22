@@ -226,6 +226,11 @@
 		reg = <0 0x0c530a80 0 0x50>;
 	};
 
+	mobicore {
+		compatible = "trustonic,mobicore";
+		interrupts = <GIC_SPI 304 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	timer: timer {
 		compatible = "arm,armv8-timer";
 		interrupt-parent = <&gic>;
