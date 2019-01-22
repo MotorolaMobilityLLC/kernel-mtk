@@ -581,7 +581,10 @@ static inline unsigned int uffs(unsigned int x)
 
 #define CMD_TIMEOUT             (HZ/10 * 5)     /* 100ms x5 */
 #define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
+/* Please modify msdc_sd.h to override the setting here */
+#ifndef CLK_TIMEOUT
 #define CLK_TIMEOUT             (HZ/10)         /* 100ms */
+#endif
 #define POLLING_BUSY            (HZ    * 3)
 #define POLLING_PINS            (HZ*20 / 1000)	/* 20ms */
 

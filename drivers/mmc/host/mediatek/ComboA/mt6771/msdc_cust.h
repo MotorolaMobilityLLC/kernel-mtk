@@ -105,7 +105,7 @@
 #define VEMC_VOSEL_3V           (3)
 #define VEMC_VOSEL_3V3          (5)
 #define VMC_VOSEL_CAL_mV(cal)   ((cal >= 0) ? ((cal)/10) : 0)
-#define VMC_VOSEL_1V8           (4) /* Acutally 1V86 */
+#define VMC_VOSEL_1V8           (4)
 #define VMC_VOSEL_2V9           (10)
 #define VMC_VOSEL_3V            (11)
 #define VMC_VOSEL_3V3           (13)
@@ -371,6 +371,9 @@
 /**************************************************************/
 /* Section 5: Adjustable Driver Parameter                     */
 /**************************************************************/
+/* Setting here will override, mtk_sd.h */
+#define CLK_TIMEOUT             (HZ/100)        /* 10ms */
+
 #define HOST_MAX_BLKSZ          (2048)
 
 #define MSDC_OCR_AVAIL          (MMC_VDD_28_29 | MMC_VDD_29_30 | MMC_VDD_30_31 | MMC_VDD_31_32 | MMC_VDD_32_33)

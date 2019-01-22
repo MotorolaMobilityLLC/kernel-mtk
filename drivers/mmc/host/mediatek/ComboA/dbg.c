@@ -244,7 +244,8 @@ void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 	spin_lock_irqsave(&cmd_dump_lock, flags);
 	if (type == 1) {
 		 /*skip log if last cmd rsp are the same*/
-		if (last_cmd == cmd && last_arg == arg) {
+		if (last_cmd == cmd &&
+			last_arg == arg && cmd == 13) {
 			skip++;
 			if (dbg_host_cnt == 0)
 				dbg_host_cnt = dbg_max_cnt;
@@ -449,10 +450,10 @@ void msdc_cmdq_func(struct msdc_host *host, const int num, struct seq_file *m)
 		host->mmc->card->ext_csd.cmdq_support = 1;
 		host->mmc->cmdq_support_changed = 1;
 		break;
+#endif
 	case 2:
 		mmc_cmd_dump(host->mmc);
 		break;
-#endif
 	default:
 		seq_printf(m, "unknown function id %d\n", num);
 		break;

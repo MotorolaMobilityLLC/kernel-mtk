@@ -67,19 +67,19 @@
 &pio {
 	msdc0_pins_default: msdc0@default {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_rst {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_ds {
-			drive-strength = /bits/ 8 <1>;
+			drive-strength = /bits/ 8 <4>;
 		};
 	};
 
@@ -91,10 +91,10 @@
 
 	msdc1_pins_default: msdc1@default {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_clk {
 			drive-strength = /bits/ 8 <4>;
@@ -103,37 +103,37 @@
 
 	msdc1_pins_sdr104: msdc1@sdr104 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 	};
 
 	msdc1_pins_sdr50: msdc1@sdr50 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 	};
 
 	msdc1_pins_ddr50: msdc1@ddr50 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <4>;
 		};
 	};
 
