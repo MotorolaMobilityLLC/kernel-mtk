@@ -17,6 +17,7 @@
 #include <linux/usb/ch9.h>
 #include <linux/usb/of.h>
 #include <linux/usb/otg.h>
+#include <linux/of_platform.h>
 
 const char *usb_otg_state_string(enum usb_otg_state state)
 {

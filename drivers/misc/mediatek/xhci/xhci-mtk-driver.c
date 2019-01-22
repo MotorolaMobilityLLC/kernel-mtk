@@ -95,6 +95,9 @@ static int mtk_xhci_hcd_init(void)
 }
 
 
+#ifdef CONFIG_USBIF_COMPLIANCE
+
+#else
 #ifdef CONFIG_USB_C_SWITCH
 static int typec_otg_enable(void *data)
 {
@@ -115,6 +118,7 @@ static struct typec_switch_data typec_host_driver = {
 	.enable = typec_otg_enable,
 	.disable = typec_otg_disable,
 };
+#endif
 #endif
 
 static void mtk_xhci_wakelock_init(void)
