@@ -625,7 +625,6 @@ static inline ssize_t scp_A_db_test_show(struct device *kobj, struct device_attr
 }
 
 DEVICE_ATTR(scp_A_db_test, 0444, scp_A_db_test_show, NULL);
-#ifdef CONFIG_MTK_ENG_BUILD
 
 static ssize_t scp_ee_force_ke_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
@@ -643,6 +642,8 @@ static ssize_t scp_ee_force_ke_ctrl(struct device *kobj, struct device_attribute
 	return n;
 }
 DEVICE_ATTR(scp_ee_force_ke, 0644, scp_ee_force_ke_show, scp_ee_force_ke_ctrl);
+
+#ifdef CONFIG_MTK_ENG_BUILD
 
 static ssize_t scp_ee_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
@@ -815,12 +816,12 @@ static int create_files(void)
 	if (unlikely(ret != 0))
 		return ret;
 
-#ifdef CONFIG_MTK_ENG_BUILD
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_ee_force_ke);
 
 	if (unlikely(ret != 0))
 		return ret;
 
+#ifdef CONFIG_MTK_ENG_BUILD
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_ee_enable);
 
 	if (unlikely(ret != 0))
