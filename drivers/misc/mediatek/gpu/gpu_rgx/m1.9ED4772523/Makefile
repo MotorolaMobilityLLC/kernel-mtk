@@ -13,12 +13,6 @@ else
 endif
 
 RGX_TOP := $(dir $(lastword $(MAKEFILE_LIST)))
-
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/met/$(MTK_PLATFORM)/platform/$(MTK_PLATFORM)/
-
 VER := $(if $(filter eng,$(TARGET_BUILD_VARIANT)),eng,user)
 
 #MTK_DDK_DEBUG := y
@@ -87,7 +81,9 @@ pvrsrvkm-y += \
 	services/server/common/tlstream.o \
 	services/server/common/htbserver.o \
 	services/server/common/cache_km.o \
+	services/server/common/devicemem_history_server.o \
 	services/server/devices/rgx/env/linux/km/rgxfwload.o \
+	services/server/devices/rgx/rgxsignals.o \
 	services/server/devices/rgx/debugmisc_server.o \
 	services/server/devices/rgx/rgxccb.o \
 	services/server/devices/rgx/rgxdebug.o \
@@ -164,8 +160,6 @@ pvrsrvkm-y += \
 	generated/rgxcmp_bridge/server_rgxcmp_bridge.o \
 	generated/devicememhistory_bridge/server_devicememhistory_bridge.o \
 	generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
-	services/server/common/devicemem_history_server.o \
-	services/server/devices/rgx/rgxsignals.o \
 	generated/rgxsignals_bridge/server_rgxsignals_bridge.o \
 	services/system/rgx_$(MTK_PLATFORM)/ion_support.o \
 	services/system/rgx_$(MTK_PLATFORM)/mtk_mfgsys.o \
@@ -188,26 +182,23 @@ endif
 
 ifeq ($(MTK_DDK_DEBUG),y)
 	pvrsrvkm-y += \
-		#services/server/common/ri_server.o \
-		#generated/ri_bridge/client_ri_direct_bridge.o \
-		#generated/ri_bridge/server_ri_bridge.o \
-		#generated/devicememhistory_bridge/server_devicememhistory_bridge.o \
-		#generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
-		#services/server/common/devicemem_history_server.o
+		services/server/common/devicemem_history_server.o \
+		services/server/common/ri_server.o \
+		generated/ri_bridge/client_ri_direct_bridge.o \
+		generated/ri_bridge/server_ri_bridge.o \
+		generated/devicememhistory_bridge/server_devicememhistory_bridge.o \
+		generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o
 endif
 
 ccflags-y += \
-	-I$(srctree)/drivers/staging/android/ion \
-	-I$(srctree)/drivers/staging/android/ion/mtk \
-	-I$(srctree)/drivers/misc/mediatek/gpu/ged/include \
-	-I$(srctree)/drivers/misc/mediatek/pmic
-
-ifeq ($(MTK_PLATFORM),mt6799)
-	ccflags-y += \
-		-I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335
-endif
-
-ccflags-y += \
+	-I$(RGX_TOP)/hwdefs \
+	-I$(RGX_TOP)/hwdefs/km \
+	-I$(RGX_TOP)/hwdefs/km/configs \
+	-I$(RGX_TOP)/hwdefs/km/cores \
+	-I$(RGX_TOP)/include \
+	-I$(RGX_TOP)/include/drm \
+	-I$(RGX_TOP)/include/public \
+	-I$(RGX_TOP)/kernel/drivers/staging/imgtec \
 	-I$(RGX_TOP)/generated/breakpoint_bridge \
 	-I$(RGX_TOP)/generated/cache_bridge \
 	-I$(RGX_TOP)/generated/cmm_bridge \
@@ -228,14 +219,9 @@ ccflags-y += \
 	-I$(RGX_TOP)/generated/srvcore_bridge \
 	-I$(RGX_TOP)/generated/sync_bridge \
 	-I$(RGX_TOP)/generated/timerquery_bridge \
-	-I$(RGX_TOP)/hwdefs \
-	-I$(RGX_TOP)/hwdefs/km \
-	-I$(RGX_TOP)/hwdefs/km/configs \
-	-I$(RGX_TOP)/hwdefs/km/cores \
-	-I$(RGX_TOP)/include \
-	-I$(RGX_TOP)/include/drm \
-	-I$(RGX_TOP)/include/public \
-	-I$(RGX_TOP)/kernel/drivers/staging/imgtec \
+	-I$(RGX_TOP)/generated/devicememhistory_bridge \
+	-I$(RGX_TOP)/generated/rgxsignals_bridge \
+	-I$(RGX_TOP)/generated/ri_bridge \
 	-I$(RGX_TOP)/services/include \
 	-I$(RGX_TOP)/services/include/env/linux \
 	-I$(RGX_TOP)/services/include/shared \
@@ -248,14 +234,18 @@ ccflags-y += \
 	-I$(RGX_TOP)/services/srvinit/devices/rgx \
 	-I$(RGX_TOP)/services/srvinit/include \
 	-I$(RGX_TOP)/services/system/include \
-	-I$(RGX_TOP)/generated/devicememhistory_bridge \
-	-I$(RGX_TOP)/generated/rgxsignals_bridge \
 	-I$(RGX_TOP)/services/system/rgx_$(MTK_PLATFORM)
 
-ifeq ($(MTK_DDK_DEBUG),y)
+ccflags-y += \
+	-I$(srctree)/drivers/staging/android/ion \
+	-I$(srctree)/drivers/staging/android/ion/mtk \
+	-I$(srctree)/drivers/misc/mediatek/gpu/ged/include \
+	-I$(srctree)/drivers/misc/mediatek/include/mt-plat \
+	-I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
+
+ifeq ($(MTK_PLATFORM),mt6799)
 	ccflags-y += \
-		#-I$(RGX_TOP)/generated/ri_bridge \
-		#-I$(RGX_TOP)/generated/devicememhistory_bridge
+		-I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335
 endif
 
 obj-y += pvrsrvkm.o
