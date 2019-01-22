@@ -148,6 +148,24 @@ static __init int boot_trace_cmdline(char *str)
 }
 __setup("androidboot.boot_trace", boot_trace_cmdline);
 
+/* If boot tracing is on.Ignore tracing off command.*/
+bool boot_ftrace_check(unsigned long trace_en)
+{
+	bool boot_complete = false;
+
+	if (boot_trace != true || trace_en)
+		return false;
+
+#ifdef CONFIG_MTPROF
+	boot_complete = boot_finish;
+#endif
+	if (!boot_complete) {
+		pr_info("Capturing boot ftrace,Ignore tracing off.\n");
+		return true;
+	}
+	return false;
+}
+
 #include <linux/rtc.h>
 
 void print_enabled_events(struct trace_buffer *buf, struct seq_file *m)

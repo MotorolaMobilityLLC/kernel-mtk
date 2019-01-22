@@ -6691,6 +6691,10 @@ rb_simple_write(struct file *filp, const char __user *ubuf,
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_MTK_SCHED_TRACERS
+	if (boot_ftrace_check(val))
+		return -EPERM;
+#endif
 	if (buffer) {
 		if (ring_buffer_record_is_on(buffer) ^ val)
 			pr_debug("[ftrace]tracing_on is toggled to %lu\n", val);

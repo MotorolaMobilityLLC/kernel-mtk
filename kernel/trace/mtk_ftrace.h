@@ -36,6 +36,10 @@ ssize_t tracing_resize_ring_buffer(struct trace_array *tr,
 struct trace_buffer;
 void print_enabled_events(struct trace_buffer *buf, struct seq_file *m);
 void update_buf_size(unsigned long size);
+bool boot_ftrace_check(unsigned long trace_en);
+#ifdef CONFIG_MTPROF
+extern int boot_finish;
+#endif
 #else
 #define print_enabled_events(b, m)
 #endif/* CONFIG_TRACING && CONFIG_MTK_SCHED_TRACERS */
