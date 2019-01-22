@@ -48,7 +48,7 @@ static struct shutdown_controller sdc;
 
 static int g_vbat_lt;
 static int g_vbat_lt_lv1;
-
+static bool shutdown_cond_enable = true;
 
 static void wake_up_power_misc(struct shutdown_controller *sdd)
 {
@@ -75,6 +75,16 @@ int get_shutdown_cond(void)
 	return ret;
 }
 
+void enable_shutdown_cond(bool enable)
+{
+	shutdown_cond_enable = enable;
+}
+
+bool is_shutdown_cond_enabled(void)
+{
+	return shutdown_cond_enable;
+}
+
 int set_shutdown_cond(int shutdown_cond)
 {
 	int now_current;
@@ -85,8 +95,12 @@ int set_shutdown_cond(int shutdown_cond)
 	now_is_charging = battery_get_bat_current_sign();
 	now_is_kpoc = battery_get_is_kpoc();
 
-	bm_err("set_shutdown_cond %d, is kpoc %d curr %d is_charging %d\n",
-		shutdown_cond, now_is_kpoc, now_current, now_is_charging);
+	bm_err("set_shutdown_cond %d, is kpoc %d curr %d is_charging %d en:%d\n",
+		shutdown_cond, now_is_kpoc, now_current, now_is_charging,
+		shutdown_cond_enable);
+
+	if (shutdown_cond_enable == false)
+		return 0;
 
 	switch (shutdown_cond) {
 	case OVERHEAT:
