@@ -320,7 +320,8 @@ static int larb_reg_backup(int larb)
 
 	if (larb == 0)
 		g_bInited = 0;
-	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163)
+	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163
+		|| smi_data->smi_priv->plat == MTK_PLAT_MT8167)
 		m4u_larb_backup_sec(larb);
 
 	return 0;
