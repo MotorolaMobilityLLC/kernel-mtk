@@ -157,6 +157,9 @@ bool setChipDmicPath(bool _enable, unsigned int sample_rate);
 void set_stf_gain(int gain);
 void set_stf_positive_gain_db(int gain_db);
 
+bool set_general_asrc(enum audio_general_asrc_id id, unsigned int sample_rate_in,
+			  unsigned int sample_rate_out);
+
 /* Sample Rate Transform */
 unsigned int SampleRateTransform(unsigned int sampleRate, enum soc_aud_digital_block audBlock);
 
@@ -332,6 +335,8 @@ struct mtk_afe_platform_ops {
 	bool (*set_smartpa_echo_ref)(int sample_rate, int extcodec_echoref_control, int enable);
 	bool (*set_dpd_module)(bool enable);
 	bool (*handle_suspend)(bool suspend);
+	bool (*set_general_asrc)(enum audio_general_asrc_id id, unsigned int sample_rate_in,
+				 unsigned int sample_rate_out);
 };
 
 void set_mem_blk_ops(struct mtk_mem_blk_ops *ops);
@@ -366,6 +371,5 @@ bool handle_suspend(bool suspend);
 int get_usage_digital_block(enum audio_usage_id id);
 int get_usage_digital_block_io(enum audio_usage_id id);
 int mtk_pcm_mmap(struct snd_pcm_substream *substream, struct vm_area_struct *vma);
-
 
 #endif
