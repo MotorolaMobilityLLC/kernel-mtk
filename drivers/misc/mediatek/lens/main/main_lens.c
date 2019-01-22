@@ -139,8 +139,8 @@ static long AF_SetMotorName(__user stAF_MotorName * pstMotorName)
 		LOG_INF("Search Motor Name : %s\n", g_stAF_DrvList[i].uDrvName);
 		if (strcmp(stMotorName.uMotorName, g_stAF_DrvList[i].uDrvName) == 0) {
 			g_pstAF_CurDrv = &g_stAF_DrvList[i];
-			g_pstAF_CurDrv->pAF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
-			i4RetValue = 1;
+			i4RetValue = g_pstAF_CurDrv->pAF_SetI2Cclient(g_pstAF_I2Cclient,
+								&g_AF_SpinLock, &g_s4AF_Opened);
 			break;
 		}
 	}
@@ -161,8 +161,8 @@ static long AF_SetLensMotorName(stAF_MotorName stMotorName)
 		LOG_INF("AF_SetLensMotorName - Search Motor Name : %s\n", g_stAF_DrvList[i].uDrvName);
 		if (strcmp(stMotorName.uMotorName, g_stAF_DrvList[i].uDrvName) == 0) {
 			g_pstAF_CurDrv = &g_stAF_DrvList[i];
-			g_pstAF_CurDrv->pAF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
-			i4RetValue = 1;
+			i4RetValue = g_pstAF_CurDrv->pAF_SetI2Cclient(g_pstAF_I2Cclient,
+								&g_AF_SpinLock, &g_s4AF_Opened);
 			break;
 		}
 	}
