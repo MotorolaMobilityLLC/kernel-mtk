@@ -17,6 +17,7 @@
 #include <linux/sysfs.h>
 #include <trace/events/sched.h>
 #include <linux/topology.h>
+#include <linux/cpufreq.h>
 
 #include "sched_power.h"
 
@@ -426,9 +427,10 @@ int show_cpu_capacity(char *buf, int buf_size)
 	int len = 0;
 
 	for_each_possible_cpu(cpu)
-		len += snprintf(buf+len, buf_size-len, "cpu=%d orig_capacity=%lu capacity=%lu\n",
+		len += snprintf(buf+len, buf_size-len, "cpu=%d orig_cap=%lu cap=%lu max_cap=%lu\n",
 				cpu, cpu_rq(cpu)->cpu_capacity_orig,
-				cpu_online(cpu)?cpu_rq(cpu)->cpu_capacity:0);
+				cpu_online(cpu)?cpu_rq(cpu)->cpu_capacity:0,
+				cpu_online(cpu)?cpu_rq(cpu)->rd->max_cpu_capacity.val:0);
 
 	return len;
 }
@@ -510,8 +512,8 @@ static struct kobj_attribute eas_knob_attr =
 __ATTR(enable, S_IWUSR | S_IRUSR, show_eas_knob,
 		store_eas_knob);
 
-/* For read version for EAS modification */
-static ssize_t show_eas_version_attr(struct kobject *kobj,
+/* For read info for EAS */
+static ssize_t show_eas_info_attr(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
 	unsigned int len = 0;
@@ -520,17 +522,20 @@ static ssize_t show_eas_version_attr(struct kobject *kobj,
 	len += snprintf(buf, max_len, "version=%d.%d(%s)\n\n", ver_major, ver_minor, module_name);
 	len += show_cpu_capacity(buf+len, max_len - len);
 
+	len += snprintf(buf+len, max_len - len, "max_cap_cpu=%d\n", cpu_rq(0)->rd->max_cpu_capacity.cpu);
+	len += snprintf(buf+len, max_len - len, "cpufreq slow=%d\n", cpufreq_driver_is_slow());
+
 	len += snprintf(buf+len, max_len - len, "\nwatershed=%d\n", power_tuning.watershed);
 	len += snprintf(buf+len, max_len - len, "turning_point=%d\n", power_tuning.turning_point);
 
 	return len;
 }
 
-static struct kobj_attribute eas_version_attr =
-__ATTR(version, S_IRUSR, show_eas_version_attr, NULL);
+static struct kobj_attribute eas_info_attr =
+__ATTR(info, S_IRUSR, show_eas_info_attr, NULL);
 
 static struct attribute *eas_attrs[] = {
-	&eas_version_attr.attr,
+	&eas_info_attr.attr,
 	&eas_knob_attr.attr,
 	&eas_watershed_attr.attr,
 	&eas_turning_point_attr.attr,
