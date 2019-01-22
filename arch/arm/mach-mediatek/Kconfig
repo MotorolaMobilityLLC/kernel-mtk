@@ -90,12 +90,13 @@ config MACH_MT6763
 	select ARMV7_COMPAT
 	select ARMV7_COMPAT_CPUINFO
 	select CPU_IDLE
-    select KERNEL_MODE_NEON
+	select KERNEL_MODE_NEON
 	select PINCTRL
 	select PINCTRL_MT6763
 	select MFD_SYSCON
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
+	select ARM_GIC_V3
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_EIC_HISTORY_DUMP
 	select MTK_EIC
