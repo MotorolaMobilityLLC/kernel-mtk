@@ -884,7 +884,7 @@ int gt1x_debug_proc(u8 *buf, int count)
 	int mode;
 	int ret;
 
-	ret = sscanf(buf, "%s %d", (char *)&mode_str, &mode);
+	ret = sscanf(buf, "%49s %d", (char *)&mode_str, &mode);
 	if (ret < 0) {
 		GTP_ERROR("gt1x_debug_proc sscanf failed");
 		return ret;
