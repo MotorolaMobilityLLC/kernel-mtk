@@ -232,7 +232,7 @@
 /**************************************************
  * Log Setting
  **************************************************/
-#define GPUFERQ_TAG							"[GPU/DVFS] "
+#define GPUFERQ_TAG							"[GPU/DVFS]"
 #define gpufreq_pr_err(fmt, args...)		pr_err(GPUFERQ_TAG"[ERROR]"fmt, ##args)
 #define gpufreq_pr_warn(fmt, args...)		pr_warn(GPUFERQ_TAG"[WARNING]"fmt, ##args)
 #define gpufreq_pr_info(fmt, args...)		pr_info(GPUFERQ_TAG"[INFO]"fmt, ##args)
@@ -322,8 +322,10 @@
 /**************************************************
  * Enumerations
  **************************************************/
-enum g_device_id_enum {
-	DEVICE_MT6771 = 0,
+enum g_segment_id_enum {
+	MT6771_SEGMENT_1 = 1,
+	MT6771_SEGMENT_2,
+	MT6771_SEGMENT_3,
 };
 enum g_post_divider_power_enum  {
 	POST_DIV2 = 1,

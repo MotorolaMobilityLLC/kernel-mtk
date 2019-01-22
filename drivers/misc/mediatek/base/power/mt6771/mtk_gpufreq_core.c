@@ -178,7 +178,8 @@ static bool g_keep_opp_freq_state;
 static bool g_fixed_freq_volt_state;
 static bool g_pbm_limited_ignore_state;
 static bool g_thermal_protect_limited_ignore_state;
-static unsigned int g_device_id;
+static unsigned int g_efuse_id;
+static unsigned int g_segment_id;
 static unsigned int g_opp_idx_num;
 static unsigned int g_cur_opp_freq;
 static unsigned int g_cur_opp_volt;
@@ -223,6 +224,7 @@ static DEFINE_MUTEX(mt_gpufreq_power_lock);
 static unsigned int g_limited_idx_array[NUMBER_OF_LIMITED_IDX] = { 0 };
 static bool g_limited_ignore_array[NUMBER_OF_LIMITED_IDX] = { false };
 static void __iomem *g_apmixed_base;
+static void __iomem *g_efuse_base;
 phys_addr_t gpu_fdvfs_virt_addr; /* for GED, legacy ?! */
 
 /**
@@ -478,7 +480,7 @@ void mt_gpufreq_enable_by_ptpod(void)
 	__mt_gpufreq_vgpu_set_mode(REGULATOR_MODE_NORMAL);
 
 	/* Freerun GPU DVFS */
-	/* g_DVFS_is_paused_by_ptpod = false; */
+	g_DVFS_is_paused_by_ptpod = false;
 
 	/* Turn off GPU MTCMOS */
 	mt_gpufreq_disable_MTCMOS();
@@ -1007,7 +1009,7 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "real freq = %d, real volt = %d\n",
 			__mt_gpufreq_get_cur_freq(), __mt_gpufreq_get_cur_volt());
 	seq_printf(m, "clock freq = %d\n", mt_get_ckgen_freq(9));
-	seq_printf(m, "g_device_id = %d\n", g_device_id);
+	seq_printf(m, "g_segment_id = %d\n", g_segment_id);
 	seq_printf(m, "g_volt_enable_state = %d\n", g_volt_enable_state);
 	seq_printf(m, "g_DVFS_off_by_ptpod_idx = %d\n", g_DVFS_off_by_ptpod_idx);
 	seq_printf(m, "g_max_limited_idx = %d\n", g_max_limited_idx);
@@ -1444,7 +1446,7 @@ static void __mt_gpufreq_clock_switch(unsigned int freq_new)
 		/* mfgpll_ck to clk26m */
 		__mt_gpufreq_switch_to_clksrc(CLOCK_SUB);
 		/* dds = GPUPLL_CON1[21:0], POST_DIVIDER = GPUPLL_CON1[24:26] */
-		DRV_WriteReg32(GPUPLL_CON1, (0x80000000) | (post_divider_power << POST_DIV_SHIFT) | dds);
+		/* DRV_WriteReg32(GPUPLL_CON1, (0x80000000) | (post_divider_power << POST_DIV_SHIFT) | dds); */
 		udelay(20);
 		/* clk26m to mfgpll_ck */
 		__mt_gpufreq_switch_to_clksrc(CLOCK_MAIN);
@@ -1551,18 +1553,22 @@ static void __mt_gpufreq_bucks_enable(void)
 {
 	int ret;
 
-	ret = regulator_enable(g_pmic->reg_vgpu);
-	if (ret) {
-		gpufreq_pr_err("@%s: enable VGPU failed, ret = %d\n", __func__, ret);
-		return;
+	if (regulator_is_enabled(g_pmic->reg_vsram_gpu) == 0) {
+		ret = regulator_enable(g_pmic->reg_vsram_gpu);
+		if (ret) {
+			gpufreq_pr_err("@%s: enable VSRAM_GPU failed, ret = %d\n", __func__, ret);
+			return;
+		}
+		udelay(VSRAM_GPU_ENABLE_TIME_US);
 	}
-	udelay(VGPU_ENABLE_TIME_US);
-	ret = regulator_enable(g_pmic->reg_vsram_gpu);
-	if (ret) {
-		gpufreq_pr_err("@%s: enable VSRAM_GPU failed, ret = %d\n", __func__, ret);
-		return;
+	if (regulator_is_enabled(g_pmic->reg_vgpu) == 0) {
+		ret = regulator_enable(g_pmic->reg_vgpu);
+		if (ret) {
+			gpufreq_pr_err("@%s: enable VGPU failed, ret = %d\n", __func__, ret);
+			return;
+		}
+		udelay(VGPU_ENABLE_TIME_US);
 	}
-	udelay(VSRAM_GPU_ENABLE_TIME_US);
 	gpufreq_pr_debug("@%s: bucks is enabled\n", __func__);
 }
 
@@ -1573,15 +1579,19 @@ static void __mt_gpufreq_bucks_disable(void)
 {
 	int ret;
 
-	ret = regulator_disable(g_pmic->reg_vgpu);
-	if (ret) {
-		gpufreq_pr_err("@%s: disable VGPU failed, ret = %d\n", __func__, ret);
-		return;
+	if (regulator_is_enabled(g_pmic->reg_vgpu) > 0) {
+		ret = regulator_disable(g_pmic->reg_vgpu);
+		if (ret) {
+			gpufreq_pr_err("@%s: disable VGPU failed, ret = %d\n", __func__, ret);
+			return;
+		}
 	}
-	ret = regulator_disable(g_pmic->reg_vsram_gpu);
-	if (ret) {
-		gpufreq_pr_err("@%s: disable VSRAM_GPU failed, ret = %d\n", __func__, ret);
-		return;
+	if (regulator_is_enabled(g_pmic->reg_vsram_gpu) > 0) {
+		ret = regulator_disable(g_pmic->reg_vsram_gpu);
+		if (ret) {
+			gpufreq_pr_err("@%s: disable VSRAM_GPU failed, ret = %d\n", __func__, ret);
+			return;
+		}
 	}
 	gpufreq_pr_debug("@%s: bucks is disabled\n", __func__);
 }
@@ -2158,10 +2168,12 @@ static void __mt_gpufreq_set_initial(void)
 static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 {
 	struct device_node *apmixed_node;
+	struct device_node *efuse_node;
 	struct device_node *node;
 	int i;
 
-	gpufreq_pr_debug("@%s: gpufreq driver probe\n", __func__);
+	gpufreq_pr_info("@%s: gpufreq driver probe, clock is %d KHz\n",
+			__func__, mt_get_ckgen_freq(9));
 
 	g_debug = 0;
 	g_DVFS_off_by_ptpod_idx = 0;
@@ -2230,7 +2242,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		return PTR_ERR(g_clk->mtcmos_mfg_core2);
 	}
 
-	pr_debug("[GPU/DVFS] [DEBUG] @%s: clk_mux is at 0x%p, clk_main_parent is at 0x%p, \t"
+	pr_info("[GPU/DVFS][INFO]@%s: clk_mux is at 0x%p, clk_main_parent is at 0x%p, \t"
 			"clk_sub_parent is at 0x%p, subsys_mfg_cg is at 0x%p, mtcmos_mfg_async is at 0x%p, \t"
 			"mtcmos_mfg is at 0x%p, mtcmos_mfg_core0 is at 0x%p, mtcmos_mfg_core1 is at 0x%p, \t"
 			"mtcmos_mfg_core2 is at 0x%p\n",
@@ -2238,10 +2250,36 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 			g_clk->subsys_mfg_cg, g_clk->mtcmos_mfg_async, g_clk->mtcmos_mfg,
 			g_clk->mtcmos_mfg_core0, g_clk->mtcmos_mfg_core1, g_clk->mtcmos_mfg_core2);
 
-	/* todo: check efuse */
-	/* Segment Code = get_devinfo_with_index(30) */
-	g_device_id = DEVICE_MT6771;
-	gpufreq_pr_debug("@%s: g_device_id = 0x%08X\n", __func__, g_device_id);
+	/* check EFUSE register 0x11f10050 ... */
+	/* Free Version : 4'b0000 */
+	/* 1GHz Version : 4'b0001 */
+	/* 950MHz Version : 4'b0010 */
+	/* 900MHz Version : 4'b0011 (Segment1) */
+	/* 850MHz Version : 4'b0100 */
+	/* 800MHz Version : 4'b0101 (Segment2) */
+	/* 750MHz Version : 4'b0110 */
+	/* 700MHz Version : 4'b0111 (Segment3) */
+	efuse_node = of_find_compatible_node(NULL, NULL, "mediatek,efusec");
+	g_efuse_base = of_iomap(efuse_node, 0);
+	if (!g_efuse_base) {
+		gpufreq_pr_err("@%s: EFUSEC iomap failed", __func__);
+		return -ENOENT;
+	}
+	g_efuse_id = readl(g_efuse_base + 0x50) & 0x00000FFF;
+	if (g_efuse_id == 0x011) {
+		/* 900MHz Version */
+		g_segment_id = MT6771_SEGMENT_1;
+	} else if (g_efuse_id == 0x101) {
+		/* 800MHz Version */
+		g_segment_id = MT6771_SEGMENT_2;
+	} else if (g_efuse_id == 0x111) {
+		/* 700MHz Version */
+		g_segment_id = MT6771_SEGMENT_3;
+	} else {
+		/* Other Version, set default segment */
+		g_segment_id = MT6771_SEGMENT_1;
+	}
+	gpufreq_pr_info("@%s: g_efuse_id = 0x%08X, g_segment_id = %d\n", __func__, g_efuse_id, g_segment_id);
 
 	/* alloc PMIC regulator */
 	g_pmic = kzalloc(sizeof(struct g_pmic_info), GFP_KERNEL);
@@ -2273,8 +2311,12 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif /* ifdef MT_GPUFREQ_AEE_RR_REC */
 
 	/* setup OPP table by device ID */
-	gpufreq_pr_debug("@%s: setup OPP table\n", __func__);
-	__mt_gpufreq_setup_opp_table(g_opp_table_segment1, ARRAY_SIZE(g_opp_table_segment1));
+	if (g_segment_id == 1)
+		__mt_gpufreq_setup_opp_table(g_opp_table_segment1, ARRAY_SIZE(g_opp_table_segment1));
+	else if (g_segment_id == 2)
+		__mt_gpufreq_setup_opp_table(g_opp_table_segment2, ARRAY_SIZE(g_opp_table_segment2));
+	else if (g_segment_id == 3)
+		__mt_gpufreq_setup_opp_table(g_opp_table_segment3, ARRAY_SIZE(g_opp_table_segment3));
 
 	/* setup PMIC init value */
 	g_vgpu_sfchg_rrate = __calculate_vgpu_sfchg_rate(true);
@@ -2290,14 +2332,19 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	regulator_set_voltage(g_pmic->reg_vsram_gpu,
 			SEG1_PMIC_MAX_VSRAM * 10, SEG1_PMIC_MAX_VSRAM * 10 + 125);
 
-	/* enable bucks (VGPU && VSRAM_GPU) */
-	__mt_gpufreq_bucks_enable();
+	/* enable bucks (VGPU && VSRAM_GPU) enforcement */
+	if (regulator_enable(g_pmic->reg_vsram_gpu))
+		gpufreq_pr_err("@%s: enable VSRAM_GPU failed\n", __func__);
+	udelay(VSRAM_GPU_ENABLE_TIME_US);
+	if (regulator_enable(g_pmic->reg_vgpu))
+		gpufreq_pr_err("@%s: enable VGPU failed\n", __func__);
+	udelay(VGPU_ENABLE_TIME_US);
 
 #ifdef MT_GPUFREQ_AEE_RR_REC
 	aee_rr_rec_gpu_dvfs_status(aee_rr_curr_gpu_dvfs_status() | (1 << GPU_DVFS_IS_VPROC_ENABLED));
 #endif /* ifdef MT_GPUFREQ_AEE_RR_REC */
 
-	pr_debug("[GPU/DVFS] [DEBUG] @%s: VGPU is enabled = %d (%d mV), VSRAM_GPU is enabled = %d (%d mV)\n",
+	pr_info("[GPU/DVFS][INFO]@%s: VGPU is enabled = %d (%d mV), VSRAM_GPU is enabled = %d (%d mV)\n",
 			__func__, regulator_is_enabled(g_pmic->reg_vgpu),
 			(regulator_get_voltage(g_pmic->reg_vgpu) / 1000),
 			regulator_is_enabled(g_pmic->reg_vsram_gpu),
@@ -2315,7 +2362,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	/* setup initial frequency */
 	__mt_gpufreq_set_initial();
-	pr_debug("[GPU/DVFS] [DEBUG] @%s: current freq = %d KHz, current volt = %d mV, \t"
+	pr_info("[GPU/DVFS][INFO]@%s: current freq = %d KHz, current volt = %d mV, \t"
 			"g_cur_opp_freq = %d, g_cur_opp_volt = %d, g_cur_opp_idx = %d, g_cur_opp_cond_idx = %d\n",
 			__func__, __mt_gpufreq_get_cur_freq(), __mt_gpufreq_get_cur_volt() / 100,
 			g_cur_opp_freq, g_cur_opp_volt, g_cur_opp_idx, g_cur_opp_cond_idx);
@@ -2355,7 +2402,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif /* ifdef MT_GPUFREQ_BATT_OC_PROTECT */
 
 
-	pr_debug("[GPU/DVFS] [DEBUG] @%s: VGPU sfchg raising rate: %d us, VGPU sfchg falling rate: %d us, \t"
+	pr_info("[GPU/DVFS][INFO]@%s: VGPU sfchg raising rate: %d us, VGPU sfchg falling rate: %d us, \t"
 			"VSRAM_GPU sfchg raising rate: %d us, VSRAM_GPU sfchg falling rate: %d us, \t"
 			"VGPU enable time: %d us, VSRAM_GPU enable time: %d us, \t"
 			"PMIC SRCLKEN_HIGH time: %d us\n"
@@ -2374,8 +2421,7 @@ static int __init __mt_gpufreq_init(void)
 {
 	int ret = 0;
 
-	gpufreq_pr_debug("@%s: start to initialize gpufreq driver, clock is %d KHZ\n",
-			__func__, mt_get_ckgen_freq(9));
+	gpufreq_pr_debug("@%s: start to initialize gpufreq driver\n", __func__);
 
 #ifdef CONFIG_PROC_FS
 	if (__mt_gpufreq_create_procfs())
