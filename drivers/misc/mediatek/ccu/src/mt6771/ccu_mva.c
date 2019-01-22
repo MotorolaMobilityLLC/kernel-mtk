@@ -179,3 +179,38 @@ static void _ccu_ion_free_handle(struct ion_client *client, struct ion_handle *h
 
 	LOG_DBG("free ion handle 0x%p\n", handle);
 }
+
+void ccu_ion_free_import_handle(struct ion_handle *handle)
+{
+	if (!_ccu_ion_client) {
+		LOG_ERR("invalid ion client!\n");
+		return;
+	}
+	if (!handle)
+		return;
+
+	ion_free(_ccu_ion_client, handle);
+}
+
+struct ion_handle *ccu_ion_import_handle(int fd)
+{
+	struct ion_handle *handle = NULL;
+
+	if (!_ccu_ion_client) {
+		LOG_ERR("ccu invalid ion client!\n");
+		return handle;
+	}
+	if (fd == -1) {
+		LOG_ERR("ccu invalid ion fd!\n");
+		return handle;
+	}
+
+	handle = ion_import_dma_buf(_ccu_ion_client, fd);
+	LOG_INF_MUST("ccu_ion_import_fd : %d, ccu_ion_import_handle : 0x%p\n", fd, handle);
+	if (!(handle)) {
+		LOG_ERR("ccu mport ion handle failed!\n");
+		return NULL;
+	}
+
+	return handle;
+}

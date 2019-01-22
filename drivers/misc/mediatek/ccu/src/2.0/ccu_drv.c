@@ -69,6 +69,7 @@
 #include "ccu_i2c_hw.h"
 #include "ccu_imgsensor.h"
 #include "kd_camera_feature.h"/*for IMGSENSOR_SENSOR_IDX*/
+#include "ccu_mva.h"
 
 /*******************************************************************************
 *
@@ -422,7 +423,7 @@ static int ccu_open(struct inode *inode, struct file *flip)
 	}
 
 	flip->private_data = user;
-
+	ccu_ion_init();
 	return ret;
 }
 
@@ -571,9 +572,11 @@ void ccu_clock_disable(void)
 
 }
 
+static struct ion_handle *import_buffer_handle[CCU_IMPORT_BUF_NUM];
 static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
+	int i = 0;
 	int powert_stat;
 	struct CCU_WAIT_IRQ_STRUCT IrqInfo;
 	struct ccu_user_s *user = flip->private_data;
@@ -847,6 +850,27 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 			return ccu_read_info_reg(regToRead);
 		}
+	case CCU_IOCTL_IMPORT_MEM:
+		{
+			struct import_mem_s import_mem;
+
+			ret = copy_from_user(&import_mem, (void *)arg, sizeof(struct import_mem_s));
+			if (ret != 0) {
+				LOG_ERR("CCU_IOCTL_IMPORT_MEM copy_to_user failed: %d\n", ret);
+				break;
+			}
+
+			for (i = 0; i < CCU_IMPORT_BUF_NUM; i++) {
+				import_buffer_handle[i] = ccu_ion_import_handle(import_mem.memID[i]);
+				if (!import_buffer_handle[i]) {
+					ret = -EFAULT;
+					LOG_ERR("CCU ccu_ion_import_handle failed: %d\n", ret);
+					break;
+				}
+			}
+
+			break;
+		}
 	default:
 		LOG_WARN("ioctl:No such command!\n");
 		ret = -EINVAL;
@@ -865,12 +889,16 @@ EXIT:
 static int ccu_release(struct inode *inode, struct file *flip)
 {
 	struct ccu_user_s *user = flip->private_data;
+	int i = 0;
 
 	LOG_INF_MUST("ccu_release +");
 
-	ccu_delete_user(user);
+	for (i = 0; i < CCU_IMPORT_BUF_NUM; i++)
+		ccu_ion_free_import_handle(import_buffer_handle[i]);/*can't in spin_lock*/
 
+	ccu_delete_user(user);
 	ccu_force_powerdown();
+	ccu_ion_uninit();
 
 	LOG_INF_MUST("ccu_release -");
 
