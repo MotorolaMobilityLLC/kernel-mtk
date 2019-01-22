@@ -14,6 +14,9 @@
 #ifndef _MT_PMIC_6337_UPMU_HW_H_
 #define _MT_PMIC_6337_UPMU_HW_H_
 
+#define MT6337_PMU_FLAG_TABLE_ENTRY struct mt6337_pmu_flag_table_entry_t
+#define MT6337_PMU_FLAGS_LIST_ENUM enum MT6337_PMU_FLAGS_LIST
+
 #define MT6337_PMIC_REG_BASE (0x8000)
 
 #define MT6337_HWCID                 ((unsigned int)(MT6337_PMIC_REG_BASE+0x0000))
@@ -3982,7 +3985,7 @@
 #define MT6337_PMIC_RG_RSV_CON0_MASK                          0x1
 #define MT6337_PMIC_RG_RSV_CON0_SHIFT                         0
 
-typedef enum {
+enum MT6337_PMU_FLAGS_LIST {
 	MT6337_PMIC_HWCID,
 	MT6337_PMIC_SWCID,
 	MT6337_PMIC_ANACID,
@@ -5175,13 +5178,13 @@ typedef enum {
 	MT6337_PMIC_GPIO_MODE2_CLR,
 	MT6337_PMIC_RG_RSV_CON0,
 	MT6337_PMU_COMMAND_MAX
-} MT6337_PMU_FLAGS_LIST_ENUM;
+};
 
-typedef struct {
+struct mt6337_pmu_flag_table_entry_t {
 	MT6337_PMU_FLAGS_LIST_ENUM flagname;
 	unsigned short offset;
 	unsigned short mask;
 	unsigned char shift;
-} MT6337_PMU_FLAG_TABLE_ENTRY;
+};
 
 #endif				/* _MT_PMIC_6337_UPMU_HW_H_ */
