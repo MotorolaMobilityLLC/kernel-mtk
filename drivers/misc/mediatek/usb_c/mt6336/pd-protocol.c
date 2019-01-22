@@ -522,29 +522,6 @@ void pd_set_msg_id(struct typec_hba *hba, uint8_t msg_id)
 inline void set_state_timeout(struct typec_hba *hba,
 	unsigned long ms_timeout, enum pd_states timeout_state)
 {
-#if FPGA_PLATFORM
-	unsigned long tmp;
-
-	#if PD_SW_WORKAROUND3
-	tmp = pd_get_jiffies(hba);
-	#else
-	tmp = jiffies;
-	#endif
-	hba->start_jiffies = tmp;
-	hba->timeout_jiffies = tmp + pd_msecs_to_jiffies(ms_timeout);
-	hba->timeout_ms = ms_timeout;
-	hba->timeout_state = timeout_state;
-
-	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_1) && (timeout_state != PD_STATE_NO_TIMEOUT)) {
-		#if PD_SW_WORKAROUND3
-		dev_err(hba->dev, "[TIMEOUT2 %dms] %s", ms_timeout, pd_state_mapping[timeout_state].name);
-		#else
-		dev_err(hba->dev, "[TIMEOUT2 %d(%d)ms] %s",
-			(pd_msecs_to_jiffies(ms_timeout) * PD_HZ_FACTOR_DIVIDER), ms_timeout,
-			pd_state_mapping[timeout_state].name);
-		#endif
-	}
-#else
 	if (hrtimer_try_to_cancel(&hba->timeout_timer) == -1)
 		dev_err(hba->dev, "Can not cancel timeout_timer\n");
 
@@ -563,7 +540,6 @@ inline void set_state_timeout(struct typec_hba *hba,
 
 		hrtimer_start(&hba->timeout_timer, ms_to_ktime(ms_timeout), HRTIMER_MODE_REL);
 	}
-#endif /* FPGA_PLATFORM */
 }
 
 /* Return flag for pd state is connected */
@@ -1814,9 +1790,6 @@ int pd_task(void *data)
 	unsigned long pre_timeout = ULONG_MAX;
 	unsigned long timeout = 10;
 
-#if FPGA_PLATFORM
-	unsigned long tmp;
-#endif
 	int ret = 0;
 	int incoming_packet = 0;
 	int hard_reset_count = 0;
@@ -3110,147 +3083,7 @@ int pd_task(void *data)
 		}
 
 		hba->last_state = curr_state;
-
-#if FPGA_PLATFORM
-		/*timeout check*/
-		typec_sw_probe(hba, DBG_LOOP_STATE, (DBG_LOOP_CHK_TIMEOUT<<DBG_LOOP_STATE_OFST));
-		if (hba->timeout_state != PD_STATE_NO_TIMEOUT) {
-			/*already timeout, run next state directly*/
-#if PD_SW_WORKAROUND3
-			tmp = pd_get_jiffies(hba);
-			if (time_after_16(tmp, hba->timeout_jiffies)) {
-#else
-			tmp = jiffies;
-			if (time_after(tmp, hba->timeout_jiffies)) {
-#endif
-				set_state(hba, hba->timeout_state);
-				timeout = 0;
-			} else if (pd_msecs_to_jiffies(timeout) > (hba->timeout_jiffies - tmp)) {
-				/*not yet timeout, but very soon*/
-				timeout = pd_jiffies_to_msecs(hba->timeout_jiffies - tmp);
-			}
-		}
-		typec_sw_probe(hba, DBG_LOOP_STATE, (DBG_LOOP_CHK_TIMEOUT<<DBG_LOOP_STATE_OFST));
-#endif
 	}
 }
-
-#if FPGA_PLATFORM
-int ts_pd(struct file *file, int argc, char **argv)
-{
-	int ret, cnt, i;
-	enum pd_states state;
-	struct typec_hba *hba = file->private_data;
-
-	if (argc == 2) {
-		if (!strncasecmp(argv[1], "dump", 4))
-			ret = 0;
-		else
-			ret = 1;
-	} else if (argc == 3) {
-		ret = 0;
-
-		if (!strncasecmp(argv[1], "comm", 4)) {
-			if (!strncasecmp(argv[2], "on", 2))
-				pd_rx_enable(hba, 1);
-			else if (!strncasecmp(argv[2], "off", 3))
-				pd_rx_enable(hba, 0);
-			else
-				ret = 1;
-		} else if (!strncasecmp(argv[1], "ping", 4)) {
-			if (!strncasecmp(argv[2], "on", 2))
-				pd_ping_enable(hba, 1);
-			else if (!strncasecmp(argv[2], "off", 3))
-				pd_ping_enable(hba, 0);
-			else
-				ret = 1;
-		} else if (!strncasecmp(argv[1], "bist", 4)) {
-			ret = 0;
-			/*cnt = simple_strtol(argv[2], &argv[2], 10);*/
-			if (kstrtoint(argv[2], 0, &cnt) != 0)
-				goto err_handle;
-
-			if (cnt == 0) {
-				hba->bist_mode = BDO_MODE_CARRIER2;
-				set_state(hba, PD_STATE_BIST_CMD);
-			} else if (cnt == 1) {
-				hba->bist_mode = BDO_MODE_TEST_DATA;
-				set_state(hba, PD_STATE_BIST_CMD);
-			} else {
-				ret = 1;
-			}
-		} else if (!strncasecmp(argv[1], "timeout", 7)) {
-			int tmp = 0;
-
-			if (kstrtoint(argv[2], 0, &tmp) != 0)
-				goto err_handle;
-
-			hba->timeout_user = tmp;
-			dev_err(hba->dev, "set timeout to %lu\n", hba->timeout_user);
-		} else if (!strncasecmp(argv[1], "soft", 4)) {
-			/*cnt = simple_strtol(argv[2], &argv[2], 10);*/
-			if (kstrtoint(argv[2], 0, &cnt) != 0)
-				goto err_handle;
-
-			for (i = 0; i < cnt; i++) {
-				dev_err(hba->dev, "\n\n%d/%d\n\n", (i+1), cnt);
-				init_completion(&hba->ready);
-
-				set_state(hba, PD_STATE_SOFT_RESET);
-
-				if (!wait_for_completion_timeout(&hba->ready, pd_msecs_to_jiffies(PD_STRESS_DELAY)))
-					return 1;
-			}
-		} else if (!strncasecmp(argv[1], "hard", 4)) {
-			/*cnt = simple_strtol(argv[2], &argv[2], 10);*/
-			if (kstrtoint(argv[2], 0, &cnt) != 0)
-				goto err_handle;
-
-			for (i = 0; i < cnt; i++) {
-				dev_err(hba->dev, "\n\n%d/%d\n\n", (i+1), cnt);
-				init_completion(&hba->ready);
-
-				set_state(hba, PD_STATE_HARD_RESET_SEND);
-
-				if (!wait_for_completion_timeout(&hba->ready, pd_msecs_to_jiffies(PD_STRESS_DELAY)))
-					return 1;
-			}
-		} else {
-			ret = 1;
-		}
-	} else if (argc == 4) {
-		ret = 0;
-
-		if (!strncasecmp(argv[1], "swap", 4)) {
-			/*cnt = simple_strtol(argv[3], &argv[3], 10);*/
-			if (kstrtoint(argv[3], 0, &cnt) != 0)
-				goto err_handle;
-
-			for (i = 0; i < cnt; i++) {
-				dev_err(hba->dev, "\n\n%d/%d\n\n", (i+1), cnt);
-				init_completion(&hba->ready);
-
-				if (!strncasecmp(argv[2], "power", 5))
-					pd_request_power_swap(hba);
-				else if (!strncasecmp(argv[2], "data", 4))
-					pd_request_data_swap(hba);
-				else if (!strncasecmp(argv[2], "vconn", 5))
-					pd_request_vconn_swap(hba);
-				else
-					return 1;
-
-				if (!wait_for_completion_timeout(&hba->ready, pd_msecs_to_jiffies(PD_STRESS_DELAY)))
-					return 1;
-			}
-		} else {
-			ret = 1;
-		}
-	} else {
-		ret = 1;
-	}
-
-err_handle:
-	return ret;
-}
 #endif
-#endif
+
