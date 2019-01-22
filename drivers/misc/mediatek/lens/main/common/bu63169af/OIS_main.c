@@ -11,11 +11,6 @@
 * GNU General Public License for more details.
 */
 
-/*
-#ifndef OIS_MAIN_C
-#define OIS_MAIN_C
-#endif
-*/
 
 /* #define OIS_DEBUG */
 #ifdef OIS_DEBUG
