@@ -38,6 +38,7 @@
 #define MAX_TLP_TIMES			(10)
 /* cpu capability of big / little = 1.7, aka 170, 170 - 100 = 70 */
 #define CPU_DMIPS_BIG_LITTLE_DIFF	(70)
+#define ROOT_CLUSTER_FROM_PPM		(1)
 
 /*
  * CONFIG - runtime
@@ -178,6 +179,7 @@ typedef struct hps_sys_struct {
 	struct hps_sys_ops *hps_sys_ops;
 	unsigned int is_set_root_cluster;
 	unsigned int root_cluster_id;
+	unsigned int ppm_root_cluster;
 	unsigned int total_online_cores;
 	unsigned int tlp_avg;
 	unsigned int rush_cnt;
