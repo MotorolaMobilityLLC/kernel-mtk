@@ -130,18 +130,22 @@ static long device_ioctl(struct file *filp,
  */
 	case FPSGO_TOUCH:
 		/* FALLTHROUGH */
-	case FPSGO_FRAME_COMPLETE:
-		/* FALLTHROUGH */
 	case FPSGO_ACT_SWITCH:
 		/* FALLTHROUGH */
 	case FPSGO_GAME:
 		/* FALLTHROUGH */
+		fbc_ioctl(cmd, msgKM->frame_time);
+		break;
 	case FPSGO_INTENDED_VSYNC:
+		/* FALLTHROUGH */
+	case FPSGO_FRAME_COMPLETE:
 		/* FALLTHROUGH */
 	case FPSGO_NO_RENDER:
 		/* FALLTHROUGH */
 	case FPSGO_SWAP_BUFFER:
-		fbc_ioctl(cmd, msgKM->frame_time);
+		if (msgKM->render_method == HWUI ||
+				msgKM->render_method == SWUI)
+			fbc_ioctl(cmd, msgKM->frame_time);
 		break;
 	case FPSGO_QUEUE:
 		/* FALLTHROUGH */
