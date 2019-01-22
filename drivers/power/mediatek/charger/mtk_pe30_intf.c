@@ -1110,7 +1110,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		pe3->pe30_charging_state, sign, cur, cap.cur - cur/10,
 		cap.cur, setting.cur, chrCur,
 		cap.vol, setting.vol, vbus, pmic_vbat, bifvbat,
-		BMT_status.SOC, BMT_status.UI_SOC2,
+		battery_get_bat_soc(), battery_get_bat_uisoc(),
 		pe3->batteryTemperature, biftmp, tmp.temp, cap_b.cur, cap_b.vol,
 		emark, pe3->charging_current_limit, pe3->charging_current_limit_by_r);
 
@@ -1130,7 +1130,7 @@ _fail:
 		pe3->pe30_charging_state, sign, cur, cap.cur - cur/10,
 		cap.cur, setting.cur, chrCur,
 		cap.vol, setting.vol, vbus, pmic_vbat, bifvbat,
-		BMT_status.SOC, BMT_status.UI_SOC2,
+		battery_get_bat_soc(), battery_get_bat_uisoc(),
 		pe3->batteryTemperature, tmp.temp, cap_b.cur, cap_b.vol,
 		emark);
 

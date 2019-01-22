@@ -928,7 +928,7 @@ static void charger_check_status(struct charger_manager *info)
 
 		if (temperature >= thermal->max_charge_temperature) {
 			pr_err("[BATTERY] Battery over Temperature or NTC fail %d %d!!\n\r", temperature,
-				thermal->min_charge_temperature);
+				thermal->max_charge_temperature);
 			thermal->sm = BAT_TEMP_HIGH;
 			charging = false;
 			goto stop_charging;
