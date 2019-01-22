@@ -52,7 +52,7 @@
 #endif
 /*#define __CHRDET_RG_DUMP__*/
 
-static CHARGER_TYPE g_chr_type;
+static enum charger_type g_chr_type;
 static struct mt_charger *g_mt_charger;
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 static struct work_struct chr_work;
@@ -453,7 +453,7 @@ static void hw_bc12_done(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
 }
 
-static void dump_charger_name(CHARGER_TYPE type)
+static void dump_charger_name(enum charger_type type)
 {
 	switch (type) {
 	case CHARGER_UNKNOWN:
@@ -490,7 +490,7 @@ int hw_charging_get_charger_type(void)
 {
 	unsigned int out = 0;
 
-	CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+	enum charger_type CHR_Type_num = CHARGER_UNKNOWN;
 
 	hw_bc12_init();
 
@@ -906,7 +906,7 @@ bool pmic_chrdet_status(void)
 	return false;
 }
 
-CHARGER_TYPE mt_get_charger_type(void)
+enum charger_type mt_get_charger_type(void)
 {
 	return g_chr_type;
 }

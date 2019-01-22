@@ -63,7 +63,7 @@ extern unsigned int musb_speed;
 extern struct musb *_mu3d_musb;
 #if defined(CONFIG_MTK_SMART_BATTERY) && !defined(FOR_BRING_UP)
 extern void BATTERY_SetUSBState(int usb_state_value);
-extern CHARGER_TYPE mt_get_charger_type(void);
+extern enum charger_type mt_get_charger_type(void);
 #endif
 /* Helper defines for struct musb->hwvers */
 #define MUSB_HWVERS_MAJOR(x)	((x >> 10) & 0x1f)
@@ -610,7 +610,7 @@ struct musb {
 	unsigned is_clk_on;
 	unsigned usb_mode;
 	unsigned active_ep;
-	CHARGER_TYPE charger_mode;
+	enum charger_type charger_mode;
 	struct work_struct suspend_work;
 	struct wake_lock usb_wakelock;
 	struct delayed_work connection_work;

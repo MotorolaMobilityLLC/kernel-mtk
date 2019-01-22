@@ -50,7 +50,7 @@
 /* #define __FORCE_USB_TYPE__ */
 #define __SW_CHRDET_IN_PROBE_PHASE__
 
-static CHARGER_TYPE g_chr_type;
+static enum charger_type g_chr_type;
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 static struct work_struct chr_work;
 #endif
@@ -58,7 +58,7 @@ static struct work_struct chr_work;
 static DEFINE_MUTEX(chrdet_lock);
 
 static struct power_supply *chrdet_psy;
-static int chrdet_inform_psy_changed(CHARGER_TYPE chg_type, bool chg_online)
+static int chrdet_inform_psy_changed(enum charger_type chg_type, bool chg_online)
 {
 	int ret = 0;
 	union power_supply_propval propval;

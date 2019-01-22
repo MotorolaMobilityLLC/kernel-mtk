@@ -97,7 +97,7 @@ struct rt5081_pmu_charger_data {
 	struct device *dev;
 	wait_queue_head_t wait_queue;
 	bool err_state;
-	CHARGER_TYPE chg_type;
+	enum charger_type chg_type;
 	bool chg_online;
 	u8 irq_flag[RT5081_CHG_IRQIDX_MAX];
 	u32 zcv;
@@ -1351,7 +1351,7 @@ static int rt5081_get_charger_type(struct mtk_charger_info *mchr_info, void *dat
 		chg_data->chg_type = CHARGER_UNKNOWN;
 	}
 
-	*(CHARGER_TYPE *)data = chg_data->chg_type;
+	*(enum charger_type *)data = chg_data->chg_type;
 	pr_info("%s: chg_type = %d\n", __func__, chg_data->chg_type);
 	return ret;
 }

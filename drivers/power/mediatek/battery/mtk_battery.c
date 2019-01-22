@@ -148,7 +148,7 @@ void __attribute__ ((weak))
 }
 
 
-CHARGER_TYPE __attribute__ ((weak))
+enum charger_type __attribute__ ((weak))
 	mt_get_charger_type(void)
 {
 	return CHARGER_UNKNOWN;

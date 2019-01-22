@@ -49,7 +49,7 @@
 #include <mt-plat/charging.h>
 #endif
 #if defined(CONFIG_MTK_SMART_BATTERY)
-extern CHARGER_TYPE mt_get_charger_type(void);
+extern enum charger_type mt_get_charger_type(void);
 #endif
 #include <linux/clk.h>
 

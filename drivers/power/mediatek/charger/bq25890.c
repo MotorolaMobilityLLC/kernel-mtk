@@ -161,7 +161,7 @@ struct bq25890_info {
 	struct device *dev;
 	const char *chg_dev_name;
 	const char *eint_name;
-	CHARGER_TYPE chg_type;
+	enum charger_type chg_type;
 	int irq;
 };
 
@@ -1197,7 +1197,7 @@ static int bq25890_get_charger_type(struct bq25890_info *info)
 	unsigned int vbus_stat = 0;
 	unsigned int pg_stat = 0;
 
-	CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+	enum charger_type CHR_Type_num = CHARGER_UNKNOWN;
 
 
 	pg_stat = bq25890_get_pg_state();
@@ -1845,7 +1845,7 @@ static int bq25890_dump_register(struct charger_device *chg_dev)
 static irqreturn_t bq25890_irq_handler(int irq, void *data)
 {
 	u8 pg_stat = 0;
-	CHARGER_TYPE org_chg_type;
+	enum charger_type org_chg_type;
 	bool en = false;
 	struct bq25890_info *info = (struct bq25890_info *)data;
 

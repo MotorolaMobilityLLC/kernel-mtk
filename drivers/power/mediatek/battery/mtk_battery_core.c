@@ -1748,8 +1748,8 @@ void fg_iavg_int_lt_handler(void)
 /* ============================================================ */
 void fg_charger_in_handler(void)
 {
-	CHARGER_TYPE chr_type = CHARGER_UNKNOWN;
-	CHARGER_TYPE current_chr_type = CHARGER_UNKNOWN;
+	enum charger_type chr_type = CHARGER_UNKNOWN;
+	enum charger_type current_chr_type = CHARGER_UNKNOWN;
 
 	current_chr_type = mt_get_charger_type();
 

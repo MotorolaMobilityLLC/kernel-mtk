@@ -108,7 +108,7 @@ struct hl7005_info {
 
 	const char *chg_dev_name;
 	const char *eint_name;
-	CHARGER_TYPE chg_type;
+	enum charger_type chg_type;
 	int irq;
 };
 

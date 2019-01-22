@@ -2849,9 +2849,9 @@ static void mt_battery_update_status(void)
 }
 
 
-CHARGER_TYPE mt_charger_type_detection(void)
+enum charger_type mt_charger_type_detection(void)
 {
-	CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
+	enum charger_type CHR_Type_num = CHARGER_UNKNOWN;
 
 	mutex_lock(&charger_type_mutex);
 
@@ -2912,7 +2912,7 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	return BMT_status.charger_type;
 }
 
-CHARGER_TYPE mt_get_charger_type(void)
+enum charger_type mt_get_charger_type(void)
 {
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 	return STANDARD_HOST;

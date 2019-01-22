@@ -29,7 +29,7 @@ extern int get_bat_charging_current_level(void);
  *  Implementation in mt_battery.c and mt_battery_fan5405.c
  */
 extern int set_bat_charging_current_limit(int current_limit);
-extern CHARGER_TYPE mt_get_charger_type(void);
+extern enum charger_type mt_get_charger_type(void);
 
 extern int read_tbat_value(void);
 

@@ -14,7 +14,7 @@
 #ifndef __MTK_CHARGER_TYPE_H__
 #define __MTK_CHARGER_TYPE_H__
 
-typedef enum {
+enum charger_type {
 	CHARGER_UNKNOWN = 0,
 	STANDARD_HOST,		/* USB : 450mA */
 	CHARGING_HOST,
@@ -24,7 +24,7 @@ typedef enum {
 	APPLE_1_0A_CHARGER, /* 1A apple charger */
 	APPLE_0_5A_CHARGER, /* 0.5A apple charger */
 	WIRELESS_CHARGER,
-} CHARGER_TYPE;
+};
 
 #if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_USB_MU3D_DRV)
 extern void mt_usb_connect(void);
@@ -34,7 +34,7 @@ extern void mt_usb_disconnect(void);
 #define mt_usb_disconnect() do { } while (0)
 #endif
 
-extern CHARGER_TYPE mt_get_charger_type(void);
+extern enum charger_type mt_get_charger_type(void);
 extern void mtk_charger_int_handler(void);
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT)
