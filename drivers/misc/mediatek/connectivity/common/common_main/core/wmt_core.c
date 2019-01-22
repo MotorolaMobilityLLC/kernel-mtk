@@ -1364,8 +1364,9 @@ static INT32 opfunc_func_off(P_WMT_OP pWmtOp)
 		iRet = 0;
 	}
 
-	/* shall we put device state to POWER_OFF state when fail? */
-	gMtkWmtCtx.eDrvStatus[drvType] = DRV_STS_POWER_OFF;
+	if (drvType != WMTDRV_TYPE_WMT)
+		gMtkWmtCtx.eDrvStatus[drvType] = DRV_STS_POWER_OFF;
+
 	if (iRet) {
 		WMT_ERR_FUNC("WMT-CORE: type(0x%x) function off failed, ret(%d)\n", drvType, iRet);
 		osal_assert(0);
