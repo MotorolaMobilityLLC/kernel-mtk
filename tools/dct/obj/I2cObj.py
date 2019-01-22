@@ -197,3 +197,44 @@ class I2cObj_MT6759(I2cObj):
             gen_str += '''};\n\n'''
 
         return gen_str
+
+class I2cObj_MT6775(I2cObj):
+    def __init__(self):
+        I2cObj.__init__(self)
+
+    def fill_dtsiFile(self):
+        gen_str = ''
+        for i in range(0, I2cData._channel_count):
+            if i >= len(self._busList):
+                break;
+            gen_str += '''&i2c%d {\n''' %(i)
+            gen_str += '''\t#address-cells = <1>;\n'''
+            gen_str += '''\t#size-cells = <0>;\n'''
+
+
+            if self._bBusEnable:
+                gen_str += '''\tclock-frequency = <%d>;\n''' %(string.atoi(self._busList[i].get_speed()) * 1000)
+                temp_str = ''
+
+                if cmp(self._busList[i].get_enable(), 'false') == 0:
+                    temp_str = 'use-open-drain'
+                elif cmp(self._busList[i].get_enable(), 'true') == 0:
+                    temp_str = 'use-push-pull'
+                gen_str += '''\tmediatek,%s;\n''' %(temp_str)
+
+            for key in sorted_key(ModuleObj.get_data(self).keys()):
+                value = ModuleObj.get_data(self)[key]
+                channel = 'I2C_CHANNEL_%d' %(i)
+                if cmp(value.get_channel(), channel) == 0 and cmp(value.get_varName(), 'NC') != 0 and value.get_address().strip() != '':
+                    gen_str += '''\t%s_mtk:%s@%s {\n''' %(value.get_varName().lower(), value.get_varName().lower(), value.get_address()[2:].lower())
+                    if re.match(r'^RT[\d]+$', value.get_varName()):
+                        gen_str += '''\t\tcompatible = \"richtek,%s\";\n''' %(value.get_varName().lower())
+                    else:
+                        gen_str += '''\t\tcompatible = \"mediatek,%s\";\n''' %(value.get_varName().lower())
+                    gen_str += '''\t\treg = <%s>;\n''' %(value.get_address().lower())
+                    gen_str += '''\t\tstatus = \"okay\";\n'''
+                    gen_str += '''\t};\n\n'''
+
+            gen_str += '''};\n\n'''
+
+        return gen_str
