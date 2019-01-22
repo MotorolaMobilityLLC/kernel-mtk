@@ -103,7 +103,7 @@ typedef struct {
 	unsigned int flags;
 	unsigned int iova_start;
 	unsigned int iova_end;
-	unsigned int *pRetMVABuf;
+	unsigned int mva;
 } port_mva_info_t;
 
 int m4u_dump_info(int m4u_index);
