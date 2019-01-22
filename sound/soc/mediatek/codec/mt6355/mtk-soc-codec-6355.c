@@ -1102,6 +1102,12 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0014, 0xffff);
 		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x4800, 0xff80);
 		/* Enable IBIST & Set HP & ZCD bias current optimization*/
+
+		if (use_6355_e3) {
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0004, 0x0004);
+			/* HP damp circuit enable */
+		}
+
 		/* 6355 need to set HPL/R output stage STB enhance as 0 */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0077);
 		/* Set HPP/N STB enhance circuits */
@@ -1227,6 +1233,11 @@ void OpenTrimBufferHardware(bool enable)
 		/* Disable HP aux feedback loop */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x000C);
 		/* Disable HP aux output stage */
+
+		if (use_6355_e3) {
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0004);
+			/* HP damp circuit disable */
+		}
 
 		/* From DE's setting */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0092, 0xffff);
@@ -2573,6 +2584,11 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0003, 0x0003);
 			/* Enable HPR/L main CMFB loop modulation control for E3 */
 
+			if (use_6355_e3) {
+				Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0004, 0x0004);
+				/* HP damp circuit enable */
+			}
+
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x000C, 0x000C);
 			/* Enable HP aux output stage */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0030, 0x0030);
@@ -2723,6 +2739,11 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			/* Disable HP aux feedback loop */
 			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x000C);
 			/* Disable HP aux output stage */
+
+			if (use_6355_e3) {
+				Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0004);
+				/* HP damp circuit disable */
+			}
 
 			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
 			/* Disable HPR/L main CMFB loop modulation control for E3 */
@@ -3381,6 +3402,11 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			/* Change compensation for HP main loop */
 		}
 
+		if (use_6355_e3) {
+			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0004, 0x0004);
+			/* HP damp circuit enable */
+		}
+
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0x0003);
 		/* Enable HP main output stage */
 
@@ -3445,6 +3471,11 @@ static void Headset_Speaker_Amp_Change(bool enable)
 
 			/* HPL/HPR output stage STB enhance for ACCDET */
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0011, 0x0011);
+
+			if (use_6355_e3) {
+				Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0004);
+				/* HP damp circuit disable */
+			}
 
 			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0003);
 			/* Disable HPR/L main CMFB loop modulation control for E3 */
