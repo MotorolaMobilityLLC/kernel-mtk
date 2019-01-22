@@ -42,4 +42,9 @@ int get_residency_latency_result(int cpu);
 void mcdi_state_pause(bool pause);
 void any_core_cpu_cond_get(unsigned long buf[NF_ANY_CORE_CPU_COND_INFO]);
 
+void idle_refcnt_inc(void);
+void idle_refcnt_dec(void);
+int all_cpu_idle_ratio_get(void);
+bool is_all_cpu_idle_criteria(void);
+
 #endif /* __MTK_MCDI_GOVERNOR_H__ */

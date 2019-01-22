@@ -59,6 +59,8 @@
 #include <mtk_cpufreq_api.h>
 #include "mtk_clk_id_internal.h"
 
+#include "mtk_mcdi_governor.h"
+
 #define FEATURE_ENABLE_SODI2P5
 
 #define IDLE_TAG     "Power/swap "
@@ -1562,7 +1564,11 @@ int rgidle_enter(int cpu)
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
 
+	idle_refcnt_inc();
+
 	go_to_rgidle(cpu);
+
+	idle_refcnt_dec();
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_RG, cpu);
 

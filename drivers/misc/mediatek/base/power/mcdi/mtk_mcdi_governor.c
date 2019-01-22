@@ -12,7 +12,9 @@
  */
 
 #include <linux/delay.h>
+#include <linux/math64.h>
 #include <linux/pm_qos.h>
+#include <linux/sched.h>
 #include <linux/spinlock.h>
 #include <linux/timekeeping.h>
 
@@ -51,6 +53,14 @@ struct mcdi_gov {
 	struct mcdi_status status[NF_CPU];
 };
 
+struct all_cpu_idle {
+	unsigned int refcnt;
+	unsigned long long enter_tick;
+	unsigned long long leave_tick;
+	unsigned int dur;
+	unsigned int window_len;
+	int thd_percent;
+};
 
 static unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
 static DEFINE_SPINLOCK(any_core_cpu_cond_spin_lock);
@@ -65,6 +75,17 @@ static DEFINE_SPINLOCK(mcdi_gov_spin_lock);
 static int mcdi_residency_latency[NF_CPU];
 
 static struct pm_qos_request mcdi_qos_request;
+
+static struct all_cpu_idle all_cpu_idle_data = {
+	0,
+	0,
+	0,
+	0,
+	500000000, /* window     = 500 ms */
+	85         /* threshold >=  85  % */
+};
+
+static DEFINE_SPINLOCK(all_cpu_idle_spin_lock);
 
 void set_mcdi_enable_by_pm_qos(bool en)
 {
@@ -813,3 +834,118 @@ void mcdi_state_pause(bool pause)
 		set_mcdi_enable_by_pm_qos(true);
 }
 
+void idle_refcnt_inc(void)
+{
+	unsigned long flags;
+	bool enter = false;
+
+	spin_lock_irqsave(&all_cpu_idle_spin_lock, flags);
+
+	all_cpu_idle_data.refcnt++;
+
+	if (all_cpu_idle_data.refcnt == mcdi_gov_data.avail_cnt_mcusys) {
+		enter = true;
+		all_cpu_idle_data.enter_tick = sched_clock();
+	}
+
+	spin_unlock_irqrestore(&all_cpu_idle_spin_lock, flags);
+
+	if (enter)
+		trace_all_cpu_idle_rcuidle(1);
+}
+
+void idle_refcnt_dec(void)
+{
+	unsigned long flags;
+	unsigned long long leave_tick;
+	unsigned long long this_dur;
+	unsigned long long temp;
+	bool leave = false;
+
+	spin_lock_irqsave(&all_cpu_idle_spin_lock, flags);
+
+	all_cpu_idle_data.refcnt--;
+
+	if (all_cpu_idle_data.refcnt == (mcdi_gov_data.avail_cnt_mcusys - 1)) {
+		leave = true;
+		leave_tick = sched_clock();
+
+		this_dur = leave_tick - all_cpu_idle_data.enter_tick;
+
+		if (((leave_tick - all_cpu_idle_data.leave_tick) > all_cpu_idle_data.window_len)) {
+			all_cpu_idle_data.dur = this_dur;
+		} else {
+			temp =  all_cpu_idle_data.window_len;
+			temp -= (leave_tick - all_cpu_idle_data.leave_tick);
+			temp *= all_cpu_idle_data.dur;
+			temp =  div64_u64(temp, all_cpu_idle_data.window_len);
+			temp += this_dur;
+
+			all_cpu_idle_data.dur = (unsigned int)temp;
+		}
+
+		all_cpu_idle_data.leave_tick = leave_tick;
+	}
+
+	spin_unlock_irqrestore(&all_cpu_idle_spin_lock, flags);
+
+	if (leave)
+		trace_all_cpu_idle_rcuidle(0);
+}
+
+int all_cpu_idle_ratio_get(void)
+{
+	unsigned long flags;
+	unsigned long long curr_tick = 0;
+	unsigned long long target_tick = 0;
+	int all_idle_ratio = 0;
+	unsigned long long leave_tick = 0;
+	unsigned long long window_len = 0;
+	unsigned long long dur = 0;
+
+	spin_lock_irqsave(&all_cpu_idle_spin_lock, flags);
+
+	leave_tick = all_cpu_idle_data.leave_tick;
+	window_len = all_cpu_idle_data.window_len;
+	dur        = all_cpu_idle_data.dur;
+
+	spin_unlock_irqrestore(&all_cpu_idle_spin_lock, flags);
+
+
+	curr_tick = sched_clock();
+
+	target_tick =
+		((curr_tick - leave_tick) > window_len) ?
+			0 :
+			div64_u64(
+				((window_len - (curr_tick - leave_tick)) * dur),
+				window_len
+			)
+		;
+
+	target_tick = target_tick <= window_len ? target_tick : window_len;
+
+	all_idle_ratio = (int)div64_u64(target_tick * 100, window_len);
+
+	return all_idle_ratio;
+}
+
+bool is_all_cpu_idle_criteria(void)
+{
+	int all_idle_ratio = 0;
+	unsigned long long start_tick = 0;
+	unsigned long long end_tick = 0;
+	unsigned long long thd_percent = 0;
+
+	thd_percent = all_cpu_idle_data.thd_percent;
+
+	start_tick = sched_clock();
+
+	all_idle_ratio = all_cpu_idle_ratio_get();
+
+	end_tick = sched_clock();
+
+	trace_mtk_menu_rcuidle(smp_processor_id(), all_idle_ratio, (int)(end_tick - start_tick));
+
+	return (all_idle_ratio >= thd_percent);
+}
