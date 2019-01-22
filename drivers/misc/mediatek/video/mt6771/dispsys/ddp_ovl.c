@@ -48,6 +48,9 @@ static enum DISP_MODULE_ENUM ovl_index_module[OVL_NUM] = {
 unsigned int gOVLBackground = 0xFF000000;
 unsigned int govldimcolor = 0xFF000000;
 
+static unsigned int ovl_bg_w[OVL_NUM];
+static unsigned int ovl_bg_h[OVL_NUM];
+
 static inline int is_module_ovl(enum DISP_MODULE_ENUM module)
 {
 	if (module == DISP_MODULE_OVL0 ||
@@ -412,6 +415,30 @@ int ovl_reset(enum DISP_MODULE_ENUM module, void *handle)
 	return ret;
 }
 
+static void _store_roi(enum DISP_MODULE_ENUM module,
+		       unsigned int bg_w, unsigned int bg_h)
+{
+	int idx = ovl_to_index(module);
+
+	if (idx >= OVL_NUM)
+		return;
+
+	ovl_bg_w[idx] = bg_w;
+	ovl_bg_h[idx] = bg_h;
+}
+
+static void _get_roi(enum DISP_MODULE_ENUM module,
+		     unsigned int *bg_w, unsigned int *bg_h)
+{
+	int idx = ovl_to_index(module);
+
+	if (idx >= OVL_NUM)
+		return;
+
+	*bg_w = ovl_bg_w[idx];
+	*bg_h = ovl_bg_h[idx];
+}
+
 int ovl_roi(enum DISP_MODULE_ENUM module, unsigned int bg_w, unsigned int bg_h,
 	    unsigned int bg_color, void *handle)
 {
@@ -430,6 +457,8 @@ int ovl_roi(enum DISP_MODULE_ENUM module, unsigned int bg_w, unsigned int bg_h,
 			ovl_base + DISP_REG_OVL_LC_SRC_SIZE, bg_w);
 	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_SRC_H,
 			ovl_base + DISP_REG_OVL_LC_SRC_SIZE, bg_h);
+
+	_store_roi(module, bg_w, bg_h);
 
 	DDPMSG("%s roi:(%ux%u)\n", ddp_get_module_name(module), bg_w, bg_h);
 	return 0;
@@ -657,11 +686,9 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 	is_rgb = ufmt_get_rgb(format);
 
 	if (rotate) {
-		unsigned int bg_h, bg_w;
+		unsigned int bg_w = 0, bg_h = 0;
 
-		bg_h = DISP_REG_GET(ovl_base + DISP_REG_OVL_ROI_SIZE);
-		bg_w = bg_h & 0xFFFF;
-		bg_h = bg_h >> 16;
+		_get_roi(module, &bg_w, &bg_h);
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
 			     ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
 	} else {
