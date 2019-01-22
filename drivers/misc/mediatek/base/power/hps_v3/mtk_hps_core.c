@@ -142,7 +142,8 @@ static void hps_get_sysinfo(void)
 	str2_ptr = str2;
 	for (idx = 0 ; idx < hps_sys.cluster_num; idx++)
 		hps_sys.cluster_info[idx].loading = 0;
-	for_each_possible_cpu(cpu) {
+	/*for_each_possible_cpu(cpu) {*/
+	for_each_online_cpu(cpu) {
 		per_cpu(hps_percpu_ctxt, cpu).load = hps_cpu_get_percpu_load(cpu);
 		hps_ctxt.cur_loads += per_cpu(hps_percpu_ctxt, cpu).load;
 
