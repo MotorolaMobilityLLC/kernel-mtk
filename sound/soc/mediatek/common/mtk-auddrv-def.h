@@ -153,12 +153,6 @@
 #define PRINTK_AUD_MODDAI(format, args...)
 #endif
 
-#ifdef DEBUG_AUD_DAI
-#define PRINTK_AUD_DAI(format, args...)  pr_debug(format, ##args)
-#else
-#define PRINTK_AUD_DAI(format, args...)
-#endif
-
 #define PRINTK_AUD_ERROR(format, args...)  pr_err(format, ##args)
 
 /* if need assert , use AUDIO_ASSERT(true) */
