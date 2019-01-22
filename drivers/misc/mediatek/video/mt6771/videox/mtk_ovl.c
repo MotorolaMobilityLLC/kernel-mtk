@@ -530,13 +530,10 @@ static int ovl2mem_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 			cmdqRecBackupUpdateSlot(pgcl->cmdq_handle_config, pgcl->ovl2mem_cur_config_fence,
 				i, ext_cur_fence);
 		}
-		/* for dim_layer/disable_layer/no_fence_layer, just release all fences configured */
-		/* for other layers, release current_fence-1 */
-		if (cfg->input_cfg[i].buffer_source == DISP_BUFFER_ALPHA
-			|| cfg->input_cfg[i].layer_enable == 0 || ext_cur_fence == -1)
-			ext_sub = 0;
-		else
-			ext_sub = 1;
+
+		/* there's no need keep last layer fence for memory session, */
+		/* it's due to memory session, would not switch path during memory session */
+		ext_sub = 0;
 
 		cmdqRecBackupUpdateSlot(pgcl->cmdq_handle_config, pgcl->ovl2mem_subtractor_when_free,
 			i, ext_sub);
