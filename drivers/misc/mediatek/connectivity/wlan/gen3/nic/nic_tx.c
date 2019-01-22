@@ -595,12 +595,14 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_16 *au2TxRlsCnt)
 				       "Release: TC%u ReturnPageCnt[%hu] FreePageCnt[%hu] FreeBufferCnt[%hu]\n",
 					i, au2FreeTcResource[i], prTcqStatus->au2FreePageCount[i],
 					prTcqStatus->au2FreeBufferCount[i]);
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
+			if (i == TC4_INDEX)
+				wlanTraceReleaseTcRes(prAdapter, au2FreeTcResource[i],
+					prTcqStatus->au2FreePageCount[i]);
+#endif
 			}
 		}
-#if (CFG_SUPPORT_TRACE_TC4 == 1)
-		if (au2TxRlsCnt[TC4_INDEX] != 0)
-			wlanTraceReleaseTcRes(prAdapter, au2TxRlsCnt, prTcqStatus->au2FreeBufferCount[TC4_INDEX]);
-#endif
+
 		for (i = TC0_INDEX; i < TC_NUM; i++)
 			prQM->au4QmTcResourceBackCounter[i] += au2FreeTcResource[i];
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
