@@ -1906,7 +1906,7 @@ static bool inactive_anon_is_low(struct lruvec *lruvec)
 	 * If we don't have swap space, anonymous page deactivation
 	 * is pointless.
 	 */
-	if (!total_swap_pages && !IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA))
+	if (!total_swap_pages)
 		return false;
 
 	if (!mem_cgroup_disabled())
@@ -2019,8 +2019,7 @@ static void get_scan_count(struct lruvec *lruvec, int swappiness,
 		force_scan = true;
 
 	/* If we have no swap space, do not bother scanning anon pages. */
-	if (!sc->may_swap ||
-		       (!IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && get_nr_swap_pages() <= 0)) {
+	if (!sc->may_swap || (get_nr_swap_pages() <= 0)) {
 		scan_balance = SCAN_FILE;
 		goto out;
 	}
@@ -2217,25 +2216,35 @@ static unsigned long migrate_lru_pages(unsigned long *nr, enum lru_list lru,
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 	LIST_HEAD(page_list);
 	struct zone *src_zone;
-	unsigned long nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
+	unsigned long nr_to_scan = SWAP_CLUSTER_MAX;
 	unsigned long nr_scanned, nr_taken;
 	int err;
 	unsigned long flags;
+
+	/* Check whether ZONE_MOVABLE_CMA zone is empty */
+	if (global_page_state(NR_FREE_CMA_PAGES) == 0)
+		return 0;
+
+	/* Determine src zone */
+	src_zone = lruvec_zone(lruvec);
+
+	/* Migrate active anon LRU when inactive < active */
+	if (zone_page_state(src_zone, NR_INACTIVE_ANON) <
+			zone_page_state(src_zone, NR_ACTIVE_ANON))
+		lru = LRU_ACTIVE_ANON;
 
 	/* If no available swap space, double the number of page migration */
 	if (get_nr_swap_pages() == 0)
 		nr_to_scan = SWAP_CLUSTER_MAX << 1;
 
+	nr_to_scan = min(zone_page_state(src_zone, NR_LRU_BASE + lru), nr_to_scan);
+
 	/* No pages for scanning */
 	if (nr_to_scan == 0)
 		return 0;
 
-	src_zone = lruvec_zone(lruvec);
-
 	/* Update nr[lru] to avoid needless shrinking */
 	nr[lru] -= min(nr[lru], nr_to_scan);
-	if (get_nr_swap_pages() == 0)
-		nr[lru] = 0;
 
 	/* Start isolation & migration */
 	spin_lock_irq(&src_zone->lru_lock);
@@ -2315,6 +2324,10 @@ static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
 	/* Record the original scan target for proportional adjustments later */
 	memcpy(targets, nr, sizeof(nr));
 
+	/* Give a chance to migrate anon pages */
+	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && nr[LRU_INACTIVE_ANON] == 0)
+		nr[LRU_INACTIVE_ANON] = SWAP_CLUSTER_MAX;
+
 	/*
 	 * Global reclaiming within direct reclaim at DEF_PRIORITY is a normal
 	 * event that can occur when there is little memory pressure e.g.
@@ -2338,6 +2351,10 @@ static void shrink_lruvec(struct lruvec *lruvec, int swappiness,
 		/* Before shrinking inactive anon lru, let us try to do migration */
 		if (zone_idx(lruvec_zone(lruvec)) < OPT_ZONE_MOVABLE_CMA)
 			nr_reclaimed += migrate_lru_pages(nr, LRU_INACTIVE_ANON, lruvec, sc);
+
+		/* Clear the number of anon lru for scanning to 0 earlier */
+		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) && get_nr_swap_pages() == 0)
+			nr[LRU_INACTIVE_ANON] = nr[LRU_ACTIVE_ANON] = 0;
 
 		for_each_evictable_lru(lru) {
 			if (nr[lru]) {
@@ -3069,7 +3086,7 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
 {
 	struct mem_cgroup *memcg;
 
-	if (!total_swap_pages && !IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA))
+	if (!total_swap_pages)
 		return;
 
 	memcg = mem_cgroup_iter(NULL, NULL, NULL);
