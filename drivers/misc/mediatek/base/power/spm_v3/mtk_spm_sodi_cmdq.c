@@ -13,12 +13,12 @@
 
 #include <mtk_spm_sodi_cmdq.h>
 
-void exit_pd_by_cmdq(cmdqRecHandle handler)
+void exit_pd_by_cmdq(struct cmdqRecStruct *handler)
 {
-	/* FIXME: Switch to CG mode */
+
 }
 
-void enter_pd_by_cmdq(cmdqRecHandle handler)
+void enter_pd_by_cmdq(struct cmdqRecStruct *handler)
 {
-	/* FIXME: Switch to PD mode */
+
 }

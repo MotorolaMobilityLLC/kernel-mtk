@@ -17,9 +17,7 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
-#ifdef CONFIG_MTK_SPM_IN_ATF
 #include <mt-plat/mtk_secure_api.h>
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -31,7 +29,7 @@
 #include <mach/mtk_gpt.h>
 
 #include <mt-plat/mtk_boot.h>
-#ifdef CONFIG_MTK_SYS_CIRQ
+#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 #include <mt-plat/mtk_cirq.h>
 #endif
 #include <mt-plat/upmu_common.h>
@@ -50,32 +48,17 @@
 #define sodi_warn(fmt, args...)		pr_warn(SODI_TAG fmt, ##args)
 #define sodi_debug(fmt, args...)	pr_debug(SODI_TAG fmt, ##args)
 
-#define SPM_BYPASS_SYSPWREQ		1
+#define SPM_BYPASS_SYSPWREQ		0
 
 #define LOG_BUF_SIZE					(256)
 #define SODI_LOGOUT_TIMEOUT_CRITERIA	(20)
 #define SODI_LOGOUT_INTERVAL_CRITERIA	(5000U)	/* unit:ms */
 
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-#ifdef CONFIG_OF
-#define MCUCFG_BASE		spm_mcucfg
-#else
-#define MCUCFG_BASE             (0xF0200000)	/* 0x1020_0000 */
-#endif
-#define MP0_AXI_CONFIG          (MCUCFG_BASE + 0x2C)
-#define MP1_AXI_CONFIG          (MCUCFG_BASE + 0x22C)
-#define MP2_AXI_CONFIG          (MCUCFG_BASE + 0x220C)
-#define CPUCFG					(MCUCFG_BASE + 0x2008)
-#define ACINACTM		(1 << 4)
-#define MP2_ACINACTM	(1 << 0)
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-
-/* FIXME: update sodi_ctrl */
 static struct pwr_ctrl sodi_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SODI,
 
 #if SPM_BYPASS_SYSPWREQ
-	.syspwreq_mask = 0,
+	.syspwreq_mask = 1,
 #endif
 
 	/* Auto-gen Start */
@@ -112,16 +95,16 @@ static struct pwr_ctrl sodi_ctrl = {
 
 	/* SPM_SRC_MASK */
 	.reg_csyspwreq_mask = 0,
-	.reg_md_srcclkena_0_infra_mask_b = 0,
+	.reg_md_srcclkena_0_infra_mask_b = 1,
 	.reg_md_srcclkena_1_infra_mask_b = 0,
-	.reg_md_apsrc_req_0_infra_mask_b = 1,
+	.reg_md_apsrc_req_0_infra_mask_b = 0,
 	.reg_md_apsrc_req_1_infra_mask_b = 0,
 	.reg_conn_srcclkena_infra_mask_b = 0,
-	.reg_conn_infra_req_mask_b = 1,
+	.reg_conn_infra_req_mask_b = 0,
 	.reg_sspm_srcclkena_infra_mask_b = 0,
 	.reg_sspm_infra_req_mask_b = 1,
 	.reg_scp_srcclkena_infra_mask_b = 0,
-	.reg_scp_infra_req_mask_b = 0,
+	.reg_scp_infra_req_mask_b = 1,
 	.reg_srcclkeni0_infra_mask_b = 0,
 	.reg_srcclkeni1_infra_mask_b = 0,
 	.reg_srcclkeni2_infra_mask_b = 0,
@@ -139,19 +122,19 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_c2k_l1_rccif_wake_mask_b = 0,
 	.reg_ps_c2k_rccif_wake_mask_b = 1,
 	.reg_l1_c2k_rccif_wake_mask_b = 0,
-	.reg_disp2_req_mask_b = 0,
+	.reg_disp2_req_mask_b = 1,
 	.reg_md_ddr_en_0_mask_b = 1,
 	.reg_md_ddr_en_1_mask_b = 0,
 	.reg_conn_ddr_en_mask_b = 0,
 
 	/* SPM_SRC2_MASK */
-	.reg_disp0_req_mask_b = 0,
-	.reg_disp1_req_mask_b = 0,
-	.reg_disp_od_req_mask_b = 0,
+	.reg_disp0_req_mask_b = 1,
+	.reg_disp1_req_mask_b = 1,
+	.reg_disp_od_req_mask_b = 1,
 	.reg_mfg_req_mask_b = 0,
 	.reg_vdec0_req_mask_b = 0,
-	.reg_gce_req_mask_b = 0,
-	.reg_gce_vrf18_req_mask_b = 0,
+	.reg_gce_req_mask_b = 1,
+	.reg_gce_vrf18_req_mask_b = 1,
 	.reg_lpdma_req_mask_b = 0,
 	.reg_conn_srcclkena_cksel2_mask_b = 0,
 	.reg_sspm_apsrc_req_ddren_mask_b = 1,
@@ -208,7 +191,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.reg_md_srcclkena_0_vrf18_mask_b = 1,
 
 	/* SPM_WAKEUP_EVENT_MASK */
-	.reg_wakeup_event_mask = 0xF0F92218,
+	.reg_wakeup_event_mask = 0xF0A92208,
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
@@ -271,14 +254,12 @@ static struct pwr_ctrl sodi_ctrl = {
 };
 
 struct spm_lp_scen __spm_sodi = {
-	/*.pcmdesc = &sodi_pcm,*/
 	.pwrctrl = &sodi_ctrl,
 };
 
 /* 0:power-down mode, 1:CG mode */
 static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
-
 
 static void spm_sodi_pre_process(void)
 {
@@ -334,7 +315,7 @@ static void spm_sodi_notify_sspm_after_wfi(void)
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-#ifdef CONFIG_MTK_SPM_IN_ATF
+#if defined(CONFIG_MTK_SPM_IN_ATF)
 void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 {
 	int spm_dormant_sta;
@@ -352,6 +333,7 @@ static void spm_sodi_pcm_setup_before_wfi(
 	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
 {
 	unsigned int resource_usage;
+
 	spm_sodi_notify_sspm_before_wfi();
 
 	spm_sodi_pre_process();
@@ -376,43 +358,33 @@ static void spm_sodi_pcm_setup_after_wfi(void)
 void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 {
 	int spm_dormant_sta;
-	if (is_cpu_pdn(pcm_flags)) {
+	if (is_cpu_pdn(pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_SODI_MODE);
-		if (spm_dormant_sta < 0)
-			sodi_err("sodi spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
-	} else {
-		spm_dormant_sta = -1;
-		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) | ACINACTM);
-		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) | ACINACTM);
-		spm_write(CPUCFG, 0x1);
-		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) | MP2_ACINACTM);
-		wfi_with_sync();
-		spm_write(MP0_AXI_CONFIG, spm_read(MP0_AXI_CONFIG) & ~ACINACTM);
-		spm_write(MP1_AXI_CONFIG, spm_read(MP1_AXI_CONFIG) & ~ACINACTM);
-		spm_write(MP2_AXI_CONFIG, spm_read(MP2_AXI_CONFIG) & ~MP2_ACINACTM);
-	}
+	else
+		spm_dormant_sta = mt_secure_call(
+			MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
+
+	if (spm_dormant_sta < 0)
+		sodi_err("sodi spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
 }
 
 static void spm_sodi_pcm_setup_before_wfi(
 	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
 {
-	unsigned int resource_usage;
-
 	__spm_set_cpu_status(cpu);
 	__spm_reset_and_init_pcm(pcmdesc);
 	__spm_kick_im_to_fetch(pcmdesc);
 	__spm_init_pcm_register();
 	__spm_init_event_vector(pcmdesc);
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
-
-	/* Get SPM resource request and update reg_spm_xxx_req */
-	resource_usage = spm_get_resource_usage();
-	pwrctrl->reg_spm_vrf18_req = (resource_usage & SPM_RESOURCE_MAINPLL) ? 1 : 0;
-	pwrctrl->reg_spm_apsrc_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
-	pwrctrl->reg_spm_ddren_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
-	pwrctrl->reg_spm_f26m_req  = (resource_usage & SPM_RESOURCE_CK_26M)  ? 1 : 0;
-
 	__spm_set_power_control(pwrctrl);
+
+	/*
+	 * Get SPM resource request and update SPM_SRC_REQ
+	 * after __spm_set_power_control
+	 */
+	__spm_src_req_update(pwrctrl);
+
 	__spm_set_wakeup_event(pwrctrl);
 
 	spm_sodi_notify_sspm_before_wfi();
@@ -556,7 +528,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
-#ifdef CONFIG_MTK_GIC_V3_EXT
+#if defined(CONFIG_MTK_GIC_V3_EXT)
 	struct mtk_irq_mask mask;
 #endif
 	wake_reason_t wr = WR_NONE;
@@ -565,11 +537,13 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	u32 cpu = spm_data;
 	int ch;
 
+#if !defined(CONFIG_MTK_SPM_IN_ATF)
 	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
 	else
 		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d",
 			dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
+#endif
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
 
@@ -592,13 +566,13 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
-#ifdef CONFIG_MTK_GIC_V3_EXT
+#if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
 	unmask_edge_trig_irqs_for_cirq();
 #endif
 
-#ifdef CONFIG_MTK_SYS_CIRQ
+#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
@@ -650,12 +624,12 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 RESTORE_IRQ:
 #endif
 
-#ifdef CONFIG_MTK_SYS_CIRQ
+#if 0 /* defined(CONFIG_MTK_SYS_CIRQ) */
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
 
-#ifdef CONFIG_MTK_GIC_V3_EXT
+#if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&mask);
 #endif
 
@@ -670,6 +644,16 @@ RESTORE_IRQ:
 	spm_sodi_reset_footprint();
 
 	return wr;
+}
+
+void spm_sodi_set_vdo_mode(bool vdo_mode)
+{
+
+}
+
+bool spm_get_cmd_mode(void)
+{
+	return true;
 }
 
 void spm_sodi_mempll_pwr_mode(bool pwr_mode)
