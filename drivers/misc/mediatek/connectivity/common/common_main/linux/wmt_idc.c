@@ -122,7 +122,10 @@ INT32 wmt_idc_msg_to_lte_handing(VOID)
 		while (handle_len < readlen) {
 			p_data += 2;	/*omit direction & opcode 2 bytes */
 			osal_memcpy(&msg_len, p_data, 2);
-			msg_len -= 1;	/*flag byte */
+			if (msg_len > 0)
+				msg_len -= 1;	/*flag byte */
+			else
+				WMT_ERR_FUNC("msg_len is ERROR!");
 			WMT_DBG_FUNC("current raw data len(%d) from connsys firmware\n", msg_len);
 
 			p_data += 2;	/*length: 2 bytes */
@@ -233,7 +236,10 @@ UINT32 wmt_idc_msg_to_lte_handing_for_test(PUINT8 p_buf, UINT32 len)
 		while (handle_len < readlen) {
 			p_data += 2;	/*omit direction & opcode 2 bytes */
 			osal_memcpy(&msg_len, p_data, 2);
-			msg_len -= 1;	/*flag byte */
+			if (msg_len > 0)
+				msg_len -= 1;	/*flag byte */
+			else
+				WMT_ERR_FUNC("msg_len is ERROR!");
 			WMT_DBG_FUNC("current raw data len(%d) from connsys firmware\n", msg_len);
 
 			p_data += 2;	/*length: 2 bytes */
