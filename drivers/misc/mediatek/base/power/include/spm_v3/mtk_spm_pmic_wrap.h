@@ -18,6 +18,12 @@
 #ifndef __MTK_SPM_PMIC_WRAP_H__
 #define __MTK_SPM_PMIC_WRAP_H__
 
+/*
+ * PMIC_WRAP
+ */
+#define VOLT_TO_PMIC_VAL(volt)  (((volt) - 40000 + 625 - 1) / 625)	/* ((((volt) - 700 * 100 + 625 - 1) / 625) */
+#define PMIC_VAL_TO_VOLT(pmic)  (((pmic) * 625) + 40000)	/* (((pmic) * 625) / 100 + 700) */
+
 enum pmic_wrap_phase_id {
 	PMIC_WRAP_PHASE_ALLINONE,
 	NR_PMIC_WRAP_PHASE,

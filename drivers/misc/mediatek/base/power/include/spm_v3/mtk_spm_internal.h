@@ -147,6 +147,7 @@ struct pwr_ctrl {
 	u32 timer_val_ramp_en_sec;	/* stress for suspend */
 	u32 wake_src;
 	u32 wake_src_cust;	/* can override wake_src */
+	u32 vcore_volt_pmic_val;
 	u8 opp_level;
 	u8 wdt_disable;		/* disable wdt in suspend */
 	u8 syspwreq_mask;	/* make 26M off when attach ICE */
@@ -546,6 +547,7 @@ struct spm_data {
 			unsigned int sys_src_clk_l;
 			unsigned int sys_src_clk_h;
 			unsigned int spm_opt;
+			unsigned int vcore_volt_pmic_val;
 		} suspend;
 		struct {
 			unsigned int root_id;
@@ -609,6 +611,7 @@ extern struct spm_lp_scen __spm_mcdi;
 extern struct spm_lp_scen __spm_vcorefs;
 
 extern int __spm_check_opp_level(int ch);
+extern unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch);
 
 extern int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl);
 #if !defined(CONFIG_MTK_SPM_IN_ATF)

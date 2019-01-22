@@ -20,8 +20,10 @@
 #include <linux/of_fdt.h>
 #include <linux/random.h>
 #include <asm/setup.h>
+#include <mtk_eem.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_misc.h>
+#include <mtk_spm_pmic_wrap.h>
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_vcorefs_governor.h>
@@ -93,30 +95,54 @@ const char *wakesrc_str[32] = {
 /**************************************
  * Function and API
  **************************************/
-int __spm_check_opp_level(int ch)
+int __spm_check_opp_level_impl(int ch)
 {
-	int level[4] = {4, 3, 1, 0};
 	int opp = vcorefs_get_sw_opp();
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	int scp_opp = scp_get_dvfs_opp();
-#endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
 
-	if (opp < 0 || opp >= ARRAY_SIZE(level)) {
-		spm_crit2("%s: error opp number %d\n", __func__, opp);
-		opp = 0;
-	}
-
-#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	if (scp_opp >= 0)
 		opp = min(scp_opp, opp);
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
+
+	return opp;
+}
+
+int __spm_check_opp_level(int ch)
+{
+	int level[4] = {4, 3, 1, 0};
+	int opp = 0;
 
 	if (ch == 2)
 		level[1] = 3;
 	else
 		level[1] = 2;
 
+	opp = __spm_check_opp_level_impl(ch);
+
+	if (opp < 0 || opp >= ARRAY_SIZE(level)) {
+		spm_crit2("%s: error opp number %d\n", __func__, opp);
+		opp = 0;
+	}
+
 	return level[opp];
+}
+
+unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int ch)
+{
+	unsigned int vcore_volt_pmic_val = 0;
+	int opp = 0;
+
+	opp = __spm_check_opp_level_impl(ch);
+
+	if (opp < 0 || opp >= 4) {
+		spm_crit2("%s: error opp number %d\n", __func__, opp);
+		opp = 0;
+	}
+
+	vcore_volt_pmic_val = (is_vcore_volt_lower) ? VOLT_TO_PMIC_VAL(56800) : get_vcore_ptp_volt(opp);
+
+	return vcore_volt_pmic_val;
 }
 
 int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl)
@@ -328,18 +354,18 @@ void __spm_src_req_update(const struct pwr_ctrl *pwrctrl)
 {
 	unsigned int resource_usage = spm_get_resource_usage();
 
-	u8 spm_vrf18_req = (resource_usage & SPM_RESOURCE_MAINPLL) ? 1 : pwrctrl->reg_spm_vrf18_req;
 	u8 spm_apsrc_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : pwrctrl->reg_spm_apsrc_req;
 	u8 spm_ddren_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : pwrctrl->reg_spm_ddren_req;
+	u8 spm_infra_req = (resource_usage & SPM_RESOURCE_MAINPLL) ? 1 : pwrctrl->reg_spm_infra_req;
 	u8 spm_f26m_req  = (resource_usage & SPM_RESOURCE_CK_26M)  ? 1 : pwrctrl->reg_spm_f26m_req;
 
 	/* SPM_SRC_REQ */
 	spm_write(SPM_SRC_REQ,
 		((spm_apsrc_req & 0x1) << 0) |
 		((spm_f26m_req & 0x1) << 1) |
-		((pwrctrl->reg_spm_infra_req & 0x1) << 2) |
+		((spm_infra_req & 0x1) << 2) |
 		((spm_ddren_req & 0x1) << 3) |
-		((spm_vrf18_req & 0x1) << 4) |
+		((pwrctrl->reg_spm_vrf18_req & 0x1) << 4) |
 		((pwrctrl->reg_spm_dvfs_level0_req & 0x1) << 5) |
 		((pwrctrl->reg_spm_dvfs_level1_req & 0x1) << 6) |
 		((pwrctrl->reg_spm_dvfs_level2_req & 0x1) << 7) |

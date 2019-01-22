@@ -745,7 +745,7 @@ static unsigned int dpidle_log_discard_cnt;
 static unsigned int dpidle_log_print_prev_time;
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_cond)
+static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_cond, struct pwr_ctrl *pwrctrl)
 {
 	int ret;
 	struct spm_data spm_d;
@@ -759,6 +759,7 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 	spm_opt |= (operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE) ? SPM_OPT_VCORE_LP_MODE : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
+	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
 	ret = spm_to_sspm_command(SPM_DPIDLE_ENTER, &spm_d);
 	if (ret < 0)
@@ -784,7 +785,7 @@ static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle)
 		spm_crit2("ret %d", ret);
 }
 #else
-static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_cond)
+static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_cond, struct pwr_ctrl *pwrctrl)
 {
 }
 
@@ -810,9 +811,9 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 {
 	unsigned int resource_usage = 0;
 
-	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond);
+	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond, pwrctrl);
 
-	spm_dpidle_pre_process(operation_cond);
+	spm_dpidle_pre_process(operation_cond, pwrctrl);
 
 	/* Get SPM resource request and update reg_spm_xxx_req */
 	resource_usage = (!sleep_dpidle) ? spm_get_resource_usage() : 0;
@@ -874,9 +875,9 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 		__spm_set_pcm_wdt(1);
 #endif
 
-	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond);
+	spm_dpidle_notify_sspm_before_wfi(sleep_dpidle, operation_cond, pwrctrl);
 
-	spm_dpidle_pre_process(operation_cond);
+	spm_dpidle_pre_process(operation_cond, pwrctrl);
 
 	__spm_kick_pcm_to_run(pwrctrl);
 }
@@ -1020,6 +1021,10 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	/* need be called before spin_lock_irqsave() */
 	ch = get_channel_lock();
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
+	pwrctrl->vcore_volt_pmic_val =
+						__spm_get_vcore_volt_pmic_val(
+							!!(operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE),
+							ch);
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);

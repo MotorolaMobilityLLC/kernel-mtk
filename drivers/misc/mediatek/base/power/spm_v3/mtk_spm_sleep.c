@@ -418,6 +418,11 @@ static void spm_set_sysclk_settle(void)
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
+
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
+			IDX_ALL_VCORE_SUSPEND,
+			pwrctrl->vcore_volt_pmic_val);
+
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 
@@ -459,6 +464,7 @@ static void spm_suspend_pcm_setup_before_wfi(u32 cpu, struct pcm_desc *pcmdesc,
 	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
+	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
 	ret = spm_to_sspm_command(SPM_SUSPEND, &spm_d);
 	if (ret < 0) {
@@ -709,6 +715,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	/* need be called before spin_lock_irqsave() */
 	ch = get_channel_lock();
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
+	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
