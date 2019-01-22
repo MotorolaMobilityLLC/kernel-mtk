@@ -801,7 +801,7 @@ void ion_mm_heap_memory_detail(void)
 	bool has_orphaned = false;
 	struct ion_mm_buffer_info *bug_info;
 	struct ion_mm_buf_debug_info *pdbg;
-	char seq_log[384];
+	char seq_log[448];
 	char seq_fmt[] = "|0x%p %10zu %5d(%5d) %16s %2d %5u-%-6u %48s |";
 	int seq_log_count = 0;
 
@@ -818,7 +818,7 @@ void ion_mm_heap_memory_detail(void)
 			need_dev_lock = false;
 	}
 
-	memset(seq_log, 0, 384);
+	memset(seq_log, 0, 448);
 	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
 		struct ion_client
 		*client = rb_entry(n, struct ion_client, node);
@@ -849,7 +849,7 @@ void ion_mm_heap_memory_detail(void)
 
 		if ((seq_log_count % 3) == 0) {
 			ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
-			memset(seq_log, 0, 384);
+			memset(seq_log, 0, 448);
 		}
 	}
 
@@ -870,7 +870,7 @@ skip_client_entry:
 	if (mutex_trylock(&dev->buffer_lock)) {
 		seq_log_count = 0;
 
-		memset(seq_log, 0, 384);
+		memset(seq_log, 0, 448);
 		for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
 			struct ion_buffer
 			*buffer = rb_entry(n, struct ion_buffer, node);
@@ -905,7 +905,7 @@ skip_client_entry:
 
 				if ((seq_log_count % 3) == 0) {
 					ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
-					memset(seq_log, 0, 384);
+					memset(seq_log, 0, 448);
 				}
 			}
 		}
