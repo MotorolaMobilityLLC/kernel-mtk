@@ -7990,23 +7990,18 @@ void cmdq_core_dump_dts_setting(void)
 	}
 }
 
-int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
+int32_t cmdq_core_get_running_task_by_engine_unlock(uint64_t engineFlag,
 	uint32_t userDebugStrLen, struct TaskStruct *p_out_task)
 {
 	struct EngineStruct *pEngine;
 	struct ThreadStruct *pThread;
 	int32_t index;
 	int32_t thread = CMDQ_INVALID_THREAD;
-	unsigned long flags = 0;
 	int32_t status = -EFAULT;
 	struct TaskStruct *pTargetTask = NULL;
 
 	if (p_out_task == NULL)
 		return -EINVAL;
-
-	/* make sure context does not change during get and copy */
-	mutex_lock(&gCmdqTaskMutex);
-	spin_lock_irqsave(&gCmdqThreadLock, flags);
 
 	pEngine = gCmdqContext.engine;
 	pThread = gCmdqContext.thread;
@@ -8035,17 +8030,12 @@ int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
 			}
 		}
 		if (!pTargetTask) {
-			unsigned long flagsExec = 0;
 			uint32_t currPC = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
 
 			CMDQ_LOG("cannot find pc (0x%08x) at thread (%d)\n", currPC, thread);
-			spin_lock_irqsave(&gCmdqExecLock, flagsExec);
 			cmdq_core_dump_task_in_thread(thread, false, true, false);
-			spin_unlock_irqrestore(&gCmdqExecLock, flagsExec);
 		}
 	}
-
-	spin_unlock_irqrestore(&gCmdqThreadLock, flags);
 
 	if (pTargetTask) {
 		uint32_t current_debug_str_len = pTargetTask->userDebugStr ?
@@ -8071,9 +8061,22 @@ int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
 		status = 0;
 	}
 
-	mutex_unlock(&gCmdqTaskMutex);
-
 	return status;
+}
+
+int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,
+	uint32_t userDebugStrLen, struct TaskStruct *p_out_task)
+{
+	int32_t result = 0;
+	unsigned long flags = 0;
+
+	/* make sure context does not change during get and copy */
+	spin_lock_irqsave(&gCmdqExecLock, flags);
+	result = cmdq_core_get_running_task_by_engine_unlock(
+		engineFlag, userDebugStrLen, p_out_task);
+	spin_unlock_irqrestore(&gCmdqExecLock, flags);
+
+	return result;
 }
 
 int32_t cmdqCoreInitialize(void)
