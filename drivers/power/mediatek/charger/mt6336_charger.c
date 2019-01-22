@@ -769,9 +769,12 @@ static int mt6336_send_ta20_current_pattern(struct charger_device *chg_dev, u32 
 
 static int mt6336_set_ta20_reset(struct charger_device *chg_dev)
 {
+	unsigned int val;
+
+	val = mt6336_get_flag_register_value(MT6336_RG_ICL);
 	mt6336_set_flag_register_value(MT6336_RG_ICL, 0x0);
 	msleep(250);
-	mt6336_set_flag_register_value(MT6336_RG_ICL, 0x3);
+	mt6336_set_flag_register_value(MT6336_RG_ICL, val);
 
 	return 0;
 }
@@ -919,13 +922,13 @@ void mt6336_rechg_callback(void)
 void mt6336_safety_timeout_callback(void)
 {
 	pr_err("mt6336_safety_timeout_callback\n");
+	mt6336_set_flag_register_value(MT6336_CLK_REG_6M_W1C_CK_PDN, 0x0);
+	mt6336_set_flag_register_value(MT6336_RG_CHR_SAFETMR_CLEAR, 1);
+
 	if (info != NULL)
 		charger_dev_notify(info->charger_dev, CHARGER_DEV_NOTIFY_SAFETY_TIMEOUT);
 	else
 		pr_err("do not call chain\n");
-
-	mt6336_set_flag_register_value(MT6336_RG_CHR_SAFETMR_CLEAR, 1);
-	mt6336_set_flag_register_value(MT6336_RG_CHR_SAFETMR_CLEAR, 0);
 }
 
 int mt6336_event(struct charger_device *chg_dev, u32 event, u32 args)
