@@ -21,6 +21,9 @@
 
 #define CMDQ_DRIVER_DEVICE_NAME         "mtk_cmdq"
 
+/* Load HW event from device tree */
+#define CMDQ_DVENT_FROM_DTS
+
 /* #define CMDQ_COMMON_ENG_SUPPORT */
 #ifdef CMDQ_COMMON_ENG_SUPPORT
 #include "cmdq_engine_common.h"
