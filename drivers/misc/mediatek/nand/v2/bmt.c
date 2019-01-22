@@ -18,6 +18,11 @@
 #include <linux/slab.h>
 #include <asm/div64.h>
 #include "mtk_nand_util.h"
+
+#ifdef CONFIG_MNTL_SUPPORT
+#include "mtk_nand_ops.h"
+#endif
+
 typedef struct {
 	char signature[3];
 	u8 version;
@@ -258,6 +263,10 @@ static void fill_nand_bmt_buffer(bmt_struct *bmt, u8 *dat, u8 *oob)
 
 	memcpy(dat + MAIN_SIGNATURE_OFFSET, phys_bmt, sizeof(phys_bmt_struct));
 	memcpy(oob + OOB_SIGNATURE_OFFSET, OOB_SIGNATURE, SIGNATURE_SIZE);
+#ifdef CONFIG_MNTL_SUPPORT
+	memcpy(dat + MAIN_SIGNATURE_OFFSET + sizeof(phys_bmt_struct), &(bmt->data_bmt), sizeof(struct data_bmt_struct));
+#endif
+
 	kfree(phys_bmt);
 }
 
@@ -266,6 +275,7 @@ static int load_bmt_data(int start, int pool_size)
 {
 	int bmt_index = start + pool_size - 1;	/* find from the end */
 	phys_bmt_struct *phys_table = NULL;
+	int i;
 
 	phys_table = kmalloc(sizeof(phys_bmt_struct), GFP_KERNEL);
 
@@ -310,8 +320,29 @@ static int load_bmt_data(int start, int pool_size)
 			/* bmt.bad_count = phys_table.header.bad_count; */
 			memcpy(bmt.table, phys_table->table, bmt.mapped_count * sizeof(bmt_entry));
 
+#ifdef CONFIG_MNTL_SUPPORT
+			memcpy(&bmt.data_bmt,
+				(dat_buf + MAIN_SIGNATURE_OFFSET + sizeof(phys_bmt_struct)),
+				sizeof(struct data_bmt_struct));
+			pr_err("Data bmt bad_count:%d start_block:0x%x, end_block:0x%x\n", bmt.data_bmt.bad_count,
+				bmt.data_bmt.start_block, bmt.data_bmt.end_block);
+#endif
+
 			pr_err("bmt found at block: %d, mapped block: %d\n", bmt_index,
 				bmt.mapped_count);
+
+			for (i = 0; i < bmt.mapped_count; i++) {
+#if 0
+				if (!nand_block_bad_bmt(OFFSET(bmt.table[i].bad_index))) {
+					pr_debug("block 0x%x is not mark bad, should be power lost last time\n",
+						bmt.table[i].bad_index);
+					mark_block_bad_bmt(OFFSET(bmt.table[i].bad_index));
+				}
+#else
+				pr_err("block[%d] map to block[%d]\n", bmt.table[i].bad_index,
+					bmt.table[i].mapped_index);
+#endif
+			}
 			kfree(phys_table);
 			return bmt_index;
 		}
@@ -702,13 +733,13 @@ bmt_struct *init_bmt(struct nand_chip *chip, int size)
 		return &bmt;
 	}
 	pr_debug("Load bmt data fail, need re-construct!\n");
-#if !defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+#if !defined(CONFIG_MTK_TLC_NAND_SUPPORT) || !defined(CONFIG_MNTL_SUPPORT)
 	if (reconstruct_bmt(&bmt))
 		return &bmt;
 #endif
 	return NULL;
 }
-EXPORT_SYMBOL_GPL(init_bmt);
+EXPORT_SYMBOL(init_bmt);
 
 
 /*******************************************************************
@@ -734,43 +765,61 @@ bool update_bmt(u64 offset, update_reason_t reason, u8 *dat, u8 *oob)
 	u64 temp;
 	u32 bad_index; /* = (u32)(offset / (devinfo.blocksize * 1024)); */
 
+#ifdef CONFIG_MNTL_SUPPORT
+	struct data_bmt_struct *data_bmt_info = &bmt.data_bmt;
+#endif
 	temp = offset;
 	do_div(temp, ((devinfo.blocksize * 1024) & 0xFFFFFFFF));
 	bad_index = (u32)temp;
 
-/* return false; */
+#ifdef CONFIG_MNTL_SUPPORT
 
-	if (reason == UPDATE_WRITE_FAIL) {
-		pr_debug("Write fail, need to migrate\n");
-		map_index = migrate_from_bad(offset, dat, oob);
-		if (!map_index) {
-			pr_debug("migrate fail\n");
-			return false;
-		}
-	} else {
-		map_index = find_available_block(false);
-		if (!map_index) {
-			pr_debug("Cannot find block in pool\n");
-			return false;
-		}
-	}
+	if ((bad_index >= data_bmt_info->start_block)
+		&& (bad_index < data_bmt_info->end_block)) {
+		if (get_mapping_block_index(bad_index) != DATA_BAD_BLK) {
+			pr_debug("update_bmt DATA bad block is 0x%x, bad_count:%d\n",
+				bad_index, data_bmt_info->bad_count);
+			data_bmt_info->entry[data_bmt_info->bad_count].bad_index  = bad_index;
+			data_bmt_info->entry[data_bmt_info->bad_count].flag = reason;
 
-	/* now let's update BMT */
-	if (bad_index >= system_block_count) {	/* mapped block become bad, find original bad block */
-		for (i = 0; i < bmt_block_count; i++) {
-			if (bmt.table[i].mapped_index == bad_index) {
-				orig_bad_block = bmt.table[i].bad_index;
-				break;
+			data_bmt_info->bad_count++;
+		} else
+			return false;
+	} else
+#endif
+	{
+		if (reason == UPDATE_WRITE_FAIL) {
+			pr_debug("Write fail, need to migrate\n");
+			map_index = migrate_from_bad(offset, dat, oob);
+			if (!map_index) {
+				pr_debug("migrate fail\n");
+				return false;
+			}
+		} else {
+			map_index = find_available_block(false);
+			if (!map_index) {
+				pr_debug("Cannot find block in pool\n");
+				return false;
 			}
 		}
-		/* bmt.bad_count++; */
-		pr_debug("Mapped block becomes bad, orig bad block is 0x%x\n", orig_bad_block);
 
-		bmt.table[i].mapped_index = map_index;
-	} else {
-		bmt.table[bmt.mapped_count].mapped_index = map_index;
-		bmt.table[bmt.mapped_count].bad_index = bad_index;
-		bmt.mapped_count++;
+		/* now let's update BMT */
+		if (bad_index >= system_block_count) {	/* mapped block become bad, find original bad block */
+			for (i = 0; i < bmt_block_count; i++) {
+				if (bmt.table[i].mapped_index == bad_index) {
+					orig_bad_block = bmt.table[i].bad_index;
+					break;
+				}
+			}
+			/* bmt.bad_count++; */
+			pr_debug("Mapped block becomes bad, orig bad block is 0x%x\n", orig_bad_block);
+
+			bmt.table[i].mapped_index = map_index;
+		} else {
+			bmt.table[bmt.mapped_count].mapped_index = map_index;
+			bmt.table[bmt.mapped_count].bad_index = bad_index;
+			bmt.mapped_count++;
+		}
 	}
 
 	memset(oob_buf, 0xFF, sizeof(oob_buf));
@@ -780,9 +829,13 @@ bool update_bmt(u64 offset, update_reason_t reason, u8 *dat, u8 *oob)
 
 	mark_block_bad_bmt(offset);
 
+#ifdef CONFIG_MNTL_SUPPORT
+	return false;
+#else
 	return true;
+#endif
 }
-EXPORT_SYMBOL_GPL(update_bmt);
+EXPORT_SYMBOL(update_bmt);
 
 /*******************************************************************
 * [BMT Interface]
@@ -799,21 +852,51 @@ EXPORT_SYMBOL_GPL(update_bmt);
 *******************************************************************/
 u16 get_mapping_block_index(int index)
 {
+#ifdef CONFIG_MNTL_SUPPORT
+	struct data_bmt_struct *data_bmt_info = &bmt.data_bmt;
+#endif
 	int i;
 /* return index; */
 
 	if (index > system_block_count)
 		return index;
 
-	for (i = 0; i < bmt.mapped_count; i++) {
-		if (bmt.table[i].bad_index == index)
-			return bmt.table[i].mapped_index;
+#ifdef CONFIG_MNTL_SUPPORT
+	if ((index >= data_bmt_info->start_block) && (index < data_bmt_info->end_block)) {
+		for (i = 0; i < data_bmt_info->bad_count; i++) {
+			if (data_bmt_info->entry[i].bad_index == index) {
+				pr_debug("$$$$$FTL partition bad block at 0x%x, bad_count:%d\n",
+					index, data_bmt_info->bad_count);
+				return DATA_BAD_BLK;
+			}
+		}
+	} else
+#endif
+	{
+		for (i = 0; i < bmt.mapped_count; i++) {
+			if (bmt.table[i].bad_index == index)
+				return bmt.table[i].mapped_index;
+		}
 	}
 
 	return index;
-}
-EXPORT_SYMBOL_GPL(get_mapping_block_index);
 
-MODULE_LICENSE("GPL");
+}
+EXPORT_SYMBOL(get_mapping_block_index);
+
+
+#ifdef CONFIG_MNTL_SUPPORT
+int get_data_bmt(struct data_bmt_struct *data_bmt)
+{
+	if (bmt.data_bmt.version == DATA_BMT_VERSION) {
+		memcpy(data_bmt, &bmt.data_bmt, sizeof(struct data_bmt_struct));
+		return 0;
+	}
+
+	return 1;
+}
+#endif
+
+/* MODULE_LICENSE("GPL"); */
 MODULE_AUTHOR("MediaTek");
 MODULE_DESCRIPTION("Bad Block mapping management for MediaTek NAND Flash Driver");
