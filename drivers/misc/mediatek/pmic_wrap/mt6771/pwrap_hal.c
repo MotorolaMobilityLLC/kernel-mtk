@@ -166,6 +166,7 @@ static void _pwrap_enable(void);
 static void _pwrap_starve_set(void);
 static signed int _pwrap_wacs2_nochk(unsigned int write, unsigned int adr, unsigned int wdata, unsigned int *rdata);
 static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr, unsigned int wdata, unsigned int *rdata);
+static void pwrap_mpu_info(void);
 /*********************test API************************************************/
 static inline void pwrap_dump_ap_register(void);
 static void pwrap_logging_at_isr(void);
@@ -241,6 +242,9 @@ static int _pwrap_timeout_ns(unsigned long long start_time_ns, unsigned long lon
 		/* timeout */
 		PWRAPLOG("@@@@Timeout: elapse time%lld,start%lld setting timer%lld\n",
 			 elapse_time, start_time_ns, timeout_time_ns);
+		/* check if timeout be caused by mpu vio */
+		if ((WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_0) & 0x80000000) != 0)
+			return 1;
 		pwrap_dump_ap_register();
 		aee_kernel_warning("WRAPPER:ERR DUMP", "WRAP");
 		return 1;
@@ -343,8 +347,15 @@ static inline unsigned int wait_for_state_ready_init(loop_condition_fp fp, unsig
 	do {
 		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
 			PWRAPLOG("ready_init timeout\n");
-			pwrap_dump_ap_register();
-			return E_PWR_WAIT_IDLE_TIMEOUT;
+			/* check if timeout be caused by mpu vio */
+			if ((WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_0)
+				& 0x80000000) != 0) {
+				pwrap_mpu_info();
+				WRAP_WR32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_0,
+					0x80000000);
+				return E_PWR_INVALID_ADDR;
+			} else
+				return E_PWR_WAIT_IDLE_TIMEOUT;
 		}
 		reg_rdata = WRAP_RD32(wacs_register);
 	} while (fp(reg_rdata));
@@ -372,8 +383,15 @@ static inline unsigned int wait_for_state_idle(loop_condition_fp fp, unsigned in
 	do {
 		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
 			PWRAPLOG("state_idle timeout\n");
-			pwrap_dump_ap_register();
-			return E_PWR_WAIT_IDLE_TIMEOUT;
+			/* check if timeout be caused by mpu vio */
+			if ((WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_0)
+				& 0x80000000) != 0) {
+				pwrap_mpu_info();
+				WRAP_WR32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_0,
+					0x80000000);
+				return E_PWR_INVALID_ADDR;
+			} else
+				return E_PWR_WAIT_IDLE_TIMEOUT;
 		}
 		reg_rdata = WRAP_RD32(wacs_register);
 		if (GET_WACS2_INIT_DONE2(reg_rdata) != WACS_INIT_DONE) {
@@ -419,8 +437,15 @@ static inline unsigned int wait_for_state_ready(loop_condition_fp fp, unsigned i
 	do {
 		if (_pwrap_timeout_ns(start_time_ns, timeout_ns)) {
 			PWRAPLOG("state_ready timeout\n");
-			pwrap_dump_ap_register();
-			return E_PWR_WAIT_IDLE_TIMEOUT;
+			/* check if timeout be caused by mpu vio */
+			if ((WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_0)
+				& 0x80000000) != 0) {
+				pwrap_mpu_info();
+				WRAP_WR32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_0,
+					0x80000000);
+				return E_PWR_INVALID_ADDR;
+			} else
+				return E_PWR_WAIT_IDLE_TIMEOUT;
 		}
 		reg_rdata = WRAP_RD32(wacs_register);
 		if (GET_WACS2_INIT_DONE2(reg_rdata) != WACS_INIT_DONE) {
@@ -459,6 +484,9 @@ static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr, unsigned
 
 	spin_lock_irqsave(&wrp_lock, flags);
 
+	/* clear pmic mpu acc vio */
+	WRAP_WR32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_0, 0x80000000);
+	WRAP_WR32(PMIC_WRAP_MPU_PWRAP_ACC_VIO_INFO_0, 0x80000000);
 	/* Check IDLE & INIT_DONE in advance */
 	return_value =
 	    wait_for_state_idle(wait_for_fsm_idle, TIMEOUT_WAIT_IDLE, PMIC_WRAP_WACS2_RDATA,
@@ -483,7 +511,6 @@ static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr, unsigned
 				&reg_rdata);
 		if (return_value != 0) {
 			PWRAP_PR_ERR("fsm_vldclr fail, ret=%d\n", return_value);
-			return_value += 1;
 			goto FAIL;
 		}
 		*rdata = GET_WACS2_RDATA(reg_rdata);
@@ -494,7 +521,6 @@ FAIL:
 	spin_unlock_irqrestore(&wrp_lock, flags);
 	if (return_value != 0) {
 		PWRAPLOG("pwrap_wacs2_hal fail, ret=%d\n", return_value);
-		PWRAPLOG("BUG_ON\n");
 	}
 
 	return return_value;
@@ -1436,6 +1462,30 @@ static void pwrap_logging_at_isr(void)
 	}
 	}
 }
+
+static void pwrap_mpu_info(void)
+{
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+
+	if (__ratelimit(&ratelimit)) {
+	PWRAPLOG("PMIC_INFO_0 0x%x\n",
+		WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_0));
+	PWRAPLOG("PMIC_INFO_1 0x%x\n",
+		WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_1));
+	PWRAPLOG("PMIC_INFO_2 0x%x\n",
+		WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_INFO_2));
+	PWRAPLOG("P2P_INFO_0 0x%x\n",
+		WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_P2P_INFO_0));
+	PWRAPLOG("P2P_INFO_1 0x%x\n",
+		WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_P2P_INFO_1));
+	PWRAPLOG("P2P_INFO_2 0x%x\n",
+		WRAP_RD32(PMIC_WRAP_MPU_PMIC_ACC_VIO_P2P_INFO_2));
+	PWRAPLOG("PWRAP_INFO_0 0x%x\n",
+		WRAP_RD32(PMIC_WRAP_MPU_PWRAP_ACC_VIO_INFO_0));
+	PWRAPLOG("PWRAP_INFO_1 0x%x\n",
+		WRAP_RD32(PMIC_WRAP_MPU_PWRAP_ACC_VIO_INFO_1));
+	}
+}
 static void pwrap_reenable_pmic_logging(void)
 {
 	unsigned int rdata = 0, sub_return = 0;
@@ -1624,8 +1674,13 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 	int1_flg = WRAP_RD32(PMIC_WRAP_INT1_FLG);
 	if ((int1_flg & 0xffffffff) != 0) {
 		PWRAPLOG("[PWRAP]INT1 error:0x%x\n", int1_flg);
-		pwrap_dump_all_register();
-		WRAP_WR32(PMIC_WRAP_INT1_CLR, 0xffffffff);
+		if ((int1_flg & (0x3 << 26)) != 0) {
+			pwrap_mpu_info();
+			WRAP_WR32(PMIC_WRAP_INT1_CLR, int1_flg);
+		} else {
+			pwrap_dump_all_register();
+			WRAP_WR32(PMIC_WRAP_INT1_CLR, 0xf3ffffff);
+		}
 	}
 
 	if ((int0_flg & 0x01) == 0x01) {
@@ -1655,7 +1710,7 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 		g_case_flag = 1;
 	}
 
-	if (g_wrap_wdt_irq_count == 10 || g_case_flag == 1)
+	if (g_wrap_wdt_irq_count == 10)
 		WARN_ON(1);
 
 	return IRQ_HANDLED;
