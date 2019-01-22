@@ -43,6 +43,13 @@
 #define RTC_IRQ_EN_LP		BIT(3)
 #define RTC_IRQ_EN_ONESHOT_AL	(RTC_IRQ_EN_ONESHOT | RTC_IRQ_EN_AL)
 
+#define RTC_AL_YEA_MASK 0x007f
+#define RTC_AL_MTH_MASK 0x000f
+#define RTC_AL_DOM_MASK 0x001f
+#define RTC_AL_HOU_MASK 0x001f
+#define RTC_AL_MIN_MASK 0x003f
+#define RTC_AL_SEC_MASK 0x003f
+
 #define RTC_AL_MASK		0x0008
 #define RTC_AL_MASK_DOW		BIT(4)
 
@@ -172,15 +179,20 @@ exit:
 
 static void _mtk_rtc_set_alarm(struct rtc_time *tm)
 {
-	u16 data[RTC_OFFSET_COUNT];
+	u16 data[RTC_OFFSET_COUNT], data_b[RTC_OFFSET_COUNT];
 	int ret;
 
-	data[RTC_OFFSET_SEC] = tm->tm_sec;
-	data[RTC_OFFSET_MIN] = tm->tm_min;
-	data[RTC_OFFSET_HOUR] = tm->tm_hour;
-	data[RTC_OFFSET_DOM] = tm->tm_mday;
-	data[RTC_OFFSET_MTH] = tm->tm_mon;
-	data[RTC_OFFSET_YEAR] = tm->tm_year;
+	ret = regmap_bulk_read(mt_rtc->regmap, mt_rtc->addr_base + RTC_AL_SEC,
+			       data_b, RTC_OFFSET_COUNT);
+	if (ret < 0)
+		goto exit;
+
+	data[RTC_OFFSET_SEC] = ((data_b[RTC_OFFSET_SEC] & ~(RTC_AL_SEC_MASK)) |  (tm->tm_sec & RTC_AL_SEC_MASK));
+	data[RTC_OFFSET_MIN] = ((data_b[RTC_OFFSET_MIN] & ~(RTC_AL_MIN_MASK)) | (tm->tm_min & RTC_AL_MIN_MASK));
+	data[RTC_OFFSET_HOUR] = ((data_b[RTC_OFFSET_HOUR] & ~(RTC_AL_HOU_MASK)) | (tm->tm_hour & RTC_AL_HOU_MASK));
+	data[RTC_OFFSET_DOM] = ((data_b[RTC_OFFSET_DOM] & ~(RTC_AL_DOM_MASK)) | (tm->tm_mday & RTC_AL_DOM_MASK));
+	data[RTC_OFFSET_MTH] = ((data_b[RTC_OFFSET_MTH] & ~(RTC_AL_MTH_MASK)) | (tm->tm_mon & RTC_AL_MTH_MASK));
+	data[RTC_OFFSET_YEAR] = ((data_b[RTC_OFFSET_YEAR] & ~(RTC_AL_YEA_MASK)) | (tm->tm_year & RTC_AL_YEA_MASK));
 
 	dev_notice(mt_rtc->dev, "set al time = %04d/%02d/%02d %02d:%02d:%02d\n",
 		  tm->tm_year + RTC_MIN_YEAR, tm->tm_mon, tm->tm_mday,
@@ -491,12 +503,12 @@ void rtc_read_pwron_alarm(struct rtc_wkalrm *alm)
 	/* return Power-On Alarm bit */
 	alm->pending = !!(pdn2 & RTC_PDN2_PWRON_ALARM);
 
-	tm->tm_sec = data[RTC_OFFSET_SEC];
-	tm->tm_min = data[RTC_OFFSET_MIN];
-	tm->tm_hour = data[RTC_OFFSET_HOUR];
-	tm->tm_mday = data[RTC_OFFSET_DOM];
-	tm->tm_mon = data[RTC_OFFSET_MTH];
-	tm->tm_year = data[RTC_OFFSET_YEAR];
+	tm->tm_sec = data[RTC_OFFSET_SEC] & RTC_AL_SEC_MASK;
+	tm->tm_min = data[RTC_OFFSET_MIN] & RTC_AL_MIN_MASK;
+	tm->tm_hour = data[RTC_OFFSET_HOUR] & RTC_AL_HOU_MASK;
+	tm->tm_mday = data[RTC_OFFSET_DOM] & RTC_AL_DOM_MASK;
+	tm->tm_mon = data[RTC_OFFSET_MTH] & RTC_AL_MTH_MASK;
+	tm->tm_year = data[RTC_OFFSET_YEAR] & RTC_AL_YEA_MASK;
 	mutex_unlock(&mt_rtc->lock);
 	tm->tm_year += RTC_MIN_YEAR_OFFSET;
 	tm->tm_mon--;
@@ -736,12 +748,12 @@ static int mtk_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	alm->pending = !!(pdn2 & RTC_PDN2_PWRON_ALARM);
 	mutex_unlock(&rtc->lock);
 
-	tm->tm_sec = data[RTC_OFFSET_SEC];
-	tm->tm_min = data[RTC_OFFSET_MIN];
-	tm->tm_hour = data[RTC_OFFSET_HOUR];
-	tm->tm_mday = data[RTC_OFFSET_DOM];
-	tm->tm_mon = data[RTC_OFFSET_MTH];
-	tm->tm_year = data[RTC_OFFSET_YEAR];
+	tm->tm_sec = data[RTC_OFFSET_SEC] & RTC_AL_SEC_MASK;
+	tm->tm_min = data[RTC_OFFSET_MIN] & RTC_AL_MIN_MASK;
+	tm->tm_hour = data[RTC_OFFSET_HOUR] & RTC_AL_HOU_MASK;
+	tm->tm_mday = data[RTC_OFFSET_DOM] & RTC_AL_DOM_MASK;
+	tm->tm_mon = data[RTC_OFFSET_MTH] & RTC_AL_MTH_MASK;
+	tm->tm_year = data[RTC_OFFSET_YEAR] & RTC_AL_YEA_MASK;
 
 	tm->tm_year += RTC_MIN_YEAR_OFFSET;
 	tm->tm_mon--;
@@ -757,18 +769,23 @@ static int mtk_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
 	struct rtc_time *tm = &alm->time;
 	struct mt6397_rtc *rtc = dev_get_drvdata(dev);
 	int ret;
-	u16 data[RTC_OFFSET_COUNT];
+	u16 data[RTC_OFFSET_COUNT], data_b[RTC_OFFSET_COUNT];
 	u32 irqsta, irqen, pdn2;
 
 	tm->tm_year -= RTC_MIN_YEAR_OFFSET;
 	tm->tm_mon++;
 
-	data[RTC_OFFSET_SEC] = tm->tm_sec;
-	data[RTC_OFFSET_MIN] = tm->tm_min;
-	data[RTC_OFFSET_HOUR] = tm->tm_hour;
-	data[RTC_OFFSET_DOM] = tm->tm_mday;
-	data[RTC_OFFSET_MTH] = tm->tm_mon;
-	data[RTC_OFFSET_YEAR] = tm->tm_year;
+	ret = regmap_bulk_read(rtc->regmap, rtc->addr_base + RTC_AL_SEC,
+			       data_b, RTC_OFFSET_COUNT);
+	if (ret < 0)
+		goto exit;
+
+	data[RTC_OFFSET_SEC] = ((data_b[RTC_OFFSET_SEC] & ~(RTC_AL_SEC_MASK)) |  (tm->tm_sec & RTC_AL_SEC_MASK));
+	data[RTC_OFFSET_MIN] = ((data_b[RTC_OFFSET_MIN] & ~(RTC_AL_MIN_MASK)) | (tm->tm_min & RTC_AL_MIN_MASK));
+	data[RTC_OFFSET_HOUR] = ((data_b[RTC_OFFSET_HOUR] & ~(RTC_AL_HOU_MASK)) | (tm->tm_hour & RTC_AL_HOU_MASK));
+	data[RTC_OFFSET_DOM] = ((data_b[RTC_OFFSET_DOM] & ~(RTC_AL_DOM_MASK)) | (tm->tm_mday & RTC_AL_DOM_MASK));
+	data[RTC_OFFSET_MTH] = ((data_b[RTC_OFFSET_MTH] & ~(RTC_AL_MTH_MASK)) | (tm->tm_mon & RTC_AL_MTH_MASK));
+	data[RTC_OFFSET_YEAR] = ((data_b[RTC_OFFSET_YEAR] & ~(RTC_AL_YEA_MASK)) | (tm->tm_year & RTC_AL_YEA_MASK));
 
 	dev_notice(rtc->dev, "set al time = %04d/%02d/%02d %02d:%02d:%02d (%d)\n",
 		  tm->tm_year + RTC_MIN_YEAR, tm->tm_mon, tm->tm_mday,
