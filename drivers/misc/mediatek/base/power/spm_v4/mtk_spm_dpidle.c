@@ -870,13 +870,7 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	}
 #endif
 
-#if 0
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
-#endif
-#else
 	dpidle_profile_time(DPIDLE_PROFILE_BEFORE_WFI);
-#endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
 
@@ -886,13 +880,7 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 	trace_dpidle_rcuidle(cpu, 0);
 
-#if 0
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[2]);
-#endif
-#else
 	dpidle_profile_time(DPIDLE_PROFILE_AFTER_WFI);
-#endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_WFI);
 
@@ -944,10 +932,7 @@ RESTORE_IRQ:
 		rekick_vcorefs_scenario();
 #endif
 
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) \
-	|| defined(CONFIG_MACH_MT6771)
 	do_gettimeofday(&pre_dpidle_time);
-#endif
 
 	return wr;
 }
