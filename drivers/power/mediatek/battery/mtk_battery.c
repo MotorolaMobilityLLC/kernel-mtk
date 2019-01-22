@@ -2918,9 +2918,7 @@ static int battery_callback(
 	case CHARGER_NOTIFY_START_CHARGING:
 		{
 /* START CHARGING */
-			if (gauge_get_hw_version() >= GAUGE_HW_V1000 &&
-				gauge_get_hw_version() < GAUGE_HW_V2000)
-				fg_sw_bat_cycle_accu();
+			fg_sw_bat_cycle_accu();
 
 			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
 			battery_update(&battery_main);
@@ -2929,6 +2927,7 @@ static int battery_callback(
 	case CHARGER_NOTIFY_STOP_CHARGING:
 		{
 /* STOP CHARGING */
+			fg_sw_bat_cycle_accu();
 			battery_main.BAT_STATUS =
 			POWER_SUPPLY_STATUS_DISCHARGING;
 			battery_update(&battery_main);

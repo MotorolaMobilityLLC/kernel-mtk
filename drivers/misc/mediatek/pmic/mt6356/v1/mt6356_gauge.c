@@ -33,6 +33,21 @@
 #include <mtk_battery_internal.h>
 
 
+#define UNIT_FGCURRENT     (314331)
+/* mt6356 314.331 uA */
+#define UNIT_FGCAR         (89409)
+/* charge_lsb 157166 * 2^11 / 3600 */
+#define R_VAL_TEMP_2         (2)
+/* MT6335 use 3, old chip use 4 */
+#define R_VAL_TEMP_3         (3)
+/* MT6335 use 3, old chip use 4 */
+#define UNIT_TIME          (50)
+#define UNIT_FGCAR_ZCV     (157166)
+/* unit 2^0 LSB */
+#define UNIT_FG_IAVG		(157166)
+#define CAR_TO_REG_FACTOR  (0x5979)
+/* 3600 * 1000 * 1000 / 157166 */
+
 static signed int g_hw_ocv_tune_value;
 static bool g_fg_is_charger_exist;
 

@@ -46,6 +46,26 @@ struct mt6357_gauge {
 	struct gauge_properties gauge_prop;
 };
 
+/*********************** MT6357 setting *********************/
+/* mt6357 314.331 uA */
+#define UNIT_FGCURRENT     (314331)
+/* charge_lsb 19646 * 2^11 / 3600 */
+#define UNIT_FGCAR         (11176)
+/* MT6335 use 3, old chip use 4 */
+#define R_VAL_TEMP_2         (1)
+/* MT6335 use 3, old chip use 4 */
+#define R_VAL_TEMP_3         (3)
+/* mt6357 0.0625 , need to * 10000 and / 10000 */
+#define UNIT_TIME          (50)
+/* mt6357: 19.646 * 1000, need to divide 1000 */
+#define UNIT_FGCAR_ZCV     (19646)
+#define UNIT_FG_IAVG		(157166)
+/* 3600 * 1000 * 1000 / 157166 , for coulomb interrupt */
+#define CAR_TO_REG_FACTOR  (0x5c2a)
+/*coulomb interrupt lsb might be different with coulomb lsb */
+#define CAR_TO_REG_SHIFT (3)
+
+
 #define VOLTAGE_FULL_RANGE    1800
 #define ADC_PRECISE           32768	/* 12 bits */
 
@@ -1475,6 +1495,63 @@ static int fgauge_get_nag_c_dltv(
 
 }
 
+static void fgauge_set_zcv_intr_internal(
+	struct gauge_device *gauge_dev,
+	int fg_zcv_det_time,
+	int fg_zcv_car_th)
+{
+	int fg_zcv_car_thr_h_reg, fg_zcv_car_thr_l_reg;
+	int slepp_cur_avg = gauge_dev->fg_cust_data->sleep_current_avg;
+	long long fg_zcv_car_th_reg = 0;
+
+	/* calculate n+1 mins car , 0.1mAh */
+	fg_zcv_car_th = (fg_zcv_det_time + 1) * slepp_cur_avg / 60;
+	fg_zcv_car_th_reg = (long long)fg_zcv_car_th;
+
+	/* 0.1mAh * 3600 -> 0.1mAs * 100 -> 1uAs * 1000 */
+	fg_zcv_car_th_reg = (fg_zcv_car_th_reg * 100 * 3600 * 1000);
+
+	/* fg_zcv_car_th_reg request uAs, 19.646 * 1000 = 19646 */
+	/* mt6357 set UNIT_FGCAR_ZCV to 19646 */
+
+#if defined(__LP64__) || defined(_LP64)
+	do_div(fg_zcv_car_th_reg, UNIT_FGCAR_ZCV);
+#else
+	fg_zcv_car_th_reg = div_s64(fg_zcv_car_th_reg, UNIT_FGCAR_ZCV);
+#endif
+
+	if (gauge_dev->fg_cust_data->r_fg_value != 100)
+#if defined(__LP64__) || defined(_LP64)
+		fg_zcv_car_th_reg = (fg_zcv_car_th_reg *
+				gauge_dev->fg_cust_data->r_fg_value) / 100;
+#else
+		fg_zcv_car_th_reg = div_s64(fg_zcv_car_th_reg *
+				gauge_dev->fg_cust_data->r_fg_value, 100);
+#endif
+
+#if defined(__LP64__) || defined(_LP64)
+	fg_zcv_car_th_reg = ((fg_zcv_car_th_reg * 1000) /
+			gauge_dev->fg_cust_data->car_tune_value);
+#else
+	fg_zcv_car_th_reg = div_s64((fg_zcv_car_th_reg * 1000),
+			gauge_dev->fg_cust_data->car_tune_value);
+#endif
+
+	fg_zcv_car_thr_h_reg = (fg_zcv_car_th_reg & 0xffff0000) >> 16;
+	fg_zcv_car_thr_l_reg = fg_zcv_car_th_reg & 0x0000ffff;
+
+	pmic_set_register_value(PMIC_FG_ZCV_DET_TIME, fg_zcv_det_time);
+	pmic_set_register_value(PMIC_FG_ZCV_CAR_TH_15_00,
+				fg_zcv_car_thr_l_reg);
+	pmic_set_register_value(PMIC_FG_ZCV_CAR_TH_31_16,
+				fg_zcv_car_thr_h_reg);
+
+	bm_debug("[FG_ZCV_INT][fg_set_zcv_intr_internal] det_time %d mv %d reg %lld 31_16 0x%x 15_00 0x%x UNIT_FGCAR_ZCV:%d\n",
+		fg_zcv_det_time, fg_zcv_car_th, fg_zcv_car_th_reg,
+		fg_zcv_car_thr_h_reg, fg_zcv_car_thr_l_reg,
+		UNIT_FGCAR_ZCV);
+}
+
 static int fgauge_enable_zcv_interrupt(struct gauge_device *gauge_dev, int en)
 {
 	pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
@@ -1485,6 +1562,12 @@ static int fgauge_enable_zcv_interrupt(struct gauge_device *gauge_dev, int en)
 static int fgauge_set_zcv_interrupt_threshold(
 	struct gauge_device *gauge_dev, int threshold)
 {
+	int fg_zcv_det_time = gauge_dev->fg_cust_data->zcv_suspend_time;
+	int fg_zcv_car_th = threshold;
+
+	fgauge_set_zcv_intr_internal(
+		gauge_dev, fg_zcv_det_time, fg_zcv_car_th);
+
 	return 0;
 }
 

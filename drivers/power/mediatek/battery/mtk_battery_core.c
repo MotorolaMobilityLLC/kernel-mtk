@@ -3771,12 +3771,18 @@ void mtk_battery_init(struct platform_device *dev)
 			fg_cust_data.vbat2_det_time * 1000,
 			fg_cust_data.vbat2_det_counter);
 
-			/* sw bat_cycle_car init */
+			/* sw bat_cycle_car init, gm25 should start from 0 */
 			gm.bat_cycle_car = gauge_get_coulomb();
+			if (gm.bat_cycle_car < 0)
+				gm.bat_cycle_car = 0;
 		}
 	}
 
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
+
+		/* sw bat_cycle_car init, gm3 may not start from 0 */
+		gm.bat_cycle_car = gauge_get_coulomb();
+
 		/* init  cycle int */
 		pmic_register_interrupt_callback(FG_N_CHARGE_L_NO,
 		fg_cycle_int_handler);

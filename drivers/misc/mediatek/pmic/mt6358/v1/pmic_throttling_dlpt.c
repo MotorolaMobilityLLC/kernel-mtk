@@ -53,6 +53,7 @@
  ******************************************************************************/
 #define PMIC_THROTTLING_DLPT_UT	0
 #define PMIC_ISENSE_SUPPORT	0
+#define UNIT_FGCURRENT     (381470)
 
 /*****************************************************************************
  * PMIC PT and DLPT UT
