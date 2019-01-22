@@ -2366,7 +2366,7 @@ nicRxWaitResponse(IN P_ADAPTER_T prAdapter,
 		DBGLOG(INIT, TRACE, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
 		       prEvent->ucEID, prEvent->ucSeqNum, prEvent->u2PacketLength);
 	} else {
-		DBGLOG(RX, ERROR, "halRxWaitResponse fail!\n");
+		DBGLOG(RX, ERROR, "halRxWaitResponse fail!status %X\n", u4Status);
 	}
 
 	return u4Status;

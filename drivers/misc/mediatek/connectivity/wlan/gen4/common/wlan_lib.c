@@ -3238,51 +3238,63 @@ WLAN_STATUS wlanImageQueryStatus(IN P_ADAPTER_T prAdapter)
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS wlanImageSectionDownloadStatus(IN P_ADAPTER_T prAdapter, IN UINT_8 ucCmdSeqNum)
 {
-	UINT_8 aucBuffer[sizeof(INIT_HIF_RX_HEADER_T) + sizeof(INIT_EVENT_CMD_RESULT)];
+	UINT_8 aucBuffer[512];
 	P_INIT_HIF_RX_HEADER_T prInitHifRxHeader;
 	P_INIT_EVENT_CMD_RESULT prEventCmdResult;
 	UINT_32 u4RxPktLength;
-	WLAN_STATUS u4Status;
+	WLAN_STATUS u4Status = WLAN_STATUS_SUCCESS;
 
 	UINT_8 ucPortIdx = IMG_DL_STATUS_PORT_IDX;
 
 	ASSERT(prAdapter);
 
-	do {
+	while (TRUE) {
 		if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE || fgIsBusAccessFailed == TRUE) {
-			u4Status = WLAN_STATUS_FAILURE;
-		} else if (nicRxWaitResponse(prAdapter,
-					     ucPortIdx,
-					     aucBuffer,
-					     sizeof(INIT_HIF_RX_HEADER_T) +
-					     sizeof(INIT_EVENT_CMD_RESULT), &u4RxPktLength) != WLAN_STATUS_SUCCESS) {
-			u4Status = WLAN_STATUS_FAILURE;
+			DBGLOG(INIT, WARN, "cardRemove %d, BusError %d\n",
+				kalIsCardRemoved(prAdapter->prGlueInfo), fgIsBusAccessFailed);
+			return WLAN_STATUS_FAILURE;
+		}
+
+		u4Status = nicRxWaitResponse(prAdapter,
+						 ucPortIdx,
+						 aucBuffer,
+						 sizeof(aucBuffer),
+						 &u4RxPktLength);
+
+		if (u4Status != WLAN_STATUS_SUCCESS) {
+			DBGLOG(INIT, ERROR, "u4Status 0x%x\n", u4Status);
+			break;
 		} else {
 			prInitHifRxHeader = (P_INIT_HIF_RX_HEADER_T) aucBuffer;
 
 			/* EID / SeqNum check */
-			if (prInitHifRxHeader->rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT) {
-				u4Status = WLAN_STATUS_FAILURE;
-			} else if (prInitHifRxHeader->rInitWifiEvent.ucSeqNum != ucCmdSeqNum) {
-				u4Status = WLAN_STATUS_FAILURE;
+			if ((prInitHifRxHeader->rInitWifiEvent.ucEID != INIT_EVENT_ID_CMD_RESULT)
+				|| (prInitHifRxHeader->rInitWifiEvent.ucSeqNum != ucCmdSeqNum)) {
+				DBGLOG(INIT, WARN, "Skip unexpected Rx pkt [0x%04x] EID[0x%02x] SEQ[%d]\n",
+					prInitHifRxHeader->rInitWifiEvent.u2PacketType,
+					prInitHifRxHeader->rInitWifiEvent.ucEID,
+					prInitHifRxHeader->rInitWifiEvent.ucSeqNum);
+				DBGLOG_MEM8(INIT, WARN, aucBuffer, u4RxPktLength);
+				continue;
 			} else {
 				prEventCmdResult =
-				    (P_INIT_EVENT_CMD_RESULT) (prInitHifRxHeader->rInitWifiEvent.aucBuffer);
+					(P_INIT_EVENT_CMD_RESULT) (prInitHifRxHeader->rInitWifiEvent.aucBuffer);
 				if (prEventCmdResult->ucStatus != 0) {	/* 0 for download success */
 					DBGLOG(INIT, ERROR, "Start CMD failed, status[%u]\n",
-					       prEventCmdResult->ucStatus);
+						   prEventCmdResult->ucStatus);
 #if CFG_SUPPORT_COMPRESSION_FW_OPTION
 				if (prEventCmdResult->ucStatus == WIFI_FW_DECOMPRESSION_FAILED)
 					DBGLOG(INIT, ERROR, "Start Decompression CMD failed, status[%u]\n",
-					       prEventCmdResult->ucStatus);
+						   prEventCmdResult->ucStatus);
 #endif
 					u4Status = WLAN_STATUS_FAILURE;
 				} else {
 					u4Status = WLAN_STATUS_SUCCESS;
 				}
+				break;
 			}
 		}
-	} while (FALSE);
+	}
 
 	return u4Status;
 }

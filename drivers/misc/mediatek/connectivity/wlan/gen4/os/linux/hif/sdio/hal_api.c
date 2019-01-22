@@ -198,7 +198,7 @@ halRxWaitResponse(IN P_ADAPTER_T prAdapter, IN UINT_8 ucPortIdx, OUT PUINT_8 puc
 			DBGLOG(RX, ERROR, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
 				   prEvent->ucEID, prEvent->ucSeqNum, prEvent->u2PacketLength);
 			DBGLOG_MEM8(RX, ERROR, pucRspBuffer, u4MaxRespBufferLen);
-			return WLAN_STATUS_FAILURE;
+			return WLAN_STATUS_INVALID_LENGTH;
 		}
 		if (u4PktLen == 0) {
 			/* timeout exceeding check */
