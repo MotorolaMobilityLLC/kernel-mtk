@@ -60,9 +60,7 @@
 		(GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN)
 	};
 #endif
-static const unsigned int orders[] = {4, 1, 0 };
-/* static const unsigned int orders[] = {8, 4, 0}; */
-static const int num_orders = ARRAY_SIZE(orders);
+
 static int order_to_index(unsigned int order)
 {
 	int i;
@@ -604,43 +602,6 @@ static int ion_dump_all_share_fds(struct seq_file *s)
 	return 0;
 }
 
-static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, void *unused)
-{
-	struct ion_system_heap
-	*sys_heap = container_of(heap, struct ion_system_heap, heap);
-	struct ion_device *dev = heap->dev;
-	int i;
-
-	for (i = 0; i < num_orders; i++) {
-		struct ion_page_pool *pool = sys_heap->pools[i];
-
-		ION_PRINT_LOG_OR_SEQ(s,
-				"%d order %u highmem pages in pool = %lu total, dev, 0x%p, heap id: %d\n",
-				pool->high_count, pool->order, (1 << pool->order) * PAGE_SIZE * pool->high_count,
-				dev, heap->id);
-		ION_PRINT_LOG_OR_SEQ(s,
-				"%d order %u lowmem pages in pool = %lu total\n",
-				pool->low_count, pool->order, (1 << pool->order) * PAGE_SIZE * pool->low_count);
-		pool = sys_heap->cached_pools[i];
-		ION_PRINT_LOG_OR_SEQ(s,
-				"%d order %u highmem pages in cached_pool = %lu total\n",
-				pool->high_count, pool->order, (1 << pool->order) * PAGE_SIZE * pool->high_count);
-		ION_PRINT_LOG_OR_SEQ(s,
-				"%d order %u lowmem pages in cached_pool = %lu total\n",
-				pool->low_count, pool->order, (1 << pool->order) * PAGE_SIZE * pool->low_count);
-	}
-	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
-		ION_PRINT_LOG_OR_SEQ(s, "mm_heap_freelist total_size=%zu\n", ion_heap_freelist_size(heap));
-	else
-		ION_PRINT_LOG_OR_SEQ(s, "mm_heap defer free disabled\n");
-
-	ion_heap_debug_show(heap, s, unused);
-
-	ION_PRINT_LOG_OR_SEQ(s, "total: %16zu!!\n", mm_heap_total_memory);
-
-	return 0;
-}
-
 int ion_mm_heap_for_each_pool(int (*fn)(int high, int order, int cache,
 					size_t size)) {
 	struct ion_heap *heap = ion_drv_get_heap(g_ion_device, ION_HEAP_TYPE_MULTIMEDIA, 1);
@@ -864,7 +825,7 @@ struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *unused)
 		heap->cached_pools[i] = pool;
 	}
 
-	heap->heap.debug_show = ion_mm_heap_debug_show;
+	heap->heap.debug_show = ion_heap_debug_show;
 	ion_comm_init();
 	return &heap->heap;
 
