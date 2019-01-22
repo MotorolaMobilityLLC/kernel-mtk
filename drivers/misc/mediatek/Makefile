@@ -100,9 +100,9 @@ endif
 #obj-$(CONFIG_MTK_MEM) += mem/
 #obj-$(CONFIG_MTK_MEMORY_LOWPOWER) += memory-lowpower/
 #obj-$(CONFIG_MTK_CMDQ) += cmdq/
-#obj-$(CONFIG_MTK_BOOT) += boot/
-#obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
-#obj-$(CONFIG_MTK_CHIP) += chip/
+obj-$(CONFIG_MTK_BOOT) += boot/
+obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
+obj-$(CONFIG_MTK_CHIP) += chip/
 #obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
 obj-y += devinfo/
 #obj-$(CONFIG_MTK_LCM) += ext_disp/
