@@ -22,6 +22,9 @@
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
 #include <linux/prefetch.h>
+#ifdef CONFIG_MTK_BOOT
+#include <mt-plat/mtk_boot_common.h>
+#endif
 
 #include <asm/cacheflush.h>
 
@@ -832,7 +835,7 @@ static int mtu3d_probe(struct platform_device *pdev)
 	mu3d_force_on = 1;
 #endif
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_MTK_BOOT
 	if (get_boot_mode() == META_BOOT) {
 		os_printk(K_WARNIN, "in special mode %d\n", get_boot_mode());
 		mu3d_force_on = 1;
