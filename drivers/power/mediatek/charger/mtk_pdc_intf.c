@@ -185,6 +185,9 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *vbus, int *cur, int *
 		if (pd->cap.min_mv[i] < 5000 || pd->cap.max_mv[i] < 5000)
 			continue;
 
+		if (pd->cap.min_mv[i] > 12000 || pd->cap.max_mv[i] > 12000)
+			continue;
+
 		if (min_vbus_idx == -1) {
 			*vbus = pd->cap.max_mv[i];
 			*cur = pd->cap.ma[i];
