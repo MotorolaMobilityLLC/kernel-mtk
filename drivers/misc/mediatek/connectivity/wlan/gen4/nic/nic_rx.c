@@ -2636,7 +2636,7 @@ nicRxGetRcpiValueFromRxv(IN UINT_8 ucRcpiMode, IN P_SW_RFB_T prSwRfb)
 	ucRxNum = HAL_RX_STATUS_GET_RX_NUM(prSwRfb->prRxStatusGroup3);
 
 	if (ucRxNum == 0)
-		ucRcpiValue = ucRcpi0; /*0:1R, means only WF0 is enalbed*/
+		ucRcpiValue = ucRcpi0; /*0:1R, BBP always report RCPI0 at 1R mode*/
 
 	else if (ucRxNum == 1) {
 		switch (ucRcpiMode) {
@@ -2650,6 +2650,10 @@ nicRxGetRcpiValueFromRxv(IN UINT_8 ucRcpiMode, IN P_SW_RFB_T prSwRfb)
 
 		case RCPI_MODE_WF2:
 		case RCPI_MODE_WF3:
+			DBGLOG(RX, WARN,
+				"Rcpi Mode = %d is invalid for device with only 2 antenna, use default rcpi0\n",
+				ucRcpiMode);
+			ucRcpiValue = ucRcpi0;
 			break;
 
 		case RCPI_MODE_AVG: /*Not recommended for CBW80+80*/
