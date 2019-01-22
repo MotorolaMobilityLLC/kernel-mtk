@@ -149,36 +149,36 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 	int ack_data;
 	unsigned int ret = 0;
 
-	/*pr_debug("#@# %s(%d) cmd %x\n", __func__, __LINE__, cmd);*/
+	/* cpufreq_ver("#@# %s(%d) cmd %x\n", __func__, __LINE__, cmd); */
 
 	switch (cmd) {
 	case IPI_DVFS_INIT_PTBL:
 		cdvfs_d->cmd = cmd;
 
-		pr_err("I'd like to initialize sspm DVFS, segment code = %d\n", cdvfs_d->u.set_fv.arg[0]);
+		cpufreq_ver("I'd like to initialize sspm DVFS, segment code = %d\n", cdvfs_d->u.set_fv.arg[0]);
 
 		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 
 	case IPI_DVFS_INIT:
 		cdvfs_d->cmd = cmd;
 
-		pr_err("I'd like to initialize sspm DVFS, segment code = %d\n", cdvfs_d->u.set_fv.arg[0]);
+		cpufreq_ver("I'd like to initialize sspm DVFS, segment code = %d\n", cdvfs_d->u.set_fv.arg[0]);
 
 		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 
@@ -191,78 +191,78 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 
 	case IPI_SET_CLUSTER_ON_OFF:
 		cdvfs_d->cmd = cmd;
 
-		pr_err("I'd like to set cluster%d ON/OFF state to %d)\n",
+		cpufreq_ver("I'd like to set cluster%d ON/OFF state to %d)\n",
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 
 		if (is_in_suspend()) {
 			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-			pr_err("Send with IPI_OPT_LOCK_POLLING\n");
+			cpufreq_ver("Send with IPI_OPT_LOCK_POLLING\n");
 		} else
 			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 
 	case IPI_SET_FREQ:
 		cdvfs_d->cmd = cmd;
 
-		pr_err("I'd like to set cluster%d freq to %d)\n",
+		cpufreq_ver("I'd like to set cluster%d freq to %d)\n",
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 
 		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 #if 0
 	case IPI_SET_VOLT:
 		cdvfs_d->cmd = cmd;
 
-		pr_err("I'd like to set cluster%d volt to %d)\n",
+		cpufreq_ver("I'd like to set cluster%d volt to %d)\n",
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1]);
 
 		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 #endif
 	case IPI_GET_VOLT:
 		cdvfs_d->cmd = cmd;
 
-		pr_err("I'd like to get volt from Buck%d\n", cdvfs_d->u.set_fv.arg[0]);
+		cpufreq_ver("I'd like to get volt from Buck%d\n", cdvfs_d->u.set_fv.arg[0]);
 
 		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
-		pr_err("Get volt = %d\n", ack_data);
+		cpufreq_ver("Get volt = %d\n", ack_data);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		ret = ack_data;
 		break;
@@ -270,19 +270,19 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 	case IPI_GET_FREQ:
 		cdvfs_d->cmd = cmd;
 
-		pr_err("I'd like to get freq from pll%d\n", cdvfs_d->u.set_fv.arg[0]);
+		cpufreq_ver("I'd like to get freq from pll%d\n", cdvfs_d->u.set_fv.arg[0]);
 		if (is_in_suspend()) {
 			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-			pr_err("Send with IPI_OPT_LOCK_POLLING\n");
+			cpufreq_ver("Send with IPI_OPT_LOCK_POLLING\n");
 		} else
 			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 
-		pr_err("Get freq = %d\n", ack_data);
+		cpufreq_ver("Get freq = %d\n", ack_data);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		ret = ack_data;
 		break;
@@ -290,40 +290,40 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 	case IPI_PAUSE_DVFS:
 		cdvfs_d->cmd = cmd;
 
-		pr_err("I'd like to set dvfs enable status to %d\n", cdvfs_d->u.set_fv.arg[0]);
+		cpufreq_ver("I'd like to set dvfs enable status to %d\n", cdvfs_d->u.set_fv.arg[0]);
 
 		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 
 	case IPI_TURBO_MODE:
 		cdvfs_d->cmd = cmd;
 
-		cpufreq_info("I'd like to set turbo mode to %d(%d, %d)\n",
+		cpufreq_ver("I'd like to set turbo mode to %d(%d, %d)\n",
 			cdvfs_d->u.set_fv.arg[0], cdvfs_d->u.set_fv.arg[1], cdvfs_d->u.set_fv.arg[2]);
 
 		if (is_in_suspend()) {
 			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, IPI_OPT_LOCK_POLLING, cdvfs_d, len, &ack_data);
-			pr_err("Send with IPI_OPT_LOCK_POLLING\n");
+			cpufreq_ver("Send with IPI_OPT_LOCK_POLLING\n");
 		} else
 			ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
 
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
+			cpufreq_ver("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			cpufreq_ver("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 
 	default:
-		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
+		cpufreq_ver("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
 
@@ -814,13 +814,13 @@ int cpuhvfs_module_init(void)
 	int r;
 
 	if (!log_repo) {
-		pr_err("FAILED TO PRE-INIT CPUHVFS\n");
+		cpufreq_err("FAILED TO PRE-INIT CPUHVFS\n");
 		return -ENODEV;
 	}
 
 	r = create_cpuhvfs_debug_fs();
 	if (r) {
-		pr_err("FAILED TO CREATE DEBUG FILESYSTEM (%d)\n", r);
+		cpufreq_err("FAILED TO CREATE DEBUG FILESYSTEM (%d)\n", r);
 		return r;
 	}
 
@@ -837,10 +837,10 @@ static int __init cmcu_module_init(void)
 
 	r = platform_driver_register(&_mt_cmcu_pdrv);
 	if (r)
-		pr_err("fail to register cmcu driver @ %s()\n", __func__);
+		cpufreq_err("fail to register sspm driver @ %s()\n", __func__);
 
 	if (!cmcu_probe_done) {
-		pr_err("FAILED TO PROBE CMCU DEVICE\n");
+		cpufreq_err("FAILED TO PROBE SSPM DEVICE\n");
 		return -ENODEV;
 	}
 
