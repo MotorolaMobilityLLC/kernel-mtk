@@ -28,7 +28,6 @@
 
 #define BATCH_TAG					"<BATCHDEV> "
 #define BATCH_FUN(f)				pr_debug(BATCH_TAG"%s\n", __func__)
-#define BATCH_ERR(fmt, args...)	pr_err(BATCH_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define BATCH_LOG(fmt, args...)	pr_debug(BATCH_TAG fmt, ##args)
 #define BATCH_VER(fmt, args...)   pr_debug(BATCH_TAG"%s: "fmt, __func__, ##args)
 
