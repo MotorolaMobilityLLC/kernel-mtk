@@ -645,6 +645,10 @@ struct rq {
 #ifdef CONFIG_SCHED_HMP
 	struct task_struct *migrate_task;
 #endif
+
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+	struct task_struct *vip_cache;
+#endif
 	/* cpu of this runqueue: */
 	int cpu;
 	int online;
@@ -1399,6 +1403,10 @@ extern void sched_max_util_task(int *cpu, int *pid, int *util, int *boost);
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 extern int inc_nr_heavy_running(const char *invoker, struct task_struct *p, int inc, bool ack_cap);
+#endif
+
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+int vip_task_force_migrate(void);
 #endif
 
 extern void init_max_cpu_capacity(struct max_cpu_capacity *mcc);
