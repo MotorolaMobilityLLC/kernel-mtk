@@ -81,7 +81,7 @@ static long device_ioctl(struct file *filp,
 
 	switch (cmd) {
 #ifdef CONFIG_MTK_FPSGO
-#ifdef CONFIG_MACH_MT6771
+#ifdef CONFIG_MTK_FPSGO_V2
 	case FPSGO_FRAME_COMPLETE:
 			if (fpsgo_notify_framecomplete_fp)
 				fpsgo_notify_framecomplete_fp(msgKM->tid, msgKM->frame_time,
@@ -201,9 +201,7 @@ static int __init init_perfctl(void)
 
 	pr_debug(TAG"Start to init perf_ioctl driver\n");
 #ifdef CONFIG_MTK_FPSGO_FBT_UX
-#ifndef CONFIG_MACH_MT6771
 	init_fbc();
-#endif
 #else
 	init_touch_boost();
 #endif

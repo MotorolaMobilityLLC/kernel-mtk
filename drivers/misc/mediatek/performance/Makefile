@@ -40,7 +40,5 @@ ifeq ($(CONFIG_MTK_FPSGO), y)
 endif
 
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/performance/perfmgr/$(MTK_PLATFORM)/),)
-	ifneq ($(CONFIG_MACH_MT6771), y)
 		obj-y += fbc/
-	endif
 endif
