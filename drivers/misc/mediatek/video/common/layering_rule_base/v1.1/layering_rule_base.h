@@ -150,6 +150,7 @@ struct layering_rule_ops {
 	bool (*unset_disp_rsz_attr)(struct disp_layer_info *disp_info,
 								int disp_idx);
 	bool (*adaptive_dc_enabled)(void);
+	bool (*adjust_hrt_level)(struct disp_layer_info *disp_info);
 };
 
 #define HRT_GET_DVFS_LEVEL(hrt_num) (hrt_num & 0xF)
