@@ -32,7 +32,8 @@ void sspm_set_emi_mpu(phys_addr_t base, phys_addr_t size)
 			FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION,
 			FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 			FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION);
-	pr_debug("[SSPM] MPU Start protect SSPM Share region<%d:%08llx:%08llx> %x, %x\n",
+	pr_debug("[SSPM] MPU SSPM Share region<%d:%08llx:%08llx> %x, %x\n",
+			region_info.region, region_info.start, region_info.end,
 			region_info.apc[1], region_info.apc[0]);
 
 	emi_mpu_set_protection(&region_info);
