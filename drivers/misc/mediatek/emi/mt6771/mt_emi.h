@@ -25,7 +25,11 @@
 #define ELM_IRQ_INDEX	1 /* Bianco uses CGM IRQ as ELM IRQ */
 
 /* macro for MPU */
+#ifdef CONFIG_ARM
+#define ENABLE_AP_REGION        0
+#else
 #define ENABLE_AP_REGION	1
+#endif
 #define AP_REGION_ID		31
 
 #define EMI_MPUD0_ST		(CEN_EMI_BASE + 0x160)
