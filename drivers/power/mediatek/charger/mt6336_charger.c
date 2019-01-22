@@ -673,8 +673,11 @@ static int mt6336_set_iterm(struct charger_device *chg_dev, u32 iterm)
 
 static int mt6336_get_eoc(struct charger_device *chr_dev, bool *is_eoc)
 {
+	unsigned short vth_mode;
+
 	*is_eoc = mt6336_get_flag_register_value(MT6336_DA_QI_EOC_STAT_MUX);
-	pr_err("mt6336_get_eoc: %d\n", *is_eoc);
+	vth_mode = mt6336_get_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL);
+	pr_err("mt6336_get_eoc: %d %d\n", *is_eoc, vth_mode);
 	return 0;
 }
 
@@ -686,6 +689,7 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 	unsigned short chg_en;
 	unsigned short state;
 	unsigned short pam_state;
+	unsigned short vth_mode;
 	u32 vpam;
 	u32 iterm;
 
@@ -697,10 +701,11 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 	state = mt6336_get_register_value(MT6336_PMIC_ANA_CORE_DA_RGS13);
 	pam_state = mt6336_get_flag_register_value(MT6336_AD_QI_PAM_MODE);
 	vpam = mt6336_get_mivr(chg_dev);
+	vth_mode = mt6336_get_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL);
 
-	pr_err("[MT6336] ICC:%dmA,ICL:%dmA,VCV:%dmV,Iterm:%dmA,VPAM:%dmV,EN=%d,state=%x,PAM:%d\n",
+	pr_err("ICC:%dmA,ICL:%dmA,VCV:%dmV,Iterm:%dmA,VPAM:%dmV,EN=%d,state=%x,PAM:%d,mode:%d\n",
 		icc * 50 + 500, aicr / 1000, (vcv * 125 + 26000) / 10, iterm / 1000,
-		vpam / 1000, chg_en, state, pam_state);
+		vpam / 1000, chg_en, state, pam_state, vth_mode);
 
 	return 0;
 }
