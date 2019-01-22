@@ -880,7 +880,7 @@ int BattVoltToTemp(int dwVolt)
 	do_div(TRes_temp, (vbif28 - dwVolt));
 	/* bm_debug("[RBAT_PULL_UP_VOLT_BY_BIF] vbif28:%d\n",pmic_get_vbif28_volt()); */
 #else
-	do_div(TRes_temp, (batt_meter_cust_data.rbat_pull_up_volt - dwVolt));
+	do_div(TRes_temp, (RBAT_PULL_UP_VOLT - dwVolt));
 #endif
 
 #ifdef RBAT_PULL_DOWN_R
@@ -1873,11 +1873,11 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		memcpy(&cali_car_tune, &msg->fgd_data[0], sizeof(cali_car_tune));
 #ifdef CALIBRATE_CAR_TUNE_VALUE_BY_META_TOOL
 		bm_notice("[fg_res] cali_car_tune = %d, default = %d, Use [cali_car_tune]\n",
-			cali_car_tune, batt_meter_cust_data.car_tune_value);
+			cali_car_tune, fg_cust_data.car_tune_value);
 		fg_cust_data.car_tune_value = cali_car_tune;
 #else
 		bm_notice("[fg_res] cali_car_tune = %d, default = %d, Use [default]\n",
-			cali_car_tune, batt_meter_cust_data.car_tune_value);
+			cali_car_tune, fg_cust_data.car_tune_value);
 #endif
 	}
 	break;
