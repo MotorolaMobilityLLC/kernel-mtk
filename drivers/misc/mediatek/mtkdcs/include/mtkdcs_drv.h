@@ -39,4 +39,8 @@ enum initial_status {
 	CASCADE_LOWPWR_INTERLEAVE_LOWPWR,
 };
 
+#ifdef CONFIG_MTK_EMI_MPU
+void dump_emi_outstanding_for_md(void);
+#endif
+
 #endif /* _MTKDCS_DRV_H_ */

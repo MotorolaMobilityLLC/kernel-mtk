@@ -272,8 +272,12 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 			mdelay(100);
 			retry--;
 		}
-		if (retry == 0)
+		if (retry == 0) {
+#ifdef CONFIG_MTK_EMI_MPU
+			dump_emi_outstanding_for_md();
+#endif
 			BUG();
+		}
 #ifdef DCS_PROFILE
 		now = sched_clock();
 		t = now - start;
