@@ -327,6 +327,22 @@ int charger_manager_get_pe30_input_current_limit(struct charger_consumer *consum
 	return -EBUSY;
 }
 
+int charger_manager_get_current_charging_type(struct charger_consumer *consumer)
+{
+	struct charger_manager *info = consumer->cm;
+
+	if (info != NULL) {
+	if (mtk_pe20_get_is_connect(info))
+		return 2;
+
+	if (mtk_is_pe30_running(info))
+		return 3;
+	}
+
+	return 0;
+}
+
+
 int register_charger_manager_notifier(struct charger_consumer *consumer,
 	struct notifier_block *nb)
 {
