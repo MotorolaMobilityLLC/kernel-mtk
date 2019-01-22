@@ -461,16 +461,16 @@ static bool __usb_cable_connected(int ops)
 		if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
 			connected = true;
 
-		/* connected according to CONNECTION_OPS */
-		if (ops != CONNECTION_OPS_CHECK)
-			connected = CONNECTION_OPS_CONN ? true : false;
-
 		/* VBUS CHECK to avoid type miss-judge */
 		vbus_exist = mu3d_hal_is_vbus_exist();
 		os_printk(K_INFO, "%s vbus_exist=%d type=%d ops=%d\n",
 				__func__, vbus_exist, chg_type, ops);
 		if (!vbus_exist)
 			connected = false;
+
+		/* connected according to CONNECTION_OPS */
+		if (ops != CONNECTION_OPS_CHECK)
+			connected = (ops == CONNECTION_OPS_CONN ? true : false);
 	}
 
 	/* CMODE CHECK */
