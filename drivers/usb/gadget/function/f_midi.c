@@ -182,7 +182,7 @@ static struct usb_ms_endpoint_descriptor_16 ms_in_desc = {
 };
 
 static struct usb_ss_ep_comp_descriptor midi_ss_comp_desc = {
-	.bLength =      sizeof(hidg_ss_comp_desc),
+	.bLength =      sizeof(midi_ss_comp_desc),
 	.bDescriptorType =  USB_DT_SS_ENDPOINT_COMP,
 };
 
