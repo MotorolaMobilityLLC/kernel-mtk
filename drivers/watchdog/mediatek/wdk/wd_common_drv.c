@@ -56,6 +56,7 @@
 #define warnmsg(msg...) pr_warn(PFX msg)
 #define errmsg(msg...) pr_err(PFX msg)
 
+#define WK_MAX_MSG_SIZE (128)
 #define MIN_KICK_INTERVAL	 1
 #define MAX_KICK_INTERVAL	30
 #define	MRDUMP_SYSRESETB	0
@@ -435,7 +436,7 @@ void wk_proc_exit(void)
 
 }
 
-void kwdt_print_utc(void)
+static void kwdt_print_utc(char *msg_buf, int msg_buf_size)
 {
 	struct rtc_time tm;
 	struct timeval tv = { 0 };
@@ -448,15 +449,15 @@ void kwdt_print_utc(void)
 	rtc_time_to_tm(tv.tv_sec, &tm);
 	tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
 	rtc_time_to_tm(tv_android.tv_sec, &tm_android);
-	pr_debug
-	    ("[thread:%d][RT:%lld] %d-%02d-%02d %02d:%02d:%02d.%u UTC;"
-	     "android time %d-%02d-%02d %02d:%02d:%02d.%03d\n",
-	     current->pid, sched_clock(), tm.tm_year + 1900, tm.tm_mon + 1,
-	     tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
-	     (unsigned int)tv.tv_usec, tm_android.tm_year + 1900,
-	     tm_android.tm_mon + 1, tm_android.tm_mday, tm_android.tm_hour,
-	     tm_android.tm_min, tm_android.tm_sec,
-	     (unsigned int)tv_android.tv_usec);
+	snprintf(msg_buf, msg_buf_size,
+		"[thread:%d][RT:%lld] %d-%02d-%02d %02d:%02d:%02d.%u UTC;"
+		"android time %d-%02d-%02d %02d:%02d:%02d.%03d\n",
+		current->pid, sched_clock(), tm.tm_year + 1900, tm.tm_mon + 1,
+		tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+		(unsigned int)tv.tv_usec, tm_android.tm_year + 1900,
+		tm_android.tm_mon + 1, tm_android.tm_mday, tm_android.tm_hour,
+		tm_android.tm_min, tm_android.tm_sec,
+		(unsigned int)tv_android.tv_usec);
 }
 
 static int kwdt_thread(void *arg)
@@ -465,6 +466,7 @@ static int kwdt_thread(void *arg)
 	int cpu = 0;
 	int local_bit = 0, loc_need_config = 0, loc_timeout = 0;
 	struct wd_api *loc_wk_wdt = NULL;
+	char msg_buf[WK_MAX_MSG_SIZE];
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	set_current_state(TASK_INTERRUPTIBLE);
@@ -475,6 +477,8 @@ static int kwdt_thread(void *arg)
 			pr_info("[wdk] kthread_should_stop do !!\n");
 			break;
 		}
+
+		msg_buf[0] = '\0';
 
 		spin_lock(&lock);
 		loc_wk_wdt = g_wd_api;
@@ -518,19 +522,33 @@ static int kwdt_thread(void *arg)
 						/* aee_rr_rec_wdk_kick_jiffies(jiffies); */
 					}
 
-					pr_debug("[wdk] c:%d,lb:0x%x,cb:0x%x,%d,%d,%lld,[%lld]\n",
-					     cpu, local_bit, wk_check_kick_bit(), lasthpg_cpu, lasthpg_act,
-					     lasthpg_t, sched_clock());
+					/*
+					 * do not print message with spinlock held to avoid bulk of delayed printk
+					 * happens here
+					 */
+					snprintf(msg_buf, WK_MAX_MSG_SIZE,
+						"[wdk-c] cpu=%d,lbit=0x%x,cbit=0x%x,%d,%d,%lld,[%lld]\n",
+						cpu, local_bit, wk_check_kick_bit(), lasthpg_cpu, lasthpg_act,
+						lasthpg_t, sched_clock());
 
 					if (local_bit == wk_check_kick_bit()) {
-						printk_deferred("[wdk] kick wdt [%lld]\n",
-								sched_clock());
+						msg_buf[5] = 'k';
 						mtk_wdt_restart(WD_TYPE_NORMAL);	/* for KICK external wdt */
 						local_bit = 0;
 					}
 
 					kick_bit = local_bit;
 					spin_unlock(&lock);
+
+					/*
+					 * [wdt-c]: mark local bit only.
+					 * [wdt-k]: kick watchdog actaully, this log is more important thus
+					 *          using printk_deferred to ensure being printed.
+					 */
+					if (msg_buf[5] != 'k')
+						pr_debug("%s", msg_buf);
+					else
+						printk_deferred("%s", msg_buf);
 
 #ifdef CONFIG_LOCAL_WDT
 					printk_deferred("[wdk] cpu:%d, kick local wdt,RT[%lld]\n",
@@ -558,11 +576,19 @@ static int kwdt_thread(void *arg)
 #endif
 				/* limit the rtc time update frequency */
 				spin_lock(&lock);
+				msg_buf[0] = '\0';
 				if (time_after(jiffies, rtc_update)) {
 					rtc_update = jiffies + (1 * HZ);
-					kwdt_print_utc();
+					kwdt_print_utc(msg_buf, WK_MAX_MSG_SIZE);
 				}
 				spin_unlock(&lock);
+
+				/*
+				 * do not print message with spinlock held to avoid bulk of delayed printk
+				 * happens here
+				 */
+				if (msg_buf[0] != '\0')
+					pr_debug("%s", msg_buf);
 			}
 		}
 
