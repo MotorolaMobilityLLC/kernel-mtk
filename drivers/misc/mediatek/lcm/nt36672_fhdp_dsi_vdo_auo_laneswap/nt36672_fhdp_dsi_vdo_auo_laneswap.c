@@ -653,7 +653,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 420;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 493;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 480;	/* this value must be in MTK suggested table */
 #endif
 	params->dsi.PLL_CK_CMD = 420;
 	params->dsi.PLL_CK_VDO = 440;
