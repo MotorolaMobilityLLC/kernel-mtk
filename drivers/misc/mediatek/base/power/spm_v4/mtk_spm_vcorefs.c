@@ -17,8 +17,7 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/of_fdt.h>
-/* #include <mt-plat/mtk_secure_api.h> */
-#include <mtk_secure_api.h>
+#include <mt-plat/mtk_secure_api.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -41,10 +40,7 @@
 #include <mmdvfs_mgr.h>
 #endif
 
-#if 0
-#define is_dvfs_in_progress()    (spm_read(DVFS_LEVEL) & 0x1F)
-#endif
-
+#define is_dvfs_in_progress()    (spm_read(DVFSRC_LEVEL) & 0xFFFF)
 #define get_dvfs_level()         (spm_read(DVFSRC_LEVEL) >> 16)
 
 /*
@@ -361,6 +357,27 @@ int spm_vcorefs_get_opp(void)
 	return level;
 }
 
+static void dvfsrc_hw_policy_mask(bool force)
+{
+	if (force) {
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 0));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 4));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 8));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 12));
+		spm_write(DVFSRC_VCORE_REQUEST, spm_read(DVFSRC_VCORE_REQUEST) & ~(0xf << 12));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 16));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 3));
+	} else {
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 0));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 4));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x2 << 8));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 12));
+		spm_write(DVFSRC_VCORE_REQUEST, spm_read(DVFSRC_VCORE_REQUEST) | (0x5 << 12));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x9 << 16));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 3));
+	}
+}
+
 static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 {
 	int r = 0;
@@ -369,9 +386,21 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	u32 emi_req[NUM_OPP] = {0x2, 0x2, 0x1, 0x0};
 	u32 md_req[NUM_OPP] = {0x0, 0x0, 0x0, 0x0};
 	u32 dvfsrc_level[NUM_OPP] = {0x8, 0x4, 0x2, 0x1};
-#if 0
+
+	/* FIXME */
+	if (0) {
+		/* LP4/LP3 1CH */
+		vcore_req[1] = 0x1;
+		emi_req[1] = 0x1;
+	}
+
+	if (fix)
+		dvfsrc_hw_policy_mask(1);
+	else
+		dvfsrc_hw_policy_mask(0);
+#if 1
 	/* check DVFS idle */
-	r = wait_spm_complete_by_condition(is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
+	r = wait_spm_complete_by_condition(is_dvfs_in_progress() == 0, SPM_DVFS_TIMEOUT);
 	if (r < 0) {
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		/* aee_kernel_warning("SPM Warring", "Vcore DVFS timeout warning"); */
@@ -422,13 +451,25 @@ static void dvfsrc_init(void)
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	spm_write(DVFSRC_LEVEL_LABEL_0_1, 0x00100000);
-	spm_write(DVFSRC_LEVEL_LABEL_2_3, 0x00210020);
-	spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01200110);
 	spm_write(DVFSRC_LEVEL_LABEL_6_7, 0x02100121);
-	spm_write(DVFSRC_LEVEL_LABEL_8_9, 0x02210220);
-	spm_write(DVFSRC_LEVEL_LABEL_10_11, 0x03200310);
 	spm_write(DVFSRC_LEVEL_LABEL_12_13, 0x04210321);
 	spm_write(DVFSRC_LEVEL_LABEL_14_15, 0x04210421);
+
+	/* FIXME */
+	if (1) {
+		/* LP4 2CH */
+		spm_write(DVFSRC_LEVEL_LABEL_2_3, 0x00210020);
+		spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01200110);
+		spm_write(DVFSRC_LEVEL_LABEL_8_9, 0x02210220);
+		spm_write(DVFSRC_LEVEL_LABEL_10_11, 0x03200310);
+	} else {
+		/* LP4/LP3 1CH */
+		spm_write(DVFSRC_LEVEL_LABEL_2_3, 0x00210011);
+		spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01110110);
+		spm_write(DVFSRC_LEVEL_LABEL_8_9, 0x02210211);
+		spm_write(DVFSRC_LEVEL_LABEL_10_11, 0x03110310);
+	}
+
 	spm_write(DVFSRC_RSRV_1, 0x00000004);
 	spm_write(DVFSRC_TIMEOUT_NEXTREQ, 0x00000011);
 
