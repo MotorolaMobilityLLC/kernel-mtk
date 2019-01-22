@@ -975,6 +975,11 @@ int get_rac(void)
 	return ptim_rac_val_avg;
 }
 
+int get_imix(void)
+{
+	return ptim_imix;
+}
+
 int get_dlpt_imix_spm(void)
 {
 #if defined(CONFIG_MTK_SMART_BATTERY)
