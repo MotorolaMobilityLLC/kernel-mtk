@@ -143,7 +143,8 @@ int queue_dc_command(struct pd_direct_chrg *dc, uint32_t vid, int op, int cmd, c
 
 	ret = pd_send_vdm(dc->hba, vid, op|cmd, data, cnt);
 	if (!ret) {
-		complete(&dc->hba->event);
+		dc->hba->rx_event = true;
+		wake_up(&dc->hba->wq);
 		if (wait_event_timeout(dc->wq, dc->data_in, msecs_to_jiffies(MTK_VDM_TIMEOUT)) > 0) {
 			if (DC_VDO_ACTION(dc->vdm_payload[0]) != OP_ACK)
 				pr_err("%s return action error\n", __func__);

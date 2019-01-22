@@ -48,7 +48,7 @@
 /* configurations */
 /*platform dependent*/
 #define USE_AUXADC 0 /*set to 1 if AUXADC is used*/
-#define CC_STANDALONE_COMPLIANCE 0 /*set to 1 use CC only. No related to USB function*/
+#define COMPLIANCE 0 /*set to 1 use CC only. No related to USB function*/
 #define SUPPORT_PD 1
 #define VDM_MODE
 #define AUTO_SEND_HR
@@ -308,8 +308,10 @@ struct typec_hba {
 	unsigned int pd_irq;
 	int id;
 
+#if COMPLIANCE
 	bool is_lowq;
 	struct mt6336_ctrl *core_ctrl;
+#endif
 
 	struct mutex ioctl_lock;
 	struct mutex typec_lock;
@@ -381,8 +383,9 @@ struct typec_hba {
 	/* Time for source recovery after hard reset */
 	unsigned long src_recover;
 
-	struct completion tx_event;
-	struct completion event;
+	wait_queue_head_t wq;
+	bool tx_event;
+	bool rx_event;
 #if RESET_STRESS_TEST
 	struct completion ready;
 #endif

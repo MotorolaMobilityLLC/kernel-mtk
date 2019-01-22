@@ -172,7 +172,8 @@ static enum hrtimer_restart timeout_hrtimer_callback(struct hrtimer *timer)
 
 	hba->flags |= PD_FLAGS_TIMEOUT;
 
-	complete(&hba->event);
+	hba->rx_event = true;
+	wake_up(&hba->wq);
 
 	return HRTIMER_NORESTART;
 }
@@ -312,9 +313,9 @@ void pd_init(struct typec_hba *hba)
 	pd_hba = hba;
 	hba->pd_comm_enabled = 1;
 
-	init_completion(&hba->event);
-
-	init_completion(&hba->tx_event);
+	init_waitqueue_head(&hba->wq);
+	hba->tx_event = false;
+	hba->rx_event = false;
 
 	pd_set_default_param(hba);
 
@@ -374,12 +375,16 @@ void pd_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uint16_t c
 	timer_event = (pd_is1 & PD_TIMER0_TIMEOUT_INTR);
 
 	/* TX events */
-	if (tx_event)
-		complete(&hba->tx_event);
+	if (tx_event) {
+		hba->tx_event = true;
+		wake_up(&hba->wq);
+	}
 
 	/* CC & RX & timer events */
-	if (cc_event || rx_event || timer_event)
-		complete(&hba->event);
+	if (cc_event || rx_event || timer_event) {
+		hba->rx_event = true;
+		wake_up(&hba->wq);
+	}
 
 	if (hba->dbg_lvl >= TYPEC_DBG_LVL_2)
 		dev_err(hba->dev, "%s pd0=0x%X, pd1=0x%X cc0=0x%X cc2=0x%X %s %s %s %s\n", __func__,
@@ -488,7 +493,7 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	for (i = 0; i < cnt; i++)
 		typec_writedw(hba, data[i], (PD_TX_DATA_OBJECT0_0+i*4));
 
-	reinit_completion(&hba->tx_event);
+	hba->tx_event = false;
 
 	/*send message*/
 	typec_set(hba, PD_TX_START, PD_TX_CTRL);
@@ -507,8 +512,7 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	if (hba->pd_is0 & PD_TX_EVENTS0 || hba->pd_is1 & PD_TX_EVENTS1)
 		dev_err(hba->dev, "%s unhandled events pd_is0: %x, pd_is1: %x", __func__,
 			hba->pd_is0 & PD_TX_EVENTS0, hba->pd_is1 & PD_TX_EVENTS1);
-
-	if (wait_for_completion_timeout(&hba->tx_event, msecs_to_jiffies(PD_TX_TIMEOUT)))	{
+	if (wait_event_timeout(hba->wq, hba->tx_event, msecs_to_jiffies(PD_TX_TIMEOUT))) {
 		/*clean up TX events*/
 		mutex_lock(&hba->typec_lock);
 
@@ -1597,11 +1601,12 @@ static void pd_vdm_send_state_machine(struct typec_hba *hba)
 		if (pdo_busy(hba))
 			break;
 
-		if ((hba->vdm_state == VDM_STATE_READY) && (hba->pd_is0 & PD_RX_SUCCESS0)) {
-			dev_err(hba->dev, "New MSG is coming in. Skip this MSG.\n");
-			hba->vdm_state = VDM_STATE_DONE;
-			return;
-		}
+		if (hba->vdm_state == VDM_STATE_READY)
+			if ((hba->pd_is0 & PD_RX_SUCCESS0) || (typec_read8(hba, PD_INTR_0+1) & 0x10)) {
+				dev_err(hba->dev, "New MSG is coming in. Skip this MSG.\n");
+				hba->vdm_state = VDM_STATE_DONE;
+				return;
+			}
 
 		/* Prepare and send VDM */
 		header = PD_HEADER(PD_DATA_VENDOR_DEF, hba->power_role,
@@ -1818,7 +1823,8 @@ int pd_task(void *data)
 		mutex_unlock(&hba->typec_lock);
 
 		if (!missing_event && timeout) {
-			ret = wait_for_completion_interruptible_timeout(&hba->event, msecs_to_jiffies(timeout));
+			hba->rx_event = false;
+			ret = wait_event_timeout(hba->wq, hba->rx_event, msecs_to_jiffies(timeout));
 		}
 
 		/* latch events */
@@ -2101,7 +2107,7 @@ int pd_task(void *data)
 					 * at PD_STATE_SRC_NEGOTIATE, the system overhead costs
 					 * 5 more ms.
 					 */
-					set_state_timeout(hba, PD_T_SENDER_RESPONSE-5, PD_STATE_HARD_RESET_SEND);
+					set_state_timeout(hba, PD_T_SENDER_RESPONSE-3, PD_STATE_HARD_RESET_SEND);
 					timeout = 0;
 					hard_reset_count = 0;
 					caps_count = 0;
@@ -2128,7 +2134,7 @@ int pd_task(void *data)
 			/* wait for a "Request" message */
 			if (state_changed(hba)) {
 				if (hba->last_state != PD_STATE_SRC_DISCOVERY)
-					set_state_timeout(hba, PD_T_SENDER_RESPONSE-5, PD_STATE_HARD_RESET_SEND);
+					set_state_timeout(hba, PD_T_SENDER_RESPONSE-3, PD_STATE_HARD_RESET_SEND);
 			}
 			break;
 
@@ -2570,7 +2576,7 @@ int pd_task(void *data)
 				 * But the system has delay. The hard reset would be issued after 30ms to
 				 * violate the spec. So shorten timeout value.
 				 */
-				set_state_timeout(hba, PD_T_SENDER_RESPONSE-7, PD_STATE_HARD_RESET_SEND);
+				set_state_timeout(hba, PD_T_SENDER_RESPONSE-3, PD_STATE_HARD_RESET_SEND);
 			}
 			break;
 
