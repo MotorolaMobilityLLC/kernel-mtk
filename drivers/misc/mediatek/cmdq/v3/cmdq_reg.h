@@ -44,7 +44,8 @@
 #define CMDQ_SYNC_TOKEN_VAL          (GCE_BASE_VA + 0x064)
 #define CMDQ_SYNC_TOKEN_UPD          (GCE_BASE_VA + 0x068)
 
-#define CMDQ_PREFETCH_GSIZE         (GCE_BASE_VA + 0x0C0)
+#define CMDQ_PREFETCH_GSIZE          (GCE_BASE_VA + 0x0C0)
+#define CMDQ_TPR_MASK                (GCE_BASE_VA + 0x0D0)
 
 #define CMDQ_GPR_R32(id)             (GCE_BASE_VA + (0x004 * id) + 0x80)
 #define CMDQ_GPR_R32_PA(id)          (GCE_BASE_PA + (0x004 * id) + 0x80)
@@ -64,15 +65,14 @@
 #define CMDQ_THR_PREFETCH(id)        (GCE_BASE_VA + (0x080 * id) + 0x144)
 #define CMDQ_THR_INST_CYCLES(id)     (GCE_BASE_VA + (0x080 * id) + 0x150)
 #define CMDQ_THR_INST_THRESX(id)     (GCE_BASE_VA + (0x080 * id) + 0x154)
+#define CMDQ_THR_SPR0(id)            (GCE_BASE_VA + (0x080 * id) + 0x160)
+#define CMDQ_THR_SPR1(id)            (GCE_BASE_VA + (0x080 * id) + 0x164)
+#define CMDQ_THR_SPR2(id)            (GCE_BASE_VA + (0x080 * id) + 0x168)
+#define CMDQ_THR_SPR3(id)            (GCE_BASE_VA + (0x080 * id) + 0x16c)
 
 #define CMDQ_THR_EXEC_CNT_PA(id)     (GCE_BASE_PA + (0x080 * id) + 0x128)
 
-#ifdef CMDQ_RECORD_V3
-#define CMDQ_TPR_MASK             (GCE_BASE_VA + 0xd0)
-#endif
-
 #define CMDQ_GCE_END_ADDR_PA         (GCE_BASE_PA + 0xFF0)
-
 #define CMDQ_APXGPT2_COUNT           (cmdq_dev_get_APXGPT2_count())
 
 #define CMDQ_REG_GET32(addr)         (readl((void *)addr) & 0xFFFFFFFF)

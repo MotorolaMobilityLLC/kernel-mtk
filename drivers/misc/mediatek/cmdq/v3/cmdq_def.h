@@ -100,19 +100,26 @@
 #undef CMDQ_SECURE_PATH_NORMAL_IRQ
 #endif
 
-#ifdef CMDQ_RECORD_V3
+typedef u64 CMDQ_VARIABLE;
 #define CMDQ_SPR_USE_FOR_BACKUP			(3)
 #define CMDQ_THREAD_SPR_NUMBER			(3)
-#define CMDQ_THREAD_CPR_NUMBER			(8)
+#define CMDQ_THREAD_CPR_NUMBER			(4)
 #define CMDQ_THREAD_MAX_LOCAL_VARIABLE	(CMDQ_THREAD_SPR_NUMBER+CMDQ_THREAD_CPR_NUMBER)
-#define CMDQ_TASK_DUMMY_DELAY_VARIABLE	(CMDQ_THREAD_MAX_LOCAL_VARIABLE+1)
+#define CMDQ_TASK_DUMMY_DELAY_START		(CMDQ_THREAD_MAX_LOCAL_VARIABLE+1)
+#define CMDQ_TASK_DUMMY_DELAY_DURATION	(CMDQ_THREAD_MAX_LOCAL_VARIABLE+2)
+#define CMDQ_TASK_DUMMY_DELAY_RESULT	(CMDQ_THREAD_MAX_LOCAL_VARIABLE+3)
 #define CMDQ_TPR_ID						(56)
 #define CMDQ_CPR_STRAT_ID				(0x8000)
+#define CMDQ_SRAM_STRAT_ADDR			(0x0)
+#define CMDQ_CPR_SIZE					(0x2df)
 #define CMDQ_CPR_DELAY_STRAT_ID			(CMDQ_MAX_THREAD_COUNT*CMDQ_THREAD_CPR_NUMBER+CMDQ_CPR_STRAT_ID)
 #define CMDQ_GPR_V3_OFFSET				(0x20)
 #define CMDQ_DELAY_THREAD_ID			(15)
-#define CMDQ_DELAY_TPR_MASK_VALUE		(1<<5)
-#endif
+#define CMDQ_DELAY_TPR_MASK_VALUE		(11)
+#define CMDQ_SRAM_ADDR(CPR_OFFSRT)		(((CMDQ_SRAM_STRAT_ADDR + CPR_OFFSRT / 2) << 3) + 0x001)
+#define CMDQ_CPR_OFFSET(SRAM_ADDR)		(((SRAM_ADDR >> 3) - CMDQ_SRAM_STRAT_ADDR) * 2)
+#define CMDQ_INVALID_CPR_OFFSET			(0xFFFFFFFF)
+#define CMDQ_MAX_SRAM_OWNER_NAME		(32)
 
 /* #define CMDQ_DUMP_GIC (0) */
 /* #define CMDQ_PROFILE_MMP (0) */
@@ -202,6 +209,8 @@ enum CMDQ_SCENARIO_ENUM {
 	CMDQ_SCENARIO_KERNEL_CONFIG_GENERAL = 37,
 
 	CMDQ_SCENARIO_TIMER_LOOP = 38,
+	CMDQ_SCENARIO_MOVE = 39,
+	CMDQ_SCENARIO_SRAM_LOOP = 40,
 
 	CMDQ_MAX_SCENARIO_COUNT	/* ALWAYS keep at the end */
 };
@@ -405,6 +414,10 @@ struct cmdqCommandStruct {
 	struct cmdqSecDataStruct secData;
 	/* [IN] CPR position */
 	struct cmdq_v3_replace_struct replace_instr;
+	/* [IN] use SRAM buffer or not */
+	bool use_sram_buffer;
+	/* [IN] SRAM buffer owner name */
+	char sram_owner_name[CMDQ_MAX_SRAM_OWNER_NAME];
 	/* [IN] set to non-zero to enable register debug dump. */
 	uint32_t debugRegDump;
 	/* [Reserved] This is for CMDQ driver usage itself. Not for client. Do not access this field from User Space */

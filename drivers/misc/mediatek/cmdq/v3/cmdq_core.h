@@ -160,6 +160,13 @@ if (1) {	\
 	cmdq_core_save_first_dump("[CMDQ][ERR]"string, ##args); \
 }			\
 }
+
+#define CMDQ_CHECK_AND_BREAK_STATUS(status)\
+{					\
+if (status < 0)		\
+	break;			\
+}
+
 #ifdef CMDQ_AEE_READY
 #define CMDQ_AEE_EX(DB_OPTs, tag, string, args...) \
 {		\
@@ -363,7 +370,6 @@ enum CMDQ_CODE_ENUM {
 	CMDQ_CODE_JUMP_C_RELATIVE = 0xb1,	/* conditional jump (related) */
 };
 
-#ifdef CMDQ_RECORD_V3
 enum CMDQ_CONDITION_ENUM {
 	CMDQ_CONDITION_ERROR = -1,
 
@@ -389,7 +395,6 @@ enum CMDQ_LOGIC_ENUM {
 	CMDQ_LOGIC_LEFT_SHIFT = 12,
 	CMDQ_LOGIC_RIGHT_SHIFT = 13
 };
-#endif
 
 enum CMDQ_LOG_LEVEL_ENUM {
 	CMDQ_LOG_LEVEL_NORMAL = 0,
@@ -539,6 +544,10 @@ struct TaskStruct {
 	struct iwcCmdqSecStatus_t *secStatus;
 	/* For v3 CPR use */
 	struct cmdq_v3_replace_struct replace_instr;
+	/* use SRAM or not */
+	bool use_sram_buffer;
+	/* Original PA address of SRAM buffer content */
+	u32 sram_base;
 
 	/* For statistics & debug */
 	CMDQ_TIME submit;	/* ASYNC: task submit time (as soon as task acquired) */
@@ -694,6 +703,19 @@ struct ResourceUnitStruct {
 	struct delayed_work delayCheckWork;	/* Delay Work item when delay check is used */
 };
 
+/*
+ * SRAM chunk structure
+ *	allocated_start: allocated start address
+ *	allocated_size: allocated SRAM size
+ *	allocated_owner: allocate owner name
+ */
+struct SRAMChunk {
+	struct list_head list_node;
+	u32 start_offset;
+	size_t count;
+	char owner[CMDQ_MAX_SRAM_OWNER_NAME];
+};
+
 struct ContextStruct {
 	/* Task information */
 	struct kmem_cache *taskCache;	/* TaskStruct object cache */
@@ -735,6 +757,10 @@ struct ContextStruct {
 
 	/* Resource manager information */
 	struct list_head resourceList;	/* all resource list */
+
+	/* SRAM manager information */
+	struct list_head sram_allocated_list;	/* all allocated SRAM chunk */
+	size_t allocated_sram_count;
 
 #ifdef CMDQ_INSTRUCTION_COUNT
 	/* GCE instructions count information */
@@ -908,6 +934,14 @@ extern "C" {
 	struct cmdqSecSharedMemoryStruct *cmdq_core_get_secure_shared_memory(void);
 
 /*
+ * Allocate/Free GCE SRAM
+ */
+	s32 cmdq_core_alloc_sram_buffer(size_t size, const char *owner_name, u32 *out_sram_addr);
+	void cmdq_core_free_sram_buffer(u32 sram_addr, size_t size);
+	size_t cmdq_core_get_free_sram_size(void);
+	void cmdq_core_dump_sram(void);
+
+/*
  * GCE capability
  */
 	uint32_t cmdq_core_subsys_to_reg_addr(uint32_t arg_a);
@@ -948,12 +982,15 @@ extern "C" {
 	ssize_t cmdqCoreWriteProfileEnable(struct device *dev, struct device_attribute *attr,
 					   const char *buf, size_t size);
 
+	void cmdq_core_dump_thread(s32 thread, const char *tag);
 	void cmdq_core_dump_tasks_info(void);
 	void cmdq_core_dump_secure_metadata(struct cmdqSecDataStruct *pSecData);
 	int32_t cmdqCoreDebugRegDumpBegin(uint32_t taskID, uint32_t *regCount,
 					  uint32_t **regAddress);
 	int32_t cmdqCoreDebugRegDumpEnd(uint32_t taskID, uint32_t regCount, uint32_t *regValues);
 	int32_t cmdqCoreDebugDumpCommand(struct TaskStruct *pTask);
+	void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize);
+	void cmdq_delay_dump_thread(void);
 	int32_t cmdqCoreQueryUsage(int32_t *pCount);
 
 	int cmdqCorePrintRecordSeq(struct seq_file *m, void *v);

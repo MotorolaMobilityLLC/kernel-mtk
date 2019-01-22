@@ -416,10 +416,8 @@ int cmdq_virtual_get_thread_index(enum CMDQ_SCENARIO_ENUM scenario, const bool s
 		return 15;
 #endif
 
-#ifdef CMDQ_RECORD_V3
 	if (scenario == CMDQ_SCENARIO_TIMER_LOOP)
 		return 15;
-#endif
 
 	if (!secure)
 		return cmdq_get_func()->dispThread(scenario);
