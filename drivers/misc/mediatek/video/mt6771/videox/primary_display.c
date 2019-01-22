@@ -1974,6 +1974,9 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 	struct cmdqRecStruct *cmdq_handle = NULL;
 	struct cmdqRecStruct *cmdq_wait_handle = NULL;
 	struct disp_ddp_path_config *pconfig = NULL;
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	int max_hrt_level;
+#endif
 
 	/* create config thread */
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
@@ -1993,7 +1996,8 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 	}
 	cmdqRecReset(cmdq_wait_handle);
 #ifdef MTK_FB_MMDVFS_SUPPORT
-	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_NUM - 1);
+	max_hrt_level = layering_rule_get_max_hrt_level();
+	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, max_hrt_level);
 #endif
 	/* configure config thread */
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
