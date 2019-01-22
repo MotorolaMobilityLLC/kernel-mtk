@@ -81,7 +81,7 @@ void xgf_trace(const char *fmt, ...)
 }
 EXPORT_SYMBOL(xgf_trace);
 
-static inline void xgf_timer_systrace(const struct hrtimer * const timer,
+static inline void xgf_timer_systrace(const void * const timer,
 				      int value)
 {
 	xgf_lockprove(__func__);
@@ -144,13 +144,13 @@ static void xgf_update_tick(struct xgf_proc *proc, struct xgf_tick *tick,
 }
 
 static struct xgf_timer *xgf_get_timer_rec(
-		const struct hrtimer * const timer,
+		const void * const timer,
 		struct xgf_proc *proc, int force)
 {
 	struct rb_node **p = &proc->timer_rec.rb_node;
 	struct rb_node *parent = NULL;
 	struct xgf_timer *xt = NULL;
-	const struct hrtimer *ref;
+	const void *ref;
 
 	xgf_lockprove(__func__);
 
@@ -226,7 +226,7 @@ static inline void xgf_blacked_recycle(struct rb_root *root)
 /**
  * is_valid_sleeper
  */
-static int is_valid_sleeper(const struct hrtimer * const timer,
+static int is_valid_sleeper(const void * const timer,
 			    struct xgf_proc *proc,
 			    unsigned long long now_ts)
 {
@@ -267,7 +267,7 @@ static int is_valid_sleeper(const struct hrtimer * const timer,
 /**
  * xgf_timer_fire - called when timer invocation
  */
-static void xgf_timer_fire(const struct hrtimer * const timer,
+static void xgf_timer_fire(const void * const timer,
 			   struct xgf_proc *proc)
 {
 	struct xgf_timer *xt;
@@ -294,7 +294,7 @@ static void xgf_timer_fire(const struct hrtimer * const timer,
 	hlist_add_head(&xt->hlist, &proc->timer_head);
 }
 
-static void xgf_update_timer_rec(const struct hrtimer * const timer,
+static void xgf_update_timer_rec(const void * const timer,
 		struct xgf_proc *proc, unsigned long long now_ts)
 {
 	struct xgf_timer *xt;
@@ -311,7 +311,7 @@ static void xgf_update_timer_rec(const struct hrtimer * const timer,
 /**
  * xgf_timer_expire - called when timer expires
  */
-static void xgf_timer_expire(const struct hrtimer * const timer,
+static void xgf_timer_expire(const void * const timer,
 			     struct xgf_proc *proc)
 {
 	struct xgf_timer *iter;
@@ -337,7 +337,7 @@ static void xgf_timer_expire(const struct hrtimer * const timer,
 	}
 }
 
-static void xgf_timer_remove(const struct hrtimer * const timer,
+static void xgf_timer_remove(const void * const timer,
 			     struct xgf_proc *proc)
 {
 	struct xgf_timer *iter;
@@ -561,7 +561,6 @@ static void xgf_qudeq_exit(struct xgf_proc *proc, struct xgf_tick *ts,
 		*time = 0ULL;
 	else
 		*time = ts->ts - start;
-	fpsgo_systrace_c_xgf(proc->parent, *time, "renew qudeq time");
 }
 
 void fpsgo_ctrl2xgf_switch_xgf(int val)
@@ -583,9 +582,9 @@ void fpsgo_fstb2xgf_set_idle(void)
 	xgf_unlock(__func__);
 }
 
-void fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd)
+int fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd, unsigned long long *sleep_time)
 {
-	int ret = 0;
+	int ret = XGF_NOTIFY_OK;
 	struct xgf_proc *p, **pproc;
 	struct xgf_proc *iter;
 	int proc_cnt = 0;
@@ -596,40 +595,43 @@ void fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd)
 	xgf_lock(__func__);
 	if (!xgf_is_enable()) {
 		xgf_unlock(__func__);
-		return;
+		return XGF_DISABLE;
 	}
 
 	switch (cmd) {
 
 	case XGF_QUEUE_START:
-
 		pproc = &p;
-		ret = xgf_get_proc(rpid, pproc, 0);
-		if (ret)
+		if (xgf_get_proc(rpid, pproc, 0)) {
+			ret = XGF_THREAD_NOT_FOUND;
 			goto qudeq_notify_err;
+		}
 
 		hlist_for_each_entry(timer_iter, &p->timer_head, hlist)
 			timer_cnt++;
-		fpsgo_systrace_c_xgf(-1000, timer_cnt, "timer_cnt");
+		fpsgo_systrace_c_xgf(rpid, timer_cnt, "timer_cnt");
 
 		dur = xgf_qudeq_enter(rpid, p, &p->deque, &p->queue);
-		fpsgo_systrace_c_xgf(p->parent, dur,
+		fpsgo_systrace_c_xgf(rpid, dur,
 				"renew sleep time");
 		p->slptime += dur;
-		fpsgo_systrace_c_xgf(-1000, p->slptime,
+		fpsgo_systrace_c_xgf(rpid, p->slptime,
 				"frame sleep time");
-		p->slptime_ged = p->slptime;
+		*sleep_time = p->slptime;
 
 		hlist_for_each_entry(iter, &xgf_procs, hlist)
 			proc_cnt++;
-		fpsgo_systrace_c_xgf(-1000, proc_cnt, "proc_cnt");
+		fpsgo_systrace_c_xgf(rpid, proc_cnt, "proc_cnt");
+
+		ret = XGF_SLPTIME_OK;
 		break;
 
 	case XGF_QUEUE_END:
 		pproc = &p;
-		ret = xgf_get_proc(rpid, pproc, 1);
-		if (ret)
+		if (xgf_get_proc(rpid, pproc, 1)) {
+			ret = XGF_THREAD_NOT_FOUND;
 			goto qudeq_notify_err;
+		}
 
 		xgf_qudeq_exit(p, &p->queue, &p->quetime);
 		/* reset for safety */
@@ -637,14 +639,14 @@ void fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd)
 		break;
 
 	case XGF_DEQUEUE_START:
-
 		pproc = &p;
-		ret = xgf_get_proc(rpid, pproc, 0);
-		if (ret)
+		if (xgf_get_proc(rpid, pproc, 0)) {
+			ret = XGF_THREAD_NOT_FOUND;
 			goto qudeq_notify_err;
+		}
 
 		dur = xgf_qudeq_enter(rpid, p, &p->queue, &p->deque);
-		fpsgo_systrace_c_xgf(p->parent, dur,
+		fpsgo_systrace_c_xgf(rpid, dur,
 				"renew sleep time");
 		p->slptime += dur;
 		xgf_blacked_recycle(&p->timer_rec);
@@ -652,44 +654,20 @@ void fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd)
 
 	case XGF_DEQUEUE_END:
 		pproc = &p;
-		ret = xgf_get_proc(rpid, pproc, 0);
-		if (ret)
+		if (xgf_get_proc(rpid, pproc, 0)) {
+			ret = XGF_THREAD_NOT_FOUND;
 			goto qudeq_notify_err;
+		}
 
 		xgf_qudeq_exit(p, &p->deque, &p->deqtime);
 		break;
 
 	default:
+		ret = XGF_PARAM_ERR;
 		break;
 	}
 
 qudeq_notify_err:
-	xgf_unlock(__func__);
-}
-
-int fpsgo_fbt2xgf_query_sleep_time(pid_t rpid, unsigned long long *slptime)
-{
-	int ret = 0;
-	struct xgf_proc *proc, **pproc;
-
-	pproc = &proc;
-
-	xgf_lock(__func__);
-	if (!xgf_is_enable()) {
-		*slptime = 0;
-		xgf_unlock(__func__);
-		return 0;
-	}
-
-	ret = xgf_get_proc(rpid, pproc, 0);
-	if (ret) {
-		*slptime = 0;
-		goto query_err;
-	}
-
-	*slptime = proc->slptime_ged;
-
-query_err:
 	xgf_unlock(__func__);
 	return ret;
 }
