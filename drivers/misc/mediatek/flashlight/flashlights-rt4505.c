@@ -302,7 +302,7 @@ static int rt4505_release(void *pArg)
 	return 0;
 }
 
-static int rt4505_set_driver(int scenario)
+static int rt4505_set_driver(void)
 {
 	/* init chip and set usage count */
 	mutex_lock(&rt4505_mutex);
@@ -318,7 +318,7 @@ static int rt4505_set_driver(int scenario)
 
 static ssize_t rt4505_strobe_store(struct flashlight_arg arg)
 {
-	rt4505_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
+	rt4505_set_driver();
 	rt4505_set_level(arg.level);
 	rt4505_enable();
 	msleep(arg.dur);

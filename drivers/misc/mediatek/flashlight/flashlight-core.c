@@ -551,7 +551,6 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 	struct flashlight_operations *pf;
 	struct flashlight_user_arg fl_arg;
 	struct flashlight_dev_arg fl_dev_arg;
-	int fl_scenario;
 	int type_index, ct_index, part_index;
 	int ret = 0;
 
@@ -642,13 +641,27 @@ static long _flashlight_ioctl(struct file *file, unsigned int cmd, unsigned long
 		pf = fl_ops[type_index][ct_index][part_index];
 		mutex_unlock(&fl_mutex);
 		if (pf) {
-			fl_scenario = fl_arg.arg;
-			if (fl_decouple[type_index][ct_index][part_index])
-				fl_scenario |= FLASHLIGHT_SCENARIO_DECOUPLE;
-			pf->flashlight_set_driver(fl_scenario);
+			pf->flashlight_set_driver();
 			mutex_lock(&fl_mutex);
 			fl_status[type_index][ct_index][part_index] = 1;
 			mutex_unlock(&fl_mutex);
+		} else {
+			fl_info("Failed with no flashlight ops\n");
+			return -EFAULT;
+		}
+		break;
+
+	case FLASH_IOC_SET_SCENARIO:
+		fl_dbg("FLASH_IOC_SET_SCENARIO(%d,%d,%d): %d\n",
+				type_index, ct_index, part_index, fl_arg.arg);
+		mutex_lock(&fl_mutex);
+		pf = fl_ops[type_index][ct_index][part_index];
+		mutex_unlock(&fl_mutex);
+		if (pf) {
+			if (fl_decouple[type_index][ct_index][part_index])
+				fl_dev_arg.arg |= FLASHLIGHT_SCENARIO_DECOUPLE;
+
+			ret = pf->flashlight_ioctl(cmd, (unsigned long)&fl_dev_arg);
 		} else {
 			fl_info("Failed with no flashlight ops\n");
 			return -EFAULT;
