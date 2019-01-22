@@ -245,9 +245,6 @@
 #define MT_GPUFREQ_BATT_PERCENT_PROTECT /* todo: disable it */
 #define MT_GPUFREQ_BATT_OC_PROTECT
 #define MT_GPUFREQ_DYNAMIC_POWER_TABLE_UPDATE
-#ifdef CONFIG_MTK_RAM_CONSOLE
-#define MT_GPUFREQ_AEE_RR_REC
-#endif
 
 /**************************************************
  * Battery Over Current Protect
@@ -343,12 +340,6 @@ enum g_limited_idx_enum {
 	IDX_PBM_LIMITED,
 	NUMBER_OF_LIMITED_IDX,
 };
-#ifdef MT_GPUFREQ_AEE_RR_REC
-enum gpu_dvfs_state_enum {
-	GPU_DVFS_IS_DOING_DVFS = 0,
-	GPU_DVFS_IS_VPROC_ENABLED,
-};
-#endif
 
 /**************************************************
  * Structures
@@ -375,20 +366,11 @@ struct g_pmic_info {
 	struct regulator *reg_vsram_gpu;
 };
 
-#endif /* _MT_GPUFREQ_CORE_H_ */
-
-/**
- * ===============================================
- * SECTION : External functions declaration
- * ===============================================
- */
-
+/**************************************************
+ * External functions declaration
+ **************************************************/
 extern bool mtk_get_gpu_loading(unsigned int *pLoading);
 extern unsigned int mt_get_ckgen_freq(unsigned int);
 extern u32 get_devinfo_with_index(u32 index);
-#ifdef MT_GPUFREQ_AEE_RR_REC
-extern void aee_rr_rec_gpu_dvfs_vgpu(u8 val);
-extern void aee_rr_rec_gpu_dvfs_oppidx(u8 val);
-extern void aee_rr_rec_gpu_dvfs_status(u8 val);
-extern u8 aee_rr_curr_gpu_dvfs_status(void);
-#endif /* ifdef MT_GPUFREQ_AEE_RR_REC */
+
+#endif /* _MT_GPUFREQ_CORE_H_ */
