@@ -351,8 +351,10 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 /*
  * enable Clock Gating
  */
-void __mt_gpufreq_enable_CG(void)
+void mt_gpufreq_enable_CG(void)
 {
+	mutex_lock(&mt_gpufreq_lock);
+
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0xB0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
@@ -365,13 +367,17 @@ void __mt_gpufreq_enable_CG(void)
 #endif
 
 	gpufreq_pr_debug("@%s: enable CG done\n", __func__);
+
+	mutex_unlock(&mt_gpufreq_lock);
 }
 
 /*
  * disable Clock Gating
  */
-void __mt_gpufreq_disable_CG(void)
+void mt_gpufreq_disable_CG(void)
 {
+	mutex_lock(&mt_gpufreq_lock);
+
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0xD0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
@@ -383,13 +389,17 @@ void __mt_gpufreq_disable_CG(void)
 #endif
 
 	gpufreq_pr_debug("@%s: disable CG done\n", __func__);
+
+	mutex_unlock(&mt_gpufreq_lock);
 }
 
 /*
  * enable MTCMOS
  */
-void __mt_gpufreq_enable_MTCMOS(void)
+void mt_gpufreq_enable_MTCMOS(void)
 {
+	mutex_lock(&mt_gpufreq_lock);
+
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0x70 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
@@ -413,13 +423,17 @@ void __mt_gpufreq_enable_MTCMOS(void)
 	aee_rr_rec_gpu_dvfs_status(0x80 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
 	gpufreq_pr_debug("@%s: enable MTCMOS done\n", __func__);
+
+	mutex_unlock(&mt_gpufreq_lock);
 }
 
 /*
  * disable MTCMOS
  */
-void __mt_gpufreq_disable_MTCMOS(void)
+void mt_gpufreq_disable_MTCMOS(void)
 {
+	mutex_lock(&mt_gpufreq_lock);
+
 #ifdef MT_GPUFREQ_SRAM_DEBUG
 	aee_rr_rec_gpu_dvfs_status(0x90 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
@@ -434,6 +448,8 @@ void __mt_gpufreq_disable_MTCMOS(void)
 	aee_rr_rec_gpu_dvfs_status(0xA0 | (aee_rr_curr_gpu_dvfs_status() & 0x0F));
 #endif
 	gpufreq_pr_debug("@%s: disable MTCMOS done\n", __func__);
+
+	mutex_unlock(&mt_gpufreq_lock);
 }
 
 /*
@@ -454,18 +470,10 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	if (enable == 1) {
 		/* Turn on GPU Bucks */
 		__mt_gpufreq_bucks_enable();
-		/* Turn on GPU MTCMOS */
-		__mt_gpufreq_enable_MTCMOS();
-		/* enable Clock Gating */
-		__mt_gpufreq_enable_CG();
 		g_volt_enable_state = true;
 		__mt_gpufreq_kick_pbm(1);
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is on\n", __func__);
 	} else if (enable == 0)  {
-		/* disable Clock Gating */
-		__mt_gpufreq_disable_CG();
-		/* Turn off GPU MTCMOS */
-		__mt_gpufreq_disable_MTCMOS();
 		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
 		/* ensure time interval of buck_on -> buck_off is at least 1ms */
 		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
@@ -498,8 +506,8 @@ void mt_gpufreq_enable_by_ptpod(void)
 	/* Freerun GPU DVFS */
 	g_DVFS_is_paused_by_ptpod = false;
 
-	/* Turn off GPU PMIC Buck */
-	mt_gpufreq_voltage_enable_set(0);
+	/* Turn off GPU MTCMOS */
+	mt_gpufreq_disable_MTCMOS();
 
 	gpufreq_pr_debug("@%s: DVFS is enabled by ptpod\n", __func__);
 }
@@ -514,6 +522,9 @@ void mt_gpufreq_disable_by_ptpod(void)
 
 	/* Turn on GPU PMIC Buck */
 	mt_gpufreq_voltage_enable_set(1);
+
+	/* Turn on GPU MTCMOS */
+	mt_gpufreq_enable_MTCMOS();
 
 	/* Pause GPU DVFS */
 	g_DVFS_is_paused_by_ptpod = true;
