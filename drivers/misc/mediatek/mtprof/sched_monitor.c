@@ -899,6 +899,9 @@ static ssize_t mt_sched_monitor_##param##_write(			\
 	if (ret < 0)							\
 		return ret;							\
 											\
+	if (val < TIME_3MS)							\
+		val = TIME_3MS;							\
+											\
 	warn_dur = val;							\
 	pr_err(" to %lu\n", val);               \
 											\
