@@ -1392,10 +1392,6 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
 		imgsensor.autoflicker_en = KAL_FALSE;
 	} else if (imgsensor.current_fps == imgsensor_info.cap2.max_framerate) {
-		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			pr_debug(
-			"Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",
-		imgsensor.current_fps, imgsensor_info.cap1.max_framerate/10);
 		imgsensor.pclk = imgsensor_info.cap2.pclk;
 		imgsensor.line_length = imgsensor_info.cap2.linelength;
 		imgsensor.frame_length = imgsensor_info.cap2.framelength;
