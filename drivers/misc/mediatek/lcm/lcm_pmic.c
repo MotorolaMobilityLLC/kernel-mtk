@@ -37,7 +37,7 @@ int display_bias_regulator_init(void)
 
 	disp_bias_neg = regulator_get(NULL, "dsv_neg");
 	if (IS_ERR(disp_bias_neg)) { /* handle return value */
-		ret = PTR_ERR(disp_bias_pos);
+		ret = PTR_ERR(disp_bias_neg);
 		pr_err("get dsv_neg fail, error: %d\n", ret);
 		return ret;
 	}
