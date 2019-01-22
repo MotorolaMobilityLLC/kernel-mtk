@@ -373,6 +373,7 @@ struct musb {
 	struct work_struct otg_notifier_work;
 	u16 hwvers;
 	struct delayed_work id_pin_work;
+	struct delayed_work host_work;
 #ifdef CONFIG_MTK_MUSB_CARPLAY_SUPPORT
 	struct delayed_work carplay_work;
 #endif
