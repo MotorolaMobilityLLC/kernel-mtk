@@ -59,6 +59,9 @@ GED_LOG_BUF_HANDLE ghLogBuf_GED = 0;
 static GED_LOG_BUF_HANDLE ghLogBuf_HWC = 0;
 #define GED_LOG_BUF_COMMON_FENCE "FENCE"
 static GED_LOG_BUF_HANDLE ghLogBuf_FENCE = 0;
+static GED_LOG_BUF_HANDLE ghLogBuf_FWTrace;
+static GED_LOG_BUF_HANDLE ghLogBuf_ftrace;
+
 
 GED_LOG_BUF_HANDLE ghLogBuf_DVFS = 0;
 GED_LOG_BUF_HANDLE ghLogBuf_ged_srv = 0;
@@ -462,6 +465,9 @@ static int ged_init(void)
 #endif
 	ghLogBuf_HWC = ged_log_buf_alloc(4096, 128 * 4096, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_HWC, NULL);
 	ghLogBuf_FENCE = ged_log_buf_alloc(256, 128 * 256, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_FENCE, NULL);
+	ghLogBuf_ftrace = ged_log_buf_alloc(1024*32, 1024*1024, GED_LOG_BUF_TYPE_RINGBUFFER,
+						"fence_trace", "fence_trace");
+	ghLogBuf_FWTrace = ged_log_buf_alloc(1024*32, 1024*1024, GED_LOG_BUF_TYPE_QUEUEBUFFER, "fw_trace", "fw_trace");
 
 #ifdef GED_DVFS_DEBUG_BUF
 #ifdef GED_LOG_SIZE_LIMITED
