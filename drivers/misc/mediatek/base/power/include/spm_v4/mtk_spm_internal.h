@@ -28,7 +28,7 @@
  * Config and Parameter
  **************************************/
 /* SPM_POWER_ON_VAL1 */
-#define POWER_ON_VAL1_DEF	0x00015830
+#define POWER_ON_VAL1_DEF	0x00015820
 /* PCM_FSM_STA */
 #define PCM_FSM_STA_DEF		0x00048490
 /* SPM_WAKEUP_EVENT_MASK */
