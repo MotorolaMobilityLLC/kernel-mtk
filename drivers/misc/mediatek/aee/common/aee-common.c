@@ -47,7 +47,7 @@ void aee_trigger_kdb(void)
 	res = get_wd_api(&wd_api);
 	/* disable Watchdog HW, note it will not enable WDT again when kdb return */
 	if (res)
-		LOGE("aee_trigger_kdb, get wd api error\n");
+		pr_notice("aee_trigger_kdb, get wd api error\n");
 	else
 		wd_api->wd_disable_all();
 #endif
@@ -56,16 +56,16 @@ void aee_trigger_kdb(void)
 	sysrq_sched_debug_show();
 #endif
 
-	LOGI("User trigger KDB\n");
+	pr_info("User trigger KDB\n");
 	/* mtk_set_kgdboc_var(); */
 	kgdb_breakpoint();
 
-	LOGI("Exit KDB\n");
+	pr_info("Exit KDB\n");
 #ifdef CONFIG_MTK_WATCHDOG
 #ifdef CONFIG_LOCAL_WDT
 	/* enable local WDT */
 	if (res)
-		LOGD("aee_trigger_kdb, get wd api error\n");
+		pr_notice("aee_trigger_kdb, get wd api error\n");
 	else
 		wd_api->wd_restart(WD_TYPE_NOLOCK);
 
@@ -82,16 +82,16 @@ void aee_dumpbasic(void)
 
 	preempt_disable();
 	console_loglevel = 7;
-	LOGI("kernel  : %s-%s\n", init_uts_ns.name.sysname, init_uts_ns.name.release);
-	LOGI("version : %s\n", init_uts_ns.name.version);
-	LOGI("machine : %s\n\n", init_uts_ns.name.machine);
+	pr_info("kernel  : %s-%s\n", init_uts_ns.name.sysname, init_uts_ns.name.release);
+	pr_info("version : %s\n", init_uts_ns.name.version);
+	pr_info("machine : %s\n\n", init_uts_ns.name.machine);
 
 #ifdef CONFIG_SCHED_DEBUG
 	sysrq_sched_debug_show();
 #endif
-	LOGI("\n%-*s      Pid   Parent Command\n", (int)(2 * sizeof(void *)) + 2, "Task Addr");
-	LOGI("0x%p %8d %8d  %s\n\n", (void *)p, p->pid, p->parent->pid, p->comm);
-	LOGI("Stack traceback for current pid %d\n", p->pid);
+	pr_info("\n%-*s      Pid   Parent Command\n", (int)(2 * sizeof(void *)) + 2, "Task Addr");
+	pr_info("0x%p %8d %8d  %s\n\n", (void *)p, p->pid, p->parent->pid, p->comm);
+	pr_info("Stack traceback for current pid %d\n", p->pid);
 	show_stack(p, NULL);
 
 #ifdef CONFIG_MTK_AEE_IPANIC_64
@@ -104,7 +104,7 @@ void aee_dumpbasic(void)
 
 void aee_trigger_kdb(void)
 {
-	LOGI("\nKDB is not enabled ! Dump basic debug info...\n\n");
+	pr_info("\nKDB is not enabled ! Dump basic debug info...\n\n");
 	aee_dumpbasic();
 }
 #endif
@@ -114,7 +114,7 @@ struct aee_oops *aee_oops_create(AE_DEFECT_ATTR attr, AE_EXP_CLASS clazz, const 
 	struct aee_oops *oops = kzalloc(sizeof(struct aee_oops), GFP_ATOMIC);
 
 	if (oops == NULL) {
-		LOGE("%s : kzalloc() fail\n", __func__);
+		pr_notice("%s : kzalloc() fail\n", __func__);
 		return NULL;
 	}
 	oops->attr = attr;
@@ -153,7 +153,7 @@ void aee_oops_free(struct aee_oops *oops)
 	kfree(oops->mini_rdump);
 	vfree(oops->userthread_stack.Userthread_Stack);
 	kfree(oops);
-	LOGE("aee_oops_free\n");
+	pr_notice("aee_oops_free\n");
 }
 EXPORT_SYMBOL(aee_oops_free);
 
@@ -166,7 +166,7 @@ EXPORT_SYMBOL(aee_register_api);
 void aee_disable_api(void)
 {
 	if (g_aee_api) {
-		LOGI("disable aee kernel api");
+		pr_info("disable aee kernel api");
 		g_aee_api = NULL;
 	}
 }
@@ -185,7 +185,7 @@ void aee_kernel_exception_api(const char *file, const int line, const int db_opt
 	if (g_aee_api && g_aee_api->kernel_reportAPI)
 		g_aee_api->kernel_reportAPI(AE_DEFECT_EXCEPTION, db_opt, module, msgbuf);
 	else
-		LOGE("AEE kernel exception: %s", msgbuf);
+		pr_notice("AEE kernel exception: %s", msgbuf);
 	va_end(args);
 }
 EXPORT_SYMBOL(aee_kernel_exception_api);
@@ -203,7 +203,7 @@ void aee_kernel_warning_api(const char *file, const int line, const int db_opt, 
 	if (g_aee_api && g_aee_api->kernel_reportAPI)
 		g_aee_api->kernel_reportAPI(AE_DEFECT_WARNING, db_opt, module, msgbuf);
 	else
-		LOGE("AEE kernel warning: %s", msgbuf);
+		pr_notice("AEE kernel warning: %s", msgbuf);
 	va_end(args);
 }
 EXPORT_SYMBOL(aee_kernel_warning_api);
@@ -221,7 +221,7 @@ void aee_kernel_reminding_api(const char *file, const int line, const int db_opt
 	if (g_aee_api && g_aee_api->kernel_reportAPI)
 		g_aee_api->kernel_reportAPI(AE_DEFECT_REMINDING, db_opt, module, msgbuf);
 	else
-		LOGE("AEE kernel reminding: %s", msgbuf);
+		pr_notice("AEE kernel reminding: %s", msgbuf);
 	va_end(args);
 }
 EXPORT_SYMBOL(aee_kernel_reminding_api);
@@ -230,18 +230,18 @@ void aed_md_exception_api(const int *log, int log_size, const int *phy, int phy_
 			  const char *detail, const int db_opt)
 {
 #ifdef CONFIG_MTK_AEE_AED
-	LOGD("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	if (g_aee_api) {
 		if (g_aee_api->md_exception) {
 			g_aee_api->md_exception("modem", log, log_size, phy, phy_size, detail,
 						db_opt);
 		} else {
-			LOGD("g_aee_api->md_exception = 0x%p\n", g_aee_api->md_exception);
+			pr_debug("g_aee_api->md_exception = 0x%p\n", g_aee_api->md_exception);
 		}
 	} else {
-		LOGD("g_aee_api is null\n");
+		pr_debug("g_aee_api is null\n");
 	}
-	LOGD("%s out\n", __func__);
+	pr_debug("%s out\n", __func__);
 #endif
 }
 EXPORT_SYMBOL(aed_md_exception_api);
@@ -250,18 +250,18 @@ void aed_md32_exception_api(const int *log, int log_size, const int *phy, int ph
 			    const char *detail, const int db_opt)
 {
 #ifdef CONFIG_MTK_AEE_AED
-	LOGD("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	if (g_aee_api) {
 		if (g_aee_api->md_exception) {
 			g_aee_api->md_exception("md32", log, log_size, phy, phy_size, detail,
 						db_opt);
 		} else {
-			LOGD("g_aee_api->md32_exception = 0x%p\n", g_aee_api->md32_exception);
+			pr_debug("g_aee_api->md32_exception = 0x%p\n", g_aee_api->md32_exception);
 		}
 	} else {
-		LOGD("g_aee_api is null\n");
+		pr_debug("g_aee_api is null\n");
 	}
-	LOGD("%s out\n", __func__);
+	pr_debug("%s out\n", __func__);
 #endif
 }
 EXPORT_SYMBOL(aed_md32_exception_api);
@@ -270,18 +270,18 @@ void aed_scp_exception_api(const int *log, int log_size, const int *phy, int phy
 			    const char *detail, const int db_opt)
 {
 #ifdef CONFIG_MTK_AEE_AED
-	LOGD("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	if (g_aee_api) {
 		if (g_aee_api->md_exception) {
 			g_aee_api->md_exception("scp", log, log_size, phy, phy_size, detail,
 						db_opt);
 		} else {
-			LOGD("g_aee_api->scp_exception = 0x%p\n", g_aee_api->scp_exception);
+			pr_debug("g_aee_api->scp_exception = 0x%p\n", g_aee_api->scp_exception);
 		}
 	} else {
-		LOGD("g_aee_api is null\n");
+		pr_debug("g_aee_api is null\n");
 	}
-	LOGD("%s out\n", __func__);
+	pr_debug("%s out\n", __func__);
 #endif
 }
 EXPORT_SYMBOL(aed_scp_exception_api);
@@ -291,18 +291,18 @@ void aed_combo_exception_api(const int *log, int log_size, const int *phy, int p
 			     const char *detail, const int db_opt)
 {
 #ifdef CONFIG_MTK_AEE_AED
-	LOGD("aed_combo_exception\n");
+	pr_debug("aed_combo_exception\n");
 	if (g_aee_api) {
 		if (g_aee_api->combo_exception) {
 			g_aee_api->combo_exception("combo", log, log_size, phy, phy_size, detail,
 						   db_opt);
 		} else {
-			LOGD("g_aee_api->combo_exception = 0x%p\n", g_aee_api->combo_exception);
+			pr_debug("g_aee_api->combo_exception = 0x%p\n", g_aee_api->combo_exception);
 		}
 	} else {
-		LOGD("g_aee_api is null\n");
+		pr_debug("g_aee_api is null\n");
 	}
-	LOGD("aed_combo_exception out\n");
+	pr_debug("aed_combo_exception out\n");
 #endif
 }
 EXPORT_SYMBOL(aed_combo_exception_api);
