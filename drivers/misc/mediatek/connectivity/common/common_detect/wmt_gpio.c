@@ -227,16 +227,6 @@ const PUINT8 gpio_state_name[GPIO_PIN_ID_MAX][GPIO_STATE_MAX] = {{"gpio_ldo_en_p
 		"",
 		"",
 		"",
-		""},
-	{"gpio_srclkenai_pull_dis",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
 		""}
 };
 
@@ -259,8 +249,8 @@ const PUINT8 gpio_pin_name[GPIO_PIN_ID_MAX] = {"gpio_combo_ldo_en_pin",
 					"gpio_gps_sync_pin",
 					"gpio_gps_lna_pin",
 					"gpio_chip_deep_sleep_pin",
-					"gpio_chip_wake_up_pin",
-					"gpio_srclkenai_pin"};
+					"gpio_chip_wake_up_pin"
+					};
 
 GPIO_CTRL_INFO gpio_ctrl_info;
 
