@@ -21,6 +21,10 @@
 
 #include "clk-mtk.h"
 
+#if defined(CONFIG_MACH_MT6799)
+#define MT_CCF_BRINGUP  1
+#endif
+
 #define REG_CON0		0
 #define REG_CON1		4
 
@@ -56,6 +60,34 @@ static inline struct mtk_clk_pll *to_mtk_clk_pll(struct clk_hw *hw)
 	return container_of(hw, struct mtk_clk_pll, hw);
 }
 
+#ifdef MT_CCF_BRINGUP
+static int mtk_pll_is_prepared_dummy(struct clk_hw *hw)
+{
+	return 1;
+}
+static int mtk_pll_prepare_dummy(struct clk_hw *hw)
+{
+	return 0;
+}
+static void mtk_pll_unprepare_dummy(struct clk_hw *hw)
+{
+}
+static unsigned long mtk_pll_recalc_rate_dummy(struct clk_hw *hw,
+		unsigned long parent_rate)
+{
+	return 0;
+}
+static long mtk_pll_round_rate_dummy(struct clk_hw *hw, unsigned long rate,
+		unsigned long *prate)
+{
+	return 0;
+}
+static int mtk_pll_set_rate_dummy(struct clk_hw *hw, unsigned long rate,
+		unsigned long parent_rate)
+{
+	return 0;
+}
+#else
 static int mtk_pll_is_prepared(struct clk_hw *hw)
 {
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
@@ -269,7 +301,18 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 	r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
 	writel(r, pll->pwr_addr);
 }
+#endif
 
+#ifdef MT_CCF_BRINGUP
+static const struct clk_ops mtk_pll_ops = {
+	.is_prepared	= mtk_pll_is_prepared_dummy,
+	.prepare	= mtk_pll_prepare_dummy,
+	.unprepare	= mtk_pll_unprepare_dummy,
+	.recalc_rate	= mtk_pll_recalc_rate_dummy,
+	.round_rate	= mtk_pll_round_rate_dummy,
+	.set_rate	= mtk_pll_set_rate_dummy,
+};
+#else
 static const struct clk_ops mtk_pll_ops = {
 	.is_prepared	= mtk_pll_is_prepared,
 	.prepare	= mtk_pll_prepare,
@@ -278,6 +321,7 @@ static const struct clk_ops mtk_pll_ops = {
 	.round_rate	= mtk_pll_round_rate,
 	.set_rate	= mtk_pll_set_rate,
 };
+#endif
 
 static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
 		void __iomem *base)
