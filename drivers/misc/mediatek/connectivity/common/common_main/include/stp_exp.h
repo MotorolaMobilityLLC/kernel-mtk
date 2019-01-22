@@ -247,6 +247,7 @@ extern INT32 mtk_wcn_stp_register_if_rx(MTK_WCN_STP_IF_RX func);
 *****************************************************************************/
 extern INT32 mtk_wcn_stp_coredump_start_get(VOID);
 
+extern INT32 mtk_stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

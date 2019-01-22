@@ -2002,25 +2002,6 @@ UINT8 *wmt_lib_get_fwinfor_from_emi(UINT8 section, UINT32 offset, UINT8 *buf, UI
 	return 0;
 }
 
-INT32 wmt_lib_poll_cpupcr(UINT32 count, UINT16 sleep, UINT16 toAee)
-{
-	ENUM_STP_FW_ISSUE_TYPE issue_type;
-
-	issue_type = STP_DBG_PROC_TEST;
-
-	stp_dbg_poll_cpupcr(count, sleep, 1);
-
-	if (toAee) {
-		stp_dbg_set_fw_info("STP ProcTest", osal_strlen("STP ProcTest"), issue_type);
-		osal_dbg_assert_aee("[SOC_CONSYS]ProcTest",
-				    "**[WCN_ISSUE_INFO]STP Tx Timeout**\n Polling CPUPCR for FW debug usage\n");
-	} else {
-		WMT_INFO_FUNC("wmt_lib:do not pass cpupcr to AEE\n");
-	}
-	return 0;
-}
-
-
 INT32 wmt_lib_merge_if_flag_ctrl(UINT32 enable)
 {
 #if WMT_PLAT_ALPS
@@ -2113,11 +2094,6 @@ UINT32 wmt_lib_jtag_flag_set(UINT32 en)
 UINT32 wmt_lib_soc_set_wifiver(UINT32 wifiver)
 {
 	return stp_dbg_set_wifiver(wifiver);
-}
-
-INT32 wmt_lib_stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd)
-{
-	return stp_dbg_poll_cpupcr(times, sleep, cmd);
 }
 
 UINT32 wmt_lib_co_clock_flag_get(VOID)

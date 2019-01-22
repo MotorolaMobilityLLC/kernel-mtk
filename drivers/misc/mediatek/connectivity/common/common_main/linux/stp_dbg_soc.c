@@ -458,6 +458,10 @@ UINT32 stp_dbg_soc_read_debug_crs(ENUM_CONNSYS_DEBUG_CR cr)
 {
 #define CONSYS_REG_READ(addr) (*((volatile UINT32 *)(addr)))
 #ifdef CONFIG_OF		/*use DT */
+	P_CONSYS_EMI_ADDR_INFO emi_phy_addr;
+
+	emi_phy_addr = mtk_wcn_consys_soc_get_emi_phy_add();
+
 	if (conn_reg.mcu_base) {
 		switch (cr) {
 		case CONNSYS_CPU_CLK:
@@ -468,6 +472,12 @@ UINT32 stp_dbg_soc_read_debug_crs(ENUM_CONNSYS_DEBUG_CR cr)
 			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DBG_CR1_OFFSET);
 		case CONNSYS_DEBUG_CR2:
 			return CONSYS_REG_READ(conn_reg.mcu_base + CONSYS_DBG_CR2_OFFSET);
+		case CONNSYS_EMI_REMAP:
+			if (emi_phy_addr->emi_remap_offset)
+				return CONSYS_REG_READ(conn_reg.topckgen_base +
+						emi_phy_addr->emi_remap_offset);
+			else
+				STP_DBG_INFO_FUNC("EMI remap has no value\n");
 		default:
 			return 0;
 		}
