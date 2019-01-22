@@ -363,9 +363,9 @@ config MTK_TUI_RAM_SIZE
 
 #source "drivers/misc/mediatek/aee/Kconfig"
 #source "drivers/misc/mediatek/atf_log/Kconfig"
-#source "drivers/misc/mediatek/boot/Kconfig"
-#source "drivers/misc/mediatek/boot_reason/Kconfig"
-#source "drivers/misc/mediatek/chip/Kconfig"
+source "drivers/misc/mediatek/boot/Kconfig"
+source "drivers/misc/mediatek/boot_reason/Kconfig"
+source "drivers/misc/mediatek/chip/Kconfig"
 #
 #source "drivers/misc/mediatek/devinfo/Kconfig"
 #source "drivers/misc/mediatek/dynamic_boost/Kconfig"
