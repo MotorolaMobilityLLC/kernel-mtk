@@ -56,8 +56,13 @@
 
 #include "mtk_spm_vcore_dvfs.h"
 
+#ifdef pr_fmt
+#undef pr_fmt
+#endif
+#define pr_fmt(fmt)	"[scp_dvfs]: " fmt
 
-#define SCP_DVFS_TAG	"[scp_dvfs] "
+#define SCP_DBG(fmt, arg...) pr_debug(fmt, ##arg)
+#define SCP_INFO(fmt, arg...) pr_info(fmt, ##arg)
 
 #define DRV_Reg32(addr)				readl(addr)
 #define DRV_WriteReg32(addr, val)	writel(val, addr)
@@ -67,7 +72,7 @@
 /***************************
  * Operate Point Definition
  ****************************/
-#if 0 /* TBD */
+#if 0
 static struct pinctrl *scp_pctrl; /* static pinctrl instance */
 #endif
 
@@ -79,7 +84,7 @@ enum SCP_DTS_GPIO_STATE {
 	SCP_DTS_GPIO_STATE_MAX,	/* for array size */
 };
 
-#if 0 /* TBD */
+#if 0
 /* DTS state mapping name */
 static const char *scp_state_name[SCP_DTS_GPIO_STATE_MAX] = {
 	"default",
@@ -111,7 +116,7 @@ static unsigned int pre_feature_req = 0xff;
 static void __iomem *gpio_base;
 #define RG_GPIO154_MODE		(gpio_base + 0x430)
 #define GPIO154_BIT			8
-#define GPIO154_MASK		0xf
+#define GPIO154_MASK		0x7
 
 unsigned int scp_get_dvfs_opp(void)
 {
@@ -138,13 +143,13 @@ int scp_set_pmic_vcore(unsigned int cur_freq)
 		scp_cur_volt = 0;
 	} else {
 	    ret = -2;
-	    pr_notice(SCP_DVFS_TAG "ERROR: %s: cur_freq=%d is not supported\n", __func__, cur_freq);
+	    pr_err("ERROR: %s: cur_freq=%d is not supported\n", __func__, cur_freq);
 		WARN_ON(1);
 	}
 
 	if (ret_vc != 0 || ret_vs != 0) {
 		ret = -1;
-		pr_notice(SCP_DVFS_TAG "ERROR: %s: scp vcore/vsram setting error, (%d, %d)\n",
+		pr_err("ERROR: %s: scp vcore/vsram setting error, (%d, %d)\n",
 					__func__, ret_vc, ret_vs);
 		WARN_ON(1);
 	}
@@ -184,7 +189,7 @@ uint32_t scp_get_freq(void)
 		return_freq = CLK_OPP2;
 	else {
 		return_freq = CLK_OPP2;
-		pr_notice(SCP_DVFS_TAG "warning: request freq %d > max opp %d\n",
+		SCP_DBG("warning: request freq %d > max opp %d\n",
 				sum, CLK_OPP2);
 	}
 
@@ -225,7 +230,7 @@ int scp_request_freq(void)
 	int is_increasing_freq = 0;
 
 	if (scp_dvfs_flag != 1) {
-		pr_info(SCP_DVFS_TAG "warning: SCP DVFS is OFF\n");
+		SCP_DBG("warning: SCP DVFS is OFF\n");
 		return 0;
 	}
 
@@ -249,12 +254,12 @@ int scp_request_freq(void)
 		 do {
 			ret = scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
 			if (ret != SCP_IPI_DONE)
-				pr_info(SCP_DVFS_TAG "%s: SCP send IPI fail - %d\n", __func__, ret);
+				SCP_DBG("%s: SCP send IPI fail - %d\n", __func__, ret);
 
 			mdelay(2);
 			timeout -= 1; /*try 50 times, total about 100ms*/
 			if (timeout <= 0) {
-				pr_notice(SCP_DVFS_TAG "%s: set freq fail, current(%d) != expect(%d)\n", __func__,
+				pr_err("%s: set freq fail, current(%d) != expect(%d)\n", __func__,
 					scp_current_freq, scp_expected_freq);
 				wake_unlock(&scp_suspend_lock);
 				WARN_ON(1);
@@ -278,7 +283,7 @@ int scp_request_freq(void)
 	}
 
 	wake_unlock(&scp_suspend_lock);
-	pr_info("[SCP] set freq OK, %d == %d\n", scp_expected_freq, scp_current_freq);
+	SCP_DBG("[SCP] set freq OK, %d == %d\n", scp_expected_freq, scp_current_freq);
 	return 0;
 }
 
@@ -290,7 +295,7 @@ void wait_scp_dvfs_init_done(void)
 		mdelay(1);
 		count++;
 		if (count > 3000) {
-			pr_notice(SCP_DVFS_TAG "ERROR: %s: SCP dvfs driver init fail\n", __func__);
+			pr_err("ERROR: %s: SCP dvfs driver init fail\n", __func__);
 			WARN_ON(1);
 		}
 	}
@@ -300,12 +305,12 @@ void scp_pll_mux_set(unsigned int pll_ctrl_flag)
 {
 	int ret = 0;
 
-	pr_info(SCP_DVFS_TAG "%s(%d)\n\n", __func__, pll_ctrl_flag);
+	SCP_DBG("%s(%d)\n\n", __func__, pll_ctrl_flag);
 
 	if (pll_ctrl_flag == PLL_ENABLE) {
 		ret = clk_prepare_enable(mt_scp_pll->clk_mux);
 		if (ret) {
-			pr_notice(SCP_DVFS_TAG "EEROR: %s: scp dvfs cannot enable clk mux, %d\n", __func__, ret);
+			pr_err("EEROR: %s: scp dvfs cannot enable clk mux, %d\n", __func__, ret);
 			WARN_ON(1);
 		}
 	} else
@@ -316,18 +321,19 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 {
 	int ret = 0;
 
-	pr_info(SCP_DVFS_TAG "%s(%d, %d)\n", __func__, pll_ctrl_flag, pll_sel);
+	SCP_DBG("%s(%d, %d)\n", __func__, pll_ctrl_flag, pll_sel);
 
 	if (pll_ctrl_flag == PLL_ENABLE) {
 		if (pre_pll_sel != CLK_OPP2) {
 			ret = clk_prepare_enable(mt_scp_pll->clk_mux);
 			if (ret) {
-				pr_notice(SCP_DVFS_TAG "ERROR: %s: clk_prepare_enable() failed, %d\n",
+				pr_err("ERROR: %s: clk_prepare_enable() failed, %d\n",
 					__func__, ret);
 				WARN_ON(1);
 			}
-		} else
-			pr_info(SCP_DVFS_TAG "no need to do clk_prepare_enable()\n");
+		} else {
+			SCP_DBG("no need to do clk_prepare_enable()\n");
+		}
 
 		switch (pll_sel) {
 		case CLK_OPP0:
@@ -340,7 +346,7 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 			ret = clk_set_parent(mt_scp_pll->clk_mux, mt_scp_pll->clk_pll6);
 			break;
 		default:
-			pr_notice(SCP_DVFS_TAG "ERROR: %s: not support opp freq %d\n", __func__, pll_sel);
+			pr_err("ERROR: %s: not support opp freq %d\n", __func__, pll_sel);
 			WARN_ON(1);
 			break;
 		}
@@ -401,11 +407,9 @@ static ssize_t mt_scp_dvfs_debug_proc_write(struct file *file, const char __user
 		else if (debug == 1)
 			mt_scp_dvfs_debug = 1;
 		else
-			pr_info("bad argument %d\n", debug);
-			pr_info("echo [0|1] > /proc/scp_dvfs/scp_dvfs_debug\n");
+			SCP_INFO("bad argument %d\n", debug);
 	} else {
-		pr_info("invalid command!\n");
-		pr_info("echo [0|1] > /proc/scp_dvfs/scp_dvfs_debug\n");
+		SCP_INFO("invalid command!\n");
 	}
 
 	scp_ipi_send(IPI_DVFS_DEBUG, (void *)&mt_scp_dvfs_debug, sizeof(mt_scp_dvfs_debug), 0, SCP_A_ID);
@@ -469,32 +473,16 @@ static ssize_t mt_scp_dvfs_sleep_proc_write(struct file *file, const char __user
 		if (val >= 0  && val <= 3) {
 			if (val != scp_sleep_flag) {
 				scp_sleep_flag = val;
-				pr_info("scp_sleep_flag = %d\n", scp_sleep_flag);
+				SCP_INFO("scp_sleep_flag = %d\n", scp_sleep_flag);
 				scp_ipi_send(IPI_DVFS_SLEEP, (void *)&scp_sleep_flag, sizeof(scp_sleep_flag),
 							0, SCP_A_ID);
 			} else
-				pr_info("SCP sleep setting is not changed. keep in %d\n", val);
+				SCP_INFO("SCP sleep setting is not changed. keep in %d\n", val);
 		} else {
-			pr_info("Warning: invalid input value %d\n", val);
-			pr_info("sleep off:\n");
-			pr_info("  echo 0 > /proc/scp_dvfs/scp_dvfs_sleep\n");
-			pr_info("sleep on:\n");
-			pr_info("  echo 1 > /proc/scp_dvfs/scp_dvfs_sleep\n");
-			pr_info("sleep without wakeup:\n");
-			pr_info("  echo 2 > /proc/scp_dvfs/scp_dvfs_sleep\n");
-			pr_info("force to sleep:\n");
-			pr_info("  echo 3 > /proc/scp_dvfs/scp_dvfs_sleep\n");
+			SCP_INFO("Warning: invalid input value %d\n", val);
 		}
 	} else {
-		pr_info("Warning: invalid input command, val=%d\n", val);
-		pr_info("sleep off:\n");
-		pr_info("  echo 0 > /proc/scp_dvfs/scp_dvfs_sleep\n");
-		pr_info("sleep on:\n");
-		pr_info("  echo 1 > /proc/scp_dvfs/scp_dvfs_sleep\n");
-		pr_info("sleep without wakeup:\n");
-		pr_info("  echo 2 > /proc/scp_dvfs/scp_dvfs_sleep\n");
-		pr_info("force to sleep:\n");
-		pr_info("  echo 3 > /proc/scp_dvfs/scp_dvfs_sleep\n");
+		SCP_INFO("Warning: invalid input command, val=%d\n", val);
 	}
 
 	return count;
@@ -545,10 +533,10 @@ static ssize_t mt_scp_dvfs_ctrl_proc_write(struct file *file, const char __user 
 	if (n == 1 || n == 2) {
 		if (!strcmp(cmd, "on")) {
 			scp_dvfs_flag = 1;
-			pr_info("SCP DVFS: ON\n");
+			SCP_INFO("SCP DVFS: ON\n");
 		} else if (!strcmp(cmd, "off")) {
 			scp_dvfs_flag = -1;
-			pr_info("SCP DVFS: OFF\n");
+			SCP_INFO("SCP DVFS: OFF\n");
 		} else if (!strcmp(cmd, "req")) {
 			if (req >= 0 && req <= 5) {
 				if (pre_feature_req == 1)
@@ -574,22 +562,15 @@ static ssize_t mt_scp_dvfs_ctrl_proc_write(struct file *file, const char __user 
 					scp_register_feature(VCORE_TEST5_FEATURE_ID);
 
 				pre_feature_req = req;
-				pr_info("[SCP] set freq: %d => %d\n", scp_current_freq, scp_expected_freq);
+				SCP_INFO("[SCP] set freq: %d => %d\n", scp_current_freq, scp_expected_freq);
 			} else {
-				pr_info("invalid req value %d\n", req);
-				pr_info("echo req <0|1|2|3|4|5> > /proc/scp_dvfs/scp_dvfs_ctrl\n");
+				SCP_INFO("invalid req value %d\n", req);
 			}
 		} else {
-			pr_info("invalid command %s\n", cmd);
-			pr_info("echo on > /proc/scp_dvfs/scp_dvfs_ctrl\n");
-			pr_info("echo off > /proc/scp_dvfs/scp_dvfs_ctrl\n");
-			pr_info("echo req <0|1|2|3|4|5> > /proc/scp_dvfs/scp_dvfs_ctrl\n");
+			SCP_INFO("invalid command %s\n", cmd);
 		}
 	} else {
-		pr_info("invalid length %d\n", n);
-		pr_info("echo on > /proc/scp_dvfs/scp_dvfs_ctrl\n");
-		pr_info("echo off > /proc/scp_dvfs/scp_dvfs_ctrl\n");
-		pr_info("echo req <0|1|2|3|4|5> > /proc/scp_dvfs/scp_dvfs_ctrl\n");
+		SCP_INFO("invalid length %d\n", n);
 	}
 
 	return count;
@@ -648,13 +629,13 @@ static int mt_scp_dvfs_create_procfs(void)
 
 	dir = proc_mkdir("scp_dvfs", NULL);
 	if (!dir) {
-		pr_notice(SCP_DVFS_TAG "fail to create /proc/scp_dvfs @ %s()\n", __func__);
+		pr_err("fail to create /proc/scp_dvfs @ %s()\n", __func__);
 		return -ENOMEM;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
 		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops)) {
-			pr_notice(SCP_DVFS_TAG "ERROR: %s: create /proc/scp_dvfs/%s failed\n",
+			pr_err("ERROR: %s: create /proc/scp_dvfs/%s failed\n",
 						__func__, entries[i].name);
 			ret = -ENOMEM;
 		}
@@ -664,7 +645,7 @@ static int mt_scp_dvfs_create_procfs(void)
 }
 #endif /* CONFIG_PROC_FS */
 
-#if 0 /* TBD */
+#if 0
 /* pinctrl implementation */
 static long _set_state(const char *name)
 {
@@ -675,7 +656,7 @@ static long _set_state(const char *name)
 
 	pState = pinctrl_lookup_state(scp_pctrl, name);
 	if (IS_ERR(pState)) {
-		pr_notice(SCP_DVFS_TAG "lookup state '%s' failed\n", name);
+		pr_err("lookup state '%s' failed\n", name);
 		ret = PTR_ERR(pState);
 		goto exit;
 	}
@@ -713,7 +694,7 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	struct device_node *node;
 	unsigned int gpio_mode;
 
-	pr_info("%s()\n", __func__);
+	SCP_DBG("%s()\n", __func__);
 
 	node = of_find_matching_node(NULL, scpdvfs_of_ids);
 	if (!node) {
@@ -766,7 +747,7 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 		dev_notice(&pdev->dev, "cannot get 7th clock parent\n");
 		return PTR_ERR(mt_scp_pll->clk_pll6);
 	}
-#if 0 /* TBD */
+#if 0
 	scp_pctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(scp_pctrl)) {
 		dev_notice(&pdev->dev, "Cannot find scp pinctrl!\n");
@@ -779,14 +760,14 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	/* get GPIO base address */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,gpio");
 	if (!node) {
-		pr_notice(SCP_DVFS_TAG "error: can't find GPIO node\n");
+		pr_err("error: can't find GPIO node\n");
 		WARN_ON(1);
 		return 0;
 	}
 
 	gpio_base = of_iomap(node, 0);
 	if (!gpio_base) {
-		pr_notice(SCP_DVFS_TAG "error: iomap fail for GPIO\n");
+		pr_err("error: iomap fail for GPIO\n");
 		WARN_ON(1);
 		return 0;
 	}
@@ -794,9 +775,9 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	/* check if v_req pin is configured correctly  */
 	gpio_mode = (DRV_Reg32(RG_GPIO154_MODE)>>GPIO154_BIT)&GPIO154_MASK;
 	if (gpio_mode == 1)
-		pr_info(SCP_DVFS_TAG "V_REQ muxpin setting is correct\n");
+		SCP_DBG("SCP v_req muxpin setting is correct\n");
 	else
-		pr_notice(SCP_DVFS_TAG "error: V_REQ muxpin setting is wrong - %d\n", gpio_mode);
+		pr_err("error: V_REQ muxpin setting is wrong - %d\n", gpio_mode);
 
 	g_scp_dvfs_init_flag = 1;
 
@@ -843,49 +824,34 @@ void mt_pmic_sshub_init(void)
 
 	val[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN);
 	val[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
-
-	val[2] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
-	val[3] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
-
-	val[4] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
-	val[5] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
-
+	val[2] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
+	val[3] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
+	val[4] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
+	val[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
 	val[6] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
 	val[7] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
-
-	pr_info(SCP_DVFS_TAG "Before init vcore and vsram_core:\n");
-	pr_info(SCP_DVFS_TAG "vcore: en=0x%x, vosel=0x%x\n", val[0], val[1]);
-	pr_info(SCP_DVFS_TAG "vsram: en=0x%x, vosel=0x%x\n", val[2], val[3]);
-	pr_info(SCP_DVFS_TAG "vcore sleep: en=0x%x, vosel=0x%x\n", val[4], val[5]);
-	pr_info(SCP_DVFS_TAG "vsram sleep: en=0x%x, vosel=0x%x\n", val[6], val[7]);
+	SCP_DBG("Before: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
+			val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
 
 	pmic_scp_set_vcore(600000);
-	pmic_scp_set_vsram_vcore(850000);
-	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN, 1);
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN, 1);
-
 	pmic_scp_set_vcore_sleep(600000);
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN, 1);
+	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN, 0);
+	pmic_scp_set_vsram_vcore(850000);
 	pmic_scp_set_vsram_vcore_sleep(850000);
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_ON, 0);
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_MODE, 0);
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN, 1);
+	pmic_set_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN, 0);
 
 	val[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN);
 	val[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
-
-	val[2] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
-	val[3] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
-
-	val[4] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
-	val[5] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
-
+	val[2] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
+	val[3] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
+	val[4] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
+	val[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
 	val[6] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
 	val[7] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
-
-	pr_info(SCP_DVFS_TAG "After init vcore and vsram_core:\n");
-	pr_info(SCP_DVFS_TAG "vcore: en=0x%x, vosel=0x%x\n", val[0], val[1]);
-	pr_info(SCP_DVFS_TAG "vsram: en=0x%x, vosel=0x%x\n", val[2], val[3]);
-	pr_info(SCP_DVFS_TAG "vcore sleep: en=0x%x, vosel=0x%x\n", val[4], val[5]);
-	pr_info(SCP_DVFS_TAG "vsram sleep: en=0x%x, vosel=0x%x\n", val[6], val[7]);
+	SCP_DBG("After: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
+			val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
 #endif
 }
 
@@ -898,12 +864,12 @@ int __init scp_dvfs_init(void)
 {
 	int ret = 0;
 
-	pr_info("@%s\n", __func__);
+	SCP_DBG("%s\n", __func__);
 
 #ifdef CONFIG_PROC_FS
 	/* init proc */
 	if (mt_scp_dvfs_create_procfs()) {
-		pr_notice(SCP_DVFS_TAG "mt_scp_dvfs_create_procfs fail..\n");
+		pr_err("mt_scp_dvfs_create_procfs fail..\n");
 		WARN_ON(1);
 		return -1;
 	}
@@ -912,14 +878,14 @@ int __init scp_dvfs_init(void)
 	/* register platform device/driver */
 	ret = platform_device_register(&mt_scp_dvfs_pdev);
 	if (ret) {
-		pr_notice(SCP_DVFS_TAG "fail to register scp dvfs device @ %s()\n", __func__);
+		pr_err("fail to register scp dvfs device @ %s()\n", __func__);
 		WARN_ON(1);
 		return -1;
 	}
 
 	ret = platform_driver_register(&mt_scp_dvfs_pdrv);
 	if (ret) {
-		pr_notice(SCP_DVFS_TAG "fail to register scp dvfs driver @ %s()\n", __func__);
+		pr_err("fail to register scp dvfs driver @ %s()\n", __func__);
 		platform_device_unregister(&mt_scp_dvfs_pdev);
 		WARN_ON(1);
 		return -1;
