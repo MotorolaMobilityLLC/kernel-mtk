@@ -60,11 +60,11 @@ void collect_ccb_info(struct ccci_modem *md)
 		md1_ccci_smem_ports[i].ccb_ctrl_offset = data_buf_counter;
 
 		for (j = 0; j < ccb_configs_len; j++) {
-			if (i == ccb_configs[j].user_id)
+			if (i == ccb_configs[j].user_id) {
 				md1_ccci_smem_ports[i].length +=
 					ccb_configs[j].dl_buff_size + ccb_configs[j].ul_buff_size;
-
-			data_buf_counter++;
+				data_buf_counter++;
+			}
 		}
 
 		/* align to 4k */
@@ -80,8 +80,8 @@ void collect_ccb_info(struct ccci_modem *md)
 				md1_ccci_smem_ports[i-1].length;
 		}
 
-		CCCI_BOOTUP_LOG(-1, "smem", "smem_user=%d, ccb_ctrl_offset=%d, md1_ccci_smem_ports[].length=%d\n",
-				i, md1_ccci_smem_ports[i].ccb_ctrl_offset, md1_ccci_smem_ports[i].length);
+		CCCI_BOOTUP_LOG(-1, "smem", "smem_user=%d, ccb_ctrl_offset=%d, buf_len=%d\n",
+				i, md1_ccci_smem_ports[i].ccb_ctrl_offset,  md1_ccci_smem_ports[i].length);
 	}
 }
 
@@ -285,7 +285,6 @@ long port_ccb_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 		if (copy_from_user(&in_ccb, (void __user *)arg, sizeof(struct ccci_ccb_config)))
 			CCCI_ERR_MSG(md_id, TAG, "set user_id fail: copy_from_user fail!\n");
 		else
-			CCCI_REPEAT_LOG(md_id, TAG, "ioctl. userspace pass in user_id=%d\n", in_ccb.user_id);
 		/* use user_id as input param, which is the array index, and it will override user space's ID value */
 		if (in_ccb.user_id > ccb_configs_len) {
 			ret = -EINVAL;

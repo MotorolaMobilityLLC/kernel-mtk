@@ -3301,8 +3301,9 @@ static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *buff, int length)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	int i;
-	char *dl_addr, *ul_addr;
+	int i, j;
+	unsigned char *curr_ch_p;
+	unsigned int *curr_p;
 
 	if (flag & DUMP_FLAG_CCIF_REG) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF REG\n");
@@ -3368,27 +3369,35 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 	if (flag & DUMP_FLAG_SMEM_CCB_CTRL) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB CTRL share memory\n");
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md->smem_layout.ccci_ccb_ctrl_base_vir,
-								md->smem_layout.ccci_ccb_ctrl_size);
+								32 * ccb_configs_len * 2);
 	}
 	if (flag & DUMP_FLAG_SMEM_CCB_DATA) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCB DATA share memory\n");
 
-		i = 0;
-		dl_addr = md->mem_layout.ccci_ccb_data_base_vir;
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dl_addr, 16);
-		ul_addr = dl_addr + ccb_configs[0].dl_buff_size;
-		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, ul_addr, 16);
+		curr_ch_p = md->mem_layout.ccci_ccb_data_base_vir;
+		curr_p = (unsigned int *)curr_ch_p;
 
-		do {
-			dl_addr = ul_addr + ccb_configs[i].ul_buff_size;
-			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dl_addr, 16);
+		for (i = 0; i < ccb_configs_len; i++) {
+			/* dump dl buffer */
+			for (j = 0; j < ccb_configs[i].dl_buff_size / ccb_configs[i].dl_page_size;  j++) {
+				ccci_dump_write(md->index, CCCI_DUMP_MEM_DUMP, 0,
+						"ul_buf%2d-page%2d %p: %08X %08X %08X %08X\n",
+						i, j, curr_p, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
 
-			i++;
+				curr_ch_p += ccb_configs[i].dl_page_size;
+				curr_p = (unsigned int *)curr_ch_p;
+			}
 
-			ul_addr = dl_addr + ccb_configs[i].dl_buff_size;
-			ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, ul_addr, 16);
+			/* dump ul buffer */
+			for (j = 0; j < ccb_configs[i].ul_buff_size / ccb_configs[i].ul_page_size; j++) {
+				ccci_dump_write(md->index, CCCI_DUMP_MEM_DUMP, 0,
+						"dl_buf%2d-page%2d %p: %08X %08X %08X %08X\n",
+						i, j, curr_p, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
 
-		} while (i < ccb_configs_len - 1);
+				curr_ch_p += ccb_configs[i].ul_page_size;
+				curr_p = (unsigned int *)curr_ch_p;
+			}
+		}
 	}
 	if (flag & DUMP_FLAG_IMAGE) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD image memory\n");
