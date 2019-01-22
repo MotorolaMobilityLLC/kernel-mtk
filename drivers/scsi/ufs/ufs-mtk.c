@@ -485,17 +485,6 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 #endif
 	}
 
-	/*
-	 * Block SCSI request if we are doing shutdown.
-	 *
-	 * SCSI host will be removed in module removel process only but not
-	 * in shutdown process, thus I/O request may still go ufshcd driver
-	 * after ufshcd is shutdown, which will lead to bus hang in
-	 * ufshcd_queuecommand() because ufs clock is disabled.
-	 */
-	if (ufshcd_is_shutdown_pm(pm_op))
-		scsi_block_requests(hba->host);
-
 	return ret;
 }
 
@@ -547,16 +536,6 @@ static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 
 #endif
 	}
-
-	/*
-	 * Unblock SCSI request if we needs resume during shutdown.
-	 *
-	 * SCSI request will be blocked during shutdown process in
-	 * ufs_mtk_suspend(). This is for erroneous case during shutdown
-	 * process which resumes ufs later.
-	 */
-	if (ufshcd_is_shutdown_pm(pm_op))
-		scsi_unblock_requests(hba->host);
 
 	return ret;
 }

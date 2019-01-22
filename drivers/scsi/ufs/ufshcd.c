@@ -6080,6 +6080,8 @@ EXPORT_SYMBOL(ufshcd_runtime_idle);
 int ufshcd_shutdown(struct ufs_hba *hba)
 {
 	int ret = 0;
+	struct scsi_device *scsi_d;
+	int i;
 
 	if (ufshcd_is_ufs_dev_poweroff(hba) && ufshcd_is_link_off(hba))
 		goto out;
@@ -6089,6 +6091,22 @@ int ufshcd_shutdown(struct ufs_hba *hba)
 		if (ret)
 			goto out;
 	}
+
+	/*
+	  * MTK PATCH:
+	  * Wait all cmds done & block user issue cmds to
+	  * general LUs, wlun device, wlun rpmb and wlun boot.
+	  * To avoid new cmds coming after device has been
+	  * stopped by SSU cmd in ufshcd_suspend().
+	  */
+	for (i = 0; i < UFS_UPIU_MAX_GENERAL_LUN; i++) {
+		scsi_d = scsi_device_lookup(hba->host, 0, 0, i);
+		if (scsi_d != NULL)
+			scsi_device_quiesce(scsi_d);
+	}
+	scsi_device_quiesce(scsi_device_lookup(hba->host, 0, 0, ufshcd_upiu_wlun_to_scsi_wlun(UFS_UPIU_BOOT_WLUN)));
+	scsi_device_quiesce(hba->sdev_ufs_device);
+	scsi_device_quiesce(hba->sdev_ufs_rpmb);
 
 	/* MTK Patch: Remove Unregister RPMB device during shutdown and UFSHCD removal */
 	ufshcd_rpmb_remove(hba);
