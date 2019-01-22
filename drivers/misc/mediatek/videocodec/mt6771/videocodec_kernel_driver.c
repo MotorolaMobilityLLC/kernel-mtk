@@ -213,6 +213,24 @@ extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int va
 /* extern int config_L2(int option); */
 #endif
 
+#define VCODEC_DEBUG_SYS
+#ifdef VCODEC_DEBUG_SYS
+#define vcodec_attr(_name) \
+static struct kobj_attribute _name##_attr = {   \
+	.attr   = {                                 \
+		.name = __stringify(_name),             \
+		.mode = 0644,                           \
+	},                                          \
+	.show   = _name##_show,                     \
+	.store  = _name##_store,                    \
+}
+
+#include <linux/kobject.h>
+#include <linux/sysfs.h>
+static struct kobject *vcodec_debug_kobject;
+static unsigned int vcodecDebugMode;
+#endif
+
 /* disable temporary for alaska DVT verification, smi seems not ready */
 /* #define ENABLE_MMDVFS_VDEC */
 #ifdef ENABLE_MMDVFS_VDEC
@@ -220,8 +238,9 @@ extern void __attribute__((weak)) met_mmsys_tag(const char *tag, unsigned int va
 #include <mtk_smi.h>
 #include <mmdvfs_config_util.h>
 #define DROP_PERCENTAGE     50
-#define RAISE_PERCENTAGE    90
+#define RAISE_PERCENTAGE    85
 #define MONITOR_DURATION_MS 4000
+#define DVFS_UNREQUEST (-1)
 #define DVFS_LOW     MMDVFS_VOLTAGE_LOW
 #define DVFS_HIGH    MMDVFS_VOLTAGE_HIGH
 #define DVFS_DEFAULT MMDVFS_VOLTAGE_HIGH
@@ -239,6 +258,7 @@ static VAL_TIME_T   gMMDFVFSMonitorEndTime;
 static VAL_UINT32_T gHWLockInterval;
 static VAL_INT32_T  gHWLockMaxDuration;
 static VAL_UINT32_T gHWLockPrevInterval;
+static VAL_UINT32_T gMMDFVSCurrentVoltage = DVFS_UNREQUEST;
 
 VAL_UINT32_T TimeDiffMs(VAL_TIME_T timeOld, VAL_TIME_T timeNew)
 {
@@ -253,15 +273,23 @@ void SendDvfsRequest(int level)
 	int ret = 0;
 
 	if (level == MMDVFS_VOLTAGE_LOW) {
-		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_OPP2)");
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_OPP3)");
 #ifdef CONFIG_MTK_SMI_EXT
-		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_OPP2);
+		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_OPP3);
 #endif
+		gMMDFVSCurrentVoltage = MMDVFS_VOLTAGE_LOW;
 	} else if (level == MMDVFS_VOLTAGE_HIGH) {
 		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_OPP0)");
 #ifdef CONFIG_MTK_SMI_EXT
 		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_OPP0);
 #endif
+		gMMDFVSCurrentVoltage = MMDVFS_VOLTAGE_HIGH;
+	}  else if (level == DVFS_UNREQUEST) {
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_FINE_STEP_UNREQUEST)");
+#ifdef CONFIG_MTK_SMI_EXT
+		ret = mmdvfs_set_fine_step(SMI_BWC_SCEN_VP, MMDVFS_FINE_STEP_UNREQUEST);
+#endif
+		gMMDFVSCurrentVoltage = DVFS_UNREQUEST;
 	} else {
 		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
 	}
@@ -493,8 +521,40 @@ void vdec_power_on(void)
 		/* print error log & error handling */
 		pr_debug("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_VDEC is not enabled, ret = %d\n", ret);
 	}
-
 }
+
+#ifdef VCODEC_DEBUG_SYS
+static ssize_t vcodec_debug_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+#ifdef ENABLE_MMDVFS_VDEC
+	VAL_UINT32_T _monitor_duration = 0;
+	VAL_UINT32_T _perc = 0;
+
+	if (gMMDFVFSMonitorStarts == VAL_TRUE && gMMDFVFSMonitorCounts > MONITOR_START_MINUS_1) {
+		_monitor_duration = VdecDvfsGetMonitorDuration();
+		_perc = (VAL_UINT32_T)(100 * gHWLockInterval / _monitor_duration);
+		return sprintf(buf, "[MMDVFS_VDEC] drop_thre=%d, raise_thre=%d, vol=%d, percent=%d\n",
+				 DROP_PERCENTAGE, RAISE_PERCENTAGE, gMMDFVSCurrentVoltage, _perc);
+	} else {
+		return sprintf(buf, "End of monitoring interval. Please try again.\n");
+	}
+#else
+	return sprintf(buf, "Not profiling(%d).\n", vcodecDebugMode);
+#endif
+}
+
+static ssize_t vcodec_debug_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	if (sscanf(buf, "%du", &vcodecDebugMode) == 1) {
+		/* Add one line comment to meet coding style */
+		MODULE_MFV_LOGD("[VCODEC][vcodec_debug_store] Input is stored\n");
+	}
+	return count;
+}
+
+vcodec_attr(vcodec_debug);
+
+#endif
 
 void vdec_power_off(void)
 {
@@ -1454,6 +1514,15 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			mutex_unlock(&DecEMILock);
 			return -EFAULT;
 		}
+#ifdef ENABLE_MMDVFS_VDEC
+		/* MM DVFS related */
+		/* MODULE_MFV_PR_DEBUG("[VCODEC][MMDVFS_VDEC] DEC_DEC_EMI MM DVFS\n"); */
+		/* unrequest voltage */
+		if (gu4DecEMICounter == 0) {
+		/* Unrequest when all decoders exit */
+			SendDvfsRequest(DVFS_UNREQUEST);
+		}
+#endif
 		mutex_unlock(&DecEMILock);
 
 		MODULE_MFV_LOGD("VCODEC_DEC_DEC_EMI_USER - tid = %d\n", current->pid);
@@ -2283,7 +2352,7 @@ static int vcodec_release(struct inode *inode, struct file *file)
 			gMMDFVFSMonitorCounts = 0;
 			gHWLockInterval = 0;
 			gHWLockMaxDuration = 0;
-			SendDvfsRequest(DVFS_LOW);
+			SendDvfsRequest(DVFS_UNREQUEST);
 		}
 #endif
 	}
@@ -2546,6 +2615,7 @@ static int __init vcodec_driver_init(void)
 {
 	VAL_RESULT_T  eValHWLockRet;
 	VAL_ULONG_T ulFlags, ulFlagsLockHW, ulFlagsISR;
+	int error = 0;
 
 	MODULE_MFV_LOGD("+vcodec_driver_init !!\n");
 
@@ -2690,6 +2760,21 @@ static int __init vcodec_driver_init(void)
 	register_swsusp_restore_noirq_func(ID_M_VCODEC, vcodec_pm_restore_noirq, NULL);
 #endif
 
+#ifdef VCODEC_DEBUG_SYS
+	vcodec_debug_kobject = kobject_create_and_add("vcodec", NULL);
+
+	if (!vcodec_debug_kobject) {
+		pr_debug("Faile to create and add vcodec kobject");
+		return -ENOMEM;
+	}
+
+	error = sysfs_create_file(vcodec_debug_kobject, &vcodec_debug_attr.attr);
+	if (error) {
+		pr_debug("Faile to create and add vcodec_debug file in /sys/vcodec/");
+		return error;
+	}
+#endif
+
 	return platform_driver_register(&vcodec_driver);
 }
 
@@ -2748,11 +2833,15 @@ static void __exit vcodec_driver_exit(void)
 	unregister_swsusp_restore_noirq_func(ID_M_VCODEC);
 #endif
 
+#ifdef VCODEC_DEBUG_SYS
+	kobject_put(vcodec_debug_kobject);
+#endif
+
 	platform_driver_unregister(&vcodec_driver);
 }
 
 module_init(vcodec_driver_init);
 module_exit(vcodec_driver_exit);
 MODULE_AUTHOR("Legis, Lu <legis.lu@mediatek.com>");
-MODULE_DESCRIPTION("Conon Vcodec Driver");
+MODULE_DESCRIPTION("Sylvia Vcodec Driver");
 MODULE_LICENSE("GPL");
