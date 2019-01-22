@@ -16,6 +16,7 @@
 
 #include "ccu_reg.h"
 #include "ccu_drv.h"
+extern void cam_mtcmos_check(void);
 
 /*spare register define*/
 #define CCU_STA_REG_SW_INIT_DONE        CCU_INFO30

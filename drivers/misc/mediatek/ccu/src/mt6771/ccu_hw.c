@@ -609,6 +609,8 @@ int ccu_force_powerdown(void)
 
 	if (ccuInfo.IsCcuPoweredOn == 1) {
 		LOG_WARN("CCU kernel drv released on CCU running, try to force shutdown\n");
+		LOG_WARN("dump cam_mtcmos_check\n");
+		cam_mtcmos_check();
 		/*Set special isr task to MSG_TO_CCU_SHUTDOWN*/
 		ccu_write_reg(ccu_base, CCU_INFO29, MSG_TO_CCU_SHUTDOWN);
 		/*Interrupt to CCU*/
