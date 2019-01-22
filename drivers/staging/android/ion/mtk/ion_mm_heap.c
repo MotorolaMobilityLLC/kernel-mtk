@@ -793,6 +793,9 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 				struct ion_mm_buffer_info *buffer_info = buffer->priv_virt;
 
 				mutex_lock(&buffer_info->lock);
+				if (param.config_buffer_param.module_id < 0)
+					IONMSG("ION_MM_CONFIG_BUFFER module_id error:%d-%d,name %16.s!!!\n",
+					       param.config_buffer_param.module_id, buffer->heap->type, client->name);
 				if (buffer_info->MVA == 0) {
 					buffer_info->module_id = param.config_buffer_param.module_id;
 					buffer_info->security = param.config_buffer_param.security;
