@@ -524,7 +524,7 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 		}
 	}
 
-	if (!(cpu >= 0 && cpu <= 7))
+	if (!(cpu >= 0 && cpu < NF_CPU))
 		return MCDI_STATE_WFI;
 
 	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
