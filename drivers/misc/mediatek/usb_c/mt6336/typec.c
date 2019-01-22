@@ -511,8 +511,9 @@ void enable_ufp(struct typec_hba *hba)
 static void trigger_driver(struct work_struct *work)
 {
 #if !COMPLIANCE
+	struct delayed_work *dwork = to_delayed_work(work);
+	struct typec_hba *hba = container_of(dwork, struct typec_hba, usb_work);
 
-	struct typec_hba *hba = container_of(work, struct typec_hba, usb_work);
 	static int type = PD_NO_ROLE;
 	const int action[3][3] = { { 0, 6, 1}, { 5, 0, 2 }, { 3, 4, 0} };
 
@@ -1626,10 +1627,16 @@ static void typec_wait_vbus_on_attach_wait_snk(struct work_struct *work)
 	while (((typec_read8(hba, TYPE_C_CC_STATUS) & RO_TYPE_C_CC_ST) == TYPEC_STATE_ATTACH_WAIT_SNK)
 		&& (i < POLLING_MAX_TIME(hba->vbus_on_polling))) {
 		if (hba->vbus_det_en && (typec_vbus(hba) > PD_VSAFE5V_LOW)) {
-			typec_vbus_present(hba, 1);
-			dev_err(hba->dev, "Vbus ON in AttachWait.SNK state\n");
 
-			break;
+			if (hba->vbus_en == 1) {
+				typec_drive_vbus(hba, 0);
+			} else {
+				typec_vbus_present(hba, 1);
+
+				dev_err(hba->dev, "Vbus ON in AttachWait.SNK state\n");
+
+				break;
+			}
 		}
 		i++;
 		msleep(hba->vbus_on_polling);
@@ -1879,7 +1886,8 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		/*Move trigger host/device driver to pd_task, if support PD*/
 		if ((hba->mode == 1) && (hba->cc > DONT_CARE)) {
 			hba->data_role = PD_NO_ROLE;
-			schedule_work(&hba->usb_work);
+			cancel_delayed_work_sync(&hba->usb_work);
+			schedule_delayed_work(&hba->usb_work, 0);
 		}
 
 		hba->cc = DONT_CARE;
@@ -1924,7 +1932,7 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		/*Move trigger host/device driver to pd_task, if support PD*/
 		if (hba->mode == 1) {
 			hba->data_role = PD_ROLE_UFP;
-			schedule_work(&hba->usb_work);
+			schedule_delayed_work(&hba->usb_work, 0);
 		}
 
 		if (!pd_is_power_swapping(hba))
@@ -1946,7 +1954,7 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 		/*Move trigger host/device driver to pd_task, if support PD*/
 		if (hba->mode == 1) {
 			hba->data_role = PD_ROLE_DFP;
-			schedule_work(&hba->usb_work);
+			schedule_delayed_work(&hba->usb_work, msecs_to_jiffies(100));
 		}
 
 		if (!pd_is_power_swapping(hba))
@@ -2226,7 +2234,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	INIT_WORK(&hba->irq_work, typec_irq_work);
 
 	/*trigger usb device/host driver*/
-	INIT_WORK(&hba->usb_work, trigger_driver);
+	INIT_DELAYED_WORK(&hba->usb_work, trigger_driver);
 
 #if USE_AUXADC
 #ifdef MT6336_E1

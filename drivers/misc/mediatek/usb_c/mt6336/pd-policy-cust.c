@@ -156,6 +156,7 @@ int pd_check_data_swap(struct typec_hba *hba)
 
 void pd_execute_data_swap(struct typec_hba *hba, int data_role)
 {
+	int debounce = 0;
 	/*
 	 * Under these 5 situations, the driver will call DR_SWAP.
 	 * 1. Hard Reset. Reset to the default state
@@ -170,7 +171,10 @@ void pd_execute_data_swap(struct typec_hba *hba, int data_role)
 	 * 5. Attached.SNK
 	 *       UFP
 	 */
-	schedule_work(&hba->usb_work);
+	if (hba->task_state == PD_STATE_SRC_ATTACH)
+		debounce = 100;
+
+	schedule_delayed_work(&hba->usb_work, msecs_to_jiffies(debounce));
 }
 
 void pd_check_pr_role(struct typec_hba *hba, int pr_role, int flags)
