@@ -958,6 +958,7 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf, s
 {
 	int layout = 0;
 	struct lsm6ds3h_i2c_data *data = obj_i2c_data;
+	int ret = 0;
 
 	if (data == NULL) {
 		GSE_PR_ERR("lsm6ds3h_i2c_data is null!!\n");
@@ -972,7 +973,9 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf, s
 			GSE_PR_ERR("invalid layout: %d, restore to %d\n", layout, data->hw->direction);
 		} else {
 			GSE_PR_ERR("invalid layout: (%d, %d)\n", layout, data->hw->direction);
-			hwmsen_get_convert(0, &data->cvt);
+			ret = hwmsen_get_convert(0, &data->cvt);
+			if (!ret)
+				GSE_PR_ERR("HWMSEN_GET_CONVERT function error!\r\n");
 		}
 	} else {
 		GSE_PR_ERR("invalid format = '%s'\n", buf);
