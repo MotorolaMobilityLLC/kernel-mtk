@@ -189,15 +189,13 @@ static struct disp_session_sync_info *_get_session_sync_info(unsigned int sessio
 			sprintf(name, "%s%d_waitvsync", disp_session_mode_spy(session_id),
 				DISP_SESSION_DEV(session_id));
 			dprec_logger_event_init(&session_info->event_waitvsync, name,
-						DPREC_LOGGER_LEVEL_DEFAULT |
-						DPREC_LOGGER_LEVEL_SYSTRACE,
+						DPREC_LOGGER_LEVEL_DEFAULT,
 						&session_info->event_prepare.mmp);
 
 			sprintf(name, "%s%d_err", disp_session_mode_spy(session_id),
 				DISP_SESSION_DEV(session_id));
 			dprec_logger_event_init(&session_info->event_err, name,
-						DPREC_LOGGER_LEVEL_DEFAULT |
-						DPREC_LOGGER_LEVEL_SYSTRACE,
+						DPREC_LOGGER_LEVEL_DEFAULT,
 						&session_info->event_prepare.mmp);
 
 			for (j = 0; j < (sizeof(session_info->session_layer_info) /
