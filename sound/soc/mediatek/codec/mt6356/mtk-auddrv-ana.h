@@ -49,7 +49,7 @@
 /*****************************************************************************
  *                E X T E R N A L   R E F E R E N C E S
  *****************************************************************************/
-#include "mtk-auddrv-common.h"
+#include "mtk-auddrv-def.h"
 
 /*****************************************************************************
  *                         D A T A   T Y P E S
@@ -119,7 +119,7 @@ typedef	int64 kal_int64;
 #define PMIC_AFE_ADDA_MTKAIF_MON1     ((UINT32)(PMIC_REG_BASE + 0x15a8))
 #define PMIC_AFE_ADDA_MTKAIF_MON2     ((UINT32)(PMIC_REG_BASE + 0x15aa))
 #define PMIC_AFE_ADDA_MTKAIF_MON3     ((UINT32)(PMIC_REG_BASE + 0x15ac))
-#define PMIC_ADDA_MTKAIF_CFG0         ((UINT32)(PMIC_REG_BASE + 0x15ae))
+#define PMIC_AFE_ADDA_MTKAIF_CFG0     ((UINT32)(PMIC_REG_BASE + 0x15ae))
 #define PMIC_AFE_ADDA_MTKAIF_RX_CFG0  ((UINT32)(PMIC_REG_BASE + 0x15b0))
 #define PMIC_AFE_ADDA_MTKAIF_RX_CFG1  ((UINT32)(PMIC_REG_BASE + 0x15b2))
 #define PMIC_AFE_ADDA_MTKAIF_RX_CFG2  ((UINT32)(PMIC_REG_BASE + 0x15b4))
