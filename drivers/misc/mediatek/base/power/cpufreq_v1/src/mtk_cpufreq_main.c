@@ -374,8 +374,8 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 
 		notify_cpu_volt_sampler(p->id, volt, VOLT_UP, VOLT_PRECHANGE);
 		do {
-			unsigned int old_vproc = cur_vproc;
-			unsigned int old_vsram = cur_vsram;
+			old_vproc = cur_vproc;
+			old_vsram = cur_vsram;
 
 			next_vsram = MIN((MAX_DIFF_VSRAM_VPROC - 2500) + cur_vproc, target_vsram);
 
@@ -420,8 +420,8 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 
 		notify_cpu_volt_sampler(p->id, volt, VOLT_DOWN, VOLT_PRECHANGE);
 		do {
-			unsigned int old_vproc = cur_vproc;
-			unsigned int old_vsram = cur_vsram;
+			old_vproc = cur_vproc;
+			old_vsram = cur_vsram;
 
 			next_vproc = MAX(next_vsram - (MAX_DIFF_VSRAM_VPROC - 2500), volt);
 
