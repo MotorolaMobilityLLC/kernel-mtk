@@ -312,10 +312,18 @@ void musb_disable_q_all(struct musb *musb)
 	for (ep_num = 1; ep_num <= RXQ_NUM; ep_num++) {
 		if (mtk_is_qmu_enabled(ep_num, RXQ))
 			mtk_disable_q(musb, ep_num, 1);
+
+		/* reset statistics */
+		mtk_host_qmu_rx_max_active_isoc_gpd[ep_num] = 0;
+		mtk_host_qmu_rx_max_number_of_pkts[ep_num] = 0;
 	}
 	for (ep_num = 1; ep_num <= TXQ_NUM; ep_num++) {
 		if (mtk_is_qmu_enabled(ep_num, TXQ))
 			mtk_disable_q(musb, ep_num, 0);
+
+		/* reset statistics */
+		mtk_host_qmu_tx_max_active_isoc_gpd[ep_num] = 0;
+		mtk_host_qmu_tx_max_number_of_pkts[ep_num] = 0;
 	}
 }
 
@@ -570,10 +578,9 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			if (mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum] < urb->number_of_packets)
 				mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum] = urb->number_of_packets;
 
-			DBG_LIMIT(1, "TXQ[%d], max_isoc gpd:%d, max_pkts:%d, skip:%d, active_dev:%d",
+			DBG_LIMIT(1, "TXQ[%d], max_isoc gpd:%d, max_pkts:%d, active_dev:%d",
 					hw_ep->epnum, mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum],
 					mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum],
-					skip_cnt,
 					mtk_host_active_dev_cnt);
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
@@ -600,10 +607,9 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			if (mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum] < urb->number_of_packets)
 				mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum] = urb->number_of_packets;
 
-			DBG_LIMIT(1, "RXQ[%d], max_isoc gpd:%d, max_pkts:%d, skip:%d, active_dev:%d",
+			DBG_LIMIT(1, "RXQ[%d], max_isoc gpd:%d, max_pkts:%d, active_dev:%d",
 					hw_ep->epnum, mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum],
 					mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum],
-					skip_cnt,
 					mtk_host_active_dev_cnt);
 		}
 
