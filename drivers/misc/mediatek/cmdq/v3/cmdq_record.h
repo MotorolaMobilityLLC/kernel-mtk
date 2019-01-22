@@ -30,10 +30,12 @@ enum CMDQ_STACK_TYPE_ENUM {
 	CMDQ_STACK_TYPE_DO_WHILE = 5,
 };
 
-#define CMDQ_DATA_BIT				(62)
-#define CMDQ_BIT_VALUE				(0LL)
-#define CMDQ_BIT_VAR				(1LL)
+#define CMDQ_DATA_BIT			(62)
+#define CMDQ_BIT_VALUE			(0LL)
+#define CMDQ_BIT_VAR			(1LL)
 #define CMDQ_TASK_CPR_INITIAL_VALUE	(0)
+#define CMDQ_REC_DEFAULT_PRIORITY	(100)
+#define CMDQ_REC_MAX_PRIORITY		(0xFFFFFFFF)
 
 struct cmdq_stack_node {
 	uint32_t position;
@@ -51,21 +53,21 @@ struct cmdq_sub_function {
 };
 
 struct cmdqRecStruct {
-	uint64_t engineFlag;
-	int32_t scenario;
-	uint32_t blockSize;	/* command size */
+	u64 engineFlag;
+	s32 scenario;
+	u32 blockSize;	/* command size */
 	void *pBuffer;
-	uint32_t bufferSize;	/* allocated buffer size */
+	u32 bufferSize;	/* allocated buffer size */
 	struct TaskStruct *pRunningTask;	/* running task after flush() or startLoop() */
-	enum CMDQ_HW_THREAD_PRIORITY_ENUM priority;	/* setting high priority. This implies Prefetch ENABLE. */
+	u32 priority;	/* task schedule priority. this is NOT HW thread priority. */
 	bool finalized;		/* set to true after flush() or startLoop() */
-	uint32_t prefetchCount;	/* maintenance prefetch instruction */
+	u32 prefetchCount;	/* maintenance prefetch instruction */
 
 	struct cmdqSecDataStruct secData;	/* secure execution data */
 
 	/* For v3 CPR use */
 	struct cmdq_v3_replace_struct replace_instr;
-	uint8_t local_var_num;
+	u8 local_var_num;
 	struct cmdq_stack_node *if_stack_node;
 	struct cmdq_stack_node *while_stack_node;
 	CMDQ_VARIABLE arg_source;	/* poll source, wait_timeout event */
