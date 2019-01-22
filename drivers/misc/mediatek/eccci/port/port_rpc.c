@@ -200,7 +200,8 @@ static int get_eint_attr_val(int md_id, struct device_node *node, int index)
 		if (ret != 0) {
 			md_eint_struct[type].value_sim[index] = ERR_SIM_HOT_PLUG_QUERY_TYPE;
 			CCCI_NORMAL_LOG(md_id, RPC, "%s:  not found\n", md_eint_struct[type].property);
-			return ERR_SIM_HOT_PLUG_QUERY_TYPE;
+			ret = ERR_SIM_HOT_PLUG_QUERY_TYPE;
+			continue;
 		}
 		/* special case: polarity's position == sensitivity's start[ */
 		if (type == SIM_HOT_PLUG_EINT_POLARITY) {
@@ -229,7 +230,7 @@ static int get_eint_attr_val(int md_id, struct device_node *node, int index)
 		} else
 			md_eint_struct[type].value_sim[index] = value;
 	}
-	return 0;
+	return ret;
 }
 
 void get_dtsi_eint_node(int md_id)
@@ -278,7 +279,8 @@ int get_eint_attr_DTSVal(int md_id, char *name, unsigned int name_len,
 			CCCI_BOOTUP_LOG(md_id, RPC, "md_eint:%s, sizeof: %d, sim_info: %d, %d\n",
 					eint_node_prop.eint_value[type].property,
 					*len, *sim_info, eint_node_prop.eint_value[type].value_sim[i]);
-			return 0;
+			if (sim_value >= 0)
+				return 0;
 		}
 	}
 	return ERR_SIM_HOT_PLUG_QUERY_STRING;
