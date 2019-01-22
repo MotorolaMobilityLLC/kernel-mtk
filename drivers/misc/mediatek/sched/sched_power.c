@@ -103,27 +103,25 @@ bool is_hybrid_enabled(void)
 	return (sched_type == SCHED_HYBRID_LB) ? true : false;
 }
 
-/* MT6799: cluster 0 & 2 is buck shared. */
+#if defined(CONFIG_MACH_MT6763)
+/* MT6763: 2 gears. cluster 0 & 1 is buck shared. */
+static int share_buck[3] = {1, 0, 2};
+#elif defined(CONFIG_MACH_MT6799)
+/* MT6799: 3 gears. cluster 0 & 2 is buck shared. */
+static int share_buck[3] = {2, 1, 0};
+#else
+/* no buck shared */
+static int share_buck[3] = {0, 1, 2};
+#endif
+
 bool is_share_buck(int cid, int *co_buck_cid)
 {
 	bool ret = false;
 
-	switch (cid) {
-	case 0:
-		*co_buck_cid = 2;
+	if (share_buck[cid] != cid) {
+		*co_buck_cid = share_buck[cid];
 		ret = true;
-		break;
-	case 2:
-		*co_buck_cid = 0;
-		ret = true;
-		break;
-	case 1:
-		ret = false;
-		break;
-	default:
-		WARN_ON(1);
 	}
-
 
 	return ret;
 }
@@ -142,7 +140,7 @@ static unsigned long mtk_cluster_max_usage(int cid, struct energy_env *eenv, int
 	for_each_cpu(cpu, &cls_cpus) {
 		int cpu_usage = 0;
 
-		if (likely(!cpu_online(cpu)))
+		if (!cpu_online(cpu))
 			continue;
 
 		delta = calc_util_delta(eenv, cpu);
