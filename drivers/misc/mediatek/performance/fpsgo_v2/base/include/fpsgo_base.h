@@ -106,6 +106,7 @@ struct render_info {
 	unsigned long long dequeue_length;
 	unsigned long long self_time;
 	unsigned long long Q2Q_time;
+	unsigned long long sleep_time;
 
 	/*fbt*/
 	int linger;

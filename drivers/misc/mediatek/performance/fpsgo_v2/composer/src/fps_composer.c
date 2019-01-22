@@ -281,6 +281,12 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 		f_render->t_enqueue_start = enqueue_start_time;
 		FPSGO_COM_TRACE("pid[%d] type[%d] enqueue_s:%llu frame_time:%llu buffer_id:%llu",
 			pid, f_render->frame_type, enqueue_start_time, f_render->self_time, buffer_id);
+		if (f_render->render_method == GLSURFACE) {
+			xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_START, &slptime);
+			if (xgf_ret != XGF_SLPTIME_OK)
+				pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+			f_render->sleep_time = slptime;
+		}
 		fpsgo_comp2fbt_enq_start(f_render, enqueue_start_time);
 		break;
 	case NON_VSYNC_ALIGNED_TYPE:
@@ -356,6 +362,11 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 			enqueue_end_time - f_render->t_enqueue_start;
 		FPSGO_COM_TRACE("pid[%d] type[%d] enqueue_e:%llu enqueue_l:%llu",
 			pid, f_render->frame_type, enqueue_end_time, f_render->enqueue_length);
+		if (f_render->render_method == GLSURFACE) {
+			xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_END, NULL);
+			if (xgf_ret != XGF_SLPTIME_OK)
+				pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+		}
 		fpsgo_comp2fbt_enq_end(f_render, enqueue_end_time);
 		break;
 	case NON_VSYNC_ALIGNED_TYPE:
@@ -416,6 +427,11 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 		f_render->t_dequeue_start = dequeue_start_time;
 		FPSGO_COM_TRACE("pid[%d] type[%d] dequeue_s:%llu",
 			pid, f_render->frame_type, dequeue_start_time);
+		if (f_render->render_method == GLSURFACE) {
+			xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_DEQUEUE_START, NULL);
+			if (xgf_ret != XGF_SLPTIME_OK)
+				pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+		}
 		fpsgo_comp2fbt_deq_start(f_render, dequeue_start_time);
 		break;
 	case NON_VSYNC_ALIGNED_TYPE:
@@ -474,6 +490,11 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 			dequeue_end_time - f_render->t_dequeue_start;
 		FPSGO_COM_TRACE("pid[%d] type[%d] dequeue_e:%llu dequeue_l:%llu",
 			pid, f_render->frame_type, dequeue_end_time, f_render->dequeue_length);
+		if (f_render->render_method == GLSURFACE) {
+			xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_DEQUEUE_END, NULL);
+			if (xgf_ret != XGF_SLPTIME_OK)
+				pr_debug(COMP_TAG"%s xgf_err:%d", __func__, xgf_ret);
+		}
 		fpsgo_comp2fbt_deq_end(f_render, dequeue_end_time);
 		break;
 	case NON_VSYNC_ALIGNED_TYPE:
@@ -523,7 +544,7 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid,
 		if (pos->frame_type != BY_PASS_TYPE && pos->render) {
 			fpsgo_systrace_c_fbt_gm(-300, pos->self_time,
 				"%d_%d-frame_time", pos->pid, pos->frame_type);
-			fpsgo_comp2fbt_frame_start(pos, t_frame_start, 0ULL);
+			fpsgo_comp2fbt_frame_start(pos, t_frame_start, pos->sleep_time);
 		}
 		fpsgo_thread_unlock(&pos->thr_mlock);
 	}
