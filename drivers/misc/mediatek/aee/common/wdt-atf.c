@@ -546,6 +546,8 @@ void notrace aee_wdt_atf_entry(void)
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_exp_type(1);
 #endif
+	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
+
 	if (atf_aee_debug_virt_addr) {
 		regs = (void *)(atf_aee_debug_virt_addr + (cpu * sizeof(struct atf_aee_regs)));
 
