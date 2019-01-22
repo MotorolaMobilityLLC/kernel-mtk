@@ -80,6 +80,7 @@ static void vpu_test_wpp(void)
 	struct vpu_buffer *buf;
 	struct vpu_algo *algo;
 
+	struct vpu_shared_memory_param mem_param;
 	struct vpu_shared_memory *shared_mem;
 	unsigned char *buf_va;
 	unsigned int buf_pa;
@@ -90,7 +91,11 @@ static void vpu_test_wpp(void)
 		return;
 	}
 
-	if (vpu_alloc_shared_memory(&shared_mem, buf_size)) {
+	mem_param.require_va = true;
+	mem_param.require_pa = true;
+	mem_param.size = buf_size;
+	mem_param.fixed_addr = 0;
+	if (vpu_alloc_shared_memory(&shared_mem, &mem_param)) {
 		LOG_ERR("vpu test: alloc memory failed.\n");
 		return;
 	}
@@ -177,6 +182,7 @@ static void vpu_test_be_true(void)
 	struct vpu_algo *algo;
 	struct emu_setting *sett;
 
+	struct vpu_shared_memory_param mem_param;
 	struct vpu_shared_memory *shared_mem;
 	unsigned char *buf_va;
 	unsigned int buf_pa;
@@ -187,7 +193,11 @@ static void vpu_test_be_true(void)
 		return;
 	}
 
-	if (vpu_alloc_shared_memory(&shared_mem, buf_size)) {
+	mem_param.require_va = true;
+	mem_param.require_pa = true;
+	mem_param.size = buf_size;
+	mem_param.fixed_addr = 0;
+	if (vpu_alloc_shared_memory(&shared_mem, &mem_param)) {
 		LOG_ERR("vpu test: alloc memory failed.\n");
 		return;
 	}
