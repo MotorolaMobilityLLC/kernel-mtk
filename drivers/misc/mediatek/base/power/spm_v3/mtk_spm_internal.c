@@ -809,7 +809,7 @@ u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
 	return period;
 }
 
-int dcs_get_channel_lock(void)
+int get_channel_lock(void)
 {
 #ifdef CONFIG_MTK_DCS
 	int ch = 0, ret = -1;
@@ -833,7 +833,7 @@ int dcs_get_channel_lock(void)
 #endif
 }
 
-void dcs_get_channel_unlock(void)
+void get_channel_unlock(void)
 {
 #ifdef CONFIG_MTK_DCS
 	dcs_get_dcs_status_unlock();
