@@ -2156,7 +2156,7 @@ static void fbt_update_pwd_tbl(void)
 	for (cluster = 0; cluster < cluster_num ; cluster++) {
 		if (fbt_is_mips_different() && cpu_dvfs[cluster].capacity[0])
 			cpu_capacity_ratio[cluster] =
-			(max_cap << 7) / cpu_dvfs[cluster].capacity[0];
+				div64_u64((max_cap << 7), cpu_dvfs[cluster].capacity[0]);
 		else
 			cpu_capacity_ratio[cluster] = 128;
 	}
