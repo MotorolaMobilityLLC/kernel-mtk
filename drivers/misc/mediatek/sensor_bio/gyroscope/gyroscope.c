@@ -408,12 +408,10 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 		err = cxt->gyro_ctl.batch(0, cxt->delay_ns, 0);
 	if (err) {
 		GYRO_PR_ERR("gyro set batch(ODR) err %d\n", err);
-		goto err_out;
 	}
 #else
 	err = gyro_enable_and_batch();
 #endif
-err_out:
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 	return err;
 }
