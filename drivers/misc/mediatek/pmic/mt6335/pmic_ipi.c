@@ -71,69 +71,75 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 
 	case MAIN_PMIC_WRITE_REGISTER:
 		if (ret_val) {
-			if (ret_val == IPI_BUSY) {
+			if (ret_val == IPI_BUSY || ret_val == IPI_TIMEOUT_ACK) {
 				if (ipi_ret != 0)
 					pr_err("%s ap_ret_w = %d ipi_ret_w =%d\n", __func__,
 							ret_val, ipi_ret);
-				else
-					ret_val = ipi_ret;
-
 			} else
 				/* Real PMIC service execution result, by each PMIC service */
 				pr_err("%s ap_ret_w = %d ipi_ret_w =%d\n", __func__,
 						ret_val, ipi_ret);
-		} else
-			ret_val = ipi_ret;
+		} else {
+			if (ipi_ret != 0)
+				pr_err("%s ap_ret_w = %d ipi_ret_w =%d\n", __func__,
+					ret_val, ipi_ret);
+		}
+		ret_val = ipi_ret;
 
 		break;
 
 	case MAIN_PMIC_READ_REGISTER:
 		if (ret_val) {
-			if (ret_val == IPI_BUSY) {
+			if (ret_val == IPI_BUSY || ret_val == IPI_TIMEOUT_ACK) {
 				if (ipi_ret != 0)
 					pr_err("%s ap_ret_r = %d ipi_ret_r =%d\n", __func__,
 							ret_val, ipi_ret);
-				else
-					ret_val = ipi_ret;
-
 			} else
 				/* Real PMIC service execution result, by each PMIC service */
 				pr_err("%s ap_ret_r = %d ipi_ret_r =%d\n", __func__,
 						ret_val, ipi_ret);
-		} else
-			ret_val = ipi_ret;
+		} else {
+			if (ipi_ret != 0)
+				pr_err("%s ap_ret_r = %d ipi_ret_r =%d\n", __func__,
+					ret_val, ipi_ret);
+		}
+		ret_val = ipi_ret;
 		break;
 
 	case MAIN_PMIC_REGULATOR:
 		if (ret_val) {
-			if (ret_val == IPI_BUSY) {
+			if (ret_val == IPI_BUSY || ret_val == IPI_TIMEOUT_ACK) {
 				if (ipi_ret != 0)
 					pr_err("%s ap_ret_mreg = %d ipi_ret_mreg =%d\n", __func__,
 						ret_val, ipi_ret);
-				else
-					ret_val = ipi_ret;
 			} else
 				/* Real PMIC service execution result, by each PMIC service */
 				pr_err("%s ap_ret_mreg = %d ipi_ret_mreg =%d\n", __func__,
 						ret_val, ipi_ret);
-		} else
-			ret_val = ipi_ret;
+		} else {
+			if (ipi_ret != 0)
+				pr_err("%s ap_ret_mreg = %d ipi_ret_mreg =%d\n", __func__,
+					ret_val, ipi_ret);
+		}
+		ret_val = ipi_ret;
 		break;
 
 	case SUB_PMIC_CTRL:
 		if (ret_val) {
-			if (ret_val == IPI_BUSY) {
+			if (ret_val == IPI_BUSY || ret_val == IPI_TIMEOUT_ACK) {
 				if (ipi_ret != 0 && ipi_ret != 1)
 					pr_err("%s ap_ret_sub = %d ipi_ret_sub =%d\n", __func__,
 						ret_val, ipi_ret);
-				else
-					ret_val = ipi_ret;
 			} else
 				/* Real PMIC service execution result, by each PMIC service */
 				pr_err("%s ap_ret_sub = %d ipi_ret_sub =%d\n", __func__,
 					ret_val, ipi_ret);
-		} else
-			ret_val = ipi_ret;
+		} else {
+			if (ipi_ret != 0 && ipi_ret != 1)
+				pr_err("%s ap_ret_sub = %d ipi_ret_sub =%d\n", __func__,
+					ret_val, ipi_ret);
+		}
+		ret_val = ipi_ret;
 
 		break;
 
