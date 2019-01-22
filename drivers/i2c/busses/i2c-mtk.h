@@ -70,8 +70,6 @@
 #define I2C_DMA_CLR_FLAG		0x0000
 #define I2C_DMA_WARM_RST		0x0001
 #define I2C_DMA_4G_MODE			0x0001
-#define I2C_DMA_USR_DEF_ADDR		0x0001
-#define I2C_DMA_ROLLBACK		0x0002
 
 #define I2C_DEFAUT_SPEED		100000	/* hz */
 #define MAX_FS_MODE_SPEED		400000
@@ -324,8 +322,7 @@ struct mt_i2c {
 	bool gpupm;			/* I2C for GPUPM */
 	bool buffermode;	/* I2C Buffer mode support */
 	bool hs_only;	/* I2C HS only */
-	bool usr_def_dma;
-	resource_size_t raw_base;
+	bool dma_only;	/* I2C DMA only */
 	/* set when doing the transfer */
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */
@@ -350,12 +347,14 @@ struct mt_i2c {
 	const struct mtk_i2c_compatible *dev_comp;
 	int rec_idx; /* next record idx */
 	struct i2c_info rec_info[I2C_RECORD_LEN];
-	int ch_offset_default;
+	u32 ch_offset_default;
 	int ch_offset;
-	int dma_ch_offset_default;
+	u32 dma_ch_offset_default;
 	int dma_ch_offset;
 	bool have_scp;
 	int scp_ch;
+	bool have_ccu;
+	u32 ccu_offset;
 };
 
 #if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
