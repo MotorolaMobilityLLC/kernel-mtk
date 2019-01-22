@@ -35,10 +35,15 @@
 #ifdef CONFIG_MTK_GPU_SUPPORT
 #include "ged_dvfs.h"
 #endif
+#include <mtk_cooler_setting.h>
 
 /* 1: turn on adaptive fps cooler; 0: turn off */
 #define ADAPTIVE_FPS_COOLER              (1)
 
+#ifdef FEATURE_DFPS
+#include "dfrc.h"
+#include "dfrc_drv.h"
+#endif
 
 #define mtk_cooler_fps_dprintk_always(fmt, args...) \
 pr_debug("[Thermal/TC/fps]" fmt, ##args)
@@ -76,14 +81,20 @@ static struct switch_dev fps_switch_data;
 
 #if ADAPTIVE_FPS_COOLER
 /* TODO: TBD */
-#define MAX_FPS_LIMIT		60
-#define MIN_FPS_LIMIT		10
+#define CFG_MAX_FPS_LIMIT		60
+#define CFG_MIN_FPS_LIMIT		20
 
-#define MAX_FPS_LEVELS		(MAX_FPS_LIMIT - MIN_FPS_LIMIT)
-#define DEFAULT_FPS_LEVEL	10
-static int fps_level[MAX_FPS_LEVELS];
-static int nr_fps_levels = MAX_FPS_LEVELS;
-static int curr_fps_level;
+static int max_fps_limit = CFG_MAX_FPS_LIMIT;
+static int min_fps_limit = CFG_MIN_FPS_LIMIT;
+
+/* TODO: TBD */
+#define MAX_NR_FPS_LEVELS	8
+struct fps_level {
+	int start;
+	int end;
+};
+struct fps_level fps_levels[MAX_NR_FPS_LEVELS];
+static int nr_fps_levels = MAX_NR_FPS_LEVELS;
 
 #define MAX_FPS_SMA_LEN			10
 static int fps_history[MAX_FPS_SMA_LEN] = {0};
@@ -102,14 +113,9 @@ static int gpu_loading_sma_len = MAX_GPU_LOADING_SMA_LEN;
 
 static struct thermal_cooling_device *cl_adp_fps_dev;
 static unsigned int cl_adp_fps_state;
-static int cl_adp_fps_limit = MAX_FPS_LIMIT;
+static int cl_adp_fps_limit = CFG_MAX_FPS_LIMIT;
 
 #define GPU_LOADING_THRESHOLD	60
-/* in percentage */
-/* ====FPS_DEBUGFS=========
-*static int gpu_loading_threshold = GPU_LOADING_THRESHOLD;
-*====FPS_DEBUGFS===========
-*/
 
 /* in percentage */
 static int fps_error_threshold = 10;
@@ -117,13 +123,7 @@ static int fps_error_threshold = 10;
 static int fps_stable_period = 10;
 /* FPS is active when over stable tpcb or always */
 static int fps_limit_always_on;
-
-static int leave_fps_limit_duration = 1;
-/* minimum fps that we regard as still in game playing */
-static int in_game_low_fps = 5;
-
-/* FIXME: need someone set/clear this */
-static int in_game_whitelist = 1;
+static int in_game_mode;
 #endif
 
 #ifndef __GED_TYPE_H__
@@ -148,14 +148,14 @@ mtk_get_gpu_loading(unsigned int *pLoading)
 }
 
 
-static int game_whitelist_check(void)
+static int game_mode_check(void)
 {
 	unsigned long result = ged_query_info(GED_EVENT_GAS_MODE);
 
 	if (result == 1)
-		in_game_whitelist = 1;
+		in_game_mode = 1;
 	else if (result == 0)
-		in_game_whitelist = 0;
+		in_game_mode = 0;
 
 	return 0;
 }
@@ -190,6 +190,9 @@ static void mtk_cl_fps_set_fps_limit(void)
 	int i = 0;
 	int min_limit = 60;
 	unsigned int min_param = 60;
+#ifdef FEATURE_DFPS
+	int ret = -1;
+#endif
 
 	for (; i < MAX_NUM_INSTANCE_MTK_COOLER_FPS; i++) {
 		unsigned long curr_state;
@@ -219,7 +222,12 @@ static void mtk_cl_fps_set_fps_limit(void)
 
 	if (min_param != cl_fps_cur_limit) {
 		cl_fps_cur_limit = min_param;
+#ifdef FEATURE_DFPS
+		ret = dfrc_set_kernel_policy(DFRC_DRV_API_THERMAL, cl_fps_cur_limit, DFRC_DRV_MODE_FRR, 0, 0);
+		mtk_cooler_fps_dprintk_always("[DFPS] fps:%d, ret = %d\n", cl_fps_cur_limit, ret);
+#else
 		switch_set_state(&fps_switch_data, cl_fps_cur_limit);
+#endif
 		mtk_cooler_fps_dprintk_always("[%s] fps limit: %d\n", __func__, cl_fps_cur_limit);
 	}
 
@@ -284,46 +292,67 @@ static void set_sma_val(int vals[], int sma_len, int *idx, int val)
 	*idx = (*idx + 1) % sma_len;
 }
 
-/* increase by one level */
+/* Increase FPS limit: current limit + 10% (fps_error_threshold)
+ * @retval new fps limit
+ *
+ * search in ascending order
+ * For discrete range: same as before, we select the upper one level that
+ *                     is just larger than current target.
+ * For contiguous range: if the new limit is between [start,end], use new limit
+ */
 static int increase_fps_limit(void)
 {
-	if (curr_fps_level > 0)
-		curr_fps_level--;
+	int i, target_limit, fps_limit = max_fps_limit;
 
-	return fps_level[curr_fps_level];
+	target_limit = cl_adp_fps_limit * (100 + fps_error_threshold) / 100;
+
+	if (target_limit >= max_fps_limit)
+		return max_fps_limit;
+
+	for (i = nr_fps_levels - 1; i >= 0; i--) {
+		if (fps_levels[i].start == fps_levels[i].end) {
+			if (fps_levels[i].end >= target_limit) {
+				fps_limit = fps_levels[i].end;
+				break;
+			}
+		} else {
+			if (fps_levels[i].start >= target_limit) {
+				if (target_limit > fps_levels[i].end)
+					fps_limit = target_limit;
+				else
+					fps_limit = fps_levels[i].end;
+				break;
+			}
+		}
+	}
+
+	if (i < 0)
+		fps_limit = max_fps_limit;
+
+	return fps_limit;
 }
-
-#if 0
-/* decrease by one level */
-static int decrease_fps_limit(void)
-{
-	if (curr_fps_level < (nr_fps_levels - 1))
-		curr_fps_level++;
-
-	return fps_level[curr_fps_level];
-}
-#endif
 
 /**
- * floor function applied to fps_level
- * @retval index of fps_level
+ * floor function applied to fps_levels
+ * @retval new fps limit
+ * search in descending order, find the range whose 'end' is smaller than fps
+ * should consider fps_error_threshold
  */
-static int find_fps_floor(int fps)
+int find_fps_floor(int fps)
 {
 	int i;
 
 	for (i = 0; i < nr_fps_levels; i++) {
-		if (fps_level[i] <= fps)
-			return i;
+		/* sma_fps >= fps_limit * 90% */
+		if (fps >= fps_levels[i].end * (100 - fps_error_threshold) / 100) {
+			if (fps_levels[i].start >= fps && fps >= fps_levels[i].end)
+				return fps;
+			else
+				return fps_levels[i].end;
+		}
 	}
 
-	return nr_fps_levels - 1;
-}
-
-static int unlimit_fps_limit(void)
-{
-	curr_fps_level = 0;
-	return fps_level[curr_fps_level];
+	return min_fps_limit;
 }
 
 /**
@@ -337,6 +366,7 @@ static bool is_system_too_busy(void)
 
 	/* GPU cases */
 	gpu_loading = get_sma_val(gpu_loading_history, gpu_loading_sma_len);
+
 	mtk_cooler_fps_dprintk("[%s] gpu_loading = %d\n", __func__, gpu_loading);
 	if (gpu_loading >= GPU_LOADING_THRESHOLD)
 		return true;
@@ -352,7 +382,7 @@ static int adp_calc_fps_limit(void)
 	static int last_change_tpcb;
 	static int period;
 	int sma_tpcb, tpcb_change, sma_fps;
-	int fps_limit = fps_level[curr_fps_level];
+	int fps_limit = cl_adp_fps_limit;
 
 	if (period < fps_stable_period) {
 		period++;
@@ -368,59 +398,32 @@ static int adp_calc_fps_limit(void)
 	mtk_cooler_fps_dprintk("[%s] sma_tpcb = %d, tpcb_change = %d, sma_fps = %d\n",
 		__func__, sma_tpcb,  tpcb_change, sma_fps);
 
-	if (fps_limit_always_on || (sma_fps < 40 && sma_tpcb >= mtk_thermal_get_tpcb_target())) {
-		if (is_system_too_busy() &&	fps_limit - sma_fps >= fps_limit * fps_error_threshold / 100) {
-			mtk_cooler_fps_dprintk("[%s] fps_limit = %d, sma_fps = %d\n",
-			__func__, fps_limit, sma_fps);
-			/* we do not limit FPS if not in game */
-			if (in_game_whitelist) {
-				curr_fps_level = find_fps_floor(sma_fps);
-				fps_limit = fps_level[curr_fps_level];
-				mtk_cooler_fps_dprintk("[%s] curr_fps_level = %d, fps_limit = %d\n",
-				__func__, curr_fps_level, fps_limit);
-			}
-#if 0
-			else {
-			/* FIXME: give hint to somebody, so that user
-			* can decides whether he/she wants fps to be
-			* limited or not
-			* send_hint_to_user();
-			*/
-			}
+	if (fps_limit_always_on || sma_tpcb >= mtk_thermal_get_tpcb_target()) {
+		/* FPS variation is HIGH */
+		if (fps_limit - sma_fps > fps_limit * fps_error_threshold / 100) {
+			/* TODO: TBD: is "sma_fpa < 40" still necessary? */
+#ifdef FEATURE_DFPS
+			if (is_system_too_busy()) {
+#else
+			if (sma_fps < 40 && is_system_too_busy()) {
 #endif
+				fps_limit = find_fps_floor(sma_fps);
+				mtk_cooler_fps_dprintk("[%s] new_fps_limit = %d\n", __func__, fps_limit);
+			}
+		} else {
+			/* For always-on and low tpcb */
+			if (sma_tpcb < mtk_thermal_get_tpcb_target() && tpcb_change < 0)
+				fps_limit = increase_fps_limit();
 		}
+	} else if (tpcb_change < 0) { /* not always-on and low tpcb */
+		if (fps_limit - sma_fps <= fps_limit * fps_error_threshold / 100)
+			fps_limit = increase_fps_limit();
 	}
-
-	/* tpcb is falling and gpu loading is low, too */
-	if (sma_tpcb < mtk_thermal_get_tpcb_target() && tpcb_change < 0)
-		fps_limit = increase_fps_limit();
 
 	if (tpcb_change)
 		last_change_tpcb = sma_tpcb;
 
 	return fps_limit;
-}
-
-static bool in_consistent_scene(void)
-{
-	static int duration;
-	int fps = tm_input_fps;
-
-	if (!in_game_whitelist)
-		return false;
-
-	if (fps <= in_game_low_fps)
-		duration++;
-	else /* TODO: TBD: should we reset duration or decrease */
-		duration = 0;
-
-	mtk_cooler_fps_dprintk("[%s] fps <= in_game_low_fps = %d\n", __func__, duration);
-
-	if (duration >= leave_fps_limit_duration) {
-		duration = 0;
-		return false;
-	} else
-		return true;
 }
 
 static int adp_fps_set_cur_state(struct thermal_cooling_device *cdev,
@@ -440,7 +443,7 @@ static int adp_fps_set_cur_state(struct thermal_cooling_device *cdev,
 	fps_update();
 
 	/* game? */
-	game_whitelist_check();
+	game_mode_check();
 
 	set_sma_val(fps_history, fps_sma_len, &fps_history_idx, tm_input_fps);
 	set_sma_val(tpcb_history, tpcb_sma_len, &tpcb_history_idx,
@@ -451,15 +454,13 @@ static int adp_fps_set_cur_state(struct thermal_cooling_device *cdev,
 
 	set_sma_val(gpu_loading_history, gpu_loading_sma_len, &gpu_loading_history_idx,
 			gpu_loading);
-	/* 1. update the parameter of "cl_adp_fps_limit" */
-	/* do we already leave game? */
-	if (!in_consistent_scene())
-		unlimit_fps_limit();
 
-	if (cl_adp_fps_state)
+	/* 1. update the parameter of "cl_adp_fps_limit" */
+	/* we do not limit FPS if not in game */
+	if (in_game_mode && (cl_adp_fps_state || fps_limit_always_on))
 		cl_adp_fps_limit = adp_calc_fps_limit();
 	else
-		cl_adp_fps_limit = unlimit_fps_limit();
+		cl_adp_fps_limit = max_fps_limit;
 
 	/* 2. set the the limit */
 	mtk_cl_fps_set_fps_limit();
@@ -477,12 +478,13 @@ static void reset_fps_level(void)
 {
 	int i, fps;
 
-	for (i = 0, fps = MAX_FPS_LIMIT;
-	    fps >= MIN_FPS_LIMIT && i < MAX_FPS_LEVELS;
-	    i++, fps -= DEFAULT_FPS_LEVEL)
-		fps_level[i] = fps;
+	for (i = 0; i < 4; i++) {
+		fps = CFG_MAX_FPS_LIMIT / (i + 1);
+		fps_levels[i].start = fps;
+		fps_levels[i].end = fps;
+	}
 
-	nr_fps_levels = i;
+	nr_fps_levels = 4;
 }
 
 static int clfps_level_read(struct seq_file *m, void *v)
@@ -491,62 +493,93 @@ static int clfps_level_read(struct seq_file *m, void *v)
 
 	seq_printf(m, "%d ", nr_fps_levels);
 	for (i = 0; i < nr_fps_levels; i++)
-		seq_printf(m, "%d ", fps_level[i]);
+		seq_printf(m, "%d-%d ", fps_levels[i].start, fps_levels[i].end);
 	seq_puts(m, "\n");
 
 	return 0;
 }
 
+/* format example: 4 60-45 30-30 20-20 15-15
+ * compatible: 4 60 30 20 15
+ * mixed: 4 60-45 30 20 15
+ */
 static ssize_t clfps_level_write(struct file *file, const char __user *buffer,
 		size_t count, loff_t *data)
 {
-	char *buf;
-	int i, ret = -EINVAL;
+	char *buf, *sepstr, *substr;
+	int ret = -EINVAL, new_nr_fps_levels, i, start_fps, end_fps;
+	struct fps_level *new_levels;
 
 	/* we do not allow change fps_level during fps throttling,
-	 * value of curr_fps_level would be changed.
+	 * because fps_levels would be changed.
 	 */
-	if (curr_fps_level != 0)
+	if (cl_adp_fps_limit != max_fps_limit)
 		return -EAGAIN;
 
 	buf = kmalloc(count + 1, GFP_KERNEL);
 	if (buf == NULL)
-		return -EFAULT;
+		return -ENOMEM;
+
+	new_levels = kmalloc(sizeof(fps_levels), GFP_KERNEL);
+	if (new_levels == NULL) {
+		ret = -ENOMEM;
+		goto err_freebuf;
+	}
 
 	if (copy_from_user(buf, buffer, count)) {
 		ret = -EFAULT;
-		goto exit;
+		goto err;
 	}
 	buf[count] = '\0';
+	sepstr = buf;
 
-	mtk_cooler_fps_dprintk_always("[%s] buf: %s\n", __func__, buf);
-
-	if (sscanf(buf, "%d %d %d %d %d %d %d",
-					&nr_fps_levels, &fps_level[0], &fps_level[1], &fps_level[2],
-					&fps_level[3], &fps_level[4], &fps_level[5]) >= 1) {
-
-		if ((nr_fps_levels > MAX_FPS_LEVELS) || (nr_fps_levels < 0)) {
-			mtk_cooler_fps_dprintk_always("[%s] nr_fps_levels: %d\n", __func__, nr_fps_levels);
-			ret = -EINVAL;
-			goto exit;
-		}
-
-		for (i = 0; i < nr_fps_levels; i++) {
-			if (fps_level[i] > MAX_FPS_LIMIT || fps_level[i] < MIN_FPS_LIMIT) {
-				mtk_cooler_fps_dprintk_always("[%s] fps_level: %d\n", __func__, fps_level[i]);
-				ret = -EINVAL;
-				goto exit;
-			}
-		}
-
-		kfree(buf);
-		return count;
+	substr = strsep(&sepstr, " ");
+	if (kstrtoint(substr, 10, &new_nr_fps_levels) != 0 || new_nr_fps_levels > MAX_NR_FPS_LEVELS) {
+		ret = -EINVAL;
+		goto err;
 	}
 
-exit:
+	for (i = 0; i < new_nr_fps_levels; i++) {
+		substr = strsep(&sepstr, " ");
+		if (!substr) {
+			ret = -EINVAL;
+			goto err;
+		}
+		if (strchr(substr, '-')) { /* maybe contiguous */
+			if (sscanf(substr, "%d-%d", &start_fps, &end_fps) != 2) {
+				ret = -EINVAL;
+				goto err;
+			}
+			new_levels[i].start = start_fps;
+			new_levels[i].end = end_fps;
+		} else { /* discrete */
+			if (kstrtoint(substr, 10, &start_fps) != 0) {
+				ret = -EINVAL;
+				goto err;
+			}
+			new_levels[i].start = start_fps;
+			new_levels[i].end = start_fps;
+		}
+	}
+
+	for (i = 0; i < new_nr_fps_levels; i++) {
+		/* check if they are interleaving */
+		if (new_levels[i].end > new_levels[i].start ||
+		    (i > 0 && new_levels[i].start > new_levels[i - 1].end)) {
+			ret = -EINVAL;
+			goto err;
+		}
+	}
+
+	ret = count;
+	nr_fps_levels = new_nr_fps_levels;
+	memcpy(fps_levels, new_levels, sizeof(fps_levels));
+	max_fps_limit = fps_levels[0].start;
+	min_fps_limit = fps_levels[nr_fps_levels - 1].end;
+err:
+	kfree(new_levels);
+err_freebuf:
 	kfree(buf);
-	if (ret < 0)
-		reset_fps_level();
 
 	return ret;
 }
@@ -562,55 +595,6 @@ static const struct file_operations clfps_level_fops = {
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.write = clfps_level_write,
-	.release = single_release,
-};
-
-static int clfps_adp_read(struct seq_file *m, void *v)
-{
-	seq_printf(m, "%d %d\n", MIN_FPS_LIMIT, MAX_FPS_LIMIT);
-
-	return 0;
-}
-
-static ssize_t clfps_adp_write(struct file *file, const char __user *buffer,
-		size_t count, loff_t *data)
-{
-	char *buf;
-	int _k_tt, _k_sum_tt, _min, _max;
-	int ret = -EINVAL;
-
-	buf = kmalloc(count + 1, GFP_KERNEL);
-	if (buf == NULL)
-		return -EFAULT;
-
-	if (copy_from_user(buf, buffer, count)) {
-		ret = -EFAULT;
-		goto exit;
-	}
-
-	buf[count] = '\0';
-
-	if (sscanf(buf, "%d %d %d %d", &_k_tt, &_k_sum_tt, &_min, &_max) == 5) {
-		/* TODO: check the values are valid */
-		ret = count;
-	}
-
-exit:
-	kfree(buf);
-	return ret;
-}
-
-static int clfps_adp_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, clfps_adp_read, NULL);
-}
-
-static const struct file_operations clfps_adp_fops = {
-	.owner = THIS_MODULE,
-	.open = clfps_adp_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.write = clfps_adp_write,
 	.release = single_release,
 };
 #endif
@@ -794,8 +778,7 @@ static ssize_t fps_tm_count_write(struct file *filp, const char __user *buf, siz
 
 static int fps_tm_count_read(struct seq_file *m, void *v)
 {
-
-	seq_printf(m, "%d\n", tm_input_fps);
+	seq_printf(m, "%d,%d,%d\n", tm_input_fps, cl_fps_cur_limit, in_game_mode);
 
 	mtk_cooler_fps_dprintk("[%s] %d\n", __func__, tm_input_fps);
 
@@ -839,14 +822,9 @@ static const struct file_operations tm_fps_fops = {
 *
 *	debugfs_entry(fps_error_threshold);
 *	debugfs_entry(fps_stable_period);
-*	debugfs_entry(curr_fps_level);
-*	debugfs_entry(in_game_whitelist);
+*	debugfs_entry(in_game_mode);
 *	debugfs_entry(fps_limit_always_on);
-*	debugfs_entry(leave_fps_limit_duration);
-*	debugfs_entry(in_game_low_fps);
-*	debugfs_entry(gpu_loading_threshold);
 *}
-
 *#undef debugfs_entry
 *====FPS_DEBUGFS===========
 */
@@ -905,20 +883,16 @@ static int __init mtk_cooler_fps_init(void)
 #if ADAPTIVE_FPS_COOLER
 		reset_fps_level();
 		if (dir_entry) {
-			entry = proc_create("clfps_adp", S_IRUGO | S_IWUSR | S_IWGRP,
-					dir_entry, &clfps_adp_fops);
-			if (entry)
-				proc_set_user(entry, uid, gid);
 			entry = proc_create("clfps_level", S_IRUGO | S_IWUSR | S_IWGRP,
 				dir_entry, &clfps_level_fops);
 			if (entry)
 				proc_set_user(entry, uid, gid);
 		}
+
 /* ====FPS_DEBUGFS=========
 *		create_debugfs_entries();
 *====FPS_DEBUGFS===========
 */
-
 
 #endif
 
