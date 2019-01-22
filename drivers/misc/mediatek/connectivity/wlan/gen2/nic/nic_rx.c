@@ -467,6 +467,7 @@ VOID nicRxProcessPktWithoutReorder(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 		}
 		prRxCtrl->apvIndPacket[prRxCtrl->ucNumIndPacket] = prSwRfb->pvPacket;
 		prRxCtrl->ucNumIndPacket++;
+		wlanPktStatusDebugTraceInfoSeq(prAdapter, prSwRfb->prHifRxHdr->u2SeqNoTid);
 
 	if (fgIsRetained) {
 		prRxCtrl->apvRetainedPacket[prRxCtrl->ucNumRetainedPacket] = prSwRfb->pvPacket;
