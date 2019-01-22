@@ -100,4 +100,5 @@ void mdee_monitor2_func(struct md_ee *mdee);
 /****************************************************************************************************************/
 extern int mdee_dumper_v1_alloc(struct md_ee *mdee);
 extern int mdee_dumper_v2_alloc(struct md_ee *mdee);
+extern int mdee_dumper_v3_alloc(struct md_ee *mdee);
 #endif	/* __MDEE_CTL_H__ */
