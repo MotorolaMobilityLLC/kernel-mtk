@@ -38,6 +38,7 @@ unsigned long dcm_cci_base;
 unsigned long dcm_cci_phys_base;
 unsigned long dcm_lpdma_base;
 unsigned long dcm_lpdma_phys_base;
+#ifndef USE_DRAM_API_INSTEAD
 unsigned long dcm_dramc0_ao_base;
 unsigned long dcm_dramc1_ao_base;
 unsigned long dcm_dramc2_ao_base;
@@ -46,6 +47,7 @@ unsigned long dcm_ddrphy0_ao_base;
 unsigned long dcm_ddrphy1_ao_base;
 unsigned long dcm_ddrphy2_ao_base;
 unsigned long dcm_ddrphy3_ao_base;
+#endif /* #ifndef USE_DRAM_API_INSTEAD */
 unsigned long dcm_emi_base;
 
 #define TOPCKGEN_NODE "mediatek,mt6799-topckgen"
@@ -54,6 +56,7 @@ unsigned long dcm_emi_base;
 #define MCUCFG_NODE "mediatek,mcucfg"
 #define CCI_NODE "mediatek,mcsi_reg"
 #define LPDMA_NODE "mediatek,lpdma"
+#ifndef USE_DRAM_API_INSTEAD
 #define DRAMC0_AO_NODE "mediatek,dramc0_ao"
 #define DRAMC1_AO_NODE "mediatek,dramc1_ao"
 #define DRAMC2_AO_NODE "mediatek,dramc2_ao"
@@ -62,6 +65,7 @@ unsigned long dcm_emi_base;
 #define DDRPHY1_AO_NODE "mediatek,ddrphy1ao"
 #define DDRPHY2_AO_NODE "mediatek,ddrphy2ao"
 #define DDRPHY3_AO_NODE "mediatek,ddrphy3ao"
+#endif /* #ifndef USE_DRAM_API_INSTEAD */
 #define EMI_NODE "mediatek,emi"
 #elif defined(CONFIG_MACH_ELBRUS)
 unsigned long dcm_infracfg_ao_base;
@@ -324,10 +328,12 @@ int dcm_stall(ENUM_STALL_DCM on)
 int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on)
 {
 #ifdef CONFIG_MACH_MT6799
+#ifndef USE_DRAM_API_INSTEAD
 	dcm_dramc0_ao_dramc_dcm(on);
 	dcm_dramc1_ao_dramc_dcm(on);
 	dcm_dramc2_ao_dramc_dcm(on);
 	dcm_dramc3_ao_dramc_dcm(on);
+#endif /* #ifndef USE_DRAM_API_INSTEAD */
 #elif defined(CONFIG_MACH_ELBRUS)
 	dcm_dramc0_ao_dramc_ao(on);
 	dcm_dramc1_ao_dramc_ao(on);
@@ -341,10 +347,12 @@ int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on)
 int dcm_ddrphy(ENUM_DDRPHY_DCM on)
 {
 #ifdef CONFIG_MACH_MT6799
+#ifndef USE_DRAM_API_INSTEAD
 	dcm_ddrphy0ao_ddrphy(on);
 	dcm_ddrphy1ao_ddrphy(on);
 	dcm_ddrphy2ao_ddrphy(on);
 	dcm_ddrphy3ao_ddrphy(on);
+#endif /* #ifndef USE_DRAM_API_INSTEAD */
 #elif defined(CONFIG_MACH_ELBRUS)
 	dcm_ddrphy0ao_ddrphy(on);
 	dcm_ddrphy1ao_ddrphy(on);
@@ -775,6 +783,7 @@ void dcm_dump_regs(void)
 	REG_DUMP(EMI_CONM);
 	REG_DUMP(EMI_CONN);
 	REG_DUMP(LPDMA_CONB);
+#ifndef USE_DRAM_API_INSTEAD
 	REG_DUMP(DDRPHY0AO_MISC_CG_CTRL0);
 	REG_DUMP(DDRPHY0AO_MISC_CG_CTRL2);
 	REG_DUMP(DRAMC0_AO_DRAMC_PD_CTRL);
@@ -791,6 +800,7 @@ void dcm_dump_regs(void)
 	REG_DUMP(DDRPHY3AO_MISC_CG_CTRL2);
 	REG_DUMP(DRAMC3_AO_DRAMC_PD_CTRL);
 	REG_DUMP(DRAMC3_AO_CLKAR);
+#endif /* #ifndef USE_DRAM_API_INSTEAD */
 #elif defined(CONFIG_MACH_ELBRUS)
 	REG_DUMP(INFRA_TOPCKGEN_DCMCTL);
 	REG_DUMP(INFRA_TOPCKGEN_DCMDBC);
@@ -1088,6 +1098,7 @@ static int mt_dcm_dts_map(void)
 	}
 #endif
 
+#ifndef USE_DRAM_API_INSTEAD
 	/* dramc0_ao */
 	node = of_find_compatible_node(NULL, NULL, DRAMC0_AO_NODE);
 	if (!node) {
@@ -1187,6 +1198,7 @@ static int mt_dcm_dts_map(void)
 		return -1;
 	}
 #endif
+#endif /* #ifndef USE_DRAM_API_INSTEAD */
 
 	/* emi */
 	node = of_find_compatible_node(NULL, NULL, EMI_NODE);

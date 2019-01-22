@@ -1324,6 +1324,7 @@ void dcm_lpdma_lpdma(int on)
 	}
 }
 
+#ifndef USE_DRAM_API_INSTEAD
 #define DDRPHY0AO_DDRPHY_REG0_MASK ((0x1 << 8) | \
 			(0x1 << 9) | \
 			(0x1 << 10) | \
@@ -2019,6 +2020,7 @@ void dcm_dramc3_ao_dramc_dcm(int on)
 			DRAMC3_AO_DRAMC_DCM_REG1_OFF);
 	}
 }
+#endif /* #ifndef USE_DRAM_API_INSTEAD */
 
 #define PERICFG_PERI_DCM_REG0_MASK ((0xfff << 0) | \
 			(0x1 << 15) | \
