@@ -88,6 +88,7 @@ int cpuhvfs_get_volt(int buck_id);
 int cpuhvfs_get_freq(int pll_id);
 int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step);
 int cpuhvfs_set_dvfs_stress(unsigned int en);
+int cpuhvfs_get_sched_dvfs_disable(void);
 int cpuhvfs_set_sched_dvfs_disable(unsigned int disable);
 int cpuhvfs_set_turbo_disable(unsigned int disable);
 int cpuhvfs_get_cur_dvfs_freq_idx(int cluster_id);
