@@ -362,7 +362,8 @@ int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const
 		/* wrong MAC address */
 		DBGLOG(REQ, WARN, "incorrect BSSID: [ %pM ] currently connected BSSID[ %pM ]\n",
 				   mac, arBssid);
-		return -ENOENT;
+		/* wificond will bring the mac address of the device itself */
+		/* return -ENOENT; */
 	}
 
 	/* 2. fill TX rate */
