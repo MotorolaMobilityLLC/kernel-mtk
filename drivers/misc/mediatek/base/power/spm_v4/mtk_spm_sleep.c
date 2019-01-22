@@ -18,6 +18,7 @@
 #include <linux/delay.h>
 #include <linux/string.h>
 #include <linux/of_fdt.h>
+#include <linux/seq_file.h>
 #include <asm/setup.h>
 #include <mt-plat/mtk_secure_api.h>
 
@@ -220,8 +221,10 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 	if (log_wakesta_index >= 0xFFFFFFF0)
 		log_wakesta_index = 0;
 
+#if !defined(CONFIG_MACH_MT6771)
 	ddr_status = vcorefs_get_curr_ddr();
 	vcore_status = vcorefs_get_curr_vcore();
+#endif
 
 	spm_crit2("dormant = %d, s_ddr = %d, s_vcore = %d, ddr = %d, vcore = %d, sleep_count = %d\n",
 		  spm_dormant_sta, sleep_ddr_status, sleep_vcore_status,
@@ -230,8 +233,10 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
 
+#if !defined(CONFIG_MACH_MT6771)
 	if (wakesta->r12 & WAKE_SRC_R12_EINT_EVENT_B)
 		mt_eint_print_status();
+#endif
 
 #ifdef CONFIG_MTK_CCCI_DEVICES
 	/* if (wakesta->r13 & 0x18) { */
