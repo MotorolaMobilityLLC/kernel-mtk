@@ -12,7 +12,12 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* ALPS header files */
+#ifndef CONFIG_RTC_DRV_MT6397
 #include <mtk_rtc.h>
+#else
+#include <linux/mfd/mt6397/rtc_misc.h>
+#endif
 
 #ifdef DFT_TAG
 #undef DFT_TAG
