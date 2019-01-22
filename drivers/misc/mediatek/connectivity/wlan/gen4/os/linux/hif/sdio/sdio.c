@@ -214,6 +214,9 @@ static INT_32 mtk_sdio_interrupt(MTK_WCN_HIF_SDIO_CLTCTX cltCtx)
 		/* printk(KERN_INFO DRV_NAME"No glue info in mtk_sdio_interrupt()\n"); */
 		return -HIF_SDIO_ERR_FAIL;
 	}
+
+	prGlueInfo->u8HifIntTime = sched_clock();
+
 	prGlueInfo->IsrCnt++;
 
 	if (prGlueInfo->ulFlag & GLUE_FLAG_HALT) {
