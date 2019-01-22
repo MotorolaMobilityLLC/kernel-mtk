@@ -186,12 +186,6 @@ enum scp_ipi_status scp_ipi_send(enum ipi_id id, void *buf,
 
 	scp_ipi_id_record = id;
 
-	if (scp_id >= SCP_CORE_TOTAL) {
-		pr_err("scp_ipi_send: scp_id:%d wrong\n", scp_id);
-		scp_ipi_desc[id].error_count++;
-		return SCP_IPI_ERROR;
-	}
-
 	if (in_interrupt()) {
 		if (wait) {
 			pr_err("scp_ipi_send: cannot use in isr\n");
@@ -200,11 +194,6 @@ enum scp_ipi_status scp_ipi_send(enum ipi_id id, void *buf,
 		}
 	}
 
-	if (id >= SCP_NR_IPI) {
-		pr_err("scp_ipi_send: ipi id %d wrong\n", id);
-		scp_ipi_desc[id].error_count++;
-		return SCP_IPI_ERROR;
-	}
 	if (is_scp_ready(scp_id) == 0) {
 		/* pr_err("scp_ipi_send: %s not enabled, id=%d\n", core_ids[scp_id], id); */
 		scp_ipi_desc[id].error_count++;

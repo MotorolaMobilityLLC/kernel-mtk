@@ -67,7 +67,6 @@ int scp_awake_lock(enum scp_core_id scp_id)
 
 	if (scp_id >= SCP_CORE_TOTAL) {
 		pr_notice("scp_awake_lock: SCP ID >= SCP_CORE_TOTAL\n");
-_eature:
 		return ret;
 	}
 
