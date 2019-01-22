@@ -97,8 +97,6 @@
 #define PROC_RX_STATISTICS                      "rx_statistics"
 #define PROC_TX_STATISTICS                      "tx_statistics"
 #define PROC_DBG_LEVEL_NAME                     "dbgLevel"
-#define PROC_DRIVER_CMD                         "driver"
-#define PROC_CFG                                "cfg"
 
 #define PROC_MCR_ACCESS_MAX_USER_INPUT_LEN      20
 #define PROC_RX_STATISTICS_MAX_USER_INPUT_LEN   10
@@ -540,8 +538,6 @@ INT_32 procUninitProcFs(VOID)
 INT_32 procRemoveProcfs(VOID)
 {
 	remove_proc_entry(PROC_MCR_ACCESS, gprProcRoot);
-	remove_proc_entry(PROC_DRIVER_CMD, gprProcRoot);
-	remove_proc_entry(PROC_CFG, gprProcRoot);
 
 #if CFG_SUPPORT_DEBUG_FS
 	remove_proc_entry(PROC_ROAM_PARAM, gprProcRoot);
