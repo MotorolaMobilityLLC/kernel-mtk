@@ -35,6 +35,7 @@ static struct disp_layer_info layering_info;
 static int debug_resolution_level;
 static struct layering_rule_info_t *l_rule_info;
 static struct layering_rule_ops *l_rule_ops;
+static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx);
 
 bool is_ext_path(struct disp_layer_info *disp_info)
 {
@@ -137,6 +138,30 @@ static inline bool is_extended_layer(struct layer_config *layer_info)
 	return (layer_info->ext_sel_layer != -1);
 }
 
+static bool is_extended_base_layer_valid(struct layer_config *configs, int layer_idx)
+{
+	if (layer_idx == 0 && is_yuv(configs->src_fmt))
+		return false;
+
+	/**
+	 * Under dual pipe, if the layer is not included in each pipes, it cannot
+	 * use as a base layer for extended layer as extended layer would not
+	 * find base layer in one of display pipe. So always Mark this specific layer
+	 * as overlap to avoid the fail case.
+	**/
+	if (!is_layer_across_each_pipe(configs))
+		return false;
+
+	return true;
+}
+
+static inline bool is_extended_over_limit(int ext_cnt)
+{
+	if (ext_cnt > 3)
+		return true;
+	return false;
+}
+
 /**
  * check if continuous ext layers is overlapped with each other
  * also need to check the below nearest phy layer which these ext layers will be attached to
@@ -158,18 +183,8 @@ static int is_continuous_ext_layer_overlap(struct layer_config *configs, int cur
 			if (overlapped)
 				break;
 		} else {
-			if (i == 0 && is_yuv(src_info->src_fmt))
-				overlapped |= 1;
-			else
-				overlapped |= is_overlap_on_yaxis(src_info, dst_info);
-
-			/**
-			 * Under dual pipe, if the layer is not included in each pipes, it cannot
-			 * use as a base layer for extended layer as extended layer would not
-			 * find base layer in one of display pipe. So always Mark this specific layer
-			 * as overlap to avoid the fail case.
-			 **/
-			if (!is_layer_across_each_pipe(src_info))
+			overlapped |= is_overlap_on_yaxis(src_info, dst_info);
+			if (!is_extended_base_layer_valid(src_info, i))
 				overlapped |= 1;
 			break;
 		}
@@ -599,6 +614,33 @@ static int _filter_by_ovl_cnt(struct disp_layer_info *disp_info, int disp_idx)
 	return 0;
 }
 
+static void ext_id_adjustment_and_retry(struct disp_layer_info *disp_info, int disp_idx, int layer_idx)
+{
+	int j, ext_idx;
+	struct layer_config *layer_info;
+
+	ext_idx = -1;
+	for (j = layer_idx ; j < layer_idx + 3 ; j++) {
+		layer_info = &disp_info->input_config[disp_idx][j];
+
+		if (ext_idx == -1) {
+			layer_info->ext_sel_layer = -1;
+			if (is_extended_base_layer_valid(layer_info, j))
+				ext_idx = j;
+		} else {
+			layer_info->ext_sel_layer = ext_idx;
+		}
+		if (j == (disp_info->layer_num[disp_idx] - 1) ||
+			!is_extended_layer(&disp_info->input_config[disp_idx][j+1]))
+			break;
+	}
+#ifdef HRT_DEBUG_LEVEL2
+	DISPMSG("[%s]cannot feet current layer layout\n", __func__);
+	dump_disp_info(disp_info, DISP_DEBUG_LEVEL_ERR);
+#endif
+	ext_id_tunning(disp_info, disp_idx);
+}
+
 static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 {
 	int ovl_mapping_tb, layer_mapping_tb, phy_ovl_cnt, i;
@@ -634,22 +676,8 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 		layer_info = &disp_info->input_config[disp_idx][i];
 		if (is_extended_layer(layer_info)) {
 			ext_cnt++;
-			if (ext_cnt > 3) {
-				int j;
-
-				for (j = i ; j < i + 3 ; j++) {
-					layer_info = &disp_info->input_config[disp_idx][j];
-					if (j == (disp_info->layer_num[disp_idx] - 1) ||
-						!is_extended_layer(&disp_info->input_config[disp_idx][j+1])) {
-						layer_info->ext_sel_layer = -1;
-						break;
-					}
-				}
-#ifdef HRT_DEBUG_LEVEL2
-				DISPMSG("[%s]cannot feet current layer layout\n", __func__);
-				dump_disp_info(disp_info, DISP_DEBUG_LEVEL_ERR);
-#endif
-				ext_id_tunning(disp_info, disp_idx);
+			if (is_extended_over_limit(ext_cnt)) {
+				ext_id_adjustment_and_retry(disp_info, disp_idx, i);
 				break;
 			}
 		} else {
