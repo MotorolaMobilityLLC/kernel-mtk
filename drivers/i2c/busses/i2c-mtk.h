@@ -83,6 +83,7 @@
 #define I2C_DMA_INT_FLAG_NONE		0x0000
 #define I2C_DMA_CLR_FLAG		0x0000
 #define I2C_DMA_WARM_RST		0x0001
+#define I2C_DMA_HARD_RST		0x0002
 #define I2C_DMA_4G_MODE			0x0001
 
 #define I2C_DEFAUT_SPEED		100000	/* hz */
@@ -323,6 +324,14 @@ struct mtk_i2c_compatible {
 	char clk_compatible[128];
 	u16 clk_sta_offset[I2C_MAX_CHANNEL]; /* I2C clock status register */
 	u8 cg_bit[I2C_MAX_CHANNEL]; /* i2c clock bit */
+#define I2C_DUMP_INFRA_DBG	0
+#define I2C_DUMP_PERI_DBG	1
+	char pericfg_compatible[128];
+	char infracfg_compatible[128];
+	u16 infra_dbg_offset;
+	u16 infra_dbg_length;
+	u16 peri_dbg_offset;
+	u16 peri_dbg_length;
 };
 
 struct mt_i2c {

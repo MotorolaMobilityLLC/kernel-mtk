@@ -129,6 +129,87 @@ void dump_cg_regs(struct mt_i2c *i2c)
 		clk_sta_val & (1 << cg_bit) ? "off":"on");
 }
 
+void __iomem *infra_base;
+void __iomem *peri_base;
+
+static s32 map_bus_regs(struct mt_i2c *i2c, u8 type)
+{
+	int ret = -1;
+
+	if (type == I2C_DUMP_INFRA_DBG) {
+		struct device_node *infra_node;
+
+		if (!infra_base && i2c->dev_comp->infracfg_compatible[0]) {
+			infra_node = of_find_compatible_node(NULL, NULL,
+				i2c->dev_comp->infracfg_compatible);
+			if (!infra_node) {
+				dev_info(i2c->dev, "Cannot find infra_node\n");
+				return -ENODEV;
+			}
+			infra_base = of_iomap(infra_node, 0);
+			if (!infra_base) {
+				dev_info(i2c->dev, "infra_base iomap failed\n");
+				return -ENOMEM;
+			}
+			ret = 0;
+		}
+	} else if (type == I2C_DUMP_PERI_DBG) {
+		struct device_node *peri_node;
+
+		if (!peri_base && i2c->dev_comp->pericfg_compatible[0]) {
+			peri_node = of_find_compatible_node(NULL, NULL,
+				i2c->dev_comp->pericfg_compatible);
+			if (!peri_node) {
+				dev_info(i2c->dev, "Cannot find peri_node\n");
+				return -ENODEV;
+			}
+			peri_base = of_iomap(peri_node, 0);
+			if (!peri_base) {
+				dev_info(i2c->dev, "peri_base iomap failed\n");
+				return -ENOMEM;
+			}
+			ret = 0;
+		}
+	}
+
+	return ret;
+}
+
+static void dump_bus_regs(struct mt_i2c *i2c, u8 type)
+{
+	u32 bus_mon_offs, bus_mon_lens, i;
+
+	if (type == I2C_DUMP_INFRA_DBG) {
+		if (!infra_base || i2c->id >= I2C_MAX_CHANNEL) {
+			dev_info(i2c->dev, "infra_base %p, i2c id = %d\n",
+				infra_base, i2c->id);
+			return;
+		}
+		bus_mon_offs = i2c->dev_comp->infra_dbg_offset;
+		bus_mon_lens = i2c->dev_comp->infra_dbg_length;
+		dev_info(i2c->dev, "INFRA DBG RGs, i2c id = %d\n", i2c->id);
+
+		for (i = bus_mon_offs;
+		     i < bus_mon_offs + bus_mon_lens + 4; i += 4)
+			pr_info_ratelimited("%p:%08x\n", infra_base + i,
+					    readl(infra_base + i));
+	} else if (type == I2C_DUMP_PERI_DBG) {
+		if (!peri_base || i2c->id >= I2C_MAX_CHANNEL) {
+			dev_info(i2c->dev, "peri_base %p, i2c id = %d\n",
+				peri_base, i2c->id);
+			return;
+		}
+		bus_mon_offs = i2c->dev_comp->peri_dbg_offset;
+		bus_mon_lens = i2c->dev_comp->peri_dbg_length;
+		dev_info(i2c->dev, "PERI DBG RGs, i2c id = %d\n", i2c->id);
+
+		for (i = bus_mon_offs;
+		     i < bus_mon_offs + bus_mon_lens + 4; i += 4)
+			pr_info_ratelimited("%p:%08x\n", peri_base + i,
+					    readl(peri_base + i));
+	}
+}
+
 void __iomem *dma_base;
 
 s32 map_dma_regs(void)
@@ -410,6 +491,28 @@ static inline void mt_i2c_wait_done(struct mt_i2c *i2c, u16 ch_off)
 
 		if (start && !tmo) {
 			dev_err(i2c->dev, "wait transfer timeout.\n");
+			i2c_dump_info(i2c);
+		}
+	}
+}
+
+static inline void mt_i2c_wait_dma_en_done(struct mt_i2c *i2c)
+{
+	u16 start, tmo;
+
+	start = i2c_readl_dma(i2c, OFFSET_EN);
+	if (start) {
+		dev_info(i2c->dev, "wait AP DMA done.\n");
+
+		tmo = 100;
+		do {
+			msleep(20);
+			start = i2c_readl_dma(i2c, OFFSET_EN);
+			tmo--;
+		} while (start && tmo);
+
+		if (start && !tmo) {
+			dev_info(i2c->dev, "complete with DMA still active.\n");
 			i2c_dump_info(i2c);
 		}
 	}
@@ -781,8 +884,15 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 
 	i2c->trans_stop = false;
 	i2c->irq_stat = 0;
-	if (i2c->total_len > 8 || i2c->msg_aux_len > 8)
+	if (i2c->total_len > 8 || i2c->msg_aux_len > 8) {
 		isDMA = true;
+		if (i2c_readl_dma(i2c, OFFSET_EN) != 0) {
+			dev_info(i2c->dev, "DMA hard reset before start\n");
+			i2c_writel_dma(I2C_DMA_HARD_RST, i2c, OFFSET_RST);
+			udelay(50);
+			i2c_writel_dma(I2C_DMA_CLR_FLAG, i2c, OFFSET_RST);
+		}
+	}
 	if (i2c->ext_data.isEnable && i2c->ext_data.timing)
 		speed_hz = i2c->ext_data.timing;
 	else
@@ -1004,6 +1114,8 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		mt_irq_dump_status(i2c->irqnr);
 		#endif
 		dump_cg_regs(i2c);
+		dump_bus_regs(i2c, I2C_DUMP_INFRA_DBG);
+		dump_bus_regs(i2c, I2C_DUMP_PERI_DBG);
 
 		if (i2c->ch_offset != 0)
 			i2c_writew(I2C_FIFO_ADDR_CLR_MCH | I2C_FIFO_ADDR_CLR,
@@ -1073,6 +1185,10 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			ptr++;
 		}
 	}
+
+	if (isDMA == true)
+		mt_i2c_wait_dma_en_done(i2c);
+
 	dev_dbg(i2c->dev, "i2c transfer done.\n");
 
 	return 0;
@@ -1580,6 +1696,28 @@ static const struct mtk_i2c_compatible mt6771_compat = {
 	.check_max_freq = 1,
 	.ext_time_config = 0x1801,
 	.ver = 0x2,
+#if 0
+	.clk_compatible = "mediatek,infracfg_ao",
+	.clk_sta_offset[0] = 0x90,
+	.cg_bit[0] = 11,
+	.cg_bit[1] = 12,
+	.cg_bit[2] = 13,
+	.cg_bit[3] = 14,
+	.clk_sta_offset[1] = 0xAC,
+	.cg_bit[4] = 7,
+	.cg_bit[5] = 18,
+	.cg_bit[6] = 20,
+	.cg_bit[7] = 22,
+	.cg_bit[8] = 24,
+	.clk_sta_offset[2] = 0xC8,
+	.cg_bit[9] = 6,
+#endif
+	.pericfg_compatible = "mediatek,pericfg",
+	.infracfg_compatible = "mediatek,infracfg_ao",
+	.peri_dbg_offset = 0x500,
+	.peri_dbg_length = 0x4c,
+	.infra_dbg_offset = 0xD00,
+	.infra_dbg_length = 0x64,
 };
 
 static const struct mtk_i2c_compatible mt6735_compat = {
@@ -1863,6 +2001,12 @@ static int mt_i2c_probe(struct platform_device *pdev)
 
 	if (!map_cg_regs(i2c))
 		pr_warn("Map cg regs successfully.\n");
+
+	if (!map_bus_regs(i2c, I2C_DUMP_INFRA_DBG))
+		dev_info(i2c->dev, "Map infra regs successfully.\n");
+
+	if (!map_bus_regs(i2c, I2C_DUMP_PERI_DBG))
+		dev_info(i2c->dev, "Map peri regs successfully.\n");
 
 	return 0;
 }
