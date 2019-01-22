@@ -32,6 +32,7 @@
 #include "include/mtk_gauge_class.h"
 #include <mtk_battery_internal.h>
 #include <mt-plat/aee.h>
+#include <mt-plat/mtk_auxadc_intf.h>
 
 static signed int g_hw_ocv_tune_value;
 static bool g_fg_is_charger_exist;
@@ -42,7 +43,7 @@ struct mt6358_gauge {
 	struct gauge_properties gauge_prop;
 };
 
-#define VOLTAGE_FULL_RANGE    1800
+#define VOLTAGE_FULL_RANGES    1800
 #define ADC_PRECISE           32768	/* 12 bits */
 
 enum {
@@ -55,7 +56,7 @@ enum {
 
 int MV_to_REG_12_value(signed int _reg)
 {
-	int ret = (_reg * 4096) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3);
+	int ret = (_reg * 4096) / (VOLTAGE_FULL_RANGES * 10 * R_VAL_TEMP_3);
 
 	bm_trace("[MV_to_REG_12_value] %d => %d\n", _reg, ret);
 	return ret;
@@ -63,7 +64,7 @@ int MV_to_REG_12_value(signed int _reg)
 
 static int MV_to_REG_12_temp_value(signed int _reg)
 {
-	int ret = (_reg * 4096) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_2);
+	int ret = (_reg * 4096) / (VOLTAGE_FULL_RANGES * 10 * R_VAL_TEMP_2);
 
 	bm_trace("[MV_to_REG_12_temp_value] %d => %d\n", _reg, ret);
 	return ret;
@@ -71,14 +72,14 @@ static int MV_to_REG_12_temp_value(signed int _reg)
 
 static signed int REG_to_MV_value(signed int _reg)
 {
-	/*int ret = (_reg * VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3) / ADC_PRECISE;*/
+	/*int ret = (_reg * VOLTAGE_FULL_RANGES * 10 * R_VAL_TEMP_3) / ADC_PRECISE;*/
 	long long _reg64 = _reg;
 	int ret;
 
 #if defined(__LP64__) || defined(_LP64)
-	_reg64 = (_reg64 * VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3) / ADC_PRECISE;
+	_reg64 = (_reg64 * VOLTAGE_FULL_RANGES * 10 * R_VAL_TEMP_3) / ADC_PRECISE;
 #else
-	_reg64 = div_s64(_reg64 * VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3, ADC_PRECISE);
+	_reg64 = div_s64(_reg64 * VOLTAGE_FULL_RANGES * 10 * R_VAL_TEMP_3, ADC_PRECISE);
 #endif
 	ret = _reg64;
 
@@ -91,9 +92,9 @@ static signed int MV_to_REG_value(signed int _mv)
 	int ret;
 	long long _reg64 = _mv;
 #if defined(__LP64__) || defined(_LP64)
-	_reg64 = (_reg64 * ADC_PRECISE) / (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3);
+	_reg64 = (_reg64 * ADC_PRECISE) / (VOLTAGE_FULL_RANGES * 10 * R_VAL_TEMP_3);
 #else
-	_reg64 = div_s64((_reg64 * ADC_PRECISE), (VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3));
+	_reg64 = div_s64((_reg64 * ADC_PRECISE), (VOLTAGE_FULL_RANGES * 10 * R_VAL_TEMP_3));
 #endif
 	ret = _reg64;
 
@@ -579,7 +580,12 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 	int bat_flag = 0;
 	int is_charger_exist;
 
-	/* TODO need to check here */
+	/* TODO debug for bat plugout */
+	/* set BATON_DEBOUNCE_THD to 1/8s, set BATON_DEBOUNCE_WND to 183us */
+	pmic_set_register_value(PMIC_RG_BATON_DEBOUNCE_THD, 3);
+	pmic_set_register_value(PMIC_RG_BATON_DEBOUNCE_WND, 0);
+
+
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, 10);
 	fgauge_get_info(gauge_dev, GAUGE_BAT_PLUG_STATUS, &bat_flag);
 	fgauge_get_info(gauge_dev, GAUGE_PL_CHARGING_STATUS, &is_charger_exist);
@@ -2596,6 +2602,8 @@ int fgauge_set_reset_status(struct gauge_device *gauge_dev, int reset)
 
 static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 {
+	int vbif28;
+
 	if (m != NULL) {
 		seq_puts(m, "fgauge dump\n");
 		seq_printf(m, "AUXADC_ADC_RDY_LBAT2 :%x\n",
@@ -2660,6 +2668,27 @@ static int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
 			"chr_zcv:%d pmic_zcv:%d %d pmic_in_zcv:%d swocv:%d zcv_from:%d tmp:%d\n",
 			charger_zcv, pmic_rdy, pmic_zcv, pmic_in_zcv, swocv, zcv_from, zcv_tmp);
 	}
+
+	vbif28 = pmic_get_auxadc_value(AUXADC_LIST_VBIF);
+
+	bm_err("[fg_bat_plugout_int_handler] Dig %d %d %d 0x%x 0x%x\n",
+		pmic_get_register_value(PMIC_AD_BATON_UNDET_RAW),
+		pmic_get_register_value(PMIC_BATON_STATUS),
+		pmic_get_register_value(PMIC_BATON_DEB_VALID),
+		pmic_get_register_value(PMIC_RG_BATON_DEBOUNCE_THD),
+		pmic_get_register_value(PMIC_RG_BATON_DEBOUNCE_WND)
+	);
+
+	bm_err("[fg_bat_plugout_int_handler] Ana %d %d %d %d %d %d %d vbif:%d\n",
+		pmic_get_register_value(PMIC_AD_BATON_UNDET_RAW),
+		pmic_get_register_value(PMIC_AD_BATON_UNDET),
+		pmic_get_register_value(PMIC_DA_VBIF28_EN),
+		pmic_get_register_value(PMIC_RG_OTG_BVALID_EN),
+		pmic_get_register_value(PMIC_RG_BATON_EN),
+		pmic_get_register_value(PMIC_RGS_CHR_LDO_DET),
+		pmic_get_register_value(PMIC_RG_QI_BATON_LT_EN),
+		vbif28
+	);
 
 	bm_debug(
 		"1st chr_zcv:%d pmic_zcv:%d %d pmic_in_zcv:%d swocv:%d zcv_from:%d tmp:%d\n",
