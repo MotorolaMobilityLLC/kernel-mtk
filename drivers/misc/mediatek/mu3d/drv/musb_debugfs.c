@@ -41,6 +41,9 @@
 #include "mu3d_hal_hw.h"
 #include "mu3d_hal_qmu_drv.h"
 
+#ifdef CONFIG_PROJECT_PHY
+#include "mtk-phy-asic.h"
+#endif
 
 struct musb_register_map {
 	char *name;
@@ -211,12 +214,18 @@ static ssize_t musb_test_mode_write(struct file *file,
 		musb_load_testpacket(musb);
 	}
 
-	if (!strncmp(buf, "test K", 6))
+	if (!strncmp(buf, "test K", 6)) {
 		test = TEST_K_MODE;
-
-	if (!strncmp(buf, "test J", 6))
+#ifdef CONFIG_PROJECT_PHY
+	usb20_rev6_setting(0, false);
+#endif
+	}
+	if (!strncmp(buf, "test J", 6)) {
 		test = TEST_J_MODE;
-
+#ifdef CONFIG_PROJECT_PHY
+	usb20_rev6_setting(0, false);
+#endif
+	}
 	if (!strncmp(buf, "test SE0 NAK", 12))
 		test = TEST_SE0_NAK_MODE;
 
@@ -545,6 +554,7 @@ static ssize_t musb_phy_rege_write(struct file *file,
 
 	return count;
 }
+
 
 static const struct file_operations musb_phy_reg_fops = {
 	.open = musb_phy_reg_open,
