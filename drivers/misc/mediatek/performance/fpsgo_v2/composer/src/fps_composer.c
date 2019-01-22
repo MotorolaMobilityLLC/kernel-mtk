@@ -132,7 +132,6 @@ void fpsgo_com_check_frame_info(void)
 	fpsgo_com_unlock(__func__);
 }
 
-
 int fpsgo_com_get_connect_api(int tgid, unsigned long long bufferID)
 {
 	struct connect_api_info *tmp, *tmp2;
@@ -151,7 +150,7 @@ int fpsgo_com_get_connect_api(int tgid, unsigned long long bufferID)
 	fpsgo_com_connect_api_unlock(__func__);
 
 	if (!find) {
-		pr_debug("%s: NON pair connect api info tgid %d bufferID %llu!!!\n",
+		FPSGO_COM_TRACE("%s: NON pair connect api info tgid %d bufferID %llu!!!\n",
 			__func__, tgid, bufferID);
 	}
 
@@ -194,7 +193,7 @@ void fpsgo_fbt2comp_destroy_frame_info(int pid)
 	fpsgo_com_unlock(__func__);
 
 	if (!find) {
-		pr_debug("%s:FPSGo composer distory frame info fail : %d !!!!\n",
+		FPSGO_COM_TRACE("%s:FPSGo composer distory frame info fail : %d !!!!\n",
 			__func__, pid);
 		return;
 	}
@@ -392,7 +391,7 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 	fpsgo_com_unlock(__func__);
 
 	if (!find) {
-		pr_debug("%s: NON pair frame info : %d !!!!\n",
+		FPSGO_COM_TRACE("%s: NON pair frame info : %d !!!!\n",
 			__func__, pid);
 		return;
 	}
@@ -440,7 +439,7 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 	fpsgo_com_unlock(__func__);
 
 	if (!find) {
-		pr_debug("%s: NON pair frame info : %d !!!!\n",
+		FPSGO_COM_TRACE("%s: NON pair frame info : %d !!!!\n",
 			__func__, pid);
 		return;
 	}
@@ -492,7 +491,7 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 	fpsgo_com_unlock(__func__);
 
 	if (!find) {
-		pr_debug("%s: NON pair frame info : %d !!!!\n",
+		FPSGO_COM_TRACE("%s: NON pair frame info : %d !!!!\n",
 			__func__, pid);
 		return;
 	}
@@ -534,7 +533,7 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid,
 	fpsgo_com_unlock(__func__);
 
 	if (!find) {
-		pr_debug("%s: NON pair frame info : %d !!!!\n",
+		FPSGO_COM_TRACE("%s: NON pair frame info : %d !!!!\n",
 			__func__, pid);
 		return;
 	}
@@ -654,7 +653,7 @@ void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long bufferID, int api)
 
 		ret = fpsgo_com_store_connect_api_info(pid, tgid, bufferID, api);
 		if (ret) {
-			pr_debug("%s: store frame info fail : %d !!!!\n",
+			FPSGO_COM_TRACE("%s: store frame info fail : %d !!!!\n",
 			__func__, pid);
 			return;
 		}
@@ -694,7 +693,7 @@ void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long bufferID, int ap
 	fpsgo_com_connect_api_unlock(__func__);
 
 	if (!find_api) {
-		pr_debug("%s: FPSGo composer distory connect api fail : %d !!!!\n",
+		FPSGO_COM_TRACE("%s: FPSGo composer distory connect api fail : %d !!!!\n",
 			__func__, pid);
 		return;
 	}
@@ -715,7 +714,7 @@ void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long bufferID, int ap
 	fpsgo_com_unlock(__func__);
 
 	if (!find_frame) {
-		pr_debug("%s: FPSGo composer no mapping frame info : %d !!!!\n",
+		FPSGO_COM_TRACE("%s: FPSGo composer no mapping frame info : %d !!!!\n",
 			__func__, pid);
 		return;
 	}
