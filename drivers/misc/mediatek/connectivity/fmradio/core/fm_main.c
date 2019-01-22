@@ -21,6 +21,7 @@
 /* #include "fm_cust_cfg.h" */
 #include "osal_typedef.h"
 #include "wmt_exp.h"
+#include "fm_cmd.h"
 /* fm main data structure */
 static struct fm *g_fm_struct;
 /* we must get low level interface first, when add a new chip, the main effort is this interface */
@@ -997,35 +998,27 @@ fm_s32 fm_getrssi(struct fm *fm, fm_s32 *rssi)
 	return ret;
 }
 
-fm_s32 fm_reg_read(struct fm *fm, fm_u8 addr, fm_u16 *val)
+fm_s32 fm_read(struct fm *fm, fm_u8 addr, fm_u16 *val)
 {
 	fm_s32 ret = 0;
 
-	if (fm_low_ops.bi.read == NULL) {
-		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	ret = fm_low_ops.bi.read(addr, val);
+	ret = fm_reg_read(addr, val);
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
 }
 
-fm_s32 fm_reg_write(struct fm *fm, fm_u8 addr, fm_u16 val)
+fm_s32 fm_write(struct fm *fm, fm_u8 addr, fm_u16 val)
 {
 	fm_s32 ret = 0;
 
-	if (fm_low_ops.bi.write == NULL) {
-		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	ret = fm_low_ops.bi.write(addr, val);
+	ret = fm_reg_write(addr, val);
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
@@ -1035,14 +1028,10 @@ fm_s32 fm_top_read(struct fm *fm, fm_u16 addr, fm_u32 *val)
 {
 	fm_s32 ret = 0;
 
-	if (fm_low_ops.bi.top_read == NULL) {
-		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	ret = fm_low_ops.bi.top_read(addr, val);
+	ret = fm_top_reg_read(addr, val);
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
@@ -1052,14 +1041,10 @@ fm_s32 fm_top_write(struct fm *fm, fm_u16 addr, fm_u32 val)
 {
 	fm_s32 ret = 0;
 
-	if (fm_low_ops.bi.top_write == NULL) {
-		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	ret = fm_low_ops.bi.top_write(addr, val);
+	ret = fm_top_reg_write(addr, val);
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
@@ -1069,14 +1054,10 @@ fm_s32 fm_host_read(struct fm *fm, fm_u32 addr, fm_u32 *val)
 {
 	fm_s32 ret = 0;
 
-	if (fm_low_ops.bi.host_read == NULL) {
-		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	ret = fm_low_ops.bi.host_read(addr, val);
+	ret = fm_host_reg_read(addr, val);
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;
@@ -1086,14 +1067,10 @@ fm_s32 fm_host_write(struct fm *fm, fm_u32 addr, fm_u32 val)
 {
 	fm_s32 ret = 0;
 
-	if (fm_low_ops.bi.host_write == NULL) {
-		WCN_DBG(FM_ERR | MAIN, "%s,invalid pointer\n", __func__);
-		return -FM_EPARA;
-	}
 	if (FM_LOCK(fm_ops_lock))
 		return -FM_ELOCK;
 
-	ret = fm_low_ops.bi.host_write(addr, val);
+	ret = fm_host_reg_write(addr, val);
 
 	FM_UNLOCK(fm_ops_lock);
 	return ret;

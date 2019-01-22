@@ -27,6 +27,20 @@
 #include "fm_stdlib.h"
 #include "fm_utils.h"
 
+fm_s32 fm_delayms(fm_u32 data)
+{
+	WCN_DBG(FM_DBG | CHIP, "delay %dms\n", data);
+	msleep(data);
+	return 0;
+}
+
+fm_s32 fm_delayus(fm_u32 data)
+{
+	WCN_DBG(FM_DBG | CHIP, "delay %dus\n", data);
+	udelay(data);
+	return 0;
+}
+
 static fm_u32 fm_event_send(struct fm_flag_event *thiz, fm_u32 mask)
 {
 	thiz->flag |= mask;

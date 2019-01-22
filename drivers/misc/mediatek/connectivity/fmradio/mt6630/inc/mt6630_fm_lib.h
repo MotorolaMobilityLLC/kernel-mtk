@@ -41,14 +41,6 @@ enum {
 	DSP_HW_COEFF = 0x04
 };
 
-enum IMG_TYPE {
-	IMG_WRONG = 0,
-	IMG_ROM,
-	IMG_PATCH,
-	IMG_COEFFICIENT,
-	IMG_HW_COEFFICIENT
-};
-
 enum {
 	mt6630_E1 = 0,
 	mt6630_E2

@@ -314,4 +314,8 @@ extern fm_s32 fm_workthread_get(struct fm_workthread *thiz);
 
 extern fm_s32 fm_workthread_put(struct fm_workthread *thiz);
 
+fm_s32 fm_delayms(fm_u32 data);
+
+fm_s32 fm_delayus(fm_u32 data);
+
 #endif /* __FM_UTILS_H__ */
