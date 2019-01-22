@@ -162,6 +162,9 @@ int ddp_clk_disable_unprepare(enum DDP_CLK_ID id)
 
 	DDPDBG("ddp_clk_disable_unprepare, clkid = %d\n", id);
 
+	if (id == DISP0_SMI_LARB0)
+		ddp_check_smi_status();
+
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return ret;
 
