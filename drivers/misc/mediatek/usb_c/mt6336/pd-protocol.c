@@ -282,7 +282,7 @@ void pd_basic_settings(struct typec_hba *hba)
  */
 	const int is_print = 0;
 
-	typec_write8(hba, (1<<RG_EN_CLKSQ_PDTYPEC_OFST), MAIN_CON4);
+	typec_write8_msk(hba, RG_EN_CLKSQ_PDTYPEC_MSK, (1<<RG_EN_CLKSQ_PDTYPEC_OFST), MAIN_CON4);
 	if (is_print)
 		dev_err(hba->dev, "MAIN_CON4(0x404)=0x%x [0x2]\n", typec_read8(hba, MAIN_CON4));
 
@@ -2662,6 +2662,8 @@ int pd_task(void *data)
 			/*Disable 26MHz clock XO_PD*/
 			clk_buf_ctrl(CLK_BUF_CHG, false);
 
+			typec_write8_msk(hba, RG_EN_CLKSQ_PDTYPEC_MSK, 0, MAIN_CON4);
+
 			hba->power_role = PD_NO_ROLE;
 			hba->data_role = PD_NO_ROLE;
 			hba->vdm_state = VDM_STATE_DONE;
@@ -2714,6 +2716,9 @@ int pd_task(void *data)
 			if (hba->vbus_en == 1) {
 				/*Enable 26MHz clock XO_PD*/
 				clk_buf_ctrl(CLK_BUF_CHG, true);
+
+				typec_write8_msk(hba, RG_EN_CLKSQ_PDTYPEC_MSK,
+							(1<<RG_EN_CLKSQ_PDTYPEC_OFST), MAIN_CON4);
 
 				if (!wake_lock_active(&hba->typec_wakelock))
 					wake_lock(&hba->typec_wakelock);
@@ -3153,6 +3158,8 @@ int pd_task(void *data)
 
 			/*Enable 26MHz clock XO_PD*/
 			clk_buf_ctrl(CLK_BUF_CHG, true);
+
+			typec_write8_msk(hba, RG_EN_CLKSQ_PDTYPEC_MSK, (1<<RG_EN_CLKSQ_PDTYPEC_OFST), MAIN_CON4);
 
 			if (hba->charger_det_notify)
 				hba->charger_det_notify(1);
