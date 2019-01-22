@@ -442,11 +442,19 @@ static ssize_t musb_regw_mode_write(struct file *file,
 	data = my_strtoul(tmp2, NULL, 0);
 
 	if (is_mac == 1) {
+		if (offset >= 0x1000) {
+			DBG(0, "Write Mac adddr failed! Offset is too big:0x%x\n", offset);
+			return count;
+		}
 		pr_warn("Mac base adddr 0x%lx, Write 0x%x[0x%x]\n", (unsigned long)musb->mregs, offset, data);
 		musb_writeb(musb->mregs, offset, data);
 	} else {
 		if ((offset % 4) != 0) {
 			pr_warn("Must use 32bits alignment address\n");
+			return count;
+		}
+		if (offset >= 0x100) {
+			DBG(0, "Write Phy adddr failed! Offset is too big:0x%x\n", offset);
 			return count;
 		}
 		pr_warn("Phy base adddr 0x%lx, Write 0x%x[0x%x]\n",
@@ -519,14 +527,26 @@ static ssize_t musb_regr_mode_write(struct file *file,
 
 	offset = my_strtoul(tmp, NULL, 0);
 
-	if (is_mac == 1)
+	if (is_mac == 1) {
+		if (offset >= 0x1000) {
+			DBG(0, "Read Mac adddr failed! Offset is too big:0x%x\n", offset);
+			return count;
+		}
+
 		pr_warn("Read Mac base adddr 0x%lx, Read 0x%x[0x%x]\n",
 			(unsigned long)musb->mregs, offset, musb_readb(musb->mregs, offset));
+	}
 	else {
 		if ((offset % 4) != 0) {
 			pr_warn("Must use 32bits alignment address\n");
 			return count;
 		}
+
+		if (offset >= 0x100) {
+			DBG(0, "Read Phy adddr failed! Offset is too big:0x%x\n", offset);
+			return count;
+		}
+
 		pr_warn("Read Phy base adddr 0x%lx, Read 0x%x[0x%x]\n",
 			(unsigned long)((void __iomem *)(((unsigned long)musb->xceiv->io_priv) + 0x800)), offset,
 			USBPHY_READ32(offset));
