@@ -355,6 +355,12 @@ static int upower_update_tbl_ref(void)
 	int i;
 	int ret = 0;
 
+	/* To disable upower, do not update upower ptr*/
+	if (!upower_enable) {
+		upower_error("upower is disabled\n");
+		return 0;
+	}
+
 	#ifdef UPOWER_PROFILE_API_TIME
 	upower_get_start_time_us(UPDATE_TBL_PTR);
 	#endif
@@ -516,6 +522,10 @@ static int create_procfs(void)
 		PROC_ENTRY(upower_debug),
 	};
 
+	/* To disable upower, do not create procfs*/
+	if (!upower_enable)
+		return 0;
+
 	/* create proc/upower node */
 	upower_dir = proc_mkdir("upower", NULL);
 	if (!upower_dir) {
@@ -538,10 +548,7 @@ static int create_procfs(void)
 
 static int __init upower_init(void)
 {
-	if (upower_enable == 0) {
-		upower_error("upower is disabled\n");
-		return 0;
-	}
+
 	/* PTP has no efuse, so volt will be set to orig data */
 	/* before upower_init_volt(), PTP has called upower_update_volt_by_eem() */
 #if 0
