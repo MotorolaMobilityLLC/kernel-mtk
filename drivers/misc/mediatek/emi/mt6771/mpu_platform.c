@@ -32,7 +32,7 @@ int is_md_master(unsigned int master_id)
 	if ((master_id & 0x7) == MASTER_MDMCU)
 		return 1;
 
-	if ((master_id & 0x8) == MASTER_MD)
+	if ((master_id & 0x7) == MASTER_MD)
 		return 1;
 
 	return 0;
