@@ -19,6 +19,8 @@
 static struct ccci_smem_port md1_ccci_smem_ports[] = {
 	{SMEM_USER_RAW_DBM, TYPE_RAW, }, /* mt_pbm.c, this must be 1st element, user need this condition. */
 	{SMEM_USER_CCB_DHL, TYPE_CCB, }, /* CCB DHL */
+	{SMEM_USER_CCB_MD_MONITOR, TYPE_CCB, }, /* CCB DHL */
+	{SMEM_USER_CCB_META, TYPE_CCB, }, /* CCB DHL */
 	{SMEM_USER_RAW_DHL, TYPE_RAW, }, /* raw region for DHL settings */
 	{SMEM_USER_RAW_NETD, TYPE_RAW, }, /* for direct tethering */
 	{SMEM_USER_RAW_USB, TYPE_RAW, }, /* for derect tethering */
@@ -28,6 +30,8 @@ static struct ccci_smem_port md1_ccci_smem_ports[] = {
 static struct ccci_smem_port md3_ccci_smem_ports[] = {
 	{SMEM_USER_RAW_DBM, TYPE_RAW, }, /* mt_pbm.c */
 	{SMEM_USER_CCB_DHL, TYPE_CCB, }, /* dummy */
+	{SMEM_USER_CCB_MD_MONITOR, TYPE_CCB, }, /* dummy */
+	{SMEM_USER_CCB_META, TYPE_CCB, }, /*dummy */
 	{SMEM_USER_RAW_DHL, TYPE_RAW, }, /* dummy */
 	{SMEM_USER_RAW_NETD, TYPE_RAW, }, /* dummy */
 	{SMEM_USER_RAW_USB, TYPE_RAW, }, /* dummy */
