@@ -1,6 +1,7 @@
 #
 # Makefile for the kernel block layer
 #
+subdir-ccflags-y += -Werror
 
 obj-$(CONFIG_BLOCK) := bio.o elevator.o blk-core.o blk-tag.o blk-sysfs.o \
 			blk-flush.o blk-settings.o blk-ioc.o blk-map.o \
