@@ -2010,6 +2010,10 @@ s32 cmdq_task_create_delay_thread_dram(void **pp_delay_thread_buffer, u32 *buffe
 	cmdq_task_reset(handle);
 	arg_delay_cpr_start = CMDQ_ARG_CPR_START + cmdq_core_get_delay_start_cpr();
 
+	cmdq_op_wait(handle, CMDQ_SYNC_TOKEN_TIMER);
+	cmdq_op_write_reg(handle, CMDQ_TPR_MASK_PA, CMDQ_DELAY_TPR_MASK_VALUE,
+		CMDQ_DELAY_TPR_MASK_VALUE);
+
 	cmdq_op_wait(handle, CMDQ_EVENT_TIMER_00 + CMDQ_DELAY_TPR_MASK_BIT);
 	for (i = 0; i < CMDQ_DELAY_MAX_SET; i++) {
 		arg_delay_set_cpr_start = arg_delay_cpr_start + CMDQ_DELAY_SET_MAX_CPR * i;
@@ -2066,7 +2070,7 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffe
 	u32 i;
 	u32 wait_tpr_index = 0;
 	u32 wait_tpr_arg_a = 0;
-	u32 replace_overwrite_index[4] = {0};
+	u32 replace_overwrite_index[2] = {0};
 	u32 replace_overwrite_debug = 0;
 	CMDQ_VARIABLE arg_delay_cpr_start, arg_delay_set_cpr_start;
 	CMDQ_VARIABLE arg_delay_set_start, arg_delay_set_duration, arg_delay_set_result;
@@ -2088,7 +2092,8 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffe
 	cmdq_op_wait(handle, CMDQ_SYNC_TOKEN_TIMER);
 	wait_tpr_index = cmdq_task_get_instruction_count(handle) - 1;
 	wait_tpr_arg_a = wait_tpr_index * 2 + 1;
-	cmdq_op_write_reg(handle, CMDQ_TPR_MASK_PA, CMDQ_DELAY_TPR_MASK_VALUE, ~0);
+	cmdq_op_write_reg(handle, CMDQ_TPR_MASK_PA, CMDQ_DELAY_TPR_MASK_VALUE,
+		CMDQ_DELAY_TPR_MASK_VALUE);
 	cmdq_op_assign(handle, &spr_min_delay, INIT_MIN_DELAY);
 	cmdq_op_assign(handle, &temp_cpr, INIT_MIN_DELAY);
 
@@ -2116,25 +2121,14 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffe
 
 	cmdq_op_if(handle, spr_min_delay, CMDQ_EQUAL, temp_cpr);
 		/* no one is waiting, reset wait event value */
-		cmdq_op_write_reg(handle, CMDQ_TPR_MASK_PA, 0, ~0);
+		cmdq_op_write_reg(handle, CMDQ_TPR_MASK_PA, 0,
+			CMDQ_DELAY_TPR_MASK_VALUE);
 		cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_SYNC_TOKEN_TIMER));
 		replace_overwrite_index[0] = cmdq_task_get_instruction_count(handle) - 1;
 	cmdq_op_else(handle);
 		/* wait precisely */
-		cmdq_op_right_shift(handle, &spr_temp, spr_min_delay, 18);
-		cmdq_op_if(handle, spr_temp, CMDQ_NOT_EQUAL, 0);
-			cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_17));
-			replace_overwrite_index[1] = cmdq_task_get_instruction_count(handle) - 1;
-		cmdq_op_else(handle);
-			cmdq_op_right_shift(handle, &spr_temp, spr_min_delay, 15);
-			cmdq_op_if(handle, spr_temp, CMDQ_NOT_EQUAL, 0);
-				cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_14));
-				replace_overwrite_index[2] = cmdq_task_get_instruction_count(handle) - 1;
-			cmdq_op_else(handle);
-				cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_11));
-				replace_overwrite_index[3] = cmdq_task_get_instruction_count(handle) - 1;
-			cmdq_op_end_if(handle);
-		cmdq_op_end_if(handle);
+		cmdq_op_assign(handle, &spr_temp, CMDQ_EVENT_ARGA(CMDQ_EVENT_TIMER_11));
+		replace_overwrite_index[1] = cmdq_task_get_instruction_count(handle) - 1;
 	cmdq_op_end_if(handle);
 
 	cmdq_op_add(handle, &spr_debug, spr_temp, 0);

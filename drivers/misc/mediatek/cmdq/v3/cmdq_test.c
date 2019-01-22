@@ -4197,19 +4197,27 @@ static void testcase_basic_delay(u32 delay_time_us)
 	const CMDQ_VARIABLE arg_tpr = (CMDQ_BIT_VAR<<CMDQ_DATA_BIT) | CMDQ_TPR_ID;
 	uint32_t begin_tpr, end_tpr;
 	int32_t duration_time;
+	u32 tpr_last_bit_mask = 0x8000000;
 
 	CMDQ_LOG("%s\n", __func__);
 
 	cmdq_delay_dump_thread(false);
 
-	cmdq_alloc_mem(&slot_handle, 2);
+	cmdq_alloc_mem(&slot_handle, 3);
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 
 	cmdq_task_reset(handle);
 
+	/* always enable tpr so that we can backup tpr value for duration */
+	cmdq_op_write_reg(handle, CMDQ_TPR_MASK_PA, tpr_last_bit_mask,
+		tpr_last_bit_mask);
+
 	cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 0);
 	cmdq_op_delay_us(handle, delay_time_us);
 	cmdq_op_backup_CPR(handle, arg_tpr, slot_handle, 1);
+
+	/* turn off tpr */
+	cmdq_op_write_reg(handle, CMDQ_TPR_MASK_PA, 0, tpr_last_bit_mask);
 
 	cmdq_op_finalize_command(handle, false);
 	_test_submit_async(handle, &pTask);
@@ -6705,9 +6713,15 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 126:
 		testcase_basic_delay(100);
-		testcase_basic_delay(1000);
-		testcase_basic_delay(10000);
-		testcase_basic_delay(100000);
+		testcase_basic_delay(200);
+		testcase_basic_delay(100);
+		testcase_basic_delay(200);
+		testcase_basic_delay(100);
+		testcase_basic_delay(200);
+		testcase_basic_delay(100);
+		testcase_basic_delay(200);
+		testcase_basic_delay(100);
+		testcase_basic_delay(200);
 		break;
 	case 125:
 		testcase_do_while_continue();
