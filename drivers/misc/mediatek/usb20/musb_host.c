@@ -2895,13 +2895,16 @@ static int musb_bus_suspend(struct usb_hcd *hcd)
 		WARNING("trying to suspend as %s while active\n",
 			otg_state_string(musb->xceiv->otg->state));
 		return -EBUSY;
-	} else
+	} else {
+		usb_hal_dpidle_request(USB_DPIDLE_TIMER);
 		return 0;
+	}
 }
 
 static int musb_bus_resume(struct usb_hcd *hcd)
 {
 	/* resuming child port does the work */
+	usb_hal_dpidle_request(USB_DPIDLE_FORBIDDEN);
 	return 0;
 }
 

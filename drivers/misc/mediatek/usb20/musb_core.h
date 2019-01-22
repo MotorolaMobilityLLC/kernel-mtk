@@ -655,5 +655,12 @@ static inline const char *otg_state_string(enum usb_otg_state state)
 	return usb_otg_state_string(state);
 }
 #endif
-
+enum {
+	USB_DPIDLE_ALLOWED = 0,
+	USB_DPIDLE_FORBIDDEN,
+	USB_DPIDLE_SRAM,
+	USB_DPIDLE_TIMER
+};
+extern void usb_hal_dpidle_request(int mode);
+extern void register_usb_hal_dpidle_request(void (*function)(int));
 #endif				/* __MUSB_CORE_H__ */
