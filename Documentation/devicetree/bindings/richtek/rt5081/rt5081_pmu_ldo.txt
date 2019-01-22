@@ -1,0 +1,45 @@
+Richtek RT5081 Vib LDO subdev
+RT5081 Vibrator ldo control.
+
+Required properties:
+- compatible : Must be "richtek,rt5081_pmu_ldo";
+- interrupt-names : RT5081 ldo enabled interrupts.
+	(R:required, O:optional)
+	1. (O)ldo_oc: report whether the event of LDO over current occurs.
+
+- ldo_oms : ldo oms function, 0 -> floating, 1 -> discharge to ground for off mode.
+
+Optional node:
+- ldo_vrc : ldo voltage rampping control.
+	    0 -> 1 step/16us, 1 -> 2 steps/16us, 2 -> 4 steps/16us, 3 -> 8 steps/16us.
+
+Child node:
+- rt5081_ldo : vib ldo regulator init setting.
+
+Example:
+rt5081_pmu@34 {
+	status = "ok";
+	compatible = "richtek,rt5081_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	rt,intr_gpio_num = <3>; /* direct defined GPIO num */
+	rt,intr_gpio = <&pio 3 0>; /* genernal GPIO */
+	ldo {
+		compatible = "richtek,rt5081_pmu_ldo";
+		interrupt-names = "ldo_oc";
+		ldo_oms = <1>; /* 0: floating ; 1: discharge to ground for off mode */
+		/* 0:  1 step/16us; 1 : 2 steps/16us; 2: 4 steps/16us; 3: 8steps/16us */
+		/*ldo_vrc = <0>; */ /* to assign this  a value will also set en_vrc = 1 */
+		ldo_vrc_lt = <1>; /* 0 : disable; 1: 10 us; 2: 20 us; 3: 40 us */
+		rt5081_ldo {
+			regulator-name = "rt5081_ldo"; /* change name by yourself */
+			regulator-min-microvolt = <1600000>;
+			regulator-max-microvolt = <4000000>; /* max == min then apply_uV = 1 */
+			/* regulator-microvolt-offset = < 0>; optional*/
+			/* regulator-boot-on = "yes"; optional, exist = enabled */
+			/* regulator-always-on = "yes"; optional, exist = enabled */
+			/* regulator-ramp-delay = <100>; optional*/
+		};
+	};
+};

@@ -1,0 +1,38 @@
+Mediatek MT6370 I2C Sub-pmic
+
+Mediatek MT6370 is Integrated Sub Power Management Chips.
+MT6370 integrates the functions included Charger, Backlight,
+RGBLED, DisplayBias, Vib LDO, Flash LED.
+Mediatek MT6370 is connected to an i2c bus.
+
+
+Required properties:
+- compatible : Must be "mediatek,mt6370_pmu";
+- reg : Must be 0x34, it's MT6370 PMU default I2C Slave address.
+- interrupt-controller : Since the MT6370 support several interrupts internally,
+  it is considered as an interrupt controller cascaded to the SoC one.
+- #interrupt-cells = <1>;
+/* If CONFIG_MTK_GPIOLIB_STAND is defined, mt6370,intr_gpio_num is used. Otherwise we use mt6370,intr_gpio. */
+- mt6370,intr_gpio_num : IRQ GPIO pin that's connected to MT6370 interrupt.
+- mt6370,intr_gpio : general IRQ GPIO pin.
+
+Optional node:
+- core : core subdev for MT6370 core part.
+- charger : charger subdev for MT6370 charger part.
+- fled : flash led subdev for MT6370 flashLED part.
+- ldo : ldo subdev for MT6370 Vib LDO part.
+- rgbled : rgbled subdev for MT6370 RGB indicator part.
+- bled : backlight subdev for MT6370 backlight led part.
+- dsv : dsv subdev for MT6370 display bias part.
+
+
+Example:
+mt6370_pmu@34 {
+	status = "ok";
+	compatible = "mediatek,mt6370_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	mt6370,intr_gpio_num = <3>; /* direct defined GPIO num */
+	mt6370,intr_gpio = <&pio 3 0>; /* genernal GPIO */
+};

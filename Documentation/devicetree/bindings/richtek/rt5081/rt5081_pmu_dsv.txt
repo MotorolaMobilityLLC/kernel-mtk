@@ -1,0 +1,83 @@
+Richtek RT5081 DSV display bias subdev
+RT5081 display bias control.
+
+Required properties:
+- compatible : Must be "richtek,rt5081_pmu_dsv";
+- interrupt-names : RT5081 dsv enabled interrupts.
+	(R:required, O:optional)
+	1. dsv_vneg_ocp: vneg's over current flag.
+	2. dsv_vpos_ocp: vpos's over current flag.
+	3. dsv_bst_ocp: boost voltage of DB's over circuit.
+	4. dsv_vneg_scp: vneg's short circuit protection.
+	5. dsv_vpos_scp: vpos's short circuit protection.
+
+- db_ext_en : 0 for i2c control, 1 for external pin control.
+- db_periodic_fix : 0 disable, 1 -> prevent from voltage drop when db is restart.
+- db_single_pin : 0 -> vpos and vneg are controlled by db_enp and db_enm,
+		  1 -> single pin control.
+- db_freq_pm : 0 -> 20Hz, 1 -> 33Hz, the value is valid only when db_period_mode = 1.
+- db_periodic_mode : 0 = always on if db is enabled; 1 = DB period mode.
+- db_startup : 0 -> close loop, wait 80%; 1 = open loop, go after soft-start dimming.
+- db_vneg_20ms : 0 disable, 1 -> DB_VNEG discharge 20ms when shutdown.
+- db_vneg_disc : 0 disable, 1 -> discharge vneg when turn off.
+- db_vpos_20ms : 0 disable, 1 -> DB_VPOS discharge 20ms when shutdown.
+- db_vpos_disc : 0 disable, 1 -> discharge vpos when turn off.
+- db_delay : 0 no constraint, 1 -> 0ms, 2 -> 1ms, 3, 4ms.
+- db_vbst : vboost voltage, need greater than dsv_pos & dsv_neg 200mV.
+- db_vpos_slew : 0 -> 8.46 V/ms, 1 -> 5.79 V/ms, 2 -> 3.87 V/ms, 3 -> 2.97 V/ms.
+- db_vneg_slew : 0 -> -9.24V/ms, 1 -> -5.97V/ms, 2 -> -4.82V/ms, 3 -> -3.07V/ms.
+
+Optional node:
+
+Child node:
+- rt5081_dsvn : rt5081_dsv vneg initial setting.
+- rt5081_dsvp : rt5081_dsv vpos initial setting.
+
+Example:
+rt5081_pmu@34 {
+	status = "ok";
+	compatible = "richtek,rt5081_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	rt,intr_gpio_num = <3>; /* direct defined GPIO num */
+	rt,intr_gpio = <&pio 3 0>; /* genernal GPIO */
+	dsv {
+		compatible = "richtek,rt5081_pmu_dsv";
+		interrupt-names = "dsv_vneg_ocp", "dsv_vpos_ocp",
+				  "dsv_bst_ocp", "dsv_vneg_scp",
+				  "dsv_vpos_scp";
+		db_ext_en = <0>;  /* 0 = i2c ctrl; 1 = ext pin */
+		db_periodic_fix = <0>; /* 1 = prevent from voltage drop when db is restart */
+		db_single_pin = <0>; /* 0 => VOS & VNEG are ctrled by DB_ENP & DB_ENN; 1 : single pin ctrl*/
+		db_freq_pm = <0>; /*  0 = 20Hz ; 1 = 33Hz; valid if db_period_mode = 1 */
+		db_periodic_mode = <0>; /* 0 = always on if DB is enabled; 1 = DB period mode */
+		db_startup = <0>; /* 0 = close loop, wait 80%; 1 = open loop, go after soft-start dimming */
+		db_vneg_20ms = <1>; /* 1 = DB VNEG discharge 20ms when shutdown; 0 = disable */
+		db_vneg_disc = <0>; /*  1 = Discharge VNEG when turn off; 0 = disable */
+		db_vpos_20ms = <1>; /* 1 = DB VPOS discharge 20ms when shutdown; 0 = disable */
+		db_vpos_disc = <0>; /*  1 = Discharge VPOS when turn off; 0 = disable */
+		db_delay = <3>; /* 0 = no constraint; 1 = 0 ms; 2 = 1 ms; 3 = 4 ms */
+		db_vbst  = <5700>; /* mV */
+		db_vpos_slew = <1>; /* 0 : 8.46 V/ms; 1 : 5.79 V/ms; 2: 3.87 V/ms; 3: 2.97V/ms */
+		db_vneg_slew = <1>; /* 0: -9.24V/ms; 1: -5.97V/ms; 2: -4.82V/ms; 3: -3.07V/ms*/
+		rt5081_dsvp {
+			regulator-name = "dsv_pos"; /* change name by yourself */
+			regulator-min-microvolt = <4000000>;
+			regulator-max-microvolt = <6000000>; /* max == min then apply_uV = 1 */
+			/* regulator-microvolt-offset = < 0>; optional*/
+			/* regulator-boot-on = "yes"; optional, exist = enabled */
+			/* regulator-always-on = "yes"; optional, exist = enabled */
+			/* regulator-ramp-delay = <100>; optional*/
+		};
+		rt5081_dsvn {
+			regulator-name = "dsv_neg"; /* change name by yourself */
+			regulator-min-microvolt = <4000000>;
+			regulator-max-microvolt = <6000000>; /* max == min then apply_uV = 1 */
+			/* regulator-microvolt-offset = < 0>; optional*/
+			/* regulator-boot-on = "yes"; optional, exist = enabled */
+			/* regulator-always-on = "yes"; optional, exist = enabled */
+			/* regulator-ramp-delay = <100>; optional*/
+		};
+	};
+};

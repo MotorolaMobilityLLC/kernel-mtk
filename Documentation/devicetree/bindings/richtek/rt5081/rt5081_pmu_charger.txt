@@ -1,0 +1,101 @@
+Richtek RT5081 switching charger subdev
+RT5081 switching charger control
+
+Required properties:
+- compatible : Must be "richtek,rt5081_pmu_charger";
+- interrupt-names : RT5081 switching charger enabled interrupts.
+	(R: required, O: optional, D: disable)
+	1.  (O) chg_treg: thermal regulation loop active.
+	2.  (O) chg_aicr: input current, AICR loop active.
+	3.  (R) chg_mivr: input voltage, MIVR loop active.
+	4.  (O) pwr_rdy: power ready detection result.
+	5.  (O) chg_vinovp: CHG_VIN over voltage protection fault.
+	6.  (O) chg_vsysuv: system UVP fault.
+	7.  (O) chg_vsysov: system OVP fault.
+	8.  (O) chg_vbatov: battery OVP fault.
+	9.  (R) chg_vbusov: VBUS over voltage protection fault.
+	10. (O) ts_bat_cold: battery temperature fault. temperature is in cold zone.
+	11. (O) ts_bat_cool: battery temperature fault. temperature is in cool zone.
+	12. (O) ts_bat_warm: battery temperature fault. temperature is in warm zone.
+	13. (O) ts_bat_hot: battery temperature fault. temperature is in hot zone.
+	14. (R) chg_tmri: charger timer timeout fault.
+	15. (O) chg_batabsi: battery absence fault.
+	16. (O) chg_adpbadi: charger bad adapter fault.
+	17. (O) chg_rvpi: charger reverse protection fault.
+	18. (O) otpi: thermal shutdown fault.
+	19. (R) chg_aiclmeasi: AICL measurement function done event.
+	20. (O) chg_ichgmeasi: ICHG measurement function done event.
+	21. (O) chgdet_donei: charger type detection done event.
+	22. (R) chg_wdtmri: watch dog timer timeout fault.
+	23. (D) ssfinishi: charger or boost softstart finishes event.
+	24. (R) chg_rechgi: recharge behavior ever occurs.
+	25. (O) chg_termi: charge terminated event.
+	26. (R) chg_ieoci: charging current is lower than EOC current ever occurs.
+	27. (R) adc_donei: ADC measurement done event.
+	28. (D) pumpx_donei: MTK pump express function done event.
+	29. (O) bst_batuvi: boost low voltage input fault.
+	30. (O) bst_vbusovi: boost VMID OVP fault event.
+	31. (O) bst_olpi: boost overload protection event.
+	32. (R) attachi: vbus attach.
+	33. (O) detachi: vbus detach. VBUSPG_D goes from 1 to 0.
+	34. (O) hvdcp_det: whether HVDCP is detected by DCP's pulling D- to GND.
+	35. (O) chgdeti: Output of USB charger detection.
+	36. (O) dcdti: Data contact detection event.
+	37. (O) dirchg_vgoki: VG charge pump ready event.
+	38. (O) dirchg_wdtmri: in LVHI mode, watchdog fault event.
+	39. (O) dirchg_uci: in LVHI mode, TA un-connect fault event.
+	40. (O) dirchg_oci: in LVHI mode, IBUS over current fault event.
+	41. (O) dirchg_ovi: in LVHI mode, BAT over voltage fault event.
+	42. (O) ovpctrl_swon_evt: OVPCTRL_MOS is turned on.
+	43. (R) ovpctrl_uvp_d_evt: OVPCTRL_VBUS is under voltage protection fault with 128us deglitc time.
+	44. (O) ovpctrl_uvp_evt: OVPCTRL_VBUS under voltage protection fault.
+	45. (O) ovpctrl_ovp_d_evt: OVPCTRL_VBUS over voltage protection fault with 128us deglitch time.
+	46. (O) ovpctrl_ovp_evt: OVPCTRL_VBUS over voltage protection fault.
+
+Optional node:
+- charger_name : charger classdev name.
+- load_switch_name : charger classdev name for load switch.
+- ichg : 100000 ~ 5000000 uA.
+- aicr : 100000 ~ 3250000 uA.
+- mivr : 3900000 ~ 13400000 uV.
+- cv : 3900000 ~ 4710000 uV.
+- ieoc : 100000 ~ 850000 uA.
+- safety_timer : 4, 6, 8, 10, 12, 14, 16, 20 hours.
+- dc_wdt : 125000, 250000, 500000, 1000000, 2000000, 4000000, 8000000 us.
+- ircmp_resistor : 0, 25000, 50000, 75000, 100000, 125000, 150000, 175000 uohm.
+- ircmp_vclamp : 0, 32000, 64000, 96000, 128000, 160000, 192000, 224000 uV.
+- enable_te : Charging termination function enable.
+              comment this line to disable this function.
+- enable_wdt: Watchdog timer function enable.
+              comment this line to disable this function.
+
+Example:
+rt5081_pmu@34 {
+	status = "ok";
+	compatible = "richtek,rt5081_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	rt,intr_gpio_num = <3>; /* direct defined GPIO num */
+	rt,intr_gpio = <&pio 3 0>; /* genernal GPIO */
+	charger {
+		compatible = "richtek,rt5081_pmu_charger";
+		interrupt-names = "adc_donei", "chg_mivr",
+			"chg_aiclmeasi","attachi", "ovpctrl_uvp_d_evt",
+			"chg_wdtmri", "chg_vbusov", "chg_rechgi";
+		charger_name = "primary_chg";
+		load_switch_name = "primary_load_switch";
+		ichg = <2000000>;	/* uA */
+		aicr = <500000>;	/* uA */
+		mivr = <4400000>;	/* uV */
+		cv = <4350000>;		/* uA */
+		ieoc = <150000>;	/* uA */
+		safety_timer = <12>;	/* hour */
+		dc_wdt = <4000000>;	/* us */
+		ircmp_resistor = <25000>;	/* uohm */
+		ircmp_vclamp = <32000>;		/* uV */
+		enable_te;
+		enable_wdt;
+		/* enable_polling; */	/* is this charger needs polling */
+	};
+};

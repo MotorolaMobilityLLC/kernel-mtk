@@ -1,0 +1,52 @@
+Richtek RT5081 flashligh led subdev
+RT5081 flashlight led control.
+
+Required properties:
+- compatible : Must be "richtek,rt5081_pmu_fled";
+- interrupt-names : RT5081 fled enabled interrupts.
+	(R: required, O: optional)
+	1.  (O)fled_strbpin: report whether the event of FLED strobe pin occurs.
+	2.  (O)fled_torpin: report whether the event of FLED torch pin occures.
+	3.  (O)fled_tx: report whether the event of FLED TX occurs.
+	4.  (O)fled_lvp: report whether the event of FLED low VF occurs.
+	5.  (R)fled2_short: report whether the event of FLED2 short occurs.
+	6.  (R)fled1_short: report whether the event of FLED1 short occurs.
+	7.  (O)fled2_strb: report whether the event of FLED2 strobe occurs.
+	8.  (O)fled1_strb: report whether the event of FLED1 strobe occurs.
+	9.  (O)fled2_strb_to: report whether the event of FLED2 strobe timeout occurs.
+	10. (O)fled1_strb_to: report whether the event of FLED1 strobe timeout occurs.
+	11. (O)fled2_tor: report whether the event of FLED2 torch occurs.
+	12. (O)fled1_tor: repower whether the event of FLED1 torch occurs.
+
+
+Optional node:
+- torch_cur : 25000 ~ 400000 uA
+- strobe_cur : 100000 ~  1500000 uA
+- strobe_timeout : 64 ~ 2432 ms
+
+Example:
+rt5081_pmu@34 {
+	status = "ok";
+	compatible = "richtek,rt5081_pmu";
+	reg = <0x34>;
+	interrupt-controller;
+	#interrupt-cells = <1>;
+	rt,intr_gpio_num = <3>; /* direct defined GPIO num */
+	rt,intr_gpio = <&pio 3 0>; /* genernal GPIO */
+	rt5081_pmu_fled1 {
+		compatible = "richtek,rt5081_pmu_fled1";
+		interrupt-names = "fled_lvf", "fled2_short",
+				  "fled1_short";
+		torch_cur = <300000>;
+		strobe_cur = <1200000>;
+		strobe_timeout = <2400>;
+	};
+	rt5081_pmu_fled2 {
+		compatible = "richtek,rt5081_pmu_fled2";
+		interrupt-names = "fled_lvf", "fled2_short",
+				  "fled1_short";
+		torch_cur = <200000>;
+		strobe_cur = <1000000>;
+		strobe_timeout = <1200>;
+	};
+};
