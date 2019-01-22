@@ -115,6 +115,19 @@ static void process_dbg_opt(const char *opt)
 			enable_ut = 1;
 		else if (strncmp(opt + 8, "off", 3) == 0)
 			enable_ut = 0;
+	} else if ((strncmp(opt, "dbgtype:", 8) == 0) ||
+		   (strncmp(opt, "regw:", 5) == 0) ||
+		   (strncmp(opt, "regr:", 5) == 0) ||
+		   (strncmp(opt, "hdcp:", 5) == 0) ||
+		   (strncmp(opt, "status", 6) == 0) ||
+		   (strncmp(opt, "help", 4) == 0) ||
+		   (strncmp(opt, "res:", 4) == 0) ||
+		   (strncmp(opt, "edid", 4) == 0) ||
+		   (strncmp(opt, "deepcolor:", 10) == 0) ||
+		   (strncmp(opt, "irq:", 4) == 0)) {
+#if defined(CONFIG_MTK_INTERNAL_HDMI_SUPPORT)
+		mt_hdmi_debug_write(opt);
+#endif
 	} else
 		goto Error;
 	return;
