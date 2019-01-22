@@ -220,7 +220,7 @@ class Olympus(ChipObj):
         return ChipObj.generate(self, paras)
 
 
-class KiboPlus(ChipObj):
+class MT6757_P25(ChipObj):
     def __init__(self, dws_path, gen_path):
         ChipObj.__init__(self, dws_path, gen_path)
 
