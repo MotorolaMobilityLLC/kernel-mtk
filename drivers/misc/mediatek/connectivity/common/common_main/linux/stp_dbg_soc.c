@@ -220,6 +220,10 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		STP_DBG_DBG_FUNC("dump_phy_ddr(%08x),dump_vir_add(0x%p),dump_len(%d)\n",
 				dump_phy_addr, dump_vir_addr, dump_len);
 
+		/* dump_len should not be negative */
+		if (dump_len < 0)
+			dump_len = 0;
+
 		/*move dump info according to dump_addr & dump_len */
 		osal_memcpy_fromio(&g_paged_dump_buffer[0], dump_vir_addr, dump_len);
 		/*stp_dbg_soc_emi_dump_buffer(&g_paged_dump_buffer[0], dump_len);*/
