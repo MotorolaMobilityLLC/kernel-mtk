@@ -62,6 +62,10 @@ static int emi_resume_noirq(struct device *dev)
 	resume_elm();
 #endif
 
+#ifdef DECS_ON_SSPM
+	resume_decs(CEN_EMI_BASE);
+#endif
+
 	return 0;
 }
 
