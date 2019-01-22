@@ -467,6 +467,8 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 	case ION_SYS_GET_PHYS:
 	{
 		struct ion_handle *kernel_handle;
+		/*phy_addr may be used for input when some port use ion, such as vpu*/
+		ion_phys_addr_t phy_addr = param.get_phys_param.phy_addr;
 
 		kernel_handle = ion_drv_get_handle(client, param.get_phys_param.handle,
 						   param.get_phys_param.kernel_handle, from_kernel);
@@ -475,14 +477,16 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 			ret = -EINVAL;
 			break;
 		}
+
 		if (ion_phys(client, kernel_handle,
-			     (ion_phys_addr_t *)&param.get_phys_param.phy_addr,
+				&phy_addr,
 				(size_t *)&param.get_phys_param.len) < 0) {
 			param.get_phys_param.phy_addr = 0;
 			param.get_phys_param.len = 0;
 			IONMSG("[ion_sys_ioctl]: Error. Cannot get physical address.\n");
 			ret = -EFAULT;
 		}
+		param.get_phys_param.phy_addr = (unsigned int)phy_addr;
 		ion_drv_put_kernel_handle(kernel_handle);
 	}
 	break;
