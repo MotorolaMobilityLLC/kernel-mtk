@@ -833,8 +833,8 @@ static ssize_t pmic_irq_dbg_write(struct file *file,
 	char *buf_ptr = NULL;
 	char *s_intNo;
 	char *s_state;
-	unsigned int intNo, state;
-	int ret;
+	unsigned int intNo = 999, state = 2; /* initialize as invalid value */
+	int ret = 0;
 
 	simple_write_to_buffer(buf, sizeof(buf), position, user_buffer, count);
 	buf_ptr = (char *)buf;
