@@ -24,7 +24,7 @@
 #include "ddp_rdma_ex.h"
 
 
-unsigned int rdma_index(DISP_MODULE_ENUM module)
+unsigned int rdma_index(enum DISP_MODULE_ENUM module)
 {
 	int idx = 0;
 
@@ -46,24 +46,24 @@ unsigned int rdma_index(DISP_MODULE_ENUM module)
 	return idx;
 }
 
-void rdma_set_target_line(DISP_MODULE_ENUM module, unsigned int line, void *handle)
+void rdma_set_target_line(enum DISP_MODULE_ENUM module, unsigned int line, void *handle)
 {
 	unsigned int idx = rdma_index(module);
 
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_TARGET_LINE, line);
 }
 
-int rdma_init(DISP_MODULE_ENUM module, void *handle)
+int rdma_init(enum DISP_MODULE_ENUM module, void *handle)
 {
 	return rdma_clock_on(module, handle);
 }
 
-int rdma_deinit(DISP_MODULE_ENUM module, void *handle)
+int rdma_deinit(enum DISP_MODULE_ENUM module, void *handle)
 {
 	return rdma_clock_off(module, handle);
 }
 
-void rdma_get_address(DISP_MODULE_ENUM module, unsigned long *addr)
+void rdma_get_address(enum DISP_MODULE_ENUM module, unsigned long *addr)
 {
 	unsigned int idx = rdma_index(module);
 

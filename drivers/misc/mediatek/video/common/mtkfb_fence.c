@@ -60,8 +60,8 @@ void mtkfb_fence_log_enable(bool enable)
 	do {							\
 		if (expr)					\
 			break;					\
-		pr_debug("FENCE ASSERT FAILED %s, %d\n",	\
-				__FILE__, __LINE__); WARN_ON(1);	\
+		pr_debug("FENCE ASSERT FAILED %s, %d\n", __FILE__, __LINE__);\
+		aee_kernel_exception("DISP/fence", "[DISP/FENCE]error:", expr);	\
 	} while (0)
 #endif
 
@@ -1026,7 +1026,8 @@ static int disp_sync_convert_input_to_fence_layer_info_v2(FENCE_LAYER_INFO *dst,
 {
 	if (!dst) {
 		pr_err("%s error!\n", __func__);
-		WARN_ON(1);
+		DISP_ERR("[fence]timeline_idx:%d,fence_id:%d, layer_en:%d, mva:%ld\n",
+			 timeline_idx, fence_id, layer_en, mva);
 	}
 
 	dst->layer = timeline_idx;

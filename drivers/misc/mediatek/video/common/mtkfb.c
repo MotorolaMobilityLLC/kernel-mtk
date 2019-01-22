@@ -1687,8 +1687,10 @@ static int mtkfb_fbinfo_init(struct fb_info *info)
 	int r = 0;
 
 	/*DISPFUNC(); */
-
-	WARN_ON(!fbdev->fb_va_base);
+	if (!fbdec->fb_va_base) {
+		MTKFBERR("fb va base:0x%p\n", fbdev->fb_va_base);
+		return -1;
+	}
 	info->fbops = &mtkfb_ops;
 	info->flags = FBINFO_FLAG_DEFAULT;
 	info->screen_base = (char *)fbdev->fb_va_base;
@@ -1815,7 +1817,7 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 		/* nothing to free */
 		break;
 	default:
-		WARN_ON();
+		pr_err("mtkfb free resources fail, state=%d\n", state);
 	}
 }
 
@@ -2555,8 +2557,10 @@ int mtkfb_pm_suspend(struct device *device)
 	/* pr_debug("calling %s()\n", __func__); */
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL);
-
+	if (!pdev) {
+		MTKFBERR("pm suspend fail, pdev is NULL\n");
+		return -1;
+	}
 	return mtkfb_suspend((struct device *)pdev, PMSG_SUSPEND);
 }
 
@@ -2565,7 +2569,10 @@ int mtkfb_pm_resume(struct device *device)
 	/* pr_debug("calling %s()\n", __func__); */
 	struct platform_device *pdev = to_platform_device(device);
 
-	WARN_ON(pdev == NULL);
+	if (!pdev) {
+		MTKFBERR("pm resume fail, pdev is NULL\n");
+		return -1;
+	}
 
 	return mtkfb_resume((struct device *)pdev);
 }
