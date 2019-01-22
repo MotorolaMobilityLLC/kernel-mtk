@@ -920,17 +920,14 @@ void ion_client_destroy(struct ion_client *client)
 	while ((n = rb_first(&client->handles))) {
 		struct ion_handle *handle = rb_entry(n, struct ion_handle,
 						     node);
-		struct ion_buffer *buffer = handle->buffer;
-		struct ion_sec_buffer_info *pbufferinfo = (struct ion_sec_buffer_info *)buffer->priv_virt;
 
 		mutex_lock(&client->lock);
-		IONMSG("warn destroy: hdl=%p, buf=%p, ref=%d, sz=%zu, kmp=%d, client %s, disp %s, dbg %s, sec 0x%lx\n",
+		IONMSG("warn destroy: hdl=%p, buf=%p, ref=%d, sz=%zu, kmp=%d, client %s, disp %s, dbg %s\n",
 		       handle, handle->buffer, atomic_read(&handle->buffer->ref.refcount),
 				handle->buffer->size,  handle->buffer->kmap_cnt,
 				client->name ? client->name : NULL,
 				client->display_name ? client->display_name : NULL,
-				client->dbg_name ? client->dbg_name : NULL,
-				(unsigned long)(pbufferinfo->priv_phys));
+				client->dbg_name ? client->dbg_name : NULL);
 		ion_handle_destroy(&handle->ref);
 		mutex_unlock(&client->lock);
 	}
