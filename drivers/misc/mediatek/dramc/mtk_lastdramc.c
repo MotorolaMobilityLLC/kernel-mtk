@@ -45,6 +45,10 @@
 
 #ifdef LAST_DRAMC_IP_BASED
 static void __iomem *(*get_emi_base)(void);
+__weak unsigned int mt_dramc_ta_addr_set(unsigned int rank, unsigned int temp_addr)
+{
+	return 0;
+}
 
 static int __init set_single_channel_test_angent(int channel)
 {
@@ -141,11 +145,10 @@ static int __init set_single_channel_test_angent(int channel)
 			pr_err("[LastDRAMC] undefined DRAM type\n");
 			return -1;
 		}
-#if defined(CONFIG_MACH_MT6739)
-		mt_dramc_ta_addr_set(rank, temp);
- #else
+
+		if (!mt_dramc_ta_addr_set(rank, temp))
 		Reg_Sync_Writel(dramc_ao_base+base_reg[rank], temp);
- #endif
+
 	}
 
 	if (rank_max > 1)
