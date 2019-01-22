@@ -1025,6 +1025,8 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			/* Clear GC's connection request. */
 			prConnReqInfo->fgIsConnRequest = FALSE;
 
+			p2pFuncClearGcDeauthRetry(prAdapter);
+
 			if ((cnmPreferredChannel(prAdapter,
 						 &eBand,
 						 &ucPreferedChnl,
@@ -1227,15 +1229,7 @@ VOID p2pFsmRunEventStopAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 		if ((prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)
 		    && (prP2pBssInfo->eIntendOPMode == OP_MODE_NUM)) {
-			/* AP is created, Beacon Update. */
-
 			p2pFuncDissolve(prAdapter, prP2pBssInfo, TRUE, REASON_CODE_DEAUTH_LEAVING_BSS);
-
-			DBGLOG(P2P, TRACE, "Stop Beaconing\n");
-			nicPmIndicateBssAbort(prAdapter, NETWORK_TYPE_P2P_INDEX);
-
-			/* Reset RLM related field of BSSINFO. */
-			rlmBssAborted(prAdapter, prP2pBssInfo);
 		}
 		/* 20120118: Moved to p2pFuncSwitchOPMode(). */
 		/* UNSET_NET_ACTIVE(prAdapter, NETWORK_TYPE_P2P_INDEX); */
@@ -1310,6 +1304,8 @@ VOID p2pFsmRunEventConnectionRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 		prP2pFsmInfo->prTargetBss = scanP2pSearchDesc(prAdapter, prP2pBssInfo, prConnReqInfo);
 		prP2pFsmInfo->eCNNState = P2P_CNN_NORMAL;
 
+		p2pFuncClearGcDeauthRetry(prAdapter);
+
 		if (prP2pFsmInfo->prTargetBss == NULL) {
 			/* Update scan parameter... to scan target device. */
 			P_P2P_SCAN_REQ_INFO_T prScanReqInfo = &(prP2pFsmInfo->rScanReqInfo);
@@ -1359,8 +1355,8 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T) NULL;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	P_MSG_P2P_CONNECTION_ABORT_T prDisconnMsg = (P_MSG_P2P_CONNECTION_ABORT_T) NULL;
-	STA_RECORD_T *prStaRec = (P_STA_RECORD_T)NULL;
-	/* P_STA_RECORD_T prTargetStaRec = (P_STA_RECORD_T)NULL; */
+	STA_RECORD_T *prStaRec = (P_STA_RECORD_T) NULL;
+	P_STA_RECORD_T prTargetStaRec = (P_STA_RECORD_T) NULL;
 	P_P2P_GC_DISCONNECTION_REQ_INFO_T prGcDisConnReqInfo;
 
 	do {
@@ -1395,15 +1391,17 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 			{
 				UINT_8 aucBCBSSID[] = BC_BSSID;
 
-				if (!prP2pBssInfo->prStaRecOfAP) {
+				prTargetStaRec = prP2pBssInfo->prStaRecOfAP;
+
+				if (!prTargetStaRec) {
 					DBGLOG(P2P, TRACE, "GO's StaRec is NULL\n");
 					break;
 				}
-				if (UNEQUAL_MAC_ADDR(prP2pBssInfo->prStaRecOfAP->aucMacAddr, prDisconnMsg->aucTargetID)
+				if (UNEQUAL_MAC_ADDR(prTargetStaRec->aucMacAddr, prDisconnMsg->aucTargetID)
 				    && UNEQUAL_MAC_ADDR(prDisconnMsg->aucTargetID, aucBCBSSID)) {
 					DBGLOG(P2P, TRACE,
 					       "Unequal MAC ADDR [ %pM : %pM ]\n",
-						prP2pBssInfo->prStaRecOfAP->aucMacAddr,
+						prTargetStaRec->aucMacAddr,
 						prDisconnMsg->aucTargetID);
 					break;
 				}
@@ -1416,19 +1414,21 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 				/* TODO: If it has. */
 
 				prGcDisConnReqInfo = &(prP2pFsmInfo->rGcDisConnReqInfo);
-				prGcDisConnReqInfo->prTargetStaRec = prP2pBssInfo->prStaRecOfAP;
+				prGcDisConnReqInfo->prTargetStaRec = prTargetStaRec;
 				prGcDisConnReqInfo->u4RetryCount = 0;
 				prGcDisConnReqInfo->u2ReasonCode = prDisconnMsg->u2ReasonCode;
 				prGcDisConnReqInfo->fgSendDeauth = prDisconnMsg->fgSendDeauth;
 
-				p2pFuncDisconnect(prAdapter, prP2pBssInfo->prStaRecOfAP, prDisconnMsg->fgSendDeauth,
+				p2pFuncDisconnect(prAdapter, prTargetStaRec, prDisconnMsg->fgSendDeauth,
 						  prDisconnMsg->u2ReasonCode);
 
-				/* prTargetStaRec = prP2pBssInfo->prStaRecOfAP; */
-
-				/* Fix possible KE when RX Beacon & call nicPmIndicateBssConnected(). */
-				/* hit prStaRecOfAP == NULL. */
-				p2pChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
+				DBGLOG(P2P, INFO, "start GC deauth timer for %pM\n",
+					prTargetStaRec->aucMacAddr);
+				cnmTimerStopTimer(prAdapter, &(prTargetStaRec->rDeauthTxDoneTimer));
+				cnmTimerInitTimer(prAdapter, &(prTargetStaRec->rDeauthTxDoneTimer),
+					(PFN_MGMT_TIMEOUT_FUNC) p2pFsmRunEventDeauthTimeout, (ULONG) prTargetStaRec);
+				cnmTimerStartTimer(prAdapter, &(prTargetStaRec->rDeauthTxDoneTimer),
+					P2P_DEAUTH_TIMEOUT_TIME_MS);
 
 				prP2pBssInfo->prStaRecOfAP = NULL;
 
@@ -1473,6 +1473,15 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 						p2pFuncDisconnect(prAdapter, prCurrStaRec, prDisconnMsg->fgSendDeauth,
 								  prDisconnMsg->u2ReasonCode);
 
+						DBGLOG(P2P, INFO, "start GO deauth timer for %pM\n",
+							prCurrStaRec->aucMacAddr);
+						cnmTimerStopTimer(prAdapter, &(prCurrStaRec->rDeauthTxDoneTimer));
+						cnmTimerInitTimer(prAdapter, &(prCurrStaRec->rDeauthTxDoneTimer),
+							(PFN_MGMT_TIMEOUT_FUNC) p2pFsmRunEventDeauthTimeout,
+							(ULONG) prCurrStaRec);
+						cnmTimerStartTimer(prAdapter, &(prCurrStaRec->rDeauthTxDoneTimer),
+							P2P_DEAUTH_TIMEOUT_TIME_MS);
+
 						/* prTargetStaRec = prCurrStaRec; */
 
 						break;
@@ -1511,58 +1520,20 @@ VOID p2pFsmRunEventDissolve(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 }
 
-WLAN_STATUS
-p2pFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
-			   IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+static VOID p2pFsmDeauthComplete(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec,
+	IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-
-	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
-	ENUM_PARAM_MEDIA_STATE_T eOriMediaStatus;
 	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T) NULL;
-	P_P2P_GC_DISCONNECTION_REQ_INFO_T prGcDisConnReqInfo;
 
 	do {
-
-		ASSERT_BREAK((prAdapter != NULL) && (prMsduInfo != NULL));
-
-		DBGLOG(P2P, INFO, "Deauth TX Done Status: %d, seqNo %d\n",
-			rTxDoneStatus, prMsduInfo->ucTxSeqNum);
-
-		prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
-
-		if (prStaRec == NULL) {
-			DBGLOG(P2P, TRACE, "Station Record NULL, Index:%d\n", prMsduInfo->ucStaRecIndex);
-			break;
-		}
-
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
-		eOriMediaStatus = prP2pBssInfo->eConnectionState;
-
 		prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
-		prGcDisConnReqInfo = &(prP2pFsmInfo->rGcDisConnReqInfo);
 
-		if (prGcDisConnReqInfo->prTargetStaRec &&
-				EQUAL_MAC_ADDR(prGcDisConnReqInfo->prTargetStaRec->aucMacAddr, prStaRec->aucMacAddr) &&
-				prP2pBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE) {
-			if (rTxDoneStatus != TX_RESULT_SUCCESS) {
-				prGcDisConnReqInfo->u4RetryCount++;
-				if (prGcDisConnReqInfo->u4RetryCount <= MAX_GC_DEAUTH_RETRY_COUNT) {
-					DBGLOG(P2P, INFO, "Retry sending deauth frame to %pM, retryCount: %d\n",
-							prGcDisConnReqInfo->prTargetStaRec->aucMacAddr,
-							prGcDisConnReqInfo->u4RetryCount);
-					p2pFuncDisconnect(prAdapter,
-							prGcDisConnReqInfo->prTargetStaRec,
-							prGcDisConnReqInfo->fgSendDeauth,
-							prGcDisConnReqInfo->u2ReasonCode);
-					break;
-				}
-			}
-		}
-		prGcDisConnReqInfo->prTargetStaRec = NULL;
-		prGcDisConnReqInfo->u4RetryCount = 0;
-		prGcDisConnReqInfo->u2ReasonCode = 0;
-		prGcDisConnReqInfo->fgSendDeauth = FALSE;
+		if ((prP2pBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT) &&
+			(p2pFuncRetryGcDeauth(prAdapter, prP2pFsmInfo, prStaRec,
+				rTxDoneStatus) == TRUE))
+			break;
 
 		/* Change station state. */
 		cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
@@ -1572,19 +1543,51 @@ p2pFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
 
 		bssRemoveStaRecFromClientList(prAdapter, prP2pBssInfo, prStaRec);
 
-		 /**/ cnmStaRecFree(prAdapter, prStaRec, TRUE);
+		cnmStaRecFree(prAdapter, prStaRec, TRUE);
 
-		if ((prP2pBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT) ||
-		    (prP2pBssInfo->rStaRecOfClientList.u4NumElem == 0)) {
-			DBGLOG(P2P, TRACE, "No More Client, Media Status DISCONNECTED\n");
-			p2pChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
+		if (prP2pBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT) {
+			p2pFuncClearGcDeauthRetry(prAdapter);
+			p2pFuncDeauthComplete(prAdapter, prP2pBssInfo);
+		} else if ((prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT) &&
+			(prP2pBssInfo->rStaRecOfClientList.u4NumElem == 0)) {
+			p2pFuncDeauthComplete(prAdapter, prP2pBssInfo);
+		}
+	} while (FALSE);
+}
+
+VOID p2pFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
+{
+	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) ulParam;
+
+	if (prStaRec) {
+		DBGLOG(P2P, INFO, "Deauth frame timeout for %pM\n", prStaRec->aucMacAddr);
+		p2pFsmDeauthComplete(prAdapter, prStaRec, TX_RESULT_LIFE_TIMEOUT);
+	}
+}
+
+WLAN_STATUS
+p2pFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
+	IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
+
+	do {
+		ASSERT_BREAK((prAdapter != NULL) && (prMsduInfo != NULL));
+
+		DBGLOG(P2P, INFO, "Deauth TX Done Status: %d, seqNo %d, staRecIdx: %d\n",
+			rTxDoneStatus, prMsduInfo->ucTxSeqNum, prMsduInfo->ucStaRecIndex);
+
+		prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
+
+		if (prStaRec == NULL) {
+			DBGLOG(P2P, TRACE, "Station Record NULL, Index:%d\n", prMsduInfo->ucStaRecIndex);
+			break;
 		}
 
-		/* Because the eConnectionState is changed before Deauth TxDone. Dont Check eConnectionState */
-		/* if (eOriMediaStatus != prP2pBssInfo->eConnectionState) { */
-		/* Update Disconnected state to FW. */
-		nicUpdateBss(prAdapter, NETWORK_TYPE_P2P_INDEX);
-		/* } */
+		p2pFsmDeauthComplete(prAdapter, prStaRec, rTxDoneStatus);
+		DBGLOG(P2P, INFO, "stop deauth timer for %pM\n", prStaRec->aucMacAddr);
+		/* Avoid re-entry */
+		cnmTimerStopTimer(prAdapter, &(prStaRec->rDeauthTxDoneTimer));
 
 	} while (FALSE);
 

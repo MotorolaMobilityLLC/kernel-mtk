@@ -824,6 +824,8 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 
 				}
 				prAdapter->rWifiVar.prP2pFsmInfo->rScanReqInfo.fgIsGOInitialDone = 0;
+				if (prStaRecOfClientList->u4NumElem == 0)
+					p2pFuncDeauthComplete(prAdapter, prP2pBssInfo);
 			}
 
 			break;
@@ -935,15 +937,6 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 			}
 
 		}
-
-		if (prP2pBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT) {
-			/* GO: It would stop Beacon TX. GC: Stop all BSS related PS function. */
-			nicPmIndicateBssAbort(prAdapter, NETWORK_TYPE_P2P_INDEX);
-
-			/* Reset RLM related field of BSSINFO. */
-			rlmBssAborted(prAdapter, prP2pBssInfo);
-		}
-
 	} while (FALSE);
 
 	return;
@@ -3844,4 +3837,91 @@ VOID p2pFuncEAPfailureWorkaround(IN P_ADAPTER_T prAdapter,
 
 }
 #endif
+
+BOOLEAN p2pFuncRetryGcDeauth(IN P_ADAPTER_T prAdapter, IN P_P2P_FSM_INFO_T prP2pFsmInfo,
+	IN P_STA_RECORD_T prStaRec, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
+	P_P2P_GC_DISCONNECTION_REQ_INFO_T prGcDisConnReqInfo;
+
+	do {
+		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
+		prGcDisConnReqInfo = &(prP2pFsmInfo->rGcDisConnReqInfo);
+
+		ASSERT_BREAK((prP2pBssInfo != NULL) && (prGcDisConnReqInfo != NULL));
+
+		if (!prGcDisConnReqInfo->prTargetStaRec ||
+			!EQUAL_MAC_ADDR(prGcDisConnReqInfo->prTargetStaRec->aucMacAddr, prStaRec->aucMacAddr))
+			break;
+		if (prP2pBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE)
+			break;
+		/* retry deauth frame only if MPDU error */
+		if (rTxDoneStatus != TX_RESULT_MPDU_ERROR)
+			break;
+		if (++prGcDisConnReqInfo->u4RetryCount > MAX_GC_DEAUTH_RETRY_COUNT)
+			break;
+
+		DBGLOG(P2P, INFO, "Retry sending deauth frame to %pM, retryCount: %d\n",
+				prGcDisConnReqInfo->prTargetStaRec->aucMacAddr,
+				prGcDisConnReqInfo->u4RetryCount);
+		p2pFuncDisconnect(prAdapter,
+			prGcDisConnReqInfo->prTargetStaRec,
+			prGcDisConnReqInfo->fgSendDeauth,
+			prGcDisConnReqInfo->u2ReasonCode);
+		/* restart timer */
+		if (prGcDisConnReqInfo->fgSendDeauth) {
+			DBGLOG(P2P, INFO, "re-start GC deauth timer for %pM\n", prStaRec->aucMacAddr);
+			cnmTimerStopTimer(prAdapter, &(prStaRec->rDeauthTxDoneTimer));
+			cnmTimerInitTimer(prAdapter, &(prStaRec->rDeauthTxDoneTimer),
+				(PFN_MGMT_TIMEOUT_FUNC) p2pFsmRunEventDeauthTimeout, (ULONG) prStaRec);
+			cnmTimerStartTimer(prAdapter, &(prStaRec->rDeauthTxDoneTimer),
+				P2P_DEAUTH_TIMEOUT_TIME_MS);
+		}
+		return TRUE;
+	} while (FALSE);
+	return FALSE;
+}
+
+VOID p2pFuncClearGcDeauthRetry(IN P_ADAPTER_T prAdapter)
+{
+	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T) NULL;
+	P_P2P_GC_DISCONNECTION_REQ_INFO_T prGcDisConnReqInfo;
+
+	do {
+		ASSERT_BREAK(prAdapter != NULL);
+
+		prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
+		prGcDisConnReqInfo = &(prP2pFsmInfo->rGcDisConnReqInfo);
+
+		ASSERT_BREAK(prP2pFsmInfo != NULL);
+
+		if (!prGcDisConnReqInfo)
+			break;
+
+		prGcDisConnReqInfo->prTargetStaRec = NULL;
+		prGcDisConnReqInfo->u4RetryCount = 0;
+		prGcDisConnReqInfo->u2ReasonCode = 0;
+		prGcDisConnReqInfo->fgSendDeauth = FALSE;
+	} while (FALSE);
+}
+
+VOID p2pFuncDeauthComplete(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prP2pBssInfo)
+{
+	do {
+		ASSERT_BREAK((prAdapter != NULL) && (prP2pBssInfo != NULL));
+
+		DBGLOG(P2P, TRACE, "p2pFuncStopComplete\n");
+
+		/* GO: It would stop Beacon TX. GC: Stop all BSS related PS function. */
+		nicPmIndicateBssAbort(prAdapter, NETWORK_TYPE_P2P_INDEX);
+
+		/* Reset RLM related field of BSSINFO. */
+		rlmBssAborted(prAdapter, prP2pBssInfo);
+
+		p2pChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
+
+		/* Release CNM channel */
+		nicUpdateBss(prAdapter, NETWORK_TYPE_P2P_INDEX);
+	} while (FALSE);
+}
 
