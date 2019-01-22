@@ -48,7 +48,6 @@ struct keymaster_command_struct {
 };
 
 extern unsigned long message_buff;
-
 extern unsigned long fdrv_message_buff;
 extern int fp_call_flag;
 extern struct semaphore fdrv_lock;

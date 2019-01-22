@@ -24,18 +24,18 @@
 #define GK_BUFF_SIZE            (4 * 1024)
 #define GK_SYS_NO               (120)
 
-unsigned long gatekeeper_buff_addr = NULL;
+unsigned long gatekeeper_buff_addr = 0;
 
 void set_gatekeeper_command(unsigned long memory_size)
 {
 	struct fdrv_message_head fdrv_msg_head;
 
-	memset(&fdrv_msg_head, 0, sizeof(struct fdrv_message_head));
+	memset((void *)(&fdrv_msg_head), 0, sizeof(struct fdrv_message_head));
 
 	fdrv_msg_head.driver_type = GK_SYS_NO;
 	fdrv_msg_head.fdrv_param_length = sizeof(unsigned int);
 
-	memcpy(fdrv_message_buff, &fdrv_msg_head, sizeof(struct fdrv_message_head));
+	memcpy((void *)fdrv_message_buff, (void *)(&fdrv_msg_head), sizeof(struct fdrv_message_head));
 	Flush_Dcache_By_Area((unsigned long)fdrv_message_buff, (unsigned long)fdrv_message_buff + MESSAGE_SIZE);
 
 	return;
@@ -44,20 +44,19 @@ void set_gatekeeper_command(unsigned long memory_size)
 unsigned long create_gatekeeper_fdrv(int buff_size)
 {
 	long retVal = 0;
-	unsigned long irq_flag = 0;
 	unsigned long temp_addr = 0;
 	struct message_head msg_head;
 	struct create_fdrv_struct msg_body;
 	struct ack_fast_call_struct msg_ack;
 
-	if (message_buff == NULL) {
+	if ((unsigned char *)message_buff == NULL) {
 		pr_err("[%s][%d]: There is NO command buffer!.\n", __func__, __LINE__);
-		return NULL;
+		return 0;
 	}
 
 	if (buff_size > VDRV_MAX_SIZE) {
 		pr_err("[%s][%d]: gatekeeper Drv buffer is too large, Can NOT create it.\n", __FILE__, __LINE__);
-		return NULL;
+		return 0;
 	}
 
 #ifdef UT_DMA_ZONE
@@ -67,14 +66,14 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 #endif
 
 
-	if (temp_addr == NULL) {
+	if ((unsigned char *)temp_addr == NULL) {
 		pr_err("[%s][%d]: kmalloc gatekeeper drv buffer failed.\n", __FILE__, __LINE__);
-		return NULL;
+		return 0;
 	}
 
-	memset(&msg_head, 0, sizeof(struct message_head));
-	memset(&msg_body, 0, sizeof(struct create_fdrv_struct));
-	memset(&msg_ack, 0, sizeof(struct ack_fast_call_struct));
+	memset((void *)(&msg_head), 0, sizeof(struct message_head));
+	memset((void *)(&msg_body), 0, sizeof(struct create_fdrv_struct));
+	memset((void *)(&msg_ack), 0, sizeof(struct ack_fast_call_struct));
 
 	msg_head.invalid_flag = VALID_TYPE;
 	msg_head.message_type = FAST_CALL_TYPE;
@@ -82,15 +81,15 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 	msg_head.param_length = sizeof(struct create_fdrv_struct);
 
 	msg_body.fdrv_type = GK_SYS_NO;
-	msg_body.fdrv_phy_addr = virt_to_phys(temp_addr);
+	msg_body.fdrv_phy_addr = virt_to_phys((void *)temp_addr);
 
 
 	msg_body.fdrv_size = buff_size;
 
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
-	memcpy(message_buff, &msg_head, sizeof(struct message_head));
-	memcpy(message_buff + sizeof(struct message_head), &msg_body, sizeof(struct create_fdrv_struct));
+	memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
+	memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)(&msg_body), sizeof(struct create_fdrv_struct));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	/* Call the smc_fast_call */
@@ -99,8 +98,8 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 	down(&(boot_sema));
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
-	memcpy(&msg_head, message_buff, sizeof(struct message_head));
-	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
+	memcpy((void *)(&msg_head), (void *)message_buff, sizeof(struct message_head));
+	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)), sizeof(struct ack_fast_call_struct));
 
 
 	/* Check the response from T_OS. */
@@ -112,7 +111,7 @@ unsigned long create_gatekeeper_fdrv(int buff_size)
 			return temp_addr;
 		}
 	} else
-		retVal = NULL;
+		retVal = 0;
 
 	/* Release the resource and return. */
 	free_pages(temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
@@ -128,44 +127,29 @@ int __send_gatekeeper_command(unsigned long share_memory_size)
 	unsigned long smc_type = 2;
 
 	set_gatekeeper_command(share_memory_size);
-	Flush_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, gatekeeper_buff_addr + GK_BUFF_SIZE);
+	Flush_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, (unsigned long)gatekeeper_buff_addr + GK_BUFF_SIZE);
 
 	fp_call_flag = GLSCH_HIGH;
 
-	n_invoke_t_drv(&smc_type, 0, 0);
+	n_invoke_t_drv((uint64_t *)(&smc_type), 0, 0);
 
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
-		nt_sched_t(&smc_type);
+		nt_sched_t((uint64_t *)(&smc_type));
 	}
 
 	return 0;
 }
 
-
-
-static void secondary_send_gatekeeper_command(void *info)
-{
-	struct gatekeeper_command_struct *cd = (struct gatekeeper_command_struct *)info;
-
-	/* with a rmb() */
-	rmb();
-
-	cd->retVal = __send_gatekeeper_command(cd->mem_size);
-
-	/* with a wmb() */
-	wmb();
-}
-
 int send_gatekeeper_command(unsigned long share_memory_size)
 {
-
-	int cpu_id = 0;
-	int retVal = 0;
-	struct fdrv_call_struct fdrv_ent;
+        int retVal = 0;
+        struct fdrv_call_struct fdrv_ent;
 
 	down(&fdrv_lock);
-	mutex_lock(&pm_mutex);
+	ut_pm_mutex_lock(&pm_mutex);
+
+	pr_info("send_gatekeeper_command start\n");
 
 	if (teei_config_flag == 1) {
 		complete(&global_down_lock);
@@ -177,10 +161,10 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 	/* with a wmb() */
 	wmb();
 	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
-	retVal = add_work_entry(FDRV_CALL, (unsigned long)&fdrv_ent);
-
+	retVal = add_work_entry(FDRV_CALL, (unsigned char *)(&fdrv_ent));
 	if (retVal != 0) {
-		mutex_unlock(&pm_mutex);
+		up(&smc_lock);
+		ut_pm_mutex_unlock(&pm_mutex);
 		up(&fdrv_lock);
 		return retVal;
 	}
@@ -188,9 +172,13 @@ int send_gatekeeper_command(unsigned long share_memory_size)
 	down(&fdrv_sema);
 	rmb();
 
-	Invalidate_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, gatekeeper_buff_addr + GK_BUFF_SIZE);
+	pr_info("send_gatekeeper_command end\n");
+	/* put_online_cpus(); */
+        rmb();
 
-	mutex_unlock(&pm_mutex);
+	Invalidate_Dcache_By_Area((unsigned long)gatekeeper_buff_addr, (unsigned long)gatekeeper_buff_addr + GK_BUFF_SIZE);
+
+	ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);
 
 	return fdrv_ent.retVal;
