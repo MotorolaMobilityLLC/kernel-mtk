@@ -695,7 +695,7 @@ void VowDrv_SetSmartDevice(bool enable)
 		/* query eint number from device tree */
 		ret = of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
 		if (ret != 0) {
-			VOWDRV_DEBUG("%s(), there is no debounce node\n", __func__);
+			VOWDRV_DEBUG("%s(), there is no debounce node, ret=%d\n", __func__, ret);
 			return;
 		}
 		eint_num = ints[0];
@@ -1190,8 +1190,8 @@ int VowDrv_setup_smartdev_eint(struct platform_device *pdev)
 	if (vowserv.node) {
 		ret = of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
 		if (ret != 0) {
-			VOWDRV_DEBUG("%s(), there is no debounce node\n", __func__);
-			return;
+			VOWDRV_DEBUG("%s(), there is no debounce node, ret=%d\n", __func__, ret);
+			return ret;
 		}
 		VOWDRV_DEBUG("VOW EINT ID: %x, %x\n", ints[0], ints[1]);
 	} else {
