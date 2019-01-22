@@ -17,6 +17,11 @@
 #include <linux/types.h>
 
 #define COMMAND_LINE_SIZE 1024
+#define MBLOCK_RESERVED_NAME_SIZE 128
+#define MBLOCK_RESERVED_NUM_MAX  128
+#define MBLOCK_NUM_MAX 128
+#define MBLOCK_MAGIC 0x99999999
+#define MBLOCK_VERSION 0x2
 
 /* The list ends with an ATAG_NONE node. */
 #define ATAG_NONE	0x00000000
@@ -156,9 +161,20 @@ struct mblock {
 	u32 rank;	/* rank the mblock belongs to */
 };
 
+typedef struct {
+	u64 start;
+	u64 size;
+	u32 mapping;   /* mapping or unmap*/
+	char name[MBLOCK_RESERVED_NAME_SIZE];
+} reserved_t;
+
 struct mblock_info {
 	u32 mblock_num;
-	struct mblock mblock[128];
+	struct mblock mblock[MBLOCK_NUM_MAX];
+	u32 mblock_magic;
+	u32 mblock_version;
+	u32 reserved_num;
+	reserved_t reserved[MBLOCK_RESERVED_NUM_MAX];
 };
 
 struct dram_info {
