@@ -133,7 +133,6 @@ static void clk_dump(void)
 	pr_err("[CCF] CCIPLL: %d\n", mt_get_abist_freq(14));
 }
 
-
 static int armpll1_fsel_read(struct seq_file *m, void *v)
 {
 	return 0;
@@ -150,6 +149,16 @@ static int armpll3_fsel_read(struct seq_file *m, void *v)
 }
 
 static int ccipll_fsel_read(struct seq_file *m, void *v)
+{
+	return 0;
+}
+
+static int mmpll_fsel_read(struct seq_file *m, void *v)
+{
+	return 0;
+}
+
+static int gpupll_fsel_read(struct seq_file *m, void *v)
 {
 	return 0;
 }
@@ -309,6 +318,56 @@ static ssize_t ccipll_fsel_write(struct file *file, const char __user *buffer,
 
 }
 
+static ssize_t mmpll_fsel_write(struct file *file, const char __user *buffer,
+				    size_t count, loff_t *data)
+{
+		char desc[32];
+		int len = 0;
+		unsigned int con0_value, con1_value;
+
+		len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+			if (copy_from_user(desc, buffer, len))
+				return 0;
+		desc[len] = '\0';
+		if (sscanf(desc, "%x %x", &con1_value, &con0_value) == 2) {
+			clk_writel(MMPLL_CON1, con1_value);
+			clk_writel(MMPLL_CON0, con0_value);
+			udelay(20);
+		}
+		return count;
+}
+
+static ssize_t gpupll_fsel_write(struct file *file, const char __user *buffer,
+				    size_t count, loff_t *data)
+{
+		char desc[32];
+		int len = 0;
+		unsigned int con0_value, con1_value;
+
+		len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+			if (copy_from_user(desc, buffer, len))
+				return 0;
+		desc[len] = '\0';
+		if (sscanf(desc, "%x %x", &con1_value, &con0_value) == 2) {
+			clk_writel(GPUPLL_CON1, con1_value);
+			clk_writel(GPUPLL_CON0, con0_value);
+			udelay(20);
+		}
+		return count;
+}
+
+static int mm_clk_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", mt_get_abist_freq(21));
+	return 0;
+}
+
+static int gpupll_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", mt_get_abist_freq(19));
+	return 0;
+}
+
 /************ L ********************/
 static int proc_armpll1_fsel_open(struct inode *inode, struct file *file)
 {
@@ -369,6 +428,58 @@ static const struct file_operations ccipll_fsel_proc_fops = {
 	.write = ccipll_fsel_write,
 	.release = single_release,
 };
+/************ MM ********************/
+static int proc_mmpll_fsel_open(struct inode *inode, struct file *file)
+{
+	clk_err("%s", __func__);
+
+	return single_open(file, mmpll_fsel_read, NULL);
+}
+
+static const struct file_operations mmpll_fsel_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_mmpll_fsel_open,
+	.read = seq_read,
+	.write = mmpll_fsel_write,
+	.release = single_release,
+};
+/************ GPU ********************/
+static int proc_gpupll_fsel_open(struct inode *inode, struct file *file)
+{
+	clk_err("%s", __func__);
+
+	return single_open(file, gpupll_fsel_read, NULL);
+}
+
+static const struct file_operations gpupll_fsel_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_gpupll_fsel_open,
+	.read = seq_read,
+	.write = gpupll_fsel_write,
+	.release = single_release,
+};
+/************ mm_clk ********************/
+static int proc_mm_clk_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mm_clk_speed_dump_read, NULL);
+}
+
+static const struct file_operations mm_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_mm_clk_open,
+	.read = seq_read,
+};
+/************ gpupll ********************/
+static int proc_gpupll_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, gpupll_speed_dump_read, NULL);
+}
+
+static const struct file_operations gpu_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_gpupll_open,
+	.read = seq_read,
+};
 
 void mt_clkmgr_debug_init(void)
 {
@@ -393,6 +504,18 @@ void mt_clkmgr_debug_init(void)
 	entry =
 	    proc_create("ccipll_fsel", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
 			&ccipll_fsel_proc_fops);
+	entry =
+	    proc_create("mmpll_fsel", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
+			&mmpll_fsel_proc_fops);
+	entry =
+	    proc_create("gpupll_fsel", S_IRUGO | S_IWUSR | S_IWGRP, clkmgr_dir,
+			&gpupll_fsel_proc_fops);
+	entry =
+	    proc_create("mm_speed_dump", S_IRUGO, clkmgr_dir,
+			&mm_fops);
+	entry =
+	    proc_create("gpu_speed_dump", S_IRUGO, clkmgr_dir,
+			&gpu_fops);
 }
 
 #ifdef CONFIG_OF
