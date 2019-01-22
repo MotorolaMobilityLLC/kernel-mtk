@@ -1,6 +1,4 @@
-config MTK_LIS3DH
-	bool "LIS3DH for MediaTek package"
-	help
-	  It supports different accelerometer sensor.
-	  If this option is set, it will support
-	  LIS3DH Accelerometer.
+
+config MTK_LIS3DH_NEW
+	bool "LIS3DH accelerometer for MediaTek package"
+	default n
