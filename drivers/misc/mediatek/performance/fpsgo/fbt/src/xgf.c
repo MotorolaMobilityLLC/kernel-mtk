@@ -601,6 +601,21 @@ void xgf_game_mode_exit(int val)
 	}
 }
 
+static inline void xgf_ioctl_notify(unsigned int cmd, unsigned long arg)
+{
+	/* only allow game process to proceed */
+	xgf_lock(__func__);
+	if (task_tgid_nr(current) != game_ppid) {
+		xgf_unlock(__func__);
+		return;
+	}
+	xgf_unlock(__func__);
+
+	/* mainly for loading estimation */
+	if (cmd == FPSGO_QUEUE || cmd == FPSGO_DEQUEUE)
+		xgf_dequeuebuffer(arg);
+}
+
 static long fpsgo_ioctl(struct file *flip, unsigned int cmd,
 			unsigned long arg)
 {
@@ -610,15 +625,11 @@ static long fpsgo_ioctl(struct file *flip, unsigned int cmd,
 	if (!xgf_is_enable())
 		return 0;
 
-	/* TODO: move to following switch case? */
-	if (cmd == FPSGO_QUEUE && !!arg) {
-		xgf_trace("eq start=%d", !!arg);
-		xgf_dequeuebuffer(1);
-	}
-
 	/* filter out main thread to queue/dequeue */
 	if (task_tgid_nr(current) == task_pid_nr(current))
 		return 0;
+
+	xgf_ioctl_notify(cmd, arg);
 
 	switch (cmd) {
 	case FPSGO_QUEUE:
@@ -655,7 +666,6 @@ static long fpsgo_ioctl(struct file *flip, unsigned int cmd,
 			deqend = ged_get_time();
 		xgf_trace("start=%d deq str=%llu end=%llu", !!arg, deqstr, deqend);
 
-		xgf_dequeuebuffer(arg);
 
 		xgf_lock("ioctl dequeue");
 		ret = xgf_get_proc(task_tgid_nr(current), pproc, 0);

@@ -1201,7 +1201,6 @@ void fbt_cpu_boost_policy(
 		return;
 
 	xgf_trace("fbt_cpu_boost_policy");
-	xgf_dequeuebuffer(0);
 
 	fpsgo_systrace_c_fbt_gm(-100, target_fps, "fps before using dfrc");
 	target_fps = _gdfrc_fps_limit;
