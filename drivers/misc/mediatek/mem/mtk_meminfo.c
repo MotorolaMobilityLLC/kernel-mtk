@@ -26,6 +26,8 @@
 /* return the actual physical DRAM size */
 static u64 kernel_mem_sz;
 static u64 phone_dram_sz;	/* original phone DRAM size */
+static u64 mntl_base;
+static u64 mntl_size;
 static int __init dt_scan_memory(unsigned long node, const char *uname,
 				int depth, void *data)
 {
@@ -106,6 +108,58 @@ phys_addr_t get_max_DRAM_size(void)
 		(phys_addr_t)phone_dram_sz : (phys_addr_t)kernel_mem_sz;
 }
 early_initcall(init_get_max_DRAM_size);
+
+static int __init __fdt_scan_reserved_mem(unsigned long node, const char *uname,
+					  int depth, void *data)
+{
+	static int found;
+	const __be32 *reg, *endp;
+	int l;
+
+	if (!found && depth == 1 && strcmp(uname, "reserved-memory") == 0) {
+		found = 1;
+		/* scan next node */
+		return 0;
+	} else if (!found) {
+		/* scan next node */
+		return 0;
+	} else if (found && depth < 2) {
+		/* scanning of /reserved-memory has been finished */
+		return 1;
+	}
+
+	if (!strstr(uname, "KOBuffer"))
+		return 0;
+
+	reg = of_get_flat_dt_prop(node, "reg", &l);
+	if (reg == NULL)
+		return 0;
+
+	endp = reg + (l / sizeof(__be32));
+	while ((endp - reg) >= (dt_root_addr_cells + dt_root_size_cells)) {
+		mntl_base = dt_mem_next_cell(dt_root_addr_cells, &reg);
+		mntl_size = dt_mem_next_cell(dt_root_size_cells, &reg);
+	}
+
+	return 0;
+}
+
+static int __init init_fdt_mntl_buf(void)
+{
+	of_scan_flat_dt(__fdt_scan_reserved_mem, NULL);
+
+	return 0;
+}
+early_initcall(init_fdt_mntl_buf);
+
+int get_mntl_buf(u64 *base, u64 *size)
+{
+	*base = mntl_base;
+	*size = mntl_size;
+
+	return 0;
+}
+
 #else
 phys_addr_t get_max_DRAM_size(void)
 {
