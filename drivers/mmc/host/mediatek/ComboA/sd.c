@@ -4857,7 +4857,11 @@ static void msdc_timer_pm(unsigned long data)
 	unsigned long flags;
 
 	spin_lock_irqsave(&host->clk_gate_lock, flags);
-	if (host->clk_gate_count == 0) {
+	/*
+	 * clock may be disabled when msdc_timer_pm executing,
+	 * need to check core_clkon status first
+	 */
+	if (host->clk_gate_count == 0 && host->core_clkon) {
 		/* re-schedule when controller or device is busy */
 		if (host->power_mode != MMC_POWER_OFF
 		 && (sdc_is_busy() ||
