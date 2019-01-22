@@ -1,0 +1,24 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+#include "bwl_platform.h"
+
+unsigned int decode_bwl_env(
+	unsigned int dram_type, unsigned int ch_num, unsigned int rk_num)
+{
+	if (ch_num == 1)
+		return BWL_ENV_LPDDR3_1CH;
+	else
+		return BWL_ENV_LPDDR4_2CH;
+}
+
