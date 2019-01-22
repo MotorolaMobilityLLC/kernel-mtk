@@ -115,8 +115,8 @@ static void VOW12MCK_Enable(bool enable);
 static void VOW32KCK_Enable(bool enable);
 #endif
 
-static mt6331_Codec_Data_Priv *mCodec_data;
-static uint32 mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = { 48000, 48000, 48000 };
+static struct codec_data_private *mCodec_data;
+static uint32 mBlockSampleRate[AUDIO_ANALOG_DEVICE_INOUT_MAX] = {48000, 48000, 48000};
 
 #define MAX_DL_SAMPLE_RATE (192000)
 #define MAX_UL_SAMPLE_RATE (192000)
@@ -191,7 +191,7 @@ static int reg_AFE_VOW_PERIODIC;		/* Periodic On/Off setting (On percent)*/
 static bool mIsVOWOn;
 
 /* VOW using */
-typedef enum {
+enum audio_vow_mic_type {
 	AUDIO_VOW_MIC_TYPE_Handset_AMIC = 0,
 	AUDIO_VOW_MIC_TYPE_Headset_MIC,
 	AUDIO_VOW_MIC_TYPE_Handset_DMIC,	/* 1P6 */
@@ -201,7 +201,8 @@ typedef enum {
 	AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM,	/* DCC ECM, dual differential */
 	AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM,	/* DCC ECM, signal differential */
 	AUDIO_VOW_MIC_TYPE_NUM
-} AUDIO_VOW_MIC_TYPE;
+};
+
 /* Jogi: Need? @{ */
 #define SND_SOC_ADV_MT_FMTS (\
 				SNDRV_PCM_FMTBIT_S16_LE |\
@@ -5910,17 +5911,17 @@ void InitCodecDefault(void)
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP3] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP4] = 3;
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = 8;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = 8;
 
 	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC1] =
-	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
+	    AUDIO_ANALOG_INPUT_PREAMP;
 	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC2] =
-	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
+	    AUDIO_ANALOG_INPUT_PREAMP;
 	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC3] =
-	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
+	    AUDIO_ANALOG_INPUT_PREAMP;
 	mCodec_data->mAudio_Ana_Mux[AUDIO_ANALOG_MUX_IN_MIC4] =
-	    AUDIO_ANALOG_AUDIOANALOG_INPUT_PREAMP;
+	    AUDIO_ANALOG_INPUT_PREAMP;
 }
 
 static void InitGlobalVarDefault(void)
@@ -5984,14 +5985,14 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 				   ARRAY_SIZE(Audio_snd_auxadc_controls));
 
 	/* here to set  private data */
-	mCodec_data = kzalloc(sizeof(mt6331_Codec_Data_Priv), GFP_KERNEL);
+	mCodec_data = kzalloc(sizeof(struct codec_data_private), GFP_KERNEL);
 	if (!mCodec_data) {
 		/*pr_warn("Failed to allocate private data\n");*/
 		return -ENOMEM;
 	}
 	snd_soc_codec_set_drvdata(codec, mCodec_data);
 
-	memset((void *)mCodec_data, 0, sizeof(mt6331_Codec_Data_Priv));
+	memset((void *)mCodec_data, 0, sizeof(struct codec_data_private));
 	mt6331_codec_init_reg(codec);
 	InitCodecDefault();
 	efuse_current_calibration = read_efuse_hp_impedance_current_calibration();
