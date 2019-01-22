@@ -14,6 +14,8 @@
 #ifndef __ICCS_H__
 #define __ICCS_H__
 
+#include <linux/proc_fs.h>
+
 #define ICCS_GOV_NAME_LEN	16
 #define ICCS_MIN_SAMPLING_RATE	40ULL
 #define MS_TO_NS(msec)		((msec) * 1000 * 1000ULL)
@@ -21,6 +23,37 @@
 #define ICCS_GET_CURR_STATE	1
 #define ICCS_GET_TARGET_STATE	2
 #define ICCS_SET_TARGET_STATE	3
+#define ICCS_SET_CACHE_SHARED	4
+
+/* PROCFS */
+#define PROC_FOPS_RW(name)							\
+	static int name ## _proc_open(struct inode *inode, struct file *file)	\
+{									\
+	return single_open(file, name ## _proc_show, PDE_DATA(inode));	\
+}									\
+static const struct file_operations name ## _proc_fops = {		\
+	.owner          = THIS_MODULE,					\
+	.open           = name ## _proc_open,				\
+	.read           = seq_read,					\
+	.llseek         = seq_lseek,					\
+	.release        = single_release,				\
+	.write          = name ## _proc_write,				\
+}
+
+#define PROC_FOPS_RO(name)							\
+	static int name ## _proc_open(struct inode *inode, struct file *file)	\
+{									\
+	return single_open(file, name ## _proc_show, PDE_DATA(inode));	\
+}									\
+static const struct file_operations name ## _proc_fops = {		\
+	.owner          = THIS_MODULE,					\
+	.open           = name ## _proc_open,				\
+	.read           = seq_read,					\
+	.llseek         = seq_lseek,					\
+	.release        = single_release,				\
+}
+
+#define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
 enum transition {
 	ONDEMAND = 0,

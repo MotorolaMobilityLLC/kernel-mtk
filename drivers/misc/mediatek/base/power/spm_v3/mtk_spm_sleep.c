@@ -54,6 +54,10 @@
 
 #include <mtk_power_gs_api.h>
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+#include <mtk_hps_internal.h>
+#endif
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -685,6 +689,9 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags),
 		  is_infra_pdn(pwrctrl->pcm_flags));
 
+#ifdef CONFIG_MTK_ICCS_SUPPORT
+	iccs_enter_low_power_state();
+#endif
 	spm_suspend_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl);
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_UART_SLEEP);

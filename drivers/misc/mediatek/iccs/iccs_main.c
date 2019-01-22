@@ -19,9 +19,14 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
+#include <linux/uaccess.h>
 
 #include <mt-plat/mtk_secure_api.h>
 #include "iccs.h"
+#include "mtk_spm.h"
+#include "mtk_spm_reg.h"
+
+struct proc_dir_entry *iccs_dir;
 
 static struct iccs_governor *governor;
 static struct iccs_cluster_info *cluster_info;
@@ -115,20 +120,30 @@ int iccs_get_target_state(unsigned char *target_power_state_bitmask,
 	return 0;
 }
 
-unsigned int iccs_is_cache_shared_enabled(unsigned int cluster_id)
+unsigned int iccs_get_curr_cache_shared_state(void)
 {
-	int ret;
+	int ret = 0;
 
-	if (!governor || !cluster_info || (governor->enabled == 0) || (cluster_id >= governor->nr_cluster))
-		return 0;
+	/*
+	 * if (!governor || !cluster_info || (governor->enabled == 0))
+	 *         return 0;
+	 */
 
 	/* get HW status from secure world */
-	ret = mt_secure_call(MTK_SIP_KERNEL_ICCS_STATE, ICCS_GET_CURR_STATE, 0, 0);
+	ret = mt_secure_call(MTK_SIP_KERNEL_ICCS_STATE, ICCS_GET_TARGET_STATE, 0, 0);
 
-	if (ret & (1 << cluster_id))
-		return 1;
-	else
-		return 0;
+	return ret;
+}
+
+void iccs_set_cache_shared_state(unsigned int cluster, int state)
+{
+	/*
+	 * if (!governor || !cluster_info || (governor->enabled == 0) || (cluster >= governor->nr_cluster))
+	 *         return;
+	 */
+
+	/* get HW status from secure world */
+	mt_secure_call(MTK_SIP_KERNEL_ICCS_STATE, ICCS_SET_CACHE_SHARED, state, cluster);
 }
 
 /*
@@ -384,9 +399,84 @@ static struct platform_driver iccs_governor_driver = {
 	}
 };
 
+int iccs_get_shared_cluster_freq(void)
+{
+	return governor->shared_cluster_freq;
+}
+
+static int iccs_cpufreq_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "iccs_cpufreq = %d\n", governor->shared_cluster_freq);
+
+	return 0;
+}
+
+static ssize_t iccs_cpufreq_proc_write(struct file *file, const char __user *buffer,
+					size_t count,	loff_t *pos)
+{
+	int len = 0, rc;
+	char desc[32];
+
+	len = min(count, sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	rc = kstrtoint(desc, 0, &governor->shared_cluster_freq);
+	if (rc != 0)
+		pr_err("Invalid input! Usage: echo <num> > /proc/iccs/iccs_cpufreq\n");
+
+	return count;
+}
+
+static int iccs_cpu_pwr_status_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "Cluster0 = %d\n", SC_MCU2_PWR_ACK_LSB == (spm_read(MCU2_PWR_CON) & SC_MCU2_PWR_ACK_LSB));
+	seq_printf(m, "CPU0     = %d\n", SC_MCU3_PWR_ACK_LSB == (spm_read(MCU3_PWR_CON) & SC_MCU3_PWR_ACK_LSB));
+	seq_printf(m, "CPU1     = %d\n", SC_MCU4_PWR_ACK_LSB == (spm_read(MCU4_PWR_CON) & SC_MCU4_PWR_ACK_LSB));
+	seq_printf(m, "CPU2     = %d\n", SC_MCU5_PWR_ACK_LSB == (spm_read(MCU5_PWR_CON) & SC_MCU5_PWR_ACK_LSB));
+	seq_printf(m, "CPU3     = %d\n", SC_MCU6_PWR_ACK_LSB == (spm_read(MCU6_PWR_CON) & SC_MCU6_PWR_ACK_LSB));
+
+	seq_printf(m, "Cluster1 = %d\n", SC_MCU7_PWR_ACK_LSB == (spm_read(MCU7_PWR_CON) & SC_MCU7_PWR_ACK_LSB));
+	seq_printf(m, "CPU4     = %d\n", SC_MCU8_PWR_ACK_LSB == (spm_read(MCU8_PWR_CON) & SC_MCU8_PWR_ACK_LSB));
+	seq_printf(m, "CPU5     = %d\n", SC_MCU9_PWR_ACK_LSB == (spm_read(MCU9_PWR_CON) & SC_MCU9_PWR_ACK_LSB));
+	seq_printf(m, "CPU6     = %d\n", SC_MCU10_PWR_ACK_LSB == (spm_read(MCU10_PWR_CON) & SC_MCU10_PWR_ACK_LSB));
+	seq_printf(m, "CPU7     = %d\n", SC_MCU11_PWR_ACK_LSB == (spm_read(MCU11_PWR_CON) & SC_MCU11_PWR_ACK_LSB));
+
+	seq_printf(m, "Cluster2 = %d\n", SC_MCU12_PWR_ACK_LSB == (spm_read(MCU12_PWR_CON) & SC_MCU12_PWR_ACK_LSB));
+	seq_printf(m, "CPU8     = %d\n", SC_MCU13_PWR_ACK_LSB == (spm_read(MCU13_PWR_CON) & SC_MCU13_PWR_ACK_LSB));
+	seq_printf(m, "CPU9     = %d\n", SC_MCU14_PWR_ACK_LSB == (spm_read(MCU14_PWR_CON) & SC_MCU14_PWR_ACK_LSB));
+	return 0;
+}
+
+PROC_FOPS_RW(iccs_cpufreq);
+PROC_FOPS_RO(iccs_cpu_pwr_status);
+
 static int __init iccs_governor_init(void)
 {
+	int i;
 	int ret;
+
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+	};
+
+	const struct pentry entries[] = {
+		PROC_ENTRY(iccs_cpufreq),
+		PROC_ENTRY(iccs_cpu_pwr_status),
+	};
+
+	/* mkdir for policies */
+	iccs_dir = proc_mkdir("iccs", NULL);
+	if (!iccs_dir)
+		pr_err("@%s: fail to create /proc/iccs dir\n", __func__);
+
+	/* create procfs */
+	for (i = 0; i < ARRAY_SIZE(entries); i++)
+		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, iccs_dir, entries[i].fops))
+			pr_err("%s(), create /proc/iccs/%s failed\n", __func__, entries[i].name);
 
 	ret = platform_driver_register(&iccs_governor_driver);
 	if (ret)
