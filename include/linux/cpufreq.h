@@ -620,6 +620,8 @@ static inline bool policy_has_boost_freq(struct cpufreq_policy *policy)
 /* the following funtion is for cpufreq core use only */
 struct cpufreq_frequency_table *cpufreq_frequency_get_table(unsigned int cpu);
 
+extern void arch_scale_set_max_freq(int cpu, unsigned long freq);
+
 /* the following are really really optional */
 extern struct freq_attr cpufreq_freq_attr_scaling_available_freqs;
 extern struct freq_attr cpufreq_freq_attr_scaling_boost_freqs;

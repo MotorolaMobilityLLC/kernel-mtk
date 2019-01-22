@@ -41,7 +41,6 @@ DEFINE_PER_CPU(struct sched_capacity_reqs, cpu_sched_capacity_reqs);
 #define MAX_CLUSTER_NR 3
 
 static struct gov_data *g_gd[MAX_CLUSTER_NR] = { NULL };
-static unsigned int max_opp[MAX_CLUSTER_NR] = {1638000};
 
 static void met_cpu_dvfs(int cid, int freq, int flag);
 
@@ -258,7 +257,7 @@ static void update_fdomain_capacity_request(int cpu, int type)
 		capacity = max(capacity, scr->total);
 	}
 
-	freq_new = capacity * max_opp[cid] >> SCHED_CAPACITY_SHIFT;
+	freq_new = capacity * arch_scale_get_max_freq(cpu) >> SCHED_CAPACITY_SHIFT;
 #else
 	if (likely(cpu_online(cpu)))
 		policy = cpufreq_cpu_get(cpu);
@@ -606,8 +605,6 @@ static int __init cpufreq_sched_init(void)
 
 		/* keep cid needed */
 		g_gd[i]->cid = i;
-
-		max_opp[i] = mt_cpufreq_get_freq_by_idx(i, 0);
 	}
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
