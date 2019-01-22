@@ -2383,7 +2383,8 @@ int fgauge_enable_vbat_high_threshold(struct gauge_device *gauge_dev, int thresh
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16, vbat2_det_time_19_16);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_DEBT_MAX, vbat2_det_counter);
 
-	bm_debug("[fg_set_vbat2_h_th] set [0x%x 0x%x 0x%x 0x%x] get [0x%x 0x%x 0x%x 0x%x]\n",
+	bm_debug("[fg_set_vbat2_h_th] set %d [0x%x 0x%x 0x%x 0x%x] get [0x%x 0x%x 0x%x 0x%x]\n",
+		threshold,
 		vbat2_h_th_reg, vbat2_det_time_15_0, vbat2_det_time_19_16, vbat2_det_counter,
 		pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MAX),
 		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0),
@@ -2615,6 +2616,65 @@ int fgauge_set_reset_status(struct gauge_device *gauge_dev, int reset)
 
 }
 
+int fgauge_dump(struct gauge_device *gauge_dev, struct seq_file *m)
+{
+	seq_puts(m, "fgauge dump\n");
+	seq_printf(m, "AUXADC_ADC_RDY_LBAT2 :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_ADC_RDY_LBAT2));
+	seq_printf(m, "AUXADC_ADC_OUT_LBAT2  :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_LBAT2));
+
+	seq_printf(m, "AUXADC_LBAT2_DEBT_MIN  :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBT_MIN));
+	seq_printf(m, "AUXADC_LBAT2_DEBT_MAX  :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBT_MAX));
+
+	seq_printf(m, "AUXADC_LBAT2_DET_PRD_15_0  :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_15_0));
+	seq_printf(m, "AUXADC_LBAT2_DET_PRD_19_16   :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DET_PRD_19_16));
+
+	seq_printf(m, "AUXADC_LBAT2_MAX_IRQ_B  :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_MAX_IRQ_B));
+	seq_printf(m, "AUXADC_LBAT2_EN_MAX   :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_EN_MAX));
+
+	seq_printf(m, "AUXADC_LBAT2_IRQ_EN_MAX  :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_IRQ_EN_MAX));
+	seq_printf(m, "AUXADC_LBAT2_VOLT_MAX   :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MAX));
+
+	seq_printf(m, "AUXADC_LBAT2_MIN_IRQ_B  :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_MIN_IRQ_B));
+	seq_printf(m, "AUXADC_LBAT2_EN_MIN   :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_EN_MIN));
+
+	seq_printf(m, "AUXADC_LBAT2_IRQ_EN_MIN  :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_IRQ_EN_MIN));
+	seq_printf(m, "AUXADC_LBAT2_VOLT_MIN   :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_VOLT_MIN));
+
+	seq_printf(m, "AUXADC_LBAT2_DEBOUNCE_COUNT_MAX  :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBOUNCE_COUNT_MAX));
+	seq_printf(m, "AUXADC_LBAT2_DEBOUNCE_COUNT_MIN   :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT2_DEBOUNCE_COUNT_MIN));
+
+	seq_printf(m, "RG_INT_EN_BAT2_H  :%x\n",
+		pmic_get_register_value(PMIC_RG_INT_EN_BAT2_H));
+	seq_printf(m, "RG_INT_EN_BAT2_L   :%x\n",
+		pmic_get_register_value(PMIC_RG_INT_EN_BAT2_L));
+
+	seq_printf(m, "RG_INT_STATUS_BAT2_H  :%x\n",
+		pmic_get_register_value(PMIC_RG_INT_STATUS_BAT2_H));
+	seq_printf(m, "RG_INT_STATUS_BAT2_L   :%x\n",
+		pmic_get_register_value(PMIC_RG_INT_STATUS_BAT2_L));
+
+	seq_printf(m, "AUXADC_SOURCE_LBAT2_SEL   :%x\n",
+		pmic_get_register_value(PMIC_AUXADC_SOURCE_LBAT2_SEL));
+
+	return 0;
+}
+
 
 static struct gauge_ops mt6356_gauge_ops = {
 	.gauge_initial = fgauge_initial,
@@ -2659,6 +2719,7 @@ static struct gauge_ops mt6356_gauge_ops = {
 	.gauge_get_rtc_ui_soc = fgauge_get_rtc_ui_soc,
 	.gauge_is_rtc_invalid = fgauge_is_rtc_invalid,
 	.gauge_set_reset_status = fgauge_set_reset_status,
+	.gauge_dump = fgauge_dump,
 };
 
 static int mt6356_parse_dt(struct mt6356_gauge *info, struct device *dev)
