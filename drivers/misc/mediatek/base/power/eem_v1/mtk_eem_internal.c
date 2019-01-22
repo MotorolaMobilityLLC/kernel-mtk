@@ -285,7 +285,8 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		#if DVT
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
 		#else
-		.features	= FEA_INIT01 | FEA_INIT02,
+		/* .features	= FEA_INIT01 | FEA_INIT02, */
+		.features	= 0,
 		#endif
 		.max_freq_khz	= 100,/* 800 MHz */
 		.VBOOT		= VBOOT_VAL_SOC, /* 10uV */

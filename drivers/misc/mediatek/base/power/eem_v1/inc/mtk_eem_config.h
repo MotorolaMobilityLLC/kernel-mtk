@@ -25,6 +25,7 @@
 #define ISRTIMER           (0)
 #define DUMP_DATA_TO_DE    (0)
 #define EEM_ENABLE         (0)
+#define EEM_FAKE_EFUSE     (1)
 #define UPDATE_TO_UPOWER   (0)
 #define EEM_LOCKTIME_LIMIT (3000)
 /* #define EEM_CUR_VOLT_PROC_SHOW */
@@ -79,6 +80,8 @@
 #define NR_HW_RES          (13) /* reserve for eem log */
 #define NR_HW_RES_FOR_BANK (12) /* real eem banks for efuse */
 #define VCORE_NR_FREQ      (4)
+#define HW_RES_IDX_TURBO   (1) /* for providing turbo value to cpu dvfs */
+#define EEM_INIT01_FLAG    (0x1F) /* should be 0x5F if vcore eem enable */
 
 #if DVT
     #define NR_FREQ 8
@@ -97,7 +100,7 @@
  * 100 us, This is the EEM Detector sampling time as represented in
  * cycles of bclk_ck during INIT. 52 MHz
  */
-#define DETWINDOW_VAL        0x514
+#define DETWINDOW_VAL        0xA28
 
 /*
  * mili Volt to config value. voltage = 600mV + val * 6.25mV
