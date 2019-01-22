@@ -127,6 +127,23 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 	case SUB_PMIC_CTRL:
 		break;
 
+	case RT5738_FPWM:
+		if (ret_val) {
+			if (ret_val == IPI_BUSY || ret_val == IPI_TIMEOUT_ACK) {
+				if (ipi_ret != 0)
+					pr_notice("%s ap_ret_rt5738 = %d ipi_ret_rt5738 =%d\n"
+					       , __func__, ret_val, ipi_ret);
+			} else
+				/* Real PMIC service execution result, by each PMIC service */
+				pr_notice("%s ap_ret_rt5738 = %d ipi_ret_rt5738 =%d\n"
+				       , __func__, ret_val, ipi_ret);
+		} else {
+			if (ipi_ret != 0)
+				pr_notice("%s ap_ret_rt5738 = %d ipi_ret_rt5738 =%d\n"
+				       , __func__, ret_val, ipi_ret);
+		}
+		ret_val = ipi_ret;
+		break;
 	default:
 		pr_err("%s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 

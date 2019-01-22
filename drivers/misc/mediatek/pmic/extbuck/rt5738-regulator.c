@@ -25,6 +25,9 @@
 #include <mt-plat/rt-regmap.h>
 #endif /* CONFIG_RT_REGMAP */
 #include <mt-plat/upmu_common.h>
+#if defined(CONFIG_MACH_MT6775)
+#include <mach/mtk_pmic_ipi.h>
+#endif
 
 #define RT5738_DRV_VERSION	"1.0.0_MTK"
 
@@ -261,7 +264,12 @@ static int rt5738_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	struct regulator_chip *chip = info->reg_chip;
 	int ret;
 
-	/* TODO: after SB, add rt5738_ipi_set_mode */
+#if defined(CONFIG_MACH_MT6775)
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H) {
+		rt5738_ipi_set_mode(mode);
+	}
+#endif
 	switch (mode) {
 	case REGULATOR_MODE_FAST: /* force pwm mode */
 		ret = rt5738_set_bit(info->i2c, chip->mode_reg, chip->mode_bit);
