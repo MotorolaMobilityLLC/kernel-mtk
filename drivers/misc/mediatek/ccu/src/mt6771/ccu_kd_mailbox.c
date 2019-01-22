@@ -21,7 +21,7 @@
 static struct ccu_mailbox_t *_ccu_mailbox;
 static struct ccu_mailbox_t *_apmcu_mailbox;
 
-static enum mb_result _mailbox_write_to_buffer(struct ccu_msg_t *task);
+static enum mb_result _mailbox_write_to_buffer(struct ccu_msg *task);
 
 /*******************************************************************************
 * Public functions
@@ -44,7 +44,7 @@ enum mb_result mailbox_init(struct ccu_mailbox_t *apmcu_mb_addr, struct ccu_mail
 }
 
 
-enum mb_result mailbox_send_cmd(struct ccu_msg_t *task)
+enum mb_result mailbox_send_cmd(struct ccu_msg *task)
 {
 		/*Fill slot*/
 		enum mb_result result = _mailbox_write_to_buffer(task);
@@ -67,7 +67,7 @@ enum mb_result mailbox_send_cmd(struct ccu_msg_t *task)
 }
 
 
-enum mb_result mailbox_receive_cmd(struct ccu_msg_t *task)
+enum mb_result mailbox_receive_cmd(struct ccu_msg *task)
 {
 		enum mb_result result;
 		 MUINT32 rear;
@@ -83,7 +83,7 @@ enum mb_result mailbox_receive_cmd(struct ccu_msg_t *task)
 		if (rear != front) {
 			/*modulus add: rear+1 = rear+1 % CCU_MAILBOX_QUEUE_SIZE*/
 			nextReadSlot = (_apmcu_mailbox->front + 1) & (CCU_MAILBOX_QUEUE_SIZE - 1);
-			ccu_memcpy(task, &(_apmcu_mailbox->queue[nextReadSlot]), sizeof(struct ccu_msg_t));
+			ccu_memcpy(task, &(_apmcu_mailbox->queue[nextReadSlot]), sizeof(struct ccu_msg));
 			_apmcu_mailbox->front = nextReadSlot;
 
 			LOG_DBG("received cmd: f(%d), r(%d), cmd(%d), in(%x), out(%x)\n",
@@ -106,7 +106,7 @@ enum mb_result mailbox_receive_cmd(struct ccu_msg_t *task)
 /*******************************************************************************
 * Private functions
 ********************************************************************************/
-static int ccu_msg_copy(struct ccu_msg_t *dest, struct ccu_msg_t *src)
+static int ccu_msg_copy(struct ccu_msg *dest, struct ccu_msg *src)
 {
 		/*LOG_DBG("src->msg_id: %d\n", src->msg_id);*/
 		dest->msg_id = src->msg_id;
@@ -125,7 +125,7 @@ static int ccu_msg_copy(struct ccu_msg_t *dest, struct ccu_msg_t *src)
 		return 0;
 }
 
-static enum mb_result _mailbox_write_to_buffer(struct ccu_msg_t *task)
+static enum mb_result _mailbox_write_to_buffer(struct ccu_msg *task)
 {
 		enum mb_result result;
 		MUINT32 nextWriteSlot = (_ccu_mailbox->rear + 1) & (CCU_MAILBOX_QUEUE_SIZE - 1);
