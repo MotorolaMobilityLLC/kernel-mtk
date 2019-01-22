@@ -919,6 +919,9 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 			prCmdResult = (P_EVENT_CMD_RESULT) ((PUINT_8) prEvent + EVENT_HDR_SIZE);
 
+			prCmdInfo->u4FwResponseTime = kalGetTimeTick();
+			wlanDebugCommandRecodTime(prCmdInfo);
+
 			/* CMD_RESULT should be only in response to Set commands */
 			ASSERT(prCmdInfo->fgSetQuery == FALSE || prCmdInfo->fgNeedResp == TRUE);
 
@@ -1052,6 +1055,8 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
 
 		if (prCmdInfo != NULL) {
+			prCmdInfo->u4FwResponseTime = kalGetTimeTick();
+			wlanDebugCommandRecodTime(prCmdInfo);
 			if (prCmdInfo->pfCmdDoneHandler)
 				prCmdInfo->pfCmdDoneHandler(prAdapter, prCmdInfo, prEvent->aucBuffer);
 			else if (prCmdInfo->fgIsOid)
@@ -1307,6 +1312,8 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
 
 		if (prCmdInfo != NULL) {
+			prCmdInfo->u4FwResponseTime = kalGetTimeTick();
+			wlanDebugCommandRecodTime(prCmdInfo);
 			if (prCmdInfo->pfCmdDoneHandler)
 				prCmdInfo->pfCmdDoneHandler(prAdapter, prCmdInfo, prEvent->aucBuffer);
 			else if (prCmdInfo->fgIsOid)
@@ -1542,6 +1549,8 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
 
 		if (prCmdInfo != NULL) {
+			prCmdInfo->u4FwResponseTime = kalGetTimeTick();
+			wlanDebugCommandRecodTime(prCmdInfo);
 			if (prCmdInfo->pfCmdDoneHandler)
 				prCmdInfo->pfCmdDoneHandler(prAdapter, prCmdInfo, prEvent->aucBuffer);
 			else if (prCmdInfo->fgIsOid)
@@ -1584,6 +1593,8 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
 
 		if (prCmdInfo != NULL) {
+			prCmdInfo->u4FwResponseTime = kalGetTimeTick();
+			wlanDebugCommandRecodTime(prCmdInfo);
 			if (prCmdInfo->pfCmdDoneHandler)
 				prCmdInfo->pfCmdDoneHandler(prAdapter, prCmdInfo, prEvent->aucBuffer);
 			else if (prCmdInfo->fgIsOid)
@@ -1694,6 +1705,8 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		prCmdInfo = nicGetPendingCmdInfo(prAdapter, prEvent->ucSeqNum);
 
 		if (prCmdInfo != NULL) {
+			prCmdInfo->u4FwResponseTime = kalGetTimeTick();
+			wlanDebugCommandRecodTime(prCmdInfo);
 			if (prCmdInfo->pfCmdDoneHandler)
 				prCmdInfo->pfCmdDoneHandler(prAdapter, prCmdInfo, prEvent->aucBuffer);
 			else if (prCmdInfo->fgIsOid)

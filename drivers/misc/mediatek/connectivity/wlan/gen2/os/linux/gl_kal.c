@@ -1877,23 +1877,6 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 
 	if (kalHaltLock(2 * WLAN_OID_TIMEOUT_THRESHOLD)) {
 		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_FAILURE\n");
-
-		prIoReq = &(prGlueInfo->OidEntry);
-		if (prIoReq != NULL) {
-			DBGLOG(OID, WARN, "OidHandler 0x%p pvInfoBuf 0x%p,Buflen =%d,InfoLen=%p "
-			, prIoReq->pfnOidHandler
-			, prIoReq->pvInfoBuf
-			, prIoReq->u4InfoBufLen
-			, prIoReq->pu4QryInfoLen);
-			DBGLOG(OID, WARN, "fgRead=%d, fgWaitRsp=%d\n"
-			, prIoReq->fgRead
-			, prIoReq->fgWaitResp);
-		}
-		wlanDumpTcResAndTxedCmd(NULL, 0);
-		cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
-		/* dump TC4[0] ~ TC4[3] TX_DESC */
-		wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
-		show_stack(current, NULL);
 		return WLAN_STATUS_FAILURE;
 	}
 
@@ -1960,23 +1943,23 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 		if (ret != WLAN_STATUS_SUCCESS)
 			DBGLOG(OID, WARN, "kalIoctl: ret ErrCode: %d\n", ret);
 	}
-#if 1
 	else {
 		/* Case 2: timeout */
 		/* clear pending OID's cmd in CMD queue */
 		DBGLOG(OID, WARN, "kalIoctl: wait_for_completion_timeout occurred!\n");
-		DBGLOG(OID, WARN, "kalIoctl: do whole chip reset!\n");
-		DBGLOG(OID, WARN, "OidHandler 0x%p pvInfoBuf 0x%p,Buflen =%d,InfoLen=%p fgRead=%d,fgWaitRsp=%d\n"
+		DBGLOG(OID, WARN
+		, "OidHandler 0x%p pvInfoBuf 0x%p,Buflen =%d,InfoLen=%p fgRead=%d,fgWaitRsp=%d,now[%u]\n"
 		, pfnOidHandler
 		, pvInfoBuf
 		, u4InfoBufLen
 		, pu4QryInfoLen
 		, fgRead
-		, fgWaitResp);
+		, fgWaitResp
+		, kalGetTimeTick());
+		wlanDebugCommandRecodDump();
 		wlanDumpTcResAndTxedCmd(NULL, 0);
 		cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
-		/* dump TC4[0] ~ TC4[3] TX_DESC */
-		wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
+		wlanDumpCommandFwStatus();
 #if 0
 		if (fgCmd) {
 			prGlueInfo->u4TimeoutFlag = 1;
@@ -1985,7 +1968,6 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 #endif
 		ret = WLAN_STATUS_FAILURE;
 	}
-#endif
 	DBGLOG(OID, TEMP, "kalIoctl: done\n");
 	up(&prGlueInfo->ioctl_sem);
 	rHaltCtrl.fgHeldByKalIoctl = FALSE;
@@ -2804,6 +2786,7 @@ VOID kalEnqueueCommand(IN P_GLUE_INFO_T prGlueInfo, IN P_QUE_ENTRY_T prQueueEntr
 		prMsduInfo->u4InqueTime = kalGetTimeTick();
 	}
 	prCmdInfo->u4InqueTime = kalGetTimeTick();
+	wlanDebugCommandRecodTime(prCmdInfo);
 
 	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_CMD_QUE);
 	QUEUE_INSERT_TAIL(prCmdQue, prQueueEntry);
@@ -4270,10 +4253,24 @@ BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter)
 	return !!(spm_get_last_wakeup_src() & WAKE_SRC_CONN2AP);
 }
 #endif
+VOID kalShowStackEachTask(IN P_GLUE_INFO_T prGlueInfo)
+{
+	if (prGlueInfo) {
+		DBGLOG(INIT, ERROR, "***** show [main thread] *****\n");
+		show_stack(prGlueInfo->main_thread, NULL);
+	}
 
+	DBGLOG(INIT, ERROR, "***** show [rHaltCtrl.owner] *****\n");
+	show_stack(rHaltCtrl.owner, NULL);
+
+	DBGLOG(INIT, ERROR, "***** show [Current] *****\n");
+	show_stack(current, NULL);
+}
 INT_32 kalHaltLock(UINT_32 waitMs)
 {
 	INT_32 i4Ret = 0;
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	P_GL_IO_REQ_T prIoReq = NULL;
 
 	if (waitMs) {
 		i4Ret = down_timeout(&rHaltCtrl.lock, MSEC_TO_JIFFIES(waitMs));
@@ -4282,24 +4279,30 @@ INT_32 kalHaltLock(UINT_32 waitMs)
 		if (i4Ret != -ETIME)
 			return i4Ret;
 		if (rHaltCtrl.fgHeldByKalIoctl) {
-			P_GLUE_INFO_T prGlueInfo = NULL;
-
 			wlanExportGlueInfo(&prGlueInfo);
+			prIoReq = &(prGlueInfo->OidEntry);
+			ASSERT(prIoReq);
+			DBGLOG(OID, WARN
+			, "OidHandler 0x%p pvInfoBuf 0x%p,Buflen =%d,InfoLen=%p fgRead=%d,fgWaitRsp=%d,now[%u]\n"
+			, prIoReq->pfnOidHandler
+			, prIoReq->pvInfoBuf
+			, prIoReq->u4InfoBufLen
+			, prIoReq->pu4QryInfoLen
+			, prIoReq->fgRead
+			, prIoReq->fgWaitResp, kalGetTimeTick());
+			wlanDebugCommandRecodDump();
+			wlanDumpCommandFwStatus();
+			wlanDumpTcResAndTxedCmd(NULL, 0);
+			cmdBufDumpCmdQueue(&prGlueInfo->prAdapter->rPendingCmdQueue, "waiting response CMD queue");
 
-			DBGLOG(INIT, ERROR,
-				"kalIoctl was executed longer than %u ms by %s pid %d, show backtrace of tx_thread!\n",
-				kalGetTimeTick() - rHaltCtrl.u4HoldStart,
-				rHaltCtrl.owner->comm, rHaltCtrl.owner->pid);
-
-			if (prGlueInfo)
-				show_stack(prGlueInfo->main_thread, NULL);
-			show_stack(rHaltCtrl.owner, NULL);
 		} else {
 			DBGLOG(INIT, ERROR, "halt lock held by %s pid %d longer than %u ms!\n",
 				rHaltCtrl.owner->comm, rHaltCtrl.owner->pid,
 				kalGetTimeTick() - rHaltCtrl.u4HoldStart);
-			show_stack(rHaltCtrl.owner, NULL);
 		}
+		kalShowStackEachTask(prGlueInfo);
+
+
 		return i4Ret;
 	}
 	down(&rHaltCtrl.lock);
