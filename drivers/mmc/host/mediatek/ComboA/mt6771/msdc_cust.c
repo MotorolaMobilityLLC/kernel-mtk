@@ -1034,7 +1034,6 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, 0x0);
 		} else if (mode == MSDC_PIN_PULL_DOWN) {
 			/* Switch MSDC1_* to 50K ohm PD */
-			MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, 0x66);
 			MSDC_SET_FIELD(MSDC1_GPIO_PUPD0_ADDR, MSDC1_PUPD0_MASK, 0x666666);
 		} else if (mode == MSDC_PIN_PULL_UP) {
 			/* Switch MSDC1_CLK to 50K ohm PD,
