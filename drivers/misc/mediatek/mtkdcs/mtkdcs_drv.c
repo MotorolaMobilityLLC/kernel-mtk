@@ -316,6 +316,91 @@ static int dcs_dram_channel_switch(enum dcs_status status)
 }
 
 /*
+ * __dcs_enter_perf
+ * mark the kicker status and switch to full bandwidth mode
+ * callers must hold dcs_kicker_lock
+ * @kicker: the kicker who enters performance mode
+ *
+ * return 0 on success or error code
+ */
+int __dcs_enter_perf(enum dcs_kicker kicker)
+{
+	dcs_kicker |= (1 << kicker);
+
+	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
+
+	/* wakeup thread */
+	pr_info("wakeup dcs_thread\n");
+#ifdef DCS_PROFILE
+	async_start = sched_clock();
+#endif
+	if (!wake_up_process(dcs_thread))
+		pr_info("dcs_thread is already running\n");
+
+	return 0;
+}
+
+/*
+ * dcs_enter_perf
+ * mark the kicker status and switch to full bandwidth mode
+ * @kicker: the kicker who enters performance mode
+ *
+ * return 0 on success or error code
+ */
+int dcs_enter_perf(enum dcs_kicker kicker)
+{
+	if (!dcs_core_initialized)
+		return -ENODEV;
+	if (kicker >= DCS_NR_KICKER)
+		return -EINVAL;
+
+	mutex_lock(&dcs_kicker_lock);
+	__dcs_enter_perf(kicker);
+	mutex_unlock(&dcs_kicker_lock);
+
+	return 0;
+}
+
+/*
+ * __dcs_exit_perf
+ * unset the kicker status
+ * callers must hold dcs_kicker_lock
+ * @kicker: the kicker who exits performance mode
+ *
+ * return 0 on success or error code
+ */
+int __dcs_exit_perf(enum dcs_kicker kicker)
+{
+	dcs_kicker &= ~(1 << kicker);
+
+	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
+
+	return 0;
+}
+
+/*
+ * dcs_exit_perf
+ * unset the kicker status
+ * @kicker: the kicker who exits performance mode
+ *
+ * return 0 on success or error code
+ */
+int dcs_exit_perf(enum dcs_kicker kicker)
+{
+	if (!dcs_core_initialized)
+		return -ENODEV;
+	if (kicker >= DCS_NR_KICKER)
+		return -EINVAL;
+
+	mutex_lock(&dcs_kicker_lock);
+	__dcs_exit_perf(kicker);
+	mutex_unlock(&dcs_kicker_lock);
+
+	return 0;
+}
+
+
+/*
  * dcs_dram_channel_switch_by_sysfs_mode
  *
  * Update dcs_sysfs_mode and send a IPI call to SSPM to perform
@@ -333,6 +418,7 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	if (!dcs_core_initialized || !dcs_full_initialized)
 		return -ENODEV;
 
+	mutex_lock(&dcs_kicker_lock);
 	wake_lock(&dcs_wake_lock);
 	down_write(&dcs_rwsem);
 
@@ -357,11 +443,11 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 		break;
 	case DCS_SYSFS_FREERUN_ASYNC_NORMAL:
 		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
-		ret = dcs_enter_perf(DCS_KICKER_PERF);
+		ret = __dcs_enter_perf(DCS_KICKER_PERF);
 		break;
 	case DCS_SYSFS_FREERUN_ASYNC_EXIT_NORMAL:
 		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
-		ret = dcs_exit_perf(DCS_KICKER_PERF);
+		ret = __dcs_exit_perf(DCS_KICKER_PERF);
 		break;
 	default:
 		pr_alert("unknown sysfs mode: %d\n", mode);
@@ -371,6 +457,7 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 out:
 	up_write(&dcs_rwsem);
 	wake_unlock(&dcs_wake_lock);
+	mutex_unlock(&dcs_kicker_lock);
 
 	return ret;
 }
@@ -414,64 +501,6 @@ int dcs_set_lbw_region(u64 start, u64 end)
 	mutex_unlock(&dcs_lbw_lock);
 
 out:
-	return 0;
-}
-
-/*
- * dcs_enter_perf
- * mark the kicker status and switch to full bandwidth mode
- * @kicker: the kicker who enters performance mode
- *
- * return 0 on success or error code
- */
-int dcs_enter_perf(enum dcs_kicker kicker)
-{
-	unsigned long k;
-
-	if (!dcs_core_initialized)
-		return -ENODEV;
-	if (kicker >= DCS_NR_KICKER)
-		return -EINVAL;
-
-	mutex_lock(&dcs_kicker_lock);
-	k = dcs_kicker |= (1 << kicker);
-	mutex_unlock(&dcs_kicker_lock);
-
-	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, k);
-
-	/* wakeup thread */
-	pr_info("wakeup dcs_thread\n");
-#ifdef DCS_PROFILE
-	async_start = sched_clock();
-#endif
-	if (!wake_up_process(dcs_thread))
-		pr_info("dcs_thread is already running\n");
-
-	return 0;
-}
-
-/*
- * dcs_exit_perf
- * unset the kicker status
- * @kicker: the kicker who exits performance mode
- *
- * return 0 on success or error code
- */
-int dcs_exit_perf(enum dcs_kicker kicker)
-{
-	unsigned long k;
-
-	if (!dcs_core_initialized)
-		return -ENODEV;
-	if (kicker >= DCS_NR_KICKER)
-		return -EINVAL;
-
-	mutex_lock(&dcs_kicker_lock);
-	k = dcs_kicker &= ~(1 << kicker);
-	mutex_unlock(&dcs_kicker_lock);
-
-	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, k);
-
 	return 0;
 }
 
@@ -643,7 +672,7 @@ bool dcs_initialied(void)
 int dcs_full_init(void)
 {
 	dcs_full_initialized = true;
-	/* dcs_switch_to_lowpower(); */
+	dcs_switch_to_lowpower();
 
 	return 0;
 }
