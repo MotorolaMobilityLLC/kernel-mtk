@@ -408,7 +408,6 @@ static int mtk_dual_switch_charging_run(struct charger_manager *info)
 {
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 	int ret = 10;
-	bool chg2_en;
 
 	pr_err("mtk_dual_switch_charging_run [%d]\n", swchgalg->state);
 
@@ -430,10 +429,7 @@ static int mtk_dual_switch_charging_run(struct charger_manager *info)
 	}
 
 	charger_dev_dump_registers(info->chg1_dev);
-	charger_dev_is_enabled(info->chg2_dev, &chg2_en);
-	pr_err("chg2_en: %d\n", chg2_en);
-	if (chg2_en)
-		charger_dev_dump_registers(info->chg2_dev);
+	charger_dev_dump_registers(info->chg2_dev);
 	return 0;
 }
 
