@@ -749,11 +749,6 @@ int kbase_mem_init(struct kbase_device *kbdev)
 	/* Initialize memory usage */
 	atomic_set(&memdev->used_pages, 0);
 
-#ifdef ENABLE_MTK_MEMINFO
-	atomic_set(&g_mtk_gpu_total_memory_usage_in_pages, 0);
-	atomic_set(&g_mtk_gpu_peak_memory_usage_in_pages, 0);
-#endif /* ENABLE_MTK_MEMINFO */
-
 	ret = kbase_mem_pool_init(&kbdev->mem_pool,
 			KBASE_MEM_POOL_MAX_SIZE_KBDEV,
 			KBASE_MEM_POOL_4KB_PAGE_TABLE_ORDER,
@@ -1461,11 +1456,6 @@ int kbase_alloc_phy_pages_helper(struct kbase_mem_phy_alloc *alloc,
 	kbase_atomic_add_pages(nr_pages_requested,
 			       &kctx->kbdev->memdev.used_pages);
 
-#ifdef ENABLE_MTK_MEMINFO
-	kbase_atomic_add_pages(nr_pages_requested, &g_mtk_gpu_total_memory_usage_in_pages);
-	mtk_kbase_set_gpu_memory_peak();
-#endif /* ENABLE_MTK_MEMINFO */
-
 	/* Increase mm counters before we allocate pages so that this
 	 * allocation is visible to the OOM killer */
 	kbase_process_page_usage_inc(kctx, nr_pages_requested);
@@ -1618,9 +1608,6 @@ alloc_failed:
 	kbase_atomic_sub_pages(nr_pages_requested,
 			       &kctx->kbdev->memdev.used_pages);
 
-#ifdef ENABLE_MTK_MEMINFO
-	kbase_atomic_sub_pages(nr_pages_requested, &g_mtk_gpu_total_memory_usage_in_pages);
-#endif /* ENABLE_MTK_MEMINFO */
 invalid_request:
 	return -ENOMEM;
 }
@@ -1913,10 +1900,6 @@ int kbase_free_phy_pages_helper(
 							&kctx->used_pages);
 		kbase_atomic_sub_pages(freed,
 				       &kctx->kbdev->memdev.used_pages);
-
-#ifdef ENABLE_MTK_MEMINFO
-		kbase_atomic_sub_pages(freed, &g_mtk_gpu_total_memory_usage_in_pages);
-#endif /* ENABLE_MTK_MEMINFO */
 
 		KBASE_TLSTREAM_AUX_PAGESALLOC(
 				kctx->id,
