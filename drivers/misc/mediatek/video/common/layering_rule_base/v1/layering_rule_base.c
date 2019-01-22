@@ -115,6 +115,16 @@ inline bool has_layer_cap(struct layer_config *layer_info, enum LAYERING_CAPS l_
 
 static int is_overlap_on_yaxis(struct layer_config *lhs, struct layer_config *rhs)
 {
+	/**
+	 * HWC may adjust the offset of yuv layer due to alignment limitation after
+	 * querying layering rule. So it have chance to make yuv layer overlap with
+	 * other extended layer. We add the workaround here to avoid the yuv as the
+	 * base layer of extended layer and will remove it once the HWC correct the
+	 * problem.
+	 */
+	if (is_yuv(lhs->src_fmt))
+		return 1;
+
 	if ((lhs->dst_offset_y + lhs->dst_height <= rhs->dst_offset_y) ||
 			(rhs->dst_offset_y + rhs->dst_height <= lhs->dst_offset_y))
 		return 0;
