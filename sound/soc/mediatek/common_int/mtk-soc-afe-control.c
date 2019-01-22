@@ -3756,6 +3756,15 @@ int audio_get_auxadc_value(void)
 #endif
 }
 
+int get_accdet_auxadc(void)
+{
+#ifdef CONFIG_MTK_AUXADC_INTF
+	return pmic_get_auxadc_value(AUXADC_LIST_ACCDET);
+#else
+	return 0;
+#endif
+}
+
 /* api for other module */
 static int irq_from_ext_module;
 
