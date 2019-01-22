@@ -310,10 +310,6 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 	BOOLEAN fgTimeout;
 	BOOLEAN fgResult;
 	BOOLEAN fgReady = FALSE;
-#if CFG_SUPPORT_LOW_POWER_DEBUG
-	UINT_32 u4MailBoxStatus0 = 0, u4MailBoxStatus1 = 0;
-	UINT_32 u4Data = 0;
-#endif
 
 	ASSERT(prAdapter);
 
@@ -331,13 +327,15 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 	while (1) {
 		HAL_LP_OWN_RD(prAdapter, &fgResult);
-		fgTimeout = ((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
 
-#if CFG_SUPPORT_LOW_POWER_DEBUG
-		/* For driver own back fail debug,  get current PC value */
-		HAL_MCR_RD(prAdapter, MCR_SWPCDBGR, &u4Data);
-		DBGLOG(NIC, TRACE, "SWPCDBGR 0x%08X\n", u4Data);
-#endif
+		if (TIME_BEFORE(kalGetTimeTick(), u4CurrTick)) { /* To prevent timer wraparound */
+			fgTimeout =
+				((kalGetTimeTick() + (~u4CurrTick)) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
+		} else {
+			fgTimeout =
+				((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
+		}
+
 		if (fgResult) {
 			prAdapter->fgIsFwOwn = FALSE;
 			prAdapter->u4OwnFailedCount = 0;
@@ -347,14 +345,6 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				/* SER is done, start Tx/Rx */
 				nicSerStartTxRx(prAdapter);
 			}
-
-#if CFG_SUPPORT_LOW_POWER_DEBUG
-			/* For Low power debug, get mailbox value */
-			halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
-			halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
-			DBGLOG(NIC, LOUD, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
-			halPollDbgCr(prAdapter, LP_DBGCR_POLL_ROUND);
-#endif
 			break;
 		} else if ((i > LP_OWN_BACK_FAILED_RETRY_CNT) &&
 			   (kalIsCardRemoved(prAdapter->prGlueInfo) || fgIsBusAccessFailed || fgTimeout
@@ -362,9 +352,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 #if CFG_SUPPORT_LOW_POWER_DEBUG
 			/* For driver own back fail debug,  get current PC value */
-			halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
-			halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
-			DBGLOG(NIC, LOUD, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1);
+			halPrintMailbox(prAdapter);
 			halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
 #endif
 			if ((prAdapter->u4OwnFailedCount == 0) ||
@@ -417,7 +405,15 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 		while (1) {
 			HAL_WIFI_FUNC_READY_CHECK(prAdapter, WIFI_FUNC_READY_BITS, &fgReady);
 
-			fgTimeout = ((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
+			if (TIME_BEFORE(kalGetTimeTick(), u4CurrTick)) { /* To prevent timer wraparound */
+				fgTimeout =
+					((kalGetTimeTick() + (~u4CurrTick)) > LP_OWN_BACK_TOTAL_DELAY_MS)
+						? TRUE : FALSE;
+			} else {
+				fgTimeout =
+					((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS)
+						? TRUE : FALSE;
+			}
 
 			if (fgReady) {
 				break;
@@ -426,10 +422,7 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 
 #if CFG_SUPPORT_LOW_POWER_DEBUG
 				/* For driver own back fail debug,	get current PC value */
-				halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
-				halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
-				DBGLOG(NIC, LOUD, "MailBox Status = 0x%08X, 0x%08X\n",
-					u4MailBoxStatus0, u4MailBoxStatus1);
+				halPrintMailbox(prAdapter);
 				halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
 #endif
 
@@ -2041,5 +2034,11 @@ VOID halSerHifReset(IN P_ADAPTER_T prAdapter)
 	/* Clear interrupt status from Rx interrupt enhance mode */
 	prHifInfo->fgIsPendingInt = FALSE;
 	kalMemZero(prHifInfo->prSDIOCtrl, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
+}
+
+VOID halPrintHifDbgInfo(IN P_ADAPTER_T prAdapter)
+{
+	halPrintMailbox(prAdapter);
+	halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
 }
 
