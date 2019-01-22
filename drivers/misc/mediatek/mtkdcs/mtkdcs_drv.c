@@ -253,7 +253,7 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 #ifdef DCS_PROFILE
 		start = sched_clock();
 #endif
-		pr_info("dcs migration start\n");
+		pr_info("dcs migration start to=%s\n", dcs_status_name(status));
 		err = dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
 		if (err) {
 			pr_err("[%d]ipi_write error: %d\n",
@@ -268,7 +268,8 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 			err = dcs_get_status_ipi(&sys_dcs_status);
 			if (!err)
 				break;
-			pr_warn("dcs get status (%d)\n", retry);
+			pr_warn("dcs get status(%d), to=%s\n", retry,
+					dcs_status_name(status));
 			mdelay(100);
 			retry--;
 		}
