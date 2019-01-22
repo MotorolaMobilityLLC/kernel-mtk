@@ -487,7 +487,7 @@ const char *cmdq_mdp_get_rsz_state(const uint32_t state)
 
 void cmdq_mdp_dump_rot(const unsigned long base, const char *label)
 {
-	uint32_t value[32] = { 0 };
+	uint32_t value[39] = { 0 };
 
 	value[0] = CMDQ_REG_GET32(base + 0x000);
 	value[1] = CMDQ_REG_GET32(base + 0x008);
@@ -539,7 +539,23 @@ void cmdq_mdp_dump_rot(const unsigned long base, const char *label)
 	value[28] = CMDQ_REG_GET32(base + 0x0D0);
 	CMDQ_REG_SET32(base + 0x018, 0x00001400);
 	value[29] = CMDQ_REG_GET32(base + 0x0D0);
-	value[30] = CMDQ_REG_GET32(base + 0x01C);
+	CMDQ_REG_SET32(base + 0x018, 0x00001500);
+	value[30] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00001600);
+	value[31] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00001700);
+	value[32] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00001800);
+	value[33] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00001900);
+	value[34] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00001A00);
+	value[35] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00001B00);
+	value[36] = CMDQ_REG_GET32(base + 0x0D0);
+	CMDQ_REG_SET32(base + 0x018, 0x00001C00);
+	value[37] = CMDQ_REG_GET32(base + 0x0D0);
+	value[38] = CMDQ_REG_GET32(base + 0x01C);
 
 	CMDQ_ERR("=============== [CMDQ] %s Status ====================================\n", label);
 	CMDQ_ERR("ROT_CTRL: 0x%08x, ROT_MAIN_BUF_SIZE: 0x%08x, ROT_SUB_BUF_SIZE: 0x%08x\n",
@@ -562,7 +578,13 @@ void cmdq_mdp_dump_rot(const unsigned long base, const char *label)
 		 value[24], value[25], value[26]);
 	CMDQ_ERR("ROT_DEBUG_12: 0x%08x, ROT_DBUGG_13: 0x%08x, ROT_DBUGG_14: 0x%08x\n",
 		 value[27], value[28], value[29]);
-	CMDQ_ERR("VIDO_INT: 0x%08x\n", value[30]);
+	CMDQ_ERR("ROT_DEBUG_15: 0x%08x, ROT_DEBUG_16: 0x%08x, ROT_DEBUG_17: 0x%08x\n",
+		 value[30], value[31], value[32]);
+	CMDQ_ERR("ROT_DEBUG_18: 0x%08x, ROT_DEBUG_19: 0x%08x, ROT_DEBUG_1A: 0x%08x\n",
+		 value[33], value[34], value[35]);
+	CMDQ_ERR("ROT_DEBUG_1B: 0x%08x, ROT_DEBUG_1C: 0x%08x\n",
+		 value[36], value[37]);
+	CMDQ_ERR("VIDO_INT: 0x%08x\n", value[38]);
 }
 
 void cmdq_mdp_dump_color(const unsigned long base, const char *label)
