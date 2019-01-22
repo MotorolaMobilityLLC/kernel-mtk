@@ -28,6 +28,20 @@
 #define UNIT_TRANS_100	100
 #define UNIT_TRANS_1000	1000
 #define UNIT_TRANS_60 60
+
+#define BATTERY_AVERAGE_SIZE 30
+#define BATTERY_AVERAGE_DATA_NUMBER 3
+
+/* ============================================================ */
+/* power misc related */
+/* ============================================================ */
+#define BAT_VOLTAGE_LOW_BOUND 3400
+#define BAT_VOLTAGE_HIGH_BOUND 3450
+#define SHUTDOWN_TIME 40
+#define AVGVBAT_ARRAY_SIZE 30
+#define INIT_VOLTAGE 3450
+#define BATTERY_SHUTDOWN_TEMPERATURE 60
+
 /* ============================================================ */
 /* typedef and Struct*/
 /* ============================================================ */
@@ -123,8 +137,6 @@ typedef enum {
 	BATTERY_METER_CMD_SET_FG_RESET_RTC_STATUS,
 	BATTERY_METER_CMD_GET_SHUTDOWN_DURATION_TIME,
 	BATTERY_METER_CMD_GET_BAT_PLUG_OUT_TIME,
-	BATTERY_METER_CMD_GET_HW_FG_CURRENT_AVG,
-	BATTERY_METER_CMD_GET_ADC_V_BAT_SENSE_AVG,
 	BATTERY_METER_CMD_GET_ZCV,
 	BATTERY_METER_CMD_RESET_BATTERY_CYCLE,
 	BATTERY_METER_CMD_SOFF_RESET,
@@ -182,11 +194,11 @@ typedef enum {
 	FG_INTR_SHUTDOWN = 16384,
 	FG_INTR_RESET_NVRAM = 32768,
 	FG_INTR_BAT_PLUGOUT = 65536,
-	FG_INTR_IAVG = 2^17,
-	FG_INTR_VBAT2_L = 2^18,
-	FG_INTR_VBAT2_H = 2^19,
-	FG_INTR_CHR_FULL = 2^20,
-	FG_INTR_DLPT_SD = 2^21,
+	FG_INTR_IAVG = 1<<17,
+	FG_INTR_VBAT2_L = 1<<18,
+	FG_INTR_VBAT2_H = 1<<19,
+	FG_INTR_CHR_FULL = 1<<20,
+	FG_INTR_DLPT_SD = 1<<21,
 
 } FG_INTERRUPT_FLAG;
 
@@ -251,7 +263,8 @@ typedef enum {
 	FG_DAEMON_CMD_IS_KPOC,
 	FG_DAEMON_CMD_GET_NAFG_VBAT,
 	FG_DAEMON_CMD_GET_HW_INFO,
-	FG_DAEMON_CMD_SET_ANDROID_UI,
+	FG_DAEMON_CMD_SET_KERNEL_SOC,
+	FG_DAEMON_CMD_SET_KERNEL_UISOC,
 	FG_DAEMON_CMD_SET_BAT_PLUGOUT_INTR,
 	FG_DAEMON_CMD_SET_IAVG_INTR,
 	FG_DAEMON_CMD_SET_FG_SHUTDOWN_COND,
@@ -272,6 +285,11 @@ struct fgd_nl_msg_t {
 	unsigned int fgd_ret_data_len;
 	char fgd_data[FGD_NL_MSG_MAX_LEN];
 };
+
+typedef enum {
+	BATTERY_AVG_VBAT = 0,
+	BATTERY_AVG_MAX
+} BATTERY_AVG_ENUM;
 
 
 typedef struct _FUELGAUGE_PROFILE_STRUCT {
@@ -326,6 +344,7 @@ typedef struct {
 	int sw_ocv;
 	int soc;
 	int ui_soc;
+	int avgvbat;
 	bool flag_hw_ocv_unreliable;
 	int is_bat_charging;
 	signed int sw_car_nafg_cnt;
@@ -674,21 +693,18 @@ extern BATTERY_METER_CONTROL battery_meter_ctrl;
 
 extern int get_hw_ocv(void);
 extern int get_sw_ocv(void);
-extern int get_soc(void);
-extern int get_ui_soc(void);
-extern int get_hw_ocv_unreliable(void);
 extern void set_hw_ocv_unreliable(bool);
 extern signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data);
 
-extern signed int battery_meter_get_battery_current(void);
-extern signed int battery_meter_get_charger_voltage(void);
 extern signed int battery_meter_get_battery_temperature(void);
 extern unsigned int battery_meter_get_fg_time(void);
 extern unsigned int battery_meter_set_fg_timer_interrupt(unsigned int sec);
 
 
 extern void do_chrdet_int_task(void);
-extern unsigned int bat_get_ui_percentage(void);
+extern int bat_get_debug_level(void);
+extern int force_get_tbat(bool update);
+/************** Old Interface *******************/
 #ifdef CONFIG_MTK_SMART_BATTERY
 	extern void wake_up_bat(void);
 	extern unsigned long BAT_Get_Battery_Voltage(int polling_mode);
@@ -696,10 +712,25 @@ extern unsigned int bat_get_ui_percentage(void);
 	#define wake_up_bat()			do {} while (0)
 	#define BAT_Get_Battery_Voltage(polling_mode)	({ 0; })
 #endif
+extern unsigned int bat_get_ui_percentage(void);
+extern signed int battery_meter_get_battery_current(void);
+extern signed int battery_meter_get_charger_voltage(void);
+extern int get_soc(void);
+extern int get_ui_soc(void);
+/************** End Old Interface *******************/
 
-extern int bat_get_debug_level(void);
-
-extern int force_get_tbat(bool update);
+/************** New Interface *******************/
+extern bool battery_get_bat_current_sign(void);
+extern signed int battery_get_bat_current(void);
+extern signed int battery_get_bat_avg_current(void);
+extern signed int battery_get_bat_voltage(void);
+extern signed int battery_get_bat_avg_voltage(void);
+extern signed int battery_get_bat_soc(void);
+extern signed int battery_get_bat_uisoc(void);
+extern signed int battery_get_bat_temperature(void);
+extern signed int battery_get_ibus(void);
+extern signed int battery_get_vbus(void);
+/************** End New Interface *******************/
 
 /* pmic battery adc service */
 extern int pmic_get_vbus(void);
@@ -728,5 +759,6 @@ extern void mtk_power_misc_init(struct platform_device *pdev);
 extern void notify_fg_shutdown(void);
 extern int set_shutdown_cond(int shutdown_cond);
 extern int get_shutdown_cond(void);
+extern void notify_fg_dlpt_sd(void);
 
 #endif /* End of _FUEL_GAUGE_GM_30_H */
