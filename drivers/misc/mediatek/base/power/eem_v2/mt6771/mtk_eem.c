@@ -2162,6 +2162,35 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 
 	read_volt_from_VOP(det);
 
+#if ENABLE_LOO
+	if (detid != EEM_DET_GPU) {
+		switch (detid) {
+		case EEM_DET_2L:
+			backupdet = id_to_eem_det(EEM_DET_2L_HI);
+			break;
+		case EEM_DET_L:
+			backupdet = id_to_eem_det(EEM_DET_L_HI);
+			break;
+		case EEM_DET_2L_HI:
+			backupdet = id_to_eem_det(EEM_DET_2L);
+			break;
+		case EEM_DET_L_HI:
+			backupdet = id_to_eem_det(EEM_DET_L);
+			break;
+		default:
+			backupdet = id_to_eem_det(EEM_DET_2L);
+			break;
+		}
+		det->ops->switch_bank(backupdet, NR_EEM_PHASE);
+		read_volt_from_VOP(backupdet);
+		det->ops->switch_bank(det, NR_EEM_PHASE);
+
+		/* Copy high bank volt table to low bank */
+		if ((detid == EEM_DET_2L) || (detid == EEM_DET_L))
+			memcpy(det->volt_tbl, backupdet->volt_tbl, sizeof(det->volt_tbl)/2);
+	}
+#endif
+
 	for (i = 0; i < NR_FREQ; i++) {
 #ifdef CONFIG_EEM_AEE_RR_REC
 		switch (det->ctrl_id) {
@@ -2343,16 +2372,10 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	if (verr == 1) {
 #if ENABLE_LOO
 		if ((detid == EEM_DET_2L_HI) ||
-			((detid == EEM_DET_L_HI) && (det != &eem_detector_cci))
-			) {
-			backupdet = (detid == EEM_DET_2L_HI) ? id_to_eem_det(EEM_DET_2L) : id_to_eem_det(EEM_DET_L);
+			((detid == EEM_DET_L_HI) && (det != &eem_detector_cci)))
 			memcpy(backupdet->volt_tbl, backupdet->volt_tbl_init2, sizeof(det->volt_tbl));
-		} else {
-			memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl));
-		}
-#else
-		memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl));
 #endif
+		memcpy(det->volt_tbl, det->volt_tbl_init2, sizeof(det->volt_tbl));
 	}
 
 	eem_set_eem_volt(det);
