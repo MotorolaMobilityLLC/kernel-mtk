@@ -115,7 +115,7 @@ struct m4u_larb_restore_param {
 	unsigned int larb_idx;
 };
 
-struct m4u_reserverd_memory_param {
+struct m4u_reserved_memory_param {
 	unsigned int reserved_mem_start;
 	unsigned int reserved_mem_size;
 };

@@ -635,6 +635,7 @@ void test_m4u_do_mva_alloc_start_from_V2p4_case1(void)
 	pinfo = vmalloc(sizeof(struct m4u_buf_info_t));
 	if (!pinfo) {
 		M4UMSG("alloc info fail\n");
+		kfree(ret_mva);
 		return;
 	}
 	pinfo->port = 0;
