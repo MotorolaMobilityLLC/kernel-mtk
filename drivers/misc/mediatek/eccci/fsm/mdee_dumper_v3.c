@@ -396,6 +396,7 @@ static void md_ee_set_fatal_para(EX_FATAL_V3_T *fatal_src, DUMP_INFO_FATAL *fata
 {
 	char temp_str[32] = { 0 };
 	char *fatal_fname_prefix = "MD Offending File:";
+	unsigned int string_len = 0;
 
 	/* 1. offender string */
 	if ((fatal_src->offender[0] != 0xCC) && (fatal_src->offender[0] != 0)) {
@@ -418,9 +419,13 @@ static void md_ee_set_fatal_para(EX_FATAL_V3_T *fatal_src, DUMP_INFO_FATAL *fata
 		fata_tar->ExStr = "";
 	/*4. file name support*/
 	if (fatal_src->is_filename_supported == 0x01) {
-		snprintf(fata_tar->fatal_fname,
-			strlen(fatal_fname_prefix) + EX_BRIEF_FATALERR_SIZE - sizeof(fatal_src) + 1,
-			"%s%s", fatal_fname_prefix, fatal_src->filename);
+		snprintf(fata_tar->fatal_fname, EX_BRIEF_FATALERR_SIZE,
+				"%s%s", fatal_fname_prefix, fatal_src->filename);
+
+		string_len = strlen(fatal_fname_prefix) + EX_BRIEF_FATALERR_SIZE - sizeof(EX_FATAL_V3_T) + 1;
+		if (string_len > EX_BRIEF_FATALERR_SIZE)
+			CCCI_NORMAL_LOG(-1, FSM, "fata fname length should be ajdustment %d > %d\n",
+				string_len, EX_BRIEF_FATALERR_SIZE);
 		CCCI_NORMAL_LOG(-1, FSM, "%s\n", fata_tar->fatal_fname);
 	} else
 		fata_tar->fatal_fname[0] = '\0';
