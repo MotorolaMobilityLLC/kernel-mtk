@@ -66,15 +66,12 @@ extern void charger_log_flash(const char *fmt, ...);
 			}								   \
 		} while (0)
 
-/*
- * Define this to poll status for eoc/recharge as workaround
- * if not defined, interrupt is used for eoc/recharge
- */
-#define MTK_CHARGER_USE_POLLING
-#ifdef MTK_CHARGER_USE_POLLING
-extern void mt6336_eoc_callback(void);
-extern void mt6336_rechg_callback(void);
-#endif
+
+/* charger_algorithm notify charger_dev */
+enum {
+	EVENT_EOC,
+	EVENT_RECHARGE,
+};
 
 
 /* charger_dev notify charger_manager */
