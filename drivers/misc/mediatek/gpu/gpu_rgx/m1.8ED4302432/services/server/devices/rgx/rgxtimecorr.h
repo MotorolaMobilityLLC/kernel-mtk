@@ -122,4 +122,7 @@ IMG_UINT32 RGXGPUFreqCalibratePostClockSpeedChange(IMG_HANDLE hDevHandle, IMG_UI
 ******************************************************************************/
 void RGXGPUFreqCalibrateCorrelatePeriodic(IMG_HANDLE hDevHandle);
 
+
+void MTKQueryPowerState(void);
+
 #endif /* __RGXTIMECORR_H__ */

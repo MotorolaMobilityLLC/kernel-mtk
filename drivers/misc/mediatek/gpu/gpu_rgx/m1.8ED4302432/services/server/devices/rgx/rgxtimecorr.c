@@ -243,6 +243,10 @@ void RGXGPUFreqCalibratePostPowerOn(IMG_HANDLE hDevHandle)
 	psGpuDVFSTable->bAccumulatePeriod =
 	    (RGX_GPU_DVFS_GET_INDEX(ui32CoreClockSpeed) == psGpuDVFSTable->ui32CurrentDVFSId);
 
+#if defined(CONFIG_MACH_MT6799)
+	MTKQueryPowerState();
+#endif
+
 	_RGXGPUFreqCalibrationPeriodStart(psDeviceNode, psGpuDVFSTable);
 
 	/* Update the timer correlation data */
