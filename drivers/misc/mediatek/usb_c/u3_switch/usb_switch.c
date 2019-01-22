@@ -434,6 +434,45 @@ void usb3_switch_ctrl_en(bool en)
 		usb3_switch_en(typec, DISABLE);
 }
 
+
+void usb3_switch_dps_en(bool en)
+{
+	struct usbtypc *typec;
+	int retval = 0;
+
+	typec = get_usbtypec();
+
+	if (!typec->pinctrl || !typec->pin_cfg || !typec->u_rd) {
+		usbc_pinctrl_printk(K_ERR, "%s not init\n", __func__);
+		return;
+	}
+
+	if (typec->u_rd->c1_gpio == 0 || typec->u_rd->c2_gpio == 0) {
+		usbc_pinctrl_printk(K_ERR, "%s not support dps mode\n", __func__);
+		return;
+	}
+
+	usbc_pinctrl_printk(K_DEBUG, "%s en=%d\n", __func__, en);
+
+	if (en) {
+		retval |= usb_redriver_config(typec, U3_EQ_C1, U3_EQ_LOW);
+		retval |= usb_redriver_config(typec, U3_EQ_C2, U3_EQ_LOW);
+	} else {
+		if ((typec->u_rd->eq_c1 == U3_EQ_HIGH) || (typec->u_rd->eq_c2 == U3_EQ_HIGH)) {
+			retval |= usb_redriver_config(typec, U3_EQ_C1, typec->u_rd->eq_c1);
+			retval |= usb_redriver_config(typec, U3_EQ_C2, typec->u_rd->eq_c2);
+		} else {
+			retval |= usb_redriver_config(typec, U3_EQ_C1, U3_EQ_HIGH);
+			retval |= usb_redriver_config(typec, U3_EQ_C2, U3_EQ_HIGH);
+
+			udelay(1);
+
+			retval |= usb_redriver_config(typec, U3_EQ_C1, typec->u_rd->eq_c1);
+			retval |= usb_redriver_config(typec, U3_EQ_C2, typec->u_rd->eq_c2);
+		}
+	}
+}
+
 static int usbc_pinctrl_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -603,7 +642,7 @@ static int usbc_pinctrl_probe(struct platform_device *pdev)
 			usbc_pinctrl_printk(K_ERR, "%s get c2_pin_val fail\n", __func__);
 
 		if (typec->u_rd->c2_gpio != 0)
-			usbc_pinctrl_printk(K_ERR, "%s C1[%d]=%d\n", __func__,
+			usbc_pinctrl_printk(K_ERR, "%s C2[%d]=%d\n", __func__,
 						typec->u_rd->c2_gpio, typec->u_rd->eq_c2);
 	}
 

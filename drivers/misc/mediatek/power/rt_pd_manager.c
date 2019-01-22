@@ -269,6 +269,13 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #endif
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+			usb3_switch_dps_en(false);
+			if (noti->typec_state.polarity == 0)
+				usb3_switch_ctrl_sel(CC1_SIDE);
+			else
+				usb3_switch_ctrl_sel(CC2_SIDE);
+#endif
 #if CONFIG_MTK_GAUGE_VERSION == 20
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 			mutex_lock(&pd_chr_mutex);
@@ -298,6 +305,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			mutex_unlock(&pd_chr_mutex);
 			pr_notice("TCP_NOTIFY_SINK_VBUS=> plug out");
 #endif
+#endif
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+			usb3_switch_dps_en(true);
 #endif
 #if CONFIG_MTK_GAUGE_VERSION == 30
 			ret = charger_dev_enable_chg_type_det(primary_charger, false);

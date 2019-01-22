@@ -140,6 +140,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 			usbc_otg_enable = true;
 			mutex_unlock(&tcpc_otg_lock);
 #ifdef CONFIG_USB_C_SWITCH_U3_MUX
+			usb3_switch_dps_en(false);
 			if (noti->typec_state.polarity == 0)
 				usb3_switch_ctrl_sel(CC2_SIDE);
 			else
@@ -151,6 +152,9 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&tcpc_otg_lock);
 			usbc_otg_enable = false;
 			mutex_unlock(&tcpc_otg_lock);
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+			usb3_switch_dps_en(true);
+#endif
 		}
 		queue_work(otg_tcpc_workq, &tcpc_otg_work);
 		break;
