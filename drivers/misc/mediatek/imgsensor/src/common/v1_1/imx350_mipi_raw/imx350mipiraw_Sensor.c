@@ -126,9 +126,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.starty = 0, /* record different mode's starty of grabwindow */
 
 		/* record different mode's width of grabwindow */
-		.grabwindow_width = 1920,
+		.grabwindow_width = 2592,
 		/* record different mode's height of grabwindow */
-		.grabwindow_height = 1080,
+		.grabwindow_height = 1936,
 
 		/* following for MIPIDataLowPwr2HighSpeedSettleDelayCount
 		 * by different scenario
@@ -256,8 +256,8 @@ static struct imgsensor_struct imgsensor = {
 
 /* Sensor output window information */
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
-	{5184, 3880, 0, 0, 5184, 3880, 1920, 1080,
-	0000, 0000, 1920, 1080, 0, 0, 1920, 1080},	/* Preview */
+	{5184, 3880, 0, 0, 5184, 3880, 2592, 1936,
+	0000, 0000, 2592, 1936, 0, 0, 2592, 1936},	/* Preview */
 	{5184, 3880, 0, 0, 5184, 3880, 5184, 3880,
 	0000, 0000, 5184, 3880, 0, 0, 5184, 3880},	/* capture */
 	{5184, 3880, 0, 480, 5184, 3880, 5184, 2916,
@@ -270,7 +270,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3] = {
 	/* Preview mode setting */
 	{0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,
-	 0x00, 0x2b, 0x0780, 0x0438, 0x01, 0x00, 0x0780, 0x0001,
+	 0x00, 0x2b, 0x0A20, 0x0790, 0x01, 0x00, 0x0780, 0x0001,
 	 0x02, 0x00, 0x0000, 0x0000, 0x03, 0x00, 0x0000, 0x0000},
 	/* Capture mode setting */
 	{0x01, 0x0a, 0x00, 0x08, 0x40, 0x00,
@@ -1791,18 +1791,18 @@ kal_uint16 addr_data_pair_preview_imx350[] = {
 	0x0404, 0x00,
 	0x0405, 0x15,
 	0x0408, 0x00,
-	0x0409, 0x24,
+	0x0409, 0x00,
 	0x040A, 0x00,
-	0x040B, 0x12,
-	0x040C, 0x09,
-	0x040D, 0xD8,
-	0x040E, 0x05,
-	0x040F, 0x8A,
+	0x040B, 0x00,
+	0x040C, 0x0A,
+	0x040D, 0x20,
+	0x040E, 0x07,
+	0x040F, 0x90,
 
-	0x034C, 0x07,
-	0x034D, 0x80,
-	0x034E, 0x04,
-	0x034F, 0x38,
+	0x034C, 0x0A,
+	0x034D, 0x20,
+	0x034E, 0x07,
+	0x034F, 0x90,
 
 	0x0301, 0x05,
 	0x0303, 0x04,
