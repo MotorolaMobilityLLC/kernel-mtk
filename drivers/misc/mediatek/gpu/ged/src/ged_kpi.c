@@ -137,6 +137,9 @@ typedef struct GED_KPI_TAG {
 	unsigned long cpu_cur_freq_LL;
 	unsigned long cpu_cur_freq_L;
 	unsigned long cpu_cur_freq_B;
+	long long t_cpu_latest;
+	int t_cpu_target;
+	int t_gpu_target;
 #ifdef GED_KPI_FUTURE_USED_FEATURE
 	int is_CP_check_pass;
 	int is_speed_down_ignored;
@@ -186,7 +189,7 @@ static unsigned int gx_frc_mode; /* variable to fix FRC mode*/
 static unsigned int enable_cpu_boost = 1;
 static unsigned int enable_gpu_boost = 1;
 static unsigned int is_GED_KPI_enabled = 1;
-static unsigned int ap_self_frc_detection_rate = 50;
+static unsigned int ap_self_frc_detection_rate = 20;
 #ifdef GED_KPI_FUTURE_USED_FEATURE
 static unsigned int enable_check_boost_CP;
 #endif
@@ -249,7 +252,7 @@ module_param(is_game_control_frame_rate, int, S_IRUGO|S_IWUSR);
 module_param(enable_game_self_frc_detect, int, S_IRUGO|S_IWUSR);
 
 /* ----------------------------------------------------------------------------- */
-#define GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE 60
+#define GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE 15
 static GED_BOOL ged_kpi_frame_rate_control_detect(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
 	static GED_KPI psKPI_list[GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE];
@@ -267,9 +270,9 @@ static GED_BOOL ged_kpi_frame_rate_control_detect(GED_KPI_HEAD *psHead, GED_KPI 
 				psKPI_head = &psKPI_list[cur_frame];
 
 			if ((psKPI_head != NULL) &&
-				(psKPI_head->t_acquire_period < 24000000))
+				(psKPI_head->t_cpu_latest < 26000000))
 				detected_frame_cnt--;
-			if (psKPI->t_acquire_period < 24000000)
+			if (psKPI->t_cpu_latest < 26000000)
 				detected_frame_cnt++;
 
 			psKPI_list[cur_frame] = *psKPI;
@@ -439,7 +442,7 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		psKPI->boost_accum_cpu,
 		psKPI->boost_accum_gpu,
 		psKPI->t_cpu_remained_pred,
-		psHead->t_cpu_target,
+		psKPI->t_cpu_target,
 		vsync_period,
 		psKPI->QedBufferDelay,
 		psKPI->cpu_max_freq_LL,
@@ -481,7 +484,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		t_gpu_cur = psHead->t_gpu_latest;
 
 		if ((long long)psHead->t_cpu_target > t_gpu_cur) {
-			t_cpu_target = (long long)psHead->t_cpu_target;
+			t_cpu_target = (long long)psKPI->t_cpu_target;
 			is_gpu_bound = 0;
 		} else {
 			/* when GPU bound, chase GPU frame time as target */
@@ -522,7 +525,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 				}
 			}
 		} else {  /* FRR mode or (default mode && FPS != GED_KPI_MAX_FPS) */
-			t_cpu_rem_cur = psHead->t_cpu_target;
+			t_cpu_rem_cur = psKPI->t_cpu_target;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - (long long)psHead->last_TimeStampS);
 		}
 		psKPI->t_cpu_remained_pred = (long long)t_cpu_rem_cur;
@@ -1022,12 +1025,13 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				GED_LOGE("[GED_KPI][Exception] failed to get ctx_id by fence_addr: %p\n",
 						psTimeStamp->fence_addr);
 #endif
-				ged_kpi_update_target_time_and_target_fps(main_head,
+				ged_kpi_update_target_time_and_target_fps(psHead,
 									GED_KPI_MAX_FPS, GED_KPI_FRC_DEFAULT_MODE, -1);
 			}
 #endif
 			/**********************************/
-
+			psKPI->t_cpu_target = psHead->t_cpu_target;
+			psKPI->t_gpu_target = psHead->t_gpu_target;
 			psHead->i32Count += 1;
 			psHead->i32Gpu_uncompleted += 1;
 			psKPI->i32Gpu_uncompleted = psHead->i32Gpu_uncompleted;
@@ -1036,6 +1040,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			/* recording cpu time per frame and boost CPU if needed */
 			psHead->t_cpu_latest =
 				psKPI->ullTimeStamp1 - psHead->last_TimeStamp1 - psHead->last_QedBufferDelay;
+			psKPI->t_cpu_latest = psHead->t_cpu_latest;
 			psKPI->QedBufferDelay = psHead->last_QedBufferDelay;
 			psHead->last_QedBufferDelay = 0;
 			if (gx_game_mode == 1 && enable_cpu_boost == 1) {
