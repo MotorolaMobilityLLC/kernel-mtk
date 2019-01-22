@@ -40,13 +40,8 @@
 #include <linux/atomic.h>
 #include <linux/io.h>
 
-#if defined(CONFIG_ARCH_MT8167)
+#include <linux/irq.h>
 #ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
-#endif
-#else
-#include <mach/irqs.h>
-#include "mach/irqs.h"
 #include <mach/mt_clkmgr.h>
 #endif
 
@@ -58,7 +53,7 @@
 #include "m4u.h"
 #endif
 
-#include "mt-plat/mt_boot.h"
+#include <mt-plat/mtk_boot_common.h>
 #include "mtkfb_info.h"
 #include "mtkfb.h"
 
@@ -1296,7 +1291,7 @@ int hdmi_get_dev_info(int is_sf, void *info)
 				 p->is_enabled, hdmi_info.displayType);
 		HDMI_LOG("DEV_INFO configuration get displayType-%d\n", hdmi_info.displayType);
 	} else if (is_sf == SF_GET_INFO) {
-		struct disp_session_info *dispif_info = (disp_session_info *) info;
+		struct disp_session_info *dispif_info = (struct disp_session_info *) info;
 
 		memset((void *)dispif_info, 0, sizeof(struct disp_session_info));
 
