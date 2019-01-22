@@ -111,6 +111,8 @@ struct dbgreg_set {
 	asm volatile("mcr p14, 0, %0, " #N "," #M ", " #OP2 : : "r" (VAL));\
 }
 #endif
+
+#define IO_VIRT_TO_PHYS(v) (0x10000000 | ((v) & 0x0fffffff))
 static inline void cs_cpu_write(void __iomem *addr_base, u32 offset, u32 wdata)
 {
 	/* TINFO="Write addr %h, with data %h", addr_base+offset, wdata */
