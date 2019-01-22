@@ -941,7 +941,8 @@ BOOLEAN glUnregisterP2P(P_GLUE_INFO_T prGlueInfo)
 #if CFG_SUPPORT_PERSIST_NETDEV
 	dev_close(prGlueInfo->prP2PInfo->prDevHandler);
 #else
-	free_netdev(prGlueInfo->prP2PInfo->prDevHandler);
+	if (prGlueInfo->prP2PInfo->prDevHandler != NULL)
+		free_netdev(prGlueInfo->prP2PInfo->prDevHandler);
 	prGlueInfo->prP2PInfo->prDevHandler = NULL;
 #endif
 	/* Free p2p memory */
