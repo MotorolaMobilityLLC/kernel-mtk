@@ -20,6 +20,7 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6356)	+= pmic.o pmic_common.o \
 		pmic_throttling_dlpt.o \
 		regulator_codegen.o \
 		pmic_lp_api.o\
+		pmic_bif.o \
 
 
 # Charger Type Detection
