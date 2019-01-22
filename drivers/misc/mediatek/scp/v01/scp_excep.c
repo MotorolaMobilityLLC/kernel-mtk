@@ -340,13 +340,15 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump, enum scp_core
 static void scp_prepare_aed(char *aed_str, struct scp_aed_cfg *aed)
 {
 	char *detail, *log;
-	u8 *phy, *ptr;
+	u8 *phy;
 	u32 log_size, phy_size;
 
 	pr_debug("scp_prepare_aed\n");
 
 	detail = vmalloc(SCP_AED_STR_LEN);
-	ptr = detail;
+	if (!detail)
+		return;
+
 	memset(detail, 0, SCP_AED_STR_LEN);
 	snprintf(detail, SCP_AED_STR_LEN, "%s\n", aed_str);
 	detail[SCP_AED_STR_LEN - 1] = '\0';
