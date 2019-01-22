@@ -166,6 +166,8 @@
 #define BATTERY_TMP_TO_ENABLE_NAFG -20
 /* #define GM30_DISABLE_NAFG */
 
+#define MULTI_TEMP_GAUGE0 0	/* different temp using different gauge 0% */
+
 #define OVER_DISCHARGE_LEVEL 100
 #define UISOC_UPDATE_TYPE 2
 /*
