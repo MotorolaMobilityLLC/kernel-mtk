@@ -946,6 +946,12 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 	CMDQ_VERBOSE("write reg(0x%lx) to 0x%08x, read reg(0x%lx), verify write result:%d\n",
 		     testWriteReg, testWriteValue, testReadReg, verifyWriteResult);
 
+	if ((testWriteReg & 0xFFFFF000) == 0 || (testReadReg & 0xFFFFF000) == 0) {
+		CMDQ_TEST_FAIL("%s: invalid write reg:%08lx read reg:%08lx\n",
+			name, testWriteReg, testReadReg);
+		return;
+	}
+
 	/* turn on CLK, function should work */
 	CMDQ_MSG("enable_clock\n");
 	if (engine == CMDQ_ENG_CMDQ) {
@@ -960,7 +966,7 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 	CMDQ_REG_SET32(testWriteReg, testWriteValue);
 	value = CMDQ_REG_GET32(testReadReg);
 	if ((true == verifyWriteResult) && (testWriteValue != value)) {
-		CMDQ_ERR("%s: when enable clock reg(0x%lx) = 0x%08x\n", name, testReadReg, value);
+		CMDQ_TEST_FAIL("%s: when enable clock reg(0x%lx) = 0x%08x\n", name, testReadReg, value);
 		/* BUG(); */
 	}
 
@@ -979,7 +985,7 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 	CMDQ_REG_SET32(testWriteReg, testWriteValue);
 	value = CMDQ_REG_GET32(testReadReg);
 	if (value != 0) {
-		CMDQ_ERR("%s: when disable clock reg(0x%lx) = 0x%08x\n", name, testReadReg, value);
+		CMDQ_TEST_FAIL("%s: when disable clock reg(0x%lx) = 0x%08x\n", name, testReadReg, value);
 		/* BUG(); */
 	}
 #endif
