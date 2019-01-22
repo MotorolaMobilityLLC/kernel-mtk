@@ -15,7 +15,7 @@
 #define __SCP_DVFS_H__
 
 /* MT6758 DVFS doesn't need PLL because it switches between ULPOSC1 and ULPOSC2 directly  */
-#define SCP_DVFS_USE_PLL	1
+#define SCP_DVFS_USE_PLL		1
 
 #define PLL_ENABLE				(1)
 #define PLL_DISABLE				(0)

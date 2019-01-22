@@ -31,9 +31,7 @@
 #include <linux/input.h>
 #include <linux/wakelock.h>
 #include <linux/io.h>
-#if 0
 #include <mt-plat/upmu_common.h>
-#endif
 #include <mt-plat/mtk_secure_api.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -56,23 +54,15 @@
 #include "mtk_pmic_info.h"
 #endif
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include "mtk_spm_vcore_dvfs.h"
-#endif
 
 
 #define SCP_DVFS_TAG	"[scp_dvfs] "
 
-#define INREG32(x)          readl((unsigned int *)((void *)(x)))
-#define OUTREG32(x, y)      writel((unsigned int *)((void *)(x)), (unsigned int)(y))
-#define SETREG32(x, y)      OUTREG32(x, INREG32(x)|(y))
-#define CLRREG32(x, y)      OUTREG32(x, INREG32(x)&~(y))
-#define MASKREG32(x, y, z)  OUTREG32(x, (INREG32(x)&~(y))|(z))
-
-#define DRV_Reg32(addr)             INREG32(addr)
-#define DRV_WriteReg32(addr, data)  OUTREG32(addr, data)
-#define DRV_SetReg32(addr, data)    SETREG32(addr, data)
-#define DRV_ClrReg32(addr, data)    CLRREG32(addr, data)
+#define DRV_Reg32(addr)				readl(addr)
+#define DRV_WriteReg32(addr, val)	writel(val, addr)
+#define DRV_SetReg32(addr, val)		DRV_WriteReg32(addr, DRV_Reg32(addr) | (val))
+#define DRV_ClrReg32(addr, val)		DRV_WriteReg32(addr, DRV_Reg32(addr) & ~(val))
 
 /***************************
  * Operate Point Definition
@@ -111,16 +101,19 @@ static int scp_sleep_flag = -1;
 
 static int mt_scp_dvfs_debug = -1;
 static unsigned int scp_cur_volt = -1;
+static unsigned int pre_pll_sel;
 static struct mt_scp_pll_t *mt_scp_pll;
 static struct wake_lock scp_suspend_lock;
 static int g_scp_dvfs_init_flag = -1;
 
 static unsigned int pre_feature_req = 0xff;
 
+#if 0 /* TBD */
 static unsigned long gpio_base;
 #define RG_GPIO159_MODE		(gpio_base + 0x430)
 #define GPIO159_BIT			28
 #define GPIO159_MASK		0x7
+#endif
 
 unsigned int scp_get_dvfs_opp(void)
 {
@@ -131,25 +124,29 @@ int scp_set_pmic_vcore(unsigned int cur_freq)
 {
 	int ret = 0;
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	unsigned int ret_vc = 0;
+	unsigned int ret_vc = 0, ret_vs = 0;
 
-	if (cur_freq <= CLK_OPP0) {
+	if (cur_freq == CLK_OPP0) {
 		ret_vc = pmic_scp_set_vcore(600000);
 		ret_vs = pmic_scp_set_vsram_vcore(850000);
 		scp_cur_volt = 2;
-	} else if (cur_freq <= CLK_OPP1) {
+	} else if (cur_freq == CLK_OPP1) {
 		ret_vc = pmic_scp_set_vcore(700000);
 		ret_vs = pmic_scp_set_vsram_vcore(900000);
 		scp_cur_volt = 1;
-	} else {
+	} else if (cur_freq == CLK_OPP2) {
 		ret_vc = pmic_scp_set_vcore(800000);
 		ret_vs = pmic_scp_set_vsram_vcore(900000);
 		scp_cur_volt = 0;
+	} else {
+	    ret = -2;
+	    pr_notice(SCP_DVFS_TAG "ERROR: %s: cur_freq=%d is not supported\n", __func__, cur_freq);
+		WARN_ON(1);
 	}
 
 	if (ret_vc != 0 || ret_vs != 0) {
 		ret = -1;
-		pr_notice(SCP_DVFS_TAG "ERROR: %s: scp vcore / vsram setting error, (%d, %d)\n",
+		pr_notice(SCP_DVFS_TAG "ERROR: %s: scp vcore/vsram setting error, (%d, %d)\n",
 					__func__, ret_vc, ret_vs);
 		WARN_ON(1);
 	}
@@ -188,11 +185,33 @@ uint32_t scp_get_freq(void)
 	else if (sum <= CLK_OPP2)
 		return_freq = CLK_OPP2;
 	else {
-		pr_notice(SCP_DVFS_TAG "ERROR: %s: not support freq %d\n", __func__, sum);
-		WARN_ON(1);
+		return_freq = CLK_OPP2;
+		pr_notice(SCP_DVFS_TAG "warning: request freq %d > max opp %d\n",
+				sum, CLK_OPP2);
 	}
 
 	return return_freq;
+}
+
+void scp_vcore_request(unsigned int clk_opp)
+{
+	/* Set PMIC */
+	scp_set_pmic_vcore(clk_opp);
+
+	/* set DVFSRC_VCORE_REQUEST [31:30] */
+	if (scp_expected_freq == CLK_OPP2)
+		dvfsrc_set_scp_vcore_request(0x1);
+	else
+		dvfsrc_set_scp_vcore_request(0x0);
+
+	/* Modify scp reg: 0xC0094 [7:0] */
+	DRV_ClrReg32(SCP_SCP2SPM_VOL_LV, 0xff);
+	if (clk_opp == CLK_OPP0)
+		DRV_SetReg32(SCP_SCP2SPM_VOL_LV, 0);
+	else if (clk_opp == CLK_OPP1)
+		DRV_SetReg32(SCP_SCP2SPM_VOL_LV, 1);
+	else
+		DRV_SetReg32(SCP_SCP2SPM_VOL_LV, 2);
 }
 
 /* scp_request_freq
@@ -221,13 +240,7 @@ int scp_request_freq(void)
 
 		/* do DVS before DFS if increasing frequency */
 		if (scp_current_freq < scp_expected_freq) {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-		    /* set DVFSRC_VCORE_REQUEST [31:30] */
-			if (scp_expected_freq == CLK_OPP2)
-				dvfsrc_set_scp_vcore_request(0x1);
-			else
-				dvfsrc_set_scp_vcore_request(0x0);
-#endif
+			scp_vcore_request(scp_expected_freq);
 			is_increasing_freq = 1;
 		}
 
@@ -245,7 +258,9 @@ int scp_request_freq(void)
 			if (timeout <= 0) {
 				pr_notice(SCP_DVFS_TAG "%s: set freq fail, current(%d) != expect(%d)\n", __func__,
 					scp_current_freq, scp_expected_freq);
-				goto set_freq_fail;
+				wake_unlock(&scp_suspend_lock);
+				WARN_ON(1);
+				return -1;
 			}
 
 			/* read scp_current_freq again */
@@ -256,46 +271,17 @@ int scp_request_freq(void)
 		} while (scp_current_freq != scp_expected_freq);
 
 		#if SCP_DVFS_USE_PLL
-		if (scp_expected_freq != CLK_OPP2)
-			scp_pll_ctrl_set(PLL_DISABLE, 0); /* turn off PLL */
+		scp_pll_ctrl_set(PLL_DISABLE, 0); /* turn off PLL */
 		#endif
 
 		/* do DVS after DFS if decreasing frequency */
-		if (is_increasing_freq == 0) {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-		    /* set DVFSRC_VCORE_REQUEST [31:30] */
-			if (scp_expected_freq == CLK_OPP2)
-				dvfsrc_set_scp_vcore_request(0x1);
-			else
-				dvfsrc_set_scp_vcore_request(0x0);
-#endif
-		}
-
-		/*  set pmic sshub_sleep_vcore_ctrl accroding to frequency */
-		ret = scp_set_pmic_vcore(scp_current_freq);
-		if (ret != 0) {
-			pr_notice(SCP_DVFS_TAG "%s: scp_set_pmic_vcore(%d) fail - %d\n",
-						__func__, scp_current_freq, ret);
-			goto fatal_error;
-		}
+		if (is_increasing_freq == 0)
+			scp_vcore_request(scp_expected_freq);
 	}
 
 	wake_unlock(&scp_suspend_lock);
 	pr_info("[SCP] set freq OK, %d == %d\n", scp_expected_freq, scp_current_freq);
 	return 0;
-
-set_freq_fail:
-	mt_secure_call(MTK_SIP_KERNEL_SCP_DVFS_CTRL, scp_current_freq, 0, 0);
-	scp_A_dump_regs();
-	wake_unlock(&scp_suspend_lock);
-	WARN_ON(1);
-	return -1;
-
-fatal_error:
-	scp_A_dump_regs();
-	wake_unlock(&scp_suspend_lock);
-	WARN_ON(1);
-	return -1;
 }
 
 void wait_scp_dvfs_init_done(void)
@@ -335,11 +321,15 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 	pr_info(SCP_DVFS_TAG "%s(%d, %d)\n", __func__, pll_ctrl_flag, pll_sel);
 
 	if (pll_ctrl_flag == PLL_ENABLE) {
-		ret = clk_prepare_enable(mt_scp_pll->clk_mux);
-		if (ret) {
-			pr_notice(SCP_DVFS_TAG "ERROR: %s: scp dvfs cannot enable clk mux, %d\n", __func__, ret);
-			WARN_ON(1);
-		}
+		if (pre_pll_sel != CLK_OPP2) {
+			ret = clk_prepare_enable(mt_scp_pll->clk_mux);
+			if (ret) {
+				pr_notice(SCP_DVFS_TAG "ERROR: %s: clk_prepare_enable() failed, %d\n",
+					__func__, ret);
+				WARN_ON(1);
+			}
+		} else
+			pr_info(SCP_DVFS_TAG "no need to do clk_prepare_enable()\n");
 
 		switch (pll_sel) {
 		case CLK_OPP0:
@@ -352,9 +342,15 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 			ret = clk_set_parent(mt_scp_pll->clk_mux, mt_scp_pll->clk_pll6);
 			break;
 		default:
+			pr_notice(SCP_DVFS_TAG "ERROR: %s: not support opp freq %d\n", __func__, pll_sel);
+			WARN_ON(1);
 			break;
 		}
-	} else if (pll_ctrl_flag == PLL_DISABLE)
+
+		if (pre_pll_sel != pll_sel)
+			pre_pll_sel = pll_sel;
+
+	} else if (pll_ctrl_flag == PLL_DISABLE && pll_sel != CLK_OPP2)
 		clk_disable_unprepare(mt_scp_pll->clk_mux);
 
 	return ret;
@@ -694,7 +690,7 @@ exit:
 #endif
 
 static const struct of_device_id scpdvfs_of_ids[] = {
-	{.compatible = "mediatek,scpdvfs",},
+	{.compatible = "mediatek,scp_dvfs",},
 	{}
 };
 
@@ -716,7 +712,9 @@ static int mt_scp_dvfs_pm_restore_early(struct device *dev)
 static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 {
 	struct device_node *node;
+#if 0 /* TBD */
 	unsigned int gpio_mode;
+#endif
 
 	pr_info("%s()\n", __func__);
 
@@ -780,6 +778,8 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 
 	_set_state(scp_state_name[SCP_DTS_VREQ_ON]);
 #endif
+
+#if 0 /* TBD */
 	/* get GPIO base address */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,gpio");
 	if (!node) {
@@ -801,6 +801,7 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 		pr_info(SCP_DVFS_TAG "V_REQ muxpin setting is correct\n");
 	else
 		pr_notice(SCP_DVFS_TAG "error: V_REQ muxpin setting is wrong - %d\n", gpio_mode);
+#endif
 
 	g_scp_dvfs_init_flag = 1;
 
@@ -845,17 +846,16 @@ void mt_pmic_sshub_init(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int ret[6];
 
-	pr_info"Before init vcore and vsram_core:\n");
 	ret[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON);
 	ret[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_MODE);
 	ret[2] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
 	ret[3] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_ON);
 	ret[4] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_MODE);
 	ret[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_VOSEL);
+	pr_info(SCP_DVFS_TAG "Before init vcore and vsram_core:\n");
 	pr_info(SCP_DVFS_TAG "vcore: on, mode, vosel = 0x%x, 0x%x, 0x%x\n", ret[0], ret[1], ret[2]);
 	pr_info(SCP_DVFS_TAG "vsram: on, mode, vosel = 0x%x, 0x%x, 0x%x\n", ret[3], ret[4], ret[5]);
 
-	pr_info(SCP_DVFS_TAG "After init vcore and vsram_core:\n");
 	pmic_scp_set_vcore(600000);
 	pmic_scp_set_vsram_vcore(850000);
 	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_ON, 1);
@@ -868,6 +868,7 @@ void mt_pmic_sshub_init(void)
 	ret[3] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_ON);
 	ret[4] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_MODE);
 	ret[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_CORE_SSHUB_VOSEL);
+	pr_info(SCP_DVFS_TAG "After init vcore and vsram_core:\n");
 	pr_info(SCP_DVFS_TAG "vcore: on, mode, vosel = 0x%x, 0x%x, 0x%x\n", ret[0], ret[1], ret[2]);
 	pr_info(SCP_DVFS_TAG "vsram: on, mode, vosel = 0x%x, 0x%x, 0x%x\n", ret[3], ret[4], ret[5]);
 #endif
