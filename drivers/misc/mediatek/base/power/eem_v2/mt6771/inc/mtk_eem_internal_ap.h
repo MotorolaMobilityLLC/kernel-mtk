@@ -249,7 +249,7 @@ extern unsigned int freq[NR_FREQ];
 
 extern struct mutex record_mutex;
 
-/* #define DRCC_SUPPORT 1 */
+#define DRCC_SUPPORT 1
 extern void mt_record_lock(unsigned long *flags);
 extern void mt_record_unlock(unsigned long *flags);
 

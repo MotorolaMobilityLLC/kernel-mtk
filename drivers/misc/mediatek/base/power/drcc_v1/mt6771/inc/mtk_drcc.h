@@ -93,10 +93,12 @@ extern void mtk_drcc_enable(unsigned int onOff);
 extern int mtk_drcc_feature_enabled_check(void);
 /* SRAM debugging */
 #ifdef CONFIG_MTK_RAM_CONSOLE
-extern void aee_rr_rec_drcc_0(u8 val);
-extern void aee_rr_rec_drcc_1(u8 val);
-extern void aee_rr_rec_drcc_2(u8 val);
-extern void aee_rr_rec_drcc_3(u8 val);
+extern void aee_rr_rec_drcc_0(u32 val);
+extern void aee_rr_rec_drcc_1(u32 val);
+extern void aee_rr_rec_drcc_2(u32 val);
+extern void aee_rr_rec_drcc_3(u32 val);
+extern void aee_rr_rec_drcc_dbg_info(uint32_t ret,
+	uint32_t off, uint64_t ts);
 
 extern u8 aee_rr_curr_drcc_0(void);
 extern u8 aee_rr_curr_drcc_1(void);
