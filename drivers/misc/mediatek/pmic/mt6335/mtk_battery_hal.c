@@ -2331,7 +2331,7 @@ static signed int fg_set_cycle_interrupt(void *data)
 int read_hw_ocv_6335_plug_in(void)
 {
 #if defined(CONFIG_POWER_EXT)
-	return 4001;
+	return 37000;
 	bm_debug("[read_hw_ocv_6335_plug_in] TBD\n");
 #else
 	signed int adc_rdy = 0;
@@ -2367,7 +2367,7 @@ int read_hw_ocv_6335_plug_in(void)
 int read_hw_ocv_6335_power_on(void)
 {
 #if defined(CONFIG_POWER_EXT)
-	return 4001;
+	return 37000;
 	bm_debug("[read_hw_ocv_6335_power_on] TBD\n");
 #else
 	signed int adc_rdy = 0;
@@ -2421,7 +2421,7 @@ int read_hw_ocv_6335_power_on(void)
 int read_hw_ocv_6336_charger_in(void)
 {
 #if defined(CONFIG_POWER_EXT)
-		return 3700;
+		return 37000;
 #else
 		int zcv_36_low, zcv_36_high, zcv_36_rdy;
 		int zcv_chrgo_1_lo, zcv_chrgo_1_hi, zcv_chrgo_1_rdy;
@@ -2482,7 +2482,7 @@ int read_hw_ocv_6336_charger_in(void)
 int read_hw_ocv_6336_charger_in(void)
 {
 #if defined(CONFIG_POWER_EXT)
-	return 3700;
+	return 37000;
 #else
 	int hw_ocv_35 = read_hw_ocv_6335_power_on();
 
@@ -2514,7 +2514,7 @@ int read_hw_ocv_6335_power_on_rdy(void)
 static signed int read_hw_ocv(void *data)
 {
 #if defined(CONFIG_POWER_EXT)
-	*(signed int *) (data) = 3700;
+	*(signed int *) (data) = 37000;
 #else
 	int _hw_ocv, _sw_ocv;
 	int _hw_ocv_src;
@@ -2575,7 +2575,13 @@ static signed int read_hw_ocv(void *data)
 				}
 			}
 		}
+	} else {
+		if (_hw_ocv_35_pon_rdy == 0) {
+			_hw_ocv = _sw_ocv;
+			_hw_ocv_src = FROM_SW_OCV;
+		}
 	}
+
 	*(signed int *) (data) = _hw_ocv;
 
 	bm_debug("[read_hw_ocv] g_fg_is_charger_exist %d MTK_CHR_EXIST %d\n",
@@ -2658,16 +2664,44 @@ static signed int fg_get_is_fg_initialized(void *data)
 	return STATUS_OK;
 }
 
+static signed int fg_get_rtc_ui_soc(void *data)
+{
+	int spare3_reg = get_rtc_spare_fg_value();
+	int rtc_ui_soc;
+
+	rtc_ui_soc = (spare3_reg & 0x7f);
+
+	*(signed int *) (data) = rtc_ui_soc;
+	bm_notice("[fg_get_rtc_ui_soc] rtc_ui_soc %d spare3_reg 0x%x\n", rtc_ui_soc, spare3_reg);
+
+	return STATUS_OK;
+}
+
+static signed int fg_set_rtc_ui_soc(void *data)
+{
+	int spare3_reg = get_rtc_spare_fg_value();
+	int rtc_ui_soc;
+
+	rtc_ui_soc = (spare3_reg & 0x7f);
+
+	*(signed int *) (data) = rtc_ui_soc;
+	bm_notice("[fg_get_rtc_ui_soc] rtc_ui_soc %d spare3_reg 0x%x\n", rtc_ui_soc, spare3_reg);
+
+	return STATUS_OK;
+}
+
 static void fgauge_read_RTC_boot_status(void)
 {
 	int hw_id = upmu_get_reg_value(0x0200);
 	int spare0_reg, spare0_reg_b13;
 	int spare3_reg;
+	int spare3_reg_valid;
 
 	spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
 	spare3_reg = get_rtc_spare_fg_value();
+	spare3_reg_valid = (spare3_reg & 0x80) >> 7;
 
-	if (spare3_reg == 0)
+	if (spare3_reg_valid == 0)
 		rtc_invalid = 1;
 	else
 		rtc_invalid = 0;
@@ -2716,7 +2750,7 @@ static signed int fg_set_fg_reset_rtc_status(void *data)
 	spare3_reg = get_rtc_spare_fg_value();
 
 	/* set spare3 0x7f */
-	set_rtc_spare_fg_value(0x7f);
+	set_rtc_spare_fg_value(spare3_reg | 0x80);
 
 	/* read spare3 again */
 	after_rst_spare3_reg = get_rtc_spare_fg_value();
@@ -3119,6 +3153,8 @@ signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 		bm_func[BATTERY_METER_CMD_SET_META_CALI_CURRENT] = fgauge_set_meta_cali_current;
 		bm_func[BATTERY_METER_CMD_META_CALI_CAR_TUNE_VALUE] = fgauge_meta_cali_car_tune_value;
 		bm_func[BATTERY_METER_CMD_GET_FG_CURRENT_IAVG_VALID] = fg_get_current_iavg_valid;
+		bm_func[BATTERY_METER_CMD_GET_RTC_UI_SOC] = fg_get_rtc_ui_soc;
+		bm_func[BATTERY_METER_CMD_SET_RTC_UI_SOC] = fg_set_rtc_ui_soc;
 	}
 
 	if (cmd < BATTERY_METER_CMD_NUMBER) {
