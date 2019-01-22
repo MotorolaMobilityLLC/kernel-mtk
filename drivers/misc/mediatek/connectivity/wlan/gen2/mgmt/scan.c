@@ -1166,13 +1166,6 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 				continue;
 			}
 
-			if ((!prBssDesc->fgIsHiddenSSID) &&
-			    (EQUAL_SSID(prBssDesc->aucSSID,
-					prBssDesc->ucSSIDLen, prConnSettings->aucSSID, prConnSettings->ucSSIDLen))) {
-				/* Don't remove the one currently we will connect. */
-				continue;
-			}
-
 			if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
 					      SEC_TO_SYSTIME(SCN_BSS_DESC_REMOVE_TIMEOUT_SEC))) {
 
@@ -1229,6 +1222,8 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 		}
 	} else if (u4RemovePolicy & SCN_RM_POLICY_SMART_WEAKEST) {
 		P_BSS_DESC_T prBssDescWeakest = (P_BSS_DESC_T) NULL;
+		P_BSS_DESC_T prBssDescWeakestSameSSID = (P_BSS_DESC_T) NULL;
+		UINT_32 u4SameSSIDCount = 0;
 
 		/* Search BSS Desc from current SCAN result list. */
 		LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
@@ -1242,8 +1237,14 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 			if ((!prBssDesc->fgIsHiddenSSID) &&
 			    (EQUAL_SSID(prBssDesc->aucSSID,
 					prBssDesc->ucSSIDLen, prConnSettings->aucSSID, prConnSettings->ucSSIDLen))) {
-				/* Don't remove the one currently we will connect. */
-				continue;
+				u4SameSSIDCount++;
+
+				if (!prBssDescWeakestSameSSID)
+					prBssDescWeakestSameSSID = prBssDesc;
+				else if (prBssDesc->ucRCPI < prBssDescWeakestSameSSID->ucRCPI)
+					prBssDescWeakestSameSSID = prBssDesc;
+				if (u4SameSSIDCount < SCN_BSS_DESC_SAME_SSID_THRESHOLD)
+					continue;
 			}
 
 			if (!prBssDescWeakest) {	/* 1st element */
@@ -1255,6 +1256,8 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 				prBssDescWeakest = prBssDesc;
 
 		}
+		if ((u4SameSSIDCount >= SCN_BSS_DESC_SAME_SSID_THRESHOLD) && (prBssDescWeakestSameSSID))
+			prBssDescWeakest = prBssDescWeakestSameSSID;
 
 		if (prBssDescWeakest) {
 

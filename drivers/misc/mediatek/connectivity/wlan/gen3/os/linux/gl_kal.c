@@ -1639,6 +1639,7 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 {
 	struct net_device *prNetDev = prGlueInfo->prDevHandler;
 	struct sk_buff *prSkb = NULL;
+	UINT_8 bssIdx = 0;
 
 	ASSERT(prGlueInfo);
 	ASSERT(pvPkt);
@@ -1655,9 +1656,19 @@ WLAN_STATUS kalRxIndicateOnePkt(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPkt)
 #endif
 
 #if 1
-	prNetDev = (struct net_device *)wlanGetNetInterfaceByBssIdx(prGlueInfo, GLUE_GET_PKT_BSS_IDX(prSkb));
-	if (!prNetDev)
+	bssIdx = GLUE_GET_PKT_BSS_IDX(prSkb);
+	prNetDev = (struct net_device *)wlanGetNetInterfaceByBssIdx(prGlueInfo, bssIdx);
+	if (!prNetDev) {
 		prNetDev = prGlueInfo->prDevHandler;
+	} else {
+		if (bssIdx == NET_DEV_P2P_IDX) {
+			if (prGlueInfo->prAdapter->rP2PNetRegState == ENUM_NET_REG_STATE_UNREGISTERED) {
+				DBGLOG(RX, INFO, "bssIdx = %d P2PNetRegState=%d\n",
+					bssIdx, prGlueInfo->prAdapter->rP2PNetRegState);
+				prNetDev = prGlueInfo->prDevHandler;
+			}
+		}
+	}
 #if CFG_SUPPORT_SNIFFER
 	if (prGlueInfo->fgIsEnableMon)
 		prNetDev = prGlueInfo->prMonDevHandler;

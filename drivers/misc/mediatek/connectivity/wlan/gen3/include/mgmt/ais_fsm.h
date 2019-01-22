@@ -308,6 +308,7 @@
 #define AIS_JOIN_CH_REQUEST_INTERVAL        4000
 #define AIS_SCN_DONE_TIMEOUT_SEC            30 /* 30 for 2.4G + 5G */	/* 5 */
 
+#define AIS_AUTORN_MIN_INTERVAL				20
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -409,6 +410,10 @@ typedef struct _AIS_FSM_INFO_T {
 	TIMER_T rScanDoneTimer;
 
 	TIMER_T rDeauthDoneTimer;
+
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+	TIMER_T rSecModeChangeTimer;
+#endif
 
 	UINT_8 ucSeqNumOfReqMsg;
 	UINT_8 ucSeqNumOfChReq;
@@ -560,6 +565,10 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication);
 /*----------------------------------------------------------------------------*/
 VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter);
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisBssSecurityChanged(IN P_ADAPTER_T prAdapter);
+#endif
+
 WLAN_STATUS
 aisDeauthXmitComplete(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus);
 
@@ -585,6 +594,10 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
 VOID aisFsmRunEventChannelTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
 
 VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisFsmRunEventSecModeChangeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr);
+#endif
 
 /*----------------------------------------------------------------------------*/
 /* OID/IOCTL Handling                                                         */

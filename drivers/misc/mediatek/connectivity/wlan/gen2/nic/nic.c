@@ -2173,7 +2173,7 @@ WLAN_STATUS nicPmIndicateBssConnected(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_
 	    || ((eNetworkTypeIdx == NETWORK_TYPE_P2P_INDEX) && (prAdapter->fgIsP2PRegistered))
 #endif
 	    ) {
-		if (prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE) {
+		if (prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE && prBssInfo->prStaRecOfAP) {
 			rCmdIndicatePmBssConnected.fgIsUapsdConnection =
 			    (UINT_8) prBssInfo->prStaRecOfAP->fgIsUapsdSupported;
 		} else {

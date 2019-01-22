@@ -1231,7 +1231,7 @@
  *------------------------------------------------------------------------------
  */
 /*! Maximum number of BSS in the SCAN list */
-#define CFG_MAX_NUM_BSS_LIST                    64
+#define CFG_MAX_NUM_BSS_LIST                    128
 
 #define CFG_MAX_COMMON_IE_BUF_LEN         ((1500 * CFG_MAX_NUM_BSS_LIST) / 3)
 
@@ -1564,6 +1564,7 @@
 #define WNM_UNIT_TEST 0
 #endif
 
+#define CFG_SUPPORT_PPR2	1
 #define CFG_DRIVER_COMPOSE_ASSOC_REQ   1
 
 #define CFG_STRICT_CHECK_CAPINFO_PRIVACY    0

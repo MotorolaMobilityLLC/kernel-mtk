@@ -768,6 +768,7 @@ VOID cnmStaRecInit(P_ADAPTER_T prAdapter)
 
 		prStaRec->ucIndex = (UINT_8) i;
 		prStaRec->fgIsInUse = FALSE;
+		prStaRec->qosMapSet = NULL;
 	}
 }
 
@@ -885,6 +886,10 @@ VOID cnmStaRecFree(P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, BOOLEAN fgSyn
 
 	prStaRec->fgIsInUse = FALSE;
 
+	if (prStaRec->qosMapSet) {
+		QosMapSetRelease(prStaRec);
+		prStaRec->qosMapSet = NULL;
+	}
 }
 
 /*----------------------------------------------------------------------------*/

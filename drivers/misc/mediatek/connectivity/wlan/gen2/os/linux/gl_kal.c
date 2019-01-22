@@ -2208,6 +2208,23 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 	/* 4 <3> Obtain the User Priority for WMM */
 	u2EtherTypeLen = (aucLookAheadBuf[ETH_TYPE_LEN_OFFSET] << 8) | (aucLookAheadBuf[ETH_TYPE_LEN_OFFSET + 1]);
 
+	/* <4> Network type */
+#if CFG_ENABLE_BT_OVER_WIFI
+	if (*pfgIsPAL == TRUE) {
+		*pucNetworkType = NETWORK_TYPE_BOW_INDEX;
+	} else
+#endif
+	{
+#if CFG_ENABLE_WIFI_DIRECT
+		if (prGlueInfo->prAdapter->fgIsP2PRegistered && GLUE_GET_PKT_IS_P2P(prPacket)) {
+			*pucNetworkType = NETWORK_TYPE_P2P_INDEX;
+		} else
+#endif
+		{
+			*pucNetworkType = NETWORK_TYPE_AIS_INDEX;
+		}
+	}
+
 	if ((u2EtherTypeLen == ETH_P_IP) && (u4PacketLen >= LOOK_AHEAD_LEN)) {
 		PUINT_8 pucIpHdr = &aucLookAheadBuf[ETH_HLEN];
 		UINT_8 ucIpVersion;
@@ -2215,9 +2232,11 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 		ucIpVersion = (pucIpHdr[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET;
 		if (ucIpVersion == IPVERSION) {
 			UINT_8 ucIpTos;
-			/* Get the DSCP value from the header of IP packet. */
 			ucIpTos = pucIpHdr[1];
-			ucUserPriority = ((ucIpTos & IPTOS_PREC_MASK) >> IPTOS_PREC_OFFSET);
+			/* Get the DSCP value from the header of IP packet. */
+			ucUserPriority = getUpFromDscp(prGlueInfo, *pucNetworkType, ucIpTos & 0x3F);
+			if (ucUserPriority == 0xFF)
+				ucUserPriority = ((ucIpTos & IPTOS_PREC_MASK) >> IPTOS_PREC_OFFSET);
 		}
 
 		/* TODO(Kevin): Add TSPEC classifier here */
@@ -2323,31 +2342,15 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			}
 		}
 	}
-	/* 4 <4> Return the value of Priority Parameter. */
+	/* 4 <5> Return the value of Priority Parameter. */
 	*pucPriorityParam = ucUserPriority;
 
-	/* 4 <5> Retrieve Packet Information - DA */
+	/* 4 <6> Retrieve Packet Information - DA */
 	/* Packet Length/ Destination Address */
 	*pu4PacketLen = u4PacketLen;
 
 	kalMemCopy(pucEthDestAddr, aucLookAheadBuf, PARAM_MAC_ADDR_LEN);
 
-	/* <6> Network type */
-#if CFG_ENABLE_BT_OVER_WIFI
-	if (*pfgIsPAL == TRUE) {
-		*pucNetworkType = NETWORK_TYPE_BOW_INDEX;
-	} else
-#endif
-	{
-#if CFG_ENABLE_WIFI_DIRECT
-		if (prGlueInfo->prAdapter->fgIsP2PRegistered && GLUE_GET_PKT_IS_P2P(prPacket)) {
-			*pucNetworkType = NETWORK_TYPE_P2P_INDEX;
-		} else
-#endif
-		{
-			*pucNetworkType = NETWORK_TYPE_AIS_INDEX;
-		}
-	}
 	return TRUE;
 }				/* end of kalQoSFrameClassifier() */
 
@@ -4143,7 +4146,7 @@ VOID kalIndicateRxMgmtFrame(IN P_GLUE_INFO_T prGlueInfo, IN P_SW_RFB_T prSwRfb)
 			DBGLOG(AIS, TRACE, "RX Action frame at channel %d ", ucChnlNum);
 			break;
 		default:
-			DBGLOG(AIS, TRACE, "RX Packet:%d at channel %d ", prWlanHeader->u2FrameCtrl, ucChnlNum);
+			DBGLOG(AIS, INFO, "RX Packet:%d at channel %d ", prWlanHeader->u2FrameCtrl, ucChnlNum);
 			break;
 		}
 
