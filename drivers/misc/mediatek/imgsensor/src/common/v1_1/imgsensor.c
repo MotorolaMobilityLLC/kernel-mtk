@@ -519,15 +519,21 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	ACDK_SENSOR_RESOLUTION_INFO_STRUCT sensor_resolution;
 
 	MUINT16 *pSensorGrabStart = &info.SensorGrabStartX_PRV;
-	MUINT8 *pMIPIDataLowPwr2HSSettleDelay = &info.MIPIDataLowPwr2HSSettleDelayM0;
+	MUINT8 *pMIPIDataLowPwr2HSSettleDelay =
+			&info.MIPIDataLowPwr2HSSettleDelayM0;
 	MUINT8 *pDPCMType = &info.IMGSENSOR_DPCM_TYPE_PRE;
+	char *pmtk_ccm_name;
 
-	memset(&info, 0, sizeof(ACDK_SENSOR_INFO_STRUCT));
-	memset(&sensor_resolution, 0, sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT));
+	memset(&info, 0,
+			sizeof(ACDK_SENSOR_INFO_STRUCT));
+	memset(&sensor_resolution,
+			0,
+			sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT));
 
 	pSensorGetInfo = (IMAGESENSOR_GETINFO_STRUCT *) pBuf;
 	if (pSensorGetInfo == NULL ||
-	    pSensorGetInfo->pInfo == NULL || pSensorGetInfo->pSensorResolution == NULL) {
+			pSensorGetInfo->pInfo == NULL ||
+			pSensorGetInfo->pSensorResolution == NULL) {
 		PK_DBG("[adopt_CAMERA_HW_GetInfo2] NULL arg.\n");
 		return -EFAULT;
 	}
@@ -540,7 +546,9 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 
 	PK_DBG("[adopt_CAMERA_HW_GetInfo2]Entry%d\n", pSensorGetInfo->SensorId);
 
-	for (i = MSDK_SCENARIO_ID_CAMERA_PREVIEW; i < MSDK_SCENARIO_ID_CUSTOM5; i++) {
+	for (i = MSDK_SCENARIO_ID_CAMERA_PREVIEW;
+			i < MSDK_SCENARIO_ID_CUSTOM5;
+			i++) {
 		imgsensor_sensor_get_info(psensor, i, &info, &config);
 
 		pSensorGrabStart[i * 2] = info.SensorGrabStartX;
@@ -548,13 +556,13 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 
 		if (i < MSDK_SCENARIO_ID_CUSTOM1) {
 			pMIPIDataLowPwr2HSSettleDelay[i] =
-			    info.MIPIDataLowPwr2HighSpeedSettleDelayCount;
+				info.MIPIDataLowPwr2HighSpeedSettleDelayCount;
 			pDPCMType[i] = info.DPCM_INFO;
 		}
 	}
 
 	if (copy_to_user((void __user *)(pSensorGetInfo->pInfo),
-			 (void *)(&info), sizeof(ACDK_SENSOR_INFO_STRUCT))) {
+			(void *)(&info), sizeof(ACDK_SENSOR_INFO_STRUCT))) {
 
 		PK_DBG("[CAMERA_HW][info] ioctl copy to user failed\n");
 		return -EFAULT;
@@ -564,77 +572,121 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	imgsensor_sensor_get_resolution(psensor, &sensor_resolution);
 
 	PK_DBG("[CAMERA_HW][Pre]w=0x%x, h = 0x%x\n",
-	       sensor_resolution.SensorPreviewWidth, sensor_resolution.SensorPreviewHeight);
+			sensor_resolution.SensorPreviewWidth,
+			sensor_resolution.SensorPreviewHeight);
 	PK_DBG("[CAMERA_HW][Full]w=0x%x, h = 0x%x\n",
-	       sensor_resolution.SensorFullWidth, sensor_resolution.SensorFullHeight);
+			sensor_resolution.SensorFullWidth,
+			sensor_resolution.SensorFullHeight);
 	PK_DBG("[CAMERA_HW][VD]w=0x%x, h = 0x%x\n",
-	       sensor_resolution.SensorVideoWidth, sensor_resolution.SensorVideoHeight);
+			sensor_resolution.SensorVideoWidth,
+			sensor_resolution.SensorVideoHeight);
 
 	/* Add info to proc: camera_info */
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nCAM[%d]:%s;",
-		 mtk_ccm_name, psensor->inst.sensor_idx, psensor->inst.psensor_list->name);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nSensor ID = %x;", mtk_ccm_name, psensor->inst.psensor_list->id);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nPre: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
-		 mtk_ccm_name,
-		 sensor_resolution.SensorPreviewWidth,
-		 sensor_resolution.SensorPreviewHeight,
-		 info.SensorGrabStartX_PRV, info.SensorGrabStartY_PRV, info.PreviewDelayFrame);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nCap: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
-		 mtk_ccm_name,
-		 sensor_resolution.SensorFullWidth,
-		 sensor_resolution.SensorFullHeight,
-		 info.SensorGrabStartX_CAP, info.SensorGrabStartY_CAP, info.CaptureDelayFrame);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nVid: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
-		 mtk_ccm_name,
-		 sensor_resolution.SensorVideoWidth,
-		 sensor_resolution.SensorVideoHeight,
-		 info.SensorGrabStartX_VD, info.SensorGrabStartY_VD, info.VideoDelayFrame);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nHSV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
-		 mtk_ccm_name,
-		 sensor_resolution.SensorHighSpeedVideoWidth,
-		 sensor_resolution.SensorHighSpeedVideoHeight,
-		 info.SensorGrabStartX_VD1,
-		 info.SensorGrabStartY_VD1, info.HighSpeedVideoDelayFrame);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nSLV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
-		 mtk_ccm_name,
-		 sensor_resolution.SensorSlimVideoWidth,
-		 sensor_resolution.SensorSlimVideoHeight,
-		 info.SensorGrabStartX_VD2, info.SensorGrabStartY_VD2, info.SlimVideoDelayFrame);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nSeninf_Type(0:parallel,1:mipi,2:serial)=%d, output_format(0:B,1:Gb,2:Gr,3:R)=%2d",
-		 mtk_ccm_name, info.SensroInterfaceType, info.SensorOutputDataFormat);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nDriving_Current(0:2mA,1:4mA,2:6mA,3:8mA)=%d, mclk_freq=%2d, mipi_lane=%d",
-		 mtk_ccm_name,
-		 info.SensorDrivingCurrent, info.SensorClockFreq, info.SensorMIPILaneNumber + 1);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nPDAF_Support(0:No PD,1:PD RAW,2:VC(Full),3:VC(Bin),4:Dual Raw,5:Dual VC=%2d",
-		 mtk_ccm_name, info.PDAF_Support);
-	snprintf(mtk_ccm_name,
-		 sizeof(mtk_ccm_name),
-		 "%s\nHDR_Support(0:NO HDR,1: iHDR,2:mvHDR,3:zHDR)=%2d",
-		 mtk_ccm_name, info.HDR_Support);
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nCAM[%d]:%s;",
+			psensor->inst.sensor_idx,
+			psensor->inst.psensor_list->name);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nSensor ID = %x;",
+			psensor->inst.psensor_list->id);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nPre: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+			sensor_resolution.SensorPreviewWidth,
+			sensor_resolution.SensorPreviewHeight,
+			info.SensorGrabStartX_PRV,
+			info.SensorGrabStartY_PRV,
+			info.PreviewDelayFrame);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nCap: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+			sensor_resolution.SensorFullWidth,
+			sensor_resolution.SensorFullHeight,
+			info.SensorGrabStartX_CAP,
+			info.SensorGrabStartY_CAP,
+			info.CaptureDelayFrame);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nVid: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+			sensor_resolution.SensorVideoWidth,
+			sensor_resolution.SensorVideoHeight,
+			info.SensorGrabStartX_VD,
+			info.SensorGrabStartY_VD,
+			info.VideoDelayFrame);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nHSV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+			sensor_resolution.SensorHighSpeedVideoWidth,
+			sensor_resolution.SensorHighSpeedVideoHeight,
+			info.SensorGrabStartX_VD1,
+			info.SensorGrabStartY_VD1,
+			info.HighSpeedVideoDelayFrame);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nSLV: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
+			sensor_resolution.SensorSlimVideoWidth,
+			sensor_resolution.SensorSlimVideoHeight,
+			info.SensorGrabStartX_VD2,
+			info.SensorGrabStartY_VD2,
+			info.SlimVideoDelayFrame);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nSeninf_Type(0:parallel,1:mipi,2:serial)=%d, output_format(0:B,1:Gb,2:Gr,3:R)=%2d",
+			info.SensroInterfaceType,
+			info.SensorOutputDataFormat);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nDriving_Current(0:2mA,1:4mA,2:6mA,3:8mA)=%d, mclk_freq=%2d, mipi_lane=%d",
+			info.SensorDrivingCurrent,
+			info.SensorClockFreq,
+			info.SensorMIPILaneNumber + 1);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nPDAF_Support(0:No PD,1:PD RAW,2:VC(Full),3:VC(Bin),4:Dual Raw,5:Dual VC=%2d",
+			info.PDAF_Support);
+
+	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
+	snprintf(
+			pmtk_ccm_name,
+			camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
+			"\nHDR_Support(0:NO HDR,1: iHDR,2:mvHDR,3:zHDR)=%2d",
+			info.HDR_Support);
 
 	/* Resolution */
 	if (copy_to_user((void __user *)(pSensorGetInfo->pSensorResolution),
-			 (void *)&sensor_resolution, sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT))) {
+			(void *)&sensor_resolution,
+			sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT))) {
 
 		PK_DBG("[CAMERA_HW][Resolution] ioctl copy to user failed\n");
 		return -EFAULT;
@@ -642,6 +694,7 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 
 	return 0;
 }
+
 
 /*******************************************************************************
 * adopt_CAMERA_HW_Control
