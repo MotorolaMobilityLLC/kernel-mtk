@@ -411,7 +411,7 @@ CONFIG_MTK_COMBO_WIFI,COMMON,sarah-cp.yang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CONN_LTE_IDC_SUPPORT,PLATFORM,Alonso.Hsu,new config in this commit 3413d51500ed33e5696cbfe6286d5b8617867b35,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT,PROJECT,weiguo.li,new config in this commit 13be5de93e0cafaa0c3fc5f5dc16aa86e0422208,,,,,,,,,,
 CONFIG_MTK_CPU_AFFINITY,COMMON,jing-ting.wu,,y,y,y,y,y,y,y,y,y,y
-CONFIG_MTK_CPU_CTRL_CFP,PROJECT,poting.chen,,,,,,,,,,
+CONFIG_MTK_CPU_CTRL_CFP,PROJECT,poting.chen,,,,,,,,,,,
 CONFIG_MTK_CPU_TOPOLOGY,PLATFORM,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CQDMA,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_DCS,PROJECT,miles.chen,,X,X,y,,,,,,,
@@ -575,7 +575,7 @@ CONFIG_MTK_MEMCFG,COMMON,yun.hsiang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_MEMORY_LOWPOWER,PROJECT,Miles.Chen,Specific hardware,,,,,,X,X,,X,
 CONFIG_MTK_MERGE_INTERFACE_SUPPORT,PROJECT,Heiping.Lei,,X,X,y,O,X,X,X,O,X,O
 CONFIG_MTK_MET,COMMON,chengchang.wu,6755 32 bits not ready,y,y,y,y,y,y,y,y,y,y
-CONFIG_MTK_MET_MEM_ALLOC,PROJECT,Chen-Hsuan.Weng,new config,X,X,X,O,X,O,X,X,
+CONFIG_MTK_MET_MEM_ALLOC,PROJECT,Chen-Hsuan.Weng,new config,X,X,X,O,X,O,X,X,,
 CONFIG_MTK_MET_PLF,COMMON,chengchang.wu,6755 32 bits not ready,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_MJC_DRIVER,PLATFORM,easer.su,new config in this commit 669b19c5c1c997fe0e430fa5e7de77c0406acf41,X,X,y,X,X,X,X,X,X,X
 CONFIG_MTK_MLC_NAND_SUPPORT,PROJECT,chienwei.chang,,,,,,,,,,,
@@ -709,6 +709,7 @@ CONFIG_MTK_VIBRATOR,COMMON,chang-an.chen,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_VIDEOCODEC_DRIVER,COMMON,Tofar.Huang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_VIDEOX,PLATFORM,Tai-Hua.Tseng,,X,X,y,X,X,X,X,X,X,X
 CONFIG_MTK_VOW_SUPPORT,PROJECT,che-jui.chang,new config in this commit a98a2d4db76d5afef19676fe44e8eb2375f44543,,,,,,,,,,
+CONFIG_MTK_VOW_BARGE_IN_SUPPORT,PROJECT,che-jui.chang,,O,O,O,O,O,O,O,O,O,O
 CONFIG_MTK_VPU_SUPPORT,PROJECT,guan-ting.lin,,x,x,y,,,,,,,
 CONFIG_MTK_WAKEHUB,PROJECT,qiangming.xia,,,,,,,,,,,
 CONFIG_MTK_WAPI_SUPPORT,PROJECT,zhiguo.niu,,,,,,,,,,,

@@ -247,6 +247,17 @@ void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 #endif
 }
 
+void Afe_Set_Reg_Val(unsigned int offset, unsigned int value)
+{
+	int ret = 0;
+
+	ret = regmap_write(pregmap, offset, value);
+	if (ret) {
+		pr_debug("%s(), ret = %d, offset = 0x%x, value = 0x%x\n",
+			__func__, ret, offset, value);
+	}
+}
+EXPORT_SYMBOL(Afe_Set_Reg_Val);
 void Afe_Set_Reg(unsigned int offset, unsigned int value, unsigned int mask)
 {
 	int ret = 0;

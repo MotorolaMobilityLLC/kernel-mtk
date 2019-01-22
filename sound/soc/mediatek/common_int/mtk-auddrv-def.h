@@ -254,6 +254,7 @@
 #define MT_SOC_ANC_NAME "mt-soc-anc-driver"
 #define MT_SOC_ANC_RECORD_DAI_NAME "mt-soc-anc-record-dai-driver"
 #define MT_SOC_OFFLOAD_PLAYBACK_DAI_NAME "mt-soc-offload-playback-dai-driver"
+#define MT_SOC_VOW_BARGE_IN_NAME "mt-soc-vowbargein-driver"
 
 /* platform name */
 #define MT_SOC_DL1_PCM   "mt-soc-dl1-pcm"
@@ -299,6 +300,7 @@
 #define MT_SOC_MOD_DAI_PCM   "mt-soc-MODDAI-pcm"
 #define MT_SOC_ANC_PCM   "mt-soc-anc-pcm"
 #define MT_SOC_PLAYBACK_OFFLOAD  "mt-soc-playback-offload"
+#define MT_SOC_VOW_BARGE_IN_PCM  "mt-soc-vow-barge-in-pcm"
 
 /* codec dai name */
 #define MT_SOC_CODEC_TXDAI_NAME "mt-soc-codec-tx-dai"
@@ -342,6 +344,7 @@
 #define MT_SOC_CODEC_BTCVSD_RX_DAI_NAME "mt-soc-codec-btcvsd-rx-dai"
 #define MT_SOC_CODEC_BTCVSD_TX_DAI_NAME "mt-soc-codec-btcvsd-tx-dai"
 #define MT_SOC_CODEC_MOD_DAI_NAME "mt-soc-mod-dai-codec"
+#define MT_SOC_CODEC_VOW_BARGE_IN_NAME "mt-soc-codec-vow-barge-in-dai"
 
 /* stream name */
 #define MT_SOC_DL1_STREAM_NAME "MultiMedia1_PLayback"
@@ -388,5 +391,6 @@
 #define MT_SOC_OFFLOAD_STREAM_NAME "Offload_Playback"
 #define MT_SOC_ANC_STREAM_NAME "ANC_Playback"
 #define MT_SOC_ANC_RECORD_STREAM_NAME "ANC_Record"
+#define MT_SOC_VOW_BARGE_IN_STREAM_NAME "VOW_Barge_In_Capture"
 
 #endif

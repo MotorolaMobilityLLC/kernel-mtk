@@ -652,6 +652,16 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_name = "snd-soc-dummy",
 	},
 #endif
+#ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
+	{
+		.name = "VOW_BARGE_IN",
+		.stream_name = MT_SOC_VOW_BARGE_IN_STREAM_NAME,
+		.cpu_dai_name = MT_SOC_VOW_BARGE_IN_NAME,
+		.platform_name = MT_SOC_VOW_BARGE_IN_PCM,
+		.codec_dai_name = MT_SOC_CODEC_VOW_BARGE_IN_NAME,
+		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
+	},
+#endif
 };
 
 static struct snd_soc_dai_link mt_soc_exthp_dai[] = {

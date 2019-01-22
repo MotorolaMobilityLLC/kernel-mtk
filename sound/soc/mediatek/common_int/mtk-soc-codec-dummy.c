@@ -385,6 +385,18 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		},
 	},
 #endif
+#ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
+	{
+	.name = MT_SOC_CODEC_VOW_BARGE_IN_NAME,
+	.capture = {
+		.stream_name = MT_SOC_VOW_BARGE_IN_STREAM_NAME,
+		.channels_min = 1,
+		.channels_max = 2,
+		.rates = SOC_HIGH_USE_RATE,
+		.formats = SND_SOC_ADV_MT_FMTS,
+		},
+	 },
+#endif
 };
 
 static int dummy_codec_probe(struct snd_soc_codec *codec)

@@ -116,6 +116,9 @@ enum scp_reserve_mem_id_t {
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	SPK_PROTECT_MEM_ID,
 #endif
+#ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
+	VOW_BARGEIN_MEM_ID,
+#endif
 	NUMS_MEM_ID,
 };
 
