@@ -84,7 +84,7 @@
 #endif
 #define ACINACTM                (1<<4)
 
-int spm_dormant_sta = MT_CPU_DORMANT_RESET;
+int spm_dormant_sta;
 int spm_ap_mdsrc_req_cnt;
 
 struct wake_status suspend_info[20];
@@ -192,8 +192,7 @@ struct wake_status spm_wakesta; /* record last wakesta */
 
 #define spm_is_wakesrc_invalid(wakesrc)     (!!((u32)(wakesrc) & 0xc0003803))
 
-/* FIXME: check mt_cpu_dormant */
-int __attribute__ ((weak)) mt_cpu_dormant(unsigned long flags)
+int __attribute__ ((weak)) mtk_enter_idle_state(int idx)
 {
 	return 0;
 }
@@ -620,11 +619,11 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 #endif
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-		spm_dormant_sta = mt_cpu_dormant(CPU_SHUTDOWN_MODE /* | DORMANT_SKIP_WFI */);
+		spm_dormant_sta = mtk_enter_idle_state(MTK_SUSPEND_MODE);
 		switch (spm_dormant_sta) {
-		case MT_CPU_DORMANT_RESET:
+		case 0:
 			break;
-		case MT_CPU_DORMANT_BYPASS:
+		case -EOPNOTSUPP:
 			break;
 		}
 	} else {

@@ -25,7 +25,7 @@ static int __init mtk_spm_init(void)
 #if defined(CONFIG_MACH_MT6757)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* cpu dormant driver init */
-	mt_cpu_dormant_init();
+	mtk_cpuidle_init();
 
 	spm_module_init();
 	slp_module_init();

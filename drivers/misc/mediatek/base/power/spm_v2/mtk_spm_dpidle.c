@@ -531,12 +531,12 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	#ifdef POWER_DOWN_VPROC_VSRAM
-		mt_cpu_dormant(CPU_SHUTDOWN_MODE);
+		mtk_enter_idle_state(MTK_SUSPEND_MODE);
 	#else
-		mt_cpu_dormant(CPU_DEEPIDLE_MODE);
+		mtk_enter_idle_state(MTK_DPIDLE_MODE);
 	#endif
 #else
-		mt_cpu_dormant(CPU_DEEPIDLE_MODE);
+		mtk_enter_idle_state(MTK_DPIDLE_MODE);
 #endif
 	} else {
 		/* backup MPx_AXI_CONFIG */
