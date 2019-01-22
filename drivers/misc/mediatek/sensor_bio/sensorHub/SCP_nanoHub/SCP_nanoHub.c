@@ -163,12 +163,13 @@ static int ipi_txrx_bufs(struct ipi_transfer *t)
 				SCP_ERR("retry fail\n");
 				return -1;
 			}
-			if (retry % 100 == 0) {
-				SCP_ERR("retry time:%d\n", retry);
+			if (retry % 100 == 0)
 				udelay(10);
-			}
 		}
 	} while (BUSY == status);
+
+	if (retry >= 100)
+		SCP_ERR("retry time:%d\n", retry);
 
 	timeout = wait_for_completion_timeout(&hw->done, 500 * HZ / 1000);
 	if (!timeout) {
@@ -205,7 +206,7 @@ static void ipi_work(struct work_struct *work)
 				status = ipi_txrx_bufs(t);
 			if (status < 0) {
 				status = -EREMOTEIO;
-				SCP_ERR("transfer err :%d\n", status);
+				/* SCP_ERR("transfer err :%d\n", status); */
 				break;
 			} else if (status != t->len) {
 				status = -EREMOTEIO;
