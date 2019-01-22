@@ -180,6 +180,7 @@ static struct deint_des *deint_descriptors;
 static int mt_eint_get_level(unsigned int eint_num);
 static unsigned int mt_eint_flip_edge(struct eint_chip *chip, unsigned int eint_num);
 static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num);
+static int gpio_to_eint(unsigned int gpio);
 static unsigned long cur_debug_eint;
 #ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
 static unsigned long cur_debug_deint;
@@ -196,6 +197,19 @@ static int is_bulitin_eint_hw_deb(u32 eint_num)
 	return 0;
 }
 
+#ifdef CONFIG_MTK_GPIOLIB_STAND
+int hwgpio_to_vgpio(int gpio)
+{
+	int gpio_base = 0;
+
+	gpio_base = mtk_pctrl_get_gpio_chip_base();
+	if (gpio_base == 0) {
+		pr_err("[EIC] unexpected gpio base %d\n", gpio_base);
+		WARN_ON(1);
+	}
+	return gpio_base + gpio;
+}
+#endif
 
 static void mt_eint_clr_deint_selection(u32 deint_mapped)
 {
@@ -1847,9 +1861,12 @@ EXPORT_SYMBOL(mt_gpio_to_eint);
 static int gpio_to_eint(unsigned int gpio)
 {
 	struct pin_node *p;
+#ifdef CONFIG_PINCTRL_MTK_COMMON
 	int i = 0;
+#endif
 	int eint = -1;
 
+#ifdef CONFIG_PINCTRL_MTK_COMMON
 	/*
 	 * check if this gpio configured as builtin eint
 	 */
@@ -1857,11 +1874,9 @@ static int gpio_to_eint(unsigned int gpio)
 		for (i = 0; i < builtin_entry; ++i) {
 			if (gpio == builtin_mapping[i].gpio) {
 #ifdef CONFIG_MTK_GPIOLIB_STAND
-				if (mtk_pinctrl_get_gpio_mode_for_eint(gpio) ==
-				    builtin_mapping[i].func_mode) {
+				if (mtk_pinctrl_get_gpio_mode_for_eint(gpio) == builtin_mapping[i].func_mode) {
 #else
-				if (mt_get_gpio_mode(gpio) ==
-				    builtin_mapping[i].func_mode) {
+				if (mt_get_gpio_mode(gpio) == builtin_mapping[i].func_mode) {
 #endif
 					eint = builtin_mapping[i].builtin_eint;
 					goto done;
@@ -1869,6 +1884,7 @@ static int gpio_to_eint(unsigned int gpio)
 			}
 		}
 	}
+#endif
 	/*
 	 * if not builtin eint, just find the mapping from normal mapping table,
 	 * or just linear map with gpio if no mapping table
@@ -1884,6 +1900,7 @@ static int gpio_to_eint(unsigned int gpio)
 		}
 	} else
 		eint = gpio;
+
 
 done:
 	return eint;
@@ -1933,8 +1950,14 @@ static void mt_eint_irq_ack(struct irq_data *data)
 
 static int mt_eint_get_level(unsigned int eint_num)
 {
-#ifdef CONFIG_GPIOLIB
-	return __gpio_get_value(EINT_FUNC.gpio[eint_num]);
+#ifdef CONFIG_PINCTRL_MTK_COMMON
+	int vgpio = 0;
+#ifdef CONFIG_MTK_GPIOLIB_STAND
+	vgpio = hwgpio_to_vgpio(EINT_FUNC.gpio[eint_num]);
+#else
+	vgpio = EINT_FUNC.gpio[eint_num];
+#endif
+	return __gpio_get_value(vgpio);
 #else
 	return 0;
 #endif
