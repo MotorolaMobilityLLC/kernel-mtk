@@ -93,7 +93,7 @@
 enum gauge_hw_version {
 	GAUGE_HW_V1000 = 1000,
 	GAUGE_HW_V2000 = 2000,
-
+	GAUGE_HW_V2001 = 2001,
 	GAUGE_HW_MAX
 };
 

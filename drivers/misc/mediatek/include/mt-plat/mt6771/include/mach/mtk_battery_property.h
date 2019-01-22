@@ -157,6 +157,7 @@
 #define UNIT_FGCAR_ZCV     (157166)     /* unit 2^0 LSB */
 #define UNIT_FG_IAVG		(157166)
 #define CAR_TO_REG_FACTOR  (0x5979)		/* 3600 * 1000 * 1000 / 157166 */
+#define CAR_TO_REG_SHIFT (3)	/*coulomb interrupt lsb might be different with coulomb lsb */
 
 #define SHUTDOWN_CONDITION_LOW_BAT_VOLT
 #define BATTERY_TMP_TO_DISABLE_GM30 -50
