@@ -368,6 +368,12 @@ static int gpupll_speed_dump_read(struct seq_file *m, void *v)
 	return 0;
 }
 
+static int univpll_speed_dump_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", mt_get_abist_freq(16));
+	return 0;
+}
+
 /************ L ********************/
 static int proc_armpll1_fsel_open(struct inode *inode, struct file *file)
 {
@@ -480,6 +486,17 @@ static const struct file_operations gpu_fops = {
 	.open = proc_gpupll_open,
 	.read = seq_read,
 };
+/************ univpll ********************/
+static int proc_univpll_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, univpll_speed_dump_read, NULL);
+}
+
+static const struct file_operations univ_fops = {
+	.owner = THIS_MODULE,
+	.open = proc_univpll_open,
+	.read = seq_read,
+};
 
 void mt_clkmgr_debug_init(void)
 {
@@ -516,6 +533,9 @@ void mt_clkmgr_debug_init(void)
 	entry =
 	    proc_create("gpu_speed_dump", S_IRUGO, clkmgr_dir,
 			&gpu_fops);
+	entry =
+	    proc_create("univpll_speed_dump", S_IRUGO, clkmgr_dir,
+			&univ_fops);
 }
 
 #ifdef CONFIG_OF
