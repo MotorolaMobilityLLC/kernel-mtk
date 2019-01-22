@@ -211,3 +211,12 @@ __weak void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs, struct task_
 {
 }
 #endif
+__weak int mtk_rgu_status_is_sysrst(void)
+{
+	return 0;
+}
+
+__weak int mtk_rgu_status_is_eintrst(void)
+{
+	return 0;
+}
