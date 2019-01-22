@@ -478,7 +478,7 @@ static void rndis_activate_direct_tethering(struct usb_function *f,
 		usb_ep_suspend_control(rndis->port.out_ep);
 	}
 
-	if (pkt_track_activate_md_fast_path(&activate_req) < 0) {
+	if (pkt_track_activate_md_fast_path(&activate_req)) {
 		usb_ep_resume_control(rndis->port.in_ep);
 		usb_ep_resume_control(rndis->port.out_ep);
 		rndis->direct_state = DIRECT_STATE_DEACTIVATED;
