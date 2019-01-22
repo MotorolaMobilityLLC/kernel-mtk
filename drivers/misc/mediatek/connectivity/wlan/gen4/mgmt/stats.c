@@ -134,7 +134,7 @@ VOID StatsEnvRxTime2Host(IN P_ADAPTER_T prAdapter, struct sk_buff *prSkb)
 	struct timeval tval;
 	struct rtc_time tm;
 
-	if ((g_ucTxRxFlag & BIT(0)) == 0)
+	if ((g_ucTxRxFlag & BIT(1)) == 0)
 		return;
 
 	if (prSkb->len <= 24 + ETH_HLEN)
@@ -198,7 +198,7 @@ VOID StatsEnvTxTime2Hif(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 	u8SysTime = StatsEnvTimeGet();
 	u8SysTimeIn = GLUE_GET_PKT_XTIME(prMsduInfo->prPacket);
 
-	if ((g_ucTxRxFlag & BIT(1)) == 0)
+	if ((g_ucTxRxFlag & BIT(0)) == 0)
 		return;
 
 	if ((u8SysTimeIn == 0) || (u8SysTime <= u8SysTimeIn))
