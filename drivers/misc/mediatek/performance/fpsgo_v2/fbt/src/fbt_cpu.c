@@ -1073,7 +1073,10 @@ static void fbt_check_var(long long loading,
 
 		frame_info[*f_iter].mips = loading;
 		mips_diff = (abs(frame_info[pre_iter].mips - frame_info[*f_iter].mips) * 100);
-		mips_diff = div64_s64(mips_diff, frame_info[*f_iter].mips);
+		if (frame_info[*f_iter].mips != 0)
+			mips_diff = div64_s64(mips_diff, frame_info[*f_iter].mips);
+		else
+			mips_diff = frame_info[pre_iter].mips;
 		mips_diff = min(mips_diff, 100LL);
 		mips_diff = max(mips_diff, 1LL);
 		frame_time = frame_info[pre_iter].q2q_time + frame_info[*f_iter].q2q_time;
@@ -1777,6 +1780,8 @@ void fpsgo_comp2fbt_frame_start(int pid, unsigned long long q2q_time,
 	runtime = self_time - slptime;
 
 	targetfps = boost->fstb_target_fps;
+	if (!targetfps)
+		targetfps = TARGET_UNLIMITED_FPS;
 	targettime = FBTCPU_SEC_DIVIDER / targetfps;
 
 	fpsgo_systrace_c_fbt_gm(pid, thr->boosting, "boosting");
@@ -2123,6 +2128,9 @@ void fpsgo_fstb2fbt_target_fps(int pid, int target_fps, int queue_fps)
 void fpsgo_ctrl2fbt_dfrc_fps(int fps_limit)
 {
 	unsigned long flags;
+
+	if (!fps_limit)
+		return;
 
 	spin_lock_irqsave(&xgf_slock, flags);
 
