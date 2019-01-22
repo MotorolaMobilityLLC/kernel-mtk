@@ -131,3 +131,12 @@ config MTK_PQ_COLOR_MODE
 	  if value equals to MDP, only mdp color is on.
 	  if value equals to DISP_MDP, mdp and display color are both on.
 	  if value equals to OFF, mdp and display color are both off.
+
+config MTK_DRE30_SUPPORT
+	bool "support DRE 30"
+	default n
+	help
+	  Decide whether to support ambient-light adaptive luma and
+	  display visual enhancement ver.3.
+	  This feature requires the cowork of AAL user-space algorithm process.
+	  Please also turn on MTK_AAL_SUPPORT amd MTK_DRE30_SUPPORT in ProjectConfig.mk.
