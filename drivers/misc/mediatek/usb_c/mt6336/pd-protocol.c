@@ -3233,7 +3233,7 @@ int pd_task(void *data)
 		case PD_STATE_SNK_DISCOVERY:
 			/* Wait for source cap expired only if we are enabled */
 			if (state_changed(hba)) {
-				if (hba->flags | PD_FLAGS_POWER_SWAPPED) {
+				if (hba->flags & PD_FLAGS_POWER_SWAPPED) {
 					if (hba->charger_det_notify)
 						hba->charger_det_notify(1);
 
