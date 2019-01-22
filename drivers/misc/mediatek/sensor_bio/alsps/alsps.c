@@ -483,7 +483,8 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 {
 	struct alsps_context *cxt = NULL;
 	int handle = 0, flag = 0, err = 0;
-	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
+	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0, delay = 0;
+	int mdelay = 0;
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4)
@@ -496,31 +497,15 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 	cxt = alsps_context_obj;
-	if (cxt->als_ctl.is_support_batch) {
-		if (maxBatchReportLatencyNs != 0) {
-			cxt->is_als_batch_enable = true;
-			if (true == cxt->is_als_polling_run) {
-				cxt->is_als_polling_run = false;
-				del_timer_sync(&cxt->timer_als);
-				cancel_work_sync(&cxt->report_als);
-				cxt->drv_data.als_data.values[0] = ALSPS_INVALID_VALUE;
-				cxt->drv_data.als_data.values[1] = ALSPS_INVALID_VALUE;
-				cxt->drv_data.als_data.values[2] = ALSPS_INVALID_VALUE;
-			}
-		} else if (maxBatchReportLatencyNs == 0) {
-			cxt->is_als_batch_enable = false;
-			if (false == cxt->is_als_polling_run) {
-				if (false == cxt->als_ctl.is_report_input_direct) {
-					cxt->is_get_valid_als_data_after_enable = false;
-					mod_timer(&cxt->timer_als, jiffies + atomic_read(&cxt->delay_als)/(1000/HZ));
-					cxt->is_als_polling_run = true;
-				}
-			}
-		} else
-			ALSPS_ERR(" als_store_batch error !!\n");
-	} else {
+	if (aal_use)
+		delay = samplingPeriodNs < AAL_DELAY ? samplingPeriodNs : AAL_DELAY;
+	if (false == cxt->als_ctl.is_report_input_direct) {
+		mdelay = (int)(delay / 1000 / 1000);
+		atomic_set(&alsps_context_obj->delay_als, mdelay);
+	}
+	if (!cxt->als_ctl.is_support_batch) {
 		maxBatchReportLatencyNs = 0;
-		ALSPS_LOG(" als_store_batch not supported\n");
+		ALSPS_LOG("als_store_batch not supported\n");
 	}
 	if (cxt->als_ctl.batch != NULL)
 		err = cxt->als_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
@@ -658,6 +643,7 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 	struct alsps_context *cxt = NULL;
 	int handle = 0, flag = 0, err = 0;
 	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
+	int mdelay = 0;
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4)
@@ -667,29 +653,11 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 	cxt = alsps_context_obj;
-	if (cxt->ps_ctl.is_support_batch) {
-		if (maxBatchReportLatencyNs != 0) {
-			cxt->is_ps_batch_enable = true;
-			if (true == cxt->is_ps_polling_run) {
-				cxt->is_ps_polling_run = false;
-				del_timer_sync(&cxt->timer_ps);
-				cancel_work_sync(&cxt->report_ps);
-				cxt->drv_data.ps_data.values[0] = ALSPS_INVALID_VALUE;
-				cxt->drv_data.ps_data.values[1] = ALSPS_INVALID_VALUE;
-				cxt->drv_data.ps_data.values[2] = ALSPS_INVALID_VALUE;
-			}
-		} else if (maxBatchReportLatencyNs == 0) {
-			cxt->is_ps_batch_enable = false;
-			if (false == cxt->is_ps_polling_run) {
-				if (false == cxt->ps_ctl.is_report_input_direct) {
-					mod_timer(&cxt->timer_ps, jiffies + atomic_read(&cxt->delay_ps)/(1000/HZ));
-					cxt->is_ps_polling_run = true;
-					cxt->is_get_valid_ps_data_after_enable = false;
-				}
-			}
-		} else
-			ALSPS_ERR("ps_store_batch error!!\n");
-	} else {
+	if (false == cxt->ps_ctl.is_report_input_direct) {
+		mdelay = (int)(samplingPeriodNs / 1000 / 1000);
+		atomic_set(&alsps_context_obj->delay_ps, mdelay);
+	}
+	if (!cxt->ps_ctl.is_support_batch) {
 		maxBatchReportLatencyNs = 0;
 		ALSPS_LOG("ps_store_batch not supported\n");
 	}
