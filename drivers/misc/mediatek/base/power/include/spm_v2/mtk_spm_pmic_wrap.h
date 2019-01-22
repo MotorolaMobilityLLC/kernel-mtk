@@ -28,8 +28,20 @@
 
 #endif
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+
+#define VOLT_TO_PMIC_VAL_BASE(volt, base)  (((volt) - base + 625 - 1) / 625)
+#define PMIC_VAL_TO_VOLT_BASE(pmic, base)  (((pmic) * 625) + base)
+
+#define VOLT_TO_PMIC_VAL(volt) VOLT_TO_PMIC_VAL_BASE(volt, 40625)
+#define PMIC_VAL_TO_VOLT(pmic) PMIC_VAL_TO_VOLT_BASE(pmic, 40625)
+
+#else
+
 #define VOLT_TO_PMIC_VAL(volt)  (((volt) - 60000 + 625 - 1) / 625)	/* ((((volt) - 700 * 100 + 625 - 1) / 625) */
 #define PMIC_VAL_TO_VOLT(pmic)  (((pmic) * 625) + 60000)	/* (((pmic) * 625) / 100 + 700) */
+
+#endif
 
 /* APIs */
 enum pmic_wrap_phase_id;
