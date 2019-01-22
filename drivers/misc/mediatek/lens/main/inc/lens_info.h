@@ -88,6 +88,14 @@ typedef struct {
 
 /* Structures */
 typedef struct {
+	int i4OISHallPosX;
+	int i4OISHallPosY;
+	int i4OISHallMaxX;
+	int i4OISHallMaxY;
+} stAF_MotorOisInfo;
+
+/* Structures */
+typedef struct {
 	u8 uEnable;
 	u8 uDrvName[32];
 	void (*pAF_SetI2Cclient)(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
@@ -118,5 +126,7 @@ typedef struct {
 #define AFIOC_S_SETDRVNAME _IOW(AF_MAGIC, 10, stAF_MotorName)
 
 #define AFIOC_S_SETPOWERDOWN _IOW(AF_MAGIC, 11, u32)
+
+#define AFIOC_G_MOTOROISINFO _IOR(AF_MAGIC, 12, stAF_MotorOisInfo)
 
 #endif
