@@ -40,7 +40,7 @@ endif
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main2/inc
 subdir-ccflags-$(CONFIG_MTK_LENS_LC898212XDAF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/main2/common/lc898212xdaf_f/inc
 
-ifeq ($(CONFIG_TOUCHSCREEN_MTK_USE_MODULE), y)
+ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
 MAIN2_CFILES += main2_lens.c
 
