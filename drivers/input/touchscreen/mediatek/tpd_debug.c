@@ -256,8 +256,14 @@ struct tpd_debug_log_buf tpd_buf;
 
 static int tpd_debug_log_open(struct inode *inode, struct file *file)
 {
+	unsigned char *temp_buffer;
+
+	temp_buffer = tpd_buf.buffer;
 	memset(&tpd_buf, 0, sizeof(struct tpd_debug_log_buf));
-	tpd_buf.buffer = vmalloc(tpd_log_line_cnt * tpd_log_line_buffer);
+	if (temp_buffer == NULL)
+		tpd_buf.buffer = vmalloc(tpd_log_line_cnt * tpd_log_line_buffer);
+	else
+		tpd_buf.buffer = temp_buffer;
 	if (tpd_buf.buffer == NULL) {
 		pr_err("tpd_log: nomem for tpd_buf->buffer\n");
 		return -ENOMEM;
@@ -278,6 +284,7 @@ static int tpd_debug_log_release(struct inode *inode, struct file *file)
 	/* struct tpd_debug_log_buf *tpd_buf = (tpd_debug_log_buf *)file->private_data; */
 	pr_debug("[tpd_em_log]: close log file\n");
 	vfree(tpd_buf.buffer);
+	tpd_buf.buffer = NULL;
 	/* free(tpd_buf); */
 	return 0;
 }
