@@ -71,32 +71,32 @@ static twam_handler_t spm_twam_handler;
 
 void __attribute__((weak)) spm_sodi3_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) spm_sodi_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) spm_deepidle_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) spm_vcorefs_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) mt_power_gs_t_dump_suspend(int count, ...)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 }
 
 int __attribute__((weak)) spm_fs_init(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 	return 0;
 }
 
@@ -292,7 +292,7 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 		ret = spm_to_sspm_command(SPM_SUSPEND_PREPARE, &spm_d);
 		spin_unlock_irqrestore(&__spm_lock, flags);
 		if (ret < 0) {
-			pr_err("#@# %s(%d) PM_SUSPEND_PREPARE return %d!!!\n", __func__, __LINE__, ret);
+			pr_info("#@# %s(%d) PM_SUSPEND_PREPARE return %d!!!\n", __func__, __LINE__, ret);
 			return NOTIFY_BAD;
 		}
 		return NOTIFY_DONE;
@@ -301,7 +301,7 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 		ret = spm_to_sspm_command(SPM_POST_SUSPEND, &spm_d);
 		spin_unlock_irqrestore(&__spm_lock, flags);
 		if (ret < 0) {
-			pr_err("#@# %s(%d) PM_POST_SUSPEND return %d!!!\n", __func__, __LINE__, ret);
+			pr_info("#@# %s(%d) PM_POST_SUSPEND return %d!!!\n", __func__, __LINE__, ret);
 			return NOTIFY_BAD;
 		}
 		return NOTIFY_DONE;
@@ -367,6 +367,9 @@ static struct platform_device *pspmdev;
 
 int __init spm_module_init(void)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	struct spm_data spm_d;
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	int r = 0;
 	int ret = -1;
 
@@ -419,6 +422,17 @@ int __init spm_module_init(void)
 	}
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	memset(&spm_d, 0, sizeof(struct spm_data));
+
+	ret = spm_to_sspm_command(SPM_EXT_BUCK_STATUS, &spm_d);
+	if (ret < 0)
+		spm_crit2("ret %d", ret);
+
+	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, ret, 0);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+
 	spm_vcorefs_init();
 	return 0;
 }
@@ -719,10 +733,10 @@ int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_async(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN);
 		if (ret != 0)
-			pr_err("#@# %s(%d) sspm_ipi_send_async(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) sspm_ipi_send_async(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		break;
 	default:
-		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
+		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
 
@@ -745,14 +759,14 @@ int spm_to_sspm_command_async_wait(u32 cmd)
 		ret = sspm_ipi_send_async_wait(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, &ack_data);
 
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_async_wait(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) sspm_ipi_send_async_wait(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 	default:
-		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
+		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
 
@@ -778,10 +792,10 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 	case SPM_VCORE_PWARP_CMD:
@@ -791,10 +805,10 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 	case SPM_DPIDLE_PREPARE:
@@ -802,10 +816,10 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
 	case SPM_SODI_PREPARE:
@@ -813,14 +827,25 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
-			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+			pr_info("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
+	case SPM_EXT_BUCK_STATUS:
+		spm_d->cmd = cmd;
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
+		if (ret != 0) {
+			pr_info("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+		} else if (ack_data < 0) {
+			ret = ack_data;
+			pr_info("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
+		} else
+			ret = ack_data;
+		break;
 	default:
-		pr_err("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
+		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
 	return ret;
