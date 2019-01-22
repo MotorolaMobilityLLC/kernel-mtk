@@ -66,7 +66,7 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_MD_DDR_EN_0_DBC_EN] = "md_ddr_en_0_dbc_en",
 	[PWR_MD_DDR_EN_1_DBC_EN] = "md_ddr_en_1_dbc_en",
 	[PWR_MD_MASK_B] = "md_mask_b",
-	[PWR_PMCU_MASK_B] = "pmcu_mask_b",
+	[PWR_SSPM_MASK_B] = "sspm_mask_b",
 	[PWR_LTE_MASK_B] = "lte_mask_b",
 	[PWR_SRCCLKENI_MASK_B] = "srcclkeni_mask_b",
 	[PWR_MD_APSRC_1_SEL] = "md_apsrc_1_sel",
@@ -100,12 +100,12 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_MD_SRCCLKENA_0_INFRA_MASK_B] = "md_srcclkena_0_infra_mask_b",
 	[PWR_MD_SRCCLKENA_1_INFRA_MASK_B] = "md_srcclkena_1_infra_mask_b",
 	[PWR_CONN_SRCCLKENA_INFRA_MASK_B] = "conn_srcclkena_infra_mask_b",
-	[PWR_MD32_SRCCLKENA_INFRA_MASK_B] = "md32_srcclkena_infra_mask_b",
+	[PWR_SSPM_SRCCLKENA_INFRA_MASK_B] = "sspm_srcclkena_infra_mask_b",
 	[PWR_SRCCLKENI_INFRA_MASK_B] = "srcclkeni_infra_mask_b",
 	[PWR_MD_APSRC_REQ_0_INFRA_MASK_B] = "md_apsrc_req_0_infra_mask_b",
 	[PWR_MD_APSRC_REQ_1_INFRA_MASK_B] = "md_apsrc_req_1_infra_mask_b",
 	[PWR_CONN_APSRCREQ_INFRA_MASK_B] = "conn_apsrcreq_infra_mask_b",
-	[PWR_MD32_APSRCREQ_INFRA_MASK_B] = "md32_apsrcreq_infra_mask_b",
+	[PWR_SSPM_APSRCREQ_INFRA_MASK_B] = "sspm_apsrcreq_infra_mask_b",
 	[PWR_MD_DDR_EN_0_MASK_B] = "md_ddr_en_0_mask_b",
 	[PWR_MD_DDR_EN_1_MASK_B] = "md_ddr_en_1_mask_b",
 	[PWR_MD_VRF18_REQ_0_MASK_B] = "md_vrf18_req_0_mask_b",
@@ -152,12 +152,12 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_DDREN_EMI_SELF_REFRESH_CH0_MASK_B] = "ddren_emi_self_refresh_ch0_mask_b",
 	[PWR_DDREN_EMI_SELF_REFRESH_CH1_MASK_B] = "ddren_emi_self_refresh_ch1_mask_b",
 	[PWR_DDREN_MM_STATE_MASK_B] = "ddren_mm_state_mask_b",
-	[PWR_DDREN_MD32_APSRC_REQ_MASK_B] = "ddren_md32_apsrc_req_mask_b",
+	[PWR_DDREN_SSPM_APSRC_REQ_MASK_B] = "ddren_sspm_apsrc_req_mask_b",
 	[PWR_DDREN_DQSSOC_REQ_MASK_B] = "ddren_dqssoc_req_mask_b",
 	[PWR_DDREN2_EMI_SELF_REFRESH_CH0_MASK_B] = "ddren2_emi_self_refresh_ch0_mask_b",
 	[PWR_DDREN2_EMI_SELF_REFRESH_CH1_MASK_B] = "ddren2_emi_self_refresh_ch1_mask_b",
 	[PWR_DDREN2_MM_STATE_MASK_B] = "ddren2_mm_state_mask_b",
-	[PWR_DDREN2_MD32_APSRC_REQ_MASK_B] = "ddren2_md32_apsrc_req_mask_b",
+	[PWR_DDREN2_SSPM_APSRC_REQ_MASK_B] = "ddren2_sspm_apsrc_req_mask_b",
 	[PWR_DDREN2_DQSSOC_REQ_MASK_B] = "ddren2_dqssoc_req_mask_b",
 	[PWR_MP0_CPU0_WFI_EN] = "mp0_cpu0_wfi_en",
 	[PWR_MP0_CPU1_WFI_EN] = "mp0_cpu1_wfi_en",
@@ -321,10 +321,10 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->md_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MD_MASK_B, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PMCU_MASK_B])) {
-		pwrctrl->pmcu_mask_b = val;
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SSPM_MASK_B])) {
+		pwrctrl->sspm_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_PMCU_MASK_B, val);
+				id, PWR_SSPM_MASK_B, val);
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_LTE_MASK_B])) {
 		pwrctrl->lte_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
@@ -457,10 +457,10 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->conn_srcclkena_infra_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_CONN_SRCCLKENA_INFRA_MASK_B, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MD32_SRCCLKENA_INFRA_MASK_B])) {
-		pwrctrl->md32_srcclkena_infra_mask_b = val;
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SSPM_SRCCLKENA_INFRA_MASK_B])) {
+		pwrctrl->sspm_srcclkena_infra_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_MD32_SRCCLKENA_INFRA_MASK_B, val);
+				id, PWR_SSPM_SRCCLKENA_INFRA_MASK_B, val);
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SRCCLKENI_INFRA_MASK_B])) {
 		pwrctrl->srcclkeni_infra_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
@@ -477,10 +477,10 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->conn_apsrcreq_infra_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_CONN_APSRCREQ_INFRA_MASK_B, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MD32_APSRCREQ_INFRA_MASK_B])) {
-		pwrctrl->md32_apsrcreq_infra_mask_b = val;
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SSPM_APSRCREQ_INFRA_MASK_B])) {
+		pwrctrl->sspm_apsrcreq_infra_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_MD32_APSRCREQ_INFRA_MASK_B, val);
+				id, PWR_SSPM_APSRCREQ_INFRA_MASK_B, val);
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MD_DDR_EN_0_MASK_B])) {
 		pwrctrl->md_ddr_en_0_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
@@ -665,10 +665,10 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->ddren_mm_state_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_DDREN_MM_STATE_MASK_B, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_DDREN_MD32_APSRC_REQ_MASK_B])) {
-		pwrctrl->ddren_md32_apsrc_req_mask_b = val;
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_DDREN_SSPM_APSRC_REQ_MASK_B])) {
+		pwrctrl->ddren_sspm_apsrc_req_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_DDREN_MD32_APSRC_REQ_MASK_B, val);
+				id, PWR_DDREN_SSPM_APSRC_REQ_MASK_B, val);
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_DDREN_DQSSOC_REQ_MASK_B])) {
 		pwrctrl->ddren_dqssoc_req_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
@@ -685,10 +685,10 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->ddren2_mm_state_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_DDREN2_MM_STATE_MASK_B, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_DDREN2_MD32_APSRC_REQ_MASK_B])) {
-		pwrctrl->ddren2_md32_apsrc_req_mask_b = val;
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_DDREN2_SSPM_APSRC_REQ_MASK_B])) {
+		pwrctrl->ddren2_sspm_apsrc_req_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_DDREN2_MD32_APSRC_REQ_MASK_B, val);
+				id, PWR_DDREN2_SSPM_APSRC_REQ_MASK_B, val);
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_DDREN2_DQSSOC_REQ_MASK_B])) {
 		pwrctrl->ddren2_dqssoc_req_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
