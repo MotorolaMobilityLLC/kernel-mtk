@@ -1294,56 +1294,54 @@ static signed int DIP_ReadReg(struct DIP_REG_IO_STRUCT *pRegIo)
 	unsigned int i;
 	signed int Ret = 0;
 
-	unsigned int module;
-	void __iomem *regBase;
+	struct DIP_REG_STRUCT *pData = NULL;
+	struct DIP_REG_STRUCT *pTmpData = NULL;
 
-
-	/*  */
-	struct DIP_REG_STRUCT reg;
-	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
-	struct DIP_REG_STRUCT *pData = (struct DIP_REG_STRUCT *)pRegIo->pData;
-
-	module = pData->module;
-
-	switch (module) {
-	case DIP_DIP_A_IDX:
-		regBase = DIP_A_BASE;
-		break;
-	default:
-		LOG_ERR("Unsupported module(%x) !!!\n", module);
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (DIP_REG_RANGE>>2))) {
+		LOG_INF("DIP_ReadReg pRegIo->pData is NULL, Count:%d!!", pRegIo->Count);
 		Ret = -EFAULT;
 		goto EXIT;
 	}
-
-
-	for (i = 0; i < pRegIo->Count; i++) {
-		if (get_user(reg.Addr, (unsigned int *)&pData->Addr) != 0) {
-			LOG_ERR("get_user failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		/* pData++; */
-		/*  */
-		if (((regBase + reg.Addr) < (regBase + PAGE_SIZE))
-			&& ((reg.Addr & 0x3) == 0)) {
-			reg.Val = DIP_RD32(regBase + reg.Addr);
-		} else {
-			LOG_ERR("Wrong address(0x%lx)\n", (unsigned long)(regBase + reg.Addr));
-			reg.Val = 0;
-		}
-		/*  */
-		/* printk("[KernelRDReg]addr(0x%x),value()0x%x\n",DIP_ADDR_CAMINF + reg.Addr,reg.Val); */
-
-		if (put_user(reg.Val, (unsigned int *) &(pData->Val)) != 0) {
-			LOG_ERR("put_user failed\n");
-			Ret = -EFAULT;
-			goto EXIT;
-		}
-		pData++;
-		/*  */
+	pData = kmalloc((pRegIo->Count) * sizeof(struct DIP_REG_STRUCT), GFP_KERNEL);
+	if (pData == NULL) {
+		LOG_INF("ERROR: DIP_ReadReg kmalloc failed, cnt:%d\n", pRegIo->Count);
+		Ret = -ENOMEM;
+		goto EXIT;
 	}
-	/*  */
+	pTmpData = pData;
+
+	if (copy_from_user(pData, (void *)pRegIo->pData, (pRegIo->Count) * sizeof(struct DIP_REG_STRUCT)) == 0) {
+		for (i = 0; i < pRegIo->Count; i++) {
+			if ((DIP_A_BASE + pData->Addr >= DIP_A_BASE)
+			    && (pData->Addr < DIP_REG_RANGE)
+				&& ((pData->Addr & 0x3) == 0)) {
+				pData->Val = DIP_RD32(DIP_A_BASE + pData->Addr);
+			} else {
+				LOG_INF("Wrong address(0x%p), DIP_BASE(0x%p), Addr(0x%lx)\n",
+					(DIP_A_BASE + pData->Addr),
+					DIP_A_BASE,
+					(unsigned long)pData->Addr);
+				pData->Val = 0;
+			}
+			pData++;
+		}
+		pData = pTmpData;
+		if (copy_to_user((void *)pRegIo->pData, pData, (pRegIo->Count) * sizeof(struct DIP_REG_STRUCT)) != 0) {
+			LOG_INF("copy_to_user failed\n");
+			Ret = -EFAULT;
+			goto EXIT;
+		}
+	} else {
+		LOG_INF("DIP_READ_REGISTER copy_from_user failed");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 EXIT:
+	if (pData != NULL) {
+		kfree(pData);
+		pData = NULL;
+	}
+
 	return Ret;
 }
 
@@ -1415,36 +1413,31 @@ static signed int DIP_WriteReg(struct DIP_REG_IO_STRUCT *pRegIo)
 	/* unsigned char* pData = NULL; */
 	struct DIP_REG_STRUCT *pData = NULL;
 
-	if (pRegIo->Count > 0xFFFFFFFF) {
-		LOG_ERR("pRegIo->Count error");
-		Ret = -EFAULT;
-		goto EXIT;
-	}
 	/*  */
 	if (IspInfo.DebugMask & DIP_DBG_WRITE_REG)
 		LOG_DBG("Data(0x%p), Count(%d)\n", (pRegIo->pData), (pRegIo->Count));
 
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (DIP_REG_RANGE>>2))) {
+		LOG_INF("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	/* pData = (unsigned char*)kmalloc((pRegIo->Count)*sizeof(DIP_REG_STRUCT), GFP_ATOMIC); */
-	pData = kmalloc((pRegIo->Count) * sizeof(struct DIP_REG_STRUCT), GFP_ATOMIC);
+	pData = kmalloc((pRegIo->Count) * sizeof(struct DIP_REG_STRUCT), GFP_KERNEL);
 	if (pData == NULL) {
-		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n",
-		current->comm, current->pid, current->tgid);
+		LOG_INF("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
+			current->pid, current->tgid);
 		Ret = -ENOMEM;
 		goto EXIT;
 	}
-
-	if ((void __user *)(pRegIo->pData) == NULL) {
-		LOG_ERR("NULL pData");
-		Ret = -EFAULT;
-		goto EXIT;
-	}
-
 	/*  */
-	if (copy_from_user(pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(struct DIP_REG_STRUCT)) != 0) {
-		LOG_ERR("copy_from_user failed\n");
+	if (copy_from_user
+	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(struct DIP_REG_STRUCT)) != 0) {
+		LOG_INF("copy_from_user failed\n");
 		Ret = -EFAULT;
 		goto EXIT;
 	}
+
 	/*  */
 	Ret = DIP_WriteRegToHw(
 		      pData,
