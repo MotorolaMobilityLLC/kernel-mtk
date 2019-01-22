@@ -197,6 +197,10 @@ struct crypt_config {
 static void clone_init(struct dm_crypt_io *, struct bio *);
 static void kcryptd_queue_crypt(struct dm_crypt_io *io);
 static u8 *iv_of_dmreq(struct crypt_config *cc, struct dm_crypt_request *dmreq);
+#if defined(CONFIG_MTK_HW_FDE)
+/* use to check if the key has been changed */
+static unsigned int key_idx;
+#endif
 
 /*
  * Use this to access cipher attributes that are the same for each CPU.
@@ -1179,6 +1183,7 @@ static int kcryptd_io_read(struct dm_crypt_io *io, gfp_t gfp)
 	if (cc->hw_fde == 1) {
 		clone->bi_hw_fde = 1;
 		clone->bi_iter.bi_sector = cc->start + io->sector;
+		clone->bi_key_idx = key_idx;
 	}
 #endif
 
@@ -1281,6 +1286,7 @@ static void kcryptd_io_write(struct dm_crypt_io *io)
 	if (cc->hw_fde == 1) {
 		clone->bi_hw_fde = 1;
 		clone->bi_iter.bi_sector = cc->start + io->sector;
+		clone->bi_key_idx = key_idx;
 	}
 #endif
 
@@ -1587,6 +1593,7 @@ static int crypt_setkey_allcpus(struct crypt_config *cc)
 				*(u32 *)(cc->key+(i*8)+4),
 				(cc->id & 0xff) << 24 |
 				(i & 0xff)<<16 | (cc->key_size & 0xffff));
+		key_idx++;
 #if defined(CONFIG_MTK_HW_FDE_AES)
 		fde_aes_set_slot(cc->id);
 #endif

@@ -98,6 +98,7 @@ struct bio {
 	 * Quried by HW FDE engine driver, e.g., eMMC/UFS.
 	 */
 	unsigned int		bi_hw_fde;
+	unsigned int		bi_key_idx;
 #endif
 
 	/*
