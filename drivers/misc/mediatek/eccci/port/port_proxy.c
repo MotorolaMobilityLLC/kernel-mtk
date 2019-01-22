@@ -822,8 +822,13 @@ static inline int proxy_send_msg_to_md(struct port_proxy *proxy_p, int ch, unsig
 	int ret = 0;
 	int md_state;
 	int qno = -1;
-	int md_id = proxy_p->md_id;
+	int md_id;
 
+	if (!proxy_p) {
+		CCCI_ERROR_LOG(0, TAG, "proxy_send_msg_to_md: proxy_p is NULL\n");
+		return -CCCI_ERR_MD_NOT_READY;
+	}
+	md_id = proxy_p->md_id;
 	md_state = ccci_fsm_get_md_state(md_id);
 	if (md_state != BOOT_WAITING_FOR_HS1 && md_state != BOOT_WAITING_FOR_HS2
 		&& md_state != READY && md_state != EXCEPTION)
