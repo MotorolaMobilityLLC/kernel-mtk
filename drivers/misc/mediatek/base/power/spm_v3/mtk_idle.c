@@ -1131,24 +1131,24 @@ static inline void soidle_post_handler(void)
 
 static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_DIS_PERI_PDN |
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
-	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
+#endif
 	SPM_FLAG_SODI_OPTION |
 	SPM_FLAG_ENABLE_SODI3
 };
 
 static u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_DIS_PERI_PDN |
+#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
-	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
+#endif
 	SPM_FLAG_SODI_OPTION
 };
 
@@ -1550,6 +1550,9 @@ int soidle3_enter(int cpu)
 	operation_cond =  clkmux_cond[IDLE_TYPE_SO3] ? 0x1 : 0x0;
 
 	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags, operation_cond);
+
+	/* Clear SODI_FLAG_DUMP_LP_GS in sodi3_flags */
+	sodi3_flags &= (~SODI_FLAG_DUMP_LP_GS);
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));

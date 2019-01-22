@@ -39,6 +39,8 @@
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 
+#include <mtk_power_gs_api.h>
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -630,9 +632,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	/* need be called before spin_lock_irqsave() */
 	ch = get_channel_lock();
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
-
-	pwrctrl->vcore_volt_pmic_val =
-		__spm_get_vcore_volt_pmic_val(!!operation_cond, ch);
+	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -651,9 +651,11 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_SLEEP);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (request_uart_to_sleep()) {
-		wr = WR_UART_BUSY;
-		goto RESTORE_IRQ;
+	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS)) {
+		if (request_uart_to_sleep()) {
+			wr = WR_UART_BUSY;
+			goto RESTORE_IRQ;
+		}
 	}
 #endif
 
@@ -668,6 +670,8 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 #ifdef SPM_SODI3_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[1]);
 #endif
+	if (sodi3_flags & SODI_FLAG_DUMP_LP_GS)
+		mt_power_gs_dump_sodi3();
 
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
@@ -684,7 +688,8 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_AWAKE);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	request_uart_to_wakeup();
+	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS))
+		request_uart_to_wakeup();
 #endif
 
 	wr = spm_sodi3_output_log(&wakesta, pcmdesc, sodi3_flags);

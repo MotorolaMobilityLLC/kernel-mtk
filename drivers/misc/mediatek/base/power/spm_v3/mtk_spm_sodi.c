@@ -263,7 +263,7 @@ static bool gSpm_SODI_mempll_pwr_mode;
 static bool gSpm_sodi_en;
 static bool gSpm_lcm_vdo_mode;
 
-static void spm_sodi_pre_process(void)
+static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	unsigned int value = 0;
@@ -289,6 +289,10 @@ static void spm_sodi_pre_process(void)
 								IDX_ALL_2_VSRAM_NORMAL,
 								value);
 
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE,
+								IDX_ALL_VCORE_SUSPEND,
+								pwrctrl->vcore_volt_pmic_val);
+
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
 #endif
@@ -302,7 +306,7 @@ static void spm_sodi_post_process(void)
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-static void spm_sodi_notify_sspm_before_wfi(void)
+static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl)
 {
 	int ret;
 	struct spm_data spm_d;
@@ -314,6 +318,7 @@ static void spm_sodi_notify_sspm_before_wfi(void)
 	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
+	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
 
 	ret = spm_to_sspm_command(SPM_ENTER_SODI, &spm_d);
 	if (ret < 0)
@@ -331,7 +336,7 @@ static void spm_sodi_notify_sspm_after_wfi(void)
 		spm_crit2("ret %d", ret);
 }
 #else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-static void spm_sodi_notify_sspm_before_wfi(void)
+static void spm_sodi_notify_sspm_before_wfi(struct pwr_ctrl *pwrctrl)
 {
 }
 
@@ -359,9 +364,9 @@ static void spm_sodi_pcm_setup_before_wfi(
 {
 	unsigned int resource_usage;
 
-	spm_sodi_notify_sspm_before_wfi();
+	spm_sodi_notify_sspm_before_wfi(pwrctrl);
 
-	spm_sodi_pre_process();
+	spm_sodi_pre_process(pwrctrl);
 
 	/* Get SPM resource request and update reg_spm_xxx_req */
 	resource_usage = spm_get_resource_usage();
@@ -412,9 +417,9 @@ static void spm_sodi_pcm_setup_before_wfi(
 
 	__spm_set_wakeup_event(pwrctrl);
 
-	spm_sodi_notify_sspm_before_wfi();
+	spm_sodi_notify_sspm_before_wfi(pwrctrl);
 
-	spm_sodi_pre_process();
+	spm_sodi_pre_process(pwrctrl);
 
 	__spm_kick_pcm_to_run(pwrctrl);
 }
@@ -587,6 +592,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	/* need be called before spin_lock_irqsave() */
 	ch = get_channel_lock();
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
+	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
