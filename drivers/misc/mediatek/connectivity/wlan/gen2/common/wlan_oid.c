@@ -3085,7 +3085,7 @@ wlanoidSetPmkid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Set
 		}
 	}
 #endif
-	if (prAdapter->rWifiVar.rConnSettings.fgUseOkc) {
+	if (prAdapter->rWifiVar.rConnSettings.fgOkcEnabled) {
 		P_BSS_DESC_T prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
 		P_UINT_8 pucPmkID = NULL;
 
@@ -3097,6 +3097,7 @@ wlanoidSetPmkid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Set
 					   prPmkid->arBSSIDInfo[0].arBSSID, sizeof(PARAM_MAC_ADDRESS));
 				kalMemCopy(prAisSpecBssInfo->arPmkidCache[0].rBssidInfo.arPMKID,
 				   prPmkid->arBSSIDInfo[0].arPMKID, sizeof(PARAM_PMKID_VALUE));
+				prAisSpecBssInfo->arPmkidCache[0].fgPmkidExist = TRUE;
 			}
 			pucPmkID = prAisSpecBssInfo->arPmkidCache[j].rBssidInfo.arPMKID;
 			DBGLOG(RSN, INFO,
