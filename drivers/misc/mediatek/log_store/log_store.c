@@ -225,7 +225,7 @@ void disable_early_log(void)
 static int __init log_store_early_init(void)
 {
 
-	sram_header = ioremap(CONFIG_MTK_DRAM_LOG_STORE_ADDR, CONFIG_MTK_RAM_CONSOLE_SIZE);
+	sram_header = ioremap(CONFIG_MTK_DRAM_LOG_STORE_ADDR, CONFIG_MTK_DRAM_LOG_STORE_SIZE);
 
 	pr_err("log_store: sram header address 0x%p.\n", sram_header);
 	if (sram_header->sig != SRAM_HEADER_SIG) {
