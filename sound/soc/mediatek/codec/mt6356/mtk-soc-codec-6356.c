@@ -3704,8 +3704,19 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* mic bias */
 			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
 				/* phone mic */
+				switch (ECMmode) {
+				case 1: /* AUDIO_MIC_MODE_DCCECMDIFF */
+					Ana_Set_Reg(AUDENC_ANA_CON9, 0x7700, 0xff00);
+					break;
+				case 2:/* AUDIO_MIC_MODE_DCCECMSINGLE */
+					Ana_Set_Reg(AUDENC_ANA_CON9, 0x1100, 0xff00);
+					break;
+				default:
+					Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0xff00);
+					break;
+				}
 				/* Enable MICBIAS0, MISBIAS0 = 1P9V */
-				Ana_Set_Reg(AUDENC_ANA_CON9, 0x0021, 0xffff);
+				Ana_Set_Reg(AUDENC_ANA_CON9, 0x0021, 0x00ff);
 			} else if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* headset mic */
 				/* Enable MICBIAS1, MISBIAS1 = 2P6V */
