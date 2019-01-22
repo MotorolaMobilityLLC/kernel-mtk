@@ -78,7 +78,7 @@ static int mi2s0_sidegen_control;
 static int mi2s0_hdoutput_control;
 static int mi2s0_extcodec_echoref_control;
 const char * const i2s0_SIDEGEN[] = {
-	"Off", "On48000", "On44100", "On32000", "On16000", "On8000", "On16000MD3"};
+	"Off", "On48000", "On44100", "On32000", "On16000", "On8000", "On16000MD3", "On32000MD3"};
 const char * const i2s0_HD_output[] = {"Off", "On"};
 const char * const i2s0_ExtCodec_EchoRef[] = {"Off", "On"};
 
