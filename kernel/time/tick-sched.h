@@ -60,6 +60,13 @@ struct tick_sched {
 	u64				next_timer;
 	ktime_t				idle_expires;
 	int				do_timer_last;
+#ifdef CONFIG_MEDIATEK_SOLUTION
+	ktime_t				idle_entrytime_wo_cpuoffline;
+	ktime_t				idle_sleeptime_wo_cpuoffline;
+	ktime_t				iowait_sleeptime_wo_cpuoffline;
+	unsigned long			next_jiffies;
+	int             cpu_plug_off_flag;
+#endif
 };
 
 extern struct tick_sched *tick_get_tick_sched(int cpu);
