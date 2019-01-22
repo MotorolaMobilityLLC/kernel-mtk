@@ -492,8 +492,15 @@ int iommu_dma_map_sg(struct device *dev, struct scatterlist *sg,
 		size_t s_length = s->length;
 		size_t pad_len = (mask - iova_len + 1) & mask;
 
-		sg_dma_address(s) = s_iova_off;
-		sg_dma_len(s) = s_length;
+		/*
+		 * for some sg which do not have page struct, we store the pa
+		 * and size in this filed, need to be take care of separately.
+		 */
+		if (!sg_dma_address(s) && !sg_dma_len(s)) {
+			sg_dma_address(s) = s_iova_off;
+			sg_dma_len(s) = s_length;
+		}
+
 		s->offset -= s_iova_off;
 		s_length = iova_align(iovad, s_length + s_iova_off);
 		s->length = s_length;
