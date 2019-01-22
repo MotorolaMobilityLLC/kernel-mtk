@@ -135,6 +135,21 @@
 * define variables for legacy and sspm eem
 ****************************************
 */
+#if ITurbo
+unsigned int ctrl_ITurbo = 0, ITurboRun;
+/* static unsigned int ITurbo_offset[16]; */
+
+/* CPU callback */
+static int _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void *hcpu);
+static struct notifier_block __refdata _mt_eem_cpu_notifier = {
+	.notifier_call = _mt_eem_cpu_CB,
+};
+#endif /* ITurbo */
+
+#if (EEM_ENABLE_TINYSYS_SSPM)
+static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data);
+#endif
+
 #if !(EEM_ENABLE_TINYSYS_SSPM)
 
 	#if EEM_ENABLE
@@ -149,11 +164,6 @@
 	* 1 : voltage bin volt
 	*/
 	/* static unsigned int ctrl_VCORE_Volt_Enable;*/
-
-	#if ITurbo
-	unsigned int ctrl_ITurbo = 0, ITurboRun;
-	static unsigned int ITurbo_offset[16];
-	#endif /* ITurbo */
 
 	static int isGPUDCBDETOverflow, is2LDCBDETOverflow;
 	static int isLDCBDETOverflow, isCCIDCBDETOverflow;
@@ -194,15 +204,6 @@
 
 	#ifdef __KERNEL__
 	DEFINE_MUTEX(record_mutex);
-
-	#if ITurbo/* irene */
-	/* CPU callback */
-	static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
-					unsigned long action, void *hcpu);
-	static struct notifier_block __refdata _mt_eem_cpu_notifier = {
-		.notifier_call = _mt_eem_cpu_CB,
-	};
-	#endif /* if ITurbo */
 
 	#endif /*ifdef __KERNEL */
 	static struct eem_devinfo eem_devinfo;
@@ -413,11 +414,18 @@ static int get_devinfo(void)
 		/* l */
 		val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
 		val[9] = get_devinfo_with_index(DEVINFO_IDX_9);
-		/* soc */
-		val[10] = get_devinfo_with_index(DEVINFO_IDX_VOLT_BIN);
-		val[11] = get_devinfo_with_index(DEVINFO_IDX_11);
-
 		val[12] = get_devinfo_with_index(DEVINFO_IDX_FTPGM);
+
+		if (GET_BITS_VAL(23:20, eem_logs->hw_res[12]) >= 5) {
+			/* soc */
+			/* apply 2L devinfo to soc devinfo to run iTurbo*/
+			val[10] = get_devinfo_with_index(DEVINFO_IDX_10);
+			val[11] = get_devinfo_with_index(DEVINFO_IDX_11);
+		} else {
+			val[10] = val[6];
+			val[11] = val[7];
+		}
+
 		#if EEM_FAKE_EFUSE
 		/* for verification */
 		val[0] = DEVINFO_0;
@@ -487,7 +495,11 @@ static int get_devinfo(void)
 		if (!det->pi_efuse)
 			continue;
 
-		bdes_mdes_idx = (det->ctrl_id << 1);
+		if (det->ctrl_id == EEM_CTRL_SOC)
+			bdes_mdes_idx = 10;
+		else
+			bdes_mdes_idx = (det->ctrl_id << 1);
+
 		mtdes_idx = bdes_mdes_idx + 1;
 
 		/* Update MTDES */
@@ -530,6 +542,11 @@ static int get_devinfo(void)
 		}
 	}
 
+	#if ITurbo
+	/* Read E-Fuse to control ITurbo mode */
+	ctrl_ITurbo = 1; /* eem_devinfo.BIG_TURBO; */
+	#endif
+
 	FUNC_EXIT(EEM_FUNC_LV_HELP);
 	return ret;
 }
@@ -550,6 +567,118 @@ unsigned char mt_eem_get_turbo(void)
 
 	return ret;
 }
+
+#if ITurbo
+static int _mt_eem_cpu_CB(struct notifier_block *nfb,	unsigned long action, void *hcpu)
+{
+	#if !(EEM_ENABLE_TINYSYS_SSPM)
+	unsigned long flags;
+	#endif
+
+	#if (EEM_ENABLE_TINYSYS_SSPM)
+	unsigned int ipi_ret = 0;
+	struct eem_ipi_data eem_data;
+	#endif
+
+	unsigned int cpu = (unsigned long)hcpu;
+	unsigned int online_cpus = num_online_cpus();
+	struct device *dev;
+	/* struct eem_det *det; */
+	enum mt_eem_cpu_id cluster_id;
+
+	/* CPU mask - Get on-line cpus per-cluster */
+	struct cpumask eem_cpumask;
+	struct cpumask cpu_online_cpumask;
+	unsigned int cpus, big_cpus;
+
+	if (ctrl_ITurbo < 2) {
+		eem_debug("Default I-Turbo off (%d) !!", ctrl_ITurbo);
+		return NOTIFY_OK;
+	}
+	/* eem_debug("I-Turbo start to run (%d) !!", ctrl_ITurbo); */
+
+	/* Current active CPU is belong which cluster */
+	cluster_id = arch_get_cluster_id(cpu);
+
+	/* How many active CPU in this cluster, present by bit mask
+	*	ex:	B	L	LL
+	*		00	1111	0000
+	*/
+	arch_get_cluster_cpus(&eem_cpumask, cluster_id);
+
+	/* How many active CPU online in this cluster, present by number */
+	cpumask_and(&cpu_online_cpumask, &eem_cpumask, cpu_online_mask);
+	cpus = cpumask_weight(&cpu_online_cpumask);
+
+	if (eem_log_en)
+		eem_error("@%s():%d, cpu = %d, act = %lu, on_cpus = %d, clst = %d, clst_cpu = %d\n"
+		, __func__, __LINE__, cpu, action, online_cpus, cluster_id, cpus);
+
+	dev = get_cpu_device(cpu);
+
+	if (dev) {
+		arch_get_cluster_cpus(&eem_cpumask, MT_EEM_CPU_B);
+		cpumask_and(&cpu_online_cpumask, &eem_cpumask, cpu_online_mask);
+		big_cpus = cpumask_weight(&cpu_online_cpumask);
+
+		switch (action) {
+		case CPU_POST_DEAD:
+			if ((ITurboRun == 0) && (big_cpus == 0) && (cluster_id == MT_EEM_CPU_B)) {
+				if (eem_log_en)
+					eem_debug("ITurbo(1) DEAD (%d) B_cc(%d)\n", online_cpus, big_cpus);
+				#if !(EEM_ENABLE_TINYSYS_SSPM)
+				mt_ptp_lock(&flags);
+				#endif
+				ITurboRun = 1;
+				/* apply SOC voltage table */
+				/* det = id_to_eem_det(EEM_DET_SOC); */
+				/* eem_set_eem_volt(det); */
+				#if (EEM_ENABLE_TINYSYS_SSPM)
+				eem_data.u.data.arg[0] = ITurboRun;
+				ipi_ret = eem_to_sspm(IPI_EEM_ITURBORUN_WRITE, &eem_data);
+				#endif
+
+				#if !(EEM_ENABLE_TINYSYS_SSPM)
+				mt_ptp_unlock(&flags);
+				#endif
+			} else {
+				if (eem_log_en)
+					eem_error("Turbo(%d)ed !! DEAD (%d), BIG_cc(%d)\n",
+						ITurboRun, online_cpus, big_cpus);
+			}
+		break;
+
+		case CPU_UP_PREPARE:
+			if ((ITurboRun == 1) && (cluster_id == MT_EEM_CPU_B) && (big_cpus == 0)) {
+				if (eem_log_en)
+					eem_error("ITurbo(0) UP (%d), BIG_cc(%d)\n", online_cpus, big_cpus);
+				#if !(EEM_ENABLE_TINYSYS_SSPM)
+				mt_ptp_lock(&flags);
+				#endif
+				ITurboRun = 0;
+				/* apply 2L voltage table */
+				/* det = id_to_eem_det(EEM_DET_2L); */
+				/* eem_set_eem_volt(det); */
+				#if (EEM_ENABLE_TINYSYS_SSPM)
+				eem_data.u.data.arg[0] = ITurboRun;
+				ipi_ret = eem_to_sspm(IPI_EEM_ITURBORUN_WRITE, &eem_data);
+				#endif
+
+				#if !(EEM_ENABLE_TINYSYS_SSPM)
+				mt_ptp_unlock(&flags);
+				#endif
+			} else {
+				if (eem_log_en)
+					eem_error("ITurbo(%d)ed !! UP (%d), BIG_cc(%d)\n",
+						ITurboRun, online_cpus, big_cpus);
+			}
+		break;
+		}
+	}
+	return NOTIFY_OK;
+}
+#endif /* if ITurbo */
+
 /*============================================================
  * function declarations of EEM detectors
  *============================================================
@@ -1641,7 +1770,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 	unsigned i;
 	int cur_temp, low_temp_offset;
 	struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
-	#if ITurbo
+	#if 0 /* ITurbo */
 	ITurboRunSet = 0;
 	#endif
 	FUNC_ENTER(EEM_FUNC_LV_HELP);
@@ -1661,7 +1790,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 
 	ctrl->volt_update |= EEM_VOLT_UPDATE;
 
-	#if ITurbo
+	#if 0 /* ITurbo */
 	if (cur_temp <= 33000) {
 		if ((det->ctrl_id == EEM_CTRL_L) && (ITurboRun == 1))
 			ITurboRunSet = 0;
@@ -1703,7 +1832,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 			break;
 
 		case EEM_CTRL_L:
-			#if ITurbo
+			#if 0 /* ITurbo */
 			if (ITurboRunSet == 1) {
 				ITurbo_offset[i] = det->ops->volt_2_eem(det, MAX_ITURBO_OFFSET + det->eem_v_base) *
 						(det->volt_tbl[i] - det->volt_tbl[NR_FREQ-1]) /
@@ -1716,7 +1845,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 			(unsigned int)(clamp(
 				det->ops->eem_2_pmic(det,
 					(det->volt_tbl[i] + det->volt_offset + low_temp_offset
-					#if ITurbo
+					#if 0 /* ITurbo */
 					- ITurbo_offset[i]
 					#endif
 				))+det->pi_offset,
@@ -2461,7 +2590,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 			infoIdvfs = 0xff;
 
 		#if ITurbo
-		if (det->ctrl_id == EEM_CTRL_L)
+		/* if (det->ctrl_id == EEM_CTRL_SOC) */
 			ctrl_ITurbo = (ctrl_ITurbo == 0) ? 0 : 2;
 		#endif
 
@@ -2641,149 +2770,6 @@ int ptp_isr(void)
 	return 0;
 #endif
 }
-#if ITurbo
-#ifdef __KERNEL__
-#define ITURBO_CPU_NUM 1
-static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
-					unsigned long action, void *hcpu)
-{
-	unsigned long flags;
-	unsigned int cpu = (unsigned long)hcpu;
-	unsigned int online_cpus = num_online_cpus();
-	struct device *dev;
-	struct eem_det *det;
-	enum mt_eem_cpu_id cluster_id;
-
-	/* CPU mask - Get on-line cpus per-cluster */
-	struct cpumask eem_cpumask;
-	struct cpumask cpu_online_cpumask;
-	unsigned int cpus, big_cpus;
-
-	if (ctrl_ITurbo < 2) {
-		eem_debug("Default I-Turbo off (%d) !!", ctrl_ITurbo);
-		return NOTIFY_OK;
-	}
-	eem_debug("I-Turbo start to run (%d) !!", ctrl_ITurbo);
-
-	/* Current active CPU is belong which cluster */
-	cluster_id = arch_get_cluster_id(cpu);
-
-	/* How many active CPU in this cluster, present by bit mask
-	*	ex:	B	L	LL
-	*		00	1111	0000
-	*/
-	arch_get_cluster_cpus(&eem_cpumask, cluster_id);
-
-	/* How many active CPU online in this cluster, present by number */
-	cpumask_and(&cpu_online_cpumask, &eem_cpumask, cpu_online_mask);
-	cpus = cpumask_weight(&cpu_online_cpumask);
-
-	if (eem_log_en)
-		eem_error("@%s():%d, cpu = %d, act = %lu, on_cpus = %d, clst = %d, clst_cpu = %d\n"
-		, __func__, __LINE__, cpu, action, online_cpus, cluster_id, cpus);
-
-	dev = get_cpu_device(cpu);
-
-	if (dev) {
-		det = id_to_eem_det(EEM_DET_BIG);
-		arch_get_cluster_cpus(&eem_cpumask, MT_EEM_CPU_B);
-		cpumask_and(&cpu_online_cpumask, &eem_cpumask, cpu_online_mask);
-		big_cpus = cpumask_weight(&cpu_online_cpumask);
-
-		switch (action) {
-		case CPU_POST_DEAD:
-			if ((ITurboRun == 0) && (big_cpus == ITURBO_CPU_NUM) && (cluster_id == MT_EEM_CPU_B)) {
-				if (eem_log_en)
-					eem_debug("Turbo(1) DEAD (%d) BIG_cc(%d)\n", online_cpus, big_cpus);
-				mt_ptp_lock(&flags);
-				ITurboRun = 1;
-				/* Revise BIG private table */
-				/* [25:21]=dcmdiv, [20:12]=DDS, [11:7]=clkdiv, [6:4]=postdiv, [3:0]=CFindex */
-#if 0 /* no record table */
-				det->recordRef[0] =
-					((*(recordTbl + (48 * 8) + 0) & 0x1F) << 21) |
-					((*(recordTbl + (48 * 8) + 1) & 0x1FF) << 12) |
-					((*(recordTbl + (48 * 8) + 2) & 0x1F) << 7) |
-					((*(recordTbl + (48 * 8) + 3) & 0x7) << 4) |
-					(*(recordTbl + (48 * 8) + 4) & 0xF);
-#endif
-				eem_set_eem_volt(det);
-				mt_ptp_unlock(&flags);
-			} else {
-				if (eem_log_en)
-					eem_error("Turbo(%d)ed !! DEAD (%d), BIG_cc(%d)\n",
-						ITurboRun, online_cpus, big_cpus);
-			}
-		break;
-
-		case CPU_DOWN_PREPARE:
-			if ((ITurboRun == 1) && (big_cpus == ITURBO_CPU_NUM) && (cluster_id == MT_EEM_CPU_B)) {
-				if (eem_log_en)
-					eem_error("Turbo(0) DP (%d) BIG_cc(%d)\n", online_cpus, big_cpus);
-				mt_ptp_lock(&flags);
-				ITurboRun = 0;
-				/* Restore BIG private table */
-#if 0 /* no record table */
-				det->recordRef[0] =
-					((*(recordTbl + (48 * 8) + 0) & 0x1F) << 21) |
-					((*(recordTbl + (48 * 8) + 1) & 0x1FF) << 12) |
-					((*(recordTbl + (48 * 8) + 2) & 0x1F) << 7) |
-					((*(recordTbl + (48 * 8) + 3) & 0x7) << 4) |
-					(*(recordTbl + (48 * 8) + 4) & 0xF);
-#endif
-				eem_set_eem_volt(det);
-				mt_ptp_unlock(&flags);
-			} else {
-				if (eem_log_en)
-					eem_error("Turbo(%d)ed !! DP (%d), BIG_cc(%d)\n",
-						ITurboRun, online_cpus, big_cpus);
-			}
-		break;
-
-		case CPU_UP_PREPARE:
-			if ((ITurboRun == 0) && (cpu == 8) && (big_cpus == 0)) {
-				eem_error("Turbo(1) UP (%d), BIG_cc(%d)\n", online_cpus, big_cpus);
-				mt_ptp_lock(&flags);
-				ITurboRun = 1;
-				/* Revise BIG private table */
-#if 0 /* no record table*/
-				det->recordRef[0] =
-					((*(recordTbl + (48 * 8) + 0) & 0x1F) << 21) |
-					((*(recordTbl + (48 * 8) + 1) & 0x1FF) << 12) |
-					((*(recordTbl + (48 * 8) + 2) & 0x1F) << 7) |
-					((*(recordTbl + (48 * 8) + 3) & 0x7) << 4) |
-					(*(recordTbl + (48 * 8) + 4) & 0xF);
-#endif
-				eem_set_eem_volt(det);
-				mt_ptp_unlock(&flags);
-			} else if ((ITurboRun == 1) && (big_cpus == ITURBO_CPU_NUM) && (cluster_id == MT_EEM_CPU_B)) {
-				if (eem_log_en)
-					eem_error("Turbo(0) UP (%d), BIG_cc(%d)\n", online_cpus, big_cpus);
-				mt_ptp_lock(&flags);
-				ITurboRun = 0;
-				/* Restore BIG private table */
-#if 0 /* no record table */
-				det->recordRef[0] =
-					((*(recordTbl + (48 * 8) + 0) & 0x1F) << 21) |
-					((*(recordTbl + (48 * 8) + 1) & 0x1FF) << 12) |
-					((*(recordTbl + (48 * 8) + 2) & 0x1F) << 7) |
-					((*(recordTbl + (48 * 8) + 3) & 0x7) << 4) |
-					(*(recordTbl + (48 * 8) + 4) & 0xF);
-#endif
-				eem_set_eem_volt(det);
-				mt_ptp_unlock(&flags);
-			} else {
-				if (eem_log_en)
-					eem_error("Turbo(%d)ed !! UP (%d), BIG_cc(%d)\n",
-						ITurboRun, online_cpus, big_cpus);
-			}
-		break;
-		}
-	}
-	return NOTIFY_OK;
-}
-#endif /* ifdef __KERNEL__*/
-#endif /* if ITurbo */
 
 void eem_init02(void)
 {
@@ -3879,9 +3865,11 @@ static int eem_iturbo_en_proc_show(struct seq_file *m, void *v)
 
 	FUNC_ENTER(EEM_FUNC_LV_HELP);
 	seq_printf(m, "%s\n", ((ctrl_ITurbo) ? "Enable" : "Disable"));
+	#if 0
 	for (i = 0; i < NR_FREQ; i++)
 		seq_printf(m, "ITurbo_offset[%d] = %d (0.00625 per step)\n", i, ITurbo_offset[i]);
 	FUNC_EXIT(EEM_FUNC_LV_HELP);
+	#endif
 
 	return 0;
 }
@@ -4647,11 +4635,6 @@ int __init eem_init(void)
 		return 0;
 	}
 
-	#if ITurbo
-	/* Read E-Fuse to control ITurbo mode */
-	ctrl_ITurbo = eem_devinfo.BIG_TURBO;
-	#endif
-
 	#ifdef __KERNEL__
 	/* init timer for log / volt */
 	hrtimer_init(&eem_log_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
@@ -4799,6 +4782,18 @@ static unsigned int eem_to_sspm(unsigned int cmd, struct eem_ipi_data *eem_data)
 		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
 		if (ret != 0)
 			eem_error("sspm_ipi_send_sync error(IPI_EEM_OFFSET_PROC_WRITE) ret:%d - %d\n",
+						ret, ackData);
+		else if (ackData < 0)
+			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
+		break;
+	#endif
+
+	#if ITurbo
+	case IPI_EEM_ITURBORUN_WRITE:
+		eem_data->cmd = cmd;
+		ret = sspm_ipi_send_sync(IPI_ID_PTPOD, IPI_OPT_POLLING, eem_data, len, &ackData, 1);
+		if (ret != 0)
+			eem_error("sspm_ipi_send_sync error(IPI_EEM_ITURBORUN_WRITE) ret:%d - %d\n",
 						ret, ackData);
 		else if (ackData < 0)
 			eem_error("cmd(%d) return error(%d)\n", cmd, ackData);
@@ -5045,13 +5040,10 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 	for_each_det(det) {
 		lock = eem_logs->det_log[det->ctrl_id].lock;
 		locklimit++;
-		eem_debug("det(%d) lock=%d\n", det->ctrl_id, lock);
+		/* eem_debug("det(%d) lock=%d\n", det->ctrl_id, lock); */
 
 		det->num_freq_tbl = eem_logs->det_log[det->ctrl_id].num_freq_tbl;
-		#if !EEM_BANK_SOC
-		if (det->ctrl_id == EEM_CTRL_SOC)
-			break; /* break out while loop, read next det */
-		#endif
+
 		for (i = EEM_PHASE_INIT01; i < NR_EEM_PHASE; i++) {
 			/* seq_printf(m, "Bank_number = %d\n", det->ctrl_id); */
 			seq_printf(m, "Bank_number = %d\n", det->ctrl_id);
@@ -5310,6 +5302,90 @@ out:
 }
 #endif
 
+/*
+ * set EEM ITurbo enable by procfs interface
+ */
+#if ITurbo
+static int eem_iturbo_en_proc_show(struct seq_file *m, void *v)
+{
+	/* int i; */
+
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
+	seq_printf(m, "%s\n", ((ctrl_ITurbo) ? "Enable" : "Disable"));
+	#if 0
+	for (i = 0; i < NR_FREQ; i++)
+		seq_printf(m, "ITurbo_offset[%d] = %d (0.00625 per step)\n", i, ITurbo_offset[i]);
+	#endif
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
+
+	return 0;
+}
+
+static ssize_t eem_iturbo_en_proc_write(struct file *file,
+					 const char __user *buffer, size_t count, loff_t *pos)
+{
+	int ret;
+	unsigned int value;
+	char *buf = (char *) __get_free_page(GFP_USER);
+	unsigned int ipi_ret = 0;
+	struct eem_ipi_data eem_data;
+
+	FUNC_ENTER(EEM_FUNC_LV_HELP);
+
+	if (!buf) {
+		FUNC_EXIT(EEM_FUNC_LV_HELP);
+		return -ENOMEM;
+	}
+
+	ret = -EINVAL;
+
+	if (count >= PAGE_SIZE)
+		goto out;
+
+	ret = -EFAULT;
+
+	if (copy_from_user(buf, buffer, count))
+		goto out;
+
+	buf[count] = '\0';
+
+	ret = -EINVAL;
+
+	if (kstrtoint(buf, 10, &value)) {
+		eem_debug("bad argument!! Should be \"0\" or \"1\"\n");
+		goto out;
+	}
+
+	ret = 0;
+	/* memset(&eem_data, 0, sizeof(struct eem_ipi_data)); */
+
+	switch (value) {
+	case 0:
+		eem_debug("eem ITurbo disabled.\n");
+		ctrl_ITurbo = 0;
+		ITurboRun = 0;
+		eem_data.u.data.arg[0] = ITurboRun;
+		ipi_ret = eem_to_sspm(IPI_EEM_ITURBORUN_WRITE, &eem_data);
+		break;
+
+	case 1:
+		eem_debug("eem ITurbo enabled.\n");
+		ctrl_ITurbo = 2;
+		break;
+
+	default:
+		eem_debug("bad argument!! Should be \"0\" or \"1\"\n");
+		ret = -EINVAL;
+	}
+
+out:
+	free_page((unsigned long)buf);
+	FUNC_EXIT(EEM_FUNC_LV_HELP);
+
+	return (ret < 0) ? ret : count;
+}
+#endif /* if ITurbo */
+
 static int eem_vcore_volt_proc_show(struct seq_file *m, void *v)
 {
 
@@ -5524,6 +5600,10 @@ EEM_PROC_FOPS_RO(eem_cur_volt);
 EEM_PROC_FOPS_RW(eem_offset);
 #endif
 
+#if ITurbo
+EEM_PROC_FOPS_RW(eem_iturbo_en);
+#endif
+
 EEM_PROC_FOPS_RO(eem_dump);
 #ifdef EEM_LOG_EN
 EEM_PROC_FOPS_RW(eem_log_en);
@@ -5562,6 +5642,9 @@ static int create_procfs(void)
 		EEM_PROC_ENTRY(eem_dump),
 		#ifdef EEM_LOG_EN
 		EEM_PROC_ENTRY(eem_log_en),
+		#endif
+		#if ITurbo
+		EEM_PROC_ENTRY(eem_iturbo_en),
 		#endif
 	};
 
@@ -5725,7 +5808,7 @@ static int __init vcore_ptp_init(void)
 		eem_vcore[i] = (eem_vcore[i] < eem_vcore[i+1]) ? eem_vcore[i+1] : eem_vcore[i];
 
 	for (i = 0; i < VCORE_NR_FREQ; i++)
-		eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[i] = eem_vcore[i];
+		eem_logs->det_log[EEM_DET_BANK5].volt_tbl_pmic[i] = eem_vcore[i];
 
 	/* MT6799 workaround for display:
 	* If primary_display_get_dsc_1slice_info() return 1,
@@ -5736,10 +5819,10 @@ static int __init vcore_ptp_init(void)
 		mt_eem_vcorefs_update_volt(true);
 
 	eem_error("Got vcore volt(pmic): 0x%x 0x%x 0x%x 0x%x\n",
-				eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[0],
-				eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[1],
-				eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[2],
-				eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[3]);
+				eem_logs->det_log[EEM_DET_BANK5].volt_tbl_pmic[0],
+				eem_logs->det_log[EEM_DET_BANK5].volt_tbl_pmic[1],
+				eem_logs->det_log[EEM_DET_BANK5].volt_tbl_pmic[2],
+				eem_logs->det_log[EEM_DET_BANK5].volt_tbl_pmic[3]);
 	return 0;
 }
 
@@ -5788,7 +5871,7 @@ unsigned int get_vcore_ptp_volt(unsigned int seg)
 	eem_debug("get_vcore_ptp_volt: %d\n",
 				eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[seg]);
 #endif
-	return eem_logs->det_log[EEM_DET_SOC].volt_tbl_pmic[seg];
+	return eem_logs->det_log[EEM_DET_BANK5].volt_tbl_pmic[seg];
 }
 
 #if 0 /* gpu dvfs no need this anymore */
@@ -5920,9 +6003,12 @@ static int eem_probe(struct platform_device *pdev)
 					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[1],
 					eem_logs->det_log[det->ctrl_id].volt_tbl_init2[0]);
 	}
-	eem_debug("eem_probe ok\n");
+	#if ITurbo
+	register_hotcpu_notifier(&_mt_eem_cpu_notifier);
+	ctrl_ITurbo = (ctrl_ITurbo == 0) ? 0 : 2;
+	#endif
+	eem_debug("for SSPM eem_probe ok\n");
 	FUNC_EXIT(EEM_FUNC_LV_MODULE);
-
 	return 0;
 }
 static int eem_suspend(struct platform_device *pdev, pm_message_t state)
