@@ -497,8 +497,12 @@ static int tpd_irq_registration(void)
 
 	node = of_find_matching_node(node, touch_of_match);
 	if (node) {
-		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
-		gpio_set_debounce(ints[0], ints[1]);
+		if (of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints)) == 0) {
+			GTP_INFO("[%s]debounce:%d-%d\n", __func__, ints[0], ints[1]);
+			gpio_set_debounce(ints[0], ints[1]);
+		} else {
+			GTP_INFO("[%s]debounce time not found\n", __func__);
+		}
 
 		touch_irq = irq_of_parse_and_map(node, 0);
 		GTP_INFO("Device gt1x_int_type = %d!", gt1x_int_type);
@@ -523,7 +527,7 @@ static int tpd_irq_registration(void)
 		GTP_ERROR("tpd request_irq can not find touch eint device node!.");
 		ret = -1;
 	}
-	GTP_INFO("[%s]irq:%d, debounce:%d-%d:", __func__, touch_irq, ints[0], ints[1]);
+	GTP_INFO("[%s]irq:%d", __func__, touch_irq);
 	return ret;
 }
 
