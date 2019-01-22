@@ -448,6 +448,8 @@ struct spm_lp_scen __spm_suspend = {
 	.wakestatus = &suspend_info[0],
 };
 
+static int mt_power_gs_dump_suspend_count = 2;
+
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -829,7 +831,8 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	snapshot_golden_setting(__func__, 0);
 #endif
-	mt_power_gs_dump_suspend();
+	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
+		mt_power_gs_dump_suspend();
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
