@@ -204,7 +204,7 @@ static struct pm_qos_request vpu_qos_vcore_request[MTK_VPU_CORE];
 #endif
 
 /* jtag */
-static bool is_jtag_enabled;
+/* static bool is_jtag_enabled; */
 
 /* direct link */
 static bool is_locked;
@@ -599,7 +599,7 @@ static int vpu_get_hw_vcore_opp(int core)
 
 /* expected range, vcore_index: 0~1 */
 /* expected range, freq_index: 0~7 */
-static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
+static int vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 {
 	int i = 0;
 	bool freq_check = false;
@@ -637,6 +637,8 @@ static void vpu_opp_check(int core, uint8_t vcore_index, uint8_t freq_index)
 
 		if (vcore_index >= opps.count) {
 			LOG_ERR("wrong vcore opp(%d), max(%d)", vcore_index, opps.count - 1);
+			mutex_unlock(&opp_mutex);
+			return -1;
 		} else if ((vcore_index < opps.vcore.index) ||
 				((vcore_index > opps.vcore.index) && (!opp_keep_flag))) {
 			opps.vcore.index = vcore_index;
@@ -704,6 +706,7 @@ out:
 		opps.vcore.index, get_vcore_opp, opps.dsp.index, opps.dspcore[0].index,
 		opps.dspcore[1].index, opps.ipu_if.index, max_vcore_opp, max_dsp_freq, freq_check,
 		force_change_vcore_opp[core], force_change_dsp_freq[core], change_freq_first[core], opp_keep_flag);
+	return 0;
 }
 
 static bool vpu_change_opp(int core, int type)
@@ -1792,7 +1795,7 @@ static int vpu_service_routine(void *arg)
 	int *d = (int *)arg;
 	int service_core = (*d);
 	bool get = false;
-	int i = 0, j = 0, cnt = 0;
+	int i = 0, j = 0, cnt = 0, opp_checkret = 0;
 
 	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 
@@ -1816,6 +1819,7 @@ static int vpu_service_routine(void *arg)
 		head = NULL;
 		get = false;
 		cnt = 0;
+		opp_checkret = 0;
 
 		mutex_lock(&vpu_dev->servicepool_mutex[service_core]);
 		if (!(list_empty(&vpu_dev->servicepool_list[service_core]))) {
@@ -1893,7 +1897,8 @@ static int vpu_service_routine(void *arg)
 			#endif
 			LOG_DBG("[vpu_%d] run, opp(%d/%d/%d)\n", service_core, req->power_param.opp_step,
 				vcore_opp_index, dsp_freq_index);
-			vpu_opp_check(service_core, vcore_opp_index, dsp_freq_index);
+			opp_checkret = vpu_opp_check(service_core,
+				vcore_opp_index, dsp_freq_index);
 			LOG_INF("[vpu_%d<-0x%x]0x%lx,ID(0x%lx_%d,%d->%d),o(%d,%d/%d-%d,%d-%d),f(0x%x),%d/%d/%d/0x%x\n",
 				service_core, req->requested_core, (unsigned long)req->user_id,
 				(unsigned long)req->request_id, req->frame_magic,
@@ -1903,6 +1908,10 @@ static int vpu_service_routine(void *arg)
 				dsp_freq_index, opps.dspcore[service_core].index, g_func_mask,
 				vpu_dev->servicepool_list_size[service_core],
 				vpu_dev->commonpool_list_size, is_locked, efuse_data);
+			if (opp_checkret) {
+				LOG_ERR("opp check fail");
+				goto out;
+			}
 			#if 0
 			/*  prevent the worker shutdown vpu first, and current enque use the same algo_id */
 			/*ret = wait_to_do_vpu_running(service_core);*/
@@ -2710,7 +2719,8 @@ static int vpu_check_postcond(int core)
 
 int vpu_hw_enable_jtag(bool enabled)
 {
-	int ret;
+	int ret = 0;
+#if 0
 	int TEMP_CORE = 0;
 
 	vpu_get_power(TEMP_CORE);
@@ -2720,11 +2730,10 @@ int vpu_hw_enable_jtag(bool enabled)
 	ret |= mt_set_gpio_mode(GPIO16 | 0x80000000, enabled ? GPIO_MODE_05 : GPIO_MODE_01);
 	ret |= mt_set_gpio_mode(GPIO17 | 0x80000000, enabled ? GPIO_MODE_05 : GPIO_MODE_01);
 	ret |= mt_set_gpio_mode(GPIO18 | 0x80000000, enabled ? GPIO_MODE_05 : GPIO_MODE_01);
+	CHECK_RET("fail to config gpio-jtag2!\n");
 #else
 	ret = 0;
 #endif
-
-	CHECK_RET("fail to config gpio-jtag2!\n");
 
 	vpu_write_field(TEMP_CORE, FLD_SPNIDEN, enabled);
 	vpu_write_field(TEMP_CORE, FLD_SPIDEN, enabled);
@@ -2733,6 +2742,7 @@ int vpu_hw_enable_jtag(bool enabled)
 
 out:
 	vpu_put_power(TEMP_CORE, VPT_ENQUE_ON);
+#endif
 	return ret;
 }
 
@@ -4443,8 +4453,9 @@ int vpu_set_power_parameter(uint8_t param, int argc, int *args)
 		ret = (argc == 1) ? 0 : -EINVAL;
 		CHECK_RET("invalid argument, expected:1, received:%d\n", argc);
 
-		is_jtag_enabled = args[0];
-		ret = vpu_hw_enable_jtag(is_jtag_enabled);
+		/* is_jtag_enabled = args[0]; */
+		/* ret = vpu_hw_enable_jtag(is_jtag_enabled); */
+		LOG_ERR("DO not support jtag control");
 
 		break;
 	case VPU_POWER_PARAM_LOCK:
