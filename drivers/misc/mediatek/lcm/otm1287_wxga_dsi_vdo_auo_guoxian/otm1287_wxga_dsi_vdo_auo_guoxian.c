@@ -481,6 +481,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width  = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->density = 160;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode   = CMD_MODE;

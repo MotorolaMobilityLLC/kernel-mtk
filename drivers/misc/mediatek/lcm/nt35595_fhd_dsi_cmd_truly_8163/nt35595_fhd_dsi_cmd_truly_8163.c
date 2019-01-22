@@ -737,9 +737,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 	memset(params, 0, sizeof(LCM_PARAMS));
 
 	params->type = LCM_TYPE_DSI;
-	params->density = 213;
+
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->density = 480;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;

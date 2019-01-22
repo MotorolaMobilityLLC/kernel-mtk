@@ -100,9 +100,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 	memset(params, 0, sizeof(LCM_PARAMS));
 
 	params->type = LCM_TYPE_DSI;
-	params->density = 230;
+
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->density = 213;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
@@ -160,6 +161,7 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	MDELAY(20);
 #else
+	SET_RESET_PIN(1);
 	pr_debug("[Kernel/LCM] lcm_init() enter\n");
 #endif
 }
@@ -176,8 +178,6 @@ void lcm_suspend(void)
 	MDELAY(10);
 #else
 	pr_debug("[Kernel/LCM] lcm_suspend() enter\n");
-	SET_RESET_PIN(1);
-	MDELAY(10);
 
 	SET_RESET_PIN(0);
 	MDELAY(10);
