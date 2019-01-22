@@ -3047,10 +3047,28 @@ static int32_t cmdq_core_insert_backup_cookie_instr(struct TaskStruct *pTask, in
 	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | regAccessToken,
 		((1 << 31) | (1 << 15) | 1));
 
-	/* Load into 32-bit GPR (R0-R15) */
-	cmdq_core_append_command(pTask,
-		(CMDQ_CODE_READ << 24) | (regAddr & 0xffff) |
-		((subsysCode & 0x1f) << subsysBit) | (2 << 21), valueRegId);
+	if (subsysCode != CMDQ_SPECIAL_SUBSYS_ADDR) {
+		/* Load into 32-bit GPR (R0-R15) */
+		cmdq_core_append_command(pTask,
+			(CMDQ_CODE_READ << 24) | (regAddr & 0xffff) |
+			((subsysCode & 0x1f) << subsysBit) | (2 << 21), valueRegId);
+	} else {
+		/*
+		 * for special sw subsys addr,
+		 * we don't read directly due to append command will acquire
+		 * CMDQ_SYNC_TOKEN_GPR_SET_4 event again.
+		 */
+
+		/* set GPR to address */
+		cmdq_core_append_command(pTask,
+			(CMDQ_CODE_MOVE << 24) | ((valueRegId & 0x1f) << 16) | (4 << 21),
+			regAddr);
+
+		/* read data from address in GPR to GPR */
+		cmdq_core_append_command(pTask,
+			(CMDQ_CODE_READ << 24) | ((valueRegId & 0x1f) << 16) | (6 << 21),
+			valueRegId);
+	}
 
 	/* Note that <MOVE> arg_b is 48-bit */
 	/* so writeAddress is split into 2 parts */
