@@ -38,6 +38,7 @@ obj-y += mtk_spm.o
 obj-y += mtk_spm_fs.o
 obj-y += mtk_spm_internal.o
 #obj-y += mtk_spm_pmic_wrap.o
+obj-y += mtk_spm_resource_req.o
 obj-y += mtk_spm_sleep.o
 #obj-y += mtk_spm_sodi.o
 #obj-y += mtk_spm_sodi3p0.o
