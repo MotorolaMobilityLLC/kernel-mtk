@@ -1,8 +1,10 @@
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
 subdir-ccflags-y += -I$(srctree)/drivers/power/mediatek/charger
+subdir-ccflags-y += -I$(srctree)/drivers/power/mediatek/misc
 else
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/mt6757
+subdir-ccflags-y += -I$(srctree)/drivers/power/mediatek/misc
 endif
 
 obj-$(CONFIG_MFD_RT5081_PMU)		+= rt5081_pmu_i2c.o rt5081_pmu_regmap.o\
