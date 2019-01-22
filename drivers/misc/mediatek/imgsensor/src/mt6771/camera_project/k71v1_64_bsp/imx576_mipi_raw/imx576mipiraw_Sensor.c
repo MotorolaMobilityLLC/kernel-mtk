@@ -161,11 +161,11 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.ihdr_le_firstline = 0,  /* 1,le first ; 0, se first */
 	.sensor_mode_num = 5,	  /* support sensor mode num */
 
-	.cap_delay_frame = 3,/* 3 guanjd modify for cts */
-	.pre_delay_frame = 3,/* 3 guanjd modify for cts */
-	.video_delay_frame = 3,
-	.hs_video_delay_frame = 3,
-	.slim_video_delay_frame = 3,
+	.cap_delay_frame = 2,/* 3 guanjd modify for cts */
+	.pre_delay_frame = 2,/* 3 guanjd modify for cts */
+	.video_delay_frame = 2,
+	.hs_video_delay_frame = 2,
+	.slim_video_delay_frame = 2,
 	/*zhengjiang.zhu@EXP CameraDrv, 2017/03/03  Increase ISP drive ability */
 	.isp_driving_current = ISP_DRIVING_8MA,  /* 2ma */
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
