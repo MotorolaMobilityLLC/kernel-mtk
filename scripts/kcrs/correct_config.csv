@@ -1,7 +1,7 @@
 CONFIG,TYPE,OWNER,NOTE,6757,6757_64,6799_64,6763_64,6758_64,6739,6771,6771_64,6775,6775_64
 CONFIG_ACCDET_EINT,PLATFORM,darren.liao,,X,X,X,X,X,X,X,X,X,X
 CONFIG_ACCDET_EINT_IRQ,PLATFORM,darren.liao,,y,y,y,y,y,y,y,y,y,y
-CONFIG_ACCDET_SUPPORT_EINT0,PLATFORM,luhua.xu,,X,,,X,,y,y,y,y,
+CONFIG_ACCDET_SUPPORT_EINT0,PLATFORM,luhua.xu,,X,,,X,,y,y,y,y,X
 CONFIG_ACCDET_SUPPORT_EINT1,PLATFORM,xuexi.bai,,X,X,y,y,X,X,X,X,X,y
 CONFIG_AEABI,PLATFORM,,,y,X,X,X,X,y,y,X,y,X
 CONFIG_ANDROID,COMMON,,,y,y,y,y,y,y,y,y,y,y
@@ -184,15 +184,15 @@ CONFIG_GATOR,COMMON,Ian-y.Chen,,X,X,X,X,X,,,X,,X
 CONFIG_GATOR_DRIVER,COMMON,Ian-y.Chen,,y,y,y,y,y,y,y,y,y,y
 CONFIG_GT1151_CONFIG,PROJECT,zh.chen,,,,,,,,,,,
 CONFIG_GT1151_FIRMWARE,PROJECT,zh.chen,,,,,,,,,,,
-CONFIG_GTP_AUTO_UPDATE,PROJECT,xing.fang,,,,,,,,,,,
-CONFIG_GTP_REQUEST_FW_UPDATE,PLATFORM,xing.fang,,X,X,X,X,y,y,y,X,y,X
-CONFIG_GTP_CREATE_WR_NODE,PROJECT,xing.fang,,,,,,,,,,,
-CONFIG_GTP_CUSTOM_CFG,PROJECT,xing.fang,,,,,,,,,,,
-CONFIG_GTP_DRIVER_SEND_CFG,PROJECT,xing.fang,,,,,,,,,,,
-CONFIG_GTP_HEADER_FW_UPDATE,PROJECT,xing.fang,,,,,,,,,,,
-CONFIG_GTP_HOTKNOT,PROJECT,xing.fang,,,,,,,,,,,
-CONFIG_GTP_ICS_SLOT_REPORT,PROJECT,xing.fang,,,,,,,,,,,
-CONFIG_GTP_POWER_CTRL_SLEEP,PROJECT,xing.fang,,,,,,,,,,,
+CONFIG_GTP_AUTO_UPDATE,PROJECT,Jane Zhang,,,,,,,,,,,
+CONFIG_GTP_REQUEST_FW_UPDATE,PLATFORM,Jane Zhang,,X,X,X,X,y,y,y,X,y,y
+CONFIG_GTP_CREATE_WR_NODE,PROJECT,Jane Zhang,,,,,,,,,,,
+CONFIG_GTP_CUSTOM_CFG,PROJECT,Jane Zhang,,,,,,,,,,,
+CONFIG_GTP_DRIVER_SEND_CFG,PROJECT,Jane Zhang,,,,,,,,,,,
+CONFIG_GTP_HEADER_FW_UPDATE,PROJECT,Jane Zhang,,,,,,,,,,,
+CONFIG_GTP_HOTKNOT,PROJECT,Jane Zhang,,,,,,,,,,,
+CONFIG_GTP_ICS_SLOT_REPORT,PROJECT,Jane Zhang,,,,,,,,,,,
+CONFIG_GTP_POWER_CTRL_SLEEP,PROJECT,Jane Zhang,,,,,,,,,,,
 CONFIG_HAVE_ARM_ARCH_TIMER,PLATFORM,,,y,X,X,X,X,y,y,X,y,X
 CONFIG_HEADSET_SUPPORT_FIVE_POLE,PROJECT,zh.chen,new config in this commit d7e6a06694326785164e1d5412d5a9a8513648ad,,,,,,,,,,
 CONFIG_HIBERNATION,PROJECT,Calvin.Hung,,,,,,,,,,,
@@ -367,7 +367,7 @@ CONFIG_MTK_ENG_BUILD,USER,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_FM_50KHZ_SUPPORT,PROJECT,xueqin.wang,,,,,,,,,,,
 CONFIG_MTK_DTBO_FEATURE,PROJECT,chia-hao.hsu,,X,X,X,X,X,,,X,,X
 CONFIG_MTK_SCHED_CPULOAD,PLATFORM,michael.jiang,,X,X,X,X,X,y,y,y,y,X
-CONFIG_MTK_SCHED_BOOST,PLATFORM,jing-ting.wu,,X,X,X,X,X,X,y,y,X,X
+CONFIG_MTK_SCHED_BOOST,PLATFORM,Jian-Min.Liu,,X,X,X,X,X,X,y,y,X,y
 CONFIG_MTK_SCHED_EAS_PLUS,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,y,y,y
 CONFIG_MTK_SCHED_EAS_POWER_SUPPORT,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,y,y,y
 CONFIG_MTK_SCHED_VIP_TASKS,PLATFORM,michael.jiang,,X,X,y,y,y,y,y,y,y,y
@@ -393,6 +393,7 @@ CONFIG_MTK_AAL_SUPPORT,PROJECT,yiruei.wu,,,,,,,,,,,
 CONFIG_MTK_ACCDET,COMMON,darren.liao,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_ACCELHUB,PROJECT,weiqi.fu,new config in this commit ddc5d59450d236e7d3732ebd43a19c5056787cc0,,,,,,,,,,
 CONFIG_MTK_ACTIVITYHUB,PROJECT,hongxu.zhao,new config in this commit c432a63a513fc50d10e28c1c65b6bba2903ac29c,,,,,,,,,,
+CONFIG_MTK_ADDITIONAL_BATTERY_TABLE,PLATFORM,wy.chuang,battery,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_AEE_FEATURE,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_AEE_MRDUMP,COMMON,my.chunag,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_AKM8963_NEW,PROJECT,Lomen.Wu,,X,X,X,,,,,,,
@@ -547,7 +548,7 @@ CONFIG_MTK_HWMON,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_ICCS_SUPPORT,PROJECT,chia-hao.hsu,new config in this commit f35226c838dfbc958d01418431cef04bb6ecd7de,x,x,y,,,,,,,
 CONFIG_MTK_ICM20645G,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda85d1c6ea1c0120c87fa93fc2570e8,,,,,,,,,,
 CONFIG_MTK_ICM20645GY,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda85d1c6ea1c0120c87fa93fc2570e8,,,,,,,,,,
-CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT,yt.chang,,,,,,,,y,y,,
+CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT,PLATFORM,yt.chang,,,,,,,y,y,y,y,y
 CONFIG_MTK_IMGSENSOR,COMMON,Josepchi.Tsai,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_INPKHUB,PROJECT,qiangming.xia,new config in this commit e5afb39d5bc749c04142bb69e4f89131015320a6,,,,,,,,,,
 CONFIG_MTK_INTERNAL,PROJECT,junzhi.zhao,,,,,y,y,,,y,,y
@@ -636,7 +637,7 @@ CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT,PROJECT,elvin.lin,,,,,,,,,,,
 CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT,PROJECT,wy.chuang,,,,,,,,,,,
 CONFIG_MTK_PUMP_EXPRESS_SUPPORT,PROJECT,elvin.lin,,,,,,,,,,,
 CONFIG_MTK_PWM,PROJECT,qiangming.xia,not required if not used,,,,,,,,,,
-CONFIG_MTK_QOS_SUPPORT,PLATFORM,Howard.Hsu,DVFS related options,X,X,X,X,X,X,y,y,y,y
+CONFIG_MTK_QOS_SUPPORT,PLATFORM,Cheng-En.Chung,DVFS related options,X,X,X,X,X,X,y,y,y,y
 CONFIG_MTK_RAM_CONSOLE,COMMON,Ji.Zhang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_RAM_CONSOLE_ADDR,PLATFORM,Ji.Zhang,,0x0011D000,0x0011D000,0x0012D000,0x0011D000,0x0011D000,0x0010DC00,0x0011D000,0x0011D000,0x0011D000,0x0011D000
 CONFIG_MTK_RAM_CONSOLE_DRAM_ADDR,PLATFORM,Ji.Zhang,,0x44400000,0x44400000,0x44400000,0x54400000,0x54400000,0x44400000,0x54400000,0x54400000,0x54400000,0x54400000
@@ -860,28 +861,28 @@ CONFIG_SETEND_EMULATION,PLATFORM,,,X,y,y,y,y,X,X,y,X,y
 CONFIG_SLUB_DEBUG,USER;PROJECT,miles.chen,gmo project config,,,,,,,,,,
 CONFIG_SLUB_DEBUG_ON,USER;PROJECT,miles.chen,gmo project config,,,,,,,,,,
 CONFIG_SLOB,PROJECT,miles.chen,,X,X,X,X,X,X,X,X,X,X
-CONFIG_SMP,PLATFORM,scott.shu,,y,X,X,X,X,y,y,X,y,X
-CONFIG_SND,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SND_ARM,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
-CONFIG_SND_DEBUG,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SND_DEBUG_VERBOSE,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SND_DYNAMIC_MINORS,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SND_HRTIMER,PROJECT,,,,,,,,,,,,
-CONFIG_SND_MIXER_OSS,COMMON,georgecy.lin,,X,X,X,X,X,X,X,X,X,X
-CONFIG_SND_PCM_OSS,COMMON,georgecy.lin,,X,X,X,X,X,X,X,X,X,X
-CONFIG_SND_PCM_XRUN_DEBUG,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SND_SEQ_DUMMY,PROJECT,,,,,,,,,,,,
-CONFIG_SND_SEQUENCER,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SND_SEQUENCER_OSS,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SND_SIMPLE_CARD,PLATFORM,,,y,y,y,y,X,X,X,y,X,y
-CONFIG_SND_SOC,COMMON,,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SMP,PLATFORM,alex.chchang,,y,X,X,X,X,y,y,X,y,X
+CONFIG_SND,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SND_ARM,PLATFORM,Michael.Hsiao,,X,X,X,X,X,X,X,X,X,X
+CONFIG_SND_DEBUG,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SND_DEBUG_VERBOSE,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SND_DYNAMIC_MINORS,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SND_HRTIMER,PROJECT,Michael.Hsiao,,,,,,,,,,,
+CONFIG_SND_MIXER_OSS,COMMON,Michael.Hsiao,,X,X,X,X,X,X,X,X,X,X
+CONFIG_SND_PCM_OSS,COMMON,Michael.Hsiao,,X,X,X,X,X,X,X,X,X,X
+CONFIG_SND_PCM_XRUN_DEBUG,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SND_SEQ_DUMMY,PROJECT,Michael.Hsiao,,,,,,,,,,,
+CONFIG_SND_SEQUENCER,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SND_SEQUENCER_OSS,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SND_SIMPLE_CARD,PLATFORM,Michael.Hsiao,,y,y,y,y,X,X,X,y,X,y
+CONFIG_SND_SOC,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SND_SOC_MAX98926 ,PROJECT,chipeng.chang,use in 97 and new config in this commit 4ba429dbf0ed272ef89e8754b562c2413c220c8a,X,X,X,X,X,X,X,X,X,X
 CONFIG_SND_SOC_RT5509,PROJECT,shane.chien,,O,O,O,,,,,,,
-CONFIG_SND_SPI,COMMON,,,N,N,N,N,N,N,N,N,N,N
-CONFIG_SND_USB_AUDIO,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SND_VERBOSE_PRINTK,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SOUND,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_SOUND_PRIME,COMMON,,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SND_SPI,COMMON,Michael.Hsiao,,N,N,N,N,N,N,N,N,N,N
+CONFIG_SND_USB_AUDIO,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SND_VERBOSE_PRINTK,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SOUND,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SOUND_PRIME,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SPECIFY_IMGSENSOR,PROJECT,josepchi.tsai,,X,X,X,X,X,X,O,O,O,O
 CONFIG_SPI,COMMON,Freddy.Hsin,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SPI_MT65XX,PLATFORM,Freddy.Hsin,,X,X,X,X,y,y,y,y,y,y
@@ -939,6 +940,7 @@ CONFIG_USB_MTK_IDDIG,PROJECT,Arvin.Wang,new config in this commit Id7f09fd3b9edf
 CONFIG_USB_MTK_OTG_SWITCH,PROJECT,Arvin.Wang,new config in this commit Id7f09fd3b9edf96f17d0c792d3fbe0c8239ee721,O,O,O,,,,,,,
 CONFIG_USB_MTK_HDRC,PLATFORM,marvin.lin,,X,X,X,y,X,y,X,X,y,y
 CONFIG_USB_MTK_OTG,PROJECT,Arvin.Wang,,,,,,,,,,,
+CONFIG_USB_MU3D_DEFAULT_U2_MODE,PLATFORM,eddie.hung,USB,X,X,X,X,X,X,X,X,X,X
 CONFIG_USB_MU3D_DRV,PLATFORM,marvin.lin,new config in this commit 9c994a5422e4766902530dd5802569f681162b20,y,y,y,X,y,X,y,y,X,X
 CONFIG_USB_MU3D_ONLY_U2_MODE,PROJECT,Arvin.Wang,,X,,,,,,,,,
 CONFIG_USB_POWER_DELIVERY,PROJECT,venf_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,O,O,O,,,,,,,
@@ -1051,8 +1053,8 @@ CONFIG_MTK_NET_RFC7217,PROJECT,Zhuoliang.Zhang,,N,O,N,N,N,N,N,N,N,N
 CONFIG_MTK_DRS,PROJECT,Miles.Chen,,N,N,N,y,y,,,y,,y
 CONFIG_MTK_GZ_KREE,PROJECT,chsuan.lin,,,,,O,O,O,O,O,O,O
 CONFIG_GZ_V2_SUPPORT,PROJECT,chsuan.lin,,,,,O,O,O,O,O,O,O
-CONFIG_MTK_WATCHDOG_COMMON,PLATFORM,stanley.chu,,X,X,X,y,X,y,y,y,y,y
-CONFIG_MTK_WATCHDOG_COMMON_V2,PLATFORM,stanley.chu,,X,X,X,y,X,y,y,y,y,y
+CONFIG_MTK_WATCHDOG_COMMON,PLATFORM,zh.chen,,X,X,X,y,X,y,y,y,y,X
+CONFIG_MTK_WATCHDOG_COMMON_V2,PLATFORM,zh.chen,,X,X,X,y,X,y,y,y,y,X
 CONFIG_MNTL_SUPPORT,PROJECT,isaac.lee,,X,X,X,X,X,O,O,X,O,X
 CONFIG_MTK_NAND_BITFLIP,PROJECT,chienwei.chang,,X,X,X,X,X,O,O,X,O,X
 CONFIG_HARDENED_USERCOPY,COMMON,Yun.Hsiang,,y,y,y,y,y,y,y,y,y,y
@@ -1121,7 +1123,7 @@ CONFIG_TASK_XACCT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_TASK_IO_ACCOUNTING,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_TIMER_TIMESYNC,PLATFORM,stanley.chu,new config in this commit 59a62d14e9bca322dd0498b6da8fdad698e7733a,X,X,X,y,X,X,y,y,y,y
 CONFIG_MTK_AKM09918,PROJECT,jy.lan,,y,y,y,,,,,,,
-CONFIG_ARM64_ERRATUM_858921,PLATFORM,stanley.chu,new config in this commit 5f8b8d201eeb6af7904ed276106097602763aaf7,X,X,X,X,X,X,X,y,X,y
+CONFIG_ARM64_ERRATUM_858921,PLATFORM,hongxu.zhao,timer,X,X,X,X,X,X,X,y,X,y
 CONFIG_ARM_ERRATA_858921,PLATFORM,stanley.chu,new config in this commit fec2807bf7ea34ddd06cdc7c7641416360058d7b,X,X,X,X,X,X,y,X,y,X
 CONFIG_USB_CONFIGFS_ACM,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_F_HID,PLATFORM,justin.hsieh,,y,y,y,y,y,y,y,y,y,y
@@ -1132,4 +1134,4 @@ CONFIG_MTK_IRIS_SUPPORT,PROJECT,yicheng.chen,new config in this commit Ie6ddb084
 CONFIG_F2FS_FS,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,O,X,X,X,X
 CONFIG_F2FS_FS_SECURITY,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,O,X,X,X,X
 CONFIG_F2FS_FS_ENCRYPTION,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,O,X,X,X,X
-CONFIG_SCHED_STACK_END_CHECK,USER;PLATFORM,miles.chen,,X(PLATFORM),X(PLATFORM),X(PLATFORM),X(PLATFORM),X(PLATFORM),X(PLATFORM),N(USER),N(USER),X(PLATFORM),X(PLATFORM)
+CONFIG_SCHED_STACK_END_CHECK,USER;PLATFORM,miles.chen,,X(PLATFORM),X(PLATFORM),X(PLATFORM),X(PLATFORM),X(PLATFORM),X(PLATFORM),X(USER),X(USER),X(PLATFORM),X(PLATFORM)
