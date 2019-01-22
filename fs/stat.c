@@ -53,9 +53,13 @@ int vfs_getattr_nosec(struct path *path, struct kstat *stat)
 {
 	struct inode *inode = d_backing_inode(path->dentry);
 
+	if (!inode || !inode->i_op)
+		goto out;
+
 	if (inode->i_op->getattr)
 		return inode->i_op->getattr(path->mnt, path->dentry, stat);
 
+out:
 	generic_fillattr(inode, stat);
 	return 0;
 }
