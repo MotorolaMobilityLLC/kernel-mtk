@@ -1005,8 +1005,7 @@ unsigned int ufs_cb_before_xxidle(void)
 	bool ufs_in_hibernate = false;
 
 	ufs_in_hibernate = !ufs_mtk_deepidle_hibern8_check();
-	/* FIXME: Don't turn on/off XO_UFS before clkbuf ready */
-	/* op_cond = ufs_in_hibernate ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0; */
+	op_cond = ufs_in_hibernate ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0;
 
 	return op_cond;
 #else
