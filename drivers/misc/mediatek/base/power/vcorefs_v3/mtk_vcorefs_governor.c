@@ -237,6 +237,27 @@ bool is_vcorefs_feature_enable(void)
 	return true;
 }
 
+void vcorefs_set_vcore_dvs_en(bool val)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	gvrctrl->vcore_dvs = val;
+}
+
+void vcorefs_set_ddr_dfs_en(bool val)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	gvrctrl->ddr_dfs = val;
+}
+
+void vcorefs_set_mm_clk_en(bool val)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	gvrctrl->mm_clk = val;
+}
+
 bool vcorefs_vcore_dvs_en(void)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;

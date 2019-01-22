@@ -795,9 +795,30 @@ static void plat_info_init(void)
 	spm_vcorefs_warn("dram_issue: 0x%x\n", dram_issue);
 }
 
+static int vcorefs_is_lp_flavor(void)
+{
+	int r = 0;
+#if defined(CONFIG_ARM64)
+
+	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/k71v1_64_bsp_lp", 24) == 0)
+		r = 1;
+
+	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/k71v1_64_bsp_cmd_lp", 28) == 0)
+		r = 1;
+#endif
+	spm_vcorefs_warn("flavor check: %s, is_lp: %d\n", CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, r);
+	return r;
+}
+
+
 void spm_vcorefs_init(void)
 {
 	int flag;
+
+	if (vcorefs_is_lp_flavor()) {
+		vcorefs_set_vcore_dvs_en(true);
+		vcorefs_set_ddr_dfs_en(true);
+	}
 
 	dvfsrc_register_init();
 	vcorefs_module_init();
