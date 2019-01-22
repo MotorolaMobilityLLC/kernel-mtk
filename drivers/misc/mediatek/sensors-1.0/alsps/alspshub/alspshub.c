@@ -951,6 +951,12 @@ static int alspshub_resume(struct platform_device *pdev)
 	APS_FUN();
 	return 0;
 }
+static void alspshub_shutdown(struct platform_device *pdev)
+{
+	als_enable_nodata(0);
+	ps_enable_nodata(0);
+}
+
 static struct platform_device alspshub_device = {
 	.name = ALSPSHUB_DEV_NAME,
 	.id = -1,
@@ -964,6 +970,7 @@ static struct platform_driver alspshub_driver = {
 	.driver = {
 		.name = ALSPSHUB_DEV_NAME,
 	},
+	.shutdown = alspshub_shutdown,
 };
 
 static int alspshub_local_init(void)
