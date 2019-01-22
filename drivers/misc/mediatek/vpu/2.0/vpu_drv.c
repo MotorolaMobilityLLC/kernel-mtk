@@ -630,7 +630,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		u_req = (struct vpu_request *) arg;
 
-		ret = copy_from_user(&req->request_id, &u_req->request_id, sizeof(uint64_t));
+		ret = copy_from_user(&req->request_id, &u_req->request_id, sizeof(uintptr_t));
 		CHECK_RET("[REG] copy 'req id' failed,%d\n", ret);
 
 		LOG_DBG("[vpu] deque test: user_id_0x%lx, request_id_0x%lx", (unsigned long)user,
