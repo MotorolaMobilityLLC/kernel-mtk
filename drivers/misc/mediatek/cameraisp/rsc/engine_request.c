@@ -16,22 +16,47 @@
 #include <linux/vmalloc.h>
 #include <linux/spinlock.h>
 #include <linux/printk.h>
+#include <linux/module.h>
 #include "engine_request.h"
 
+/*
+ * module control
+ */
+MODULE_DESCRIPTION("Stand Alone Engine Request");
+MODULE_AUTHOR("MM3SW5");
+MODULE_LICENSE("GPL");
+
+unsigned egn_debug;
+module_param(egn_debug, uint, 0644);
+MODULE_PARM_DESC(egn_debug, " activates debug info");
 
 #define MyTag "[STALN]"
 #define LOG_VRB(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
 
-/* #define STALN_DEBUG */
-#ifdef STALN_DEBUG
-#define LOG_DBG(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
-#else
-#define LOG_DBG(format, args...)
-#endif
+#define LOG_DBG(format, args...)				 \
+	do {							 \
+		if (egn_debug >= 2)				 \
+		pr_info(MyTag "[%s] " format, __func__, ##args); \
+	} while (0)
 
-#define LOG_INF(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
-#define LOG_WRN(format, args...)    pr_info(MyTag "[%s] " format, __func__, ##args)
-#define LOG_ERR(format, args...)    pr_info(MyTag "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)				 \
+	do {							 \
+		if (egn_debug >= 1)				 \
+		pr_info(MyTag "[%s] " format, __func__, ##args);\
+	} while (0)
+
+#define LOG_WRN(format, args...)				 \
+	do {							 \
+		if (egn_debug >= 0)				 \
+		pr_info(MyTag "[%s] " format, __func__, ##args); \
+	} while (0)
+
+#define LOG_ERR(format, args...)				 \
+	do {							 \
+		if (egn_debug >= 0)				 \
+		pr_info(MyTag "[%s] " format, __func__, ##args); \
+	} while (0)
+
 
 /*
 * Single ring ctl init
@@ -100,7 +125,8 @@ signed int set_frame_data(struct frame *f, void *engine)
 	if (f == NULL) {
 		LOG_ERR("NULL frame(%p)", (void *)f);
 		return -1;
-}
+	}
+
 	f->data = engine;
 
 	return 0;
@@ -498,3 +524,60 @@ ERROR:
 	return -1;
 }
 
+signed int request_dump(struct engine_requests *eng)
+{
+	unsigned int r;
+	unsigned int f;
+
+	LOG_ERR("[%s] +\n", __func__);
+
+	if (eng == NULL) {
+		LOG_ERR("[%s]can't dump NULL engine", __func__);
+		return -1;
+	}
+
+	LOG_ERR("req_ctl:wc:%d, gc:%d, ic:%d, rc:%d, data:%p\n",
+				eng->req_ctl.wcnt,
+				eng->req_ctl.gcnt,
+				eng->req_ctl.icnt,
+				eng->req_ctl.rcnt,
+				eng->reqs[0].frames[0].data);
+
+	for (r = 0; r < MAX_REQUEST_SIZE_PER_ENGINE; r++) {
+		LOG_ERR("R[%d].sta:%d, pid:0x%08X, wc:%d, gc:%d, ic:%d, rc:%d\n",
+					r,
+					eng->reqs[r].state,
+					eng->reqs[r].pid,
+					eng->reqs[r].fctl.wcnt,
+					eng->reqs[r].fctl.gcnt,
+					eng->reqs[r].fctl.icnt,
+					eng->reqs[r].fctl.rcnt);
+
+		for (f = 0; f < MAX_FRAMES_PER_REQUEST; f += 2) {
+			LOG_ERR("F[%d].state:%d, F[%d].state:%d\n",
+			     f, eng->reqs[r].frames[f].state,
+			     f + 1, eng->reqs[r].frames[f + 1].state);
+		}
+	}
+
+	LOG_ERR("[%s] -\n", __func__);
+
+	return 0;
+}
+
+static int __init egnreq_init(void)
+{
+	int ret = 0;
+
+	LOG_INF("engine_request module loaded");
+	return ret;
+}
+
+static void __exit egnreq_exit(void)
+{
+	LOG_INF("engine_request module unloaded");
+
+}
+
+module_init(egnreq_init);
+module_exit(egnreq_exit);

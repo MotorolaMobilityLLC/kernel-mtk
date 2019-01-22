@@ -1476,7 +1476,9 @@ static signed int RSC_DumpReg(void)
 #else
 {
 	signed int Ret = 0;
+#ifndef ENGINE
 	unsigned int i, j;
+#endif
 	/*  */
 	LOG_INF("- E.");
 	/*  */
@@ -1537,7 +1539,7 @@ static signed int RSC_DumpReg(void)
 	LOG_INF("[0x%08X %08X]\n", (unsigned int)(RSC_DMA_RDY_STATUS_HW),
 		(unsigned int)RSC_RD32(RSC_DMA_RDY_STATUS_REG));
 
-
+#ifndef ENGINE
 	LOG_INF("RSC:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n", g_RSC_ReqRing.HWProcessIdx,
 		g_RSC_ReqRing.WriteIdx, g_RSC_ReqRing.ReadIdx);
 
@@ -1557,7 +1559,7 @@ static signed int RSC_DumpReg(void)
 		}
 
 	}
-
+#endif
 
 
 	LOG_INF("- X.");
@@ -2007,8 +2009,10 @@ static signed int RSC_WaitIrq(struct RSC_WAIT_IRQ_STRUCT *WaitIrq)
 		LOG_ERR("WaitIrq Timeout:whichReq(%d),ProcID(%d) RscIrqCnt(0x%08X) WriteReq(0x%08X) ReadReq(0x%08X)\n",
 		     whichReq, WaitIrq->ProcessID, RSCInfo.IrqInfo.RscIrqCnt, RSCInfo.WriteReqIdx, RSCInfo.ReadReqIdx);
 
-		if (WaitIrq->bDumpReg)
+		if (WaitIrq->bDumpReg) {
 			RSC_DumpReg();
+			request_dump(&rsc_reqs);
+		}
 
 		Ret = -EFAULT;
 		goto EXIT;
