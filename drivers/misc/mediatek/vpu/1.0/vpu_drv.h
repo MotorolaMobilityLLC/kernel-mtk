@@ -218,16 +218,17 @@ struct vpu_request {
 /*---------------------------------------------------------------------------*/
 /*  IOCTL Command                                                            */
 /*---------------------------------------------------------------------------*/
-#define VPU_MAGICNO             'v'
+#define VPU_MAGICNO                 'v'
 #define VPU_IOCTL_SET_POWER         _IOW(VPU_MAGICNO,   0, int)
 #define VPU_IOCTL_ENQUE_REQUEST     _IOW(VPU_MAGICNO,   1, int)
 #define VPU_IOCTL_DEQUE_REQUEST     _IOWR(VPU_MAGICNO,  2, int)
 #define VPU_IOCTL_FLUSH_REQUEST     _IOW(VPU_MAGICNO,   3, int)
-#define VPU_IOCTL_LOAD_ALG          _IOW(VPU_MAGICNO,   4, int)
-#define VPU_IOCTL_GET_ALGO_INFO     _IOWR(VPU_MAGICNO,  5, int)
-#define VPU_IOCTL_REG_WRITE         _IOW(VPU_MAGICNO,   6, int)
-#define VPU_IOCTL_REG_READ          _IOWR(VPU_MAGICNO,  7, int)
-
+#define VPU_IOCTL_GET_ALGO_INFO     _IOWR(VPU_MAGICNO,  4, int)
+#define VPU_IOCTL_LOCK              _IOW(VPU_MAGICNO,   5, int)
+#define VPU_IOCTL_UNLOCK            _IOW(VPU_MAGICNO,   6, int)
+#define VPU_IOCTL_LOAD_ALG          _IOW(VPU_MAGICNO,   7, int)
+#define VPU_IOCTL_REG_WRITE         _IOW(VPU_MAGICNO,   8, int)
+#define VPU_IOCTL_REG_READ          _IOWR(VPU_MAGICNO,  9, int)
 
 int vpu_set_power(struct vpu_power *power);
 
