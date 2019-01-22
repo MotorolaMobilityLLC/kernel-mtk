@@ -23,6 +23,7 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/auxadc/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/common/inc/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/imgsensor/inc/
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735"))
 ifeq ($(CONFIG_ARCH_MT6735),y)
@@ -194,6 +195,7 @@ endif
 
 obj-$(CONFIG_THERMAL) += mtk_tsAll.o
 obj-$(CONFIG_THERMAL) += mtk_ts_Abts.o
+obj-$(CONFIG_THERMAL) += mtk_ts_imgsensor.o
 
 ifneq ($(CONFIG_MTK_BIF_SUPPORT),)
 obj-$(CONFIG_THERMAL) += mtk_ts_bif.o
