@@ -51,7 +51,7 @@
 #define sodi3_warn(fmt, args...)	pr_warn(SODI3_TAG fmt, ##args)
 #define sodi3_debug(fmt, args...)	pr_debug(SODI3_TAG fmt, ##args)
 
-#define SPM_PCMWDT_EN               1
+#define SPM_PCMWDT_EN               0
 #define SPM_BYPASS_SYSPWREQ         0
 
 #define LOG_BUF_SIZE					(256)
@@ -609,7 +609,7 @@ static wake_reason_t spm_sodi3_output_log(
 
 wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 operation_cond)
 {
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if SPM_PCMWDT_EN && defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	int wd_ret;
 	struct wd_api *wd_api;
 #endif
@@ -652,7 +652,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 
 	pwrctrl->timer_val = 2 * 32768;	/* 2 sec */
 
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if SPM_PCMWDT_EN && defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	wd_ret = get_wd_api(&wd_api);
 	if (!wd_ret) {
 		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
@@ -700,13 +700,13 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 
 	spm_sodi3_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
 
-#ifdef SPM_SODI3_PROFILE_TIME
-	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[1]);
-#endif
-
 	spm_sodi3_footprint(SPM_SODI3_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
 	spm_sodi3_notify_sspm_before_wfi_async_wait();
+
+#ifdef SPM_SODI3_PROFILE_TIME
+	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[1]);
+#endif
 
 	spm_sodi3_footprint_val((1 << SPM_SODI3_ENTER_WFI) |
 		(1 << SPM_SODI3_B4) | (1 << SPM_SODI3_B5) | (1 << SPM_SODI3_B6));
@@ -764,7 +764,7 @@ RESTORE_IRQ:
 
 	spm_sodi3_notify_sspm_after_wfi_async_wait();
 
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if SPM_PCMWDT_EN && defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	if (!wd_ret) {
 		if (!pwrctrl->wdt_disable)
 			wd_api->wd_resume_notify();

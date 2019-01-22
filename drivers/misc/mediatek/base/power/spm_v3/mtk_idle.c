@@ -54,6 +54,7 @@
 #endif
 
 #include <linux/uaccess.h>
+#include <mtk_cpufreq_api.h>
 
 #define FEATURE_ENABLE_SODI2P5
 
@@ -563,6 +564,9 @@ static bool soidle3_can_enter(int cpu, int reason)
 	#ifdef SPM_SODI3_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[0]);
 	#endif
+	#ifdef SPM_SODI_PROFILE_TIME
+	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[0]);
+	#endif
 
 	/* check previous common criterion */
 	if (reason == BY_CLK) {
@@ -693,9 +697,6 @@ static bool soidle_can_enter(int cpu, int reason)
 		reason = NR_REASONS;
 	} else if (reason < NR_REASONS)
 		goto out;
-
-	if (!next_timer_criteria_check(soidle_time_criteria))
-		reason = BY_TMR;
 
 	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (soidle_by_pass_en == 0) {
@@ -1425,8 +1426,9 @@ int soidle3_enter(int cpu)
 
 #ifdef SPM_SODI3_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[3]);
-	idle_ver("SODI3: cpu_freq:%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_freq(0), soidle3_profile[1] - soidle3_profile[0],
+	idle_ver("SODI3: cpu_freq:%u/%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
+			mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1),
+			soidle3_profile[1] - soidle3_profile[0],
 			soidle3_profile[2] - soidle3_profile[1],
 			soidle3_profile[3] - soidle3_profile[2]);
 #endif
@@ -1473,8 +1475,9 @@ int soidle_enter(int cpu)
 
 #ifdef SPM_SODI_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[3]);
-	idle_ver("SODI: cpu_freq:%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_freq(0), soidle_profile[1] - soidle_profile[0],
+	idle_ver("SODI: cpu_freq:%u/%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
+			mt_cpufreq_get_cur_freq(0), mt_cpufreq_get_cur_freq(1),
+			soidle_profile[1] - soidle_profile[0],
 			soidle_profile[2] - soidle_profile[1],
 			soidle_profile[3] - soidle_profile[2]);
 #endif
