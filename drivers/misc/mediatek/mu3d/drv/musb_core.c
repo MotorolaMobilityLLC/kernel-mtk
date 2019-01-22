@@ -133,7 +133,7 @@ const char musb_driver_name[] = MUSB_DRIVER_NAME;
 struct musb *_mu3d_musb;
 
 
-u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN | K_NOTICE | K_INFO | K_DEBUG;
+u32 debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN;
 u32 fake_CDP;
 
 module_param(debug_level, int, 0644);
