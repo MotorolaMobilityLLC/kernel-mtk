@@ -34,6 +34,14 @@ extern "C" {
 #include "mtk_unified_power_mt6739.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6771)
+#include "mtk_unified_power_mt6771.h"
+#endif
+
+#if defined(CONFIG_MACH_MT6775)
+#include "mtk_unified_power_mt6775.h"
+#endif
+
 #define UPOWER_TAG "[UPOWER]"
 
 #define upower_error(fmt, args...) pr_debug(UPOWER_TAG fmt, ##args)

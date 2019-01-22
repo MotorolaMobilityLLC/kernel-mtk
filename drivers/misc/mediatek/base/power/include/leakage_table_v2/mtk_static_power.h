@@ -33,6 +33,14 @@
 #include "mtk_static_power_mt6739.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6771)
+#include "mtk_static_power_mt6771.h"
+#endif
+
+#if defined(CONFIG_MACH_MT6775)
+#include "mtk_static_power_mt6775.h"
+#endif
+
 /*
  * bit operation
  */
