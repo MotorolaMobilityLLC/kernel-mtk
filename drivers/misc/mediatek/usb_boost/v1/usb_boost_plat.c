@@ -47,6 +47,16 @@ struct act_arg_obj cpu_freq_test_arg = {2500000, -1, -1};
 struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
 struct act_arg_obj dram_vcore_test_arg = {OPP_0, -1, -1};
 
+#elif defined(CONFIG_MACH_MT6739)
+static int cpu_freq_test_para[] = {1, 5, 500, 0};
+static int cpu_core_test_para[] = {1, 5, 500, 0};
+static int dram_vcore_test_para[] = {1, 5, 500, 0};
+
+/* -1 denote not used*/
+struct act_arg_obj cpu_freq_test_arg = {1500000, -1, -1};
+struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
+struct act_arg_obj dram_vcore_test_arg = {OPP_0, -1, -1};
+
 #elif defined(CONFIG_ARCH_MT6XXX)
 /* add new here */
 #endif
@@ -69,6 +79,8 @@ static int freq_release(struct act_arg_obj *arg)
 static int core_hold(struct act_arg_obj *arg)
 {
 	USB_BOOST_DBG("\n");
+
+	/*This API is deprecated*/
 	mt_ppm_sysboost_core(BOOST_BY_USB, arg->arg1);
 
 	/*Disable MCDI to save around 100us "Power ON CPU -> CPU context restore"*/
@@ -79,6 +91,8 @@ static int core_hold(struct act_arg_obj *arg)
 static int core_release(struct act_arg_obj *arg)
 {
 	USB_BOOST_DBG("\n");
+
+	/*This API is deprecated*/
 	mt_ppm_sysboost_core(BOOST_BY_USB, 0);
 
 	/*Enable MCDI*/

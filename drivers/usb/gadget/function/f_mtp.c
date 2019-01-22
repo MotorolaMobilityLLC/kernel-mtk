@@ -1661,7 +1661,7 @@ static int __mtp_setup(struct mtp_instance *fi_mtp)
 	INIT_WORK(&dev->receive_file_work, receive_file_work);
 
 	dev->is_boost = 0;
-	cpumask_clear(&(dev->cpu_mask));
+	cpumask_setall(&(dev->cpu_mask));
 
 	_mtp_dev = dev;
 
