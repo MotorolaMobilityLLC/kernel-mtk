@@ -22,6 +22,7 @@
 struct pe40_power_cap {
 	uint8_t selected_cap_idx;
 	uint8_t nr;
+	uint8_t pwr_limit[PDO_MAX_NR];
 	int max_mv[PDO_MAX_NR];
 	int min_mv[PDO_MAX_NR];
 	int ma[PDO_MAX_NR];

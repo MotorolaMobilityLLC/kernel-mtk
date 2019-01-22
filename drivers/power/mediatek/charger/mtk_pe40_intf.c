@@ -177,9 +177,13 @@ void mtk_pe40_init_cap(struct charger_manager *info)
 	int idx = 0;
 	int i;
 	struct pe40_power_cap *pe40_cap;
+	struct mtk_pe40 *pe40;
 
 	if (info->tcpc == NULL)
 		return;
+
+	pe40 = &info->pe4;
+	pe40->max_vbus = PE40_MAX_VBUS;
 
 	pe40_cap = &info->pe4.cap;
 	while (1) {
@@ -191,20 +195,27 @@ void mtk_pe40_init_cap(struct charger_manager *info)
 			break;
 		}
 
+		pe40_cap->pwr_limit[idx] = cap.pwr_limit;
 		pe40_cap->ma[idx] = cap.ma;
 		pe40_cap->max_mv[idx] = cap.max_mv;
 		pe40_cap->min_mv[idx] = cap.min_mv;
 		pe40_cap->maxwatt[idx] = cap.max_mv * cap.ma;
 		pe40_cap->minwatt[idx] = cap.min_mv * cap.ma;
+		if (cap.pwr_limit == 1)
+			pe40->max_vbus = 9000;
 		idx++;
-		chr_err("pps_boundary[%d], %d mv ~ %d mv, %d ma\n", cap_i, cap.min_mv, cap.max_mv, cap.ma);
+		chr_err("pps_boundary[%d], %d mv ~ %d mv, %d ma pl:%d\n",
+			cap_i, cap.min_mv, cap.max_mv, cap.ma, cap.pwr_limit);
 	}
 
 	pe40_cap->nr = idx;
 
 	for (i = 0; i < pe40_cap->nr; i++) {
-		chr_err("pps_cap[%d:%d], %d mv ~ %d mv, %d ma\n", i, (int)pe40_cap->nr,
-			pe40_cap->min_mv[i], pe40_cap->max_mv[i], pe40_cap->ma[i]);
+		chr_err("pps_cap[%d:%d], %d mv ~ %d mv, %d ma pl:%d\n", i, (int)pe40_cap->nr,
+			pe40_cap->min_mv[i],
+			pe40_cap->max_mv[i],
+			pe40_cap->ma[i],
+			cap.pwr_limit);
 	}
 
 	if (cap_i == 0)
