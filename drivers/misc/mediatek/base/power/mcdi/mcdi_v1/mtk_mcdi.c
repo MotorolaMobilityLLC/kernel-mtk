@@ -135,6 +135,10 @@ unsigned long long __attribute__((weak)) idle_get_current_time_ms(void)
 	return 0;
 }
 
+void __attribute__((weak)) aee_rr_rec_mcdi_val(int id, u32 val)
+{
+}
+
 static int cluster_idx_map[NF_CPU] = {
 	0,
 	0,
