@@ -708,7 +708,7 @@ static void mtu3d_musb_reg_init(struct musb *musb)
 	if (!u3phy_ops)
 		ret = u3phy_init();
 
-	if (ret || u3phy_ops) {
+	if (u3phy_ops) {
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 		if (usb_phy_check_in_uart_mode()) {
