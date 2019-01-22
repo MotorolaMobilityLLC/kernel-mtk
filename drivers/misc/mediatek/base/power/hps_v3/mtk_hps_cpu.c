@@ -159,8 +159,7 @@ int hps_cpu_init(void)
 	}
 
 	for (i = 0; i < hps_sys.cluster_num; i++) {
-		hps_sys.cluster_info[i].cluster_id = i;
-
+		hps_sys.cluster_info[i].pwr_seq = hps_sys.cluster_info[i].cluster_id = i;
 		/* get topology info of hps */
 		arch_get_cluster_cpus(&cpu_mask, i);
 		hps_sys.cluster_info[i].core_num = cpumask_weight(&cpu_mask);
@@ -181,11 +180,12 @@ int hps_cpu_init(void)
 		hps_sys.cluster_info[i].up_threshold = DEF_CPU_UP_THRESHOLD;
 		hps_sys.cluster_info[i].down_threshold = DEF_CPU_DOWN_THRESHOLD;
 	}
-#if 0 /*For evaluation*/
-		hps_sys.cluster_info[0].up_threshold = 50;
-		hps_sys.cluster_info[0].down_threshold = 40;
-		hps_sys.cluster_info[1].up_threshold = 80;
-		hps_sys.cluster_info[1].down_threshold = 70;
+#if 0  /*For EAS  evaluation*/
+		hps_sys.cluster_info[0].up_threshold = 20;
+		hps_sys.cluster_info[0].down_threshold = 10;
+
+		hps_sys.cluster_info[1].up_threshold = 70;
+		hps_sys.cluster_info[1].down_threshold = 60;
 
 		hps_sys.cluster_info[2].up_threshold = 95;
 		hps_sys.cluster_info[2].down_threshold = 20;

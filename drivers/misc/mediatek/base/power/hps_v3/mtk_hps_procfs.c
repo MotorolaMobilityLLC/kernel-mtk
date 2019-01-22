@@ -16,10 +16,34 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
 
 #include "mtk_hps_internal.h"
 
 typedef void (*func_void) (void);
+
+static char *hps_copy_from_user_for_proc(const char __user *buffer, size_t count)
+{
+	char *buf = (char *)__get_free_page(GFP_USER);
+
+	if (!buf)
+		return NULL;
+
+	if (count >= PAGE_SIZE)
+		goto out;
+
+	if (copy_from_user(buf, buffer, count))
+		goto out;
+
+	buf[count] = '\0';
+
+	return buf;
+
+out:
+	free_page((unsigned long)buf);
+
+	return NULL;
+}
 
 static int hps_proc_uint_show(struct seq_file *m, void *v)
 {
@@ -143,6 +167,8 @@ PROC_FOPS_RO_UINT(state, hps_ctxt.state);
 PROC_FOPS_RW_UINT(enabled, hps_ctxt.enabled, hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(heavy_task_enabled, hps_ctxt.heavy_task_enabled,
 		  hps_proc_uint_write_with_lock_reset);
+PROC_FOPS_RW_UINT(big_task_enabled, hps_ctxt.big_task_enabled,
+		hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(suspend_enabled, hps_ctxt.suspend_enabled, hps_proc_uint_write_with_lock);
 PROC_FOPS_RW_UINT(cur_dump_enabled, hps_ctxt.cur_dump_enabled, hps_proc_uint_write_with_lock);
 PROC_FOPS_RW_UINT(stats_dump_enabled, hps_ctxt.stats_dump_enabled, hps_proc_uint_write_with_lock);
@@ -178,11 +204,84 @@ PROC_FOPS_RW_UINT(power_mode, hps_ctxt.power_mode, hps_proc_uint_write_with_lock
  *     - little_num_base_perf_serv
  *     - big_num_base_perf_serv
  */
+static int hps_pwrseq_proc_show(struct seq_file *m, void *v)
+{
+	int i = 0;
+	unsigned int cluster_num = hps_sys.cluster_num;
+
+	for (i = 0; i < cluster_num; i++)
+		seq_printf(m, "cluster %d, power sequence = %d\n", i, hps_sys.cluster_info[i].pwr_seq);
+	return 0;
+}
+
+static ssize_t hps_pwrseq_proc_write(struct file *file,
+						const char __user *buffer,
+						size_t count, loff_t *pos)
+{
+	int i = 0;
+	int j = 0;
+	int *pwrseq;
+	char *tok;
+	unsigned int cluster_num = hps_sys.cluster_num;
+	char *desc = hps_copy_from_user_for_proc(buffer, count);
+
+	pwrseq = kcalloc(cluster_num, sizeof(*pwrseq), GFP_KERNEL);
+	if (!pwrseq)
+		goto out;
+
+	while ((tok = strsep(&desc, " ")) != NULL) {
+		if (i == cluster_num) {
+			hps_warn("@%s: number of arguments > %d!\n", __func__, cluster_num);
+			goto out;
+		}
+
+		if (kstrtoint(tok, 10, &pwrseq[i])) {
+			hps_warn("@%s: Invalid input: %s\n", __func__, tok);
+			goto out;
+		} else
+			i++;
+	}
+
+	if (i < cluster_num) {
+		hps_warn("@%s: number of arguments < %d!\n", __func__, cluster_num);
+		goto out;
+	}
+
+	for (i = 0; i < cluster_num; i++) {
+		if (pwrseq[i] > cluster_num) {
+			hps_warn("@%s: Invalid input! pwrseq[%d] = %d\n", __func__, i, pwrseq[i]);
+			goto out;
+		}
+		for (j = 0; j < cluster_num; j++) {
+			if (i != j) {
+				if (pwrseq[i] == pwrseq[j]) {
+					hps_warn
+				("@%s: Invalid input! pwrseq[%d] = pwrseq[%d] = %d\n", __func__, i, j, pwrseq[i]);
+					goto out;
+				}
+			}
+		}
+	}
+	mutex_lock(&hps_ctxt.lock);
+	for (i = 0; i < cluster_num; i++)
+		hps_sys.cluster_info[i].pwr_seq = pwrseq[i];
+
+	mutex_unlock(&hps_ctxt.lock);
+	kfree(pwrseq);
+	return count;
+
+out:
+	kfree(pwrseq);
+	return -EINVAL;
+
+}
+PROC_FOPS_RW(pwrseq);
+
 static int hps_num_base_perf_serv_proc_show(struct seq_file *m, void *v)
 {
 	if (hps_ctxt.is_hmp || hps_ctxt.is_amp)
 		seq_printf(m, "%u %u\n", hps_ctxt.little_num_base_perf_serv,
-			   hps_ctxt.big_num_base_perf_serv);
+		hps_ctxt.big_num_base_perf_serv);
 	else
 		seq_printf(m, "%u\n", hps_ctxt.little_num_base_perf_serv);
 	return 0;
@@ -644,6 +743,7 @@ int hps_procfs_init(void)
 		PROC_ENTRY(state),
 		PROC_ENTRY(enabled),
 		PROC_ENTRY(heavy_task_enabled),
+		PROC_ENTRY(big_task_enabled),
 		PROC_ENTRY(suspend_enabled),
 		PROC_ENTRY(cur_dump_enabled),
 		PROC_ENTRY(stats_dump_enabled),
@@ -663,6 +763,7 @@ int hps_procfs_init(void)
 		PROC_ENTRY(num_limit_ultra_power_saving),
 		PROC_ENTRY(num_limit_power_serv),
 		PROC_ENTRY(power_mode),
+		PROC_ENTRY(pwrseq),
 	};
 
 	hps_warn("hps_procfs_init\n");

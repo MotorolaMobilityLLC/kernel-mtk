@@ -16,7 +16,7 @@
 
 #include "mtk_hps.h"
 #include "mtk_hps_internal.h"
-#define USE_EAS (0)
+#define USE_EAS (1)
 static int cal_base_cores(void)
 {
 	int i, base_val;
@@ -108,7 +108,14 @@ static int hps_algo_eas(void)
 			ret = 1;
 		} else {
 		/*if loading < down_threshod ==> power off cores*/
-			val = hps_sys.cluster_info[i].loading / hps_sys.cluster_info[i].down_threshold;
+			if (!hps_sys.cluster_info[i].loading) {
+				hps_sys.cluster_info[i].target_core_num = 0;
+				continue;
+			}
+			val = hps_sys.cluster_info[i].loading /
+			(hps_sys.cluster_info[i].down_threshold * hps_sys.cluster_info[i].online_core_num);
+			if (!val)
+				val++;
 			if (val >= hps_sys.cluster_info[i].base_value)
 				hps_sys.cluster_info[i].target_core_num = val;
 			else
@@ -116,6 +123,15 @@ static int hps_algo_eas(void)
 			ret = 1;
 		}
 	}
+
+
+	/*Check with big task criteriai*/
+	for (i = 1 ; i < hps_sys.cluster_num ; i++) {
+		if ((!hps_sys.cluster_info[i].bigTsk_value) &&
+		(!(hps_sys.cluster_info[i].loading / hps_sys.cluster_info[i].down_threshold)))
+			hps_sys.cluster_info[i].target_core_num = 0;
+	}
+
 	return ret;
 }
 #else
@@ -196,7 +212,7 @@ static int hps_algo_down(void)
 			val = hps_sys.total_online_cores;
 
 			while (hps_ctxt.down_loads_sum < down_threshold * (val - 1))
-				--val;
+				val--;
 			WARN_ON(val < 0);
 			if (val > base_val)
 				val -= base_val;
