@@ -61,6 +61,7 @@ static struct i2c_client *g_ccuI2cClientSub;
 static struct i2c_dma_info g_dma_reg;
 static struct i2c_msg ccu_i2c_msg[MAX_I2C_CMD_LEN];
 static MBOOL ccu_i2c_enabled = MFALSE;
+static MBOOL ccu_i2c_locked  = MFALSE;
 
 static const struct i2c_device_id ccu_i2c_main_ids[] = { {CCU_I2C_MAIN_HW_DRVNAME, 0}, {} };
 static const struct i2c_device_id ccu_i2c_sub_ids[] = { {CCU_I2C_SUB_HW_DRVNAME, 0}, {} };
@@ -308,9 +309,12 @@ static int ccu_i2c_seize_controller(void)
 	}
 
 	i2c = i2c_get_adapdata(pClient->adapter);
-	mutex_lock(&i2c->i2c_mutex);
+	/*mutex_lock(&i2c->i2c_mutex);*/
 	disable_irq(i2c->irqnr);
+	ccu_i2c_locked = MTRUE;
 
+	/*LOG_INF_MUST("ccu i2c controller locked");*/
+	LOG_INF_MUST("i2c controller irq disabled by ccu");
 	return 0;
 }
 
@@ -319,29 +323,32 @@ static int ccu_i2c_release_controller(void)
 	struct i2c_client *pClient = NULL;
 	struct mt_i2c *i2c = NULL;
 
-	pClient = getCcuI2cClient();
+	if (ccu_i2c_locked == MTRUE) {
+		pClient = getCcuI2cClient();
 
-	LOG_DBG("pClient: %p\n", pClient);
+		LOG_DBG("pClient: %p\n", pClient);
 
-	if (pClient == NULL) {
-		LOG_ERR("i2c client is null");
-		return -1;
+		if (pClient == NULL) {
+			LOG_ERR("i2c client is null\n");
+			return -1;
+		}
+
+		i2c = i2c_get_adapdata(pClient->adapter);
+		enable_irq(i2c->irqnr);
+		/*mutex_unlock(&i2c->i2c_mutex);*/
+		ccu_i2c_locked = MFALSE;
+		/*LOG_INF_MUST("ccu i2c controller unlocked\n");*/
+		LOG_INF_MUST("i2c controller irq enabled by ccu");
+	} else {
+		/*LOG_INF_MUST("ccu i2c controller not in locked status, skip unlock\n");*/
+		LOG_INF_MUST("i2c controller irq is not in disable status, skip enable\n");
 	}
-
-	i2c = i2c_get_adapdata(pClient->adapter);
-	enable_irq(i2c->irqnr);
-	mutex_unlock(&i2c->i2c_mutex);
 
 	return 0;
 }
 
 int ccu_i2c_buf_mode_init(unsigned char i2c_write_id, int transfer_len)
 {
-	if (ccu_i2c_enabled == MTRUE) {
-		/*if not first time init, release mutex first to avoid deadlock*/
-		LOG_DBG_MUST("reinit, temporily release mutex.\n");
-		ccu_i2c_release_controller();
-	}
 	if (ccu_i2c_buf_mode_en(1) == -1) {
 		LOG_DBG("i2c_buf_mode_en fail\n");
 		return -1;
@@ -352,7 +359,6 @@ int ccu_i2c_buf_mode_init(unsigned char i2c_write_id, int transfer_len)
 	ccu_init_i2c_buf_mode(i2c_write_id);
 	ccu_config_i2c_buf_mode(transfer_len);
 	ccu_i2c_seize_controller();
-
 	LOG_DBG_MUST("ccu_i2c_buf_mode_init done.\n");
 
 	return 0;
