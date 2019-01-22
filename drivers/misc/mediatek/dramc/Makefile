@@ -11,4 +11,9 @@
 # GNU General Public License for more details.
 #
 
+MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)
+
+obj-$(CONFIG_MTK_DRAMC) := dramc.o
+
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
