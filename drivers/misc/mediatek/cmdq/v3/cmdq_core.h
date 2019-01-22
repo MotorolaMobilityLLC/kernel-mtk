@@ -369,6 +369,7 @@ enum CMDQ_CODE_ENUM {
 	CMDQ_CODE_WRITE_S = 0x90,	/* write operation (v3 only) */
 	CMDQ_CODE_WRITE_S_W_MASK = 0x91,	/* write with mask operation (v3 only) */
 	CMDQ_CODE_LOGIC = 0xa0,	/* logic operation */
+	CMDQ_CODE_JUMP_C_ABSOLUTE = 0xb0,	/* conditional jump (absolute) */
 	CMDQ_CODE_JUMP_C_RELATIVE = 0xb1,	/* conditional jump (related) */
 };
 
@@ -1110,6 +1111,8 @@ extern "C" {
 	bool cmdq_core_is_feature_off(enum CMDQ_FEATURE_TYPE_ENUM featureOption);
 	void cmdq_core_set_mem_monitor(bool enable);
 	void cmdq_core_dump_mem_monitor(void);
+
+	void cmdq_core_dump_task_mem(const struct TaskStruct *pTask);
 #ifdef __cplusplus
 }
 #endif

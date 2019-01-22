@@ -774,6 +774,9 @@ int32_t cmdq_append_command(struct cmdqRecStruct *handle, enum CMDQ_CODE_ENUM co
 			CMDQ_MSG("save delay event: 0x%02x, CMD: arg_a: 0x%08x\n", code, arg_a);
 			cmdq_save_op_variable_position(handle);
 		}
+	} else if (code == CMDQ_CODE_JUMP && (arg_a & 0x1) == 0) {
+		cmdq_save_op_variable_position(handle);
+		CMDQ_MSG("save jump event: 0x%02x, CMD: arg_a: 0x%08x\n", code, arg_a);
 	}
 
 	handle->blockSize += CMDQ_INST_SIZE;
@@ -2323,21 +2326,31 @@ enum CMDQ_CONDITION_ENUM cmdq_reverse_op_condition(enum CMDQ_CONDITION_ENUM arg_
 int32_t cmdq_append_jump_c_command(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
 			   enum CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c)
 {
-	int32_t status = 0;
-	const uint32_t dummy_address = 8;
+	s32 status = 0;
+	const s32 dummy_address = 8;
 	enum CMDQ_CONDITION_ENUM instr_condition;
-	uint32_t arg_b_i, arg_c_i;
-	uint32_t arg_b_type, arg_c_type, arg_abc_type;
-	uint32_t *p_command;
+	u32 arg_a_i, arg_b_i, arg_c_i;
+	u32 arg_a_type, arg_b_type, arg_c_type, arg_abc_type;
+	u32 *p_command;
+	CMDQ_VARIABLE arg_temp_cpr = CMDQ_TASK_TEMP_CPR_VAR;
+
+	/*
+	 * Always insert write_s to write address to SPR1,
+	 * since we may change relative to absolute jump later,
+	 * and use this write_s instruction to set destination PA address.
+	 */
+	status = cmdq_op_assign(handle, &arg_temp_cpr, dummy_address);
+	if (status < 0)
+		return status;
 
 	status = cmdq_check_before_append(handle);
 	if (status < 0) {
 		CMDQ_ERR("	  cannot add jump_c command (condition: %d, arg_b: 0x%08x, arg_c: 0x%08x)\n",
-			arg_condition, (uint32_t)(arg_b & 0xFFFFFFFF), (uint32_t)(arg_c & 0xFFFFFFFF));
+			arg_condition, (u32)(arg_b & 0xFFFFFFFF), (u32)(arg_c & 0xFFFFFFFF));
 		return status;
 	}
 
-	p_command = (uint32_t *) ((uint8_t *) handle->pBuffer + handle->blockSize);
+	p_command = (u32 *) ((u8 *) handle->pBuffer + handle->blockSize);
 
 	do {
 		/* reverse condition statement */
@@ -2346,6 +2359,11 @@ int32_t cmdq_append_jump_c_command(struct cmdqRecStruct *handle, CMDQ_VARIABLE a
 			status = -EFAULT;
 			break;
 		}
+
+		/* arg_a always be register SPR1 */
+		status = cmdq_var_data_type(CMDQ_TASK_TEMP_CPR_VAR, &arg_a_i, &arg_a_type);
+		if (status < 0)
+			break;
 
 		/* get actual arg_b_i & arg_b_type */
 		status = cmdq_var_data_type(arg_b, &arg_b_i, &arg_b_type);
@@ -2357,21 +2375,22 @@ int32_t cmdq_append_jump_c_command(struct cmdqRecStruct *handle, CMDQ_VARIABLE a
 		if (status < 0)
 			break;
 
-		/* arg_a always be value */
-		arg_abc_type = (arg_b_type << 1) | (arg_c_type);
+		arg_abc_type = (arg_a_type << 2) | (arg_b_type << 1) | (arg_c_type);
 		if (true == cmdq_is_cpr(arg_b_i, arg_b_type)
 			|| true == cmdq_is_cpr(arg_c_i, arg_c_type)) {
 			/* save local variable position */
 			CMDQ_MSG("save jump_c: condition:%d, arg_b: 0x%08x, arg_c: 0x%08x, arg_abc_type: %d\n",
 				 arg_condition, arg_b_i, arg_c_i, arg_abc_type);
-			cmdq_save_op_variable_position(handle);
 		}
 		if ((arg_c_i & 0xFFFF0000) != 0)
 			CMDQ_ERR("jump_c arg_c value is over 16 bit: 0x%08x\n", arg_c_i);
 
 		*p_command++ = (arg_b_i << 16) | (arg_c_i);
 		*p_command++ = (CMDQ_CODE_JUMP_C_RELATIVE << 24) | (arg_abc_type << 21) |
-			(instr_condition << 16) | (dummy_address);
+			(instr_condition << 16) | (arg_a_i);
+
+		/* save position to replace write value later and cpu use in jump_c */
+		cmdq_save_op_variable_position(handle);
 
 		handle->blockSize += CMDQ_INST_SIZE;
 	} while (0);
@@ -2382,7 +2401,7 @@ int32_t cmdq_append_jump_c_command(struct cmdqRecStruct *handle, CMDQ_VARIABLE a
 int32_t cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle, uint32_t rewritten_position, uint32_t new_value)
 {
 	int32_t status = 0;
-	uint32_t op, op_arg_type;
+	uint32_t op, op_arg_type, op_jump;
 	uint32_t *p_command;
 
 	if (handle == NULL)
@@ -2393,13 +2412,13 @@ int32_t cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle, uint32_t rewritten_
 	do {
 		/* reserve condition statement */
 		op = (p_command[1] & 0xFF000000) >> 24;
-		if (op != CMDQ_CODE_JUMP_C_RELATIVE)
+		op_jump = (p_command[3] & 0xFF000000) >> 24;
+		if (op != CMDQ_CODE_LOGIC || op_jump != CMDQ_CODE_JUMP_C_RELATIVE)
 			break;
 
-		op_arg_type = (p_command[1] & 0xFFFF0000) >> 16;
-
 		/* rewrite actual jump value */
-		p_command[1] = (op_arg_type << 16) | (new_value - rewritten_position);
+		op_arg_type = (p_command[0] & 0xFFFF0000) >> 16;
+		p_command[0] = (op_arg_type << 16) | (new_value - rewritten_position - CMDQ_INST_SIZE);
 	} while (0);
 
 	return status;
