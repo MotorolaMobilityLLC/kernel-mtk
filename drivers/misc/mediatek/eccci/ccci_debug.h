@@ -56,7 +56,7 @@ do { \
 #define CCCI_INIT_LOG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_INIT, CCCI_DUMP_TIME_FLAG, "[%d]" fmt, (idx+1), ##args); \
-	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
+	CCCI_LEGACY_ALWAYS_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 /* This log is used for save runtime data */
@@ -65,13 +65,13 @@ do { \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_BOOTUP, CCCI_DUMP_CURR_FLAG|CCCI_DUMP_TIME_FLAG, \
 			"[%d]" fmt, (idx+1), ##args); \
-	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
+	CCCI_LEGACY_ALWAYS_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 #define CCCI_BOOTUP_DUMP_LOG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_BOOTUP, 0, "[%d]" fmt, (idx+1), ##args); \
-	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
+	CCCI_LEGACY_ALWAYS_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 /* This log is used for modem boot up log and event */
@@ -103,7 +103,7 @@ do { \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_REPEAT, CCCI_DUMP_CURR_FLAG|CCCI_DUMP_TIME_FLAG, \
 			"[%d]" fmt, (idx+1), ##args); \
-	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
+	CCCI_LEGACY_ALWAYS_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 /* This log is used for memory dump */
@@ -111,13 +111,13 @@ do { \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_MEM_DUMP, CCCI_DUMP_TIME_FLAG|CCCI_DUMP_CURR_FLAG,\
 			"[%d]" fmt, (idx+1), ##args); \
-	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
+	CCCI_LEGACY_ALWAYS_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 #define CCCI_MEM_LOG(idx, tag, fmt, args...) \
 do { \
 	ccci_dump_write(idx, CCCI_DUMP_MEM_DUMP, 0, fmt, ##args); \
-	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
+	CCCI_LEGACY_ALWAYS_LOG(idx, tag, fmt, ##args); \
 } while (0)
 
 /* This log is used for history dump */
