@@ -79,6 +79,7 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
     endif
     export KBUILD_BUILD_USER
     export KBUILD_BUILD_HOST
+    export MTK_DTBO_FEATURE
     BUILT_KERNEL_TARGET := $(KERNEL_ZIMAGE_OUT).bin
     INSTALLED_KERNEL_TARGET := $(PRODUCT_OUT)/kernel
     TARGET_KERNEL_CONFIG := $(KERNEL_OUT)/.config
@@ -103,6 +104,9 @@ $(KERNEL_ZIMAGE_OUT): $(TARGET_KERNEL_CONFIG) FORCE
 	$(hide) mkdir -p $(KERNEL_OUT)
 	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION)
 	$(hide) $(call fixup-kernel-cmd-file,$(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/compressed/.piggy.xzkern.cmd)
+ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
+	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) dtboimage
+endif
 ifneq ($(KERNEL_CONFIG_MODULES),)
 	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) modules
 	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) INSTALL_MOD_PATH=$(KERNEL_MODULES_SYMBOLS_OUT) modules_install
@@ -130,14 +134,24 @@ $(TARGET_PREBUILT_KERNEL): $(BUILT_KERNEL_TARGET) $(LOCAL_PATH)/Android.mk | $(A
     BUILT_KERNEL_TARGET := $(TARGET_PREBUILT_KERNEL)
   endif#TARGET_PREBUILT_KERNEL
 
-$(INSTALLED_KERNEL_TARGET): $(BUILT_KERNEL_TARGET) $(LOCAL_PATH)/Android.mk | $(ACP)
+ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
+INSTALLED_DTB_OVERLAY_TARGET := $(PRODUCT_OUT)/dtbo.img
+BUILT_DTB_OVERLAY_TARGET := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/dts/mediatek/overlays/dtbo.img
+
+$(BUILT_DTB_OVERLAY_TARGET): $(BUILT_KERNEL_TARGET)
+
+$(INSTALLED_DTB_OVERLAY_TARGET): $(BUILT_DTB_OVERLAY_TARGET) $(LOCAL_PATH)/Android.mk | $(ACP)
+	$(copy-file-to-target)
+endif
+
+$(INSTALLED_KERNEL_TARGET): $(BUILT_KERNEL_TARGET) $(INSTALLED_DTB_OVERLAY_TARGET) $(LOCAL_PATH)/Android.mk | $(ACP)
 	$(copy-file-to-target)
 
 ifneq ($(KERNEL_CONFIG_MODULES),)
 $(BUILT_SYSTEMIMAGE): $(KERNEL_MODULES_DEPS)
 endif
 
-.PHONY: kernel save-kernel kernel-savedefconfig %config-kernel clean-kernel
+.PHONY: kernel save-kernel kernel-savedefconfig %config-kernel clean-kernel dtboimage
 kernel: $(INSTALLED_KERNEL_TARGET)
 save-kernel: $(TARGET_PREBUILT_KERNEL)
 
@@ -154,6 +168,14 @@ kernel-menuconfig:
 
 clean-kernel:
 	$(hide) rm -rf $(KERNEL_OUT) $(KERNEL_MODULES_OUT) $(INSTALLED_KERNEL_TARGET)
+ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
+	$(hide) rm -f $(INSTALLED_DTB_OVERLAY_TARGET)
+
+dtboimage: $(TARGET_KERNEL_CONFIG) FORCE
+	$(hide) mkdir -p $(KERNEL_OUT)
+	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) dtboimage
+	$(hide) cp $(BUILT_DTB_OVERLAY_TARGET) $(INSTALLED_DTB_OVERLAY_TARGET)
+endif
 
 .PHONY: check-kernel-config check-kernel-dotconfig
 droid: check-kernel-config check-kernel-dotconfig
