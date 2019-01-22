@@ -116,13 +116,13 @@ typedef struct GED_DVFS_UM_QUERY_PACK_TAG {
 	char bFirstBorn;
 	unsigned int ui32GPULoading;
 	unsigned int ui32GPUFreqID;
-	unsigned long gpu_cur_freq;
-	unsigned long gpu_pre_freq;
+	unsigned int gpu_cur_freq;
+	unsigned int gpu_pre_freq;
 	long long usT;
 	long long nsOffset;
-	unsigned long ul3DFenceDoneTime;
-	unsigned long ulPreCalResetTS_us;
-	unsigned long ulWorkingPeriod_us;
+	unsigned long long ul3DFenceDoneTime;
+	unsigned long long ulPreCalResetTS_us;
+	unsigned long long ulWorkingPeriod_us;
 	unsigned int ui32TargetPeriod_us;
 	unsigned int ui32BoostValue;
 } GED_DVFS_UM_QUERY_PACK;
