@@ -2272,6 +2272,17 @@ static void dump_clk_state(const char *clkname, struct seq_file *s)
 #endif
 }
 
+int univpll_is_used(void)
+{
+	/*
+	* 0: univpll is not used, sspm can disable
+	* 1: univpll is used, sspm cannot disable
+	*/
+	struct clk *c = __clk_lookup("univpll");
+
+	return __clk_get_enable_count(c);
+}
+
 static int clkdbg_dump_state_all(struct seq_file *s, void *v)
 {
 	int i;
