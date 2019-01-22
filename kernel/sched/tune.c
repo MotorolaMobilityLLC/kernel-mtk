@@ -11,6 +11,10 @@
 
 #include "sched.h"
 
+#if MET_SCHED_DEBUG
+#include <mt-plat/met_drv.h>
+#endif
+
 unsigned int sysctl_sched_cfs_boost __read_mostly;
 
 /*
@@ -116,6 +120,17 @@ __schedtune_accept_deltas(int nrg_delta, int cap_delta,
 
 	return payoff;
 }
+
+#if MET_SCHED_DEBUG
+static
+void met_stune_boost(int idx, int boost)
+{
+	char boost_str[64] = {0};
+
+	snprintf(boost_str, sizeof(boost_str), "sched_boost_idx%d", idx);
+	met_tag_oneshot(0, boost_str, boost);
+}
+#endif
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 
@@ -452,12 +467,17 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 		schedtune_boostgroup_update(ct->idx, ct->boost);
 		printk_deferred("success: GED task boost=%d, pid=%d, idx=%d\n", ct->boost, pid, ct->idx);
 		pr_cont_cgroup_name(ct->css.cgroup);
-		trace_sched_tune_config(ct->boost);
 	} else {
 		printk_deferred("error: GED task no exist: pid=%d, boost=%d\n", pid, boost_value);
 		rcu_read_unlock();
 		return -EINVAL;
 	}
+
+	trace_sched_tune_config(ct->boost);
+
+#if MET_SCHED_DEBUG
+	met_stune_boost(ct->idx, ct->boost);
+#endif
 
 	rcu_read_unlock();
 	return 0;
@@ -508,11 +528,16 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 
 		printk_deferred("success: GED task boost=%d, idx=%d\n", ct->boost, ct->idx);
 		pr_cont_cgroup_name(ct->css.cgroup);
-		trace_sched_tune_config(ct->boost);
 	} else {
 		printk_deferred("error: GED boost for stune group no exist: idx=%d\n", group_idx);
 		return -EINVAL;
 	}
+
+	trace_sched_tune_config(ct->boost);
+
+#if MET_SCHED_DEBUG
+	met_stune_boost(ct->idx, ct->boost);
+#endif
 
 	return 0;
 }
@@ -604,6 +629,10 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	schedtune_boostgroup_update(st->idx, st->boost);
 
 	trace_sched_tune_config(st->boost);
+
+#if MET_SCHED_DEBUG
+	met_stune_boost(st->idx, st->boost);
+#endif
 
 	return 0;
 }
@@ -953,6 +982,7 @@ schedtune_add_cluster_nrg(
 	}
 }
 #endif /* !define CONFIG_MTK_ACAO */
+
 
 /*
  * Initialize the constants required to compute normalized energy.
