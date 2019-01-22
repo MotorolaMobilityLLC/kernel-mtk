@@ -75,7 +75,7 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 
 	if (!debug)
 		if (current_boost_value[cgroup_idx] >= -100 && current_boost_value[cgroup_idx] < 3000)
-			boost_value_for_GED_idx(cgroup_idx, current_boost_value[cgroup_idx]);
+			boost_write_for_perf_idx(cgroup_idx, current_boost_value[cgroup_idx]);
 
 	mutex_unlock(&boost_eas);
 
@@ -189,7 +189,7 @@ static ssize_t perfmgr_debug_fg_boost_write(struct file *filp, const char *ubuf,
 
 #ifdef CONFIG_SCHED_TUNE
 	if (debug)
-		boost_value_for_GED_idx(CGROUP_FG, debug_boost_value[CGROUP_FG]);
+		boost_write_for_perf_idx(CGROUP_FG, debug_boost_value[CGROUP_FG]);
 #endif
 
 	return cnt;
@@ -316,7 +316,7 @@ static ssize_t perfmgr_debug_bg_boost_write(struct file *filp, const char *ubuf,
 
 #ifdef CONFIG_SCHED_TUNE
 	if (debug)
-		boost_value_for_GED_idx(CGROUP_BG, debug_boost_value[CGROUP_BG]);
+		boost_write_for_perf_idx(CGROUP_BG, debug_boost_value[CGROUP_BG]);
 #endif
 
 	return cnt;
@@ -444,7 +444,7 @@ static ssize_t perfmgr_debug_ta_boost_write(struct file *filp, const char *ubuf,
 
 #ifdef CONFIG_SCHED_TUNE
 	if (debug)
-		boost_value_for_GED_idx(CGROUP_TA, debug_boost_value[CGROUP_TA]);
+		boost_write_for_perf_idx(CGROUP_TA, debug_boost_value[CGROUP_TA]);
 #endif
 
 	return cnt;

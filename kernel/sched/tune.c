@@ -513,7 +513,7 @@ static void update_freq_fastpath(void)
 #endif
 
 #if 0 /* no use */
-int boost_value_for_GED_pid(int pid, int boost_value)
+int boost_write_for_perf_pid(int pid, int boost_value)
 {
 	struct task_struct *boost_task;
 	struct schedtune *ct;
@@ -528,7 +528,7 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 	}
 
 	if (boost_value < -100 || boost_value > 100)
-		printk_deferred("warning: GED boost value should be -100~100\n");
+		printk_deferred("warning: perf boost value should be -100~100\n");
 
 	if (boost_value >= 100)
 		boost_value = 100;
@@ -542,7 +542,7 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 		ct = task_schedtune(boost_task);
 
 		if (ct->idx == 0) {
-			printk_deferred("error: don't boost GED task at root idx=%d, pid:%d\n", ct->idx, pid);
+			printk_deferred("error: don't boost perf task at root idx=%d, pid:%d\n", ct->idx, pid);
 			rcu_read_unlock();
 			return -EINVAL;
 		}
@@ -564,7 +564,7 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 		/* Update CPU boost */
 		schedtune_boostgroup_update(ct->idx, ct->boost);
 	} else {
-		printk_deferred("error: GED task no exist: pid=%d, boost=%d\n", pid, boost_value);
+		printk_deferred("error: perf task no exist: pid=%d, boost=%d\n", pid, boost_value);
 		rcu_read_unlock();
 		return -EINVAL;
 	}
@@ -572,9 +572,9 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 	trace_sched_tune_config(ct->boost);
 
 #if MET_STUNE_DEBUG
-	/* GED: foreground with pid */
+	/* perf: foreground with pid */
 	if (ct->idx == 1)
-		met_tag_oneshot(0, "sched_boost_ged", ct->boost);
+		met_tag_oneshot(0, "sched_boost_fg", ct->boost);
 #endif
 
 	rcu_read_unlock();
@@ -582,18 +582,13 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 }
 #endif
 
-int boost_value_for_GED_idx(int group_idx, int boost_value)
+int boost_write_for_perf_idx(int group_idx, int boost_value)
 {
 	struct schedtune *ct;
 	unsigned threshold_idx;
 	int boost_pct;
 	bool dvfs_on_demand = false;
 	int idx = 0;
-
-	if (group_idx == 0) {
-		printk_deferred("error: don't boost GED task at root: idx=%d\n", group_idx);
-		return -EINVAL;
-	}
 
 	if (boost_value >= 2000) { /* dvfs short cut */
 		boost_value -= 2000;
@@ -608,7 +603,7 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 	}
 
 	if (boost_value < -100 || boost_value > 100)
-		printk_deferred("warning: GED boost value should be -100~100\n");
+		printk_deferred("warning: perf boost value should be -100~100\n");
 
 	if (boost_value >= 100)
 		boost_value = 100;
@@ -617,6 +612,8 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 
 	if (boost_value < 0)
 		global_negative_flag = true; /* set all group negative */
+	else
+		global_negative_flag = false;
 
 	for (idx = 0; idx < BOOSTGROUPS_COUNT; idx++) {
 		if (!global_negative_flag) /* positive path or google original path */
@@ -661,7 +658,7 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 
 		} else {
 			if (!global_negative_flag) { /* positive path or google original path */
-				printk_deferred("error: GED boost for stune group no exist: idx=%d\n",
+				printk_deferred("error: perf boost for stune group no exist: idx=%d\n",
 						idx);
 				return -EINVAL;
 			}
@@ -806,8 +803,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		return -EINVAL;
 	}
 
-	if (boost < 0)
-		global_negative_flag = false;
+	global_negative_flag = false;
 
 	boost_pct = boost;
 
@@ -841,7 +837,10 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 #if MET_STUNE_DEBUG
 	/* user: foreground */
 	if (st->idx == 1)
-		met_tag_oneshot(0, "sched_boost_user", st->boost);
+		met_tag_oneshot(0, "sched_boost_user_fg", st->boost);
+	/* user: top-app */
+	if (st->idx == 3)
+		met_tag_oneshot(0, "sched_boost_user_top", st->boost);
 #endif
 
 	return 0;
