@@ -426,7 +426,7 @@ void hps_power_on_vproc2(void)
  */
 static int hps_probe(struct platform_device *pdev)
 {
-#if defined(CONFIG_MACH_MT6799)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 	int ret;
 #endif
 
@@ -437,8 +437,11 @@ static int hps_probe(struct platform_device *pdev)
 		pr_debug("cpu_vproc11_id regulator_get failed\n");
 	else
 		pr_info("cpu_vproc11_id regulator_get success\n");
-#ifdef CONFIG_MACH_MT6771
+	ret = regulator_enable(cpu_vproc11_id);
+#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 	cpu_vsram11_id = regulator_get(&pdev->dev, "vsram_proc11");
+	ret = regulator_enable(cpu_vsram11_id);
+
 #else
 	cpu_vsram11_id = regulator_get(&pdev->dev, "vsram_gpu");
 #endif
