@@ -350,11 +350,13 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 		fifo_off_drs_enter = 4;
 		fifo_off_drs_leave = 1;
 		fifo_off_spm = 50; /* 10 times */
-		fifo_off_dvfs = 2;
-		if (is_wrot_sram)
+		if (is_wrot_sram) {
 			fifo_off_ultra = 50;
-		else
+			fifo_off_dvfs = 50;
+		} else {
 			fifo_off_ultra = 2;
+			fifo_off_dvfs = 2;
+		}
 		consume_rate = rdma_golden_setting->dst_width;
 		consume_rate = consume_rate * rdma_golden_setting->dst_height
 				*frame_rate * Bytes_per_sec;
@@ -409,10 +411,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	do_div(sodi_threshold_low, 10);
 
 
-	temp_for_div = 1200 * (fill_rate - consume_rate);
+	temp_for_div = 1200 * (fill_rate - consume_rate_div * 1000);
 	WARN_ON(temp_for_div < 0);
 	do_div(temp_for_div, 1000000);
-	temp = fifo_valid_size - temp_for_div;
+	temp = (long long)fifo_valid_size - temp_for_div;
 	if (temp < 0)
 		sodi_threshold_high = preultra_high;
 	else
