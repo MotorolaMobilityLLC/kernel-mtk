@@ -73,24 +73,21 @@ static void cpu_stop_signal_done(struct cpu_stop_done *done, bool executed)
 	}
 }
 
-static void __cpu_stop_queue_work(struct cpu_stopper *stopper,
-					struct cpu_stop_work *work)
-{
-	list_add_tail(&work->list, &stopper->works);
-	wake_up_process(stopper->thread);
-}
-
 /* queue @work to @stopper.  if offline, @work is completed immediately */
 static void cpu_stop_queue_work(unsigned int cpu, struct cpu_stop_work *work)
 {
 	struct cpu_stopper *stopper = &per_cpu(cpu_stopper, cpu);
+
 	unsigned long flags;
 
 	spin_lock_irqsave(&stopper->lock, flags);
-	if (stopper->enabled)
-		__cpu_stop_queue_work(stopper, work);
-	else
+
+	if (stopper->enabled) {
+		list_add_tail(&work->list, &stopper->works);
+		wake_up_process(stopper->thread);
+	} else
 		cpu_stop_signal_done(work->done, false);
+
 	spin_unlock_irqrestore(&stopper->lock, flags);
 }
 
@@ -216,31 +213,26 @@ static int multi_cpu_stop(void *data)
 	return err;
 }
 
-static int cpu_stop_queue_two_works(int cpu1, struct cpu_stop_work *work1,
-				    int cpu2, struct cpu_stop_work *work2)
+struct irq_cpu_stop_queue_work_info {
+	int cpu1;
+	int cpu2;
+	struct cpu_stop_work *work1;
+	struct cpu_stop_work *work2;
+};
+
+/*
+ * This function is always run with irqs and preemption disabled.
+ * This guarantees that both work1 and work2 get queued, before
+ * our local migrate thread gets the chance to preempt us.
+ */
+static void irq_cpu_stop_queue_work(void *arg)
 {
-	struct cpu_stopper *stopper1 = per_cpu_ptr(&cpu_stopper, cpu1);
-	struct cpu_stopper *stopper2 = per_cpu_ptr(&cpu_stopper, cpu2);
-	int err;
+	struct irq_cpu_stop_queue_work_info *info = arg;
 
-	lg_double_lock(&stop_cpus_lock, cpu1, cpu2);
-	spin_lock_irq(&stopper1->lock);
-	spin_lock_nested(&stopper2->lock, SINGLE_DEPTH_NESTING);
-
-	err = -ENOENT;
-	if (!stopper1->enabled || !stopper2->enabled)
-		goto unlock;
-
-	err = 0;
-	__cpu_stop_queue_work(stopper1, work1);
-	__cpu_stop_queue_work(stopper2, work2);
-unlock:
-	spin_unlock(&stopper2->lock);
-	spin_unlock_irq(&stopper1->lock);
-	lg_double_unlock(&stop_cpus_lock, cpu1, cpu2);
-
-	return err;
+	cpu_stop_queue_work(info->cpu1, info->work1);
+	cpu_stop_queue_work(info->cpu2, info->work2);
 }
+
 /**
  * stop_two_cpus - stops two cpus
  * @cpu1: the cpu to stop
@@ -254,12 +246,11 @@ unlock:
  */
 int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *arg)
 {
+	int call_cpu;
 	struct cpu_stop_done done;
 	struct cpu_stop_work work1, work2;
-	struct multi_stop_data msdata;
-
-	preempt_disable();
-	msdata = (struct multi_stop_data){
+	struct irq_cpu_stop_queue_work_info call_args;
+	struct multi_stop_data msdata = {
 		.fn = fn,
 		.data = arg,
 		.num_threads = 2,
@@ -272,20 +263,29 @@ int stop_two_cpus(unsigned int cpu1, unsigned int cpu2, cpu_stop_fn_t fn, void *
 		.done = &done
 	};
 
+	call_args = (struct irq_cpu_stop_queue_work_info){
+		.cpu1 = cpu1,
+		.cpu2 = cpu2,
+		.work1 = &work1,
+		.work2 = &work2,
+	};
+
 	cpu_stop_init_done(&done, 2);
 	set_state(&msdata, MULTI_STOP_PREPARE);
 
-	if (cpu1 > cpu2)
-		swap(cpu1, cpu2);
-	if (cpu_stop_queue_two_works(cpu1, &work1, cpu2, &work2)) {
-		preempt_enable();
-		return -ENOENT;
-	}
+	lg_local_lock(&stop_cpus_lock);
+	/*
+	 * Queuing needs to be done by the lowest numbered CPU, to ensure
+	 * that works are always queued in the same order on every CPU.
+	 * This prevents deadlocks.
+	 */
+	call_cpu = min(cpu1, cpu2);
 
-	preempt_enable();
+	smp_call_function_single(call_cpu, &irq_cpu_stop_queue_work,
+				 &call_args, 1);
+	lg_local_unlock(&stop_cpus_lock);
 
 	wait_for_completion(&done.completion);
-
 	return done.executed ? done.ret : -ENOENT;
 }
 
@@ -594,12 +594,15 @@ static int __cpu_stop_dispatch_work(unsigned int cpu, struct cpu_stop_work *work
 	int ret = 0;
 
 	spin_lock_irqsave(&stopper->lock, flags);
-	if (stopper->enabled)
-		__cpu_stop_queue_work(stopper, work);
-	else {
+
+	if (stopper->enabled) {
+		list_add_tail(&work->list, &stopper->works);
+		wake_up_process(stopper->thread);
+	} else {
 		cpu_stop_signal_done(work->done, false);
 		ret = 1;
 	}
+
 	spin_unlock_irqrestore(&stopper->lock, flags);
 
 	return ret;
