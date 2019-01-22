@@ -1567,12 +1567,7 @@ void musb_ep_restart(struct musb *musb, struct musb_request *req)
 {
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	/* limit debug mechanism to avoid printk too much */
-	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
-
-	if (!(__ratelimit(&ratelimit)))
-		return;
-
-	QMU_WARN("<== %s request %p len %u on hw_ep%d\n",
+	DBG_LIMIT(10, "<== %s request %p len %u on hw_ep%d",
 	    req->tx ? "TX/IN" : "RX/OUT", &req->request, req->request.length, req->epnum);
 #else
 	DBG(2, "<== %s request %p len %u on hw_ep%d\n",

@@ -76,6 +76,17 @@ static inline int _dbg_level(unsigned level)
 #endif
 #define DBG(level, fmt, args...) xprintk(level, fmt, ## args)
 
+#define DBG_LIMIT(FREQ, fmt, args...) do {\
+	static DEFINE_RATELIMIT_STATE(ratelimit, HZ, FREQ);\
+	static int skip_cnt;\
+	\
+	if (__ratelimit(&ratelimit)) {\
+		DBG(0, fmt " ,skip_cnt<%d>\n", ## args, skip_cnt);\
+		skip_cnt = 0;\
+	} else\
+	    skip_cnt++;\
+} while (0)\
+
 /* extern const char *otg_state_string(struct musb *); */
 
 extern int musb_init_debugfs(struct musb *musb);
