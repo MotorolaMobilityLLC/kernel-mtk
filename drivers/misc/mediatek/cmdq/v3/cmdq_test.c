@@ -6239,8 +6239,10 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 			wait_status = wait_for_completion_interruptible_timeout(&trigger_thread.cmplt,
 				msecs_to_jiffies(finish_timeout_ms));
 			CMDQ_LOG("wait trigger thread complete count: %u status: %d\n",
-				timeout_counter++, wait_status);
-		} while (wait_status != 0);
+				timeout_counter, wait_status);
+			msleep_interruptible(finish_timeout_ms);
+			timeout_counter++;
+		} while (wait_status <= 0);
 	} while (0);
 
 	CMDQ_LOG("%s END\n", __func__);
