@@ -427,6 +427,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	int vcore_status = 0;
 #endif
 	u32 cpu = spm_data;
+	int ch;
 
 	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready) {
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
@@ -445,6 +446,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 #endif
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
+	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
 
 	/* for gps only case */
 	if (spm_for_gps_flag) {
@@ -462,6 +464,10 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 	/* enable APxGPT timer */
 	/* soidle3_before_wfi(cpu); */
+
+	/* need be called before spin_lock_irqsave() */
+	ch = dcs_get_channel_lock();
+	pwrctrl->opp_level = __spm_check_opp_level(ch);
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -553,6 +559,9 @@ RESTORE_IRQ:
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
+
+	/* need be called after spin_unlock_irqrestore() */
+	dcs_get_channel_unlock();
 
 	/* stop APxGPT timer and enable caore0 local timer */
 	/* soidle3_after_wfi(cpu); */

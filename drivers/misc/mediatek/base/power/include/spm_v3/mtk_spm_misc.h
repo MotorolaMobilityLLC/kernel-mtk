@@ -147,14 +147,7 @@ int vcorefs_get_curr_ddr(void)
 
 extern int mt_cpu_dormant_init(void);
 
-extern void pll_force_on(void);
-extern void pll_force_off(void);
-extern void clock_force_on(void);
-extern void clock_force_off(void);
-extern void mtcmos_force_on(void);
-extern void mtcmos_force_off(void);
-extern void ulposcpll_force_on(void);
-extern void ulposcpll_force_off(void);
+extern int univpll_is_used(void);
 
 __attribute__ ((weak))
 int hps_get_root_id(void)

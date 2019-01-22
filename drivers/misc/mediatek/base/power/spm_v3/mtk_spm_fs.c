@@ -53,16 +53,18 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_PCM_FLAGS_CUST] = "pcm_flags_cust",
 	[PWR_PCM_FLAGS_CUST_SET] = "pcm_flags_cust_set",
 	[PWR_PCM_FLAGS_CUST_CLR] = "pcm_flags_cust_clr",
-	[PWR_PCM_RESERVE] = "pcm_reserve",
+	[PWR_PCM_FLAGS1] = "pcm_flags1",
+	[PWR_PCM_FLAGS1_CUST] = "pcm_flags1_cust",
+	[PWR_PCM_FLAGS1_CUST_SET] = "pcm_flags1_cust_set",
+	[PWR_PCM_FLAGS1_CUST_CLR] = "pcm_flags1_cust_clr",
 	[PWR_TIMER_VAL] = "timer_val",
 	[PWR_TIMER_VAL_CUST] = "timer_val_cust",
 	[PWR_TIMER_VAL_RAMP_EN] = "timer_val_ramp_en",
 	[PWR_TIMER_VAL_RAMP_EN_SEC] = "timer_val_ramp_en_sec",
 	[PWR_WAKE_SRC] = "wake_src",
 	[PWR_WAKE_SRC_CUST] = "wake_src_cust",
-	[PWR_WAKE_SRC_MD32] = "wake_src_md32",
+	[PWR_OPP_LEVEL] = "opp_level",
 	[PWR_WDT_DISABLE] = "wdt_disable",
-	[PWR_DVFS_HALT_SRC_CHK] = "dvfs_halt_src_chk",
 	[PWR_SYSPWREQ_MASK] = "syspwreq_mask",
 	[PWR_REG_SRCCLKEN0_CTL] = "reg_srcclken0_ctl",
 	[PWR_REG_SRCCLKEN1_CTL] = "reg_srcclken1_ctl",
@@ -215,16 +217,18 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 	p += sprintf(p, "pcm_flags_cust = 0x%x\n", pwrctrl->pcm_flags_cust);
 	p += sprintf(p, "pcm_flags_cust_set = 0x%x\n", pwrctrl->pcm_flags_cust_set);
 	p += sprintf(p, "pcm_flags_cust_clr = 0x%x\n", pwrctrl->pcm_flags_cust_clr);
-	p += sprintf(p, "pcm_reserve = 0x%x\n", pwrctrl->pcm_reserve);
+	p += sprintf(p, "pcm_flags1 = 0x%x\n", pwrctrl->pcm_flags1);
+	p += sprintf(p, "pcm_flags1_cust = 0x%x\n", pwrctrl->pcm_flags1_cust);
+	p += sprintf(p, "pcm_flags1_cust_set = 0x%x\n", pwrctrl->pcm_flags1_cust_set);
+	p += sprintf(p, "pcm_flags1_cust_clr = 0x%x\n", pwrctrl->pcm_flags1_cust_clr);
 	p += sprintf(p, "timer_val = 0x%x\n", pwrctrl->timer_val);
 	p += sprintf(p, "timer_val_cust = 0x%x\n", pwrctrl->timer_val_cust);
 	p += sprintf(p, "timer_val_ramp_en = 0x%x\n", pwrctrl->timer_val_ramp_en);
 	p += sprintf(p, "timer_val_ramp_en_sec = 0x%x\n", pwrctrl->timer_val_ramp_en_sec);
 	p += sprintf(p, "wake_src = 0x%x\n", pwrctrl->wake_src);
 	p += sprintf(p, "wake_src_cust = 0x%x\n", pwrctrl->wake_src_cust);
-	p += sprintf(p, "wake_src_md32 = 0x%x\n", pwrctrl->wake_src_md32);
+	p += sprintf(p, "opp_level = 0x%x\n", pwrctrl->opp_level);
 	p += sprintf(p, "wdt_disable = 0x%x\n", pwrctrl->wdt_disable);
-	p += sprintf(p, "dvfs_halt_src_chk = 0x%x\n", pwrctrl->dvfs_halt_src_chk);
 	p += sprintf(p, "syspwreq_mask = 0x%x\n", pwrctrl->syspwreq_mask);
 	p += sprintf(p, "reg_srcclken0_ctl = 0x%x\n", pwrctrl->reg_srcclken0_ctl);
 	p += sprintf(p, "reg_srcclken1_ctl = 0x%x\n", pwrctrl->reg_srcclken1_ctl);
@@ -443,11 +447,29 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST_CLR, val);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_RESERVE])) {
-		pwrctrl->pcm_reserve = val;
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1])) {
+		pwrctrl->pcm_flags1 = val;
 #ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_PCM_RESERVE, val);
+				id, PWR_PCM_FLAGS1, val);
+#endif /* CONFIG_MTK_SPM_IN_ATF */
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1_CUST])) {
+		pwrctrl->pcm_flags1_cust = val;
+#ifdef CONFIG_MTK_SPM_IN_ATF
+		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1_CUST, val);
+#endif /* CONFIG_MTK_SPM_IN_ATF */
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1_CUST_SET])) {
+		pwrctrl->pcm_flags1_cust_set = val;
+#ifdef CONFIG_MTK_SPM_IN_ATF
+		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1_CUST_SET, val);
+#endif /* CONFIG_MTK_SPM_IN_ATF */
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1_CUST_CLR])) {
+		pwrctrl->pcm_flags1_cust_clr = val;
+#ifdef CONFIG_MTK_SPM_IN_ATF
+		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1_CUST_CLR, val);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_TIMER_VAL])) {
 		pwrctrl->timer_val = val;
@@ -485,23 +507,17 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC_CUST, val);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_WAKE_SRC_MD32])) {
-		pwrctrl->wake_src_md32 = val;
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_OPP_LEVEL])) {
+		pwrctrl->opp_level = val;
 #ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_WAKE_SRC_MD32, val);
+				id, PWR_OPP_LEVEL, val);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_WDT_DISABLE])) {
 		pwrctrl->wdt_disable = val;
 #ifdef CONFIG_MTK_SPM_IN_ATF
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_WDT_DISABLE, val);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_DVFS_HALT_SRC_CHK])) {
-		pwrctrl->dvfs_halt_src_chk = val;
-#ifdef CONFIG_MTK_SPM_IN_ATF
-		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_DVFS_HALT_SRC_CHK, val);
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SYSPWREQ_MASK])) {
 		pwrctrl->syspwreq_mask = val;

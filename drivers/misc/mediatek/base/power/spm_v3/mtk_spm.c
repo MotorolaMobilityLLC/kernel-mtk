@@ -226,7 +226,7 @@ static void spm_register_init(void)
 	/* init PCM control register */
 	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | RG_EN_IM_SLEEP_DVS_LSB);
 	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | REG_EVENT_LOCK_EN_LSB |
-		  REG_SPM_SRAM_ISOINT_B_LSB | RG_PCM_WDT_EN_LSB | RG_AHBMIF_APBEN_LSB);
+		  REG_SPM_SRAM_ISOINT_B_LSB | RG_AHBMIF_APBEN_LSB);
 	spm_write(PCM_IM_PTR, 0);
 	spm_write(PCM_IM_LEN, 0);
 
@@ -463,6 +463,7 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	struct spm_data spm_d;
 	int ret;
+	unsigned long flags;
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	switch (pm_event) {
@@ -475,14 +476,18 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	case PM_SUSPEND_PREPARE:
 		spm_d.u.notify.root_id = hps_get_root_id();
+		spin_lock_irqsave(&__spm_lock, flags);
 		ret = spm_to_sspm_command(SPM_SUSPEND_PREPARE, &spm_d);
+		spin_unlock_irqrestore(&__spm_lock, flags);
 		if (ret < 0) {
 			pr_err("#@# %s(%d) PM_SUSPEND_PREPARE return %d!!!\n", __func__, __LINE__, ret);
 			return NOTIFY_BAD;
 		}
 		return NOTIFY_DONE;
 	case PM_POST_SUSPEND:
+		spin_lock_irqsave(&__spm_lock, flags);
 		ret = spm_to_sspm_command(SPM_POST_SUSPEND, &spm_d);
+		spin_unlock_irqrestore(&__spm_lock, flags);
 		if (ret < 0) {
 			pr_err("#@# %s(%d) PM_POST_SUSPEND return %d!!!\n", __func__, __LINE__, ret);
 			return NOTIFY_BAD;
@@ -809,7 +814,7 @@ EXPORT_SYMBOL(mt_spm_base_get);
 void mt_spm_for_gps_only(int enable)
 {
 	spm_for_gps_flag = !!enable;
-	pr_debug("#@# %s(%d) spm_for_gps_flag %d\n", __func__, __LINE__, spm_for_gps_flag);
+	/* pr_debug("#@# %s(%d) spm_for_gps_flag %d\n", __func__, __LINE__, spm_for_gps_flag); */
 }
 EXPORT_SYMBOL(mt_spm_for_gps_only);
 
@@ -825,7 +830,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	unsigned int ret = 0;
 	/* struct spm_data _spm_d; */
 
-	pr_debug("#@# %s(%d) cmd %x\n", __func__, __LINE__, cmd);
+	/* pr_debug("#@# %s(%d) cmd %x\n", __func__, __LINE__, cmd); */
 	switch (cmd) {
 	case SPM_SUSPEND:
 	case SPM_RESUME:
@@ -855,7 +860,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	case SPM_SUSPEND_PREPARE:
 	case SPM_POST_SUSPEND:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_NOLOCK, spm_d, SPM_D_LEN, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_DEFAUT, spm_d, SPM_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
