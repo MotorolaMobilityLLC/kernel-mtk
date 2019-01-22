@@ -35,6 +35,7 @@
 ********************************************************************************
 */
 #include "gl_vendor.h"
+#include "gl_qa_agent.h"
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -846,6 +847,7 @@ typedef struct _EVENT_DUMP_MEM_T {
 typedef struct _CMD_ACCESS_RX_STAT {
 	UINT_32 u4SeqNum;
 	UINT_32 u4TotalNum;
+	PARAM_RX_STAT_T rRxStat;
 } CMD_ACCESS_RX_STAT, *P_CMD_ACCESS_RX_STAT;
 
 typedef struct _EVENT_ACCESS_RX_STAT {
