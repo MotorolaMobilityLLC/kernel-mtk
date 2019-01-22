@@ -188,7 +188,8 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	}
 	/* QHQ RT Monitor end */
 
-	if (cmd == AEEIOCTL_SET_SF_STATE) {
+	if ((cmd == AEEIOCTL_SET_SF_STATE) && (!strncmp(current->comm, "surfaceflinger", 10) ||
+						!strncmp(current->comm, "SWWatchDog", 10))) {
 		if (copy_from_user(&monitor_status, (void __user *)arg, sizeof(long long)))
 			ret = -1;
 		return ret;
