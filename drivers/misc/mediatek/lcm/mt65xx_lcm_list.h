@@ -215,6 +215,7 @@ extern LCM_DRIVER r63419_wqhd_truly_phantom_cmd_lcm_drv;
 extern LCM_DRIVER r63419_wqhd_truly_phantom_vdo_lcm_drv;
 extern LCM_DRIVER r63419_fhd_truly_phantom_lcm_drv;
 extern LCM_DRIVER r63423_wqhd_truly_phantom_lcm_drv;
+extern LCM_DRIVER kd070d5450nha6_rgb_dpi_lcm_drv;
 extern LCM_DRIVER kr101ia2s_dsi_vdo_lcm_drv;
 extern LCM_DRIVER kr070ia4t_dsi_vdo_lcm_drv;
 extern LCM_DRIVER r69338_hd720_dsi_vdo_jdi_dw8755a_drv;
