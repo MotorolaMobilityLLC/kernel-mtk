@@ -30,6 +30,7 @@
 #include <linux/debugfs.h>
 #include <linux/mutex.h>
 #include <linux/uaccess.h>
+#include <linux/highmem.h>
 #include <asm/setup.h>
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
@@ -494,9 +495,9 @@ static void mmap_mem_open(struct vm_area_struct *vma)
 
 static void mmap_mem_close(struct vm_area_struct *vma)
 {
-	size_t size = vma->vm_end - vma->vm_start;
+	/*size_t size = vma->vm_end - vma->vm_start;*/
 
-	pr_info("%s(): 0x%lx~0x%lx pgoff=0x%lx %lx\n", __func__, vma->vm_start, vma->vm_end, vma->vm_pgoff, size);
+	/*pr_info("%s(): 0x%lx~0x%lx pgoff=0x%lx %x\n", __func__, vma->vm_start, vma->vm_end, vma->vm_pgoff, size);*/
 }
 
 static const struct vm_operations_struct mmap_mem_ops = {
