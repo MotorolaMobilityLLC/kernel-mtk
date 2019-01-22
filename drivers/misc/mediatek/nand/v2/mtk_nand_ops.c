@@ -19,7 +19,6 @@
 #include "mtk_nand_ops.h"
 #include "bmt.h"
 
-
 static struct mtk_nand_data_info *data_info;
 
 
@@ -86,13 +85,14 @@ static int mtk_nand_read_pages(struct mtk_nand_chip_info *info,
 	unsigned int col_addr, sect_read;
 	int ret = 0;
 
-	stats = mtd->ecc_stats;
 
 	nand_debug("mtk_nand_chip_read_page, block:0x%x page:0x%x offset:0x%x size:0x%x",
 		block, page, offset, size);
 
 	/* Grab the lock and see if the device is available */
 	nand_get_device(mtd, FL_READING);
+
+	stats = mtd->ecc_stats;
 	chip->select_chip(mtd, 0);
 
 	if ((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
@@ -426,6 +426,9 @@ static int mtk_nand_erase_blocks(struct mtk_nand_chip_operation *ops0,
 
 	page_addr0 = (ops0->block+data_info->bmt.start_block)*info->data_page_num;
 
+	/* Grab the lock and see if the device is available */
+	nand_get_device(mtd, FL_ERASING);
+
 	if (ops0->block < info->data_block_num) {
 		devinfo.tlcControl.slcopmodeEn = FALSE;
 	} else {
@@ -433,8 +436,6 @@ static int mtk_nand_erase_blocks(struct mtk_nand_chip_operation *ops0,
 		devinfo.tlcControl.slcopmodeEn = TRUE;
 	}
 
-	/* Grab the lock and see if the device is available */
-	nand_get_device(mtd, FL_ERASING);
 	chip->select_chip(mtd, 0);
 
 	status = mtk_chip_erase_blocks(mtd, page_addr0, page_addr1);
