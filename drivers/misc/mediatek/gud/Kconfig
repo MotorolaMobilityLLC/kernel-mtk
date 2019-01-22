@@ -15,16 +15,24 @@ config TRUSTONIC_TEE_VERSION
 
 config MTK_TRUSTONIC_TEE_DEBUGFS
 	bool "Enable Trustonic TEE debugfs"
+	depends on (TRUSTONIC_TEE_VERSION="302c")
 	default n
 	---help---
 	  Enable Trustonic TEE debugfs
+
+config TRUSTONIC_TEE_DEBUG
+	bool "Trustonic TEE driver debug mode"
+	depends on (TRUSTONIC_TEE_SUPPORT) && (TRUSTONIC_TEE_VERSION="311b")
+	default n
+	---help---
+	  Enable the debug mode in the Trustonic TEE Driver.
 
 #
 # MobiCore configuration
 #
 config MOBICORE_DRIVER
 	tristate "MobiCore Driver"
-	depends on TRUSTONIC_TEE_SUPPORT
+	depends on (TRUSTONIC_TEE_SUPPORT) && (TRUSTONIC_TEE_VERSION="302c")
 	default y
 	---help---
 	  Enable Linux Kernel MobiCore Support

@@ -1269,15 +1269,15 @@ int mcp_start(void)
 	size_t q_len = ALIGN(2 * (sizeof(struct notification_queue_header) +
 		NQ_NUM_ELEMS * sizeof(struct notification)), 4);
 	int ret;
-#if defined(irq_get_irq_data)
 	struct irq_data *irq_d;
-#endif
 
 	/* Make sure we have an interrupt number before going on */
 #if defined(CONFIG_OF)
 	mcp_ctx.irq = irq_of_parse_and_map(g_ctx.mcd->of_node, 0);
+	mc_dev_info("SSIQ from dts is 0x%08x\n", mcp_ctx.irq);
 #endif
 #if defined(MC_INTR_SSIQ)
+	mc_dev_info("MC_INTR_SSIQ is 0x%08x\n", MC_INTR_SSIQ);
 	if (mcp_ctx.irq <= 0)
 		mcp_ctx.irq = MC_INTR_SSIQ;
 #endif
@@ -1286,6 +1286,8 @@ int mcp_start(void)
 		mc_dev_err("No IRQ number, aborting\n");
 		return -EINVAL;
 	}
+
+	mc_dev_info("FINAL SSIQ is 0x%08x\n", mcp_ctx.irq);
 
 	/*
 	 * Initialize the time structure for SWd
@@ -1308,11 +1310,13 @@ int mcp_start(void)
 	mcp_ctx.mcp_buffer->message.init_values.irq = MC_INTR_SSIQ_SWD;
 #endif
 	mcp_ctx.mcp_buffer->message.init_values.flags |= MC_IV_FLAG_TIME;
-#if defined(irq_get_irq_data)
+
 	irq_d = irq_get_irq_data(mcp_ctx.irq);
-	if (irq_d)
+	if (irq_d) {
+		mcp_ctx.mcp_buffer->message.init_values.flags |= MC_IV_FLAG_IRQ;
 		mcp_ctx.mcp_buffer->message.init_values.irq = irq_d->hwirq;
-#endif
+		mc_dev_info("irq_d->hwirq is 0x%lx\n", irq_d->hwirq);
+	}
 	mcp_ctx.mcp_buffer->message.init_values.time_ofs =
 		(u32)((uintptr_t)mcp_ctx.time - (uintptr_t)mcp_ctx.base);
 	mcp_ctx.mcp_buffer->message.init_values.time_len =
@@ -1355,7 +1359,7 @@ int mcp_start(void)
 			mc_dev_err("halt during init, state 0x%x\n", status);
 			return -ENODEV;
 		case MC_STATUS_INITIALIZED:
-			mc_dev_devel("ready\n");
+			mc_dev_info("ready\n");
 			break;
 		default:
 			/* MC_STATUS_BAD_INIT or anything else */

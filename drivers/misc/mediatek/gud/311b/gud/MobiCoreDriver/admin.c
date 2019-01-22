@@ -120,7 +120,7 @@ void tee_object_free(struct tee_object *robj)
 static inline void client_state_change(enum client_state state)
 {
 	mutex_lock(&g_request.states_mutex);
-	mc_dev_devel("client state changes from %d to %d",
+	mc_dev_devel("client state changes from %d to %d\n",
 		     g_request.client_state, state);
 	g_request.client_state = state;
 	mutex_unlock(&g_request.states_mutex);
@@ -139,7 +139,7 @@ static inline bool client_state_is(enum client_state state)
 static inline void server_state_change(enum server_state state)
 {
 	mutex_lock(&g_request.states_mutex);
-	mc_dev_devel("server state changes from %d to %d",
+	mc_dev_devel("server state changes from %d to %d\n",
 		     g_request.server_state, state);
 	g_request.server_state = state;
 	mutex_unlock(&g_request.states_mutex);
@@ -207,11 +207,11 @@ static int request_send(u32 command, const struct mc_uuid_t *uuid, bool is_gp,
 
 	/* Send request */
 	complete(&g_request.client_complete);
-	mc_dev_devel("request sent");
+	mc_dev_devel("request sent\n");
 
 	/* Wait for header (could be interruptible, but then needs more work) */
 	wait_for_completion(&g_request.server_complete);
-	mc_dev_devel("response received");
+	mc_dev_devel("response received\n");
 
 	/* Server should be waiting with some data for us */
 	mutex_lock(&g_request.states_mutex);
@@ -243,7 +243,7 @@ end:
 	if (ret)
 		request_cancel();
 
-	mc_dev_devel("request_send ret=%d", ret);
+	mc_dev_devel("request_send ret=%d\n", ret);
 	return ret;
 }
 
@@ -614,7 +614,7 @@ static inline int load_driver(struct tee_client *client,
 	ret = client_add_session(client, obj, dci, dci_len, &sid, false,
 				 &identity, 0, 0);
 	if (!ret)
-		mc_dev_devel("driver loaded with sid %x", sid);
+		mc_dev_devel("driver loaded with sid %x\n", sid);
 
 	/*
 	 * Always 'free' the buffer (will remain as long as used), never freed

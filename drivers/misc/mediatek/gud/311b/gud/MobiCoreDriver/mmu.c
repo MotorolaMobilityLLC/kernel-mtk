@@ -355,7 +355,7 @@ static inline void unmap_buffer(struct tee_mmu *mmu_table)
 {
 	size_t t;
 
-	mc_dev_devel("clear MMU table, virt %p", mmu_table);
+	mc_dev_devel("clear MMU table, virt %p\n", mmu_table);
 	if (!mmu_table->user)
 		goto end;
 
