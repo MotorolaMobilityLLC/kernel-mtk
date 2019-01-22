@@ -20,6 +20,7 @@
 #include <linux/pm_qos.h>
 #include <linux/smp.h>
 #include <linux/spinlock.h>
+#include <linux/string.h>
 #include <linux/tick.h>
 #include <linux/uaccess.h>
 
@@ -48,8 +49,6 @@
 #define LOG_BUF_LEN         1024
 
 #define MCDI_SYSRAM_SIZE    0x800
-#define MCDI_SYSRAM_NF_WORD (MCDI_SYSRAM_SIZE / 4)
-#define SYSRAM_DUMP_RANGE   50
 
 #define MCDI_DEBUG_INFO_MAGIC_NUM           0x1eef9487
 #define MCDI_DEBUG_INFO_NON_REPLACE_OFFSET  0x0008
@@ -259,8 +258,11 @@ static ssize_t mcdi_state_read(struct file *filp,
 static ssize_t mcdi_state_write(struct file *filp,
 				const char __user *userbuf, size_t count, loff_t *f_pos)
 {
-	char cmd[NF_CMD_BUF];
-	int param;
+	int ret = 0;
+	unsigned long param = 0;
+	char *cmd_ptr = cmd_buf;
+	char *cmd_str = NULL;
+	char *param_str = NULL;
 
 	count = min(count, sizeof(cmd_buf) - 1);
 
@@ -269,75 +271,33 @@ static ssize_t mcdi_state_write(struct file *filp,
 
 	cmd_buf[count] = '\0';
 
-	if (sscanf(cmd_buf, "%127s %x", cmd, &param) == 2) {
-		if (!strcmp(cmd, "enable"))
-			set_mcdi_enable_status(param);
-		else if (!strcmp(cmd, "s_state"))
-			set_mcdi_s_state(param);
-		else if (!strcmp(cmd, "hint"))
-			system_idle_hint_request(SYSTEM_IDLE_HINT_USER_MCDI_TEST, param);
+	cmd_str = strsep(&cmd_ptr, " ");
+
+	if (cmd_str == NULL)
+		return -EINVAL;
+
+	param_str = strsep(&cmd_ptr, " ");
+
+	if (param_str == NULL)
+		return -EINVAL;
+
+	ret = kstrtoul(param_str, 16, &param);
+
+	if (ret < 0)
+		return -EINVAL;
+
+	if (!strncmp(cmd_str, "enable", sizeof("enable"))) {
+		set_mcdi_enable_status(param != 0);
 		return count;
-	}
-
-	return -EINVAL;
-}
-
-/* mcdi_debug */
-static int sysram_dump_start_idx;
-
-static int _mcdi_debug_open(struct seq_file *s, void *data)
-{
-	return 0;
-}
-
-static int mcdi_debug_open(struct inode *inode, struct file *filp)
-{
-	return single_open(filp, _mcdi_debug_open, inode->i_private);
-}
-
-static ssize_t mcdi_debug_read(struct file *filp,
-			       char __user *userbuf, size_t count, loff_t *f_pos)
-{
-	int len = 0;
-	int i;
-	char *p = dbg_buf;
-	int end_idx = 0;
-
-	end_idx = (sysram_dump_start_idx + (SYSRAM_DUMP_RANGE >= MCDI_SYSRAM_NF_WORD)) ?
-				MCDI_SYSRAM_NF_WORD :
-				(sysram_dump_start_idx + SYSRAM_DUMP_RANGE);
-
-	mcdi_log("\nsysram: 0x%x\n", sysram_dump_start_idx);
-	for (i = sysram_dump_start_idx; i < end_idx; i++)
-		mcdi_log("[0x%04x] = %08x\n", i * 4, mcdi_read(mcdi_sysram_base + 4 * i));
-
-	len = p - dbg_buf;
-
-	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
-}
-
-static ssize_t mcdi_debug_write(struct file *filp,
-				const char __user *userbuf, size_t count, loff_t *f_pos)
-{
-	char cmd[NF_CMD_BUF];
-	int param;
-
-	count = min(count, sizeof(cmd_buf) - 1);
-
-	if (copy_from_user(cmd_buf, userbuf, count))
-		return -EFAULT;
-
-	cmd_buf[count] = '\0';
-
-	if (sscanf(cmd_buf, "%127s %x", cmd, &param) == 2) {
-		if (!strcmp(cmd, "sysram")) {
-			if (param >= 0 && param < MCDI_SYSRAM_NF_WORD)
-				sysram_dump_start_idx = param;
-		}
+	} else if (!strncmp(cmd_str, "s_state", sizeof("s_state"))) {
+		set_mcdi_s_state(param);
 		return count;
+	} else if (!strncmp(cmd_str, "hint", sizeof("hint"))) {
+		system_idle_hint_request(SYSTEM_IDLE_HINT_USER_MCDI_TEST, param != 0);
+		return count;
+	} else {
+		return -EINVAL;
 	}
-
-	return -EINVAL;
 }
 
 /* mcdi profile */
@@ -444,8 +404,11 @@ static ssize_t mcdi_profile_read(struct file *filp,
 static ssize_t mcdi_profile_write(struct file *filp,
 				const char __user *userbuf, size_t count, loff_t *f_pos)
 {
-	char cmd[NF_CMD_BUF];
-	int param;
+	int ret = 0;
+	unsigned long param = 0;
+	char *cmd_ptr = cmd_buf;
+	char *cmd_str = NULL;
+	char *param_str = NULL;
 
 	count = min(count, sizeof(cmd_buf) - 1);
 
@@ -454,29 +417,37 @@ static ssize_t mcdi_profile_write(struct file *filp,
 
 	cmd_buf[count] = '\0';
 
-	if (sscanf(cmd_buf, "%127s %x", cmd, &param) == 2) {
-		if (!strcmp(cmd, "reg")) {
-			pr_info("mcdi_reg: 0x%x=0x%x(%d)\n",
-				param, mcdi_read(mcdi_sysram_base+param), mcdi_read(mcdi_sysram_base+param));
-		}
-		return count;
-	}
+	cmd_str = strsep(&cmd_ptr, " ");
 
-	return -EINVAL;
+	if (cmd_str == NULL)
+		return -EINVAL;
+
+	param_str = strsep(&cmd_ptr, " ");
+
+	if (param_str == NULL)
+		return -EINVAL;
+
+	ret = kstrtoul(param_str, 16, &param);
+
+	if (ret < 0)
+		return -EINVAL;
+
+	if (!strncmp(cmd_str, "reg", sizeof("reg"))) {
+		if (!(param >= 0 && param < MCDI_SYSRAM_SIZE && (param % 4) == 0))
+			return -EINVAL;
+
+		pr_info("mcdi_reg: 0x%lx=0x%x(%d)\n",
+			param, mcdi_read(mcdi_sysram_base + param), mcdi_read(mcdi_sysram_base + param));
+		return count;
+	} else {
+		return -EINVAL;
+	}
 }
 
 static const struct file_operations mcdi_state_fops = {
 	.open = mcdi_state_open,
 	.read = mcdi_state_read,
 	.write = mcdi_state_write,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static const struct file_operations mcdi_debug_fops = {
-	.open = mcdi_debug_open,
-	.read = mcdi_debug_read,
-	.write = mcdi_debug_write,
 	.llseek = seq_lseek,
 	.release = single_release,
 };
@@ -504,7 +475,6 @@ static int mcdi_debugfs_init(void)
 	}
 
 	debugfs_create_file("mcdi_state", 0644, root_entry, NULL, &mcdi_state_fops);
-	debugfs_create_file("mcdi_debug", 0644, root_entry, NULL, &mcdi_debug_fops);
 	debugfs_create_file("mcdi_profile", 0644, root_entry, NULL, &mcdi_profile_fops);
 
 	return 0;
