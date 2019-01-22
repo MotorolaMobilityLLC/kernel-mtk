@@ -63,6 +63,7 @@ static struct mt6336_ctrl *core_ctrl;
 static bool first_connect = true;
 #endif
 
+static DEFINE_MUTEX(chrdet_lock);
 
 #if  defined(CONFIG_MTK_FPGA)
 /*****************************************************************************
@@ -590,6 +591,7 @@ void do_charger_detect(void)
 
 	/* enable ctrl to lock power, keeping MT6336 in normal mode */
 	mt6336_ctrl_enable(core_ctrl);
+	mutex_lock(&chrdet_lock);
 
 	if (upmu_get_rgs_chrdet() == true) {
 		pr_err("charger IN\n");
@@ -614,6 +616,7 @@ void do_charger_detect(void)
 		power_supply_changed(g_mt_charger->usb_psy);
 	}
 
+	mutex_unlock(&chrdet_lock);
 	/* enter low power mode*/
 	mt6336_ctrl_disable(core_ctrl);
 }
@@ -815,6 +818,7 @@ static int mt_charger_probe(struct platform_device *pdev)
 	device_init_wakeup(&pdev->dev, 1);
 
 	core_ctrl = mt6336_ctrl_get("mt6336_chrdet");
+	mutex_init(&chrdet_lock);
 
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 	/* do charger detect here to prevent HW miss interrupt*/
