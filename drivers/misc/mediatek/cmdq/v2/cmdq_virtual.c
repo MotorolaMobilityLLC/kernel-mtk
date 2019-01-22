@@ -427,7 +427,7 @@ int cmdq_virtual_get_thread_index(enum CMDQ_SCENARIO_ENUM scenario, const bool s
 	case CMDQ_SCENARIO_RDMA0_DISP:
 	case CMDQ_SCENARIO_DEBUG_PREFETCH:
 		/* CMDQ_MIN_SECURE_THREAD_ID */
-		return 12;
+		return CMDQ_THREAD_SEC_PRIMARY_DISP;
 	case CMDQ_SCENARIO_DISP_SUB_DISABLE_SECURE_PATH:
 	case CMDQ_SCENARIO_SUB_DISP:
 	case CMDQ_SCENARIO_SUB_ALL:
@@ -437,12 +437,12 @@ int cmdq_virtual_get_thread_index(enum CMDQ_SCENARIO_ENUM scenario, const bool s
 	case CMDQ_SCENARIO_DISP_MIRROR_MODE:
 	case CMDQ_SCENARIO_DISP_COLOR:
 	case CMDQ_SCENARIO_PRIMARY_MEMOUT:
-		return 13;
+		return CMDQ_THREAD_SEC_SUB_DISP;
 	case CMDQ_SCENARIO_USER_MDP:
 	case CMDQ_SCENARIO_USER_SPACE:
 	case CMDQ_SCENARIO_DEBUG:
 		/* because there is one input engine for MDP, reserve one secure thread is enough */
-		return 14;
+		return CMDQ_THREAD_SEC_MDP;
 	default:
 		CMDQ_ERR("no dedicated secure thread for senario:%d\n", scenario);
 		return CMDQ_INVALID_THREAD;

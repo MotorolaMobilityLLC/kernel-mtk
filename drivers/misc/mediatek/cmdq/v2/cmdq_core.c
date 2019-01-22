@@ -4289,9 +4289,9 @@ void cmdq_core_dump_secure_metadata(struct cmdqSecDataStruct *pSecData)
 		return;
 
 	for (i = 0; i < pSecData->addrMetadataCount; i++) {
-		CMDQ_LOG("idx:%d, type:%d, baseHandle:%x, offset:%d, size:%d, port:%d\n",
-			 i, pAddr[i].type, pAddr[i].baseHandle, pAddr[i].offset, pAddr[i].size,
-			 pAddr[i].port);
+		CMDQ_LOG("idx:%d, type:%d, baseHandle:0x%08x, blockOffset:%u, offset:%u, size:%u, port:%u\n",
+			 i, pAddr[i].type, pAddr[i].baseHandle, pAddr[i].blockOffset, pAddr[i].offset,
+			 pAddr[i].size, pAddr[i].port);
 	}
 #endif
 }
