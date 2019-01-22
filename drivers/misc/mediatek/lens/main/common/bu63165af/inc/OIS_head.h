@@ -151,12 +151,13 @@ void func_COEF_DOWNLOAD(OIS_UWORD u16_coef_type);
 void download(OIS_UWORD u16_type, OIS_UWORD u16_coef_type);
 
 ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-	OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param);
+			     OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param);
 
 void SET_FADJ_PARAM(const _FACT_ADJ *param);
 
 ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-	OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param);
+					     OIS_UBYTE filter, OIS_UBYTE range,
+					     const _FACT_ADJ *param);
 
 void HalfShutterOn(void);
 
@@ -208,7 +209,7 @@ extern int s4EEPROM_ReadReg_BU63165AF(u16 addr, u16 *data);
 extern int s4AF_WriteReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData);
 
 extern int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData,
-				   u8 *a_pRecvData, u16 a_sizeRecvData);
+				  u8 *a_pRecvData, u16 a_sizeRecvData);
 
 /* #define      DEBUG_FADJ */
 #ifdef	DEBUG_FADJ

@@ -245,7 +245,7 @@ unsigned short TneRun(void)
 	TneHvc();
 #endif				/* NEUTRAL_CENTER */
 #else
-/* StbOnnN( OFF , ON ) ;    */                      /* Y OFF, X ON */
+	/* StbOnnN( OFF , ON ) ;    *//* Y OFF, X ON */
 	WitTim_LC898122AF(TNE);
 
 	StTneVal.UlDwdVal = TnePtp(Y_DIR, PTP_BEFORE);
@@ -483,7 +483,8 @@ unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
 				UcTofRst = FAILURE;
 
 			/* Check Tuning Result */
-			if ((StTneVal.StDwdVal.UsHigVal < HALL_MIN_GAP && StTneVal.StDwdVal.UsLowVal < HALL_MIN_GAP)
+			if ((StTneVal.StDwdVal.UsHigVal < HALL_MIN_GAP
+			     && StTneVal.StDwdVal.UsLowVal < HALL_MIN_GAP)
 			    && (StTneVal.StDwdVal.UsHigVal > HALL_MAX_GAP
 				&& StTneVal.StDwdVal.UsLowVal > HALL_MAX_GAP)) {
 				UcTneRst = SUCCESS;
@@ -496,8 +497,7 @@ unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
 				UcTmeOut++;
 			}
 		} else {
-			if ((StTneVal.StDwdVal.UsHigVal > MARGIN) && (StTneVal.StDwdVal.UsLowVal
-				> MARGIN)) {	/* position check */
+			if ((StTneVal.StDwdVal.UsHigVal > MARGIN) && (StTneVal.StDwdVal.UsLowVal > MARGIN)) {
 				UcTofRst = SUCCESS;
 				UsValBef = UsValNow = 0x0000;
 			} else if ((StTneVal.StDwdVal.UsHigVal <= MARGIN)
@@ -571,11 +571,11 @@ unsigned char TneCen(unsigned char UcTneAxs, UnDwdVal StTneVal)
 		if (UcTneAxs & 0xF0) {
 			if ((UcTmeOut / 2) == TIME_OUT)
 				UcTmeOut = 0;
-				/* Set Time Out Count */
+			/* Set Time Out Count */
 		} else {
 			if (UcTmeOut == TIME_OUT)
 				UcTmeOut = 0;
-				/* Set Time Out Count */
+			/* Set Time Out Count */
 		}
 	}
 
@@ -693,8 +693,9 @@ unsigned long TneBia(UnDwdVal StTneVal, unsigned char UcTneAxs)
 	if (UcChkFst) {
 		if (UcTneAxs & 0xF0) {
 			/* Calculatiton For Hall BIAS 1/2 Searching */
-			if (((unsigned short)0xFFFF - (StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal))
-			      < BIAS_ADJ_RANGE) {
+			if (((unsigned short)0xFFFF -
+			     (StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal))
+			    < BIAS_ADJ_RANGE) {
 				if (((unsigned short)0xFFFF -
 				     (StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal)) <
 				    BIAS_ADJ_SKIP) {
@@ -715,7 +716,8 @@ unsigned long TneBia(UnDwdVal StTneVal, unsigned char UcTneAxs)
 
 		} else {
 			/* Calculatiton For Hall BIAS 1/2 Searching */
-			if ((StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal) / 2 > BIAS_ADJ_BORDER)
+			if ((StTneVal.StDwdVal.UsHigVal + StTneVal.StDwdVal.UsLowVal) / 2 >
+			    BIAS_ADJ_BORDER)
 				SlSetBia += UsStpSiz;
 			else
 				SlSetBia -= UsStpSiz;
@@ -1157,7 +1159,7 @@ void LopSin(unsigned char UcDirSel, unsigned char UcSonOff)
 #ifdef	USE_EXTCLK_ALL		/* 24MHz */
 		/* Freq = CmSinFrq * 11.718kHz / 65536 / 16 */
 #ifdef	ACTREG_6P5OHM
-/* UsFreqVal       =       0x30EE ;  */                             /* 139.9Hz */
+		/* UsFreqVal       =       0x30EE ;  *//* 139.9Hz */
 		UsFreqVal = 0x29F1;	/* 119.9Hz */
 #endif
 #ifdef	ACTREG_10P2OHM
@@ -1169,7 +1171,7 @@ void LopSin(unsigned char UcDirSel, unsigned char UcSonOff)
 #else
 		/* Freq = CmSinFrq * 23.4375kHz / 65536 / 16 */
 #ifdef	ACTREG_6P5OHM
-/* UsFreqVal       =       0x1877 ;   */                              /* 139.9Hz */
+		/* UsFreqVal       =       0x1877 ;   *//* 139.9Hz */
 		UsFreqVal = 0x14F8;	/* 119.9Hz */
 #endif
 #ifdef	ACTREG_10P2OHM
@@ -1477,7 +1479,7 @@ void GyrCon(unsigned char UcGyrCon)
 
 #ifdef	GAIN_CONT
 		/* Gain3 Register */
-/* AutoGainControlSw( ON ) ;  */                     /* Auto Gain Control Mode ON */
+		/* AutoGainControlSw( ON ) ;  *//* Auto Gain Control Mode ON */
 #endif
 		ClrGyr(0x000E, CLR_FRAM1);	/* Gyro Delay RAM Clear */
 
@@ -1489,7 +1491,7 @@ void GyrCon(unsigned char UcGyrCon)
 
 #ifdef	GAIN_CONT
 		/* Gain3 Register */
-/* AutoGainControlSw( ON ) ;  */                      /* Auto Gain Control Mode ON */
+		/* AutoGainControlSw( ON ) ;  *//* Auto Gain Control Mode ON */
 #endif
 
 		RamWrite32A_LC898122AF(sxggf, 0x3F800000);	/* 0x10B5 */
@@ -1504,7 +1506,7 @@ void GyrCon(unsigned char UcGyrCon)
 
 #ifdef	GAIN_CONT
 		/* Gain3 Register */
-/* AutoGainControlSw( OFF ) ;  */                    /* Auto Gain Control Mode OFF */
+		/* AutoGainControlSw( OFF ) ;  *//* Auto Gain Control Mode OFF */
 #endif
 	}
 }
@@ -2290,7 +2292,7 @@ const signed char ScCselRate[CRATETABLE] = {
 
 
 #define	TARGET_FREQ		48000.0F	/* 48MHz */
-/* #define       TARGET_FREQ          24000.0F */    /* 24MHz */
+
 #define	START_RSEL		0x04	/* Typ */
 #define	START_CSEL		0x08	/* Typ bit4:OSCPMSEL */
 #define	MEAS_MAX		32	/* è„å¿32âÒ */
@@ -2321,7 +2323,7 @@ unsigned short OscAdj(void)
 	unsigned char UcOsccselP, UcOsccselM;	/* Reg set value */
 	unsigned short UsResult;
 
-/* unsigned char   UcOscsetBk ;  */                                               /* Reg set value */
+	/* unsigned char   UcOscsetBk ;  *//* Reg set value */
 
 	UcMeasFlg = 0;		/* Clear Measure check flag */
 	UcMeasCnt = 0;		/* Clear Measure counter */

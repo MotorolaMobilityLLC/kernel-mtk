@@ -151,12 +151,13 @@ void func_COEF_DOWNLOAD(OIS_UWORD u16_coef_type);
 void download(OIS_UWORD u16_type, OIS_UWORD u16_coef_type);
 
 ADJ_STS func_SET_SCENE_PARAM(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-	OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param);
+			     OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param);
 
 void SET_FADJ_PARAM(const _FACT_ADJ *param);
 
 ADJ_STS func_SET_SCENE_PARAM_for_NewGYRO_Fil(OIS_UBYTE u16_scene, OIS_UBYTE u16_mode,
-	OIS_UBYTE filter, OIS_UBYTE range, const _FACT_ADJ *param);
+					     OIS_UBYTE filter, OIS_UBYTE range,
+					     const _FACT_ADJ *param);
 
 void HalfShutterOn(void);
 
@@ -202,10 +203,12 @@ extern void setOISMode(int Disable);
 
 extern int s4EEPROM_ReadReg_BU63169AF(unsigned short addr, unsigned short *data);
 
-extern int s4AF_WriteReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData, unsigned short a_sizeSendData);
+extern int s4AF_WriteReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData,
+				   unsigned short a_sizeSendData);
 
-extern int s4AF_ReadReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData, unsigned short a_sizeSendData,
-				   unsigned char *a_pRecvData, unsigned short a_sizeRecvData);
+extern int s4AF_ReadReg_BU63169AF(unsigned short i2c_id, unsigned char *a_pSendData,
+				  unsigned short a_sizeSendData, unsigned char *a_pRecvData,
+				  unsigned short a_sizeRecvData);
 
 /* #define      DEBUG_FADJ */
 #ifdef	DEBUG_FADJ

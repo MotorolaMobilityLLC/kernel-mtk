@@ -689,7 +689,7 @@ void IniGyr(void)
 	RegWriteA_LC898122AF(WG_ADJGANGO, 0x00);	/* 0x0108       manual off */
 
 	/* exe function */
-/* AutoGainControlSw( OFF ) ;     */                         /* Auto Gain Control Mode OFF */
+	/* AutoGainControlSw( OFF ) ;     *//* Auto Gain Control Mode OFF */
 	AutoGainControlSw(ON);	/* Auto Gain Control Mode ON  */
 #endif
 
@@ -766,8 +766,8 @@ void IniAdj(void)
 	RamWriteA_LC898122AF(OFF1Z, HYOFF1Z_INI);	/* 0x14D0 */
 	RamWriteA_LC898122AF(sxg, SXGAIN_INI);	/* 0x10D3 */
 	RamWriteA_LC898122AF(syg, SYGAIN_INI);	/* 0x11D3 */
-/* UsCntXof = OPTCEN_X ;         */                    /* Clear Optical center X value */
-/* UsCntYof = OPTCEN_Y ;         */                    /* Clear Optical center Y value */
+	/* UsCntXof = OPTCEN_X ;         *//* Clear Optical center X value */
+	/* UsCntYof = OPTCEN_Y ;         *//* Clear Optical center Y value */
 /* RamWriteA_LC898122AF( SXOFFZ1,             UsCntXof ) ;            // 0x1461 */
 /* RamWriteA_LC898122AF( SYOFFZ1,             UsCntYof ) ;            // 0x14E1 */
 
