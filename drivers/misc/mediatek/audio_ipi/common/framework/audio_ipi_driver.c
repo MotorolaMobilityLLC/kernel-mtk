@@ -481,7 +481,11 @@ static long audio_ipi_driver_compat_ioctl(
 static ssize_t audio_ipi_driver_read(
 	struct file *file, char __user *buf, size_t count, loff_t *ppos)
 {
+#if defined(CONFIG_MTK_AUDIODSP_SUPPORT)
 	return audio_ipi_dma_msg_read(buf, count);
+#else
+	return 0;
+#endif
 }
 
 
