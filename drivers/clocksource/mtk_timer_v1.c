@@ -820,6 +820,8 @@ err_clk_put_src:
 	clk_put(clk_src);
 err_unmap_irq:
 	irq_dispose_mapping(xgpt_timers.tmr_irq);
+
+	gpt_update_unlock(save_flags);
 }
 
 static void release_gpt_dev_locked(struct gpt_device *dev)
