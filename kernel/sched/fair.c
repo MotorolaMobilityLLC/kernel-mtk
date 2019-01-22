@@ -33,18 +33,23 @@
 #include <linux/module.h>
 
 #include <trace/events/sched.h>
+#include <mt-plat/met_drv.h>
 
 #include "sched.h"
 #include "tune.h"
 #include "walt.h"
 
-#include "hmp.c"
+
+#ifndef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+/* L+ cpu is defined in power.c */
+static int l_plus_cpu = -1;
+#endif
 
 static inline unsigned long boosted_task_util(struct task_struct *task);
 
-#include "vip.c"
+#include "hmp.c"
 
-#include <mt-plat/met_drv.h>
+#include "vip.c"
 
 /* global default 0 */
 int stune_task_threshold;
@@ -6066,8 +6071,10 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		int vip_idle_cpu;
 
 		vip_idle_cpu = find_idle_vip_cpu(p);
-		if (vip_idle_cpu >= 0)
+		if (vip_idle_cpu >= 0) {
+			trace_sched_select_task_rq(p, (LB_VIP | vip_idle_cpu), prev_cpu, vip_idle_cpu);
 			return vip_idle_cpu;
+		}
 	}
 #endif
 
@@ -9849,7 +9856,7 @@ int select_max_spare_capacity_cpu(struct task_struct *p, int target)
 	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	/* If the prevous cpu is cache affine and idle, choose it first. */
-	if (cpu != target && cpus_share_cache(cpu, target) && idle_cpu(cpu))
+	if (cpu != l_plus_cpu && cpu != target && cpus_share_cache(cpu, target) && idle_cpu(cpu))
 		return cpu;
 
 	arch_get_cluster_cpus(&cls_cpus, cid);

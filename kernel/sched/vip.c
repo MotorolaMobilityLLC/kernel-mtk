@@ -19,6 +19,7 @@
 
 #include <mt-plat/met_drv.h>
 
+
 static DEFINE_SPINLOCK(vip_force_migration);
 static DEFINE_MUTEX(VIP_MUTEX_LOCK);
 
@@ -183,8 +184,13 @@ int find_idle_vip_cpu(struct task_struct *p)
 
 		/* favoring tasks that prefer idle cpus to improve latency. */
 		if (idle_cpu(i)) {
+
 			/* as fallback */
-			big_idle_cpu = i;
+			if (big_idle_cpu > 0) {
+				if (capacity_orig_of(big_idle_cpu) < capacity_orig_of(i))
+					big_idle_cpu = i;
+			} else
+				big_idle_cpu = i;
 
 			/* Ensure minimum capacity to grant the required boost */
 			if (new_util <= capacity_orig_of(i)) {
@@ -530,17 +536,26 @@ int vip_task_force_migrate(void)
 					__func__, p->pid, i);
 
 			if (task_running(task_rq(p), p)) {
+				/* for running task, pick a better and idle CPU  */
 				if (capacity_of(i) > capacity_of(cpu_of(target))) {
 					push_cpu = i;
 					mt_sched_printf(sched_lb, "%s:task_running: vip=%d, i=%d, target=%d",
 							__func__, p->pid, i, cpu_of(target));
-					break;
+					/* don't consider L+ as 1th choice */
+					if (l_plus_cpu == i)
+						continue;
+					else
+						break;
 				}
-			} else {
+			} else { /* for runnable task, pick a idle CPU  */
 				push_cpu = i;
 				mt_sched_printf(sched_lb, "%s:task_runnable: vip=%d, i=%d, target=%d",
 						__func__, p->pid, i, cpu_of(target));
-				break;
+				/* don't consider L+ as 1th choice */
+				if (l_plus_cpu == i)
+					continue;
+				else
+					break;
 			}
 		}
 	}
