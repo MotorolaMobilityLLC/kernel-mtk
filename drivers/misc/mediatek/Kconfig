@@ -81,6 +81,15 @@ config TARGET_COPY_OUT_ODM
 	  OTA project will disable it to prevent exception
 	  If you are not sure about this, do not set it to n
 
+config EXTREME_LOW_RAM
+	bool "Support the device with memory smaller than 512M"
+	default n
+	help
+	  This config decide if device memory < 512M
+	  For 512M device, it has many low mem shrinking mechanism
+	  Normal project will disable it first
+	  If you are not sure about this, do not set it to y
+
 config MTK_LDVT
 	bool "LDVT"
 	help
