@@ -29,6 +29,8 @@
 #endif /* #ifdef USE_DRAM_API_INSTEAD */
 #include <mtk_dcm_autogen.h>
 
+#include <emi_mpu.h>
+
 #if defined(__KERNEL__) && defined(CONFIG_OF)
 #ifdef CONFIG_MACH_MT6799
 unsigned long dcm_topckgen_base;
@@ -172,6 +174,11 @@ static DEFINE_MUTEX(dcm_lock);
 #ifdef CONFIG_HOTPLUG_CPU
 static struct notifier_block dcm_hotplug_nb;
 #endif
+
+int __attribute__((weak)) emi_set_dcm_ratio(unsigned int div_val)
+{
+	return 0;
+}
 
 /*****************************************
  * following is implementation per DCM module.
@@ -436,9 +443,29 @@ int dcm_rgu(ENUM_RGU_DCM on)
 	return 0;
 }
 
+/* return divider value converted from fsel_val */
+static unsigned int topckgen_emi_dcm_get_div_val(void)
+{
+	unsigned int fsel_val = topckgen_emi_dcm_full_fsel_get();
+
+	dcm_dbg("%s: fmem_fsel_val=%u\n", __func__, fsel_val);
+
+	if (fsel_val)
+		if (fsel_val > 16)
+			return 1;
+		else
+			return (16 / fsel_val);
+	else
+		return 32;
+}
+
 int dcm_topckg(ENUM_TOPCKG_DCM on)
 {
 	dcm_topckgen_cksys_dcm_emi(on);
+
+	/* notify EMI if FMEM divider is changed */
+	if (emi_set_dcm_ratio(topckgen_emi_dcm_get_div_val()))
+		dcm_err("%s: emi_set_dcm_ratio failed\n", __func__);
 
 	return 0;
 }
@@ -960,6 +987,10 @@ void dcm_set_fmem_fsel_dbc(unsigned int fsel, unsigned int dbc)
 	topckgen_emi_dcm_full_fsel_set(0x10 >> fsel);
 	topckgen_emi_dcm_dbc_cnt_set(dbc);
 	dcm_info("%s: set fmem fsel=%d, dbc=%d\n", __func__, fsel, dbc);
+
+	/* notify EMI if FMEM divider is changed */
+	if (emi_set_dcm_ratio(topckgen_emi_dcm_get_div_val()))
+		dcm_err("%s: emi_set_dcm_ratio failed\n", __func__);
 
 	mutex_unlock(&dcm_lock);
 #endif
