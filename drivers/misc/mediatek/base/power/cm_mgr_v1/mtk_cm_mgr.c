@@ -65,6 +65,7 @@ static unsigned long long test_diff;
 static unsigned long long cnt;
 static unsigned int test_max;
 static unsigned int prev_freq_idx[CM_MGR_CPU_CLUSTER];
+static unsigned int prev_freq[CM_MGR_CPU_CLUSTER];
 /* 0: < 50us */
 /* 1: 50~100us */
 /* 2: 100~200us */
@@ -297,6 +298,11 @@ void check_cm_mgr_status_internal(void)
 		now = ktime_get();
 
 #ifdef ATF_SECURE_SMC
+#ifdef USE_NEW_CPU_OPP
+		ret = mt_secure_call(MTK_SIP_KERNEL_PMU_EVA, 0,
+				prev_freq[0] / 1000,
+				prev_freq[1] / 1000);
+#else
 #ifdef USE_AVG_PMU
 		ret = mt_secure_call(MTK_SIP_KERNEL_PMU_EVA, 0,
 				mt_cpufreq_get_cur_phy_freq_no_lock(0) / 1000,
@@ -306,6 +312,12 @@ void check_cm_mgr_status_internal(void)
 				mt_cpufreq_get_cur_freq(0) / 1000,
 				mt_cpufreq_get_cur_freq(1) / 1000);
 #endif
+#endif /* USE_NEW_CPU_OPP */
+#else
+#ifdef USE_NEW_CPU_OPP
+		ret = cm_mgr_check_stall_ratio(
+				prev_freq[0] / 1000,
+				prev_freq[1] / 1000);
 #else
 #ifdef USE_AVG_PMU
 		ret = cm_mgr_check_stall_ratio(
@@ -316,6 +328,7 @@ void check_cm_mgr_status_internal(void)
 				mt_cpufreq_get_cur_freq(0) / 1000,
 				mt_cpufreq_get_cur_freq(1) / 1000);
 #endif
+#endif /* USE_NEW_CPU_OPP */
 #endif
 #if 0
 		total_bw = dvfsrc_get_bw(QOS_TOTAL_AVE) / 512;
@@ -366,7 +379,11 @@ void check_cm_mgr_status_internal(void)
 			max_ratio_idx[i] = ratio_max[i] / 5;
 			if (max_ratio_idx[i] > RATIO_COUNT)
 				max_ratio_idx[i] = RATIO_COUNT;
+#ifdef USE_NEW_CPU_OPP
+			cpu_opp_cur[i] = prev_freq_idx[i];
+#else
 			cpu_opp_cur[i] = mt_cpufreq_get_cur_freq_idx(i);
+#endif /* USE_NEW_CPU_OPP */
 			v2f[i] = _v2f_all[cpu_opp_cur[i]][i];
 			cpu_power_up_array[i] = cpu_power_up[i] = 0;
 			cpu_power_down_array[i] = cpu_power_down[i] = 0;
@@ -610,6 +627,7 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 	}
 
 	prev_freq_idx[cluster] = freq_idx;
+	prev_freq[cluster] = freq;
 
 	check_cm_mgr_status_internal();
 }
