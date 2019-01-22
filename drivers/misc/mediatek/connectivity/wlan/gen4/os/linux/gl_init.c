@@ -1912,7 +1912,7 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 			       wlanoidSetP2pMode,
 			       (PVOID) &rSetP2P, sizeof(PARAM_CUSTOM_P2P_SET_STRUCT_T), FALSE, FALSE, TRUE, &u4BufLen);
 	if (rWlanStatus != WLAN_STATUS_SUCCESS) {
-		DBGLOG(INIT, ERROR, "kalIoctl failed: 0x%08lx\n", (UINT_32) rWlanStatus);
+		DBGLOG(INIT, ERROR, "kalIoctl failed: 0x%08lx\n", (ULONG) rWlanStatus);
 		return -1;
 	}
 
