@@ -16,7 +16,7 @@
  * @brief   hotplug strategy(hps) - algo
  */
 
-#include <linux/kernel.h>	/* printk */
+#include <linux/kernel.h>
 #include <linux/module.h>	/* MODULE_DESCRIPTION, MODULE_LICENSE */
 #include <linux/init.h>		/* module_init, module_exit */
 #include <linux/kthread.h>	/* kthread_create */
