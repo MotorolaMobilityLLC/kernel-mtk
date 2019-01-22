@@ -1470,12 +1470,12 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 	if (!dev) {
 		M4UMSG("%s, %d, dev is NULL\n", __func__, __LINE__);
 		return -EINVAL;
-	} else {
-		domain = iommu_get_domain_for_dev(dev);
-		if (!domain) {
-			M4UMSG("%s, %d, domain is NULL\n", __func__, __LINE__);
-			return -EINVAL;
-		}
+	}
+
+	domain = iommu_get_domain_for_dev(dev);
+	if (!domain) {
+		M4UMSG("%s, %d, domain is NULL\n", __func__, __LINE__);
+		return -EINVAL;
 	}
 
 	M4UDBG
