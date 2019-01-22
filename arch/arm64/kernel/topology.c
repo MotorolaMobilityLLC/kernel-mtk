@@ -1030,3 +1030,17 @@ void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
 #else
 void __init arch_get_hmp_domains(struct list_head *hmp_domains_list) {}
 #endif /* CONFIG_SCHED_HMP */
+
+
+#ifdef CONFIG_MTK_UNIFY_POWER
+static int
+update_all_cpu_capacity(void)
+{
+	int cpu;
+
+	for (cpu = 0; cpu < nr_cpu_ids ; cpu++)
+		update_cpu_capacity(cpu);
+}
+
+late_initcall_sync(update_all_cpu_capacity)
+#endif

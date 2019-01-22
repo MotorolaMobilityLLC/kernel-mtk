@@ -1072,3 +1072,15 @@ unsigned long get_cpu_orig_capacity(unsigned int cpu)
 }
 #endif
 
+#ifdef CONFIG_MTK_UNIFY_POWER
+static int
+update_all_cpu_capacity(void)
+{
+	int cpu;
+
+	for (cpu = 0; cpu < nr_cpu_ids ; cpu++)
+		update_cpu_capacity(cpu);
+}
+
+late_initcall_sync(update_all_cpu_capacity)
+#endif

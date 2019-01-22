@@ -42,10 +42,10 @@ DEFINE_PER_CPU(struct sched_capacity_reqs, cpu_sched_capacity_reqs);
 
 static struct gov_data *g_gd[MAX_CLUSTER_NR] = { NULL };
 
-static void met_cpu_dvfs(int cid, int freq, int flag);
-
 #ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
 static bool g_inited[MAX_CLUSTER_NR] = {false};
+#else
+static DEFINE_PER_CPU(unsigned long, freq_scale) = SCHED_CAPACITY_SCALE;
 #endif
 
 #define DEBUG 0
@@ -57,9 +57,17 @@ static bool g_inited[MAX_CLUSTER_NR] = {false};
 #define printk_dbg(f, a...) do {} while (0)
 #endif
 
-#if MET_SCHED_DEBUG
 #include <mt-plat/met_drv.h>
-#endif
+
+
+static char met_dvfs_info[5][16] = {
+	"sched_dvfs_cid0",
+	"sched_dvfs_cid1",
+	"sched_dvfs_cid2",
+	"NULL",
+	"NULL"
+};
+
 
 unsigned int capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
 int dbg_id = DEBUG_FREQ_DISABLED;
@@ -97,13 +105,23 @@ void show_freq_kernel_log(int dbg_id, int cid, unsigned int freq)
 		printk_deferred("[name:sched_power&] cid=%d freq=%u\n", cid, freq);
 }
 
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu)
+{
+	return per_cpu(freq_scale, cpu);
+}
+#endif
 
 static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_policy *policy,
 					    unsigned int freq, int type)
 {
 	struct gov_data *gd;
 	int cid;
-
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	unsigned long scale;
+	struct cpumask cls_cpus;
+	int cpu = target_cpu;
+#endif
 	cid = arch_get_cluster_id(target_cpu);
 
 	if (cid >= MAX_CLUSTER_NR || cid < 0) {
@@ -115,16 +133,25 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	gd = g_gd[cid];
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-	/*
-	 * debug
-	 */
-	met_cpu_dvfs(cid, freq, 0);
-
 	/* SSPM should support??? */
 	if (dbg_id  < DEBUG_FREQ_DISABLED)
 		show_freq_kernel_log(dbg_id, cid, freq);
 
+	/* Carefully! platform related */
+	freq = mt_cpufreq_find_close_freq(cid, freq);
+
+	scale = (freq << SCHED_CAPACITY_SHIFT) / arch_scale_get_max_freq(target_cpu);
+
+	arch_get_cluster_cpus(&cls_cpus, cid);
+
+	for_each_cpu(cpu, &cls_cpus) {
+		per_cpu(freq_scale, cpu) = scale;
+		arch_scale_set_curr_freq(cpu, freq); /* per_cpu(cpu_freq_capacity) */
+	}
+
 	mt_cpufreq_set_by_schedule_load_cluster(cid, freq);
+
+	met_tag_oneshot(0, met_dvfs_info[cid], freq);
 
 	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
 #else
@@ -140,10 +167,6 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	/* avoid race with cpufreq_sched_stop */
 	if (!down_write_trylock(&policy->rwsem))
 		return;
-	/*
-	 * debug
-	 */
-	met_cpu_dvfs(cid, freq, 1);
 
 	printk_dbg("%s: cid=%d cpu=%d max_freq=%u +\n", __func__, cid, policy->cpu, policy->max);
 	__cpufreq_driver_target(policy, freq, CPUFREQ_RELATION_L);
@@ -542,7 +565,6 @@ static int cpu_hotplug_handler(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
 	int cpu = (unsigned long)data;
-	int cid = arch_get_cluster_id(cpu);
 
 	switch (val) {
 	case CPU_ONLINE:
@@ -560,32 +582,9 @@ static int cpu_hotplug_handler(struct notifier_block *nb,
 		per_cpu(enabled, cpu) = 0;
 
 		printk_dbg("%s cpu=%d down_prepare\n", __func__, cpu);
-		/*
-		 * debug
-		 */
-#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-		met_cpu_dvfs(cid, 0, 0);
-#else
-		met_cpu_dvfs(cid, 0, 1);
-#endif
 		break;
 	}
 	return NOTIFY_OK;
-}
-
-/*
- * debug function
- */
-static
-void met_cpu_dvfs(int cid, int freq, int flag)
-{
-#if MET_SCHED_DEBUG
-	char string[64] = {0};
-
-	snprintf(string, sizeof(string), "sched_dvfs_%d_cid%d", flag, cid);
-
-	met_tag_oneshot(0, string, freq);
-#endif
 }
 
 
