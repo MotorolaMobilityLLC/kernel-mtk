@@ -52,6 +52,9 @@ drm_dma_handle_t *drm_pci_alloc(struct drm_device * dev, size_t size, size_t ali
 	if (align > size)
 		return NULL;
 
+	if (!dev->pdev)
+		return NULL;
+
 	dmah = kmalloc(sizeof(drm_dma_handle_t), GFP_KERNEL);
 	if (!dmah)
 		return NULL;
