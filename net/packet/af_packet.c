@@ -1507,7 +1507,6 @@ static void __fanout_unlink(struct sock *sk, struct packet_sock *po)
 	struct packet_fanout *f = po->fanout;
 	int i;
 
-	mutex_lock(&fanout_mutex);
 	spin_lock(&f->lock);
 	for (i = 0; i < f->num_members; i++) {
 		if (f->arr[i] == sk)
@@ -1519,7 +1518,6 @@ static void __fanout_unlink(struct sock *sk, struct packet_sock *po)
 	if (f->num_members == 0)
 		__dev_remove_pack(&f->prot_hook);
 	spin_unlock(&f->lock);
-	mutex_unlock(&fanout_mutex);
 }
 
 static bool match_fanout_group(struct packet_type *ptype, struct sock *sk)
@@ -1653,9 +1651,6 @@ static int fanout_add(struct sock *sk, u16 id, u16 type_flags)
 	}
 
 	mutex_lock(&fanout_mutex);
-	err = -EINVAL;
-	if (!po->running)
-		goto out;
 
 	err = -EALREADY;
 	if (po->fanout)
@@ -1706,7 +1701,9 @@ static int fanout_add(struct sock *sk, u16 id, u16 type_flags)
 	}
 	err = -EINVAL;
 
-	if (match->type == type &&
+	spin_lock(&po->bind_lock);
+	if (po->running &&
+	    match->type == type &&
 	    match->prot_hook.type == po->prot_hook.type &&
 	    match->prot_hook.dev == po->prot_hook.dev) {
 		err = -ENOSPC;
@@ -1718,7 +1715,12 @@ static int fanout_add(struct sock *sk, u16 id, u16 type_flags)
 			err = 0;
 		}
 	}
+	spin_unlock(&po->bind_lock);
 
+	if (err && !atomic_read(&match->sk_ref)) {
+		list_del(&match->list);
+		kfree(match);
+	}
 
 out:
 	if (err && rollover) {
