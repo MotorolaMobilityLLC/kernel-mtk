@@ -565,7 +565,7 @@ void notrace aee_wdt_atf_entry(void)
 	int cpu = get_HW_cpuid();
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #ifdef CONFIG_MTK_WATCHDOG
-	if (mtk_rgu_status_is_sysrst() || mtk_rgu_status_is_sysrst())
+	if (mtk_rgu_status_is_sysrst() || mtk_rgu_status_is_eintrst())
 		aee_rr_rec_exp_type(4);
 	else
 		aee_rr_rec_exp_type(1);
