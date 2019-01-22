@@ -39,6 +39,10 @@
 
 #define SPI_CLK_TOTAL_TIME  107
 
+#ifdef CONFIG_SPI_MT65XX
+static u32 gf_factory_SPIClk = 1*1000000;
+#endif
+
 int  gf_ioctl_spi_init_cfg_cmd(struct mt_chip_conf *mcc, unsigned long arg)
 {
 	int retval = 0;
@@ -97,6 +101,8 @@ static void gf_spi_setup_conf_factory(struct gf_device *gf_dev, u32 high_time,
   * speed: 1, 4, 6, 8 unit:MHz
   * mode: DMA mode or FIFO mode
   */
+ /* non-upstream SPI driver */
+#ifndef CONFIG_SPI_MT65XX
 void gf_spi_setup_conf_factory(struct gf_device *gf_dev, u32 speed, enum spi_transfer_mode mode)
 {
 	struct mt_chip_conf *mcc = &gf_dev->spi_mcc;
@@ -140,6 +146,7 @@ void gf_spi_setup_conf_factory(struct gf_device *gf_dev, u32 speed, enum spi_tra
 
 }
 #endif
+#endif
 
 static int gf_spi_transfer_raw_ree(struct gf_device *gf_dev, u8 *tx_buf, u8 *rx_buf, u32 len)
 {
@@ -152,6 +159,9 @@ static int gf_spi_transfer_raw_ree(struct gf_device *gf_dev, u8 *tx_buf, u8 *rx_
 	xfer.tx_buf = tx_buf;
 	xfer.rx_buf = rx_buf;
 	xfer.len = len;
+#ifdef CONFIG_SPI_MT65XX
+	xfer.speed_hz = gf_factory_SPIClk;
+#endif
 	spi_message_add_tail(&xfer, &msg);
 	spi_sync(gf_dev->spi, &msg);
 
@@ -194,18 +204,14 @@ int gf_ioctl_transfer_raw_cmd(struct gf_device *gf_dev, unsigned long arg, unsig
 		}
 
 		/* change speed and set transfer mode */
-#if 0
-		if (ioc_xraw.len > 32)
-			gf_spi_setup_conf_factory(gf_dev, ioc_xraw.high_time, ioc_xraw.low_time, DMA_TRANSFER);
-		else
-			gf_spi_setup_conf_factory(gf_dev, ioc_xraw.high_time, ioc_xraw.low_time, FIFO_TRANSFER);
-
-#else
+#ifndef CONFIG_SPI_MT65XX
 		if (ioc_xraw.len > 32)
 		gf_spi_setup_conf_factory(gf_dev, ioc_xraw.high_time, DMA_TRANSFER);
 		else
 		gf_spi_setup_conf_factory(gf_dev, ioc_xraw.high_time, FIFO_TRANSFER);
-
+#else
+		gf_factory_SPIClk = ioc_xraw.high_time*1000000;
+		/* gf_debug(INFO_LOG, "%s, %d, now spi clock:%d\n", __func__, __LINE__, gf_factory_SPIClk); */
 #endif
 
 		len = ioc_xraw.len;

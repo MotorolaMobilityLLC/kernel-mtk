@@ -247,7 +247,7 @@ struct gf_device {
 
 #ifdef SUPPORT_REE_SPI
 
-#define SUPPORT_REE_MILAN_A_SERIALS
+#define SUPPORT_REE_MILAN_A
 
 #define HIGH_SPEED 6
 #define LOW_SPEED  1
@@ -264,6 +264,14 @@ int gf_spi_read_byte_ree(struct gf_device *gf_dev, u16 addr, u8 *value);
 int gf_spi_write_byte_ree(struct gf_device *gf_dev, u16 addr, u8 value);
 int gf_ioctl_transfer_raw_cmd(struct gf_device *gf_dev, unsigned long arg, unsigned int bufsiz);
 int  gf_ioctl_spi_init_cfg_cmd(struct mt_chip_conf *mcc, unsigned long arg);
+
+#ifdef SUPPORT_REE_MILAN_A
+#ifndef CONFIG_TRUSTONIC_TEE_SUPPORT
+int gf_spi_read_bytes_ree_new(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *buf);
+int gf_spi_write_bytes_ree_new(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *buf);
+int gf_milan_a_series_init_process(struct gf_device *gf_dev);
+#endif
+#endif
 
 #endif
 
