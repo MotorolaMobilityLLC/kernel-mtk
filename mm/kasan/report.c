@@ -24,6 +24,7 @@
 #include <linux/types.h>
 #include <linux/kasan.h>
 #include <linux/module.h>
+#include <mt-plat/aee.h>
 
 #include <asm/sections.h>
 
@@ -242,6 +243,8 @@ static void kasan_report_error(struct kasan_access_info *info)
 	add_taint(TAINT_BAD_PAGE, LOCKDEP_NOW_UNRELIABLE);
 	spin_unlock_irqrestore(&report_lock, flags);
 	kasan_enable_current();
+	/* trigger KE to get the KAsan corruption message */
+	BUG();
 }
 
 void kasan_report(unsigned long addr, size_t size,
