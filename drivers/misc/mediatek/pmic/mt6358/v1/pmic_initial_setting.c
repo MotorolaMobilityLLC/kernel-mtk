@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/delay.h>
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_chip.h>
 #include <mt-plat/mtk_rtc.h>
@@ -39,6 +40,7 @@ int PMIC_check_wdt_status(void)
 
 	is_wdt_reboot_pmic = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
 	ret = pmic_set_register_value(PMIC_TOP_RST_MISC_SET, 0x8);
+	udelay(50);
 	is_wdt_reboot_pmic_chk = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
 	ret = pmic_set_register_value(PMIC_TOP_RST_MISC_CLR, 0x8);
 	ret = pmic_set_register_value(PMIC_TOP_RST_MISC_SET, 0x1);
