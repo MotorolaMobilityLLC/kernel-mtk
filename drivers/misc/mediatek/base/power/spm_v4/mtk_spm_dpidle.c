@@ -945,7 +945,8 @@ RESTORE_IRQ:
 		rekick_vcorefs_scenario();
 #endif
 
-#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739)
+#if defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) \
+	|| defined(CONFIG_MACH_MT6771)
 	do_gettimeofday(&pre_dpidle_time);
 #endif
 
