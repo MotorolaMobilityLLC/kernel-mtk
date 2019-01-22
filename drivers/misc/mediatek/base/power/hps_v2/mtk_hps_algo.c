@@ -214,7 +214,7 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 				return 1;
 			}
 			if (!cpu_online(cpu)) {	/* For CPU offline */
-				if (hps_cpu_up(cpu))
+				if (cpu_up(cpu))
 					hps_warn("[Info]CPU %d ++!\n", cpu);
 				++online_cores;
 			}
@@ -233,7 +233,7 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 				return 1;
 			}
 			if (cpu_online(cpu)) {
-				if (hps_cpu_down(cpu))
+				if (cpu_down(cpu))
 					hps_warn("[Info]CPU %d --!\n", cpu);
 				--online_cores;
 			}
