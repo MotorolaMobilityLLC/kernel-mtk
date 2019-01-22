@@ -1321,7 +1321,7 @@ int spm_mtcmos_ctrl_audio(int state)
 int spm_mtcmos_ctrl_cam(int state)
 {
 	int err = 0;
-	int retry = 0;
+	/*int retry = 0;*/
 
 	/* TINFO="enable SPM register control" */
 	/*spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));*/
