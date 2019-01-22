@@ -83,7 +83,8 @@ int get_shutdown_cond(void)
 		ret |= 1;
 	if (sdc.lowbatteryshutdown)
 		ret |= 1;
-	bm_err("get_shutdown_cond ret:%d %d %d %d vbat:%d\n",
+	bm_err("%s ret:%d %d %d %d vbat:%d\n",
+		__func__,
 	ret, sdc.shutdown_status.is_soc_zero_percent,
 	sdc.shutdown_status.is_uisoc_one_percent,
 	sdc.lowbatteryshutdown, vbat);
@@ -113,7 +114,8 @@ int disable_shutdown_cond(int shutdown_cond)
 	if (mt_get_charger_type() != CHARGER_UNKNOWN)
 		now_is_charging = 1;
 
-	bm_err("disable_shutdown_cond %d, is kpoc %d curr %d is_charging %d flag:%d lb:%d\n",
+	bm_err("%s %d, is kpoc %d curr %d is_charging %d flag:%d lb:%d\n",
+		__func__,
 		shutdown_cond, now_is_kpoc, now_current, now_is_charging,
 		shutdown_cond_flag, battery_get_bat_voltage());
 
@@ -156,7 +158,8 @@ int set_shutdown_cond(int shutdown_cond)
 	if (now_current >= 0)
 		now_is_charging = 1;
 
-	bm_err("set_shutdown_cond %d %d kpoc %d curr %d is_charging %d flag:%d lb:%d\n",
+	bm_err("%s %d %d kpoc %d curr %d is_charging %d flag:%d lb:%d\n",
+		__func__,
 		shutdown_cond, enable_lbat_shutdown,
 		now_is_kpoc, now_current, now_is_charging,
 		shutdown_cond_flag, vbat);
@@ -219,7 +222,8 @@ int set_shutdown_cond(int shutdown_cond)
 						VBAT2_DET_VOLTAGE1 / 10;
 				sdc.batidx = 0;
 			}
-			bm_err("LOW_BAT_VOLT:vbat %d %d", vbat, VBAT2_DET_VOLTAGE1 / 10);
+			bm_err("LOW_BAT_VOLT:vbat %d %d",
+				vbat, VBAT2_DET_VOLTAGE1 / 10);
 			mutex_unlock(&sdc.lock);
 		}
 		break;
@@ -271,7 +275,8 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 
 	get_monotonic_boottime(&now);
 
-	bm_err("shutdown_event_handler:%d %d %d %d\n",
+	bm_err("%s:%d %d %d %d\n",
+		__func__,
 		sdd->shutdown_status.is_soc_zero_percent,
 		sdd->shutdown_status.is_uisoc_one_percent,
 		sdd->shutdown_status.is_dlpt_shutdown,
@@ -409,7 +414,8 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 		}
 
 		polling++;
-			bm_err("[shutdown_event_handler][UT] V %d ui_soc %d dur %d [%d:%d:%d:%d:%d] batdata[%d] %d\n",
+			bm_err("[%s][UT] V %d ui_soc %d dur %d [%d:%d:%d:%d:%d] batdata[%d] %d\n",
+				__func__,
 			sdd->avgvbat, current_ui_soc,
 			(int)duraction.tv_sec,
 			down_to_low_bat, ui_zero_time_flag,
@@ -424,7 +430,8 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 	}
 
 	bm_err(
-		"shutdown_event_handler %d avgvbat:%d sec:%d lowst:%d\n",
+		"%s %d avgvbat:%d sec:%d lowst:%d\n",
+		__func__,
 		polling, sdd->avgvbat,
 		(int)duraction.tv_sec, sdd->lowbatteryshutdown);
 
@@ -442,19 +449,28 @@ static int power_misc_kthread_fgtimer_func(struct gtimer *data)
 	return 0;
 }
 
-static int power_misc_routine_thread(void *arg)
+void power_misc_handler(void *arg)
 {
 	struct shutdown_controller *sdd = arg;
 	int ret;
+
+	mutex_lock(&sdd->lock);
+	ret = shutdown_event_handler(sdd);
+	mutex_unlock(&sdd->lock);
+	if (ret != 0 && is_fg_disabled() == false)
+		gtimer_start(&sdd->kthread_fgtimer, ret);
+
+}
+
+static int power_misc_routine_thread(void *arg)
+{
+	struct shutdown_controller *sdd = arg;
 
 	while (1) {
 		wait_event(sdd->wait_que, (sdd->timeout == true));
 		sdd->timeout = false;
 
-		ret = shutdown_event_handler(sdd);
-
-		if (ret != 0 && is_fg_disabled() == false)
-			gtimer_start(&sdd->kthread_fgtimer, ret);
+		power_misc_handler(arg);
 	}
 
 	return 0;
