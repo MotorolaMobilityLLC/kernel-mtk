@@ -1485,21 +1485,20 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 	if (!dev) {
 		M4UMSG("%s, %d, dev is NULL\n", __func__, __LINE__);
 		return -EINVAL;
-	} else {
-#ifdef CONFIG_ARM64
-		domain = iommu_get_domain_for_dev(dev);
-		if (!domain) {
-			M4UMSG("%s, %d, domain is NULL\n", __func__, __LINE__);
-			return -EINVAL;
-		}
-#else
-		mapping = to_dma_iommu_mapping(dev);
-		if (!mapping) {
-			M4UMSG("%s, %d, mapping is NULL\n", __func__, __LINE__);
-			return -EINVAL;
-		}
-#endif
 	}
+#ifdef CONFIG_ARM64
+	domain = iommu_get_domain_for_dev(dev);
+	if (!domain) {
+		M4UMSG("%s, %d, domain is NULL\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+#else
+	mapping = to_dma_iommu_mapping(dev);
+	if (!mapping) {
+		M4UMSG("%s, %d, mapping is NULL\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+#endif
 
 	M4UDBG
 	    ("m4u_dealloc_mva, module = %s, addr = 0x%lx, size = 0x%x, MVA = 0x%x, mva_end = 0x%x\n",
