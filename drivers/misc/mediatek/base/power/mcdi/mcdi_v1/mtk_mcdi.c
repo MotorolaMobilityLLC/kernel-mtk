@@ -33,6 +33,8 @@
 #include <mtk_mcdi_reg.h>
 #include <mtk_mcdi_state.h>
 
+#include <mtk_mcdi_governor_hint.h>
+
 #include <sspm_mbox.h>
 
 #include <trace/events/mtk_idle_event.h>
@@ -211,6 +213,8 @@ static ssize_t mcdi_state_read(struct file *filp,
 
 	mcdi_log("pm_qos latency_req = %d\n", latency_req);
 
+	mcdi_log("system_idle_hint = %08x\n", system_idle_hint_result_raw());
+
 	len = p - dbg_buf;
 
 	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
@@ -234,6 +238,8 @@ static ssize_t mcdi_state_write(struct file *filp,
 			set_mcdi_enable_status(param);
 		else if (!strcmp(cmd, "s_state"))
 			set_mcdi_s_state(param);
+		else if (!strcmp(cmd, "hint"))
+			system_idle_hint_request(SYSTEM_IDLE_HINT_USER_MCDI_TEST, param);
 		return count;
 	}
 
@@ -637,6 +643,8 @@ void mcdi_heart_beat_log_dump(void)
 	mcdi_buf_append(buf, ", enabled = %d, max_s_state = %d",
 						feature_stat.enable,
 						feature_stat.s_state);
+
+	mcdi_buf_append(buf, ", system_idle_hint = %08x\n", system_idle_hint_result_raw());
 
 	pr_warn("%s\n", get_mcdi_buf(buf));
 }
