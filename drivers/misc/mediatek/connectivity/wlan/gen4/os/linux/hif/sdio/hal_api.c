@@ -332,7 +332,13 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 	while (1) {
 		HAL_LP_OWN_RD(prAdapter, &fgResult);
 
-		fgTimeout = ((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
+		if (TIME_AFTER(kalGetTimeTick(), u4CurrTick)) { /* To prevent timer wraparound */
+			fgTimeout =
+				((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
+		} else {
+			fgTimeout =
+				((kalGetTimeTick() + (~u4CurrTick)) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
+		}
 
 #if CFG_SUPPORT_LOW_POWER_DEBUG
 		/* For driver own back fail debug,  get current PC value */
@@ -417,18 +423,48 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 		u4CurrTick = kalGetTimeTick();
 		while (1) {
 			HAL_WIFI_FUNC_READY_CHECK(prAdapter, WIFI_FUNC_READY_BITS, &fgReady);
-			fgTimeout = ((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
+
+			if (TIME_AFTER(kalGetTimeTick(), u4CurrTick)) { /* To prevent timer wraparound */
+				fgTimeout =
+					((kalGetTimeTick() - u4CurrTick) > LP_OWN_BACK_TOTAL_DELAY_MS) ? TRUE : FALSE;
+			} else {
+				fgTimeout =
+					((kalGetTimeTick() + (~u4CurrTick)) > LP_OWN_BACK_TOTAL_DELAY_MS)
+						? TRUE : FALSE;
+			}
 
 			if (fgReady) {
 				break;
 			} else if (kalIsCardRemoved(prAdapter->prGlueInfo) || fgIsBusAccessFailed || fgTimeout
 			    || wlanIsChipNoAck(prAdapter)) {
-				DBGLOG(NIC, INFO,
+
+#if CFG_SUPPORT_LOW_POWER_DEBUG
+				/* For driver own back fail debug,	get current PC value */
+				halGetMailbox(prAdapter, 0, &u4MailBoxStatus0);
+				halGetMailbox(prAdapter, 1, &u4MailBoxStatus1);
+				DBGLOG(NIC, LOUD, "MailBox Status = 0x%08X, 0x%08X\n",
+					u4MailBoxStatus0, u4MailBoxStatus1);
+				halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
+#endif
+
+				DBGLOG(NIC, ERROR,
+				       "Resetting[%u], CardRemoved[%u] NoAck[%u] Timeout[%u](%u - %u)ms\n",
+				       kalIsResetting(),
+				       kalIsCardRemoved(prAdapter->prGlueInfo), wlanIsChipNoAck(prAdapter),
+				       fgTimeout, kalGetTimeTick(), u4CurrTick);
+
+
+				DBGLOG(NIC, LOUD,
 					"Skip waiting CR4 ready for next %ums\n", LP_OWN_BACK_FAILED_LOG_SKIP_MS);
 				fgStatus = FALSE;
+
+				if (fgTimeout) {
+					/* Trigger RESET */
 #if CFG_CHIP_RESET_SUPPORT
-				glResetTrigger(prAdapter);
+					glResetTrigger(prAdapter);
 #endif
+				}
+
 				break;
 			}
 			/* Delay for CR4 to complete its operation. */
