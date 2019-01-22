@@ -106,6 +106,7 @@ static unsigned long gL_ulPreCalResetTS_us = 0; // previous calculate loading re
 static unsigned long gL_ulWorkingPeriod_us = 0; // last frame half, t0
 
 static unsigned long g_policy_tar_freq;
+static int g_mode;
 
 static unsigned int  g_ui32FreqIDFromPolicy = 0;
 
@@ -144,7 +145,6 @@ extern unsigned long (*mtk_get_gpu_bottom_freq_fp)(void);
 extern unsigned long (*mtk_get_gpu_custom_boost_freq_fp)(void);
 extern unsigned long (*mtk_get_gpu_custom_upbound_freq_fp)(void);
 
-extern unsigned long (*mtk_get_gpu_dvfs_cal_freq_fp)(void);
 
 extern void ged_monitor_3D_fence_set_enable(GED_BOOL bEnable);
 
@@ -162,34 +162,6 @@ static bool ged_dvfs_policy(
 		unsigned int ui32GPULoading, unsigned int* pui32NewFreqID, 
 		unsigned long t, long phase, unsigned long ul3DFenceDoneTime, bool bRefreshed);
 unsigned long ged_gas_query_mode(void);
-
-#ifdef GED_DVFS_ENABLE
-static struct {
-	int freq;
-	int up;
-	int down;
-} loading_ud_table[16];
-
-static void _init_loading_ud_table(void)
-{
-	int i;
-	int num = (int)mt_gpufreq_get_dvfs_table_num();
-
-	for (i = 0; i < num; ++i) {
-		loading_ud_table[i].freq = mt_gpufreq_get_freq_by_idx(i);
-		loading_ud_table[i].up = 90;
-	}
-	for (i = 0; i < num - 1; ++i) {
-		int a = loading_ud_table[i].freq;
-		int b = loading_ud_table[i+1].freq;
-
-		loading_ud_table[i].down = (90 * b) / a;
-	}
-
-	if (num >= 2)
-		loading_ud_table[num-1].down = loading_ud_table[num-2].down;
-}
-#endif
 
 unsigned long ged_query_info( GED_INFO eType)
 {
@@ -543,6 +515,7 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 
 		g_um_gpu_tar_freq = gpu_tar_freq;
 		g_policy_tar_freq = g_um_gpu_tar_freq;
+		g_mode = 1;
 		/*
 		* ADD CAP CALLBACK HERE
 		*/
@@ -685,27 +658,15 @@ static bool ged_dvfs_policy(
 	}
 	else // vsync-based fallback mode
 	{
+
+		if (ui32GPULoading >= 70)
 		{
-			static int init;
-
-			if (init == 0) {
-				init = 1;
-				_init_loading_ud_table();
-			}
-		}
-
-		if (ui32GPULoading >= loading_ud_table[ui32GPUFreq].up)
 			i32NewFreqID -= 1;
-		else if (ui32GPULoading <= loading_ud_table[ui32GPUFreq].down)
+		}
+		else if (ui32GPULoading <= 50)
+		{
 			i32NewFreqID += 1;
-
-		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K1] rdy gpu_av_loading: %u, %d(%d)-up:%d,%d, new: %d",
-				gpu_loading,
-				ui32GPUFreq,
-				loading_ud_table[ui32GPUFreq].freq,
-				loading_ud_table[ui32GPUFreq].up,
-				loading_ud_table[ui32GPUFreq].down,
-				i32NewFreqID);
+		}
 
 		g_CommitType = MTK_GPU_DVFS_TYPE_FALLBACK;
 	}
@@ -722,6 +683,7 @@ static bool ged_dvfs_policy(
 
 	*pui32NewFreqID = (unsigned int)i32NewFreqID;
 	g_policy_tar_freq = mt_gpufreq_get_freq_by_idx(i32NewFreqID);
+	g_mode = 2;
 	/*
 	* ADD CAP CALLBACK HERE
 	*/
@@ -1131,12 +1093,11 @@ void ged_dvfs_get_gpu_pre_freq(GED_DVFS_FREQ_DATA* psData)
 #endif
 }
 
-unsigned long ged_get_gpu_dvfs_cal_freq(void)
+void ged_get_gpu_dvfs_cal_freq(unsigned long *p_policy_tar_freq, int *pmode)
 {
-	return g_policy_tar_freq;
+	*p_policy_tar_freq = g_policy_tar_freq;
+	*pmode = g_mode;
 }
-
-
 
 
 
@@ -1241,6 +1202,7 @@ GED_ERROR ged_dvfs_system_init()
 
 	g_ulvsync_period = get_ns_period_from_fps(60);
 
+
 #ifdef GED_DVFS_ENABLE
 	gpu_dvfs_enable = 1;
 #else
@@ -1260,6 +1222,7 @@ GED_ERROR ged_dvfs_system_init()
 	gpu_cust_upbound_freq = mt_gpufreq_get_freq_by_idx(g_cust_upbound_freq_id);
 
 	g_policy_tar_freq = 0;
+	g_mode = 0;
 
 #ifdef ENABLE_TIMER_BACKUP
 	g_gpu_timer_based_emu=0;
