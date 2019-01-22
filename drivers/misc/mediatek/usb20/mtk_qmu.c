@@ -167,7 +167,7 @@ int qmu_init_gpd_pool(struct device *dev)
 	/* make sure GPD address no longer than 32-bit */
 	coherent_dma_mask = dev->coherent_dma_mask;
 	dev->coherent_dma_mask = DMA_BIT_MASK(32);
-	QMU_WARN("save coherent<%llx>, force to 32-bit\n",
+	QMU_DBG("save coherent<%llx>, force to 32-bit\n",
 			coherent_dma_mask);
 
 	if (!mtk_qmu_max_gpd_num)
@@ -188,7 +188,6 @@ int qmu_init_gpd_pool(struct device *dev)
 		Rx_gpd_max_count[i] = Tx_gpd_max_count[i] = mtk_qmu_max_gpd_num;
 
 	gpd_sz = (u32) (u64) sizeof(struct TGPD);
-	QMU_WARN("sizeof(struct TGPD):%d\n", gpd_sz);
 	if (gpd_sz != GPD_SZ)
 		QMU_ERR("ERR!!!, GPD SIZE != %d\n", GPD_SZ);
 
@@ -211,7 +210,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		Rx_gpd_free_count[i] = Rx_gpd_max_count[i] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Rx_gpd_end[i]);
 		gpd_ptr_align(RXQ, i, Rx_gpd_end[i]);
-		QMU_WARN("RX GPD HEAD[%d], VIRT<%p>, DMA<%p>, PHY<%p>, RQSAR<%p>\n",
+		QMU_DBG("RX GPD HEAD[%d], VIRT<%p>, DMA<%p>, PHY<%p>, RQSAR<%p>\n",
 				i,
 				Rx_gpd_head[i], io_ptr, (void *)addr,
 				(void *)(uintptr_t)gpd_virt_to_phys(Rx_gpd_end[i], RXQ, i));
@@ -236,7 +235,7 @@ int qmu_init_gpd_pool(struct device *dev)
 		Tx_gpd_free_count[i] = Tx_gpd_max_count[i] - 1; /* one must be for tail */
 		TGPD_CLR_FLAGS_HWO(Tx_gpd_end[i]);
 		gpd_ptr_align(TXQ, i, Tx_gpd_end[i]);
-		QMU_WARN("TX GPD HEAD[%d], VIRT<%p>, DMA<%p>, PHY<%p>, TQSAR<%p>\n",
+		QMU_DBG("TX GPD HEAD[%d], VIRT<%p>, DMA<%p>, PHY<%p>, TQSAR<%p>\n",
 				i,
 				Tx_gpd_head[i], io_ptr, (void *)addr,
 				(void *)(uintptr_t)gpd_virt_to_phys(Tx_gpd_end[i], TXQ, i));
@@ -248,7 +247,7 @@ int qmu_init_gpd_pool(struct device *dev)
 #endif
 
 	dev->coherent_dma_mask = coherent_dma_mask;
-	QMU_WARN("restore coherent from 32-bit to <%llx>\n",
+	QMU_DBG("restore coherent from 32-bit to <%llx>\n",
 			coherent_dma_mask);
 	return 0;
 }

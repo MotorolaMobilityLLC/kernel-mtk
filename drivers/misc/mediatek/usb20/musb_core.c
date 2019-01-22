@@ -1475,7 +1475,7 @@ static int fifo_setup(struct musb *musb, struct musb_hw_ep *hw_ep,
 
 	switch (cfg->style) {
 	case MUSB_FIFO_TX:
-		DBG(0, "Tx ep:%d fifo size:%d fifo address:%x\n", hw_ep->epnum, maxpacket,
+		DBG(1, "Tx ep:%d fifo size:%d fifo address:%x\n", hw_ep->epnum, maxpacket,
 		    c_off);
 		/* musb_write_txfifosz(mbase, c_size); */
 		/* musb_write_txfifoadd(mbase, c_off); */
@@ -1485,7 +1485,7 @@ static int fifo_setup(struct musb *musb, struct musb_hw_ep *hw_ep,
 		hw_ep->ep_in.fifo_mode = cfg->mode;
 		break;
 	case MUSB_FIFO_RX:
-		DBG(0, "Rx ep:%d fifo size:%d fifo address:%x\n", hw_ep->epnum, maxpacket,
+		DBG(1, "Rx ep:%d fifo size:%d fifo address:%x\n", hw_ep->epnum, maxpacket,
 		    c_off);
 		/* musb_write_rxfifosz(mbase, c_size); */
 		/* musb_write_rxfifoadd(mbase, c_off); */
@@ -1774,7 +1774,7 @@ static int musb_core_init(u16 musb_type, struct musb *musb)
 	if (reg & MUSB_CONFIGDATA_SOFTCONE)
 		strcat(aInfo, ", SoftConn");
 
-	DBG(0, "%s: ConfigData=0x%02x (%s)\n", musb_driver_name, reg, aInfo);
+	DBG(1, "%s: ConfigData=0x%02x (%s)\n", musb_driver_name, reg, aInfo);
 
 	aDate[0] = 0;
 	if (musb_type == MUSB_CONTROLLER_MHDRC) {
@@ -1804,7 +1804,7 @@ static int musb_core_init(u16 musb_type, struct musb *musb)
 
 	if (musb->dyn_fifo) {
 		status = ep_config_from_table(musb);
-		DBG(0, "ep_config_from_table %d\n", status);
+		DBG(1, "ep_config_from_table %d\n", status);
 	} else {
 		status = ep_config_from_hw(musb);
 		DBG(0, "ep_config_from_hw %d\n", status);
@@ -1825,7 +1825,7 @@ static int musb_core_init(u16 musb_type, struct musb *musb)
 		hw_ep->tx_reinit = 1;
 
 		if (hw_ep->max_packet_sz_tx) {
-			DBG(0,
+			DBG(1,
 			    "%s: hw_ep %d%s, %smax %d\n",
 			    musb_driver_name, i,
 			    hw_ep->is_shared_fifo ? "shared" : "tx",
@@ -1833,7 +1833,7 @@ static int musb_core_init(u16 musb_type, struct musb *musb)
 			    ? "doublebuffer, " : "", hw_ep->max_packet_sz_tx);
 		}
 		if (hw_ep->max_packet_sz_rx && !hw_ep->is_shared_fifo) {
-			DBG(0,
+			DBG(1,
 			    "%s: hw_ep %d%s, %smax %d\n",
 			    musb_driver_name, i,
 			    "rx",
@@ -1843,7 +1843,6 @@ static int musb_core_init(u16 musb_type, struct musb *musb)
 		if (!(hw_ep->max_packet_sz_tx || hw_ep->max_packet_sz_rx))
 			DBG(0, "hw_ep %d not configured\n", i);
 	}
-	DBG(0, "musb_core_init end\n");
 	return 0;
 }
 
