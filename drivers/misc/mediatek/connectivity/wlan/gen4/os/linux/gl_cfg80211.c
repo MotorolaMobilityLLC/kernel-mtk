@@ -1926,7 +1926,7 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 	if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_MAC, MAC_ADDR_LEN, prParams->aucMacAddr) < 0))
 		goto nla_put_failure;
 	{
-		u8 __tmp = u4LinkScore;
+		u32 __tmp = u4LinkScore;
 
 		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_LINK_SCORE, sizeof(u32), &__tmp) < 0))
 			goto nla_put_failure;
