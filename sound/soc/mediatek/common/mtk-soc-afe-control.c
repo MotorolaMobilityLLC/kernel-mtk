@@ -3839,14 +3839,15 @@ int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params 
 	return 0;
 }
 
-bool set_smartpa_i2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control)
+bool set_smartpa_i2s(int sidegen_control, int hdoutput_control, int extcodec_echoref_control,
+			int mtk_soc_always_hd)
 {
 	bool ret;
 
 	/* by platform to implement*/
 	if (s_afe_platform_ops->set_smartpa_i2s != NULL) {
 		ret = s_afe_platform_ops->set_smartpa_i2s(sidegen_control,
-			hdoutput_control, extcodec_echoref_control);
+			hdoutput_control, extcodec_echoref_control, mtk_soc_always_hd);
 		return ret;
 	}
 
