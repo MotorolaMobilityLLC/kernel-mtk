@@ -379,6 +379,21 @@
 
 #define RT5081_MASK_MIVR_STAT	(1 << RT5081_SHIFT_MIVR_STAT)
 
+/* ========== CHG_STAT2 0xD1 ============ */
+#define RT5081_SHIFT_CHG_VBUSOV_STAT	7
+
+#define RT5081_MASK_CHG_VBUSOV_STAT	(1 << RT5081_SHIFT_CHG_VBUSOV_STAT)
+
+/* ========== CHG_STAT4 0xD3 ============ */
+#define RT5081_SHIFT_CHG_TMRI_STAT	3
+
+#define RT5081_MASK_CHG_TMRI_STAT	(1 << RT5081_SHIFT_CHG_TMRI_STAT)
+
+/* ========== CHG_STAT5 0xD4 ============ */
+#define RT5081_SHIFT_CHG_IEOCI_STAT	7
+
+#define RT5081_MASK_CHG_IEOCI_STAT	(1 << RT5081_SHIFT_CHG_IEOCI_STAT)
+
 /* ========== DPDM_STAT 0xD6 ============ */
 #define RT5081_SHIFT_DCDTI_STAT	7
 
