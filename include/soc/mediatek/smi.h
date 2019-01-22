@@ -47,7 +47,7 @@ int mtk_smi_larb_clock_on(int larbid, bool pm);
 void mtk_smi_larb_clock_off(int larbid, bool pm);
 int mtk_smi_larb_ready(int larbid);
 
-#if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || defined(CONFIG_TRUSTY)
+#if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 #define M4U_TEE_SERVICE_ENABLE
 int pseudo_config_port_tee(int kernelport);
 #endif
