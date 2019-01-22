@@ -21,6 +21,7 @@
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 #include "secmem.h"
+#include "secmem_plat.h"
 #elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
 #include "tz_cross/trustzone.h"
 #include "tz_cross/ta_mem.h"
@@ -100,7 +101,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 #endif
 
 	if (sec_handle <= 0) {
-		IONMSG("%s alloc security memory failed\n", __func__);
+		IONMSG("%s alloc security memory failed, handle(0x%x)\n", __func__, sec_handle);
 		return -ENOMEM;
 	}
 
@@ -173,7 +174,11 @@ struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
 	}
 
 #if ION_RUNTIME_DEBUGGER
+#ifdef SECMEM_64BIT_PHYS_SHIFT
+	sg_set_page(table->sgl, phys_to_page(pbufferinfo->priv_phys << SECMEM_64BIT_PHYS_SHIFT), buffer->size, 0);
+#else
 	sg_set_page(table->sgl, phys_to_page(pbufferinfo->priv_phys), buffer->size, 0);
+#endif
 #else
 	sg_set_page(table->sgl, 0, 0, 0);
 #endif
