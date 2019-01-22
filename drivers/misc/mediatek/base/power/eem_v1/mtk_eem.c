@@ -242,21 +242,12 @@ static unsigned int vcore_opp_1[VCORE_NR_FREQ][4] = {
 	{80000, 0, 0, 0},
 };
 /* SOC E2 Voltage (10uv)*/
-#if 0
 static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
-	{84000, 815000, 79000, 76500},
-	{79000, 765000, 74000, 71500},
+	{84000, 81500, 79000, 76500},
+	{79000, 76500, 74000, 71500},
 	{74000, 71500, 69000, 66500},
 	{69000, 66500, 64000, 61500},
 };
-#else
-static unsigned int vcore_opp_2[VCORE_NR_FREQ][4] = {
-	{79000, 815000, 79000, 76500},
-	{79000, 765000, 74000, 71500},
-	{74000, 71500, 69000, 66500},
-	{69000, 66500, 64000, 61500},
-};
-#endif
 
 /* ptr that points to E1 or E2 opp table */
 unsigned int (*vcore_opp)[VCORE_NR_FREQ];
@@ -303,10 +294,10 @@ static void get_soc_efuse(void)
 		soc_efuse = get_devinfo_with_index(DEVINFO_IDX_VOLT_BIN);
 
 	eem_error("[VCORE] - Kernel Got efuse 0x%0X\n", soc_efuse);
-	eem_vcore_index[0] = (soc_efuse >> 4) & 0x03;
-	eem_vcore_index[1] = (soc_efuse >> 2) & 0x03;
-	eem_vcore_index[2] = soc_efuse & 0x03;
-	eem_vcore_index[3] = 0;
+	eem_vcore_index[0] = GET_BITS_VAL(7:6, soc_efuse);
+	eem_vcore_index[1] = GET_BITS_VAL(5:4, soc_efuse);
+	eem_vcore_index[2] = GET_BITS_VAL(3:2, soc_efuse);
+	eem_vcore_index[3] = GET_BITS_VAL(1:0, soc_efuse);
 	eem_error("eem_vcore_index:%d, %d, %d, %d\n", eem_vcore_index[0], eem_vcore_index[1],
 				eem_vcore_index[2], eem_vcore_index[3]);
 }
