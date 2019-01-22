@@ -2582,6 +2582,9 @@ static int musb_suspend_noirq(struct device *dev)
 
 	/*Turn on USB clock, before reading a batch of regs */
 	mtk_usb_power = true;
+	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
+	mt_usb_clock_prepare();
+	#endif
 	usb_enable_clock(true);
 
 	musb_save_context(musb);
@@ -2590,10 +2593,9 @@ static int musb_suspend_noirq(struct device *dev)
 	/*Turn off USB clock, after finishing reading regs */
 	usb_enable_clock(false);
 	mtk_usb_power = false;
-	clk_unprepare(icusb_clk);
-	clk_unprepare(usbmcu_clk);
-	clk_unprepare(usb_clk);
-	clk_unprepare(usbpll_clk);
+	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
+	mt_usb_clock_unprepare();
+	#endif
 	/*spin_unlock_irqrestore(&musb->lock, flags); */
 	return 0;
 }
@@ -2603,12 +2605,11 @@ static int musb_resume_noirq(struct device *dev)
 {
 	struct musb *musb = dev_to_musb(dev);
 
-	clk_prepare(usbpll_clk);
-	clk_prepare(usb_clk);
-	clk_prepare(usbmcu_clk);
-	clk_prepare(icusb_clk);
 	/*Turn on USB clock, before writing a batch of regs */
 	mtk_usb_power = true;
+	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
+	mt_usb_clock_prepare();
+	#endif
 	usb_enable_clock(true);
 
 	musb_restore_context(musb);
@@ -2616,6 +2617,9 @@ static int musb_resume_noirq(struct device *dev)
 	/*Turn off USB clock, after finishing writing regs */
 	usb_enable_clock(false);
 	mtk_usb_power = false;
+	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
+	mt_usb_clock_unprepare();
+	#endif
 
 	return 0;
 }
