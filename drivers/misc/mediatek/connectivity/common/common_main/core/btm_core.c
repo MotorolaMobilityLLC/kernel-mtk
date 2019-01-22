@@ -669,6 +669,7 @@ static inline INT32 _stp_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 		osal_sleep_ms(20);
 
 		if (j > 49) {
+			mtk_wcn_stp_dbg_dump_package();
 			stp_dbg_set_fw_info("host trigger fw assert timeout",
 					osal_strlen("host trigger fw assert timeout"),
 					STP_HOST_TRIGGER_ASSERT_TIMEOUT);

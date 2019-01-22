@@ -1062,11 +1062,12 @@ static INT32 wmt_ctrl_evt_err_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 
 	if (mtk_wcn_stp_get_wmt_evt_err_trg_assert() == 0) {
 		mtk_wcn_stp_set_wmt_evt_err_trg_assert(1);
-		wmt_lib_set_host_assert_info(drv_type, reason, 1);
 
 		iRet = mtk_wcn_stp_wmt_evt_err_trg_assert();
 		if (iRet)
 			mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
+		else
+			wmt_lib_set_host_assert_info(drv_type, reason, 1);
 	} else
 		WMT_INFO_FUNC("do trigger assert & chip reset in stp noack\n");
 	return 0;
