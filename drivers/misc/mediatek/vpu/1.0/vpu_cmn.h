@@ -20,6 +20,7 @@
 #include "vpu_drv.h"
 
 #define VPU_PORT_OF_IOMMU M4U_PORT_VPU
+/* #define VIMVO_CTRL_ENABLE */
 
 /* Common Structure */
 struct vpu_device {
@@ -282,6 +283,10 @@ int vpu_dump_power(struct seq_file *s);
  * @args:       the pointer of arryf of arguments
  */
 int vpu_set_power_parameter(uint8_t param, int argc, int *args);
+
+
+int vpu_get_vimvo_parameter(uint32_t *values);
+
 
 /* =============================== define in vpu_drv.c  =============================== */
 
