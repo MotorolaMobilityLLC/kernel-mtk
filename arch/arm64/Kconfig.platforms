@@ -91,6 +91,7 @@ config MACH_MT6757
 
 config MACH_MT6759
 	bool "MediaTek MT6759"
+	select MTK_BASE_POWER
 	help
 	  This enables support for MediaTek MT6759
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
