@@ -25,7 +25,9 @@
 #include <linux/of_address.h>
 #endif
 
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
+#endif
 #include <mt-plat/mtk_chip.h>
 
 #include <mtk_spm_misc.h>
@@ -33,7 +35,11 @@
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
 #include <mtk_dvfsrc_reg.h>
+#if defined(CONFIG_MACH_MT6739)
+#include <mtk_sleep_reg_md_reg_mt6739.h>
+#else
 #include <mtk_sleep_reg_md_reg_mt6763.h>
+#endif
 #include <mtk_eem.h>
 #include <ext_wd_drv.h>
 #include "mtk_devinfo.h"
@@ -82,165 +88,14 @@ static inline void spm_vcorefs_footprint(enum spm_vcorefs_step step)
 #endif
 }
 
-static struct pwr_ctrl vcorefs_ctrl = {
-	.wake_src		= R12_PCM_TIMER,
-
-	/* default VCORE DVFS is disabled */
-	.pcm_flags		= (SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS),
-
-	/* Auto-gen Start */
-
-	/* SPM_AP_STANDBY_CON */
-	.wfi_op = WFI_OP_AND,
-	.mp0_cputop_idle_mask = 0,
-	.mp1_cputop_idle_mask = 0,
-	.mcusys_idle_mask = 0,
-	.mm_mask_b = 0,
-	.md_ddr_en_0_dbc_en = 0,
-	.md_ddr_en_1_dbc_en = 0,
-	.md_mask_b = 0,
-	.sspm_mask_b = 0,
-	.lte_mask_b = 0,
-	.srcclkeni_mask_b = 0,
-	.md_apsrc_1_sel = 0,
-	.md_apsrc_0_sel = 0,
-	.conn_ddr_en_dbc_en = 0,
-	.conn_mask_b = 0,
-	.conn_apsrc_sel = 0,
-
-	/* SPM_SRC_REQ */
-	.spm_apsrc_req = 0,
-	.spm_f26m_req = 0,
-	.spm_lte_req = 0,
-	.spm_infra_req = 0,
-	.spm_vrf18_req = 0,
-	.spm_dvfs_req = 0,
-	.spm_dvfs_force_down = 0,
-	.spm_ddren_req = 0,
-	.spm_rsv_src_req = 0,
-	.spm_ddren_2_req = 0,
-	.cpu_md_dvfs_sop_force_on = 0,
-
-	/* SPM_SRC_MASK */
-	.csyspwreq_mask = 0,
-
-	.ccif0_md_event_mask_b = 0,
-	.ccif0_ap_event_mask_b = 0,
-	.ccif1_md_event_mask_b = 0,
-	.ccif1_ap_event_mask_b = 0,
-	.ccifmd_md1_event_mask_b = 0,
-	.ccifmd_md2_event_mask_b = 0,
-	.dsi0_vsync_mask_b = 0,
-	.dsi1_vsync_mask_b = 0,
-	.dpi_vsync_mask_b = 0,
-	.isp0_vsync_mask_b = 0,
-	.isp1_vsync_mask_b = 0,
-	.md_srcclkena_0_infra_mask_b = 0,
-	.md_srcclkena_1_infra_mask_b = 0,
-	.conn_srcclkena_infra_mask_b = 0,
-	.sspm_srcclkena_infra_mask_b = 0,
-	.srcclkeni_infra_mask_b = 0,
-	.md_apsrc_req_0_infra_mask_b = 0,
-	.md_apsrc_req_1_infra_mask_b = 0,
-	.conn_apsrcreq_infra_mask_b = 0,
-	.sspm_apsrcreq_infra_mask_b = 0,
-	.md_ddr_en_0_mask_b = 0,
-	.md_ddr_en_1_mask_b = 0,
-	.md_vrf18_req_0_mask_b = 0,
-	.md_vrf18_req_1_mask_b = 0,
-	.md1_dvfs_req_mask = 0,
-	.cpu_dvfs_req_mask = 0,
-	.emi_bw_dvfs_req_mask = 0,
-	.md_srcclkena_0_dvfs_req_mask_b = 0,
-	.md_srcclkena_1_dvfs_req_mask_b = 0,
-	.conn_srcclkena_dvfs_req_mask_b = 0,
-
-	/* SPM_SRC2_MASK */
-	.dvfs_halt_mask_b = 0,
-	.vdec_req_mask_b = 0,
-	.gce_req_mask_b = 0,
-	.cpu_md_dvfs_req_merge_mask_b = 0,
-	.md_ddr_en_dvfs_halt_mask_b = 0,
-	.dsi0_vsync_dvfs_halt_mask_b = 0,
-	.dsi1_vsync_dvfs_halt_mask_b = 0,
-	.dpi_vsync_dvfs_halt_mask_b = 0,
-	.isp0_vsync_dvfs_halt_mask_b = 0,
-	.isp1_vsync_dvfs_halt_mask_b = 0,
-	.conn_ddr_en_mask_b = 0,
-	.disp_req_mask_b = 0,
-	.disp1_req_mask_b = 0,
-	.mfg_req_mask_b = 0,
-	.ufs_srcclkena_mask_b = 0,
-	.ufs_vrf18_req_mask_b = 0,
-	.ps_c2k_rccif_wake_mask_b = 0,
-	.l1_c2k_rccif_wake_mask_b = 0,
-	.sdio_on_dvfs_req_mask_b = 0,
-	.emi_boost_dvfs_req_mask_b = 0,
-	.cpu_md_emi_dvfs_req_prot_dis = 0,
-	.dramc_spcmd_apsrc_req_mask_b = 0,
-	.emi_boost_dvfs_req_2_mask_b = 0,
-	.emi_bw_dvfs_req_2_mask = 0,
-	.gce_vrf18_req_mask_b = 0,
-
-	/* SPM_WAKEUP_EVENT_MASK */
-	.spm_wakeup_event_mask = 0,
-
-	/* SPM_WAKEUP_EVENT_EXT_MASK */
-	.spm_wakeup_event_ext_mask = 0,
-
-	/* SPM_SRC3_MASK */
-	.md_ddr_en_2_0_mask_b = 0,
-	.md_ddr_en_2_1_mask_b = 0,
-	.conn_ddr_en_2_mask_b = 0,
-	.dramc_spcmd_apsrc_req_2_mask_b = 0,
-	.spare1_ddren_2_mask_b = 0,
-	.spare2_ddren_2_mask_b = 0,
-	.ddren_emi_self_refresh_ch0_mask_b = 0,
-	.ddren_emi_self_refresh_ch1_mask_b = 0,
-	.ddren_mm_state_mask_b = 0,
-	.ddren_sspm_apsrc_req_mask_b = 0,
-	.ddren_dqssoc_req_mask_b = 0,
-	.ddren2_emi_self_refresh_ch0_mask_b = 0,
-	.ddren2_emi_self_refresh_ch1_mask_b = 0,
-	.ddren2_mm_state_mask_b = 0,
-	.ddren2_sspm_apsrc_req_mask_b = 0,
-	.ddren2_dqssoc_req_mask_b = 0,
-
-	/* MP0_CPU0_WFI_EN */
-	.mp0_cpu0_wfi_en = 0,
-
-	/* MP0_CPU1_WFI_EN */
-	.mp0_cpu1_wfi_en = 0,
-
-	/* MP0_CPU2_WFI_EN */
-	.mp0_cpu2_wfi_en = 0,
-
-	/* MP0_CPU3_WFI_EN */
-	.mp0_cpu3_wfi_en = 0,
-
-	/* MP1_CPU0_WFI_EN */
-	.mp1_cpu0_wfi_en = 0,
-
-	/* MP1_CPU1_WFI_EN */
-	.mp1_cpu1_wfi_en = 0,
-
-	/* MP1_CPU2_WFI_EN */
-	.mp1_cpu2_wfi_en = 0,
-
-	/* MP1_CPU3_WFI_EN */
-	.mp1_cpu3_wfi_en = 0,
-
-	/* Auto-gen End */
-};
-
-struct spm_lp_scen __spm_vcorefs = {
-	.pwrctrl	= &vcorefs_ctrl,
-};
-
 char *spm_vcorefs_dump_dvfs_regs(char *p)
 {
 	if (p) {
+		#if defined(CONFIG_MACH_MT6739)
+
+		#else
 		p += sprintf(p, "dram_issue: 0x%x\n", dram_issue);
+		#endif
 		/* p += sprintf(p, "(v:%d)(r:%d)(c:%d)\n", plat_chip_ver, plat_lcd_resolution, plat_channel_num); */
 		#if 1
 		/* DVFSRC */
@@ -272,6 +127,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		/* SPM */
 		p += sprintf(p, "SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "SPM_SW_RSV_5           : 0x%x\n", spm_read(SPM_SW_RSV_5));
+		p += sprintf(p, "DVFSRC_MD_GEAR         : 0x%x\n", spm_read(DVFSRC_MD_GEAR));
 		p += sprintf(p, "MD2SPM_DVFS_CON        : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		p += sprintf(p, "SPM_DVFS_EVENT_STA     : 0x%x\n", spm_read(SPM_DVFS_EVENT_STA));
 		p += sprintf(p, "SPM_DVFS_LEVEL         : 0x%x\n", spm_read(SPM_DVFS_LEVEL));
@@ -331,6 +187,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("SPM_SW_RSV_5           : 0x%x\n", spm_read(SPM_SW_RSV_5));
 		spm_vcorefs_warn("SPM_SW_RSV_11          : 0x%x\n", spm_read(SPM_SW_RSV_11));
+		spm_vcorefs_warn("DVFSRC_MD_GEAR         : 0x%x\n", spm_read(DVFSRC_MD_GEAR));
 		spm_vcorefs_warn("MD2SPM_DVFS_CON        : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		spm_vcorefs_warn("SPM_DVFS_EVENT_STA     : 0x%x\n", spm_read(SPM_DVFS_EVENT_STA));
 		spm_vcorefs_warn("SPM_DVFS_LEVEL         : 0x%x\n", spm_read(SPM_DVFS_LEVEL));
@@ -382,10 +239,12 @@ u32 spm_vcorefs_get_MD_status(void)
 	return spm_read(MD2SPM_DVFS_CON);
 }
 
+#if defined(CONFIG_MACH_MT6763)
 u32 spm_vcorefs_get_md_srcclkena(void)
 {
 	return spm_read(PCM_REG13_DATA) & (1U << 8);
 }
+#endif
 
 static void spm_dvfsfw_init(int curr_opp)
 {
@@ -402,6 +261,21 @@ int spm_vcorefs_pwarp_cmd(void)
 {
 #if 1
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if defined(CONFIG_MACH_MT6739)
+
+	unsigned long flags;
+	int opp;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	for (opp = 0; opp < NUM_OPP; opp++)
+		mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, opp, get_vcore_ptp_volt(opp));
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_warn("spm_vcorefs_pwarp_cmd: atf\n");
+
+#else
 	/* PMIC_WRAP_PHASE_ALLINONE */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, CMD_0, get_vcore_ptp_volt(OPP_3)); /* 0.7 */
 	/* mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, CMD_0, get_vcore_ptp_volt(OPP_2)); */ /* 0.7 */
@@ -412,6 +286,7 @@ int spm_vcorefs_pwarp_cmd(void)
 
 	spm_vcorefs_warn("spm_vcorefs_pwarp_cmd: kernel\n");
 
+#endif
 #else
 	int ret;
 	struct spm_data spm_d;
@@ -484,8 +359,33 @@ int spm_vcorefs_get_opp(void)
 	return level;
 }
 
+#if defined(CONFIG_MACH_MT6739)
+void dvfsrc_msdc_autok_finish(void)
+{
+	spm_write(DVFSRC_VCORE_REQUEST, spm_read(DVFSRC_VCORE_REQUEST) | (0x3 << 26));
+}
+#endif
+
 static void dvfsrc_hw_policy_mask(bool force)
 {
+#if defined(CONFIG_MACH_MT6739)
+	if (force || vcorefs_i_hwpath_en()) {
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 0));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 16));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 3));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 0));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) | (0x1 << 5));
+		spm_write(DVFSRC_VCORE_REQUEST, spm_read(DVFSRC_VCORE_REQUEST) & ~(0x3 << 26));
+		spm_write(DVFSRC_MD_REQUEST, 0x0);
+	} else {
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x1 << 0));
+		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) | (0x1 << 16));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 3));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 0));
+		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 5));
+	}
+#else
+
 	if (force || vcorefs_i_hwpath_en()) {
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 0));
 		spm_write(DVFSRC_EMI_REQUEST, spm_read(DVFSRC_EMI_REQUEST) & ~(0xf << 4));
@@ -507,12 +407,20 @@ static void dvfsrc_hw_policy_mask(bool force)
 		spm_write(DVFSRC_MD_SW_CONTROL, spm_read(DVFSRC_MD_SW_CONTROL) & ~(0x1 << 5));
 		spm_write(DVFSRC_VCORE_MD2SPM0, 0x8000C0C0);
 	}
+#endif
 }
 
 static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 {
 	int r = 0;
 
+#if defined(CONFIG_MACH_MT6739)
+	u32 vcore_req[NUM_OPP] = {0x2, 0x2, 0x1, 0x0};
+	u32 emi_req[NUM_OPP] = {0x1, 0x0, 0x0, 0x0};
+	/* u32 md_req[NUM_OPP] = {0x0, 0x0, 0x0, 0x0}; */
+	u32 dvfsrc_level[NUM_OPP] = {0x8, 0x4, 0x2, 0x1};
+
+#else
 	u32 vcore_req[NUM_OPP] = {0x1, 0x0, 0x0, 0x0};
 	u32 emi_req[NUM_OPP] = {0x2, 0x2, 0x1, 0x0};
 	/* u32 md_req[NUM_OPP] = {0x0, 0x0, 0x0, 0x0}; */
@@ -522,6 +430,7 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 		vcore_req[1] = 0x1;
 		emi_req[1] = 0x1;
 	}
+#endif
 
 	if (fix)
 		dvfsrc_hw_policy_mask(1);
@@ -575,7 +484,9 @@ int spm_dvfs_flag_init(void)
 
 void dvfsrc_md_scenario_update(bool suspend)
 {
-#if 1
+#if defined(CONFIG_MACH_MT6739)
+
+#else
 	if (__spm_get_dram_type() == SPMFW_LP4X_2CH) {
 		/* LP4 2CH */
 		if (suspend) {
@@ -602,11 +513,60 @@ void dvfsrc_md_scenario_update(bool suspend)
 #endif
 }
 
+#if defined(CONFIG_MACH_MT6739)
+void dvfsrc_mdsrclkena_control_nolock(bool on)
+{
+	if (on)
+		spm_write(DVFSRC_VCORE_REQUEST, spm_read(DVFSRC_VCORE_REQUEST) | (0x3 << 26));
+	else
+		spm_write(DVFSRC_VCORE_REQUEST, spm_read(DVFSRC_VCORE_REQUEST) & ~(0x3 << 26));
+}
+
+void dvfsrc_mdsrclkena_control(bool on)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	dvfsrc_mdsrclkena_control_nolock(on);
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	spm_vcorefs_warn("mdsrclkena_control (%d)(0x%x)\n", on, spm_read(DVFSRC_VCORE_REQUEST));
+}
+#endif
+
 static void dvfsrc_init(void)
 {
 	unsigned long flags;
 
 	spin_lock_irqsave(&__spm_lock, flags);
+
+#if defined(CONFIG_MACH_MT6739)
+	spm_write(DVFSRC_LEVEL_LABEL_0_1, 0x00010000);
+	spm_write(DVFSRC_LEVEL_LABEL_2_3, 0x00130002);
+	spm_write(DVFSRC_LEVEL_LABEL_4_5, 0x01010100);
+	spm_write(DVFSRC_LEVEL_LABEL_6_7, 0x01130102);
+	spm_write(DVFSRC_LEVEL_LABEL_8_9, 0x01130113);
+	spm_write(DVFSRC_LEVEL_LABEL_10_11, 0x01130113);
+	spm_write(DVFSRC_LEVEL_LABEL_12_13, 0x01130113);
+	spm_write(DVFSRC_LEVEL_LABEL_14_15, 0x01130113);
+	spm_write(DVFSRC_OPT_MASK, 0x0000000C);
+	spm_write(DVFSRC_TIMEOUT_NEXTREQ, 0x000000FF);
+
+	spm_write(DVFSRC_EMI_HRT, 0x00000010);
+	spm_write(DVFSRC_VCORE_HRT, 0x00000010);
+	spm_write(DVFSRC_EMI_MD2SPM0, 0x00000001);
+	spm_write(DVFSRC_EMI_MD2SPM1, 0x00000000);
+	spm_write(DVFSRC_MD_VMD_REMAP, 0x00000000);
+	spm_write(DVFSRC_DEBOUNCE_FOUR, 0x0);
+
+	spm_write(DVFSRC_EMI_REQUEST, 0x00111001);
+	spm_write(DVFSRC_VCORE_REQUEST, 0x0C200000);
+	spm_write(DVFSRC_FORCE, 0x00080000);
+	spm_write(DVFSRC_BASIC_CONTROL, 0x0000803B);
+	spm_write(DVFSRC_BASIC_CONTROL, 0x0000023B);
+#else
 
 	if (__spm_get_dram_type() == SPMFW_LP4X_2CH) {
 		/* LP4 2CH */
@@ -650,6 +610,8 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_FORCE, 0x00080000);
 	spm_write(DVFSRC_BASIC_CONTROL, 0x0000803B);
 	spm_write(DVFSRC_BASIC_CONTROL, 0x0000023B);
+#endif
+
 
 #if 1
 	mtk_rgu_cfg_dvfsrc(1);
@@ -738,6 +700,7 @@ void spm_go_to_vcorefs(int spm_flags)
 	spm_vcorefs_warn("[%s] done\n", __func__);
 }
 
+#if defined(CONFIG_MACH_MT6763)
 void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
 {
 	u32 emi_req[NUM_OPP] = {0x2, 0x2, 0x1, 0x0};
@@ -754,6 +717,7 @@ void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
 		break;
 	}
 }
+#endif
 
 static void plat_info_init(void)
 {
