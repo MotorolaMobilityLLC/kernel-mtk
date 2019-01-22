@@ -970,6 +970,9 @@ static void spm_dpidle_notify_sspm_before_wfi(bool sleep_dpidle, u32 operation_c
 	spm_opt |= ((operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) && !sleep_dpidle) ?
 					SPM_OPT_XO_UFS_OFF :
 					0;
+	spm_opt |= ((operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM) && !sleep_dpidle) ?
+					SPM_OPT_CLKBUF_ENTER_BBLPM :
+					0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
 	spm_d.u.suspend.vcore_volt_pmic_val = pwrctrl->vcore_volt_pmic_val;
@@ -1001,6 +1004,9 @@ static void spm_dpidle_notify_sspm_after_wfi(bool sleep_dpidle, u32 operation_co
 	spm_opt |= sleep_dpidle ?      SPM_OPT_SLEEP_DPIDLE : 0;
 	spm_opt |= ((operation_cond & DEEPIDLE_OPT_XO_UFS_ON_OFF) && !sleep_dpidle) ?
 					SPM_OPT_XO_UFS_OFF :
+					0;
+	spm_opt |= ((operation_cond & DEEPIDLE_OPT_CLKBUF_BBLPM) && !sleep_dpidle) ?
+					SPM_OPT_CLKBUF_ENTER_BBLPM :
 					0;
 
 	spm_d.u.suspend.spm_opt = spm_opt;
@@ -1116,7 +1122,7 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta,
 
 	if (log_cond & DEEPIDLE_LOG_FULL) {
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false, "dpidle");
-		pr_info("oper_cond = %x\n", operation_cond);
+		dpidle_dbg("oper_cond = %x\n", operation_cond);
 
 		if (log_cond & DEEPIDLE_LOG_RESOURCE_USAGE)
 			spm_resource_req_dump();
