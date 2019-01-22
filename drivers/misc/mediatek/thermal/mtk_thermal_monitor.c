@@ -1193,7 +1193,7 @@ static ssize_t _mtkthermal_cooler_write(struct file *file, const char __user *bu
 #if (MTK_THERMAL_MONITOR_COOLER_MAX_EXTRA_CONDITIONS == 3)
 	_mtkthermal_clear_cooler_conditions(mcdata);
 
-	if (sscanf(desc, "%s %d %s %d %s %d",
+	if (sscanf(desc, "%19s %d %19s %d %19s %d",
 			&mcdata->conditions[0][0], &mcdata->threshold[0],
 			&mcdata->conditions[1][0], &mcdata->threshold[1],
 			&mcdata->conditions[2][0], &mcdata->threshold[2]) >= 2) {
@@ -1238,7 +1238,7 @@ static ssize_t _mtkthermal_cooler_write(struct file *file, const char __user *bu
 #else
 #error "Change correspondent part when changing MTK_THERMAL_MONITOR_COOLER_MAX_EXTRA_CONDITIONS!"
 #endif
-	THRML_ERROR_LOG("%s bad arg\n", __func__);
+	/*THRML_ERROR_LOG("%s bad arg\n", __func__);*/
 
 	return -EINVAL;
 }
@@ -1340,7 +1340,7 @@ static ssize_t _mtkthermal_tz_write(struct file *file, const char __user *buffer
 			if (!tzdata)
 				WARN_ON_ONCE(1);
 
-			THRML_ERROR_LOG("%s trailing=%s\n", __func__, trailing);
+			/*THRML_ERROR_LOG("%s trailing=%s\n", __func__, trailing);*/
 
 		/**
 		 *  reset MA len and lock
@@ -1352,7 +1352,7 @@ static ssize_t _mtkthermal_tz_write(struct file *file, const char __user *buffer
 			tzdata->curr_idx_ma_len = 0;
 			tzdata->ma_lens[0] = arg_val;
 			tzdata->msma_ht[0] = MSMA_MAX_HT;
-			THRML_ERROR_LOG("%s %s ma_len=%d.\n", __func__, tz->type, tzdata->ma_len);
+			/*THRML_ERROR_LOG("%s %s ma_len=%d.\n", __func__, tz->type, tzdata->ma_len);*/
 #if (MAX_STEP_MA_LEN == 4)
 			/* reset */
 			tzdata->msma_ht[1] = tzdata->msma_ht[2] = tzdata->msma_ht[3] = MSMA_MAX_HT;
@@ -1360,10 +1360,11 @@ static ssize_t _mtkthermal_tz_write(struct file *file, const char __user *buffer
 			check = sscanf(trailing, "%ld,%d;%ld,%d;%ld,%d;", &tzdata->msma_ht[0], &tzdata->ma_lens[1],
 					&tzdata->msma_ht[1], &tzdata->ma_lens[2],
 					&tzdata->msma_ht[2], &tzdata->ma_lens[3]);
-			THRML_ERROR_LOG("%s %s (%ld, %d), (%ld, %d), (%ld, %d)\n", __func__,
-					tz->type, tzdata->msma_ht[0], tzdata->ma_lens[1],
-					tzdata->msma_ht[1], tzdata->ma_lens[2],
-					tzdata->msma_ht[2], tzdata->ma_lens[3]);
+			/*THRML_ERROR_LOG("%s %s (%ld, %d), (%ld, %d), (%ld, %d)\n", __func__,
+			*		tz->type, tzdata->msma_ht[0], tzdata->ma_lens[1],
+			*		tzdata->msma_ht[1], tzdata->ma_lens[2],
+			*		tzdata->msma_ht[2], tzdata->ma_lens[3]);
+			*/
 #else
 #error
 #endif
@@ -1375,7 +1376,7 @@ static ssize_t _mtkthermal_tz_write(struct file *file, const char __user *buffer
 			mutex_unlock(&tzdata->ma_lock);
 			THRML_ERROR_LOG("%s %s ma_len=%d.\n", __func__, tz->type, tzdata->ma_len);
 #endif
-		} else if ((strncmp(arg_name, "Tfake", 5)) && (arg_val >= -275000) == 0) {
+		} else if ((strncmp(arg_name, "Tfake", 5) == 0) && (arg_val >= -275000)) {
 			/* only accept for [-275000, max positive value of int] */
 			struct mtk_thermal_tz_data *tzdata = NULL;
 
@@ -2220,7 +2221,7 @@ int trip, struct thermal_cooling_device *cdev) {
 					     THERMAL_NO_LIMIT, THERMAL_WEIGHT_DEFAULT);
 
 	if (ret) {
-		THRML_ERROR_LOG("thermal_zone_bind_cooling_device Fail. Code(%d)\n", ret);
+		/*THRML_ERROR_LOG("thermal_zone_bind_cooling_device Fail. Code(%d)\n", ret);*/
 	} else {
 		/* TODO: think of a way don't do this here...Or cannot rollback devdata in bind ops... */
 		/* Init mtk Cooler Data */
