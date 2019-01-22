@@ -104,18 +104,21 @@ static uint32_t dump_data_routine_cnt_pass;
 static bool b_enable_dump;
 
 
-#define FRAME_BUF_SIZE   (640)
+#define MAX_FRAME_BUF_SIZE   (1280)
 
 typedef struct pcm_dump_ul_t {
-	char ul_in_ch1[FRAME_BUF_SIZE];
-	char ul_in_ch2[FRAME_BUF_SIZE];
-	char aec_in[FRAME_BUF_SIZE];
-	char ul_out[FRAME_BUF_SIZE];
+	char ul_in_ch1[MAX_FRAME_BUF_SIZE];
+	char ul_in_ch2[MAX_FRAME_BUF_SIZE];
+	char ul_in_ch3[MAX_FRAME_BUF_SIZE];
+	char aec_in[MAX_FRAME_BUF_SIZE];
+	char ul_out[MAX_FRAME_BUF_SIZE];
+	uint32_t frame_buf_size;
 } pcm_dump_ul_t;
 
 typedef struct pcm_dump_dl_t {
-	char dl_in[FRAME_BUF_SIZE];
-	char dl_out[FRAME_BUF_SIZE];
+	char dl_in[MAX_FRAME_BUF_SIZE];
+	char dl_out[MAX_FRAME_BUF_SIZE];
+	uint32_t frame_buf_size;
 } pcm_dump_dl_t;
 
 
@@ -123,6 +126,7 @@ static audio_resv_dram_t *p_resv_dram;
 
 struct file *file_ul_in_ch1;
 struct file *file_ul_in_ch2;
+struct file *file_ul_in_ch3;
 struct file *file_ul_out;
 struct file *file_aec_in;
 struct file *file_dl_in;
@@ -136,6 +140,7 @@ void open_dump_file(void)
 
 	char string_ul_in_ch1[16] = "ul_in_ch1.pcm";
 	char string_ul_in_ch2[16] = "ul_in_ch2.pcm";
+	char string_ul_in_ch3[16] = "ul_in_ch3.pcm";
 	char string_aec_in[16]    = "aec_in.pcm";
 	char string_ul_out[16]    = "ul_out.pcm";
 	char string_dl_in[16]     = "dl_in.pcm";
@@ -143,6 +148,7 @@ void open_dump_file(void)
 
 	char path_ul_in_ch1[64];
 	char path_ul_in_ch2[64];
+	char path_ul_in_ch3[64];
 	char path_aec_in[64];
 	char path_ul_out[64];
 	char path_dl_in[64];
@@ -164,6 +170,8 @@ void open_dump_file(void)
 		 DUMP_DSP_PCM_DATA_PATH, string_time, string_ul_in_ch1);
 	snprintf(path_ul_in_ch2, sizeof(path_ul_in_ch2), "%s/%s_%s",
 		 DUMP_DSP_PCM_DATA_PATH, string_time, string_ul_in_ch2);
+	snprintf(path_ul_in_ch3, sizeof(path_ul_in_ch3), "%s/%s_%s",
+		 DUMP_DSP_PCM_DATA_PATH, string_time, string_ul_in_ch3);
 	snprintf(path_aec_in, sizeof(path_aec_in), "%s/%s_%s",
 		 DUMP_DSP_PCM_DATA_PATH, string_time, string_aec_in);
 	snprintf(path_ul_out, sizeof(path_ul_out), "%s/%s_%s",
@@ -182,6 +190,12 @@ void open_dump_file(void)
 	file_ul_in_ch2 = filp_open(path_ul_in_ch2, O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_ul_in_ch2)) {
 		AUD_LOG_W("file_ul_in_ch2 < 0\n");
+		return;
+	}
+
+	file_ul_in_ch3 = filp_open(path_ul_in_ch3, O_CREAT | O_WRONLY, 0);
+	if (IS_ERR(file_ul_in_ch3)) {
+		AUD_LOG_W("file_ul_in_ch3 < 0\n");
 		return;
 	}
 
@@ -262,6 +276,10 @@ void close_dump_file(void)
 	if (!IS_ERR(file_ul_in_ch2)) {
 		filp_close(file_ul_in_ch2, NULL);
 		file_ul_in_ch2 = NULL;
+	}
+	if (!IS_ERR(file_ul_in_ch3)) {
+		filp_close(file_ul_in_ch3, NULL);
+		file_ul_in_ch3 = NULL;
 	}
 	if (!IS_ERR(file_ul_out)) {
 		filp_close(file_ul_out, NULL);
@@ -411,28 +429,35 @@ static int dump_kthread(void *data)
 				ret = file_ul_in_ch1->f_op->write(
 					      file_ul_in_ch1,
 					      pcm_dump_ul->ul_in_ch1,
-					      FRAME_BUF_SIZE,
+					      pcm_dump_ul->frame_buf_size,
 					      &file_ul_in_ch1->f_pos);
 			}
 			if (!IS_ERR(file_ul_in_ch2)) {
 				ret = file_ul_in_ch2->f_op->write(
 					      file_ul_in_ch2,
 					      pcm_dump_ul->ul_in_ch2,
-					      FRAME_BUF_SIZE,
+					      pcm_dump_ul->frame_buf_size,
 					      &file_ul_in_ch2->f_pos);
+			}
+			if (!IS_ERR(file_ul_in_ch3)) {
+				ret = file_ul_in_ch3->f_op->write(
+					      file_ul_in_ch3,
+					      pcm_dump_ul->ul_in_ch3,
+					      pcm_dump_ul->frame_buf_size,
+					      &file_ul_in_ch3->f_pos);
 			}
 			if (!IS_ERR(file_aec_in)) {
 				ret = file_aec_in->f_op->write(
 					      file_aec_in,
 					      pcm_dump_ul->aec_in,
-					      FRAME_BUF_SIZE,
+					      pcm_dump_ul->frame_buf_size,
 					      &file_aec_in->f_pos);
 			}
 			if (!IS_ERR(file_ul_out)) {
 				ret = file_ul_out->f_op->write(
 					      file_ul_out,
 					      pcm_dump_ul->ul_out,
-					      FRAME_BUF_SIZE,
+					      pcm_dump_ul->frame_buf_size,
 					      &file_ul_out->f_pos);
 			}
 			irq_cnt_k[DUMP_UL]++;
@@ -446,14 +471,14 @@ static int dump_kthread(void *data)
 				ret = file_dl_in->f_op->write(
 					      file_dl_in,
 					      pcm_dump_dl->dl_in,
-					      FRAME_BUF_SIZE,
+					      pcm_dump_dl->frame_buf_size,
 					      &file_dl_in->f_pos);
 			}
 			if (!IS_ERR(file_dl_out)) {
 				ret = file_dl_out->f_op->write(
 					      file_dl_out,
 					      pcm_dump_dl->dl_out,
-					      FRAME_BUF_SIZE,
+					      pcm_dump_dl->frame_buf_size,
 					      &file_dl_out->f_pos);
 			}
 			irq_cnt_k[DUMP_DL]++;
