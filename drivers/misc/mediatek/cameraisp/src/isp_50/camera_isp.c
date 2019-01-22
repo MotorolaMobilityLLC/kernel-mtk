@@ -48,7 +48,9 @@
 #define EP_STAGE
 #ifdef EP_STAGE
 #define EP_MARK_SMI                   /* disable SMI related for EP */
+#if 0
 #define DUMMY_INT                       /* For early if load dont need to use camera*/
+#endif
 #define EP_NO_CLKMGR                /* Clkmgr is not ready in early porting, en/disable clock  by hardcode */
 #define EP_NO_PMQOS                  /* If PMQoS is not ready on EP stage */
 #define EP_NO_K_LOG_ADJUST    /* EP no need to adjust upper bound of kernel log count */
@@ -961,7 +963,7 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 	dmaerr[_flko_] = (unsigned int)ISP_RD32(CAM_REG_FLKO_ERR_STAT(regModule));
 	dmaerr[_rsso_] = (unsigned int)ISP_RD32(CAM_REG_RSSO_A_ERR_STAT(regModule));
 	dmaerr[_ufgo_] = (unsigned int)ISP_RD32(CAM_REG_UFGO_ERR_STAT(regModule));
-	dmaerr[_rawi_] = (unsigned int)ISP_RD32(CAM_UNI_REG_RAWI_ERR_STAT(regModule));
+	dmaerr[_rawi_] = (unsigned int)ISP_RD32(CAM_UNI_REG_RAWI_ERR_STAT(ISP_UNI_A_IDX));
 
 	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 		"camsys:0x%x", ISP_RD32(ISP_CAMSYS_CONFIG_BASE));
