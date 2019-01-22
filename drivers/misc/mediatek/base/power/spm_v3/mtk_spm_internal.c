@@ -21,6 +21,7 @@
 #include <linux/random.h>
 #include <asm/setup.h>
 #include <mtk_spm_internal.h>
+#include <mtk_spm_misc.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_vcorefs_governor.h>
 #include <mtk_spm_vcore_dvfs.h>
@@ -731,7 +732,7 @@ void spm_set_dummy_read_addr(int debug)
 	u64 rank0_addr, rank1_addr;
 	u32 dram_rank_num;
 
-#if 0 /* def CONFIG_MTK_DRAMC */
+#ifdef CONFIG_MTK_DRAMC
 	dram_rank_num = g_dram_info_dummy_read->rank_num;
 	rank0_addr = g_dram_info_dummy_read->rank_info[0].start;
 	if (dram_rank_num == 1)
