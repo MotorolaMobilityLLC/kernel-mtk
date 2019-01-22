@@ -346,14 +346,16 @@ void oc_int_handler(PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	PMICLOG("[%s] int name=%s\n", __func__, int_name);
 	switch (intNo) {
-	case INT_VCAMA1_OC:
-	case INT_VCAMA2_OC:
-	case INT_VCAMD1_OC:
-	case INT_VCAMD2_OC:
-	case INT_VCAMIO_OC:
+	/*
+	 *case INT_VCAMA1_OC:
+	 *case INT_VCAMA2_OC:
+	 *case INT_VCAMD1_OC:
+	 *case INT_VCAMD2_OC:
+	 *case INT_VCAMIO_OC:
+	 */
 		/* keep OC interrupt and keep tracking */
-		pr_err(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
-		break;
+		/*pr_err(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);*/
+		/*break;*/
 	default:
 		/* issue AEE exception and disable OC interrupt */
 		/* TBD: dump_exception_reg */
@@ -512,7 +514,11 @@ void register_all_oc_interrupts(void)
 		if (oc_interrupt == INT_VCORE_PREOC)
 			continue;
 		pmic_register_oc_interrupt_callback(oc_interrupt);
-		pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
+			if (oc_interrupt == INT_VCAMA1_OC || oc_interrupt == INT_VCAMA2_OC
+				|| oc_interrupt == INT_VCAMD1_OC || oc_interrupt == INT_VCAMD2_OC)
+				pmic_enable_interrupt(oc_interrupt, 0, "PMIC");
+			else
+				pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
 	}
 }
 
