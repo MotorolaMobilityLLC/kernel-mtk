@@ -55,4 +55,14 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 	return _svp_region_offline(pa, size, UPPER_LIMIT32);
 }
 EXPORT_SYMBOL(svp_region_offline);
+
+#ifdef CONFIG_MTK_ION
+extern void ion_sec_heap_dump_info(void);
+#else
+static inline void ion_sec_heap_dump_info(void)
+{
+	pr_info("%s is not supported\n", __func__);
+}
+#endif
+
 #endif

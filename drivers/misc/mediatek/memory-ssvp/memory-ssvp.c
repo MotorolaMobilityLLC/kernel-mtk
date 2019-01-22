@@ -575,6 +575,8 @@ static int _svp_wdt_kthread_func(void *data)
 	}
 	pr_info("[COUNT DOWN FAIL]\n");
 
+	ion_sec_heap_dump_info();
+
 	pr_info("Shareable SVP trigger kernel warning");
 	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
 			| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
