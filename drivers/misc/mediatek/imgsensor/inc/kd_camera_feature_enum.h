@@ -346,7 +346,7 @@ FID_TO_TYPE_ENUM(
 	)
 )CAPTURE_MODE_T;
 
-
+#if 0
 /* Capture Size */
 FID_TO_TYPE_ENUM(
 	FID_CAP_SIZE,
@@ -364,7 +364,7 @@ FID_TO_TYPE_ENUM(
 		NUM_OF_CAPTURE_SIZE
 	)
 )CAPTURE_SIZE_T;
-
+#endif
 
 /* Preview Size */
 FID_TO_TYPE_ENUM(
