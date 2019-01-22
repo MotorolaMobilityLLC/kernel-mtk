@@ -1736,6 +1736,8 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 
 		prNativePacket = prMsduInfo->prPacket;
 		u2OverallBufferLength = TFCB_FRAME_PAD_TO_DW((prCmdInfo->u2InfoBufLen + ucTxDescLength));
+		if (prNativePacket)
+			prMsduInfo->ucEapolKeyType = kalGetEapolKeyType(prNativePacket);
 
 		/* <3> Copy Frame Body */
 		kalCopyFrame(prAdapter->prGlueInfo, prNativePacket, pucOutputBuf + ucTxDescLength);
