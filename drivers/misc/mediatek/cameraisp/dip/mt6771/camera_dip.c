@@ -1370,11 +1370,6 @@ static void DIP_EnableClock(bool En)
 #else/*CCF*/
 		/*LOG_INF("CCF:prepare_enable clk");*/
 		spin_lock(&(IspInfo.SpinLockClock));
-		if (G_u4EnableClockCount == 0) {
-			unsigned int _reg = DIP_RD32(DIP_CLOCK_CELL_BASE);
-
-			DIP_WR32(DIP_CLOCK_CELL_BASE, _reg|(1<<6));
-		}
 		G_u4EnableClockCount++;
 		spin_unlock(&(IspInfo.SpinLockClock));
 		Prepare_Enable_ccf_clock(); /* !!cannot be used in spinlock!! */
