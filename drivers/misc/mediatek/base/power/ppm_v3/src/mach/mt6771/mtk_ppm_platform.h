@@ -22,6 +22,9 @@ extern "C" {
 #include "mach/mtk_ppm_api.h"
 #include "mach/mtk_cpufreq_api.h"
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#define PPM_SSPM_SUPPORT        (1)
+#endif
 
 /*==============================================================*/
 /* Macros							*/
