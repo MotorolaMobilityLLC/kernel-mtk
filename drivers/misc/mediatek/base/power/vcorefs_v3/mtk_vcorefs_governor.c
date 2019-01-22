@@ -337,22 +337,52 @@ int governor_debug_store(const char *buf)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	int val, r = 0;
+#if defined(CONFIG_MACH_MT6759)
+	int val2;
+#endif
+
 	char cmd[32];
 
+#if defined(CONFIG_MACH_MT6759)
+	if (sscanf(buf, "%31s 0x%x 0x%x", cmd, &val, &val2) == 3 ||
+	    sscanf(buf, "%31s %d %d", cmd, &val, &val2) == 3) {
+
+		if (log_mask() != 65535)
+			vcorefs_crit("vcore_debug: cmd: %s, val: %d val2: %d\n", cmd, val, val2);
+
+		if (!strcmp(cmd, "emibw"))
+			r = vcorefs_set_emi_bw_ctrl(val, val2);
+		else
+			r = -EPERM;
+
+	}
+#else
 	if (sscanf(buf, "%31s %d", cmd, &val) != 2)
 		return -EPERM;
+#endif
+	if (sscanf(buf, "%31s 0x%x", cmd, &val) == 2 ||
+		sscanf(buf, "%31s %d", cmd, &val) == 2) {
 
-	if (!strcmp(cmd, "vcore_dvs")) {
-		gvrctrl->vcore_dvs = val;
-		set_vcorefs_en();
-	} else if (!strcmp(cmd, "ddr_dfs")) {
-		gvrctrl->ddr_dfs = val;
-		set_vcorefs_en();
-	} else if (!strcmp(cmd, "mm_clk")) {
-		gvrctrl->mm_clk = val;
-		set_vcorefs_en();
-	} else if (!strcmp(cmd, "isr_debug")) {
-		vcorefs_enable_debug_isr(val);
+		if (log_mask() != 65535)
+			vcorefs_crit("vcore_debug: cmd: %s, val: %d\n", cmd, val);
+
+		if (!strcmp(cmd, "vcore_dvs")) {
+			gvrctrl->vcore_dvs = val;
+			set_vcorefs_en();
+		} else if (!strcmp(cmd, "ddr_dfs")) {
+			gvrctrl->ddr_dfs = val;
+			set_vcorefs_en();
+		} else if (!strcmp(cmd, "mm_clk")) {
+			gvrctrl->mm_clk = val;
+#if defined(CONFIG_MACH_MT6759)
+			spm_prepare_mm_clk(val);
+#endif
+			set_vcorefs_en();
+		} else if (!strcmp(cmd, "isr_debug")) {
+			vcorefs_enable_debug_isr(val);
+		} else {
+			r = -EPERM;
+		}
 	} else {
 		r = -EPERM;
 	}
