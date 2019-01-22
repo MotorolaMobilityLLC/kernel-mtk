@@ -701,6 +701,8 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 	seq_puts(m, "102: kernel table\n");
 	seq_puts(m, "103: send CHR FULL\n");
 	seq_puts(m, "104: disable NAFG interrupt\n");
+	seq_puts(m, "105: show daemon pid\n");
+
 	seq_printf(m, "current command:%d\n", gm.proc_cmd_id);
 
 	switch (gm.proc_cmd_id) {
@@ -733,6 +735,9 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 	case 104:
 		gauge_set_nag_en(false);
 		gm.disable_nafg_int = true;
+		break;
+	case 105:
+		seq_printf(m, "Gauge daemon pid:%d\n", gm.g_fgd_pid);
 		break;
 	default:
 		seq_printf(m, "do not support command:%d\n", gm.proc_cmd_id);

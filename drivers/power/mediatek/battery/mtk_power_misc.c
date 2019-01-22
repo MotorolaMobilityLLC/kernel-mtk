@@ -219,7 +219,7 @@ int set_shutdown_cond(int shutdown_cond)
 						VBAT2_DET_VOLTAGE1 / 10;
 				sdc.batidx = 0;
 			}
-			bm_err("LOW_BAT_VOLT:%d", vbat);
+			bm_err("LOW_BAT_VOLT:vbat %d %d", vbat, VBAT2_DET_VOLTAGE1 / 10);
 			mutex_unlock(&sdc.lock);
 		}
 		break;
@@ -243,6 +243,14 @@ int set_shutdown_cond(int shutdown_cond)
 	return 0;
 }
 
+int next_waketime(int polling)
+{
+	if (polling <= 0)
+		return 0;
+	else
+		return 10;
+}
+
 static int shutdown_event_handler(struct shutdown_controller *sdd)
 {
 	struct timespec now, duraction;
@@ -254,6 +262,7 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 	int vbat = battery_get_bat_voltage();
 	int tmp = 25;
 
+	mutex_lock(&sdd->lock);
 
 	now.tv_sec = 0;
 	now.tv_nsec = 0;
@@ -276,7 +285,10 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			polling++;
 			if (duraction.tv_sec >= SHUTDOWN_TIME) {
 				bm_err("soc zero shutdown\n");
+				mutex_unlock(&sdd->lock);
 				kernel_power_off();
+				return next_waketime(polling);
+
 			}
 		} else if (current_soc > 0) {
 			sdd->shutdown_status.is_soc_zero_percent = false;
@@ -294,7 +306,9 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			polling++;
 			if (duraction.tv_sec >= SHUTDOWN_TIME) {
 				bm_err("uisoc one shutdown\n");
+				mutex_unlock(&sdd->lock);
 				kernel_power_off();
+				return next_waketime(polling);
 			}
 		} else {
 			/* ui_soc is not zero, check it after 10s */
@@ -307,7 +321,9 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 		polling++;
 		if (duraction.tv_sec >= SHUTDOWN_TIME) {
 			bm_err("dlpt shutdown\n");
+			mutex_unlock(&sdd->lock);
 			kernel_power_off();
+			return next_waketime(polling);
 		}
 	}
 
@@ -332,6 +348,8 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 
 		if (sdd->avgvbat < BAT_VOLTAGE_LOW_BOUND) {
 			/* avg vbat less than 3.4v */
+			sdd->lowbatteryshutdown = true;
+			polling++;
 
 			if (down_to_low_bat == 0) {
 				if (IS_ENABLED(
@@ -352,21 +370,21 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			}
 
 			if ((current_ui_soc == 0) && (ui_zero_time_flag == 0)) {
-				duraction =
-					timespec_sub(
-					now, sdd->pre_time[LOW_BAT_VOLT]);
+				get_monotonic_boottime(
+					&sdc.pre_time[LOW_BAT_VOLT]);
 				ui_zero_time_flag = 1;
 			}
 
 			if (current_ui_soc == 0) {
+				duraction = timespec_sub(
+					now, sdd->pre_time[LOW_BAT_VOLT]);
 				if (duraction.tv_sec >= SHUTDOWN_TIME) {
 					bm_err("low bat shutdown\n");
+					mutex_unlock(&sdd->lock);
 					kernel_power_off();
+					return next_waketime(polling);
 				}
 			}
-
-			sdd->lowbatteryshutdown = true;
-			polling++;
 		} else {
 			/* greater than 3.4v, clear status */
 			down_to_low_bat = 0;
@@ -410,10 +428,9 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 		polling, sdd->avgvbat,
 		(int)duraction.tv_sec, sdd->lowbatteryshutdown);
 
-	if (polling <= 0)
-		return 0;
-	else
-		return 10;
+	mutex_unlock(&sdd->lock);
+	return next_waketime(polling);
+
 }
 
 static int power_misc_kthread_fgtimer_func(struct gtimer *data)
@@ -434,9 +451,8 @@ static int power_misc_routine_thread(void *arg)
 		wait_event(sdd->wait_que, (sdd->timeout == true));
 		sdd->timeout = false;
 
-		mutex_lock(&sdd->lock);
 		ret = shutdown_event_handler(sdd);
-		mutex_unlock(&sdd->lock);
+
 		if (ret != 0 && is_fg_disabled() == false)
 			gtimer_start(&sdd->kthread_fgtimer, ret);
 	}
