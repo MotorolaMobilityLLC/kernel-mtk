@@ -311,6 +311,7 @@ struct cldma_rbd {
 typedef enum {
 	ONCE_MORE,
 	ALL_CLEAR,
+	LOW_MEMORY,
 } RX_COLLECT_RESULT;
 
 enum {
