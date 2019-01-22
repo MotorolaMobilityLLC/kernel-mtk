@@ -11,6 +11,12 @@
  * GNU General Public License for more details.
  */
 #include "fbc.h"
+#include <mtk_vcorefs_governor.h>
+#include <mtk_vcorefs_manager.h>
+
+#ifndef TOUCH_VCORE_OPP
+#define TOUCH_VCORE_OPP (-1)
+#endif
 
 static void notify_twanted_timeout_eas(void);
 static void notify_touch_up_timeout(void);
@@ -187,6 +193,7 @@ static void notify_touch(int action)
 	if (action == 1) {
 		fbc_ux_state = 1;
 		disable_touch_up_timer();
+		vcorefs_request_dvfs_opp(KIR_FBT, TOUCH_VCORE_OPP);
 	} else if (action == 0) {
 		fbc_ux_state = 2;
 		enable_touch_up_timer();
@@ -513,8 +520,11 @@ void notify_frame_complete_eas(long frame_time)
 		boost_value = 0;
 
 	if (first_frame) {
-		if (first_vsync)
+		if (first_vsync) {
 			first_frame = 0;
+			/* release DRAM touch boost */
+			vcorefs_request_dvfs_opp(KIR_FBT, -1);
+		}
 		fbc_tracer(-4, "first_frame", first_frame);
 	}
 

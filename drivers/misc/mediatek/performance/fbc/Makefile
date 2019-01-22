@@ -11,6 +11,10 @@
 # GNU General Public License for more details.
 #
 
+ifeq ($(CONFIG_MACH_MT6739), y)
+        ccflags-y += -DTOUCH_VCORE_OPP=0
+endif
+
 obj-y += fbc.o
 
 ifeq ($(CONFIG_MTK_FBC),y)
