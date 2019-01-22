@@ -44,13 +44,18 @@ int mtk_pe20_reset_ta_vchr(struct charger_manager *pinfo)
 	int ret = 0, chr_volt = 0;
 	u32 retry_cnt = 0;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
+	bool chg2_chip_enabled = false;
 
 	chr_debug("%s: starts\n", __func__);
 
 	/* Reset TA's charging voltage */
 	do {
-		if (pinfo->chg2_dev)
-			charger_dev_enable(pinfo->chg2_dev, false);
+		if (pinfo->chg2_dev) {
+			charger_dev_is_chip_enabled(pinfo->chg2_dev,
+				&chg2_chip_enabled);
+			if (chg2_chip_enabled)
+				charger_dev_enable(pinfo->chg2_dev, false);
+		}
 
 		ret = charger_dev_set_ta20_reset(pinfo->chg1_dev);
 		msleep(250);
@@ -112,15 +117,22 @@ static int pe20_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
 static int pe20_set_mivr(struct charger_manager *pinfo, int uV)
 {
 	int ret = 0;
+	bool chg2_chip_enabled = false;
+
 
 	ret = charger_dev_set_mivr(pinfo->chg1_dev, uV);
 	if (ret < 0)
 		pr_err("%s: failed, ret = %d\n", __func__, ret);
 
 	if (pinfo->chg2_dev) {
-		ret = charger_dev_set_mivr(pinfo->chg2_dev, uV);
-		if (ret < 0)
-			pr_err("%s: chg2 failed, ret = %d\n", __func__, ret);
+		charger_dev_is_chip_enabled(pinfo->chg2_dev,
+			&chg2_chip_enabled);
+		if (chg2_chip_enabled) {
+			ret = charger_dev_set_mivr(pinfo->chg2_dev, uV);
+			if (ret < 0)
+				pr_info("%s: chg2 failed, ret = %d\n", __func__,
+					ret);
+		}
 	}
 
 	return ret;
@@ -191,6 +203,7 @@ static int __pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 {
 	int ret = 0;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
+	bool chg2_chip_enabled = false;
 
 	chr_debug("%s: starts\n", __func__);
 
@@ -200,8 +213,12 @@ static int __pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 		return -EIO;
 	}
 
-	if (pinfo->chg2_dev)
-		charger_dev_enable(pinfo->chg2_dev, false);
+	if (pinfo->chg2_dev) {
+		charger_dev_is_chip_enabled(pinfo->chg2_dev,
+			&chg2_chip_enabled);
+		if (chg2_chip_enabled)
+			charger_dev_enable(pinfo->chg2_dev, false);
+	}
 
 	ret = charger_dev_send_ta20_current_pattern(pinfo->chg1_dev, chr_volt);
 	if (ret < 0) {

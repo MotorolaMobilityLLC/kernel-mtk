@@ -49,8 +49,14 @@
 
 static void _disable_all_charging(struct charger_manager *info)
 {
+	bool chg2_chip_enabled = false;
+
+	charger_dev_is_chip_enabled(info->chg2_dev, &chg2_chip_enabled);
 	charger_dev_enable(info->chg1_dev, false);
-	charger_dev_enable(info->chg2_dev, false);
+	if (chg2_chip_enabled) {
+		charger_dev_enable(info->chg2_dev, false);
+		charger_dev_enable_chip(info->chg2_dev, false);
+	}
 
 	if (mtk_pe20_get_is_enable(info)) {
 		mtk_pe20_set_is_enable(info, false);
@@ -71,6 +77,9 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 	u32 ichg1_min = 0, ichg2_min = 0, aicr1_min = 0, aicr2_min = 0;
 	int ret = 0;
+	bool chg2_chip_enabled = false;
+
+	charger_dev_is_chip_enabled(info->chg2_dev, &chg2_chip_enabled);
 
 	pdata = &info->chg1_data;
 	pdata2 = &info->chg2_data;
@@ -261,10 +270,12 @@ done:
 
 	if ((mtk_pe20_get_is_enable(info) && mtk_pe20_get_is_connect(info))
 	    || (mtk_pe_get_is_enable(info) && mtk_pe_get_is_connect(info))) {
-		charger_dev_set_input_current(info->chg2_dev,
-					pdata2->input_current_limit);
-		charger_dev_set_charging_current(info->chg2_dev,
-					pdata2->charging_current_limit);
+		if (chg2_chip_enabled) {
+			charger_dev_set_input_current(info->chg2_dev,
+				pdata2->input_current_limit);
+			charger_dev_set_charging_current(info->chg2_dev,
+				pdata2->charging_current_limit);
+		}
 	}
 #if 0
 	/* If AICR < 300mA, stop PE+/PE+20 */
@@ -311,6 +322,9 @@ done:
 static void swchg_select_cv(struct charger_manager *info)
 {
 	u32 constant_voltage;
+	bool chg2_chip_enabled = false;
+
+	charger_dev_is_chip_enabled(info->chg2_dev, &chg2_chip_enabled);
 
 	if (info->enable_sw_jeita)
 		if (info->sw_jeita.cv != 0) {
@@ -324,7 +338,9 @@ static void swchg_select_cv(struct charger_manager *info)
 
 	charger_dev_set_constant_voltage(info->chg1_dev, constant_voltage);
 	/* Set slave charger's CV to 200mV higher than master's */
-	charger_dev_set_constant_voltage(info->chg2_dev, constant_voltage + 200000);
+	if (chg2_chip_enabled)
+		charger_dev_set_constant_voltage(info->chg2_dev,
+			constant_voltage + 200000);
 }
 
 static void dual_swchg_turn_on_charging(struct charger_manager *info)
@@ -332,6 +348,9 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 	bool chg1_enable = true;
 	bool chg2_enable = true;
+	bool chg2_chip_enabled = false;
+
+	charger_dev_is_chip_enabled(info->chg2_dev, &chg2_chip_enabled);
 
 	if (swchgalg->state == CHR_ERROR) {
 		chg1_enable = false;
@@ -371,23 +390,30 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 		/* charger_dev_enable(info->chg1_dev, true); */
 		if ((mtk_pe20_get_is_enable(info) && mtk_pe20_get_is_connect(info))
 		    || (mtk_pe_get_is_enable(info) && mtk_pe_get_is_connect(info))) {
+			if (!chg2_chip_enabled)
+				charger_dev_enable_chip(info->chg2_dev, true);
 			if (swchgalg->state != CHR_POSTCC) {
 				charger_dev_enable(info->chg2_dev, true);
 				charger_dev_set_eoc_current(info->chg1_dev, 450000);
 				charger_dev_enable_termination(info->chg1_dev, false);
 			} else {
-				charger_dev_enable(info->chg2_dev, false);
 				charger_dev_set_eoc_current(info->chg1_dev, 150000);
 				charger_dev_enable_termination(info->chg1_dev, true);
 			}
 		} else {
-			charger_dev_enable(info->chg2_dev, false);
+			if (chg2_chip_enabled) {
+				charger_dev_enable(info->chg2_dev, false);
+				charger_dev_enable_chip(info->chg2_dev, false);
+			}
 			charger_dev_set_eoc_current(info->chg1_dev, 150000);
 			charger_dev_enable_termination(info->chg1_dev, true);
 		}
 	} else {
 		/* charger_dev_enable(info->chg1_dev, false); */
-		charger_dev_enable(info->chg2_dev, false);
+		if (chg2_chip_enabled) {
+			charger_dev_enable(info->chg2_dev, false);
+			charger_dev_enable_chip(info->chg2_dev, false);
+		}
 	}
 
 	if (chg1_enable == false || chg2_enable == false) {
@@ -592,6 +618,9 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 	u32 ichg2, ichg2_min;
 	bool chg_en;
 	int ret;
+	bool chg2_chip_enabled = false;
+
+	charger_dev_is_chip_enabled(info->chg2_dev, &chg2_chip_enabled);
 
 	pr_err("charger_dev_event %ld\n", event);
 
@@ -602,7 +631,7 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 			return NOTIFY_DONE;
 		}
 
-		if (!chg_en) {
+		if (!chg_en || !chg2_chip_enabled) {
 			swchgalg->state = CHR_BATFULL;
 			charger_manager_notifier(info, CHARGER_NOTIFY_EOC);
 			if (info->chg1_dev->is_polling_mode == false)

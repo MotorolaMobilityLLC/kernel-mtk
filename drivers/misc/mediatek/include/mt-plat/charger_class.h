@@ -57,6 +57,7 @@ struct charger_ops {
 
 	/* enable/disable chip */
 	int (*enable_chip)(struct charger_device *, bool en);
+	int (*is_chip_enabled)(struct charger_device *, bool *en);
 
 	/* get/set charging current*/
 	int (*get_charging_current)(struct charger_device *, u32 *uA);
@@ -205,6 +206,7 @@ extern int charger_dev_enable_cable_drop_comp(struct charger_device *charger_dev
 
 /* PE 3.0 */
 extern int charger_dev_enable_chip(struct charger_device *charger_dev, bool en);
+extern int charger_dev_is_chip_enabled(struct charger_device *charger_dev, bool *en);
 extern int charger_dev_enable_direct_charging(struct charger_device *charger_dev, bool en);
 extern int charger_dev_kick_direct_charging_wdt(struct charger_device *charger_dev);
 extern int charger_dev_get_ibus(struct charger_device *charger_dev, u32 *ibus);

@@ -40,7 +40,7 @@
 #include "mtk_charger_intf.h"
 #include "rt9465.h"
 #define I2C_ACCESS_MAX_RETRY	5
-#define RT9465_DRV_VERSION	"1.0.9_MTK"
+#define RT9465_DRV_VERSION	"1.0.10_MTK"
 
 /* ======================= */
 /* RT9465 Parameter        */
@@ -402,7 +402,7 @@ static const rt_register_map_t rt9465_regmap_map[] = {
 /* I2C operations            */
 /* ========================= */
 
-static inline bool rt9465_is_chip_en(struct rt9465_info *info)
+static inline bool __rt9465_is_chip_en(struct rt9465_info *info)
 {
 	int en = 0;
 
@@ -509,8 +509,10 @@ static int rt9465_i2c_write_byte(struct rt9465_info *info, u8 cmd, u8 data)
 
 	mutex_lock(&info->i2c_access_lock);
 	mutex_lock(&info->gpio_access_lock);
-	if (rt9465_is_chip_en(info))
+	if (__rt9465_is_chip_en(info))
 		ret = __rt9465_i2c_write_byte(info, cmd, data);
+	else
+		ret = -EINVAL;
 	mutex_unlock(&info->gpio_access_lock);
 	mutex_unlock(&info->i2c_access_lock);
 
@@ -551,8 +553,10 @@ static int rt9465_i2c_read_byte(struct rt9465_info *info, u8 cmd)
 
 	mutex_lock(&info->i2c_access_lock);
 	mutex_lock(&info->gpio_access_lock);
-	if (rt9465_is_chip_en(info))
+	if (__rt9465_is_chip_en(info))
 		ret = __rt9465_i2c_read_byte(info, cmd);
+	else
+		ret = -EINVAL;
 	mutex_unlock(&info->gpio_access_lock);
 	mutex_unlock(&info->i2c_access_lock);
 
@@ -583,8 +587,10 @@ static int rt9465_i2c_block_write(struct rt9465_info *info, u8 cmd, u32 leng,
 
 	mutex_lock(&info->i2c_access_lock);
 	mutex_lock(&info->gpio_access_lock);
-	if (rt9465_is_chip_en(info))
+	if (__rt9465_is_chip_en(info))
 		ret = __rt9465_i2c_block_write(info, cmd, leng, data);
+	else
+		ret = -EINVAL;
 	mutex_unlock(&info->gpio_access_lock);
 	mutex_unlock(&info->i2c_access_lock);
 
@@ -612,8 +618,10 @@ static int rt9465_i2c_block_read(struct rt9465_info *info, u8 cmd, u32 leng,
 
 	mutex_lock(&info->i2c_access_lock);
 	mutex_lock(&info->gpio_access_lock);
-	if (rt9465_is_chip_en(info))
+	if (__rt9465_is_chip_en(info))
 		ret = __rt9465_i2c_block_read(info, cmd, leng, data);
+	else
+		ret = -EINVAL;
 	mutex_unlock(&info->gpio_access_lock);
 	mutex_unlock(&info->i2c_access_lock);
 
@@ -646,7 +654,7 @@ static int rt9465_i2c_update_bits(struct rt9465_info *info, u8 cmd, u8 data,
 
 	mutex_lock(&info->i2c_access_lock);
 	mutex_lock(&info->gpio_access_lock);
-	if (rt9465_is_chip_en(info)) {
+	if (__rt9465_is_chip_en(info)) {
 		ret = __rt9465_i2c_read_byte(info, cmd);
 		if (ret < 0)
 			goto out;
@@ -656,7 +664,8 @@ static int rt9465_i2c_update_bits(struct rt9465_info *info, u8 cmd, u8 data,
 		reg_data |= (data & mask);
 
 		ret = __rt9465_i2c_write_byte(info, cmd, reg_data);
-	}
+	} else
+		ret = -EINVAL;
 
 out:
 	mutex_unlock(&info->gpio_access_lock);
@@ -680,7 +689,7 @@ static inline int rt9465_clr_bit(struct rt9465_info *info, u8 reg, u8 mask)
 
 /* The following APIs will be reference in internal functions */
 static int rt9465_get_ichg(struct charger_device *chg_dev, u32 *uA);
-static int __rt9465_enable_chip(struct rt9465_info *info, bool en);
+static int rt9465_dump_register(struct charger_device *chg_dev);
 
 static inline u8 rt9465_closest_reg(u32 min, u32 max, u32 step, u32 target)
 {
@@ -922,26 +931,8 @@ static bool rt9465_is_hw_exist(struct rt9465_info *info)
 {
 	int ret = 0;
 	u8 version = 0;
-	int retry_cnt = 10;
 
-	/* I2C might fail after EN pin is pulled high, retry again */
-	do {
-		ret = i2c_smbus_read_byte_data(info->i2c, RT9465_REG_SYSTEM1);
-		if (ret >= 0)
-			break;
-		dev_err(info->dev, "%s: fail(%d)\n", __func__, ret);
-		retry_cnt--;
-
-		/* Reenable chip */
-		ret = __rt9465_enable_chip(info, true);
-		if (ret < 0)
-			dev_info(info->dev, "%s: re en chip fail\n", __func__);
-		msleep(20);
-	} while (retry_cnt > 0);
-
-	if (retry_cnt == 0)
-		return false;
-
+	ret = i2c_smbus_read_byte_data(info->i2c, RT9465_REG_SYSTEM1);
 	version = (ret & RT9465_MASK_VERSION) >> RT9465_SHIFT_VERSION;
 	dev_info(info->dev, "%s: E%d(0x%02X)\n", __func__, version + 1,
 		version);
@@ -1219,10 +1210,12 @@ static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 
 static int __rt9465_enable_chip(struct rt9465_info *info, bool en)
 {
+	bool is_chip_en = false;
 	dev_info(info->dev, "%s: en = %d\n", __func__, en);
 
 	mutex_lock(&info->gpio_access_lock);
-	if (en) {
+	is_chip_en = __rt9465_is_chip_en(info);
+	if (en && !is_chip_en) {
 #ifdef CONFIG_RT9465_PWR_EN_TO_MT6336
 		mt6336_ctrl_enable(info->lowq_ctrl);
 		mt6336_set_flag_register_value(MT6336_GPIO_DOUT1_SET, 0x8);
@@ -1236,7 +1229,7 @@ static int __rt9465_enable_chip(struct rt9465_info *info, bool en)
 		gpio_set_value(info->en_gpio, 1);
 #endif /* CONFIG_RT9465_PWR_EN_TO_MT6336 */
 		dev_info(info->dev, "%s: set gpio high\n", __func__);
-	} else {
+	} else if (!en && is_chip_en) {
 #ifdef CONFIG_RT9465_PWR_EN_TO_MT6336
 		mt6336_ctrl_enable(info->lowq_ctrl);
 		mt6336_set_flag_register_value(MT6336_GPIO_DOUT1_CLR, 0x8);
@@ -1262,7 +1255,6 @@ static int __rt9465_enable_chip(struct rt9465_info *info, bool en)
 	mdelay(1);
 	atomic_set(&info->is_chip_en, en);
 	mutex_unlock(&info->gpio_access_lock);
-
 	return 0;
 }
 
@@ -1385,9 +1377,48 @@ err:
 
 static int rt9465_enable_chip(struct charger_device *chg_dev, bool en)
 {
+	int ret = 0;
 	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
 
-	return __rt9465_enable_chip(info, en);
+	ret = __rt9465_enable_chip(info, en);
+	if (ret < 0)
+		return ret;
+
+	if (!en)
+		return 0;
+
+	/* Do the following flow for enabling chip */
+	if (!rt9465_is_hw_exist(info)) {
+		dev_info(info->dev, "%s: no rt9465 exists\n", __func__);
+		return -ENODEV;
+	}
+
+	ret = rt9465_init_setting(info);
+	if (ret < 0)
+		dev_info(info->dev, "%s: init fail(%d)\n", __func__, ret);
+
+	ret = rt9465_sw_workaround(info);
+	if (ret < 0)
+		dev_info(info->dev, "%s: sw wkard fail(%d)\n", __func__, ret);
+
+	ret = rt9465_init_irq(info);
+	if (ret < 0)
+		dev_info(info->dev, "%s: init irq fail(%d)\n", __func__, ret);
+
+	rt9465_dump_register(info->chg_dev);
+
+	return ret;
+}
+
+static int rt9465_is_chip_enabled(struct charger_device *chg_dev, bool *en)
+{
+	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
+
+	mutex_lock(&info->gpio_access_lock);
+	*en = __rt9465_is_chip_en(info);
+	mutex_unlock(&info->gpio_access_lock);
+
+	return 0;
 }
 
 static int rt9465_is_charging_enabled(struct charger_device *chg_dev, bool *en)
@@ -1576,6 +1607,7 @@ static int rt9465_kick_wdt(struct charger_device *chg_dev)
 static struct charger_ops rt9465_chg_ops = {
 	.enable = rt9465_enable_charging,
 	.is_enabled = rt9465_is_charging_enabled,
+	.is_chip_enabled = rt9465_is_chip_enabled,
 	.enable_safety_timer = rt9465_enable_safety_timer,
 	.enable_chip = rt9465_enable_chip,
 	.dump_registers = rt9465_dump_register,
@@ -1614,24 +1646,11 @@ static int rt9465_probe(struct i2c_client *i2c,
 	mutex_init(&info->hidden_mode_lock);
 	atomic_set(&info->is_chip_en, 0);
 
-	/* Must parse en gpio and try to enable rt9465 first */
+	/* Must parse en gpio */
 	ret = rt9465_parse_dt(info, &i2c->dev);
 	if (ret < 0) {
 		dev_err(info->dev, "%s: parse dt failed\n", __func__);
 		goto err_parse_dt;
-	}
-
-	ret = __rt9465_enable_chip(info, true);
-	if (ret < 0) {
-		dev_err(info->dev, "%s: enable chip failed\n", __func__);
-		goto err_enable_chip;
-	}
-
-	/* Is HW exist */
-	if (!rt9465_is_hw_exist(info)) {
-		dev_err(info->dev, "%s: no rt9465 exists\n", __func__);
-		return -ENODEV;
-		goto err_no_dev;
 	}
 	i2c_set_clientdata(i2c, info);
 
@@ -1640,23 +1659,6 @@ static int rt9465_probe(struct i2c_client *i2c,
 	if (ret < 0)
 		goto err_register_regmap;
 #endif
-
-	/* Reset chip */
-	ret = rt9465_reset_chip(info);
-	if (ret < 0)
-		dev_err(info->dev, "%s: reset chip fail(%d)\n", __func__, ret);
-
-	ret = rt9465_init_setting(info);
-	if (ret < 0) {
-		dev_err(info->dev, "%s: init fail(%d)\n", __func__, ret);
-		goto err_init_setting;
-	}
-
-	ret = rt9465_sw_workaround(info);
-	if (ret < 0) {
-		dev_err(info->dev, "%s: sw wkard fail(%d)\n", __func__, ret);
-		goto err_sw_workaround;
-	}
 
 	/* Register charger device */
 	info->chg_dev = charger_device_register(info->desc->chg_dev_name,
@@ -1672,27 +1674,16 @@ static int rt9465_probe(struct i2c_client *i2c,
 		goto err_register_irq;
 	}
 
-	ret = rt9465_init_irq(info);
-	if (ret < 0)
-		dev_err(info->dev, "%s: init irq fail(%d)\n", __func__, ret);
-
-	rt9465_dump_register(info->chg_dev);
-
 	dev_info(info->dev, "%s: successfully\n", __func__);
 
 	return ret;
 
 err_register_irq:
 err_register_chg_dev:
-err_sw_workaround:
-err_init_setting:
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(info->regmap_dev);
 err_register_regmap:
 #endif
-err_no_dev:
-	__rt9465_enable_chip(info, false);
-err_enable_chip:
 err_parse_dt:
 	mutex_destroy(&info->adc_access_lock);
 	mutex_destroy(&info->i2c_access_lock);
@@ -1831,6 +1822,10 @@ MODULE_VERSION(RT9465_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.0.10
+ * (1) Remove retries for chip id check
+ * (2) Move chip check from probe to enale_chip
+ *
  * 1.0.9
  * (1) Add more retries for chip id check
  *
