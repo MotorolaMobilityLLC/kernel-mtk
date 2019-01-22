@@ -464,7 +464,7 @@ next_hook:
 	iptables_drop_packets.drop_packets[num].table = elem->hook;
 	iptables_drop_packets.drop_packets[num].packet_num = num + 1;
 	iptables_drop_packets.drop_packets[num].already_print = 0;
-	if (skb->dev && skb->dev->name) {
+	if (skb->dev) {
 		strncpy(iptables_drop_packets.drop_packets[num].iface, skb->dev->name, IFNAMSIZ);
 		iptables_drop_packets.drop_packets[num].iface[IFNAMSIZ - 1] = 0;
 	}
