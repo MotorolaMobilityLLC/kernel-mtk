@@ -1540,8 +1540,14 @@ int vpu_set_power(struct vpu_user *user, struct vpu_power *power)
 		vcore_opp_index = 0xFF;
 		dsp_freq_index = 0xFF;
 	} else {
-		vcore_opp_index = opps.vcore.opp_map[power->opp_step];
-		dsp_freq_index = opps.dspcore[core].opp_map[power->opp_step];
+		if (power->opp_step < VPU_MAX_NUM_OPPS && power->opp_step >= 0) {
+			vcore_opp_index = opps.vcore.opp_map[power->opp_step];
+			dsp_freq_index = opps.dspcore[core].opp_map[power->opp_step];
+		} else {
+			LOG_ERR("wrong opp step (%d)", power->opp_step);
+			ret = -1;
+			return ret;
+		}
 	}
 	vpu_opp_check(core, vcore_opp_index, dsp_freq_index);
 	user->power_opp = power->opp_step;
