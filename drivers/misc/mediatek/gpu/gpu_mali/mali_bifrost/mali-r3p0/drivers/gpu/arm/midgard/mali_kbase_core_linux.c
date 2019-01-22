@@ -94,6 +94,8 @@
 
 #include <mali_kbase_as_fault_debugfs.h>
 
+#include "platform/mtk_platform_common.h"
+
 /* GPU IRQ Tags */
 #define	JOB_IRQ_TAG	0
 #define MMU_IRQ_TAG	1
@@ -4000,6 +4002,13 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		err = 0;
 	}
 #endif
+	/* MTK  */
+	err = mtk_platform_init(pdev, kbdev);
+	if (err) {
+		pr_err("[MALI] GPU: mtk_platform_init fail!\n");
+		return err;
+	}
+	/********/
 
 	dev_info(kbdev->dev,
 			"Probed as %s\n", dev_name(kbdev->mdev.this_device));

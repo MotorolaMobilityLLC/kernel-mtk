@@ -1242,6 +1242,8 @@ struct kbase_device {
 
 	/* Current serialization mode. See KBASE_SERIALIZE_* for details */
 	u8 serialize_jobs;
+
+	void *mtk_config;
 };
 
 /**
