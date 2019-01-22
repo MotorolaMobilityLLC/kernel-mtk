@@ -461,9 +461,10 @@ static inline bool dp_dfp_u_select_pin_mode(struct __pd_port *pd_port)
 		break;
 
 	case DPSTS_UFP_D_CONNECTED:
-		/* TODO: */
-		DP_ERR("select_pin error0\n");
-		return false;
+		/* TODO: checkit next version*/
+		pin_cap[0] = PD_DP_UFP_D_PIN_CAPS(dp_mode[0]);
+		pin_cap[1] = PD_DP_DFP_D_PIN_CAPS(dp_mode[1]);
+		break;
 
 	default:
 		DP_ERR("select_pin error1\n");

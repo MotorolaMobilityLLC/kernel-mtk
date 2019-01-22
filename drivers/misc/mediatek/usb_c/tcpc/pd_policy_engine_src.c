@@ -136,12 +136,16 @@ void pe_src_capability_response_entry(struct __pd_port *pd_port, struct __pd_eve
 	switch (pd_event->msg_sec) {
 	case PD_DPM_NAK_REJECT_INVALID:
 		pd_port->invalid_contract = true;
+		break;
 	case PD_DPM_NAK_REJECT:
+		pd_port->invalid_contract = true;
 		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_REJECT);
 		break;
 
 	case PD_DPM_NAK_WAIT:
 		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_WAIT);
+		break;
+	default:
 		break;
 	}
 }

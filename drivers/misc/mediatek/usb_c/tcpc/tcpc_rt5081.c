@@ -400,8 +400,8 @@ static int rt5081_regmap_init(struct rt5081_chip *chip)
 	if ((!props->name) || (!props->aliases))
 		return -ENOMEM;
 
-	strcpy((char *)props->name, name);
-	strcpy((char *)props->aliases, name);
+	strlcpy((char *)props->name, name, strlen(name)+1);
+	strlcpy((char *)props->aliases, name, strlen(name)+1);
 	props->io_log_en = 0;
 
 	chip->m_dev = rt_regmap_device_register(props,
@@ -584,7 +584,7 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 
 	len = strlen(chip->tcpc_desc->name);
 	name = kzalloc(len+5, GFP_KERNEL);
-	sprintf(name, "%s-IRQ", chip->tcpc_desc->name);
+	snprintf(name, PAGE_SIZE, "%s-IRQ", chip->tcpc_desc->name);
 
 	pr_info("%s name = %s\n", __func__, chip->tcpc_desc->name);
 
@@ -592,14 +592,14 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 	ret = of_get_named_gpio(node, "rt5081pd,intr_gpio", 0);
 	if (ret < 0) {
 		pr_err("%s no intr_gpio info\n", __func__);
-		return -EINVAL;
+		goto err_gpio;
 	}
 	chip->irq_gpio = ret;
 #else
 	ret =  of_property_read_u32(node, "rt5081pd,intr_gpio_num", &chip->irq_gpio);
 	if (ret < 0) {
 		pr_err("%s no intr_gpio info\n", __func__);
-		return -EINVAL;
+		goto err_gpio;
 	}
 #endif
 	pr_info("%s irq_gpio = %d\n", __func__, chip->irq_gpio);
@@ -607,13 +607,13 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 	ret = gpio_request_one(chip->irq_gpio, GPIOF_IN, "rt5081pd_irq_gpio");
 	if (ret < 0) {
 		dev_err(chip->dev, "%s gpio request fail\n", __func__);
-		return ret;
+		goto err_gpio;
 	}
 
 	ret = gpio_to_irq(chip->irq_gpio);
 	if (ret < 0) {
 		dev_err(chip->dev, "%s: irq mapping fail\n", __func__);
-		goto out_irq;
+		goto err_irq;
 	}
 	chip->irq = ret;
 
@@ -627,7 +627,7 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 			&chip->irq_worker, chip->tcpc_desc->name);
 	if (IS_ERR(chip->irq_worker_task)) {
 		pr_err("Error: Could not create tcpc task\n");
-		return -EINVAL;
+		goto err_irq;
 	}
 
 	sched_setscheduler(chip->irq_worker_task, SCHED_FIFO, &param);
@@ -635,9 +635,12 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 
 	enable_irq_wake(chip->irq);
 	return 0;
-out_irq:
+
+err_irq:
 	gpio_free(chip->irq_gpio);
-	return ret;
+err_gpio:
+	kfree(name);
+	return -EINVAL;
 }
 
 int rt5081_alert_status_clear(struct tcpc_device *tcpc, uint32_t mask)
@@ -1359,7 +1362,7 @@ static int rt5081_tcpcdev_init(struct rt5081_chip *chip, struct device *dev)
 	if (!desc->name)
 		return -ENOMEM;
 
-	strcpy((char *)desc->name, name);
+	strlcpy((char *)desc->name, name, strlen(name)+1);
 
 	chip->tcpc_desc = desc;
 
@@ -1540,13 +1543,12 @@ static int rt5081_i2c_resume(struct device *dev)
 static void rt5081_shutdown(struct i2c_client *client)
 {
 	struct rt5081_chip *chip = i2c_get_clientdata(client);
-	struct tcpc_device *tcpc = chip->tcpc;
 
 	/* Please reset IC here */
 	if (chip != NULL) {
 		if (chip->irq)
 			disable_irq(chip->irq);
-		tcpm_shutdown(tcpc);
+		tcpm_shutdown(chip->tcpc);
 	} else {
 		i2c_smbus_write_byte_data(
 			client, RT5081_REG_SWRESET, 0x01);

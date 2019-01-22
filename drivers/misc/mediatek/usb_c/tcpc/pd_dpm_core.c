@@ -180,10 +180,12 @@ int pd_dpm_send_source_caps(struct __pd_port *pd_port)
 void pd_dpm_inform_cable_id(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	struct __pd_msg *pd_msg = pd_event->pd_msg;
-	uint32_t cnt = PD_HEADER_CNT(pd_msg->msg_hdr)-1;
-	uint32_t size = sizeof(uint32_t) * (cnt);
+	uint32_t cnt;
+	uint32_t size;
 
 	if (pd_msg) {
+		cnt = PD_HEADER_CNT(pd_msg->msg_hdr)-1;
+		size = sizeof(uint32_t)*(cnt);
 		memcpy(pd_port->cable_vdos, pd_msg->payload+1, size);
 		DPM_DBG("InformCable, 0x%02x, 0x%02x, 0x%02x, 0x%02x\r\n",
 				pd_msg->payload[1], pd_msg->payload[2],

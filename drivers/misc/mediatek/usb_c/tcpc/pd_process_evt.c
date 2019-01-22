@@ -278,7 +278,6 @@ bool pd_process_protocol_error(
 	case PE_SRC_TRANSITION_SUPPLY:
 	case PE_SRC_TRANSITION_SUPPLY2:
 		power_change = true;
-	case PE_PRS_SRC_SNK_WAIT_SOURCE_ON:
 		if (pd_event_msg_match(pd_event,
 				PD_EVT_CTRL_MSG, PD_CTRL_PING)) {
 			PE_DBG("Ignore Ping\r\n");
@@ -286,6 +285,13 @@ bool pd_process_protocol_error(
 		}
 		break;
 
+	case PE_PRS_SRC_SNK_WAIT_SOURCE_ON:
+		if (pd_event_msg_match(pd_event,
+				PD_EVT_CTRL_MSG, PD_CTRL_PING)) {
+			PE_DBG("Ignore Ping\r\n");
+			return false;
+		}
+		break;
 	case PE_SRC_SOFT_RESET:
 	case PE_SRC_SEND_SOFT_RESET:
 	case PE_SNK_SOFT_RESET:
