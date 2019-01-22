@@ -5410,9 +5410,13 @@ UINT_32 qmDumpQueueStatus(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_3
 	LOGBUF(pucBuf, u4Max, u4Len, "ucNumRetainedPacket[%u]\n", prAdapter->rRxCtrl.ucNumRetainedPacket);
 
 	LOGBUF(pucBuf, u4Max, u4Len, "---------------------------------\n");
-	LOGBUF(pucBuf, u4Max, u4Len, "CMD: Free[%u/%u] Cmd[%u] ToTx[%u]\n",
-		prAdapter->rFreeCmdList.u4NumElem, CFG_TX_MAX_CMD_PKT_NUM,
-		prAdapter->rPendingCmdQueue.u4NumElem, prGlueInfo->rCmdQueue.u4NumElem);
+	LOGBUF(pucBuf, u4Max, u4Len, "CMD: Free[%u/%u] PQ[%u] CQ[%u] TCQ[%u] TCDQ[%u]\n",
+		prAdapter->rFreeCmdList.u4NumElem,
+		CFG_TX_MAX_CMD_PKT_NUM,
+		prAdapter->rPendingCmdQueue.u4NumElem,
+		prGlueInfo->rCmdQueue.u4NumElem,
+		prAdapter->rTxCmdQueue.u4NumElem,
+		prAdapter->rTxCmdDoneQueue.u4NumElem);
 	LOGBUF(pucBuf, u4Max, u4Len, "MSDU: Free[%u/%u] Pending[%u] Done[%u]\n",
 		prAdapter->rTxCtrl.rFreeMsduInfoList.u4NumElem, CFG_TX_MAX_PKT_NUM,
 		prAdapter->rTxCtrl.rTxMgmtTxingQueue.u4NumElem,
