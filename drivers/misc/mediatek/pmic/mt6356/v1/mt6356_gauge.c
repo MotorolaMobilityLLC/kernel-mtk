@@ -203,7 +203,8 @@ static void read_fg_hw_info_Iavg(struct gauge_device *gauge_dev, int *is_iavg_va
 	if (valid_bit == 1) {
 		fg_iavg_reg_27_16 = pmic_get_register_value(PMIC_FG_IAVG_27_16);
 		fg_iavg_reg_15_00 = pmic_get_register_value(PMIC_FG_IAVG_15_00);
-		fg_iavg_reg = (fg_iavg_reg_27_16 << 16) + fg_iavg_reg_15_00;
+		fg_iavg_reg = fg_iavg_reg_27_16;
+		fg_iavg_reg = (fg_iavg_reg << 16) + fg_iavg_reg_15_00;
 		sign_bit = (fg_iavg_reg_27_16 & 0x800) >> 11;
 
 		if (sign_bit) {
@@ -267,7 +268,8 @@ static signed int fg_get_current_iavg(struct gauge_device *gauge_dev, int *data)
 	if (pmic_get_register_value(PMIC_FG_IAVG_VLD) == 1) {
 		fg_iavg_reg_27_16 = pmic_get_register_value(PMIC_FG_IAVG_27_16);
 		fg_iavg_reg_15_00 = pmic_get_register_value(PMIC_FG_IAVG_15_00);
-		fg_iavg_reg = (fg_iavg_reg_27_16 << 16) + fg_iavg_reg_15_00;
+		fg_iavg_reg = fg_iavg_reg_27_16;
+		fg_iavg_reg = (fg_iavg_reg << 16) + fg_iavg_reg_15_00;
 		sign_bit = (fg_iavg_reg_27_16 & 0x800) >> 11;
 
 		if (sign_bit) {
@@ -656,7 +658,8 @@ static int fgauge_get_average_current(struct gauge_device *gauge_dev, int *data,
 	if (pmic_get_register_value(PMIC_FG_IAVG_VLD) == 1) {
 		fg_iavg_reg_27_16 = pmic_get_register_value(PMIC_FG_IAVG_27_16);
 		fg_iavg_reg_15_00 = pmic_get_register_value(PMIC_FG_IAVG_15_00);
-		fg_iavg_reg = (fg_iavg_reg_27_16 << 16) + fg_iavg_reg_15_00;
+		fg_iavg_reg = fg_iavg_reg_27_16;
+		fg_iavg_reg = (fg_iavg_reg << 16) + fg_iavg_reg_15_00;
 		sign_bit = (fg_iavg_reg_27_16 & 0x800) >> 11;
 
 		if (sign_bit) {

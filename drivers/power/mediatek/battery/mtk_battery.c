@@ -149,7 +149,7 @@ bool is_fg_disable(void)
 }
 
 
-int Enable_BATDRV_LOG = 7;	/* Todo: charging.h use it, should removed */
+int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
 int reset_fg_bat_int;
 
 bool is_init_done;
