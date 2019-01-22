@@ -4,3 +4,9 @@ config MTK_CMDQ
 	help
 	  enable this config to build CMDQ
 	  This CMDQ module is used for Display/MDP to write HW register
+
+config MTK_CMDQ_TAB
+	bool "enable CMDQ Tablet compatibility"
+	help
+	  enable this config to be compatible with Tablet architecture
+	  especially SVP path

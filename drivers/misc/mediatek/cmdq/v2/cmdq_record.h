@@ -189,6 +189,27 @@ extern "C" {
 				   uint32_t baseHandle,
 				   uint32_t offset, uint32_t size, uint32_t port);
 
+/* tablet use */
+/*
+ * Record and memorize the index of write command to trust zone in secure path
+ * Parameter:
+ *	   handle: the command queue recorder handle
+ *	   addr: the specified target register physical address
+ *	   type: base handle type
+ *	   value: the specified target register value
+ *       mask: the specified target register mask
+ * Return:
+ *	   0 for success; else the error code is returned
+ * Note:
+ *	   support only when secure OS enabled
+ */
+#ifdef CONFIG_MTK_CMDQ_TAB
+	int32_t cmdq_op_write_reg_secure_mask(struct cmdqRecStruct *handle, uint32_t addr,
+				enum CMDQ_SEC_ADDR_METADATA_TYPE type, uint32_t value, uint32_t mask);
+	int32_t cmdqRecWriteSecureMask(struct cmdqRecStruct *handle, uint32_t addr,
+				enum CMDQ_SEC_ADDR_METADATA_TYPE type, uint32_t value, uint32_t mask);
+#endif
+
 /**
  * Append poll command to the recorder
  * Parameter:
@@ -566,6 +587,23 @@ extern "C" {
 		uint32_t addr, uint32_t value, uint32_t mask);
 	int32_t cmdqRecWriteAndReleaseResource(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM resourceEvent,
 		uint32_t addr, uint32_t value, uint32_t mask);
+
+/* tablet use */
+/*
+ * Set secure mode to prevent m4u translation fault
+ * Parameter:
+ *	   handle: the command queue recorder handle
+ *	   mode: secure mode type
+ * Return:
+ *	   0 for success; else the error code is returned
+ * Note:
+ *		 mutex protected, be careful
+ *		 Remember to flush handle after this API to release resource via GCE
+ */
+#ifdef CONFIG_MTK_CMDQ_TAB
+	int32_t cmdq_task_set_secure_mode(struct cmdqRecStruct *handle, enum CMDQ_DISP_MODE mode);
+	int32_t cmdqRecSetSecureMode(struct cmdqRecStruct *handle, enum CMDQ_DISP_MODE mode);
+#endif
 
 #ifdef __cplusplus
 }

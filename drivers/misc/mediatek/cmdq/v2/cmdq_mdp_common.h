@@ -19,6 +19,10 @@
 
 #include <linux/types.h>
 
+#if defined(CMDQ_USE_LEGACY)
+#include <linux/clk.h>
+#endif
+
 /* dump mmsys config */
 typedef void (*CmdqDumpMMSYSConfig) (void);
 
@@ -69,6 +73,21 @@ typedef const char*(*CmdqDispatchModule) (uint64_t engineFlag);
 
 typedef void (*CmdqTrackTask) (const struct TaskStruct *pTask);
 
+#if defined(CMDQ_USE_LEGACY)
+typedef void (*CmdqMdpInitModuleClkMutex32K) (void);
+#endif
+#ifdef CONFIG_MTK_CMDQ_TAB
+typedef void (*CmdqMdpSmiLarbEnableClock) (bool enable);
+#endif
+
+#ifdef CMDQ_OF_SUPPORT
+typedef void (*CmdqMdpGetModulePa) (long *startPA, long *endPA);
+#endif
+
+#ifdef CMDQ_USE_LEGACY
+typedef void (*CmdqMdpEnableClockMutex32k) (bool enable);
+#endif
+
 struct cmdqMDPFuncStruct {
 	CmdqDumpMMSYSConfig dumpMMSYSConfig;
 	CmdqVEncDumpInfo vEncDumpInfo;
@@ -90,6 +109,18 @@ struct cmdqMDPFuncStruct {
 	CmdqTestcaseClkmgrMdp testcaseClkmgrMdp;
 	CmdqDispatchModule dispatchModule;
 	CmdqTrackTask trackTask;
+#if defined(CMDQ_USE_LEGACY)
+	CmdqMdpInitModuleClkMutex32K mdpInitModuleClkMutex32K;
+#endif
+#ifdef CONFIG_MTK_CMDQ_TAB
+	CmdqMdpSmiLarbEnableClock mdpSmiLarbEnableClock;
+#endif
+#ifdef CMDQ_OF_SUPPORT
+	CmdqMdpGetModulePa mdpGetModulePa;
+#endif
+#ifdef CMDQ_USE_LEGACY
+	CmdqMdpEnableClockMutex32k mdpEnableClockMutex32k;
+#endif
 };
 
 /* track MDP task */
