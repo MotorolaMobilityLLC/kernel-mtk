@@ -22,6 +22,15 @@
 
 #include <gz/tz_cross/trustzone.h>
 
+void KREE_SESSION_LOCK(int32_t handle);
+void KREE_SESSION_UNLOCK(int32_t handle);
+
+int gz_get_cpuinfo_thread(void *data);
+struct _cpus_cluster_freq {
+	unsigned int max_freq;
+	unsigned int min_freq;
+};
+
 /* / KREE session handle type. */
 typedef int32_t KREE_SESSION_HANDLE;
 
@@ -37,6 +46,19 @@ typedef uint32_t KREE_SHAREDMEM_HANDLE;
  * @return return code
  */
 TZ_RESULT KREE_CreateSession(const char *ta_uuid, KREE_SESSION_HANDLE *pHandle);
+
+
+/**
+ *  Create a new TEE sesssion with tag for debug purpose
+ *
+ * @param ta_uuid UUID of the TA to connect to.
+ * @param pHandle Handle for the new session.
+ *	  Return KREE_SESSION_HANDLE_FAIL if fail.
+ * @param tag string can be printed when querying memory usage.
+ * @return return code
+ */
+/*fix mtee sync*/
+TZ_RESULT KREE_CreateSessionWithTag(const char *ta_uuid, KREE_SESSION_HANDLE *pHandle, const char *tag);
 
 /**
  * Close TEE session

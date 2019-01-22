@@ -42,6 +42,17 @@
 #define TZCMD_MEM_SECURECM_ZALLOC_WITH_TAG    20
 #define TZCMD_MEM_SHAREDMEM_REG_WITH_TAG      21
 #define TZCMD_MEM_USAGE_SECURECM              22
+#define TZCMD_MEM_APPEND_MULTI_CHUNKMEM       23
+#define TZCMD_MEM_RELEASE_CHUNKMEM            24
+#define TZCMD_MEM_SECUREMULTICHUNKMEM_ALLOC   25
+#define TZCMD_MEM_SECUREMULTICHUNKMEM_ZALLOC  26
+#define TZCMD_MEM_SECUREMULTICHUNKMEM_REF     27
+#define TZCMD_MEM_SECUREMULTICHUNKMEM_UNREF   28
+#define TZCMD_MEM_Query_IONHandle             29
+#define TZCMD_MEM_CopyChmtoShm                30
+#define TZCMD_MEM_APPEND_MULTI_CHUNKMEM_ION   31
+#define TZCMD_MEM_RELEASE_CHUNKMEM_ION        32
+
 
 /* data structure for parameter passing */
 struct shm_buffer_s {
