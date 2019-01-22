@@ -55,7 +55,7 @@
 #include <mtk_hibernate_dpm.h>
 #endif
 
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PWR_LOSS_MTK_TEST)
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 #include <mach/power_loss_test.h>
 #else
 #define MVG_EMMC_CHECK_BUSY_AND_RESET(...)
@@ -445,6 +445,9 @@ void msdc_hang_detect_dump(u32 id)
 			host->start_dma_time, host->stop_dma_time);
 	}
 
+	/* dump command history */
+	mmc_cmd_dump(host->mmc);
+
 	pr_info("======= msdc%d dump end =======\n", id);
 }
 EXPORT_SYMBOL(msdc_hang_detect_dump);
@@ -796,8 +799,6 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 	/* need because clk changed.*/
 	msdc_set_timeout(host, host->timeout_ns, host->timeout_clks);
 
-	msdc_set_smpl_all(host, mode);
-
 	pr_info("msdc%d -> !!! Set<%dKHz> Source<%dKHz> -> sclk<%dKHz> timing<%d> mode<%d> div<%d> hs400_div_dis<%d>\n",
 		host->id, hz/1000, hclk/1000, sclk/1000, (int)timing, mode, div,
 		hs400_div_dis);
@@ -915,7 +916,7 @@ static void msdc_init_hw(struct msdc_host *host)
 	/* Disable card detection */
 	MSDC_CLR_BIT32(MSDC_PS, MSDC_PS_CDEN);
 	if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)) {
-		MSDC_CLR_BIT32(MSDC_INTEN, MSDC_INTEN_CDSC);
+		MSDC_CLR_BIT32(MSDC_INTEN, MSDC_INT_CDSC);
 		MSDC_CLR_BIT32(SDC_CFG, SDC_CFG_INSWKUP);
 	}
 
@@ -1000,6 +1001,15 @@ static void msdc_card_reset(struct mmc_host *mmc)
 	msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
 	usleep_range(200, 500);
 	msdc_init_hw(host);
+}
+
+static int msdc_prepare_hs400_tuning(struct mmc_host *mmc, struct mmc_ios *ios)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+
+	host->hs400_mode = true;
+
+	return 0;
 }
 
 static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
@@ -1665,6 +1675,9 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 						*rsp);
 				}
 			}
+#ifdef SDCARD_ESD_RECOVERY
+			host->cmd13_timeout_cont = 0;
+#endif
 			break;
 		}
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
@@ -1720,7 +1733,13 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			pr_notice("msdc%d: send stop TMO, device status: %x\n",
 				host->id, host->device_status);
 		}
-
+#ifdef SDCARD_ESD_RECOVERY
+		if (cmd->opcode == 13) {
+			host->cmd13_timeout_cont++;
+			pr_notice("%s: %d: CMD%d cmd13_timeout_cont = %d\n", __func__, __LINE__,
+				cmd->opcode, host->cmd13_timeout_cont);
+		}
+#endif
 		if (((mmc_resp_type(cmd) == MMC_RSP_R1B) || (cmd->opcode == 13))
 			&& (host->hw->host_function != MSDC_SDIO)) {
 			pr_notice("[%s]: msdc%d XXX CMD<%d> ARG<0x%.8X> is R1B, TMO not reset hw\n",
@@ -1982,8 +2001,7 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 	u8 *u8ptr;
 	u32 left = 0;
 	u32 count, size = 0;
-	u32 wints = MSDC_INTEN_DATTMO | MSDC_INTEN_DATCRCERR
-		| MSDC_INTEN_XFER_COMPL;
+	u32 wints = MSDC_INT_DATTMO | MSDC_INT_DATCRCERR | MSDC_INT_XFER_COMPL;
 	u32 ints = 0;
 	bool get_xfer_done = 0;
 	unsigned long tmo = jiffies + DAT_TIMEOUT;
@@ -2182,8 +2200,7 @@ int msdc_pio_write(struct msdc_host *host, struct mmc_data *data)
 	u8 *u8ptr;
 	u32 left = 0;
 	u32 count, size = 0;
-	u32 wints = MSDC_INTEN_DATTMO | MSDC_INTEN_DATCRCERR
-		| MSDC_INTEN_XFER_COMPL;
+	u32 wints = MSDC_INT_DATTMO | MSDC_INT_DATCRCERR | MSDC_INT_XFER_COMPL;
 	bool get_xfer_done = 0;
 	unsigned long tmo = jiffies + DAT_TIMEOUT;
 	u32 ints = 0;
@@ -2361,8 +2378,8 @@ error:
 static void msdc_dma_start(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
-	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
-		| MSDC_INTEN_DATCRCERR | MSDC_INTEN_GPDCSERR | MSDC_INTEN_BDCSERR;
+	u32 wints = MSDC_INT_XFER_COMPL | MSDC_INT_DATTMO
+		| MSDC_INT_DATCRCERR | MSDC_INT_GPDCSERR | MSDC_INT_BDCSERR;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	host->mmc->is_data_dma = 1;
@@ -2396,8 +2413,7 @@ static void msdc_dma_stop(struct msdc_host *host)
 	void __iomem *base = host->base;
 	int retry = 500;
 	int count = 1000;
-	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
-		| MSDC_INTEN_DATCRCERR;
+	u32 wints = MSDC_INT_XFER_COMPL | MSDC_INT_DATTMO | MSDC_INT_DATCRCERR;
 
 	/* Clear DMA data busy timeout */
 	if (host->data) {
@@ -3128,6 +3144,10 @@ done_no_data:
 		host->need_tune = TUNE_LEGACY_DATA_READ;
 	else if (host->error & REQ_CRC_STATUS_ERR)
 		host->need_tune = TUNE_LEGACY_DATA_WRITE;
+#ifdef SDCARD_ESD_RECOVERY
+	else if (host->error & REQ_CMD_TMO)
+		host->need_tune = TUNE_LEGACY_CMD_TMO;
+#endif
 
 	if (host->error & (REQ_CMD_EIO | REQ_DAT_ERR | REQ_CRC_STATUS_ERR))
 		host->err_cmd = mrq->cmd->opcode;
@@ -3364,7 +3384,20 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		autok_err_type = DATA_ERROR;
 	else if (host->need_tune & (TUNE_ASYNC_DATA_WRITE | TUNE_LEGACY_DATA_WRITE))
 		autok_err_type = CRC_STATUS_ERROR;
-
+#ifdef SDCARD_ESD_RECOVERY
+	else if (host->need_tune & TUNE_LEGACY_CMD_TMO) {
+		host->need_tune = TUNE_NONE;
+		if ((host->hw->host_function == MSDC_SD)
+			&& (mrq->cmd->opcode == MMC_SEND_STATUS)) {
+			if (host->cmd13_timeout_cont >= 3) {
+				pr_notice("%s: CMD%d tmo cnt = %d,reset sdcard\n",
+					__func__, mrq->cmd->opcode, host->cmd13_timeout_cont);
+				(void)sdcard_hw_reset(mmc);
+			}
+		}
+		goto end;
+	}
+#endif
 	/* 1. mmc_blk_err_check will send CMD13 to check device status
 	 * Don't autok/switch edge here, or it will cause CMD19 send when
 	 * device is not in transfer status
@@ -3820,6 +3853,10 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 		/* mmc_blk_err_check will do legacy request without data */
 		if (host->need_tune & TUNE_LEGACY_CMD)
 			host->need_tune &= ~TUNE_LEGACY_CMD;
+#ifdef SDCARD_ESD_RECOVERY
+		if (host->need_tune & TUNE_LEGACY_CMD_TMO)
+			host->need_tune &= ~TUNE_LEGACY_CMD_TMO;
+#endif
 		/* Retry legacy data read pass, clear autok pass flag */
 		if ((host->need_tune & TUNE_LEGACY_DATA_READ) &&
 			mrq->cmd->data) {
@@ -4187,6 +4224,9 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 
 	host->power_cycle_cnt = 0;
 	host->block_bad_card = 0;
+#ifdef SDCARD_ESD_RECOVERY
+	host->cmd13_timeout_cont = 0;
+#endif
 	host->data_timeout_cont = 0;
 	host->is_autok_done = 0;
 	msdc_ops_get_cd(mmc);
@@ -4329,8 +4369,8 @@ static void msdc_check_data_timeout(struct work_struct *work)
 	u32 err = 0;
 	unsigned long tmo;
 	u32 intsts;
-	u32 wints = MSDC_INTEN_XFER_COMPL | MSDC_INTEN_DATTMO
-		| MSDC_INTEN_DATCRCERR | MSDC_INTEN_GPDCSERR | MSDC_INTEN_BDCSERR;
+	u32 wints = MSDC_INT_XFER_COMPL | MSDC_INT_DATTMO
+		| MSDC_INT_DATCRCERR | MSDC_INT_GPDCSERR | MSDC_INT_BDCSERR;
 
 	if (!data || !mrq || !mmc)
 		return;
@@ -4422,6 +4462,7 @@ static struct mmc_host_ops mt_msdc_ops = {
 	.execute_tuning                = msdc_execute_tuning,
 	.hw_reset                      = msdc_card_reset,
 	.card_busy                     = msdc_card_busy,
+	.prepare_hs400_tuning          = msdc_prepare_hs400_tuning,
 };
 
 static void msdc_irq_data_complete(struct msdc_host *host,
@@ -4528,7 +4569,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	u32 acmdsts = MSDC_INT_ACMDCRCERR | MSDC_INT_ACMDTMO | MSDC_INT_ACMDRDY |
 		     MSDC_INT_ACMD19_DONE;
 	u32 datsts = MSDC_INT_DATCRCERR | MSDC_INT_DATTMO;
-	u32 gpdsts = MSDC_INTEN_GPDCSERR | MSDC_INTEN_BDCSERR;
+	u32 gpdsts = MSDC_INT_GPDCSERR | MSDC_INT_BDCSERR;
 	u32 intsts, inten;
 	u32 cmdsts = MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO | MSDC_INT_CMDRDY;
 
@@ -4714,13 +4755,20 @@ static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)
 static void msdc_timer_pm(unsigned long data)
 {
 	struct msdc_host *host = (struct msdc_host *)data;
+	void __iomem *base = host->base;
 	unsigned long flags;
 
 	spin_lock_irqsave(&host->clk_gate_lock, flags);
 	if (host->clk_gate_count == 0) {
-		msdc_clksrc_onoff(host, 0);
-		N_MSG(CLK, "time out, dsiable clock, clk_gate_count=%d",
-			host->clk_gate_count);
+		/* re-schedule when controller or device is busy */
+		if (host->power_mode != MMC_POWER_OFF
+		 && (sdc_is_busy() ||
+		     !((MSDC_READ32(MSDC_PS) >> 16) & 0x1))) {
+			mod_timer(&host->timer, jiffies + CLK_TIMEOUT);
+		} else {
+			msdc_clksrc_onoff(host, 0);
+			N_MSG(CLK, "gate msdc%d clock", host->id);
+		}
 	}
 
 	spin_unlock_irqrestore(&host->clk_gate_lock, flags);
@@ -5166,7 +5214,7 @@ static int __init mt_msdc_init(void)
 		return ret;
 	}
 
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PWR_LOSS_MTK_TEST)
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 	msdc_proc_emmc_create();
 #endif
 	msdc_debug_proc_init();

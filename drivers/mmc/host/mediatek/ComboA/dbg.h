@@ -44,6 +44,9 @@ enum {
 	SDIO_AUTOK_RESULT = 30,
 	MMC_CMDQ_STATUS = 31,
 	SD_TOOL_TOP_REG_ACCESS = 32,
+
+	/* for DB dump, do not change index */
+	MMC_HANG_DETECT_DUMP = 256,
 };
 
 /* Debug message event */
@@ -150,8 +153,9 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 	uint address, int count, uint type, int multi_thread);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
-void mmc_cmd_dump(struct mmc_host *mmc);
 #endif
+void mmc_cmd_dump(struct mmc_host *mmc);
 void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m);
 
+void msdc_hang_detect_dump(u32 id);
 #endif

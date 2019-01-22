@@ -578,31 +578,6 @@
 #define MSDC_INT_ACMD53_FAIL            (0x1  << 22)    /* W1C */
 #define MSDC_INT_AXI_RESP_ERR           (0x1  << 23)    /* W1C */
 
-/* MSDC_INTEN mask */
-#define MSDC_INTEN_MMCIRQ               (0x1  << 0)     /* RW */
-#define MSDC_INTEN_CDSC                 (0x1  << 1)     /* RW */
-#define MSDC_INTEN_ACMDRDY              (0x1  << 3)     /* RW */
-#define MSDC_INTEN_ACMDTMO              (0x1  << 4)     /* RW */
-#define MSDC_INTEN_ACMDCRCERR           (0x1  << 5)     /* RW */
-#define MSDC_INTEN_DMAQ_EMPTY           (0x1  << 6)     /* RW */
-#define MSDC_INTEN_SDIOIRQ              (0x1  << 7)     /* RW */
-#define MSDC_INTEN_CMDRDY               (0x1  << 8)     /* RW */
-#define MSDC_INTEN_CMDTMO               (0x1  << 9)     /* RW */
-#define MSDC_INTEN_RSPCRCERR            (0x1  << 10)    /* RW */
-#define MSDC_INTEN_CSTA                 (0x1  << 11)    /* RW */
-#define MSDC_INTEN_XFER_COMPL           (0x1  << 12)    /* RW */
-#define MSDC_INTEN_DXFER_DONE           (0x1  << 13)    /* RW */
-#define MSDC_INTEN_DATTMO               (0x1  << 14)    /* RW */
-#define MSDC_INTEN_DATCRCERR            (0x1  << 15)    /* RW */
-#define MSDC_INTEN_ACMD19_DONE          (0x1  << 16)    /* RW */
-#define MSDC_INTEN_BDCSERR              (0x1  << 17)    /* RW */
-#define MSDC_INTEN_GPDCSERR             (0x1  << 18)    /* RW */
-#define MSDC_INTEN_DMAPRO               (0x1  << 19)    /* RW */
-#define MSDC_INTEN_GOBOUND              (0x1  << 20)    /* RW */
-#define MSDC_INTEN_ACMD53_DONE          (0x1  << 21)    /* RW */
-#define MSDC_INTEN_ACMD53_FAIL          (0x1  << 22)    /* RW */
-#define MSDC_INTEN_AXI_RESP_ERR         (0x1  << 23)    /* RW */
-
 /* MSDC_FIFOCS mask */
 #define MSDC_FIFOCS_RXCNT               (0xff << 0)     /* R  */
 #define MSDC_FIFOCS_TXCNT               (0xff << 16)    /* R  */

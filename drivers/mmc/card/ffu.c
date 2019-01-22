@@ -35,6 +35,7 @@
 #include <linux/uaccess.h>
 
 #define  FFU_BUS_FREQ	25000000
+/* #define  FFU_DUMMY_TEST */
 
 /**
  * struct mmc_ffu_pages - pages allocated by 'alloc_pages()'.
@@ -95,7 +96,7 @@ int mmc_ffu_cache_ctrl(struct mmc_host *host, u8 enable)
 			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 					EXT_CSD_CACHE_CTRL, enable, timeout);
 			if (err)
-				pr_err("%s: cache %s error %d\n",
+				pr_notice("%s: cache %s error %d\n",
 						mmc_hostname(card->host),
 						enable ? "on" : "off",
 						err);
@@ -489,7 +490,7 @@ static int mmc_ffu_write(struct mmc_card *card, u8 *src, u32 arg,
 	mem.mem = NULL;
 
 	if (!src) {
-		pr_err("FFU: %s: data buffer is NULL\n",
+		pr_notice("FFU: %s: data buffer is NULL\n",
 			mmc_hostname(card->host));
 		return -EINVAL;
 	}
@@ -500,7 +501,7 @@ static int mmc_ffu_write(struct mmc_card *card, u8 *src, u32 arg,
 	rc = mmc_ffu_simple_transfer(card, mem.sg, mem.sg_len, arg,
 		size / CARD_BLOCK_SIZE, CARD_BLOCK_SIZE, 1);
 
-	pr_err("FFU write result %d\n", rc);
+	pr_notice("FFU write result %d\n", rc);
 
 exit:
 	mmc_ffu_area_cleanup(&mem);
@@ -519,7 +520,7 @@ static int mmc_ffu_restart(struct mmc_card *card)
 	card->state |= MMC_STATE_FFUED;
 
 	err = mmc_reinit_oldcard(host);
-	pr_err("mmc_init_card ret %d\n", err);
+	pr_notice("mmc_init_card ret %d\n", err);
 	if (!err)
 		card->state &= ~MMC_STATE_FFUED;
 
@@ -540,7 +541,7 @@ static int mmc_host_set_ffu(struct mmc_card *card, u32 ffu_enable)
 			EXT_CSD_FW_CONFIG, MMC_FFU_ENABLE,
 			card->ext_csd.generic_cmd6_time);
 		if (err) {
-			pr_err("%s: switch to FFU failed with error %d\n",
+			pr_notice("%s: switch to FFU failed with error %d\n",
 				mmc_hostname(card->host), err);
 			return err;
 		}
@@ -599,7 +600,7 @@ static int mmc_ffu_reduce_speed(struct mmc_card *card)
 	}
 
 	if (hs_timing == 1) {
-		pr_err("FFU switch to HS\n");
+		pr_notice("FFU switch to HS\n");
 		/* After changing timing, platform dependent HW may fail to
 		 * correctly latch response of CMD13 for checking card status.
 		 * Therefore __mmc_switch(..., true, false, false) is invoked
@@ -610,7 +611,7 @@ static int mmc_ffu_reduce_speed(struct mmc_card *card)
 			card->ext_csd.generic_cmd6_time,
 			true, false, false);
 		if (err) {
-			pr_err("FFU: %s: error %d switch to high-speed\n",
+			pr_notice("FFU: %s: error %d switch to high-speed\n",
 				mmc_hostname(card->host), err);
 			goto exit;
 		}
@@ -624,7 +625,7 @@ static int mmc_ffu_reduce_speed(struct mmc_card *card)
 		EXT_CSD_BUS_WIDTH, bus_width,
 		card->ext_csd.generic_cmd6_time);
 	if (err) {
-		pr_err("FFU: %s: error %d change bus width to 4 bit\n",
+		pr_notice("FFU: %s: error %d change bus width to 4 bit\n",
 			mmc_hostname(card->host), err);
 		goto exit;
 	}
@@ -647,6 +648,7 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 	u8 set = 1;
 	u8 retry = 10;
 
+#if !defined(FFU_DUMMY_TEST)
 	if (!FFU_FEATURES(ext_csd[EXT_CSD_FFU_FEATURES])) {
 
 		/* host switch back to work in normal MMC Read/Write commands */
@@ -655,12 +657,12 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 			set = 0;
 		}
 
-		pr_err("FFU exit FFU mode\n");
+		pr_notice("FFU exit FFU mode\n");
 		err = mmc_switch(card, set,
 			EXT_CSD_MODE_CONFIG, MMC_FFU_MODE_NORMAL,
 			card->ext_csd.generic_cmd6_time);
 		if (err) {
-			pr_err("FFU: %s: error %d exit FFU mode\n",
+			pr_notice("FFU: %s: error %d exit FFU mode\n",
 				mmc_hostname(card->host), err);
 			goto exit;
 		}
@@ -682,7 +684,7 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 		timeout = ext_csd[EXT_CSD_OPERATION_CODE_TIMEOUT];
 		if (timeout == 0 || timeout > 0x17) {
 			timeout = 0x17;
-			pr_warn("FFU: %s: operation code timeout is out of range. Using maximum timeout.\n",
+			pr_notice("FFU: %s: operation code timeout is out of range. Using maximum timeout.\n",
 				mmc_hostname(card->host));
 		}
 
@@ -695,17 +697,18 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 			MMC_FFU_INSTALL_SET, timeout);
 
 		if (err) {
-			pr_err("FFU: %s: error %d setting install mode\n",
+			pr_notice("FFU: %s: error %d setting install mode\n",
 				mmc_hostname(card->host), err);
 			goto exit;
 		}
 
 	}
+#endif
 
-	pr_err("FFU re-init eMMC at higher speed\n");
+	pr_notice("FFU re-init eMMC at higher speed\n");
 	err = mmc_ffu_restart(card);
 	if (err) {
-		pr_err("FFU: %s: error %d restart\n",
+		pr_notice("FFU: %s: error %d restart\n",
 			mmc_hostname(card->host), err);
 		goto exit;
 	}
@@ -714,13 +717,13 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 	while (retry--) {
 		err = mmc_get_ext_csd(card, &ext_csd_new);
 		if (err)
-			pr_err("FFU: %s: sending ext_csd retry times %d\n",
+			pr_notice("FFU: %s: sending ext_csd retry times %d\n",
 				mmc_hostname(card->host), retry);
 		else
 			break;
 	}
 	if (err) {
-		pr_err("FFU: %s: sending ext_csd error %d\n",
+		pr_notice("FFU: %s: sending ext_csd error %d\n",
 			mmc_hostname(card->host), err);
 		goto exit;
 	}
@@ -728,10 +731,10 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 	/* return status */
 	err = ext_csd_new[EXT_CSD_FFU_STATUS];
 	if (!err) {
-		pr_err("FFU: %s: succeed FFU\n",
+		pr_notice("FFU: %s: succeed FFU\n",
 			mmc_hostname(card->host));
 	} else if (err) {
-		pr_err("FFU: %s: error %d FFU install:\n",
+		pr_notice("FFU: %s: error %d FFU install:\n",
 			mmc_hostname(card->host), err);
 		err = -EINVAL;
 	}
@@ -747,10 +750,10 @@ int mmc_ffu_download(struct mmc_card *card, struct mmc_command *cmd,
 	u8 *ext_csd = NULL;
 	int err;
 
-	/* Read the EXT_CSD */
+	/* Read EXT_CSD */
 	err = mmc_get_ext_csd(card, &ext_csd);
 	if (err) {
-		pr_err("FFU: %s: error %d sending ext_csd\n",
+		pr_notice("FFU: %s: error %d sending ext_csd\n",
 			mmc_hostname(card->host), err);
 		goto exit;
 	}
@@ -758,12 +761,12 @@ int mmc_ffu_download(struct mmc_card *card, struct mmc_command *cmd,
 	/* Check if FFU is supported by card */
 	if (!FFU_SUPPORTED_MODE(ext_csd[EXT_CSD_SUPPORTED_MODE])) {
 		err = -EINVAL;
-		pr_err("FFU: %s: error %d FFU is not supported\n",
+		pr_notice("FFU: %s: error %d FFU is not supported\n",
 			mmc_hostname(card->host), err);
 		goto exit;
 	}
 
-	pr_err("eMMC cache originally %s -> %s\n",
+	pr_notice("eMMC cache originally %s -> %s\n",
 		((card->ext_csd.cache_ctrl) ? "on" : "off"),
 		((card->ext_csd.cache_ctrl) ? "turn off" : "keep"));
 	if (card->ext_csd.cache_ctrl) {
@@ -773,9 +776,10 @@ int mmc_ffu_download(struct mmc_card *card, struct mmc_command *cmd,
 
 	mmc_ffu_reduce_speed(card);
 
+#ifndef FFU_DUMMY_TEST
 	err = mmc_host_set_ffu(card, ext_csd[EXT_CSD_FW_CONFIG]);
 	if (err) {
-		pr_err("FFU: %s: error %d FFU is not supported\n",
+		pr_notice("FFU: %s: error %d FFU is not supported\n",
 			mmc_hostname(card->host), err);
 		err = -EINVAL;
 		goto exit;
@@ -785,7 +789,7 @@ int mmc_ffu_download(struct mmc_card *card, struct mmc_command *cmd,
 	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL, EXT_CSD_MODE_CONFIG,
 		MMC_FFU_MODE_SET, card->ext_csd.generic_cmd6_time);
 	if (err) {
-		pr_err("FFU: %s: error %d FFU is not supported\n",
+		pr_notice("FFU: %s: error %d FFU is not supported\n",
 			mmc_hostname(card->host), err);
 		err = -EINVAL;
 		goto exit;
@@ -802,8 +806,9 @@ int mmc_ffu_download(struct mmc_card *card, struct mmc_command *cmd,
 	if (card->cid.manfid == CID_MANFID_SAMSUNG && cmd->arg == 0x0)
 		cmd->arg = 0xc7810000;
 
-	pr_err("FFU perform write\n");
+	pr_notice("FFU perform write\n");
 	err = mmc_ffu_write(card, data, cmd->arg, buf_bytes);
+#endif
 	if (err && (FFU_FEATURES(ext_csd[EXT_CSD_FFU_FEATURES]))) {
 		/* FIX ME, to set FFU_ABORT to MODE_OPERATION_CODES */
 		;
