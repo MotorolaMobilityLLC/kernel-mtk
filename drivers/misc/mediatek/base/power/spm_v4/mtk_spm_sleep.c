@@ -58,6 +58,8 @@
 #include <mtk_hps_internal.h>
 #endif
 
+#include <mtk_mcdi_api.h>
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -310,6 +312,8 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	struct pwr_ctrl *pwrctrl;
 	u32 cpu = 0;
 
+	mcdi_task_pause(true);
+
 	spm_suspend_footprint(SPM_SUSPEND_ENTER);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -415,6 +419,8 @@ RESTORE_IRQ:
 		mtk_usb2jtag_resume();
 #endif
 	spm_suspend_footprint(0);
+
+	mcdi_task_pause(false);
 
 	if (last_wr == WR_PCM_ASSERT)
 		rekick_vcorefs_scenario();
