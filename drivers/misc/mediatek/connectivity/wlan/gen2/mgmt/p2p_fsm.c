@@ -1427,13 +1427,12 @@ p2pFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 		prP2pFsmInfo = prAdapter->rWifiVar.prP2pFsmInfo;
 		prMgmtTxReqInfo = &(prP2pFsmInfo->rMgmtTxInfo);
 
-		if (rTxDoneStatus != TX_RESULT_SUCCESS) {
-			DBGLOG(P2P, INFO, "Mgmt Frame TX Fail, Status: %d, seq NO. %d, Cookie: 0x%llx\n",
-				rTxDoneStatus, prMsduInfo->ucTxSeqNum, prMgmtTxReqInfo->u8Cookie);
-		} else {
+		if (rTxDoneStatus == TX_RESULT_SUCCESS)
 			fgIsSuccess = TRUE;
-			DBGLOG(P2P, TRACE, "Mgmt Frame TX Done.\n");
-		}
+
+		DBGLOG(P2P, INFO, "Mgmt Frame : Status: %d, seq NO. %d, Cookie: 0x%llx\n",
+				rTxDoneStatus, prMsduInfo->ucTxSeqNum, prMgmtTxReqInfo->u8Cookie);
+
 
 		if (prMgmtTxReqInfo->prMgmtTxMsdu == prMsduInfo) {
 			kalP2PIndicateMgmtTxStatus(prAdapter->prGlueInfo,

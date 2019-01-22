@@ -534,7 +534,7 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 		/*
 		 * if (scan_req_t->n_channels > MAXIMUM_OPERATION_CHANNEL_LIST) {
 		 * DBGLOG(REQ, TRACE, "request channel great max num, reset channel num\n");
-		 * }
+		 *  }
 		 */
 		PartialScanChannel = (P_PARTIAL_SCAN_INFO) kalMemAlloc(sizeof(PARTIAL_SCAN_INFO), VIR_MEM_TYPE);
 		if (PartialScanChannel == NULL) {
@@ -5543,19 +5543,40 @@ wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 		prAdapter->u4OsPacketFilter &= PARAM_PACKET_FILTER_P2P_MASK;
 		prAdapter->u4OsPacketFilter |= u4NewPacketFilter;
 
-		return wlanSendSetQueryCmd(prAdapter,
-					   CMD_ID_SET_RX_FILTER,
-					   TRUE,
-					   FALSE,
-					   TRUE,
-					   nicCmdEventSetCommon,
-					   nicOidCmdTimeoutCommon,
-					   sizeof(UINT_32),
-					   (PUINT_8) &prAdapter->u4OsPacketFilter, pvSetBuffer, u4SetBufferLen);
-	} else {
-		return rStatus;
+		rStatus = wlanoidSetPacketFilter(prAdapter, prAdapter->u4OsPacketFilter,
+					TRUE, pvSetBuffer, u4SetBufferLen);
 	}
+	DBGLOG(REQ, INFO, "[MC debug] u4OsPacketFilter=%x\n", prAdapter->u4OsPacketFilter);
+	return rStatus;
 }				/* wlanoidSetCurrentPacketFilter */
+
+WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter,
+				BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen)
+{
+#if CFG_SUPPORT_DROP_MC_PACKET
+	/* Note:
+	*	If PARAM_PACKET_FILTER_ALL_MULTICAST is set in PacketFilter,
+	*	Firmware will pass multicast frame.
+	*	Else if PARAM_PACKET_FILTER_MULTICAST is set in PacketFilter,
+	*	Firmware will pass some multicast frame in multicast table.
+	*	Else firmware will drop all multicast frame.
+	*/
+	if (fgIsUnderSuspend)
+		u4PacketFilter &= ~(PARAM_PACKET_FILTER_MULTICAST | PARAM_PACKET_FILTER_ALL_MULTICAST);
+#endif
+
+	DBGLOG(REQ, INFO, "[MC debug] u4PacketFilter=%x, IsSuspend=%d\n", u4PacketFilter, fgIsUnderSuspend);
+	return wlanSendSetQueryCmd(prAdapter,
+						   CMD_ID_SET_RX_FILTER,
+						   TRUE,
+						   FALSE,
+						   fgIsOid,
+						   nicCmdEventSetCommon,
+						   nicOidCmdTimeoutCommon,
+						   sizeof(UINT_32),
+						   (PUINT_8)&u4PacketFilter,
+						   pvSetBuffer, u4SetBufferLen);
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -9478,7 +9499,7 @@ wlanoidSetStopSchedScan(IN P_ADAPTER_T prAdapter,
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief This routine is called to set a periodically scan action
+* \brief This routine is called to set a periodically PSCN action
 *
 * \param[in] prAdapter Pointer to the Adapter structure.
 * \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
@@ -9501,60 +9522,35 @@ wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
 		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
 	P_CMD_SET_PSCAN_ENABLE prCmdPscnAction;
-	P_SCAN_INFO_T prScanInfo;
-
-	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-	DBGLOG(SCN, TRACE, "wlanoidSetGSCNAction\n");
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(SCN, WARN, "Fail in set Periodically Scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
+		DBGLOG(SCN, ERROR, "Adapter not ready: ACPI=%d, Radio=%d\n",
 				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
 
-	if (u4SetBufferLen != sizeof(CMD_SET_PSCAN_ENABLE))
+	if (u4SetBufferLen != sizeof(CMD_SET_PSCAN_ENABLE)) {
+		DBGLOG(SCN, ERROR, "u4SetBufferLen != sizeof(CMD_SET_PSCAN_ENABLE)\n");
 		return WLAN_STATUS_INVALID_LENGTH;
-	else if (pvSetBuffer == NULL)
+	} else if (pvSetBuffer == NULL) {
+		DBGLOG(SCN, ERROR, "pvSetBuffer == NULL\n");
 		return WLAN_STATUS_INVALID_DATA;
+	}
 
 	if (prAdapter->fgIsRadioOff) {
-		DBGLOG(SCN, WARN, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
+		DBGLOG(SCN, ERROR, "Radio off: ACPI=%d, Radio=%d\n",
 				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_SUCCESS;
 	}
 
 	prCmdPscnAction = (P_CMD_SET_PSCAN_ENABLE) pvSetBuffer;
 
-	if (prCmdPscnAction->ucPscanAct == ENABLE) {
-#if 0
-		DBGLOG(OID, INFO, "set  PCSN ENABLE\n");
-		if (scnFsmPSCNAction(prAdapter, (UINT_8) (prCmdPscnAction->ucPscanAct)) == TRUE) {
-
-			DBGLOG(OID, INFO, "wlanoidSetGSCNAction < ---\n");
-			return WLAN_STATUS_PENDING;
-		}
-		DBGLOG(OID, INFO, "wlanoidSetGSCNAction < ---\n");
-		return WLAN_STATUS_FAILURE;
-
-#endif
-		scnPSCNFsm(prAdapter, PSCN_SCANNING, NULL, NULL, NULL, NULL, FALSE, FALSE, FALSE, TRUE);
-	} else if (prCmdPscnAction->ucPscanAct == DISABLE) {
-#if 0
-		DBGLOG(OID, INFO, "disable PCSN\n");
-		scnFsmPSCNAction(prAdapter, (UINT_8) DISABLE);
-
-		DBGLOG(OID, TRACE, "set new PCSN\n");
-		scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, NULL, NULL, FALSE, FALSE, TRUE);
-
-		DBGLOG(OID, INFO, "ENABLE or disable PCSN\n");
-		if (!prScanInfo->fgPscnOnnning) {
-			DBGLOG(OID, INFO, "ENABLE PCSN\n");
-			scnFsmPSCNAction(prAdapter, ENABLE);
-		} else {
-			DBGLOG(OID, INFO, "All PCSN is disabled...\n");
-		}
-#endif
-		scnPSCNFsm(prAdapter, PSCN_RESET, NULL, NULL, NULL, NULL, FALSE, FALSE, TRUE, FALSE);
+	if (prCmdPscnAction) {
+		DBGLOG(SCN, TRACE, "ucPscanAct=[%d]\n", prCmdPscnAction->ucPscanAct);
+		if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_ENABLE)
+			scnPSCNFsm(prAdapter, PSCN_SCANNING);
+		else if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_DISABLE)
+			scnPSCNFsm(prAdapter, PSCN_IDLE);
 	}
 
 	return WLAN_STATUS_SUCCESS;
@@ -9562,7 +9558,7 @@ wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief This routine is called to set a periodically scan action
+* \brief This routine is called to configure GScan PARAMs
 *
 * \param[in] prAdapter Pointer to the Adapter structure.
 * \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
@@ -9581,64 +9577,47 @@ wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
 */
 /*----------------------------------------------------------------------------*/
 WLAN_STATUS
-wlanoidSetGSCNAParam(IN P_ADAPTER_T prAdapter,
+wlanoidSetGSCNParam(IN P_ADAPTER_T prAdapter,
 		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
 	P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam;
-	/*UINT_8 i, j = 0;*/
-	DBGLOG(SCN, INFO, "wlanoidSetGSCNAParam v1\n");
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(SCN, WARN, "Fail in set Periodically Scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
+		DBGLOG(SCN, ERROR, "Adapter not ready: ACPI=%d, Radio=%d\n",
 				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
 	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)) {
-		DBGLOG(SCN, WARN, "(u4SetBufferLen != sizeof(P_PARAM_WIFI_GSCAN_CMD_PARAMS))\n");
+		DBGLOG(SCN, ERROR, "u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)\n");
 		return WLAN_STATUS_INVALID_LENGTH;
 	} else if (pvSetBuffer == NULL) {
-		DBGLOG(SCN, WARN, "(pvSetBuffer == NULL)\n");
+		DBGLOG(SCN, ERROR, "pvSetBuffer == NULL\n");
 		return WLAN_STATUS_INVALID_DATA;
 	}
 	if (prAdapter->fgIsRadioOff) {
-		DBGLOG(SCN, INFO, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
+		DBGLOG(SCN, ERROR, "Radio off: ACPI=%d, Radio=%d\n",
 				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_SUCCESS;
 	}
 
 	prCmdGscnParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer;
-	/* KC-XXX memcpy(prCmdGscnParam, */
-	/*	(P_PARAM_WIFI_GSCAN_CMD_PARAMS)pvSetBuffer, */
-	/*	sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS) ); */
-	DBGLOG(SCN, INFO,
-		"prCmdGscnParam : base_period[%u], max_ap_per_scan[%u] num_buckets[%u], report_threshold[%u]\n",
-		prCmdGscnParam->base_period, prCmdGscnParam->max_ap_per_scan, prCmdGscnParam->num_buckets,
-		prCmdGscnParam->report_threshold);
-#if 0
-	for (i = 0; i < prCmdGscnParam->num_buckets; i++) {
+	if (prCmdGscnParam) {
+		DBGLOG(SCN, TRACE, "prCmdGscnParam: base_period[%u], num_buckets[%u] band[%d] num_channels[%u]\n",
+			prCmdGscnParam->base_period, prCmdGscnParam->num_buckets,
+			prCmdGscnParam->buckets[0].band, prCmdGscnParam->buckets[0].num_channels);
 
-		DBGLOG(OID, INFO,
-		    "prCmdGscnParam->buckets : band[%u], bucket[%u] num_buckets[%u], period[%u] report_events[%u]\n",
-		     prCmdGscnParam->buckets[i].band, prCmdGscnParam->buckets[i].bucket,
-		     prCmdGscnParam->buckets[i].num_channels, prCmdGscnParam->buckets[i].period,
-		     prCmdGscnParam->buckets[i].report_events));
-		DBGLOG(OID, INFO, "prCmdGscnParam->buckets[%d] has channel: ", i);
-		for (j = 0; j < prCmdGscnParam->buckets[i].num_channels; j++)
-			DBGLOG(OID, INFO, " %d,  ", prCmdGscnParam->buckets[i].channels[j].channel);
-		DBGLOG(OID, INFO, "\n");
+		if (scnSetGSCNParam(prAdapter, prCmdGscnParam) == TRUE)
+			return WLAN_STATUS_SUCCESS;
+		else
+			return WLAN_STATUS_FAILURE;
 	}
-#endif
-	if (scnSetGSCNParam(prAdapter, prCmdGscnParam) == TRUE) {
-		DBGLOG(SCN, INFO, "wlanoidSetGSCNAParam --->scnSetGSCNParam\n");
-		return WLAN_STATUS_PENDING;
-	} else {
-		return WLAN_STATUS_FAILURE;
-	}
+
+	return WLAN_STATUS_INVALID_DATA;
 }
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief This routine is called to set configure  gscan PARAMs
+* \brief This routine is called to configure GScan PARAMs
 *
 * \param[in] prAdapter Pointer to the Adapter structure.
 * \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
@@ -9656,56 +9635,52 @@ wlanoidSetGSCNAParam(IN P_ADAPTER_T prAdapter,
 * \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
 */
 /*----------------------------------------------------------------------------*/
-
 WLAN_STATUS
-wlanoidSetGSCNAConfig(IN P_ADAPTER_T prAdapter,
+wlanoidSetGSCNConfig(IN P_ADAPTER_T prAdapter,
 		      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
-	P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnScnConfigParam;
-	CMD_GSCN_SCN_COFIG_T rCmdGscnScnConfig;
-
-	DBGLOG(SCN, INFO, "wlanoidSetGSCNAConfig v1\n");
+	P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnConfigParam;
+	CMD_GSCN_SCN_COFIG_T rCmdGscnConfig;
 
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(SCN, WARN, "Fail in set Periodically Scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
+		DBGLOG(SCN, ERROR, "Adapter not ready: ACPI=%d, Radio=%d\n",
 				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
 	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)) {
-		DBGLOG(SCN, WARN, "(u4SetBufferLen != sizeof(CMD_GSCN_SCN_COFIG_T))\n");
+		DBGLOG(SCN, ERROR, "u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)\n");
 		return WLAN_STATUS_INVALID_LENGTH;
 	} else if (pvSetBuffer == NULL) {
-		DBGLOG(SCN, WARN, "(pvSetBuffer == NULL)\n");
+		DBGLOG(SCN, ERROR, "pvSetBuffer == NULL\n");
 		return WLAN_STATUS_INVALID_DATA;
 	}
 	if (prAdapter->fgIsRadioOff) {
-		DBGLOG(SCN, INFO, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
+		DBGLOG(SCN, ERROR, "Radio off: ACPI=%d, Radio=%d\n",
 				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_SUCCESS;
 	}
 
-	DBGLOG(SCN, INFO, "prCmdGscnScnConfigParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS)pvSetBuffer\n");
-	prCmdGscnScnConfigParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer;
-	memcpy(prCmdGscnScnConfigParam, (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer,
-	       sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
-	DBGLOG(SCN, INFO, "prCmdGscnScnConfigParam assign  prCmdGscnScnConfig\n");
-	rCmdGscnScnConfig.u4BufferThreshold = prCmdGscnScnConfigParam->report_threshold;
-	rCmdGscnScnConfig.ucNumApPerScn = prCmdGscnScnConfigParam->max_ap_per_scan;
-	rCmdGscnScnConfig.u4NumScnToCache = prCmdGscnScnConfigParam->num_scans;
-	DBGLOG(SCN, INFO, " report_threshold %d report_threshold %d  num_scans %d\n",
-			   rCmdGscnScnConfig.u4BufferThreshold,
-			   rCmdGscnScnConfig.ucNumApPerScn, rCmdGscnScnConfig.u4NumScnToCache);
-	if (scnFsmSetGSCNConfig(prAdapter, &rCmdGscnScnConfig) == TRUE) {
-		DBGLOG(SCN, INFO, "wlanoidSetGSCNAParam --->scnSetGSCNParam\n");
-		return WLAN_STATUS_PENDING;
-	} else {
-		return WLAN_STATUS_FAILURE;
+	prCmdGscnConfigParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer;
+	kalMemZero(&rCmdGscnConfig, sizeof(CMD_GSCN_SCN_COFIG_T));
+
+	if (prCmdGscnConfigParam) {
+		rCmdGscnConfig.u4BufferThreshold = prCmdGscnConfigParam->report_threshold_percent;
+		rCmdGscnConfig.ucNumApPerScn = prCmdGscnConfigParam->max_ap_per_scan;
+		rCmdGscnConfig.u4NumScnToCache = prCmdGscnConfigParam->report_threshold_num_scans;
 	}
+	DBGLOG(SCN, TRACE, "rCmdGscnScnConfig: threshold_percent[%d] max_ap_per_scan[%d] num_scans[%d]\n",
+			   rCmdGscnConfig.u4BufferThreshold,
+			   rCmdGscnConfig.ucNumApPerScn, rCmdGscnConfig.u4NumScnToCache);
+
+	if (scnSetGSCNConfig(prAdapter, &rCmdGscnConfig) == TRUE)
+		return WLAN_STATUS_SUCCESS;
+	else
+		return WLAN_STATUS_FAILURE;
 }
 
 /*----------------------------------------------------------------------------*/
 /*!
-* \brief This routine is called to get a gscan result
+* \brief This routine is called to get a GScan result
 *
 * \param[in] prAdapter Pointer to the Adapter structure.
 * \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
@@ -9730,44 +9705,41 @@ wlanoidGetGSCNResult(IN P_ADAPTER_T prAdapter,
 	P_PARAM_WIFI_GSCAN_GET_RESULT_PARAMS prGetGscnScnResultParm;
 	CMD_GET_GSCAN_RESULT_T rGetGscnScnResultCmd;
 
-	DEBUGFUNC("wlanoidGetGSCNResult()");
-	DBGLOG(SCN, INFO, "wlanoidGetGSCNResult v1\n");
 	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(SCN, WARN, "Fail in set Periodically Scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
+		DBGLOG(SCN, ERROR, "Adapter not ready: ACPI=%d, Radio=%d\n",
 				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_ADAPTER_NOT_READY;
 	}
 
 	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_GET_RESULT_PARAMS)) {
-		DBGLOG(SCN, WARN, "(u4SetBufferLen != sizeof(CMD_GSCN_SCN_COFIG_T))\n");
+		DBGLOG(SCN, ERROR, "u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_GET_RESULT_PARAMS))\n");
 		return WLAN_STATUS_INVALID_LENGTH;
 	} else if (pvSetBuffer == NULL) {
-		DBGLOG(SCN, WARN, "(pvSetBuffer == NULL)\n");
+		DBGLOG(SCN, ERROR, "pvSetBuffer == NULL\n");
 		return WLAN_STATUS_INVALID_DATA;
 	}
 
 	if (prAdapter->fgIsRadioOff) {
-		DBGLOG(SCN, INFO, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
+		DBGLOG(SCN, ERROR, "Radio off: ACPI=D%d, Radio=%d\n",
 				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_SUCCESS;
 	}
 
 	prGetGscnScnResultParm = (P_PARAM_WIFI_GSCAN_GET_RESULT_PARAMS) pvSetBuffer;
-	/* memcpy(&rGetGscnScnResultCmd, prGetGscnScnResultParm, sizeof(PARAM_WIFI_GSCAN_GET_RESULT_PARAMS) ); */
+	kalMemZero(&rGetGscnScnResultCmd, sizeof(CMD_GET_GSCAN_RESULT_T));
 
-	rGetGscnScnResultCmd.u4Num = prGetGscnScnResultParm->get_num;
-	rGetGscnScnResultCmd.ucFlush = prGetGscnScnResultParm->flush;
-	rGetGscnScnResultCmd.ucVersion = PSCAN_VERSION;
-	kalMemZero(rGetGscnScnResultCmd.aucReserved, sizeof(rGetGscnScnResultCmd.aucReserved));
-
-	if (scnFsmGetGSCNResult(prAdapter, &rGetGscnScnResultCmd) == TRUE) {
-		DBGLOG(SCN, INFO, "wlanoidGetGSCNResult --->scnFsmGetGSCNResult\n");
-		return WLAN_STATUS_PENDING;
-	} else {
-		return WLAN_STATUS_FAILURE;
+	if (prGetGscnScnResultParm) {
+		rGetGscnScnResultCmd.u4Num = prGetGscnScnResultParm->get_num;
+		rGetGscnScnResultCmd.ucFlush = prGetGscnScnResultParm->flush;
+		rGetGscnScnResultCmd.ucVersion = PSCAN_VERSION;
 	}
 
+	if (scnFsmGetGSCNResult(prAdapter, &rGetGscnScnResultCmd, pu4SetInfoLen) == TRUE)
+		return WLAN_STATUS_SUCCESS;
+	else
+		return WLAN_STATUS_FAILURE;
 }
+
 
 #if CFG_SUPPORT_HOTSPOT_2_0
 /*----------------------------------------------------------------------------*/
