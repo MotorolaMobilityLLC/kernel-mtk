@@ -21,6 +21,8 @@ config RT5081_PMU_CHARGER
 config RT5081_PMU_FLED
 	bool "RT5081 PMU FLED Part"
 	depends on LEDS_CLASS && MFD_RT5081_PMU
+	select FLASHLIGHT
+	select RT_FLASH_LED
 	help
 	  Say Y here
 	  to enable
@@ -47,7 +49,7 @@ config RT5081_PMU_RGBLED
 
 config RT5081_PMU_LDO
 	bool "rt5081 PMU LDO Part"
-	depends on MFD_RT5081_PMU
+	depends on REGULATOR && REGULATOR_MTK && MFD_RT5081_PMU
 	help
 	  Say Y here
 	  to enable
@@ -56,7 +58,7 @@ config RT5081_PMU_LDO
 
 config RT5081_PMU_DSV
 	bool "rt5081 PMU DSV Part"
-	depends on MFD_RT5081_PMU
+	depends on REGULATOR && REGULATOR_MTK && MFD_RT5081_PMU
 	help
 	  Say Y here to
 	  enable support
