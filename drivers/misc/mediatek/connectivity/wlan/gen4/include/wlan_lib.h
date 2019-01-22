@@ -161,127 +161,6 @@
 #define WLAN_FLAG_5G_COANT_SUPPORT			BIT(6)	/*1: support, 0: NOT support */
 #define WLAN_FLAG_5G_COANT_PATH				BIT(7)	/*1: WF1, 0:WF0 */
 
-#if CFG_SUPPORT_EASY_DEBUG
-
-#define MAX_CMD_ITEM_MAX			4	/* Max item per cmd. */
-#define MAX_CMD_NAME_MAX_LENGTH		32	/* Max name string length */
-#define MAX_CMD_VALUE_MAX_LENGTH	32	/* Max value string length */
-#define MAX_CMD_TYPE_LENGTH			1
-#define MAX_CMD_STRING_LENGTH		1
-#define MAX_CMD_VALUE_LENGTH		1
-#define MAX_CMD_RESERVE_LENGTH		1
-
-#define CMD_FORMAT_V1_LENGTH	\
-	(MAX_CMD_NAME_MAX_LENGTH + MAX_CMD_VALUE_MAX_LENGTH + \
-	MAX_CMD_TYPE_LENGTH + MAX_CMD_STRING_LENGTH + MAX_CMD_VALUE_LENGTH + MAX_CMD_RESERVE_LENGTH)
-
-#define MAX_CMD_BUFFER_LENGTH	(CMD_FORMAT_V1_LENGTH * MAX_CMD_ITEM_MAX)
-
-#if 1
-#define ED_STRING_SITE	0
-#define ED_VALUE_SITE		1
-
-
-#else
-#define ED_ITEMTYPE_SITE	0
-#define ED_STRING_SITE		1
-#define ED_VALUE_SITE		2
-#endif
-
-typedef enum _CMD_VER_T {
-	CMD_VER_1, /* Type[2]+String[32]+Value[32] */
-	CMD_VER_2 /* for furtur define. */
-} CMD_VER_T, *P_CMD_VER_T;
-
-
-#if 0
-typedef enum _ENUM_AIS_REQUEST_TYPE_T {
-	AIS_REQUEST_SCAN,
-	AIS_REQUEST_RECONNECT,
-	AIS_REQUEST_ROAMING_SEARCH,
-	AIS_REQUEST_ROAMING_CONNECT,
-	AIS_REQUEST_REMAIN_ON_CHANNEL,
-	AIS_REQUEST_NUM
-} ENUM_AIS_REQUEST_TYPE_T;
-#endif
-typedef enum _CMD_TYPE_T {
-	CMD_TYPE_QUERY,
-	CMD_TYPE_SET
-} CMD_TYPE_T, *P_CMD_TYPE_T;
-
-
-#define ITEM_TYPE_DEC	1
-#define ITEM_TYPE_HEX	2
-#define ITEM_TYPE_STR	3
-
-typedef enum _CMD_DEFAULT_SETTING_VALUE {
-	CMD_PNO_ENABLE,
-	CMD_PNO_SCAN_PERIOD,
-	CMD_SCN_CHANNEL_PLAN,
-	CMD_SCN_DWELL_TIME,
-	CMD_SCN_STOP_SCAN,
-	CMD_MAX,
-} CMD_DEFAULT_SETTING_VALUE;
-
-typedef enum _CMD_DEFAULT_STR_SETTING_VALUE {
-	CMD_STR_TEST_STR,
-	CMD_STR_MAX,
-} CMD_DEFAULT_STR_SETTING_VALUE;
-
-typedef struct _CMD_FORMAT_V1_T {
-	UINT_8 itemType;
-	UINT_8 itemStringLength;
-	UINT_8 itemValueLength;
-	UINT_8 Reserved;
-	UINT_8 itemString[MAX_CMD_NAME_MAX_LENGTH];
-	UINT_8 itemValue[MAX_CMD_VALUE_MAX_LENGTH];
-} CMD_FORMAT_V1_T, *P_CMD_FORMAT_V1_T;
-
-typedef struct _CMD_HEADER_T {
-	CMD_VER_T	cmdVersion;
-	CMD_TYPE_T	cmdType;
-	UINT_8	itemNum;
-	UINT_16	cmdBufferLen;
-	UINT_8	buffer[MAX_CMD_BUFFER_LENGTH];
-} CMD_HEADER_T, *P_CMD_HEADER_T;
-
-typedef struct _CFG_DEFAULT_SETTING_TABLE_T {
-	UINT_32 itemNum;
-	const char *String;
-	UINT_8 itemType;
-	UINT_32 defaultValue;
-	UINT_32 minValue;
-	UINT_32 maxValue;
-} CFG_DEFAULT_SETTING_TABLE_T, *P_CFG_DEFAULT_SETTING_TABLE_T;
-
-typedef struct _CFG_DEFAULT_SETTING_STR_TABLE_T {
-	UINT_32 itemNum;
-	const char *String;
-	UINT_8 itemType;
-	const char *DefString;
-	UINT_16 minLen;
-	UINT_16 maxLen;
-} CFG_DEFAULT_SETTING_STR_TABLE_T, *P_CFG_DEFAULT_SETTING_STR_TABLE_T;
-
-typedef struct _CFG_QUERY_FORMAT_T {
-	UINT_32 Length;
-	UINT_32 Value;
-	UINT_32 Type;
-	PUINT_32 ptr;
-} CFG_QUERY_FORMAT_T, *P_CFG_QUERY_FORMAT_T;
-
-/*Globol Configure define */
-typedef struct _CFG_SETTING_T {
-	UINT_8	PnoEnable;
-	UINT_32 PnoScanPeriod;
-	UINT_8 ScnChannelPlan;
-	UINT_16 ScnDwellTime;
-	UINT_8 ScnStopScan;
-	UINT_8 TestStr[80];
-
-} CFG_SETTING_T, *P_CFG_SETTING_T;
-
-#endif
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -1255,11 +1134,6 @@ WLAN_STATUS wlanCfgSet(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, PCHAR pucVa
 WLAN_STATUS
 wlanCfgSetCb(IN P_ADAPTER_T prAdapter, const PCHAR pucKey, WLAN_CFG_SET_CB pfSetCb, void *pPrivate, UINT_32 u4Flags);
 
-#if CFG_SUPPORT_EASY_DEBUG
-
-WLAN_STATUS wlanCfgParse(IN P_ADAPTER_T prAdapter, PUINT_8 pucConfigBuf, UINT_32 u4ConfigBufLen, BOOLEAN isFwConfig);
-VOID wlanFeatureToFw(IN P_ADAPTER_T prAdapter);
-#endif
 
 VOID wlanLoadDefaultCustomerSetting(IN P_ADAPTER_T prAdapter);
 

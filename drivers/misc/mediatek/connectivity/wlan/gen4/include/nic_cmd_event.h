@@ -3053,6 +3053,10 @@ VOID nicEventRddSendPulse(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventUpdateCoexPhyrate(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventRspChnlUtilization(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
 VOID nicEventBaFwDropSn(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent);
+
+#ifdef FW_CFG_SUPPORT
+VOID nicCmdEventQueryCfgRead(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

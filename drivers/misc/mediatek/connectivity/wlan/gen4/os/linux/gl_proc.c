@@ -76,12 +76,18 @@
 #include "debug.h"
 #include "wlan_oid.h"
 
+#ifdef FW_CFG_SUPPORT
+#include "fwcfg.h"
+#endif
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
 */
 #define PROC_MCR_ACCESS                         "mcr"
 #define PROC_ROOT_NAME							"wlan"
+#ifdef FW_CFG_SUPPORT
+#define PROC_CFG_NAME							"cfg"
+#endif
 
 #if CFG_SUPPORT_DEBUG_FS
 #define PROC_ROAM_PARAM							"roam_param"
@@ -128,6 +134,9 @@ static UINT_8 aucDbModuleName[][PROC_DBG_LEVEL_MAX_DISPLAY_STR_LEN] = {
 /* This buffer could be overwrite by any proc commands */
 static UINT_8 g_aucProcBuf[3000];
 
+#if FW_CFG_SUPPORT
+static P_GLUE_INFO_T gprGlueInfo;
+#endif
 /* This u32 is only for DriverCmdRead/Write, should not be used by other function */
 static UINT_32 g_u4NextDriverReadLen;
 /*******************************************************************************
@@ -220,219 +229,11 @@ static ssize_t procDbgLevelWrite(struct file *file, const char __user *buffer,
 	return count;
 }
 
-#if WLAN_INCLUDE_PROC
-#if	CFG_SUPPORT_EASY_DEBUG
-
-static ssize_t procCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
-{
-	UINT_8 *temp = &g_aucProcBuf[0];
-	UINT_32 u4CopySize = 0;
-	UINT_16 i;
-
-#define BUFFER_RESERVE_BYTE 50
-
-	P_GLUE_INFO_T prGlueInfo;
-
-	P_WLAN_CFG_ENTRY_T prWlanCfgEntry;
-	P_ADAPTER_T prAdapter;
-
-	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(gPrDev));
-
-	if (!prGlueInfo)
-		pr_err("procCfgRead prGlueInfo is  NULL????\n");
-
-	prAdapter = prGlueInfo->prAdapter;
-
-	/* if *f_ops>0, we should return 0 to make cat command exit */
-	if (*f_pos > 0)
-		return 0;
-
-#if 0
-	kalStrCpy(temp, "\nERROR|WARN|STATE|EVENT|TRACE|INFO|LOUD|TEMP\n"
-			"bit0 |bit1|bit2 |bit3 |bit4 |bit5|bit6|bit7\n\n"
-			"Debug Module\tIndex\tLevel\tDebug Module\tIndex\tLevel\n\n");
-	temp += kalStrLen(temp);
-
-	u2ModuleNum = (sizeof(aucDbModuleName) / PROC_DBG_LEVEL_MAX_DISPLAY_STR_LEN) & 0xfe;
-	for (i = 0; i < u2ModuleNum; i += 2)
-		SPRINTF(temp, ("DBG_%s_IDX\t(0x%02x):\t0x%02x\tDBG_%s_IDX\t(0x%02x):\t0x%02x\n",
-			&aucDbModuleName[i][0], i, aucDebugModule[i],
-				&aucDbModuleName[i+1][0], i+1, aucDebugModule[i+1]));
-
-	if ((sizeof(aucDbModuleName) / PROC_DBG_LEVEL_MAX_DISPLAY_STR_LEN) & 0x1)
-		SPRINTF(temp, ("DBG_%s_IDX\t(0x%02x):\t0x%02x\n",
-			&aucDbModuleName[u2ModuleNum][0], u2ModuleNum, aucDebugModule[u2ModuleNum]));
-#endif
-	kalStrCpy(temp, "\nDUMP CONFIGURATION :\n"
-		"<KEY|VALUE> OR <D:KEY|VALUE>\n"
-		"'D': driver part current setting\n"
-		"===================================\n");
-	temp += kalStrLen(temp);
-
-
-	for (i = 0; i < WLAN_CFG_ENTRY_NUM_MAX; i++) {
-		prWlanCfgEntry = wlanCfgGetEntryByIndex(prAdapter, i, 0);
-
-
-		if ((prWlanCfgEntry->aucKey[0] == '\0') || (!prWlanCfgEntry))
-			break;
-
-		SPRINTF(temp, ("%s|%s\n", prWlanCfgEntry->aucKey, prWlanCfgEntry->aucValue));
-
-		if (kalStrLen(g_aucProcBuf) > (sizeof(g_aucProcBuf)-BUFFER_RESERVE_BYTE))
-			break;
-
-
-	}
-
-	for (i = 0; i < WLAN_CFG_REC_ENTRY_NUM_MAX; i++) {
-		prWlanCfgEntry = wlanCfgGetEntryByIndex(prAdapter, i, 1);
-
-
-		if ((prWlanCfgEntry->aucKey[0] == '\0') || (!prWlanCfgEntry))
-			break;
-
-		SPRINTF(temp, ("D:%s|%s\n", prWlanCfgEntry->aucKey, prWlanCfgEntry->aucValue));
-
-		if (kalStrLen(g_aucProcBuf) > (sizeof(g_aucProcBuf)-BUFFER_RESERVE_BYTE))
-			break;
-
-
-	}
-
-	u4CopySize = kalStrLen(g_aucProcBuf);
-	if (u4CopySize > count)
-		u4CopySize = count;
-	if (copy_to_user(buf, g_aucProcBuf, u4CopySize)) {
-		pr_err("copy to user failed\n");
-		return -EFAULT;
-	}
-
-	*f_pos += u4CopySize;
-	return (ssize_t)u4CopySize;
-
-
-}
-
-
-static ssize_t procCfgWrite(struct file *file, const char __user *buffer,
-		size_t count, loff_t *data)
-{
-
-	/*	UINT_32 u4DriverCmd, u4DriverValue;
-	*UINT_8 *temp = &g_aucProcBuf[0];
-	*/
-	UINT_32 u4CopySize = sizeof(g_aucProcBuf);
-	P_GLUE_INFO_T prGlueInfo;
-	PUINT_8	pucTmp;
-	/*	PARAM_CUSTOM_P2P_SET_STRUCT_T rSetP2P; */
-
-
-	kalMemSet(g_aucProcBuf, 0, u4CopySize);
-	if (u4CopySize >= (count+1))
-		u4CopySize = count;
-
-	pucTmp = g_aucProcBuf;
-	SPRINTF(pucTmp, ("%s ", "set_cfg"));
-
-	if (copy_from_user(pucTmp, buffer, u4CopySize)) {
-		pr_err("error of copy from user\n");
-		return -EFAULT;
-	}
-	g_aucProcBuf[u4CopySize+8] = '\0';
-
-
-	prGlueInfo = g_prGlueInfo_proc;
-	/* if g_u4NextDriverReadLen >0,
-	 * the content for next DriverCmdRead will be in : g_aucProcBuf with length : g_u4NextDriverReadLen
-	 */
-	g_u4NextDriverReadLen = priv_driver_set_cfg(prGlueInfo->prDevHandler, g_aucProcBuf, sizeof(g_aucProcBuf));
-
-	return count;
-
-}
-
-static ssize_t procDriverCmdRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
-{
-	/* DriverCmd read should only be executed right after a DriverCmd write
-	 * because content buffer 'g_aucProcBuf' is a global buffer for all proc command,
-	 *  otherwise , the content could be overwrite by other proc command
-	 */
-	UINT_32 u4CopySize = 0;
-
-	/* if *f_ops>0, we should return 0 to make cat command exit */
-	if (*f_pos > 0)
-		return 0;
-
-	if (g_u4NextDriverReadLen > 0) /* Detect content to show */
-		u4CopySize = g_u4NextDriverReadLen;
-	if (copy_to_user(buf, g_aucProcBuf, u4CopySize)) {
-		pr_err("copy to user failed\n");
-		return -EFAULT;
-	}
-	g_u4NextDriverReadLen = 0;
-
-	*f_pos += u4CopySize;
-	return (ssize_t)u4CopySize;
-}
-
-
-
-static ssize_t procDriverCmdWrite(struct file *file, const char __user *buffer,
-										size_t count, loff_t *data)
-{
-
-/*	UINT_32 u4DriverCmd, u4DriverValue;
-*	UINT_8 *temp = &g_aucProcBuf[0];
-*/
-	UINT_32 u4CopySize = sizeof(g_aucProcBuf);
-	P_GLUE_INFO_T prGlueInfo;
-/*	PARAM_CUSTOM_P2P_SET_STRUCT_T rSetP2P; */
-
-
-	kalMemSet(g_aucProcBuf, 0, u4CopySize);
-	if (u4CopySize >= (count+1))
-		u4CopySize = count;
-	if (copy_from_user(g_aucProcBuf, buffer, u4CopySize)) {
-		pr_err("error of copy from user\n");
-		return -EFAULT;
-	}
-	g_aucProcBuf[u4CopySize] = '\0';
-
-
-	prGlueInfo = g_prGlueInfo_proc;
-	/* if g_u4NextDriverReadLen >0,
-	 * the content for next DriverCmdRead will be in : g_aucProcBuf with length : g_u4NextDriverReadLen
-	 */
-	g_u4NextDriverReadLen = priv_driver_cmds(prGlueInfo->prDevHandler, g_aucProcBuf, sizeof(g_aucProcBuf));
-
-	return count;
-}
-#endif
-#endif
-
 static const struct file_operations dbglevel_ops = {
 	.owner = THIS_MODULE,
 	.read = procDbgLevelRead,
 	.write = procDbgLevelWrite,
 };
-
-#if WLAN_INCLUDE_PROC
-#if	CFG_SUPPORT_EASY_DEBUG
-
-static const struct file_operations drivercmd_ops = {
-	.owner = THIS_MODULE,
-	.read = procDriverCmdRead,
-	.write = procDriverCmdWrite,
-};
-
-static const struct file_operations cfg_ops = {
-	.owner = THIS_MODULE,
-	.read = procCfgRead,
-	.write = procCfgWrite,
-};
-#endif
-#endif
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -774,20 +575,6 @@ INT_32 procCreateFsEntry(P_GLUE_INFO_T prGlueInfo)
 		return -1;
 	}
 #endif
-#if	CFG_SUPPORT_EASY_DEBUG
-
-	prEntry = proc_create(PROC_DRIVER_CMD, 0664, gprProcRoot, &drivercmd_ops);
-	if (prEntry == NULL) {
-		pr_err("Unable to create /proc entry for driver command\n\r");
-		return -1;
-	}
-
-	prEntry = proc_create(PROC_CFG, 0664, gprProcRoot, &cfg_ops);
-	if (prEntry == NULL) {
-		pr_err("Unable to create /proc entry for driver command\n\r");
-		return -1;
-	}
-#endif
 
 	return 0;
 }
@@ -1017,4 +804,130 @@ static int procTxStatisticsWrite(struct file *file, const char *buffer, unsigned
 }				/* end of procTxStatisticsWrite() */
 #endif
 
+#ifdef FW_CFG_SUPPORT
+#define MAX_CFG_OUTPUT_BUF_LENGTH 1024
+static UINT_8 aucCfgBuf[CMD_FORMAT_V1_LENGTH];
+static UINT_8 aucCfgQueryKey[MAX_CMD_NAME_MAX_LENGTH];
+static UINT_8 aucCfgOutputBuf[MAX_CFG_OUTPUT_BUF_LENGTH];
 
+static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+	UINT_8 *temp = &aucCfgOutputBuf[0];
+	UINT_32 u4CopySize = 0;
+
+	struct _CMD_HEADER_T cmdV1Header;
+	struct _CMD_FORMAT_V1_T *pr_cmd_v1 = (struct _CMD_FORMAT_V1_T *) cmdV1Header.buffer;
+
+	/* if *f_pos >  0, we should return 0 to make cat command exit */
+	if (*f_pos > 0 || gprGlueInfo == NULL)
+		return 0;
+	if (!kalStrLen(aucCfgQueryKey))
+		return 0;
+
+	kalMemSet(aucCfgOutputBuf, 0, MAX_CFG_OUTPUT_BUF_LENGTH);
+
+	SPRINTF(temp, ("\nprocCfgRead() %s:\n", aucCfgQueryKey));
+
+	/* send to FW */
+	cmdV1Header.cmdVersion = CMD_VER_1;
+	cmdV1Header.cmdType = CMD_TYPE_QUERY;
+	cmdV1Header.itemNum = 1;
+	cmdV1Header.cmdBufferLen = sizeof(struct _CMD_FORMAT_V1_T);
+	kalMemSet(cmdV1Header.buffer, 0, MAX_CMD_BUFFER_LENGTH);
+
+	pr_cmd_v1->itemStringLength = kalStrLen(aucCfgQueryKey);
+
+	kalMemCopy(pr_cmd_v1->itemString, aucCfgQueryKey, kalStrLen(aucCfgQueryKey));
+
+	rStatus = kalIoctl(gprGlueInfo,
+			wlanoidQueryCfgRead,
+			(PVOID)&cmdV1Header,
+			sizeof(cmdV1Header),
+			TRUE,
+			TRUE,
+			TRUE,
+			&u4CopySize);
+	if (rStatus == WLAN_STATUS_FAILURE)
+		DBGLOG(INIT, ERROR, "prCmdV1Header kalIoctl wlanoidQueryCfgRead fail 0x%x\n", rStatus);
+
+	SPRINTF(temp, ("%s\n", cmdV1Header.buffer));
+
+	u4CopySize = kalStrLen(aucCfgOutputBuf);
+	if (u4CopySize > count)
+		u4CopySize = count;
+
+	if (copy_to_user(buf, aucCfgOutputBuf, u4CopySize))
+		DBGLOG(INIT, ERROR, "copy to user failed\n");
+
+	*f_pos += u4CopySize;
+	return (ssize_t)u4CopySize;
+}
+
+static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
+{
+	/* echo xxx xxx > /proc/net/wlan/cfg */
+	UINT_8 i = 0;
+	UINT_32 u4CopySize = sizeof(aucCfgBuf);
+	UINT_8 token_num = 1;
+
+	kalMemSet(aucCfgBuf, 0, u4CopySize);
+
+	if (u4CopySize >= (count + 1))
+		u4CopySize = count;
+
+	if (copy_from_user(aucCfgBuf, buf, u4CopySize)) {
+		DBGLOG(INIT, ERROR, "copy from user failed\n");
+		return -EFAULT;
+	}
+
+	for (; i < u4CopySize; i++) {
+		if (aucCfgBuf[i] == ' ') {
+			token_num++;
+			break;
+		}
+	}
+
+	if (token_num == 1) {
+		kalMemSet(aucCfgQueryKey, 0, sizeof(aucCfgQueryKey));
+		/* remove the 0x0a */
+		memcpy(aucCfgQueryKey, aucCfgBuf, u4CopySize);
+		if (aucCfgQueryKey[u4CopySize - 1] == 0x0a)
+			aucCfgQueryKey[u4CopySize - 1] = '\0';
+	} else {
+		if (u4CopySize)
+			wlanFwCfgParse(gprGlueInfo->prAdapter, aucCfgBuf);
+	}
+
+	return count;
+}
+
+static const struct file_operations fwcfg_ops = {
+	.owner = THIS_MODULE,
+	.read = cfgRead,
+	.write = cfgWrite,
+};
+
+INT_32 cfgRemoveProcEntry(void)
+{
+	remove_proc_entry(PROC_CFG_NAME, gprProcRoot);
+	return 0;
+}
+
+INT_32 cfgCreateProcEntry(P_GLUE_INFO_T prGlueInfo)
+{
+	struct proc_dir_entry *prEntry;
+
+	prGlueInfo->pProcRoot = gprProcRoot;
+	gprGlueInfo = prGlueInfo;
+
+	prEntry = proc_create(PROC_CFG_NAME, 0664, gprProcRoot, &fwcfg_ops);
+	if (prEntry == NULL) {
+		DBGLOG(INIT, ERROR, "Unable to create /proc entry cfg\n\r");
+		return -1;
+	}
+	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
+	return 0;
+}
+#endif

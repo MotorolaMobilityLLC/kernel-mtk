@@ -125,6 +125,7 @@ endif
 NIC_DIR     := nic/
 MGMT_DIR    := mgmt/
 CHIPS       := chips/
+FWCFG_DIR   := $(srctree)/drivers/misc/mediatek/connectivity/wlan/gen4/$(MTK_PROJECT)/
 
 
 # ---------------------------------------------------
@@ -231,6 +232,24 @@ HIF_OBJS :=  $(HIF_DIR)usb.o
 endif
 
 HIF_OBJS +=  $(HIF_DIR)hal_api.o
+# ---------------------------------------------------
+# FW customization
+# ---------------------------------------------------
+FW_CUSTOMIZATION = y
+ifeq ($(FW_CUSTOMIZATION), y)
+ifneq ($(wildcard $(FWCFG_DIR)fw_config.c),)
+	COMMON_OBJS += $(MTK_PROJECT)/fw_config.o
+endif
+	COMMON_OBJS += $(COMMON_DIR)fwcfg.o
+	ccflags-y += -DFW_CFG_SUPPORT
+ifeq ($(TARGET_BUILD_VARIANT), eng)
+    ccflags-y += -DENABLED_IN_ENGUSERDEBUG
+endif
+ifeq ($(TARGET_BUILD_VARIANT), userdebug)
+    ccflags-y += -DENABLED_IN_ENGUSERDEBUG
+endif
+endif
+# ---------------------------------------------------
 
 $(MODULE_NAME)-objs  += $(COMMON_OBJS)
 $(MODULE_NAME)-objs  += $(NIC_OBJS)

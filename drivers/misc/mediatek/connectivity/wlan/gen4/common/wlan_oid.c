@@ -74,6 +74,9 @@
 #include "debug.h"
 #include <stddef.h>
 
+#ifdef FW_CFG_SUPPORT
+#include "fwcfg.h"
+#endif
 /******************************************************************************
 *                              C O N S T A N T S
 *******************************************************************************
@@ -6595,9 +6598,6 @@ wlanoidSetKeyCfg(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 		wlanCfgSet(prAdapter, prKeyCfgInfo->aucKey, prKeyCfgInfo->aucValue, 0);
 
 	wlanInitFeatureOption(prAdapter);
-#if CFG_SUPPORT_EASY_DEBUG
-	wlanFeatureToFw(prAdapter);
-#endif
 	return rWlanStatus;
 }
 
@@ -12321,4 +12321,57 @@ wlanoidDisableTdlsPs(IN P_ADAPTER_T prAdapter,
 							0);
 	return WLAN_STATUS_SUCCESS;
 }
+
+#ifdef FW_CFG_SUPPORT
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to query fw cfg info
+*
+* \param[in]  pvAdapter        Pointer to the Adapter structure.
+* \param[out] pvQueryBuffer    A pointer to the buffer that holds the result of
+*                              the query.
+* \param[in]  u4QueryBufferLen The length of the query buffer.
+* \param[out] pu4QueryInfoLen  If the call is successful, returns the number of
+*                              bytes written into the query buffer. If the call
+*                              failed due to invalid length of the query buffer,
+*                              returns the amount of storage needed.
+*
+* \retval WLAN_STATUS_PENDING
+* \retval WLAN_STATUS_FAILURE
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS wlanoidQueryCfgRead(IN P_ADAPTER_T prAdapter,
+			   IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
+{
+	struct _CMD_HEADER_T *prCmdV1Header = (struct _CMD_HEADER_T *)pvQueryBuffer;
+	struct _CMD_HEADER_T cmdV1Header;
+	WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+
+	ASSERT(prAdapter);
+	ASSERT(pu4QueryInfoLen);
+
+	if (u4QueryBufferLen)
+		ASSERT(pvQueryBuffer);
+
+	*pu4QueryInfoLen = sizeof(struct _CMD_HEADER_T);
+
+	if (u4QueryBufferLen < sizeof(struct _CMD_HEADER_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	kalMemCopy(&cmdV1Header, prCmdV1Header, sizeof(struct _CMD_HEADER_T));
+	rStatus = wlanSendSetQueryCmd(
+			prAdapter,
+			CMD_ID_GET_SET_CUSTOMER_CFG,
+			FALSE,
+			TRUE,
+			TRUE,
+			nicCmdEventQueryCfgRead,
+			nicOidCmdTimeoutCommon,
+			sizeof(struct _CMD_HEADER_T),
+			(PUINT_8)&cmdV1Header,
+			pvQueryBuffer,
+			u4QueryBufferLen);
+	return rStatus;
+}
+#endif
 
