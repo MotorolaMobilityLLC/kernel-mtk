@@ -32,6 +32,7 @@ endif
 ifeq ($(CONFIG_MACH_MT6763),y)
   ifeq ($(CONFIG_MTK_CAMERA_ISP),y)
   obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+  obj-y += fdvt/
   endif
 endif
 
