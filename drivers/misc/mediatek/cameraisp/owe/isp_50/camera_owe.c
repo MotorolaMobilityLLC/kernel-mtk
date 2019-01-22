@@ -2177,7 +2177,7 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_OCC_RequestRing.OCCReq_Struct[WIdx].RequestState = OWE_REQUEST_STATE_PENDING;
 				OccWriteIdx = WIdx;
 				g_OCC_RequestRing.WriteIdx = (WIdx + 1) % _SUPPORT_MAX_OWE_REQUEST_RING_SIZE_;
-				LOG_INF("OCC request enque done!\n");
+				LOG_INF("OCC enq %d done!\n", WIdx);
 			} else {
 				LOG_ERR("No OCC Buf! WriteIdx(%d),ReqSta(%d),FrameWRIdx(%d),enqReqNum(%d)\n",
 				     g_OCC_RequestRing.WriteIdx,
@@ -2245,7 +2245,7 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_OCC_RequestRing.OCCReq_Struct[ReadIdx].FrameRDIdx = 0;
 				g_OCC_RequestRing.OCCReq_Struct[ReadIdx].enqueReqNum = 0;
 				g_OCC_RequestRing.ReadIdx = (ReadIdx + 1) % _SUPPORT_MAX_OWE_REQUEST_RING_SIZE_;
-				LOG_INF("OCC Request ReadIdx(%d)\n", g_OCC_RequestRing.ReadIdx);
+				LOG_INF("OCC deq %d done\n", ReadIdx);
 
 
 				spin_unlock_irqrestore(&
@@ -2332,7 +2332,7 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_WMFE_ReqRing.WMFEReq_Struct[WIdx].RequestState = OWE_REQUEST_STATE_PENDING;
 				WmfeWriteIdx = WIdx;
 				g_WMFE_ReqRing.WriteIdx = (WIdx + 1) % _SUPPORT_MAX_OWE_REQUEST_RING_SIZE_;
-				LOG_INF("WMFE request enque done!!\n");
+				LOG_INF("WMFE enq %d done!!\n", WIdx);
 			} else {
 				LOG_ERR("No Empty WMFE Buf!WriteIdx(%d),ReqSta(%d),FWRIdx(%d),enqReqNum(%d)\n",
 				     WIdx,
@@ -2402,7 +2402,7 @@ static long OWE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_WMFE_ReqRing.WMFEReq_Struct[ReadIdx].FrameRDIdx = 0;
 				g_WMFE_ReqRing.WMFEReq_Struct[ReadIdx].enqueReqNum = 0;
 				g_WMFE_ReqRing.ReadIdx = (ReadIdx + 1) % _SUPPORT_MAX_OWE_REQUEST_RING_SIZE_;
-				LOG_DBG("WMFE Request ReadIdx(%d)\n", g_WMFE_ReqRing.ReadIdx);
+				LOG_INF("WMFE deq %d done\n", ReadIdx);
 
 				spin_unlock_irqrestore(&
 						       (OWEInfo.
