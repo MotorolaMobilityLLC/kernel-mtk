@@ -1241,7 +1241,13 @@ schedtune_init(void)
 
 	/* Compute normalization constants */
 	delta_pwr = ste->max_power - ste->min_power;
-	ste->rdiv = reciprocal_value(delta_pwr);
+	if (delta_pwr > 0)
+		ste->rdiv = reciprocal_value(delta_pwr);
+	else {
+		ste->rdiv.m = 0;
+		ste->rdiv.sh1 = 0;
+		ste->rdiv.sh2 = 0;
+	}
 	pr_info("schedtune: using normalization constants mul: %u sh1: %u sh2: %u\n",
 		ste->rdiv.m, ste->rdiv.sh1, ste->rdiv.sh2);
 
