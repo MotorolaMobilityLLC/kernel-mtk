@@ -450,38 +450,6 @@ static int lbat_dbg_open(struct inode *inode, struct file *file)
 static ssize_t lbat_dbg_write(struct file *file,
 	const char __user *user_buffer, size_t count, loff_t *position)
 {
-#if 0
-	struct lbat_dbg_st *dbg_st = file->private_data;
-	char buf[10] = {0};
-	char *buf_ptr = NULL;
-	char *s_intNo;
-	char *s_state;
-	unsigned int intNo = 999, state = 2; /* initialize as invalid value */
-	int ret = 0;
-
-	simple_write_to_buffer(buf, sizeof(buf), position, user_buffer, count);
-	buf_ptr = (char *)buf;
-	s_intNo = strsep(&buf_ptr, " ");
-	s_state = strsep(&buf_ptr, " ");
-	if (s_intNo)
-		ret = kstrtou32(s_intNo, 10, (unsigned int *)&intNo);
-	if (s_state)
-		ret = kstrtou32(s_state, 10, (unsigned int *)&state);
-
-	switch (dbg_st->dbg_id) {
-	case PMIC_IRQ_DBG_ENABLE:
-		pmic_enable_interrupt(intNo, state, "pmic_irq_dbg");
-		break;
-	case PMIC_IRQ_DBG_MASK:
-		if (state == 1)
-			pmic_mask_interrupt(intNo, "pmic_irq_dbg");
-		else if (state == 0)
-			pmic_unmask_interrupt(intNo, "pmic_irq_dbg");
-		break;
-	default:
-		break;
-	}
-#endif
 	return count;
 }
 
