@@ -47,7 +47,7 @@ static int ppm_main_pdrv_remove(struct platform_device *pdev);
 /* Global variables						*/
 /*==============================================================*/
 struct ppm_data ppm_main_info = {
-	.is_enabled = false,
+	.is_enabled = true,
 	.is_in_suspend = false,
 
 	.cur_mode = PPM_MODE_PERFORMANCE,
@@ -686,7 +686,6 @@ int mt_ppm_main(void)
 					c_req->cpu_limit[i].advise_cpu_core
 				);
 		}
-
 #ifdef _TRACE_
 		trace_ppm_update(policy_mask, ppm_main_info.min_power_budget, c_req->root_cluster, buf);
 #endif
