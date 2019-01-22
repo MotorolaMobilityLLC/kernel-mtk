@@ -115,12 +115,14 @@ atomic_t hdmi_3d_config_event = ATOMIC_INIT(0);
 
 static unsigned int hdmi_layer_num;
 static unsigned long ovl_config_address[EXTD_OVERLAY_CNT];
+#ifndef MTK_EXTENSION_MODE_SUPPORT
 static unsigned int hdmi_resolution_param_table[][3] = {
 	{720, 480, 60},
 	{1280, 720, 60},
 	{1920, 1080, 30},
 	{1920, 1080, 60},
 };
+#endif
 
 DEFINE_SEMAPHORE(hdmi_update_mutex);
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -720,11 +722,15 @@ static enum HDMI_STATUS hdmi_drv_init(void)
 {
 	HDMI_FUNC();
 
+#ifndef MTK_EXTENSION_MODE_SUPPORT
 	p->hdmi_width = hdmi_resolution_param_table[hdmi_params->init_config.vformat][0];
 	p->hdmi_height = hdmi_resolution_param_table[hdmi_params->init_config.vformat][1];
+#else
+	p->hdmi_width = hdmi_params->width;
+	p->hdmi_height = hdmi_params->height;
+#endif
 	p->bg_width = 0;
 	p->bg_height = 0;
-
 	p->output_video_resolution = hdmi_params->init_config.vformat;
 	p->output_audio_format = hdmi_params->init_config.aformat;
 	p->scaling_factor = hdmi_params->scaling_factor < 10 ? hdmi_params->scaling_factor : 10;
@@ -806,7 +812,9 @@ static void hdmi_state_reset(void)
 
 /*static*/ void hdmi_resume(void)
 {
-	/* HDMI_LOG("p->state is %d,(0:off, 1:on, 2:standby)\n", atomic_read(&p->state)); */
+#ifndef MTK_EXTENSION_MODE_SUPPORT
+	HDMI_LOG("p->state is %d,(0:off, 1:on, 2:standby)\n", atomic_read(&p->state));
+#endif
 	if (IS_HDMI_NOT_STANDBY())
 		return;
 
@@ -1342,6 +1350,11 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			HDMI_ERR(": copy_from_user failed! line:%d\n", __LINE__);
 			return -EAGAIN;
 		}
+
+#ifndef MTK_EXTENSION_MODE_SUPPORT
+		if (displayid != MTKFB_DISPIF_HDMI)
+			HDMI_LOG(": invalid display id:%d\n", displayid);
+#endif
 
 		memset(&hdmi_info, 0, sizeof(hdmi_info));
 		hdmi_info.displayFormat = DISPIF_FORMAT_RGB888;
