@@ -1527,7 +1527,7 @@ void dpi_dvt_parameters(DPI_U8 arg)
 			DPI_DVT_Context.hdmi_width = 720 - DPI_DVT_Context.bg_width;
 			DPI_DVT_Context.hdmi_height = 480 - DPI_DVT_Context.bg_height;
 			DPI_DVT_Context.output_video_resolution = HDMI_VIDEO_720x480p_60Hz;
-			dpi_clock = 27027;
+			dpi_clock = HDMI_VIDEO_720x480p_60Hz;
 			break;
 		}
 /*
@@ -1560,7 +1560,7 @@ void dpi_dvt_parameters(DPI_U8 arg)
 			DPI_DVT_Context.hdmi_width = 1440 / 2 - DPI_DVT_Context.bg_width;
 			DPI_DVT_Context.hdmi_height = 480 - DPI_DVT_Context.bg_height;
 			DPI_DVT_Context.output_video_resolution = HDMI_VIDEO_720x480i_60Hz;
-			dpi_clock = 27027;
+			dpi_clock = HDMI_VIDEO_720x480i_60Hz;
 			break;
 		}
 */
@@ -1592,7 +1592,7 @@ void dpi_dvt_parameters(DPI_U8 arg)
 			DPI_DVT_Context.hdmi_width = 1440 / 2 - DPI_DVT_Context.bg_width;
 			DPI_DVT_Context.hdmi_height = 480 - DPI_DVT_Context.bg_height;
 			DPI_DVT_Context.output_video_resolution = HDMI_VIDEO_720x480i_60Hz;
-			dpi_clock = 27027;
+			dpi_clock = HDMI_VIDEO_720x480i_60Hz;
 			break;
 		}
 	case HDMI_VIDEO_1280x720p_60Hz:
@@ -1622,7 +1622,7 @@ void dpi_dvt_parameters(DPI_U8 arg)
 			vsync_pulse_width = 5;
 			vsync_back_porch = 20;
 			vsync_front_porch = 5;
-			dpi_clock = 74250;
+			dpi_clock = HDMI_VIDEO_1280x720p_60Hz;
 
 			DPI_DVT_Context.bg_height =
 			    ((720 * DPI_DVT_Context.scaling_factor) / 100 >> 2) << 2;
@@ -1666,7 +1666,7 @@ void dpi_dvt_parameters(DPI_U8 arg)
 			DPI_DVT_Context.hdmi_height = 1080 - DPI_DVT_Context.bg_height;
 
 			DPI_DVT_Context.output_video_resolution = HDMI_VIDEO_1920x1080p_30Hz;
-			dpi_clock = 74250;
+			dpi_clock = HDMI_VIDEO_1920x1080p_30Hz;
 			break;
 		}
 	case HDMI_VIDEO_1920x1080p_60Hz:
@@ -1701,7 +1701,7 @@ void dpi_dvt_parameters(DPI_U8 arg)
 			DPI_DVT_Context.hdmi_height = 1080 - DPI_DVT_Context.bg_height;
 
 			DPI_DVT_Context.output_video_resolution = HDMI_VIDEO_1920x1080p_60Hz;
-			dpi_clock = 148500;
+			dpi_clock = HDMI_VIDEO_1920x1080p_60Hz;
 			break;
 		}
 	case HDMI_VIDEO_1920x1080i_60Hz:
@@ -1736,7 +1736,7 @@ void dpi_dvt_parameters(DPI_U8 arg)
 			DPI_DVT_Context.hdmi_height = 1080 - DPI_DVT_Context.bg_height;
 
 			DPI_DVT_Context.output_video_resolution = HDMI_VIDEO_1920x1080i_60Hz;
-			dpi_clock = 74250;
+			dpi_clock = HDMI_VIDEO_1920x1080i_60Hz;
 			break;
 		}
 
@@ -1769,7 +1769,7 @@ void dpi_dvt_parameters(DPI_U8 arg)
 			DPI_DVT_Context.hdmi_height = 2160;
 
 			DPI_DVT_Context.output_video_resolution = HDMI_VIDEO_2160p_DSC_24Hz;
-			dpi_clock = 89100;
+			dpi_clock = HDMI_VIDEO_2160p_DSC_24Hz;
 
 			break;
 		}
