@@ -6,7 +6,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/inc  \
              -I$(srctree)/drivers/misc/mediatek/ext_disp/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/lcm/inc \
              -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6336/ \
-             -I$(srctree)/drivers/misc/mediatek/pmic/include/
+             -I$(srctree)/drivers/misc/mediatek/pmic/include/ \
+             -I$(srctree)/drivers/misc/mediatek/usb_c/inc
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 

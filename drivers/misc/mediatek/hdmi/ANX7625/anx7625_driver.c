@@ -48,7 +48,9 @@ Revision History:
 #endif
 #include "mt-plat/upmu_common.h"
 #endif
-
+#ifdef CONFIG_USB_C_SWITCH
+#include <typec.h>
+#endif
 #ifdef DYNAMIC_CONFIG_MIPI
 #include "../anx_extern/msm_dba.h"
 #include "../anx_extern/msm_dba_internal.h"
@@ -65,8 +67,6 @@ static int create_sysfs_interfaces(struct device *dev);
 
 /* to access global platform data */
 static struct anx7625_platform_data *g_pdata;
-
-
 
 atomic_t anx7625_power_status;
 unsigned char cable_connected;
@@ -116,25 +116,16 @@ static unsigned char  last_read_DevAddr = 0xff;
 
 #ifdef ANX7625_MTK_PLATFORM
 /*USB Driver wrapper*/
-static struct usbtypc *g_exttypec;
+static struct usbtypc_anx7625 *g_exttypec;
 struct delayed_work usb_work;
 
-struct usbtypc {
+struct usbtypc_anx7625 {
 	struct pinctrl *pinctrl;
 	struct usbc_pin_ctrl *pin_cfg;
 	struct device *pinctrl_dev;
 	struct i2c_client *i2c_hd;
 	struct typec_switch_data *host_driver;
 	struct typec_switch_data *device_driver;
-};
-
-struct typec_switch_data {
-	char *name;
-	int type;
-	int on;
-	int (*enable)(void *);
-	int (*disable)(void *);
-	void *priv_data;
 };
 
 /* Stat */
@@ -150,7 +141,7 @@ static void trigger_driver(struct work_struct *work)
 {
 	int type = 0;
 	int stat = cable_connected;
-	struct usbtypc *typec = g_exttypec;
+	struct usbtypc_anx7625 *typec = g_exttypec;
 
 	type = ((ReadReg(OCM_SLAVE_I2C_ADDR, SYSTEM_STSTUS) &
 		DATA_ROLE) == 0x20) ? HOST_TYPE : DEVICE_TYPE;
@@ -204,7 +195,8 @@ int register_typec_switch_callback(struct typec_switch_data *new_driver)
 		new_driver->name, new_driver->type);
 
 	if (!g_exttypec)
-		g_exttypec = kzalloc(sizeof(struct usbtypc), GFP_KERNEL);
+		g_exttypec = kzalloc(sizeof(struct usbtypc_anx7625),
+				GFP_KERNEL);
 
 	if (new_driver->type == DEVICE_TYPE) {
 		g_exttypec->device_driver = new_driver;
@@ -655,11 +647,36 @@ void anx7625_vbus_control(bool on)
 	mt6336_ctrl_disable(mt6336_ctrl);
 
 skip:
+
 	if (vbus_en != on)
 		pr_err("VBUS %s", (on ? "ON" : "OFF"));
 
 	vbus_en = (on ? 1 : 0);
-#else
+
+
+#elif defined CONFIG_USB_C_SWITCH
+	struct usbtypc_anx7625 *typec = g_exttypec;
+	struct typec_switch_data *drv = typec->host_driver;
+
+	if (!drv || !(drv->vbus_enable) || !(drv->vbus_disable)) {
+		pr_err("no function callback for VBUS");
+		return;
+	}
+
+	pr_info("VBUS before %s, after %s",
+			(vbus_en ? "ON" : "OFF"),
+			(on ? "ON" : "OFF"));
+
+	if (vbus_en == on)
+		return;
+
+	if (on)
+		drv->vbus_enable(drv->priv_data);
+	else
+		drv->vbus_disable(drv->priv_data);
+
+	vbus_en = (on ? 1 : 0);
+#else /* CONFIG_USB_C_SWITCH end */
 
 #ifdef CONFIG_OF
 	struct anx7625_platform_data *pdata = g_pdata;
@@ -672,10 +689,10 @@ skip:
 		gpio_set_value(pdata->gpio_vbus_ctrl, ENABLE_VBUS_OUTPUT);
 	else
 		gpio_set_value(pdata->gpio_vbus_ctrl, DISABLE_VBUS_OUTPUT);
-#endif
-#endif
-#endif
 
+#endif
+#endif
+#endif
 }
 
 static void anx7625_free_gpio(struct anx7625_data *platform)
@@ -1209,11 +1226,14 @@ static int anx7625_i2c_probe(struct i2c_client *client,
 	struct anx7625_data *platform;
 	struct anx7625_platform_data *pdata;
 	int ret = 0;
+
 #ifdef ANX7625_MTK_PLATFORM
-	struct usbtypc *typec;
+	struct usbtypc_anx7625 *typec;
 #else
 	int cbl_det_irq = 0;
 #endif
+
+	TRACE("%s:\n", __func__);
 
 	if (!i2c_check_functionality(client->adapter,
 				I2C_FUNC_SMBUS_I2C_BLOCK)) {
@@ -1260,7 +1280,7 @@ static int anx7625_i2c_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&usb_work, trigger_driver);
 
 	if (!g_exttypec) {
-		typec = kzalloc(sizeof(struct usbtypc), GFP_KERNEL);
+		typec = kzalloc(sizeof(struct usbtypc_anx7625), GFP_KERNEL);
 		g_exttypec = typec;
 	} else {
 		typec = g_exttypec;
@@ -1470,6 +1490,8 @@ static void __init anx7625_init_async(
 #else
 	slimport_log_on = false;
 #endif
+
+	TRACE("%s:\n", __func__);
 
 #ifdef ANX7625_MTK_PLATFORM
 	slimport_platform_init();
