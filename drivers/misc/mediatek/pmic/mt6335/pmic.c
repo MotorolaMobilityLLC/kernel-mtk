@@ -386,8 +386,8 @@ unsigned int enable_vsram_vcore_hw_tracking(unsigned int en)
 	pmic_read_interface(MT6335_LDO_TRACKING_CON0, &rdata, 0x7, 0);
 	if (!(rdata ^ 0x7)) {
 		pr_err("[PMIC][%s] %s HW TRACKING success\n", __func__, (en == 1)?"enable":"disable");
-		if (en == 0)
-			buck_set_voltage(VSRAM_VCORE, 1000000);
+		if (en == 0)	/* set VSRAM_VCORE to 1.0V*/
+			pmic_set_register_value(PMIC_RG_VSRAM_VCORE_VOSEL, 0x60);
 		return 0;
 	}
 	pr_err("[PMIC][%s] %s HW TRACKING fail\n", __func__, (en == 1)?"enable":"disable");
