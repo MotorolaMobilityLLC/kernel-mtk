@@ -57,10 +57,10 @@
 static const unsigned int BL_MIN_LEVEL = 20;
 static LCM_UTIL_FUNCS lcm_util;
 
+
 #define SET_RESET_PIN(v)	(lcm_util.set_reset_pin((v)))
 #define MDELAY(n)		(lcm_util.mdelay(n))
 #define UDELAY(n)		(lcm_util.udelay(n))
-
 
 #define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update) \
 	lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
@@ -112,7 +112,7 @@ static const struct of_device_id lcm_of_match[] = {
 #endif
 
 /*static struct i2c_client *tps65132_i2c_client;*/
-struct i2c_client *tps65132_i2c_client;
+static struct i2c_client *tps65132_i2c_client;
 
 /*****************************************************************************
  * Function Prototype
@@ -168,7 +168,7 @@ static int tps65132_remove(struct i2c_client *client)
 
 /*static int tps65132_write_bytes(unsigned char addr, unsigned char value)*/
 #if !defined(CONFIG_ARCH_MT6797)
-int tps65132_write_bytes(unsigned char addr, unsigned char value)
+static int tps65132_write_bytes(unsigned char addr, unsigned char value)
 {
 	int ret = 0;
 	struct i2c_client *client = tps65132_i2c_client;
@@ -183,22 +183,16 @@ int tps65132_write_bytes(unsigned char addr, unsigned char value)
 }
 #endif
 
+#if defined(CONFIG_MTK_LEGACY)
 static int __init tps65132_iic_init(void)
 {
-	LCM_LOGI("tps65132_iic_init\n");
-#if defined(CONFIG_MTK_LEGACY)
 	i2c_register_board_info(TPS_I2C_BUSNUM, &tps65132_board_info, 1);
-#endif
-	LCM_LOGI("tps65132_iic_init2\n");
-	i2c_add_driver(&tps65132_iic_driver);
-	LCM_LOGI("tps65132_iic_init success\n");
 	return 0;
 }
 
 static void __exit tps65132_iic_exit(void)
 {
 	LCM_LOGI("tps65132_iic_exit\n");
-	i2c_del_driver(&tps65132_iic_driver);
 }
 
 
@@ -208,6 +202,29 @@ module_exit(tps65132_iic_exit);
 MODULE_AUTHOR("Xiaokuan Shi");
 MODULE_DESCRIPTION("MTK TPS65132 I2C Driver");
 MODULE_LICENSE("GPL");
+#endif
+
+
+static int tps65132_iic_add_driver(void)
+{
+	static int inited;
+	int ret;
+
+	if (inited)
+		return 0;
+
+	inited = 1;
+
+	LCM_LOGI("tps65132_iic_init\n");
+	ret = i2c_add_driver(&tps65132_iic_driver);
+
+	if (ret)
+		LCM_LOGI("error: lcm tps65132_iic_init fail !!!\n");
+	else
+		LCM_LOGI("tps65132_iic_init success\n");
+	return 0;
+}
+
 #endif
 #endif
 
@@ -1435,7 +1452,6 @@ static void push_table(void *cmdq, struct LCM_setting_table *table,
 	unsigned cmd;
 
 	for (i = 0; i < count; i++) {
-
 		cmd = table[i].cmd;
 
 		switch (cmd) {
@@ -1647,6 +1663,8 @@ static void lcm_init(void)
 	cmd = 0x00;
 	data = 0x0E;
 
+	tps65132_iic_add_driver();
+
 	SET_RESET_PIN(0);
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -1759,7 +1777,7 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsig
 
 static unsigned int lcm_compare_id(void)
 {
-	unsigned int id = 0;
+	unsigned int id = 0, version_id = 0;
 	unsigned char buffer[2];
 	unsigned int array[16];
 
@@ -1774,11 +1792,14 @@ static unsigned int lcm_compare_id(void)
 	dsi_set_cmdq(array, 1, 1);
 
 	read_reg_v2(0xF4, buffer, 2);
-	id = buffer[0];		/* we only need ID */
+	id = buffer[0];     /* we only need ID */
 
-	LCM_LOGI("%s,nt35695 debug: nt35695 id = 0x%08x\n", __func__, id);
+	read_reg_v2(0xDB, buffer, 1);
+	version_id = buffer[0];
 
-	if (id == LCM_ID_NT35695)
+	LCM_LOGI("%s,nt35695_id=0x%08x,version_id=0x%x\n", __func__, id, version_id);
+
+	if (id == LCM_ID_NT35695 && version_id == 0x81)
 		return 1;
 	else
 		return 0;

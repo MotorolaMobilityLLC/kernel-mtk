@@ -277,6 +277,8 @@ extern LCM_DRIVER s6e3ha3_wqhd_2k_cmd_laneswap_drv;
 extern LCM_DRIVER nt36380_wqhd_vdo_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_nt50358_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_720p_lcm_drv;
+extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_qhd_lcm_drv;
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
