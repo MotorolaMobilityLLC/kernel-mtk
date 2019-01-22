@@ -16,7 +16,7 @@
 
 #include "mtk_smi.h"
 
-enum SMI_LARB_ID {
+enum SMI_MASTER_ID {
 	SMI_LARB0 = 0,
 	SMI_LARB_MMSYS0 = SMI_LARB0,
 	SMI_LARB1 = 1,
@@ -34,15 +34,17 @@ enum SMI_LARB_ID {
 	SMI_LARB7 = 7,
 	SMI_LARB_VENCSYS = SMI_LARB7,
 	SMI_LARB8 = 8,
-	SMI_LARB_MJCSYS = SMI_LARB8
+	SMI_LARB_MJCSYS = SMI_LARB8,
+	SMI_COMMON = 9
 };
 
 /* SMI extern API */
 extern MTK_SMI_BWC_SCEN smi_get_current_profile(void);
-extern int smi_bus_enable(enum SMI_LARB_ID larb_id, char *user_name);
-extern int smi_bus_disable(enum SMI_LARB_ID larb_id, char *user_name);
-extern int smi_clk_prepare(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos);
-extern int smi_clk_enable(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos);
-extern int smi_clk_unprepare(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos);
-extern int smi_clk_disable(enum SMI_LARB_ID larb_id, char *user_name, int enable_mtcmos);
+extern int smi_bus_enable(enum SMI_MASTER_ID master_id, char *user_name);
+extern int smi_bus_disable(enum SMI_MASTER_ID master_id, char *user_name);
+extern int smi_clk_prepare(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
+extern int smi_clk_enable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
+extern int smi_clk_unprepare(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
+extern int smi_clk_disable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
+
 #endif
