@@ -359,9 +359,8 @@ rw_end:
 		else
 			is_cmdq_en = false;
 	}
-
-	mmc_release_host(mmc);
 #endif
+	mmc_release_host(mmc);
 
 rw_end_without_release:
 	if (ret)
