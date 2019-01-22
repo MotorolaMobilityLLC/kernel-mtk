@@ -77,6 +77,7 @@
 /*
  *    global variable control
  */
+static DEFINE_SPINLOCK(clksys_set_reg_lock);
 static const unsigned int SramCaptureOffSet = (16 * 1024);
 
 static const struct regmap_config mtk_afe_regmap_config = {
@@ -222,6 +223,7 @@ void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 	volatile long address = (long)((char *)CLKSYS_ADDRESS + offset);
 	volatile unsigned int *val_addr = (volatile unsigned int *)address;
 	volatile unsigned int val_tmp;
+	unsigned long flags = 0;
 
 	if (CLKSYS_ADDRESS == NULL) {
 		pr_err("%s(), CLKSYS_ADDRESS is null\n", __func__);
@@ -229,10 +231,12 @@ void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 	}
 
 	pr_aud("%s offset=%x, value=%x, mask=%x\n", __func__, offset, value, mask);
+	spin_lock_irqsave(&clksys_set_reg_lock, flags);
 	val_tmp = clksys_get_reg(offset);
 	val_tmp &= (~mask);
 	val_tmp |= (value & mask);
 	mt_reg_sync_writel(val_tmp, val_addr);
+	spin_unlock_irqrestore(&clksys_set_reg_lock, flags);
 }
 
 void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask)
