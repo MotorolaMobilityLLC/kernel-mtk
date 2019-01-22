@@ -4510,12 +4510,10 @@ static void cmdq_core_parse_error(const struct TaskStruct *pTask, uint32_t threa
 
 	do {
 		/* confirm if SMI is hang */
-		if (!pTask || !CMDQ_TASK_IS_INTERNAL(pTask)) {
-			isSMIHang = cmdq_get_func()->dumpSMI(0);
-			if (isSMIHang) {
-				module = "SMI";
-				break;
-			}
+		isSMIHang = cmdq_get_func()->dumpSMI(0);
+		if (isSMIHang) {
+			module = "SMI";
+			break;
 		}
 
 		/* other cases, use instruction to judge */
@@ -6112,27 +6110,25 @@ static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const stru
 	cmdq_core_dump_task_in_thread(thread, false, false, false);
 	cmdq_core_dump_task_with_engine_flag(printEngineFlag, thread);
 
+	CMDQ_ERR("=============== [CMDQ] CMDQ Status ===============\n");
+	cmdq_core_dump_status("ERR");
+
+#ifndef CONFIG_MTK_FPGA
+	CMDQ_ERR("=============== [CMDQ] SMI Status ===============\n");
+	cmdq_get_func()->dumpSMI(1);
+#endif
+
 	if (short_log) {
 		CMDQ_ERR("=============== skip detail error dump ===============\n");
 		return;
 	}
 
-	CMDQ_ERR("=============== [CMDQ] CMDQ Status ===============\n");
-	cmdq_core_dump_status("ERR");
+	CMDQ_ERR("=============== [CMDQ] Clock Gating Status ===============\n");
+	CMDQ_ERR("[CLOCK] common clock ref=%d\n", atomic_read(&gCmdqThreadUsage));
 
-	if (!pTask || !CMDQ_TASK_IS_INTERNAL(pTask)) {
-#ifndef CONFIG_MTK_FPGA
-		CMDQ_ERR("=============== [CMDQ] SMI Status ===============\n");
-		cmdq_get_func()->dumpSMI(1);
-#endif
-
-		CMDQ_ERR("=============== [CMDQ] Clock Gating Status ===============\n");
-		CMDQ_ERR("[CLOCK] common clock ref=%d\n", atomic_read(&gCmdqThreadUsage));
-
-		/* Dump MMSYS configuration */
-		CMDQ_ERR("=============== [CMDQ] MMSYS_CONFIG ===============\n");
-		cmdq_mdp_get_func()->dumpMMSYSConfig();
-	}
+	/* Dump MMSYS configuration */
+	CMDQ_ERR("=============== [CMDQ] MMSYS_CONFIG ===============\n");
+	cmdq_mdp_get_func()->dumpMMSYSConfig();
 
 	/* ask each module to print their status */
 	CMDQ_ERR("=============== [CMDQ] Engine Status ===============\n");
