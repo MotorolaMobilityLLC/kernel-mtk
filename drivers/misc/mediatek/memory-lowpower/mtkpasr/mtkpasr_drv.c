@@ -28,6 +28,7 @@
 #include <mtk_dramc.h>
 
 #ifdef CONFIG_MTK_DCS
+#include <mt_vcorefs_manager.h>
 #include <mt-plat/mtk_meminfo.h>
 #endif
 
@@ -255,8 +256,10 @@ static int mtkpasr_config(int times, get_range_t func)
 	if (enter_pasr_dpd_config(mtkpasr_on & 0xFF, mtkpasr_on >> 0x8) != 0)
 		MTKPASR_PRINT("%s: failed to program DRAMC!\n", __func__);
 #else
+	vcorefs_request_dvfs_opp(KIR_PASR, OPP_0);
 	/* Channel based PASR configuration */
 	enable_dcs_pasr();
+	vcorefs_request_dvfs_opp(KIR_PASR, OPP_UNREQ);
 #endif
 
 	++mtkpasr_triggered;
@@ -284,7 +287,9 @@ static int mtkpasr_restore(void)
 #ifndef CONFIG_MTK_DCS
 	restore_pasr();
 #else
+	vcorefs_request_dvfs_opp(KIR_PASR, OPP_0);
 	disable_dcs_pasr();
+	vcorefs_request_dvfs_opp(KIR_PASR, OPP_UNREQ);
 #endif
 
 	MTKPASR_PRINT("%s:-\n", __func__);
