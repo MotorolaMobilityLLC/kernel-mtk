@@ -784,6 +784,7 @@ static irqreturn_t md_ccif_isr(int irq, void *data)
 		if (ch_id & 0x1 << i)
 			set_bit(i, &md_ctrl->channel_id);
 	ccif_write32(md_ctrl->ccif_ap_base, APCCIF_ACK, ch_id);
+	CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "md_ccif_isr ch_id = 0x%lX\n", md_ctrl->channel_id);
 	/*igore exception queue*/
 	if (ch_id >> RINGQ_BASE) {
 		md_ctrl->traffic_info.latest_isr_time = local_clock();
