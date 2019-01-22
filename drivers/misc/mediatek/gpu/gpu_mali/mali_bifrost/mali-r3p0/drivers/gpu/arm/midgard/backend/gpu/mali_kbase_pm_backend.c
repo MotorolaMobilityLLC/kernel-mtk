@@ -77,6 +77,7 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
 
 	kbdev->pm.backend.gpu_powered = false;
 	kbdev->pm.suspending = false;
+	kbdev->pm.backend.mtk_gpu_suspend = false;
 #ifdef CONFIG_MALI_DEBUG
 	kbdev->pm.backend.driver_ready_for_irqs = false;
 #endif /* CONFIG_MALI_DEBUG */
@@ -103,6 +104,11 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
 					callbacks->power_runtime_off_callback;
 		kbdev->pm.backend.callback_power_runtime_idle =
 					callbacks->power_runtime_idle_callback;
+
+		kbdev->pm.backend.callback_mtk_power_suspend =
+					callbacks->mtk_power_suspend_callback;
+		kbdev->pm.backend.callback_mtk_power_resume =
+					callbacks->mtk_power_resume_callback;
 	} else {
 		kbdev->pm.backend.callback_power_on = NULL;
 		kbdev->pm.backend.callback_power_off = NULL;
@@ -113,6 +119,9 @@ int kbase_hwaccess_pm_init(struct kbase_device *kbdev)
 		kbdev->pm.backend.callback_power_runtime_on = NULL;
 		kbdev->pm.backend.callback_power_runtime_off = NULL;
 		kbdev->pm.backend.callback_power_runtime_idle = NULL;
+
+		kbdev->pm.backend.callback_mtk_power_suspend = NULL;
+		kbdev->pm.backend.callback_mtk_power_resume = NULL;
 	}
 
 	/* Initialise the metrics subsystem */
