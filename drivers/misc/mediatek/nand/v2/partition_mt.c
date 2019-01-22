@@ -581,7 +581,8 @@ void construct_mtd_partition(struct mtd_info *mtd)
 				mtd->eraseregions[i].erasesize = mtd->erasesize / 2;
 
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-			if (partition_type_array[i] == REGION_SLC_MODE)
+			if ((partition_type_array[i] == REGION_SLC_MODE)
+				|| (partition_type_array[i] == REGION_LOW_PAGE))
 				mtd->eraseregions[i].erasesize = mtd->erasesize / 3;
 
 #endif
@@ -639,7 +640,8 @@ void part_init_pmt(struct mtd_info *mtd, u8 *buf)
 				if (partition_type_array[i] == REGION_LOW_PAGE)
 					mtd->eraseregions[i].erasesize = mtd->erasesize / 2;
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-				if (partition_type_array[i] == REGION_SLC_MODE)
+				if ((partition_type_array[i] == REGION_SLC_MODE)
+					|| (partition_type_array[i] == REGION_LOW_PAGE))
 					mtd->eraseregions[i].erasesize = mtd->erasesize/3;
 
 #endif
