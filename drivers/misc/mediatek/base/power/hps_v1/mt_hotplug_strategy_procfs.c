@@ -139,50 +139,36 @@ static ssize_t hps_proc_uint_write_with_lock_reset(
 #define PROC_ENTRY(name)	{__stringify(name), &hps_##name##_proc_fops}
 
 /***********************************************************
-* procfs callback - state series
-*                     - init_state
-*                     - state
-***********************************************************/
+ * procfs callback - state series
+ *                     - init_state
+ ***********************************************************/
 PROC_FOPS_RO_UINT(init_state, hps_ctxt.init_state);
-PROC_FOPS_RO_UINT(state, hps_ctxt.state);
 
 /***********************************************************
-* procfs callback - enabled series
-*                     - enabled
-*                     - early_suspend_enabled
-*                     - suspend_enabled
-*                     - log_mask
-***********************************************************/
+ * procfs callback - enabled series
+ *                     - enabled
+ *                     - log_mask
+ ***********************************************************/
 PROC_FOPS_RW_UINT(
 	enabled,
 	hps_ctxt.enabled,
 	hps_proc_uint_write_with_lock_reset);
-PROC_FOPS_RW_UINT(
-	early_suspend_enabled,
-	hps_ctxt.early_suspend_enabled,
-	hps_proc_uint_write_with_lock);
-PROC_FOPS_RW_UINT(
-	suspend_enabled,
-	hps_ctxt.suspend_enabled,
-	hps_proc_uint_write_with_lock);
 PROC_FOPS_RW_UINT(
 	log_mask,
 	hps_ctxt.log_mask,
 	hps_proc_uint_write_with_lock);
 
 /***********************************************************
-* procfs callback - algo config series
-*                     - up_threshold
-*                     - up_times
-*                     - down_threshold
-*                     - down_times
-*                     - input_boost_enabled
-*                     - input_boost_cpu_num
-*                     - rush_boost_enabled
-*                     - rush_boost_threshold
-*                     - rush_boost_times
-*                     - tlp_times
-***********************************************************/
+ * procfs callback - algo config series
+ *                     - up_threshold
+ *                     - up_times
+ *                     - down_threshold
+ *                     - down_times
+ *                     - rush_boost_enabled
+ *                     - rush_boost_threshold
+ *                     - rush_boost_times
+ *                     - tlp_times
+ ***********************************************************/
 PROC_FOPS_RW_UINT(
 	up_threshold,
 	hps_ctxt.up_threshold,
@@ -199,14 +185,6 @@ PROC_FOPS_RW_UINT(
 	down_times,
 	hps_ctxt.down_times,
 	hps_proc_uint_write_with_lock_reset);
-PROC_FOPS_RW_UINT(
-	input_boost_enabled,
-	hps_ctxt.input_boost_enabled,
-	hps_proc_uint_write_with_lock);
-PROC_FOPS_RW_UINT(
-	input_boost_cpu_num,
-	hps_ctxt.input_boost_cpu_num,
-	hps_proc_uint_write_with_lock);
 PROC_FOPS_RW_UINT(
 	rush_boost_enabled,
 	hps_ctxt.rush_boost_enabled,
@@ -646,17 +624,12 @@ int hps_procfs_init(void)
 
 	const struct pentry entries[] = {
 		PROC_ENTRY(init_state),
-		PROC_ENTRY(state),
 		PROC_ENTRY(enabled),
-		PROC_ENTRY(early_suspend_enabled),
-		PROC_ENTRY(suspend_enabled),
 		PROC_ENTRY(log_mask),
 		PROC_ENTRY(up_threshold),
 		PROC_ENTRY(up_times),
 		PROC_ENTRY(down_threshold),
 		PROC_ENTRY(down_times),
-		PROC_ENTRY(input_boost_enabled),
-		PROC_ENTRY(input_boost_cpu_num),
 		PROC_ENTRY(rush_boost_enabled),
 		PROC_ENTRY(rush_boost_threshold),
 		PROC_ENTRY(rush_boost_times),

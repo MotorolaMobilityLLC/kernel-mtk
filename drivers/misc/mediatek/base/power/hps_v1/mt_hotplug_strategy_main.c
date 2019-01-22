@@ -28,34 +28,12 @@
 #define DEF_LOG_MASK		0
 #endif
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void hps_early_suspend(struct early_suspend *h);
-static void hps_late_resume(struct early_suspend *h);
-#endif
-
-static int hps_probe(struct platform_device *pdev);
-static int hps_suspend(struct device *dev);
-static int hps_resume(struct device *dev);
-static int hps_freeze(struct device *dev);
-static int hps_restore(struct device *dev);
-
-static const struct dev_pm_ops hps_dev_pm_ops = {
-	.suspend    = hps_suspend,
-	.resume     = hps_resume,
-	.freeze     = hps_freeze,
-	.restore    = hps_restore,
-	.thaw       = hps_restore,
-};
-
 struct hps_ctxt_struct hps_ctxt = {
 	/* state */
 	.init_state = INIT_STATE_NOT_READY,
-	.state = STATE_LATE_RESUME,
 
 	/* enabled */
 	.enabled = EN_HPS,
-	.early_suspend_enabled = 1,
-	.suspend_enabled = 1,
 	.log_mask = DEF_LOG_MASK,
 
 	/* core */
@@ -67,30 +45,11 @@ struct hps_ctxt_struct hps_ctxt = {
 	.wait_queue = __WAIT_QUEUE_HEAD_INITIALIZER(hps_ctxt.wait_queue),
 #endif
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	.es_handler = {
-		.level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 250,
-		.suspend = hps_early_suspend,
-		.resume  = hps_late_resume,
-	},
-#endif /* #ifdef CONFIG_HAS_EARLYSUSPEND */
-	.pdrv = {
-		.remove     = NULL,
-		.shutdown   = NULL,
-		.probe      = hps_probe,
-		.driver     = {
-			.name = "hps",
-			.pm   = &hps_dev_pm_ops,
-		},
-	},
-
 	/* algo config */
 	.up_threshold = DEF_CPU_UP_THRESHOLD,
 	.up_times = DEF_CPU_UP_TIMES,
 	.down_threshold = DEF_CPU_DOWN_THRESHOLD,
 	.down_times = DEF_CPU_DOWN_TIMES,
-	.input_boost_enabled = EN_CPU_INPUT_BOOST,
-	.input_boost_cpu_num = DEF_CPU_INPUT_BOOST_CPU_NUM,
 	.rush_boost_enabled = EN_CPU_RUSH_BOOST,
 	.rush_boost_threshold = DEF_CPU_RUSH_BOOST_THRESHOLD,
 	.rush_boost_times = DEF_CPU_RUSH_BOOST_TIMES,
@@ -155,12 +114,7 @@ void hps_ctxt_reset_stas(void)
 void hps_ctxt_print_basic(int toUart)
 {
 	log_info("hps_ctxt.init_state: %u\n", hps_ctxt.init_state);
-	log_info("hps_ctxt.state: %u\n", hps_ctxt.state);
 	log_info("hps_ctxt.enabled: %u\n", hps_ctxt.enabled);
-	log_info("hps_ctxt.early_suspend_enabled: %u\n",
-		hps_ctxt.early_suspend_enabled);
-	log_info("hps_ctxt.suspend_enabled: %u\n",
-		hps_ctxt.suspend_enabled);
 	log_info("hps_ctxt.is_hmp: %u\n", hps_ctxt.is_hmp);
 	log_info("hps_ctxt.little_cpu_id_min: %u\n",
 		hps_ctxt.little_cpu_id_min);
@@ -179,10 +133,6 @@ void hps_ctxt_print_algo_config(int toUart)
 	log_info("hps_ctxt.down_threshold: %u\n",
 		hps_ctxt.down_threshold);
 	log_info("hps_ctxt.down_times: %u\n", hps_ctxt.down_times);
-	log_info("hps_ctxt.input_boost_enabled: %u\n",
-		hps_ctxt.input_boost_enabled);
-	log_info("hps_ctxt.input_boost_cpu_num: %u\n",
-		hps_ctxt.input_boost_cpu_num);
 	log_info("hps_ctxt.rush_boost_enabled: %u\n",
 		hps_ctxt.rush_boost_enabled);
 	log_info("hps_ctxt.rush_boost_threshold: %u\n",
@@ -263,184 +213,6 @@ void hps_ctxt_print_algo_stats_tlp(int toUart)
 }
 
 /*
- * early suspend callback
- */
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void hps_early_suspend(struct early_suspend *h)
-{
-	log_info("hps_early_suspend\n");
-
-	mutex_lock(&hps_ctxt.lock);
-	hps_ctxt.state = STATE_EARLY_SUSPEND;
-
-	hps_ctxt.rush_boost_enabled_backup = hps_ctxt.rush_boost_enabled;
-	hps_ctxt.rush_boost_enabled = 0;
-
-	if (hps_ctxt.is_hmp && hps_ctxt.early_suspend_enabled) {
-		unsigned int cpu;
-
-		for (cpu = hps_ctxt.big_cpu_id_max;
-			cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
-			if (cpu_online(cpu))
-				hps_cpu_down(cpu);
-		}
-	}
-	mutex_unlock(&hps_ctxt.lock);
-
-	log_info(
-		"state: %u, enabled: %u, early_suspend_enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.early_suspend_enabled, hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
-}
-#endif /* #ifdef CONFIG_HAS_EARLYSUSPEND */
-
-/*
- * late resume callback
- */
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void hps_late_resume(struct early_suspend *h)
-{
-	log_info("hps_late_resume\n");
-
-	mutex_lock(&hps_ctxt.lock);
-	hps_ctxt.rush_boost_enabled = hps_ctxt.rush_boost_enabled_backup;
-
-	hps_ctxt.state = STATE_LATE_RESUME;
-	mutex_unlock(&hps_ctxt.lock);
-
-	log_info(
-		"state: %u, enabled: %u, early_suspend_enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.early_suspend_enabled, hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
-}
-#endif /* #ifdef CONFIG_HAS_EARLYSUSPEND */
-
-/*
- * probe callback
- */
-static int hps_probe(struct platform_device *pdev)
-{
-	log_info("hps_probe\n");
-
-	return 0;
-}
-
-/*
- * suspend callback
- */
-static int hps_suspend(struct device *dev)
-{
-	log_info("%s\n", __func__);
-
-	if (!hps_ctxt.suspend_enabled)
-		goto suspend_end;
-
-	mutex_lock(&hps_ctxt.lock);
-	hps_ctxt.enabled_backup = hps_ctxt.enabled;
-	hps_ctxt.enabled = 0;
-	mutex_unlock(&hps_ctxt.lock);
-
-suspend_end:
-	hps_ctxt.state = STATE_SUSPEND;
-	log_info(
-		"state: %u, enabled: %u, early_suspend_enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.early_suspend_enabled, hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
-
-	return 0;
-}
-
-/*
- * resume callback
- */
-static int hps_resume(struct device *dev)
-{
-	log_info("%s\n", __func__);
-
-	if (!hps_ctxt.suspend_enabled)
-		goto resume_end;
-
-	mutex_lock(&hps_ctxt.lock);
-	hps_ctxt.enabled = hps_ctxt.enabled_backup;
-	mutex_unlock(&hps_ctxt.lock);
-
-resume_end:
-	hps_ctxt.state = STATE_EARLY_SUSPEND;
-	log_info(
-		"state: %u, enabled: %u, early_suspend_enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.early_suspend_enabled, hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
-
-	return 0;
-}
-
-/*
- * freeze callback
- */
-static int hps_freeze(struct device *dev)
-{
-	log_info("%s\n", __func__);
-
-	if (!hps_ctxt.suspend_enabled)
-		goto freeze_end;
-
-	mutex_lock(&hps_ctxt.lock);
-	hps_ctxt.enabled_backup = hps_ctxt.enabled;
-	hps_ctxt.enabled = 0;
-
-	/* prepare to hibernation restore */
-	if (hps_ctxt.is_hmp) {
-		unsigned int cpu;
-
-		for (cpu = hps_ctxt.big_cpu_id_max;
-			cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
-			if (cpu_online(cpu))
-				hps_cpu_down(cpu);
-		}
-	}
-	mutex_unlock(&hps_ctxt.lock);
-
-freeze_end:
-	hps_ctxt.state = STATE_SUSPEND;
-	log_info(
-		"state: %u, enabled: %u, early_suspend_enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.early_suspend_enabled, hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
-
-	return 0;
-}
-
-/*
- * restore callback
- */
-static int hps_restore(struct device *dev)
-{
-	log_info("%s\n", __func__);
-
-	if (!hps_ctxt.suspend_enabled)
-		goto restore_end;
-
-	mutex_lock(&hps_ctxt.lock);
-	hps_ctxt.enabled = hps_ctxt.enabled_backup;
-	mutex_unlock(&hps_ctxt.lock);
-
-restore_end:
-	hps_ctxt.state = STATE_EARLY_SUSPEND;
-	log_info(
-		"state: %u, enabled: %u, early_suspend_enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.early_suspend_enabled, hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
-
-	return 0;
-}
-
-/*
  * module init function
  */
 static int __init hps_init(void)
@@ -461,14 +233,6 @@ static int __init hps_init(void)
 	r = hps_procfs_init();
 	if (r)
 		hps_err("hps_procfs_init fail(%d)\n", r);
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	register_early_suspend(&hps_ctxt.es_handler);
-#endif /* #ifdef CONFIG_HAS_EARLYSUSPEND */
-
-	r = platform_driver_register(&hps_ctxt.pdrv);
-	if (r)
-		hps_err("platform_driver_register fail(%d)\n", r);
 
 	hps_ctxt.init_state = INIT_STATE_DONE;
 
