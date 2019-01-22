@@ -451,13 +451,15 @@ void audckbufEnable(bool enable)
 	if (enable) {
 		if (audck_buf_Count == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-			if (mClkBufferfromPMIC) {
-				Ana_Set_Reg(DCXO_CW14, 0x2000, 0x2000);
-				pr_warn("-PMIC DCXO XO_AUDIO_EN_M enable, DCXO_CW14 = 0x%x\n",
-						Ana_Get_Reg(DCXO_CW14));
-			} else {
+			/* Turn on clock from DCXO to PMIC Audio */
+			Ana_Set_Reg(DCXO_CW14, 0x2000, 0x2000);
+			pr_debug("-PMIC DCXO XO_AUDIO_EN_M enable, DCXO_CW14 = 0x%x\n",
+					Ana_Get_Reg(DCXO_CW14));
+			if (!mClkBufferfromPMIC) {
+				/* Co-VCTCXO: PMIC DCXO clock source is from RF */
+				/* The clock from RF to PMIC need to be turned on */
 				clk_buf_ctrl(CLK_BUF_AUDIO, true);
-				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
+				pr_debug("-RF clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
 			}
 #endif
 		}
@@ -466,13 +468,12 @@ void audckbufEnable(bool enable)
 		audck_buf_Count--;
 		if (audck_buf_Count == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
-			if (mClkBufferfromPMIC) {
-				Ana_Set_Reg(DCXO_CW14, 0x0000, 0x2000);
-				pr_warn("-PMIC DCXO XO_AUDIO_EN_M disable, DCXO_CW14 = 0x%x\n",
-						Ana_Get_Reg(DCXO_CW14));
-			} else {
+			Ana_Set_Reg(DCXO_CW14, 0x0000, 0x2000);
+			pr_debug("-PMIC DCXO XO_AUDIO_EN_M disable, DCXO_CW14 = 0x%x\n",
+					Ana_Get_Reg(DCXO_CW14));
+			if (!mClkBufferfromPMIC) {
 				clk_buf_ctrl(CLK_BUF_AUDIO, false);
-				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
+				pr_debug("-RF clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
 			}
 #endif
 		}
@@ -492,10 +493,8 @@ static void ClsqEnable(bool enable)
 	mutex_lock(&AudAna_lock);
 	if (enable) {
 		if (ClsqCount == 0) {
-			if (is_clk_buf_from_pmic())
-				Ana_Set_Reg(TOP_CLKSQ_SET, 0x0001, 0x0001);
-			else
-				Ana_Set_Reg(TOP_CLKSQ_SET, 0x0801, 0x0801);
+			/* PMIC Audio clock source from PMIC internal DCXO */
+			Ana_Set_Reg(TOP_CLKSQ_SET, 0x0001, 0x0001);
 			/* Turn on 26MHz source clock */
 		}
 		ClsqCount++;
@@ -7051,7 +7050,7 @@ static int Voice_Call_DAC_DAC_HS_Set(struct snd_kcontrol *kcontrol,
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x009B, 0xffff);
 
 		/* UL - DCC Mode */
-		Ana_Set_Reg(TOP_CLKSQ, 0x0801, 0xffff);
+		Ana_Set_Reg(TOP_CLKSQ, 0x0001, 0xffff);
 		Ana_Set_Reg(AUDENC_ANA_CON3, 0x0001, 0xffff);
 		Ana_Set_Reg(TOP_CKPDN_CON3, 0x0100, 0xffff);
 		Ana_Set_Reg(AFE_DCCLK_CFG0, 0x2060, 0xffff);
@@ -8114,12 +8113,10 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	pr_warn("%s\n", __func__);
 
 	audckbufEnable(true);
-#ifndef CONFIG_FPGA_EARLY_PORTING
-	if (is_clk_buf_from_pmic())
-		Ana_Set_Reg(TOP_CLKSQ, 0x0, 0x0001);
-	else
-		Ana_Set_Reg(TOP_CLKSQ, 0x0800, 0x0801);
-#endif
+
+	/* PMIC Audio clock source from PMIC internal DCXO */
+	Ana_Set_Reg(TOP_CLKSQ, 0x0, 0x0001);
+
 	/* Disable CLKSQ 26MHz */
 	Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0010, 0x0010);
 	/* disable AUDGLB */
