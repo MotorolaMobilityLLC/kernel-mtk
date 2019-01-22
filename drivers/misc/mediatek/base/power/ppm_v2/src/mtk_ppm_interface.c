@@ -273,6 +273,7 @@ static int ppm_mode_proc_show(struct seq_file *m, void *v)
 		break;
 	default:
 		WARN_ON(1);
+		break;
 	}
 
 	seq_printf(m, "%s\n", mode);
