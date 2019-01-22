@@ -29,6 +29,10 @@
 #include "hdmicec.h"
 #endif
 
+#ifdef HDMI_ITE66121_SUPPORT
+#include "extd_hdmi.h"
+#endif
+
 enum HDMI_TASK_COMMAND_TYPE_T {
 	HDMI_CEC_CMD = 0,
 	HDMI_PLUG_DETECT_CMD,
@@ -485,7 +489,11 @@ struct HDMI_DRIVER {
 	void (*read)(unsigned char u8Reg);
 	void (*write)(unsigned char u8Reg, unsigned char u8Data);
 	void (*log_enable)(bool enable);
+#ifdef HDMI_ITE66121_SUPPORT
+	void (*getedid)(struct _HDMI_EDID_T *pv_get_info);
+#else
 	void (*getedid)(void *pv_get_info);
+#endif
 #else
 	void (*read)(unsigned long u2Reg, unsigned int *p4Data);
 	void (*write)(unsigned long u2Reg, unsigned int u4Data);
@@ -520,6 +528,15 @@ struct HDMI_DRIVER {
 /* --------------------------------------------------------------------------- */
 /* HDMI Driver Functions */
 /* --------------------------------------------------------------------------- */
+#ifdef HDMI_ITE66121_SUPPORT
+int it66121_i2c_read_byte(u8 addr, u8 *data);
+int it66121_i2c_write_byte(u8 addr, u8 data);
+int it66121_i2c_read_block(u8 addr, u8 *data, int len);
+int it66121_i2c_write_block(u8 addr, u8 *data, int len);
+int ite66121_pmic_power_on(void);
+int ite66121_pmic_power_off(void);
+
+#endif
 extern unsigned int dst_is_dsi;
 extern struct semaphore hdmi_update_mutex;
 const struct HDMI_DRIVER *HDMI_GetDriver(void);
