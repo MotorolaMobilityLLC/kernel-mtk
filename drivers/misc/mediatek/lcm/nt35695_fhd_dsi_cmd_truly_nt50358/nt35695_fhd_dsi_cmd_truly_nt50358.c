@@ -173,6 +173,12 @@ int tps65132_write_bytes(unsigned char addr, unsigned char value)
 	int ret = 0;
 	struct i2c_client *client = tps65132_i2c_client;
 	char write_data[2] = { 0 };
+
+	if (client == NULL) {
+		pr_debug("ERROR!!tps65132_i2c_client is null\n");
+		return 0;
+	}
+
 	write_data[0] = addr;
 	write_data[1] = value;
 	ret = i2c_master_send(client, write_data, 2);
