@@ -123,7 +123,7 @@ static inline char *m4u_get_port_name(M4U_PORT_ID portID)
 	if ((portID < gM4u_port_num) &&  (portID >= M4U_PORT_DISP_OVL0))
 		return gM4uPort[portID].name;
 
-		return "m4u_port_unknown";
+	return "m4u_port_unknown";
 }
 
 static inline int m4u_get_port_by_tf_id(int m4u_id, int tf_id)
