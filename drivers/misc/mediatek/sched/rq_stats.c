@@ -37,11 +37,6 @@
 #define DEFAULT_DEF_TIMER_JIFFIES 5
 #define HEAVY_TASK_ENABLE 1
 
-#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
-static unsigned int heavy_task_prio = NICE_TO_PRIO(CONFIG_SCHED_HMP_PRIO_FILTER_VAL);
-#define task_low_priority(prio) ((prio >= heavy_task_prio)?1:0)
-#endif
-
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 struct rq_data rq_info;
 spinlock_t rq_lock;
@@ -56,6 +51,9 @@ static unsigned int heavy_task_threshold = 920; /* max=1023, for last_poll, thre
 static unsigned int heavy_task_threshold2 = 920; /* max=1023 for AHT, threshold  */
 static unsigned int avg_heavy_task_threshold = 65; /* max=99 for AHT, admission control */
 static int htask_cpucap_ctrl = 1;
+
+/* max = 100, threshold for capacity overutiled */
+static int overutil_threshold = 80;
 
 struct cpu_load_data {
 	cputime64_t prev_cpu_idle;
@@ -78,6 +76,11 @@ typedef enum {
 	AVG_LOAD_IGNORE,
 	AVG_LOAD_UPDATE
 } AVG_LOAD_ID;
+
+int get_overutil_threshold(void)
+{
+	return overutil_threshold;
+}
 
 #ifdef CONFIG_CPU_FREQ
 #include <linux/cpufreq.h>
@@ -314,11 +317,12 @@ static void __trace_out(int heavy, int cpu, struct task_struct *p)
 #define TRACEBUF_LEN 128
 	char tracebuf[TRACEBUF_LEN];
 
-		snprintf(tracebuf, TRACEBUF_LEN, " %s cpu=%d load=%4lu cpucap=%4lu/%4lu pid=%4d name=%s",
+		snprintf(tracebuf, TRACEBUF_LEN, "[hvytask_poll] %s cpu=%d load=%4lu cpucap=%4lu/%4lu pid=%4d name=%s",
 				 heavy ? "Y" : "N",
 				 cpu, p->se.avg.load_avg,
 				 topology_cur_cpu_capacity(cpu), topology_max_cpu_capacity(cpu),
-				 p->pid, p->comm);
+				 p->pid,
+				 p->comm);
 		trace_sched_heavy_task(tracebuf);
 
 		if (unlikely(heavy))
@@ -393,13 +397,9 @@ EXPORT_SYMBOL(is_heavy_task);
 
 int inc_nr_heavy_running(const char *invoker, struct task_struct *p, int inc, bool ack_cap)
 {
-	if (is_heavy_task(p)) {
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
-		sched_update_nr_heavy_prod(invoker, cpu_of(task_rq(p)), inc, ack_cap);
-		trace_sched_avg_heavy_task_load(p);
+	sched_update_nr_heavy_prod(invoker, p, cpu_of(task_rq(p)), inc, ack_cap);
 #endif
-		return inc;
-	}
 
 	return 0;
 }
@@ -887,6 +887,46 @@ static struct kobj_attribute avg_htasks_ac_attr =
 __ATTR(avg_htasks_ac, S_IWUSR | S_IRUSR, show_avg_heavy_task_ac,
 		store_avg_heavy_task_ac);
 
+void set_overutil_threshold(int val)
+{
+	overutil_threshold = (int)val;
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+	overutil_thresh_chg_notify();
+#endif
+}
+EXPORT_SYMBOL(set_overutil_threshold);
+
+/* For read/write utilization related settings */
+static ssize_t store_overutil(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+
+	if (sscanf(buf, "%iu", &val) != 0) {
+		if (val >= 0 && val <= 100)
+			set_overutil_threshold(val);
+	}
+	return count;
+}
+
+static ssize_t show_overutil(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int len = 0;
+	unsigned int max_len = 4096;
+
+	len += snprintf(buf, max_len, "overutilization threshold=%d max=100\n\n", overutil_threshold);
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+	len += get_overutil_stats(buf+len, max_len-len);
+#endif
+
+	return len;
+}
+
+static struct kobj_attribute over_util_attr =
+__ATTR(over_util, S_IWUSR | S_IRUSR, show_overutil,
+		store_overutil);
+
 /* For read/write threshold for average heavy task */
 static ssize_t store_avg_heavy_task_thresh(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
@@ -930,6 +970,7 @@ static struct attribute *rq_attrs[] = {
 	&htasks_thresh_attr.attr,
 	&avg_htasks_thresh_attr.attr,
 	&avg_htasks_ac_attr.attr,
+	&over_util_attr.attr,
 	NULL,
 };
 

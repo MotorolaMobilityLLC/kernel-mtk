@@ -2771,6 +2771,8 @@ static inline void update_load_avg(struct sched_entity *se, int update_tg)
 	/* sched: add trace_sched */
 	if (entity_is_task(se))
 		trace_sched_task_entity_avg(1, task_of(se), &se->avg);
+
+	trace_sched_load_avg_cpu(cpu, cfs_rq);
 }
 
 static void attach_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
@@ -4142,7 +4144,6 @@ static void hrtick_start_fair(struct rq *rq, struct task_struct *p)
 		hrtick_start(rq, delta);
 	}
 }
-
 /*
  * called from enqueue/dequeue and updates the hrtick when the
  * current task is from our class and nr_running is low enough
