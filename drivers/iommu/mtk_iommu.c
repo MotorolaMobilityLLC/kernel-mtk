@@ -242,6 +242,14 @@ static void mtk_iommu_config(struct mtk_iommu_data *data,
 	}
 }
 
+static unsigned long mtk_iommu_pgt_base;
+
+unsigned long mtk_get_pgt_base(void)
+{
+	return mtk_iommu_pgt_base;
+}
+EXPORT_SYMBOL(mtk_get_pgt_base);
+
 static int mtk_iommu_domain_finalise(struct mtk_iommu_data *data)
 {
 	struct mtk_iommu_domain *dom = data->m4u_dom;
@@ -270,6 +278,8 @@ static int mtk_iommu_domain_finalise(struct mtk_iommu_data *data)
 
 	/* Update our support page sizes bitmap */
 	mtk_iommu_ops.pgsize_bitmap = dom->cfg.pgsize_bitmap;
+
+	mtk_iommu_pgt_base = data->m4u_dom->cfg.arm_v7s_cfg.ttbr[0];
 
 	writel(data->m4u_dom->cfg.arm_v7s_cfg.ttbr[0],
 	       data->base + REG_MMU_PT_BASE_ADDR);
