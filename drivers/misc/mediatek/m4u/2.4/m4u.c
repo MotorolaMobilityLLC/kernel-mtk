@@ -137,6 +137,7 @@ static void m4u_profile_init(void)
 	M4U_MMP_Events[M4U_MMP_M4U_ERROR] = mmprofile_register_event(M4U_Event, "M4U ERROR");
 	M4U_MMP_Events[M4U_MMP_CACHE_SYNC] = mmprofile_register_event(M4U_Event, "M4U_CACHE_SYNC");
 	M4U_MMP_Events[M4U_MMP_TOGGLE_CG] = mmprofile_register_event(M4U_Event, "M4U_Toggle_CG");
+	M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG] = mmprofile_register_event(M4U_Event, "MVA_DBG");
 
 	/* enable events by default */
 	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_ALLOC_MVA], 1);
@@ -144,6 +145,7 @@ static void m4u_profile_init(void)
 	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], 1);
 	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_M4U_ERROR], 1);
 	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_CACHE_SYNC], 1);
+	mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], 1);
 	/* mmprofile_enable_event(M4U_MMP_Events[M4U_MMP_TOGGLE_CG], 0); */
 	mmprofile_start(1);
 }
