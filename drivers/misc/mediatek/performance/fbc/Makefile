@@ -11,8 +11,8 @@
 # GNU General Public License for more details.
 #
 
-obj-y += fliper/
-obj-y += perfmgr/
-obj-y += smart/
-obj-y += eas_controller/
-#obj-y += fbc/
+obj-y += fbc.o
+
+ifeq ($(CONFIG_MTK_FBC),y)
+ccflags-y += -DMTK_FBC_SUPPORT
+endif
