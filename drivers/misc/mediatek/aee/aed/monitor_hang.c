@@ -52,7 +52,8 @@
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #include <mt-plat/mtk_ram_console.h>
 #endif
-
+#include "../mrdump/mrdump_private.h"
+#include <mrdump.h>
 
 static DEFINE_SPINLOCK(pwk_hang_lock);
 static int wdt_kick_status;
@@ -1554,6 +1555,7 @@ static int hang_detect_thread(void *arg)
 		.sched_priority = 99
 	};
 	struct task_struct *hd_thread;
+	struct pt_regs saved_regs;
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	reset_hang_info();
@@ -1610,6 +1612,10 @@ static int hang_detect_thread(void *arg)
 					aee_rr_rec_fiq_step(AEE_FIQ_STEP_HANG_DETECT);
 					mrdump_mini_add_hang_raw((unsigned long)Hang_Info, MaxHangInfoSize);
 					mrdump_mini_add_extra_misc();
+					mrdump_mini_save_regs(&saved_regs);
+					__mrdump_create_oops_dump(
+						AEE_REBOOT_MODE_HANG_DETECT,
+						&saved_regs, "Hang Detect");
 					aee_exception_reboot();
 #ifdef CONFIG_MTK_ENG_BUILD
 						}
