@@ -1291,8 +1291,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_2L_MONEN;
 		det->MTDES	= devinfo->CPU_2L_MTDES;
 		det->SPEC	= devinfo->CPU_2L_SPEC;
-		det->volt_offset = MARGIN_ADD_OFF;
 		det->features = FEA_INIT01 | FEA_INIT02;
+
+		if (eem_devinfo.FT_PGM <= 3)
+			det->volt_offset = MARGIN_ADD_OFF_VER3;
 
 		if (mt_cpufreq_get_cpu_level() > 0)
 			det->DVTFIXED = 0x9;
@@ -1307,12 +1309,15 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_L_MONEN;
 		det->MTDES	= devinfo->CPU_L_MTDES;
 		det->SPEC	= devinfo->CPU_L_SPEC;
-		det->volt_offset = MARGIN_ADD_OFF;
 		det->features = FEA_INIT01 | FEA_INIT02;
+
+		if (eem_devinfo.FT_PGM <= 3)
+			det->volt_offset = MARGIN_ADD_OFF_VER3;
+		else
+			det->volt_offset = MARGIN_ADD_OFF_VER4;
 
 		if (mt_cpufreq_get_cpu_level() > 0)
 			det->DVTFIXED = 0x9;
-
 		break;
 #endif
 #if ENABLE_LOO
@@ -1368,6 +1373,9 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->MTDES	= devinfo->CCI_MTDES;
 		det->SPEC       = devinfo->CCI_SPEC;
 		det->features = FEA_INIT01 | FEA_INIT02;
+
+		if (eem_devinfo.FT_PGM <= 3)
+			det->volt_offset = MARGIN_ADD_OFF_VER3;
 
 		if (mt_cpufreq_get_cpu_level() > 0)
 			det->DVTFIXED = 0x9;
