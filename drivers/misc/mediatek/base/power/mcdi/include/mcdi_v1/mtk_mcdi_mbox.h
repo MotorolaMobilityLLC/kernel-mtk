@@ -34,6 +34,7 @@
 #define MCDI_MBOX_CLUSTER_1_CNT                 11
 #define MCDI_MBOX_CLUSTER_2_CNT                 12
 #define MCDI_MBOX_PAUSE_ACK                     13
+#define MCDI_MBOX_PENDING_ON_EVENT              14
 
 /* MCDI_MBOX_ACTION_STAT */
 #define MCDI_ACTION_INIT                        0
