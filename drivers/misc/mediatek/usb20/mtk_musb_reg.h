@@ -225,6 +225,14 @@
 #define MUSB_OPSTATE    0x620
 #define OTG_IDLE 0
 
+/*
+  * MD Direct Tethering related Registers
+  */
+
+#define MUSB_USB_MDL1INTM	0x744
+#define MUSB_QIMCR			0xc08
+#define MUSB_QIMSR			0xc0c
+#define MUSB_USBGCSR		0xb00
 
 /* These are always controlled through the INDEX register */
 #define MUSB_TXFIFOSZ		0x62	/* 8-bit (see masks) */

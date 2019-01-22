@@ -57,16 +57,6 @@ config USB_MU3D_DEFAULT_U2_MODE
 	  Say N here if you want to enable USB super speed.
 	  If unsure, say Y.
 
-config MTK_MD_DIRECT_TETHERING_SUPPORT
-	tristate "MediaTek MD Direct Tethering"
-	depends on USB_MU3D_DRV
-	default n
-	---help---
-	  This selects the MediaTek MD Direction Tethering support.
-	  Say Y here if you want to enable MD Direction Tethering.
-	  Say N here if you want to disable MD Direction Tethering.
-	  If unsure, say N.
-
 config USB_MU3D_DRV_36BIT
 	tristate "MediaTek SSUSB 36bits addressing support"
 	default n
