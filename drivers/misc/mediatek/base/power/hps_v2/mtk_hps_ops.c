@@ -227,11 +227,7 @@ static int hps_algo_perf_indicator(void)
 {
 	unsigned int i;
 
-	if (atomic_read(&hps_ctxt.is_ondemand) != 0
-#if TURBO_CORE_SUPPORT
-	    || (hps_sys.turbo_core_supp && hps_sys.smart_dect_hint)
-#endif
-	) { /* for ondemand request */
+	if (atomic_read(&hps_ctxt.is_ondemand) != 0) { /* for ondemand request */
 		atomic_set(&hps_ctxt.is_ondemand, 0);
 
 		mutex_lock(&hps_ctxt.para_lock);
