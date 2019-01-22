@@ -852,14 +852,14 @@ ftrace_event_write(struct file *file, const char __user *ubuf,
 
 		ret = ftrace_set_clr_event(tr, parser.buffer + !set, set);
 		if (ret) {
-			pr_debug("[ftrace]fail to %s event '%s'\n", set ? "enable" : "disable", parser.buffer + !set);
-			goto out_put;
+			pr_debug("[ftrace]fail to %s event '%s'\n",
+				 set ? "enable" : "disable",
+				 parser.buffer + !set);
 		}
 	}
 
 	ret = read;
 
- out_put:
 	trace_parser_put(&parser);
 
 	return ret;
