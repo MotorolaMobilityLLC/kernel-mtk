@@ -212,8 +212,8 @@ void preloader_init(void)
 	efuse_cal = pmic_get_register_value(PMIC_RG_FGADC_GAINERROR_CAL);
 	pmic_set_register_value(PMIC_FG_GAIN, efuse_cal);
 
-	hw_id = upmu_get_reg_value(PMIC_HWCID);
-	sw_id = upmu_get_reg_value(0x0202);
+	hw_id = pmic_get_register_value(PMIC_HWCID);
+	sw_id = pmic_get_register_value(PMIC_SWCID);
 
 
 	ret = fgauge_get_time(&fg_curr_time);
@@ -1884,7 +1884,7 @@ static signed int fg_is_battery_exist(void *data)
 #else
 	int temp;
 	int is_bat_exist;
-	int hw_id = upmu_get_reg_value(PMIC_HWCID);
+	int hw_id = pmic_get_register_value(PMIC_HWCID);
 
 	temp = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
 
@@ -2388,7 +2388,7 @@ int read_hw_ocv_6335_power_on(void)
 	signed int adc_rdy = 0;
 	signed int adc_result_reg = 0;
 	signed int adc_result = 0;
-	int hw_id = upmu_get_reg_value(PMIC_HWCID);
+	int hw_id = pmic_get_register_value(PMIC_HWCID);
 
 #if defined(SWCHR_POWER_PATH)
 	if (hw_id == 0x3510) {
@@ -2513,7 +2513,7 @@ int read_hw_ocv_6335_power_on_rdy(void)
 	bm_debug("[read_hw_ocv_6335_power_on_rdy] POWER_EXT\n");
 #else
 	signed int pon_rdy = 0;
-	int hw_id = upmu_get_reg_value(PMIC_HWCID);
+	int hw_id = pmic_get_register_value(PMIC_HWCID);
 
 	if (hw_id == 0x3510)
 		pon_rdy = pmic_get_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_PCHR);
@@ -2725,10 +2725,11 @@ static signed int fg_get_rtc_invalid(void *data)
 
 static void fgauge_read_RTC_boot_status(void)
 {
-	int hw_id = upmu_get_reg_value(PMIC_HWCID);
-	int spare0_reg, spare0_reg_b13;
-	int spare3_reg;
-	int spare3_reg_valid;
+	int hw_id = pmic_get_register_value(PMIC_HWCID);
+	int spare0_reg = 0;
+	int spare0_reg_b13 = 0;
+	int spare3_reg = 0;
+	int spare3_reg_valid = 0;
 
 	spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
 	spare3_reg = get_rtc_spare_fg_value();
@@ -2744,7 +2745,7 @@ static void fgauge_read_RTC_boot_status(void)
 		if ((hw_id & 0xff00) == 0x3500)
 			is_bat_plugout = spare0_reg_b13;
 		else
-			is_bat_plugout = ~spare0_reg_b13;
+			is_bat_plugout = !spare0_reg_b13;
 
 		bat_plug_out_time = spare0_reg & 0x1f;	/*[12:8], 5 bits*/
 	} else {
@@ -2752,14 +2753,15 @@ static void fgauge_read_RTC_boot_status(void)
 		bat_plug_out_time = 31;	/*[12:8], 5 bits*/
 	}
 
-	bm_err("[fgauge_read_RTC_boot_status] rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d spare3 0x%x spare0 0x%x\n",
+	bm_err(
+	"[fgauge_read_RTC_boot_status] rtc_invalid %d plugout %d plugout_time %d spare3 0x%x spare0 0x%x hw_id 0x%x\n",
 			rtc_invalid, is_bat_plugout, bat_plug_out_time,
-			spare3_reg, spare0_reg);
+			spare3_reg, spare0_reg, hw_id);
 }
 
 static signed int fg_set_fg_reset_rtc_status(void *data)
 {
-	int hw_id = upmu_get_reg_value(PMIC_HWCID);
+	int hw_id = pmic_get_register_value(PMIC_HWCID);
 	int temp_value;
 	int spare0_reg, after_rst_spare0_reg;
 	int spare3_reg, after_rst_spare3_reg;
@@ -2814,7 +2816,7 @@ static signed int fg_set_fg_reset_rtc_status(void *data)
 static signed int read_boot_battery_plug_out_status(void *data)
 {
 	*(unsigned int *) (data) = is_bat_plugout;
-	bm_err("[read_boot_battery_plug_out_status] rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d\n",
+	bm_err("[read_boot_battery_plug_out_status] rtc_invalid %d plugout %d bat_plug_out_time %d\n",
 			rtc_invalid, is_bat_plugout, bat_plug_out_time);
 
 	return STATUS_OK;
@@ -2824,7 +2826,7 @@ static signed int read_bat_plug_out_time(void *data) /* weiching fix */
 {
 	*(unsigned int *) (data) = bat_plug_out_time;
 
-	bm_err("[read_bat_plug_out_time] rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d\n",
+	bm_err("[read_bat_plug_out_time] rtc_invalid %d plugout %d bat_plug_out_time %d\n",
 			rtc_invalid, is_bat_plugout, bat_plug_out_time);
 
 	return STATUS_OK;
@@ -2977,7 +2979,7 @@ static signed int fg_set_vbat2_h_th(void *data)
 
 static signed int fg_get_hw_ver(void *data)
 {
-	int hw_id = upmu_get_reg_value(PMIC_HWCID);
+	int hw_id = pmic_get_register_value(PMIC_HWCID);
 
 	*(signed int *) (data) = hw_id;
 	return STATUS_OK;
