@@ -36,12 +36,6 @@
 #include <mt-plat/mtk_auxadc_intf.h>
 #endif /* CONFIG_MTK_AUXADC_INTF */
 
-#if defined(CONFIG_MTK_SMART_BATTERY)
-#include <mt-plat/battery_meter.h>
-#include <mt-plat/battery_common.h>
-#include <mach/mtk_battery_meter.h>
-#endif
-
 /*****************************************************************************
  * PMIC related define
  ******************************************************************************/
