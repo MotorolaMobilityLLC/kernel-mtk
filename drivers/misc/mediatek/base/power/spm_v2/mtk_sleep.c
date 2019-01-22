@@ -302,10 +302,6 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif				/* CONFIG_MT_SND_SOC_6755 */
 #endif
 
-#ifndef CONFIG_ARM64
-	return 0; /* temporarily fix suspend fail */
-#endif
-
 #ifdef CONFIG_MTKPASR
 	/* PASR SW operations */
 	enter_pasrdpd();
