@@ -96,7 +96,7 @@ static unsigned char o_buf[STP_GPS_BUFFER_SIZE];	/* output buffer of write() */
 static struct semaphore wr_mtx, rd_mtx;
 static DECLARE_WAIT_QUEUE_HEAD(GPS_wq);
 static int flag;
-static volatile int rstflag;
+static int rstflag;
 
 static void GPS_event_cb(void);
 
