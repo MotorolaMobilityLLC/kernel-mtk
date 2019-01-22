@@ -76,7 +76,7 @@ static struct task_struct *memory_lowpower_task;
 static unsigned long memory_lowpower_state;
 static atomic_t mlp_take_action;
 /* mlp_action can be set anywhere, anytime w/o protection */
-static volatile enum power_state mlp_action;
+static enum power_state mlp_action;
 
 static int get_cma_aligned;			/* in PAGE_SIZE order */
 static int get_cma_num;				/* number of allocations */
