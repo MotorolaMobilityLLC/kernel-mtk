@@ -636,7 +636,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		LOG_DBG("[vpu] VPU_IOCTL_DEQUE_REQUEST + ");
 
 		u_req = (struct vpu_request *) arg;
-
+		#if 0
 		ret = copy_from_user(&req->request_id, &u_req->request_id, sizeof(uintptr_t));
 		CHECK_RET("[REG] copy 'req id' failed,%d\n", ret);
 
@@ -644,6 +644,12 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 			(unsigned long)(req->request_id));
 
 		ret = vpu_get_request_from_queue(user, req->request_id, &req);
+		#else
+		LOG_DBG("[vpu] dequee test: user_id_0x%lx, request_id_0x%lx", (unsigned long)user,
+			(unsigned long)(u_req->request_id));
+
+		ret = vpu_get_request_from_queue(user, u_req->request_id, &req);
+		#endif
 		CHECK_RET("[DEQUE] pop request failed, ret=%d\n", ret);
 
 		ret = put_user(req->status, &u_req->status);

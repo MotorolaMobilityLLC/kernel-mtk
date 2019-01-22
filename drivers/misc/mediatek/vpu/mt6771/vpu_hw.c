@@ -321,12 +321,12 @@ static void vpu_opp_check(int core, uint8_t vcore_value, uint8_t freq_value)
 	int i = 0;
 	bool freq_check = false;
 
-	LOG_INF("opp_check + (%d/%d/%d), ori vcore(%d)", core, vcore_value, freq_value, opps.vcore.index);
+	LOG_DBG("opp_check + (%d/%d/%d), ori vcore(%d)", core, vcore_value, freq_value, opps.vcore.index);
 
 	mutex_lock(&opp_mutex);
 	/* vcore opp */
 	if (vcore_value == 0xFF) {
-		LOG_INF("no request, vcore opp(%d)", vcore_value);
+		LOG_DBG("no request, vcore opp(%d)", vcore_value);
 	} else {
 		if (vcore_value >= opps.count) {
 			LOG_ERR("wrong vcore opp(%d), max(%d)", vcore_value, opps.count - 1);
@@ -340,7 +340,7 @@ static void vpu_opp_check(int core, uint8_t vcore_value, uint8_t freq_value)
 
 	/* dsp freq opp */
 	if (freq_value == 0xFF) {
-		LOG_INF("no request, freq opp(%d)", freq_value);
+		LOG_DBG("no request, freq opp(%d)", freq_value);
 	} else if ((opps.dspcore[core].index != freq_value) || (freq_check)) {
 		opps.dspcore[core].index = freq_value;
 		if (opps.vcore.index > 0) {
@@ -350,7 +350,7 @@ static void vpu_opp_check(int core, uint8_t vcore_value, uint8_t freq_value)
 		opps.dsp.index = 7;
 		opps.ipu_if.index = 7;
 		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
-			LOG_INF("opp_check opps.dspcore[%d].index(%d -> %d)", core,
+			LOG_DBG("opp_check opps.dspcore[%d].index(%d -> %d)", core,
 				opps.dspcore[core].index, opps.dsp.index);
 			/* interface should be the max freq of vpu cores */
 			if (opps.dspcore[i].index < opps.dsp.index) {
@@ -1043,7 +1043,7 @@ static int vpu_get_power(int core)
 {
 	int ret = 0;
 
-	LOG_INF("[vpu_%d/%d] gp +\n", core, power_counter[core]);
+	LOG_DBG("[vpu_%d/%d] gp +\n", core, power_counter[core]);
 	mutex_lock(&power_counter_mutex[core]);
 	power_counter[core]++;
 	ret = vpu_boot_up(core);
@@ -1059,7 +1059,7 @@ static int vpu_get_power(int core)
 		LOG_INF("vpu_%d force change vcore opp", core);
 	}
 	mutex_unlock(&opp_mutex);
-	LOG_INF("[vpu_%d/%d] gp -\n", core, power_counter[core]);
+	LOG_DBG("[vpu_%d/%d] gp -\n", core, power_counter[core]);
 
 	if (ret == POWER_ON_MAGIC)
 		return 0;
@@ -1069,12 +1069,12 @@ static int vpu_get_power(int core)
 
 static void vpu_put_power(int core)
 {
-	LOG_INF("[vpu_%d/%d] pp +\n", core, power_counter[core]);
+	LOG_DBG("[vpu_%d/%d] pp +\n", core, power_counter[core]);
 	mutex_lock(&power_counter_mutex[core]);
 	if (--power_counter[core] == 0)
 		mod_delayed_work(wq, &(power_counter_work[core].my_work), msecs_to_jiffies(PWR_KEEP_TIME_MS));
 	mutex_unlock(&power_counter_mutex[core]);
-	LOG_INF("[vpu_%d/%d] pp -\n", core, power_counter[core]);
+	LOG_DBG("[vpu_%d/%d] pp -\n", core, power_counter[core]);
 }
 
 static void vpu_power_counter_routine(struct work_struct *work)
@@ -1670,7 +1670,7 @@ int vpu_boot_up(int core)
 {
 	int ret;
 
-	LOG_INF("[vpu_%d] boot_up +\n", core);
+	LOG_DBG("[vpu_%d] boot_up +\n", core);
 	mutex_lock(&power_mutex[core]);
 	LOG_DBG("[vpu_%d] is_power_on(%d)\n", core, is_power_on[core]);
 	if (is_power_on[core]) {
@@ -1800,7 +1800,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 {
 	int ret;
 
-	LOG_INF("[vpu_%d/%d] eq + ", core, request->algo_id[core]);
+	LOG_DBG("[vpu_%d/%d] eq + ", core, request->algo_id[core]);
 	wait_to_do_vpu_running();
 	vpu_trace_begin("vpu_hw_enque_request(%d)", request->algo_id[core]);
 	ret = vpu_get_power(core);
