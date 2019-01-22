@@ -29,7 +29,7 @@ static long long Twanted;
 static long long X_ms;
 static long long avgFT;
 static int first_frame;
-static int EMA;
+static int ema;
 static int boost_method;
 static int frame_done;
 static int super_boost;
@@ -44,6 +44,7 @@ static struct ppm_limit_data core_limit[NR_PPM_CLUSTERS];
 
 static struct hrtimer hrt;
 static long long capacity;
+static long long touch_capacity;
 static long long chase_capacity;
 static long long avg_capacity;
 
@@ -238,11 +239,11 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		}
 	}
 
-	if (strncmp(option, "DEBUG", 5) == 0) {
+	if (strncmp(option, "debug", 5) == 0) {
 		fbc_debug = arg1;
 		boost_value = 0;
 		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
-	} else if (strncmp(option, "TOUCH", 5) == 0) {
+	} else if (strncmp(option, "touch", 5) == 0) {
 		fbc_touch_pre = fbc_touch;
 		fbc_touch = arg1;
 		if (fbc_debug)
@@ -257,7 +258,7 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 			update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
 
 			chase = 0;
-			capacity = 286;
+			capacity = touch_capacity;
 			if (boost_method == 2)
 				boost_freq(capacity);
 			perfmgr_kick_fg_boost(KIR_FBC, 100);
@@ -318,28 +319,29 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		}
 		mt_kernel_trace_counter("Touch", fbc_touch);
 #endif
-	} else if (strncmp(option, "INIT", 4) == 0) {
+	} else if (strncmp(option, "init", 4) == 0) {
 		touch_boost_value = arg1;
 		boost_value  = touch_boost_value;
-	} else if (strncmp(option, "TWANTED", 7) == 0) {
+		touch_capacity = arg1;
+	} else if (strncmp(option, "twanted", 7) == 0) {
 		Twanted = arg1 * 1000000;
 		X_ms = Twanted / 1000000;
-	} else if (strncmp(option, "EMA", 3) == 0)
-		EMA = arg1;
-	 else if (strncmp(option, "METHOD", 6) == 0)
+	} else if (strncmp(option, "ema", 3) == 0)
+		ema = arg1;
+	 else if (strncmp(option, "method", 6) == 0)
 		boost_method = arg1;
 	 else if (strncmp(option, "super_boost", 11) == 0)
 		super_boost = arg1;
-	 else if (strncmp(option, "GAME", 4) == 0)
+	 else if (strncmp(option, "game", 4) == 0)
 		is_game = arg1;
-	 else if (strncmp(option, "30FPS", 5) == 0)
+	 else if (strncmp(option, "30fps", 5) == 0)
 		is_30_fps = arg1;
-	 else if (strncmp(option, "DUMP_TBL", 8) == 0) {
+	 else if (strncmp(option, "dump_tbl", 8) == 0) {
 		for (i = 0; i < 16; i++) {
 			pr_crit(TAG"ll freq:%d, cap:%d", power_ll[i][0], power_ll[i][1]);
 			pr_crit(TAG"b freq:%d, cap:%d", power_b[i][0], power_b[i][1]);
 		 }
-	 } else if (strncmp(option, "TRACE", 5) == 0)
+	 } else if (strncmp(option, "trace", 5) == 0)
 		fbc_trace = arg1;
 
 	return cnt;
@@ -349,13 +351,13 @@ static int device_show(struct seq_file *m, void *v)
 {
 	SEQ_printf(m, "-----------------------------------------------------\n");
 	SEQ_printf(m, "touch: %d\n", fbc_touch);
-	SEQ_printf(m, "init: %d\n", touch_boost_value);
+	SEQ_printf(m, "init: %lld\n", touch_capacity);
 	SEQ_printf(m, "debug: %d\n", fbc_debug);
 	SEQ_printf(m, "twanted: %lld\n", Twanted);
 	SEQ_printf(m, "first frame: %d\n", first_frame);
 	SEQ_printf(m, "ez: %d\n", boost_method);
 	SEQ_printf(m, "super_boost: %d\n", super_boost);
-	SEQ_printf(m, "ema: %d\n", EMA);
+	SEQ_printf(m, "ema: %d\n", ema);
 	SEQ_printf(m, "game mode: %d\n", is_game);
 	SEQ_printf(m, "30 fps: %d\n", is_30_fps);
 	SEQ_printf(m, "trace: %d\n", fbc_trace);
@@ -391,7 +393,7 @@ ssize_t device_ioctl(struct file *filp,
 				avgFT = frame_time;
 				first_frame = 0;
 			} else {
-				avgFT = (EMA * frame_time + (10 - EMA) * avgFT) / 10;
+				avgFT = (ema * frame_time + (10 - ema) * avgFT) / 10;
 			}
 			boost_linear = (long long)((avgFT - Twanted) * 100 / Twanted);
 
@@ -444,7 +446,7 @@ ssize_t device_ioctl(struct file *filp,
 				avgFT = frame_time;
 				first_frame = 0;
 			} else {
-				avgFT = (EMA * frame_time + (10 - EMA) * avgFT) / 10;
+				avgFT = (ema * frame_time + (10 - ema) * avgFT) / 10;
 			}
 			boost_linear = (long long)((avgFT - Twanted) * 100 / Twanted);
 
@@ -543,12 +545,13 @@ static int __init init_fbc(void)
 	boost_method = 2;
 	avgFT = 0;
 	first_frame = 1;
-	EMA = 5;
+	ema = 5;
 	frame_done = 0;
 	super_boost = 30;
 	is_game = 0;
 	is_30_fps = 0;
-	capacity = 286;
+	touch_capacity = 286;
+	capacity = touch_capacity;
 	fbc_trace = 0;
 	mark_addr = kallsyms_lookup_name("tracing_mark_write");
 
@@ -577,7 +580,7 @@ static int __init init_fbc(void)
 
 
 	pr_crit(TAG"init fbc driver start\n");
-	pe = proc_create("fbc", 0664, NULL, &Fops);
+	pe = proc_create("perfmgr/fbc", 0664, NULL, &Fops);
 	if (!pe)
 		return -ENOMEM;
 
