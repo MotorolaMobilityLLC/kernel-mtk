@@ -42,7 +42,7 @@
 #define BTIF_USER_NAME_MAX_LEN 32
 
 /*-------------Register Defination Start ---------------*/
-#if (defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MT_ENG_BUILD))
+#if (defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_ENG_BUILD))
 #define BTIF_RX_BUFFER_SIZE (1024 * 32)
 #else
 #define BTIF_RX_BUFFER_SIZE (1024 * 64)
@@ -170,7 +170,7 @@ typedef struct _mtk_btif_dma_ {
 	atomic_t entry;		/* entry count */
 } mtk_btif_dma, *p_mtk_btif_dma;
 
-#if (defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MT_ENG_BUILD))
+#if (defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) && !defined(CONFIG_MTK_ENG_BUILD))
 #define BTIF_LOG_ENTRY_NUM 10
 #else
 #define BTIF_LOG_ENTRY_NUM 30
