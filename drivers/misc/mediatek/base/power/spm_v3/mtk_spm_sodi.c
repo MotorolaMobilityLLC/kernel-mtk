@@ -554,6 +554,10 @@ bool spm_get_sodi_en(void)
 void spm_sodi_init(void)
 {
 	spm_sodi_aee_init();
+
+	sodi_ctrl.wake_src = WAKE_SRC_FOR_SODI;
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+		SPM_PWR_CTRL_SODI, PWR_WAKE_SRC, sodi_ctrl.wake_src);
 }
 
 MODULE_DESCRIPTION("SPM-SODI Driver v0.1");
