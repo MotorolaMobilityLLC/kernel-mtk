@@ -1307,14 +1307,17 @@ void EnableApll1(bool enable)
 			/* 180.6336 / 8 = 22.5792MHz */
 			clksys_set_reg(CLK_AUDDIV_0, 7 << 24, 0xf << 24);
 			AudDrv_APLL22M_Clk_On();
+			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x1 << 0, 0x1 << 0);
 		}
 
 		Aud_APLL_DIV_APLL1_cntr++;
 	} else {
 		Aud_APLL_DIV_APLL1_cntr--;
 
-		if (Aud_APLL_DIV_APLL1_cntr == 0)
+		if (Aud_APLL_DIV_APLL1_cntr == 0) {
+			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x0 << 0, 0x1 << 0);
 			AudDrv_APLL22M_Clk_Off();
+		}
 	}
 }
 
@@ -1327,12 +1330,15 @@ void EnableApll2(bool enable)
 			/* 196.608 / 8 = 24.576MHz */
 			clksys_set_reg(CLK_AUDDIV_0, 7 << 28, 0xf << 28);
 			AudDrv_APLL24M_Clk_On();
+			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x1 << 1, 0x1 << 1);
 		}
 		Aud_APLL_DIV_APLL2_cntr++;
 	} else {
 		Aud_APLL_DIV_APLL2_cntr--;
-		if (Aud_APLL_DIV_APLL2_cntr == 0)
+		if (Aud_APLL_DIV_APLL2_cntr == 0) {
+			Afe_Set_Reg(AFE_HD_ENGEN_ENABLE, 0x0 << 1, 0x1 << 1);
 			AudDrv_APLL24M_Clk_Off();
+		}
 	}
 }
 
