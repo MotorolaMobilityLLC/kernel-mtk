@@ -58,9 +58,6 @@ endif
         MINI_PLATFORM_VER = OPR2
     endif
 
-    ifeq ($(CONFIG_MTK_CONN_MT3337_CHIP_SUPPORT),y)
-        TARGET_PLATFORM_VERSION = A
-    endif
     # compare $(PLATFORM_VERSION)>=$(MINI_PLATFORM_VER)
     ifeq ($(MINI_PLATFORM_VER), $(word 1, $(sort $(MINI_PLATFORM_VER) $(TARGET_PLATFORM_VERSION))))
         # Do Nothing, move to standalone repo
