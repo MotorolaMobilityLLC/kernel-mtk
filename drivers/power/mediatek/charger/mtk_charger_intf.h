@@ -95,6 +95,10 @@ struct charger_custom_data {
 	int pe20_ichg_level_threshold;
 	int ta_start_battery_soc;
 	int ta_stop_battery_soc;
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
+	u32 chg1_ta_ac_charger_current;
+	u32 chg2_ta_ac_charger_current;
+#endif
 };
 
 struct charger_data {

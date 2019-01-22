@@ -70,6 +70,15 @@ int charger_dev_enable(struct charger_device *charger_dev, bool en)
 }
 EXPORT_SYMBOL(charger_dev_enable);
 
+int charger_dev_is_enabled(struct charger_device *charger_dev, bool *en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->is_enabled)
+		return charger_dev->ops->is_enabled(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable);
+
 int charger_dev_plug_in(struct charger_device *charger_dev)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->plug_in)
@@ -101,6 +110,15 @@ int charger_dev_get_charging_current(struct charger_device *charger_dev, u32 *uA
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->get_charging_current)
 		return charger_dev->ops->get_charging_current(charger_dev, uA);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_charging_current);
+
+int charger_dev_get_min_charging_current(struct charger_device *charger_dev, u32 *uA)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->get_min_charging_current)
+		return charger_dev->ops->get_min_charging_current(charger_dev, uA);
 
 	return -ENOTSUPP;
 }
@@ -276,6 +294,14 @@ int charger_dev_is_safety_timer_enabled(struct charger_device *charger_dev, bool
 	return -ENOTSUPP;
 }
 EXPORT_SYMBOL(charger_dev_is_safety_timer_enabled);
+
+int charger_dev_enable_termination(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_termination)
+		return charger_dev->ops->enable_termination(charger_dev, en);
+
+	return -ENOTSUPP;
+}
 
 int charger_dev_get_mivr_state(struct charger_device *charger_dev, bool *in_loop)
 {

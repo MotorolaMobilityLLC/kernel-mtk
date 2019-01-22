@@ -46,12 +46,15 @@ struct charger_ops {
 	/* enable/disable charger */
 	int (*enable)(struct charger_device *, bool en);
 
+	int (*is_enabled)(struct charger_device *, bool *en);
+
 	/* enable/disable chip */
 	int (*enable_chip)(struct charger_device *, bool en);
 
 	/* get/set charging current*/
 	int (*get_charging_current)(struct charger_device *, u32 *uA);
 	int (*set_charging_current)(struct charger_device *, u32 uA);
+	int (*get_min_charging_current)(struct charger_device *, u32 *uA);
 
 	/* set cv */
 	int (*set_constant_voltage)(struct charger_device *, u32 uV);
@@ -88,6 +91,9 @@ struct charger_ops {
 	/* enable/disable charging safety timer */
 	int (*is_safety_timer_enabled)(struct charger_device *, bool *en);
 	int (*enable_safety_timer)(struct charger_device *, bool en);
+
+	/* enable term */
+	int (*enable_termination)(struct charger_device *, bool en);
 
 	/* direct charging */
 	int (*enable_direct_charging)(struct charger_device *, bool en);
@@ -132,10 +138,12 @@ static inline void *charger_get_data(
 }
 
 extern int charger_dev_enable(struct charger_device *charger_dev, bool en);
+extern int charger_dev_is_enabled(struct charger_device *charger_dev, bool *en);
 extern int charger_dev_plug_in(struct charger_device *charger_dev);
 extern int charger_dev_plug_out(struct charger_device *charger_dev);
 extern int charger_dev_set_charging_current(struct charger_device *charger_dev, u32 uA);
 extern int charger_dev_get_charging_current(struct charger_device *charger_dev, u32 *uA);
+extern int charger_dev_get_min_charging_current(struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_set_input_current(struct charger_device *charger_dev, u32 uA);
 extern int charger_dev_get_input_current(struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_set_eoc_current(struct charger_device *charger_dev, u32 uA);
@@ -170,6 +178,7 @@ extern int unregister_charger_device_notifier(struct charger_device *charger_dev
 extern int charger_dev_notify(struct charger_device *charger_dev, int event);
 extern int charger_dev_is_powerpath_enabled(struct charger_device *charger_dev, bool *en);
 extern int charger_dev_is_safety_timer_enabled(struct charger_device *charger_dev, bool *en);
+extern int charger_dev_enable_termination(struct charger_device *charger_dev, bool en);
 extern int charger_dev_is_charging_done(struct charger_device *charger_dev, bool *done);
 extern int charger_dev_enable_powerpath(struct charger_device *charger_dev, bool en);
 extern int charger_dev_enable_safety_timer(struct charger_device *charger_dev, bool en);

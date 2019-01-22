@@ -994,10 +994,12 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		mtk_switch_charging_init(info);
 	}
 
+#ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 	if (strcmp(info->algorithm_name, "DualSwitchCharging") == 0) {
 		pr_debug("found DualSwitchCharging\n");
 		mtk_dual_switch_charging_init(info);
 	}
+#endif
 
 	info->enable_sw_safety_timer = of_property_read_bool(np, "enable_sw_safety_timer");
 	info->enable_sw_jeita = of_property_read_bool(np, "enable_sw_jeita");
@@ -1069,8 +1071,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->data.ta_start_battery_soc = TA_START_BATTERY_SOC;
 	info->data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
 
-	pr_err("algorithm name:%s\n",
-		info->algorithm_name);
+	pr_err("algorithm name:%s\n", info->algorithm_name);
 
 	return 0;
 }
@@ -1348,7 +1349,6 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 			&mtk_charger_en_safety_timer_fops, info);
 
 _out:
-	pr_err("%s fail\n", __func__);
 	return ret;
 }
 
