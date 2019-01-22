@@ -222,9 +222,21 @@ int mt_dcm_dts_map(void)
 		return -1;
 	}
 #else
-	dcm_emi_base = 0x10219000;
-	dcm_chn0_emi_base = 0x1022d000;
-	dcm_chn1_emi_base = 0x10235000;
+	node = of_find_compatible_node(NULL, NULL, EMI_NODE);
+	if (!node)
+		return -1;
+
+	dcm_emi_base = (unsigned long)of_iomap(node, 0);
+	if (!dcm_emi_base)
+		return -1;
+
+	dcm_chn0_emi_base = (unsigned long)of_iomap(node, 2);
+	if (!dcm_chn0_emi_base)
+		return -1;
+
+	dcm_chn1_emi_base = (unsigned long)of_iomap(node, 3);
+	if (!dcm_chn1_emi_base)
+		return -1;
 #endif
 	/* mp2_ca15m */
 	node = of_find_compatible_node(NULL, NULL, MP2_CA15M_NODE);
