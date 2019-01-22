@@ -232,6 +232,14 @@ int buck_set_mode(BUCK_TYPE type, unsigned char pmode)
 			pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
 			pmic_config_interface(0x0F58, 0x4, 0x7, 0);
 		}
+	} else if (type == VDRAM) {
+		if (pmode == 1) {
+			pmic_config_interface(0x0F6C, 0x1, 0x1, 4);
+			pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
+		} else {
+			pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
+			pmic_config_interface(0x0F6C, 0x0, 0x1, 4);
+		}
 	} else
 		pmic_set_register_value(mtk_bucks_class[type].mode, pmode);
 
