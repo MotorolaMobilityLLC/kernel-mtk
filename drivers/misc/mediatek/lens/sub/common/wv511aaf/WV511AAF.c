@@ -205,13 +205,13 @@ static inline int moveAF(unsigned long a_u4Position)
 		spin_unlock(g_AF_SpinLock);
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
-
+		ret = -1;
 		spin_lock(g_AF_SpinLock);
 		g_i4MotorStatus = -1;
 		spin_unlock(g_AF_SpinLock);
 	}
 
-	return 0;
+	return ret;
 }
 
 static inline int setAFInf(unsigned long a_u4Position)
