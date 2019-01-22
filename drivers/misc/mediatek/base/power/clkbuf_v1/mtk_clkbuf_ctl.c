@@ -373,7 +373,7 @@ void clk_buf_disable(enum clk_buf_id id)
 
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 {
-	short ret = 0;
+	short ret = 0, no_lock = 0;
 
 	if (!is_clkbuf_initiated)
 		return false;
@@ -384,7 +384,11 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	clk_buf_dbg("%s: id=%d, onoff=%d, clkbuf_ctrl_stat=0x%x\n", __func__,
 		    id, onoff, clkbuf_ctrl_stat);
 
-	mutex_lock(&clk_buf_ctrl_lock);
+	if (preempt_count() > 0 || irqs_disabled() || system_state != SYSTEM_RUNNING || oops_in_progress)
+		no_lock = 1;
+
+	if (!no_lock)
+		mutex_lock(&clk_buf_ctrl_lock);
 
 	switch (id) {
 	case CLK_BUF_BB_MD:
@@ -467,7 +471,8 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 		break;
 	}
 
-	mutex_unlock(&clk_buf_ctrl_lock);
+	if (!no_lock)
+		mutex_unlock(&clk_buf_ctrl_lock);
 
 	if (ret)
 		return false;
