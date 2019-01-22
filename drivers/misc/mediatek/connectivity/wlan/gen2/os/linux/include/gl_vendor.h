@@ -41,6 +41,7 @@
 #define GOOGLE_OUI 0x001A11
 #define OUI_QCA 0x001374
 
+#define QCA_NL80211_VENDOR_SUBCMD_ROAMING 9
 #define QCA_NL80211_VENDOR_SUBCMD_SETBAND 105
 
 typedef enum {
@@ -758,5 +759,7 @@ int mtk_cfg80211_vendor_event_rssi_beyond_range(struct wiphy *wiphy, struct wire
 int mtk_cfg80211_vendor_set_band(struct wiphy *wiphy, struct wireless_dev *wdev,
 					const void *data, int data_len);
 
+int mtk_cfg80211_vendor_set_roaming_policy(struct wiphy *wiphy, struct wireless_dev *wdev,
+					const void *data, int data_len);
 
 #endif /* _GL_VENDOR_H */
