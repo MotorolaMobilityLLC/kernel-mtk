@@ -82,6 +82,7 @@ struct power_tuning_t *get_eas_power_setting(void)
 
 bool is_game_mode;
 
+#ifdef CONFIG_MTK_GPU_SUPPORT
 void game_hint_notifier(int is_game)
 {
 	if (is_game) {
@@ -92,6 +93,7 @@ void game_hint_notifier(int is_game)
 		is_game_mode = false;
 	}
 }
+#endif
 
 bool is_eas_enabled(void)
 {
@@ -846,8 +848,9 @@ static int __init eas_stats_init(void)
 	if (ret)
 		eas_info.init = 1;
 
+#ifdef CONFIG_MTK_GPU_SUPPORT
 	ged_kpi_set_game_hint_value_fp = game_hint_notifier;
-
+#endif
 	return ret;
 }
 late_initcall(eas_stats_init);
