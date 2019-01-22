@@ -3108,6 +3108,30 @@ static int mt_ftl_reload_config_blk(struct mt_ftl_blk *dev, unsigned int *buf)
 	return 1;
 }
 
+static int mt_ftl_page_all_00(struct mt_ftl_blk *dev, unsigned int *buf)
+{
+	unsigned int i;
+
+	for (i = 0; i < (dev->min_io_size / 4); i++) {
+		if (buf[i] != 0x00000000)
+			return 0;
+	}
+
+	return 1;
+}
+
+static int mt_ftl_page_all_FF(struct mt_ftl_blk *dev, unsigned int *buf)
+{
+	unsigned int i;
+
+	for (i = 0; i < (dev->min_io_size / 4); i++) {
+		if (buf[i] != 0xFFFFFFFF)
+			return 0;
+	}
+
+	return 1;
+}
+
 static int mt_ftl_recover_blk(struct mt_ftl_blk *dev)
 {
 	int ret = MT_FTL_SUCCESS, i = 0;
@@ -3128,8 +3152,8 @@ static int mt_ftl_recover_blk(struct mt_ftl_blk *dev)
 				offset, dev->min_io_size);
 			if (ret)
 				return MT_FTL_FAIL;
-			if (param->tmp_page_buffer[0] == 0x00000000) {
-				mt_ftl_err(dev, "offset = %d, page = %d", offset, offset / dev->min_io_size);
+			if (mt_ftl_page_all_00(dev, param->tmp_page_buffer)) {
+				mt_ftl_err(dev, "[1]offset = %d, page = %d", offset, offset / dev->min_io_size);
 				break;
 			}
 			ret = mt_ftl_leb_write(dev, PMT_START_BLOCK + i + 3, param->tmp_page_buffer,
@@ -3143,8 +3167,8 @@ static int mt_ftl_recover_blk(struct mt_ftl_blk *dev)
 				offset, dev->min_io_size);
 			if (ret)
 				return MT_FTL_FAIL;
-			if (param->tmp_page_buffer[0] == 0xFFFFFFFF) {
-				mt_ftl_err(dev, "offset = %d, page = %d", offset, offset / dev->min_io_size);
+			if (mt_ftl_page_all_FF(dev, param->tmp_page_buffer)) {
+				mt_ftl_err(dev, "[2]offset = %d, page = %d", offset, offset / dev->min_io_size);
 				goto out;
 			}
 			ret = mt_ftl_leb_write(dev, PMT_START_BLOCK + i, param->tmp_page_buffer,
