@@ -876,6 +876,13 @@ typedef struct _P2P_DEVICE_DESC_T {
 		*(PUINT_16)(_value_p) = ((UINT_16)__cp[0] << 8) | ((UINT_16)__cp[1]); \
 	}
 
+#define WLAN_GET_FIELD_BE24(_memAddr_p, _value_p) \
+	{ \
+		PUINT_8 __cp = (PUINT_8)(_memAddr_p); \
+		*(PUINT_32)(_value_p) = ((UINT_8)__cp[0] << 16) | ((UINT_8)__cp[1] << 8) | ((UINT_8)__cp[2]); \
+	}
+
+
 #define WLAN_GET_FIELD_32(_memAddr_p, _value_p) \
 	{ \
 		PUINT_8 __cp = (PUINT_8)(_memAddr_p); \
