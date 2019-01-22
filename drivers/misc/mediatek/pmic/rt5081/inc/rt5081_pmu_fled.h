@@ -1,0 +1,39 @@
+/*
+ *  include header file for Richtek RT5081 FLED
+ *
+ *  Copyright (C) 2016 Richtek Technology Corp.
+ *  Sakya <jeff_chang@richtek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ */
+
+#ifndef __LINUX_RT5081_PMU_FLED_H
+#define __LINUX_RT5081_PMU_FLED_H
+
+
+#define RT5081_TORCH_EN_MASK	(0x80)
+#define RT5081_TORCH_EN_SHIFT	(3)
+
+#define RT5081_STROBE_EN_MASK	(0x40)
+#define RT5081_STROBE_EN_SHIFT	(2)
+
+#define RT5081_FLEDCS_EN_MASK	(0x03)
+#define RT5081_FLEDCS1_MASK	(1 << 1)
+#define RT5081_FLEDCS2_MASK	(1 << 0)
+
+#define RT5081_FLED_TORCHCUR_MASK (0x1f)
+#define RT5081_FLED_TORCHCUR_SHIFT (0)
+
+#define RT5081_FLED_STROBECUR_MASK	(0x7f)
+#define RT5081_FLED_STROBECUR_SHIFT	(0)
+
+#define	RT5081_FLED_TIMEOUT_LEVEL_MASK	(0x70)
+#define RT5081_TIMEOUT_LEVEL_SHIFT	(4)
+
+#define RT5081_FLED_STROBE_TIMEOUT_MASK		(0x7f)
+#define RT5081_FLED_STROBE_TIMEOUT_SHIFT	(0)
+
+#endif /* __LINUX_RT5081_PMU_FLED_H */
