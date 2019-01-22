@@ -5262,7 +5262,7 @@ void cmdq_core_dump_error_instruction(const uint32_t *pcVA, const long pcPA,
 	}
 }
 
-static void cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
+static s32 cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
 	u32 *va_pc, struct NGTaskInfoStruct **nginfo_out)
 {
 	u8 *buffer = NULL;
@@ -5272,14 +5272,14 @@ static void cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
 	buffer = kzalloc(ngtask->bufferSize, GFP_ATOMIC);
 	if (!buffer) {
 		CMDQ_ERR("fail to allocate NG buffer\n");
-		return;
+		return -ENOMEM;
 	}
 
 	nginfo = kzalloc(sizeof(*nginfo), GFP_ATOMIC);
 	if (!nginfo) {
 		CMDQ_ERR("fail to allocate NG info\n");
 		kfree(buffer);
-		return;
+		return -ENOMEM;
 	}
 
 	/* copy ngtask info */
@@ -5309,6 +5309,8 @@ static void cmdq_core_create_nginfo(const struct TaskStruct *ngtask,
 
 	/* only dump to pc */
 	nginfo->dump_size = buffer - (u8 *)nginfo->buffer;
+
+	return 0;
 }
 
 static void cmdq_core_release_nginfo(struct NGTaskInfoStruct *nginfo)
@@ -5380,13 +5382,16 @@ static void cmdq_core_dump_summary(const struct TaskStruct *pTask, s32 thread,
 	cmdq_core_dump_disp_trigger_loop("ERR");
 
 	*ngtask_out = pNGTask;
-	if (nginfo_out) {
-		cmdq_core_create_nginfo(pNGTask, pcVA, nginfo_out);
-		(*nginfo_out)->module = module;
-		(*nginfo_out)->irq_flag = irqFlag;
-		(*nginfo_out)->inst[1] = instA;
-		(*nginfo_out)->inst[0] = instB;
-	}
+	if (!nginfo_out)
+		return;
+
+	if (cmdq_core_create_nginfo(pNGTask, pcVA, nginfo_out) < 0)
+		return;
+
+	(*nginfo_out)->module = module;
+	(*nginfo_out)->irq_flag = irqFlag;
+	(*nginfo_out)->inst[1] = instA;
+	(*nginfo_out)->inst[0] = instB;
 }
 
 void cmdqCoreDumpCommandMem(const uint32_t *pCmd, int32_t commandSize)
@@ -7403,6 +7408,51 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 	return status;
 }
 
+static s32 cmdq_core_get_pmqos_task_list(struct TaskStruct *pTask, struct ThreadStruct *pThread,
+	struct TaskStruct **task_list_out, u32 *task_list_count_out, u32 task_list_max_size)
+{
+	u32 hw_cookie = 0;
+	u32 task_list_count = 0;
+	u32 i = 0;
+	u32 tmp_index = 0;
+	u32 thread = 0;
+	unsigned long flags;
+
+	if (!pTask || !pThread || !task_list_out)
+		return -EINVAL;
+
+	thread = pTask->thread;
+
+	CMDQ_PROF_SPIN_LOCK(gCmdqExecLock, flags, get_exec_task);
+
+	/* get current running task */
+	hw_cookie = CMDQ_GET_COOKIE_CNT(thread) % CMDQ_MAX_TASK_IN_THREAD;
+	if (pTask->scenario == CMDQ_SCENARIO_USER_MDP) {
+		CMDQ_MSG("%s, taskCount=%u, waitCookie=%u, hw_cookie=%u\n",
+			__func__, pThread->taskCount, pThread->waitCookie, hw_cookie);
+	}
+
+	/* snapshot from thread's current task array */
+	for (i = 0; i < ARRAY_SIZE(pThread->pCurTask); i++) {
+		tmp_index = (i + hw_cookie + 1) % CMDQ_MAX_TASK_IN_THREAD;
+
+		if (tmp_index == pThread->waitCookie % CMDQ_MAX_TASK_IN_THREAD - 1)
+			break;
+
+		if (pThread->pCurTask[tmp_index] && task_list_count < task_list_max_size) {
+			CMDQ_MSG("pCurTask[%u]=%p\n", tmp_index, pThread->pCurTask[tmp_index]);
+			task_list_out[task_list_count] = pThread->pCurTask[tmp_index];
+			task_list_count++;
+		}
+
+	}
+
+	*task_list_count_out = task_list_count;
+
+	CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, get_exec_task);
+
+	return 0;
+}
 static s32 cmdq_core_wait_task_done(struct TaskStruct *pTask, u32 timeout_ms)
 {
 	int32_t waitQ;
@@ -7411,8 +7461,7 @@ static s32 cmdq_core_wait_task_done(struct TaskStruct *pTask, u32 timeout_ms)
 	struct ThreadStruct *pThread = NULL;
 	const u32 max_thread_count = cmdq_dev_get_thread_count();
 	struct TaskStruct *task_list[CMDQ_MAX_TASK_IN_THREAD] = { NULL };
-	struct TaskStruct *entry_task = NULL;
-	s32 task_list_count = 0;
+	u32 task_list_count = 0;
 
 	status = 0;		/* Default status */
 
@@ -7483,14 +7532,10 @@ static s32 cmdq_core_wait_task_done(struct TaskStruct *pTask, u32 timeout_ms)
 	pTask->wakedUp = sched_clock();
 
 	CMDQ_PROF_MUTEX_LOCK(gCmdqTaskMutex, snapshot_tasklist_in_wait_task_done);
-	/* snapshot from activelist without copy current task */
-	list_for_each_entry(entry_task, &gCmdqContext.taskActiveList, listEntry) {
-		if (entry_task->thread == thread && entry_task != pTask &&
-			task_list_count < CMDQ_MAX_TASK_IN_THREAD) {
-			task_list[task_list_count] = entry_task;
-			task_list_count++;
-		}
-	}
+
+	if (pThread->taskCount > 0)
+		cmdq_core_get_pmqos_task_list(pTask, pThread, task_list, &task_list_count, ARRAY_SIZE(task_list));
+
 	cmdq_core_group_end_task(pTask, task_list, task_list_count);
 
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, snapshot_tasklist_in_wait_task_done);
@@ -7684,8 +7729,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 	/* for no suspend thread, we shift END before JUMP */
 	bool shift_end = false;
 	struct TaskStruct *task_list[CMDQ_MAX_TASK_IN_THREAD] = { NULL };
-	struct TaskStruct *entry_task = NULL;
-	s32 task_list_count = 0;
+	u32 task_list_count = 0;
 
 	cmdq_long_string_init(false, long_msg, &msg_offset, &msg_max_size);
 	cmdq_core_get_task_first_buffer(pTask, &pVABase, &MVABase);
@@ -7707,18 +7751,19 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 
 	pThread = &(gCmdqContext.thread[thread]);
 
-	/* snapshot from activelist */
-	list_for_each_entry(entry_task, &gCmdqContext.taskActiveList, listEntry) {
-		if (entry_task->thread == thread &&
-			task_list_count < CMDQ_MAX_TASK_IN_THREAD) {
-			task_list[task_list_count] = entry_task;
-			task_list_count++;
-		}
-	}
 	/* update task's thread info */
 	pTask->thread = thread;
 	pTask->irqFlag = 0;
 	pTask->taskState = TASK_STATE_BUSY;
+
+	if (pThread->taskCount > 0)
+		cmdq_core_get_pmqos_task_list(pTask, pThread, task_list, &task_list_count, ARRAY_SIZE(task_list));
+
+	/* add coming task to last */
+	if (task_list_count < ARRAY_SIZE(task_list)) {
+		task_list[task_list_count] = pTask;
+		task_list_count++;
+	}
 
 	/* update group before submit to HW */
 	cmdq_core_group_begin_task(pTask, task_list, task_list_count);
