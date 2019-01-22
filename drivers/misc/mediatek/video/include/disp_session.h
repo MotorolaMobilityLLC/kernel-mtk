@@ -411,9 +411,6 @@ struct disp_caps_info {
 	enum DISP_CAP_OUTPUT_MODE output_mode;
 	enum DISP_CAP_OUTPUT_PASS output_pass;
 	unsigned int max_layer_num;
-#ifdef CONFIG_FOR_SOURCE_PQ
-	unsigned int max_pq_num;
-#endif
 	unsigned int disp_feature;
 	int is_support_frame_cfg_ioctl;
 	int is_output_rotated;

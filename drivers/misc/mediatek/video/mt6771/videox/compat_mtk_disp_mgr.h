@@ -129,9 +129,6 @@ struct compat_disp_caps_info {
 	compat_uint_t output_mode;
 	compat_uint_t output_pass;
 	compat_uint_t max_layer_num;
-#ifdef CONFIG_FOR_SOURCE_PQ
-	compat_uint_t max_pq_num;
-#endif
 	compat_uint_t disp_feature;
 	compat_uint_t is_support_frame_cfg_ioctl;
 	compat_uint_t is_output_rotated;
