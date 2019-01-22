@@ -1009,7 +1009,6 @@ extern struct cpumask hmp_slow_cpu_mask;
 
 extern void __init arch_get_hmp_domains(struct list_head *hmp_domains_list);
 
-static LIST_HEAD(hmp_domains);
 DECLARE_PER_CPU(struct hmp_domain *, hmp_cpu_domain);
 
 #define hmp_cpu_domain(cpu)     (per_cpu(hmp_cpu_domain, (cpu)))

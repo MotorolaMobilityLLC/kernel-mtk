@@ -226,6 +226,8 @@ static void sched_update_clbstats(struct clb_env *clbenv)
 
 DEFINE_PER_CPU(struct hmp_domain *, hmp_cpu_domain);
 
+static LIST_HEAD(hmp_domains);
+
 /* Setup hmp_domains */
 static int __init hmp_cpu_mask_setup(void)
 {
@@ -312,12 +314,17 @@ static inline unsigned int hmp_cpu_is_fastest(int cpu)
 }
 
 /* Check if cpu is in slowest hmp_domain */
-inline unsigned int hmp_cpu_is_slowest(int cpu)
+static inline unsigned int __hmp_cpu_is_slowest(int cpu)
 {
 	struct list_head *pos;
 
 	pos = &hmp_cpu_domain(cpu)->hmp_domains;
 	return list_is_last(pos, &hmp_domains);
+}
+
+unsigned int hmp_cpu_is_slowest(int cpu)
+{
+	return __hmp_cpu_is_slowest(cpu);
 }
 
 /* Next (slower) hmp_domain relative to cpu */
@@ -557,7 +564,7 @@ static int hmp_select_task_migration(int sd_flag, struct task_struct *p, int pre
 	if (hmp_down_migration(B_target, &L_target, se, &clbenv))
 		goto select_slow;
 	step = 4;
-	if (hmp_cpu_is_slowest(prev_cpu))
+	if (__hmp_cpu_is_slowest(prev_cpu))
 		goto select_slow;
 	goto select_fast;
 
@@ -1117,7 +1124,7 @@ static void hmp_force_down_migration(int this_cpu)
 	cpumask_clear(&slow_cpu_mask);
 
 	/* Migrate light task from big to LITTLE */
-	if (!hmp_cpu_is_slowest(this_cpu)) {
+	if (!__hmp_cpu_is_slowest(this_cpu)) {
 		hmp_domain = hmp_cpu_domain(this_cpu);
 		cpumask_copy(&fast_cpu_mask, &hmp_domain->possible_cpus);
 		while (!list_is_last(&hmp_domain->hmp_domains, &hmp_domains)) {
@@ -1717,7 +1724,7 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	/*
 	 * aggressive idle balance for min_cap/idle_prefer
 	 */
-	if (hmp_cpu_is_slowest(this_cpu))
+	if (__hmp_cpu_is_slowest(this_cpu))
 		hmp_slowest_idle_prefer_pull(this_cpu, &p, &target);
 	else
 		hmp_fastest_idle_prefer_pull(this_cpu, &p, &target);
@@ -1738,7 +1745,7 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	if (energy_aware() && !system_overutilized(this_cpu))
 		goto done;
 
-	if (!hmp_cpu_is_slowest(this_cpu))
+	if (!__hmp_cpu_is_slowest(this_cpu))
 		hmp_domain = hmp_slower_domain(this_cpu);
 	if (!hmp_domain)
 		goto done;
@@ -1888,7 +1895,7 @@ static struct sched_entity *hmp_get_lightest_task(
 	if (migrate_down) {
 		struct hmp_domain *hmp;
 
-		if (hmp_cpu_is_slowest(cpu_of(se->cfs_rq->rq)))
+		if (__hmp_cpu_is_slowest(cpu_of(se->cfs_rq->rq)))
 			return min_se;
 		hmp = hmp_slower_domain(cpu_of(se->cfs_rq->rq));
 		hmp_target_mask = &hmp->cpus;
