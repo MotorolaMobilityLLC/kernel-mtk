@@ -81,7 +81,6 @@ extern int kernel_init_done;
 extern int musb_force_on;
 extern int musb_host_dynamic_fifo;
 extern int musb_host_dynamic_fifo_usage_msk;
-extern unsigned musb_uart_debug;
 extern struct musb *mtk_musb;
 extern bool mtk_usb_power;
 extern ktime_t ktime_ready;

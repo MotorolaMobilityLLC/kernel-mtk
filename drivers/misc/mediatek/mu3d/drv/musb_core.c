@@ -137,15 +137,15 @@ const char musb_driver_name[] = MUSB_DRIVER_NAME;
 struct musb *_mu3d_musb;
 
 
-u32 debug_level = K_WARNIN;
-u32 fake_CDP;
+int debug_level = K_WARNIN;
+int fake_CDP;
 
 module_param(debug_level, int, 0400);
 MODULE_PARM_DESC(debug_level, "Debug Print Log Lvl");
 module_param(fake_CDP, int, 0400);
 
 #ifdef EP_PROFILING
-u32 is_prof = 1;
+int is_prof = 1;
 
 module_param(is_prof, int, 0400);
 MODULE_PARM_DESC(is_prof, "profiling each EP");

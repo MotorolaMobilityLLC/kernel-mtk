@@ -32,7 +32,7 @@
 
 #include <linux/list.h>
 
-extern u32 is_prof;
+extern int is_prof;
 extern unsigned int ep_prof[8][2];
 extern void wake_up_bat(void);
 

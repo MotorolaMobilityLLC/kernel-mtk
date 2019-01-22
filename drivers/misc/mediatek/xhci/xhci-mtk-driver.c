@@ -64,8 +64,7 @@ static enum dualrole_state mtk_dualrole_stat = DUALROLE_DEVICE;
 static struct switch_dev mtk_otg_state;
 static bool boost_on;
 
-u32 xhci_debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN;
-
+int xhci_debug_level = K_ALET | K_CRIT | K_ERR | K_WARNIN;
 module_param(xhci_debug_level, int, 0400);
 
 bool mtk_is_charger_4_vol(void)
