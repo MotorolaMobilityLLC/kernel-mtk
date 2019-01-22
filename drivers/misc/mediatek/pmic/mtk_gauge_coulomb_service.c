@@ -29,7 +29,7 @@ static spinlock_t slock;
 static struct wake_lock wlock;
 static wait_queue_head_t wait_que;
 static bool coulomb_thread_timeout;
-static int ftlog_level = 2;
+static int ftlog_level;
 static int pre_coulomb;
 static bool init;
 
@@ -86,6 +86,11 @@ void wake_up_gauge_coulomb(void)
 
 	coulomb_thread_timeout = true;
 	wake_up(&wait_que);
+}
+
+void gauge_coulomb_set_log_level(int x)
+{
+	ftlog_level = x;
 }
 
 void gauge_coulomb_consumer_init(struct gauge_consumer *coulomb, struct device *dev, char *name)
@@ -284,8 +289,8 @@ void gauge_coulomb_stop(struct gauge_consumer *coulomb)
 		return;
 	}
 
-	ft_debug("coulomb_stop node:%s %ld %ld %d\n",
-	dev_name(coulomb->dev), coulomb->start, coulomb->end,
+	ft_debug("coulomb_stop name:%s %ld %ld %d\n",
+	coulomb->name, coulomb->start, coulomb->end,
 	coulomb->variable);
 
 	mutex_coulomb_lock();

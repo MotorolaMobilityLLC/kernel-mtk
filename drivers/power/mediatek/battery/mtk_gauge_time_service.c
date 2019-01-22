@@ -24,7 +24,7 @@
 static struct list_head gtimer_head = LIST_HEAD_INIT(gtimer_head);
 
 static bool gtimer_thread_timeout;
-static int ftlog_level = 3;
+static int ftlog_level;
 
 static struct mutex gtimer_lock;
 static spinlock_t slock;
@@ -70,6 +70,11 @@ void mutex_gtimer_lock(void)
 void mutex_gtimer_unlock(void)
 {
 	mutex_unlock(&gtimer_lock);
+}
+
+void gtimer_set_log_level(int x)
+{
+	ftlog_level = x;
 }
 
 void gtimer_dump_list(void)
