@@ -1671,15 +1671,15 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	int i = 0;
 	int *modules;
 	int module_num;
-	struct ddp_path_handle *handle;
+	struct ddp_path_handle handle;
 	struct DDP_MANAGER_CONTEXT *context = _get_context();
 
 	ASSERT(dp_handle != NULL);
-	handle = (struct ddp_path_handle *)dp_handle;
-	modules = ddp_get_scenario_list(handle->scenario);
-	module_num = ddp_get_module_num(handle->scenario);
+	memcpy(&handle, dp_handle, sizeof(struct ddp_path_handle));
+	modules = ddp_get_scenario_list(handle.scenario);
+	module_num = ddp_get_module_num(handle.scenario);
 
-	DDPDUMP("--> check status on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DDPDUMP("--> check status on scenario %s\n", ddp_get_scenario_name(handle.scenario));
 
 	if (!(context->power_state)) {
 		DDPDUMP("cannot check ddp status due to already power off\n");
@@ -1687,8 +1687,8 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	}
 
 	ddp_dump_analysis(DISP_MODULE_CONFIG);
-	ddp_check_path(handle->scenario);
-	ddp_check_mutex(handle->hwmutexid, handle->scenario, handle->mode);
+	ddp_check_path(handle.scenario);
+	ddp_check_mutex(handle.hwmutexid, handle.scenario, handle.mode);
 
 	/* dump path */
 	{
