@@ -539,11 +539,15 @@ static void mdee_dumper_v3_dump_ee_info(struct md_ee *mdee, MDEE_DUMP_LEVEL leve
 					ex_info, DB_OPT_DEFAULT);
 		} else if (md_state == BOOT_WAITING_FOR_HS2) {
 			snprintf(ex_info, EE_BUF_LEN, "\n[Others] MD_BOOT_UP_FAIL(HS%d)\n", 2);
+			ccci_md_dump_info(mdee->md_obj, DUMP_FLAG_REG, NULL, 0);
+			msleep(10000);
+			ccci_md_dump_info(mdee->md_obj, DUMP_FLAG_REG, NULL, 0);
 			/* Handshake 2 fail */
-			CCCI_NORMAL_LOG(md_id, KERN, "Dump MD EX log\n");
+			CCCI_MEM_LOG_TAG(md_id, KERN, "Dump MD EX log\n");
 			if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
-				ccci_mem_dump(md_id, smem_layout->ccci_exp_smem_base_vir,
-							smem_layout->ccci_exp_dump_size);
+				ccci_util_mem_dump(md_id, CCCI_DUMP_MEM_DUMP,
+						smem_layout->ccci_exp_smem_base_vir,
+						smem_layout->ccci_exp_dump_size);
 
 			ccci_aed_v3(mdee, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_EX_MEM, ex_info, DB_OPT_FTRACE);
 		}
