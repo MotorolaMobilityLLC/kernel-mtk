@@ -738,6 +738,39 @@ static int mt6336_dump_register(struct charger_device *chg_dev)
 	return 0;
 }
 
+static int mt6336_send_ta_current_pattern(struct charger_device *chg_dev, bool is_increase)
+{
+	int pep_value;
+	unsigned int fastcc_stat;
+
+	fastcc_stat = mt6336_get_flag_register_value(MT6336_DA_QI_FASTCC_STAT_MUX);
+	if (fastcc_stat != 1) {
+		pr_err("Not in FASTCC state, cannot use PE+!\n");
+		return -1;
+	}
+
+	mt6336_set_aicr(chg_dev, 800000);
+	mt6336_set_ichg(chg_dev, 2000000);
+	usleep_range(1000, 1200);
+
+	/* Enable clock */
+	mt6336_set_flag_register_value(MT6336_CLK_REG_6M_W1C_CK_PDN, 0x0);
+
+	if (is_increase)
+		pep_value = 0x7;
+	else
+		pep_value = 0x1C;
+
+	mt6336_set_flag_register_value(MT6336_RG_PEP_DATA, pep_value);
+	mt6336_set_flag_register_value(MT6336_RG_PE_SEL, 0); /* PE+ */
+	mt6336_set_flag_register_value(MT6336_RG_PE_TC_SEL, 2);
+	mt6336_set_flag_register_value(MT6336_RG_PE_ENABLE, 1);
+
+	msleep(2600);
+
+	return 0;
+}
+
 int mt6336_set_pe20_efficiency_table(struct charger_device *chg_dev)
 {
 	struct charger_manager *pinfo;
@@ -1120,6 +1153,7 @@ static struct charger_ops mt6366_charger_dev_ops = {
 	.set_eoc_current = mt6336_set_iterm,
 	.dump_registers = mt6336_dump_register,
 	.is_charging_done = mt6336_get_eoc,
+	.send_ta_current_pattern = mt6336_send_ta_current_pattern,
 	.set_pe20_efficiency_table = mt6336_set_pe20_efficiency_table,
 	.send_ta20_current_pattern = mt6336_send_ta20_current_pattern,
 	.set_ta20_reset = mt6336_set_ta20_reset,

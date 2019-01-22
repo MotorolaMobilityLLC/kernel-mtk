@@ -183,6 +183,8 @@ extern int charger_dev_enable_discharge(struct charger_device *charger_dev, bool
 extern int charger_dev_set_boost_current_limit(struct charger_device *charger_dev, u32 uA);
 extern int charger_dev_get_zcv(struct charger_device *charger_dev, u32 *uV);
 
+/* PE */
+extern int charger_dev_send_ta_current_pattern(struct charger_device *charger_dev, bool is_increase);
 
 /* PE 2.0 */
 extern int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, u32 uV);
