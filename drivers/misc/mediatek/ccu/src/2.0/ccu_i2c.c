@@ -315,11 +315,12 @@ static int i2c_query_dma_buffer_addr(enum CCU_I2C_CHANNEL i2c_controller_id, voi
 	i2c = i2c_get_adapdata(pClient->adapter);
 
 	/*i2c_get_dma_buffer_addr_imp(pClient->adapter ,va);*/
-	*va = i2c->dma_buf.vaddr;
-	*va_l = i2c->dma_buf.paddr;
-	*va_h = (i2c->dma_buf.paddr >> 32);
+	*va = i2c->dma_buf.vaddr + PAGE_SIZE;
+	*va_l = i2c->dma_buf.paddr + PAGE_SIZE;
+	*va_h = ((i2c->dma_buf.paddr + PAGE_SIZE) >> 32);
 	*i2c_id = i2c->id;
-	LOG_DBG_MUST("pa(%lld), va(%d), i2c-id(%d)\n", i2c->dma_buf.paddr, *(i2c->dma_buf.vaddr), (uint32_t)i2c->id);
+	LOG_DBG_MUST("$$pa(%lld), va(%d), i2c-id(%d)\n", i2c->dma_buf.paddr + PAGE_SIZE,
+		*(i2c->dma_buf.vaddr + PAGE_SIZE), (uint32_t)i2c->id);
 
 	return 0;
 }
