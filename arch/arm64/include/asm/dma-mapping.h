@@ -80,6 +80,7 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
 
 static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
 {
+#ifdef CONFIG_MTK_BOUNCING_CHECK
 	bool ret;
 
 	if (!dev->dma_mask) {
@@ -93,6 +94,12 @@ static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
 				"Incorrect dma_mask(%llx), addr+size-1(%llx)",
 				*dev->dma_mask, addr + size - 1);
 	return ret;
+#else
+	if (!dev->dma_mask)
+		return false;
+
+	return addr + size - 1 <= *dev->dma_mask;
+#endif
 }
 
 static inline void dma_mark_clean(void *addr, size_t size)
