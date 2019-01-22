@@ -29,17 +29,11 @@
 /* Memory lowpower private header file */
 #include "../internal.h"
 
-static enum dcs_status sys_dcs_status;
+static enum dcs_status sys_dcs_status = DCS_NORMAL;
 static int dcs_initialized;
 static int normal_channel_num;
 static int lowpower_channel_num;
 static DEFINE_MUTEX(dcs_mutex);
-
-/* dummy IPI APIs */
-enum dcs_status dummy_ipi_read_dcs_status(void)
-{
-	return DCS_NORMAL;
-}
 
 static char * const dcs_status_name[DCS_NR_STATUS] = {
 	"normal",
@@ -51,6 +45,25 @@ static char * const dcs_status_name[DCS_NR_STATUS] = {
 #include "sspm_ipi.h"
 static unsigned int dcs_recv_data[4];
 
+static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
+{
+	int ipi_data_ret = 0, err;
+	unsigned int ipi_buf[32];
+
+	ipi_buf[0] = IPI_DCS_GET_MODE;
+
+	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+
+	if (err) {
+		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		return -EBUSY;
+	}
+
+	*sys_dcs_status = (ipi_data_ret) ? DCS_LOWPOWER : DCS_LOWPOWER;
+
+	return 0;
+}
+
 static int dcs_migration_ipi(enum migrate_dir dir)
 {
 	int ipi_data_ret = 0, err;
@@ -61,10 +74,10 @@ static int dcs_migration_ipi(enum migrate_dir dir)
 
 	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
 
-	if (err)
-		pr_err("ipi_write error: %d\n", err);
-	else
-		pr_err("ipi_write success: %x\n", ipi_data_ret);
+	if (err) {
+		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		return -EBUSY;
+	}
 
 	return 0;
 }
@@ -83,10 +96,10 @@ static int dcs_set_dummy_write_ipi(void)
 
 	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
 
-	if (err)
-		pr_err("ipi_write error: %d\n", err);
-	else
-		pr_err("ipi_write success: %x\n", ipi_data_ret);
+	if (err) {
+		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		return -EBUSY;
+	}
 
 	return 0;
 }
@@ -100,10 +113,10 @@ static int dcs_dump_reg_ipi(void)
 
 	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
 
-	if (err)
-		pr_err("ipi_write error: %d\n", err);
-	else
-		pr_err("ipi_write success: %x\n", ipi_data_ret);
+	if (err) {
+		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		return -EBUSY;
+	}
 
 	return 0;
 }
@@ -128,6 +141,7 @@ static int dcs_ipi_register(void)
 	return 0;
 }
 #else /* !CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status) { return 0; }
 static int dcs_ipi_register(void) { return 0; }
 static int dcs_migration_ipi(enum migrate_dir dir) { return 0; }
 static int dcs_set_dummy_write_ipi(void) { return 0; }
@@ -224,7 +238,12 @@ static int __init mtkdcs_init(void)
 	int ret;
 
 	/* read system dcs status */
-	sys_dcs_status = dummy_ipi_read_dcs_status();
+	ret = dcs_get_status_ipi(&sys_dcs_status);
+	if (!ret)
+		pr_info("get init dcs status: %s\n",
+			dcs_status_name[sys_dcs_status]);
+	else
+		return ret;
 
 	/* read number of dram channels */
 	normal_channel_num = MAX_CHANNELS;
