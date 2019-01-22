@@ -29,6 +29,10 @@
 #include "xhci.h"
 #include "xhci-trace.h"
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+#include "xhci-mtk.h"
+#endif
+
 /*
  * Allocates a generic ring segment from the ring pool, sets the dma address,
  * initializes the segment to zero, and sets the private next pointer to NULL.
@@ -65,8 +69,15 @@ static struct xhci_segment *xhci_segment_alloc(struct xhci_hcd *xhci,
 	return seg;
 }
 
+
 static void xhci_segment_free(struct xhci_hcd *xhci, struct xhci_segment *seg)
 {
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (seg->sram_flag) {
+		xhci_mtk_free_sram(seg->sram_flag & 0xFF);
+		seg->trbs = NULL;
+	} else
+#endif
 	if (seg->trbs) {
 		dma_pool_free(xhci->segment_pool, seg->trbs, seg->dma);
 		seg->trbs = NULL;
@@ -351,6 +362,96 @@ static int xhci_alloc_segments_for_ring(struct xhci_hcd *xhci,
 
 	return 0;
 }
+
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+static struct xhci_segment *xhci_segment_alloc_sram(int sram_id, struct xhci_hcd *xhci,
+					unsigned int cycle_state, gfp_t flags)
+{
+	struct xhci_segment *seg;
+	dma_addr_t	dma;
+	int		i;
+
+	seg = kzalloc(sizeof(*seg), flags);
+	if (!seg)
+		return NULL;
+
+	xhci_mtk_allocate_sram(sram_id, &dma, (unsigned char **) &seg->trbs);
+
+	if (!seg->trbs) {
+		kfree(seg);
+		return NULL;
+	}
+
+	memset_io(seg->trbs, 0, TRB_SEGMENT_SIZE);
+	/* If the cycle state is 0, set the cycle bit to 1 for all the TRBs */
+	if (cycle_state == 0) {
+		for (i = 0; i < TRBS_PER_SEGMENT; i++)
+			seg->trbs[i].link.control |= cpu_to_le32(TRB_CYCLE);
+	}
+	seg->dma = dma;
+	seg->next = NULL;
+	seg->sram_flag = 0xFF00 + sram_id;
+
+	return seg;
+}
+
+/* Allocate segments and link them for a ring */
+static int xhci_alloc_segments_for_ring_sram(struct xhci_hcd *xhci,
+		struct xhci_segment **first, struct xhci_segment **last,
+		unsigned int num_segs, unsigned int cycle_state,
+		enum xhci_ring_type type, gfp_t flags, int sram_id)
+{
+	struct xhci_segment *prev;
+
+	prev = xhci_segment_alloc_sram(sram_id, xhci, cycle_state, flags);
+	if (!prev)
+		return -ENOMEM;
+
+	*first = prev;
+
+	xhci_link_segments(xhci, prev, *first, type);
+	*last = prev;
+
+	return 0;
+}
+
+static struct xhci_ring *xhci_ring_alloc_sram(struct xhci_hcd *xhci,
+		unsigned int num_segs, unsigned int cycle_state,
+		enum xhci_ring_type type, gfp_t flags, int sram_id)
+{
+	struct xhci_ring	*ring;
+	int ret;
+
+	ring = kzalloc(sizeof *(ring), flags);
+	if (!ring)
+		return NULL;
+
+	ring->num_segs = num_segs;
+	INIT_LIST_HEAD(&ring->td_list);
+	ring->type = type;
+	if (num_segs == 0)
+		return ring;
+
+	ret = xhci_alloc_segments_for_ring_sram(xhci, &ring->first_seg,
+			&ring->last_seg, num_segs, cycle_state, type, flags, sram_id);
+
+	if (ret)
+		goto fail;
+
+	/* Only event ring does not use link TRB */
+	if (type != TYPE_EVENT) {
+		/* See section 4.9.2.1 and 6.4.4.1 */
+		ring->last_seg->trbs[TRBS_PER_SEGMENT - 1].link.control |=
+			cpu_to_le32(LINK_TOGGLE);
+	}
+	xhci_initialize_ring_info(ring, cycle_state);
+	return ring;
+
+fail:
+	kfree(ring);
+	return NULL;
+}
+#endif
 
 /**
  * Create a new ring with zero or more segments.
@@ -1410,7 +1511,9 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 	enum xhci_ring_type type;
 	u32 max_esit_payload;
 	u32 endpoint_type;
-
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	int in;
+#endif
 	ep_index = xhci_get_endpoint_index(&ep->desc);
 	ep_ctx = xhci_get_ep_ctx(xhci, virt_dev->in_ctx, ep_index);
 
@@ -1421,8 +1524,26 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 
 	type = usb_endpoint_type(&ep->desc);
 	/* Set up the endpoint ring */
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (xhci->msram_virt_addr && type == USB_ENDPOINT_XFER_ISOC) {
+		in = usb_endpoint_dir_in(&ep->desc);
+		xhci_dbg(xhci, "xhci_ring_alloc_sram, ep=%d, type=%d, in=%d\n",
+				 ep_index, type, in);
+		if (in)
+			virt_dev->eps[ep_index].new_ring =
+				xhci_ring_alloc_sram(xhci, 1, 1, type, mem_flags, XHCI_EPRX);
+		else
+			virt_dev->eps[ep_index].new_ring =
+				xhci_ring_alloc_sram(xhci, 1, 1, type, mem_flags, XHCI_EPTX);
+	} else {
 	virt_dev->eps[ep_index].new_ring =
 		xhci_ring_alloc(xhci, 2, 1, type, mem_flags);
+	}
+#else
+	virt_dev->eps[ep_index].new_ring =
+		xhci_ring_alloc(xhci, 2, 1, type, mem_flags);
+
+#endif
 	if (!virt_dev->eps[ep_index].new_ring) {
 		/* Attempt to use the ring cache */
 		if (virt_dev->num_rings_cached == 0)
@@ -1796,9 +1917,19 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
 
 	/* Free the Event Ring Segment Table and the actual Event Ring */
 	size = sizeof(struct xhci_erst_entry)*(xhci->erst.num_entries);
-	if (xhci->erst.entries)
+	if (xhci->erst.entries) {
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+		if (xhci->msram_virt_addr)
+			xhci_mtk_free_sram(XHCI_ERST);
+		else
 		dma_free_coherent(dev, size,
 				xhci->erst.entries, xhci->erst.erst_dma_addr);
+#else
+		dma_free_coherent(dev, size,
+				xhci->erst.entries, xhci->erst.erst_dma_addr);
+
+#endif
+	}
 	xhci->erst.entries = NULL;
 	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "Freed ERST");
 	if (xhci->event_ring)
@@ -1846,9 +1977,18 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
 	xhci_dbg_trace(xhci, trace_xhci_dbg_init,
 			"Freed medium stream array pool");
 
-	if (xhci->dcbaa)
+	if (xhci->dcbaa) {
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+		if (xhci->msram_virt_addr)
+			xhci_mtk_free_sram(XHCI_DCBAA);
+		else
 		dma_free_coherent(dev, sizeof(*xhci->dcbaa),
 				xhci->dcbaa, xhci->dcbaa->dma);
+#else
+		dma_free_coherent(dev, sizeof(*xhci->dcbaa),
+				xhci->dcbaa, xhci->dcbaa->dma);
+#endif
+	}
 	xhci->dcbaa = NULL;
 
 	scratchpad_free(xhci);
@@ -1863,6 +2003,10 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
 			kfree(tt);
 		}
 	}
+
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	xhci_mtk_deinit_sram(xhci);
+#endif
 
 no_bw:
 	xhci->cmd_ring_reserved_trbs = 0;
@@ -2102,7 +2246,7 @@ static void xhci_add_in_port(struct xhci_hcd *xhci, unsigned int num_ports,
 			addr, port_offset, port_count, major_revision);
 	/* Port count includes the current port offset */
 	if (port_offset == 0 || (port_offset + port_count - 1) > num_ports)
-		/* WTF? "Valid values are ‘1’ to MaxPorts" */
+		/* WTF? "Valid values are ????to MaxPorts" */
 		return;
 
 	rhub->psi_count = XHCI_EXT_PORT_PSIC(temp);
@@ -2394,15 +2538,36 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
 			"// Setting Max device slots reg = 0x%x.", val);
 	writel(val, &xhci->op_regs->config_reg);
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	xhci_mtk_init_sram(xhci);
+#endif
+
 	/*
 	 * Section 5.4.8 - doorbell array must be
 	 * "physically contiguous and 64-byte (cache line) aligned".
 	 */
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (xhci->msram_virt_addr)
+		xhci_mtk_allocate_sram(XHCI_DCBAA, &dma, (unsigned char **) &xhci->dcbaa);
+	else
+		xhci->dcbaa = dma_alloc_coherent(dev, sizeof(*xhci->dcbaa), &dma,
+			GFP_KERNEL);
+#else
 	xhci->dcbaa = dma_alloc_coherent(dev, sizeof(*xhci->dcbaa), &dma,
 			GFP_KERNEL);
+#endif
+
 	if (!xhci->dcbaa)
 		goto fail;
+
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (xhci->msram_virt_addr)
+		memset_io(xhci->dcbaa, 0, sizeof *(xhci->dcbaa));
+	else
 	memset(xhci->dcbaa, 0, sizeof *(xhci->dcbaa));
+#else
+	memset(xhci->dcbaa, 0, sizeof *(xhci->dcbaa));
+#endif
 	xhci->dcbaa->dma = dma;
 	xhci_dbg_trace(xhci, trace_xhci_dbg_init,
 			"// Device context base array address = 0x%llx (DMA), %p (virt)",
@@ -2486,23 +2651,51 @@ int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags)
 	 * the event ring segment table (ERST).  Section 4.9.3.
 	 */
 	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "// Allocating event ring");
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (xhci->msram_virt_addr)
+		xhci->event_ring = xhci_ring_alloc_sram(xhci, 1, 1, TYPE_EVENT,
+						flags, XHCI_EVENTRING);
+	else
+		xhci->event_ring = xhci_ring_alloc(xhci, ERST_NUM_SEGS, 1, TYPE_EVENT,
+						flags);
+#else
 	xhci->event_ring = xhci_ring_alloc(xhci, ERST_NUM_SEGS, 1, TYPE_EVENT,
 						flags);
+#endif
 	if (!xhci->event_ring)
 		goto fail;
 	if (xhci_check_trb_in_td_math(xhci) < 0)
 		goto fail;
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (xhci->msram_virt_addr)
+		xhci_mtk_allocate_sram(XHCI_ERST, &dma, (unsigned char **) &xhci->erst.entries);
+	else
+		xhci->erst.entries = dma_alloc_coherent(dev,
+			sizeof(struct xhci_erst_entry) * ERST_NUM_SEGS, &dma,
+			GFP_KERNEL);
+#else
 	xhci->erst.entries = dma_alloc_coherent(dev,
 			sizeof(struct xhci_erst_entry) * ERST_NUM_SEGS, &dma,
 			GFP_KERNEL);
+
+#endif
+
 	if (!xhci->erst.entries)
 		goto fail;
 	xhci_dbg_trace(xhci, trace_xhci_dbg_init,
 			"// Allocated event ring segment table at 0x%llx",
 			(unsigned long long)dma);
 
+#ifdef CONFIG_MTK_UAC_POWER_SAVING
+	if (xhci->msram_virt_addr)
+		memset_io(xhci->erst.entries, 0, sizeof(struct xhci_erst_entry)*ERST_NUM_SEGS);
+	else
+		memset(xhci->erst.entries, 0, sizeof(struct xhci_erst_entry)*ERST_NUM_SEGS);
+#else
 	memset(xhci->erst.entries, 0, sizeof(struct xhci_erst_entry)*ERST_NUM_SEGS);
+#endif
+
 	xhci->erst.num_entries = ERST_NUM_SEGS;
 	xhci->erst.erst_dma_addr = dma;
 	xhci_dbg_trace(xhci, trace_xhci_dbg_init,

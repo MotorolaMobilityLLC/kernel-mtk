@@ -98,11 +98,13 @@ static int mtk_xhci_hcd_init(void)
 #ifdef CONFIG_USB_C_SWITCH
 static int typec_otg_enable(void *data)
 {
+	pr_info("typec_otg_enable\n");
 	return mtk_xhci_driver_load(false);
 }
 
 static int typec_otg_disable(void *data)
 {
+	pr_info("typec_otg_disable\n");
 	mtk_xhci_driver_unload(false);
 	return 0;
 }
