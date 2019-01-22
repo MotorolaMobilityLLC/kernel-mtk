@@ -271,12 +271,6 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 		return -1;
 	}
 
-#ifdef MT_GPUFREQ_OPP_STRESS_TEST
-	/* for DEMO, set freq from GED to max freq */
-	if (!g_opp_stress_test_state)
-		idx = 0;
-#endif /* ifdef MT_GPUFREQ_OPP_STRESS_TEST */
-
 	/* look up for the target OPP table */
 	target_freq = g_opp_table[idx].gpufreq_khz;
 	target_volt = g_opp_table[idx].gpufreq_volt;
