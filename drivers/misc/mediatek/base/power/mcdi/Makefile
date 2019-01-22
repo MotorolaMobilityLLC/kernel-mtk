@@ -26,3 +26,6 @@ obj-$(CONFIG_MACH_MT6739) += mtk_mcdi_governor_hint.o
 obj-$(CONFIG_MACH_MT6771) += mcdi_v1/
 obj-$(CONFIG_MACH_MT6771) += mtk_mcdi_governor.o
 obj-$(CONFIG_MACH_MT6771) += mtk_mcdi_governor_hint.o
+obj-$(CONFIG_MACH_MT6775) += mcdi_v1/
+obj-$(CONFIG_MACH_MT6775) += mtk_mcdi_governor.o
+obj-$(CONFIG_MACH_MT6775) += mtk_mcdi_governor_hint.o

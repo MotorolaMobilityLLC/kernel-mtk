@@ -43,6 +43,7 @@
 #endif
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 #include <mtk_mcdi_api.h>
+#include <mtk_mcdi_governor.h>
 #endif
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
@@ -1149,7 +1150,6 @@ static bool rgidle_can_enter(int cpu, int reason)
 
 static void rgidle_before_wfi(int cpu)
 {
-
 }
 
 static void rgidle_after_wfi(int cpu)
@@ -1761,7 +1761,11 @@ int rgidle_enter(int cpu)
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
 
+	idle_refcnt_inc();
+
 	go_to_rgidle(cpu);
+
+	idle_refcnt_dec();
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_RG, cpu);
 

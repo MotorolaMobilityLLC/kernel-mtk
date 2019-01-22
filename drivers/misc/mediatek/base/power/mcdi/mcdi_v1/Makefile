@@ -35,4 +35,7 @@ endif
 ifeq ($(CONFIG_MACH_MT6771), y)
 obj-y += mtk_mcdi_mt6771.o
 endif
+ifeq ($(CONFIG_MACH_MT6775), y)
+obj-y += mtk_mcdi_mt6775.o
+endif
 

@@ -16,13 +16,6 @@
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_state.h>
 
-enum {
-	MCDI_STATE_TABLE_SET_0      = 0,
-	MCDI_STATE_TABLE_SET_1      = 1,
-	MCDI_STATE_TABLE_SET_2      = 2,
-	NF_MCDI_STATE_TABLE_TYPE    = 3
-};
-
 /*
  * Used for mcdi_governor
  * only use exit_latency & target_residency
@@ -174,22 +167,11 @@ static struct cpuidle_driver mt67xx_acao_mcdi_state[NF_MCDI_STATE_TABLE_TYPE] = 
 	}
 };
 
-static int mcdi_state_table_idx_map[NF_CPU] = {
-	MCDI_STATE_TABLE_SET_0,
-	MCDI_STATE_TABLE_SET_0,
-	MCDI_STATE_TABLE_SET_0,
-	MCDI_STATE_TABLE_SET_0,
-	MCDI_STATE_TABLE_SET_1,
-	MCDI_STATE_TABLE_SET_1,
-	MCDI_STATE_TABLE_SET_1,
-	MCDI_STATE_TABLE_SET_2
-};
-
 struct cpuidle_driver *mcdi_state_tbl_get(int cpu)
 {
 	int tbl_idx = 0;
 
-	tbl_idx = (cpu >= 0 && cpu < NF_CPU) ? mcdi_state_table_idx_map[cpu] : 0;
+	tbl_idx = mcdi_get_state_tbl(cpu);
 
 	return &mt67xx_acao_mcdi_state[tbl_idx];
 }

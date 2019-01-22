@@ -760,6 +760,40 @@ void set_mcdi_s_state(int state)
 	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
 }
 
+void set_mcdi_buck_off_mask(unsigned int buck_off_mask)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&mcdi_feature_stat_spin_lock, flags);
+
+	mcdi_feature_stat.buck_off =
+		buck_off_mask & mcdi_get_buck_ctrl_mask();
+	mcdi_mbox_write(MCDI_MBOX_BUCK_POWER_OFF_MASK,
+				mcdi_feature_stat.buck_off);
+
+	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
+}
+
+bool mcdi_is_buck_off(int cluster_idx)
+{
+	unsigned long flags;
+	unsigned int buck_off_mask;
+	unsigned int cluster_off;
+
+	spin_lock_irqsave(&mcdi_feature_stat_spin_lock, flags);
+
+	buck_off_mask = mcdi_mbox_read(MCDI_MBOX_BUCK_POWER_OFF_MASK);
+
+	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
+
+	cluster_off = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT) >> 16;
+
+	if ((cluster_off & buck_off_mask) == (1 << cluster_idx))
+		return true;
+
+	return false;
+}
+
 void mcdi_governor_init(void)
 {
 	unsigned long flags;
@@ -798,6 +832,7 @@ void get_mcdi_feature_status(struct mcdi_feature_status *stat)
 	stat->enable      = mcdi_feature_stat.enable;
 	stat->pause       = mcdi_feature_stat.pause;
 	stat->cluster_off = mcdi_feature_stat.cluster_off;
+	stat->buck_off    = mcdi_feature_stat.buck_off;
 	stat->any_core    = mcdi_feature_stat.any_core;
 	stat->s_state     = mcdi_feature_stat.s_state;
 
