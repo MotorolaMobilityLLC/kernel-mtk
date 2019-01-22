@@ -181,24 +181,34 @@ static void spm_register_init(void)
 
 	spm_err("spm_base = %p, sleep_reg_md_base = %p, spm_irq_0 = %d\n", spm_base, sleep_reg_md_base, spm_irq_0);
 
-	/* kp_irq_b */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-keypad");
+	/* mipi_apb_tx_irq */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 	if (!node) {
-		spm_err("find mt6799-keypad node failed\n");
+		spm_err("find mediatek,infracfg_ao syscon node failed\n");
+	} else {
+		edge_trig_irqs[1] = irq_of_parse_and_map(node, 0);
+		if (!edge_trig_irqs[1])
+			spm_err("get mediatek,infracfg_ao syscon failed\n");
+	}
+
+	/* kp_irq_b */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,kp");
+	if (!node) {
+		spm_err("find mediatek,kp node failed\n");
 	} else {
 		edge_trig_irqs[2] = irq_of_parse_and_map(node, 0);
 		if (!edge_trig_irqs[2])
-			spm_err("get mt6799-keypad failed\n");
+			spm_err("get mediatek,kp failed\n");
 	}
 
-	/* c2k_wdt_irq_b */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,ap2c2k_ccif");
+	/* conn_wdt_irq_b */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6763-consys");
 	if (!node) {
-		spm_err("find ap2c2k_ccif node failed\n");
+		spm_err("find mediatek,mt6763-consys node failed\n");
 	} else {
-		edge_trig_irqs[4] = irq_of_parse_and_map(node, 1);
-		if (!edge_trig_irqs[4])
-			spm_err("get ap2c2k_ccif failed\n");
+		edge_trig_irqs[3] = irq_of_parse_and_map(node, 1);
+		if (!edge_trig_irqs[3])
+			spm_err("get mediatek,mt6763-consys failed\n");
 	}
 
 	/* md_wdt_int_ao */
@@ -206,11 +216,13 @@ static void spm_register_init(void)
 	if (!node) {
 		spm_err("find mdcldma node failed\n");
 	} else {
-		edge_trig_irqs[5] = irq_of_parse_and_map(node, 2);
+		edge_trig_irqs[5] = irq_of_parse_and_map(node, 3);
 		if (!edge_trig_irqs[5])
 			spm_err("get mdcldma failed\n");
 	}
 
+	/* deprecated: no user used this irq at mt6763 */
+#if 0
 	/* lowbattery_irq_b */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,auxadc");
 	if (!node) {
@@ -220,6 +232,7 @@ static void spm_register_init(void)
 		if (!edge_trig_irqs[6])
 			spm_err("get auxadc failed\n");
 	}
+#endif
 
 	spm_err("edge trigger irqs: %d, %d, %d, %d, %d, %d, %d\n",
 		 edge_trig_irqs[0],
