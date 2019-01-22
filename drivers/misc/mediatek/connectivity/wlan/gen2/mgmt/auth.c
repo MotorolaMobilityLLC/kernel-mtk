@@ -987,8 +987,8 @@ authSendDeauthFrame(IN P_ADAPTER_T prAdapter,
 	prMsduInfo->ucTxSeqNum = nicIncreaseTxSeqNum(prAdapter);
 	prMsduInfo->pfTxDoneHandler = pfTxDoneHandler;
 	prMsduInfo->fgIsBasicRate = TRUE;
-	DBGLOG(SAA, INFO, "Sending Deauth, network: %d, seqNo %d\n",
-		eNetTypeIndex, prMsduInfo->ucTxSeqNum);
+	DBGLOG(SAA, INFO, "Sending Deauth, network: %d, seqNo %d, reason: %d\n",
+		eNetTypeIndex, prMsduInfo->ucTxSeqNum, u2ReasonCode);
 
 	/* 4 <8> Inform TXM to send this Deauthentication frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);

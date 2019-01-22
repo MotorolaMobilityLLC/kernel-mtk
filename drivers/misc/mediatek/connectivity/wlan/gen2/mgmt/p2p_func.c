@@ -882,8 +882,8 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 		/* kalP2PGOStationUpdate */
 		/* kalP2PGCIndicateConnectionStatus */
 		/* p2pIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, prStaRec->aucMacAddr); */
-		DBGLOG(P2P, INFO, "p2pFuncDisconnect, eCurrentOPMode: %d, sendDeauth: %s\n",
-			prP2pBssInfo->eCurrentOPMode, fgSendDeauth ? "True" : "False");
+		DBGLOG(P2P, INFO, "p2pFuncDisconnect, eCurrentOPMode: %d, sendDeauth: %s, u2ReasonCode: %d\n",
+			prP2pBssInfo->eCurrentOPMode, fgSendDeauth ? "True" : "False", u2ReasonCode);
 #if CFG_SUPPORT_P2P_EAP_FAIL_WORKAROUND
 		u4DeauthDelayTimeDiff = kalGetTimeTick() - prP2pBssInfo->u4P2PEapTxDoneTime;
 		if (prP2pBssInfo->fgP2PPendingDeauth == TRUE &&
