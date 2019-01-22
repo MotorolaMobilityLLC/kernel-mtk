@@ -155,18 +155,23 @@ static irqreturn_t mtk_timer_interrupt(int irq, void *dev_id)
 }
 
 static void
-__init mtk_timer_setup(struct mtk_clock_event_device *evt, u8 timer, u8 option)
+__init mtk_timer_setup(struct mtk_clock_event_device *evt, u8 timer,
+			    u8 option, u8 clk_src, bool enable)
 {
+	u32 val;
+
 	writel(TIMER_CTRL_CLEAR | TIMER_CTRL_DISABLE,
 		evt->gpt_base + TIMER_CTRL_REG(timer));
 
-	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_SYS13M) | TIMER_CLK_DIV1,
+	writel(TIMER_CLK_SRC(clk_src) | TIMER_CLK_DIV1,
 			evt->gpt_base + TIMER_CLK_REG(timer));
 
 	writel(0x0, evt->gpt_base + TIMER_CMP_REG(timer));
 
-	writel(TIMER_CTRL_OP(option) | TIMER_CTRL_ENABLE,
-			evt->gpt_base + TIMER_CTRL_REG(timer));
+	val = TIMER_CTRL_OP(option);
+	if (enable)
+		val |= TIMER_CTRL_ENABLE;
+	writel(val, evt->gpt_base + TIMER_CTRL_REG(timer));
 }
 
 static void mtk_timer_enable_irq(struct mtk_clock_event_device *evt, u8 timer)
@@ -204,8 +209,9 @@ static void __init mtk_timer_init(struct device_node *node)
 {
 	struct mtk_clock_event_device *evt;
 	struct resource res;
-	unsigned long rate = 0;
-	struct clk *clk, *clk_bus;
+	unsigned long rate_src, rate_evt;
+	struct clk *clk_src, *clk_evt, *clk_bus;
+	bool clk32k_exist = false;
 
 	evt = kzalloc(sizeof(*evt), GFP_KERNEL);
 	if (!evt)
@@ -237,53 +243,74 @@ static void __init mtk_timer_init(struct device_node *node)
 	if (!IS_ERR(clk_bus))
 		clk_prepare_enable(clk_bus);
 
-	clk = of_clk_get(node, 0);
-	if (IS_ERR(clk)) {
-		pr_err("Can't get timer clock\n");
+	clk_src = of_clk_get(node, 0);
+	if (IS_ERR(clk_src)) {
+		pr_err("Can't get timer clock_src\n");
 		goto err_irq;
 	}
 
-	if (clk_prepare_enable(clk)) {
-		pr_err("Can't prepare clock\n");
-		goto err_clk_put;
+	if (clk_prepare_enable(clk_src)) {
+		pr_err("Can't prepare clock_src\n");
+		goto err_clk_put_src;
 	}
-	rate = clk_get_rate(clk);
+	rate_src = clk_get_rate(clk_src);
+
+	clk_evt = of_clk_get_by_name(node, "clk32k");
+	if (!IS_ERR(clk_evt)) {
+		clk32k_exist = true;
+		clk_prepare_enable(clk_evt);
+		rate_evt = clk_get_rate(clk_evt);
+	} else {
+		rate_evt = rate_src;
+	}
 
 	if (request_irq(evt->dev.irq, mtk_timer_interrupt,
 			IRQF_TIMER | IRQF_IRQPOLL, "mtk_timer", evt)) {
 		pr_err("failed to setup irq %d\n", evt->dev.irq);
-		goto err_clk_disable;
+		if (clk32k_exist)
+			goto err_clk_disable_evt;
+		else
+			goto err_clk_disable_src;
 	}
 
-	evt->ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
+	evt->ticks_per_jiffy = DIV_ROUND_UP(rate_evt, HZ);
 
 	mtk_evt = evt;
 
 	/* Configure clock source */
-	mtk_timer_setup(evt, GPT_CLK_SRC, TIMER_CTRL_OP_FREERUN);
+	mtk_timer_setup(evt, GPT_CLK_SRC, TIMER_CTRL_OP_FREERUN, TIMER_CLK_SRC_SYS13M, true);
 	clocksource_mmio_init(evt->gpt_base + TIMER_CNT_REG(GPT_CLK_SRC),
-			node->name, rate, 300, 32, clocksource_mmio_readl_up);
+			node->name, rate_src, 300, 32, clocksource_mmio_readl_up);
 	gpt_sched_reg = evt->gpt_base + TIMER_CNT_REG(GPT_CLK_SRC);
-	sched_clock_register(mtk_read_sched_clock, 32, rate);
+	sched_clock_register(mtk_read_sched_clock, 32, rate_src);
 
 	/* Configure clock event */
-	mtk_timer_setup(evt, GPT_CLK_EVT, TIMER_CTRL_OP_REPEAT);
-	clockevents_config_and_register(&evt->dev, rate, 0x3,
+	if (clk32k_exist)
+		mtk_timer_setup(evt, GPT_CLK_EVT, TIMER_CTRL_OP_REPEAT, TIMER_CLK_SRC_RTC32K, false);
+	else
+		mtk_timer_setup(evt, GPT_CLK_EVT, TIMER_CTRL_OP_REPEAT, TIMER_CLK_SRC_SYS13M, false);
+	clockevents_config_and_register(&evt->dev, rate_evt, 0x3,
 					0xffffffff);
 
 	mtk_timer_enable_irq(evt, GPT_CLK_EVT);
 
 	return;
 
-err_clk_disable:
-	clk_disable_unprepare(clk);
-err_clk_put:
-	clk_put(clk);
+err_clk_disable_evt:
+	clk_disable_unprepare(clk_evt);
+	clk_put(clk_evt);
+err_clk_disable_src:
+	clk_disable_unprepare(clk_src);
+err_clk_put_src:
+	clk_put(clk_src);
 err_irq:
 	irq_dispose_mapping(evt->dev.irq);
 err_mem:
 	iounmap(evt->gpt_base);
-	of_address_to_resource(node, 0, &res);
+	if (of_address_to_resource(node, 0, &res)) {
+		pr_warn("Failed to parse resource\n");
+		return;
+	}
 	release_mem_region(res.start, resource_size(&res));
 err_kzalloc:
 	kfree(evt);
