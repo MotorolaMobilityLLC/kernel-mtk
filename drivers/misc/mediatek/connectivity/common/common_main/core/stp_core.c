@@ -3553,9 +3553,9 @@ INT32 mtk_wcn_stp_wmt_evt_err_trg_assert(VOID)
 	return ret;
 }
 
-
 INT32 mtk_wcn_stp_coredump_timeout_handle(VOID)
 {
+	stp_core_ctx.assert_info_cnt = 0;
 	mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
 	mtk_wcn_stp_coredump_start_ctrl(0);
 	stp_psm_set_sleep_enable(stp_core_ctx.psm);
