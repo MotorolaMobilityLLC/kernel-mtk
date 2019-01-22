@@ -14,8 +14,7 @@
 #include "gyrohub.h"
 #include <gyroscope.h>
 #include <SCP_sensorHub.h>
-#include <linux/notifier.h>
-#include "scp_helper.h"
+#include "SCP_power_monitor.h"
 
 #define GYROHUB_DEV_NAME        "gyro_hub"	/* name must different with gsensor gyrohub */
 
@@ -41,7 +40,8 @@ struct gyrohub_ipi_data {
 	int direction;
 	atomic_t trace;
 	atomic_t suspend;
-	int cali_sw[GYROHUB_AXES_NUM + 1];
+	int32_t static_cali[GYROHUB_AXES_NUM];
+	int32_t dynamic_cali[GYROHUB_AXES_NUM];
 	struct work_struct init_done_work;
 	/*data */
 	atomic_t scp_init_done;
@@ -51,14 +51,15 @@ static struct gyrohub_ipi_data *obj_ipi_data;
 
 static int gyrohub_write_rel_calibration(struct gyrohub_ipi_data *obj, int dat[GYROHUB_AXES_NUM])
 {
-	obj->cali_sw[GYROHUB_AXIS_X] = dat[GYROHUB_AXIS_X];
-	obj->cali_sw[GYROHUB_AXIS_Y] = dat[GYROHUB_AXIS_Y];
-	obj->cali_sw[GYROHUB_AXIS_Z] = dat[GYROHUB_AXIS_Z];
+	obj->static_cali[GYROHUB_AXIS_X] = dat[GYROHUB_AXIS_X];
+	obj->static_cali[GYROHUB_AXIS_Y] = dat[GYROHUB_AXIS_Y];
+	obj->static_cali[GYROHUB_AXIS_Z] = dat[GYROHUB_AXIS_Z];
 
 
 	if (atomic_read(&obj->trace) & GYRO_TRC_CALI) {
 		GYROS_LOG("write gyro calibration data  (%5d, %5d, %5d)\n",
-			 obj->cali_sw[GYROHUB_AXIS_X], obj->cali_sw[GYROHUB_AXIS_Y], obj->cali_sw[GYROHUB_AXIS_Z]);
+			 obj->static_cali[GYROHUB_AXIS_X], obj->static_cali[GYROHUB_AXIS_Y],
+			 obj->static_cali[GYROHUB_AXIS_Z]);
 	}
 
 	return 0;
@@ -70,16 +71,12 @@ static int gyrohub_ResetCalibration(void)
 	unsigned char buf[2] = {0};
 	int err = 0;
 
-	if (!atomic_read(&obj->scp_init_done)) {
-		GYROS_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
 	err = sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_RESET_CALI, buf);
 	if (err < 0)
 		GYROS_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
 			ID_GYROSCOPE, CUST_ACTION_RESET_CALI);
 
-	memset(obj->cali_sw, 0x00, sizeof(obj->cali_sw));
+	memset(obj->static_cali, 0x00, sizeof(obj->static_cali));
 	return err;
 }
 
@@ -87,9 +84,9 @@ static int gyrohub_ReadCalibration(int dat[GYROHUB_AXES_NUM])
 {
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
-	dat[GYROHUB_AXIS_X] = obj->cali_sw[GYROHUB_AXIS_X];
-	dat[GYROHUB_AXIS_Y] = obj->cali_sw[GYROHUB_AXIS_Y];
-	dat[GYROHUB_AXIS_Z] = obj->cali_sw[GYROHUB_AXIS_Z];
+	dat[GYROHUB_AXIS_X] = obj->static_cali[GYROHUB_AXIS_X];
+	dat[GYROHUB_AXIS_Y] = obj->static_cali[GYROHUB_AXIS_Y];
+	dat[GYROHUB_AXIS_Z] = obj->static_cali[GYROHUB_AXIS_Z];
 
 
 	if (atomic_read(&obj->trace) & GYRO_TRC_CALI)
@@ -103,12 +100,7 @@ static int gyrohub_ReadCalibration(int dat[GYROHUB_AXES_NUM])
 static int gyrohub_WriteCalibration_scp(int dat[GYROHUB_AXES_NUM])
 {
 	int err = 0;
-	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
-	if (!atomic_read(&obj->scp_init_done)) {
-		GYROS_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
 	err = sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_SET_CALI, dat);
 	if (err < 0)
 		GYROS_ERR("sensor_set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
@@ -135,9 +127,9 @@ static int gyrohub_WriteCalibration(int dat[GYROHUB_AXES_NUM])
 		return -1;
 	}
 
-	cali[GYROHUB_AXIS_X] = obj->cali_sw[GYROHUB_AXIS_X];
-	cali[GYROHUB_AXIS_Y] = obj->cali_sw[GYROHUB_AXIS_Y];
-	cali[GYROHUB_AXIS_Z] = obj->cali_sw[GYROHUB_AXIS_Z];
+	cali[GYROHUB_AXIS_X] = obj->static_cali[GYROHUB_AXIS_X];
+	cali[GYROHUB_AXIS_Y] = obj->static_cali[GYROHUB_AXIS_Y];
+	cali[GYROHUB_AXIS_Z] = obj->static_cali[GYROHUB_AXIS_Z];
 
 	cali[GYROHUB_AXIS_X] += dat[GYROHUB_AXIS_X];
 	cali[GYROHUB_AXIS_Y] += dat[GYROHUB_AXIS_Y];
@@ -155,12 +147,7 @@ static int gyrohub_WriteCalibration(int dat[GYROHUB_AXES_NUM])
 static int gyrohub_SetPowerMode(bool enable)
 {
 	int err = 0;
-	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
-	if (!atomic_read(&obj->scp_init_done)) {
-		GYROS_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
 	err = sensor_enable_to_hub(ID_GYROSCOPE, enable);
 	if (err < 0)
 		GYROS_ERR("sensor_enable_to_hub fail!\n");
@@ -177,11 +164,6 @@ static int gyrohub_ReadGyroData(char *buf, int bufsize)
 	int gyro[GYROHUB_AXES_NUM];
 	int err = 0;
 	int status = 0;
-
-	if (!atomic_read(&obj->scp_init_done)) {
-		GYROS_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
 
 	if (atomic_read(&obj->suspend))
 		return -3;
@@ -308,10 +290,6 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 		GYROS_ERR("obj is null!!\n");
 		return 0;
 	}
-	if (!atomic_read(&obj->scp_init_done)) {
-		GYROS_ERR("sensor hub has not been ready!!\n");
-		return 0;
-	}
 	if (sscanf(buf, "0x%x", &trace) == 1) {
 		atomic_set(&obj->trace, trace);
 		res = sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_SET_TRACE, &trace);
@@ -356,10 +334,6 @@ static ssize_t store_chip_orientation(struct device_driver *ddri, const char *bu
 
 	if (obj == NULL)
 		return 0;
-	if (!atomic_read(&obj->scp_init_done)) {
-		GYROS_ERR("sensor hub has not been ready!!\n");
-		return 0;
-	}
 	ret = kstrtoint(buf, 10, &_nDirection);
 	if (ret == 0) {
 		obj->direction = _nDirection;
@@ -433,9 +407,12 @@ static void scp_init_work_done(struct work_struct *work)
 		if (atomic_read(&obj->first_ready_after_boot) == 0) {
 			atomic_set(&obj->first_ready_after_boot, 1);
 		} else {
-			err = gyrohub_WriteCalibration_scp(obj->cali_sw);
+			err = gyrohub_WriteCalibration_scp(obj->static_cali);
 			if (err < 0)
 				GYROS_ERR("gyrohub_WriteCalibration_scp fail\n");
+			err = sensor_cfg_to_hub(ID_GYROSCOPE, (uint8_t *)obj->dynamic_cali, sizeof(obj->dynamic_cali));
+			if (err < 0)
+				GYROS_ERR("sensor_cfg_to_hub fail\n");
 		}
 	}
 }
@@ -443,14 +420,19 @@ static void scp_init_work_done(struct work_struct *work)
 static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
+	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
 	if (event->flush_action == FLUSH_ACTION)
 		err = gyro_flush_report();
 	else if (event->flush_action == DATA_ACTION)
 		err = gyro_data_report(event->gyroscope_t.x, event->gyroscope_t.y, event->gyroscope_t.z,
 			event->gyroscope_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
-	else if (event->flush_action == BIAS_ACTION)
+	else if (event->flush_action == BIAS_ACTION) {
 		err = gyro_bias_report(event->gyroscope_t.x_bias, event->gyroscope_t.y_bias, event->gyroscope_t.z_bias);
+		obj->dynamic_cali[GYROHUB_AXIS_X] = event->gyroscope_t.x_bias;
+		obj->dynamic_cali[GYROHUB_AXIS_Y] = event->gyroscope_t.y_bias;
+		obj->dynamic_cali[GYROHUB_AXIS_Z] = event->gyroscope_t.z_bias;
+	}
 	return err;
 }
 
@@ -758,10 +740,6 @@ static int gyrohub_set_delay(u64 ns)
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
 	value = (int)ns / 1000 / 1000;
-	if (!atomic_read(&obj->scp_init_done)) {
-		GYROS_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
 	err = sensor_set_delay_to_hub(ID_GYROSCOPE, value);
 	if (err < 0) {
 		GYROS_ERR("sensor_set_delay_to_hub fail!\n");
@@ -791,6 +769,9 @@ static int gyrohub_flush(void)
 
 static int gyrohub_set_cali(uint8_t *data, uint8_t count)
 {
+	struct gyrohub_ipi_data *obj = obj_ipi_data;
+
+	memcpy(obj->dynamic_cali, data, count);
 	return sensor_cfg_to_hub(ID_GYROSCOPE, data, count);
 }
 
@@ -846,22 +827,23 @@ static int gyrohub_get_data(int *x, int *y, int *z, int *status)
 	}
 	return 0;
 }
-static int scp_ready_event(struct notifier_block *this, unsigned long event, void *ptr)
+static int scp_ready_event(uint8_t event, void *ptr)
 {
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
 	switch (event) {
-	case SCP_EVENT_READY:
+	case SENSOR_POWER_UP:
 	    atomic_set(&obj->scp_init_done, 1);
-			schedule_work(&obj->init_done_work);
+		schedule_work(&obj->init_done_work);
 	    break;
-	case SCP_EVENT_STOP:
+	case SENSOR_POWER_DOWN:
 	    atomic_set(&obj->scp_init_done, 0);
 	    break;
 	}
-	return NOTIFY_DONE;
+	return 0;
 }
-static struct notifier_block scp_ready_notifier = {
+static struct scp_power_monitor scp_ready_notifier = {
+	.name = "gyro",
 	.notifier_call = scp_ready_event,
 };
 static int gyrohub_probe(struct platform_device *pdev)
@@ -894,7 +876,7 @@ static int gyrohub_probe(struct platform_device *pdev)
 		GYROS_ERR("gpio_config failed\n");
 		goto exit_kfree;
 	}
-	scp_A_register_notify(&scp_ready_notifier);
+	scp_power_monitor_register(&scp_ready_notifier);
 	err = scp_sensorHub_data_registration(ID_GYROSCOPE, gyro_recv_data);
 	if (err < 0) {
 		GYROS_ERR("scp_sensorHub_data_registration failed\n");

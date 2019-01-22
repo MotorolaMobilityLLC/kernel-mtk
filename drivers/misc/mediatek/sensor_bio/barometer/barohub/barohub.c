@@ -18,8 +18,7 @@
 #include <barometer.h>
 #include <hwmsensor.h>
 #include <SCP_sensorHub.h>
-#include <linux/notifier.h>
-#include "scp_helper.h"
+#include "SCP_power_monitor.h"
 
 /* trace */
 enum BAR_TRC {
@@ -57,12 +56,7 @@ static struct baro_init_info barohub_init_info = {
 static int barohub_set_powermode(bool enable)
 {
 	int err = 0;
-	struct barohub_ipi_data *obj = obj_ipi_data;
 
-	if (!atomic_read(&obj->scp_init_done)) {
-		BAR_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
 	err = sensor_enable_to_hub(ID_PRESSURE, enable);
 	if (err < 0)
 		BAR_ERR("SCP_sensorHub_req_send fail!\n");
@@ -94,10 +88,6 @@ static int barohub_get_pressure(char *buf, int bufsize)
 	int pressure;
 	int err = 0;
 
-	if (!atomic_read(&obj->scp_init_done)) {
-		BAR_ERR("sensor hub has not been ready!!\n");
-		return -1;
-	}
 	if (atomic_read(&obj->suspend))
 		return -3;
 
@@ -160,10 +150,6 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 
 	if (obj == NULL) {
 		BAR_ERR("obj is null\n");
-		return 0;
-	}
-	if (!atomic_read(&obj->scp_init_done)) {
-		BAR_ERR("sensor hub has not been ready!!\n");
 		return 0;
 	}
 	res = kstrtoint(buf, 10, &trace);
@@ -399,15 +385,10 @@ static int barohub_set_delay(u64 ns)
 	struct barohub_ipi_data *obj = obj_ipi_data;
 
 	delayms = (unsigned int)ns / 1000 / 1000;
-	if (atomic_read(&obj->scp_init_done)) {
-		err = sensor_set_delay_to_hub(ID_PRESSURE, delayms);
-		if (err < 0) {
-			BAR_ERR("als_set_delay fail!\n");
-			return err;
-		}
-	} else {
-		BAR_ERR("sensor hub has not been ready!!\n");
-		return -1;
+	err = sensor_set_delay_to_hub(ID_PRESSURE, delayms);
+	if (err < 0) {
+		BAR_ERR("als_set_delay fail!\n");
+		return err;
 	}
 	return 0;
 #elif defined CONFIG_NANOHUB
@@ -444,22 +425,23 @@ static int barohub_get_data(int *value, int *status)
 
 	return 0;
 }
-static int scp_ready_event(struct notifier_block *this, unsigned long event, void *ptr)
+static int scp_ready_event(uint8_t event, void *ptr)
 {
 	struct barohub_ipi_data *obj = obj_ipi_data;
 
 	switch (event) {
-	case SCP_EVENT_READY:
+	case SENSOR_POWER_UP:
 	    atomic_set(&obj->scp_init_done, 1);
 	    break;
-	case SCP_EVENT_STOP:
+	case SENSOR_POWER_DOWN:
 	    atomic_set(&obj->scp_init_done, 0);
 	    break;
 	}
-	return NOTIFY_DONE;
+	return 0;
 }
 
-static struct notifier_block scp_ready_notifier = {
+static struct scp_power_monitor scp_ready_notifier = {
+	.name = "baro",
 	.notifier_call = scp_ready_event,
 };
 
@@ -485,7 +467,7 @@ static int barohub_probe(struct platform_device *pdev)
 	atomic_set(&obj->suspend, 0);
 
 	atomic_set(&obj->scp_init_done, 0);
-	scp_A_register_notify(&scp_ready_notifier);
+	scp_power_monitor_register(&scp_ready_notifier);
 	err = scp_sensorHub_data_registration(ID_PRESSURE, baro_recv_data);
 	if (err < 0) {
 		BAR_ERR("scp_sensorHub_data_registration failed\n");
