@@ -863,6 +863,7 @@ static int CM36558_check_intr(struct i2c_client *client)
 {
 	int res = 0;
 	u8 databuf[2];
+	struct CM36558_priv *obj = i2c_get_clientdata(client);
 
 	databuf[0] = CM36558_REG_PS_DATA;
 	res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
@@ -871,7 +872,8 @@ static int CM36558_check_intr(struct i2c_client *client)
 		goto EXIT_ERR;
 	}
 
-	APS_INFO("CM36558_REG_PS_DATA value value_low = %x, value_reserve = %x\n", databuf[0], databuf[1]);
+	if (atomic_read(&obj->trace) & CMC_TRC_DEBUG)
+		APS_INFO("CM36558_REG_PS_DATA value value_low = %x, value_reserve = %x\n", databuf[0], databuf[1]);
 
 	databuf[0] = CM36558_REG_INT_FLAG;
 	res = CM36558_i2c_master_operate(client, databuf, 2, I2C_FLAG_READ);
