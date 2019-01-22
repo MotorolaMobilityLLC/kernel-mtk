@@ -32,7 +32,7 @@
 /* #include <mach/mt_typedefs.h> */
 #include <mt-plat/sync_write.h>
 /*#include "mt_clkmgr.h"*/
-#include "mt6763_clkmgr.h"
+#include "mt6771_clkmgr.h"
 /* #include <mach/mt_dcm.h> */
 /* #include <mach/mt_idvfs.h> */ /* Fix when idvfs ready */
 /*#include "mt_spm.h"*/
