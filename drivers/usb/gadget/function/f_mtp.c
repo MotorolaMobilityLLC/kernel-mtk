@@ -118,6 +118,7 @@ static struct delayed_work monitor_work;
 static void do_monitor_work(struct work_struct *work);
 static void protocol_dump(char *data, int buf_len, int limit)
 {
+#if 0
 	u32 *len;
 	u32 *type_code;
 	u32 *id;
@@ -141,6 +142,7 @@ static void protocol_dump(char *data, int buf_len, int limit)
 		while (i++ < bound)
 			MTP_DBG("D[%d]:%x\n", i, data[i]);
 	}
+#endif
 }
 
 enum {
