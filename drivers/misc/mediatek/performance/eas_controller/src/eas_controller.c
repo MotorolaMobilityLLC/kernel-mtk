@@ -79,6 +79,11 @@ static inline void reduce_stall_wrapper(int boost_value)
 static inline void reduce_stall_wrapper(int boost_value) { }
 #endif
 
+static int check_boost_value(int boost_value)
+{
+	return clamp(boost_value, -100, 5000);
+}
+
 /*************************************************************************************/
 #ifdef CONFIG_SCHED_TUNE
 int update_eas_boost_value(int kicker, int cgroup_idx, int value)
@@ -124,12 +129,7 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	else
 		final_boost_value = 0;
 
-	if (final_boost_value > 5000)
-		current_boost_value[cgroup_idx] = 5000;
-	else if (final_boost_value < -100)
-		current_boost_value[cgroup_idx] = -100;
-	else
-		current_boost_value[cgroup_idx] = final_boost_value;
+	current_boost_value[cgroup_idx] = check_boost_value(final_boost_value);
 
 	if (kicker == EAS_KIR_PERF)
 		pr_debug(TAG"kicker:%d, boost:%d, final:%d, current:%d",
@@ -138,10 +138,8 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 
 
 	if (!debug) {
-		if (current_boost_value[cgroup_idx] >= -100 && current_boost_value[cgroup_idx] < 5000) {
-			boost_write_for_perf_idx(cgroup_idx, current_boost_value[cgroup_idx]);
-			reduce_stall_wrapper(current_boost_value[cgroup_idx]);
-		}
+		boost_write_for_perf_idx(cgroup_idx, current_boost_value[cgroup_idx]);
+		reduce_stall_wrapper(current_boost_value[cgroup_idx]);
 	}
 
 	mutex_unlock(&boost_eas);
@@ -172,10 +170,7 @@ static ssize_t perfmgr_perfserv_fg_boost_write(struct file *filp, const char *ub
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (data > 3000)
-		data = 3000;
-	else if (data < -100)
-		data = -100;
+	data = check_boost_value(data);
 
 	update_eas_boost_value(EAS_KIR_PERF, CGROUP_FG, data);
 
@@ -243,16 +238,11 @@ static ssize_t perfmgr_debug_fg_boost_write(struct file *filp, const char *ubuf,
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (data > 3000) {
-		debug_boost_value[CGROUP_FG] = 3000;
+	debug_boost_value[CGROUP_FG] = check_boost_value(data);
+	if (debug_boost_value[CGROUP_FG])
 		debug = 1;
-	} else if (data < -100) {
-		debug_boost_value[CGROUP_FG] = -100;
-		debug = 1;
-	} else {
-		debug_boost_value[CGROUP_FG] = data;
-		debug = 1;
-	}
+	else
+		debug = 0;
 
 #ifdef CONFIG_SCHED_TUNE
 	if (debug)
@@ -299,10 +289,7 @@ static ssize_t perfmgr_perfserv_bg_boost_write(struct file *filp, const char *ub
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (data > 3000)
-		data = 3000;
-	else if (data < -100)
-		data = -100;
+	data = check_boost_value(data);
 
 	update_eas_boost_value(EAS_KIR_PERF, CGROUP_BG, data);
 
@@ -370,16 +357,11 @@ static ssize_t perfmgr_debug_bg_boost_write(struct file *filp, const char *ubuf,
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (data > 3000) {
-		debug_boost_value[CGROUP_BG] = 3000;
+	debug_boost_value[CGROUP_BG] = check_boost_value(data);
+	if (debug_boost_value[CGROUP_BG])
 		debug = 1;
-	} else if (data < -100) {
-		debug_boost_value[CGROUP_BG] = -100;
-		debug = 1;
-	} else {
-		debug_boost_value[CGROUP_BG] = data;
-		debug = 1;
-	}
+	else
+		debug = 0;
 
 #ifdef CONFIG_SCHED_TUNE
 	if (debug)
@@ -427,10 +409,7 @@ static ssize_t perfmgr_perfserv_ta_boost_write(struct file *filp, const char *ub
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (data > 4000)
-		data = 4000;
-	else if (data < -100)
-		data = -100;
+	data = check_boost_value(data);
 
 	update_eas_boost_value(EAS_KIR_PERF, CGROUP_TA, data);
 
@@ -474,12 +453,10 @@ static ssize_t perfmgr_boot_boost_write(struct file *filp, const char *ubuf,
 	if (sscanf(buf, "%d %d", &cgroup, &data) != 2)
 		return -1;
 
-	if (data > 4000)
-		data = 4000;
-	else if (data < -100)
-		data = -100;
+	data = check_boost_value(data);
 
-	update_eas_boost_value(EAS_KIR_BOOT, cgroup, data);
+	if (cgroup >= 0 && cgroup < NR_CGROUP)
+		update_eas_boost_value(EAS_KIR_BOOT, cgroup, data);
 
 	return cnt;
 }
@@ -548,16 +525,11 @@ static ssize_t perfmgr_debug_ta_boost_write(struct file *filp, const char *ubuf,
 	if (kstrtoint(buf, 10, &data))
 		return -1;
 
-	if (data > 3000) {
-		debug_boost_value[CGROUP_TA] = 3000;
+	debug_boost_value[CGROUP_TA] = check_boost_value(data);
+	if (debug_boost_value[CGROUP_TA])
 		debug = 1;
-	} else if (data < -100) {
-		debug_boost_value[CGROUP_TA] = -100;
-		debug = 1;
-	} else {
-		debug_boost_value[CGROUP_TA] = data;
-		debug = 1;
-	}
+	else
+		debug = 0;
 
 #ifdef CONFIG_SCHED_TUNE
 	if (debug)
