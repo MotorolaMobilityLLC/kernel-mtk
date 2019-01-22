@@ -831,6 +831,7 @@ static int mtu3d_probe(struct platform_device *pdev)
 		goto err2;
 	}
 
+/* run time force on */
 #if defined(CONFIG_FPGA_EARLY_PORTING) || defined(U3_COMPLIANCE) || defined(FOR_BRING_UP)
 	mu3d_force_on = 1;
 #endif
