@@ -1534,6 +1534,8 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	/* For SSPM probe */
 	cpuhvfs_set_init_sta();
+	/* Default disable schedule assist DVFS */
+	cpuhvfs_set_sched_dvfs_disable(1);
 #endif
 
 	mt_cpufreq_regulator_map(pdev);
