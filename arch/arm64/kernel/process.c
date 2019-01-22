@@ -125,6 +125,8 @@ void machine_power_off(void)
 {
 	local_irq_disable();
 	smp_send_stop();
+	pr_emerg("machine_power_off, pm_power_off(%p)\n", pm_power_off);
+	dump_stack();
 	if (pm_power_off)
 		pm_power_off();
 }
@@ -148,10 +150,13 @@ void machine_restart(char *cmd)
 	 * UpdateCapsule() depends on the system being reset via
 	 * ResetSystem().
 	 */
-	if (efi_enabled(EFI_RUNTIME_SERVICES))
+	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
+		pr_emerg("machine_restart, efi_reboot(%p)\n", efi_reboot);
 		efi_reboot(reboot_mode, NULL);
 
+	}
 	/* Now call the architecture specific reboot code. */
+	pr_emerg("machine_restart, arm_pm_restart(%p)\n", arm_pm_restart);
 	if (arm_pm_restart)
 		arm_pm_restart(reboot_mode, cmd);
 	else
