@@ -43,12 +43,6 @@ config MTK_CPU_HOTPLUG_DEBUG_3
 	  care the latency, for example, thermal.
 	  If unsure, say Y.
 
-config MTK_SPM_IN_ATF
-	bool "MTK SPM move to ATF"
-	default n
-	---help---
-	  move SPM to ATF
-
 config MTK_UNIFY_POWER
 	bool "MTK UNIFY POWER"
 	default n

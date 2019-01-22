@@ -386,7 +386,6 @@ static void spm_sodi_notify_sspm_after_wfi_async_wait(void)
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
-#if defined(CONFIG_MTK_SPM_IN_ATF)
 void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 {
 	int spm_dormant_sta;
@@ -419,53 +418,6 @@ static void spm_sodi_pcm_setup_after_wfi(u32 operation_cond)
 {
 	spm_sodi_post_process();
 }
-
-#else /* CONFIG_MTK_SPM_IN_ATF */
-
-void spm_trigger_wfi_for_sodi(u32 pcm_flags)
-{
-	int spm_dormant_sta;
-	if (is_cpu_pdn(pcm_flags))
-		spm_dormant_sta = mtk_enter_idle_state(MTK_SODI_MODE);
-	else
-		spm_dormant_sta = mt_secure_call(
-			MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
-
-	if (spm_dormant_sta < 0)
-		sodi_err("sodi spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
-}
-
-static void spm_sodi_pcm_setup_before_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
-{
-	__spm_set_cpu_status(cpu);
-	__spm_reset_and_init_pcm(pcmdesc);
-	__spm_kick_im_to_fetch(pcmdesc);
-	__spm_init_pcm_register();
-	__spm_init_event_vector(pcmdesc);
-	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
-	__spm_set_power_control(pwrctrl);
-
-	/*
-	 * Get SPM resource request and update SPM_SRC_REQ
-	 * after __spm_set_power_control
-	 */
-	__spm_src_req_update(pwrctrl);
-
-	__spm_set_wakeup_event(pwrctrl);
-
-	spm_sodi_pre_process(pwrctrl, operation_cond);
-
-	__spm_kick_pcm_to_run(pwrctrl);
-}
-
-static void spm_sodi_pcm_setup_after_wfi(u32 operation_cond)
-{
-	spm_sodi_post_process();
-
-	__spm_clean_after_wakeup();
-}
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 static wake_reason_t spm_sodi_output_log(
 	struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 sodi_flags)
@@ -599,14 +551,6 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
 	u32 cpu = spm_data;
 	int ch;
-
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready)
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].desc);
-	else
-		spm_crit2("dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready %d",
-			dyna_load_pcm[DYNA_LOAD_PCM_SUSPEND].ready);
-#endif
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
 

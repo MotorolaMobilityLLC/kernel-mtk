@@ -617,18 +617,6 @@ extern unsigned int __spm_get_vcore_volt_pmic_val(bool is_vcore_volt_lower, int 
 
 extern int __spm_get_pcm_timer_val(const struct pwr_ctrl *pwrctrl);
 extern void __spm_sync_pcm_flags(struct pwr_ctrl *pwrctrl);
-#if !defined(CONFIG_MTK_SPM_IN_ATF)
-extern void __spm_set_cpu_status(int cpu);
-extern void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc);
-extern void __spm_kick_im_to_fetch(const struct pcm_desc *pcmdesc);
-extern void __spm_init_pcm_register(void);
-extern void __spm_init_event_vector(const struct pcm_desc *pcmdesc);
-extern void __spm_src_req_update(const struct pwr_ctrl *pwrctrl);
-extern void __spm_set_power_control(const struct pwr_ctrl *pwrctrl);
-extern void __spm_set_wakeup_event(const struct pwr_ctrl *pwrctrl);
-extern void __spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl);
-extern void __spm_clean_after_wakeup(void);
-#endif /* CONFIG_MTK_SPM_IN_ATF */
 
 extern void __spm_get_wakeup_status(struct wake_status *wakesta);
 extern wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
