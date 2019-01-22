@@ -50,6 +50,7 @@ static unsigned int WARN_STIMER_DUR;
 static unsigned int WARN_BURST_IRQ_DETECT;
 static unsigned int WARN_PREEMPT_DUR;
 static unsigned int WARN_IRQ_DISABLE_DUR;
+static unsigned int AEE_WARN_DUR;
 
 static unsigned int irq_info_enable;
 
@@ -63,6 +64,7 @@ static unsigned int irq_info_enable;
 #define TIME_10MS 10000000
 #define TIME_20MS 20000000
 #define TIME_200MS  200000000
+#define TIME_500MS  500000000
 #define TIME_1S   1000000000
 #define TIME_5S   5000000000
 #define TIME_30S  30000000000
@@ -115,7 +117,6 @@ static const char *task_name(void *task)
 
 static void sched_monitor_aee(struct sched_block_event *b)
 {
-#ifdef CONFIG_MTK_SCHED_MON_DEFAULT_ENABLE
 	char aee_str[60];
 	unsigned long long t_dur;
 
@@ -134,9 +135,6 @@ static void sched_monitor_aee(struct sched_block_event *b)
 				       (int)b->last_event, t_dur);
 		break;
 	}
-#else
-	return;
-#endif
 }
 
 /* Real work */
@@ -152,7 +150,8 @@ static void event_duration_check(struct sched_block_event *b)
 			    ("[ISR DURATION WARN] IRQ[%d:%s], dur:%llu ns > %d ms,(s:%llu,e:%llu)\n",
 			     (int)b->last_event, isr_name(b->last_event), t_dur,
 			     WARN_ISR_DUR / 1000000, b->last_ts, b->last_te);
-			if (unlikely(__raw_get_cpu_var(mtsched_mon_enabled) & 0x1))
+			if (unlikely(__raw_get_cpu_var(mtsched_mon_enabled) & 0x1)
+				|| (AEE_WARN_DUR > 0 && t_dur > AEE_WARN_DUR))
 				sched_monitor_aee(b);
 		}
 		if (b->preempt_count != preempt_count())
@@ -177,8 +176,9 @@ static void event_duration_check(struct sched_block_event *b)
 				     b_isr->last_te - b_isr->last_ts, b_isr->last_ts,
 				     b_isr->last_te);
 			}
-			if (unlikely(__raw_get_cpu_var(mtsched_mon_enabled) & 0x1)
+			if ((unlikely(__raw_get_cpu_var(mtsched_mon_enabled) & 0x1)
 			    && (b->last_event != RCU_SOFTIRQ))
+			    || (AEE_WARN_DUR > 0 && t_dur > AEE_WARN_DUR))
 				sched_monitor_aee(b);
 
 		}
@@ -941,7 +941,7 @@ DECLARE_MT_SCHED_MATCH(PREEMPT_DUR, WARN_PREEMPT_DUR);
 DECLARE_MT_SCHED_MATCH(BURST_IRQ, WARN_BURST_IRQ_DETECT);
 DECLARE_MT_SCHED_MATCH(IRQ_DISABLE_DUR, WARN_IRQ_DISABLE_DUR);
 DECLARE_MT_SCHED_MATCH(IRQ_INFO_ENABLE, irq_info_enable);
-
+DECLARE_MT_SCHED_MATCH(AEE_WARNING_DUR, AEE_WARN_DUR);
 
 static int __init init_mtsched_mon(void)
 {
@@ -968,8 +968,9 @@ static int __init init_mtsched_mon(void)
 	WARN_HRTIMER_DUR = TIME_10MS;
 	WARN_STIMER_DUR = TIME_10MS;
 	WARN_BURST_IRQ_DETECT = 25000;
-	WARN_PREEMPT_DUR = TIME_5MS;
+	WARN_PREEMPT_DUR = TIME_3MS;
 	WARN_IRQ_DISABLE_DUR = TIME_3MS;
+	AEE_WARN_DUR = TIME_500MS;
 	irq_info_enable = 0;
 
 	if (!proc_mkdir("mtmon", NULL))
@@ -1008,6 +1009,10 @@ static int __init init_mtsched_mon(void)
 		return -ENOMEM;
 	pe = proc_create("mtmon/sched_mon_duration_IRQ_DISABLE", 0664, NULL,
 			 &mt_sched_monitor_IRQ_DISABLE_DUR_fops);
+	if (!pe)
+		return -ENOMEM;
+	pe = proc_create("mtmon/sched_mon_duration_AEE_WARNING", 0664, NULL,
+			 &mt_sched_monitor_AEE_WARNING_DUR_fops);
 	if (!pe)
 		return -ENOMEM;
 	pe = proc_create("mtmon/irq_info_enable", 0664, NULL,

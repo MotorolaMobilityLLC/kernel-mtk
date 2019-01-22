@@ -62,10 +62,10 @@ static void spin_dump(raw_spinlock_t *lock, const char *msg)
 
 	if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
 		owner = lock->owner;
-	printk(KERN_EMERG "BUG: spinlock %s on CPU#%d, %s/%d\n",
+	printk_deferred("BUG: spinlock %s on CPU#%d, %s/%d\n",
 		msg, raw_smp_processor_id(),
 		current->comm, task_pid_nr(current));
-	pr_emerg("lock: %pS, .magic: %08x, .owner: %s/%d, .owner_cpu: %d,value: 0x%08x\n",
+	printk_deferred("lock: %pS, .magic: %08x, .owner: %s/%d, .owner_cpu: %d,value: 0x%08x\n",
 		lock, lock->magic,
 		owner ? owner->comm : "<none>",
 		owner ? task_pid_nr(owner) : -1,
@@ -85,11 +85,11 @@ static void spin_bug(raw_spinlock_t *lock, const char *msg)
 	snprintf(aee_str, 50, "Spinlock %s :%s\n", current->comm, msg);
 	if ((!strcmp(msg, "bad magic")) || (!strcmp(msg, "already unlocked"))
 		|| (!strcmp(msg, "wrong owner")) || (!strcmp(msg, "wrong CPU"))) {
-		pr_emerg("%s\n", aee_str);
-		pr_emerg("[spindebug] maybe use an un-initial spin_lock or mem corrupt\n");
-		pr_emerg("[spindebug] maybe already unlocked or wrong owner or wrong CPU\n");
-		pr_emerg("[spindebug] maybe bad magic:%08x, should be %08x\n", lock->magic, SPINLOCK_MAGIC);
-		pr_emerg(">>>>>>>>>>>>>> Let's KE <<<<<<<<<<<<<<\n");
+		printk_deferred("%s\n", aee_str);
+		printk_deferred("[spindebug] maybe use an un-initial spin_lock or mem corrupt\n");
+		printk_deferred("[spindebug] maybe already unlocked or wrong owner or wrong CPU\n");
+		printk_deferred("[spindebug] maybe bad magic:%08x, should be %08x\n", lock->magic, SPINLOCK_MAGIC);
+		printk_deferred(">>>>>>>>>>>>>> Let's KE <<<<<<<<<<<<<<\n");
 		BUG_ON(1);
 	}
 	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE,
@@ -126,7 +126,7 @@ static inline void debug_spin_unlock(raw_spinlock_t *lock)
 #ifdef CONFIG_MTK_LOCK_DEBUG
 static void show_cpu_backtrace(void *ignored)
 {
-	pr_emerg("spinlock debug show lock owenr CPU%d:\n", smp_processor_id());
+	printk_deferred("spinlock debug show lock owenr CPU%d:\n", smp_processor_id());
 	show_stack(NULL, NULL);
 }
 #endif
@@ -161,7 +161,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 	}
 
 #ifdef CONFIG_PREEMPT_MONITOR
-	/* MT_trace_spin_lock_start(lock); */
+	MT_trace_spin_lock_start(lock);
 #endif
 
 	t1 = sched_clock();
@@ -171,7 +171,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 		for (i = 0; i < loops; i++) {
 			if (arch_spin_trylock(&lock->raw_lock)) {
 #ifdef CONFIG_PREEMPT_MONITOR
-				/* MT_trace_spin_lock_end(lock); */
+				MT_trace_spin_lock_end(lock);
 #endif
 				return;
 			}
@@ -191,10 +191,10 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 		/* lockup suspected: */
 		if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
 			owner = lock->owner;
-		pr_emerg("spin time: %llu ns(start:%llu ns, lpj:%lu, LPHZ:%d), value: 0x%08x\n",
+		printk_deferred("spin time: %llu ns(start:%llu ns, lpj:%lu, LPHZ:%d), value: 0x%08x\n",
 					sched_clock() - t1, t1, loops_per_jiffy, (int)LOOP_HZ,
 					*((unsigned int *)&lock->raw_lock));
-		pr_emerg("spinlock .owner: %s/%d, .owner_cpu: %d\n",
+		printk_deferred("spinlock .owner: %s/%d, .owner_cpu: %d\n",
 			owner ? owner->comm : "<none>",
 			owner ? task_pid_nr(owner) : -1,
 			lock->owner_cpu);
@@ -206,7 +206,8 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 			trigger_all_cpu_backtrace();
 #endif
 			if (owner) {
-				pr_emerg("spinlock debug show lock owenr[%s/%d] info\n", owner->comm, owner->pid);
+				printk_deferred("spinlock debug show lock owenr[%s/%d] info\n",
+					owner->comm, owner->pid);
 				smp_call_function_single(lock->owner_cpu, show_cpu_backtrace, NULL, 0);
 				if (debug_locks)
 					debug_show_held_locks(owner);
@@ -282,7 +283,7 @@ static void rwlock_bug(rwlock_t *lock, const char *msg)
 	if (!debug_locks_off())
 		return;
 
-	printk(KERN_EMERG "BUG: rwlock %s on CPU#%d, %s/%d, %p\n",
+	printk_deferred("BUG: rwlock %s on CPU#%d, %s/%d, %p\n",
 		msg, raw_smp_processor_id(), current->comm,
 		task_pid_nr(current), lock);
 	dump_stack();
@@ -306,7 +307,7 @@ static void __read_lock_debug(rwlock_t *lock)
 		/* lockup suspected: */
 		if (print_once) {
 			print_once = 0;
-			printk(KERN_EMERG "BUG: read-lock lockup on CPU#%d, "
+			printk_deferred("BUG: read-lock lockup on CPU#%d, "
 					"%s/%d, %p\n",
 				raw_smp_processor_id(), current->comm,
 				current->pid, lock);
@@ -381,7 +382,7 @@ static void __write_lock_debug(rwlock_t *lock)
 		/* lockup suspected: */
 		if (print_once) {
 			print_once = 0;
-			printk(KERN_EMERG "BUG: write-lock lockup on CPU#%d, "
+			printk_deferred("BUG: write-lock lockup on CPU#%d, "
 					"%s/%d, %p\n",
 				raw_smp_processor_id(), current->comm,
 				current->pid, lock);
