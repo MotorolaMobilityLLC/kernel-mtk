@@ -88,12 +88,6 @@
 #define CMDQ_PREDUMP_TIMEOUT_MS         (200)
 #define CMDQ_PREDUMP_RETRY_COUNT        (5)
 
-#ifdef CONFIG_OF
-#define CMDQ_OF_SUPPORT		/* enable device tree support */
-#else
-#undef  CMDQ_OF_SUPPORT
-#endif
-
 #ifndef CONFIG_MTK_FPGA
 #define CMDQ_PWR_AWARE		/* FPGA does not have ClkMgr */
 #else

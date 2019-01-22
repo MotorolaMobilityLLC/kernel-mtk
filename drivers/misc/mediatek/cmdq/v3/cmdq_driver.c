@@ -39,11 +39,7 @@
 #ifdef CMDQ_USE_LEGACY
 #include <mach/mt_boot.h>
 #endif
-#ifndef CMDQ_OF_SUPPORT
-#include <mach/mt_irq.h>	/* mt_irq.h is not available on device tree enabled platforms */
-#endif
 
-#ifdef CMDQ_OF_SUPPORT
 /**
  * @device tree porting note
  * alps/kernel-3.10/arch/arm64/boot/dts/{platform}.dts
@@ -54,7 +50,6 @@ static const struct of_device_id cmdq_of_ids[] = {
 	{.compatible = "mediatek,gce",},
 	{}
 };
-#endif
 
 static dev_t gCmdqDevNo;
 static struct cdev *gCmdqCDev;
@@ -1031,9 +1026,7 @@ static struct platform_driver gCmdqDriver = {
 		   .name = CMDQ_DRIVER_DEVICE_NAME,
 		   .owner = THIS_MODULE,
 		   .pm = &cmdq_pm_ops,
-#ifdef CMDQ_OF_SUPPORT
 		   .of_match_table = cmdq_of_ids,
-#endif
 		   }
 };
 
