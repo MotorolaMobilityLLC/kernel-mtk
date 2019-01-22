@@ -407,7 +407,9 @@ int scp_awake_unlock(scp_core_id scp_id)
 	int *scp_awake_count;
 	char *core_id;
 	int ret = -1;
+	unsigned int scp_ipi_awake_num;
 
+	scp_ipi_awake_num = scp_ipi_awake_number[scp_id];
 	if (scp_id >= SCP_CORE_TOTAL) {
 		pr_err("scp_awake_unlock: SCP ID >= SCP_CORE_TOTAL\n");
 		return ret;
@@ -448,6 +450,10 @@ int scp_awake_unlock(scp_core_id scp_id)
 	/* release lock */
 	if (*scp_awake_count > 0)
 		*scp_awake_count = *scp_awake_count - 1;
+
+	/* WE1: set a direct IPI to awake SCP */
+	/*pr_debug("scp_awake_unlock: try to awake %s\n", core_id);*/
+	writel((1 << scp_ipi_awake_num), SCP_GIPC_REG);
 
 	mutex_unlock(scp_awake_mutex);
 	/*pr_debug("scp_awake_unlock: %s unlock, count=%d\n", core_id, *scp_awake_count);*/
