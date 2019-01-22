@@ -173,7 +173,6 @@ int tps65132_write_bytes(unsigned char addr, unsigned char value)
 	int ret = 0;
 	struct i2c_client *client = tps65132_i2c_client;
 	char write_data[2] = { 0 };
-
 	write_data[0] = addr;
 	write_data[1] = value;
 	ret = i2c_master_send(client, write_data, 2);
@@ -216,6 +215,10 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_DSI_CMD_MODE									1
 #define FRAME_WIDTH										(1080)
 #define FRAME_HEIGHT									(1920)
+
+/* physical size in um */
+#define LCM_PHYSICAL_WIDTH									(74520)
+#define LCM_PHYSICAL_HEIGHT									(132480)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #define GPIO_65132_EN GPIO_LCD_BIAS_ENP_PIN
@@ -1469,6 +1472,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->physical_width = LCM_PHYSICAL_WIDTH/1000;
+	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
+	params->physical_width_um = LCM_PHYSICAL_WIDTH;
+	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;

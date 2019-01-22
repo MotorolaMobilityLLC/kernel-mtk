@@ -20,7 +20,6 @@
 #define DISP_NO_ION_FD                 ((int)(~0U>>1))
 #define DISP_NO_USE_LAEYR_ID           ((int)(~0U>>1))
 
-
 #define MAKE_DISP_FORMAT_ID(id, bpp)  (((id) << 8) | (bpp))
 #define DISP_SESSION_MODE(id) (((id)>>24)&0xff)
 #define DISP_SESSION_TYPE(id) (((id)>>16)&0xff)
@@ -319,6 +318,8 @@ struct disp_session_info {
 	unsigned int vsyncFPS;
 	unsigned int physicalWidth;
 	unsigned int physicalHeight;
+	unsigned int physicalWidthUm;	/* length: um, for more precise precision */
+	unsigned int physicalHeightUm;	/* length: um, for more precise precision */
 	unsigned int isConnected;
 	unsigned int isHDCPSupported;
 	unsigned int isOVLDisabled;

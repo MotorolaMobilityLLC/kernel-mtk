@@ -909,6 +909,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35510_dsi_cmd_lcm_drv,
 #endif
 
+#if defined(NT35695B_FHD_DSI_CMD_TRULY_NT50358)
+	&nt35695B_fhd_dsi_cmd_truly_nt50358_lcm_drv
+#endif
+
 #if defined(NT35695_FHD_DSI_CMD_TRULY_NT50358)
 	&nt35695_fhd_dsi_cmd_truly_nt50358_lcm_drv,
 #endif
