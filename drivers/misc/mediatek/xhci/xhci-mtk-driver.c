@@ -96,12 +96,12 @@ static void mtk_enable_otg_mode(void)
 	}
 	pinctrl_drvvbus = devm_pinctrl_get(&g_pdev->dev);
 	if (IS_ERR(pinctrl_drvvbus)) {
-		pr_notice(&g_pdev->dev, "Cannot find usb pinctrl!\n");
+		pr_notice("Cannot find usb pinctrl!\n");
 		return;
 	}
 	pinctrl_drvvbus_high = pinctrl_lookup_state(pinctrl_drvvbus, "drvvbus_high");
 	if (IS_ERR(pinctrl_drvvbus_high)) {
-		pr_notice(&g_pdev->dev, "Cannot find usb pinctrl drvvbus_high\n");
+		pr_notice("Cannot find usb pinctrl drvvbus_high\n");
 		return;
 	}
 	pinctrl_select_state(pinctrl_drvvbus, pinctrl_drvvbus_high);
@@ -131,12 +131,12 @@ static void mtk_disable_otg_mode(void)
 	}
 	pinctrl_drvvbus = devm_pinctrl_get(&g_pdev->dev);
 	if (IS_ERR(pinctrl_drvvbus)) {
-		pr_notice(&g_pdev->dev, "Cannot find usb pinctrl!\n");
+		pr_notice("Cannot find usb pinctrl!\n");
 		return;
 	}
 	pinctrl_drvvbus_low = pinctrl_lookup_state(pinctrl_drvvbus, "drvvbus_low");
 	if (IS_ERR(pinctrl_drvvbus_low)) {
-		pr_notice(&g_pdev->dev, "Cannot find usb pinctrl drvvbus_low\n");
+		pr_notice("Cannot find usb pinctrl drvvbus_low\n");
 		return;
 	}
 	pinctrl_select_state(pinctrl_drvvbus, pinctrl_drvvbus_low);
