@@ -439,6 +439,7 @@ static u32 sram_debug_info[SRAM_DEBUG_COUNT];
 static char *vcorefs_get_sram_debug_info(char *p)
 {
 	char *buff_end = p + PAGE_SIZE;
+
 	if (p) {
 		p += snprintf(p, buff_end - p,
 				"dvfs  up/down count: %u / %u\n",
