@@ -30,7 +30,9 @@ static struct mutex gtimer_lock;
 static spinlock_t slock;
 static struct wake_lock wlock;
 static wait_queue_head_t wait_que;
-struct hrtimer gtimer_kthread_timer;
+static struct hrtimer gtimer_kthread_timer;
+static struct timespec gtimer_suspend_time;
+
 
 #define FTLOG_ERROR_LEVEL   1
 #define FTLOG_DEBUG_LEVEL   2
@@ -39,21 +41,21 @@ struct hrtimer gtimer_kthread_timer;
 #define ft_err(fmt, args...)   \
 do {									\
 	if (ftlog_level >= FTLOG_ERROR_LEVEL) {			\
-		pr_err(fmt, ##args); \
+		pr_notice(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define ft_debug(fmt, args...)   \
 do {									\
 	if (ftlog_level >= FTLOG_DEBUG_LEVEL) {		\
-		pr_err(fmt, ##args); \
+		pr_notice(fmt, ##args); \
 	}								   \
 } while (0)
 
 #define ft_trace(fmt, args...)\
 do {									\
 	if (ftlog_level >= FTLOG_TRACE_LEVEL) {			\
-		pr_err(fmt, ##args);\
+		pr_notice(fmt, ##args);\
 	}						\
 } while (0)
 
@@ -115,7 +117,7 @@ void gtimer_start_timer(int sec)
 {
 	ktime_t ktime = ktime_set(sec, 0);
 
-	pr_err("gtimer_start_timer %d", sec);
+	ft_debug("gtimer_start_timer %d", sec);
 	hrtimer_start(&gtimer_kthread_timer, ktime, HRTIMER_MODE_REL);
 }
 
@@ -316,21 +318,22 @@ static int gtimer_pm_event(struct notifier_block *notifier, unsigned long pm_eve
 {
 	switch (pm_event) {
 	case PM_HIBERNATION_PREPARE:	/* Going to hibernate */
-		pr_warn("[%s] pm_event %lu (IPOH)\n", __func__, pm_event);
+		ft_err("[%s] pm_event %lu (IPOH)\n", __func__, pm_event);
 	case PM_RESTORE_PREPARE:	/* Going to restore a saved image */
 	case PM_SUSPEND_PREPARE:	/* Going to suspend the system */
-		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
+		get_monotonic_boottime(&gtimer_suspend_time);
+		ft_err("[%s] pm_event %lu %ld\n", __func__, pm_event, gtimer_suspend_time.tv_sec);
 		gtimer_suspend();
 		return NOTIFY_DONE;
 
 	case PM_POST_SUSPEND:	/* Suspend finished */
 	case PM_POST_RESTORE:	/* Restore failed */
-		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
+		ft_err("[%s] pm_event %lu\n", __func__, pm_event);
 		gtimer_resume();
 		return NOTIFY_DONE;
 
 	case PM_POST_HIBERNATION:	/* Hibernation finished */
-		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
+		ft_err("[%s] pm_event %lu\n", __func__, pm_event);
 
 
 		return NOTIFY_DONE;
@@ -351,7 +354,7 @@ enum hrtimer_restart gtimer_kthread_hrtimer_func(struct hrtimer *timer)
 
 signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_capacity_level)
 {
-	struct timespec time_now, duraction;
+	struct timespec duraction;
 	struct list_head *pos = gtimer_head.next;
 	struct gtimer *ptr;
 	signed int sec = 4800;
@@ -360,13 +363,12 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 	if (list_empty(pos) != true) {
 		ptr = container_of(pos, struct gtimer, list);
 
-		get_monotonic_boottime(&time_now);
-		duraction = timespec_sub(ptr->endtime, time_now);
+		duraction = timespec_sub(ptr->endtime, gtimer_suspend_time);
 		sec = duraction.tv_sec + 1;
 		if (sec <= 10)
 			sec = 10;
 		ft_err("get_dynamic_period time:now:%ld next:%ld diff:%d\n",
-		time_now.tv_sec, ptr->endtime.tv_sec, sec);
+		gtimer_suspend_time.tv_sec, ptr->endtime.tv_sec, sec);
 	} else
 		ft_err("get_dynamic_period time:%d\n", sec);
 
