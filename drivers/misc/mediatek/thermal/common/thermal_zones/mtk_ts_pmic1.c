@@ -27,7 +27,7 @@
 #include "mach/mtk_thermal.h"
 #include "mtk_thermal_timer.h"
 #include <mt-plat/upmu_common.h>
-#include <tspmic_settings.h>
+#include <tspmic_settings1.h>
 #include <linux/uidgid.h>
 #include <linux/slab.h>
 
@@ -71,15 +71,11 @@ static char g_bind7[20] = { 0 };
 static char g_bind8[20] = { 0 };
 static char g_bind9[20] = { 0 };
 
-static long int mtktspmic_cur_temp;
-static long int mtktspmic_start_temp;
-static long int mtktspmic_end_temp;
 /*=============================================================*/
 
 static int mtktspmic_get_temp(struct thermal_zone_device *thermal, int *t)
 {
-	*t = mtktspmic_get_hw_temp();
-	mtktspmic_cur_temp = *t;
+	*t = mtktspmic_get_hw_temp_1();
 
 	if ((int)*t >= polling_trip_temp1)
 		thermal->polling_delay = interval * 1000;
@@ -475,7 +471,7 @@ static const struct file_operations mtktspmic_fops = {
 static int mtktspmic_read_log(struct seq_file *m, void *v)
 {
 
-	seq_printf(m, "mtktspmic_read_log = %d\n", mtktspmic_debug_log);
+	seq_printf(m, "mtktspmic_read_log = %d\n", mtktspmic_debug_log1);
 
 
 	return 0;
@@ -496,7 +492,7 @@ static ssize_t mtktspmic_write_log(struct file *file, const char __user *buffer,
 	desc[len] = '\0';
 
 	if (kstrtoint(desc, 10, &log_switch) == 0) {
-		mtktspmic_debug_log = log_switch;
+		mtktspmic_debug_log1 = log_switch;
 
 		return count;
 	}
@@ -517,61 +513,6 @@ static const struct file_operations mtktspmic_log_fops = {
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.write = mtktspmic_write_log,
-	.release = single_release,
-};
-
-static int mtktspmic_read_ate(struct seq_file *m, void *v)
-{
-
-	seq_printf(m, "s_temp= %ld, e_temp= %ld, d_temp= %ld\n", mtktspmic_start_temp, mtktspmic_end_temp,
-		   (mtktspmic_end_temp - mtktspmic_start_temp));
-
-	if ((mtktspmic_end_temp - mtktspmic_start_temp) > 2000)
-		seq_puts(m, "Thermal ate test: PASS\n");
-	else
-		seq_puts(m, "Thermal ate test: FAIL\n");
-
-	return 0;
-}
-
-static int mtktspmic_open_ate(struct inode *inode, struct file *file)
-{
-	return single_open(file, mtktspmic_read_ate, NULL);
-}
-
-static ssize_t mtktspmic_write_ate(struct file *file, const char __user *buffer, size_t count,
-				   loff_t *data)
-{
-	char desc[32];
-	int isTesting = 0;
-	int len = 0;
-
-
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
-		return 0;
-
-	desc[len] = '\0';
-
-	if (kstrtoint(desc, 10, &isTesting) == 0) {
-		if (isTesting)
-			mtktspmic_start_temp = mtktspmic_cur_temp;
-		else
-			mtktspmic_end_temp = mtktspmic_cur_temp;
-
-		return count;
-	}
-
-	mtktspmic_info("mtktspmic_write_log bad argument\n");
-	return -EINVAL;
-}
-
-static const struct file_operations mtktspmic_ate_fops = {
-	.owner = THIS_MODULE,
-	.open = mtktspmic_open_ate,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.write = mtktspmic_write_ate,
 	.release = single_release,
 };
 
@@ -596,8 +537,8 @@ static int __init mtktspmic_init(void)
 *    if((pmic_data>>4&0x1)!=1 || (pmic_data>>2&0x1)!=0)
 *	mtktspmic_info("[mtktspmic_init]: Warrning !!! Need to checking this !!!!!\n");
 */
-	mtktspmic_cali_prepare();
-	mtktspmic_cali_prepare2();
+	mtktspmic_cali_prepare_1();
+	mtktspmic_cali_prepare2_1();
 
 	err = mtktspmic_register_cooler();
 	if (err)
@@ -611,20 +552,17 @@ static int __init mtktspmic_init(void)
 		mtktspmic_info("[%s]: mkdir /proc/driver/thermal failed\n", __func__);
 	} else {
 		entry =
-		    proc_create("tzpmic", S_IRUGO | S_IWUSR | S_IWGRP, mtktspmic_dir,
+		    proc_create("tzpmic1", S_IRUGO | S_IWUSR | S_IWGRP, mtktspmic_dir,
 				&mtktspmic_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
 
 		entry =
-		    proc_create("tzpmic_log", S_IRUGO | S_IWUSR, mtktspmic_dir,
+		    proc_create("tzpmic_log1", S_IRUGO | S_IWUSR, mtktspmic_dir,
 				&mtktspmic_log_fops);
-		entry =
-		    proc_create("tzpmic_ate", S_IRUGO | S_IWUSR, mtktspmic_dir,
-				&mtktspmic_ate_fops);
 	}
 
-	mtkTTimer_register("mtktspmic", mtkts_pmic_start_thermal_timer, mtkts_pmic_cancel_thermal_timer);
+	mtkTTimer_register("mtktspmic1", mtkts_pmic_start_thermal_timer, mtkts_pmic_cancel_thermal_timer);
 
 	return 0;
 
