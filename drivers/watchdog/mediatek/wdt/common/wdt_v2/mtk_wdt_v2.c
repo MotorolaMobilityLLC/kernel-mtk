@@ -204,7 +204,7 @@ void mtk_wdt_mode_config(bool dual_mode_en,
 
 	/* Bit 4: WDT_Auto_restart, this is a reserved bit, we use it as bypass powerkey flag. */
 	/* Because HW reboot always need reboot to kernel, we set it always. */
-	tmp |= MTK_WDT_MODE_AUTO_RESTART;
+	tmp |= MTK_WDT_MODE_AUTO_RESTART | MTK_WDT_MODE_IRQ_LEVEL_EN;
 
 	mt_reg_sync_writel(tmp, MTK_WDT_MODE);
 	/* dual_mode(1); //always dual mode */
