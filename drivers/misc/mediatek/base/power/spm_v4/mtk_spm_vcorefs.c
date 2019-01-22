@@ -56,6 +56,8 @@ void __iomem *dvfsrc_base;
 u32 plat_channel_num;
 u32 plat_chip_ver;
 
+#define VMODEM_VCORE_COBUCK 1
+
 #ifdef CONFIG_MTK_SMI_EXT
 mmdvfs_lcd_size_enum plat_lcd_resolution;
 #else
@@ -706,11 +708,6 @@ void spm_vcorefs_init(void)
 	vcorefs_module_init();
 	/* plat_info_init(); */
 
-	if (!spm_load_firmware_status()) {
-		spm_vcorefs_warn("[%s] SPM FIRMWARE IS NOT READY\n", __func__);
-		return;
-	}
-
 	if (is_vcorefs_feature_enable()) {
 		flag = spm_dvfs_flag_init();
 		vcorefs_init_opp_table();
@@ -720,6 +717,12 @@ void spm_vcorefs_init(void)
 		vcorefs_late_init_dvfs();
 		spm_vcorefs_warn("[%s] DONE\n", __func__);
 	} else {
+		#if VMODEM_VCORE_COBUCK
+		flag = SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS;
+		spm_dvfsfw_init(spm_vcorefs_get_opp());
+		spm_go_to_vcorefs(flag);
+		dvfsrc_init();
+		#endif
 		spm_vcorefs_warn("[%s] VCORE DVFS IS DISABLE\n", __func__);
 	}
 }
