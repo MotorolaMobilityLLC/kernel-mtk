@@ -673,15 +673,39 @@ static bool pwrap_is_fsm_idle_and_sync_idle(struct pmic_wrapper *wrp)
 		(val & PWRAP_STATE_SYNC_IDLE0);
 }
 
+static int pwrap_timeout_ns(unsigned long long start_time_ns, unsigned long long timeout_time_ns)
+{
+	unsigned long long cur_time = 0;
+	unsigned long long elapse_time = 0;
+
+	/* get current tick */
+	cur_time = sched_clock();	/* ns */
+
+	/* avoid timer over flow exiting in FPGA env */
+	if (cur_time < start_time_ns) {
+		start_time_ns = cur_time;
+		timeout_time_ns = 10000 * 1000;	/* 10000us */
+	}
+
+	elapse_time = cur_time - start_time_ns;
+
+	/* check if timeout */
+	if (timeout_time_ns <= elapse_time)
+		return 1;
+	return 0;
+}
+
+
 static int pwrap_wait_for_state(struct pmic_wrapper *wrp,
 		bool (*fp)(struct pmic_wrapper *))
 {
-	unsigned long timeout;
+	unsigned long long start_time_ns = 0, timeout_ns = 0;
 
-	timeout = jiffies + usecs_to_jiffies(10000);
+	start_time_ns = sched_clock();
+	timeout_ns = 10000 * 1000;
 
 	do {
-		if (time_after(jiffies, timeout))
+		if (pwrap_timeout_ns(start_time_ns, timeout_ns))
 			return fp(wrp) ? 0 : -ETIMEDOUT;
 		if (fp(wrp))
 			return 0;
