@@ -670,6 +670,8 @@ void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_BIA)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_ZIO)
+		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 
 }
 
@@ -992,6 +994,8 @@ int mmdvfs_get_mmdvfs_profile(void)
 	mmdvfs_profile_id = MMDVFS_PROFILE_ALA;
 #elif defined(SMI_BIA)
 	mmdvfs_profile_id = MMDVFS_PROFILE_BIA;
+#elif defined(SMI_ZIO)
+	mmdvfs_profile_id = MMDVFS_PROFILE_ZIO;
 #endif
 
 	MMDVFSDEBUG(4, "Segment_code=%d,mmdvfs_profile_id=%d\n", segment_code,
