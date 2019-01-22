@@ -29,7 +29,7 @@ ccflags-y += -DGED_ENABLE_FB_DVFS
 endif
 endif
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799" "mt6763"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799" "mt6763" "mt6775" "mt6771"))
 ccflags-y += -DGED_KPI_DFRC
 endif
 
