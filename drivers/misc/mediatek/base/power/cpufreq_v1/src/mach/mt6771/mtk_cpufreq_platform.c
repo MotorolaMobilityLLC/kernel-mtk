@@ -161,7 +161,7 @@ static unsigned int mt6358_vsram_settletime(unsigned int old_volt, unsigned int 
 	if (new_volt > old_volt)
 		return ((new_volt - old_volt) + UP_SRATE - 1) / UP_SRATE + PMIC_CMD_DELAY_TIME;
 	else
-		return ((new_volt - old_volt) + DOWN_SRATE - 1) / DOWN_SRATE + PMIC_CMD_DELAY_TIME;
+		return ((old_volt - new_volt) + DOWN_SRATE - 1) / DOWN_SRATE + PMIC_CMD_DELAY_TIME;
 }
 
 /* upper layer CANNOT use 'set' function in secure path */
