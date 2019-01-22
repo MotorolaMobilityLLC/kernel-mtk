@@ -58,7 +58,7 @@
 #define PROC_DRV_STATUS                         "status"
 #define PROC_RX_STATISTICS                      "rx_statistics"
 #define PROC_TX_STATISTICS                      "tx_statistics"
-#define PROC_DBG_LEVEL_NAME                     "dbg_level"
+#define PROC_DBG_LEVEL_NAME                     "dbgLevel"
 
 #define PROC_MCR_ACCESS_MAX_USER_INPUT_LEN      20
 #define PROC_RX_STATISTICS_MAX_USER_INPUT_LEN   10

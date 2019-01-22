@@ -170,7 +170,9 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_GET_LTE_CHN = 0x87,	/* 0x87 (Query) */
 	CMD_ID_GET_CHN_LOADING = 0x88,	/* 0x88 (Query) */
 
-	CMD_ID_ACCESS_REG = 0xc0,	/* 0xc0 (Set / Query) */
+	CMD_ID_WFC_KEEP_ALIVE = 0xA0,	/* 0xa0(Set) */
+	CMD_ID_RSSI_MONITOR = 0xA1,	/* 0xa1(Set) */
+	CMD_ID_ACCESS_REG = 0xC0,	/* 0xc0 (Set / Query) */
 	CMD_ID_MAC_MCAST_ADDR,	/* 0xc1 (Set / Query) */
 	CMD_ID_802_11_PMKID,	/* 0xc2 (Set / Query) */
 	CMD_ID_ACCESS_EEPROM,	/* 0xc3 (Set / Query) */
@@ -254,6 +256,7 @@ typedef enum _ENUM_EVENT_ID_T {
 	EVENT_ID_RSP_CHNL_UTILIZATION = 0x59, /* 0x59 (Query - CMD_ID_REQ_CHNL_UTILIZATION) */
 
 	EVENT_ID_TDLS = 0x80,	/* TDLS event_id */
+	EVENT_ID_RSSI_MONITOR = 0xA1,
 
 	EVENT_ID_BUILD_DATE_CODE = 0xF8,
 	EVENT_ID_GET_AIS_BSS_INFO = 0xF9,
@@ -266,6 +269,11 @@ typedef enum _ENUM_EVENT_ID_T {
 #define CMD_ID_SET_PSCN_ADD_SW_BSSID CMD_ID_SET_GSCAN_ADD_SWC_BSSID	/* 0x46 (Set) */
 #define CMD_ID_SET_PSCN_MAC_ADDR     CMD_ID_SET_GSCAN_MAC_ADDR          /* 0x65 (Set) */	/* 0x47 (Set) */
 #define CMD_ID_SET_PSCN_ENABLE      CMD_ID_SET_PSCAN_ENABLE
+
+#define NLO_CHANNEL_TYPE_SPECIFIED	0
+#define NLO_CHANNEL_TYPE_DUAL_BAND	1
+#define NLO_CHANNEL_TYPE_2G4_ONLY	2
+#define NLO_CHANNEL_TYPE_5G_ONLY	3
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -973,7 +981,7 @@ typedef struct _CMD_SET_WMM_PS_TEST_STRUCT_T {
 
 typedef struct _GSCN_CHANNEL_INFO_T {
 	UINT_8 ucBand;
-	UINT_8 ucChannel;	/* frequency */
+	UINT_8 ucChannelNumber;	/* Channel Number */
 	UINT_8 ucPassive;	/* 0 => active, 1 => passive scan; ignored for DFS */
 	UINT_8 aucReserved[1];
 
@@ -981,28 +989,33 @@ typedef struct _GSCN_CHANNEL_INFO_T {
 	/* Add channel class */
 } GSCN_CHANNEL_INFO_T, *P_GSCN_CHANNEL_INFO_T;
 
-typedef struct _GSCAN_CHANNEL_BUCKET_T {
-
+typedef struct _GSCAN_BUCKET_T {
 	UINT_16 u2BucketIndex;	/* bucket index, 0 based */
-	UINT_8 ucBucketFreqMultiple;	/*
-					 * desired period, in millisecond; if this is too low, the firmware
-					 * should choose to generate results as fast as it can instead of
-					 * failing the command
+	UINT_8 ucBucketFreqMultiple;	/* desired period, in millisecond;
+					 * if this is too low, the firmware should choose to generate
+					 * results as fast as it can instead of failing the command
 					 */
-	/*
-	 * report_events semantics -
-	 *  0 => report only when scan history is % full
-	 *  1 => same as 0 + report a scan completion event after scanning this bucket
-	 *  2 => same as 1 + forward scan results (beacons/probe responses + IEs) in real time to HAL
-	 *  3 => same as 2 + forward scan results (beacons/probe responses + IEs) in real time to
-	 * supplicant as well (optional).
-	 */
+	 /* report_events semantics -
+	  *  This is a bit field; which defines following bits -
+	  *  REPORT_EVENTS_EACH_SCAN	=> report a scan completion event after scan. If this is not set
+	  *				    then scan completion events should be reported if
+	  *				    report_threshold_percent or report_threshold_num_scans is
+	  *				    reached.
+	  *  REPORT_EVENTS_FULL_RESULTS => forward scan results (beacons/probe responses + IEs)
+	  *				    in real time to HAL, in addition to completion events
+	  *				    Note: To keep backward compatibility, fire completion
+	  *				    events regardless of REPORT_EVENTS_EACH_SCAN.
+	  *  REPORT_EVENTS_NO_BATCH	=> controls if scans for this bucket should be placed in the
+	  *				    history buffer
+	  */
 	UINT_8 ucReportFlag;
+	UINT_8 ucMaxBucketFreqMultiple; /* max_period / base_period */
+	UINT_8 ucStepCount;
 	UINT_8 ucNumChannels;
-	UINT_8 aucReserved[3];
+	UINT_8 aucReserved[1];
 	WIFI_BAND eBand;	/* when UNSPECIFIED, use channel list */
 	GSCN_CHANNEL_INFO_T arChannelList[GSCAN_MAX_CHANNELS];	/* channels to scan; these may include DFS channels */
-} GSCAN_CHANNEL_BUCKET_T, *P_GSCAN_CHANNEL_BUCKET_T;
+} GSCAN_BUCKET_T, *P_GSCAN_BUCKET_T;
 
 typedef struct _CMD_GSCN_REQ_T {
 	UINT_8 ucFlags;
@@ -1011,17 +1024,15 @@ typedef struct _CMD_GSCN_REQ_T {
 	UINT_32 u4BufferThreshold;
 	UINT_32 u4BasePeriod;	/* base timer period in ms */
 	UINT_32 u4NumBuckets;
-	UINT_32 u4MaxApPerScan;	/*
-				 * number of APs to store in each scan in the
-				 * history buffer (keep the highest RSSI APs
-				 */
-	GSCAN_CHANNEL_BUCKET_T arChannelBucket[GSCAN_MAX_BUCKETS];
+	UINT_32 u4MaxApPerScan;	/* number of APs to store in each scan in the */
+	/* BSSID/RSSI history buffer (keep the highest RSSI APs) */
+	GSCAN_BUCKET_T arBucket[GSCAN_MAX_BUCKETS];
 } CMD_GSCN_REQ_T, *P_CMD_GSCN_REQ_T;
 
 typedef struct _CMD_GSCN_SCN_COFIG_T {
-	UINT_8 ucNumApPerScn;	/* GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN */
-	UINT_32 u4NumScnToCache;	/* GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE */
+	UINT_8 ucNumApPerScn;		/* GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN */
 	UINT_32 u4BufferThreshold;	/* GSCAN_ATTRIBUTE_REPORT_THRESHOLD */
+	UINT_32 u4NumScnToCache;	/* GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE */
 } CMD_GSCN_SCN_COFIG_T, *P_CMD_GSCN_SCN_COFIG_T;
 
 typedef struct _CMD_GET_GSCAN_RESULT {
@@ -1432,13 +1443,18 @@ typedef enum _ENUM_NLO_AUTH_ALGORITHM {
 	NLO_AUTH_ALGO_RSNA_PSK = 7,
 } ENUM_NLO_AUTH_ALGORITHM, *P_ENUM_NLO_AUTH_ALGORITHM;
 
-typedef struct _NLO_NETWORK {
-	UINT_8 ucNumChannelHint[4];
+struct NLO_SSID_MATCH_SETS {
+	INT_8 cRssiThresold;
 	UINT_8 ucSSIDLength;
-	UINT_8 ucCipherAlgo;
-	UINT_16 u2AuthAlgo;
 	UINT_8 aucSSID[32];
-} NLO_NETWORK, *P_NLO_NETWORK;
+};
+
+struct NLO_NETWORK {
+	UINT_8 ucChannelType; /* 0: specific channel; 1: dual band; 2: 2.4G; 3: 5G; 3*/
+	UINT_8 ucChnlNum;
+	UINT_8 aucChannel[94];
+	struct NLO_SSID_MATCH_SETS arMatchSets[16];
+};
 
 typedef struct _CMD_NLO_REQ {
 	UINT_8 ucSeqNum;
@@ -1450,7 +1466,7 @@ typedef struct _CMD_NLO_REQ {
 	UINT_8 ucEntryNum;
 	UINT_8 ucFlag;		/* BIT(0) Check cipher */
 	UINT_16 u2IELen;
-	NLO_NETWORK arNetworkList[16];
+	struct NLO_NETWORK rNLONetwork;
 	UINT_8 aucIE[0];
 } CMD_NLO_REQ, *P_CMD_NLO_REQ;
 
@@ -1598,9 +1614,10 @@ typedef struct _EVENT_GSCAN_RESULT_T {
 } EVENT_GSCAN_RESULT_T, *P_EVENT_GSCAN_RESULT_T;
 
 typedef struct _EVENT_GSCAN_FULL_RESULT_T {
-	UINT_8 ucVersion;
-	UINT_8 aucReserved[3];
 	WIFI_GSCAN_RESULT_T rResult;
+	UINT_32 u4BucketMask;		/* scan chbucket bitmask */
+	UINT_32 u4IeLength;		/* byte length of Information Elements */
+	UINT_8  ucIeData[1];		/* IE data to follow */
 } EVENT_GSCAN_FULL_RESULT_T, *P_EVENT_GSCAN_FULL_RESULT_T;
 
 typedef struct GSCAN_SWC_NET {

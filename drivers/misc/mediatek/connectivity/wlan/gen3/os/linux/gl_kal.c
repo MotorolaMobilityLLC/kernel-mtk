@@ -4128,9 +4128,8 @@ void *pMetGlobalData;
 VOID kalSchedScanResults(IN P_GLUE_INFO_T prGlueInfo)
 {
 	ASSERT(prGlueInfo);
-
+	scanReportBss2Cfg80211(prGlueInfo->prAdapter, BSS_TYPE_INFRASTRUCTURE, NULL);
 	cfg80211_sched_scan_results(priv_to_wiphy(prGlueInfo));
-
 }
 
 /*----------------------------------------------------------------------------*/
@@ -4144,7 +4143,7 @@ VOID kalSchedScanResults(IN P_GLUE_INFO_T prGlueInfo)
 *           None
 */
 /*----------------------------------------------------------------------------*/
-VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo)
+VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo, BOOLEAN fgDriverTriggerd)
 {
 	/* DBGLOG(SCN, INFO, ("-->kalSchedScanStopped\n" )); */
 
@@ -4159,16 +4158,15 @@ VOID kalSchedScanStopped(IN P_GLUE_INFO_T prGlueInfo)
 		prGlueInfo->prSchedScanRequest = NULL;
 	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 #endif
-	DBGLOG(SCN, INFO, "cfg80211_sched_scan_stopped send event\n");
+	DBGLOG(SCN, INFO, "Driver triggerd %d\n", fgDriverTriggerd);
 
 	/* 2. indication to cfg80211 */
 	/*
 	 * 20150205 change cfg80211_sched_scan_stopped to work queue to use K thread to send event instead of Tx thread
 	 * due to sched_scan_mtx dead lock issue by Tx thread serves oid cmds and send event in the same time
 	 */
-	DBGLOG(SCN, INFO, "start work queue to send event\n");
-	schedule_delayed_work(&sched_workq, 0);
-	DBGLOG(SCN, INFO, "Tx_thread return from kalSchedScanStoppped\n");
+	if (fgDriverTriggerd)
+		schedule_delayed_work(&sched_workq, 0);
 }
 
 BOOLEAN

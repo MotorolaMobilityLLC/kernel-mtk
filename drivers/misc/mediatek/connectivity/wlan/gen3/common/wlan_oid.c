@@ -654,7 +654,7 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 	if ((scan_req_t->n_channels != 0) && (scan_req_t->channels != NULL)) {
 
 		channel_counts = scan_req_t->n_channels;
-		DBGLOG(OID, INFO, "partional scan channel_counts=%d\n", channel_counts);
+		DBGLOG(OID, TRACE, "scan channel number: n_channels=%d\n", channel_counts);
 		if (channel_counts > MAXIMUM_OPERATION_CHANNEL_LIST)
 			return TRUE;
 		/*
@@ -698,7 +698,7 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 			i++;
 		}
 	}
-	DBGLOG(INIT, INFO, "set channel i=%d\n", i);
+	DBGLOG(OID, INFO, "Partial Scan: set channel i=%d\n", i);
 	if (i > 0) {
 		PartialScanChannel->ucChannelListNum = i;
 		/*ScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;*/
@@ -790,12 +790,12 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 #if CFG_SUPPORT_RDD_TEST_MODE
 	if (prAdapter->prGlueInfo->rRegInfo.u4RddTestMode) {
 		if ((prAdapter->fgEnOnlineScan == TRUE) && (prAdapter->ucRddStatus)) {
-			if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED)
+			if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
 				partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
 				if (partial_result == FALSE)
 					return WLAN_STATUS_FAILURE;
 				aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
-			else
+			} else
 				return WLAN_STATUS_FAILURE;
 		} else
 			return WLAN_STATUS_FAILURE;
@@ -803,11 +803,15 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 #endif
 	{
 		if (prAdapter->fgEnOnlineScan == TRUE) {
+			if (prScanRequest == NULL)
+				return WLAN_STATUS_FAILURE;
 			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
-			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
 			if (partial_result == FALSE)
 				return WLAN_STATUS_FAILURE;
+			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
 		} else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
+			if (prScanRequest == NULL)
+				return WLAN_STATUS_FAILURE;
 			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
 			if (partial_result == FALSE)
 				return WLAN_STATUS_FAILURE;
@@ -3581,6 +3585,55 @@ wlanoidQueryVendorId(IN P_ADAPTER_T prAdapter,
 
 	return WLAN_STATUS_SUCCESS;
 }				/* wlanoidQueryVendorId */
+
+WLAN_STATUS
+wlanoidRssiMonitor(IN P_ADAPTER_T prAdapter,
+		   OUT PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
+{
+	PARAM_RSSI_MONITOR_T rRssi;
+
+	ASSERT(prAdapter);
+	ASSERT(pu4QueryInfoLen);
+	if (u4QueryBufferLen)
+		ASSERT(pvQueryBuffer);
+
+	*pu4QueryInfoLen = sizeof(PARAM_RSSI_MONITOR_T);
+
+	/* Check for query buffer length */
+	if (u4QueryBufferLen < *pu4QueryInfoLen) {
+		DBGLOG(OID, WARN, "Too short length %u\n", u4QueryBufferLen);
+		return WLAN_STATUS_BUFFER_TOO_SHORT;
+	}
+
+	kalMemZero(&rRssi, sizeof(PARAM_RSSI_MONITOR_T));
+
+	if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) == PARAM_MEDIA_STATE_DISCONNECTED)
+		return WLAN_STATUS_ADAPTER_NOT_READY;
+
+	kalMemCopy(&rRssi, pvQueryBuffer, sizeof(PARAM_RSSI_MONITOR_T));
+	if (rRssi.enable) {
+		if (rRssi.max_rssi_value > PARAM_WHQL_RSSI_MAX_DBM)
+			rRssi.max_rssi_value = PARAM_WHQL_RSSI_MAX_DBM;
+		if (rRssi.min_rssi_value < -120)
+			rRssi.min_rssi_value = -120;
+	} else {
+		rRssi.max_rssi_value = 0;
+		rRssi.min_rssi_value = 0;
+	}
+
+	DBGLOG(OID, INFO, "enable=%d, max_rssi_value=%d, min_rssi_value=%d\n",
+		rRssi.enable, rRssi.max_rssi_value, rRssi.min_rssi_value);
+
+	return wlanSendSetQueryCmd(prAdapter,
+			   CMD_ID_RSSI_MONITOR,
+			   TRUE,
+			   FALSE,
+			   TRUE,
+			   nicCmdEventSetCommon,
+			   nicOidCmdTimeoutCommon,
+			   sizeof(PARAM_RSSI_MONITOR_T), (PUINT_8)&rRssi, NULL, 0);
+
+}
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -9839,8 +9892,10 @@ wlanoidSetStartSchedScan(IN P_ADAPTER_T prAdapter,
 	if (scnFsmSchedScanRequest(prAdapter,
 				   (UINT_8) (prSchedScanRequest->u4SsidNum),
 				   prSchedScanRequest->arSsid,
+				   prSchedScanRequest->acRssiThresold,
 				   prSchedScanRequest->u4IELength,
-				   prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval) == TRUE)
+				   prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval,
+				   prSchedScanRequest->ucChnlNum, prSchedScanRequest->pucChannels) == TRUE)
 		return WLAN_STATUS_SUCCESS;
 	else
 		return WLAN_STATUS_FAILURE;
@@ -10223,6 +10278,259 @@ wlanoidQueryBatchScanResult(IN P_ADAPTER_T prAdapter,
 
 #endif /* CFG_SUPPORT_BATCH_SCAN */
 
+#if CFG_SUPPORT_GSCN
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to set a periodically PSCN action
+*
+* \param[in] prAdapter Pointer to the Adapter structure.
+* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
+* \param[in] u4SetBufferLen The length of the set buffer.
+* \param[out] pu4SetInfoLen If the call is successful, returns the number of
+*                          bytes read from the set buffer. If the call failed
+*                          due to invalid length of the set buffer, returns
+*                          the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_ADAPTER_NOT_READY
+* \retval WLAN_STATUS_INVALID_LENGTH
+* \retval WLAN_STATUS_INVALID_DATA
+*
+* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_CMD_SET_PSCAN_ENABLE prCmdPscnAction;
+
+	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
+		DBGLOG(SCN, ERROR, "Adapter not ready: ACPI=%d, Radio=%d\n",
+				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_ADAPTER_NOT_READY;
+	}
+
+	if (u4SetBufferLen != sizeof(CMD_SET_PSCAN_ENABLE)) {
+		DBGLOG(SCN, ERROR, "u4SetBufferLen != sizeof(CMD_SET_PSCAN_ENABLE)\n");
+		return WLAN_STATUS_INVALID_LENGTH;
+	} else if (pvSetBuffer == NULL) {
+		DBGLOG(SCN, ERROR, "pvSetBuffer == NULL\n");
+		return WLAN_STATUS_INVALID_DATA;
+	}
+
+	if (prAdapter->fgIsRadioOff) {
+		DBGLOG(SCN, ERROR, "Radio off: ACPI=%d, Radio=%d\n",
+				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	prCmdPscnAction = (P_CMD_SET_PSCAN_ENABLE) pvSetBuffer;
+
+	if (prCmdPscnAction) {
+		DBGLOG(SCN, TRACE, "ucPscanAct=[%d]\n", prCmdPscnAction->ucPscanAct);
+		if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_ENABLE) {
+			prAdapter->rWifiVar.rScanInfo.fgGScnAction = TRUE;
+			scnPSCNFsm(prAdapter, PSCN_SCANNING);
+		} else if (prCmdPscnAction->ucPscanAct == PSCAN_ACT_DISABLE) {
+			scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, NULL, NULL, FALSE, FALSE, TRUE);
+			if (prAdapter->rWifiVar.rScanInfo.prPscnParam->fgNLOScnEnable
+				|| prAdapter->rWifiVar.rScanInfo.prPscnParam->fgBatchScnEnable)
+				scnPSCNFsm(prAdapter, PSCN_RESET); /* in case there is any PSCN */
+			else
+				scnPSCNFsm(prAdapter, PSCN_IDLE);
+		}
+	}
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to configure GScan PARAMs
+*
+* \param[in] prAdapter Pointer to the Adapter structure.
+* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
+* \param[in] u4SetBufferLen The length of the set buffer.
+* \param[out] pu4SetInfoLen If the call is successful, returns the number of
+*                          bytes read from the set buffer. If the call failed
+*                          due to invalid length of the set buffer, returns
+*                          the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_ADAPTER_NOT_READY
+* \retval WLAN_STATUS_INVALID_LENGTH
+* \retval WLAN_STATUS_INVALID_DATA
+*
+* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidSetGSCNParam(IN P_ADAPTER_T prAdapter,
+		    IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam;
+
+	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
+		DBGLOG(SCN, ERROR, "Adapter not ready: ACPI=%d, Radio=%d\n",
+				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_ADAPTER_NOT_READY;
+	}
+	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)) {
+		DBGLOG(SCN, ERROR, "u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)\n");
+		return WLAN_STATUS_INVALID_LENGTH;
+	} else if (pvSetBuffer == NULL) {
+		DBGLOG(SCN, ERROR, "pvSetBuffer == NULL\n");
+		return WLAN_STATUS_INVALID_DATA;
+	}
+	if (prAdapter->fgIsRadioOff) {
+		DBGLOG(SCN, ERROR, "Radio off: ACPI=%d, Radio=%d\n",
+				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	prCmdGscnParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer;
+	if (prCmdGscnParam) {
+		DBGLOG(SCN, TRACE, "prCmdGscnParam: base_period[%u], num_buckets[%u] band[%d] num_channels[%u]\n",
+			prCmdGscnParam->base_period, prCmdGscnParam->num_buckets,
+			prCmdGscnParam->buckets[0].band, prCmdGscnParam->buckets[0].num_channels);
+
+		if (scnSetGSCNParam(prAdapter, prCmdGscnParam) == TRUE)
+			return WLAN_STATUS_SUCCESS;
+		else
+			return WLAN_STATUS_FAILURE;
+	}
+
+	return WLAN_STATUS_INVALID_DATA;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to configure GScan PARAMs
+*
+* \param[in] prAdapter Pointer to the Adapter structure.
+* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
+* \param[in] u4SetBufferLen The length of the set buffer.
+* \param[out] pu4SetInfoLen If the call is successful, returns the number of
+*                          bytes read from the set buffer. If the call failed
+*                          due to invalid length of the set buffer, returns
+*                          the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_ADAPTER_NOT_READY
+* \retval WLAN_STATUS_INVALID_LENGTH
+* \retval WLAN_STATUS_INVALID_DATA
+*
+* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidSetGSCNConfig(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnConfigParam;
+	CMD_GSCN_SCN_COFIG_T rCmdGscnConfig;
+
+	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
+		DBGLOG(SCN, ERROR, "Adapter not ready: ACPI=%d, Radio=%d\n",
+				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_ADAPTER_NOT_READY;
+	}
+	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)) {
+		DBGLOG(SCN, ERROR, "u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)\n");
+		return WLAN_STATUS_INVALID_LENGTH;
+	} else if (pvSetBuffer == NULL) {
+		DBGLOG(SCN, ERROR, "pvSetBuffer == NULL\n");
+		return WLAN_STATUS_INVALID_DATA;
+	}
+	if (prAdapter->fgIsRadioOff) {
+		DBGLOG(SCN, ERROR, "Radio off: ACPI=%d, Radio=%d\n",
+				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	prCmdGscnConfigParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer;
+	kalMemZero(&rCmdGscnConfig, sizeof(CMD_GSCN_SCN_COFIG_T));
+
+	if (prCmdGscnConfigParam) {
+		rCmdGscnConfig.u4BufferThreshold = prCmdGscnConfigParam->report_threshold_percent;
+		rCmdGscnConfig.ucNumApPerScn = prCmdGscnConfigParam->max_ap_per_scan;
+		rCmdGscnConfig.u4NumScnToCache = prCmdGscnConfigParam->report_threshold_num_scans;
+	}
+	DBGLOG(SCN, TRACE, "rCmdGscnScnConfig: threshold_percent[%d] max_ap_per_scan[%d] num_scans[%d]\n",
+			   rCmdGscnConfig.u4BufferThreshold,
+			   rCmdGscnConfig.ucNumApPerScn, rCmdGscnConfig.u4NumScnToCache);
+
+	if (scnSetGSCNConfig(prAdapter, &rCmdGscnConfig) == TRUE)
+		return WLAN_STATUS_SUCCESS;
+	else
+		return WLAN_STATUS_FAILURE;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to get a GScan result
+*
+* \param[in] prAdapter Pointer to the Adapter structure.
+* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
+* \param[in] u4SetBufferLen The length of the set buffer.
+* \param[out] pu4SetInfoLen If the call is successful, returns the number of
+*                          bytes read from the set buffer. If the call failed
+*                          due to invalid length of the set buffer, returns
+*                          the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_ADAPTER_NOT_READY
+* \retval WLAN_STATUS_INVALID_LENGTH
+* \retval WLAN_STATUS_INVALID_DATA
+*
+* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidGetGSCNResult(IN P_ADAPTER_T prAdapter,
+		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_WIFI_GSCAN_GET_RESULT_PARAMS prGetGscnScnResultParm;
+	CMD_GET_GSCAN_RESULT_T rGetGscnScnResultCmd;
+
+	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
+		DBGLOG(SCN, ERROR, "Adapter not ready: ACPI=%d, Radio=%d\n",
+				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_ADAPTER_NOT_READY;
+	}
+
+	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_GET_RESULT_PARAMS)) {
+		DBGLOG(SCN, ERROR, "u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_GET_RESULT_PARAMS))\n");
+		return WLAN_STATUS_INVALID_LENGTH;
+	} else if (pvSetBuffer == NULL) {
+		DBGLOG(SCN, ERROR, "pvSetBuffer == NULL\n");
+		return WLAN_STATUS_INVALID_DATA;
+	}
+
+	if (prAdapter->fgIsRadioOff) {
+		DBGLOG(SCN, ERROR, "Radio off: ACPI=D%d, Radio=%d\n",
+				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	prGetGscnScnResultParm = (P_PARAM_WIFI_GSCAN_GET_RESULT_PARAMS) pvSetBuffer;
+	kalMemZero(&rGetGscnScnResultCmd, sizeof(CMD_GET_GSCAN_RESULT_T));
+
+	if (prGetGscnScnResultParm) {
+		rGetGscnScnResultCmd.u4Num = prGetGscnScnResultParm->get_num;
+		rGetGscnScnResultCmd.ucFlush = prGetGscnScnResultParm->flush;
+		rGetGscnScnResultCmd.ucVersion = PSCAN_VERSION;
+	}
+
+	if (scnFsmGetGSCNResult(prAdapter, &rGetGscnScnResultCmd, pu4SetInfoLen) == TRUE)
+		return WLAN_STATUS_SUCCESS;
+	else
+		return WLAN_STATUS_FAILURE;
+}
+#endif /* CFG_SUPPORT_GSCN */
+
+
 #if CFG_SUPPORT_PASSPOINT
 /*----------------------------------------------------------------------------*/
 /*!
@@ -10462,447 +10770,6 @@ wlanoidSetMonitor(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 }
 #endif
 
-#if CFG_SUPPORT_SCN_PSCN
-
-#if 0
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief This routine is called to request starting of schedule scan
-*
-* \param[in] prAdapter Pointer to the Adapter structure.
-* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
-* \param[in] u4SetBufferLen The length of the set buffer.
-* \param[out] pu4SetInfoLen If the call is successful, returns the number of
-*                          bytes read from the set buffer. If the call failed
-*                          due to invalid length of the set buffer, returns
-*                          the amount of storage needed.
-*
-* \retval WLAN_STATUS_SUCCESS
-* \retval WLAN_STATUS_ADAPTER_NOT_READY
-* \retval WLAN_STATUS_INVALID_LENGTH
-* \retval WLAN_STATUS_INVALID_DATA
-*
-* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
-*/
-/*----------------------------------------------------------------------------*/
-WLAN_STATUS
-wlanoidSetStartSchedScan(IN P_ADAPTER_T prAdapter,
-			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-	P_PARAM_SCHED_SCAN_REQUEST prSchedScanRequest;
-
-	DEBUGFUNC("wlanoidSetStartSchedScan()");
-
-	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(OID, WARN,
-		       ("Fail in set scheduled scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
-			prAdapter->rAcpiState, prAdapter->fgIsRadioOff));
-		return WLAN_STATUS_ADAPTER_NOT_READY;
-	}
-
-	ASSERT(pu4SetInfoLen);
-	*pu4SetInfoLen = 0;
-
-	if (u4SetBufferLen != sizeof(PARAM_SCHED_SCAN_REQUEST)) {
-		return WLAN_STATUS_INVALID_LENGTH;
-	} else if (pvSetBuffer == NULL) {
-		return WLAN_STATUS_INVALID_DATA;
-	} else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) == PARAM_MEDIA_STATE_CONNECTED
-		   && prAdapter->fgEnOnlineScan == FALSE) {
-		return WLAN_STATUS_FAILURE;
-	}
-
-	if (prAdapter->fgIsRadioOff) {
-		DBGLOG(OID, WARN, ("Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
-				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff));
-		return WLAN_STATUS_SUCCESS;
-	}
-
-	prSchedScanRequest = (P_PARAM_SCHED_SCAN_REQUEST) pvSetBuffer;
-
-	if (scnFsmSchedScanRequest(prAdapter,
-				   (UINT_8) (prSchedScanRequest->u4SsidNum),
-				   prSchedScanRequest->arSsid,
-				   prSchedScanRequest->u4IELength,
-				   prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval) == TRUE) {
-		return WLAN_STATUS_PENDING;
-	} else {
-		return WLAN_STATUS_FAILURE;
-	}
-}
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief This routine is called to request termination of schedule scan
-*
-* \param[in] prAdapter Pointer to the Adapter structure.
-* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
-* \param[in] u4SetBufferLen The length of the set buffer.
-* \param[out] pu4SetInfoLen If the call is successful, returns the number of
-*                          bytes read from the set buffer. If the call failed
-*                          due to invalid length of the set buffer, returns
-*                          the amount of storage needed.
-*
-* \retval WLAN_STATUS_SUCCESS
-* \retval WLAN_STATUS_ADAPTER_NOT_READY
-* \retval WLAN_STATUS_INVALID_LENGTH
-* \retval WLAN_STATUS_INVALID_DATA
-*
-* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
-*/
-/*----------------------------------------------------------------------------*/
-WLAN_STATUS
-wlanoidSetStopSchedScan(IN P_ADAPTER_T prAdapter,
-			IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-	ASSERT(prAdapter);
-
-	/* ask SCN module to stop scan request */
-	if (scnFsmSchedScanStopRequest(prAdapter) == TRUE)
-		return WLAN_STATUS_PENDING;
-	else
-		return WLAN_STATUS_FAILURE;
-}
-
-#endif
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief This routine is called to set a periodically scan action
-*
-* \param[in] prAdapter Pointer to the Adapter structure.
-* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
-* \param[in] u4SetBufferLen The length of the set buffer.
-* \param[out] pu4SetInfoLen If the call is successful, returns the number of
-*                          bytes read from the set buffer. If the call failed
-*                          due to invalid length of the set buffer, returns
-*                          the amount of storage needed.
-*
-* \retval WLAN_STATUS_SUCCESS
-* \retval WLAN_STATUS_ADAPTER_NOT_READY
-* \retval WLAN_STATUS_INVALID_LENGTH
-* \retval WLAN_STATUS_INVALID_DATA
-*
-* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
-*/
-/*----------------------------------------------------------------------------*/
-WLAN_STATUS
-wlanoidSetGSCNAction(IN P_ADAPTER_T prAdapter,
-		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-	P_CMD_SET_PSCAN_ENABLE prCmdPscnAction;
-
-	P_SCAN_INFO_T prScanInfo;
-
-	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-
-	/* DBGLOG(OID, TRACE, "wlanoidSetGSCNAction\n"); */
-
-	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(OID, WARN,
-		       "Fail in set Periodically Scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-		return WLAN_STATUS_ADAPTER_NOT_READY;
-	}
-
-	if (u4SetBufferLen != sizeof(CMD_SET_PSCAN_ENABLE))
-		return WLAN_STATUS_INVALID_LENGTH;
-	else if (pvSetBuffer == NULL)
-		return WLAN_STATUS_INVALID_DATA;
-
-	if (prAdapter->fgIsRadioOff) {
-		DBGLOG(OID, WARN, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-		return WLAN_STATUS_SUCCESS;
-	}
-
-	prCmdPscnAction = (P_CMD_SET_PSCAN_ENABLE) pvSetBuffer;
-
-	if (prCmdPscnAction->ucPscanAct == ENABLE) {
-
-#if 0
-		DBGLOG(OID, INFO, ("set PCSN ENABLE\n"));
-		if (scnFsmPSCNAction(prAdapter, (UINT_8) (prCmdPscnAction->ucPscanAct)) == TRUE) {
-			DBGLOG(OID, INFO, ("wlanoidSetGSCNAction < ---\n"));
-			return WLAN_STATUS_PENDING;
-		}
-		DBGLOG(OID, INFO, ("wlanoidSetGSCNAction < ---\n"));
-		return WLAN_STATUS_FAILURE;
-#endif
-
-		scnPSCNFsm(prAdapter, PSCN_SCANNING, NULL, NULL, NULL, NULL, FALSE, FALSE, FALSE, TRUE);
-
-	} else if (prCmdPscnAction->ucPscanAct == DISABLE) {
-
-#if 0
-		DBGLOG(OID, INFO, ("disable PCSN\n"));
-
-		scnFsmPSCNAction(prAdapter, (UINT_8) DISABLE);
-
-		DBGLOG(OID, TRACE, ("set new PCSN\n"));
-		scnCombineParamsIntoPSCN(prAdapter, NULL, NULL, NULL, NULL, FALSE, FALSE, TRUE);
-
-		DBGLOG(OID, INFO, ("ENABLE or disable PCSN\n"));
-
-		if (!prScanInfo->fgPscnOnnning) {
-			DBGLOG(OID, INFO, ("ENABLE PCSN\n"));
-			scnFsmPSCNAction(prAdapter, ENABLE);
-		} else {
-			DBGLOG(OID, INFO, ("All PCSN is disabled...\n"));
-		}
-#endif
-
-		scnPSCNFsm(prAdapter, PSCN_RESET, NULL, NULL, NULL, NULL, FALSE, FALSE, TRUE, FALSE);
-
-	}
-
-	return WLAN_STATUS_SUCCESS;
-
-}
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief This routine is called to set a periodically scan action
-*
-* \param[in] prAdapter Pointer to the Adapter structure.
-* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
-* \param[in] u4SetBufferLen The length of the set buffer.
-* \param[out] pu4SetInfoLen If the call is successful, returns the number of
-*                          bytes read from the set buffer. If the call failed
-*                          due to invalid length of the set buffer, returns
-*                          the amount of storage needed.
-*
-* \retval WLAN_STATUS_SUCCESS
-* \retval WLAN_STATUS_ADAPTER_NOT_READY
-* \retval WLAN_STATUS_INVALID_LENGTH
-* \retval WLAN_STATUS_INVALID_DATA
-*
-* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
-*/
-/*----------------------------------------------------------------------------*/
-WLAN_STATUS
-wlanoidSetGSCNAParam(IN P_ADAPTER_T prAdapter,
-		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-	P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnParam;
-
-	DBGLOG(OID, INFO, "wlanoidSetGSCNAParam v1\n");
-
-	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(OID, WARN,
-		       "Fail in set Periodically Scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-		DBGLOG(OID, INFO,
-		       "Fail in set Periodically Scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-		return WLAN_STATUS_ADAPTER_NOT_READY;
-	}
-	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)) {
-
-		DBGLOG(OID, INFO, "(u4SetBufferLen != sizeof(P_PARAM_WIFI_GSCAN_CMD_PARAMS))\n");
-		return WLAN_STATUS_INVALID_LENGTH;
-	} else if (pvSetBuffer == NULL) {
-		DBGLOG(OID, INFO, "(pvSetBuffer == NULL)\n");
-		return WLAN_STATUS_INVALID_DATA;
-	}
-	if (prAdapter->fgIsRadioOff) {
-		DBGLOG(OID, WARN, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-		DBGLOG(OID, INFO, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-		return WLAN_STATUS_SUCCESS;
-	}
-
-	prCmdGscnParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer;
-	/*
-	 * memcpy(prCmdGscnParam, (P_PARAM_WIFI_GSCAN_CMD_PARAMS)pvSetBuffer,
-	 *       sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS) );
-	 */
-	/*
-	 * DBGLOG(OID, INFO, "prCmdGscnParam : base_period[%u],
-	 * max_ap_per_scan[%u] num_buckets[%u], report_threshold[%u]\n",
-	 * prCmdGscnParam->base_period, prCmdGscnParam->max_ap_per_scan,
-	 * prCmdGscnParam->num_buckets, prCmdGscnParam->report_threshold);
-	 */
-#if 0
-	for (i = 0; i < prCmdGscnParam->num_buckets; i++) {
-
-		DBGLOG(OID, INFO,
-		       "prCmdGscnParam->buckets : band[%u], bucket[%u] num_buckets[%u], period[%u] report_events[%u]\n",
-		       prCmdGscnParam->buckets[i].band, prCmdGscnParam->buckets[i].bucket,
-		       prCmdGscnParam->buckets[i].num_channels, prCmdGscnParam->buckets[i].period,
-		       prCmdGscnParam->buckets[i].report_events);
-		DBGLOG(OID, INFO, "prCmdGscnParam->buckets[%d] has channel: ", i);
-		for (j = 0; j < prCmdGscnParam->buckets[i].num_channels; j++)
-			DBGLOG(OID, INFO, " %d,  ", prCmdGscnParam->buckets[i].channels[j].channel);
-		DBGLOG(OID, INFO, "\n");
-	}
-#endif
-	if (scnSetGSCNParam(prAdapter, prCmdGscnParam) == TRUE) {
-		DBGLOG(OID, INFO, "wlanoidSetGSCNAParam --->scnSetGSCNParam\n");
-		/*return WLAN_STATUS_PENDING; */
-	} else {
-		/*return WLAN_STATUS_FAILURE; */
-	}
-
-	return WLAN_STATUS_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief This routine is called to set configure  gscan PARAMs
-*
-* \param[in] prAdapter Pointer to the Adapter structure.
-* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
-* \param[in] u4SetBufferLen The length of the set buffer.
-* \param[out] pu4SetInfoLen If the call is successful, returns the number of
-*                          bytes read from the set buffer. If the call failed
-*                          due to invalid length of the set buffer, returns
-*                          the amount of storage needed.
-*
-* \retval WLAN_STATUS_SUCCESS
-* \retval WLAN_STATUS_ADAPTER_NOT_READY
-* \retval WLAN_STATUS_INVALID_LENGTH
-* \retval WLAN_STATUS_INVALID_DATA
-*
-* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
-*/
-/*----------------------------------------------------------------------------*/
-
-WLAN_STATUS
-wlanoidSetGSCNAConfig(IN P_ADAPTER_T prAdapter,
-		      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-
-	P_PARAM_WIFI_GSCAN_CMD_PARAMS prCmdGscnScnConfigParam;
-	CMD_GSCN_SCN_COFIG_T rCmdGscnScnConfig;
-
-	DBGLOG(OID, INFO, "wlanoidSetGSCNAConfig v1\n");
-
-	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(OID, WARN,
-		       "Fail in set Periodically Scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-
-		return WLAN_STATUS_ADAPTER_NOT_READY;
-	}
-	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS)) {
-
-		DBGLOG(OID, INFO, "(u4SetBufferLen != sizeof(CMD_GSCN_SCN_COFIG_T))\n");
-		return WLAN_STATUS_INVALID_LENGTH;
-	} else if (pvSetBuffer == NULL) {
-
-		DBGLOG(OID, INFO, "(pvSetBuffer == NULL)\n");
-
-		return WLAN_STATUS_INVALID_DATA;
-	}
-	if (prAdapter->fgIsRadioOff) {
-		DBGLOG(OID, WARN, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-
-		return WLAN_STATUS_SUCCESS;
-	}
-
-	DBGLOG(OID, INFO, "prCmdGscnScnConfigParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS)pvSetBuffer\n");
-	prCmdGscnScnConfigParam = (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer;
-	memcpy(prCmdGscnScnConfigParam, (P_PARAM_WIFI_GSCAN_CMD_PARAMS) pvSetBuffer,
-	       sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
-	DBGLOG(OID, INFO, "prCmdGscnScnConfigParam assign  prCmdGscnScnConfig\n");
-	rCmdGscnScnConfig.u4BufferThreshold = prCmdGscnScnConfigParam->report_threshold;
-	rCmdGscnScnConfig.ucNumApPerScn = prCmdGscnScnConfigParam->max_ap_per_scan;
-	rCmdGscnScnConfig.u4NumScnToCache = prCmdGscnScnConfigParam->num_scans;
-	DBGLOG(OID, INFO, " report_threshold %d report_threshold %d  num_scans %d\n",
-	       rCmdGscnScnConfig.u4BufferThreshold, rCmdGscnScnConfig.ucNumApPerScn, rCmdGscnScnConfig.u4NumScnToCache);
-	if (scnFsmSetGSCNConfig(prAdapter, &rCmdGscnScnConfig) == TRUE) {
-		DBGLOG(OID, INFO, "wlanoidSetGSCNAParam --->scnSetGSCNParam\n");
-		/*return WLAN_STATUS_PENDING; */
-	} else {
-		/*return WLAN_STATUS_FAILURE; */
-	}
-
-	return WLAN_STATUS_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief This routine is called to get a gscan result
-*
-* \param[in] prAdapter Pointer to the Adapter structure.
-* \param[in] pvSetBuffer A pointer to the buffer that holds the data to be set.
-* \param[in] u4SetBufferLen The length of the set buffer.
-* \param[out] pu4SetInfoLen If the call is successful, returns the number of
-*                          bytes read from the set buffer. If the call failed
-*                          due to invalid length of the set buffer, returns
-*                          the amount of storage needed.
-*
-* \retval WLAN_STATUS_SUCCESS
-* \retval WLAN_STATUS_ADAPTER_NOT_READY
-* \retval WLAN_STATUS_INVALID_LENGTH
-* \retval WLAN_STATUS_INVALID_DATA
-*
-* \note The setting buffer PARAM_SCHED_SCAN_REQUEST_EXT_T
-*/
-/*----------------------------------------------------------------------------*/
-
-WLAN_STATUS
-wlanoidGetGSCNResult(IN P_ADAPTER_T prAdapter,
-		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-
-	P_PARAM_WIFI_GSCAN_GET_RESULT_PARAMS prGetGscnScnResultParm;
-	CMD_GET_GSCAN_RESULT_T rGetGscnScnResultCmd;
-
-	DEBUGFUNC("wlanoidGetGSCNResult()");
-	DBGLOG(INIT, INFO, "wlanoidGetGSCNResult v1\n");
-	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
-		DBGLOG(OID, WARN,
-		       "Fail in set Periodically Scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-
-		return WLAN_STATUS_ADAPTER_NOT_READY;
-	}
-
-	if (u4SetBufferLen != sizeof(PARAM_WIFI_GSCAN_GET_RESULT_PARAMS)) {
-
-		DBGLOG(OID, INFO, "(u4SetBufferLen != sizeof(CMD_GSCN_SCN_COFIG_T))\n");
-		return WLAN_STATUS_INVALID_LENGTH;
-	} else if (pvSetBuffer == NULL) {
-
-		DBGLOG(OID, INFO, "(pvSetBuffer == NULL)\n");
-
-		return WLAN_STATUS_INVALID_DATA;
-	}
-
-	if (prAdapter->fgIsRadioOff) {
-		DBGLOG(OID, WARN, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-		DBGLOG(OID, INFO, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
-		       prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
-
-		return WLAN_STATUS_SUCCESS;
-	}
-
-	prGetGscnScnResultParm = (P_PARAM_WIFI_GSCAN_GET_RESULT_PARAMS) pvSetBuffer;
-	/*memcpy(&rGetGscnScnResultCmd, prGetGscnScnResultParm, sizeof(PARAM_WIFI_GSCAN_GET_RESULT_PARAMS) ); */
-
-	rGetGscnScnResultCmd.u4Num = prGetGscnScnResultParm->get_num;
-	rGetGscnScnResultCmd.ucFlush = prGetGscnScnResultParm->flush;
-	rGetGscnScnResultCmd.ucVersion = PSCAN_VERSION;
-
-	if (scnFsmGetGSCNResult(prAdapter, &rGetGscnScnResultCmd) == TRUE) {
-
-		DBGLOG(INIT, INFO, "wlanoidGetGSCNResult --->scnFsmGetGSCNResult\n");
-
-		/*return WLAN_STATUS_FAILURE; */
-	} else {
-		/*return WLAN_STATUS_FAILURE; */
-	}
-	return WLAN_STATUS_SUCCESS;
-
-}
-#endif
-
 WLAN_STATUS
 wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
 		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
@@ -10924,6 +10791,48 @@ wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
 				   (PUINT_8)&rSuspendCmd,
 				   NULL,
 				   0);
+}
+
+WLAN_STATUS
+wlanoidPacketKeepAlive(IN P_ADAPTER_T prAdapter,
+		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	P_PARAM_PACKET_KEEPALIVE_T prPacket;
+
+	DEBUGFUNC("wlanoidPacketKeepAlive");
+	ASSERT(prAdapter);
+	ASSERT(pu4SetInfoLen);
+	if (u4SetBufferLen)
+		ASSERT(pvSetBuffer);
+
+	*pu4SetInfoLen = sizeof(PARAM_PACKET_KEEPALIVE_T);
+
+	/* Check for query buffer length */
+	if (u4SetBufferLen < *pu4SetInfoLen) {
+		DBGLOG(OID, WARN, "Too short length %u\n", u4SetBufferLen);
+		return WLAN_STATUS_BUFFER_TOO_SHORT;
+	}
+
+	prPacket = (P_PARAM_PACKET_KEEPALIVE_T)kalMemAlloc(sizeof(PARAM_PACKET_KEEPALIVE_T), VIR_MEM_TYPE);
+	if (!prPacket) {
+		DBGLOG(OID, ERROR, "Can not alloc memory for PARAM_PACKET_KEEPALIVE_T\n");
+		return -ENOMEM;
+	}
+	kalMemCopy(prPacket, pvSetBuffer, sizeof(PARAM_PACKET_KEEPALIVE_T));
+
+	DBGLOG(OID, INFO, "enable=%d, index=%d\r\n", prPacket->enable, prPacket->index);
+
+	rStatus = wlanSendSetQueryCmd(prAdapter,
+			   CMD_ID_WFC_KEEP_ALIVE,
+			   TRUE,
+			   FALSE,
+			   TRUE,
+			   nicCmdEventSetCommon,
+			   nicOidCmdTimeoutCommon,
+			   sizeof(PARAM_PACKET_KEEPALIVE_T), (PUINT_8)prPacket, NULL, 0);
+	kalMemFree(prPacket, VIR_MEM_TYPE, sizeof(PARAM_PACKET_KEEPALIVE_T));
+	return rStatus;
 }
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
