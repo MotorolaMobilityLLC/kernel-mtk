@@ -1,0 +1,7 @@
+config MTPROF
+	bool "Enable MTK profiler/debugger tool"
+	help
+	  CONFIG_MTPROF define if mtk profiling tools should be built-in or not. It
+	  includes workqueue debugger, signal debugger, bootprof, and other
+	  misc tools. If you are not sure about whether to enable it or not, please
+	  set n.
