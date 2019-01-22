@@ -1536,7 +1536,7 @@ static void dip_freebuf(struct dip_imem_memory *pMemInfo)
 	}
 
 	handle = (struct ion_handle *) pMemInfo->handle;
-	if (handle) {
+	if (handle != NULL) {
 		ion_unmap_kernel(dip_p2_ion_client, handle);
 		ion_free(dip_p2_ion_client, handle);
 	}
