@@ -88,6 +88,7 @@ typedef struct ccmni_instance {
 	unsigned long      tx_full_tick[2];
 	unsigned int       tx_full_cnt[2];
 	unsigned int       tx_irq_cnt[2];
+	unsigned int       rx_gro_cnt;
 	void               *priv_data;
 } ccmni_instance_t;
 
