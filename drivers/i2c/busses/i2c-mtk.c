@@ -991,9 +991,11 @@ static bool mt_i2c_should_combine(struct i2c_msg *msg)
 
 static bool mt_i2c_should_batch(struct i2c_msg *prev, struct i2c_msg *next)
 {
-	if ((prev->flags & I2C_M_RD) || (next->flags & I2C_M_RD))
+	if ((prev == NULL) || (next == NULL) ||
+	    (prev->flags & I2C_M_RD) || (next->flags & I2C_M_RD))
 		return false;
-	if (prev->len == next->len && prev->addr == next->addr)
+	if ((next != NULL) && (next != NULL) &&
+	    (prev->len == next->len && prev->addr == next->addr))
 		return true;
 	return false;
 }
