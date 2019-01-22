@@ -219,6 +219,29 @@
 /* HUBADDR */
 #define MUSBFSH_HUBADDR_MULTI_TT	0x80
 
+#define DMA_INTR_UNMASK_SET_OFFSET	24
+
+/* UTMI */
+#define	FORCE_OPMODE				16
+#define	FORCE_TERMSEL				17
+#define	FORCE_SUSPENDM				18
+#define	FORCE_XCVRSEL				19
+#define	FORCE_DPPULLDOWN			20
+#define	FORCE_DMPULLDOWN			21
+#define	FORCE_TXVALID				22
+#define	FORCE_VBUSVALID				13
+
+#define	RG_OPMODE				0
+#define	RG_TERMSEL				2
+#define	RG_XCVRSEL				4
+#define	RG_DPPULLDOWN				6
+#define	RG_DMPULLDOWN				7
+#define	RG_TXVALID				8
+#define	RG_TXVALID_H				9
+#define	RG_VBUSVALID				5
+#define RG_SUSPENDM				3
+
+
 /*
  * Common USB registers
  */
