@@ -89,7 +89,7 @@ static void algo_hmp_base(
 		unsigned int bo /* big_num_online */)
 {
 	unsigned int cpu;
-	unsigned int val;
+	int val;
 	unsigned int num_online = lo + bo;
 
 	WARN_ON(bo > bl);
