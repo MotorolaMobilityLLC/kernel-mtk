@@ -282,8 +282,7 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 		return;
 
 	if (do_dvfs_stress_test)
-		/* cpufreq_dbg("%s: %s: cur_khz = %d(%d), target_khz = %d(%d), clkdiv = %d->%d\n", */
-		pr_crit("%s: %s: cur_khz = %d(%d), target_khz = %d(%d), clkdiv = %d->%d\n",
+		cpufreq_dbg("%s: %s: cur_khz = %d(%d), target_khz = %d(%d), clkdiv = %d->%d\n",
 			__func__, cpu_dvfs_get_name(p), cur_khz, p->idx_opp_tbl, target_khz, idx,
 			opp_tbl_m[CUR_OPP_IDX].slot->clk_div, opp_tbl_m[TARGET_OPP_IDX].slot->clk_div);
 
@@ -1021,10 +1020,6 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 	struct cpumask cpu_online_cpumask[NR_MT_CPU_DVFS];
 	unsigned int cpus[NR_MT_CPU_DVFS];
 
-#ifndef CONFIG_HYBRID_CPU_DVFS
-	return NOTIFY_OK;
-#endif
-
 	if (dvfs_disable_flag == 1)
 		return NOTIFY_OK;
 
@@ -1035,6 +1030,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 		cpumask_and(&cpu_online_cpumask[i], &dvfs_cpumask[i], cpu_online_mask);
 		cpus[i] = cpumask_weight(&cpu_online_cpumask[i]);
 	}
+
 	cpufreq_ver("@%s():%d, cpu = %d, action = %lu, num_online_cpus = %d\n"
 	, __func__, __LINE__, cpu, action, online_cpus);
 
@@ -1243,7 +1239,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	unsigned long flags;
 	struct mt_cpu_dvfs *p;
 	unsigned int i;
-
+	return;
 	cpufreq_ver("get feedback from PPM module\n");
 
 	cpufreq_para_lock(flags);
@@ -1303,10 +1299,6 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 	unsigned int new_opp_idx;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-
-#ifndef CONFIG_HYBRID_CPU_DVFS
-	return 0;
-#endif
 
 	if (dvfs_disable_flag == 1)
 		return 0;
@@ -1604,7 +1596,7 @@ static int __init _mt_cpufreq_tbl_init(void)
 	int i, j;
 	struct opp_tbl_info *opp_tbl_info;
 	struct cpufreq_frequency_table *table;
-	return 0;
+
 	/* Prepare OPP table for EEM */
 	for_each_cpu_dvfs(j, p) {
 		opp_tbl_info = &opp_tbls[j][CPU_LV_TO_OPP_IDX(lv)];
@@ -1637,9 +1629,6 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	struct cpumask cpu_mask;
 	unsigned int cluster_num;
 	int i;
-
-	/* Fix me */
-	return 0;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
