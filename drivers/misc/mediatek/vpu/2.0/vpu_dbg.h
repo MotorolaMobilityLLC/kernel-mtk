@@ -15,9 +15,17 @@
 #define __VPU_DBG_H__
 
 /*
+ * level 2: open log to monitor d2d period
+ * level 3: open log to monitor load algp period
  * level 5: open per-frame log
  * level 9: dump log buffer
  */
 extern int g_vpu_log_level;
+extern unsigned int g_func_mask;
+
+enum VpuFuncMask {
+	VFM_SKIP_WAIT_VCORE	= 0x1,
+	VFM_ROUTINE_PRT_SYSLOG = 0x2
+};
 
 #endif

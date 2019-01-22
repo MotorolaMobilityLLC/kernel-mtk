@@ -32,6 +32,7 @@
 
 /* global variables */
 int g_vpu_log_level = 1;
+unsigned int g_func_mask;
 
 #ifdef MTK_VPU_DVT
 
@@ -558,6 +559,24 @@ static int vpu_log_level_get(void *data, u64 *val)
 
 DEFINE_SIMPLE_ATTRIBUTE(vpu_debug_log_level_fops, vpu_log_level_get, vpu_log_level_set, "%llu\n");
 
+static int vpu_func_mask_set(void *data, u64 val)
+{
+	g_func_mask = val & 0xffffffff;
+	LOG_INF("g_func_mask: 0x%x\n", g_func_mask);
+
+	return 0;
+}
+
+static int vpu_func_mask_get(void *data, u64 *val)
+{
+	*val = g_func_mask;
+
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(vpu_debug_func_mask_fops, vpu_func_mask_get, vpu_func_mask_set, "%llu\n");
+
+
 #define IMPLEMENT_VPU_DEBUGFS(name)                                             \
 static int vpu_debug_## name ##_show(struct seq_file *s, void *unused)			\
 {                                                                               \
@@ -736,6 +755,7 @@ int vpu_init_debug(struct vpu_device *vpu_dev)
 	}
 
 	CREATE_VPU_DEBUGFS(algo);
+	CREATE_VPU_DEBUGFS(func_mask);
 	CREATE_VPU_DEBUGFS(log_level);
 	CREATE_VPU_DEBUGFS(register);
 	CREATE_VPU_DEBUGFS(user);

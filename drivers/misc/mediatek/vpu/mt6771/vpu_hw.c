@@ -326,6 +326,11 @@ static inline int wait_to_do_change_vcore_opp(int core)
 	int ret = 0;
 	int retry = 0;
 
+	if (g_func_mask & VFM_SKIP_WAIT_VCORE) {
+		if (g_vpu_log_level > 3)
+			LOG_INF("[vpu_%d_0x%x] wait change vcore return now\n", core, g_func_mask);
+		return ret;
+	}
 #if 0
 	return (wait_event_interruptible_timeout(
 			waitq_change_vcore, vpu_other_core_idle_check(core), msecs_to_jiffies(OPP_WAIT_TIME_MS)) > 0)
@@ -1252,13 +1257,13 @@ static int vpu_service_routine(void *arg)
 			LOG_DBG("[vpu_%d] run, opp(%d/%d/%d)\n", service_core, req->power_param.opp_step,
 				vcore_opp_index, dsp_freq_index);
 			vpu_opp_check(service_core, vcore_opp_index, dsp_freq_index);
-			LOG_INF("[vpu_%d <- 0x%x] run, algo_id(0x%lx_%d, %d->%d), opp(%d,%d/%d->%d, %d->%d)\n",
+			LOG_INF("[vpu_%d<-0x%x] run,algo_id(0x%lx_%d, %d->%d),opp(%d,%d/%d->%d, %d->%d),fk(0x%x)\n",
 				service_core, req->requested_core,
 				(unsigned long)req->request_id, req->frame_magic,
 				vpu_service_cores[service_core].current_algo, (int)(req->algo_id[service_core]),
 				req->power_param.opp_step, req->power_param.freq_step,
 				vcore_opp_index, opps.vcore.index,
-				dsp_freq_index, opps.dspcore[service_core].index);
+				dsp_freq_index, opps.dspcore[service_core].index, g_func_mask);
 			#if 0
 			/*  prevent the worker shutdown vpu first, and current enque use the same algo_id */
 			/*ret = wait_to_do_vpu_running(service_core);*/
@@ -1720,6 +1725,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 
 
 		wq = create_workqueue("vpu_wq");
+		g_func_mask = 0x0;
 
 
 		/* define the steps and OPP */
