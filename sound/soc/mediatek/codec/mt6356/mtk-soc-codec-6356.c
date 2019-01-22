@@ -1663,10 +1663,7 @@ static void TurnOnDacPower(int device)
 	/* Turn on AUD 26M */
 	udelay(250);
 
-	if (GetAdcStatus() == false)
-		Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8020, 0xBfff);	/* power on clock */
-	else
-		Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xBfff);	/* power on clock */
+	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x0000, 0x00c4); /* power on clock */
 
 	udelay(250);
 
@@ -3245,18 +3242,6 @@ static bool GetAdcStatus(void)
 	return false;
 }
 
-static bool GetDacStatus(void)
-{
-	int i = 0;
-
-	for (i = AUDIO_ANALOG_DEVICE_OUT_EARPIECER; i < AUDIO_ANALOG_DEVICE_2IN1_SPK; i++) {
-		if (mCodec_data->mAudio_Ana_DevicePower[i] == true)
-			return true;
-	}
-	return false;
-}
-
-
 static bool TurnOnADcPowerACC(int ADCType, bool enable)
 {
 	pr_debug("%s ADCType = %d enable = %d\n", __func__, ADCType, enable);
@@ -3325,10 +3310,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			Topck_Enable(true);
 
 			/* power on clock */
-			if (GetDacStatus() == false)
-				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8040, 0xffff);
-			else
-				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xffff);
+			Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xdfbf);
 
 			/* configure ADC setting */
 			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
@@ -3454,10 +3436,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			Topck_Enable(true);
 
 			/* power on clock */
-			if (GetDacStatus() == false)
-				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8040, 0xffff);
-			else
-				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xffff);
+			Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xdfbf);
 
 			/* configure ADC setting */
 			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
@@ -3626,10 +3605,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 
 			/* here to set digital part */
 			/* power on clock */
-			if (GetDacStatus() == false)
-				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8040, 0xffff);
-			else
-				Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xffff);
+			Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x8000, 0xdfbf);
 
 			/* configure ADC setting */
 			Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
@@ -4635,7 +4611,7 @@ static void mt6356_codec_init_reg(struct snd_soc_codec *codec)
 	/* Turn off AUDNCP_CLKDIV engine clock,Turn off AUD 26M */
 	Ana_Set_Reg(AUD_TOP_CKPDN_CON0, 0x66, 0x66);
 	/* set pdn for golden setting */
-	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x00ff, 0x00ff);
+	Ana_Set_Reg(PMIC_AUDIO_TOP_CON0, 0x20ff, 0x20ff);
 	/* Disable HeadphoneL/HeadphoneR short circuit protection */
 	Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3 << 12, 0x3 << 12);
 	/* Disable voice short circuit protection */
