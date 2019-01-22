@@ -146,108 +146,7 @@ static struct pwr_ctrl sodi3_ctrl = {
 #endif
 };
 #else
-static struct pwr_ctrl sodi3_ctrl = {
-	.wake_src = WAKE_SRC_FOR_SODI3,
-
-	.wake_src_md32 = WAKE_SRC_FOR_MD32,
-	.r0_ctrl_en = 1,
-	.r7_ctrl_en = 1,
-	.infra_dcm_lock = 1, /* set to be 1 if SODI 3.0 */
-	.wfi_op = WFI_OP_AND,
-
-	/* SPM_AP_STANDBY_CON */
-	.mp0top_idle_mask = 0,
-	.mp1top_idle_mask = 0,
-	.mcusys_idle_mask = 0,
-	.md_ddr_dbc_en = 0,
-	.md1_req_mask_b = 1,
-	.md2_req_mask_b = 0, /* bit 20 */
-#if defined(CONFIG_ARCH_MT6797)
-	.scp_req_mask_b = 1, /* bit 21 */
-#endif
-	.lte_mask_b = 0,
-	.md_apsrc1_sel = 0, /* bit 24 */
-	.md_apsrc0_sel = 0, /* bit 25 */
-	.conn_mask_b = 1,
-	.conn_apsrc_sel = 0, /* bit 27 */
-
-	/* SPM_SRC_REQ */
-	.spm_apsrc_req = 0,
-	.spm_f26m_req = 0,
-	.spm_lte_req = 0,
-	.spm_infra_req = 0,
-	.spm_vrf18_req = 0,
-	.spm_dvfs_req = 0,
-	.spm_dvfs_force_down = 0,
-	.spm_ddren_req = 0,
-	.cpu_md_dvfs_sop_force_on = 0,
-
-	/* SPM_SRC_MASK */
-	.ccif0_to_md_mask_b = 1,
-	.ccif0_to_ap_mask_b = 1,
-	.ccif1_to_md_mask_b = 1,
-	.ccif1_to_ap_mask_b = 1,
-	.ccifmd_md1_event_mask_b = 1,
-	.ccifmd_md2_event_mask_b = 1,
-	.vsync_mask_b = 0,	/* 5-bit */
-	.md_srcclkena_0_infra_mask_b = 0, /* bit 12 */
-	.md_srcclkena_1_infra_mask_b = 0, /* bit 13 */
-	.conn_srcclkena_infra_mask_b = 0, /* bit 14 */
-	.md32_srcclkena_infra_mask_b = 0, /* bit 15 */
-	.srcclkeni_infra_mask_b = 0, /* bit 16 */
-	.md_apsrcreq_0_infra_mask_b = 1,
-	.md_apsrcreq_1_infra_mask_b = 0,
-	.conn_apsrcreq_infra_mask_b = 1,
-	.md32_apsrcreq_infra_mask_b = 0,
-	.md_ddr_en_0_mask_b = 1,
-	.md_ddr_en_1_mask_b = 0, /* bit 22 */
-	.md_vrf18_req_0_mask_b = 1,
-	.md_vrf18_req_1_mask_b = 0, /* bit 24 */
-	.emi_bw_dvfs_req_mask = 1,
-	.md_srcclkena_0_dvfs_req_mask_b = 0,
-	.md_srcclkena_1_dvfs_req_mask_b = 0,
-	.conn_srcclkena_dvfs_req_mask_b = 0,
-
-	/* SPM_SRC2_MASK */
-	.dvfs_halt_mask_b = 0x1f, /* 5-bit */
-	.vdec_req_mask_b = 0, /* bit 6 */
-	.gce_req_mask_b = 1, /* bit 7, set to be 1 for SODI */
-	.cpu_md_dvfs_erq_merge_mask_b = 0,
-	.md1_ddr_en_dvfs_halt_mask_b = 0,
-	.md2_ddr_en_dvfs_halt_mask_b = 0,
-	.vsync_dvfs_halt_mask_b = 0, /* 5-bit, bit 11 ~ 15 */
-	.conn_ddr_en_mask_b = 1,
-	.disp_req_mask_b = 1, /* bit 17, set to be 1 for SODI */
-	.disp1_req_mask_b = 1, /* bit 18, set to be 1 for SODI */
-#if defined(CONFIG_ARCH_MT6797)
-	.mfg_req_mask_b = 1, /* bit 19, set to be 1 for SODI */
-#endif
-	.c2k_ps_rccif_wake_mask_b = 1,
-	.c2k_l1_rccif_wake_mask_b = 1,
-	.ps_c2k_rccif_wake_mask_b = 1,
-	.l1_c2k_rccif_wake_mask_b = 1,
-	.sdio_on_dvfs_req_mask_b = 0,
-	.emi_boost_dvfs_req_mask_b = 0,
-	.cpu_md_emi_dvfs_req_prot_dis = 0,
-#if defined(CONFIG_ARCH_MT6797)
-	.disp_od_req_mask_b = 1, /* bit 27, set to be 1 for SODI */
-#endif
-	/* SPM_CLK_CON */
-	.srclkenai_mask = 1,
-
-	.mp1_cpu0_wfi_en	= 1,
-	.mp1_cpu1_wfi_en	= 1,
-	.mp1_cpu2_wfi_en	= 1,
-	.mp1_cpu3_wfi_en	= 1,
-	.mp0_cpu0_wfi_en	= 1,
-	.mp0_cpu1_wfi_en	= 1,
-	.mp0_cpu2_wfi_en	= 1,
-	.mp0_cpu3_wfi_en	= 1,
-
-#if SPM_BYPASS_SYSPWREQ
-	.syspwreq_mask = 1,
-#endif
-};
+#error "Not support SODI3"
 #endif
 
 struct spm_lp_scen __spm_sodi3 = {
@@ -309,17 +208,6 @@ static void spm_sodi3_pmic_before_wfi(void)
 #endif
 	__spm_pmic_low_iq_mode(1);
 
-#elif defined(CONFIG_ARCH_MT6797)
-
-	pmic_read_interface_nolock(MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_ADDR, &val, 0xFFFF, 0);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
-			IDX_DI_VCORE_LQ_EN,
-			val | (1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
-			IDX_DI_VCORE_LQ_DIS,
-			val & ~(1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
-	__spm_pmic_low_iq_mode(1);
-
 #endif
 
 	pmic_read_interface_nolock(MT6351_TOP_CON, &val, ALL_TOP_CON_MASK, 0);
@@ -339,7 +227,7 @@ static void spm_sodi3_pmic_after_wfi(void)
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_pmic_low_iq_mode(0);
 #endif
 
@@ -388,12 +276,6 @@ static __always_inline void spm_sodi3_disable_pcm_wdt(void)
 
 static void rekick_sodi3_common_scenario(void)
 {
-#if defined(CONFIG_ARCH_MT6797)
-	spm_sodi3_footprint(SPM_SODI3_REKICK_VCORE);
-	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-	__spm_backup_vcore_dvfs_dram_shuffle();
-	vcorefs_go_to_vcore_dvfs();
-#endif
 }
 
 wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)

@@ -44,10 +44,6 @@
 
 #include <mt-plat/mtk_io.h>
 
-#if defined(CONFIG_ARCH_MT6797)
-#include "mt_vcorefs_governor.h"
-#endif
-
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include "mtk_dramc.h"
 #include "mtk_spm_dpidle_mt6757.h"
@@ -415,9 +411,6 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0,
-#if defined(CONFIG_ARCH_MT6797)
-	.scp_req_mask_b = 1, /* bit 21 */
-#endif
 	.lte_mask_b = 0,
 	.md_apsrc1_sel = 0,
 	.md_apsrc0_sel = 0,
@@ -431,9 +424,6 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
 	.spm_dvfs_req = 0,
-#if defined(CONFIG_ARCH_MT6797)
-	.spm_dvfs_force_down = 1,
-#endif
 	.spm_ddren_req = 0,
 	.cpu_md_dvfs_sop_force_on = 0,
 
@@ -482,9 +472,6 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
-#if defined(CONFIG_ARCH_MT6797)
-	.disp_od_req_mask_b = 0, /* bit 27, set 0 for deepidle */
-#endif
 
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,
@@ -515,9 +502,6 @@ static unsigned int dpidle_log_print_prev_time;
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
 	u32 v0, v1;
-#if defined(CONFIG_ARCH_MT6797)
-	u32 v2;
-#endif
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
@@ -534,19 +518,9 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		v0 = reg_read(MP0_AXI_CONFIG);
 		v1 = reg_read(MP1_AXI_CONFIG);
 
-#if defined(CONFIG_ARCH_MT6797)
-		v2 = reg_read(MP2_AXI_CONFIG);
-		MCUSYS_SMC_WRITE(MP2_AXI_CONFIG, v2 | ACINACTM_MP2);
-#endif
-
 		/* disable snoop function */
 		MCUSYS_SMC_WRITE(MP0_AXI_CONFIG, v0 | ACINACTM);
 		MCUSYS_SMC_WRITE(MP1_AXI_CONFIG, v1 | ACINACTM);
-
-#if defined(CONFIG_ARCH_MT6797)
-		v2 = reg_read(MP2_AXI_CONFIG);
-		MCUSYS_SMC_WRITE(MP2_AXI_CONFIG, v2 | ACINACTM_MP2);
-#endif
 
 		dpidle_dbg("enter legacy WFI, MP0_AXI_CONFIG=0x%x, MP1_AXI_CONFIG=0x%x\n",
 			   reg_read(MP0_AXI_CONFIG), reg_read(MP1_AXI_CONFIG));
@@ -556,10 +530,6 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 		/* restore MP0_AXI_CONFIG */
 		MCUSYS_SMC_WRITE(MP0_AXI_CONFIG, v0);
 		MCUSYS_SMC_WRITE(MP1_AXI_CONFIG, v1);
-
-#if defined(CONFIG_ARCH_MT6797)
-		MCUSYS_SMC_WRITE(MP2_AXI_CONFIG, v2);
-#endif
 
 		dpidle_dbg("exit legacy WFI, MP0_AXI_CONFIG=0x%x, MP1_AXI_CONFIG=0x%x\n",
 			   reg_read(MP0_AXI_CONFIG), reg_read(MP1_AXI_CONFIG));
@@ -660,32 +630,6 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 
 void rekick_dpidle_common_scenario(struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
 {
-#if defined(CONFIG_ARCH_MT6797)
-	if (is_vcorefs_feature_enable()) {
-		__spm_backup_vcore_dvfs_dram_shuffle();
-		__spm_kick_im_to_fetch(pcmdesc);
-		__spm_init_pcm_register();
-		__spm_init_event_vector(pcmdesc);
-		__spm_check_md_pdn_power_control(pwrctrl);
-		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-
-		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
-		pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
-		pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
-
-		__spm_set_power_control(pwrctrl);
-		__spm_set_wakeup_event(pwrctrl);
-		__spm_set_vcorefs_wakeup_event(__spm_vcore_dvfs.pwrctrl);
-
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-
-		__spm_kick_pcm_to_run(pwrctrl);
-
-#if SPM_AEE_RR_REC
-		aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_DEEPIDLE);
-#endif
-	}
-#endif
 }
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
@@ -778,12 +722,6 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-#endif
-
-#if defined(CONFIG_ARCH_MT6797)
-	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
-	pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
-	pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
 #endif
 
 	__spm_set_power_control(pwrctrl);
@@ -943,12 +881,6 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-#endif
-
-#if defined(CONFIG_ARCH_MT6797)
-	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
-	pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
-	pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
 #endif
 
 	__spm_set_power_control(pwrctrl);
