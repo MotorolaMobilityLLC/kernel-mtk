@@ -416,6 +416,7 @@ extern int get_avg_heavy_task_threshold(void);
 extern int get_heavy_task_threshold(void);
 extern unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int threshold);
 extern int sched_get_nr_heavy_running_avg(int cid, int *avg);
+extern void sched_get_percpu_load2(int cpu, bool reset, unsigned int *rel_load, unsigned int *abs_load);
 extern struct cpumask cpu_domain_big_mask;
 extern struct cpumask cpu_domain_little_mask;
 extern int sched_get_nr_running_avg(int *avg, int *iowait_avg);
@@ -424,6 +425,6 @@ extern unsigned int sched_get_nr_heavy_task(void);
 extern void armpll_control(int id, int on);
 extern void mp_enter_suspend(int id, int suspend);
 extern void sched_big_task_nr(int *L_nr, int *B_nr);
-extern void __attribute__((weak))
-mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp, unsigned int btask);
+extern void __attribute__((weak))mt_smart_update_sysinfo(unsigned int cur_loads,
+	unsigned int cur_tlp, unsigned int btask, unsigned int total_heavy_task);
 #endif

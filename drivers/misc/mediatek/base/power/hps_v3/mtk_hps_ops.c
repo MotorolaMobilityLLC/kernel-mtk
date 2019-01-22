@@ -46,12 +46,17 @@ static int hps_cal_cores(void)
 static int hps_algo_rush_boost(void)
 {
 	int val, base_val;
+	unsigned int idx, total_rel_load;
+
+	idx = total_rel_load = 0;
+	for (idx = 0 ; idx < hps_sys.cluster_num ; idx++)
+		total_rel_load += hps_sys.cluster_info[idx].rel_load;
 
 	if (!hps_ctxt.rush_boost_enabled)
 		return 0;
 	base_val = cal_base_cores();
 
-	if (hps_ctxt.cur_loads > hps_ctxt.rush_boost_threshold * hps_sys.total_online_cores)
+	if (total_rel_load > hps_ctxt.rush_boost_threshold * hps_sys.total_online_cores)
 		++hps_ctxt.rush_count;
 	else
 		hps_ctxt.rush_count = 0;
@@ -110,8 +115,6 @@ static int hps_algo_eas(void)
 			}
 			val = hps_sys.cluster_info[i].loading /	hps_sys.cluster_info[i].down_threshold;
 			if (hps_sys.cluster_info[i].loading % hps_sys.cluster_info[i].down_threshold)
-				val++;
-			if (!val)
 				val++;
 			if (val >= hps_sys.cluster_info[i].base_value)
 				hps_sys.cluster_info[i].target_core_num = val;
