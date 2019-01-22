@@ -1097,7 +1097,6 @@ static void cldma_rx_worker_start(struct ccci_modem *md, int qno)
 	int ret = 0;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	md->latest_q_rx_isr_time[qno] = local_clock();
 	if (qno != 0) {
 		ret = queue_work(md_ctrl->rxq[qno].worker,
 					&md_ctrl->rxq[qno].cldma_rx_work);
@@ -1202,6 +1201,7 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 #endif
 		for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
 			if (L2RISAR0 & CLDMA_BM_INT_DONE & (1 << i)) {
+				md->latest_q_rx_isr_time[i] = local_clock();
 				/* disable RX_DONE interrupt */
 				cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_L2RIMSR0,
 					      CLDMA_BM_ALL_QUEUE & (1 << i));
@@ -2303,7 +2303,7 @@ static int check_power_off_en(struct ccci_modem *md)
 	if (md->index != MD_SYS1)
 		return 1;
 
-	smem_val = *((int *)((long)md->mem_layout.smem_region_vir + 8*1024+31*4));
+	smem_val = *((int *)((long)md->smem_layout.ccci_exp_smem_base_vir + CCCI_SMEM_OFFSET_EPOF));
 	CCCI_NORMAL_LOG(md->index, TAG, "share for power off:%x\n", smem_val);
 	if (smem_val != 0) {
 		CCCI_NORMAL_LOG(md->index, TAG, "[ccci]enable power off check\n");
@@ -3174,8 +3174,10 @@ static int md_cd_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 	if (type == CCIF_INTERRUPT)
 		md_cd_ccif_send(md, AP_MD_SEQ_ERROR);
 #ifdef MD_UMOLY_EE_SUPPORT
-	else if (type == CCIF_MPU_INTR)
+	else if (type == CCIF_MPU_INTR) {
 		md_cd_ccif_send(md, H2D_MPU_FORCE_ASSERT);
+		md->ops->dump_info(md, DUMP_FLAG_CCIF_REG, NULL, 0);
+	}
 #endif
 
 	return 0;
