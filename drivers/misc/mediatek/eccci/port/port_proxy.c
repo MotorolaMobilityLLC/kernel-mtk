@@ -534,7 +534,7 @@ int port_recv_skb(struct port_t *port, struct sk_buff *skb)
 			__skb_queue_tail(&port->rx_skb_list, skb);
 		port->rx_pkg_cnt++;
 		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
-		wake_lock_timeout(&port->rx_wakelock, HZ);
+		wake_lock_timeout(&port->rx_wakelock, HZ / 2);
 		spin_lock_irqsave(&port->rx_wq.lock, flags);
 		wake_up_all_locked(&port->rx_wq);
 		spin_unlock_irqrestore(&port->rx_wq.lock, flags);
