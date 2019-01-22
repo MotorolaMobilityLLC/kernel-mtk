@@ -437,12 +437,12 @@ static int hps_probe(struct platform_device *pdev)
 		pr_debug("cpu_vproc11_id regulator_get failed\n");
 	else
 		pr_info("cpu_vproc11_id regulator_get success\n");
+
 	if (cpu_vproc11_id)
 		ret = regulator_enable(cpu_vproc11_id);
-#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
+
+#if defined(CONFIG_MACH_MT6771)
 	cpu_vsram11_id = regulator_get(&pdev->dev, "vsram_proc11");
-	if (cpu_vsram11_id)
-		ret = regulator_enable(cpu_vsram11_id);
 #else
 	cpu_vsram11_id = regulator_get(&pdev->dev, "vsram_gpu");
 #endif
@@ -450,7 +450,10 @@ static int hps_probe(struct platform_device *pdev)
 		pr_debug("cpu_vsram_id regulator_get failed\n");
 	else
 		pr_info("cpu_vsram_id regulator_get success\n");
-#endif
+
+	if (cpu_vsram11_id)
+		ret = regulator_enable(cpu_vsram11_id);
+#endif /* CONFIG_MACH_MT6771 || CONFIG_MACH_MT6775 */
 
 #if defined(CONFIG_MACH_MT6799)
 	mtk_regulator_vproc2 = regulator_get(&pdev->dev, "ext_buck_proc2");
