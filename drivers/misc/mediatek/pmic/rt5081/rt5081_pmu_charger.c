@@ -39,7 +39,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.18_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.19_MTK"
 
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, S_IRUGO | S_IWUSR);
@@ -443,10 +443,10 @@ static int rt5081_set_fast_charge_timer(
 	return ret;
 }
 
-#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
 static int rt5081_set_usbsw_state(struct rt5081_pmu_charger_data *chg_data,
 	int state)
 {
+#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
 	dev_info(chg_data->dev, "%s: state = %d\n", __func__, state);
 
 	if (chg_data->usb_switch)
@@ -459,10 +459,10 @@ static int rt5081_set_usbsw_state(struct rt5081_pmu_charger_data *chg_data,
 			Charger_Detect_Release();
 	}
 #endif
+#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 	return 0;
 }
-#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 static int rt5081_enable_hidden_mode(struct rt5081_pmu_charger_data *chg_data,
 	bool en)
@@ -655,7 +655,6 @@ out:
 	return ret;
 }
 
-#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
 static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	bool en)
 {
@@ -698,7 +697,6 @@ static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 
 	return ret;
 }
-#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 /* Hardware pin current limit */
 static int rt5081_enable_ilim(struct rt5081_pmu_charger_data *chg_data, bool en)
@@ -3097,7 +3095,7 @@ static irqreturn_t rt5081_pmu_ovpctrl_swon_evt_irq_handler(int irq, void *data)
 
 static irqreturn_t rt5081_pmu_ovpctrl_uvp_d_evt_irq_handler(int irq, void *data)
 {
-#if defined(CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT) && !defined(CONFIG_TCPC_CALSS)
+#if defined(CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT) && !defined(CONFIG_TCPC_CLASS)
 	int ret = 0;
 	bool uvp_d = false, otg_mode = false;
 	struct rt5081_pmu_charger_data *chg_data =
@@ -3416,13 +3414,11 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 		dev_err(chg_data->dev,
 			"%s: set IR compensation vclamp failed\n", __func__);
 
-#ifdef CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT
-	/* Disable USB charger type detection */
+	/* Disable USB charger type detection first, no matter use it or not */
 	ret = rt5081_enable_chgdet_flow(chg_data, false);
 	if (ret < 0)
 		dev_err(chg_data->dev,
 			"%s: disable usb chrdet failed\n", __func__);
-#endif /* CONFIG_RT5081_PMU_CHARGER_TYPE_DETECT */
 
 	return ret;
 }
@@ -3669,6 +3665,9 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.19_MTK
+ * (1) Always disable charger detection first no matter use it or not
+ *
  * 1.1.18_MTK
  * (1) Move AICL work from MIVR IRQ handler to charger thread
  * (2) Keep IEOC setting which is modified in set_ichg
