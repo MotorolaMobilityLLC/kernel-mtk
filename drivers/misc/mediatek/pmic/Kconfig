@@ -44,6 +44,7 @@ config MTK_PMIC_CHIP_MT6337
 
 config MTK_PMIC_CHIP_MT6336
 	tristate "MediaTek Power MT6336 Driver"
+	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
 	default n
 	---help---
 	  This selects for MediaTek(R) PMIC MT6336 driver.
