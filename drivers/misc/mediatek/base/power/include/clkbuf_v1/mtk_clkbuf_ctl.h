@@ -24,6 +24,8 @@
 
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6799)
 #include "mt6799/mtk_clkbuf_hw.h"
+#elif defined(CONFIG_MACH_MT6758)
+#include "mt6758/mtk_clkbuf_hw.h"
 #elif defined(CONFIG_MACH_MT6759)
 #include "mt6759/mtk_clkbuf_hw.h"
 #elif defined(CONFIG_MACH_MT6763)
