@@ -53,6 +53,7 @@ DEFINE_PER_CPU(unsigned long long, rt_dur_ts);
 
 static DEFINE_SPINLOCK(mt_rt_mon_lock);
 static struct mt_rt_mon_struct buffer[MAX_THROTTLE_COUNT];
+static int rt_mon_cpu_buffer;
 static int rt_mon_count_buffer;
 static unsigned long long rt_start_ts_buffer, rt_end_ts_buffer, rt_dur_ts_buffer;
 char rt_monitor_print_at_AEE_buffer[124];
@@ -226,6 +227,7 @@ void mt_rt_mon_print_task(int cpu)
 	struct mt_rt_mon_struct *tmp;
 	struct list_head *list_head;
 
+	rt_mon_cpu_buffer = cpu;
 	rt_mon_count_buffer = __raw_get_cpu_var(rt_mon_count);
 	rt_start_ts_buffer = __raw_get_cpu_var(rt_start_ts);
 	rt_end_ts_buffer =  __raw_get_cpu_var(rt_end_ts);
@@ -267,8 +269,9 @@ void mt_rt_mon_print_task_from_buffer(void)
 	int i;
 
 	printf_at_AEE("last throttle information start\n");
-	printf_at_AEE("sched: mon_count = %d monitor start[%lld.%06lu] end[%lld.%06lu] dur[%lld.%06lu]\n",
-			rt_mon_count_buffer, SPLIT_NS_H(rt_start_ts_buffer), SPLIT_NS_L(rt_start_ts_buffer),
+	printf_at_AEE("sched: cpu=%d mon_count=%d start[%lld.%06lu] end[%lld.%06lu] dur[%lld.%06lu]\n",
+			rt_mon_cpu_buffer, rt_mon_count_buffer,
+			SPLIT_NS_H(rt_start_ts_buffer), SPLIT_NS_L(rt_start_ts_buffer),
 			SPLIT_NS_H(rt_end_ts_buffer), SPLIT_NS_L(rt_end_ts_buffer),
 			SPLIT_NS_H((rt_end_ts_buffer - rt_start_ts_buffer)),
 			SPLIT_NS_L((rt_end_ts_buffer - rt_start_ts_buffer)));
