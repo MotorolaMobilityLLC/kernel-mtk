@@ -30,7 +30,7 @@
 #define RELOAD_TH           (3)	/*reload pool if pool size dropped below 1/RELOAD_TH */
 
 /* EE dump cunstomization */
-#define CCCI_EE_SIZE_CCIF_SRAM (36) /* SRAM size we dump into smem */
+#define CCCI_EE_SIZE_CCIF_SRAM (72) /* SRAM size we dump into smem */
 #define CCCI_EE_OFFSET_CCIF_SRAM (1024 - CCCI_EE_SIZE_CCIF_SRAM) /* CCIF dump offset in MD SS debug region */
 #define CCCI_EE_OFFSET_EPON_MD1 (0x1C24) /* flag to tell WDT is triggered by EPON or not, in MD SS debug region */
 #define CCCI_EE_OFFSET_EPON_MD3 (0x464)
