@@ -1163,16 +1163,11 @@ VOID cnmGetDbdcCapability(
 			prDbdcCap->ucNss = wlanGetSupportNss(prAdapter, ucBssIndex);
 		else
 			prDbdcCap->ucNss = ucNss;
-		prDbdcCap->ucDbdcBandIndex = ENUM_BAND_0;
 		break;
 
 	case DBDC_MODE_STATIC:
 		/* Static DBDC mode, 1SS only */
 		prDbdcCap->ucNss = 1;
-		if (eRfBand == BAND_5G)
-			prDbdcCap->ucDbdcBandIndex = ENUM_BAND_0;
-		else
-			prDbdcCap->ucDbdcBandIndex = ENUM_BAND_1;
 		break;
 
 	case DBDC_MODE_DYNAMIC:
@@ -1180,7 +1175,6 @@ VOID cnmGetDbdcCapability(
 			prDbdcCap->ucNss = 1;
 		else
 			prDbdcCap->ucNss = wlanGetSupportNss(prAdapter, ucBssIndex);
-		prDbdcCap->ucDbdcBandIndex = ENUM_BAND_AUTO;
 		break;
 
 	default:

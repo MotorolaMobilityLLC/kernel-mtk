@@ -177,7 +177,6 @@ typedef struct _DEVICE_TYPE_T {
 #if CFG_SUPPORT_DBDC
 typedef struct _CNM_DBDC_CAP_T {
 	UINT_8 ucBssIndex;
-	UINT_8 ucDbdcBandIndex;
 	UINT_8 ucNss;
 	UINT_8 ucWmmSetIndex;
 } CNM_DBDC_CAP_T, *P_CNM_DBDC_CAP_T;
