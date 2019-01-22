@@ -81,7 +81,7 @@ enum dcs_sysfs_mode {
 	DCS_SYSFS_NR_MODE,
 };
 
-enum dcs_sysfs_mode dcs_sysfs_mode = DCS_SYSFS_ALWAYS_NORMAL;
+enum dcs_sysfs_mode dcs_sysfs_mode = DCS_SYSFS_FREERUN;
 
 static char * const dcs_sysfs_mode_name[DCS_SYSFS_NR_MODE] = {
 	"always normal",
@@ -721,6 +721,7 @@ static ssize_t mtkdcs_status_show(struct device *dev,
 	enum dcs_status dcs_status;
 	int n = 0, ch, ret;
 
+	mutex_lock(&dcs_kicker_lock);
 	ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
 
 	if (!ret) {
@@ -737,8 +738,11 @@ static ssize_t mtkdcs_status_show(struct device *dev,
 		n += sprintf(buf + n, "dcs mpu_start=%llx, mpu_end=%llx\n",
 				mpu_start, mpu_end);
 		n += sprintf(buf + n, "nr_swap=%u\n", nr_swap);
+		n += sprintf(buf + n, "kicker=0x%lx\n", dcs_kicker);
 		dcs_get_dcs_status_unlock();
 	}
+
+	mutex_unlock(&dcs_kicker_lock);
 
 	/* call debug ipi */
 	dcs_set_dummy_write_ipi();
