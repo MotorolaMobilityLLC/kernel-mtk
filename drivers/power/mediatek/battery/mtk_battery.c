@@ -3843,6 +3843,7 @@ void fg_update_sw_low_battery_check(unsigned int thd)
 	if (sw_low_battery_ht_en == 1 && vbat >= sw_low_battery_ht_threshold) {
 		sw_low_battery_ht_en = 0;
 		sw_low_battery_lt_en = 0;
+		disable_shutdown_cond(LOW_BAT_VOLT);
 		wakeup_fg_algo(FG_INTR_VBAT2_H);
 	}
 	if (sw_low_battery_lt_en == 1 && vbat <= sw_low_battery_lt_threshold) {
