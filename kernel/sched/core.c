@@ -3216,6 +3216,10 @@ void scheduler_tick(void)
 	cal_cpu_load(cpu);
 #endif
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+	sched_max_util_task_tracking();
+#endif
+
 #ifdef CONFIG_MTK_SCHED_SYSHINT
 	sched_hint_check(sched_ktime_clock());
 #endif
