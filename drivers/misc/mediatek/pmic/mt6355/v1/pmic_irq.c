@@ -518,6 +518,9 @@ void register_all_oc_interrupts(void)
 		/* ignore VPA oc */
 		if (oc_interrupt == INT_VPA_OC)
 			continue;
+		/* ignore VA18 oc */
+		if (oc_interrupt == INT_VA18_OC)
+			continue;
 		/* ignore VXO18 oc */
 		if (oc_interrupt == INT_VXO18_OC)
 			continue;
