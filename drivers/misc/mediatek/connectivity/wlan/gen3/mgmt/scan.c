@@ -1939,7 +1939,7 @@ UINT_8 nicChannelNum2Index(IN UINT_8 ucChannelNum)
 	} else
 		ucindex = 0;
 
-		return ucindex;
+	return ucindex;
 }
 
 /*----------------------------------------------------------------------------*/
