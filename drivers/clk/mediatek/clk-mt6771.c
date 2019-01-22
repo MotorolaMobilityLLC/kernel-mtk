@@ -242,6 +242,8 @@ static const struct mtk_fixed_clk fixed_clks[] __initconst = {
 static const struct mtk_fixed_factor top_divs[] __initconst = {
 	FACTOR(TOP_CLK13M, "clk13m", "clk26m", 1,
 		2),
+	FACTOR(TOP_F26M_CK_D2, "csw_f26m_ck_d2", "clk26m", 1,
+		2),
 	FACTOR(TOP_SYSPLL_CK, "syspll_ck", "mainpll", 1,
 		1),
 	FACTOR(TOP_SYSPLL_D2, "syspll_d2", "syspll_ck", 1,
@@ -298,10 +300,6 @@ static const struct mtk_fixed_factor top_divs[] __initconst = {
 		4),
 	FACTOR(TOP_UNIVPLL_D3_D8, "univpll_d3_d8", "univpll_d3", 1,
 		8),
-	FACTOR(TOP_UNIVPLL_D3_D16, "univpll_d3_d16", "univpll_d3", 1,
-		16),
-	FACTOR(TOP_UNIVPLL_D3_D32, "univpll_d3_d32", "univpll_d3", 1,
-		32),
 
 	FACTOR(TOP_UNIVPLL_D5, "univpll_d5", "univpll", 1,
 		5),
@@ -314,14 +312,6 @@ static const struct mtk_fixed_factor top_divs[] __initconst = {
 
 	FACTOR(TOP_UNIVPLL_D7, "univpll_d7", "univpll", 1,
 		7),
-	FACTOR(TOP_UNIVPLL_D26, "univpll_d26", "univpll_ck", 1,
-		26),
-	FACTOR(TOP_UNIVPLL_D52, "univpll_d52", "univpll_ck", 1,
-		52),
-	FACTOR(TOP_UNIVPLL_D104, "univpll_d104", "univpll_ck", 1,
-		104),
-	FACTOR(TOP_UNIVPLL_D208, "univpll_d208", "univpll_ck", 1,
-		208),
 
 	FACTOR(TOP_UNIVP_192M_CK, "univ_192m_ck", "univpll_192m", 1,
 		1),
@@ -405,8 +395,6 @@ static const struct mtk_fixed_factor top_divs[] __initconst = {
 		8),
 	FACTOR(TOP_OSC_D16, "osc_d16", "osc", 1,
 		16),
-	FACTOR(TOP_OSC_D32, "osc_d32", "osc", 1,
-		32),
 };
 
 static const char * const axi_parents[] __initconst = {
@@ -1284,7 +1272,7 @@ static const struct mtk_gate infra_clks[] __initconst = {
 		"axi_sel", 27),
 	GATE_INFRA2(INFRACFG_AO_UFS_CG, "infra_ufs",
 		"fufs_sel", 28),
-	GATE_INFRA2(INFRACFG_AO_AES_CG, "infra_aes",
+	GATE_INFRA2(INFRACFG_AO_AES_UFSFDE_CG, "infra_aes_ufsfde",
 		"spi_sel", 29),
 	GATE_INFRA2(INFRACFG_AO_UFS_TICK_CG, "infra_ufs_tick",
 		"fufs_sel", 30),
@@ -1318,7 +1306,7 @@ static const struct mtk_gate infra_clks[] __initconst = {
 		"axi_sel", 19),
 	GATE_INFRA3(INFRACFG_AO_SEJ_F13M_CG, "infra_sej_f13m",
 		"f_f26m_ck", 20),
-	GATE_INFRA3(INFRACFG_AO_AES_CG, "infra_aes",
+	GATE_INFRA3(INFRACFG_AO_AES_BCLK_CG, "infra_aes_bclk",
 		"axi_sel", 21),
 	GATE_INFRA3(INFRACFG_AO_I2C7_CG, "infra_i2c7",
 		"i2c_sel", 22),
