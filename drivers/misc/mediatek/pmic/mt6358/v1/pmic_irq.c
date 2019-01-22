@@ -36,32 +36,12 @@
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #include <mt-plat/mtk_boot_common.h>
-/*#include <mt-plat/mtk_boot.h> TBD*/
-/*#include <mt-plat/mtk_gpt.h> TBD*/
 #endif
 
-#if defined(CONFIG_MTK_SMART_BATTERY)
-/*#include <mt-plat/battery_common.h>*/
-/*#include <mach/mtk_battery_meter.h> TBD*/
-/*#include <mt-plat/battery_meter.h> TBD*/
-#endif
 #include <mt-plat/mtk_ccci_common.h>
-
-/*---IPI Mailbox define---*/
-/*#define IPIMB*/
 
 /* Global variable */
 int g_pmic_irq;
-#if 0 /* TBD */
-unsigned int g_eint_pmic_num = 176;
-unsigned int g_cust_eint_mt_pmic_debounce_cn = 1;
-unsigned int g_cust_eint_mt_pmic_type = 4;
-unsigned int g_cust_eint_mt_pmic_debounce_en = 1;
-#endif
-
-/* PMIC extern variable */
-
-#define IRQ_HANDLER_READY 1
 
 /* Interrupt Setting */
 static struct pmic_sp_irq buck_irqs[][PMIC_INT_WIDTH] = {
@@ -281,7 +261,6 @@ struct pmic_sp_interrupt sp_interrupts[] = {
 
 unsigned int sp_interrupt_size = ARRAY_SIZE(sp_interrupts);
 
-#if IRQ_HANDLER_READY
 /* PWRKEY Int Handler */
 void pwrkey_int_handler(void)
 {
@@ -321,36 +300,6 @@ void homekey_int_handler_r(void)
 	kpd_pmic_rstkey_handler(0x0);
 #endif
 }
-
-/* Chrdet Int Handler */
-#if (CONFIG_MTK_GAUGE_VERSION != 30)
-void chrdet_int_handler(void)
-{
-	IRQLOG("[chrdet_int_handler]CHRDET status = %d....\n",
-		pmic_get_register_value(PMIC_RGS_CHRDET));
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (!upmu_get_rgs_chrdet()) {
-		int boot_mode = 0;
-
-		boot_mode = get_boot_mode();
-
-		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
-		|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
-			IRQLOG("[chrdet_int_handler] Unplug Charger/USB\n");
-#ifdef CONFIG_MTK_RTC
-			mt_power_off();
-#endif
-		}
-	}
-#endif
-	/*pmic_set_register_value(PMIC_RG_USBDL_RST, 1); MT6358 not support */
-#if defined(CONFIG_MTK_SMART_BATTERY)
-	do_chrdet_int_task();
-#endif
-}
-#endif /* CONFIG_MTK_GAUGE_VERSION != 30 */
-#endif /* IRQ_HANDLER_READY */
-
 
 #if ENABLE_ALL_OC_IRQ
 /* General OC Int Handler */
@@ -675,14 +624,8 @@ int pmic_thread_kthread(void *x)
 #endif
 #endif
 
-#if 0
-	struct sched_param param = {.sched_priority = 98 };
-
-	sched_setscheduler(current, SCHED_FIFO, &param);
-#else
 	/* try to modify pmic irq priority to NICE = -19 */
 	set_user_nice(current, (MIN_NICE + 1));
-#endif
 
 	IRQLOG("[PMIC_INT] enter\n");
 
@@ -734,19 +677,10 @@ static void irq_thread_init(void)
 
 static void register_irq_handlers(void)
 {
-#if IRQ_HANDLER_READY
 	pmic_register_interrupt_callback(INT_PWRKEY, pwrkey_int_handler);
 	pmic_register_interrupt_callback(INT_HOMEKEY, homekey_int_handler);
 	pmic_register_interrupt_callback(INT_PWRKEY_R, pwrkey_int_handler_r);
 	pmic_register_interrupt_callback(INT_HOMEKEY_R, homekey_int_handler_r);
-
-#if (CONFIG_MTK_GAUGE_VERSION != 30)
-	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
-#endif
-
-	pmic_register_interrupt_callback(INT_FG_CUR_H, fg_cur_h_int_handler);
-	pmic_register_interrupt_callback(INT_FG_CUR_L, fg_cur_l_int_handler);
-#endif
 #if ENABLE_ALL_OC_IRQ
 	register_all_oc_interrupts();
 #endif
@@ -758,8 +692,6 @@ static void enable_pmic_irqs(void)
 	pmic_enable_interrupt(INT_HOMEKEY, 1, "PMIC");
 	pmic_enable_interrupt(INT_PWRKEY_R, 1, "PMIC");
 	pmic_enable_interrupt(INT_HOMEKEY_R, 1, "PMIC");
-
-	pmic_enable_interrupt(INT_CHRDET_EDGE, 1, "PMIC");
 }
 
 void PMIC_EINT_SETTING(void)
@@ -803,13 +735,6 @@ void PMIC_EINT_SETTING(void)
 		enable_irq_wake(g_pmic_irq);
 	} else
 		pr_notice(PMICTAG "can't find compatible node\n");
-
-#if 0
-	IRQLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6357_NUM=%d\n", g_eint_pmic_num);
-	IRQLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
-	IRQLOG("[CUST_EINT] CUST_EINT_PMIC_TYPE=%d\n", g_cust_eint_mt_pmic_type);
-	IRQLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_EN=%d\n", g_cust_eint_mt_pmic_debounce_en);
-#endif
 }
 
 /*****************************************************************************

@@ -132,13 +132,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint44>
-            <eint183>
+            <eint182>
                 <varName>MAIN_PMIC</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>High</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
-            </eint183>
+            </eint182>
             <eint186>
                 <varName>SMART_PA</varName>
                 <debounce_time>0</debounce_time>
