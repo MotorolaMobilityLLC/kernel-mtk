@@ -65,7 +65,7 @@
 #include "mtk_switch_charging.h"
 #include <mt-plat/charger_class.h>
 #include <mt-plat/mtk_charger.h>
-/*#include <mt-plat/mt_boot.h>*/
+#include "mtk_pe20_intf.h"
 
 static void swchg_select_charging_current_limit(struct charger_manager *info)
 {
@@ -97,6 +97,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	} else if (info->chr_type == STANDARD_CHARGER) {
 		info->input_current_limit = info->data.ac_charger_input_current;
 		info->charging_current_limit = info->data.ac_charger_current;
+		mtk_pe20_set_charging_current(info, &info->charging_current_limit, &info->input_current_limit);
 	} else if (info->chr_type == CHARGING_HOST) {
 		info->input_current_limit = info->data.charging_host_charger_current;
 		info->charging_current_limit = info->data.charging_host_charger_current;
@@ -130,7 +131,14 @@ done:
 	charger_dev_set_input_current(info->primary_chg, info->input_current_limit);
 	charger_dev_set_charging_current(info->primary_chg, info->charging_current_limit);
 
-
+	/* If AICR < 300mA, stop PE+/PE+20 */
+	if (info->input_current_limit < 300000) {
+		if (mtk_pe20_get_is_enable(info)) {
+			mtk_pe20_set_is_enable(info, false);
+			if (mtk_pe20_get_is_connect(info))
+				mtk_pe20_reset_ta_vchr(info);
+		}
+	}
 	if (info->input_current_limit > 0 && info->charging_current_limit > 0)
 		charger_dev_enable(info->primary_chg);
 }
@@ -163,6 +171,8 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 		charging_enable = false;
 		pr_err("[charger]In meta or advanced meta mode, disable charging.\n");
 	} else {
+		mtk_pe20_start_algorithm(info);
+
 		swchg_select_charging_current_limit(info);
 		if (info->input_current_limit == 0 || info->charging_current_limit == 0) {
 			charging_enable = false;
@@ -185,12 +195,14 @@ static int mtk_switch_charging_plug_in(struct charger_manager *info)
 
 	swchgalg->state = CHR_CC;
 	swchgalg->disable_charging = false;
+	charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
 
 	return 0;
 }
 
 static int mtk_switch_charging_plug_out(struct charger_manager *info)
 {
+	charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 	return 0;
 }
 
@@ -235,6 +247,11 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 		info->thermal_input_current_limit < 300)
 		return 0;
 
+	if (!mtk_pe20_get_is_enable(info)) {
+		mtk_pe20_set_is_enable(info, true);
+		mtk_pe20_set_to_check_chr_type(info, true);
+	}
+
 	return 0;
 }
 
@@ -254,6 +271,12 @@ int mtk_switch_chr_err(struct charger_manager *info)
 	}
 	charger_dev_disable(info->primary_chg);
 
+	if (mtk_pe20_get_is_enable(info)) {
+		mtk_pe20_set_is_enable(info, false);
+		if (mtk_pe20_get_is_connect(info))
+			mtk_pe20_reset_ta_vchr(info);
+	}
+
 	return 0;
 }
 
@@ -271,6 +294,8 @@ int mtk_switch_chr_full(struct charger_manager *info)
 
 	if (charger_dev_get_charging_status(info->primary_chg) == 1) {
 		swchgalg->state = CHR_CC;
+
+		mtk_pe20_set_to_check_chr_type(info, true);
 		pr_err("battery recharging!\n");
 	}
 
@@ -285,6 +310,8 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 	int ret = 10;
 
 	pr_err("mtk_switch_charging_run [%d]\n", swchgalg->state);
+
+	mtk_pe20_check_charger(info);
 
 	switch (swchgalg->state) {
 	case CHR_CC:

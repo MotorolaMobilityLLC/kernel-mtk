@@ -1,0 +1,598 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#include <linux/errno.h>
+#include <linux/mutex.h>
+#include <linux/wakelock.h>
+#include <linux/delay.h>
+#include <mt-plat/charger_class.h>
+#include <mt-plat/mtk_charger.h>
+#include <mt-plat/charger_type.h>
+#include <mt-plat/mtk_battery.h>
+
+#include "mtk_pe20_intf.h"
+
+
+int mtk_pe20_reset_ta_vchr(struct charger_manager *pinfo)
+{
+	int ret = 0, chr_volt = 0;
+	u32 retry_cnt = 0;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	pr_err("%s: starts\n", __func__);
+
+	/* Reset TA's charging voltage */
+	do {
+		ret = charger_dev_set_ta20_reset(pinfo->primary_chg);
+		msleep(250);
+
+		/* Check charger's voltage */
+		chr_volt = pmic_get_vbus();
+		if (abs(chr_volt - pe20->ta_vchr_org) <= 1000) {
+			pe20->vbus = chr_volt;
+			pe20->idx = -1;
+			pe20->is_connect = false;
+			break;
+		}
+
+		retry_cnt++;
+	} while (retry_cnt < 3);
+
+	if (pe20->is_connect) {
+		pr_err("%s: failed, ret = %d\n",
+			__func__, ret);
+		return ret;
+	}
+
+	pr_err("%s: OK\n", __func__);
+
+	return ret;
+}
+
+static int pe20_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
+{
+	int ret = 0;
+
+	if (enable)
+		ret = charger_dev_enable_vbus_ovp(pinfo->primary_chg);
+	else
+		ret = charger_dev_disable_vbus_ovp(pinfo->primary_chg);
+
+	if (ret < 0)
+		pr_err("%s: failed, ret = %d\n",
+			__func__, ret);
+
+	return ret;
+}
+
+/* Enable/Disable HW */
+static int pe20_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
+{
+	int ret = 0;
+
+	/* Enable/Disable HW(PMIC) OVP */
+	ret = pe20_enable_hw_vbus_ovp(pinfo, enable);
+	if (ret < 0) {
+		pr_err("%s: failed, ret = %d\n",
+			__func__, ret);
+		return ret;
+	}
+
+	return ret;
+}
+
+static int pe20_set_mivr(struct charger_manager *pinfo, int mv)
+{
+	int ret = 0;
+
+	ret = charger_dev_set_mivr(pinfo->primary_chg, mv * 1000);
+	if (ret < 0)
+		pr_err("%s: failed, ret = %d\n",
+			__func__, ret);
+	return ret;
+}
+
+static int pe20_leave(struct charger_manager *pinfo)
+{
+	int ret = 0;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	pr_err("%s: starts\n", __func__);
+	ret = mtk_pe20_reset_ta_vchr(pinfo);
+	if (ret < 0 || pe20->is_connect) {
+		pr_err("%s: failed, is_connect = %d, ret = %d\n",
+			__func__, pe20->is_connect, ret);
+		return ret;
+	}
+
+	pe20_enable_vbus_ovp(pinfo, true);
+	pe20_set_mivr(pinfo, 4500);
+	pr_err("%s: OK\n", __func__);
+	return ret;
+}
+
+static int pe20_check_leave_status(struct charger_manager *pinfo)
+{
+	int ret = 0;
+	bool bif_exist = false;
+	u32 vbat = 0, cv = 0, ichg = 0;
+	bool current_sign;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	pr_err("%s: starts\n", __func__);
+	ichg = battery_meter_get_battery_current(); /* 0.1 mA */
+	ichg /= 10; /* mA */
+	current_sign = battery_meter_get_battery_current_sign();
+	bif_exist = pmic_is_bif_exist();
+
+	/* BIF exists, check CV & VBAT */
+	if (bif_exist) {
+		ret = mtk_get_dynamic_cv(pinfo, &cv);
+		vbat = pmic_get_battery_voltage();
+		if (ret == 0) {
+			if (vbat >= cv && current_sign &&
+			    ichg < pinfo->data.pe20_ichg_level_threshold) {
+				ret = pe20_leave(pinfo);
+				if (ret < 0 || pe20->is_connect)
+					goto _err;
+				pr_err("%s: OK, vbat,cv = (%d,%d), stop PE+20\n",
+					__func__, vbat, cv);
+			}
+			return ret;
+		}
+		pr_err("%s: Get CV failed, use SOC\n", __func__);
+	}
+
+	/* BIF does not exist, check SOC */
+	if (get_soc() > pinfo->data.ta_stop_battery_soc &&
+	    current_sign && ichg < pinfo->data.pe20_ichg_level_threshold) {
+		ret = pe20_leave(pinfo);
+		if (ret < 0 || pe20->is_connect)
+			goto _err;
+		pr_err("%s: OK, SOC = (%d,%d), stop PE+20\n", __func__,
+			get_soc(), pinfo->data.ta_stop_battery_soc);
+	}
+
+	return ret;
+
+_err:
+	pr_err("%s: failed, is_connect = %d, ret = %d\n",
+		__func__, pe20->is_connect, ret);
+	return ret;
+}
+
+static int __pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
+{
+	int ret = 0;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	pr_err("%s: starts\n", __func__);
+
+	/* Not to set chr volt if cable is plugged out */
+	if (pe20->is_cable_out_occur) {
+		pr_err("%s: failed, cable out\n", __func__);
+		return -EIO;
+	}
+
+	ret = charger_dev_send_ta20_current_pattern(pinfo->primary_chg, chr_volt * 1000);
+	if (ret < 0) {
+		pr_err("%s: failed, ret = %d\n",
+			__func__, ret);
+		return ret;
+	}
+
+	pr_err("%s: OK\n", __func__);
+
+	return ret;
+}
+
+static int pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
+{
+	int ret = 0;
+	int vchr_before, vchr_after, vchr_delta;
+	const u32 sw_retry_cnt_max = 3;
+	const u32 retry_cnt_max = 5;
+	u32 sw_retry_cnt = 0, retry_cnt = 0;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	pr_err("%s: starts\n", __func__);
+
+	do {
+		vchr_before = pmic_get_vbus();
+		ret = __pe20_set_ta_vchr(pinfo, chr_volt);
+		vchr_after = pmic_get_vbus();
+
+		vchr_delta = abs(vchr_after - chr_volt);
+
+		/* It is successful
+		 * if difference to target is less than 500mA
+		 */
+		if (vchr_delta < 500 && ret == 0) {
+			pr_err("%s: OK, vchr = (%d, %d), vchr_target = %d\n",
+				__func__, vchr_before, vchr_after, chr_volt);
+			return ret;
+		}
+
+		if (ret == 0 || sw_retry_cnt >= sw_retry_cnt_max)
+			retry_cnt++;
+		else
+			sw_retry_cnt++;
+
+		pr_err("%s: retry_cnt = (%d, %d), vchr = (%d, %d), vchr_target = %d\n",
+			__func__, sw_retry_cnt, retry_cnt, vchr_before, vchr_after, chr_volt);
+
+	} while (!pe20->is_cable_out_occur && mt_get_charger_type() != CHARGER_UNKNOWN
+		&& retry_cnt < retry_cnt_max);
+
+	ret = -EIO;
+	pr_err("%s: failed, vchr_org = %d, vchr_after = %d, target_vchr = %d\n",
+		__func__, pe20->ta_vchr_org, vchr_after, chr_volt);
+
+	return ret;
+}
+
+
+static int pe20_detect_ta(struct charger_manager *pinfo)
+{
+	int ret;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	pr_err("%s: starts\n", __func__);
+	pe20->ta_vchr_org = pmic_get_vbus();
+
+	/* Disable OVP */
+	ret = pe20_enable_vbus_ovp(pinfo, false);
+	if (ret < 0)
+		goto _err;
+
+	if (abs(pe20->ta_vchr_org - 8500) > 500)
+		ret = pe20_set_ta_vchr(pinfo, 8500);
+	else
+		ret = pe20_set_ta_vchr(pinfo, 6500);
+
+	if (ret < 0) {
+		pe20->to_check_chr_type = false;
+		goto _err;
+	}
+
+	pe20->is_connect = true;
+	/*mt_charger_enable_DP_voltage(1);*/
+	pr_err("%s: OK\n", __func__);
+
+	return ret;
+_err:
+	pe20->is_connect = false;
+	pe20_enable_vbus_ovp(pinfo, true);
+	pr_err("%s: failed, ret = %d\n", __func__, ret);
+	return ret;
+}
+
+static int pe20_init_ta(struct charger_manager *pinfo)
+{
+	int ret = 0;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	pe20->is_connect = false;
+	pe20->is_cable_out_occur = false;
+
+	pr_err("%s: starts\n", __func__);
+
+#ifdef PE20_HW_INIT /* need check */
+	ret = battery_charging_control(CHARGING_CMD_INIT, NULL);
+	if (ret < 0) {
+		pr_err("%s: failed, ret = %d\n",
+			__func__, ret);
+		return ret;
+	}
+#endif /*PE20_HW_INIT*/
+
+	pr_err("%s: OK\n", __func__);
+	return ret;
+}
+
+int mtk_pe20_set_charging_current(struct charger_manager *pinfo,
+	unsigned int *ichg, unsigned int *aicr)
+{
+	int ret = 0;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	if (!pe20->is_connect)
+		return -ENOTSUPP;
+
+	pr_err("%s: starts\n", __func__);
+	*aicr = 3200000;
+	*ichg = pinfo->data.ta_ac_charger_current;
+	pr_err("%s: OK, ichg = %dmA, AICR = %dmA\n",
+		__func__, *ichg / 1000, *aicr / 1000);
+
+	return ret;
+}
+
+int mtk_pe20_plugout_reset(struct charger_manager *pinfo)
+{
+	int ret = 0;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	pr_err("%s: starts\n", __func__);
+
+	pe20->is_connect = false;
+	pe20->is_cable_out_occur = true;
+	pe20->to_check_chr_type = true;
+	pe20->idx = -1;
+	pe20->vbus = 5000; /* mV */
+
+	/* Enable OVP */
+	ret = pe20_enable_vbus_ovp(pinfo, true);
+	if (ret < 0)
+		goto _err;
+
+	/* Set MIVR to 4.5V for vbus 5V */
+	ret = pe20_set_mivr(pinfo, 4500); /* uV */
+	if (ret < 0)
+		goto _err;
+
+	/*mt_charger_enable_DP_voltage(0);*/
+	pr_err("%s: OK\n", __func__);
+
+	return ret;
+_err:
+	pr_err("%s: failed, ret = %d\n", __func__, ret);
+
+	return ret;
+}
+
+int mtk_pe20_check_charger(struct charger_manager *pinfo)
+{
+	int ret = 0;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+	if (!pe20->is_enabled) {
+		pr_err("%s: stop, PE+20 is disabled\n",
+			__func__);
+		return ret;
+	}
+
+	mutex_lock(&pe20->access_lock);
+	wake_lock(&pe20->suspend_lock);
+
+	pr_err("%s: starts\n", __func__);
+
+	/* Not to check charger type or
+	 * Not standard charger or
+	 * SOC is not in range
+	 */
+	if (!pe20->to_check_chr_type ||
+	    mt_get_charger_type() != STANDARD_CHARGER ||
+	    get_soc() < pinfo->data.ta_start_battery_soc ||
+	    get_soc() >= pinfo->data.ta_stop_battery_soc)
+		goto _err;
+
+	ret = pe20_init_ta(pinfo);
+	if (ret < 0)
+		goto _err;
+
+	ret = mtk_pe20_reset_ta_vchr(pinfo);
+	if (ret < 0)
+		goto _err;
+
+	ret = pe20_detect_ta(pinfo);
+	if (ret < 0)
+		goto _err;
+
+	pe20->to_check_chr_type = false;
+
+	pr_err("%s: OK, to_check_chr_type = %d\n",
+		__func__, pe20->to_check_chr_type);
+	wake_unlock(&pe20->suspend_lock);
+	mutex_unlock(&pe20->access_lock);
+
+	return ret;
+_err:
+
+	pr_err("%s: stop, SOC = (%d, %d, %d), to_check_chr_type = %d, chr_type = %d, ret = %d\n",
+		__func__, get_soc(), pinfo->data.ta_start_battery_soc,
+		pinfo->data.ta_stop_battery_soc, pe20->to_check_chr_type,
+		mt_get_charger_type(), ret);
+
+	wake_unlock(&pe20->suspend_lock);
+	mutex_unlock(&pe20->access_lock);
+
+	return ret;
+}
+
+
+int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
+{
+	int ret = 0;
+	int i;
+	int vbat, vbus, ichg;
+	int pre_vbus, pre_idx;
+	int tune = 0, pes = 0; /* For log, to know the state of PE+20 */
+	bool current_sign;
+	u32 size;
+	struct mtk_pe20 *pe20 = &pinfo->pe2;
+
+
+	if (!pe20->is_enabled) {
+		pr_err("%s: stop, PE+20 is disabled\n",
+			__func__);
+		return ret;
+	}
+
+	mutex_lock(&pe20->access_lock);
+	wake_lock(&pe20->suspend_lock);
+	pr_err("%s: starts\n", __func__);
+
+	if (!pe20->is_connect) {
+		ret = -EIO;
+		pr_err("%s: stop, PE+20 is not connected\n",
+			__func__);
+		wake_unlock(&pe20->suspend_lock);
+		mutex_unlock(&pe20->access_lock);
+		return ret;
+	}
+
+	vbat = pmic_get_battery_voltage();
+	vbus = pmic_get_vbus();
+	ichg = battery_meter_get_battery_current();
+	current_sign = battery_meter_get_battery_current_sign();
+
+	pre_vbus = pe20->vbus;
+	pre_idx = pe20->idx;
+
+	ret = pe20_check_leave_status(pinfo);
+	if (!pe20->is_connect || ret < 0) {
+		pes = 1;
+		goto _out;
+	}
+
+	size = ARRAY_SIZE(pe20->profile);
+	for (i = 0; i < size; i++) {
+		tune = 0;
+
+		/* Exceed this level, check next level */
+		if (vbat > (pe20->profile[i].vbat + 100))
+			continue;
+
+		/* If vbat is still 30mV larger than the lower level
+		 * Do not down grade
+		 */
+		if (i < pe20->idx && vbat > (pe20->profile[i].vbat + 30))
+			continue;
+
+		if (pe20->vbus != pe20->profile[i].vchr)
+			tune = 1;
+
+		pe20->vbus = pe20->profile[i].vchr;
+		pe20->idx = i;
+
+		if (abs(vbus - pe20->vbus) >= 1000)
+			tune = 2;
+
+		if (tune != 0) {
+			ret = pe20_set_ta_vchr(pinfo, pe20->vbus);
+			if (ret == 0)
+				pe20_set_mivr(pinfo, pe20->vbus - 1000);
+		}
+		break;
+	}
+	pes = 2;
+
+_out:
+	pr_err(
+		"%s: vbus = (%d, %d), idx = (%d, %d), I = (%d, %d)\n",
+		__func__, pre_vbus, pe20->vbus, pre_idx, pe20->idx,
+		(int)current_sign, (int)ichg / 10);
+
+	pr_err(
+		"%s: SOC = ??, is_connect = %d, tune = %d, pes = %d, vbat = %d, ret = %d\n",
+		__func__, pe20->is_connect, tune, pes, vbat, ret);
+	wake_unlock(&pe20->suspend_lock);
+	mutex_unlock(&pe20->access_lock);
+
+	return ret;
+}
+
+void mtk_pe20_set_to_check_chr_type(struct charger_manager *pinfo, bool check)
+{
+	mutex_lock(&pinfo->pe2.access_lock);
+	wake_lock(&pinfo->pe2.suspend_lock);
+
+	pr_err("%s: check = %d\n", __func__, check);
+	pinfo->pe2.to_check_chr_type = check;
+
+	wake_unlock(&pinfo->pe2.suspend_lock);
+	mutex_unlock(&pinfo->pe2.access_lock);
+}
+
+void mtk_pe20_set_is_enable(struct charger_manager *pinfo, bool enable)
+{
+	mutex_lock(&pinfo->pe2.access_lock);
+	wake_lock(&pinfo->pe2.suspend_lock);
+
+	pr_err("%s: enable = %d\n", __func__, enable);
+	pinfo->pe2.is_enabled = enable;
+
+	wake_unlock(&pinfo->pe2.suspend_lock);
+	mutex_unlock(&pinfo->pe2.access_lock);
+}
+
+void mtk_pe20_set_is_cable_out_occur(struct charger_manager *pinfo, bool out)
+{
+	pr_err("%s: out = %d\n", __func__, out);
+	mutex_lock(&pinfo->pe2.pmic_sync_lock);
+	pinfo->pe2.is_cable_out_occur = out;
+	mutex_unlock(&pinfo->pe2.pmic_sync_lock);
+}
+
+bool mtk_pe20_get_to_check_chr_type(struct charger_manager *pinfo)
+{
+	return pinfo->pe2.to_check_chr_type;
+}
+
+bool mtk_pe20_get_is_connect(struct charger_manager *pinfo)
+{
+	/*
+	 * Cable out is occurred,
+	 * but not execute plugout_reset yet
+	 */
+	if (pinfo->pe2.is_cable_out_occur)
+		return false;
+
+	return pinfo->pe2.is_connect;
+}
+
+bool mtk_pe20_get_is_enable(struct charger_manager *pinfo)
+{
+	return pinfo->pe2.is_enabled;
+}
+
+int mtk_pe20_init(struct charger_manager *pinfo)
+{
+	wake_lock_init(&pinfo->pe2.suspend_lock, WAKE_LOCK_SUSPEND,
+		"PE+20 TA charger suspend wakelock");
+	mutex_init(&pinfo->pe2.access_lock);
+	mutex_init(&pinfo->pe2.pmic_sync_lock);
+
+	pinfo->pe2.ta_vchr_org = 5000;
+	pinfo->pe2.idx = -1;
+	pinfo->pe2.vbus = 5000;
+	pinfo->pe2.to_check_chr_type = true;
+	pinfo->pe2.is_enabled = true;
+
+	pinfo->pe2.profile[0].vbat = 3400;
+	pinfo->pe2.profile[1].vbat = 3500;
+	pinfo->pe2.profile[2].vbat = 3600;
+	pinfo->pe2.profile[3].vbat = 3700;
+	pinfo->pe2.profile[4].vbat = 3800;
+	pinfo->pe2.profile[5].vbat = 3900;
+	pinfo->pe2.profile[6].vbat = 4000;
+	pinfo->pe2.profile[7].vbat = 4100;
+	pinfo->pe2.profile[8].vbat = 4200;
+	pinfo->pe2.profile[9].vbat = 4300;
+
+	pinfo->pe2.profile[0].vchr = 8000;
+	pinfo->pe2.profile[1].vchr = 8500;
+	pinfo->pe2.profile[2].vchr = 8500;
+	pinfo->pe2.profile[3].vchr = 9000;
+	pinfo->pe2.profile[4].vchr = 9000;
+	pinfo->pe2.profile[5].vchr = 9000;
+	pinfo->pe2.profile[6].vchr = 9500;
+	pinfo->pe2.profile[7].vchr = 9500;
+	pinfo->pe2.profile[8].vchr = 1000;
+	pinfo->pe2.profile[9].vchr = 1000;
+
+	return 0;
+}
+
+

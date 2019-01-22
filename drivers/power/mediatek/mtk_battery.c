@@ -49,6 +49,7 @@
 
 #include <linux/vmalloc.h>
 
+#include <mt-plat/mtk_charger.h>
 #include <mt-plat/mtk_battery.h>
 #include <mach/mtk_battery_property.h>
 #include <mach/mtk_battery_table.h>	/* BATTERY_PROFILE_STRUCT */
@@ -109,7 +110,11 @@ bool fg_time_en;
 int Enable_BATDRV_LOG = 5;	/* Todo: charging.h use it, should removed */
 int reset_fg_bat_int;
 
-int fixed_bat_tmp = 0xffff;
+static int fixed_bat_tmp = 0xffff;
+static struct charger_consumer *pbat_consumer;
+static struct notifier_block bat_nb;
+
+
 /********************** 0823_ac *******************************/
 static enum power_supply_property ac_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
@@ -442,12 +447,23 @@ EXPORT_SYMBOL(wake_up_bat);
 
 signed int battery_meter_get_battery_current(void)
 {
-	return 100;
+	int fg_current;
+	int ret;
+
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &fg_current);
+
+	return fg_current;
 }
 
 bool battery_meter_get_battery_current_sign(void)
 {
-	return 0;
+	int ret = 0;
+	bool val = 0;
+
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN, &val);
+
+	return val;
+
 }
 
 signed int battery_meter_get_charger_voltage(void)
@@ -2592,6 +2608,38 @@ static ssize_t store_BAT_EC(struct device *dev, struct device_attribute *attr, c
 }
 static DEVICE_ATTR(BAT_EC, 0664, show_BAT_EC, store_BAT_EC);
 
+static int battery_callback(struct notifier_block *nb, unsigned long event, void *v)
+{
+	pr_err("battery_callback:%ld\n", event);
+	switch (event) {
+	case CHARGER_NOTIFY_EOC:
+		{
+/* CHARGING FULL */
+		}
+		break;
+	case CHARGER_NOTIFY_START_CHARGING:
+		{
+/* START CHARGING */
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
+
+		}
+		break;
+	case CHARGER_NOTIFY_STOP_CHARGING:
+		{
+/* STOP CHARGING */
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		}
+		break;
+
+	default:
+		{
+		}
+		break;
+	}
+
+	return NOTIFY_DONE;
+}
+
 struct wake_lock battery_lock;
 static int battery_probe(struct platform_device *dev)
 {
@@ -2665,6 +2713,13 @@ static int battery_probe(struct platform_device *dev)
 	/* sysfs node */
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BAT_EC);
 	fgtimer_service_init();
+
+	pbat_consumer = charger_manager_get_by_name(&(dev->dev), "charger");
+	if (pbat_consumer != NULL) {
+		bat_nb.notifier_call = battery_callback;
+		register_charger_manager_notifier(pbat_consumer, &bat_nb);
+	}
+
 	wake_unlock(&battery_lock);
 	return 0;
 }

@@ -154,6 +154,54 @@ int charger_dev_get_charging_status(struct charger_device *charger_dev)
 	return 0;
 }
 
+int charger_dev_enable_vbus_ovp(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_vbus_ovp)
+		return charger_dev->ops->enable_vbus_ovp(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_disable_vbus_ovp(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->disable_vbus_ovp)
+		return charger_dev->ops->disable_vbus_ovp(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_set_mivr(struct charger_device *charger_dev, int uv)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_mivr)
+		return charger_dev->ops->set_mivr(charger_dev, uv);
+
+	return 0;
+}
+
+int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, int uv)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->send_ta20_current_pattern)
+		return charger_dev->ops->send_ta20_current_pattern(charger_dev, uv);
+
+	return 0;
+}
+
+int charger_dev_set_ta20_reset(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_ta20_reset)
+		return charger_dev->ops->set_ta20_reset(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_set_pe20_efficiency_table(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_pe20_efficiency_table)
+		return charger_dev->ops->set_pe20_efficiency_table(charger_dev);
+
+	return 0;
+}
+
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(

@@ -92,6 +92,7 @@ struct charger_ops {
 	int (*run_aicl)(struct charger_device *);
 
 	int (*get_charging_status)(struct charger_device *);
+	int (*set_pe20_efficiency_table)(struct charger_device *);
 	int (*dump_registers)(struct charger_device *);
 };
 
@@ -130,6 +131,13 @@ extern int charger_dev_get_input_current(struct charger_device *charger_dev);
 extern int charger_dev_set_constant_voltage(struct charger_device *charger_dev, int uV);
 extern int charger_dev_get_constant_voltage(struct charger_device *charger_dev);
 extern int charger_dev_dump_registers(struct charger_device *charger_dev);
+extern int charger_dev_enable_vbus_ovp(struct charger_device *charger_dev);
+extern int charger_dev_disable_vbus_ovp(struct charger_device *charger_dev);
+extern int charger_dev_set_mivr(struct charger_device *charger_dev, int uv);
+extern int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, int uv);
+extern int charger_dev_set_ta20_reset(struct charger_device *charger_dev);
+extern int charger_dev_set_pe20_efficiency_table(struct charger_device *charger_dev);
+
 extern int register_charger_device_notifier(struct charger_device *charger_dev,
 			      struct notifier_block *nb);
 extern int unregister_charger_device_notifier(struct charger_device *charger_dev,

@@ -66,13 +66,15 @@
 
 #include <mt-plat/charger_class.h>
 #include <mt-plat/mtk_charger.h>
+#include "mtk_pe20_intf.h"
 #include <mt-plat/charger_type.h>
-
 #include <mt-plat/mtk_battery.h>
 #include <musb_core.h>
 
+static struct charger_manager *pinfo;
+static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
+static DEFINE_MUTEX(consumer_mutex);
 
-struct charger_manager *pinfo;
 #define USE_FG_TIMER 1
 
 
@@ -157,100 +159,82 @@ void wake_up_charger(struct charger_manager *info)
 
 
 /* user interface */
-struct charger_consumer *charger_manager_get(struct device *dev,
-	const char *supply_name)
+struct charger_consumer *charger_manager_get_by_name(struct device *dev,
+	const char *name)
 {
 	struct charger_consumer *puser;
-
-	if (pinfo == NULL)
-		return NULL;
 
 	puser = kzalloc(sizeof(struct charger_consumer), GFP_KERNEL);
 	if (puser == NULL)
 		return NULL;
 
+	mutex_lock(&consumer_mutex);
 	puser->dev = dev;
+
+	if (pinfo == NULL)
+		list_add(&puser->list, &consumer_head);
+	else
 	puser->cm = pinfo;
+	mutex_unlock(&consumer_mutex);
 
 	return puser;
 }
 
-void charger_manager_set_input_current_limit(struct charger_consumer *consumer,
+int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int input_current)
 {
 	if (consumer->cm != NULL) {
 		consumer->cm->thermal_input_current_limit = input_current;
 		wake_up_charger(consumer->cm);
+		return 0;
 	}
+	return -EBUSY;
 }
 
-void charger_manager_set_charging_current_limit(struct charger_consumer *consumer,
+int charger_manager_set_charging_current_limit(struct charger_consumer *consumer,
 	int charging_current)
 {
 	if (consumer->cm != NULL) {
 		consumer->cm->thermal_charging_current_limit = charging_current;
 		wake_up_charger(consumer->cm);
+		return 0;
 	}
+	return -EBUSY;
 }
 
 int register_charger_manager_notifier(struct charger_consumer *consumer,
 	struct notifier_block *nb)
 {
-	int ret;
+	int ret = 0;
 
+	mutex_lock(&consumer_mutex);
+	if (consumer->cm != NULL)
 	ret = srcu_notifier_chain_register(&consumer->cm->evt_nh, nb);
+	else
+		consumer->pnb = nb;
+	mutex_unlock(&consumer_mutex);
+
 	return ret;
 }
 
 int unregister_charger_manager__notifier(struct charger_consumer *consumer,
 				struct notifier_block *nb)
 {
-	return srcu_notifier_chain_unregister(&consumer->cm->evt_nh, nb);
+	int ret = 0;
+
+	mutex_lock(&consumer_mutex);
+	if (consumer->cm != NULL)
+		ret = srcu_notifier_chain_unregister(&consumer->cm->evt_nh, nb);
+	else
+		consumer->pnb = NULL;
+	mutex_unlock(&consumer_mutex);
+
+	return ret;
 }
 
-/* user interface */
+/* user interface end*/
 
-int charger_manager_notifier(struct charger_manager *info, int event)
-{
-	return srcu_notifier_call_chain(
-		&info->evt_nh, event, NULL);
-}
-
-int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
-{
-	struct charger_manager *info = container_of(nb, struct charger_manager, psy_nb);
-	struct power_supply *psy = v;
-	union power_supply_propval val;
-	int ret;
-	int tmp = 0;
-
-	if (strcmp(psy->desc->name, "battery") == 0) {
-		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_batt_temp, &val);
-		if (!ret) {
-			tmp = val.intval;
-			if (info->battery_temperature != tmp && mt_get_charger_type() != CHARGER_UNKNOWN)
-				wake_up_charger(info);
-		}
-	}
-
-	pr_err("charger_psy_event %ld %s tmp:%d %d chr:%d", event, psy->desc->name, tmp,
-		info->battery_temperature, mt_get_charger_type());
-
-	return NOTIFY_DONE;
-}
-
-void mtk_charger_int_handler(void)
-{
-	struct charger_manager *info = pinfo;
-
-	pr_err("mtk_charger_int_handler ,type:%d\n", mt_get_charger_type());
-
-	if (pinfo == NULL)
-		return;
-
-	wake_up_charger(info);
-}
-
+/* sw jeita */
 void do_sw_jeita_state_machine(struct charger_manager *info)
 {
 	struct sw_jeita_data *sw_jeita;
@@ -352,6 +336,140 @@ void do_sw_jeita_state_machine(struct charger_manager *info)
 
 	pr_err("[SW_JEITA]preState:%d newState:%d tmp:%d cv:%d\n\r",
 		pre_sm, sw_jeita->sm, info->battery_temperature, sw_jeita->cv);
+}
+
+static ssize_t show_sw_jeita(struct device *dev, struct device_attribute *attr,
+					       char *buf)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+
+	pr_err("show_sw_jeita: %d\n", pinfo->enable_sw_jeita);
+	return sprintf(buf, "%d\n", pinfo->enable_sw_jeita);
+}
+
+static ssize_t store_sw_jeita(struct device *dev, struct device_attribute *attr,
+						const char *buf, size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	signed int temp;
+
+	if (kstrtoint(buf, 10, &temp) == 0) {
+		if (temp == 0)
+			pinfo->enable_sw_jeita = false;
+		else
+			pinfo->enable_sw_jeita = true;
+
+	} else {
+		pr_err("store_Battery_Temperature: format error!\n");
+	}
+	return size;
+}
+
+static DEVICE_ATTR(sw_jeita, 0664, show_sw_jeita,
+		   store_sw_jeita);
+/* sw jeita end*/
+
+/* pump express series */
+bool mtk_is_pep_series_connect(struct charger_manager *info)
+{
+	if (mtk_pe20_get_is_connect(info))
+		return true;
+
+	return false;
+}
+/* pump express series end*/
+
+int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
+{
+	int ret = 0;
+	u32 _cv, _cv_temp;
+	u32 vbat_threshold[4] = {3400, 0, 0, 0};
+	u32 vbat_bif = 0, vbat_auxadc = 0, vbat = 0;
+	u32 retry_cnt = 0;
+
+	if (pmic_is_bif_exist()) {
+
+		do {
+			ret = pmic_get_bif_battery_voltage(&vbat_bif);
+			if (ret >= 0 && vbat_bif != 0 && vbat_bif < vbat_auxadc) {
+				vbat = vbat_bif;
+				pr_err("%s: use BIF vbat = %dmV, dV to auxadc = %dmV\n",
+					__func__, vbat, vbat_auxadc - vbat_bif);
+				break;
+			}
+
+			retry_cnt++;
+
+		} while (retry_cnt < 5);
+
+		if (retry_cnt == 5) {
+			ret = 0;
+			vbat = vbat_auxadc;
+			pr_err("%s: use AUXADC vbat = %dmV, since BIF vbat = %d\n",
+				__func__, vbat_auxadc, vbat_bif);
+		}
+
+		/* Adjust CV according to the obtained vbat */
+
+	vbat_threshold[1] = bif_threshold1;
+	vbat_threshold[2] = bif_threshold2;
+	_cv_temp = bif_cv_under_threshold2;
+
+	if (vbat >= vbat_threshold[0] && vbat < vbat_threshold[1])
+		_cv = 4608;
+	else if (vbat >= vbat_threshold[1] && vbat < vbat_threshold[2])
+		_cv = _cv_temp;
+	else
+		_cv = bif_cv;
+
+	*cv = _cv;
+	pr_err("%s: CV = %dmV\n", __func__, _cv);
+
+	} else
+		ret = -ENOTSUPP;
+
+	return ret;
+}
+
+int charger_manager_notifier(struct charger_manager *info, int event)
+{
+	return srcu_notifier_call_chain(
+		&info->evt_nh, event, NULL);
+}
+
+int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
+{
+	struct charger_manager *info = container_of(nb, struct charger_manager, psy_nb);
+	struct power_supply *psy = v;
+	union power_supply_propval val;
+	int ret;
+	int tmp = 0;
+
+	if (strcmp(psy->desc->name, "battery") == 0) {
+		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_batt_temp, &val);
+		if (!ret) {
+			tmp = val.intval;
+			if (info->battery_temperature != tmp && mt_get_charger_type() != CHARGER_UNKNOWN)
+				wake_up_charger(info);
+		}
+	}
+
+	pr_err("charger_psy_event %ld %s tmp:%d %d chr:%d", event, psy->desc->name, tmp,
+		info->battery_temperature, mt_get_charger_type());
+
+	return NOTIFY_DONE;
+}
+
+void mtk_charger_int_handler(void)
+{
+	struct charger_manager *info = pinfo;
+
+	pr_err("mtk_charger_int_handler ,type:%d\n", mt_get_charger_type());
+
+	if (pinfo == NULL)
+		return;
+
+	wake_up_charger(info);
 }
 
 static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_type)
@@ -656,6 +774,11 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->data.ac_charger_input_current = AC_CHARGER_INPUT_CURRENT;
 	info->data.non_std_ac_charger_current = NON_STD_AC_CHARGER_CURRENT;
 	info->data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
+	info->data.ta_ac_charger_current = TA_AC_CHARGING_CURRENT;
+	info->data.max_charger_voltage = V_CHARGER_MAX;
+	info->data.pe20_ichg_level_threshold = PE20_ICHG_LEAVE_THRESHOLD;
+	info->data.ta_start_battery_soc = TA_START_BATTERY_SOC;
+	info->data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
 
 	pr_err("algorithm name:%s\n",
 		info->algorithm_name);
@@ -663,39 +786,12 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	return 0;
 }
 
-static ssize_t show_sw_jeita(struct device *dev, struct device_attribute *attr,
-					       char *buf)
-{
-	struct charger_manager *pinfo = dev->driver_data;
-
-	pr_err("show_sw_jeita: %d\n", pinfo->enable_sw_jeita);
-	return sprintf(buf, "%d\n", pinfo->enable_sw_jeita);
-}
-
-static ssize_t store_sw_jeita(struct device *dev, struct device_attribute *attr,
-						const char *buf, size_t size)
-{
-	struct charger_manager *pinfo = dev->driver_data;
-	signed int temp;
-
-	if (kstrtoint(buf, 10, &temp) == 0) {
-		if (temp == 0)
-			pinfo->enable_sw_jeita = false;
-		else
-			pinfo->enable_sw_jeita = true;
-
-	} else {
-		pr_err("store_Battery_Temperature: format error!\n");
-	}
-	return size;
-}
-
-static DEVICE_ATTR(sw_jeita, 0664, show_sw_jeita,
-		   store_sw_jeita);
-
 static int mtk_charger_probe(struct platform_device *pdev)
 {
 	struct charger_manager *info = NULL;
+	struct list_head *pos;
+	struct list_head *phead = &consumer_head;
+	struct charger_consumer *ptr;
 	int ret;
 
 	pr_err("%s: starts\n", __func__);
@@ -734,6 +830,20 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	srcu_init_notifier_head(&info->evt_nh);
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_sw_jeita);
+
+	mtk_pe20_init(info);
+
+	mutex_lock(&consumer_mutex);
+	list_for_each(pos, phead) {
+		ptr = container_of(pos, struct charger_consumer, list);
+		ptr->cm = info;
+		if (ptr->pnb != NULL) {
+			srcu_notifier_chain_register(&ptr->cm->evt_nh, ptr->pnb);
+			ptr->pnb = NULL;
+		}
+	}
+	mutex_unlock(&consumer_mutex);
+
 
 	return 0;
 }
