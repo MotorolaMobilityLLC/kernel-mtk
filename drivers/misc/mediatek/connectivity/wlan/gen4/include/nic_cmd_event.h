@@ -77,7 +77,7 @@
 */
 #define CMD_PQ_ID           (0x8000)
 #define CMD_PACKET_TYPE_ID  (0xA0)
-#define ENABLE_HOSTPRINT 0
+#define ENABLE_HOSTPRINT 1
 #define PKT_FT_CMD			0x2
 
 #define CMD_STATUS_SUCCESS      0
