@@ -1347,6 +1347,9 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK] = MIPITX_PHY_LANE_1;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] = MIPITX_PHY_LANE_1;
 #endif
+	/* for ARR 2.0 */
+	params->max_refresh_rate = 60;
+	params->min_refresh_rate = 45;
 }
 
 static void lcm_init_power(void)
