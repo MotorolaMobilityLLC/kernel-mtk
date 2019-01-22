@@ -119,12 +119,8 @@ static struct pwr_ctrl vcorefs_ctrl = {
 	.spm_ddren_2_req = 0,
 	.cpu_md_dvfs_sop_force_on = 0,
 
-#if 0
 	/* SPM_SRC_MASK */
-#if SPM_BYPASS_SYSPWREQ
-	.csyspwreq_mask = 1,
-#endif
-#endif
+	.csyspwreq_mask = 0,
 
 	.ccif0_md_event_mask_b = 0,
 	.ccif0_ap_event_mask_b = 0,
@@ -333,34 +329,6 @@ static void spm_dvfsfw_init(int curr_opp, u32 channel)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
-void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl)
-{
-#if 0
-	u32 dvfs_mask = SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS;
-
-	/* SPM_SRC_REQ */
-	dest_pwr_ctrl->reg_spm_dvfs_level0_req = src_pwr_ctrl->reg_spm_dvfs_level0_req;
-	dest_pwr_ctrl->reg_spm_dvfs_level1_req = src_pwr_ctrl->reg_spm_dvfs_level1_req;
-	dest_pwr_ctrl->reg_spm_dvfs_level2_req = src_pwr_ctrl->reg_spm_dvfs_level2_req;
-	dest_pwr_ctrl->reg_spm_dvfs_level3_req = src_pwr_ctrl->reg_spm_dvfs_level3_req;
-	dest_pwr_ctrl->reg_spm_dvfs_level4_req = src_pwr_ctrl->reg_spm_dvfs_level4_req;
-
-	/* SPM_SRC2_MASK */
-	dest_pwr_ctrl->reg_next_dvfs_level0_mask_b = src_pwr_ctrl->reg_next_dvfs_level0_mask_b;
-	dest_pwr_ctrl->reg_next_dvfs_level1_mask_b = src_pwr_ctrl->reg_next_dvfs_level1_mask_b;
-	dest_pwr_ctrl->reg_next_dvfs_level2_mask_b = src_pwr_ctrl->reg_next_dvfs_level2_mask_b;
-	dest_pwr_ctrl->reg_next_dvfs_level3_mask_b = src_pwr_ctrl->reg_next_dvfs_level3_mask_b;
-	dest_pwr_ctrl->reg_next_dvfs_level4_mask_b = src_pwr_ctrl->reg_next_dvfs_level4_mask_b;
-
-	dest_pwr_ctrl->pcm_flags = (dest_pwr_ctrl->pcm_flags & (~dvfs_mask)) |
-					(src_pwr_ctrl->pcm_flags & dvfs_mask);
-
-	if (dest_pwr_ctrl->pcm_flags_cust)
-		dest_pwr_ctrl->pcm_flags_cust = (dest_pwr_ctrl->pcm_flags_cust & (~dvfs_mask)) |
-						(src_pwr_ctrl->pcm_flags & dvfs_mask);
-#endif
-}
-
 int spm_vcorefs_pwarp_cmd(void)
 {
 #if 0
@@ -467,7 +435,8 @@ static void dvfsrc_init(void)
 	spm_write(DVFSRC_EMI_REQUEST, 0x00099299);
 	spm_write(DVFSRC_VCORE_REQUEST, 0x00005000);
 	spm_write(DVFSRC_FORCE, 0x00080000);
-	spm_write(DVFSRC_BASIC_CONTROL, 0x00008233);
+	spm_write(DVFSRC_BASIC_CONTROL, 0x00008033);
+	spm_write(DVFSRC_BASIC_CONTROL, 0x00000233);
 
 #if 0
 	mtk_rgu_cfg_dvfsrc(1);
