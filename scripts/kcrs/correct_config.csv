@@ -25,7 +25,6 @@ CONFIG_ARM64_ERRATUM_836870,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_ARM64_ERRATUM_858921,PLATFORM,hongxu.zhao,timer,X,X,X,X,X,X,X,y,X,y
 CONFIG_ARM_CRYPTO,PROJECT,Calvin.Liao,,y,N,N,,,y,y,,y,
 CONFIG_ARM_ERRATA_858921,PLATFORM,stanley.chu,new config in this commit fec2807bf7ea34ddd06cdc7c7641416360058d7b,X,X,X,X,X,X,y,X,y,X
-CONFIG_ARM_KERNMEM_PERMS,PLATFORM,yun.hsiang,,X,X,X,X,X,y,y,X,y,X
 CONFIG_ARM_MODULE_PLTS,PLATFORM,johnson.lin,,y,,,,,y,y,,y,
 CONFIG_ARM_PATCH_PHYS_VIRT,COMMON,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_ARM_PSCI,PLATFORM,scott.shu,,y,X,X,X,X,y,y,X,y,X
@@ -829,7 +828,6 @@ CONFIG_SLUB_DEBUG_ON,USER;PROJECT,miles.chen,gmo project config,,,,,,,,,,
 CONFIG_SLUB_DEBUG,USER;PROJECT,miles.chen,gmo project config,,,,,,,,,,
 CONFIG_SMP,PLATFORM,alex.chchang,,y,X,X,X,X,y,y,X,y,X
 CONFIG_SND_ARM,PLATFORM,Michael.Hsiao,,X,X,X,X,X,X,X,X,X,X
-CONFIG_SND,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SND_DEBUG,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SND_DEBUG_VERBOSE,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SND_DYNAMIC_MINORS,COMMON,Michael.Hsiao,,y,y,y,y,y,y,y,y,y,y
@@ -905,7 +903,6 @@ CONFIG_USB_C_SWITCH_MT6336,PROJECT,justin.hsieh,,X,X,O,,,,,,,
 CONFIG_USB_C_SWITCH_SII70XX_MHL_MODE,COMMON,chihhao.chen,new config in this commit 57c8a01463206721e18e958ecbc0692d08cf01eb,X,X,X,X,X,X,X,X,X,X
 CONFIG_USB_C_SWITCH_SII70XX,PROJECT,justin.hsieh,new config in this commit 7ddbca5bd9947e9e79a414898e8c6be366f24602,,,,,,,,,,
 CONFIG_USB_C_SWITCH_U3_MUX,PLATFORM,eddie.hung,,X,X,X,X,y,X,y,y,X,X
-CONFIG_USB_G_ANDROID,PLATFORM,,,y,y,y,y,y,y,y,y,X,X
 CONFIG_USB_MTK_DUALMODE,PROJECT,Arvin.Wang,,,,,,,,,,,
 CONFIG_USB_MTK_HDRC,PLATFORM,marvin.lin,,X,X,X,y,X,y,X,X,y,y
 CONFIG_USB_MTK_IDDIG,PROJECT,Arvin.Wang,new config in this commit Id7f09fd3b9edf96f17d0c792d3fbe0c8239ee721,,,,,,,,,,
