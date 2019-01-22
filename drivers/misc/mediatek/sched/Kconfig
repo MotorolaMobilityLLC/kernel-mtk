@@ -109,6 +109,24 @@ config MTK_SCHED_RQAVG_US
 		used in user space operation.
 		TLP estimation for user space
 		CPUfreq governors.
+
+config MTK_SCHED_CPULOAD
+	bool "Enable timing-base CPU loading tracking in scheduler"
+	depends on MTK_SCHED_RQAVG_US
+	help
+		Support timing-base CPU loading tracking
+		in scheduler tick.
+		Which helps load tracking in time-base view
+		and more quick response in loading change.
+
+config MTK_SCHED_SYSHINT
+	bool "Enable asynchronus hint for external modules to get loading change in time"
+	depends on MTK_ACAO_SUPPORT
+	help
+		Support asynchronus hint for external modules
+		to get loading change notification from scheduler
+		in time that helps resource control
+		in low latency.
 endmenu
 
 menu "MTK Energy Aware Scheduler Plus"

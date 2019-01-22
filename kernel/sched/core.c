@@ -3079,6 +3079,14 @@ void scheduler_tick(void)
 	trigger_load_balance(rq);
 #endif
 	rq_last_tick_reset(rq);
+
+#ifdef CONFIG_MTK_SCHED_CPULOAD
+	cal_cpu_load(cpu);
+#endif
+
+#ifdef CONFIG_MTK_SCHED_SYSHINT
+	sched_hint_check(sched_ktime_clock());
+#endif
 }
 
 #ifdef CONFIG_NO_HZ_FULL

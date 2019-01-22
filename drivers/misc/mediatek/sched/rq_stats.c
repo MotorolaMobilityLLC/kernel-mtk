@@ -28,6 +28,7 @@
 #include <linux/suspend.h>
 #include <linux/version.h>
 #include <asm/smp_plat.h>
+#include <mt-plat/met_drv.h>
 
 #include <trace/events/sched.h>
 #include "rq_stats.h"
@@ -65,6 +66,7 @@ struct cpu_load_data {
 	unsigned int window_size;
 	unsigned int cur_freq;
 	unsigned int policy_max;
+	ktime_t last_update;
 	cpumask_var_t related_cpus;
 	spinlock_t cpu_load_lock;
 };
@@ -255,15 +257,153 @@ static void report_load_at_max_freq(bool reset, unsigned int *rel_load, unsigned
 }
 #endif
 
+#ifdef CONFIG_MTK_SCHED_CPULOAD
+static void get_percpu_load(int cpu, bool reset, unsigned int *rel_load, unsigned int *abs_load)
+{
+	struct cpu_load_data *pcpu;
+	unsigned long flags;
+
+	if (!rel_load || !abs_load)
+		return;
+
+	*rel_load = 0;
+	*abs_load = 0;
+	if (rq_info.init != 1) {
+		*rel_load = 90;
+		*abs_load = 90;
+		return;
+	}
+
+	pcpu = &per_cpu(cpuload, cpu);
+	spin_lock_irqsave(&pcpu->cpu_load_lock, flags);
+	update_average_load(AVG_LOAD_UPDATE, pcpu->cur_freq, cpu);
+	*rel_load = pcpu->avg_load_maxfreq_rel;
+	*abs_load = pcpu->avg_load_maxfreq_abs;
+	if (reset) {
+		pcpu->avg_load_maxfreq_rel = 0;
+		pcpu->avg_load_maxfreq_abs = 0;
+	}
+	pcpu->last_update = ktime_get();
+	spin_unlock_irqrestore(&pcpu->cpu_load_lock, flags);
+}
+
+struct cpu_loading {
+	int rel_load;
+	int abs_load;
+};
+
+static DEFINE_PER_CPU(struct cpu_loading, cpuloading);
+
+/* to calculate cpu loading */
+
+static char met_cpu_load[16][32] = {
+	"sched_load_tick0",
+	"sched_load_tick1",
+	"sched_load_tick2",
+	"sched_load_tick3",
+	"sched_load_tick4",
+	"sched_load_tick5",
+	"sched_load_tick6",
+	"sched_load_tick7",
+	"sched_load_tick8",
+	"sched_load_tick9",
+	"NULL"
+};
+
+void cal_cpu_load(int cpu)
+{
+	int rel_load, abs_load;
+	int reset = 1;
+	struct cpu_loading *this_cpu = &per_cpu(cpuloading, cpu);
+	struct cpu_load_data *pcpu = &per_cpu(cpuload, cpu);
+	ktime_t now = ktime_get();
+
+	/* periodic: 20ms */
+	if (ktime_before(now, ktime_add_ms(pcpu->last_update,
+			(CPU_LOAD_AVG_DEFAULT_MS - CPU_LOAD_AVG_TOLERANCE))))
+		return;
+
+	get_percpu_load(cpu, reset, &rel_load, &abs_load);
+	this_cpu->rel_load = rel_load;
+	this_cpu->abs_load = abs_load;
+
+	met_tag_oneshot(0, met_cpu_load[cpu], sched_get_cpu_load(cpu));
+}
+
+/* Legacy interfaces to export */
+void sched_get_percpu_load2(int cpu, bool reset, unsigned int *rel_load, unsigned int *abs_load)
+{
+	struct cpu_loading *this_cpu = &per_cpu(cpuloading, cpu);
+	struct cpu_load_data *pcpu = &per_cpu(cpuload, cpu);
+	ktime_t now = ktime_get();
+
+	if (!rel_load || !abs_load)
+		return;
+
+	*rel_load = 0;
+	*abs_load = 0;
+	if (rq_info.init != 1) {
+		*rel_load = 90;
+		*abs_load = 90;
+		return;
+	}
+
+	/*
+	 * If cpu loading was last updated long enough,
+	 * don't take care this loading into account.
+	 */
+	if (ktime_after(now, ktime_add_ms(pcpu->last_update, (CPU_LOAD_AVG_DEFAULT_MS*2)))) {
+		*rel_load = 0;
+		*abs_load = 0;
+		return;
+	}
+
+	*rel_load = this_cpu->rel_load;
+	*abs_load = this_cpu->abs_load;
+}
+EXPORT_SYMBOL(sched_get_percpu_load2);
+
+/* Legacy interfaces to export */
+unsigned int sched_get_percpu_load(int cpu, bool reset, bool use_maxfreq)
+{
+	struct cpu_loading *this_cpu = &per_cpu(cpuloading, cpu);
+	struct cpu_load_data *pcpu = &per_cpu(cpuload, cpu);
+	ktime_t now = ktime_get();
+
+	if (rq_info.init != 1)
+		return 90;
+
+	/* If cpu loading was last updated long enough, ignore it. */
+	if (ktime_after(now, ktime_add_ms(pcpu->last_update, (CPU_LOAD_AVG_DEFAULT_MS*2))))
+		return 0;
+
+	return use_maxfreq ? this_cpu->abs_load : this_cpu->rel_load;
+}
+EXPORT_SYMBOL(sched_get_percpu_load);
+
+/* New interface to export */
+unsigned int sched_get_cpu_load(int cpu)
+{
+	struct cpu_loading *this_cpu = &per_cpu(cpuloading, cpu);
+	struct cpu_load_data *pcpu = &per_cpu(cpuload, cpu);
+	ktime_t now = ktime_get();
+
+	if (rq_info.init != 1)
+		return 90;
+
+	/* If cpu loading was last updated long enough, ignore it. */
+	if (ktime_after(now, ktime_add_ms(pcpu->last_update, (CPU_LOAD_AVG_DEFAULT_MS*2))))
+		return 0;
+
+	return this_cpu->rel_load;
+}
+EXPORT_SYMBOL(sched_get_cpu_load);
+#else
 void sched_get_percpu_load2(int cpu, bool reset, unsigned int *rel_load, unsigned int *abs_load)
 {
 	struct cpu_load_data *pcpu;
 	unsigned long flags;
 
-#if 0
-	if (!cpu_online(cpu))
-		return 0;
-#endif
 	if (!rel_load || !abs_load)
 		return;
 
@@ -296,6 +436,7 @@ unsigned int sched_get_percpu_load(int cpu, bool reset, bool use_maxfreq)
 	return use_maxfreq ? abs_load : rel_load;
 }
 EXPORT_SYMBOL(sched_get_percpu_load);
+#endif
 
 /* #define DETECT_HTASK_HEAT */
 

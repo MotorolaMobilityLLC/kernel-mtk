@@ -7725,7 +7725,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
 						&overload, &overutilized, &intra_overutil);
 
-		if (sysctl_sched_isolation_hint_enable && sg->group_weight > 1) {
+		if (sg->group_weight > 1) {
 			sys_util += sgs->group_util;
 			sys_cap += sg->sgc->capacity;
 		}
@@ -7794,8 +7794,9 @@ next_group:
 			else
 				unset_cpu_isolation(ISO_SCHED);
 		}
-		met_tag_oneshot(0, "sched_sys_util", sys_util);
 #endif
+		update_sched_hint(sys_util, sys_cap);
+		met_tag_oneshot(0, "sched_sys_util", sys_util);
 	} else {
 		if (!env->dst_rq->rd->overutilized && overutilized)
 			env->dst_rq->rd->overutilized = true;
