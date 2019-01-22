@@ -2506,6 +2506,17 @@ static INT_32 wlanProbe(PVOID pvData)
 
 		prGlueInfo->u4ReadyFlag = 0;
 
+		/*Check the build variant*/
+#if defined(WLAN_ENG_LOAD)
+		prGlueInfo->rBuildVarint = MTK_BUILD_VAR_ENG;
+#elif defined(WLAN_USERDEBUG_LOAD)
+		prGlueInfo->rBuildVarint = MTK_BUILD_VAR_USERDEUB;
+#elif defined(WLAN_USER_LOAD)
+		prGlueInfo->rBuildVarint = MTK_BUILD_VAR_USER;
+#else
+		prGlueInfo->rBuildVarint = 0;
+#endif
+
 #if CFG_TCP_IP_CHKSUM_OFFLOAD
 		prAdapter->u4CSUMFlags = (CSUM_OFFLOAD_EN_TX_TCP | CSUM_OFFLOAD_EN_TX_UDP | CSUM_OFFLOAD_EN_TX_IP);
 #endif
@@ -2742,8 +2753,12 @@ bailout:
 			CMD_DRIVER_DUMP_EMI_LOG_T rDriverDumpEmiLog;
 			UINT_32 u4SetInfoLen = 0;
 
+			/*ENG_LOAD_OFFSET 1*/
+			/*USERDEBUG_LOAD_OFFSET 2 */
+			/*USER_LOAD_OFFSET 3 */
+
 			kalMemZero(&rDriverDumpEmiLog, sizeof(CMD_DRIVER_DUMP_EMI_LOG_T));
-			rDriverDumpEmiLog.fgIsDriverDumpEmiLogEnable = TRUE;
+			rDriverDumpEmiLog.fgIsDriverDumpEmiLogEnable = TRUE | (1 << prGlueInfo->rBuildVarint);
 
 			rStatus = kalIoctl(prGlueInfo,
 					   wlanoidSetEnableDumpEMILog,

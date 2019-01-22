@@ -2383,6 +2383,68 @@ VOID aisFsmStateAbort(IN P_ADAPTER_T prAdapter, UINT_8 ucReasonOfDisconnect, BOO
 
 }				/* end of aisFsmStateAbort() */
 
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+VOID configDelBaToFw(P_ADAPTER_T prAdapter, BOOLEAN fgEnable)
+{
+	struct _CMD_HEADER_T *pcmdV1Header = NULL;
+	UINT_8 itemString[] = "CoexRemoveBA";
+	WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+	struct _CMD_FORMAT_V1_T *pr_cmd_v1 = NULL;
+
+	pcmdV1Header = (struct _CMD_HEADER_T *) kalMemAlloc(sizeof(struct _CMD_HEADER_T), VIR_MEM_TYPE);
+	if (pcmdV1Header == NULL)
+		return;
+
+	kalMemSet(pcmdV1Header->buffer, 0, MAX_CMD_BUFFER_LENGTH);
+
+	pr_cmd_v1 = (struct _CMD_FORMAT_V1_T *) pcmdV1Header->buffer;
+	pr_cmd_v1->itemStringLength = strlen(itemString);
+	kalMemCopy(pr_cmd_v1->itemString, itemString, pr_cmd_v1->itemStringLength);
+	pr_cmd_v1->itemType = 1;
+	pr_cmd_v1->itemValueLength = 1;
+	if (fgEnable)
+		kalMemCopy(pr_cmd_v1->itemValue, "1", pr_cmd_v1->itemValueLength);
+	else
+		kalMemCopy(pr_cmd_v1->itemValue, "0", pr_cmd_v1->itemValueLength);
+
+	pcmdV1Header->cmdVersion = CMD_VER_1_EXT;
+	pcmdV1Header->cmdType = CMD_TYPE_SET;
+	pcmdV1Header->itemNum = 1;
+	pcmdV1Header->cmdBufferLen = sizeof(struct _CMD_FORMAT_V1_T);
+
+	rStatus = wlanSendSetQueryCmd(prAdapter, CMD_ID_GET_SET_CUSTOMER_CFG,
+				TRUE, FALSE, FALSE,
+				NULL, NULL,
+				sizeof(struct _CMD_HEADER_T),
+				(PUINT_8) pcmdV1Header,
+				NULL, 0);
+	kalMemFree(pcmdV1Header, VIR_MEM_TYPE, sizeof(struct _CMD_HEADER_T));
+
+	if (rStatus == WLAN_STATUS_FAILURE)
+		DBGLOG(INIT, ERROR, "wifiSefCFG fail 0x%x\n", rStatus);
+}
+
+VOID aisSendBaCmdByAtherosAp(IN P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc)
+{
+	static BOOLEAN fgSetDelBatoFw = FALSE;
+
+	if (fgSetDelBatoFw) {
+		configDelBaToFw(prAdapter, FALSE);
+		fgSetDelBatoFw = FALSE;
+	}
+
+	if (prBssDesc) {
+		if (prBssDesc->fgIsAtherosAP) {
+			DBGLOG(AIS, INFO, "Connect to AtherosAP,Del BA\n");
+			configDelBaToFw(prAdapter, TRUE);
+			fgSetDelBatoFw = TRUE;
+		}
+	} else {
+		return;
+	}
+}
+#endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function will handle the Join Complete Event from SAA FSM for AIS FSM
@@ -2588,11 +2650,19 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 #if CFG_SUPPORT_ROAMING
 					if (prAisBssInfo->prStaRecOfAP)
 						prAisBssInfo->prStaRecOfAP->fgIsTxAllowed = TRUE;
-
-					eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 #if CFG_SUPPORT_ROAMING_RETRY
+					/*Under roamming case : After candidate BSS joined fail.*/
+					/*STA will re-try other BSS.*/
+					DBGLOG(AIS, INFO,
+						"Under roamming %pM join fail and STA will re-try other AP\n",
+					prBssDesc->aucBSSID);
+					prBssDesc->fgIsRoamFail = TRUE;
 					fgIsUnderRoaming = TRUE;
-#endif /*CFG_SUPPORT_ROAMING_RETRY*/
+
+					eNextState = AIS_STATE_COLLECT_ESS_INFO;
+#else
+					eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
+#endif /* CFG_SUPPORT_ROAMING_RETRY */
 #endif /* CFG_SUPPORT_ROAMING */
 #if CFG_SUPPORT_RN
 				} else if (prAisBssInfo->fgDisConnReassoc == TRUE) {
@@ -3265,9 +3335,12 @@ VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, 
 		prAisBssInfo->u2BeaconInterval = prBssDesc->u2BeaconInterval;
 	} else {
 		/* should never happen */
+		DBGLOG(AIS, WARN, "no prBssDesc found!\n");
 		ASSERT(0);
 	}
-
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+	aisSendBaCmdByAtherosAp(prAdapter, prBssDesc);
+#endif
 	/* NOTE: Defer ucDTIMPeriod updating to when beacon is received after connection */
 	prAisBssInfo->ucDTIMPeriod = 0;
 	prAisBssInfo->u2ATIMWindow = 0;
@@ -3679,18 +3752,8 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 	/* 4 <6> Indicate Disconnected Event to Host */
 	aisIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, fgDelayIndication);
 
-#if 0
-	/*dump package information and ignore disconnect before new connect state*/
-	if (prAdapter->rWifiVar.rAisFsmInfo.eCurrentState != AIS_STATE_REMAIN_ON_CHANNEL &&
-			prAisBssInfo->ucReasonOfDisconnect != DISCONNECT_REASON_CODE_NEW_CONNECTION)
-		wlanPktDebugDumpInfo(prAdapter);
-#endif
-
 	/* 4 <7> Trigger AIS FSM */
 	aisFsmSteps(prAdapter, AIS_STATE_IDLE);
-
-	/*dump package information*/
-	wlanPktDebugDumpInfo(prAdapter);
 
 }				/* end of aisFsmDisconnect() */
 
@@ -5490,14 +5553,16 @@ VOID aisFsmRunEventBssTransition(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgH
 static VOID
 aisSendNeighborRequest(P_ADAPTER_T prAdapter)
 {
-	struct SUB_ELEMENT_LIST rSSIDIE;
+	struct SUB_ELEMENT_LIST *prSSIDIE;
+	UINT_8 aucBuffer[sizeof(*prSSIDIE) + 31];
 	P_BSS_INFO_T prBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 
-	kalMemZero(&rSSIDIE, sizeof(rSSIDIE));
-	rSSIDIE.rSubIE.ucSubID = ELEM_ID_SSID;
-	rSSIDIE.rSubIE.ucLength = prBssInfo->ucSSIDLen;
-	kalMemCopy(&rSSIDIE.rSubIE.aucOptInfo[0], prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
-	rlmTxNeighborReportRequest(prAdapter, prBssInfo->prStaRecOfAP, &rSSIDIE);
+	kalMemZero(aucBuffer, sizeof(aucBuffer));
+	prSSIDIE = (struct SUB_ELEMENT_LIST *)&aucBuffer[0];
+	prSSIDIE->rSubIE.ucSubID = ELEM_ID_SSID;
+	COPY_SSID(&prSSIDIE->rSubIE.aucOptInfo[0], prSSIDIE->rSubIE.ucLength,
+		prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
+	rlmTxNeighborReportRequest(prAdapter, prBssInfo->prStaRecOfAP, prSSIDIE);
 }
 
 VOID aisCollectNeighborAPChannel(P_ADAPTER_T prAdapter,

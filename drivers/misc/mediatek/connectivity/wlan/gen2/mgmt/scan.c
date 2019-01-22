@@ -65,8 +65,11 @@ UINT_8 pref5GhzLo = PREF_LO_5GHZ;
 #define WEIGHT_IDX_5G_BAND		2
 #define WEIGHT_IDX_BAND_WIDTH	1
 #define WEIGHT_IDX_STBC			1
-#define WEIGHT_IDX_DEAUTH_LAST	3
+#define WEIGHT_IDX_DEAUTH_LAST	4
 #define WEIGHT_IDX_BLACK_LIST	2
+#if CFG_SUPPORT_RSN_SCORE
+#define WEIGHT_IDX_RSN			2
+#endif
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -1226,7 +1229,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* check if it is a beacon frame */
 			if (((prWlanBeaconFrame->u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_BEACON) &&
 				!fgIsValidSsid) {
-				DBGLOG(SCN, INFO, "scanAddToBssDescssid is NULL Beacon, don't add hidden BSS(%pM)\n",
+				DBGLOG(SCN, TRACE, "scanAddToBssDescssid is NULL Beacon, don't add hidden BSS(%pM)\n",
 					(PUINT_8)prWlanBeaconFrame->aucBSSID);
 				return NULL;
 			}
@@ -1364,6 +1367,9 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 #endif
 #if CFG_PRIVACY_MIGRATION
 	prBssDesc->fgIEWPA = FALSE;
+#endif
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+	prBssDesc->fgIsAtherosAP = FALSE;
 #endif
 	prBssDesc->fgExsitBssLoadIE = FALSE;
 	prBssDesc->fgMultiAnttenaAndSTBC = FALSE;
@@ -1549,6 +1555,13 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 				}
 			}
 #endif /* CFG_ENABLE_WIFI_DIRECT */
+#if CFG_SUPPORT_DETECT_ATHEROS_AP
+			if (IE_LEN(pucIE) <= ELEM_MIN_LEN_WFA_OUI_TYPE_SUBTYPE)
+				break;
+			else if (pucIE[2] == 0x00 &&
+					pucIE[3] == 0x03 && pucIE[4] == 0x7F)
+				prBssDesc->fgIsAtherosAP = TRUE;
+#endif
 			break;
 		case ELEM_ID_PWR_CONSTRAINT:
 		{
@@ -1659,7 +1672,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* Limit Tx power changed */
 			if (prBssDesc->cPowerLimit != cNewPwrLimit) {
 				prBssDesc->cPowerLimit = cNewPwrLimit;
-				DBGLOG(SCN, INFO, "Old: TxPwrLimit %d,New: CountryMax %d, Constraint %d\n",
+				DBGLOG(SCN, TRACE, "Old: TxPwrLimit %d,New: CountryMax %d, Constraint %d\n",
 					prBssDesc->cPowerLimit, prSubBand->cMaxTxPwrLv, ucPowerConstraint);
 				/* should tell firmware to restrict tx power if connected a BSS */
 				if (prBssDesc->fgIsConnected) {
@@ -2055,6 +2068,35 @@ UINT_8 nicChannelNum2Index(IN UINT_8 ucChannelNum)
 		return ucindex;
 }
 
+static UINT_8 scanGetChannel(P_HIF_RX_HEADER_T prHifRxHdr, PUINT_8 pucIE, UINT_16 u2IELen)
+{
+	UINT_8 ucDsChannel = 0;
+	UINT_8 ucHtChannel = 0;
+	UINT_8 ucHwChannel = HIF_RX_HDR_GET_CHNL_NUM(prHifRxHdr);
+	UINT_8 u2Offset = 0;
+	ENUM_BAND_T eBand = HIF_RX_HDR_GET_RF_BAND(prHifRxHdr);
+
+	IE_FOR_EACH(pucIE, u2IELen, u2Offset) {
+		switch (IE_ID(pucIE)) {
+		case ELEM_ID_DS_PARAM_SET:
+			if (IE_LEN(pucIE) == ELEM_MAX_LEN_DS_PARAMETER_SET)
+				ucDsChannel = DS_PARAM_IE(pucIE)->ucCurrChnl;
+			break;
+		case ELEM_ID_HT_OP:
+			if (IE_LEN(pucIE) == (sizeof(IE_HT_OP_T) - 2))
+				ucHtChannel = ((P_IE_HT_OP_T) pucIE)->ucPrimaryChannel;
+			break;
+		}
+	}
+	DBGLOG(SCN, INFO, "band %d, hw channel %d, ds %d, ht %d\n", eBand, ucHwChannel, ucDsChannel, ucHtChannel);
+	if (eBand == BAND_2G4) {
+		if (ucDsChannel >= 1 && ucDsChannel <= 14)
+			return ucDsChannel;
+		return (ucHtChannel >= 1 && ucHtChannel <= 14) ? ucHtChannel:ucHwChannel;
+	}
+	return (ucHtChannel >= 1 && ucHtChannel < 200) ? ucHtChannel:ucHwChannel;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief Parse the content of given Beacon or ProbeResp Frame.
@@ -2073,17 +2115,19 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 	if (prRmReq->rBcnRmParam.eState == RM_ON_GOING) {
 		struct RM_BEACON_REPORT_PARAMS rRepParams;
 		P_WLAN_BEACON_FRAME_T prWlanBeacon = (P_WLAN_BEACON_FRAME_T)prSwRfb->pvHeader;
+		UINT_16 u2IELen = prSwRfb->u2PacketLen - OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem);
 
 		kalMemZero(&rRepParams, sizeof(rRepParams));
+		if (u2IELen > CFG_IE_BUFFER_SIZE)
+			u2IELen = CFG_IE_BUFFER_SIZE;
 		/* if this is a one antenna only device, the antenna id is always 1. 7.3.2.40 */
 		rRepParams.ucAntennaID = 1;
-		rRepParams.ucChannel = prSwRfb->prHifRxHdr->ucHwChannelNum;
+		rRepParams.ucChannel = scanGetChannel(prSwRfb->prHifRxHdr, prWlanBeacon->aucInfoElem, u2IELen);
 		rRepParams.ucRCPI = prSwRfb->prHifRxHdr->ucRcpi;
 		rRepParams.ucRSNI = 255; /* 255 means RSNI not available. see 7.3.2.41 */
 		rRepParams.ucFrameInfo = 0;
 		kalMemCopy(&rRepParams.aucBcnFixedField, prWlanBeacon->au4Timestamp, 12);
-		scanCollectBeaconReport(prAdapter, prWlanBeacon->aucInfoElem,
-			prSwRfb->u2PacketLen - OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem),
+		scanCollectBeaconReport(prAdapter, prWlanBeacon->aucInfoElem, u2IELen,
 			prWlanBeacon->aucBSSID, &rRepParams);
 		return WLAN_STATUS_SUCCESS;
 	}
@@ -2139,7 +2183,7 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 	PUINT_8 pucReportIeIds = NULL;
 	UINT_8 ucReportIeIdsLen = 0;
 	struct RM_BCN_REPORT *prBcnReport = NULL;
-	UINT_16 u2BcnReportLen = 0;
+	UINT_8 ucBcnReportLen = 0;
 	struct RM_MEASURE_REPORT_ENTRY *prReportEntry = NULL;
 	UINT_16 u2RemainLen = 0;
 	BOOLEAN fgValidChannel = FALSE;
@@ -2152,8 +2196,6 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 	}
 
 	pucIE = pucIEBuf;
-	if (u2IELength > CFG_IE_BUFFER_SIZE)
-		u2IELength = CFG_IE_BUFFER_SIZE;
 
 	/* Step1: parsing Beacon Request sub element field to get Report controlling information */
 	/* if match the channel that is in fixed field, no need to check AP channel report */
@@ -2168,6 +2210,9 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 			break;
 		switch (pucSubIE[0]) {
 		case 0: /* checking if SSID is matched */
+			/* length of sub-element ssid is 0 or first byte is 0, means wildcard ssid matching */
+			if (!IE_LEN(pucSubIE) || !pucSubIE[2])
+				break;
 			IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
 				if (IE_ID(pucIE) == ELEM_ID_SSID)
 					break;
@@ -2195,27 +2240,27 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 		}
 		case 51: /* AP CHANNEL REPORT Element */
 		{
-			UINT_8 ucNumChannels = 0;
+			UINT_8 ucNumChannels = 3; /* channel info is starting with the fourth byte */
 
 			if (fgValidChannel)
 				break;
 			/* try to match with AP channel report */
-			ucNumChannels = ucIeSize - 1;
-			while (ucNumChannels >= 3) {
+			while (ucNumChannels < ucIeSize) {
 				if (prRepParams->ucChannel == pucSubIE[ucNumChannels]) {
 					fgValidChannel = TRUE;
 					break;
 				}
-				ucNumChannels--;
+				ucNumChannels++;
 			}
 		}
 		}
 		u2RemainLen -= ucIeSize;
 		pucSubIE += ucIeSize;
 	}
-	DBGLOG(SCN, INFO, "fgValidChannel %d\n", fgValidChannel);
-	if (!fgValidChannel && prBcnReq->ucChannel > 0 && prBcnReq->ucChannel < 255)
+	if (!fgValidChannel && prBcnReq->ucChannel > 0 && prBcnReq->ucChannel < 255) {
+		DBGLOG(SCN, INFO, "channel %d, valid %d\n", prBcnReq->ucChannel, fgValidChannel);
 		return;
+	}
 
 	/* Step2: check report condition */
 	ucRSSI = RCPI_TO_dBm(prRepParams->ucRCPI);
@@ -2239,9 +2284,9 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 		prBcnReport = (struct RM_BCN_REPORT *)prReportElem->aucReportFields;
 		if (EQUAL_MAC_ADDR(prBcnReport->aucBSSID, pucBssid))
 			break;
+		prBcnReport = NULL;
 	}
-	if (!prReportEntry || /* not found a entry in collected report link */
-		(&prReportEntry->rLinkEntry == (P_LINK_ENTRY_T)&prRmRep->rReportLink)) {
+	if (!prBcnReport) { /* not found a entry in collected report link */
 		LINK_REMOVE_HEAD(&prRmRep->rFreeReportLink, prReportEntry, struct RM_MEASURE_REPORT_ENTRY *);
 		if (!prReportEntry) {/* not found a entry in free report link */
 			prReportEntry = kalMemAlloc(sizeof(*prReportEntry), VIR_MEM_TYPE);
@@ -2250,6 +2295,8 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 				return;
 			}
 		}
+		DBGLOG(SCN, INFO, "allocate entry for Bss %pM, total entry %u\n",
+			pucBssid, prRmRep->rReportLink.u4NumElem);
 		LINK_INSERT_TAIL(&prRmRep->rReportLink, &prReportEntry->rLinkEntry);
 	}
 	kalMemZero(prReportEntry->aucMeasReport, sizeof(prReportEntry->aucMeasReport));
@@ -2278,41 +2325,64 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 		u8Tsf = *(PUINT_64)&rTsf.au4Tsf[0] + rCurrent - rTsf.rTime;
 		kalMemCopy(prBcnReport->aucParentTSF, &u8Tsf, 4); /* low part of TSF */
 	}
-	u2BcnReportLen = OFFSET_OF(struct RM_BCN_REPORT, aucOptElem);
+	ucBcnReportLen = 0;
 	/* Optional Subelement Field */
 	/* all fixed length fields and IEs in Request Sub Elements should be reported */
 	if (ucReportDetail == 1 && ucReportIeIdsLen > 0) {
-		pucSubIE = prBcnReport->aucOptElem;
+		pucSubIE = &prBcnReport->aucOptElem[2];
 		kalMemCopy(pucSubIE, prRepParams->aucBcnFixedField, BEACON_FIXED_FIELD_LENGTH);
 		pucSubIE += BEACON_FIXED_FIELD_LENGTH;
-		u2BcnReportLen += BEACON_FIXED_FIELD_LENGTH;
+		ucBcnReportLen += BEACON_FIXED_FIELD_LENGTH;
 		pucIE = pucIEBuf;
 		IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
 			UINT_16 i = 0;
+			UINT_8 ucIncludedIESize = 0;
 
 			for (; i < ucReportIeIdsLen; i++)
 				if (pucIE[0] == pucReportIeIds[i]) {
-					UINT_8 ucIncludedIESize = IE_SIZE(pucIE);
-
-					kalMemCopy(pucSubIE, pucIE, ucIncludedIESize);
-					pucSubIE += ucIncludedIESize;
-					u2BcnReportLen += ucIncludedIESize;
+					ucIncludedIESize = IE_SIZE(pucIE);
 					break;
 				}
+			/* the length of sub-element should less than 225,
+			** and the included IE should be a complete one
+			*/
+			if (ucBcnReportLen + ucIncludedIESize > RM_BCN_REPORT_SUB_ELEM_MAX_LENGTH)
+				break;
+			if (ucIncludedIESize == 0)
+				continue;
+			ucBcnReportLen += ucIncludedIESize;
+			kalMemCopy(pucSubIE, pucIE, ucIncludedIESize);
+			pucSubIE += ucIncludedIESize;
 		}
+		prBcnReport->aucOptElem[0] = 1; /* sub-element id for reported frame body */
+		prBcnReport->aucOptElem[1] = ucBcnReportLen; /* length of the sub-element */
+		ucBcnReportLen += 2;
 	} else if (ucReportDetail == 2) {/* all fixed length fields and IEs should be reported */
-		kalMemCopy(prBcnReport->aucOptElem, prRepParams->aucBcnFixedField,
-				u2IELength + BEACON_FIXED_FIELD_LENGTH);
-		u2BcnReportLen += u2IELength + BEACON_FIXED_FIELD_LENGTH;
+		ucBcnReportLen += BEACON_FIXED_FIELD_LENGTH;
+		pucIE = pucIEBuf;
+		/* the length of sub-element should less than 225, and the included IE should be a complete one */
+		IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
+			if (ucBcnReportLen + IE_SIZE(pucIE) > RM_BCN_REPORT_SUB_ELEM_MAX_LENGTH)
+				break;
+			ucBcnReportLen += IE_SIZE(pucIE);
+		}
+		prBcnReport->aucOptElem[0] = 1; /* sub-element id for reported frame body */
+		prBcnReport->aucOptElem[1] = ucBcnReportLen; /* length of the sub-element */
+		pucIE = &prBcnReport->aucOptElem[2];
+		kalMemCopy(pucIE, prRepParams->aucBcnFixedField, BEACON_FIXED_FIELD_LENGTH);
+		pucIE += BEACON_FIXED_FIELD_LENGTH;
+		kalMemCopy(pucIE, pucIEBuf, ucBcnReportLen - BEACON_FIXED_FIELD_LENGTH);
+		ucBcnReportLen += 2;
 	}
+	ucBcnReportLen += OFFSET_OF(struct RM_BCN_REPORT, aucOptElem);
 	/* Step4: fill in basic content of Measurement report IE */
 	prMeasReport->ucId = ELEM_ID_MEASUREMENT_REPORT;
 	prMeasReport->ucToken = prRmReq->prCurrMeasElem->ucToken;
 	prMeasReport->ucMeasurementType = ELEM_RM_TYPE_BEACON_REPORT;
 	prMeasReport->ucReportMode = 0;
-	prMeasReport->ucLength = 3 + u2BcnReportLen;
-	DBGLOG(SCN, INFO, "Bss %pM, ReportDeail %d, IncludeIE Num %d\n",
-		pucBssid, ucReportDetail, ucReportIeIdsLen);
+	prMeasReport->ucLength = 3 + ucBcnReportLen;
+	DBGLOG(SCN, INFO, "Bss %pM, ReportDeail %d, IncludeIE Num %d, chnl %d\n",
+		pucBssid, ucReportDetail, ucReportIeIdsLen, prRepParams->ucChannel);
 }
 
 static WLAN_STATUS __scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
@@ -3297,6 +3367,11 @@ VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter)
 #define CALCULATE_SCORE_BY_DEAUTH(prBssDesc) \
 	(WEIGHT_IDX_DEAUTH_LAST * (prBssDesc->fgDeauthLastTime ? 0:BSS_FULL_SCORE))
 
+#if CFG_SUPPORT_RSN_SCORE
+#define CALCULATE_SCORE_BY_RSN(prBssDesc) \
+	(WEIGHT_IDX_RSN * (prBssDesc->fgIsRSNSuitableBss ? BSS_FULL_SCORE:0))
+#endif
+
 #if 0/* we don't take it into account now */
 /* Channel Utilization: weight index will be */
 static UINT_16 scanCalculateScoreByChnlInfo(
@@ -3441,8 +3516,10 @@ static BOOLEAN scanSanityCheckBssDesc(P_ADAPTER_T prAdapter,
 			return FALSE;
 	} else
 #endif
+
 	if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
 		return FALSE;
+
 	if (prAdapter->rWifiVar.rAisSpecificBssInfo.fgCounterMeasure) {
 		DBGLOG(SCN, WARN, "Skip while at counter measure period!!!\n");
 		return FALSE;
@@ -3461,9 +3538,9 @@ static UINT_16 scanCalculateScoreByRssi(P_BSS_DESC_T prBssDesc)
 	else if (cRssi >= -65)
 		u2Score = 90;
 	else if (cRssi >= -70)
-		u2Score = 85;
+		u2Score = 50;
 	else if (cRssi >= -77)
-		u2Score = 30;
+		u2Score = 10;
 	else if (cRssi <= -88 && cRssi > -100)
 		u2Score = 5;
 	else if (cRssi <= -100)
@@ -3473,6 +3550,7 @@ static UINT_16 scanCalculateScoreByRssi(P_BSS_DESC_T prBssDesc)
 
 	return u2Score;
 }
+
 /*****
 *Bss Characteristics to be taken into account when calculate Score:
 *Channel Loading Group:
@@ -3512,6 +3590,7 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 	UINT_16 u2ScoreDeauth = 0;
 	UINT_16 u2ScoreSnrRssi = 0;
 	UINT_16 u2ScoreTotal = 0;
+	UINT_16 u2ScoreRSN = 0;
 	UINT_16 u2CandBssScore = 0;
 	UINT_16 u2CandBssScoreForLowRssi = 0;
 	UINT_16 u2BlackListScore = 0;
@@ -3561,6 +3640,8 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 
 try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
+		dumpMemory8IEOneLine(prBssDesc->aucBSSID, &prBssDesc->aucIEBuf[0], prBssDesc->u2IELength);
+
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
 			EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prConnSettings->aucBSSID)) {
 			if (!scanSanityCheckBssDesc(prAdapter, prBssDesc, eBand, ucChannel, fgIsFixedChannel))
@@ -3621,13 +3702,18 @@ try_again:
 		u2ScoreProbeRsp = CALCULATE_SCORE_BY_PROBE_RSP(prBssDesc);
 		u2ScoreScanMiss = CALCULATE_SCORE_BY_MISS_CNT(prAdapter, prBssDesc);
 		u2ScoreBand = CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc, cRssi);
+#if CFG_SUPPORT_RSN_SCORE
+		u2ScoreRSN = CALCULATE_SCORE_BY_RSN(prBssDesc);
+#endif
 		u2ScoreTotal = u2ScoreBandwidth + u2ScoreChnlInfo + u2ScoreDeauth + u2ScoreProbeRsp +
-			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand + u2BlackListScore;
+			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand +
+			u2BlackListScore + u2ScoreRSN;
 
 		DBGLOG(SCN, INFO,
-			"%pM cRSSI[%d] Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d]\n",
+			"%pM cRSSI[%d] Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d], RSN[%d]\n",
 			prBssDesc->aucBSSID, cRssi, u2ScoreTotal, u2ScoreBandwidth, u2ScoreChnlInfo, u2ScoreDeauth,
-			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi, u2ScoreSTBC, u2ScoreBand);
+			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi, u2ScoreSTBC,
+			u2ScoreBand, u2ScoreRSN);
 		/*if (cRssi < HARD_TO_CONNECT_RSSI_THRESOLD) {
 		*	if (!prCandBssDescForLowRssi) {
 		*		prCandBssDescForLowRssi = prBssDesc;

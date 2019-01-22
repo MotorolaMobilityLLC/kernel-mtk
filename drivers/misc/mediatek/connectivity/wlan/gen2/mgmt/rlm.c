@@ -2172,6 +2172,9 @@ BOOLEAN rlmFillScanMsg(P_ADAPTER_T prAdapter, P_MSG_SCN_SCAN_REQ prMsg)
 			break;
 		switch (pucSubIE[0]) {
 		case 0: /* SSID */
+			/* length of sub-element ssid is 0 or first byte is 0, means wildcard ssid matching */
+			if (!IE_LEN(pucSubIE) || !pucSubIE[2])
+				break;
 			COPY_SSID(prMsg->aucSSID, prMsg->ucSSIDLength, &pucSubIE[2], pucSubIE[1]);
 			prMsg->ucSSIDType = SCAN_REQ_SSID_SPECIFIED_ONLY;
 			break;

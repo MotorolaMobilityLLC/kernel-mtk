@@ -4075,7 +4075,12 @@ WLAN_STATUS wlanTxPendingPackets(IN P_ADAPTER_T prAdapter, IN OUT PBOOLEAN pfgHw
 			nicTxAdjustTcq(prAdapter);
 		} else
 			wlanProcessQueuedMsduInfo(prAdapter, prMsduInfo); /* free the packet */
+	} else {
+		if (prAdapter->prGlueInfo->i4TxPendingFrameNum > 0)
+			DBGLOG(INIT, WARN, "prMsduInfo is Null and PendingPKT(%u)\n"
+			, prAdapter->prGlueInfo->i4TxPendingFrameNum);
 	}
+
 #if (MT6620_E1_ASIC_HIFSYS_WORKAROUND == 1)
 	if (prAdapter->fgIsClockGatingEnabled == FALSE)
 		nicEnableClockGating(prAdapter);

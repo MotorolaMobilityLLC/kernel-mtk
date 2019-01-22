@@ -54,6 +54,42 @@
 *                              F U N C T I O N S
 ********************************************************************************
 */
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to dump a segment of memory in bytes.
+*
+* \param[in] pucStartAddr	Pointer to the starting address of the memory to be dumped.
+* \param[in] u4Length		Length of the memory to be dumped.
+*
+* \return (none)
+*/
+/*----------------------------------------------------------------------------*/
+#define BUF_MSG_LENGTH 1024
+
+VOID dumpMemory8IEOneLine(IN PUINT_8 aucBSSID, IN PUINT_8 pucStartAddr, IN UINT_32 u4Length)
+{
+	UINT_8 pucMsg[BUF_MSG_LENGTH];
+	UINT_32 offsetMsg;
+	UINT_32 i;
+
+	ASSERT(pucStartAddr);
+
+	kalMemZero(pucMsg, BUF_MSG_LENGTH);
+	offsetMsg = 0;
+
+	offsetMsg += kalSnprintf(pucMsg + offsetMsg, BUF_MSG_LENGTH - offsetMsg, "[%pM],Len:%u:[", aucBSSID, u4Length);
+
+	if (u4Length > CFG_IE_BUFFER_SIZE)
+		u4Length = CFG_IE_BUFFER_SIZE;
+
+	for (i = 0 ; i < u4Length ; i++)
+		offsetMsg += kalSnprintf(pucMsg + offsetMsg, BUF_MSG_LENGTH - offsetMsg, "%02x,", pucStartAddr[i]);
+
+	offsetMsg += kalSnprintf(pucMsg + offsetMsg, BUF_MSG_LENGTH - offsetMsg, "%s", "]");
+
+	LOG_FUNC("%s\n", pucMsg);
+
+}				/* end of dumpMemory8() */
 
 /*----------------------------------------------------------------------------*/
 /*!

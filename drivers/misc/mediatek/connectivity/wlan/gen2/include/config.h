@@ -121,6 +121,8 @@
 #define CFG_SUPPORT_RN				1
 
 #define CFG_SUPPORT_SET_CAM_BY_PROC	1
+
+#define CFG_SUPPORT_RSN_SCORE		1
 /*------------------------------------------------------------------------------
  * SLT Option
  *------------------------------------------------------------------------------
@@ -471,6 +473,7 @@
 #endif
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
 
+#define CFG_SUPPORT_DETECT_ATHEROS_AP		0
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Support EMI DEBUG
@@ -859,6 +862,7 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_SUPPORT_NCHO		0
+#define CFG_SUPPORT_NCHO_AUTO_ENABLE		0
 
 #define CFG_SUPPORT_ADD_CONN_AP		1
 
@@ -879,7 +883,7 @@
 /*Branch: 00 for Trunk, 01->mp1,02->mp2*/
 /*Date: relase date*/
 /*Serial Number :start form 1*/
-#define WIFI_DRIVER_VERSION		"11_70_00_20170303_1"
+#define WIFI_DRIVER_VERSION		"11_70_00_20170324_1"
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A
