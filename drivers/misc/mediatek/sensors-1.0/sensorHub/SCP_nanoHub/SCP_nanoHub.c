@@ -101,6 +101,37 @@ static struct SCP_sensorHub_data *obj_data;
 #define SCP_PR_ERR(fmt, args...)    pr_err(SCP_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define SCP_LOG(fmt, args...)    pr_debug(SCP_TAG fmt, ##args)
 
+enum scp_ipi_status __attribute__((weak)) scp_ipi_registration(enum ipi_id id,
+	void (*ipi_handler)(int id, void *data, unsigned int len),
+	const char *name)
+{
+	return SCP_IPI_ERROR;
+}
+
+void __attribute__((weak)) scp_A_register_notify(struct notifier_block *nb)
+{
+}
+
+enum scp_ipi_status __attribute__((weak)) scp_ipi_send(enum ipi_id id, void *buf,
+	unsigned int  len, unsigned int wait, enum scp_core_id scp_id)
+{
+	return SCP_IPI_ERROR;
+}
+
+phys_addr_t __attribute__((weak)) scp_get_reserve_mem_virt(enum scp_reserve_mem_id_t id)
+{
+	return 0;
+}
+
+phys_addr_t __attribute__((weak)) scp_get_reserve_mem_phys(enum scp_reserve_mem_id_t id)
+{
+	return 0;
+}
+
+void __attribute__((weak)) scp_register_feature(enum feature_id id)
+{
+}
+
 /* arch counter is 13M, mult is 161319385, shift is 21 */
 static inline uint64_t arch_counter_to_ns(uint64_t cyc)
 {
