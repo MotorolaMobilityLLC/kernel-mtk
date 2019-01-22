@@ -26,21 +26,17 @@ obj-$(CONFIG_MTK_COMBO_WIFI) += wmt_chrdev_wifi.o
 # WLAN driver
 
 ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
-$(warning include gen3)
 	obj-y   +=  gen3/
 endif
 
 ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
-$(warning include gen3)
 	subdir-ccflags-y += -D MT6797
 	subdir-ccflags-y += -D CFG_SPM_WORKAROUND_FOR_HOTSPOT=0
 	obj-y   +=  gen3/
 else ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-$(warning include gen2)
 	obj-y   +=  gen2/
 endif
 
 ifneq ($(filter "MT6632",$(CONFIG_MTK_COMBO_CHIP)),)
-$(warning include gen4)
 	obj-y   +=  gen4/
 endif
