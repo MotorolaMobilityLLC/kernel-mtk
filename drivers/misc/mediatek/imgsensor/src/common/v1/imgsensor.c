@@ -901,14 +901,14 @@ static inline int adopt_CAMERA_HW_GetInfo2(void *pBuf)
 	/* Add info to proc: camera_info */
 
 	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
-	snprintf(mtk_ccm_name,
+	snprintf(pmtk_ccm_name,
 		camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
 				"\n\nCAM_Info[%d]:%s;",
 				pSensorGetInfo->SensorId,
 				psensor->inst.psensor_name);
 
 	pmtk_ccm_name = strchr(mtk_ccm_name, '\0');
-	snprintf(mtk_ccm_name,
+	snprintf(pmtk_ccm_name,
 		camera_info_size - (int)(pmtk_ccm_name - mtk_ccm_name),
 		"\nPre: TgGrab_w,h,x_,y=%5d,%5d,%3d,%3d, delay_frm=%2d",
 		psensorResolution->SensorPreviewWidth,
