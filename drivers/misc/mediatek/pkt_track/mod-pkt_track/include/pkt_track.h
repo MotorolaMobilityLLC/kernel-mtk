@@ -27,7 +27,7 @@
 #define NETLINK_ENABLE
 
 /* MD to AP CCCI_IPC callback function*/
-int pkt_track_md_msg_hdlr(ipc_ilm_t *ilm);
+int pkt_track_md_msg_hdlr(struct ipc_ilm *ilm);
 
 /* AP to MD CCCI_IPC control msg API for USB gadget driver */
 bool pkt_track_enable_md_fast_path(ufpm_enable_md_func_req_t *req);
