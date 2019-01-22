@@ -809,8 +809,8 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	unsigned int wr = WR_NONE;
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
-	u32 cpu = spm_data;
-	u32 spm_flags1 = get_spm_idle_flags1();
+	u32 cpu = smp_processor_id();
+	u32 spm_flags1 = spm_data;
 
 	cpu_footprint = cpu << CPU_FOOTPRINT_SHIFT;
 

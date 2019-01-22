@@ -707,6 +707,18 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 
+static u32 slp_spm_SODI3_flags1 = {
+	0
+};
+
+static u32 slp_spm_SODI_flags1 = {
+	0
+};
+
+static u32 slp_spm_deepidle_flags1 = {
+	0
+};
+
 #elif defined(CONFIG_MACH_MT6739)
 
 static u32 slp_spm_SODI3_flags = {
@@ -736,6 +748,18 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH
+};
+
+static u32 slp_spm_SODI3_flags1 = {
+	0
+};
+
+static u32 slp_spm_SODI_flags1 = {
+	0
+};
+
+static u32 slp_spm_deepidle_flags1 = {
+	0
 };
 
 
@@ -778,6 +802,18 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
 	SPM_FLAG_DEEPIDLE_OPTION
+};
+
+static u32 slp_spm_SODI3_flags1 = {
+	SPM_FLAG1_ENABLE_CPU_SLEEP_VOLT
+};
+
+static u32 slp_spm_SODI_flags1 = {
+	SPM_FLAG1_ENABLE_CPU_SLEEP_VOLT
+};
+
+static u32 slp_spm_deepidle_flags1 = {
+	SPM_FLAG1_ENABLE_CPU_SLEEP_VOLT
 };
 
 #endif
@@ -1101,7 +1137,7 @@ int dpidle_enter(int cpu)
 	operation_cond |= dpidle_force_vcore_lp_mode ? DEEPIDLE_OPT_VCORE_LP_MODE :
 						(clkmux_cond[IDLE_TYPE_DP] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0);
 
-	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log, operation_cond);
+	spm_go_to_dpidle(slp_spm_deepidle_flags, slp_spm_deepidle_flags1, dpidle_dump_log, operation_cond);
 
 	dpidle_post_process(cpu);
 
@@ -1146,7 +1182,7 @@ int soidle3_enter(int cpu)
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags);
+	spm_go_to_sodi3(slp_spm_SODI3_flags, slp_spm_SODI3_flags1, sodi3_flags);
 
 	/* Clear SODI_FLAG_DUMP_LP_GS in sodi3_flags */
 	sodi3_flags &= (~SODI_FLAG_DUMP_LP_GS);
@@ -1203,7 +1239,7 @@ int soidle_enter(int cpu)
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
-	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags);
+	spm_go_to_sodi(slp_spm_SODI_flags, slp_spm_SODI_flags1, sodi_flags);
 
 	/* Clear SODI_FLAG_DUMP_LP_GS in sodi_flags */
 	sodi_flags &= (~SODI_FLAG_DUMP_LP_GS);
