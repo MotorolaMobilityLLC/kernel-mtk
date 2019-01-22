@@ -31,6 +31,16 @@ config MTK_LOAD_BALANCE_ENHANCEMENT
 	  2. aggressive load balance in hmp noHz.
 	  3. aggressive cluster-migration in idle balancing & GTS balacing
 
+config MTK_IDLE_BALANCE_ENHANCEMENT
+	bool "mtk load balance enhancement"
+	depends on SMP && CGROUP_SCHEDTUNE
+	default n
+	help
+	  Mediatek aggressive idle balance, include
+	  1. aggressive idle balance for runnable tasks with idle prefer attributes
+	  2. aggressive idle balance for runnable and running tasks with min_cap(dynamic floor)
+	  3. migrate runnable task directly and use stop machine to migrate running task
+
 config MTK_SCHED_INTEROP
 	bool "mtk scheduling interopation enhancement"
 	default n
