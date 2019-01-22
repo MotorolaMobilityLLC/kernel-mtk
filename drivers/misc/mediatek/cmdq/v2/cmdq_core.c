@@ -5896,6 +5896,87 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 #endif
 	wake_up(&gCmdWaitQueue[thread]);
 }
+#ifdef CONFIG_MTK_CMDQ_TAB
+static void cmdq_core_handle_secure_thread_done_impl(const int32_t thread,
+							   const int32_t value, CMDQ_TIME *pGotIRQ)
+{
+	uint32_t cookie;
+
+	/* get cookie value from shared memory */
+	cookie = cmdq_core_get_secure_thread_exec_counter(thread);
+	if (cookie < 0)
+		return;
+	cmdq_core_handle_done_with_cookie_impl(thread, value, pGotIRQ, cookie);
+
+}
+
+const bool cmdq_core_is_valid_notify_thread_for_secure_path(const int32_t thread)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	return (thread == 15) ? (true) : (false);
+#else
+	return false;
+#endif
+}
+
+static void cmdq_core_handle_secure_paths_exec_done_notify(const int32_t notifyThread,
+								 const int32_t value,
+								 CMDQ_TIME *pGotIRQ)
+{
+	uint32_t i;
+	uint32_t raisedIRQ;
+	int32_t thread;
+	uint32_t secure_exec_counter[3];
+	const uint32_t startThread = CMDQ_MIN_SECURE_THREAD_ID;
+	const uint32_t endThread = CMDQ_MIN_SECURE_THREAD_ID + CMDQ_MAX_SECURE_THREAD_COUNT;
+
+	memset(secure_exec_counter, 0, 3);
+	/* HACK:
+	 * IRQ of the notify thread,
+	 * implies threre are some secure tasks execute done.
+	 *
+	 * when receive it, we should
+	 * .suspend notify thread
+	 * .scan shared memory to update secure path task status
+	 *  (and notify waiting process context to check result)
+	 * .resume notify thread
+	 */
+
+	/* it's okey that SWd update and NWd read shared memory, which used to
+	 * store copy value of secure thread cookie, at the same time.
+	 *
+	 * The reason is NWd will receive a notify thread IRQ again after resume notify thread.
+	 * The later IRQ let driver scan shared memory again.
+	 * (note it's possible that same content in shared memory in such case)
+	 */
+
+	/* confirm if it is notify thread */
+	if (false == cmdq_core_is_valid_notify_thread_for_secure_path(notifyThread))
+		return;
+
+
+
+	raisedIRQ = cmdq_core_get_secure_IRQ_status();
+	secure_exec_counter[0] = cmdq_core_get_secure_thread_exec_counter(12);
+	secure_exec_counter[1] = cmdq_core_get_secure_thread_exec_counter(13);
+	secure_exec_counter[2] = cmdq_core_get_secure_thread_exec_counter(14);
+	CMDQ_MSG("%s, raisedIRQ:0x%08x, shared_cookie(%d, %d, %d)\n",
+		 __func__,
+		 raisedIRQ, secure_exec_counter[0], secure_exec_counter[1], secure_exec_counter[2]);
+
+
+	/* update tasks' status according cookie in shared memory */
+	for (i = startThread; i < endThread; i++) {
+		/* bit X = 1 means thread X raised IRQ */
+		if (0 == (raisedIRQ & (0x1 << i)))
+			continue;
+
+		thread = i;
+		cmdq_core_handle_secure_thread_done_impl(thread, value, pGotIRQ);
+	}
+	cmdq_core_set_secure_IRQ_status(0x0);
+}
+#endif
 
 static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIRQ)
 {
@@ -6008,6 +6089,10 @@ static void cmdqCoreHandleDone(int32_t thread, int32_t value, CMDQ_TIME *pGotIRQ
 
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->loopBeat,
 			      MMPROFILE_FLAG_PULSE, thread, loopResult);
+#ifdef CONFIG_MTK_CMDQ_TAB
+		/* HACK: there are some seucre task execue done */
+		cmdq_core_handle_secure_paths_exec_done_notify(thread, value, pGotIRQ);
+#endif
 
 		if (loopResult >= 0) {
 #ifdef CMDQ_PROFILE_COMMAND_TRIGGER_LOOP
