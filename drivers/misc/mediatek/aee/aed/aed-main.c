@@ -1845,7 +1845,7 @@ static void kernel_reportAPI(const enum AE_DEFECT_ATTR attr, const int db_opt, c
 	struct rtc_time tm;
 	struct timeval tv = { 0 };
 
-	if (aee_mode == AEE_MODE_CUSTOMER_USER || (aee_mode == AEE_MODE_CUSTOMER_ENG && attr == AE_DEFECT_WARNING))
+	if (aee_mode >= AEE_MODE_CUSTOMER_USER || (aee_mode == AEE_MODE_CUSTOMER_ENG && attr == AE_DEFECT_WARNING))
 		return;
 	oops = aee_oops_create(attr, AE_KERNEL_PROBLEM_REPORT, module);
 	if (oops != NULL) {
