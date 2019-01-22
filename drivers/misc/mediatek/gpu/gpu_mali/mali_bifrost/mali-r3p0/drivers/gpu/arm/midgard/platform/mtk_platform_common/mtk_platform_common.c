@@ -29,6 +29,8 @@
 
 /* on:1, off:0 */
 int g_vgpu_power_on_flag;
+DEFINE_MUTEX(g_flag_lock);
+
 
 int g_mtk_gpu_efuse_set_already;
 
@@ -421,7 +423,9 @@ int mtk_get_vgpu_power_on_flag(void)
 
 int mtk_set_vgpu_power_on_flag(int power_on_id)
 {
+	mutex_lock(&g_flag_lock);
 	g_vgpu_power_on_flag = power_on_id;
+	mutex_unlock(&g_flag_lock);
 
 	return 0;
 }
@@ -429,8 +433,16 @@ int mtk_set_vgpu_power_on_flag(int power_on_id)
 int mtk_set_mt_gpufreq_target(int freq_id)
 {
 #ifdef ENABLE_COMMON_DVFS
+	int ret = 0;
+
+	mutex_lock(&g_flag_lock);
+
 	if (mtk_get_vgpu_power_on_flag() == MTK_VGPU_POWER_ON)
-		return	mt_gpufreq_target(freq_id);
+		ret = mt_gpufreq_target(freq_id);
+
+	mutex_unlock(&g_flag_lock);
+
+	return ret;
 #else
 	pr_alert("MALI: GPU DVFS doesn't support\n");
 #endif
