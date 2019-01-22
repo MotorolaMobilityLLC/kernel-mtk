@@ -386,6 +386,9 @@ static int golden_test_proc_show(struct seq_file *m, void *v)
 		seq_puts(m, "6.   set register value (normal mode):  echo set 0x10000000 (addr) 0x13201494 (reg val) > /proc/clkmgr/golden_test\n");
 		seq_puts(m, "(6.) set register value (mask mode):    echo set 0x10000000 (addr) 0xffff (mask) 0x13201494 (reg val) > /proc/clkmgr/golden_test\n");
 		seq_puts(m, "(6.) set register value (bit mode):     echo set 0x10000000 (addr) 0 (bit num) 1 (reg val) > /proc/clkmgr/golden_test\n");
+		seq_puts(m, "7.   dump suspend comapare:             echo dump_suspend > /proc/clkmgr/golden_test\n");
+		seq_puts(m, "8.   dump dpidle comapare:              echo dump_dpidle > /proc/clkmgr/golden_test\n");
+		seq_puts(m, "9.   dump sodi comapare:                echo dump_sodi > /proc/clkmgr/golden_test\n");
 	} else {
 		static struct snapshot *snapshot;
 
@@ -502,6 +505,12 @@ static ssize_t golden_test_proc_write(struct file *file, const char __user *buff
 			_golden_setting_set_mode(&_golden, MODE_DIFF);
 		else if (!strcmp(cmd, "filter"))
 			_golden.func[0] = '\0';
+		else if (!strcmp(cmd, "dump_suspend"))
+			mt_power_gs_suspend_compare();
+		else if (!strcmp(cmd, "dump_dpidle"))
+			mt_power_gs_dpidle_compare();
+		else if (!strcmp(cmd, "dump_sodi"))
+			mt_power_gs_sodi_compare();
 	}
 
 	free_page((size_t)buf);
@@ -579,6 +588,8 @@ static int mt_golden_setting_init(void)
 					pr_err("[%s]: fail to mkdir /proc/golden/%s\n", __func__, entries[i].name);
 			}
 
+			_base_remap.table_size = REMAP_SIZE_MASK;
+			_base_remap.table_pos = 0;
 			mt_power_gs_table_init();
 		}
 	}
@@ -649,6 +660,7 @@ void __iomem *_get_virt_base_from_table(unsigned int phys_base)
 			if (_base_remap.table[k].phys_base == phys_base)
 				return (io_base = _base_remap.table[k].virt_base);
 
+	pr_warn("Power_gs: cannot find virtual address, return value 0\n");
 	return io_base;
 }
 
@@ -664,9 +676,6 @@ unsigned int mt_power_gs_base_remap_init(char *scenario, char *pmic_name,
 	}
 
 	if (_base_remap.table) {
-		_base_remap.table_size = REMAP_SIZE_MASK;
-		_base_remap.table_pos = 0;
-
 		table = _base_remap.table;
 
 		for (i = 0; i < pmic_gs_len; i += 3) {
