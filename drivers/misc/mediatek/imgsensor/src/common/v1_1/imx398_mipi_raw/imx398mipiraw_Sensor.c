@@ -52,6 +52,8 @@
 #define LOG_1 LOG_INF("IMX398,MIPI 4LANE\n")
 /****************************   Modify end    *******************************************/
 
+#define IMX398_HS_VIDEO_115FPS
+
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #define BYTE               unsigned char
@@ -112,6 +114,19 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 30,
 		.max_framerate = 300,
 	},
+#ifdef IMX398_HS_VIDEO_115FPS
+	.hs_video = {		/* 120 fps */
+		.pclk = 600000000,
+		.linelength = 5536,
+		.framelength = 944,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 1476,
+		.grabwindow_height = 834,
+		.mipi_data_lp2hs_settle_dc = 30,
+		.max_framerate = 1150,
+	},
+#else
 	.hs_video = {		/* 120 fps */
 		.pclk = 600000000,
 		.linelength = 5536,
@@ -123,6 +138,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 30,
 		.max_framerate = 1200,
 	},
+#endif
 	.slim_video = {
 		.pclk = 240000000,
 		.linelength = 5536,
@@ -2774,8 +2790,13 @@ kal_uint16 addr_data_pair_hs_video_imx398[] = {
 	0x0220, 0x00,
 	0x0221, 0x11,
 	0x0222, 0x10,
+#ifdef IMX398_HS_VIDEO_115FPS
+	0x0340, 0x03,
+	0x0341, 0xB0,
+#else
 	0x0340, 0x03,
 	0x0341, 0x86,
+#endif
 	0x0342, 0x15,
 	0x0343, 0xA0,
 	0x0344, 0x00,
