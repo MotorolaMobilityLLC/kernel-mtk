@@ -30,6 +30,7 @@
 #include "mtk-ssusb-hal.h"
 
 static struct phy *mtk_phy;
+static void __iomem *infra_ao_base;
 
 static void u3phywrite32(u32 reg, int mode, int offset, int mask, int value)
 {
@@ -45,6 +46,43 @@ static int dpidle_status = USB_DPIDLE_ALLOWED;
 static DEFINE_SPINLOCK(usb_hal_dpidle_lock);
 #define DPIDLE_TIMER_INTERVAL_MS 30
 static void issue_dpidle_timer(void);
+
+static int usbaudio_idle_notify_call(struct notifier_block *nfb,
+				unsigned long id,
+				void *arg)
+{
+	switch (id) {
+	case NOTIFY_DPIDLE_ENTER:
+	case NOTIFY_SOIDLE_ENTER:
+		if (dpidle_status == USB_DPIDLE_AUDIO_SRAM) {
+			writel(readl(infra_ao_base + 0x78) | (0x1<<1), infra_ao_base + 0x78);
+			writel(readl(infra_ao_base + 0x78) & ~(0x1<<0), infra_ao_base + 0x78);
+			writel(readl(infra_ao_base + 0x78) | (0x1<<6), infra_ao_base + 0x78);
+			writel(readl(infra_ao_base + 0x78) | (0x1<<0), infra_ao_base + 0x78);
+			writel(readl(infra_ao_base + 0x78) & ~(0x1<<1), infra_ao_base + 0x78);
+		}
+		break;
+	case NOTIFY_DPIDLE_LEAVE:
+	case NOTIFY_SOIDLE_LEAVE:
+		writel(readl(infra_ao_base + 0x78) | (0x1<<1), infra_ao_base + 0x78);
+		writel(readl(infra_ao_base + 0x78) & ~(0x1<<0), infra_ao_base + 0x78);
+		writel(readl(infra_ao_base + 0x78) & ~(0x1<<6), infra_ao_base + 0x78);
+		writel(readl(infra_ao_base + 0x78) | (0x1<<0), infra_ao_base + 0x78);
+		writel(readl(infra_ao_base + 0x78) & ~(0x1<<1), infra_ao_base + 0x78);
+		break;
+	case NOTIFY_SOIDLE3_ENTER:
+	case NOTIFY_SOIDLE3_LEAVE:
+	default:
+		/* do nothing */
+		break;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block usbaudio_idle_nfb = {
+	.notifier_call = usbaudio_idle_notify_call,
+};
+
 static void dpidle_timer_wakeup_func(unsigned long data)
 {
 	struct timer_list *timer = (struct timer_list *)data;
@@ -88,7 +126,9 @@ void usb_hal_dpidle_request(int mode)
 
 	/* update dpidle_status */
 	dpidle_status = mode;
-
+#if 0
+	usb_audio_req(false);
+#endif
 	switch (mode) {
 
 	case USB_DPIDLE_ALLOWED:
@@ -118,6 +158,22 @@ void usb_hal_dpidle_request(int mode)
 				skip_cnt++;
 		}
 		break;
+#if 0
+	case USB_DPIDLE_AUDIO_SRAM:
+		spm_resource_req(SPM_RESOURCE_USER_SSUSB, 0);
+		usb_audio_req(true);
+		{
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
+			static int skip_cnt;
+
+			if (__ratelimit(&ratelimit)) {
+				os_printk(K_INFO, "USB_DPIDLE_AUDIO_SRAM, skip_cnt<%d>\n", skip_cnt);
+				skip_cnt = 0;
+			} else
+				skip_cnt++;
+		}
+		break;
+#endif
 	case USB_DPIDLE_TIMER:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_CK_26M);
 		os_printk(K_INFO, "USB_DPIDLE_TIMER\n");
@@ -238,9 +294,8 @@ MODULE_DESCRIPTION("mtud usb2uart Driver");
 MODULE_AUTHOR("MediaTek");
 MODULE_LICENSE("GPL v2");
 module_platform_driver(usb2uart_dts_driver);
-
-
 #endif
+
 
 #ifdef CONFIG_U3_PHY_SMT_LOOP_BACK_SUPPORT
 bool u3_loop_back_test(void)
@@ -424,7 +479,19 @@ void Charger_Detect_Release(void)
 
 void init_phy_hal(struct phy *phy)
 {
+	struct device_node *node;
+	struct device_node *phy_node = phy->dev.of_node;
+
 	mtk_phy = phy;
+	if (of_device_is_compatible(phy_node, "mediatek,mt6758-phy")) {
+		node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+		if (node) {
+			infra_ao_base = of_iomap(node, 0);
+			if (infra_ao_base)
+				mtk_idle_notifier_register(&usbaudio_idle_nfb);
+		}
+	}
+
 #ifdef CONFIG_MTK_SIB_USB_SWITCH
 	wake_lock_init(&sib_wakelock, WAKE_LOCK_SUSPEND, "SIB.lock");
 #endif
