@@ -196,27 +196,36 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		dvfsrc_write(dvfsrc, DVFSRC_SW_BW_4, data / 100);
 		break;
 	case PM_QOS_EMI_OPP:
-		level = EMI_NUM_OPP - data - 1;
+		if (data >= EMI_OPP_NUM)
+			data = EMI_OPP_NUM - 1;
+
+		level = EMI_OPP_NUM - data - 1;
 		dvfsrc_write(dvfsrc, DVFSRC_SW_REQ,
 				(dvfsrc_read(dvfsrc, DVFSRC_SW_REQ)
 				& ~(0x3)) | level);
 		break;
 	case PM_QOS_VCORE_OPP:
-		level = ((VCORE_NUM_OPP - data - 1) << 2);
+		if (data >= VCORE_OPP_NUM)
+			data = VCORE_OPP_NUM - 1;
+
+		level = ((VCORE_OPP_NUM - data - 1) << 2);
 		dvfsrc_write(dvfsrc, DVFSRC_SW_REQ,
 				(dvfsrc_read(dvfsrc, DVFSRC_SW_REQ)
 				& ~(0xC)) | level);
 		break;
 	case PM_QOS_VCORE_DVFS_FIXED_OPP:
-		if (data == -1) {
+		if (data >= VCORE_DVFS_FIXED_OPP_NUM)
+			data = VCORE_DVFS_FIXED_OPP_NUM;
+
+		if (data == VCORE_DVFS_FIXED_OPP_NUM) { /* no fix opp*/
 			level = 0;
 			force_en_tar = 0;
 			dvfsrc_write(dvfsrc, DVFSRC_BASIC_CONTROL,
 					(dvfsrc_read(dvfsrc, DVFSRC_BASIC_CONTROL)
 					& ~(1 << 15)) | force_en_tar);
 			dvfsrc_write(dvfsrc, DVFSRC_FORCE, level);
-		} else {
-			level = 1 << (VCORE_DVFS_FIXED_NUM_OPP - data - 1);
+		} else { /* fix opp */
+			level = 1 << (VCORE_DVFS_FIXED_OPP_NUM - data - 1);
 			force_en_tar = (1 << 15);
 			dvfsrc_write(dvfsrc, DVFSRC_FORCE, level);
 			dvfsrc_write(dvfsrc, DVFSRC_BASIC_CONTROL,
