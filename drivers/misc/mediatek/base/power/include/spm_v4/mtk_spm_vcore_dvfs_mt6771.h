@@ -77,7 +77,7 @@ extern int spm_vcorefs_pwarp_cmd(void);
 extern int spm_vcorefs_get_opp(void);
 extern void spm_request_dvfs_opp(int id, enum dvfs_opp opp);
 extern u32 spm_vcorefs_get_md_srcclkena(void);
-extern void dvfsrc_md_scenario_update(bool);
+extern void dvfsrc_md_scenario_update_to_fb(bool);
 extern void dvfsrc_set_scp_vcore_request(unsigned int val);
 extern void dvfsrc_set_power_model_ddr_request(unsigned int level);
 extern void helio_dvfsrc_sspm_ipi_init(int dvfs_en, int dram_type);
