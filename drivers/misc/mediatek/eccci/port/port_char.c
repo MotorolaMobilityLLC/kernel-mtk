@@ -165,7 +165,7 @@ static int port_char_recv_skb(struct port_t *port, struct sk_buff *skb)
 		return -CCCI_ERR_DROP_PACKET;
 
 #ifdef CONFIG_MTK_ECCCI_C2K
-	if ((md_id == MD_SYS3) && port->interception) {
+	if (port->interception) {
 		c2k_req_push_to_usb(port, skb);
 		return 0;
 	}
