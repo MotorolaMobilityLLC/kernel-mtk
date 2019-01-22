@@ -72,6 +72,7 @@ config MMC_TEST
 config MMC_BLOCK_IO_LOG
 	bool "Block IO log"
 	depends on MMC_BLOCK
+	depends on MTK_BLOCK_TAG
 	default y
 	help
 	  The BLOCK TAG trace provides I/O logs for performance analysis and
