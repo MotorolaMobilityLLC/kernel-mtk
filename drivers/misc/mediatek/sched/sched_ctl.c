@@ -202,6 +202,9 @@ void update_sched_hint(int sys_util, int sys_cap)
 		return;
 	}
 
+	if (!sys_cap)
+		return;
+
 	g_shd.sys_util =  sys_util;
 	g_shd.sys_cap = sys_cap;
 
