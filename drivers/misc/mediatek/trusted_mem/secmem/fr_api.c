@@ -30,6 +30,7 @@
 #include "private/tmem_device.h"
 #include "private/tmem_error.h"
 #include "tee_impl/tee_common.h"
+#include "tee_impl/tee_invoke.h"
 
 int secmem_fr_set_prot_shared_region(u64 pa, u32 size)
 {
@@ -46,8 +47,7 @@ int secmem_fr_set_prot_shared_region(u64 pa, u32 size)
 	}
 #endif
 
-	return tmem_core_invoke_command(TRUSTED_MEM_SVP_VIRT_2D_FR,
-					&cmd_params);
+	return tee_directly_invoke_cmd(&cmd_params);
 }
 
 int secmem_fr_dump_info(void)
@@ -55,6 +55,5 @@ int secmem_fr_dump_info(void)
 	struct trusted_driver_cmd_params cmd_params = {0};
 
 	cmd_params.cmd = CMD_SEC_MEM_DUMP_MEM_INFO;
-	return tmem_core_invoke_command(TRUSTED_MEM_SVP_VIRT_2D_FR,
-					&cmd_params);
+	return tee_directly_invoke_cmd(&cmd_params);
 }
