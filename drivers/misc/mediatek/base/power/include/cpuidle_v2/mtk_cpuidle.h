@@ -24,6 +24,8 @@
 #include "mtk_cpuidle_mt6759.h"
 #elif defined(CONFIG_MACH_MT6763)
 #include "mtk_cpuidle_mt6763.h"
+#elif defined(CONFIG_MACH_MT6758)
+#include "mtk_cpuidle_mt6758.h"
 #endif
 
 enum mtk_cpuidle_mode {

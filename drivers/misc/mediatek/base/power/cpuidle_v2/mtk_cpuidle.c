@@ -30,7 +30,6 @@
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/sync_write.h>
 
-#include <mtk_clkmgr.h>
 #include <mtk_cpuidle.h>
 #if defined(CONFIG_MTK_RAM_CONSOLE) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 #include <mt-plat/mtk_secure_api.h>
@@ -59,7 +58,7 @@ static void mtk_spm_wakeup_src_restore(void)
 	int i;
 
 	for (i = 0; i < IRQ_NR_MAX; i++) {
-		if (spm_read(SPM_WAKEUP_STA) & wake_src_irq[i])
+		if (readl_relaxed(SPM_WAKEUP_STA) & wake_src_irq[i])
 			mt_irq_set_pending(irq_nr[i]);
 	}
 }
