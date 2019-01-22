@@ -98,6 +98,7 @@ static void ccci_ringbuf_dump(int md_id, unsigned char *title,
 {
 	int i, j;
 	unsigned char tmp_buf[256];
+	unsigned char buf[256];
 	unsigned int write = read + dump_size;
 
 	if (write >= length)
@@ -116,8 +117,9 @@ static void ccci_ringbuf_dump(int md_id, unsigned char *title,
 		memset(tmp_buf, 0, sizeof(tmp_buf));
 		snprintf(tmp_buf, sizeof(tmp_buf), "%08X:", i);
 		for (j = 0; j < 4; j++) {
+			snprintf(buf, sizeof(tmp_buf), "%s", tmp_buf);
 			snprintf(tmp_buf, sizeof(tmp_buf),
-				 "%s %02X%02X%02X%02X", tmp_buf, *(buffer + i),
+				 "%s %02X%02X%02X%02X", buf, *(buffer + i),
 				 *(buffer + i + 1), *(buffer + i + 2),
 				 *(buffer + i + 3));
 			i += sizeof(unsigned int);
