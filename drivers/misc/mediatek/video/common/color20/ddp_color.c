@@ -2160,23 +2160,26 @@ static unsigned long color_get_MDP_RDMA0_VA(void)
 
 static void _color_get_VA(void)
 {
-	g_tdshp_va = color_get_TDSHP_VA();
+	/* check if va address initialized*/
+	if (g_get_va_flag == false) {
+		g_tdshp_va = color_get_TDSHP_VA();
 #if defined(DISP_MDP_COLOR_ON) || defined(MDP_COLOR_ON)
-	g_mdp_color_va = color_get_MDP_COLOR_VA();
+		g_mdp_color_va = color_get_MDP_COLOR_VA();
 #endif
 #if defined(CONFIG_MACH_MT6595) || defined(CONFIG_MACH_MT6795)
-	g_tdshp1_va = color_get_TDSHP1_VA();
+		g_tdshp1_va = color_get_TDSHP1_VA();
 #endif
 #if defined(SUPPORT_ULTRA_RESOLUTION)
-	g_mdp_rsz0_va = color_get_MDP_RSZ0_VA();
-	g_mdp_rsz1_va = color_get_MDP_RSZ1_VA();
-	g_mdp_rsz2_va = color_get_MDP_RSZ2_VA();
+		g_mdp_rsz0_va = color_get_MDP_RSZ0_VA();
+		g_mdp_rsz1_va = color_get_MDP_RSZ1_VA();
+		g_mdp_rsz2_va = color_get_MDP_RSZ2_VA();
 #endif
 
 #if defined(SUPPORT_HDR)
-	g_mdp_rdma0_va = color_get_MDP_RDMA0_VA();
+		g_mdp_rdma0_va = color_get_MDP_RDMA0_VA();
 #endif
-	g_get_va_flag = true;
+		g_get_va_flag = true;
+	}
 }
 
 
@@ -2266,9 +2269,7 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 static unsigned long color_pa2va(unsigned int addr)
 {
 	unsigned int i = 0;
-	/* check va address */
-	if (g_get_va_flag == false)
-		_color_get_VA();
+	_color_get_VA();
 
 	/* check disp module */
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6763) \
