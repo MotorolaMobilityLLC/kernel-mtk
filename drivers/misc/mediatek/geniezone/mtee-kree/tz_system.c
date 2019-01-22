@@ -47,6 +47,9 @@ DEFINE_MUTEX(fd_mutex);
 #define KREE_SESSION_HANDLE_MAX_SIZE 512
 #define KREE_SESSION_HANDLE_SIZE_MASK (KREE_SESSION_HANDLE_MAX_SIZE-1)
 
+static int32_t _sys_service_Fd = -1; /* only need to open sys service once */
+static tipc_k_handle _sys_service_h;
+
 static tipc_k_handle _kree_session_handle_pool[KREE_SESSION_HANDLE_MAX_SIZE];
 static int32_t _kree_session_handle_idx;
 
@@ -65,10 +68,13 @@ int32_t _setSessionHandle(tipc_k_handle h)
 
 int _getSessionHandle(int32_t session, tipc_k_handle *h)
 {
-	if (session < 0 || session >= KREE_SESSION_HANDLE_MAX_SIZE)
+	if (session < 0 || session > KREE_SESSION_HANDLE_MAX_SIZE)
 		return -1;
 
-	*h = _kree_session_handle_pool[session];
+	if (session == KREE_SESSION_HANDLE_MAX_SIZE)
+		*h = _sys_service_h;
+	else
+		*h = _kree_session_handle_pool[session];
 
 	return 0;
 }
@@ -93,6 +99,21 @@ int32_t _HandleToFd(tipc_k_handle h)
 
 #define _HandleToChanInfo(x) ((struct tipc_dn_chan *)(x))
 
+static TZ_RESULT KREE_OpenSysFd(void)
+{
+	TZ_RESULT ret = TZ_RESULT_SUCCESS;
+
+	ret = tipc_k_connect(&_sys_service_h, GZ_SYS_SERVICE_NAME);
+	if (ret < 0) {
+		KREE_DEBUG("%s: Failed to connect to service\n", __func__);
+		return TZ_RESULT_ERROR_COMMUNICATION;
+	}
+	_sys_service_Fd = KREE_SESSION_HANDLE_MAX_SIZE;
+
+	KREE_DEBUG("===> %s: chan_p = 0x%llx\n", __func__, (uint64_t)_sys_service_h);
+
+	return ret;
+}
 
 static TZ_RESULT KREE_OpenFd(const char *port, int32_t *Fd)
 {
@@ -433,7 +454,7 @@ TZ_RESULT _GzCreateSession_body(int32_t Fd, unsigned int cmd, const char *uuid)
 	/* connect to sys service */
 	if (_sys_service_Fd < 0) {
 		KREE_DEBUG("%s: Open sys service fd first.\n", __func__);
-		ret = KREE_OpenFd(GZ_SYS_SERVICE_NAME, &_sys_service_Fd);
+		ret = KREE_OpenSysFd();
 		if (ret) {
 			KREE_ERR("%s: open sys service fd failed, ret = 0x%x\n", __func__, ret);
 			return ret;
