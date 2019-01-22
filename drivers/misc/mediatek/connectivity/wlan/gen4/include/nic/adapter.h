@@ -834,6 +834,13 @@ typedef struct _WIFI_VAR_T {
 #if CFG_RX_BA_REORDERING_ENHANCEMENT
 	BOOLEAN fgEnableReportIndependentPkt;
 #endif
+
+	UINT_8	uDeQuePercentEnable;
+	UINT_32	u4DeQuePercentVHT80Nss1;
+	UINT_32	u4DeQuePercentVHT40Nss1;
+	UINT_32	u4DeQuePercentVHT20Nss1;
+	UINT_32	u4DeQuePercentHT40Nss1;
+	UINT_32	u4DeQuePercentHT20Nss1;
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */
