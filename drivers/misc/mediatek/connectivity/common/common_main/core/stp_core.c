@@ -3515,7 +3515,7 @@ INT32 mtk_wcn_stp_wmt_evt_err_trg_assert(VOID)
 
 	if (mtk_wcn_stp_coredump_start_get() != 0) {
 		STP_INFO_FUNC("firmware assert has been triggered\n");
-		return 0;
+		return 1;
 	}
 	ret = stp_notify_btm_do_fw_assert(STP_BTM_CORE(stp_core_ctx));
 
