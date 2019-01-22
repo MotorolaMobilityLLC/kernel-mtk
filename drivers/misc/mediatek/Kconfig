@@ -155,7 +155,7 @@ config MTK_DCS
 
 config MTK_PASR
 	bool "Support Mediatek DRAM PASR mechanism"
-	depends on MTK_MEMORY_LOWPOWER && (MTK_EMI || MTK_EMI_MPU)
+	depends on MTK_MEMORY_LOWPOWER && (MTK_EMI || MTK_EMI_MPU) && MTK_DRAMC
 	default n
 	help
 	  Mediatek DRAM PASR mechanism.
