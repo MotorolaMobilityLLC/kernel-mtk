@@ -511,7 +511,7 @@ static ssize_t mtktscharger_write(struct file *file, const char __user *buffer, 
 			trip_temp[7], trip_temp[8]);
 		mtktscharger_dprintk("trip_9_temp=%d time_ms=%d\n", trip_temp[9], interval * 1000);
 
-		mtktscharger_dprintk("mtktscharger_unregister_thermal\n");
+		mtktscharger_dprintk("mtktscharger_register_thermal\n");
 		mtktscharger_register_thermal();
 		up(&sem_mutex);
 
