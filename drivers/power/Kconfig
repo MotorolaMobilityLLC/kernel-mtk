@@ -508,6 +508,8 @@ config AXP20X_POWER
 	  This driver provides support for the power supply features of
 	  AXP20x PMIC.
 
+source "drivers/power/mediatek/Kconfig"
+
 source "drivers/power/reset/Kconfig"
 
 endif # POWER_SUPPLY
