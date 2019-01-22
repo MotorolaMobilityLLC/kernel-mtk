@@ -581,12 +581,12 @@ void register_all_oc_interrupts(void)
 	enum PMIC_IRQ_ENUM oc_interrupt;
 
 	/* BUCK OC */
-	for (oc_interrupt = INT_VPROC_OC; oc_interrupt <= INT_VPA_OC; oc_interrupt++) {
+	for (oc_interrupt = INT_VPROC11_OC; oc_interrupt <= INT_VPA_OC; oc_interrupt++) {
 		pmic_register_oc_interrupt_callback(oc_interrupt);
 		pmic_enable_interrupt(oc_interrupt, 1, "PMIC");
 	}
 	/* LDO OC */
-	for (oc_interrupt = INT_VFE28_OC; oc_interrupt <= INT_VSIM2_OC; oc_interrupt++) {
+	for (oc_interrupt = INT_VFE28_OC; oc_interrupt <= INT_VBIF28_OC; oc_interrupt++) {
 		switch (oc_interrupt) {
 		case INT_VSIM1_OC:
 		case INT_VSIM2_OC:
