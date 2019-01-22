@@ -160,6 +160,7 @@ struct OVL_CONFIG_STRUCT {
 	unsigned int key;
 	unsigned int aen;
 	unsigned char alpha;
+	unsigned int dim_color;
 
 	unsigned int sur_aen;
 	unsigned int src_alpha;

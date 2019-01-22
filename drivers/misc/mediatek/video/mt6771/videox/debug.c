@@ -1344,22 +1344,30 @@ static void process_dbg_opt(const char *opt)
 			mipi_clk_change(0, 0);
 	} else if (strncmp(opt, "ovl_bgcolor", 11) == 0) {
 		unsigned int bgcolor;
+		unsigned int old;
 
 		ret = sscanf(opt, "ovl_bgcolor:0x%x\n", &bgcolor);
 		if (ret != 1) {
 			DDPPR_ERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
-		gOVLBackground = bgcolor;
+		old = ovl_set_bg_color(bgcolor);
+		DISPMSG("change bg_color from 0x%08x to 0x%08x\n",
+			old, bgcolor);
+
 	} else if (strncmp(opt, "ovl_dimcolor", 12) == 0) {
 		unsigned int dimcolor;
+		unsigned int old;
 
 		ret = sscanf(opt, "ovl_dimcolor:0x%x\n", &dimcolor);
 		if (ret != 1) {
 			DDPPR_ERR("%d error to parse cmd %s\n", __LINE__, opt);
 			return;
 		}
-		govldimcolor = dimcolor;
+
+		old = ovl_set_dim_color(dimcolor);
+		DISPMSG("change dim_color from 0x%08x to 0x%08x\n",
+			old, dimcolor);
 	} else if (strncmp(opt, "disp_rdma_recovery", 18) == 0) {
 		DISPMSG("disp_rdma_recovery\n");
 		primary_display_recovery(DISP_MODULE_RDMA0);
