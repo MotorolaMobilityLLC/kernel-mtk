@@ -755,6 +755,20 @@ int fgauge_set_coulomb_interrupt1_ht(struct gauge_device *gauge_dev, int car_val
 		value32_CAR, value32_CAR, uvalue32_CAR_MSB, (pmic_get_register_value(PMIC_FG_CAR_15_00)),
 		(pmic_get_register_value(PMIC_FG_CAR_31_16)));
 
+	/* recover read */
+	ret = pmic_config_interface(MT6357_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	m = 0;
+	while (fg_get_data_ready_status() != 0) {
+		m++;
+		if (m > 1000) {
+			bm_err(
+				 "[fgauge_set_coulomb_interrupt1_ht] fg_get_data_ready_status timeout 2 !");
+			break;
+		}
+	}
+	ret = pmic_config_interface(MT6357_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	/* recover done */
+
 	/* gap to register-base */
 #if defined(__LP64__) || defined(_LP64)
 	car = car * CAR_TO_REG_FACTOR / 10;
@@ -866,6 +880,20 @@ int fgauge_set_coulomb_interrupt1_lt(struct gauge_device *gauge_dev, int car_val
 		"[fgauge_set_coulomb_interrupt1_lt] FG_CAR = 0x%x:%d   uvalue32_CAR_MSB:0x%x 0x%x 0x%x\r\n",
 		value32_CAR, value32_CAR, uvalue32_CAR_MSB, (pmic_get_register_value(PMIC_FG_CAR_15_00)),
 		(pmic_get_register_value(PMIC_FG_CAR_31_16)));
+
+	/* recover read */
+	ret = pmic_config_interface(MT6357_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	m = 0;
+	while (fg_get_data_ready_status() != 0) {
+		m++;
+		if (m > 1000) {
+			bm_err(
+				 "[fgauge_set_coulomb_interrupt1_lt] fg_get_data_ready_status timeout 2 !");
+			break;
+		}
+	}
+	ret = pmic_config_interface(MT6357_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	/* recover done */
 
 	/* gap to register-base */
 #if defined(__LP64__) || defined(_LP64)
