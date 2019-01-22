@@ -13,7 +13,7 @@
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 # ccflags-y += -Idrivers/misc/mediatek/aee/aed/
-# ccflags-y += -Idrivers/misc/mediatek/log_store/
+ccflags-y += -Idrivers/misc/mediatek/log_store/
 # LINUXINCLUDE += -include $(srctree)/kernel/sched/sched.h
 
 obj-y := bootprof.o common.o mtprof.o
