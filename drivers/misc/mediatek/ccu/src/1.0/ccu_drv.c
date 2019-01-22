@@ -277,14 +277,13 @@ int ccu_push_command_to_queue(ccu_user_t *user, ccu_cmd_st *cmd)
 
 	LOG_DBG("+:%s\n", __func__);
 
-	/*spin_lock(&g_ccu_device->cmd_wait.lock);*/
-
 	mutex_lock(&user->data_mutex);
 	list_add_tail(vlist_link(cmd, ccu_cmd_st), &user->enque_ccu_cmd_list);
 	mutex_unlock(&user->data_mutex);
 
+	spin_lock(&g_ccu_device->cmd_wait.lock);
 	wake_up_locked(&g_ccu_device->cmd_wait);
-	/*spin_unlock(&g_ccu_device->cmd_wait.lock);*/
+	spin_unlock(&g_ccu_device->cmd_wait.lock);
 
 	return 0;
 }
