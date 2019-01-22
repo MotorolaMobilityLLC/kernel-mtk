@@ -63,10 +63,29 @@ static kal_uint32 readFromBT_cnt;
 
 static bool rx_timeout;
 
+static uint64 bt_rx_timestamp;
+static uint64 bt_tx_timestamp;
+static uint64 bt_rx_bufdata_equivalent_time;
+static uint64 bt_tx_bufdata_equivalent_time;
+
+
+
 /*=============================================================================================
 *     BT SCO Internal Function
 *=============================================================================================
 */
+
+void get_tx_timestamp(struct time_buffer_info *timestamp)
+{
+	timestamp->timestamp_us = bt_tx_timestamp;
+	timestamp->data_count_equi_time = bt_tx_bufdata_equivalent_time;
+}
+
+void get_rx_timestamp(struct time_buffer_info *timestamp)
+{
+	timestamp->timestamp_us = bt_rx_timestamp;
+	timestamp->data_count_equi_time = bt_rx_bufdata_equivalent_time;
+}
 
 void AudDrv_BTCVSD_DataTransfer(BT_SCO_DIRECT uDir, kal_uint8 *pSrc,
 										kal_uint8 *pDst, kal_uint32 uBlockSize,
@@ -694,6 +713,18 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 			}
 		}
 	}
+
+	/* Save current timestamp & buffer time in bt_rx_timestamp and bt_rx_bufdata_equivalent_time */
+	bt_rx_timestamp = sched_clock();
+	bt_rx_bufdata_equivalent_time = (btsco.pRX->iPacket_w - btsco.pRX->iPacket_r) * (SCO_RX_PLC_SIZE)
+					* 16 * 1000  / 2 / 64;
+	bt_rx_bufdata_equivalent_time += read_count * SCO_RX_PLC_SIZE * 16 * 1000
+					 / (SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE) / 2 / 64;
+	bt_rx_bufdata_equivalent_time *= 1000;  /* return equivalent time(us) to data count */
+
+	LOGBT("bt_rx_timestamp:%llu,bt_rx_bufdata_equivalent_time:%llu, iPacket_w:%d, iPacket_r:%d ",
+	      bt_rx_timestamp, bt_rx_bufdata_equivalent_time, btsco.pRX->iPacket_w, btsco.pRX->iPacket_r);
+
 	LOGBT("AudDrv_btcvsd_read read_count = %zd,read_timeout_limit=%llu\n", read_count, read_timeout_limit);
 	return read_count;
 }
@@ -714,6 +745,14 @@ ssize_t AudDrv_btcvsd_write(const char __user *data, size_t count)
 
 	/* ns */
 	write_timeout_limit = ((kal_uint64)SCO_TX_PACKER_BUF_NUM*SCO_TX_ENCODE_SIZE*16*1000000000)/2/2/64000;
+
+	/* Save current timestamp & buffer time in bt_tx_timestamp and bt_tx_bufdata_equivalent_time */
+	bt_tx_timestamp = sched_clock();
+	bt_tx_bufdata_equivalent_time = (btsco.pTX->iPacket_w - btsco.pTX->iPacket_r) * (SCO_TX_ENCODE_SIZE)
+					* 16 * 1000  / 2 / 64;
+	bt_tx_bufdata_equivalent_time *= 1000; /* return equivalent time(us) to data count */
+	LOGBT("bt_tx_timestamp:%llu,bt_tx_bufdata_equivalent_time:%llu, iPacket_w:%d, iPacket_r:%d ",
+	      bt_tx_timestamp, bt_tx_bufdata_equivalent_time, btsco.pTX->iPacket_w, btsco.pTX->iPacket_r);
 
 	while (count) {
 		LOGBT("%s btsco.pTX->iPacket_w=%d, btsco.pTX->iPacket_r=%d\n",

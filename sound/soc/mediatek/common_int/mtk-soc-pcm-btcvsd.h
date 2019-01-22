@@ -204,6 +204,11 @@ struct btcvsd_tx_buffer_info {
 	kal_uint32 packet_number;
 };
 
+struct time_buffer_info {
+	uint64 data_count_equi_time;
+	uint64 timestamp_us;
+};
+
 typedef struct {
 		dma_addr_t pucTXPhysBufAddr;
 		dma_addr_t pucRXPhysBufAddr;
@@ -251,6 +256,7 @@ typedef struct {
 		kal_bool  fIsStructMemoryOnMED;
 		enum BT_SCO_BAND band;
 } BT_SCO_T;
+
 extern BT_SCO_T btsco;
 
 extern volatile kal_uint32 *bt_hw_REG_PACKET_W, *bt_hw_REG_PACKET_R;
@@ -295,6 +301,10 @@ unsigned long btcvsd_bytes_to_frame(struct snd_pcm_substream *substream,
 void set_btcvsd_band(enum BT_SCO_BAND band);
 enum BT_SCO_BAND get_btcvsd_band(void);
 void btcvsd_tx_clean_buffer(void);
+
+void get_tx_timestamp(struct time_buffer_info *timestamp);
+void get_rx_timestamp(struct time_buffer_info *timestamp);
+
 
 /* here is temp address for ioremap BT hardware register */
 extern volatile void *BTSYS_PKV_BASE_ADDRESS;
