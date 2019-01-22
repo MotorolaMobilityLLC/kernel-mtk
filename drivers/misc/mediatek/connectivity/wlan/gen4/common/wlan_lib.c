@@ -6929,7 +6929,7 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->u4PerfMonTpTh[0] =
 		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv1", 20);
 	prWifiVar->u4PerfMonTpTh[1] =
-		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv2", 60);
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv2", 50);
 	prWifiVar->u4PerfMonTpTh[2] =
 		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv3", 135);
 	prWifiVar->u4PerfMonTpTh[3] =
@@ -6937,7 +6937,7 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->u4PerfMonTpTh[4] =
 		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv5", 250);
 	prWifiVar->u4PerfMonTpTh[5] =
-		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv6", 350);
+		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv6", 300);
 	prWifiVar->u4PerfMonTpTh[6] =
 		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv7", 400);
 	prWifiVar->u4PerfMonTpTh[7] =
@@ -6947,7 +6947,7 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->u4PerfMonTpTh[9] =
 		(UINT_32) wlanCfgGetUint32(prAdapter, "PerfMonLv10", 700);
 	prWifiVar->u4BoostCpuTh =
-			(UINT_32) wlanCfgGetUint32(prAdapter, "BoostCpuTh", 4);
+			(UINT_32) wlanCfgGetUint32(prAdapter, "BoostCpuTh", 1);
 	/*
 	 * For Certification purpose,forcibly set
 	 * "Compressed Steering Number of Beamformer Antennas Supported" to our own capability.

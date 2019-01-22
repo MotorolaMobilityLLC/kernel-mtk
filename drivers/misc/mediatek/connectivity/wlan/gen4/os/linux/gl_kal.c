@@ -840,7 +840,6 @@ kalProcessRxPacket(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket, IN PUINT_8 pu
 WLAN_STATUS kalRxIndicatePkts(IN P_GLUE_INFO_T prGlueInfo, IN PVOID apvPkts[], IN UINT_8 ucPktNum)
 {
 	UINT_8 ucIdx = 0;
-	struct net_device *prNetDev = NULL;
 
 	ASSERT(prGlueInfo);
 	ASSERT(apvPkts);
@@ -851,9 +850,6 @@ WLAN_STATUS kalRxIndicatePkts(IN P_GLUE_INFO_T prGlueInfo, IN PVOID apvPkts[], I
 	KAL_WAKE_LOCK_TIMEOUT(prGlueInfo->prAdapter, &prGlueInfo->rTimeoutWakeLock,
 		MSEC_TO_JIFFIES(prGlueInfo->prAdapter->rWifiVar.u4WakeLockRxTimeout));
 
-	prNetDev = prGlueInfo->prDevHandler;
-	if (netif_carrier_ok(prNetDev))
-		kalPerMonStart(prGlueInfo);
 	return WLAN_STATUS_SUCCESS;
 }
 
@@ -5517,6 +5513,7 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	prPerMonitor->ulP2PLastTxBytes = p2pLatestTxBytes;
 	prPerMonitor->ulP2PLastRxBytes = p2pLatestRxBytes;
 
+	prPerMonitor->u4TarPerfLevel = PERF_MON_TP_MAX_THRESHOLD;
 	for (u4Idx = 0; u4Idx < PERF_MON_TP_MAX_THRESHOLD; u4Idx++) {
 		if ((prPerMonitor->ulThroughput >> 20) < prAdapter->rWifiVar.u4PerfMonTpTh[u4Idx]) {
 			prPerMonitor->u4TarPerfLevel = u4Idx;
@@ -5531,8 +5528,15 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 		(prP2pBssInfo->rStaRecOfClientList.u4NumElem > 0)))
 		kalPerMonStop(prGlueInfo);
 	else {
-		DBGLOG(SW4, TRACE, "throughput:%ld bps\n", prPerMonitor->ulThroughput);
-		if (prPerMonitor->u4TarPerfLevel != prPerMonitor->u4CurrPerfLevel) {
+		if ((prPerMonitor->u4TarPerfLevel != prPerMonitor->u4CurrPerfLevel) &&
+			(prAdapter->rWifiVar.u4BoostCpuTh < PERF_MON_TP_MAX_THRESHOLD)) {
+
+			DBGLOG(SW4, INFO, "PerfMon total:%3lu.%03lu mbps lv:%u th:%u fg:0x%x\n",
+				(prPerMonitor->ulThroughput >> 20),
+				((prPerMonitor->ulThroughput >> 10) & BITS(0, 9)),
+				prPerMonitor->u4CurrPerfLevel,
+				prAdapter->rWifiVar.u4BoostCpuTh, prPerMonitor->ulPerfMonFlag);
+
 			kalBoostCpu(prAdapter, prPerMonitor->u4TarPerfLevel, prAdapter->rWifiVar.u4BoostCpuTh);
 		}
 		prPerMonitor->u4UpdatePeriod = prAdapter->rWifiVar.u4PerfMonUpdatePeriod;
@@ -5570,8 +5574,8 @@ UINT_32 kalPerMonGetInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_32
 	LOGBUF(pucBuf, u4Max, u4Len, "Total: %3lu.%03lu mbps\n",
 		(prPerMonitor->ulThroughput >> 20), ((prPerMonitor->ulThroughput >> 10) & BITS(0, 9)));
 
-	LOGBUF(pucBuf, u4Max, u4Len, "Performance level: %u\n",
-		prPerMonitor->u4CurrPerfLevel);
+	LOGBUF(pucBuf, u4Max, u4Len, "Performance level: %u threshold: %u flag: 0x%x\n",
+		prPerMonitor->u4CurrPerfLevel, prAdapter->rWifiVar.u4BoostCpuTh, prPerMonitor->ulPerfMonFlag);
 
 	return u4Len;
 }

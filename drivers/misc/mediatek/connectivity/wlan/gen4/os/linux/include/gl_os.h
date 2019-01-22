@@ -90,7 +90,7 @@
 
 #define CFG_TX_STOP_NETIF_QUEUE_THRESHOLD   256	/* packets */
 
-#define CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD   512	/* packets */
+#define CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD   256	/* packets */
 #define CFG_TX_START_NETIF_PER_QUEUE_THRESHOLD  128	/* packets */
 
 #define CHIP_NAME    "MT6632"
