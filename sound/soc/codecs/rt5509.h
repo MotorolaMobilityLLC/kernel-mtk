@@ -18,7 +18,7 @@
 #include <mt-plat/rt-regmap.h>
 
 #define RT5509_DEVICE_NAME		"rt5509"
-#define RT5509_DRV_VER			"1.0.2_M"
+#define RT5509_DRV_VER			"1.0.4_M"
 
 #ifdef CONFIG_RT_REGMAP
 #define RT5509_SIMULATE_DEVICE	0
@@ -31,9 +31,8 @@ int rt5509_calculate_total_size(void);
 #endif /* #ifdef CONFIG_RT_REGMAP */
 
 enum {
-	RT5509_CHIP_REVA = 0,
-	RT5509_CHIP_REVB,
-	RT5509_CHIP_REVC,
+	RT5509_CHIP_REVB = 0,
+	RT5509_CHIP_REVC = 2,
 	RT5509_CHIP_REVD,
 };
 
@@ -73,6 +72,7 @@ struct rt5509_chip {
 	struct semaphore io_semaphore;
 	atomic_t power_count;
 	u8 chip_rev;
+	u8 bypass_dsp:1;
 };
 
 /* RT5509_REGISTER_LIST */
@@ -427,7 +427,7 @@ enum {
 /* RT5509_REG_CLKEN2: 0xF5 */
 #define RT5509_CLKEN2_MASK	0x03
 
-struct rt_regmap_device * rt5509_regmap_register(
+struct rt_regmap_device *rt5509_regmap_register(
 	struct rt_regmap_fops *regmap_ops,
 	struct device *parent, void *client, void *drvdata);
 int rt5509_calib_create(struct rt5509_chip *chip);
