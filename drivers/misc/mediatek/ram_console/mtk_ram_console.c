@@ -640,7 +640,7 @@ static int __init ram_console_early_init(void)
 			sram.start = CONFIG_MTK_RAM_CONSOLE_ADDR;
 			sram.size = CONFIG_MTK_RAM_CONSOLE_SIZE;
 		}
-		bufp = ioremap(sram.start, sram.size);
+		bufp = ioremap_wc(sram.start, sram.size);
 		ram_console_buffer_pa = (struct ram_console_buffer *)sram.start;
 		if (bufp)
 			buffer_size = sram.size;
@@ -653,7 +653,7 @@ static int __init ram_console_early_init(void)
 		return 0;
 	}
 #else
-	bufp = ioremap(CONFIG_MTK_RAM_CONSOLE_ADDR, CONFIG_MTK_RAM_CONSOLE_SIZE);
+	bufp = ioremap_wc(CONFIG_MTK_RAM_CONSOLE_ADDR, CONFIG_MTK_RAM_CONSOLE_SIZE);
 	if (bufp)
 		buffer_size = CONFIG_MTK_RAM_CONSOLE_SIZE;
 		ram_console_buffer_pa = CONFIG_MTK_RAM_CONSOLE_ADDR;
