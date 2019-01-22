@@ -629,7 +629,7 @@ static int mt6336_set_cv(struct charger_device *chg_dev, u32 cv)
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_DET_VOLT_11_0_H,
 					(register_value >> 8) & 0xF);
 
-	pr_err("%s: rechg 0x%x %d %d\n", __func__, register_value, cv, set_cv);
+	pr_err_ratelimited("%s: rechg 0x%x %d %d\n", __func__, register_value, cv, set_cv);
 	return 0;
 }
 
@@ -705,7 +705,7 @@ static int mt6336_get_eoc(struct charger_device *chr_dev, bool *is_eoc)
 
 	*is_eoc = mt6336_get_flag_register_value(MT6336_DA_QI_EOC_STAT_MUX);
 	vth_mode = mt6336_get_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL);
-	pr_err("mt6336_get_eoc: %d %d\n", *is_eoc, vth_mode);
+	pr_err_ratelimited("mt6336_get_eoc: %d %d\n", *is_eoc, vth_mode);
 	return 0;
 }
 

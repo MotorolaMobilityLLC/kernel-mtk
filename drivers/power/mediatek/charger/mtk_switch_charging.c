@@ -405,7 +405,7 @@ int charger_dev_event(struct notifier_block *nb, unsigned long event, void *v)
 	struct charger_manager *info = container_of(nb, struct charger_manager, chg1_nb);
 	struct chgdev_notify *data = v;
 
-	pr_err("%s %ld", __func__, event);
+	pr_err_ratelimited("%s %ld", __func__, event);
 
 	switch (event) {
 	case CHARGER_DEV_NOTIFY_EOC:
