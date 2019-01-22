@@ -252,7 +252,7 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		spm_print(suspend, "PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
 			  wakesta->assert_pc, scenario, wakesta->r13, wakesta->debug_flag);
 
-		aee_kernel_warning("SPM Warning", "SPM F/W ASSERT WARNING");
+		/* aee_kernel_warning("SPM Warning", "SPM F/W ASSERT WARNING"); */
 
 		return WR_PCM_ASSERT;
 	}
