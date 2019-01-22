@@ -574,6 +574,13 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 
 	pmic_set_register_value(PMIC_AUXADC_SPL_NUM_LARGE, 0x0006);
 
+	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_MODE, 1);
+	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_EN, 1);
+	/* For 56 */
+	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 1);
+	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CNT, 1);
+	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_MODE, 1);
+
 	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_PRD, 6);
 #if 0 /* default use hw control, no need to set CK_PDN_HWEN to sw mode */
 	pmic_set_register_value(PMIC_CLK_AUXADC_SMPS_CK_PDN, 0);
@@ -594,20 +601,6 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 
 	/*set issue interrupt */
 	/*pmic_set_register_value(PMIC_RG_INT_EN_AUXADC_IMP,1); */
-
-#if 0
-	#if defined(SWCHR_POWER_PATH)
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 1);
-	#else
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 0);
-	#endif
-#else
-	/* For 55 */
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 1);
-#endif
-	/*pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 1);*//*Peter-SW:55,56*/
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CNT, 1);
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_MODE, 1);
 
 	while (pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS) == 0) {
 		if ((count_adc_imp++) > count_time_out_adc_imp) {
@@ -663,6 +656,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 		}
 		mdelay(1);
 	}
+	vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_IMP);
 
 	/*disable */
 	/*pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 0);*//*Peter-SW:55,56*/
@@ -676,7 +670,9 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur, bool *i
 
 	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 0); /*Peter-SW:55,56*/
 
-	vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_IMP_AVG);
+	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_MODE, 0);
+	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_EN, 1);
+
 	/*ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768; */
 	*bat = (vbat_reg * 3 * 18000) / 32768;
 
