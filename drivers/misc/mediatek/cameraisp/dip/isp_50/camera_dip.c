@@ -215,7 +215,7 @@ const struct ISR_TABLE DIP_IRQ_CB_TBL[DIP_IRQ_TYPE_AMOUNT] = {
  *  "DIP_DEV_NODE_ENUM" in camera_dip.h
  */
 static const struct of_device_id dip_of_ids[] = {
-/*	{ .compatible = "mediatek,imgsys", },*/
+	{ .compatible = "mediatek,imgsys", },
 	{ .compatible = "mediatek,dip1", }, /* Remider: Add this device node manually in .dtsi */
 	{}
 };
@@ -251,16 +251,6 @@ static struct IspWorkqueTable dip_workque[DIP_IRQ_TYPE_AMOUNT] = {
 
 #ifdef CONFIG_OF
 
-/* TODO: Remove, Jessy */
-enum {
-	DIP_BASE_ADDR = 0,
-	DIP_INNER_BASE_ADDR,
-	DIP_IMGSYS_CONFIG_BASE_ADDR,
-	DIP_MIPI_ANA_BASE_ADDR,
-	DIP_GPIO_BASE_ADDR,
-	DIP_CAM_BASEADDR_NUM
-} DIP_CAM_BASEADDR_ENUM;
-
 #ifndef CONFIG_MTK_CLKMGR /*CCF*/
 #include <linux/clk.h>
 struct DIP_CLK_STRUCT {
@@ -271,9 +261,6 @@ struct DIP_CLK_STRUCT {
 struct DIP_CLK_STRUCT dip_clk;
 #endif
 
-/* TODO: Remove, Jessy */
-/*static unsigned long gDIPSYS_Irq[DIP_IRQ_TYPE_AMOUNT];*/
-/*static unsigned long gDIPSYS_Reg[DIP_CAM_BASEADDR_NUM];*/
 
 #ifdef CONFIG_OF
 struct dip_device {
@@ -335,34 +322,10 @@ struct wakeup_source dip_wake_lock;
 struct wake_lock dip_wake_lock;
 #endif
 static int g_bWaitLock;
-/*
-* static void __iomem *g_dip_base_dase;
-* static void __iomem *g_dip_inner_base_dase;
-* static void __iomem *g_imgsys_config_base_dase;
-*/
 
 /* Get HW modules' base address from device nodes */
-#define DIP_IMGSYS_CONFIG_BASE          (dip_devs[DIP_DIP_A_IDX].regs)
+#define DIP_IMGSYS_CONFIG_BASE          (dip_devs[DIP_IMGSYS_CONFIG_IDX].regs)
 #define DIP_A_BASE                  (dip_devs[DIP_DIP_A_IDX].regs)
-
-void __iomem *DIP_SENINF0_BASE;
-void __iomem *DIP_SENINF1_BASE;
-void __iomem *DIP_SENINF2_BASE;
-void __iomem *DIP_SENINF3_BASE;
-
-void __iomem *DIP_CLOCK_CELL_BASE;
-
-void __iomem *DIP_MMSYS_CONFIG_BASE;
-
-/* TODO: Remove start, Jessy */
-#define DIP_ADDR                        (gDIPSYS_Reg[DIP_BASE_ADDR])
-#define DIP_IMGSYS_BASE                 (gDIPSYS_Reg[DIP_IMGSYS_CONFIG_BASE_ADDR])
-#define DIP_ADDR_CAMINF                 (gDIPSYS_Reg[DIP_IMGSYS_CONFIG_BASE_ADDR])
-
-#define DIP_MIPI_ANA_ADDR               (gDIPSYS_Reg[DIP_MIPI_ANA_BASE_ADDR])
-#define DIP_GPIO_ADDR                   (gDIPSYS_Reg[DIP_GPIO_BASE_ADDR])
-
-#define DIP_IMGSYS_BASE_PHY             0x15000000
 
 #else
 #define DIP_ADDR                        (IMGSYS_BASE + 0x4000)
@@ -763,42 +726,6 @@ static struct SV_LOG_STR gSvLog[DIP_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_PRINTER(irq, ppb, logT)
 #endif
 
-/* //////////////////////////////////////////////////// */
-union _FBC_CTRL_1_ {
-	struct { /* 0x18004110 */
-		unsigned int  FBC_NUM                               :  6;      /*  0.. 5, 0x0000003F */
-		unsigned int  rsv_6                                 :  9;      /*  6..14, 0x00007FC0 */
-		unsigned int  FBC_EN                                :  1;      /* 15..15, 0x00008000 */
-		unsigned int  FBC_MODE                              :  1;      /* 16..16, 0x00010000 */
-		unsigned int  LOCK_EN                               :  1;      /* 17..17, 0x00020000 */
-		unsigned int  rsv_18                                :  2;      /* 18..19, 0x000C0000 */
-		unsigned int  DROP_TIMING                           :  1;      /* 20..20, 0x00100000 */
-		unsigned int  rsv_21                                :  3;      /* 21..23, 0x00E00000 */
-		unsigned int  SUB_RATIO                             :  8;      /* 24..31, 0xFF000000 */
-	} Bits;
-	unsigned int Raw;
-} FBC_CTRL_1;  /* CAM_A_FBC_IMGO_CTL1 */
-
-union _FBC_CTRL_2_ {
-	struct { /* 0x18004114 */
-		unsigned int  FBC_CNT                               :  7;      /*  0.. 6, 0x0000007F */
-		unsigned int  rsv_7                                 :  1;      /*  7.. 7, 0x00000080 */
-		unsigned int  RCNT                                  :  6;      /*  8..13, 0x00003F00 */
-		unsigned int  rsv_14                                :  2;      /* 14..15, 0x0000C000 */
-		unsigned int  WCNT                                  :  6;      /* 16..21, 0x003F0000 */
-		unsigned int  rsv_22                                :  2;      /* 22..23, 0x00C00000 */
-		unsigned int  DROP_CNT                              :  8;      /* 24..31, 0xFF000000 */
-	} Bits;
-	unsigned int Raw;
-} FBC_CTRL_2;  /* CAM_A_FBC_IMGO_CTL2 */
-
-
-struct _dip_bk_reg_t {
-	unsigned int  CAM_TG_INTER_ST;                                 /* 453C*/
-};
-
-static struct _dip_bk_reg_t g_BkReg[DIP_IRQ_TYPE_AMOUNT];
-
 /* Everest top registers */
 /*#define CAMSYS_REG_CG_CON               (DIP_CAMSYS_CONFIG_BASE + 0x0)*/
 #define IMGSYS_REG_CG_CON               (DIP_IMGSYS_CONFIG_BASE + 0x0)
@@ -806,49 +733,6 @@ static struct _dip_bk_reg_t g_BkReg[DIP_IRQ_TYPE_AMOUNT];
 #define IMGSYS_REG_CG_SET               (DIP_IMGSYS_CONFIG_BASE + 0x4)
 /*#define CAMSYS_REG_CG_CLR               (DIP_CAMSYS_CONFIG_BASE + 0x8)*/
 #define IMGSYS_REG_CG_CLR               (DIP_IMGSYS_CONFIG_BASE + 0x8)
-
-#define DIP_REG_ADDR_EN1                (DIP_ADDR + 0x4)
-#define DIP_REG_ADDR_INT_P1_ST          (DIP_ADDR + 0x4C)
-#define CAM_REG_ADDR_DMA_ST             (DIP_ADDR + 0x4C)
-#define DIP_REG_ADDR_INT_P1_ST2         (DIP_ADDR + 0x54)
-#define DIP_REG_ADDR_INT_P1_ST_D        (DIP_ADDR + 0x5C)
-#define DIP_REG_ADDR_INT_P1_ST2_D       (DIP_ADDR + 0x64)
-#define DIP_REG_ADDR_INT_P2_ST          (DIP_ADDR + 0x6C)
-#define DIP_REG_ADDR_INT_STATUSX        (DIP_ADDR + 0x70)
-#define DIP_REG_ADDR_INT_STATUS2X       (DIP_ADDR + 0x74)
-#define DIP_REG_ADDR_INT_STATUS3X       (DIP_ADDR + 0x78)
-#define DIP_REG_ADDR_CAM_SW_CTL         (DIP_ADDR + 0x8C)
-
-#define DIP_TPIPE_ADDR                  (0x15004000)
-
-/* CAM_CTL_SW_CTL */
-#define DIP_REG_SW_CTL_SW_RST_P1_MASK   (0x00000007)
-#define DIP_REG_SW_CTL_SW_RST_TRIG      (0x00000001)
-#define DIP_REG_SW_CTL_SW_RST_STATUS    (0x00000002)
-#define DIP_REG_SW_CTL_HW_RST           (0x00000004)
-#define DIP_REG_SW_CTL_SW_RST_P2_MASK   (0x00000070)
-#define DIP_REG_SW_CTL_SW_RST_P2_TRIG   (0x00000010)
-#define DIP_REG_SW_CTL_SW_RST_P2_STATUS (0x00000020)
-#define DIP_REG_SW_CTL_HW_RST_P2        (0x00000040)
-
-/* if dip has been suspend, frame cnt needs to add previous value*/
-#define DIP_RD32_TG_CAM_FRM_CNT(IrqType, reg_module) ({\
-	unsigned int _regVal;\
-	_regVal = DIP_RD32(CAM_REG_TG_INTER_ST(reg_module));\
-	_regVal = ((_regVal & 0x00FF0000) >> 16) + g_BkReg[IrqType].CAM_TG_INTER_ST;\
-	if (_regVal > 255) { \
-		_regVal -= 256;\
-	} \
-	_regVal;\
-})
-
-#if 0
-/*******************************************************************************
-* file shrink
-********************************************************************************/
-#include "camera_dip_reg.c"
-#include "camera_dip_isr.c"
-#endif
 
 /*******************************************************************************
 *
@@ -1177,6 +1061,7 @@ static signed int DIP_DumpDIPReg(void)
 		DIP_RD32(DIP_A_BASE + 0x5328), DIP_RD32(DIP_A_BASE + 0x532C));
 	LOG_INF("crz: 0x15027330(0x%x)\n", DIP_RD32(DIP_A_BASE + 0x5330));
 
+	LOG_INF("imgsys: 0x15020000(0x%x)\n", DIP_RD32(DIP_IMGSYS_CONFIG_BASE));
      /* NR3D */
 	LOG_INF("tnr and color: 0x15027380(0x%x)-0x15027398(0x%x)-0x15027110(0x%x)\n",
 		DIP_RD32(DIP_A_BASE + 0x5380), DIP_RD32(DIP_A_BASE + 0x5398),
@@ -3004,9 +2889,6 @@ static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case DIP_REGISTER_IRQ_USER_KEY:
 	case DIP_FLUSH_IRQ_REQUEST:
 	case DIP_P2_BUFQUE_CTRL:/* structure (no pointer) */
-	case DIP_ION_IMPORT:
-	case DIP_ION_FREE:
-	case DIP_ION_FREE_BY_HWMODULE:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -3179,8 +3061,6 @@ static signed int DIP_open(
 		for (q = 0; q < IRQ_USER_NUM_MAX; q++)
 			IspInfo.IrqInfo.Status[i][q] = 0;
 	}
-	/* reset backup regs*/
-	memset(g_BkReg, 0, sizeof(struct _dip_bk_reg_t) * DIP_IRQ_TYPE_AMOUNT);
 
 #ifdef KERNEL_LOG
 	IspInfo.DebugMask = (DIP_DBG_INT);
@@ -3345,8 +3225,6 @@ static signed int DIP_release(
 		LOG_ERR("dip_p2_ion_client is NULL!!\n");
 	}
 #endif
-	/* reset backup regs*/
-	memset(g_BkReg, 0, sizeof(struct _dip_bk_reg_t) * DIP_IRQ_TYPE_AMOUNT);
 
 	/* LOG_DBG("Before spm_enable_sodi()."); */
 	/* Enable sodi (Multi-Core Deep Idle). */
@@ -3655,16 +3533,11 @@ static signed int DIP_probe(struct platform_device *pDev)
 #else
 		/*CCF: Grab clock pointer (struct clk*) */
 		dip_clk.DIP_IMG_LARB5 = devm_clk_get(&pDev->dev, "DIP_CG_IMG_LARB5");
-		dip_clk.DIP_IMG_LARB2 = devm_clk_get(&pDev->dev, "DIP_CG_IMG_LARB2");
 		dip_clk.DIP_IMG_DIP = devm_clk_get(&pDev->dev, "DIP_CG_IMG_DIP");
 
 		if (IS_ERR(dip_clk.DIP_IMG_LARB5)) {
 			LOG_ERR("cannot get DIP_IMG_LARB5 clock\n");
 			return PTR_ERR(dip_clk.DIP_IMG_LARB5);
-		}
-		if (IS_ERR(dip_clk.DIP_IMG_LARB2)) {
-			LOG_ERR("cannot get DIP_IMG_LARB2 clock\n");
-			return PTR_ERR(dip_clk.DIP_IMG_LARB2);
 		}
 		if (IS_ERR(dip_clk.DIP_IMG_DIP)) {
 			LOG_ERR("cannot get DIP_IMG_DIP clock\n");
@@ -4249,7 +4122,9 @@ static signed int __init DIP_Init(void)
 {
 	signed int Ret = 0, j;
 	void *tmp;
+#if 0
 	struct device_node *node = NULL;
+#endif
 	struct proc_dir_entry *proc_entry;
 	struct proc_dir_entry *dip_p2_dir;
 
@@ -4266,18 +4141,7 @@ static signed int __init DIP_Init(void)
 
 	/* Use of_find_compatible_node() sensor registers from device tree */
 	/* Don't use compatitble define in probe(). Otherwise, probe() of Seninf driver cannot be called. */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
-	if (!node) {
-		LOG_ERR("find mediatek,apmixed node failed!!!\n");
-		return -ENODEV;
-	}
-	DIP_CLOCK_CELL_BASE = of_iomap(node, 0);
-	if (!DIP_CLOCK_CELL_BASE) {
-		LOG_ERR("unable to map DIP_CLOCK_CELL_BASE registers!!!\n");
-		return -ENODEV;
-	}
-	LOG_DBG("DIP_CLOCK_CELL_BASE: %p\n", DIP_CLOCK_CELL_BASE);
-
+#if 0
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
 	if (!node) {
 		LOG_ERR("find mmsys_config node failed!!!\n");
@@ -4289,6 +4153,7 @@ static signed int __init DIP_Init(void)
 		return -ENODEV;
 	}
 	LOG_DBG("DIP_MMSYS_CONFIG_BASE: %p\n", DIP_MMSYS_CONFIG_BASE);
+#endif
 
 	/* FIX-ME: linux-3.10 procfs API changed */
 	proc_create("driver/dip_reg", 0, NULL, &fcameradip_proc_fops);
