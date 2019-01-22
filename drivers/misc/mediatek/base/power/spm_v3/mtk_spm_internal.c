@@ -176,8 +176,6 @@ int __spm_check_opp_level_impl(int ch)
 {
 	int opp = 0;
 
-#if !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
-
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	opp = scp_get_dvfs_opp();
@@ -198,14 +196,15 @@ int __spm_check_opp_level_impl(int ch)
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
 #endif
 
-#endif
 	return opp;
 }
 
 int __spm_check_opp_level(int ch)
 {
 	int opp;
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) \
+	|| defined(CONFIG_MACH_MT6758) \
+	|| defined(CONFIG_MACH_MT6775)
 	int level[3] = {2, 1, 0};
 #else
 	int level[4] = {4, 3, 1, 0};
