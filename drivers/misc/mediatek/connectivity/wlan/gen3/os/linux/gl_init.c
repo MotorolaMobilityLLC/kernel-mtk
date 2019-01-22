@@ -1727,6 +1727,10 @@ static VOID wlanNetDestroy(struct wireless_dev *prWdev)
 VOID wlanSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 {
 	struct net_device *prDev = NULL;
+#if CFG_SUPPORT_DROP_MC_PACKET
+	UINT_32 u4PacketFilter = 0;
+	UINT_32 u4SetInfoLen = 0;
+#endif
 
 	if (!prGlueInfo)
 		return;
@@ -1743,6 +1747,17 @@ VOID wlanSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 	if (!prDev)
 		return;
 
+#if CFG_SUPPORT_DROP_MC_PACKET
+	/* new filter should not include p2p mask */
+#if CFG_ENABLE_WIFI_DIRECT_CFG_80211
+	u4PacketFilter = prGlueInfo->prAdapter->u4OsPacketFilter & (~PARAM_PACKET_FILTER_P2P_MASK);
+#endif
+	if (kalIoctl(prGlueInfo,
+		wlanoidSetCurrentPacketFilter,
+		&u4PacketFilter,
+		sizeof(u4PacketFilter), FALSE, FALSE, TRUE, &u4SetInfoLen) != WLAN_STATUS_SUCCESS)
+		DBGLOG(INIT, ERROR, "set packet filter failed.\n");
+#endif
 	kalSetNetAddressFromInterface(prGlueInfo, prDev, fgEnable);
 }
 

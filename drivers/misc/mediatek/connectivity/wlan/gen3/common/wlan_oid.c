@@ -6876,10 +6876,11 @@ wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter,
 				BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen)
 {
+#if CFG_SUPPORT_DROP_MC_PACKET
 	if (prAdapter->prGlueInfo->fgIsInSuspendMode)
 		u4PacketFilter &= ~(PARAM_PACKET_FILTER_MULTICAST | PARAM_PACKET_FILTER_ALL_MULTICAST);
-
-	DBGLOG(OID, TRACE, "[MC debug] u4PacketFilter=%x, IsSuspend=%d\n", u4PacketFilter,
+#endif
+	DBGLOG(OID, INFO, "[MC debug] u4PacketFilter=%x, IsSuspend=%d\n", u4PacketFilter,
 				prAdapter->prGlueInfo->fgIsInSuspendMode);
 	return wlanSendSetQueryCmd(prAdapter,
 				   CMD_ID_SET_RX_FILTER,
