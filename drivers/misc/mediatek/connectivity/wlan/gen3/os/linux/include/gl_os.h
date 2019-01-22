@@ -222,7 +222,10 @@ extern BOOLEAN fgIsBusAccessFailed;
 
 #define WAKE_LOCK_RX_TIMEOUT                            300	/* ms */
 #define WAKE_LOCK_THREAD_WAKEUP_TIMEOUT                 50	/* ms */
+/*Full2Partial*/
+#define UPDATE_FULL_TO_PARTIAL_SCAN_TIMEOUT             60	/* s */
 
+#define FULL_SCAN_MAX_CHANNEL_NUM						40
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -552,6 +555,13 @@ struct _GLUE_INFO_T {
 	PUINT_32 prRegValue;
 
 	UINT_64 u8HifIntTime;
+
+	/*Full2Partial*/
+	OS_SYSTIME u4LastFullScanTime;
+	/*full scan or partial scan*/
+	UINT_8 ucTrScanType;
+	UINT_8 ucChannelNum[FULL_SCAN_MAX_CHANNEL_NUM];
+	PUINT_8	puFullScan2PartialChannel;
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);

@@ -459,6 +459,14 @@ VOID scnFsmMsgAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 						  prScanParam->ucSeqNum,
 						  prScanParam->ucBssIndex, SCAN_STATUS_CANCELLED);
 
+			/*Full2Partial at here, should stop save channel num*/
+			if (prAdapter->prGlueInfo->ucTrScanType == 1) {
+				prAdapter->prGlueInfo->ucTrScanType = 0;
+				prAdapter->prGlueInfo->u4LastFullScanTime = 0;
+				DBGLOG(SCN, INFO, "Full2Partial scan cancel update ucTrScanType=%d\n",
+					prAdapter->prGlueInfo->ucTrScanType);
+			}
+
 			/* switch to next pending scan */
 			scnFsmSteps(prAdapter, SCAN_STATE_IDLE);
 		} else {
@@ -712,6 +720,16 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 		} else {
 			prScanInfo->fgIsSparseChannelValid = FALSE;
 		}
+	}
+
+	/*Full2Partial at here, should stop save channel num*/
+	DBGLOG(SCN, TRACE, "Full2Partial scan done ucTrScanType=%d, eScanChannel=%d\n",
+		prAdapter->prGlueInfo->ucTrScanType, prScanParam->eScanChannel);
+	if ((prScanParam->eScanChannel == SCAN_CHANNEL_FULL) &&
+		(prAdapter->prGlueInfo->ucTrScanType == 1)) {
+		prAdapter->prGlueInfo->ucTrScanType = 0;
+		DBGLOG(SCN, INFO, "Full2Partial scan done update ucTrScanType=%d\n",
+			prAdapter->prGlueInfo->ucTrScanType);
 	}
 
 	if (prScanInfo->eCurrentState == SCAN_STATE_SCANNING && prScanDone->ucSeqNum == prScanParam->ucSeqNum) {
