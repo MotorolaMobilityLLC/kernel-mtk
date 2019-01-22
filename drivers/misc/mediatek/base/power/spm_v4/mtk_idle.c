@@ -2302,6 +2302,36 @@ static int mtk_idle_hotplug_cb_init(void)
 }
 #endif
 
+#if defined(CONFIG_MACH_MT6763)
+void mtk_spm_dump_debug_info(void)
+{
+	pr_info("SPM_POWER_ON_VAL0     0x%08x\n", spm_read(SPM_POWER_ON_VAL0));
+	pr_info("SPM_POWER_ON_VAL1     0x%08x\n", spm_read(SPM_POWER_ON_VAL1));
+	pr_info("PCM_PWR_IO_EN         0x%08x\n", spm_read(PCM_PWR_IO_EN));
+	pr_info("PCM_REG0_DATA         0x%08x\n", spm_read(PCM_REG0_DATA));
+	pr_info("PCM_REG7_DATA         0x%08x\n", spm_read(PCM_REG7_DATA));
+	pr_info("PCM_REG12_DATA        0x%08x\n", spm_read(PCM_REG12_DATA));
+	pr_info("PCM_REG13_DATA        0x%08x\n", spm_read(PCM_REG13_DATA));
+	pr_info("PCM_REG15_DATA        0x%08x\n", spm_read(PCM_REG15_DATA));
+	pr_info("SPM_MAS_PAUSE_MASK_B  0x%08x\n", spm_read(SPM_MAS_PAUSE_MASK_B));
+	pr_info("SPM_MAS_PAUSE2_MASK_B 0x%08x\n", spm_read(SPM_MAS_PAUSE2_MASK_B));
+	pr_info("SPM_SW_FLAG           0x%08x\n", spm_read(SPM_SW_FLAG));
+	pr_info("SPM_DEBUG_FLAG        0x%08x\n", spm_read(SPM_SW_DEBUG));
+	pr_info("SPM_PC_TRACE_G0       0x%08x\n", spm_read(SPM_PC_TRACE_G0));
+	pr_info("SPM_PC_TRACE_G1       0x%08x\n", spm_read(SPM_PC_TRACE_G1));
+	pr_info("SPM_PC_TRACE_G2       0x%08x\n", spm_read(SPM_PC_TRACE_G2));
+	pr_info("SPM_PC_TRACE_G3       0x%08x\n", spm_read(SPM_PC_TRACE_G3));
+	pr_info("SPM_PC_TRACE_G4       0x%08x\n", spm_read(SPM_PC_TRACE_G4));
+	pr_info("SPM_PC_TRACE_G5       0x%08x\n", spm_read(SPM_PC_TRACE_G5));
+	pr_info("SPM_PC_TRACE_G6       0x%08x\n", spm_read(SPM_PC_TRACE_G6));
+	pr_info("SPM_PC_TRACE_G7       0x%08x\n", spm_read(SPM_PC_TRACE_G7));
+	pr_info("DCHA_GATING_LATCH_0   0x%08x\n", spm_read(DCHA_GATING_LATCH_0));
+	pr_info("DCHA_GATING_LATCH_5   0x%08x\n", spm_read(DCHA_GATING_LATCH_5));
+	pr_info("DCHB_GATING_LATCH_0   0x%08x\n", spm_read(DCHB_GATING_LATCH_0));
+	pr_info("DCHB_GATING_LATCH_5   0x%08x\n", spm_read(DCHB_GATING_LATCH_5));
+}
+#endif
+
 void mtk_idle_gpt_init(void)
 {
 #ifndef USING_STD_TIMER_OPS
