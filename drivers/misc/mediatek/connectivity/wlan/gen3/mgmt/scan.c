@@ -242,6 +242,10 @@ VOID scnUninit(IN P_ADAPTER_T prAdapter)
 	LINK_INITIALIZE(&prScanInfo->rBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rRoamFreeBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rRoamBSSDescList);
+	cnmTimerStopTimer(prAdapter, &prScanInfo->rScanDoneTimer);
+#if CFG_SUPPORT_SCN_PSCN
+	cnmTimerStopTimer(prAdapter, &prScanInfo->rWaitForGscanResutsTimer);
+#endif
 
 }				/* end of scnUninit() */
 
