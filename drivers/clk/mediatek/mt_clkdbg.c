@@ -1167,7 +1167,7 @@ void print_reg(void __iomem *reg, const char *name)
 	clk_info("%-21s: 0x%08x\n", name, clk_readl(reg));
 }
 
-void print_regs(void)
+void print_registers(void)
 {
 	static struct regname rn[128];
 	int i, n;
@@ -2429,7 +2429,7 @@ static int clkdbg_set_rate(struct seq_file *s, void *v)
 	return r;
 }
 
-void *reg_from_str(const char *str)
+void *register_from_str(const char *str)
 {
 	if (sizeof(void *) == sizeof(unsigned long)) {
 		unsigned long v;
@@ -2472,7 +2472,7 @@ static int parse_reg_val_from_cmd(void __iomem **preg, unsigned long *pval)
 	val_str = strsep(&c, " ");
 
 	if (preg)
-		*preg = reg_from_str(reg_str);
+		*preg = register_from_str(reg_str);
 
 	if (pval)
 		r = kstrtoul(val_str, 0, pval);
@@ -3082,7 +3082,7 @@ int __init mt_clkdbg_init(void)
 	init_iomap();
 
 #if DUMP_INIT_STATE
-	print_regs();
+	print_registers();
 	print_fmeter_all();
 #endif /* DUMP_INIT_STATE */
 
