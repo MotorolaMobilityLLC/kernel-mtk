@@ -17,6 +17,8 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/random.h>
+#include <linux/cpu_pm.h>
+#include <linux/cpu.h>
 #ifdef CONFIG_ARM64
 #include <asm/cpu_ops.h>
 #endif
@@ -127,6 +129,37 @@ int hps_cpu_get_tlp(unsigned int *avg, unsigned int *iowait_avg)
 #endif
 }
 
+int hps_cpu_up(unsigned int cpu)
+{
+	struct device *cpu_dev = get_cpu_device(cpu);
+	int ret;
+
+	lock_device_hotplug();
+
+	ret = device_online(cpu_dev);
+	if (ret)
+		dev_err(cpu_dev, "HPS: unable to up CPU\n");
+
+	unlock_device_hotplug();
+
+	return ret;
+}
+
+int hps_cpu_down(unsigned int cpu)
+{
+	struct device *cpu_dev = get_cpu_device(cpu);
+	int ret;
+
+	lock_device_hotplug();
+
+	ret = device_offline(cpu_dev);
+	if (ret)
+		dev_err(cpu_dev, "HPS: unable to down CPU\n");
+
+	unlock_device_hotplug();
+
+	return ret;
+}
 
 /*
  * init

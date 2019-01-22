@@ -205,12 +205,16 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 
 	if (target_cores > online_cores) {	/*Power up cpus */
 		for (cpu = cpu_id_min; cpu <= cpu_id_max; ++cpu) {
-			if (hps_get_break_en() != 0)
+			if (hps_get_break_en() != 0) {
+				hps_warn("[CPUHP] up CPU%d: hps_get_break_en\n", cpu);
 				return 1;
-			if (hps_algo_check_criteria() == 1)
+			}
+			if (hps_algo_check_criteria() == 1) {
+				hps_warn("[CPUHP] up CPU%d: hps_algo_check_criteria\n", cpu);
 				return 1;
+			}
 			if (!cpu_online(cpu)) {	/* For CPU offline */
-				if (cpu_up(cpu))
+				if (hps_cpu_up(cpu))
 					hps_warn("[Info]CPU %d ++!\n", cpu);
 				++online_cores;
 			}
@@ -220,12 +224,16 @@ static int hps_algo_do_cluster_action(unsigned int cluster_id)
 
 	} else {		/*Power down cpus */
 		for (cpu = cpu_id_max; cpu >= cpu_id_min; --cpu) {
-			if (hps_get_break_en() != 0)
+			if (hps_get_break_en() != 0) {
+				hps_warn("[CPUHP] down CPU%d: hps_get_break_en\n", cpu);
 				return 1;
-			if (hps_algo_check_criteria() == 1)
+			}
+			if (hps_algo_check_criteria() == 1) {
+				hps_warn("[CPUHP] down CPU%d: hps_algo_check_criteria\n", cpu);
 				return 1;
+			}
 			if (cpu_online(cpu)) {
-				if (cpu_down(cpu))
+				if (hps_cpu_down(cpu))
 					hps_warn("[Info]CPU %d --!\n", cpu);
 				--online_cores;
 			}
