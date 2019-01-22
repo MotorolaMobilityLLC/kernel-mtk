@@ -1044,8 +1044,11 @@ static void createWirelessDevice(void)
 	prWiphy->max_scan_ssids   = 1;
 #endif
 	prWiphy->max_scan_ie_len = 512;
-
-	prWiphy->max_sched_scan_ssids	= CFG_SCAN_SSID_MAX_NUM;
+#if CFG_SUPPORT_SCHED_SCN_SSID_SETS
+	prWiphy->max_sched_scan_ssids	  = CFG_SCAN_HIDDEN_SSID_MAX_NUM;
+#else
+	prWiphy->max_sched_scan_ssids	  = CFG_SCAN_SSID_MAX_NUM;
+#endif
 	prWiphy->max_match_sets		= CFG_SCAN_SSID_MATCH_MAX_NUM;
 	prWiphy->max_sched_scan_ie_len	= CFG_CFG80211_IE_BUF_LEN;
 
