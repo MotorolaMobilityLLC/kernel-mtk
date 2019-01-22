@@ -298,6 +298,7 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
 }
 
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 void update_cpu_freq_quick(int cpu, int freq)
 {
 	int cid = arch_get_cluster_id(cpu);
@@ -325,6 +326,7 @@ void update_cpu_freq_quick(int cpu, int freq)
 	cpufreq_sched_try_driver_target(cpu, NULL, freq_new, -1);
 }
 EXPORT_SYMBOL(update_cpu_freq_quick);
+#endif
 
 #if 0
 static bool finish_last_request(struct gov_data *gd)
