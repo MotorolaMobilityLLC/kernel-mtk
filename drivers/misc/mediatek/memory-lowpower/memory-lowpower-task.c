@@ -71,10 +71,15 @@ static struct wakeup_source mlp_wakeup;
 #define MLPT_SET_ACTION         (0x0)
 #define MLPT_CLEAR_ACTION       (0x1)
 
+/* The processing state of memory lowpower task */
+#define MLPT_NO_PROCESS		(0x0)
+#define MLPT_PROCESSING		(0x1)
+
 static struct task_struct *memory_lowpower_task;
 /* memory_lowpower_state are protected by mlp_take_action */
 static unsigned long memory_lowpower_state;
 static atomic_t mlp_take_action;
+static atomic_t mlp_process_state;
 /* mlp_action can be set anywhere, anytime w/o protection */
 static enum power_state mlp_action;
 
@@ -505,6 +510,7 @@ static int memory_lowpower_entry(void *p)
 
 		/* Check whether there is any action */
 		while (atomic_xchg(&mlp_take_action, MLPT_CLEAR_ACTION) == MLPT_SET_ACTION) {
+			atomic_set(&mlp_process_state, MLPT_PROCESSING);
 			current_action = mlp_action;
 			switch (current_action) {
 			case MLP_ENTER:
@@ -516,6 +522,7 @@ static int memory_lowpower_entry(void *p)
 			default:
 				MLPT_PRINT("%s: Invalid action[%d]\n", __func__, current_action);
 			}
+			atomic_set(&mlp_process_state, MLPT_NO_PROCESS);
 		}
 
 		/* Release wakelock */
@@ -575,9 +582,12 @@ int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned long even
 	struct fb_event *fb_event = data;
 	int new_status;
 	static unsigned long debounce_time;
+	unsigned long long __start_ns, __end_ns;
 
 	if (event != FB_EVENT_BLANK)
 		return NOTIFY_DONE;
+
+	__start_ns = sched_clock();
 
 	new_status = *(int *)fb_event->data ? 1 : 0;
 
@@ -606,14 +616,23 @@ retry:
 		pr_notice_ratelimited("It was already running.\n");
 		if (IS_ACTION_LEAVE(mlp_action) &&
 				atomic_read(&mlp_take_action) == MLPT_SET_ACTION) {
+
 			/* It was disable already, no retry to wake it up */
 			if (MlpsDisable(&memory_lowpower_state))
 				goto out;
+
+			/* In the process of taking action, no retry */
+			if (atomic_read(&mlp_process_state) == MLPT_PROCESSING)
+				goto out;
+
 			pr_notice_ratelimited("No action taken for screen-on, retry it.\n");
 			goto retry;
 		}
 	}
 out:
+	__end_ns = sched_clock();
+	pr_info("elapsed %llu ns\n", (__end_ns - __start_ns));
+
 	return NOTIFY_OK;
 }
 
@@ -674,6 +693,7 @@ int __init memory_lowpower_task_init(void)
 
 	/* Reset mlp_take_action */
 	atomic_set(&mlp_take_action, MLPT_CLEAR_ACTION);
+	atomic_set(&mlp_process_state, MLPT_NO_PROCESS);
 out:
 	MLPT_PRINT("%s: memory_power_state[0x%lx]\n", __func__, memory_lowpower_state);
 	return ret;
