@@ -653,10 +653,8 @@ static BATTERY_VOLTAGE_ENUM select_jeita_cv(void)
 
 PMU_STATUS do_jeita_state_machine(void)
 {
-	int previous_g_temp_status;
 	BATTERY_VOLTAGE_ENUM cv_voltage;
 
-	previous_g_temp_status = g_temp_status;
 	/* JEITA battery temp Standard */
 	if (BMT_status.temperature >= TEMP_POS_60_THRESHOLD) {
 		battery_log(BAT_LOG_CRTI,
@@ -749,15 +747,12 @@ PMU_STATUS do_jeita_state_machine(void)
 		return PMU_STATUS_FAIL;
 	}
 
-	/* set CV after temperature changed */
-	if (g_temp_status != previous_g_temp_status) {
-		cv_voltage = select_jeita_cv();
-		battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
+	cv_voltage = select_jeita_cv();
+	battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
-		#if (CONFIG_MTK_GAUGE_VERSION == 20)
-		g_cv_voltage = cv_voltage;
-		#endif
-	}
+#if (CONFIG_MTK_GAUGE_VERSION == 20)
+	g_cv_voltage = cv_voltage;
+#endif
 
 	return PMU_STATUS_OK;
 }
@@ -1394,4 +1389,5 @@ void mt_battery_charging_algorithm(void)
 		break;
 	}
 
+	battery_charging_control(CHARGING_CMD_DUMP_REGISTER, NULL);
 }
