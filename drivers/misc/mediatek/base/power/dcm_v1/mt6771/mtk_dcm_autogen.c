@@ -1859,10 +1859,10 @@ void dcm_mp0_cpucfg_mp0_rgu_dcm(int on)
 #define MCU_MISCCFG_ADB400_DCM_REG0_ON ((0x1 << 0) | \
 			(0x1 << 1) | \
 			(0x1 << 2) | \
-			(0x1 << 3) | \
-			(0x1 << 4) | \
-			(0x1 << 5) | \
-			(0x1 << 6) | \
+			(0x0 << 3) | \
+			(0x0 << 4) | \
+			(0x0 << 5) | \
+			(0x0 << 6) | \
 			(0x1 << 11))
 #define MCU_MISCCFG_ADB400_DCM_REG0_OFF ((0x0 << 0) | \
 			(0x0 << 1) | \
@@ -2040,8 +2040,8 @@ void dcm_mcu_misccfg_bus_clock_dcm(int on)
 			(0x1 << 1) | \
 			(0x1 << 2) | \
 			(0x1 << 3) | \
-			(0x1 << 4) | \
-			(0x1 << 5) | \
+			(0x0 << 4) | \
+			(0x0 << 5) | \
 			(0x1 << 6) | \
 			(0x1 << 7) | \
 			(0x1 << 8) | \
@@ -2050,7 +2050,7 @@ void dcm_mcu_misccfg_bus_clock_dcm(int on)
 			(0x1 << 11) | \
 			(0x1 << 12) | \
 			(0x1 << 16) | \
-			(0x1 << 17) | \
+			(0x0 << 17) | \
 			(0x1 << 18) | \
 			(0x1 << 19) | \
 			(0x1 << 20) | \
