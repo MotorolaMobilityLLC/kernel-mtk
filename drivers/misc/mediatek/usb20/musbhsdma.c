@@ -37,6 +37,27 @@
 /* extern void __iomem	*USB_BASE; */
 #endif
 
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+
+#define USB_DMACNTL_ADDR36_EN (1 << 14)
+#define USB_DMACNT_COUNT_MASK (0xffffff)
+#define USB_DMACNT_HADDR_OFFSET (24)
+#define USB_DMACNT_HADDR_MASK (0xf)
+static u32 dma_extract_count(u32 count) {return (count & USB_DMACNT_COUNT_MASK); }
+static dma_addr_t dma_append_high_addr(
+		dma_addr_t addr,
+		void __iomem *mbase,
+		u8 bchannel)
+{
+	u64 hbit;
+
+	hbit = musb_read_hsdma_count(mbase, bchannel);
+	hbit = hbit >> USB_DMACNT_HADDR_OFFSET;
+	addr = addr | (hbit << 32);
+	return addr;
+}
+#endif
+
 static int dma_controller_start(struct dma_controller *c)
 {
 	/* nothing to do */
@@ -157,9 +178,27 @@ static void configure_channel(struct dma_channel *channel,
 	    | (musb_channel->transmit ? (1 << MUSB_HSDMA_TRANSMIT_SHIFT)
 	       : 0);
 
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+	{
+		u32 val;
+
+		/* enable 36-bit support */
+		csr |= USB_DMACNTL_ADDR36_EN;
+
+		/* low address */
+		musb_write_hsdma_addr(mbase, bchannel, dma_addr & 0xFFFFFFFF);
+
+		/* count */
+		val = len & USB_DMACNT_COUNT_MASK;
+		/* high address */
+		val |= (((dma_addr >> 32) & USB_DMACNT_HADDR_MASK) << USB_DMACNT_HADDR_OFFSET);
+		musb_write_hsdma_count(mbase, bchannel, val);
+	}
+#else
 	/* address/count */
 	musb_write_hsdma_addr(mbase, bchannel, dma_addr);
 	musb_write_hsdma_count(mbase, bchannel, len);
+#endif
 
 	/* control (this should start things) */
 	musb_writew(mbase, MUSB_HSDMA_CHANNEL_OFFSET(bchannel, MUSB_HSDMA_CONTROL), csr);
@@ -278,7 +317,8 @@ static int dma_channel_tx_status(struct dma_channel *channel)
 	void __iomem *mbase = musb_channel->controller->base;
 
 	u8 bchannel = musb_channel->idx;
-	u32 addr, count, residue;
+	u32 count, residue;
+	dma_addr_t addr;
 
 	/*
 	 * Get the number of bytes left to be transferred over
@@ -291,6 +331,9 @@ static int dma_channel_tx_status(struct dma_channel *channel)
 	 */
 	/* residue = musb_read_hsdma_count(mbase, bchannel); */
 	addr = musb_read_hsdma_addr(mbase, bchannel);
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+	addr = dma_append_high_addr(addr, mbase, bchannel);
+#endif
 	count = addr - musb_channel->start_addr;
 	residue = channel->prog_len - count;
 
@@ -339,8 +382,9 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 	u8 bchannel;
 	u8 int_hsdma;
 
-	u32 addr, count;
+	u32 count;
 	u16 csr;
+	dma_addr_t addr;
 
 	spin_lock_irqsave(&musb->lock, flags);
 
@@ -360,6 +404,9 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 			channel = &musb_channel->channel;
 			if (channel->status == MUSB_DMA_STATUS_BUSY) {
 				count = musb_read_hsdma_count(mbase, bchannel);
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+				count = dma_extract_count(count);
+#endif
 
 				if (count == 0)
 					int_hsdma |= (1 << bchannel);
@@ -388,12 +435,16 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 				u8 devctl;
 
 				addr = musb_read_hsdma_addr(mbase, bchannel);
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+				addr = dma_append_high_addr(addr, mbase, bchannel);
+#endif
 				channel->actual_len = addr - musb_channel->start_addr;
 				/* channel->actual_len = musb_readl(mbase,USB_DMA_REALCOUNT(bchannel)); */
 
-				DBG(2, "channel %d ch %p, 0x%x -> 0x%x (%zu / %d) %s\n", bchannel,
-				    channel, musb_channel->start_addr,
-				    addr, channel->actual_len,
+				DBG(2, "channel %d ch %p, 0x%p -> 0x%p (%zu / %d) %s\n", bchannel,
+				    channel,
+					(void *)(uintptr_t)musb_channel->start_addr,
+				    (void *)(uintptr_t)addr, channel->actual_len,
 				    musb_channel->len,
 				    (channel->actual_len
 				     < musb_channel->len) ? "=> reconfig 0" : "=> complete");
