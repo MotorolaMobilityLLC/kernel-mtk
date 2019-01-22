@@ -51,7 +51,7 @@
 #define SYNC_TIME_CYCLC		10
 #define SCP_sensorHub_DEV_NAME        "SCP_sensorHub"
 
-#define CHRE_POWER_RESET_NOTIFY
+#undef CHRE_POWER_RESET_NOTIFY
 
 static int sensor_send_timestamp_to_hub(void);
 static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp);
@@ -84,7 +84,6 @@ struct SCP_sensorHub_data {
 static struct SensorState mSensorState[ID_SENSOR_MAX_HANDLE + 1];
 static DEFINE_MUTEX(mSensorState_mtx);
 static atomic_t power_status = ATOMIC_INIT(SENSOR_POWER_DOWN);
-
 static struct SCP_sensorHub_data *obj_data;
 #define SCP_TAG                  "[sensorHub] "
 #define SCP_FUN(f)               pr_err(SCP_TAG"%s\n", __func__)
@@ -931,7 +930,7 @@ static int sensor_send_dram_info_to_hub(void)
 	struct SCP_sensorHub_data *obj = obj_data;
 	SCP_SENSOR_HUB_DATA data;
 	unsigned int len = 0;
-	int err = 0;
+	int err = 0, retry = 0, total = 3;
 
 	obj->shub_dram_phys = scp_get_reserve_mem_phys(SENS_MEM_ID);
 	obj->shub_dram_virt = scp_get_reserve_mem_virt(SENS_MEM_ID);
@@ -941,22 +940,16 @@ static int sensor_send_dram_info_to_hub(void)
 	data.set_config_req.bufferBase = (unsigned int)(obj->shub_dram_phys & 0xFFFFFFFF);
 
 	len = sizeof(data.set_config_req);
-
-	err = scp_sensorHub_req_send(&data, &len, 1);
-	if (err < 0) {
+	for (retry = 0; retry < total; ++retry) {
 		err = scp_sensorHub_req_send(&data, &len, 1);
 		if (err < 0) {
-			err = scp_sensorHub_req_send(&data, &len, 1);
-			if (err < 0) {
-				err = scp_sensorHub_req_send(&data, &len, 1);
-				if (err < 0) {
-					SCP_ERR("sensor_send_dram_info_to_hub fail 4 times!\n");
-					return SCP_SENSOR_HUB_FAILURE;
-				}
-			}
+			SCP_ERR("sensor_send_dram_info_to_hub fail!\n");
+			continue;
 		}
+		break;
 	}
-
+	if (retry < total)
+		SCP_ERR("sensor_send_dram_info_to_hub success!\n");
 	return SCP_SENSOR_HUB_SUCCESS;
 }
 int sensor_send_timestamp_to_hub(void)
@@ -1634,8 +1627,28 @@ static void sensorHub_power_up_work(struct work_struct *work)
 	int ret = 0;
 	int handle = 0, flush_cnt = 0;
 	struct ConfigCmd cmd;
+	struct SCP_sensorHub_data *obj = obj_data;
 
-	msleep(20);
+	/* firstly we should update dram information */
+	/* 1. reset wp queue head and tail */
+	obj->wp_queue.head = 0;
+	obj->wp_queue.tail = 0;
+	/* 2. init dram information */
+	obj->SCP_sensorFIFO = (struct sensorFIFO *)scp_get_reserve_mem_virt(SENS_MEM_ID);
+	WARN_ON(obj->SCP_sensorFIFO == NULL);
+	obj->SCP_sensorFIFO->wp = 0;
+	obj->SCP_sensorFIFO->rp = 0;
+	obj->SCP_sensorFIFO->FIFOSize =
+		(SCP_SENSOR_HUB_FIFO_SIZE - offsetof(struct sensorFIFO, data)) / SENSOR_DATA_SIZE * SENSOR_DATA_SIZE;
+	SCP_ERR("obj->SCP_sensorFIFO = %p, wp = %d, rp = %d, size = %d\n", obj->SCP_sensorFIFO,
+		obj->SCP_sensorFIFO->wp, obj->SCP_sensorFIFO->rp, obj->SCP_sensorFIFO->FIFOSize);
+#ifndef CHRE_POWER_RESET_NOTIFY
+	/* 3. wait for chre init done when don't support power reset feature */
+	msleep(2000);
+#endif
+	/* 4. send dram information to scp */
+	sensor_send_dram_info_to_hub();
+	/* secondly we enable sensor which sensor is enable by framework */
 	mutex_lock(&mSensorState_mtx);
 	for (handle = 0; handle < ID_SENSOR_MAX_HANDLE + 1; handle++) {
 		if ((mSensorState[handle].sensorType || (handle == ID_ACCELEROMETER &&
@@ -1659,7 +1672,9 @@ static void sensorHub_power_up_work(struct work_struct *work)
 }
 static int sensorHub_ready_event(struct notifier_block *this, unsigned long event, void *ptr)
 {
+#ifndef CHRE_POWER_RESET_NOTIFY
 	struct SCP_sensorHub_data *obj = obj_data;
+#endif
 
 	if (event == SCP_EVENT_STOP) {
 		atomic_set(&power_status, SENSOR_POWER_DOWN);
@@ -1707,22 +1722,6 @@ static int sensorHub_probe(struct platform_device *pdev)
 	}
 	/* register ipi interrupt handler */
 	scp_ipi_registration(IPI_SENSOR, SCP_sensorHub_IPI_handler, "SCP_sensorHub");
-	/* init dram fifo */
-	obj->SCP_sensorFIFO = (struct sensorFIFO *)scp_get_reserve_mem_virt(SENS_MEM_ID);
-	if (!obj->SCP_sensorFIFO) {
-		SCP_ERR("Allocate SCP_sensorFIFO fail\n");
-		err = -ENOMEM;
-		goto exit;
-	}
-	obj->SCP_sensorFIFO->wp = 0;
-	obj->SCP_sensorFIFO->rp = 0;
-	obj->SCP_sensorFIFO->FIFOSize =
-	    (SCP_SENSOR_HUB_FIFO_SIZE - offsetof(struct sensorFIFO, data)) / SENSOR_DATA_SIZE * SENSOR_DATA_SIZE;
-	SCP_ERR("[Lomen] sensor_send_dram_info_to_hub+\n");
-	sensor_send_dram_info_to_hub();
-	SCP_ERR("[Lomen] sensor_send_dram_info_to_hub-\n");
-	SCP_ERR("obj->SCP_sensorFIFO = %p, wp = %d, rp = %d, size = %d\n", obj->SCP_sensorFIFO,
-		obj->SCP_sensorFIFO->wp, obj->SCP_sensorFIFO->rp, obj->SCP_sensorFIFO->FIFOSize);
 	/* init receive scp dram data worker */
 	INIT_WORK(&obj->direct_push_work, SCP_sensorHub_direct_push_work);
 	obj->direct_push_workqueue = create_singlethread_workqueue("chre_work");
@@ -1804,7 +1803,7 @@ static void __exit SCP_sensorHub_exit(void)
 	SCP_FUN();
 }
 
-late_initcall(SCP_sensorHub_init);
+module_init(SCP_sensorHub_init);
 module_exit(SCP_sensorHub_exit);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("SCP sensor hub driver");
