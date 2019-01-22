@@ -8,6 +8,9 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_boost
+ifdef CONFIG_MTPROF
+ccflags-y += -Idrivers/misc/mediatek/mtprof/
+endif
 ifeq ($(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT),y)
 subdir-ccflags-y += -I$(srctree)/drivers/usb/gadget/function
 endif
