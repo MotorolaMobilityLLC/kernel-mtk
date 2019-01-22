@@ -1306,8 +1306,10 @@ static int vxlan_udp_encap_recv(struct sock *sk, struct sk_buff *skb)
 		gbp = (struct vxlanhdr_gbp *)vxh;
 		md->gbp = ntohs(gbp->policy_id);
 
-		if (tun_dst)
+		if (tun_dst) {
 			tun_dst->u.tun_info.key.tun_flags |= TUNNEL_VXLAN_OPT;
+			tun_dst->u.tun_info.options_len = sizeof(*md);
+		}
 
 		if (gbp->dont_learn)
 			md->gbp |= VXLAN_GBP_DONT_LEARN;
@@ -1984,11 +1986,6 @@ static void vxlan_xmit_one(struct sk_buff *skb, struct net_device *dev,
 				     vxlan->cfg.port_max, true);
 
 	if (info) {
-		if (info->key.tun_flags & TUNNEL_CSUM)
-			flags |= VXLAN_F_UDP_CSUM;
-		else
-			flags &= ~VXLAN_F_UDP_CSUM;
-
 		ttl = info->key.ttl;
 		tos = info->key.tos;
 
@@ -2003,8 +2000,15 @@ static void vxlan_xmit_one(struct sk_buff *skb, struct net_device *dev,
 			goto drop;
 		sk = vxlan->vn4_sock->sock->sk;
 
-		if (info && (info->key.tun_flags & TUNNEL_DONT_FRAGMENT))
-			df = htons(IP_DF);
+		if (info) {
+			if (info->key.tun_flags & TUNNEL_DONT_FRAGMENT)
+				df = htons(IP_DF);
+
+			if (info->key.tun_flags & TUNNEL_CSUM)
+				flags |= VXLAN_F_UDP_CSUM;
+			else
+				flags &= ~VXLAN_F_UDP_CSUM;
+		}
 
 		memset(&fl4, 0, sizeof(fl4));
 		fl4.flowi4_oif = rdst ? rdst->remote_ifindex : 0;
@@ -2100,6 +2104,13 @@ static void vxlan_xmit_one(struct sk_buff *skb, struct net_device *dev,
 				goto tx_error;
 			vxlan_encap_bypass(skb, vxlan, dst_vxlan);
 			return;
+		}
+
+		if (info) {
+			if (info->key.tun_flags & TUNNEL_CSUM)
+				flags &= ~VXLAN_F_UDP_ZERO_CSUM6_TX;
+			else
+				flags |= VXLAN_F_UDP_ZERO_CSUM6_TX;
 		}
 
 		ttl = ttl ? : ip6_dst_hoplimit(ndst);
@@ -2751,7 +2762,7 @@ static int vxlan_dev_configure(struct net *src_net, struct net_device *dev,
 			       struct vxlan_config *conf)
 {
 	struct vxlan_net *vn = net_generic(src_net, vxlan_net_id);
-	struct vxlan_dev *vxlan = netdev_priv(dev);
+	struct vxlan_dev *vxlan = netdev_priv(dev), *tmp;
 	struct vxlan_rdst *dst = &vxlan->default_dst;
 	unsigned short needed_headroom = ETH_HLEN;
 	int err;
@@ -2817,9 +2828,15 @@ static int vxlan_dev_configure(struct net *src_net, struct net_device *dev,
 	if (!vxlan->cfg.age_interval)
 		vxlan->cfg.age_interval = FDB_AGE_DEFAULT;
 
-	if (vxlan_find_vni(src_net, conf->vni, use_ipv6 ? AF_INET6 : AF_INET,
-			   vxlan->cfg.dst_port, vxlan->flags))
+	list_for_each_entry(tmp, &vn->vxlan_list, next) {
+		if (tmp->cfg.vni == conf->vni &&
+		    (tmp->default_dst.remote_ip.sa.sa_family == AF_INET6 ||
+		     tmp->cfg.saddr.sa.sa_family == AF_INET6) == use_ipv6 &&
+		    tmp->cfg.dst_port == vxlan->cfg.dst_port &&
+		    (tmp->flags & VXLAN_F_RCV_FLAGS) ==
+		    (vxlan->flags & VXLAN_F_RCV_FLAGS))
 		return -EEXIST;
+	}
 
 	dev->ethtool_ops = &vxlan_ethtool_ops;
 

@@ -357,8 +357,19 @@ static void mt_feature_mapping(struct hid_device *hdev,
 			break;
 		}
 
-		td->inputmode = field->report->id;
-		td->inputmode_index = usage->usage_index;
+		if (td->inputmode < 0) {
+			td->inputmode = field->report->id;
+			td->inputmode_index = usage->usage_index;
+		} else {
+			/*
+			 * Some elan panels wrongly declare 2 input mode
+			 * features, and silently ignore when we set the
+			 * value in the second field. Skip the second feature
+			 * and hope for the best.
+			 */
+			dev_info(&hdev->dev,
+				 "Ignoring the extra HID_DG_INPUTMODE\n");
+		}
 
 		break;
 	case HID_DG_CONTACTMAX:
@@ -384,6 +395,11 @@ static void mt_feature_mapping(struct hid_device *hdev,
 		if (field->value[usage->usage_index] == MT_BUTTONTYPE_CLICKPAD)
 			td->is_buttonpad = true;
 
+		break;
+	case 0xff0000c5:
+		/* Retrieve the Win8 blob once to enable some devices */
+		if (usage->usage_index == 0)
+			mt_get_feature(hdev, field->report);
 		break;
 	}
 }

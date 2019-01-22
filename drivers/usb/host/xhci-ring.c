@@ -2192,10 +2192,6 @@ static int process_bulk_intr_td(struct xhci_hcd *xhci, struct xhci_td *td,
 		}
 	/* Fast path - was this the last TRB in the TD for this URB? */
 	} else if (event_trb == td->last_trb) {
-		if (td->urb_length_set && trb_comp_code == COMP_SHORT_TX)
-			return finish_td(xhci, td, event_trb, event, ep,
-					 status, false);
-
 		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
 			td->urb->actual_length =
 				td->urb->transfer_buffer_length -
@@ -2247,12 +2243,6 @@ static int process_bulk_intr_td(struct xhci_hcd *xhci, struct xhci_td *td,
 			td->urb->actual_length +=
 				TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
 				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
-
-		if (trb_comp_code == COMP_SHORT_TX) {
-			xhci_dbg(xhci, "mid bulk/intr SP, wait for last TRB event\n");
-			td->urb_length_set = true;
-			return 0;
-		}
 	}
 
 	return finish_td(xhci, td, event_trb, event, ep, status, false);
@@ -4018,7 +4008,8 @@ static int queue_command(struct xhci_hcd *xhci, struct xhci_command *cmd,
 	int reserved_trbs = xhci->cmd_ring_reserved_trbs;
 	int ret;
 
-	if (xhci->xhc_state) {
+	if ((xhci->xhc_state & XHCI_STATE_DYING) ||
+		(xhci->xhc_state & XHCI_STATE_HALTED)) {
 		xhci_dbg(xhci, "xHCI dying or halted, can't queue_command\n");
 		return -ESHUTDOWN;
 	}

@@ -594,9 +594,9 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 	int err = 0, ioc_err = 0;
 
 	/*
-	 *The caller muyst have CAP_SYS_RAWIO, and must be calling this on the
-	 *whole block device,not on a partition.This prevent overspray
-	 *between sibling partitions
+	 * The caller must have CAP_SYS_RAWIO, and must be calling this on the
+	 * whole block device, not on a partition.  This prevents overspray
+	 * between sibling partitions.
 	 */
 	if ((!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
 		return -EPERM;
@@ -644,9 +644,9 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 	__u64 num_of_cmds;
 
 	/*
-	 *The caller muyst have CAP_SYS_RAWIO, and must be calling this on the
-	 *whole block device,not on a partition.This prevent overspray
-	 *between sibling partitions
+	 * The caller must have CAP_SYS_RAWIO, and must be calling this on the
+	 * whole block device, not on a partition.  This prevents overspray
+	 * between sibling partitions.
 	 */
 	if ((!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
 		return -EPERM;
