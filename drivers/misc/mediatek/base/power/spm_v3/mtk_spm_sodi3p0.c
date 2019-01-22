@@ -46,6 +46,11 @@
 #include <mtk_hps_internal.h>
 #endif
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#include <sspm_define.h>
+#include <sspm_timesync.h>
+#endif
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -259,6 +264,20 @@ static void spm_sodi3_resume_wdt(struct pwr_ctrl *pwrctrl, void *api)
 #endif
 }
 
+static void spm_sodi3_atf_time_sync(void)
+{
+	/* Get local_clock and sync to ATF */
+	u64 time_to_sync = local_clock();
+
+#ifdef CONFIG_ARM64
+	mt_secure_call(MTK_SIP_KERNEL_TIME_SYNC, time_to_sync, 0, 0);
+#else
+	mt_secure_call(MTK_SIP_KERNEL_TIME_SYNC,
+			(u32)time_to_sync, (u32)(time_to_sync >> 32), 0);
+#endif
+	sodi3_pr_debug("atf_time_sync\n");
+}
+
 unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 operation_cond)
 {
 	void *api = NULL;
@@ -394,6 +413,8 @@ RESTORE_IRQ:
 	soidle3_after_wfi(cpu);
 	spm_sodi3_notify_sspm_after_wfi_async_wait();
 	spm_sodi3_resume_wdt(pwrctrl, api);
+
+	spm_sodi3_atf_time_sync();
 
 	spm_sodi3_reset_footprint();
 
