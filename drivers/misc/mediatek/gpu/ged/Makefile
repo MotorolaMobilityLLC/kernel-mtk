@@ -45,7 +45,6 @@ ifneq ($(strip $(TARGET_BUILD_VARIANT)),)
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),eng)
 VER:=user
 ifeq ($(CONFIG_EXTREME_LOW_RAM), y)
-ccflags-y += -DGED_LOG_SIZE_LIMITED
 ccflags-y += -DGED_BUFFER_LOG_DISABLE
 endif
 endif

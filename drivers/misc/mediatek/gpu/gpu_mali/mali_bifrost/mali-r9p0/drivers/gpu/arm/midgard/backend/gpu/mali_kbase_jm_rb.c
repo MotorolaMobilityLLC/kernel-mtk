@@ -32,6 +32,10 @@
 #include <backend/gpu/mali_kbase_js_affinity.h>
 #include <backend/gpu/mali_kbase_pm_internal.h>
 
+#ifdef ENABLE_MTK_DEBUG
+#include <mtk_gpu_log.h>
+#endif
+
 /* Return whether the specified ringbuffer is empty. HW access lock must be
  * held */
 #define SLOT_RB_EMPTY(rb)   (rb->write_idx == rb->read_idx)
@@ -1451,6 +1455,12 @@ void kbase_gpu_complete_hw(struct kbase_device *kbdev, int js,
 						ktime_to_ns(*end_timestamp),
 						(u32)next_katom->kctx->id, 0,
 						next_katom->work_id);
+#ifdef ENABLE_MTK_DEBUG
+			GPULOG("gpu_name=%s next_ctx_id=%lu next_job_id=%lu",
+					js_string,
+					(unsigned long)next_katom->kctx->id,
+					(unsigned long)next_katom->work_id);
+#endif
 			kbdev->hwaccess.backend.slot_rb[js].last_context =
 							next_katom->kctx;
 		} else {
@@ -1461,6 +1471,9 @@ void kbase_gpu_complete_hw(struct kbase_device *kbdev, int js,
 							sizeof(js_string)),
 						ktime_to_ns(ktime_get()), 0, 0,
 						0);
+#ifdef ENABLE_MTK_DEBUG
+			GPULOG("gpu_name=%s next_ctx_id=0 next_job_id=0", js_string);
+#endif
 			kbdev->hwaccess.backend.slot_rb[js].last_context = 0;
 		}
 	}
