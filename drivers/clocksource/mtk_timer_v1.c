@@ -1082,6 +1082,4 @@ EXPORT_SYMBOL(gpt_set_clk);
 
 /************************************************************************************************/
 CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,apxgpt", mt_gpt_init);
-CLOCKSOURCE_OF_DECLARE(mtk_apxgpt_mt6739, "mediatek,apxgpt", mt_gpt_init);
-CLOCKSOURCE_OF_DECLARE(mtk_apxgpt_mt6763, "mediatek,mt6763-timer", mt_gpt_init);
 
