@@ -654,6 +654,14 @@ static ssize_t step_c_store_flush(struct device *dev, struct device_attribute *a
 			STEP_C_ERR("DON'T SUPPORT SMD COMMON VERSION FLUSH\n");
 		if (err < 0)
 			STEP_C_ERR("smd enable flush err %d\n", err);
+	} else if (handle == ID_FLOOR_COUNTER) {
+		if (cxt->step_c_ctl.floor_c_flush != NULL)
+			err = cxt->step_c_ctl.floor_c_flush();
+		else
+			STEP_C_ERR("DON'T SUPPORT FLOOR COUNTER COMMON VERSION FLUSH\n");
+		if (err < 0)
+			STEP_C_ERR("floor counter enable flush err %d\n", err);
+
 	}
 	mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 	return count;
