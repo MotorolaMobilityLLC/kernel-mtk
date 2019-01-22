@@ -55,6 +55,7 @@
 #include <linux/io.h>
 #include <asm/irq.h>
 #include <mt-plat/sync_write.h>
+#include <mt-plat/mtk_devinfo.h>
 
 #include "mtk_auxadc.h"
 #include "mtk_auxadc_hw.h"
@@ -213,7 +214,11 @@ static void mt_auxadc_update_cali(void)
 	cali_ge = 0;
 
 #if defined(EFUSE_CALI)
+#if defined(AUXADC_INDEX)
+	cali_reg = get_devinfo_with_index(AUXADC_INDEX);
+#else
 	cali_reg = (*(volatile unsigned int *const)(ADC_CALI_EN_A_REG));
+#endif
 
 	if (((cali_reg & ADC_CALI_EN_A_MASK) >> ADC_CALI_EN_A_SHIFT) != 0) {
 		cali_oe_a = (cali_reg & ADC_OE_A_MASK) >> ADC_OE_A_SHIFT;
