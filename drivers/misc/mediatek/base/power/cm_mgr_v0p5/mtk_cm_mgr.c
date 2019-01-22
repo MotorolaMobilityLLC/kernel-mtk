@@ -128,8 +128,11 @@ static void cm_mgr_update_met(void)
 	met_data.cm_mgr_loading[1] = cm_mgr_rel_load;
 	met_data.cm_mgr_loading[2] = max_load[0];
 	met_data.cm_mgr_loading[3] = max_load[1];
-	for_each_possible_cpu(cpu)
+	for_each_possible_cpu(cpu) {
+		if (cpu >= CM_MGR_CPU_COUNT)
+			break;
 		met_data.cm_mgr_loading[4 + cpu] = cpu_load[cpu];
+	}
 
 	met_data.cm_mgr_ratio[0] = ratio[0];
 	met_data.cm_mgr_ratio[1] = ratio[1];
@@ -353,6 +356,8 @@ void check_cm_mgr_status(unsigned int freq_idx, unsigned int cluster)
 		for_each_possible_cpu(i) {
 			int avg_load;
 
+			if (i >= CM_MGR_CPU_COUNT)
+				break;
 			if (unlikely(loading_cnt == 0))
 				break;
 			avg_load = loading_acc[i] / loading_cnt;
