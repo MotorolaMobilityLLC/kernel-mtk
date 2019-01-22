@@ -40,6 +40,9 @@
 
 #include "configfs.h"
 #include "usb_boost.h"
+#ifdef CONFIG_MEDIATEK_SOLUTION
+#include "aee.h"
+#endif
 
 #define MTP_BULK_BUFFER_SIZE       16384
 #define INTR_BUFFER_SIZE           28
@@ -536,6 +539,27 @@ fail:
 	return -1;
 }
 
+#define MTP_QUEUE_DBG(fmt, args...)		\
+	pr_warn("MTP_QUEUE_DBG, <%s(), %d> " fmt, __func__, __LINE__, ## args)
+#define MTP_QUEUE_DBG_STR_SZ 128
+
+void mtp_dbg_dump(void)
+{
+	static char string[MTP_QUEUE_DBG_STR_SZ];
+
+	sprintf(string, "NOT MtpServer, task info<%d,%s>\n", current->pid, current->comm);
+	MTP_QUEUE_DBG("%s\n", string);
+
+#ifdef CONFIG_MEDIATEK_SOLUTION
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_NATIVE_BACKTRACE, string, string);
+#else
+	{
+		char *ptr = NULL;
+		*ptr = 0;
+	}
+#endif
+}
+
 static ssize_t mtp_read(struct file *fp, char __user *buf,
 	size_t count, loff_t *pos)
 {
@@ -545,6 +569,25 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 	ssize_t r = count;
 	unsigned xfer;
 	int ret = 0;
+
+	{
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+		static int skip_cnt;
+
+		if (!strstr(current->comm, "MtpServer")) {
+			MTP_QUEUE_DBG("NOT MtpServer.........\n");
+			mtp_dbg_dump();
+
+			/* return directly for malfunction usage */
+			return count;
+		}
+
+		if (__ratelimit(&ratelimit)) {
+			MTP_QUEUE_DBG("MtpServer........., skip_cnt:%d\n", skip_cnt);
+			skip_cnt = 0;
+		} else
+			skip_cnt++;
+	}
 
 	DBG(cdev, "mtp_read(%zu)\n", count);
 
@@ -776,7 +819,7 @@ static void send_file_work(struct work_struct *data)
 					__cpu_to_le32(dev->xfer_transaction_id);
 		}
 
-usb_boost();
+		usb_boost();
 		ret = vfs_read(filp, req->buf + hdr_size, xfer - hdr_size,
 								&offset);
 		if (ret < 0) {
