@@ -39,6 +39,7 @@
 
 #include "mt6336.h"
 
+#define TURN_ON_RDM_DWM
 
 CHARGER_TYPE CHR_Type_num = CHARGER_UNKNOWN;
 
@@ -118,8 +119,11 @@ static unsigned int hw_bc12_step_1(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 1);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
-	/* Wait 200us */
-	usleep_range(200, 1000);
+#if defined(TURN_ON_RDM_DWM)
+	bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 1);
+#endif
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	/* RGS_BC12_CMP_OUT */
 	/* Check BC 1.2 comparator output
@@ -127,8 +131,11 @@ static unsigned int hw_bc12_step_1(void)
 	 * 1: Jump to 2-b
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
-	/* Wait 4us */
-	udelay(4);
+#if defined(TURN_ON_RDM_DWM)
+	bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 0);
+#endif
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	return wChargerAvail;
 }
@@ -148,8 +155,11 @@ static unsigned int hw_bc12_step_2a(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 1);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
-	/* Wait 200us */
-	usleep_range(200, 1000);
+#if defined(TURN_ON_RDM_DWM)
+	bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 1);
+#endif
+	/* Delay 40ms */
+	usleep_range(40000, 41000);
 
 	/* RGS_BC12_CMP_OUT */
 	/* Check BC 1.2 comparator output
@@ -157,8 +167,11 @@ static unsigned int hw_bc12_step_2a(void)
 	 * 1: Jump to 3-a
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
-	/* Wait 4us */
-	udelay(4);
+#if defined(TURN_ON_RDM_DWM)
+	bc12_set_register_value(MT6336_RG_A_ANABASE_RSV, 0);
+#endif
+	/* Delay 20ms */
+	usleep_range(20000, 21000);
 
 	return wChargerAvail;
 }
@@ -178,14 +191,14 @@ static unsigned int hw_bc12_step_2b1(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 2);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 2);
-	/* Wait 200us */
-	usleep_range(200, 1000);
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	/* RGS_BC12_CMP_OUT */
 	/* Latch output OUT1 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
-	/* Wait 4us */
-	udelay(4);
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	return wChargerAvail;
 }
@@ -206,14 +219,14 @@ static unsigned int hw_bc12_step_2b2(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 1);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
-	/* Wait 200us */
-	usleep_range(200, 1000);
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	/* RGS_BC12_CMP_OUT */
 	/* Latch output OUT2 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
-	/* Wait 4us */
-	udelay(4);
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	return wChargerAvail;
 }
@@ -248,8 +261,8 @@ static unsigned int hw_bc12_step_3a(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 0);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
-	/* Wait 200us */
-	usleep_range(200, 1000);
+	/* Delay 40ms */
+	usleep_range(40000, 41000);
 
 	/* RGS_BC12_CMP_OUT */
 	/* Check BC 1.2 comparator output
@@ -257,8 +270,8 @@ static unsigned int hw_bc12_step_3a(void)
 	 * 1: DCP
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
-	/* Wait 4us */
-	udelay(4);
+	/* Delay 20ms */
+	usleep_range(20000, 21000);
 
 	return wChargerAvail;
 }
@@ -279,8 +292,8 @@ static unsigned int hw_bc12_step_3b(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 1);
 	/* RG_A_BC12_IPD_HALF_EN = 1 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 1);
-	/* Wait 200us */
-	usleep_range(200, 1000);
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	/* RGS_BC12_CMP_OUT */
 	/* Check BC 1.2 comparator output
@@ -288,8 +301,8 @@ static unsigned int hw_bc12_step_3b(void)
 	 * 1: Non-STD Charger
 	 */
 	wChargerAvail = bc12_get_register_value(MT6336_AD_QI_BC12_CMP_OUT);
-	/* Wait 4us */
-	udelay(4);
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	return wChargerAvail;
 }
@@ -310,13 +323,13 @@ static unsigned int hw_bc12_step_4(void)
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_EN, 0);
 	/* RG_A_BC12_IPD_HALF_EN = 0 */
 	bc12_set_register_value(MT6336_RG_A_BC12_IPD_HALF_EN, 0);
-	/* Wait 200us */
-	usleep_range(200, 1000);
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	/* RGS_BC12_CMP_OUT */
 	wChargerAvail = bc12_set_register_value(MT6336_AD_QI_BC12_CMP_OUT, 0);
-	/* Wait 4us */
-	udelay(4);
+	/* Delay 10ms */
+	usleep_range(10000, 20000);
 
 	return wChargerAvail;
 }
@@ -379,10 +392,13 @@ int hw_charging_get_charger_type(void)
 		case 0:
 			if (hw_bc12_step_3b())
 				CHR_Type_num = NONSTANDARD_CHARGER;
-			else if (hw_bc12_step_4())
-				pr_err("charger type: DP/DM are floating\n");
-			else
-				pr_err("charger type: SS 5V/2A\n");
+			else if (hw_bc12_step_4()) {
+				CHR_Type_num = NONSTANDARD_CHARGER;
+				pr_err("charger type: DP/DM are floating. Force to Non-STD!\n");
+			} else {
+				CHR_Type_num = NONSTANDARD_CHARGER;
+				pr_err("charger type: SS 5V/2A. Force to Non-STD!\n");
+			}
 			break;
 		case 1:
 			CHR_Type_num = APPLE_1_0A_CHARGER;
