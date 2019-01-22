@@ -265,8 +265,15 @@ P_OSAL_OP _stp_btm_get_free_op(MTKSTP_BTM_T *stp_btm)
 
 	if (stp_btm) {
 		pOp = _stp_btm_get_op(stp_btm, &stp_btm->rFreeOpQ);
-		if (pOp)
+		if (pOp) {
 			osal_memset(&pOp->op, 0, sizeof(pOp->op));
+
+			/* at the moment the signal's timeoutValue is initialized by caller of _stp_btm_get_free_op(),
+			 * and the signal's comp is initialized in _stp_btm_put_act_op(),
+			 * leaving us with no choice but to initialize timeoutExtension here.
+			 */
+			pOp->signal.timeoutExtension = 0;
+		}
 
 		return pOp;
 	} else
@@ -313,7 +320,7 @@ INT32 _stp_btm_put_act_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp)
 		bCleanup = 1;	/* MTK_WCN_BOOL_TRUE; */
 
 		/* check result */
-		wait_ret = osal_wait_for_signal_timeout(&pOp->signal);
+		wait_ret = osal_wait_for_signal_timeout(&pOp->signal, &stp_btm->BTMd);
 
 		STP_BTM_DBG_FUNC("wait completion:%d\n", wait_ret);
 		if (!wait_ret) {

@@ -385,6 +385,88 @@ INT32 osal_thread_destroy(P_OSAL_THREAD pThread)
 }
 
 /*
+ * osal_thread_sched_retrieve
+ * Retrieve thread's current scheduling statistics and stored in output "sched".
+ * Return value:
+ *	 0 : Schedstats successfully retrieved
+ *	-1 : Kernel's schedstats feature not enabled
+ *	-2 : pThread not yet initialized or sched is a NULL pointer
+ */
+static INT32 osal_thread_sched_retrieve(P_OSAL_THREAD pThread, P_OSAL_THREAD_SCHEDSTATS sched)
+{
+#ifdef CONFIG_SCHEDSTATS
+	struct sched_entity se;
+	UINT64 sec;
+	ULONG usec;
+
+	if (!sched)
+		return -2;
+
+	/* always clear sched to simplify error handling at caller side */
+	memset(sched, 0, sizeof(OSAL_THREAD_SCHEDSTATS));
+
+	if (!pThread || !pThread->pThread)
+		return -2;
+
+	memcpy(&se, &pThread->pThread->se, sizeof(struct sched_entity));
+	osal_get_local_time(&sec, &usec);
+
+	sched->time = sec*1000 + usec/1000;
+	sched->exec = se.sum_exec_runtime;
+	sched->runnable = se.statistics.wait_sum;
+	sched->iowait = se.statistics.iowait_sum;
+
+	return 0;
+#else
+	/* always clear sched to simplify error handling at caller side */
+	if (sched)
+		memset(sched, 0, sizeof(OSAL_THREAD_SCHEDSTATS));
+	return -1;
+#endif
+}
+
+/*
+ * osal_thread_sched_mark
+ * Record the thread's current schedstats and stored in output "schedstats" parameter for profiling at later time.
+ * Return value:
+ *	 0 : Schedstats successfully recorded
+ *	-1 : Kernel's schedstats feature not enabled
+ *	-2 : pThread not yet initialized or invalid parameters
+ */
+INT32 osal_thread_sched_mark(P_OSAL_THREAD pThread, P_OSAL_THREAD_SCHEDSTATS schedstats)
+{
+	return osal_thread_sched_retrieve(pThread, schedstats);
+}
+
+/*
+ * osal_thread_sched_unmark
+ * Calculate scheduling statistics against the previously marked point.
+ * The result will be filled back into the schedstats output parameter.
+ * Return value:
+ *	 0 : Schedstats successfully calculated
+ *	-1 : Kernel's schedstats feature not enabled
+ *	-2 : pThread not yet initialized or invalid parameters
+ */
+INT32 osal_thread_sched_unmark(P_OSAL_THREAD pThread, P_OSAL_THREAD_SCHEDSTATS schedstats)
+{
+	INT32 ret;
+	OSAL_THREAD_SCHEDSTATS sched_now;
+
+	if (unlikely(!schedstats)) {
+		ret = -2;
+	} else {
+		ret = osal_thread_sched_retrieve(pThread, &sched_now);
+		if (ret == 0) {
+			schedstats->time = sched_now.time - schedstats->time;
+			schedstats->exec = sched_now.exec - schedstats->exec;
+			schedstats->runnable = sched_now.runnable - schedstats->runnable;
+			schedstats->iowait = sched_now.iowait - schedstats->iowait;
+		}
+	}
+	return ret;
+}
+
+/*
   *OSAL layer Signal Opeartion related APIs
   *initialization
   *wait for signal
@@ -414,14 +496,62 @@ INT32 osal_wait_for_signal(P_OSAL_SIGNAL pSignal)
 	}
 }
 
-INT32 osal_wait_for_signal_timeout(P_OSAL_SIGNAL pSignal)
+/*
+ * osal_wait_for_signal_timeout
+ *
+ * Wait for a signal to be triggered by the corresponding thread, within the
+ * expected timeout specified by the signal's timeoutValue.
+ * When the pThread parameter is specified, the thread's scheduling ability is
+ * considered, the timeout will be extended when thread cannot acquire CPU
+ * resource, and will only extend for a number of times specified by the
+ * signal's timeoutExtension should the situation continues.
+ *
+ * Return value:
+ *	 0 : timeout
+ *	>0 : signal triggered
+ */
+INT32 osal_wait_for_signal_timeout(P_OSAL_SIGNAL pSignal, P_OSAL_THREAD pThread)
 {
+	OSAL_THREAD_SCHEDSTATS schedstats;
+	INT32 waitRet;
+
 	/* return wait_for_completion_interruptible_timeout(&pSignal->comp, msecs_to_jiffies(pSignal->timeoutValue)); */
 	/* [ChangeFeature][George] gps driver may be closed by -ERESTARTSYS.
 	 * Avoid using *interruptible" version in order to complete our jobs, such
 	 * as function off gracefully.
 	 */
-	return wait_for_completion_timeout(&pSignal->comp, msecs_to_jiffies(pSignal->timeoutValue));
+	if (!pThread || !pThread->pThread)
+		return wait_for_completion_timeout(&pSignal->comp, msecs_to_jiffies(pSignal->timeoutValue));
+
+	do {
+		osal_thread_sched_mark(pThread, &schedstats);
+		waitRet = wait_for_completion_timeout(&pSignal->comp, msecs_to_jiffies(pSignal->timeoutValue));
+		osal_thread_sched_unmark(pThread, &schedstats);
+
+		if (waitRet > 0)
+			break;
+
+		if (schedstats.runnable > schedstats.exec) {
+			osal_err_print(
+				"[E]%s:wait completion timeout, %s cannot get CPU, extension(%d), show backtrace:\n",
+				__func__,
+				pThread->threadName,
+				pSignal->timeoutExtension);
+		} else {
+			osal_err_print("[E]%s:wait completion timeout, show %s backtrace:\n",
+				__func__,
+				pThread->threadName);
+			pSignal->timeoutExtension = 0;
+		}
+		osal_err_print("[E]%s:\tduration:%llums, sched(x%llu/r%llu/i%llu)\n",
+			__func__,
+			schedstats.time,
+			schedstats.exec,
+			schedstats.runnable,
+			schedstats.iowait);
+		osal_thread_show_stack(pThread);
+	} while (pSignal->timeoutExtension--);
+	return waitRet;
 }
 
 INT32 osal_raise_signal(P_OSAL_SIGNAL pSignal)
