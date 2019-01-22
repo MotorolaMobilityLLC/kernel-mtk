@@ -345,13 +345,12 @@ static unsigned long global_dirtyable_memory(void)
 	 * remove movable zone from dirtyable memory count
 	 */
 	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA)) {
-		int node;
+		struct zone *z;
 		unsigned long dirtyable_memory = 0;
 
-		for_each_node(node) {
-			struct zone *z = &NODE_DATA(node)->node_zones[ZONE_MOVABLE];
-
-			dirtyable_memory += zone_dirtyable_memory(z);
+		for_each_populated_zone(z) {
+			if (IS_ZONE_MOVABLE_CMA_ZONE(z))
+				dirtyable_memory += zone_dirtyable_memory(z);
 		}
 
 		if ((long)dirtyable_memory < 0)
