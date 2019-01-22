@@ -896,7 +896,7 @@ void _mt_cpufreq_dvfs_request_wrapper(struct mt_cpu_dvfs *p, int new_opp_idx,
 
 		/* Update public table */
 		for (i = 0; i < p->nr_opp_tbl; i++)
-			p->opp_tbl[i].cpufreq_volt = vproc_p->buck_ops->transfer2volt((*volt_tbl)[i]);
+			p->opp_tbl[i].cpufreq_volt = vproc_p->buck_ops->transfer2volt((*volt_tbl)[i]) / 10;
 
 		for_each_cpu_dvfs_only(i, pp) {
 			if ((pp->Vproc_buck_id == p->Vproc_buck_id) && pp->armpll_is_available
