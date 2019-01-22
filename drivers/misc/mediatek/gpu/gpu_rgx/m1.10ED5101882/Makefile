@@ -152,7 +152,6 @@ pvrsrvkm-y += \
 	services/server/env/linux/physmem_dmabuf.o \
 	services/server/env/linux/pmr_os.o \
 	services/server/env/linux/module_common.o \
-	services/server/env/linux/dma_fence_sync_native_server.o \
 	services/server/env/linux/pvr_debugfs.o \
 	services/server/env/linux/osconnection_server.o \
 	services/shared/devices/rgx/rgx_hwperf_table.o \
@@ -166,14 +165,21 @@ pvrsrvkm-y += \
 	services/shared/common/devicemem.o \
 	services/shared/common/htbuffer.o \
 	services/shared/common/mem_utils.o \
-	kernel/drivers/staging/imgtec/pvr_sw_fence.o \
 	kernel/drivers/staging/imgtec/pvr_drm.o \
-	kernel/drivers/staging/imgtec/pvr_sync_file.o \
-	kernel/drivers/staging/imgtec/pvr_counting_timeline.o \
-	kernel/drivers/staging/imgtec/pvr_fence.o \
 	kernel/drivers/staging/imgtec/pvr_platform_drv.o \
-	
 
+ifeq ($(SUPPORT_DMA_FENCE),1)
+	pvrsrvkm-y += \
+		kernel/drivers/staging/imgtec/pvr_sync_file.o \
+		kernel/drivers/staging/imgtec/pvr_counting_timeline.o \
+		kernel/drivers/staging/imgtec/pvr_sw_fence.o \
+		kernel/drivers/staging/imgtec/pvr_fence.o \
+		services/server/env/linux/dma_fence_sync_native_server.o
+else
+	pvrsrvkm-y += \
+		services/server/env/linux/sync_native_server.o \
+		kernel/drivers/staging/imgtec/pvr_sync2.o
+endif
 
 pvrsrvkm-$(CONFIG_ARM) += services/server/env/linux/osfunc_arm.o
 pvrsrvkm-$(CONFIG_ARM64) += services/server/env/linux/osfunc_arm64.o
