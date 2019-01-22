@@ -1,232 +1,24 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/hem_mbox.h#3
- */
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/hem_mbox.h#3
+*/
 
 /*
  * ! \file   hem_mbox.h
  *   \brief
- */
-
-/*
- * Log: hem_mbox.h
- *
- * 08 09 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * 1. integrate scheduled scan functionality
- * 2. condition compilation for linux-3.4 & linux-3.8 compatibility
- * 3. correct CMD queue access to reduce lock scope
- *
- * 07 29 2013 cp.wu
- * [BORA00002725] [MT6630][Wi-Fi] Add MGMT TX/RX support for Linux port
- * Preparation for porting remain_on_channel support
- *
- * 01 22 2013 cp.wu
- * [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
- * modification for ucBssIndex migration
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 07 24 2012 yuche.tsai
- * NULL
- * Bug fix for JB.
- *
- * 07 19 2012 yuche.tsai
- * NULL
- * Code update for JB.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Sync CFG80211 modification from branch 2,2.
- *
- * 07 18 2011 cp.wu
- * [WCXRP00000858] [MT5931][Driver][Firmware] Add support for scan to search for
- * more than one SSID in a single scanning request
- * add framework in driver domain for supporting new SCAN_REQ_V2 for more than 1 SSID
- * support as well as uProbeDelay in NDIS 6.x driver model
- *
- * 06 07 2011 yuche.tsai
- * [WCXRP00000696] [Volunteer Patch][MT6620][Driver] Infinite loop issue when RX invitation response.
- * cnm_timer[WCXRP00000763] [Volunteer Patch][MT6620][Driver] RX Service Discovery Frame under AP mode Issue
- * Add invitation support.
- *
- * 06 02 2011 cp.wu
- * [WCXRP00000681] [MT5931][Firmware] HIF code size reduction
- * eliminate unused parameters for SAA-FSM
- *
- * 01 26 2011 cm.chang
- * [WCXRP00000395] [MT6620 Wi-Fi][Driver][FW] Search STA_REC with additional net type index argument
- * Allocate system RAM if fixed message or mgmt buffer is not available
- *
- * 11 08 2010 cm.chang
- * [WCXRP00000169] [MT6620 Wi-Fi][Driver][FW] Remove unused CNM recover message ID
- * Remove CNM channel reover message ID
- *
- * 09 16 2010 cm.chang
- * NULL
- * Remove unused message ID
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 08 30 2010 cp.wu
- * NULL
- * eliminate klockwork errors
- *
- * 08 25 2010 george.huang
- * NULL
- * update OID/ registry control path for PM related settings
- *
- * 08 23 2010 chinghwa.yu
- * NULL
- * Update for BOW.
- *
- * 08 16 2010 cp.wu
- * NULL
- * add interface for RLM to trigger OBSS-SCAN.
- *
- * 08 11 2010 yuche.tsai
- * NULL
- * Add some message ID for P2P FSM under provisioning phase.
- *
- * 08 11 2010 yuche.tsai
- * NULL
- * Add Message Event ID for P2P Module.
- *
- * 08 05 2010 yuche.tsai
- * NULL
- * Check-in P2P Device Discovery Feature.
- *
- * 08 04 2010 cp.wu
- * NULL
- * remove unused mailbox message definitions.
- *
- * 08 02 2010 yuche.tsai
- * NULL
- * P2P Group Negotiation Code Check in.
- *
- * 07 19 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * message table should not be commented out by compilation option without modifying header file
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 07 08 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Rename MID_MNY_CNM_CH_RELEASE to MID_MNY_CNM_CH_ABORT
- *
- * 07 01 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * AIS-FSM integration with CNM channel request messages
- *
- * 07 01 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * implementation of DRV-SCN and related mailbox message handling.
- *
- * 07 01 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Modify CNM message handler for new flow
- *
- * 06 18 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Provide cnmMgtPktAlloc() and alloc/free function of msg/buf
- *
- * 06 14 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * restore utility function invoking via hem_mbox to direct calls
- *
- * 06 11 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * auth.c is migrated.
- *
- * 06 10 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add buildable & linkable ais_fsm.c
- *
- * related reference are still waiting to be resolved
- *
- * 06 09 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add definitions for module migration.
- *
- * 06 08 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * hem_mbox is migrated.
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * merge cnm_scan.h and hem_mbox.h
- *
- * 05 12 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Add Power Management - Legacy PS-POLL support.
- *
- * 04 29 2010 tehuang.liu
- * [BORA00000605][WIFISYS] Phase3 Integration
- * Removed MID_RXM_MQM_QOS_ACTION_FRAME
- *
- * 04 29 2010 tehuang.liu
- * [BORA00000605][WIFISYS] Phase3 Integration
- * Removed MID_RXM_MQM_BA_ACTION_FRAME
- *
- * 03 30 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Support 2.4G OBSS scan
- *
- * 03 16 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Add AdHoc Mode
- *
- * 03 10 2010 kevin.huang
- * [BORA00000654][WIFISYS][New Feature] CNM Module - Ch Manager Support
- *
- *  *  *  *  * Add Channel Manager for arbitration of JOIN and SCAN Req
- *
- * 03 05 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Develop partial DPD code
- *
- * 02 11 2010 tehuang.liu
- * [BORA00000569][WIFISYS] Phase 2 Integration Test
- * Added MID_RXM_MQM_QOS_ACTION_FRAME for RXM to indicate QoS Action frames to MQM
- *
- * 01 11 2010 kevin.huang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Add Deauth and Disassoc Handler
- *
- * Dec 7 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Rename the parameter of mboxDummy()
- *
- * Dec 2 2009 MTK02468
- * [BORA00000337] To check in codes for FPGA emulation
- * Added MID_RXM_MQM_BA_ACTION_FRAME
- *
- * Nov 24 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Remove Dummy MSG ID
- *
- * Nov 23 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Add JOIN REQ related MSG ID
- *
- * Nov 16 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Add AIS ABORT MSG ID
- *
- * Nov 5 2009 mtk01461
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * Add SCN MSG IDs
- *
- * Oct 28 2009 mtk01104
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- *
  */
 
 #ifndef _HEM_MBOX_H

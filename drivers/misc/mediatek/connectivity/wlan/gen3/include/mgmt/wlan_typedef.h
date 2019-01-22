@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
  * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/mgmt/wlan_typedef.h#1
  */
 
@@ -8,20 +22,6 @@
  *
  *   In this file we declare the data type and return values which will be exported
  *   to all MGMT Protocol Stack.
- */
-
-/*
- * Log: wlan_typedef.h
- *
- * 01 21 2013 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * 1. Create rP2pDevInfo structure
- * 2. Support 80/160 MHz channel bandwidth for channel privilege
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
  */
 
 #ifndef _WLAN_TYPEDEF_H

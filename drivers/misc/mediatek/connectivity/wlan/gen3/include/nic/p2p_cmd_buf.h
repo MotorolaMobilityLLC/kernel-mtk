@@ -1,4 +1,18 @@
 /*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
 ** Id:
 */
 
@@ -8,32 +22,6 @@
  *              In this file we define the structure for Command Packet and the control unit
  *  of MGMT Memory Pool.
  */
-
-/*
-** Log: p2p_cmd_buf.h
-**
-** 07 25 2014 eason.tsai
-** AOSP
-**
-** 03 07 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Add wlan_p2p.c, but still need to FIX many place.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-*
-* 07 17 2012 yuche.tsai
-* NULL
-* Compile no error before trial run.
-*
-* 12 22 2010 cp.wu
- * [WCXRP00000283] [MT6620 Wi-Fi][Driver][Wi-Fi Direct] Implementation of interface
- * for supporting Wi-Fi Direct Service Discovery
-* 1. header file restructure for more clear module isolation
-* 2. add function interface definition for implementing Service Discovery callbacks
-*/
 
 #ifndef _P2P_CMD_BUF_H
 #define _P2P_CMD_BUF_H

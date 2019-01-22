@@ -1,69 +1,26 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/gl_proc.c#2
- */
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify it under the terms of the
+* GNU General Public License version 2 as published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See the GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/gl_proc.c#2
+*/
 
 /*
  * ! \file   "gl_proc.c"
  *  \brief  This file defines the interface which can interact with users in /proc fs.
  *
  *   Detail description.
- */
-
-/*
- * Log: gl_proc.c
- *
- * 09 17 2012 cm.chang
- * [BORA00002149] [MT6630 Wi-Fi] Initial software development
- * Duplicate source from MT6620 v2.3 driver branch
- * (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 08 24 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * .
- *
- * 08 24 2012 cp.wu
- * [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
- * cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 11 10 2011 cp.wu
- * [WCXRP00001098] [MT6620 Wi-Fi][Driver] Replace printk by DBG LOG macros in linux porting layer
- * 1. eliminaite direct calls to printk in porting layer.
- * 2. replaced by DBGLOG, which would be XLOG on ALPS platforms.
- *
- * 12 10 2010 kevin.huang
- * [WCXRP00000128] [MT6620 Wi-Fi][Driver] Add proc support to Android Driver for debug and driver status check
- * Add Linux Proc Support
- *  \main\maintrunk.MT5921\19 2008-09-02 21:08:37 GMT mtk01461
- *  Fix the compile error of SPRINTF()
- *  \main\maintrunk.MT5921\18 2008-08-10 18:48:28 GMT mtk01461
- *  Update for Driver Review
- *  \main\maintrunk.MT5921\17 2008-08-04 16:52:01 GMT mtk01461
- *  Add proc dbg print message of DOMAIN_INDEX level
- *  \main\maintrunk.MT5921\16 2008-07-10 00:45:16 GMT mtk01461
- *  Remove the check of MCR offset, we may use the MCR address which is not align to DW boundary or proprietary usage.
- *  \main\maintrunk.MT5921\15 2008-06-03 20:49:44 GMT mtk01461
- *  \main\maintrunk.MT5921\14 2008-06-02 22:56:00 GMT mtk01461
- *  Rename some functions for linux proc
- *  \main\maintrunk.MT5921\13 2008-06-02 20:23:18 GMT mtk01461
- *  Revise PROC mcr read / write for supporting TELNET
- *  \main\maintrunk.MT5921\12 2008-03-28 10:40:25 GMT mtk01461
- *  Remove temporary set desired rate in linux proc
- *  \main\maintrunk.MT5921\11 2008-01-07 15:07:29 GMT mtk01461
- *  Add User Update Desired Rate Set for QA in Linux
- *  \main\maintrunk.MT5921\10 2007-12-11 00:11:14 GMT mtk01461
- *  Fix SPIN_LOCK protection
- *  \main\maintrunk.MT5921\9 2007-12-04 18:07:57 GMT mtk01461
- *  Add additional debug category to proc
- *  \main\maintrunk.MT5921\8 2007-11-02 01:03:23 GMT mtk01461
- *  Unify TX Path for Normal and IBSS Power Save + IBSS neighbor learning
- *  \main\maintrunk.MT5921\7 2007-10-25 18:08:14 GMT mtk01461
- *  Add VOIP SCAN Support  & Refine Roaming
- * Revision 1.3  2007/07/05 07:25:33  MTK01461
- * Add Linux initial code, modify doc, add 11BB, RF init code
- *
- * Revision 1.2  2007/06/27 02:18:51  MTK01461
- * Update SCAN_FSM, Initial(Can Load Module), Proc(Can do Reg R/W), TX API
- *
  */
 
 /*******************************************************************************
