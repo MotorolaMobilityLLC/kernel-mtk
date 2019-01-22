@@ -27,9 +27,9 @@
 
 #include "spm_v1/mt_sleep.h"
 
-#elif defined(CONFIG_ARCH_ELBRUS)
+#elif defined(CONFIG_MACH_MT6799)
 
-#include "spm_v3/mt_sleep.h"
+#include "spm_v3/mtk_sleep.h"
 
 #endif
 
