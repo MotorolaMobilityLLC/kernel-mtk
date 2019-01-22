@@ -4566,7 +4566,7 @@ int WPE_pm_suspend(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	LOG_DBG("calling %s()\n", __func__);
-	LOG_INF("WPE suspend g_u4EnableClockCount: %d, g_u4WpeCnt: %d", g_u4EnableClockCount, g_u4WpeCnt);
+	LOG_DBG("WPE suspend g_u4EnableClockCount: %d, g_u4WpeCnt: %d", g_u4EnableClockCount, g_u4WpeCnt);
 
 	return WPE_suspend(pdev, PMSG_SUSPEND);
 }
@@ -4578,7 +4578,7 @@ int WPE_pm_resume(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	LOG_DBG("calling %s()\n", __func__);
-	LOG_INF("WPE resume g_u4EnableClockCount: %d, g_u4WpeCnt: %d", g_u4EnableClockCount, g_u4WpeCnt);
+	LOG_DBG("WPE resume g_u4EnableClockCount: %d, g_u4WpeCnt: %d", g_u4EnableClockCount, g_u4WpeCnt);
 
 	return WPE_resume(pdev);
 }
