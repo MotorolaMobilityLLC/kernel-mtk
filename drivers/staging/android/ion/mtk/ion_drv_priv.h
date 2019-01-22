@@ -47,7 +47,16 @@ int ion_mm_heap_for_each_pool(int (*fn)(int high, int order, int cache, size_t s
 struct ion_heap *ion_drv_get_heap(struct ion_device *dev, int heap_id, int need_lock);
 int ion_drv_create_heap(struct ion_platform_heap *heap_data);
 struct ion_buffer *ion_drv_file_to_buffer(struct file *file);
+int ion_mm_heap_cache_allocate(struct ion_heap *heap,
+			       struct ion_buffer *buffer,
+			       unsigned long size,
+			       unsigned long align,
+			       unsigned long flags);
+void ion_mm_heap_cache_free(struct ion_buffer *buffer);
+int ion_mm_heap_pool_size(struct ion_heap *heap, gfp_t gfp_mask, bool cache);
 
+int ion_comm_init(void);
+void ion_comm_event_notify(bool allc, size_t len);
 #ifdef CONFIG_PM
 void shrink_ion_by_scenario(int need_lock);
 #endif
