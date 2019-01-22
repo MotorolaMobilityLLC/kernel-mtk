@@ -20,6 +20,7 @@
 void connectivity_export_show_stack(struct task_struct *tsk, unsigned long *sp);
 void connectivity_export_tracing_record_cmdline(struct task_struct *tsk);
 extern void tracing_record_cmdline(struct task_struct *tsk);
+extern void show_stack(struct task_struct *tsk, unsigned long *sp);
 
 /*********************************************
  * copy from
