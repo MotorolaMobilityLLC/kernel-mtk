@@ -300,10 +300,12 @@ void m4u_mvaGraph_dump(void)
 	int i, max_bit, is_busy, is_reserve, integrity = 0;
 	short frag[12] = { 0 };
 	unsigned short nr_free = 0, nr_alloc = 0;
+	unsigned long irq_flags;
 
 	M4ULOG_HIGH("[M4U_2.4] mva allocation info dump:====================>\n");
 	M4ULOG_HIGH("start       end        size     blocknum    busy    reserve    integrity\n");
 
+	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 	for (index = 1; index < MVA_MAX_BLOCK_NR + 1; index += nr) {
 		start = index << MVA_BLOCK_SIZE_ORDER;
 		nr = MVA_GET_NR(index);
@@ -353,6 +355,7 @@ void m4u_mvaGraph_dump(void)
 			start, end, size, nr, is_busy, is_reserve, integrity);
 		integrity = 0;
 	}
+	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 
 	M4ULOG_HIGH("\n");
 	M4ULOG_HIGH("[M4U_2.4] mva alloc summary: (unit: blocks)========================>\n");
@@ -896,6 +899,9 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 	unsigned long irq_flags;
 	int   vpu_region_status = 0, is_in_vpu_region = 0;
 	int ccu_region_status, is_in_ccu_region = 0;
+#if defined(CONFIG_MACH_MT6771)
+	struct m4u_buf_info_t *pMvaInfo = (struct m4u_buf_info_t *)priv;
+#endif
 
 	if (size == 0 || priv == NULL) {
 		M4UMSG("%s: invalid size & port info\n", __func__);
@@ -944,8 +950,10 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		region_start += MVA_GET_NR(region_start)) {
 		/*error check*/
 		if ((mvaGraph[region_start] & MVA_BLOCK_NR_MASK) == 0) {
+			spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 			m4u_mvaGraph_dump();
 			m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[region_start]);
+			return 0;
 		}
 		if ((region_start + MVA_GET_NR(region_start)) > startIdx) {
 			next_region_start = region_start + MVA_GET_NR(region_start);
@@ -1006,8 +1014,10 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		for (; s < (MVA_MAX_BLOCK_NR + 1); s += (mvaGraph[s] & MVA_BLOCK_NR_MASK)) {
 			/*error check*/
 			if ((mvaGraph[s] & MVA_BLOCK_NR_MASK) == 0) {
-				m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[s]);
+				spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 				m4u_mvaGraph_dump();
+				m4u_aee_print("%s: s=%d, 0x%x\n", __func__, s, mvaGraph[s]);
+				return 0;
 			}
 
 			if (MVA_GET_NR(s) > nr && !MVA_IS_BUSY(s)) {
@@ -1123,15 +1133,22 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		/* alloc a mva region */
 		end = s + mvaGraph[s] - 1;
 
+		/*check [startIdx, endIdx] status*/
+		is_in_ccu_region = 0;
+		is_in_vpu_region = 0;
+		ccu_region_status = __check_ccu_mva_region(s, nr, priv);
+		if (ccu_region_status == 1)
+			is_in_ccu_region = 1;
+		vpu_region_status = m4u_check_mva_region(s, MVA_GET_NR(s), priv);
+		if (vpu_region_status == 1)
+			is_in_vpu_region = 1;
+
 		if (unlikely(nr == mvaGraph[s])) {
 			MVA_SET_BUSY(s);
 			MVA_SET_BUSY(end);
 			mvaInfoGraph[s] = priv;
 			mvaInfoGraph[end] = priv;
-			if (is_in_ccu_region) {
-				MVA_SET_RESERVED(s);
-				MVA_SET_RESERVED(end);
-			} else if (is_in_vpu_region) {
+			if (is_in_ccu_region || is_in_vpu_region) {
 				MVA_SET_RESERVED(s);
 				MVA_SET_RESERVED(end);
 			}
@@ -1143,12 +1160,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 			mvaGraph[new_end] = nr | MVA_BUSY_MASK;
 			mvaGraph[s] = mvaGraph[new_end];
 			mvaGraph[end] = mvaGraph[new_start];
-			if (is_in_ccu_region) {
-				MVA_SET_RESERVED(new_start);
-				MVA_SET_RESERVED(new_end);
-				MVA_SET_RESERVED(s);
-				MVA_SET_RESERVED(end);
-			} else if (is_in_vpu_region) {
+			if (is_in_ccu_region || is_in_vpu_region) {
 				MVA_SET_RESERVED(new_start);
 				MVA_SET_RESERVED(new_end);
 				MVA_SET_RESERVED(s);
@@ -1162,6 +1174,14 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 
 	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 
+#if defined(CONFIG_MACH_MT6771)
+	if (((pMvaInfo->port == M4U_PORT_CCU0) || (pMvaInfo->port == M4U_PORT_CCU1) ||
+	     (pMvaInfo->port == M4U_PORT_CAM_CCUI) || (pMvaInfo->port == M4U_PORT_CAM_CCUG) ||
+	     (pMvaInfo->port == M4U_PORT_CAM_CCUO)) && !is_in_ccu_region) {
+		M4UMSG("alloc ccu mva not match,s=0x%x\n", s);
+		m4u_mvaGraph_dump();
+	}
+#endif
 	mvaRegionStart = (unsigned int)s;
 
 	return (mvaRegionStart << MVA_BLOCK_SIZE_ORDER) + mva_pageOffset(va);
