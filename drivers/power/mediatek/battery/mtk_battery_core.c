@@ -969,6 +969,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_debug("Get COM_R_FG_VALUE: %d\n",
 			 fg_cust_data.com_r_fg_value);
 	} else {
+		fg_cust_data.com_r_fg_value = fg_cust_data.r_fg_value;
 		bm_err("Get COM_R_FG_VALUE failed\n");
 	}
 
@@ -1132,6 +1133,8 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_debug("Get COM_FG_METER_RESISTANCE: %d\n",
 			 fg_cust_data.com_fg_meter_resistance);
 	} else {
+		fg_cust_data.com_fg_meter_resistance =
+			fg_cust_data.fg_meter_resistance;
 		bm_err("Get COM_FG_METER_RESISTANCE failed\n");
 	}
 
