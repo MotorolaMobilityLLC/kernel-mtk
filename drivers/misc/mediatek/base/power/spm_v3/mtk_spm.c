@@ -41,6 +41,7 @@
 #include <linux/seq_file.h>
 #include <linux/debugfs.h>
 #include <mtk_spm_misc.h>
+#include <mtk_spm_resource_req_internal.h>
 
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
@@ -680,6 +681,7 @@ int __init spm_module_init(void)
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
 	spm_file = debugfs_create_file("spm_sleep_count", S_IRUGO, spm_dir, NULL, &spm_sleep_count_fops);
+	spm_resource_req_debugfs_init(spm_dir);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_PM
