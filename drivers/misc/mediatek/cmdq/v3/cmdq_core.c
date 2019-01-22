@@ -1466,22 +1466,16 @@ const char *cmdq_core_get_event_name(enum CMDQ_EVENT_ENUM event)
 void cmdqCoreClearEvent(enum CMDQ_EVENT_ENUM event)
 {
 	int32_t eventValue = cmdq_core_get_event_value(event);
-	unsigned long flags;
 
 	CMDQ_MSG("clear event %d\n", eventValue);
-	spin_lock_irqsave(&g_cmdq_event_lock, flags);
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, eventValue);
-	spin_unlock_irqrestore(&g_cmdq_event_lock, flags);
 }
 
 void cmdqCoreSetEvent(enum CMDQ_EVENT_ENUM event)
 {
 	int32_t eventValue = cmdq_core_get_event_value(event);
-	unsigned long flags;
 
-	spin_lock_irqsave(&g_cmdq_event_lock, flags);
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | eventValue);
-	spin_unlock_irqrestore(&g_cmdq_event_lock, flags);
 }
 
 uint32_t cmdqCoreGetEvent(enum CMDQ_EVENT_ENUM event)
@@ -7109,9 +7103,21 @@ static int32_t cmdq_core_handle_wait_task_result_impl(struct TaskStruct *pTask, 
 	pThread = &(gCmdqContext.thread[thread]);
 
 	if (waitQ == 0) {
-		/* print error log before entering exec lock in timeout case */
-		cmdq_core_attach_error_task_detail(pTask, thread, &pNGTask, &module,
-			&timeoutIrqFlag, &instA, &instB);
+		u32 cookie = CMDQ_GET_COOKIE_CNT(thread);
+
+		/* only attach error if cookie not reach */
+		if (cookie < pThread->nextCookie - 1) {
+			/* print error log before entering exec lock
+			 * in timeout case
+			 */
+			cmdq_core_attach_error_task_detail(pTask, thread,
+				&pNGTask, &module, &timeoutIrqFlag,
+				&instA, &instB);
+		} else {
+			/* only print task and current cookie */
+			CMDQ_ERR("IRQ delay with timeout task:0x%p thread:%d cookie:%u\n",
+				pTask, thread, cookie);
+		}
 	}
 
 	/* Note that although we disable IRQ, HW continues to execute */
