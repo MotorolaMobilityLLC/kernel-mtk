@@ -122,9 +122,9 @@ static UINT32 gLpbkBufLog;	/* George LPBK debug */
 static INT32 gWmtInitDone;
 static wait_queue_head_t gWmtInitWq;
 #ifdef CONFIG_MTK_COMBO_COMM_APO
-UINT32 always_pwr_on_flag;
-#else
 UINT32 always_pwr_on_flag = 1;
+#else
+UINT32 always_pwr_on_flag;
 #endif
 P_WMT_PATCH_INFO pPatchInfo;
 UINT32 pAtchNum;
@@ -239,7 +239,7 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 
 	WMT_DBG_FUNC("wmt_pwr_on_off_handler start to run\n");
 
-	if (always_pwr_on_flag != 0) {
+	if (always_pwr_on_flag == 0) {
 		osal_lock_sleepable_lock(&g_es_lr_lock);
 		lpbk_req_onoff = g_es_lr_flag_for_lpbk_onoff;
 		osal_unlock_sleepable_lock(&g_es_lr_lock);
@@ -817,11 +817,9 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		do {
 			MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
 
-			if (arg & 0x80000000) {
+			if (arg & 0x80000000)
 				bRet = mtk_wcn_wmt_func_on(arg & 0xF);
-				if (bRet)
-					currentLpbkStatus = 1;
-			} else
+			else
 				bRet = mtk_wcn_wmt_func_off(arg & 0xF);
 
 			iRet = (bRet == MTK_WCN_BOOL_FALSE) ? -EFAULT : 0;
@@ -829,13 +827,25 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 		break;
 	case WMT_IOCTL_LPBK_POWER_CTRL:
 		do {
-			MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
+			MTK_WCN_BOOL bRet = MTK_WCN_BOOL_TRUE;
 
-			if (arg)
+			switch (arg) {
+			case 0:
+				if (always_pwr_on_flag)
+					bRet	= mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
+				break;
+			case 1:
+				if (always_pwr_on_flag)
+					bRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_LPBK);
+				break;
+			case 2:
 				bRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_LPBK);
-			else
+				break;
+			case 3:
 				bRet = mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
-			iRet = (bRet == MTK_WCN_BOOL_FALSE) ? -EFAULT : 0;
+				break;
+			}
+			iRet = (bRet == MTK_WCN_BOOL_TRUE) ? 0 : -EFAULT;
 		} while (0);
 		break;
 	case WMT_IOCTL_LPBK_TEST:
