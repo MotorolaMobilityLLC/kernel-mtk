@@ -2397,7 +2397,7 @@ UINT32 DSI_dcs_read_lcm_reg_v3(enum DISP_MODULE_ENUM module,
 	/* illegal parameters */
 
 	if (buffer == NULL || buffer_size == 0) {
-		DISPINFO("DSI Read Fail: buffer=%p and buffer_size=%d\n", buffer,
+		DDPPR_ERR("DSI Read Fail: buffer=%p and buffer_size=%d\n", buffer,
 			  (unsigned int)buffer_size);
 		return 0;
 	}
@@ -2528,7 +2528,7 @@ UINT32 DSI_dcs_read_lcm_reg_v3(enum DISP_MODULE_ENUM module,
 			DSI_BACKUPREG32(cmdq, hSlot, 3,
 							&DSI_REG[0]->DSI_RX_DATA3);
 		} else {
-			DISPINFO("DSI read save RX data fail\n");
+			DDPPR_ERR("DSI read save RX data fail\n");
 		}
 		/* 3. write RX_RACK */
 		DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG, DSI_REG[dsi_i]->DSI_RACK,
@@ -2580,7 +2580,7 @@ UINT32 DSI_dcs_read_lcm_reg_v3(enum DISP_MODULE_ENUM module,
 			cmdqBackupReadSlot(hSlot, 2, (uint32_t *)&read_data2);
 			cmdqBackupReadSlot(hSlot, 3, (uint32_t *)&read_data3);
 		} else {
-			DISPINFO("DSI read hSlot is empty\n");
+			DDPPR_ERR("DSI read hSlot is empty\n");
 		}
 		packet_type = read_data0.byte0;
 		/* 0x02: acknowledge & error report */
