@@ -665,7 +665,7 @@ static int FDVT_WaitIRQ(u32 *u4IRQMask)
 	us_to_jiffies(15 * 1000000));
 
 	if (timeout == 0) {
-		LOG_DBG("wait_event_interruptible_timeout timeout, %d, %d\n", g_FDVTIRQMSK,
+		LOG_ERR("wait_event_interruptible_timeout timeout, %d, %d\n", g_FDVTIRQMSK,
 			g_FDVTIRQ);
 		FDVT_WR32(0x00030000, FDVT_START);  /* LDVT Disable */
 		FDVT_WR32(0x00000000, FDVT_START);  /* LDVT Disable */
@@ -675,8 +675,14 @@ static int FDVT_WaitIRQ(u32 *u4IRQMask)
 	*u4IRQMask = g_FDVTIRQ;
 	/*LOG_DBG("[FDVT] IRQ : 0x%8x\n",g_FDVTIRQ);*/
 
+	/* check if user is interrupted by system signal */
+	if (timeout != 0 && !(g_FDVTIRQMSK & g_FDVTIRQ)) {
+		LOG_ERR("interrupted by system signal,return value(%d)\n", timeout);
+		return -ERESTARTSYS; /* actually it should be -ERESTARTSYS */
+	}
+
 	if (!(g_FDVTIRQMSK & g_FDVTIRQ)) {
-		LOG_DBG("wait_event_interruptible Not FDVT, %d, %d\n", g_FDVTIRQMSK, g_FDVTIRQ);
+		LOG_ERR("wait_event_interruptible Not FDVT, %d, %d\n", g_FDVTIRQMSK, g_FDVTIRQ);
 		FDVT_DUMPREG();
 		return -1;
 	}
