@@ -612,7 +612,6 @@ struct musb {
 	enum charger_type charger_mode;
 	struct work_struct suspend_work;
 	struct wake_lock usb_wakelock;
-	struct delayed_work connection_work;
 	struct delayed_work check_ltssm_work;
 #ifndef CONFIG_USBIF_COMPLIANCE
 	struct delayed_work reconnect_work;
@@ -845,6 +844,18 @@ static inline int mtk_is_host_mode(void)
 #endif
 extern int mu3d_force_on;
 extern void mt_usb_connect(void);
+extern void mt_usb_disconnect(void);
+extern void mt_usb_reconnect(void);
 extern void mt_usb_connect_test(int start);
 extern void trigger_disconnect_check_work(void);
+/* specific USB operation */
+enum CONNECTION_OPS {
+	CONNECTION_OPS_DISC = 0,
+	CONNECTION_OPS_CHECK,
+	CONNECTION_OPS_CONN
+};
+struct mt_usb_work {
+	struct delayed_work dwork;
+	int ops;
+};
 #endif	/* __MUSB_CORE_H__ */

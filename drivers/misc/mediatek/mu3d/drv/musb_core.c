@@ -2156,7 +2156,6 @@ static void musb_free(struct musb *musb)
 #endif
 
 	cancel_work_sync(&musb->irq_work);
-	cancel_delayed_work_sync(&musb->connection_work);
 	/* cancel_delayed_work_sync(&musb->check_ltssm_work); */
 	cancel_work_sync(&musb->suspend_work);
 
@@ -2243,8 +2242,6 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 	_mu3d_musb = musb;
 
 	wake_lock_init(&musb->usb_wakelock, WAKE_LOCK_SUSPEND, "USB.lock");
-
-	INIT_DELAYED_WORK(&musb->connection_work, connection_work);
 
 	INIT_DELAYED_WORK(&musb->check_ltssm_work, check_ltssm_work);
 
