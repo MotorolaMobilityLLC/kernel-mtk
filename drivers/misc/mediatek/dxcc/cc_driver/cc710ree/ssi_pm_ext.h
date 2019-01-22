@@ -24,9 +24,9 @@
 #include "ssi_driver.h"
 #include <linux/clk.h>
 
-void ssi_pm_ext_hw_suspend(struct device *dev, struct clk *dxcc_ao_clk, struct clk *dxcc_pub_clk);
+void ssi_pm_ext_hw_suspend(struct device *dev, struct clk *dxcc_pub_clk);
 
-void ssi_pm_ext_hw_resume(struct device *dev, struct clk *dxcc_ao_clk, struct clk *dxcc_pub_clk);
+void ssi_pm_ext_hw_resume(struct device *dev, struct clk *dxcc_pub_clk);
 
 
 #endif /*__POWER_MGR_H__*/
