@@ -339,26 +339,6 @@ void spm_set_dummy_read_addr(int debug)
 #endif /* CONFIG_MACH_MT6739 */
 }
 
-void __spm_set_pcm_wdt(int en)
-{
-	/* enable PCM WDT (normal mode) to start count if needed */
-	if (en) {
-		u32 con1;
-
-		con1 = spm_read(PCM_CON1) & ~(PCM_WDT_WAKE_MODE_LSB);
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | con1);
-
-		if (spm_read(PCM_TIMER_VAL) > PCM_TIMER_MAX)
-			spm_write(PCM_TIMER_VAL, PCM_TIMER_MAX);
-		spm_write(PCM_WDT_VAL, spm_read(PCM_TIMER_VAL) + PCM_WDT_TIMEOUT);
-		spm_write(PCM_CON1, con1 | SPM_REGWR_CFG_KEY | PCM_WDT_EN_LSB);
-	} else {
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) &
-		~PCM_WDT_EN_LSB));
-	}
-
-}
-
 int __attribute__ ((weak)) get_dynamic_period(int first_use, int first_wakeup_time,
 					      int battery_capacity_level)
 {
