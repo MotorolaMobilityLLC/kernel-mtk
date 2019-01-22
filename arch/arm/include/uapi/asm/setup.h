@@ -16,7 +16,7 @@
 
 #include <linux/types.h>
 
-#define COMMAND_LINE_SIZE 1024
+#define COMMAND_LINE_SIZE 2048
 #define MBLOCK_RESERVED_NAME_SIZE 128
 #define MBLOCK_RESERVED_NUM_MAX  128
 #define MBLOCK_NUM_MAX 128
