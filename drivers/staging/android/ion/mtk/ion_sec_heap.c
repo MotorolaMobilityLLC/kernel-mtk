@@ -67,6 +67,9 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	pbufferinfo->priv_phys = sec_handle;
 	pbufferinfo->VA = 0;
 	pbufferinfo->MVA = 0;
+	pbufferinfo->FIXED_MVA = 0;
+	pbufferinfo->iova_start = 0;
+	pbufferinfo->iova_end = 0;
 	pbufferinfo->module_id = -1;
 	pbufferinfo->dbg_info.value1 = 0;
 	pbufferinfo->dbg_info.value2 = 0;

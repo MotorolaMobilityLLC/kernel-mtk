@@ -70,6 +70,7 @@ void ion_fb_free(struct ion_heap *heap, ion_phys_addr_t addr,
 static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			    ion_phys_addr_t *addr, size_t *len) {
 	struct ion_fb_buffer_info *buffer_info = (struct ion_fb_buffer_info *)buffer->priv_virt;
+	port_mva_info_t port_info;
 
 	if (!buffer_info) {
 		IONMSG("[ion_fb_heap_phys]: Error. Invalid buffer.\n");
@@ -80,12 +81,17 @@ static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 		return -EFAULT; /* Buffer not configured. */
 	}
 
+	memset((void *)&port_info, 0, sizeof(port_info));
+	port_info.eModuleID = buffer_info->module_id;
+	port_info.cache_coherent = buffer_info->coherent;
+	port_info.security = buffer_info->security;
+	port_info.BufSize = buffer->size;
+	port_info.flags = 0;
+	port_info.pRetMVABuf = &buffer_info->MVA;
 	/*Allocate MVA*/
 	mutex_lock(&buffer_info->lock);
 	if (buffer_info->MVA == 0) {
-		int ret = m4u_alloc_mva_sg(buffer_info->module_id, buffer->sg_table,
-				buffer->size, buffer_info->security, buffer_info->coherent,
-				&buffer_info->MVA);
+		int ret = m4u_alloc_mva_sg(&port_info, buffer->sg_table);
 		if (ret < 0) {
 			mutex_unlock(&buffer_info->lock);
 			IONMSG("[ion_fb_heap_phys]: Error. Allocate MVA failed.\n");
@@ -123,6 +129,9 @@ static int ion_fb_heap_allocate(struct ion_heap *heap,
 	buffer_info->priv_phys = paddr;
 	buffer_info->VA = 0;
 	buffer_info->MVA = 0;
+	buffer_info->FIXED_MVA = 0;
+	buffer_info->iova_start = 0;
+	buffer_info->iova_end = 0;
 	buffer_info->module_id = -1;
 	buffer_info->dbg_info.value1 = 0;
 	buffer_info->dbg_info.value2 = 0;

@@ -39,6 +39,9 @@ struct ion_mm_buffer_info {
 	unsigned int coherent;
 	void *VA;
 	unsigned int MVA;
+	unsigned int FIXED_MVA;
+	unsigned int iova_start;
+	unsigned int iova_end;
 	struct ion_mm_buf_debug_info dbg_info;
 	struct ion_mm_sf_buf_info sf_buf_info;
 	ion_mm_buf_destroy_callback_t *destroy_fn;
@@ -248,6 +251,9 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	buffer->sg_table = table;
 	buffer_info->VA = 0;
 	buffer_info->MVA = 0;
+	buffer_info->FIXED_MVA = 0;
+	buffer_info->iova_start = 0;
+	buffer_info->iova_end = 0;
 	buffer_info->module_id = -1;
 	buffer_info->dbg_info.value1 = 0;
 	buffer_info->dbg_info.value2 = 0;
@@ -295,6 +301,10 @@ void ion_mm_heap_free_buffer_info(struct ion_buffer *buffer)
 
 		if ((buffer_info->module_id != -1) && (buffer_info->MVA))
 			m4u_dealloc_mva_sg(buffer_info->module_id, table, buffer->size, buffer_info->MVA);
+		if ((buffer_info->module_id != -1) && (buffer_info->FIXED_MVA)) {
+			IONMSG("[ion_mm_heap] free fix mva 0x%x\n", buffer_info->FIXED_MVA);
+			m4u_dealloc_mva_sg(buffer_info->module_id, table, buffer->size, buffer_info->FIXED_MVA);
+		}
 
 		kfree(buffer_info);
 	}
@@ -354,32 +364,65 @@ static int ion_mm_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask, int nr_to_s
 }
 
 static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
-			    ion_phys_addr_t *addr, size_t *len) {
+			    ion_phys_addr_t *addr, size_t *len)
+{
 	struct ion_mm_buffer_info *buffer_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
+	port_mva_info_t port_info;
+	int ret = 0;
 
 	if (!buffer_info) {
-		IONMSG("[ion_mm_heap_phys]: Error. Invalid buffer.\n");
+		IONMSG("[ion_mm_heap_phys] Error. Invalid buffer.\n");
 		return -EFAULT; /* Invalid buffer */
 	}
 	if (buffer_info->module_id == -1) {
-		IONMSG("[ion_mm_heap_phys]: Error. Buffer not configured.\n");
+		IONMSG("[ion_mm_heap_phys] Error. Buffer not configured.\n");
 		return -EFAULT; /* Buffer not configured. */
 	}
-	/* Allocate MVA */
 
-	if (buffer_info->MVA == 0) {
-		int ret = m4u_alloc_mva_sg(buffer_info->module_id, buffer->sg_table,
-				buffer->size, buffer_info->security, buffer_info->coherent,
-				&buffer_info->MVA);
+	memset((void *)&port_info, 0, sizeof(port_info));
+	port_info.eModuleID = buffer_info->module_id;
+	port_info.cache_coherent = buffer_info->coherent;
+	port_info.security = buffer_info->security;
+	port_info.BufSize = buffer->size;
+	port_info.pRetMVABuf = &buffer_info->MVA;
+
+	if (((*(unsigned int *)addr & 0xffff) == ION_FLAG_GET_FIXED_PHYS) &&
+	    ((*(unsigned int *)len) == ION_FLAG_GET_FIXED_PHYS)) {
+		port_info.flags = M4U_FLAGS_FIX_MVA;
+		port_info.eModuleID = (*(unsigned int *)addr & 0xff000000) >> 24;
+		port_info.iova_start = buffer_info->iova_start;
+		port_info.iova_end = buffer_info->iova_end;
+		if (port_info.iova_start == port_info.iova_end)
+			buffer_info->FIXED_MVA = port_info.iova_start;
+
+		port_info.pRetMVABuf = &buffer_info->FIXED_MVA;
+	}
+	if (port_info.flags > 0)
+		IONMSG("[ion_mm_heap_phys] 0x%x 0x%x, flag %d, 0x%x--0x%x\n",
+		       *(unsigned int *)addr, *(unsigned int *)len, port_info.flags,
+		       buffer_info->iova_start, buffer_info->iova_end);
+	if (((buffer_info->MVA == 0) && (port_info.flags == 0)) ||
+	    ((buffer_info->FIXED_MVA == 0) && (port_info.flags > 0))) {
+		ret = m4u_alloc_mva_sg(&port_info, buffer->sg_table);
+		*(unsigned int *)addr = *(unsigned int *)(port_info.pRetMVABuf);
 
 		if (ret < 0) {
-			buffer_info->MVA = 0;
-			IONMSG("[ion_mm_heap_phys]: Error. Allocate MVA failed.\n");
+			IONMSG("[ion_mm_heap_phys] Error. port %d MVA(fixed 0x%x) failed(region 0x%x--0x%x).\n",
+			       port_info.eModuleID, *(unsigned int *)addr,
+			       port_info.iova_start, port_info.iova_end);
+			*(unsigned int *)addr = 0;
+			if (port_info.flags > 0)
+				buffer_info->FIXED_MVA = 0;
 			return -EFAULT;
 		}
-	}
-	*(unsigned int *)addr = buffer_info->MVA; /* MVA address */
-	*len = buffer->size;
+	} else
+		*(unsigned int *)addr = port_info.flags ? buffer_info->FIXED_MVA : buffer_info->MVA;
+
+	*len = port_info.BufSize;
+	if (port_info.flags > 0)
+		IONMSG("[ion_mm_heap_phys] port %d Allocate MVA(fixed 0x%x-0x%x) (region: 0x%x--0x%x).\n",
+		       port_info.eModuleID, *(unsigned int *)addr, port_info.BufSize,
+		       port_info.iova_start, port_info.iova_end);
 
 	return 0;
 }
@@ -763,6 +806,7 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 
 	switch (param.mm_cmd) {
 	case ION_MM_CONFIG_BUFFER:
+	case ION_MM_CONFIG_BUFFER_EXT:
 		if (param.config_buffer_param.handle) {
 			struct ion_buffer *buffer;
 			struct ion_handle *kernel_handle;
@@ -788,6 +832,10 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 					buffer_info->module_id = param.config_buffer_param.module_id;
 					buffer_info->security = param.config_buffer_param.security;
 					buffer_info->coherent = param.config_buffer_param.coherent;
+					if (param.mm_cmd == ION_MM_CONFIG_BUFFER_EXT) {
+						buffer_info->iova_start = param.config_buffer_param.reserve_iova_start;
+						buffer_info->iova_end = param.config_buffer_param.reserve_iova_end;
+					}
 				} else {
 					if (buffer_info->security != param.config_buffer_param.security ||
 					    buffer_info->coherent != param.config_buffer_param.coherent) {
@@ -810,6 +858,10 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 					buffer_info->module_id = param.config_buffer_param.module_id;
 					buffer_info->security = param.config_buffer_param.security;
 					buffer_info->coherent = param.config_buffer_param.coherent;
+					if (param.mm_cmd == ION_MM_CONFIG_BUFFER_EXT) {
+						buffer_info->iova_start = param.config_buffer_param.reserve_iova_start;
+						buffer_info->iova_end = param.config_buffer_param.reserve_iova_end;
+					}
 				} else {
 					if (buffer_info->security != param.config_buffer_param.security ||
 					    buffer_info->coherent != param.config_buffer_param.coherent) {
@@ -832,6 +884,10 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 					buffer_info->module_id = param.config_buffer_param.module_id;
 					buffer_info->security = param.config_buffer_param.security;
 					buffer_info->coherent = param.config_buffer_param.coherent;
+					if (param.mm_cmd == ION_MM_CONFIG_BUFFER_EXT) {
+						buffer_info->iova_start = param.config_buffer_param.reserve_iova_start;
+						buffer_info->iova_end = param.config_buffer_param.reserve_iova_end;
+					}
 				}
 			} else {
 				IONMSG("[ion_heap]: Error. Cannot configure buffer that is not from %c heap.\n",

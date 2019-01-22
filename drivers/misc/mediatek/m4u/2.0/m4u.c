@@ -736,11 +736,8 @@ err:
 
 /* interface for ion */
 static m4u_client_t *ion_m4u_client;
-
-int m4u_alloc_mva_sg(int eModuleID,
-		     struct sg_table *sg_table,
-		     const unsigned int BufSize,
-		     int security, int cache_coherent, unsigned int *pRetMVABuf)
+int m4u_alloc_mva_sg(port_mva_info_t *port_info,
+				struct sg_table *sg_table)
 {
 	int prot;
 
@@ -753,10 +750,11 @@ int m4u_alloc_mva_sg(int eModuleID,
 	}
 
 	prot = M4U_PROT_READ | M4U_PROT_WRITE
-	    | (cache_coherent ? (M4U_PROT_SHARE | M4U_PROT_CACHE) : 0)
-	    | (security ? M4U_PROT_SEC : 0);
+	    | (port_info->cache_coherent ? (M4U_PROT_SHARE | M4U_PROT_CACHE) : 0)
+	    | (port_info->security ? M4U_PROT_SEC : 0);
 
-	return m4u_alloc_mva(ion_m4u_client, eModuleID, 0, sg_table, BufSize, prot, 0, pRetMVABuf);
+	return m4u_alloc_mva(ion_m4u_client, port_info->eModuleID, 0, sg_table, port_info->BufSize, prot,
+				port_info->flags, (unsigned int *)port_info->pRetMVABuf);
 }
 
 #ifdef M4U_TEE_SERVICE_ENABLE
