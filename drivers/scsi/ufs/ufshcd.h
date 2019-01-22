@@ -177,6 +177,8 @@ struct ufshcd_lrb {
 	ktime_t issue_time_stamp;
 	ktime_t complete_time_stamp;
 
+	bool req_abort_skip;
+
 #ifdef CONFIG_MTK_HW_FDE
 	u32 crypto_en;
 	u32 crypto_cfgid;
