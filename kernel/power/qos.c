@@ -706,8 +706,11 @@ static void pm_qos_work_fn(struct work_struct *work)
 void pm_qos_add_request(struct pm_qos_request *req,
 			int pm_qos_class, s32 value)
 {
+	char owner[20];
 	if (!req) /*guard against callers passing in null */
 		return;
+
+	snprintf(owner, sizeof(owner) - 1, "%pf", __builtin_return_address(0));
 
 	if (pm_qos_request_active(req)) {
 		WARN(1, KERN_ERR "pm_qos_add_request() called for already added request\n");
@@ -715,7 +718,7 @@ void pm_qos_add_request(struct pm_qos_request *req,
 	}
 
 	/* name of pm_qos reqester */
-	snprintf(req->owner, sizeof(req->owner) - 1, "%pf", __builtin_return_address(0));
+	strncpy(req->owner, owner, sizeof(req->owner) - 1);
 
 	req->pm_qos_class = pm_qos_class;
 	INIT_DELAYED_WORK(&req->work, pm_qos_work_fn);

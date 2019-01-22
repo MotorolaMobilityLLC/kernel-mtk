@@ -366,6 +366,11 @@ void vcorefs_drv_init(int plat_init_opp)
 	pwrctrl->plat_init_opp = plat_init_opp;
 	pwrctrl->init_done = true;
 	feature_en = true;
+
+#if defined(CONFIG_MTK_QOS_SUPPORT)
+		pwrctrl->kr_req_mask = (1 << NUM_KICKER) - 1;
+#endif
+
 	mutex_unlock(&vcorefs_mutex);
 
 	vcorefs_crit("[%s] done\n", __func__);

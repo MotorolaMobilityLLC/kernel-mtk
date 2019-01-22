@@ -626,6 +626,7 @@ static void dvfsrc_init(void)
 
 	spm_write(DVFSRC_RSRV_1, 0x0000001C);
 	spm_write(DVFSRC_TIMEOUT_NEXTREQ, 0x00000011);
+	spm_write(DVFSRC_INT_EN, 0x2);
 
 	spm_write(DVFSRC_EMI_REQUEST, 0x00290209);
 	spm_write(DVFSRC_EMI_REQUEST2, 0x00009999);
@@ -641,7 +642,7 @@ static void dvfsrc_init(void)
 #endif
 	spm_write(DVFSRC_FORCE, 0x00400000);
 	spm_write(DVFSRC_BASIC_CONTROL, 0x0000C07B);
-	spm_write(DVFSRC_BASIC_CONTROL, 0x0000017B);
+	spm_write(DVFSRC_BASIC_CONTROL, 0x0000097B);
 
 	mtk_rgu_cfg_dvfsrc(1);
 
@@ -745,7 +746,6 @@ void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
 			return;
 
 		mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_2, id, emi_req[opp]);
-		spm_vcorefs_warn("DRAM ZQTX tracking request: %d\n", opp);
 		break;
 	default:
 		break;
