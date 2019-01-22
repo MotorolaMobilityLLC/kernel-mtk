@@ -195,22 +195,6 @@ void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 		sodi_err("spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
 }
 
-static void spm_sodi_pcm_setup_before_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
-{
-	unsigned int resource_usage;
-
-	spm_sodi_pre_process(pwrctrl, operation_cond);
-
-	__spm_sync_pcm_flags(pwrctrl);
-
-	/* Get SPM resource request and update reg_spm_xxx_req */
-	resource_usage = spm_get_resource_usage();
-
-	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
-		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
-}
-
 static void spm_sodi_pcm_setup_after_wfi(u32 operation_cond)
 {
 	spm_sodi_post_process();
@@ -405,6 +389,7 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
 	u32 cpu = spm_data;
+	u32 spm_flags1 = get_spm_idle_flags1();
 	unsigned int operation_cond = 0;
 
 	spm_sodi_footprint(SPM_SODI_ENTER);
@@ -419,7 +404,8 @@ unsigned int spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 		spm_flags &= ~SPM_FLAG_SODI_CG_MODE; /* PDN mode */
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+
+	set_pwrctrl_pcm_flags1(pwrctrl, spm_flags1);
 
 	soidle_before_wfi(cpu);
 

@@ -110,6 +110,7 @@ obj-$(CONFIG_MACH_MT6759) += spm_v3/
 obj-$(CONFIG_MACH_MT6799) += spm_v3/
 obj-$(CONFIG_MACH_MT6739) += spm_v4/
 obj-$(CONFIG_MACH_MT6763) += spm_v4/
+#obj-$(CONFIG_MACH_MT6771) += spm_v4/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MACH_MT6739) += clkbuf_v1/
 obj-$(CONFIG_MACH_MT6758) += clkbuf_v1/

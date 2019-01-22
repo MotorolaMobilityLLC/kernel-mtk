@@ -1351,12 +1351,10 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 		for (k = 0; k < 32; k++) {
 			if (dpidle_blocking_stat[i][k] != 0)
 				mt_idle_log("%-2d: %d, ", k, dpidle_blocking_stat[i][k]);
+			dpidle_blocking_stat[i][k] = 0;
 		}
 		mt_idle_log("\n");
 	}
-	for (i = 0; i < NR_GRPS; i++)
-		for (k = 0; k < 32; k++)
-			dpidle_blocking_stat[i][k] = 0;
 
 	mt_idle_log("dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
 	mt_idle_log("dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);

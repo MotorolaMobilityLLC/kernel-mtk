@@ -77,6 +77,8 @@ static inline void spm_sodi3_aee_init(void)
 
 extern void spm_sodi3_post_process(void);
 extern void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond);
+extern void spm_sodi3_pcm_setup_before_wfi(
+		u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond);
 
 #endif /* __MTK_SPM_SODI3_H__ */
 
