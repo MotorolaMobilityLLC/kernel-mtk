@@ -52,7 +52,6 @@ static const char *rt9465_chg_status_name[RT9465_CHG_STATUS_MAX] = {
 
 struct rt9465_desc {
 	u32 ichg;		/* uA */
-	u32 aicr;		/* uA */
 	u32 mivr;		/* uV */
 	u32 cv;			/* uV */
 	u32 ieoc;		/* uA */
@@ -69,7 +68,6 @@ struct rt9465_desc {
 /* These default values will be used if there's no property in dts */
 static struct rt9465_desc rt9465_default_desc = {
 	.ichg = 2000000,	/* uA */
-	.aicr = 500000,		/* uA */
 	.mivr = 4400000,	/* uV */
 	.cv = 4350000,		/* uV */
 	.ieoc = 250000,		/* uA */
@@ -890,6 +888,11 @@ static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 		&info->chg_props.alias_name) < 0) {
 		pr_err("%s: no alias name\n", __func__);
 		info->chg_props.alias_name = rt9465_default_desc.alias_name;
+	}
+
+	if (of_property_read_string(np, "eint_name", &desc->eint_name) < 0) {
+		pr_err("%s: no eint name\n", __func__);
+		desc->eint_name = rt9465_default_desc.eint_name;
 	}
 
 	/*
