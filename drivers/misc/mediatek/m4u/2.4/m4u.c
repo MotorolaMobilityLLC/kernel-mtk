@@ -1697,6 +1697,7 @@ m4u_sec_reinit:
 	if (ret < 0) {
 		m4u_sec_context_deinit();
 		M4UMSG("%s:init fail,ret=0x%x\n", __func__, ret);
+		m4u_tee_en = 0;
 		return ret;
 	}
 
