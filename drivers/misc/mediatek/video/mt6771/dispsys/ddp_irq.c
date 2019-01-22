@@ -62,6 +62,9 @@ atomic_t ESDCheck_byCPU = ATOMIC_INIT(0);
 /* dsi read by cmdq should keep esd_check_bycmdq = 1. */
 static atomic_t esd_check_bycmdq = ATOMIC_INIT(1);
 
+#define RDMA_UNDERFLOW_CNT_AEE 5
+static long long rdma_underflow_ts[RDMA_UNDERFLOW_CNT_AEE];
+
 unsigned int display_ut_status;
 
 void disp_irq_esd_cust_bycmdq(int enable)
@@ -396,18 +399,21 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				cnt_rdma_underflow[index], in_p_cnt, in_l_cnt,
 				out_p_cnt, out_l_cnt);
 			if (disp_helper_get_option(DISP_OPT_RDMA_UNDERFLOW_AEE)) {
-				static long long underflow_t;
+				static int offset;
 				static long long db_t;
-				long long current_t = sched_clock();
+				int offset_n = (offset + 1) % RDMA_UNDERFLOW_CNT_AEE;
 
-				/* Dump DB if undeflow happened twice in 1ms */
-				if (current_t - underflow_t <= 1000000 &&
-				    current_t - db_t > 1000000000) {
+				/* trigger aee when 5 RDMA underflow happen in 1 s */
+				/* diff between current and the newest timestamp */
+				rdma_underflow_ts[offset] = sched_clock();
+				if (rdma_underflow_ts[offset] -
+				rdma_underflow_ts[offset_n] < 1000000000 &&
+				rdma_underflow_ts[offset] - db_t > 1000000000) {
 					DDPAEE("RDMA%d underflow!cnt=%d\n",
-						index, cnt_rdma_underflow[index]);
-					db_t = current_t;
+					index, cnt_rdma_underflow[index]);
+					db_t = rdma_underflow_ts[offset];
 				}
-				underflow_t = current_t;
+				offset = offset_n;
 			}
 			disp_irq_log_module |= 1 << module;
 			rdma_underflow_irq_cnt[index]++;
