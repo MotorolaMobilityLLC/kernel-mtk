@@ -646,7 +646,7 @@ char *ccci_get_md_info_str(int md_id)
 	return md_img_info_str[md_id];
 }
 
-static void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
+void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 {
 	/* name format: modem_X_YY_K_Ex.img */
 	int X, Ex = 0;
@@ -677,16 +677,16 @@ static void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 	YY_K[0] = '\0';
 	switch (md_id) {
 	case MD_SYS1:
-		feature_val = get_modem_support_cap(MD_SYS1);
+		feature_val = get_md_img_type(MD_SYS1);
 		break;
 	case MD_SYS2:
-		feature_val = get_modem_support_cap(MD_SYS2);
+		feature_val = get_md_img_type(MD_SYS2);
 		break;
 	case MD_SYS3:
-		feature_val = get_modem_support_cap(MD_SYS3);
+		feature_val = get_md_img_type(MD_SYS3);
 		break;
 	case MD_SYS5:
-		feature_val = get_modem_support_cap(MD_SYS5);
+		feature_val = get_md_img_type(MD_SYS5);
 		break;
 	default:
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "request MD ID %d not supported\n", md_id);
@@ -745,6 +745,8 @@ int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_f
 	int hdr_size = 0;
 	void *img_data_ptr = NULL;
 	char *img_str = md_img_info_str[md_id];
+	int scan_max;
+	int md_type_val;
 
 
 	if (dev == NULL) {
@@ -765,18 +767,26 @@ int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_f
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]Invalid img type%d\n", img->type);
 		return -CCCI_ERR_INVALID_PARAM;
 	}
-	/*
-	* NOTES:
-	* if md support type is ubin, then need try to find suitable md image
-	*/
-	i = modem_ultg;
+
+	md_type_val = get_modem_support_cap(md_id);
+	if ((md_type_val > 0) && (md_type_val < modem_ultg)) {
+		i = md_type_val;
+		scan_max = md_type_val;
+	} else {
+		/*
+		* NOTES:
+		* if md support type is ubin, then need try to find suitable md image
+		*/
+		i = modem_ultg;
+		scan_max = MAX_IMG_NUM;
+	}
 TRY_LOAD_IMG:
 	ret = request_firmware(&fw_entry, img_name, dev);
 	if (ret != 0) {
 		/*CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 		 *	"Try to load firmware %s failed:ret=%d!\n", img_name, ret);
 		 */
-		if (i <= MAX_IMG_NUM) {
+		if (i <= scan_max) {
 			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Curr i:%d\n", i);
 			if (img->type == IMG_MD)
 				snprintf(img_name, IMG_NAME_LEN, "modem_%d_%s_n.img", md_id+1, type_str[i]);
@@ -793,6 +803,9 @@ TRY_LOAD_IMG:
 		} else {
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 			     "Try to load all md image failed:ret=%d!\n", ret);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+			aed_md_exception_api(NULL, 0, NULL, 0, "Try to load all md image failed!", DB_OPT_DEFAULT);
+#endif
 			ret = -CCCI_ERR_INVALID_PARAM;
 			goto out;
 		}
@@ -905,95 +918,6 @@ int ccci_init_security(void)
 	CCCI_UTIL_INF_MSG("security is off!\n");
 #endif
 	return ret;
-}
-
-static const int md1_capability_array[] = {
-	0, 0, 0, 0, 0, 0, 0, 0,
-/* ultg */
-	((1 << modem_ulwtg) | (1 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulwg */
-	((1 << modem_ulwtg) | (0 << modem_ultg) | (1 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulwtg */
-	((1 << modem_ulwtg) | (0 << modem_ultg) | (1 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulwcg */
-	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulwctg */
-	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulttg */
-	((1 << modem_ulwtg) | (1 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulfwg */
-	((1 << modem_ulwtg) | (0 << modem_ultg) | (1 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulfwcg */
-	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulctg */
-	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ultctg */
-	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ultwg */
-	((1 << modem_ulwtg) | (0 << modem_ultg) | (1 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ultwcg */
-	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulftg */
-	((1 << modem_ulwtg) | (1 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
-/* ulfctg */
-	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
-};
-
-static const int ap_md_wm_id_map_array[] = { 0x0,	/* 0-invalid */
-	0x0,			/* 1-2g */
-	0x0,			/* 2-3g */
-	0x0,			/* 3-wg */
-	0x0,			/* 4-tg */
-	0x0,			/* 5-lwg */
-	0x0,			/* 6-ltg */
-	0x0,			/* 7-sglte */
-	0x33,			/* 8-ultg */
-	0x39,			/* 9-ulwg */
-	0x3B,			/* 10-ulwtg */
-	0x3D,			/* 11-ulwcg */
-	0x3F,			/* 12-ulwctg */
-	0x13,			/* 13-ulttg */
-	0x29,			/* 14-ulfwg */
-	0x2D,			/* 15-ulfwcg */
-	0x37,			/* 16-ulctg */
-	0x17,			/* 17-ultctg */
-	0x19,			/* 18-ultwg */
-	0x1D,			/* 19-ultwcg */
-	0x23,			/* 20-ulftg */
-	0x27,			/* 21-ulfctg */
-};
-
-int get_md_wm_id_map(int ap_wm_id)
-{
-	if (ap_wm_id < (sizeof(ap_md_wm_id_map_array) / sizeof(int)))
-		return ap_md_wm_id_map_array[ap_wm_id];
-	return 0;
-}
-
-int md_capability(int md_id, int wm_id, int curr_md_type)
-{
-	int md_type;
-
-	if (curr_md_type >= MAX_IMG_NUM)
-		return -1;
-	if (wm_id >= MAX_IMG_NUM)
-		return -2;
-
-	if (curr_md_type != 0)
-		md_type = curr_md_type;
-	else
-		md_type = curr_ubin_id;
-
-	if (md_type == 0) {
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "curr_ubin_id is default val\n");
-		return 1;
-	}
-	if (md_id == MD_SYS1) {
-		if (md1_capability_array[wm_id] & (1 << md_type))
-			return 1;
-		return 0;
-	}
-	return -3;
 }
 
 #define IMG_MAGIC		0x58881688

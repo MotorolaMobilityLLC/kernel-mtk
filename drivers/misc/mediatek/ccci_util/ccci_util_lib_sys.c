@@ -131,6 +131,8 @@ static ssize_t boot_status_store(const char *buf, size_t count)
 	if (md_id < MAX_MD_NUM) {
 		if (trigger_md_boot(md_id) != 0)
 			CCCI_UTIL_INF_MSG("md%d n/a\n", md_id + 1);
+		else
+			clear_meta_1st_boot_arg(md_id);
 	} else
 		CCCI_UTIL_INF_MSG("invalid id(%d)\n", md_id + 1);
 	return count;
@@ -156,6 +158,15 @@ static ssize_t ccci_md_enable_show(char *buf)
 }
 
 CCCI_ATTR(md_en, 0660, &ccci_md_enable_show, NULL);
+
+/* Sys -- post fix */
+static ssize_t ccci_md1_post_fix_show(char *buf)
+{
+	get_md_postfix(MD_SYS1, NULL, buf, NULL);
+	return strlen(buf);
+}
+
+CCCI_ATTR(md1_postfix, 0440, &ccci_md1_post_fix_show, NULL);
 
 /* Sys -- dump buff usage */
 static ssize_t ccci_dump_buff_usage_show(char *buf)
@@ -618,6 +629,7 @@ static struct attribute *ccci_default_attrs[] = {
 	&ccci_attr_lk_md.attr,
 	&ccci_attr_md_chn.attr,
 	&ccci_attr_ft_info.attr,
+	&ccci_attr_md1_postfix.attr,
 	NULL
 };
 
