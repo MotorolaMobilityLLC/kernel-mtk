@@ -855,3 +855,100 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
 	rdma_cfg->yuv_range = ovl_cfg->yuv_range;
 	return 0;
 }
+
+bool ddp_path_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
+{
+	if (module == DISP_MODULE_RDMA0) {
+		int rdma_smi_busy, smi_common_ostd, smi_larb_ostd;
+
+		rdma_smi_busy = DISP_REG_GET_FIELD(GLOBAL_CON_FLD_SMI_BUSY,
+			DISP_REG_RDMA_GLOBAL_CON);
+		smi_common_ostd = DISP_REG_GET_FIELD(FLD_SMI_DEBUG_M0,
+			DISP_REG_SMI_COMMON_SMI_DEBUG_M0);
+		smi_larb_ostd = DISP_REG_GET_FIELD(FLD_OSTD_MON_PORT,
+			DISP_REG_SMI_LARB0_SMI_LARB_OSTD_MON_PORT4);
+		DDPMSG("%s, module:%d, rdma_smi_busy:%d, smi_common_ostd:%d, smi_larb_ostd:%d\n",
+			__func__, module, rdma_smi_busy, smi_common_ostd, smi_larb_ostd);
+		if (rdma_smi_busy == 1 && smi_common_ostd == 0 && smi_common_ostd == 0)
+			return true;
+		else
+			return false;
+	} else if (module == DISP_MODULE_WDMA0) {
+		int wdma_smi_busy, wdma_state, smi_common_ostd, smi_larb_ostd;
+
+		wdma_state = DISP_REG_GET_FIELD(FLOW_CTRL_DBG_FLD_WDMA_STATE,
+			DISP_REG_WDMA_FLOW_CTRL_DBG);
+		wdma_smi_busy = DISP_REG_GET_FIELD(FLOW_CTRL_DBG_FLD_SMI_BUSY,
+			DISP_REG_WDMA_FLOW_CTRL_DBG);
+		smi_common_ostd = DISP_REG_GET_FIELD(FLD_SMI_DEBUG_M1,
+			DISP_REG_SMI_COMMON_SMI_DEBUG_M0);
+		smi_larb_ostd = DISP_REG_GET_FIELD(FLD_OSTD_MON_PORT,
+			DISP_REG_SMI_LARB0_SMI_LARB_OSTD_MON_PORT6);
+		DDPMSG("%s, module:%d, wdma_state:%d, wdma_smi_busy:%d, smi_common_ostd:%d, smi_larb_ostd:%d\n",
+			__func__, module, wdma_state, wdma_smi_busy, smi_common_ostd, smi_larb_ostd);
+		if (wdma_state != 1 && wdma_smi_busy != 0 &&
+			smi_common_ostd == 0 && smi_common_ostd == 0)
+			return true;
+		else
+			return false;
+	} else {
+		DDPMSG("No check rule for module:%d\n", module);
+		return false;
+	}
+}
+
+int ddp_path_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
+{
+	int bit = -1;
+
+	switch (module) {
+	case DISP_MODULE_OVL0:
+		bit = 13;
+		break;
+	case DISP_MODULE_OVL0_2L:
+		bit = 14;
+		break;
+	case DISP_MODULE_OVL1_2L:
+		bit = 15;
+		break;
+	case DISP_MODULE_RDMA0:
+		bit = 16;
+		break;
+	case DISP_MODULE_RDMA1:
+		bit = 17;
+		break;
+	case DISP_MODULE_WDMA0:
+		bit = 18;
+		break;
+	case DISP_MODULE_COLOR0:
+		bit = 19;
+		break;
+	case DISP_MODULE_CCORR0:
+		bit = 20;
+		break;
+	case DISP_MODULE_AAL0:
+		bit = 21;
+		break;
+	case DISP_MODULE_GAMMA0:
+		bit = 22;
+		break;
+	case DISP_MODULE_DITHER0:
+		bit = 23;
+		break;
+	case DISP_MODULE_DSI0:
+		bit = 25;
+		break;
+	case DISP_MODULE_DPI:
+		bit = 26;
+		break;
+	case DISP_MODULE_RSZ0:
+		bit = 27;
+		break;
+	default:
+		return -1;
+	}
+
+	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit), DISP_REG_CONFIG_MMSYS_SW0_RST_B, 0x0);
+	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit), DISP_REG_CONFIG_MMSYS_SW0_RST_B, 0x1);
+	return 0;
+}
