@@ -410,6 +410,7 @@ CONFIG_MTK_COMBO_WIFI,COMMON,sarah-cp.yang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CONN_LTE_IDC_SUPPORT,PLATFORM,Alonso.Hsu,new config in this commit 3413d51500ed33e5696cbfe6286d5b8617867b35,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT,PROJECT,weiguo.li,new config in this commit 13be5de93e0cafaa0c3fc5f5dc16aa86e0422208,,,,,,,,,,
 CONFIG_MTK_CPU_AFFINITY,COMMON,jing-ting.wu,,y,y,y,y,y,y,y,y,y,y
+CONFIG_MTK_CPU_CTRL_CFP,PROJECT,poting.chen,,,,,,,,,,
 CONFIG_MTK_CPU_TOPOLOGY,PLATFORM,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CQDMA,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_DCS,PROJECT,miles.chen,,X,X,y,,,,,,,
