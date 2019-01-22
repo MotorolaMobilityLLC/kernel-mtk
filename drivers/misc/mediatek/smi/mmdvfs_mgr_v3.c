@@ -279,7 +279,7 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 	spin_unlock(&g_mmdvfs_mgr->scen_lock);
 
 	/* Change HW configuration */
-#ifdef MMDVFS_PMQOS
+#ifdef CONFIG_MTK_QOS_SUPPORT
 	mmdvfs_qos_update(step_util, final_step);
 #else
 	adaptor->apply_hw_configurtion_by_step(adaptor, final_step, original_step);
@@ -325,17 +325,22 @@ int mmdvfs_internal_set_fine_step_default(enum MTK_SMI_BWC_SCEN smi_scenario, in
 
 void mmdvfs_internal_notify_vcore_calibration(struct mmdvfs_prepare_action_event *event)
 {
-	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_VIN ||
-		mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_SYL) {
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_VIN) {
 		MMDVFSMSG("calibration event is not hanlded in this platform\n");
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 		return;
 	}
 	if (event->event_type == MMDVFS_EVENT_PREPARE_CALIBRATION_START) {
 		g_mmdvfs_mgr->is_mmdvfs_start = 0;
+#ifdef CONFIG_MTK_QOS_SUPPORT
+		mmdvfs_qos_enable(false);
+#endif
 		MMDVFSMSG("mmdvfs service is disabled for vcore calibration\n");
 	} else if (event->event_type  == MMDVFS_EVENT_PREPARE_CALIBRATION_END) {
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
+#ifdef CONFIG_MTK_QOS_SUPPORT
+		mmdvfs_qos_enable(true);
+#endif
 		MMDVFSMSG("mmdvfs service has been enabled\n");
 	} else {
 		MMDVFSMSG("mmdvfs_internal_notify_vcore_calibration: unknown status code:%d\n",

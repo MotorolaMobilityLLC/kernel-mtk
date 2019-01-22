@@ -2248,7 +2248,7 @@
 		cam_step1 = <364 1 1 4>;
 		img_step0 = <525 1 2 5>;
 		img_step1 = <364 1 2 4>;
-		vopp_steps = <0 3>;
+		vopp_steps = <0 1>;
 		disp_freq = "mm_step0", "mm_step1";
 		mdp_freq = "mm_step0", "mm_step1";
 		cam_freq = "cam_step0","cam_step1";

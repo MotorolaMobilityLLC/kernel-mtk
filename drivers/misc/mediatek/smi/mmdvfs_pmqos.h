@@ -16,6 +16,7 @@
 
 #define MAX_FREQ_STEP 6
 
+#ifdef CONFIG_MTK_QOS_SUPPORT
 /**
  * mmdvfs_qos_get_freq_steps - get available freq steps of each pmqos class
  * @pm_qos_class: pm_qos_class of each mm freq domain
@@ -36,5 +37,19 @@ int mmdvfs_qos_get_freq_steps(u32 pm_qos_class, u64 *freq_steps, u32 *step_size)
  */
 int mmdvfs_qos_force_step(int step);
 
+/**
+ * mmdvfs_qos_enable - function to enable or disable mmdvfs
+ * @enable: mmdvfs enable or disable
+ */
+void mmdvfs_qos_enable(bool enable);
 
+#else
+static inline int mmdvfs_qos_get_freq_steps(u32 pm_qos_class,
+	u64 *freq_steps, u32 *step_size)
+	{ *step_size = 0; return 0; }
+static inline int mmdvfs_qos_force_step(int step)
+	{ return 0; }
+static inline void mmdvfs_qos_enable(bool enable)
+	{ return; }
+#endif
 #endif /* __MMDVFS_PMQOS_H__ */
