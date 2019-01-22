@@ -68,38 +68,38 @@
 #define _bRW_MISCTL__PATCH_AREA_EN_  0x404D
 
 /*
- 1.  firmware structure
-    header: 128b
-
-    offset           size          content
-    0                 4              firmware length
-    4                 2              checksum
-    6                 6              target MASK name
-    12               3              target MASK version
-    15               6              TP subsystem PID
-    21               3              TP subsystem version
-    24               1              subsystem count
-    25               1              chip type                             0x91: GT1X,   0x92: GT2X
-    26               6              reserved
-    32               8              subsystem info[0]
-    32               8              subsystem info[1]
-    .....
-    120             8              subsystem info[11]
-
-    body: followed header
-
-    128             N0              subsystem[0]
-    128+N0       N1              subsystem[1]
-    ....
-
- 2. subsystem info structure
-    offset           size          content
-    0                 1              subsystem type
-    1                 2              subsystem length
-    3                 2              stored address in flash           addr = value * 256
-    5                 3              reserved
-
-*/
+ * 1.  firmware structure
+ *    header: 128b
+ *
+ *   offset           size          content
+ *   0                 4              firmware length
+ *   4                 2              checksum
+ *   6                 6              target MASK name
+ *   12               3              target MASK version
+ *   15               6              TP subsystem PID
+ *   21               3              TP subsystem version
+ *   24               1              subsystem count
+ *   25               1              chip type                             0x91: GT1X,   0x92: GT2X
+ *   26               6              reserved
+ *   32               8              subsystem info[0]
+ *   32               8              subsystem info[1]
+ *   .....
+ *   120             8              subsystem info[11]
+ *
+ *   body: followed header
+ *
+ *   128             N0              subsystem[0]
+ *   128+N0       N1              subsystem[1]
+ *   ....
+ *
+ * 2. subsystem info structure
+ *   offset           size          content
+ *   0                 1              subsystem type
+ *   1                 2              subsystem length
+ *   3                 2              stored address in flash           addr = value * 256
+ *   5                 3              reserved
+ *
+ */
 
 #define FW_HEAD_SIZE                         128
 #define FW_HEAD_SUBSYSTEM_INFO_SIZE          8
@@ -912,7 +912,7 @@ int __gt1x_hold_ss51_dsp_20(void)
 			GTP_DEBUG("Hold ss51 & dsp I2C error,retry:%d", retry);
 			continue;
 		}
-		if (0x0C == buf[0]) {
+		if (buf[0] == 0x0C) {
 			if (hold_times++ < 20)
 				continue;
 			else
