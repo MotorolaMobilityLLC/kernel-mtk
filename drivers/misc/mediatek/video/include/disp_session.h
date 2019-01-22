@@ -404,6 +404,7 @@ struct layer_config {
 	unsigned int dst_offset_x, dst_offset_y;
 	unsigned int dst_width, dst_height;
 	int ext_sel_layer;
+	unsigned int src_width, src_height;
 };
 
 struct disp_layer_info {
