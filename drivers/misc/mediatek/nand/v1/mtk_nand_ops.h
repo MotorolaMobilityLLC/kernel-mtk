@@ -226,6 +226,16 @@ enum TLC_MULTI_PROG_MODE {
 	BLOCK1_ONLY,
 };
 
+#if defined(CONFIG_PWR_LOSS_MTK_SPOH)
+struct mvg_case_stack {
+	char gname[63];
+	char cname[63];
+	struct mvg_case_stack *next;
+};
+extern int mvg_current_case_check(void);
+#endif
+
+
 extern struct mtk_nand_data_info *data_info;
 extern int mtk_nand_ops_init(struct mtd_info *mtd, struct nand_chip *chip);
 extern int mtk_nand_data_info_init(void);

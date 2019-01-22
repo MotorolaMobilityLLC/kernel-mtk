@@ -35,6 +35,9 @@
 #include "bmt.h"
 
 int g_i4Homescreen;
+#if defined(CONFIG_PWR_LOSS_MTK_SPOH)
+struct mvg_case_stack *cstack;
+#endif
 struct mtk_nand_data_info *data_info;
 
 static inline bool block_page_num_is_valid(
@@ -2141,6 +2144,73 @@ int os_mvg_on_group_case(const char *gname, const char *cname)
 	return 0;
 }
 EXPORT_SYMBOL(os_mvg_on_group_case);
+#if defined(CONFIG_PWR_LOSS_MTK_SPOH)
+static void push_case(const char *gname, const char *cname)
+{
+	struct mvg_case_stack *case_stack = kmalloc(sizeof(struct mvg_case_stack), GFP_KERNEL);
+
+	strcpy(case_stack->gname, gname);
+	strcpy(case_stack->cname, cname);
+	case_stack->next = cstack;
+	cstack = case_stack;
+}
+
+static void pop_case(void)
+{
+	struct mvg_case_stack *case_stack = cstack;
+
+	cstack = cstack->next;
+	kfree(case_stack);
+}
+
+int mvg_current_case_check(void)
+{
+	if (cstack)
+		return mvg_on_group_case(cstack->gname, cstack->cname);
+	return 0;
+}
+
+
+#endif
+
+int mvg_set_current_case(const char *gname, const char *cname)
+{
+#if defined(CONFIG_PWR_LOSS_MTK_SPOH)
+	if (mvg_on_group_case(gname, cname)) {
+		if (cstack) {
+			pr_info("[MVG] set case reentry on %s-%s\n", gname, cname);
+			return -EINVAL;
+		}
+		push_case(gname, cname);
+	} else {
+		if (cstack)
+			push_case(gname, cname);
+	}
+#endif
+	return 0;
+}
+EXPORT_SYMBOL(mvg_set_current_case);
+int mvg_case_exit(const char *gname, const char *cname)
+{
+#if defined(CONFIG_PWR_LOSS_MTK_SPOH)
+	int s1, s2;
+
+	if (!cstack)
+		return 0;
+	s1 = strcmp(cstack->gname, gname);
+	s2 = strcmp(cstack->cname, cname);
+
+	if (s1 || s2) {
+		pr_info("[MVG] case exit un-balance current %s-%s, exit %s-%s\n",
+			cstack->gname, cstack->cname, gname, cname);
+		return -EINVAL;
+	}
+
+	pop_case();
+#endif
+	return 0;
+}
+EXPORT_SYMBOL(mvg_case_exit);
 
 char *os_get_task_comm(char *buf, struct task_struct *tsk)
 {
