@@ -578,7 +578,7 @@ struct tcp_dpm_uvdm_data {
 };
 #endif	/* CONFIG_USB_PD_UVDM */
 
-typedef struct tcp_dpm_event {
+struct tcp_dpm_event {
 	uint8_t event_id;
 	tcp_dpm_event_cb event_cb;
 
@@ -594,7 +594,7 @@ typedef struct tcp_dpm_event {
 		struct tcp_dpm_uvdm_data uvdm_data;
 #endif	/* CONFIG_USB_PD_UVDM */
 	} tcp_dpm_data;
-} tcp_dpm_event_t;
+};
 
 int tcpm_put_tcp_dpm_event(
 	struct tcpc_device *tcpc, struct tcp_dpm_event *event);

@@ -24,13 +24,13 @@
  */
 
 void pe_dfp_ufp_vdm_identity_request_entry(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_vdm_discover_id(pd_port, TCPC_TX_SOP);
 }
 
 void pe_dfp_ufp_vdm_identity_acked_entry(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_id(pd_port, pd_event, true);
@@ -38,7 +38,7 @@ void pe_dfp_ufp_vdm_identity_acked_entry(
 }
 
 void pe_dfp_ufp_vdm_identity_naked_entry(
-	pd_port_t *pd_port, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_id(pd_port, pd_event, false);
@@ -50,7 +50,7 @@ void pe_dfp_ufp_vdm_identity_naked_entry(
  */
 
 void pe_dfp_cbl_vdm_identity_request_entry(
-			pd_port_t *pd_port, pd_event_t *pd_event)
+			struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_vdm_discover_id(pd_port, TCPC_TX_SOP_PRIME);
 	pd_port->discover_id_counter++;
@@ -60,7 +60,7 @@ void pe_dfp_cbl_vdm_identity_request_entry(
 }
 
 void pe_dfp_cbl_vdm_identity_acked_entry(
-			pd_port_t *pd_port, pd_event_t *pd_event)
+			struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_port->dpm_flags &=
 		~(DPM_FLAGS_CHECK_CABLE_ID | DPM_FLAGS_CHECK_CABLE_ID_DFP);
@@ -73,7 +73,7 @@ void pe_dfp_cbl_vdm_identity_acked_entry(
 }
 
 void pe_dfp_cbl_vdm_identity_naked_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 
@@ -85,19 +85,19 @@ void pe_dfp_cbl_vdm_identity_naked_entry(
  * [PD2.0] Figure 8-66 DFP VDM Discover SVIDs State Diagram
  */
 
-void pe_dfp_vdm_svids_request_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_vdm_svids_request_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_vdm_discover_svids(pd_port, TCPC_TX_SOP);
 }
 
-void pe_dfp_vdm_svids_acked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_vdm_svids_acked_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_svids(pd_port, pd_event, true);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_dfp_vdm_svids_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_vdm_svids_naked_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_svids(pd_port, pd_event, false);
@@ -108,19 +108,19 @@ void pe_dfp_vdm_svids_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
  * [PD2.0] Figure 8-67 DFP VDM Discover Modes State Diagram
  */
 
-void pe_dfp_vdm_modes_request_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_vdm_modes_request_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_vdm_discover_modes(pd_port, TCPC_TX_SOP, pd_port->mode_svid);
 }
 
-void pe_dfp_vdm_modes_acked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_vdm_modes_acked_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_modes(pd_port, pd_event, true);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_dfp_vdm_modes_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_vdm_modes_naked_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_modes(pd_port, pd_event, false);
@@ -132,14 +132,14 @@ void pe_dfp_vdm_modes_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
  */
 
 void pe_dfp_vdm_mode_entry_request_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_vdm_enter_mode(pd_port, TCPC_TX_SOP,
 		pd_port->mode_svid, pd_port->mode_obj_pos);
 }
 
 void pe_dfp_vdm_mode_entry_acked_entry(
-			pd_port_t *pd_port, pd_event_t *pd_event)
+			struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_MODE_ENTRY);
 	pd_dpm_dfp_inform_enter_mode(pd_port, pd_event, true);
@@ -147,7 +147,7 @@ void pe_dfp_vdm_mode_entry_acked_entry(
 
 }
 
-void pe_dfp_vdm_mode_entry_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_vdm_mode_entry_naked_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_MODE_ENTRY);
 	pd_dpm_dfp_inform_enter_mode(pd_port, pd_event, false);
@@ -159,14 +159,14 @@ void pe_dfp_vdm_mode_entry_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
  */
 
 void pe_dfp_vdm_mode_exit_request_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_vdm_exit_mode(pd_port, TCPC_TX_SOP,
 		pd_port->mode_svid, pd_port->mode_obj_pos);
 }
 
 void pe_dfp_vdm_mode_exit_acked_entry(
-			pd_port_t *pd_port, pd_event_t *pd_event)
+			struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_MODE_EXIT);
 	pd_dpm_dfp_inform_exit_mode(pd_port, pd_event);
@@ -178,7 +178,7 @@ void pe_dfp_vdm_mode_exit_acked_entry(
  */
 
 void pe_dfp_vdm_attention_request_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_dpm_dfp_inform_attention(pd_port, pd_event);
 	pd_free_pd_event(pd_port, pd_event);
@@ -191,13 +191,13 @@ void pe_dfp_vdm_attention_request_entry(
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
 
 void pe_dfp_vdm_dp_status_update_request_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_dpm_dfp_send_dp_status_update(pd_port, pd_event);
 }
 
 void pe_dfp_vdm_dp_status_update_acked_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_dp_status_update(pd_port, pd_event, true);
@@ -205,7 +205,7 @@ void pe_dfp_vdm_dp_status_update_acked_entry(
 }
 
 void pe_dfp_vdm_dp_status_update_naked_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_dp_status_update(pd_port, pd_event, false);
@@ -213,13 +213,13 @@ void pe_dfp_vdm_dp_status_update_naked_entry(
 }
 
 void pe_dfp_vdm_dp_configuration_request_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_dpm_dfp_send_dp_configuration(pd_port, pd_event);
 }
 
 void pe_dfp_vdm_dp_configuration_acked_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_dp_configuration(pd_port, pd_event, true);
@@ -227,7 +227,7 @@ void pe_dfp_vdm_dp_configuration_acked_entry(
 }
 
 void pe_dfp_vdm_dp_configuration_naked_entry(
-				pd_port_t *pd_port, pd_event_t *pd_event)
+				struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_VDM_RESPONSE);
 	pd_dpm_dfp_inform_dp_configuration(pd_port, pd_event, false);
@@ -243,19 +243,19 @@ void pe_dfp_vdm_dp_configuration_naked_entry(
 
 #ifdef CONFIG_USB_PD_UVDM
 
-void pe_dfp_uvdm_send_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_uvdm_send_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_dpm_dfp_send_uvdm(pd_port, pd_event);
 }
 
-void pe_dfp_uvdm_acked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_uvdm_acked_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_UVDM_RESPONSE);
 	pd_dpm_dfp_inform_uvdm(pd_port, pd_event, true);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_dfp_uvdm_naked_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_dfp_uvdm_naked_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_UVDM_RESPONSE);
 	pd_dpm_dfp_inform_uvdm(pd_port, pd_event, false);

@@ -378,13 +378,10 @@ static const char *const pe_state_name[] = {
 
 #endif
 
-typedef void (*pe_state_action_fcn_t)
-	(pd_port_t *pd_port, pd_event_t *pd_event);
-
-typedef struct __pe_state_actions {
-	const pe_state_action_fcn_t entry_action;
-	/* const pd_pe_state_action_fcn_t exit_action; */
-} pe_state_actions_t;
+struct __pe_state_actions {
+	void (*entry_action)(struct __pd_port *pd_port, struct __pd_event *pd_event);
+	/* const void (*exit_action)(struct __pd_port *pd_port, struct __pd_event *pd_event); */
+};
 
 #define PE_STATE_ACTIONS(state) { .entry_action = state##_entry, }
 
@@ -393,7 +390,7 @@ typedef struct __pe_state_actions {
  * Policy Engine General State Activity
  */
 
-static void pe_idle_reset_data(pd_port_t *pd_port)
+static void pe_idle_reset_data(struct __pd_port *pd_port)
 {
 	pd_reset_pe_timer(pd_port);
 	pd_reset_svid_data(pd_port);
@@ -414,20 +411,20 @@ static void pe_idle_reset_data(pd_port_t *pd_port)
 	pd_unlock_msg_output(pd_port);
 }
 
-static void pe_idle1_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+static void pe_idle1_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pe_idle_reset_data(pd_port);
 
 	pd_try_put_pe_idle_event(pd_port);
 }
 
-static void pe_idle2_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+static void pe_idle2_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_set_rx_enable(pd_port, PD_RX_CAP_PE_IDLE);
 	pd_notify_pe_idle(pd_port);
 }
 
-void pe_error_recovery_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_error_recovery_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pe_idle_reset_data(pd_port);
 
@@ -437,7 +434,7 @@ void pe_error_recovery_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 }
 
 #ifdef CONFIG_USB_PD_RECV_HRESET_COUNTER
-void pe_over_recv_hreset_limit_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_over_recv_hreset_limit_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	PE_INFO("OverHResetLimit++\r\n");
 	pe_idle_reset_data(pd_port);
@@ -446,25 +443,25 @@ void pe_over_recv_hreset_limit_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 }
 #endif	/* CONFIG_USB_PD_RECV_HRESET_COUNTER */
 
-void pe_bist_test_data_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_bist_test_data_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_enable_bist_test_mode(pd_port, true);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_bist_test_data_exit(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_bist_test_data_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_enable_bist_test_mode(pd_port, false);
 }
 
-void pe_bist_carrier_mode_2_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_bist_carrier_mode_2_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_send_bist_mode2(pd_port);
 	pd_enable_timer(pd_port, PD_TIMER_BIST_CONT_MODE);
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_bist_carrier_mode_2_exit(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_bist_carrier_mode_2_exit(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_BIST_CONT_MODE);
 	pd_disable_bist_mode2(pd_port);
@@ -474,7 +471,7 @@ void pe_bist_carrier_mode_2_exit(pd_port_t *pd_port, pd_event_t *pd_event)
  * Policy Engine Share State Activity
  */
 
-void pe_power_ready_entry(pd_port_t *pd_port, pd_event_t *pd_event)
+void pe_power_ready_entry(struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_port->during_swap = false;
 	pd_port->explicit_contract = true;
@@ -498,7 +495,7 @@ void pe_power_ready_entry(pd_port_t *pd_port, pd_event_t *pd_event)
 	pd_free_pd_event(pd_port, pd_event);
 }
 
-static const pe_state_actions_t pe_state_actions[] = {
+static const struct __pe_state_actions pe_state_actions[] = {
 
 	/* src activity */
 	PE_STATE_ACTIONS(pe_src_startup),
@@ -684,14 +681,15 @@ static const pe_state_actions_t pe_state_actions[] = {
 };
 
 static inline void pe_exit_action_disable_sender_response(
-		pd_port_t *pd_port, pd_event_t *pd_event)
+		struct __pd_port *pd_port, struct __pd_event *pd_event)
 {
 	pd_disable_timer(pd_port, PD_TIMER_SENDER_RESPONSE);
 }
 
-pe_state_action_fcn_t pe_get_exit_action(uint8_t pe_state)
+/* pd_state_action_fcn_t pe_get_exit_action(uint8_t pe_state) */
+void (*pe_get_exit_action(uint8_t pe_state))(struct __pd_port *, struct __pd_event *)
 {
-	pe_state_action_fcn_t retval = NULL;
+	void (*retval)(struct __pd_port *, struct __pd_event *) = NULL;
 
 	switch (pe_state) {
 
@@ -767,7 +765,7 @@ pe_state_action_fcn_t pe_get_exit_action(uint8_t pe_state)
 }
 
 static inline void print_state(
-	pd_port_t *pd_port, bool vdm_evt, uint8_t state)
+	struct __pd_port *pd_port, bool vdm_evt, uint8_t state)
 {
 	/*
 	 * Source (P, Provider), Sink (C, Consumer)
@@ -788,10 +786,10 @@ static inline void print_state(
 }
 
 static void pd_pe_state_change(
-	pd_port_t *pd_port, pd_event_t *pd_event, bool vdm_evt)
+	struct __pd_port *pd_port, struct __pd_event *pd_event, bool vdm_evt)
 {
-	pe_state_action_fcn_t prev_exit_action;
-	pe_state_action_fcn_t next_entry_action;
+	void (*prev_exit_action)(struct __pd_port *, struct __pd_event *);
+	void (*next_entry_action)(struct __pd_port *, struct __pd_event *);
 
 	uint8_t old_state = pd_port->pe_state_curr;
 	uint8_t new_state = pd_port->pe_state_next;
@@ -824,7 +822,7 @@ static void pd_pe_state_change(
 }
 
 static int pd_handle_event(
-	pd_port_t *pd_port, pd_event_t *pd_event, bool vdm_evt)
+	struct __pd_port *pd_port, struct __pd_event *pd_event, bool vdm_evt)
 {
 	if (vdm_evt) {
 		if (pd_port->reset_vdm_state) {
@@ -846,9 +844,9 @@ static int pd_handle_event(
 }
 
 static inline int pd_put_dpm_ack_immediately(
-	pd_port_t *pd_port, bool vdm_evt)
+	struct __pd_port *pd_port, bool vdm_evt)
 {
-	pd_event_t pd_event = {
+	struct __pd_event pd_event = {
 		.event_type = PD_EVT_DPM_MSG,
 		.msg = PD_DPM_ACK,
 		.pd_msg = NULL,
@@ -862,10 +860,10 @@ static inline int pd_put_dpm_ack_immediately(
 }
 
 static inline bool pd_try_get_tcp_deferred_event(
-	struct tcpc_device *tcpc_dev, pd_event_t *pd_event, bool *vdm_evt)
+	struct tcpc_device *tcpc_dev, struct __pd_event *pd_event, bool *vdm_evt)
 {
 	int ret = false;
-	pd_port_t *pd_port = &tcpc_dev->pd_port;
+	struct __pd_port *pd_port = &tcpc_dev->pd_port;
 
 	switch (pd_port->pe_pd_state) {
 	case PE_SNK_READY:
@@ -897,10 +895,10 @@ static inline bool pd_try_get_tcp_deferred_event(
 }
 
 static inline bool pd_try_get_vdm_event(
-	struct tcpc_device *tcpc_dev, pd_event_t *pd_event)
+	struct tcpc_device *tcpc_dev, struct __pd_event *pd_event)
 {
 	bool vdm_evt = false;
-	pd_port_t *pd_port = &tcpc_dev->pd_port;
+	struct __pd_port *pd_port = &tcpc_dev->pd_port;
 
 	switch (pd_port->pe_pd_state) {
 	case PE_SNK_READY:
@@ -919,7 +917,7 @@ static inline bool pd_try_get_vdm_event(
 }
 
 static inline bool pd_try_get_next_event(
-	struct tcpc_device *tcpc_dev, pd_event_t *pd_event, bool *vdm_evt)
+	struct tcpc_device *tcpc_dev, struct __pd_event *pd_event, bool *vdm_evt)
 {
 	*vdm_evt = false;
 
@@ -940,8 +938,8 @@ static inline bool pd_try_get_next_event(
 int pd_policy_engine_run(struct tcpc_device *tcpc_dev)
 {
 	bool vdm_evt = false;
-	pd_event_t pd_event;
-	pd_port_t *pd_port = &tcpc_dev->pd_port;
+	struct __pd_event pd_event;
+	struct __pd_port *pd_port = &tcpc_dev->pd_port;
 
 	if (!pd_try_get_next_event(tcpc_dev, &pd_event, &vdm_evt))
 		return false;

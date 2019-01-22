@@ -22,7 +22,7 @@
 #ifdef CONFIG_USB_PD_RICHTEK_UVDM
 
 bool richtek_dfp_notify_pe_startup(
-		pd_port_t *pd_port, svdm_svid_data_t *svid_data)
+		struct __pd_port *pd_port, struct __svdm_svid_data *svid_data)
 {
 	UVDM_INFO("richtek_dfp_notify_pe_startup\r\n");
 	pd_port->richtek_init_done = false;
@@ -30,7 +30,7 @@ bool richtek_dfp_notify_pe_startup(
 }
 
 int richtek_dfp_notify_pe_ready(
-	pd_port_t *pd_port, svdm_svid_data_t *svid_data, pd_event_t *pd_event)
+	struct __pd_port *pd_port, struct __svdm_svid_data *svid_data, struct __pd_event *pd_event)
 {
 	PD_BUG_ON(pd_port->data_role != PD_ROLE_DFP);
 
@@ -52,8 +52,8 @@ int richtek_dfp_notify_pe_ready(
 	return 1;
 }
 
-bool richtek_dfp_notify_uvdm(pd_port_t *pd_port,
-				svdm_svid_data_t *svid_data, bool ack)
+bool richtek_dfp_notify_uvdm(struct __pd_port *pd_port,
+				struct __svdm_svid_data *svid_data, bool ack)
 {
 	uint32_t resp_cmd = 0;
 
@@ -68,8 +68,8 @@ bool richtek_dfp_notify_uvdm(pd_port_t *pd_port,
 	return true;
 }
 
-bool richtek_ufp_notify_uvdm(pd_port_t *pd_port,
-				svdm_svid_data_t *svid_data)
+bool richtek_ufp_notify_uvdm(struct __pd_port *pd_port,
+				struct __svdm_svid_data *svid_data)
 {
 	uint32_t hdr = PD_UVDM_HDR(0x29cf, 0x1234);
 	uint32_t cmd = PD_UVDM_HDR_CMD(pd_port->uvdm_data[0]);
