@@ -883,9 +883,9 @@ static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 	}
 
 	/* Enable connsys FM 2 wire RX */
-	fm_reg_write(0x9B, 0xF9AB);				/* G2: Set audio output i2s TX mode */
+	fm_reg_write(0x9B, 0xF9AB);                /* G2: Set audio output i2s TX mode */
 	fm_host_reg_write(0x81024064, 0x00000014); /* G3: Enable aon_osc_clk_cg */
-	fm_host_reg_write(0x81024058, 0x888100C3); /* G4: Enable FMAUD trigger */
+	fm_host_reg_write(0x81024058, 0x888100F3); /* G4: Enable FMAUD trigger, 20170119 */
 	fm_host_reg_write(0x81024054, 0x00000100); /* G5: Release fmsys memory power down*/
 
 	WCN_DBG(FM_NTC | CHIP, "pwr on seq ok\n");
