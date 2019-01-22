@@ -90,6 +90,6 @@ void xgf_kfree(const void *block);
 
 void fpsgo_ctrl2xgf_switch_xgf(int val);
 int fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd, unsigned long long *sleep_time);
-void fpsgo_fstb2xgf_set_idle(void);
+void fpsgo_fstb2xgf_do_recycle(int fstb_active);
 
 #endif

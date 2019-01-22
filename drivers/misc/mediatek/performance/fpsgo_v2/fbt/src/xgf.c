@@ -37,7 +37,7 @@ static DEFINE_MUTEX(xgf_main_lock);
 static HLIST_HEAD(xgf_procs);
 static int xgf_enable;
 static struct dentry *debugfs_xgf_dir;
-static unsigned long long last_blacked_recycle_ts;
+static unsigned long long last_check2recycle_ts;
 
 
 int (*xgf_est_slptime_fp)(
@@ -184,27 +184,6 @@ static struct xgf_timer *xgf_get_timer_rec(
 	return xt;
 }
 
-static inline void xgf_idle_recycle(void)
-{
-	unsigned long long now_ts = ged_get_time();
-	long long diff;
-	struct xgf_proc *iter;
-	struct hlist_node *tmp;
-
-	xgf_lockprove(__func__);
-
-	hlist_for_each_entry_safe(iter, tmp, &xgf_procs, hlist) {
-		diff = (long long)now_ts - (long long)(iter->deque.ts);
-		/* has not been one seconds since last recycle */
-		if (diff < 0LL || diff < NSEC_PER_SEC)
-			continue;
-
-		xgf_reset_render(iter);
-		hlist_del(&iter->hlist);
-		kfree(iter);
-	}
-}
-
 static inline void xgf_blacked_recycle(struct rb_root *root)
 {
 	struct rb_node *n;
@@ -212,12 +191,6 @@ static inline void xgf_blacked_recycle(struct rb_root *root)
 	unsigned long long now_ts = ged_get_time();
 
 	xgf_lockprove(__func__);
-
-	diff = (long long)now_ts - (long long)last_blacked_recycle_ts;
-
-	/* has not been four seconds since last recycle */
-	if (diff < 0LL || diff < (NSEC_PER_SEC << 2))
-		return;
 
 	n = rb_first(root);
 	while (n) {
@@ -243,8 +216,6 @@ static inline void xgf_blacked_recycle(struct rb_root *root)
 
 		n = rb_first(root);
 	}
-
-	last_blacked_recycle_ts = now_ts;
 }
 
 /**
@@ -424,8 +395,6 @@ void xgf_igather_timer(const void * const timer, int fire)
 			kfree(iter);
 			continue;
 		}
-
-		xgf_blacked_recycle(&iter->timer_rec);
 
 		switch (fire) {
 		case 1:
@@ -620,11 +589,47 @@ void fpsgo_ctrl2xgf_switch_xgf(int val)
 	xgf_unlock(__func__);
 }
 
-void fpsgo_fstb2xgf_set_idle(void)
+void fpsgo_fstb2xgf_do_recycle(int fstb_active)
 {
+	unsigned long long now_ts = ged_get_time();
+	long long recycle_diff, recycle_period, deque_diff;
+	struct xgf_proc *proc_iter;
+	struct hlist_node *proc_t;
+
+	/* over four seconds since last check2recycle */
+	recycle_period = NSEC_PER_SEC << 2;
+	recycle_diff = (long long)now_ts - (long long)last_check2recycle_ts;
+
+	xgf_trace("fpsgo_fstb2xgf_do_recycle at now=%llu, last check=%llu, fstb_active=%d",
+		now_ts, last_check2recycle_ts, fstb_active);
+
 	xgf_lock(__func__);
-	xgf_reset_procs();
+
+	if (!fstb_active) {
+		xgf_reset_procs();
+		goto out;
+	}
+
+	if (recycle_diff < 0LL || recycle_diff < recycle_period)
+		goto done;
+
+	hlist_for_each_entry_safe(proc_iter, proc_t, &xgf_procs, hlist) {
+		deque_diff = (long long)now_ts - (long long)proc_iter->deque.ts;
+		/* has not been over recycle_period since last deque, do black recycle only */
+		if (deque_diff < 0LL || deque_diff < recycle_period) {
+			xgf_blacked_recycle(&proc_iter->timer_rec);
+			continue;
+		}
+		xgf_reset_render(proc_iter);
+		hlist_del(&proc_iter->hlist);
+		kfree(proc_iter);
+	}
+
+out:
+	last_check2recycle_ts = now_ts;
+done:
 	xgf_unlock(__func__);
+	return;
 }
 
 int fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd, unsigned long long *sleep_time)
@@ -694,8 +699,6 @@ int fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd, unsigned long long *sleep_tim
 		fpsgo_systrace_c_xgf(rpid, dur,
 				"renew sleep time");
 		p->slptime += dur;
-		xgf_blacked_recycle(&p->timer_rec);
-		xgf_idle_recycle();
 		break;
 
 	case XGF_DEQUEUE_END:
