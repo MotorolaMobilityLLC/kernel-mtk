@@ -1408,19 +1408,26 @@ struct platform_device pwm_plat_dev = {
 static ssize_t pwm_debug_store(struct device *dev, struct device_attribute *attr, const char *buf,
 				   size_t count)
 {
+	int cmd, sub_cmd, pwm_no, n;
+	int data_width = 10, thresh = 5;
+
 	PWMDBG("pwm power_flag: 0x%x\n", (unsigned int)pwm_dev->power_flag);
 
 	pwm_debug_store_hal();
 /* PWM LDVT Hight Test Case */
-#if 0
+#if 1
 	PWMDBG("Enter into pwm_debug_store\n");
-	int cmd, sub_cmd, pwm_no, n;
 
-	n = sscanf(buf, "%d %d %d", &cmd, &sub_cmd, &pwm_no);
-	if (!n)
+	n = sscanf(buf, "%d %d %d %d %d", &cmd, &sub_cmd, &pwm_no, &data_width, &thresh);
+	if (!n) {
 		pr_err("pwm_debug_store nothing\n");
+		return count;
+	}
+	pr_info("cmd:%d, sub_cmd:%d, pwm_no:%d, data_width:%d, thresh:%d\n", cmd, sub_cmd, pwm_no, data_width, thresh);
+
 	/* set gpio mode */
 	/* pwm0 */
+	/*
 	if (pwm_no == 0) {
 		mt_set_gpio_mode(GPIO44, GPIO_MODE_06);
 		mt_set_gpio_mode(GPIO78, GPIO_MODE_05);
@@ -1442,6 +1449,7 @@ static ssize_t pwm_debug_store(struct device *dev, struct device_attribute *attr
 	} else {
 		PWMDBG("Invalid PWM Number!\n");
 	}
+	*/
 
 	if (cmd == 0) {
 		PWMDBG("********** HELP **********\n");
@@ -1469,7 +1477,7 @@ static ssize_t pwm_debug_store(struct device *dev, struct device_attribute *attr
 			pr_debug("=============clk source select test : 26M===============\n");
 			conf.pwm_no = pwm_no;
 			conf.mode = PWM_MODE_FIFO;
-			conf.clk_div = CLK_DIV6;
+			conf.clk_div = CLK_DIV1;
 			conf.clk_src = PWM_CLK_NEW_MODE_BLOCK;
 			conf.PWM_MODE_FIFO_REGS.IDLE_VALUE = IDLE_FALSE;
 			conf.PWM_MODE_FIFO_REGS.GUARD_VALUE = GUARD_FALSE;
@@ -1618,8 +1626,8 @@ static ssize_t pwm_debug_store(struct device *dev, struct device_attribute *attr
 			conf.PWM_MODE_OLD_REGS.GUARD_VALUE = GUARD_FALSE;
 			conf.PWM_MODE_OLD_REGS.GDURATION = 0;
 			conf.PWM_MODE_OLD_REGS.WAVE_NUM = 0;
-			conf.PWM_MODE_OLD_REGS.DATA_WIDTH = 10;
-			conf.PWM_MODE_OLD_REGS.THRESH = 5;
+			conf.PWM_MODE_OLD_REGS.DATA_WIDTH = data_width;
+			conf.PWM_MODE_OLD_REGS.THRESH = thresh;
 			pwm_set_spec_config(&conf);
 		} else if (sub_cmd == 2) {
 			struct pwm_spec_config conf;
@@ -1628,13 +1636,13 @@ static ssize_t pwm_debug_store(struct device *dev, struct device_attribute *attr
 			conf.pwm_no = pwm_no;
 			conf.mode = PWM_MODE_OLD;
 			conf.clk_div = CLK_DIV1;
-			conf.clk_src = PWM_CLK_OLD_MODE_32K;  /* 16KHz */
+			conf.clk_src = PWM_CLK_NEW_MODE_BLOCK_DIV_BY_1625;  /* 16KHz */
 			conf.PWM_MODE_OLD_REGS.IDLE_VALUE = IDLE_FALSE;
 			conf.PWM_MODE_OLD_REGS.GUARD_VALUE = GUARD_FALSE;
 			conf.PWM_MODE_OLD_REGS.GDURATION = 0;
 			conf.PWM_MODE_OLD_REGS.WAVE_NUM = 0;
-			conf.PWM_MODE_OLD_REGS.DATA_WIDTH = 10;
-			conf.PWM_MODE_OLD_REGS.THRESH = 5;
+			conf.PWM_MODE_OLD_REGS.DATA_WIDTH = data_width;
+			conf.PWM_MODE_OLD_REGS.THRESH = thresh;
 			pwm_set_spec_config(&conf);
 		} else if (sub_cmd == 3) {
 			struct pwm_spec_config conf;
@@ -1648,11 +1656,12 @@ static ssize_t pwm_debug_store(struct device *dev, struct device_attribute *attr
 			conf.PWM_MODE_OLD_REGS.GUARD_VALUE = GUARD_FALSE;
 			conf.PWM_MODE_OLD_REGS.GDURATION = 0;
 			conf.PWM_MODE_OLD_REGS.WAVE_NUM = 0;
-			conf.PWM_MODE_OLD_REGS.DATA_WIDTH = 10;
-			conf.PWM_MODE_OLD_REGS.THRESH = 5;
+			conf.PWM_MODE_OLD_REGS.DATA_WIDTH = data_width;
+			conf.PWM_MODE_OLD_REGS.THRESH = thresh;
 			pwm_set_spec_config(&conf);
 		} /* end sub cmd */
 	} else if (cmd == 5) {
+#if 0
 		struct pwm_spec_config conf;
 
 		PWMDBG("=============3DLCM test===============\n");
@@ -1671,10 +1680,14 @@ static ssize_t pwm_debug_store(struct device *dev, struct device_attribute *attr
 		conf.PWM_MODE_FIFO_REGS.WAVE_NUM = 0;
 		mt_pwm_26M_clk_enable_hal(1);
 		pwm_set_spec_config(&conf);
+#endif
 	} else if (cmd == 6) {
 		PWMDBG(" \tTest all gpio, This coverd by above test case!\n");
 	} else if (cmd == 7) {
 		struct pwm_spec_config conf;
+		dma_addr_t phys;
+		unsigned int *virt;
+		unsigned int *membuff;
 
 		PWMDBG("=============MEMO test===============\n");
 		conf.mode = PWM_MODE_MEMORY;
@@ -1690,12 +1703,11 @@ static ssize_t pwm_debug_store(struct device *dev, struct device_attribute *attr
 		conf.PWM_MODE_MEMORY_REGS.STOP_BITPOS_VALUE = 32;
 
 		mt_pwm_26M_clk_enable_hal(1);
-		unsigned int *phys;
-		unsigned int *virt;
 
 		virt = dma_alloc_coherent(NULL, 8, &phys, GFP_KERNEL);
 		/* virt = (unsigned int*)malloc(sizeof(unsigned int) * 128); */
-		unsigned int *membuff = virt;
+		membuff = virt;
+
 		/* static unsigned int data = {0xaaaaaaaa, 0xaaaaaaaa}; */
 		membuff[0] = 0xaaaaaaaa;
 		membuff[1] = 0xffff0000;
@@ -1740,6 +1752,8 @@ static int mt_pwm_probe(struct platform_device *pdev)
 {
 	int ret, pwm_irqnr;
 
+	PWMINFO("+\n");
+
 	mt_pwm_platform_init();
 
 	pwm_base = of_iomap(pdev->dev.of_node, 0);
@@ -1764,7 +1778,7 @@ static int mt_pwm_probe(struct platform_device *pdev)
 
 	ret = device_create_file(&pdev->dev, &dev_attr_pwm_debug);
 	if (ret)
-		PWMDBG("error creating sysfs files: pwm_debug\n");
+		PWMINFO("error creating sysfs files: pwm_debug\n");
 
 	/* ret = request_irq(pwm_irqnr, mt_pwm_irq, IRQF_TRIGGER_LOW, PWM_DEVICE, NULL); */
 	pwm_irqnr = platform_get_irq(pdev, 0);
