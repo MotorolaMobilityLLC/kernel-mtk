@@ -313,7 +313,8 @@ int pd_custom_vdm(struct typec_hba *hba, int cnt, uint32_t *payload,
 	int svid = PD_VDO_VID(payload[0]);
 	int len = 0;
 
-	dev_err(hba->dev, "Unstructured VDM 0x%04X\n", svid);
+	if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
+		dev_err(hba->dev, "Unstructured VDM 0x%04X\n", svid);
 
 	/* make sure we have some payload */
 	if (cnt == 0)
