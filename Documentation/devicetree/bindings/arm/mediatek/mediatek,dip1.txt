@@ -1,0 +1,21 @@
+Mediatek ispsys controller
+============================
+
+The Mediatek ispsys controller provides various clocks to the system.
+
+Required Properties:
+
+- compatible: Should be:
+	- "mediatek,mt6739-ispsys", "syscon"
+- #clock-cells: Must be 1
+
+The ispsys controller uses the common clk binding from
+Documentation/devicetree/bindings/clock/clock-bindings.txt
+The available clocks are defined in dt-bindings/clock/mt*-clk.h.
+
+Example:
+dip1@15022000 {
+	compatible = "mediatek,dip1";
+	reg = <0 0x15022000 0 0x6000>;
+	interrupts = <GIC_SPI 322 IRQ_TYPE_LEVEL_LOW>;
+};
