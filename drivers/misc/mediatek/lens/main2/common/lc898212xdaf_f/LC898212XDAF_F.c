@@ -253,7 +253,7 @@ static void LC898212XD_init(void)
 		}
 	}
 
-	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k57v1", 5) == 0) {
+	if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k57v1", 5) == 0 || Hall_Off == 0 || Hall_Bias == 0) {
 
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F63, &val2);
 		s4EEPROM_ReadReg_LC898212XDAF_F(0x0F64, &val1);
