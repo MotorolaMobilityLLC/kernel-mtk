@@ -154,12 +154,14 @@ static size_t scp_A_get_last_log(size_t b_len)
 			ret++;
 			if (update_start_idx >= scp_A_log_buf_maxlen_last)
 				update_start_idx = update_start_idx - scp_A_log_buf_maxlen_last;
+
+			scp_A_last_log[ret] = '\0';
 		}
 	} else {
 		/* no buffer, just skip logs*/
 		update_start_idx = log_end_idx;
 	}
-	scp_A_last_log[ret] = '\0';
+
 
 	/*SCP release awake */
 	if (scp_awake_unlock(SCP_A_ID) == -1)
@@ -709,12 +711,14 @@ void scp_crash_log_move_to_buf(enum scp_core_id scp_id)
 			ret++;
 			if (log_start_idx >= scp_log_buf_maxlen_last[scp_id])
 				log_start_idx = log_start_idx - scp_log_buf_maxlen_last[scp_id];
+
+			scp_last_logger[ret] = '\0';
 		}
 	} else {
 		/* no buffer, just skip logs*/
 		log_start_idx = log_end_idx;
 	}
-	scp_last_logger[ret] = '\0';
+
 
 	if (ret != 0) {
 		/*get buffer w pos*/
