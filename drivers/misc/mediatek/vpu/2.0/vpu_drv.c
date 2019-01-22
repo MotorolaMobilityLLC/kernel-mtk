@@ -482,36 +482,29 @@ int vpu_dump_user(struct seq_file *s)
 	struct vpu_user *user;
 	struct list_head *head_user;
 	struct list_head *head_req;
-	uint32_t cnt_enq, cnt_deq;
+	uint32_t cnt_deq;
 
-#define LINE_BAR "  +------------------+------+------+-------+-------+-------+-------+\n"
+#define LINE_BAR "  +------------------+------+------+-------+-------+\n"
 	vpu_print_seq(s, LINE_BAR);
-	vpu_print_seq(s, "  |%-18s|%-6s|%-6s|%-7s|%-7s|%-7s|%-7s|\n",
-			"Id", "Pid", "Tid", "Enque", "Running", "Deque", "Locked");
+	vpu_print_seq(s, "  |%-18s|%-6s|%-6s|%-7s|%-7s|\n",
+			"Id", "Pid", "Tid", "Deque", "Locked");
 	vpu_print_seq(s, LINE_BAR);
 
 	mutex_lock(&vpu_device->user_mutex);
 	list_for_each(head_user, &vpu_device->user_list)
 	{
 		user = vlist_node_of(head_user, struct vpu_user);
-		cnt_enq = cnt_deq = 0;
-
-		list_for_each(head_req, &user->enque_list)
-		{
-			cnt_enq++;
-		}
+		cnt_deq = 0;
 
 		list_for_each(head_req, &user->deque_list)
 		{
 			cnt_deq++;
 		}
 
-		vpu_print_seq(s, "  |0x%-16lx|%-6d|%-6d|%-7d|%-7d|%-7d|%-7d|\n",
+		vpu_print_seq(s, "  |0x%-16lx|%-6d|%-6d|%-7d|%7d|\n",
 			      (unsigned long)(user->id),
 			      user->open_pid,
 			      user->open_tgid,
-			      cnt_enq,
-			      user->running,
 			      cnt_deq,
 			      user->locked);
 		vpu_print_seq(s, LINE_BAR);

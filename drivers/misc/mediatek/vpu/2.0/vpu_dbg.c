@@ -578,6 +578,7 @@ static const struct file_operations vpu_debug_ ## name ## _fops = {             
 IMPLEMENT_VPU_DEBUGFS(algo);
 IMPLEMENT_VPU_DEBUGFS(register);
 IMPLEMENT_VPU_DEBUGFS(user);
+IMPLEMENT_VPU_DEBUGFS(vpu);
 IMPLEMENT_VPU_DEBUGFS(image_file);
 IMPLEMENT_VPU_DEBUGFS(mesg);
 IMPLEMENT_VPU_DEBUGFS(opp_table);
@@ -678,6 +679,7 @@ int vpu_init_debug(struct vpu_device *vpu_dev)
 	CREATE_VPU_DEBUGFS(user);
 	CREATE_VPU_DEBUGFS(image_file);
 	CREATE_VPU_DEBUGFS(mesg);
+	CREATE_VPU_DEBUGFS(vpu);
 	CREATE_VPU_DEBUGFS(opp_table);
 	CREATE_VPU_DEBUGFS(power);
 
