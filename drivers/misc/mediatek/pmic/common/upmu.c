@@ -401,6 +401,7 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		adc_out_data[0] = 0;
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK3_EXIST:%d\n", adc_out_data[0]);
+		break;
 	default:
 		PMICLOG("[pmic_ftm_ioctl] Error ID\n");
 		break;
