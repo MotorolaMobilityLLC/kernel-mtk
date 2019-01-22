@@ -258,8 +258,12 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3] = {
 	 0x00, 0x00, 0x0000, 0x0000, 0x00, 0x00, 0x0000, 0x0000},
 	/* Video mode setting */
 	{0x02, 0x0a, 0x00, 0x08, 0x40, 0x00,
-	 0x00, 0x2b, 0x0B40, 0x086C, 0x00, 0x00, 0x0000, 0x0000,
-	 0x00, 0x00, 0x0000, 0x0000, 0x00, 0x00, 0x0000, 0x0000}
+	 /*VC0:raw, VC1:Embedded data*/
+	 0x00, 0x2b, 0x0B40, 0x086C, 0x00, 0x12, 0x0E10, 0x0002,
+	/*VC2:Y HIST(3HDR), VC3:AE HIST(3HDR)*/
+	 0x00, 0x31, 0x0E10, 0x0001, 0x00, 0x32, 0x0E10, 0x0001,
+	/*VC4:Flicker(3HDR), VC5:no data*/
+	 0x00, 0x33, 0x0E10, 0x0001, 0x00, 0x00, 0x0000, 0x0000}
 };
 
 
@@ -1569,10 +1573,10 @@ static void capture_setting(kal_uint16 currefps, kal_bool stream_on)
 } /* capture setting */
 
 static void normal_video_setting(kal_uint16 currefps)
-	{
-		LOG_INF("E\n");
-		preview_setting();	/* Tower modify 20160214 */
-	}
+{
+	LOG_INF("E\n");
+	preview_setting();	/* Tower modify 20160214 */
+}
 
 static void hs_video_setting(void)
 {
@@ -1910,19 +1914,32 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 				  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	LOG_INF("E\n");
+	LOG_INF("E imgsensor.hdr_mode=%d\n", imgsensor.hdr_mode);
 
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
-	imgsensor.pclk = imgsensor_info.normal_video.pclk;
-	imgsensor.line_length = imgsensor_info.normal_video.linelength;
-	imgsensor.frame_length = imgsensor_info.normal_video.framelength;
-	imgsensor.min_frame_length = imgsensor_info.normal_video.framelength;
-	imgsensor.autoflicker_en = KAL_FALSE;
-	spin_unlock(&imgsensor_drv_lock);
-
-	normal_video_setting(imgsensor.current_fps);
-	/* preview_setting(); */
+	if (imgsensor.hdr_mode && (gSensorVersion != IMX576_VER_90CUT)) {
+		LOG_INF("E preview 3HDR\n");
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.sensor_mode = IMGSENSOR_MODE_PREVIEW;
+		imgsensor.pclk = imgsensor_info.pre_3HDR.pclk;
+		imgsensor.line_length = imgsensor_info.pre_3HDR.linelength;
+		imgsensor.frame_length = imgsensor_info.pre_3HDR.framelength;
+		imgsensor.min_frame_length =
+		imgsensor_info.pre_3HDR.framelength;
+		imgsensor.autoflicker_en = KAL_FALSE;
+		spin_unlock(&imgsensor_drv_lock);
+		preview_setting_3HDR();
+	} else {
+		spin_lock(&imgsensor_drv_lock);
+		imgsensor.sensor_mode = IMGSENSOR_MODE_VIDEO;
+		imgsensor.pclk = imgsensor_info.normal_video.pclk;
+		imgsensor.line_length = imgsensor_info.normal_video.linelength;
+		imgsensor.frame_length = imgsensor_info.normal_video.framelength;
+		imgsensor.min_frame_length = imgsensor_info.normal_video.framelength;
+		imgsensor.autoflicker_en = KAL_FALSE;
+		spin_unlock(&imgsensor_drv_lock);
+		normal_video_setting(imgsensor.current_fps);
+		/* preview_setting(); */
+	}
 	set_mirror_flip(imgsensor.mirror);
 
 	return ERROR_NONE;
@@ -2932,10 +2949,10 @@ imgsensor.current_fps = (UINT16)*feature_data_32;
 		 */
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			*(MUINT32 *) (uintptr_t) (*(feature_data + 1)) = 0x2;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		default:
