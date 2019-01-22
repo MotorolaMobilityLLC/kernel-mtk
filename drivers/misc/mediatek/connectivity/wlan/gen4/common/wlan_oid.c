@@ -6254,6 +6254,10 @@ wlanoidSetSwCtrlWrite(IN P_ADAPTER_T prAdapter,
 			prAdapter->fgDisStaAgingTimeoutDetection = (BOOLEAN) u4Data;
 		else if (u2SubId == 0x5)
 			prAdapter->rWifiVar.rConnSettings.uc2G4BandwidthMode = (UINT_8) u4Data;
+#if CFG_RX_BA_REORDERING_ENHANCEMENT
+		else if (u2SubId == 0x6)
+			prAdapter->rWifiVar.fgEnableReportIndependentPkt = (BOOLEAN) u4Data;
+#endif
 		else if (u2SubId == 0x0100) {
 			if (u4Data == 2)
 				prAdapter->rWifiVar.ucRxGf = FEATURE_DISABLED;
