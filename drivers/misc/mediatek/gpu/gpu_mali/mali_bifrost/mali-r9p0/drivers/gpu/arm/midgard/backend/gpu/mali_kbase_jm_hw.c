@@ -39,7 +39,7 @@
 #include <mtk_gpufreq.h>
 #include <mtk_gpu_log.h>
 #else
-#define GPULOG(...) do { } while (0)
+#define GPULOG2(...) do { } while (0)
 #endif
 
 #define beenthere(kctx, f, a...) \
@@ -66,7 +66,7 @@ void kbase_try_dump_gpu_debug_info(struct kbase_device *kbdev)
 #define GPU_DBG_HI 0x0FEC
 		unsigned int dbg_lo, dbg_hi;
 
-		GPULOG("Send debug command to GPU and get relavant status....\n");
+		GPULOG2("Send debug command to GPU and get relavant status....");
 
 		kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), DBG_SEND_L2_GROUP, NULL);
 		while ((kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_STATUS), NULL) & DBG_ACTIVE_BIT))
@@ -74,7 +74,7 @@ void kbase_try_dump_gpu_debug_info(struct kbase_device *kbdev)
 		dbg_lo = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_LO), NULL);
 		dbg_hi = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_HI), NULL);
 
-		GPULOG("DEBUG INFO :LO 0x%x, HI 0x%x\n", dbg_lo, dbg_hi);
+		GPULOG2("DEBUG INFO :LO 0x%x, HI 0x%x", dbg_lo, dbg_hi);
 }
 
 static inline int kbasep_jm_is_js_free(struct kbase_device *kbdev, int js,

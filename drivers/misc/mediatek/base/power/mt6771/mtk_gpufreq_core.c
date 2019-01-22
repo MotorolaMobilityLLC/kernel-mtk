@@ -1021,12 +1021,12 @@ int mt_gpufreq_check_GPU_non_idle_infra_idle(void)
 	if (((val & 0x3000) >> 12) == 0x3)
 		counter++;
 	/* check if 0x10001D3C bit [11] [9] [6] [4] [1] == 0x0 */
-	if ((val & 0xa51) == 0x0)
+	if ((val & 0xa52) == 0x0)
 		counter++;
 	/* check if 0x10001D44 bit [11] [9] [6] [4] [1] == 0x0 */
 	val = readl(g_INFRA_AO_base + 0xd44);
 	gpufreq_pr_info("@%s: 0x10001D44 val = 0x%x\n", __func__, val);
-	if ((val & 0xa51) == 0x0)
+	if ((val & 0xa52) == 0x0)
 		counter++;
 	/* Infra bus timeout */
 	/* check if 0x10001D04 bit 0 == 0x0, 1 for timeout */
@@ -1077,23 +1077,23 @@ void mfg_latency_debug_stopRead(void)
 	/* set debug sel and read and print */
 	writel(0x30000000, g_MFG_base + 0x1f0); /* debug sel */
 	regRead = readl(g_MFG_base + 0x2a0); /* read debug */
-	GPULOG("[Debug] mfg_lat[3000] <%08x> hashadError\n", regRead);
+	gpufreq_pr_info("[Debug] mfg_lat[3000] <%08x> hashadError\n", regRead);
 
 	writel(0x30020000, g_MFG_base + 0x1f0); /* debug sel */
 	regRead = readl(g_MFG_base + 0x2a0); /* read debug */
-	GPULOG("[Debug] mfg_lat[3002] <%08x> r_if_nReqWaiting\n", regRead);
+	gpufreq_pr_info("[Debug] mfg_lat[3002] <%08x> r_if_nReqWaiting\n", regRead);
 
 	writel(0x30030000, g_MFG_base + 0x1f0); /* debug sel */
 	regRead = readl(g_MFG_base + 0x2a0); /* read debug */
-	GPULOG("[Debug] mfg_lat[3003] <%08x> w_if_nReqWaiting\n", regRead);
+	gpufreq_pr_info("[Debug] mfg_lat[3003] <%08x> w_if_nReqWaiting\n", regRead);
 
 	writel(0x30040000, g_MFG_base + 0x1f0); /* debug sel */
 	regRead = readl(g_MFG_base + 0x2a0); /* read debug */
-	GPULOG("[Debug] mfg_lat[3004] <%08x> r_if_latency_func_r\n", regRead);
+	gpufreq_pr_info("[Debug] mfg_lat[3004] <%08x> r_if_latency_func_r\n", regRead);
 
 	writel(0x30050000, g_MFG_base + 0x1f0); /* debug sel */
 	regRead = readl(g_MFG_base + 0x2a0); /* read debug */
-	GPULOG("[Debug] mfg_lat[3005] <%08x> w_if_latency_func_r\n", regRead);
+	gpufreq_pr_info("[Debug] mfg_lat[3005] <%08x> w_if_latency_func_r\n", regRead);
 }
 
 void mt_gpufreq_dump_reg(void)
@@ -1108,7 +1108,7 @@ void mt_gpufreq_dump_reg(void)
 
 	mutex_lock(&mt_gpufreq_lock);
 
-	GPULOG("@%s: g_clock_on:%d", __func__, g_clock_on);
+	GPULOG2("@%s: g_clock_on:%d", __func__, g_clock_on);
 
 	if (!g_clock_on) {
 		gpufreq_pr_info("@%s: skip, clock is not enabled", __func__);
@@ -1173,81 +1173,73 @@ void mt_gpufreq_dump_reg(void)
 	gpufreq_pr_info("@%s: gpu ip <-> merge ...\n", __func__);
 	writel(0x10, g_MFG_base + 0x180); /* write 0x13000180 = 0x10, [7:4]=0x1, [3:0]=0x0 */
 	writel(0xff, g_MFG_base + 0x184); /* write 0x13000184 = 0xff, [1]=0x1 */
-	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
-	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
-	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
-	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
-	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+	gpufreq_pr_info("@%s: 0x10 0x1300017c val = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			__func__, readl(g_MFG_base + 0x17c),
+			readl(g_MFG_base + 0x180), readl(g_MFG_base + 0x184),
+			readl(g_MFG_base + 0x188), readl(g_MFG_base + 0x18c));
 
 	/* merge <-> axi1to2 */
 	gpufreq_pr_info("@%s: merge <-> axi1to2 ...\n", __func__);
 	writel(0x11, g_MFG_base + 0x180); /* write 0x13000180 = 0x11, [7:4]=0x1, [3:0]=0x1 */
 	writel(0xff, g_MFG_base + 0x184); /* write 0x13000184 = 0xff, [1]=0x1 */
-	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
-	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
-	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
-	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
-	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+	gpufreq_pr_info("@%s: 0x11 0x1300017c val = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			__func__, readl(g_MFG_base + 0x17c),
+			readl(g_MFG_base + 0x180), readl(g_MFG_base + 0x184),
+			readl(g_MFG_base + 0x188), readl(g_MFG_base + 0x18c));
 
 	/* axi1to2 <-> memif0_freq_bridge */
 	gpufreq_pr_info("@%s: axi1to2 <-> memif0_freq_bridge ...\n", __func__);
 	writel(0x12, g_MFG_base + 0x180); /* write 0x13000180 = 0x12, [7:4]=0x1, [3:0]=0x2 */
 	writel(0xff, g_MFG_base + 0x184); /* write 0x13000184 = 0xff, [1]=0x1 */
-	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
-	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
-	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
-	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
-	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+	gpufreq_pr_info("@%s: 0x12 0x1300017c val = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			__func__, readl(g_MFG_base + 0x17c),
+			readl(g_MFG_base + 0x180), readl(g_MFG_base + 0x184),
+			readl(g_MFG_base + 0x188), readl(g_MFG_base + 0x18c));
 
 	/* axi1to2 <-> memif1_freq_bridge */
 	gpufreq_pr_info("@%s: axi1to2 <-> memif1_freq_bridge ...\n", __func__);
 	writel(0x13, g_MFG_base + 0x180); /* write 0x13000180 = 0x13, [7:4]=0x1, [3:0]=0x3 */
 	writel(0xff, g_MFG_base + 0x184); /* write 0x13000184 = 0xff, [1]=0x1 */
-	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
-	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
-	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
-	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
-	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+	gpufreq_pr_info("@%s: 0x13 0x1300017c val = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			__func__, readl(g_MFG_base + 0x17c),
+			readl(g_MFG_base + 0x180), readl(g_MFG_base + 0x184),
+			readl(g_MFG_base + 0x188), readl(g_MFG_base + 0x18c));
 
 	/* memif0_freq_bridge <-> memif0 gals tx */
 	gpufreq_pr_info("@%s: memif0_freq_bridge <-> memif0 gals tx ...\n", __func__);
 	writel(0x100000, g_MFG_base + 0x180); /* write 0x13000180 = 0x100000, [23:20]=0x1, [19:16]=0x0 */
 	writel(0xffff0000, g_MFG_base + 0x184); /* write 0x13000184 = 0xffff0000 */
-	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
-	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
-	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
-	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
-	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+	gpufreq_pr_info("@%s: 0x100000 0x1300017c val = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			__func__, readl(g_MFG_base + 0x17c),
+			readl(g_MFG_base + 0x180), readl(g_MFG_base + 0x184),
+			readl(g_MFG_base + 0x188), readl(g_MFG_base + 0x18c));
 
 	/* memif1_freq_bridge <-> memif1 gals tx */
 	gpufreq_pr_info("@%s: memif1_freq_bridge <-> memif1 gals tx ...\n", __func__);
 	writel(0x110000, g_MFG_base + 0x180); /* write 0x13000180 = 0x110000, [23:20]=0x1, [19:16]=0x1 */
 	writel(0xffff0000, g_MFG_base + 0x184); /* write 0x13000184 = 0xffff0000 */
-	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
-	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
-	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
-	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
-	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+	gpufreq_pr_info("@%s: 0x110000 0x1300017c val = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			__func__, readl(g_MFG_base + 0x17c),
+			readl(g_MFG_base + 0x180), readl(g_MFG_base + 0x184),
+			readl(g_MFG_base + 0x188), readl(g_MFG_base + 0x18c));
 
 	/* mfg memif0 gals tx */
 	gpufreq_pr_info("@%s: mfg memif0 gals tx ...\n", __func__);
 	writel(0x80000, g_MFG_base + 0x180); /* write 0x13000180 = 0x80000, [19:16]=0x8 */
 	writel(0x0, g_MFG_base + 0x184);
-	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
-	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
-	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
-	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
-	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+	gpufreq_pr_info("@%s: 0x80000 0x1300017c val = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			__func__, readl(g_MFG_base + 0x17c),
+			readl(g_MFG_base + 0x180), readl(g_MFG_base + 0x184),
+			readl(g_MFG_base + 0x188), readl(g_MFG_base + 0x18c));
 
 	/* mfg memif1 gals tx */
 	gpufreq_pr_info("@%s: mfg memif1 gals tx ...\n", __func__);
 	writel(0x90000, g_MFG_base + 0x180); /* write 0x13000180 = 0x90000, [19:16]=0x9 */
 	writel(0x0, g_MFG_base + 0x184);
-	gpufreq_pr_info("@%s: 0x1300017c val = 0x%x\n", __func__, readl(g_MFG_base + 0x17c));
-	gpufreq_pr_info("@%s: 0x13000180 val = 0x%x\n", __func__, readl(g_MFG_base + 0x180));
-	gpufreq_pr_info("@%s: 0x13000184 val = 0x%x\n", __func__, readl(g_MFG_base + 0x184));
-	gpufreq_pr_info("@%s: 0x13000188 val = 0x%x\n", __func__, readl(g_MFG_base + 0x188));
-	gpufreq_pr_info("@%s: 0x1300018c val = 0x%x\n", __func__, readl(g_MFG_base + 0x18c));
+	gpufreq_pr_info("@%s: 0x90000 0x1300017c val = 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+			__func__, readl(g_MFG_base + 0x17c),
+			readl(g_MFG_base + 0x180), readl(g_MFG_base + 0x184),
+			readl(g_MFG_base + 0x188), readl(g_MFG_base + 0x18c));
 
 	/* idle */
 	gpufreq_pr_info("@%s: idle ...\n", __func__);
@@ -1288,23 +1280,23 @@ void mt_gpufreq_dump_reg(void)
 	/* Step 1: enable monitor, write address 0d0a_0044 bit[0] = 1 */
 	val = readl(g_DBGAPB_base + 0xa0044);
 	writel((val & ~(0x1)) | 0x1, g_DBGAPB_base + 0xa0044);
-	/* Step 2: check address 1000_0188 bit[24] should be “0”  ;  if not 0, please set this bit to 0 */
+	/* Step 2: check address 1000_0188 bit[24] should be "0"; if not 0, please set this bit to 0 */
 	val = readl(g_TOPCKGEN_base + 0x188);
 	writel(val & ~(0x1000000), g_TOPCKGEN_base + 0x188);
 
 	/* for mfg2infra gals */
 	gpufreq_pr_info("@%s: mfg2infra gals ...\n", __func__);
-	/* Step 2: write address 0d0a_0044 bit[8:0] = 9’b000110101 ; // (7'd26) <<1 */
+	/* Step 2: write address 0d0a_0044 bit[8:0] = 9'b000110101 ; // (7'd26) <<1 */
 	val = readl(g_DBGAPB_base + 0xa0044);
 	writel((val & ~(0x1ff)) | 0x35, g_DBGAPB_base + 0xa0044);
 	gpufreq_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
 	gpufreq_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
-	/* Step 3: write address 0d0a_0044 bit[8:0] = 9’b000110111 ; // (7'd27) <<1 */
+	/* Step 3: write address 0d0a_0044 bit[8:0] = 9'b000110111 ; // (7'd27) <<1 */
 	val = readl(g_DBGAPB_base + 0xa0044);
 	writel((val & ~(0x1ff)) | 0x37, g_DBGAPB_base + 0xa0044);
 	gpufreq_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
 	gpufreq_pr_info("@%s: 0x0d0a0040 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0040));
-	/* Step 4: write address 0d0a_0044 bit[8:0] = 9’b000111001 ; // (7'd28) <<1 */
+	/* Step 4: write address 0d0a_0044 bit[8:0] = 9'b000111001 ; // (7'd28) <<1 */
 	val = readl(g_DBGAPB_base + 0xa0044);
 	writel((val & ~(0x1ff)) | 0x39, g_DBGAPB_base + 0xa0044);
 	gpufreq_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));
@@ -1312,7 +1304,7 @@ void mt_gpufreq_dump_reg(void)
 
 	/* for gpu2infra idle */
 	gpufreq_pr_info("@%s: gpu2infra idle ...\n", __func__);
-	/* Step 5: write address 0d0a_0044 bit[8:0] = 9’b000101001 ; // (7'd20) <<1 */
+	/* Step 5: write address 0d0a_0044 bit[8:0] = 9'b000101001 ; // (7'd20) <<1 */
 	val = readl(g_DBGAPB_base + 0xa0044);
 	writel((val & ~(0x1ff)) | 0x29, g_DBGAPB_base + 0xa0044);
 	gpufreq_pr_info("@%s: 0x0d0a0044 val = 0x%x\n", __func__, readl(g_DBGAPB_base + 0xa0044));

@@ -15,27 +15,38 @@
 #include <mt-plat/aee.h>
 
 #include "mtk_gpu_log.h"
+#include "mtk_gpufreq_core.h"
 
 static struct workqueue_struct *g_aee_workqueue;
 static struct work_struct g_aee_work;
+
+static int aee_dumping;
 
 static void aee_Handle(struct work_struct *_psWork)
 {
 	/* avoid the build warnning */
 	_psWork = _psWork;
 
+	GPULOG2("trigger aee, call aee_kernel_exception");
+
 	aee_kernel_exception("gpulog", "aee dump gpulog");
+
+	aee_dumping = 0;
 }
 
 void mtk_gpu_log_trigger_aee(const char *msg)
 {
-	static int once;
+	static int count;
 
-	GPULOG("trigger aee [%s]", msg);
+	if (g_aee_workqueue && count < 5 && aee_dumping == 0) {
+		count += 1;
+		aee_dumping = 1;
 
-	if (g_aee_workqueue && once == 0) {
+		GPULOG2("trigger aee [%s], count: %d", msg, count);
+
 		queue_work(g_aee_workqueue, &g_aee_work);
-		once = 1;
+	} else {
+		GPULOG2("skip aee [%s], count: %d, aee_dumping: %d", msg, count, aee_dumping);
 	}
 }
 
