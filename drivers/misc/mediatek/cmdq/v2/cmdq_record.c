@@ -152,9 +152,10 @@ int32_t cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct 
 }
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-int32_t cmdq_append_addr_metadata(struct cmdqRecStruct *handle, const cmdqSecAddrMetadataStruct *pMetadata)
+int32_t cmdq_append_addr_metadata(struct cmdqRecStruct *handle,
+	const struct cmdqSecAddrMetadataStruct *pMetadata)
 {
-	cmdqSecAddrMetadataStruct *pAddrs;
+	struct cmdqSecAddrMetadataStruct *pAddrs;
 	int32_t status;
 	uint32_t size;
 	/* element index of the New appended addr metadat */
@@ -188,7 +189,7 @@ int32_t cmdq_append_addr_metadata(struct cmdqRecStruct *handle, const cmdqSecAdd
 		status = -EFAULT;
 	} else {
 		pAddrs =
-		    (cmdqSecAddrMetadataStruct *) (CMDQ_U32_PTR(handle->secData.addrMetadatas));
+		    (struct cmdqSecAddrMetadataStruct *) (CMDQ_U32_PTR(handle->secData.addrMetadatas));
 		/* append meatadata */
 		pAddrs[index].instrIndex = pMetadata->instrIndex;
 		pAddrs[index].baseHandle = pMetadata->baseHandle;
@@ -563,7 +564,7 @@ int32_t cmdq_op_write_reg_secure(struct cmdqRecStruct *handle, uint32_t addr,
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status;
 	int32_t writeInstrIndex;
-	cmdqSecAddrMetadataStruct metadata;
+	struct cmdqSecAddrMetadataStruct metadata;
 	const uint32_t mask = 0xFFFFFFFF;
 
 	/* append command */

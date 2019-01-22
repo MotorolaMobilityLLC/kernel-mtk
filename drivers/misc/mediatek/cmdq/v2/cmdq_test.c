@@ -2015,7 +2015,7 @@ static void testcase_estimate_command_exec_time(void)
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 #include "cmdq_sec.h"
 #include "cmdq_sec_iwc_common.h"
-#include "cmdqSecTl_Api.h"
+#include "cmdqsectl_api.h"
 int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 						       struct TaskStruct *pTask, int32_t thread,
 						       CmdqSecFillIwcCB iwcFillCB, void *data);
