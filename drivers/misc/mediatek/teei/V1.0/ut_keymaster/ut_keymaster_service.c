@@ -51,13 +51,15 @@ static void secondary_init_keymaster_cmdbuf(void *info)
 	/* with a rmb() */
 	rmb();
 
-        printk("[%s][%d] keymaster addr= %lx,  keymaster f addr = %lx, keymaster b addr = %lx\n", __func__, __LINE__,
+	pr_debug("[%s][%d] keymaster addr= %lx,  keymaster f addr = %lx, keymaster b addr = %lx\n", __func__, __LINE__,
 		(unsigned long)cd->phy_addr, (unsigned long)cd->f_phy_addr,
 		(unsigned long)cd->b_phy_addr);
 
-	//n_init_t_fc_buf(cd->phy_addr, cd->fdrv_phy_addr, 0);
-	//n_init_t_fc_buf(cd->bdrv_phy_addr, cd->tlog_phy_addr, 0);
-	//chx need add  the smc call function to transmit the physical addr from REE to TEE
+	/*
+	n_init_t_fc_buf(cd->phy_addr, cd->fdrv_phy_addr, 0);
+	n_init_t_fc_buf(cd->bdrv_phy_addr, cd->tlog_phy_addr, 0);
+	chx need add  the smc call function to transmit the physical addr from REE to TEE
+	*/
 
 	/* with a wmb() */
 	wmb();
@@ -65,7 +67,7 @@ static void secondary_init_keymaster_cmdbuf(void *info)
 
 
 static void init_keymaster_cmd_buf(unsigned long phy_address, unsigned long f_phy_address,
-			unsigned long b_phy_address)
+				unsigned long b_phy_address)
 {
 	int cpu_id = 0;
 	keymaster_cmdbuf_entry.phy_addr = phy_address;
@@ -93,34 +95,35 @@ long create_keymaster_cmd_buf(void)
 	ut_keymaster_message_buf =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 
 	if (ut_keymaster_message_buf == NULL) {
-		printk("[%s][%d] Create message buffer failed!\n", __FILE__, __LINE__);
+		pr_err("[%s][%d] Create message buffer failed!\n", __FILE__, __LINE__);
 		return -ENOMEM;
 	}
 
 	ut_keymaster_fmessage_buf =  (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 
-        if (ut_keymaster_fmessage_buf == NULL) {
-                printk("[%s][%d] Create fdrv message buffer failed!\n", __FILE__, __LINE__);
+	if (ut_keymaster_fmessage_buf == NULL) {
+		pr_err("[%s][%d] Create fdrv message buffer failed!\n", __FILE__, __LINE__);
 		free_pages(ut_keymaster_message_buf, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
-                return -ENOMEM;
-        }
+		return -ENOMEM;
+	}
 
 	ut_keymaster_bmessage_buf = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+
 	if (ut_keymaster_bmessage_buf == NULL) {
-    	printk("[%s][%d] Create bdrv message buffer failed!\n", __FILE__, __LINE__);
-        free_pages(ut_keymaster_message_buf, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+		pr_err("[%s][%d] Create bdrv message buffer failed!\n", __FILE__, __LINE__);
+		free_pages(ut_keymaster_message_buf, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
 		free_pages(ut_keymaster_fmessage_buf, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
-        return -ENOMEM;
-        }
+		return -ENOMEM;
+	}
 
 
-        printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx\n", __func__, __LINE__,
-			(unsigned long)virt_to_phys(ut_keymaster_message_buf),
-			(unsigned long)virt_to_phys(ut_keymaster_fmessage_buf),
-			(unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
+	pr_debug("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx\n", __func__, __LINE__,
+		(unsigned long)virt_to_phys(ut_keymaster_message_buf),
+		(unsigned long)virt_to_phys(ut_keymaster_fmessage_buf),
+		(unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
 
 	init_keymaster_cmd_buf((unsigned long)virt_to_phys(ut_keymaster_message_buf), (unsigned long)virt_to_phys(ut_keymaster_fmessage_buf),
-			(unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
+				(unsigned long)virt_to_phys(ut_keymaster_bmessage_buf));
 
 	return 0;
 }

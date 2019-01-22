@@ -5,9 +5,9 @@
 #define NQ_VALID                                1
 
 struct teei_contexts_head {
-        u32 dev_file_cnt;
-        struct list_head context_list;
-        struct rw_semaphore teei_contexts_sem;
+	u32 dev_file_cnt;
+	struct list_head context_list;
+	struct rw_semaphore teei_contexts_sem;
 };
 
 /******************************
@@ -15,32 +15,32 @@ struct teei_contexts_head {
  ******************************/
 
 struct message_head {
-        unsigned int invalid_flag;
-        unsigned int message_type;
-        unsigned int child_type;
-        unsigned int param_length;
+	unsigned int invalid_flag;
+	unsigned int message_type;
+	unsigned int child_type;
+	unsigned int param_length;
 };
 
 
 struct smc_call_struct {
-        unsigned long local_cmd;
-        u32 teei_cmd_type;
-        u32 dev_file_id;
-        u32 svc_id;
-        u32 cmd_id;
-        u32 context;
-        u32 enc_id;
-        void *cmd_buf;
-        size_t cmd_len;
-        void *resp_buf;
-        size_t resp_len;
-        void *meta_data;
-        void *info_data;
-        size_t info_len;
-        int *ret_resp_len;
-        int *error_code;
-        struct semaphore *psema;
-        int retVal;
+	unsigned long local_cmd;
+	u32 teei_cmd_type;
+	u32 dev_file_id;
+	u32 svc_id;
+	u32 cmd_id;
+	u32 context;
+	u32 enc_id;
+	void *cmd_buf;
+	size_t cmd_len;
+	void *resp_buf;
+	size_t resp_len;
+	void *meta_data;
+	void *info_data;
+	size_t info_len;
+	int *ret_resp_len;
+	int *error_code;
+	struct semaphore *psema;
+	int retVal;
 };
 
 extern struct semaphore smc_lock;
