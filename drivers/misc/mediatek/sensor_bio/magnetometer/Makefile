@@ -6,3 +6,4 @@ obj-y   +=  mag.o
 obj-y   +=  mag_factory.o
 
 obj-$(CONFIG_MTK_MAGHUB)        +=  maghub/
+obj-$(CONFIG_MTK_AKM09915_NEW)         +=  akm09915/
