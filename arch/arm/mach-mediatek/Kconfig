@@ -102,6 +102,8 @@ config MACH_MT6763
 	select MTK_EIC
 	select MTK_BOUNCING_CHECK
 	select MTK_SYSTRACKER_V2
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
 	help
 	  This enables support for MediaTek MT6763
 	  Support for arm Architecture
