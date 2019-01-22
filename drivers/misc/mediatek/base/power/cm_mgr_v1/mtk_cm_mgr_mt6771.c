@@ -53,7 +53,7 @@
 
 #include <mtk_spm_vcore_dvfs.h>
 
-/* #define CM_MGR_USE_PM_NOTIFY */
+#define CM_MGR_USE_PM_NOTIFY
 #ifdef CM_MGR_USE_PM_NOTIFY
 #include <linux/cpu_pm.h>
 static atomic_t cm_mgr_idle_mask;
@@ -123,9 +123,11 @@ static int cm_mgr_check_dram_type(void)
 	int ddr_type = get_ddr_type();
 	int ddr_hz = dram_steps_freq(0);
 
-	if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3600)
+	if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3600) {
 		cm_mgr_idx = CM_MGR_LP4X_2CH_3600;
-	else if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3200)
+		vcore_power_ratio_up[0] = 100;
+		vcore_power_ratio_down[0] = 100;
+	} else if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3200)
 		cm_mgr_idx = CM_MGR_LP4X_2CH_3200;
 	else if (ddr_type == TYPE_LPDDR3 && ddr_hz == 1866)
 		cm_mgr_idx = CM_MGR_LP3_1CH_1866;
@@ -164,18 +166,24 @@ int cm_mgr_read_stall(int cpu)
 {
 	int val = 0;
 
+#define SPM_PWR_STATUS                     (0x180)
+#define SPM_MP0_CPUTOP_PWR_CON             (0x204)
+#define SPM_MP1_CPUTOP_PWR_CON             (0x218)
+
 	if (cpu < 4) {
 #ifdef CM_MGR_USE_PM_NOTIFY
 		if (atomic_read(&cm_mgr_idle_mask) & 0x0f)
 #else
-		if (cm_mgr_read(spm_sleep_base + 0x180) & (1 << 8))
+		if ((cm_mgr_read(spm_sleep_base + SPM_PWR_STATUS) & (1 << 8)) &&
+			(cm_mgr_read(spm_sleep_base + SPM_MP0_CPUTOP_PWR_CON) & (1 << 2)))
 #endif /* CM_MGR_USE_PM_NOTIFY */
 			val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
 	} else {
 #ifdef CM_MGR_USE_PM_NOTIFY
 		if (atomic_read(&cm_mgr_idle_mask) & 0xf0)
 #else
-		if (cm_mgr_read(spm_sleep_base + 0x180) & (1 << 15))
+		if ((cm_mgr_read(spm_sleep_base + SPM_PWR_STATUS) & (1 << 15)) &&
+			(cm_mgr_read(spm_sleep_base + SPM_MP0_CPUTOP_PWR_CON) & (1 << 2)))
 #endif /* CM_MGR_USE_PM_NOTIFY */
 			val = cm_mgr_read(CPU0_STALL_COUNTER + 4 * (cpu - 4));
 	}
@@ -260,28 +268,6 @@ int cm_mgr_check_stall_ratio(int mp0, int mp2)
 	debug_stall_all();
 #endif
 	return 0;
-}
-
-int cm_mgr_cps_check(void)
-{
-#ifdef CONFIG_MTK_SCHED_RQAVG_US
-	unsigned int cpu;
-	unsigned int rel_load, abs_load;
-
-	for_each_online_cpu(cpu) {
-		int tmp;
-
-		if (cpu > CM_MGR_CPU_COUNT)
-			break;
-		tmp = mt_cpufreq_get_cur_phy_freq_no_lock(cpu / 4) / 100000;
-		sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
-		cm_mgr_abs_load += abs_load * tmp;
-		cm_mgr_rel_load += rel_load * tmp;
-	}
-	return 1;
-#else
-	return 0;
-#endif /* CONFIG_MTK_SCHED_RQAVG_US */
 }
 
 #ifdef CM_MGR_USE_PM_NOTIFY

@@ -30,6 +30,8 @@
 extern spinlock_t cm_mgr_lock;
 extern int cm_mgr_disable_fb;
 extern int cm_mgr_blank_status;
+extern int vcore_power_ratio_up[CM_MGR_EMI_OPP];
+extern int vcore_power_ratio_down[CM_MGR_EMI_OPP];
 
 extern void check_cm_mgr_status(unsigned int cluster, unsigned int freq);
 
