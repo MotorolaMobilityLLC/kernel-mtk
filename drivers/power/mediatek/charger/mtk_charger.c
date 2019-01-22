@@ -63,6 +63,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/reboot.h>
 
 #include "mtk_charger_intf.h"
 #include <mt-plat/charger_type.h>
@@ -1065,6 +1066,24 @@ stop_charging:
 
 }
 
+static void kpoc_power_off_check(struct charger_manager *info)
+{
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	unsigned int boot_mode = get_boot_mode();
+	int vbus = battery_get_vbus();
+
+	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+		pr_debug("[%s] vchr=%d, boot_mode=%d\n",
+			__func__, vbus, boot_mode);
+		if (!mtk_is_pe30_running(info) && vbus < 2500) {
+			pr_err("Unplug Charger/USB in KPOC mode, shutdown\n");
+			kernel_power_off();
+		}
+	}
+#endif
+}
+
 enum hrtimer_restart charger_kthread_hrtimer_func(struct hrtimer *timer)
 {
 	struct charger_manager *info = container_of(timer, struct charger_manager, charger_kthread_timer);
@@ -1141,6 +1160,7 @@ static int charger_routine_thread(void *arg)
 
 		charger_update_data(info);
 		charger_check_status(info);
+		kpoc_power_off_check(info);
 
 		if (is_charger_on == true) {
 			if (info->do_algorithm)
