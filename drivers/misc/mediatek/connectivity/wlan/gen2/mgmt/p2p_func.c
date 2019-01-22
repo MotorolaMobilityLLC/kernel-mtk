@@ -3754,7 +3754,8 @@ BOOLEAN p2pFuncValidateProbeResp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMg
 			break;
 
 		switch (prP2pFsmInfo->eCurrentState) {
-		case P2P_STATE_IDLE:
+		case P2P_STATE_IDLE: /* Cancel remain-on-channel case  */
+		case P2P_STATE_REQING_CHANNEL: /* Re-enter ChReq case  */
 			if (prP2pFsmInfo->ePreviousState == P2P_STATE_CHNL_ON_HAND &&
 				prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE) {
 				fgValidToSend = FALSE;
