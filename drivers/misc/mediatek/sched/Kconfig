@@ -1,3 +1,13 @@
+menu "MTK runqueue statistic calculation and CPU affinity"
+config MT_CPU_AFFINITY
+	bool "Enhance CPU affinity in hotplug"
+	depends on HOTPLUG_CPU
+	help
+	  The CPU affinity library for Hotplug enhancement is to achieve set CPU
+	  affinity without take care kernel behavior and to avoid affect the original
+	  Linux design.
+endmenu
+
 menu "MT load balance and schedule enhancement"
 config MT_SCHED_TRACE
 	bool "mt scheduling trace, output mtk schedule trace into FTRACE"
