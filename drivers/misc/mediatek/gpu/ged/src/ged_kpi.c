@@ -168,6 +168,7 @@ static unsigned int is_GED_KPI_enabled = 1;
 module_param(gx_dfps, uint, S_IRUGO|S_IWUSR);
 module_param(gx_frc_mode, uint, S_IRUGO|S_IWUSR);
 module_param(enable_cpu_boost, uint, S_IRUGO|S_IWUSR);
+module_param(is_GED_KPI_enabled, uint, S_IRUGO|S_IWUSR);
 
 /* for calculating remained time budgets of CPU and GPU:
  *		time budget: the buffering time that prevents fram drop
