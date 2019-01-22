@@ -792,6 +792,9 @@ void PMIC_EINT_SETTING(void)
 	unsigned int spNo, sp_conNo;
 	unsigned int enable_reg;
 
+	/* unmask PMIC TOP interrupt */
+	pmic_set_register_value(PMIC_TOP_INT_MASK_CON0_CLR, 0x1FF);
+
 	/* create pmic irq thread handler*/
 	irq_thread_init();
 
