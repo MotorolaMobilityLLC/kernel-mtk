@@ -986,6 +986,11 @@ void pd_execute_hard_reset(struct typec_hba *hba)
 					CHARGE_CEIL_NONE);
 #endif /* CONFIG_CHARGE_MANAGER */
 
+		if (hba->flags & PD_FLAGS_VCONN_ON) {
+			typec_drive_vconn(hba, 0);
+			hba->flags &= ~PD_FLAGS_VCONN_ON;
+		}
+
 		typec_vbus_det_enable(hba, 0);
 		set_state(hba, PD_STATE_SNK_HARD_RESET_RECOVER);
 
@@ -1034,6 +1039,53 @@ void execute_soft_reset(struct typec_hba *hba)
 }
 
 #ifdef CONFIG_USB_PD_DUAL_ROLE
+void dump_pdo(struct typec_hba *hba, enum pd_data_msg_type type, int cnt, uint32_t *caps)
+{
+	int i = 0;
+
+	dev_err(hba->dev, "===%s PDO===", ((type == PD_DATA_SOURCE_CAP)?"SRC":"SNK"));
+
+	for (i = 0; i < cnt; i++) {
+		int pdo_type = caps[i] & PDO_TYPE_MASK;
+
+		switch (pdo_type) {
+		case PDO_TYPE_FIXED:
+			dev_err(hba->dev, "FIXED %s %s %s %s %s Peak=%d %dmV %dmA",
+				((caps[i] & PDO_FIXED_DUAL_ROLE)?"DRP":""),
+				((type == PD_DATA_SOURCE_CAP) ?
+					((caps[i] & PDO_FIXED_USB_SUSPEND)?"USB Suspend":"") :
+					((caps[i] & PDO_FIXED_HIGHER_CAP)?"High Cap":"")),
+				((caps[i] & PDO_FIXED_EXTERNAL)?"EXT PWR":""),
+				((caps[i] & PDO_FIXED_COMM_CAP)?"USB COMM":""),
+				((caps[i] & PDO_FIXED_DATA_SWAP)?"DR SWAP":""),
+				((caps[i] & PDO_FIXED_PEAK_CURR_MSK) >> PDO_FIXED_PEAK_CURR_OFST),
+				(((caps[i] & PDO_FIXED_VOLT_MSK) >> PDO_FIXED_VOLT_OFST)*50),
+				(((caps[i] & PDO_FIXED_CURR_MSK) >> PDO_FIXED_CURR_OFST)*10)
+				);
+		break;
+		case PDO_TYPE_BATTERY:
+			dev_err(hba->dev, "BAT Min=%dmV Max=%dmV %dmW",
+				(((caps[i] & PDO_BATT_MAX_VOLT_MSK) >> PDO_BATT_MAX_VOLT_OFST)*50),
+				(((caps[i] & PDO_BATT_MIN_VOLT_MSK) >> PDO_BATT_MIN_VOLT_OFST)*50),
+				(((caps[i] & PDO_BATT_PWR_MSK) >> PDO_BATT_PWR_OFST)*250)
+				);
+		break;
+		case PDO_TYPE_VARIABLE:
+			dev_err(hba->dev, "VAR Min=%dmV Max=%dmV %dmA",
+				(((caps[i] & PDO_VAR_MAX_VOLT_MSK) >> PDO_VAR_MAX_VOLT_OFST)*50),
+				(((caps[i] & PDO_VAR_MIN_VOLT_MSK) >> PDO_VAR_MIN_VOLT_OFST)*50),
+				(((caps[i] & PDO_VAR_CURR_MSK) >> PDO_VAR_CURR_OFST)*10)
+				);
+		break;
+		default:
+			dev_err(hba->dev, "Reserved");
+		break;
+		}
+	}
+
+	dev_err(hba->dev, "===PDO===");
+}
+
 void pd_store_src_cap(struct typec_hba *hba, int cnt, uint32_t *src_caps)
 {
 	int i;
@@ -1198,6 +1250,8 @@ void handle_data_request(struct typec_hba *hba, uint16_t head,
 			pd_process_source_cap(hba, pd_src_cap_cnt, pd_src_caps);
 
 			pd_send_request_msg(hba, 1);
+
+			dump_pdo(hba, PD_DATA_SOURCE_CAP, cnt, payload);
 		}
 		break;
 #endif /* CONFIG_USB_PD_DUAL_ROLE */
@@ -1245,6 +1299,9 @@ void handle_data_request(struct typec_hba *hba, uint16_t head,
 		hba->flags |= PD_FLAGS_SNK_CAP_RECVD;
 		/* snk cap 0 should be fixed PDO */
 		pd_update_pdo_flags(hba, payload[0]);
+
+		dump_pdo(hba, PD_DATA_SINK_CAP, cnt, payload);
+
 		if (hba->task_state == PD_STATE_SRC_GET_SINK_CAP)
 			set_state(hba, PD_STATE_SRC_READY);
 		break;
@@ -2106,8 +2163,10 @@ int pd_task(void *data)
 #ifdef CONFIG_USBC_VCONN
 					/* drive Vconn ONLY when there is Ra */
 					if (hba->ra) {
-						typec_drive_vconn(hba, 1);
 						hba->flags |= PD_FLAGS_VCONN_ON;
+					} else {
+						typec_drive_vconn(hba, 0);
+						hba->flags &= ~PD_FLAGS_VCONN_ON;
 					}
 #endif
 					hba->flags |= (PD_FLAGS_CHECK_PR_ROLE | PD_FLAGS_CHECK_DR_ROLE);
