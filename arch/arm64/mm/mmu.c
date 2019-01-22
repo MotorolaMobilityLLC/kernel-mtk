@@ -42,6 +42,7 @@
 #include <asm/memblock.h>
 #include <asm/mmu_context.h>
 #include <mt-plat/mtk_memcfg.h>
+#include <mt-plat/mtk_meminfo.h>
 
 #include "mm.h"
 
@@ -249,7 +250,10 @@ static inline bool use_1G_block(unsigned long addr, unsigned long next,
 	 * and SVP to prevent illegal fetch of EMI MPU Violation.
 	 * Return false to make all memory become pmd mapping.
 	 */
-	return false;
+	if (memory_ssvp_inited()) {
+		pr_info("%s, memory-ssvp inited\n", __func__);
+		return false;
+	}
 #endif
 
 	return true;

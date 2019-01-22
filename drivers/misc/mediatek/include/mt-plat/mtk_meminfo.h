@@ -71,10 +71,9 @@ extern int zmc_notifier_call_chain(unsigned long val, void *v);
 #endif
 
 #ifdef CONFIG_MTK_SVP
-extern phys_addr_t memory_ssvp_cma_base(void);
-extern phys_addr_t memory_ssvp_cma_size(void);
+extern bool memory_ssvp_inited(void);
 extern struct single_cma_registration memory_ssvp_registration;
-#endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
+#endif /* end CONFIG_MTK_SVP */
 
 #ifdef CONFIG_MTK_DCS
 #define DCS_SCREENOFF_ONLY_MODE

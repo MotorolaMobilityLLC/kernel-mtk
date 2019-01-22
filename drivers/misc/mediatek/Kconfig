@@ -463,6 +463,7 @@ config MTK_CACHE_FLUSH_RANGE_PARALLEL
 config MTK_SVP
 	bool "Support Mediatek Shareable Secure Video Playback technology"
 	depends on CMA
+	default y if (ARM || ARM64)
 	help
 	  Mediatek Shareable SVP technology.
 	  It tries to save memory by switching
