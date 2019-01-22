@@ -620,9 +620,6 @@ static int st21nfc_probe(struct i2c_client *client,
 	pr_info("%s : after i2c_check_functionality %d %d\n",
 		__func__, platform_data->reset_gpio, platform_data->irq_gpio);
 
-	client->adapter->timeout = msecs_to_jiffies(3 * 10);	/* 30ms */
-	client->adapter->retries = 0;
-
 	st21nfc_dev = kzalloc(sizeof(*st21nfc_dev), GFP_KERNEL);
 	if (st21nfc_dev == NULL) {
 		ret = -ENOMEM;
