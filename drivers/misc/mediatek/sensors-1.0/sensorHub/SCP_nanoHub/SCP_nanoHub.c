@@ -576,9 +576,11 @@ static void SCP_sensorHub_moving_average(SCP_SENSOR_HUB_DATA_P rsp)
 	uint64_t ap_now_time = 0, arch_counter = 0, scp_raw_time = 0, scp_now_time = 0;
 	uint64_t ipi_transfer_time = 0;
 
-	if (READ_ONCE(rtc_compensation_suspend)) {
-		pr_err_ratelimited("rtc_compensation_suspend is suspended, so drop run algo\n");
-		return;
+	if (timekeeping_rtc_skipresume()) {
+		if (READ_ONCE(rtc_compensation_suspend)) {
+			pr_err_ratelimited("rtc_compensation_suspended, so drop run algo\n");
+			return;
+		}
 	}
 	ap_now_time = ktime_get_boot_ns();
 	arch_counter = arch_counter_get_cntvct();
@@ -976,7 +978,7 @@ static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp)
 {
 	struct SCP_sensorHub_data *obj = obj_data;
 	char *pStart, *pEnd, *rp, *wp;
-	struct data_unit_t event;
+	struct data_unit_t event, event_copy;
 	uint32_t wp_copy;
 	int err = 0;
 
@@ -995,13 +997,21 @@ static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp)
 		SCP_PR_ERR("FIFO empty\n");
 		return 0;
 	}
-	/* opimize performance for dram, dram have no cacheable, so we should firstly memcpy data to cacheable ram */
+	/*
+	 * opimize for dram,no cache,we should cpy data to cacheable ram
+	 * event and event_copy are cacheable ram, SCP_sensorHub_report_data
+	 * will change time_stamp field, so when SCP_sensorHub_report_data fail
+	 * we should reinit the time_stamp by memcpy to event_copy;
+	 * why memcpy_fromio(&event_copy), because rp is not cacheable
+	 */
 	if (rp < wp) {
 		while (rp < wp) {
 			memcpy_fromio(&event, rp, SENSOR_DATA_SIZE);
 			/* this is a work, we sleep here safe enough, data will save in dram and not lost */
 			do {
-				err = SCP_sensorHub_report_data(&event);
+				/* init event_copy when retry */
+				event_copy = event;
+				err = SCP_sensorHub_report_data(&event_copy);
 				if (err < 0) {
 					usleep_range(2000, 4000);
 					pr_err_ratelimited("event buffer full, so sleep some time\n");
@@ -1013,7 +1023,9 @@ static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp)
 		while (rp < pEnd) {
 			memcpy_fromio(&event, rp, SENSOR_DATA_SIZE);
 			do {
-				err = SCP_sensorHub_report_data(&event);
+				/* init event_copy when retry */
+				event_copy = event;
+				err = SCP_sensorHub_report_data(&event_copy);
 				if (err < 0) {
 					usleep_range(2000, 4000);
 					pr_err_ratelimited("event buffer full, so sleep some time\n");
@@ -1025,7 +1037,9 @@ static int SCP_sensorHub_server_dispatch_data(uint32_t *currWp)
 		while (rp < wp) {
 			memcpy_fromio(&event, rp, SENSOR_DATA_SIZE);
 			do {
-				err = SCP_sensorHub_report_data(&event);
+				/* init event_copy when retry */
+				event_copy = event;
+				err = SCP_sensorHub_report_data(&event_copy);
 				if (err < 0) {
 					usleep_range(2000, 4000);
 					pr_err_ratelimited("event buffer full, so sleep some time\n");
