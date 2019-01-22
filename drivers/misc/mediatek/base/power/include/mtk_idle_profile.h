@@ -18,6 +18,10 @@
 
 #include "spm_v3/mtk_idle_profile.h"
 
+#elif defined(CONFIG_MACH_MT6763)
+
+#include "spm_v4/mtk_idle_profile.h"
+
 #elif defined(CONFIG_MACH_MT6757)
 
 #include "spm_v2/mtk_idle_profile.h"

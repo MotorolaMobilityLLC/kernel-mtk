@@ -11,22 +11,14 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_IDLE_COMMON_H__
-#define __MTK_IDLE_COMMON_H__
+#ifndef __MTK_SPM_RESOURCE_REQ_INTERNAL_H__
+#define __MTK_SPM_RESOURCE_REQ_INTERNAL_H__
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+/* SPM resource request APIs: for internal use */
 
-#include "spm_v2/mtk_idle.h"
+void spm_resource_req_dump(void);
+unsigned int spm_get_resource_usage(void);
+bool spm_resource_req_init(void);
+void spm_resource_req_debugfs_init(struct dentry *spm_dir);
 
-#elif defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
-
-#include "spm_v3/mtk_idle.h"
-
-#elif defined(CONFIG_MACH_MT6763)
-
-#include "spm_v4/mtk_idle.h"
-
-#endif
-
-#endif /* __MTK_IDLE_COMMON_H__ */
-
+#endif /* __MTK_SPM_RESOURCE_REQ_INTERNAL_H__ */

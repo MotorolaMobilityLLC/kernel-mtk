@@ -22,6 +22,10 @@
 
 #include "spm_v3/mtk_spm_misc.h"
 
+#elif defined(CONFIG_MACH_MT6763)
+
+#include "spm_v4/mtk_spm_misc.h"
+
 #endif
 
 #endif /* __MTK_SPM_MISC_H___ */
