@@ -599,6 +599,7 @@ void set_iounmap_nonlazy(void)
  * Returns with *start = min(*start, lowest purged address)
  *              *end = max(*end, highest purged address)
  */
+#define MAX_LAZY_VMAP 3000	/* max number vmap_area to purge at a time */
 static void __purge_vmap_area_lazy(unsigned long *start, unsigned long *end,
 					int sync, int force_flush)
 {
@@ -607,6 +608,7 @@ static void __purge_vmap_area_lazy(unsigned long *start, unsigned long *end,
 	struct vmap_area *va;
 	struct vmap_area *n_va;
 	int nr = 0;
+	int cnt = 0;
 
 	/*
 	 * If sync is 0 but force_flush is 1, we'll go sync anyway but callers
@@ -633,6 +635,9 @@ static void __purge_vmap_area_lazy(unsigned long *start, unsigned long *end,
 			list_add_tail(&va->purge_list, &valist);
 			va->flags |= VM_LAZY_FREEING;
 			va->flags &= ~VM_LAZY_FREE;
+			cnt++;
+			if (!sync && !force_flush && (cnt >= MAX_LAZY_VMAP))
+				break;
 		}
 	}
 	rcu_read_unlock();
