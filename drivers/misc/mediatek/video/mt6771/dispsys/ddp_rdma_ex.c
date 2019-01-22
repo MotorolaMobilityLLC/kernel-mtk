@@ -1037,8 +1037,8 @@ static int do_rdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		pConfig->rdma_config.bg_ctrl.right = r_config->dst_w -
 			r_config->dst_x - width;
 	}
-	DDPDBG("top=%d,bottom=%d,left=%d,right=%d,r.dst_x=%d,r.dst_y=%d,r.dst_w=%d,r.dst_h=%d\n",
-		pConfig->rdma_config.bg_ctrl.top, pConfig->rdma_config.bg_ctrl.bottom,
+	DDPDBG("%s:top=%d,bottom=%d,left=%d,right=%d,r.dst_x=%d,r.dst_y=%d,r.dst_w=%d,r.dst_h=%d\n",
+		__func__, pConfig->rdma_config.bg_ctrl.top, pConfig->rdma_config.bg_ctrl.bottom,
 		pConfig->rdma_config.bg_ctrl.left, pConfig->rdma_config.bg_ctrl.right,
 		r_config->dst_x, r_config->dst_y, r_config->dst_w, r_config->dst_h);
 	DDPDBG("width=%d,height=%d,bw:%llu\n", width, height, rdma_bw);

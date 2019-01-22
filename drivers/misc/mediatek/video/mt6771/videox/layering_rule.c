@@ -27,6 +27,7 @@
 #include "mtk_dramc.h"
 #include "layering_rule.h"
 #include "disp_drv_log.h"
+#include "ddp_rsz.h"
 
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
@@ -80,6 +81,9 @@ static int layer_mapping_table[HRT_TB_NUM][TOTAL_OVL_LAYER_NUM] = {
 	/* HRT_TB_TYPE_GENERAL */
 	{0x00010001, 0x00030003, 0x00030007, 0x0003000F, 0x0003001F, 0x0003003F,
 	0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F, 0x0003003F},
+	/* HRT_TB_TYPE_PARTIAL_RESIZE */
+	{0x00010001, 0x00030005, 0x0003000D, 0x0003001D, 0x0003003D, 0x0003003D,
+	0x0003003D, 0x0003003D, 0x0003003D, 0x0003003D, 0x0003003D, 0x0003003D},
 };
 
 #else
@@ -87,6 +91,9 @@ static int layer_mapping_table[HRT_TB_NUM][TOTAL_OVL_LAYER_NUM] = {
 	/* HRT_TB_TYPE_GENERAL */
 	{0x00010001, 0x00030003, 0x00030007, 0x0003000F, 0x0003001F, 0x0003001F,
 	0x0003001F, 0x0003001F, 0x0003001F, 0x0003001F},
+	/* HRT_TB_TYPE_PARTIAL_RESIZE */
+	{0x00010001, 0x00030005, 0x0003000D, 0x0003001D, 0x0003003D, 0x0003003D,
+	0x0003003D, 0x0003003D, 0x0003003D, 0x0003003D, 0x0003003D, 0x0003003D},
 };
 #endif
 /**
@@ -102,14 +109,135 @@ static int larb_mapping_table[HRT_TB_NUM] = {
  */
 #ifndef CONFIG_MTK_ROUND_CORNER_SUPPORT
 static int ovl_mapping_table[HRT_TB_NUM] = {
-	0x00020028,
+	0x00020022,
 };
 #else
 static int ovl_mapping_table[HRT_TB_NUM] = {
-	0x00020018,
+	0x00020012,
 };
 #endif
 #define GET_SYS_STATE(sys_state) ((l_rule_info.hrt_sys_state >> sys_state) & 0x1)
+
+static bool has_rsz_layer(struct disp_layer_info *disp_info, int disp_idx)
+{
+	int i = 0;
+	struct layer_config *c = NULL;
+
+	for (i = 0; i < disp_info->layer_num[disp_idx]; i++) {
+		c = &disp_info->input_config[disp_idx][i];
+
+		if (is_gles_layer(disp_info, disp_idx, i))
+			continue;
+
+		if ((c->src_height != c->dst_height) ||
+		    (c->src_width != c->dst_width))
+			return true;
+	}
+
+	return false;
+}
+
+static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
+							   int *scale_ratio)
+{
+	int i = 0;
+	struct layer_config *c = NULL;
+	int gpu_rsz_idx = 0;
+
+	if (disp_info->gles_head[disp_idx] == 0 ||
+	    disp_info->layer_num[disp_idx] <= 0)
+		return false;
+
+	c = &disp_info->input_config[disp_idx][0];
+
+	if (c->src_width == c->dst_width && c->src_height == c->dst_height)
+		return false;
+
+	if (c->src_width > c->dst_width || c->src_height > c->dst_height)
+		return false;
+
+	if (c->src_width > RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN)
+		return false;
+
+	c->layer_caps |= DISP_RSZ_LAYER;
+
+	for (i = 1; i < disp_info->layer_num[disp_idx]; i++) {
+		c = &disp_info->input_config[disp_idx][i];
+		if (c->src_width != c->dst_width ||
+		    c->src_height != c->dst_height) {
+			if (has_layer_cap(c, MDP_RSZ_LAYER))
+				continue;
+
+			gpu_rsz_idx = i;
+			break;
+		}
+	}
+
+	if (gpu_rsz_idx)
+		rollback_resize_layer_to_GPU_range(disp_info, disp_idx,
+			gpu_rsz_idx, disp_info->layer_num[disp_idx] - 1);
+
+	return true;
+}
+
+/* lr_rsz_layout - layering rule resize layer layout */
+static bool lr_rsz_layout(struct disp_layer_info *disp_info)
+{
+	int disp_idx;
+	int ratio = HRT_SCALE_UNKNOWN;
+
+	if (l_rule_info.dal_enable) {
+		rollback_all_resize_layer_to_GPU(disp_info, HRT_PRIMARY);
+		rollback_all_resize_layer_to_GPU(disp_info, HRT_SECONDARY);
+
+		return 0;
+	} else if (is_ext_path(disp_info)) {
+		rollback_all_resize_layer_to_GPU(disp_info, HRT_SECONDARY);
+	}
+
+	for (disp_idx = 0; disp_idx < 2; disp_idx++) {
+		if (disp_info->layer_num[disp_idx] <= 0)
+			continue;
+
+		/* only support resize layer on Primary Display */
+		if (disp_idx == HRT_SECONDARY)
+			continue;
+
+		if (!has_rsz_layer(disp_info, disp_idx)) {
+			l_rule_info.scale_rate = HRT_SCALE_NONE;
+			l_rule_info.disp_path = HRT_PATH_UNKNOWN;
+		} else if (is_RPO(disp_info, disp_idx, &ratio)) {
+			l_rule_info.disp_path = HRT_PATH_RESIZE_PARTIAL;
+		} else {
+			rollback_all_resize_layer_to_GPU(disp_info,
+								HRT_PRIMARY);
+			l_rule_info.scale_rate = HRT_SCALE_NONE;
+			l_rule_info.disp_path = HRT_PATH_UNKNOWN;
+		}
+	}
+
+	return 0;
+}
+
+static bool
+lr_unset_disp_rsz_attr(struct disp_layer_info *disp_info, int disp_idx)
+{
+	struct layer_config *lc = &disp_info->input_config[disp_idx][0];
+
+	if (l_rule_info.disp_path == HRT_PATH_RESIZE_PARTIAL &&
+	    has_layer_cap(lc, MDP_RSZ_LAYER) &&
+	    has_layer_cap(lc, DISP_RSZ_LAYER)) {
+		lc->layer_caps &= ~DISP_RSZ_LAYER;
+		l_rule_info.disp_path = HRT_PATH_GENERAL;
+		l_rule_info.layer_tb_idx = HRT_TB_TYPE_GENERAL;
+		return true;
+	}
+	return false;
+}
+
+static void lr_gpu_change_rsz_info(void)
+{
+}
 
 static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 {
@@ -121,8 +249,12 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 		/* layer_tb_idx = HRT_TB_TYPE_MULTI_WINDOW_TUI;*/
 		l_rule_info.layer_tb_idx = HRT_TB_TYPE_GENERAL;
 	} else {
-		l_rule_info.layer_tb_idx = HRT_TB_TYPE_GENERAL;
-		l_rule_info.disp_path = HRT_PATH_GENERAL;
+		if (l_rule_info.disp_path == HRT_PATH_RESIZE_PARTIAL) {
+			l_rule_info.layer_tb_idx = HRT_TB_TYPE_PARTIAL_RESIZE;
+		} else {
+			l_rule_info.layer_tb_idx = HRT_TB_TYPE_GENERAL;
+			l_rule_info.disp_path = HRT_PATH_GENERAL;
+		}
 	}
 
 	l_rule_info.primary_fps = 60;
@@ -277,10 +409,12 @@ int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level)
 }
 
 static struct layering_rule_ops l_rule_ops = {
+	.resizing_rule = lr_rsz_layout,
+	.rsz_by_gpu_info_change = lr_gpu_change_rsz_info,
 	.scenario_decision = layering_rule_senario_decision,
 	.get_bound_table = get_bound_table,
 	.get_hrt_bound = get_hrt_bound,
 	.get_mapping_table = get_mapping_table,
 	.rollback_to_gpu_by_hw_limitation = filter_by_hw_limitation,
+	.unset_disp_rsz_attr = lr_unset_disp_rsz_attr,
 };
-

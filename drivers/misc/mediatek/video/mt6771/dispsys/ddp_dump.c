@@ -24,6 +24,7 @@
 #include "ddp_dsi.h"
 #include "ddp_dpi.h"
 #include "ddp_dbi.h"
+#include "ddp_rsz.h"
 
 
 static char *ddp_signal_0(int bit)
@@ -227,7 +228,7 @@ static char *ddp_get_mutex_module0_name(unsigned int bit)
 	case 18: return "PWM0";
 	case 19: return "DSI";
 	case 20: return "DPI";
-	case 22: return "RSZ";
+	case 22: return "rsz";
 	case 25: return "DBI";
 	default: return "mutex-unknown";
 	}
@@ -360,7 +361,7 @@ static char *ddp_clock_1(int bit)
 	case 7:
 		return "26M, ";
 	case 9:
-		return "rsz, ";
+		return "disp_rsz, ";
 	case 12:
 		return "dbi_mm(cg), ";
 	case 13:
@@ -1559,8 +1560,12 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DITHER0:
 		dither_dump_reg(module);
 		break;
+	case DISP_MODULE_RSZ0:
+		rsz_dump_reg(module);
+		break;
 	default:
 		DDPDUMP("no dump_reg for module %s(%d)\n", ddp_get_module_name(module), module);
+		break;
 	}
 	return 0;
 }
@@ -1612,9 +1617,13 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DITHER0:
 		dither_dump_analyze(module);
 		break;
+	case DISP_MODULE_RSZ0:
+		rsz_dump_analysis(module);
+		break;
 	default:
 		DDPDUMP("no dump_analysis for module %s(%d)\n", ddp_get_module_name(module),
 			module);
+		break;
 	}
 	return 0;
 }

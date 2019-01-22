@@ -115,6 +115,7 @@ extern cmdqBackupSlotHandle dispsys_slot;
 #define DISPSYS_SMI_COMMON_BASE		ddp_get_module_va(DISP_MODULE_SMI_COMMON)
 #define DISPSYS_MIPITX0_BASE				ddp_get_module_va(DISP_MODULE_MIPI0)
 #define DISPSYS_MIPITX1_BASE				ddp_get_module_va(DISP_MODULE_MIPI1)
+#define DISPSYS_RSZ0_BASE		ddp_get_module_va(DISP_MODULE_RSZ0)
 #define DISPSYS_SLOT_BASE		    dispsys_slot
 
 #ifdef INREG32

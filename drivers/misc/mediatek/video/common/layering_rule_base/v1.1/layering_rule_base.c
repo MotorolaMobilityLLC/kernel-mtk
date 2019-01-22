@@ -140,7 +140,7 @@ static inline bool is_extended_layer(struct layer_config *layer_info)
 
 static bool is_extended_base_layer_valid(struct layer_config *configs, int layer_idx)
 {
-	if (layer_idx == 0 && is_yuv(configs->src_fmt))
+	if (layer_idx == 0 && has_layer_cap(configs, DISP_RSZ_LAYER))
 		return false;
 
 	/**
@@ -430,38 +430,39 @@ static void print_disp_info_to_log_buffer(struct disp_layer_info *disp_info)
 
 }
 
-static bool support_partial_gles_layer(enum HRT_PATH_SCENARIO path_scenario)
+int rollback_resize_layer_to_GPU_range(struct disp_layer_info *disp_info,
+				int disp_idx, int start_idx, int end_idx)
 {
-	if (HRT_GET_PATH_RSZ_TYPE(path_scenario) == HRT_PATH_RSZ_NONE)
-		return true;
-	else
-		return false;
-}
-
-int rollback_all_resize_layer_to_GPU(struct disp_layer_info *disp_info, int disp_idx)
-{
-	int curr_ovl_num, i;
-	struct layer_config *layer_info;
+	int i;
+	struct layer_config *lc;
 
 	if (disp_info->layer_num[disp_idx] <= 0)
 		return 0;
 
-	curr_ovl_num = 0;
-	for (i = 0 ; i < disp_info->layer_num[disp_idx] ; i++) {
-		layer_info = &disp_info->input_config[disp_idx][i];
-		if ((layer_info->src_height != layer_info->dst_height) ||
-					(layer_info->src_width != layer_info->dst_width)) {
-			if (disp_info->gles_head[disp_idx] == -1 || disp_info->gles_head[disp_idx] > i)
+	if (start_idx < 0 || end_idx >= disp_info->layer_num[disp_idx])
+		return -EINVAL;
+
+	for (i = start_idx; i <= end_idx; i++) {
+		lc = &disp_info->input_config[disp_idx][i];
+		if ((lc->src_height != lc->dst_height) ||
+		    (lc->src_width != lc->dst_width)) {
+			if (has_layer_cap(lc, MDP_RSZ_LAYER))
+				continue;
+
+			if (disp_info->gles_head[disp_idx] == -1 ||
+			    disp_info->gles_head[disp_idx] > i)
 				disp_info->gles_head[disp_idx] = i;
-			if (disp_info->gles_tail[disp_idx] == -1 || disp_info->gles_tail[disp_idx] < i)
+			if (disp_info->gles_tail[disp_idx] == -1 ||
+			    disp_info->gles_tail[disp_idx] < i)
 				disp_info->gles_tail[disp_idx] = i;
 		}
 	}
 
 	if (disp_info->gles_head[disp_idx] != -1) {
-		for (i = disp_info->gles_head[disp_idx] ; i <= disp_info->gles_tail[disp_idx] ; i++) {
-			layer_info = &disp_info->input_config[disp_idx][i];
-			layer_info->ext_sel_layer = -1;
+		for (i = disp_info->gles_head[disp_idx];
+		     i <= disp_info->gles_tail[disp_idx]; i++) {
+			lc = &disp_info->input_config[disp_idx][i];
+			lc->ext_sel_layer = -1;
 		}
 	}
 
@@ -472,6 +473,15 @@ int rollback_all_resize_layer_to_GPU(struct disp_layer_info *disp_info, int disp
 		l_rule_ops->rsz_by_gpu_info_change();
 	else
 		DISPWARN("%s, rsz_by_gpu_info_change not defined\n", __func__);
+
+	return 0;
+}
+
+int rollback_all_resize_layer_to_GPU(struct disp_layer_info *disp_info,
+				     int disp_idx)
+{
+	rollback_resize_layer_to_GPU_range(disp_info, disp_idx, 0,
+					   disp_info->layer_num[disp_idx] - 1);
 
 	return 0;
 }
@@ -557,13 +567,6 @@ static int rollback_to_GPU(struct disp_layer_info *disp_info, int disp_idx, int 
 	struct layer_config *layer_info;
 
 	available_ovl_num = available;
-	if (!support_partial_gles_layer(l_rule_info->disp_path)) {
-		rollback_all_resize_layer_to_GPU(disp_info, disp_idx);
-		available_ovl_num = get_phy_layer_limit(
-			l_rule_ops->get_mapping_table(DISP_HW_LAYER_TB, MAX_PHY_OVL_CNT - 1), disp_idx);
-		if (l_rule_info->dal_enable)
-			available_ovl_num--;
-	}
 
 	if (disp_info->gles_head[disp_idx] != -1)
 		has_gles_layer = true;
@@ -594,6 +597,7 @@ static int _filter_by_ovl_cnt(struct disp_layer_info *disp_info, int disp_idx)
 	if (disp_info->layer_num[disp_idx] <= 0)
 		return 0;
 
+retry:
 	phy_ovl_cnt = get_phy_ovl_layer_cnt(disp_info, disp_idx);
 #ifdef HRT_DEBUG_LEVEL2
 	DISPMSG("layer_tb_idx:%d, layer_mapping_table:0x%x\n",
@@ -609,6 +613,11 @@ static int _filter_by_ovl_cnt(struct disp_layer_info *disp_info, int disp_idx)
 #endif
 	if (phy_ovl_cnt <= ovl_num_limit)
 		return 0;
+
+	if (l_rule_ops->unset_disp_rsz_attr) {
+		if (l_rule_ops->unset_disp_rsz_attr(disp_info, disp_idx))
+			goto retry;
+	}
 
 	rollback_to_GPU(disp_info, disp_idx, ovl_num_limit);
 	return 0;
@@ -1592,7 +1601,8 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
 		ret = l_rule_ops->rollback_to_gpu_by_hw_limitation(&layering_info);
 
 	/* Check and choose the Resize Scenario */
-	if (disp_helper_get_option(DISP_OPT_RSZ)) {
+	if (disp_helper_get_option(DISP_OPT_RSZ) ||
+	    disp_helper_get_option(DISP_OPT_RPO)) {
 		if (l_rule_ops->resizing_rule)
 			ret = l_rule_ops->resizing_rule(&layering_info);
 		else
