@@ -3671,6 +3671,7 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 #if CFG_SUPPORT_FCC_DYNAMIC_TX_PWR_ADJUST
 	CMD_FCC_TX_PWR_ADJUST FccTxPwrAdjust = {0x00};
 #endif
+	CMD_BAND_SUPPORT_T rCmdBandSupport;
 
 	UINT8 uc_NVRAM[EXTEND_NVRAM_SIZE] = {0x0};
 	UINT16 NVRAMSize = 0;
@@ -3888,19 +3889,16 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 				    NULL, NULL, sizeof(CMD_RSSI_COMPENSATE_T), (PUINT_8)&rCmdRssiCompensate, NULL, 0);
 	}
 	/* 10. notify FW Band Support 5G */
-	if (prAdapter->fgEnable5GBand) {
-		CMD_BAND_SUPPORT_T rCmdBandSupport;
 
-		rCmdBandSupport.uc5GBandSupport = TRUE;
-		DBGLOG(INIT, TRACE, "NVRAM 5G BandSupport\n");
-		wlanSendSetQueryCmd(prAdapter,
-				    CMD_ID_SET_BAND_SUPPORT,
-				    TRUE,
-				    FALSE,
-				    FALSE,
-				    NULL, NULL, sizeof(CMD_BAND_SUPPORT_T), (PUINT_8)&rCmdBandSupport, NULL, 0);
+	rCmdBandSupport.uc5GBandSupport = prAdapter->fgEnable5GBand;
+	DBGLOG(INIT, TRACE, "notify NVRAM 5G BandSupport %d\n", rCmdBandSupport.uc5GBandSupport);
 
-	}
+	wlanSendSetQueryCmd(prAdapter,
+			    CMD_ID_SET_BAND_SUPPORT,
+			    TRUE,
+			    FALSE,
+			    FALSE,
+			    NULL, NULL, sizeof(CMD_BAND_SUPPORT_T), (PUINT_8)&rCmdBandSupport, NULL, 0);
 
 	return WLAN_STATUS_SUCCESS;
 }
