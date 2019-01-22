@@ -389,6 +389,7 @@ obj-$(CONFIG_SND_SOC_WM_ADSP)	+= snd-soc-wm-adsp.o
 obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
 obj-$(CONFIG_SND_SOC_MT8167_CODEC)	+= snd-soc-mt8167-codec.o
 obj-$(CONFIG_MTK_SPEAKER)	+= snd-soc-mt6392-codec.o
+obj-$(CONFIG_SND_SOC_CS4382A)	+= cs4382a.o
 
 # Amp
 obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
