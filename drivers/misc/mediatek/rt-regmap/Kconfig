@@ -1,6 +1,5 @@
 config RT_REGMAP
-	bool "Richtek Regmap"
-	select DEBUG_FS
+	bool "Richtek regmap"
 	default n
 	help
-	  Say Y to enable Richtek Register Map
+	  Say Y to enable Richtek regmap

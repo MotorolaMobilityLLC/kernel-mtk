@@ -27,6 +27,7 @@
 #include <linux/semaphore.h>
 
 #include <mt-plat/rt-regmap.h>
+#define RT_REGMAP_VERSION	"1.1.11_G"
 
 struct rt_regmap_ops {
 	int (*regmap_block_write)(struct rt_regmap_device *rd, u32 reg,
@@ -86,6 +87,7 @@ struct rt_regmap_device {
 	unsigned char part_size_limit;
 	unsigned char *alloc_data;
 	char *err_msg;
+	int slv_addr;
 
 	int (*rt_block_write[4])(struct rt_regmap_device *rd,
 			struct rt_register *rm, int size,
@@ -1366,11 +1368,7 @@ hiden_read:
 			seq_puts(seq_file, "3 => IO_BLK_CHIP\n");
 		break;
 	case RT_DBG_SLAVE_ADDR:
-		{
-			struct i2c_client *i2c = rd->client;
-
-			seq_printf(seq_file, "0x%02x\n", i2c->addr);
-		}
+		seq_printf(seq_file, "0x%02x\n", rd->slv_addr);
 		break;
 	case RT_SUPPORT_MODE:
 		seq_puts(seq_file, " == BLOCK MODE ==\n");
@@ -1797,7 +1795,7 @@ static ssize_t eachreg_read(struct file *file, char __user *ubuf,
 {
 	struct rt_debug_st *st = file->private_data;
 	struct rt_regmap_device *rd = st->info;
-	char lbuf[200];
+	char lbuf[80];
 	unsigned char regval[32];
 	rt_register_map_t rm = rd->props.rm[st->id];
 	int i, j = 0, rc;
@@ -1960,18 +1958,11 @@ static int rt_create_simple_map(struct rt_regmap_device *rd)
 	return 0;
 }
 
-/* rt_regmap_device_register
- * @props: a pointer to rt_regmap_properties for rt_regmap_device
- * @rops: a pointer to rt_regmap_fops for rt_regmap_device
- * @parent: a pinter to parent device
- * @client: a pointer to the slave client of this device
- * @drvdata: a pointer to the driver data
- */
-struct rt_regmap_device *rt_regmap_device_register
+struct rt_regmap_device *rt_regmap_device_register_ex
 			(struct rt_regmap_properties *props,
 			struct rt_regmap_fops *rops,
 			struct device *parent,
-			void *client, void *drvdata)
+			void *client, int slv_addr, void *drvdata)
 {
 	struct rt_regmap_device *rd;
 	int ret = 0, i;
@@ -2020,6 +2011,7 @@ struct rt_regmap_device *rt_regmap_device_register
 	}
 
 	rd->rops = rops;
+	rd->slv_addr = slv_addr;
 	rd->err_msg = devm_kzalloc(parent, 128*sizeof(char), GFP_KERNEL);
 
 	if (!(rd->props.rt_regmap_mode &  RT_BYTE_MODE_MASK)) {
@@ -2075,7 +2067,7 @@ err_cacheinit:
 	return NULL;
 
 }
-EXPORT_SYMBOL(rt_regmap_device_register);
+EXPORT_SYMBOL(rt_regmap_device_register_ex);
 
 /* rt_regmap_device_unregister - unregister rt_regmap_device*/
 void rt_regmap_device_unregister(struct rt_regmap_device *rd)
@@ -2098,8 +2090,8 @@ EXPORT_SYMBOL(rt_regmap_device_unregister);
 
 static int __init regmap_plat_init(void)
 {
+	pr_info("Init Richtek RegMap %s\n", RT_REGMAP_VERSION);
 	rt_regmap_dir = debugfs_create_dir("rt-regmap", 0);
-	pr_info("Init Richtek RegMap\n");
 	if (IS_ERR(rt_regmap_dir)) {
 		pr_err("rt-regmap debugfs node create fail\n");
 		return -EINVAL;
