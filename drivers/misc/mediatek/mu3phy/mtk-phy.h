@@ -246,5 +246,12 @@ extern void __iomem *ap_pll_con0;
 #ifdef CONFIG_FPGA_EARLY_PORTING
 extern void __iomem *i2c1_base;
 #endif
+
+enum {
+	USB_SPM_MODE_NONE = 0,
+	USB_SPM_MODE_DRAM,
+	USB_SPM_MODE_SRAM
+};
+extern int usb_hal_spm_mode_req(int mode);
 /***********************************/
 #endif
