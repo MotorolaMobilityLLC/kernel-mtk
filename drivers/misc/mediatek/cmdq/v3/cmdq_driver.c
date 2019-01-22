@@ -644,9 +644,8 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 		/* make sure the task is running and wait for it */
 		status = cmdqCoreWaitResultAndReleaseTask(pTask,
-							  &jobResult.regValue,
-							  msecs_to_jiffies
-							  (CMDQ_DEFAULT_TIMEOUT_MS));
+			&jobResult.regValue,
+			CMDQ_DEFAULT_TIMEOUT_MS);
 		if (status < 0) {
 			CMDQ_ERR("waitResultAndReleaseTask fail=%d\n", status);
 			/* free kernel space result buffer */
