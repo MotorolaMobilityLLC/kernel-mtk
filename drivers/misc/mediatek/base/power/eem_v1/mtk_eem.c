@@ -3962,12 +3962,12 @@ static int create_procfs(void)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(det_entries_vcore); i++) {
-		if (!proc_create_data(det_entries[i].name,
+		if (!proc_create_data(det_entries_vcore[i].name,
 			S_IRUGO | S_IWUSR | S_IWGRP,
 			det_dir,
-			det_entries[i].fops, det)) {
+			det_entries_vcore[i].fops, det)) {
 			eem_debug("[%s]: create /proc/eem/%s/%s failed\n", __func__,
-				det->name, det_entries[i].name);
+				det->name, det_entries_vcore[i].name);
 			FUNC_EXIT(FUNC_LV_HELP);
 			return -3;
 				}
@@ -5371,12 +5371,12 @@ static int create_procfs(void)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(det_entries_vcore); i++) {
-		if (!proc_create_data(det_entries[i].name,
+		if (!proc_create_data(det_entries_vcore[i].name,
 			S_IRUGO | S_IWUSR | S_IWGRP,
 			det_dir,
-			det_entries[i].fops, det)) {
+			det_entries_vcore[i].fops, det)) {
 			eem_debug("[%s]: create /proc/eem/%s/%s failed\n", __func__,
-				det->name, det_entries[i].name);
+				det->name, det_entries_vcore[i].name);
 		FUNC_EXIT(FUNC_LV_HELP);
 		return -3;
 				}
@@ -5881,9 +5881,9 @@ static int __init eem_init(void)
 {
 	int err = 0;
 	struct eem_ipi_data eem_data;
-	int ret = 0;
+	int ret = 1;
 	struct device_node *node = NULL;
-	unsigned long flags;
+	/* unsigned long flags; */
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 	/* for testing */
@@ -5906,15 +5906,18 @@ static int __init eem_init(void)
 
 	eem_data.u.data.arg[0] = eem_log_phy_addr;
 	eem_data.u.data.arg[1] = eem_log_size;
+	eem_debug("eem_log_phy_addr=0x%x\n", eem_log_phy_addr);
 	/* read efuse data to dram log */
 	get_devinfo_to_log();
 
 	/* ret 1: eem disabled at sspm
 	 * ret 0: eem enabled at sspm
 	 */
+	#if 0
 	spin_lock_irqsave(&eem_spinlock, flags);
 	ret = eem_to_sspm(IPI_EEM_INIT, &eem_data);
 	spin_unlock_irqrestore(&eem_spinlock, flags);
+	#endif
 
 	/* use eem_enable to decide what procfs to create */
 	if (ret > 0) {
