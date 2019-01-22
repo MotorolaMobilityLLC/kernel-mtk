@@ -25,6 +25,7 @@
 #include <linux/io.h>
 #include <linux/uaccess.h>
 #include <asm/memory.h>
+#include <mt-plat/mtk_memcfg.h>
 
 #include "log_store_kernel.h"
 
@@ -153,6 +154,10 @@ static int __init log_store_late_init(void)
 		sram_dram_buff->buf_addr, sram_dram_buff->buf_size);
 
 	pbuff = remap_lowmem(sram_dram_buff->buf_addr, sram_dram_buff->buf_size);
+	MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]log_store_mem   :   0x%08llx - 0x%08llx (0x%llx)\n",
+			(unsigned long long)sram_dram_buff->buf_addr,
+			(unsigned long long)sram_dram_buff->buf_addr + sram_dram_buff->buf_size - 1,
+			(unsigned long long)sram_dram_buff->buf_size);
 	if (pbuff == NULL) {
 		pr_err("log_store: ioremap failed.\n");
 		dram_log_store_status = BUFF_ERROR;
