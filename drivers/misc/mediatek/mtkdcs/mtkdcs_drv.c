@@ -216,33 +216,6 @@ static int dcs_ipi_register(void)
 }
 
 /*
- * dcs_force_acc_low_ipi
- * set or unset force access low function
- *
- * return 0 on success, otherwise error code
- */
-static int dcs_force_acc_low_ipi(int enable)
-{
-	int ipi_data_ret = 0, err;
-	unsigned int ipi_buf[6];
-
-	ipi_buf[0] = IPI_DCS_FORCE_ACC_LOW;
-	ipi_buf[1] = enable;
-
-	err = sspm_ipi_send_sync_new(IPI_ID_DCS, IPI_OPT_POLLING, (void *)ipi_buf, 6,
-			&ipi_data_ret, 1);
-
-	if (err) {
-		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
-		return -EBUSY;
-	}
-
-	pr_info("%s returns 0x%x\n", __func__, ipi_data_ret);
-
-	return 0;
-}
-
-/*
  * __dcs_dram_channel_switch
  *
  * Do the channel switch operation
@@ -731,14 +704,11 @@ int dcs_full_init(void)
 
 static int __dcs_mpu_protection_enable(void)
 {
-	int err;
+	emi_mpu_set_region_protection((unsigned long long)mpu_start,
+			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
+			MPU_ACCESS_PERMISSON_FORBIDDEN);
 
-	err = dcs_force_acc_low_ipi(1);
-	if (err) {
-		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
-		BUG(); /* fatal error */
-	}
-	pr_info("enable force acc low, no MPU\n");
+	pr_info("enable MPU\n");
 
 	/* wait for EMI to consume all transactions in the proection range */
 	mdelay(1);
@@ -748,15 +718,11 @@ static int __dcs_mpu_protection_enable(void)
 
 static int __dcs_mpu_protection_disable(void)
 {
-	int err;
+	emi_mpu_set_region_protection((unsigned long long)mpu_start,
+			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
+			MPU_ACCESS_PERMISSON_NO_PROTECTION);
 
-	err = dcs_force_acc_low_ipi(0);
-	if (err) {
-		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
-		BUG(); /* fatal error */
-	}
-
-	pr_info("disable force acc low, no MPU\n");
+	pr_info("disable MPU\n");
 
 	/* wait for EMI to consume all transactions in the proection range */
 	mdelay(1);
