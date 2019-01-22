@@ -33,7 +33,6 @@ endif
 
     obj-y += common/
     obj-$(CONFIG_MTK_COMBO_BT) += bt/
-    obj-$(CONFIG_MTK_COMBO_GPS) += gps/
 
     # MINI PLATFORM VERSION = Android O
     MINI_PLATFORM_VER = O
@@ -80,6 +79,7 @@ endif
         $(warning Android($(TARGET_PLATFORM_VERSION) < $(MINI_PLATFORM_VER)) do build-in)
         obj-$(CONFIG_MTK_FMRADIO) += fmradio/
         obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/
+        obj-$(CONFIG_MTK_COMBO_GPS) += gps/
     endif
 
 # Otherwise we were called directly from the command line;
