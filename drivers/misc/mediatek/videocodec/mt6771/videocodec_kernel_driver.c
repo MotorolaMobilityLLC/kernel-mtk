@@ -1641,7 +1641,7 @@ static long vcodec_set_frame_info(unsigned long arg)
 		/* Request BW after lock hw, this should always be true */
 		if (gVDECBWRequested == 0) {
 			frame_type = rFrameInfo.frame_type;
-			if (frame_type > 3)
+			if (frame_type > 3 || frame_type < 0)
 				frame_type = 0;
 
 			if (dec_step_size > 1)
