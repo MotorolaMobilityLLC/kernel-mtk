@@ -804,7 +804,7 @@ initcall_debug=1";
 	};
 };
 
-#include <k71v1_64_bsp/cust.dtsi>
+#include <k71v1_bsp/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
 
 
