@@ -44,7 +44,7 @@ unsigned int mtkCidList[MTK_MAX_CID_NUM] = {
 	0x040b00ff /*Double MTK Format in One OTP/EEPRom V1.4*/
 };
 
-stCAM_CAL_FUNC_STRUCT g_camCalCMDFunc[] = {
+struct stCAM_CAL_FUNC_STRUCT g_camCalCMDFunc[] = {
 	{CMD_BRCB032GWZ, brcb032gwz_selective_read_region},
 	{CMD_CAT24C16, cat24c16_selective_read_region},
 	{CMD_GT24C32A, gt24c32a_selective_read_region},
@@ -53,7 +53,7 @@ stCAM_CAL_FUNC_STRUCT g_camCalCMDFunc[] = {
 	{0, 0} /*end of list*/
 };
 
-stCAM_CAL_LIST_STRUCT g_camCalList[] = {
+struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 /*Below is sensor on 99*/
 	{IMX258_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{IMX258_MONO_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
@@ -80,7 +80,7 @@ stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{0, 0, CMD_NONE, 0} /*end of list*/
 };
 
-unsigned int cam_cal_get_sensor_list(stCAM_CAL_LIST_STRUCT **ppCamcalList)
+unsigned int cam_cal_get_sensor_list(struct stCAM_CAL_LIST_STRUCT **ppCamcalList)
 
 {
 	if (ppCamcalList == NULL)
@@ -91,7 +91,7 @@ unsigned int cam_cal_get_sensor_list(stCAM_CAL_LIST_STRUCT **ppCamcalList)
 }
 
 
-unsigned int cam_cal_get_func_list(stCAM_CAL_FUNC_STRUCT **ppCamcalFuncList)
+unsigned int cam_cal_get_func_list(struct stCAM_CAL_FUNC_STRUCT **ppCamcalFuncList)
 {
 	if (ppCamcalFuncList == NULL)
 		return 1;

@@ -69,30 +69,27 @@ static struct i2c_client *g_pstI2Cclient2;
 
 static DEFINE_SPINLOCK(g_spinLock); /*for SMP*/
 
-typedef enum {
+enum CAM_CAL_DEV_ID {
 	I2C_DEV_1 = 0,
 	I2C_DEV_2,
 	I2C_DEV_3,
 	I2C_DEV_4,
 	I2C_DEV_MAX,
-} CAM_CAL_DEV_ID;
+};
 
-typedef CAM_CAL_DEV_ID cam_cal_dev_id;
 
-static cam_cal_dev_id g_curDevIdx = I2C_DEV_1;
+static enum CAM_CAL_DEV_ID g_curDevIdx = I2C_DEV_1;
 
-typedef enum {
+enum CAM_CAL_BUS_ID {
 	BUS_ID_MAIN = 0,
 	BUS_ID_SUB,
 	BUS_ID_MAIN2,
 	BUS_ID_SUB2,
 	BUS_ID_MAX,
-} CAM_CAL_BUS_ID;
-
-typedef CAM_CAL_BUS_ID cam_cal_bus_id;
+};
 
 static unsigned int g_busNum[BUS_ID_MAX] = {0, 0, 0, 0};
-static cam_cal_bus_id g_curBusIdx = BUS_ID_MAIN;
+static enum CAM_CAL_BUS_ID g_curBusIdx = BUS_ID_MAIN;
 static struct i2c_client *g_Current_Client;
 
 
@@ -113,15 +110,15 @@ static unsigned int g_lastDevID = SENSOR_DEV_NONE;
 /*******************************************************************************
 *
 ********************************************************************************/
-typedef struct {
+struct stCAM_CAL_CMD_INFO_STRUCT {
 	unsigned int sensorID;
 	unsigned int deviceID;
 	struct i2c_client *client;
 	cam_cal_cmd_func readCMDFunc;
 	cam_cal_cmd_func writeCMDFunc;
-} stCAM_CAL_CMD_INFO_STRUCT, *stPCAM_CAL_CMD_INFO_STRUCT;
+};
 
-static stCAM_CAL_CMD_INFO_STRUCT g_camCalDrvInfo[CAM_CAL_I2C_MAX_SENSOR];
+static struct stCAM_CAL_CMD_INFO_STRUCT g_camCalDrvInfo[CAM_CAL_I2C_MAX_SENSOR];
 
 /*******************************************************************************
 *
@@ -161,10 +158,10 @@ static int EEPROM_set_i2c_bus(unsigned int deviceID)
 }
 
 
-static int EEPROM_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT *cmdInfo)
+static int EEPROM_get_cmd_info(unsigned int sensorID, struct stCAM_CAL_CMD_INFO_STRUCT *cmdInfo)
 {
-	stCAM_CAL_LIST_STRUCT *pCamCalList = NULL;
-	stCAM_CAL_FUNC_STRUCT *pCamCalFunc = NULL;
+	struct stCAM_CAL_LIST_STRUCT *pCamCalList = NULL;
+	struct stCAM_CAL_FUNC_STRUCT *pCamCalFunc = NULL;
 	int i = 0;
 
 	cam_cal_get_sensor_list(&pCamCalList);
@@ -193,7 +190,7 @@ static int EEPROM_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT 
 
 }
 
-static stCAM_CAL_CMD_INFO_STRUCT *EEPROM_get_cmd_info_ex(unsigned int sensorID,
+static struct stCAM_CAL_CMD_INFO_STRUCT *EEPROM_get_cmd_info_ex(unsigned int sensorID,
 	unsigned int deviceID)
 {
 	int i = 0;
@@ -391,8 +388,8 @@ static struct platform_driver g_stEEPROM_HW_Driver = {
 
 #ifdef CONFIG_COMPAT
 static int compat_put_cal_info_struct(
-	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
-	stCAM_CAL_INFO_STRUCT __user *data)
+	struct COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
+	struct stCAM_CAL_INFO_STRUCT __user *data)
 {
 	compat_uptr_t p;
 	compat_uint_t i;
@@ -416,8 +413,8 @@ static int compat_put_cal_info_struct(
 }
 
 static int EEPROM_compat_get_info(
-	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
-	stCAM_CAL_INFO_STRUCT __user *data)
+	struct COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
+	struct stCAM_CAL_INFO_STRUCT __user *data)
 {
 	compat_uptr_t p;
 	compat_uint_t i;
@@ -442,8 +439,8 @@ static long EEPROM_drv_compat_ioctl(struct file *filp, unsigned int cmd, unsigne
 {
 	long ret;
 
-	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32;
-	stCAM_CAL_INFO_STRUCT __user *data;
+	struct COMPAT_stCAM_CAL_INFO_STRUCT __user *data32;
+	struct stCAM_CAL_INFO_STRUCT __user *data;
 	int err;
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
@@ -518,28 +515,28 @@ static long EEPROM_drv_ioctl(
 	u8 *pBuff = NULL;
 	u8 *pu1Params = NULL;
 	/*u8 *tempP = NULL;*/
-	stCAM_CAL_INFO_STRUCT *ptempbuf = NULL;
-	stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
+	struct stCAM_CAL_INFO_STRUCT *ptempbuf = NULL;
+	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
 
 #ifdef CAM_CALGETDLT_DEBUG
 	struct timeval ktv1, ktv2;
 	unsigned long TimeIntervalUS;
 #endif
 	if (_IOC_DIR(a_u4Command) != _IOC_NONE) {
-		pBuff = kmalloc(sizeof(stCAM_CAL_INFO_STRUCT), GFP_KERNEL);
+		pBuff = kmalloc(sizeof(struct stCAM_CAL_INFO_STRUCT), GFP_KERNEL);
 		if (pBuff == NULL) {
 			PK_DBG(" ioctl allocate pBuff mem failed\n");
 			return -ENOMEM;
 		}
 
-		if (copy_from_user((u8 *) pBuff, (u8 *) a_u4Param, sizeof(stCAM_CAL_INFO_STRUCT))) {
+		if (copy_from_user((u8 *) pBuff, (u8 *) a_u4Param, sizeof(struct stCAM_CAL_INFO_STRUCT))) {
 			/*get input structure address*/
 			kfree(pBuff);
 			PK_DBG("ioctl copy from user failed\n");
 			return -EFAULT;
 		}
 
-		ptempbuf = (stCAM_CAL_INFO_STRUCT *)pBuff;
+		ptempbuf = (struct stCAM_CAL_INFO_STRUCT *)pBuff;
 
 		if ((ptempbuf->u4Length <= 0) || (ptempbuf->u4Length > CAM_CAL_MAX_BUF_SIZE)) {
 			kfree(pBuff);
