@@ -15,7 +15,6 @@
 #include <linux/module.h>
 #include <linux/completion.h>
 #include <linux/workqueue.h>
-#include <scp_ipi.h>
 #include "main.h"
 #include "bl.h"
 #include "comms.h"
