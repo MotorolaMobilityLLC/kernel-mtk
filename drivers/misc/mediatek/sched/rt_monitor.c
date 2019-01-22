@@ -141,6 +141,7 @@ void stop_rt_mon_task(int cpu)
 	do_div(dur_ts, 1000000);	/* put prof_dur_ts to ms */
 	list_head = &(__raw_get_cpu_var(mt_rt_mon_head).list);
 
+	rcu_read_lock();
 	list_for_each_entry(tmp, list_head, list) {
 		tsk = find_task_by_vpid(tmp->pid);
 		if (tsk && task_has_rt_policy(tsk)) {
@@ -165,6 +166,7 @@ void stop_rt_mon_task(int cpu)
 			tmp->cost_isrtime = 0;
 		}
 	}
+	rcu_read_unlock();
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 }
 
@@ -180,6 +182,7 @@ void reset_rt_mon_list(int cpu)
 	list_head = &(per_cpu(mt_rt_mon_head, cpu).list);
 	per_cpu(mt_rt_mon_enabled, cpu) = 0;
 
+	rcu_read_lock();
 	list_for_each_entry_safe(tmp, tmp2, list_head, list) {
 		tsk = find_task_by_vpid(tmp->pid);
 		if (tsk) {
@@ -196,6 +199,7 @@ void reset_rt_mon_list(int cpu)
 			kfree(tmp);
 		}
 	}
+	rcu_read_unlock();
 	per_cpu(rt_end_ts, cpu) = 0;
 	spin_unlock_irqrestore(&mt_rt_mon_lock, irq_flags);
 
