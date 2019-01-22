@@ -327,7 +327,9 @@ void mdee_state_notify(struct md_ee *mdee, MD_EX_STAGE stage)
 		ccci_fsm_append_command(mdee->md_obj, CCCI_COMMAND_WDT, 0);
 		break;
 	case MD_BOOT_TIMEOUT:
+		spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
 		mdee_bootup_timeout_handler(mdee);
+		spin_lock_irqsave(&mdee->ctrl_lock, flags);
 		break;
 	default:
 		break;
