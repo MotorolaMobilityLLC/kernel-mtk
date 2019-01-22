@@ -930,6 +930,10 @@ static void __ioctl(unsigned int ctlid, void *arg)
 	struct freqhopping_ioctl *fh_ctl = arg;
 	struct fhctl_ipi_data ipi_data;
 
+	if ((fh_ctl->pll_id == 2) || (fh_ctl->pll_id == 6) || (fh_ctl->pll_id == 10)) {
+		return;
+	}
+
 	switch (ctlid) {
 	case FH_IO_PROC_READ:
 		{
