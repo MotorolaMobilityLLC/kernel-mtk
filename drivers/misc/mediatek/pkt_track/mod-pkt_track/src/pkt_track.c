@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
 
 #include <linux/types.h>
@@ -16,8 +29,6 @@
 #include <linux/netfilter_bridge.h>
 #include <net/netfilter/nf_conntrack.h>
 #include <net/netfilter/nf_conntrack_core.h>
-/*#include <net/netfilter/ipv4/nf_conntrack_ipv4.h>*/
-/*#include <net/netfilter/ipv6/nf_conntrack_ipv6.h>*/
 #include <mtk_ccci_common.h>
 
 #include "pkt_track.h"
@@ -29,7 +40,6 @@
 #ifdef NETLINK_ENABLE
 #include <net/netlink.h>
 #include <linux/netfilter_ipv4/ipt_ULOG.h>
-/* #include <mach/mt_ccci_common.h> */
 
 static struct sock *netlink_sock_md;	/* used to receive data statistic command from user-space netd. */
 static int pt_nl_event = 112;
@@ -165,8 +175,6 @@ static struct nf_hook_ops pkt_track_ops[] __read_mostly = {
 	 .priority = NF_IP_PRI_LAST,
 	 },
 };
-
-MODULE_LICENSE("GPL");
 
 #ifdef NETLINK_ENABLE
 static void pkt_track_nl_set_cmd(struct sk_buff *skb);

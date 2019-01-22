@@ -1,35 +1,17 @@
-/**
- *	@author mtk01984
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+
 #include <linux/module.h>
-
-/*#define MEASUREMENT*/
-
-/* TODO: Peter DEBUG */
-/* #if defined _UNIT_fastpath_main */
-#if 0
-#include <base/utest.h>
-
-static exc_t t1(void *p)
-{
-	UTST(1);
-	CERR_Ok();
-}
-
-static int fastpath_init(void)
-{
-	UTST_Add(t1);
-	UTST_Run(0);
-	return 0;
-}
-
-static void fastpath_dest(void)
-{
-	fp_printk(K_ERR, "unit, clean mod-fastpath\n");
-}
-module_init(fastpath_init)
-module_exit(fastpath_dest)
-#endif
 #include <linux/kernel_stat.h>
 #include <linux/proc_fs.h>
 #include <net/xfrm.h>
@@ -37,7 +19,6 @@ module_exit(fastpath_dest)
 #include "desc.h"
 #include "protocol.h"
 #include "tuple.h"
-/*#include "hw.h"*/
 #include "dev.h"
 #include "hw.c"
 #include "pkt_track.h"
@@ -59,66 +40,13 @@ u32 fp_log_level = K_ALET | K_CRIT | K_ERR | K_WARNIN | K_NOTICE;
 module_param(fp_log_level, int, 0644);
 MODULE_PARM_DESC(fp_log_level, "Debug Print Log Lvl");
 
-/*extern unsigned long timeout;*/
-int fastpath_max_nat = MD_DIRECT_TETHERING_RULE_NUM;
-int fastpath_max_bridge = MD_DIRECT_TETHERING_RULE_NUM;
-int fastpath_max_router = MD_DIRECT_TETHERING_RULE_NUM;
-int fastpath_max_ipsec = MD_DIRECT_TETHERING_RULE_NUM;
-int fastpath_max_total = (MD_DIRECT_TETHERING_RULE_NUM * 4);
-
 int fastpath_contentfilter;
 
 struct interface ifaces[MAX_IFACE_NUM];
 
-struct kmem_cache *nat_tuple_cache;
-struct kmem_cache *bridge_tuple_cache;
-struct kmem_cache *router_tuple_cache;
-struct kmem_cache *ipsec_tuple_cache;
-
 spinlock_t fp_lock;
-#ifdef CONFIG_PREEMPT_RT_FULL
-raw_spinlock_t tuple_lock;
-#else
-spinlock_t tuple_lock;
-#endif
 
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
-/* AP & MD Rule id mapping API */
-void *md_rule_id_mapping_table[MD_DIRECT_TETHERING_RULE_NUM * 2];
-
-static void init_md_rule_id_mapping_table(void)
-{
-	memset(md_rule_id_mapping_table, 0, sizeof(md_rule_id_mapping_table));
-}
-
-void *get_tuple_by_md_rule_id(unsigned int id)
-{
-	if (id >= MD_DIRECT_TETHERING_RULE_NUM * 2) {
-		WARN_ON(1);
-		return NULL;
-	}
-	return md_rule_id_mapping_table[id];
-}
-EXPORT_SYMBOL(get_tuple_by_md_rule_id);
-
-
-int get_md_rule_id_by_tuple(void *p)
-{
-	int i;
-
-	if (!p)
-		return -1;
-
-	for (i = 0; i < MD_DIRECT_TETHERING_RULE_NUM * 2; i++) {
-		if (p == md_rule_id_mapping_table[i])
-			return i;
-	}
-
-	return -1;
-}
-EXPORT_SYMBOL(get_md_rule_id_by_tuple);
-
-
 struct fp_track_t fp_track;
 void dummy_destructor_track_table(struct sk_buff *skb)
 {
@@ -509,120 +437,6 @@ static inline void fastpath_release_device(struct device_registering *device)
 	device->dev = NULL;
 	kfree(device);
 }
-
-/* TODO: Peter DEBUG */
-#if 0
-static int fastpath_is_device_dynamic_registered(struct net_device *dev)
-{
-	int ret = 0;
-	unsigned long flags;
-	struct device_registering *found_device;
-	unsigned int hash = fastpath_get_hash_by_device(dev);
-
-	spin_lock_irqsave(&device_registering_lock, flags);
-	list_for_each_entry(found_device, &device_registering_hash[hash], list) {
-		if (found_device->dev == dev) {
-			ret = 1;
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&device_registering_lock, flags);
-
-	return ret;
-}
-
-static void fastpath_device_dynamic_register(struct net_device *dev)
-{
-	unsigned long flags;
-	struct device_registering *found_device;
-	struct device_registering *new_device;
-	unsigned int hash = fastpath_get_hash_by_device(dev);
-
-	if (in_irq())
-		new_device = kmalloc(sizeof(struct device_registering), GFP_ATOMIC);
-	else
-		new_device = kmalloc(sizeof(struct device_registering), GFP_KERNEL);
-
-	if (!new_device) {
-
-		fp_printk(K_ERR, "%s: kmalloc failed\n", __func__);
-		return;
-	}
-
-	spin_lock_irqsave(&device_registering_lock, flags);
-
-	/* if duplicated, BUG */
-	list_for_each_entry(found_device, &device_registering_hash[hash], list) {
-		WARN_ON(found_device->dev == dev);
-	}
-	new_device->dev = dev;
-/* <JQ_DEBUG> */
-/* dev_hold(new_device->dev); */
-	list_add_tail(&new_device->list, &device_registering_hash[hash]);
-	spin_unlock_irqrestore(&device_registering_lock, flags);
-}
-
-static void fastpath_device_dynamic_unregister(struct net_device *dev)
-{
-	unsigned long flags;
-	int found = 0;
-	struct device_registering *found_device;
-	unsigned int hash = fastpath_get_hash_by_device(dev);
-
-	spin_lock_irqsave(&device_registering_lock, flags);
-	list_for_each_entry(found_device, &device_registering_hash[hash], list) {
-		if (found_device->dev == dev) {
-			fastpath_release_device(found_device);
-			found = 1;
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&device_registering_lock, flags);
-
-	WARN_ON(found == 0);
-}
-#endif
-#endif
-
-/* TODO: Peter DEBUG */
-#if 0
-static int fp_notifier_event(struct notifier_block *nb, unsigned long event, void *data)
-{
-	unsigned long flag;
-	struct net_device *dev = data;
-
-	FP_LOCK(&fp_lock, flag);
-	switch (event) {
-#ifdef FASTPATH_NETFILTER
-	case NETDEV_REGISTER:
-		fp_printk(K_INFO, "%s: NETDEV_REGISTER: %s\n", __func__, dev->name);
-		if (!fastpath_is_device_dynamic_registered(dev))
-			fastpath_device_dynamic_register(dev);
-
-		break;
-	case NETDEV_UNREGISTER:
-		fp_printk(K_INFO, "%s: NETDEV_UNREGISTER: %s\n", __func__, dev->name);
-		if (fastpath_is_device_dynamic_registered(dev))
-			fastpath_device_dynamic_unregister(dev);
-
-		break;
-#endif
-	default:
-		fp_printk(K_INFO, "%s: NETDEV_DEFAULT: %s\n", __func__, dev->name);
-		break;
-	}
-#ifdef FASTPATH_NO_KERNEL_SUPPORT
-	del_all_track_table();
-#endif
-	del_all_tuple();
-	FP_UNLOCK(&fp_lock, flag);
-
-	return NOTIFY_DONE;
-}
-
-static struct notifier_block fp_notifier_block __read_mostly = {
-	.notifier_call = fp_notifier_event,
-};
 #endif
 
 static int fp_notifier_init(void)
@@ -642,10 +456,6 @@ static int fp_notifier_init(void)
 	proc_create(FP_DEVICE_DYNAMIC_REGISTERING_PROC_ENTRY, 0, NULL,
 			&fastpath_device_dynamic_registering_proc_fops);
 #endif
-	/* TODO: Peter DEBUG */
-#if 0
-	ret = register_netdevice_notifier(&fp_notifier_block);
-#endif
 
 	return ret;
 }
@@ -658,10 +468,6 @@ static void fp_notifier_dest(void)
 	int i;
 #endif
 
-	/* TODO: Peter DEBUG */
-#if 0
-	unregister_netdevice_notifier(&fp_notifier_block);
-#endif
 #ifdef FASTPATH_NETFILTER
 	remove_proc_entry(FP_DEVICE_DYNAMIC_REGISTERING_PROC_ENTRY, NULL);
 	/* release all registered devices */
@@ -678,56 +484,15 @@ static void fp_notifier_dest(void)
 
 static int fastpath_init(void)
 {
-	/*int i; */
 	int ret = 0;
 
 	memset(ifaces, 0, sizeof(ifaces));
 
-	timeout = jiffies;
-
-/* #ifdef MEASUREMENT */
-/*	fp_printk(K_ERR, "XXXXXXXXXXXXXXXXXXXXXXXXX %s\n", __TIME__); */
-/*	__asm__ __volatile__("mcr p15, 0, %0, c9, c12, 1" :  : "r"(0x80000000)); */
-/* #endif */
-
-/* if(unlikely(!bridge_dev)){ */
-/* bridge_dev=dev_get_by_name(&init_net, "br0"); */
-/* if(!bridge_dev){ */
-/* return -ENODEV; */
-/* } */
-/* } */
-
 	FP_INIT_LOCK(&fp_lock);
-
-	TUPLE_INIT_LOCK(&tuple_lock);
 
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
 	init_track_table();
 #endif
-
-/* <JQ_TO_DELETE> */
-#if 0
-	ret = init_fastpath_dev();
-	if (ret)
-		return ret;
-#endif
-
-	init_nat_tuple();
-	init_bridge_tuple();
-	init_router_tuple();
-	init_ipsec_tuple();
-
-	nat_tuple_cache =
-		kmem_cache_create("fastpath_nat_tuple", sizeof(struct nat_tuple), 0, SLAB_HWCACHE_ALIGN, NULL);
-	bridge_tuple_cache =
-		kmem_cache_create("fastpath_bridge_tuple", sizeof(struct bridge_tuple), 0, SLAB_HWCACHE_ALIGN,
-				  NULL);
-	router_tuple_cache =
-		kmem_cache_create("fastpath_router_tuple", sizeof(struct router_tuple), 0, SLAB_HWCACHE_ALIGN,
-				  NULL);
-	ipsec_tuple_cache =
-		kmem_cache_create("fastpath_ipsec_tuple", sizeof(struct ipsec_tuple), 0, SLAB_HWCACHE_ALIGN,
-				  NULL);
 
 #ifdef ENABLE_PORTBASE_QOS
 	/* initialize /proc/fastpath/dscp_marking interface */
@@ -750,8 +515,6 @@ static int fastpath_init(void)
 	}
 #endif
 
-	init_md_rule_id_mapping_table();
-
 	ret = fp_notifier_init();
 	if (ret < 0) {
 		fp_printk(K_ERR, "%s: fp_notifier_init failed with ret = %d\n", __func__, ret);
@@ -764,7 +527,6 @@ static int fastpath_init(void)
 static void fastpath_dest(void)
 {
 	fp_notifier_dest();
-	dest_fastpath_dev();
 #ifdef FASTPATH_NO_KERNEL_SUPPORT
 	dest_track_table();
 #endif
@@ -779,12 +541,6 @@ static inline void _fastpath_in_tail(u_int8_t iface, struct fp_desc *desc, struc
 {
 	struct ip4header *ip;
 	struct ip6header *ip6;
-
-	/* TODO: Peter DEBUG */
-#if 0
-	if (skb->dev && !fastpath_is_device_dynamic_registered(skb->dev))
-		return;
-#endif
 
 	cb = add_track_table(skb, desc);
 	if (!cb) {
@@ -819,11 +575,6 @@ static inline void _fastpath_in_tail(u_int8_t iface, struct fp_desc *desc, struc
 				cb->dport = udp->uh_dport;
 			}
 			break;
-/* case IPPROTO_GRE: */
-/* { */
-/* //greheader *gre = (greheader *)(skb->data + desc->l4_off); */
-/* } */
-/* break; */
 		default:
 			fp_printk(K_ALET, "BUG, %s: Should not reach here, skb[%p], protocol[%d].\n",
 						__func__, skb, ip->ip_p);
@@ -841,8 +592,6 @@ static inline void _fastpath_in_tail(u_int8_t iface, struct fp_desc *desc, struc
 			fp_printk(K_ERR, "%s: Invalid router flag[%x], skb[%p]!\n", __func__, desc->flag, skb);
 		}
 
-		/* if (desc->flag & DESC_FLAG_IPV4) */
-			/* TODO: IPv4 routing */
 	}
 	fp_printk(K_DEBUG, "%s: Invalid flag[%x], skb[%p]!\n", __func__, desc->flag, skb);
 }
@@ -856,7 +605,6 @@ static inline void _fastpath_in_nat(unsigned char *offset2, struct fp_desc *desc
 	/* IPv6 */
 	struct router_tuple t6;
 	struct ip6header *ip6;
-	/*unsigned char ip6_nexthdr; */
 	__be16 ip6_frag_off;
 
 	void *l4_header;
@@ -894,9 +642,6 @@ static inline void _fastpath_in_nat(unsigned char *offset2, struct fp_desc *desc
 		case IPPROTO_UDP:
 			fp_ip4_udp(desc, skb, &t4, &ifaces[iface], ip, l4_header);
 			return;
-/* case IPPROTO_ICMP: */
-/* fp_ip4_icmp_lan(desc, skb, &t4, &ifaces[iface], ip, l4_header); */
-/* return; */
 		default:
 			desc->flag |= DESC_FLAG_UNKNOWN_PROTOCOL;
 			return;
@@ -932,9 +677,6 @@ static inline void _fastpath_in_nat(unsigned char *offset2, struct fp_desc *desc
 		case IPPROTO_UDP:
 			fp_ip6_udp_lan(desc, skb, &t6, &ifaces[iface], ip6, l4_header);
 			return;
-/* case IPPROTO_ICMPV6: */
-/* fp_ip6_icmp_lan(desc, skb, &t6, &ifaces[iface], ip6, l4_header); */
-/* return; */
 		default:
 			{
 				desc->flag |= DESC_FLAG_UNKNOWN_PROTOCOL;
@@ -951,19 +693,9 @@ static inline void _fastpath_in_nat(unsigned char *offset2, struct fp_desc *desc
 static inline int fastpath_in_internal(int iface, struct sk_buff *skb)
 {
 	struct fp_cb *cb;
-	/*unsigned flag; */
 	struct fp_desc desc;
-/* #ifdef MEASUREMENT */
-/*	__asm__ __volatile__("mcr p15, 0, %0, c9, c12, 0" :  : "r"(0x00000007)); */
-/*	__asm__ __volatile__("mrc p15, 0, %0, c9, c13, 0\n":"=r"(c1)); */
-/* #endif */
 
 	pm_reset_traffic();
-
-	if (unlikely(!fastpath_max_total)) {
-		fp_printk(K_ERR, "%s: No fastpath!\n", __func__);
-		return 0;	/* original path */
-	}
 
 	cb = (struct fp_cb *) (&skb->cb[48]);
 	/* reset cb flag ?? */
@@ -972,25 +704,13 @@ static inline int fastpath_in_internal(int iface, struct sk_buff *skb)
 	/* HW */
 	desc.flag = 0;
 	desc.l3_off = 0;
-	/*desc.pflag = &flag; */
 
 
 	skb_set_network_header(skb, desc.l3_off);
 
 	_fastpath_in_nat(skb->data, &desc, skb, iface);
-	/* SW */
-/* if(likely(desc.flag & DESC_FLAG_FASTPATH)){ */
-/* #ifdef MEASUREMENT */
-/* fp_printk(K_ERR, "ELAPSED: %d\n", c5 - c1); */
-/* #endif */
-/* return 1; //fast path */
-/* } */
 	if (desc.flag & DESC_FLAG_NOMEM) {
 		fp_printk(K_ERR, "%s: No memory, flag[%x], skb[%p].\n", __func__, desc.flag, skb);
-		/* <JQ_TO_DELETE> */
-		#if 0
-		dev_kfree_skb_any(skb);
-		#endif
 
 		return 2;
 	}
@@ -1018,10 +738,6 @@ int fastpath_in_nf(int iface, struct sk_buff *skb)
 }
 
 #ifdef FASTPATH_NETFILTER
-void fastpath_out(int iface, struct sk_buff *skb)
-{
-}
-
 void fastpath_out_nf_ipv4(
 	int iface,
 	struct sk_buff *skb,
@@ -1084,17 +800,6 @@ void fastpath_out_nf_ipv4(
 							__func__, nat_ip_conntrack->proto.tcp.state, skb);
 				goto out;
 			}
-
-			/* #if (defined(FASTPATH_NO_KERNEL_SUPPORT) && defined(FASTPATH_DISABLE_TCP_WINDOW_CHECK)) */
-			/* ct = container_of(nat_ip_conntrack, struct nf_conn, ct_general); */
-			/* spin_lock_bh(&ct->lock); */
-			/* tcp_state = &ct->proto.tcp; */
-			/* ((struct ip_ct_tcp_state *)(&tcp_state->seen[IP_CT_DIR_ORIGINAL]))->flags |= */
-			/*				IP_CT_TCP_FLAG_BE_LIBERAL; */
-			/* ((struct ip_ct_tcp_state *)(&tcp_state->seen[IP_CT_DIR_REPLY]))->flags |= */
-			/*				IP_CT_TCP_FLAG_BE_LIBERAL; */
-			/* spin_unlock_bh(&ct->lock); */
-			/* #endif */
 
 			/* Tag this packet for MD tracking */
 			if (skb_headroom(skb) > sizeof(struct fp_tag_packet_t)) {
@@ -1229,18 +934,6 @@ void fastpath_out_nf_ipv6(int iface, struct sk_buff *skb, struct net_device *out
 			}
 #endif
 
-			/* #if (defined(FASTPATH_NO_KERNEL_SUPPORT) && defined(FASTPATH_DISABLE_TCP_WINDOW_CHECK)) */
-			/* //ct = container_of(nat_ip_conntrack, struct nf_conn, ct_general); */
-			/* ct = nat_ip_conntrack; */
-			/* spin_lock_bh(&ct->lock); */
-			/* tcp_state = &ct->proto.tcp; */
-			/* ((struct ip_ct_tcp_state *)(&tcp_state->seen[IP_CT_DIR_ORIGINAL]))->flags |= */
-			/*				IP_CT_TCP_FLAG_BE_LIBERAL; */
-			/* ((struct ip_ct_tcp_state *)(&tcp_state->seen[IP_CT_DIR_REPLY]))->flags |= */
-			/*				IP_CT_TCP_FLAG_BE_LIBERAL; */
-			/* spin_unlock_bh(&ct->lock); */
-			/* #endif */
-
 			/* Tag this packet for MD tracking */
 			if (skb_headroom(skb) > sizeof(struct fp_tag_packet_t)) {
 				skb_tag->guard_pattern = MDT_TAG_PATTERN;
@@ -1333,28 +1026,10 @@ void fastpath_out_nf(int iface, struct sk_buff *skb, struct net_device *out)
 	unsigned char *offset2 = skb->data;
 	struct fp_cb *cb;
 	unsigned long flags;
-#if (defined(FASTPATH_NO_KERNEL_SUPPORT) && defined(FASTPATH_DISABLE_TCP_WINDOW_CHECK))
-/* struct nf_conn *ct = NULL; */
-/* struct ip_ct_tcp *tcp_state = NULL; */
-#endif
 
 	fp_printk(K_DEBUG, "%s: post-routing, add rule, skb[%p].\n", __func__, skb);
 
 	pm_reset_traffic();
-
-	if (!fastpath_max_nat && !fastpath_max_bridge && !fastpath_max_router && !fastpath_max_ipsec) {
-		/* do not investigate into skb */
-		fp_printk(K_ERR, "%s: No fastpath, skb[%p].\n", __func__, skb);
-		return;
-	}
-
-#ifdef FASTPATH_NETFILTER
-	/* TODO: Peter DEBUG */
-#if 0
-	if (skb->dev && !fastpath_is_device_dynamic_registered(skb->dev))
-		return;
-#endif
-#endif
 
 	cb = search_and_hold_track_table(skb);
 	if (!cb) {
@@ -1390,9 +1065,6 @@ void fastpath_out_nf(int iface, struct sk_buff *skb, struct net_device *out)
 		else
 			fp_printk(K_ERR, "%s: Invalid IPv6 flag[%x], skb[%p].\n", __func__, cb->flag, skb);
 
-
-		/* if (cb->flag & DESC_FLAG_IPV4) */
-			/* TODO: IPv4 routing */
 	} else {
 		fp_printk(K_DEBUG, "%s: No need to track, skb[%p], cb->flag[%x].\n", __func__, skb, cb->flag);
 	}
@@ -1406,22 +1078,8 @@ EXPORT_SYMBOL(fastpath_out_nf);
 
 module_init(fastpath_init)
 module_exit(fastpath_dest)
-module_param(fastpath_max_nat, int, 0);
 module_param(fastpath_contentfilter, int, 0);
-module_param(fastpath_max_bridge, int, 0);
-module_param(fastpath_max_router, int, 0);
-module_param(fastpath_max_ipsec, int, 0);
 
-/* EXPORT_SYMBOL(fastpath_register); */
-/* EXPORT_SYMBOL(fastpath_dyn_register); */
-/* EXPORT_SYMBOL(fastpath_unregister); */
-/* EXPORT_SYMBOL(fastpath_in); */
-/* EXPORT_SYMBOL(fastpath_in_noarp); */
-#ifdef FASTPATH_SKBLIST
-/* EXPORT_SYMBOL(fastpath_in_list); */
-/* EXPORT_SYMBOL(fastpath_in_noarp_list); */
-#endif
-EXPORT_SYMBOL(fastpath_out);
 #endif
 EXPORT_SYMBOL(fastpath_in_nf);
 
