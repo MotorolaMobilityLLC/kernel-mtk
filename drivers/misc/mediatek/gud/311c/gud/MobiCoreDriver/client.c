@@ -183,9 +183,9 @@ static void client_release(struct kref *kref)
 	atomic_dec(&g_ctx.c_clients);
 }
 
-void client_put(struct tee_client *client)
+int client_put(struct tee_client *client)
 {
-	kref_put(&client->kref, client_release);
+	return kref_put(&client->kref, client_release);
 }
 
 /*
