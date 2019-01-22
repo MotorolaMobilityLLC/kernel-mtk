@@ -32,7 +32,8 @@
 #include <linux/topology.h>
 #include "mtk_hps_internal.h"
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
-|| defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
+|| defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
+|| defined(CONFIG_MACH_MT6771)
 #include "include/pmic_regulator.h"
 #include "mtk_pmic_regulator.h"
 #include "mach/mtk_freqhopping.h"
@@ -43,7 +44,12 @@
 #include <mtk_iccs.h>
 #endif
 
-#define BUCK_CTRL_DBLOG		(0)
+#define BUCK_CTRL_DBLOG		(1)
+#define DRCC_CHECK_ENABLE	(0)
+static int MP0_BUCK_STATUS;
+static int MP1_BUCK_STATUS;
+static int MP2_BUCK_STATUS;
+
 
 #if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 #define MTK_DRCC_SUPPORT
@@ -54,6 +60,9 @@ static unsigned int cpus_L;
 #endif
 #endif
 
+#if DRCC_CHECK_ENABLE
+static DEFINE_SPINLOCK(drcc_spin_lock);
+#endif
 static struct notifier_block cpu_hotplug_nb;
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 static struct notifier_block hps_pm_notifier_func;
@@ -78,11 +87,15 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 	struct cpumask cpuhp_cpumask;
 	struct cpumask cpu_online_cpumask;
 	unsigned int first_cpu;
-#ifdef CONFIG_MACH_MT6799
+#if DRCC_CHECK_ENABLE
+	unsigned long drcc_flags;
+#endif
+
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6771)
 	int ret;
 #endif
 	switch (action) {
-	case CPU_ONLINE:
+	case CPU_STARTING:
 	#if defined(CONFIG_MACH_MT6771) || defined(CONFIG_MACH_MT6775)
 		#ifdef MTK_DRCC_SUPPORT
 		arch_get_cluster_cpus(&cpuhp_cpumask, 1);
@@ -96,6 +109,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			cpu,
 			cpus_L);
 		#endif
+		#if DRCC_CHECK_ENABLE
+		spin_lock_irqsave(&drcc_spin_lock, drcc_flags);
 		if ((cpus_L == 1) &&
 			(mtk_drcc_calibration_result() == 0)) {
 			/* Log into SRAM debug. */
@@ -103,6 +118,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			pr_notice("DRCC calibration fail !!!\n");
 			/* drcc_fail_composite(); */
 		}
+		spin_unlock_irqrestore(&drcc_spin_lock, drcc_flags);
+		#endif
 		/* pr_notice("DRCC calibration done !!!\n"); */
 		#endif
 	#endif
@@ -119,7 +136,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				}
 #endif
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
-|| defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
+|| defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
+|| defined(CONFIG_MACH_MT6771)
 				/*1. Turn on ARM PLL*/
 				armpll_control(1, 1);
 
@@ -151,10 +169,25 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				}
 #endif
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
-|| defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
+|| defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
+|| defined(CONFIG_MACH_MT6771)
+
 #if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 #if CPU_BUCK_CTRL
+
+#if defined(CONFIG_MACH_MT6771)
+					ret = regulator_enable(cpu_vsram11_id);
+					if (ret)
+						pr_info("regulator_enable vsram11 failed\n");
+					dsb(sy);
+					ret = regulator_enable(cpu_vproc11_id);
+					if (ret)
+						pr_info("regulator_enable vproc11 failed\n");
+					dsb(sy);
+					MP1_BUCK_STATUS = MP_BUCK_ON;
+
+#else
 					/*1. Power ON VSram*/
 					ret = buck_enable(VSRAM_DVFS2, 1);
 					if (ret != 1)
@@ -168,6 +201,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					dsb(sy);
 					mdelay(1);
 					dsb(sy);
+#endif
 #endif
 				}
 #endif
@@ -203,7 +237,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					break;
 				}
 #endif
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
+|| defined(CONFIG_MACH_MT6771)
 				/*1. Turn on ARM PLL*/
 				armpll_control(3, 1);
 
@@ -241,7 +276,8 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #endif
 			mt_secure_call(MTK_SIP_POWER_DOWN_CLUSTER, cpu/4, 0, 0);
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) \
-|| defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
+|| defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) \
+|| defined(CONFIG_MACH_MT6771)
 			/*pr_info("End of power off cluster %d\n", cpu/4);*/
 			switch (cpu/4) {/*Turn off ARM PLL*/
 			case 0:
@@ -270,6 +306,13 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 #if CPU_BUCK_CTRL
+
+
+#if defined(CONFIG_MACH_MT6771)
+					regulator_disable(cpu_vproc11_id);
+					regulator_disable(cpu_vsram11_id);
+					MP1_BUCK_STATUS = MP_BUCK_OFF;
+#else
 					/*4. Power off Vproc2*/
 					hps_power_off_vproc2();
 
@@ -277,6 +320,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					ret = buck_enable(VSRAM_DVFS2, 0);
 					if (ret == 1)
 						WARN_ON(1);
+#endif
 #endif
 				}
 #endif
@@ -333,6 +377,38 @@ static int hps_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 	return NOTIFY_OK;
 }
 #endif
+
+bool cpuhp_is_buck_off(int cluster_idx)
+{
+	bool ret;
+
+	switch (cluster_idx) {
+	case 0:
+		if (MP0_BUCK_STATUS == MP_BUCK_OFF)
+			ret = true;
+		else
+			ret = false;
+		break;
+	case 1:
+		if (MP1_BUCK_STATUS == MP_BUCK_OFF)
+			ret = true;
+		else
+			ret = false;
+		break;
+	case 2:
+		if (MP2_BUCK_STATUS == MP_BUCK_OFF)
+			ret = true;
+		else
+			ret = false;
+		break;
+	default:
+		ret = true;
+		break;
+
+	}
+	return ret;
+}
+
 static __init int hotplug_cb_init(void)
 {
 	int ret;
@@ -349,6 +425,9 @@ static __init int hotplug_cb_init(void)
 #endif
 		set_cpu_present(i, true);
 	}
+
+
+	MP0_BUCK_STATUS = MP1_BUCK_STATUS = MP2_BUCK_STATUS = MP_BUCK_ON;
 
 	mp_enter_suspend(0, 1);/*Switch LL cluster to HW mode*/
 	cpumask_clear(mtk_cpu_cluster0_mask);
@@ -381,6 +460,7 @@ static __init int hotplug_cb_init(void)
 	}
 	pr_info("HPS PM Notification\n");
 #endif
+
 	return 0;
 }
 early_initcall(hotplug_cb_init);

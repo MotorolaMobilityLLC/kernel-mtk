@@ -26,9 +26,15 @@
  */
 #define STATIC
 /* #define STATIC static */
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799)
 static struct regulator *mtk_regulator_vproc2;
 #endif
+
+#if defined(CONFIG_MACH_MT6771)
+struct regulator *cpu_vproc11_id;
+struct regulator *cpu_vsram11_id;
+#endif
+
 static int hps_probe(struct platform_device *pdev);
 static int hps_suspend(struct device *dev);
 static int hps_resume(struct device *dev);
@@ -377,7 +383,7 @@ void hps_ctxt_print_algo_stats_tlp(int toUart)
 		hps_debug("hps_ctxt.rush_count: %u\n", hps_ctxt.rush_count);
 	}
 }
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799)
 void hps_power_off_vproc2(void)
 {
 	int ret;
@@ -420,12 +426,25 @@ void hps_power_on_vproc2(void)
  */
 static int hps_probe(struct platform_device *pdev)
 {
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799)
 	int ret;
 #endif
 
 	hps_warn("hps_probe\n");
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6771)
+	cpu_vproc11_id = regulator_get(&pdev->dev, "vproc11");
+	if (!cpu_vproc11_id)
+		pr_debug("cpu_vproc11_id regulator_get failed\n");
+	else
+		pr_info("cpu_vproc11_id regulator_get success\n");
+	cpu_vsram11_id = regulator_get(&pdev->dev, "vsram_proc11");
+	if (!cpu_vsram11_id)
+		pr_debug("cpu_vsram_id regulator_get failed\n");
+	else
+		pr_info("cpu_vsram_id regulator_get success\n");
+#endif
+
+#if defined(CONFIG_MACH_MT6799)
 	mtk_regulator_vproc2 = regulator_get(&pdev->dev, "ext_buck_proc2");
 	if (mtk_regulator_vproc2 == NULL) {
 		hps_warn("%s No this Regulator\n", __func__);
