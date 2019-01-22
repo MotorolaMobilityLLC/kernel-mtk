@@ -136,7 +136,10 @@ static struct cdev *pSmiDev;
 #define SMI_LARB6_REG_INDX 7
 #define SMI_LARB7_REG_INDX 8
 #define SMI_LARB8_REG_INDX 9
-
+#if defined(SMI_WHI)
+#define SMI_MMSYS_REG_INDX 10
+static unsigned long mmsys_reg;
+#endif
 
 #if defined(SMI_WHI)
 #define SMI_REG_REGION_MAX 10
@@ -151,6 +154,9 @@ static unsigned long gSMIBaseAddrs[SMI_REG_REGION_MAX];
 struct smi_device {
 	struct device *dev;
 	void __iomem *regs[SMI_REG_REGION_MAX];
+#if defined(SMI_WHI)
+	void __iomem *mmsys;
+#endif
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
 	struct clk *smi_common_fifo0_clk;
 	struct clk *smi_common_fifo1_clk;
@@ -1541,6 +1547,14 @@ static int smi_probe(struct platform_device *pdev)
 			SMIMSG("DT, i=%d, region=%s, map_addr=0x%p, reg_pa=0x%lx\n", i,
 			       smi_get_region_name(i), smi_dev->regs[i], get_register_base(i));
 		}
+#if defined(SMI_WHI)
+		smi_dev->mmsys = (void *)of_iomap(pdev->dev.of_node, SMI_MMSYS_REG_INDX);
+		if (!smi_dev->mmsys) {
+			SMIERR("Unable to ioremap mmsys registers, of_iomap fail");
+			return -ENOMEM;
+		}
+		mmsys_reg = (unsigned long) smi_dev->mmsys;
+#endif
 #if defined(SMI_INTERNAL_CCF_SUPPORT)
 		smi_dev->smi_common_fifo0_clk = get_smi_clk("smi-common-FIFO0");
 		smi_dev->smi_common_fifo1_clk = get_smi_clk("smi-common-FIFO1");
@@ -2038,9 +2052,19 @@ static void smi_driver_setting(void)
 
 static void smi_apply_common_basic_setting(void)
 {
+#if defined(SMI_WHI)
+	/* disable DCM for prevent memory transaction fail */
+	unsigned int DCM_val = M4U_ReadReg32(mmsys_reg, 0x130);
+
+	SMIMSG("before setting, DCM_val = 0x%x\n", DCM_val);
+	DCM_val |= 0x3fb0;
+	M4U_WriteReg32(mmsys_reg, 0x130, DCM_val);
+	SMIMSG("after setting, DCM_val = 0x%x\n", M4U_ReadReg32(mmsys_reg, 0x130));
+#endif
 	SMIDBG(1, "start to apply common basic setting.\n");
 	smi_common_setting(&smi_basic_setting_config);
 	SMIDBG(1, "apply common basic setting done.\n");
+
 }
 
 static void smi_apply_larb_basic_setting(int larb)
