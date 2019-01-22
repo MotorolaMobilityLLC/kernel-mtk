@@ -350,7 +350,7 @@ UINT32 mtk_wcn_consys_soc_chipid(VOID)
 	if (wmt_consys_ic_ops == NULL)
 		wmt_consys_ic_ops = mtk_wcn_get_consys_ic_ops();
 
-	if (wmt_consys_ic_ops->consys_ic_soc_chipid_get)
+	if (wmt_consys_ic_ops && wmt_consys_ic_ops->consys_ic_soc_chipid_get)
 		return wmt_consys_ic_ops->consys_ic_soc_chipid_get();
 	else
 		return 0;
