@@ -403,12 +403,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	u32 cpu = spm_data;
 	u32 sodi_idx;
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
-	vcore_status = 0;
-#else
-	vcore_status = vcorefs_get_curr_ddr();
-#endif
-
 	sodi_idx = spm_sodi_get_pcm_idx(cpu);
 
 	if (!dyna_load_pcm[sodi_idx].ready) {
@@ -485,6 +479,9 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	__spm_set_wakeup_event(pwrctrl);
 
 	spm_sodi3_enable_pcm_wdt();
+
+	vcore_status = vcorefs_get_curr_ddr();
+	spm_sodi_get_vcore_opp(&sodi3_flags);
 
 	spm_sodi3_pre_process();
 
