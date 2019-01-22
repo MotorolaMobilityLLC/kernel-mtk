@@ -262,9 +262,31 @@ int DW9718SAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
-	if (*g_pAF_Opened == 2)
-		LOG_INF("Wait\n");
+	if (*g_pAF_Opened == 2) {
+		unsigned long af_step = 25;
 
+		if (g_u4CurrPosition > g_u4AF_INF && g_u4CurrPosition <= g_u4AF_MACRO) {
+			while (g_u4CurrPosition > 50) {
+				if (g_u4CurrPosition > 400)
+					af_step = 70;
+				else if (g_u4CurrPosition > 180)
+					af_step = 40;
+				else
+					af_step = 25;
+
+				s4AF_WriteReg(g_u4CurrPosition - af_step);
+
+				g_u4CurrPosition = g_u4CurrPosition - af_step;
+				mdelay(10);
+				if (g_u4CurrPosition <= 0 || g_u4CurrPosition > 1023)
+					break;
+			}
+		}
+
+		g_u4CurrPosition = 0;
+
+		LOG_INF("Wait\n");
+	}
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
 
