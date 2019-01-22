@@ -112,6 +112,17 @@ enum {
 };
 
 enum {
+	MIC_BIAS_1p7 = 0,
+	MIC_BIAS_1p8,
+	MIC_BIAS_1p9,
+	MIC_BIAS_2p0,
+	MIC_BIAS_2p1,
+	MIC_BIAS_2p5,
+	MIC_BIAS_2p6,
+	MIC_BIAS_2p7,
+};
+
+enum {
 	DL_GAIN_8DB = 0,
 	DL_GAIN_0DB = 8,
 	DL_GAIN_N_1DB = 9,
@@ -128,6 +139,13 @@ enum hp_depop_flow {
 	HP_DEPOP_FLOW_NONE,
 };
 static unsigned int mUseHpDepopFlow;
+
+enum DBG_TYPE {
+	DBG_DCTRIM_BYPASS_4POLE = 0x1 << 0,
+	DBG_DCTRIM_4POLE_LOG = 0x1 << 1,
+};
+
+enum DBG_TYPE codec_debug_enable;
 
 static int low_power_mode;
 
@@ -441,6 +459,15 @@ static int audio_get_auxadc_value(void)
 {
 #ifdef CONFIG_MTK_AUXADC_INTF
 	return pmic_get_auxadc_value(AUXADC_LIST_HPOFS_CAL);
+#else
+	return 0;
+#endif
+}
+
+static int get_accdet_auxadc(void)
+{
+#ifdef CONFIG_MTK_AUXADC_INTF
+	return pmic_get_auxadc_value(AUXADC_LIST_ACCDET);
 #else
 	return 0;
 #endif
@@ -1104,8 +1131,14 @@ static int detect_impedance(void)
 	return impedance;
 }
 
+/* 1.7V * 0.5kohm / (2.5 + 0.5)kohm = 0.283V, support 1k ~ 14k, 0.5k margin */
+#define MIC_VINP_4POLE_THRES_MV 283
+#define VINP_NORMALIZED_TO_MV 1700
+
 static int dctrim_calibrated;
 static int hpl_dc_offset, hpr_dc_offset;
+static int mic_vinp_mv;
+
 static int last_lch_comp_value, last_rch_comp_value;
 
 static const int dBFactor_Den = 8192;
@@ -1121,12 +1154,77 @@ static const int dBFactor_Nom[32] = {
 	819200, 819200, 819200, 819200,
 };
 
-static int calOffsetToDcComp(int TrimOffset)
+static int get_mic_bias_mv(void)
 {
-	/* The formula is from DE programming guide */
-	/* should be mantain by pmic owner */
-	/* 32768/2 is rounded value */
-	return DIV_ROUND_CLOSEST(TrimOffset * 2804225, 32768);
+	unsigned int mic_bias = (Ana_Get_Reg(AUDENC_ANA_CON10) >> 4) & 0x7;
+
+	switch (mic_bias) {
+	case MIC_BIAS_1p7:
+		return 1700;
+	case MIC_BIAS_1p8:
+		return 1800;
+	case MIC_BIAS_1p9:
+		return 1900;
+	case MIC_BIAS_2p0:
+		return 2000;
+	case MIC_BIAS_2p1:
+		return 2100;
+	case MIC_BIAS_2p5:
+		return 2500;
+	case MIC_BIAS_2p6:
+		return 2600;
+	case MIC_BIAS_2p7:
+		return 2700;
+	default:
+		pr_warn("%s(), invalid mic_bias %d\n", __func__, mic_bias);
+		return 2600;
+	};
+}
+
+static int calOffsetToDcComp(int offset, int vol_type)
+{
+	int gain = mCodec_data->mAudio_Ana_Volume[vol_type];
+	int mic_bias_mv;
+	int real_mic_vinp_mv;
+
+	int offset_scale = DIV_ROUND_CLOSEST(offset * dBFactor_Nom[gain],
+					     dBFactor_Den);
+
+	if (mic_vinp_mv > MIC_VINP_4POLE_THRES_MV &&
+	    ((codec_debug_enable & DBG_DCTRIM_BYPASS_4POLE) == 0)) {
+		int v_diff_bias_vinp;
+		int v_diff_bias_vinp_scale;
+
+		/* refine mic bias influence on 4 pole headset */
+		mic_bias_mv = get_mic_bias_mv();
+		real_mic_vinp_mv = DIV_ROUND_CLOSEST(mic_vinp_mv * mic_bias_mv,
+						     VINP_NORMALIZED_TO_MV);
+
+		v_diff_bias_vinp = mic_bias_mv - real_mic_vinp_mv;
+		v_diff_bias_vinp_scale = DIV_ROUND_CLOSEST((v_diff_bias_vinp) *
+							   dBFactor_Nom[gain],
+							   dBFactor_Den);
+
+		if ((codec_debug_enable & DBG_DCTRIM_4POLE_LOG) != 0) {
+			pr_debug("%s(), mic_bias_mv %d, mic_vinp_mv %d, real_mic_vinp_mv %d\n",
+				 __func__,
+				 mic_bias_mv, mic_vinp_mv, real_mic_vinp_mv);
+
+			pr_debug("%s(), a %d, b %d\n", __func__,
+				 DIV_ROUND_CLOSEST(offset_scale * 2804225,
+						   32768),
+				 DIV_ROUND_CLOSEST(v_diff_bias_vinp_scale *
+						   1782,
+						   1800));
+		}
+
+		return DIV_ROUND_CLOSEST(offset_scale * 2804225, 32768) -
+		       DIV_ROUND_CLOSEST(v_diff_bias_vinp_scale * 1782, 1800);
+	} else {
+		/* The formula is from DE programming guide */
+		/* should be mantain by pmic owner */
+		return DIV_ROUND_CLOSEST(offset_scale * 2804225, 32768);
+	}
 }
 
 static int get_dc_ramp_step(int gain)
@@ -1147,7 +1245,6 @@ static int SetDcCompenSation(bool enable)
 	int sign_lch = 0, sign_rch = 0;
 	int abs_lch = 0, abs_rch = 0;
 	int index_lgain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL];
-	int index_rgain = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	int diff_lch = 0, diff_rch = 0, ramp_l = 0, ramp_r = 0;
 	int ramp_step = get_dc_ramp_step(index_lgain);
 
@@ -1165,8 +1262,10 @@ static int SetDcCompenSation(bool enable)
 		return 0;
 	}
 
-	lch_value = calOffsetToDcComp(hpl_dc_offset * dBFactor_Nom[index_lgain] / dBFactor_Den);
-	rch_value = calOffsetToDcComp(hpr_dc_offset * dBFactor_Nom[index_rgain] / dBFactor_Den);
+	lch_value = calOffsetToDcComp(hpl_dc_offset,
+				      AUDIO_ANALOG_VOLUME_HPOUTL);
+	rch_value = calOffsetToDcComp(hpr_dc_offset,
+				      AUDIO_ANALOG_VOLUME_HPOUTR);
 	diff_lch = enable ? lch_value - last_lch_comp_value : lch_value;
 	diff_rch = enable ? rch_value - last_rch_comp_value : rch_value;
 	sign_lch = diff_lch < 0 ? -1 : 1;
@@ -3152,9 +3251,13 @@ static int hp_impedance_get(struct snd_kcontrol *kcontrol,
 		pr_warn("%s(), pmic dl busy, do nothing\n", __func__);
 	set_hp_impedance_ctl(false);
 
+
 	ucontrol->value.integer.value[0] = hp_impedance;
-	pr_debug("%s(), hp_impedance = %d, efuse = %d\n",
-		 __func__, hp_impedance, efuse_current_calibrate);
+
+	mic_vinp_mv = get_accdet_auxadc();
+
+	pr_debug("%s(), hp_impedance = %d, efuse = %d, mic_vinp_mv = %d\n",
+		 __func__, hp_impedance, efuse_current_calibrate, mic_vinp_mv);
 	return 0;
 }
 
@@ -4467,6 +4570,21 @@ static int Voice_Call_DAC_DAC_HS_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int codec_debug_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = codec_debug_enable;
+	return 0;
+
+}
+
+static int codec_debug_set(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	codec_debug_enable = ucontrol->value.integer.value[0];
+	return 0;
+}
+
 static const struct soc_enum Pmic_Test_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Pmic_Test_function), Pmic_Test_function),
@@ -4487,6 +4605,9 @@ static const struct snd_kcontrol_new mt6356_pmic_Test_controls[] = {
 		     Voice_Call_DAC_DAC_HS_Set),
 	SOC_ENUM_EXT("SineTable_UL2", Pmic_Test_Enum[4], SineTable_UL2_Get, SineTable_UL2_Set),
 	SOC_ENUM_EXT("Pmic_Loopback", Pmic_Test_Enum[5], Pmic_Loopback_Get, Pmic_Loopback_Set),
+	SOC_SINGLE_EXT("Codec_Debug_Enable", SND_SOC_NOPM, 0, 0xffffffff, 0,
+		       codec_debug_get,
+		       codec_debug_set),
 };
 
 static const struct snd_kcontrol_new mt6356_UL_Codec_controls[] = {
