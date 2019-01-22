@@ -230,6 +230,10 @@ void rsnSaQueryAction(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb);
 VOID rsnGenerateWSCIEForAssocRsp(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
 #endif
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+BOOLEAN rsnCheckSecurityModeChanged(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_BSS_DESC_T prBssDesc);
+#endif
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

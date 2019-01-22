@@ -200,6 +200,11 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 
 	/* Features */
 	prConnSettings->fgIsEnableRoaming = FALSE;
+
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+	prConnSettings->fgSecModeChangeStartTimer = FALSE;
+#endif
+
 #if CFG_SUPPORT_ROAMING
 #if 0
 	if (prRegInfo)
@@ -308,6 +313,12 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 			  &prAisFsmInfo->rDeauthDoneTimer,
 			  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventDeauthTimeout, (ULONG) NULL);
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+		cnmTimerInitTimer(prAdapter,
+			  &prAisFsmInfo->rSecModeChangeTimer,
+			  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventSecModeChangeTimeout, (ULONG) NULL);
+#endif
+
 	/* 4 <1.2> Initiate PWR STATE */
 	SET_NET_PWR_STATE_IDLE(prAdapter, prAisBssInfo->ucBssIndex);
 
@@ -400,6 +411,9 @@ VOID aisFsmUninit(IN P_ADAPTER_T prAdapter)
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rIbssAloneTimer);
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rJoinTimeoutTimer);
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rSecModeChangeTimer);
+#endif
 
 	/* 4 <2> flush pending request */
 	aisFsmFlushRequest(prAdapter);
@@ -2215,6 +2229,10 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 			GET_CURRENT_SYSTIME(&prAisBssInfo->rConnTime);
 			prAisBssInfo->fgDisConnReassoc = FALSE;
 #endif
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+			prAdapter->rWifiVar.rConnSettings.fgSecModeChangeStartTimer = FALSE;
+#endif
+
 			/* 1. Reset retry count */
 			prAisFsmInfo->ucConnTrialCount = 0;
 			prAdapter->rWifiVar.rConnSettings.eReConnectLevel = RECONNECT_LEVEL_MIN;
@@ -3549,6 +3567,13 @@ VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 	aisDeauthXmitComplete(prAdapter, NULL, TX_RESULT_LIFE_TIMEOUT);
 }
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisFsmRunEventSecModeChangeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
+{
+	DBGLOG(AIS, INFO, "Beacon security mode change timeout, trigger disconnect!\n");
+	aisBssSecurityChanged(prAdapter);
+}
+#endif
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 /*----------------------------------------------------------------------------*/
 /*!
@@ -3928,6 +3953,14 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 		aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_RADIO_LOST, TRUE);
 	}
 }				/* end of aisBssBeaconTimeout() */
+
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisBssSecurityChanged(P_ADAPTER_T prAdapter)
+{
+	prAdapter->rWifiVar.rConnSettings.fgIsDisconnectedByNonRequest = TRUE;
+	aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_DEAUTHENTICATED, FALSE);
+}
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*!
