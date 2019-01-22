@@ -542,8 +542,8 @@ VOID scanAddToRoamBssDesc(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
 				prBssDesc->aucSSID, prBssDesc->ucSSIDLen);
 		}
 	}
-
-	GET_CURRENT_SYSTIME(&prRoamBssDesc->rUpdateTime);
+	if (prRoamBssDesc != NULL)
+		GET_CURRENT_SYSTIME(&prRoamBssDesc->rUpdateTime);
 }
 
 VOID scanSearchBssDescOfRoamSsid(IN P_ADAPTER_T prAdapter)
