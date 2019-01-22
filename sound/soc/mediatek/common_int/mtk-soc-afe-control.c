@@ -456,12 +456,8 @@ bool InitAfeControl(struct device *pDev)
 
 	mAudioMrg->Mrg_I2S_SampleRate = SampleRateTransform(44100, Soc_Aud_Digital_Block_MRG_I2S_OUT);
 
-#if 0
-	for (i = AUDIO_APLL1_DIV0; i < AUDIO_APLL_DIV_NUM; i++)
-		EnableI2SDivPower(i, false);
-#else
 	PowerDownAllI2SDiv();
-#endif
+
 	init_afe_ops();
 	if (s_afe_platform_ops->init_platform != NULL)
 		s_afe_platform_ops->init_platform();
