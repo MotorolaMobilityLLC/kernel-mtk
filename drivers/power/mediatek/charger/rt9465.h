@@ -17,6 +17,8 @@
 #define RT9465_VERSION_E1	0x00
 #define RT9465_VERSION_E2	0x01
 #define RT9465_VERSION_E3	0x02
+#define RT9465_VERSION_E4	0x03
+#define RT9465_VERSION_E5	0x04
 
 enum rt9465_reg_addr {
 	RT9465_REG_CHG_CTRL0,
@@ -73,13 +75,6 @@ enum rt9465_reg_addr {
 #define RT9465_BAT_VOREG_MIN	3800000
 #define RT9465_BAT_VOREG_MAX	5060000
 #define RT9465_BAT_VOREG_STEP	20000
-
-/* Watchdog fast-charge timer */
-/* hour */
-#define RT9465_WT_FC_NUM	8
-#define RT9465_WT_FC_MIN	4
-#define RT9465_WT_FC_MAX	20
-#define RT9465_WT_FC_STEP	2
 
 /* ADC Temperature */
 /* degree */
