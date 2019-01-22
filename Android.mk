@@ -78,17 +78,6 @@ clean-kernel:
 	$(hide) rm -rf $(KERNEL_OUT) $(KERNEL_MODULES_OUT) $(INSTALLED_KERNEL_TARGET)
 	$(hide) rm -f $(INSTALLED_DTB_OVERLAY_TARGET)
 
-ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
-.PHONY: odmdtboimage
-odmdtboimage: $(INSTALLED_DTB_OVERLAY_TARGET) $(SIGN_DTB_OVERLAY_TARGET)
-droid: $(INSTALLED_DTB_OVERLAY_TARGET) $(SIGN_DTB_OVERLAY_TARGET)
-
-$(SIGN_DTB_OVERLAY_TARGET):
-
-$(INSTALLED_DTB_OVERLAY_TARGET): $(BUILT_DTB_OVERLAY_TARGET) $(LOCAL_PATH)/Android.mk | $(ACP)
-	$(copy-file-to-target)
-
-endif
 
 .PHONY: check-kernel-config check-kernel-dotconfig
 droid: check-kernel-config check-kernel-dotconfig
