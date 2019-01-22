@@ -128,6 +128,11 @@ static const struct mtk_spi_compatible mt6775_compat = {
 	.adjust_reg = true,
 	.dma_8gb_v1 = true,
 };
+static const struct mtk_spi_compatible mt6771_compat = {
+	.need_pad_sel = true,
+	.adjust_reg = true,
+	.dma_8gb_v2 = true,
+};
 static const struct mtk_spi_compatible mt6739_compat = {
 	.need_pad_sel = true,
 	.adjust_reg = true,
@@ -161,6 +166,9 @@ static const struct of_device_id mtk_spi_of_match[] = {
 	},
 	{ .compatible = "mediatek,mt6775-spi",
 		.data = (void *)&mt6775_compat,
+	},
+	{ .compatible = "mediatek,mt6771-spi",
+		.data = (void *)&mt6771_compat,
 	},
 	{ .compatible = "mediatek,mt8135-spi",
 		.data = (void *)&mtk_common_compat,
