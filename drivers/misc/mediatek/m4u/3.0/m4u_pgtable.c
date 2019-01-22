@@ -141,7 +141,7 @@ int m4u_get_pte_info(m4u_domain_t *domain, unsigned long mva, m4u_pte_info_t *pt
 {
 	imu_pgd_t *pgd;
 	imu_pte_t *pte = NULL;
-	unsigned int pa = 0;
+	unsigned long pa = 0;
 	unsigned int size;
 	int valid = 1;
 
@@ -151,10 +151,18 @@ int m4u_get_pte_info(m4u_domain_t *domain, unsigned long mva, m4u_pte_info_t *pt
 		pte = imu_pte_offset_map(pgd, mva);
 		if (F_PTE_TYPE_GET(imu_pte_val(*pte)) == F_PTE_TYPE_LARGE) {
 			pa = imu_pte_val(*pte) & F_PTE_PA_LARGE_MSK;
+			if (imu_pte_val(*pte) & F_PTE_BIT32_BIT)
+				pa |= 0x100000000;
+			if (imu_pte_val(*pte) & F_PTE_BIT33_BIT)
+				pa |= 0x200000000;
 			pa |= mva & (~F_PTE_PA_LARGE_MSK);
 			size = MMU_LARGE_PAGE_SIZE;
 		} else if (F_PTE_TYPE_GET(imu_pte_val(*pte)) == F_PTE_TYPE_SMALL) {
 			pa = imu_pte_val(*pte) & F_PTE_PA_SMALL_MSK;
+			if (imu_pte_val(*pte) & F_PTE_BIT32_BIT)
+				pa |= 0x100000000;
+			if (imu_pte_val(*pte) & F_PTE_BIT33_BIT)
+				pa |= 0x200000000;
 			pa |= mva & (~F_PTE_PA_SMALL_MSK);
 			size = MMU_SMALL_PAGE_SIZE;
 		} else {
@@ -165,10 +173,18 @@ int m4u_get_pte_info(m4u_domain_t *domain, unsigned long mva, m4u_pte_info_t *pt
 		pte = NULL;
 		if (F_PGD_TYPE_IS_SECTION(*pgd)) {
 			pa = imu_pgd_val(*pgd) & F_PGD_PA_SECTION_MSK;
+			if (imu_pgd_val(*pgd) & F_PGD_BIT32_BIT)
+				pa |= 0x100000000;
+			if (imu_pgd_val(*pgd) & F_PGD_BIT33_BIT)
+				pa |= 0x200000000;
 			pa |= mva & (~F_PGD_PA_SECTION_MSK);
 			size = MMU_SECTION_SIZE;
 		} else if (F_PGD_TYPE_IS_SUPERSECTION(*pgd)) {
 			pa = imu_pgd_val(*pgd) & F_PGD_PA_SUPERSECTION_MSK;
+			if (imu_pgd_val(*pgd) & F_PGD_BIT32_BIT)
+				pa |= 0x100000000;
+			if (imu_pgd_val(*pgd) & F_PGD_BIT33_BIT)
+				pa |= 0x200000000;
 			pa |= mva & (~F_PGD_PA_SUPERSECTION_MSK);
 			size = MMU_SUPERSECTION_SIZE;
 		} else {
