@@ -349,4 +349,7 @@ void set_LowLatencyDebug(uint32 bFlag);
 /* For handling suspend */
 bool handle_suspend(bool suspend);
 
+int get_usage_digital_block(enum audio_usage_id id);
+int get_usage_digital_block_io(enum audio_usage_id id);
+
 #endif
