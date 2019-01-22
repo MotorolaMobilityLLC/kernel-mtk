@@ -696,9 +696,9 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	case SPM_LEAVE_SODI:
 	case SPM_LEAVE_SODI3:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync_new(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
@@ -709,9 +709,9 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	case SPM_SUSPEND_PREPARE:
 	case SPM_POST_SUSPEND:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync_new(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
@@ -720,9 +720,9 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	case SPM_DPIDLE_PREPARE:
 	case SPM_POST_DPIDLE:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync_new(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
@@ -731,9 +731,9 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 	case SPM_SODI_PREPARE:
 	case SPM_POST_SODI:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {
-			pr_err("#@# %s(%d) sspm_ipi_send_sync_new(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
+			pr_err("#@# %s(%d) sspm_ipi_send_sync(cmd:0x%x) ret %d\n", __func__, __LINE__, cmd, ret);
 		} else if (ack_data < 0) {
 			ret = ack_data;
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
