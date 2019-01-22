@@ -51,7 +51,6 @@ extern void mt_usb_dual_role_to_host(void);
 #endif
 
 extern bool mtk_is_host_mode(void);
-extern bool musb_check_ipo_state(void);
 bool mtk_is_charger_4_vol(void);
 
 #if CONFIG_MTK_GAUGE_VERSION == 30

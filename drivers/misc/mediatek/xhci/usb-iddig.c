@@ -150,10 +150,6 @@ void mtk_xhci_mode_switch(struct work_struct *work)
 	int ret = 0;
 
 	mtk_xhci_mtk_printk(K_DEBUG, "mtk_xhci_mode_switch\n");
-	if (musb_check_ipo_state() == true) {
-		enable_irq(mtk_idpin_irqnum); /* prevent from disable irq twice*/
-		return;
-	}
 
 	if (mtk_idpin_cur_stat == IDPIN_OUT) {
 		is_load = false;
