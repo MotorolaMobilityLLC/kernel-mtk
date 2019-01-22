@@ -180,6 +180,7 @@ struct charger_manager {
 /* charger related module interface */
 extern int charger_manager_notifier(struct charger_manager *info, int event);
 extern int mtk_switch_charging_init(struct charger_manager *);
+extern int mtk_dual_switch_charging_init(struct charger_manager *);
 extern void _wake_up_charger(struct charger_manager *);
 extern int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv);
 

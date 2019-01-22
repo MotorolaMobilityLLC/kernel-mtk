@@ -32,6 +32,9 @@ int mtk_pe20_reset_ta_vchr(struct charger_manager *pinfo)
 
 	/* Reset TA's charging voltage */
 	do {
+		if (pinfo->chg2_dev)
+			charger_dev_enable(pinfo->chg2_dev, false);
+
 		ret = charger_dev_set_ta20_reset(pinfo->chg1_dev);
 		msleep(250);
 
@@ -196,6 +199,9 @@ static int __pe20_set_ta_vchr(struct charger_manager *pinfo, u32 chr_volt)
 		pr_err("%s: failed, cable out\n", __func__);
 		return -EIO;
 	}
+
+	if (pinfo->chg2_dev)
+		charger_dev_enable(pinfo->chg2_dev, false);
 
 	ret = charger_dev_send_ta20_current_pattern(pinfo->chg1_dev, chr_volt * 1000);
 	if (ret < 0) {
