@@ -5021,6 +5021,7 @@ static inline void ufshcd_rpmb_remove(struct ufs_hba *hba)
 
 	scsi_device_put(hba->sdev_ufs_rpmb);
 	hba->sdev_ufs_rpmb = NULL;
+	hba->rawdev_ufs_rpmb = NULL;
 
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 }
