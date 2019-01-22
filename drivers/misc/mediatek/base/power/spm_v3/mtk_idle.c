@@ -34,10 +34,7 @@
 
 #include <asm/system_misc.h>
 #include <mt-plat/sync_write.h>
-/* Owen 20170407 Fix Build error */
-#ifndef CONFIG_MACH_MT6758
 #include <mach/mtk_gpt.h>
-#endif
 #include <mtk_spm.h>
 #include <mtk_spm_dpidle.h>
 #include <mtk_spm_idle.h>
@@ -2650,7 +2647,7 @@ void mtk_cpuidle_framework_init(void)
 
 	mtk_idle_gpt_init();
 
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 	dpidle_by_pass_pg = true;
 #endif
 

@@ -69,7 +69,7 @@ DEFINE_SPINLOCK(__spm_lock);
 #define PCM_TIMER_RAMP_BASE_SUSPEND_LONG	0x927C00 /* 5min */
 static u32 pcm_timer_ramp_max_sec_loop = 1;
 
-#ifdef CONFIG_MACH_MT6759
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 const char *wakesrc_str[32] = {
 	[0] = " R12_PCMTIMER",
 	[1] = " R12_SSPM_WDT_EVENT_B",
@@ -166,9 +166,7 @@ int __spm_check_opp_level_impl(int ch)
 int __spm_check_opp_level(int ch)
 {
 	int opp;
-#if defined(CONFIG_MACH_MT6759)
-	int level[4] = {2, 1, 1, 1};
-#elif defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	int level[4] = {2, 1, 1, 1};
 
 #if 0 /* TODO: 6758 EP */
@@ -314,7 +312,7 @@ do {						\
 
 void rekick_vcorefs_scenario(void)
 {
-#ifndef CONFIG_MACH_MT6759
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
 	int flag;
 
 	if (spm_read(PCM_REG15_DATA) == 0x0) {

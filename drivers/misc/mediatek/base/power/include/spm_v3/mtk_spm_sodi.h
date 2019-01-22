@@ -66,7 +66,7 @@
 	WAKE_SRC_R12_SEJ_EVENT_B)
 #endif /* CONFIG_MICROTRUST_TEE_SUPPORT */
 
-#elif defined(CONFIG_MACH_MT6759)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #define WAKE_SRC_FOR_COMMON_SODI (         \
 	WAKE_SRC_R12_PCMTIMER            | \
 	WAKE_SRC_R12_SSPM_WDT_EVENT_B    | \
@@ -97,37 +97,6 @@
 
 #endif /* CONFIG_MICROTRUST_TEE_SUPPORT */
 
-/* Owen 20170407 Fix Build error */
-#elif defined(CONFIG_MACH_MT6758)
-#define WAKE_SRC_FOR_COMMON_SODI (         \
-	WAKE_SRC_R12_PCMTIMER            | \
-	WAKE_SRC_R12_SSPM_WDT_EVENT_B    | \
-	WAKE_SRC_R12_KP_IRQ_B            | \
-	WAKE_SRC_R12_APXGPT1_EVENT_B     | \
-	WAKE_SRC_R12_SYS_TIMER_EVENT_B   | \
-	WAKE_SRC_R12_EINT_EVENT_B        | \
-	WAKE_SRC_R12_C2K_WDT_IRQ_B       | \
-	WAKE_SRC_R12_CCIF0_EVENT_B       | \
-	WAKE_SRC_R12_SSPM_SPM_IRQ_B      | \
-	WAKE_SRC_R12_SCP_IPC_MD2SPM_B    | \
-	WAKE_SRC_R12_SCP_WDT_EVENT_B     | \
-	WAKE_SRC_R12_USBX_CDSC_B         | \
-	WAKE_SRC_R12_USBX_POWERDWN_B     | \
-	WAKE_SRC_R12_CONN2AP_WAKEUP_B    | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B       | \
-	WAKE_SRC_R12_AFE_IRQ_MCU_B       | \
-	WAKE_SRC_R12_SCP_CIRQ_IRQ_B      | \
-	WAKE_SRC_R12_CONN2AP_WDT_IRQ_B   | \
-	WAKE_SRC_R12_MD1_WDT_B           | \
-	WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT)
-
-#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
-#define WAKE_SRC_FOR_SODI WAKE_SRC_FOR_COMMON_SODI
-#else
-#define WAKE_SRC_FOR_SODI (WAKE_SRC_FOR_COMMON_SODI | WAKE_SRC_R12_SEJ_EVENT_B)
-
-#endif /* CONFIG_MICROTRUST_TEE_SUPPORT */
 #else
 #error "Does not support!"
 #endif
@@ -156,7 +125,7 @@ extern unsigned int	soidle_profile[4];
 			pr_debug(SODI_TAG fmt, ##args);		\
 	} while (0)
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #define SPM_BYPASS_SYSPWREQ     1
 #else
 #define SPM_BYPASS_SYSPWREQ     0

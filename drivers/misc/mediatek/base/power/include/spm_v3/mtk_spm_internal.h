@@ -24,11 +24,7 @@
 #include <mtk_lpae.h>
 #include <mtk_gpio.h>
 
-#if defined(CONFIG_MACH_MT6759)
-#define SUP_MCSODI_FS
-#endif
-/* Owen 20170407 Fix Build error */
-#if defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 #define SUP_MCSODI_FS
 #endif
 

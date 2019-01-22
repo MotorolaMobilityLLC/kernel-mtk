@@ -26,10 +26,7 @@
 #endif
 
 /* #include <mach/irqs.h> */
-/* 20170407 Owen Fix build Error*/
-#ifndef CONFIG_MACH_MT6758
 #include <mach/mtk_gpt.h>
-#endif
 
 #include <mt-plat/mtk_boot.h>
 #if defined(CONFIG_MTK_SYS_CIRQ)
@@ -256,7 +253,7 @@ static struct pwr_ctrl sodi_ctrl = {
 
 	/* Auto-gen End */
 
-#elif defined(CONFIG_MACH_MT6759)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	/* Auto-gen Start */
 
 	/* SPM_CLK_CON */
