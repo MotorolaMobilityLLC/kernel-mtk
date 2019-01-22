@@ -405,7 +405,7 @@ struct clk *get_smi_clk(char *smi_clk_name)
 
 unsigned int smi_clk_get_ref_count(const unsigned int reg_indx)
 {
-	if (reg_indx < SMI_REG_REGION_MAX)
+	if (reg_indx < SMI_LARB_NUM)
 		return (unsigned int)atomic_read(&(larbs_clock_count[reg_indx]));
 	return 0;
 }
@@ -1470,9 +1470,9 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4Lo
 	enum MTK_SMI_BWC_SCEN eFinalScen;
 	static enum MTK_SMI_BWC_SCEN ePreviousFinalScen = SMI_BWC_SCEN_CNT;
 
-	if ((p_conf->scenario >= SMI_BWC_SCEN_CNT) || (p_conf->scenario < 0)) {
-		SMIERR("Incorrect SMI BWC config : 0x%x, how could this be...\n", p_conf->scenario);
-		return -1;
+	if ((p_conf->scenario < 0) || (p_conf->scenario >= SMI_BWC_SCEN_CNT)) {
+		SMIMSG("Incorrect SMI BWC config : 0x%x, how could this be...\n", p_conf->scenario);
+		return -EINVAL;
 	}
 
 	SMIMSG("current request is turn %s %d\n", p_conf->b_on_off ? "on" : "off", p_conf->scenario);
