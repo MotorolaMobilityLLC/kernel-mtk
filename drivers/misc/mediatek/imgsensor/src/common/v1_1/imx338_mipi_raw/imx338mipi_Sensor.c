@@ -498,13 +498,16 @@ static kal_uint32 imx338_ATR(UINT16 DarkLimit, UINT16 OverExp)
 	/*write_cmos_sensor(0xAA19, 0x3C);*/
 	/*write_cmos_sensor(0xAA1A, 0x10);*/
 	/*write_cmos_sensor(0xAA1B, 0x00);*/
+#if 0
 	if (DarkLimit > ATR_DARK_THRESHOLD) {
+#endif
 		write_cmos_sensor(0xAA16, 0x00);
 		write_cmos_sensor(0xAA17, 0x64);
 		write_cmos_sensor(0xAA18, 0x08);
 		write_cmos_sensor(0xAA19, 0x00);
 		write_cmos_sensor(0xAA1A, 0x10);
 		write_cmos_sensor(0xAA1B, 0x00);
+#if 0
 	} else {
 		write_cmos_sensor(0xAA16, 0x00);
 		write_cmos_sensor(0xAA17, 0x96);
@@ -513,6 +516,7 @@ static kal_uint32 imx338_ATR(UINT16 DarkLimit, UINT16 OverExp)
 		write_cmos_sensor(0xAA1A, 0x01);
 		write_cmos_sensor(0xAA1B, 0x00);
 	}
+#endif
 	/*LOG_INF("bk_ imx338_ATR 0x%x-%x, 0x%x-%x, 0x%x-%x DarkLimit %d",
 	*	read_cmos_sensor(0xAA16), read_cmos_sensor(0xAA17),
 	*	read_cmos_sensor(0xAA18), read_cmos_sensor(0xAA19),
