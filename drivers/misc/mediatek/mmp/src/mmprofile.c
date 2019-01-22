@@ -44,7 +44,9 @@
 #include <linux/bug.h>
 
 #define MMPROFILE_INTERNAL
-#include <mmprofile_internal.h>
+#include "mmprofile_internal.h"
+#include "mmprofile_function.h"
+#include "mmprofile_static_event.h"
 
 #ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
@@ -101,6 +103,12 @@ static DEFINE_MUTEX(mmprofile_regtable_mutex);
 static DEFINE_MUTEX(mmprofile_meta_buffer_mutex);
 static mmprofile_event_t *p_mmprofile_ring_buffer;
 static unsigned char *p_mmprofile_meta_buffer;
+
+static mmp_static_event_t mmprofile_static_events[] = {
+	{MMP_ROOT_EVENT, "Root_Event", MMP_INVALID_EVENT},
+	{MMP_TOUCH_PANEL_EVENT, "TouchPanel_Event", MMP_ROOT_EVENT},
+};
+
 static mmprofile_global_t mmprofile_globals
 __aligned(PAGE_SIZE) = {
 	.buffer_size_record = MMPROFILE_DEFAULT_BUFFER_SIZE,

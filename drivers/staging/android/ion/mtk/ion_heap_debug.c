@@ -23,6 +23,7 @@
 #include <linux/fdtable.h>
 #include <linux/mutex.h>
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 #include <linux/debugfs.h>
 #include <linux/kthread.h>
 #include "mtk/mtk_ion.h"

@@ -48,6 +48,7 @@
 #define MMP_Event unsigned int
 #else
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 
 extern void MMProfileEnable(int enable);
 extern void MMProfileStart(int start);

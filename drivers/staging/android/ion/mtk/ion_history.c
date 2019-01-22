@@ -24,6 +24,7 @@
 #include <linux/slab.h>
 #include <linux/mutex.h>
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 #include <linux/debugfs.h>
 #include <linux/kthread.h>
 #include "ion_profile.h"
