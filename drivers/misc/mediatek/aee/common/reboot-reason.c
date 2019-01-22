@@ -438,22 +438,23 @@ asmlinkage void aee_stop_nested_panic(struct pt_regs *regs)
 		ipanic_recursive_ke(regs, excp_regs, cpu);
 
 		aee_rec_step_nested_panic(step_base + 6);
-		/* we donot want a FIQ after this, so disable hwt */
-#ifdef CONFIG_MTK_WATCHDOG
-		res = get_wd_api(&wd_api);
-
-		if (res)
-			aee_nested_printf("get_wd_api error\n");
-		else
-			wd_api->wd_aee_confirm_hwreboot();
-#else
-		aee_nested_printf("mtk watchdog not enable.\n");
-#endif
-		aee_rec_step_nested_panic(step_base + 7);
 		break;
 	default:
 		break;
 	}
+
+	/* we donot want a FIQ after this, so disable hwt */
+#ifdef CONFIG_MTK_WATCHDOG
+	res = get_wd_api(&wd_api);
+
+	if (res)
+		aee_nested_printf("get_wd_api error\n");
+	else
+		wd_api->wd_aee_confirm_hwreboot();
+#else
+	aee_nested_printf("mtk watchdog not enable.\n");
+#endif
+	aee_rec_step_nested_panic(step_base + 7);
 
 	/* waiting for the WDT timeout */
 	while (1) {
