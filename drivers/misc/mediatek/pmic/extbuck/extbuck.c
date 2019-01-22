@@ -1,0 +1,67 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ * Sakys <jeff_chang@richtek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#include <linux/regulator/consumer.h>
+#include <mt-plat/upmu_common.h>
+
+int is_ext_buck_exist(void)
+{
+#ifndef CONFIG_MTK_EXTBUCK
+	return 0;
+#else
+	#ifdef CONFIG_REGULATOR_ISL91302A
+	struct regulator *reg;
+
+	reg = regulator_get(NULL, "ext_buck_proc1");
+	if (reg == NULL)
+		return 0;
+	regulator_put(reg);
+	return 1;
+	#endif /* CONFIG_REGULATOR_ISL91302A */
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
+	if ((is_mt6313_exist() == 1))
+		return 1;
+	#endif /* CONFIG_MTK_PMIC_CHIP_MT6313 */
+#endif /* if not CONFIG_MTK_EXTBUCK */
+	return 0;
+}
+
+int is_ext_buck2_exist(void)
+{
+#ifndef CONFIG_MTK_EXTBUCK
+	return 0;
+#else
+	#ifdef CONFIG_REGULATOR_RT5738
+	struct regulator *reg;
+	int ret = 0;
+
+	reg = regulator_get(NULL, "ext_buck_vdram");
+	if (reg == NULL)
+		return 0;
+	regulator_put(reg);
+	return 1;
+	#endif /* CONFIG_REGULATOR_RT5738 */
+	return 0;
+#endif /* if not CONIFG_MTK_EXTBUCK */
+}
+
+int is_ext_buck_sw_ready(void)
+{
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6313)
+	if ((is_mt6313_sw_ready() == 1))
+		return 1;
+#endif
+		return 0;
+}
+

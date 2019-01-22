@@ -216,4 +216,7 @@ extern int pmic_dump_all_reg(void);
 
 extern int pmic_force_vcore_pwm(bool enable);
 
+extern int is_ext_buck_exist(void);
+extern int is_ext_buck2_exist(void);
+
 #endif				/* _MT_PMIC_COMMON_H_ */
