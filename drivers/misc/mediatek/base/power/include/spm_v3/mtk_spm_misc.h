@@ -111,6 +111,8 @@ extern bool is_already_snap_shot;
 
 /* power golden setting */
 extern void mt_power_gs_dump_suspend(void);
+extern void mt_power_gs_dump_dpidle(void);
+extern void mt_power_gs_dump_sodi3(void);
 extern bool slp_dump_golden_setting;
 
 /* gpio */
