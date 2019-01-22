@@ -596,6 +596,9 @@ static int ramoops_probe(struct platform_device *pdev)
 	phys_addr_t paddr;
 	int err = -EINVAL;
 
+	if (!pdata)
+		pdata = pdev->dev.platform_data;
+
 	if (dev->of_node && !pdata) {
 		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
 		if (!pdata) {
