@@ -251,9 +251,9 @@ void ohio_hardware_poweron(void)
 	while (retry_count) {
 		/* power enable */
 		pinctrl_select_state(g_exttypec->pinctrl, g_exttypec->pin_cfg->pwr_en_high);
-		mdelay(10*4);
+		mdelay(10*8);
 		pinctrl_select_state(g_exttypec->pinctrl, g_exttypec->pin_cfg->rst_n_high);
-		mdelay(10);
+		mdelay(10*2);
 
 		/* check connect DTB */
 		if (do_chip_detect) {
@@ -347,10 +347,11 @@ static int ohio_init_gpio(struct ohio_data *ohio)
 	int ret = 0;
 
 	pinctrl_select_state(g_exttypec->pinctrl,
-		g_exttypec->pin_cfg->rst_n_init);
+		g_exttypec->pin_cfg->pwr_en_init);
+	mdelay(10*8);
 
 	pinctrl_select_state(g_exttypec->pinctrl,
-		g_exttypec->pin_cfg->pwr_en_init);
+		g_exttypec->pin_cfg->rst_n_init);
 
 	pinctrl_select_state(g_exttypec->pinctrl,
 		g_exttypec->pin_cfg->intp_init);
@@ -1015,6 +1016,11 @@ static int ohio_i2c_probe(struct i2c_client *client,
 		goto err2;
 	}
 
+	atomic_set(&power_status, 0);
+	atomic_set(&ohio_sys_is_ready, 0);
+	cable_connected = 0;
+	ohio_power_standby();
+
 	wake_lock_init(&ohio->ohio_lock,
 		       WAKE_LOCK_SUSPEND, "ohio_wake_lock");
 
@@ -1133,11 +1139,6 @@ static int ohio_i2c_probe(struct i2c_client *client,
 
 	/*enable driver*/
 	queue_delayed_work(ohio->workqueue, &ohio->work, 0);
-
-	atomic_set(&power_status, 0);
-	atomic_set(&ohio_sys_is_ready, 0);
-	cable_connected = 0;
-	ohio_power_standby();
 
 	anx_printk(K_INFO, "ohio_i2c_probe successfully end\n");
 	goto exit;
