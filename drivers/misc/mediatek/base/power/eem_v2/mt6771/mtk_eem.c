@@ -198,6 +198,7 @@ static int get_devinfo(void)
 #endif
 
 #ifdef CONFIG_EEM_AEE_RR_REC
+	aee_rr_rec_ptp_devinfo_0((unsigned int)val[0]);
 	aee_rr_rec_ptp_e0((unsigned int)val[1]);
 	aee_rr_rec_ptp_e1((unsigned int)val[2]);
 	aee_rr_rec_ptp_e2((unsigned int)val[3]);
@@ -1487,21 +1488,20 @@ static void eem_set_eem_volt(struct eem_det *det)
 			i, det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
 #endif
 #if ENABLE_LOO
-		if ((i > 0) && (det->volt_tbl_pmic[i] > det->volt_tbl_pmic[i-1])) {
-			aee_kernel_warning("mt_eem",
-				"@%s():%d; (%s) [%d] = [%x] > [%d] = [%x]\n",
-				__func__, __LINE__, ((char *)(det->name) + 8),
-				i, det->volt_tbl_pmic[i], i-1, det->volt_tbl_pmic[i-1]);
-
-			aee_kernel_warning("mt_eem",
-				"@%s():%d; (%s) V30_[0x%x], V74_[0x%x], VD30_[0x%x], VD74_[0x%x]\n",
-				__func__, __LINE__, ((char *)(det->name) + 8),
-				eem_read(EEM_VOP30), eem_read(EEM_VOP74),
-				eem_read(EEM_VDESIGN30), eem_read(EEM_VDESIGN74));
-
-			WARN_ON(det->volt_tbl_pmic[i] > det->volt_tbl_pmic[i-1]);
-
-			return;
+		if ((i > 0) && (det->volt_tbl_pmic[i] > det->volt_tbl_pmic[i-1]) &&
+			(det->set_volt_to_upower)) {
+			if ((org_det->ctrl_id == EEM_CTRL_2L_HI) ||
+				(org_det->ctrl_id == EEM_CTRL_L_HI))
+				/* Receive high bank isr but low opp still using higher volt */
+				/* overwrite low bank opp voltage */
+				det->volt_tbl_pmic[i] = det->volt_tbl_pmic[i-1];
+			else {
+				/* Receive low bank isr but high opp still using lower volt */
+				/* overwrite high bank opp voltage */
+				det->volt_tbl_pmic[i-1] = det->volt_tbl_pmic[i];
+				if ((i > 1) && (det->volt_tbl_pmic[i] > det->volt_tbl_pmic[i-2]))
+					det->volt_tbl_pmic[i-2] = det->volt_tbl_pmic[i];
+			}
 		}
 #endif
 
@@ -2308,9 +2308,10 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 
 		if ((i > 0) && (det->volt_tbl[i] > det->volt_tbl[i-1])) {
 #if ENABLE_LOO
+			/* It's not necessary to compare opp7~15 for high bank */
 			if (((detid == EEM_DET_2L_HI) ||
 				((detid == EEM_DET_L_HI) && (det != &eem_detector_cci)))
-				&& (i == 8))
+				&& (i >= 8))
 				continue;
 #endif
 			verr = 1;
