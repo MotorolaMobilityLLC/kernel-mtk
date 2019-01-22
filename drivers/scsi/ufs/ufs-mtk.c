@@ -257,7 +257,7 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 
 	/* get ufs_mtk_mmio_base_infracfg_ao */
 
-	node_infracfg_ao = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+	node_infracfg_ao = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-infracfg_ao");
 
 	if (node_infracfg_ao) {
 		ufs_mtk_mmio_base_infracfg_ao = of_iomap(node_infracfg_ao, 0);
@@ -272,7 +272,7 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 
 	/* get ufs_mtk_mmio_base_pericfg */
 
-	node_pericfg = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
+	node_pericfg = of_find_compatible_node(NULL, NULL, "mediatek,mt6799-pericfg");
 
 	if (node_pericfg) {
 		ufs_mtk_mmio_base_pericfg = of_iomap(node_pericfg, 0);
@@ -580,6 +580,7 @@ static int ufs_mtk_link_startup_notify(struct ufs_hba *hba, enum ufs_notify_chan
 static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {
 	int ret = 0;
+	u32 reg;
 
 	if (ufshcd_is_link_hibern8(hba)) {
 		/*
@@ -589,6 +590,54 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		ret = ufshcd_dme_set(hba, UIC_ARG_MIB_SEL(VENDOR_UNIPROPOWERDOWNCONTROL, 0), 1);
 		if (ret)
 			return ret;
+
+		/* VA09 LDO will be shutdwon by SPM (Step1: SPM set RG_VA09_ON to 1'b0 Step2: SPM turn off VA09 LDO )
+		 * Before VA09 LDO shutdown, some sw flow of mphy needs to be  done here.
+		*/
+		/* step1: force DIFZ hihg */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa09c);
+		reg = reg | (0x1 << 18);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa09c);
+
+		/* step2: force DA_MP_RX0_SQ_EN=0 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		reg = reg | (0x1);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		reg = reg & ~(0x1 << 1);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+
+		/* step3: force DA_MP_CDR_ISO_EN=1 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = reg | (0x1 << 19);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = reg | (0x1 << 20);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+
+		/* step4: force DA_MP_CDR_PWR_ON=0 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = reg | (0x1 << 17);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = reg & ~(0x1 << 18);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+
+		/* step5: force DA_MP_PLL_ISO_EN=1 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = reg | (0x1 << 8);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = reg | (0x1 << 9);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+
+		/* step6: force DA_MP_PLL_PWR_ON=0 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = reg | (0x1 << 10);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = reg & ~(0x1 << 11);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
 
 		#if 0
 		/* TEST ONLY: emulate UFSHCI power off by HCI SW reset */
@@ -602,8 +651,57 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 {
 	int ret = 0;
+	u32 reg;
 
 	if (ufshcd_is_link_hibern8(hba)) {
+		/* VA09 LDO will be power on by SPM (Step1: SPM turn on VA09 LDO Step2: SPM set RG_VA09_ON to 1'b1  )
+		 * Before VA09 LDO is enabled, some sw flow of mphy needs to be  done here.
+		*/
+		/* step6: release DA_MP_PLL_PWR_ON=0 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = reg | (0x1 << 11);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = reg & ~(0x1 << 10);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+
+		/* step5: release DA_MP_PLL_ISO_EN=1 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = reg & ~(0x1 << 9);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+		reg = reg & ~(0x1 << 8);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0x008c);
+
+		/* step4: release DA_MP_CDR_PWR_ON=0 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = reg | (0x1 << 18);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = reg & ~(0x1 << 17);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+
+		/* step3: release DA_MP_CDR_ISO_EN=1 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = reg & ~(0x1 << 20);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+		reg = reg & ~(0x1 << 19);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xb044);
+
+		/* step2: release DA_MP_RX0_SQ_EN=0 */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		reg = reg | (0x1 << 1);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+		reg = reg & ~(0x1);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa0ac);
+
+		/* step1: release DIFZ hihg */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao + 0xa09c);
+		reg = reg & ~(0x1 << 18);
+		writel(reg, ufs_mtk_mmio_base_infracfg_ao + 0xa09c);
+
 		/*
 		 * HCI power-on flow with link in hibern8
 		 *
