@@ -162,6 +162,7 @@ enum {
 #define NF_CLK_CFG            15     /* = NF_CLKMUX / 4 */
 
 extern bool             soidle_by_pass_pg;
+extern bool             mcsodi_by_pass_pg;
 extern bool             dpidle_by_pass_pg;
 
 extern void __iomem *infrasys_base;
@@ -285,6 +286,7 @@ enum {
 	IDLE_TYPE_SO3,
 	IDLE_TYPE_SO,
 	IDLE_TYPE_MC,
+	IDLE_TYPE_MCSO,
 	IDLE_TYPE_SL,
 	IDLE_TYPE_RG,
 	NR_TYPES,
@@ -294,6 +296,7 @@ enum {
 enum {
 	CPUIDLE_STATE_RG = 0,
 	CPUIDLE_STATE_SL,
+	CPUIDLE_STATE_MCSO,
 	CPUIDLE_STATE_MC,
 	CPUIDLE_STATE_SO,
 	CPUIDLE_STATE_DP,

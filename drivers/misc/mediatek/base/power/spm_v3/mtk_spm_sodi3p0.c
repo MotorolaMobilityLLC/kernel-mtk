@@ -269,6 +269,7 @@ static int by_md2ap_count;
 
 static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
+#ifndef CONFIG_MACH_MT6759
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	unsigned int value = 0;
 	unsigned int vcore_lp_mode = 0;
@@ -318,16 +319,18 @@ static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 
 	wk_mt6337_set_lp_setting();
 #endif
-
+#endif
 	__spm_sync_pcm_flags(pwrctrl);
 }
 
 static void spm_sodi3_post_process(void)
 {
+#ifndef CONFIG_MACH_MT6759
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 
 	wk_mt6337_restore_lp_setting();
+#endif
 #endif
 }
 
@@ -674,9 +677,10 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	spm_sodi3_footprint_val((1 << SPM_SODI3_ENTER_WFI) |
 		(1 << SPM_SODI3_B4) | (1 << SPM_SODI3_B5) | (1 << SPM_SODI3_B6));
 
+#ifndef CONFIG_MACH_MT6759
 	if (sodi3_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3();
-
+#endif
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 
 #ifdef SPM_SODI3_PROFILE_TIME

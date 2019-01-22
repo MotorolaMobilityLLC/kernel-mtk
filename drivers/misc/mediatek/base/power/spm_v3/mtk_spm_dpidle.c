@@ -1007,8 +1007,10 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	spm_dpidle_notify_spm_before_wfi_async_wait();
 
 	/* Dump low power golden setting */
+#ifndef CONFIG_MACH_MT6759
 	if (operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)
 		mt_power_gs_dump_dpidle();
+#endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
@@ -1034,8 +1036,9 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!(operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN))
 		request_uart_to_wakeup();
+
 RESTORE_IRQ:
-#if defined(CONFIG_MTK_SYS_CIRQ)
+#endif
 
 	spm_dpidle_notify_sspm_after_wfi(false, operation_cond);
 
@@ -1049,9 +1052,9 @@ RESTORE_IRQ:
 
 	wr = spm_output_wake_reason(&wakesta, pcmdesc, log_cond, operation_cond);
 
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
-#endif
 #endif
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)

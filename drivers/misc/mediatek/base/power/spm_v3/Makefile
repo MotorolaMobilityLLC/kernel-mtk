@@ -64,4 +64,29 @@ obj-y += mtk_spm_sodi.o
 obj-y += mtk_spm_sodi3p0.o
 obj-y += mtk_spm_sodi_cmdq.o
 obj-y += mtk_spm_vcorefs.o
+#obj-y += mtk_spm_mcsodi.o
+endif
+
+ifeq ($(CONFIG_MACH_MT6759), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v1/inc/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
+obj-y += mtk_idle.o
+obj-y += mtk_idle_mt6759.o
+obj-y += mtk_idle_profile.o
+obj-y += mtk_sleep.o
+obj-y += mtk_spm_init.o
+obj-y += mtk_spm.o
+obj-y += mtk_spm_dpidle.o
+obj-y += mtk_spm_dpidle_mt6759.o
+obj-y += mtk_spm_fs.o
+obj-y += mtk_spm_internal.o
+ifneq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+obj-y += mtk_spm_pmic_wrap.o
+endif
+obj-y += mtk_spm_resource_req.o
+obj-y += mtk_spm_sleep.o
+obj-y += mtk_spm_sodi.o
+obj-y += mtk_spm_sodi3p0.o
+obj-y += mtk_spm_mcsodi.o
+obj-y += mtk_spm_sodi_cmdq.o
 endif
