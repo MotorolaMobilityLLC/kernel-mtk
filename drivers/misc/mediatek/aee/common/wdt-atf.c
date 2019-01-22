@@ -34,6 +34,7 @@
 #include <asm/memory.h>
 #include <asm/traps.h>
 #include <linux/compiler.h>
+#include <linux/reboot.h>
 /* #include <mach/fiq_smp_call.h> */
 #ifdef CONFIG_MTK_WATCHDOG
 #include <mach/wd_api.h>
@@ -535,14 +536,20 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	mt_aee_dump_sched_traces();
 #endif
 
+#ifdef CONFIG_SCHED_DEBUG
+	sysrq_sched_debug_show_at_AEE();
+#endif
+
 	/* avoid lock prove to dump_stack in __debug_locks_off() */
 	xchg(&debug_locks, 0);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_DONE);
 #endif
+
 	dump_emi_outstanding();
 
-	BUG();
+	__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, regs, "WDT/HWT");
+	emergency_restart();
 }
 
 void notrace aee_wdt_atf_entry(void)

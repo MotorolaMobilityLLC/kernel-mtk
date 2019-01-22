@@ -458,11 +458,15 @@ void aee_wdt_irq_info(void)
 	mt_aee_dump_sched_traces();
 #endif
 
+#ifdef CONFIG_SCHED_DEBUG
+	sysrq_sched_debug_show_at_AEE();
+#endif
+
 	/* avoid lock prove to dump_stack in __debug_locks_off() */
 	xchg(&debug_locks, 0);
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_DONE);
 	aee_rr_rec_exp_type(1);
-	BUG();
+	emergency_restart();
 }
 
 #if defined(CONFIG_FIQ_GLUE)
@@ -509,6 +513,10 @@ void aee_wdt_fiq_info(void *arg, void *regs, void *svc_sp)
 	}
 
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_FIQ_DONE);
+
+	/* FIXME: correct mrdump function if necessary */
+	__mrdump_create_oops_dump(AEE_REBOOT_MODE_WDT, regs, "WDT/HWT");
+
 	aee_wdt_irq_info();
 }
 #endif				/* CONFIG_FIQ_GLUE */
