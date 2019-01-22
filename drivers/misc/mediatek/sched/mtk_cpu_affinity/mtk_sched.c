@@ -423,6 +423,24 @@ static long sched_ioctl_ioctl(struct file *filp, unsigned int cmd, unsigned long
 
 		retval = __mt_sched_exitaffinity(pid);
 		break;
+#ifdef CONFIG_MTK_SCHED_VIP_TASKS
+	case IOCTL_SETVIP:
+		if (copy_from_user(&pid, (int __user *)arg, sizeof(pid))) {
+			retval = -EFAULT;
+			goto done;
+		}
+
+		retval = vip_task_set(pid, true);
+		break;
+	case IOCTL_UNSETVIP:
+		if (copy_from_user(&pid, (int __user *)arg, sizeof(pid))) {
+			retval = -EFAULT;
+			goto done;
+		}
+
+		retval = vip_task_set(pid, false);
+		break;
+#endif
 	default:
 		retval = -ENOTTY;
 	}
