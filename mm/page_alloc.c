@@ -2756,7 +2756,7 @@ static inline bool should_suppress_show_mem(void)
 
 static DEFINE_RATELIMIT_STATE(nopage_rs,
 		DEFAULT_RATELIMIT_INTERVAL,
-		DEFAULT_RATELIMIT_BURST);
+		(DEFAULT_RATELIMIT_BURST / 2));
 
 void warn_alloc_failed(gfp_t gfp_mask, unsigned int order, const char *fmt, ...)
 {
