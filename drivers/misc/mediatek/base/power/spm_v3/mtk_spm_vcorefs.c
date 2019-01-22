@@ -1182,7 +1182,7 @@ static void dvfsrc_init(void)
 
 	/* FIXME 11/12 */
 	if (1)
-		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0003);
+		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001);
 	else
 		spm_write(DVFSRC_MD_LEVEL_MASK, 0xffff0001);
 
