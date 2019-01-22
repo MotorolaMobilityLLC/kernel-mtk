@@ -54,8 +54,15 @@ static bool ip_exceeds_mtu(const struct sk_buff *skb, unsigned int mtu)
 	if (skb->ignore_df)
 		return false;
 
-	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu)
+	if (skb_is_gso(skb) && skb_gso_network_seglen(skb) <= mtu) {
+		/* gro on: clatd checksum fail patch */
+		if (skb_shinfo(skb)->gso_size == 1) {
+			int network_header = (skb_gso_network_seglen(skb) - skb_shinfo(skb)->gso_size);
+
+			skb_shinfo(skb)->gso_size = mtu - network_header;
+		}
 		return false;
+	}
 
 	return true;
 }
