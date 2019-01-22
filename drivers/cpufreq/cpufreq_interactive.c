@@ -31,17 +31,17 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 
-#ifdef CONFIG_ARCH_MT6755
+#ifdef CONFIG_MACH_MT6755
 #include "../misc/mediatek/base/power/mt6755/mt_cpufreq.h"
 #define CPUDVFS_POWER_MODE
 #endif
 
-#ifdef CONFIG_ARCH_MT6757
-#include "../misc/mediatek/base/power/mt6757/mt_cpufreq.h"
+#ifdef CONFIG_MACH_MT6757
+#include "../misc/mediatek/base/power/mt6757/mtk_cpufreq.h"
 #define CPUDVFS_POWER_MODE
 #endif
 
-#ifdef CONFIG_ARCH_MT6797
+#ifdef CONFIG_MACH_MT6797
 #include "../misc/mediatek/base/power/mt6797/mt_cpufreq.h"
 #define CPUDVFS_POWER_MODE
 #endif
@@ -392,9 +392,9 @@ static void cpufreq_interactive_timer(unsigned long data)
 
 #ifdef CPUDVFS_POWER_MODE
 	/* default(normal), low power, just make, performance(sports) */
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_MACH_MT6755)
 	int freq_idx[4] = { 2, 6, 4, 0 };
-#elif defined(CONFIG_ARCH_MT6797)
+#elif defined(CONFIG_MACH_MT6797)
 	int freq_idx[4] = { 7, 11, 8, 0 };
 #endif
 	int ppb_idx;
@@ -424,7 +424,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 #ifdef CPUDVFS_POWER_MODE
 	ppb_idx = mt_cpufreq_get_ppb_state();
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_MACH_MT6755) || defined(CONFIG_MACH_MT6797)
 	/* Not to modify if L in default mode */
 	if (ppb_idx == 0 && arch_get_cluster_id(pcpu->policy->cpu) >= 1
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
