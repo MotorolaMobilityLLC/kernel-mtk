@@ -38,4 +38,6 @@ extern void disable_soidle_by_bit(int id);
 extern int mtk_idle_notifier_register(struct notifier_block *n);
 extern void mtk_idle_notifier_unregister(struct notifier_block *n);
 
+extern void idle_lock_by_ufs(unsigned int lock);
+
 #endif

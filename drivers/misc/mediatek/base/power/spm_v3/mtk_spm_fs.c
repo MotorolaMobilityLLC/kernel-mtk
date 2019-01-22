@@ -213,9 +213,6 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 
 	p += sprintf(p, "pcm_flags = 0x%x\n", pwrctrl->pcm_flags);
 	p += sprintf(p, "pcm_flags_cust = 0x%x\n", pwrctrl->pcm_flags_cust);
-
-	/* FIXME: reduce buf usage (should < PAGE_SIZE) */
-#if 0
 	p += sprintf(p, "pcm_flags_cust_set = 0x%x\n", pwrctrl->pcm_flags_cust_set);
 	p += sprintf(p, "pcm_flags_cust_clr = 0x%x\n", pwrctrl->pcm_flags_cust_clr);
 	p += sprintf(p, "pcm_flags1 = 0x%x\n", pwrctrl->pcm_flags1);
@@ -231,6 +228,9 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 	p += sprintf(p, "opp_level = 0x%x\n", pwrctrl->opp_level);
 	p += sprintf(p, "wdt_disable = 0x%x\n", pwrctrl->wdt_disable);
 	p += sprintf(p, "syspwreq_mask = 0x%x\n", pwrctrl->syspwreq_mask);
+
+	/* reduce buf usage (should < PAGE_SIZE) */
+#if 0
 	p += sprintf(p, "reg_srcclken0_ctl = 0x%x\n", pwrctrl->reg_srcclken0_ctl);
 	p += sprintf(p, "reg_srcclken1_ctl = 0x%x\n", pwrctrl->reg_srcclken1_ctl);
 	p += sprintf(p, "reg_spm_lock_infra_dcm = 0x%x\n", pwrctrl->reg_spm_lock_infra_dcm);
