@@ -15,6 +15,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/inc  \
              -I$(srctree)/drivers/misc/mediatek/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
+             -I$(srctree)/drivers/misc/mediatek/lcm/inc \
              -I$(srctree)/drivers/misc/mediatek/ext_disp/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6336/ \
              -I$(srctree)/drivers/misc/mediatek/pmic/include/

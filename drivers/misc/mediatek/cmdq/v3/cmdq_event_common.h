@@ -385,6 +385,12 @@ DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_USER_0, 410, sw_token)
 DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_USER_1, 411, sw_token)
 DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_POLL_MONITOR, 412, sw_token)
 
+/* SW Sync Tokens (Pre-defined) */
+/* Config thread notify trigger thread for external display */
+DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY, 415, sw_token)
+/* Trigger thread notify config thread */
+DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_EXT_STREAM_EOF, 416, sw_token)
+
 /* Secure video path notify SW token */
 DECLARE_CMDQ_EVENT(CMDQ_SYNC_DISP_OVL0_2NONSEC_END, 420, sw_token)
 DECLARE_CMDQ_EVENT(CMDQ_SYNC_DISP_OVL1_2NONSEC_END, 421, sw_token)

@@ -14,6 +14,7 @@
 #ifndef __HDMI_DRV_H__
 #define __HDMI_DRV_H__
 
+#include "lcm_drv.h"
 #ifdef HDMI_MT8193_SUPPORT
 #include "mt8193hdmictrl.h"
 #include "mt8193edid.h"
@@ -154,7 +155,6 @@ enum HDMI_VIDEO_RESOLUTION {
 	HDMI_VIDEO_1920x1080p_60Hz = 0x0b,
 	HDMI_VIDEO_2160p_DSC_30Hz = 0x13,
 	HDMI_VIDEO_2160p_DSC_24Hz = 0x14,
-
 	HDMI_VIDEO_RESOLUTION_NUM
 };
 #endif
@@ -271,6 +271,8 @@ struct HDMI_PARAMS {
 	unsigned int HDCPSupported;
 	int is_3d_support;
 	unsigned int input_clock;
+
+	LCM_DSI_PARAMS dsi_params;
 };
 
 enum HDMI_STATE {
@@ -509,7 +511,7 @@ struct HDMI_DRIVER {
 /* --------------------------------------------------------------------------- */
 /* HDMI Driver Functions */
 /* --------------------------------------------------------------------------- */
-
+extern unsigned int dst_is_dsi;
 extern struct semaphore hdmi_update_mutex;
 const struct HDMI_DRIVER *HDMI_GetDriver(void);
 void Notify_AP_MHL_TX_Event(unsigned int event, unsigned int event_param, void *param);

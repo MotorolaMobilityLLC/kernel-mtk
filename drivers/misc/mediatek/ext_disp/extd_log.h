@@ -26,6 +26,11 @@
 #define EPD_FUNC()		pr_debug("[EXTD-EPD]:%s\n", __func__)
 #define EPD_ERR(fmt, arg...)	pr_err("[EXTD-EPD]:"fmt, ##arg)
 
+/* LCM log functions*/
+#define LCM_LOG(fmt, arg...)	pr_debug("[EXTD-LCM]:"fmt, ##arg)
+#define LCM_FUNC()		pr_debug("[EXTD-LCM]:%s\n", __func__)
+#define LCM_ERR(fmt, arg...)	pr_err("[EXTD-LCM]:"fmt, ##arg)
+
 /*external display - multi-control log functions */
 #define MULTI_COTRL_LOG(fmt, arg...)	pr_debug("[EXTD-MULTI]:"fmt, ##arg)
 #define MULTI_COTRL_ERR(fmt, arg...)	pr_err("[EXTD-MULTI]:"fmt, ##arg)

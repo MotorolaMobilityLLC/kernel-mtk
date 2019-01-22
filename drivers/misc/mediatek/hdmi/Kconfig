@@ -3,7 +3,7 @@ config CUSTOM_KERNEL_HDMI
 	string "Select vendor driver"
 	help
 	  To select vendor driver.
-	  e.g:"Sii8348","Anx7805","MT8193"
+	  e.g:"Sii8348","ANX7805","ANX7625","MT8193"
 
 config MTK_HDMI_SUPPORT
 	bool "Enable or disable HDMI feature"

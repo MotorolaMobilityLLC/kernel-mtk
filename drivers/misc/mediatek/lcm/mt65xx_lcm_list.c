@@ -957,6 +957,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35595_fhd_dsi_cmd_truly_nt50358_extern_lcm_drv,
 #endif
 
+#if defined(NT35595_FHD_DSI_CMD_TRULY_NT50358_2TH)
+	&nt35595_fhd_dsi_cmd_truly_nt50358_2th_lcm_drv,
+#endif
+
 #if defined(R69429_WQXGA_DSI_VDO)
 	&r69429_wqxga_dsi_vdo_lcm_drv,
 #endif

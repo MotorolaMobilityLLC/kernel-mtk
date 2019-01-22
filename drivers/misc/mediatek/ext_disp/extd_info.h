@@ -19,6 +19,7 @@ enum EXTD_DEV_ID {
 	DEV_MHL,
 	DEV_EINK,
 	DEV_WFD,
+	DEV_LCM,
 	DEV_MAX_NUM
 };
 
@@ -31,6 +32,19 @@ enum EXTD_IOCTL_CMD {
 enum EXTD_GET_INFO_TYPE {
 	AP_GET_INFO,
 	SF_GET_INFO,
+};
+
+enum EXTD_OVL_REQ_STATUS {
+	EXTD_OVL_NO_REQ = 0,
+	EXTD_OVL_REQUSTING_REQ,
+	EXTD_OVL_IDLE_REQ,
+	EXTD_OVL_SUB_REQ,
+	EXTD_OVL_REMOVE_REQ,
+	EXTD_OVL_REMOVING,
+	EXTD_OVL_REMOVED,
+	EXTD_OVL_INSERT_REQ,
+	EXTD_OVL_INSERTING,
+	EXTD_OVL_INSERTED
 };
 
 struct SWITCH_MODE_INFO_STRUCT {
@@ -72,6 +86,7 @@ struct EXTD_DRIVER {
 /*get driver handle*/
 const struct EXTD_DRIVER *EXTD_EPD_Driver(void);
 const struct EXTD_DRIVER *EXTD_HDMI_Driver(void);
+const struct EXTD_DRIVER *EXTD_LCM_Driver(void);
 
 /*get driver handle for factory mode test*/
 const struct EXTD_DRIVER *EXTD_Factory_HDMI_Driver(void);
