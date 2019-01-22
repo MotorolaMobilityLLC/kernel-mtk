@@ -89,6 +89,7 @@ int ps_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = FLUSH_ACTION;
