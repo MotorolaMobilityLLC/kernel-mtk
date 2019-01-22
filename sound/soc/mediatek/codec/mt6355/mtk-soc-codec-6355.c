@@ -1255,7 +1255,7 @@ static int get_hp_trim_offset(int channel)
 	for (counter = 0; counter < kTrimTimes; counter++)
 		averageOffset = averageOffset + trimOffset[counter];
 
-	averageOffset = (averageOffset + (kTrimTimes / 2)) / kTrimTimes;
+	averageOffset = DIV_ROUND_CLOSEST(averageOffset, kTrimTimes);
 	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
 
 	return averageOffset;
@@ -1396,7 +1396,7 @@ static int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
 	/* R = V /I */
 	/* V = auxDiff (raw data) * (1800mv /auxResolution)  /TrimBufGain */
 	/* I =  pcmOffset * DAC_constant * Gsdm * Gibuf */
-	return (3600000 / pcm_offset * aux_diff + 3916) / 7832;
+	return DIV_ROUND_CLOSEST(3600000 / pcm_offset * aux_diff, 7832);
 }
 
 static int mtk_calculate_hp_impedance(int dc_init, int dc_input, short pcm_offset,
@@ -1412,13 +1412,13 @@ static int mtk_calculate_hp_impedance(int dc_init, int dc_input, short pcm_offse
 
 	dc_value = dc_input - dc_init;
 	r_tmp = mtk_calculate_impedance_formula(pcm_offset, dc_value);
-	r_tmp = (r_tmp + (detect_times / 2)) / detect_times;
+	r_tmp = DIV_ROUND_CLOSEST(r_tmp, detect_times);
 
 	/* Efuse calibration */
 	if ((efuse_current_calibration != 0) && (r_tmp != 0)) {
 		pr_aud("%s(), Before Calibration from EFUSE: %d, R: %d\n",
 		       __func__, efuse_current_calibration, r_tmp);
-		r_tmp = (r_tmp * (128 + efuse_current_calibration) + 64) / 128;
+		r_tmp = DIV_ROUND_CLOSEST(r_tmp * (128 + efuse_current_calibration), 128);
 	}
 
 	pr_aud("%s(), pcm_offset %d dcoffset %d detected resistor is %d\n",
@@ -1590,7 +1590,7 @@ static int calOffsetToDcComp(int TrimOffset)
 	int64 tmp;
 
 	tmp = TrimOffset;
-	return (tmp * 2804225 + (32768 / 2)) / 32768;
+	return DIV_ROUND_CLOSEST(tmp * 2804225, 32768);
 }
 
 static void set_lch_dc_compensation_reg(int lch_value)
