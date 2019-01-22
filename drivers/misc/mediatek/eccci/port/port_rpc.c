@@ -321,6 +321,7 @@ static void get_md_dtsi_debug(void)
 	struct ccci_rpc_md_dtsi_output output;
 
 	input.req = RPC_REQ_PROP_VALUE;
+	output.retValue = 0;
 	snprintf(input.strName, sizeof(input.strName), "%s", "mediatek,md_drdi_rf_set_idx");
 	get_md_dtsi_val(&input, &output);
 }
