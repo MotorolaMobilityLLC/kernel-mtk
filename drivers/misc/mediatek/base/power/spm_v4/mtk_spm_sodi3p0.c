@@ -297,7 +297,11 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_SLEEP);
 
 	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS)) {
+#if defined(CONFIG_MACH_MT6771)
+		if (mtk8250_request_to_sleep()) {
+#else
 		if (request_uart_to_sleep()) {
+#endif
 			wr = WR_UART_BUSY;
 			goto RESTORE_IRQ;
 		}
@@ -324,7 +328,11 @@ unsigned int spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!(sodi3_flags & SODI_FLAG_DUMP_LP_GS))
+#if defined(CONFIG_MACH_MT6771)
+		mtk8250_request_to_wakeup();
+#else
 		request_uart_to_wakeup();
+#endif
 RESTORE_IRQ:
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_AWAKE);

@@ -425,7 +425,11 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
 	if (!(operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)) {
+#if defined(CONFIG_MACH_MT6771)
+		if (mtk8250_request_to_sleep()) {
+#else
 		if (request_uart_to_sleep()) {
+#endif
 			wr = WR_UART_BUSY;
 			goto RESTORE_IRQ;
 		}
@@ -448,7 +452,11 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!(operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN))
+#if defined(CONFIG_MACH_MT6771)
+		mtk8250_request_to_wakeup();
+#else
 		request_uart_to_wakeup();
+#endif
 RESTORE_IRQ:
 #endif
 
@@ -592,7 +600,11 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MACH_MT6771)
+	if (mtk8250_request_to_sleep()) {
+#else
 	if (request_uart_to_sleep()) {
+#endif
 		last_wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
 	}
@@ -609,7 +621,11 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_LEAVE_WFI);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MACH_MT6771)
+	mtk8250_request_to_wakeup();
+#else
 	request_uart_to_wakeup();
+#endif
 RESTORE_IRQ:
 #endif
 

@@ -29,9 +29,19 @@ extern int mt_irq_mask_restore(struct mtk_irq_mask *mask);
 extern void mt_irq_unmask_for_sleep(unsigned int irq);
 
 /* UART */
+#if defined(CONFIG_MACH_MT6771)
+extern int mtk8250_request_to_sleep(void);
+extern int mtk8250_request_to_wakeup(void);
+#else
 extern int request_uart_to_sleep(void);
 extern int request_uart_to_wakeup(void);
+#endif
+
+#if defined(CONFIG_MACH_MT6771)
+extern void mtk8250_restore_dev(void);
+#else
 extern void mtk_uart_restore(void);
+#endif
 extern void dump_uart_reg(void);
 
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)

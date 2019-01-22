@@ -135,6 +135,8 @@ CONFIG_DM_DEBUG,USER,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_DM_UEVENT,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_DM_VERITY,PROJECT,Calvin.Liao,for dm-verity,y,y,y,X,y,X,X,X,y,y
 CONFIG_DMA_API_DEBUG,USER,miles.chen,,X,X,X,X,X,X,X,X,X,X
+CONFIG_DMA_MTK_UART,PLATFORM,qiangming.xia,,N,N,N,N,N,N,y,y,N,N
+CONFIG_DMADEVICES,PLATFORM,qiangming.xia,,N,N,N,N,N,N,y,y,N,N
 CONFIG_DUAL_ROLE_USB_INTF,PROJECT,vend_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,O,O,O,,,,,,,
 CONFIG_DYNAMIC_DEBUG,PLATFORM,,,y,y,y,y,y,X,y,y,y,y
 CONFIG_EFI,PLATFORM,my.chuang,arm64 only,X,N,N,N,N,X,X,N,X,N
@@ -229,7 +231,7 @@ CONFIG_KCOV,PROJECT,,,X,X,X,O,O,O,O,O,O,O
 CONFIG_KEYBOARD_ATKBD,COMMON,Unused,,N,N,N,N,N,N,N,N,N,N
 CONFIG_KEYBOARD_MTK,COMMON,Zh.Chen,,y,y,y,y,y,y,y,y,y,y
 CONFIG_KEYBOARD_MTK_PMIC,PLATFORM,chang-an.chen,Keypad owner,X,X,X,X,X,y,X,X,X,X
-CONFIG_MTK_SERIAL,PLATFORM,qiangming.xia,uart owner,y,y,y,y,y,y,y,y,y,y
+CONFIG_MTK_SERIAL,PLATFORM,qiangming.xia,uart owner,y,y,y,y,y,y,X,X,y,y
 CONFIG_KGDB,USER,my.chuang,,X,X,X,X,X,X,X,X,X,X
 CONFIG_KGDB_KDB,USER,my.chuang,,X,X,X,X,X,X,X,X,X,X
 CONFIG_KPD_PMIC_LPRST_TD,PROJECT,elvin.lin,,0,0,0,,,,,,,
@@ -782,6 +784,11 @@ CONFIG_USB_MU3D_ONLY_U2_MODE,PROJECT,Arvin.Wang,,X,,,,,,,,,
 CONFIG_USB_POWER_DELIVERY,PROJECT,venf_jeff_chang001,new config at this commit ebc855c95fb2bdff04b66d63675dbac9387577a8,O,O,O,,,,,,,
 CONFIG_USB_PRINTER,COMMON,Unused,,X,X,X,X,X,X,X,X,X,X
 CONFIG_USB_SERIAL,PLATFORM,eddie.hung,,y,y,y,y,y,y,y,y,y,y
+CONFIG_SERIAL_8250,PLATFORM,qiangming.xia,,N,N,N,N,N,N,y,y,N,N
+CONFIG_SERIAL_8250_CONSOLE,PLATFORM,qiangming.xia,,N,N,N,N,N,N,y,y,N,N
+CONFIG_SERIAL_8250_MT6577,PLATFORM,qiangming.xia,,N,N,N,N,N,N,y,y,N,N
+CONFIG_SERIAL_8250_NR_UARTS,PLATFORM,qiangming.xia,,N,N,N,N,N,N,2,2,N,N
+CONFIG_SERIAL_8250_RUNTIME_UARTS,PLATFORM,qiangming.xia,,N,N,N,N,N,N,2,2,N,N
 CONFIG_USB_STORAGE,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_STORAGE_ALAUDA,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_STORAGE_CYPRESS_ATACB,COMMON,,,y,y,y,y,y,y,y,y,y,y
