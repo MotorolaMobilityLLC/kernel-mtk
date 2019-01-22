@@ -21,13 +21,23 @@
 /***********************************************************************************
 ** VOW Type Define
 ************************************************************************************/
+#define DEBUG_VOWDRV 1
+
+#if DEBUG_VOWDRV
+#define VOWDRV_DEBUG(format, args...) pr_debug(format, ##args)
+#else
+#define VOWDRV_DEBUG(format, args...)
+#endif
+#define VOWDRV_PR_ERR(format, args...) pr_err(format, ##args)
+
 #define VOW_DEVNAME                    "vow"
+#define VOW_PRE_LEARN_MODE             1
 #define MAX_VOW_SPEAKER_MODEL          10
 #define VOW_WAITCHECK_INTERVAL_MS      1
 #define MAX_VOW_INFO_LEN               5
 #define VOW_VOICE_RECORD_THRESHOLD     2560 /* 80ms */
 #define VOW_VOICE_RECORD_BIG_THRESHOLD 8000 /* 250ms */
-#define VOW_IPI_SEND_CNT_TIMEOUT       10
+#define VOW_IPI_SEND_CNT_TIMEOUT       500 /* 500ms */
 #define VOW_VOICEDATA_OFFSET           0xA000 /* VOW VOICE DATA DRAM OFFSET */
 #define WORD_H                         8
 #define WORD_L                         8
