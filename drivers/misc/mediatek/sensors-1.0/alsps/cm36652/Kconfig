@@ -1,0 +1,9 @@
+
+config MTK_CM36652
+	tristate "cm36652 for MediaTek package"
+	default n
+	help
+	  It support different type sensor
+	  in this platform. If this option
+	  is set, it will support sensor CM36652
+	  which integrates a proximity sensor, a color sensor.
