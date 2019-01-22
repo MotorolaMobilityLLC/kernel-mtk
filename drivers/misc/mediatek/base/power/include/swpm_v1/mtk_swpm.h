@@ -14,21 +14,9 @@
 #ifndef __MTK_SWPM_H__
 #define __MTK_SWPM_H__
 
-enum swpm_type {
-	SWPM_CPU = 0,
-	SWPM_GPU,
-	SWPM_CORE,
-	SWPM_MEM,
 
-	NR_SWPM_TYPE,
-};
-
-extern unsigned int swpm_get_avg_power(enum swpm_type type,
+extern unsigned int swpm_get_avg_power(unsigned int type,
 				unsigned int avg_window);
-#if 0 /* TODO: need this? */
-extern void swpm_start_pmu(int cpu);
-extern void swpm_stop_pmu(int cpu);
-#endif
 
 #endif /* __MTK_SWPM_H__ */
 
