@@ -64,15 +64,16 @@
 /* scp ready timout definition*/
 #define SCP_READY_TIMEOUT (2 * HZ) /* 2 seconds*/
 
-#define EXPECTED_FREQ_REG SCP_A_GENERAL_REG3
-#define CURRENT_FREQ_REG  SCP_A_GENERAL_REG4
-
 
 /* scp ready status for notify*/
 unsigned int scp_ready[SCP_CORE_TOTAL];
 
 /* scp enable status*/
 unsigned int scp_enable[SCP_CORE_TOTAL];
+
+/* scp dvfs variable*/
+unsigned int scp_expected_freq;
+unsigned int scp_current_freq;
 
 phys_addr_t scp_mem_base_phys;
 phys_addr_t scp_mem_base_virt;
@@ -96,7 +97,7 @@ unsigned int scp_deep_sleep_bits[SCP_CORE_TOTAL] = {SCP_A_DEEP_SLEEP_BIT, SCP_B_
 unsigned int scp_semaphore_flags[SCP_CORE_TOTAL] = {SEMAPHORE_SCP_A_AWAKE, SEMAPHORE_SCP_B_AWAKE};
 struct wake_lock scp_awake_wakelock[SCP_CORE_TOTAL];
 char *core_ids[SCP_CORE_TOTAL] = {"SCP A", "SCP B"};
-static DEFINE_SPINLOCK(scp_awake_spinlock);
+DEFINE_SPINLOCK(scp_awake_spinlock);
 /* set flag after driver initial done */
 static bool driver_init_done;
 unsigned char **scp_swap_buf;
@@ -1002,8 +1003,14 @@ DEVICE_ATTR(scp_B_reg_status, 0444, scp_B_reg_status_show, NULL);
 #if SCP_VCORE_TEST_ENABLE
 static inline ssize_t scp_vcore_request_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
+	unsigned long spin_flags;
+
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+	scp_current_freq = readl(CURRENT_FREQ_REG);
+	scp_expected_freq = readl(EXPECTED_FREQ_REG);
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 	pr_err("[SCP] receive freq show\n");
-	return scnprintf(buf, PAGE_SIZE, "SCP freq. expect=%d, cur=%d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	return scnprintf(buf, PAGE_SIZE, "SCP freq. expect=%d, cur=%d\n", scp_expected_freq, scp_current_freq);
 }
 
 static unsigned int pre_feature_req = 0xff;
@@ -1053,7 +1060,7 @@ static ssize_t scp_vcore_request_store(struct device *kobj, struct device_attrib
 			pre_feature_req = 0;
 		}
 		pr_warn("[SCP] set high freq(vcore to v1.0), expect=%d, cur=%d\n",
-			EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+			scp_expected_freq, scp_current_freq);
 		tick_cnt = mt_get_ckgen_freq(28);
 		tick_cnt_2 = mt_get_abist_freq(3);
 		tick_cnt_3 = mt_get_abist_freq(63);
@@ -1499,6 +1506,7 @@ void scp_register_feature(feature_id_t id)
 {
 	uint32_t i;
 	int ret = 0;
+	unsigned long spin_flags;
 
 	/*prevent from access when scp is down*/
 	if (!scp_ready[SCP_A_ID] || !scp_ready[SCP_B_ID]) {
@@ -1513,7 +1521,11 @@ void scp_register_feature(feature_id_t id)
 		if (feature_table[i].feature == id)
 			feature_table[i].enable = 1;
 	}
-	EXPECTED_FREQ_REG = scp_get_freq();
+	scp_expected_freq = scp_get_freq();
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+	scp_current_freq = readl(CURRENT_FREQ_REG);
+	writel(scp_expected_freq, EXPECTED_FREQ_REG);
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	/* send request only when scp is not down */
 	if (scp_ready[SCP_A_ID]) {
@@ -1534,6 +1546,7 @@ void scp_deregister_feature(feature_id_t id)
 {
 	uint32_t i;
 	int ret = 0;
+	unsigned long spin_flags;
 
 	/*prevent from access when scp is down*/
 	if (!scp_ready[SCP_A_ID] || !scp_ready[SCP_B_ID])
@@ -1543,7 +1556,11 @@ void scp_deregister_feature(feature_id_t id)
 		if (feature_table[i].feature == id)
 			feature_table[i].enable = 0;
 	}
-	EXPECTED_FREQ_REG = scp_get_freq();
+	scp_expected_freq = scp_get_freq();
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+	scp_current_freq = readl(CURRENT_FREQ_REG);
+	writel(scp_expected_freq, EXPECTED_FREQ_REG);
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	/* send request only when scp is not down */
 	if (scp_ready[SCP_A_ID]) {
@@ -1569,8 +1586,14 @@ int scp_check_resource(void)
 	 * 0: main_pll may disable, 26M may disable, infra may disable
 	 */
 	int scp_resource_status = 0;
+	unsigned long spin_flags;
 
-	if (EXPECTED_FREQ_REG == FREQ_416MHZ || CURRENT_FREQ_REG == FREQ_416MHZ)
+	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+	scp_current_freq = readl(CURRENT_FREQ_REG);
+	scp_expected_freq = readl(EXPECTED_FREQ_REG);
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+
+	if (scp_expected_freq == FREQ_416MHZ || scp_current_freq == FREQ_416MHZ)
 		scp_resource_status = 1;
 	else
 		scp_resource_status = 0;
