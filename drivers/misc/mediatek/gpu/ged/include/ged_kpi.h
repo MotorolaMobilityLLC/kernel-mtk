@@ -22,13 +22,13 @@
 GED_ERROR ged_kpi_dequeue_buffer_ts(int pid,
 								unsigned long long ullWdnd,
 								int i32FrameID,
-								int fence_fd);
+								int fence_fd,
+								int isSF);
 GED_ERROR ged_kpi_queue_buffer_ts(int pid,
 								unsigned long long ullWdnd,
 								int i32FrameID,
 								int fence,
-								int QedBuffer_length,
-								int isSF);
+								int QedBuffer_length);
 GED_ERROR ged_kpi_acquire_buffer_ts(int pid, unsigned long long ullWdnd, int i32FrameID);
 GED_ERROR ged_kpi_sw_vsync(void);
 GED_ERROR ged_kpi_hw_vsync(void);

@@ -151,15 +151,15 @@ int ged_bridge_gpu_timestamp(
 				ged_kpi_dequeue_buffer_ts(psGpuBeginINT->pid,
 									psGpuBeginINT->ullWnd,
 									psGpuBeginINT->i32FrameID,
-									psGpuBeginINT->fence_fd);
+									psGpuBeginINT->fence_fd,
+									psGpuBeginINT->isSF);
 		else if (psGpuBeginINT->QedBuffer_length != -1)
 			psGpuBeginOUT->eError =
 				ged_kpi_queue_buffer_ts(psGpuBeginINT->pid,
 										psGpuBeginINT->ullWnd,
 										psGpuBeginINT->i32FrameID,
 										psGpuBeginINT->fence_fd,
-										psGpuBeginINT->QedBuffer_length,
-										psGpuBeginINT->isSF);
+										psGpuBeginINT->QedBuffer_length);
 		else
 			psGpuBeginOUT->eError =
 				ged_kpi_acquire_buffer_ts(psGpuBeginINT->pid,
