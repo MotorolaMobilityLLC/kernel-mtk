@@ -19,7 +19,7 @@
 #include "ufs-mtk-platform.h"
 #include "mtk_idle.h"
 #include "mtk_spm_resource_req.h"
-/* #include "mtk_secure_api.h" */
+#include "mtk_secure_api.h"
 
 #ifdef MTK_UFS_HQA
 #include <mtk_reboot.h>
@@ -437,10 +437,10 @@ int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
 
 	/* wait 200 us to stablize VA09 */
 	udelay(200);
-#if 0
+
 	/* Step 1: Set RG_VA09_ON to 1 */
-	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, (1 << 0), 1, 0);
-#endif
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 1, 1, 0);
+
 	/* Step 2: release DA_MP_PLL_PWR_ON */
 	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
 	reg = reg | (0x1 << 11);
@@ -542,10 +542,9 @@ int ufs_mtk_pltfrm_suspend(struct ufs_hba *hba)
 	reg = reg & ~(0x1 << 11);
 	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
 
-#if 0 /* need platform porting */
 	/* Step 7: Set RG_VA09_ON to 0 */
-	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, (1 << 0), 0, 0);
-#endif
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 1, 0, 0);
+
 	/* delay awhile to satisfy T_HIBERNATE */
 	mdelay(15);
 
