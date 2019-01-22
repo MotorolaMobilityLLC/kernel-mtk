@@ -298,6 +298,10 @@ typedef struct _REG_INFO_T {
 #if CFG_SUPPORT_TX_POWER_BACK_OFF
 	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
 	UINT_8 fgRlmMitigatedPwrByChByMode;
+	BOOLEAN bTxPowerLimitEnable2G;
+	BOOLEAN bTxPowerLimitEnable5G;
+	UINT8 cTxBackOffMaxPower2G;
+	UINT8 cTxBackOffMaxPower5G;
 #endif
 #if CFG_SUPPORT_FCC_POWER_BACK_OFF
 	FCC_TX_PWR_ADJUST rFccTxPwrAdjust;
