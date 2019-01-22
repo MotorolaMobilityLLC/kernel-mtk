@@ -239,12 +239,12 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 				__func__, noti->swap_state.new_role);
 		if (otg_on &&
 			noti->swap_state.new_role == PD_ROLE_UFP) {
-			pr_info("switch role to device\n", __func__);
+			pr_info("%s switch role to device\n", __func__);
 			tcpc_otg_enable(false);
 			mt_usb_connect();
 		} else if (!otg_on &&
 			noti->swap_state.new_role == PD_ROLE_DFP) {
-			pr_info("switch role to host\n", __func__);
+			pr_info("%s switch role to host\n", __func__);
 			mt_usb_disconnect();
 			mt_usb_dev_off();
 			tcpc_otg_enable(true);
