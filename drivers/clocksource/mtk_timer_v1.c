@@ -488,7 +488,8 @@ static void gpt_devs_init(void)
 	for (i = 0; i < NR_GPTS; i++) {
 		gpt_devs[i].id = i;
 		gpt_devs[i].base_addr = GPT1_BASE + 0x10 * i;
-		pr_info("gpt_devs_init: base_addr=0x%lx\n", (unsigned long)gpt_devs[i].base_addr);
+		pr_info("[mtk_gpt] gpt%d, base=0x%lx\n",
+			i + 1, (unsigned long)gpt_devs[i].base_addr);
 	}
 
 	gpt_devs[GPT6].features |= GPT_FEAT_64_BIT;
@@ -700,6 +701,7 @@ static inline void setup_clksrc(u32 freq)
 static inline void setup_clkevt(u32 freq, int irq)
 {
 	unsigned int cmp[2];
+	unsigned int clkdiv;
 	struct clock_event_device *evt = &gpt_clockevent;
 	struct gpt_device *dev = id_to_dev(GPT_CLKEVT_ID);
 
@@ -711,34 +713,67 @@ static inline void setup_clkevt(u32 freq, int irq)
 	evt->min_delta_ns = clockevent_delta2ns(3, evt);
 	evt->cpumask = cpu_possible_mask;
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
+	if (freq == 13000000)
+		clkdiv = GPT_CLK_SRC_SYS;
+	else
+		clkdiv = GPT_CLK_SRC_RTC;
+
 	/*
 	 * 1. Use always-on 32K clock since 13M/26M clock will be disabled during SODI
 	 * 2. Configure this device as ONESHOT mode as tick broadcast device.
 	 */
-	setup_gpt_dev_locked(dev, GPT_ONE_SHOT, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1,
+	setup_gpt_dev_locked(dev, GPT_ONE_SHOT, clkdiv, GPT_CLK_DIV_1,
 		freq / HZ, clkevt_handler, GPT_ISR);
-#else
-	/* Not used in MTK SMP platform */
-	setup_gpt_dev_locked(dev, GPT_REPEAT, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
-		freq / HZ, clkevt_handler, GPT_ISR);
-#endif
 
 	__gpt_get_cmp(dev, cmp);
-	pr_info("[mtk_gpt] GPT1: CMP=%d, HZ=%d, freq=%d\n", cmp[0], HZ, freq);
+
+	pr_info("[mtk_gpt] gpt%d: clkdiv=%d, cmp=%d, hz=%d, freq=%d\n",
+		GPT_CLKEVT_ID + 1, clkdiv, cmp[0], HZ, freq);
 
 	clockevents_register_device(evt);
 }
 
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+static void __init mt_gpt_init_acao(struct device_node *node)
+{
+	u32 freq;
+	struct clk *clk_evt;
+
+	/* inquiry clk_evt, freq is RTC_CLK_RATE (32KHz) */
+
+	clk_evt = of_clk_get(node, 0);
+	if (IS_ERR(clk_evt)) {
+		pr_info("[mtk_gpt] can't get timer clk_evt\n");
+		return;
+	}
+
+	if (clk_prepare_enable(clk_evt)) {
+		pr_info("[mtk_gpt] can't prepare clk_evt\n");
+		clk_put(clk_evt);
+		return;
+	}
+
+	freq = (u32)clk_get_rate(clk_evt);
+
+	WARN(!freq, "[mtk_gpt] can't get freq of clk_evt\n");
+
+#ifdef CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0
+	irq_force_affinity(xgpt_timers.tmr_irq, cpumask_of(0));
+#endif
+
+	setup_clkevt(freq, xgpt_timers.tmr_irq);
+
+	pr_info("[mtk_gpt] acao clkevt, freq=%d\n",	freq);
+
+}
+#else
+static void __init mt_gpt_init_acao(struct device_node *node) {};
+#endif
+
 static void __init mt_gpt_init(struct device_node *node)
 {
 	int i;
-	u32 freq[2] = {0};
 	unsigned long save_flags;
-	struct clk *clk_src;
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-	struct clk *clk_evt;
-#endif
 
 	gpt_update_lock(save_flags);
 
@@ -748,81 +783,25 @@ static void __init mt_gpt_init(struct device_node *node)
 	/* Setup IO addresses */
 	xgpt_timers.tmr_regs = of_iomap(node, 0);
 
+	pr_info("[mtk_gpt] base=0x%lx, irq=%d\n",
+		(unsigned long)xgpt_timers.tmr_regs, xgpt_timers.tmr_irq);
+
 	/* setup gpt itself */
 	gpt_devs_init();
+
 	for (i = 0; i < NR_GPTS; i++)
 		__gpt_reset(&gpt_devs[i]);
 
-	/* inquiry clk_src, idx = 0, freq is SYS_CLK_RATE */
-
-	clk_src = of_clk_get(node, 0);
-	if (IS_ERR(clk_src)) {
-		pr_info("[mtk_gpt] can't get timer clk_src\n");
-		goto err_unmap_irq;
-	}
-
-	if (clk_prepare_enable(clk_src)) {
-		pr_info("[mtk_gpt] can't prepare clk_src\n");
-		goto err_clk_put_src;
-	}
-
-	freq[0] = (u32)clk_get_rate(clk_src);
-	WARN(!freq[0], "[mtk_gpt] can't get freq of clk_src\n");
-
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-
-	/* inquiry clk_evt, idx = 1, freq is RTC_CLK_RATE (32KHz) */
-
-	clk_evt = of_clk_get(node, 1);
-	if (IS_ERR(clk_evt)) {
-		pr_info("[mtk_gpt] can't get timer clk_evt\n");
-		goto err_unmap_irq;
-	}
-
-	if (clk_prepare_enable(clk_evt)) {
-		pr_info("[mtk_gpt] can't prepare clk_evt\n");
-		goto err_clk_put_evt;
-	}
-
-	freq[1] = (u32)clk_get_rate(clk_evt);
-	WARN(!freq[1], "[mtk_gpt] can't get freq of clk_evt\n");
-
-#endif
-
-	boot_time_value = xgpt_boot_up_time(); /*record the time when init GPT*/
-
-	pr_info("[mtk_gpt] tmr_regs=0x%lx, tmr_irq=%d, freq[0]=%d, freq[1]=%d\n",
-		(unsigned long)xgpt_timers.tmr_regs, xgpt_timers.tmr_irq, freq[0], freq[1]);
-
-	setup_clksrc(freq[0]);
-
-#ifdef CONFIG_MTK_TIMER_BC_IRQ_FORCE_CPU0
-	irq_force_affinity(xgpt_timers.tmr_irq, cpumask_of(0));
-#endif
-
 	setup_irq(xgpt_timers.tmr_irq, &gpt_irq);
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-	setup_clkevt(freq[1], xgpt_timers.tmr_irq);
-#else
-	setup_clkevt(freq[0], xgpt_timers.tmr_irq);
-#endif
+	mt_gpt_init_acao(node);
 
-	pr_info("[mtk_gpt] GPT2: CNT=%lld\n", mt_gpt_read(NULL)); /* /TODO: remove */
+	/* record the time when init GPT */
+	boot_time_value = xgpt_boot_up_time();
+
 	gpt_update_unlock(save_flags);
 
 	return;
-
-#ifdef CONFIG_MTK_ACAO_SUPPORT
-err_clk_put_evt:
-	clk_put(clk_evt);
-#endif
-err_clk_put_src:
-	clk_put(clk_src);
-err_unmap_irq:
-	irq_dispose_mapping(xgpt_timers.tmr_irq);
-
-	gpt_update_unlock(save_flags);
 }
 
 static void release_gpt_dev_locked(struct gpt_device *dev)
