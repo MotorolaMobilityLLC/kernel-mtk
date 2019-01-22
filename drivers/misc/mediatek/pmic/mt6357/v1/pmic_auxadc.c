@@ -208,6 +208,8 @@ int wk_auxadc_battmp_dbg(int bat_temp)
 		pr_notice("[%s] reset AUXADC\n", __func__);
 		pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
 		pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
+		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
 		for (i = 0; i < 5; i++) {
 			bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
@@ -215,15 +217,12 @@ int wk_auxadc_battmp_dbg(int bat_temp)
 #endif
 			if (is_charging == 0)
 				bat_cur = 0 - bat_cur;
-			pr_notice("[CH3_DBG] vbat = %d, bat_cur = %d\n"
-				  , bat, bat_cur);
-
 			arr_bat_temp[i] = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
+			pr_notice("[CH3_DBG] %d,%d,%d\n",
+				  bat, bat_cur, arr_bat_temp[i]);
 		}
 		bat_temp = bat_temp_filter(arr_bat_temp, 5);
-		pr_notice("%d,%d,%d,%d,%d, BAT_TEMP_NEW:%d\n",
-			arr_bat_temp[0], arr_bat_temp[1], arr_bat_temp[2],
-			arr_bat_temp[3], arr_bat_temp[4], bat_temp);
+		pr_notice("Final BAT_TEMP_NEW:%d\n", bat_temp);
 	}
 	dbg_flag = 0;
 	return bat_temp;
