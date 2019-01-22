@@ -644,6 +644,22 @@ static ssize_t scp_ee_force_ke_ctrl(struct device *kobj, struct device_attribute
 }
 DEVICE_ATTR(scp_ee_force_ke, 0644, scp_ee_force_ke_show, scp_ee_force_ke_ctrl);
 
+static ssize_t scp_ee_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", scp_ee_enable);
+}
+
+static ssize_t scp_ee_ctrl(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	unsigned int value = 0;
+
+	if (kstrtouint(buf, 10, &value) == 0) {
+		scp_ee_enable = value;
+		pr_debug("[SCP] scp_ee_enable = %d(1:enable, 0:disable)\n", scp_ee_enable);
+	}
+	return n;
+}
+DEVICE_ATTR(scp_ee_enable, 0644, scp_ee_show, scp_ee_ctrl);
 
 static inline ssize_t scp_A_awake_lock_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
@@ -801,6 +817,11 @@ static int create_files(void)
 
 #ifdef CONFIG_MTK_ENG_BUILD
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_ee_force_ke);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_ee_enable);
 
 	if (unlikely(ret != 0))
 		return ret;

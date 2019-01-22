@@ -41,6 +41,7 @@ extern void aed_scp_exception_api(const int *log, int log_size, const int *phy,
 extern void scp_excep_cleanup(void);
 enum { r0, r1, r2, r3, r12, lr, pc, psr};
 extern int scp_ee_force_ke_enable;
+extern int scp_ee_enable;
 
 struct TaskContextType {
 	unsigned int r0;
