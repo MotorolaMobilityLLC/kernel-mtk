@@ -83,6 +83,20 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 		break;
 
 	case MAIN_PMIC_REGULATOR:
+		if (lock) {
+			ret_val =
+				sspm_ipi_send_sync_ex(IPI_ID_PMIC, IPI_OPT_DEFAUT, buffer,
+					  PMIC_IPI_SEND_SLOT_SIZE, retbuf, PMIC_IPI_ACK_SLOT_SIZE);
+		} else {
+			ret_val =
+				sspm_ipi_send_sync_ex(IPI_ID_PMIC, IPI_OPT_LOCK_POLLING, buffer,
+					  PMIC_IPI_SEND_SLOT_SIZE, retbuf, PMIC_IPI_ACK_SLOT_SIZE);
+		}
+
+		if (ret_val >= 0) {
+			/* Real PMIC service execution result, by each PMIC service */
+			ret_val = ((struct pmic_ipi_ret_datas *)retbuf)->data[0];
+		}
 		break;
 
 	case SUB_PMIC_CTRL:
@@ -132,6 +146,20 @@ unsigned int pmic_ipi_config_interface(unsigned int RegNum, unsigned int val, un
 	send.cmd[4] = SHIFT;
 
 	ret = pmic_ipi_to_sspm(&send, &recv, lock);
+
+	return ret;
+}
+
+unsigned int pmic_regulator_profiling(unsigned char type)
+{
+	struct pmic_ipi_cmds send = { {0} };
+	struct pmic_ipi_ret_datas recv = { {0} };
+	unsigned int ret = 0;
+
+	send.cmd[0] = MAIN_PMIC_REGULATOR;
+	send.cmd[1] = type;  /*PMIC_REGULATOR PROFILLING TYPE*/
+
+	ret = pmic_ipi_to_sspm(&send, &recv, 1);
 
 	return ret;
 }
