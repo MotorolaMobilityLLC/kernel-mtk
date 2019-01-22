@@ -1394,6 +1394,13 @@ void blk_requeue_request(struct request_queue *q, struct request *rq)
 	if (rq->cmd_flags & REQ_QUEUED)
 		blk_queue_end_tag(q, rq);
 
+	/* MTK Patch:
+	 *
+	 * Remove REQ_DEV_STARTED to make sure future possible abort handler
+	 * works correctly.
+	 */
+	rq->cmd_flags &= ~REQ_DEV_STARTED;
+
 	BUG_ON(blk_queued_rq(rq));
 
 	elv_requeue_request(q, rq);

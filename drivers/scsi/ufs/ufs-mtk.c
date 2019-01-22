@@ -1730,8 +1730,6 @@ bool ufs_mtk_is_data_cmd(char cmd_op)
 	return false;
 }
 
-#ifdef CONFIG_MTK_UFS_DEBUG_QUEUECMD
-
 static struct ufs_cmd_str_struct ufs_mtk_cmd_str_tbl[] = {
 	{"TEST_UNIT_READY",        0x00},
 	{"REQUEST_SENSE",          0x03},
@@ -1774,11 +1772,14 @@ static int ufs_mtk_get_cmd_str_idx(char cmd)
 	return i;
 }
 
-void ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd)
+void ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd, u32 flag)
 {
 	u32 lba = 0;
 	u32 blk_cnt;
 	u32 fua, flush;
+
+	if (!(flag & hba->ufshcd_dbg_print))
+		return;
 
 	if (ufs_mtk_is_data_cmd(cmd->cmnd[0])) {
 
@@ -1809,11 +1810,6 @@ void ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd)
 			ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str);
 	}
 }
-#else
-void ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd)
-{
-}
-#endif /* CONFIG_MTK_UFS_DEBUG_QUEUECMD */
 
 /**
  * struct ufs_hba_mtk_vops - UFS MTK specific variant operations
