@@ -67,5 +67,11 @@ struct FSTB_FRAME_INFO {
 
 };
 
+struct FSTB_RENDER_TARGET_FPS {
+	char process_name[16];
+	int nr_level;
+	struct fps_level level[3];
+};
+
 #endif
 
