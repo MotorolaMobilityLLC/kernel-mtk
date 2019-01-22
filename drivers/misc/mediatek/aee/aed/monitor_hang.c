@@ -102,6 +102,7 @@ static int hang_aee_warn;
 #endif
 static int system_server_pid;
 static bool watchdog_thread_exist;
+static bool reboot_flag;
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_start_wait);
 DECLARE_WAIT_QUEUE_HEAD(dump_bt_done_wait);
 
@@ -269,7 +270,15 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned lon
 			hang_aee_warn = 2;
 			pr_info("hang_detect: aee enable system_server coredump.\n");
 		}
+		return ret;
+	}
 
+	if (cmd == AEEIOCTL_SET_HANG_REBOOT &&
+		(!strncmp(current->comm, "init", 4))) {
+		reboot_flag = true;
+		hang_detect_counter = 1;
+		pr_info("hang_detect: %s set reboot command.\n", current->comm);
+		return ret;
 	}
 
 	return ret;
@@ -625,11 +634,12 @@ void show_thread_info(struct task_struct *p, bool dump_bt)
 
 	Log2HangInfo("%-15.15s %c ", p->comm,
 		state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-	Log2HangInfo("%lld.%06ld %d %lu %lu 0x%x 0x%lx ",
+	Log2HangInfo("%lld.%06ld %d %lu %lu 0x%x 0x%lx %d ",
 		nsec_high(p->se.sum_exec_runtime),
 		nsec_low(p->se.sum_exec_runtime),
 		task_pid_nr(p), p->nvcsw, p->nivcsw, p->flags,
-		(unsigned long)task_thread_info(p)->flags);
+		(unsigned long)task_thread_info(p)->flags,
+		p->real_parent->pid);
 #ifdef CONFIG_SCHED_INFO
 	Log2HangInfo("%llu", p->sched_info.last_arrival);
 #endif
@@ -1585,7 +1595,8 @@ static int hang_detect_thread(void *arg)
 				hang_detect_counter, hd_timeout, hd_detect_enabled);
 		system_server_pid = FindTaskByName("system_server");
 
-		if ((hd_detect_enabled == 1) && (system_server_pid != -1)) {
+		if (reboot_flag || ((hd_detect_enabled == 1) &&
+			(system_server_pid != -1))) {
 #ifdef CONFIG_MTK_RAM_CONSOLE
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
 #endif
@@ -1603,7 +1614,8 @@ static int hang_detect_thread(void *arg)
 #endif
 
 
-			if (hang_detect_counter == 1 && hang_aee_warn == 2 && hd_timeout != 11) {
+			if (hang_detect_counter == 1 && hang_aee_warn == 2
+				&& hd_timeout != 11 && reboot_flag == false) {
 				hang_detect_counter = hd_timeout / 2;
 				hang_aee_warn = 1;
 				wake_up_dump();
@@ -1681,6 +1693,11 @@ void hd_test(void)
 void aee_kernel_RT_Monitor_api(int lParam)
 {
 	reset_hang_info();
+	if (reboot_flag) {
+		pr_info("[Hang_Detect] in reboot flow.\n");
+		return;
+	}
+
 	if (lParam == 0) {
 		hd_detect_enabled = 0;
 		hang_detect_counter = hd_timeout;
