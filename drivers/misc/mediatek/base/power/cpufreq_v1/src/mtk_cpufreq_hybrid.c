@@ -142,7 +142,6 @@ int Ripi_cpu_dvfs_thread(void *data)
 	return 0;
 }
 
-int has_dvfs;
 int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 {
 #define OPT				(0) /* reserve for extensibility */
@@ -192,7 +191,6 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 
 		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
-		has_dvfs = 1;
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -229,7 +227,6 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 
 		/* ret = sspm_ipi_send_sync(iSPEED_DEV_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data); */
 		ret = sspm_ipi_send_sync(IPI_ID_CPU_DVFS, OPT, cdvfs_d, len, &ack_data);
-		has_dvfs = 1;
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -342,11 +339,7 @@ static void __iomem *csram_base;
 static void __iomem *cspm_base;
 #define csram_read(offs)		__raw_readl(csram_base + (offs))
 #define csram_write(offs, val)		mt_reg_sync_writel(val, csram_base + (offs))
-static struct hrtimer nfy_trig_timer;
-static struct task_struct *dvfs_nfy_task;
-static atomic_t dvfs_nfy_req = ATOMIC_INIT(0);
 
-/* #define CSRAM_BASE		0x00100000 */
 #define CSRAM_BASE		0x0012a000
 #define CSRAM_SIZE		0x3000		/* 12K bytes */
 #define ENTRY_EACH_LOG		7
@@ -373,208 +366,7 @@ static atomic_t dvfs_nfy_req = ATOMIC_INIT(0);
 #define REPO_GUARD1		0xaa55aa55
 #define NR_FREQ       16
 
-#define MAX_LOG_FETCH		20
-
 static u32 dbg_repo_bak[DBG_REPO_NUM];
-/* log_box[MAX_LOG_FETCH] is also used to save last log entry */
-static struct cpu_dvfs_log_box log_box_parsed[1 + MAX_LOG_FETCH] __nosavedata;
-static unsigned int next_log_offs __nosavedata = OFFS_LOG_S;
-static dvfs_notify_t notify_dvfs_change_cb;
-
-void parse_time_log_content(unsigned int *local_buf, int idx)
-{
-	struct cpu_dvfs_log *log_box = (struct cpu_dvfs_log *)local_buf;
-
-	log_box_parsed[idx].time_stamp = ((unsigned long long)log_box->time_stamp_h_log << 32) |
-		(unsigned long long)(log_box->time_stamp_l_log);
-
-	cpufreq_ver("log_box[%d]->time_stamp_log = %llu\n",
-		idx, log_box_parsed[idx].time_stamp);
-}
-
-void parse_log_content(unsigned int *local_buf, int idx)
-{
-	struct cpu_dvfs_log *log_box = (struct cpu_dvfs_log *)local_buf;
-	struct mt_cpu_dvfs *p;
-	int i;
-
-	for_each_cpu_dvfs(i, p) {
-		log_box_parsed[idx].cluster_opp_cfg[i].freq_idx = log_box->cluster_opp_cfg[i].opp_idx_log;
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
-			log_box_parsed[idx].cluster_opp_cfg[i].limit_idx = log_box->h_ll_limit;
-			log_box_parsed[idx].cluster_opp_cfg[i].base_idx = log_box->l_ll_limit;
-		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
-			log_box_parsed[idx].cluster_opp_cfg[i].limit_idx = log_box->h_l_limit;
-			log_box_parsed[idx].cluster_opp_cfg[i].base_idx = log_box->l_l_limit;
-		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
-			log_box_parsed[idx].cluster_opp_cfg[i].limit_idx = log_box->h_b_limit;
-			log_box_parsed[idx].cluster_opp_cfg[i].base_idx = log_box->l_b_limit;
-		}
-	}
-
-#if 0
-	for_each_cpu_dvfs(i, p) {
-		cpufreq_info("[%s]log_box->vproc_ll_log = 0x%x\n",
-			cpu_dvfs_get_name(p), log_box->cluster_opp_cfg[i].vproc_log);
-		cpufreq_info("[%s]log_box->opp_ll_log = 0x%x\n",
-			cpu_dvfs_get_name(p), log_box->cluster_opp_cfg[i].opp_idx_log);
-		cpufreq_info("[%s]log_box->wfi_ll_log = 0x%x\n",
-			cpu_dvfs_get_name(p), log_box->cluster_opp_cfg[i].wfi_log);
-		cpufreq_info("[%s]log_box->vsram_ll_log = 0x%x\n",
-			cpu_dvfs_get_name(p), log_box->cluster_opp_cfg[i].vsram_log);
-	}
-
-	cpufreq_info("log_box->pause_bit = 0x%x\n", log_box->pause_bit);
-	cpufreq_info("log_box->b_en = 0x%x\n", log_box->b_en);
-	cpufreq_info("log_box->h_b_limit = 0x%x\n", log_box->h_b_limit);
-	cpufreq_info("log_box->l_b_limit = 0x%x\n", log_box->l_b_limit);
-	cpufreq_info("log_box->l_en = 0x%x\n", log_box->l_en);
-	cpufreq_info("log_box->h_l_limit = 0x%x\n", log_box->h_l_limit);
-	cpufreq_info("log_box->l_l_limit = 0x%x\n", log_box->l_l_limit);
-	cpufreq_info("log_box->ll_en = 0x%x\n", log_box->ll_en);
-	cpufreq_info("log_box->h_ll_limit = 0x%x\n", log_box->h_ll_limit);
-	cpufreq_info("log_box->l_ll_limit = 0x%x\n", log_box->l_ll_limit);
-#endif
-}
-
-static void fetch_dvfs_log_and_notify(void)
-{
-	int i, j;
-	unsigned int buf[ENTRY_EACH_LOG] = {0};
-	unsigned int next_log_offs_bk = 0;
-
-#if 0
-	cpufreq_ver("DVFS - Do thread task Begin!\n");
-
-	if (log_box_parsed[MAX_LOG_FETCH].time_stamp == 0 &&
-					next_log_offs <= OFFS_LOG_S) {
-		return;
-	}
-#endif
-
-	if (has_dvfs == 0)
-		return;
-
-	log_box_parsed[0] = log_box_parsed[MAX_LOG_FETCH];
-
-	for (i = 1; i <= MAX_LOG_FETCH; i++) {
-
-		next_log_offs_bk = next_log_offs;
-		buf[0] = csram_read(next_log_offs_bk);
-		next_log_offs_bk += 4;
-		if (next_log_offs_bk >= OFFS_LOG_E)
-			next_log_offs_bk = OFFS_LOG_S;
-		buf[1] = csram_read(next_log_offs_bk);
-		parse_time_log_content(buf, i);
-
-		cpufreq_ver("log_box_parsed[%d] = %llu < log_box_parsed[%d] = %llu\n",
-			i, log_box_parsed[i].time_stamp, (i-1), log_box_parsed[i-1].time_stamp);
-
-		if (log_box_parsed[i].time_stamp < log_box_parsed[i-1].time_stamp)
-			break;
-
-		for (j = 0; j < ENTRY_EACH_LOG; j++) {
-			if (j == 0) {
-				next_log_offs_bk = next_log_offs;
-				cpufreq_ver("backup next_log_offs_bk = 0x%x, next_log_offs = 0x%x\n",
-					next_log_offs_bk, next_log_offs);
-			}
-			buf[j] = csram_read(next_log_offs);
-			cpufreq_ver("DVFS receive - buf[%d] = addr[0x%x] = 0x%x!\n",
-				j, next_log_offs, buf[j]);
-
-			next_log_offs += 4;
-			if (next_log_offs >= OFFS_LOG_E)
-				next_log_offs = OFFS_LOG_S;
-		}
-		parse_log_content(buf, i);
-	}
-
-	if (log_box_parsed[0].time_stamp == 0 && i >= 2)
-		log_box_parsed[0] = log_box_parsed[1];
-
-	if (i >= 2 && i <= MAX_LOG_FETCH)
-		log_box_parsed[MAX_LOG_FETCH] = log_box_parsed[i - 1];
-
-	if (notify_dvfs_change_cb && log_box_parsed[0].time_stamp > 0)
-		notify_dvfs_change_cb(log_box_parsed, i);
-
-	/* cpufreq_info("DVFS - Do thread task Done!\n"); */
-	}
-
-/* #ifdef CPUHVFS_HW_GOVERNOR */
-#if 1
-void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)
-{
-	notify_dvfs_change_cb = callback;
-}
-#endif
-
-static inline void start_notify_trigger_timer(u32 intv_ms)
-{
-	hrtimer_start(&nfy_trig_timer, ms_to_ktime(intv_ms), HRTIMER_MODE_REL);
-}
-
-static inline void stop_notify_trigger_timer(void)
-{
-	hrtimer_cancel(&nfy_trig_timer);
-}
-
-static inline void kick_kthread_to_notify(void)
-{
-	atomic_inc(&dvfs_nfy_req);
-	wake_up_process(dvfs_nfy_task);
-}
-
-static int dvfs_nfy_task_fn(void *data)
-{
-	while (1) {
-		set_current_state(TASK_UNINTERRUPTIBLE);
-
-		if (atomic_read(&dvfs_nfy_req) <= 0) {
-			schedule();
-			continue;
-		}
-
-		__set_current_state(TASK_RUNNING);
-
-		fetch_dvfs_log_and_notify();
-		atomic_dec(&dvfs_nfy_req);
-	}
-
-	return 0;
-}
-
-#define DVFS_NOTIFY_INTV	20		/* ms */
-static enum hrtimer_restart nfy_trig_timer_fn(struct hrtimer *timer)
-{
-	kick_kthread_to_notify();
-
-	hrtimer_forward_now(timer, ms_to_ktime(DVFS_NOTIFY_INTV));
-
-	return HRTIMER_RESTART;
-}
-
-static int create_resource_for_dvfs_notify(void)
-{
-	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 2 };	/* lower than WDK */
-
-	/* init hrtimer */
-	hrtimer_init(&nfy_trig_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	nfy_trig_timer.function = nfy_trig_timer_fn;
-
-	/* create kthread */
-	dvfs_nfy_task = kthread_create(dvfs_nfy_task_fn, NULL, "dvfs_log_dump");
-
-	if (IS_ERR(dvfs_nfy_task))
-		return PTR_ERR(dvfs_nfy_task);
-
-	sched_setscheduler_nocheck(dvfs_nfy_task, SCHED_FIFO, &param);
-	get_task_struct(dvfs_nfy_task);
-
-	return 0;
-}
-
 static int _mt_cmcu_pdrv_probe(struct platform_device *pdev)
 {
 	cspm_base = of_iomap(pdev->dev.of_node, 0);
@@ -718,47 +510,6 @@ int cpuhvfs_set_freq(int cluster_id, unsigned int freq)
 	return 0;
 }
 
-int cpuhvfs_pause_dvfsp_running(void)
-{
-	struct cdvfs_data cdvfs_d;
-
-	/* set on = 0 */
-	/* cdvfs_d.u.set_fv.arg[0] = PAUSE_IDLE; */
-	cdvfs_d.u.set_fv.arg[0] = PAUSE_SUSPEND_LL;
-
-	dvfs_to_spm2_command(IPI_PAUSE_DVFS, &cdvfs_d);
-
-	/* stop_notify_trigger_timer(); */
-
-	return 0;
-}
-
-void cpuhvfs_unpause_dvfsp_to_run(void)
-{
-	struct cdvfs_data cdvfs_d;
-
-	/* set on = 1 */
-	cdvfs_d.u.set_fv.arg[0] = UNPAUSE;
-
-	dvfs_to_spm2_command(IPI_PAUSE_DVFS, &cdvfs_d);
-
-	/* start_notify_trigger_timer(DVFS_NOTIFY_INTV); */
-}
-
-#if 0
-int cpuhvfs_dvfsp_suspend(void)
-{
-	cpuhvfs_pause_dvfsp_running(PAUSE_SUSPEND);
-	return 0;
-}
-
-void cpuhvfs_dvfsp_resume(unsigned int on_cluster)
-{
-	cpuhvfs_set_cluster_on_off(on_cluster, 1);
-	cpuhvfs_unpause_dvfsp_to_run(PAUSE_SUSPEND);
-}
-#endif
-
 int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step)
 {
 	struct cdvfs_data cdvfs_d;
@@ -779,73 +530,73 @@ int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step)
 #define ARRAY_ROW_SIZE 4
 unsigned int fyTbl[][ARRAY_ROW_SIZE] = {
 /* Freq, Vproc, post_div, clk_div */
-	{1638, 0x5C, 1, 2},/* (LL) */
-	{1560, 0x57, 1, 2},
-	{1495, 0x52, 1, 2},
-	{1417, 0x4D, 1, 2},
-	{1339, 0x48, 1, 2},
-	{1248, 0x43, 1, 2},
-	{1144, 0x3E, 1, 2},
-	{1040, 0x39, 1, 2},
-	{936, 0x34, 1, 2},
-	{845, 0x30, 1, 2},
-	{754, 0x2C, 1, 2},
-	{663, 0x28, 2, 2},
-	{585, 0x24, 2, 2},
-	{507, 0x20, 2, 2},
-	{429, 0x1C, 2, 2},
-	{221, 0x18, 2, 2},
+	{1508, 0x32A, 1, 2},/* (LL) */
+	{1443, 0x316, 1, 2},
+	{1391, 0x307, 1, 2},
+	{1326, 0x2F3, 1, 2},
+	{1261, 0x2DF, 1, 2},
+	{1196, 0x2CB, 1, 2},
+	{1118, 0x2B7, 1, 2},
+	{1053, 0x2A3, 1, 2},
+	{975, 0x28A, 1, 2},
+	{910, 0x276, 1, 2},
+	{819, 0x270, 1, 2},
+	{728, 0x270, 2, 2},
+	{637, 0x270, 2, 2},
+	{546, 0x270, 2, 2},
+	{455, 0x270, 2, 2},
+	{338, 0x270, 2, 2},
 
-	{2340, 0x5C, 1, 1},/* (L) */
-	{2262, 0x57, 1, 1},
-	{2184, 0x52, 1, 1},
-	{2106, 0x4D, 1, 1},
-	{2015, 0x48, 1, 1},
-	{1872, 0x43, 1, 1},
-	{1742, 0x3E, 1, 1},
-	{1599, 0x39, 1, 1},
-	{1443, 0x34, 2, 1},
-	{1300, 0x30, 2, 1},
-	{1170, 0x2C, 2, 1},
-	{1040, 0x28, 2, 1},
-	{923, 0x24, 2, 1},
-	{793, 0x20, 2, 1},
-	{533, 0x1C, 2, 2},
-	{442, 0x18, 2, 2},
+	{1703, 0x32A, 1, 1},/* (L) */
+	{1625, 0x316, 1, 1},
+	{1560, 0x307, 1, 1},
+	{1469, 0x2F3, 1, 1},
+	{1391, 0x2DF, 1, 1},
+	{1313, 0x2CB, 1, 1},
+	{1222, 0x2B7, 1, 1},
+	{1144, 0x2A3, 1, 1},
+	{1040, 0x28A, 2, 1},
+	{949, 0x276, 2, 1},
+	{858, 0x270, 2, 1},
+	{754, 0x270, 2, 1},
+	{663, 0x270, 2, 1},
+	{559, 0x270, 2, 1},
+	{468, 0x270, 2, 2},
+	{338, 0x270, 2, 2},
 
-	{2548, 0x5C, 1, 1},/* (B) */
-	{2444, 0x57, 1, 1},
-	{2327, 0x52, 1, 1},
-	{2210, 0x4D, 1, 1},
-	{2093, 0x48, 1, 1},
-	{1911, 0x43, 1, 1},
-	{1716, 0x3E, 1, 1},
-	{1534, 0x39, 1, 1},
-	{1417, 0x38, 2, 1},
-	{1339, 0x38, 2, 1},
-	{1274, 0x38, 2, 1},
-	{1196, 0x38, 2, 1},
-	{1040, 0x38, 2, 1},
-	{897, 0x38, 2, 1},
-	{533, 0x38, 2, 2},
-	{442, 0x38, 2, 2},
+	{1976, 0x32A, 1, 1},/* (B) */
+	{1872, 0x316, 1, 1},
+	{1781, 0x307, 1, 1},
+	{1677, 0x2F3, 1, 1},
+	{1560, 0x2DF, 1, 1},
+	{1443, 0x2CB, 1, 1},
+	{1339, 0x2B7, 1, 1},
+	{1222, 0x2A3, 1, 1},
+	{1079, 0x28A, 2, 1},
+	{962, 0x276, 2, 1},
+	{858, 0x270, 2, 1},
+	{767, 0x270, 2, 1},
+	{663, 0x270, 2, 1},
+	{572, 0x270, 2, 1},
+	{468, 0x270, 2, 2},
+	{338, 0x270, 2, 2},
 
-	{1391, 0x5C, 1, 2},/* (CCI) */
-	{1326, 0x57, 1, 2},
-	{1274, 0x52, 1, 2},
-	{1209, 0x4D, 1, 2},
-	{1144, 0x48, 1, 2},
-	{1066, 0x43, 1, 2},
-	{988, 0x3E, 1, 2},
-	{910, 0x39, 1, 2},
-	{819, 0x34, 1, 2},
-	{741, 0x30, 2, 2},
-	{663, 0x2C, 2, 2},
-	{598, 0x28, 2, 2},
-	{520, 0x24, 2, 2},
-	{442, 0x20, 2, 2},
-	{390, 0x1C, 2, 2},
-	{221, 0x18, 2, 2},
+	{949, 0x32A, 1, 2},/* (CCI) */
+	{910, 0x316, 1, 2},
+	{871, 0x307, 1, 2},
+	{819, 0x2F3, 1, 2},
+	{767, 0x2DF, 1, 2},
+	{728, 0x2CB, 1, 2},
+	{676, 0x2B7, 1, 2},
+	{624, 0x2A3, 1, 2},
+	{559, 0x28A, 1, 2},
+	{520, 0x276, 2, 2},
+	{455, 0x270, 2, 2},
+	{390, 0x270, 2, 2},
+	{325, 0x270, 2, 2},
+	{273, 0x270, 2, 2},
+	{208, 0x270, 2, 2},
+	{130, 0x270, 2, 2},
 };
 
 u32 *recordRef;
@@ -865,7 +616,7 @@ void cpuhvfs_pvt_tbl_create(void)
 		/* Freq, Vproc, post_div, clk_div */
 		/* LL [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i] =
-			((*(recordTbl + (i * ARRAY_ROW_SIZE) + 1) & 0xFF) << 16) |
+			((*(recordTbl + (i * ARRAY_ROW_SIZE) + 1) & 0xFFF) << 16) |
 			(*(recordTbl + (i * ARRAY_ROW_SIZE)) & 0xFFFF);
 		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i, recordRef[i]);
 		/* LL [31:16] = postdiv, [15:0] = clkdiv */
@@ -875,7 +626,7 @@ void cpuhvfs_pvt_tbl_create(void)
 		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + NR_FREQ, recordRef[i + NR_FREQ]);
 		/* L [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 36] =
-			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE + 1) & 0xFF) << 16) |
+			((*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE + 1) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 1) + i) * ARRAY_ROW_SIZE) & 0xFFFF);
 		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 36, recordRef[i + 36]);
 		/* L [31:16] = postdiv, [15:0] = clkdiv */
@@ -885,17 +636,17 @@ void cpuhvfs_pvt_tbl_create(void)
 		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 36 + NR_FREQ, recordRef[i + 36 + NR_FREQ]);
 		/* CCI [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 72] =
-			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 1) & 0xFF) << 16) |
+			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 1) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE) & 0xFFFF);
 		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 72, recordRef[i + 72]);
 		/* CCI [31:16] = postdiv, [15:0] = clkdiv */
 		recordRef[i + 72 + NR_FREQ] =
-			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 3) & 0xFF) << 16) |
+			((*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 3) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 2) + i) * ARRAY_ROW_SIZE + 2) & 0xFF);
 		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 72 + NR_FREQ, recordRef[i + 72 + NR_FREQ]);
 		/* BIG [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 108] =
-			((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE + 1) & 0xFF) << 16) |
+			((*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE + 1) & 0xFFF) << 16) |
 			(*(recordTbl + ((NR_FREQ * 3) + i) * ARRAY_ROW_SIZE) & 0xFFFF);
 		cpufreq_info("DVFS - recordRef[%d] = 0x%x\n", i + 108, recordRef[i + 108]);
 		/* BIG [31:16] = postdiv, [15:0] = clkdiv */
@@ -979,13 +730,6 @@ static int __init cmcu_module_init(void)
 	if (!cmcu_probe_done) {
 		pr_err("FAILED TO PROBE CMCU DEVICE\n");
 		return -ENODEV;
-	}
-
-	/* HW Governor Report */
-	r = create_resource_for_dvfs_notify();
-	if (r) {
-		cpufreq_err("FAILED TO CREATE RESOURCE FOR NOTIFY (%d)\n", r);
-		return r;
 	}
 
 	log_repo = csram_base;
