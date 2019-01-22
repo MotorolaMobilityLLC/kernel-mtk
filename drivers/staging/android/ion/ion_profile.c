@@ -12,43 +12,41 @@
  */
 #include "ion_profile.h"
 
-/*MMP_Event ION_MMP_events[PROFILE_MAX];*/
+mmp_event ion_mmp_events[PROFILE_MAX];
 /*because avoid CamelCase, will modify after*/
 void ion_profile_init(void)
 {
-/*
-*	MMP_Event ION_Event;
-*
-*	MMProfileEnable(1);
-*	ION_Event = MMProfileRegisterEvent(MMP_RootEvent, "ION");
-*	ION_MMP_Events[PROFILE_ALLOC] = MMProfileRegisterEvent(ION_Event, "alloc");
-*	ION_MMP_Events[PROFILE_FREE] = MMProfileRegisterEvent(ION_Event, "free");
-*	ION_MMP_Events[PROFILE_SHARE] = MMProfileRegisterEvent(ION_Event, "share");
-*	ION_MMP_Events[PROFILE_IMPORT] = MMProfileRegisterEvent(ION_Event, "import");
-*	ION_MMP_Events[PROFILE_MAP_KERNEL] = MMProfileRegisterEvent(ION_Event, "map_kern");
-*	ION_MMP_Events[PROFILE_UNMAP_KERNEL] = MMProfileRegisterEvent(ION_Event, "unmap_kern");
-*	ION_MMP_Events[PROFILE_MAP_USER] = MMProfileRegisterEvent(ION_Event, "map_user");
-*	ION_MMP_Events[PROFILE_UNMAP_USER] = MMProfileRegisterEvent(ION_Event, "unmap_user");
-*	ION_MMP_Events[PROFILE_CUSTOM_IOC] = MMProfileRegisterEvent(ION_Event, "custom_ioc");
-*	ION_MMP_Events[PROFILE_GET_PHYS] = MMProfileRegisterEvent(ION_Event, "phys");
-*	ION_MMP_Events[PROFILE_DMA_CLEAN_RANGE] = MMProfileRegisterEvent(ION_Event, "clean_range");
-*	ION_MMP_Events[PROFILE_DMA_FLUSH_RANGE] = MMProfileRegisterEvent(ION_Event, "flush_range");
-*	ION_MMP_Events[PROFILE_DMA_INVALID_RANGE] = MMProfileRegisterEvent(ION_Event, "inv_range");
-*	ION_MMP_Events[PROFILE_DMA_CLEAN_ALL] = MMProfileRegisterEvent(ION_Event, "clean_all");
-*	ION_MMP_Events[PROFILE_DMA_FLUSH_ALL] = MMProfileRegisterEvent(ION_Event, "flush_all");
-*	ION_MMP_Events[PROFILE_DMA_INVALID_ALL] = MMProfileRegisterEvent(ION_Event, "inv_all");
-*/
+	mmp_event ion_event;
+
+	mmprofile_enable(1);
+	ion_event = mmprofile_register_event(mmp_root_event, "ION");
+	ion_mmp_events[PROFILE_ALLOC] = mmprofile_register_event(ion_event, "alloc");
+	ion_mmp_events[PROFILE_FREE] = mmprofile_register_event(ion_event, "free");
+	ion_mmp_events[PROFILE_SHARE] = mmprofile_register_event(ion_event, "share");
+	ion_mmp_events[PROFILE_IMPORT] = mmprofile_register_event(ion_event, "import");
+	ion_mmp_events[PROFILE_MAP_KERNEL] = mmprofile_register_event(ion_event, "map_kern");
+	ion_mmp_events[PROFILE_UNMAP_KERNEL] = mmprofile_register_event(ion_event, "unmap_kern");
+	ion_mmp_events[PROFILE_MAP_USER] = mmprofile_register_event(ion_event, "map_user");
+	ion_mmp_events[PROFILE_UNMAP_USER] = mmprofile_register_event(ion_event, "unmap_user");
+	ion_mmp_events[PROFILE_CUSTOM_IOC] = mmprofile_register_event(ion_event, "custom_ioc");
+	ion_mmp_events[PROFILE_GET_PHYS] = mmprofile_register_event(ion_event, "phys");
+	ion_mmp_events[PROFILE_DMA_CLEAN_RANGE] = mmprofile_register_event(ion_event, "clean_range");
+	ion_mmp_events[PROFILE_DMA_FLUSH_RANGE] = mmprofile_register_event(ion_event, "flush_range");
+	ion_mmp_events[PROFILE_DMA_INVALID_RANGE] = mmprofile_register_event(ion_event, "inv_range");
+	ion_mmp_events[PROFILE_DMA_CLEAN_ALL] = mmprofile_register_event(ion_event, "clean_all");
+	ion_mmp_events[PROFILE_DMA_FLUSH_ALL] = mmprofile_register_event(ion_event, "flush_all");
+	ion_mmp_events[PROFILE_DMA_INVALID_ALL] = mmprofile_register_event(ion_event, "inv_all");
+
 	/* enable events by default */
-/*
-*	MMProfileEnableEvent(ION_MMP_Events[PROFILE_ALLOC], 1);
-*	MMProfileEnableEvent(ION_MMP_Events[PROFILE_MAP_KERNEL], 1);
-*	MMProfileEnableEvent(ION_MMP_Events[PROFILE_MAP_USER], 1);
-*	MMProfileEnableEvent(ION_MMP_Events[PROFILE_DMA_CLEAN_RANGE], 1);
-*	MMProfileEnableEvent(ION_MMP_Events[PROFILE_DMA_FLUSH_RANGE], 1);
-*	MMProfileEnableEvent(ION_MMP_Events[PROFILE_DMA_INVALID_RANGE], 1);
-*	MMProfileEnableEvent(ION_MMP_Events[PROFILE_DMA_CLEAN_ALL], 1);
-*	MMProfileEnableEvent(ION_MMP_Events[PROFILE_DMA_FLUSH_ALL], 1);
-*	MMProfileEnableEvent(ION_MMP_Events[PROFILE_DMA_INVALID_ALL], 1);
-*	MMProfileStart(1);
-*/
+
+	mmprofile_enable_event(ion_mmp_events[PROFILE_ALLOC], 1);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_KERNEL], 1);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_USER], 1);
+	/*mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_CLEAN_RANGE], 1);*/
+	/*mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE], 1);*/
+	/*mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_INVALID_RANGE], 1);*/
+	mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_CLEAN_ALL], 1);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_FLUSH_ALL], 1);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_INVALID_ALL], 1);
+	mmprofile_start(1);
 }

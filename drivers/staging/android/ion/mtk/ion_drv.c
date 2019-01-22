@@ -38,8 +38,8 @@
 #include <linux/fb.h>
 #endif
 
-#define ION_FUNC_ENTER  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagStart, __func__); */
-#define ION_FUNC_LEAVE  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagEnd, __func__); */
+#define ION_FUNC_ENTER  /*mmprofile_log_meta_string(MMP_ION_DEBUG, MMPROFILE_FLAG_START, __func__)*/
+#define ION_FUNC_LEAVE  /*mmprofile_log_meta_string(MMP_ION_DEBUG, MMPROFILE_FLAG_END, __func__)*/
 /* #pragma GCC optimize ("O0") */
 #define DEFAULT_PAGE_SIZE 0x1000
 #define PAGE_ORDER 12
@@ -68,25 +68,22 @@ static int __ion_cache_sync_kernel(unsigned long start, size_t size,
 	/* L1 cache sync */
 	if ((sync_type == ION_CACHE_CLEAN_BY_RANGE) ||
 	    (sync_type == ION_CACHE_CLEAN_BY_RANGE_USE_VA)) {
-		/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_CLEAN_RANGE],*/
-			       /*MMProfileFlagStart, size, 0);*/
+		mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_CLEAN_RANGE], MMPROFILE_FLAG_START, size, start);
 		/* IONMSG("[ion_sys_cache_sync]: ION cache clean by range. start=0x%08X size=0x%08X\n",*/
-		 /* start, size); */
+			  /* start, size); */
 		dmac_map_area((void *)start, size, DMA_TO_DEVICE);
 	} else if ((sync_type == ION_CACHE_INVALID_BY_RANGE) ||
 		   (sync_type == ION_CACHE_INVALID_BY_RANGE_USE_VA)) {
-		/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_INVALID_RANGE],*/
-			       /*MMProfileFlagStart, size, 0);*/
-		/* IONMSG("[ion_sys_cache_sync]: ION cache invalid by range. start=0x%08X size=0x%08X\n",*/
-		 /* start, size); */
-		dmac_unmap_area((void *)start, size, DMA_FROM_DEVICE);
+		mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_INVALID_RANGE], MMPROFILE_FLAG_START, size, start);
+			/* IONMSG("[ion_sys_cache_sync]: ION cache invalid by range. start=0x%08X size=0x%08X\n",*/
+				  /* start, size); */
+			dmac_unmap_area((void *)start, size, DMA_FROM_DEVICE);
 	} else if ((sync_type == ION_CACHE_FLUSH_BY_RANGE) ||
 		   (sync_type == ION_CACHE_FLUSH_BY_RANGE_USE_VA)) {
-		/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_FLUSH_RANGE],*/
-			       /*MMProfileFlagStart, size, 0);*/
-		/* IONMSG("[ion_sys_cache_sync]: ION cache flush by range. start=0x%08X size=0x%08X\n",*/
-		 /* start, size); */
-		dmac_flush_range((void *)start, (void *)(start + size - 1));
+		mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE], MMPROFILE_FLAG_START, size, start);
+			/* IONMSG("[ion_sys_cache_sync]: ION cache flush by range. start=0x%08X size=0x%08X\n",*/
+				  /* start, size); */
+			dmac_flush_range((void *)start, (void *)(start + size - 1));
 	}
 
 	return 0;
@@ -174,6 +171,7 @@ static long ion_sys_cache_sync(struct ion_client *client,
 
 				return ret;
 			}
+			{
 #endif
 			mutex_lock(&ion_cache_sync_user_lock);
 
@@ -234,35 +232,35 @@ static long ion_sys_cache_sync(struct ion_client *client,
 		}
 
 		ion_drv_put_kernel_handle(kernel_handle);
-/*
-*		if (param->sync_type == ION_CACHE_CLEAN_BY_RANGE)
-*			MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_CLEAN_RANGE], MMProfileFlagEnd, size, 0);
-*		else if (param->sync_type == ION_CACHE_INVALID_BY_RANGE)
-*			MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_INVALID_RANGE], MMProfileFlagEnd, size, 0);
-*		else if (param->sync_type == ION_CACHE_FLUSH_BY_RANGE)
-*			MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_FLUSH_RANGE], MMProfileFlagEnd, size, 0);
-*/
+
+		if (param->sync_type == ION_CACHE_CLEAN_BY_RANGE)
+			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_CLEAN_RANGE], MMPROFILE_FLAG_END, size, 0);
+		else if (param->sync_type == ION_CACHE_INVALID_BY_RANGE)
+			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_INVALID_RANGE], MMPROFILE_FLAG_END, size, 0);
+		else if (param->sync_type == ION_CACHE_FLUSH_BY_RANGE)
+			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE], MMPROFILE_FLAG_END, size, 0);
+
 	} else {
 		/* All cache operation */
 		if (param->sync_type == ION_CACHE_CLEAN_ALL) {
-			/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_CLEAN_ALL], MMProfileFlagStart, 1, 1);*/
+			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_CLEAN_ALL], MMPROFILE_FLAG_START, 1, 1);
 			/* printk("[ion_sys_cache_sync]: ION cache clean all.\n"); */
 			smp_inner_dcache_flush_all();
 			/* outer_clean_all(); */
-			/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_CLEAN_ALL], MMProfileFlagEnd, 1, 1);*/
+			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_CLEAN_ALL], MMPROFILE_FLAG_END, 1, 1);
 		} else if (param->sync_type == ION_CACHE_INVALID_ALL) {
-			/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_INVALID_ALL], MMProfileFlagStart, 1, 1);*/
+			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_INVALID_ALL], MMPROFILE_FLAG_START, 1, 1);
 			/* printk("[ion_sys_cache_sync]: ION cache invalid all.\n"); */
 			smp_inner_dcache_flush_all();
 			/* outer_inv_all(); */
 			/* outer_flush_all(); */
-			/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_INVALID_ALL], MMProfileFlagEnd, 1, 1);*/
+			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_INVALID_ALL], MMPROFILE_FLAG_END, 1, 1);
 		} else if (param->sync_type == ION_CACHE_FLUSH_ALL) {
-			/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_FLUSH_ALL], MMProfileFlagStart, 1, 1);*/
+			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_ALL], MMPROFILE_FLAG_START, 1, 1);
 			/* printk("[ion_sys_cache_sync]: ION cache flush all.\n"); */
 			smp_inner_dcache_flush_all();
 			/* outer_flush_all(); */
-			/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_FLUSH_ALL], MMProfileFlagEnd, 1, 1);*/
+			mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_ALL], MMPROFILE_FLAG_END, 1, 1);
 		}
 	}
 	ION_FUNC_LEAVE;
@@ -283,10 +281,10 @@ int ion_sys_copy_client_name(const char *src, char *dst)
 
 static int ion_cache_sync_flush(unsigned long start, size_t size,
 				enum ION_DMA_TYPE dma_type) {
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_FLUSH_RANGE],*/
-	/*		 MMProfileFlagStart, size, 0); */
+	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE],
+			 MMPROFILE_FLAG_START, size, 0);
 	dmac_flush_range((void *)start, (void *)(start + size - 1));
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_FLUSH_RANGE], MMProfileFlagEnd, size, 0); */
+	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_RANGE], MMPROFILE_FLAG_END, size, 0);
 
 	return 0;
 }
@@ -412,11 +410,11 @@ void ion_dma_unmap_area_va(void *start, size_t size, enum ION_DMA_DIR dir)
 
 void ion_cache_flush_all(void)
 {
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_FLUSH_ALL], MMProfileFlagStart, 1, 1);*/
+	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_ALL], MMPROFILE_FLAG_START, 1, 1);
 	/* IONMSG("[ion_cache_flush_all]: ION cache flush all.\n"); */
 	smp_inner_dcache_flush_all();
 	/* outer_clean_all(); */
-	/*MMProfileLogEx(ION_MMP_Events[PROFILE_DMA_FLUSH_ALL], MMProfileFlagEnd, 1, 1);*/
+	mmprofile_log_ex(ion_mmp_events[PROFILE_DMA_FLUSH_ALL], MMPROFILE_FLAG_END, 1, 1);
 }
 
 static long ion_sys_dma_op(struct ion_client *client, struct ion_dma_param *param, int from_kernel)
