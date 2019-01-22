@@ -140,13 +140,6 @@ endif
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6799"))
 ifeq ($(CONFIG_MTK_THERMAL_PA_VIA_ATCMD),y)
-    #obj-$(CONFIG_THERMAL) += mtk_cooler_amddulthro.o
-    #obj-$(CONFIG_THERMAL) += mtk_cooler_amdtxctrl.o
-    obj-$(CONFIG_THERMAL) += mtk_cooler_amutt.o
-    #obj-$(CONFIG_THERMAL) += mtk_cooler_mddtxpwr.o
-    #obj-$(CONFIG_THERMAL) += mtk_cooler_mddulthro.o
-    #obj-$(CONFIG_THERMAL) += mtk_cooler_mdtxpwr.o
-    #obj-$(CONFIG_THERMAL) += mtk_cooler_mdulthro.o
     obj-$(CONFIG_THERMAL) += mtk_cooler_mutt.o
 endif
 obj-$(CONFIG_THERMAL) += mtk_cooler_fps.o
