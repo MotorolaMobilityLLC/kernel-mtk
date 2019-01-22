@@ -243,6 +243,12 @@ int vpu_ext_be_busy(void);
 int vpu_dump_register(struct seq_file *s);
 
 /**
+ * vpu_dump_buffer_mva - dump the buffer mva information.
+ * @s:          the requeest.
+ */
+int vpu_dump_buffer_mva(struct vpu_request *request);
+
+/**
  * vpu_dump_image_file - dump the binary information stored in flash storage.
  * @s:          the pointer to seq_file.
  */
