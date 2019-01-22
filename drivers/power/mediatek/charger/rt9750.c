@@ -33,7 +33,7 @@
 #include <mt-plat/rt-regmap.h>
 #endif
 
-#define RT9750_DRV_VERSION	"1.0.5_MTK"
+#define RT9750_DRV_VERSION	"1.0.6_MTK"
 
 #define I2C_ACCESS_MAX_RETRY 5
 
@@ -1266,7 +1266,7 @@ static int rt9750_probe(struct i2c_client *i2c,
 	/* Disable Chip */
 	ret = _rt9750_enable_chip(info, false);
 	if (ret < 0) {
-		pr_err("%s: enable chip failed\n", __func__);
+		pr_err("%s: disable chip failed\n", __func__);
 		goto err_disable_chip;
 	}
 
@@ -1287,8 +1287,9 @@ err_disable_chip:
 	rt_regmap_device_unregister(info->regmap_dev);
 err_register_regmap:
 #endif
-err_enable_chip:
 err_no_dev:
+	_rt9750_enable_chip(info, false);
+err_enable_chip:
 	charger_device_unregister(info->chg_dev);
 err_parse_dt:
 err_register_chg_dev:
@@ -1392,6 +1393,9 @@ MODULE_VERSION(RT9750_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.0.6
+ * (1) Disable chip if probed failed
+ *
  * 1.0.5
  * (1) Unregister charger device if probe failed
  * (2) Mask all irqs for now
