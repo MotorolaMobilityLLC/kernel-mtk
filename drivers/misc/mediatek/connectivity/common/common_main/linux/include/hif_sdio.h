@@ -321,6 +321,7 @@ extern INT32 mtk_wcn_hif_sdio_read_buf(MTK_WCN_HIF_SDIO_CLTCTX ctx,
 
 extern INT32 mtk_wcn_hif_sdio_write_buf(MTK_WCN_HIF_SDIO_CLTCTX ctx,
 					UINT32 offset, PUINT32 pbuf, UINT32 len);
+extern INT32 mtk_wcn_hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
 
 extern VOID mtk_wcn_hif_sdio_set_drvdata(MTK_WCN_HIF_SDIO_CLTCTX ctx, PVOID private_data_p);
 
@@ -349,9 +350,6 @@ INT32 mtk_wcn_hif_sdio_tell_chipid(INT32 chipId);
 INT32 mtk_wcn_hif_sdio_query_chipid(INT32 waitFlag);
 #endif
 
-extern INT32 mtk_wcn_hif_sdio_en_deep_sleep(MTK_WCN_HIF_SDIO_CLTCTX ctx);
-
-extern INT32 mtk_wcn_hif_sdio_dis_deep_sleep(MTK_WCN_HIF_SDIO_CLTCTX ctx);
 
 /*******************************************************************************
 *                              F U N C T I O N S
