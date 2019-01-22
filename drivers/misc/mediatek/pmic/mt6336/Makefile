@@ -7,7 +7,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 # Mediatek PMIC MT63XX specific files
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6336)	+= mt6336.o mt6336_efuse.o mt6336_auxadc.o mt6336_controller.o
 ifdef _MT6336_E1
-$(warning MT6336_E1)
 	ccflags-y += -DMT6336_E1
 	obj-$(CONFIG_MTK_PMIC_CHIP_MT6336)	+= mt6336_irq_e1.o mt6336_common_e1.o
 else
