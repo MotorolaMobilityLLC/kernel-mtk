@@ -80,6 +80,7 @@ enum dcs_status {
 enum dcs_kicker {
 	DCS_KICKER_MHL,
 	DCS_KICKER_PERF,
+	DCS_KICKER_WFD,
 	DCS_KICKER_DEBUG,
 	DCS_NR_KICKER,
 };
