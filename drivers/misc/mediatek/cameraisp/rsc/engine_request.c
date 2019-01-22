@@ -382,7 +382,17 @@ int update_request(struct engine_requests *eng, pid_t *pid)
 
 		eng->reqs[i].frames[f].state = FRAME_STATUS_FINISHED;
 		LOG_INF("[%s]request %d of frame %d finished.\n", __func__, i, f);
+		/*TODO: to obtain statistics */
+		if (eng->ops->req_feedback_cb == NULL) {
+			LOG_DBG("NULL req_feedback_cb");
+			goto NO_FEEDBACK;
+		}
 
+		if (eng->ops->req_feedback_cb(&eng->reqs[i].frames[f])) {
+			LOG_ERR("Failed to feedback statistics, check cb");
+			goto NO_FEEDBACK;
+		}
+NO_FEEDBACK:
 		n = f + 1;
 		if ((n == MAX_FRAMES_PER_REQUEST) ||
 			((n < MAX_FRAMES_PER_REQUEST) &&

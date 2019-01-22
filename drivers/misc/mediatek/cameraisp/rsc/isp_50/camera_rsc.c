@@ -1293,10 +1293,22 @@ signed int CmdqRSCHW(struct frame *frame)
 	return 0;
 }
 
+signed int rsc_feedback(struct frame *frame)
+{
+	struct RSC_Config *pRscConfig;
+
+	pRscConfig = (struct RSC_Config *) frame->data;
+
+	/* TODO: read statistics and write to the frame data */
+	pRscConfig->RSC_STA_0 = RSC_RD32(RSC_STA_0_REG);
+	return 0;
+}
+
 static const struct engine_ops rsc_ops = {
 	.req_enque_cb = rsc_enque_cb,
 	.req_deque_cb = rsc_deque_cb,
 	.frame_handler = CmdqRSCHW,
+	.req_feedback_cb = rsc_feedback,
 };
 
 static signed int ConfigRSCHW(struct RSC_Config *pRscConfig)
@@ -1435,7 +1447,7 @@ static signed int ConfigRSCHW(struct RSC_Config *pRscConfig)
 static bool Check_RSC_Is_Busy(void)
 #if !BYPASS_REG
 {
-	unsigned int Ctrl _Fsm;
+	unsigned int Ctrl_Fsm;
 	unsigned int Rsc_Start;
 
 	Ctrl_Fsm = RSC_RD32(RSC_DBG_INFO_00_REG);
