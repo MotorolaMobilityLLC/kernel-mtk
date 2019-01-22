@@ -312,6 +312,8 @@ config MACH_MT6775
 	select MFD_SYSCON
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
+	select MTK_SYSIRQ
+	select MTK_EINT_MULTI_TRIGGER_DESIGN
 	select MTK_CQDMA
 	select ARM64_CRYPTO
 	select CRYPTO_SHA2_ARM64_CE
@@ -319,6 +321,9 @@ config MACH_MT6775
 	select MTK_SYSTRACKER_V2
 	select MTK_DEBUG_TRACER
 	select MTK_BUS_TRACER
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_SYS_CIRQ
+	select FAST_CIRQ_CLONE_FLUSH
 	help
 	  This enables support for MediaTek MT6775
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
