@@ -178,6 +178,22 @@ int charger_dev_set_mivr(struct charger_device *charger_dev, int uv)
 	return 0;
 }
 
+int charger_dev_enable_powerpath(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_powerpath)
+		return charger_dev->ops->enable_powerpath(charger_dev);
+
+	return 0;
+}
+
+int charger_dev_disable_powerpath(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->disable_powerpath)
+		return charger_dev->ops->disable_powerpath(charger_dev);
+
+	return 0;
+}
+
 int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, int uv)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->send_ta20_current_pattern)

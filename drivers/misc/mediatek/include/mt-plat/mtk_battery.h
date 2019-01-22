@@ -703,6 +703,7 @@ extern int pmic_get_battery_voltage(void);
 extern int pmic_is_bif_exist(void);
 extern int pmic_get_bif_battery_voltage(int *vbat);
 extern int pmic_get_bif_battery_temperature(int *tmp);
+extern int pmic_is_battery_exist(void);
 
 
 /* mtk_power_misc */

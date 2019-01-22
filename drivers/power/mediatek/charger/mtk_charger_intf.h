@@ -27,26 +27,9 @@
 #include <linux/spinlock.h>
 #include <mt-plat/mtk_battery.h>
 
-/* pe 2.0*/
-typedef struct pe20_profile {
-	unsigned int vbat;
-	unsigned int vchr;
-} pe20_profile_t, *p_pe20_profile_t;
-
-struct mtk_pe20 {
-	struct mutex access_lock;
-	struct mutex pmic_sync_lock;
-	struct wake_lock suspend_lock;
-	int ta_vchr_org;
-	int idx;
-	int vbus;
-	bool to_check_chr_type;
-	bool is_cable_out_occur; /* Plug out happened while detect PE+20 */
-	bool is_connect;
-	bool is_enabled;
-	pe20_profile_t profile[10];
-
-};
+struct charger_manager;
+#include "mtk_pe20_intf.h"
+#include "mtk_pe30_intf.h"
 
 /* charger_dev notify charger_manager */
 enum {
@@ -167,7 +150,9 @@ struct charger_manager {
 	bool enable_pe_2;
 	struct mtk_pe20 pe2;
 
+	/* pe 3.0 */
 	bool enable_pe_3;
+	struct mtk_pe30 pe3;
 
 	/* thread related */
 	struct hrtimer charger_kthread_timer;
@@ -185,11 +170,8 @@ struct charger_manager {
 /* charger related module interface */
 extern int charger_manager_notifier(struct charger_manager *info, int event);
 extern int mtk_switch_charging_init(struct charger_manager *);
-extern void wake_up_charger(struct charger_manager *);
+extern void _wake_up_charger(struct charger_manager *);
 extern int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv);
-
-#include "mtk_pe20_intf.h"
-#include "mtk_pe30_intf.h"
 
 #endif /* __MTK_CHARGER_INTF_H__ */
 

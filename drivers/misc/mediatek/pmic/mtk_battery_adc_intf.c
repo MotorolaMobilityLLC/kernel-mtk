@@ -42,6 +42,33 @@ int pmic_get_vbus(void)
 	return vchr;
 }
 
+int pmic_is_battery_exist(void)
+{
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
+	pr_debug("bat exist for evb\n");
+	return 1;
+#else
+	unsigned int val = 0;
+	int ret = 0;
+
+	val = pmic_get_register_value(PMIC_BATON_TDET_EN);
+	pr_debug("[charging_get_battery_status] BATON_TDET_EN = %d\n", val);
+	if (val) {
+		pmic_set_register_value(PMIC_BATON_TDET_EN, 1);
+		pmic_set_register_value(PMIC_RG_BATON_EN, 1);
+		ret = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
+	} else {
+		ret = false;
+	}
+	return ret;
+#endif
+}
+
+int pmic_get_ibus(void)
+{
+	return 0;
+}
+
 int pmic_get_ibat(void)
 {
 	return 0;
