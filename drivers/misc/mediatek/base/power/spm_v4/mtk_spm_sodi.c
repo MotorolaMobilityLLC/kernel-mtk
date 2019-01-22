@@ -386,7 +386,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 #endif
 
 	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
-		; /* mt_power_gs_dump_sodi3(); */
+		mt_power_gs_dump_sodi3(GS_ALL);
 
 #ifdef SPM_SODI_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[1]);
