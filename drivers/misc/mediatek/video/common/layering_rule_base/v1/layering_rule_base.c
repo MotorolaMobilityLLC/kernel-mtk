@@ -109,19 +109,6 @@ inline bool has_layer_cap(struct layer_config *layer_info, enum LAYERING_CAPS l_
 	return false;
 }
 
-static int get_ovl_layer_cnt(struct disp_layer_info *disp_info, int disp_idx)
-{
-	int total_cnt = 0;
-
-	if (disp_info->layer_num[disp_idx] != -1) {
-		total_cnt = disp_info->layer_num[disp_idx];
-
-		if (disp_info->gles_head[disp_idx] >= 0)
-			total_cnt -= (disp_info->gles_tail[disp_idx] - disp_info->gles_head[disp_idx]);
-	}
-	return total_cnt;
-}
-
 static int is_overlap_on_yaxis(struct layer_config *lhs, struct layer_config *rhs)
 {
 	if ((lhs->dst_offset_y + lhs->dst_height <= rhs->dst_offset_y) ||
@@ -196,7 +183,7 @@ int get_phy_ovl_layer_cnt(struct disp_layer_info *disp_info, int disp_idx)
 	int i;
 	struct layer_config *layer_info;
 
-	if (disp_info->layer_num[disp_idx] != -1) {
+	if (disp_info->layer_num[disp_idx] > 0) {
 		total_cnt = disp_info->layer_num[disp_idx];
 
 		if (disp_info->gles_head[disp_idx] >= 0)
@@ -243,7 +230,7 @@ bool is_max_lcm_resolution(void)
 		return false;
 }
 
-#ifdef ROUND_CORNER_FEATURE
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 static int get_ovl_num(enum HRT_DISP_TYPE disp_type)
 {
 	unsigned int i, ovl_mapping_tb, ovl_num;
@@ -499,7 +486,8 @@ static int _rollback_to_GPU_bottom_up(struct disp_layer_info *disp_info, int dis
 				}
 			}
 			break;
-		} else if (available_ovl_num == 0) {
+		} else if (available_ovl_num <= 0) {
+			available_ovl_num = 0;
 			disp_info->gles_head[disp_idx] = i;
 			disp_info->gles_tail[disp_idx] = disp_info->layer_num[disp_idx] - 1;
 			break;
@@ -525,7 +513,8 @@ static int _rollback_to_GPU_top_down(struct disp_layer_info *disp_info, int disp
 
 			if (is_gles_layer(disp_info, disp_idx, i))
 				break;
-			if (available_ovl_num == 0) {
+			if (available_ovl_num <= 0) {
+				available_ovl_num = 0;
 				if (tmp_ext_id == -1)
 					disp_info->gles_tail[disp_idx] = i;
 				else
@@ -615,9 +604,10 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 	int ovl_mapping_tb, layer_mapping_tb, phy_ovl_cnt, i;
 	int ext_cnt = 0, cur_phy_cnt = 0;
 	struct layer_config *layer_info;
-#ifdef ROUND_CORNER_FEATURE
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	int ovl_num;
 #endif
+
 	if (disp_info->layer_num[disp_idx] <= 0)
 		return 0;
 
@@ -635,7 +625,7 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 		layer_mapping_tb &= HRT_AEE_LAYER_MASK;
 	}
 
-#ifdef ROUND_CORNER_FEATURE
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	ovl_num = get_ovl_num(HRT_PRIMARY);
 	if (ovl_num == 1)
 		ext_cnt = 1;
@@ -675,9 +665,8 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 			if (cur_phy_cnt > 0) {
 				if (get_ovl_idx_by_phy_layer(layer_mapping_tb, cur_phy_cnt) !=
 					get_ovl_idx_by_phy_layer(layer_mapping_tb, cur_phy_cnt - 1)) {
-
 					ext_cnt = 0;
-#ifdef ROUND_CORNER_FEATURE
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 					if (get_ovl_idx_by_phy_layer(layer_mapping_tb, cur_phy_cnt) == ovl_num - 1)
 						ext_cnt = 1;
 #endif
@@ -927,7 +916,7 @@ static int get_hrt_level(int sum_overlap_w, int is_larb)
 	else
 		bound_table = l_rule_ops->get_bound_table(DISP_HW_EMI_BOUND_TB);
 	for (hrt_level = 0 ; hrt_level < HRT_LEVEL_NUM ; hrt_level++) {
-		if (bound_table[hrt_level] != -1 && (sum_overlap_w <= bound_table[hrt_level] * 240))
+		if (bound_table[hrt_level] != -1 && (sum_overlap_w <= bound_table[hrt_level] * HRT_UINT_BOUND_BPP))
 			return hrt_level;
 	}
 	return hrt_level;
@@ -954,7 +943,7 @@ static int get_layer_weight(int disp_idx, struct layer_config *layer_info)
 	if (layer_info)
 		bpp = get_bpp(layer_info->src_fmt);
 	else
-		bpp = 4;
+		bpp = HRT_UINT_BOUND_BPP;
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 	if (disp_idx == HRT_SECONDARY) {
 		struct disp_session_info dispif_info;
@@ -963,11 +952,11 @@ static int get_layer_weight(int disp_idx, struct layer_config *layer_info)
 		hdmi_get_dev_info(true, &dispif_info);
 
 		if (dispif_info.displayWidth > 2560)
-			weight = 120;
+			weight = HRT_UINT_WEIGHT * 2;
 		else if (dispif_info.displayWidth > 1920)
-			weight = 60;
+			weight = HRT_UINT_WEIGHT;
 		else
-			weight = 30;
+			weight = HRT_UINT_WEIGHT / 2;
 
 		if (dispif_info.vsyncFPS <= 30)
 			weight /= 2;
@@ -982,24 +971,24 @@ static int get_layer_weight(int disp_idx, struct layer_config *layer_info)
 	/* Do not adjust hrt weight for resize layer unless the resize golden setting ready.*/
 #if 0
 		case HRT_SCALE_200:
-			weight = 23;
+			weight = HRT_UINT_WEIGHT * 3 / 8;
 			break;
 		case HRT_SCALE_200:
-			weight = 30;
+			weight = HRT_UINT_WEIGHT / 2;
 			break;
 		case HRT_SCALE_150:
-			weight = 40;
+			weight = HRT_UINT_WEIGHT * 2 / 3;
 			break;
 		case HRT_SCALE_133:
-			weight = 45;
+			weight = HRT_UINT_WEIGHT * 3 / 4;
 			break;
 #endif
 		default:
-			weight = 60;
+			weight = HRT_UINT_WEIGHT;
 			break;
 		}
 	} else {
-		weight = 60;
+		weight = HRT_UINT_WEIGHT;
 	}
 
 	return weight * bpp;
@@ -1018,7 +1007,11 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp_index,
 
 /* 1.Initial overlap conditions. */
 	sum_overlap_w = 0;
-	overlap_lower_bound = l_rule_ops->get_hrt_bound(0, 0) * 240;
+	/**
+	 * The parameters of hrt table are base on ARGB color format.
+	 * Multiply the bpp of it.
+	 */
+	overlap_lower_bound = l_rule_ops->get_hrt_bound(0, 0) * HRT_UINT_BOUND_BPP;
 
 /**
  * 2.Add each layer info to layer list and sort it by yoffset.
@@ -1076,7 +1069,11 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp_index,
 		sum_overlap_w += get_layer_weight(disp_index, NULL);
 
 	if (has_dal_layer)
-		sum_overlap_w += 120;
+		sum_overlap_w += HRT_AEE_WEIGHT;
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	sum_overlap_w += HRT_ROUND_CORNER_WEIGHT;
+#endif
 
 /**
  * 3.Calculate the HRT bound if the total layer weight over the lower bound
@@ -1090,7 +1087,10 @@ static int _calc_hrt_num(struct disp_layer_info *disp_info, int disp_index,
 		if (has_gles)
 			sum_overlap_w += get_layer_weight(disp_index, NULL);
 		if (has_dal_layer)
-			sum_overlap_w += 120;
+			sum_overlap_w += HRT_AEE_WEIGHT;
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+		sum_overlap_w += HRT_ROUND_CORNER_WEIGHT;
+#endif
 	}
 
 #ifdef HRT_DEBUG_LEVEL1
@@ -1260,23 +1260,22 @@ static int dispatch_ovl_id(struct disp_layer_info *disp_info)
 		int valid_ovl_cnt = l_rule_ops->get_hrt_bound(0, HRT_LEVEL_NUM - 1);
 
 		if (l_rule_info->dal_enable)
-			valid_ovl_cnt--;
+			valid_ovl_cnt -= (HRT_AEE_WEIGHT / HRT_UINT_BOUND_BPP);
 
-		if (has_hrt_limit(disp_info, HRT_SECONDARY)) {
-			int phy_ovl_cnt;
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+		valid_ovl_cnt -= (HRT_ROUND_CORNER_WEIGHT / HRT_UINT_BOUND_BPP);
+#endif
 
-			phy_ovl_cnt = get_ovl_layer_cnt(disp_info, HRT_SECONDARY);
-			if (valid_ovl_cnt > phy_ovl_cnt) {
-				valid_ovl_cnt -= phy_ovl_cnt;
-			} else {
-				/* TODO: Adjust gles layer by valid ovl count for seconard display */
-				valid_ovl_cnt = 1;
-			}
-		}
+		valid_ovl_cnt /= HRT_UINT_WEIGHT;
+		if (has_hrt_limit(disp_info, HRT_SECONDARY))
+			valid_ovl_cnt = rollback_to_GPU(disp_info, HRT_SECONDARY, valid_ovl_cnt - 1) + 1;
 
 		if (has_hrt_limit(disp_info, HRT_PRIMARY))
 			rollback_to_GPU(disp_info, HRT_PRIMARY, valid_ovl_cnt);
-		disp_info->hrt_num = HRT_LEVEL_NUM - 1;
+
+		/* ajust hrt_num */
+		disp_info->hrt_num = get_hrt_level(
+			l_rule_ops->get_hrt_bound(0, HRT_LEVEL_NUM - 1) * HRT_UINT_BOUND_BPP, 0);
 	}
 
 	/* Dispatch OVL id */
