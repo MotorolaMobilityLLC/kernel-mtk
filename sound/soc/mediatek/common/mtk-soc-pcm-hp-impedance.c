@@ -84,6 +84,8 @@ static const char * const switch_function[] = { "Off", "On" };
 #define AUXADC_BIT_RESOLUTION (1 << 12)
 #define AUXADC_VOLTAGE_RANGE 1800
 
+#define DPD_DEFAULT_IMPEDANCE (32)
+
 /*
  *    function implementation
  */
@@ -600,6 +602,7 @@ static int audio_dpd_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	int enable = ucontrol->value.integer.value[0];
+	int dpd_impedance = DPD_DEFAULT_IMPEDANCE;
 
 	pr_warn("%s() enable = %d, mhp_impedance = %d\n", __func__, enable, mhp_impedance);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(switch_function)) {
@@ -612,7 +615,10 @@ static int audio_dpd_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 		return 0;
 	}
 
-	get_afe_platform_ops()->set_dpd_module(enable, mhp_impedance);
+	if (mhp_impedance != 0)
+		dpd_impedance = mhp_impedance;
+
+	get_afe_platform_ops()->set_dpd_module(enable, dpd_impedance);
 	audio_dpd_switch = enable;
 
 	return 0;
