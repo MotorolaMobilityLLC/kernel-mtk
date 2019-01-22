@@ -109,12 +109,12 @@ struct mrdump_machdesc {
 	uint64_t high_memory;
 
 	uint64_t kimage_vaddr;
-	uint64_t kimage_init_begin;
-	uint64_t kimage_init_end;
+	uint64_t dram_start;
+	uint64_t dram_end;
 	uint64_t kimage_stext;
 	uint64_t kimage_etext;
-	uint64_t kimage_srodata;
-	uint64_t kimage_erodata;
+	uint64_t kimage_stext_real;
+	uint64_t kimage_voffset;
 	uint64_t kimage_sdata;
 	uint64_t kimage_edata;
 

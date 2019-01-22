@@ -17,6 +17,7 @@
 #include <linux/memblock.h>
 #include <linux/module.h>
 #include <linux/io.h>
+#include <asm/memory.h>
 #include <asm/sections.h>
 #include <mt-plat/mrdump.h>
 #include "mrdump_private.h"
@@ -179,12 +180,14 @@ __init void mrdump_cblock_init(void)
 #if defined(TEXT_OFFSET)
 	machdesc_p->kimage_vaddr += TEXT_OFFSET;
 #endif
-	machdesc_p->kimage_init_begin = (uintptr_t)__init_begin;
-	machdesc_p->kimage_init_end = (uintptr_t)__init_end;
+	machdesc_p->dram_start = (uintptr_t)memblock_start_of_DRAM();
+	machdesc_p->dram_end = (uintptr_t)memblock_end_of_DRAM();
 	machdesc_p->kimage_stext = (uintptr_t)_text;
 	machdesc_p->kimage_etext = (uintptr_t)_etext;
-	machdesc_p->kimage_srodata = (uintptr_t)__start_rodata;
-	machdesc_p->kimage_erodata = (uintptr_t)__init_begin;
+	machdesc_p->kimage_stext_real = (uintptr_t)_stext;
+#if defined(CONFIG_ARM64)
+	machdesc_p->kimage_voffset = kimage_voffset;
+#endif
 	machdesc_p->kimage_sdata = (uintptr_t)_sdata;
 	machdesc_p->kimage_edata = (uintptr_t)_edata;
 
