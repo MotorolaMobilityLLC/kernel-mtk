@@ -485,14 +485,15 @@ EXPORT_SYMBOL(mt6355_auxadc_dump_clk_regs);
 
 void mt6355_auxadc_dump_channel_regs(void)
 {
-/*
- *	u8 list = 0;
- *
- *	for (list = AUXADC_LIST_MT6355_START; list <= AUXADC_LIST_MT6355_END; list++)
- *		pr_err("[auxadc list %d] %d\n", list, mt6355_get_auxadc_value(list));
- */
+/* Enable this only for debug */
+#if 0
+	u8 list = 0;
+
+	for (list = AUXADC_LIST_MT6355_START; list <= AUXADC_LIST_MT6355_END; list++)
+		pr_notice("[auxadc list %d] %d\n", list, mt6355_get_auxadc_value(list));
+#endif
 }
-EXPORT_SYMBOL(mt6355_auxadc_channel_regs);
+EXPORT_SYMBOL(mt6355_auxadc_dump_channel_regs);
 
 
 void mt6355_auxadc_dump_regs(char *buf)
