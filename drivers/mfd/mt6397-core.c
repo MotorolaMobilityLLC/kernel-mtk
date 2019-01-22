@@ -67,7 +67,7 @@ static const struct resource mt6392_rtc_resources[] = {
 static const struct resource mt6392_keys_resources[] = {
 	{
 		.start = MT6392_IRQ_STATUS_PWRKEY,
-		.end   = MT6392_IRQ_STATUS_FCHRKEY,
+		.end   = MT6392_IRQ_STATUS_RELEASE_FCHRKEY,
 		.flags = IORESOURCE_IRQ,
 	},
 };
