@@ -213,7 +213,7 @@ unsigned int g_reg_value_6337;
 static ssize_t show_mt6337_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	pr_err("[show_mt6337_access] 0x%x\n", g_reg_value_6337);
-	return sprintf(buf, "%u\n", g_reg_value_6337);
+	return sprintf(buf, "0x%x\n", g_reg_value_6337);
 }
 
 static ssize_t store_mt6337_access(struct device *dev, struct device_attribute *attr, const char *buf,
@@ -226,22 +226,15 @@ static ssize_t store_mt6337_access(struct device *dev, struct device_attribute *
 
 	pr_err("[store_mt6337_access]\n");
 	if (buf != NULL && size != 0) {
-		pr_err("[store_mt6337_access] buf is %s\n", buf);
-		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
+		pr_err("[store_mt6337_access] size is %d, buf is %s\n", (int)size, buf);
 
 		pvalue = (char *)buf;
-		if (size > 5) {
-			addr = strsep(&pvalue, " ");
+		addr = strsep(&pvalue, " ");
+		val = strsep(&pvalue, " ");
+		if (addr)
 			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
-		} else
-			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
-
-		if (size > 5) {
-			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
-			/*pvalue = (char *)buf + 1;*/
-			val =  strsep(&pvalue, " ");
+		if (val) {
 			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
-
 			pr_err("[store_mt6337_access] write PMU reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
 			ret = mt6337_config_interface(reg_address, reg_value, 0xFFFF, 0x0);
@@ -249,7 +242,7 @@ static ssize_t store_mt6337_access(struct device *dev, struct device_attribute *
 			ret = mt6337_read_interface(reg_address, &g_reg_value_6337, 0xFFFF, 0x0);
 			pr_err("[store_mt6337_access] read PMU reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value_6337);
-			pr_err("[store_mt6337_access] use \"cat mt6337_access\" to get value(decimal)\r\n");
+			pr_err("[store_mt6337_access] use \"cat mt6337_access\" to get value\n");
 		}
 	}
 	return size;
@@ -362,10 +355,8 @@ void MT6337_INIT_SETTING(void)
 	ret = mt6337_config_interface(0x8206, 0x0, 0x1, 11);
 	/* [7:7]: RG_REG_CK_PDN_HWEN; Joseph/RG CLK HW */
 	ret = mt6337_config_interface(0x8218, 0x1, 0x1, 7);
-#if 0  /*--TBD--*/ /*--Need DE Check--*/
 	/* [8:8]: RG_OSC_SEL_BUCK_LDO_EN; Joseph/OSC CLK mode don't care this signal*/
 	ret = mt6337_config_interface(0x8232, 0x0, 0x1, 8);
-#endif
 	/* [1:1]: RG_VA18_HW0_OP_EN; Joseph/LDO LP wi SRCLKEN */
 	ret = mt6337_config_interface(0x9008, 0x1, 0x1, 1);
 	/* [1:1]: RG_VA18_HW0_OP_CFG; Joseph/LDO LP wi SRCLKEN */

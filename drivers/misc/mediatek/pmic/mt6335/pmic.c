@@ -596,7 +596,7 @@ unsigned int g_reg_value;
 static ssize_t show_pmic_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	pr_err("[show_pmic_access] 0x%x\n", g_reg_value);
-	return sprintf(buf, "%u\n", g_reg_value);
+	return sprintf(buf, "0x%x\n", g_reg_value);
 }
 
 static ssize_t store_pmic_access(struct device *dev, struct device_attribute *attr, const char *buf,
@@ -609,17 +609,14 @@ static ssize_t store_pmic_access(struct device *dev, struct device_attribute *at
 
 	pr_err("[store_pmic_access]\n");
 	if (buf != NULL && size != 0) {
-		pr_err("[store_pmic_access] buf is %s\n", buf);
+		pr_err("[store_pmic_access] size is %d, buf is %s\n", (int)size, buf);
 
 		pvalue = (char *)buf;
-		if (size > 5) {
-			addr = strsep(&pvalue, " ");
+		addr = strsep(&pvalue, " ");
+		val = strsep(&pvalue, " ");
+		if (addr)
 			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
-		} else
-			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
-
-		if (size > 5) {
-			val =  strsep(&pvalue, " ");
+		if (val) {
 			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
 
 			pr_err("[store_pmic_access] write PMU reg 0x%x with value 0x%x !\n",
@@ -629,7 +626,7 @@ static ssize_t store_pmic_access(struct device *dev, struct device_attribute *at
 			ret = pmic_read_interface(reg_address, &g_reg_value, 0xFFFF, 0x0);
 			pr_err("[store_pmic_access] read PMU reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value);
-			pr_err("[store_pmic_access] use \"cat pmic_access\" to get value(decimal)\r\n");
+			pr_err("[store_pmic_access] use \"cat pmic_access\" to get value\n");
 		}
 	}
 	return size;
