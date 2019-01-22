@@ -16,12 +16,8 @@
 #include <linux/cma.h>
 #include <linux/of_reserved_mem.h>
 
-/* physical offset */
-extern phys_addr_t get_phys_offset(void);
 /* physical DRAM size */
 extern phys_addr_t get_max_DRAM_size(void);
-/* DRAM size controlled by kernel */
-extern phys_addr_t get_memory_size(void);
 extern phys_addr_t mtk_get_max_DRAM_size(void);
 extern phys_addr_t get_zone_movable_cma_base(void);
 extern phys_addr_t get_zone_movable_cma_size(void);
