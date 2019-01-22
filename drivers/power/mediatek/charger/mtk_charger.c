@@ -707,6 +707,8 @@ static void mtk_battery_notify_UI_test(struct charger_manager *info)
 
 static void mtk_battery_notify_check(struct charger_manager *info)
 {
+	info->notify_code = 0x0000;
+
 	if (info->notify_test_mode == 0x0000) {
 		mtk_battery_notify_VCharger_check(info);
 		mtk_battery_notify_VBatTemp_check(info);
@@ -773,9 +775,8 @@ static void charger_check_status(struct charger_manager *info)
 		}
 	}
 
-	mtk_battery_notify_check(info);
-
 stop_charging:
+	mtk_battery_notify_check(info);
 
 	pr_err("tmp:%d (jeita:%d sm:%d cv:%d en:%d) (sm:%d) en:%d\n", temperature,
 		info->enable_sw_jeita, info->sw_jeita.sm, info->sw_jeita.cv,
