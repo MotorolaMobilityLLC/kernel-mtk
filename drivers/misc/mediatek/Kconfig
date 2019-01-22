@@ -402,7 +402,7 @@ source "drivers/misc/mediatek/sched/Kconfig"
 #source "drivers/misc/mediatek/selinux_warning/Kconfig"
 source "drivers/misc/mediatek/sysenv/Kconfig"
 #
-#source "drivers/misc/mediatek/teei/Kconfig"
+source "drivers/misc/mediatek/teei/Kconfig"
 #source "drivers/misc/mediatek/trustzone/Kconfig"
 #source "drivers/misc/mediatek/vow/Kconfig"
 #source "drivers/misc/mediatek/watchpoint/Kconfig"
