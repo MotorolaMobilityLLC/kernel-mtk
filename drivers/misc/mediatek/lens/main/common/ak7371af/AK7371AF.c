@@ -225,6 +225,25 @@ static inline int setVCMPos(unsigned long a_u4Position)
 	return i4RetValue;
 }
 
+static inline int initdrv(void)
+{
+	int i4RetValue = 0;
+	int ret = 0;
+	unsigned short data = 0;
+
+	/* 00:active mode , 10:Standby mode , x1:Sleep mode */
+	ret = s4AF_WriteReg(0x02, 0x00); /* from Standby mode to Active mode */
+	msleep(20);
+
+	if (ret == 0) {
+		ret = s4AF_ReadReg(0x02, &data);
+
+		if ((ret == 0) && (data == 0))
+			i4RetValue = 1;
+	}
+
+	return i4RetValue;
+}
 static inline int moveAF(unsigned long a_u4Position)
 {
 	int ret = 0;
@@ -235,15 +254,16 @@ static inline int moveAF(unsigned long a_u4Position)
 	}
 
 	if (*g_pAF_Opened == 1) {
-		unsigned short InitPos, InitPosM, InitPosL, data;
+		unsigned short InitPos, InitPosM, InitPosL;
 
-		s4AF_ReadReg(0x02, &data);
+		if (initdrv() == 1) {
+			spin_lock(g_pAF_SpinLock);
+			*g_pAF_Opened = 2;
+			spin_unlock(g_pAF_SpinLock);
+		} else {
+			LOG_INF("InitDrv Fail!! I2C error occurred");
+		}
 
-		LOG_INF("Addr : 0x02 , Data : %x\n", data);
-
-		/* 00:active mode        10:Standby mode    x1:Sleep mode */
-		s4AF_WriteReg(0x02, 0x00);	/* from Standby mode to Active mode */
-		msleep(20);
 		s4AF_ReadReg(0x0, &InitPosM);
 		ret = s4AF_ReadReg(0x1, &InitPosL);
 		InitPos = ((InitPosM & 0xFF) << 2) + ((InitPosL >> 6) & 0x3);
@@ -260,10 +280,6 @@ static inline int moveAF(unsigned long a_u4Position)
 			g_u4CurrPosition = 0;
 			spin_unlock(g_pAF_SpinLock);
 		}
-
-		spin_lock(g_pAF_SpinLock);
-		*g_pAF_Opened = 2;
-		spin_unlock(g_pAF_SpinLock);
 	}
 
 	if (g_u4CurrPosition == a_u4Position)
