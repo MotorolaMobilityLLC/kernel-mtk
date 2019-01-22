@@ -18,7 +18,8 @@
 
 #include "vcorefs_v1/mtk_vcorefs_manager_mt6757.h"
 
-#elif defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6759)
+#elif defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)    \
+	|| defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 
 #include "vcorefs_v3/mtk_vcorefs_manager.h"
 
