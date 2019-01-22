@@ -1839,7 +1839,6 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		      .formats = SND_SOC_ADV_MT_FMTS,
 		      },
 	 },
-#ifdef _NON_COMMON_FEATURE_READY
 	{
 	 .name = MT_SOC_CODEC_OFFLOAD_NAME,
 	 .ops = &mt6323_aif1_dai_ops,
@@ -1851,7 +1850,6 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 		      .formats = SND_SOC_ADV_MT_FMTS,
 		      },
 	},
-#endif
 #ifdef _NON_COMMON_FEATURE_READY
 	{
 		.name = MT_SOC_CODEC_ANC_NAME,
