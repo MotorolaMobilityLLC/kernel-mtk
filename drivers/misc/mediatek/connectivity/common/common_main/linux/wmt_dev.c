@@ -428,7 +428,13 @@ INT32 wmt_dev_patch_get(PUINT8 pPatchName, osal_firmware **ppPatch)
 		return -1;
 	}
 	*ppPatch = NULL;
-	iRet = request_firmware((const struct firmware **)&fw, pPatchName, NULL);
+	do {
+		iRet = request_firmware((const struct firmware **)&fw, pPatchName, NULL);
+		if (iRet == -EAGAIN) {
+			WMT_ERR_FUNC("failed to open or read!(%s), retry again!\n", pPatchName);
+			osal_sleep_ms(100);
+		}
+	} while (iRet == -EAGAIN);
 	if (iRet != 0) {
 		WMT_ERR_FUNC("failed to open or read!(%s)\n", pPatchName);
 		return -1;
