@@ -34,14 +34,18 @@
 #define POSTDIV_MASK		0x7
 #if defined(CONFIG_MACH_MT6799)
 #define INTEGER_BITS		8
+#define UNIVPLL_DIV			2
 #elif defined(CONFIG_MACH_MT6759)
 /*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		8
+#define UNIVPLL_DIV			1
 #elif defined(CONFIG_MACH_MT6763)
 /*#define MT_CCF_BRINGUP*/
 #define INTEGER_BITS		8
+#define UNIVPLL_DIV			2
 #else
 #define INTEGER_BITS		7
+#define UNIVPLL_DIV			1
 #endif
 /*
  * MediaTek PLLs are configured through their pcw value. The pcw value describes
@@ -216,7 +220,7 @@ static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 
 	/* if univpll, rate << 1 for analog div 2 */
 	if (!strcmp(__clk_get_name(hw->clk), "univpll"))
-		rate_div = rate << 1;
+		rate_div = rate * UNIVPLL_DIV;
 	#if 0
 	else if ((!strcmp(__clk_get_name(hw->clk), "apll1")) || (!strcmp(__clk_get_name(hw->clk), "apll2")))
 		rate_div = rate << 2;
@@ -246,7 +250,7 @@ static unsigned long mtk_pll_recalc_rate(struct clk_hw *hw,
 	/* if univpll, analogdiv = 2 */
 	/* if apll1/apll2, analogdiv = 4 */
 	if (!strcmp(__clk_get_name(hw->clk), "univpll"))
-		analogdiv = 2;
+		analogdiv = UNIVPLL_DIV;
 	#if 0
 	else if ((!strcmp(__clk_get_name(hw->clk), "apll1")) || (!strcmp(__clk_get_name(hw->clk), "apll2")))
 		analogdiv = 4;
@@ -269,7 +273,7 @@ static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
 	/* if univpll, analogdiv = 2 */
 	/* if apll1/apll2, analogdiv = 4 */
 	if (!strcmp(__clk_get_name(hw->clk), "univpll"))
-		analogdiv = 2;
+		analogdiv = UNIVPLL_DIV;
 	#if 0
 	else if ((!strcmp(__clk_get_name(hw->clk), "apll1")) || (!strcmp(__clk_get_name(hw->clk), "apll2")))
 		analogdiv = 4;
