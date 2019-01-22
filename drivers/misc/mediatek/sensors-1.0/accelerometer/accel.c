@@ -130,6 +130,7 @@ static void acc_work_func(struct work_struct *work)
 
 	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
 		struct acc_data tmp_data = cxt->drv_data;
+
 		pre_ns += delay_ms*1000000LL;
 		tmp_data.timestamp = pre_ns;
 		acc_data_report(&tmp_data);
@@ -686,6 +687,7 @@ int acc_data_report(struct acc_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.time_stamp = data->timestamp;
@@ -708,6 +710,7 @@ int acc_bias_report(struct acc_data *data)
 {
 	struct sensor_event event;
 	int err = 0;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = BIAS_ACTION;
@@ -743,6 +746,7 @@ int acc_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	ACC_LOG("flush\n");

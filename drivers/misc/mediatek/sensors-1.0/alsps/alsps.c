@@ -27,6 +27,7 @@ int als_data_report(int value, int status)
 	int err = 0;
 	struct alsps_context *cxt = NULL;
 	struct sensor_event event;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	cxt  = alsps_context_obj;
@@ -56,6 +57,7 @@ int als_flush_report(void)
 {
 	struct sensor_event event;
 	int err = 0;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	event.flush_action = FLUSH_ACTION;
@@ -71,6 +73,7 @@ int ps_data_report(int value, int status)
 {
 	int err = 0;
 	struct sensor_event event;
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	pr_notice("[ALS/PS]ps_data_report! %d, %d\n", value, status);

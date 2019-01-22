@@ -450,6 +450,7 @@ static const struct file_operations biometric_fops = {
 static int biometric_misc_init(struct biometric_context *cxt)
 {
 	int err = 0;
+
 	cxt->mdev.minor = ID_EKG;/* MISC_DYNAMIC_MINOR; */
 	cxt->mdev.name = BIO_MISC_DEV_NAME;
 	cxt->mdev.fops = &biometric_fops;
