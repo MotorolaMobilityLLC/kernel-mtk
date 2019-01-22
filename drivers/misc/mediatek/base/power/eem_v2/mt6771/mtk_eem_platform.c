@@ -19,6 +19,7 @@
  */
 #define __MTK_EEM_PLATFORM_C__
 
+#include <linux/kernel.h>
 #include "mtk_eem_config.h"
 #include "mtk_eem.h"
 #include "mtk_eem_internal_ap.h"
@@ -120,7 +121,10 @@ int set_volt_cpu(struct eem_det *det)
 	mt_record_lock(&flags);
 
 	for (value = 0; value < NR_FREQ; value++)
-		record_tbl_locked[value] = det->volt_tbl_pmic[value] + det->volt_offset_drcc[value];
+		record_tbl_locked[value] = min(
+		(unsigned int)(det->volt_tbl_pmic[value] +
+			det->volt_offset_drcc[value]),
+		det->volt_tbl_orig[value]);
 #else
 	mutex_lock(&record_mutex);
 

@@ -41,7 +41,7 @@ void drcc_offset_set(void)
 	int i;
 
 	for (i = 0; i < NR_FREQ; i++)
-		det->volt_offset_drcc[i] = 3;
+		det->volt_offset_drcc[i] = 7;
 }
 
 void drcc_fail_composite(void)

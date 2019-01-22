@@ -63,6 +63,7 @@ static noinline int mt_secure_call_drcc(u64 function_id,
 #define MTK_SIP_KERNEL_DRCC_FORCETRIM		0xC2000309
 #define MTK_SIP_KERNEL_DRCC_PROTECT		0xC200030A
 #define MTK_SIP_KERNEL_DRCC_READ		0xC200030B
+#define MTK_SIP_KERNEL_DRCC_K_RST		0xC200030C
 #else
 #define MTK_SIP_KERNEL_DRCC_INIT		0x82000300
 #define MTK_SIP_KERNEL_DRCC_ENABLE		0x82000301
@@ -76,7 +77,15 @@ static noinline int mt_secure_call_drcc(u64 function_id,
 #define MTK_SIP_KERNEL_DRCC_FORCETRIM		0x82000309
 #define MTK_SIP_KERNEL_DRCC_PROTECT		0x8200030A
 #define MTK_SIP_KERNEL_DRCC_READ		0x8200030B
+#define MTK_SIP_KERNEL_DRCC_K_RST		0x8200030C
 #endif
+
+enum mt_drcc_cpu_id {
+	MT_DRCC_CPU_L,
+	MT_DRCC_CPU_B,
+
+	NR_MT_DRCC_CPU,
+};
 
 extern int mtk_drcc_calibration_result(void);
 extern void mtk_drcc_init(void);
