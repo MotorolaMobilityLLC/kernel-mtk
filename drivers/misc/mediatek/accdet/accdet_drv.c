@@ -158,16 +158,6 @@ static void accdet_mod_exit(void)
 
 	ACCDET_DEBUG_DRV("[Accdet]accdet_mod_exit Done!\n");
 }
-
-/* Patch for CR ALPS00804150 & ALPS00804802 PMIC temp not correct issue */
-int accdet_cable_type_state(void)
-{
-	/* ACCDET_DEBUG("[ACCDET] accdet_cable_type_state=%d\n",accdet_get_cable_type()); */
-	return accdet_get_cable_type();
-}
-EXPORT_SYMBOL(accdet_cable_type_state);
-/* Patch for CR ALPS00804150 & ALPS00804802 PMIC temp not correct issue */
-
 module_init(accdet_mod_init);
 module_exit(accdet_mod_exit);
 
