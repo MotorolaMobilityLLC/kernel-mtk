@@ -43,7 +43,7 @@
 #include "vpu_dbg.h"
 
 /* MET: define to enable MET */
-/* #define VPU_MET_READY */
+#define VPU_MET_READY
 #if defined(VPU_MET_READY)
 #define CREATE_TRACE_POINTS
 #include "met_vpusys_events.h"
