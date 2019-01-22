@@ -718,8 +718,11 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 				int shutdown)
 {
 	int err, archiving = 0, scrubbing = 0, torture = 0, protect = 0, erroneous = 0, erase_e2 = 1;
-	int vol_id = -1, lnum = -1;
+	int erase = 0, keep = 0, vol_id = -1, lnum = -1;
 	struct ubi_wl_entry *e1 = NULL, *e2 = NULL;
+#ifdef CONFIG_MTD_UBI_FASTMAP
+	int anchor = wrk->anchor;
+#endif
 	struct ubi_vid_hdr *vid_hdr;
 	int wl_mode = wrk->wl_mode;
 
@@ -864,6 +867,16 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 			scrubbing = 1;
 			erase_e2 = 0;
 			goto out_not_moved;
+		} else if (ubi->fast_attach && err == UBI_IO_BAD_HDR_EBADMSG) {
+			/*
+			 * While a full scan would detect interrupted erasures
+			 * at attach time we can face them here when attached from
+			 * Fastmap.
+			 */
+			dbg_wl("PEB %d has ECC errors, maybe from an interrupted erasure",
+			       e1->pnum);
+			erase = 1;
+			goto out_not_moved;
 		}
 
 		ubi_err(ubi, "error %d while reading VID header from PEB %d",
@@ -905,7 +918,8 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 			/*
 			 * Target PEB had bit-flips or write error - torture it.
 			 */
-			torture = 1;  /* need or not ? */
+			torture = 1;
+			keep = 1;
 			goto out_not_moved;
 		}
 
@@ -1010,6 +1024,8 @@ out_not_moved:
 		ubi->tlc_archive_count++;
 	} else if (scrubbing)
 		wl_tree_add(ubi, e1, &ubi->scrub);
+	else if (keep)
+		wl_tree_add(e1, &ubi->used);
 	else {
 		if (e1->tlc)
 			wl_tree_add(ubi, e1, &ubi->tlc_used);
@@ -1040,6 +1056,12 @@ out_not_moved:
 		wl_tree_add(ubi, e2, &ubi->free);
 		ubi->free_count++;
 		spin_unlock(&ubi->wl_lock);
+	}
+
+	if (erase) {
+		err = do_sync_erase(ubi, e1, vol_id, lnum, 1);
+		if (err)
+			goto out_ro;
 	}
 
 	mutex_unlock(&ubi->move_mutex);
