@@ -33,7 +33,7 @@
 #include <mt-plat/rt-regmap.h>
 #endif
 
-#define RT9750_DRV_VERSION	"1.0.6_MTK"
+#define RT9750_DRV_VERSION	"1.0.7_MTK"
 
 #define I2C_ACCESS_MAX_RETRY 5
 
@@ -1029,6 +1029,9 @@ static int _rt9750_enable_chip(struct rt9750_info *info, bool en)
 		pr_info("%s: set gpio high\n", __func__);
 		udelay(10);
 		i2c_unlock_adapter(info->i2c->adapter);
+
+		/* wait rt9750 enable, at least 200us */
+		mdelay(1);
 	} else {
 		pinctrl_select_state(info->en_pinctrl, info->en_disable);
 		pr_info("%s: set gpio low\n", __func__);
@@ -1036,7 +1039,6 @@ static int _rt9750_enable_chip(struct rt9750_info *info, bool en)
 
 	mutex_unlock(&info->gpio_access_lock);
 	return 0;
-
 }
 
 static int rt9750_enable_chip(struct charger_device *chg_dev, bool en)
@@ -1395,6 +1397,9 @@ MODULE_VERSION(RT9750_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.0.7
+ * (1) Add 1ms delay after enabling chip
+ *
  * 1.0.6
  * (1) Disable chip if probed failed
  *
