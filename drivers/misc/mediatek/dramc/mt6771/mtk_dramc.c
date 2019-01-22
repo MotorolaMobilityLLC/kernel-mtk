@@ -181,7 +181,7 @@ const char *uname, int depth, void *data)
 	return node;
 }
 
-#ifdef INTERFACE_READ_MR4
+#if defined(INTERFACE_READ_MR4) || defined(SW_TX_TRACKING)
 static unsigned int read_dram_mode_reg(
 unsigned int mr_index, unsigned int *mr_value,
 void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
@@ -380,13 +380,23 @@ static unsigned int dramc_tx_tracking(int channel)
 	shu_level = (Reg_Readl(DRAMC_AO_SHUSTATUS) >> 1) & 0x3;
 	opp_level = shu_level + 1;
 
-	tx_freq_ratio[0] = dram_steps_freq(1) * 8 / dram_steps_freq(opp_level);
-	tx_freq_ratio[1] = dram_steps_freq(2) * 8 / dram_steps_freq(opp_level);
-	tx_freq_ratio[2] = dram_steps_freq(3) * 8 / dram_steps_freq(opp_level);
+	if (lp4_highfreq_3600) {
+		tx_freq_ratio[0] = dram_steps_freq(0) * 8 / dram_steps_freq(opp_level);
+		tx_freq_ratio[1] = dram_steps_freq(2) * 8 / dram_steps_freq(opp_level);
+		tx_freq_ratio[2] = dram_steps_freq(3) * 8 / dram_steps_freq(opp_level);
 
-	max_pi_adj[0] = 10;
-	max_pi_adj[1] = 7;
-	max_pi_adj[2] = 4;
+		max_pi_adj[0] = 11;
+		max_pi_adj[1] = 10;
+		max_pi_adj[2] = 4;
+	} else {
+		tx_freq_ratio[0] = dram_steps_freq(1) * 8 / dram_steps_freq(opp_level);
+		tx_freq_ratio[1] = dram_steps_freq(2) * 8 / dram_steps_freq(opp_level);
+		tx_freq_ratio[2] = dram_steps_freq(3) * 8 / dram_steps_freq(opp_level);
+
+		max_pi_adj[0] = 10;
+		max_pi_adj[1] = 7;
+		max_pi_adj[2] = 4;
+	}
 
 	shu_offset_dramc = 0x600 * shu_level;
 	dqsosc_inc[0] = (Reg_Readl(DRAMC_AO_DQSOSCTHRD + shu_offset_dramc) >>  0) & 0xFFF;
@@ -1417,7 +1427,9 @@ void zqcs_timer_callback(unsigned long data)
 
 #if defined(SW_ZQCS) || defined(SW_TX_TRACKING)
 	unsigned long save_flags;
+#ifdef DVFS_READY
 	unsigned int timeout;
+#endif
 
 	if ((get_dram_data_rate() >= 3200) || (low_freq_counter >= 10))
 		low_freq_counter = 0;
@@ -1427,6 +1439,7 @@ void zqcs_timer_callback(unsigned long data)
 		return;
 	}
 
+#ifdef DVFS_READY
 	if (mt_spm_base_get()) {
 		if (spm_vcorefs_get_md_srcclkena()) {
 			spm_request_dvfs_opp(0, OPP_1);
@@ -1442,6 +1455,7 @@ void zqcs_timer_callback(unsigned long data)
 		}
 	}
 #endif
+#endif
 
 #ifdef SW_ZQCS
 	local_irq_save(save_flags);
@@ -1449,7 +1463,9 @@ void zqcs_timer_callback(unsigned long data)
 		pr_info("[DRAMC] can NOT get SPM HW SEMAPHORE!\n");
 		goto tx_start;
 	}
+#ifdef DVFS_READY
 	writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
+#endif
   /* CH0_Rank0 --> CH1Rank0 */
 #ifdef EMI_READY
 	for (RankCounter = 0; RankCounter < get_rk_num(); RankCounter++) {
@@ -1559,7 +1575,9 @@ tx_start:
 		local_irq_restore(save_flags);
 		pr_info("[DRAMC] TX 0 can NOT get SPM HW SEMAPHORE!\n");
 	} else {
+#ifdef DVFS_READY
 		writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
+#endif
 		res[0] = dramc_tx_tracking(0);
 		if (release_dram_ctrl() != 0)
 			pr_info("[DRAMC] TX 0 release SPM HW SEMAPHORE fail!\n");
@@ -1573,7 +1591,9 @@ tx_start:
 		local_irq_restore(save_flags);
 		pr_info("[DRAMC] TX 1 can NOT get SPM HW SEMAPHORE!\n");
 	} else {
+#ifdef DVFS_READY
 		writel(readl(PDEF_SYS_TIMER), PDEF_SPM_TX_TIMESTAMP);
+#endif
 		res[1] = dramc_tx_tracking(1);
 		if (release_dram_ctrl() != 0)
 			pr_info("[DRAMC] TX 1 release SPM HW SEMAPHORE fail!\n");
@@ -1582,7 +1602,9 @@ tx_start:
 #endif
 
 #if defined(SW_ZQCS) || defined(SW_TX_TRACKING)
+#ifdef DVFS_READY
 	spm_request_dvfs_opp(0, OPP_3);
+#endif
 	mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280));
 #endif
 
