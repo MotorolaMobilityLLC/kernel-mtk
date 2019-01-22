@@ -198,9 +198,7 @@ static ssize_t gz_log_read(struct file *file, char __user *buf, size_t size, lof
 		schedule();
 	}
 	finish_wait(&gz_log_wq, &wait);
-	spin_lock(&tls->lock);
 	ret = do_gz_log_read(file, buf, size);
-	spin_unlock(&tls->lock);
 	poll_event = atomic_read(&gz_log_event_count);
 	return ret;
 }
