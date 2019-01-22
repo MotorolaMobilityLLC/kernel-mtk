@@ -174,6 +174,8 @@ struct ufshcd_lrb {
 	int task_tag;
 	u8 lun; /* UPIU LUN id field is only 8-bit wide */
 	bool intr_cmd;
+	ktime_t issue_time_stamp;
+	ktime_t complete_time_stamp;
 
 #ifdef CONFIG_MTK_HW_FDE
 	u32 crypto_en;
@@ -371,6 +373,23 @@ struct ufs_init_prefetch {
 	u32 icc_level;
 };
 
+
+/* UFS Host Controller debug print bitmask */
+#define UFSHCD_DBG_PRINT_CLK_FREQ_EN		UFS_BIT(0)
+#define UFSHCD_DBG_PRINT_UIC_ERR_HIST_EN	UFS_BIT(1)
+#define UFSHCD_DBG_PRINT_HOST_REGS_EN		UFS_BIT(2)
+#define UFSHCD_DBG_PRINT_TRS_EN			UFS_BIT(3)
+#define UFSHCD_DBG_PRINT_TMRS_EN		UFS_BIT(4)
+#define UFSHCD_DBG_PRINT_PWR_EN			UFS_BIT(5)
+#define UFSHCD_DBG_PRINT_HOST_STATE_EN		UFS_BIT(6)
+
+#define UFSHCD_DBG_PRINT_ALL						   \
+		(UFSHCD_DBG_PRINT_CLK_FREQ_EN		|		   \
+		 UFSHCD_DBG_PRINT_UIC_ERR_HIST_EN	|		   \
+		 UFSHCD_DBG_PRINT_HOST_REGS_EN | UFSHCD_DBG_PRINT_TRS_EN | \
+		 UFSHCD_DBG_PRINT_TMRS_EN | UFSHCD_DBG_PRINT_PWR_EN |	   \
+		 UFSHCD_DBG_PRINT_HOST_STATE_EN)
+
 /**
  * struct ufs_hba - per adapter private structure
  * @mmio_base: UFSHCI base register address
@@ -558,6 +577,12 @@ struct ufs_hba {
 	struct list_head clk_list_head;
 
 	bool wlun_dev_clr_ua;
+
+	/* Number of requests aborts */
+	int req_abort_count;
+
+	/* Bitmask for enabling debug prints */
+	u32 ufshcd_dbg_print;
 
 	struct ufs_pa_layer_attr pwr_info;
 	struct ufs_pwr_mode_info max_pwr_info;

@@ -75,6 +75,8 @@ enum {
 	REG_UIC_COMMAND_ARG_2			= 0x98,
 	REG_UIC_COMMAND_ARG_3			= 0x9C,
 
+	UFSHCI_REG_SPACE_SIZE			= 0xA0,
+
 	/* MTK vendor-specific registers */
 	REG_UMABA				= 0xB0, /* not used */
 	REG_UMABAU				= 0xB4, /* not used */
