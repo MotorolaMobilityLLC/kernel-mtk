@@ -189,14 +189,15 @@ int fpsgo_com_store_frame_info(int pid,
 	unsigned long long enqueue_start_time, unsigned long long bufferID)
 {
 	struct queue_info *frame_info;
-	int tgid, type, api;
+	int tgid, api;
+	int type = NON_VSYNC_ALIGNED_TYPE;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
 
 	tgid = fpsgo_com_get_tgid(pid);
 	api = fpsgo_com_get_connect_api(tgid, bufferID);
 	if (api)
-		type = fpsgo_com_check_frame_type_is_by_pass(api, NON_VSYNC_ALIGNED_TYPE);
+		type = fpsgo_com_check_frame_type_is_by_pass(api, type);
 
 
 	frame_info = kzalloc(sizeof(struct queue_info), GFP_KERNEL);
@@ -311,10 +312,11 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 				fpsgo_systrace_c_fbt_gm(-100, 0, "%d-frame_time", pid);
 				break;
 			default:
-				list_del(&(tmp->list));
-				kfree(tmp);
+				FPSGO_COM_TRACE("type not found pid[%d] type[%d]",
+				pid, tmp->frame_type);
 				break;
 			}
+			break;
 		}
 	}
 	fpsgo_com_unlock(__func__);
@@ -365,8 +367,8 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 				find = 1;
 				break;
 			default:
-				list_del(&(tmp->list));
-				kfree(tmp);
+				FPSGO_COM_TRACE("type not found pid[%d] type[%d]",
+				pid, tmp->frame_type);
 				break;
 			}
 			break;
@@ -413,10 +415,11 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 				find = 1;
 				break;
 			default:
-				list_del(&(tmp->list));
-				kfree(tmp);
+				FPSGO_COM_TRACE("type not found pid[%d] type[%d]",
+				pid, tmp->frame_type);
 				break;
 			}
+			break;
 		}
 	}
 	fpsgo_com_unlock(__func__);
@@ -463,8 +466,8 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 				find = 1;
 				break;
 			default:
-				list_del(&(tmp->list));
-				kfree(tmp);
+				FPSGO_COM_TRACE("type not found pid[%d] type[%d]",
+				pid, tmp->frame_type);
 				break;
 			}
 			break;
@@ -701,6 +704,30 @@ void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long bufferID, int ap
 			__func__, pid);
 		return;
 	}
+}
+
+void fpsgo_ctrl2comp_resent_by_pass_info(void)
+{
+	struct connect_api_info *tmp, *tmp2;
+
+	fpsgo_com_connect_api_lock(__func__);
+
+	list_for_each_entry_safe(tmp, tmp2, &connect_api_info_head.list, list) {
+		switch (tmp->api) {
+		case NATIVE_WINDOW_API_MEDIA:
+		case NATIVE_WINDOW_API_CAMERA:
+			FPSGO_COM_TRACE("resent bypass info pid[%d] api[%d]",
+				tmp->pid, tmp->api);
+			fpsgo_comp2fbt_bypass_connect(tmp->pid);
+			break;
+		default:
+			FPSGO_COM_TRACE("non bypass info pid[%d] api[%d]",
+				tmp->pid, tmp->api);
+			break;
+		}
+	}
+
+	fpsgo_com_connect_api_unlock(__func__);
 }
 
 #define FPSGO_COM_DEBUGFS_ENTRY(name) \
