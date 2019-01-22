@@ -195,7 +195,8 @@ void __spm_update_pcm_flags_dcs_workaround(struct pwr_ctrl *pwrctrl, int ch)
 #ifdef CONFIG_MACH_MT6799
 #ifdef CONFIG_MTK_DCS
 	/* dcs s0 workaround only applied when ch is 2 */
-	if (mt_get_chip_sw_ver() == CHIP_SW_VER_02 && ch == 4)
+	if (mt_get_chip_sw_ver() == CHIP_SW_VER_02 &&
+		((spm_get_resource_usage() & SPM_RESOURCE_DRAM) || ch == 4))
 		pwrctrl->pcm_flags |= SPM_FLAG_DIS_DCSS0_LOW;
 #else
 	/* dcs s0 work around default off */
