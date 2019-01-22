@@ -1042,7 +1042,7 @@ bool mtk_pe30_safety_check(struct charger_manager *info)
 		}
 	}
 
-	if (pmic_is_battery_exist() == false) {
+	if (battery_is_battery_exist() == false) {
 		pr_err("[%s]no battery, end pe30\n",
 		__func__);
 		reset = false;
@@ -1164,7 +1164,7 @@ static int mtk_charger_pe30_thread_handler(void *arg)
 		/*charger_dev_dump_registers(info->dc_chg);*/
 
 		if (pe3->pe30_charging_state != DC_STOP) {
-			/*mtk_pe30_safety_check(info);*/
+			mtk_pe30_safety_check(info);
 			pe30_dc_kick_wdt(info);
 			hrtimer_start(&pe3->mtk_charger_pe30_timer, pe3->ktime, HRTIMER_MODE_REL);
 		}

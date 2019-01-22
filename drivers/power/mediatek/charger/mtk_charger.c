@@ -141,6 +141,16 @@ void _wake_up_charger(struct charger_manager *info)
 	wake_up(&info->wait_que);
 }
 
+/* charger_manager ops  */
+int mtk_charger_change_current_setting(struct charger_manager *info)
+{
+	if (info != NULL && info->change_current_setting)
+		return info->change_current_setting(info);
+
+	return 0;
+}
+/* charger_manager ops end */
+
 
 /* user interface */
 struct charger_consumer *charger_manager_get_by_name(struct device *dev,
@@ -500,14 +510,16 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 {
 	int ret = 0;
 	u32 _cv, _cv_temp;
-	u32 vbat_threshold[4] = {3400, 0, 0, 0};
+	unsigned int vbat_threshold[4] = {3400000, 0, 0, 0};
 	u32 vbat_bif = 0, vbat_auxadc = 0, vbat = 0;
 	u32 retry_cnt = 0;
 
 	if (pmic_is_bif_exist()) {
 
 		do {
+			vbat_auxadc = battery_get_bat_voltage() * 1000;
 			ret = pmic_get_bif_battery_voltage(&vbat_bif);
+			vbat_bif = vbat_bif * 1000;
 			if (ret >= 0 && vbat_bif != 0 && vbat_bif < vbat_auxadc) {
 				vbat = vbat_bif;
 				pr_err("%s: use BIF vbat = %dmV, dV to auxadc = %dmV\n",
@@ -533,7 +545,7 @@ int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 	_cv_temp = bif_cv_under_threshold2;
 
 	if (vbat >= vbat_threshold[0] && vbat < vbat_threshold[1])
-		_cv = 4608;
+		_cv = 4608000;
 	else if (vbat >= vbat_threshold[1] && vbat < vbat_threshold[2])
 		_cv = _cv_temp;
 	else

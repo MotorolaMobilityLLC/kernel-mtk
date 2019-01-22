@@ -286,6 +286,15 @@ config MTK_PUMP_EXPRESS_PLUS_20_SUPPORT
 	  Set Yes to enable PE+20.
 	  Set No to disable PE+20.
 
+config MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
+	bool "MediaTek PUMP EXPRESS PLUS 3.0"
+	default n
+	help
+	  low voltage high current fast charging, by using switch charger and PD
+	  to achive better charging ability,it reduce more IC heat than PE+
+	  Set Yes to enable PE+30.
+	  Set No to disable PE+30.
+
 config MTK_BIF_SUPPORT
 	bool "Mediatek BIF battery driver"
 	select MTK_DYNAMIC_BAT_CV_SUPPORT

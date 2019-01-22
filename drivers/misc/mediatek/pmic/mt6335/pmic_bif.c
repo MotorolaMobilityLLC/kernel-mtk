@@ -525,12 +525,19 @@ int mtk_bif_get_vbat(int *vbat)
 
 	/* Prevent ADC & BIF read at the same time */
 	/*lockadcch3();*/
-	pr_debug("%s: starts\n", __func__);
+
+	if (!IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
+		ret = -ENOTSUPP;
+		*vbat = 0;
+		return ret;
+	}
 
 	if (bif_checked && !bif_exist) {
 		ret = -ENOTSUPP;
 		goto _err;
 	}
+
+	pr_err("%s: starts1 %d %d\n", __func__, bif_checked, bif_exist);
 
 	/* Enable ADC */
 	ret = bif_adc_enable();
@@ -561,6 +568,12 @@ int mtk_bif_get_tbat(int *tbat)
 
 	/* Prevent ADC & BIF read at the same time */
 	/*lockadcch3();*/
+	if (!IS_ENABLED(CONFIG_MTK_BIF_SUPPORT)) {
+		ret = -ENOTSUPP;
+		*tbat = 0;
+		return ret;
+	}
+
 	pr_debug("%s: starts\n", __func__);
 
 	if (!bif_exist) {
