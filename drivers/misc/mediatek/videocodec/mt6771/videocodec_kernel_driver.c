@@ -93,7 +93,7 @@ static struct clk *clk_MT_CG_VENC_VENC;         /* VENC_VENC */
 
 static struct clk *clk_MT_SCP_SYS_VDE;          /* SCP_SYS_VDE */
 static struct clk *clk_MT_SCP_SYS_VEN;          /* SCP_SYS_VEN */
-static struct clk *clk_MT_SCP_SYS_MM0;          /* SCP_SYS_MM0 */
+static struct clk *clk_MT_SCP_SYS_DIS;          /* SCP_SYS_DIS */
 
 static DEFINE_MUTEX(IsOpenedLock);
 static DEFINE_MUTEX(PWRLock);
@@ -453,8 +453,8 @@ void vdec_polling_status(void)
 				MODULE_MFV_PR_INFO("[VCODEC][DUMP] MISC_%d = %x\n", i, u4DataStatus);
 			}
 
-			/* smi_debug_bus_hanging_detect_ext2(0x1FF, 1, 0, 1);  */
-			/* mmsys_cg_check();  */
+			smi_debug_bus_hanging_detect_ext2(0x1FF, 1, 0, 1);
+			/*mmsys_cg_check(); */
 
 			u4Counter = 0;
 			WARN_ON(1);
@@ -474,29 +474,13 @@ void vdec_power_on(void)
 	mutex_unlock(&VdecPWRLock);
 	ret = 0;
 
-	ret = clk_prepare_enable(clk_MT_SCP_SYS_MM0);
+	ret = clk_prepare_enable(clk_MT_SCP_SYS_DIS);
 	if (ret) {
 		/* print error log & error handling */
-		pr_debug("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_MM0 is not enabled, ret = %d\n", ret);
+		pr_debug("[VCODEC][ERROR][vdec_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
 	}
 
-#if defined(CONFIG_MTK_SMI_EXT)
 	smi_bus_enable(SMI_LARB_VDECSYS, "VDEC");
-#else
-	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON);
-	if (ret) {
-		/* print error log & error handling */
-		pr_debug("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_SMI_COMMON is not enabled, ret = %d\n",
-		ret);
-		}
-
-	ret = clk_prepare_enable(clk_MT_CG_GALS_VDEC2MM);
-	if (ret) {
-		/* print error log & error handling */
-		pr_debug("[VCODEC][ERROR][vdec_power_on] clk_MT_CG_GALS_VDEC2MM is not enabled, ret = %d\n",
-		ret);
-		}
-#endif
 
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_VDE);
 	if (ret) {
@@ -518,18 +502,14 @@ void vdec_power_off(void)
 	if (gu4VdecPWRCounter == 0) {
 		MODULE_MFV_LOGD("[VCODEC] gu4VdecPWRCounter = 0\n");
 	} else {
-
-		vdec_polling_status();
+		/*vdec_polling_status();*/
 		gu4VdecPWRCounter--;
 		clk_disable_unprepare(clk_MT_CG_VDEC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VDE);
-#if defined(CONFIG_MTK_SMI_EXT)
+
 		smi_bus_disable(SMI_LARB_VDECSYS, "VDEC");
-#else
-		clk_disable_unprepare(clk_MT_CG_GALS_VDEC2MM);
-		clk_disable_unprepare(clk_MT_CG_SMI_COMMON);
-#endif
-		clk_disable_unprepare(clk_MT_SCP_SYS_MM0);
+
+		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
 	}
 	mutex_unlock(&VdecPWRLock);
 }
@@ -545,29 +525,13 @@ void venc_power_on(void)
 
 	MODULE_MFV_LOGD("[VCODEC] venc_power_on +\n");
 
-	ret = clk_prepare_enable(clk_MT_SCP_SYS_MM0);
+	ret = clk_prepare_enable(clk_MT_SCP_SYS_DIS);
 	if (ret) {
 		/* print error log & error handling */
-		pr_debug("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_MM0 is not enabled, ret = %d\n", ret);
+		pr_debug("[VCODEC][ERROR][venc_power_on] clk_MT_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
 	}
 
-#if defined(CONFIG_MTK_SMI_EXT)
 	smi_bus_enable(SMI_LARB_VENCSYS, "VENC");
-#else
-	ret = clk_prepare_enable(clk_MT_CG_SMI_COMMON);
-	if (ret) {
-		/* print error log & error handling */
-		pr_debug("[VCODEC][ERROR][venc_power_on] clk_MT_CG_SMI_COMMON is not enabled, ret = %d\n",
-		ret);
-	}
-
-	ret = clk_prepare_enable(clk_MT_CG_GALS_VENC2MM);
-	if (ret) {
-		/* print error log & error handling */
-		pr_debug("[VCODEC][ERROR][venc_power_on] clk_MT_CG_GALS_VENC2MM is not enabled, ret = %d\n",
-		ret);
-	}
-#endif
 
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_VEN);
 	if (ret) {
@@ -592,15 +556,14 @@ void venc_power_off(void)
 	} else {
 		gu4VencPWRCounter--;
 		MODULE_MFV_LOGD("[VCODEC] venc_power_off +\n");
+
 		clk_disable_unprepare(clk_MT_CG_VENC_VENC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VEN);
-#if defined(CONFIG_MTK_SMI_EXT)
+
 		smi_bus_disable(SMI_LARB_VENCSYS, "VENC");
-#else
-		clk_disable_unprepare(clk_MT_CG_GALS_VENC2MM);
-		clk_disable_unprepare(clk_MT_CG_SMI_COMMON);
-#endif
-		clk_disable_unprepare(clk_MT_SCP_SYS_MM0);
+
+		clk_disable_unprepare(clk_MT_SCP_SYS_DIS);
+
 		MODULE_MFV_LOGD("[VCODEC] venc_power_off -\n");
 	}
 	mutex_unlock(&VencPWRLock);
@@ -2474,6 +2437,7 @@ static int vcodec_probe(struct platform_device *dev)
 	disable_irq(VDEC_IRQ_ID);
 	disable_irq(VENC_IRQ_ID);
 
+#if 0
 #ifndef CONFIG_MTK_SMI_EXT
 	clk_MT_CG_SMI_COMMON = devm_clk_get(&dev->dev, "MT_CG_SMI_COMMON");
 	if (IS_ERR(clk_MT_CG_SMI_COMMON)) {
@@ -2493,6 +2457,7 @@ static int vcodec_probe(struct platform_device *dev)
 		return PTR_ERR(clk_MT_CG_GALS_VENC2MM);
 	}
 #endif
+#endif
 
 	clk_MT_CG_VDEC = devm_clk_get(&dev->dev, "MT_CG_VDEC");
 	if (IS_ERR(clk_MT_CG_VDEC)) {
@@ -2500,7 +2465,7 @@ static int vcodec_probe(struct platform_device *dev)
 		return PTR_ERR(clk_MT_CG_VDEC);
 	}
 
-	clk_MT_CG_VENC_VENC = devm_clk_get(&dev->dev, "MT_CG_VENC_VENC");
+	clk_MT_CG_VENC_VENC = devm_clk_get(&dev->dev, "MT_CG_VENC");
 	if (IS_ERR(clk_MT_CG_VENC_VENC)) {
 		pr_debug("[VCODEC][ERROR] Unable to devm_clk_get MT_CG_VENC_VENC\n");
 		return PTR_ERR(clk_MT_CG_VENC_VENC);
@@ -2518,10 +2483,10 @@ static int vcodec_probe(struct platform_device *dev)
 		return PTR_ERR(clk_MT_SCP_SYS_VEN);
 	}
 
-	clk_MT_SCP_SYS_MM0 = devm_clk_get(&dev->dev, "MT_SCP_SYS_MM0");
-	if (IS_ERR(clk_MT_SCP_SYS_MM0)) {
-		pr_debug("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_MM0\n");
-		return PTR_ERR(clk_MT_SCP_SYS_MM0);
+	clk_MT_SCP_SYS_DIS = devm_clk_get(&dev->dev, "MT_SCP_SYS_DIS");
+	if (IS_ERR(clk_MT_SCP_SYS_DIS)) {
+		pr_debug("[VCODEC][ERROR] Unable to devm_clk_get MT_SCP_SYS_DIS\n");
+		return PTR_ERR(clk_MT_SCP_SYS_DIS);
 	}
 
 	MODULE_MFV_LOGD("vcodec_probe Done\n");
@@ -2557,7 +2522,7 @@ static int vcodec_pm_restore_noirq(struct device *device)
 #endif
 
 static const struct of_device_id vcodec_of_match[] = {
-	{ .compatible = "mediatek,vdec_top_global_con", },
+	{ .compatible = "mediatek,vdec_gcon", },
 	{/* sentinel */}
 };
 
@@ -2606,16 +2571,16 @@ static int __init vcodec_driver_init(void)
 	{
 		struct device_node *node = NULL;
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,vdec_full_top");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,vdec");
 		KVA_VDEC_BASE = (VAL_ULONG_T)of_iomap(node, 0);
 		VDEC_IRQ_ID =  irq_of_parse_and_map(node, 0);
-		KVA_VDEC_MISC_BASE = KVA_VDEC_BASE + 0x5000;
-		KVA_VDEC_VLD_BASE = KVA_VDEC_BASE + 0x0000;
+		KVA_VDEC_MISC_BASE = KVA_VDEC_BASE + 0x0000;
+		KVA_VDEC_VLD_BASE = KVA_VDEC_BASE + 0x1000;
 	}
 	{
 		struct device_node *node = NULL;
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,vdec_top_global_con");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,vdec_gcon");
 		KVA_VDEC_GCON_BASE = (VAL_ULONG_T)of_iomap(node, 0);
 
 		MODULE_MFV_LOGD("[VCODEC][DeviceTree] KVA_VENC_BASE(0x%lx), KVA_VDEC_BASE(0x%lx), KVA_VDEC_GCON_BASE(0x%lx)",
