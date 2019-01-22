@@ -972,7 +972,7 @@ VOID kalP2PIndicateScanDone(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex, 
 		KAL_ACQUIRE_MUTEX(prGlueInfo->prAdapter, MUTEX_DEL_INF);
 		GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 
-		if (prP2pGlueDevInfo->prScanRequest != NULL) {
+		if (prP2pGlueDevInfo->prScanRequest != NULL && ucRoleIndex == 0xFF) {
 			prScanRequest = prP2pGlueDevInfo->prScanRequest;
 			cfg80211_scan_done(prScanRequest, fgIsAbort);
 			prP2pGlueDevInfo->prScanRequest = NULL;
