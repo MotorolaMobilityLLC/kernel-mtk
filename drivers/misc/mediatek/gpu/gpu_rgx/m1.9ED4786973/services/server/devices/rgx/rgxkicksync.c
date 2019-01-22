@@ -698,7 +698,7 @@ PVRSRV_ERROR PVRSRVRGXKickSyncKM(RGX_SERVER_KICKSYNC_CONTEXT * psKickSyncContext
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)
@@ -748,7 +748,7 @@ fail_create_output_fence:
 	/* Free memory allocated to hold the resolved fence's checkpoints */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Drop the references taken on the sync checkpoints in the
 	 * resolved input fence */

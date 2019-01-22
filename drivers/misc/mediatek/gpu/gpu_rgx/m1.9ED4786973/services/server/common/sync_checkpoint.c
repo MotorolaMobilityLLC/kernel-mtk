@@ -186,6 +186,7 @@ static PFN_SYNC_CHECKPOINT_FENCE_CREATE_FN g_pfnFenceCreate = NULL;
 static PFN_SYNC_CHECKPOINT_FENCE_ROLLBACK_DATA_FN g_pfnFenceDataRollback = NULL;
 static PFN_SYNC_CHECKPOINT_FENCE_FINALISE_FN g_pfnFenceFinalise = NULL;
 static PFN_SYNC_CHECKPOINT_NOHW_UPDATE_TIMELINES_FN g_pfnNoHWUpdateTimelines = NULL;
+static PFN_SYNC_CHECKPOINT_FREE_CHECKPOINT_LIST_MEM_FN g_pfnFreeChkptListMem = NULL;
 
 #if (SYNC_CHECKPOINT_POOL_SIZE > 0)
 static _SYNC_CHECKPOINT *_GetCheckpointFromPool(_SYNC_CHECKPOINT_CONTEXT *psContext);
@@ -483,7 +484,8 @@ SyncCheckpointRegisterFunctions(PFN_SYNC_CHECKPOINT_FENCE_RESOLVE_FN pfnFenceRes
                                 PFN_SYNC_CHECKPOINT_FENCE_CREATE_FN pfnFenceCreate,
                                 PFN_SYNC_CHECKPOINT_FENCE_ROLLBACK_DATA_FN pfnFenceDataRollback,
                                 PFN_SYNC_CHECKPOINT_FENCE_FINALISE_FN pfnFenceFinalise,
-                                PFN_SYNC_CHECKPOINT_NOHW_UPDATE_TIMELINES_FN pfnNoHWUpdateTimelines)
+                                PFN_SYNC_CHECKPOINT_NOHW_UPDATE_TIMELINES_FN pfnNoHWUpdateTimelines,
+                                PFN_SYNC_CHECKPOINT_FREE_CHECKPOINT_LIST_MEM_FN pfnFreeCheckpointListMem)
 {
 	PVRSRV_ERROR eError = PVRSRV_OK;
 
@@ -492,6 +494,7 @@ SyncCheckpointRegisterFunctions(PFN_SYNC_CHECKPOINT_FENCE_RESOLVE_FN pfnFenceRes
 	g_pfnFenceDataRollback = pfnFenceDataRollback;
 	g_pfnFenceFinalise = pfnFenceFinalise;
 	g_pfnNoHWUpdateTimelines = pfnNoHWUpdateTimelines;
+	g_pfnFreeChkptListMem = pfnFreeCheckpointListMem;
 
 	return eError;
 }
@@ -673,6 +676,15 @@ SyncCheckpointFinaliseFence(PVRSRV_FENCE hFence, void *pvFinaliseData)
 		PVR_LOG_IF_ERROR(eError, "g_pfnFenceFinalise returned error");
 	}
 	return eError;
+}
+
+IMG_INTERNAL void
+SyncCheckpointFreeCheckpointListMem(void *pvCheckpointListMem)
+{
+	if (g_pfnFreeChkptListMem)
+	{
+		g_pfnFreeChkptListMem(pvCheckpointListMem);
+	}
 }
 
 IMG_INTERNAL PVRSRV_ERROR

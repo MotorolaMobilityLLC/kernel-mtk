@@ -1012,7 +1012,7 @@ PVRSRV_ERROR PVRSRVRGXTDMSubmitTransferKM(
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)
@@ -1088,12 +1088,16 @@ fail_populate_sync_addr_list:
 	PVR_ASSERT(eError != PVRSRV_OK);
 	OSFreeMem(psCmdHelper);
 fail_allochelper:
+#if defined(SUPPORT_FALLBACK_FENCE_SYNC) || (defined(SUPPORT_NATIVE_FENCE_SYNC) && defined(PVRSRV_USE_SYNC_CHECKPOINTS))
+	if (apsFenceSyncCheckpoints)
+	{
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
+	}
+#endif
 #if !defined(PVRSRV_USE_BRIDGE_LOCK)
         OSLockRelease(psTransferContext->hLock);
 #endif
 	return eError;
-	
-
 }
 
 

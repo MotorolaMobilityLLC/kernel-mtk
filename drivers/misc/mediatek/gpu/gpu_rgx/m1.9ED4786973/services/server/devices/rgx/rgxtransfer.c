@@ -1400,7 +1400,7 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)
@@ -1481,7 +1481,7 @@ fail_alloc3dhelper:
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)

@@ -95,6 +95,11 @@ static struct {
 
 static const struct file_operations pvr_sync_fops;
 
+static
+void pvr_sync_free_checkpoint_list_mem(void *mem_ptr)
+{
+	kfree(mem_ptr);
+}
 static bool is_pvr_timeline(struct file *file)
 {
 	return file->f_op == &pvr_sync_fops;
@@ -560,7 +565,7 @@ enum PVRSRV_ERROR pvr_sync_init(void *device_cookie)
 	 */
 	SyncCheckpointRegisterFunctions(pvr_sync_resolve_fence,
 		pvr_sync_create_fence, pvr_sync_rollback_fence_data,
-		pvr_sync_finalise_fence, NULL);
+		pvr_sync_finalise_fence, NULL, pvr_sync_free_checkpoint_list_mem);
 
 	err = misc_register(&pvr_sync_device);
 	if (err) {
@@ -575,7 +580,7 @@ err_out:
 	return error;
 
 err_unregister_checkpoint_funcs:
-	SyncCheckpointRegisterFunctions(NULL, NULL, NULL, NULL, NULL);
+	SyncCheckpointRegisterFunctions(NULL, NULL, NULL, NULL, NULL, NULL);
 	pvr_fence_context_destroy(pvr_sync_data.foreign_fence_context);
 	goto err_out;
 }
@@ -583,7 +588,7 @@ err_unregister_checkpoint_funcs:
 void pvr_sync_deinit(void)
 {
 	DPF("%s", __func__);
-	SyncCheckpointRegisterFunctions(NULL, NULL, NULL, NULL, NULL);
+	SyncCheckpointRegisterFunctions(NULL, NULL, NULL, NULL, NULL, NULL);
 	misc_deregister(&pvr_sync_device);
 	pvr_fence_context_destroy(pvr_sync_data.foreign_fence_context);
 }

@@ -849,7 +849,7 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)
@@ -894,7 +894,7 @@ err_populate_sync_addr_list:
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)

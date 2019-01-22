@@ -3095,7 +3095,7 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)
@@ -3138,7 +3138,7 @@ PVRSRVRGXKickRSKM_Exit:
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)
@@ -3698,7 +3698,7 @@ PVRSRV_ERROR PVRSRVRGXKickVRDMKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)
@@ -3741,7 +3741,7 @@ PVRSRVRGXKickSHKM_Exit:
 	/* Free the memory that was allocated for the sync checkpoint list returned by ResolveFence() */
 	if (apsFenceSyncCheckpoints)
 	{
-		OSFreeMem(apsFenceSyncCheckpoints);
+		SyncCheckpointFreeCheckpointListMem(apsFenceSyncCheckpoints);
 	}
 	/* Free memory allocated to hold the internal list of update values */
 	if (pui32IntAllocatedUpdateValues)
