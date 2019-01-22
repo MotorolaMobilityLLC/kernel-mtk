@@ -153,7 +153,7 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 	{"INFRASYS_EFUSE_PDN_DEBUG",              true    },
 	{"INFRASYS_DEVICE_APC",                   true    },
 	{"INFRASYS_DBG_TRACKER",                  true    },
-	{"INFRASYS_CCIF0_AP",                     true    },
+	{"INFRASYS_CCIF0_AP",                     false   },
 	{"INFRASYS_CCIF0_MD",                     true    },
 
 	/* 40 */
