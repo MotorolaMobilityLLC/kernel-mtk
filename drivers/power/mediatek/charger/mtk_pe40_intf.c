@@ -120,6 +120,7 @@ void mtk_pe40_reset(struct charger_manager *pinfo, bool enable)
 	pe40 = &pinfo->pe4;
 
 	if (pe40->is_connect == true) {
+		tcpm_set_pd_charging_policy(pinfo->tcpc, DPM_CHARGING_POLICY_VSAFE5V, NULL);
 		charger_dev_set_mivr(pinfo->chg1_dev, 4500000);
 		charger_enable_vbus_ovp(pinfo, true);
 		pinfo->polling_interval = 10;
@@ -146,7 +147,6 @@ void mtk_pe40_end(struct charger_manager *pinfo, int type, bool retry)
 {
 	if (pinfo->enable_pe_4) {
 		mtk_pe40_reset(pinfo, retry);
-		mtk_pe40_reset_ta_vchr(pinfo, 1);
 		chr_err("mtk_pe40_end:%d retry:%d\n", type, retry);
 	}
 }
@@ -342,23 +342,18 @@ bool mtk_pe40_get_is_enable(struct charger_manager *pinfo)
 	return pinfo->pe4.is_enabled;
 }
 
-int mtk_pe40_reset_ta_vchr(struct charger_manager *pinfo, int flag)
-{
-	if (pinfo->tcpc == NULL)
-		return 0;
-	tcpm_set_pd_charging_policy(pinfo->tcpc, DPM_CHARGING_POLICY_VSAFE5V, NULL);
-	chr_err("mtk_pe40_reset_ta_vchr:%d\n", flag);
-	return 0;
-}
-
 bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 {
 	struct charger_data *pdata;
 	int tmp;
+	int ibus;
+	int ret;
 
 	tmp = battery_get_bat_temperature();
 	pdata = &pinfo->chg1_data;
-	chr_err("mtk_pe40_is_ready:%d hv:%d thermal:%d,%d tmp:%d,%d,%d pps:%d enable:%d\n",
+
+	ret = charger_dev_get_ibus(pinfo->chg1_dev, &ibus);
+	chr_err("mtk_pe40_is_ready:%d hv:%d thermal:%d,%d tmp:%d,%d,%d pps:%d enable:%d ibus:%d\n",
 		pinfo->enable_pe_4,
 		pinfo->enable_hv_charging,
 		pdata->thermal_charging_current_limit,
@@ -367,14 +362,16 @@ bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 		HIGH_TEMP_TO_ENTER_PE40,
 		LOW_TEMP_TO_ENTER_PE40,
 		mtk_is_TA_support_pd_pps(pinfo),
-		mtk_pe40_get_is_enable(pinfo));
+		mtk_pe40_get_is_enable(pinfo),
+		ret);
 
 	if (pinfo->enable_pe_4 == false ||
 		pinfo->enable_hv_charging == false ||
 		pdata->thermal_charging_current_limit != -1 ||
 		pdata->thermal_input_current_limit != -1 ||
 		tmp > HIGH_TEMP_TO_ENTER_PE40 ||
-		tmp < LOW_TEMP_TO_ENTER_PE40)
+		tmp < LOW_TEMP_TO_ENTER_PE40 ||
+		ret == -ENOTSUPP)
 		return false;
 
 	if (mtk_is_TA_support_pd_pps(pinfo) == true)
