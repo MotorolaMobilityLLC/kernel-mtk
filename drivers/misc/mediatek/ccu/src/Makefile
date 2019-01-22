@@ -22,7 +22,7 @@ platform = $(subst ",,$(CONFIG_MTK_PLATFORM))
 
 obj-y += $(subst ",,$(platform))/
 
-ifneq (,$(filter $(platform),mt6757 mt6799))
+ifneq (,$(filter $(platform),mt6757))
     obj-y += 1.0/
 else ifneq (,$(filter $(platform),mt6758 mt6763))
     obj-y += 1.1/
