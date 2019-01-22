@@ -15,10 +15,6 @@
 #ifndef _TL_SEC_TCI_H_
 #define _TL_SEC_TCI_H_
 
-typedef uint32_t tciCommandId_t;
-typedef uint32_t tciResponseId_t;
-typedef uint32_t tciReturnCode_t;
-
 /**< Responses have bit 31 set */
 #define RSP_ID_MASK (1U << 31)
 #define RSP_ID(cmdId) (((uint32_t)(cmdId)) | RSP_ID_MASK)
@@ -35,16 +31,16 @@ typedef uint32_t tciReturnCode_t;
 /**
  * TCI command header.
  */
-typedef struct{
-	tciCommandId_t commandId; /**< Command ID */
-} tciCommandHeader_t;
+struct tciCommandHeader_t {
+	uint32_t commandId; /**< Command ID */
+};
 
 /**
  * TCI response header.
  */
-typedef struct{
-	tciResponseId_t     responseId; /**< Response ID (must be command ID | RSP_ID_MASK )*/
-	tciReturnCode_t     returnCode; /**< Return code of command */
-} tciResponseHeader_t;
+struct tciResponseHeader_t {
+	uint32_t responseId; /**< Response ID (must be command ID | RSP_ID_MASK )*/
+	uint32_t returnCode; /**< Return code of command */
+};
 
 #endif /* TCI_H_ */
