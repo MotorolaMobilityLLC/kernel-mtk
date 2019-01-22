@@ -96,6 +96,7 @@ struct cmdqMDPFuncStruct {
 	CmdqTrackTask trackTask;
 	CmdqPraseErrorModByEngFlag parseErrModByEngFlag;
 	CmdqMdpGetEngineGroupBits getEngineGroupBits;
+	CmdqErrorResetCB errorReset;
 };
 
 /* track MDP task */
