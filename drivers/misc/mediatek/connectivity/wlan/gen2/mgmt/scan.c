@@ -71,6 +71,8 @@ UINT_8 pref5GhzLo = PREF_LO_5GHZ;
 #define WEIGHT_IDX_RSN			2
 #endif
 
+#define P2P_INDICATE_COMPLETE_BSS_INFO	1
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -1930,13 +1932,18 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 					prSpecificBssDesc->ucChannelNum,
 					RCPI_TO_dBm(prSpecificBssDesc->ucRCPI));
 		} else {
+
+#if P2P_INDICATE_COMPLETE_BSS_INFO
+			kalP2PIndicateCompleteBssInfo(prAdapter->prGlueInfo, prSpecificBssDesc);
+#else
 			rChannelInfo.ucChannelNum = prSpecificBssDesc->ucChannelNum;
 			rChannelInfo.eBand = prSpecificBssDesc->eBand;
 			kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
-					      (PUINT_8) prSpecificBssDesc->aucRawBuf,
-					      prSpecificBssDesc->u2RawLength,
-					      &rChannelInfo,
-					      RCPI_TO_dBm(prSpecificBssDesc->ucRCPI));
+				(PUINT_8) prSpecificBssDesc->aucRawBuf,
+				prSpecificBssDesc->u2RawLength,
+				&rChannelInfo,
+				RCPI_TO_dBm(prSpecificBssDesc->ucRCPI));
+#endif
 		}
 
 #if CFG_ENABLE_WIFI_DIRECT
@@ -2005,13 +2012,11 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 #endif
 						rChannelInfo.ucChannelNum = prBssDesc->ucChannelNum;
 						rChannelInfo.eBand = prBssDesc->eBand;
-
 						kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
 								      (PUINT_8) prBssDesc->aucRawBuf,
 								      prBssDesc->u2RawLength,
 								      &rChannelInfo,
 								      RCPI_TO_dBm(prBssDesc->ucRCPI));
-
 						/* Do not clear it then we can pass the bss in Specific report */
 						/* kalMemZero(prBssDesc->aucRawBuf,CFG_RAW_BUFFER_SIZE); */
 
