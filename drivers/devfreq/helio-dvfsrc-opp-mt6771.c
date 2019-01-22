@@ -15,6 +15,7 @@
 #include <linux/seq_file.h>
 #include <linux/file.h>
 #include <linux/proc_fs.h>
+#include <linux/uaccess.h>
 
 #include <helio-dvfsrc.h>
 #include <helio-dvfsrc-opp.h>
@@ -209,6 +210,29 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 		vcore_dvfs_to_ddr_opp[2], vcore_dvfs_to_ddr_opp[3]);
 }
 
+static char *_copy_from_user_for_proc(const char __user *buffer, size_t count)
+{
+	char *buf = (char *)__get_free_page(GFP_USER);
+
+	if (!buf)
+		return NULL;
+
+	if (count >= PAGE_SIZE)
+		goto out;
+
+	if (copy_from_user(buf, buffer, count))
+		goto out;
+
+	buf[count] = '\0';
+
+	return buf;
+
+out:
+	free_page((unsigned long)buf);
+
+	return NULL;
+}
+
 static int vcore_opp_proc_show(struct seq_file *m, void *v)
 {
 	unsigned int i = 0;
@@ -225,7 +249,12 @@ static ssize_t vcore_opp_proc_write(struct file *file,
 {
 	s32 opp, vcore_uv;
 
-	if (sscanf(buffer, "%d %d", &opp, &vcore_uv) != 2)
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (sscanf(buf, "%d %d", &opp, &vcore_uv) != 2)
 		return -EINVAL;
 
 	if (opp < 0 || opp >= VCORE_DVFS_OPP_NUM || vcore_uv < 0)
@@ -233,6 +262,7 @@ static ssize_t vcore_opp_proc_write(struct file *file,
 
 	update_vcore_opp_uv(opp, vcore_uv);
 
+	free_page((unsigned long)buf);
 	return count;
 }
 
