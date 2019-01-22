@@ -1080,7 +1080,7 @@ static int fgauge_enable_nag_interrupt(struct gauge_device *gauge_dev, int en)
 {
 	if (en != 0)
 		en = 1;
-	pmic_set_register_value(PMIC_RG_INT_EN_NAG_C_DLTV, en);
+	pmic_enable_interrupt(FG_RG_INT_EN_NAG_C_DLTV, en, "GM30");
 	pmic_set_register_value(PMIC_AUXADC_NAG_IRQ_EN, en);
 	pmic_set_register_value(PMIC_AUXADC_NAG_EN, en);
 
