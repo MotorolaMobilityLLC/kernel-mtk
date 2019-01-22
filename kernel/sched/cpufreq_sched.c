@@ -148,6 +148,10 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 
 	freq = clamp(freq, min, max);
 
+	/* no freq = 0 case */
+	if (!freq)
+		return;
+
 	scale = (freq << SCHED_CAPACITY_SHIFT) / max;
 
 	arch_get_cluster_cpus(&cls_cpus, cid);
