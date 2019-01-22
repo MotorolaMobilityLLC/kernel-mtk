@@ -893,8 +893,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* pmic_ldo_va10_lp(SRCLKEN0, 1, HW_OFF); */
 		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_vbif28_lp(SRCLKEN0, 1, HW_OFF);
-
-		mt_power_gs_dump_suspend();
 		break;
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);
