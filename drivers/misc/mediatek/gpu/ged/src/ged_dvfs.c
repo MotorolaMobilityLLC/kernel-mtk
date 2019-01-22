@@ -860,7 +860,7 @@ FB_RET:
 
 static int _loading_avg(int ui32loading)
 {
-	static int data[8];
+	static int data[4];
 	static int idx;
 	static int sum;
 
@@ -879,6 +879,7 @@ static bool ged_dvfs_policy(
 	int i32MaxLevel = (int)(mt_gpufreq_get_dvfs_table_num() - 1);
 	unsigned int ui32GPUFreq = mt_gpufreq_get_cur_freq_index();
 	unsigned int sentinalLoading = 0;
+	unsigned int ui32GPULoading_avg;
 
 	int i32NewFreqID = (int)ui32GPUFreq;
 	g_um_gpu_tar_freq = 0;
@@ -970,11 +971,12 @@ static bool ged_dvfs_policy(
 			_init_loading_ud_table();
 		}
 
-		ui32GPULoading = _loading_avg(ui32GPULoading);
-
-		if (ui32GPULoading >= loading_ud_table[ui32GPUFreq].up)
+		ui32GPULoading_avg = _loading_avg(ui32GPULoading);
+		if (ui32GPULoading >= 110 - gx_tb_dvfs_margin_cur)
+			i32NewFreqID = 0;
+		else if (ui32GPULoading_avg >= loading_ud_table[ui32GPUFreq].up)
 			i32NewFreqID -= 1;
-		else if (ui32GPULoading <= loading_ud_table[ui32GPUFreq].down)
+		else if (ui32GPULoading_avg <= loading_ud_table[ui32GPUFreq].down)
 			i32NewFreqID += 1;
 
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K1] rdy gpu_av_loading: %u, %d(%d)-up:%d,%d, new: %d",
