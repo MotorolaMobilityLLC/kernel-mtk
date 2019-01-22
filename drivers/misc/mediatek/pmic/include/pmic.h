@@ -35,6 +35,11 @@
 #define PMIC_VOL REGULATOR_CHANGE_VOLTAGE
 #define PMIC_EN_VOL 9
 
+#ifdef MTK_EVB_PLATFORM
+#define ENABLE_ALL_OC_IRQ 0
+#else
+#define ENABLE_ALL_OC_IRQ 1
+#endif
 
 /*
  * PMIC EXTERN VARIABLE
