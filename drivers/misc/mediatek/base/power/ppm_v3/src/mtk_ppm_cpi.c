@@ -274,7 +274,7 @@ static unsigned int ppm_get_core_cpi_locked(unsigned int cpu)
 {
 	unsigned int val[2];
 
-	if (cpu >= num_possible_cpus() || !cpu_online(cpu))
+	if (cpu >= num_possible_cpus() || !cpu_online(cpu) || cpu_isolated(cpu))
 		return 0;
 
 	smp_call_function_single(cpu, ppm_cpi_get_pmu_val, val, 1);
