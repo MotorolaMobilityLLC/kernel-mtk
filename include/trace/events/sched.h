@@ -94,6 +94,7 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
 		__field(	int,	target_cpu		)
 #ifdef CONFIG_MTK_SCHED_TRACERS
 		__field(long, state)
+		__field(bool, overutil)
 #endif
 	),
 
@@ -105,12 +106,13 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
 		__entry->target_cpu	= task_cpu(p);
 #ifdef CONFIG_MTK_SCHED_TRACERS
 		__entry->state	= __trace_sched_switch_state(false, p);
+		__entry->overutil = task_rq(p)->rd->overutilized;
 #endif
 	),
 
 	TP_printk(
 #ifdef CONFIG_MTK_SCHED_TRACERS
-		"comm=%s pid=%d prio=%d success=%d target_cpu=%03d state=%s",
+		"comm=%s pid=%d prio=%d success=%d target_cpu=%03d state=%s overutil=%d",
 #else
 		"comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
 #endif
@@ -133,7 +135,8 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
 				{ TASK_NOLOAD, "N"},
 				{ _MT_TASK_BLOCKED_RTMUX, "r"},
 				{ _MT_TASK_BLOCKED_MUTEX, "m"},
-				{ _MT_TASK_BLOCKED_IO, "d"}) : "R"
+				{ _MT_TASK_BLOCKED_IO, "d"}) : "R",
+		__entry->overutil
 #endif
 			)
 );
