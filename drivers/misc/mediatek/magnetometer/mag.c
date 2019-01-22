@@ -82,9 +82,9 @@ static void mag_work_func(struct work_struct *work)
 			cxt->drv_data[i].mag_data.status = status;
 			m_pre_ns = cxt->drv_data[i].mag_data.time;
 			cxt->drv_data[i].mag_data.time = cur_ns;
-			if (true ==  cxt->is_first_data_after_enable) {
+			if (true ==  cxt->is_first_data_after_enable_mag) {
 				m_pre_ns = cur_ns;
-				cxt->is_first_data_after_enable = false;
+				cxt->is_first_data_after_enable_mag = false;
 				/* filter -1 value */
 				if (MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[0] ||
 					MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[1] ||
@@ -122,9 +122,9 @@ static void mag_work_func(struct work_struct *work)
 			cxt->drv_data[i].mag_data.status = status;
 			o_pre_ns = cxt->drv_data[i].mag_data.time;
 			cxt->drv_data[i].mag_data.time = cur_ns;
-			if (true ==  cxt->is_first_data_after_enable) {
+			if (true ==  cxt->is_first_data_after_enable_ori) {
 				o_pre_ns = cur_ns;
-				cxt->is_first_data_after_enable = false;
+				cxt->is_first_data_after_enable_ori = false;
 				/* filter -1 value */
 				if (MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[0] ||
 				MAG_INVALID_VALUE == cxt->drv_data[i].mag_data.values[1] ||
@@ -186,7 +186,8 @@ static struct mag_context *mag_context_alloc_object(void)
 		return NULL;
 	}
 	initTimer(&obj->hrTimer, mag_poll);
-	obj->is_first_data_after_enable = false;
+	obj->is_first_data_after_enable_mag = false;
+	obj->is_first_data_after_enable_ori = false;
 	obj->is_polling_run = false;
 	obj->active_data_sensor = 0;
 	obj->active_nodata_sensor = 0;
@@ -207,13 +208,14 @@ static int mag_enable_data(int handle, int enable)
 
 	if (1 == enable) {
 		MAG_LOG("MAG(%d) enable\n", handle);
-		cxt->is_first_data_after_enable = true;
 		cxt->active_data_sensor |= 1<<handle;
 		if (ID_M_V_ORIENTATION == handle) {
+			cxt->is_first_data_after_enable_ori = true;
 			cxt->mag_ctl.o_enable(1);
 			cxt->mag_ctl.o_open_report_data(1);
 		}
 		if (ID_M_V_MAGNETIC == handle) {
+			cxt->is_first_data_after_enable_mag = true;
 			cxt->mag_ctl.m_enable(1);
 			cxt->mag_ctl.m_open_report_data(1);
 		}
