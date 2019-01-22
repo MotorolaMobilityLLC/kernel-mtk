@@ -20,8 +20,6 @@
 #include "ccci_config.h"
 #include "ccci_core.h"
 
-#define CCCI_SMEM_MINOR_BASE 150
-
 enum {
 	TYPE_RAW = 0,
 	TYPE_CCB,

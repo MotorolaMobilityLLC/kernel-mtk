@@ -22,9 +22,15 @@ static struct ccci_smem_port md1_ccci_smem_ports[] = {
 	{SMEM_USER_RAW_DHL, TYPE_RAW, }, /* raw region for DHL settings */
 	{SMEM_USER_RAW_NETD, TYPE_RAW, }, /* for direct tethering */
 	{SMEM_USER_RAW_USB, TYPE_RAW, }, /* for derect tethering */
+	{SMEM_USER_RAW_AUDIO, TYPE_RAW, }, /* for speech */
 };
 static struct ccci_smem_port md3_ccci_smem_ports[] = {
 	{SMEM_USER_RAW_DBM, TYPE_RAW, }, /* mt_pbm.c */
+	{SMEM_USER_CCB_DHL, TYPE_CCB, }, /* dummy */
+	{SMEM_USER_RAW_DHL, TYPE_RAW, }, /* dummy */
+	{SMEM_USER_RAW_NETD, TYPE_RAW, }, /* dummy */
+	{SMEM_USER_RAW_USB, TYPE_RAW, }, /* dummy */
+	{SMEM_USER_RAW_AUDIO, TYPE_RAW, }, /* for speech */
 };
 struct tx_notify_task md1_tx_notify_tasks[SMEM_USER_MAX];
 
@@ -182,6 +188,10 @@ int port_smem_cfg(struct ccci_modem *md)
 		md1_ccci_smem_ports[SMEM_USER_RAW_USB].addr_phy = md->smem_layout.ccci_dt_usb_smem_base_phy;
 		md1_ccci_smem_ports[SMEM_USER_RAW_USB].length = md->smem_layout.ccci_dt_usb_smem_size;
 
+		md1_ccci_smem_ports[SMEM_USER_RAW_AUDIO].addr_vir = md->smem_layout.ccci_raw_audio_base_vir;
+		md1_ccci_smem_ports[SMEM_USER_RAW_AUDIO].addr_phy = md->smem_layout.ccci_raw_audio_base_phy;
+		md1_ccci_smem_ports[SMEM_USER_RAW_AUDIO].length = md->smem_layout.ccci_raw_audio_size;
+
 		for (i = 0; i < ARRAY_SIZE(md1_ccci_smem_ports); i++) {
 			md1_ccci_smem_ports[i].state = CCB_USER_INVALID;
 			md1_ccci_smem_ports[i].wakeup = 0;
@@ -199,6 +209,9 @@ int port_smem_cfg(struct ccci_modem *md)
 								CCCI_SMEM_DBM_GUARD_SIZE;
 		md3_ccci_smem_ports[SMEM_USER_RAW_DBM].length = CCCI_SMEM_DBM_SIZE;
 #endif
+		md3_ccci_smem_ports[SMEM_USER_RAW_AUDIO].addr_vir = md->smem_layout.ccci_raw_audio_base_vir;
+		md3_ccci_smem_ports[SMEM_USER_RAW_AUDIO].addr_phy = md->smem_layout.ccci_raw_audio_base_phy;
+		md3_ccci_smem_ports[SMEM_USER_RAW_AUDIO].length = md->smem_layout.ccci_raw_audio_size;
 		break;
 	default:
 		return -EINVAL;

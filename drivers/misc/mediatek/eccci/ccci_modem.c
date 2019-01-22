@@ -236,7 +236,22 @@ void ccci_md_config(struct ccci_modem *md)
 								CCCI_SMEM_OFFSET_SMART_LOGGING;
 	}
 #endif
-
+	/* Audio region */
+#ifdef FEATURE_AUDIO_RAW_SUPPORT
+	if (md->index == MD_SYS1) {
+		md->smem_layout.ccci_raw_audio_base_phy = md->mem_layout.smem_region_phy +
+								CCCI_SMEM_OFFSET_RAW_AUDIO_MD1;
+		md->smem_layout.ccci_raw_audio_base_vir = md->mem_layout.smem_region_vir +
+								CCCI_SMEM_OFFSET_RAW_AUDIO_MD1;
+	}
+	if (md->index == MD_SYS3) {
+		md->smem_layout.ccci_raw_audio_base_phy = md->mem_layout.smem_region_phy +
+								CCCI_SMEM_OFFSET_RAW_AUDIO_MD3;
+		md->smem_layout.ccci_raw_audio_base_vir = md->mem_layout.smem_region_vir +
+								CCCI_SMEM_OFFSET_RAW_AUDIO_MD3;
+	}
+	md->smem_layout.ccci_raw_audio_size = CCCI_SMEM_SIZE_RAW_AUDIO;
+#endif
 	/* md1 md3 shared memory region and remap */
 	get_md1_md3_resv_smem_info(md->index, &md->mem_layout.md1_md3_smem_phy,
 		&md->mem_layout.md1_md3_smem_size);
@@ -627,7 +642,11 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 #else
 	ap_side_md_feature->feature_set[MISC_INFO_C2K_MEID].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 #endif
-
+#ifdef FEATURE_AUDIO_RAW_SUPPORT
+	ap_side_md_feature->feature_set[AUDIO_RAW_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#else
+	ap_side_md_feature->feature_set[AUDIO_RAW_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+#endif
 }
 
 unsigned int align_to_2_power(unsigned int n)
@@ -901,6 +920,13 @@ int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb)
 				rt_feature.data_len = sizeof(unsigned int);
 				random_seed = 1;
 				append_runtime_feature(&rt_data, &rt_feature, &random_seed);
+				break;
+			case AUDIO_RAW_SHARE_MEMORY:
+				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+				rt_shm.addr = md->smem_layout.ccci_raw_audio_base_phy -
+					md->mem_layout.smem_offset_AP_to_MD;
+				rt_shm.size = md->smem_layout.ccci_raw_audio_size;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
 				break;
 			default:
 				break;

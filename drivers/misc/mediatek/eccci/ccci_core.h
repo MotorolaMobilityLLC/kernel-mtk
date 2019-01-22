@@ -51,6 +51,7 @@
   * but when we use it in code, we need it's unique among all ports for addressing.
   */
 #define CCCI_IPC_MINOR_BASE 100
+#define CCCI_SMEM_MINOR_BASE 150
 #define CCCI_NET_MINOR_BASE 200
 
 struct ccci_log {
@@ -239,6 +240,11 @@ struct ccci_smem_layout {
 	phys_addr_t ccci_ccif_smem_base_phy;
 	unsigned int ccci_ccif_smem_size;
 
+	/* Audio share memory region */
+	void __iomem *ccci_raw_audio_base_vir;
+	phys_addr_t ccci_raw_audio_base_phy;
+	unsigned int ccci_raw_audio_size;
+
 	/* sub regions in exception region */
 	void __iomem *ccci_exp_smem_ccci_debug_vir;
 	unsigned int ccci_exp_smem_ccci_debug_size;
@@ -361,6 +367,7 @@ typedef enum{
 	MISC_INFO_CUSTOMER_VAL = 21,
 	CCCI_FAST_HEADER = 22,
 	MISC_INFO_C2K_MEID = 24,
+	AUDIO_RAW_SHARE_MEMORY = 26,
 	MULTI_MD_MPU = 27,
 	MD_RUNTIME_FEATURE_ID_MAX,
 } MD_CCCI_RUNTIME_FEATURE_ID;
