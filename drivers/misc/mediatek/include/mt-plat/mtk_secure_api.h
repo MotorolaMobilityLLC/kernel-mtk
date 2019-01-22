@@ -152,6 +152,18 @@ mt_secure_call(MTK_SIP_KERNEL_MCSI_A_WRITE, addr, val, 0)
 #define kernel_smc_msg(x1, x2, x3) \
 	mt_secure_call(MTK_SIP_KERNEL_MSG, x1, x2, x3)
 
+#define mcsi_reg_read(offset) \
+	mt_secure_call(MTK_SIP_KERENL_MCSI_NS_ACCESS, 0, offset, 0)
+
+#define mcsi_reg_write(val, offset) \
+	mt_secure_call(MTK_SIP_KERENL_MCSI_NS_ACCESS, 1, offset, val)
+
+#define mcsi_reg_set_bitmask(val, offset) \
+	mt_secure_call(MTK_SIP_KERENL_MCSI_NS_ACCESS, 2, offset, val)
+
+#define mcsi_reg_clear_bitmask(val, offset) \
+	mt_secure_call(MTK_SIP_KERENL_MCSI_NS_ACCESS, 3, offset, val)
+
 #ifdef CONFIG_ARM64		/* Kernel 64 */
 #define mcusys_smc_write(virt_addr, val) \
 	mt_reg_sync_writel(val, virt_addr)
