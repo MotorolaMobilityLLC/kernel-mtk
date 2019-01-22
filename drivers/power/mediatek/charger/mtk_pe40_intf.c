@@ -522,7 +522,8 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 	ret = pe40_tcpm_dpm_pd_get_pps_status(pinfo->tcpc, NULL, &cap);
 
 	pe40->can_query = true;
-	if (ret == TCP_DPM_RET_NOT_SUPPORT)
+	if (ret == 0 && cap.output_ma == -1 &&
+		cap.output_mv == -1)
 		pe40->can_query = false;
 	else if (ret != 0) {
 		chr_err("[pe40_i0] err:2 %d\n", ret);
