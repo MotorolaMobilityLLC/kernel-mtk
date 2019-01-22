@@ -555,7 +555,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	else
 		spm_sleep_count++;
 
-	wr = __spm_output_wake_reason(wakesta, pcmdesc, true);
+	wr = __spm_output_wake_reason(wakesta, pcmdesc, true, "suspend");
 
 #if 1
 	memcpy(&suspend_info[log_wakesta_cnt], wakesta, sizeof(struct wake_status));
