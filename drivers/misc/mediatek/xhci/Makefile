@@ -26,6 +26,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
 ifeq ($(CONFIG_TCPC_CLASS),y)
 	ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
 endif
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 
 ifeq ($(CONFIG_USB_DEBUG),y)
 	EXTRA_CFLAGS		+= -DDEBUG

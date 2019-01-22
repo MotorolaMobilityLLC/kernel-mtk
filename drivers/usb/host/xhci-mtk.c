@@ -97,7 +97,6 @@ static int xhci_mtk_host_enable(struct xhci_hcd_mtk *mtk)
 	u32 value, check_val;
 	int ret;
 	int i;
-	struct device_node *of_node = mtk->dev->of_node;
 
 	if (ippc == NULL)
 		return 0;
@@ -123,22 +122,18 @@ static int xhci_mtk_host_enable(struct xhci_hcd_mtk *mtk)
 		writel(value, &ippc->u2_ctrl_p[i]);
 	}
 
-	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
-		;	/* TODO LIST */
-	} else {
-		/*
-		 * wait for clocks to be stable, and clock domains reset to
-		 * be inactive after power on and enable ports
-		 */
-		check_val = STS1_SYSPLL_STABLE | STS1_REF_RST |
-				STS1_SYS125_RST | STS1_XHCI_RST;
+	/*
+	 * wait for clocks to be stable, and clock domains reset to
+	 * be inactive after power on and enable ports
+	 */
+	check_val = STS1_SYSPLL_STABLE | STS1_REF_RST |
+			STS1_SYS125_RST | STS1_XHCI_RST;
 
-		ret = readl_poll_timeout(&ippc->ip_pw_sts1, value,
-					(check_val == (value & check_val)), 100, 20000);
-		if (ret) {
-			dev_err(mtk->dev, "clocks are not stable (0x%x)\n", value);
-			return ret;
-		}
+	ret = readl_poll_timeout(&ippc->ip_pw_sts1, value,
+				(check_val == (value & check_val)), 100, 20000);
+	if (ret) {
+		dev_err(mtk->dev, "clocks are not stable (0x%x)\n", value);
+		return ret;
 	}
 	return 0;
 }
@@ -176,6 +171,7 @@ static int xhci_mtk_host_disable(struct xhci_hcd_mtk *mtk)
 		dev_err(mtk->dev, "ip sleep failed!!!\n");
 		return ret;
 	}
+
 	return 0;
 }
 
@@ -240,6 +236,25 @@ static int xhci_mtk_ssusb_config(struct xhci_hcd_mtk *mtk)
 
 	return xhci_mtk_host_enable(mtk);
 }
+
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+static void xhci_mtk_ssusb_ip_sleep(struct xhci_hcd_mtk *mtk)
+{
+	struct device_node *of_node = mtk->dev->of_node;
+	struct mu3c_ippc_regs __iomem *ippc = mtk->ippc_regs;
+	u32 value;
+
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
+		/* Set below sequence to avoid power leakage */
+		xhci_mtk_host_power_down(mtk);
+		udelay(50);
+		/* reset whole ip */
+		value = readl(&ippc->ip_pw_ctr0);
+		value |= CTRL0_IP_SW_RST;
+		writel(value, &ippc->ip_pw_ctr0);
+	}
+}
+#endif
 
 static int xhci_mtk_clks_enable(struct xhci_hcd_mtk *mtk)
 {
@@ -388,7 +403,7 @@ static void usb_wakeup_enable(struct xhci_hcd_mtk *mtk)
 	struct device_node *of_node = mtk->dev->of_node;
 
 	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
-		;	/* TODO THIS */
+		enable_ipsleep_wakeup();	/* TODO THIS */
 	} else {
 		if (mtk->wakeup_src == SSUSB_WK_IP_SLEEP)
 			usb_wakeup_ip_sleep_en(mtk);
@@ -658,8 +673,11 @@ static int xhci_mtk_setup(struct usb_hcd *hcd)
 	}
 
 	/* allow runtime pm */
-	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci"))
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
+#ifndef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
 		pm_runtime_put_noidle(mtk->dev);
+#endif
+	}
 
 	return ret;
 }
@@ -727,9 +745,13 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 		mtk->num_phys = 0;
 	}
 	pm_runtime_enable(dev);
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	pm_runtime_get_sync(dev);
+	device_disable_async_suspend(dev);
+#else
 	pm_runtime_get_noresume(dev);
 	device_enable_async_suspend(dev);
-
+#endif
 	ret = xhci_mtk_ldos_enable(mtk);
 	if (ret)
 		goto disable_pm;
@@ -823,6 +845,10 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 	if (ret)
 		goto dealloc_usb2_hcd;
 
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	device_set_wakeup_enable(&hcd->self.root_hub->dev, 1);
+	device_set_wakeup_enable(&xhci->shared_hcd->self.root_hub->dev, 1);
+#endif
 	return 0;
 
 dealloc_usb2_hcd:
@@ -847,9 +873,15 @@ disable_clk:
 
 disable_ldos:
 	xhci_mtk_ldos_disable(mtk);
-
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	xhci_mtk_ssusb_ip_sleep(mtk);
+#endif
 disable_pm:
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	pm_runtime_put_sync(dev);
+#else
 	pm_runtime_put_noidle(dev);
+#endif
 	pm_runtime_disable(dev);
 	return ret;
 }
@@ -860,6 +892,9 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	struct usb_hcd	*hcd = mtk->hcd;
 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
 
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	xhci_mtk_host_enable(mtk);
+#endif
 	usb_remove_hcd(xhci->shared_hcd);
 	xhci_mtk_phy_power_off(mtk);
 	xhci_mtk_phy_exit(mtk);
@@ -869,12 +904,20 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	usb_put_hcd(xhci->shared_hcd);
 	usb_put_hcd(hcd);
 	xhci_mtk_sch_exit(mtk);
+#ifndef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
 	xhci_mtk_host_power_down(mtk);
+#endif
 	xhci_mtk_clks_disable(mtk);
 	xhci_mtk_ldos_disable(mtk);
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	pm_runtime_put_sync(&dev->dev);
+#else
 	pm_runtime_put_noidle(&dev->dev);
+#endif
 	pm_runtime_disable(&dev->dev);
-
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	xhci_mtk_ssusb_ip_sleep(mtk);
+#endif
 	return 0;
 }
 
@@ -1139,14 +1182,26 @@ static int __maybe_unused xhci_mtk_suspend(struct device *dev)
 	struct xhci_hcd_mtk *mtk = dev_get_drvdata(dev);
 	struct usb_hcd *hcd = mtk->hcd;
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	int ret;
+#endif
 
+	xhci_info(xhci, "xhci_plat_suspend\n");
+#ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
+	ret = xhci_mtk_host_disable(mtk);
+	if (ret) {
+		xhci_mtk_host_enable(mtk);
+		return -EBUSY;
+	}
+#endif
 	xhci_dbg(xhci, "%s: stop port polling\n", __func__);
 	clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
 	del_timer_sync(&hcd->rh_timer);
 	clear_bit(HCD_FLAG_POLL_RH, &xhci->shared_hcd->flags);
 	del_timer_sync(&xhci->shared_hcd->rh_timer);
-
+#ifndef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
 	xhci_mtk_host_disable(mtk);
+#endif
 	xhci_mtk_phy_power_off(mtk);
 	xhci_mtk_clks_disable(mtk);
 	usb_wakeup_enable(mtk);
@@ -1159,6 +1214,7 @@ static int __maybe_unused xhci_mtk_resume(struct device *dev)
 	struct usb_hcd *hcd = mtk->hcd;
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 
+	xhci_info(xhci, "xhci_plat_resume\n");
 	usb_wakeup_disable(mtk);
 	xhci_mtk_clks_enable(mtk);
 	xhci_mtk_phy_power_on(mtk);
@@ -1173,9 +1229,14 @@ static int __maybe_unused xhci_mtk_resume(struct device *dev)
 }
 
 static const struct dev_pm_ops xhci_mtk_pm_ops = {
+#ifndef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
 	SET_SYSTEM_SLEEP_PM_OPS(xhci_mtk_suspend, xhci_mtk_resume)
 	SET_RUNTIME_PM_OPS(xhci_mtk_runtime_suspend,
 			xhci_mtk_runtime_resume, NULL)
+#else
+	.resume_noirq = xhci_mtk_resume,
+	.suspend_noirq = xhci_mtk_suspend,
+#endif
 };
 
 #define DEV_PM_OPS (IS_ENABLED(CONFIG_PM) ? &xhci_mtk_pm_ops : NULL)
