@@ -47,3 +47,4 @@ extern int get_overutil_threshold(void);
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 extern bool is_game_mode;
 #endif
+extern int show_btask(char *buf, int buf_size);
