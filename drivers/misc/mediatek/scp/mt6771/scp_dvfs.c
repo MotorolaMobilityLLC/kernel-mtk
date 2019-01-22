@@ -337,6 +337,11 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 		}
 
 		switch (pll_sel) {
+		case CLK_26M:
+			ret = clk_set_parent(
+					mt_scp_pll->clk_mux,
+					mt_scp_pll->clk_pll0);
+			break;
 		case CLK_OPP0:
 			ret = clk_set_parent(
 					mt_scp_pll->clk_mux,

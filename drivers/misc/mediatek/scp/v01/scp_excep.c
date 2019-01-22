@@ -228,6 +228,17 @@ void scp_reg_copy(void *bufp)
 	scp_reg->clk_sw_sel = readl(SCP_CLK_SW_SEL);
 	scp_reg->clk_enable = readl(SCP_CLK_ENABLE);
 	scp_reg->clk_high_core = readl(SCP_CLK_HIGH_CORE_CG);
+	scp_reg->debug_wdt_sp = readl(SCP_WDT_SP);
+	scp_reg->debug_wdt_lr = readl(SCP_WDT_LR);
+	scp_reg->debug_wdt_psp = readl(SCP_WDT_PSP);
+	scp_reg->debug_wdt_pc = readl(SCP_WDT_PC);
+	scp_reg->debug_addr_s2r = readl(SCP_DEBUG_ADDR_S2R);
+	scp_reg->debug_addr_dma = readl(SCP_DEBUG_ADDR_DMA);
+	scp_reg->debug_addr_spi0 = readl(SCP_DEBUG_ADDR_SPI0);
+	scp_reg->debug_addr_spi1 = readl(SCP_DEBUG_ADDR_SPI1);
+	scp_reg->debug_addr_spi2 = readl(SCP_DEBUG_ADDR_SPI2);
+	scp_reg->debug_bus_status = readl(SCP_DEBUG_BUS_STATUS);
+	scp_reg->debug_infra_mon = readl(SCP_SYS_INFRA_MON);
 	scp_reg->scp_reg_magic_end = 0xDEADBEEF;
 
 }
@@ -323,7 +334,7 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump, enum scp_core
 	/*dump scp reg*/
 	scp_reg_copy(&(pMemoryDump->scp_reg_dump));
 
-	scp_dump_size = CRASH_MEMORY_HEADER_SIZE + SCP_A_TCM_SIZE + CRASH_REG_SIZE;
+	scp_dump_size = CRASH_MEMORY_HEADER_SIZE + SCP_A_TCM_SIZE + sizeof(struct scp_reg_dump_list);
 
 	*reg = lock;
 	dsb(SY);

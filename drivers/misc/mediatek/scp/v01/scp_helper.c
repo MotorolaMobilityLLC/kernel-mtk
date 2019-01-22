@@ -45,6 +45,7 @@
 #include "scp_helper.h"
 #include "scp_excep.h"
 #include "scp_dvfs.h"
+#include "mtk_spm_resource_req.h"
 
 #ifdef CONFIG_OF_RESERVED_MEM
 #include <linux/of_reserved_mem.h>
@@ -52,8 +53,7 @@
 #include "scp_reservedmem_define.h"
 #endif
 
-/* scp awake timout count definition*/
-#define SCP_AWAKE_TIMEOUT 5000
+
 /* scp semaphore timout count definition*/
 #define SEMAPHORE_TIMEOUT 5000
 #define SEMAPHORE_3WAY_TIMEOUT 5000
@@ -327,7 +327,7 @@ static void scp_A_notify_ws(struct work_struct *ws)
 	if (scp_notify_flag) {
 #if SCP_DVFS_INIT_ENABLE
 		/* release pll clock after scp ulposc calibration */
-		scp_pll_mux_set(PLL_DISABLE);
+		scp_pll_ctrl_set(PLL_DISABLE, CLK_26M);
 #endif
 #if SCP_RECOVERY_SUPPORT
 		scp_recovery_flag[SCP_A_ID] = SCP_A_RECOVERY_OK;
@@ -345,6 +345,10 @@ static void scp_A_notify_ws(struct work_struct *ws)
 	pr_debug("[SCP] clear scp reset flag and unlock\n");
 	scp_reset_status = RESET_STATUS_STOP;
 	wake_unlock(&scp_reset_lock);
+	spm_resource_req(SPM_RESOURCE_USER_SCP, SPM_RESOURCE_RELEASE);
+	/* register scp dvfs*/
+	mdelay(2000);
+	scp_register_feature(RTOS_FEATURE_ID);
 #endif
 
 }
@@ -457,7 +461,7 @@ int reset_scp(int reset)
 
 #if SCP_DVFS_INIT_ENABLE
 		/* request pll clock before turn on scp */
-		scp_pll_mux_set(PLL_ENABLE);
+		scp_pll_ctrl_set(PLL_ENABLE, CLK_26M);
 #endif
 
 		reg = (unsigned int *)scpreg.cfg;
@@ -488,7 +492,7 @@ int reset_scp(int reset)
 					break;
 				}
 #endif
-				msleep(20);
+				mdelay(20);
 				if (timeout == 0)
 					pr_debug("[SCP] wait scp A reset timeout, skip\n");
 			}
@@ -1049,6 +1053,14 @@ void scp_register_feature(enum feature_id id)
 	 * accessing in the same time
 	 */
 	mutex_lock(&scp_feature_mutex);
+
+	/*SCP keep awake */
+	if (scp_awake_lock(SCP_A_ID) == -1) {
+		pr_debug("scp_register_feature: awake scp fail\n");
+		mutex_unlock(&scp_feature_mutex);
+		return;
+	}
+
 	for (i = 0; i < NUM_FEATURE_ID; i++) {
 		if (feature_table[i].feature == id)
 			feature_table[i].enable = 1;
@@ -1056,10 +1068,6 @@ void scp_register_feature(enum feature_id id)
 #if SCP_DVFS_INIT_ENABLE
 	scp_expected_freq = scp_get_freq();
 #endif
-	/*SCP keep awake */
-	if (scp_awake_lock(SCP_A_ID) == -1)
-		pr_debug("scp_register_feature: awake scp fail\n");
-
 
 	scp_current_freq = readl(CURRENT_FREQ_REG);
 	writel(scp_expected_freq, EXPECTED_FREQ_REG);
@@ -1100,6 +1108,14 @@ void scp_deregister_feature(enum feature_id id)
 	}
 
 	mutex_lock(&scp_feature_mutex);
+
+	/*SCP keep awake */
+	if (scp_awake_lock(SCP_A_ID) == -1) {
+		pr_debug("scp_deregister_feature: awake scp fail\n");
+		mutex_unlock(&scp_feature_mutex);
+		return;
+	}
+
 	for (i = 0; i < NUM_FEATURE_ID; i++) {
 		if (feature_table[i].feature == id)
 			feature_table[i].enable = 0;
@@ -1107,9 +1123,6 @@ void scp_deregister_feature(enum feature_id id)
 #if SCP_DVFS_INIT_ENABLE
 	scp_expected_freq = scp_get_freq();
 #endif
-	/*SCP keep awake */
-	if (scp_awake_lock(SCP_A_ID) == -1)
-		pr_debug("scp_deregister_feature: awake scp fail\n");
 
 	scp_current_freq = readl(CURRENT_FREQ_REG);
 	writel(scp_expected_freq, EXPECTED_FREQ_REG);
@@ -1253,11 +1266,13 @@ void scp_sys_reset_ws(struct work_struct *ws)
 
 	/* wake lock AP*/
 	wake_lock(&scp_reset_lock);
+	/* keep Univpll */
+	spm_resource_req(SPM_RESOURCE_USER_SCP, SPM_RESOURCE_CK_26M);
 
 	/*request pll clock before turn off scp */
-	pr_debug("%s(): scp_pll_mux_set\n", __func__);
+	pr_debug("%s(): scp_pll_ctrl_set\n", __func__);
 #if SCP_DVFS_INIT_ENABLE
-	scp_pll_mux_set(PLL_ENABLE);
+	scp_pll_ctrl_set(PLL_ENABLE, CLK_26M);
 #endif
 
 	/*workqueue for scp ee, scp reset by cmd will not trigger scp ee*/
@@ -1293,7 +1308,7 @@ void scp_sys_reset_ws(struct work_struct *ws)
 					break;
 				}
 			}
-			msleep(20);
+			mdelay(20);
 			if (timeout == 0) {
 				pr_debug("[SCP]wdt reset timeout, still reset scp\n");
 				*(unsigned int *)scp_reset_reg = 0x0;
@@ -1488,8 +1503,10 @@ static int __init scp_init(void)
 	scp_dvfs_init();
 	wait_scp_dvfs_init_done();
 	/* pll maybe gate, request pll before access any scp reg/sram */
-	scp_pll_mux_set(PLL_ENABLE);
+	scp_pll_ctrl_set(PLL_ENABLE, CLK_26M);
 #endif
+	/* keep Univpll */
+	spm_resource_req(SPM_RESOURCE_USER_SCP, SPM_RESOURCE_CK_26M);
 
 	/* scp ready static flag initialise */
 	for (i = 0; i < SCP_CORE_TOTAL ; i++) {
@@ -1617,7 +1634,7 @@ static int __init scp_init(void)
 	driver_init_done = true;
 #if SCP_DVFS_INIT_ENABLE
 	/* remember to release pll */
-	scp_pll_mux_set(PLL_DISABLE);
+	scp_pll_ctrl_set(PLL_DISABLE, CLK_26M);
 #endif
 	reset_scp(SCP_ALL_ENABLE);
 
@@ -1626,7 +1643,7 @@ static int __init scp_init(void)
 err:
 #if SCP_DVFS_INIT_ENABLE
 	/* remember to release pll */
-	scp_pll_mux_set(PLL_DISABLE);
+	scp_pll_ctrl_set(PLL_DISABLE, CLK_26M);
 #endif
 	return -1;
 
