@@ -106,7 +106,9 @@ static INT32 wmt_plat_sdio_pin_ctrl(ENUM_PIN_STATE state);
 static INT32 wmt_plat_gps_sync_ctrl(ENUM_PIN_STATE state);
 static INT32 wmt_plat_gps_lna_ctrl(ENUM_PIN_STATE state);
 static INT32 wmt_plat_uart_rx_ctrl(ENUM_PIN_STATE state);
-
+#if CFG_WMT_LTE_COEX_HANDLING
+static INT32 wmt_plat_tdm_req_ctrl(ENUM_PIN_STATE state);
+#endif
 static INT32 wmt_plat_dump_pin_conf(VOID);
 
 
@@ -152,6 +154,9 @@ static const fp_set_pin gfp_set_pin_table[] = {
 	[PIN_GPS_SYNC] = wmt_plat_gps_sync_ctrl,
 	[PIN_GPS_LNA] = wmt_plat_gps_lna_ctrl,
 	[PIN_UART_RX] = wmt_plat_uart_rx_ctrl,
+#if CFG_WMT_LTE_COEX_HANDLING
+	[PIN_TDM_REQ] = wmt_plat_tdm_req_ctrl,
+#endif
 };
 
 /*******************************************************************************
@@ -1515,6 +1520,13 @@ static INT32 wmt_plat_uart_rx_ctrl(ENUM_PIN_STATE state)
 
 	return 0;
 }
+
+#if CFG_WMT_LTE_COEX_HANDLING
+static INT32 wmt_plat_tdm_req_ctrl(ENUM_PIN_STATE state)
+{
+	return 0;
+}
+#endif
 
 INT32 wmt_plat_wake_lock_ctrl(ENUM_WL_OP opId)
 {
