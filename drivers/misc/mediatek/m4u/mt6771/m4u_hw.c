@@ -832,7 +832,8 @@ static int m4u_clock_off(void)
 #endif
 
 char *smi_clk_name[] = {
-	"m4u_smi_larb0", "m4u_smi_larb1", "m4u_smi_larb2", "m4u_smi_larb3"
+	"m4u_smi_larb0", "m4u_smi_larb1", "m4u_smi_larb2", "m4u_smi_larb3", "m4u_smi_larb4",
+	"m4u_smi_larb5", "m4u_smi_larb6"
 };
 
 void smi_common_clock_off(void)
