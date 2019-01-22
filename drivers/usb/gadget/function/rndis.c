@@ -270,19 +270,27 @@ static int rndis_send_md_ep0_msg(u8 *buf, struct usb_ctrlrequest *ctrl_req,
 	return 0;
 }
 
-int rndis_send_ep0_response(struct rndis_params *params, u32 ep0_data_len, void *ep0Buffer)
+int rndis_send_ep0_response(struct usb_composite_dev *cdev,
+		struct rndis_params *params, u32 ep0_data_len, void *ep0Buffer)
 {
+
 	rndis_resp_t *r;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cdev->lock, flags);
 
 	pr_debug("%s\n", __func__);
 
-	if (!params->dev)
+	if (!params->dev) {
+		spin_unlock_irqrestore(&cdev->lock, flags);
 		return -ENOTSUPP;
+	}
 
 	r = rndis_add_response(params, ep0_data_len);
 
 	if (!r) {
 		pr_err("rndis_send_ep0_response, rndis_add_response return NULL\n");
+		spin_unlock_irqrestore(&cdev->lock, flags);
 		return -ENOMEM;
 	}
 
@@ -302,6 +310,7 @@ int rndis_send_ep0_response(struct rndis_params *params, u32 ep0_data_len, void 
 	#endif
 
 	params->resp_avail(params->v);
+	spin_unlock_irqrestore(&cdev->lock, flags);
 	return 0;
 }
 

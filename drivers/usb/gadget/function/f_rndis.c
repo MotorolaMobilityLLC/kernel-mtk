@@ -598,7 +598,8 @@ static int rndis_md_msg_hdlr(struct usb_function *f, int msg_id, void *data)
 		ep0_msg = (ufpm_send_ap_ep0_msg_t *)&local_para_ptr->data[0];
 		if (ep0_msg->mode == UFPM_FUNC_MODE_TETHER) {
 			if (rndis->direct_state == DIRECT_STATE_ACTIVATED)
-				rndis_send_ep0_response(rndis->params, ep0_msg->ep0_data_len, &ep0_msg->ep0Buffer);
+				rndis_send_ep0_response(f->config->cdev,
+						rndis->params, ep0_msg->ep0_data_len, &ep0_msg->ep0Buffer);
 			handled = 1;
 		}
 		break;
