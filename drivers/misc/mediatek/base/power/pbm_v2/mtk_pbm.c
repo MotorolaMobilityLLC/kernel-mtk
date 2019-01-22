@@ -42,7 +42,7 @@
 #include <mach/mtk_ppm_api.h>
 
 #if MD_POWER_METER_ENABLE
-#include "mtk_spm_vcorefs.h"
+#include "mtk_spm_vcore_dvfs.h"
 #include "mtk_ccci_common.h"
 #endif
 
