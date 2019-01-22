@@ -1644,8 +1644,11 @@ int dpidle_enter(int cpu)
 
 	operation_cond |= dpidle_force_vcore_lp_mode ? DEEPIDLE_OPT_VCORE_LP_MODE :
 						(clkmux_cond[IDLE_TYPE_DP] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0);
-
+#if defined(CONFIG_MACH_MT6775)
+	spm_go_to_dpidle(slp_spm_deepidle_flags, slp_spm_deepidle_flags1, dpidle_dump_log, operation_cond);
+#else
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log, operation_cond);
+#endif
 
 	dpidle_post_process(cpu, operation_cond);
 

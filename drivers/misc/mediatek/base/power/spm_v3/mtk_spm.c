@@ -924,4 +924,15 @@ void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name)
 }
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
+#if defined(CONFIG_MACH_MT6775)
+bool is_big_buck_pdn_by_spm(void)
+{
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	/* check mcdi status with big_buck */
+	/* check hotplug status with big_buck */
+#endif
+	return false;
+}
+#endif
+
 MODULE_DESCRIPTION("SPM Driver v0.1");

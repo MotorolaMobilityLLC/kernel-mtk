@@ -741,6 +741,11 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 #if defined(CONFIG_MACH_MT6775)
+	if (is_big_buck_pdn_by_spm()) {
+		spm_data |= (SPM_RSV_CON2_BIG_BUCK_ON_EN |
+			     SPM_RSV_CON2_BIG_BUCK_OFF_EN);
+	}
+
 	set_pwrctrl_pcm_flags1(pwrctrl, spm_data);
 #endif
 	/* need be called after set_pwrctrl_pcm_flags1() */

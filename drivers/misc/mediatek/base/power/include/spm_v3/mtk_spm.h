@@ -123,6 +123,10 @@ extern bool is_sspm_ipi_lock_spm(void);
 extern void sspm_ipi_lock_spm_scenario(int start, int id, int opt, const char *name);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
+#if defined(CONFIG_MACH_MT6775)
+extern bool is_big_buck_pdn_by_spm(void);
+#endif /* CONFIG_MACH_MT6775 */
+
 /**************************************
  * Macro and Inline
  **************************************/
