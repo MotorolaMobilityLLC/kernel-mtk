@@ -2605,6 +2605,13 @@ static struct usb_composite_driver android_usb_driver = {
 #endif
 };
 
+struct usb_composite_dev *android_get_composite_device(void)
+{
+	if (_android_dev && _android_dev->cdev)
+		return _android_dev->cdev;
+	else
+		return NULL;
+}
 
 #define USB_STATE_MONITOR_DELAY 3000
 static struct delayed_work android_usb_state_monitor_work;
@@ -2667,7 +2674,6 @@ static int android_create_device(struct android_dev *dev)
 
 	return 0;
 }
-
 
 #ifdef CONFIG_USBIF_COMPLIANCE
 
@@ -2813,7 +2819,6 @@ err_dev:
 }
 
 late_initcall(init);
-
 
 
 static void __exit cleanup(void)

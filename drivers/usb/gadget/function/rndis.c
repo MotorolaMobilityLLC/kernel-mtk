@@ -44,6 +44,7 @@
 
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 #include "port_ipc.h"
+#include "ccci_ipc_task_ID.h"
 #include "ccci_ipc_msg_id.h"
 #include "mtk_gadget.h"
 #endif
@@ -202,6 +203,48 @@ typedef struct md_ep0_msg {
 
 static md_ep0_data md_ep0_data_par;
 
+static int send_md_ep0_msg(ufpm_send_md_ep0_msg_t *req, u32 msg_id)
+{
+	ipc_ilm_t ilm;
+	local_para_struct *p_local_para = NULL;
+
+	pr_debug("%s\n", __func__);
+
+	memset(&ilm, 0, sizeof(ilm));
+	p_local_para = kzalloc(sizeof(local_para_struct) +
+		sizeof(ufpm_send_md_ep0_msg_t), GFP_KERNEL);
+
+	if (p_local_para == NULL)
+		return -ENOMEM;
+
+	p_local_para->msg_len = sizeof(local_para_struct) +
+		sizeof(ufpm_send_md_ep0_msg_t);
+	memcpy(p_local_para->data, req, sizeof(ufpm_send_md_ep0_msg_t));
+
+	ilm.src_mod_id = AP_MOD_USB;
+	ilm.dest_mod_id = MD_MOD_UFPM;
+	ilm.msg_id = msg_id;
+	ilm.local_para_ptr = p_local_para;
+
+	#if 0
+	if (p_local_para->msg_len) {
+		int i;
+
+		pr_debug("msg_len=%d, data=0x", p_local_para->msg_len);
+
+		for (i = 0; i < p_local_para->msg_len; i++)
+			pr_debug("%02x ", *((u8 *)p_local_para->data + i));
+
+		pr_debug("\n");
+	}
+	#endif
+
+	ccci_ipc_send_ilm(0, &ilm);
+	kfree(p_local_para);
+
+	return 0;
+}
+
 static void rndis_send_md_ep0_handler(struct work_struct *work)
 {
 	md_ep0_data *ep0_data = container_of(work, md_ep0_data, ep0_work);
@@ -219,7 +262,7 @@ static void rndis_send_md_ep0_handler(struct work_struct *work)
 
 		pr_debug("%s: mas_id=0x%x\n", __func__, ep0_msg->msg_id);
 
-		musb_send_md_ep0_msg(ep0_msg->msg, ep0_msg->msg_id);
+		send_md_ep0_msg(ep0_msg->msg, ep0_msg->msg_id);
 
 		kfree(ep0_msg->msg);
 		kfree(ep0_msg);

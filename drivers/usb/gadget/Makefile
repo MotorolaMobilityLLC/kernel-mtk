@@ -18,10 +18,13 @@ endif
 ccflags-y	+= -I$(srctree)/drivers/usb/gadget/udc -I$(srctree)/drivers/usb/gadget/function
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/c2k_usb/
 ccflags-y += -I$(srctree)/drivers/usb/gadget/
+
 ifeq ($(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pkt_track/mod-pkt_track/include \
+             -I$(srctree)/drivers/misc/mediatek/eccci \
+             -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
 endif
+
 
 obj-$(CONFIG_USB_LIBCOMPOSITE)	+= libcomposite.o
 libcomposite-y			:= usbstring.o config.o epautoconf.o

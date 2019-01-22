@@ -493,7 +493,7 @@ retry:
 				break;
 			case AP_IPC_USB:
 #if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
-				musb_md_msg_hdlr(&out_ilm);
+				rndis_md_msg_hdlr(&out_ilm);
 #endif
 				break;
 			default:

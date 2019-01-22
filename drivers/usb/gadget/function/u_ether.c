@@ -443,6 +443,7 @@ static void rx_fill(struct eth_dev *dev, gfp_t gfp_flags)
 	struct usb_request	*req;
 	unsigned long		flags;
 	int			req_cnt = 0;
+
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 	static DEFINE_RATELIMIT_STATE(ratelimit1, 1 * HZ, 2);
 
@@ -744,11 +745,11 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 	static DEFINE_RATELIMIT_STATE(ratelimit3, 1 * HZ, 2);
-
 	int direct_state = rndis_get_direct_tethering_state(&dev->port_usb->func);
 
 	if (__ratelimit(&ratelimit3))
 		pr_info("%s (%d)\n", __func__, direct_state);
+
 	if (direct_state == DIRECT_STATE_ACTIVATING ||
 		direct_state == DIRECT_STATE_ACTIVATED ||
 		direct_state == DIRECT_STATE_DEACTIVATING) {
