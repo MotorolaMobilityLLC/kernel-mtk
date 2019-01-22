@@ -380,7 +380,7 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 	.bypass = disp_gamma_bypass,
 	.set_listener = disp_gamma_set_listener,
 	.cmd = disp_gamma_io,
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6763)
+#if !defined(CONFIG_MACH_MT6759)
 	.init = disp_gamma_power_on,
 	.deinit = disp_gamma_power_off,
 #endif
@@ -882,7 +882,7 @@ struct DDP_MODULE_DRIVER ddp_driver_ccorr = {
 	.bypass = disp_ccorr_bypass,
 	.set_listener = disp_ccorr_set_listener,
 	.cmd = disp_ccorr_io,
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6763)
+#if !defined(CONFIG_MACH_MT6759)
 	.init = disp_ccorr_power_on,
 	.deinit = disp_ccorr_power_off,
 #endif
