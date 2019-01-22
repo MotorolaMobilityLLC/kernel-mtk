@@ -319,7 +319,8 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 			else
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3_HD;
 		} else {
-			if (primary_display_get_height() * 10 /
+			if (primary_display_get_width() != 0 &&
+				 primary_display_get_height() * 10 /
 					primary_display_get_width() > 20)
 				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_FHD_19;
 			else
