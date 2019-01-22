@@ -39,6 +39,7 @@ void fpsgo_comp2fbt_bypass_enq(void);
 void fpsgo_comp2fbt_bypass_disconnect(void);
 void fpsgo_base2fbt_set_bypass(int has_bypass);
 void fpsgo_base2fbt_check_max_blc(void);
+void fpsgo_base2fbt_no_one_render(void);
 
 int fbt_cpu_init(void);
 void fbt_cpu_exit(void);
@@ -69,6 +70,7 @@ static inline void fpsgo_comp2fbt_bypass_enq(void) { }
 static inline void fpsgo_comp2fbt_bypass_disconnect(void) { }
 static inline void fpsgo_base2fbt_set_bypass(int has_bypass) { }
 static inline void fpsgo_base2fbt_check_max_blc(void) { }
+static void fpsgo_base2fbt_no_one_render(void) { }
 
 #endif
 

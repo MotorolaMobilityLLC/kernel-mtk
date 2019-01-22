@@ -402,24 +402,6 @@ static struct fbt_thread_blc *fbt_list_blc_add(int pid)
 	return obj;
 }
 
-void fpsgo_base2fbt_item_del(struct fbt_thread_loading *obj, struct fbt_thread_blc *pblc)
-{
-	unsigned long flags;
-
-	if (!obj || !pblc)
-		return;
-
-	spin_lock_irqsave(&loading_slock, flags);
-	list_del(&obj->entry);
-	spin_unlock_irqrestore(&loading_slock, flags);
-	kfree(obj);
-
-	mutex_lock(&blc_mlock);
-	list_del(&pblc->entry);
-	kfree(pblc);
-	mutex_unlock(&blc_mlock);
-}
-
 static void fbt_find_max_blc(unsigned int *temp_blc, int *temp_blc_pid)
 {
 	struct fbt_thread_blc *pos, *next;
@@ -475,6 +457,32 @@ static void fbt_free_bhr(void)
 
 	update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
 	kfree(pld);
+}
+
+static void fbt_set_idleprefer_locked(int enable)
+{
+	if (!fbt_idleprefer_enable)
+		return;
+
+	if (set_idleprefer == enable)
+		return;
+
+	xgf_trace("fpsgo %s idelprefer", enable?"enable":"disbale");
+	prefer_idle_for_perf_idx(CGROUP_TA, enable);
+	set_idleprefer = enable;
+}
+
+static void fbt_set_walt_locked(int enable)
+{
+	if (force_walt_off)
+		return;
+
+	if (walt_enable == enable)
+		return;
+
+	xgf_trace("fpsgo %s walt", enable?"enable":"disable");
+	sched_walt_enable(LT_WALT_FPSGO, enable);
+	walt_enable = enable;
 }
 
 static void fbt_get_new_base_blc(unsigned int *blc_wt, struct ppm_limit_data *pld)
@@ -1492,13 +1500,13 @@ void fpsgo_comp2fbt_frame_complete(struct render_info *thr, unsigned long long t
 		max_blc = 0;
 		memset(base_freq, 0, cluster_num * sizeof(unsigned int));
 		xgf_trace("max_blc %d, max_blc_pid %d", max_blc, max_blc_pid);
-		mutex_unlock(&fbt_mlock);
 		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
+		fpsgo_systrace_c_fbt(thr->pid, 0, "cluster%d perf_index", 0);
+		fpsgo_systrace_c_fbt(thr->pid, 0, "cluster%d perf_index", 1);
 		fbt_free_bhr();
-		if (fbt_idleprefer_enable && set_idleprefer) {
-			prefer_idle_for_perf_idx(CGROUP_TA, 0);
-			set_idleprefer = 0;
-		}
+		if (bypass_flag == 0)
+			fbt_set_idleprefer_locked(0);
+		mutex_unlock(&fbt_mlock);
 	} else {
 		mutex_lock(&fbt_mlock);
 		if (max_blc_pid == thr->pid) {
@@ -1544,6 +1552,10 @@ void fpsgo_comp2fbt_enq_start(struct render_info *thr, unsigned long long ts)
 		fpsgo_systrace_c_fbt_gm(thr->pid, atomic_read(&thr->pLoading->last_cb_ts), "last_cb_ts");
 	}
 	spin_unlock_irqrestore(&loading_slock, flags);
+
+	mutex_lock(&fbt_mlock);
+	fbt_set_idleprefer_locked(1);
+	mutex_unlock(&fbt_mlock);
 }
 
 void fpsgo_comp2fbt_enq_end(struct render_info *thr, unsigned long long ts)
@@ -1625,70 +1637,47 @@ void fpsgo_comp2fbt_deq_end(struct render_info *thr, unsigned long long ts)
 
 void fpsgo_comp2fbt_bypass_enq(void)
 {
-	int free_bhr = 0;
-	int do_walt = 0;
-
-	if (!fbt_is_enable())
-		return;
-
 	mutex_lock(&fbt_mlock);
+
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return;
+	}
+
 	if (!bypass_flag) {
 		bypass_flag = 1;
-		free_bhr = 1;
+		fbt_free_bhr();
+		fbt_set_walt_locked(1);
+		fbt_set_idleprefer_locked(1);
 
-		if (!force_walt_off) {
-			walt_enable = 1;
-			do_walt = 1;
-		}
 		xgf_trace("bypass_flag %d", bypass_flag);
 		xgf_trace("walt_enable %d", walt_enable);
+		xgf_trace("set_idleprefer %d", set_idleprefer);
 	}
 	mutex_unlock(&fbt_mlock);
-
-	if (free_bhr) {
-		fbt_free_bhr();
-
-		if (do_walt) {
-			sched_walt_enable(LT_WALT_FPSGO, 1);
-			xgf_trace("fpsgo enable walt");
-		}
-	}
 }
 
 void fpsgo_base2fbt_set_bypass(int has_bypass)
 {
-	int free_bhr = 0;
-	int do_walt = 0;
-
-	if (!fbt_is_enable())
-		return;
-
 	mutex_lock(&fbt_mlock);
-	if (bypass_flag != has_bypass) {
-		if (has_bypass) {
-			free_bhr = 1;
 
-			if (!force_walt_off) {
-				walt_enable = 1;
-				do_walt = 1;
-			}
-		} else {
-			walt_enable = 0;
-			do_walt = 1;
-		}
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return;
+	}
+
+	if (bypass_flag != has_bypass) {
+		if (unlikely(has_bypass)) {
+			/*should not enter here*/
+			fbt_free_bhr();
+			fbt_set_walt_locked(1);
+		} else
+			fbt_set_walt_locked(0);
+
 		bypass_flag = has_bypass;
 		xgf_trace("bypass_flag %d", bypass_flag);
 		xgf_trace("walt_enable %d", walt_enable);
 	}
-
-	if (do_walt) {
-		sched_walt_enable(LT_WALT_FPSGO, walt_enable);
-		xgf_trace("fpsgo %s walt", walt_enable?"enable":"disable");
-	}
-
-	if (free_bhr)
-		fbt_free_bhr();
-
 	mutex_unlock(&fbt_mlock);
 }
 
@@ -1753,14 +1742,35 @@ void fpsgo_base2fbt_node_init(struct render_info *obj)
 	obj->p_blc = blc_link;
 }
 
+void fpsgo_base2fbt_item_del(struct fbt_thread_loading *obj, struct fbt_thread_blc *pblc)
+{
+	unsigned long flags;
+
+	if (!obj || !pblc)
+		return;
+
+	spin_lock_irqsave(&loading_slock, flags);
+	list_del(&obj->entry);
+	spin_unlock_irqrestore(&loading_slock, flags);
+	kfree(obj);
+
+	mutex_lock(&blc_mlock);
+	list_del(&pblc->entry);
+	kfree(pblc);
+	mutex_unlock(&blc_mlock);
+}
+
 int fpsgo_base2fbt_get_max_blc_pid(void)
 {
 	int temp_pid;
 
-	if (!fbt_is_enable())
-		return 0;
-
 	mutex_lock(&fbt_mlock);
+
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return 0;
+	}
+
 	temp_pid = max_blc_pid;
 	mutex_unlock(&fbt_mlock);
 
@@ -1781,6 +1791,27 @@ void fpsgo_base2fbt_check_max_blc(void)
 	max_blc = temp_blc;
 	max_blc_pid = temp_blc_pid;
 	xgf_trace("max_blc %d, max_blc_pid %d", max_blc, max_blc_pid);
+	mutex_unlock(&fbt_mlock);
+}
+
+void fpsgo_base2fbt_no_one_render(void)
+{
+	mutex_lock(&fbt_mlock);
+
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return;
+	}
+
+	xgf_trace("fpsgo_base2fbt_no_one_render");
+
+	max_blc = 0;
+	max_blc_pid = 0;
+	xgf_trace("max_blc %d, max_blc_pid %d", max_blc, max_blc_pid);
+
+	fbt_set_idleprefer_locked(0);
+	fbt_free_bhr();
+
 	mutex_unlock(&fbt_mlock);
 }
 
@@ -1842,18 +1873,10 @@ static void fbt_setting_exit(void)
 	memset(base_freq, 0, cluster_num * sizeof(unsigned int));
 	max_blc = 0;
 	max_blc_pid = 0;
-	if (walt_enable) {
-		walt_enable = 0;
-		xgf_trace("fpsgo disable walt");
-		sched_walt_enable(LT_WALT_FPSGO, 0);
-	}
 
+	fbt_set_walt_locked(0);
 	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, 0);
-	if (fbt_idleprefer_enable && set_idleprefer) {
-		prefer_idle_for_perf_idx(CGROUP_TA, 0);
-		set_idleprefer = 0;
-	}
-
+	fbt_set_idleprefer_locked(0);
 	fbt_free_bhr();
 }
 
@@ -1867,17 +1890,11 @@ int fpsgo_ctrl2fbt_switch_fbt(int enable)
 	}
 
 	fbt_enable = enable;
-	FPSGO_LOGI("fbt_enable %d\n", fbt_enable);
+	xgf_trace("fbt_enable %d", fbt_enable);
 
 	ppm_game_mode_change_cb(enable);
 	if (!enable)
 		fbt_setting_exit();
-	else {
-		if (fbt_idleprefer_enable) {
-			prefer_idle_for_perf_idx(CGROUP_TA, 1);
-			set_idleprefer = 1;
-		}
-	}
 
 	mutex_unlock(&fbt_mlock);
 	return 0;
@@ -1886,26 +1903,22 @@ int fpsgo_ctrl2fbt_switch_fbt(int enable)
 int fbt_switch_idleprefer(int enable)
 {
 	int last_enable;
-	int do_set = 0;
-
-	if (!fbt_is_enable())
-		return 0;
 
 	mutex_lock(&fbt_mlock);
 
-	last_enable = fbt_idleprefer_enable;
-	fbt_idleprefer_enable = enable;
-
-	if (last_enable && !fbt_idleprefer_enable) {
-		do_set = 1;
-		set_idleprefer = 0;
-	} else if (!last_enable && fbt_idleprefer_enable) {
-		do_set = 1;
-		set_idleprefer = 1;
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return 0;
 	}
 
-	if (do_set)
-		prefer_idle_for_perf_idx(CGROUP_TA, enable);
+	last_enable = fbt_idleprefer_enable;
+
+	if (last_enable && !enable)
+		fbt_set_idleprefer_locked(0);
+	else if (!last_enable && enable)
+		fbt_set_idleprefer_locked(1);
+
+	fbt_idleprefer_enable = enable;
 
 	mutex_unlock(&fbt_mlock);
 
@@ -1916,10 +1929,12 @@ int fbt_switch_ceiling(int enable)
 {
 	int last_enable;
 
-	if (!fbt_is_enable())
-		return 0;
-
 	mutex_lock(&fbt_mlock);
+
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return 0;
+	}
 
 	last_enable = suppress_ceiling;
 	suppress_ceiling = enable;
@@ -1934,29 +1949,22 @@ int fbt_switch_ceiling(int enable)
 
 int fbt_switch_force_walt_off(int off)
 {
-	int disable_walt = 0;
-
-	if (!fbt_is_enable())
-		return 0;
-
 	mutex_lock(&fbt_mlock);
+
+	if (!fbt_enable) {
+		mutex_unlock(&fbt_mlock);
+		return 0;
+	}
 
 	if (force_walt_off == off) {
 		mutex_unlock(&fbt_mlock);
 		return 0;
 	}
 
+	if (off)
+		fbt_set_walt_locked(0);
+
 	force_walt_off = off;
-
-	if (force_walt_off && walt_enable) {
-		disable_walt = 1;
-		walt_enable = 0;
-	}
-
-	if (disable_walt) {
-		sched_walt_enable(LT_WALT_FPSGO, 0);
-		xgf_trace("fpsgo disable walt");
-	}
 
 	mutex_unlock(&fbt_mlock);
 
@@ -2059,12 +2067,20 @@ FBT_DEBUGFS_ENTRY(force_walt);
 
 static int fbt_thread_info_show(struct seq_file *m, void *unused)
 {
+	struct fbt_thread_blc *pos, *next;
+
 	mutex_lock(&fbt_mlock);
 	SEQ_printf(m, "enable\tbypass\twalt\tidleprefer\tmax_blc\tmax_pid\tdfps\tvsync\n");
 	SEQ_printf(m, "%d\t%d\t%d\t%d\t\t%d\t%d\t%d\t%llu\n\n",
 		fbt_enable, bypass_flag, walt_enable, set_idleprefer,
 		max_blc, max_blc_pid, _gdfrc_fps_limit, vsync_time);
 	mutex_unlock(&fbt_mlock);
+
+	SEQ_printf(m, "pid\tperfidx\t\n");
+	mutex_lock(&blc_mlock);
+	list_for_each_entry_safe(pos, next, &blc_list, entry)
+		SEQ_printf(m, "%d\t%d\n", pos->pid, pos->blc);
+	mutex_unlock(&blc_mlock);
 
 	return 0;
 }
