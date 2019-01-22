@@ -49,7 +49,11 @@
 #include <linux/delay.h>
 
 /* ALPS header files */
+#ifndef CONFIG_RTC_DRV_MT6397
 #include <mtk_rtc.h>
+#else
+#include <linux/mfd/mt6397/rtc_misc.h>
+#endif
 #ifdef CONFIG_MTK_MT6306_SUPPORT
 #include <mach/dcl_sim_gpio.h>
 #endif
