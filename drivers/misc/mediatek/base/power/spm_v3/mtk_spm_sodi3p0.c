@@ -35,6 +35,8 @@
 #include <mt-plat/mtk_io.h>
 
 #include <mtk_spm_sodi3.h>
+#include <mtk_spm_resource_req.h>
+#include <mtk_spm_resource_req_internal.h>
 
 
 /**************************************
@@ -295,7 +297,7 @@ static void spm_sodi3_notify_sspm_before_wfi(void)
 		spm_crit2("ret %d", ret);
 }
 
-static void spm_sodi3_notify_sspm_after_wfi(void)
+static void spm_sodi3_notify_sspm_after_wfi(u32 operation_cond)
 {
 	int ret;
 	struct spm_data spm_d;
@@ -312,7 +314,7 @@ static void spm_sodi3_notify_sspm_after_wfi(void)
 		spm_crit2("ret %d", ret);
 }
 #else /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-static void spm_sodi3_notify_sspm_before_wfi(void)
+static void spm_sodi3_notify_sspm_before_wfi(u32 operation_cond)
 {
 }
 
@@ -324,15 +326,20 @@ static void spm_sodi3_notify_sspm_after_wfi(void)
 #ifdef CONFIG_MTK_SPM_IN_ATF
 
 static void spm_sodi3_pcm_setup_before_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
+	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
-	spm_sodi3_notify_sspm_before_wfi();
+	unsigned int resource_usage;
+
+	spm_sodi3_notify_sspm_before_wfi(operation_cond);
 
 	spm_sodi3_pre_process();
 
-	/* TODO */
-	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS, pwrctrl->pcm_flags,
-		pwrctrl->pcm_flags1, pwrctrl->timer_val);
+	/* Get SPM resource request and update reg_spm_xxx_req */
+	resource_usage = spm_get_resource_usage();
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
+		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+		SPM_PWR_CTRL_SODI, PWR_OPP_LEVEL, pwrctrl->opp_level);
 }
 
 static void spm_sodi3_pcm_setup_after_wfi(void)
@@ -345,21 +352,31 @@ static void spm_sodi3_pcm_setup_after_wfi(void)
 #else /* defined(CONFIG_MTK_SPM_IN_ATF) */
 
 static void spm_sodi3_pcm_setup_before_wfi(
-	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
+	u32 cpu, struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl, u32 operation_cond)
 {
+	unsigned int resource_usage;
+
 	__spm_set_cpu_status(cpu);
 	__spm_reset_and_init_pcm(pcmdesc);
 	__spm_kick_im_to_fetch(pcmdesc);
 	__spm_init_pcm_register();
 	__spm_init_event_vector(pcmdesc);
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcorefs.pwrctrl);
+
+	/* Get SPM resource request and update reg_spm_xxx_req */
+	resource_usage = spm_get_resource_usage();
+	pwrctrl->reg_spm_vrf18_req = (resource_usage & SPM_RESOURCE_MAINPLL) ? 1 : 0;
+	pwrctrl->reg_spm_apsrc_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
+	pwrctrl->reg_spm_ddren_req = (resource_usage & SPM_RESOURCE_DRAM)    ? 1 : 0;
+	pwrctrl->reg_spm_f26m_req  = (resource_usage & SPM_RESOURCE_CK_26M)  ? 1 : 0;
+
 	__spm_set_power_control(pwrctrl);
 	__spm_set_wakeup_event(pwrctrl);
 
 	/* enable pcm wdt */
 	__spm_set_pcm_wdt(1);
 
-	spm_sodi3_notify_sspm_before_wfi();
+	spm_sodi3_notify_sspm_before_wfi(operation_cond);
 
 	spm_sodi3_pre_process();
 
@@ -393,17 +410,14 @@ static wake_reason_t spm_sodi3_output_log(
 	unsigned long int sodi3_logout_curr_time = 0;
 	int need_log_out = 0;
 
-	if (sodi3_flags&SODI_FLAG_NO_LOG) {
-		if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
-			sodi3_err("PCM ASSERT AT SPM_PC = 0x%0x (%s), R12 = 0x%x, R13 = 0x%x, DEBUG_FLAG = 0x%x\n",
-				wakesta->assert_pc, pcmdesc->version, wakesta->r12, wakesta->r13, wakesta->debug_flag);
-			wr = WR_PCM_ASSERT;
-		}
-	} else if (!(sodi3_flags&SODI_FLAG_REDUCE_LOG) || (sodi3_flags & SODI_FLAG_RESIDENCY)) {
-		sodi3_warn("self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+	if (!(sodi3_flags & SODI_FLAG_REDUCE_LOG) ||
+			(sodi3_flags & SODI_FLAG_RESIDENCY)) {
+		sodi3_warn("self_refresh = 0x%x, sw_flag = 0x%x, 0x%x\n",
 				spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-				spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+				spm_read(DUMMY1_PWR_CON));
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+		if (sodi3_flags & SODI_FLAG_RESOURCE_USAGE)
+			spm_resource_req_dump();
 	} else {
 		/*
 		 * Log reduction mechanism, print debug information criteria :
@@ -453,9 +467,9 @@ static wake_reason_t spm_sodi3_output_log(
 			sodi3_logout_prev_time = sodi3_logout_curr_time;
 
 			if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
-				sodi3_err("WAKE UP BY ASSERT, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, %s\n",
+				sodi3_err("WAKE UP BY ASSERT, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x\n",
 						spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+						spm_read(DUMMY1_PWR_CON));
 
 				sodi3_err("SODI3_CNT = %d, SELF_REFRESH_CNT = 0x%x, SPM_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x\n",
 						logout_sodi3_cnt, logout_selfrefresh_cnt,
@@ -487,9 +501,9 @@ static wake_reason_t spm_sodi3_output_log(
 				}
 				WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-				sodi3_warn("wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+				sodi3_warn("wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x\n",
 						buf, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+						spm_read(DUMMY1_PWR_CON));
 
 				sodi3_warn("sodi3_cnt = %d, self_refresh_cnt = 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
 						logout_sodi3_cnt, logout_selfrefresh_cnt,
@@ -498,8 +512,10 @@ static wake_reason_t spm_sodi3_output_log(
 				sodi3_warn("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 						wakesta->event_reg, wakesta->isr);
-			}
 
+				if (sodi3_flags & SODI_FLAG_RESOURCE_USAGE)
+					spm_resource_req_dump();
+			}
 			logout_sodi3_cnt = 0;
 			logout_selfrefresh_cnt = 0;
 		}
@@ -508,7 +524,7 @@ static wake_reason_t spm_sodi3_output_log(
 	return wr;
 }
 
-wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
+wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 operation_cond)
 {
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	int wd_ret;
@@ -590,7 +606,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER_SPM_FLOW);
 
-	spm_sodi3_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl);
+	spm_sodi3_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
 
 	spm_sodi3_footprint_val((1 << SPM_SODI3_ENTER_WFI) |
 				(1 << SPM_SODI3_B3) | (1 << SPM_SODI3_B4) |
