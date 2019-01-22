@@ -2944,7 +2944,7 @@ static unsigned long sum_capacity_reqs(unsigned long cfs_cap,
 {
 	unsigned long total = cfs_cap + scr->rt;
 
-	total = total * 1077; /*capacity_margin ~5%, 1077/1024=1.05 */
+	total = total * 1126; /*capacity_margin ~10%, 1126/1024=1.09 */
 	total /= SCHED_CAPACITY_SCALE;
 	total += scr->dl;
 	return total;
@@ -2981,14 +2981,30 @@ static void sched_freq_tick(int cpu)
 		if (sd) {
 			const struct sched_group_energy *const sge = sd->groups->sge;
 			int nr_cap_states = sge->nr_cap_states;
-			int idx;
+			int idx, tmp_idx;
+			int opp_jump_step;
 
 			for (idx = 0; idx < nr_cap_states; idx++) {
 				if (sge->cap_states[idx].cap > capacity_curr+1)
 					break;
 			}
 
-			capacity_req = (sge->cap_states[idx].cap + capacity_curr)/2;
+			if (idx < nr_cap_states/3)
+				opp_jump_step = 2; /* far step */
+			else
+				opp_jump_step = 1; /* near step */
+
+			tmp_idx = idx + (opp_jump_step - 1);
+
+			idx = tmp_idx > (nr_cap_states - 1) ?
+				(nr_cap_states - 1) : tmp_idx;
+
+			if (idx)
+				capacity_req = (sge->cap_states[idx].cap +
+						sge->cap_states[idx-1].cap)/2;
+			else
+				/* should not arrive here!*/
+				capacity_req = sge->cap_states[idx].cap + 2;
 		}
 
 		/* convert scale-invariant capacity */
