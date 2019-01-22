@@ -172,6 +172,10 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 		} else if (tcpm_inquire_typec_remote_rp_curr(info->tcpc) == 1500) {
 			pdata->input_current_limit = 1500000;
 			pdata->charging_current_limit = 2000000;
+		} else {
+			/* for TYPEC_CC_VOLT_SNK_DFT */
+			pdata->input_current_limit = 500000;
+			pdata->charging_current_limit = 500000;
 		}
 
 		chr_err("type-C:%d current:%d\n",
