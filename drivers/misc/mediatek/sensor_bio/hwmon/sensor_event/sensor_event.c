@@ -59,7 +59,7 @@ int sensor_input_event(unsigned char handle,
 	 * handle, (struct lock_class_key*)client->buffer_lock.rlock.dep_map.key);
 	 */
 	if (unlikely(client->buffull == true)) {
-		SE_ERR("input buffull, handle:%d, head:%d, tail:%d\n", handle, client->head, client->tail);
+		pr_err_ratelimited("input buffull, handle:%d, head:%d, tail:%d\n", handle, client->head, client->tail);
 		spin_unlock(&client->buffer_lock);
 		wake_up_interruptible(&client->wait);
 		return -1;
