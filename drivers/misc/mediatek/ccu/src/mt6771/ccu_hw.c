@@ -779,10 +779,10 @@ int ccu_run(void)
 	 * Driver wait CCU main initialize done and query INFO00 & INFO01 as mailbox address
 	 */
 	pMailBox[MAILBOX_SEND] =
-		(struct ccu_mailbox_t *)(dmem_base +
+		(struct ccu_mailbox_t *)(uintptr_t)(dmem_base +
 				ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_CCU));
 	pMailBox[MAILBOX_GET] =
-		(struct ccu_mailbox_t *)(dmem_base +
+		(struct ccu_mailbox_t *)(uintptr_t)(dmem_base +
 				ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_APMCU));
 
 
@@ -932,7 +932,7 @@ int ccu_flushLog(int argc, int *argv)
 
 int ccu_read_info_reg(int regNo)
 {
-	int *offset = (int *)(ccu_base + 0x60 + regNo * 4);
+	int *offset = (int *)(uintptr_t)(ccu_base + 0x60 + regNo * 4);
 
 	LOG_DBG("ccu_read_info_reg: %x\n", (unsigned int)(*offset));
 

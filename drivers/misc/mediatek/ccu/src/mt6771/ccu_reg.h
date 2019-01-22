@@ -50,10 +50,12 @@
 /*#define ccu_read_reg(base, regName)       (((struct CCU_A_REGS *)base)->regName.Raw)
 *#define ccu_write_reg(base, regName, val)  (((struct CCU_A_REGS *)base)->regName.Raw = val)
 */
-#define ccu_read_reg_bit(base, regName, fieldNmae)       (((struct CCU_A_REGS *)base)->regName.Bits.fieldNmae)
-#define ccu_write_reg_bit(base, regName, fieldNmae, val)  (((struct CCU_A_REGS *)base)->regName.Bits.fieldNmae = val)
-#define ccu_read_reg(base, regName) readl(&(((struct CCU_A_REGS *)base)->regName))
-#define ccu_write_reg(base, regName, val) writel(val, &(((struct CCU_A_REGS *)base)->regName))
+#define ccu_read_reg_bit(base, regName, fieldNmae) \
+(((struct CCU_A_REGS *)(uintptr_t)base)->regName.Bits.fieldNmae)
+#define ccu_write_reg_bit(base, regName, fieldNmae, val) \
+(((struct CCU_A_REGS *)(uintptr_t)base)->regName.Bits.fieldNmae = val)
+#define ccu_read_reg(base, regName) readl(&(((struct CCU_A_REGS *)(uintptr_t)base)->regName))
+#define ccu_write_reg(base, regName, val) writel(val, &(((struct CCU_A_REGS *)(uintptr_t)base)->regName))
 
 /*#endif*/
 
