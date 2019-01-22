@@ -10,9 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-
-#define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
-
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
@@ -20,6 +17,9 @@
 #include <linux/printk.h>
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
+#include <linux/spinlock.h>
+#include <linux/spinlock_types.h>
+#include <linux/kthread.h>
 #include <mach/emi_mpu.h>
 #include <mach/mt_secure_api.h>
 #include <mt-plat/mtk_meminfo.h>
@@ -32,6 +32,9 @@ static bool dcs_initialized;
 static int normal_channel_num;
 static int lowpower_channel_num;
 static struct rw_semaphore dcs_rwsem;
+static DEFINE_SPINLOCK(dcs_kicker_lock);
+static unsigned long dcs_kicker;
+static struct task_struct *dcs_thread;
 
 static char * const __dcs_status_name[DCS_NR_STATUS] = {
 	"normal",
@@ -46,6 +49,8 @@ enum dcs_sysfs_mode {
 	DCS_SYSFS_FREERUN,
 	DCS_SYSFS_FREERUN_NORMAL,
 	DCS_SYSFS_FREERUN_LOWPOWER,
+	DCS_SYSFS_FREERUN_ASYNC_NORMAL,
+	DCS_SYSFS_FREERUN_ASYNC_EXIT_NORMAL,
 	DCS_SYSFS_NR_MODE,
 };
 
@@ -57,6 +62,8 @@ static char * const dcs_sysfs_mode_name[DCS_SYSFS_NR_MODE] = {
 	"freerun only",
 	"freerun normal",
 	"freerun lowpower",
+	"freerun async normal",
+	"freerun async exit normal",
 };
 
 /*
@@ -86,10 +93,12 @@ static int dcs_migration_ipi(enum migrate_dir dir)
 	ipi_buf[0] = IPI_DCS_MIGRATION;
 	ipi_buf[1] = dir;
 
+	pr_info("dcs migration start\n");
 	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
+	pr_info("dcs migration end\n");
 
 	if (err) {
-		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
 		return -EBUSY;
 	}
 
@@ -111,7 +120,7 @@ static int dcs_set_dummy_write_ipi(void)
 	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
 
 	if (err) {
-		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
 		return -EBUSY;
 	}
 
@@ -128,7 +137,7 @@ static int dcs_dump_reg_ipi(void)
 	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
 
 	if (err) {
-		pr_err("[%s:%d]ipi_write error: %d\n", __func__, __LINE__, err);
+		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
 		return -EBUSY;
 	}
 
@@ -175,20 +184,20 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 
 		err = dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
 		if (err) {
-			pr_err("[%s:%d]ipi_write error: %d\n",
-					__func__, __LINE__, err);
+			pr_err("[%d]ipi_write error: %d\n",
+					__LINE__, err);
 			sys_dcs_status = DCS_BUSY;
 			BUG(); /* fatal error */
 			return -EBUSY;
 		}
+		sys_dcs_status = status;
+		pr_info("sys_dcs_status=%s\n", dcs_status_name(sys_dcs_status));
 
 		/* release DRAM frequency */
 		vcorefs_request_dvfs_opp(KIR_DCS, OPP_UNREQ);
 		/* update DVFSRC setting */
 		spm_dvfsrc_set_channel_bw(status == DCS_NORMAL ?
 				DVFSRC_CHANNEL_4 : DVFSRC_CHANNEL_2);
-		sys_dcs_status = status;
-		pr_info("sys_dcs_status=%s\n", dcs_status_name(sys_dcs_status));
 	} else {
 		pr_info("sys_dcs_status not changed\n");
 	}
@@ -217,7 +226,7 @@ static int dcs_get_status(enum dcs_status *sys_dcs_status)
 	ret = lpdma_smc_get_mode();
 
 	if (ret == -1) {
-		pr_err("[%s:%d]lpdma_smc_get_mode error: %d\n", __func__,
+		pr_err("[%d]lpdma_smc_get_mode error: %d\n",
 				__LINE__, ret);
 		return -EBUSY;
 	}
@@ -237,7 +246,7 @@ static int dcs_get_status(enum dcs_status *sys_dcs_status)
  *
  * return 0 on success or error code
  */
-int dcs_dram_channel_switch(enum dcs_status status)
+static int dcs_dram_channel_switch(enum dcs_status status)
 {
 	int ret = 0;
 
@@ -288,6 +297,14 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	case DCS_SYSFS_ALWAYS_LOWPOWER:
 		ret = __dcs_dram_channel_switch(DCS_LOWPOWER);
 		break;
+	case DCS_SYSFS_FREERUN_ASYNC_NORMAL:
+		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+		ret = dcs_enter_perf(DCS_KICKER_DEBUG);
+		break;
+	case DCS_SYSFS_FREERUN_ASYNC_EXIT_NORMAL:
+		dcs_sysfs_mode = DCS_SYSFS_FREERUN;
+		ret = dcs_exit_perf(DCS_KICKER_DEBUG);
+		break;
 	default:
 		pr_alert("unknown sysfs mode: %d\n", mode);
 		break;
@@ -296,6 +313,147 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	up_write(&dcs_rwsem);
 
 	return ret;
+}
+
+/*
+ * dcs_enter_perf
+ * mark the kicker status and switch to full bandwidth mode
+ * @kicker: the kicker who enters performance mode
+ *
+ * return 0 on success or error code
+ */
+int dcs_enter_perf(enum dcs_kicker kicker)
+{
+	if (!dcs_initialized)
+		return -ENODEV;
+	if (kicker >= DCS_NR_KICKER)
+		return -EINVAL;
+
+	spin_lock(&dcs_kicker_lock);
+	dcs_kicker |= (1 << kicker);
+	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
+	spin_unlock(&dcs_kicker_lock);
+
+	/* wakeup thread */
+	pr_info("wakeup dcs_thread\n");
+	if (!wake_up_process(dcs_thread))
+		pr_info("dcs_thread is already running\n");
+
+	return 0;
+}
+
+/*
+ * dcs_exit_perf
+ * unset the kicker status
+ * @kicker: the kicker who exits performance mode
+ *
+ * return 0 on success or error code
+ */
+int dcs_exit_perf(enum dcs_kicker kicker)
+{
+	if (!dcs_initialized)
+		return -ENODEV;
+	if (kicker >= DCS_NR_KICKER)
+		return -EINVAL;
+
+	spin_lock(&dcs_kicker_lock);
+	dcs_kicker &= ~(1 << kicker);
+	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
+	spin_unlock(&dcs_kicker_lock);
+
+	return 0;
+}
+
+/*
+ * dcs_switch_to_lowpower
+ * try to switch to lowpower mode, every kicker must be unset
+ *
+ * return 0 on success or error code
+ */
+int dcs_switch_to_lowpower(void)
+{
+	int err;
+	unsigned long kicker = false;
+
+	if (!dcs_initialized)
+		return -ENODEV;
+	if (kicker >= DCS_NR_KICKER)
+		return -EINVAL;
+
+	spin_lock(&dcs_kicker_lock);
+	kicker = dcs_kicker;
+	pr_info("[%d]dcs_kicker=%08lx\n", __LINE__, dcs_kicker);
+	spin_unlock(&dcs_kicker_lock);
+
+	if (!kicker) {
+		err = dcs_dram_channel_switch(DCS_LOWPOWER);
+		if (err) {
+			pr_err("[%d]fail: %d\n", __LINE__, err);
+			return err;
+		}
+		pr_info("entering lowpower mode\n");
+	} else
+		pr_info("not entering lowpower mode\n");
+
+	return 0;
+}
+
+/*
+ * dcs_thread_entry
+ * A thread performs the channel switch.
+ *
+ * return 0 on success or error code
+ */
+static int dcs_thread_entry(void *p)
+{
+	int err;
+
+	do {
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule();
+		set_current_state(TASK_RUNNING);
+		/* perform channel swtich */
+		pr_info("%s waken\n", __func__);
+		err = dcs_dram_channel_switch(DCS_NORMAL);
+		if (err) {
+			pr_err("[%d] fail: %d\n", __LINE__, err);
+			return err;
+		}
+	} while (1);
+
+	return 0;
+}
+/*
+ * __dcs_get_dcs_status
+ * return the number of DRAM channels and status
+ * Callers need to hold dcs_resem
+ * DO _NOT_ USE THIS API UNLESS YOU KNOW HOW TO USE THIS API
+ * @ch: address storing the number of DRAM channels.
+ * @dcs_status: address storing the system dcs status
+ *
+ * return 0 on success or error code
+ */
+int __dcs_get_dcs_status(int *ch, enum dcs_status *dcs_status)
+{
+	*dcs_status = sys_dcs_status;
+
+	switch (sys_dcs_status) {
+	case DCS_NORMAL:
+		*ch = normal_channel_num;
+		break;
+	case DCS_LOWPOWER:
+		*ch = lowpower_channel_num;
+		break;
+	default:
+		pr_err("[%d], incorrect DCS status=%s\n",
+				__LINE__,
+				dcs_status_name(sys_dcs_status));
+		goto BUSY;
+	}
+	return 0;
+BUSY:
+	*ch = -1;
+	return -EBUSY;
 }
 
 /*
@@ -313,31 +471,12 @@ int dcs_get_dcs_status_lock(int *ch, enum dcs_status *dcs_status)
 
 	down_read(&dcs_rwsem);
 
-	*dcs_status = sys_dcs_status;
-
-	switch (sys_dcs_status) {
-	case DCS_NORMAL:
-		*ch = normal_channel_num;
-		break;
-	case DCS_LOWPOWER:
-		*ch = lowpower_channel_num;
-		break;
-	default:
-		pr_err("%s:%d, incorrect DCS status=%s\n",
-				__func__,
-				__LINE__,
-				dcs_status_name(sys_dcs_status));
-		goto BUSY;
-	}
-	return 0;
-BUSY:
-	*ch = -1;
-	return -EBUSY;
+	return __dcs_get_dcs_status(ch, dcs_status);
 }
 
 /*
  * dcs_get_dcs_status_trylock
- * return the number of DRAM channels and status and get the dcs lock
+ * return the number of DRAM channels and status and trylock dcs lock
  * @ch: address storing the number of DRAM channels, -1 if lock failed
  * @dcs_status: address storing the system dcs status, DCS_BUSY if lock failed
  *
@@ -354,23 +493,8 @@ int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *dcs_status)
 		goto BUSY;
 	}
 
-	*dcs_status = sys_dcs_status;
+	return __dcs_get_dcs_status(ch, dcs_status);
 
-	switch (sys_dcs_status) {
-	case DCS_NORMAL:
-		*ch = normal_channel_num;
-		break;
-	case DCS_LOWPOWER:
-		*ch = lowpower_channel_num;
-		break;
-	default:
-		pr_err("%s:%d, incorrect DCS status=%s\n",
-				__func__,
-				__LINE__,
-				dcs_status_name(sys_dcs_status));
-		goto BUSY;
-	}
-	return 0;
 BUSY:
 	*ch = -1;
 	return -EBUSY;
@@ -450,7 +574,7 @@ static ssize_t mtkdcs_mode_store(struct device *dev,
 			goto apply_mode;
 	}
 
-	pr_alert("%s:unknown command: %s\n", __func__, buf);
+	pr_alert("[%d] unknown command: %s\n", __LINE__, buf);
 	return n;
 
 apply_mode:
@@ -510,6 +634,16 @@ static int __init mtkdcs_init(void)
 	}
 
 	lowpower_channel_num = (normal_channel_num / 2);
+
+	/* sanity check */
+	BUILD_BUG_ON(DCS_NR_KICKER > BITS_PER_LONG);
+
+	/* Start a kernel thread */
+	dcs_thread = kthread_run(dcs_thread_entry, NULL, "dcs_thread");
+	if (IS_ERR(dcs_thread)) {
+		pr_err("Failed to start dcs_thread!\n");
+		return -ENODEV;
+	}
 
 	dcs_initialized = true;
 
