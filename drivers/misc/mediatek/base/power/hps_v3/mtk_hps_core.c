@@ -239,8 +239,13 @@ static void hps_get_sysinfo(void)
 		hps_sys.cluster_info[1].down_threshold = DEF_EAS_DOWN_THRESHOLD_1;
 
 		/* B: absolute threshold */
-		hps_sys.cluster_info[2].up_threshold = DEF_EAS_UP_THRESHOLD_2;
-		hps_sys.cluster_info[2].down_threshold = DEF_EAS_DOWN_THRESHOLD_2;
+		if (big_task_B > 1) {
+			hps_sys.cluster_info[2].up_threshold = DEF_EAS_UP_THRESHOLD_2;
+			hps_sys.cluster_info[2].down_threshold = DEF_EAS_DOWN_THRESHOLD_2;
+		} else {
+			hps_sys.cluster_info[2].up_threshold = DEF_CPU_UP_THRESHOLD;
+			hps_sys.cluster_info[2].down_threshold = DEF_CPU_DOWN_THRESHOLD;
+		}
 	}
 
 	if (!hps_ctxt.eas_enabled) {
