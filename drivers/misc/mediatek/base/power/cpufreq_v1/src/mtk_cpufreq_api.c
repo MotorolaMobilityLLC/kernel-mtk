@@ -65,6 +65,27 @@ int mt_cpufreq_set_by_schedule_load_cluster(unsigned int cluster_id, unsigned in
 EXPORT_SYMBOL(mt_cpufreq_set_by_schedule_load_cluster);
 #endif
 
+int mt_cpufreq_set_iccs_frequency_by_cluster(int en, unsigned int cluster_id, unsigned int freq)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	enum mt_cpu_dvfs_id id = (enum mt_cpu_dvfs_id) cluster_id;
+
+	if (!en)
+		freq = mt_cpufreq_get_freq_by_idx(id, 15);
+
+	if (freq < mt_cpufreq_get_freq_by_idx(id, 15))
+		freq = mt_cpufreq_get_freq_by_idx(id, 15);
+
+	if (freq > mt_cpufreq_get_freq_by_idx(id, 0))
+		freq = mt_cpufreq_get_freq_by_idx(id, 0);
+
+	cpuhvfs_set_iccs_freq(id, freq);
+#endif
+
+	return 0;
+}
+EXPORT_SYMBOL(mt_cpufreq_set_iccs_frequency_by_cluster);
+
 int is_in_suspend(void)
 {
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(0);
