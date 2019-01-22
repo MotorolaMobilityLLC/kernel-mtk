@@ -114,7 +114,7 @@ typedef struct {
 typedef struct {
 	IMGSENSOR_SENSOR_IDX           sensor_idx;
 	IMGSENSOR_HW_CUSTOM_POWER_INFO pwr_info[IMGSENSOR_HW_POWER_INFO_MAX];
-} IMGSENSOR_HW_CUSTOM_POWER_CFG;
+} IMGSENSOR_HW_POWER_CFG;
 
 typedef struct {
 	IMGSENSOR_HW_PIN       pin;
@@ -125,14 +125,9 @@ typedef struct {
 } IMGSENSOR_HW_POWER_INFO;
 
 typedef struct {
-	char                   *sensor_name;
+	char                   *idx;
 	IMGSENSOR_HW_POWER_INFO pwr_info[IMGSENSOR_HW_POWER_INFO_MAX];
-} IMGSENSOR_HW_SENSOR_POWER_SEQ;
-
-typedef struct {
-	IMGSENSOR_SENSOR_IDX    sensor_idx;
-	IMGSENSOR_HW_POWER_INFO pwr_info[IMGSENSOR_HW_POWER_INFO_MAX];
-} IMGSENSOR_HW_PLATFORM_POWER_SEQ;
+} IMGSENSOR_HW_POWER_SEQ;
 
 typedef IMGSENSOR_RETURN (*imgsensor_hw_open)(IMGSENSOR_HW_DEVICE **);
 
