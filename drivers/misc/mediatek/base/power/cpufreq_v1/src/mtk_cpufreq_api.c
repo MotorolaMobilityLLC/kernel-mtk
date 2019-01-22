@@ -78,6 +78,20 @@ unsigned int mt_cpufreq_find_close_freq(unsigned int cluster_id, unsigned int fr
 	return mt_cpufreq_get_freq_by_idx(id, idx);
 }
 
+#define VBOOT_VOLT 80000
+unsigned int mt_cpufreq_find_Vboot_idx(unsigned int cluster_id)
+{
+	enum mt_cpu_dvfs_id id = (enum mt_cpu_dvfs_id) cluster_id;
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+	int idx = _search_available_freq_idx_under_v(p, VBOOT_VOLT);
+
+	if (idx > p->nr_opp_tbl)
+		idx = p->nr_opp_tbl;
+
+	return idx;
+}
+
+
 int mt_cpufreq_set_iccs_frequency_by_cluster(int en, unsigned int cluster_id, unsigned int freq)
 {
 #ifdef CONFIG_HYBRID_CPU_DVFS

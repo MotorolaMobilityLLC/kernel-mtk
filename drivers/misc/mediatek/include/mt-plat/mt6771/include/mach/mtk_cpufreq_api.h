@@ -67,6 +67,7 @@ extern int mt_cpufreq_get_ppb_state(void);
 extern unsigned int mt_cpufreq_get_cur_phy_freq(unsigned int cluster_id);
 extern unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(unsigned int cluster_id);
 extern void mt_cpufreq_setvolt_ocp_registerCB(cpuVoltsampler_func pCB);
+extern unsigned int mt_cpufreq_find_Vboot_idx(unsigned int cluster_id);
 
 /* Upower */
 extern unsigned int mt_cpufreq_get_cpu_level(void);

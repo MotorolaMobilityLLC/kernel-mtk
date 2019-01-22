@@ -76,29 +76,61 @@ int degree_set[NR_UPOWER_DEGREE] = {
 /* collect all the raw tables */
 #define INIT_UPOWER_TBL_INFOS(name, tbl) {__stringify(name), &tbl}
 struct upower_tbl_info upower_tbl_infos_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK] = {
-	/* MT6771_FY */
+	/* V3 */
 	[0] = {
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_1_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_l_FY0),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_b_FY0),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_l_FY0),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_b_FY0),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY0),
 	},
-	/* MT6771_FY2 */
+	/* V4 */
 	[1] = {
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_1_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_1_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_1_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_1_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_1_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_l_FY1),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_b_FY1),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_l_FY1),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_b_FY1),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY1),
 	},
-	/* MT6771_SB */
+	/* V5_1 */
 	[2] = {
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_2_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_2_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_2_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_2_FY),
-		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_2_FY),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_l_FY2),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_b_FY2),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_l_FY2),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_b_FY2),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY2),
+	},
+	/* V5_2 */
+	[3] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_l_FY3),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_b_FY3),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_l_FY3),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_b_FY3),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY3),
+	},
+	/* V5_3 */
+	[4] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_l_FY4),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_b_FY4),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_l_FY4),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_b_FY4),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY4),
+	},
+	/* V5_4 */
+	[5] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_l_FY5),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_b_FY5),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_l_FY5),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_b_FY5),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY5),
+	},
+	/* V6 */
+	[6] = {
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_l_FY6),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_b_FY6),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_l_FY6),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_b_FY6),
+		INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY6),
 	},
 };
 /* Upower will know how to apply voltage that comes from EEM */

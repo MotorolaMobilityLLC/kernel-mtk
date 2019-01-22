@@ -55,7 +55,7 @@ struct pll_ctrl_t *id_to_pll_ctrl(enum mt_cpu_dvfs_pll_id id)
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx);
 static unsigned int _calc_new_opp_idx_no_base(struct mt_cpu_dvfs *p, int new_opp_idx);
 
-static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned int volt)
+int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned int volt)
 {
 	int i;
 

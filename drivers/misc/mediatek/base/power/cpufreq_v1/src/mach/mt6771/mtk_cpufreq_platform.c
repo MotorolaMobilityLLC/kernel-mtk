@@ -583,16 +583,42 @@ int mt_cpufreq_dts_map(void)
 }
 
 #define CPUFREQ_EFUSE_IDX_0 50
+#define CPUFREQ_SEG_CODE_IDX_0 7
+#define CPUFREQ_BIN_CODE_IDX_0 120
+
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = CPU_LEVEL_0;
 	unsigned int temp = 0;
+	unsigned int segcode = 0;
+	unsigned int bincode = 0;
 
 	temp = get_devinfo_with_index(CPUFREQ_EFUSE_IDX_0);
-	if (temp >= 0x40)
-		lv = CPU_LEVEL_1;
-	else
-		lv = CPU_LEVEL_0;
+	segcode = (get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 5) & 0x1;
+	bincode = (get_devinfo_with_index(CPUFREQ_BIN_CODE_IDX_0) >> 4) & 0x7;
+
+	if (temp > 0x40) {
+		if (segcode == 1)
+			lv = CPU_LEVEL_6;	/* V6 */
+		else {
+			if (bincode == 0)
+				lv = CPU_LEVEL_2;	/* V5_1 */
+			else if (bincode == 1)
+				lv = CPU_LEVEL_3;	/* V5_2 */
+			else if (bincode == 2)
+				lv = CPU_LEVEL_4;	/* V5_3 */
+			else if (bincode == 3)
+				lv = CPU_LEVEL_5;	/* V5_4 */
+			else
+				lv = CPU_LEVEL_5;	/* V5_4 */
+		}
+	} else if (temp == 0x40) {
+		if (segcode == 1)
+			lv = CPU_LEVEL_6;	/* V6 */
+		else
+			lv = CPU_LEVEL_1;	/* V4 */
+	} else
+		lv = CPU_LEVEL_0;	/* V3 */
 
 	turbo_flag = 0;
 
