@@ -924,6 +924,7 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "lcm0_reset", 10) == 0) {
 		DISPCHECK("lcm0_reset\n");
 #if 1
+		primary_display_idlemgr_kick(__func__, 0);
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 1);
 		msleep(20);
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 0);
@@ -947,8 +948,10 @@ static void process_dbg_opt(const char *opt)
 #endif
 #endif
 	} else if (strncmp(opt, "lcm0_reset0", 11) == 0) {
+		primary_display_idlemgr_kick(__func__, 0);
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 0);
 	} else if (strncmp(opt, "lcm0_reset1", 11) == 0) {
+		primary_display_idlemgr_kick(__func__, 0);
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 1);
 	} else if (strncmp(opt, "dump_layer:", 11) == 0) {
 		if (strncmp(opt + 11, "on", 2) == 0) {
