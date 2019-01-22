@@ -1103,10 +1103,16 @@ UINT_64 kalGetBootTime(VOID);
 
 int kalMetInitProcfs(IN P_GLUE_INFO_T prGlueInfo);
 int kalMetRemoveProcfs(void);
+
 UINT_8 kalGetEapolKeyType(P_NATIVE_PACKET prPacket);
 
-#endif /* _GL_KAL_H */
+#if CFG_SUPPORT_WAKEUP_REASON_DEBUG
+BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
+#endif
 
 VOID kalFreeTxMsduWorker(struct work_struct *work);
 VOID kalFreeTxMsdu(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
+
+#endif /* _GL_KAL_H */
+
 

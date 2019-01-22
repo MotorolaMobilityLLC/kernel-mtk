@@ -77,6 +77,9 @@
 #if CFG_SUPPORT_AGPS_ASSIST
 #include <net/netlink.h>
 #endif
+#if CFG_SUPPORT_WAKEUP_REASON_DEBUG
+#include <mtk_sleep.h>
+#endif
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -2065,12 +2068,12 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 {
 	P_GL_IO_REQ_T prIoReq = NULL;
 	WLAN_STATUS ret = WLAN_STATUS_SUCCESS;
-
+#if 0
 #if CFG_CHIP_RESET_SUPPORT
 	if (kalIsResetting())
 		return WLAN_STATUS_SUCCESS;
 #endif
-
+#endif
 	/* GLUE_SPIN_LOCK_DECLARATION(); */
 	ASSERT(prGlueInfo);
 
@@ -4888,6 +4891,48 @@ UINT_64 kalGetBootTime(void)
 	bootTime += ts.tv_nsec / NSEC_PER_USEC;
 	return bootTime;
 }
+
+#if CFG_SUPPORT_WAKEUP_REASON_DEBUG
+/* if SPM is not implement this function, we will use this default one */
+wake_reason_t __weak slp_get_wake_reason(VOID)
+{
+	DBGLOG(INIT, WARN, "SPM didn't define this function!\n");
+	return WR_NONE;
+}
+
+/* if SPM is not implement this function, we will use this default one */
+bool __weak spm_read_eint_status(UINT_32 u4EintNum)
+{
+	DBGLOG(INIT, WARN, "SPM didn't define this function!\n");
+	return FALSE;
+}
+static inline BOOLEAN spm_check_wakesrc(VOID)
+{
+	return spm_read_eint_status(4);
+}
+
+BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter)
+{
+	/*
+	* SUSPEND_FLAG_FOR_WAKEUP_REASON is set means system has suspended, but may be failed
+	* duo to some driver suspend failed. so we need help of function slp_get_wake_reason
+	*/
+	if (test_and_clear_bit(SUSPEND_FLAG_FOR_WAKEUP_REASON, &prAdapter->ulSuspendFlag) == 0)
+		return FALSE;
+	/*
+	* if slp_get_wake_reason or spm_get_last_wakeup_src is NULL, it means SPM module didn't implement
+	* it. then we should return FALSE always. otherwise,  if slp_get_wake_reason returns WR_WAKE_SRC,
+	* then it means the host is suspend successfully.
+	*/
+	if (slp_get_wake_reason() != WR_WAKE_SRC)
+		return FALSE;
+	/*
+	* spm_get_last_wakeup_src will returns the last wakeup source,
+	*  WAKE_SRC_CONN2AP is connsys
+	*/
+	return spm_check_wakesrc();
+}
+#endif
 
 #if CFG_ASSERT_DUMP
 WLAN_STATUS kalOpenCorDumpFile(BOOLEAN fgIsN9)

@@ -76,6 +76,9 @@
 #include "precomp.h"
 #include "gl_rst.h"
 
+
+UINT_32 g_IsNeedDoChipReset;
+
 #if CFG_CHIP_RESET_SUPPORT
 
 /*******************************************************************************
@@ -89,7 +92,6 @@
 */
 static BOOLEAN fgResetTriggered = FALSE;
 BOOLEAN fgIsResetting = FALSE;
-UINT_32 g_IsNeedDoChipReset;
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A

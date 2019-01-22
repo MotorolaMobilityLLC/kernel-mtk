@@ -1734,7 +1734,22 @@ VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	ASSERT(prSwRfb);
 
 	nicRxFillRFB(prAdapter, prSwRfb);
-
+	if (prSwRfb->prRxStatusGroup3 == NULL) {
+		DBGLOG(RX, WARN,
+			"rxStatusGroup3 for MGMT frame is NULL, drop this packet, dump RXD and Packet\n");
+		DBGLOG_MEM8(RX, WARN, (PUINT_8) prSwRfb->prRxStatus, sizeof(*prSwRfb->prRxStatus));
+		if (prSwRfb->pvHeader)
+			DBGLOG_MEM8(RX, WARN, (PUINT_8) prSwRfb->pvHeader,
+				prSwRfb->u2PacketLen > 32 ? 32:prSwRfb->u2PacketLen);
+		nicRxReturnRFB(prAdapter, prSwRfb);
+		RX_INC_CNT(&prAdapter->rRxCtrl, RX_DROP_TOTAL_COUNT);
+#if 0
+#if CFG_CHIP_RESET_SUPPORT
+		glResetTrigger(prAdapter);
+#endif
+#endif
+		return;
+	}
 	ucSubtype = (*(PUINT_8) (prSwRfb->pvHeader) & MASK_FC_SUBTYPE) >> OFFSET_OF_FC_SUBTYPE;
 
 #if CFG_RX_PKTS_DUMP
@@ -1795,6 +1810,132 @@ VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	nicRxReturnRFB(prAdapter, prSwRfb);
 }
 
+#if CFG_SUPPORT_WAKEUP_REASON_DEBUG
+static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
+{
+	PUINT_8 pvHeader = NULL;
+	P_HW_MAC_RX_DESC_T prRxStatus;
+	UINT_16 u2PktLen = 0;
+	UINT_32 u4HeaderOffset;
+
+	if (!prSwRfb)
+		return;
+	prRxStatus = prSwRfb->prRxStatus;
+	if (!prRxStatus)
+		return;
+
+	switch (prSwRfb->ucPacketType) {
+	case RX_PKT_TYPE_RX_DATA:
+	{
+		UINT_16 u2Temp = 0;
+
+		u2PktLen = HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus);
+		if (!prSwRfb->fgReorderBuffer && !prSwRfb->fgDataFrame) {
+			P_WLAN_MAC_HEADER_T prWlanMacHeader = (P_WLAN_MAC_HEADER_T)pvHeader;
+
+			if ((prWlanMacHeader->u2FrameCtrl & MASK_FRAME_TYPE) ==
+				MAC_FRAME_BLOCK_ACK_REQ) {
+				DBGLOG(RX, INFO, "BAR frame[SSN:%d, TID:%d] wakeup host\n",
+					prSwRfb->u2SSN, prSwRfb->ucTid);
+				break;
+			}
+		}
+		u4HeaderOffset = (UINT_32) (HAL_RX_STATUS_GET_HEADER_OFFSET(prRxStatus));
+		u2Temp = sizeof(HW_MAC_RX_DESC_T);
+		if (prSwRfb->ucGroupVLD & BIT(RX_GROUP_VLD_4))
+			u2Temp += sizeof(HW_MAC_RX_STS_GROUP_4_T);
+		if (prSwRfb->ucGroupVLD & BIT(RX_GROUP_VLD_1))
+			u2Temp += sizeof(HW_MAC_RX_STS_GROUP_1_T);
+		if (prSwRfb->ucGroupVLD & BIT(RX_GROUP_VLD_2))
+			u2Temp += sizeof(HW_MAC_RX_STS_GROUP_2_T);
+		if (prSwRfb->ucGroupVLD & BIT(RX_GROUP_VLD_3))
+			u2Temp += sizeof(HW_MAC_RX_STS_GROUP_3_T);
+		pvHeader = (PUINT_8)prRxStatus + u2Temp + u4HeaderOffset;
+		u2PktLen -= u2Temp + u4HeaderOffset;
+		if (!pvHeader) {
+			DBGLOG(RX, ERROR, "data packet but pvHeader is NULL!\n");
+			break;
+		}
+		u2Temp = (pvHeader[ETH_TYPE_LEN_OFFSET] << 8) | (pvHeader[ETH_TYPE_LEN_OFFSET + 1]);
+
+		switch (u2Temp) {
+		case ETH_P_IPV4:
+			u2Temp = *(UINT_16 *) &pvHeader[ETH_HLEN + 4];
+			DBGLOG(RX, INFO, "IP Packet from:%d.%d.%d.%d, IP ID 0x%04x wakeup host\n",
+				pvHeader[ETH_HLEN + 12], pvHeader[ETH_HLEN + 13],
+				pvHeader[ETH_HLEN + 14], pvHeader[ETH_HLEN + 15], u2Temp);
+			break;
+		case ETH_P_ARP:
+			break;
+		case ETH_P_1X:
+		case ETH_P_PRE_1X:
+#if CFG_SUPPORT_WAPI
+		case ETH_WPI_1X:
+#endif
+		case ETH_P_AARP:
+		case ETH_P_IPV6:
+		case ETH_P_IPX:
+		case 0x8100: /* VLAN */
+		case 0x890d: /* TDLS */
+			DBGLOG(RX, INFO, "Data Packet, EthType 0x%04x wakeup host\n", u2Temp);
+			break;
+		default:
+			DBGLOG(RX, WARN, "maybe abnormal data packet, EthType 0x%04x wakeup host, dump it\n",
+				u2Temp);
+			DBGLOG_MEM8(RX, INFO, pvHeader, u2PktLen > 50 ? 50:u2PktLen);
+			break;
+		}
+		break;
+	}
+	case RX_PKT_TYPE_SW_DEFINED:
+		/* HIF_RX_PKT_TYPE_EVENT */
+		if ((prSwRfb->prRxStatus->u2PktTYpe & RXM_RXD_PKT_TYPE_SW_BITMAP) == RXM_RXD_PKT_TYPE_SW_EVENT) {
+			P_WIFI_EVENT_T prEvent = (P_WIFI_EVENT_T) prSwRfb->pucRecvBuff;
+
+			DBGLOG(RX, INFO, "Event 0x%02x wakeup host\n", prEvent->ucEID);
+			break;
+
+		}
+		/* case HIF_RX_PKT_TYPE_MANAGEMENT: */
+		else if ((prSwRfb->prRxStatus->u2PktTYpe & RXM_RXD_PKT_TYPE_SW_BITMAP) ==
+			 RXM_RXD_PKT_TYPE_SW_FRAME) {
+			UINT_8 ucSubtype;
+			P_WLAN_MAC_MGMT_HEADER_T prWlanMgmtHeader;
+			UINT_16 u2Temp = sizeof(HW_MAC_RX_DESC_T);
+
+			u4HeaderOffset = (UINT_32) (HAL_RX_STATUS_GET_HEADER_OFFSET(prRxStatus));
+			if (prSwRfb->ucGroupVLD & BIT(RX_GROUP_VLD_4))
+				u2Temp += sizeof(HW_MAC_RX_STS_GROUP_4_T);
+			if (prSwRfb->ucGroupVLD & BIT(RX_GROUP_VLD_1))
+				u2Temp += sizeof(HW_MAC_RX_STS_GROUP_1_T);
+			if (prSwRfb->ucGroupVLD & BIT(RX_GROUP_VLD_2))
+				u2Temp += sizeof(HW_MAC_RX_STS_GROUP_2_T);
+			if (prSwRfb->ucGroupVLD & BIT(RX_GROUP_VLD_3))
+				u2Temp += sizeof(HW_MAC_RX_STS_GROUP_3_T);
+			pvHeader = (PUINT_8)prRxStatus + u2Temp + u4HeaderOffset;
+			if (!pvHeader) {
+				DBGLOG(RX, ERROR, "Mgmt Frame but pvHeader is NULL!\n");
+				break;
+			}
+			prWlanMgmtHeader = (P_WLAN_MAC_MGMT_HEADER_T)pvHeader;
+			ucSubtype = (prWlanMgmtHeader->u2FrameCtrl & MASK_FC_SUBTYPE) >>
+				OFFSET_OF_FC_SUBTYPE;
+			DBGLOG(RX, INFO, "MGMT frame subtype: %d SeqCtrl %d wakeup host\n",
+				ucSubtype, prWlanMgmtHeader->u2SeqCtrl);
+		} else {
+			DBGLOG(RX, ERROR,
+				"[%s]ERROR: u2PktTYpe(0x%04X) is OUT OF DEF.!!!\n", __func__,
+				prSwRfb->prRxStatus->u2PktTYpe);
+			ASSERT(0);
+		}
+		break;
+	default:
+		DBGLOG(RX, WARN, "Unknown Packet %d wakeup host\n", prSwRfb->ucPacketType);
+		break;
+	}
+}
+#endif
+
 VOID nicRxProcessMsduReport(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 {
 	halRxProcessMsduReport(prAdapter, prSwRfb);
@@ -1843,6 +1984,13 @@ VOID nicRxProcessRFBs(IN P_ADAPTER_T prAdapter)
 
 			while (QUEUE_IS_NOT_EMPTY(prTempRfbList)) {
 				QUEUE_REMOVE_HEAD(prTempRfbList, prSwRfb, P_SW_RFB_T);
+
+				if (!prSwRfb)
+					break;
+#if CFG_SUPPORT_WAKEUP_REASON_DEBUG
+				if (kalIsWakeupByWlan(prAdapter))
+					nicRxCheckWakeupReason(prSwRfb);
+#endif
 
 				switch (prSwRfb->ucPacketType) {
 				case RX_PKT_TYPE_RX_DATA:

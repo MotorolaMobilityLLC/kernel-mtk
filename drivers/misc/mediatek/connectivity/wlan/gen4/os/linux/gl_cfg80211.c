@@ -2803,3 +2803,64 @@ INT_32 mtk_cfg80211_process_str_cmd(P_GLUE_INFO_T prGlueInfo, PUINT_8 cmd, INT_3
 }
 
 #endif
+
+int	mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+
+	down(&g_halt_sem);
+	if (g_u4HaltFlag || !wiphy)
+		goto end;
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+
+	set_bit(SUSPEND_FLAG_FOR_WAKEUP_REASON, &prGlueInfo->prAdapter->ulSuspendFlag);
+	set_bit(SUSPEND_FLAG_CLEAR_WHEN_RESUME, &prGlueInfo->prAdapter->ulSuspendFlag);
+end:
+	up(&g_halt_sem);
+	return 0;
+}
+
+/*----------------------------------------------------------------------------*/
+/*!
+ * @brief cfg80211 resume callback, will be invoked in wiphy_resume.
+ *
+ * @param wiphy: pointer to wiphy
+ *
+ * @retval 0:       successful
+ *         others:  failure
+ */
+/*----------------------------------------------------------------------------*/
+int mtk_cfg80211_resume(struct wiphy *wiphy)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	P_BSS_DESC_T *pprBssDesc = NULL;
+	P_ADAPTER_T prAdapter = NULL;
+	UINT_8 i = 0;
+
+	down(&g_halt_sem);
+	if (g_u4HaltFlag || !wiphy)
+		goto end;
+
+	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	prAdapter = prGlueInfo->prAdapter;
+	clear_bit(SUSPEND_FLAG_CLEAR_WHEN_RESUME, &prAdapter->ulSuspendFlag);
+	pprBssDesc = &prAdapter->rWifiVar.rScanInfo.rNloParam.aprPendingBssDescToInd[0];
+	for (; i < SCN_SSID_MATCH_MAX_NUM; i++) {
+		if (pprBssDesc[i] == NULL)
+			break;
+		if (pprBssDesc[i]->u2RawLength == 0)
+			continue;
+		kalIndicateBssInfo(prGlueInfo,
+						   (PUINT_8) pprBssDesc[i]->aucRawBuf,
+						   pprBssDesc[i]->u2RawLength,
+						   pprBssDesc[i]->ucChannelNum,
+						   RCPI_TO_dBm(pprBssDesc[i]->ucRCPI));
+	}
+	DBGLOG(SCN, INFO, "pending %d sched scan results\n", i);
+	if (i > 0)
+		kalMemZero(&pprBssDesc[0], i * sizeof(P_BSS_DESC_T));
+end:
+	up(&g_halt_sem);
+	return 0;
+}
