@@ -29,6 +29,9 @@
 #define AKM09918_RETRY_COUNT	10
 #define AKM09918_DEFAULT_DELAY	100
 
+#ifdef pr_fmt
+#undef pr_fmt
+#endif
 #define pr_fmt(fmt) "[AKM09918]%s:%d: " fmt, __func__, __LINE__
 
 #if AKM09918_DEBUG
