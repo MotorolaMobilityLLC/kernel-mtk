@@ -204,6 +204,8 @@ static void sdcardfs_work_handle_mkdir(struct sdcardfs_work_job *pw)
 	struct inode *dir = pw->dir;
 	umode_t mode = pw->mode;
 	int make_nomedia_in_obb = 0;
+	int is_data = 0;
+	int is_obb = 0;
 	struct dentry *lower_dentry;
 	struct dentry *lower_parent_dentry = NULL;
 	struct path lower_path;
@@ -216,8 +218,19 @@ static void sdcardfs_work_handle_mkdir(struct sdcardfs_work_job *pw)
 	int fullpath_namelen;
 	int touch_err = 0;
 
+	if (pi->perm == PERM_ANDROID) {
+		if (!strcasecmp(dentry->d_name.name, "data"))
+			is_data = 1;
+		else if (!strcasecmp(dentry->d_name.name, "obb"))
+			is_obb = 1;
+	}
+
 	/* save current_cred and override it */
-	saved_cred = override_fsids_and_keys(SDCARDFS_SB(dir->i_sb), pw->owner->cred);
+	if (is_data || is_obb)
+		saved_cred = override_fsids_and_keys(SDCARDFS_SB(dir->i_sb), pw->owner->cred);
+	else
+		saved_cred = override_fsids(SDCARDFS_SB(dir->i_sb));
+
 	if (!saved_cred) {
 		err = -ENOMEM;
 		goto out_cred;
@@ -273,13 +286,11 @@ static void sdcardfs_work_handle_mkdir(struct sdcardfs_work_job *pw)
 	/* update number of links on parent directory */
 	set_nlink(dir, sdcardfs_lower_inode(dir)->i_nlink);
 
-	if ((!sbi->options.multiuser) && (!strcasecmp(dentry->d_name.name, "obb"))
-		&& (pi->perm == PERM_ANDROID) && (pi->userid == 0))
+	if ((!sbi->options.multiuser) && is_obb && (pi->userid == 0))
 		make_nomedia_in_obb = 1;
 
 	/* When creating /Android/data and /Android/obb, mark them as .nomedia */
-	if (make_nomedia_in_obb ||
-		((pi->perm == PERM_ANDROID) && (!strcasecmp(dentry->d_name.name, "data")))) {
+	if (make_nomedia_in_obb || is_data) {
 
 		page_buf = (char *)__get_free_page(GFP_KERNEL);
 		if (!page_buf) {
