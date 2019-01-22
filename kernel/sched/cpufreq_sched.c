@@ -122,12 +122,12 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	struct gov_data *gd;
 	int cid;
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	unsigned int boost_min;
 	unsigned long scale;
 	struct cpumask cls_cpus;
 	int cpu = target_cpu;
 	unsigned int max, min;
 #endif
-	unsigned int boost_min;
 
 	cid = arch_get_cluster_id(target_cpu);
 
@@ -172,7 +172,6 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	for_each_cpu(cpu, &cls_cpus) {
 		per_cpu(freq_scale, cpu) = scale;
 		arch_scale_set_curr_freq(cpu, freq); /* per_cpu(cpu_freq_capacity) */
-
 #ifdef CONFIG_SCHED_WALT
 		walt_cpufreq_notifier_trans(cpu, freq);
 #endif
@@ -183,7 +182,8 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	met_tag_oneshot(0, met_dvfs_info[cid], freq);
 
 	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
-#else
+
+#else /* !CONFIG_CPU_FREQ_SCHED_ASSIST */
 	policy = gd->policy;
 
 	if (IS_ERR_OR_NULL(policy))
@@ -203,6 +203,7 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 
 	gd->throttle = ktime_add_ns(ktime_get(), gd->throttle_nsec);
 	up_write(&policy->rwsem);
+
 #endif
 }
 
@@ -310,6 +311,9 @@ static void update_fdomain_capacity_request(int cpu, int type)
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	gd = g_gd[cid];
+
+	if (!mt_cpufreq_get_sched_enable())
+		goto out;
 
 	/* bail early if we are throttled */
 	if (ktime_before(ktime_get(), gd->throttle))
@@ -660,14 +664,53 @@ static int __init cpufreq_sched_init(void)
 	cpu_hotplug.notifier_call = cpu_hotplug_handler;
 	register_hotcpu_notifier(&cpu_hotplug);
 
-
-
 	return cpufreq_register_governor(&cpufreq_gov_sched);
 }
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+
+static int cpufreq_callback(struct notifier_block *nb,
+		unsigned long val, void *data)
+{
+	struct cpufreq_freqs *freq = data;
+	int cpu = freq->cpu;
+	struct cpumask cls_cpus;
+	int id;
+	int cid = arch_get_cluster_id(cpu);
+	ktime_t throttle = g_gd[cid]->throttle;
+	bool sched_dvfs;
+
+	if (freq->flags & CPUFREQ_CONST_LOOPS)
+		return NOTIFY_OK;
+
+	sched_dvfs = mt_cpufreq_get_sched_enable();
+
+	if (val == CPUFREQ_PRECHANGE) {
+		/* consider DVFS has been changed by PPM or other governors */
+		if (!sched_dvfs ||
+		    !ktime_before(ktime_get(), ktime_add_ns(throttle, (20000000 - THROTTLE_NSEC)/*20ms*/))) {
+			arch_get_cluster_cpus(&cls_cpus, cid);
+			for_each_cpu(id, &cls_cpus)
+				arch_scale_set_curr_freq(id, freq->new);
+		}
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cpufreq_notifier = {
+	.notifier_call = cpufreq_callback,
+};
+
+static int __init register_cpufreq_notifier(void)
+{
+	return cpufreq_register_notifier(&cpufreq_notifier,
+			CPUFREQ_TRANSITION_NOTIFIER);
+}
+
 /* sched-assist dvfs is NOT a governor. */
 late_initcall(cpufreq_sched_init);
+core_initcall(register_cpufreq_notifier);
 #else
 /* Try to make this the default governor */
 fs_initcall(cpufreq_sched_init);

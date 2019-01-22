@@ -1406,13 +1406,6 @@ schedtune_init(void)
 	pr_info("schedtune: configured to support global boosting only\n");
 #endif
 
-	/* [FIXME] pass build error */
-	if (false) {
-		mt_cpufreq_set_by_schedule_load_cluster(0, 0);
-		mt_cpufreq_find_close_freq(0, 0);
-		mt_cpufreq_get_freq_by_idx(0, 0);
-	}
-
 	return 0;
 
 nodata:
