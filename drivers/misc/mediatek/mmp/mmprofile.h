@@ -51,6 +51,10 @@ typedef enum {
 	MMPROFILE_BITMAP_RGBA8888,
 	MMPROFILE_BITMAP_BGR888,
 	MMPROFILE_BITMAP_BGRA8888,
+	MMPROFILE_BITMAP_UYVY,
+	MMPROFILE_BITMAP_VYUY,
+	MMPROFILE_BITMAP_YUYV,
+	MMPROFILE_BITMAP_YVYU,
 	MMPROFILE_BITMAP_MAX = 0xFFFFFFFF
 } mmp_pixel_format;
 
@@ -111,6 +115,7 @@ long mmprofile_log_meta_string_ex(mmp_event event, mmp_log_type type,
 		unsigned long data1, unsigned long data2, const char *str);
 long mmprofile_log_meta_structure(mmp_event event, mmp_log_type type, mmp_metadata_structure_t *p_meta_data);
 long mmprofile_log_meta_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *p_meta_data);
+long mmprofile_log_meta_yuv_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *p_meta_data);
 void mmprofile_start(int start);
 void mmprofile_enable(int enable);
 unsigned int mmprofile_get_dump_size(void);
@@ -185,6 +190,11 @@ static inline long mmprofile_log_meta_string(mmp_event event, mmp_log_type type,
 }
 
 static inline long mmprofile_log_meta_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *p_meta_data)
+{
+	return 0;
+}
+
+static inline long mmprofile_log_meta_yuv_bitmap(mmp_event event, mmp_log_type type, mmp_metadata_bitmap_t *p_meta_data)
 {
 	return 0;
 }
