@@ -5989,8 +5989,11 @@ static void __exit eem_exit(void)
 	FUNC_EXIT(FUNC_LV_MODULE);
 }
 
+/* init at subsys_initcall after
+ * sspm driver done at arch_initcall
+ */
 #ifdef __KERNEL__
-arch_initcall(vcore_ptp_init); /* I-Chang */
+subsys_initcall(vcore_ptp_init);
 module_init(eem_init);
 #endif
 #endif/* EEM_ENABLE_TINYSYS_SSPM */
