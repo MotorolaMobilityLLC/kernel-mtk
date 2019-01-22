@@ -191,13 +191,13 @@ struct mt_i2c_ext {
 
 struct mtk_i2c_compatible {
 	unsigned char dma_support;  /* 0 : original; 1: 4gb  support 2: 33bit support; 3: 36 bit support */
-	unsigned char idvfs_i2c;
+	unsigned char idvfs_i2c; /* compatible before chip, set 1 if no TRANSFER_LEN_AUX */
 	unsigned char set_dt_div; /* use dt to set div */
 	unsigned char check_max_freq; /* check max freq */
 	u16 ext_time_config;
 	char clk_compatible[128];
-	u16 clk_sta_offset;
-	u8 cg_bit[10];
+	u16 clk_sta_offset; /* I2C clock status register */
+	u8 cg_bit[10]; /* i2c clock bit, i2c0-9 */
 };
 
 struct mt_i2c {
