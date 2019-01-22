@@ -159,8 +159,8 @@ static unsigned int sspm_log_enable_set(unsigned int enable)
 		ipi_data.cmd = PLT_LOG_ENABLE;
 		ipi_data.u.logger.enable = enable;
 
-		ret = sspm_ipi_send_sync(IPI_ID_PLATFORM, IPI_OPT_LOCK_BUSY,
-				&ipi_data, sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata);
+		ret = sspm_ipi_send_sync_new(IPI_ID_PLATFORM, IPI_OPT_WAIT,
+				&ipi_data, sizeof(ipi_data) / MBOX_SLOT_SIZE, &ackdata, 1);
 		if (ret != 0) {
 			pr_err("SSPM: logger IPI fail ret=%d\n", ret);
 			goto error;
