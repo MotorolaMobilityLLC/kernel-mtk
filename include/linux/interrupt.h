@@ -193,6 +193,7 @@ extern void disable_irq_nosync(unsigned int irq);
 extern bool disable_hardirq(unsigned int irq);
 extern void disable_irq(unsigned int irq);
 extern void disable_percpu_irq(unsigned int irq);
+extern void _disable_percpu_irq(unsigned int irq, unsigned int cpu);
 extern void enable_irq(unsigned int irq);
 extern void enable_percpu_irq(unsigned int irq, unsigned int type);
 extern void irq_wake_thread(unsigned int irq, void *dev_id);

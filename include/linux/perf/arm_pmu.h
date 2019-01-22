@@ -82,6 +82,7 @@ struct arm_pmu {
 	cpumask_t	active_irqs;
 	cpumask_t	supported_cpus;
 	int		*irq_affinity;
+	int		ppi_irq;
 	char		*name;
 	irqreturn_t	(*handle_irq)(int irq_num, void *dev);
 	void		(*enable)(struct perf_event *event);
