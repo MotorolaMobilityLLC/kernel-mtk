@@ -82,6 +82,12 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 		}
 		break;
 
+	case MAIN_PMIC_REGULATOR:
+		break;
+
+	case SUB_PMIC_CTRL:
+		break;
+
 	default:
 		pr_err("%s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 
@@ -126,6 +132,21 @@ unsigned int pmic_ipi_config_interface(unsigned int RegNum, unsigned int val, un
 	send.cmd[4] = SHIFT;
 
 	ret = pmic_ipi_to_sspm(&send, &recv, lock);
+
+	return ret;
+}
+
+unsigned int sub_pmic_ipi_interface(unsigned int type, unsigned int ctrl)
+{
+	struct pmic_ipi_cmds send = { {0} };
+	struct pmic_ipi_ret_datas recv = { {0} };
+	unsigned int ret = 0;
+
+	send.cmd[0] = SUB_PMIC_CTRL;
+	send.cmd[1] = type;  /*PMIC_IPI_FUNC_SUB_PMIC_EN*/
+	send.cmd[2] = ctrl;
+
+	ret = pmic_ipi_to_sspm(&send, &recv, 1);
 
 	return ret;
 }
