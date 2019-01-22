@@ -970,7 +970,7 @@ int spm_vcorefs_get_opp(void)
 	u32 dvfs_level[NUM_OPP] = { 0x10, 0x4, 0x2, 0x1};
 	int level;
 
-	if (is_vcorefs_can_work()) {
+	if (is_vcorefs_can_work() == 1) {
 		spin_lock_irqsave(&__spm_lock, flags);
 
 		level = get_dvfs_level();
