@@ -114,6 +114,9 @@ void connectivity_export_mt6306_set_gpio_dir(unsigned long pin, unsigned long di
 #ifdef CONFIG_MACH_MT6799
 #define CPU_BOOST y
 #endif
+#ifdef CONFIG_MACH_MT6739
+#define CPU_BOOST y
+#endif
 #ifdef CPU_BOOST
 #include "mach/mtk_ppm_api.h"
 #include "mtk_spm_resource_req.h"
