@@ -38,7 +38,7 @@
  *****************************************************************************/
 /* #define _MC3XXX_SUPPORT_DOT_CALIBRATION_  *//* Just for mcube's calibration APK*/
 #define _MC3XXX_SUPPORT_LPF_
-#define _MC3XXX_SUPPORT_CONCURRENCY_PROTECTION_
+/*#define _MC3XXX_SUPPORT_CONCURRENCY_PROTECTION_ */
 /* #define _MC3XXX_SUPPORT_APPLY_AVERAGE_AGORITHM_ */
 /* #define _MC3XXX_SUPPORT_PERIODIC_DOC_ */
 /* #define _MC3XXX_SUPPORT_VPROXIMITY_SENSOR_ */
@@ -275,9 +275,6 @@ static unsigned int	iAcc1Lpf0_Z;
 static unsigned int	iAcc1Lpf1_Z;
 
 static signed char	s_bAccuracyStatus = SENSOR_STATUS_ACCURACY_MEDIUM;
-static int mc3xxx_mutex_lock(void);
-static void mc3xxx_mutex_unlock(void);
-static void mc3xxx_mutex_init(void);
 
 
 #ifdef _MC3XXX_SUPPORT_PERIODIC_DOC_
@@ -297,6 +294,10 @@ static void mc3xxx_mutex_init(void);
  *** MACRO
  *****************************************************************************/
 #ifdef _MC3XXX_SUPPORT_CONCURRENCY_PROTECTION_
+static int mc3xxx_mutex_lock(void);
+static void mc3xxx_mutex_unlock(void);
+static void mc3xxx_mutex_init(void);
+
 static void mc3xxx_mutex_init(void)
 {
 	sema_init(&s_tSemaProtect, 1);
@@ -314,7 +315,7 @@ static void mc3xxx_mutex_unlock(void)
 	up(&s_tSemaProtect);
 }
 #else
-	#define mc3xxx_mutex_lock()				do {} while (0)
+	#define mc3xxx_mutex_init()				do {} while (0)
 	#define mc3xxx_mutex_lock()				do {} while (0)
 	#define mc3xxx_mutex_unlock()			  do {} while (0)
 #endif
