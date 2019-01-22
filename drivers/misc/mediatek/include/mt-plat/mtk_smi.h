@@ -119,6 +119,7 @@ struct MTK_MMDVFS_CMD {
 	unsigned int ddr_type;
 	unsigned int step;
 	unsigned int venc_size;
+	unsigned int preview_size;
 
 	unsigned int ret;
 };
