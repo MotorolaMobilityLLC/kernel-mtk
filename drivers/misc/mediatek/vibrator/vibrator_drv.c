@@ -142,7 +142,6 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 	struct vibrator_hw *hw = mt_get_cust_vibrator_hw();
 #endif
 
-	spin_lock_irqsave(&vibe_lock, flags);
 	if (hrtimer_cancel(&vibe_timer))
 		VIB_DEBUG("vibrator_enable: cancel existed hrtimer, cust timer: %d(ms), value: %d, shutdown: %d\n",
 			hw->vib_timer, value, shutdown_flag);
@@ -150,6 +149,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 		VIB_DEBUG("vibrator_enable: no timer existed, cust timer: %d(ms), value: %d, shutdown: %d\n",
 			hw->vib_timer, value, shutdown_flag);
 
+	spin_lock_irqsave(&vibe_lock, flags);
 	if (value == 0 || shutdown_flag == 1) {
 		vibe_state = 0;
 	} else {
