@@ -2349,24 +2349,6 @@ static void tscpu_start_thermal_timer(void)
 #endif
 }
 
-#ifdef CONFIG_OF
-long tscpu_dev_alloc_module_base_by_name(const char *name)
-{
-	unsigned long VA;
-	struct device_node *node = NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
-	if (!node) {
-		pr_debug("find node failed\n");
-		return 0;
-	}
-	VA = (unsigned long)of_iomap(node, 0);
-	pr_debug("DEV: VA(%s): 0x%lx\n", name, VA);
-
-	return VA;
-}
-#endif
-
 static void init_thermal(void)
 {
 	int temp = 0;
