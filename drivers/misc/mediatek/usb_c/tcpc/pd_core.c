@@ -1211,7 +1211,10 @@ int pd_send_svdm_request(struct pd_port *pd_port,
 	uint8_t ver = SVDM_REV10;
 	uint32_t payload[PD_DATA_OBJ_SIZE];
 
-	PD_BUG_ON(cnt > VDO_MAX_NR);
+	if (cnt > VDO_MAX_NR) {
+		PD_BUG_ON(1);
+		return -EINVAL;
+	}
 
 #ifdef CONFIG_USB_PD_REV30
 	if (pd_check_rev30(pd_port))
@@ -1261,7 +1264,7 @@ int pd_reply_svdm_request(struct pd_port *pd_port,
 
 	payload[0] = VDO_REPLY(ver, reply, pd_get_msg_vdm_hdr(pd_port));
 
-	if (cnt > 0) {
+	if (cnt > 0 && cnt <= PD_DATA_OBJ_SIZE - 1) {
 		PD_BUG_ON(data_obj == NULL);
 		memcpy(&payload[1], data_obj, sizeof(uint32_t) * cnt);
 	}
