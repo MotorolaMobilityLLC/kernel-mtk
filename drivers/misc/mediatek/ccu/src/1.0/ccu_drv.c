@@ -780,6 +780,9 @@ static int ccu_release(struct inode *inode, struct file *flip)
 
 	ccu_delete_user(user);
 
+
+	ccu_force_powerdown();
+
 	return 0;
 }
 

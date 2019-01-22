@@ -199,6 +199,7 @@ typedef struct {
 	spinlock_t SpinLockI2cPower;
 	unsigned int IsI2cPowerDisabling;
 	unsigned int IsI2cPoweredOn;
+	unsigned int IsCcuPoweredOn;
 
 	wait_queue_head_t WaitQueueHead;
 	volatile wait_queue_head_t WaitQHeadList[SUPPORT_MAX_IRQ];
