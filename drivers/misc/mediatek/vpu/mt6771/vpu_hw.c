@@ -725,6 +725,21 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 	int vpu_freq_index = 0;
 
 	#if 0
+	bool vpu_down = true;
+
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		mutex_lock(&power_counter_mutex[i]);
+		if (power_counter[i] > 0)
+			vpu_down = false;
+		mutex_unlock(&power_counter_mutex[i]);
+	}
+	if (vpu_down) {
+		LOG_INF("[vpu] all vpu are off currently, do nothing\n");
+		return ret;
+	}
+	#endif
+
+	#if 0
 	if ((int)vpu_opp < 4) {
 		vcore_opp_index = 0;
 		vpu_freq_index = vpu_opp;
@@ -761,37 +776,38 @@ int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp)
 			switch (vpu_freq_index) {
 			case 0:
 			default:
-				LOG_INF("thermal force change dsp freq to 525MHz\n");
+				LOG_INF("thermal force bound dsp freq to 525MHz\n");
 				break;
 			case 1:
-				LOG_INF("thermal force change dsp freq to 450MHz\n");
+				LOG_INF("thermal force bound dsp freq to 450MHz\n");
 				break;
 			case 2:
-				LOG_INF("thermal force change dsp freq to 416MHz\n");
+				LOG_INF("thermal force bound dsp freq to 416MHz\n");
 				break;
 			case 3:
-				LOG_INF("thermal force change dsp freq to 364MHz\n");
+				LOG_INF("thermal force bound dsp freq to 364MHz\n");
 				break;
 			case 4:
-				LOG_INF("thermal force change dsp freq to 312MHz\n");
+				LOG_INF("thermal force bound dsp freq to 312MHz\n");
 				break;
 			case 5:
-				LOG_INF("thermal force change dsp freq to 273MHz\n");
+				LOG_INF("thermal force bound dsp freq to 273MHz\n");
 				break;
 			case 6:
-				LOG_INF("thermal force change dsp freq to 208MHz\n");
+				LOG_INF("thermal force bound dsp freq to 208MHz\n");
 				break;
 			case 7:
-				LOG_INF("thermal force change dsp freq to 182MHz\n");
+				LOG_INF("thermal force bound dsp freq to 182MHz\n");
 				break;
 			}
-			vpu_change_opp(i, OPPTYPE_DSPFREQ);
-		} else if (force_change_vcore_opp[i]) {
+			/*vpu_change_opp(i, OPPTYPE_DSPFREQ);*/
+		}
+		if (force_change_vcore_opp[i]) {
 			/* vcore change should wait */
-			LOG_INF("thermal force change vcore opp to %d\n", vcore_opp_index);
+			LOG_INF("thermal force bound vcore opp to %d\n", vcore_opp_index);
 			/* vcore only need to change one time from thermal request*/
-			if (i == 0)
-				vpu_change_opp(i, OPPTYPE_VCORE);
+			/*if (i == 0)*/
+			/*	vpu_change_opp(i, OPPTYPE_VCORE);*/
 		}
 	}
 
