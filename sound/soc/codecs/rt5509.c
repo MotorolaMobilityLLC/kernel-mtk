@@ -710,10 +710,6 @@ static int rt5509_codec_probe(struct snd_soc_codec *codec)
 	ret = rt5509_calib_create(chip);
 	if (ret < 0)
 		goto err_out_probe;
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 15, 0))
-	if (chip->chip_rev < RT5509_CHIP_REVC)
-		codec->ignore_pmdown_time = 1;
-#endif
 	dev_info(codec->dev, "%s\n", __func__);
 	return rt5509_set_bias_level(codec, SND_SOC_BIAS_OFF);
 err_out_probe:
@@ -1341,9 +1337,6 @@ static struct snd_soc_dai_driver rt5509_i2s_dais[] = {
 
 static inline int rt5509_codec_register(struct rt5509_chip *chip)
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 15, 0))
-	rt5509_codec_drv.ignore_pmdown_time = 1;
-#endif
 	return snd_soc_register_codec(chip->dev, &rt5509_codec_drv,
 		rt5509_i2s_dais, ARRAY_SIZE(rt5509_i2s_dais));
 }
