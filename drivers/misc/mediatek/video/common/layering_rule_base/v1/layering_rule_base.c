@@ -1532,6 +1532,9 @@ static void debug_set_layer_data(struct disp_layer_info *disp_info, int disp_id,
 
 	if (layer_id != -1)
 		layer_info = &disp_info->input_config[disp_id][layer_id];
+	else
+		return;
+
 	switch (data_type) {
 	case HRT_LAYER_DATA_ID:
 		layer_id = value;
