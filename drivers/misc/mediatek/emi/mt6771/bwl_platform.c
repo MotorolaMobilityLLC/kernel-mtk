@@ -19,7 +19,6 @@
 #include "mt_emi.h"
 #include "bwl_platform.h"
 
-#define LAST_EMI_DECS_CTRL	(LAST_EMI_BASE + 0x4)
 #define EMI_BWCT0_2ND		(CEN_EMI_BASE + 0x6A0)
 #define EMI_BWCT0_4TH		(CEN_EMI_BASE + 0x780)
 #define EMI_BWCT0_5TH		(CEN_EMI_BASE + 0x7B0)
