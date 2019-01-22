@@ -753,6 +753,9 @@ int ddp_path_top_clock_on(void)
 	ddp_ovl_dcm_reset();
 	/* hw workaround : end */
 
+	/* MMSYS golden setting */
+	DISP_REG_SET_FIELD(NULL, REG_FLD(5, 0), DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0x3);
+
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K, "DDP_MUTEX"); */
 	DDPDBG("ddp CG0:%x, CG1:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));

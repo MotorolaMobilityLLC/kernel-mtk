@@ -546,7 +546,7 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	unsigned int ultra_high_us = 4;
 	unsigned int preultra_low_us = 7;
 	unsigned int preultra_high_us = ultra_low_us;
-	unsigned int fifo_pseudo_size = 360;
+	unsigned int fifo_pseudo_size = 244;
 	unsigned int frame_rate = 60;
 	unsigned int bytes_per_sec = 3;
 	/*unsigned int is_primary_flag = 1;*/  /*primary or external*/
@@ -576,9 +576,9 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	frame_rate = p_golden_setting->fps;
 
 	if (is_primary_flag) {
-		fifo_off_drs_enter = 4;
-		fifo_off_drs_leave = 2;
-		fifo_off_dvfs = 4;
+		fifo_off_drs_enter = 0;
+		fifo_off_drs_leave = 0;
+		fifo_off_dvfs = 2;
 		res = p_golden_setting->dst_width * p_golden_setting->dst_height;
 	} else {
 		res = p_golden_setting->ext_dst_width *
@@ -637,92 +637,92 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 
 	preultra_low = (preultra_low_us + fifo_off_drs_enter) * consume_rate * bytes_per_sec;
 	preultra_low_UV = (preultra_low_us + fifo_off_drs_enter) * consume_rate;
-	do_div(preultra_low, 1000);
-	do_div(preultra_low_UV, 1000);
+	preultra_low = DIV_ROUND_UP(preultra_low, 1000);
+	preultra_low_UV = DIV_ROUND_UP(preultra_low_UV, 1000);
 
 	preultra_high = (preultra_high_us + fifo_off_drs_enter) * consume_rate * bytes_per_sec;
 	preultra_high_UV = (preultra_high_us + fifo_off_drs_enter) * consume_rate;
-	do_div(preultra_high, 1000);
-	do_div(preultra_high_UV, 1000);
+	preultra_high = DIV_ROUND_UP(preultra_high, 1000);
+	preultra_high_UV = DIV_ROUND_UP(preultra_high_UV, 1000);
 
 	ultra_high = (ultra_high_us + fifo_off_drs_enter) * consume_rate * bytes_per_sec;
 	ultra_high_UV = (ultra_high_us + fifo_off_drs_enter) * consume_rate;
-	do_div(ultra_high, 1000);
-	do_div(ultra_high_UV, 1000);
+	ultra_high = DIV_ROUND_UP(ultra_high, 1000);
+	ultra_high_UV = DIV_ROUND_UP(ultra_high_UV, 1000);
 
 	ultra_low = preultra_high;
 	ultra_low_UV = preultra_high_UV;
 
 	/* DISP_REG_WDMA_BUF_CON5  Y*/
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - preultra_low;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
-	temp = fifo_pseudo_size - ultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - ultra_low;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON5, regval);
 
 	/* DISP_REG_WDMA_BUF_CON6 Y*/
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - preultra_high;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
-	temp = fifo_pseudo_size - ultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - ultra_high;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON6, regval);
 
 	/* DISP_REG_WDMA_BUF_CON7 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_low_UV;
+	temp = (long long)fifo_pseudo_size - preultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
-	temp = fifo_pseudo_size - ultra_low_UV;
+	temp = (long long)fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON7, regval);
 
 	/* DISP_REG_WDMA_BUF_CON8 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_high_UV;
+	temp = (long long)fifo_pseudo_size - preultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
-	temp = fifo_pseudo_size - ultra_high_UV;
+	temp = (long long)fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON8, regval);
 
 	/* DISP_REG_WDMA_BUF_CON9 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_low_UV;
+	temp = (long long)fifo_pseudo_size - preultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
-	temp = fifo_pseudo_size - ultra_low_UV;
+	temp = (long long)fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON9, regval);
 
 	/* DISP_REG_WDMA_BUF_CON10 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_high_UV;
+	temp = (long long)fifo_pseudo_size - preultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
-	temp = fifo_pseudo_size - ultra_high_UV;
+	temp = (long long)fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON10, regval);
@@ -730,22 +730,19 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	/* DISP_REG_WDMA_DRS_CON0 */
 	regval = 0;
 	/* TODO: SET DRS_EN */
-	temp = fifo_pseudo_size - ultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - ultra_low;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_Y, temp);
 
-	if (p_golden_setting->is_dc)
-		regval |= REG_FLD_VAL(WDMA_DRS_EN, 0);
-	else
-		regval |= REG_FLD_VAL(WDMA_DRS_EN, 1);
+	regval |= REG_FLD_VAL(WDMA_DRS_EN, 1);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_DRS_CON0, regval);
 
 	/* DISP_REG_WDMA_DRS_CON1 */
 	regval = 0;
-	temp = fifo_pseudo_size - ultra_low_UV;
+	temp = (long long)fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_U, temp);
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_ENTER_DRS_TH_V, temp);
 
@@ -757,16 +754,16 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	do_div(ultra_low_UV, 1000);
 
 	regval = 0;
-	temp = fifo_pseudo_size - ultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - ultra_low;
+	temp = (temp > 0) ? temp : 0;
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_LEAVE_DRS_TH_Y, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_DRS_CON2, regval);
 
 	regval = 0;
-	temp = fifo_pseudo_size - ultra_low_UV;
+	temp = (long long)fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_LEAVE_DRS_TH_U, temp);
 	regval |= REG_FLD_VAL(BUF_DRS_FLD_LEAVE_DRS_TH_V, temp);
 
@@ -793,74 +790,74 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 
 	/* DISP_REG_WDMA_BUF_CON11 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - preultra_low;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
-	temp = fifo_pseudo_size - ultra_low;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - ultra_low;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON11, regval);
 
 	/* DISP_REG_WDMA_BUF_CON12 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - preultra_high;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
-	temp = fifo_pseudo_size - ultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - ultra_high;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON12, regval);
 
 	/* DISP_REG_WDMA_BUF_CON13 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_low_UV;
+	temp = (long long)fifo_pseudo_size - preultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
-	temp = fifo_pseudo_size - ultra_low_UV;
+	temp = (long long)fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON13, regval);
 
 	/* DISP_REG_WDMA_BUF_CON14 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_high_UV;
+	temp = (long long)fifo_pseudo_size - preultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
-	temp = fifo_pseudo_size - ultra_high_UV;
+	temp = (long long)fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON14, regval);
 
 	/* DISP_REG_WDMA_BUF_CON15 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_low_UV;
+	temp = (long long)fifo_pseudo_size - preultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_LOW, temp);
-	temp = fifo_pseudo_size - ultra_low_UV;
+	temp = (long long)fifo_pseudo_size - ultra_low_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_LOW, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON15, regval);
 
 	/* DISP_REG_WDMA_BUF_CON16 */
 	regval = 0;
-	temp = fifo_pseudo_size - preultra_high_UV;
+	temp = (long long)fifo_pseudo_size - preultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_PRE_ULTRA_HIGH, temp);
-	temp = fifo_pseudo_size - ultra_high_UV;
+	temp = (long long)fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON_FLD_ULTRA_HIGH, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON16, regval);
@@ -868,25 +865,22 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	/* DISP_REG_WDMA_BUF_CON17 */
 	regval = 0;
 	/* TODO: SET DVFS_EN */
-	temp = fifo_pseudo_size - ultra_high;
-	temp = (temp > 0) ? temp : 16;
+	temp = (long long)fifo_pseudo_size - ultra_high;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON17_FLD_DVFS_TH_Y, temp);
+	regval |= REG_FLD_VAL(BUF_CON17_FLD_WDMA_DVFS_EN, 1);
 
-	if (p_golden_setting->is_dc)
-		regval |= REG_FLD_VAL(BUF_CON17_FLD_WDMA_DVFS_EN, 0);
-	else
-		regval |= REG_FLD_VAL(BUF_CON17_FLD_WDMA_DVFS_EN, 1);
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON17, regval);
 
 	/* DISP_REG_WDMA_BUF_CON18 */
 	regval = 0;
-	temp = fifo_pseudo_size - ultra_high_UV;
+	temp = (long long)fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON18_FLD_DVFS_TH_U, temp);
-	temp = fifo_pseudo_size - ultra_high_UV;
+	temp = (long long)fifo_pseudo_size - ultra_high_UV;
 	temp = DIV_ROUND_UP(temp, 4);
-	temp = (temp > 0) ? temp : 16;
+	temp = (temp > 0) ? temp : 1;
 	regval |= REG_FLD_VAL(BUF_CON18_FLD_DVFS_TH_V, temp);
 
 	DISP_REG_SET(cmdq, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_BUF_CON18, regval);
