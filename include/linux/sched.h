@@ -10,6 +10,8 @@ struct sched_param {
 	int sched_priority;
 };
 
+struct sched_entity;
+
 #include <asm/param.h>	/* for HZ */
 
 #include <linux/capability.h>
@@ -1117,6 +1119,24 @@ extern void partition_sched_domains(int ndoms_new, cpumask_var_t doms_new[],
 cpumask_var_t *alloc_sched_domains(unsigned int ndoms);
 void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
 
+#if defined(CONFIG_SCHED_HMP)
+struct clb_stats {
+	int ncpu;                     /* The number of CPU */
+	int ntask;                    /* The number of tasks */
+	int load_avg;                 /* Arithmetic average of task load ratio */
+	int cpu_capacity;             /* Current CPU capacity */
+	int cpu_power;                /* Max CPU capacity */
+	int acap;                     /* Available CPU capacity */
+	int scaled_acap;              /* Scaled available CPU capacity */
+	int scaled_atask;             /* Scaled available task */
+	int threshold;                /* Dynamic threshold */
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+	int nr_normal_prio_task;      /* The number of normal-prio tasks */
+	int nr_dequeuing_low_prio;    /* The number of dequeuing low-prio tasks */
+#endif
+};
+#endif
+
 bool cpus_share_cache(int this_cpu, int that_cpu);
 
 typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
@@ -1150,6 +1170,20 @@ extern void wake_up_if_idle(int cpu);
 # define SD_INIT_NAME(type)
 #endif
 
+#ifdef CONFIG_SCHED_HMP
+struct hmp_domain {
+	struct cpumask cpus;
+	struct cpumask possible_cpus;
+	struct list_head hmp_domains;
+};
+
+#ifdef CONFIG_HMP_TRACER
+struct hmp_statisic {
+	unsigned int nr_force_up;   /* The number of task force up-migration */
+	unsigned int nr_force_down; /* The number of task force down-migration */
+};
+#endif /* CONFIG_HMP_TRACER */
+#endif /* CONFIG_SCHED_HMP */
 #else /* CONFIG_SMP */
 
 struct sched_domain_attr;
@@ -1206,6 +1240,16 @@ struct sched_avg {
 	u32 util_sum, period_contrib;
 	unsigned long load_avg, util_avg;
 	unsigned long loadwop_avg, loadwop_sum;
+#ifdef CONFIG_SCHED_HMP
+	unsigned long pending_load;
+	u32 nr_pending;
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+	u32 nr_dequeuing_low_prio;
+	u32 nr_normal_prio;
+#endif
+	u64 hmp_last_up_migration;
+	u64 hmp_last_down_migration;
+#endif /* CONFIG_SCHED_HMP */
 };
 
 #ifdef CONFIG_SCHEDSTATS
@@ -3235,5 +3279,63 @@ static inline unsigned long rlimit_max(unsigned int limit)
 {
 	return task_rlimit_max(current, limit);
 }
+
+enum fbq_type { regular, remote, all };
+
+struct lb_env {
+	struct sched_domain     *sd;
+
+	struct rq               *src_rq;
+	int                     src_cpu;
+
+	int                     dst_cpu;
+	struct rq               *dst_rq;
+
+	struct cpumask          *dst_grpmask;
+	int                     new_dst_cpu;
+	enum cpu_idle_type      idle;
+	long                    imbalance;
+	/* The set of CPUs under consideration for load-balancing */
+	struct cpumask          *cpus;
+
+	unsigned int            flags;
+
+	unsigned int            loop;
+	unsigned int            loop_break;
+	unsigned int            loop_max;
+
+	enum fbq_type           fbq_type;
+	struct list_head        tasks;
+};
+
+
+#define LBF_ALL_PINNED  0x01
+#define LBF_NEED_BREAK  0x02
+#define LBF_DST_PINNED  0x04
+#define LBF_SOME_PINNED 0x08
+
+#define LB_RESET                0
+#define LB_AFFINITY             0x10
+#define LB_FORK                 0x30
+#define LB_SMP_SHIFT    16
+#define LB_SMP                  0x500000
+#define LB_HMP_SHIFT    24
+#define LB_HMP                  0x60000000
+
+extern inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq);
+extern inline struct task_struct *task_of(struct sched_entity *se);
+extern inline int throttled_lb_pair(struct task_group *tg,
+		int src_cpu, int dest_cpu);
+extern int task_hot(struct task_struct *p, struct lb_env *env);
+
+/* runqueue "owned" by this group */
+extern inline struct cfs_rq *group_cfs_rq(struct sched_entity *grp);
+extern inline struct cfs_rq *cfs_rq_of(struct sched_entity *se);
+extern struct sched_entity *__pick_next_entity(struct sched_entity *se);
+
+#ifdef CONFIG_FAIR_GROUP_SCHED
+/* An entity is a task if it doesn't "own" a runqueue */
+#define entity_is_task(se)      (!se->my_q)
+#endif
 
 #endif
