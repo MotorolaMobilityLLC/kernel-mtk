@@ -320,6 +320,29 @@ TRACE_EVENT(all_cpu_idle,
 	TP_printk("enter = %d", (int)__entry->enter)
 );
 
+TRACE_EVENT(idle_cg,
+
+	TP_PROTO(
+		int id,
+		int enable
+	),
+
+	TP_ARGS(id, enable),
+
+	TP_STRUCT__entry(
+		__field(int, id)
+		__field(int, enable)
+	),
+
+	TP_fast_assign(
+		__entry->id = id;
+		__entry->enable = enable;
+	),
+
+	TP_printk("id = %d %d", (int)__entry->id, (int)__entry->enable)
+);
+
+
 #endif /* _TRACE_MTK_IDLE_EVENT_H */
 
 /* This part must be outside protection */
