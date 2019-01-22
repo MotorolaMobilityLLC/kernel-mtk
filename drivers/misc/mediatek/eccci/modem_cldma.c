@@ -3440,7 +3440,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 			/* dump dl buffer */
 			for (j = 0; j < ccb_configs[i].dl_buff_size / ccb_configs[i].dl_page_size;  j++) {
 				ccci_dump_write(md->index, CCCI_DUMP_MEM_DUMP, 0,
-						"ul_buf%2d-page%2d %p: %08X %08X %08X %08X\n",
+						"DL buf%2d-page%2d %p: %08X %08X %08X %08X\n",
 						i, j, curr_p, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
 
 				curr_ch_p += ccb_configs[i].dl_page_size;
@@ -3450,7 +3450,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 			/* dump ul buffer */
 			for (j = 0; j < ccb_configs[i].ul_buff_size / ccb_configs[i].ul_page_size; j++) {
 				ccci_dump_write(md->index, CCCI_DUMP_MEM_DUMP, 0,
-						"dl_buf%2d-page%2d %p: %08X %08X %08X %08X\n",
+						"UL buf%2d-page%2d %p: %08X %08X %08X %08X\n",
 						i, j, curr_p, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
 
 				curr_ch_p += ccb_configs[i].ul_page_size;
