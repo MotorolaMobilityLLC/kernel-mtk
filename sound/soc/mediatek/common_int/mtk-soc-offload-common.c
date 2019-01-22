@@ -814,6 +814,7 @@ Error:
 static int mtk_compr_offload_pointer(void __user *arg)
 {
 	int ret = 0;
+
 	if (!afe_offload_service.ipiwait) {
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,

@@ -339,6 +339,7 @@ static int Audio_hdmi_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 	if (mHdmi_sidegen_control) {
 		uint32 MclkDiv = 0;
+
 		pr_warn("%s(),mHdmi_sidegen_control\n", __func__);
 
 		mtk_Hdmi_Configuration_Init((void *)ptrAudioHDMIFormat);
