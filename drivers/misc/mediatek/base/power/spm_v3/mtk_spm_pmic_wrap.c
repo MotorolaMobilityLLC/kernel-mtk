@@ -74,7 +74,7 @@ static struct pmic_wrap_setting pw = {
 	.addr = {{0, 0} },
 
 	.set[PMIC_WRAP_PHASE_ALLINONE] = {
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 		._[IDX_ALL_VSRAM_PWR_ON]      = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(0:0, 1),},
 		._[IDX_ALL_VSRAM_SHUTDOWN]    = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(0:0, 0),},
 		._[IDX_ALL_VSRAM_NORMAL]      = {PMIC_RG_LDO_VSRAM_PROC_EN_ADDR, _BITS_(1:0, 1),},

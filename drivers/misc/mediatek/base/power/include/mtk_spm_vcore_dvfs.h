@@ -34,6 +34,10 @@
 
 #include "spm_v3/mtk_spm_vcore_dvfs_mt6759.h"
 
+#elif defined(CONFIG_MACH_MT6758)
+
+#include "spm_v3/mtk_spm_vcore_dvfs_mt6758.h"
+
 #endif
 
 #endif /* _COMMON_MTK_SPM_VCORE_DVFS_H */

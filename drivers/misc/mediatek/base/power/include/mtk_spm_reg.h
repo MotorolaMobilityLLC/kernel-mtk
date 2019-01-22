@@ -26,6 +26,10 @@
 
 #include "spm_v3/mtk_spm_reg_mt6759.h"
 
+#elif defined(CONFIG_MACH_MT6758)
+
+#include "spm_v3/mtk_spm_reg_mt6758.h"
+
 #elif defined(CONFIG_MACH_MT6763)
 
 #include "spm_v4/mtk_spm_reg_mt6763.h"

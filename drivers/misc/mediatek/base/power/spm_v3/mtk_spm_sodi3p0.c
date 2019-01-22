@@ -20,7 +20,10 @@
 #include <mt-plat/mtk_secure_api.h>
 
 /* #include <mach/irqs.h> */
+/* 20170407 Owen Fix build Error*/
+#ifndef CONFIG_MACH_MT6758
 #include <mach/mtk_gpt.h>
+#endif
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
@@ -751,8 +754,11 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 	spm_sodi3_footprint_val((1 << SPM_SODI3_ENTER_WFI) |
 		(1 << SPM_SODI3_B4) | (1 << SPM_SODI3_B5) | (1 << SPM_SODI3_B6));
 
-	if (sodi3_flags & SODI_FLAG_DUMP_LP_GS)
+	/* 20170407 Owen fix build error */
+	#if 0
+	if (sodi_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3();
+	#endif
 
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
 

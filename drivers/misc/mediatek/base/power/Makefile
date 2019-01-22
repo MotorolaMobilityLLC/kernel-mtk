@@ -74,6 +74,7 @@ obj-$(CONFIG_MACH_MT6758) += ppm_v2/
 obj-$(CONFIG_MACH_MT6763) += ppm_v2/
 endif
 obj-$(CONFIG_MACH_MT6799) += ppm_v2/
+obj-$(CONFIG_MACH_MT6758) += spm_v3/
 obj-$(CONFIG_MACH_MT6759) += spm_v3/
 obj-$(CONFIG_MACH_MT6799) += spm_v3/
 obj-$(CONFIG_MACH_MT6763) += spm_v4/

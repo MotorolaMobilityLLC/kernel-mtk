@@ -34,7 +34,10 @@
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
+/* 20170407 Owen Fix build error */
+#ifndef CONFIG_MACH_MT6758
 #include <mach/mtk_gpt.h>
+#endif
 #include <mt-plat/mtk_ccci_common.h>
 #include <mtk_spm_misc.h>
 #include <mt-plat/upmu_common.h>
@@ -728,7 +731,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 
 	/* Auto-gen End */
 };
-#elif defined(CONFIG_MACH_MT6759)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 static struct pwr_ctrl dpidle_ctrl = {
 	.wake_src = WAKE_SRC_FOR_DPIDLE,
 
@@ -1240,9 +1243,11 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	spm_dpidle_notify_spm_before_wfi_async_wait();
 
 	/* Dump low power golden setting */
+	/* 20170407 Owen fix build error */
+	#if 0
 	if (operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)
 		mt_power_gs_dump_dpidle();
-
+	#endif
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_SLEEP);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)

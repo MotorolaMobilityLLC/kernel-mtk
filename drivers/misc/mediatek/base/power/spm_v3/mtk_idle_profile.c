@@ -11,7 +11,10 @@
  * GNU General Public License for more details.
  */
 #include <linux/kernel.h>
+/* Owen 20170407 Fix Build error */
+#ifndef CONFIG_MACH_MT6758
 #include <mach/mtk_gpt.h>
+#endif
 #include "mtk_cpuidle.h"
 #include "mtk_idle_internal.h"
 #include "mtk_idle_profile.h"
