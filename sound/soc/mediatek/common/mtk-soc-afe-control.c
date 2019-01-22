@@ -69,6 +69,11 @@
 * #include <mt-plat/mt_boot_common.h>
 * #include <mt-plat/mt_lpae.h>
 */
+#ifdef CONFIG_MTK_AUXADC_INTF
+#include <mt-plat/mtk_auxadc_intf.h>
+#else
+#include <mt-plat/upmu_common.h>
+#endif
 
 #include <linux/ftrace.h>
 
@@ -2968,6 +2973,19 @@ int irq_update_user(const void *_user,
 	return 0;
 }
 /* IRQ Manager END*/
+
+int audio_get_auxadc_value(void)
+{
+#ifdef _GIT318_PMIC_READY
+#ifdef CONFIG_MTK_AUXADC_INTF
+	return pmic_get_auxadc_value(AUXADC_LIST_HPOFS_CAL);
+#else
+	return PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 20, 0);
+#endif
+#else
+	return 0;
+#endif
+}
 
 /* api for other module */
 static int irq_from_ext_module;

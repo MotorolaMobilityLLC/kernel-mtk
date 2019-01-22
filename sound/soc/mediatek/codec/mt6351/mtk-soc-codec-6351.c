@@ -63,6 +63,7 @@
 #include "mtk-auddrv-gpio.h"
 
 #include "mtk-soc-analog-type.h"
+#include "mtk-soc-codec-63xx.h"
 #ifdef _GIT318_READY
 #include <mtk_clkbuf_ctl.h>
 #endif
@@ -1017,6 +1018,26 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		TurnOffDacPower();
 	}
 	return true;
+}
+
+void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param)
+{
+	hpdet_param->auxadc_upper_bound = 4050; /* should little lower than auxadc max resolution */
+	hpdet_param->dc_Step = 100; /* Dc ramp up and ramp down step */
+	hpdet_param->dc_Phase0 = 200; /* Phase 0 : high impedance with worst resolution */
+	hpdet_param->dc_Phase1 = 2200; /* Phase 1 : median impedance with normal resolution */
+	hpdet_param->dc_Phase2 = 8800; /* Phase 2 : low impedance with better resolution */
+	hpdet_param->resistance_first_threshold = 150; /* Resistance Threshold of phase 2 and phase 1 */
+	hpdet_param->resistance_second_threshold = 650; /* Resistance Threshold of phase 1 and phase 0 */
+}
+int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff)
+{
+	/* The formula is from DE programming guide */
+	/* should be mantain by pmic owner */
+	/* R = V /I */
+	/* V = auxDiff * (1800mv /auxResolution)  /TrimBufGain */
+	/* I =  pcmOffset * DAC_constant * Gsdm * Gibuf */
+	return (28800000 / pcm_offset * aux_diff + 4051) / 8102;
 }
 
 void setHpGainZero(void)
@@ -2910,25 +2931,6 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	return 0;
 }
 
-static uint32 mHp_Impedance = 32;
-
-static int Audio_Hp_Impedance_Get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
-{
-	pr_aud("Audio_Hp_Impedance_Get = %d\n", mHp_Impedance);
-	ucontrol->value.integer.value[0] = mHp_Impedance;
-	return 0;
-
-}
-
-static int Audio_Hp_Impedance_Set(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
-{
-	mHp_Impedance = ucontrol->value.integer.value[0];
-	pr_aud("%s Audio_Hp_Impedance_Set = 0x%x\n", __func__, mHp_Impedance);
-	return 0;
-}
-
 static int Aud_Clk_Buf_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_aud("\%s n", __func__);
@@ -3093,9 +3095,6 @@ static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 	SOC_ENUM_EXT("Receiver_Speaker_Switch", Audio_DL_Enum[11],
 		     Receiver_Speaker_Switch_Get,
 		     Receiver_Speaker_Switch_Set),
-	SOC_SINGLE_EXT("Audio HP Impedance", SND_SOC_NOPM, 0, 512, 0,
-		       Audio_Hp_Impedance_Get,
-		       Audio_Hp_Impedance_Set),
 	SOC_ENUM_EXT("PMIC_REG_CLEAR", Audio_DL_Enum[12], PMIC_REG_CLEAR_Get, PMIC_REG_CLEAR_Set),
 	SOC_ENUM_EXT("Audio_ANC_Switch", Audio_DL_Enum[0], Audio_ANC_Get, Audio_ANC_Set),
 };

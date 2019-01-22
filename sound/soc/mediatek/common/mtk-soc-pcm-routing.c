@@ -85,7 +85,6 @@ static int mtk_afe_routing_probe(struct platform_device *pdev);
 static int mtk_routing_pcm_close(struct snd_pcm_substream *substream);
 static int mtk_asoc_routing_pcm_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_afe_routing_platform_probe(struct snd_soc_platform *platform);
-/* extern int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd); */
 
 static int mDac_Sinegen = 27;	/* "OFF" */
 static const char * const DAC_DL_SINEGEN[] = {
@@ -585,31 +584,6 @@ static int Audio_Mode_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 	return 0;
 }
 
-/* static struct snd_dma_buffer *Dl1_Playback_dma_buf  = NULL; */
-#ifndef CONFIG_FPGA_EARLY_PORTING
-static int GetAudioTrimOffsetAverage(int *buffer_value, int trim_num)
-{
-	int i, j, tmp;
-
-	for (i = 0; i < trim_num+1; i++) {
-		for (j = i+1; j < trim_num+2; j++) {
-			if (buffer_value[i] > buffer_value[j]) {
-				tmp = buffer_value[i];
-				buffer_value[i] = buffer_value[j];
-				buffer_value[j] = tmp;
-			}
-		}
-	}
-
-	tmp = 0;
-	for (i = 0; i <  trim_num; i++)
-		tmp = tmp + buffer_value[i+1];
-
-	tmp = (tmp + 2) / 4;
-	return tmp;
-}
-#endif
-
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
 
 static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
@@ -631,134 +605,96 @@ static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
 
 #endif
 
-static void GetAudioTrimOffset(int channels)
+#ifdef CONFIG_FPGA_EARLY_PORTING
+static int getTrimBufferDiff(int channels)
 {
-#ifndef CONFIG_FPGA_EARLY_PORTING
-	const int trim_num = 4;
-	const int off_counter = 20, on_counter = 20, Const_DC_OFFSET = 2048;
-	int Buffer_on_value = 0, Buffer_offl_value = 0, Buffer_offr_value = 0;
-	int Buffer_tmp[6];
-	int i;
+	int diffValue = 0, onValue = 0, offValue = 0;
 
-	pr_warn("%s channels = %d\n", __func__, channels);
+	if (channels != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channels != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support this channels = %d\n", __func__, channels);
+		return 0;
+	}
+
+	/* Buffer Off and Get Auxadc value */
+	OpenTrimBufferHardware(true); /* buffer off setting */
+	setHpGainZero();
+
+	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	offValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+
+	OpenTrimBufferHardware(false);
+
+	/* Buffer On and Get Auxadc values */
+	OpenAnalogHeadphone(true); /* buffer on setting */
+	setHpGainZero();
+
+	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
+	setOffsetTrimMux(channels);
+	setOffsetTrimBufferGain(3); /* TrimBufferGain 18db */
+	EnableTrimbuffer(true);
+	usleep_range(1 * 1000, 10 * 1000);
+
+	onValue = audio_get_auxadc_value();
+
+	EnableTrimbuffer(false);
+	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
+	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
+
+	OpenAnalogHeadphone(false);
+
+	diffValue = onValue - offValue;
+	pr_debug("#diffValue(%d), onValue(%d), offValue(%d)\n", diffValue, onValue, offValue);
+
+	return diffValue;
+}
+#endif
+
+static int GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX channel)
+{
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	const int kTrimTimes = 20;
+	int counter = 0, averageOffset = 0;
+	int trimOffset[kTrimTimes];
+
+	if (channel != AUDIO_OFFSET_TRIM_MUX_HPL &&
+	    channel != AUDIO_OFFSET_TRIM_MUX_HPR){
+		pr_warn("%s Not support channel(%d)\n", __func__, channel);
+		return 0;
+	}
+
+	pr_warn("%s channels = %d\n", __func__, channel);
+
 	/* open headphone and digital part */
 	AudDrv_Clk_On();
 	AudDrv_Emi_Clk_On();
 	OpenAfeDigitaldl1(true);
-	switch (channels) {
-	case AUDIO_OFFSET_TRIM_MUX_HPL:
-	case AUDIO_OFFSET_TRIM_MUX_HPR:{
-			OpenTrimBufferHardware(true);
-			setHpGainZero();
-			break;
-		}
-	default:
-		break;
-	}
 
-	/* Get HPL off offset */
-	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
-	/*msleep(1); */
-	usleep_range(1 * 1000, 20 * 1000);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPL);
-	setOffsetTrimBufferGain(3);
-	EnableTrimbuffer(true);
-	/*msleep(1); */
-	usleep_range(1 * 1000, 20 * 1000);
-	for (i = 0; i < (trim_num + 2); i++) {
-		Buffer_tmp[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
-		/* pr_warn("#%d Buffer_off_value_L = %d\n", i, Buffer_tmp[i]); */
-	}
-	Buffer_offl_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
-	pr_warn("[Average %d times] Buffer_off_value_L = %d\n", trim_num, Buffer_offl_value);
-	EnableTrimbuffer(false);
+	for (counter = 0; counter < kTrimTimes; counter++)
+		trimOffset[counter] = getTrimBufferDiff(channel);
 
-	/* Get HPR off offset */
-	SetSdmLevel(AUDIO_SDM_LEVEL_MUTE);
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
-	setOffsetTrimBufferGain(3);
-	EnableTrimbuffer(true);
-	/*msleep(1); */
-	usleep_range(1 * 1000, 20 * 1000);
-	for (i = 0; i < (trim_num + 2); i++) {
-		Buffer_tmp[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
-		/* pr_warn("#%d Buffer_off_value_R = %d\n", i, Buffer_tmp[i]); */
-	}
-	Buffer_offr_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
-	pr_warn("[Average %d times] Buffer_off_value_R = %d\n", trim_num, Buffer_offr_value);
-	EnableTrimbuffer(false);
-
-	switch (channels) {
-	case AUDIO_OFFSET_TRIM_MUX_HPL:
-	case AUDIO_OFFSET_TRIM_MUX_HPR:{
-			OpenTrimBufferHardware(false);
-			break;
-		}
-	default:
-		break;
-	}
-
-
-	/* calibrate HPL offset trim */
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPL);
-	setOffsetTrimBufferGain(3);
-	/* EnableTrimbuffer(true); */
-	/* msleep(5); */
-
-	switch (channels) {
-	case AUDIO_OFFSET_TRIM_MUX_HPL:
-	case AUDIO_OFFSET_TRIM_MUX_HPR:{
-			OpenAnalogHeadphone(true);
-			setHpGainZero();
-			break;
-		}
-	default:
-		break;
-	}
-	EnableTrimbuffer(true);
-
-	/*msleep(10); */
-	usleep_range(10 * 1000, 20 * 1000);
-	for (i = 0; i < (trim_num + 2); i++) {
-		Buffer_tmp[i]  = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, on_counter, 0);
-		/* pr_warn("#%d Buffer_on_value_L = %d\n", i, Buffer_tmp[i]); */
-	}
-	Buffer_on_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
-	mHplOffset = Buffer_on_value - Buffer_offl_value + Const_DC_OFFSET;
-	pr_warn("[Average %d times] Buffer_on_value_L = %d, Buffer_off_value_L = %d, mHplOffset = %d\n",
-			trim_num, Buffer_on_value, Buffer_offl_value, mHplOffset);
-
-	EnableTrimbuffer(false);
-
-	/* calibrate HPL offset trim */
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
-	setOffsetTrimBufferGain(3);
-	EnableTrimbuffer(true);
-	/*msleep(1);    */
-	usleep_range(10 * 1000, 20 * 1000);
-	for (i = 0; i < (trim_num + 2); i++) {
-		Buffer_tmp[i]  = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, on_counter, 0);
-		/* pr_warn("#%d Buffer_on_value_R = %d\n", i, Buffer_tmp[i]); */
-	}
-	Buffer_on_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
-	mHprOffset = Buffer_on_value - Buffer_offr_value + Const_DC_OFFSET;
-	pr_warn("[Average %d times] Buffer_on_value_R = %d, Buffer_off_value_R = %d, mHprOffset = %d\n",
-			trim_num, Buffer_on_value, Buffer_offr_value, mHprOffset);
-
-	switch (channels) {
-	case AUDIO_OFFSET_TRIM_MUX_HPL:
-	case AUDIO_OFFSET_TRIM_MUX_HPR:
-		OpenAnalogHeadphone(false);
-		break;
-	}
-
-	setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND);
-	EnableTrimbuffer(false);
 	OpenAfeDigitaldl1(false);
-
-	SetSdmLevel(AUDIO_SDM_LEVEL_NORMAL);
 	AudDrv_Emi_Clk_Off();
 	AudDrv_Clk_Off();
+
+	for (counter = 0; counter < kTrimTimes; counter++)
+		averageOffset = averageOffset + trimOffset[counter];
+
+	averageOffset = (averageOffset + (kTrimTimes / 2)) / kTrimTimes;
+	pr_warn("[Average %d times] averageOffset = %d\n", kTrimTimes, averageOffset);
+
+	return averageOffset;
+#else
+	return 0;
 #endif
 }
 
@@ -768,11 +704,9 @@ static int Audio_Hpl_Offset_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	pr_warn("%s\n", __func__);
 	AudDrv_Clk_On();
 	if (mHplCalibrated == false) {
-		GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX_HPL);
-		SetHprTrimOffset(mHprOffset);
+		mHplOffset = GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX_HPL);
 		SetHplTrimOffset(mHplOffset);
 		mHplCalibrated = true;
-		mHprCalibrated = true;
 	}
 	ucontrol->value.integer.value[0] = mHplOffset;
 	AudDrv_Clk_Off();
@@ -800,10 +734,8 @@ static int Audio_Hpr_Offset_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	pr_warn("%s\n", __func__);
 	AudDrv_Clk_On();
 	if (mHprCalibrated == false) {
-		GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX_HPR);
+		mHprOffset = GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX_HPR);
 		SetHprTrimOffset(mHprOffset);
-		SetHplTrimOffset(mHplOffset);
-		mHplCalibrated = true;
 		mHprCalibrated = true;
 	}
 	ucontrol->value.integer.value[0] = mHprOffset;
