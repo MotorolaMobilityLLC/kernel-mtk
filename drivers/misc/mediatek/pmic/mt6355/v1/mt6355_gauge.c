@@ -516,12 +516,11 @@ static void fgauge_read_RTC_boot_status(void)
 static int fgauge_initial(struct gauge_device *gauge_dev)
 {
 	fgauge_read_RTC_boot_status();
+#if defined(CONFIG_MTK_DISABLE_GAUGE)
+#else
+	pmic_set_register_value(PMIC_FG_SON_SLP_EN, 0);
+#endif
 
-	/* workaround , nafg interrupt does not work in KPOC */
-	if (bat_is_kpoc() == true) {
-		pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN, 0);
-		pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN, 0);
-	}
 	return 0;
 }
 
