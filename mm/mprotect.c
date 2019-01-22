@@ -297,6 +297,7 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
 			   vma->vm_userfaultfd_ctx, vma_get_anon_name(vma));
 	if (*pprev) {
 		vma = *pprev;
+		VM_WARN_ON((vma->vm_flags ^ newflags) & ~VM_SOFTDIRTY);
 		goto success;
 	}
 
