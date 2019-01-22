@@ -109,8 +109,11 @@ static int cluster_idx_map[NF_CPU] = {
 
 int cluster_idx_get(int cpu)
 {
-	if (!(cpu >= 0 && cpu < NF_CPU))
-		return -1;
+	if (!(cpu >= 0 && cpu < NF_CPU)) {
+		WARN_ON(!(cpu >= 0 && cpu < NF_CPU));
+
+		return 0;
+	}
 
 	return cluster_idx_map[cpu];
 }
