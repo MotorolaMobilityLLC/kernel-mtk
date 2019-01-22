@@ -61,6 +61,7 @@
 #include <linux/scatterlist.h>
 #include <linux/suspend.h>
 
+#include <mt-plat/mtk_boot.h>
 #include <musb_core.h>
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"

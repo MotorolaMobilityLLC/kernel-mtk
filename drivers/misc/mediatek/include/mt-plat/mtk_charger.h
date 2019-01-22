@@ -10,8 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-#include <mt-plat/charger_type.h>
-#include <mt-plat/charger_class.h>
 
 #ifndef __MTK_CHARGER_H__
 #define __MTK_CHARGER_H__
@@ -26,6 +24,8 @@
 #include <linux/spinlock.h>
 #include <mach/mtk_charger_init.h>
 
+#include <mt-plat/charger_type.h>
+#include <mt-plat/charger_class.h>
 
 /* charger_manager notify charger_consumer */
 enum {

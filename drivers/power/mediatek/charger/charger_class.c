@@ -194,6 +194,14 @@ int charger_dev_disable_powerpath(struct charger_device *charger_dev)
 	return 0;
 }
 
+int charger_dev_get_mivr_state(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->get_mivr_state)
+		return charger_dev->ops->get_mivr_state(charger_dev);
+
+	return 0;
+}
+
 int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, int uv)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->send_ta20_current_pattern)

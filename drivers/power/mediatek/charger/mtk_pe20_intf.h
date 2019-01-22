@@ -33,6 +33,8 @@ struct mtk_pe20 {
 	bool is_enabled;
 	pe20_profile_t profile[10];
 
+	int vbat_orig; /* Measured VBAT before cable impedance measurement */
+	int aicr_cable_imp; /* AICR to set after cable impedance measurement */
 };
 
 extern int mtk_pe20_init(struct charger_manager *pinfo);

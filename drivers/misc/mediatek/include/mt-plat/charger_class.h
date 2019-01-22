@@ -73,6 +73,7 @@ struct charger_ops {
 	int (*set_ta20_reset)(struct charger_device *);
 
 	int (*set_mivr)(struct charger_device *, int uv);
+	int (*get_mivr_state)(struct charger_device *);
 
 	/* enable/disable powerpath */
 	int (*enable_powerpath)(struct charger_device *);
@@ -141,6 +142,7 @@ extern int charger_dev_dump_registers(struct charger_device *charger_dev);
 extern int charger_dev_enable_vbus_ovp(struct charger_device *charger_dev);
 extern int charger_dev_disable_vbus_ovp(struct charger_device *charger_dev);
 extern int charger_dev_set_mivr(struct charger_device *charger_dev, int uv);
+extern int charger_dev_get_mivr_state(struct charger_device *charger_dev);
 extern int charger_dev_send_ta20_current_pattern(struct charger_device *charger_dev, int uv);
 extern int charger_dev_set_ta20_reset(struct charger_device *charger_dev);
 extern int charger_dev_set_pe20_efficiency_table(struct charger_device *charger_dev);
