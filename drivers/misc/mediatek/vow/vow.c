@@ -586,11 +586,13 @@ static bool vow_service_SetVBufAddr(unsigned long arg)
 	vowserv.voicedata_user_addr = vowserv.vow_info_apuser[1];
 	vowserv.voicedata_user_size = vowserv.vow_info_apuser[2];
 	vowserv.voicedata_user_return_size_addr = vowserv.vow_info_apuser[3];
-	vowserv.voicedata_kernel_ptr = vmalloc(vowserv.voicedata_user_size);
 
-	VOW_ASSERT(vowserv.voicedata_kernel_ptr != NULL);
-
-	return true;
+	if (vowserv.voicedata_user_size > 0) {
+		vowserv.voicedata_kernel_ptr = vmalloc(vowserv.voicedata_user_size);
+		return true;
+	} else {
+		return false;
+	}
 }
 
 static bool vow_service_Enable(void)
