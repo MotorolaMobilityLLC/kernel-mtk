@@ -132,7 +132,7 @@ typedef struct {
 static int g_RAP_pull_up_R = 390000;	/* 390K,pull up resister */
 static int g_TAP_over_critical_low = 4251000;	/* base on 100K NTC temp default value -40 deg */
 static int g_RAP_pull_up_voltage = 1800;	/* 1.8V ,pull up voltage */
-static int g_RAP_ntc_table = 6;	/* default is //NTCG104EF104F(100K) */
+static int g_RAP_ntc_table = 7;	/* default is NCP15WF104F03RC(100K) */
 static int g_RAP_ADC_channel = AUX_IN0_NTC;	/* default is 0 */
 #else
 static int g_RAP_pull_up_R = 39000;	/* 39K,pull up resister */

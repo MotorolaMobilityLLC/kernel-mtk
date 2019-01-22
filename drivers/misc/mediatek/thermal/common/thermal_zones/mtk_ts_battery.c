@@ -164,10 +164,10 @@ static int get_hw_battery_temp(void)
 #else
 	/* Phone */
 
-/* TO-DO: Use CONFIG MT6799 or GM3.0 */
-#if defined(CONFIG_MACH_MT6799)
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
 	ret = battery_get_bat_temperature();
 #else
+	/* MTK_GAUGE_VERSION = 10 or 20 */
 	ret = read_tbat_value();
 #endif
 	ret = ret * 10;
