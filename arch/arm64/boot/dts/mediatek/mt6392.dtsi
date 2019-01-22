@@ -196,8 +196,6 @@
 				regulator-min-microvolt = <1240000>;
 				regulator-max-microvolt = <1390000>;
 				regulator-enable-ramp-delay = <264>;
-				regulator-always-on;
-				regulator-boot-on;
 			};
 
 			mt6392_vio18_reg: ldo_vio18 {
