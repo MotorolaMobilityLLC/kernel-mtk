@@ -37,6 +37,7 @@
 #ifndef CONFIG_USB_VBUS_GPIO
 #if CONFIG_MTK_GAUGE_VERSION == 30
 #include <mt-plat/mtk_battery.h>
+#include <mtk_gauge_time_service.h>
 #else
 #include <mt-plat/battery_meter.h>
 #endif

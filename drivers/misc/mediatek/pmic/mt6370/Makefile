@@ -1,6 +1,7 @@
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
 subdir-ccflags-y += -I$(srctree)/drivers/power/mediatek/charger
+subdir-ccflags-y += -I$(srctree)/drivers/power/mediatek/misc/
 else
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/mt6757
 endif

@@ -71,5 +71,14 @@ extern signed int battery_get_ibus(void);
 extern signed int battery_get_vbus(void);
 extern signed int battery_get_bat_avg_current(void);
 
+/* legacy API */
+extern bool gauge_get_current(int *bat_current);
+extern signed int battery_meter_get_battery_current(void);
+extern bool battery_meter_get_battery_current_sign(void);
+extern signed int battery_meter_get_charger_voltage(void);
+
+/* GM25 Plug out API */
+int en_intr_VBATON_UNDET(int en);
+int reg_VBATON_UNDET(void (*callback)(void));
 
 #endif /* End of _FUEL_GAUGE_GM_30_H */
