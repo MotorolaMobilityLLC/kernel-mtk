@@ -2360,6 +2360,10 @@ static VOID wlanRemove(VOID)
 		return;
 	}
 
+#if WLAN_INCLUDE_PROC
+	procRemoveProcfs();
+#endif /* WLAN_INCLUDE_PROC */
+
 	prAdapter = prGlueInfo->prAdapter;
 
 #if CFG_ENABLE_BT_OVER_WIFI
@@ -2429,11 +2433,6 @@ static VOID wlanRemove(VOID)
 	if (prGlueInfo->rBowInfo.fgIsRegistered)
 		glUnregisterAmpc(prGlueInfo);
 #endif
-
-	/* 4 <3> Remove /proc filesystem. */
-#if WLAN_INCLUDE_PROC
-	procRemoveProcfs();
-#endif /* WLAN_INCLUDE_PROC */
 
 #if (CFG_MET_PACKET_TRACE_SUPPORT == 1)
 	kalMetRemoveProcfs();
