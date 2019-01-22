@@ -283,7 +283,8 @@ int spm_vcorefs_pwarp_cmd(void)
 
 	/* 0.7V opp */
 	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_3, 0,
-			vcore_uv_to_pmic(get_vcore_opp_volt(VCORE_OPP_1)));
+			vcore_uv_to_pmic(get_vcore_opp_volt(VCORE_OPP_3)));
+
 	/* 0.8V opp */
 	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_3, 1,
 			vcore_uv_to_pmic(get_vcore_opp_volt(VCORE_OPP_0)));

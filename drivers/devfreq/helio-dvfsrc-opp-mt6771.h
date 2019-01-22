@@ -33,6 +33,8 @@ enum vcore_opp {
 	VCORE_OPP_UNREQ = -1,
 	VCORE_OPP_0 = 0,		/* 0.8V */
 	VCORE_OPP_1,			/* 0.7V */
+	VCORE_OPP_2,			/* 0.7V */
+	VCORE_OPP_3,			/* 0.7V */
 	VCORE_OPP_NUM,
 };
 

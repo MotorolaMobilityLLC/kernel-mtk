@@ -30,12 +30,23 @@ __weak int get_ddr_type(void) { return TYPE_LPDDR4X; }
 /* SOC v1 Voltage (10uv)*/
 static unsigned int vcore_opp_L4_2CH[VCORE_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 	{ 800000, 800000 },
-	{ 725000, 700000 }
+	{ 725000, 700000 },
+	{ 725000, 700000 },
+	{ 725000, 700000 },
+};
+
+static unsigned int vcore_opp_L4_2CH_CASE2[VCORE_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
+	{ 800000, 800000 },
+	{ 800000, 800000 },
+	{ 725000, 700000 },
+	{ 725000, 700000 },
 };
 
 static unsigned int vcore_opp_L3_1CH[VCORE_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 	{ 800000, 800000 },
-	{ 725000, 700000 }
+	{ 800000, 800000 },
+	{ 725000, 700000 },
+	{ 725000, 700000 },
 };
 
 int vcore_dvfs_to_vcore_opp[] = {
@@ -109,8 +120,7 @@ static unsigned int update_vcore_opp_uv(unsigned int opp, unsigned int vcore_uv)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
-		if (opp == spm_get_vcore_opp(i))
-			dvfsrc_update_sspm_vcore_opp_table(i, get_vcore_opp_volt(opp));
+		dvfsrc_update_sspm_vcore_opp_table(i, get_vcore_opp_volt(i));
 #endif
 
 	ret = spm_vcorefs_pwarp_cmd();
@@ -139,17 +149,26 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 		return;
 	}
 
-	if (ddr_type == TYPE_LPDDR4X) {
+	if (ddr_type == SPMFW_LP4X_2CH_3200) {
 		vcore_opp = &vcore_opp_L4_2CH[0];
-
 		vcore_opp_efuse_idx[0] = 0; /* 0.8V, no corner tightening*/
 		vcore_opp_efuse_idx[1] = soc_efuse & mask; /* 0.7V */
-	} else if (ddr_type == TYPE_LPDDR3) {
+		vcore_opp_efuse_idx[2] = soc_efuse & mask; /* 0.7V */
+		vcore_opp_efuse_idx[3] = soc_efuse & mask; /* 0.7V */
+	} else if (ddr_type == SPMFW_LP4X_2CH_3733) {
+		vcore_opp = &vcore_opp_L4_2CH_CASE2[0];
+		vcore_opp_efuse_idx[0] = 0; /* 0.8V, no corner tightening*/
+		vcore_opp_efuse_idx[1] = 0; /* 0.8V, no corner tightening*/
+		vcore_opp_efuse_idx[2] = soc_efuse & mask; /* 0.7V */
+		vcore_opp_efuse_idx[3] = soc_efuse & mask; /* 0.7V */
+	} else if (ddr_type == SPMFW_LP3_1CH_1866) {
 		vcore_opp = &vcore_opp_L3_1CH[0];
 		vcore_opp_efuse_idx[0] = 0; /* 0.8V, no corner tightening*/
-		vcore_opp_efuse_idx[1] = soc_efuse & mask; /* 0.7V */
+		vcore_opp_efuse_idx[1] = 0; /* 0.8V, no corner tightening*/
+		vcore_opp_efuse_idx[2] = soc_efuse & mask; /* 0.7V */
+		vcore_opp_efuse_idx[3] = soc_efuse & mask; /* 0.7V */
 	} else {
-		pr_info("WRONG DRAM TYPE: %d\n", ddr_type);
+		pr_info("WRONG SPM DRAM TYPE: %d\n", ddr_type);
 		return;
 	}
 
@@ -250,7 +269,7 @@ int vcore_opp_init(void)
 	if (ret)
 		return ret;
 
-	build_vcore_opp_table(get_ddr_type(), get_soc_efuse());
+	build_vcore_opp_table(__spm_get_dram_type(), get_soc_efuse());
 
 	return 0;
 }
