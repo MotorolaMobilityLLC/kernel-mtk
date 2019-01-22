@@ -2724,6 +2724,7 @@ static bool mtk_nand_dma_read_data(struct mtd_info *mtd, u8 *buf, u32 length)
 					timer_timeout.tv_usec -= 1000000;
 					timer_timeout.tv_sec += 1;
 				}
+				poll_retry++;
 			} else {
 				dump_nfi();
 				ASSERT(0);
