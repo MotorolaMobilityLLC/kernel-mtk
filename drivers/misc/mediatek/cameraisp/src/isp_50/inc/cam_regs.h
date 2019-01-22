@@ -51,6 +51,11 @@
 #define UFEO_ERR_ST        (1L<<27)
 #define PDO_ERR_ST          (1L<<28)
 #define DMA_ERR_ST          (1L<<29)
+/* err status_2 */
+#define FLKO_ERR_ST          (1L<<16)
+#define LMVO_ERR_ST          (1L<<17)
+#define RSSO_ERR_ST          (1L<<18)
+
 /**
  *    CAM DMA done status
  */
@@ -118,6 +123,9 @@
  *    IRQ Warning Mask
  */
 #define INT_ST_MASK_CAM_WARN    (\
+				 PDO_ERR_ST |\
+				 UFGO_ERR_ST |\
+				 UFEO_ERR_ST |\
 				 RRZO_ERR_ST |\
 				 AFO_ERR_ST |\
 				 IMGO_ERR_ST |\
@@ -126,6 +134,11 @@
 				 LCSO_ERR_ST |\
 				 BNR_ERR_ST |\
 				 LSC_ERR_ST)
+
+#define INT_ST_MASK_CAM_WARN_2    (\
+				 FLKO_ERR_ST |\
+				 RSSO_ERR_ST |\
+				 LMVO_ERR_ST)
 
 /**
  *    IRQ Error Mask
@@ -318,6 +331,7 @@
 
 /* CAMSV */
 #define CAMSV_REG_MODULE_EN(module)  (isp_devs[module].regs + 0x0510)
+#define CAMSV_REG_INT_EN(module)    (isp_devs[module].regs + 0x0518)
 #define CAMSV_REG_INT_STATUS(module)  (isp_devs[module].regs + 0x051C)
 #define CAMSV_REG_SW_CTL(module)  (isp_devs[module].regs + 0x0520)
 #define CAMSV_REG_FBC_IMGO_CTL1(module)  (isp_devs[module].regs + 0x0110)
