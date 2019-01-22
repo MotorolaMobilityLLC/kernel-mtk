@@ -200,7 +200,8 @@ static unsigned int g_cur_opp_idx;
 static unsigned int g_cur_opp_cond_idx;
 static unsigned int g_keep_opp_freq;
 static unsigned int g_keep_opp_freq_idx;
-static unsigned int g_fixed_vsram_volt_idx;
+static unsigned int g_fixed_vsram_volt;
+static unsigned int g_fixed_vsram_volt_threshold;
 static unsigned int g_fixed_freq;
 static unsigned int g_fixed_volt;
 static unsigned int g_max_limited_idx;
@@ -422,16 +423,17 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	if (enable == 1) {
 		__mt_gpufreq_bucks_enable();
 		g_volt_enable_state = true;
-		__mt_gpufreq_kick_pbm(1);
-		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is on\n", __func__);
-	} else if (enable == 0)  {
 		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
 		/* ensure time interval of buck_on -> buck_off is at least 1ms */
 		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
+		__mt_gpufreq_kick_pbm(1);
+		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is on\n", __func__);
+	} else if (enable == 0)  {
 		__mt_gpufreq_bucks_disable();
+		g_volt_enable_state = false;
+		/* [MT6358] srclken high : 1ms, srclken low : 1T of 32K */
 		/* ensure time interval of buck_off -> buck_on is at least 1ms */
 		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
-		g_volt_enable_state = false;
 		__mt_gpufreq_kick_pbm(0);
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is off\n", __func__);
 	}
@@ -1414,13 +1416,19 @@ static void __mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_ne
 			__func__, volt_new, volt_old, vsram_volt_new, vsram_volt_old);
 
 	if (volt_new > volt_old) {
-		__mt_gpufreq_vsram_gpu_volt_switch(VOLT_RISING, g_vsram_sfchg_rrate, vsram_volt_old, vsram_volt_new);
+		if (vsram_volt_new > vsram_volt_old) {
+			__mt_gpufreq_vsram_gpu_volt_switch(VOLT_RISING, g_vsram_sfchg_rrate,
+					vsram_volt_old, vsram_volt_new);
+		}
 		__mt_gpufreq_vgpu_volt_switch(VOLT_RISING, g_vgpu_sfchg_rrate, volt_old, volt_new);
 		gpufreq_pr_debug("@%s: [RISING] vgpu_volt = %d, vsram_gpu_volt = %d\n", __func__,
 				regulator_get_voltage(g_pmic->reg_vgpu), regulator_get_voltage(g_pmic->reg_vsram_gpu));
-	} else {
+	} else if (volt_new < volt_old) {
 		__mt_gpufreq_vgpu_volt_switch(VOLT_FALLING, g_vgpu_sfchg_frate, volt_old, volt_new);
-		__mt_gpufreq_vsram_gpu_volt_switch(VOLT_FALLING, g_vsram_sfchg_frate, vsram_volt_old, vsram_volt_new);
+		if (vsram_volt_new < vsram_volt_old) {
+			__mt_gpufreq_vsram_gpu_volt_switch(VOLT_FALLING, g_vsram_sfchg_frate,
+					vsram_volt_old, vsram_volt_new);
+		}
 		gpufreq_pr_debug("@%s: [FALLING] vgpu_volt = %d, vsram_gpu_volt = %d\n", __func__,
 				regulator_get_voltage(g_pmic->reg_vgpu), regulator_get_voltage(g_pmic->reg_vsram_gpu));
 	}
@@ -1457,6 +1465,10 @@ static void __mt_gpufreq_vsram_gpu_volt_switch(enum g_volt_switch_enum switch_wa
 	unsigned int max_diff, steps;
 
 	max_diff = (switch_way == VOLT_RISING) ? (volt_new - volt_old) : (volt_old - volt_new);
+
+	if (max_diff == 0)
+		return;
+
 	steps = (max_diff / DELAY_FACTOR) + 1;
 
 	regulator_set_voltage(g_pmic->reg_vsram_gpu, volt_new * 10, VSRAM_GPU_MAX_VOLT * 10 + 125);
@@ -1475,6 +1487,10 @@ static void __mt_gpufreq_vgpu_volt_switch(enum g_volt_switch_enum switch_way, un
 	unsigned int max_diff, steps;
 
 	max_diff = (switch_way == VOLT_RISING) ? (volt_new - volt_old) : (volt_old - volt_new);
+
+	if (max_diff == 0)
+		return;
+
 	steps = (max_diff / DELAY_FACTOR) + 1;
 
 	regulator_set_voltage(g_pmic->reg_vgpu, volt_new * 10, VGPU_MAX_VOLT * 10 + 125);
@@ -1818,10 +1834,13 @@ static unsigned int __mt_gpufreq_get_vsram_volt_by_target_volt(unsigned int volt
 {
 	unsigned int target_vsram;
 
-	if (volt > g_opp_table[g_fixed_vsram_volt_idx].gpufreq_volt)
+	if (volt > g_fixed_vsram_volt_threshold)
 		target_vsram = volt + 10000;
 	else
-		target_vsram = g_opp_table[g_fixed_vsram_volt_idx].gpufreq_vsram;
+		target_vsram = g_fixed_vsram_volt;
+
+	gpufreq_pr_debug("@%s: g_fixed_vsram_volt_threshold = %d, volt = %d, target_vsram = %d\n",
+			__func__, g_fixed_vsram_volt_threshold, volt, target_vsram);
 	return target_vsram;
 }
 
@@ -2266,13 +2285,16 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	/* setup OPP table by device ID */
 	if (g_segment_id == MT6771_SEGMENT_1) {
 		__mt_gpufreq_setup_opp_table(g_opp_table_segment1, ARRAY_SIZE(g_opp_table_segment1));
-		g_fixed_vsram_volt_idx = 5;
+		g_fixed_vsram_volt = SEG1_GPU_DVFS_VSRAM15;
+		g_fixed_vsram_volt_threshold = SEG1_GPU_DVFS_VOLT5;
 	} else if (g_segment_id == MT6771_SEGMENT_2) {
 		__mt_gpufreq_setup_opp_table(g_opp_table_segment2, ARRAY_SIZE(g_opp_table_segment2));
-		g_fixed_vsram_volt_idx = 3;
+		g_fixed_vsram_volt = SEG2_GPU_DVFS_VSRAM15;
+		g_fixed_vsram_volt_threshold = SEG2_GPU_DVFS_VOLT3;
 	} else if (g_segment_id == MT6771_SEGMENT_3) {
 		__mt_gpufreq_setup_opp_table(g_opp_table_segment3, ARRAY_SIZE(g_opp_table_segment3));
-		g_fixed_vsram_volt_idx = 1;
+		g_fixed_vsram_volt = SEG3_GPU_DVFS_VSRAM15;
+		g_fixed_vsram_volt_threshold = SEG3_GPU_DVFS_VOLT1;
 	}
 
 	/* setup PMIC init value */
