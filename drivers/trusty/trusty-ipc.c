@@ -674,17 +674,6 @@ void tipc_chan_destroy(struct tipc_chan *chan)
 }
 EXPORT_SYMBOL(tipc_chan_destroy);
 
-/***************************************************************************/
-
-struct tipc_dn_chan {
-	int state;
-	struct mutex lock; /* protects rx_msg_queue list and channel state */
-	struct tipc_chan *chan;
-	wait_queue_head_t readq;
-	struct completion reply_comp;
-	struct list_head rx_msg_queue;
-};
-
 static int dn_wait_for_reply(struct tipc_dn_chan *dn, int timeout)
 {
 	int ret;
