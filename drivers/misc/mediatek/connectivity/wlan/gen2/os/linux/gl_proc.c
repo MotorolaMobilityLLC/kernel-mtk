@@ -938,6 +938,8 @@ static ssize_t procCountryWrite(struct file *file, const char __user *buffer,
 	}
 
 	aucProcBuf[u4CopySize] = '\0';
+
+	ASSERT(g_prGlueInfo_proc);
 	rStatus = kalIoctl(g_prGlueInfo_proc, wlanoidSetCountryCode,
 				&aucProcBuf[0], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 	if (rStatus != WLAN_STATUS_SUCCESS) {
