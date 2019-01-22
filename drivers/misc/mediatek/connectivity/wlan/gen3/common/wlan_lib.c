@@ -3317,32 +3317,30 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 		/* Save the value of Priority Parameter */
 		GLUE_SET_PKT_TID(prPacket, rTxPacketInfo.ucPriorityParam);
 
-#if 1
 		if (rTxPacketInfo.u2Flag) {
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_1X)) {
 				P_STA_RECORD_T prStaRec;
 
-				DBGLOG(TX, TRACE, "T1X len=%d\n", rTxPacketInfo.u4PacketLen);
+				DBGLOG(RSN, TRACE, "T1X len=%d\n", rTxPacketInfo.u4PacketLen);
 
 				prStaRec = cnmGetStaRecByAddress(prAdapter,
 								 GLUE_GET_PKT_BSS_IDX(prPacket),
 								 rTxPacketInfo.aucEthDestAddr);
 
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_1X);
-				if (prStaRec != NULL && prStaRec->ucBssIndex <= HW_BSSID_NUM) {
+				if (prStaRec != NULL && prStaRec->ucBssIndex <= HW_BSSID_NUM)
 					prBssInfo = prAdapter->aprBssInfo[prStaRec->ucBssIndex];
-				} else {
+				else {
 					prBssInfo = NULL;
-					DBGLOG(TX, WARN, "Bss Index is invaild\n");
+					DBGLOG(RSN, WARN, "Bss Index is invaild\n");
 				}
 				if (secIsProtected1xFrame(prAdapter, prStaRec)) {
-					/* 1st 4way-handshake don't encrpted it */
+					/* 1st 4way-handshake don't encrypted */
 					if (!prBssInfo || !(prBssInfo->fgUnencryptedEapol)) {
 						GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
-						DBGLOG(RSN, INFO, "This EAP Frame will be encrypyed\n");
+						DBGLOG(RSN, TRACE, "This EAP Frame will be encrypted\n");
 					}
 				}
-
 			}
 
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_802_3))
@@ -3365,34 +3363,8 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_DNS))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DNS);
+
 		}
-#else
-		if (rTxPacketInfo.fgIs1X) {
-			P_STA_RECORD_T prStaRec;
-
-			DBGLOG(RSN, INFO, "T1X len=%d\n", rTxPacketInfo.u4PacketLen);
-
-			prStaRec = cnmGetStaRecByAddress(prAdapter,
-							 GLUE_GET_PKT_BSS_IDX(prPacket), rTxPacketInfo.aucEthDestAddr);
-
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_1X);
-
-			if (secIsProtected1xFrame(prAdapter, prStaRec))
-				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
-		}
-
-		if (rTxPacketInfo.fgIs802_3)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_802_3);
-
-		if (rTxPacketInfo.fgIsVlanExists)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_VLAN_EXIST);
-
-		if (rTxPacketInfo.fgIsDhcp)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DHCP);
-
-		if (rTxPacketInfo.fgIsArp)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ARP);
-#endif
 
 		ucMacHeaderLen = ETHER_HEADER_LEN;
 
@@ -3412,16 +3384,15 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 	return FALSE;
 }
 
-
 WLAN_STATUS
 nicTxSecFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
 	UINT_8 ucKeyCmdAction = SEC_TX_KEY_COMMAND;
 
-	DBGLOG(TX, INFO, "SEC Msdu WIDX:PID[%u:%u] Status[%u], SeqNo[%u]\n",
-			   prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus,
-			   prMsduInfo->ucTxSeqNum);
+	DBGLOG(TX, INFO, "SEC Frame TX DONE WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
+	       prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus,
+	       prMsduInfo->ucTxSeqNum);
 
 	if (rTxDoneStatus != TX_RESULT_SUCCESS)
 		ucKeyCmdAction = SEC_DROP_KEY_COMMAND;
@@ -3432,7 +3403,6 @@ nicTxSecFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 	kalSetEvent(prAdapter->prGlueInfo);
 	return WLAN_STATUS_SUCCESS;
 }
-
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -3552,7 +3522,7 @@ VOID wlanSecurityFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 			/* secFsmEventEapolTxDone(prAdapter, prSta, TX_RESULT_SUCCESS); */
 		}
 	}
-	DBGLOG(RSN, INFO, "SECURITY PKT HOST TO HIF TX DONE\n");
+
 	/* Clear the flag when Eapol frame tx Done */
 	GET_BSS_INFO_BY_INDEX(prAdapter, prCmdInfo->ucBssIndex)->fgUnencryptedEapol = FALSE;
 	kalSecurityFrameSendComplete(prAdapter->prGlueInfo, prCmdInfo->prPacket, WLAN_STATUS_SUCCESS);
@@ -6746,8 +6716,8 @@ WLAN_STATUS wlanTriggerStatsLog(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DurationI
 WLAN_STATUS
 wlanDhcpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(TX, INFO, "DHCP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	DBGLOG(TX, INFO, "DHCP PKT TX DONE WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
+	       prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }
@@ -6755,8 +6725,12 @@ wlanDhcpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX
 WLAN_STATUS
 wlanArpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(TX, INFO, "ARP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	if (rTxDoneStatus)
+		DBGLOG(TX, INFO, "ARP PKT TX DONE WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
+		       prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	else
+		DBGLOG_LIMITED(TX, INFO, "ARP PKT TX DONE WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
+		       prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }
@@ -6764,8 +6738,8 @@ wlanArpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_
 WLAN_STATUS
 wlanIcmpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(TX, INFO, "ICMP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	DBGLOG(TX, INFO, "ICMP PKT TX DONE WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
+	       prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }
@@ -6773,8 +6747,8 @@ wlanIcmpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX
 WLAN_STATUS
 wlanTdlsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(TX, INFO, "TDLS PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	DBGLOG(TX, INFO, "TDLS PKT TX DONE WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
+	       prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }
@@ -6783,8 +6757,8 @@ WLAN_STATUS
 wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(SW4, INFO, "DNS PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	DBGLOG(TX, INFO, "DNS PKT TX DONE WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
+	       prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }

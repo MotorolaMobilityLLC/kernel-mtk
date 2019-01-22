@@ -1897,11 +1897,9 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 		else {
 			WLAN_GET_FIELD_BE16(&aucLookAheadBuf[5 + ucEapOffset], &u2KeyInfo);
 			/* BIT3 is pairwise key bit */
-			DBGLOG(TX, TRACE, "u2KeyInfo=0x%x\n", u2KeyInfo);
 			if (u2KeyInfo & BIT(3))
 				prTxPktInfo->u2Flag |= BIT(ENUM_PKT_NON_PROTECTED_1X);
 		}
-
 
 		switch (ucEapolType) {
 		case 0: /* eap packet */
@@ -1911,7 +1909,7 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 			ucAisBssIndex = prGlueInfo->prAdapter->prAisBssInfo->ucBssIndex;
 
 			DBGLOG(TX, INFO, "<TX> EAP Packet: code %d, id %d, type %d, PKT[0x%p], SeqNo: %d\n",
-					pucEapol[4], pucEapol[5], pucEapol[8], prPacket, ucSeqNo);
+			       pucEapol[4], pucEapol[5], pucEapol[8], prPacket, ucSeqNo);
 			pucPos = pucEapol + 8;
 			if (*pucPos != EAP_TYPE_EXPANDED)
 				break;
@@ -1942,7 +1940,7 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 			GLUE_SET_PKT_SEQ_NO(prPacket, ucSeqNo);
 
 			DBGLOG(TX, INFO, "<TX> EAPOL: key, KeyInfo 0x%04x, PKT[0x%p], SeqNo: %d\n",
-					*((PUINT_16)(&pucEapol[5])), prPacket, ucSeqNo);
+			       u2KeyInfo, prPacket, ucSeqNo);
 			break;
 		}
 #if CFG_SUPPORT_WAPI
@@ -1956,7 +1954,7 @@ kalSecurityFrameClassifier(IN P_GLUE_INFO_T prGlueInfo,
 		prTxPktInfo->u2Flag |= BIT(ENUM_PKT_NON_PROTECTED_1X);
 
 		DBGLOG(TX, INFO, "<TX> WAPI: subType %d, Len %d, Seq %d, PKT[0x%p], SeqNo: %d\n",
-				ucSubType, u2Length, u2Seq, prPacket, ucSeqNo);
+		       ucSubType, u2Length, u2Seq, prPacket, ucSeqNo);
 #endif
 	}
 	prTxPktInfo->u2Flag |= BIT(ENUM_PKT_1X);

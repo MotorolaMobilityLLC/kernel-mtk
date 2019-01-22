@@ -4337,10 +4337,10 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 					DBGLOG(TX, WARN, "Bss Index is invaild\n");
 				}
 				if (secIsProtected1xFrame(prAdapter, prStaRec)) {
-					/* 1st 4way-handshake don't encrpted it */
+					/* 1st 4way-handshake don't encrypted */
 					if (!prBssInfo || !(prBssInfo->fgUnencryptedEapol)) {
 						GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
-						DBGLOG(RSN, INFO, "This EAP Frame will be encrypyed\n");
+						DBGLOG(RSN, TRACE, "This EAP Frame will be encrypted\n");
 					}
 				}
 			}
@@ -4395,9 +4395,10 @@ nicTxSecFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 {
 	UINT_8 ucKeyCmdAction = SEC_TX_KEY_COMMAND;
 
-	DBGLOG(TX, INFO, "SEC Msdu WIDX:PID[%u:%u] Status[%u], SeqNo[%u]\n",
+	DBGLOG(TX, INFO, "SEC Frame TX DONE WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
 			   prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus,
 			   prMsduInfo->ucTxSeqNum);
+
 	if (rTxDoneStatus != TX_RESULT_SUCCESS)
 		ucKeyCmdAction = SEC_DROP_KEY_COMMAND;
 	else
@@ -8167,11 +8168,12 @@ wlanPktTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_
 		prMsduInfo->ucPktType = 0;
 
 	if ((prMsduInfo->ucPktType == ENUM_PKT_ARP) || (prMsduInfo->ucPktType == ENUM_PKT_DHCP)) {
-		if (rCurrent - prPktProfile->rHardXmitArrivalTimestamp > 2000) {
-			DBGLOG(TX, INFO, "valid %d; ArriveDrv %u, Enq %u, Deq %u, LeaveDrv %u, TxDone %u\n",
-				prPktProfile->fgIsValid, prPktProfile->rHardXmitArrivalTimestamp,
-				prPktProfile->rEnqueueTimestamp, prPktProfile->rDequeueTimestamp,
-				prPktProfile->rHifTxDoneTimestamp, rCurrent);
+		if (prPktProfile->fgIsValid && (rCurrent - prPktProfile->rHardXmitArrivalTimestamp > 2000)) {
+			DBGLOG(TX, INFO, "MSDU[0x%p] Type[%s]: ArriveDrv %u, Enq %u, Deq %u, LeaveDrv %u, TxDone %u\n",
+			       prMsduInfo, apucPktType[prMsduInfo->ucPktType],
+			       prPktProfile->rHardXmitArrivalTimestamp,
+			       prPktProfile->rEnqueueTimestamp, prPktProfile->rDequeueTimestamp,
+			       prPktProfile->rHifTxDoneTimestamp, rCurrent);
 
 			if (prMsduInfo->ucPktType == ENUM_PKT_ARP)
 				prAdapter->prGlueInfo->fgTxDoneDelayIsARP = TRUE;
@@ -8185,15 +8187,15 @@ wlanPktTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_
 	}
 
 	if (prMsduInfo->ucPktType == ENUM_PKT_ARP && rTxDoneStatus == 0)
-		DBGLOG_LIMITED(TX, INFO, "TX DONE, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+		DBGLOG_LIMITED(TX, INFO, "TX DONE, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
+			       apucPktType[prMsduInfo->ucPktType], prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+			       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	else if (rTxDoneStatus)
+		DBGLOG(TX, INFO, "TX DONE FAILED, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
 		       apucPktType[prMsduInfo->ucPktType], prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
 		       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
-	else if (rTxDoneStatus)
-		DBGLOG(TX, INFO, "TX DONE FAILED, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-			   apucPktType[prMsduInfo->ucPktType], prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
-			   prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 	else
-		DBGLOG(TX, TRACE, "TX DONE, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+		DBGLOG(TX, TRACE, "TX DONE, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u] SeqNo[%u]\n",
 		       apucPktType[prMsduInfo->ucPktType], prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
 		       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
