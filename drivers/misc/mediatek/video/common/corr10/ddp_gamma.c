@@ -20,7 +20,7 @@
 #else
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_ARCH_ELBRUS)
+	defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6799)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -31,7 +31,8 @@
 #include <ddp_gamma.h>
 #include <disp_drv_platform.h>
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #include <disp_helper.h>
 #endif
 
@@ -53,13 +54,15 @@ static DEFINE_MUTEX(g_gamma_global_lock);
 /*  GAMMA                                                                   */
 /* ======================================================================== */
 
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #define GAMMA0_MODULE_NAMING (DISP_MODULE_GAMMA0)
 #else
 #define GAMMA0_MODULE_NAMING (DISP_MODULE_GAMMA)
 #endif
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #define GAMMA_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -276,7 +279,8 @@ static int disp_gamma_bypass(enum DISP_MODULE_ENUM module, int bypass)
 static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 	/* gamma is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -295,7 +299,8 @@ static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 static int disp_gamma_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 	/* gamma is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -333,7 +338,8 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 /*  COLOR CORRECTION                                                        */
 /* ======================================================================== */
 
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #define CCORR0_BASE_NAMING (DISPSYS_CCORR0_BASE)
 #define CCORR0_MODULE_NAMING (DISP_MODULE_CCORR0)
 #else
@@ -341,7 +347,8 @@ struct DDP_MODULE_DRIVER ddp_driver_gamma = {
 #define CCORR0_MODULE_NAMING (DISP_MODULE_CCORR)
 #endif
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #define CCORR_SUPPORT_PARTIAL_UPDATE
 #endif
 

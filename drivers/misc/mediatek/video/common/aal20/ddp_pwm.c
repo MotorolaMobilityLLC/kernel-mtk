@@ -24,7 +24,7 @@
 #else
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
 	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_ARCH_ELBRUS)
+	defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6799)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -422,8 +422,9 @@ int disp_pwm_set_max_backlight(disp_pwm_id_t id, unsigned int level_1024)
 	g_pwm_max_backlight[index] = (int)level_1024;
 
 	PWM_MSG("disp_pwm_set_max_backlight(id = 0x%x, level = %u)", id, level_1024);
-
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	g_pwm_is_change_state = true;
+#endif
 	disp_pwm_set_backlight(id, atomic_read(&g_pwm_backlight[index]));
 
 	return 0;

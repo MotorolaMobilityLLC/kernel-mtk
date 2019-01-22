@@ -18,14 +18,16 @@
 #include <linux/of_address.h>
 #include <disp_drv_platform.h>
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #include <disp_helper.h>
 #endif
 
 #if defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 #include <mach/mt_clkmgr.h>
 #elif defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #include "ddp_clkmgr.h"
 #endif
 
@@ -35,7 +37,8 @@
 #include "ddp_color.h"
 #include "cmdq_def.h"
 
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #define COLOR_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -972,14 +975,16 @@ int tdshp_index_init;
 #define TDSHP_PA_BASE   0x14009000
 #define TDSHP1_PA_BASE  0x1400A000
 static unsigned long g_tdshp1_va;
-#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #define TDSHP_PA_BASE   0x14009000
 #else
 #define TDSHP_PA_BASE   0x14006000
 #endif
 
 #ifdef DISP_MDP_COLOR_ON
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 #define MDP_COLOR_PA_BASE 0x1400A000
 #else
 #define MDP_COLOR_PA_BASE 0x14007000
@@ -1922,7 +1927,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 	case SWREG_COLOR_BASE_ADDRESS:
 		{
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795) || defined(CONFIG_ARCH_ELBRUS) \
-	|| defined(CONFIG_MACH_MT6757)  || defined(CONFIG_MACH_KIBOPLUS)
+	|| defined(CONFIG_MACH_MT6757)  || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_COLOR0];
 #else
 			ret = ddp_reg_pa_base[DISP_REG_COLOR];
@@ -1932,7 +1937,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 
 	case SWREG_GAMMA_BASE_ADDRESS:
 		{
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACHMT6757)
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACHMT6757) || defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
 #else
 		/* ret = ddp_reg_pa_base[DISP_REG_GAMMA]; */
@@ -1942,7 +1947,8 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 
 	case SWREG_AAL_BASE_ADDRESS:
 		{
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_AAL0];
 #else
 			ret = ddp_reg_pa_base[DISP_REG_AAL];
@@ -1953,7 +1959,8 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CCORR_SUPPORT)
 	case SWREG_CCORR_BASE_ADDRESS:
 		{
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
+	defined(CONFIG_MACH_MT6799)
 			ret = ddp_reg_pa_base[DISP_REG_CCORR0];
 #else
 			ret = ddp_reg_pa_base[DISP_REG_CCORR];
@@ -2825,7 +2832,7 @@ static int _color_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_ha
 	/* only get COLOR HIST on primary display */
 	if ((module == DISP_MODULE_COLOR0) && (state == CMDQ_AFTER_STREAM_EOF)) {
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795) || defined(CONFIG_ARCH_ELBRUS) \
-	|| defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+	|| defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799)
 		ret =
 		    cmdqRecReadToDataRegister(cmdq_trigger_handle,
 					      ddp_reg_pa_base[DISP_REG_COLOR0] +
