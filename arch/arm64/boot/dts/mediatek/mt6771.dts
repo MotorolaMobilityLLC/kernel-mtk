@@ -2161,7 +2161,15 @@
 	dip1@15022000 {
 		compatible = "mediatek,dip1";
 		reg = <0 0x15022000 0 0x6000>;
-		interrupts = <GIC_SPI 322 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 268 IRQ_TYPE_LEVEL_LOW>;
+		clocks =
+				<&imgsys IMG_LARB5>,
+				<&imgsys IMG_LARB2>,
+				<&imgsys IMG_DIP>;
+		clock-names =
+				"DIP_CG_IMG_LARB5",
+				"DIP_CG_IMG_LARB2",
+				"DIP_CG_IMG_DIP";
 	};
 
 	dip2@15023000 {
