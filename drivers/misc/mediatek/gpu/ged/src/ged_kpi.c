@@ -100,9 +100,6 @@ typedef struct GED_KPI_HEAD_TAG {
 	GED_KPI_FRC_MODE_TYPE frc_mode;
 	int frc_client;
 	unsigned long long last_QedBufferDelay;
-#ifdef GED_KPI_FUTURE_USED_FEATURE
-	int is_pre_frame_speed_down_ignored;
-#endif
 } GED_KPI_HEAD;
 
 typedef struct GED_KPI_TAG {
@@ -140,10 +137,7 @@ typedef struct GED_KPI_TAG {
 	long long t_cpu_latest;
 	int t_cpu_target;
 	int t_gpu_target;
-#ifdef GED_KPI_FUTURE_USED_FEATURE
-	int is_CP_check_pass;
-	int is_speed_down_ignored;
-#endif
+	int if_fallback_to_ft;
 } GED_KPI;
 
 typedef struct GED_TIMESTAMP_TAG {
@@ -190,18 +184,12 @@ static unsigned int enable_cpu_boost = 1;
 static unsigned int enable_gpu_boost = 1;
 static unsigned int is_GED_KPI_enabled = 1;
 static unsigned int ap_self_frc_detection_rate = 20;
-#ifdef GED_KPI_FUTURE_USED_FEATURE
-static unsigned int enable_check_boost_CP;
-#endif
 module_param(gx_dfps, uint, S_IRUGO|S_IWUSR);
 module_param(gx_frc_mode, uint, S_IRUGO|S_IWUSR);
 module_param(enable_cpu_boost, uint, S_IRUGO|S_IWUSR);
 module_param(enable_gpu_boost, uint, S_IRUGO|S_IWUSR);
 module_param(is_GED_KPI_enabled, uint, S_IRUGO|S_IWUSR);
 module_param(ap_self_frc_detection_rate, uint, S_IRUGO|S_IWUSR);
-#ifdef GED_KPI_FUTURE_USED_FEATURE
-module_param(enable_check_boost_CP, uint, S_IRUGO|S_IWUSR);
-#endif
 /* for calculating remained time budgets of CPU and GPU:
  *		time budget: the buffering time that prevents fram drop
  */
@@ -223,7 +211,6 @@ static unsigned int g_gpu_freq_accum;
 static unsigned int g_frame_count;
 
 static int gx_game_mode;
-static int is_game_control_frame_rate;
 static int enable_game_self_frc_detect = 1;
 static unsigned int gx_fps;
 static unsigned int gx_cpu_time_avg;
@@ -248,52 +235,96 @@ module_param(cpu_boost_policy, int, S_IRUGO|S_IWUSR);
 module_param(boost_extra, int, S_IRUGO|S_IWUSR);
 module_param(boost_amp, int, S_IRUGO|S_IWUSR);
 module_param(boost_upper_bound, int, S_IRUGO|S_IWUSR);
-module_param(is_game_control_frame_rate, int, S_IRUGO|S_IWUSR);
 module_param(enable_game_self_frc_detect, int, S_IRUGO|S_IWUSR);
 
 /* ----------------------------------------------------------------------------- */
-#define GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE 15
-static GED_BOOL ged_kpi_frame_rate_control_detect(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
+/* detect if app self frc to make frame time 16 ms */
+#define GED_KPI_FALLBACK_VOTE_NUM 60
+static int if_fallback_to_ft;
+static int num_fallback_vote;
+static int recorded_fallback_vote;
+static void ged_kpi_check_fallback_main_head_reset(void)
 {
-	static GED_KPI psKPI_list[GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE];
-	static int continuous_frame_cnt;
-	static int detected_frame_cnt;
-	static int cur_frame;
-	GED_KPI *psKPI_head = NULL;
-	GED_BOOL ret = GED_TRUE;
-
-	if (enable_game_self_frc_detect) {
-		if (main_head == psHead) {
-			if (continuous_frame_cnt < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE)
-				continuous_frame_cnt++;
+	num_fallback_vote = 0;
+	recorded_fallback_vote = 0;
+	if_fallback_to_ft = 0;
+}
+static inline void ged_kpi_check_if_fallback_is_needed(int boost_value, int t_cpu_latest)
+{
+	if (if_fallback_to_ft == 0) {
+		if (boost_value > 70 && t_cpu_latest < 17000000 && t_cpu_latest > 16000000)
+			num_fallback_vote++;
+		recorded_fallback_vote++;
+		if (recorded_fallback_vote == GED_KPI_FALLBACK_VOTE_NUM) {
+			if (num_fallback_vote * 100 / recorded_fallback_vote > 80)
+				if_fallback_to_ft = 1;
 			else
-				psKPI_head = &psKPI_list[cur_frame];
+				ged_kpi_check_fallback_main_head_reset();
+		}
+	}
+}
+/* ----------------------------------------------------------------------------- */
+#define GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE 5
+static int is_game_control_frame_rate;
+module_param(is_game_control_frame_rate, int, S_IRUGO|S_IWUSR);
+static int target_fps_4_main_head = 60;
+static int fps_records[GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE];
+static int cur_fps_idx;
+static int fps_recorded_num;
+void ged_kpi_frc_detection_main_head_reset(void)
+{
+	cur_fps_idx = 0;
+	fps_recorded_num = 1;
+	target_fps_4_main_head = 60;
+}
+static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
+{
+	if (enable_game_self_frc_detect) {
+		fps_records[cur_fps_idx] = fps;
 
-			if ((psKPI_head != NULL) &&
-				(psKPI_head->t_cpu_latest < 26000000))
-				detected_frame_cnt--;
-			if (psKPI->t_cpu_latest < 26000000)
-				detected_frame_cnt++;
+		if (fps_recorded_num == GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE) {
+			if (fps_records[cur_fps_idx] > 31) {
+				target_fps_4_main_head = 60;
+			} else {
+				int avg_fps = 0;
+				int i;
 
-			psKPI_list[cur_frame] = *psKPI;
-			cur_frame++;
-			cur_frame %= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
+				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++)
+					avg_fps += fps_records[i];
+				avg_fps /= GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE;
 
-			if ((continuous_frame_cnt == GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE)
-				&& (detected_frame_cnt * 100 / GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE)
-				>= ap_self_frc_detection_rate)
-				ret = GED_FALSE;
+				if (avg_fps <= 31)
+					target_fps_4_main_head = 30;
+				else
+					target_fps_4_main_head = 60;
+
+				for (i = 0; i < GED_KPI_GAME_SELF_FRC_DETECT_MONITOR_WINDOW_SIZE; i++) {
+					int fps_diff = 0;
+
+					if (target_fps_4_main_head == 60)
+						break;
+					if (target_fps_4_main_head < fps_records[i])
+						fps_diff = fps_records[i] - target_fps_4_main_head;
+					if (fps_diff >= target_fps_4_main_head * 110 / 100) {
+						target_fps_4_main_head = 60;
+						break;
+					}
+				}
+			}
+		} else {
+			fps_recorded_num++;
 		}
 
-		if (ret == GED_TRUE)
+		cur_fps_idx++;
+		cur_fps_idx %= 3;
+
+		if (target_fps_4_main_head != 60)
 			is_game_control_frame_rate = 1;
 		else
 			is_game_control_frame_rate = 0;
 	} else {
 		is_game_control_frame_rate = 0;
 	}
-
-	return ret;
 }
 /* ----------------------------------------------------------------------------- */
 static inline void ged_kpi_clean_kpi_info(void)
@@ -306,6 +337,12 @@ static inline void ged_kpi_clean_kpi_info(void)
 	g_gpu_remained_time_accum = 0;
 	g_cpu_remained_time_accum = 0;
 	g_gpu_freq_accum = 0;
+}
+/* ----------------------------------------------------------------------------- */
+void ged_kpi_main_head_reset(void)
+{
+	ged_kpi_frc_detection_main_head_reset();
+	ged_kpi_check_fallback_main_head_reset();
 }
 /* ----------------------------------------------------------------------------- */
 static GED_BOOL ged_kpi_find_main_head_func(unsigned long ulID, void *pvoid, void *pvParam)
@@ -343,6 +380,7 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 		g_pre_TimeStamp1 = psKPI->ullTimeStamp1;
 		g_pre_TimeStamp2 = psKPI->ullTimeStamp2;
 		g_pre_TimeStampH = psKPI->ullTimeStampH;
+		ged_kpi_main_head_reset();
 		prev_main_head = main_head;
 		return;
 	}
@@ -393,6 +431,7 @@ static inline void ged_kpi_calc_kpi_info(unsigned long ulID, GED_KPI *psKPI, GED
 			gx_gpu_freq_avg = g_gpu_freq_accum;
 
 			ged_kpi_clean_kpi_info();
+			ged_kpi_push_cur_fps_and_detect_app_self_frc((int)gx_fps);
 		}
 	}
 }
@@ -415,7 +454,6 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 	unsigned long frame_attr = 0;
 
 	ged_kpi_calc_kpi_info(ulID, psKPI, psHead);
-	ged_kpi_frame_rate_control_detect(psHead, psKPI);
 	frame_attr |= ((psHead->isSF & GED_KPI_IS_SF_MASK_BIT) << GED_KPI_IS_SF_SHIFT);
 	frame_attr |= ((psKPI->i32QedBuffer_length & GED_KPI_QBUFFER_LEN_MASK_BIT) << GED_KPI_QBUFFER_LEN_SHIFT);
 	frame_attr |= ((psKPI->i32DebugQedBuffer_length & GED_KPI_DEBUG_QBUFFER_LEN_MASK_BIT)
@@ -454,7 +492,6 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 		);
 }
 /* ----------------------------------------------------------------------------- */
-#define GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW 5
 static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 {
 	long long cpu_target_loss, cpu_target_loss_4_rt;
@@ -463,18 +500,6 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 	long long t_cpu_rem_cur = 0;
 	int is_gpu_bound;
 	int temp_boost_accum_cpu;
-	/* for checking boost value CP */
-#ifdef GED_KPI_FUTURE_USED_FEATURE
-	static int boost_value_CP_list[GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW];
-	static int boost_value_CP_pass_cnt, boost_value_CP_entry_cnt, cur_frame;
-	static int *boost_value_CP_list_head;
-	int boost_linear_cpu_ori;
-	int is_CP_check_pass;
-	int is_speed_down_ignored = 0;
-#endif
-	static int reset_RT_slope_monitor = 1;
-	static long long RT_start, RT_cur;
-	static int RT_slope_monitor_frame_cnt;
 
 	if (psHead == main_head) {
 		boost_linear_cpu = 0;
@@ -497,32 +522,10 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		cpu_target_loss_4_rt = cpu_target_loss;
 			/* ARR mode and default mode with GED_KPI_MAX_FPS FPS */
 		if (psHead->target_fps == GED_KPI_MAX_FPS) {
-			int RT_slope_check_pass;
-
 			t_cpu_rem_cur = vsync_period * psHead->i32DebugQedBuffer_length;
 			t_cpu_rem_cur -= (psKPI->ullTimeStamp1 - psHead->last_TimeStampS);
-			RT_cur = t_cpu_rem_cur;
-
-			if (reset_RT_slope_monitor == 1) {
-				reset_RT_slope_monitor = 0;
-				RT_slope_monitor_frame_cnt = 0;
-				RT_start = t_cpu_rem_cur;
-			}
-			RT_slope_monitor_frame_cnt++;
-
-			if ((t_cpu_rem_cur < 0) || (RT_cur > RT_start))
-				reset_RT_slope_monitor = 1;
-
-			RT_slope_check_pass =
-				((RT_start - RT_cur) * 60 / RT_slope_monitor_frame_cnt > target_t_cpu_remained) ? 0 : 1;
-
-			if (RT_slope_check_pass == 0 || reset_RT_slope_monitor == 1) {
-				if (cpu_target_loss_4_rt < 0) {
-					cpu_target_loss_4_rt = 0;
-#ifdef GED_KPI_FUTURE_USED_FEATURE
-					is_speed_down_ignored = 1;
-#endif
-				}
+			if (cpu_target_loss_4_rt < 0 && t_cpu_rem_cur < target_t_cpu_remained && !if_fallback_to_ft) {
+				cpu_target_loss_4_rt = 0;
 			}
 		} else {  /* FRR mode or (default mode && FPS != GED_KPI_MAX_FPS) */
 			t_cpu_rem_cur = psKPI->t_cpu_target;
@@ -530,55 +533,10 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		}
 		psKPI->t_cpu_remained_pred = (long long)t_cpu_rem_cur;
 
-#ifdef GED_KPI_FUTURE_USED_FEATURE
-		boost_linear_cpu_ori = (int)(cpu_target_loss * 100 / t_cpu_target);
-#endif
 		if (!is_gpu_bound)
 			cpu_target_loss = cpu_target_loss_4_rt;
 
 		boost_linear_cpu = (int)(cpu_target_loss * 100 / t_cpu_target);
-
-#ifdef GED_KPI_FUTURE_USED_FEATURE
-		/* Checking CP value */
-		if (enable_check_boost_CP) {
-			if (boost_value_CP_entry_cnt < GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW)
-				boost_value_CP_entry_cnt++;
-			else
-				boost_value_CP_list_head = &boost_value_CP_list[cur_frame];
-
-			if (psHead->is_pre_frame_speed_down_ignored == 1) {
-				if (boost_linear_cpu_ori <= 0)
-					is_CP_check_pass = 1;
-				else
-					is_CP_check_pass = 0;
-			} else {
-				is_CP_check_pass = 1;
-			}
-
-			if ((boost_value_CP_list_head != NULL) && (*boost_value_CP_list_head == 1))
-				boost_value_CP_pass_cnt--;
-
-			if (is_CP_check_pass == 1)
-				boost_value_CP_pass_cnt++;
-
-			psKPI->is_CP_check_pass = is_CP_check_pass;
-			boost_value_CP_list[cur_frame] = is_CP_check_pass;
-
-			cur_frame++;
-			cur_frame %= GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW;
-
-			/* if boost_value CP pass rate is lower than 90% fallback to frame-time-based policy */
-			if (is_speed_down_ignored == 1) {
-				if ((boost_value_CP_entry_cnt == GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW)
-				&& ((boost_value_CP_pass_cnt * 100 / GED_KPI_BOOST_VALUE_CP_MONITOR_WINDOW) < 100)) {
-					boost_linear_cpu = boost_linear_cpu_ori;
-					is_speed_down_ignored = 0;
-				}
-			}
-			psHead->is_pre_frame_speed_down_ignored = is_speed_down_ignored;
-		}
-		/* end of checking CP value*/
-#endif
 
 		if (boost_linear_cpu < 0)
 			boost_real_cpu = (-1)*linear_real_boost((-1)*boost_linear_cpu);
@@ -616,9 +574,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		psKPI->boost_linear_cpu = boost_linear_cpu;
 		psKPI->boost_real_cpu = boost_real_cpu;
 		psKPI->boost_accum_cpu = boost_accum_cpu;
-#ifdef GED_KPI_FUTURE_USED_FEATURE
-		psKPI->is_speed_down_ignored = is_speed_down_ignored;
-#endif
+		psKPI->if_fallback_to_ft = if_fallback_to_ft;
 		boost_accum_cpu = temp_boost_accum_cpu;
 		psKPI->cpu_max_freq_LL = arch_scale_get_max_freq(0);
 		psKPI->cpu_max_freq_L = arch_scale_get_max_freq(4);
@@ -627,6 +583,7 @@ static inline void ged_kpi_cpu_boost_policy_0(GED_KPI_HEAD *psHead, GED_KPI *psK
 		psKPI->cpu_cur_freq_L = psKPI->cpu_max_freq_L * cpufreq_scale_freq_capacity(NULL, 4) / 1024;
 		psKPI->cpu_cur_freq_B = psKPI->cpu_max_freq_B * cpufreq_scale_freq_capacity(NULL, 8) / 1024;
 
+		ged_kpi_check_if_fallback_is_needed(boost_accum_cpu, psKPI->t_cpu_latest);
 #ifdef GED_KPI_MET_DEBUG
 		met_tag_oneshot(0, "ged_pframeb_boost_accum_cpu", boost_accum_cpu);
 
@@ -849,7 +806,7 @@ static GED_BOOL ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead
 
 		if (is_game_control_frame_rate && (psHead == main_head)
 			&& (psHead->frc_mode == GED_KPI_FRC_DEFAULT_MODE))
-			target_fps = (target_fps > 30) ? 30 : target_fps;
+			target_fps = target_fps_4_main_head;
 
 		psHead->target_fps = target_fps;
 		psHead->t_cpu_target = GED_KPI_SEC_DIVIDER/target_fps;
