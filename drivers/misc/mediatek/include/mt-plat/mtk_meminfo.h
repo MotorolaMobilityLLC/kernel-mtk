@@ -27,6 +27,7 @@ extern phys_addr_t get_zone_movable_cma_size(void);
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER
 extern phys_addr_t memory_lowpower_cma_base(void);
 extern phys_addr_t memory_lowpower_cma_size(void);
+extern struct single_cma_registration memory_lowpower_registration;
 #endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
 
 #ifdef CONFIG_ZONE_MOVABLE_CMA

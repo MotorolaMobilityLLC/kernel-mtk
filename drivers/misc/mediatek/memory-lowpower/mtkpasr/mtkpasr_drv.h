@@ -30,13 +30,29 @@ struct mtkpasr_bank {
 	int rank;			/* Associated rank */
 };
 
+/* PASR masked with channel information */
+struct pasrvec {
+	unsigned long pasr_on;		/* LSB stands for the segment with the smallest order */
+	int channel;			/* which channel */
+};
+
+/* #define DEBUG_FOR_CHANNEL_SWITCH */
+
 /* MTKPASR internal functions */
 extern int __init mtkpasr_init_range(unsigned long start_pfn, unsigned long end_pfn, unsigned long *bank_pfns);
 
 /* Give bank, this function will return its (start_pfn, end_pfn) and corresponding rank */
 extern int __init query_bank_rank_information(int bank, unsigned long *spfn, unsigned long *epfn, int *segn);
 
-/* APMCU flow */
-extern int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_rank1)__attribute__((weak));
-extern int exit_pasr_dpd_config(void)__attribute__((weak));
+/* Query the number of channel */
+#ifdef DEBUG_FOR_CHANNEL_SWITCH
+extern unsigned int get_channel_num(void);
+#else
+extern unsigned int __init get_channel_num(void);
+#endif
+
+/* Query PASR masked with specified channel configuration */
+#define USE_ORIG_CHCONFIG	(0xFFFFFFFF)
+extern int fill_pasr_on_by_chconfig(unsigned int chconfig, struct pasrvec *pasrvec, unsigned long opon);
+
 #endif
