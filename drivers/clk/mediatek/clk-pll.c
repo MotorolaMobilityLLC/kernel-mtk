@@ -96,7 +96,6 @@ static unsigned long __mtk_pll_recalc_rate(struct mtk_clk_pll *pll, u32 fin,
 	return ((unsigned long)vco + postdiv - 1) / postdiv;
 }
 
-#if !defined(CONFIG_MACH_MT6763)
 static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 		int postdiv)
 {
@@ -129,7 +128,6 @@ static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 
 	udelay(20);
 }
-#endif
 
 /*
  * mtk_pll_calc_values - calculate good values for a given input frequency.
@@ -211,8 +209,6 @@ static void mtk_pll_unprepare_dummy(struct clk_hw *hw)
 static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 		unsigned long parent_rate)
 {
-#if defined(CONFIG_MACH_MT6763)
-#else
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 	u32 pcw = 0;
 	u32 postdiv;
@@ -229,7 +225,7 @@ static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 		rate_div = rate;
 	mtk_pll_calc_values(pll, &pcw, &postdiv, rate_div, parent_rate);
 	mtk_pll_set_rate_regs(pll, pcw, postdiv);
-#endif
+
 	return 0;
 }
 
@@ -285,8 +281,6 @@ static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
 
 static int mtk_pll_prepare(struct clk_hw *hw)
 {
-#if defined(CONFIG_MACH_MT6763)
-#else
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 	u32 r;
 
@@ -322,14 +316,11 @@ static int mtk_pll_prepare(struct clk_hw *hw)
 			writel(r, pll->base_addr + REG_CON0);
 		}
 	}
-#endif
 	return 0;
 }
 
 static void mtk_pll_unprepare(struct clk_hw *hw)
 {
-#if defined(CONFIG_MACH_MT6763)
-#else
 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
 	u32 r;
 
@@ -358,7 +349,6 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
 			writel(r, pll->pwr_addr);
 		}
 	}
-#endif
 }
 #else
 static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
