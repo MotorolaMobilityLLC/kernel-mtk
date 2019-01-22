@@ -47,6 +47,7 @@ struct mtk_pe30 {
 
 };
 
+#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 
 extern bool mtk_pe30_init(struct charger_manager *info);
 extern bool mtk_is_TA_support_pe30(struct charger_manager *info);
@@ -83,7 +84,54 @@ extern int tcpm_set_direct_charge_en(void *tcpc_dev, bool en);
 extern int tcpm_get_cable_capability(void *tcpc_dev, unsigned char *capability);
 extern int mtk_clr_ta_pingcheck_fault(void *ptr);
 extern bool mtk_is_pe30_en_unlock(void);
+#else
+static inline bool mtk_pe30_init(struct charger_manager *info)
+{
+	return true;
+}
 
+static inline bool mtk_is_TA_support_pe30(struct charger_manager *info)
+{
+	return false;
+}
+
+static inline bool mtk_is_pe30_running(struct charger_manager *info)
+{
+	return false;
+}
+
+static inline void mtk_pe30_set_charging_current_limit(struct charger_manager *info, int cur)
+{
+}
+
+static inline int mtk_pe30_get_charging_current_limit(struct charger_manager *info)
+{
+	return true;
+}
+
+static inline void mtk_pe30_end(struct charger_manager *info)
+{
+}
+
+static inline void mtk_pe30_plugout_reset(struct charger_manager *info)
+{
+}
+
+static inline bool mtk_pe30_check_charger(struct charger_manager *info)
+{
+	return false;
+}
+
+static inline bool mtk_pe30_get_is_enable(struct charger_manager *pinfo)
+{
+	return false;
+}
+
+static inline void mtk_pe30_set_is_enable(struct charger_manager *pinfo, bool enable)
+{
+}
+
+#endif
 
 #endif /* __MTK_PE_30_INTF_H */
 
