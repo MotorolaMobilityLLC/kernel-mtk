@@ -228,7 +228,7 @@ static void _btif_set_default_setting(void)
 		BTIF_INFO_FUNC("get interrupt flag(0x%x)\n", mtk_btif_info.p_irq->irq_flags);
 	}
 
-	if (of_property_read_u32_index(node, "reg", 0, &phy_base))
+	if (of_property_read_u32_index(node, "reg", 1, &phy_base))
 		BTIF_ERR_FUNC("get register phy base from DTS fail\n");
 	else
 		BTIF_INFO_FUNC("get register phy base(0x%x)\n", (unsigned int)phy_base);

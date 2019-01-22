@@ -123,8 +123,10 @@ static int _btif_exit_dpidle_from_dpidle(p_mtk_btif p_btif);
 static int _btif_enter_dpidle_from_on(p_mtk_btif p_btif);
 static int _btif_enter_dpidle_from_sus(p_mtk_btif p_btif);
 
+#if ENABLE_BTIF_TX_DMA
 static int _btif_vfifo_deinit(p_mtk_btif_dma p_dma);
 static int _btif_vfifo_init(p_mtk_btif_dma p_dma);
+#endif
 
 static bool _btif_is_tx_complete(p_mtk_btif p_btif);
 static int _btif_init(p_mtk_btif p_btif);
@@ -1840,6 +1842,7 @@ bool _btif_is_tx_complete(p_mtk_btif p_btif)
 
 /*--------------------------------Functions-------------------------------------------*/
 
+#if ENABLE_BTIF_TX_DMA
 static int _btif_vfifo_init(p_mtk_btif_dma p_dma)
 {
 	P_DMA_VFIFO p_vfifo = NULL;
@@ -1922,6 +1925,7 @@ static int _btif_vfifo_deinit(p_mtk_btif_dma p_dma)
 
 	return 0;
 }
+#endif
 
 static int _btif_state_init(p_mtk_btif p_btif)
 {

@@ -52,12 +52,12 @@ extern UINT32 wmtPlatLogLvl;
 #define WMT_PLAT_LOUD_FUNC(fmt, arg...) \
 do { \
 	if (wmtPlatLogLvl >= WMT_PLAT_LOG_LOUD) \
-		pr_debug(DFT_TAG "[L]%s:"  fmt, __func__, ##arg); \
+		pr_warn(DFT_TAG "[L]%s:"  fmt, __func__, ##arg); \
 } while (0)
 #define WMT_PLAT_INFO_FUNC(fmt, arg...) \
 do { \
 	if (wmtPlatLogLvl >= WMT_PLAT_LOG_INFO) \
-		pr_debug(DFT_TAG "[I]%s:"  fmt, __func__, ##arg); \
+		pr_warn(DFT_TAG "[I]%s:"  fmt, __func__, ##arg); \
 } while (0)
 #define WMT_PLAT_WARN_FUNC(fmt, arg...) \
 do { \
@@ -72,7 +72,7 @@ do { \
 #define WMT_PLAT_DBG_FUNC(fmt, arg...) \
 do { \
 	if (wmtPlatLogLvl >= WMT_PLAT_LOG_DBG) \
-		pr_debug(DFT_TAG "[D]%s:"  fmt, __func__, ##arg); \
+		pr_warn(DFT_TAG "[D]%s:"  fmt, __func__, ##arg); \
 } while (0)
 
 #endif
@@ -224,7 +224,7 @@ typedef enum _ENUM_CHIP_DUMP_STATE_T {
 	STP_CHIP_DUMP_MAX
 } ENUM_CHIP_DUMP_STATE, *P_ENUM_CHIP_DUMP_STATE_T;
 
-#define CONSYS_DBG_CR_BASE		0x18070000
+#define CONSYS_DBG_CR_BASE		0x19070000
 #define CONSYS_BUS_CLK_STATUS_OFFSET	0x00000100
 #define CONSYS_CPU_CLK_STATUS_OFFSET	0x0000010c
 #define CONSYS_DBG_CR1_OFFSET		0x00000408

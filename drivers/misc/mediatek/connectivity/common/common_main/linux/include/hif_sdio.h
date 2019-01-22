@@ -248,11 +248,11 @@ extern UINT32 gHifSdioDbgLvl;
 
 #define HIF_SDIO_LOUD_FUNC(fmt, arg...)	\
 do { if (gHifSdioDbgLvl >= HIF_SDIO_LOG_LOUD)	\
-	osal_dbg_print(DFT_TAG"[L]%s:"  fmt, __func__, ##arg);	\
+	osal_warn_print(DFT_TAG"[L]%s:"  fmt, __func__, ##arg);	\
 } while (0)
 #define HIF_SDIO_DBG_FUNC(fmt, arg...)	\
 do { if (gHifSdioDbgLvl >= HIF_SDIO_LOG_DBG)	\
-	osal_dbg_print(DFT_TAG"[D]%s:"  fmt, __func__, ##arg);	\
+	osal_warn_print(DFT_TAG"[D]%s:"  fmt, __func__, ##arg);	\
 } while (0)
 #define HIF_SDIO_INFO_FUNC(fmt, arg...)	\
 do { if (gHifSdioDbgLvl >= HIF_SDIO_LOG_INFO)	\
@@ -275,7 +275,7 @@ do { if (gHifSdioDbgLvl >= HIF_SDIO_LOG_ERR)	\
 #define HIF_SDIO_ASSERT(expr) \
 { \
 		if (!(expr)) { \
-			osal_dbg_print("assertion failed! %s[%d]: %s\n",\
+			osal_warn_print("assertion failed! %s[%d]: %s\n",\
 					__func__, __LINE__, #expr); \
 			osal_bug_on(!(expr));\
 		} \

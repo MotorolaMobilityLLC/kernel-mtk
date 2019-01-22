@@ -382,14 +382,14 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID)
 				if (0 == (i % 64)) {
 					*p_str++ = '\n';
 					*p_str = '\0';
-					pr_debug("%s", str);
+					pr_warn("%s", str);
 					p_str = &str[0];
 				}
 			}
 			if (dump_len % 64) {
 				*p_str++ = '\n';
 				*p_str = '\0';
-				pr_debug("%s", str);
+				pr_warn("%s", str);
 			}
 		} while (0);
 		/*move parser fw assert infor to paged dump in the one paged dump */

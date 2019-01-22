@@ -58,7 +58,7 @@ do { \
 #define STP_BTM_TRC_FUNC(f) \
 do { \
 	if (gBtmDbgLevel >= STP_BTM_LOG_DBG) \
-		pr_debug(PFX_BTM "<%s> <%d>\n", __func__, __LINE__); \
+		pr_warn(PFX_BTM "<%s> <%d>\n", __func__, __LINE__); \
 } while (0)
 
 #define ASSERT(expr)
