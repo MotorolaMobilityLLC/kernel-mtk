@@ -1162,6 +1162,17 @@ static ssize_t store_BN_TestMode(struct device *dev, struct device_attribute *at
 }
 static DEVICE_ATTR(BN_TestMode, 0664, show_BN_TestMode, store_BN_TestMode);
 
+static ssize_t show_ADC_Charger_Voltage(struct device *dev, struct device_attribute *attr,
+					char *buf)
+{
+	int vbus = battery_get_vbus();
+
+	pr_debug("[%s]: %d\n", __func__, vbus);
+	return sprintf(buf, "%d\n", vbus);
+}
+
+static DEVICE_ATTR(ADC_Charger_Voltage, 0444, show_ADC_Charger_Voltage, NULL);
+
 /* procfs */
 static int mtk_charger_current_cmd_show(struct seq_file *m, void *data)
 {
@@ -1310,6 +1321,10 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 		goto _out;
 	/* Pump express */
 	ret = device_create_file(&(pdev->dev), &dev_attr_Pump_Express);
+	if (ret)
+		goto _out;
+
+	ret = device_create_file(&(pdev->dev), &dev_attr_ADC_Charger_Voltage);
 	if (ret)
 		goto _out;
 
