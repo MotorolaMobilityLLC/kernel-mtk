@@ -18,6 +18,7 @@
 #include <linux/printk.h>
 #include <linux/module.h>
 #include <linux/seqlock.h>
+#include <linux/irqflags.h>
 #include "engine_request.h"
 
 /*
@@ -172,9 +173,11 @@ signed int register_requests(struct engine_requests *eng, size_t size)
 	}
 
 	seqlock_init(&eng->seqlock);
+	local_irq_disable();
 	write_seqlock(&eng->seqlock);
 	eng->req_running = false;
 	write_sequnlock(&eng->seqlock);
+	local_irq_enable();
 
 	/* init and inc for 1st request_handler use */
 	init_completion(&eng->req_handler_done);
@@ -199,9 +202,11 @@ signed int unregister_requests(struct engine_requests *eng)
 			set_frame_data(&eng->reqs[r].frames[f], NULL);
 	}
 
+	local_irq_disable();
 	write_seqlock(&eng->seqlock);
 	eng->req_running = false;
 	write_sequnlock(&eng->seqlock);
+	local_irq_enable();
 
 	return 0;
 }
