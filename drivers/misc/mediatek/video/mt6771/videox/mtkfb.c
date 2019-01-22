@@ -71,6 +71,9 @@
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 #include "external_display.h"
 #endif
+#ifndef _UAPI__ASMARM_SETUP_H
+#define _UAPI__ASMARM_SETUP_H
+#endif
 #include <mt-plat/mtk_ccci_common.h>
 #include "ddp_dsi.h"
 
