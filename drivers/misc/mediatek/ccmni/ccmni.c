@@ -1089,12 +1089,6 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx, enum HIF_STATE 
 	ccmni = (struct ccmni_instance *)netdev_priv(dev);
 
 	switch (state) {
-	case RX_IRQ:
-		mod_timer(ccmni->timer, jiffies+HZ);
-		napi_schedule(ccmni->napi);
-		wake_lock_timeout(&ctlb->ccmni_wakelock, HZ);
-		break;
-
 #ifdef ENABLE_WQ_GRO
 	case RX_FLUSH:
 		preempt_disable();
@@ -1103,6 +1097,12 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx, enum HIF_STATE 
 		napi_gro_flush(ccmni->napi, false);
 		spin_unlock_bh(ccmni->spinlock);
 		preempt_enable();
+		break;
+#else
+	case RX_IRQ:
+		mod_timer(ccmni->timer, jiffies + HZ);
+		napi_schedule(ccmni->napi);
+		wake_lock_timeout(&ctlb->ccmni_wakelock, HZ);
 		break;
 #endif
 
@@ -1121,12 +1121,13 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx, enum HIF_STATE 
 					netif_wake_queue(ccmni->dev);
 			}
 			ccmni->tx_irq_cnt[is_ack]++;
-			if (ccmni->flags[is_ack] & CCMNI_TX_PRINT_F ||
-				time_after(jiffies, ccmni->tx_full_tick[is_ack] + 1)) {
+			if ((ccmni->flags[is_ack] & CCMNI_TX_PRINT_F) ||
+				time_after(jiffies, ccmni->tx_irq_tick[is_ack] + 2)) {
 				ccmni->flags[is_ack] &= ~CCMNI_TX_PRINT_F;
-				CCMNI_DBG_MSG(md_id, "%s(%d), idx=%d, hif_sta=TX_IRQ, ack=%d, cnt(%u, %u)\n",
+				CCMNI_INF_MSG(md_id, "%s(%d), idx=%d, md_sta=TX_IRQ, ack=%d, cnt(%u, %u), time=%lu\n",
 					ccmni->dev->name, atomic_read(&ccmni->usage), ccmni->index,
-					is_ack, ccmni->tx_full_cnt[is_ack], ccmni->tx_irq_cnt[is_ack]);
+					is_ack, ccmni->tx_full_cnt[is_ack], ccmni->tx_irq_cnt[is_ack],
+					(jiffies - ccmni->tx_irq_tick[is_ack]));
 			}
 		}
 		break;
@@ -1144,7 +1145,8 @@ static void ccmni_queue_state_callback(int md_id, int ccmni_idx, enum HIF_STATE 
 				netif_stop_queue(ccmni->dev);
 			}
 			ccmni->tx_full_cnt[is_ack]++;
-			if (time_after(jiffies, ccmni->tx_full_tick[is_ack] + 1)) {
+			ccmni->tx_irq_tick[is_ack] = jiffies;
+			if (time_after(jiffies, ccmni->tx_full_tick[is_ack] + 4)) {
 				ccmni->tx_full_tick[is_ack] = jiffies;
 				ccmni->flags[is_ack] |= CCMNI_TX_PRINT_F;
 				CCMNI_DBG_MSG(md_id, "%s(%d), idx=%d, hif_sta=TX_FULL, ack=%d, cnt(%u, %u)\n",
