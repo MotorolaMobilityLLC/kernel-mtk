@@ -1121,7 +1121,7 @@ static void ged_dvfs_custom_boost_gpu_freq(unsigned int ui32FreqLevel)
 
 	/* 0 => The highest frequency */
 	/* table_num - 1 => The lowest frequency */
-	g_cust_boost_freq_id = ui32MaxLevel - ui32FreqLevel;
+	g_cust_boost_freq_id = ui32FreqLevel;
 	gpu_cust_boost_freq = mt_gpufreq_get_freq_by_idx(g_cust_boost_freq_id);
 
 	if (g_cust_boost_freq_id < mt_gpufreq_get_cur_freq_index())
@@ -1145,7 +1145,7 @@ static void ged_dvfs_custom_ceiling_gpu_freq(unsigned int ui32FreqLevel)
 
 	/* 0 => The highest frequency */
 	/* table_num - 1 => The lowest frequency */
-	g_cust_upbound_freq_id = ui32MaxLevel - ui32FreqLevel;
+	g_cust_upbound_freq_id = ui32FreqLevel;
 	gpu_cust_upbound_freq = mt_gpufreq_get_freq_by_idx(g_cust_upbound_freq_id);
 
 	if (g_cust_upbound_freq_id > mt_gpufreq_get_cur_freq_index())
@@ -1163,9 +1163,7 @@ static unsigned int ged_dvfs_get_bottom_gpu_freq(void)
 
 static unsigned int ged_dvfs_get_custom_ceiling_gpu_freq(void)
 {
-	unsigned int ui32MaxLevel = mt_gpufreq_get_dvfs_table_num() - 1;
-
-	return ui32MaxLevel - g_cust_upbound_freq_id;
+	return g_cust_upbound_freq_id;
 }
 
 static unsigned long ged_get_gpu_bottom_freq(void)
@@ -1186,9 +1184,7 @@ static unsigned long ged_get_gpu_custom_upbound_freq(void)
 
 unsigned int ged_dvfs_get_custom_boost_gpu_freq(void)
 {
-	unsigned int ui32MaxLevel = mt_gpufreq_get_dvfs_table_num() - 1;
-
-	return ui32MaxLevel - g_cust_boost_freq_id;
+	return g_cust_boost_freq_id;
 }
 
 /* Need spinlocked */
