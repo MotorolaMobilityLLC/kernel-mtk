@@ -499,6 +499,12 @@ static void mtk_dma_free_chan_resources(struct dma_chan *chan)
 		free_irq(mtkd->dma_irq[c->dma_ch], chan);
 	}
 
+	/* disable the tasklet. if the task is running, wait for it finish and
+	 * remove it from tasklet list. Put it before reset channel paremeter
+	 * because it may running.
+	 */
+	tasklet_kill(&mtkd->task);
+
 	c->channel_base = NULL;
 	mtkd->lch_map[c->dma_ch] = NULL;
 	vchan_free_chan_resources(&c->vc);
@@ -506,7 +512,6 @@ static void mtk_dma_free_chan_resources(struct dma_chan *chan)
 	pr_debug("freeing channel for %u\n", c->dma_sig);
 	c->dma_sig = 0;
 
-	tasklet_kill(&mtkd->task);
 	pm_runtime_put_sync(mtkd->ddev.dev);
 }
 
