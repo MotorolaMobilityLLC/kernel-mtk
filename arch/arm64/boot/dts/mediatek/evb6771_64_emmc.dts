@@ -644,6 +644,10 @@ initcall_debug=1";
 	};
 }; /* IRTX GPIO Settings -End */
 
+&lk_charger {
+	disable_charger;
+};
+
 &charger {
 	disable_charger;
 };
