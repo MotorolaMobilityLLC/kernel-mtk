@@ -2179,6 +2179,10 @@ static int pseudo_probe(struct platform_device *pdev)
 	unsigned long iommu_pgt_base = mtk_get_pgt_base();
 
 	pseudo_m4u_session_init();
+
+	/* bit[0:11] is reserved */
+	iommu_pgt_base &= 0xfffff000;
+	M4UMSG("%s, %d, iommu_pgt_base 0x%lx\n", __func__, __LINE__, iommu_pgt_base);
 	pseudo_m4u_sec_init(iommu_pgt_base, gM4U_L2_enable, &sec_mem_size);
 		/* reserve mva range for security world */
 	__reserve_iova_sec(dev, 0, sec_mem_size);
