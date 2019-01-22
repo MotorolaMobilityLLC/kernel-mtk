@@ -28,7 +28,7 @@
 #include "mtk_spm.h"
 #include "mtk_spm_sleep.h"
 #include "mtk_spm_idle.h"
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #include <mach/mtk_clkmgr.h>
 #endif
 
@@ -329,7 +329,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 	subsys_if_on();
 #endif
 #endif
-#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (slp_check_mtcmos_pll)
 		slp_check_pm_mtcmos_pll();

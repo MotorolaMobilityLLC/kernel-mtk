@@ -14,7 +14,8 @@
 #ifndef __MT_SLEEP_H__
 #define __MT_SLEEP_H__
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_MT6797) \
+	|| defined(CONFIG_MACH_KIBOPLUS)
 
 #include "spm_v2/mtk_sleep.h"
 

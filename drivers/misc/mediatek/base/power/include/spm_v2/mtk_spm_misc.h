@@ -26,7 +26,7 @@
 /* IRQ */
 extern int mt_irq_mask_all(struct mtk_irq_mask *mask);
 extern int mt_irq_mask_restore(struct mtk_irq_mask *mask);
-#if !defined(CONFIG_MACH_MT6757)
+#if !defined(CONFIG_MACH_MT6757) && !defined(CONFIG_MACH_KIBOPLUS)
 /* Dilapidate, needs to remove */
 extern void mt_irq_unmask_for_sleep(unsigned int irq);
 #endif

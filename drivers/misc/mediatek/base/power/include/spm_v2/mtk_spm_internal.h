@@ -163,7 +163,7 @@ struct pcm_desc {
 	u32 vec15;		/* event vector 15 config */
 };
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 struct pwr_ctrl {
 	u32 pcm_flags;
 	u32 pcm_flags_cust;	/* can override pcm_flags */
@@ -436,7 +436,7 @@ struct pwr_ctrl {
 };
 #endif
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 #define PCM_FIRMWARE_SIZE   0x4000 /* 16KB */
 #else
 #define PCM_FIRMWARE_SIZE   0x2000
@@ -444,7 +444,7 @@ struct pwr_ctrl {
 #define DYNA_LOAD_PCM_PATH_SIZE 128
 #define PCM_FIRMWARE_VERSION_SIZE 128
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 enum dyna_load_pcm_index {
 	DYNA_LOAD_PCM_SUSPEND = 0,
 	DYNA_LOAD_PCM_SUSPEND_BY_MP1,
@@ -576,7 +576,7 @@ extern void __spm_set_pcm_wdt(int en);
 extern u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr);
 extern struct dram_info *g_dram_info_dummy_read;
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 extern int can_spm_pmic_set_vcore_voltage(void);
 #endif
 
@@ -634,7 +634,7 @@ static inline void update_pwrctrl_pcm_flags(u32 *flags)
 	/* SPM controls NFC clock buffer in RF only */
 	if (!is_clk_buf_from_pmic() && is_clk_buf_under_flightmode())
 		(*flags) |= SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL;
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	if (is_clk_buf_from_pmic())
 		(*flags) |= SPM_FLAG_IS_COTSX;
 #endif
