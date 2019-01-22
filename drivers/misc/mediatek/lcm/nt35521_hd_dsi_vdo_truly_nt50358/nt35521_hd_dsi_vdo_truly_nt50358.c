@@ -501,7 +501,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 6;
-	params->dsi.vertical_frontporch = 28;
+	params->dsi.vertical_frontporch = 50;
 	params->dsi.vertical_frontporch_for_low_power = 470;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
@@ -514,10 +514,10 @@ static void lcm_get_params(LCM_PARAMS *params)
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 220;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 220;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 224;	/* this value must be in MTK suggested table */
 #endif
 	params->dsi.PLL_CK_CMD = 220;
-	params->dsi.PLL_CK_VDO = 220;
+	params->dsi.PLL_CK_VDO = 224;
 #else
 	params->dsi.pll_div1 = 0;
 	params->dsi.pll_div2 = 0;
