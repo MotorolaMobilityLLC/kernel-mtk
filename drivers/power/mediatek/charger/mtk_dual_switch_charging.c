@@ -673,18 +673,20 @@ int mtk_dual_switch_chr_err(struct charger_manager *info)
 {
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 
-	if (info->enable_sw_jeita) {
-		if ((info->sw_jeita.sm == TEMP_BELOW_T0) || (info->sw_jeita.sm == TEMP_ABOVE_T4))
-			info->sw_jeita.error_recovery_flag = false;
+	if (info->can_charging) {
+		if (info->enable_sw_jeita) {
+			if ((info->sw_jeita.sm == TEMP_BELOW_T0) || (info->sw_jeita.sm == TEMP_ABOVE_T4))
+				info->sw_jeita.error_recovery_flag = false;
 
-		if ((info->sw_jeita.error_recovery_flag == false) &&
-			(info->sw_jeita.sm != TEMP_BELOW_T0) && (info->sw_jeita.sm != TEMP_ABOVE_T4)) {
-			info->sw_jeita.error_recovery_flag = true;
-			swchgalg->state = CHR_CC;
+			if ((info->sw_jeita.error_recovery_flag == false) &&
+				(info->sw_jeita.sm != TEMP_BELOW_T0) && (info->sw_jeita.sm != TEMP_ABOVE_T4)) {
+				info->sw_jeita.error_recovery_flag = true;
+				swchgalg->state = CHR_CC;
+			}
+		} else {
+			if (info->thermal.sm == BAT_TEMP_NORMAL)
+				swchgalg->state = CHR_CC;
 		}
-	} else {
-		if (info->thermal.sm == BAT_TEMP_NORMAL)
-			swchgalg->state = CHR_CC;
 	}
 
 	_disable_all_charging(info);
