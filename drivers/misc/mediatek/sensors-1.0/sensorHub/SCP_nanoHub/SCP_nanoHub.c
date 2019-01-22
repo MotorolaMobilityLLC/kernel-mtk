@@ -890,6 +890,9 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[ID_FLAT].sensorType = ID_FLAT;
 	mSensorState[ID_FLAT].rate = SENSOR_RATE_ONESHOT;
 	mSensorState[ID_FLAT].timestamp_filter = false;
+
+	mSensorState[ID_RGBW].sensorType = ID_RGBW;
+	mSensorState[ID_RGBW].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)
