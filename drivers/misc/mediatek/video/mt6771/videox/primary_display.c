@@ -2352,6 +2352,7 @@ static int DL_switch_to_OVL_DCM_fast(int sw_only, int block)
 
 	struct disp_ddp_path_config *data_config_dl = NULL;
 	struct disp_ddp_path_config *data_config_dc = NULL;
+	struct OVL_CONFIG_STRUCT *tmp_ovl_config = NULL;
 	/* unsigned int mva = pgc->dc_buf[pgc->dc_buf_id]; */ /* mva for 1.ovl->wdma and 2.Rdma->dsi */
 	unsigned int mva;
 	struct ddp_io_golden_setting_arg gset_arg;
@@ -2398,6 +2399,10 @@ static int DL_switch_to_OVL_DCM_fast(int sw_only, int block)
 	/* 4.config ovl1 */
 	rdma_config.address = mva;
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	tmp_ovl_config = kzalloc(sizeof(data_config_dl->ovl_config), GFP_KERNEL);
+	if (tmp_ovl_config)
+		memcpy((void *)tmp_ovl_config, (const void *)data_config_dl->ovl_config,
+			sizeof(data_config_dl->ovl_config));
 	data_config_dl->dst_dirty = 1;
 	data_config_dl->ovl_dirty = 1;
 	data_config_dl->ovl_config[0].layer = 0;
@@ -2473,6 +2478,7 @@ static int DL_switch_to_OVL_DCM_fast(int sw_only, int block)
 		DISPDBG("dpmgr create ovl memout path SUCCESS(%p)\n", pgc->ovl2mem_path_handle);
 	} else {
 		DISPPR_ERROR("dpmgr create path FAIL\n");
+		kfree(tmp_ovl_config);
 		return -1;
 	}
 
@@ -2485,9 +2491,14 @@ static int DL_switch_to_OVL_DCM_fast(int sw_only, int block)
 	data_config_dc->dst_dirty = 1;
 
 	/* move ovl config info from dl to dc */
-	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
-	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
-		   sizeof(data_config_dl->ovl_config));
+	if (tmp_ovl_config) {
+		memcpy(data_config_dc->ovl_config, tmp_ovl_config, sizeof(data_config_dl->ovl_config));
+		kfree(tmp_ovl_config);
+	} else  {
+		data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+		memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
+			sizeof(data_config_dl->ovl_config));
+	}
 	data_config_dc->ovl_dirty = 1;
 	data_config_dc->p_golden_setting_context = data_config_dl->p_golden_setting_context;
 	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc,
