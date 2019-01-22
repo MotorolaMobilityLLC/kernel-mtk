@@ -20,27 +20,21 @@ void upower_update_volt_by_eem(enum upower_bank bank, unsigned int *volt, unsign
 	int i, j;
 	int index = opp_num;
 
-	upower_debug("upower_update_volt_by_eem: bank = %d, opp_num = %d\n", bank, opp_num);
+	upower_debug("(%s) bank = %d, opp_num = %d\n", __func__, bank, opp_num);
 
-	/* UPOWER_BANK_B +3 = UPOWER_BANK_CLS_B */
 	if (bank >= NR_UPOWER_BANK) {
-		upower_error("(%s) No this bank in UPOWER\n", __func__);
-	} else if (bank == UPOWER_BANK_CCI) {
-		for (j = 0; j < opp_num; j++) {
-			index = opp_num - j - 1; /* reorder index of volt */
-			upower_tbl_ref[bank].row[index].volt = volt[j];
-			upower_debug("[sram]volt = %u, [eem]volt = %u\n",
-						upower_tbl_ref[bank].row[index].volt, volt[j]);
-		}
-	} else {
-		for (i = bank; i < UPOWER_BANK_CCI; i = i+3) {
+		upower_error("(%s) No this bank\n", __func__);
+		return;
+	}
+	for (i = 0; i < NR_UPOWER_BANK; i++) {
+		if (upower_recognize_by_eem[i] == bank) {
 			for (j = 0; j < opp_num; j++) {
 				index = opp_num - j - 1; /* reorder index of volt */
 				upower_tbl_ref[i].row[index].volt = volt[j];
-				upower_debug("[sram]volt = %u, [eem]volt = %u\n",
-						upower_tbl_ref[i].row[index].volt, volt[j]);
-			} /* for */
-		} /* for */
+			}
+			upower_debug("(upower bk %d)volt = %u, (eem bk %d)volt = %u\n",
+						i, upower_tbl_ref[i].row[0].volt, bank, volt[0]);
+		}
 	}
 }
 EXPORT_SYMBOL(upower_update_volt_by_eem);
@@ -63,21 +57,17 @@ void upower_update_degree_by_eem(enum upower_bank bank, int deg)
 	if (idx == -1)
 		idx = 0;
 
-	/* UPOWER_BANK_B +3 = UPOWER_BANK_CLS_B */
+	upower_debug("(%s) bank = %d, deg = %d\n", __func__, bank, deg);
 	if (bank >= NR_UPOWER_BANK) {
-		upower_error("upower_update_volt_by_eem: no this bank\n");
-	} else if (bank == UPOWER_BANK_CCI) {
-		upower_debug("--------Bank(%d) (deg %d) eem update deg idx--------\n",
-					bank, deg);
-		upower_tbl_ref[bank].lkg_idx = idx;
-		upower_debug("[sram]lkg_idx = %d\n", upower_tbl_ref[bank].lkg_idx);
-	} else {
-		for (i = bank; i < UPOWER_BANK_CCI; i = i+3) {
-			upower_debug("--------Bank(%d) (deg %d) eem update deg idx--------\n",
-						i, deg);
+		upower_error("(%s) No this bank\n", __func__);
+		return;
+	}
+
+	for (i = 0; i < NR_UPOWER_BANK; i++) {
+		if (upower_recognize_by_eem[i] == bank) {
 			upower_tbl_ref[i].lkg_idx = idx;
-			upower_debug("[sram]lkg_idx = %d\n", upower_tbl_ref[i].lkg_idx);
-		} /* for */
+			upower_debug("i = %d, deg = %d\n", i, deg);
+		}
 	}
 }
 EXPORT_SYMBOL(upower_update_degree_by_eem);

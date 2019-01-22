@@ -26,6 +26,7 @@
 #include <linux/sched.h>
 #include <linux/types.h>
 #include <mt-plat/mtk_chip.h>
+#include <linux/delay.h>
 
 /* local include */
 #include "mtk_upower.h"
@@ -57,10 +58,6 @@ struct upower_tbl_info *upower_tbl_infos;
 /* sspm reserved mem info for sspm upower */
 phys_addr_t upower_data_phy_addr, upower_data_virt_addr;
 unsigned long long upower_data_size;
-
-/* #if (NR_UPOWER_TBL_LIST <= 1) */
-struct upower_tbl final_upower_tbl[NR_UPOWER_BANK] = {};
-/* #endif */
 
 #if 0
 static void print_tbl(void)
@@ -302,18 +299,26 @@ static void upower_init_rownum(void)
 
 static unsigned int eem_is_enabled(void)
 {
-	unsigned int ret = 1;
-	struct upower_tbl *tbl;
+	return mt_eem_is_enabled();
+}
+
+static void upower_wait_for_eem_volt_done(void)
+{
+	unsigned char eem_volt_not_ready = 0;
 	int i;
 
-	/* if volt is 0, means ptp is not enabled, return 0 */
-	for (i = 0; i < NR_UPOWER_BANK; i++) {
-		tbl = upower_tbl_infos[i].p_upower_tbl;
-		ret = upower_tbl_ref[i].row[0].volt > 0 ? 1 : 0;
-		if (!ret)
+	udelay(100);
+	while (1) {
+		eem_volt_not_ready = 0;
+		for (i = 0; i < NR_UPOWER_BANK; i++) {
+			if (upower_tbl_ref[i].row[UPOWER_OPP_NUM - 1].volt == 0)
+				eem_volt_not_ready = 1;
+		}
+		if (!eem_volt_not_ready)
 			break;
+		else
+			udelay(100);
 	}
-	return ret;
 }
 
 static void upower_init_lkgidx(void)
@@ -393,9 +398,9 @@ static int __init upower_get_tbl_ref(void)
 	mt_eem_send_upower_table_ref(upower_data_phy_addr, upower_data_size);
 #endif
 	/* upower_tbl_ref has been assigned in get_original_table() if no sspm */
-	upower_error("upower tbl orig location([0](%p)= %p\n",
+	upower_debug("upower tbl orig location([0](%p)= %p\n",
 					upower_tbl_infos, upower_tbl_infos[0].p_upower_tbl);
-	upower_error("upower tbl new location([0](%p)\n", upower_tbl_ref);
+	upower_debug("upower tbl new location([0](%p)\n", upower_tbl_ref);
 
 	return 0;
 }
@@ -551,6 +556,8 @@ static int __init upower_init(void)
 		upower_error("eem is not enabled\n");
 		upower_init_lkgidx();
 		upower_init_volt();
+	} else {
+		upower_wait_for_eem_volt_done();
 	}
 
 	upower_update_dyn_pwr();
