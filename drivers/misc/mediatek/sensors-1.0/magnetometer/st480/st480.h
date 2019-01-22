@@ -92,17 +92,6 @@
 #define MAX_FAILURE_COUNT 3
 #define ST480_DEFAULT_DELAY   27
 
-/*
- * Debug
- */
-
-/*******************************************************************/
-#define SENODIAIO                   0xA1
-
-#define IOCTL_SENSOR_GET_DATA_MAG           _IO(SENODIAIO, 0x01)
-#define IOCTL_SENSOR_WRITE_DATA_COMPASS     _IO(SENODIAIO, 0x02)
-#define IOCTL_SENSOR_GET_COMPASS_FLAG	    _IO(SENODIAIO, 0x03)
-#define IOCTL_SENSOR_GET_COMPASS_DELAY	    _IO(SENODIAIO, 0x04)
 
 /*
  *  IC select
