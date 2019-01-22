@@ -98,6 +98,14 @@
 #include <linux/debugfs.h>
 #include "mtk-soc-codec-63xx.h"
 
+#include "mtk-hw-component.h"
+#if defined(CONFIG_SND_SOC_CS43130)
+#include "mtk-cs43130-machine-ops.h"
+#endif
+#if defined(CONFIG_SND_SOC_CS35L35)
+#include "mtk-cs35l35-machine-ops.h"
+#endif
+
 static struct dentry *mt_sco_audio_debugfs;
 #define DEBUG_FS_NAME "mtksocaudio"
 #define DEBUG_ANA_FS_NAME "mtksocanaaudio"
@@ -600,9 +608,38 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_SPKSCPTXDAI_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
+	{
+		.name = "VOICE_SCP",
+		.stream_name = MT_SOC_SCPVOICE_STREAM_NAME,
+		.cpu_dai_name   = MT_SOC_SCPVOICE_NAME,
+		.platform_name  = MT_SOC_SCP_VOICE_PCM,
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+	},
 #endif
 };
 
+static struct snd_soc_dai_link mt_soc_exthp_dai[] = {
+	{
+		.name = "ext_Headphone_Multimedia",
+		.stream_name = MT_SOC_HEADPHONE_STREAM_NAME,
+		.cpu_dai_name   = "snd-soc-dummy-dai",
+		.platform_name  = "snd-soc-dummy",
+#ifdef CONFIG_SND_SOC_CS43130
+		.codec_dai_name = "cs43130-hifi",
+		.codec_name = "cs43130.2-0030",
+		.ignore_suspend = 1,
+		.ignore_pmdown_time = true,
+		.dai_fmt = SND_SOC_DAIFMT_I2S |
+			   SND_SOC_DAIFMT_CBS_CFS |
+			   SND_SOC_DAIFMT_NB_NF,
+		.ops = &cs43130_ops,
+#else
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.codec_name = "snd-soc-dummy",
+#endif
+	},
+};
 
 static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 	{
@@ -645,6 +682,7 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 
 static struct snd_soc_dai_link mt_soc_dai_component[
 	ARRAY_SIZE(mt_soc_dai_common) +
+	ARRAY_SIZE(mt_soc_exthp_dai) +
 	ARRAY_SIZE(mt_soc_extspk_dai)];
 
 static struct snd_soc_card mt_snd_soc_card_mt = {
@@ -653,6 +691,11 @@ static struct snd_soc_card mt_snd_soc_card_mt = {
 	.num_links  = ARRAY_SIZE(mt_soc_dai_common),
 };
 
+static void get_ext_dai_codec_name(void)
+{
+	get_extspk_dai_codec_name(mt_soc_extspk_dai);
+	get_exthp_dai_codec_name(mt_soc_exthp_dai);
+}
 
 static int mt_soc_snd_init(struct platform_device *pdev)
 {
@@ -660,13 +703,17 @@ static int mt_soc_snd_init(struct platform_device *pdev)
 	int ret;
 	int daiLinkNum = 0;
 
+	get_ext_dai_codec_name();
 	pr_debug("mt_soc_snd_init dai_link = %p\n", mt_snd_soc_card_mt.dai_link);
 
 	/* DEAL WITH DAI LINK */
 	memcpy(mt_soc_dai_component, mt_soc_dai_common, sizeof(mt_soc_dai_common));
 	daiLinkNum += ARRAY_SIZE(mt_soc_dai_common);
+	memcpy(mt_soc_dai_component + daiLinkNum,
+	mt_soc_exthp_dai, sizeof(mt_soc_exthp_dai));
+	daiLinkNum += ARRAY_SIZE(mt_soc_exthp_dai);
 
-	memcpy(mt_soc_dai_component + ARRAY_SIZE(mt_soc_dai_common),
+	memcpy(mt_soc_dai_component + daiLinkNum,
 	mt_soc_extspk_dai, sizeof(mt_soc_extspk_dai));
 	daiLinkNum += ARRAY_SIZE(mt_soc_extspk_dai);
 

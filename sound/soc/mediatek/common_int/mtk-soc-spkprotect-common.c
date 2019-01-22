@@ -54,6 +54,7 @@ static Aud_Spk_Message_t mAud_Spk_Message;
 
 void spkprocservice_ipicmd_received(ipi_msg_t *ipi_msg)
 {
+
 	switch (ipi_msg->msg_id) {
 	case SPK_PROTECT_IRQDL:
 		mAud_Spk_Message.msg_id = ipi_msg->msg_id;
@@ -74,10 +75,23 @@ void spkprocservice_ipicmd_send(audio_ipi_msg_data_t data_type,
 						uint32_t param2, char *payload)
 {
 	ipi_msg_t ipi_msg;
+	int send_result = 0;
+	int retry_count;
+	const int k_max_try_count = 200;  /* maximum wait 20ms */
 
 	memset((void *)&ipi_msg, 0, sizeof(ipi_msg_t));
-	audio_send_ipi_msg(&ipi_msg, TASK_SCENE_SPEAKER_PROTECTION, AUDIO_IPI_LAYER_KERNEL_TO_SCP,
-		data_type, ack_type, msg_id, param1, param2, (char *)payload);
+	for (retry_count = 0; retry_count < k_max_try_count ; retry_count++) {
+		send_result = audio_send_ipi_msg(&ipi_msg, TASK_SCENE_SPEAKER_PROTECTION,
+						 AUDIO_IPI_LAYER_KERNEL_TO_SCP,
+						 data_type, ack_type, msg_id, param1, param2, (char *)payload);
+		if (send_result == 0)
+			break;
+		udelay(100);
+	}
+
+	if (send_result < 0)
+		pr_err("%s(), scp_ipi send fail\n", __func__);
+
 }
 
 MODULE_LICENSE("GPL");
