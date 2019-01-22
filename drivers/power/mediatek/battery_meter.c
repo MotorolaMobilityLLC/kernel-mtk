@@ -500,6 +500,25 @@ int __batt_meter_init_cust_data_from_cust_header(void)
 }
 
 #if defined(BATTERY_DTS_SUPPORT) && defined(CONFIG_OF)
+static void fgauge_check_table_size(void)
+{
+	int saddles;
+
+	saddles = sizeof(battery_profile_temperature) / sizeof(BATTERY_PROFILE_STRUCT);
+	if (saddles != (sizeof(battery_profile_t0) / sizeof(BATTERY_PROFILE_STRUCT)) ||
+		saddles != (sizeof(battery_profile_t1) / sizeof(BATTERY_PROFILE_STRUCT)) ||
+		saddles != (sizeof(battery_profile_t2) / sizeof(BATTERY_PROFILE_STRUCT)) ||
+		saddles != (sizeof(battery_profile_t3) / sizeof(BATTERY_PROFILE_STRUCT)))
+		pr_err("fgauge_check_table_size: battery_profile_t number not sync\n");
+
+	saddles = sizeof(r_profile_temperature) / sizeof(R_PROFILE_STRUCT);
+	if (saddles != (sizeof(r_profile_t0) / sizeof(R_PROFILE_STRUCT)) ||
+		saddles != (sizeof(r_profile_t1) / sizeof(R_PROFILE_STRUCT)) ||
+		saddles != (sizeof(r_profile_t2) / sizeof(R_PROFILE_STRUCT)) ||
+		saddles != (sizeof(r_profile_t3) / sizeof(R_PROFILE_STRUCT)))
+		pr_err("fgauge_check_table_size: r_profile number not sync\n");
+}
+
 static void __batt_meter_parse_node(const struct device_node *np,
 				const char *node_srting, int *cust_val)
 {
@@ -514,20 +533,22 @@ static void __batt_meter_parse_node(const struct device_node *np,
 }
 
 static void __batt_meter_parse_table(const struct device_node *np,
-				const char *node_srting, BATTERY_PROFILE_STRUCT_P profile_p)
+				const char *node_srting, BATTERY_PROFILE_STRUCT_P profile_p, int num)
 {
 	int addr, val, idx, saddles;
 
 	/*the number of battery table is the same as the number of r table*/
 	saddles = fgauge_get_saddles();
 	idx = 0;
-	bm_print(BM_LOG_CRTI, "batt_meter_parse_table: %s, %d\n", node_srting, saddles);
+	bm_print(BM_LOG_CRTI, "batt_meter_parse_table: %s, %d, %d\n", node_srting, saddles, num);
+	if (saddles < num)
+		pr_err("r_profile_t0: saddles: %d less than dts num: %d!!!\n", saddles, num);
 
 	while (!of_property_read_u32_index(np, node_srting, idx, &addr)) {
 		idx++;
 		if (!of_property_read_u32_index(np, node_srting, idx, &val)) {
-			battery_log(BAT_LOG_CRTI, "batt_temperature_table: addr: %d, val: %d\n",
-				    addr, val);
+			battery_log(BAT_LOG_CRTI, "batt_temperature_table: addr: %d, val: %d idx: %d\n",
+				addr, val, idx);
 		}
 		profile_p->percentage = addr;
 		profile_p->voltage = val;
@@ -540,7 +561,7 @@ static void __batt_meter_parse_table(const struct device_node *np,
 		#endif
 
 		profile_p++;
-		if ((idx++) >= (saddles * 2))
+		if ((++idx) >= (saddles * 2))
 			break;
 	}
 
@@ -606,45 +627,39 @@ int __batt_meter_init_cust_data_from_dt(void)
 			break;
 	}
 
-	__batt_meter_parse_node(np, "battery_profile_t0_num", &num);
+	fgauge_check_table_size();
 
+	__batt_meter_parse_node(np, "battery_profile_t0_num", &num);
 	__batt_meter_parse_table(np, "battery_profile_t0",
-			fgauge_get_profile(batt_meter_cust_data.temperature_t0));
+			fgauge_get_profile(batt_meter_cust_data.temperature_t0), num);
 
 	__batt_meter_parse_node(np, "battery_profile_t1_num", &num);
-
 	__batt_meter_parse_table(np, "battery_profile_t1",
-			fgauge_get_profile(batt_meter_cust_data.temperature_t1));
+			fgauge_get_profile(batt_meter_cust_data.temperature_t1), num);
 
 	__batt_meter_parse_node(np, "battery_profile_t2_num", &num);
-
 	__batt_meter_parse_table(np, "battery_profile_t2",
-			fgauge_get_profile(batt_meter_cust_data.temperature_t2));
+			fgauge_get_profile(batt_meter_cust_data.temperature_t2), num);
 
 	__batt_meter_parse_node(np, "battery_profile_t3_num", &num);
-
 	__batt_meter_parse_table(np, "battery_profile_t3",
-			fgauge_get_profile(batt_meter_cust_data.temperature_t3));
+			fgauge_get_profile(batt_meter_cust_data.temperature_t3), num);
 
 	__batt_meter_parse_node(np, "r_profile_t0_num",	&num);
-
 	__batt_meter_parse_table(np, "r_profile_t0",
-			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t0));
+			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t0), num);
 
 	__batt_meter_parse_node(np, "r_profile_t1_num",	&num);
-
 	__batt_meter_parse_table(np, "r_profile_t1",
-			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t1));
+			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t1), num);
 
 	__batt_meter_parse_node(np, "r_profile_t2_num",	&num);
-
 	__batt_meter_parse_table(np, "r_profile_t2",
-			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t2));
+			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t2), num);
 
 	__batt_meter_parse_node(np, "r_profile_t3_num",	&num);
-
 	__batt_meter_parse_table(np, "r_profile_t3",
-			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t3));
+			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t3), num);
 
 	__batt_meter_parse_node(np, "r_bat_sense",
 		&batt_meter_cust_data.r_bat_sense);
