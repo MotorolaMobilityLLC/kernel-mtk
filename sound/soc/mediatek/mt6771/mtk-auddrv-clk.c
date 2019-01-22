@@ -185,6 +185,9 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_CLK26M] = {"top_clk26m_clk", false, false, NULL}
 };
 
+static int apll1_mux_setting(bool enable);
+static int apll2_mux_setting(bool enable);
+
 static int aud_clk_enable(const struct audio_clock_attr *clk)
 {
 	int ret;
@@ -241,6 +244,10 @@ int AudDrv_Clk_probe(void *dev)
 			}
 		}
 	}
+
+	/* Set APLL1/APLL2 as disable state when boot */
+	apll1_mux_setting(false);
+	apll2_mux_setting(false);
 
 	return ret;
 }
