@@ -439,6 +439,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	/* AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);             //disable RTP */
 }
 
+#ifdef CONFIG_PM
 static void mt_auxadc_hal_suspend(void)
 {
 	pr_debug("******** MT auxadc driver suspend!! ********\n");
@@ -491,6 +492,7 @@ static void mt_auxadc_hal_resume(void)
 #endif
 	/* AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);             //disable RTP */
 }
+#endif
 
 static int mt_auxadc_dump_register(char *buf)
 {
