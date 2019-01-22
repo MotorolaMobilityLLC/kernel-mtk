@@ -462,8 +462,15 @@
  */
 #define CFG_MULTI_SSID_SCAN			1
 #define CFG_NLO_MSP 0 /* NLO/PNO Multiple Scan Plan */
+#define CFG_SUPPORT_SCHED_SCN_SSID_SETS		1 /*Sched-scan support hidden SSID*/
 #define CFG_SCAN_SSID_MAX_NUM                   (10)
+
+
+#if CFG_SUPPORT_SCHED_SCN_SSID_SETS
+#define CFG_SCAN_HIDDEN_SSID_MAX_NUM       (8)
+#endif
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
+
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Support EMI DEBUG
@@ -808,7 +815,6 @@
  */
 
 #define CFG_SUPPORT_SCN_PSCN	1
-
 #if CFG_SUPPORT_SCN_PSCN
 #define CFG_SUPPORT_GSCN	1	/* GSCN can be disabled here */
 #else
