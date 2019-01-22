@@ -210,11 +210,6 @@ extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
 	.clk_div = clk,			\
 }
 
-struct mt_cpu_freq_method {
-	const char pos_div;
-	const char clk_div;
-};
-
 struct opp_idx_tbl {
 	struct mt_cpu_dvfs *p;
 	struct mt_cpu_freq_method *slot;
@@ -231,11 +226,6 @@ enum opp_idx_type {
 	.cpufreq_khz = khz,             \
 	.cpufreq_volt = volt,           \
 }
-
-struct mt_cpu_freq_info {
-	const unsigned int cpufreq_khz;
-	unsigned int cpufreq_volt;
-};
 
 struct opp_tbl_info {
 	struct mt_cpu_freq_info *const opp_tbl;
@@ -319,25 +309,22 @@ extern int is_in_suspend(void);
 
 extern int cpufreq_procfs_init(void);
 extern char *_copy_from_user_for_proc(const char __user *buffer, size_t count);
-extern void _mt_cpufreq_aee_init(void);
 
-/* #ifdef CONFIG_CPU_DVFS_AEE_RR_REC */
-#if 1
 /* SRAM debugging*/
 extern void aee_rr_rec_cpu_dvfs_vproc_big(u8 val);
 extern void aee_rr_rec_cpu_dvfs_vproc_little(u8 val);
 extern void aee_rr_rec_cpu_dvfs_oppidx(u8 val);
-extern u8 aee_rr_curr_cpu_dvfs_oppidx(void);
 extern void aee_rr_rec_cpu_dvfs_cci_oppidx(u8 val);
-extern u8 aee_rr_curr_cpu_dvfs_cci_oppidx(void);
 extern void aee_rr_rec_cpu_dvfs_status(u8 val);
-extern u8 aee_rr_curr_cpu_dvfs_status(void);
 extern void aee_rr_rec_cpu_dvfs_step(u8 val);
-extern u8 aee_rr_curr_cpu_dvfs_step(void);
 extern void aee_rr_rec_cpu_dvfs_cb(u8 val);
-extern u8 aee_rr_curr_cpu_dvfs_cb(void);
 extern void aee_rr_rec_cpufreq_cb(u8 val);
+
+extern u8 aee_rr_curr_cpu_dvfs_oppidx(void);
+extern u8 aee_rr_curr_cpu_dvfs_cci_oppidx(void);
+extern u8 aee_rr_curr_cpu_dvfs_status(void);
+extern u8 aee_rr_curr_cpu_dvfs_step(void);
+extern u8 aee_rr_curr_cpu_dvfs_cb(void);
 extern u8 aee_rr_curr_cpufreq_cb(void);
-#endif
 
 #endif	/* __MTK_CPUFREQ_INTERNAL_H__ */

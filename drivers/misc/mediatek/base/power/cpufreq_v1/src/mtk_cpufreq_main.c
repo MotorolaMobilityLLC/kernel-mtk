@@ -161,60 +161,28 @@ static unsigned int _search_available_volt(struct mt_cpu_dvfs *p, unsigned int t
 	return cpu_dvfs_get_volt_by_idx(p, i);	/* mv * 100 */
 }
 
-static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx,
-	unsigned int *target_cci_volt)
+static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx, unsigned int *target_cci_volt)
 {
-	int freq_idx[NR_MT_CPU_DVFS - 1] = {-1};
-	unsigned int volt[NR_MT_CPU_DVFS - 1] = {0};
 	int i;
-	struct mt_cpu_dvfs *pp, *p_cci;
+	struct mt_cpu_dvfs *pp;
+	struct mt_cpu_dvfs *p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
+	unsigned int max_volt = 0;
+	unsigned int new_cci_opp_idx;
 
-	unsigned int target_cci_freq = 0;
-	int new_cci_opp_idx;
-
-	/* This is for cci */
-	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
-
-	/* Fill the V and F to determine cci state*/
-	/* MCSI Algorithm for cci target F */
 	for_each_cpu_dvfs_only(i, pp) {
-		if (pp->armpll_is_available) {
-			/* F */
+		if (pp->armpll_is_available || pp->idx_opp_tbl != pp->nr_opp_tbl - 1) {
 			if (pp == p)
-				freq_idx[i] = new_opp_idx;
+				max_volt = MAX(max_volt, cpu_dvfs_get_volt_by_idx(pp, new_opp_idx));
 			else
-				freq_idx[i] = pp->idx_opp_tbl;
-
-			target_cci_freq = MAX(target_cci_freq, cpu_dvfs_get_freq_by_idx(pp, freq_idx[i]));
-			/* V */
-			volt[i] = cpu_dvfs_get_volt_by_idx(pp, freq_idx[i]);
-
-			cpufreq_ver("DVFS: MCSI: %s, freq = %d, volt = %d\n", cpu_dvfs_get_name(pp),
-				cpu_dvfs_get_freq_by_idx(pp, freq_idx[i]), volt[i]);
+				max_volt = MAX(max_volt, cpu_dvfs_get_cur_volt(pp));
 		}
 	}
 
-	/* Most efficient frequency for CCI */
-	target_cci_freq = target_cci_freq / 2;
-
-	if (target_cci_freq > cpu_dvfs_get_freq_by_idx(p_cci, 0)) {
-		target_cci_freq = cpu_dvfs_get_freq_by_idx(p_cci, 0);
-		*target_cci_volt = cpu_dvfs_get_volt_by_idx(p_cci, 0);
-	} else
-		*target_cci_volt = _search_available_volt(p_cci, target_cci_freq);
-
-	/* Determine dominating voltage */
-	for_each_cpu_dvfs_only(i, pp) {
-		if (pp->Vproc_buck_id == p_cci->Vproc_buck_id)
-			*target_cci_volt = MAX(*target_cci_volt, volt[i]);
-	}
-
-	cpufreq_ver("DVFS: MCSI: target_cci (F,V) = (%d, %d)\n", target_cci_freq, *target_cci_volt);
-
+	*target_cci_volt = max_volt;
 	new_cci_opp_idx = _search_available_freq_idx_under_v(p_cci, *target_cci_volt);
 
-	cpufreq_ver("DVFS: MCSI: Final Result, target_cci_volt = %d, target_cci_freq = %d\n",
-		*target_cci_volt, cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx));
+	cpufreq_ver("target_cci_volt = %u, target_cci_freq = %u\n",
+		    *target_cci_volt, cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx));
 
 	return new_cci_opp_idx;
 }
@@ -527,7 +495,7 @@ static int _cpufreq_set_locked_cci(unsigned int target_cci_khz, unsigned int tar
 {
 	int ret = -1;
 	int new_opp_idx;
-	struct mt_cpu_dvfs *p_cci;
+	struct mt_cpu_dvfs *p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
 	unsigned int cur_cci_khz;
 	unsigned int cur_cci_volt;
 
@@ -535,16 +503,9 @@ static int _cpufreq_set_locked_cci(unsigned int target_cci_khz, unsigned int tar
 	struct buck_ctrl_t *vsram_p;
 	struct pll_ctrl_t *pll_p;
 
-	FUNC_ENTER(FUNC_LV_HELP);
-
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
-		(1 << CPU_DVFS_CCI_IS_DOING_DVFS));
-#endif
+	aee_record_cpu_dvfs_in(p_cci);
 
 	aee_record_cci_dvfs_step(1);
-
-	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
 
 	vproc_p = id_to_buck_ctrl(p_cci->Vproc_buck_id);
 	vsram_p = id_to_buck_ctrl(p_cci->Vsram_buck_id);
@@ -596,10 +557,8 @@ static int _cpufreq_set_locked_cci(unsigned int target_cci_khz, unsigned int tar
 out:
 	aee_record_cci_dvfs_step(0);
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
-		~(1 << CPU_DVFS_CCI_IS_DOING_DVFS));
-#endif
+	aee_record_cpu_dvfs_out(p_cci);
+
 	return ret;
 }
 
@@ -1256,17 +1215,13 @@ static void ppm_limit_callback(struct ppm_client_req req)
 static int _mt_cpufreq_verify(struct cpufreq_policy *policy)
 {
 	struct mt_cpu_dvfs *p;
-	int ret = 0;		/* cpufreq_frequency_table_verify() always return 0 */
-
-	FUNC_ENTER(FUNC_LV_MODULE);
+	int ret;		/* cpufreq_frequency_table_verify() always return 0 */
 
 	p = id_to_cpu_dvfs(_get_cpu_dvfs_id(policy->cpu));
+	if (!p)
+		return -EINVAL;
 
-#ifdef CONFIG_CPU_FREQ
 	ret = cpufreq_frequency_table_verify(policy, p->freq_tbl_for_cpufreq);
-#endif
-
-	FUNC_EXIT(FUNC_LV_MODULE);
 
 	return ret;
 }
@@ -1274,25 +1229,23 @@ static int _mt_cpufreq_verify(struct cpufreq_policy *policy)
 static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target_freq,
 			      unsigned int relation)
 {
-	enum mt_cpu_dvfs_id id = _get_cpu_dvfs_id(policy->cpu);
-	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+	struct mt_cpu_dvfs *p;
+	int ret;
 	unsigned int new_opp_idx;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
-
-	if (dvfs_disable_flag == 1)
-		return 0;
-
-	if (policy->cpu >= num_possible_cpus()
-	    || cpufreq_frequency_table_target(policy, id_to_cpu_dvfs(id)->freq_tbl_for_cpufreq,
-					      target_freq, relation, &new_opp_idx)
-	    || (id_to_cpu_dvfs(id) && id_to_cpu_dvfs(id)->dvfs_disable_by_procfs)
-	    )
+	p = id_to_cpu_dvfs(_get_cpu_dvfs_id(policy->cpu));
+	if (!p)
 		return -EINVAL;
 
-	_mt_cpufreq_dvfs_request_wrapper(p, new_opp_idx, MT_CPU_DVFS_NORMAL, NULL);
+	ret = cpufreq_frequency_table_target(policy, p->freq_tbl_for_cpufreq,
+					     target_freq, relation, &new_opp_idx);
+	if (ret || new_opp_idx >= p->nr_opp_tbl)
+		return -EINVAL;
 
-	FUNC_EXIT(FUNC_LV_MODULE);
+	if (dvfs_disable_flag || p->dvfs_disable_by_suspend || p->dvfs_disable_by_procfs)
+		return -EPERM;
+
+	_mt_cpufreq_dvfs_request_wrapper(p, new_opp_idx, MT_CPU_DVFS_NORMAL, NULL);
 
 	return 0;
 }
@@ -1396,11 +1349,9 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu)
 {
 	struct mt_cpu_dvfs *p;
 
-	FUNC_ENTER(FUNC_LV_MODULE);
-
 	p = id_to_cpu_dvfs(_get_cpu_dvfs_id(cpu));
-
-	FUNC_EXIT(FUNC_LV_MODULE);
+	if (!p)
+		return 0;
 
 	return cpu_dvfs_get_cur_freq(p);
 }
