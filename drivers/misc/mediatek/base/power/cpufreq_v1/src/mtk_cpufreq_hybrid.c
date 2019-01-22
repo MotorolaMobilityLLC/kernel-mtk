@@ -69,10 +69,53 @@ static const struct file_operations fname##_fops = {			\
 }
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
+
+#include <linux/of_address.h>
+u32 *g_dbg_repo;
+static u32 dvfsp_probe_done;
+void __iomem *log_repo;
+static void __iomem *csram_base;
+/* static void __iomem *cspm_base; */
+#define csram_read(offs)		__raw_readl(csram_base + (offs))
+#define csram_write(offs, val)		mt_reg_sync_writel(val, csram_base + (offs))
+
+#define OFFS_TBL_S		0x0010
+#define OFFS_TBL_E		0x0250
+#define PVT_TBL_SIZE    (OFFS_TBL_E - OFFS_TBL_S)
+#define OFFS_DATA_S		0x02a0
+#define OFFS_LOG_S		0x03d0
+#define OFFS_LOG_E		0x1438
+
+#define MAX_LOG_FETCH 40
+/* log_box_parsed[MAX_LOG_FETCH] is also used to save last log entry */
+static struct cpu_dvfs_log_box log_box_parsed[1 + MAX_LOG_FETCH];
+
+void parse_time_log_content(unsigned int time_stamp_l_log, unsigned int time_stamp_h_log, int idx)
+{
+	if (time_stamp_h_log == 0 && time_stamp_l_log == 0)
+		log_box_parsed[idx].time_stamp = 0;
+
+	log_box_parsed[idx].time_stamp = ((unsigned long long)time_stamp_h_log << 32) |
+		(unsigned long long)(time_stamp_l_log);
+}
+
+void parse_log_content(unsigned int *local_buf, int idx)
+{
+	struct cpu_dvfs_log *log_box = (struct cpu_dvfs_log *)local_buf;
+	struct mt_cpu_dvfs *p;
+	int i;
+
+	for_each_cpu_dvfs(i, p) {
+		log_box_parsed[idx].cluster_opp_cfg[i].limit_idx = log_box->cluster_opp_cfg[i].limit;
+		log_box_parsed[idx].cluster_opp_cfg[i].base_idx = log_box->cluster_opp_cfg[i].base;
+		log_box_parsed[idx].cluster_opp_cfg[i].freq_idx = log_box->cluster_opp_cfg[i].opp_idx_log;
+	}
+}
+
 spinlock_t cpudvfs_lock;
 static struct task_struct *Ripi_cpu_dvfs_task;
-struct ipi_action ptpod_act;
-uint32_t ptpod_buf[4];
+struct ipi_action cpufreq_act;
+uint32_t cpufreq_buf[4];
 int Ripi_cpu_dvfs_thread(void *data)
 {
 	int i, ret;
@@ -80,11 +123,18 @@ int Ripi_cpu_dvfs_thread(void *data)
 	unsigned long flags;
 	uint32_t pwdata[4];
 	struct cpufreq_freqs freqs;
+
 	int previous_limit = -1;
+	int num_log;
+	unsigned int buf[ENTRY_EACH_LOG] = {0};
+	unsigned int bk_log_offs;
+	unsigned int buf_freq;
+	unsigned long long tf_sum, t_diff, avg_f;
+	int j;
 
 	/* cpufreq_info("CPU DVFS received thread\n"); */
-	ptpod_act.data = (void *)ptpod_buf;
-	ret = sspm_ipi_recv_registration_ex(IPI_ID_CPU_DVFS, &cpudvfs_lock, &ptpod_act);
+	cpufreq_act.data = (void *)cpufreq_buf;
+	ret = sspm_ipi_recv_registration_ex(IPI_ID_CPU_DVFS, &cpudvfs_lock, &cpufreq_act);
 
 	if (ret != 0) {
 		cpufreq_err("Error: ipi_recv_registration CPU DVFS error: %d\n", ret);
@@ -96,37 +146,84 @@ int Ripi_cpu_dvfs_thread(void *data)
 	/* cpufreq_info("sspm_ipi_recv_registration IPI_ID_CPU_DVFS pass!!(%d)\n", ret); */
 
 	/* an endless loop in which we are doing our work */
-	i = 0;
 	do {
-		i++;
 		/* cpufreq_info("sspm_ipi_recv_wait IPI_ID_CPU_DVFS\n"); */
 		sspm_ipi_recv_wait(IPI_ID_CPU_DVFS);
-		/* cpufreq_info("Info: CPU DVFS thread received ID=%d, i=%d\n", ptpod_act.id, i); */
+		/* cpufreq_info("Info: CPU DVFS thread received ID=%d, i=%d\n", cpufreq_act.id, i); */
 		spin_lock_irqsave(&cpudvfs_lock, flags);
-		memcpy(pwdata, ptpod_buf, sizeof(pwdata));
+		memcpy(pwdata, cpufreq_buf, sizeof(pwdata));
 		spin_unlock_irqrestore(&cpudvfs_lock, flags);
+
+		bk_log_offs = pwdata[0];
+		num_log = 0;
+		while (bk_log_offs != pwdata[1]) {
+			buf[0] = csram_read(bk_log_offs);
+			bk_log_offs += 4;
+			if (bk_log_offs >= OFFS_LOG_E)
+				bk_log_offs = OFFS_LOG_S;
+			buf[1] = csram_read(bk_log_offs);
+			bk_log_offs += 4;
+			if (bk_log_offs >= OFFS_LOG_E)
+				bk_log_offs = OFFS_LOG_S;
+
+			/* For parsing timestamp */
+			parse_time_log_content(buf[0], buf[1], num_log);
+			for (j = 2; j < ENTRY_EACH_LOG; j++) {
+				/* Read out sram content */
+				buf[j] = csram_read(bk_log_offs);
+				bk_log_offs += 4;
+				if (bk_log_offs >= OFFS_LOG_E)
+					bk_log_offs = OFFS_LOG_S;
+			}
+
+			/* For parsing freq idx */
+			parse_log_content(buf, num_log);
+			num_log++;
+		}
 
 		cpufreq_lock(flags);
 		for_each_cpu_dvfs_only(i, p) {
-#if 0
-			cpufreq_info("DVFS - Received %s: (old | new freq:%d %d, limit:%d, base:%d)\n",
-				cpu_dvfs_get_name(p), cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl),
-				cpu_dvfs_get_freq_by_idx(p, (int)(pwdata[0] >> (8*i)) & 0xF),
-				cpu_dvfs_get_freq_by_idx(p, (int)((pwdata[1] >> (8*i+4)) & 0xF)),
-				cpu_dvfs_get_freq_by_idx(p, (int)((pwdata[1] >> (8*i)) & 0xF)));
-#endif
 			if (!p->armpll_is_available)
 				continue;
 
+			if (num_log == 1)
+				j = log_box_parsed[0].cluster_opp_cfg[i].freq_idx;
+			else {
+				tf_sum = 0;
+				for (j = num_log - 1; j >= 1; j--) {
+					buf_freq = cpu_dvfs_get_freq_by_idx(p,
+						log_box_parsed[j - 1].cluster_opp_cfg[i].freq_idx);
+					tf_sum += (log_box_parsed[j].time_stamp - log_box_parsed[j-1].time_stamp) *
+					(buf_freq/1000);
+				}
+				t_diff = log_box_parsed[num_log - 1].time_stamp - log_box_parsed[0].time_stamp;
+				avg_f = tf_sum / t_diff;
+				avg_f *= 1000;
+				for (j = p->nr_opp_tbl - 1; j >= 1; j--) {
+					if (cpu_dvfs_get_freq_by_idx(p, j) >= avg_f)
+						break;
+				}
+			}
+
 			/* Avoid memory issue */
-			if (p->mt_policy && p->mt_policy->governor && p->mt_policy->governor_enabled &&
+			if (p->mt_policy && p->mt_policy->governor &&
+				p->mt_policy->governor_enabled &&
 				(p->mt_policy->cpu < 10) && (p->mt_policy->cpu >= 0)) {
 				int cid;
 
-				/* Update policy min/max */
 				previous_limit = p->idx_opp_ppm_limit;
-				p->idx_opp_ppm_base = (int)((pwdata[2] >> (8*i)) & 0xF);
-				p->idx_opp_ppm_limit = (int)((pwdata[1] >> (8*i)) & 0xF);
+				p->idx_opp_ppm_limit =
+					(int)(log_box_parsed[num_log - 1].cluster_opp_cfg[i].limit_idx);
+				p->idx_opp_ppm_base =
+					(int)(log_box_parsed[num_log - 1].cluster_opp_cfg[i].base_idx);
+
+				if (j < p->idx_opp_ppm_limit)
+					j = p->idx_opp_ppm_limit;
+
+				if (j > p->idx_opp_ppm_base)
+					j = p->idx_opp_ppm_base;
+
+				/* Update policy min/max */
 				p->mt_policy->min =
 					cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
 				p->mt_policy->max =
@@ -141,21 +238,19 @@ int Ripi_cpu_dvfs_thread(void *data)
 					met_tag_oneshot(0, "sched_dvfs_max_c2", p->mt_policy->max);
 
 				/* Policy notification */
-				if (p->idx_opp_tbl != (int)((pwdata[0] >> (8*i)) & 0xF) ||
+				if (p->idx_opp_tbl != j ||
 					(p->idx_opp_ppm_limit != previous_limit)) {
-					cpufreq_ver("DVFS - cpu%d do postchange\n", p->mt_policy->cpu);
-					freqs.cpu = p->mt_policy->cpu;
-					freqs.old = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_tbl);
-					freqs.new = cpu_dvfs_get_freq_by_idx(p, (int)(pwdata[0] >> (8*i)) & 0xF);
+					freqs.old = cpu_dvfs_get_cur_freq(p);
+					freqs.new = cpu_dvfs_get_freq_by_idx(p, j);
+					p->idx_opp_tbl = j;
+					/* Update frequency change */
 					cpufreq_freq_transition_begin(p->mt_policy, &freqs);
 					cpufreq_freq_transition_end(p->mt_policy, &freqs, 0);
-					p->idx_opp_tbl = (int)(pwdata[0] >> (8*i) & 0xF);
 				}
 			}
 		}
 		cpufreq_unlock(flags);
 
-		/* cpufreq_info("Info: CPU DVFS Task send back Done\n"); */
 	} while (!kthread_should_stop());
 	return 0;
 }
@@ -309,28 +404,6 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 	return ret;
 }
 
-#include <linux/of_address.h>
-u32 *g_dbg_repo;
-static u32 dvfsp_probe_done;
-void __iomem *log_repo;
-static void __iomem *csram_base;
-/* static void __iomem *cspm_base; */
-#define csram_read(offs)		__raw_readl(csram_base + (offs))
-#define csram_write(offs, val)		mt_reg_sync_writel(val, csram_base + (offs))
-
-#define ENTRY_EACH_LOG		7
-#define OFFS_TBL_S		0x0010
-#define OFFS_TBL_E		0x0250
-#define PVT_TBL_SIZE    (OFFS_TBL_E - OFFS_TBL_S)
-#define OFFS_DATA_S		0x02a0
-#if 0
-#define OFFS_LOG_S		0x03d0
-#define OFFS_LOG_E		0x0ec0
-#else
-#define OFFS_LOG_S		0x03d0
-#define OFFS_LOG_E		0x1438
-#endif
-/* #define OFFS_LOG_E		0x2ff8 */
 #define DBG_REPO_S		CSRAM_BASE
 #define DBG_REPO_E		(DBG_REPO_S + CSRAM_SIZE)
 #define DBG_REPO_TBL_S		(DBG_REPO_S + OFFS_TBL_S)
