@@ -390,6 +390,11 @@ int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv)
 {
 	struct m4u_buf_info_t *pMvaInfo = (struct m4u_buf_info_t *)priv;
 	int is_in = 0, is_interseted = 0;
+#if defined(CONFIG_MACH_MT6775)
+	is_vpu_port = (pMvaInfo->port == M4U_PORT_VPU0) || (pMvaInfo->port == M4U_PORT_VPU1);
+#else
+	is_vpu_port = (pMvaInfo->port == M4U_PORT_VPU);
+#endif
 
 	/*check if input mva region is in vpu region.
 	 *if it's in vpu region, we check if it's non-vpu port
@@ -399,9 +404,9 @@ int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv)
 		__func__, startIdx, GET_END_INDEX(startIdx, nr));
 #endif
 	is_in = is_in_vpu_region(startIdx, nr);
-	if (is_in && (pMvaInfo->port == M4U_PORT_VPU))
+	if (is_in && is_vpu_port)
 		return 1;
-	else if (is_in && (pMvaInfo->port != M4U_PORT_VPU)) {
+	else if (is_in && !is_vpu_port) {
 		M4UINFO("[0x%x - 0x%x] requested by port(%d) is in vpu reserved region!\n",
 			startIdx, GET_END_INDEX(startIdx, nr),
 			pMvaInfo->port);
