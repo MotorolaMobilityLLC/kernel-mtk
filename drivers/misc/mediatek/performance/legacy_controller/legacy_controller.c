@@ -29,6 +29,10 @@
 #include <linux/platform_device.h>
 #include "legacy_controller.h"
 
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+#include "cpu_ctrl_cfp.h"
+#endif
+
 #ifdef CONFIG_TRACING
 #include <linux/kallsyms.h>
 #include <linux/trace_events.h>
@@ -37,6 +41,7 @@
 #define TAG "[boost_controller]"
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 static struct mutex boost_freq;
 static struct mutex boost_core;
@@ -94,6 +99,11 @@ static inline void lhd_kernel_trace(char *name, int id, int min, int max)
 	preempt_enable();
 }
 
+#endif
+
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+static int cfp_init_ret;
+int powerhal_tid;
 #endif
 
 /*************************************************************************************/
@@ -242,7 +252,15 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 	for (i = 0; i < PPM_MAX_KIR; i++) {
 		for (j = 0; j < nr_ppm_clusters; j++) {
 			final_freq[j].min = MAX(freq_set[i][j].min, final_freq[j].min);
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+			final_freq[j].max
+				= final_freq[j].max != -1 &&
+				freq_set[i][j].max != -1 ?
+				MIN(freq_set[i][j].max, final_freq[j].max) :
+				MAX(freq_set[i][j].max, final_freq[j].max);
+#else
 			final_freq[j].max = MAX(freq_set[i][j].max, final_freq[j].max);
+#endif
 			if (final_freq[j].min > final_freq[j].max && final_freq[j].max != -1)
 				final_freq[j].max = final_freq[j].min;
 		}
@@ -258,8 +276,14 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 #endif
 	}
 
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+	if (!cfp_init_ret)
+		cpu_ctrl_cfp(final_freq);
+	else
+		mt_ppm_userlimit_cpu_freq(nr_ppm_clusters, final_freq);
+#else
 	mt_ppm_userlimit_cpu_freq(nr_ppm_clusters, final_freq);
-
+#endif
 
 ret_update:
 	kfree(final_freq);
@@ -374,8 +398,12 @@ static ssize_t perfmgr_perfserv_freq_write(struct file *filp, const char __user 
 
 	if (i < arg_num)
 		pr_debug(TAG"@%s: number of arguments < %d!\n", __func__, arg_num);
-	else
+	else {
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+		powerhal_tid = current->pid;
+#endif
 		update_userlimit_cpu_freq(PPM_KIR_PERF, nr_ppm_clusters, freq_limit);
+	}
 
 out:
 	free_page((unsigned long)buf);
@@ -589,6 +617,10 @@ static int __init perfmgr_legacy_boost_init(void)
 
 	nr_ppm_clusters = arch_get_nr_clusters();
 
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+	cfp_init_ret = cpu_ctrl_cfp_init(boost_dir);
+#endif
+
 	current_core = kcalloc(nr_ppm_clusters, sizeof(struct ppm_limit_data), GFP_KERNEL);
 	current_freq = kcalloc(nr_ppm_clusters, sizeof(struct ppm_limit_data), GFP_KERNEL);
 	for (i = 0; i < PPM_MAX_KIR; i++) {
@@ -626,6 +658,11 @@ void perfmgr_legacy_boost_exit(void)
 		kfree(core_set[i]);
 		kfree(freq_set[i]);
 	}
+
+#ifdef CONFIG_MTK_CPU_CTRL_CFP
+	if (!cfp_init_ret)
+		cpu_ctrl_cfp_exit();
+#endif
 }
 
 MODULE_LICENSE("GPL");
