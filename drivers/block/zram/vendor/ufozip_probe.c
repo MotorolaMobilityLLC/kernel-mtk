@@ -23,6 +23,9 @@
 #include <linux/device.h>
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/freezer.h>
+#include <linux/kthread.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/of.h>
@@ -42,6 +45,7 @@
 
 #ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
 #include <mtk_vcorefs_manager.h>
+static struct task_struct *ufozip_task;
 #endif
 
 #ifndef CONFIG_MTK_CLKMGR
@@ -51,17 +55,15 @@
 #include <mach/mt_clkmgr.h>  /* For clock mgr APIS. enable_clock() & disable_clock(). */
 #endif
 
-
 #ifdef MTK_UFOZIP_USING_CCF
-
 struct clk *g_ufoclk_enc_sel;
 struct clk *g_ufoclk_high_624;
 struct clk *g_ufoclk_low_312;
 struct clk *g_ufoclk_clk;
-
-
 #endif
 
+static DEFINE_SPINLOCK(lock);
+static int hclk_count;
 
 /* static unsigned int ufozip_default_fifo_size = 64; */
 static unsigned int ufozip_default_fifo_size = 256;
@@ -389,13 +391,14 @@ static int enable_ufozip_clock(void);
 static void disable_ufozip_clock(void);
 static void ufozip_hclkctrl(enum platform_ops ops)
 {
-	static DEFINE_SPINLOCK(lock);
-	static int hclk_count;
 	unsigned long flags;
 
 	spin_lock_irqsave(&lock, flags);
 	if (ops == COMP_ENABLE || ops == DECOMP_ENABLE) {
 		if (hclk_count++ == 0) {
+#ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
+			wake_up_process(ufozip_task);
+#endif
 #ifdef MTK_UFOZIP_USING_CCF
 			if (enable_ufozip_clock())
 				pr_err("%s: ops(%d)\n", __func__, ops);
@@ -411,13 +414,18 @@ static void ufozip_hclkctrl(enum platform_ops ops)
 	spin_unlock_irqrestore(&lock, flags);
 }
 
-/* vcore fs control - this may sleep, TBC. */
-static void ufozip_vcorectrl(enum platform_ops ops)
+static void ufozip_clock_control(enum platform_ops ops)
 {
+	ufozip_hclkctrl(ops);
+}
+
 #ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
+/* vcore fs control - this may sleep */
+static void ufozip_vcorectrl(bool set_high)
+{
 	int err = 0;
 
-	if (ops == COMP_ENABLE || ops == DECOMP_ENABLE) {
+	if (set_high) {
 		vcorefs_request_dvfs_opp(KIR_UFO, OPP_1);
 		err = clk_set_parent(g_ufoclk_enc_sel, g_ufoclk_high_624);
 	} else {
@@ -426,15 +434,71 @@ static void ufozip_vcorectrl(enum platform_ops ops)
 	}
 
 	if (err)
-		pr_warn("%s(%d)\n", __func__, ops);
-#endif
+		pr_warn("%s(%d)\n", __func__, (int)set_high);
 }
 
-static void ufozip_clock_control(enum platform_ops ops)
+static int ufozip_entry(void *p)
 {
-	ufozip_vcorectrl(ops);	/* May sleep - TBC */
-	ufozip_hclkctrl(ops);
+#define HIGH_FREQ	(0x2)
+#define LOW_FREQ	(0x1)
+#define KEEP_FREQ	(0x0)	/* no actions */
+#define LOW_COUNT	(100)
+#define TIME_AFTER	(HZ/LOW_COUNT)
+
+	int curr_freq = LOW_FREQ;
+	int set_freq = KEEP_FREQ;
+	int requested_low_count = 0;
+	unsigned long flags;
+
+	/* Call freezer_do_not_count to skip me */
+	freezer_do_not_count();
+
+	/* Start actions */
+	do {
+		/* Start running */
+		set_current_state(TASK_RUNNING);
+
+		/* Check action */
+		spin_lock_irqsave(&lock, flags);
+		if (hclk_count > 0)
+			set_freq = HIGH_FREQ;
+		else
+			set_freq = LOW_FREQ;
+		spin_unlock_irqrestore(&lock, flags);
+
+		/* Shall we apply action */
+		if (set_freq == curr_freq)
+			set_freq = KEEP_FREQ;
+
+		/* One more check for LOW_FREQ action */
+		if (set_freq == LOW_FREQ) {
+			if (requested_low_count++ < LOW_COUNT)
+				set_freq = KEEP_FREQ;
+		} else {
+			requested_low_count = 0;
+		}
+
+		/* Apply action */
+		if (set_freq == LOW_FREQ) {
+			ufozip_vcorectrl(false);
+			requested_low_count = 0;
+		} else if (set_freq == HIGH_FREQ) {
+			ufozip_vcorectrl(true);
+		} else {
+			set_freq = KEEP_FREQ;
+		}
+
+		/* Record current level */
+		if (set_freq != KEEP_FREQ)
+			curr_freq = set_freq;
+
+		/* Schedule me */
+		schedule_timeout_interruptible(TIME_AFTER);
+	} while (1);
+
+	return 0;
 }
+#endif
 
 #ifdef CONFIG_OF
 
@@ -486,6 +550,10 @@ static int ufozip_of_probe(struct platform_device *pdev)
 		pr_warn("%s: failed to enable clock\n", __func__);
 		return -EINVAL;
 	}
+
+#ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
+	ufozip_task = kthread_run(ufozip_entry, NULL, "ufozip_task");
+#endif
 
 	/* Initialization of hwzram_impl */
 	hwz = hwzram_impl_init(&pdev->dev, ufozip_default_fifo_size,
