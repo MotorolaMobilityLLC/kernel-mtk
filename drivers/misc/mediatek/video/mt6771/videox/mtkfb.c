@@ -71,6 +71,8 @@
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 #include "external_display.h"
 #endif
+#include <mt-plat/mtk_ccci_common.h>
+#include "ddp_dsi.h"
 
 /* static variable */
 static u32 MTK_FB_XRES;
@@ -2742,6 +2744,11 @@ static int mtkfb_probe(struct platform_device *pdev)
 	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
 #endif
 	fbdev->state = MTKFB_ACTIVE;
+
+	if (!strcmp(mtkfb_find_lcm_driver(), "oppo17321_tianma_td4310_1080p_dsi_vdo") ||
+	    !strcmp(mtkfb_find_lcm_driver(), "oppo17321_tianma_nt36672_1080p_dsi_vdo")) {
+		register_ccci_sys_call_back(MD_SYS1, MD_DISPLAY_DYNAMIC_MIPI, mipi_clk_change);
+	}
 
 	MSG_FUNC_LEAVE();
 	pr_info("disp driver(2) mtkfb_probe end\n");
