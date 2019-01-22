@@ -15,13 +15,15 @@
 
 /* Memory Lowpower State & Action */
 enum power_state {
-	MLP_INIT,		/* Memory-lowpower is initialized */
-	MLP_SCREENON,
-	MLP_SCREENOFF,
-	MLP_SCREENIDLE,
-	MLP_ENABLE,
-	MLP_ENABLE_DCS,
-	MLP_ENABLE_PASR,
+	MLP_INIT,		/* Before memory-lowpower is initialized */
+	/* action */
+	MLP_ENTER_AGAIN,	/* Entering MLP again (valid at MLP_ENABLE) */
+	MLP_ENTER,		/* Entering MLP */
+	MLP_LEAVE,		/* Leaving MLP */
+	/* state */
+	MLP_ENABLE,		/* MLP is enabled */
+	MLP_DISABLE,		/* MLP is disabled */
+	MLP_NR_STATUS,
 };
 
 #define TEST_MEMORY_LOWPOWER_STATE(uname, lname) \
@@ -37,29 +39,28 @@ static inline void ClearMlps##uname(unsigned long *state) \
 			{ clear_bit(MLP_##lname, state); }
 
 TEST_MEMORY_LOWPOWER_STATE(Init, INIT)
-TEST_MEMORY_LOWPOWER_STATE(ScreenOn, SCREENON)
-TEST_MEMORY_LOWPOWER_STATE(ScreenIdle, SCREENIDLE)
+TEST_MEMORY_LOWPOWER_STATE(Enter, ENTER)
+TEST_MEMORY_LOWPOWER_STATE(Leave, LEAVE)
+TEST_MEMORY_LOWPOWER_STATE(EnterAgain, ENTER_AGAIN)
 TEST_MEMORY_LOWPOWER_STATE(Enable, ENABLE)
-TEST_MEMORY_LOWPOWER_STATE(EnableDCS, ENABLE_DCS)
-TEST_MEMORY_LOWPOWER_STATE(EnablePASR, ENABLE_PASR)
+TEST_MEMORY_LOWPOWER_STATE(Disable, DISABLE)
 
 SET_MEMORY_LOWPOWER_STATE(Init, INIT)
-SET_MEMORY_LOWPOWER_STATE(ScreenOn, SCREENON)
-SET_MEMORY_LOWPOWER_STATE(ScreenIdle, SCREENIDLE)
+SET_MEMORY_LOWPOWER_STATE(Enter, ENTER)
+SET_MEMORY_LOWPOWER_STATE(Leave, LEAVE)
+SET_MEMORY_LOWPOWER_STATE(EnterAgain, ENTER_AGAIN)
 SET_MEMORY_LOWPOWER_STATE(Enable, ENABLE)
-SET_MEMORY_LOWPOWER_STATE(EnableDCS, ENABLE_DCS)
-SET_MEMORY_LOWPOWER_STATE(EnablePASR, ENABLE_PASR)
+SET_MEMORY_LOWPOWER_STATE(Disable, DISABLE)
 
 CLEAR_MEMORY_LOWPOWER_STATE(Init, INIT)
-CLEAR_MEMORY_LOWPOWER_STATE(ScreenOn, SCREENON)
-CLEAR_MEMORY_LOWPOWER_STATE(ScreenIdle, SCREENIDLE)
+CLEAR_MEMORY_LOWPOWER_STATE(Enter, ENTER)
+CLEAR_MEMORY_LOWPOWER_STATE(Leave, LEAVE)
+CLEAR_MEMORY_LOWPOWER_STATE(EnterAgain, ENTER_AGAIN)
 CLEAR_MEMORY_LOWPOWER_STATE(Enable, ENABLE)
-CLEAR_MEMORY_LOWPOWER_STATE(EnableDCS, ENABLE_DCS)
-CLEAR_MEMORY_LOWPOWER_STATE(EnablePASR, ENABLE_PASR)
+CLEAR_MEMORY_LOWPOWER_STATE(Disable, DISABLE)
 
-#define IS_ACTION_SCREENON(action)	(action == MLP_SCREENON)
-#define IS_ACTION_SCREENOFF(action)	(action == MLP_SCREENOFF)
-#define IS_ACTION_SCREENIDLE(action)	(action == MLP_SCREENIDLE)
+#define IS_ACTION_ENTER(action)		(action == MLP_ENTER)
+#define IS_ACTION_LEAVE(action)		(action == MLP_LEAVE)
 
 /* Memory Lowpower Features & their operations */
 enum power_level {
@@ -124,8 +125,8 @@ extern void unregister_memory_lowpower_operation(struct memory_lowpower_operatio
 extern bool memory_lowpower_inited(void);
 extern int get_memory_lowpower_cma(void);
 extern int put_memory_lowpower_cma(void);
-extern int get_memory_lowpower_cma_aligned(int count, unsigned int align, struct page **pages);
-extern int put_memory_lowpower_cma_aligned(int count, struct page *pages);
+extern int get_memory_lowpower_cma_aligned(int count, unsigned int align, struct page **pages, bool last);
+extern int put_memory_lowpower_cma_aligned(int count, struct page *pages, bool last);
 extern int memory_lowpower_task_init(void);
 extern phys_addr_t memory_lowpower_base(void);
 extern phys_addr_t memory_lowpower_size(void);
