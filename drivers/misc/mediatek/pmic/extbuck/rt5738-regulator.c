@@ -47,6 +47,11 @@ enum {
 	RT5738_C,
 };
 
+enum {
+	RT5738_G,
+	RT5738_H,
+};
+
 static const char * const rt5738_text[] = {
 	"rt5738a",
 	"rt5738b",
@@ -403,6 +408,12 @@ static int rt5738_i2c_probe(struct i2c_client *i2c,
 	case 0x57:
 		info->id = RT5738_B;
 		break;
+	case 0x51:
+		info->id = RT5738_G;
+		break;
+	case 0x53:
+		info->id = RT5738_H;
+		break;
 	default:
 		pr_err("%s invalid Slave Addr\n", __func__);
 		return -ENODEV;
@@ -411,6 +422,21 @@ static int rt5738_i2c_probe(struct i2c_client *i2c,
 	ret = rt5738_parse_dt(info, &i2c->dev);
 	if (ret < 0) {
 		pr_err("%s parse dt (0x%02x) fail\n", __func__, i2c->addr);
+		return -EINVAL;
+	}
+
+	init_data = of_get_regulator_init_data(&i2c->dev, i2c->dev.of_node, NULL);
+	if (init_data) {
+		dev_info(&i2c->dev, "regulator_name = %s, min_uV =%d, max_uV = %d\n"
+			 , init_data->constraints.name
+			 , init_data->constraints.min_uV
+			 , init_data->constraints.max_uV);
+		pr_notice("rt5738 regulator_name = %s, min_uV =%d, max_uV = %d\n"
+			 , init_data->constraints.name
+			 , init_data->constraints.min_uV
+			 , init_data->constraints.max_uV);
+	} else {
+		dev_info(&i2c->dev, "%s: no init data\n", __func__);
 		return -EINVAL;
 	}
 
@@ -459,8 +485,8 @@ static int rt5738_i2c_remove(struct i2c_client *i2c)
 
 #if defined(CONFIG_MACH_MT6775)
 static const struct of_device_id rt_match_table[] = {
-	{ .compatible = "mediatek,ext_buck_vpu", },
-	{ .compatible = "mediatek,ext_buck_cpul", },
+	{ .compatible = "mediatek,ext_buck2", },
+	{ .compatible = "mediatek,ext_buck", },
 	{ },
 };
 #else
