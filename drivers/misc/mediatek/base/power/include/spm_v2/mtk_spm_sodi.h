@@ -248,6 +248,13 @@ u32 __attribute__((weak)) aee_rr_curr_sodi_val(void)
 }
 #endif
 
+#if defined(CONFIG_MACH_KIBOPLUS)
+int __attribute__((weak)) vcorefs_get_curr_ddr(void)
+{
+	return 0;
+}
+#endif
+
 static __always_inline u32 spm_sodi_get_pcm_idx(u32 cpu)
 {
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
