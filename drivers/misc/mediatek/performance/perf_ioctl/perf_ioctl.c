@@ -70,12 +70,12 @@ static long device_ioctl(struct file *filp,
 		unsigned int cmd, unsigned long arg)
 {
 	ssize_t ret = 0;
-	FPSGO_PACKAGE *msgKM = NULL, *msgUM = (FPSGO_PACKAGE *)arg;
-	FPSGO_PACKAGE smsgKM;
+	struct _FPSGO_PACKAGE *msgKM = NULL, *msgUM = (struct _FPSGO_PACKAGE *)arg;
+	struct _FPSGO_PACKAGE smsgKM;
 
 	msgKM = &smsgKM;
 
-	if (perfctl_copy_from_user(msgKM, msgUM, sizeof(FPSGO_PACKAGE))) {
+	if (perfctl_copy_from_user(msgKM, msgUM, sizeof(struct _FPSGO_PACKAGE))) {
 		ret = -EFAULT;
 		goto ret_ioctl;
 	}
