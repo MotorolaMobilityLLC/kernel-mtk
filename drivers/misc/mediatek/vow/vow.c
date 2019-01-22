@@ -782,62 +782,9 @@ void VowDrv_SetSmartDevice(bool enable)
 	PRINTK_VOWDRV("VowDrv_SetSmartDevice:%x\n", enable);
 	if (vowserv.node) {
 		of_property_read_u32_array(vowserv.node, "debounce", ints, ARRAY_SIZE(ints));
-		switch (ints[0]) {
-		case VOW_EINT_NUM_0:
-			eint_num = 0;
-			break;
-		case VOW_EINT_NUM_1:
-			eint_num = 1;
-			break;
-		case VOW_EINT_NUM_2:
-			eint_num = 2;
-			break;
-		case VOW_EINT_NUM_3:
-			eint_num = 3;
-			break;
-		case VOW_EINT_NUM_4:
-			eint_num = 4;
-			break;
-		case VOW_EINT_NUM_5:
-			eint_num = 5;
-			break;
-		case VOW_EINT_NUM_6:
-			eint_num = 6;
-			break;
-		case VOW_EINT_NUM_7:
-			eint_num = 7;
-			break;
-		case VOW_EINT_NUM_8:
-			eint_num = 8;
-			break;
-		case VOW_EINT_NUM_9:
-			eint_num = 9;
-			break;
-		case VOW_EINT_NUM_10:
-			eint_num = 10;
-			break;
-		case VOW_EINT_NUM_11:
-			eint_num = 11;
-			break;
-		case VOW_EINT_NUM_12:
-			eint_num = 12;
-			break;
-		case VOW_EINT_NUM_13:
-			eint_num = 13;
-			break;
-		case VOW_EINT_NUM_14:
-			eint_num = 14;
-			break;
-		case VOW_EINT_NUM_15:
-			eint_num = 15;
-			break;
-		default:
-			eint_num = 0xFF;
-			break;
-		}
+		eint_num = vow_query_eint_num(ints[0]);
+
 		if (enable == false)
-			eint_num = 0xFF;
-		if (eint_num >= VOW_EINT_SUM)
 			eint_num = 0xFF;
 
 		vowserv.vow_info_dsp[0] = enable;
