@@ -35,7 +35,7 @@
 
 static __read_mostly unsigned int walt_ravg_hist_size = 5;
 static __read_mostly unsigned int walt_window_stats_policy =
-	WINDOW_STATS_AVG;
+	WINDOW_STATS_MAX_RECENT_AVG;
 static __read_mostly unsigned int walt_account_wait_time = 1;
 static __read_mostly unsigned int walt_freq_account_wait_time = 0;
 static __read_mostly unsigned int walt_io_is_busy = 0;

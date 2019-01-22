@@ -67,10 +67,6 @@ struct cluster_heavy_tbl_t *cluster_heavy_tbl;
 
 static int init_heavy_tlb(void);
 
-static inline unsigned long task_utilization(struct task_struct *p)
-{
-	return p->se.avg.util_avg;
-}
 
 /*
  * Big Task Tracking:
@@ -167,8 +163,9 @@ enum overutil_type_t is_task_overutil(struct task_struct *p)
 	struct overutil_stats_t *cpu_overutil;
 	/* int cid; */
 	/* int cluster_nr = arch_get_nr_clusters(); */
-	u64 task_util;
 	int cpu, cid;
+	unsigned long task_util;
+	unsigned long boosted_task_util;
 
 	if (!p)
 		return NO_OVERUTIL;
@@ -181,22 +178,22 @@ enum overutil_type_t is_task_overutil(struct task_struct *p)
 	cid = cpu_topology[cpu].socket_id;
 #endif
 
-	task_util = task_utilization(p);
+	get_task_util(p, &task_util, &boosted_task_util);
 
 	cpu_overutil = &per_cpu(cpu_overutil_state, cpu);
 
 	/* track task with max utilization */
 	if (task_util > cpu_overutil->max_task_util) {
 		cpu_overutil->max_task_util = task_util;
-		cpu_overutil->max_boost_util = get_boosted_task_util(p);
+		cpu_overutil->max_boost_util = boosted_task_util;
 		cpu_overutil->max_task_pid = p->pid;
 	}
 
 	/* check if task is overutilized */
-	if (task_utilization(p) >= cpu_overutil->overutil_thresh_h) {
+	if (task_util >= cpu_overutil->overutil_thresh_h) {
 		tracking_btask_nr(p->pid, cid, true); /* big task */
 		return H_OVERUTIL;
-	} else if (task_utilization(p) >= cpu_overutil->overutil_thresh_l) {
+	} else if (task_util >= cpu_overutil->overutil_thresh_l) {
 		tracking_btask_nr(p->pid, cid, false); /* big task */
 		return L_OVERUTIL;
 	} else

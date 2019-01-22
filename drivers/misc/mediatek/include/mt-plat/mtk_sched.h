@@ -45,3 +45,11 @@ enum sched_status_t {
 	SCHED_STATUS_OVERUTIL,
 	SCHED_STATUS_UNDERUTIL
 };
+
+enum {
+	LT_WALT_POWERHAL  = 0,
+	LT_WALT_FPSGO,
+	LT_UNKNOWN_USER
+};
+
+extern int sched_walt_enable(int user, int en);
