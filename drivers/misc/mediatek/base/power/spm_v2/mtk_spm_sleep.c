@@ -220,6 +220,18 @@ void __attribute__((weak)) mt_cirq_disable(void)
 }
 #endif
 
+#if defined(CONFIG_MACH_KIBOPLUS) /* temporarily fix build fail */
+int __attribute__((weak)) snapshot_golden_setting(const char *func, const unsigned int line)
+{
+	return 0;
+}
+
+int __attribute__((weak)) vcorefs_get_curr_ddr(void)
+{
+	return 0;
+}
+#endif
+
 #if SPM_AEE_RR_REC
 enum spm_suspend_step {
 	SPM_SUSPEND_ENTER = 0,
