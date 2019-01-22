@@ -669,7 +669,7 @@ void add_show_fps_layers(struct disp_ddp_path_config *cfg, unsigned int w,
 	input_ext->yuv_range = 0;
 	input_ext->ext_layer = ext_layer;
 	input_ext->ext_sel_layer = ext_sel_layer;
-	input_ext->phy_layer = 1;
+	input_ext->phy_layer = 3;
 }
 
 static void add_fps_info_for_debug(void)
