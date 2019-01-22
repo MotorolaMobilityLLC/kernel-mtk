@@ -136,6 +136,7 @@ extern bool is_vcorefs_feature_enable(void);
 bool vcorefs_vcore_dvs_en(void);
 bool vcorefs_dram_dfs_en(void);
 bool vcorefs_mm_clk_en(void);
+bool vcorefs_i_hwpath_en(void);
 int vcorefs_module_init(void);
 extern int vcorefs_get_num_opp(void);
 extern int vcorefs_get_sw_opp(void);
