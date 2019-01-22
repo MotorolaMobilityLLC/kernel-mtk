@@ -6591,9 +6591,9 @@ wlanoidSetKeyCfg(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 		wlanCfgSet(prAdapter, prKeyCfgInfo->aucKey, prKeyCfgInfo->aucValue, 0);
 
 	wlanInitFeatureOption(prAdapter);
-
+#if CFG_SUPPORT_EASY_DEBUG
 	wlanFeatureToFw(prAdapter);
-
+#endif
 	return rWlanStatus;
 }
 
