@@ -141,14 +141,13 @@ static long AF_SetMotorName(__user struct stAF_MotorName *pstMotorName)
 	if (copy_from_user(&stMotorName, pstMotorName, sizeof(struct stAF_MotorName)))
 		LOG_INF("copy to user failed when getting motor information\n");
 
-	LOG_INF("Set Motor Name : %s\n", stMotorName.uMotorName);
-
 	for (i = 0; i < MAX_NUM_OF_LENS; i++) {
 		if (g_stAF_DrvList[i].uEnable != 1)
 			break;
 
-		LOG_INF("Search Motor Name : %s\n", g_stAF_DrvList[i].uDrvName);
+		/* LOG_INF("Search Motor Name : %s\n", g_stAF_DrvList[i].uDrvName); */
 		if (strcmp(stMotorName.uMotorName, g_stAF_DrvList[i].uDrvName) == 0) {
+			LOG_INF("Set Motor Name : %s (%d)\n", stMotorName.uMotorName, i);
 			g_pstAF_CurDrv = &g_stAF_DrvList[i];
 			i4RetValue = g_pstAF_CurDrv->pAF_SetI2Cclient(g_pstAF_I2Cclient,
 								&g_AF_SpinLock, &g_s4AF_Opened);
