@@ -147,21 +147,17 @@ int ion_heap_debug_show(struct ion_heap *heap, struct seq_file *s, void *unused)
 			     "%18.s %8.s %4.s %3.s %3.s %3.s %7.s %3.s %4.s %4.s %s %s %4.s %4.s %4.s %4.s %s\n",
 			     "buffer", "size", "kmap", "ref", "hdl", "mod", "mva", "sec",
 			     "flag", "heap_id", "pid(alloc_pid)", "comm(client)", "v1", "v2", "v3", "v4", "dbg_name");
-	if (!dev) {
-		pr_info("%s dev NULL\n", __func__);
-		return 0;
-	}
+
 	mutex_lock(&dev->buffer_lock);
 	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
 		struct ion_buffer
 		*buffer = rb_entry(n, struct ion_buffer, node);
-		int port;
-		unsigned int mva;
-
-		port = bug_info->module_id ? bug_info->module_id : bug_info->fix_module_id;
-		mva = bug_info->MVA ? bug_info->MVA : bug_info->FIXED_MVA;
+		int port = 0;
+		unsigned int mva = 0;
 
 		bug_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
+		port = bug_info->module_id ? bug_info->module_id : bug_info->fix_module_id;
+		mva = bug_info->MVA ? bug_info->MVA : bug_info->FIXED_MVA;
 		pdbg = &bug_info->dbg_info;
 
 		ION_PRINT_LOG_OR_SEQ(s,
