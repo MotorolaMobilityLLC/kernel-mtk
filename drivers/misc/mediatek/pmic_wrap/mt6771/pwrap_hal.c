@@ -167,6 +167,8 @@ static signed int _pwrap_wacs2_nochk(unsigned int write, unsigned int adr, unsig
 static signed int pwrap_wacs2_hal(unsigned int write, unsigned int adr, unsigned int wdata, unsigned int *rdata);
 /*********************test API************************************************/
 static inline void pwrap_dump_ap_register(void);
+static void pwrap_logging_at_isr(void);
+static void pwrap_reenable_pmic_logging(void);
 static unsigned int pwrap_write_test(void);
 static unsigned int pwrap_read_test(void);
 /************* end--internal API**********************************************/
@@ -1356,7 +1358,8 @@ static inline void pwrap_dump_ap_register(void)
 		PWRAPLOG("addr:0x%p = 0x%x\n", reg_addr, val);
 	}
 	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x0);
-	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0xa);
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x8); /* clear log */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x2); /* reenable */
 	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x1);
 }
 
@@ -1380,6 +1383,91 @@ static inline void pwrap_dump_pmic_register(void)
 	}
 }
 
+static void pwrap_logging_at_isr(void)
+{
+	unsigned int i = 0, offset = 0;
+#if (PMIC_WRAP_KERNEL) || (PMIC_WRAP_CTP)
+	unsigned int *reg_addr;
+#else
+	unsigned int reg_addr;
+#endif
+	unsigned int val = 0;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+
+	if (__ratelimit(&ratelimit)) {
+	PWRAPLOG("INT0 flag 0x%x\n", WRAP_RD32(PMIC_WRAP_INT0_FLG));
+	PWRAPLOG("INT1 flag 0x%x\n", WRAP_RD32(PMIC_WRAP_INT1_FLG));
+	PWRAPLOG("DCXO_CONN_ADR0=0x%x\n", WRAP_RD32(PMIC_WRAP_DCXO_CONN_ADR0));
+	PWRAPLOG("DCXO_CONN_ADR1=0x%x\n", WRAP_RD32(PMIC_WRAP_DCXO_CONN_ADR1));
+	PWRAPLOG("MONITOR_CTRL_0=0x%x\n", WRAP_RD32(PMIC_WRAP_MONITOR_CTRL_0));
+	PWRAPLOG("CH_SEQ_0=0x%x\n", WRAP_RD32(PMIC_WRAP_CHANNEL_SEQUENCE_0));
+	PWRAPLOG("CH_SEQ_1=0x%x\n", WRAP_RD32(PMIC_WRAP_CHANNEL_SEQUENCE_1));
+	PWRAPLOG("CH_SEQ_2=0x%x\n", WRAP_RD32(PMIC_WRAP_CHANNEL_SEQUENCE_2));
+	PWRAPLOG("CH_SEQ_3=0x%x\n", WRAP_RD32(PMIC_WRAP_CHANNEL_SEQUENCE_3));
+	PWRAPLOG("CMD_SEQ_0=0x%x\n", WRAP_RD32(PMIC_WRAP_CMD_SEQUENCE_0));
+	PWRAPLOG("CMD_SEQ_1=0x%x\n", WRAP_RD32(PMIC_WRAP_CMD_SEQUENCE_1));
+	PWRAPLOG("CMD_SEQ_2=0x%x\n", WRAP_RD32(PMIC_WRAP_CMD_SEQUENCE_2));
+	PWRAPLOG("CMD_SEQ_3=0x%x\n", WRAP_RD32(PMIC_WRAP_CMD_SEQUENCE_3));
+	PWRAPLOG("CMD_SEQ_4=0x%x\n", WRAP_RD32(PMIC_WRAP_CMD_SEQUENCE_4));
+	PWRAPLOG("CMD_SEQ_5=0x%x\n", WRAP_RD32(PMIC_WRAP_CMD_SEQUENCE_5));
+	PWRAPLOG("CMD_SEQ_6=0x%x\n", WRAP_RD32(PMIC_WRAP_CMD_SEQUENCE_6));
+	PWRAPLOG("CMD_SEQ_7=0x%x\n", WRAP_RD32(PMIC_WRAP_CMD_SEQUENCE_7));
+	PWRAPLOG("WDATA_SEQ_0=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_0));
+	PWRAPLOG("WDATA_SEQ_1=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_1));
+	PWRAPLOG("WDATA_SEQ_2=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_2));
+	PWRAPLOG("WDATA_SEQ_3=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_3));
+	PWRAPLOG("WDATA_SEQ_4=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_4));
+	PWRAPLOG("WDATA_SEQ_5=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_5));
+	PWRAPLOG("WDATA_SEQ_6=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_6));
+	PWRAPLOG("WDATA_SEQ_7=0x%x\n", WRAP_RD32(PMIC_WRAP_WDATA_SEQUENCE_7));
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x8); /* clear log */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x2); /* reenable */
+	for (i = 0; i <= 14; i++) {
+		offset = 0xc00 + i * 4;
+		reg_addr = (PMIC_WRAP_BASE + offset);
+#if (PMIC_WRAP_KERNEL)
+		val = WRAP_RD32(((unsigned int *) (PMIC_WRAP_BASE + offset)));
+#else
+		val = WRAP_RD32(reg_addr);
+#endif
+		PWRAPLOG("addr:0x%p = 0x%x\n", reg_addr, val);
+	}
+	}
+}
+static void pwrap_reenable_pmic_logging(void)
+{
+	unsigned int rdata = 0, sub_return = 0;
+
+	/* Read Last three command */
+	pwrap_read_nochk(PMIC_RECORD_CMD0_ADDR, &rdata);
+	PWRAPLOG("REC_CMD0:0x%x (The last cmd addr)\n", (rdata & 0x3fff));
+	pwrap_read_nochk(PMIC_RECORD_WDATA0_ADDR, &rdata);
+	PWRAPLOG("REC_WDATA0:0x%x (The last cmd wdata)\n", rdata);
+	pwrap_read_nochk(PMIC_RECORD_CMD1_ADDR, &rdata);
+	PWRAPLOG("REC_CMD1:0x%x (The sec-last cmd addr)\n", (rdata & 0x3fff));
+	pwrap_read_nochk(PMIC_RECORD_WDATA1_ADDR, &rdata);
+	PWRAPLOG("REC_WDATA1:0x%x (The second-last cmd wdata)\n", rdata);
+	pwrap_read_nochk(PMIC_RECORD_CMD2_ADDR, &rdata);
+	PWRAPLOG("REC_CMD2:0x%x (The third cmd addr)\n", (rdata & 0x3fff));
+	pwrap_read_nochk(PMIC_RECORD_WDATA2_ADDR, &rdata);
+	PWRAPLOG("REC_WDATA2:0x%x (The third-last cmd wdata)\n", rdata);
+
+	/* Enable Command Recording */
+	sub_return = pwrap_write_nochk(PMIC_RG_EN_RECORD_ADDR, 0x1);
+	if (sub_return != 0)
+		PWRAPLOG("enable spi debug fail, ret=%x\n", sub_return);
+	PWRAPLOG("enable spi debug ok\n");
+
+	/* Clear Last three command */
+	sub_return = pwrap_write_nochk(PMIC_RG_SPI_RECORD_CLR_ADDR, 0x1);
+	if (sub_return != 0)
+		PWRAPLOG("clear record command fail, ret=%x\n", sub_return);
+	sub_return = pwrap_write_nochk(PMIC_RG_SPI_RECORD_CLR_ADDR, 0x0);
+	if (sub_return != 0)
+		PWRAPLOG("clear record command fail, ret=%x\n", sub_return);
+	PWRAPLOG("clear record command ok\n\r");
+
+}
 void pwrap_dump_and_recovery(void)
 {
 	pwrap_dump_ap_register();
@@ -1398,6 +1486,7 @@ void pwrap_dump_all_register(void)
 	pr_notice("tsx dump reg_addr:0x1000d288 = 0x%x\n", dcxo_0);
 	dcxo_1 = WRAP_RD32(PMIC_WRAP_MD_ADCINF_1_STA_1);
 	pr_notice("tsx dump reg_addr:0x1000d28c = 0x%x\n", dcxo_1);
+
 }
 
 static int is_pwrap_init_done(void)
@@ -1516,41 +1605,52 @@ static int g_wrap_wdt_irq_count;
 static int g_case_flag;
 static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 {
-	unsigned long flags = 0;
+	unsigned int int0_flg = 0, int1_flg = 0, ret = 0;
+	unsigned char str[50] = "";
 
-	PWRAPFUC();
-	if ((WRAP_RD32(PMIC_WRAP_INT0_FLG) & 0x01) == 0x01) {
+	int0_flg = WRAP_RD32(PMIC_WRAP_INT0_FLG);
+	if ((int0_flg & 0xffffffff) != 0) {
+		PWRAPLOG("[PWRAP]INT0 error:0x%x\n", int0_flg);
+		WRAP_WR32(PMIC_WRAP_INT0_CLR, 0xffffffff);
+
+		if ((int0_flg & 0x02) == 0x02) {
+			/* Clear spislv CRC sta */
+			ret = pwrap_write_nochk(PMIC_DEW_CRC_SWRST_ADDR, 0x1);
+			if (ret != 0)
+				PWRAPLOG("clear crc fail, ret=%x\n", ret);
+			ret = pwrap_write_nochk(PMIC_DEW_CRC_SWRST_ADDR, 0x0);
+			if (ret != 0)
+				PWRAPLOG("clear crc fail, ret=%x\n", ret);
+			pwrap_write_nochk(PMIC_DEW_CRC_EN_ADDR, 0x0);
+			WRAP_WR32(PMIC_WRAP_CRC_EN, 0x0);
+			WRAP_WR32(PMIC_WRAP_STAUPD_GRPEN, 0xf4);
+		}
+	}
+	int1_flg = WRAP_RD32(PMIC_WRAP_INT1_FLG);
+	if ((int1_flg & 0xffffffff) != 0) {
+		PWRAPLOG("[PWRAP]INT1 error:0x%x\n", int1_flg);
+		pwrap_dump_all_register();
+		WRAP_WR32(PMIC_WRAP_INT1_CLR, 0xffffffff);
+	}
+
+	if ((int0_flg & 0x01) == 0x01) {
 		g_wrap_wdt_irq_count++;
 		g_case_flag = 0;
-		PWRAPREG("g_wrap_wdt_irq_count=%d\n", g_wrap_wdt_irq_count);
+		PWRAPLOG("g_wrap_wdt_irq_count=%d\n", g_wrap_wdt_irq_count);
 
+	} else if ((int0_flg & 0x02) == 0x02) {
+		snprintf(str, 50, "PWRAP CRC=0x%x",
+			WRAP_RD32(PMIC_WRAP_SIG_ERRVAL));
+		aee_kernel_warning(str, str);
+		pwrap_logging_at_isr();
+		pwrap_reenable_pmic_logging();
+		WRAP_WR32(PMIC_WRAP_INT0_EN, 0xfffffff9);
 	} else {
 		g_case_flag = 1;
 	}
-/* Check INT1_FLA Status, if wrong status, dump all register info */
-	if ((WRAP_RD32(PMIC_WRAP_INT1_FLG) & 0xffffff) != 0) {
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-		pwrap_wacs2_ipi(0x10010000 + 0xD8, 0xffffffff, (WRITE_CMD | WRITE_PMIC_WRAP));
-#else
-		WRAP_WR32(PMIC_WRAP_INT1_CLR, 0xffffffff);
-#endif
-		PWRAPREG("INT1_FLG status Wrong,value=0x%x\n", WRAP_RD32(PMIC_WRAP_INT1_FLG));
-	}
-	spin_lock_irqsave(&wrp_lock, flags);
-	/* pwrap_dump_all_register(); */
 
-	/* clear interrupt flag */
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-			pwrap_wacs2_ipi(0x10010000 + 0xc8, 0xffffffff, (WRITE_CMD | WRITE_PMIC_WRAP));
-#else
-			WRAP_WR32(PMIC_WRAP_INT0_CLR, 0xffffffff);
-#endif
-
-	PWRAPREG("INT0 flag 0x%x\n", WRAP_RD32(PMIC_WRAP_INT0_EN));
 	if (g_wrap_wdt_irq_count == 10 || g_case_flag == 1)
 		WARN_ON(1);
-
-	spin_unlock_irqrestore(&wrp_lock, flags);
 
 	return IRQ_HANDLED;
 }
@@ -1675,8 +1775,6 @@ static int __init pwrap_hal_init(void)
 		PWRAP_PR_ERR("not init (%d)\n", ret);
 	}
 
-	/* enable logging mode */
-	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0xa);
 	PWRAPLOG("mt_pwrap_init----\n");
 	return ret;
 }
