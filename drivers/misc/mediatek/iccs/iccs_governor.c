@@ -22,35 +22,36 @@ void policy_update(struct iccs_governor *gov, enum transition new_policy)
 	if (unlikely(!gov))
 		return;
 
-	if (gov->policy == new_policy)
+	spin_lock(&gov->spinlock);
+
+	if (gov->policy == new_policy) {
+		spin_unlock(&gov->spinlock);
 		return;
+	}
+
+	hrtimer_cancel(&gov->hr_timer);
 
 	switch (new_policy) {
 	case BENCHMARK:
 		if (gov->policy != ONDEMAND)
 			break;
 	case PERFORMANCE:
-		spin_lock(&gov->spinlock);
-		gov->iccs_cache_shared_useful_bitmask = ALL_CLUSTER_ICCS_ENABLE;
+		gov->iccs_cache_shared_useful_bitmask = ((1 << gov->nr_cluster) - 1);
 		gov->policy = new_policy;
-		spin_unlock(&gov->spinlock);
 		break;
 	case ONDEMAND:
-		hrtimer_cancel(&gov->hr_timer);
-		spin_lock(&gov->spinlock);
 		gov->policy = new_policy;
-		spin_unlock(&gov->spinlock);
 		hrtimer_start(&gov->hr_timer, gov->sampling, HRTIMER_MODE_REL);
 		break;
 	case POWERSAVE:
-		spin_lock(&gov->spinlock);
 		gov->iccs_cache_shared_useful_bitmask = ALL_CLUSTER_ICCS_DISABLE;
 		gov->policy = new_policy;
-		spin_unlock(&gov->spinlock);
 		break;
 	default:
 		break;
 	}
+
+	spin_unlock(&gov->spinlock);
 }
 
 void sampling_update(struct iccs_governor *gov, unsigned long long new_rate)
@@ -67,13 +68,14 @@ void sampling_update(struct iccs_governor *gov, unsigned long long new_rate)
 static int iccs_governor_task(void *data)
 {
 	struct iccs_governor *gov = data;
-	unsigned char cache_shared_useful_bitmask = 0x7;
+	unsigned char cache_shared_useful_bitmask = ALL_CLUSTER_ICCS_DISABLE;
 
 	if (unlikely(!gov))
 		return -EINVAL;
 
 	while (1) {
 
+		spin_lock(&gov->spinlock);
 		if (gov->policy == ONDEMAND) {
 			/* TODO:
 			 * 1. Collect EMI BW/ Cache miss rate..
@@ -81,11 +83,10 @@ static int iccs_governor_task(void *data)
 			 */
 
 			hrtimer_cancel(&gov->hr_timer);
-			spin_lock(&gov->spinlock);
 			gov->iccs_cache_shared_useful_bitmask = cache_shared_useful_bitmask;
-			spin_unlock(&gov->spinlock);
 			hrtimer_start(&gov->hr_timer, gov->sampling, HRTIMER_MODE_REL);
 		}
+		spin_unlock(&gov->spinlock);
 
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule();
@@ -113,15 +114,19 @@ static enum hrtimer_restart iccs_governor_timer(struct hrtimer *hrtimer)
 
 int governor_activation(struct iccs_governor *gov)
 {
+	int ret;
+
 	if (unlikely(!gov))
 		return -EINVAL;
 
 	/* Create kthread */
 	gov->task = kthread_create(iccs_governor_task, (void *)gov, "iccs_governor");
-	if (IS_ERR(gov->task))
-		return PTR_ERR(gov->task);
+	if (IS_ERR(gov->task)) {
+		ret = PTR_ERR(gov->task);
+		gov->task = NULL;
+		return ret;
+	}
 
-	set_user_nice(gov->task, MIN_NICE);
 	get_task_struct(gov->task);
 
 	/* Initialize a hr_timer */
