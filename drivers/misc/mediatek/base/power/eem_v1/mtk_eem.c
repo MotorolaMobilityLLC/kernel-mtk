@@ -4602,7 +4602,7 @@ int __init eem_init(void)
 	create_procfs();
 	#endif
 	/* process_voltage_bin(&eem_devinfo); */ /* LTE voltage bin use I-Chang */
-	if (ctrl_EEM_Enable == 0 || eem_checkEfuse == 0) {
+	if (ctrl_EEM_Enable == 0 || eem_checkEfuse == 0 || eem_chip_ver == CHIP_SW_VER_02) {
 		/* informGpuEEMisReady = 1; */
 		eem_error("ctrl_EEM_Enable = 0x%X\n", ctrl_EEM_Enable);
 		FUNC_EXIT(FUNC_LV_MODULE);
@@ -5900,6 +5900,13 @@ static int __init eem_init(void)
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
+	/* Disable eem if ver2 */
+	if (eem_chip_ver == CHIP_SW_VER_02) {
+		eem_error("EEM disabled by chip ver\n");
+		return 0;
+	}
+
+	eem_debug("chip ver=%d\n", eem_chip_ver);
 	memset(&eem_data, 0, sizeof(struct eem_ipi_data));
 
 	eem_data.u.data.arg[0] = eem_log_phy_addr;
