@@ -942,3 +942,9 @@ const char *cmdq_mdp_parse_error_module_by_hwflag(const struct TaskStruct *task)
 	return cmdq_mdp_get_func()->parseErrModByEngFlag(task);
 }
 
+#ifdef CMDQ_COMMON_ENG_SUPPORT
+void cmdq_mdp_platform_function_setting(void)
+{
+}
+#endif
+
