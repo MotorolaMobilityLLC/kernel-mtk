@@ -1458,17 +1458,27 @@ static const struct mtk_gate_regs cam_cg_regs = {
 		.ops = &mtk_clk_gate_ops_setclr,	\
 	}
 
+#define GATE_CAM_DUMMY(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &cam_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_dummy,	\
+	}
+
 static const struct mtk_gate cam_clks[] __initconst = {
-	GATE_CAM(CAMSYS_LARB6_CGPDN, "camsys_larb6", "cam_sel", 0),
+	GATE_CAM_DUMMY(CAMSYS_LARB6_CGPDN, "camsys_larb6", "cam_sel", 0),
 	GATE_CAM(CAMSYS_DFP_VAD_CGPDN, "camsys_dfp_vad", "cam_sel", 1),
-	GATE_CAM(CAMSYS_LARB3_CGPDN, "camsys_larb3", "cam_sel", 2),
+	GATE_CAM_DUMMY(CAMSYS_LARB3_CGPDN, "camsys_larb3", "cam_sel", 2),
 	GATE_CAM(CAMSYS_CAM_CGPDN, "camsys_cam", "cam_sel", 6),
 	GATE_CAM(CAMSYS_CAMTG_CGPDN, "camsys_camtg", "cam_sel", 7),
-	GATE_CAM(CAMSYS_SENINF_CGPDN, "camsys_seninf", "cam_sel", 8),
-	GATE_CAM(CAMSYS_CAMSV0_CGPDN, "camsys_camsv0", "cam_sel", 9),
-	GATE_CAM(CAMSYS_CAMSV1_CGPDN, "camsys_camsv1", "cam_sel", 10),
-	GATE_CAM(CAMSYS_CAMSV2_CGPDN, "camsys_camsv2", "cam_sel", 11),
-	GATE_CAM(CAMSYS_CCU_CGPDN, "camsys_ccu", "cam_sel", 12),
+
+	GATE_CAM_DUMMY(CAMSYS_SENINF_CGPDN, "camsys_seninf", "cam_sel", 8),
+	GATE_CAM_DUMMY(CAMSYS_CAMSV0_CGPDN, "camsys_camsv0", "cam_sel", 9),
+	GATE_CAM_DUMMY(CAMSYS_CAMSV1_CGPDN, "camsys_camsv1", "cam_sel", 10),
+	GATE_CAM_DUMMY(CAMSYS_CAMSV2_CGPDN, "camsys_camsv2", "cam_sel", 11),
+	GATE_CAM_DUMMY(CAMSYS_CCU_CGPDN, "camsys_ccu", "cam_sel", 12),
 };
 
 static const struct mtk_gate_regs img_cg_regs = {
@@ -1486,9 +1496,18 @@ static const struct mtk_gate_regs img_cg_regs = {
 		.ops = &mtk_clk_gate_ops_setclr,	\
 	}
 
+#define GATE_IMG_DUMMY(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &img_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_dummy,	\
+	}
+
 static const struct mtk_gate img_clks[] __initconst = {
-	GATE_IMG(IMG_LARB5, "imgsys_larb5", "img_sel", 0),
-	GATE_IMG(IMG_LARB2, "imgsys_larb2", "img_sel", 1),
+	GATE_IMG_DUMMY(IMG_LARB5, "imgsys_larb5", "img_sel", 0),
+	GATE_IMG_DUMMY(IMG_LARB2, "imgsys_larb2", "img_sel", 1),
 	GATE_IMG(IMG_DIP, "imgsys_dip", "img_sel", 2),
 	GATE_IMG(IMG_FDVT, "imgsys_fdvt", "img_sel", 3),
 	GATE_IMG(IMG_DPE, "imgsys_dpe", "img_sel", 4),
@@ -1562,29 +1581,29 @@ static const struct mtk_gate mm_clks[] __initconst = {
 
 	GATE_MM0_DUMMY(MMSYS_GALS_CAM2MM, "mm_gals_cam2mm", "mm_sel", 8),
 	GATE_MM0_DUMMY(MMSYS_GALS_IPU2MM, "mm_gals_ipu2mm", "mm_sel", 9),
-	GATE_MM0_DUMMY(MMSYS_MDP_DL_TXCK, "mm_mdp_dl_txck", "mm_sel", 10),
-	GATE_MM0_DUMMY(MMSYS_IPU_DL_TXCK, "mm_ipu_dl_txck", "mm_sel", 11),
-	GATE_MM0_DUMMY(MMSYS_MDP_RDMA0, "mm_mdp_rdma0", "mm_sel", 12),
-	GATE_MM0_DUMMY(MMSYS_MDP_RDMA1, "mm_mdp_rdma1", "mm_sel", 13),
-	GATE_MM0_DUMMY(MMSYS_MDP_RSZ0, "mm_mdp_rsz0", "mm_sel", 14),
-	GATE_MM0_DUMMY(MMSYS_MDP_RSZ1, "mm_mdp_rsz1", "mm_sel", 15),
-	GATE_MM0_DUMMY(MMSYS_MDP_TDSHP, "mm_mdp_tdshp", "mm_sel", 16),
-	GATE_MM0_DUMMY(MMSYS_MDP_WROT0, "mm_mdp_wrot0", "mm_sel", 17),
-	GATE_MM0_DUMMY(MMSYS_MDP_WDMA0, "mm_mdp_wdma0", "mm_sel", 18),
+	GATE_MM0(MMSYS_MDP_DL_TXCK, "mm_mdp_dl_txck", "mm_sel", 10),
+	GATE_MM0(MMSYS_IPU_DL_TXCK, "mm_ipu_dl_txck", "mm_sel", 11),
+	GATE_MM0(MMSYS_MDP_RDMA0, "mm_mdp_rdma0", "mm_sel", 12),
+	GATE_MM0(MMSYS_MDP_RDMA1, "mm_mdp_rdma1", "mm_sel", 13),
+	GATE_MM0(MMSYS_MDP_RSZ0, "mm_mdp_rsz0", "mm_sel", 14),
+	GATE_MM0(MMSYS_MDP_RSZ1, "mm_mdp_rsz1", "mm_sel", 15),
+	GATE_MM0(MMSYS_MDP_TDSHP, "mm_mdp_tdshp", "mm_sel", 16),
+	GATE_MM0(MMSYS_MDP_WROT0, "mm_mdp_wrot0", "mm_sel", 17),
+	GATE_MM0(MMSYS_MDP_WDMA0, "mm_mdp_wdma0", "mm_sel", 18),
 
-	GATE_MM0_DUMMY(MMSYS_FAKE_ENG, "mm_fake_eng", "mm_sel", 19),
-	GATE_MM0_DUMMY(MMSYS_DISP_OVL0, "mm_disp_ovl0", "mm_sel", 20),
-	GATE_MM0_DUMMY(MMSYS_DISP_OVL0_2L, "mm_disp_ovl0_2l", "mm_sel", 21),
-	GATE_MM0_DUMMY(MMSYS_DISP_OVL1_2L, "mm_disp_ovl1_2l", "mm_sel", 22),
-	GATE_MM0_DUMMY(MMSYS_DISP_RDMA0, "mm_disp_rdma0", "mm_sel", 23),
-	GATE_MM0_DUMMY(MMSYS_DISP_RDMA1, "mm_disp_rdma1", "mm_sel", 24),
-	GATE_MM0_DUMMY(MMSYS_DISP_WDMA0, "mm_disp_wdma0", "mm_sel", 25),
-	GATE_MM0_DUMMY(MMSYS_DISP_COLOR0, "mm_disp_color0", "mm_sel", 26),
-	GATE_MM0_DUMMY(MMSYS_DISP_CCORR0, "mm_disp_ccorr0", "mm_sel", 27),
-	GATE_MM0_DUMMY(MMSYS_DISP_AAL0, "mm_disp_aal0", "mm_sel", 28),
-	GATE_MM0_DUMMY(MMSYS_DISP_GAMMA0, "mm_disp_gamma0", "mm_sel", 29),
-	GATE_MM0_DUMMY(MMSYS_DISP_DITHER0, "mm_disp_dither0", "mm_sel", 30),
-	GATE_MM0_DUMMY(MMSYS_DISP_SPLIT, "mm_disp_split", "mm_sel", 31),
+	GATE_MM0(MMSYS_FAKE_ENG, "mm_fake_eng", "mm_sel", 19),
+	GATE_MM0(MMSYS_DISP_OVL0, "mm_disp_ovl0", "mm_sel", 20),
+	GATE_MM0(MMSYS_DISP_OVL0_2L, "mm_disp_ovl0_2l", "mm_sel", 21),
+	GATE_MM0(MMSYS_DISP_OVL1_2L, "mm_disp_ovl1_2l", "mm_sel", 22),
+	GATE_MM0(MMSYS_DISP_RDMA0, "mm_disp_rdma0", "mm_sel", 23),
+	GATE_MM0(MMSYS_DISP_RDMA1, "mm_disp_rdma1", "mm_sel", 24),
+	GATE_MM0(MMSYS_DISP_WDMA0, "mm_disp_wdma0", "mm_sel", 25),
+	GATE_MM0(MMSYS_DISP_COLOR0, "mm_disp_color0", "mm_sel", 26),
+	GATE_MM0(MMSYS_DISP_CCORR0, "mm_disp_ccorr0", "mm_sel", 27),
+	GATE_MM0(MMSYS_DISP_AAL0, "mm_disp_aal0", "mm_sel", 28),
+	GATE_MM0(MMSYS_DISP_GAMMA0, "mm_disp_gamma0", "mm_sel", 29),
+	GATE_MM0(MMSYS_DISP_DITHER0, "mm_disp_dither0", "mm_sel", 30),
+	GATE_MM0(MMSYS_DISP_SPLIT, "mm_disp_split", "mm_sel", 31),
 	/* MM1 */
 	GATE_MM1_DUMMY(MMSYS_DSI0_MM_CK, "mm_dsi0_mmck", "mm_sel", 0),
 	GATE_MM1_DUMMY(MMSYS_DSI0_IF_CK, "mm_dsi0_ifck", "mm_sel", 1),/* should mipipll1 */
@@ -2671,13 +2690,13 @@ void check_ven_clk_sts(void)
 	/* confirm mm0 clk */
 	pr_notice("VENC_CG_CON = 0x%08x\n", clk_readl(VENC_CG_CON));
 }
-
+#if 0
 void check_cam_clk_sts(void)
 {
 	/* confirm mm0 clk */
 	pr_notice("CAMSYS_CG_CON = 0x%08x\n", clk_readl(CAMSYS_CG_CON));
 }
-
+#endif
 static int __init clk_mt6771_init(void)
 {
 	/*timer_ready = true;*/

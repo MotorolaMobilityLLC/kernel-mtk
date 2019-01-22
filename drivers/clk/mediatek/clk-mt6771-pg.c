@@ -29,7 +29,7 @@
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP  1
+#define MT_CCF_BRINGUP  0
 #define CONTROL_LIMIT 1
 #endif
 
@@ -73,8 +73,10 @@ void __iomem *clk_camsys_base;
 #define VDEC_GALS_CFG (clk_vdec_gcon_base + 0x0168)
 #define VENC_CG_SET	(clk_venc_gcon_base + 0x0004)
 #endif
-#define CAMSYS_CG_STA	(clk_camsys_base + 0x0000)
-#define CAMSYS_CG_CLR	(clk_camsys_base + 0x0008)
+#define MM_CG_CLR0 (clk_mmsys_config_base + 0x108)
+#define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
+#define CAM_CG_CLR	(clk_camsys_base + 0x0008)
+#define CAM_CG_CON	(clk_camsys_base + 0x0000)
 
 
 /*
@@ -851,6 +853,11 @@ int spm_mtcmos_ctrl_conn(int state)
 	return err;
 }
 
+void enable_mm_clk(void)
+{
+	clk_writel(MM_CG_CLR0, 0x03ff);
+}
+
 int spm_mtcmos_ctrl_dis(int state)
 {
 	int err = 0;
@@ -951,6 +958,7 @@ int spm_mtcmos_ctrl_dis(int state)
 		/* Note that this protect ack check after releasing protect has been ignored */
 #endif
 		/* TINFO="Finish to turn on DIS" */
+		enable_mm_clk();
 	}
 	return err;
 }
@@ -1021,6 +1029,11 @@ int spm_mtcmos_ctrl_mfg(int state)
 		/* TINFO="Finish to turn on MFG" */
 	}
 	return err;
+}
+
+void enable_img_clk(void)
+{
+	clk_writel(IMG_CG_CLR, 0x03);
 }
 
 int spm_mtcmos_ctrl_isp(int state)
@@ -1131,6 +1144,7 @@ int spm_mtcmos_ctrl_isp(int state)
 		/* Note that this protect ack check after releasing protect has been ignored */
 #endif
 		/* TINFO="Finish to turn on ISP" */
+		enable_img_clk();
 	}
 	return err;
 }
@@ -1613,6 +1627,16 @@ int spm_mtcmos_ctrl_audio(int state)
 	return err;
 }
 
+void enable_cam_clk(void)
+{
+	#if 0
+	clk_writel(CAM_CG_CLR, 0x1fff);
+	clk_writel(CAM_CG_CLR, 0x00ff);
+	clk_writel(CAM_CG_CLR, 0x0105);
+	clk_writel(CAM_CG_CLR, 0x01ff);
+	#endif
+	clk_writel(CAM_CG_CLR, 0x1f05);
+}
 int spm_mtcmos_ctrl_cam(int state)
 {
 	int err = 0;
@@ -1733,6 +1757,7 @@ int spm_mtcmos_ctrl_cam(int state)
 		/* Note that this protect ack check after releasing protect has been ignored */
 #endif
 		/* TINFO="Finish to turn on CAM" */
+		enable_cam_clk();
 	}
 	return err;
 }
@@ -3003,26 +3028,26 @@ static int subsys_is_on(enum subsys_id id)
 
 #if CONTROL_LIMIT
 int allow[NR_SYSS] = {
-0,	/*SYS_MD1 = 0,*/
-0,	/*SYS_CONN = 1,*/
-0,	/*SYS_DIS = 2,*//*can HS, but resume fail*/
-0,	/*SYS_MFG = 3,*/
-0,	/*SYS_ISP = 4,*/
-0,	/*SYS_VEN = 5,*/
-0,	/*SYS_MFG_ASYNC = 6,*/
-0,	/*SYS_AUDIO = 7,*/
-0,	/*SYS_CAM = 8,*//*There is no process hold rtnl lock*/
-0,	/*SYS_MFG_CORE1 = 9,*/
-0,	/*SYS_MFG_CORE0 = 10,*/
-0,	/*SYS_VDE = 11,*/
-0,	/*SYS_VPU_TOP = 12,*/
-0,	/*SYS_VPU_CORE0_DORMANT = 13,*/
-0,	/*SYS_VPU_CORE0_SHUTDOWN = 14,*/
-0,	/*SYS_VPU_CORE1_DORMANT = 15,*/
-0,	/*SYS_VPU_CORE1_SHUTDOWN = 16,*/
+1,	/*SYS_MD1 = 0,*/
+1,	/*SYS_CONN = 1,*/
+1,	/*SYS_DIS = 2,*//*can HS, but resume fail*/
+1,	/*SYS_MFG = 3,*/
+1,	/*SYS_ISP = 4,*/
+1,	/*SYS_VEN = 5,*/
+1,	/*SYS_MFG_ASYNC = 6,*/
+1,	/*SYS_AUDIO = 7,*/
+1,	/*SYS_CAM = 8,*//*There is no process hold rtnl lock*/
+1,	/*SYS_MFG_CORE1 = 9,*/
+1,	/*SYS_MFG_CORE0 = 10,*/
+1,	/*SYS_VDE = 11,*/
+1,	/*SYS_VPU_TOP = 12,*/
+1,	/*SYS_VPU_CORE0_DORMANT = 13,*/
+1,	/*SYS_VPU_CORE0_SHUTDOWN = 14,*/
+1,	/*SYS_VPU_CORE1_DORMANT = 15,*/
+1,	/*SYS_VPU_CORE1_SHUTDOWN = 16,*/
 0,	/*SYS_VPU_CORE2_DORMANT = 17,*/
 0,	/*SYS_VPU_CORE2_SHUTDOWN = 18,*/
-0,	/*SYS_MFG_2D = 19*/
+1,	/*SYS_MFG_2D = 19*/
 };
 #endif
 static int enable_subsys(enum subsys_id id)
@@ -3500,14 +3525,14 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_mfg_core0(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg_core1(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg_2d(STA_POWER_ON);
-
+#if 0
 	spm_mtcmos_ctrl_dis(STA_POWER_ON);
 	spm_mtcmos_ctrl_cam(STA_POWER_ON);
 	spm_mtcmos_ctrl_ven(STA_POWER_ON);
 	spm_mtcmos_ctrl_vde(STA_POWER_ON);
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
-
-#if 1 /*avoid hang in bring up*/
+#endif
+#if 0 /*avoid hang in bring up*/
 	spm_mtcmos_ctrl_vpu_top(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_core0_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_core1_shut_down(STA_POWER_ON);
@@ -3515,7 +3540,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 #endif
 	/*spm_mtcmos_ctrl_md1(STA_POWER_ON);*/
 	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_audio(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_audio(STA_POWER_ON);*/
 #endif
 #endif				/* !MT_CCF_BRINGUP */
 }
@@ -3559,7 +3584,7 @@ void subsys_if_on(void)
 		pr_notice("suspend warning: SYS_AUDIO is on!!!\n");
 	if ((sta & (1U << 27)) && (sta_s & (1U << 27))) {
 		pr_notice("suspend warning: SYS_CAM is on!!!\n");
-		check_cam_clk_sts();
+		/*check_cam_clk_sts();*/
 		ret++;
 	}
 	if ((sta & (1U << 30)) && (sta_s & (1U << 30))) {
