@@ -799,7 +799,7 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 
 		/* update capacity_min */
 		if (boost_value < 0 || boost_value > 100) {
-			printk_deferred("warning: boost for capacity_min should be 0~100\n");
+			/* printk_deferred("warning: boost for capacity_min should be 0~100\n"); */
 			if (boost_value > 100)
 				boost_value = 100;
 			else if (boost_value < 0)
