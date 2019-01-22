@@ -343,7 +343,7 @@ static int disp_aal_wait_hist(unsigned long timeout)
 }
 
 #ifdef CONFIG_MTK_AAL_SUPPORT
-static void disp_aal_clear_irq_only(enum DISP_MODULE_ENUM module, bool cleared)
+static int disp_aal_clear_irq_only(enum DISP_MODULE_ENUM module, bool cleared)
 {
 	unsigned int intsta;
 	unsigned long flags;
@@ -352,6 +352,8 @@ static void disp_aal_clear_irq_only(enum DISP_MODULE_ENUM module, bool cleared)
 	int getlock;
 
 	intsta = DISP_REG_GET(DISP_AAL_INTSTA + offset);
+	if (intsta == 0x0)
+		return 1;
 
 	aal_index_hist_spin_trylock(index, flags, getlock);
 	if (getlock > 0) {
@@ -377,6 +379,8 @@ static void disp_aal_clear_irq_only(enum DISP_MODULE_ENUM module, bool cleared)
 	}
 
 	AAL_NOTICE("disp_aal_clear_irq_only, Module(%d), process:(%d)", module, cleared);
+
+	return 0;
 }
 
 static void disp_aal_single_pipe_hist_update(enum DISP_MODULE_ENUM module)
@@ -1107,6 +1111,12 @@ static int aal_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 		ddp_aal_backup();
 
 	AAL_DBG("aal_clock_off");
+#ifdef CONFIG_MTK_AAL_SUPPORT
+	if (disp_aal_clear_irq_only(module, true) == 0) {
+		/* print message */
+		AAL_NOTICE("intsta not cleared before aal_clock_off");
+	}
+#endif		/* CONFIG_MTK_AAL_SUPPORT */
 #if defined(CONFIG_MACH_ELBRUS) || defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* aal is DCM , do nothing */
 #else
