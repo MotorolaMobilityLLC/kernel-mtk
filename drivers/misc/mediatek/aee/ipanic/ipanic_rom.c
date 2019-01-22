@@ -587,7 +587,7 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 	cpu_proc_fin();
 #endif
 	mrdump_mini_ke_cpu_regs(excp_regs);
-	mrdump_mini_per_cpu_regs(cpu, regs);
+	mrdump_mini_per_cpu_regs(cpu, regs, current);
 	inner_dcache_flush_all();
 	if (!has_mt_dump_support())
 		emergency_restart();
