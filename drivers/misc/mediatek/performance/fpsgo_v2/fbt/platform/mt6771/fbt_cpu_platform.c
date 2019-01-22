@@ -19,12 +19,9 @@
 
 #define CLUSTER_FREQ 1287000
 
-void fbt_set_boost_value(int cluster, unsigned int base_blc)
+void fbt_set_boost_value(unsigned int base_blc)
 {
-	if (cluster == 1)
-		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, (base_blc - 1) + 4200);
-	else if (cluster == 0)
-		update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, (base_blc - 1) + 4100);
+	update_eas_boost_value(EAS_KIR_FBC, CGROUP_TA, base_blc - 1 + 4000);
 }
 
 void fbt_init_cpuset_freq_bound_table(void)
