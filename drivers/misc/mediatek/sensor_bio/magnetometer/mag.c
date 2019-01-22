@@ -13,6 +13,7 @@
 
 #include <linux/vmalloc.h>
 #include "inc/mag.h"
+#include "performance.h"
 
 struct mag_context *mag_context_obj/* = NULL*/;
 static struct mag_init_info *msensor_init_list[MAX_CHOOSE_G_NUM] = {0};
@@ -634,6 +635,8 @@ int mag_data_report(struct mag_data *data)
 	event.word[2] = data->z;
 	event.reserved = data->reserved[0];
 
+	if (event.reserved == 1)
+		mark_timestamp(ID_MAGNETIC, DATA_REPORT, ktime_get_raw_ns(), event.time_stamp);
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
 	if (err < 0)
 		MAG_ERR("failed due to event buffer full\n");
