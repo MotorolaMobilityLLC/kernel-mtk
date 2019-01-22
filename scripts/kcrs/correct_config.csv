@@ -229,6 +229,7 @@ CONFIG_KCOV,PROJECT,,,X,X,X,O,O,O,O,O,O,O
 CONFIG_KEYBOARD_ATKBD,COMMON,Unused,,N,N,N,N,N,N,N,N,N,N
 CONFIG_KEYBOARD_MTK,COMMON,Zh.Chen,,y,y,y,y,y,y,y,y,y,y
 CONFIG_KEYBOARD_MTK_PMIC,PLATFORM,chang-an.chen,Keypad owner,X,X,X,X,X,y,X,X,X,X
+CONFIG_MTK_SERIAL,PLATFORM,qiangming.xia,uart owner,y,y,y,y,y,y,y,y,y,y
 CONFIG_KGDB,USER,my.chuang,,X,X,X,X,X,X,X,X,X,X
 CONFIG_KGDB_KDB,USER,my.chuang,,X,X,X,X,X,X,X,X,X,X
 CONFIG_KPD_PMIC_LPRST_TD,PROJECT,elvin.lin,,0,0,0,,,,,,,
