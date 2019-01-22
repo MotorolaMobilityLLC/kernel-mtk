@@ -1014,7 +1014,6 @@ static ssize_t scp_vcore_request_store(struct device *kobj, struct device_attrib
 DEVICE_ATTR(scp_vcore_request, 0644, scp_vcore_request_show, scp_vcore_request_store);
 #endif
 
-#ifdef CONFIG_MTK_ENG_BUILD
 static inline ssize_t scp_A_db_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 
@@ -1022,7 +1021,8 @@ static inline ssize_t scp_A_db_test_show(struct device *kobj, struct device_attr
 		scp_aed_reset(EXCEP_RUNTIME, SCP_A_ID);
 		return scnprintf(buf, PAGE_SIZE, "dumping SCP A db\n");
 	} else
-		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
+		scp_aed_reset(EXCEP_RUNTIME, SCP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready, try to dump EE\n");
 }
 
 DEVICE_ATTR(scp_A_db_test, 0444, scp_A_db_test_show, NULL);
@@ -1033,12 +1033,15 @@ static inline ssize_t scp_B_db_test_show(struct device *kobj, struct device_attr
 	if (scp_ready[SCP_B_ID]) {
 		scp_aed_reset(EXCEP_RUNTIME, SCP_B_ID);
 		return scnprintf(buf, PAGE_SIZE, "dumping SCP B db\n");
-	} else
-		return scnprintf(buf, PAGE_SIZE, "SCP B is not ready\n");
+	} else {
+		scp_aed_reset(EXCEP_RUNTIME, SCP_B_ID);
+		return scnprintf(buf, PAGE_SIZE, "SCP B is not ready, try to dump EE\n");
+	}
 }
 
 DEVICE_ATTR(scp_B_db_test, 0444, scp_B_db_test_show, NULL);
 
+#ifdef CONFIG_MTK_ENG_BUILD
 static inline ssize_t scp_A_awake_lock_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 
@@ -1223,7 +1226,7 @@ static int create_files(void)
 
 	if (unlikely(ret != 0))
 		return ret;
-#ifdef CONFIG_MTK_ENG_BUILD
+
 	/*only support debug db test in engineer build*/
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_db_test);
 
@@ -1234,7 +1237,7 @@ static int create_files(void)
 
 	if (unlikely(ret != 0))
 		return ret;
-
+#ifdef CONFIG_MTK_ENG_BUILD
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_A_awake_lock);
 
 	if (unlikely(ret != 0))

@@ -267,6 +267,10 @@ void scp_A_dump_regs(void)
 		pr_err("[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
 	} else {
 		pr_err("[SCP} SCP A is dead\n");
+		pr_err("[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
+		pr_err("[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
+		pr_err("[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
+		pr_err("[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
 	}
 }
 
@@ -283,6 +287,10 @@ void scp_B_dump_regs(void)
 		pr_err("[SCP] SCP_B_DEBUG_SP_REG:0x%x\n", SCP_B_DEBUG_SP_REG);
 	} else {
 		pr_err("[SCP} SCP B is dead\n");
+		pr_err("[SCP] SCP_B_DEBUG_PC_REG:0x%x\n", SCP_B_DEBUG_PC_REG);
+		pr_err("[SCP] SCP_B_DEBUG_LR_REG:0x%x\n", SCP_B_DEBUG_LR_REG);
+		pr_err("[SCP] SCP_B_DEBUG_PSP_REG:0x%x\n", SCP_B_DEBUG_PSP_REG);
+		pr_err("[SCP] SCP_B_DEBUG_SP_REG:0x%x\n", SCP_B_DEBUG_SP_REG);
 	}
 }
 
