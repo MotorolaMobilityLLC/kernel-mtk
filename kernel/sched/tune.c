@@ -236,10 +236,11 @@ static struct schedtune *allocated_group[BOOSTGROUPS_COUNT] = {
  */
 struct boost_groups {
 	/* Maximum boost value for all RUNNABLE tasks on a CPU */
-	unsigned boost_max;
+	bool idle;
+	int boost_max;
 	struct {
 		/* The boost for tasks on that boost group */
-		unsigned boost;
+		int boost;
 		/* Count of RUNNABLE tasks on that boost group */
 		unsigned tasks;
 	} group[BOOSTGROUPS_COUNT];
@@ -252,7 +253,7 @@ static void
 schedtune_cpu_update(int cpu)
 {
 	struct boost_groups *bg;
-	unsigned boost_max;
+	int boost_max;
 	int idx;
 
 	bg = &per_cpu(cpu_boost_groups, cpu);
@@ -268,7 +269,11 @@ schedtune_cpu_update(int cpu)
 			continue;
 		boost_max = max(boost_max, bg->group[idx].boost);
 	}
-
+	/* Ensures boost_max is non-negative when all cgroup boost values
+	 * are neagtive. Avoids under-accounting of cpu capacity which may cause
+	 * task stacking and frequency spikes.
+	 */
+	boost_max = max(boost_max, 0);
 	bg->boost_max = boost_max;
 }
 
@@ -497,6 +502,7 @@ static void update_freq_fastpath(void)
 }
 #endif
 
+#if 0 /* no use */
 int boost_value_for_GED_pid(int pid, int boost_value)
 {
 	struct task_struct *boost_task;
@@ -511,14 +517,13 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 		stune_task_threshold = default_stune_threshold;
 	}
 
-	if (boost_value < 0 || boost_value > 100)
-		printk_deferred("warning: GED boost value should be 0~100\n");
-
-	if (boost_value < 0)
-		boost_value = 0;
+	if (boost_value < -100 || boost_value > 100)
+		printk_deferred("warning: GED boost value should be -100~100\n");
 
 	if (boost_value >= 100)
-		boost_value = 99;
+		boost_value = 100;
+	else if (boost_value <= -100)
+		boost_value = -100;
 
 	rcu_read_lock();
 
@@ -565,6 +570,7 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 	rcu_read_unlock();
 	return 0;
 }
+#endif
 
 int boost_value_for_GED_idx(int group_idx, int boost_value)
 {
@@ -590,14 +596,13 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 		stune_task_threshold = default_stune_threshold;
 	}
 
-	if (boost_value < 0 || boost_value > 100)
-		printk_deferred("warning: GED boost value should be 0~100\n");
-
-	if (boost_value < 0)
-		boost_value = 0;
+	if (boost_value < -100 || boost_value > 100)
+		printk_deferred("warning: GED boost value should be -100~100\n");
 
 	if (boost_value >= 100)
-		boost_value = 99;
+		boost_value = 100;
+	else if (boost_value <= -100)
+		boost_value = -100;
 
 	ct = allocated_group[group_idx];
 
@@ -738,7 +743,7 @@ prefer_idle_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	return 0;
 }
 
-static u64
+static s64
 boost_read(struct cgroup_subsys_state *css, struct cftype *cft)
 {
 	struct schedtune *st = css_st(css);
@@ -748,7 +753,7 @@ boost_read(struct cgroup_subsys_state *css, struct cftype *cft)
 
 static int
 boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
-	    u64 boost)
+	    s64 boost)
 {
 	struct schedtune *st = css_st(css);
 	unsigned threshold_idx;
@@ -766,7 +771,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	} else
 		stune_task_threshold = default_stune_threshold;
 
-	if (boost < 0 || boost > 100) {
+	if (boost < -100 || boost > 100) {
 		stune_task_threshold = default_stune_threshold;
 		return -EINVAL;
 	}
@@ -812,8 +817,8 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 static struct cftype files[] = {
 	{
 		.name = "boost",
-		.read_u64 = boost_read,
-		.write_u64 = boost_write,
+		.read_s64 = boost_read,
+		.write_s64 = boost_write,
 	},
 	{
 		.name = "prefer_idle",
