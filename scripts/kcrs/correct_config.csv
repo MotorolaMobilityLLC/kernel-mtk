@@ -959,3 +959,12 @@ CONFIG_MTK_LATE_MOUNT,PROJECT,juju.sung,,N,N,N,N,N,N,N,N,N,N,N
 CONFIG_TARGET_COPY_OUT_ODM,PROJECT,lucas-sr.wei,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT,PROJECT,vincent.fan,,,,,,,,,,,,
 CONFIG_HIGHPTE,COMMON,miles.chen,,N,N,N,N,N,N
+CONFIG_BLK_DEV_MD,PROJECT,pangyen.chen,,,,,,,,,,,,
+CONFIG_MD_LINEAR,PROJECT,pangyen.chen,,,,,,,,,,,,
+CONFIG_DM_ANDROID_VERITY,PROJECT,pangyen.chen,,,,,,,,,,,,
+CONFIG_KEYS,PROJECT,pangyen.chen,,,,,,,,,,,,
+CONFIG_INTEGRITY_SIGNATURE,PROJECT,pangyen.chen,,,,,,,,,,,,
+CONFIG_INTEGRITY_ASYMMETRIC_KEYS,PROJECT,pangyen.chen,,,,,,,,,,,,
+CONFIG_SYSTEM_TRUSTED_KEYRING,PROJECT,pangyen.chen,,,,,,,,,,,,
+CONFIG_SYSTEM_TRUSTED_KEYS,PROJECT,pangyen.chen,,,,,,,,,,,,
+CONFIG_DM_ANDROID_VERITY,PROJECT,pangyen.chen,,,,,,,,,,,,
