@@ -4112,12 +4112,45 @@ void print_modules(void)
 	list_for_each_entry_rcu(mod, &modules, list) {
 		if (mod->state == MODULE_STATE_UNFORMED)
 			continue;
-		pr_cont(" %s%s", mod->name, module_flags(mod, buf));
+		pr_cont(" %s %p %p %d %d %s", mod->name, mod->module_core, mod->module_init,
+				mod->core_size, mod->init_size, module_flags(mod, buf));
 	}
 	preempt_enable();
 	if (last_unloaded_module[0])
 		pr_cont(" [last unloaded: %s]", last_unloaded_module);
 	pr_cont("\n");
+}
+
+/* MUST ensure called when preempt disabled already */
+int save_modules(char *mbuf, int mbufsize)
+{
+	struct module *mod;
+	char buf[8];
+	/*int off = 0;*/
+	int sz = 0;
+
+	if (mbuf == NULL || mbufsize <= 0) {
+		pr_cont("mrdump: module info buffer wrong(size:%d)\n", mbufsize);
+		return 0;
+	}
+
+	memset(mbuf, '\0', mbufsize);
+	sz += snprintf(mbuf + sz, mbufsize - sz, "Modules linked in:");
+	list_for_each_entry_rcu(mod, &modules, list) {
+		if (mod->state == MODULE_STATE_UNFORMED)
+			continue;
+		if (sz >= mbufsize) {
+			pr_cont("mrdump: module info buffer full(size:%d)\n", mbufsize);
+			break;
+		}
+		sz += snprintf(mbuf + sz, mbufsize - sz, " %s %p %p %d %d %s", mod->name, mod->module_core,
+				mod->module_init, mod->core_size, mod->init_size, module_flags(mod, buf));
+	}
+	if (last_unloaded_module[0] && sz < mbufsize)
+		sz += snprintf(mbuf + sz, mbufsize - sz, " [last unloaded: %s]", last_unloaded_module);
+	if (sz < mbufsize)
+		sz += snprintf(mbuf + sz, mbufsize - sz, "\n");
+	return sz;
 }
 
 #ifdef CONFIG_MODVERSIONS
