@@ -851,6 +851,20 @@ FB_RET:
 }
 #endif
 
+static int _loading_avg(int ui32loading)
+{
+	static int data[8];
+	static int idx;
+	static int sum;
+
+	int cidx = ++idx % ARRAY_SIZE(data);
+
+	sum += ui32loading - data[cidx];
+	data[cidx] = ui32loading;
+
+	return sum / ARRAY_SIZE(data);
+}
+
 static bool ged_dvfs_policy(
 		unsigned int ui32GPULoading, unsigned int* pui32NewFreqID,
 		unsigned long t, long phase, unsigned long ul3DFenceDoneTime, bool bRefreshed)
@@ -929,14 +943,6 @@ static bool ged_dvfs_policy(
 		}
 
 		g_CommitType = MTK_GPU_DVFS_TYPE_TIMERBASED;
-	} else if (phase == GED_DVFS_TIMER_BACKUP) {
-		/* easy to boost in offscreen cases */
-		if (ui32GPULoading >= 50)
-			i32NewFreqID -= 1;
-		else if (ui32GPULoading <= 30)
-			i32NewFreqID += 1;
-
-		g_CommitType = MTK_GPU_DVFS_TYPE_TIMERBASED;
 	} else {
 		/* vsync-based fallback mode */
 		static int init;
@@ -946,13 +952,15 @@ static bool ged_dvfs_policy(
 			_init_loading_ud_table();
 		}
 
+		ui32GPULoading = _loading_avg(ui32GPULoading);
+
 		if (ui32GPULoading >= loading_ud_table[ui32GPUFreq].up)
 			i32NewFreqID -= 1;
 		else if (ui32GPULoading <= loading_ud_table[ui32GPUFreq].down)
 			i32NewFreqID += 1;
 
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K1] rdy gpu_av_loading: %u, %d(%d)-up:%d,%d, new: %d",
-				gpu_loading,
+				ui32GPULoading,
 				ui32GPUFreq,
 				loading_ud_table[ui32GPUFreq].freq,
 				loading_ud_table[ui32GPUFreq].up,
