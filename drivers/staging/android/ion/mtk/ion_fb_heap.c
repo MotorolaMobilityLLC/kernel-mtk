@@ -163,7 +163,6 @@ static void ion_fb_heap_free(struct ion_buffer *buffer)
 {
 	struct ion_heap *heap = buffer->heap;
 	struct ion_mm_buffer_info *buffer_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
-	struct sg_table *table = buffer->sg_table;
 
 	if (!buffer_info) {
 		IONMSG("[ion_fb_heap_free]: Error: buffer_info is NULL.\n");
@@ -197,7 +196,7 @@ struct sg_table *ion_fb_heap_map_dma(struct ion_heap *heap,
 
 void ion_fb_heap_unmap_dma(struct ion_heap *heap, struct ion_buffer *buffer)
 {
-	struct ion_fb_buffer_info *buffer_info = (struct ion_fb_buffer_info *)buffer->priv_virt;
+	struct ion_mm_buffer_info *buffer_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
 
 	if (buffer_info->MVA)
 		m4u_dealloc_mva_sg(buffer_info->module_id, buffer->sg_table, buffer->size, buffer_info->MVA);
