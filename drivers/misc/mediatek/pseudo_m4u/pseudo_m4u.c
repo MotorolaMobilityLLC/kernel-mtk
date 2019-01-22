@@ -15,6 +15,9 @@
 #include <linux/scatterlist.h>
 #include <linux/dma-mapping.h>
 #include <linux/dma-iommu.h>
+#ifndef CONFIG_ARM64
+#include <asm/dma-iommu.h>
+#endif
 #include <soc/mediatek/smi.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
@@ -611,10 +614,18 @@ static int __m4u_alloc_mva(M4U_PORT_ID port, unsigned long va, unsigned int size
 	}
 
 	if (sg_table) {
+#ifdef CONFIG_ARM64
 		iommu_dma_map_sg(dev, table->sgl, table->nents, IOMMU_READ | IOMMU_WRITE);
+#else
+		arm_coherent_iommu_map_sg(dev, table->sgl, table->nents, 1, NULL);
+#endif
 		dma_addr = sg_dma_address(table->sgl);
 	} else {
+#ifdef CONFIG_ARM64
 		iommu_dma_map_sg(dev, table->sgl, table->orig_nents, IOMMU_READ | IOMMU_WRITE);
+#else
+		arm_coherent_iommu_map_sg(dev, table->sgl, table->orig_nents, 1, NULL);
+#endif
 		dma_addr = sg_dma_address(table->sgl);
 	}
 
@@ -1462,7 +1473,11 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 	struct sg_table *table = NULL;
 	int kernelport = m4u_user2kernel_port(eModuleID);
 	struct device *dev = m4u_get_larbdev(kernelport);
+#ifdef CONFIG_ARM64
 	struct iommu_domain *domain;
+#else
+	struct dma_iommu_mapping *mapping;
+#endif
 	unsigned long addr_align = MVA;
 	unsigned int size_align = BufSize;
 	int offset;
@@ -1470,12 +1485,20 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 	if (!dev) {
 		M4UMSG("%s, %d, dev is NULL\n", __func__, __LINE__);
 		return -EINVAL;
-	}
-
-	domain = iommu_get_domain_for_dev(dev);
-	if (!domain) {
-		M4UMSG("%s, %d, domain is NULL\n", __func__, __LINE__);
-		return -EINVAL;
+	} else {
+#ifdef CONFIG_ARM64
+		domain = iommu_get_domain_for_dev(dev);
+		if (!domain) {
+			M4UMSG("%s, %d, domain is NULL\n", __func__, __LINE__);
+			return -EINVAL;
+		}
+#else
+		mapping = to_dma_iommu_mapping(dev);
+		if (!mapping) {
+			M4UMSG("%s, %d, mapping is NULL\n", __func__, __LINE__);
+			return -EINVAL;
+		}
+#endif
 	}
 
 	M4UDBG
@@ -1514,7 +1537,11 @@ int __m4u_dealloc_mva(M4U_MODULE_ID_ENUM eModuleID,
 		table = m4u_del_sgtable(addr_align);
 
 	if (table)
+#ifdef CONFIG_ARM64
 		iommu_dma_unmap_sg(dev, table->sgl, table->orig_nents, 0, NULL);
+#else
+		arm_coherent_iommu_unmap_sg(dev, table->sgl, table->nents, 0, NULL);
+#endif
 	else {
 		M4UERR("could not found the sgtable and would return error\n");
 		return -EINVAL;
@@ -2166,8 +2193,178 @@ long MTK_M4U_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 
 #endif
 
+/*
+ * reserve the iova for direct mapping.
+ * without this, the direct mapping iova maybe allocated to other users,
+ * and the armv7s iopgtable may assert warning and return error.
+ * We reserve those iova to avoid this iova been allocated by other users.
+ */
+#ifdef CONFIG_ARM64
+static int pseudo_reserve_dm(void)
+{
+	struct iommu_dm_region *entry;
+	struct list_head mappings;
+	struct device *dev = m4u_get_larbdev(0);
+	struct iommu_domain *domain;
+	struct iova_domain *iovad;
+	struct iova *iova;
+	unsigned long pg_size = SZ_4K, limit, shift;
+
+	INIT_LIST_HEAD(&mappings);
+
+	iommu_get_dm_regions(dev, &mappings);
+
+	/* We need to consider overlapping regions for different devices */
+	list_for_each_entry(entry, &mappings, list) {
+		dma_addr_t start;
+
+		start = ALIGN(entry->start, pg_size);
+retry:
+		domain = iommu_get_domain_for_dev(dev);
+		if (!domain) {
+			M4UMSG("%s, %d, get iommu_domain failed\n", __func__, __LINE__);
+			domain = iommu_get_domain_for_dev(dev);
+			cond_resched();
+			goto retry;
+		}
+
+		iovad = domain->iova_cookie;
+		shift = iova_shift(iovad);
+		limit = (start + entry->length) >> shift;
+		/* add plus one page for the size of allocation or there maybe overlap */
+		iova = alloc_iova(iovad, (entry->length >> shift) + 1, limit, false);
+		if (!iova) {
+			dev_err(dev, "pseudo alloc_iova failed %s, %d, dm->start 0x%lx, dm->length 0x%zx\n",
+				__func__, __LINE__, (unsigned long)entry->start, entry->length);
+			return -1;
+		}
+
+		M4UMSG("reserve iova for dm success, dm->start 0x%lx, dm->length 0x%zx, start 0x%lx, end 0x%lx\n",
+			(unsigned long)entry->start, entry->length,
+			iova->pfn_lo << shift, iova->pfn_hi << shift);
+
+	}
+
+	return 0;
+}
+#else
+static struct dma_iommu_mapping *dmapping;
+static int extend_iommu_mapping(struct dma_iommu_mapping *mapping)
+{
+	int next_bitmap;
+
+	if (mapping->nr_bitmaps >= mapping->extensions)
+		return -EINVAL;
+
+	next_bitmap = mapping->nr_bitmaps;
+	mapping->bitmaps[next_bitmap] = kzalloc(mapping->bitmap_size,
+						GFP_ATOMIC);
+	if (!mapping->bitmaps[next_bitmap])
+		return -ENOMEM;
+
+	mapping->nr_bitmaps++;
+
+	return 0;
+}
+
+static inline int __reserve_iova(struct dma_iommu_mapping *mapping,
+				dma_addr_t iova, size_t size)
+{
+	unsigned long count, start;
+	unsigned long flags;
+	int i, sbitmap, ebitmap;
+
+	if (iova < mapping->base)
+		return -EINVAL;
+
+	start = (iova - mapping->base) >> PAGE_SHIFT;
+	count = PAGE_ALIGN(size) >> PAGE_SHIFT;
+
+	sbitmap = start / mapping->bits;
+	ebitmap = (start + count) / mapping->bits;
+	start = start % mapping->bits;
+
+	if (ebitmap > mapping->extensions)
+		return -EINVAL;
+
+	spin_lock_irqsave(&mapping->lock, flags);
+
+	for (i = mapping->nr_bitmaps; i <= ebitmap; i++) {
+		if (extend_iommu_mapping(mapping)) {
+			spin_unlock_irqrestore(&mapping->lock, flags);
+			return -ENOMEM;
+		}
+	}
+
+	for (i = sbitmap; count && i < mapping->nr_bitmaps; i++) {
+		int bits = count;
+
+		if (bits + start > mapping->bits)
+			bits = mapping->bits - start;
+
+		bitmap_set(mapping->bitmaps[i], start, bits);
+		start = 0;
+		count -= bits;
+	}
+
+	spin_unlock_irqrestore(&mapping->lock, flags);
+
+	return 0;
+}
+
+static int pseudo_reserve_dm(void)
+{
+	struct iommu_dm_region *entry;
+	struct list_head mappings;
+	struct device *dev = m4u_get_larbdev(0);
+	unsigned long pg_size;
+	struct iommu_domain	*domain = dmapping->domain;
+	int ret = 0;
+
+	WARN_ON(!domain->ops->pgsize_bitmap);
+
+	pg_size = 1UL << __ffs(domain->ops->pgsize_bitmap);
+	INIT_LIST_HEAD(&mappings);
+
+	iommu_get_dm_regions(dev, &mappings);
+
+	/* We need to consider overlapping regions for different devices */
+	list_for_each_entry(entry, &mappings, list) {
+		dma_addr_t start, end, addr;
+
+		start = ALIGN(entry->start, pg_size);
+		end   = ALIGN(entry->start + entry->length, pg_size);
+
+		for (addr = start; addr < end; addr += pg_size) {
+			phys_addr_t phys_addr;
+
+			phys_addr = iommu_iova_to_phys(domain, addr);
+			if (phys_addr)
+				continue;
+
+			ret = iommu_map(domain, addr, addr, pg_size, entry->prot);
+			if (ret)
+				goto out;
+		}
+
+		ret = __reserve_iova(dmapping, start, end - start);
+		if (ret != 0) {
+			M4UERR("failed to reserve mapping\n");
+			goto out;
+		}
+	}
+
+out:
+	iommu_put_dm_regions(dev, &mappings);
+
+	return ret;
+}
+#endif
+
+
 #ifdef M4U_TEE_SERVICE_ENABLE
 /* reserve iova address range for security world for 1GB memory */
+#ifdef CONFIG_ARM64
 static int __reserve_iova_sec(struct device *device,
 				dma_addr_t dma_addr, size_t size)
 {
@@ -2205,66 +2402,19 @@ retry:
 		return -1;
 	}
 
-	dev_err(dev, "reserve iova for security world success, we get the iova start 0x%lx, end 0x%lx\n",
+	dev_info(dev, "reserve iova for security world success, we get the iova start 0x%lx, end 0x%lx\n",
 			iova->pfn_lo << PAGE_SHIFT, iova->pfn_hi << PAGE_SHIFT);
 
 	return 0;
 }
-#endif
+#else
+static int __reserve_iova_sec(struct device *device,
+				dma_addr_t dma_addr, size_t size) {
 
-/*
- * reserve the iova for direct mapping.
- * without this, the direct mapping iova maybe allocated to other users,
- * and the armv7s iopgtable may assert warning and return error.
- * We reserve those iova to avoid this iova been allocated by other users.
- */
-static int pseudo_reserve_dm(void)
-{
-	struct iommu_dm_region *entry;
-	struct list_head mappings;
-	struct device *dev = m4u_get_larbdev(0);
-	struct iommu_domain *domain;
-	struct iova_domain *iovad;
-	struct iova *iova;
-	unsigned long pg_size = SZ_4K, limit, shift;
-
-	INIT_LIST_HEAD(&mappings);
-
-	iommu_get_dm_regions(dev, &mappings);
-
-	/* We need to consider overlapping regions for different devices */
-	list_for_each_entry(entry, &mappings, list) {
-		dma_addr_t start;
-
-		start = ALIGN(entry->start, pg_size);
-retry:
-		domain = iommu_get_domain_for_dev(dev);
-		if (!domain) {
-			M4UMSG("%s, %d, get iommu_domain failed\n", __func__, __LINE__);
-			domain = iommu_get_domain_for_dev(dev);
-			cond_resched();
-			goto retry;
-		}
-
-		iovad = domain->iova_cookie;
-		shift = iova_shift(iovad);
-		limit = (start + entry->length) >> shift;
-		/* add plus one page for the size of allocation or there maybe overlap */
-		iova = alloc_iova(iovad, (entry->length >> shift) + 1, limit, false);
-		if (!iova) {
-			dev_err(dev, "pseudo alloc_iova failed %s, %d, dm->start 0x%lx, dm->length 0x%lx\n",
-				__func__, __LINE__, (unsigned long)entry->start, entry->length);
-			return -1;
-		}
-
-		M4UMSG("reserve iova for dm success, dm->start 0x%lx, dm->length 0x%lx, start 0x%lx, end 0x%lx\n",
-			(unsigned long)entry->start, entry->length,
-			iova->pfn_lo << shift, iova->pfn_hi << shift);
-
-	}
-
-	return 0;
+	return __reserve_iova(dmapping, dma_addr, size);
 }
+#endif
+#endif
 
 static const struct file_operations g_stMTK_M4U_fops = {
 	.owner = THIS_MODULE,
@@ -2295,6 +2445,24 @@ static int pseudo_probe(struct platform_device *pdev)
 {
 	int i;
 
+#ifndef CONFIG_ARM64
+	struct device *dev = &pdev->dev;
+	struct device_node *node = dev->of_node;
+	struct platform_device *pimudev;
+
+	node = of_parse_phandle(pdev->dev.of_node, "iommus", 0);
+	if (!node)
+		return 0;
+
+	pimudev = of_find_device_by_node(node);
+	of_node_put(node);
+	if (WARN_ON(!pimudev))
+		return -EINVAL;
+
+	dmapping = pimudev->dev.archdata.iommu;
+	WARN_ON(!dmapping);
+#endif
+
 	for (i = 0; i < 3; i++) {
 		/* wait for larb probe done. */
 		if (mtk_smi_larb_ready(i) == 0)
@@ -2317,10 +2485,11 @@ static int pseudo_probe(struct platform_device *pdev)
 
 	/* bit[0:11] is reserved */
 	iommu_pgt_base &= 0xfffff000;
-	M4UMSG("%s, %d, iommu_pgt_base 0x%lx\n", __func__, __LINE__, iommu_pgt_base);
 	pseudo_m4u_sec_init(iommu_pgt_base, gM4U_L2_enable, &sec_mem_size);
-		/* reserve mva range for security world */
-	__reserve_iova_sec(dev, 0, sec_mem_size);
+	/* reserve mva range for security world */
+	M4UMSG("%s, %d, iommu_pgt_base 0x%lx size %u\n", __func__, __LINE__, iommu_pgt_base, sec_mem_size);
+	if (sec_mem_size > 0)
+		__reserve_iova_sec(dev, 0, sec_mem_size);
 }
 #endif
 	pseudo_reserve_dm();
