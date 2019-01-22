@@ -51,10 +51,10 @@ struct switch_call_struct {
 
 static void switch_fn(struct kthread_work *work);
 
-extern struct mutex pm_mutex;
-extern unsigned long ut_pm_count;
-extern unsigned int need_mig_flag;
-extern unsigned int nt_core;
+
+
+
+
 
 
 static struct switch_call_struct *create_switch_call_struct(void)
@@ -63,9 +63,9 @@ static struct switch_call_struct *create_switch_call_struct(void)
 
 	tmp_entry = kmalloc(sizeof(struct switch_call_struct), GFP_KERNEL);
 
-	if (tmp_entry == NULL) {
+	if (tmp_entry == NULL)
 		IMSG_ERROR("[%s][%d] kmalloc failed!!!\n", __func__, __LINE__);
-	}
+
 
 	return tmp_entry;
 }
@@ -102,9 +102,9 @@ static int ut_smc_call(void *buff)
 		.data = buff,
 	};
 
-	if (!queue_kthread_work(&ut_fastcall_worker, &usc_work.work)) {
+	if (!queue_kthread_work(&ut_fastcall_worker, &usc_work.work))
 		return -1;
-	}
+
 
 	flush_kthread_work(&usc_work.work);
 	return 0;
@@ -150,9 +150,9 @@ int handle_dump_call(void *buff)
 
 void handle_lock_pm_mutex(struct mutex *lock)
 {
-	if (ut_pm_count == 0) {
+	if (ut_pm_count == 0)
 		mutex_lock(lock);
-	}
+
 
 	ut_pm_count++;
 }
@@ -163,9 +163,9 @@ void handle_unlock_pm_mutex(struct mutex *lock)
 
 	ut_pm_count--;
 
-	if (ut_pm_count == 0) {
+	if (ut_pm_count == 0)
 		mutex_unlock(lock);
-	}
+
 }
 
 int add_work_entry(int work_type, unsigned char *buff)
@@ -201,9 +201,9 @@ int add_work_entry(int work_type, unsigned char *buff)
 
 int get_call_type(struct switch_call_struct *ent)
 {
-	if (ent == NULL) {
+	if (ent == NULL)
 		return -EINVAL;
-	}
+
 
 	return ent->switch_type;
 }
@@ -226,8 +226,8 @@ int handle_sched_call(void *buff)
 int handle_capi_call(void *buff)
 {
 	struct smc_call_struct *cd = NULL;
-	cd = (struct smc_call_struct *)buff;
 
+	cd = (struct smc_call_struct *)buff;
 	/* with a rmb() */
 	rmb();
 
@@ -259,14 +259,14 @@ int handle_capi_call(void *buff)
 int handle_fdrv_call(void *buff)
 {
 	struct fdrv_call_struct *cd = NULL;
-	cd = (struct fdrv_call_struct *)buff;
 
+	cd = (struct fdrv_call_struct *)buff;
 	/* with a rmb() */
 	rmb();
 
 	switch (cd->fdrv_call_type) {
-	IMSG_DEBUG("cd->fdrv_call_type = %d \n", cd->fdrv_call_type);
 
+	IMSG_DEBUG("cd->fdrv_call_type = %d\n", cd->fdrv_call_type);
 	case FP_SYS_NO:
 		cd->retVal = __send_fp_command(cd->fdrv_call_buff_size);
 		break;
@@ -312,8 +312,8 @@ struct bdrv_call_struct {
 int handle_bdrv_call(void *buff)
 {
 	struct bdrv_call_struct *cd = NULL;
-	cd = (struct bdrv_call_struct *)buff;
 
+	cd = (struct bdrv_call_struct *)buff;
 	/* with a rmb() */
 	rmb();
 
@@ -356,6 +356,7 @@ int handle_switch_call(void *buff)
 int handler_power_down_call(void *buff)
 {
 	uint64_t smc_type = 5;
+
 	nt_cancel_t_tui(&smc_type, 0, 0);
 	while (smc_type == 0x54) {
 		udelay(IRQ_DELAY);
@@ -369,6 +370,7 @@ int handler_power_down_call(void *buff)
 int handler_i2c_ree_call(void *buff)
 {
 	unsigned long smc_type = 5;
+
 	nt_i2c_ree(&smc_type, 0, 0);
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
@@ -381,6 +383,7 @@ int handler_i2c_ree_call(void *buff)
 int handler_i2c_tee_call(void *buff)
 {
 	unsigned long smc_type = 5;
+
 	nt_i2c_tee(&smc_type, 0, 0);
 	while (smc_type == 1) {
 		udelay(IRQ_DELAY);
@@ -431,33 +434,30 @@ static void switch_fn(struct kthread_work *work)
 
 	case CAPI_CALL:
 		retVal = handle_capi_call((void *)(switch_ent->buff_addr));
-		if (retVal < 0) {
+		if (retVal < 0)
 			IMSG_ERROR("[%s][%d] fail to handle ClientAPI!\n", __func__, __LINE__);
-		}
 
 		break;
 
 	case FDRV_CALL:
 		retVal = handle_fdrv_call((void *)(switch_ent->buff_addr));
-		if (retVal < 0) {
+		if (retVal < 0)
 			IMSG_ERROR("[%s][%d] fail to handle F-driver!\n", __func__, __LINE__);
-		}
 
 		break;
 
 	case BDRV_CALL:
 		retVal = handle_bdrv_call((void *)(switch_ent->buff_addr));
-		if (retVal < 0) {
+		if (retVal < 0)
 			IMSG_ERROR("[%s][%d] fail to handle B-driver!\n", __func__, __LINE__);
-		}
+
 
 		break;
 
 	case SCHED_CALL:
 		retVal = handle_sched_call((void *)(switch_ent->buff_addr));
-		if (retVal < 0) {
+		if (retVal < 0)
 			IMSG_ERROR("[%s][%d] fail to handle sched-Call!\n", __func__, __LINE__);
-		}
 
 		break;
 
@@ -472,21 +472,21 @@ static void switch_fn(struct kthread_work *work)
 
 	case POWER_DOWN_CALL:
 		retVal = handler_power_down_call((void *)(switch_ent->buff_addr));
-		if (retVal < 0) {
+		if (retVal < 0)
 			IMSG_ERROR("[%s][%d] fail to handle power_down-Call!\n", __func__, __LINE__);
-		}
+
 		break;
 	case I2C_REE_CALL:
 		retVal = handler_i2c_ree_call(switch_ent->buff_addr);
-		if (retVal < 0) {
+		if (retVal < 0)
 			IMSG_ERROR("[%s][%d] fail to handle i2c_ree-Call!\n", __func__, __LINE__);
-		}
+
 		break;
 	case I2C_TEE_CALL:
 		retVal = handler_i2c_tee_call(switch_ent->buff_addr);
-		if (retVal < 0) {
+		if (retVal < 0)
 			IMSG_ERROR("[%s][%d] fail to handle i2c_tee-Call!\n", __func__, __LINE__);
-		}
+
 		break;
 #endif
 
@@ -496,9 +496,9 @@ static void switch_fn(struct kthread_work *work)
 
 	case NT_DUMP_T:
 		retVal = handle_dump_call((void *)(switch_ent->buff_addr));
-		if (retVal < 0) {
+		if (retVal < 0)
 			IMSG_ERROR("[%s][%d] fail to handle dump-Call!\n", __func__, __LINE__);
-		}
+
 
 		break;
 
@@ -509,7 +509,7 @@ static void switch_fn(struct kthread_work *work)
 
 	retVal = destroy_switch_call_struct(switch_ent);
 
-	if (retVal != 0) {
+	if (retVal != 0)
 		IMSG_ERROR("[%s][%d] destroy_switch_call_struct failed %d!\n", __func__, __LINE__, retVal);
-	}
+
 }

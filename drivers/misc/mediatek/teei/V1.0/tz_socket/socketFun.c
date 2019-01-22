@@ -205,6 +205,7 @@ int socket_init(void)
 {
 	int result = 0;
 	struct device *class_dev = NULL;
+
 	devno = MKDEV(socket_major, 0);
 
 	result = alloc_chrdev_region(&devno, 0, 1, "tz_socket");

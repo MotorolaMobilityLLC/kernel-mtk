@@ -14,8 +14,13 @@
 #ifndef __UT_TUI_H_
 #define __UT_TUI_H_
 
+extern int power_down_flag;
+extern int enter_tui_flag;
+
+extern void disp_aal_notify_backlight_changed(int bl_1024);
+
 extern int mtkfb_set_backlight_level(unsigned int level);
-extern int disp_pwm_set_backlight(disp_pwm_id_t id, int level_1024);
+extern int disp_pwm_set_backlight(u32 disp_pwm_id_t, int level_1024);
 extern void disp_aal_notify_backlight_changed(int bl_1024);
 extern void ut_down_low(struct semaphore *sema);
 

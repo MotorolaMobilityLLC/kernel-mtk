@@ -32,26 +32,26 @@
  * @brief Encoding data type
  */
 enum teei_enc_data_type {
-    TEEI_ENC_INVALID_TYPE = 0,
-    TEEI_ENC_UINT32,
-    TEEI_ENC_ARRAY,
-    TEEI_MEM_REF,
-    TEEI_SECURE_MEM_REF
+	TEEI_ENC_INVALID_TYPE = 0,
+	TEEI_ENC_UINT32,
+	TEEI_ENC_ARRAY,
+	TEEI_MEM_REF,
+	TEEI_SECURE_MEM_REF
 };
 /**
  * @brief Command ID's for global service
  */
 enum _global_cmd_id {
-    TEEI_GLOBAL_CMD_ID_INVALID = 0x0,
-    TEEI_GLOBAL_CMD_ID_BOOT_ACK,
-    /* add by lodovico */
-    TEEI_GLOBAL_CMD_ID_INIT_CONTEXT,
-    /* add end */
-    TEEI_GLOBAL_CMD_ID_OPEN_SESSION,
-    TEEI_GLOBAL_CMD_ID_CLOSE_SESSION,
-    TEEI_GLOBAL_CMD_ID_RESUME_ASYNC_TASK,
-    TEEI_GLOBAL_CMD_ID_UNKNOWN         = 0x7FFFFFFE,
-    TEEI_GLOBAL_CMD_ID_MAX             = 0x7FFFFFFF
+	TEEI_GLOBAL_CMD_ID_INVALID = 0x0,
+	TEEI_GLOBAL_CMD_ID_BOOT_ACK,
+	/* add by lodovico */
+	TEEI_GLOBAL_CMD_ID_INIT_CONTEXT,
+	/* add end */
+	TEEI_GLOBAL_CMD_ID_OPEN_SESSION,
+	TEEI_GLOBAL_CMD_ID_CLOSE_SESSION,
+	TEEI_GLOBAL_CMD_ID_RESUME_ASYNC_TASK,
+	TEEI_GLOBAL_CMD_ID_UNKNOWN         = 0x7FFFFFFE,
+	TEEI_GLOBAL_CMD_ID_MAX             = 0x7FFFFFFF
 };
 
 /* add by lodovico */
@@ -71,15 +71,15 @@ int service_smc_call(u32 teei_cmd_type, u32 dev_file_id, u32 svc_id,
 #endif
 
 enum teei_cmd_type {
-    TEEI_CMD_TYPE_INVALID = 0x0,
-    TEEI_CMD_TYPE_SOCKET_INIT,
-    TEEI_CMD_TYPE_INITILIZE_CONTEXT,
-    TEEI_CMD_TYPE_FINALIZE_CONTEXT,
-    TEEI_CMD_TYPE_OPEN_SESSION,
-    TEEI_CMD_TYPE_CLOSE_SESSION,
-    TEEI_CMD_TYPE_INVOKE_COMMAND,
-    TEEI_CMD_TYPE_UNKNOWN         = 0x7FFFFFFE,
-    TEEI_CMD_TYPE_MAX             = 0x7FFFFFFF
+	TEEI_CMD_TYPE_INVALID = 0x0,
+	TEEI_CMD_TYPE_SOCKET_INIT,
+	TEEI_CMD_TYPE_INITILIZE_CONTEXT,
+	TEEI_CMD_TYPE_FINALIZE_CONTEXT,
+	TEEI_CMD_TYPE_OPEN_SESSION,
+	TEEI_CMD_TYPE_CLOSE_SESSION,
+	TEEI_CMD_TYPE_INVOKE_COMMAND,
+	TEEI_CMD_TYPE_UNKNOWN         = 0x7FFFFFFE,
+	TEEI_CMD_TYPE_MAX             = 0x7FFFFFFF
 };
 
 #define ROUND_UP(N, S) ((((N) + (S) - 1) / (S)) * (S))
@@ -136,6 +136,7 @@ static inline void __Invalidate_Dcache_By_Area(unsigned long start, unsigned lon
 #ifdef CONFIG_ARM64
 
 	uint64_t temp[2];
+
 	temp[0] = start;
 	temp[1] = end;
 	__asm__ volatile(
@@ -223,9 +224,9 @@ static inline void Invalidate_Dcache_By_Area(unsigned long start, unsigned long 
 	    : "memory");
 #endif
 
-	if (boot_soter_flag == START_STATUS) {
+	if (boot_soter_flag == START_STATUS)
 		__Invalidate_Dcache_By_Area(start, end);
-	}
+
 }
 
 /* add end */

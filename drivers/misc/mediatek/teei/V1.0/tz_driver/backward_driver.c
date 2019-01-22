@@ -55,7 +55,8 @@ void set_ack_vdrv_cmd(unsigned int sys_num)
 		ack_body.sysno = sys_num;
 
 		memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
-		memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)(&ack_body), sizeof(struct ack_vdrv_struct));
+		memcpy((void *)(message_buff + sizeof(struct message_head)),
+			(void *)(&ack_body), sizeof(struct ack_vdrv_struct));
 
 		Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 	} else {
@@ -63,12 +64,12 @@ void set_ack_vdrv_cmd(unsigned int sys_num)
 		Flush_Dcache_By_Area((unsigned long)bdrv_message_buff, (unsigned long)bdrv_message_buff + MESSAGE_SIZE);
 	}
 
-	return;
 }
 
 void secondary_invoke_fastcall(void *info)
 {
 	uint64_t smc_type = 2;
+
 	n_invoke_t_fast_call(&smc_type, 0, 0);
 
 	while (smc_type == 0x54) {
@@ -126,7 +127,8 @@ static long register_shared_param_buf(struct service_handler *handler)
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy((void *)message_buff, (void *)(&msg_head), sizeof(struct message_head));
-	memcpy((void *)(message_buff + sizeof(struct message_head)), (void *)(&msg_body), sizeof(struct create_vdrv_struct));
+	memcpy((void *)(message_buff + sizeof(struct message_head)),
+				(void *)(&msg_body), sizeof(struct create_vdrv_struct));
 	Flush_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 
 	/* get_online_cpus(); */
@@ -139,7 +141,8 @@ static long register_shared_param_buf(struct service_handler *handler)
 
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 	memcpy((void *)(&msg_head), (void *)(message_buff), sizeof(struct message_head));
-	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)), sizeof(struct ack_fast_call_struct));
+	memcpy((void *)(&msg_ack), (void *)(message_buff + sizeof(struct message_head)),
+				sizeof(struct ack_fast_call_struct));
 
 	/*local_irq_restore(irq_flag);*/
 
@@ -147,9 +150,8 @@ static long register_shared_param_buf(struct service_handler *handler)
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_VDRV)) {
 		retVal = msg_ack.retVal;
 
-		if (retVal == 0) {
+		if (retVal == 0)
 			return retVal;
-		}
 	} else {
 		retVal = -EAGAIN;
 	}
@@ -170,7 +172,7 @@ static long reetime_init(struct service_handler *handler)
 
 static void reetime_deinit(struct service_handler *handler)
 {
-	return;
+
 }
 
 int __reetime_handle(struct service_handler *handler)
@@ -253,6 +255,7 @@ int vfs_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsig
 static long vfs_init(struct service_handler *handler) /*! init service */
 {
 	long retVal = 0;
+
 	retVal = register_shared_param_buf(handler);
 	vfs_flush_address = handler->param_buf;
 
@@ -261,12 +264,13 @@ static long vfs_init(struct service_handler *handler) /*! init service */
 
 static void vfs_deinit(struct service_handler *handler) /*! stop service  */
 {
-	return;
+
 }
 
 int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 {
 	uint64_t smc_type = 2;
+
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
@@ -295,7 +299,8 @@ static int vfs_handle(struct service_handler *handler)
 	/* with a wmb() */
 	wmb();
 
-	Flush_Dcache_By_Area((unsigned long)vfs_bdrv_ent, (unsigned long)vfs_bdrv_ent + sizeof(struct bdrv_call_struct));
+	Flush_Dcache_By_Area((unsigned long)vfs_bdrv_ent,
+						(unsigned long)vfs_bdrv_ent + sizeof(struct bdrv_call_struct));
 	retVal = add_work_entry(BDRV_CALL, (unsigned char *)(vfs_bdrv_ent));
 
 	if (retVal != 0) {

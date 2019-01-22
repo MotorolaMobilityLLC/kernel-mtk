@@ -19,18 +19,18 @@
 #define pr_info printk
 #define pr_err printk
 
-inline uint32_t params_null_check(void* paras, char* error_log)
+inline uint32_t params_null_check(void *paras, char *error_log)
 {
 	if (paras == NULL) {
-		pr_err("[E] Error Illegal argument : %s \n", error_log);
+		pr_err("[E] Error Illegal argument : %s\n", error_log);
 		return -1;
 	}
 	return 0;
 }
 
-inline uint32_t release_share_memory(UT_TEEC_SharedMemory* memory, int *ret)
+inline uint32_t release_share_memory(UT_TEEC_SharedMemory *memory, int *ret)
 {
-        struct session_shared_mem_info info;
+	struct session_shared_mem_info info;
 	void *buff_addr = NULL;
 	int retVal = 0;
 	void *buffer = NULL;
@@ -41,12 +41,12 @@ inline uint32_t release_share_memory(UT_TEEC_SharedMemory* memory, int *ret)
 		buff_addr = memory->saved_buffer;
 
 
-        list_del(&(memory->head_ref));
+	list_del(&(memory->head_ref));
 
-        info.session_id = 0;
-        info.user_mem_addr = (unsigned long)buffer;
-        retVal = ut_client_shared_mem_free(memory->context->fd, &info);
-        if (retVal != 0)
+	info.session_id = 0;
+	info.user_mem_addr = (unsigned long)buffer;
+	retVal = ut_client_shared_mem_free(memory->context->fd, &info);
+	if (retVal != 0)
 		return retVal;
 
 	/* clear the memory strucuture */
@@ -81,7 +81,7 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 	char temp_name[256];
 	int retVal = 0;
 
-	if (NULL == context) {
+	if (context == NULL) {
 		pr_err("[%s][%d] context is NULL\n", __func__, __LINE__);
 		return -EINVAL;
 	}
@@ -93,22 +93,22 @@ TEEC_Result TEEC_InitializeContext(const char *name, TEEC_Context *context)
 		strncpy(temp_name, name, 256);
 	}
 
-	// open file
+	/* open file */
 	dev_file_id = ut_client_open_dev();
 	if (dev_file_id < 0) {
 		pr_err("TEEC_InitializeContext: device open failed，error code:%ld\n", dev_file_id);
 		return TEEC_ERROR_GENERIC;
 	} else {
-		// initialize ut context
+		/* initialize ut context*/
 		ut_context = kmalloc(sizeof(UT_TEEC_Context), GFP_KERNEL);
-		if (ut_context == NULL) {
+		if (ut_context == NULL)
 			return TEEC_ERROR_OUT_OF_MEMORY;
-		}
+
 		memset(ut_context, 0x0, sizeof(UT_TEEC_Context));
 		context->imp = ut_context;
 		context->imp->fd = dev_file_id;
 
-		// init share memory and session list
+		/* init share memory and session list*/
 		INIT_LIST_HEAD(&context->imp->shared_mem_list);
 		INIT_LIST_HEAD(&context->imp->session_list);
 	}
@@ -191,7 +191,7 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 	/* close session in context list */
 
 	list_for_each_entry(session_item, &(context->imp->session_list), head) {
-		ses_close.session_id = session_item->session_id ;
+		ses_close.session_id = session_item->session_id;
 		retVal = ut_client_session_close(session_item->device->fd, &ses_close);
 		if (retVal != 0) {
 			result = 1;
@@ -200,9 +200,9 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 	}
 
 	/* clear the session_list */
-	if (result == 0) {
+	if (result == 0)
 		INIT_LIST_HEAD(&context->imp->session_list);
-	}
+
 
 	/* if share memory and session list is empty, send close context ioctl request */
 	if (list_empty(&(context->imp->session_list)) && list_empty(&(context->imp->shared_mem_list))) {
@@ -210,7 +210,8 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 		strncpy(ctx.name, context->imp->tee_name, 256);
 		retVal = ut_client_context_close(context->imp->fd, &ctx);
 		if (retVal != 0) {
-			pr_err("[%s]:ioctl CLIENT_IOCTL_CLOSECONTEXT_REQ failed, return value is %d\n", __func__, retVal);
+			pr_err("[%s]:ioctl CLIENT_IOCTL_CLOSECONTEXT_REQ failed, return value is %d\n",
+					__func__, retVal);
 			return;
 		}
 		ut_client_release(context->imp->fd);
@@ -220,7 +221,7 @@ void TEEC_FinalizeContext(TEEC_Context *context)
 
 	kfree(context->imp);
 	pr_debug("[%s][%d] end!\n", __func__, __LINE__);
-	return;
+
 }
 
 /**
@@ -264,7 +265,7 @@ TEEC_Result TEEC_AllocateSharedMemory(TEEC_Context *context, TEEC_SharedMemory *
 	sharedMem->imp = uTSharedMem;
 
 	/* map memory */
-	if(sharedMem->size == 0)
+	if (sharedMem->size == 0)
 		sharedMem->buffer = ut_client_map_mem(context->imp->fd, ZERO_SIZE_MAP);
 	else
 		sharedMem->buffer = ut_client_map_mem(context->imp->fd, sharedMem->size);
@@ -301,12 +302,12 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *
 {
 	UT_TEEC_SharedMemory *uTSharedMem = NULL;
 
-	if (NULL == sharedMem) {
+	if (sharedMem == NULL) {
 		pr_err("TEEC_RegisterSharedMemory share memory is null\n");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
-	if (NULL == context) {
+	if (context == NULL) {
 		pr_err("TEEC_RegisterSharedMemory context is null\n");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
@@ -314,11 +315,11 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *
 	if ((sharedMem->flags != TEEC_MEM_INPUT) &&
 		(sharedMem->flags != TEEC_MEM_OUTPUT) &&
 		(sharedMem->flags != (TEEC_MEM_INPUT | TEEC_MEM_OUTPUT))) {
-		pr_err("[%s] : Error Illegal argument, share memory flag not exist \n", __func__);
+		pr_err("[%s] : Error Illegal argument, share memory flag not exist\n", __func__);
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
-	if (NULL == sharedMem->buffer) {
+	if (sharedMem->buffer == NULL) {
 		pr_err("TEEC_RegisterSharedMemory sharedMem->buffer is null\n");
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
@@ -334,7 +335,7 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *
 
 
 
-	if(sharedMem->size == 0)
+	if (sharedMem->size == 0)
 		sharedMem->imp->saved_buffer = ut_client_map_mem(context->imp->fd, ZERO_SIZE_MAP);
 	else
 		sharedMem->imp->saved_buffer = ut_client_map_mem(context->imp->fd, sharedMem->size);
@@ -364,7 +365,7 @@ TEEC_Result TEEC_RegisterSharedMemory(TEEC_Context *context, TEEC_SharedMemory *
  *
  * @param sharedMem: Pointer to the shared memory
  */
-void TEEC_ReleaseSharedMemory(TEEC_SharedMemory* sharedMem)
+void TEEC_ReleaseSharedMemory(TEEC_SharedMemory *sharedMem)
 {
 	int retVal = 0;
 	int result = 0;
@@ -378,16 +379,16 @@ void TEEC_ReleaseSharedMemory(TEEC_SharedMemory* sharedMem)
 
 	retVal  = release_share_memory(sharedMem->imp, &result);
 	if (retVal != 0) {
-		pr_err("Failed to release share memory \n");
+		pr_err("Failed to release share memory\n");
 		return;
 	} else
-		pr_debug("Succeed to release share memroy \n");
+		pr_debug("Succeed to release share memroy\n");
 
 	sharedMem->size = 0;
 	sharedMem->buffer = NULL;
 	pr_debug("[%s][%d] end!\n", __func__, __LINE__);
 
-	return;
+
 }
 
 inline uint32_t set_inout(uint32_t type, uint32_t flag)
@@ -401,11 +402,11 @@ inline uint32_t set_inout(uint32_t type, uint32_t flag)
 	else if (type == TEEC_VALUE_INOUT || type == TEEC_MEMREF_TEMP_INOUT || type == TEEC_MEMREF_PARTIAL_INOUT)
 		inout = 2;
 	else if (type == TEEC_MEMREF_WHOLE) {
-		if(flag == (TEEC_MEM_INPUT | TEEC_MEM_OUTPUT))
+		if (flag == (TEEC_MEM_INPUT | TEEC_MEM_OUTPUT))
 			inout = 2;
-		else if(flag == TEEC_MEM_INPUT)
+		else if (flag == TEEC_MEM_INPUT)
 			inout = 0;
-		else if(flag == TEEC_MEM_OUTPUT)
+		else if (flag == TEEC_MEM_OUTPUT)
 			inout = 1;
 	}
 	return inout;
@@ -446,7 +447,7 @@ uint32_t ut_dec_value(EncodeCmd *enc, int dev_file_id, uint32_t *returnOrigin)
 	enc->len  = sizeof(uint32_t);
 	retVal = ut_client_decode_uint32(dev_file_id, enc);
 	if (retVal != 0) {
-		if(returnOrigin != NULL)
+		if (returnOrigin != NULL)
 			*returnOrigin = TEEC_ORIGIN_COMMS;
 		pr_err("ut decoding value in client driver failed\n");
 	}
@@ -454,7 +455,8 @@ uint32_t ut_dec_value(EncodeCmd *enc, int dev_file_id, uint32_t *returnOrigin)
 	return retVal;
 }
 
-uint32_t ut_enc_register_data(int dev_file_id, EncodeCmd *enc, TEEC_Parameter params, uint32_t *returnOrigin, uint8_t isTemp)
+uint32_t ut_enc_register_data(int dev_file_id, EncodeCmd *enc,
+					TEEC_Parameter params, uint32_t *returnOrigin, uint8_t isTemp)
 {
 	uint32_t retVal = 0;
 	unsigned long temp_enc_data = 0;
@@ -489,7 +491,8 @@ uint32_t ut_enc_register_data(int dev_file_id, EncodeCmd *enc, TEEC_Parameter pa
 	return retVal;
 }
 
-inline uint32_t ut_enc_memory(int dev_file_id, EncodeCmd *enc, TEEC_Parameter params, uint32_t *returnOrigin, uint32_t inout, uint8_t isTemp)
+inline uint32_t ut_enc_memory(int dev_file_id, EncodeCmd *enc, TEEC_Parameter params,
+							uint32_t *returnOrigin, uint32_t inout, uint8_t isTemp)
 {
 	uint32_t retVal = 0;
 
@@ -531,8 +534,7 @@ inline uint32_t ut_enc_memory(int dev_file_id, EncodeCmd *enc, TEEC_Parameter pa
  * TEEC_SUCCESS: The session was successfully opened. \n
  * TEEC_ERROR_*: An implementation-defined error code for any other error.
  */
-
-TEEC_Result TEEC_OpenSession (
+TEEC_Result TEEC_OpenSession(
 	TEEC_Context *context,
 	TEEC_Session *session,
 	const TEEC_UUID *destination,
@@ -557,14 +559,14 @@ TEEC_Result TEEC_OpenSession (
 
 	if ((context == NULL) || (context->imp == NULL) || (session == NULL)) {
 		pr_err("%s paraments error!\n", __func__);
-		if(returnOrigin)
+		if (returnOrigin)
 			*returnOrigin = TEEC_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
 
 	if (destination == NULL) {
 		pr_err("TEEC_OpenSession destination is null\n");
-		if(returnOrigin)
+		if (returnOrigin)
 			*returnOrigin = TEEC_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
@@ -576,7 +578,7 @@ TEEC_Result TEEC_OpenSession (
 		connectionMethod != TEEC_LOGIN_USER_APPLICATION &&
 		connectionMethod != TEEC_LOGIN_GROUP_APPLICATION) {
 
-		if(returnOrigin)
+		if (returnOrigin)
 			*returnOrigin = TEEC_ORIGIN_ANY_NOT_TRUSTED_APP;
 		return TEEC_UNDEFINED_ERROR;
 	}
@@ -586,13 +588,13 @@ TEEC_Result TEEC_OpenSession (
 		connectionMethod == TEEC_LOGIN_APPLICATION ||
 		connectionMethod == TEEC_LOGIN_USER_APPLICATION) {
 		if (connectionData != NULL) {
-			if(returnOrigin != NULL)
+			if (returnOrigin != NULL)
 				*returnOrigin = TEEC_ORIGIN_TRUSTED_APP;
 			return TEEC_ERROR_BAD_PARAMETERS;
 		}
 	} else if (connectionMethod == TEEC_LOGIN_GROUP || connectionMethod == TEEC_LOGIN_GROUP_APPLICATION) {
 		if (connectionData == NULL) {
-			if(returnOrigin != NULL)
+			if (returnOrigin != NULL)
 				*returnOrigin = TEEC_ORIGIN_TRUSTED_APP;
 			return TEEC_ERROR_BAD_PARAMETERS;
 		}
@@ -601,19 +603,18 @@ TEEC_Result TEEC_OpenSession (
 	/* send initialize session ioctl request */
 	pr_debug("[%s] init session\n", __func__);
 	retVal = ut_client_session_init(context->imp->fd, &ses_init);
-	if (retVal != 0) {
+	if (retVal != 0)
 		pr_err("init failed [%x]\n", retVal);
-	}
 
 	pr_debug("init session id [%x]\n", ses_init.session_id);
 	pr_debug("[%s] init session end\n", __func__);
 	memcpy(&ses_open.uuid, (const void *)destination, sizeof(*destination));
 
-	if((operation != NULL) && (operation->started == 0)) {
-		pr_err("[%s] : cancellation, operation->started is %d \n ", __func__, operation->started);
-		if(returnOrigin){
+	if ((operation != NULL) && (operation->started == 0)) {
+		pr_err("[%s] : cancellation, operation->started is %d\n ", __func__, operation->started);
+		if (returnOrigin)
 			*returnOrigin = TEEC_ORIGIN_API;
-		}
+
 		return TEEC_SUCCESS;
 	}
 
@@ -641,7 +642,8 @@ TEEC_Result TEEC_OpenSession (
 			enc.param_pos_type = param_types[param_count];
 
 			/* check value type */
-			if ((param_types[param_count] == TEEC_VALUE_INPUT) || (param_types[param_count] == TEEC_VALUE_INOUT)
+			if ((param_types[param_count] == TEEC_VALUE_INPUT)
+				|| (param_types[param_count] == TEEC_VALUE_INOUT)
 				|| (param_types[param_count] == TEEC_VALUE_OUTPUT)) {
 
 				inout = set_inout(param_types[param_count], 0);
@@ -664,11 +666,14 @@ TEEC_Result TEEC_OpenSession (
 				}
 
 			/* check share memory type */
-			} else if((param_types[param_count] == TEEC_MEMREF_WHOLE) || (param_types[param_count] == TEEC_MEMREF_PARTIAL_INPUT) ||
-					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) || (param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT)) {
+			} else if ((param_types[param_count] == TEEC_MEMREF_WHOLE) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INPUT) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT)) {
 
 				pr_debug("[%s] encode memref start", __func__);
-				inout = set_inout(param_types[param_count], operation->params[param_count].memref.parent->flags);
+				inout = set_inout(param_types[param_count],
+						operation->params[param_count].memref.parent->flags);
 
 				if (operation->params[param_count].memref.parent == NULL) {
 					pr_err("TEEC_OpenSession:memory reference parent is NULL\n");
@@ -687,8 +692,10 @@ TEEC_Result TEEC_OpenSession (
 					break;
 				}
 
-				if ((param_types[param_count] == TEEC_MEMREF_PARTIAL_INPUT && (!(operation->params[param_count].memref.parent->flags & TEEC_MEM_INPUT))) ||
-					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT && !(operation->params[param_count].memref.parent->flags & TEEC_MEM_OUTPUT))) {
+				if ((param_types[param_count] == TEEC_MEMREF_PARTIAL_INPUT &&
+					(!(operation->params[param_count].memref.parent->flags & TEEC_MEM_INPUT))) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT &&
+					!(operation->params[param_count].memref.parent->flags & TEEC_MEM_OUTPUT))) {
 					pr_err("TEEC_OpenSession:memory reference direction is invalid\n");
 					if (returnOrigin)
 						*returnOrigin = TEEC_ORIGIN_API;
@@ -698,7 +705,7 @@ TEEC_Result TEEC_OpenSession (
 
 				if (param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) {
 					if (!(operation->params[param_count].memref.parent->flags & TEEC_MEM_INPUT) ||
-						(!(operation->params[param_count].memref.parent->flags & TEEC_MEM_OUTPUT))) {
+					(!(operation->params[param_count].memref.parent->flags & TEEC_MEM_OUTPUT))) {
 						pr_err("TEEC_OpenSession:memory reference direction is invalid\n");
 						if (returnOrigin != NULL)
 							*returnOrigin = TEEC_ORIGIN_API;
@@ -712,12 +719,14 @@ TEEC_Result TEEC_OpenSession (
 				else
 					enc.offset = operation->params[param_count].memref.offset;
 
-				if (operation->params[param_count].memref.parent->size > operation->params[param_count].memref.size)
+				if (operation->params[param_count].memref.parent->size >
+						operation->params[param_count].memref.size)
 					enc.len = operation->params[param_count].memref.size;
 				else
 					enc.len = operation->params[param_count].memref.parent->size;
 
-				retVal = ut_enc_memory(context->imp->fd, &enc, operation->params[param_count], returnOrigin, inout, 0);
+				retVal = ut_enc_memory(context->imp->fd, &enc,
+						operation->params[param_count], returnOrigin, inout, 0);
 				if (retVal != 0) {
 					session->imp->s_errno = retVal;
 					break;
@@ -725,14 +734,15 @@ TEEC_Result TEEC_OpenSession (
 				pr_debug("[%s] encode memref end\n", __func__);
 
 			/* check temp memory type */
-			} else if((param_types[param_count] == TEEC_MEMREF_TEMP_INPUT) || (param_types[param_count] == TEEC_MEMREF_TEMP_OUTPUT) ||
+			} else if ((param_types[param_count] == TEEC_MEMREF_TEMP_INPUT) ||
+					(param_types[param_count] == TEEC_MEMREF_TEMP_OUTPUT) ||
 					(param_types[param_count] == TEEC_MEMREF_TEMP_INOUT)) {
 
 				pr_debug("[%s] encode mem temp start\n", __func__);
 				inout = set_inout(param_types[param_count], 0);
 				if (operation->params[param_count].tmpref.buffer == NULL) {
 					pr_err("TEEC_OpenSession:temporary memory reference buffer is NULL\n");
-					if(returnOrigin != NULL)
+					if (returnOrigin != NULL)
 						*returnOrigin = TEEC_ORIGIN_API;
 					retVal = TEEC_ERROR_NO_DATA;
 					break;
@@ -740,7 +750,7 @@ TEEC_Result TEEC_OpenSession (
 
 				/* This is a variation of API spec. */
 				if (operation->params[param_count].tmpref.size == 0) {
-					if(returnOrigin != NULL)
+					if (returnOrigin != NULL)
 						*returnOrigin = TEEC_ORIGIN_API;
 
 					retVal = TEEC_ERROR_NO_DATA;
@@ -762,8 +772,10 @@ TEEC_Result TEEC_OpenSession (
 					return TEEC_ERROR_OUT_OF_MEMORY;
 				}
 
-				memcpy(enc.data, operation->params[param_count].tmpref.buffer, operation->params[param_count].tmpref.size);
-				retVal = ut_enc_memory(context->imp->fd, &enc, operation->params[param_count], returnOrigin, inout, 1);
+				memcpy(enc.data, operation->params[param_count].tmpref.buffer,
+					operation->params[param_count].tmpref.size);
+				retVal = ut_enc_memory(context->imp->fd, &enc,
+					operation->params[param_count], returnOrigin, inout, 1);
 				if (retVal != 0) {
 					session->imp->s_errno = retVal;
 					break;
@@ -787,7 +799,7 @@ TEEC_Result TEEC_OpenSession (
 		if (returnOrigin != NULL)
 			*returnOrigin = ses_open.return_origin;
 	} else {
-		if(returnOrigin != NULL)
+		if (returnOrigin != NULL)
 			*returnOrigin = TEEC_ORIGIN_COMMS;
 
 		context->imp->s_errno = -(retVal);
@@ -819,17 +831,19 @@ TEEC_Result TEEC_OpenSession (
 					session->imp->s_errno = -(retVal);
 					break;
 				} else
-					operation->params[param_count].value.a = *((uint32_t*)enc.data);
+					operation->params[param_count].value.a = *((uint32_t *)enc.data);
 
 				retVal = ut_dec_value(&enc, context->imp->fd, returnOrigin);
 				if (retVal != 0) {
 					session->imp->s_errno = -(retVal);
 					break;
 				} else
-					operation->params[param_count].value.b = *((uint32_t*)enc.data);
+					operation->params[param_count].value.b = *((uint32_t *)enc.data);
 
-			} else if ((param_types[param_count] == TEEC_MEMREF_WHOLE) || (param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) ||
-					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT) || (param_types[param_count] == TEEC_MEMREF_TEMP_INOUT) ||
+			} else if ((param_types[param_count] == TEEC_MEMREF_WHOLE) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT) ||
+					(param_types[param_count] == TEEC_MEMREF_TEMP_INOUT) ||
 					(param_types[param_count] == TEEC_MEMREF_TEMP_OUTPUT)) {
 
 				if (inout == 0)
@@ -837,9 +851,9 @@ TEEC_Result TEEC_OpenSession (
 
 				retVal = ut_client_decode_array_space(context->imp->fd, &enc);
 
-				if(operation->params[param_count].memref.parent->imp->allocated == 0) {
+				if (operation->params[param_count].memref.parent->imp->allocated == 0) {
 					memcpy(operation->params[param_count].memref.parent->buffer,
-						(const void *)enc.data, operation->params[param_count].memref.parent->size);
+					(const void *)enc.data, operation->params[param_count].memref.parent->size);
 				}
 
 				if (retVal != 0) {
@@ -850,7 +864,8 @@ TEEC_Result TEEC_OpenSession (
 					break;
 				}
 
-				if ((param_types[param_count] == TEEC_MEMREF_WHOLE) || (param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) ||
+				if ((param_types[param_count] == TEEC_MEMREF_WHOLE) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) ||
 					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT)) {
 					operation->params[param_count].memref.size = enc.len;
 				} else {
@@ -869,7 +884,7 @@ operation_release:
 	if (operation != NULL) {
 		retVal = ut_client_operation_release(context->imp->fd, &enc);
 		if (retVal != 0) {
-			if(returnOrigin != NULL)
+			if (returnOrigin != NULL)
 				*returnOrigin = TEEC_ORIGIN_COMMS;
 			pr_err("Operation release failed\n");
 		}
@@ -893,7 +908,7 @@ operation_release:
  *
  * @param session: Pointer to the session structure
  */
-void TEEC_CloseSession (TEEC_Session* session)
+void TEEC_CloseSession(TEEC_Session *session)
 {
 	pr_debug("[%s][%d] start!\n", __func__, __LINE__);
 
@@ -910,7 +925,7 @@ void TEEC_CloseSession (TEEC_Session* session)
 		return;
 	}
 
-	ses_close.session_id = session->imp->session_id ;
+	ses_close.session_id = session->imp->session_id;
 	retVal = ut_client_session_close(session->imp->device->fd, &ses_close);
 
 	if (retVal == 0) {
@@ -937,7 +952,8 @@ void TEEC_CloseSession (TEEC_Session* session)
  * TEEC_SUCCESS: The command was successfully invoked. \n
  * TEEC_ERROR_*: An implementation-defined error code for any other error.
  */
-TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_Operation* operation, uint32_t* returnOrigin)
+TEEC_Result TEEC_InvokeCommand(TEEC_Session *session, uint32_t commandID,
+						TEEC_Operation *operation, uint32_t *returnOrigin)
 {
 	int retVal = TEEC_SUCCESS;
 	unsigned char inout = 0; /* in = 0; out = 1; inout = 2 */
@@ -950,7 +966,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 
 	if (session == NULL) {
 		pr_err("TEEC_InvokeCommand session is NULL\n");
-		if(returnOrigin)
+		if (returnOrigin)
 			*returnOrigin = TEEC_ORIGIN_API;
 		return TEEC_ERROR_BAD_PARAMETERS;
 	}
@@ -959,7 +975,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 	pr_debug("session imp device %p\n", session->imp->device);
 
 	if ((operation != NULL) && (operation->started == 0))
-		pr_err("[%s] : cancellation, operation->started is %d \n ", __func__, operation->started);
+		pr_err("[%s] : cancellation, operation->started is %d\n ", __func__, operation->started);
 
 	enc.encode_id = -1;
 	enc.cmd_id = commandID;
@@ -978,11 +994,12 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 			enc.param_pos_type = param_types[param_count];
 
 			/* start if for TEEC_VALUE check */
-			if ((param_types[param_count] == TEEC_VALUE_INPUT) || (param_types[param_count] == TEEC_VALUE_INOUT)
+			if ((param_types[param_count] == TEEC_VALUE_INPUT)
+				|| (param_types[param_count] == TEEC_VALUE_INOUT)
 				|| (param_types[param_count] == TEEC_VALUE_OUTPUT)) {
 
 				inout = set_inout(param_types[param_count], 0);
-				temp_enc_data = (void*)&operation->params[param_count].value.a;
+				temp_enc_data = (void *)&operation->params[param_count].value.a;
 				enc.data = temp_enc_data;
 				enc.len  = sizeof(uint32_t);
 				enc.value_flag = PARAM_A;
@@ -992,7 +1009,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 					break;
 				}
 
-				temp_enc_data = (void*)&operation->params[param_count].value.b;
+				temp_enc_data = (void *)&operation->params[param_count].value.b;
 				enc.data = temp_enc_data;
 
 				enc.len  = sizeof(uint32_t);
@@ -1005,8 +1022,10 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 			} /* end if for TEEC_VALUE check */
 
 			/* start if for TEEC_MEM_REF check */
-			else if ((param_types[param_count] == TEEC_MEMREF_WHOLE) || (param_types[param_count] == TEEC_MEMREF_PARTIAL_INPUT) ||
-					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) || (param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT)) {
+			else if ((param_types[param_count] == TEEC_MEMREF_WHOLE) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INPUT) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT)) {
 
 				if (operation->params[param_count].memref.parent == NULL) {
 					pr_err("TEEC_InvokeCommand: memory reference parent is NULL\n");
@@ -1024,7 +1043,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 
 				if (param_types[param_count] == TEEC_MEMREF_PARTIAL_INPUT) {
 					if (!(operation->params[param_count].memref.parent->flags & TEEC_MEM_INPUT)) {
-						if(returnOrigin != NULL)
+						if (returnOrigin != NULL)
 							*returnOrigin = TEEC_ORIGIN_API;
 
 						retVal = TEEC_ERROR_BAD_FORMAT;
@@ -1035,9 +1054,9 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 
 				if (param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT) {
 					if (!(operation->params[param_count].memref.parent->flags & TEEC_MEM_OUTPUT)) {
-						if (returnOrigin != NULL) {
+						if (returnOrigin != NULL)
 							*returnOrigin = TEEC_ORIGIN_API;
-						}
+
 						retVal = TEEC_ERROR_BAD_FORMAT;
 						pr_err("TEEC_InvokeCommand: memory reference direction[OUTPUT] is invalid\n");
 						break;
@@ -1067,37 +1086,42 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) ||
 					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT)) {
 					/*
-					if ((operation->params[param_count].memref.offset + operation->params[param_count].memref.size >
-						operation->params[param_count].memref.parent->size)) {
-						if(returnOrigin)
-							*returnOrigin = TEEC_ORIGIN_API;
-						retVal = TEEC_ERROR_EXCESS_DATA;
-						pr_err("TEEC_InvokeCommand: memory reference offset + size is greater than the actual memory size\n");
-						break;
-					}
+					*if ((operation->params[param_count].memref.offset +
+					*	operation->params[param_count].memref.size >
+					*	operation->params[param_count].memref.parent->size)) {
+					*	if(returnOrigin)
+					*		*returnOrigin = TEEC_ORIGIN_API;
+					*	retVal = TEEC_ERROR_EXCESS_DATA;
+					*	pr_err("TEEC_InvokeCommand: memory reference offset +
+								size is greater than the actual memory size\n");
+					*	break;
+					*}
 					*/
 				}
 
-				inout = set_inout(param_types[param_count], operation->params[param_count].memref.parent->flags);
+				inout = set_inout(param_types[param_count],
+					operation->params[param_count].memref.parent->flags);
 
 				if (param_types[param_count] == TEEC_MEMREF_WHOLE)
 					enc.offset = 0;
 				else
 					enc.offset = operation->params[param_count].memref.offset;
 
-				if (operation->params[param_count].memref.parent->size > operation->params[param_count].memref.size)
+				if (operation->params[param_count].memref.parent->size >
+					operation->params[param_count].memref.size)
 					enc.len = operation->params[param_count].memref.size;
 				else
 					enc.len = operation->params[param_count].memref.parent->size;
 
-				retVal = ut_enc_memory(session->imp->device->fd, &enc, operation->params[param_count], returnOrigin, inout, 0);
+				retVal = ut_enc_memory(session->imp->device->fd, &enc,
+					operation->params[param_count], returnOrigin, inout, 0);
 
 				if (retVal != 0) {
 					session->imp->s_errno = -(retVal);
 					break;
 				}
 			} /* end if for TEEC_MEM_REF check */
-			else if((param_types[param_count] == TEEC_MEMREF_TEMP_INPUT) ||
+			else if ((param_types[param_count] == TEEC_MEMREF_TEMP_INPUT) ||
 				(param_types[param_count] == TEEC_MEMREF_TEMP_OUTPUT) ||
 				(param_types[param_count] == TEEC_MEMREF_TEMP_INOUT)) {
 
@@ -1109,8 +1133,10 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 				}
 
 				/* This is a variation of API spec. */
-				pr_debug("TEEC_InvokeCommand: temporary memory reference size is : %x\n", operation->params[param_count].tmpref.size);
-				pr_debug("TEEC_InvokeCommand: LINE %d the value is %s\n", __LINE__, operation->params[param_count].tmpref.buffer);
+				pr_debug("TEEC_InvokeCommand: temporary memory reference size is : %x\n",
+					operation->params[param_count].tmpref.size);
+				pr_debug("TEEC_InvokeCommand: LINE %d the value is %s\n", __LINE__,
+					operation->params[param_count].tmpref.buffer);
 
 				if (operation->params[param_count].tmpref.size == 0) {
 					if (returnOrigin != NULL)
@@ -1124,7 +1150,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 				/* map temp share memory */
 				enc.len  = operation->params[param_count].tmpref.size;
 				if (enc.len == 0)
-					temp_buffer[param_count] = ut_client_map_mem(session->imp->device->fd, ZERO_SIZE_MAP);
+					temp_buffer[param_count] = ut_client_map_mem(session->imp->device->fd,
+													ZERO_SIZE_MAP);
 				else
 					temp_buffer[param_count] = ut_client_map_mem(session->imp->device->fd, enc.len);
 
@@ -1139,18 +1166,19 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 				temp_enc_data = temp_buffer[param_count];
 				enc.data = temp_enc_data;
 				pr_debug("TEEC_InvokeCommand: LINE %d the value is %s\n", __LINE__, enc.data);
-				retVal = ut_enc_memory(session->imp->device->fd, &enc, operation->params[param_count], returnOrigin, inout, 1);
+				retVal = ut_enc_memory(session->imp->device->fd, &enc, o
+							peration->params[param_count], returnOrigin, inout, 1);
 
 				if (retVal != 0) {
 					session->imp->s_errno = -(retVal);
 					break;
 				}
 			} /* end if for temp reference */
-		}/* end for */
+		} /* end for */
 	} /* end paramtype */
 
 	if (retVal != 0) {
-		pr_err("error in encoding the data \n");
+		pr_err("error in encoding the data\n");
 		goto operation_release;
 	}
 
@@ -1188,13 +1216,14 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 	if ((operation != NULL) && (operation->paramTypes != 0)) {
 		for (param_count = 0; param_count < 4; param_count++) {
 			/* decode value type */
-			if ((param_types[param_count] == TEEC_VALUE_INOUT) || (param_types[param_count] == TEEC_VALUE_OUTPUT)) {
+			if ((param_types[param_count] == TEEC_VALUE_INOUT) ||
+				(param_types[param_count] == TEEC_VALUE_OUTPUT)) {
 				retVal = ut_dec_value(&enc, session->imp->device->fd, returnOrigin);
 				if (retVal != 0) {
 					session->imp->s_errno = -(retVal);
 					break;
 				} else {
-					operation->params[param_count].value.a = *((uint32_t*)enc.data);
+					operation->params[param_count].value.a = *((uint32_t *)enc.data);
 				}
 
 				retVal = ut_dec_value(&enc, session->imp->device->fd, returnOrigin);
@@ -1202,16 +1231,18 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 					session->imp->s_errno = -(retVal);
 					break;
 				} else {
-					operation->params[param_count].value.b = *((uint32_t*)enc.data);
+					operation->params[param_count].value.b = *((uint32_t *)enc.data);
 				}
-			}
-			else if ((param_types[param_count] == TEEC_MEMREF_WHOLE) || (param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) ||
-					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT) || (param_types[param_count] == TEEC_MEMREF_TEMP_INOUT) ||
+			} else if ((param_types[param_count] == TEEC_MEMREF_WHOLE) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_INOUT) ||
+					(param_types[param_count] == TEEC_MEMREF_PARTIAL_OUTPUT) ||
+					(param_types[param_count] == TEEC_MEMREF_TEMP_INOUT) ||
 					(param_types[param_count] == TEEC_MEMREF_TEMP_OUTPUT)) {
 
 				pr_debug("[%s][%d] decode memory buffer\n", __func__, __LINE__);
 				inout = 2;
-				inout = set_inout(param_types[param_count], operation->params[param_count].memref.parent->flags);
+				inout = set_inout(param_types[param_count],
+							operation->params[param_count].memref.parent->flags);
 				if (inout == 0)
 					continue;
 				retVal = ut_client_decode_array_space(session->imp->device->fd, &enc);
@@ -1223,11 +1254,12 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 
 					pr_debug("[%s][%d] decode memory buffer\n", __func__, __LINE__);
 
-					if(operation->params[param_count].memref.parent->imp->allocated == 0) {
+					if (operation->params[param_count].memref.parent->imp->allocated == 0) {
 						pr_debug("[%s][%d] --------------------------\n", __func__, __LINE__);
 						operation->params[param_count].memref.parent->size = enc.len;
 						pr_debug("[%s][%d] --------------------------\n", __func__, __LINE__);
-						memcpy(operation->params[param_count].memref.parent->buffer, (const void *)enc.data, enc.len);
+						memcpy(operation->params[param_count].memref.parent->buffer, (
+								const void *)enc.data, enc.len);
 						pr_debug("decode register memory buffer\n");
 					}
 				}
@@ -1237,7 +1269,8 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 					pr_debug("decode temp memory buffer\n");
 
 					operation->params[param_count].tmpref.size = enc.len;
-					memcpy(operation->params[param_count].tmpref.buffer, temp_buffer[param_count], enc.len);
+					memcpy(operation->params[param_count].tmpref.buffer,
+							temp_buffer[param_count], enc.len);
 
 				}
 				pr_debug("[%s][%d] --------------------------\n", __func__, __LINE__);
@@ -1246,7 +1279,7 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 					if (returnOrigin != NULL)
 						*returnOrigin = TEEC_ORIGIN_COMMS;
 					session->imp->s_errno = -(retVal);
-					pr_err("TEEC_InvokeCommand CLIENT_IOCTL_DEC_ARRAY_SPACE: decoding data in client driver failed \n");
+					pr_err("TEEC_InvokeCommand CLIENT_IOCTL_DEC_ARRAY_SPACE: decoding data in client driver failed\n");
 					break;
 				}
 
@@ -1263,16 +1296,15 @@ TEEC_Result TEEC_InvokeCommand(TEEC_Session* session, uint32_t commandID, TEEC_O
 				}
 				pr_debug("[%s][%d] --------------------------\n", __func__, __LINE__);
 			} /* end if for TEEC_MEM_REF check */
-		}/* end for */
+		} /* end for */
 	} /* end paramtype */
-	else {
+	else
 		pr_debug("else case of (operation && operation->paramTypes != 0)\n");
-	}
+
 
 	pr_debug("[%s][%d] --------------------------\n", __func__, __LINE__);
-	if(retVal != 0) {
+	if (retVal != 0)
 		pr_err("error in decoding the data\n");
-	}
 
 operation_release:
 	/* release the operation */
@@ -1295,7 +1327,7 @@ operation_release:
 *
 * @param operation: Pointer to TEEC operation structure
 */
-void TEEC_RequestCancellation(TEEC_Operation* operation)
+void TEEC_RequestCancellation(TEEC_Operation *operation)
 {
 	int retVal = 0;
 	int fd = -1;
@@ -1316,20 +1348,20 @@ void TEEC_RequestCancellation(TEEC_Operation* operation)
 	/* open the device */
 
 	fd = open(CLIENT_FULL_PATH_DEV_NAME, O_RDWR);
-    if (fd < 0) {
-        E("[%s]open deivce failed the return value is %d !", __func__, fd);
-        return;
-    } else {
-        D("open deivce success the return value is %d !", fd);
-    }
+	if (fd < 0) {
+		E("[%s]open deivce failed the return value is %d !", __func__, fd);
+		return;
+	} else {
+		D("open deivce success the return value is %d !", fd);
+	}
 
-    ret = ioctl(fd, CLIENT_IOCTL_CANCEL_COMMAND, CANCEL_MSG);
-    if (ret) {
-        E("[%s]send cancellation command failed the return value is %d !", __func__, ret);
-    } else {
-        D("send cancellation command success the return value is %d !", ret);
-    }
-    D("[%s][%d] end!\n", __func__, __LINE__);
-    return;
+	ret = ioctl(fd, CLIENT_IOCTL_CANCEL_COMMAND, CANCEL_MSG);
+	if (ret)
+		E("[%s]send cancellation command failed the return value is %d !", __func__, ret);
+	else
+		D("send cancellation command success the return value is %d !", ret);
+
+	D("[%s][%d] end!\n", __func__, __LINE__);
+
 }
 #endif

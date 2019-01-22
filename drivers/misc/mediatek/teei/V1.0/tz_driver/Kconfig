@@ -25,4 +25,7 @@ config MICROTRUST_TZ_DRIVER
 	default n
 	---help---
 	Enable teei_driver framework.
+	Enable teei_driver framework.
+	Enable teei_driver framework.
+	Enable teei_driver framework.
 	#Communication with the secure OS

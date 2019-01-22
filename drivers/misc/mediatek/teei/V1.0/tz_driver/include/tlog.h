@@ -24,18 +24,18 @@
 #define UT_TLOG_VERSION			(2)
 #define UT_TYPE_STRING			(1)
 #define MAX_LOG_LEN			(250)
-/********************************************
-	structures for LOG IRQ handler
- ********************************************/
+
+/*	structures for LOG IRQ handler*/
+
 struct tlog_struct {
 	int valid;
 	struct work_struct work;
 	char context[TLOG_CONTEXT_LEN];
 };
 
-/********************************************
-	structures for utOS printf
- ********************************************/
+
+/*	structures for utOS printf*/
+
 struct ut_log_buf_head {
 	int version;
 	int length;
@@ -51,9 +51,9 @@ struct ut_log_entry {
 	char reserve3;
 };
 
-/********************************************
-	structures for uTgate LOG
- ********************************************/
+
+/*	structures for uTgate LOG*/
+
 struct utgate_log_head {
 	int version;
 	int length;
@@ -61,9 +61,9 @@ struct utgate_log_head {
 	int reserve;
 };
 
-/*********************************************
-	variables for LOG IRQ handler
- *********************************************/
+
+/*	variables for LOG IRQ handler*/
+
 
 irqreturn_t tlog_handler(void);
 long create_utgate_log_thread(unsigned long tlog_virt_addr, unsigned long buff_size);

@@ -53,18 +53,18 @@ struct semaphore fp_api_lock;
 struct fp_dev *fp_devp;
 struct semaphore daulOS_rd_sem;
 struct semaphore daulOS_wr_sem;
-
-EXPORT_SYMBOL_GPL(daulOS_rd_sem);
-EXPORT_SYMBOL_GPL(daulOS_wr_sem);
+/**
+*EXPORT_SYMBOL_GPL(daulOS_rd_sem);
+*EXPORT_SYMBOL_GPL(daulOS_wr_sem);
+*/
 DECLARE_WAIT_QUEUE_HEAD(__fp_open_wq);
-
 int fp_open(struct inode *inode, struct file *filp)
 {
 	int ret = -1;
 
 	if (wait_teei_config_flag_count != 1 && teei_config_flag == 0) {
 		ret = wait_event_timeout(__fp_open_wq, (teei_config_flag == 1), msecs_to_jiffies(1000*20));
-		IMSG_ERROR("[TEE] open wait for %u msecs in first time \n", (1000*20-jiffies_to_msecs(ret)));
+		IMSG_ERROR("[TEE] open wait for %u msecs in first time\n", (1000*20-jiffies_to_msecs(ret)));
 	}
 
 	wait_teei_config_flag_count = 1;
@@ -96,11 +96,11 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 #ifdef FP_DEBUG
 	IMSG_DEBUG("##################################\n");
 	IMSG_DEBUG("fp ioctl received received cmd is: %x arg is %x\n", cmd, (unsigned int)arg);
-	IMSG_DEBUG("CMD_MEM_CLEAR is: %x CMD_FP_CMD is %x \n", CMD_MEM_CLEAR, CMD_FP_CMD);
+	IMSG_DEBUG("CMD_MEM_CLEAR is: %x CMD_FP_CMD is %x\n", CMD_MEM_CLEAR, CMD_FP_CMD);
 #endif
 	switch (cmd) {
 	case CMD_MEM_CLEAR:
-		IMSG_INFO("CMD MEM CLEAR. \n");
+		IMSG_INFO("CMD MEM CLEAR.\n");
 		break;
 	case CMD_FP_CMD:
 		/*TODO compute args length*/
@@ -111,17 +111,18 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		/*[4-7] is fuction id*/
 		fp_fid = *((unsigned int *)(arg + 4));
 #ifdef FP_DEBUG
-		IMSG_DEBUG("invoke fp cmd CMD_FP_CMD: arg's address is %x, args's length %d\n", (unsigned int)arg, args_len);
-		IMSG_DEBUG("invoke fp cmd fp_cid is %d fp_fid is %d \n", fp_cid, fp_fid);
+		IMSG_DEBUG("invoke fp cmd CMD_FP_CMD: arg's address is %x, args's length %d\n",
+					(unsigned int)arg, args_len);
+		IMSG_DEBUG("invoke fp cmd fp_cid is %d fp_fid is %d\n", fp_cid, fp_fid);
 #endif
 		if (!fp_buff_addr) {
-			IMSG_ERROR("fp_buiff_addr is invalid!. \n");
+			IMSG_ERROR("fp_buiff_addr is invalid!.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
 		memset((void *)fp_buff_addr, 0, args_len + 16);
 		if (copy_from_user((void *)fp_buff_addr, (void *)arg, args_len + 16)) {
-			IMSG_ERROR("copy from user failed. \n");
+			IMSG_ERROR("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
@@ -130,19 +131,20 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		/*send command data to TEEI*/
 		send_fp_command(FP_DRIVER_ID);
 #ifdef FP_DEBUG
-		IMSG_DEBUG("back from TEEI try copy share mem to user \n");
-		IMSG_DEBUG("result in share memory %d  \n", *((unsigned int *)fp_buff_addr));
-		IMSG_DEBUG("[%s][%d] fp_buff_addr 88 - 91 = %d\n", __func__, args_len, *((unsigned int *)(fp_buff_addr + 88)));
+		IMSG_DEBUG("back from TEEI try copy share mem to user\n");
+		IMSG_DEBUG("result in share memory %d\n", *((unsigned int *)fp_buff_addr));
+		IMSG_DEBUG("[%s][%d] fp_buff_addr 88 - 91 = %d\n",
+					__func__, args_len, *((unsigned int *)(fp_buff_addr + 88)));
 #endif
 
 		if (copy_to_user((void *)arg, (void *)fp_buff_addr, (args_len + 16))) {
-			IMSG_ERROR("copy from user failed. \n");
+			IMSG_ERROR("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
 #ifdef FP_DEBUG
-		IMSG_DEBUG("result after copy %d  \n", *((unsigned int *)arg));
-		IMSG_DEBUG("invoke fp cmd end. \n");
+		IMSG_DEBUG("result after copy %d\n", *((unsigned int *)arg));
+		IMSG_DEBUG("invoke fp cmd end.\n");
 #endif
 		break;
 	case CMD_GATEKEEPER_CMD:
@@ -150,7 +152,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		IMSG_DEBUG("case CMD_GATEKEEPER_CMD\n");
 		#endif
 		if (!gatekeeper_buff_addr) {
-			IMSG_ERROR("gatekeeper_buff_addr is invalid!. \n");
+			IMSG_ERROR("gatekeeper_buff_addr is invalid!.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
@@ -163,7 +165,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		IMSG_DEBUG("memset  ok\n");
 #endif
 		if (copy_from_user((void *)gatekeeper_buff_addr, (void *)arg, 0x1000)) {
-			IMSG_ERROR("copy from user failed. \n");
+			IMSG_ERROR("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
@@ -179,7 +181,7 @@ static long fp_ioctl(struct file *filp, unsigned cmd, unsigned long arg)
 		IMSG_DEBUG("send_gatekeeper_command  ok\n");
 #endif
 		if (copy_to_user((void *)arg, (void *)gatekeeper_buff_addr, 0x1000)) {
-			IMSG_ERROR("copy from user failed. \n");
+			IMSG_ERROR("copy from user failed.\n");
 			up(&fp_api_lock);
 			return -EFAULT;
 		}
@@ -237,24 +239,24 @@ static void fp_setup_cdev(struct fp_dev *dev, int index)
 	cdev_init(&dev->cdev, &fp_fops);
 	dev->cdev.owner = fp_fops.owner;
 	err = cdev_add(&dev->cdev, devno, 1);
-	if (err) {
+	if (err)
 		IMSG_ERROR("Error %d adding fp %d.\n", err, index);
-	}
+
 }
 
 int fp_init(void)
 {
 	int result = 0;
-	struct device *class_dev = NULL;
-	devno = MKDEV(fp_major, 0);
 
+	struct device *class_dev = NULL;
+
+	devno = MKDEV(fp_major, 0);
 	result = alloc_chrdev_region(&devno, 0, 1, DEV_NAME);
 	fp_major = MAJOR(devno);
 	sema_init(&(fp_api_lock), 1);
 
-	if (result < 0) {
+	if (result < 0)
 		return result;
-	}
 
 	driver_class = NULL;
 	driver_class = class_create(THIS_MODULE, DEV_NAME);
