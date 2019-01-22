@@ -505,9 +505,6 @@ void scp_aed(scp_excep_id type, scp_core_id id)
 	mutex_lock(&scp_excep_mutex);
 
 	/* get scp title and exception type*/
-	if ((type == EXCEP_RUNTIME) && (id == SCP_B_ID))
-		type = (is_scp_ready(id)) ? EXCEP_RUNTIME : EXCEP_BOOTUP;
-
 	switch (type) {
 		case EXCEP_LOAD_FIRMWARE:
 			scp_prepare_aed("scp firmware load exception", &aed);
