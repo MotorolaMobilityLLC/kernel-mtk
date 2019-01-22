@@ -12,7 +12,6 @@
  */
 
 /* Please set primary/secondary charger to corresponding I2C bus */
-
 &i2c1 {
 	rt9466@53 {
 		compatible = "richtek,rt9466";
