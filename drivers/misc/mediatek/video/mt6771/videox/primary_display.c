@@ -2018,7 +2018,7 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma, enum D
 	/* wait wdma0 sof */
 	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	cmdqRecFlush(cmdq_wait_handle);
-	DISPMSG("dl_to_dc capture:Flush wait wdma sof\n");
+	DISPINFO("dl_to_dc capture:Flush wait wdma sof\n");
 out:
 	cmdqRecDestroy(cmdq_handle);
 	cmdqRecDestroy(cmdq_wait_handle);
