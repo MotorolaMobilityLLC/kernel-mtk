@@ -105,12 +105,10 @@ struct upower_tbl_info **upower_get_tbl(void)
 
 	return ptr;
 #endif
-	if (upower_enable) {
-		upower_debug("get upower tbl location = %p\n", p_upower_tbl_infos->p_upower_tbl);
+	if (upower_enable)
 		return &p_upower_tbl_infos;
-	} else {
+	else
 		return NULL;
-	}
 
 }
 EXPORT_SYMBOL(upower_get_tbl);
