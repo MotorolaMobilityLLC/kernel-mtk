@@ -746,8 +746,11 @@ int disp_input_free_dirty_roi(struct disp_frame_cfg_t *cfg)
 {
 	int i;
 
+	if (cfg == NULL)
+		return 0;
+
 	for (i = 0; i < cfg->input_layer_num; i++)
-		if (cfg != NULL && cfg->input_cfg[i].dirty_roi_addr != NULL)
+		if (cfg->input_cfg[i].dirty_roi_addr != NULL)
 			kfree(cfg->input_cfg[i].dirty_roi_addr);
 
 	return 0;

@@ -1060,7 +1060,8 @@ struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm
 #if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 			lcm_drv = lcm_driver_list[1];
 #else
-			lcm_drv = NULL;
+			DISPPR_ERROR("no define CONFIG_MTK_DUAL_DISPLAY_SUPPORT\n");
+			return NULL;
 #endif
 
 			isLCMFound = true;
