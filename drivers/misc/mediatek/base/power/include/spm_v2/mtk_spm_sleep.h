@@ -32,6 +32,7 @@ extern bool spm_check_wakeup_src(void);
 extern void spm_poweron_config_set(void);
 extern void spm_md32_sram_con(u32 value);
 extern void spm_ap_mdsrc_req(u8 set);
+extern int get_spm_sleep_count(struct seq_file *s, void *unused);
 extern bool spm_set_suspned_pcm_init_flag(u32 *suspend_flags);
 
 extern void spm_output_sleep_option(void);
