@@ -2013,7 +2013,6 @@ static unsigned short mt6631_chan_para_get(unsigned short freq)
 
 	size = ARRAY_SIZE(mt6631_chan_para_map);
 
-	pos = (pos < 0) ? 0 : pos;
 	pos = (pos > (size - 1)) ? (size - 1) : pos;
 
 	return mt6631_chan_para_map[pos];
