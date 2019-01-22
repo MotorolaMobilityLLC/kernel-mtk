@@ -3635,6 +3635,3 @@
 #include "cust_mt6771_msdc.dtsi"
 #include "mt6370.dtsi"
 #include "mt6370_pd.dtsi"
-#ifdef CONFIG_CHARGER_RT9465
-#include "rt9465.dtsi"
-#endif
