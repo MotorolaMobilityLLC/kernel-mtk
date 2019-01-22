@@ -89,5 +89,33 @@ void mt_cirq_clone_gic(void);
 void mt_cirq_flush(void);
 int mt_cirq_test(void);
 void mt_cirq_dump_reg(void);
+#ifdef CONFIG_FAST_CIRQ_CLONE_FLUSH
+static void cirq_fast_sw_flush(void);
+struct cirq_reg {
+	unsigned int reg_num;
+	unsigned int used;
+	unsigned int mask;
+	unsigned int pol;
+	unsigned int sen;
+	unsigned long pending;
+	struct list_head the_link;
+};
 
+struct cirq_events {
+	unsigned int num_reg;
+	unsigned int spi_start;
+	unsigned int num_of_events;
+	unsigned int *wakeup_events;
+	struct cirq_reg *table;
+	void __iomem *dist_base;
+	void __iomem *cirq_base;
+	struct list_head used_reg_head;
+};
+
+/*#define FAST_CIRQ_DEBUG*/
+/*#define LATENCY_CHECK*/
+#ifdef FAST_CIRQ_DEBUG
+void debug_setting_dump(void);
+#endif
+#endif
 #endif  /*!__CIRQ_H__ */
