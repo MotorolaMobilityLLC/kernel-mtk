@@ -150,7 +150,8 @@ struct crypt_config {
 	char *cipher_string;
 
 #if defined(CONFIG_MTK_HW_FDE)
-	unsigned int hw_fde;
+	int hw_fde;
+	int id;
 #endif
 
 	struct crypt_iv_operations *iv_gen_ops;
@@ -1257,6 +1258,58 @@ static int crypt_is_hw_fde(const char *path)
 	return 0;
 }
 
+static int crypt_dev_id(const char *path)
+{
+	dev_t uninitialized_var(dev);
+	unsigned int major, minor;
+	char dummy;
+
+	pr_debug("%s %d PATH : %s\n", __func__, __LINE__, path);
+
+	if (sscanf(path, "%u:%u%c", &major, &minor, &dummy) == 2) {
+		/* Extract the major/minor numbers */
+		dev = MKDEV(major, minor);
+		if (MAJOR(dev) != major || MINOR(dev) != minor)
+			return -EOVERFLOW;
+	} else {
+		/* convert the path to a device */
+		struct block_device *bdev = lookup_bdev(path);
+
+		if (IS_ERR(bdev))
+			return PTR_ERR(bdev);
+		dev = bdev->bd_dev;
+		major = MAJOR(dev);
+		minor = MINOR(dev);
+	}
+
+	pr_debug("%s %d Major:Minor %d:%d\n", __func__, __LINE__, major, minor);
+
+#if defined(CONFIG_MTK_UFS_BOOTING) /* UFS booting */
+	/* UFS device */
+	if (major == SCSI_DISK0_MAJOR ||
+		major == BLOCK_EXT_MAJOR)
+		return 0;
+	#if defined(CONFIG_MTK_HW_FDE_AES)
+	/* SD card */
+	if (major == MMC_BLOCK_MAJOR && minor <= 2)
+		return 1;
+	#endif
+#elif defined(CONFIG_MTK_EMMC_SUPPORT) /* eMMC booting */
+	#if defined(CONFIG_MTK_HW_FDE_AES)
+	/* both eMMC and SD card use HW FDE */
+	if (major == MMC_BLOCK_MAJOR)
+		return 1;
+	if (major == BLOCK_EXT_MAJOR)
+		return 0;
+	#else
+	/* eMMC device use HW FDE only. SD card cannot use HW FDE */
+	if (major == MMC_BLOCK_MAJOR && minor < CONFIG_MMC_BLOCK_MINORS * 4)
+		return 1;
+	#endif
+#endif
+
+	return -1;
+}
 #endif
 
 static void kcryptd_queue_read(struct dm_crypt_io *io)
@@ -1579,7 +1632,11 @@ static int crypt_setkey_allcpus(struct crypt_config *cc)
 			mt_secure_call(MTK_SIP_KERNEL_HW_FDE_KEY,
 				*(u32 *)(cc->key+(i*8)),
 				*(u32 *)(cc->key+(i*8)+4),
-				(i<<16) | (cc->key_size & 0xffff));
+				(cc->id & 0xff) << 24 |
+				(i & 0xff)<<16 | (cc->key_size & 0xffff));
+#if defined(CONFIG_MTK_HW_FDE_AES)
+		fde_aes_set_slot(cc->id);
+#endif
 	} else
 #endif
 	{
@@ -1892,7 +1949,10 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 
 #if defined(CONFIG_MTK_HW_FDE)
 	cc->hw_fde = (crypt_is_hw_fde(argv[3]) == 1)?1:0;
-	pr_debug("%s %d HW FDE:%d\n", __func__, __LINE__, cc->hw_fde);
+	cc->id = ret = crypt_dev_id(argv[3]);
+	if (ret < 0)
+		goto bad;
+	pr_debug("%s %d HW FDE:%d MSDC%d\n", __func__, __LINE__, cc->hw_fde, cc->id);
 #endif
 
 	ret = crypt_ctr_cipher(ti, argv[0], argv[1]);
