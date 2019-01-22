@@ -421,6 +421,10 @@ static unsigned int g_ccorr_relay_value;
 
 static DISP_CCORR_COEF_T *g_disp_ccorr_coef[DISP_CCORR_TOTAL] = { NULL };
 
+static DECLARE_WAIT_QUEUE_HEAD(g_ccorr_get_irq_wq);
+static DEFINE_SPINLOCK(g_ccorr_get_irq_lock);
+static volatile int g_ccorr_get_irq;
+
 static ddp_module_notify g_ccorr_ddp_notify;
 
 static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq, enum DISP_MODULE_ENUM module,
@@ -517,13 +521,116 @@ ccorr_write_coef_unlock:
 	return ret;
 }
 
-
 static void disp_ccorr_trigger_refresh(disp_ccorr_id_t id)
 {
 	if (g_ccorr_ddp_notify != NULL)
 		g_ccorr_ddp_notify(CCORR0_MODULE_NAMING, DISP_PATH_EVENT_TRIGGER);
 }
 
+void disp_ccorr_on_end_of_frame(void)
+{
+	unsigned int intsta;
+	unsigned long flags;
+
+	intsta = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
+
+	CCORR_DBG("disp_ccorr_on_end_of_frame: intsta: 0x%x", intsta);
+	if (intsta & 0x2) {	/* End of frame */
+		if (spin_trylock_irqsave(&g_ccorr_get_irq_lock, flags)) {
+			DISP_CPU_REG_SET(DISP_REG_CCORR_INTSTA, (intsta & ~0x3));
+
+			g_ccorr_get_irq = 1;
+
+			spin_unlock_irqrestore(&g_ccorr_get_irq_lock, flags);
+
+			wake_up_interruptible(&g_ccorr_get_irq_wq);
+		}
+	}
+}
+
+#ifdef CCORR_TRANSITION
+static DEFINE_SPINLOCK(g_pq_bl_change_lock);
+static int g_pq_backlight;
+static int g_pq_backlight_db;
+
+static void disp_ccorr_set_interrupt(int enabled)
+{
+	if (enabled) {
+		if (DISP_REG_GET(DISP_REG_CCORR_EN) == 0) {
+			/* Print error message */
+			CCORR_DBG("[WARNING] DISP_REG_CCORR_EN not enabled!");
+		}
+
+		/* Enable output frame end interrupt */
+		DISP_CPU_REG_SET(DISP_REG_CCORR_INTEN, 0x2);
+		CCORR_DBG("Interrupt enabled");
+	} else {
+		/* Disable output frame end interrupt */
+		DISP_CPU_REG_SET(DISP_REG_CCORR_INTEN, 0x0);
+		CCORR_DBG("Interrupt disabled");
+	}
+}
+
+static int disp_ccorr_wait_irq(unsigned long timeout)
+{
+	unsigned long flags;
+	int ret = 0;
+
+	CCORR_DBG("disp_ccorr_wait_irq: get_irq = %d", g_ccorr_get_irq);
+
+	if (!g_ccorr_get_irq) {
+		ret = wait_event_interruptible(g_ccorr_get_irq_wq, (g_ccorr_get_irq != 0));
+		CCORR_DBG("disp_ccorr_wait_irq: waken up, ret = %d", ret);
+	} else {
+		/* If g_ccorr_get_irq is already set, means PQService was delayed */
+	}
+
+	spin_lock_irqsave(&g_ccorr_get_irq_lock, flags);
+	g_ccorr_get_irq = 0;
+	spin_unlock_irqrestore(&g_ccorr_get_irq_lock, flags);
+
+	return ret;
+}
+
+static int disp_pq_copy_backlight_to_user(int __user *backlight)
+{
+	unsigned long flags;
+	int ret = -EFAULT;
+
+	/* We assume only one thread will call this function */
+	spin_lock_irqsave(&g_pq_bl_change_lock, flags);
+	g_pq_backlight_db = g_pq_backlight;
+	spin_unlock_irqrestore(&g_pq_bl_change_lock, flags);
+
+	if (copy_to_user(backlight, &g_pq_backlight_db, sizeof(int)) == 0)
+		ret = 0;
+
+	CCORR_DBG("disp_pq_copy_backlight_to_user: %d", ret);
+
+	return ret;
+}
+#endif
+
+void disp_pq_notify_backlight_changed(int bl_1024)
+{
+#ifdef CCORR_TRANSITION
+	unsigned long flags;
+	int old_bl;
+
+	spin_lock_irqsave(&g_pq_bl_change_lock, flags);
+	old_bl = g_pq_backlight;
+	g_pq_backlight = bl_1024;
+	spin_unlock_irqrestore(&g_pq_bl_change_lock, flags);
+
+	CCORR_DBG("disp_pq_notify_backlight_changed %d", bl_1024);
+
+	if (old_bl == 0 || bl_1024 == 0) {
+		disp_ccorr_set_interrupt(1);
+		disp_ccorr_trigger_refresh(DISP_CCORR0);
+		CCORR_DBG("trigger refresh when backlight ON/Off");
+	}
+#endif
+}
 
 static int disp_ccorr_set_coef(const DISP_CCORR_COEF_T __user *user_color_corr,
 		enum DISP_MODULE_ENUM module, void *cmdq)
@@ -567,7 +674,6 @@ static int disp_ccorr_set_coef(const DISP_CCORR_COEF_T __user *user_color_corr,
 	return ret;
 }
 
-
 static int disp_ccorr_config(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
 {
 	if (pConfig->dst_dirty)
@@ -609,6 +715,34 @@ static int disp_ccorr_io(enum DISP_MODULE_ENUM module, int msg, unsigned long ar
 			return -EFAULT;
 		}
 		break;
+#ifdef CCORR_TRANSITION
+	case DISP_IOCTL_CCORR_EVENTCTL:
+		{
+			int enabled;
+
+			if (copy_from_user(&enabled, (void *)arg, sizeof(enabled))) {
+				CCORR_ERR("DISP_IOCTL_CCORR_EVENTCTL: copy_from_user() failed");
+				return -EFAULT;
+			}
+
+			disp_ccorr_set_interrupt(enabled);
+
+			if (enabled)
+				disp_ccorr_trigger_refresh(DISP_CCORR0);
+
+			break;
+		}
+		break;
+	case DISP_IOCTL_CCORR_GET_IRQ:
+		{
+			disp_ccorr_wait_irq(60);
+			if (disp_pq_copy_backlight_to_user((int *) arg) < 0) {
+				CCORR_ERR("DISP_IOCTL_CCORR_GET_IRQ: copy_to_user() failed");
+				return -EFAULT;
+			}
+		}
+		break;
+#endif
 	}
 
 	return 0;
