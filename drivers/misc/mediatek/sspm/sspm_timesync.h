@@ -11,7 +11,7 @@
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
 #ifndef _SSPM_TIMESYNC_H_
-#define _SSPM_TIMESTNC_H_
+#define _SSPM_TIMESYNC_H_
 
 extern unsigned int sspm_timesync_init(phys_addr_t start, phys_addr_t limit);
 extern int sspm_timesync_init_done(void);
