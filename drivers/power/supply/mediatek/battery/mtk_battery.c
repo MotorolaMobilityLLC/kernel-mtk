@@ -1230,7 +1230,7 @@ int force_get_tbat_internal(bool update)
 			if (((dtime.tv_sec <= 20) &&
 				(abs(pre_bat_temperature_val2 -
 				bat_temperature_val) >= 5)) ||
-				bat_temperature_val >= 58) {
+				bat_temperature_val >= 75) {
 				bm_err(
 				"[force_get_tbat][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d\n",
 					bat_temperature_volt_temp,
