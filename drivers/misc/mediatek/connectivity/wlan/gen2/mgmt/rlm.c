@@ -228,6 +228,14 @@ VOID rlmRspGenerateHtCapIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
+	if (prStaRec)
+		DBGLOG(RLM, TRACE, "%s index %d ,availPhyTypeSet:0x%x prStaRec->ucPhyTypeSet:0x%x [%pM]\n ", __func__
+		, prMsduInfo->ucStaRecIndex, prAdapter->rWifiVar.ucAvailablePhyTypeSet
+		, prStaRec->ucPhyTypeSet, prStaRec->aucMacAddr);
+	else
+		DBGLOG(RLM, TRACE, "%s prStaRec is null ,availPhyTypeSet:0x%x, index :%d\n", __func__
+		, prAdapter->rWifiVar.ucAvailablePhyTypeSet, prMsduInfo->ucStaRecIndex);
+
 	if ((prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) &&
 		(!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
 		rlmFillHtCapIE(prAdapter, prBssInfo, prMsduInfo);
@@ -256,6 +264,14 @@ VOID rlmRspGenerateExtCapIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
+	if (prStaRec)
+		DBGLOG(RLM, TRACE, "%s index %d ,availPhyTypeSet:0x%x prStaRec->ucPhyTypeSet:0x%x [%pM]\n ", __func__
+		, prMsduInfo->ucStaRecIndex, prAdapter->rWifiVar.ucAvailablePhyTypeSet
+		, prStaRec->ucPhyTypeSet, prStaRec->aucMacAddr);
+	else
+		DBGLOG(RLM, TRACE, "%s prStaRec is null ,availPhyTypeSet:0x%x, index :%d\n", __func__
+		, prAdapter->rWifiVar.ucAvailablePhyTypeSet, prMsduInfo->ucStaRecIndex);
+
 	if ((prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) &&
 		(!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
 		rlmFillExtCapIE(prAdapter, prBssInfo, prMsduInfo);
@@ -283,6 +299,14 @@ VOID rlmRspGenerateHtOpIE(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 
 	prBssInfo = &prAdapter->rWifiVar.arBssInfo[prMsduInfo->ucNetworkType];
 	ASSERT(prBssInfo);
+
+	if (prStaRec)
+		DBGLOG(RLM, TRACE, "%s index %d ,availPhyTypeSet:0x%x prStaRec->ucPhyTypeSet:0x%x [%pM]\n ", __func__
+		, prMsduInfo->ucStaRecIndex, prAdapter->rWifiVar.ucAvailablePhyTypeSet
+		, prStaRec->ucPhyTypeSet, prStaRec->aucMacAddr);
+	else
+		DBGLOG(RLM, TRACE, "%s prStaRec is null ,availPhyTypeSet:0x%x, index :%d\n", __func__
+		, prAdapter->rWifiVar.ucAvailablePhyTypeSet, prMsduInfo->ucStaRecIndex);
 
 	if ((prAdapter->rWifiVar.ucAvailablePhyTypeSet & PHY_TYPE_SET_802_11N) &&
 		(!prStaRec || (prStaRec->ucPhyTypeSet & PHY_TYPE_SET_802_11N)))
