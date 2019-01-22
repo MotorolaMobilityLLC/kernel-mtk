@@ -12,3 +12,4 @@
 #
 
 obj-$(CONFIG_MACH_MT6757) += pbm_v1/
+obj-$(CONFIG_MACH_MT6757) += spm_v2/
