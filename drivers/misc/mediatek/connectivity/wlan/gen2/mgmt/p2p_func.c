@@ -2740,6 +2740,7 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 	PUINT_8 pucIEBuf = (PUINT_8) NULL;
 	UINT_16 u2Offset = 0, u2IELength = 0, u2ProbeRspHdrLen = 0;
 	BOOLEAN fgIsP2PIE = FALSE, fgIsWSCIE = FALSE;
+	BOOLEAN fgIsWFDIE = FALSE;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	UINT_16 u2EstimateSize = 0, u2EstimatedExtraIELen = 0;
 	UINT_32 u4IeArraySize = 0, u4Idx = 0, u4P2PIeIdx = 0;
@@ -2767,6 +2768,7 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 		u2IELength = prMgmtTxMsdu->u2FrameLength - u2ProbeRspHdrLen;
 
 #if CFG_SUPPORT_WFD
+		prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen = 0;
 		prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen = 0;
 #endif
 
@@ -2788,6 +2790,7 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 							IE_SIZE(pucIEBuf));
 						fgIsWSCIE = TRUE;
 					}
+
 				} else if (p2pFuncParseCheckForP2PInfoElem(prAdapter, pucIEBuf, &ucOuiType) &&
 					(ucOuiType == VENDOR_OUI_TYPE_P2P)) {
 					if (u4P2PIeIdx < MAX_P2P_IE_SIZE) {
@@ -2824,16 +2827,29 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 			if (ucOuiType == VENDOR_OUI_TYPE_WMM)
 				break;
 		}
-		if (p2pFuncParseCheckForP2PInfoElem(prAdapter, pucIEBuf, &ucOuiType) &&
-			(ucOuiType == VENDOR_OUI_TYPE_P2P)) {
-			if (u4P2PIeIdx < MAX_P2P_IE_SIZE) {
-				kalP2PUpdateP2P_IE(prAdapter->prGlueInfo,
-					u4P2PIeIdx, pucIEBuf, IE_SIZE(pucIEBuf));
-				u4P2PIeIdx++;
-				fgIsP2PIE = TRUE;
-			} else
-				DBGLOG(P2P, WARN, "Too much P2P IE for ProbeResp, skip update\n");
+		if (p2pFuncParseCheckForP2PInfoElem(prAdapter, pucIEBuf, &ucOuiType)) {
+			if (ucOuiType == VENDOR_OUI_TYPE_P2P) {
+				if (u4P2PIeIdx < MAX_P2P_IE_SIZE) {
+					kalP2PUpdateP2P_IE(prAdapter->prGlueInfo,
+						u4P2PIeIdx, pucIEBuf, IE_SIZE(pucIEBuf));
+					u4P2PIeIdx++;
+					fgIsP2PIE = TRUE;
+				} else
+					DBGLOG(P2P, WARN, "Too much P2P IE for ProbeResp, skip update\n");
+			} else if (ucOuiType == VENDOR_OUI_TYPE_WFD) {
+				DBGLOG(P2P, INFO,
+					"WFD IE is found in probe resp (supp). Len %u\n", IE_SIZE(pucIEBuf));
+				if ((sizeof(prAdapter->prGlueInfo->prP2PInfo->aucWFDIE) >=
+				     (prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen + IE_SIZE(pucIEBuf)))) {
+					fgIsWFDIE = TRUE;
+					kalMemCopy(prAdapter->prGlueInfo->prP2PInfo->aucWFDIE,
+						   pucIEBuf, IE_SIZE(pucIEBuf));
+					prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen += IE_SIZE(pucIEBuf);
+				}
+			}	/*  VENDOR_OUI_TYPE_WFD */
 		} else {
+			DBGLOG(P2P, INFO,
+				"Other vender IE is found in probe resp (supp). Len %u\n", IE_SIZE(pucIEBuf));
 			if ((prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen + IE_SIZE(pucIEBuf)) <
 				1024) {
 				kalMemCopy(prAdapter->prGlueInfo->prP2PInfo->aucVenderIE +
@@ -2886,6 +2902,11 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 			u2EstimatedExtraIELen += p2pFuncCalculateP2P_IE_NoA(prAdapter, 0, NULL);
 		}
 #if CFG_SUPPORT_WFD
+		ASSERT(sizeof(prAdapter->prGlueInfo->prP2PInfo->aucWFDIE) >=
+		       prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen);
+		if (fgIsWFDIE)
+			u2EstimatedExtraIELen += prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen;
+
 		u2EstimatedExtraIELen += prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen;
 #endif
 
@@ -2945,6 +2966,17 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 			p2pFuncGenerateP2P_IE_NoA(prAdapter, prRetMsduInfo);
 		}
 #if CFG_SUPPORT_WFD
+		if (fgIsWFDIE) {
+			ASSERT(prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen > 0);
+			kalMemCopy((PUINT_8)
+				   ((ULONG) prRetMsduInfo->prPacket +
+				    (ULONG) prRetMsduInfo->u2FrameLength),
+				   prAdapter->prGlueInfo->prP2PInfo->aucWFDIE,
+				   prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen);
+			prRetMsduInfo->u2FrameLength += (UINT_16) prAdapter->prGlueInfo->prP2PInfo->u2WFDIELen;
+
+		}
+
 		if (prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen > 0) {
 			kalMemCopy((PUINT_8) ((ULONG) prRetMsduInfo->prPacket + (UINT_32) prRetMsduInfo->u2FrameLength),
 				   prAdapter->prGlueInfo->prP2PInfo->aucVenderIE,
