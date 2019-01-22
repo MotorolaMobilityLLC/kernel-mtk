@@ -56,6 +56,10 @@ ifneq (,$(filter y,$(CONFIG_MTK_PMIC_CHIP_MT6356)))
   MDI_IP_FOLDER:=mt6356
 endif
 
+ifneq (,$(filter y,$(CONFIG_MTK_PMIC_CHIP_MT6357)))
+  MDI_IP_FOLDER:=mt6357
+endif
+
 MDP_COMMON_FOLDER:= ./
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/rtc/$(MDI_IP_FOLDER)
