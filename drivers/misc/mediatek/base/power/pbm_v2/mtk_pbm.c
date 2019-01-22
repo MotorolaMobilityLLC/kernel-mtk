@@ -209,30 +209,29 @@ static atomic_t kthread_nreq = ATOMIC_INIT(0);
 /*
  * weak function
  */
-#if 1
-__weak int tscpu_get_min_cpu_pwr(void)
+int __attribute__ ((weak))
+tscpu_get_min_cpu_pwr(void)
 {
-	pbm_crit("tscpu_get_min_cpu_pwr not ready\n");
+	pbm_crit("%s not ready\n", __func__);
 	return 0;
 }
-#endif
 
-#if defined(CONFIG_ARCH_ELBRUS)
 unsigned int __attribute__ ((weak))
 mt_gpufreq_get_leakage_mw(void)
 {
+	pbm_crit("%s not ready\n", __func__);
 	return 0;
 }
+
 void __attribute__ ((weak))
 mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 {
-
+	pbm_crit("%s not ready\n", __func__);
 }
-#endif
 
 int get_battery_volt(void)
 {
-	return mt6335_get_auxadc_value(PMIC_AUX_BATSNS_AP);
+	return pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 	/* return 3900; */
 }
 
@@ -878,7 +877,7 @@ static bool pbm_update_table_info(enum pbm_kicker kicker, struct mrp *mrpmgr)
 		break;
 	default:
 		pbm_crit("[%s] ERROR, unknown kicker [%d]\n", __func__, kicker);
-		WARN_ON();
+		WARN_ON_ONCE(1);
 		break;
 	}
 
