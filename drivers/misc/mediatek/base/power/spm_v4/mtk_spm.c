@@ -841,7 +841,7 @@ void spm_phypll_mode_check(void)
 	unsigned int val = spm_read(SPM_POWER_ON_VAL0);
 
 	if ((val & (R0_SC_PHYPLL_MODE_SW_PCM | R0_SC_PHYPLL2_MODE_SW_PCM))
-			!= 0x1) {
+			!= R0_SC_PHYPLL_MODE_SW_PCM) {
 
 		aee_kernel_warning(
 			"SPM Warning",
