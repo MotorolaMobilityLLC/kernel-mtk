@@ -427,6 +427,19 @@ static void ppm_main_calc_new_limit(void)
 
 	/* fill root cluster */
 	c_req->root_cluster = ppm_get_root_cluster_by_state(ppm_main_info.cur_power_state);
+	/* error check: avoid max core of root cluster is 0 */
+	if (c_req->root_cluster < NR_PPM_CLUSTERS
+		&& c_req->cpu_limit[c_req->root_cluster].max_cpu_core == 0) {
+		/* find first non-zero max core cluster as root cluster */
+		int i;
+
+		for_each_ppm_clusters(i) {
+			if (c_req->cpu_limit[i].max_cpu_core) {
+				c_req->root_cluster = i;
+				break;
+			}
+		}
+	}
 
 	/* fill ptpod activate flag */
 	c_req->is_ptp_policy_activate = is_ptp_activate;
