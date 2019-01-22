@@ -3032,12 +3032,9 @@ int submit_bh_wbc_crypt(struct inode *inode, int rw, struct buffer_head *bh,
 
 	bio->bi_iter.bi_sector = bh->b_blocknr * (bh->b_size >> 9);
 	bio->bi_bdev = bh->b_bdev;
-	bio->bi_io_vec[0].bv_page = bh->b_page;
-	bio->bi_io_vec[0].bv_len = bh->b_size;
-	bio->bi_io_vec[0].bv_offset = bh_offset(bh);
 
-	bio->bi_vcnt = 1;
-	bio->bi_iter.bi_size = bh->b_size;
+	bio_add_page(bio, bh->b_page, bh->b_size, bh_offset(bh));
+	BUG_ON(bio->bi_iter.bi_size != bh->b_size);
 
 	bio->bi_end_io = end_bio_bh_io_sync;
 	bio->bi_private = bh;
@@ -3054,9 +3051,7 @@ int submit_bh_wbc_crypt(struct inode *inode, int rw, struct buffer_head *bh,
 	if (buffer_prio(bh))
 		rw |= REQ_PRIO;
 
-	bio_get(bio);
 	submit_bio(rw, bio);
-	bio_put(bio);
 
 	return ret;
 }
