@@ -471,20 +471,6 @@ log_again:
 		lowmem_deathpending = selected;
 		lowmem_deathpending_timeout = jiffies + HZ;
 
-		if (output_expect(enable_candidate_log)) {
-			if (print_extra_info) {
-				show_free_areas(0);
-			#ifdef CONFIG_MTK_ION
-				/* Show ION status */
-				ion_mm_heap_memory_detail();
-			#endif
-			#ifdef CONFIG_MTK_GPU_SUPPORT
-				if (mtk_dump_gpu_memory_usage() == false)
-					lowmem_print(1, "mtk_dump_gpu_memory_usage not support\n");
-			#endif
-			}
-		}
-
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
 		/*
 		* when kill adj=0 process trigger kernel warning, only in MTK internal eng load
@@ -541,6 +527,22 @@ log_again:
 		     sc->nr_to_scan, sc->gfp_mask, rem);
 	rcu_read_unlock();
 	spin_unlock(&lowmem_shrink_lock);
+
+	/* Dump HW memory outside the lock */
+	if (selected && output_expect(enable_candidate_log)) {
+		if (print_extra_info) {
+			show_free_areas(0);
+#ifdef CONFIG_MTK_ION
+			/* Show ION status */
+			ion_mm_heap_memory_detail();
+#endif
+#ifdef CONFIG_MTK_GPU_SUPPORT
+			if (mtk_dump_gpu_memory_usage() == false)
+				lowmem_print(1, "mtk_dump_gpu_memory_usage not support\n");
+#endif
+		}
+	}
+
 	return rem;
 }
 
