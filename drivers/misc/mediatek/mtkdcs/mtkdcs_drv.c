@@ -26,6 +26,8 @@
 #include "mtkdcs_drv.h"
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_vcorefs_manager.h>
+#include <mtkdcs_drv.h>
+#include <internal.h>
 
 static enum dcs_status sys_dcs_status = DCS_NORMAL;
 static bool dcs_core_initialized;
@@ -37,6 +39,7 @@ static DEFINE_MUTEX(dcs_kicker_lock);
 static unsigned long dcs_kicker;
 static struct task_struct *dcs_thread;
 static u64 lbw_start = ULONG_MAX, lbw_end;
+static phys_addr_t mpu_start, mpu_end;
 static DEFINE_MUTEX(dcs_lbw_lock);
 static struct wake_lock dcs_wake_lock;
 #define DCS_PROFILE
@@ -631,6 +634,26 @@ int dcs_full_init(void)
 	return 0;
 }
 
+/*
+ * dcs_mpu_protection
+ *
+ * enable/disable DCS MPU
+ * @enable: disable DCS MPU if enable is 0, otherwise enable MPU
+ *
+ * return 0 on success or error code
+ */
+int dcs_mpu_protection(int enable)
+{
+	emi_mpu_set_region_protection((unsigned long long)mpu_start,
+			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
+			enable ? MPU_ACCESS_PERMISSON_FORBIDDEN :
+				MPU_ACCESS_PERMISSON_NO_PROTECTION);
+
+	pr_info("%s MPU\n", enable ? "enable" : "disable");
+
+	return 0;
+}
+
 static ssize_t mtkdcs_status_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -650,6 +673,8 @@ static ssize_t mtkdcs_status_show(struct device *dev,
 				dcs_sysfs_mode_name[dcs_sysfs_mode]);
 		n += sprintf(buf + n, "dcs lbw_start=%llx, lbw_end=%llx\n",
 				lbw_start, lbw_end);
+		n += sprintf(buf + n, "dcs mpu_start=%llx, mpu_end=%llx\n",
+				mpu_start, mpu_end);
 		dcs_get_dcs_status_unlock();
 	}
 
@@ -771,6 +796,10 @@ static int __init mtkdcs_init(void)
 
 	/* sanity check */
 	BUILD_BUG_ON(DCS_NR_KICKER > BITS_PER_LONG);
+
+	/* get mpu region (high address) */
+	mpu_start = get_max_DRAM_size() / 2 + PHYS_OFFSET;
+	mpu_end = get_max_DRAM_size() + PHYS_OFFSET;
 
 	/* Start a kernel thread */
 	dcs_thread = kthread_run(dcs_thread_entry, NULL, "dcs_thread");
