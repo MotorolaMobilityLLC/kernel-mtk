@@ -6279,7 +6279,7 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, in
 	if (ngtask_out && nginfo && nginfo->ngtask)
 		*ngtask_out = nginfo->ngtask;
 
-	if (module_out && irq_flag_out && inst_a_out && inst_b_out) {
+	if (module_out && irq_flag_out && inst_a_out && inst_b_out && nginfo) {
 		*module_out = nginfo->module;
 		*irq_flag_out = nginfo->irq_flag;
 		*inst_a_out = nginfo->inst[1];
