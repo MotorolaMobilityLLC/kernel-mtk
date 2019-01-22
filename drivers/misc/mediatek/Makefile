@@ -84,6 +84,7 @@ obj-$(CONFIG_MTK_BOOT) += boot/
 obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
+obj-$(CONFIG_MTK_TRNG_DRIVER) += trng/
 obj-y += devinfo/
 obj-$(CONFIG_CRYPTO_DEV_DX_CC63P) += dxcc/
 obj-$(CONFIG_MTK_LCM) += lcm/
