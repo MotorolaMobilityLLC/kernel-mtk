@@ -1141,7 +1141,6 @@ bool is_md_c2k_conn_power_off(void)
 }
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-static u32 pmic_rg_auxadc_ck_pdn_hwen;
 static u32 pmic_rg_efuse_ck_pdn;
 #endif
 
@@ -1149,15 +1148,6 @@ void __spm_backup_pmic_ck_pdn(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-	pmic_read_interface_nolock(PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
-				   &pmic_rg_auxadc_ck_pdn_hwen,
-				   PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
-				   PMIC_RG_AUXADC_CK_PDN_HWEN_SHIFT);
-	pmic_config_interface_nolock(PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
-				     0,
-				     PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
-				     PMIC_RG_AUXADC_CK_PDN_HWEN_SHIFT);
-
 	pmic_read_interface_nolock(PMIC_RG_EFUSE_CK_PDN_ADDR,
 				   &pmic_rg_efuse_ck_pdn,
 				   PMIC_RG_EFUSE_CK_PDN_MASK,
@@ -1168,14 +1158,6 @@ void __spm_backup_pmic_ck_pdn(void)
 				     PMIC_RG_EFUSE_CK_PDN_SHIFT);
 #else
 	/* PMIC setting 2015/07/31 by Chia-Lin/Kev */
-	pmic_read_interface_nolock(MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
-				   &pmic_rg_auxadc_ck_pdn_hwen,
-				   MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
-				   MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_SHIFT);
-	pmic_config_interface_nolock(MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
-				     0,
-				     MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
-				     MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_SHIFT);
 
 	pmic_read_interface_nolock(MT6351_PMIC_RG_EFUSE_CK_PDN_ADDR,
 				   &pmic_rg_efuse_ck_pdn,
@@ -1193,22 +1175,12 @@ void __spm_restore_pmic_ck_pdn(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
-	pmic_config_interface_nolock(PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
-				     pmic_rg_auxadc_ck_pdn_hwen,
-				     PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
-				     PMIC_RG_AUXADC_CK_PDN_HWEN_SHIFT);
-
 	pmic_config_interface_nolock(PMIC_RG_EFUSE_CK_PDN_ADDR,
 				     pmic_rg_efuse_ck_pdn,
 				     PMIC_RG_EFUSE_CK_PDN_MASK,
 				     PMIC_RG_EFUSE_CK_PDN_SHIFT);
 #else
 	/* PMIC setting 2015/07/31 by Chia-Lin/Kev */
-	pmic_config_interface_nolock(MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
-				     pmic_rg_auxadc_ck_pdn_hwen,
-				     MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
-				     MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_SHIFT);
-
 	pmic_config_interface_nolock(MT6351_PMIC_RG_EFUSE_CK_PDN_ADDR,
 				     pmic_rg_efuse_ck_pdn,
 				     MT6351_PMIC_RG_EFUSE_CK_PDN_MASK,
