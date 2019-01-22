@@ -737,7 +737,11 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 			break;
 		}
 	}
-
+	if (region_start > MVA_MAX_BLOCK_NR) {
+		M4UMSG("%s:alloc mva fail,no available MVA for %d blocks\n", __func__, nr);
+		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+		return 0;
+	}
 	region_end = region_start + MVA_GET_NR(region_start) - 1;
 
 	if (next_region_start == 0) {
