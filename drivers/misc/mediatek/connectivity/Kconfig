@@ -279,3 +279,11 @@ config MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
 	  if the project is no deep sleep design,
 	  host can`t wake up chip form deep sleep,
 	  we must close this config.
+
+config MTK_CONN_MT3337_CHIP_SUPPORT
+	bool "Mediatek MT3337 device driver support"
+	help
+	  This config is used to enable or disble chip 3337's gps driver.
+	  MT3337 is gps only chip without BT and wifi,
+	  it is powered on by new gps driver.
+	  Otherwise we must close this config.
