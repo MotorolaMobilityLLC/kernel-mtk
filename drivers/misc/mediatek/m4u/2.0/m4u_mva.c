@@ -501,13 +501,21 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, uns
 int m4u_do_mva_free(unsigned int mva, unsigned int size)
 {
 	short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	short nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
-	short endIdx = startIdx + nr - 1;
+	short nr;
+	short endIdx;
 	unsigned int startRequire, endRequire, sizeRequire;
 	short nrRequire;
 	unsigned long irq_flags;
 
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
+	if (startIdx == 0 || startIdx > MVA_MAX_BLOCK_NR) {
+		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+
+		M4UMSG("mvaGraph index is 0. mva=0x%x\n", mva);
+		return -1;
+	}
+	nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
+	endIdx = startIdx + nr - 1;
 	/* -------------------------------- */
 	/* check the input arguments */
 	/* right condition: startIdx is not NULL && region is busy && right module && right size */
