@@ -2641,6 +2641,42 @@ static int fgauge_get_info(struct gauge_device *gauge_dev, enum gauge_info ginfo
 	return 0;
 }
 
+int fgauge_set_battery_cycle_interrupt(struct gauge_device *gauge_dev, int threshold)
+{
+	long long car = threshold;
+	long long carReg;
+
+	pmic_enable_interrupt(FG_N_CHARGE_L_NO, 0, "GM30");
+
+	car = car * CAR_TO_REG_FACTOR;
+	if (fg_cust_data.r_fg_value != 100) {
+		car = (car * fg_cust_data.r_fg_value);
+		do_div(car, 100);
+	}
+
+	car = car * 1000;
+	do_div(car, fg_cust_data.car_tune_value);
+
+	carReg = car + 5;
+	do_div(carReg, 10);
+	carReg = 0 - carReg;
+
+	pmic_set_register_value(PMIC_FG_N_CHARGE_LTH_15_14, (carReg & 0xffff)>>14);
+	pmic_set_register_value(PMIC_FG_N_CHARGE_LTH_31_16, (carReg & 0xffff0000) >> 16);
+
+	bm_debug("car:%d carR:%lld r:%lld current:low:0x%x high:0x%x target:low:0x%x high:0x%x",
+		threshold, car, carReg,
+		pmic_get_register_value(PMIC_FG_NCAR_15_00),
+		pmic_get_register_value(PMIC_FG_NCAR_31_16),
+		pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_15_14),
+		pmic_get_register_value(PMIC_FG_N_CHARGE_LTH_31_16));
+
+	pmic_enable_interrupt(FG_N_CHARGE_L_NO, 1, "GM30");
+
+	return 0;
+
+}
+
 static struct gauge_ops mt6335_gauge_ops = {
 	.gauge_initial = fgauge_initial,
 	.gauge_read_current = fgauge_read_current,
@@ -2656,6 +2692,7 @@ static struct gauge_ops mt6335_gauge_ops = {
 	.gauge_get_zcv = fgauge_get_zcv,
 	.gauge_is_gauge_initialized = fgauge_is_gauge_initialized,
 	.gauge_set_gauge_initialized = fgauge_set_gauge_initialized,
+	.gauge_set_battery_cycle_interrupt = fgauge_set_battery_cycle_interrupt,
 	.gauge_reset_shutdown_time = fgauge_reset_shutdown_time,
 	.gauge_reset_ncar = fgauge_reset_ncar,
 	.gauge_set_nag_zcv = fgauge_set_nag_zcv,
