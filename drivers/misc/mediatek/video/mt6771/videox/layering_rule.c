@@ -166,10 +166,18 @@ static bool has_rsz_layer(struct disp_layer_info *disp_info, int disp_idx)
 	return false;
 }
 
-static void scale_ratio(struct layer_config *input, int *ratio_x, int *ratio_y)
+static bool same_ratio(struct layer_config *basic, struct layer_config *tgt)
 {
-	*ratio_x = input->dst_width  * 100 / input->src_width;
-	*ratio_y = input->dst_height * 100 / input->src_height;
+	int diff_w = tgt->dst_width * basic->src_width / basic->dst_width
+				- tgt->src_width;
+	int diff_h = tgt->dst_height * basic->src_height / basic->dst_height
+				- tgt->src_height;
+
+	if (diff_w > 1 || diff_w < -1 ||
+		diff_h > 1 || diff_h < -1)
+		return false;
+
+	return true;
 }
 
 static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
@@ -177,15 +185,12 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 {
 	int i = 0;
 	struct layer_config *c = NULL;
+	struct layer_config *basic_layer = NULL;
 	int gpu_rsz_idx = 0;
 	struct disp_rect src_layer_roi = {0, 0, 0, 0};
 	struct disp_rect src_total_roi = {0, 0, 0, 0};
 	struct disp_rect dst_layer_roi = {0, 0, 0, 0};
 	struct disp_rect dst_total_roi = {0, 0, 0, 0};
-	int all_ratio_x = 1;
-	int all_ratio_y = 1;
-	int layer_ratio_x = 1;
-	int layer_ratio_y = 1;
 
 	*has_dim_layer = false;
 	*rsz_idx = -1;
@@ -225,11 +230,9 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 			break;
 
 		/* if greater than one layer need check ratio is same */
-		scale_ratio(c, &layer_ratio_x, &layer_ratio_y);
 		if ((i == 0 && !*has_dim_layer) || (i == 1 && *has_dim_layer)) {
-			all_ratio_x = layer_ratio_x;
-			all_ratio_y = layer_ratio_y;
-		} else if (all_ratio_x != layer_ratio_x || all_ratio_y != layer_ratio_y)
+			basic_layer = c;
+		} else if (!same_ratio(basic_layer, c))
 			break;
 
 		rect_make(&src_layer_roi,
@@ -244,8 +247,14 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 		rect_join(&dst_layer_roi, &dst_total_roi, &dst_total_roi);
 
 		if (src_total_roi.width > dst_total_roi.width ||
-			src_total_roi.height > dst_total_roi.height)
+			src_total_roi.height > dst_total_roi.height) {
+			DISPERR("layer%d leads RSZ scale-down(%d,%d,%d,%d)->(%d,%d,%d,%d)\n",
+					i, src_total_roi.x, src_total_roi.y,
+					src_total_roi.width, src_total_roi.height,
+					dst_total_roi.x, dst_total_roi.y,
+					dst_total_roi.width, dst_total_roi.height);
 			break;
+		}
 
 		if (src_total_roi.width > RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN ||
 			src_total_roi.height > RSZ_IN_MAX_HEIGHT)
