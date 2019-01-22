@@ -1097,6 +1097,8 @@ PVRSRVStatsInitialise(void)
 
 		bProcessStatsInitialised = IMG_TRUE;
 	}
+	mtk_get_gpu_memory_usage_fp = MTKGetMemStat;
+	mtk_dump_gpu_memory_usage_fp = MTKGetMemStatDump;
 	return error;
 e1:
 	OSLockDestroy(gpsSizeTrackingHashTableLock);
