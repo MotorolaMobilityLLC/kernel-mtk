@@ -244,13 +244,16 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	{
 #ifdef ENABLE_COMMON_DVFS
 
-	long long llDiff = 0;
-	bool bHWEventKick = false;
-	unsigned long long temp;
-
-	unsigned long t;
+#ifndef GED_ENABLE_FB_DVFS
 	long phase = 0;
+	unsigned long t;
+	bool bHWEventKick = false;
+	long long llDiff = 0;
+#endif
+
+	unsigned long long temp;
 	unsigned long ul3DFenceDoneTime;
+
 
 	psQueryData->bFirstBorn = ged_sw_vsync_event(true);
 
@@ -260,7 +263,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	/*psQueryData->ulWorkingPeriod_us = g_ulWorkingPeriod_us;
 	psQueryData->ulPreCalResetTS_us = g_ulCalResetTS_us; // IMPORTANT*/
 
-	temp = ged_get_time();
+	hw_vsync_ts = temp = ged_get_time();
 
 
 	if(g_gpu_timer_based_emu)
@@ -273,7 +276,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 
 #ifdef GED_ENABLE_FB_DVFS
 	return GED_ERROR_INTENTIONAL_BLOCK;
-#endif
+#else
 
 
 	/*critical session begin*/
@@ -360,7 +363,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 			ged_dvfs_run(0, 0, 0);
 		}
 	}
-
+#endif
 #else
 #if 0
 	GED_NOTIFY_SW_SYNC* psNotify;
