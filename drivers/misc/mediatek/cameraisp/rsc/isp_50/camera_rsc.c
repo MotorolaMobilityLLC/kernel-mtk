@@ -1219,7 +1219,7 @@ signed int CmdqRSCHW(struct frame *frame)
 	struct cmdqRecStruct *handle;
 	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_RSC);
 #endif
-	if (frame == NULL)
+	if (frame == NULL && frame->data == NULL)
 		return -1;
 
 	LOG_DBG("%s request sent to CMDQ driver", __func__);
@@ -1990,7 +1990,7 @@ static signed int RSC_WaitIrq(struct RSC_WAIT_IRQ_STRUCT *WaitIrq)
 	/* check if user is interrupted by system signal */
 	if ((Timeout != 0) &&
 		(!RSC_GetIRQState(WaitIrq->Type, WaitIrq->UserKey, WaitIrq->Status, whichReq, WaitIrq->ProcessID))) {
-		LOG_DBG("interrupted by system, timeout(%d),irq Type/User/Sts/whichReq/Pid(0x%x/%d/0x%x/%d/%d)\n",
+		LOG_ERR("interrupted by system, timeout(%d),irq Type/User/Sts/whichReq/Pid(0x%x/%d/0x%x/%d/%d)\n",
 		Timeout, WaitIrq->Type, WaitIrq->UserKey, WaitIrq->Status, whichReq, WaitIrq->ProcessID);
 		Ret = -ERESTARTSYS;	/* actually it should be -ERESTARTSYS */
 		goto EXIT;
@@ -3020,7 +3020,7 @@ static signed int RSC_release(struct inode *pInode, struct file *pFile)
 	} else
 		spin_unlock(&(RSCInfo.SpinLockRSCRef));
 	/*  */
-	LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), last user",
+	LOG_INF("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), last user",
 		RSCInfo.UserCount, current->comm, current->pid, current->tgid);
 
 
