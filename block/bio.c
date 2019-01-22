@@ -917,6 +917,9 @@ void bio_advance(struct bio *bio, unsigned bytes)
 		bio_integrity_advance(bio, bytes);
 
 	bio_advance_iter(bio, &bio->bi_iter, bytes);
+
+	/* also advance bc_iv in behind bio for hie */
+	bio->bi_crypt_ctx.bc_iv += (bytes >> PAGE_SHIFT);
 }
 EXPORT_SYMBOL(bio_advance);
 
