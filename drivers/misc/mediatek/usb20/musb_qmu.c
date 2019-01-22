@@ -51,7 +51,7 @@ enum {
 	IDLE_STAGE,
 	RUNNING_STAGE
 };
-#define MONITOR_FREQ 3000 /* ms */
+#define MONITOR_FREQ 6000 /* ms */
 static void do_low_power_timer_monitor_work(struct work_struct *work)
 {
 	static int state = IDLE_STAGE;
@@ -181,12 +181,12 @@ void do_low_power_timer_test_work(struct work_struct *work)
 	unsigned long flags;
 	signed int set_time;
 	unsigned long int diff_time_ns;
-	int gdp_free_count_last, gdp_free_count;
+	int gpd_free_count_last, gpd_free_count;
 	int done = 0;
 
 	spin_lock_irqsave(&mtk_musb->lock, flags);
-	gdp_free_count = qmu_free_gpd_count(0, ISOC_EP_START_IDX);
-	gdp_free_count_last = gdp_free_count;
+	gpd_free_count = qmu_free_gpd_count(0, ISOC_EP_START_IDX);
+	gpd_free_count_last = gpd_free_count;
 	spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
 	while (!done) {
@@ -194,9 +194,9 @@ void do_low_power_timer_test_work(struct work_struct *work)
 		udelay(300);
 
 		spin_lock_irqsave(&mtk_musb->lock, flags);
-		gdp_free_count = qmu_free_gpd_count(0, ISOC_EP_START_IDX);
+		gpd_free_count = qmu_free_gpd_count(0, ISOC_EP_START_IDX);
 
-		if (gdp_free_count == gdp_free_count_last) {
+		if (gpd_free_count == gpd_free_count_last) {
 			ktime_end = ktime_get();
 			diff_time_ns = ktime_to_us(ktime_sub(ktime_end, ktime_begin));
 			set_time = (low_power_timer_request_time - (diff_time_ns/1000));
@@ -204,7 +204,7 @@ void do_low_power_timer_test_work(struct work_struct *work)
 			done = 1;
 		}
 
-		gdp_free_count_last = gdp_free_count;
+		gpd_free_count_last = gpd_free_count;
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 	}
 }
@@ -472,7 +472,7 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 	dma_addr_t pBuffer;
 	u32 dwLength;
 	u16 i;
-	u32 gdp_free_count = 0;
+	u32 gpd_free_count = 0;
 
 	if (!urb) {
 		QMU_WARN("!urb\n");
@@ -547,15 +547,15 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 		mtk_qmu_enable(musb, hw_ep->epnum, isRx);
 	}
 
-	gdp_free_count = qmu_free_gpd_count(isRx, hw_ep->epnum);
+	gpd_free_count = qmu_free_gpd_count(isRx, hw_ep->epnum);
 	if (qh->type == USB_ENDPOINT_XFER_ISOC) {
-		u32 gdp_used_count;
+		u32 gpd_used_count;
 
 		DBG(4, "USB_ENDPOINT_XFER_ISOC\n");
 		pBuffer = urb->transfer_dma;
 
-		if (gdp_free_count < urb->number_of_packets) {
-			DBG(0, "gdp_free_count:%d, number_of_packets:%d\n", gdp_free_count, urb->number_of_packets);
+		if (gpd_free_count < urb->number_of_packets) {
+			DBG(0, "gpd_free_count:%d, number_of_packets:%d\n", gpd_free_count, urb->number_of_packets);
 			DBG(0, "%s:%d Error Here\n", __func__, __LINE__);
 			return -ENOSPC;
 		}
@@ -571,11 +571,11 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			mtk_qmu_resume(hw_ep->epnum, isRx);
 		}
 
-		gdp_used_count = qmu_used_gpd_count(isRx, hw_ep->epnum);
+		gpd_used_count = qmu_used_gpd_count(isRx, hw_ep->epnum);
 
 		if (!isRx) {
-			if (mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum] < gdp_used_count)
-				mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum] = gdp_used_count;
+			if (mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum] < gpd_used_count)
+				mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum] = gpd_used_count;
 
 			if (mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum] < urb->number_of_packets)
 				mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum] = urb->number_of_packets;
@@ -595,16 +595,17 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 					&& mtk_host_active_dev_cnt == 1
 					&& hw_ep->epnum == ISOC_EP_START_IDX
 					&& usb_on_sram
-					&& audio_on_sram) {
+					&& audio_on_sram
+					&& (mtk_host_qmu_rx_max_active_isoc_gpd[ISOC_EP_START_IDX] == 0)) {
 				if (urb->dev->speed == USB_SPEED_FULL)
-					low_power_timer_sleep(gdp_used_count * 2 / 3);
+					low_power_timer_sleep(gpd_used_count * 3 / 4);
 				else
-					low_power_timer_sleep(gdp_used_count * 2 / 3 / 8);
+					low_power_timer_sleep(gpd_used_count * 2 / 3 / 8);
 			}
 #endif
 		} else {
-			if (mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum] < gdp_used_count)
-				mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum] = gdp_used_count;
+			if (mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum] < gpd_used_count)
+				mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum] = gpd_used_count;
 
 			if (mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum] < urb->number_of_packets)
 				mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum] = urb->number_of_packets;
@@ -622,9 +623,9 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 		QMU_WARN("non isoc\n");
 		pBuffer = urb->transfer_dma;
 		if (urb->transfer_buffer_length < QMU_RX_SPLIT_THRE) {
-			if (gdp_free_count < 1) {
-				DBG(0, "gdp_free_count:%d, number_of_packets:%d\n",
-						gdp_free_count, urb->number_of_packets);
+			if (gpd_free_count < 1) {
+				DBG(0, "gpd_free_count:%d, number_of_packets:%d\n",
+						gpd_free_count, urb->number_of_packets);
 				DBG(0, "%s:%d Error Here\n", __func__, __LINE__);
 				return -ENOSPC;
 			}
@@ -639,9 +640,9 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			/*reuse isoc urb->unmber_of_packets*/
 			urb->number_of_packets =
 				((urb->transfer_buffer_length) + QMU_RX_SPLIT_BLOCK_SIZE-1)/(QMU_RX_SPLIT_BLOCK_SIZE);
-			if (gdp_free_count < urb->number_of_packets) {
-				DBG(0, "gdp_free_count:%d, number_of_packets:%d\n",
-						gdp_free_count, urb->number_of_packets);
+			if (gpd_free_count < urb->number_of_packets) {
+				DBG(0, "gpd_free_count:%d, number_of_packets:%d\n",
+						gpd_free_count, urb->number_of_packets);
 				DBG(0, "%s:%d Error Here\n", __func__, __LINE__);
 				return -ENOSPC;
 			}
