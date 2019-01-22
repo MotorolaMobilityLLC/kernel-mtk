@@ -797,7 +797,7 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, mtk);
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	hcd->regs = devm_ioremap_resource(dev, res);
+	hcd->regs = devm_ioremap(dev, res->start, resource_size(res));
 	if (IS_ERR(hcd->regs)) {
 		ret = PTR_ERR(hcd->regs);
 		goto put_usb2_hcd;
@@ -808,7 +808,7 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 	mtk->ippc_regs = NULL;
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (res) {	/* ippc register is optional */
-		mtk->ippc_regs = devm_ioremap_resource(dev, res);
+		mtk->ippc_regs = devm_ioremap(dev, res->start, resource_size(res));
 		if (IS_ERR(mtk->ippc_regs)) {
 			ret = PTR_ERR(mtk->ippc_regs);
 			goto put_usb2_hcd;
