@@ -177,7 +177,49 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 }
 #endif
 
-VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType)
+static VOID
+firmwareHexDump(const PUCHAR pucPreFix, INT_32 i4PreFixType,
+		    INT_32 i4RowSize, INT_32 i4GroupSize,
+		    const PVOID pvBuf, size_t len, BOOL fgAscii)
+{
+#define OLD_KBUILD_MODNAME KBUILD_MODNAME
+#undef KBUILD_MODNAME
+#define KBUILD_MODNAME "wlan_mt6632_fw"
+
+	const PUINT_8 pucPtr = pvBuf;
+	INT_32 i, i4LineLen, i4Remaining = len;
+	UCHAR ucLineBuf[32 * 3 + 2 + 32 + 1];
+
+	if (i4RowSize != 16 && i4RowSize != 32)
+		i4RowSize = 16;
+
+	for (i = 0; i < len; i += i4RowSize) {
+		i4LineLen = min(i4Remaining, i4RowSize);
+		i4Remaining -= i4RowSize;
+
+		/* use kernel API */
+		hex_dump_to_buffer(pucPtr + i, i4LineLen, i4RowSize, i4GroupSize,
+				   ucLineBuf, sizeof(ucLineBuf), fgAscii);
+
+		switch (i4PreFixType) {
+		case DUMP_PREFIX_ADDRESS:
+			pr_debug("%s%p: %s\n",
+			       pucPreFix, pucPtr + i, ucLineBuf);
+			break;
+		case DUMP_PREFIX_OFFSET:
+			pr_debug("%s%.8x: %s\n", pucPreFix, i, ucLineBuf);
+			break;
+		default:
+			pr_debug("%s%s\n", pucPreFix, ucLineBuf);
+			break;
+		}
+	}
+#undef KBUILD_MODNAME
+#define KBUILD_MODNAME OLD_KBUILD_MODNAME
+}
+
+VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType,
+	const PUCHAR pucFmt, ...)
 {
 #define OLD_KBUILD_MODNAME KBUILD_MODNAME
 #define OLD_LOG_FUNC LOG_FUNC
@@ -185,6 +227,10 @@ VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType)
 #undef LOG_FUNC
 #define KBUILD_MODNAME "wlan_mt6632_fw"
 #define LOG_FUNC pr_debug
+#define DBG_LOG_BUF_SIZE 128
+
+	CHAR aucLogBuffer[DBG_LOG_BUF_SIZE];
+	va_list args;
 
 	if (u2MsgSize > DEBUG_MSG_SIZE_MAX - 1) {
 		LOG_FUNC("Firmware Log Size(%d) is too large, type %d\n", u2MsgSize, ucMsgType);
@@ -195,11 +241,21 @@ VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType)
 		pucLogContent[u2MsgSize] = '\0';
 		LOG_FUNC("%s\n", pucLogContent);
 		break;
+	case DEBUG_MSG_TYPE_DRIVER:
+		/* Only 128 Bytes is available to print in driver */
+		va_start(args, pucFmt);
+		vsnprintf(aucLogBuffer, sizeof(aucLogBuffer) - 1, pucFmt, args);
+		va_end(args);
+		aucLogBuffer[DBG_LOG_BUF_SIZE - 1] = '\0';
+		LOG_FUNC("%s\n", aucLogBuffer);
+		break;
 	case DEBUG_MSG_TYPE_MEM8:
-		DBGLOG_MEM8(RX, INFO, pucLogContent, u2MsgSize);
+		firmwareHexDump("fw data:", DUMP_PREFIX_ADDRESS,
+			16, 1, pucLogContent, u2MsgSize, true);
 		break;
 	default:
-		DBGLOG_MEM32(RX, INFO, (PUINT_32)pucLogContent, u2MsgSize);
+		firmwareHexDump("fw data:", DUMP_PREFIX_ADDRESS,
+			16, 4, pucLogContent, u2MsgSize, true);
 		break;
 	}
 
