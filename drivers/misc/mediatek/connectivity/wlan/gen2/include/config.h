@@ -301,7 +301,7 @@
  */
 
 /*! Maximum number of SW TX packet queue */
-#define CFG_TX_MAX_PKT_NUM                      512	/*
+#define CFG_TX_MAX_PKT_NUM                      4096	/*
 							 * 256 must >= CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD * 2;
 							 * or wmm will fail when queue is full
 							 */
@@ -326,7 +326,7 @@
 #define CFG_NUM_OF_RX1_HIF_DESC                 2
 
 /*! Max. buffer hold by QM */
-#define CFG_NUM_OF_QM_RX_PKT_NUM                120
+#define CFG_NUM_OF_QM_RX_PKT_NUM                4096
 
 /*! Maximum number of SW RX packet buffer */
 #define CFG_RX_MAX_PKT_NUM                      ((CFG_NUM_OF_RX0_HIF_DESC + CFG_NUM_OF_RX1_HIF_DESC) * 3 \
@@ -458,6 +458,7 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_MULTI_SSID_SCAN			1
+#define CFG_NLO_MSP 0 /* NLO/PNO Multiple Scan Plan */
 #define CFG_SCAN_SSID_MAX_NUM                   (10)
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
 
@@ -736,6 +737,8 @@
 #define CFG_SUPPORT_WFD_COMPOSE_IE          1
 
 #define CFG_SUPPORT_CPU_BOOST			0
+
+#define CFG_SUPPORT_TX_BACKOFF              0
 /*------------------------------------------------------------------------------
  * Flags of Packet Lifetime Profiling Mechanism
  *------------------------------------------------------------------------------
@@ -748,6 +751,7 @@
 #define CFG_PRINT_RTP_SN_SKIP               0
 
 #define CFG_SUPPORT_PWR_LIMIT_COUNTRY       1
+#define CFG_SUPPORT_MTK_SYNERGY             1
 /*------------------------------------------------------------------------------
  * Flags of bus error tolerance
  *------------------------------------------------------------------------------
@@ -824,7 +828,7 @@
 /*Branch: 00 for Trunk, 01->mp1,02->mp2*/
 /*Date: relase date*/
 /*Serial Number :start form 1*/
-#define WIFI_DRIVER_VERSION		"11_70_00_20161025_1"
+#define WIFI_DRIVER_VERSION		"11_70_00_20161205_2"
 
 /*******************************************************************************
 *                           P R I V A T E   D A T A

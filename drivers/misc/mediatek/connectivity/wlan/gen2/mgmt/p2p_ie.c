@@ -559,7 +559,7 @@ VOID p2pFuncComposeNoaAttribute(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsd
 		prNoaAttr->ucCTWOppPSParam = 0;
 	}
 	/*NoA Description */
-	DBGLOG(P2P, INFO, "Compose NoA count=%d.\n", prP2pSpecificBssInfo->ucNoATimingCount);
+	DBGLOG(P2P, TRACE, "Compose NoA count=%d.\n", prP2pSpecificBssInfo->ucNoATimingCount);
 	for (i = 0; i < prP2pSpecificBssInfo->ucNoATimingCount; i++) {
 		if (prP2pSpecificBssInfo->arNoATiming[i].fgIsInUse) {
 

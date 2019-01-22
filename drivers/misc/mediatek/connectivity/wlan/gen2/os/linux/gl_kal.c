@@ -1852,6 +1852,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 		kalHaltUnlock();
 		return WLAN_STATUS_FAILURE;
 	}
+	rHaltCtrl.fgHeldByKalIoctl = TRUE;
 
 	/* <2> TODO: thread-safe */
 
@@ -1913,6 +1914,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 #endif
 	DBGLOG(OID, TEMP, "kalIoctl: done\n");
 	up(&prGlueInfo->ioctl_sem);
+	rHaltCtrl.fgHeldByKalIoctl = FALSE;
 	kalHaltUnlock();
 
 	return ret;
@@ -3223,7 +3225,6 @@ UINT_8 kalGetPktEtherType(IN PUINT_8 pucPkt)
 
 	return ucResult;
 }
-
 /*----------------------------------------------------------------------------*/
 /*!
  * \brief
@@ -3480,7 +3481,7 @@ kalIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 		    ieee80211_get_channel(wiphy, ieee80211_channel_to_frequency(ucChannelNum, IEEE80211_BAND_5GHZ));
 	}
 
-	if (prChannel != NULL && (prGlueInfo->prScanRequest != NULL || prGlueInfo->prSchedScanRequest != NULL)) {
+	if (prChannel != NULL && prGlueInfo->fgIsRegistered == TRUE) {
 		struct cfg80211_bss *bss;
 #if CFG_SUPPORT_TSF_USING_BOOTTIME
 		struct ieee80211_mgmt *prMgmtFrame = (struct ieee80211_mgmt *)pucBeaconProbeResp;

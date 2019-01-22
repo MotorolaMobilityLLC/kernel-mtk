@@ -325,6 +325,21 @@ VOID dumpBss(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo)
 
 }
 
+UINT_32 swCrGetDNSRxFilter(VOID)
+{
+	UINT_32 u2RetRxFilter = 0;
+
+	if (g_u4mDNSRXFilter & RX_MDNS_FILTER_IPV4)
+		u2RetRxFilter |= PARAM_PACKET_FILTER_ALL_MULTICAST;
+	else
+		u2RetRxFilter |= PARAM_PACKET_FILTER_MULTICAST;
+
+	DBGLOG(SW4, TRACE, "[MC debug]swCrGetDNSRxFilter %x\n", u2RetRxFilter);
+
+	return u2RetRxFilter;
+}
+
+
 VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, UINT_8 ucOpt0, UINT_8 ucOpt1)
 {
 	UINT_8 ucIndex, ucRead;
@@ -371,20 +386,13 @@ VOID swCtrlCmdCategory0(P_ADAPTER_T prAdapter, UINT_8 ucCate, UINT_8 ucAction, U
 				if (ucOpt0 == SWCR_RX_MDNS_FILTER_CMD_STOP) {
 					g_u4mDNSRXFilter &= ~(RX_MDNS_FILTER_START);
 
-					prAdapter->u4OsPacketFilter &= ~PARAM_PACKET_FILTER_MULTICAST;
-					u4rxfilter = prAdapter->u4OsPacketFilter;
+					u4rxfilter = prAdapter->u4OsPacketFilter & (
+						~PARAM_PACKET_FILTER_MULTICAST | ~PARAM_PACKET_FILTER_ALL_MULTICAST);
 					fgUpdate = TRUE;
 				} else if (ucOpt0 == SWCR_RX_MDNS_FILTER_CMD_START) {
 					g_u4mDNSRXFilter |= (RX_MDNS_FILTER_START);
 
-					if ((g_u4mDNSRXFilter & RX_MDNS_FILTER_IPV4) ||
-					    (g_u4mDNSRXFilter & RX_MDNS_FILTER_IPV6)) {
-						prAdapter->u4OsPacketFilter |= PARAM_PACKET_FILTER_MULTICAST;
-#if 0
-						u4rxfilter |= PARAM_PACKET_FILTER_ALL_MULTICAST;
-#endif
-					}
-					u4rxfilter = prAdapter->u4OsPacketFilter;
+					u4rxfilter = prAdapter->u4OsPacketFilter | swCrGetDNSRxFilter();
 					fgUpdate = TRUE;
 				} else if (ucOpt0 == SWCR_RX_MDNS_FILTER_CMD_ADD) {
 					if (ucOpt1 < 31)

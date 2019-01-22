@@ -716,6 +716,9 @@ kalGetConfigurationVersion(IN P_GLUE_INFO_T prGlueInfo,
 			   OUT PUINT_16 pu2Part1CfgPeerVersion,
 			   OUT PUINT_16 pu2Part2CfgOwnVersion, OUT PUINT_16 pu2Part2CfgPeerVersion);
 
+BOOLEAN kalCfgDataRead(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Offset,
+							IN UINT_32 u4Len, OUT PUINT_16 pu2Data);
+
 BOOLEAN kalCfgDataRead16(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Offset, OUT PUINT_16 pu2Data);
 
 BOOLEAN kalCfgDataWrite16(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Offset, IN UINT_16 u2Data);

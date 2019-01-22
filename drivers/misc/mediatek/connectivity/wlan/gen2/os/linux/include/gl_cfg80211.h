@@ -297,6 +297,7 @@ int	mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow);
 int mtk_cfg80211_resume(struct wiphy *wiphy);
 
 INT_32 mtk_cfg80211_process_str_cmd(P_GLUE_INFO_T prGlueInfo, PUINT_8 cmd, INT_32 len);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

@@ -165,6 +165,10 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 
 	prConnSettings->fgIsAdHocQoSEnable = FALSE;
 
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+		prConnSettings->fgSecModeChangeStartTimer = FALSE;
+#endif
+
 	prConnSettings->eDesiredPhyConfig = PHY_CONFIG_802_11ABGN;
 
 	/* Set default bandwidth modes */
@@ -255,6 +259,11 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 	cnmTimerInitTimer(prAdapter,
 			  &prAisFsmInfo->rDeauthDoneTimer,
 			  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventDeauthTimeout, (ULONG) NULL);
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+		cnmTimerInitTimer(prAdapter,
+				  &prAisFsmInfo->rSecModeChangeTimer,
+				  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventSecModeChangeTimeout, (ULONG) NULL);
+#endif
 
 	cnmTimerInitTimer(prAdapter,
 				  &prAisFsmInfo->rWaitOkcPMKTimer,
@@ -2386,6 +2395,8 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 						 * ASSERT(prBssDesc);
 						 * ASSERT(prBssDesc->fgIsConnecting);
 						 */
+						aisFsmStateAbort(prAdapter,
+							DISCONNECT_REASON_CODE_DEAUTHENTICATED, FALSE);
 						break;
 					}
 					/* ASSERT(prBssDesc); */
@@ -2926,6 +2937,7 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 {
 	P_BSS_INFO_T prAisBssInfo;
 	P_CONNECTION_SETTINGS_T prConnSettings;
+	P_SCAN_INFO_T prScanInfo;
 	BOOLEAN fgFound = TRUE;
 
 	/*
@@ -2941,6 +2953,12 @@ VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_IN
 		prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN) {
 		DBGLOG(AIS, INFO, "CurrentState: %d, don't report disconnect\n",
 				   prAisFsmInfo->eCurrentState);
+		return;
+	}
+
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	if (prScanInfo->eCurrentState == SCAN_STATE_SCANNING) {
+		DBGLOG(AIS, INFO, "SCANNING, don't report disconnect\n");
 		return;
 	}
 
@@ -3782,6 +3800,13 @@ VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 {
 	aisDeauthXmitComplete(prAdapter, NULL, TX_RESULT_LIFE_TIMEOUT);
 }
+#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
+VOID aisFsmRunEventSecModeChangeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
+{
+	DBGLOG(AIS, INFO, "Beacon security mode change timeout, trigger disconnect!\n");
+	aisBssSecurityChanged(prAdapter);
+}
+#endif
 
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 /*----------------------------------------------------------------------------*/

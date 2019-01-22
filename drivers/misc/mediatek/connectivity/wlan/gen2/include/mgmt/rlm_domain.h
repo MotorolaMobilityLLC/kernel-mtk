@@ -277,11 +277,18 @@
 #define COUNTRY_CODE_ZW (((UINT_16) 'Z' << 8) | (UINT_16) 'W')	/* Zimbabwe                            */
 
 #define COUNTRY_CODE_DF (((UINT_16) 'D' << 8) | (UINT_16) 'F')	/* Default country domain              */
-#define COUNTRY_CODE_UDF (((UINT_16) 'U' << 8) | (UINT_16) 'D')	/*
+
+#ifdef CONFIG_MTK_TC1_FEATURE
+#define COUNTRY_CODE_UDF (((UINT_16) 'D' << 8) | (UINT_16) 'C') /*
+								 * Default Country Code, for User
+								 * Defined channel list and passive scan channel list
+								 */
+#else
+#define COUNTRY_CODE_UDF (((UINT_16) 'U' << 8) | (UINT_16) 'D') /*
 								 * User defined supported channel list
 								 * and passive scan channel list
 								 */
-
+#endif
 #define COUNTRY_CODE_FF (((UINT_16) 'F' << 8) | (UINT_16) 'F')	/* enable open for all channel for Certification */
 #define COUNTRY_CODE_FE (((UINT_16) 'F' << 8) | (UINT_16) 'E')	/* disable open for all channel for Certification */
 

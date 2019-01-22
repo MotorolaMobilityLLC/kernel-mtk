@@ -598,6 +598,89 @@ WLAN_STATUS scanSendDeviceDiscoverEvent(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_
 }				/* scanSendDeviceDiscoverEvent */
 
 VOID
+scanP2pUpdateBssChannel(IN UINT_8 ucHwChannel,
+			     IN UINT_8 ucDsChannel,
+			     IN UINT_8 ucHtChannel,
+			     IN P_HIF_RX_HEADER_T prHifRxHdr,
+			     IN P_BSS_DESC_T prBssDesc)
+{
+	DBGLOG(P2P, INFO, "[channel] hw:ds:ht: %d:%d:%d\n",
+			ucHwChannel,
+			ucDsChannel,
+			ucHtChannel);
+	if (prBssDesc->eBand == BAND_2G4) {
+
+		/* Update RCPI if in right channel */
+		if (ucDsChannel >= 1 && ucDsChannel <= 14) {
+
+			/* Receive Beacon/ProbeResp frame from adjacent channel. */
+			if ((ucDsChannel == ucHwChannel) || (prHifRxHdr->ucRcpi > prBssDesc->ucRCPI))
+				prBssDesc->ucRCPI = prHifRxHdr->ucRcpi;
+			/* trust channel information brought by IE */
+			prBssDesc->ucChannelNum = ucDsChannel;
+		} else if (ucHtChannel >= 1 && ucHtChannel <= 14) {
+			/* Receive Beacon/ProbeResp frame from adjacent channel. */
+			if ((ucHtChannel == ucHwChannel) || (prHifRxHdr->ucRcpi > prBssDesc->ucRCPI))
+				prBssDesc->ucRCPI = prHifRxHdr->ucRcpi;
+			/* trust channel information brought by IE */
+			prBssDesc->ucChannelNum = ucHtChannel;
+		} else {
+			prBssDesc->ucRCPI = prHifRxHdr->ucRcpi;
+
+			prBssDesc->ucChannelNum = ucHwChannel;
+		}
+	} else {
+		if (ucHtChannel >= 1 && ucHtChannel < 200) {
+			/* Receive Beacon/ProbeResp frame from adjacent channel. */
+			if ((ucHtChannel == ucHwChannel) || (prHifRxHdr->ucRcpi > prBssDesc->ucRCPI))
+				prBssDesc->ucRCPI = prHifRxHdr->ucRcpi;
+			/* trust channel information brought by IE */
+			prBssDesc->ucChannelNum = ucHtChannel;
+		} else {
+			/* Always update RCPI */
+			prBssDesc->ucRCPI = prHifRxHdr->ucRcpi;
+
+			prBssDesc->ucChannelNum = ucHwChannel;
+		}
+	}
+}
+
+VOID
+scanP2pGetBssChannel(IN P_SW_RFB_T prSwRfb,
+			 OUT PUINT_8 opucDsChannel,
+			 OUT PUINT_8 opucHtChannel)
+{
+	const u8 *pucDsIe;
+	const u8 *pucHtIe;
+	UINT_8 ucDSChannel = 0;
+	UINT_8 ucHTChannel = 0;
+	PUINT_8 pucIe = NULL;
+	UINT_32 u4PacketLen = 0;
+	UINT_32 u4IeLen = 0;
+	struct ieee80211_mgmt *prBcnProbeResponse = NULL;
+
+	u4PacketLen = prSwRfb->u2PacketLen;
+	u4IeLen = u4PacketLen - offsetof(struct ieee80211_mgmt, u.probe_resp.variable);
+	prBcnProbeResponse = prSwRfb->pvHeader;
+	pucIe = prBcnProbeResponse->u.probe_resp.variable;
+
+	pucDsIe = cfg80211_find_ie(ELEM_ID_DS_PARAM_SET, pucIe, u4IeLen);
+	if (pucDsIe && pucDsIe[1] == 1)
+		ucDSChannel = pucDsIe[2];
+
+	pucHtIe = cfg80211_find_ie(ELEM_ID_HT_OP, pucIe, u4IeLen);
+	if (pucHtIe && pucHtIe[1] >= sizeof(struct ieee80211_ht_operation)) {
+
+		struct ieee80211_ht_operation *htop = (void *)(pucHtIe + 2);
+
+		ucHTChannel = htop->primary_chan;
+	}
+
+	*opucDsChannel = ucDSChannel;
+	*opucHtChannel = ucHTChannel;
+}
+
+VOID
 scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 				 IN P_SW_RFB_T prSwRfb,
 				 IN P_WLAN_STATUS prStatus,
@@ -606,6 +689,10 @@ scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 	BOOLEAN fgIsSkipThisBeacon;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	P_P2P_CONNECTION_SETTINGS_T prP2pConnSettings = (P_P2P_CONNECTION_SETTINGS_T) NULL;
+	UINT_8 ucHwChannel = 0;
+	UINT_8 ucDsChannel = 0;
+	UINT_8 ucHtChannel = 0;
+
 
 	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 	prP2pConnSettings = prAdapter->rWifiVar.prP2PConnSettings;
@@ -638,11 +725,27 @@ scanP2pProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter,
 					break;
 			}
 
+			ucHwChannel = HIF_RX_HDR_GET_CHNL_NUM(prSwRfb->prHifRxHdr);
+			prBssDesc->eBand = HIF_RX_HDR_GET_RF_BAND(prSwRfb->prHifRxHdr);
+
+			/*
+			 * Should update channel information separately
+			 */
+			scanP2pGetBssChannel(prSwRfb, &ucDsChannel, &ucHtChannel);
+			scanP2pUpdateBssChannel(ucHwChannel, ucDsChannel, ucHtChannel,
+						prSwRfb->prHifRxHdr,
+						prBssDesc);
 			rChannelInfo.ucChannelNum = prBssDesc->ucChannelNum;
 			rChannelInfo.eBand = prBssDesc->eBand;
 			prBssDesc->fgIsP2PReport = TRUE;
 
-			DBGLOG(P2P, INFO, "indicate %s [%d]\n", prBssDesc->aucSSID, prBssDesc->ucChannelNum);
+			DBGLOG(P2P, INFO, "indicate %s %pM [%s] [channel: %d] [rcpi: %d] update time %u\n",
+				prBssDesc->aucSSID, prWlanBeaconFrame->aucBSSID,
+				(prWlanBeaconFrame->u2FrameCtrl & MASK_FRAME_TYPE) == MAC_FRAME_BEACON ?
+				"beacon" : "probe response",
+				prBssDesc->ucChannelNum,
+				prBssDesc->ucRCPI,
+				prBssDesc->rUpdateTime);
 
 			kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
 					      (PUINT_8) prSwRfb->pvHeader,

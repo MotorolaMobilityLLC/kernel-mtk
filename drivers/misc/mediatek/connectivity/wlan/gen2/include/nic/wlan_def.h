@@ -794,6 +794,14 @@ static const UINT_8 aucRateTableSize[PREAMBLE_OPTION_NUM] = {
 				    ((UINT_32) __cp[2] << 16) | ((UINT_32) __cp[3] << 24); \
 	}
 
+#define WLAN_GET_FIELD_BE32(_memAddr_p, _value_p) \
+	{ \
+		PUINT_8 __cp = (PUINT_8)(_memAddr_p); \
+		*(PUINT_32)(_value_p) = ((UINT_32)__cp[0] << 24) | \
+		    ((UINT_32)__cp[1] << 16) | ((UINT_32)__cp[2] << 8) | \
+		    ((UINT_32)__cp[3]); \
+	}
+
 #define WLAN_GET_FIELD_64(_memAddr_p, _value_p) \
 	{ \
 	    PUINT_8 __cp = (PUINT_8) (_memAddr_p); \

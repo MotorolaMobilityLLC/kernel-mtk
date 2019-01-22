@@ -65,6 +65,15 @@ else
     ccflags-y += -DCFG_TC1_FEATURE=0
 endif
 
+ifeq ($(CONFIG_MTK_TC10_FEATURE), y)
+    ccflags-y += -DCFG_TC10_FEATURE=1
+    ccflags-y += -DCFG_SKIP_MAC_INFO_CHECK
+    ccflags-y += -DCFG_SUPPORT_TX_POWER_BACK_OFF
+    ccflags-y += -DCFG_USE_AOSP_TETHERING_NAME
+else
+    ccflags-y += -DCFG_TC10_FEATURE=0
+endif
+
 MTK_SRAM_SIZE_OPTION=0
 ifeq ($(CONFIG_ARCH_MT6755), y)
     MTK_SRAM_SIZE_OPTION=2
@@ -250,6 +259,10 @@ PLAT_OBJS := $(PLAT_DIR)plat_priv.o
 $(MODULE_NAME)-objs  += $(PLAT_OBJS)
 endif
 
+ifeq ($(CONFIG_ARCH_MT6735), y)
+PLAT_OBJS := $(PLAT_DIR)plat_priv.o
+$(MODULE_NAME)-objs  += $(PLAT_OBJS)
+endif
 
 ifeq ($(CONFIG_ARCH_MT6735M), y)
 PLAT_OBJS := $(PLAT_DIR)plat_priv.o
