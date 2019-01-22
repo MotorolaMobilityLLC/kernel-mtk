@@ -106,9 +106,12 @@ static struct i2c_driver gi2c_driver[IMGSENSOR_I2C_DEV_MAX_NUM] = {
 enum IMGSENSOR_RETURN imgsensor_i2c_create(void)
 {
 	int i;
+	struct IMGSENSOR_I2C_INST *pinst = gi2c.inst;
 
-	for (i = 0; i < IMGSENSOR_I2C_DEV_MAX_NUM; i++)
+	for (i = 0; i < IMGSENSOR_I2C_DEV_MAX_NUM; i++, pinst++) {
 		i2c_add_driver(&gi2c_driver[i]);
+		mutex_init(&pinst->i2c_mutex);
+	}
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }
@@ -132,8 +135,6 @@ enum IMGSENSOR_RETURN imgsensor_i2c_init(
 
 	pi2c_cfg->pinst       = &gi2c.inst[device];
 	pi2c_cfg->pi2c_driver = &gi2c_driver[device];
-
-	mutex_init(&pi2c_cfg->i2c_mutex);
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }
@@ -174,7 +175,7 @@ enum IMGSENSOR_RETURN imgsensor_i2c_read(
 		return IMGSENSOR_RETURN_ERROR;
 	}
 
-	mutex_lock(&pi2c_cfg->i2c_mutex);
+	mutex_lock(&pinst->i2c_mutex);
 
 	pinst->msg[0].addr  = id >> 1;
 	pinst->msg[0].flags = 0;
@@ -200,7 +201,7 @@ enum IMGSENSOR_RETURN imgsensor_i2c_read(
 		ret = IMGSENSOR_RETURN_ERROR;
 	}
 
-	mutex_unlock(&pi2c_cfg->i2c_mutex);
+	mutex_unlock(&pinst->i2c_mutex);
 
 	return ret;
 }
@@ -225,7 +226,7 @@ enum IMGSENSOR_RETURN imgsensor_i2c_write(
 		return IMGSENSOR_RETURN_ERROR;
 	}
 
-	mutex_lock(&pi2c_cfg->i2c_mutex);
+	mutex_lock(&pinst->i2c_mutex);
 
 	while (pdata < pend && i < IMGSENSOR_I2C_CMD_LENGTH_MAX) {
 		pmsg->addr  = id >> 1;
@@ -252,7 +253,7 @@ enum IMGSENSOR_RETURN imgsensor_i2c_write(
 		ret = IMGSENSOR_RETURN_ERROR;
 	}
 
-	mutex_unlock(&pi2c_cfg->i2c_mutex);
+	mutex_unlock(&pinst->i2c_mutex);
 
 	return ret;
 }
