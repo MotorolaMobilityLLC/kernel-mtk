@@ -13,7 +13,6 @@ endif
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 obj-$(CONFIG_MTK_SMART_BATTERY) += mt6358_gauge.o
-#obj-$(CONFIG_MTK_SMART_BATTERY) += mt6357_charger.o
 endif
 
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6358)	+= pmic.o pmic_common.o \
@@ -26,6 +25,6 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6358)	+= pmic.o pmic_common.o \
 		regulator_codegen.o \
 		pmic_lp_api.o \
 		pmic_efuse.o \
-#		pmic_bif.o \
+		pmic_bif.o \
 
 
