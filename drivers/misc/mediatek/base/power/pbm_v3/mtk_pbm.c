@@ -1040,16 +1040,20 @@ static void pbm_allocate_budget_manager(void)
 		pbm_debug("(C/G)=%d,%d => (D/L/M1/F/C/G)=%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
 			 cpu, gpu, dlpt, leakage, md1, flash, tocpu, togpu, multiple, cpu_lower_bound);
 	} else {
-		if ((pre_tocpu != tocpu && cpu > tocpu) || (pre_togpu != togpu && gpu > togpu))
+		if (((abs(pre_tocpu - tocpu) >= 10) && cpu > tocpu) ||
+			((abs(pre_togpu - togpu) >= 10) && gpu > togpu)) {
 			pbm_crit("(C/G)=%d,%d => (D/L/M1/F/C/G)=%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
 				cpu, gpu, dlpt, leakage, md1, flash, tocpu, togpu, multiple, cpu_lower_bound);
-		else if ((cpu > tocpu) || (gpu > togpu))
+			pre_tocpu = tocpu;
+			pre_togpu = togpu;
+		} else if ((cpu > tocpu) || (gpu > togpu)) {
 			pbm_warn_limit("(C/G)=%d,%d => (D/L/M1/F/C/G)=%d,%d,%d,%d,%d,%d (Multi:%d),%d\n",
 				cpu, gpu, dlpt, leakage, md1, flash, tocpu, togpu, multiple, cpu_lower_bound);
+		} else {
+			pre_tocpu = tocpu;
+			pre_togpu = togpu;
+		}
 	}
-
-	pre_tocpu = tocpu;
-	pre_togpu = togpu;
 }
 
 static bool pbm_func_enable_check(void)
