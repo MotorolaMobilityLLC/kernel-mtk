@@ -63,6 +63,24 @@ config MTK_DTBO_FEATURE
 	  in the existing tree.
 	  If you are not sure about this, set y
 
+config MTK_LATE_MOUNT
+	bool "Support late mount for vendor partition"
+	default n
+	help
+	  This config disables early mount for vendor partition
+	  Early mount is requested in new android version
+	  OTA project will disable it to prevent exception
+	  If you are not sure about this, do not set it to y
+
+config TARGET_COPY_OUT_ODM
+	bool "Support ODM partition"
+	default y
+	help
+	  This config decide to enable odm partition
+	  ODM partition is defined in new android version
+	  OTA project will disable it to prevent exception
+	  If you are not sure about this, do not set it to n
+
 config MTK_LDVT
 	bool "LDVT"
 	help
