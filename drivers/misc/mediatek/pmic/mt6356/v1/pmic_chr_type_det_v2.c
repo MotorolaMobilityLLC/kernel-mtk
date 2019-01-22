@@ -41,6 +41,7 @@
 #include <mach/upmu_hw.h>
 #include <mt-plat/mtk_boot.h>
 #include <mt-plat/charger_type.h>
+#include <mt-plat/mtk_boot.h>
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 #include <mt-plat/mtk_usb2jtag.h>
@@ -355,6 +356,14 @@ void do_charger_detect(void)
 	if (!mt_usb_is_device()) {
 		g_chr_type = CHARGER_UNKNOWN;
 		pr_err("charger type: UNKNOWN, Now is usb host mode. Skip detection!!!\n");
+		return;
+	}
+
+	if (is_meta_mode()) {
+		/* Skip charger type detection to speed up meta boot.*/
+		pr_notice("charger type: force Standard USB Host in meta\n");
+		g_chr_type = STANDARD_HOST;
+		chrdet_inform_psy_changed(g_chr_type, 1);
 		return;
 	}
 
