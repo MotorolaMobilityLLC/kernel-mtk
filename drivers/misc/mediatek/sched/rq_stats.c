@@ -374,8 +374,6 @@ EXPORT_SYMBOL(is_ack_curcap);
 
 int is_heavy_task(struct task_struct *p)
 {
-	int is_heavy = 0;
-
 	if (!HEAVY_TASK_ENABLE)
 		return 0;
 
@@ -386,18 +384,10 @@ int is_heavy_task(struct task_struct *p)
 	if (task_low_priority(p->prio))
 		return 0;
 #endif
-	if (unlikely(p->se.load.weight > NICE_0_LOAD)) {
-		/* don't consider weight in heavy task detection */
-		long long task_wop_load = (p->se.avg.load_avg*NICE_0_LOAD)/p->se.load.weight;
+	if (p->se.avg.loadwop_avg >= heavy_task_threshold2)
+		return 1;
 
-		if (task_wop_load >= heavy_task_threshold2)
-			is_heavy = 1;
-	} else {
-		if (p->se.avg.load_avg >= heavy_task_threshold2)
-			is_heavy = 1;
-	}
-
-	return is_heavy;
+	return 0;
 }
 EXPORT_SYMBOL(is_heavy_task);
 
@@ -441,18 +431,7 @@ unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int t
 			if (task_low_priority(p->prio))
 				continue;
 #endif
-			if (unlikely(p->se.load.weight > NICE_0_LOAD)) {
-				/* don't consider weight in heavy task detection */
-				long long task_wop_load = (p->se.avg.load_avg*NICE_0_LOAD)/p->se.load.weight;
-
-				if (task_wop_load >= threshold)
-					is_heavy = 1;
-			} else {
-				if (p->se.avg.load_avg >= threshold)
-					is_heavy = 1;
-			}
-
-			if (is_heavy) {
+			if (p->se.avg.loadwop_avg >= threshold) {
 				is_heavy = ack_by_curcap(cpu, cluster_id, clusters-1);
 				count += is_heavy ? 1 : 0;
 				__trace_out(is_heavy, cpu, p);
