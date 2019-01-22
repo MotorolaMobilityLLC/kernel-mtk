@@ -94,7 +94,7 @@ static const char *scp_state_name[SCP_DTS_GPIO_STATE_MAX] = {
 #endif
 
 /* -1:SCP DVFS OFF, 1:SCP DVFS ON */
-static int scp_dvfs_flag = -1;
+static int scp_dvfs_flag = 1;
 
 /*
  * 0: SCP Sleep: OFF,
@@ -865,6 +865,9 @@ void mt_pmic_sshub_init(void)
 	val[7] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
 	SCP_DBG("After: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
 			val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
+
+	/*  Workaround once force BUCK in NML mode */
+	pmic_set_register_value(PMIC_RG_SRCVOLTEN_LP_EN, 1);
 #endif
 }
 
