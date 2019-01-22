@@ -232,7 +232,7 @@ GED_KPI_HEAD *prev_main_head;
 /* for calculating KPI info per second */
 static unsigned long long g_pre_TimeStamp1;
 static unsigned long long g_pre_TimeStamp2;
-static unsigned long long g_pre_TimeStampH;
+static unsigned long long g_pre_TimeStampS;
 static unsigned long long g_elapsed_time_per_sec;
 static unsigned long long g_cpu_time_accum;
 static unsigned long long g_gpu_time_accum;
@@ -590,17 +590,15 @@ static inline void ged_kpi_calc_kpi_info(u64 ulID, GED_KPI *psKPI, GED_KPI_HEAD 
 		ged_kpi_clean_kpi_info();
 		g_pre_TimeStamp1 = psKPI->ullTimeStamp1;
 		g_pre_TimeStamp2 = psKPI->ullTimeStamp2;
-		g_pre_TimeStampH = psKPI->ullTimeStampH;
+		g_pre_TimeStampS = psKPI->ullTimeStampS;
 		ged_kpi_main_head_reset();
 		prev_main_head = main_head;
 		return;
 	}
 
 	if (psHead == main_head) {
-		g_elapsed_time_per_sec += psKPI->ullTimeStampH - g_pre_TimeStampH;
-		g_response_time_accum += psKPI->ullTimeStampH - g_pre_TimeStamp1;
+		g_elapsed_time_per_sec += psKPI->ullTimeStampS - g_pre_TimeStampS;
 		g_gpu_time_accum += psKPI->t_gpu;
-		g_gpu_remained_time_accum += psKPI->ullTimeStampH - psKPI->ullTimeStamp2;
 		g_cpu_remained_time_accum += psKPI->ullTimeStampS - psKPI->ullTimeStamp1;
 		g_gpu_freq_accum += psKPI->gpu_freq;
 		g_cpu_time_accum += psKPI->ullTimeStamp1 - g_pre_TimeStamp1;
@@ -608,7 +606,7 @@ static inline void ged_kpi_calc_kpi_info(u64 ulID, GED_KPI *psKPI, GED_KPI_HEAD 
 
 		g_pre_TimeStamp1 = psKPI->ullTimeStamp1;
 		g_pre_TimeStamp2 = psKPI->ullTimeStamp2;
-		g_pre_TimeStampH = psKPI->ullTimeStampH;
+		g_pre_TimeStampS = psKPI->ullTimeStampS;
 
 		if (g_elapsed_time_per_sec >= GED_KPI_SEC_DIVIDER) {
 			unsigned long long g_fps;
@@ -852,6 +850,8 @@ static GED_BOOL ged_kpi_tag_type_s(u64 ulID, GED_KPI_HEAD *psHead, GED_TIMESTAMP
 				psTimeStamp->ullTimeStamp;
 			psKPI->i32AcquireID = psTimeStamp->i32FrameID;
 			ret = GED_TRUE;
+			if (psKPI && (psKPI->ulMask & GED_TIMESTAMP_TYPE_2))
+				ged_kpi_statistics_and_remove(psHead, psKPI);
 		} else {
 #ifdef GED_KPI_DEBUG
 			GED_LOGE("[GED_KPI][Exception] TYPE_S: psKPI NULL, frameID: %lu\n", psTimeStamp->i32FrameID);
@@ -892,7 +892,6 @@ static GED_BOOL ged_kpi_h_iterator_func(unsigned long ulID, void *pvoid, void *p
 							(psKPI_prev->ullTimeStamp2 - psHead->last_TimeStampH);
 
 						psHead->last_TimeStampH = psTimeStamp->ullTimeStamp;
-						ged_kpi_statistics_and_remove(psHead, psKPI_prev);
 					}
 					break;
 				}
@@ -913,7 +912,6 @@ static GED_BOOL ged_kpi_h_iterator_func(unsigned long ulID, void *pvoid, void *p
 					(psKPI->ullTimeStamp2 - psHead->last_TimeStampH);
 
 				psHead->last_TimeStampH = psTimeStamp->ullTimeStamp;
-				ged_kpi_statistics_and_remove(psHead, psKPI);
 			}
 		}
 	}
@@ -1353,6 +1351,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()));
 				ged_kpi_output_gfx_info2(psHead->t_gpu_latest, psKPI->gpu_freq * 1000,
 					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()), ulID);
+				if (psKPI && (psKPI->ulMask & GED_TIMESTAMP_TYPE_S))
+					ged_kpi_statistics_and_remove(psHead, psKPI);
 			} else {
 				GED_PR_ERR("[GED_KPI][Exception] TYPE_2: psKPI NULL, frameID: %lu\n",
 										psTimeStamp->i32FrameID);
@@ -1617,14 +1617,6 @@ static void ged_kpi_gpu_3d_fence_sync_cb(struct sync_fence *fence, struct sync_f
 	sync_fence_put(psMonitor->psSyncFence);
 	ged_free(psMonitor, sizeof(GED_KPI_GPU_TS));
 }
-/* ----------------------------------------------------------------------------- */
-static void ged_kpi_wait_for_hw_vsync_cb(void *data)
-{
-	while (1) {
-		dpmgr_wait_event(primary_get_dpmgr_handle(), DISP_PATH_EVENT_IF_VSYNC);
-		ged_notification(GED_NOTIFICATION_TYPE_HW_VSYNC_PRIMARY_DISPLAY);
-	}
-}
 #endif
 /* ----------------------------------------------------------------------------- */
 GED_ERROR ged_kpi_acquire_buffer_ts(int pid, u64 ullWdnd, int i32FrameID)
@@ -1849,14 +1841,9 @@ unsigned int ged_kpi_get_cur_avg_gpu_freq(void)
 GED_ERROR ged_kpi_system_init(void)
 {
 #ifdef MTK_GED_KPI
-	GED_ERROR ret;
 
 	ghLogBuf = ged_log_buf_alloc(GED_KPI_MAX_FPS * 10,
 		220 * GED_KPI_MAX_FPS * 10, GED_LOG_BUF_TYPE_RINGBUFFER, NULL, "KPI");
-
-	ret = ged_thread_create(&ghThread, "kpi_wait_4_hw_vsync", ged_kpi_wait_for_hw_vsync_cb, (void *)&ghLogBuf);
-	if (ret != GED_OK)
-		return ret;
 
 	g_psWorkQueue = alloc_ordered_workqueue("ged_kpi", WQ_FREEZABLE | WQ_MEM_RECLAIM);
 	if (g_psWorkQueue) {
