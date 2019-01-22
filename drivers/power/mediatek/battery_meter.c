@@ -3068,6 +3068,7 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 	static signed int last_time;
 	signed int vbat_val = 0;
 	int ret = 0;
+	signed int uisoc_tmp = 0, soc_tmp = 0;
 
 #if defined(FG_BAT_INT)
 #else
@@ -3087,8 +3088,10 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 	if (car_instant < 0)
 		car_instant = car_instant - (car_instant * 2);
 
+	uisoc_tmp = BMT_status.UI_SOC;
+	soc_tmp = BMT_status.SOC;
 
-	if (BMT_status.UI_SOC != BMT_status.SOC) {
+	if (uisoc_tmp != soc_tmp) {
 		last_time = 10;
 		g_spm_timer = 10;
 		bm_print(BM_LOG_CRTI, "[get_dynamic_period] UISOC:%d SOC:%d vbat:%d current:%d car:%d new_time:%d\n",

@@ -1609,7 +1609,7 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 	if (BMT_status.charger_type == STANDARD_CHARGER &&
 		mtk_pep20_get_to_check_chr_type() &&
 		mtk_pep_get_to_check_chr_type() &&
-		BMT_status.UI_SOC < batt_cust_data.ta_stop_battery_soc) {
+		batt_cust_data.ta_stop_battery_soc >= BMT_status.UI_SOC) {
 		do {
 			icount--;
 			msleep(200);
@@ -1777,6 +1777,9 @@ static kal_bool mt_battery_nPercent_tracking_check(void)
 #if defined(SOC_BY_HW_FG)
 	static unsigned int timer_counter;
 	static int timer_counter_init;
+	unsigned int zcv_tmp = 0, nPercent_zcv_tmp = 0;
+	unsigned int nPrecent_UI_SOC_check_point_tmp = 0;
+	signed int uisoc_tmp;
 
 	if (timer_counter_init == 0) {
 		timer_counter_init = 1;
@@ -1788,8 +1791,12 @@ static kal_bool mt_battery_nPercent_tracking_check(void)
 		return KAL_FALSE;
 
 	/* fuel gauge ZCV < 15%, but UI > 15%,  15% can be customized */
-	if ((BMT_status.ZCV <= BMT_status.nPercent_ZCV)
-	&& (BMT_status.UI_SOC > BMT_status.nPrecent_UI_SOC_check_point)) {
+	zcv_tmp = BMT_status.ZCV;
+	nPercent_zcv_tmp = BMT_status.nPercent_ZCV;
+	uisoc_tmp = BMT_status.UI_SOC;
+	nPrecent_UI_SOC_check_point_tmp = BMT_status.nPrecent_UI_SOC_check_point;
+	if ((zcv_tmp <= nPercent_zcv_tmp)
+	&& (uisoc_tmp > nPrecent_UI_SOC_check_point_tmp)) {
 		if (timer_counter == (batt_cust_data.npercent_tracking_time / BAT_TASK_PERIOD)) {
 			/* every x sec decrease UI percentage */
 			BMT_status.UI_SOC--;
@@ -1803,8 +1810,8 @@ static kal_bool mt_battery_nPercent_tracking_check(void)
 			    "[nPercent] ZCV %d <= nPercent_ZCV %d, UI_SOC=%d., tracking UI_SOC=%d\n",
 			    BMT_status.ZCV, BMT_status.nPercent_ZCV, BMT_status.UI_SOC,
 			    BMT_status.nPrecent_UI_SOC_check_point);
-	} else if ((BMT_status.ZCV > BMT_status.nPercent_ZCV)
-		&& (BMT_status.UI_SOC == BMT_status.nPrecent_UI_SOC_check_point)) {
+	} else if ((zcv_tmp > nPercent_zcv_tmp)
+		&& (uisoc_tmp == nPrecent_UI_SOC_check_point_tmp)) {
 		/* UI less than 15 , but fuel gague is more than 15, hold UI 15% */
 		timer_counter = (batt_cust_data.npercent_tracking_time / BAT_TASK_PERIOD);
 		resetBatteryMeter = KAL_TRUE;
@@ -1845,8 +1852,11 @@ static kal_bool mt_battery_0Percent_tracking_check(void)
 static void mt_battery_Sync_UI_Percentage_to_Real(void)
 {
 	static unsigned int timer_counter;
+	signed int uisoc_tmp = 0, soc_tmp = 0;
 
-	if ((BMT_status.UI_SOC > BMT_status.SOC) && ((BMT_status.UI_SOC != 1))) {
+	uisoc_tmp = BMT_status.UI_SOC;
+	soc_tmp = BMT_status.SOC;
+	if ((uisoc_tmp > soc_tmp) && ((uisoc_tmp != 1))) {
 #if !defined(SYNC_UI_SOC_IMM)
 		/* reduce after xxs */
 		if (chr_wake_up_bat == KAL_FALSE) {
@@ -2387,7 +2397,9 @@ void mt_battery_GetBatteryData(void)
 
 
 	if (BMT_status.charger_exist == KAL_FALSE) {
-		if (BMT_status.SOC > previous_SOC && previous_SOC >= 0)
+		signed int soc_tmp = BMT_status.SOC;
+
+		if (soc_tmp > previous_SOC && previous_SOC >= 0)
 			BMT_status.SOC = previous_SOC;
 	}
 
