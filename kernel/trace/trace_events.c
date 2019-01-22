@@ -370,7 +370,8 @@ static int __ftrace_event_enable_disable(struct trace_event_file *file,
 	int disable;
 
 	if (call->name && ((file->flags & EVENT_FILE_FL_ENABLED) ^ enable))
-		pr_debug("[ftrace]event '%s' is %s\n", call->name, enable ? "enabled" : "disabled");
+		pr_debug("[ftrace]event '%s' is %s\n", trace_event_name(call),
+			 enable ? "enabled" : "disabled");
 
 	switch (enable) {
 	case 0:
