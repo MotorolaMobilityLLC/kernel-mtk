@@ -26,14 +26,6 @@
 #define PD_SW_WORKAROUND1_1 0
 #define PD_SW_WORKAROUND1_2 1
 
-/*use timer0 for pd_task main loop*/
-/*this should be enabled when the scale of jiffies is not small enough or not accurate*/
-#define PD_SW_WORKAROUND2 0
-
-/*use timer1 to replace system jiffies*/
-/*this should be enabled when the scale of jiffies is not small enough or not accurate*/
-#define PD_SW_WORKAROUND3 0
-
 #define CONFIG_USB_PD_DUAL_ROLE
 #define CONFIG_USBC_VCONN
 #define CONFIG_USBC_VCONN_SWAP
@@ -96,10 +88,6 @@
 
 /* Time to wait to complete transmit */
 #define PD_TX_TIMEOUT (100*1)
-
-/* Timeout implmented by wait_for_completion has overhead. timeout below this value is not achievable */
-/*#define PD_WAIT_FOR_COMPLETION_OVERHEAD 4*/ /*about 3.65ms on V7 FPGA*/
-#define PD_WAIT_FOR_COMPLETION_OVERHEAD 0
 
 #define PD_STRESS_DELAY 2500
 

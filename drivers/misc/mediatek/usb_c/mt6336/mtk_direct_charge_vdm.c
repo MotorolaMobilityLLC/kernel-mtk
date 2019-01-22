@@ -18,6 +18,8 @@
 #include <linux/delay.h>
 #include <linux/wakelock.h>
 #include <linux/slab.h>
+#include <linux/random.h>
+
 #ifdef CONFIG_DEBUG_FS
 #include <linux/debugfs.h>
 #endif /* CONFIG_DEBUG_FS */
@@ -27,6 +29,87 @@
 #include "usb_pd.h"
 #include "usb_pd_func.h"
 #include "mtk_direct_charge_vdm.h"
+
+static struct pd_direct_chrg *g_dc;
+
+struct pd_direct_chrg *get_dc(void)
+{
+	return g_dc;
+}
+
+bool mtk_is_pd_chg_ready(void)
+{
+	struct pd_direct_chrg *dc = get_dc();
+
+	if (dc)
+		return (dc->hba->task_state == PD_STATE_SNK_READY);
+
+	return false;
+}
+
+int tcpm_hard_reset(void *ptr)
+{
+	struct pd_direct_chrg *dc = get_dc();
+
+	pr_info("%s request HARD RESET\n", __func__);
+
+	if (!dc || (dc->hba->task_state != PD_STATE_SNK_READY))
+		return -1;
+
+	set_state(dc->hba, PD_STATE_HARD_RESET_SEND);
+
+	return 0;
+}
+
+int tcpm_set_direct_charge_en(void *ptr, bool en)
+{
+	struct pd_direct_chrg *dc = get_dc();
+
+	if (!dc)
+		return -1;
+
+	if (mtk_is_pep30_en_unlock()) {
+		pr_info("%s vbus_absent(snk), Dircet Charging\n", (en?"Ignore":"Detect"));
+
+		typec_vbus_det_enable(dc->hba, !en);
+	}
+
+	return 0;
+}
+
+#define PD_VDO_CABLE_CURR(x)	(((x) >> 5) & 0x03)
+
+int tcpm_get_cable_capability(void *ptr, unsigned char *capability)
+{
+	struct typec_hba *hba = get_dc()->hba;
+
+	unsigned char limit = 0;
+
+	if (hba->sop_p.cable_vdo) {
+		limit =  PD_VDO_CABLE_CURR(hba->sop_p.cable_vdo) + 1;
+
+		pr_info("%s limit = %d\n", __func__, limit);
+
+		limit = (limit > 3) ? 0 : limit;
+
+		*capability = limit;
+	} else
+		pr_info("%s it's not power cable\n", __func__);
+
+	return 0;
+}
+
+bool mtk_is_pep30_en_unlock(void)
+{
+	struct pd_direct_chrg *dc = get_dc();
+
+	if (!mtk_is_pd_chg_ready())
+		return false;
+
+	pr_info("%s PE3.0 is %s\n", __func__, (dc->auth_pass == 1)?"UNLOCK":"LOCK");
+
+	return (dc->auth_pass == 1);
+}
 
 void mtk_direct_charging_payload(struct pd_direct_chrg *dc, int cnt, uint32_t *payload)
 {
@@ -54,6 +137,7 @@ int queue_dc_command(struct pd_direct_chrg *dc, uint32_t vid, int op, int cmd, c
 
 	ret = pd_send_vdm(dc->hba, vid, op|cmd, data, cnt);
 	if (!ret) {
+		reinit_completion(&dc->rx_event);
 		if (wait_for_completion_timeout(&dc->rx_event, MTK_VDM_TIMEOUT) > 0) {
 			if (DC_VDO_ACTION(dc->vdm_payload[0]) != OP_ACK)
 				pr_err("%s return action error\n", __func__);
@@ -80,6 +164,7 @@ int mtk_get_ta_id(void *ptr)
 	ret = queue_dc_command(dc, RT7207_SVID, OP_READ, CMD_READ_MANUFACTURE_INFO, NULL, 0);
 	if (ret == MTK_VDM_SUCCESS) {
 		id = dc->vdm_payload[1];
+		pr_err("%s id=%d\n", __func__, id);
 	} else {
 		id = ret;
 		pr_err("%s CMD FAIL\n", __func__);
@@ -87,6 +172,28 @@ int mtk_get_ta_id(void *ptr)
 
 	return id;
 }
+
+int mtk_clr_ta_pingcheck_fault(void *ptr)
+{
+	struct pd_direct_chrg *dc = ptr;
+	int ret = 0;
+	int status = MTK_VDM_FAIL;
+	uint32_t data = 0;
+
+	data = 0x10;
+
+	ret = queue_dc_command(dc, RT7207_SVID, OP_WRITE, CMD_READ_CHARGER_STAT, &data, 1);
+	if (ret == MTK_VDM_SUCCESS) {
+		pr_info("%s Success\n", __func__);
+		status = MTK_VDM_SUCCESS;
+	} else {
+		pr_err("%s CMD FAIL\n", __func__);
+		status = ret;
+	}
+
+	return status;
+}
+
 
 #define BIT_CHG_MODE (0x1<<31)
 #define BIT_DC_EN (0x1<<30)
@@ -562,12 +669,10 @@ static ssize_t de_write(struct file *file,
 		mtk_get_ta_temperature(dc, &ret);
 		break;
 	case 5:
-		pr_info("%s yo == 5!\n", __func__);
-		/*tcpm_set_direct_charge_en(dc, true);*/
+		tcpm_set_direct_charge_en(dc, true);
 		break;
 	case 6:
-		pr_info("%s yo == 6!\n", __func__);
-		/*tcpm_set_direct_charge_en(dc, false);*/
+		tcpm_set_direct_charge_en(dc, false);
 		break;
 	case 7:
 		cap.cur = 3000;
@@ -581,6 +686,12 @@ static ssize_t de_write(struct file *file,
 		break;
 	case 9:
 		mtk_set_ta_uvlo(dc, 3000);
+		break;
+	case 10:
+		mtk_clr_ta_pingcheck_fault(dc);
+		break;
+	case 11:
+		tcpm_hard_reset(dc);
 		break;
 	default:
 		pr_info("%s unsupport cmd\n", __func__);
@@ -606,6 +717,7 @@ int mtk_direct_charge_vdm_init(void)
 
 	dc->hba = get_hba();
 	dc->hba->dc = dc;
+	g_dc = dc;
 
 	if (!dc->dc_vdm_inited) {
 		init_completion(&dc->rx_event);
@@ -617,7 +729,7 @@ int mtk_direct_charge_vdm_init(void)
 		dc->dc_vdm_inited = true;
 
 #ifdef CONFIG_DEBUG_FS
-		dc->root = debugfs_create_dir("rt7207_vdm_dbg", 0);
+		dc->root = debugfs_create_dir("rt7207", 0);
 		if (!dc->root) {
 			ret = -ENOMEM;
 			goto err0;

@@ -57,9 +57,6 @@
 /*enable SNK<->ACC, SRC<->ACC transitions*/
 #define ENABLE_ACC 1
 
-/*debug*/
-#define DBG_PROBE 0 /*set to 1 if SW debug probe is used*/
-
 #define RESET_STRESS_TEST 0
 
 /* macros */
@@ -434,7 +431,6 @@ struct reg_mapping {
 };
 
 /* SW probe */
-
 #define DBG_TIMER0_VAL_OFST 20
 #define DBG_VBUS_DET_EN_OFST 19
 #define DBG_VCONN_EN_OFST 18
@@ -479,27 +475,10 @@ enum enum_loop_state {
 	DBG_LOOP_CHK_TIMEOUT = 8,
 };
 
-extern void typec_sw_probe(struct typec_hba *hba, uint32_t msk, uint32_t val);
-
-/*#define INMEM_LOG*/
-extern void inmem_log(const char *fmt, ...);
-
-#ifdef INMEM_LOG
-#define MEMPRINTK(fmt, ...) inmem_log("[%s]"fmt, __func__, ##__VA_ARGS__)
-#else
-#define MEMPRINTK(fmt, args...) do {} while (0)
-#endif
-
-extern u32 upmu_get_rgs_chrdet(void);
-extern bool upmu_is_chr_det(void);
-#if defined(CONFIG_MTK_BQ25896_SUPPORT)
-extern void bq25890_set_boost_ilim(uint32_t val);
-extern void bq25890_otg_en(uint32_t val);
-#endif
-
 /* read/write function calls */
 extern void typec_write8(struct typec_hba *hba, uint8_t val, unsigned int reg);
 extern void typec_writew(struct typec_hba *hba, uint16_t val, unsigned int reg);
+extern void typec_writedw(struct typec_hba *hba, uint32_t val, unsigned int reg);
 extern uint8_t typec_read8(struct typec_hba *hba, unsigned int reg);
 extern uint16_t typec_readw(struct typec_hba *hba, unsigned int reg);
 extern void typec_writew_msk(struct typec_hba *hba, uint16_t msk, uint16_t val, unsigned int reg);
@@ -528,7 +507,6 @@ extern void pd_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uin
 extern void pd_rx_enable(struct typec_hba *hba, uint8_t enable);
 extern void pd_ping_enable(struct typec_hba *hba, int enable);
 extern void set_state(struct typec_hba *hba, enum pd_states next_state);
-extern unsigned long pd_msecs_to_jiffies(unsigned long ms_timeout);
 extern void pd_request_power_swap(struct typec_hba *hba);
 extern void pd_request_vconn_swap(struct typec_hba *hba);
 extern void pd_request_data_swap(struct typec_hba *hba);
