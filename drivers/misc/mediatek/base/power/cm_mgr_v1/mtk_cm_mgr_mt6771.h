@@ -43,11 +43,15 @@ enum {
 extern void __iomem *mcucfg_mp0_counter_base;
 extern void __iomem *mcucfg_mp2_counter_base;
 
+extern int cm_mgr_abs_load;
+extern int cm_mgr_rel_load;
+
 extern int cm_mgr_get_idx(void);
 extern int cm_mgr_get_stall_ratio(int cpu);
 extern int cm_mgr_get_cpu_count(int cluster);
 extern int cm_mgr_get_max_stall_ratio(int cluster);
 extern int cm_mgr_check_stall_ratio(int mp0, int mp2);
+extern int cm_mgr_cps_check(void);
 extern int cm_mgr_register_init(void);
 extern int cm_mgr_platform_init(void);
 
