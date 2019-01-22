@@ -293,6 +293,8 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 			return -ENOTSUPP;
 
 		pdata->thermal_input_current_limit = input_current;
+		pr_err("%s: dev:%s idx:%d en:%d\n", __func__, dev_name(consumer->dev),
+		idx, input_current);
 		_mtk_charger_change_current_setting(info);
 		_wake_up_charger(info);
 		return 0;
@@ -316,6 +318,8 @@ int charger_manager_set_charging_current_limit(struct charger_consumer *consumer
 			return -ENOTSUPP;
 
 		pdata->thermal_charging_current_limit = charging_current;
+		pr_err("%s: dev:%s idx:%d en:%d\n", __func__, dev_name(consumer->dev),
+		idx, charging_current);
 		_mtk_charger_change_current_setting(info);
 		_wake_up_charger(info);
 		return 0;
@@ -800,7 +804,6 @@ static bool mtk_is_charger_on(struct charger_manager *info)
 	CHARGER_TYPE chr_type;
 
 	chr_type = mt_get_charger_type();
-	pr_err("mtk_is_charger_on %d %d\n", chr_type, info->chr_type);
 	if (chr_type == CHARGER_UNKNOWN) {
 		if (info->chr_type != CHARGER_UNKNOWN)
 			mtk_charger_plug_out(info);
@@ -1044,18 +1047,18 @@ static int charger_routine_thread(void *arg)
 	bool curr_sign, is_charger_on;
 
 	while (1) {
-		pr_err("charger_routine_thread [%s]\n", info->chg1_dev->props.alias_name);
 		wait_event(info->wait_que, (info->charger_thread_timeout == true));
 
 		mutex_lock(&info->charger_lock);
 		info->charger_thread_timeout = false;
 		i++;
 		curr_sign = battery_get_bat_current_sign();
-		pr_err("Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d\n", battery_get_bat_voltage(),
+		pr_err("Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d\n", battery_get_bat_voltage(),
 			curr_sign ? battery_get_bat_current() :
 					-1 * battery_get_bat_current(),
 			battery_get_vbus(), battery_get_bat_temperature(),
-			battery_get_bat_soc(), battery_get_bat_uisoc());
+			battery_get_bat_soc(), battery_get_bat_uisoc(),
+			mt_get_charger_type(), info->chr_type);
 
 		is_charger_on = mtk_is_charger_on(info);
 
