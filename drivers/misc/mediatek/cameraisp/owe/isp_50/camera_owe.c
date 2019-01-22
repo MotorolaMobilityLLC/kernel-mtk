@@ -1474,12 +1474,11 @@ static signed int OWE_DumpReg(void)
 
 		for (j = 0; j < _SUPPORT_MAX_OWE_FRAME_REQUEST_;) {
 			LOG_INF
-			    ("OCC:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
+			    ("OCC:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 			     j, g_OCC_RequestRing.OCCReq_Struct[i].OccFrameStatus[j]
 			     , j + 1, g_OCC_RequestRing.OCCReq_Struct[i].OccFrameStatus[j + 1],
-			     j + 2, g_OCC_RequestRing.OCCReq_Struct[i].OccFrameStatus[j + 2]
-			     , j + 3, g_OCC_RequestRing.OCCReq_Struct[i].OccFrameStatus[j + 3]);
-			j = j + 4;
+			     j + 2, g_OCC_RequestRing.OCCReq_Struct[i].OccFrameStatus[j + 2]);
+			j = j + 3;
 		}
 	}
 
@@ -1498,12 +1497,11 @@ static signed int OWE_DumpReg(void)
 
 		for (j = 0; j < _SUPPORT_MAX_OWE_FRAME_REQUEST_;) {
 			LOG_INF
-			    ("WMFE:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
+			    ("WMFE:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 			     j, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j]
 			     , j + 1, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j + 1],
-			     j + 2, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j + 2]
-			     , j + 3, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j + 3]);
-			j = j + 4;
+			     j + 2, g_WMFE_ReqRing.WMFEReq_Struct[i].WmfeFrameStatus[j + 2]);
+			j = j + 3;
 		}
 
 	}
