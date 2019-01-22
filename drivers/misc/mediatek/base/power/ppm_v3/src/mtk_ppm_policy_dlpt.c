@@ -219,7 +219,7 @@ static int __init ppm_dlpt_policy_init(void)
 {
 	int ret = 0;
 #ifndef DISABLE_DLPT_FEATURE
-	int i,
+	int i;
 
 	struct pentry {
 		const char *name;
