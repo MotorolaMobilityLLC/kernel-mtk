@@ -30,6 +30,7 @@
 /* on:1, off:0 */
 int g_vgpu_power_on_flag;
 
+int g_mtk_gpu_efuse_set_already;
 
 #ifdef ENABLE_MTK_MEMINFO
 /*
@@ -48,13 +49,6 @@ int g_mtk_gpu_total_memory_usage_in_pages_debugfs;
 atomic_t g_mtk_gpu_total_memory_usage_in_pages;
 atomic_t g_mtk_gpu_peak_memory_usage_in_pages;
 static mtk_gpu_meminfo_type g_mtk_gpu_meminfo[MTK_MEMINFO_SIZE];
-
-int g_mtk_gpu_efuse_set_already;
-
-/*extern u32 kbasep_get_gl_utilization(void);
-* extern u32 kbasep_get_cl_js0_utilization(void);
-* extern u32 kbasep_get_cl_js1_utilization(void);
-*/
 
 void mtk_kbase_gpu_memory_debug_init(void)
 {
@@ -240,18 +234,17 @@ static const struct file_operations kbasep_gpu_memory_usage_debugfs_open = {
 static int proc_gpu_utilization_show(struct seq_file *m, void *v)
 {
 #ifdef ENABLE_COMMON_DVFS
-	/*unsigned long gl, cl0, cl1;*/
+	unsigned long gl, cl0, cl1;
 	unsigned int iCurrentFreq;
 
 	iCurrentFreq = mt_gpufreq_get_cur_freq_index();
 
-	/*
-	* gl	= kbasep_get_gl_utilization();
-	* cl0 = kbasep_get_cl_js0_utilization();
-	* cl1 = kbasep_get_cl_js1_utilization();
-	* seq_printf(m, "gpu/cljs0/cljs1=%lu/%lu/%lu, frequency index=%d power(0:off, 1:0n):%d\n",
-	* gl, cl0, cl1, iCurrentFreq, mtk_get_vgpu_power_on_flag());
-	*/
+	gl = kbasep_get_gl_utilization();
+	cl0 = kbasep_get_cl_js0_utilization();
+	cl1 = kbasep_get_cl_js1_utilization();
+
+	seq_printf(m, "gpu/cljs0/cljs1=%lu/%lu/%lu, frequency index=%d power(0:off, 1:0n):%d\n",
+		gl, cl0, cl1, iCurrentFreq, mtk_get_vgpu_power_on_flag());
 #else
 	seq_puts(m, "GPU DVFS doesn't support\n");
 #endif
