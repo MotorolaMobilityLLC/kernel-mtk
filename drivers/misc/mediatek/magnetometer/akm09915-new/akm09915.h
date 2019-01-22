@@ -4,7 +4,7 @@
 * and/or permission notice(S).
 */
 
-/* akm09916.c - akm09916 compass driver
+/* akm09915.c - akm09915 compass driver
  *
  *
  * This software is licensed under the terms of the GNU General Public
@@ -18,15 +18,15 @@
  *
  */
 
-#ifndef AKM09916_H
-#define AKM09916_H
+#ifndef AKM09915_H
+#define AKM09915_H
 
 #include <linux/ioctl.h>
 
-#define AKM09916_I2C_NAME "akm09916"
+#define AKM09915_I2C_NAME "akm09915"
 
-#define AKM09916_I2C_ADDRESS 	AKM09911_I2C_ADDRESS	
-#define AKM09916_BUFSIZE		AKM09911_BUFSIZE
+#define AKM09915_I2C_ADDRESS 	AKM09911_I2C_ADDRESS	
+#define AKM09915_BUFSIZE		AKM09911_BUFSIZE
 
 #define AKM09911_I2C_NAME "akm09911"
 
@@ -37,43 +37,43 @@
 #define RWBUF_SIZE				16	/* Read/Write buffer size.*/
 #define CALIBRATION_DATA_SIZE	26
 
-/*! \name AK09916 register address
-\anchor AK09916_REG
-Defines a register address of the AK09916.*/
+/*! \name AK09915 register address
+\anchor AK09915_REG
+Defines a register address of the AK09915.*/
 /*! @{*/
 /* Device specific constant values */
-#define AK09916_REG_WIA1			0x00
-#define AK09916_REG_WIA2			0x01
-#define AK09916_REG_RSV1			0x02
-#define AK09916_REG_RSV2			0x03
-#define AK09916_REG_ST1				0x10
-#define AK09916_REG_HXL				0x11
-#define AK09916_REG_HXH				0x12
-#define AK09916_REG_HYL				0x13
-#define AK09916_REG_HYH				0x14
-#define AK09916_REG_HZL				0x15
-#define AK09916_REG_HZH				0x16
-#define AK09916_REG_TMPS			0x17
-#define AK09916_REG_ST2				0x18
-#define AK09916_REG_CNTL1			0x30
-#define AK09916_REG_CNTL2			0x31
-#define AK09916_REG_CNTL3			0x32
+#define AK09915_REG_WIA1			0x00
+#define AK09915_REG_WIA2			0x01
+#define AK09915_REG_RSV1			0x02
+#define AK09915_REG_RSV2			0x03
+#define AK09915_REG_ST1				0x10
+#define AK09915_REG_HXL				0x11
+#define AK09915_REG_HXH				0x12
+#define AK09915_REG_HYL				0x13
+#define AK09915_REG_HYH				0x14
+#define AK09915_REG_HZL				0x15
+#define AK09915_REG_HZH				0x16
+#define AK09915_REG_TMPS			0x17
+#define AK09915_REG_ST2				0x18
+#define AK09915_REG_CNTL1			0x30
+#define AK09915_REG_CNTL2			0x31
+#define AK09915_REG_CNTL3			0x32
 
-/*! \name AK09916 fuse-rom address
-\anchor AK09916_FUSE
-Defines a read-only address of the fuse ROM of the AK09916.*/
+/*! \name AK09915 fuse-rom address
+\anchor AK09915_FUSE
+Defines a read-only address of the fuse ROM of the AK09915.*/
 
-/*! \name AK09916 operation mode
- \anchor AK09916_Mode
- Defines an operation mode of the AK09916.*/
-#define AK09916_MODE_SNG_MEASURE	0x01
-#define AK09916_MODE_SELF_TEST		0x10
-#define AK09916_MODE_POWERDOWN		0x00
-#define AK09916_RESET_DATA			0x01
+/*! \name AK09915 operation mode
+ \anchor AK09915_Mode
+ Defines an operation mode of the AK09915.*/
+#define AK09915_MODE_SNG_MEASURE	0x01
+#define AK09915_MODE_SELF_TEST		0x10
+#define AK09915_MODE_POWERDOWN		0x00
+#define AK09915_RESET_DATA			0x01
 
-#define AK09916_REGS_SIZE		13
-#define AK09916_WIA1_VALUE		0x48
-#define AK09916_WIA2_VALUE		0x09
+#define AK09915_REGS_SIZE		13
+#define AK09915_WIA1_VALUE		0x48
+#define AK09915_WIA2_VALUE		0x09
 
 /*! \name AK09911 register address
 \anchor AK09911_REG
@@ -250,9 +250,9 @@ Defines a read-only address of the fuse ROM of the AK09911.*/
 
 /* #define ECS_IOCTL_GET_INFO			_IOR(MSENSOR, 0x27, unsigned char[AKM_SENSOR_INFO_SIZE]) */
 #define ECS_IOCTL_GET_CONF			_IOR(MSENSOR, 0x28, unsigned char[AKM_SENSOR_CONF_SIZE])
-#define ECS_IOCTL_SET_YPR_09916               _IOW(MSENSOR, 0x29, int[26])
-#define ECS_IOCTL_GET_DELAY_09916             _IOR(MSENSOR, 0x30, int64_t[3])
-#define	ECS_IOCTL_GET_LAYOUT_09916			_IOR(MSENSOR, 0x31, char)
+#define ECS_IOCTL_SET_YPR_09915               _IOW(MSENSOR, 0x29, int[26])
+#define ECS_IOCTL_GET_DELAY_09915             _IOR(MSENSOR, 0x30, int64_t[3])
+#define	ECS_IOCTL_GET_LAYOUT_09915			_IOR(MSENSOR, 0x31, char)
 
 #ifndef DBGPRINT
 #define DBGPRINT(level, format, ...) \
@@ -262,7 +262,7 @@ Defines a read-only address of the fuse ROM of the AK09911.*/
 
 #endif
 
-struct akm09916_platform_data {
+struct akm09915_platform_data {
 	char layout;
 	char outbit;
 	int gpio_DRDY;
@@ -270,65 +270,65 @@ struct akm09916_platform_data {
 };
 
 /*** Limit of factory shipment test *******************************************/
-#define TLIMIT_TN_REVISION_09916				""
-#define TLIMIT_NO_RST_WIA1_09916				"1-3"
-#define TLIMIT_TN_RST_WIA1_09916				"RST_WIA1"
-#define TLIMIT_LO_RST_WIA1_09916				0x48
-#define TLIMIT_HI_RST_WIA1_09916				0x48
-#define TLIMIT_NO_RST_WIA2_09916				"1-4"
-#define TLIMIT_TN_RST_WIA2_09916				"RST_WIA2"
-#define TLIMIT_LO_RST_WIA2_09916				0x10
-#define TLIMIT_HI_RST_WIA2_09916				0x10
+#define TLIMIT_TN_REVISION_09915				""
+#define TLIMIT_NO_RST_WIA1_09915				"1-3"
+#define TLIMIT_TN_RST_WIA1_09915				"RST_WIA1"
+#define TLIMIT_LO_RST_WIA1_09915				0x48
+#define TLIMIT_HI_RST_WIA1_09915				0x48
+#define TLIMIT_NO_RST_WIA2_09915				"1-4"
+#define TLIMIT_TN_RST_WIA2_09915				"RST_WIA2"
+#define TLIMIT_LO_RST_WIA2_09915				0x10
+#define TLIMIT_HI_RST_WIA2_09915				0x10
 
-#define TLIMIT_NO_SNG_ST1_09916				"2-3"
-#define TLIMIT_TN_SNG_ST1_09916				"SNG_ST1"
-#define TLIMIT_LO_SNG_ST1_09916				1
-#define TLIMIT_HI_SNG_ST1_09916				1
+#define TLIMIT_NO_SNG_ST1_09915				"2-3"
+#define TLIMIT_TN_SNG_ST1_09915				"SNG_ST1"
+#define TLIMIT_LO_SNG_ST1_09915				1
+#define TLIMIT_HI_SNG_ST1_09915				1
 
-#define TLIMIT_NO_SNG_HX_09916				"2-4"
-#define TLIMIT_TN_SNG_HX_09916				"SNG_HX"
-#define TLIMIT_LO_SNG_HX_09916				-32752
-#define TLIMIT_HI_SNG_HX_09916				32752
+#define TLIMIT_NO_SNG_HX_09915				"2-4"
+#define TLIMIT_TN_SNG_HX_09915				"SNG_HX"
+#define TLIMIT_LO_SNG_HX_09915				-32752
+#define TLIMIT_HI_SNG_HX_09915				32752
 
-#define TLIMIT_NO_SNG_HY_09916				"2-6"
-#define TLIMIT_TN_SNG_HY_09916				"SNG_HY"
-#define TLIMIT_LO_SNG_HY_09916				-32752
-#define TLIMIT_HI_SNG_HY_09916				32752
+#define TLIMIT_NO_SNG_HY_09915				"2-6"
+#define TLIMIT_TN_SNG_HY_09915				"SNG_HY"
+#define TLIMIT_LO_SNG_HY_09915				-32752
+#define TLIMIT_HI_SNG_HY_09915				32752
 
-#define TLIMIT_NO_SNG_HZ_09916				"2-8"
-#define TLIMIT_TN_SNG_HZ_09916				"SNG_HZ"
-#define TLIMIT_LO_SNG_HZ_09916				-32752
-#define TLIMIT_HI_SNG_HZ_09916				32752
+#define TLIMIT_NO_SNG_HZ_09915				"2-8"
+#define TLIMIT_TN_SNG_HZ_09915				"SNG_HZ"
+#define TLIMIT_LO_SNG_HZ_09915				-32752
+#define TLIMIT_HI_SNG_HZ_09915				32752
 
-#define TLIMIT_NO_SNG_ST2_09916				"2-10"
-#define TLIMIT_TN_SNG_ST2_09916				"SNG_ST2"
-#define TLIMIT_LO_SNG_ST2_09916				0
-#define TLIMIT_HI_SNG_ST2_09916				112
+#define TLIMIT_NO_SNG_ST2_09915				"2-10"
+#define TLIMIT_TN_SNG_ST2_09915				"SNG_ST2"
+#define TLIMIT_LO_SNG_ST2_09915				0
+#define TLIMIT_HI_SNG_ST2_09915				112
 
-#define TLIMIT_NO_SLF_ST1_09916				"2-13"
-#define TLIMIT_TN_SLF_ST1_09916				"SLF_ST1"
-#define TLIMIT_LO_SLF_ST1_09916				1
-#define TLIMIT_HI_SLF_ST1_09916				1
+#define TLIMIT_NO_SLF_ST1_09915				"2-13"
+#define TLIMIT_TN_SLF_ST1_09915				"SLF_ST1"
+#define TLIMIT_LO_SLF_ST1_09915				1
+#define TLIMIT_HI_SLF_ST1_09915				1
 
-#define TLIMIT_NO_SLF_RVHX_09916				"2-14"
-#define TLIMIT_TN_SLF_RVHX_09916				"SLF_REVSHX"
-#define TLIMIT_LO_SLF_RVHX_09916			-200
-#define TLIMIT_HI_SLF_RVHX_09916			200
+#define TLIMIT_NO_SLF_RVHX_09915				"2-14"
+#define TLIMIT_TN_SLF_RVHX_09915				"SLF_REVSHX"
+#define TLIMIT_LO_SLF_RVHX_09915			-200
+#define TLIMIT_HI_SLF_RVHX_09915			200
 
-#define TLIMIT_NO_SLF_RVHY_09916				"2-16"
-#define TLIMIT_TN_SLF_RVHY_09916				"SLF_REVSHY"
-#define TLIMIT_LO_SLF_RVHY_09916			-200
-#define TLIMIT_HI_SLF_RVHY_09916			200
+#define TLIMIT_NO_SLF_RVHY_09915				"2-16"
+#define TLIMIT_TN_SLF_RVHY_09915				"SLF_REVSHY"
+#define TLIMIT_LO_SLF_RVHY_09915			-200
+#define TLIMIT_HI_SLF_RVHY_09915			200
 
-#define TLIMIT_NO_SLF_RVHZ_09916				"2-18"
-#define TLIMIT_TN_SLF_RVHZ_09916				"SLF_REVSHZ"
-#define TLIMIT_LO_SLF_RVHZ_09916			-800
-#define TLIMIT_HI_SLF_RVHZ_09916			-200
+#define TLIMIT_NO_SLF_RVHZ_09915				"2-18"
+#define TLIMIT_TN_SLF_RVHZ_09915				"SLF_REVSHZ"
+#define TLIMIT_LO_SLF_RVHZ_09915			-800
+#define TLIMIT_HI_SLF_RVHZ_09915			-200
 
-#define TLIMIT_NO_SLF_ST2_09916				"2-20"
-#define TLIMIT_TN_SLF_ST2_09916				"SLF_ST2"
-#define TLIMIT_LO_SLF_ST2_09916				0
-#define TLIMIT_HI_SLF_ST2_09916				112
+#define TLIMIT_NO_SLF_ST2_09915				"2-20"
+#define TLIMIT_TN_SLF_ST2_09915				"SLF_ST2"
+#define TLIMIT_LO_SLF_ST2_09915				0
+#define TLIMIT_HI_SLF_ST2_09915				112
 
 #define TLIMIT_TN_REVISION_09911				""
 #define TLIMIT_NO_RST_WIA1_09911				"1-3"
