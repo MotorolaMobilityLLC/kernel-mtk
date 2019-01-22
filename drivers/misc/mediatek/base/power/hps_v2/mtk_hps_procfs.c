@@ -29,30 +29,94 @@ static int hps_proc_uint_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+static int hps_sanitize_var(unsigned int *hpsvar, unsigned int newv)
+{
+	int rc = -EINVAL;
+
+	if (hpsvar == &hps_ctxt.enabled) {
+		if (newv >= 0 && newv <= 1)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.heavy_task_enabled) {
+		if (newv >= 0 && newv <= 1)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.suspend_enabled) {
+		if (newv >= 0 && newv <= 1)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.cur_dump_enabled) {
+		if (newv >= 0 && newv <= 1)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.stats_dump_enabled) {
+		if (newv >= 0 && newv <= 1)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.up_threshold) {
+		if (newv > 0)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.up_times) {
+		if (newv > 0 && newv <= (unsigned int)MAX_CPU_UP_TIMES)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.down_threshold) {
+		if (newv > 0)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.down_times) {
+		if (newv > 0 && newv <= (unsigned int)MAX_CPU_DOWN_TIMES)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.input_boost_enabled) {
+		if (newv >= 0 && newv <= 1)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.input_boost_cpu_num) {
+		/* NOTE: what is the maximum? */
+		if (newv > 0)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.rush_boost_enabled) {
+		if (newv >= 0 && newv <= 1)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.rush_boost_threshold) {
+		if (newv > 0)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.rush_boost_times) {
+		if (newv > 0)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.tlp_times) {
+		if (newv > 0 && newv <= (unsigned int)MAX_TLP_TIMES)
+			rc = 0;
+	} else if (hpsvar == &hps_ctxt.power_mode) {
+		/* NOTE: what is the accepted range? */
+		if (newv > 0)
+			rc = 0;
+	} else {
+		tag_pr_info("Unknown hps procfs node\n");
+		rc = -EINVAL;
+	}
+
+	return rc;
+}
+
 static ssize_t hps_proc_uint_write(struct file *file, const char __user *buffer,
 				   size_t count, loff_t *pos,
 				   func_void before_write, func_void after_write)
 {
 	unsigned int var;
 	unsigned int *pv;
+	int rc;
 
-	pv = (unsigned int *)((struct seq_file *)file->private_data)->private;
+	rc = kstrtouint_from_user(buffer, count, 0, &var);
+	if (rc)
+		return rc;
 
-	if (!kstrtouint_from_user(buffer, count, 0, &var)) {
-		if (before_write)
-			before_write();
+	pv = ((struct seq_file *)file->private_data)->private;
+	rc = hps_sanitize_var(pv, var);
+	if (rc)
+		return rc;
 
-		*pv = var;
+	if (before_write)
+		before_write();
 
-		if (after_write)
-			after_write();
+	*pv = var;
 
-		return count;
-	}
+	if (after_write)
+		after_write();
 
-	tag_pr_info("%s(): bad argument\n", __func__);
-
-	return -EINVAL;
+	return count;
 }
 
 static void lock_hps_ctxt(void)
