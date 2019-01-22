@@ -122,6 +122,10 @@ static struct device offloaddev = {
 	.coherent_dma_mask = ~0,             /* dma_alloc_coherent(): allow any address */
 	.dma_mask = &offloaddev.coherent_dma_mask,  /* other APIs: use the same mask as coherent */
 };
+static struct OFFLOAD_TIMESTAMP_T timestamp = {
+	.pcm_io_frames = 0,
+	.sampling_rate = 0,
+};
 
 static uint32 Data_Wait_Queue_flag;
 DECLARE_WAIT_QUEUE_HEAD(Data_Wait_Queue);
@@ -432,11 +436,7 @@ int mtk_compr_offload_copy(unsigned long arg)/* (OFFLOAD_WRITE_T __user *arg) */
 			switch (afe_offload_block.state) {
 			case OFFLOAD_STATE_INIT:
 			case OFFLOAD_STATE_IDLE:
-				retval = OffloadService_CopyDatatoRAM(params->tmpBuffer, params->bytes);
-				break;
 			case OFFLOAD_STATE_PREPARE:
-				retval = OffloadService_CopyDatatoRAM(params->tmpBuffer, params->bytes);
-				break;
 			case OFFLOAD_STATE_RUNNING:
 				retval = OffloadService_CopyDatatoRAM(params->tmpBuffer, params->bytes);
 				break;
@@ -504,7 +504,6 @@ static int mtk_compr_offload_open(void)
 	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK, MP3_INIT,
 				   1, 0, NULL);
 	scp_register_feature(MP3_FEATURE_ID);
-	scp_request_freq();
 #endif
 	return 0;
 }
@@ -795,7 +794,7 @@ int OffloadService_CopyDatatoRAM(void __user *buf, size_t count)
 		}
 	}
 	if (afe_offload_block.state != OFFLOAD_STATE_RUNNING) {
-		if ((afe_offload_block.transferred > 8 * USE_PERIODS_MAX) ||
+		if ((afe_offload_block.transferred >= 8 * USE_PERIODS_MAX) ||
 		    (afe_offload_block.transferred < 8 * USE_PERIODS_MAX &&
 		     afe_offload_block.state == OFFLOAD_STATE_DRAIN)) {
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
@@ -815,14 +814,11 @@ Error:
 static int mtk_compr_offload_pointer(void __user *arg)
 {
 	int ret = 0;
-	struct OFFLOAD_TIMESTAMP_T timestamp;
-
 	if (!afe_offload_service.ipiwait) {
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 					   MP3_TSTAMP, 0, 0, NULL);
 #endif
-
 		afe_offload_service.ipiwait = true;
 	}
 	if (afe_offload_block.state == OFFLOAD_STATE_INIT ||
@@ -832,8 +828,13 @@ static int mtk_compr_offload_pointer(void __user *arg)
 		timestamp.pcm_io_frames = 0;
 		return 0;
 	}
+
 	if (afe_offload_block.state == OFFLOAD_STATE_RUNNING && afe_offload_service.write_blocked)
 		OffloadService_IPICmd_Wait(MP3_PCMCONSUMED);
+
+	if ((afe_offload_block.copied_total >> 2) == timestamp.pcm_io_frames)  /* no update */
+		return 0;
+
 	timestamp.sampling_rate = afe_offload_block.samplerate;
 	timestamp.pcm_io_frames = afe_offload_block.copied_total >> 2;  /* DSP return 16bit data */
 
