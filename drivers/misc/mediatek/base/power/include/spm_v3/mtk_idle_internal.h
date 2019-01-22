@@ -333,6 +333,7 @@ const char *mtk_get_cg_group_name(int id);
 const char *mtk_get_pll_group_name(int id);
 
 bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1]);
+bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NR_GRPS + 1]);
 bool mtk_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask);
 bool mtk_idle_check_clkmux(int idle_type,
 							unsigned int block_mask[NR_TYPES][NF_CLK_CFG]);
