@@ -89,7 +89,7 @@ typedef enum {
 
 typedef CAM_CAL_BUS_ID cam_cal_bus_id;
 
-static unsigned int g_busNum[BUS_ID_MAX] = {2, 3, 3, 5};
+static unsigned int g_busNum[BUS_ID_MAX] = {0, 0, 0, 0};
 static cam_cal_bus_id g_curBusIdx = BUS_ID_MAIN;
 
 /*Note: Must Mapping to IHalSensor.h*/
