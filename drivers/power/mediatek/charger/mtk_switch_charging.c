@@ -118,7 +118,17 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		goto done;
 	}
 
-	if (info->chr_type == STANDARD_HOST) {
+	if (mtk_pdc_check_charger(info) == true) {
+		int vbus, cur, idx;
+
+		mtk_pdc_get_setting(info, &vbus, &cur, &idx);
+		pdata->input_current_limit = cur * 1000;
+		pdata->charging_current_limit = info->data.pd_charger_current;
+		chr_err("[%s]vbus:%d input_cur:%d idx:%d current:%d\n", __func__,
+			vbus, cur, idx, info->data.pd_charger_current);
+		mtk_pdc_setup(info, idx);
+
+	} else if (info->chr_type == STANDARD_HOST) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)) {
 			if (info->usb_state == USB_SUSPEND)
 				pdata->input_current_limit = info->data.usb_charger_current_suspend;
@@ -400,7 +410,11 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	int ret = 0;
 
-	pr_err("mtk_switch_charging_run [%d]\n", swchgalg->state);
+	mtk_pdc_check_charger(info);
+
+	pr_err("mtk_switch_charging_run [%d] pd:[%d]\n", swchgalg->state,
+		mtk_pdc_check_charger(info));
+
 
 	if (mtk_pe30_check_charger(info) == true)
 		swchgalg->state = CHR_PE30;
