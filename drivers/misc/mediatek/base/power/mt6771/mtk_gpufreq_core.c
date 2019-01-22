@@ -973,7 +973,8 @@ static int mt_gpufreq_opp_dump_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "[%d] ", i);
 		seq_printf(m, "freq = %d, ", g_opp_table[i].gpufreq_khz);
 		seq_printf(m, "volt = %d, ", g_opp_table[i].gpufreq_volt);
-		seq_printf(m, "vsram = %d\n", g_opp_table[i].gpufreq_vsram);
+		seq_printf(m, "vsram = %d, ", g_opp_table[i].gpufreq_vsram);
+		seq_printf(m, "gpufreq_power = %d\n", g_power_table[i].gpufreq_power);
 	}
 
 	return 0;
@@ -1002,6 +1003,9 @@ static int mt_gpufreq_power_dump_proc_show(struct seq_file *m, void *v)
 static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 {
 	int i;
+	unsigned int gpu_loading = 0;
+
+	mtk_get_gpu_loading(&gpu_loading);
 
 	seq_printf(m, "g_cur_opp_idx = %d, g_cur_opp_cond_idx = %d\n",
 			g_cur_opp_idx, g_cur_opp_cond_idx);
@@ -1015,6 +1019,8 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "g_opp_stress_test_state = %d\n", g_opp_stress_test_state);
 	seq_printf(m, "g_DVFS_off_by_ptpod_idx = %d\n", g_DVFS_off_by_ptpod_idx);
 	seq_printf(m, "g_max_limited_idx = %d\n", g_max_limited_idx);
+	seq_printf(m, "gpu_loading = %d\n", gpu_loading);
+
 	for (i = 0; i < NUMBER_OF_LIMITED_IDX; i++)
 		seq_printf(m, "g_limited_idx_array[%d] = %d\n", i, g_limited_idx_array[i]);
 
@@ -2181,6 +2187,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	g_opp_stress_test_state = false;
 	g_DVFS_off_by_ptpod_idx = 0;
+
 	/* Pause GPU DVFS for debug */
 	/* g_keep_opp_freq_state = true; */
 

@@ -385,6 +385,7 @@ struct g_pmic_info {
  * ===============================================
  */
 
+extern bool mtk_get_gpu_loading(unsigned int *pLoading);
 extern unsigned int mt_get_ckgen_freq(unsigned int);
 extern u32 get_devinfo_with_index(u32 index);
 #ifdef MT_GPUFREQ_AEE_RR_REC
