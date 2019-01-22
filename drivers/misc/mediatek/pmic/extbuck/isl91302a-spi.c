@@ -248,7 +248,7 @@ static struct mt_chip_conf isl91302a_spi_config = {
 	/* com_mod --> FIFO/DMA mode */
 	.com_mod = FIFO_TRANSFER,
 	/* pause --> if want to always let CS active, set this flag to 1*/
-	.pause = 1,
+	.pause = 0,
 	/* tckdly --> tune timing */
 	.tckdly = 0,
 
