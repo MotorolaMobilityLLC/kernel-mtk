@@ -75,8 +75,6 @@
 #endif
 
 #if defined(ISP_MET_READY)
-/*MET:met mmsys profile*/
-#include <mt-plat/met_drv.h>
 #define CREATE_TRACE_POINTS
 #include "inc/met_events_camsys.h"
 #endif
@@ -841,19 +839,22 @@ int MET_Event_Get_BPP(enum _isp_dma_enum_ dmao, unsigned int reg_module)
 	return ret;
 }
 
-void MET_Events_Trace(bool enter, unsigned int reg_module)
+void MET_Events_Trace(bool enter, u32 reg_module, enum ISP_IRQ_TYPE_ENUM cam)
 {
 	if (enter) {
 		int imgo_en = 0, rrzo_en = 0, imgo_bpp, rrzo_bpp, imgo_xsize, imgo_ysize;
 		int rrzo_xsize, rrzo_ysize, rrz_src_w, rrz_src_h, rrz_dst_w;
 		int rrz_dst_h, rrz_hori_step, rrz_vert_step;
-		unsigned int dma_en, rrz_in, rrz_out;
+		u32 ctl_dma_en, rrz_in, rrz_out;
+		u32 ctl_en, ctl_en2;
 
-		dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
+		ctl_dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
+		ctl_en = ISP_RD32(CAM_REG_CTL_EN(reg_module));
+		ctl_en2 = ISP_RD32(CAM_REG_CTL_EN2(reg_module));
 		rrz_in = ISP_RD32(CAM_REG_RRZ_IN_IMG(reg_module));
 		rrz_out = ISP_RD32(CAM_REG_RRZ_OUT_IMG(reg_module));
-		imgo_en = dma_en & 0x1;
-		rrzo_en = dma_en & 0x4;
+		imgo_en = ctl_dma_en & 0x1;
+		rrzo_en = ctl_dma_en & 0x4;
 		imgo_bpp = MET_Event_Get_BPP(_imgo_, reg_module);
 		rrzo_bpp = MET_Event_Get_BPP(_rrzo_, reg_module);
 		imgo_xsize = (int)(ISP_RD32(CAM_REG_IMGO_XSIZE(reg_module)) & 0xFFFF);
@@ -867,10 +868,11 @@ void MET_Events_Trace(bool enter, unsigned int reg_module)
 		rrz_hori_step = (int)(ISP_RD32(CAM_REG_RRZ_HORI_STEP(reg_module)) & 0x3FFFF);
 		rrz_vert_step = (int)(ISP_RD32(CAM_REG_RRZ_VERT_STEP(reg_module)) & 0x3FFFF);
 
-		trace_ISP_Pass1_CAM_enter(imgo_en, rrzo_en, imgo_bpp, rrzo_bpp, imgo_xsize, imgo_ysize,
-		rrzo_xsize, rrzo_ysize, rrz_src_w, rrz_src_h, rrz_dst_w, rrz_dst_h, rrz_hori_step, rrz_vert_step);
+		trace_ISP__Pass1_CAM_enter(cam, imgo_en, rrzo_en, imgo_bpp, rrzo_bpp,
+		imgo_xsize, imgo_ysize, rrzo_xsize, rrzo_ysize, rrz_src_w, rrz_src_h, rrz_dst_w, rrz_dst_h,
+		rrz_hori_step, rrz_vert_step, ctl_en, ctl_dma_en, ctl_en2);
 	} else {
-		trace_ISP_Pass1_CAM_leave(0);
+		trace_ISP__Pass1_CAM_leave(cam, 0);
 	}
 }
 #endif
@@ -3835,13 +3837,6 @@ static int ISP_probe(struct platform_device *pDev)
 	isp_devs = _ispdev;
 
 
-	#if defined(ISP_MET_READY)
-	/*MET: met mmsys profile*/
-	if (met_mmsys_config_isp_base_addr)
-		met_mmsys_config_isp_base_addr((unsigned long *)isp_devs);
-	#endif
-
-
 	isp_dev = &(isp_devs[nr_isp_devs - 1]);
 	isp_dev->dev = &pDev->dev;
 
@@ -5897,16 +5892,12 @@ irqreturn_t ISP_Irq_CAM(enum ISP_IRQ_TYPE_ENUM irq_module)
 	#if defined(ISP_MET_READY)
 	/*MET:ISP EOF*/
 	if (IrqStatus & HW_PASS1_DON_ST) {
-		if (met_mmsys_event_isp_pass1_end)
-			met_mmsys_event_isp_pass1_end(cardinalNum);
-		MET_Events_Trace(0, reg_module);
+		MET_Events_Trace(0, reg_module, irq_module);
 	}
 
 	if (IrqStatus & SOF_INT_ST) {
 		/*met mmsys profile*/
-		if (met_mmsys_event_isp_pass1_begin)
-			met_mmsys_event_isp_pass1_begin(cardinalNum);
-		MET_Events_Trace(1, reg_module);
+		MET_Events_Trace(1, reg_module, irq_module);
 	}
 	#endif
 

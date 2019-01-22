@@ -169,6 +169,7 @@
 #define CAMSYS_REG_CG_SET               (ISP_CAMSYS_CONFIG_BASE + 0x4)
 #define CAMSYS_REG_CG_CLR               (ISP_CAMSYS_CONFIG_BASE + 0x8)
 
+#define CAM_REG_CTL_EN(module)  (isp_devs[module].regs + 0x0004)
 #define CAM_REG_CTL_DMA_EN(module)  (isp_devs[module].regs + 0x0008)
 #define CAM_REG_CTL_FMT_SEL(module)  (isp_devs[module].regs + 0x000C)
 #define CAM_REG_CTL_SEL(module)  (isp_devs[module].regs + 0x0010)
@@ -209,8 +210,16 @@
 #define CAM_REG_TG_INTER_ST(module)  (isp_devs[module].regs + 0x026C)
 #define CAM_REG_TG_SUB_PERIOD(module)  (isp_devs[module].regs + 0x02A4)
 
+#define CAM_REG_RRZ_IN_IMG(module)  (isp_devs[module].regs + 0x04E4)
+#define CAM_REG_RRZ_OUT_IMG(module)  (isp_devs[module].regs + 0x04E8)
+
 #define CAM_REG_IMGO_BASE_ADDR(module)  (isp_devs[module].regs + 0x1020)
+#define CAM_REG_IMGO_XSIZE(module)  (isp_devs[module].regs + 0x1030)
+#define CAM_REG_IMGO_YSIZE(module)  (isp_devs[module].regs + 0x1034)
+
 #define CAM_REG_RRZO_BASE_ADDR(module)  (isp_devs[module].regs + 0x1050)
+#define CAM_REG_RRZO_XSIZE(module)  (isp_devs[module].regs + 0x1060)
+#define CAM_REG_RRZO_YSIZE(module)  (isp_devs[module].regs + 0x1064)
 
 #define CAM_REG_IMGO_ERR_STAT(module)  (isp_devs[module].regs + 0x1360)
 #define CAM_REG_RRZO_ERR_STAT(module)  (isp_devs[module].regs + 0x1364)
@@ -230,6 +239,9 @@
 
 #define CAM_REG_IMGO_FH_SPARE_2(module)  (isp_devs[module].regs + 0x1434)
 #define CAM_REG_RRZO_FH_SPARE_2(module)  (isp_devs[module].regs + 0x1474)
+
+#define CAM_REG_RRZ_HORI_STEP(module)  (isp_devs[module].regs + 0x14EC)
+#define CAM_REG_RRZ_VERT_STEP(module)  (isp_devs[module].regs + 0x14F0)
 
 /* CAM_UNI */
 #define CAM_UNI_REG_TOP_SW_CTL(module)  (isp_devs[module].regs + 0x0008)
