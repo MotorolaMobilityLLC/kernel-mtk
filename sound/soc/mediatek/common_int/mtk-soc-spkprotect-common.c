@@ -50,9 +50,9 @@
 #include <audio_dma_buf_control.h>
 #endif
 
-static struct Aud_Spk_Message mAud_Spk_Message;
+static struct Aud_Spk_Message_t mAud_Spk_Message;
 
-void spkprocservice_ipicmd_received(ipi_msg_t *ipi_msg)
+void spkprocservice_ipicmd_received(struct ipi_msg_t *ipi_msg)
 {
 
 	switch (ipi_msg->msg_id) {
@@ -70,16 +70,16 @@ void spkprocservice_ipicmd_received(ipi_msg_t *ipi_msg)
 	}
 }
 
-void spkprocservice_ipicmd_send(audio_ipi_msg_data_t data_type,
-						audio_ipi_msg_ack_t ack_type, uint16_t msg_id, uint32_t param1,
+void spkprocservice_ipicmd_send(uint8_t data_type,
+						uint8_t ack_type, uint16_t msg_id, uint32_t param1,
 						uint32_t param2, char *payload)
 {
-	ipi_msg_t ipi_msg;
+	struct ipi_msg_t ipi_msg;
 	int send_result = 0;
 	int retry_count;
 	const int k_max_try_count = 200;  /* maximum wait 20ms */
 
-	memset((void *)&ipi_msg, 0, sizeof(ipi_msg_t));
+	memset((void *)&ipi_msg, 0, sizeof(struct ipi_msg_t));
 	for (retry_count = 0; retry_count < k_max_try_count ; retry_count++) {
 		send_result = audio_send_ipi_msg(&ipi_msg, TASK_SCENE_SPEAKER_PROTECTION,
 						 AUDIO_IPI_LAYER_KERNEL_TO_SCP,

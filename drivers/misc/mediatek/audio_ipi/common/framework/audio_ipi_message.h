@@ -37,7 +37,7 @@
  * =============================================================================
  */
 
-typedef enum {
+enum { /* audio_ipi_msg_layer_t */
 	AUDIO_IPI_LAYER_HAL_TO_KERNEL,  /* HAL    -> kernel */
 	AUDIO_IPI_LAYER_HAL_TO_SCP,     /* HAL    -> SCP */
 
@@ -48,22 +48,22 @@ typedef enum {
 	AUDIO_IPI_LAYER_SCP_TO_KERNEL,  /* SCP    -> kernel */
 
 	AUDIO_IPI_LAYER_MODEM_TO_SCP,   /* MODEM  -> SCP */
-} audio_ipi_msg_layer_t;
+};
 
 
-typedef enum {
+enum { /* audio_ipi_msg_data_t */
 	AUDIO_IPI_MSG_ONLY, /* param1: defined by user,       param2: defined by user */
 	AUDIO_IPI_PAYLOAD,  /* param1: payload length (<=32), param2: defined by user */
 	AUDIO_IPI_DMA,      /* param1: dma data length,       param2: defined by user */
-} audio_ipi_msg_data_t;
+};
 
 
-typedef enum {
+enum { /* audio_ipi_msg_ack_t */
 	AUDIO_IPI_MSG_BYPASS_ACK = 0,
 	AUDIO_IPI_MSG_NEED_ACK   = 1,
 	AUDIO_IPI_MSG_ACK_BACK   = 2,
 	AUDIO_IPI_MSG_CANCELED   = 8
-} audio_ipi_msg_ack_t;
+};
 
 
 /*
@@ -72,7 +72,7 @@ typedef enum {
  * =============================================================================
  */
 
-typedef struct ipi_msg_t {
+struct ipi_msg_t {
 	uint16_t magic;      /* IPI_MSG_MAGIC_NUMBER */
 	uint8_t  task_scene; /* see task_scene_t */
 	uint8_t  msg_layer;  /* see audio_ipi_msg_layer_t */
@@ -85,7 +85,7 @@ typedef struct ipi_msg_t {
 		char payload[MAX_IPI_MSG_PAYLOAD_SIZE];
 		char *dma_addr;  /* for AUDIO_IPI_DMA only */
 	};
-} ipi_msg_t;
+};
 
 
 /*
@@ -103,16 +103,16 @@ typedef void (*recv_message_t)(struct ipi_msg_t *p_ipi_msg);
  * =============================================================================
  */
 
-uint16_t get_message_buf_size(const ipi_msg_t *p_ipi_msg);
+uint16_t get_message_buf_size(const struct ipi_msg_t *p_ipi_msg);
 
-void dump_msg(const ipi_msg_t *p_ipi_msg);
+void dump_msg(const struct ipi_msg_t *p_ipi_msg);
 
-void check_msg_format(const ipi_msg_t *p_ipi_msg, unsigned int len);
+void check_msg_format(const struct ipi_msg_t *p_ipi_msg, unsigned int len);
 
 void print_msg_info(
 	const char *func_name,
 	const char *description,
-	const ipi_msg_t *p_ipi_msg);
+	const struct ipi_msg_t *p_ipi_msg);
 
 
 #endif /* end of AUDIO_IPI_MESSAGE_H */

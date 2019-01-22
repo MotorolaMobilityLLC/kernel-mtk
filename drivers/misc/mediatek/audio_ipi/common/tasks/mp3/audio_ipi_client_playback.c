@@ -53,37 +53,37 @@
 #define DUMP_DSP_PCM_DATA_PATH "/sdcard/mtklog"
 static struct wake_lock playback_pcm_dump_wake_lock;
 
-typedef enum {
+enum { /* dump_data_t */
 	DUMP_DECODE = 0,
 	NUM_DUMP_DATA = 1,
-} dump_data_t;
+};
 
 
 
-typedef struct {
+struct dump_work_t {
 	struct work_struct work;
 	char *dma_addr;
-} dump_work_t;
+};
 
 
-typedef struct {
-	dump_data_t dump_data_type;
+struct dump_package_t {
+	uint8_t dump_data_type; /* dump_data_t */
 	char *data_addr;
-} dump_package_t;
+};
 
 
-typedef struct {
-	dump_package_t dump_package[256];
+struct dump_queue_t {
+	struct dump_package_t dump_package[256];
 	uint8_t idx_r;
 	uint8_t idx_w;
-} dump_queue_t;
+};
 
 
-static dump_queue_t *dump_queue;
+static struct dump_queue_t *dump_queue;
 static DEFINE_SPINLOCK(dump_queue_lock);
 
 
-static dump_work_t dump_work[NUM_DUMP_DATA];
+static struct dump_work_t dump_work[NUM_DUMP_DATA];
 static struct workqueue_struct *dump_workqueue[NUM_DUMP_DATA];
 
 struct task_struct *playback_dump_task;
@@ -100,11 +100,11 @@ static int datasize;
 #define FRAME_BUF_SIZE   (4608)
 #define MP3_PCMDUMP_OK (24)
 
-typedef struct pcm_dump_t {
+struct pcm_dump_t {
 	char decode_pcm[FRAME_BUF_SIZE];
-} pcm_dump_t;
+};
 
-static audio_resv_dram_t *p_resv_dram;
+static struct audio_resv_dram_t *p_resv_dram;
 
 struct file *file_decode_pcm;
 
@@ -140,9 +140,9 @@ void playback_open_dump_file(void)
 	}
 
 	if (dump_queue == NULL) {
-		dump_queue = kmalloc(sizeof(dump_queue_t), GFP_KERNEL);
+		dump_queue = kmalloc(sizeof(struct dump_queue_t), GFP_KERNEL);
 		if (dump_queue != NULL)
-			memset_io(dump_queue, 0, sizeof(dump_queue_t));
+			memset_io(dump_queue, 0, sizeof(struct dump_queue_t));
 	}
 
 	if (!playback_dump_task) {
@@ -185,10 +185,11 @@ void playback_close_dump_file(void)
 
 static void dump_data_routine(struct work_struct *ws)
 {
-	dump_work_t *dump_work = NULL;
+	struct dump_work_t *dump_work = NULL;
 	char *data_addr = NULL;
 	unsigned long flags = 0;
-	dump_work = container_of(ws, dump_work_t, work);
+
+	dump_work = container_of(ws, struct dump_work_t, work);
 	data_addr = get_resv_dram_vir_addr(dump_work->dma_addr);
 	AUD_LOG_E("data %p, dma %p, vp %p, pp %p\n",
 		  data_addr, dump_work->dma_addr,
@@ -208,7 +209,7 @@ void playback_dump_message(struct ipi_msg_t *ipi_msg)
 {
 	int ret = 0;
 
-	dump_data_t idx = 0;
+	uint8_t idx = 0; /* dump_data_t */
 
 	datasize = 0;
 
@@ -228,7 +229,7 @@ static int dump_kthread(void *data)
 	int size = 0, writedata = 0;
 	uint8_t current_idx = 0;
 
-	pcm_dump_t *pcm_dump = NULL;
+	struct pcm_dump_t *pcm_dump = NULL;
 
 	struct sched_param param = {.sched_priority = 85 }; /* RTPM_PRIO_AUDIO_PLAYBACK */
 
@@ -265,7 +266,7 @@ static int dump_kthread(void *data)
 			size = datasize;
 			writedata = FRAME_BUF_SIZE;
 			pcm_dump =
-				(pcm_dump_t *)dump_queue->dump_package[current_idx].data_addr;
+				(struct pcm_dump_t *)dump_queue->dump_package[current_idx].data_addr;
 			AUD_LOG_D("pcm_dump = %p datasize = %d\n", pcm_dump, datasize);
 
 			while (size > 0) {
