@@ -45,6 +45,11 @@
 #include <linux/time.h>
 
 #include <tscpu_settings.h>
+#include <mtk_ts_setting.h>
+
+#if THERMAL_LT_SET_HPM
+#include <mtk_vcorefs_manager.h>
+#endif
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -123,6 +128,11 @@ int thermal_5A_limit_H = 85000; /*85C*/
 int thermal_5A_limit_L = 83000; /*83C*/
 #endif
 
+#if THERMAL_LT_SET_HPM
+int enter_hpm_temp = 10000;
+int leave_hpm_temp = 15000;
+int enable_hpm_temp = 1;
+#endif
 static int tc_mid_trip = -275000;
 /* trip_temp[0] must be initialized to the thermal HW protection point. */
 #if defined(TZCPU_SET_INIT_CFG)
@@ -575,6 +585,9 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, int *t)
 	int temp_temp;
 	static int last_cpu_real_temp;
 #endif
+#if THERMAL_LT_SET_HPM
+	int vcore_temp, vcore_r;
+#endif
 
 #ifdef FAST_RESPONSE_ATM
 	curr_temp = tscpu_get_curr_max_ts_temp();
@@ -611,6 +624,22 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, int *t)
 	curr_temp = temp_temp;
 #endif
 
+#if THERMAL_LT_SET_HPM
+	if (enable_hpm_temp) {
+		vcore_temp = get_immediate_ts4_wrap();
+		if (vcore_temp > leave_hpm_temp) {
+			if (vcorefs_get_kicker_opp(KIR_THERMAL) != OPPI_UNREQ) {
+				tscpu_warn("setVcore: vcore_temp=%d leave HPM\n", vcore_temp);
+				vcore_r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_UNREQ);
+			}
+		} else if (vcore_temp < enter_hpm_temp) {
+			if (vcorefs_get_kicker_opp(KIR_THERMAL) != OPPI_PERF) {
+				tscpu_warn("setVcore: vcore_temp=%d enter HPM\n", vcore_temp);
+				vcore_r = vcorefs_request_dvfs_opp(KIR_THERMAL, OPPI_PERF);
+			}
+		}
+	}
+#endif
 	tscpu_read_curr_temp = curr_temp;
 	*t = (unsigned long)curr_temp;
 
@@ -1127,6 +1156,59 @@ static ssize_t tscpu_write_fastpoll(struct file *file, const char __user *buffer
 
 	tscpu_dprintk("tscpu_write_fastpoll bad argument\n");
 	return -EINVAL;
+}
+#endif
+
+#if THERMAL_LT_SET_HPM
+static int tscpu_read_setVcore(struct seq_file *m, void *v)
+{
+	int vcore_temp = get_immediate_ts4_wrap();
+
+	seq_printf(m, "vcore_temp: %d\n", vcore_temp);
+	seq_printf(m, "enter_hpm: %d leave_hpm: %d enable: %d\n",
+			enter_hpm_temp, leave_hpm_temp, enable_hpm_temp);
+	return 0;
+}
+
+static ssize_t tscpu_write_setVcore(struct file *file, const char __user *buffer, size_t count,
+				    loff_t *data)
+{
+	char desc[128];
+	int len = 0;
+
+	int set_enable = 0;
+	int trip1 = -1, trip2 = -1, enable = 1;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	if (sscanf(desc, "%d %d %d", &trip1, &trip2, &enable) == 3) {
+		set_enable = 1;
+	} else if (sscanf(desc, "%d %d", &trip1, &trip2) == 2) {
+		set_enable = 0;
+	} else {
+		tscpu_warn("tscpu_write_setVcore bad argument\n");
+		return -EINVAL;
+	}
+
+	if ((trip1 >= 0) && (trip2 >= 0)) {
+		enter_hpm_temp = trip1;
+		leave_hpm_temp = trip2;
+		tscpu_warn("tscpu_write_setVcore applied enter_hpm: %d , leave_hpm: %d\n",
+				enter_hpm_temp, leave_hpm_temp);
+	} else {
+		tscpu_warn("tscpu_write_setVcore out of range\n");
+	}
+
+	if (set_enable) {
+		enable_hpm_temp = !!(enable);
+		tscpu_warn("tscpu_write_setVcore enable: %d (%d)\n", enable_hpm_temp, enable);
+	}
+
+	return count;
 }
 #endif
 
@@ -1922,6 +2004,23 @@ static const struct file_operations mtktscpu_fastpoll_fops = {
 };
 #endif
 
+
+#if THERMAL_LT_SET_HPM
+static int tscpu_setVcore_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, tscpu_read_setVcore, NULL);
+}
+
+static const struct file_operations mtktscpu_setVcore_fops = {
+	.owner = THIS_MODULE,
+	.open = tscpu_setVcore_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = tscpu_write_setVcore,
+	.release = single_release,
+};
+#endif
+
 static int tscpu_read_ttpct(struct seq_file *m, void *v)
 {
 	unsigned int cpu_power, gpu_power, max_cpu_pwr, max_gpu_pwr;
@@ -2410,6 +2509,13 @@ static void tscpu_create_fs(void)
 		if (entry)
 			proc_set_user(entry, uid, gid);
 
+#endif
+#if THERMAL_LT_SET_HPM
+		entry =
+		    proc_create("tzcpu_setVcore", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir,
+				&mtktscpu_setVcore_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
 #endif
 	}
 }

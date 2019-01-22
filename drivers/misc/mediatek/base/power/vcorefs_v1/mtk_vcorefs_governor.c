@@ -32,6 +32,7 @@
 #include "mtk_spm_vcore_dvfs.h"
 #include "mtk_dramc.h"
 #include "mtk_eem.h"
+#include "mtk_ts_setting.h"
 
 /*
  * AutoK options
@@ -168,6 +169,7 @@ static char *kicker_name[] = {
 	"KIR_SYSFS_N",
 	"KIR_GPU",
 	"KIR_CPU",
+	"KIR_THERMAL",
 	"NUM_KICKER",
 
 	"KIR_LATE_INIT",
@@ -302,7 +304,6 @@ int vcorefs_get_vcore_by_steps(u32 steps)
 		break;
 	}
 #endif
-
 	return 0;
 }
 
@@ -374,11 +375,22 @@ int vcorefs_get_dvfs_kicker_group(int kicker)
 	case KIR_LATE_INIT:
 	case KIR_GPU:
 	case KIR_CPU:
+	case KIR_THERMAL:
 	default:
 		group = KIR_GROUP_HPM;
 	break;
 	}
 	return group;
+}
+
+int vcorefs_get_kicker_opp(int id)
+{
+	int opp = -1;
+
+	if (id < LAST_KICKER)
+		opp = kicker_table[id];
+
+	return opp;
 }
 
 /*
@@ -886,6 +898,14 @@ int vcorefs_late_init_dvfs(void)
 	gvrctrl->late_init_opp = set_init_opp_index();
 
 	if (is_vcorefs_feature_enable()) {
+		int init_temp = get_immediate_ts4_wrap();
+#if THERMAL_LT_SET_HPM
+		if (init_temp < enter_hpm_temp)  {
+			kicker_table[KIR_THERMAL] = OPPI_PERF;
+			gvrctrl->late_init_opp = OPPI_PERF;
+			vcorefs_crit("init with HPM for LT(temp=%d)\n", init_temp);
+		}
+#endif
 		krconf.kicker = KIR_LATE_INIT;
 		krconf.opp = gvrctrl->late_init_opp;
 		krconf.dvfs_opp = gvrctrl->late_init_opp;
@@ -954,6 +974,7 @@ static int __init vcorefs_module_init(void)
 {
 	int r;
 	struct device_node *node;
+	int i;
 
 #if defined(CONFIG_FPGA_EARLY_PORTING)
 	return 0;
@@ -988,6 +1009,8 @@ static int __init vcorefs_module_init(void)
 	}
 	vcorefs_init_sram_debug();
 
+	for (i = 0; i < NUM_KICKER; i++)
+		kicker_table[i] = -1;
 	return r;
 }
 
