@@ -310,6 +310,8 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 {
 	int i;
 	char buf[LOG_BUF_SIZE] = { 0 };
+	char log_buf[1024] = { 0 };
+	int log_size = 0;
 	wake_reason_t wr = WR_UNKNOWN;
 
 	if (wakesta->assert_pc != 0) {
@@ -346,15 +348,15 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 	}
 	WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-	spm_print(suspend, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, ch = %u\n",
+	log_size += sprintf(log_buf, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, ch = %u\n",
 		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag, wakesta->dcs_ch);
 
-	spm_print(suspend,
+	log_size += sprintf(log_buf,
 		  "r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 		  wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 		  wakesta->event_reg, wakesta->isr);
 
-	spm_print(suspend,
+	log_size += sprintf(log_buf,
 		"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x 0x%x, req = 0x%x, resource = 0x%x\n",
 		wakesta->raw_ext_sta,
 		wakesta->wake_misc,
@@ -363,6 +365,10 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		spm_read(SPM_SW_RSV_4),
 		spm_read(SPM_SRC_REQ),
 		spm_get_resource_usage());
+
+	WARN_ON(log_size >= 1024);
+
+	spm_print(suspend, "%s", log_buf);
 
 	return wr;
 }
@@ -430,8 +436,8 @@ void __spm_set_pcm_wdt(int en)
 int __attribute__ ((weak)) get_dynamic_period(int first_use, int first_wakeup_time,
 					      int battery_capacity_level)
 {
-	pr_err("NO %s !!!\n", __func__);
-	return 5400;
+	/* pr_err("NO %s !!!\n", __func__); */
+	return 5401;
 }
 
 u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
