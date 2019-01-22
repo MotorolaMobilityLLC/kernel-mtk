@@ -1207,17 +1207,6 @@ static long vcodec_lockhw(unsigned long arg)
 					 grVcodecDecHWLock.rLockedTime.u4Sec, grVcodecDecHWLock.rLockedTime.u4uSec);
 
 				bLockedHW = VAL_TRUE;
-				if (eValRet == VAL_RESULT_INVALID_ISR && FirstUseDecHW != 1) {
-					pr_debug("[WARNING] VCODEC_LOCKHW, reset power/irq when HWLock!!\n");
-#ifdef CONFIG_PM
-					pm_runtime_put_sync(vcodec_device);
-#else
-#ifndef KS_POWER_WORKAROUND
-					vdec_power_off();
-#endif
-#endif
-					disable_irq(VDEC_IRQ_ID);
-				}
 #ifdef VCODEC_DVFS_V2
 				mutex_lock(&VdecDVFSLock);
 				if (dec_cur_job == 0) {
@@ -2779,6 +2768,7 @@ static int vcodec_flush(struct file *file, fl_owner_t id)
 static int vcodec_release(struct inode *inode, struct file *file)
 {
 	VAL_ULONG_T ulFlagsLockHW, ulFlagsISR;
+	VAL_VOID_T *pvCheckHandle = 0;
 
 	/* dump_stack(); */
 	MODULE_MFV_LOGD("vcodec_release, curr_tid =%d\n", current->pid);
@@ -2789,6 +2779,7 @@ static int vcodec_release(struct inode *inode, struct file *file)
 	if (Driver_Open_Count == 0) {
 		mutex_lock(&VdecHWLock);
 		gu4VdecLockThreadId = 0;
+		pvCheckHandle = grVcodecDecHWLock.pvHandle;
 
 		/* check if someone didn't unlockHW */
 		if (grVcodecDecHWLock.pvHandle != 0) {
@@ -2801,7 +2792,15 @@ static int vcodec_release(struct inode *inode, struct file *file)
 				grVcodecDecHWLock.eDriverType == VAL_DRIVER_TYPE_H264_DEC ||
 				grVcodecDecHWLock.eDriverType == VAL_DRIVER_TYPE_MP1_MP2_DEC) {
 				vdec_break();
+				pr_debug("[WARNING] VCODEC_DEC release, reset power/irq!!\n");
+#ifdef CONFIG_PM
+				pm_runtime_put_sync(vcodec_device);
+#else
+#ifndef KS_POWER_WORKAROUND
 				vdec_power_off();
+#endif
+#endif
+				disable_irq(VDEC_IRQ_ID);
 			}
 		}
 
@@ -2810,14 +2809,25 @@ static int vcodec_release(struct inode *inode, struct file *file)
 		grVcodecDecHWLock.rLockedTime.u4Sec = 0;
 		grVcodecDecHWLock.rLockedTime.u4uSec = 0;
 		mutex_unlock(&VdecHWLock);
+		if (pvCheckHandle != 0)
+			eVideoSetEvent(&DecHWLockEvent, sizeof(VAL_EVENT_T));
 
 		mutex_lock(&VencHWLock);
+		pvCheckHandle = grVcodecEncHWLock.pvHandle;
 		if (grVcodecEncHWLock.pvHandle != 0) {
 			pr_info("[ERROR] someone didn't unlockHW vcodec_release pid = %d, grVcodecEncHWLock.eDriverType %d grVcodecEncHWLock.pvHandle 0x%lx\n",
 				current->pid, grVcodecEncHWLock.eDriverType, (VAL_ULONG_T)grVcodecEncHWLock.pvHandle);
 			if (grVcodecEncHWLock.eDriverType == VAL_DRIVER_TYPE_H264_ENC) {
 				venc_break();
+				pr_debug("[WARNING] VCODEC_ENC release, reset power/irq!!\n");
+#ifdef CONFIG_PM
+				pm_runtime_put_sync(vcodec_device2);
+#else
+#ifndef KS_POWER_WORKAROUND
 				venc_power_off();
+#endif
+#endif
+				disable_irq(VENC_IRQ_ID);
 			}
 		}
 		grVcodecEncHWLock.pvHandle = 0;
@@ -2825,6 +2835,8 @@ static int vcodec_release(struct inode *inode, struct file *file)
 		grVcodecEncHWLock.rLockedTime.u4Sec = 0;
 		grVcodecEncHWLock.rLockedTime.u4uSec = 0;
 		mutex_unlock(&VencHWLock);
+		if (pvCheckHandle != 0)
+			eVideoSetEvent(&EncHWLockEvent, sizeof(VAL_EVENT_T));
 
 		mutex_lock(&DecEMILock);
 		gu4DecEMICounter = 0;
