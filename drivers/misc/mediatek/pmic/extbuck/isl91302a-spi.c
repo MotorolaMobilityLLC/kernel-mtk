@@ -31,6 +31,8 @@
 #define ISL91302A_DRV_VERSION	"1.0.0_MTK"
 #define ISL91302A_IRQ_ENABLE	0
 
+static struct spi_device *isl91302a_spi;
+
 static int isl91302a_read_device(void *client, u32 addr, int len, void *dst)
 {
 	int ret;
@@ -393,12 +395,22 @@ static int isl91302a_init_irq(struct isl91302a_chip *chip, struct device *dev)
 }
 #endif /* if ISL91302A_IRQ_ENABLE */
 
+int force_enable_proc2(void)
+{
+	if (isl91302a_spi == NULL) {
+		pr_err("%s spi device is null\n", __func__);
+		return -EINVAL;
+	}
+	return isl91302a_set_bit(isl91302a_spi, 0x24, 0x40);
+}
+
 static int isl91302a_spi_probe(struct spi_device *spi)
 {
 	struct isl91302a_chip *chip;
 	int ret;
 
 	pr_info("%s\n", __func__);
+	isl91302a_spi = spi;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	pr_info("%s SSPM not need kernel Driver\n", __func__);
 	return -EINVAL;
