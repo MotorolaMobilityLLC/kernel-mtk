@@ -805,8 +805,13 @@ static int vcorefs_is_lp_flavor(void)
 
 	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/k71v1_64_bsp_cmd_lp", 28) == 0)
 		r = 1;
-#endif
+
+	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, "mediatek/evb6771_64_fhdp_lp", 27) == 0)
+		r = 1;
+
 	spm_vcorefs_warn("flavor check: %s, is_lp: %d\n", CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES, r);
+#endif
+
 	return r;
 }
 
