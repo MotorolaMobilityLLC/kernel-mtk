@@ -134,7 +134,7 @@ static int secmem_execute(u32 cmd, struct secmem_param *param)
 #endif
 
 	struct TEEC_Operation op;
-	secmem_msg_t *msg;
+	struct secmem_msg_t *msg;
 
 	DBG("\n");
 
@@ -381,8 +381,8 @@ static int secmem_session_open(void)
 
 		INFO("Testing teec_register_shared_memory with get_zeroed_page\n");
 
-		wsm.buffer = kmalloc(sizeof(secmem_msg_t), GFP_KERNEL);
-		wsm.size = sizeof(secmem_msg_t);
+		wsm.buffer = kmalloc(sizeof(struct secmem_msg_t), GFP_KERNEL);
+		wsm.size = sizeof(struct secmem_msg_t);
 		wsm.flags = TEEC_MEM_INPUT | TEEC_MEM_OUTPUT;
 		memset(wsm.buffer, 0, wsm.size);
 
