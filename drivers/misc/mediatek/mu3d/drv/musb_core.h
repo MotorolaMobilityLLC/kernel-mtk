@@ -629,6 +629,7 @@ struct musb {
 #if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
 	u32 bus_event;
 #endif
+	struct workqueue_struct *st_wq;
 };
 
 static inline struct musb *gadget_to_musb(struct usb_gadget *g)

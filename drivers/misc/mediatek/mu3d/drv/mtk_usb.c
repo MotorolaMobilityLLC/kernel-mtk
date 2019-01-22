@@ -137,7 +137,7 @@ void connection_work(struct work_struct *data)
 			os_printk(K_INFO, "%s ----Disconnect----\n", __func__);
 		}
 
-		schedule_delayed_work(&musb->connection_work,
+		queue_delayed_work(musb->st_wq, &musb->connection_work,
 				msecs_to_jiffies(delay));
 		return;
 	}
@@ -247,7 +247,7 @@ void mt_usb_connect(void)
 
 		work = &_mu3d_musb->connection_work;
 
-		schedule_delayed_work(work, 0);
+		queue_delayed_work(_mu3d_musb->st_wq, work, 0);
 	} else {
 		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
 	}
@@ -264,7 +264,7 @@ void mt_usb_disconnect(void)
 
 		work = &_mu3d_musb->connection_work;
 
-		schedule_delayed_work(work, 0);
+		queue_delayed_work(_mu3d_musb->st_wq, work, 0);
 	} else {
 		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
 	}
@@ -273,7 +273,7 @@ void mt_usb_disconnect(void)
 EXPORT_SYMBOL_GPL(mt_usb_disconnect);
 
 /* build time force on */
-#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(U3_COMPLIANCE) || defined(FOR_BRING_UP)
+#if defined(CONFIG_FPGA_EARLY_PORTING)
 #define BYPASS_PMIC_LINKAGE
 #endif
 
@@ -357,14 +357,6 @@ bool usb_cable_connected(void)
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
 	bool connected = false, vbus_exist = false;
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
-			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
-		os_printk(K_INFO, "%s, in KPOC, force USB on\n", __func__);
-		return true;
-	}
-#endif
-
 	if (mu3d_test_connect) {
 		os_printk(K_INFO, "%s, return test_connected<%d>\n", __func__, test_connected);
 		return test_connected;
@@ -415,7 +407,7 @@ int typec_switch_usb_connect(void *data)
 
 		work = &musb->connection_work;
 
-		schedule_delayed_work(work, 0);
+		queue_delayed_work(_mu3d_musb->st_wq, work, 0);
 	} else {
 		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
 	}
@@ -435,7 +427,7 @@ int typec_switch_usb_disconnect(void *data)
 
 		work = &musb->connection_work;
 
-		schedule_delayed_work(work, 0);
+		queue_delayed_work(_mu3d_musb->st_wq, work, 0);
 	} else {
 		os_printk(K_INFO, "%s musb_musb not ready\n", __func__);
 	}
