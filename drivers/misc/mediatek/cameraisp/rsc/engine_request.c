@@ -126,6 +126,12 @@ signed int register_requests(struct engine_requests *eng, size_t size)
 	/* TODO: KE Risk : array out of bound */
 	len = (size * MAX_FRAMES_PER_REQUEST) * MAX_REQUEST_SIZE_PER_ENGINE;
 	_data = vmalloc(len);
+
+	if (_data == NULL) {
+		LOG_INF("[%s] vmalloc failed", __func__);
+		return -1;
+	}
+
 	memset(_data, 0x0, len);
 	LOG_INF("[%s]Engine struct total size is %zu", __func__, len);
 
