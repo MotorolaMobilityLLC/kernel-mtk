@@ -1238,7 +1238,7 @@ static inline void handle_init01_isr(struct eem_det *det)
 	det->DCVOFFSETIN = ~(eem_read(EEM_DCVALUES) & 0xffff) + 1; /* hw bug, workaround */
 	/* check if DCVALUES is minus and set DCVOFFSETIN to zero */
 
-	if ((det->SPEC == 0x7) || (det->DCVOFFSETIN & 0x8000))
+	if (det->DCVOFFSETIN & 0x8000)
 		det->DCVOFFSETIN = 0;
 
 	det->AGEVOFFSETIN = eem_read(EEM_AGEVALUES) & 0xffff;
@@ -1488,8 +1488,8 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 {
 	unsigned int i, verr = 0;
 #ifdef CONFIG_THERMAL
-	unsigned long long temp_long;
 #ifdef CONFIG_EEM_AEE_RR_REC
+	unsigned long long temp_long;
 	unsigned long long temp_cur = (unsigned long long)aee_rr_curr_ptp_temp();
 #endif
 #endif
