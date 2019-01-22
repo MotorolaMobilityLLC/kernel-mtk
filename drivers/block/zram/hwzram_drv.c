@@ -373,9 +373,13 @@ static void hwzram_impl_decompr_cb(struct hwzram_impl_completion *cmpl)
 	if (cmpl->decompr_status == DCMD_STATUS_DECOMPRESSED) {
 		if (cmpl->flags)
 			bio_endio(bio);
-	} else {
+	}
+	/* No need to handle bio_io_error for atomic decompression here.
+	 * This will be finished in __hwzram_make_request.
+	else {
 		bio_io_error(bio);
 	}
+	*/
 
 	kfree(cmpl);
 }

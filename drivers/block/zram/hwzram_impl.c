@@ -664,7 +664,7 @@ struct hwzram_impl *hwzram_impl_init(struct device *dev, uint16_t fifo_size,
 				     hwzram_clock_control hwctrl)
 {
 	struct hwzram_impl *hwz;
-	int ret, i;
+	int ret = 0, i;
 	uint64_t hwid, hwfeatures, hwfeatures2, decomp_hwfeatures2;
 	unsigned int desc_size;
 	phys_addr_t fixed_fifo_addr;
@@ -1222,8 +1222,8 @@ static int process_completed_descriptor(struct hwzram_impl *hwz,
 
 				/* clear the entry in the descriptor */
 				desc->dst_addr[index - 1] = 0;
-				if (desc1)
-					desc1->dst_addr[index - 1] = 0;
+				/* if (desc1) */
+				desc1->dst_addr[index - 1] = 0;
 				buf_sel = buf_sel & ~(1 << (index - 1));
 			}
 		}
@@ -1333,8 +1333,8 @@ exit:
 
 	/* set the descriptor back to IDLE */
 	desc->u1.s1.status = HWZRAM_IDLE;
-	if (desc1)
-		desc1->u2.status.status = HWZRAM_IDLE;
+	/* if (desc1) */
+	desc1->u2.status.status = HWZRAM_IDLE;
 
 	/* disable clock: the completion of one compression request */
 	if (hwz->hwctrl)
@@ -1546,7 +1546,7 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 	pr_devel("%s: cmd set [%u] size 0x%x dest %pa\n",
 		 __func__, index, compr_size, &page_phys);
 
-	csize_data = compr_size << ZRAM_DCMD_CSIZE_SIZE_SHIFT;
+	csize_data = (uint64_t)compr_size << ZRAM_DCMD_CSIZE_SIZE_SHIFT;
 	dest_data = page_to_phys(page);
 
 	if (hwzram_non_coherent(hwz)) {
