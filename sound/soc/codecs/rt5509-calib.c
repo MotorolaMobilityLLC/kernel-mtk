@@ -200,10 +200,10 @@ static int rt5509_calib_read_otp(struct rt5509_chip *chip)
 	int ret = 0;
 
 	ret = snd_soc_read(codec, RT5509_REG_ISENSEGAIN);
-	ret &= 0xffffff;
 	if (ret < 0)
 		return ret;
-	param_put = ret;
+	ret &= 0xffffff;
+        param_put = ret;
 	dev_info(chip->dev, "param = 0x%08x\n", param_put);
 	return 0;
 }
