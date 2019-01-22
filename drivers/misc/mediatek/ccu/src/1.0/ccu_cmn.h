@@ -180,6 +180,8 @@ int32_t ccu_get_current_fps(void);
 
 void ccu_get_sensor_i2c_slave_addr(int32_t *sensorI2cSlaveAddr);
 
+void ccu_get_sensor_name(char **sensor_name);
+
 /* =============================== define in ccu_drv.c  =============================== */
 
 /**
@@ -233,7 +235,6 @@ int ccu_clock_enable(void);
  */
 void ccu_clock_disable(void);
 
-
 /* LOG & AEE */
 #define CCU_TAG "[ccu]"
 /*#define LOG_DBG(format, args...)    pr_err(CCU_TAG " " format, ##args)*/
@@ -250,7 +251,7 @@ void ccu_clock_disable(void);
 #define LOG_WRN_MUST(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
 #define LOG_DBG(format, args...)
 #define LOG_INF(format, args...)
-#define LOG_WRN(format, args...)
+#define LOG_WRN(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
 #define LOG_ERR(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
 
 #define ccu_print_seq(seq_file, fmt, args...) \

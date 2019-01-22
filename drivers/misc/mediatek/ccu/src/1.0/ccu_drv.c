@@ -52,6 +52,8 @@
 #include "ccu_cmn.h"
 #include "ccu_reg.h"
 #include "ccu_n3d_a.h"
+#include "ccu_i2c.h"
+#include "ccu_i2c_hw.h"
 
 /*******************************************************************************
 *
@@ -59,11 +61,11 @@
 
 #define CCU_DEV_NAME            "ccu"
 
-
 struct clk *ccu_clock_ctrl;
 
 ccu_device_t *g_ccu_device;
 static ccu_power_t power;
+static struct ccu_platform_info g_ccu_platform_info;
 
 static wait_queue_head_t wait_queue_deque;
 static wait_queue_head_t wait_queue_enque;
@@ -183,440 +185,6 @@ static struct platform_driver ccu_driver = {
 		   }
 };
 
-/*--todo: check if need id-table & name, id of_match_table is given*/
-#if 1
-static int ccu_i2c_probe_main(struct i2c_client *client, const struct i2c_device_id *id);
-static int ccu_i2c_probe_sub(struct i2c_client *client, const struct i2c_device_id *id);
-static int ccu_i2c_remove(struct i2c_client *client);
-
-static enum CCU_I2C_CHANNEL g_ccuI2cChannel = CCU_I2C_CHANNEL_UNDEF;
-static struct i2c_client *g_ccuI2cClientMain;
-static struct i2c_client *g_ccuI2cClientSub;
-
-#define MAX_I2C_CMD_LEN 255
-#define CCU_I2C_APDMA_TXLEN 128
-#define CCU_I2C_MAIN_HW_DRVNAME  "ccu_i2c_main_hwtrg"
-#define CCU_I2C_SUB_HW_DRVNAME  "ccu_i2c_sub_hwtrg"
-
-
-static const struct i2c_device_id ccu_i2c_main_ids[] = { {CCU_I2C_MAIN_HW_DRVNAME, 0}, {} };
-static const struct i2c_device_id ccu_i2c_sub_ids[] = { {CCU_I2C_SUB_HW_DRVNAME, 0}, {} };
-
-#ifdef CONFIG_OF
-static const struct of_device_id ccu_i2c_main_driver_of_ids[] = {
-	{.compatible = "mediatek,ccu_sensor_i2c_main_hw",},
-	{}
-};
-
-static const struct of_device_id ccu_i2c_sub_driver_of_ids[] = {
-	{.compatible = "mediatek,ccu_sensor_i2c_sub_hw",},
-	{}
-};
-#endif
-
-struct i2c_driver ccu_i2c_main_driver = {
-	.probe = ccu_i2c_probe_main,
-	.remove = ccu_i2c_remove,
-	.driver = {
-		   .name = CCU_I2C_MAIN_HW_DRVNAME,
-		   .owner = THIS_MODULE,
-#ifdef CONFIG_OF
-		   .of_match_table = ccu_i2c_main_driver_of_ids,
-#endif
-		   },
-	.id_table = ccu_i2c_main_ids,
-};
-
-struct i2c_driver ccu_i2c_sub_driver = {
-	.probe = ccu_i2c_probe_sub,
-	.remove = ccu_i2c_remove,
-	.driver = {
-		   .name = CCU_I2C_SUB_HW_DRVNAME,
-		   .owner = THIS_MODULE,
-#ifdef CONFIG_OF
-		   .of_match_table = ccu_i2c_sub_driver_of_ids,
-#endif
-		   },
-	.id_table = ccu_i2c_sub_ids,
-};
-
-
-/*---------------------------------------------------------------------------*/
-/* CCU Driver: i2c driver funcs                                              */
-/*---------------------------------------------------------------------------*/
-static int ccu_i2c_probe_main(struct i2c_client *client, const struct i2c_device_id *id)
-{
-	/*int i4RetValue = 0;*/
-	LOG_DBG("[ccu_i2c_probe] Attach I2C for HW trriger g_ccuI2cClientMain %p\n", client);
-
-	/* get sensor i2c client */
-	/*--todo: add subcam implementation*/
-	g_ccuI2cClientMain = client;
-
-	/* set I2C clock rate */
-	/*#ifdef CONFIG_MTK_I2C_EXTENSION*/
-	/*g_pstI2Cclient3->timing = 100;*/ /* 100k */
-	/*g_pstI2Cclient3->ext_flag &= ~I2C_POLLING_FLAG;*/ /* No I2C polling busy waiting */
-	/*#endif*/
-
-	LOG_DBG("[ccu_i2c_probe] Attached!!\n");
-	return 0;
-}
-
-static int ccu_i2c_probe_sub(struct i2c_client *client, const struct i2c_device_id *id)
-{
-	/*int i4RetValue = 0;*/
-	LOG_DBG("[ccu_i2c_probe] Attach I2C for HW trriger g_ccuI2cClientSub %p\n", client);
-
-	g_ccuI2cClientSub = client;
-
-	LOG_DBG("[ccu_i2c_probe] Attached!!\n");
-	return 0;
-}
-
-
-static struct i2c_client *getCcuI2cClient(void)
-{
-	switch (g_ccuI2cChannel) {
-	case CCU_I2C_CHANNEL_MAINCAM:
-		{
-			return g_ccuI2cClientMain;
-		}
-	case CCU_I2C_CHANNEL_SUBCAM:
-		{
-			return g_ccuI2cClientSub;
-		}
-	default:
-		{
-			return MNULL;
-		}
-	}
-}
-
-static int ccu_i2c_remove(struct i2c_client *client)
-{
-	return 0;
-}
-
-static inline u32 i2c_readl_dma(struct mt_i2c *i2c, u8 offset)
-{
-	return readl(i2c->pdmabase + offset);
-}
-
-static inline void i2c_writel_dma(u32 value, struct mt_i2c *i2c, u8 offset)
-{
-	writel(value, i2c->pdmabase + offset);
-}
-
-static inline u16 i2c_readw(struct mt_i2c *i2c, u8 offset)
-{
-	return readw(i2c->base + offset);
-}
-
-static inline void i2c_writew(u16 value, struct mt_i2c *i2c, u8 offset)
-{
-	writew(value, i2c->base + offset);
-}
-
-static struct i2c_dma_info g_dma_reg;
-static void ccu_record_i2c_dma_info(struct mt_i2c *i2c)
-{
-	g_dma_reg.base = (unsigned long)i2c->pdmabase;
-	g_dma_reg.int_flag = i2c_readl_dma(i2c, OFFSET_INT_FLAG);
-	g_dma_reg.int_en = i2c_readl_dma(i2c, OFFSET_INT_EN);
-	g_dma_reg.en = i2c_readl_dma(i2c, OFFSET_EN);
-	g_dma_reg.rst = i2c_readl_dma(i2c, OFFSET_RST);
-	g_dma_reg.stop = i2c_readl_dma(i2c, OFFSET_STOP);
-	g_dma_reg.flush = i2c_readl_dma(i2c, OFFSET_FLUSH);
-	g_dma_reg.con = i2c_readl_dma(i2c, OFFSET_CON);
-	g_dma_reg.tx_mem_addr = i2c_readl_dma(i2c, OFFSET_TX_MEM_ADDR);
-	g_dma_reg.rx_mem_addr = i2c_readl_dma(i2c, OFFSET_RX_MEM_ADDR);
-	g_dma_reg.tx_len = i2c_readl_dma(i2c, OFFSET_TX_LEN);
-	g_dma_reg.rx_len = i2c_readl_dma(i2c, OFFSET_RX_LEN);
-	g_dma_reg.int_buf_size = i2c_readl_dma(i2c, OFFSET_INT_BUF_SIZE);
-	g_dma_reg.debug_sta = i2c_readl_dma(i2c, OFFSET_DEBUG_STA);
-	g_dma_reg.tx_mem_addr2 = i2c_readl_dma(i2c, OFFSET_TX_MEM_ADDR2);
-	g_dma_reg.rx_mem_addr2 = i2c_readl_dma(i2c, OFFSET_RX_MEM_ADDR2);
-}
-
-void ccu_i2c_dump_info(struct mt_i2c *i2c)
-{
-	/* I2CFUC(); */
-	/* int val=0; */
-	pr_err("i2c_dump_info ++++++++++++++++++++++++++++++++++++++++++\n");
-	pr_err("I2C structure:\n"
-	       I2CTAG "Clk=%d,Id=%d,Op=%x,Irq_stat=%x,Total_len=%x\n"
-	       I2CTAG "Trans_len=%x,Trans_num=%x,Trans_auxlen=%x,speed=%d\n"
-	       I2CTAG "Trans_stop=%u\n",
-	       15600, i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
-	       i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop);
-
-	pr_err("base address 0x%p\n", i2c->base);
-	pr_err("I2C register:\n"
-	       I2CTAG "SLAVE_ADDR=%x,INTR_MASK=%x,INTR_STAT=%x,CONTROL=%x,TRANSFER_LEN=%x\n"
-	       I2CTAG "TRANSAC_LEN=%x,DELAY_LEN=%x,TIMING=%x,START=%x,FIFO_STAT=%x\n"
-	       I2CTAG "IO_CONFIG=%x,HS=%x,DCM_EN=%x,DEBUGSTAT=%x,EXT_CONF=%x,TRANSFER_LEN_AUX=%x\n",
-	       (i2c_readw(i2c, OFFSET_SLAVE_ADDR)),
-	       (i2c_readw(i2c, OFFSET_INTR_MASK)),
-	       (i2c_readw(i2c, OFFSET_INTR_STAT)),
-	       (i2c_readw(i2c, OFFSET_CONTROL)),
-	       (i2c_readw(i2c, OFFSET_TRANSFER_LEN)),
-	       (i2c_readw(i2c, OFFSET_TRANSAC_LEN)),
-	       (i2c_readw(i2c, OFFSET_DELAY_LEN)),
-	       (i2c_readw(i2c, OFFSET_TIMING)),
-	       (i2c_readw(i2c, OFFSET_START)),
-	       (i2c_readw(i2c, OFFSET_FIFO_STAT)),
-	       (i2c_readw(i2c, OFFSET_IO_CONFIG)),
-	       (i2c_readw(i2c, OFFSET_HS)),
-	       (i2c_readw(i2c, OFFSET_DCM_EN)),
-	       (i2c_readw(i2c, OFFSET_DEBUGSTAT)),
-	       (i2c_readw(i2c, OFFSET_EXT_CONF)), (i2c_readw(i2c, OFFSET_TRANSFER_LEN_AUX)));
-
-	pr_err("before enable DMA register(0x%lx):\n"
-	       I2CTAG "INT_FLAG=%x,INT_EN=%x,EN=%x,RST=%x,\n"
-	       I2CTAG "STOP=%x,FLUSH=%x,CON=%x,TX_MEM_ADDR=%x, RX_MEM_ADDR=%x\n"
-	       I2CTAG "TX_LEN=%x,RX_LEN=%x,INT_BUF_SIZE=%x,DEBUG_STATUS=%x\n"
-	       I2CTAG "TX_MEM_ADDR2=%x, RX_MEM_ADDR2=%x\n",
-	       g_dma_reg.base,
-	       g_dma_reg.int_flag,
-	       g_dma_reg.int_en,
-	       g_dma_reg.en,
-	       g_dma_reg.rst,
-	       g_dma_reg.stop,
-	       g_dma_reg.flush,
-	       g_dma_reg.con,
-	       g_dma_reg.tx_mem_addr,
-	       g_dma_reg.tx_mem_addr,
-	       g_dma_reg.tx_len,
-	       g_dma_reg.rx_len,
-	       g_dma_reg.int_buf_size, g_dma_reg.debug_sta,
-	       g_dma_reg.tx_mem_addr2, g_dma_reg.tx_mem_addr2);
-	pr_err("DMA register(0x%p):\n"
-	       I2CTAG "INT_FLAG=%x,INT_EN=%x,EN=%x,RST=%x,\n"
-	       I2CTAG "STOP=%x,FLUSH=%x,CON=%x,TX_MEM_ADDR=%x, RX_MEM_ADDR=%x\n"
-	       I2CTAG "TX_LEN=%x,RX_LEN=%x,INT_BUF_SIZE=%x,DEBUG_STATUS=%x\n"
-	       I2CTAG "TX_MEM_ADDR2=%x, RX_MEM_ADDR2=%x\n",
-	       i2c->pdmabase,
-	       (i2c_readl_dma(i2c, OFFSET_INT_FLAG)),
-	       (i2c_readl_dma(i2c, OFFSET_INT_EN)),
-	       (i2c_readl_dma(i2c, OFFSET_EN)),
-	       (i2c_readl_dma(i2c, OFFSET_RST)),
-	       (i2c_readl_dma(i2c, OFFSET_STOP)),
-	       (i2c_readl_dma(i2c, OFFSET_FLUSH)),
-	       (i2c_readl_dma(i2c, OFFSET_CON)),
-	       (i2c_readl_dma(i2c, OFFSET_TX_MEM_ADDR)),
-	       (i2c_readl_dma(i2c, OFFSET_RX_MEM_ADDR)),
-	       (i2c_readl_dma(i2c, OFFSET_TX_LEN)),
-	       (i2c_readl_dma(i2c, OFFSET_RX_LEN)),
-	       (i2c_readl_dma(i2c, OFFSET_INT_BUF_SIZE)),
-	       (i2c_readl_dma(i2c, OFFSET_DEBUG_STA)),
-	       (i2c_readl_dma(i2c, OFFSET_TX_MEM_ADDR2)),
-	       (i2c_readl_dma(i2c, OFFSET_RX_MEM_ADDR2)));
-	pr_err("i2c_dump_info ------------------------------------------\n");
-
-}
-
-/*do i2c apdma warm reset & re-write dma buf addr, txlen*/
-static int ccu_reset_i2c_apdma(struct mt_i2c *i2c)
-{
-	i2c_writel_dma(I2C_DMA_WARM_RST, i2c, OFFSET_RST);
-
-#ifdef CONFIG_MTK_LM_MODE
-	if ((i2c->dev_comp->dma_support == 1) && (enable_4G())) {
-		i2c_writel_dma(0x1, i2c, OFFSET_TX_MEM_ADDR2);
-		i2c_writel_dma(0x1, i2c, OFFSET_RX_MEM_ADDR2);
-	}
-#endif
-
-	i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
-	i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
-	i2c_writel_dma((u32) i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
-	if ((i2c->dev_comp->dma_support >= 2))
-		i2c_writel_dma(i2c->dma_buf.paddr >> 32, i2c, OFFSET_TX_MEM_ADDR2);
-
-	/*write ap mda tx len = 128(must > totoal tx len within a frame)*/
-	i2c_writel_dma(CCU_I2C_APDMA_TXLEN, i2c, OFFSET_TX_LEN);
-
-	return 0;
-}
-
-int ccu_i2c_frame_reset(void)
-{
-	struct i2c_client *pClient = NULL;
-	struct mt_i2c *i2c;
-
-	pClient = getCcuI2cClient();
-	i2c = i2c_get_adapdata(pClient->adapter);
-
-	ccu_reset_i2c_apdma(i2c);
-
-	/*--todo:remove dump log on production*/
-	/*ccu_record_i2c_dma_info(i2c);*/
-
-	i2c_writew(I2C_FIFO_ADDR_CLR, i2c, OFFSET_FIFO_ADDR_CLR);
-	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP, i2c, OFFSET_INTR_MASK);
-	mb();
-	/*--todo:remove dump log on production*/
-	/*ccu_i2c_dump_info(i2c);*/
-
-	return 0;
-}
-
-
-int ccu_trigger_i2c(int transac_len, MBOOL do_dma_en)
-{
-	struct i2c_client *pClient = NULL;
-	struct mt_i2c *i2c;
-
-	u8 *dmaBufVa;
-
-	pClient = getCcuI2cClient();
-	i2c = i2c_get_adapdata(pClient->adapter);
-
-	dmaBufVa = i2c->dma_buf.vaddr;
-
-	/*LOG_DBG("i2c_dma_buf_content: %x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n",*/
-	/*  dmaBufVa[0],dmaBufVa[1],dmaBufVa[2],dmaBufVa[3],dmaBufVa[4],dmaBufVa[5],*/
-	/*dmaBufVa[18],dmaBufVa[19],dmaBufVa[20],dmaBufVa[21],dmaBufVa[22],dmaBufVa[23]);*/
-
-	/*set i2c transaction length & enable apdma*/
-	i2c_writew(transac_len, i2c, OFFSET_TRANSAC_LEN);
-
-	/*--todo:remove dump log on production*/
-	/*ccu_record_i2c_dma_info(i2c);*/
-
-	i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
-
-	/*--todo:remove dump log on production*/
-	/*ccu_i2c_dump_info(i2c);*/
-
-	/*--todo: add subcam implementation (using n3d_b);*/
-	/*trigger i2c start from n3d_a*/
-	n3d_a_writew(0x0000017C, g_ccu_device->n3d_a_base, OFFSET_CTL);
-
-	switch (g_ccuI2cChannel) {
-	case CCU_I2C_CHANNEL_MAINCAM:
-		{
-			n3d_a_writew(0x00000001, g_ccu_device->n3d_a_base, OFFSET_TRIG);
-			break;
-		}
-	case CCU_I2C_CHANNEL_SUBCAM:
-		{
-			n3d_a_writew(0x00000002, g_ccu_device->n3d_a_base, OFFSET_TRIG);
-			break;
-		}
-	default:
-		{
-			LOG_ERR("ccu_trigger_i2c fail, unknown channel: %d\n", g_ccuI2cChannel);
-			return MNULL;
-		}
-	}
-
-	/*--todo:remove dump log on production*/
-	/*ccu_i2c_dump_info(i2c);*/
-
-	return 0;
-}
-
-
-int ccu_config_i2c_buf_mode(int transfer_len)
-{
-	struct i2c_client *pClient = NULL;
-	struct mt_i2c *i2c;
-
-	pClient = getCcuI2cClient();
-	i2c = i2c_get_adapdata(pClient->adapter);
-
-	/*write i2c controller tx len*/
-	i2c->total_len = transfer_len;
-	i2c->msg_len = transfer_len;
-	i2c_writew(transfer_len, i2c, OFFSET_TRANSFER_LEN);
-
-	/*ccu_reset_i2c_apdma(i2c);*/
-
-	ccu_record_i2c_dma_info(i2c);
-
-	/*flush before sending DMA start*/
-	/*mb();*/
-	/*i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);*/
-
-	ccu_i2c_frame_reset();
-
-	ccu_i2c_dump_info(i2c);
-
-	return 0;
-}
-
-
-/*--todo: add subcam implementation*/
-static struct i2c_msg ccu_i2c_msg[MAX_I2C_CMD_LEN];
-int ccu_init_i2c_buf_mode(u16 i2cId)
-{
-	int ret = 0;
-	unsigned char dummy_data[] = {
-		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-		0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18
-	};
-
-	struct i2c_client *pClient = NULL;
-	int trans_num = 1;
-
-	memset(ccu_i2c_msg, 0, MAX_I2C_CMD_LEN * sizeof(struct i2c_msg));
-
-	pClient = getCcuI2cClient();
-
-	/*for(i = 0 ; i<trans_num ; i++){*/
-	ccu_i2c_msg[0].addr = i2cId >> 1;
-	ccu_i2c_msg[0].flags = 0;
-	ccu_i2c_msg[0].len = 16;
-	ccu_i2c_msg[0].buf = dummy_data;
-	/*}*/
-
-	ret = hw_trig_i2c_transfer(pClient->adapter, ccu_i2c_msg, trans_num);
-	return ret;
-}
-
-int ccu_i2c_buf_mode_en(int enable)
-{
-	int ret = 0;
-	struct i2c_client *pClient = NULL;
-
-	LOG_DBG("i2c_buf_mode_en %d\n", enable);
-
-	pClient = getCcuI2cClient();
-
-	LOG_DBG("i2c_buf_mode_en, pClient: %p\n", pClient);
-	if (pClient == NULL)
-		return -1;
-
-	if (enable)
-		ret = hw_trig_i2c_enable(pClient->adapter);
-	else
-		ret = hw_trig_i2c_disable(pClient->adapter);
-	return ret;
-}
-
-int i2c_get_dma_buffer_addr(void **va)
-{
-	struct i2c_client *pClient = NULL;
-	struct mt_i2c *i2c;
-
-	pClient = getCcuI2cClient();
-
-	if (pClient == MNULL) {
-		LOG_ERR("ccu client is NULL");
-		return -EFAULT;
-	}
-
-	i2c = i2c_get_adapdata(pClient->adapter);
-
-	/*i2c_get_dma_buffer_addr_imp(pClient->adapter ,va);*/
-	*va = i2c->dma_buf.vaddr;
-	LOG_DBG("got i2c buf va: %p\n", *va);
-
-	return 0;
-}
-#endif
 
 /*---------------------------------------------------------------------------*/
 /* CCU Driver: file operations                                               */
@@ -1111,32 +679,15 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		}
 	case CCU_IOCTL_SET_I2C_CHANNEL:
 		{
-#if 1
-			ret =
-			    copy_from_user(&g_ccuI2cChannel, (void *)arg,
-					   sizeof(enum CCU_I2C_CHANNEL));
-
-			if ((g_ccuI2cChannel == CCU_I2C_CHANNEL_MAINCAM)
-			    || (g_ccuI2cChannel == CCU_I2C_CHANNEL_SUBCAM)) {
-				ret = 0;
-			} else {
-				LOG_ERR("invalid i2c channel: %d\n", g_ccuI2cChannel);
-				ret = -EFAULT;
-			}
-#else
 			enum CCU_I2C_CHANNEL channel;
 
 			ret = copy_from_user(&channel, (void *)arg, sizeof(enum CCU_I2C_CHANNEL));
 
-			if ((channel == CCU_I2C_CHANNEL_MAINCAM)
-			    || (channel == CCU_I2C_CHANNEL_SUBCAM)) {
-				ccu_i2c_set_channel(channel);
-				ret = 0;
-			} else {
+			ret = ccu_i2c_set_channel(channel);
+
+			if (ret < 0)
 				LOG_ERR("invalid i2c channel: %d\n", channel);
-				ret = -EFAULT;
-			}
-#endif
+
 			break;
 		}
 	case CCU_IOCTL_GET_CURRENT_FPS:
@@ -1157,6 +708,51 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 			break;
 		}
+
+	case CCU_IOCTL_GET_SENSOR_NAME:
+		{
+			#define SENSOR_NAME_MAX_LEN 32
+
+			char *sensor_names[3];
+
+			ccu_get_sensor_name(sensor_names);
+
+			if (sensor_names[0] != NULL) {
+				ret = copy_to_user((char *)arg, sensor_names[0], strlen(sensor_names[0])+1);
+				if (ret != 0) {
+					LOG_ERR("copy_to_user 1 failed: %d\n", ret);
+					break;
+				}
+			}
+
+			if (sensor_names[1] != NULL) {
+				ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN),
+					sensor_names[1], strlen(sensor_names[1])+1);
+				if (ret != 0) {
+					LOG_ERR("copy_to_user 2 failed: %d\n", ret);
+					break;
+				}
+			}
+
+			if (sensor_names[2] != NULL) {
+				ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN*2),
+					sensor_names[2], strlen(sensor_names[2])+1);
+				if (ret != 0) {
+					LOG_ERR("copy_to_user 3 failed: %d\n", ret);
+					break;
+				}
+			}
+
+			#undef SENSOR_NAME_MAX_LEN
+			break;
+	}
+
+	case CCU_IOCTL_GET_PLATFORM_INFO:
+	{
+		ret = copy_to_user((void *)arg, &g_ccu_platform_info, sizeof(g_ccu_platform_info));
+		break;
+	}
+
 	case CCU_READ_REGISTER:
 		{
 			int regToRead = (int)arg;
@@ -1205,57 +801,55 @@ static int ccu_mmap(struct file *flip, struct vm_area_struct *vma)
 	    ("CCU_mmap: vm_pgoff(0x%lx),pfn(0x%x),phy(0x%lx),vm_start(0x%lx),vm_end(0x%lx),length(0x%lx)\n",
 	     vma->vm_pgoff, pfn, vma->vm_pgoff << PAGE_SHIFT, vma->vm_start, vma->vm_end, length);
 
-	if (pfn >= CCU_REG_BASE_HW) {
+	/*if (pfn >= CCU_REG_BASE_HW) {*/
 
-		switch (pfn) {
-		case CCU_A_BASE_HW:
+		if (pfn == (g_ccu_platform_info.ccu_hw_base - g_ccu_platform_info.ccu_hw_offset)) {
 			if (length > CCU_REG_RANGE) {
 				LOG_ERR
 				    ("mmap range error :module(0x%x),length(0x%lx),CCU_A_BASE_HW(0x%x)!\n",
 				     pfn, length, 0x4000);
 				return -EAGAIN;
 			}
-			break;
-		case CCU_CAMSYS_BASE_HW:
-			if (length > CCU_REG_RANGE) {
+		} else if (pfn == g_ccu_platform_info.ccu_camsys_base) {
+			if (length > g_ccu_platform_info.ccu_camsys_size) {
 				LOG_ERR
 				    ("mmap range error :module(0x%x),length(0x%lx),CCU_CAMSYS_BASE_HW(0x%x)!\n",
 				     pfn, length, 0x4000);
 				return -EAGAIN;
 			}
-			break;
-		case CCU_PMEM_BASE_HW:
-			if (length > CCU_PMEM_RANGE) {
+		} else if (pfn == g_ccu_platform_info.ccu_pmem_base) {
+			if (length > g_ccu_platform_info.ccu_pmem_size) {
 				LOG_ERR
 				    ("mmap range error :module(0x%x),length(0x%lx),CCU_PMEM_BASE_HW(0x%x)!\n",
 				     pfn, length, 0x4000);
 				return -EAGAIN;
 			}
-			break;
-		case CCU_DMEM_BASE_HW:
-			if (length > CCU_DMEM_RANGE) {
+		} else if (pfn == g_ccu_platform_info.ccu_dmem_base) {
+			if (length > g_ccu_platform_info.ccu_dmem_size) {
 				LOG_ERR
 				    ("mmap range error :module(0x%x),length(0x%lx),CCU_PMEM_BASE_HW(0x%x)!\n",
 				     pfn, length, 0x4000);
 				return -EAGAIN;
 			}
-			break;
-		default:
+		} else {
 			LOG_ERR("Illegal starting HW addr for mmap!\n");
 			return -EAGAIN;
 		}
+
 		if (remap_pfn_range
 		    (vma, vma->vm_start, vma->vm_pgoff, vma->vm_end - vma->vm_start,
 		     vma->vm_page_prot)) {
 			LOG_ERR("remap_pfn_range\n");
 			return -EAGAIN;
 		}
+		LOG_DBG("map_check_1\n");
 
-	} else {
-
-		return ccu_mmap_hw(flip, vma);
-
-	}
+	/*
+	* } else {
+	*	LOG_DBG("map_check_2\n");
+	*	return ccu_mmap_hw(flip, vma);
+	*}
+	*/
 
 	return 0;
 }
@@ -1318,17 +912,63 @@ EXIT:
 * platform_driver
 ********************************************************************************/
 
+static int ccu_read_platform_info_from_dt(struct device_node *node)
+{
+	uint32_t reg[4] = {0, 0, 0, 0};
+
+	of_property_read_u32_array(node, "reg", reg, 4);
+	g_ccu_platform_info.ccu_hw_base = reg[1];
+	of_property_read_u32(node, "ccu_hw_offset", &(g_ccu_platform_info.ccu_hw_offset));
+	of_property_read_u32(node, "ccu_pmem_base", &(g_ccu_platform_info.ccu_pmem_base));
+	of_property_read_u32(node, "ccu_pmem_size", &(g_ccu_platform_info.ccu_pmem_size));
+	of_property_read_u32(node, "ccu_dmem_base", &(g_ccu_platform_info.ccu_dmem_base));
+	of_property_read_u32(node, "ccu_dmem_size", &(g_ccu_platform_info.ccu_dmem_size));
+	of_property_read_u32(node, "ccu_dmem_offset", &(g_ccu_platform_info.ccu_dmem_offset));
+	of_property_read_u32(node, "ccu_log_base", &(g_ccu_platform_info.ccu_log_base));
+	of_property_read_u32(node, "ccu_log_size", &(g_ccu_platform_info.ccu_log_size));
+	of_property_read_u32(node, "ccu_hw_dump_size", &(g_ccu_platform_info.ccu_hw_dump_size));
+	of_property_read_u32(node, "ccu_camsys_base", &(g_ccu_platform_info.ccu_camsys_base));
+	of_property_read_u32(node, "ccu_camsys_size", &(g_ccu_platform_info.ccu_camsys_size));
+	of_property_read_u32(node, "ccu_n3d_a_base", &(g_ccu_platform_info.ccu_n3d_a_base));
+	of_property_read_u32(node, "ccu_n3d_a_size", &(g_ccu_platform_info.ccu_n3d_a_size));
+	of_property_read_u32(node, "ccu_sensor_pm_size", &(g_ccu_platform_info.ccu_sensor_pm_size));
+	of_property_read_u32(node, "ccu_sensor_dm_size", &(g_ccu_platform_info.ccu_sensor_dm_size));
+
+	LOG_ERR("ccu read dt property ccu_hw_base = %x\n", g_ccu_platform_info.ccu_hw_base);
+	LOG_ERR("ccu read dt property ccu_hw_offset = %x\n", g_ccu_platform_info.ccu_hw_offset);
+	LOG_ERR("ccu read dt property ccu_pmem_base = %x\n", g_ccu_platform_info.ccu_pmem_base);
+	LOG_ERR("ccu read dt property ccu_pmem_size = %x\n", g_ccu_platform_info.ccu_pmem_size);
+	LOG_ERR("ccu read dt property ccu_dmem_base = %x\n", g_ccu_platform_info.ccu_dmem_base);
+	LOG_ERR("ccu read dt property ccu_dmem_size = %x\n", g_ccu_platform_info.ccu_dmem_size);
+	LOG_ERR("ccu read dt property ccu_dmem_offset = %x\n", g_ccu_platform_info.ccu_dmem_offset);
+	LOG_ERR("ccu read dt property ccu_log_base = %x\n", g_ccu_platform_info.ccu_log_base);
+	LOG_ERR("ccu read dt property ccu_log_size = %x\n", g_ccu_platform_info.ccu_log_size);
+	LOG_ERR("ccu read dt property ccu_hw_dump_size = %x\n", g_ccu_platform_info.ccu_hw_dump_size);
+	LOG_ERR("ccu read dt property ccu_camsys_base = %x\n", g_ccu_platform_info.ccu_camsys_base);
+	LOG_ERR("ccu read dt property ccu_camsys_size = %x\n", g_ccu_platform_info.ccu_camsys_size);
+	LOG_ERR("ccu read dt property ccu_n3d_a_base = %x\n", g_ccu_platform_info.ccu_n3d_a_base);
+	LOG_ERR("ccu read dt property ccu_n3d_a_size = %x\n", g_ccu_platform_info.ccu_n3d_a_size);
+	LOG_ERR("ccu read dt property ccu_sensor_pm_size = %x\n", g_ccu_platform_info.ccu_sensor_pm_size);
+	LOG_ERR("ccu read dt property ccu_sensor_dm_size = %x\n", g_ccu_platform_info.ccu_sensor_dm_size);
+
+	return 0;
+}
+
 static int ccu_probe(struct platform_device *pdev)
 {
 #ifdef CONFIG_OF
 	struct device *dev;
 	struct device_node *node;
 	int ret = 0;
-	int i2c_ret = 0;
+	uint32_t phy_addr;
+	uint32_t phy_size;
+
 
 	node = pdev->dev.of_node;
 	g_ccu_device->dev = &pdev->dev;
 	LOG_DBG("probe 0, pdev id = %d name = %s\n", pdev->id, pdev->name);
+
+	ccu_read_platform_info_from_dt(node);
 
 #ifdef MTK_CCU_EMULATOR
 	/* emulator will fill ccu_base and bin_base */
@@ -1336,36 +976,47 @@ static int ccu_probe(struct platform_device *pdev)
 #else
 	/* get register address */
 	if ((strcmp("ccu", g_ccu_device->dev->of_node->name) == 0)) {
-		g_ccu_device->ccu_base = (unsigned long)of_iomap(node, 1);
-		LOG_DBG("ccu_base=0x%lx\n", g_ccu_device->ccu_base);
 
 		/* get physical address of pmem  */
-		{
-			uint32_t phy_addr;
-			uint32_t phy_size;
-
-			if (of_property_read_u32(node, "ccu_dmem_base", &phy_addr) ||
-				of_property_read_u32(node, "ccu_dmem_size", &phy_size)) {
-				LOG_ERR("fail to get physical address of ccu dmem!\n");
-				return -ENODEV;
-			}
-
-			LOG_INF("probe 1, phy_addr: 0x%x, phy_size: 0x%x\n", phy_addr, phy_size);
-
-			/* ioremap_wc() has no access 4 bytes alignment limitation as of_iomap() does?
+		/* ioremap_wc() has no access 4 bytes alignment limitation as of_iomap() does?
 			* https://forums.xilinx.com/xlnx/attachments/
 			* xlnx/ELINUX/11158/1/Linux%20CPU%20to%20PL%20Access.pdf
 			*/
-			g_ccu_device->dmem_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
+		{
+			/*remap ccu_base*/
+			phy_addr = g_ccu_platform_info.ccu_hw_base;
+			phy_size = 0x1000;
+			g_ccu_device->ccu_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
+			LOG_INF("ccu_base pa: 0x%x, size: 0x%x\n", phy_addr, phy_size);
+			LOG_INF("ccu_base va: 0x%lx\n", g_ccu_device->ccu_base);
 
-			g_ccu_device->camsys_base = (unsigned long)of_iomap(node, 0);
-			LOG_DBG("ccu_base_camsys=0x%lx\n", g_ccu_device->camsys_base);
+			/*remap dmem_base*/
+			phy_addr = g_ccu_platform_info.ccu_dmem_base;
+			phy_size = g_ccu_platform_info.ccu_dmem_size;
+			g_ccu_device->dmem_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
+			LOG_INF("dmem_base pa: 0x%x, size: 0x%x\n", phy_addr, phy_size);
+			LOG_INF("dmem_base va: 0x%lx\n", g_ccu_device->dmem_base);
+
+			/*remap camsys_base*/
+			phy_addr = g_ccu_platform_info.ccu_camsys_base;
+			phy_size = g_ccu_platform_info.ccu_camsys_size;
+			g_ccu_device->camsys_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
+			LOG_INF("camsys_base pa: 0x%x, size: 0x%x\n", phy_addr, phy_size);
+			LOG_INF("camsys_base va: 0x%lx\n", g_ccu_device->camsys_base);
+
+			/*remap n3d_a_base*/
+			phy_addr = g_ccu_platform_info.ccu_n3d_a_base;
+			phy_size = g_ccu_platform_info.ccu_n3d_a_size;
+			g_ccu_device->n3d_a_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
+			LOG_INF("n3d_a_base pa: 0x%x, size: 0x%x\n", phy_addr, phy_size);
+			LOG_INF("n3d_a_base va: 0x%lx\n", g_ccu_device->n3d_a_base);
+
 		}
 		/* get Clock control from device tree.  */
 		{
 			ccu_clock_ctrl = devm_clk_get(g_ccu_device->dev, "CCU_CLK_CAM_CCU");
 			if (ccu_clock_ctrl == NULL)
-				LOG_ERR("Get clock ctrl fail.\n");
+				LOG_ERR("Get ccu clock ctrl fail.\n");
 		}
 		/**/
 		g_ccu_device->irq_num = irq_of_parse_and_map(node, 0);
@@ -1428,13 +1079,12 @@ static int ccu_probe(struct platform_device *pdev)
 			/*}*/
 
 			/*register i2c driver callback*/
-			/*ccu_i2c_add_drivers();*/
-			LOG_DBG("i2c_add_driver(&ccu_i2c_main_driver)++\n");
-			i2c_ret = i2c_add_driver(&ccu_i2c_main_driver);
-			LOG_DBG("i2c_add_driver(&ccu_i2c_main_driver), ret: %d--\n", i2c_ret);
-			LOG_DBG("i2c_add_driver(&ccu_i2c_sub_driver)++\n");
-			i2c_ret = i2c_add_driver(&ccu_i2c_sub_driver);
-			LOG_DBG("i2c_add_driver(&ccu_i2c_sub_driver), ret: %d--\n", i2c_ret);
+			ret = ccu_i2c_register_driver();
+			if (ret < 0)
+				goto EXIT;
+			ret = ccu_i2c_set_n3d_base(g_ccu_device->n3d_a_base);
+			if (ret < 0)
+				goto EXIT;
 
 EXIT:
 			if (ret < 0)
@@ -1445,10 +1095,6 @@ EXIT:
 
 		LOG_ERR("ccu probe cuccess...\n");
 
-	} else if ((strcmp("n3d_ctl_a", g_ccu_device->dev->of_node->name) == 0)) {
-		g_ccu_device->n3d_a_base = (unsigned long)of_iomap(node, 0);
-		LOG_DBG("n3d_a_base=0x%lx\n", g_ccu_device->n3d_a_base);
-		LOG_ERR("ccu n3da probe success...\n");
 	}
 #endif
 #endif
@@ -1474,8 +1120,7 @@ static int ccu_remove(struct platform_device *pDev)
 	ccu_unreg_chardev();
 
 	/*ccu_i2c_del_drivers();*/
-	i2c_del_driver(&ccu_i2c_main_driver);
-	i2c_del_driver(&ccu_i2c_sub_driver);
+	ccu_i2c_delete_driver();
 
 	/* Release IRQ */
 	disable_irq(g_ccu_device->irq_num);

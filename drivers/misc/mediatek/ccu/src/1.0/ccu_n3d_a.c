@@ -19,10 +19,10 @@
 
 inline u32 n3d_a_readw(unsigned long n3d_a_base, u32 offset)
 {
-	return readw((u32 *) (n3d_a_base + offset));
+	return readl((u32 *) (n3d_a_base + offset));
 }
 
 inline void n3d_a_writew(u32 value, unsigned long n3d_a_base, u32 offset)
 {
-	writew(value, (u32 *) (n3d_a_base + offset));
+	writel(value, (u32 *) (n3d_a_base + offset));
 }
