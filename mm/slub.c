@@ -5805,7 +5805,7 @@ static int mtk_memcfg_add_location(struct loc_track *t, struct kmem_cache *s,
 	/*
 	 * Not found. Insert new tracking element.
 	 */
-	if (t->count >= t->max && !alloc_loc_track(t, 2 * t->max, GFP_ATOMIC))
+	if (t->count >= t->max && !alloc_loc_track(t, 2 * t->max, __GFP_HIGH | __GFP_ATOMIC))
 		return 0;
 
 	l = t->loc + pos;
