@@ -10,6 +10,7 @@
 #define XT_QTAGUID_SOCKET XT_OWNER_SOCKET
 #define xt_qtaguid_match_info xt_owner_match_info
 
+int qtaguid_untag(struct socket *sock, bool kernel);
 #ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 /*MD Tethering ShareMemory Data*/
 struct mdt_data_t {
