@@ -852,7 +852,7 @@ void mt6336_rechg_callback(void)
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
 	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
 	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
-	usleep_range(1000, 2000);
+	usleep_range(2000, 3000);
 	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
 
 	if (info != NULL)
