@@ -483,6 +483,9 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 		}
 	}
 
+	if (!(cpu >= 0 && cpu <= 7))
+		return MCDI_STATE_WFI;
+
 	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
 
 	/* increase MCDI num (MCUSYS/cluster) */
@@ -511,9 +514,6 @@ int mcdi_governor_select(int cpu, int cluster_idx)
 
 	/* residency latency check of current CPU */
 	update_residency_latency_result(cpu);
-
-	if (!(cpu >= 0 && cpu <= 7))
-		return MCDI_STATE_WFI;
 
 	/* Check if any core deepidle/SODI can entered */
 	if (mcdi_feature_stat.any_core && last_core_token_get) {
