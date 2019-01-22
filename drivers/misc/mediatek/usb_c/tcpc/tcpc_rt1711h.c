@@ -803,6 +803,29 @@ int rt1711_fault_status_clear(struct tcpc_device *tcpc, uint8_t status)
 	return 0;
 }
 
+int rt1711_get_alert_mask(struct tcpc_device *tcpc, uint32_t *mask)
+{
+	int ret;
+#ifdef CONFIG_TCPC_VSAFE0V_DETECT_IC
+	uint8_t v2;
+#endif
+
+	ret = rt1711_i2c_read16(tcpc, TCPC_V10_REG_ALERT_MASK);
+	if (ret < 0)
+		return ret;
+	*mask = (uint16_t) ret;
+
+#ifdef CONFIG_TCPC_VSAFE0V_DETECT_IC
+	ret = rt1711_i2c_read8(tcpc, RT1711H_REG_RT_MASK);
+	if (ret < 0)
+		return ret;
+
+	v2 = (uint8_t) ret;
+	*mask |= v2 << 16;
+#endif
+	return 0;
+}
+
 int rt1711_get_alert_status(struct tcpc_device *tcpc, uint32_t *alert)
 {
 	int ret;
@@ -916,6 +939,23 @@ static int rt1711_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 	return 0;
 }
 
+static int rt1711_enable_vsafe0v_detect(
+	struct tcpc_device *tcpc, bool enable)
+{
+	int ret = rt1711_i2c_read8(tcpc, MT6370_REG_MT_MASK);
+
+	if (ret < 0)
+		return ret;
+
+	if (enable)
+		ret |= RT1711H_REG_M_VBUS_80;
+	else
+		ret &= ~RT1711H_REG_M_VBUS_80;
+
+	mt6370_i2c_write8(tcpc, RT1711H_REG_RT_MASK, (uint8_t) ret);
+	return ret;
+}
+
 static int rt1711_set_cc(struct tcpc_device *tcpc, int pull)
 {
 	int ret;
@@ -931,8 +971,10 @@ static int rt1711_set_cc(struct tcpc_device *tcpc, int pull)
 		ret = rt1711_i2c_write8(
 			tcpc, TCPC_V10_REG_ROLE_CTRL, data);
 
-		if (ret == 0)
+		if (ret == 0) {
+			rt1711_enable_vsafe0v_detect(tcpc, false);
 			ret = rt1711_command(tcpc, TCPM_CMD_LOOK_CONNECTION);
+		}
 	} else {
 #ifdef CONFIG_USB_POWER_DELIVERY
 		if (pull == TYPEC_CC_RD && tcpc->pd_wait_pr_swap_complete)
@@ -1018,9 +1060,15 @@ static int rt1711_set_low_power_mode(
 
 		if (pull & TYPEC_CC_RP)
 			data |= RT1711H_REG_BMCIO_LPRPRD;
+
+#ifdef CONFIG_TYPEC_CAP_NORP_SRC
+		data |= RT1711H_REG_VBUS_DET_EN;
+#endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
 	} else
 		data = RT1711H_REG_BMCIO_BG_EN |
 			RT1711H_REG_VBUS_DET_EN | RT1711H_REG_BMCIO_OSC_EN;
+
+		rt1711_enable_vsafe0v_detect(tcpc_dev, true);
 
 	rv = rt1711_i2c_write8(tcpc_dev, RT1711H_REG_BMC_CTRL, data);
 	return rv;
@@ -1143,7 +1191,7 @@ static int rt1711_set_bist_carrier_mode(
 	return 0;
 }
 
-/* message header (2byte) + data object (7*4) */
+/* transmit count (1byte) + message header (2byte) + data object (7*4) */
 #define RT1711_TRANSMIT_MAX_SIZE	(1+sizeof(uint16_t)+sizeof(uint32_t)*7)
 
 #ifdef CONFIG_USB_PD_RETRY_CRC_DISCARD
@@ -1212,6 +1260,7 @@ static struct tcpc_ops rt1711_tcpc_ops = {
 	.init = rt1711_tcpc_init,
 	.alert_status_clear = rt1711_alert_status_clear,
 	.fault_status_clear = rt1711_fault_status_clear,
+	.get_alert_mask = rt1711_get_alert_mask,
 	.get_alert_status = rt1711_get_alert_status,
 	.get_power_status = rt1711_get_power_status,
 	.get_fault_status = rt1711_get_fault_status,
