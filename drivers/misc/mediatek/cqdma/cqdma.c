@@ -28,6 +28,7 @@
 #ifdef CONFIG_MTK_GIC
 #include <linux/irqchip/mt-gic.h>
 #endif
+#include <linux/wakelock.h>
 
 #include <mt-plat/mtk_io.h>
 #include <mt-plat/dma.h>
@@ -50,6 +51,7 @@ struct cqdma_env_info {
 
 static struct cqdma_env_info env_info[MAX_CQDMA_CHANNELS];
 static u32 nr_cqdma_channel;
+struct wake_lock wk_lock[MAX_CQDMA_CHANNELS];
 
 /*
  * DMA information
@@ -202,6 +204,7 @@ int mt_req_gdma(DMA_CHAN chan)
 				continue;
 			else {
 				dma_ctrl[i].in_use = 1;
+				wake_lock(&wk_lock[i]);
 				break;
 			}
 		}
@@ -211,6 +214,7 @@ int mt_req_gdma(DMA_CHAN chan)
 		else {
 			i = chan;
 			dma_ctrl[chan].in_use = 1;
+			wake_lock(&wk_lock[chan]);
 		}
 	}
 
@@ -496,6 +500,8 @@ int mt_free_gdma(int channel)
 	if (clk_cqdma)
 		clk_disable_unprepare(clk_cqdma);
 
+	wake_unlock(&wk_lock[channel]);
+
 	dma_ctrl[channel].isr_cb = NULL;
 	dma_ctrl[channel].data = NULL;
 	dma_ctrl[channel].in_use = 0;
@@ -689,6 +695,8 @@ static int cqdma_probe(struct platform_device *pdev)
 		ret = request_irq(env_info[i].irq, gdma1_irq_handler, IRQF_TRIGGER_NONE, "CQDMA", &dma_ctrl);
 		if (ret > 0)
 			pr_err("GDMA%d IRQ LINE NOT AVAILABLE,ret 0x%x!!\n", i, ret);
+
+		wake_lock_init(&wk_lock[i], WAKE_LOCK_SUSPEND, "cqdma_wakelock");
 	}
 
 	clk_cqdma = devm_clk_get(&pdev->dev, "cqdma");
