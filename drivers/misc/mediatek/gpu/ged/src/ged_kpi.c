@@ -51,10 +51,8 @@
 
 #ifdef MTK_GED_KPI
 
-#ifdef GED_KPI_DEBUG
-#undef GED_LOGE
-#define GED_LOGE printk
-#endif
+#define GED_TAG "[GED_KPI]"
+#define GED_PR_ERR(fmt, args...) pr_err_ratelimited(GED_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 
 #define GED_KPI_MSEC_DIVIDER 1000000
 #define GED_KPI_SEC_DIVIDER 1000000000
@@ -322,8 +320,10 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 		if (reset == 0) {
 			if (fps > target_fps_4_main_head + 1 || afrc_rst_cnt_down == 120) {
 				ged_kpi_frc_detection_main_head_reset(60);
+#ifdef GED_KPI_DEBUG
 				GED_LOGE("[AFRC] reset: %d, %d, afrc_rst: %d, %d\n",
 					fps, target_fps_4_main_head + 1, afrc_rst_cnt_down, afrc_rst_over_target_cnt);
+#endif
 			} else if (afrc_rst_over_target_cnt >= 15) {
 				int is_fps_grp_aligned = 1;
 
@@ -351,8 +351,10 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 					target_fps_4_main_head = fps_grp[0];
 					is_game_control_frame_rate = 1;
 					afrc_rst_over_target_cnt = 0;
+#ifdef GED_KPI_DEBUG
 					GED_LOGE("[AFRC] retarget to %d FPS due to over target detection\n",
 						fps_grp[0]);
+#endif
 				}
 
 			} else {
@@ -396,8 +398,9 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 					}
 				}
 
+#ifdef GED_KPI_DEBUG
 				GED_LOGE("[AFRC] fps_grp: %d, %d, %d\n", fps_grp[0], fps_grp[1], fps_grp[2]);
-
+#endif
 				if (reset == 0 && fps_grp[0] < 60) {
 					target_fps_4_main_head = fps_grp[0];
 					is_game_control_frame_rate = 1;
@@ -414,10 +417,12 @@ static void ged_kpi_push_cur_fps_and_detect_app_self_frc(int fps)
 		if (target_fps_4_main_head == 60 || enable_game_self_frc_detect == 0)
 			is_game_control_frame_rate = 0;
 	}
+#ifdef GED_KPI_DEBUG
 	/* debug AFRC detection */
 	GED_LOGE("[AFRC]: cur_fps: %d, fps_records: %d, %d, %d, target_fps: %d\n",
 		fps, fps_records[0], fps_records[1], fps_records[2], target_fps_4_main_head);
 	/* end of debug AFRC detection */
+#endif
 }
 #endif /* GED_KPI_CPU_BOOST */
 /* ----------------------------------------------------------------------------- */
@@ -451,7 +456,9 @@ static GED_BOOL ged_kpi_find_main_head_func(unsigned long ulID, void *pvoid, voi
 #endif
 		if (psHead->isSF == 0) {
 			if (main_head == NULL || psHead->i32Count > main_head->i32Count) {
+#ifdef GED_KPI_DEBUG
 				GED_LOGE("[GED_KPI] main_head changes from %p to %p\n", main_head, psHead);
+#endif
 				main_head = psHead;
 			}
 		}
@@ -773,13 +780,17 @@ static inline void ged_kpi_cpu_boost(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 
 	if (ged_kpi_cpu_boost_policy_fp != cpu_boost_policy_fp) {
 		ged_kpi_cpu_boost_policy_fp = cpu_boost_policy_fp;
+#ifdef GED_KPI_DEBUG
 		GED_LOGE("[GED_KPI] use cpu_boost_policy %d\n", cpu_boost_policy);
+#endif
 	}
 
 	if (ged_kpi_cpu_boost_policy_fp != NULL)
 		ged_kpi_cpu_boost_policy_fp(psHead, psKPI);
+#ifdef GED_KPI_DEBUG
 	else
 		GED_LOGE("[GED_KPI] no such cpu_boost_policy %d\n", cpu_boost_policy);
+#endif
 }
 #endif /* GED_KPI_CPU_BOOST */
 /* ----------------------------------------------------------------------------- */
@@ -816,7 +827,9 @@ static GED_BOOL ged_kpi_tag_type_s(unsigned long ulID, GED_KPI_HEAD *psHead, GED
 			psKPI->i32AcquireID = psTimeStamp->i32FrameID;
 			ret = GED_TRUE;
 		} else {
+#ifdef GED_KPI_DEBUG
 			GED_LOGE("[GED_KPI][Exception] TYPE_S: psKPI NULL, frameID: %lu\n", psTimeStamp->i32FrameID);
+#endif
 		}
 		return ret;
 	} else {
@@ -920,7 +933,9 @@ static GED_BOOL ged_kpi_update_target_time_and_target_fps(GED_KPI_HEAD *psHead
 		default:
 			psHead->frc_mode = GED_KPI_FRC_DEFAULT_MODE;
 			vsync_period = GED_KPI_SEC_DIVIDER / GED_KPI_MAX_FPS;
+#ifdef GED_KPI_DEBUG
 			GED_LOGE("[GED_KPI][Exception]: no invalid FRC mode is specified, use default mode\n");
+#endif
 		}
 
 		if (is_game_control_frame_rate && (psHead == main_head)
@@ -956,7 +971,7 @@ static void ged_kpi_record_miss_tag(unsigned long ulID, int i32FrameID, GED_TIME
 			memset(miss_tag_head, 0, sizeof(GED_KPI_MISS_TAG));
 			INIT_LIST_HEAD(&miss_tag_head->sList);
 		} else {
-			GED_LOGE("[GED_KPI][Exception] ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG)) failed\n");
+			GED_PR_ERR("[GED_KPI][Exception] ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG)) failed\n");
 			return;
 		}
 	}
@@ -964,7 +979,7 @@ static void ged_kpi_record_miss_tag(unsigned long ulID, int i32FrameID, GED_TIME
 	psMiss_tag = (GED_KPI_MISS_TAG *)ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG));
 
 	if (unlikely(!psMiss_tag)) {
-		GED_LOGE("[GED_KPI][Exception]: ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG)) failed\n");
+		GED_PR_ERR("[GED_KPI][Exception]: ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG)) failed\n");
 		return;
 	}
 
@@ -1033,9 +1048,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				ged_hashtable_remove(gs_hashtable, ulID);
 				ged_free(psHead, sizeof(GED_KPI_HEAD));
 			}
+		} else {
+#ifdef GED_KPI_DEBUG
+			GED_PR_ERR("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+#endif
 		}
-		else
-			GED_LOGE("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
 
 		/* reset data */
 		memset(psKPI, 0, sizeof(GED_KPI));
@@ -1058,7 +1075,8 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				INIT_LIST_HEAD(&psHead->sList);
 				ged_hashtable_set(gs_hashtable, ulID, (void *)psHead);
 			} else {
-				GED_LOGE("[GED_KPI][Exception] ged_alloc_atomic(sizeof(GED_KPI_HEAD)) failed\n");
+				GED_PR_ERR("[GED_KPI][Exception] ged_alloc_atomic(sizeof(GED_KPI_HEAD)) failed\n");
+				goto work_cb_end;
 			}
 		}
 		memset(psKPI, 0, sizeof(GED_KPI));
@@ -1089,9 +1107,9 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				psKPI = NULL;
 			}
 			if (psKPI == NULL) {
-				GED_LOGE("[GED_KPI][Exception] TYPE_1: psKPI NULL, frameID: %lu\n",
+				GED_PR_ERR("[GED_KPI][Exception] TYPE_1: psKPI NULL, frameID: %lu\n",
 										psTimeStamp->i32FrameID);
-				return;
+				goto work_cb_end;
 			}
 
 			/* new data */
@@ -1149,12 +1167,6 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			if (ged_kpi_find_and_delete_miss_tag(ulID, psTimeStamp->i32FrameID
 									, GED_TIMESTAMP_TYPE_S) == GED_TRUE) {
 
-				if (!psHead) {
-					GED_LOGE("[GED_KPI][Exception] TYPE_S: no hashtable head for ulID: %lu\n",
-							ulID);
-					return;
-				}
-
 				psTimeStamp->eTimeStampType = GED_TIMESTAMP_TYPE_S;
 				ged_kpi_tag_type_s(ulID, psHead, psTimeStamp);
 				psHead->i32DebugQedBuffer_length -= 1;
@@ -1173,19 +1185,19 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				}
 			}
 
+#ifdef GED_KPI_DEBUG
 			if (psHead->isSF != psTimeStamp->isSF)
 				GED_LOGE("[GED_KPI][Exception] psHead->isSF != psTimeStamp->isSF\n");
 			if (psHead->pid != psTimeStamp->pid) {
 				GED_LOGE("[GED_KPI][Exception] psHead->pid != psTimeStamp->pid: (%d, %d)\n",
 					psHead->pid, psTimeStamp->pid);
 			}
-#ifdef GED_KPI_DEBUG
 			GED_LOGE("[GED_KPI] TimeStamp1, i32QedBuffer_length:%d, ts: %llu, psHead: %p\n",
 				psTimeStamp->i32QedBuffer_length, psTimeStamp->ullTimeStamp, psHead);
 #endif
 		}
 		else
-			GED_LOGE("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+			GED_PR_ERR("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
 		break;
 	case GED_TIMESTAMP_TYPE_2:
 		ulID = (unsigned long) psTimeStamp->ullWnd;
@@ -1252,11 +1264,11 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					ged_kpi_set_gpu_dvfs_hint(((int)vsync_period / 1000), 100);
 				}
 			} else {
-				GED_LOGE("[GED_KPI][Exception] TYPE_2: psKPI NULL, frameID: %lu\n",
+				GED_PR_ERR("[GED_KPI][Exception] TYPE_2: psKPI NULL, frameID: %lu\n",
 										psTimeStamp->i32FrameID);
 			}
 		} else {
-			GED_LOGE("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+			GED_PR_ERR("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
 		}
 		break;
 	case GED_TIMESTAMP_TYPE_P:
@@ -1284,22 +1296,22 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				psKPI->ullTimeStampP = psTimeStamp->ullTimeStamp;
 			} else {
 				ged_log_perf_trace_counter("t_pre_fence_delay", 0);
-				GED_LOGE("[GED_KPI][Exception] TYPE_P: psKPI NULL, frameID: %lu\n",
+				GED_PR_ERR("[GED_KPI][Exception] TYPE_P: psKPI NULL, frameID: %lu\n",
 										psTimeStamp->i32FrameID);
 			}
 		} else {
-			GED_LOGE("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
+			GED_PR_ERR("[GED_KPI][Exception] no hashtable head for ulID: %lu\n", ulID);
 		}
 		break;
 	case GED_TIMESTAMP_TYPE_S:
 		ulID = (unsigned long) psTimeStamp->ullWnd;
 		psHead = (GED_KPI_HEAD *)ged_hashtable_find(gs_hashtable, ulID);
 
-
+#ifdef GED_KPI_DEBUG
 		if (!psHead) {
-			GED_LOGE("[GED_KPI][Exception] TYPE_S: no hashtable head for ulID: %lu\n", ulID);
-			return;
+			GED_PR_ERR("[GED_KPI][Exception] TYPE_S: no hashtable head for ulID: %lu\n", ulID);
 		}
+#endif
 
 		if (ged_kpi_tag_type_s(ulID, psHead, psTimeStamp) != GED_TRUE) {
 #ifdef GED_KPI_DEBUG
@@ -1351,7 +1363,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 	default:
 		break;
 	}
-
+work_cb_end:
 	ged_free(psTimeStamp, sizeof(GED_TIMESTAMP));
 }
 /* ----------------------------------------------------------------------------- */
@@ -1370,8 +1382,10 @@ static GED_ERROR ged_kpi_push_timestamp(
 	if (g_psWorkQueue && is_GED_KPI_enabled) {
 		GED_TIMESTAMP *psTimeStamp = (GED_TIMESTAMP *)ged_alloc_atomic(sizeof(GED_TIMESTAMP));
 
-		if (!psTimeStamp)
+		if (!psTimeStamp) {
+			GED_PR_ERR("[GED_KPI]: GED_ERROR_OOM in %s\n", __func__);
 			return GED_ERROR_OOM;
+		}
 
 		psTimeStamp->eTimeStampType = eTimeStampType;
 		psTimeStamp->ullTimeStamp = ullTimeStamp;
@@ -1515,8 +1529,10 @@ GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, unsigned long long ullWdnd, int i32
 
 	psMonitor = (GED_KPI_GPU_TS *)ged_alloc(sizeof(GED_KPI_GPU_TS));
 
-	if (!psMonitor)
+	if (!psMonitor) {
+		GED_PR_ERR("[GED_KPI]: GED_ERROR_OOM in %s\n", __func__);
 		return GED_ERROR_OOM;
+	}
 
 	ged_kpi_timeD(pid, ullWdnd, i32FrameID, isSF);
 
@@ -1560,8 +1576,10 @@ GED_ERROR ged_kpi_queue_buffer_ts(int pid, unsigned long long ullWdnd, int i32Fr
 
 	psMonitor = (GED_KPI_GPU_TS *)ged_alloc(sizeof(GED_KPI_GPU_TS));
 
-	if (!psMonitor)
+	if (!psMonitor) {
+		GED_PR_ERR("[GED_KPI]: GED_ERROR_OOM in %s\n", __func__);
 		return GED_ERROR_OOM;
+	}
 
 	sync_fence_waiter_init(&psMonitor->sSyncWaiter, ged_kpi_gpu_3d_fence_sync_cb);
 	psMonitor->psSyncFence = psSyncFence;
