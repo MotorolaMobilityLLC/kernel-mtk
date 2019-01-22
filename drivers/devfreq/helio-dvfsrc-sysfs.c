@@ -98,7 +98,7 @@ static ssize_t dvfsrc_debug_show(struct device *dev,
 	p += snprintf(p, buff_end - p, "[%-12s] khz: %-8u\n", "ddr", vcorefs_get_curr_ddr());
 
 	p += snprintf(p, buff_end - p, "[%-12s]: %d\n", "Enable", dvfsrc->enable);
-	p += snprintf(p, buff_end - p, "[%-12s]: %d\n", "dram_issue", dvfsrc->dram_issue);
+	p += snprintf(p, buff_end - p, "[%-12s]: %d\n", "skip", dvfsrc->skip);
 
 	p += snprintf(p, buff_end - p, "[vcore_dvs]: %d\n", dvfsrc->vcore_dvs);
 	p += snprintf(p, buff_end - p, "[ddr_dfs  ]: %d\n", dvfsrc->ddr_dfs);
@@ -191,6 +191,8 @@ static ssize_t dvfsrc_debug_store(struct device *dev,
 		pm_qos_update_request(&dvfsrc_emi_request, val);
 	else if (!strcmp(cmd, "kir_vcore"))
 		pm_qos_update_request(&dvfsrc_vcore_request, val);
+	else if (!strcmp(cmd, "skip"))
+		dvfsrc->skip = val;
 	else
 		r = -EPERM;
 
