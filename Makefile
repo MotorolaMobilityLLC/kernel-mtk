@@ -398,14 +398,6 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -std=gnu89 $(call cc-option,-fno-PIE)
 
-
-ifeq ($(findstring aarch64-linux-gnu-6.3.1, $(CROSS_COMPILE)), aarch64-linux-gnu-6.3.1)
-   KBUILD_CFLAGS += -Wno-maybe-uninitialized -Wno-array-bounds \
-            -Wno-discarded-array-qualifiers \
-            -Wno-logical-not-parentheses \
-            -Wno-misleading-indentation
-endif
-
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__ $(call cc-option,-fno-PIE)
