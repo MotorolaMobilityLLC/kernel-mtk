@@ -8198,9 +8198,14 @@ wlanPktTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_
 	if (prMsduInfo->ucPktType >= ENUM_PKT_FLAG_NUM)
 		prMsduInfo->ucPktType = 0;
 
-	DBGLOG(TX, INFO, "TX DONE, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
-	       apucPktType[prMsduInfo->ucPktType], prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
-	       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	if (prMsduInfo->ucPktType == ENUM_PKT_ARP && rTxDoneStatus == 0)
+		DBGLOG_LIMITED(TX, INFO, "TX DONE, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+		       apucPktType[prMsduInfo->ucPktType], prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+		       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+	else
+		DBGLOG(TX, INFO, "TX DONE, Type[%s] Tag[0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+		       apucPktType[prMsduInfo->ucPktType], prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+		       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }
