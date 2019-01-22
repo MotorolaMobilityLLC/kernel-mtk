@@ -27,10 +27,10 @@
 #include "trustzone/kree/mem.h"
 #endif
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-#include "secmem.h"
+#if defined(CONFIG_MTK_SECURE_MEM_SUPPORT) && \
+		defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#include "secmem_api.h"
 #endif
-
 
 /* global variables */
 int gM4U_log_to_uart = 2;
