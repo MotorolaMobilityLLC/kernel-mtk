@@ -291,7 +291,7 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 		arch_scale_set_curr_freq(cpu, freq);
 
 		#ifdef CONFIG_SCHED_WALT
-		walt_cpufreq_notifier_trans(cpu, freq);
+		cpu_rq(cpu)->cur_freq = freq;
 		#endif
 	}
 #endif

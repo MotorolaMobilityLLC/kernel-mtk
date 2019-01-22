@@ -846,6 +846,7 @@ void walt_fixup_busy_time(struct task_struct *p, int new_cpu)
 	struct rq *src_rq = task_rq(p);
 	struct rq *dest_rq = cpu_rq(new_cpu);
 	u64 wallclock;
+	int lock_needed = 0;
 
 	if (!p->on_rq && p->state != TASK_WAKING)
 		return;
@@ -855,6 +856,9 @@ void walt_fixup_busy_time(struct task_struct *p, int new_cpu)
 	}
 
 	if (p->state == TASK_WAKING)
+		lock_needed = 1;
+
+	if (lock_needed)
 		double_rq_lock(src_rq, dest_rq);
 
 	wallclock = walt_ktime_clock();
@@ -888,7 +892,7 @@ void walt_fixup_busy_time(struct task_struct *p, int new_cpu)
 	trace_walt_migration_update_sum(src_rq, p);
 	trace_walt_migration_update_sum(dest_rq, p);
 
-	if (p->state == TASK_WAKING)
+	if (lock_needed)
 		double_rq_unlock(src_rq, dest_rq);
 }
 
