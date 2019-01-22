@@ -22,7 +22,7 @@ void fsm_md_bootup_timeout_handler(struct ccci_fsm_ee *ee_ctl)
 	CCCI_NORMAL_LOG(ee_ctl->md_id, FSM, "Dump MD layout struct\n");
 	ccci_mem_dump(ee_ctl->md_id, mem_layout, sizeof(struct ccci_mem_layout));
 	CCCI_NORMAL_LOG(ee_ctl->md_id, FSM, "Dump queue 0 & 1\n");
-	ccci_md_dump_info(ee_ctl->md_id, (DUMP_FLAG_QUEUE_0_1 | DUMP_MD_BOOTUP_STATUS), NULL, 0);
+	ccci_md_dump_info(ee_ctl->md_id, (DUMP_FLAG_QUEUE_0_1 | DUMP_MD_BOOTUP_STATUS | DUMP_FLAG_REG), NULL, 0);
 	CCCI_NORMAL_LOG(ee_ctl->md_id, FSM, "Dump MD ee boot failed info\n");
 
 	ee_ctl->ops->dump_ee_info(ee_ctl, MDEE_DUMP_LEVEL_BOOT_FAIL, 0);
