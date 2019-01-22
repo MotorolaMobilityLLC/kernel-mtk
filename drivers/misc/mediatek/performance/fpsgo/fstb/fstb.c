@@ -140,6 +140,7 @@ static unsigned int cur_capacity[FRAME_TIME_BUFFER_SIZE];
 int second_chance_flag;
 
 static int vag_flag;
+static int force_vag;
 
 int is_fstb_enable(void)
 {
@@ -205,6 +206,19 @@ int switch_percentile_frametime(int ratio)
 	QUANTILE = ratio;
 
 	return 0;
+}
+
+int switch_force_vag(int arg)
+{
+		if (arg == 1) {
+			force_vag = 1;
+			dfrc_set_kernel_policy(DFRC_DRV_API_LOADING, -1, DFRC_DRV_MODE_INTERNAL_SW, 0, 0);
+		} else if (arg == 0) {
+			force_vag = 0;
+		} else
+			return -EINVAL;
+
+		return 0;
 }
 
 int switch_lpp_fps(int arg)
@@ -1029,13 +1043,13 @@ static void fstb_fps_stats(struct work_struct *work)
 		fpsgo_systrace_c_fstb(-200, asfc_flag, "asfc_flag");
 	}
 
-	if (vag_flag == 2)
+	if (vag_flag == 2 || force_vag)
 		fbt_cpu_vag_set_fps(30);
 	else
 		fbt_cpu_vag_set_fps(0);
 
 #ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
-	if (lpp_mode == 0)
+	if (!lpp_mode && !force_vag)
 		ret = dfrc_set_kernel_policy(DFRC_DRV_API_LOADING,
 				((fstb_fps_cur_limit != 60 && in_game_mode && fstb_enable) ? fstb_fps_cur_limit : -1),
 				DFRC_DRV_MODE_INTERNAL_SW, 0, 0);
@@ -1328,6 +1342,41 @@ static const struct file_operations fstb_tune_error_threshold_fops = {
 	.write = fstb_tune_error_threshold_write,
 	.release = single_release,
 };
+
+static int fstb_tune_force_vag_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d ", force_vag);
+	return 0;
+}
+
+static ssize_t fstb_tune_force_vag_write(struct file *file, const char __user *buffer,
+		size_t count, loff_t *data)
+{
+	int ret;
+	int arg;
+
+	if (!kstrtoint_from_user(buffer, count, 0, &arg))
+		ret = switch_force_vag(arg);
+	else
+		ret = -EINVAL;
+
+	return (ret < 0) ? ret : count;
+}
+
+static int fstb_tune_force_vag_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, fstb_tune_force_vag_read, NULL);
+}
+
+static const struct file_operations fstb_tune_force_vag_fops = {
+	.owner = THIS_MODULE,
+	.open = fstb_tune_force_vag_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = fstb_tune_force_vag_write,
+	.release = single_release,
+};
+
 static int fstb_tune_lpp_fps_read(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d ", lppfps);
@@ -1541,6 +1590,12 @@ static int __init mtk_fstb_init(void)
 			    fstb_debugfs_dir,
 			    NULL,
 			    &fstb_tune_lpp_fps_fops);
+
+	debugfs_create_file("fstb_tune_force_vag",
+			    S_IRUGO | S_IWUSR | S_IWGRP,
+			    fstb_debugfs_dir,
+			    NULL,
+			    &fstb_tune_force_vag_fops);
 
 	reset_fps_level();
 
