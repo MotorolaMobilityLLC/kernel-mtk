@@ -79,6 +79,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ri_server.h"
 #endif 
 
+#define PMR_STRUCTURE_ASSERT
+
+#define PMR_SIGNATURE_LIVE 0x504D524C
+#define PMR_SIGNATURE_DEAD 0x504D5244
+
+
 /* ourselves */
 #include "pmr.h"
 
@@ -144,6 +150,9 @@ struct _PMR_
        basis which means we need the physical heap info
     */
     PHYS_HEAP *psPhysHeap;
+
+	/* Signature value to show validity of structure */
+	IMG_UINT32 ui32PMRSignature;
 
     ATOMIC_T iRefCount;
 
@@ -264,6 +273,31 @@ struct _PMR_PAGELIST_
 	struct _PMR_ *psReferencePMR;
 };
 
+#ifdef PMR_STRUCTURE_ASSERT
+static IMG_BOOL
+_PMRAssert(const PMR *psPMR)
+{
+	if (psPMR
+	    && PMR_SIGNATURE_LIVE == psPMR->ui32PMRSignature
+	    && OSAtomicRead(&psPMR->iRefCount)) {
+		return IMG_TRUE;
+	}
+
+	if (!psPMR) {
+		PVR_DPF((PVR_DBG_ERROR, "%s: PMR %p NULL", __func__, psPMR));
+	} else if (psPMR->ui32PMRSignature == PMR_SIGNATURE_DEAD) {
+		PVR_DPF((PVR_DBG_ERROR, "%s: PMR %p DEAD", __func__, psPMR));
+	} else {
+		PVR_DPF((PVR_DBG_ERROR, "%s: PMR %p CORRUPT %08x", __func__,
+			psPMR, psPMR->ui32PMRSignature));
+	}
+
+	OSWarnOn(IMG_TRUE);
+	return IMG_FALSE;
+}
+#else
+#define _PMRAssert(a) PVR_ASSERT(a)
+#endif
 
 #define MIN3(a,b,c)	(((a) < (b)) ? (((a) < (c)) ? (a):(c)) : (((b) < (c)) ? (b):(c)))
 
@@ -353,6 +387,8 @@ _PMRCreate(PMR_SIZE_T uiLogicalSize,
 	psPMR->uiKey = psContext->uiNextKey;
 	psPMR->uiSerialNum = psContext->uiNextSerialNum;
 
+	psPMR->ui32PMRSignature = PMR_SIGNATURE_LIVE;
+
 #if defined(PVR_RI_DEBUG)
 	psPMR->hRIHandle = NULL;
 #endif
@@ -403,6 +439,7 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 
 	if (iRefCount == 0)
 	{
+		psPMR->ui32PMRSignature = PMR_SIGNATURE_DEAD;
 #if defined(PDUMP)
 		PDumpPMRFreePMR(psPMR,
 		                psPMR->uiLogicalSize,
@@ -570,7 +607,7 @@ PVRSRV_ERROR PMRLockSysPhysAddressesNested(PMR *psPMR,
 {
     PVRSRV_ERROR eError;
 
-    PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
 	/* Note: taking this lock is not required to protect the PMR reference count,
 	 * because the PMR reference count is atomic.
@@ -636,7 +673,7 @@ PMRUnlockSysPhysAddressesNested(PMR *psPMR, IMG_UINT32 ui32NestingLevel)
 {
     PVRSRV_ERROR eError;
 
-    PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
 	/* Acquiring the lock here, as well as during the Lock operation ensures
 	 * the lock count hitting zero and the unlocking of the phys addresses is
@@ -671,7 +708,7 @@ PMRUnpinPMR(PMR *psPMR, IMG_BOOL bDevMapped)
 {
 	PVRSRV_ERROR eError = PVRSRV_OK;
 
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
 	OSLockAcquire(psPMR->hLock);
 	/* Stop if we still have references on the PMR */
@@ -705,7 +742,7 @@ PMRPinPMR(PMR *psPMR)
 {
 	PVRSRV_ERROR eError= PVRSRV_OK;
 
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
 	if(psPMR->psFuncTab->pfnPinMem != NULL)
 	{
@@ -744,7 +781,8 @@ PMRLocalImportPMR(PMR *psPMR,
 				  IMG_DEVMEM_SIZE_T *puiSize,
 				  IMG_DEVMEM_ALIGN_T *puiAlign)
 {
-	 _Ref(psPMR);
+	_PMRAssert(psPMR);
+	_Ref(psPMR);
 
 	/* Return the PMR */
 	*ppsPMR = psPMR;
@@ -757,7 +795,7 @@ PVRSRV_ERROR
 PMRGetUID(PMR *psPMR,
 		  IMG_UINT64 *pui64UID)
 {
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
 	*pui64UID = psPMR->uiSerialNum;
 
@@ -775,6 +813,7 @@ PMRExportPMR(PMR *psPMR,
     IMG_UINT64 uiPassword;
     PMR_EXPORT *psPMRExport;
 
+	_PMRAssert(psPMR);
     uiPassword = psPMR->uiKey;
 
     psPMRExport = OSAllocMem(sizeof(*psPMRExport));
@@ -799,10 +838,10 @@ PVRSRV_ERROR
 PMRUnexportPMR(PMR_EXPORT *psPMRExport)
 {
     PVR_ASSERT(psPMRExport != NULL);
-    PVR_ASSERT(psPMRExport->psPMR != NULL);
+	_PMRAssert(psPMRExport->psPMR);
     PVR_ASSERT(OSAtomicRead(&psPMRExport->psPMR->iRefCount) > 0);
 
-    _UnrefAndMaybeDestroy(psPMRExport->psPMR);
+	_UnrefAndMaybeDestroy(psPMRExport->psPMR);
 
     OSFreeMem(psPMRExport);
 
@@ -824,7 +863,7 @@ PMRImportPMR(CONNECTION_DATA *psConnection,
     PVR_UNREFERENCED_PARAMETER(psConnection);
 
     PVR_ASSERT(psPMRExport != NULL);
-    PVR_ASSERT(psPMRExport->psPMR != NULL);
+	_PMRAssert(psPMRExport->psPMR);
     PVR_ASSERT(OSAtomicRead(&psPMRExport->psPMR->iRefCount) > 0);
 
     psPMR = psPMRExport->psPMR;
@@ -859,6 +898,7 @@ PMRImportPMR(CONNECTION_DATA *psConnection,
 PVRSRV_ERROR
 PMRUnimportPMR(PMR *psPMR)
 {
+	_PMRAssert(psPMR);
     _UnrefAndMaybeDestroy(psPMR);
 
     return PVRSRV_OK;
@@ -929,6 +969,7 @@ PVRSRV_ERROR PMRSecureExportPMR(CONNECTION_DATA *psConnection,
 {
 	PVRSRV_ERROR eError;
 
+	_PMRAssert(psPMR);
 	PVR_UNREFERENCED_PARAMETER(psDevNode);
 	
 	/* We are acquiring reference to PMR here because OSSecureExport
@@ -957,6 +998,7 @@ e0:
 
 PVRSRV_ERROR PMRSecureUnexportPMR(PMR *psPMR)
 {
+	_PMRAssert(psPMR);
 	_UnrefAndMaybeDestroy(psPMR);
 	return PVRSRV_OK;
 }
@@ -979,6 +1021,7 @@ PVRSRV_ERROR PMRSecureImportPMR(CONNECTION_DATA *psConnection,
 		goto e0;
 	}
 
+	_PMRAssert(psPMR);
 	if (psPMR->psDevNode != psDevNode)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: PMR invalid for this device\n", __func__));
@@ -999,6 +1042,7 @@ e0:
 
 PVRSRV_ERROR PMRSecureUnimportPMR(PMR *psPMR)
 {
+	_PMRAssert(psPMR);
 	_UnrefAndMaybeDestroy(psPMR);
 	return PVRSRV_OK;
 }
@@ -1009,10 +1053,10 @@ PVRSRV_ERROR
 PMRStoreRIHandle(PMR *psPMR,
 				 void *hRIHandle)
 {
-    PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
-    psPMR->hRIHandle = hRIHandle;
-    return PVRSRV_OK;
+	psPMR->hRIHandle = hRIHandle;
+	return PVRSRV_OK;
 }
 #endif
 
@@ -1029,7 +1073,7 @@ _PMRAcquireKernelMappingData(PMR *psPMR,
     void *pvKernelAddress;
     IMG_HANDLE hPriv;
 
-    PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
     if (_PMRIsSparse(psPMR) && !bMapSparse)
     {
@@ -1127,6 +1171,7 @@ PVRSRV_ERROR
 PMRReleaseKernelMappingData(PMR *psPMR,
                             IMG_HANDLE hPriv)
 {
+	_PMRAssert(psPMR);
     PVR_ASSERT (psPMR->psFuncTab->pfnAcquireKernelMappingData != NULL);
     PVR_ASSERT (psPMR->psFuncTab->pfnReleaseKernelMappingData != NULL);
 
@@ -1360,6 +1405,7 @@ PMR_ReadBytes(PMR *psPMR,
     IMG_DEVMEM_OFFSET_T uiPhysicalOffset;
     size_t uiBytesCopied = 0;
 
+	_PMRAssert(psPMR);
     if (uiLogicalOffset + uiBufSz > psPMR->uiLogicalSize)
     {
 		uiBufSz = TRUNCATE_64BITS_TO_32BITS(psPMR->uiLogicalSize - uiLogicalOffset);
@@ -1527,6 +1573,7 @@ PMR_WriteBytes(PMR *psPMR,
     IMG_DEVMEM_OFFSET_T uiPhysicalOffset;
     size_t uiBytesCopied = 0;
 
+	_PMRAssert(psPMR);
     if (uiLogicalOffset + uiBufSz > psPMR->uiLogicalSize)
     {
         uiBufSz = TRUNCATE_64BITS_TO_32BITS(psPMR->uiLogicalSize - uiLogicalOffset);
@@ -1599,6 +1646,7 @@ PMR_WriteBytes(PMR *psPMR,
 PVRSRV_ERROR
 PMRMMapPMR(PMR *psPMR, PMR_MMAP_DATA pOSMMapData)
 {
+	_PMRAssert(psPMR);
 	if (psPMR->psFuncTab->pfnMMap)
 	{
 		return psPMR->psFuncTab->pfnMMap(psPMR->pvFlavourData, psPMR, pOSMMapData);
@@ -1610,14 +1658,15 @@ PMRMMapPMR(PMR *psPMR, PMR_MMAP_DATA pOSMMapData)
 void
 PMRRefPMR(PMR *psPMR)
 {
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 	_Ref(psPMR);
 }
 
 PVRSRV_ERROR
 PMRUnrefPMR(PMR *psPMR)
 {
-    _UnrefAndMaybeDestroy(psPMR);
+	_PMRAssert(psPMR);
+	_UnrefAndMaybeDestroy(psPMR);
     return PVRSRV_OK;
 }
 
@@ -1634,7 +1683,7 @@ PMRUnrefUnlockPMR(PMR *psPMR)
 PVRSRV_DEVICE_NODE *
 PMR_DeviceNode(const PMR *psPMR)
 {
-    PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
     return psPMR->psDevNode;
 }
@@ -1642,7 +1691,7 @@ PMR_DeviceNode(const PMR *psPMR)
 PMR_FLAGS_T
 PMR_Flags(const PMR *psPMR)
 {
-    PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
     return psPMR->uiFlags;
 }
@@ -1650,7 +1699,7 @@ PMR_Flags(const PMR *psPMR)
 IMG_BOOL
 PMR_IsSparse(const PMR *psPMR)
 {
-    PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
     return _PMRIsSparse(psPMR);
 
@@ -1660,7 +1709,7 @@ PVRSRV_ERROR
 PMR_LogicalSize(const PMR *psPMR,
 				IMG_DEVMEM_SIZE_T *puiLogicalSize)
 {
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 
     *puiLogicalSize = psPMR->uiLogicalSize;
     return PVRSRV_OK;
@@ -1669,6 +1718,7 @@ PMR_LogicalSize(const PMR *psPMR,
 PHYS_HEAP *
 PMR_PhysHeap(const PMR *psPMR)
 {
+	_PMRAssert(psPMR);
 	return psPMR->psPhysHeap;
 }
 
@@ -1685,7 +1735,7 @@ PMR_IsOffsetValid(const PMR *psPMR,
 	IMG_UINT32 *pui32BytesRemain = aui32BytesRemain;
 	PVRSRV_ERROR eError = PVRSRV_OK;
 
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 	PVR_ASSERT(psPMR->uiLogicalSize >= uiLogicalOffset);
 
 	if (ui32NumOfPages > PMR_MAX_TRANSLATION_STACK_ALLOC)
@@ -1730,7 +1780,7 @@ e0:
 PMR_MAPPING_TABLE *
 PMR_GetMappigTable(const PMR *psPMR)
 {
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 	return psPMR->psMappingTable;
 
 }
@@ -1738,14 +1788,14 @@ PMR_GetMappigTable(const PMR *psPMR)
 IMG_UINT32
 PMR_GetLog2Contiguity(const PMR *psPMR)
 {
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 	return psPMR->uiLog2ContiguityGuarantee;
 }
 
 PMR_IMPL_TYPE
 PMR_GetType(const PMR *psPMR)
 {
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 	return psPMR->eFlavour;
 }
 
@@ -1763,7 +1813,7 @@ PMR_DevPhysAddr(const PMR *psPMR,
 	IMG_DEVMEM_OFFSET_T auiPhysicalOffset[PMR_MAX_TRANSLATION_STACK_ALLOC];
 	IMG_DEVMEM_OFFSET_T *puiPhysicalOffset = auiPhysicalOffset;
 
-	PVR_ASSERT(psPMR != NULL);
+	_PMRAssert(psPMR);
 	PVR_ASSERT(ui32NumOfPages > 0);
 	PVR_ASSERT(psPMR->psFuncTab->pfnDevPhysAddr != NULL);
 
@@ -1860,6 +1910,7 @@ PMR_CpuPhysAddr(const PMR *psPMR,
 	IMG_DEV_PHYADDR asDevPAddr[PMR_MAX_TRANSLATION_STACK_ALLOC];
 	IMG_DEV_PHYADDR *psDevPAddr = asDevPAddr;
 
+	_PMRAssert(psPMR);
     if (ui32NumOfPages > PMR_MAX_TRANSLATION_STACK_ALLOC)
     {
     	psDevPAddr = OSAllocMem(ui32NumOfPages * sizeof(IMG_DEV_PHYADDR));
@@ -1903,6 +1954,7 @@ PVRSRV_ERROR PMR_ChangeSparseMem(PMR *psPMR,
 {
 	PVRSRV_ERROR eError;
 
+	_PMRAssert(psPMR);
 	if (NULL == psPMR->psFuncTab->pfnChangeSparseMem)
 	{
 		PVR_DPF((PVR_DBG_ERROR,
@@ -1965,6 +2017,7 @@ PVRSRV_ERROR PMR_ChangeSparseMemCPUMap(PMR *psPMR,
 {
 	PVRSRV_ERROR eError;
 
+	_PMRAssert(psPMR);
 	if ((NULL == psPMR->psFuncTab) ||
 	    (NULL == psPMR->psFuncTab->pfnChangeSparseMemCPUMap))
 	{
@@ -2870,6 +2923,7 @@ PDumpPMRMallocPMR(PMR *psPMR,
 void *PMRGetPrivateData(const PMR *psPMR,
                         const PMR_IMPL_FUNCTAB *psFuncTab)
 {
+	_PMRAssert(psPMR);
     return (psFuncTab == psPMR->psFuncTab) ? psPMR->pvFlavourData : NULL;
 }
 
@@ -3179,7 +3233,7 @@ PMRZeroingPMR(PMR *psPMR,
     PVRSRV_ERROR eError = PVRSRV_OK;
     size_t uiMapedSize;
 
-    PVR_ASSERT(psPMR);
+	_PMRAssert(psPMR);
 
     /* Calculate number of pages in this PMR */
 	uiNumPages = (IMG_UINT32)(psPMR->uiLogicalSize >> uiLog2PageSize);
