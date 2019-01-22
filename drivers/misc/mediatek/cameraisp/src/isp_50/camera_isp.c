@@ -985,7 +985,7 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 
 	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 	"%s:IMGO:0x%x,RRZO:0x%x,AAO=0x%x,AFO=0x%x,LCSO=0x%x,UFEO=0x%x,PDO=0x%x,PSO=0x%x\n"
-	"EISO=0x%x,RSSO=0x%x,UFGO=0x%x,FLKO=0x%x\n",
+	"EISO=0x%x,RSSO=0x%x,UFGO=0x%x,FLKO=0x%x DMA_DBG_SEL=0x%x TOP_DBG_PORT=0x%x\n",
 			cam,
 			dmaerr[_imgo_],
 			dmaerr[_rrzo_],
@@ -998,7 +998,44 @@ static void ISP_DumpDmaDeepDbg(enum ISP_IRQ_TYPE_ENUM module)
 			dmaerr[_lmvo_],
 			dmaerr[_rsso_],
 			dmaerr[_ufgo_],
-			dmaerr[_flko_]);
+			dmaerr[_flko_],
+			(unsigned int)ISP_RD32(CAM_REG_DMA_DEBUG_SEL(regModule)),
+			(unsigned int)ISP_RD32(CAM_UNI_REG_TOP_DBG_PORT(ISP_UNI_A_IDX)));
+
+	/* CAM_UNI_TOP_DBG_SET [15:12] = 4'd0; for smi dbg dump */
+	ISP_WR32(CAM_UNI_REG_TOP_DBG_SET(ISP_UNI_A_IDX),
+		(ISP_RD32(CAM_UNI_REG_TOP_DBG_SET(ISP_UNI_A_IDX)) & 0xFFFF0FFF));
+
+	ISP_WR32(CAM_REG_DMA_DEBUG_SEL(regModule), 0x00080403);
+	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR, "(IMGO1:DMA_DBG_SEL=0x%x DBG_PORT=0x%x)",
+			(unsigned int)ISP_RD32(CAM_REG_DMA_DEBUG_SEL(regModule)),
+			(unsigned int)ISP_RD32(CAM_UNI_REG_TOP_DBG_PORT(ISP_UNI_A_IDX)));
+
+	ISP_WR32(CAM_REG_DMA_DEBUG_SEL(regModule), 0x00000403);
+	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR, "(IMGO2:DMA_DBG_SEL=0x%x DBG_PORT=0x%x)",
+			(unsigned int)ISP_RD32(CAM_REG_DMA_DEBUG_SEL(regModule)),
+			(unsigned int)ISP_RD32(CAM_UNI_REG_TOP_DBG_PORT(ISP_UNI_A_IDX)));
+
+	ISP_WR32(CAM_REG_DMA_DEBUG_SEL(regModule), 0x00010403);
+	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR, "(IMGO3:DMA_DBG_SEL=0x%x DBG_PORT=0x%x)",
+			(unsigned int)ISP_RD32(CAM_REG_DMA_DEBUG_SEL(regModule)),
+			(unsigned int)ISP_RD32(CAM_UNI_REG_TOP_DBG_PORT(ISP_UNI_A_IDX)));
+
+	ISP_WR32(CAM_REG_DMA_DEBUG_SEL(regModule), 0x00080404);
+	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR, "(RRZO1:DMA_DBG_SEL=0x%x DBG_PORT=0x%x)",
+			(unsigned int)ISP_RD32(CAM_REG_DMA_DEBUG_SEL(regModule)),
+			(unsigned int)ISP_RD32(CAM_UNI_REG_TOP_DBG_PORT(ISP_UNI_A_IDX)));
+
+	ISP_WR32(CAM_REG_DMA_DEBUG_SEL(regModule), 0x00000404);
+	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR, "(RRZO2:DMA_DBG_SEL=0x%x DBG_PORT=0x%x)",
+			(unsigned int)ISP_RD32(CAM_REG_DMA_DEBUG_SEL(regModule)),
+			(unsigned int)ISP_RD32(CAM_UNI_REG_TOP_DBG_PORT(ISP_UNI_A_IDX)));
+
+	ISP_WR32(CAM_REG_DMA_DEBUG_SEL(regModule), 0x00010404);
+	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR, "(RRZO3:DMA_DBG_SEL=0x%x DBG_PORT=0x%x)",
+			(unsigned int)ISP_RD32(CAM_REG_DMA_DEBUG_SEL(regModule)),
+			(unsigned int)ISP_RD32(CAM_UNI_REG_TOP_DBG_PORT(ISP_UNI_A_IDX)));
+
 	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 	"%s:BPCI:0x%x,LSCI=0x%x,PDI=0x%x,RAWI=0x%x\n",
 			cam,
@@ -3795,6 +3832,7 @@ RESET:
 			break;
 		}
 	}
+
 	ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x4);
 	ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x0);
 	regTGSt = (ISP_RD32(CAM_REG_TG_INTER_ST(module)) & 0x00003F00) >> 8;
