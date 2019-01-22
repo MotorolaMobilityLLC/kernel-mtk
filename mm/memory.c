@@ -72,7 +72,7 @@
 
 #include <trace/events/pagemap.h>
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 
@@ -1769,7 +1769,7 @@ int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
 	 * un-COW'ed pages by matching them up with "vma->vm_pgoff".
 	 * See vm_normal_page() for details.
 	 */
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	if (addr == vma->vm_start && end == vma->vm_end)
 		vma->vm_pgoff = pfn;
 	else if (is_cow_mapping(vma->vm_flags))
@@ -3748,7 +3748,7 @@ static int __access_remote_vm(struct task_struct *tsk, struct mm_struct *mm,
 		ret = get_user_pages(tsk, mm, addr, 1,
 				write, 1, &page, &vma);
 		if (ret <= 0) {
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 			if (!write) {
 				vma = find_vma(mm, addr);
 				if (!vma || vma->vm_start > addr)

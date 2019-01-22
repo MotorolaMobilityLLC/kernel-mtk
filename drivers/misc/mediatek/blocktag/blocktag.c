@@ -31,7 +31,7 @@
 #include <linux/blk_types.h>
 #include <linux/module.h>
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 #include <linux/exm_driver.h>
 #endif
 
@@ -848,7 +848,7 @@ static void mtk_btag_pidlogger_init(void)
 
 	spin_lock_init(&mtk_btag_pagelogger_lock);
 
-#ifdef CONFIG_MTK_EXTMEM
+#ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 	mtk_btag_pagelogger = extmem_malloc_page_align(size);
 #else
 	mtk_btag_pagelogger = vmalloc(size);
