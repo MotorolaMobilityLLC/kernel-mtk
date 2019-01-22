@@ -136,7 +136,11 @@ $(TARGET_PREBUILT_KERNEL): $(BUILT_KERNEL_TARGET) $(LOCAL_PATH)/Android.mk | $(A
 
 ifeq ($(strip $(MTK_DTBO_FEATURE)), yes)
 INSTALLED_DTB_OVERLAY_TARGET := $(PRODUCT_OUT)/dtbo.img
-BUILT_DTB_OVERLAY_TARGET := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/dts/mediatek/overlays/dtbo.img
+ifeq ($(strip $(MTK_K64_SUPPORT)), yes)
+BUILT_DTB_OVERLAY_TARGET := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/dts/mediatek/dtbo.img
+else
+BUILT_DTB_OVERLAY_TARGET := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/dts/dtbo.img
+endif
 
 $(BUILT_DTB_OVERLAY_TARGET): $(BUILT_KERNEL_TARGET)
 
