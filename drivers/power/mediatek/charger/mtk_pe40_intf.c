@@ -44,6 +44,10 @@
 #ifndef LOW_TEMP_TO_ENTER_PE40
 #define LOW_TEMP_TO_ENTER_PE40 TEMP_T2_THRES_PLUS_X_DEGREE
 #endif
+#ifndef PE40_VBUS_IR_DROP_THRESHOLD
+#define PE40_VBUS_IR_DROP_THRESHOLD 1200
+#endif
+
 
 int mtk_pe40_pd_1st_request(struct charger_manager *pinfo,
 	int adapter_mv, int adapter_ma, int ma,
@@ -69,8 +73,8 @@ int mtk_pe40_pd_1st_request(struct charger_manager *pinfo,
 	if (oldmA < ma)
 		charger_dev_set_input_current(pinfo->chg1_dev, ma * 1000);
 
-	if ((adapter_mv - 1200) > 4500)
-		mivr = adapter_mv - 1200;
+	if ((adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD) > 4500)
+		mivr = adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD;
 
 	charger_dev_set_mivr(pinfo->chg1_dev, mivr * 1000);
 
@@ -84,6 +88,7 @@ int mtk_pe40_pd_request(struct charger_manager *pinfo,
 {
 	unsigned int oldmA;
 	int ret;
+	int mivr = 4500;
 
 	chr_err("pe40_pd_req:vbus:%d ibus:%d input_current:%d\n",
 		adapter_mv, adapter_ma, ma);
@@ -98,7 +103,13 @@ int mtk_pe40_pd_request(struct charger_manager *pinfo,
 	if (oldmA < ma)
 		charger_dev_set_input_current(pinfo->chg1_dev, ma * 1000);
 
-	charger_dev_set_mivr(pinfo->chg1_dev, (adapter_mv - 1200) * 1000);
+	if ((adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD) > 4500)
+		mivr = adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD;
+
+	charger_dev_set_mivr(pinfo->chg1_dev, mivr * 1000);
+
+	charger_dev_set_mivr(pinfo->chg1_dev, (adapter_mv -
+		PE40_VBUS_IR_DROP_THRESHOLD) * 1000);
 
 	pinfo->pe4.pe4_input_current_limit_setting = ma * 1000;
 	return ret;
@@ -677,7 +688,8 @@ int mtk_pe40_safety_check(struct charger_manager *pinfo)
 		}
 	}
 
-	if (cap.output_mv != -1 && cap.output_mv - vbus > 1200) {
+	if (cap.output_mv != -1 && cap.output_mv - vbus >
+		PE40_VBUS_IR_DROP_THRESHOLD) {
 		chr_err("[pe40_err]vbus ov2 :vbus:%d avbus:%d\n",
 			vbus, cap.output_mv);
 		goto err;
