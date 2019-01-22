@@ -61,8 +61,7 @@ extern "C" {
 #define PWRTHRO_LOW_BAT_LV2_MW	(600)
 
 #define DVFS_OPP_NUM		(16)
-#define get_cluster_ptpod_fix_freq_idx(id)	PTPOD_FREQ_IDX	/* the same for each cluster */
-
+#define get_cluster_ptpod_fix_freq_idx(id)	((mt_cpufreq_get_cpu_level() != 1 && id == 1) ?  8 : 7)
 /*==============================================================*/
 /* Enum								*/
 /*==============================================================*/
