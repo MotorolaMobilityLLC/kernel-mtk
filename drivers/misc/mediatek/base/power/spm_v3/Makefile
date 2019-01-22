@@ -45,6 +45,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
 obj-y += mtk_idle.o
 obj-y += mtk_idle_mt6799.o
+obj-y += mtk_idle_profile.o
 obj-y += mtk_sleep.o
 obj-y += mtk_spm_init.o
 obj-y += mtk_spm.o
@@ -62,4 +63,3 @@ obj-y += mtk_spm_sodi3p0.o
 obj-y += mtk_spm_sodi_cmdq.o
 obj-y += mtk_spm_vcorefs.o
 endif
-
