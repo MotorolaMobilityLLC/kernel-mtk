@@ -65,29 +65,31 @@
  *    function implementation
  */
 
+static int m_input_use_single_ch;
 static int m_input_use_lch;
 
+static const char * const LR_channel_switch[] = {"Off", "Left", "Right"};
 static const char * const switch_texts[] = {"Off", "On"};
 
-static const struct soc_enum input_use_lch_enum[] = {
+static const struct soc_enum input_use_sigle_ch_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(LR_channel_switch), LR_channel_switch),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(switch_texts), switch_texts),
 };
 
-
 static int lpbk_in_use_lch_get(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+			       struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Audio_AmpR_Get = %d\n", m_input_use_lch);
+	pr_debug("m_input_use_lch = %d\n", m_input_use_lch);
 	ucontrol->value.integer.value[0] = m_input_use_lch;
 	return 0;
 }
 
 static int lpbk_in_use_lch_set(struct snd_kcontrol *kcontrol,
-				      struct snd_ctl_elem_value *ucontrol)
+			       struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(switch_texts)) {
-		pr_warn("return -EINVAL\n");
+		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 
@@ -96,10 +98,80 @@ static int lpbk_in_use_lch_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int lpbk_in_use_single_ch_get(struct snd_kcontrol *kcontrol,
+				     struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("m_input_use_single_ch = %d\n", m_input_use_single_ch);
+	ucontrol->value.integer.value[0] = m_input_use_single_ch;
+	return 0;
+}
+
+static int lpbk_in_use_single_ch_set(struct snd_kcontrol *kcontrol,
+				     struct snd_ctl_elem_value *ucontrol)
+{
+	m_input_use_single_ch = ucontrol->value.integer.value[0];
+	pr_debug("%s(), m_input_use_single_ch = %d\n", __func__, m_input_use_single_ch);
+
+	AudDrv_Clk_On();
+
+	switch (m_input_use_single_ch) {
+	case 0:
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S3);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_RCH, Soc_Aud_AFE_IO_Block_I2S3);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_RCH, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_RCH, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+		break;
+	case 1:
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_RCH, Soc_Aud_AFE_IO_Block_I2S3);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_RCH, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_RCH, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S3);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+		break;
+	case 2:
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S3);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_LCH, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_RCH, Soc_Aud_AFE_IO_Block_I2S3);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_RCH, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_ADDA_UL_RCH, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+		break;
+	default:
+		pr_err("%s, control error, return -EINVAL\n", __func__);
+		AudDrv_Clk_Off();
+		return -EINVAL;
+	}
+
+	AudDrv_Clk_Off();
+	return 0;
+}
 
 static const struct snd_kcontrol_new lpbk_controls[] = {
-	SOC_ENUM_EXT("LPBK_IN_USE_LCH", input_use_lch_enum[0],
-		lpbk_in_use_lch_get, lpbk_in_use_lch_set),
+	SOC_ENUM_EXT("loopback_use_single_input", input_use_sigle_ch_enum[0],
+		     lpbk_in_use_single_ch_get, lpbk_in_use_single_ch_set),
+	SOC_ENUM_EXT("LPBK_IN_USE_LCH", input_use_sigle_ch_enum[1],
+		     lpbk_in_use_lch_get, lpbk_in_use_lch_set),
 };
 
 static int mtk_uldlloopback_probe(struct platform_device *pdev);
