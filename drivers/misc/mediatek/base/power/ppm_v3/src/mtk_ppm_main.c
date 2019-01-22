@@ -380,8 +380,6 @@ static void ppm_main_calc_new_limit(void)
 		ppm_unlock(&pos->lock);
 	}
 
-	/* TODO: calculate active cpu mask to hps! */
-
 	/* set freq idx to previous limit if nr_cpu in the cluster is 0 */
 	for (i = 0; i < c_req->cluster_num; i++) {
 		if (c_req->cpu_limit[i].max_cpu_core)
