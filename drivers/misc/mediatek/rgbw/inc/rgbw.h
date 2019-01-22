@@ -39,10 +39,10 @@
 #include "rgbw_factory.h"
 
 #define RGBW_TAG		 "<RGBW> "
-#define RGBW_FUN(f)		 pr_err(RGBW_TAG"%s\n", __func__)
-#define RGBW_ERR(fmt, args...)	 pr_err(RGBW_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define RGBW_LOG(fmt, args...)	 pr_err(RGBW_TAG fmt, ##args)
-#define RGBW_VER(fmt, args...)   pr_err(RGBW_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
+#define RGBW_FUN(f)		 pr_debug(RGBW_TAG"%s\n", __func__)
+#define RGBW_ERR(fmt, args...)	 pr_debug(RGBW_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define RGBW_LOG(fmt, args...)	 pr_debug(RGBW_TAG fmt, ##args)
+#define RGBW_VER(fmt, args...)   pr_debug(RGBW_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
 
 #define   OP_rgbw_DELAY	0X01
 #define	OP_rgbw_ENABLE	0X02

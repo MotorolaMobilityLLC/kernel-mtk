@@ -63,7 +63,7 @@ extern u32 anx_debug_level;
 #if DEBUG
 #define anx_printk(level, fmt, args...) do { \
 		if (anx_debug_level & level) { \
-			pr_err("[ANX]" fmt, ## args); \
+			pr_debug("[ANX]" fmt, ## args); \
 		} \
 	} while (0)
 #endif
