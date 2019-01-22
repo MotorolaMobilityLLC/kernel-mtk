@@ -23,6 +23,8 @@ obj-y += $(subst ",,$(platform))/
 
 ifneq (,$(filter $(platform),mt6757 mt6799))
     obj-y += 1.0/
-else
+else ifneq (,$(filter $(platform),mt6758 mt6763))
     obj-y += 1.1/
+else
+    obj-y += 2.0/
 endif
