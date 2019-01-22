@@ -92,9 +92,11 @@ enum audio_system_gpio_type {
 	GPIO_EXTAMP2_LOW,
 	GPIO_RCVSPK_HIGH,
 	GPIO_RCVSPK_LOW,
-	GPIO_HPDEPOP_HIGH,
 #endif
+	GPIO_HPDEPOP_HIGH,
 	GPIO_HPDEPOP_LOW,
+	GPIO_AUD_CLK_MOSI_HIGH,
+	GPIO_AUD_CLK_MOSI_LOW,
 	GPIO_NUM
 };
 
@@ -141,6 +143,8 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 
 	[GPIO_HPDEPOP_HIGH] = {"hpdepop-pullhigh", false, NULL},
 	[GPIO_HPDEPOP_LOW] = {"hpdepop-pulllow", false, NULL},
+	[GPIO_AUD_CLK_MOSI_HIGH] = {"aud_clk_mosi_pull_high", false, NULL},
+	[GPIO_AUD_CLK_MOSI_LOW] = {"aud_clk_mosi_pull_low", false, NULL},
 };
 #endif
 
@@ -602,6 +606,20 @@ int AudDrv_GPIO_HPDEPOP_Select(int bEnable)
 		AudDrv_GPIO_Select(GPIO_HPDEPOP_LOW);
 	else
 		AudDrv_GPIO_Select(GPIO_HPDEPOP_HIGH);
+
+	return retval;
+}
+
+int audio_drv_gpio_aud_clk_pull(bool high)
+{
+	int retval = 0;
+
+	pr_debug("%s, high = %d\n", __func__, high);
+
+	if (high == 1)
+		AudDrv_GPIO_Select(GPIO_AUD_CLK_MOSI_HIGH);
+	else
+		AudDrv_GPIO_Select(GPIO_AUD_CLK_MOSI_LOW);
 
 	return retval;
 }

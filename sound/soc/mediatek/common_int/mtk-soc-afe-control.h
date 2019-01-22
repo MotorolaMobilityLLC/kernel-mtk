@@ -309,8 +309,8 @@ struct mtk_afe_platform_ops {
 				int mtk_soc_always_hd);
 	bool (*set_smartpa_echo_ref)(int sample_rate, int extcodec_echoref_control, int enable);
 	bool (*set_dpd_module)(bool enable, int impedance);
+	bool (*handle_suspend)(bool suspend);
 };
-
 
 void set_mem_blk_ops(struct mtk_mem_blk_ops *ops);
 
@@ -340,5 +340,8 @@ void set_LowLatencyDebug(uint32 bFlag);
 
 /* DC trim API, implement by platform */
 int get_audio_trim_offset(int channel);
+
+/* For handling suspend */
+bool handle_suspend(bool suspend);
 
 #endif
