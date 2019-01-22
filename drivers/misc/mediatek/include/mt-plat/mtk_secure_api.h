@@ -73,6 +73,9 @@
 /* SPM SODI related SMC call */
 #define MTK_SIP_KERNEL_SPM_SODI_ARGS		(0x82000222 | MTK_SIP_SMC_AARCH_BIT)
 
+/* DCM SMC call */
+#define MTK_SIP_KERNEL_DCM			(0x82000223 | MTK_SIP_SMC_AARCH_BIT)
+
 /* SPM DCS S1 control */
 #define MTK_SIP_KERNEL_SPM_DCS_S1		(0x82000224 | MTK_SIP_SMC_AARCH_BIT)
 
@@ -157,6 +160,12 @@ mt_secure_call(MTK_SIP_KERNEL_MCSI_A_READ, addr, 0, 0)
 
 #define mcsi_a_smc_write_phy(addr, val) \
 mt_secure_call(MTK_SIP_KERNEL_MCSI_A_WRITE, addr, val, 0)
+
+#define dcm_smc_msg(init_type) \
+mt_secure_call(MTK_SIP_KERNEL_DCM, init_type, 0, 0)
+
+#define dcm_smc_read_cnt(type) \
+mt_secure_call(MTK_SIP_KERNEL_DCM, type, 1, 0)
 
 #define CONFIG_MCUSYS_WRITE_PROTECT
 

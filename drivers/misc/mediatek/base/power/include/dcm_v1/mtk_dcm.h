@@ -20,15 +20,13 @@
 #define DCM_OFF (0)
 #define DCM_ON (1)
 
-#define DCM_DEBUG
-
 /* Note: ENABLE_DCM_IN_LK is used in kernel if DCM is enabled in LK */
 #define ENABLE_DCM_IN_LK
 #ifdef ENABLE_DCM_IN_LK
 #define INIT_DCM_TYPE_BY_K	0
 #endif
 
-/* #define CTRL_BIGCORE_DCM_IN_DORMANT */
+#define CTRL_BIGCORE_DCM_IN_KERNEL
 
 typedef enum {
 	ARMCORE_DCM_OFF = DCM_OFF,
@@ -71,7 +69,27 @@ typedef enum {
 	STALL_DCM_ON = DCM_ON,
 } ENUM_STALL_DCM;
 
+typedef enum {
+	BIG_CORE_DCM_OFF = DCM_OFF,
+	BIG_CORE_DCM_ON = DCM_ON,
+} ENUM_BIG_CORE_DCM;
+
 #ifdef CONFIG_MACH_MT6799
+typedef enum {
+	GIC_SYNC_DCM_OFF = DCM_OFF,
+	GIC_SYNC_DCM_ON = DCM_ON,
+} ENUM_GIC_SYNC_DCM;
+
+typedef enum {
+	LAST_CORE_DCM_OFF = DCM_OFF,
+	LAST_CORE_DCM_ON = DCM_ON,
+} ENUM_LAST_CORE_DCM;
+
+typedef enum {
+	RGU_DCM_OFF = DCM_OFF,
+	RGU_DCM_ON = DCM_ON,
+} ENUM_RGU_DCM;
+
 typedef enum {
 	TOPCKG_DCM_OFF = DCM_OFF,
 	TOPCKG_DCM_ON = DCM_ON,
@@ -92,7 +110,11 @@ enum {
 	DRAMC_DCM,
 	DDRPHY_DCM,
 	STALL_DCM,
+	BIG_CORE_DCM,
 #ifdef CONFIG_MACH_MT6799
+	GIC_SYNC_DCM,	/* WE2 */
+	LAST_CORE_DCM,	/* WE2 */
+	RGU_DCM,	/* WE2 */
 	TOPCKG_DCM,
 	LPDMA_DCM,
 #elif defined(CONFIG_MACH_ELBRUS)
@@ -111,7 +133,11 @@ enum {
 	DRAMC_DCM_TYPE		= (1U << DRAMC_DCM),
 	DDRPHY_DCM_TYPE		= (1U << DDRPHY_DCM),
 	STALL_DCM_TYPE		= (1U << STALL_DCM),
+	BIG_CORE_DCM_TYPE	= (1U << BIG_CORE_DCM),
 #ifdef CONFIG_MACH_MT6799
+	GIC_SYNC_DCM_TYPE	= (1U << GIC_SYNC_DCM),
+	LAST_CORE_DCM_TYPE	= (1U << LAST_CORE_DCM),
+	RGU_DCM_TYPE		= (1U << RGU_DCM),
 	TOPCKG_DCM_TYPE		= (1U << TOPCKG_DCM),
 	LPDMA_DCM_TYPE		= (1U << LPDMA_DCM),
 #elif defined(CONFIG_MACH_ELBRUS)
@@ -121,28 +147,11 @@ enum {
 	NR_DCM_TYPE = NR_DCM,
 };
 
-#ifdef CONFIG_MACH_MT6799
-#define ALL_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE \
-		       | INFRA_DCM_TYPE | PERI_DCM_TYPE | TOPCKG_DCM_TYPE \
-		       | DDRPHY_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE \
-		       | LPDMA_DCM_TYPE \
-		       )
-
-#define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE \
-			| INFRA_DCM_TYPE | PERI_DCM_TYPE | TOPCKG_DCM_TYPE \
-		       )
-#elif defined(CONFIG_MACH_ELBRUS)
-#define ALL_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE \
-		       | INFRA_DCM_TYPE | PERI_DCM_TYPE \
-		       | DDRPHY_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE \
-		       )
-
-#define INIT_DCM_TYPE  (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE \
-			| INFRA_DCM_TYPE | PERI_DCM_TYPE \
-		       )
-#else
-#error NO corresponding project can be found!!!
-#endif
+enum {
+	DCM_CPU_CLUSTER_LL	= (1U << 0),
+	DCM_CPU_CLUSTER_L	= (1U << 1),
+	DCM_CPU_CLUSTER_B	= (1U << 2),
+};
 
 #ifdef CONFIG_MACH_MT6799
 #define SYNC_DCM_CLK_MIN_FREQ	52
@@ -249,7 +258,11 @@ int dcm_dramc_ao(ENUM_DRAMC_AO_DCM on);
 int dcm_emi(ENUM_EMI_DCM on);
 int dcm_ddrphy(ENUM_DDRPHY_DCM on);
 int dcm_stall(ENUM_STALL_DCM on);
+int dcm_big_core(ENUM_BIG_CORE_DCM on);
 #ifdef CONFIG_MACH_MT6799
+int dcm_gic_sync(ENUM_GIC_SYNC_DCM on);
+int dcm_last_core(ENUM_LAST_CORE_DCM on);
+int dcm_rgu(ENUM_RGU_DCM on);
 int dcm_topckg(ENUM_TOPCKG_DCM on);
 int dcm_lpdma(ENUM_LPDMA_DCM on);
 #endif

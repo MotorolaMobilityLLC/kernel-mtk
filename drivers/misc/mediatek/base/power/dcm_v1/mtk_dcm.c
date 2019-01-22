@@ -111,12 +111,17 @@ unsigned long dcm_cci_phys_base;
 #define MCSI_SMC_WRITE(addr, val)  reg_write(addr, val)
 #define MCSI_SMC_READ(addr)  reg_read(addr)
 #endif
+#define dcm_smc_msg_send(msg) dcm_smc_msg(msg)
 
 #define TAG	"[Power/dcm] "
 #define dcm_err(fmt, args...)	pr_err(TAG fmt, ##args)
 #define dcm_warn(fmt, args...)	pr_warn(TAG fmt, ##args)
 #define dcm_info(fmt, args...)	pr_notice(TAG fmt, ##args)
-#define dcm_dbg(fmt, args...)	pr_info(TAG fmt, ##args)
+#define dcm_dbg(fmt, args...)				\
+	do {						\
+		if (dcm_debug)				\
+			pr_warn(TAG fmt, ##args);	\
+	} while (0)
 #define dcm_ver(fmt, args...)	pr_debug(TAG fmt, ##args)
 
 #define REG_DUMP(addr) dcm_info("%-30s(0x%08lx): 0x%08x\n", #addr, addr, reg_read(addr))
@@ -129,7 +134,36 @@ unsigned long dcm_cci_phys_base;
 
 /** global **/
 static DEFINE_MUTEX(dcm_lock);
-static unsigned int dcm_initiated;
+static short dcm_initiated;
+static short dcm_debug;
+static short dcm_cpu_cluster_stat;
+static struct notifier_block dcm_hotplug_nb;
+
+#ifdef CONFIG_MACH_MT6799
+static unsigned int all_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE
+				    | STALL_DCM_TYPE | BIG_CORE_DCM_TYPE
+				    | GIC_SYNC_DCM_TYPE | LAST_CORE_DCM_TYPE | RGU_DCM_TYPE
+				    | INFRA_DCM_TYPE | PERI_DCM_TYPE | TOPCKG_DCM_TYPE
+				    | DDRPHY_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE
+				    | LPDMA_DCM_TYPE
+				    );
+static unsigned int init_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE
+				     | STALL_DCM_TYPE | BIG_CORE_DCM_TYPE
+				     | INFRA_DCM_TYPE | PERI_DCM_TYPE | TOPCKG_DCM_TYPE
+				     );
+#elif defined(CONFIG_MACH_ELBRUS)
+static unsigned int all_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE
+				    | STALL_DCM_TYPE | BIG_CORE_DCM_TYPE
+				    | INFRA_DCM_TYPE | PERI_DCM_TYPE
+				    | DDRPHY_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE
+				    );
+static unsigned int init_dcm_type = (ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE
+				     | STALL_DCM_TYPE | BIG_CORE_DCM_TYPE
+				     | INFRA_DCM_TYPE | PERI_DCM_TYPE
+				     );
+#else
+#error NO corresponding project can be found!!!
+#endif
 
 /*****************************************
  * following is implementation per DCM module.
@@ -212,10 +246,6 @@ int dcm_mcusys(ENUM_MCUSYS_DCM on)
 	/* dcm_mcucfg_mp1_arm_pll_divider_dcm(on); */
 	dcm_mcucfg_mp1_sync_dcm_enable(on);
 	/* dcm_mcucfg_mp2_arm_pll_divider_dcm(on); */
-#ifdef CTRL_BIGCORE_DCM_IN_DORMANT
-	/* only can be accessed if B cluster power on */
-	dcm_mcucfg_sync_dcm_cfg(on);
-#endif
 	dcm_mcucfg_mcu_misc_dcm(on);
 
 	dcm_mcsi_reg_cci_cactive(on);
@@ -232,11 +262,27 @@ int dcm_mcusys(ENUM_MCUSYS_DCM on)
 	dcm_misccfg_mp0_sync_dcm(on);
 	dcm_misccfg_mp1_sync_dcm(on);
 	/* dcm_misccfg_mp2_dbg_dcm(on); */
-	dcm_mcucfg_mp2_sync_dcm(on);
 
 	dcm_mcsi_cci_dcm(on);
 #else
 #error NO corresponding project can be found!!!
+#endif
+
+	return 0;
+}
+
+int dcm_big_core(ENUM_BIG_CORE_DCM on)
+{
+#ifdef CTRL_BIGCORE_DCM_IN_KERNEL
+	/* only can be accessed if B cluster power on */
+	if (dcm_cpu_cluster_stat & DCM_CPU_CLUSTER_B)
+#ifdef CONFIG_MACH_MT6799
+		dcm_mcucfg_sync_dcm_cfg(on);
+#elif defined(CONFIG_MACH_ELBRUS)
+		dcm_mcucfg_mp2_sync_dcm(on);
+#else
+#error NO corresponding project can be found!!!
+#endif
 #endif
 
 	return 0;
@@ -306,6 +352,27 @@ int dcm_emi(ENUM_EMI_DCM on)
 }
 
 #ifdef CONFIG_MACH_MT6799
+int dcm_gic_sync(ENUM_GIC_SYNC_DCM on)
+{
+	/* TODO: add function in WE2 */
+
+	return 0;
+}
+
+int dcm_last_core(ENUM_LAST_CORE_DCM on)
+{
+	/* TODO: add function in WE2 */
+
+	return 0;
+}
+
+int dcm_rgu(ENUM_RGU_DCM on)
+{
+	/* TODO: add function in WE2 */
+
+	return 0;
+}
+
 int dcm_topckg(ENUM_TOPCKG_DCM on)
 {
 	dcm_topckgen_cksys_dcm_emi(on);
@@ -400,7 +467,39 @@ static DCM dcm_array[NR_DCM_TYPE] = {
 	 .default_state = STALL_DCM_ON,
 	 .disable_refcnt = 0,
 	 },
+	{
+	 .typeid = BIG_CORE_DCM_TYPE,
+	 .name = "BIG_CORE_DCM",
+	 .func = (DCM_FUNC) dcm_big_core,
+	 .current_state = BIG_CORE_DCM_ON,
+	 .default_state = BIG_CORE_DCM_ON,
+	 .disable_refcnt = 0,
+	 },
 #ifdef CONFIG_MACH_MT6799
+	{
+	 .typeid = GIC_SYNC_DCM_TYPE,
+	 .name = "GIC_SYNC_DCM",
+	 .func = (DCM_FUNC) dcm_gic_sync,
+	 .current_state = GIC_SYNC_DCM_ON,
+	 .default_state = GIC_SYNC_DCM_ON,
+	 .disable_refcnt = 0,
+	 },
+	{
+	 .typeid = LAST_CORE_DCM_TYPE,
+	 .name = "LAST_CORE_DCM",
+	 .func = (DCM_FUNC) dcm_last_core,
+	 .current_state = LAST_CORE_DCM_ON,
+	 .default_state = LAST_CORE_DCM_ON,
+	 .disable_refcnt = 0,
+	 },
+	{
+	 .typeid = RGU_DCM_TYPE,
+	 .name = "RGU_CORE_DCM",
+	 .func = (DCM_FUNC) dcm_rgu,
+	 .current_state = RGU_DCM_ON,
+	 .default_state = RGU_DCM_ON,
+	 .disable_refcnt = 0,
+	 },
 	{
 	 .typeid = TOPCKG_DCM_TYPE,
 	 .name = "TOPCKG_DCM",
@@ -438,10 +537,10 @@ void dcm_set_default(unsigned int type)
 	DCM *dcm;
 
 #ifndef ENABLE_DCM_IN_LK
-	dcm_info("[%s]type:0x%08x\n", __func__, type);
+	dcm_info("[%s]type:0x%08x, init_dcm_type=0x%x\n", __func__, type, init_dcm_type);
 #else
-	dcm_info("[%s]type:0x%08x,INIT_DCM_TYPE_BY_K=0x%x\n", __func__, type,
-		 INIT_DCM_TYPE_BY_K);
+	dcm_info("[%s]type:0x%08x, init_dcm_type=0x%x, INIT_DCM_TYPE_BY_K=0x%x\n",
+		 __func__, type, init_dcm_type, INIT_DCM_TYPE_BY_K);
 #endif
 
 	mutex_lock(&dcm_lock);
@@ -467,6 +566,8 @@ void dcm_set_default(unsigned int type)
 		}
 	}
 
+	dcm_smc_msg_send(init_dcm_type);
+
 	mutex_unlock(&dcm_lock);
 }
 
@@ -474,8 +575,10 @@ void dcm_set_state(unsigned int type, int state)
 {
 	int i;
 	DCM *dcm;
+	unsigned int init_dcm_type_pre = init_dcm_type;
 
-	dcm_info("[%s]type:0x%08x, set:%d\n", __func__, type, state);
+	dcm_info("[%s]type:0x%08x, set:%d, init_dcm_type_pre=0x%x\n",
+		 __func__, type, state, init_dcm_type_pre);
 
 	mutex_lock(&dcm_lock);
 
@@ -485,6 +588,11 @@ void dcm_set_state(unsigned int type, int state)
 
 			dcm->saved_state = state;
 			if (dcm->disable_refcnt == 0) {
+				if (state)
+					init_dcm_type |= dcm->typeid;
+				else
+					init_dcm_type &= ~(dcm->typeid);
+
 				dcm->current_state = state;
 				dcm->func(dcm->current_state);
 			}
@@ -496,6 +604,12 @@ void dcm_set_state(unsigned int type, int state)
 		}
 	}
 
+	if (init_dcm_type_pre != init_dcm_type) {
+		dcm_info("[%s]type:0x%08x, set:%d, init_dcm_type=0x%x->0x%x\n",
+			 __func__, type, state, init_dcm_type_pre, init_dcm_type);
+		dcm_smc_msg_send(init_dcm_type);
+	}
+
 	mutex_unlock(&dcm_lock);
 }
 
@@ -504,6 +618,7 @@ void dcm_disable(unsigned int type)
 {
 	int i;
 	DCM *dcm;
+	unsigned int init_dcm_type_pre = init_dcm_type;
 
 	dcm_info("[%s]type:0x%08x\n", __func__, type);
 
@@ -514,7 +629,8 @@ void dcm_disable(unsigned int type)
 			type &= ~(dcm->typeid);
 
 			dcm->current_state = DCM_OFF;
-			dcm->disable_refcnt++;
+			if (dcm->disable_refcnt++ == 0)
+				init_dcm_type &= ~(dcm->typeid);
 			dcm->func(dcm->current_state);
 
 			dcm_info("[%16s 0x%08x] current state:%d (%d)\n",
@@ -522,6 +638,12 @@ void dcm_disable(unsigned int type)
 				 dcm->disable_refcnt);
 
 		}
+	}
+
+	if (init_dcm_type_pre != init_dcm_type) {
+		dcm_info("[%s]type:0x%08x, init_dcm_type=0x%x->0x%x\n",
+			 __func__, type, init_dcm_type_pre, init_dcm_type);
+		dcm_smc_msg_send(init_dcm_type);
 	}
 
 	mutex_unlock(&dcm_lock);
@@ -532,6 +654,7 @@ void dcm_restore(unsigned int type)
 {
 	int i;
 	DCM *dcm;
+	unsigned int init_dcm_type_pre = init_dcm_type;
 
 	dcm_info("[%s]type:0x%08x\n", __func__, type);
 
@@ -544,6 +667,11 @@ void dcm_restore(unsigned int type)
 			if (dcm->disable_refcnt > 0)
 				dcm->disable_refcnt--;
 			if (dcm->disable_refcnt == 0) {
+				if (dcm->saved_state)
+					init_dcm_type |= dcm->typeid;
+				else
+					init_dcm_type &= ~(dcm->typeid);
+
 				dcm->current_state = dcm->saved_state;
 				dcm->func(dcm->current_state);
 			}
@@ -553,6 +681,12 @@ void dcm_restore(unsigned int type)
 				 dcm->disable_refcnt);
 
 		}
+	}
+
+	if (init_dcm_type_pre != init_dcm_type) {
+		dcm_info("[%s]type:0x%08x, init_dcm_type=0x%x->0x%x\n",
+			 __func__, type, init_dcm_type_pre, init_dcm_type);
+		dcm_smc_msg_send(init_dcm_type);
 	}
 
 	mutex_unlock(&dcm_lock);
@@ -595,9 +729,19 @@ void dcm_dump_regs(void)
 	REG_DUMP(MP1_PLL_DIVIDER_CFG);
 	REG_DUMP(MP2_PLL_DIVIDER_CFG);
 	REG_DUMP(BUS_PLL_DIVIDER_CFG);
-#ifdef CTRL_BIGCORE_DCM_IN_DORMANT
+#ifdef CTRL_BIGCORE_DCM_IN_KERNEL
 	/* only can be accessed if B cluster power on */
-	REG_DUMP(MCUCFG_SYNC_DCM);
+	if (dcm_cpu_cluster_stat & DCM_CPU_CLUSTER_B)
+		REG_DUMP(MCUCFG_SYNC_DCM_MP2_REG);
+#endif
+
+/* TODO: add in WE2*/
+#if 0
+	if (init_dcm_type & LAST_CORE_DCM_TYPE)
+
+	if (init_dcm_type & GIC_SYNC_DCM_TYPE)
+
+	if (init_dcm_type & RGU_DCM_TYPE)
 #endif
 
 	REG_DUMP(PERICFG_PERI_BIU_REG_DCM_CTRL);
@@ -643,7 +787,10 @@ void dcm_dump_regs(void)
 	REG_DUMP(CCI_ADB400_DCM_CONFIG);
 	REG_DUMP(MCSIB_DBG_CTRL1);
 	REG_DUMP(SYNC_DCM_CONFIG);
-	REG_DUMP(MCUCFG_SYNC_DCM);
+#ifdef CTRL_BIGCORE_DCM_IN_KERNEL
+	if (dcm_cpu_cluster_stat & DCM_CPU_CLUSTER_B)
+		REG_DUMP(MCUCFG_SYNC_DCM_MP2_REG);
+#endif
 	REG_DUMP(SYNC_DCM_CLUSTER_CONFIG);
 	/* REG_DUMP(BIG_DBG_PWR_CTRL); */
 	REG_DUMP(EMI_CONM);
@@ -661,14 +808,14 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	int i;
 	DCM *dcm;
 
-	/* dcm_dump_state(ALL_DCM_TYPE); */
+	/* dcm_dump_state(all_dcm_type); */
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"\n******** dcm dump state *********\n");
 	for (i = 0, dcm = &dcm_array[0]; i < NR_DCM_TYPE; i++, dcm++)
 		len += snprintf(buf+len, PAGE_SIZE-len,
-				"[%-16s 0x%08x] current state:%d (%d)\n",
+				"[%-16s 0x%08x] current state:%d (%d), atf_on_cnt:%u\n",
 				dcm->name, dcm->typeid, dcm->current_state,
-				dcm->disable_refcnt);
+				dcm->disable_refcnt, dcm_smc_read_cnt(dcm->typeid));
 
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"\n********** dcm_state help *********\n");
@@ -681,9 +828,14 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"dump:      echo dump [mask] > /sys/power/dcm_state\n");
 	len += snprintf(buf+len, PAGE_SIZE-len,
+			"debug:     echo debug [0/1] > /sys/power/dcm_state\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
 			"***** [mask] is hexl bit mask of dcm;\n");
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"***** [mode] is type of DCM to set and retained\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"init_dcm_type=0x%x, all_dcm_type=0x%x, dcm_debug=%d, dcm_cpu_cluster_stat=%d\n",
+			init_dcm_type, all_dcm_type, dcm_debug, dcm_cpu_cluster_stat);
 
 	return len;
 }
@@ -732,7 +884,7 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 	int ret, mode;
 
 	if (sscanf(buf, "%15s %x", cmd, &mask) == 2) {
-		mask &= ALL_DCM_TYPE;
+		mask &= all_dcm_type;
 
 		if (!strcmp(cmd, "restore")) {
 			/* dcm_dump_regs(); */
@@ -745,12 +897,17 @@ static ssize_t dcm_state_store(struct kobject *kobj,
 		} else if (!strcmp(cmd, "dump")) {
 			dcm_dump_state(mask);
 			dcm_dump_regs();
+		} else if (!strcmp(cmd, "debug")) {
+			if (mask)
+				dcm_debug = 1;
+			else
+				dcm_debug = 0;
 		} else if (!strcmp(cmd, "set_stall_sel")) {
 			if (sscanf(buf, "%15s %x %x", cmd, &mp0, &mp1) == 3)
 				dcm_set_stall_wr_del_sel(mp0, mp1);
 		} else if (!strcmp(cmd, "set")) {
 			if (sscanf(buf, "%15s %x %d", cmd, &mask, &mode) == 3) {
-				mask &= ALL_DCM_TYPE;
+				mask &= all_dcm_type;
 
 				dcm_set_state(mask, mode);
 
@@ -1002,6 +1159,71 @@ static int mt_dcm_dts_map(void)
 }
 #endif /* #ifdef CONFIG_PM */
 
+static int dcm_hotplug_nc(struct notifier_block *self,
+					 unsigned long action, void *hcpu)
+{
+	unsigned int cpu = (long)hcpu;
+	struct cpumask cpuhp_cpumask;
+	struct cpumask cpu_online_cpumask;
+
+	switch (action) {
+	case CPU_ONLINE:
+		arch_get_cluster_cpus(&cpuhp_cpumask, arch_get_cluster_id(cpu));
+		cpumask_and(&cpu_online_cpumask, &cpuhp_cpumask, cpu_online_mask);
+		if (cpumask_weight(&cpu_online_cpumask) == 1) {
+			switch (cpu / 4) {
+			case 0:
+				dcm_dbg("%s: action=0x%lx, cpu=%u, LL CPU_ONLINE\n",
+					__func__, action, cpu);
+				dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_LL;
+				break;
+			case 1:
+				dcm_dbg("%s: action=0x%lx, cpu=%u, L CPU_ONLINE\n",
+					__func__, action, cpu);
+				dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_L;
+				break;
+			case 2:
+				dcm_dbg("%s: action=0x%lx, cpu=%u, B CPU_ONLINE\n",
+					__func__, action, cpu);
+				dcm_cpu_cluster_stat |= DCM_CPU_CLUSTER_B;
+				break;
+			default:
+				break;
+			}
+		}
+		break;
+	case CPU_DOWN_PREPARE:
+		arch_get_cluster_cpus(&cpuhp_cpumask, arch_get_cluster_id(cpu));
+		cpumask_and(&cpu_online_cpumask, &cpuhp_cpumask, cpu_online_mask);
+		if (cpumask_weight(&cpu_online_cpumask) == 1) {
+			switch (cpu / 4) {
+			case 0:
+				dcm_dbg("%s: action=0x%lx, cpu=%u, LL CPU_DOWN_PREPARE\n",
+					__func__, action, cpu);
+				dcm_cpu_cluster_stat &= ~DCM_CPU_CLUSTER_LL;
+				break;
+			case 1:
+				dcm_dbg("%s: action=0x%lx, cpu=%u, L CPU_DOWN_PREPARE\n",
+					__func__, action, cpu);
+				dcm_cpu_cluster_stat &= ~DCM_CPU_CLUSTER_L;
+				break;
+			case 2:
+				dcm_dbg("%s: action=0x%lx, cpu=%u, B CPU_DOWN_PREPARE\n",
+					__func__, action, cpu);
+				dcm_cpu_cluster_stat &= ~DCM_CPU_CLUSTER_B;
+				break;
+			default:
+				break;
+			}
+		}
+		break;
+	default:
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
 int mt_dcm_init(void)
 {
 #ifdef DCM_BRINGUP
@@ -1022,7 +1244,7 @@ int mt_dcm_init(void)
 	dcm_info("%s: 0x10202008=0x%x\n", __func__, reg_read(0x10202008));
 #endif
 
-#ifdef CTRL_BIGCORE_DCM_IN_DORMANT
+#if 0 /* def CTRL_BIGCORE_DCM_IN_KERNEL */
 	/* big ext buck iso power on */
 	reg_write(0x10B00260, reg_read(0x10B00260) & ~(0x1 << 2));
 	dcm_info("%s: 0x10B00260=0x%x\n", __func__, reg_read(0x10B00260));
@@ -1030,9 +1252,9 @@ int mt_dcm_init(void)
 
 #ifndef DCM_DEFAULT_ALL_OFF
 	/** enable all dcm **/
-	dcm_set_default(INIT_DCM_TYPE);
+	dcm_set_default(init_dcm_type);
 #else /* DCM_DEFAULT_ALL_OFF */
-	dcm_set_state(ALL_DCM_TYPE, DCM_OFF);
+	dcm_set_state(all_dcm_type, DCM_OFF);
 #endif /* #ifndef DCM_DEFAULT_ALL_OFF */
 
 	dcm_dump_regs();
@@ -1057,6 +1279,14 @@ int mt_dcm_init(void)
 #endif /* #ifdef DCM_DEBUG_MON */
 #endif /* #ifdef CONFIG_PM */
 
+	dcm_hotplug_nb = (struct notifier_block) {
+		.notifier_call	= dcm_hotplug_nc,
+		.priority	= CPU_PRI_PERF + 1,
+	};
+
+	if (register_cpu_notifier(&dcm_hotplug_nb))
+		dcm_err("[%s]: fail to register_cpu_notifier\n", __func__);
+
 	dcm_initiated = 1;
 
 	return 0;
@@ -1066,18 +1296,18 @@ late_initcall(mt_dcm_init);
 /**** public APIs *****/
 void mt_dcm_disable(void)
 {
-	if (mt_dcm_init())
+	if (!dcm_initiated)
 		return;
 
-	dcm_disable(ALL_DCM_TYPE);
+	dcm_disable(all_dcm_type);
 }
 
 void mt_dcm_restore(void)
 {
-	if (mt_dcm_init())
+	if (!dcm_initiated)
 		return;
 
-	dcm_restore(ALL_DCM_TYPE);
+	dcm_restore(all_dcm_type);
 }
 
 unsigned int sync_dcm_convert_freq2div(unsigned int freq)
@@ -1097,7 +1327,7 @@ unsigned int sync_dcm_convert_freq2div(unsigned int freq)
 
 int sync_dcm_set_cci_div(unsigned int cci)
 {
-	if (mt_dcm_init())
+	if (!dcm_initiated)
 		return -1;
 
 	/*
@@ -1114,13 +1344,11 @@ int sync_dcm_set_cci_div(unsigned int cci)
 	reg_write(MCUCFG_SYNC_DCM_CCI_REG, aor(reg_read(MCUCFG_SYNC_DCM_CCI_REG),
 				       ~MCUCFG_SYNC_DCM_CCI_TOGMASK,
 				       MCUCFG_SYNC_DCM_CCI_TOG1));
-#ifdef DCM_DEBUG
-	dcm_info("%s: MCUCFG_SYNC_DCM_CCI_REG=0x%08x, cci_div_sel=%u,%u\n",
+	dcm_dbg("%s: MCUCFG_SYNC_DCM_CCI_REG=0x%08x, cci_div_sel=%u,%u\n",
 		 __func__, reg_read(MCUCFG_SYNC_DCM_CCI_REG),
 		 (and(reg_read(MCUCFG_SYNC_DCM_CCI_REG),
 		      MCUCFG_SYNC_DCM_SEL_CCI_MASK) >> MCUCFG_SYNC_DCM_SEL_CCI),
 		 cci);
-#endif
 
 	return 0;
 }
@@ -1134,7 +1362,7 @@ int sync_dcm_set_cci_freq(unsigned int cci)
 
 int sync_dcm_set_mp0_div(unsigned int mp0)
 {
-	if (mt_dcm_init())
+	if (!dcm_initiated)
 		return -1;
 
 	/*
@@ -1151,13 +1379,11 @@ int sync_dcm_set_mp0_div(unsigned int mp0)
 	reg_write(MCUCFG_SYNC_DCM_MP0_REG, aor(reg_read(MCUCFG_SYNC_DCM_MP0_REG),
 				       ~MCUCFG_SYNC_DCM_MP0_TOGMASK,
 				       MCUCFG_SYNC_DCM_MP0_TOG1));
-#ifdef DCM_DEBUG
-	dcm_info("%s: MCUCFG_SYNC_DCM_MP0_REG=0x%08x, mp0_div_sel=%u,%u\n",
+	dcm_dbg("%s: MCUCFG_SYNC_DCM_MP0_REG=0x%08x, mp0_div_sel=%u,%u\n",
 		 __func__, reg_read(MCUCFG_SYNC_DCM_MP0_REG),
 		 (and(reg_read(MCUCFG_SYNC_DCM_MP0_REG),
 		      MCUCFG_SYNC_DCM_SEL_MP0_MASK) >> MCUCFG_SYNC_DCM_SEL_MP0),
 		 mp0);
-#endif
 
 	return 0;
 }
@@ -1171,7 +1397,7 @@ int sync_dcm_set_mp0_freq(unsigned int mp0)
 
 int sync_dcm_set_mp1_div(unsigned int mp1)
 {
-	if (mt_dcm_init())
+	if (!dcm_initiated)
 		return -1;
 
 	/*
@@ -1188,13 +1414,11 @@ int sync_dcm_set_mp1_div(unsigned int mp1)
 	reg_write(MCUCFG_SYNC_DCM_MP1_REG, aor(reg_read(MCUCFG_SYNC_DCM_MP1_REG),
 				       ~MCUCFG_SYNC_DCM_MP1_TOGMASK,
 				       MCUCFG_SYNC_DCM_MP1_TOG1));
-#ifdef DCM_DEBUG
-	dcm_info("%s: MCUCFG_SYNC_DCM_MP1_REG=0x%08x, mp1_div_sel=%u,%u\n",
+	dcm_dbg("%s: MCUCFG_SYNC_DCM_MP1_REG=0x%08x, mp1_div_sel=%u,%u\n",
 		 __func__, reg_read(MCUCFG_SYNC_DCM_MP1_REG),
 		 (and(reg_read(MCUCFG_SYNC_DCM_MP1_REG),
 		      MCUCFG_SYNC_DCM_SEL_MP1_MASK) >> MCUCFG_SYNC_DCM_SEL_MP1),
 		 mp1);
-#endif
 
 	return 0;
 }
@@ -1208,7 +1432,11 @@ int sync_dcm_set_mp1_freq(unsigned int mp1)
 
 int sync_dcm_set_mp2_div(unsigned int mp2)
 {
-	if (mt_dcm_init())
+	if (!dcm_initiated)
+		return -1;
+
+#ifdef CTRL_BIGCORE_DCM_IN_KERNEL
+	if (!(dcm_cpu_cluster_stat & DCM_CPU_CLUSTER_B))
 		return -1;
 
 	/*
@@ -1225,13 +1453,14 @@ int sync_dcm_set_mp2_div(unsigned int mp2)
 	reg_write(MCUCFG_SYNC_DCM_MP2_REG, aor(reg_read(MCUCFG_SYNC_DCM_MP2_REG),
 				       ~MCUCFG_SYNC_DCM_MP2_TOGMASK,
 				       MCUCFG_SYNC_DCM_MP2_TOG1));
-#ifdef DCM_DEBUG
-	dcm_info("%s: MCUCFG_SYNC_DCM_MP2_REG=0x%08x, mp2_div_sel=%u,%u\n",
+
+	dcm_dbg("%s: MCUCFG_SYNC_DCM_MP2_REG=0x%08x, mp2_div_sel=%u,%u\n",
 		 __func__, reg_read(MCUCFG_SYNC_DCM_MP2_REG),
 		 (and(reg_read(MCUCFG_SYNC_DCM_MP2_REG),
 		      MCUCFG_SYNC_DCM_SEL_MP2_MASK) >> MCUCFG_SYNC_DCM_SEL_MP2),
 		 mp2);
 #endif
+
 	return 0;
 }
 
