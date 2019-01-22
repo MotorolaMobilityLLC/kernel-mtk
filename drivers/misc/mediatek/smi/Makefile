@@ -25,6 +25,7 @@ obj-y += smi_info_util.o
 obj-y += smi_config_util.o
 obj-y += smi_configuration.o
 obj-y += smi_internal.o
+obj-y += mmdvfs_mgr_util.o
 
 ifeq ($(CONFIG_ARCH_MT6735),y)
 ccflags-y += -I$(srctree)/drivers/clk/mediatek

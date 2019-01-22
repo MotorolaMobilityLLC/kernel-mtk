@@ -136,6 +136,14 @@ enum {
 /* Backward compatible */
 #define SMI_BWC_SCEN_120HZ MMDVFS_SCEN_DISP
 
+/* mmdvfs display sizes */
+#define MMDVFS_DISPLAY_SIZE_HD  (1280 * 832)
+#define MMDVFS_DISPLAY_SIZE_FHD (1920 * 1216)
+
+typedef enum {
+	MMDVFS_LCD_SIZE_HD, MMDVFS_LCD_SIZE_FHD, MMDVFS_LCD_SIZE_WQHD, MMDVFS_LCD_SIZE_END_OF_ENUM
+} mmdvfs_lcd_size_enum;
+
 
 #ifndef CONFIG_MTK_SMI_EXT
 #define mmdvfs_set_step(scenario, step)
@@ -146,5 +154,6 @@ int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step);
 extern int mmdvfs_get_mmdvfs_profile(void);
 extern int is_mmdvfs_supported(void);
 extern int mmdvfs_set_mmsys_clk(MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode);
+extern mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void);
 
 #endif /* __MMDVFS_MGR_H__ */

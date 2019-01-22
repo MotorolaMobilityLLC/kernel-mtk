@@ -68,11 +68,6 @@
 #define MMDVFS_PIXEL_NUM_16M		(16000000)
 #define MMDVFS_PIXEL_NUM_20M		(20000000)
 
-/* lcd size */
-typedef enum {
-	MMDVFS_LCD_SIZE_HD, MMDVFS_LCD_SIZE_FHD, MMDVFS_LCD_SIZE_WQHD, MMDVFS_LCD_SIZE_END_OF_ENUM
-} mmdvfs_lcd_size_enum;
-
 #if defined(MMDVFS_E1)
 	#define MMDVFS_PIXEL_NUM_SENSOR_FULL (MMDVFS_PIXEL_NUM_10M)
 #elif defined(MMDVFS_O1)
@@ -81,10 +76,6 @@ typedef enum {
 	#define MMDVFS_PIXEL_NUM_SENSOR_FULL (MMDVFS_PIXEL_NUM_13M)
 #endif /* defined(MMDVFS_E1) */
 
-
-/* mmdvfs display sizes */
-#define MMDVFS_DISPLAY_SIZE_FHD	(1920 * 1216)
-#define MMDVFS_DISPLAY_SIZE_HD	(1280 * 720)
 
 #define MMDVFS_CLK_SWITCH_CB_MAX 16
 #define MMDVFS_CLK_SWITCH_CLIENT_MSG_MAX 20
@@ -181,22 +172,6 @@ int venc_resolution, mmdvfs_context_struct *mmdvfs_mgr_cntx, int is_ui_idle);
 
 static mmdvfs_context_struct g_mmdvfs_mgr_cntx;
 static mmdvfs_context_struct * const g_mmdvfs_mgr = &g_mmdvfs_mgr_cntx;
-
-static mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void)
-{
-	int lcd_resolution = DISP_GetScreenWidth() * DISP_GetScreenHeight();
-	mmdvfs_lcd_size_enum result = MMDVFS_LCD_SIZE_HD;
-
-	if (lcd_resolution <= MMDVFS_DISPLAY_SIZE_HD)
-		result = MMDVFS_LCD_SIZE_HD;
-	else if (lcd_resolution <= MMDVFS_DISPLAY_SIZE_FHD)
-		result = MMDVFS_LCD_SIZE_FHD;
-	else
-		result = MMDVFS_LCD_SIZE_WQHD;
-
-	return result;
-}
-
 
 static mmdvfs_voltage_enum mmdvfs_get_default_step(void)
 {
@@ -1861,7 +1836,8 @@ int mmdvfs_notify_mmclk_switch_request(int event)
 			current_mmsys_clk = MMSYS_CLK_MEDIUM;
 			return 1;
 		}
-	} else if (event == MMDVFS_EVENT_OVL_SINGLE_LAYER_ENTER && SMI_BWC_SCEN_VP) {
+	} else if (event == MMDVFS_EVENT_OVL_SINGLE_LAYER_ENTER &&
+			current_smi_scenario == SMI_BWC_SCEN_VP) {
 		/* call back from DISP so we don't need use DISP lock here */
 		if (current_mmsys_clk != MMSYS_CLK_HIGH) {
 			notify_cb_func_checked(notify_cb_func_nolock, current_mmsys_clk, MMSYS_CLK_LOW,
