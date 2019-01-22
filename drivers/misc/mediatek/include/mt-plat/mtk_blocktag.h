@@ -28,13 +28,17 @@
 #define BTAG_KLOGEN(btag) (btag ? btag->klog_enable : 0)
 
 struct page_pid_logger {
-	unsigned short pid1;
-	unsigned short pid2;
+	unsigned short pid;
 };
 
 #ifdef CONFIG_MTK_USE_RESERVED_EXT_MEM
 extern void *extmem_malloc_page_align(size_t bytes);
 #endif
+
+enum {
+	PIDLOG_MODE_BLK_SUBMIT_BIO = 0,
+	PIDLOG_MODE_MM_FS
+};
 
 struct mtk_btag_workload {
 	__u64 period;  /* period time (ns) */
@@ -166,13 +170,14 @@ void mtk_btag_klog(struct mtk_blocktag *btag, struct mtk_btag_trace *tr);
 
 void mtk_btag_pidlog_map_sg(struct request_queue *q, struct bio *bio, struct bio_vec *bvec);
 void mtk_btag_pidlog_submit_bio(struct bio *bio);
-void mtk_btag_pidlog_write_begin(struct page *p);
+void mtk_btag_pidlog_set_pid(struct page *p);
+
 
 #else
 
 #define mtk_btag_pidlog_map_sg(...)
 #define mtk_btag_pidlog_submit_bio(...)
-#define mtk_btag_pidlog_write_begin(...)
+#define mtk_btag_pidlog_set_pid(...)
 
 #endif
 
