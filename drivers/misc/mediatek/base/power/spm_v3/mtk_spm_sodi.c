@@ -51,7 +51,7 @@
  **************************************/
 #define LOG_BUF_SIZE					(256)
 #define SODI_LOGOUT_TIMEOUT_CRITERIA    (20)
-#define SODI_LOGOUT_MAXTIME_CRITERIA    (2500)
+#define SODI_LOGOUT_MAXTIME_CRITERIA    (3000)
 #define SODI_LOGOUT_INTERVAL_CRITERIA   (5000U)	/* unit:ms */
 
 static struct pwr_ctrl sodi_ctrl = {
@@ -768,13 +768,13 @@ wake_reason_t spm_sodi_output_log(
 				}
 				WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-				so_warn(flags, "wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, %d\n",
+				so_warn(flags, "wake up by %s, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, res_usage = 0x%x, op_cond = 0x%x, %d\n",
 						buf, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 						spm_read(DUMMY1_PWR_CON), logout_sodi_cnt, logout_selfrefresh_cnt,
 						wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta,
 						wakesta->idle_sta, wakesta->event_reg, wakesta->isr,
-						spm_get_resource_usage(), need_log_out);
+						spm_get_resource_usage(), operation_cond, need_log_out);
 			}
 			logout_sodi_cnt = 0;
 			logout_selfrefresh_cnt = 0;
