@@ -109,7 +109,9 @@ typedef struct {
 	unsigned int sensor_size;
 	unsigned int sensor_fps;
 	unsigned int camera_mode;
-
+	unsigned int boost_disable;
+	unsigned int ddr_type;
+	unsigned int step;
 	unsigned int venc_size;
 
 	unsigned int ret;
@@ -117,6 +119,9 @@ typedef struct {
 
 #define MTK_MMDVFS_CMD_TYPE_SET		0
 #define MTK_MMDVFS_CMD_TYPE_QUERY	1
+#define MTK_MMDVFS_CMD_TYPE_GET	2
+#define MTK_MMDVFS_CMD_TYPE_CONFIG	3
+#define MTK_MMDVFS_CMD_TYPE_STEP_SET 4
 
 typedef enum {
 	SMI_BWC_INFO_CON_PROFILE = 0,

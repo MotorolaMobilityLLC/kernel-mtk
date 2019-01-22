@@ -48,7 +48,7 @@ obj-y += mmdvfs_mgr_v2.o
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757"))
 ccflags-y += -DSMI_OLY
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
-obj-y += mmdvfs_mgr_default.o
+obj-y += mmdvfs_mgr_v2.o
 else
 ccflags-y += -DSMI_DUMMY
 obj-y += mmdvfs_mgr_default.o
