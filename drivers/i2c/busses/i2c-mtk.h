@@ -70,6 +70,8 @@
 #define I2C_DMA_CLR_FLAG		0x0000
 #define I2C_DMA_WARM_RST		0x0001
 #define I2C_DMA_4G_MODE			0x0001
+#define I2C_DMA_USR_DEF_ADDR		0x0001
+#define I2C_DMA_ROLLBACK		0x0002
 
 #define I2C_DEFAUT_SPEED		100000	/* hz */
 #define MAX_FS_MODE_SPEED		400000
@@ -116,6 +118,8 @@ enum DMA_REGS_OFFSET {
 	OFFSET_DEBUG_STA = 0x50,
 	OFFSET_TX_MEM_ADDR2 = 0x54,
 	OFFSET_RX_MEM_ADDR2 = 0x58,
+	OFFSET_USR_DEF_ADDR = 0x5C,
+	OFFSET_USR_DEF_CTRL = 0x60,
 };
 
 struct i2c_dma_info {
@@ -135,6 +139,8 @@ struct i2c_dma_info {
 	unsigned int debug_sta;
 	unsigned int tx_mem_addr2;
 	unsigned int rx_mem_addr2;
+	unsigned int usr_def_addr;
+	unsigned int use_def_addr;
 };
 
 enum i2c_trans_st_rs {
@@ -318,6 +324,8 @@ struct mt_i2c {
 	bool gpupm;			/* I2C for GPUPM */
 	bool buffermode;	/* I2C Buffer mode support */
 	bool hs_only;	/* I2C HS only */
+	bool usr_def_dma;
+	resource_size_t raw_base;
 	/* set when doing the transfer */
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */

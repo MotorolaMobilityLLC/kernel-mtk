@@ -853,6 +853,11 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 
 	/* Prepare buffer data to start transfer */
 	if (isDMA == true) {
+		if (i2c->usr_def_dma && i2c->raw_base) {
+			i2c_writel_dma(i2c->raw_base, i2c, OFFSET_USR_DEF_ADDR);
+			i2c_writel_dma(I2C_DMA_ROLLBACK, i2c, OFFSET_USR_DEF_CTRL);
+		}
+
 #ifdef CONFIG_MTK_LM_MODE
 		if ((i2c->dev_comp->dma_support == 1) && (enable_4G())) {
 			i2c_writel_dma(0x1, i2c, OFFSET_TX_MEM_ADDR2);
@@ -1429,6 +1434,7 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	i2c->gpupm = of_property_read_bool(np, "mediatek,gpupm_used");
 	i2c->buffermode = of_property_read_bool(np, "mediatek,buffermode_used");
 	i2c->hs_only = of_property_read_bool(np, "mediatek,hs_only");
+	i2c->usr_def_dma = of_property_read_bool(np, "mediatek,usr_def_dma");
 	pr_info("[I2C] id : %d, freq : %d, div : %d, ch_offset: %d, dma_ch_offset: %d\n",
 		i2c->id, i2c->speed_hz, i2c->clk_src_div, i2c->ch_offset_default,
 		i2c->dma_ch_offset_default);
@@ -1626,6 +1632,8 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	i2c->base = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(i2c->base))
 		return PTR_ERR(i2c->base);
+
+	i2c->raw_base = res->start;
 
 	if (i2c->id < I2C_MAX_CHANNEL)
 		g_mt_i2c[i2c->id] = i2c;
