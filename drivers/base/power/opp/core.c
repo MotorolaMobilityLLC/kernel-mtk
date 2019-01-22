@@ -1099,14 +1099,7 @@ int dev_pm_opp_adjust_voltage(struct device *dev, unsigned long freq,
 	/* plug in new node */
 	new_opp->u_volt = u_volt;
 
-	_opp_remove(dev_opp, opp, false);
-	r = _opp_add(dev, new_opp, dev_opp);
-	if (r) {
-		dev_err(dev, "Failed to add new_opp (u_volt=%lu)\n", u_volt);
-		_opp_add(dev, opp, dev_opp);
-		goto unlock;
-	}
-
+	list_replace_rcu(&opp->node, &new_opp->node);
 	mutex_unlock(&dev_opp_list_lock);
 	call_srcu(&dev_opp->srcu_head.srcu, &opp->rcu_head, _kfree_opp_rcu);
 
