@@ -71,7 +71,7 @@ extern long long data_free_size_th;
 
 #endif
 
-typedef struct env_struct {
+struct env_struct {
 	char sig[8]; /* "ENV_v1" */
 	char *env_data;
 	char sig_1[8];  /* "ENV_v1" */
