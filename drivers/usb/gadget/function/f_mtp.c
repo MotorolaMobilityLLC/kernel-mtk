@@ -468,8 +468,8 @@ static void mtp_complete_in(struct usb_ep *ep, struct usb_request *req)
 }
 
 static atomic_t usb_read_complete;
-static int usb_read_count;
-static int vfs_write_count;
+static long usb_read_count;
+static long vfs_write_count;
 static bool rx_concurrent_abort;
 static bool mtp_rx_concurrent = true;
 module_param(mtp_rx_concurrent, bool, 0644);
@@ -1129,8 +1129,8 @@ static void vfs_write_work(struct work_struct *data)
 	int64_t request_count = dev->xfer_file_length;
 	int index = 0;
 
-	MTP_RX_CONCURRENT_DBG("write_cnt<%d>, read_cnt<%d>, req_cnt<%d>\n",
-			vfs_write_count, usb_read_count, (int)request_count);
+	MTP_RX_CONCURRENT_DBG("write_cnt<%ld>, read_cnt<%ld>, req_cnt<%ld>\n",
+			vfs_write_count, usb_read_count, (long)request_count);
 
 	while (!rx_concurrent_abort && (vfs_write_count != request_count)) {
 		if (dev->state != STATE_BUSY) {
@@ -1158,8 +1158,8 @@ static void vfs_write_work(struct work_struct *data)
 			if (rc != write_req->actual)
 				MTP_RX_CONCURRENT_DBG("rc<%d> != actual<%d>\n", rc, write_req->actual);
 			vfs_write_count += write_req->actual;
-			MTP_RX_CONCURRENT_DBG("vfs_write_count<%d>, usb_read_count<%d>, request_count<%d>\n",
-					(int)vfs_write_count, (int)usb_read_count, (int)request_count);
+			MTP_RX_CONCURRENT_DBG("write_cnt<%ld>, read_cnt<%ld>, req_cnt<%ld>\n",
+					vfs_write_count, usb_read_count, (long)request_count);
 
 
 			/* check next round existence */
@@ -1177,13 +1177,13 @@ static void vfs_write_work(struct work_struct *data)
 					break;
 				}
 				usb_read_count += read_req->length;
-				MTP_RX_CONCURRENT_DBG("vfs_write_count<%d>, usb_read_count<%d>, request_count<%d>\n",
-						(int)vfs_write_count, (int)usb_read_count, (int)request_count);
+				MTP_RX_CONCURRENT_DBG("write_cnt<%ld>, read_cnt<%ld>, req_cnt<%ld>\n",
+						vfs_write_count, usb_read_count, (long)request_count);
 			}
 		}
 	};
-	MTP_RX_CONCURRENT_DBG("write_cnt<%d>, read_cnt<%d>, req_cnt<%d>\n",
-			vfs_write_count, usb_read_count, (int)request_count);
+	MTP_RX_CONCURRENT_DBG("write_cnt<%ld>, read_cnt<%ld>, req_cnt<%ld>\n",
+			vfs_write_count, usb_read_count, (long)request_count);
 }
 void trigger_rx_concurrent(void)
 {
