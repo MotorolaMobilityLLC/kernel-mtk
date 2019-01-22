@@ -1040,7 +1040,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 				can_turbo = 0;
 #ifdef CONFIG_HYBRID_CPU_DVFS
 				/* Block until ack */
-				cpuhvfs_set_turbo_mode(can_turbo, 1, 0);
+				cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
 #else
 #endif
 				cpufreq_info("DVFS - can't go turbo due to cpu%d CPU_UP_PREPARE\n", cpu);
@@ -1050,7 +1050,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					can_turbo = 0;
 #ifdef CONFIG_HYBRID_CPU_DVFS
 					/* Block until ack */
-					cpuhvfs_set_turbo_mode(can_turbo, 1, 0);
+					cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
 #else
 #endif
 					cpufreq_info("DVFS - can't go turbo due to cpu%d CPU_DOWN_PREPARE\n", cpu);
@@ -1062,7 +1062,7 @@ static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					can_turbo = 1;
 #ifdef CONFIG_HYBRID_CPU_DVFS
 					/* Block until ack */
-					cpuhvfs_set_turbo_mode(can_turbo, 1, 0);
+					cpuhvfs_set_turbo_mode(can_turbo, 6, 0);
 #else
 #endif
 					cpufreq_info("DVFS - can go turbo due to cpu%d CPU_ONLINE OR CPU_DEAD\n", cpu);
