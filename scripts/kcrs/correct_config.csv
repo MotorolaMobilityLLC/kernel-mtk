@@ -1026,3 +1026,5 @@ CONFIG_USB_CONFIGFS_UEVENT,COMMON,,,y,y,y,y,y
 CONFIG_USELIB,COMMON,,,N,N,N,N,N
 CONFIG_MTK_GZ_KREE,PROJECT,chsuan.lin,,,,,O,O
 CONFIG_GZ_V2_SUPPORT,PROJECT,chsuan.lin,,,,,O,O
+CONFIG_DEBUG_OBJECTS,USER,stanley.chu,new config in this commit 9fb8ecd5d6e7c3b01d18f003d07cc178eaee9bd9,X,X,X,O,X
+CONFIG_DEBUG_OBJECTS_TIMERS,USER,stanley.chu,new config in this commit 9fb8ecd5d6e7c3b01d18f003d07cc178eaee9bd9,X,X,X,O,X
