@@ -33,6 +33,17 @@
 #include <linux/dma-mapping.h>
 #include <mt-plat/mtk_ccci_common.h>
 
+/*
+ * normal workqueue:   MODEM_CAP_NAPI=0, ENABLE_NAPI_GRO=0, ENABLE_WQ_GRO=0
+ * workqueue with GRO: MODEM_CAP_NAPI=0, ENABLE_NAPI_GRO=0, ENABLE_WQ_GRO=1
+ * NAPI without GRO:   MODEM_CAP_NAPI=1, ENABLE_NAPI_GRO=0, ENABLE_WQ_GRO=0
+ * NAPI with GRO:      MODEM_CAP_NAPI=1, ENABLE_NAPI_GRO=1, ENABLE_WQ_GRO=0
+ */
+/* #define ENABLE_NAPI_GRO */
+#ifdef CONFIG_MTK_ECCCI_C2K
+#define ENABLE_WQ_GRO
+#endif
+
 #define  CCMNI_MTU              1500
 #define  CCMNI_TX_QUEUE         1000
 #define  CCMNI_NETDEV_WDT_TO    (1*HZ)
