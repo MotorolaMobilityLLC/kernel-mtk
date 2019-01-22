@@ -40,8 +40,8 @@
 #define IMX338_MAX_OFFSET 4096
 
 #define DATA_SIZE 2048
-#define SPC_START_ADDR 0x763
-#define DCC_START_ADDR 0x8c3
+#define SPC_START_ADDR 0x7C3
+#define DCC_START_ADDR 0x763
 
 
 
