@@ -229,33 +229,9 @@ static long seninf_ioctl(struct file *pfile, unsigned int cmd, unsigned long arg
 		break;
 
 	case KDSENINFIOC_X_GET_ISP_CLK:
-#if 0
-		/*E1(High):490, (Medium):364, (low):273 */
-#define ISP_CLK_LOW    273
-#define ISP_CLK_MEDIUM 364
-#define ISP_CLK_HIGH   490
-#ifdef CONFIG_MTK_SMI_EXT
-		PK_DBG("KDIMGSENSORIOC_X_GET_ISP_CLK current_mmsys_clk=%d\n", current_mmsys_clk);
-		if (mmdvfs_get_stable_isp_clk() == MMSYS_CLK_HIGH)
-			*(unsigned int *)pbuff = ISP_CLK_HIGH;
-		else if (mmdvfs_get_stable_isp_clk() == MMSYS_CLK_MEDIUM)
-			*(unsigned int *)pbuff = ISP_CLK_MEDIUM;
-		else
-			*(unsigned int *)pbuff = ISP_CLK_LOW;
-#else
-		*(unsigned int *)pbuff = ISP_CLK_HIGH;
-#endif
-#endif
-		break;
-
 	case KDSENINFIOC_X_GET_CSI_CLK:
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-		*(unsigned int *)pbuff = mt_get_ckgen_freq(*(unsigned int *)pbuff);
-		PK_DBG("f_fcamtg_ck = %d\n", mt_get_ckgen_freq(8));
-		PK_DBG("f_fcamtg2_ck = %d\n", mt_get_ckgen_freq(41));
-		PK_DBG("f_fcam_ck = %d\n", mt_get_ckgen_freq(5));
-		PK_DBG("f_fseninf_ck = %d\n", mt_get_ckgen_freq(35));
-#endif
+		*(unsigned int *)pbuff =
+			seninf_clk_get_meter(&pseninf->clk, *(unsigned int *)pbuff);
 		break;
 
 	default:

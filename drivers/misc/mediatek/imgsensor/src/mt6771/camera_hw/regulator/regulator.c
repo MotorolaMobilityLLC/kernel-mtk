@@ -146,12 +146,28 @@ static enum IMGSENSOR_RETURN regulator_set(
 	return IMGSENSOR_RETURN_SUCCESS;
 }
 
+static enum IMGSENSOR_RETURN regulator_dump(void *pinstance)
+{
+	struct REGULATOR *preg = (struct REGULATOR *)pinstance;
+	int i;
+
+	for (i = REGULATOR_TYPE_MAIN_VCAMA; i < REGULATOR_TYPE_MAX_NUM; i++) {
+		if (regulator_is_enabled(preg->pregulator[i]) &&
+				atomic_read(&preg->enable_cnt[i]) != 0)
+			PK_DBG("%s = %d\n", regulator_control[i].pregulator_type,
+				regulator_get_voltage(preg->pregulator[i]));
+	}
+
+	return IMGSENSOR_RETURN_SUCCESS;
+}
+
 static struct IMGSENSOR_HW_DEVICE device = {
 	.id        = IMGSENSOR_HW_ID_REGULATOR,
 	.pinstance = (void *)&reg_instance,
 	.init      = regulator_init,
 	.set       = regulator_set,
-	.release   = regulator_release
+	.release   = regulator_release,
+	.dump      = regulator_dump
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_regulator_open(

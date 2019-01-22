@@ -208,3 +208,14 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	return IMGSENSOR_RETURN_SUCCESS;
 }
 
+enum IMGSENSOR_RETURN imgsensor_hw_dump(struct IMGSENSOR_HW *phw)
+{
+	int i;
+
+	for (i = 0; i < IMGSENSOR_HW_ID_MAX_NUM; i++) {
+		if (phw->pdev[i]->dump != NULL)
+			(phw->pdev[i]->dump)(phw->pdev[i]->pinstance);
+	}
+	return IMGSENSOR_RETURN_SUCCESS;
+}
+
