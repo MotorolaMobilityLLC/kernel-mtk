@@ -123,6 +123,7 @@ typedef enum {
 #define SENSOR_DOES_NOT_KNOW      0xFFFFFFFF
 
 /* Define for sensor sync mode (bitwise) */
+#define SENSOR_NO_SYNC_MODE 0
 #define SENSOR_MASTER_SYNC_MODE 1
 #define SENSOR_SLAVE_SYNC_MODE 2
 

@@ -79,7 +79,7 @@
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-static MUINT32 g_sync_mode = SENSOR_MASTER_SYNC_MODE;
+static MUINT32 g_sync_mode = SENSOR_NO_SYNC_MODE;
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K3L8_SENSOR_ID,	/* Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h */
@@ -714,7 +714,7 @@ static void sensor_set_sync_mode(void)
 		/* master mode */
 		write_cmos_sensor(0x6028, 0x4000);
 		write_cmos_sensor(0x30C0, 0x0300); /* Vsync out GPIO3 */
-	} else {
+	} else if (g_sync_mode == SENSOR_SLAVE_SYNC_MODE) {
 		LOG_INF("set to slave mode\n");
 		/* slave mode */
 		write_cmos_sensor(0x6028, 0x2000);
@@ -739,6 +739,8 @@ static void sensor_set_sync_mode(void)
 		write_cmos_sensor(0x3816, 0x0000);
 		write_cmos_sensor(0x30C4, 0x0100);
 		write_cmos_sensor(0x3812, 0x0002);
+	} else {
+		LOG_INF("set to no sync mode\n");
 	}
 
 	write_cmos_sensor(0x0100, 0x0100);
