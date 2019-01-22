@@ -1437,7 +1437,7 @@ int fbt_cpu_push_frame_time(pid_t pid, unsigned long long last_ts,
 	fpsgo_systrace_c_log(slptime, "get frame sleep time");
 
 	fbt_save_deq_q2q_info(deqtime, q2qtime);
-
+	fstb_queue_time_update(curr_ts);
 	fbt_notifier_push_cpu_frame_time(q2qtime, *p_frmtime);
 	return 0;
 }

@@ -64,6 +64,7 @@ static int fstb_fps_klog_on;
 
 static unsigned int fstb_fps_cur_limit;
 static unsigned int tm_input_fps;
+static unsigned int tm_queue_fps;
 static struct dentry *fstb_debugfs_dir;
 
 #define CFG_MAX_FPS_LIMIT	60
@@ -103,6 +104,9 @@ static int weighted_cpu_time_begin,  weighted_cpu_time_end;
 static long long sorted_weighted_cpu_time[FRAME_TIME_BUFFER_SIZE];
 static struct mutex fstb_lock;
 
+static unsigned long long queue_time_ts[FRAME_TIME_BUFFER_SIZE]; /*timestamp*/
+static int queue_time_begin, queue_time_end;
+
 static int lppfps;
 static int lpp_mode;
 static unsigned int lpp_freq = 1200000;
@@ -141,6 +145,7 @@ int second_chance_flag;
 
 static int vag_flag;
 static int force_vag;
+static int vag_fps = 30;
 
 int is_fstb_enable(void)
 {
@@ -210,15 +215,25 @@ int switch_percentile_frametime(int ratio)
 
 int switch_force_vag(int arg)
 {
-		if (arg == 1) {
-			force_vag = 1;
-			dfrc_set_kernel_policy(DFRC_DRV_API_LOADING, -1, DFRC_DRV_MODE_INTERNAL_SW, 0, 0);
-		} else if (arg == 0) {
-			force_vag = 0;
-		} else
-			return -EINVAL;
+	if (arg == 1) {
+		force_vag = 1;
+		dfrc_set_kernel_policy(DFRC_DRV_API_LOADING, -1, DFRC_DRV_MODE_INTERNAL_SW, 0, 0);
+	} else if (arg == 0) {
+		force_vag = 0;
+	} else
+		return -EINVAL;
 
-		return 0;
+	return 0;
+}
+
+int switch_vag_fps(int arg)
+{
+	if (arg <= 60 && arg >= 20)
+		vag_fps = arg;
+	else
+		vag_fps = 30;
+
+	return 0;
 }
 
 int switch_lpp_fps(int arg)
@@ -421,7 +436,7 @@ int update_cpu_frame_info(
 		fstb_check_30_fps = 0;
 	fpsgo_systrace_c_fstb(-200, fstb_check_30_fps, "fstb_check_30_fps");
 	/* check if self-control 30 -> if yes, jump to 30 directly*/
-	if (!lpp_mode &&
+	if (!lpp_mode && !force_vag &&
 		fstb_fps_cur_limit > 30 && vag_flag < 2 && asfc_flag == 0 && fstb_check_30_fps == 0 && is_30_fps()) {
 		asfc_flag = 1;
 		fpsgo_systrace_c_fstb(-200, asfc_flag, "asfc_flag");
@@ -751,6 +766,78 @@ static int get_display_fps(long long interval)
 
 }
 
+void fstb_queue_time_update(unsigned long long ts)
+{
+	if (queue_time_begin < 0 ||
+		queue_time_end < 0 ||
+		queue_time_begin > queue_time_end ||
+		queue_time_end >= FRAME_TIME_BUFFER_SIZE) {
+		/* purge all data */
+		queue_time_begin = queue_time_end = 0;
+	}
+
+	/*remove old entries*/
+	while (queue_time_begin < queue_time_end) {
+		if (queue_time_ts[queue_time_begin] < ts - (long long)FRAME_TIME_WINDOW_SIZE_US * 1000)
+			queue_time_begin++;
+		else
+			break;
+	}
+
+	if (queue_time_begin == queue_time_end &&
+		queue_time_end == FRAME_TIME_BUFFER_SIZE - 1)
+		queue_time_begin = queue_time_end = 0;
+
+	/*insert entries to weighted_display_time*/
+	/*if buffer full --> move array align first*/
+	if (queue_time_begin < queue_time_end &&
+		queue_time_end == FRAME_TIME_BUFFER_SIZE - 1) {
+		memmove(queue_time_ts, &queue_time_ts[queue_time_begin],
+				sizeof(unsigned long long) * (queue_time_end - queue_time_begin));
+		/*reset index*/
+		queue_time_end = queue_time_end - queue_time_begin;
+		queue_time_begin = 0;
+	}
+
+	queue_time_ts[queue_time_end] = ts;
+	queue_time_end++;
+}
+
+static int fstb_get_queue_fps(long long interval)
+{
+	int i = queue_time_begin, j;
+	long long queue_fps;
+	unsigned long long frame_interval_count = 0;
+	unsigned long long avg_frame_interval = 0;
+	unsigned long long retval = 0;
+
+	/* remove old entries */
+	while (i < queue_time_end) {
+		if (queue_time_ts[i] < sched_clock() - interval * 1000)
+			i++;
+		else
+			break;
+	}
+
+	/* filter */
+	for (j = i + 1; j < queue_time_end; j++) {
+		if ((queue_time_ts[j] - queue_time_ts[j - 1]) < DISPLAY_FPS_FILTER_NS) {
+			avg_frame_interval += (queue_time_ts[j] - queue_time_ts[j - 1]);
+			frame_interval_count++;
+		}
+	}
+
+	queue_fps = (long long)(queue_time_end - i) * 1000000LL;
+	do_div(queue_fps, interval);
+	fpsgo_systrace_c_fstb(-200, (int)queue_fps, "queue_fps_nofilter");
+
+	if (avg_frame_interval != 0) {
+		retval = 1000000000ULL * frame_interval_count;
+		do_div(retval, avg_frame_interval);
+		return retval;
+	} else
+		return queue_fps;
+}
 
 static long long weighted_gpu_time[FRAME_TIME_BUFFER_SIZE];
 static long long weighted_gpu_time_ts[FRAME_TIME_BUFFER_SIZE];	/*timestamp*/
@@ -865,6 +952,9 @@ static int get_gpu_frame_time(void)
 
 static int fps_update(void)
 {
+	tm_queue_fps = fstb_get_queue_fps(FRAME_TIME_WINDOW_SIZE_US);
+	fpsgo_systrace_c_log(tm_queue_fps, "tm_queue_fps");
+
 	tm_input_fps = get_display_fps(FRAME_TIME_WINDOW_SIZE_US);
 	return 0;
 }
@@ -903,6 +993,23 @@ static int calculate_fps_limit(int target_fps)
 		fps_limit = max_fps_limit;
 
 	return fps_limit;
+}
+
+static long long check_vag(long long target_limit)
+{
+	if (vag_flag == 2)
+		target_limit = max_fps_limit;
+	else if (tm_queue_fps <= (fstb_fps_cur_limit / 2 + 2)) {
+		vag_flag++;
+		if (fstb_fps_cur_limit == 30)
+			asfc_flag = 0;
+		if (vag_flag == 2)
+			target_limit = max_fps_limit;
+	} else
+		vag_flag = 0;
+
+	fpsgo_systrace_c_log(vag_flag, "vag_flag");
+	return target_limit;
 }
 
 static int cur_cpu_time;
@@ -966,7 +1073,7 @@ static void fstb_fps_stats(struct work_struct *work)
 		second_chance_flag = 0;
 		fpsgo_systrace_c_fstb(-200, second_chance_flag, "second_chance_flag");
 		vag_flag = 0;
-		fpsgo_systrace_c_fstb(-200, vag_flag, "vag_flag");
+		fpsgo_systrace_c_log(vag_flag, "vag_flag");
 	} else if (lpp_mode == 1) {
 		target_limit = max_fps_limit;
 		asfc_flag = 0;
@@ -986,17 +1093,7 @@ static void fstb_fps_stats(struct work_struct *work)
 		}
 		fpsgo_systrace_c_fstb(-200, (int)target_limit, "tmp_target_limit");
 		fpsgo_systrace_c_fstb(-200, second_chance_flag, "second_chance_flag");
-
-		if (vag_flag == 2)
-			target_limit = max_fps_limit;
-		else if (tm_input_fps <= (fstb_fps_cur_limit / 2 + 2)) {
-			vag_flag++;
-			if (vag_flag == 2)
-				target_limit = max_fps_limit;
-		} else
-			vag_flag = 0;
-
-		fpsgo_systrace_c_fstb(-200, vag_flag, "vag_flag");
+		target_limit = check_vag(target_limit);
 		/*increase*/
 	} else if (avg_fps_limit - tm_input_fps <= 1) {
 
@@ -1025,12 +1122,13 @@ static void fstb_fps_stats(struct work_struct *work)
 				target_limit = tmp_target_limit;
 		} else
 			target_limit = fstb_fps_cur_limit;
-
+		target_limit = check_vag(target_limit);
 		/*stable state*/
 	} else {
 		second_chance_flag = 0;
 		fpsgo_systrace_c_fstb(-200, second_chance_flag, "second_chance_flag");
 		target_limit = fstb_fps_cur_limit;
+		target_limit = check_vag(target_limit);
 	}
 
 	if (vag_flag < 2 && asfc_flag && target_limit > 30)
@@ -1038,13 +1136,13 @@ static void fstb_fps_stats(struct work_struct *work)
 
 	fstb_fps_cur_limit = calculate_fps_limit(target_limit);
 
-	if (fstb_fps_cur_limit == 30) {
+	if (fstb_fps_cur_limit == 30 && vag_flag == 0) {
 		asfc_flag = 1;
 		fpsgo_systrace_c_fstb(-200, asfc_flag, "asfc_flag");
 	}
 
 	if (vag_flag == 2 || force_vag)
-		fbt_cpu_vag_set_fps(30);
+		fbt_cpu_vag_set_fps(vag_fps);
 	else
 		fbt_cpu_vag_set_fps(0);
 
@@ -1377,6 +1475,40 @@ static const struct file_operations fstb_tune_force_vag_fops = {
 	.release = single_release,
 };
 
+static int fstb_tune_vag_fps_read(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d ", vag_fps);
+	return 0;
+}
+
+static ssize_t fstb_tune_vag_fps_write(struct file *file, const char __user *buffer,
+		size_t count, loff_t *data)
+{
+	int ret;
+	int arg;
+
+	if (!kstrtoint_from_user(buffer, count, 0, &arg))
+		ret = switch_vag_fps(arg);
+	else
+		ret = -EINVAL;
+
+	return (ret < 0) ? ret : count;
+}
+
+static int fstb_tune_vag_fps_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, fstb_tune_vag_fps_read, NULL);
+}
+
+static const struct file_operations fstb_tune_vag_fps_fops = {
+	.owner = THIS_MODULE,
+	.open = fstb_tune_vag_fps_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = fstb_tune_vag_fps_write,
+	.release = single_release,
+};
+
 static int fstb_tune_lpp_fps_read(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d ", lppfps);
@@ -1596,6 +1728,12 @@ static int __init mtk_fstb_init(void)
 			    fstb_debugfs_dir,
 			    NULL,
 			    &fstb_tune_force_vag_fops);
+
+	debugfs_create_file("fstb_tune_vag_fps",
+			    S_IRUGO | S_IWUSR | S_IWGRP,
+			    fstb_debugfs_dir,
+			    NULL,
+			    &fstb_tune_vag_fps_fops);
 
 	reset_fps_level();
 

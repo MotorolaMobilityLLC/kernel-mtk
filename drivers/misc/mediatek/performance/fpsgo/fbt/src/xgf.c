@@ -25,7 +25,7 @@
 #include <linux/trace_events.h>
 #include <linux/debugfs.h>
 
-#include <uapi/linux/fpsgo.h>
+#include "../../../perf_ioctl/perf_ioctl.h"
 #include <mt-plat/fpsgo_common.h>
 
 #define CREATE_TRACE_POINTS
@@ -94,17 +94,15 @@ static inline void xgf_timer_systrace(const struct hrtimer * const timer,
 
 static inline int xgf_is_enable(void)
 {
+	xgf_lockprove(__func__);
+
 	if (exit_game_mode)
 		return 0;
 
 	xgf_trace("exit_game_mode", exit_game_mode);
 
-	xgf_lock(__func__);
-	if (!xgf_enable) {
-		xgf_unlock(__func__);
+	if (!xgf_enable)
 		return 0;
-	}
-	xgf_unlock(__func__);
 
 	return 1;
 }
@@ -390,12 +388,14 @@ void xgf_igather_timer(const struct hrtimer * const timer, int fire)
 	struct xgf_proc *iter;
 	pid_t tpid;
 
-	if (!xgf_is_enable())
-		return;
-
 	tpid = task_tgid_nr(current);
 
 	xgf_lock(__func__);
+
+	if (!xgf_is_enable()) {
+		xgf_unlock(__func__);
+		return;
+	}
 
 	hlist_for_each_entry(iter, &xgf_procs, hlist) {
 		if (iter->parent != tpid)
@@ -517,10 +517,12 @@ static int xgf_get_proc(pid_t ppid, struct xgf_proc **ret, int force)
 
 int xgf_self_ctrl_enable(int enable, pid_t ppid)
 {
-	if (exit_game_mode)
-		return 0;
-
 	xgf_lock(__func__);
+
+	if (exit_game_mode) {
+		xgf_unlock(__func__);
+		return 0;
+	}
 
 	/*
 	 * with some operations, ex: power key resume to game, game
@@ -553,8 +555,10 @@ int xgf_self_ctrl_enable(int enable, pid_t ppid)
 			return ret;
 		}
 		game_ppid = ppid;
-	} else
+	} else {
+		game_ppid = 0;
 		xgf_reset_procs();
+	}
 
 	xgf_unlock(__func__);
 	return 0;
@@ -616,41 +620,48 @@ static void xgf_qudeq_exit(struct xgf_proc *proc, struct xgf_tick *ts,
 
 void xgf_game_mode_exit(int val)
 {
+	xgf_lock(__func__);
 	exit_game_mode = val;
 	if (val) {
-		xgf_lock(__func__);
+		xgf_enable = 0;
+		game_ppid = 0;
+
 		xgf_reset_procs();
-		xgf_unlock(__func__);
 	}
+
+	xgf_unlock(__func__);
 }
 
 static inline void xgf_ioctl_notify(unsigned int cmd, unsigned long arg)
 {
+	xgf_lockprove(__func__);
+
 	/* only allow game process to proceed */
-	xgf_lock(__func__);
-	if (task_tgid_nr(current) != game_ppid) {
-		xgf_unlock(__func__);
+	if (task_tgid_nr(current) != game_ppid)
 		return;
-	}
-	xgf_unlock(__func__);
 
 	/* mainly for loading estimation */
 	if (cmd == FPSGO_QUEUE || cmd == FPSGO_DEQUEUE)
 		xgf_dequeuebuffer(arg);
 }
 
-static long fpsgo_ioctl(struct file *flip, unsigned int cmd,
-			unsigned long arg)
+void xgf_qudeq_notify(unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
 	struct xgf_proc *p, **pproc;
-
-	if (!xgf_is_enable())
-		return 0;
+	struct xgf_proc *iter;
+	int proc_cnt = 0;
+	int timer_cnt = 0;
 
 	/* filter out main thread to queue/dequeue */
 	if (task_tgid_nr(current) == task_pid_nr(current))
-		return 0;
+		return;
+
+	xgf_lock(__func__);
+	if (!xgf_is_enable()) {
+		xgf_unlock(__func__);
+		return;
+	}
 
 	xgf_ioctl_notify(cmd, arg);
 
@@ -658,21 +669,31 @@ static long fpsgo_ioctl(struct file *flip, unsigned int cmd,
 	case FPSGO_QUEUE:
 		pproc = &p;
 
-		xgf_lock("ioctl queue");
 		ret = xgf_get_proc(task_tgid_nr(current), pproc, 0);
 		if (ret)
 			goto ioctl_err;
 
 		if (!!arg) {
 			unsigned long long dur;
+			struct xgf_timer *timer_iter;
+
+			hlist_for_each_entry(timer_iter, &p->timer_head, hlist)
+				timer_cnt++;
+			fpsgo_systrace_c_log(timer_cnt, "timer_cnt");
 
 			dur = xgf_qudeq_enter(p, &p->deque, &p->queue);
 			fpsgo_systrace_c_xgf(p->parent, dur,
-					     "renew sleep time");
+					"renew sleep time");
 			p->slptime += dur;
 			fpsgo_systrace_c_log(p->slptime,
-					     "frame sleep time");
+					"frame sleep time");
 			p->slptime_ged = p->slptime;
+
+			hlist_for_each_entry(iter, &xgf_procs, hlist)
+				proc_cnt++;
+			if (proc_cnt > 5)
+				xgf_reset_procs();
+			fpsgo_systrace_c_log(proc_cnt, "proc_cnt");
 		} else {
 			xgf_qudeq_exit(p, &p->queue, &p->quetime);
 			/* reset for safety */
@@ -690,7 +711,6 @@ static long fpsgo_ioctl(struct file *flip, unsigned int cmd,
 		xgf_trace("start=%d deq str=%llu end=%llu", !!arg, deqstr, deqend);
 
 
-		xgf_lock("ioctl dequeue");
 		ret = xgf_get_proc(task_tgid_nr(current), pproc, 0);
 		if (ret)
 			goto ioctl_err;
@@ -715,29 +735,8 @@ static long fpsgo_ioctl(struct file *flip, unsigned int cmd,
 
 ioctl_err:
 	xgf_unlock(__func__);
-	return ret;
+	return;
 }
-
-static int fpsgo_show(struct seq_file *m, void *unused)
-{
-	seq_puts(m, "fpsgo v1.0\n");
-	return 0;
-}
-
-static int fpsgo_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, fpsgo_show, inode->i_private);
-}
-
-static const struct file_operations fpsgo_fops = {
-	.owner		= THIS_MODULE,
-	.unlocked_ioctl	= fpsgo_ioctl,
-	.compat_ioctl	= fpsgo_ioctl,
-	.open		= fpsgo_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
-};
 
 int xgf_query_blank_time(pid_t ppid, unsigned long long *deqtime,
 			 unsigned long long *slptime)
@@ -752,12 +751,13 @@ int xgf_query_blank_time(pid_t ppid, unsigned long long *deqtime,
 		deqtime_t = deqend - deqstr;
 	*deqtime = deqtime_t;
 
+	xgf_lock(__func__);
 	if (!xgf_is_enable()) {
 		*slptime = 0;
+		xgf_unlock(__func__);
 		return 0;
 	}
 
-	xgf_lock(__func__);
 	ret = xgf_get_proc(ppid, pproc, 0);
 	if (ret)
 		goto query_err;
@@ -818,14 +818,6 @@ FPSGO_DEBUGFS_ENTRY(black);
 
 static int __init init_xgf(void)
 {
-	struct proc_dir_entry *pe;
-
-	pe = proc_create("fpsgo",
-			 (S_IRUGO | S_IWUSR | S_IWGRP),
-			 NULL, &fpsgo_fops);
-	if (!pe)
-		return -ENOMEM;
-
 	if (!fpsgo_debugfs_dir)
 		return -ENODEV;
 
