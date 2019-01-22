@@ -15,6 +15,24 @@
 #include "mtk_cpufreq_hybrid.h"
 #include "mtk_cpufreq_platform.h"
 
+int mt_cpufreq_set_by_wfi_load_cluster(unsigned int cluster_id, unsigned int freq)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	enum mt_cpu_dvfs_id id = (enum mt_cpu_dvfs_id) cluster_id;
+
+	if (freq < mt_cpufreq_get_freq_by_idx(id, 15))
+		freq = mt_cpufreq_get_freq_by_idx(id, 15);
+
+	if (freq > mt_cpufreq_get_freq_by_idx(id, 0))
+		freq = mt_cpufreq_get_freq_by_idx(id, 0);
+
+	cpuhvfs_set_dvfs(id, freq);
+#endif
+
+	return 0;
+}
+EXPORT_SYMBOL(mt_cpufreq_set_by_wfi_load_cluster);
+
 int mt_cpufreq_set_by_schedule_load_cluster(unsigned int cluster_id, unsigned int freq)
 {
 #ifdef CONFIG_HYBRID_CPU_DVFS
