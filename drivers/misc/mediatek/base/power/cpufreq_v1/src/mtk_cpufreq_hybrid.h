@@ -14,6 +14,8 @@
 #ifndef __MTK_CPUFREQ_HYBRID__
 #define __MTK_CPUFREQ_HYBRID__
 
+/* #define CPUDVFS_TIME_PROFILE 1 */
+
 struct cpu_dvfs_log {
 	unsigned int time_stamp_l_log:32;
 	unsigned int time_stamp_h_log:32;
@@ -51,18 +53,19 @@ enum cpu_dvfs_ipi_type {
 	IPI_GET_FREQ,
 #endif
 	IPI_TURBO_MODE,
+	IPI_TIME_PROFILE,
 
 	NR_DVFS_IPI,
 };
 
-typedef struct cdvfs_data {
+struct cdvfs_data {
 	unsigned int cmd;
 	union {
 		struct {
 			unsigned int arg[3];
 		} set_fv;
 	} u;
-} cdvfs_data_t;
+};
 
 int cpuhvfs_module_init(void);
 int cpuhvfs_set_init_sta(void);
@@ -76,6 +79,7 @@ int cpuhvfs_get_cur_volt(int cluster_id);
 int cpuhvfs_get_volt(int buck_id);
 int cpuhvfs_get_freq(int pll_id);
 int cpuhvfs_set_turbo_mode(int turbo_mode, int freq_step, int volt_step);
+int cpuhvfs_get_time_profile(void);
 int cpuhvfs_set_dvfs_stress(unsigned int en);
 int cpuhvfs_get_sched_dvfs_disable(void);
 int cpuhvfs_set_sched_dvfs_disable(unsigned int disable);
