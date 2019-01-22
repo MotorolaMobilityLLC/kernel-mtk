@@ -468,8 +468,7 @@ struct tee_mmu *tee_mmu_create(struct mm_struct *mm,
 			u64 *pte = &mmu->l2_tables[chunk].ptes_64[0];
 
 			for (i = 0; i < pages_nr; i++, page_ptr++, pte++) {
-				unsigned long phys = page_to_phys(*page_ptr);
-				*pte = phys;
+				*pte = page_to_phys(*page_ptr);
 				*pte |= get_pte_flags_64(write);
 			}
 		} else {
