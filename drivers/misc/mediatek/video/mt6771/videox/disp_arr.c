@@ -103,3 +103,13 @@ int primary_display_set_refresh_rate(unsigned int refresh_rate)
 	return ret;
 }
 
+int primary_display_force_vdo_mode(unsigned int force_on)
+{
+	if (force_on)
+		primary_display_switch_dst_mode(1);
+	else
+		primary_display_switch_dst_mode(0);
+
+	return 0;
+}
+

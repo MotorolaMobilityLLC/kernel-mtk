@@ -1290,7 +1290,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	lcm_dsi_mode = SYNC_PULSE_VDO_MODE;
 #endif
 	LCM_LOGI("lcm_get_params lcm_dsi_mode %d\n", lcm_dsi_mode);
-	params->dsi.switch_mode_enable = 0;
+	params->dsi.switch_mode_enable = 1;
 
 	/* DSI */
 	/* Command mode setting */
