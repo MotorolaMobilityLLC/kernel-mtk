@@ -1,0 +1,9 @@
+Watchdata TEE Feature
+
+Required properties
+        - compatible: Should be "watchdata,wdtee.txt"
+
+Example:
+        wdtee {
+                compatible = "watchdata,wdtee";
+        };
