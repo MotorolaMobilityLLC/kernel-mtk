@@ -20,6 +20,7 @@
 #include <linux/spinlock.h>
 #include <linux/spinlock_types.h>
 #include <linux/kthread.h>
+#include <linux/wakelock.h>
 #include <mach/emi_mpu.h>
 #include <mt-plat/mtk_meminfo.h>
 #include "mtkdcs_drv.h"
@@ -37,6 +38,7 @@ static unsigned long dcs_kicker;
 static struct task_struct *dcs_thread;
 static u64 lbw_start = ULONG_MAX, lbw_end;
 static DEFINE_MUTEX(dcs_lbw_lock);
+static struct wake_lock dcs_wake_lock;
 #define DCS_PROFILE
 
 #ifdef DCS_PROFILE
@@ -339,12 +341,14 @@ static int dcs_dram_channel_switch(enum dcs_status status)
 	if (!dcs_core_initialized || !dcs_full_initialized)
 		return -ENODEV;
 
+	wake_lock(&dcs_wake_lock);
 	down_write(&dcs_rwsem);
 
 	if (dcs_sysfs_mode == DCS_SYSFS_FREERUN)
 		ret = __dcs_dram_channel_switch(status);
 
 	up_write(&dcs_rwsem);
+	wake_unlock(&dcs_wake_lock);
 
 	return ret;
 }
@@ -367,6 +371,7 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	if (!dcs_core_initialized || !dcs_full_initialized)
 		return -ENODEV;
 
+	wake_lock(&dcs_wake_lock);
 	down_write(&dcs_rwsem);
 
 	dcs_sysfs_mode = mode;
@@ -397,6 +402,7 @@ static int dcs_dram_channel_switch_by_sysfs_mode(enum dcs_sysfs_mode mode)
 	}
 
 	up_write(&dcs_rwsem);
+	wake_unlock(&dcs_wake_lock);
 
 	return ret;
 }
@@ -778,6 +784,9 @@ static int __init mtkdcs_init(void)
 
 	/* init rwsem */
 	init_rwsem(&dcs_rwsem);
+
+	/* init wakelock */
+	wake_lock_init(&dcs_wake_lock, WAKE_LOCK_SUSPEND, "dcs_wakelock");
 
 	/* register IPI */
 	ret = dcs_ipi_register();
