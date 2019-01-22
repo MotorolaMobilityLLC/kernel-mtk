@@ -829,9 +829,11 @@ static int _get_current_gpu_power(void)
 	unsigned int cur_gpu_power = 0;
 	int i = 0;
 
-	for (; i < Num_of_GPU_OPP; i++)
-		if (mtk_gpu_power[i].gpufreq_khz == cur_gpu_freq)
-			cur_gpu_power = mtk_gpu_power[i].gpufreq_power;
+	if (mtk_gpu_power != NULL) {
+		for (; i < Num_of_GPU_OPP; i++)
+			if (mtk_gpu_power[i].gpufreq_khz == cur_gpu_freq)
+				cur_gpu_power = mtk_gpu_power[i].gpufreq_power;
+	}
 
 	return (int) cur_gpu_power;
 }
@@ -973,6 +975,7 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 				gpu_power = MAX(gpu_power, MINIMUM_GPU_POWER);
 			} else {
 				gpu_power = MIN(highest_possible_gpu_power, cur_gpu_power);
+				gpu_power = MAX(gpu_power, MINIMUM_GPU_POWER);
 			}
 		}  else {
 			gpu_power = 0;
