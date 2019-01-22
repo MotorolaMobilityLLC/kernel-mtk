@@ -1560,6 +1560,8 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (copy_to_user((void __user *)arg, &data, _IOC_SIZE(cmd))) {
 			if (cleanup_handle) {
 				mutex_lock(&client->lock);
+				if (cleanup_handle != ion_handle_get_by_id_nolock(client, data.allocation.handle))
+					IONMSG("ion_ioctl copy_to_user fail, handle not same %p\n", cleanup_handle);
 				user_ion_free_nolock(client, cleanup_handle);
 				ion_handle_put_nolock(cleanup_handle);
 				mutex_unlock(&client->lock);
