@@ -2374,7 +2374,11 @@ static int clkdbg_set_parent(struct seq_file *s, void *v)
 		return PTR_ERR(parent);
 	}
 
-	clk_prepare_enable(clk);
+	r = clk_prepare_enable(clk);
+	if (r) {
+		seq_printf(s, "clk_prepare_enable() failed: %d\n", r);
+		return r;
+	}
 	r = clk_set_parent(clk, parent);
 	clk_disable_unprepare(clk);
 	seq_printf(s, "%d\n", r);
