@@ -32,7 +32,7 @@
 #include <mach/mtk_clkmgr.h>
 #endif
 
-/* #include "mtk_spm_mtcmos.h" */ /* TODO */
+/* #include "mtk_spm_mtcmos.h" */
 #include "mtk_spm_misc.h"
 #ifdef CONFIG_MT_SND_SOC_6755
 #include <mt_soc_afe_control.h>

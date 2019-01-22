@@ -19,7 +19,7 @@
 #include <linux/delay.h>
 #include <linux/atomic.h>
 #include "mtk_spm_idle.h"
-/* #include <mach/irqs.h> */ /* TODO */
+/* #include <mach/irqs.h> */
 #include <mt-plat/upmu_common.h>
 #include "mtk_spm_vcore_dvfs.h"
 #include "mtk_vcorefs_governor.h"
