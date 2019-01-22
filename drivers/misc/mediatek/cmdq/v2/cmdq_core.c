@@ -250,10 +250,11 @@ void cmdq_core_unlock_resource(struct work_struct *workItem)
 			/* print error message */
 			CMDQ_LOG("[Res]: available CB func is NULL, event:%d\n", pResource->lockEvent);
 		} else {
+			CmdqResourceAvailableCB cb_func = pResource->availableCB;
+
 			/* before call callback, release lock at first */
 			mutex_unlock(&gCmdqResourceMutex);
-			status =
-				pResource->availableCB(pResource->lockEvent);
+			status = cb_func(pResource->lockEvent);
 			mutex_lock(&gCmdqResourceMutex);
 
 			if (status < 0) {
@@ -8810,10 +8811,11 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 					CMDQ_LOG("[Res]: release CB func is NULL, event:%d\n",
 						pResource->lockEvent);
 				} else {
+					CmdqResourceReleaseCB cb_func = pResource->releaseCB;
+
 					/* release mutex before callback */
 					mutex_unlock(&gCmdqResourceMutex);
-					status =
-						pResource->releaseCB(pResource->lockEvent);
+					status = cb_func(pResource->lockEvent);
 					mutex_lock(&gCmdqResourceMutex);
 
 					if (status < 0) {
