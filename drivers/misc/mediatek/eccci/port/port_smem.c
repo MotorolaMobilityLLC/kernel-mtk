@@ -147,6 +147,7 @@ int port_smem_rx_wakeup(struct port_t *port)
 	smem_port->wakeup = 0xFFFFFFFF;
 	spin_unlock_irqrestore(&smem_port->write_lock, flags);
 
+	wake_lock_timeout(&port->rx_wakelock, HZ);
 	CCCI_DEBUG_LOG(md_id, TAG, "wakeup port.\n");
 	wake_up_all(&smem_port->rx_wq);
 	return 0;
