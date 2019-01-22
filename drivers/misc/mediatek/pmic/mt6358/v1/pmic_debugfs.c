@@ -28,15 +28,13 @@
  */
 unsigned int pmic_dbg_level_set(unsigned int level)
 {
-	unsigned char Dlevel = (level & 0x7);
-	unsigned char HKlevel = (level & 0x38) >> 3;
-	unsigned char COMlevel = (level & 0x1C0) >> 6;
-	unsigned char IRQlevel = (level & 0xE00) >> 9;
-	unsigned char REGlevel = (level & 0x7000) >> 12;
+	unsigned char Dlevel = (level >> 0) & 0xF;
+	unsigned char HKlevel = (level >> 4) & 0xF;
+	unsigned char IRQlevel = (level >> 8) & 0xF;
+	unsigned char REGlevel = (level >> 12) & 0xF;
 
 	gPMICDbgLvl = Dlevel > PMIC_LOG_DBG ? PMIC_LOG_DBG : Dlevel;
 	gPMICHKDbgLvl = HKlevel > PMIC_LOG_DBG ? PMIC_LOG_DBG : HKlevel;
-	gPMICCOMDbgLvl = COMlevel > PMIC_LOG_DBG ? PMIC_LOG_DBG : COMlevel;
 	gPMICIRQDbgLvl = IRQlevel > PMIC_LOG_DBG ? PMIC_LOG_DBG : IRQlevel;
 	gPMICREGDbgLvl = REGlevel > PMIC_LOG_DBG ? PMIC_LOG_DBG : REGlevel;
 	return 0;
