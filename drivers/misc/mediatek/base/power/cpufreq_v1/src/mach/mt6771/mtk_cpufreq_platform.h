@@ -22,6 +22,7 @@
 #define EEM_AP_SIDE	1
 /* #define CPU_DVFS_NOT_READY	1 */
 #define DRCC_SUPPORT 1
+#define REPORT_IDLE_FREQ	1
 #else
 #define SUPPORT_VOLT_HW_AUTO_TRACK 1
 #define CPU_DVFS_NOT_READY	1
