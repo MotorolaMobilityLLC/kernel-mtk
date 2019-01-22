@@ -36,6 +36,7 @@
 #include <linux/kobject.h>
 #include <linux/platform_device.h>
 #include <linux/atomic.h>
+#include <linux/pm_wakeup.h>
 
 #include <hwmsensor.h>
 #include <sensors_io.h>
@@ -52,6 +53,8 @@
 #define FLAT_FUN(f)               pr_debug(FLAT_TAG"%s\n", __func__)
 #define FLAT_PR_ERR(fmt, args...)    pr_err(FLAT_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 #define FLAT_LOG(fmt, args...)    pr_debug(FLAT_TAG fmt, ##args)
+
+static struct wakeup_source flat_wake_lock;
 
 static int flat_get_data(int *probability, int *status)
 {
@@ -100,8 +103,10 @@ static int flat_recv_data(struct data_unit_t *event, void *reserved)
 {
 	if (event->flush_action == FLUSH_ACTION)
 		FLAT_PR_ERR("flat do not support flush\n");
-	else if (event->flush_action == DATA_ACTION)
+	else if (event->flush_action == DATA_ACTION) {
+		__pm_wakeup_event(&flat_wake_lock, msecs_to_jiffies(100));
 		situation_notify(ID_FLAT);
+	}
 	return 0;
 }
 
@@ -131,6 +136,7 @@ static int flat_local_init(void)
 		FLAT_PR_ERR("SCP_sensorHub_data_registration fail!!\n");
 		goto exit_create_attr_failed;
 	}
+	wakeup_source_init(&flat_wake_lock, "flat_wake_lock");
 	return 0;
 exit:
 exit_create_attr_failed:

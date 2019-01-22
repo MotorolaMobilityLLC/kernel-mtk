@@ -32,6 +32,8 @@
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/poll.h>
+#include <linux/pm_wakeup.h>
+
 #include <sensors_io.h>
 #include <hwmsensor.h>
 #include "alsps_factory.h"
@@ -176,6 +178,7 @@ struct alsps_context {
 	int ps_enable;
 	int64_t ps_delay_ns;
 	int64_t ps_latency_ns;
+	struct wakeup_source ps_wake_lock;
 };
 
 /* AAL Functions */

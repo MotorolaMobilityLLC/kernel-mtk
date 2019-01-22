@@ -23,6 +23,7 @@
 #include <linux/kobject.h>
 #include <linux/platform_device.h>
 #include <linux/atomic.h>
+#include <linux/pm_wakeup.h>
 
 #include <hwmsensor.h>
 #include <sensors_io.h>
@@ -45,6 +46,7 @@ typedef enum {
 } GLGHUB_TRC;
 
 static struct situation_init_info glghub_init_info;
+static struct wakeup_source g_gesture_wake_lock;
 
 static int glance_gesture_get_data(int *probability, int *status)
 {
@@ -86,8 +88,10 @@ static int glance_gesture_recv_data(struct data_unit_t *event, void *reserved)
 {
 	if (event->flush_action == FLUSH_ACTION)
 		GLGHUB_LOG("glance_gesture do not support flush\n");
-	else if (event->flush_action == DATA_ACTION)
+	else if (event->flush_action == DATA_ACTION) {
+		__pm_wakeup_event(&g_gesture_wake_lock, msecs_to_jiffies(100));
 		situation_notify(ID_GLANCE_GESTURE);
+	}
 	return 0;
 }
 
@@ -117,6 +121,7 @@ static int glghub_local_init(void)
 		GLGHUB_PR_ERR("SCP_sensorHub_data_registration fail!!\n");
 		goto exit_create_attr_failed;
 	}
+	wakeup_source_init(&g_gesture_wake_lock, "glance_gesture_wake_lock");
 	return 0;
 exit:
 exit_create_attr_failed:

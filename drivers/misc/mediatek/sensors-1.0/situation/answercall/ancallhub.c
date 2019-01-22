@@ -23,6 +23,7 @@
 #include <linux/kobject.h>
 #include <linux/platform_device.h>
 #include <linux/atomic.h>
+#include <linux/pm_wakeup.h>
 
 #include <hwmsensor.h>
 #include <sensors_io.h>
@@ -45,6 +46,7 @@ typedef enum {
 } ANCALLHUB_TRC;
 
 static struct situation_init_info ancallhub_init_info;
+static struct wakeup_source answer_c_wake_lock;
 
 static int answer_call_get_data(int *probability, int *status)
 {
@@ -87,8 +89,10 @@ static int answer_call_recv_data(struct data_unit_t *event, void *reserved)
 {
 	if (event->flush_action == FLUSH_ACTION)
 		ANCALLHUB_LOG("answer_call do not support flush\n");
-	else if (event->flush_action == DATA_ACTION)
+	else if (event->flush_action == DATA_ACTION) {
+		__pm_wakeup_event(&answer_c_wake_lock, msecs_to_jiffies(100));
 		situation_notify(ID_ANSWER_CALL);
+	}
 	return 0;
 }
 
@@ -118,6 +122,7 @@ static int ancallhub_local_init(void)
 		ANCALLHUB_PR_ERR("SCP_sensorHub_data_registration fail!!\n");
 		goto exit_create_attr_failed;
 	}
+	wakeup_source_init(&answer_c_wake_lock, "answer_call_wake_lock");
 	return 0;
 exit:
 exit_create_attr_failed:
