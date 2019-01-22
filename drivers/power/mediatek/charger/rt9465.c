@@ -658,12 +658,7 @@ static bool rt9465_is_hw_exist(struct rt9465_info *info)
 	}
 
 	version = (ret & RT9465_MASK_VERSION) >> RT9465_SHIFT_VERSION;
-	if (version == RT9465_VERSION_E1)
-		pr_info("%s: E1(0x%02X)\n", __func__, version);
-	else if (version == RT9465_VERSION_E2)
-		pr_info("%s: E2(0x%02X)\n", __func__, version);
-	else
-		return false;
+	pr_info("%s: E%d(0x%02X)\n", __func__, version + 1, version);
 
 	info->device_id = version;
 	return true;
@@ -846,35 +841,6 @@ static int rt9465_get_ieoc(struct rt9465_info *info, u32 *ieoc)
 	return ret;
 }
 
-static int rt9465_is_charging_enabled(struct charger_device *chg_dev, bool *en)
-{
-	int ret = 0;
-	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
-
-	ret = rt9465_i2c_read_byte(info, RT9465_REG_CHG_CTRL1);
-	if (ret < 0)
-		return ret;
-
-	*en = (((ret & RT9465_MASK_CHG_EN) >> RT9465_SHIFT_CHG_EN) & 0xFF)
-		> 0 ? true : false;
-
-	return ret;
-}
-
-static int rt9465_is_charging_enable(struct rt9465_info *info, bool *enable)
-{
-	int ret = 0;
-
-	ret = rt9465_i2c_read_byte(info, RT9465_REG_CHG_CTRL1);
-	if (ret < 0)
-		return ret;
-
-	*enable = (((ret & RT9465_MASK_CHG_EN) >> RT9465_SHIFT_CHG_EN) & 0xFF)
-		> 0 ? true : false;
-
-	return ret;
-}
-
 static int rt9465_parse_dt(struct rt9465_info *info, struct device *dev)
 {
 	struct rt9465_desc *desc = NULL;
@@ -1038,6 +1004,20 @@ static int rt9465_enable_chip(struct charger_device *chg_dev, bool enable)
 	return 0;
 }
 
+static int rt9465_is_charging_enabled(struct charger_device *chg_dev, bool *en)
+{
+	int ret = 0;
+	struct rt9465_info *info = dev_get_drvdata(&chg_dev->dev);
+
+	ret = rt9465_i2c_read_byte(info, RT9465_REG_CHG_CTRL1);
+	if (ret < 0)
+		return ret;
+
+	*en = (((ret & RT9465_MASK_CHG_EN) >> RT9465_SHIFT_CHG_EN) & 0xFF)
+		> 0 ? true : false;
+
+	return ret;
+}
 
 static int rt9465_dump_register(struct charger_device *chg_dev)
 {
@@ -1050,7 +1030,7 @@ static int rt9465_dump_register(struct charger_device *chg_dev)
 
 	ret = rt9465_get_ichg(chg_dev, &ichg);
 	ret = rt9465_get_mivr(info, &mivr);
-	ret = rt9465_is_charging_enable(info, &chg_enable);
+	ret = rt9465_is_charging_enabled(chg_dev, &chg_enable);
 	ret = rt9465_get_ieoc(info, &ieoc);
 	ret = rt9465_get_charging_status(info, &chg_status);
 
@@ -1485,11 +1465,16 @@ module_exit(rt9465_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9465 Charger Driver");
-MODULE_VERSION("1.0.2_MTK");
+MODULE_VERSION("1.0.3_MTK");
 
 
 /*
  * Version Note
+ * 1.0.3
+ * (1) Modify rt9465_is_hw_exist to support all version
+ * (2) Correct chip version
+ * (3) Release rt9465_is_charging_enabled/rt9465_get_min_ichg
+ *
  * 1.0.2
  * (1) Add ICHG accuracy workaround for E2
  * (2) Support E3 chip
