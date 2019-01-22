@@ -28,7 +28,7 @@
 #include <linux/uidgid.h>
 #include <linux/slab.h>
 #if defined(CONFIG_MTK_GM_30)
-#include <mt-plat/mtk_charger.h>
+#include <mt-plat/mtk_charger.h>ss
 #else
 #include <charging.h>
 #endif
@@ -64,13 +64,22 @@ static char g_bind9[20] = "";
 
 #define mtktscharger_TEMP_CRIT 150000	/* 150.000 degree Celsius */
 
-#define mtktscharger_dprintk(fmt, args...)			\
-do {								\
-	if (mtktscharger_debug_log)					\
-		pr_debug("[Power/charger_Thermal]" fmt, ##args);	\
+#define mtktscharger_dprintk(fmt, args...)   \
+do {                                    \
+	if (mtktscharger_debug_log) {                \
+		pr_debug("Power/charger_Thermal" fmt, ##args); \
+	}                                   \
 } while (0)
 
-static int mtktscharger_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
+
+
+int __attribute__ ((weak))
+mtk_chr_get_tchr(int *min_tchr, int *max_tchr)
+{
+	return 0;
+}
+
+static int mtktscharger_get_temp(struct thermal_zone_device *thermal, int *t)
 {
 	/*unsigned char val = 0;*/
 	int ret = 0;
@@ -80,6 +89,7 @@ static int mtktscharger_get_temp(struct thermal_zone_device *thermal, unsigned l
 	*t = 0;
 
 	ret = mtk_chr_get_tchr(&min_temp, &max_temp);
+
 /*
 *	if (da9214_read_interface(0x51, &val, 3, 2) == 1) {
 *		switch (val) {
@@ -105,8 +115,9 @@ static int mtktscharger_get_temp(struct thermal_zone_device *thermal, unsigned l
 *		*t = pre_temp;
 *	}
 */
+
 	pre_temp = *t;
-	mtktscharger_dprintk("temp =%lu\n", *t);
+	mtktscharger_dprintk("temp =%u\n", *t);
 	return 0;
 }
 
@@ -203,13 +214,13 @@ static int mtktscharger_get_trip_type(struct thermal_zone_device *thermal, int t
 }
 
 static int mtktscharger_get_trip_temp(struct thermal_zone_device *thermal, int trip,
-				   unsigned long *temp)
+				   int *temp)
 {
 	*temp = trip_temp[trip];
 	return 0;
 }
 
-static int mtktscharger_get_crit_temp(struct thermal_zone_device *thermal, unsigned long *temperature)
+static int mtktscharger_get_crit_temp(struct thermal_zone_device *thermal, int *temperature)
 {
 	*temperature = mtktscharger_TEMP_CRIT;
 	return 0;

@@ -80,7 +80,7 @@ static int tsallts_get_index(struct thermal_zone_device *thermal)
 	return index;
 }
 
-static int tsallts_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
+static int tsallts_get_temp(struct thermal_zone_device *thermal, int *t)
 {
 	int curr_temp, index;
 
@@ -179,7 +179,7 @@ static int tsallts_get_trip_type(struct thermal_zone_device *thermal, int trip,
 	return 0;
 }
 
-static int tsallts_get_trip_temp(struct thermal_zone_device *thermal, int trip, unsigned long *temp)
+static int tsallts_get_trip_temp(struct thermal_zone_device *thermal, int trip, int *temp)
 {
 	int index;
 
@@ -188,7 +188,7 @@ static int tsallts_get_trip_temp(struct thermal_zone_device *thermal, int trip, 
 	return 0;
 }
 
-static int tsallts_get_crit_temp(struct thermal_zone_device *thermal, unsigned long *temperature)
+static int tsallts_get_crit_temp(struct thermal_zone_device *thermal, int *temperature)
 {
 	*temperature = TSALLTS_TEMP_CRIT;
 	return 0;
