@@ -60,6 +60,7 @@ signed int chip_diff_trim_value_4_0;
 signed int chip_diff_trim_value;	/* unit = 0.1 */
 signed int ptim_vol;
 signed int ptim_curr;
+signed int ptim_curr_sign;
 signed int g_hw_ocv_tune_value;
 signed int g_meta_input_cali_current;
 
@@ -2281,11 +2282,12 @@ static signed int fg_set_zcv_intr(void *data)
 
 static signed int fg_reset_soff_time(void *data)
 {
-#if 0
+	int ret;
+
 	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x1000, 0x1000, 0x0);
 	mdelay(1);
 	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0000, 0x1000, 0x0);
-#endif
+
 	return STATUS_OK;
 }
 
@@ -2608,9 +2610,12 @@ static signed int dump_register_fgadc(void *data)
 static signed int fgauge_do_ptim(void *data)
 {
 	int is_ptim_lock;
+	int ret;
 
 	is_ptim_lock = *(int *)data;
-	return do_ptim_ex(is_ptim_lock, &ptim_vol, &ptim_curr);
+	ret = do_ptim_ex(is_ptim_lock, &ptim_vol, &ptim_curr);
+
+	return ret;
 }
 
 static signed int read_ptim_bat_vol(void *data)
