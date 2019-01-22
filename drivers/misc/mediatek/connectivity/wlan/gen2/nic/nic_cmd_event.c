@@ -587,6 +587,28 @@ VOID nicCmdEventSetMediaStreamMode(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prC
 				     (PVOID)&rParamMediaStreamIndication, sizeof(PARAM_MEDIA_STREAMING_INDICATION));
 }
 
+VOID nicCmdEventSetStopSchedScan(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
+{
+	/*
+	* DBGLOG(SCN, INFO, "--->nicCmdEventSetStopSchedScan\n" ));
+	 */
+	ASSERT(prAdapter);
+	ASSERT(prCmdInfo);
+	/*
+	* DBGLOG(SCN, INFO, "<--kalSchedScanStopped\n" );
+	 */
+	if (prCmdInfo->fgIsOid) {
+		/* Update Set Information Length */
+		kalOidComplete(prAdapter->prGlueInfo,
+			       prCmdInfo->fgSetQuery, prCmdInfo->u4InformationBufferLength, WLAN_STATUS_SUCCESS);
+	}
+
+	DBGLOG(SCN, INFO, "nicCmdEventSetStopSchedScan OID done, release lock and send event to uplayer\n");
+	/*Due to dead lock issue, need to release the IO control before calling kernel APIs */
+	kalSchedScanStopped(prAdapter->prGlueInfo);
+
+}
+
 /* Statistics responder */
 VOID nicCmdEventQueryXmitOk(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
 {
