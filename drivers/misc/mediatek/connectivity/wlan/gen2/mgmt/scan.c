@@ -1659,6 +1659,11 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		const UINT_8 ucSubBandSize = (UINT_8)sizeof(COUNTRY_INFO_SUBBAND_TRIPLET_T);
 		INT_8 cNewPwrLimit = RLM_INVALID_POWER_LIMIT;
 
+		if ((ucRemainLen < 0) || (ucRemainLen > 252)) {
+			DBGLOG(SCN, ERROR, "prCountryIE->ucLength is invalid: %x\n", ucRemainLen);
+			return NULL;
+		}
+
 		/* Try to find a country subband base on our channel */
 		while (ucRemainLen >= ucSubBandSize) {
 			if (prSubBand->ucFirstChnlNum < 201 &&
