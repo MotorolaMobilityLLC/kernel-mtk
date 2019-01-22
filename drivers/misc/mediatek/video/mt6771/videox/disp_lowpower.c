@@ -858,14 +858,17 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 
 	if (atomic_read(&dvfs_ovl_req_status) != req) {
 		switch (req) {
-		case HRT_LEVEL_LEVEL2:
+		case HRT_LEVEL_LEVEL3:
 			step = MMDVFS_FINE_STEP_OPP0;
 			break;
-		case HRT_LEVEL_LEVEL1:
+		case HRT_LEVEL_LEVEL2:
 			step = MMDVFS_FINE_STEP_OPP1;
 			break;
-		case HRT_LEVEL_LEVEL0:
+		case HRT_LEVEL_LEVEL1:
 			step = MMDVFS_FINE_STEP_OPP2;
+			break;
+		case HRT_LEVEL_LEVEL0:
+			step = MMDVFS_FINE_STEP_OPP3;
 			break;
 		case HRT_LEVEL_DEFAULT:
 			step = MMDVFS_FINE_STEP_UNREQUEST;
