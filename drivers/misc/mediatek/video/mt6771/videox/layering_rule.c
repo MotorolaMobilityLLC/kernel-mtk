@@ -173,6 +173,19 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 		if (c->src_width > c->dst_width ||
 		    c->src_height > c->dst_height)
 			return false;
+		/*
+		 * HWC adjusts MDP layer alignment after query_valid_layer.
+		 * This makes the decision of layering rule unreliable. Thus we
+		 * add constraint to avoid frame_cfg becoming scale-down.
+		 *
+		 * TODO: If HWC adjusts MDP layer alignment before
+		 * query_valid_layer, we could remove this if statement.
+		 */
+		if ((has_layer_cap(c, MDP_RSZ_LAYER) ||
+		     has_layer_cap(c, MDP_ROT_LAYER)) &&
+		    (c->dst_width - c->src_width <= MDP_ALIGNMENT_MARGIN ||
+		     c->dst_height - c->src_height <= MDP_ALIGNMENT_MARGIN))
+			return false;
 		if (c->src_width > RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN ||
 		    c->src_height > RSZ_IN_MAX_HEIGHT)
 			return false;
