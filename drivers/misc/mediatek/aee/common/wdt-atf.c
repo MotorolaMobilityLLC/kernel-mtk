@@ -47,6 +47,7 @@
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #include <mt-plat/mtk_ram_console.h>
 #endif
+#include <mrdump_private.h>
 
 #define THREAD_INFO(sp) ((struct thread_info *) \
 				((unsigned long)(sp) & ~(THREAD_SIZE - 1)))
@@ -79,6 +80,9 @@ __weak void aee_sram_fiq_log(const char *msg)
 
 #define ATF_AEE_DEBUG_BUF_LENGTH	0x4000
 static void *atf_aee_debug_virt_addr;
+
+static atomic_t aee_wdt_zap_lock;
+int no_zap_locks;
 
 struct atf_aee_regs {
 	__u64 regs[31];
@@ -456,7 +460,6 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 		aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_FIQ_LOOP);
 #endif
 		aee_wdt_percpu_printf(cpu, "Other CPU already enter WDT FIQ handler\n");
-		set_cpu_online(cpu, false);
 		local_fiq_disable();
 		local_irq_disable();
 
@@ -466,6 +469,16 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 
 	/* Wait for other cpu dump */
 	mdelay(1000);
+
+	/* printk lock: exec aee_wdt_zap_lock() only one time */
+	if (atomic_xchg(&aee_wdt_zap_lock, 0)) {
+		if (!no_zap_locks) {
+			aee_wdt_zap_locks();
+			snprintf(str_buf[cpu], sizeof(str_buf[cpu]), "\nCPU%d: zap printk locks\n", cpu);
+			aee_sram_fiq_log(str_buf[cpu]);
+			memset(str_buf[cpu], 0, sizeof(str_buf[cpu]));
+		}
+	}
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_KICK);
@@ -485,7 +498,7 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_TIME);
 #endif
-	t = cpu_clock(smp_processor_id());
+	t = cpu_clock(get_HW_cpuid());
 	nanosec_rem = do_div(t, 1000000000);
 	aee_wdt_printf("\nQwdt at [%5lu.%06lu]\n", (unsigned long)t, nanosec_rem / 1000);
 	aee_sram_fiq_log(wdt_log_buf);
@@ -519,12 +532,6 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_DONE);
 #endif
 	BUG();
-}
-
-__weak int get_HW_cpuid(void)
-{
-	LOGE("%s:weak function\n", __func__);
-	return -99;
 }
 
 void notrace aee_wdt_atf_entry(void)
@@ -593,6 +600,8 @@ static int __init aee_wdt_init(void)
 	phys_addr_t atf_aee_debug_phy_addr;
 
 	atomic_set(&wdt_enter_fiq, 0);
+	atomic_set(&aee_wdt_zap_lock, 1);
+
 	for (i = 0; i < NR_CPUS; i++) {
 		wdt_percpu_log_buf[i] = kzalloc(WDT_PERCPU_LOG_SIZE, GFP_KERNEL);
 		if (wdt_percpu_log_buf[i] == NULL)

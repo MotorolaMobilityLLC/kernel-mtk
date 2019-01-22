@@ -27,6 +27,7 @@
 #include <mach/mtk_secure_api.h>
 #endif
 #include "aed.h"
+#include <mrdump_private.h>
 
 #ifndef PARTIAL_BUILD
 
@@ -53,12 +54,6 @@ static struct notifier_block panic_test = {
 	.notifier_call = force_panic_hang,
 	.priority = INT_MAX,
 };
-
-__weak int get_HW_cpuid(void)
-{
-	LOGE("%s:weak function\n", __func__);
-	return -99;
-}
 
 void notrace wdt_atf_hang(void)
 {

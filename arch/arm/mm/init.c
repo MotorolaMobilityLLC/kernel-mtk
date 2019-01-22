@@ -36,6 +36,7 @@
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
+#include <mt-plat/mrdump.h>
 
 #include "mm.h"
 
@@ -274,6 +275,9 @@ void __init arm_memblock_init(const struct machine_desc *mdesc)
 
 	/* reserve memory for DMA contiguous allocations */
 	dma_contiguous_reserve(arm_dma_limit);
+
+	/* reserve memory for MT-RAMDUMP */
+	mrdump_rsvmem();
 
 	arm_memblock_steal_permitted = false;
 	memblock_dump_all();
