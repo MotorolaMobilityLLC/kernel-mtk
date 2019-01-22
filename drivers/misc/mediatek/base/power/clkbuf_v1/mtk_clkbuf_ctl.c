@@ -168,7 +168,7 @@ static void __iomem *pwrap_base;
 #define PMIC_REG_MASK				0xFFFF
 #define PMIC_REG_SHIFT				0
 
-#define PMIC_CW00_INIT_VAL			0x4FFD
+#define PMIC_CW00_INIT_VAL			0x4EFD /* NFC default off */
 #define PMIC_CW11_INIT_VAL			0xA400
 
 /* TODO: marked this after driver is ready */
@@ -228,7 +228,7 @@ static int8_t clkbuf_drv_curr_auxout[CLKBUF_NUM];
 static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_ENABLE,
-	CLK_BUF_SW_ENABLE,
+	CLK_BUF_SW_DISABLE,
 	CLK_BUF_SW_ENABLE,
 	CLK_BUF_SW_DISABLE,
 	CLK_BUF_SW_ENABLE,
