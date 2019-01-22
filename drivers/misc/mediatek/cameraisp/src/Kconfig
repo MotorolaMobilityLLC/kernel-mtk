@@ -43,3 +43,14 @@ config MTK_CAMERA_ISP_FD_SUPPORT
 	  Face Detection. Enable to detect faces on images.
 	  Disable if it is not supported or not wanted.
 
+config MTK_CAMERA_ISP_WPE_SUPPORT
+	bool "[WPE]Warping Engine"
+	default n
+	depends on MTK_CAMERA_ISP
+	help
+	  Warping Engine (WPE) is an important module to off-load
+	  CPU/GPU loading on the features including Auto-Panorama,
+	  Rolling Shutter Compensation (RSC), Video Face Beautify (VFB),
+	  Electronic Image Stabilization 2.0 (EIS 2.0), and Lens
+	  Distortion Compensation (LDC). The function of WPE is
+	  dedicated for real-time image warping.
