@@ -99,8 +99,8 @@ int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 {
 	void __iomem *mbase = musb->mregs;
 	int epnum = qh->hw_ep->epnum;
-	u16 maxpacket = qh->maxpacket;
-	u16 request_fifo_sz, fifo_unit_nr;
+	u16 maxpacket;
+	u16 request_fifo_sz = 0, fifo_unit_nr = 0;
 	u16 idx_start = 0;
 	u8 index, i;
 	u16 c_off = 0;
@@ -108,14 +108,33 @@ int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 	u16 free_uint = 0;
 	u8 found = 0;
 
+	if (qh->hb_mult)
+		maxpacket = qh->maxpacket * qh->hb_mult;
+	else
+		maxpacket = qh->maxpacket;
+
 	if (maxpacket <= 512) {
 		request_fifo_sz = 512;
 		fifo_unit_nr = 1;
 		c_size = 6;
-	} else {
+	} else if (maxpacket <= 1024) {
 		request_fifo_sz = 1024;
 		fifo_unit_nr = 2;
 		c_size = 7;
+	} else if (maxpacket <= 2048) {
+		request_fifo_sz = 2048;
+		fifo_unit_nr = 4;
+		c_size = 8;
+	} else if (maxpacket <= 4096) {
+		request_fifo_sz = 4096;
+		fifo_unit_nr = 8;
+		c_size = 9;
+	} else {
+		DBG(0, "should not be here qh maxp:%d maxp:%d\n", qh->maxpacket, maxpacket);
+		request_fifo_sz = 0;
+		fifo_unit_nr = 0;
+		musb_bug();
+		return -ENOSPC;
 	}
 
 	for (i = 0; i < dynamic_fifo_total_slot; i++) {
@@ -172,12 +191,28 @@ void musb_host_free_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 	u8 index, i;
 	u16 c_off = 0;
 
+	if (qh->hb_mult)
+		maxpacket = qh->maxpacket * qh->hb_mult;
+	else
+		maxpacket = qh->maxpacket;
+
 	if (maxpacket <= 512) {
 		request_fifo_sz = 512;
 		fifo_unit_nr = 1;
-	} else {
+	} else if (maxpacket <= 1024) {
 		request_fifo_sz = 1024;
 		fifo_unit_nr = 2;
+	} else if (maxpacket <= 2048) {
+		request_fifo_sz = 2048;
+		fifo_unit_nr = 4;
+	} else if (maxpacket <= 4096) {
+		request_fifo_sz = 4096;
+		fifo_unit_nr = 8;
+	} else {
+		DBG(0, "should not be here qh maxp:%d maxp:%d\n", qh->maxpacket, maxpacket);
+		request_fifo_sz = 0;
+		fifo_unit_nr = 0;
+		musb_bug();
 	}
 
 	index = musb_readb(mbase, MUSB_INDEX);
@@ -2171,13 +2206,73 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 	if (!musb->is_active)
 		return -ENODEV;
 
-
 	/* use fixed hardware for control and bulk */
 	if (qh->type == USB_ENDPOINT_XFER_CONTROL) {
 		head = &musb->control;
 		hw_ep = musb->control_ep;
 		goto success;
 	}
+#ifdef MUSB_QMU_LIMIT_SUPPORT
+	if (isoc_ep_gpd_count && qh->is_use_qmu) {
+		for (epnum = 1, hw_ep = musb->endpoints + 1;
+				epnum < MAX_QMU_EP; epnum++, hw_ep++) {
+			/* int	diff; */
+
+			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
+				continue;
+
+			hw_end = epnum;
+			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
+			DBG(1, "qh->type:%d, find a hw_ep%d\n", qh->type, hw_end);
+			break;
+		}
+
+		if (hw_end) {
+			idle = 1;
+			qh->mux = 0;
+			DBG(1, "qh->type:%d, find a hw_ep%d, grap qmu_isoc_ep\n", qh->type, hw_end);
+			goto success;
+		}
+	}
+	qh->is_use_qmu = 0;
+	for (epnum = (MAX_QMU_EP + 1), hw_ep = musb->endpoints + (MAX_QMU_EP + 1);
+		epnum < musb->nr_endpoints; epnum++, hw_ep++) {
+		if (musb_ep_get_qh(hw_ep, is_in) != NULL)
+			continue;
+
+		hw_end = epnum;
+		hw_ep = musb->endpoints + hw_end;	/* got the right ep */
+		break;
+	}
+
+	if (hw_end) {
+		idle = 1;
+		qh->mux = 0;
+		goto success;
+	}
+
+	if (!hw_end) {
+		for (epnum = 1, hw_ep = musb->endpoints + 1;
+				epnum <= MAX_QMU_EP; epnum++, hw_ep++) {
+
+			if (musb_ep_get_qh(hw_ep, is_in) != NULL)
+				continue;
+
+			hw_end = epnum;
+			hw_ep = musb->endpoints + hw_end;	/* got the right ep */
+			break;
+		}
+	}
+
+	if (hw_end) {
+		idle = 1;
+		qh->mux = 0;
+		goto success;
+	} else {
+		WARNING("EP OVERFLOW.\n");
+		return -ENOSPC;
+	}
+#endif
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	if (isoc_ep_gpd_count
@@ -2225,9 +2320,9 @@ static int musb_schedule(struct musb *musb, struct musb_qh *qh, int is_in)
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	/* grab isoc ep if no other ep is available */
-	if (isoc_ep_gpd_count
-			&& !hw_end
-			&& qh->type != USB_ENDPOINT_XFER_ISOC) {
+	if (isoc_ep_gpd_count &&
+		!hw_end &&
+		qh->type != USB_ENDPOINT_XFER_ISOC) {
 		for (epnum = isoc_ep_start_idx, hw_ep = musb->endpoints + isoc_ep_start_idx;
 				epnum < musb->nr_endpoints; epnum++, hw_ep++) {
 			/* int  diff; */
@@ -2384,21 +2479,21 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 	 * Some musb cores don't support high bandwidth ISO transfers; and
 	 * we don't (yet!) support high bandwidth interrupt transfers.
 	 */
-#if 0
-	qh->hb_mult = 1 + ((qh->maxpacket >> 11) & 0x03);
-	if (qh->hb_mult > 1) {
-		int ok = (qh->type == USB_ENDPOINT_XFER_ISOC);
+	if (qh->type == USB_ENDPOINT_XFER_ISOC) {
+		qh->hb_mult = 1 + ((qh->maxpacket >> 11) & 0x03);
+		if (qh->hb_mult > 1) {
+			int ok = (qh->type == USB_ENDPOINT_XFER_ISOC);
 
-		if (ok)
-			ok = (usb_pipein(urb->pipe) && musb->hb_iso_rx)
-			    || (usb_pipeout(urb->pipe) && musb->hb_iso_tx);
-		if (!ok) {
-			ret = -EMSGSIZE;
-			goto done;
+			if (ok)
+				ok = (usb_pipein(urb->pipe) && musb->hb_iso_rx)
+				    || (usb_pipeout(urb->pipe) && musb->hb_iso_tx);
+			if (!ok) {
+				ret = -EMSGSIZE;
+				goto done;
+			}
+			qh->maxpacket &= 0x7ff;
 		}
-		qh->maxpacket &= 0x7ff;
 	}
-#endif
 	qh->epnum = usb_endpoint_num(epd);
 
 	/* NOTE: urb->dev->devnum is wrong during SET_ADDRESS */
@@ -2499,7 +2594,7 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 	}
 	spin_unlock_irqrestore(&musb->lock, flags);
 
-/* done: */
+done:
 	if (ret != 0) {
 		spin_lock_irqsave(&musb->lock, flags);
 		usb_hcd_unlink_urb_from_ep(hcd, urb);
