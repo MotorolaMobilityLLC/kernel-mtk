@@ -28,10 +28,12 @@
 #include <ged.h>
 #include "ged_thread.h"
 /* #include <ged_vsync.h> */
+#ifdef MTK_GED_KPI
 #include <primary_display.h>
 #include <mt-plat/mtk_gpu_utility.h>
 #ifdef GED_DVFS_ENABLE
 #include <mtk_gpufreq.h>
+#endif
 #endif
 
 /* #include <mt-plat/met_drv.h> */
@@ -420,33 +422,6 @@ static void ged_kpi_update_target_time_and_target_fps(void)
 	gx_perf_state.t_gpu_target = gx_perf_state.t_cpu_target;
 }
 /* ----------------------------------------------------------------------------- */
-void ged_kpi_get_latest_perf_state(long long *t_cpu_remained,
-									long long *t_gpu_remained,
-									long *t_cpu_target,
-									long *t_gpu_target)
-{
-	if (t_cpu_remained != NULL && main_head != NULL && !(main_head->t_cpu_remained < (-1)*SCREEN_IDLE_PERIOD))
-		*t_cpu_remained = main_head->t_cpu_remained;
-	else
-		*t_cpu_remained = 0;
-
-	if (t_gpu_remained != NULL && main_head != NULL && !(main_head->t_gpu_remained < (-1)*SCREEN_IDLE_PERIOD))
-		*t_gpu_remained = main_head->t_gpu_remained;
-	else
-		*t_gpu_remained = 0;
-
-	if (t_cpu_target != NULL)
-		*t_cpu_target = gx_perf_state.t_cpu_target;
-	if (t_gpu_target != NULL)
-		*t_gpu_target = gx_perf_state.t_gpu_target;
-}
-/* ----------------------------------------------------------------------------- */
-void ged_kpi_set_target_fps(unsigned int target_fps)
-{
-	gx_dfps = target_fps;
-	ged_kpi_update_target_time_and_target_fps();
-}
-/* ----------------------------------------------------------------------------- */
 static void ged_kpi_work_cb(struct work_struct *psWork)
 {
 	GED_TIMESTAMP *psTimeStamp = GED_CONTAINER_OF(psWork, GED_TIMESTAMP, sWork);
@@ -777,6 +752,37 @@ GED_ERROR ged_kpi_hw_vsync(void)
 #endif
 }
 /* ----------------------------------------------------------------------------- */
+void ged_kpi_set_target_fps(unsigned int target_fps)
+{
+#ifdef MTK_GED_KPI
+	gx_dfps = target_fps;
+	ged_kpi_update_target_time_and_target_fps();
+#endif
+}
+/* ----------------------------------------------------------------------------- */
+void ged_kpi_get_latest_perf_state(long long *t_cpu_remained,
+									long long *t_gpu_remained,
+									long *t_cpu_target,
+									long *t_gpu_target)
+{
+#ifdef MTK_GED_KPI
+	if (t_cpu_remained != NULL && main_head != NULL && !(main_head->t_cpu_remained < (-1)*SCREEN_IDLE_PERIOD))
+		*t_cpu_remained = main_head->t_cpu_remained;
+	else
+		*t_cpu_remained = 0;
+
+	if (t_gpu_remained != NULL && main_head != NULL && !(main_head->t_gpu_remained < (-1)*SCREEN_IDLE_PERIOD))
+		*t_gpu_remained = main_head->t_gpu_remained;
+	else
+		*t_gpu_remained = 0;
+
+	if (t_cpu_target != NULL)
+		*t_cpu_target = gx_perf_state.t_cpu_target;
+	if (t_gpu_target != NULL)
+		*t_gpu_target = gx_perf_state.t_gpu_target;
+#endif
+}
+/* ----------------------------------------------------------------------------- */
 int ged_kpi_get_uncompleted_count(void)
 {
 #ifdef MTK_GED_KPI
@@ -922,8 +928,10 @@ bool ged_kpi_set_game_hint_value(int is_game_mode)
 /* ----------------------------------------------------------------------------- */
 void ged_kpi_set_game_hint(int mode)
 {
+#ifdef MTK_GED_KPI
 	if (mode == 1 || mode == 0) {
 		gx_game_mode = mode;
 		ged_kpi_set_game_hint_value(mode);
 	}
+#endif
 }
