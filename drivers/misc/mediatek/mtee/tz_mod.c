@@ -35,6 +35,7 @@
 #include <linux/of_platform.h>
 #include <linux/of_irq.h>
 #include <linux/completion.h>
+#include <mt-plat/mtk_cmo.h>
 
 #include "trustzone/kree/tz_mod.h"
 #include "trustzone/kree/mem.h"
@@ -1390,7 +1391,7 @@ TZ_RESULT KREE_ServGetChunkmemPool(u32 op,
 			chunkmem->chunkmem_pa, secure_size);
 
 	/* flush cache to avoid writing secure memory after allocation. */
-	flush_cache_all();
+	smp_inner_dcache_flush_all();
 
 	return TZ_RESULT_SUCCESS;
 }
