@@ -75,6 +75,7 @@ void __iomem *clk_camsys_base;
 #define VDEC_GALS_CFG (clk_vdec_gcon_base + 0x0168)
 #define VENC_CG_SET	(clk_venc_gcon_base + 0x0004)
 #endif
+#define MM_CG_CON0 (clk_mmsys_config_base + 0x100)
 #define MM_CG_CLR0 (clk_mmsys_config_base + 0x108)
 #define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
 #define CAM_CG_CLR	(clk_camsys_base + 0x0008)
@@ -881,6 +882,7 @@ int spm_mtcmos_ctrl_dis(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1));
 				pr_notice("PWR_STATUS = %08x, %08x\n",
 					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("MM_CG_CON0 = %08x\n", spm_read(MM_CG_CON0));
 				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
@@ -905,6 +907,7 @@ int spm_mtcmos_ctrl_dis(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1));
 				pr_notice("PWR_STATUS = %08x, %08x\n",
 					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("MM_CG_CON0 = %08x\n", spm_read(MM_CG_CON0));
 				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
@@ -929,6 +932,7 @@ int spm_mtcmos_ctrl_dis(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1));
 				pr_notice("PWR_STATUS = %08x, %08x\n",
 					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("MM_CG_CON0 = %08x\n", spm_read(MM_CG_CON0));
 				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
@@ -1725,6 +1729,8 @@ int spm_mtcmos_ctrl_cam(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1));
 				pr_notice("PWR_STATUS = %08x, %08x\n",
 					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("CAM_CG_CON = %08x, MM_CG_CON0 = %08x\n",
+					spm_read(CAM_CG_CON), spm_read(MM_CG_CON0));
 				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
@@ -1747,6 +1753,8 @@ int spm_mtcmos_ctrl_cam(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1));
 				pr_notice("PWR_STATUS = %08x, %08x\n",
 					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("CAM_CG_CON = %08x, MM_CG_CON0 = %08x\n",
+					spm_read(CAM_CG_CON), spm_read(MM_CG_CON0));
 				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
@@ -1769,6 +1777,8 @@ int spm_mtcmos_ctrl_cam(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1));
 				pr_notice("PWR_STATUS = %08x, %08x\n",
 					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("CAM_CG_CON = %08x, MM_CG_CON0 = %08x\n",
+					spm_read(CAM_CG_CON), spm_read(MM_CG_CON0));
 				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
@@ -1791,6 +1801,8 @@ int spm_mtcmos_ctrl_cam(int state)
 					spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1));
 				pr_notice("PWR_STATUS = %08x, %08x\n",
 					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				pr_notice("CAM_CG_CON = %08x, MM_CG_CON0 = %08x\n",
+					spm_read(CAM_CG_CON), spm_read(MM_CG_CON0));
 				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
 					spm_read(INFRA_TOPAXI_PROTECTEN));
 				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
