@@ -609,7 +609,15 @@ VOID p2pFsmRunEventChannelAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 			ASSERT((prP2pFsmInfo->eCurrentState == P2P_STATE_REQING_CHANNEL ||
 				(prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND)));
-
+			/*
+			 * If cancel-roc cmd is called from Supplicant while driver is waiting
+			 * for FW's channel grant event, roc event must be returned to Supplicant
+			 * first to reset Supplicant's variables and then transition to idle state.
+			 */
+			if (prP2pFsmInfo->eCurrentState == P2P_STATE_REQING_CHANNEL) {
+				DBGLOG(P2P, INFO, "Transition to P2P_STATE_CHNL_ON_HAND first\n");
+				p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_CHNL_ON_HAND);
+			}
 			p2pFsmStateTransition(prAdapter, prP2pFsmInfo, P2P_STATE_IDLE);
 		} else {
 			/* just avoid supplicant waiting too long */
