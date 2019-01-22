@@ -18,7 +18,7 @@
 #include "mt6336.h"
 
 
-#define MT6336_CTRL_READY 0
+#define MT6336_CTRL_READY 1
 unsigned int g_mt6336_use_count;
 
 unsigned int mt6336_max_users;
@@ -67,24 +67,30 @@ unsigned int mt6336_ctrl_disable(struct mt6336_ctrl *ctrl)
 	unsigned int ret = 0;
 
 	mutex_lock(&mt6336_ctrl_mutex);
+	if (g_mt6336_use_count < 1) {
+		pr_err(MT6336TAG "[%s] Error! MT6336 has never be enabled and it can not be disabled by %s!\n",
+			__func__, ctrl->name);
+		ret = 1;
+		goto out;
+	}
 	/* last user, need to disable MT6336 control by enter lowQ mode */
 	if (g_mt6336_use_count == 1) {
 		if (mt6336_get_flag_register_value(MT6336_RG_DIS_LOWQ_MODE) == 0)
 			pr_err(MT6336TAG "[%s] Warning! someone may disable MT6336 by hard-code!!\n", __func__);
-		else if (ctrl->state == 0) {
+		if (ctrl->state < 1) {
 			pr_err(MT6336TAG "[%s] Error! %s has not enabled MT6336 and it should not disable MT6336!\n",
 				__func__, ctrl->name);
-			ret = 1;
+			ret = 2;
 			goto out;
 		} else {
 			mt6336_set_flag_register_value(MT6336_RG_DIS_LOWQ_MODE, 0x0);
 			MT6336LOG("[%s] MT6336 controller disabled by %s\n", __func__, ctrl->name);
 		}
-		ctrl->state--;
+		ctrl->state = 0;
 		g_mt6336_use_count = 0;
 	} else if (g_mt6336_use_count > 1) {
 		ctrl->state--;
-		g_mt6336_use_count = 0;
+		g_mt6336_use_count--;
 	}
 out:
 	mutex_unlock(&mt6336_ctrl_mutex);
