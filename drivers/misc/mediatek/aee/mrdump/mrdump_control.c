@@ -90,14 +90,6 @@ __init void mrdump_rsvmem(void)
 
 early_param("mrdump_rsvmem", early_mrdump_rsvmem);
 
-extern const unsigned long kallsyms_addresses[] __weak;
-extern const u8 kallsyms_names[] __weak;
-extern const u8 kallsyms_token_table[] __weak;
-extern const u16 kallsyms_token_index[] __weak;
-extern const unsigned long kallsyms_markers[] __weak;
-extern const unsigned long kallsyms_num_syms
-__attribute__((weak, section(".rodata")));
-
 static void mrdump_cblock_kallsyms_init(struct mrdump_ksyms_param *kparam)
 {
 	unsigned long start_addr = (unsigned long) &kallsyms_addresses;
@@ -136,7 +128,7 @@ void mrdump_cblock_init(void)
 	memcpy(&mrdump_cblock.sig, MRDUMP_GO_DUMP, 8);
 
 	machdesc_p = &mrdump_cblock.machdesc;
-	machdesc_p->nr_cpus = NR_CPUS;
+	machdesc_p->nr_cpus = AEE_MTK_CPU_NUMS;
 	machdesc_p->page_offset = (uint64_t)PAGE_OFFSET;
 	machdesc_p->high_memory = (uintptr_t)high_memory;
 

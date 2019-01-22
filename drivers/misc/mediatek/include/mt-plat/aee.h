@@ -174,6 +174,7 @@ struct aee_oops *aee_oops_create(enum AE_DEFECT_ATTR attr, enum AE_EXP_CLASS cla
 void aee_oops_set_backtrace(struct aee_oops *oops, const char *backtrace);
 void aee_oops_set_process_path(struct aee_oops *oops, const char *process_path);
 void aee_oops_free(struct aee_oops *oops);
+#define AEE_MTK_CPU_NUMS	NR_CPUS
 /* powerkey press,modules use bits */
 #define AE_WDT_Powerkey_DEVICE_PATH		"/dev/kick_powerkey"
 #define WDT_SETBY_DEFAULT		(0)
