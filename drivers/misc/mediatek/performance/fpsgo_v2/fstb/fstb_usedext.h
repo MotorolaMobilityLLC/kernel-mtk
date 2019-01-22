@@ -34,14 +34,6 @@ extern int (*fbt_notifier_cpu_frame_time_fps_stabilizer)(
 extern void (*display_time_fps_stablizer)(unsigned long long ts);
 extern void fbt_cpu_vag_set_fps(unsigned int fps);
 
-enum {
-	NON_VSYNC_ALIGNED_TYPE = 0,
-	VSYNC_ALIGNED_TYPE = 1,
-	BY_PASS_TYPE = 2,
-};
-
-
-
 #define FRAME_TIME_BUFFER_SIZE 300
 struct FSTB_FRAME_INFO {
 	struct hlist_node hlist;

@@ -16,31 +16,21 @@
 #ifndef __FPS_COMPOSER_H__
 #define __FPS_COMPOSER_H__
 
-struct queue_info {
-	struct list_head list;
-	int pid;
-	int ui_pid;
-	unsigned long long bufferID;
-	int tgid;
-	int api;
-	int frame_type;
-	int render_method;
-	int render;
-	unsigned long long t_enqueue_start;
-	unsigned long long t_enqueue_end;
-	unsigned long long t_dequeue_start;
-	unsigned long long t_dequeue_end;
-	unsigned long long enqueue_length;
-	unsigned long long dequeue_length;
-	unsigned long long frame_time;
-	unsigned long long Q2Q_time;
+#include <linux/rbtree.h>
+
+enum FPSGO_COM_ERROR {
+	FPSGO_COM_IS_RENDER,
+	FPSGO_COM_TASK_NOT_EXIST,
+	FPSGO_COM_IS_SF,
 };
 
 struct connect_api_info {
-	struct list_head list;
+	struct rb_node rb_node;
+	struct list_head render_list;
 	int pid;
 	int tgid;
-	unsigned long long bufferID;
+	unsigned long long buffer_id;
+	int buffer_key;
 	int api;
 };
 
@@ -51,6 +41,7 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done
 	(int pid, int ui_pid, unsigned long long frame_time,
 	int render, unsigned long long t_frame_done, int render_method);
 void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid, unsigned long long t_frame_start);
+void fpsgo_ctrl2comp_vysnc_aligned_no_render(int pid, int render, unsigned long long t_frame_done);
 void fpsgo_ctrl2comp_dequeue_end(int pid, unsigned long long dequeue_end_time, unsigned long long bufferID);
 void fpsgo_ctrl2comp_dequeue_start(int pid, unsigned long long dequeue_start_time, unsigned long long bufferID);
 void fpsgo_ctrl2comp_enqueue_end(int pid, unsigned long long enqueue_end_time, unsigned long long bufferID);
@@ -58,7 +49,7 @@ void fpsgo_ctrl2comp_enqueue_start(int pid, unsigned long long enqueue_start_tim
 void fpsgo_fbt2comp_destroy_frame_info(int pid);
 void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long bufferID, int api);
 void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long bufferID, int api);
-void fpsgo_ctrl2comp_resent_by_pass_info(void);
+void fpsgo_fstb2comp_check_connect_api(void);
 
 #endif
 

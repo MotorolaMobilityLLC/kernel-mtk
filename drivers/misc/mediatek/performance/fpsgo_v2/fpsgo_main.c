@@ -81,9 +81,24 @@ static int fpsgo_enable;
 static int fpsgo_force_onoff;
 
 /* TODO: event register & dispatch */
+int fpsgo_is_enable(void)
+{
+	int enable;
+
+	mutex_lock(&notify_lock);
+	enable = fpsgo_enable;
+	mutex_unlock(&notify_lock);
+
+	FPSGO_LOGI("[FPSGO_CTRL] isenable %d\n", enable);
+	return enable;
+}
+
 static void fpsgo_notifier_wq_cb_dfrc_fps(int dfrc_fps)
 {
 	FPSGO_LOGI("[FPSGO_CB] dfrc_fps %d\n", dfrc_fps);
+
+	if (!fpsgo_is_enable())
+		return;
 
 	fpsgo_ctrl2fbt_dfrc_fps(dfrc_fps);
 }
@@ -91,6 +106,9 @@ static void fpsgo_notifier_wq_cb_dfrc_fps(int dfrc_fps)
 static void fpsgo_notifier_wq_cb_intended_vsync(int cur_pid, unsigned long long cur_ts)
 {
 	FPSGO_LOGI("[FPSGO_CB] intended_vsync: pid %d, ts %llu\n", cur_pid, cur_ts);
+
+	if (!fpsgo_is_enable())
+		return;
 
 	fpsgo_ctrl2comp_vysnc_aligned_frame_start(cur_pid, cur_ts);
 }
@@ -111,7 +129,14 @@ static void fpsgo_notifier_wq_cb_framecomplete(int cur_pid, int ui_pid, unsigned
 	FPSGO_LOGI("[FPSGO_CB] framecomplete: cur_pid %d, ui_pid %d, frame_time %llu, render %d, render_method %d\n",
 				cur_pid, ui_pid, frame_time, render, render_method);
 
-	fpsgo_ctrl2comp_vysnc_aligned_frame_done(cur_pid, ui_pid, frame_time, render, cur_ts, render_method);
+	if (!fpsgo_is_enable())
+		return;
+
+	if (render)
+		fpsgo_ctrl2comp_vysnc_aligned_frame_done(cur_pid, ui_pid, frame_time,
+			render, cur_ts, render_method);
+	else
+		fpsgo_ctrl2comp_vysnc_aligned_no_render(cur_pid, render, cur_ts);
 }
 
 static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend, unsigned long long bufID,
@@ -119,6 +144,9 @@ static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend, unsigne
 {
 	FPSGO_LOGI("[FPSGO_CB] qudeq: %d-%d, buf %llu, pid %d, ts %llu\n",
 		qudeq, startend, bufID, cur_pid, curr_ts);
+
+	if (!fpsgo_is_enable())
+		return;
 
 	switch (qudeq) {
 	case 1:
@@ -164,10 +192,11 @@ static void fpsgo_notifier_wq_cb_enable(int enable)
 	fpsgo_ctrl2fstb_switch_fstb(enable);
 	fpsgo_ctrl2xgf_switch_xgf(enable);
 
-	if (enable == 1)
-		fpsgo_ctrl2comp_resent_by_pass_info();
-
 	fpsgo_enable = enable;
+
+	if (!fpsgo_enable)
+		fpsgo_clear();
+
 	FPSGO_LOGI("[FPSGO_CB] fpsgo_enable %d\n", fpsgo_enable);
 	mutex_unlock(&notify_lock);
 }
@@ -266,7 +295,7 @@ void fpsgo_notify_qudeq(int qudeq, unsigned int startend, unsigned long long buf
 
 	FPSGO_LOGI("[FPSGO_CTRL] qudeq %d-%d, buf %llu pid %d\n", qudeq, startend, bufID, pid);
 
-	if (!fpsgo_enable)
+	if (!fpsgo_is_enable())
 		return;
 
 	vpPush =
@@ -302,7 +331,7 @@ void fpsgo_notify_intended_vsync(int pid)
 
 	FPSGO_LOGI("[FPSGO_CTRL] intended_vsync pid %d\n", pid);
 
-	if (!fpsgo_enable)
+	if (!fpsgo_is_enable())
 		return;
 
 	cur_ts = fpsgo_get_time();
@@ -339,7 +368,7 @@ void fpsgo_notify_framecomplete(int ui_pid, unsigned long long frame_time,
 	FPSGO_LOGI("[FPSGO_CTRL] framecomplete: cur_pid %d, ui_pid %d, frame_time %llu, render %d, render_method %d\n",
 		cur_pid, ui_pid, frame_time, render, render_method);
 
-	if (!fpsgo_enable)
+	if (!fpsgo_is_enable())
 		return;
 
 	cur_ts = fpsgo_get_time();
@@ -403,7 +432,7 @@ void fpsgo_notify_vsync(void)
 {
 	FPSGO_LOGI("[FPSGO_CTRL] vsync\n");
 
-	if (!fpsgo_enable)
+	if (!fpsgo_is_enable())
 		return;
 
 	fpsgo_ctrl2fbt_vsync();
@@ -423,7 +452,7 @@ void fpsgo_notify_display_update(unsigned long long ts)
 {
 	FPSGO_LOGI("[FPSGO_CTRL] display_update\n");
 
-	if (!fpsgo_enable)
+	if (!fpsgo_is_enable())
 		return;
 
 	fpsgo_ctrl2fstb_display_time_update(ts);
@@ -433,7 +462,7 @@ void fpsgo_notify_gpu_display_update(long long t_gpu, unsigned int cur_freq, uns
 {
 	FPSGO_LOGI("[FPSGO_CTRL] gpu_display_update\n");
 
-	if (!fpsgo_enable)
+	if (!fpsgo_is_enable())
 		return;
 
 	fpsgo_ctrl2fstb_gpu_time_update(t_gpu, cur_freq, cur_max_freq);
@@ -445,7 +474,7 @@ void dfrc_fps_limit_cb(int fps_limit)
 	unsigned int vTmp = TARGET_UNLIMITED_FPS;
 	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush;
 
-	if (!fpsgo_enable)
+	if (!fpsgo_is_enable())
 		return;
 
 	if (fps_limit != DFRC_DRV_FPS_NON_ASSIGN)
@@ -477,12 +506,6 @@ EXPORT_SYMBOL(dfrc_fps_limit_cb);
 #endif
 
 /* FPSGO control */
-int fpsgo_is_enable(void)
-{
-	FPSGO_LOGI("[FPSGO_CTRL] isenable %d\n", fpsgo_enable);
-	return fpsgo_enable;
-}
-
 void fpsgo_switch_enable(int enable)
 {
 	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush = NULL;

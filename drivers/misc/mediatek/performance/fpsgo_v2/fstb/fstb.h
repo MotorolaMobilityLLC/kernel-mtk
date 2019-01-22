@@ -42,6 +42,8 @@ int fpsgo_fbt2fstb_update_cpu_frame_info(
 	unsigned int Curr_cap,
 	unsigned int Max_cap,
 	unsigned int Target_fps);
+int fpsgo_fbt2fstb_query_fps(int pid);
+
 #else
 static inline int fpsgo_fstb2fbt_reset_asfc(int level) { return 0; }
 static inline int is_fstb_enable(void) { return 0; }
@@ -59,6 +61,8 @@ static inline int fpsgo_fbt2fstb_update_cpu_frame_info(
 	unsigned int Curr_cap,
 	unsigned int Max_cap,
 	unsigned int Target_fps) { return 0; }
+static inline int fpsgo_fbt2fstb_query_fps(int pid) { }
+
 #endif
 
 #endif

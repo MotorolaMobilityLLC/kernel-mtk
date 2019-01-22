@@ -27,10 +27,19 @@
 #include "fpsgo_common.h"
 #include "fpsgo_v2_common.h"
 #include "fpsgo_usedext.h"
+#include "fbt_cpu.h"
 #include <linux/preempt.h>
 #include <linux/trace_events.h>
 #include <linux/fs.h>
 #include <linux/debugfs.h>
+#include <linux/rbtree.h>
+
+#define TIME_1S  1000000000ULL
+
+static struct rb_root render_pid_tree;
+static struct rb_root render_ui_pid_tree;
+
+static DEFINE_MUTEX(fpsgo_render_lock);
 
 void *fpsgo_alloc_atomic(int i32Size)
 {
@@ -129,6 +138,296 @@ void __fpsgo_systrace_e(void)
 	preempt_enable();
 }
 
+void fpsgo_render_tree_lock(const char *tag)
+{
+	mutex_lock(&fpsgo_render_lock);
+}
+
+void fpsgo_render_tree_unlock(const char *tag)
+{
+	mutex_unlock(&fpsgo_render_lock);
+}
+
+void fpsgo_lockprove(const char *tag)
+{
+	WARN_ON(!mutex_is_locked(&fpsgo_render_lock));
+}
+
+void fpsgo_thread_lock(struct mutex *mlock)
+{
+	fpsgo_lockprove(__func__);
+	mutex_lock(mlock);
+}
+
+void fpsgo_thread_unlock(struct mutex *mlock)
+{
+	mutex_unlock(mlock);
+}
+
+void fpsgo_thread_lockprove(const char *tag, struct mutex *mlock)
+{
+	WARN_ON(!mutex_is_locked(mlock));
+}
+
+int fpsgo_get_tgid(int pid)
+{
+	struct task_struct *tsk;
+	int tgid = 0;
+
+	rcu_read_lock();
+	tsk = find_task_by_vpid(pid);
+	if (tsk)
+		get_task_struct(tsk);
+	rcu_read_unlock();
+
+	if (!tsk)
+		return 0;
+
+	tgid = tsk->tgid;
+	put_task_struct(tsk);
+
+	return tgid;
+}
+
+struct render_info *fpsgo_search_and_add_render_info(int pid, int force)
+{
+	struct rb_node **p = &render_pid_tree.rb_node;
+	struct rb_node *parent = NULL;
+	struct render_info *tmp = NULL;
+	int tgid;
+
+	fpsgo_lockprove(__func__);
+
+	tgid = fpsgo_get_tgid(pid);
+
+	while (*p) {
+		parent = *p;
+		tmp = rb_entry(parent, struct render_info, pid_node);
+
+		if (pid < tmp->pid)
+			p = &(*p)->rb_left;
+		else if (pid > tmp->pid)
+			p = &(*p)->rb_right;
+		else
+			return tmp;
+	}
+
+	if (!force)
+		return NULL;
+
+	tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
+	if (!tmp)
+		return NULL;
+
+	mutex_init(&tmp->thr_mlock);
+
+	tmp->pid = pid;
+	tmp->tgid = tgid;
+	fpsgo_base2fbt_node_init(tmp);
+
+	rb_link_node(&tmp->pid_node, parent, p);
+	rb_insert_color(&tmp->pid_node, &render_pid_tree);
+
+	return tmp;
+}
+
+void fpsgo_delete_render_info(int pid)
+{
+	struct render_info *data;
+	int delete = 0;
+
+	fpsgo_lockprove(__func__);
+
+	data = fpsgo_search_and_add_render_info(pid, 0);
+
+	if (!data)
+		return;
+
+	fpsgo_thread_lock(&data->thr_mlock);
+	rb_erase(&data->pid_node, &render_pid_tree);
+	rb_erase(&data->ui_pid_node, &render_ui_pid_tree);
+	list_del(&(data->bufferid_list));
+	fpsgo_base2fbt_item_del(data->pLoading, data->p_blc);
+
+	if (data->boost_info.proc.jerks[0].jerking == 0
+		&& data->boost_info.proc.jerks[1].jerking == 0)
+		delete = 1;
+	else {
+		delete = 0;
+		data->linger = 1;
+	}
+	fpsgo_thread_unlock(&data->thr_mlock);
+
+	if (delete == 1)
+		kfree(data);
+}
+
+struct render_info *fpsgo_search_render_info_by_ui_pid(int ui_pid)
+{
+	struct rb_node *node = render_ui_pid_tree.rb_node;
+
+	fpsgo_lockprove(__func__);
+
+	while (node) {
+		struct render_info *data = container_of(node, struct render_info, ui_pid_node);
+
+		if (ui_pid < data->ui_pid)
+			node = node->rb_left;
+		else if (ui_pid > data->ui_pid)
+			node = node->rb_right;
+		else
+			return data;
+	}
+	return NULL;
+}
+
+int fpsgo_add_render_info_by_ui_pid(struct render_info *data)
+{
+	struct rb_node **new = &render_ui_pid_tree.rb_node;
+	struct rb_node *parent = NULL;
+
+	fpsgo_lockprove(__func__);
+
+	while (*new) {
+		struct render_info *this = container_of(*new, struct render_info, ui_pid_node);
+
+		parent = *new;
+		if (data->ui_pid < this->ui_pid)
+			new = &((*new)->rb_left);
+		else if (data->ui_pid > this->ui_pid)
+			new = &((*new)->rb_right);
+		else
+			return 0;
+	}
+
+	rb_link_node(&data->ui_pid_node, parent, new);
+	rb_insert_color(&data->ui_pid_node, &render_ui_pid_tree);
+
+	return 1;
+}
+
+int fpsgo_has_bypass(void)
+{
+	struct rb_node *n;
+	struct render_info *iter;
+	int result = 0;
+
+	fpsgo_lockprove(__func__);
+
+	for (n = rb_first(&render_pid_tree); n != NULL; n = rb_next(n)) {
+		iter = rb_entry(n, struct render_info, pid_node);
+		fpsgo_thread_lock(&iter->thr_mlock);
+
+		if (iter->frame_type == BY_PASS_TYPE) {
+			result = 1;
+			fpsgo_thread_unlock(&iter->thr_mlock);
+			break;
+		}
+		fpsgo_thread_unlock(&iter->thr_mlock);
+	}
+
+	return result;
+}
+
+void fpsgo_check_thread_status(void)
+{
+	unsigned long long ts = fpsgo_get_time();
+	unsigned long long expire_ts;
+	int delete = 0;
+	int check_max_blc = 0;
+	int has_bypass = 0;
+
+	struct rb_node *n;
+	struct render_info *iter;
+
+	if (ts < TIME_1S)
+		return;
+
+	expire_ts = ts - TIME_1S;
+
+	fpsgo_render_tree_lock(__func__);
+
+	n = rb_first(&render_pid_tree);
+	while (n) {
+		iter = rb_entry(n, struct render_info, pid_node);
+
+		fpsgo_thread_lock(&iter->thr_mlock);
+
+		if (iter->t_enqueue_start < expire_ts) {
+			if (iter->pid == fpsgo_base2fbt_get_max_blc_pid())
+				check_max_blc = 1;
+
+			rb_erase(&iter->pid_node, &render_pid_tree);
+			rb_erase(&iter->ui_pid_node, &render_ui_pid_tree);
+			list_del(&(iter->bufferid_list));
+			fpsgo_base2fbt_item_del(iter->pLoading, iter->p_blc);
+			n = rb_first(&render_pid_tree);
+
+			if (iter->boost_info.proc.jerks[0].jerking == 0
+				&& iter->boost_info.proc.jerks[1].jerking == 0)
+				delete = 1;
+			else {
+				delete = 0;
+				iter->linger = 1;
+			}
+
+			fpsgo_thread_unlock(&iter->thr_mlock);
+
+			if (delete == 1)
+				kfree(iter);
+
+		} else {
+			if (iter->frame_type == BY_PASS_TYPE)
+				has_bypass = 1;
+			n = rb_next(n);
+			fpsgo_thread_unlock(&iter->thr_mlock);
+		}
+	}
+
+	fpsgo_render_tree_unlock(__func__);
+
+	if (check_max_blc)
+		fpsgo_base2fbt_check_max_blc();
+	fpsgo_base2fbt_set_bypass(has_bypass);
+}
+
+void fpsgo_clear(void)
+{
+	int delete = 0;
+	struct rb_node *n;
+	struct render_info *iter;
+
+	fpsgo_render_tree_lock(__func__);
+
+	n = rb_first(&render_pid_tree);
+	while (n) {
+		iter = rb_entry(n, struct render_info, pid_node);
+
+		fpsgo_thread_lock(&iter->thr_mlock);
+
+		rb_erase(&iter->pid_node, &render_pid_tree);
+		rb_erase(&iter->ui_pid_node, &render_ui_pid_tree);
+		list_del(&(iter->bufferid_list));
+		fpsgo_base2fbt_item_del(iter->pLoading, iter->p_blc);
+		n = rb_first(&render_pid_tree);
+
+		if (iter->boost_info.proc.jerks[0].jerking == 0
+			&& iter->boost_info.proc.jerks[1].jerking == 0)
+			delete = 1;
+		else {
+			delete = 0;
+			iter->linger = 1;
+		}
+
+		fpsgo_thread_unlock(&iter->thr_mlock);
+
+		if (delete == 1)
+			kfree(iter);
+	}
+
+	fpsgo_render_tree_unlock(__func__);
+}
+
 static int fpsgo_systrace_mask_show(struct seq_file *m, void *unused)
 {
 	int i;
@@ -183,6 +482,57 @@ static ssize_t fpsgo_benchmark_hint_write(struct file *flip,
 
 FPSGO_DEBUGFS_ENTRY(benchmark_hint);
 
+static int fpsgo_render_info_show(struct seq_file *m, void *unused)
+{
+	struct rb_node *n;
+	struct render_info *iter;
+	struct task_struct *tsk;
+
+	seq_puts(m, "\n  PID  NAME  TGID  TYPE  API  BufferID");
+	seq_puts(m, "    FRAME_L    ENQ_L    ENQ_S    ENQ_E");
+	seq_puts(m, "    DEQ_L     DEQ_S    DEQ_E\n");
+
+	fpsgo_render_tree_lock(__func__);
+	rcu_read_lock();
+
+	for (n = rb_first(&render_pid_tree); n != NULL; n = rb_next(n)) {
+		iter = rb_entry(n, struct render_info, pid_node);
+		tsk = find_task_by_vpid(iter->tgid);
+		if (tsk) {
+			get_task_struct(tsk);
+			seq_printf(m, "%5d %4s %4d %4d %4d %4llu",
+				iter->pid, tsk->comm, iter->tgid, iter->frame_type,
+				iter->api, iter->buffer_id);
+			seq_printf(m, "  %4llu %4llu %4llu %4llu %4llu %4llu %4llu\n",
+				iter->self_time, iter->enqueue_length,
+				iter->t_enqueue_start, iter->t_enqueue_end,
+				iter->dequeue_length, iter->t_dequeue_start,
+				iter->t_dequeue_end);
+		}
+		put_task_struct(tsk);
+	}
+
+	rcu_read_unlock();
+	fpsgo_render_tree_unlock(__func__);
+
+	return 0;
+}
+
+static ssize_t fpsgo_render_info_write(struct file *flip,
+			const char *ubuf, size_t cnt, loff_t *data)
+{
+	int val;
+	int ret;
+
+	ret = kstrtoint_from_user(ubuf, cnt, 0, &val);
+	if (ret)
+		return ret;
+
+	return cnt;
+}
+
+FPSGO_DEBUGFS_ENTRY(render_info);
+
 static int fpsgo_force_onoff_show(struct seq_file *m, void *unused)
 {
 	int result = fpsgo_is_force_enable();
@@ -223,8 +573,12 @@ static ssize_t fpsgo_force_onoff_write(struct file *flip,
 
 FPSGO_DEBUGFS_ENTRY(force_onoff);
 
+
 int init_fpsgo_common(void)
 {
+	render_pid_tree = RB_ROOT;
+	render_ui_pid_tree = RB_ROOT;
+
 	fpsgo_debugfs_dir = debugfs_create_dir("fpsgo", NULL);
 	if (!fpsgo_debugfs_dir)
 		return -ENODEV;
@@ -251,6 +605,12 @@ int init_fpsgo_common(void)
 			    debugfs_common_dir,
 			    NULL,
 			    &fpsgo_force_onoff_fops);
+
+	debugfs_create_file("render_info",
+			    S_IRUGO | S_IWUSR,
+			    debugfs_common_dir,
+			    NULL,
+			    &fpsgo_render_info_fops);
 
 	mark_addr = kallsyms_lookup_name("tracing_mark_write");
 	fpsgo_systrace_mask = FPSGO_DEBUG_MANDATORY;
