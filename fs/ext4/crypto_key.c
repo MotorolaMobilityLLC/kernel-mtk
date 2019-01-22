@@ -287,8 +287,11 @@ int ext4_get_encryption_info(struct inode *inode)
 	case EXT4_ENCRYPTION_MODE_AES_256_HEH:
 		cipher_str = "heh(aes)";
 		break;
-	case EXT4_ENCRYPTION_MODE_PRIVATE:
-		cipher_str = "bugon";
+	case EXT4_ENCRYPTION_MODE_SPECK128_256_XTS:
+		cipher_str = "xts(speck128)";
+		break;
+	case EXT4_ENCRYPTION_MODE_SPECK128_256_CTS:
+		cipher_str = "cts(cbc(speck128))";
 		break;
 	default:
 		printk_once(KERN_WARNING
