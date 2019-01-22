@@ -29,8 +29,7 @@
 #include <linux/trace_events.h>
 #endif
 
-static struct hrtimer ext_launch_timer;
-static struct notifier_block ext_launch_lcmoff_fb_notifier;
+static struct notifier_block fpsgo_lcmoff_fb_notifier;
 
 static void walt_mode(int enable)
 {
@@ -66,32 +65,16 @@ static inline void eas_ctrl_extend_kernel_trace_end(void)
 }
 #endif
 
-void ext_launch_cond(int cond_check)
+void fpsgo_cond(int cond_check)
 {
 	switch (cond_check) {
 	case 0:
-	case 2:
-		hrtimer_cancel(&ext_launch_timer);
-		pr_debug("ext_launch_%s\n", ((cond_check == 2) ? "pre" : "lcm_off"));
-#ifdef CONFIG_TRACING
-		eas_ctrl_extend_kernel_trace_begin("ext_launch_cond", cond_check, 0, 0);
-#endif
+		pr_debug("fpsgo_lcm_off\n");
 		fpsgo_switch_enable_keep(0);
-		walt_mode(0);
-#ifdef CONFIG_TRACING
-		eas_ctrl_extend_kernel_trace_end();
-#endif
 		break;
 	case 1:
-		pr_debug("ext_launch_lcm_on\n");
-#ifdef CONFIG_TRACING
-		eas_ctrl_extend_kernel_trace_begin("ext_launch_cond", cond_check, 0, 1);
-#endif
-		walt_mode(0);
+		pr_debug("fpsgo_lcm_on\n");
 		fpsgo_switch_enable_keep(1);
-#ifdef CONFIG_TRACING
-		eas_ctrl_extend_kernel_trace_end();
-#endif
 		break;
 	default:
 		break;
@@ -100,22 +83,17 @@ void ext_launch_cond(int cond_check)
 
 void ext_launch_start(void)
 {
-	ktime_t ktime;
-
-	ktime = ktime_set(30, 0);
 	pr_debug("ext_launch_start\n");
 	/*--feature start from here--*/
 #ifdef CONFIG_TRACING
 	eas_ctrl_extend_kernel_trace_begin("ext_launch_start", 0, 1, 0);
 #endif
 
-	fpsgo_switch_enable_keep(0);
 	walt_mode(1);
 
 #ifdef CONFIG_TRACING
 	eas_ctrl_extend_kernel_trace_end();
 #endif
-	hrtimer_start(&ext_launch_timer, ktime, HRTIMER_MODE_REL);
 }
 
 void ext_launch_end(void)
@@ -125,7 +103,6 @@ void ext_launch_end(void)
 #ifdef CONFIG_TRACING
 	eas_ctrl_extend_kernel_trace_begin("ext_launch_end", 0, 0, 1);
 #endif
-	fpsgo_switch_enable_keep(1);
 	walt_mode(0);
 
 #ifdef CONFIG_TRACING
@@ -133,16 +110,7 @@ void ext_launch_end(void)
 #endif
 }
 
-enum hrtimer_restart ext_launch_notify_method(struct hrtimer *timer)
-{
-	pr_debug("ext_launch_notify_method is called\n");
-
-	ext_launch_end();
-
-	return HRTIMER_NORESTART;
-}
-
-static int ext_launch_lcmoff_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+static int fpsgo_lcmoff_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = data;
 	int blank;
@@ -160,11 +128,11 @@ static int ext_launch_lcmoff_fb_notifier_callback(struct notifier_block *self, u
 	switch (blank) {
 	/* LCM ON */
 	case FB_BLANK_UNBLANK:
-		ext_launch_cond(1);
+		fpsgo_cond(1);
 		break;
 	/* LCM OFF */
 	case FB_BLANK_POWERDOWN:
-		ext_launch_cond(0);
+		fpsgo_cond(0);
 		break;
 	default:
 		break;
@@ -172,24 +140,17 @@ static int ext_launch_lcmoff_fb_notifier_callback(struct notifier_block *self, u
 	return 0;
 }
 
-void ext_launch_notify_init(void)
+void eas_ctrl_extend_notify_init(void)
 {
 	int ret;
-	ktime_t ktime;
 
-	ktime = ktime_set(30, 0);
-	hrtimer_init(&ext_launch_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	ext_launch_timer.function = ext_launch_notify_method;
-
-	pr_debug("ext_launch_notify_init_timer\n");
-
-	ext_launch_lcmoff_fb_notifier = (struct notifier_block){
-		.notifier_call = ext_launch_lcmoff_fb_notifier_callback,
+	fpsgo_lcmoff_fb_notifier = (struct notifier_block){
+		.notifier_call = fpsgo_lcmoff_fb_notifier_callback,
 	};
 
-	ret = fb_register_client(&ext_launch_lcmoff_fb_notifier);
+	ret = fb_register_client(&fpsgo_lcmoff_fb_notifier);
 	if (ret)
 		pr_info("@%s: lcmoff policy register FB client failed!\n", __func__);
 
-	pr_debug("ext_launch_notify_init_fb\n");
+	pr_debug("eas_ctl_extend_notify_init\n");
 }

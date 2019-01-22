@@ -23,12 +23,12 @@ static inline int reduce_stall(int bv, int thres, int flag) { return -1; }
 #endif
 
 
-#ifdef CONFIG_SCHED_WALT
-void ext_launch_notify_init(void);
+#ifdef CONFIG_MACH_MT6771
+void eas_ctrl_extend_notify_init(void);
 void ext_launch_start(void);
-void ext_launch_cond(int cond);
+void ext_launch_end(void);
 #else
-static inline void ext_launch_notify_init(void) { }
+static inline void eas_ctrl_extend_notify_init(void) { }
 static inline void ext_launch_start(void) { }
-static inline void ext_launch_cond(int cond) { }
+static inline void ext_launch_end(void) { }
 #endif
