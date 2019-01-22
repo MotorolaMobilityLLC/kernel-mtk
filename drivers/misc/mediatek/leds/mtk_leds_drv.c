@@ -77,7 +77,13 @@ static int debug_enable_led = 1;
 #ifdef LED_INCREASE_LED_LEVEL_MTKPATCH
 #define LED_INTERNAL_LEVEL_BIT_CNT 10
 #endif
-
+/* Fix dependency if CONFIG_MTK_LCM not ready */
+void __weak disp_aal_notify_backlight_changed(int bl_1024) {};
+bool __weak disp_aal_is_support(void) { return false; };
+int __weak disp_bls_set_max_backlight(unsigned int level_1024) { return 0; };
+int __weak disp_bls_set_backlight(int level_1024) { return 0; }
+int __weak mtkfb_set_backlight_level(unsigned int level) { return 0; };
+void __weak disp_pq_notify_backlight_changed(int bl_1024) {};
 static int mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level);
 
 /****************************************************************************
