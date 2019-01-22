@@ -23,6 +23,9 @@ MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
 
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/inc
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/lc898122af
+ifeq ($(CONFIG_MTK_LENS_OV5645AF_SUPPORT), y)
+subdir-ccflags-$(CONFIG_MTK_LENS_OV5645AF_SUPPORT) += -I$(MTK_CUSTOM_PATH)/lens/main/common/ov5645af
+endif
 subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/lc898212xdaf/inc
 ifeq ($(CONFIG_MTK_LENS_BU63165AF_SUPPORT), y)
   subdir-ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/main/common/bu63165af/inc
@@ -55,6 +58,9 @@ MAIN_CFILES  += common/lc898217af/LC898217AF.c
 MAIN_CFILES  += common/lc898122af/LC898122AF.c
 MAIN_CFILES  += common/lc898122af/OisCmd.c
 MAIN_CFILES  += common/lc898122af/OisIni.c
+ifeq ($(CONFIG_MTK_LENS_OV5645AF_SUPPORT), y)
+MAIN_CFILES  += common/ov5645af/OV5645AF.c
+endif
 MAIN_CFILES  += common/ad5820af/AD5820AF.c
 MAIN_CFILES  += common/wv511aaf/WV511AAF.c
 MAIN_CFILES  += common/ak7371af/AK7371AF.c
@@ -94,6 +100,9 @@ obj-y  += common/lc898212xdaf_tvc700/
 obj-y  += common/lc898214af/
 obj-y  += common/lc898217af/
 obj-y  += common/lc898122af/
+ifeq ($(CONFIG_MTK_LENS_OV5645AF_SUPPORT), y)
+obj-$(CONFIG_MTK_LENS_OV5645AF_SUPPORT) += common/ov5645af/
+endif
 obj-y  += common/ad5820af/
 obj-y  += common/wv511aaf/
 obj-y  += common/ak7371af/

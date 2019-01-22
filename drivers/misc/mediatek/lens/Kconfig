@@ -244,6 +244,15 @@ config MTK_LENS_OV8825AF_SUPPORT
 	  lens driver for the camera sensor module
 	  Set as y if the driver is used in this project
 
+config MTK_LENS_OV5645AF_SUPPORT
+	bool "OV5645AF Lens Driver"
+	default n
+	help
+	  OV5645AF Lens Driver
+	  This config is used to enable the corresponding
+	  lens driver for the camera sensor module
+	  Set as y if the driver is used in this project
+
 config MTK_LENS_SENSORDRIVE_SUPPORT
 	bool "SENSORDRIVE Lens Driver"
 	default n

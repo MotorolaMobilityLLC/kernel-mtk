@@ -164,6 +164,14 @@ extern int LC898217AFC_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock
 extern long LC898217AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int LC898217AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 extern int LC898217AF_PowerDown(void);
+#ifdef CONFIG_MTK_LENS_OV5645AF_SUPPORT
+#define OV5645AF_SetI2Cclient OV5645AF_SetI2Cclient_Main
+#define OV5645AF_Ioctl OV5645AF_Ioctl_Main
+#define OV5645AF_Release OV5645AF_Release_Main
+extern int OV5645AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long OV5645AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int OV5645AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
 
 #define AD5820AF_SetI2Cclient AD5820AF_SetI2Cclient_Main
 #define AD5820AF_Ioctl AD5820AF_Ioctl_Main
