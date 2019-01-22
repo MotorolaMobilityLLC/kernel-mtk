@@ -479,9 +479,11 @@ static int hps_resume(struct device *dev)
 	if (!hps_ctxt.suspend_enabled)
 		goto resume_end;
 /*Add to speedup home screen*/
+#if 0
 	mutex_lock(&hps_ctxt.lock);
 	hps_ctxt.enabled = hps_ctxt.enabled_backup;
 	mutex_unlock(&hps_ctxt.lock);
+#endif
 #if 0
 	/*In order to fast screen on, power on extra little CPU to serve system resume. */
 	for (cpu = hps_ctxt.little_cpu_id_min; cpu <= hps_ctxt.little_cpu_id_max; cpu++) {
