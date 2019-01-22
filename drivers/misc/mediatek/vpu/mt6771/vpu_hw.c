@@ -1360,9 +1360,6 @@ int vpu_init_hw(int core, struct vpu_device *device)
 			case 1:
 				mem_param.fixed_addr = VPU2_MVA_KERNEL_LIB;
 				break;
-			case 2:
-				mem_param.fixed_addr = VPU3_MVA_KERNEL_LIB;
-				break;
 			}
 
 			ret = vpu_alloc_shared_memory(&(vpu_service_cores[i].exec_kernel_lib), &mem_param);
