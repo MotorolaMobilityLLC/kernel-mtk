@@ -1161,6 +1161,24 @@ static void process_dbg_opt(const char *opt)
 			round_corner_offset_enable = 1;
 		else if (strncmp(opt + 26, "off", 3) == 0)
 			round_corner_offset_enable = 0;
+	} else if (strncmp(opt, "ovl_bgcolor", 11) == 0) {
+		unsigned int bgcolor;
+
+		ret = sscanf(opt, "ovl_bgcolor:0x%x\n", &bgcolor);
+		if (ret != 1) {
+			DDPPR_ERR("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
+		gOVLBackground = bgcolor;
+	} else if (strncmp(opt, "ovl_dimcolor", 12) == 0) {
+		unsigned int dimcolor;
+
+		ret = sscanf(opt, "ovl_dimcolor:0x%x\n", &dimcolor);
+		if (ret != 1) {
+			DDPPR_ERR("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
+		govldimcolor = dimcolor;
 	}
 }
 
