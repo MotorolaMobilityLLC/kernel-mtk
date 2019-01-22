@@ -130,7 +130,7 @@ static bool is_anycore_dpidle_sodi_state(int state)
 
 void update_residency_latency_result(int cpu)
 {
-	struct cpuidle_driver *tbl = mcdi_state_tbl_get();
+	struct cpuidle_driver *tbl = mcdi_state_tbl_get(cpu);
 	int i;
 	unsigned int predict_us = get_menu_predict_us();
 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
@@ -173,7 +173,7 @@ int get_residency_latency_result(int cpu)
 #if CHECK_CLUSTER_RESIDENCY
 bool cluster_residency_check(int cpu)
 {
-	struct cpuidle_driver *mcdi_state_tbl = mcdi_state_tbl_get();
+	struct cpuidle_driver *mcdi_state_tbl = mcdi_state_tbl_get(cpu);
 	int cluster_idx = cluster_idx_get(cpu);
 	int cpu_start = cluster_idx * 4;
 	int cpu_end   = cluster_idx * 4 + (4 - 1);
