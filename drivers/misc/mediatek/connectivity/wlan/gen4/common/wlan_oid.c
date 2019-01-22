@@ -2530,6 +2530,19 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 		}
 	}
 
+#if 0
+	DBGLOG(RSN, INFO, "Add key cmd to wlan index %d:", prCmdKey->ucWlanIndex);
+	DBGLOG(RSN, INFO, "(BSS = %d) " MACSTR "\n", prCmdKey->ucBssIdx, MAC2STR(prCmdKey->aucPeerAddr));
+	DBGLOG(RSN, INFO, "Tx = %d type = %d Auth = %d\n", prCmdKey->ucTxKey, prCmdKey->ucKeyType,
+		prCmdKey->ucIsAuthenticator);
+	DBGLOG(RSN, INFO, "cipher = %d keyid = %d keylen = %d\n", prCmdKey->ucAlgorithmId, prCmdKey->ucKeyId,
+		prCmdKey->ucKeyLen);
+	DBGLOG(RSN, INFO, "wepkeyUsed = %d\n", prBssInfo->wepkeyUsed[prCmdKey->ucKeyId]);
+	DBGLOG(RSN, INFO, "wepkeyWlanIdx = %d:", prBssInfo->wepkeyWlanIdx);
+	DBGLOG(RSN, INFO, "ucBMCWlanIndexSUsed = %d\n", prBssInfo->ucBMCWlanIndexSUsed[prCmdKey->ucKeyId]);
+	DBGLOG(RSN, INFO, "ucBMCWlanIndexS = %d:", prBssInfo->ucBMCWlanIndexS[prCmdKey->ucKeyId]);
+#endif
+
 	/* insert into prCmdQueue */
 	kalEnqueueCommand(prGlueInfo, (P_QUE_ENTRY_T) prCmdInfo);
 
