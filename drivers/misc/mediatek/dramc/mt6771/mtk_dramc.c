@@ -1640,7 +1640,9 @@ static int dram_probe(struct platform_device *pdev)
 
 	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
 		low_freq_counter = 10;
-		setup_deferrable_timer_on_stack(&zqcs_timer, zqcs_timer_callback, 0);
+		init_timer_deferrable(&zqcs_timer);
+		zqcs_timer.function = zqcs_timer_callback;
+		zqcs_timer.data = 0;
 		if (mod_timer(&zqcs_timer, jiffies + msecs_to_jiffies(280)))
 			pr_info("[DRAMC Driver] Error in ZQCS mod_timer\n");
 	}
