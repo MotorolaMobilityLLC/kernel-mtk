@@ -220,7 +220,9 @@ static void sys_timer_timesync_sync_base_internal(unsigned int flag)
 
 	freeze = (flag & SYS_TIMER_TIMESYNC_FLAG_FREEZE) ? 1 : 0;
 
-	sys_timer_timesync_update_sysram(freeze, tick, ts);
+	if (timesync_cxt.support_sysram)
+		sys_timer_timesync_update_sysram(freeze, tick, ts);
+
 	sys_timer_timesync_update_sspm(freeze, tick, ts);
 
 	spin_unlock_irqrestore(&timesync_cxt.lock, irq_flags);
@@ -354,21 +356,24 @@ static int sys_timer_timesync_init(struct platform_device *pdev)
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "sysram_base");
 	timesync_cxt.sysram_base = devm_ioremap_resource(dev, res);
 
-	if (IS_ERR((void const *)timesync_cxt.sysram_base)) {
-		pr_info("unable to ioremap sysram base\n");
-		goto fail_out;
-	}
+	if (IS_ERR((void const *)timesync_cxt.sysram_base))
+		pr_info("unable to ioremap sysram base, might be disabled\n");
+	else {
+		/* get sysram size */
 
-	/* get sysram size */
+		if (of_property_read_u32(node, "mediatek,sysram-size", &sysram_size)) {
+			pr_info("unable to get sysram-size\n");
+			goto fail_out;
+		}
 
-	if (of_property_read_u32(node, "mediatek,sysram-size", &sysram_size))
-		goto fail_out;
+		/* check if we have enough sysram size */
 
-	/* check if we have enough sysram size */
+		if (sysram_size < 20) {
+			pr_info("not enough sram size %d\n", sysram_size);
+			goto fail_out;
+		}
 
-	if (sysram_size < 20) {
-		pr_info("not enough sram size %d\n", sysram_size);
-		goto fail_out;
+		timesync_cxt.support_sysram = 1;
 	}
 
 	/* init mult and shift */
@@ -392,7 +397,8 @@ fail_out:
 	ret = -1;
 
 out:
-	pr_info("enabled: %d\n", timesync_cxt.enabled);
+	pr_info("enabled: %d, support_sysram: %d\n",
+		timesync_cxt.enabled, timesync_cxt.support_sysram);
 
 	return 0;
 }
