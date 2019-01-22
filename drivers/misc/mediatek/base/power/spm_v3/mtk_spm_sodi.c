@@ -299,6 +299,12 @@ wake_reason_t spm_sodi_output_log(
 	unsigned long int sodi_logout_curr_time = 0;
 	int need_log_out = 0;
 
+#if defined(CONFIG_MACH_MT6799)
+	/* Note: Print EMI Idle Fail */
+	if (spm_read(SPM_SW_RSV_3) & 0x1)
+		so_pr_info(flags, "SPM CHECK EMI IDLE FAIL\n");
+#endif
+
 	if (!(flags & SODI_FLAG_REDUCE_LOG) ||
 			(flags & SODI_FLAG_RESIDENCY)) {
 		so_pr_notice(flags, "self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, oper_cond = 0x%0x\n",

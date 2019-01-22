@@ -1108,6 +1108,12 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta,
 	bool log_print = false;
 	static bool timer_out_too_short;
 
+#if defined(CONFIG_MACH_MT6799)
+	/* Note: Print EMI Idle Fail */
+	if (spm_read(SPM_SW_RSV_3) & 0x1)
+		pr_info("DP: SPM CHECK EMI IDLE FAIL\n");
+#endif
+
 	if (log_cond & DEEPIDLE_LOG_FULL) {
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false, "dpidle");
 		pr_info("oper_cond = %x\n", operation_cond);
