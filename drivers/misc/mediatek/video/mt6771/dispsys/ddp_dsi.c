@@ -3974,7 +3974,7 @@ int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq)
 #endif
 
 	/* fhd no split setting */
-	DSI_OUTREG32(cmdq, DISP_REG_CONFIG_MMSYS_MISC, 0x14);
+	DSI_MASKREG32(cmdq, DISP_REG_CONFIG_MMSYS_MISC, 0x14, 0x14);
 #if 0
 	/* dsi pattern */
 	DSI_BIST_Pattern_Test(module, NULL, 1, 0x00ffff00);
