@@ -22,7 +22,8 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_ARCH_ELBRUS)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -72,6 +73,7 @@ enum PWM_LOG_TYPE {
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
 static int g_pwm_log_num = PWM_LOG_BUFFER_SIZE;
+static volatile bool g_pwm_force_backlight_update;
 
 int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 {
@@ -87,7 +89,7 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 		ret = of_property_read_u32_array(led_node, "pwm_config", pwm_config,
 						       ARRAY_SIZE(pwm_config));
 		if (!ret) {
-			/*PWM_MSG("The backlight's pwm config data is %d %d %d %d %d\n",*/
+			/* PWM_MSG("The backlight's pwm config data is %d %d %d %d %d\n",*/
 			/* pwm_config[0], pwm_config[1], pwm_config[2], pwm_config[3], pwm_config[4]);*/
 
 			*clocksource = pwm_config[0];
@@ -101,6 +103,12 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 		PWM_ERR("get pwm cust info fail");
 
 	return ret;
+}
+
+void disp_pwm_set_force_update_flag(void)
+{
+	g_pwm_force_backlight_update = true;
+	PWM_NOTICE("disp_pwm_set_force_update_flag (%d)", g_pwm_force_backlight_update);
 }
 
 static int disp_pwm_config_init(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *cmdq)
@@ -353,16 +361,26 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 	int old_pwm;
 	int index;
 	int abs_diff;
+	bool force_update = false;
 
 	if ((DISP_PWM_ALL & id) == 0) {
 		PWM_ERR("[ERROR] disp_pwm_set_backlight_cmdq: invalid PWM ID = 0x%x", id);
 		return -EFAULT;
 	}
 
+	/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
+	if (g_pwm_force_backlight_update == true && cmdq != NULL)
+		force_update = true;
+
 	index = index_of_pwm(id);
 
 	old_pwm = atomic_xchg(&g_pwm_backlight[index], level_1024);
-	if (old_pwm != level_1024) {
+	if (old_pwm != level_1024 || force_update == true) {
+		if (force_update == true) {
+			PWM_NOTICE("PWM force set backlight to 0 again\n");
+			g_pwm_force_backlight_update = false;
+		}
+
 		abs_diff = level_1024 - old_pwm;
 		if (abs_diff < 0)
 			abs_diff = -abs_diff;
