@@ -266,7 +266,7 @@ void socket_exit(void)
 MODULE_AUTHOR("microtrust");
 MODULE_LICENSE("Dual BSD/GPL");
 
-module_param(socket_major, int, S_IRUGO);
+module_param(socket_major, int, 0444);
 
 module_init(socket_init);
 module_exit(socket_exit);

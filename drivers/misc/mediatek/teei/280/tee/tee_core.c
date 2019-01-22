@@ -1075,7 +1075,7 @@ static void __exit tee_exit(void)
 subsys_initcall(tee_init);
 module_exit(tee_exit);
 
-MODULE_AUTHOR("Linaro");
+MODULE_AUTHOR("MICROTRUST");
 MODULE_DESCRIPTION("TEE Driver");
 MODULE_VERSION("1.0");
 MODULE_LICENSE("GPL v2");

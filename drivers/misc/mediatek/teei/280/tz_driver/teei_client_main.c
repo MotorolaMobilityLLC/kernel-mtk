@@ -625,7 +625,6 @@ int set_soter_version(void)
 	return 0;
 }
 
-
 long create_cmd_buff(void)
 {
 #ifdef UT_DMA_ZONE
@@ -929,7 +928,7 @@ int is_teei_ready(void)
 EXPORT_SYMBOL(is_teei_ready);
 
 static long teei_config_ioctl(struct file *file,
-				unsigned cmd, unsigned long arg)
+				unsigned int cmd, unsigned long arg)
 {
 	int retVal = 0;
 	struct init_param param;
@@ -1104,7 +1103,7 @@ return_fn:
  * @return
  */
 static long teei_client_ioctl(struct file *file,
-				unsigned cmd, unsigned long arg)
+				unsigned int cmd, unsigned long arg)
 {
 	int retVal = 0;
 	void *argp = (void __user *) arg;
@@ -1426,7 +1425,7 @@ static long teei_client_ioctl(struct file *file,
 }
 
 static long teei_client_unioctl(struct file *file,
-					unsigned cmd, unsigned long arg)
+					unsigned int cmd, unsigned long arg)
 {
 	int retVal = 0;
 	void *argp = (void __user *) arg;

@@ -138,7 +138,7 @@ struct fdrv_call_struct {
 struct service_handler {
 	unsigned int sysno;
 	void *param_buf;
-	unsigned size;
+	unsigned int size;
 	long (*init)(struct service_handler *handler);
 	void (*deinit)(struct service_handler *handler);
 	int (*handle)(struct service_handler *handler);

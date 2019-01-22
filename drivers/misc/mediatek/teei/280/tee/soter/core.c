@@ -144,6 +144,7 @@ static struct tee_driver_ops soter_ops = {
 	.open_session = soter_open_session,
 	.close_session = soter_close_session,
 	.invoke_func = soter_invoke_func,
+	.cancel_req = soter_cancel_func,
 };
 
 static struct tee_desc soter_desc = {
