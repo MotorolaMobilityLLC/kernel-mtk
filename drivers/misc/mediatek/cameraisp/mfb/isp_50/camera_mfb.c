@@ -1737,10 +1737,13 @@ static signed int MFB_ReadReg(MFB_REG_IO_STRUCT *pRegIo)
 		/* pData++; */
 		/*  */
 		if ((ISP_MFB_BASE + reg.Addr >= ISP_MFB_BASE)
-		    && (ISP_MFB_BASE + reg.Addr < (ISP_MFB_BASE + MFB_REG_RANGE))) {
+		    && (reg.Addr < MFB_REG_RANGE)) {
 			reg.Val = MFB_RD32(ISP_MFB_BASE + reg.Addr);
 		} else {
-			log_err("Wrong address(0x%p)", (ISP_MFB_BASE + reg.Addr));
+			log_err("Wrong address(0x%p), MFB_BASE(0x%p), Addr(0x%lx)",
+				(ISP_MFB_BASE + reg.Addr),
+				ISP_MFB_BASE,
+				(unsigned long)reg.Addr);
 			reg.Val = 0;
 		}
 		/*  */
@@ -1787,11 +1790,13 @@ static signed int MFB_WriteRegToHw(MFB_REG_STRUCT *pReg, unsigned int Count)
 				(unsigned int) (pReg[i].Val));
 		}
 
-		if (((ISP_MFB_BASE + pReg[i].Addr) < (ISP_MFB_BASE + MFB_REG_RANGE))) {
+		if (pReg[i].Addr < MFB_REG_RANGE) {
 			MFB_WR32(ISP_MFB_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
-			log_err("wrong address(0x%lx)\n",
-				(unsigned long)(ISP_MFB_BASE + pReg[i].Addr));
+			log_err("wrong address(0x%p), MFB_BASE(0x%p), Addr(0x%lx)\n",
+				(ISP_MFB_BASE + pReg[i].Addr),
+				ISP_MFB_BASE,
+				(unsigned long)pReg[i].Addr);
 		}
 	}
 

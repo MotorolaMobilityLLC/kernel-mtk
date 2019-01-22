@@ -2093,10 +2093,13 @@ static signed int DPE_ReadReg(struct DPE_REG_IO_STRUCT *pRegIo)
 	if (copy_from_user(pData, (void *)pRegIo->pData, (pRegIo->Count) * sizeof(struct DPE_REG_STRUCT)) == 0) {
 		for (i = 0; i < pRegIo->Count; i++) {
 			if ((ISP_DPE_BASE + pData->Addr >= ISP_DPE_BASE)
-			    && (ISP_DPE_BASE + pData->Addr < (ISP_DPE_BASE + DPE_REG_RANGE))) {
+			    && (pData->Addr < DPE_REG_RANGE)) {
 				pData->Val = DPE_RD32(ISP_DPE_BASE + pData->Addr);
 			} else {
-				LOG_INF("Wrong address(0x%p)", (ISP_DPE_BASE + pData->Addr));
+				LOG_INF("Wrong address(0x%p), DPE_BASE(0x%p), Addr(0x%lx)\n",
+					(ISP_DPE_BASE + pData->Addr),
+					ISP_DPE_BASE,
+					(unsigned long)pData->Addr);
 				pData->Val = 0;
 			}
 			pData++;
@@ -2150,11 +2153,13 @@ static signed int DPE_WriteRegToHw(struct DPE_REG_STRUCT *pReg, unsigned int Cou
 				(unsigned int) (pReg[i].Val));
 		}
 
-		if (((ISP_DPE_BASE + pReg[i].Addr) < (ISP_DPE_BASE + DPE_REG_RANGE))) {
+		if (pReg[i].Addr < DPE_REG_RANGE) {
 			DPE_WR32(ISP_DPE_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
-			LOG_INF("wrong address(0x%lx)\n",
-				(unsigned long)(ISP_DPE_BASE + pReg[i].Addr));
+			LOG_INF("Wrong address(0x%p), DPE_BASE(0x%p), Addr(0x%lx)\n",
+				(ISP_DPE_BASE + pReg[i].Addr),
+				ISP_DPE_BASE,
+				(unsigned long)pReg[i].Addr);
 		}
 	}
 
