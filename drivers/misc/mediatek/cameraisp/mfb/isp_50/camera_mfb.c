@@ -142,7 +142,7 @@ struct MFB_CLK_STRUCT mfb_clk;
 #define BYPASS_REG         (0)
 /* #define MFB_WAITIRQ_LOG  */
 #define MFB_USE_GCE
-#define MFB_DEBUG_USE
+/* #define MFB_DEBUG_USE */
 #define DUMMY_MFB	   (0)
 /* #define MFB_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA due to slow FPGA. */
@@ -154,7 +154,7 @@ struct MFB_CLK_STRUCT mfb_clk;
 #ifdef MFB_DEBUG_USE
 #define log_dbg(format, args...)    pr_info(MyTag format, ##args)
 #else
-#define log_dbg(format, args...)    pr_info(MyTag format, ##args)
+#define log_dbg(format, args...)
 #endif
 
 #define log_inf(format, args...)    pr_info(MyTag format,  ##args)
