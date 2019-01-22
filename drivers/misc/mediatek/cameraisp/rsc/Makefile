@@ -23,4 +23,10 @@ ccflags-y += -I$(srctree)/drivers/staging/android/ion \
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/
 
 obj-y += engine_request.o
-obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += $(MTK_PLATFORM)/camera_rsc.o
+ifeq ($(CONFIG_MACH_MT6771),y)
+  obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += mt6775/camera_rsc.o
+else
+  ifeq ($(CONFIG_MACH_MT6775),y)
+    obj-$(CONFIG_MTK_CAMERA_ISP_RSC_SUPPORT) += $(MTK_PLATFORM)/camera_rsc.o
+  endif
+endif
