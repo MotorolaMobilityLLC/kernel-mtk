@@ -22,7 +22,9 @@
 #include <linux/types.h>
 
 #include "disp_drv_platform.h"
+#ifdef CONFIG_MTK_M4U
 #include "m4u_priv.h"
+#endif
 #include "mtkfb.h"
 #include "debug.h"
 #include "lcm_drv.h"
@@ -516,6 +518,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	}
 	case FB_LAYER_DUMP:
 	{
+#ifdef CONFIG_MTK_M4U
 		int layer_size;
 		int ret = 0;
 		unsigned long kva = 0;
@@ -571,6 +574,9 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			return ret;
 		} else
 			return -2;
+#else
+		return -2;
+#endif
 	}
 	case LCM_GET_ESD:
 	{
