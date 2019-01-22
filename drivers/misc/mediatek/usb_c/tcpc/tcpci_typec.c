@@ -1836,6 +1836,10 @@ static inline int typec_handle_error_recovery_timeout(
 
 	mutex_lock(&tcpc_dev->access_lock);
 	tcpc_dev->pd_wait_error_recovery = false;
+	if (tcpc_dev->pd_transmit_state >= PD_TX_STATE_WAIT) {
+		TYPEC_INFO("Still wait tx_done\r\n");
+		tcpc_dev->pd_transmit_state = PD_TX_STATE_GOOD_CRC;
+	}
 	mutex_unlock(&tcpc_dev->access_lock);
 
 	typec_unattach_wait_pe_idle_entry(tcpc_dev);
@@ -2197,17 +2201,19 @@ int tcpc_typec_handle_pe_pr_swap(struct tcpc_device *tcpc_dev)
 	switch (tcpc_dev->typec_state) {
 	case typec_attached_snk:
 		TYPEC_NEW_STATE(typec_attached_src);
-		tcpc_dev->typec_attach_old = TYPEC_ATTACHED_SRC;
+		tcpc_dev->typec_attach_new = TYPEC_ATTACHED_SRC;
 		tcpci_set_cc(tcpc_dev, tcpc_dev->typec_local_rp_level);
 		break;
 	case typec_attached_src:
 		TYPEC_NEW_STATE(typec_attached_snk);
-		tcpc_dev->typec_attach_old = TYPEC_ATTACHED_SNK;
+		tcpc_dev->typec_attach_new = TYPEC_ATTACHED_SNK;
 		tcpci_set_cc(tcpc_dev, TYPEC_CC_RD);
 		break;
 	default:
 		break;
 	}
+
+	typec_alert_attach_state_change(tcpc_dev);
 	mutex_unlock(&tcpc_dev->typec_lock);
 	return ret;
 }
