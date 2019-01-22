@@ -77,6 +77,7 @@ static u32 nfc_irq;
 static bool irqIsAttached;
 
 static bool device_open; /* Is device open? */
+static bool enable_debug_log;
 
 struct st21nfc_dev {
 	wait_queue_head_t read_wq;
@@ -94,7 +95,8 @@ static int st21nfc_loc_set_polaritymode(struct st21nfc_dev *st21nfc_dev,
 	unsigned int irq_type;
 	int ret;
 
-	pr_info("%s:%d mode %d", __FILE__, __LINE__, mode);
+	if (enable_debug_log)
+		pr_info("%s:%d mode %d", __FILE__, __LINE__, mode);
 
 	st21nfc_dev->platform_data.polarity_mode = mode;
 	/* setup irq_flags */
@@ -133,7 +135,8 @@ static int st21nfc_loc_set_polaritymode(struct st21nfc_dev *st21nfc_dev,
 	/* request irq.  the irq is set whenever the chip has data available
 	 * for reading.  it is cleared when all data has been read.
 	 */
-	pr_debug("%s : requesting IRQ %d\n", __func__, client->irq);
+	if (enable_debug_log)
+		pr_debug("%s : requesting IRQ %d\n", __func__, client->irq);
 
 	st21nfc_dev->irq_enabled = true;
 
@@ -144,7 +147,8 @@ static int st21nfc_loc_set_polaritymode(struct st21nfc_dev *st21nfc_dev,
 	if (!ret)
 		irqIsAttached = true;
 
-	pr_info("%s:%d ret %d", __FILE__, __LINE__, ret);
+	if (enable_debug_log)
+		pr_info("%s:%d ret %d", __FILE__, __LINE__, ret);
 	return ret;
 }
 
@@ -184,7 +188,8 @@ static ssize_t st21nfc_dev_read(struct file *filp, char __user *buf,
 	if (count > MAX_BUFFER_SIZE)
 		count = MAX_BUFFER_SIZE;
 
-	pr_debug("%s : reading %zu bytes.\n", __func__, count);
+	if (enable_debug_log)
+		pr_debug("%s : reading %zu bytes.\n", __func__, count);
 
 	mutex_lock(&st21nfc_dev->platform_data.read_mutex);
 
@@ -217,8 +222,10 @@ static ssize_t st21nfc_dev_write(struct file *filp, const char __user *buf,
 
 	st21nfc_dev = container_of(filp->private_data,
 				   struct st21nfc_dev, st21nfc_device);
-	pr_debug("%s: st21nfc_dev ptr %p\n", __func__, st21nfc_dev);
-	pr_debug("%s : writing %zu bytes.\n", __func__, count);
+	if (enable_debug_log) {
+		pr_debug("%s: st21nfc_dev ptr %p\n", __func__, st21nfc_dev);
+		pr_debug("%s : writing %zu bytes.\n", __func__, count);
+	}
 
 	if (count > MAX_BUFFER_SIZE)
 		count = MAX_BUFFER_SIZE;
@@ -242,20 +249,23 @@ static int st21nfc_dev_open(struct inode *inode, struct file *filp)
 	int ret = 0;
 	struct st21nfc_dev *st21nfc_dev = NULL;
 
-	pr_info("%s:%d dev_open", __FILE__, __LINE__);
+	if (enable_debug_log) {
+		pr_info("%s:%d dev_open", __FILE__, __LINE__);
+
 	if (device_open) {
 		ret = -EBUSY;
-		pr_err("%s : device already opened ret= %d\n", __func__, ret);
-		} else {
-	device_open = true;
-	st21nfc_dev = container_of(filp->private_data,
-						       struct st21nfc_dev,
-						       st21nfc_device);
+		if (enable_debug_log)
+			pr_debug("%s : device already opened ret= %d\n", __func__, ret);
+	} else {
+		device_open = true;
+		st21nfc_dev = container_of(filp->private_data,
+								   struct st21nfc_dev,
+								   st21nfc_device);
 
-	pr_debug("%s : %d,%d ", __func__, imajor(inode), iminor(inode));
-
-	pr_debug("%s: st21nfc_dev ptr %p\n", __func__, st21nfc_dev);
-
+		if (enable_debug_log) {
+			pr_debug("%s : %d,%d ", __func__, imajor(inode), iminor(inode));
+			pr_debug("%s: st21nfc_dev ptr %p\n", __func__, st21nfc_dev);
+		}
 	}
 	return ret;
 }
@@ -264,7 +274,8 @@ static int st21nfc_dev_open(struct inode *inode, struct file *filp)
 static int st21nfc_release(struct inode *inode, struct file *file)
 {
 	device_open = false;
-	pr_debug("%s : device_open  = %d\n", __func__, device_open);
+	if (enable_debug_log)
+		pr_debug("%s : device_open  = %d\n", __func__, device_open);
 
 	return 0;
 }
@@ -340,7 +351,8 @@ static long st21nfc_dev_ioctl(struct file *filp, unsigned int cmd,
 		break;
 	case ST21NFC_GET_POLARITY:
 		ret = st21nfc_dev->platform_data.polarity_mode;
-		pr_debug("%s get polarity %d\n", __func__, ret);
+		if (enable_debug_log)
+			pr_debug("%s get polarity %d\n", __func__, ret);
 		break;
 	case ST21NFC_RECOVERY:
 		/* For ST21NFCD usage only */
@@ -406,11 +418,13 @@ static unsigned int st21nfc_poll(struct file *file, poll_table *wait)
 	} else {
 		/* Wake_up_pin  is low. Activate ISR  */
 		if (!st21nfc_dev->irq_enabled) {
-			pr_debug("%s enable irq\n", __func__);
+			if (enable_debug_log)
+				pr_debug("%s enable irq\n", __func__);
 			st21nfc_dev->irq_enabled = true;
 			enable_irq(st21nfc_dev->platform_data.client->irq);
 		} else {
-			pr_err("%s irq already enabled\n", __func__);
+			if (enable_debug_log)
+				pr_debug("%s irq already enabled\n", __func__);
 		}
 
 	}
@@ -420,13 +434,15 @@ static unsigned int st21nfc_poll(struct file *file, poll_table *wait)
 
 static int st21nfc_platform_probe(struct platform_device *pdev)
 {
-	pr_err("st21nfc_platform_probe\n");
+	if (enable_debug_log)
+		pr_debug("st21nfc_platform_probe\n");
 	return 0;
 }
 
 static int st21nfc_platform_remove(struct platform_device *pdev)
 {
-	pr_err("st21nfc_platform_remove\n");
+	if (enable_debug_log)
+		pr_debug("st21nfc_platform_remove\n");
 	return 0;
 }
 
@@ -527,7 +543,8 @@ static int nfc_parse_dt(struct device *dev, struct st21nfc_platform_data *pdata)
 		&(pdata->irq_gpio), 1);
 #endif
 	} else {
-		pr_debug("%s : get gpio num err.\n", __func__);
+		if (enable_debug_log)
+			pr_debug("%s : get gpio num err.\n", __func__);
 		return -1;
 	}
 
@@ -598,7 +615,8 @@ static int st21nfc_probe(struct i2c_client *client,
 		goto err_exit;
 	}
 
-	pr_debug("%s : dev_cb_addr %p\n", __func__, st21nfc_dev);
+	if (enable_debug_log)
+		pr_debug("%s : dev_cb_addr %p\n", __func__, st21nfc_dev);
 	pr_info("%s : dev_cb_addr %p\n", __func__, st21nfc_dev);
 
 	/* store for later use */
@@ -820,9 +838,11 @@ static struct platform_driver st21nfc_platform_driver = {
 
 static int __init st21nfc_dev_init(void)
 {
-	pr_debug("Loading st21nfc driver\n");
+	if (enable_debug_log)
+		pr_debug("Loading st21nfc driver\n");
 	platform_driver_register(&st21nfc_platform_driver);
-	pr_debug("Loading st21nfc platform driver\n");
+	if (enable_debug_log)
+		pr_debug("Loading st21nfc platform driver\n");
 
 	return i2c_add_driver(&st21nfc_driver);
 }
@@ -831,7 +851,8 @@ module_init(st21nfc_dev_init);
 
 static void __exit st21nfc_dev_exit(void)
 {
-	pr_debug("Unloading st21nfc driver\n");
+	if (enable_debug_log)
+		pr_debug("Unloading st21nfc driver\n");
 	i2c_del_driver(&st21nfc_driver);
 }
 
