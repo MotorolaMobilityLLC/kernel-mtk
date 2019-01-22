@@ -16,7 +16,7 @@
 
 #include <linux/platform_device.h>
 
-#define BUS_DBG_CON			(BUS_DBG_BASE + 0x0000)
+#define BUS_DBG_CON			(BUS_DBG_CON_REG)
 #define BUS_DBG_TIMER_CON0		(BUS_DBG_BASE + 0x0004)
 #define BUS_DBG_TIMER_CON1		(BUS_DBG_BASE + 0x0008)
 #define BUS_DBG_TIMER_R0		(BUS_DBG_BASE + 0x000C)
@@ -135,6 +135,7 @@ extern void dump_regs(const char *fmt, const char v1, const unsigned int reg, co
 extern struct mt_systracker_driver *get_mt_systracker_drv(void);
 
 extern void __iomem *BUS_DBG_BASE;
+extern void __iomem *BUS_DBG_CON_REG;
 extern int systracker_irq;
 extern struct systracker_config_t track_config;
 extern struct systracker_entry_t track_entry;

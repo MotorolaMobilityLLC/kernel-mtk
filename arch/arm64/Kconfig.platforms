@@ -96,6 +96,7 @@ config MACH_MT6759
 	select PINCTRL_MT6759
 	select MFD_SYSCON
 	select MTK_EIC
+	select MTK_SYSTRACKER_V2
 	help
 	  This enables support for MediaTek MT6759
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
