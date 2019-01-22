@@ -12,6 +12,7 @@
  */
 #include "fbc.h"
 
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define EAS 1
 #define LEGACY 2
 #define NR_PPM_CLUSTERS 3
@@ -47,8 +48,10 @@ static struct ppm_limit_data core_limit[NR_PPM_CLUSTERS];
 static struct hrtimer hrt;
 static long long capacity;
 static long long touch_capacity;
+static long long current_max_capacity;
 static long long chase_capacity;
 static long long avg_capacity;
+static int act_switched;
 
 static int power_ll[16][2];
 static int power_l[16][2];
@@ -177,6 +180,20 @@ static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
+static void notify_act_switch(int begin)
+{
+	mutex_lock(&notify_lock);
+	if (fbc_debug || is_game || !fbc_touch) {
+		mutex_unlock(&notify_lock);
+		return;
+	}
+
+	if (!begin)
+		act_switched = 1;
+
+	mutex_unlock(&notify_lock);
+}
+
 static void notify_no_render_legacy(void)
 {
 	mutex_lock(&notify_lock);
@@ -191,6 +208,10 @@ static void notify_no_render_legacy(void)
 static void notify_twanted_timeout_legacy(void)
 {
 	mutex_lock(&notify_lock);
+	if (fbc_debug || is_game || !fbc_touch) {
+		mutex_unlock(&notify_lock);
+		return;
+	}
 
 	if (frame_done == 0) {
 		chase_capacity = capacity * (100 + super_boost) / 100;
@@ -213,6 +234,14 @@ void notify_touch_legacy(int touch)
 	fbc_tracer(-1, "touch", fbc_touch);
 
 	if (fbc_touch && fbc_touch_pre == 0) {
+		chase = 0;
+
+		if (act_switched) {
+			capacity = touch_capacity = 347;
+			act_switched = 0;
+		} else
+			capacity = touch_capacity = current_max_capacity;
+
 		core_limit[0].min = 3;
 		core_limit[0].max = -1;
 		core_limit[1].min = -1;
@@ -221,8 +250,6 @@ void notify_touch_legacy(int touch)
 		core_limit[2].max = -1;
 		update_userlimit_cpu_core(KIR_FBC, NR_PPM_CLUSTERS, core_limit);
 
-		chase = 0;
-		capacity = touch_capacity;
 		boost_freq(capacity);
 		perfmgr_kick_fg_boost(KIR_FBC, 100);
 	} else if (fbc_touch == 0 && fbc_touch_pre) {
@@ -283,6 +310,9 @@ void notify_frame_complete_legacy(unsigned long frame_time)
 		capacity = 1024;
 	if (capacity <= 0)
 		capacity = 1;
+
+	if (!first_frame)
+		current_max_capacity = MAX(current_max_capacity, capacity);
 
 	boost_freq(capacity);
 
@@ -417,16 +447,15 @@ void notify_intended_vsync_eas(void)
 static ssize_t device_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
-	char buf[64];
-	int ret;
-	unsigned long arg1, arg2;
-	char option[64], arg[10];
-	int i, j;
+	char buf[32];
+	int arg1;
+	char option[32];
+	int i;
 #if 0
 	int boost_value_super;
 #endif
 
-	arg1 = arg2 = 0;
+	arg1 = 0;
 
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
@@ -435,38 +464,8 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		return -EFAULT;
 	buf[cnt] = '\0';
 
-	/* get option */
-	for (i = 0; i < cnt && buf[i] != ' '; i++)
-		option[i] = buf[i];
-	option[i] = '\0';
-
-	/* get arg1 */
-	for (; i < cnt && buf[i] == ' '; i++)
-		;
-	for (j = 0; i < cnt && buf[i] != ' '; i++, j++)
-		arg[j] = buf[i];
-	arg[j] = '\0';
-	if (j > 0) {
-		ret = kstrtoul(arg, 0, (unsigned long *)&arg1);
-		if (ret < 0) {
-			pr_debug(TAG"1 ret of kstrtoul is broke\n");
-			return ret;
-		}
-	}
-
-	/* get arg2 */
-	for (; i < cnt && buf[i] == ' '; i++)
-		;
-	for (j = 0; i < cnt && buf[i] != ' '; i++, j++)
-		arg[j] = buf[i];
-	arg[j] = '\0';
-	if (j > 0) {
-		ret = kstrtoul(arg, 0, (unsigned long *)&arg2);
-		if (ret < 0) {
-			pr_debug(TAG"2 ret of kstrtoul is broke\n");
-			return ret;
-		}
-	}
+	if (sscanf(buf, "%31s %d", option, &arg1) != 2)
+		return -EFAULT;
 
 	if (strncmp(option, "debug", 5) == 0) {
 		fbc_debug = arg1;
@@ -479,6 +478,10 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 			notify_touch_eas();
 		else if (boost_method == LEGACY)
 			notify_touch_legacy(arg1);
+	} else if (strncmp(option, "act_switch", 5) == 0) {
+		if (fbc_debug || is_game)
+			return cnt;
+		notify_act_switch(arg1);
 	} else if (strncmp(option, "init", 4) == 0) {
 		touch_boost_value = arg1;
 		boost_value  = touch_boost_value;
@@ -627,8 +630,9 @@ static int __init init_fbc(void)
 	super_boost = 30;
 	is_game = 0;
 	is_30_fps = 0;
-	touch_capacity = 286;
-	capacity = touch_capacity;
+	touch_capacity = 347;
+	act_switched = 0;
+	capacity = current_max_capacity = touch_capacity;
 	fbc_trace = 0;
 	mark_addr = kallsyms_lookup_name("tracing_mark_write");
 
