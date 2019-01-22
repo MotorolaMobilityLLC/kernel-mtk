@@ -194,8 +194,12 @@ WLAN_STATUS nicAllocateAdapterMemory(IN P_ADAPTER_T prAdapter)
 
 		/* Allocate memory for the common coalescing buffer. */
 		u4CbSize = CFG_COALESCING_BUFFER_SIZE;
-		prAdapter->u4CoalescingBufCachedSize = u4CbSize > CFG_RX_COALESCING_BUFFER_SIZE ?
-		    u4CbSize : CFG_RX_COALESCING_BUFFER_SIZE;
+
+#if CFG_COALESCING_BUFFER_SIZE > CFG_RX_COALESCING_BUFFER_SIZE
+		prAdapter->u4CoalescingBufCachedSize = CFG_COALESCING_BUFFER_SIZE;
+#else
+		prAdapter->u4CoalescingBufCachedSize = CFG_RX_COALESCING_BUFFER_SIZE;
+#endif
 
 		prAdapter->pucCoalescingBufCached = kalAllocateIOBuffer(prAdapter->u4CoalescingBufCachedSize);
 
