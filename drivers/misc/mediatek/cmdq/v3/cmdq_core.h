@@ -787,6 +787,11 @@ struct cmdq_subsys_dts_name {
 	const char *group;
 };
 
+enum CMDQ_SPM_MODE {
+	CMDQ_CG_MODE,
+	CMDQ_PD_MODE,
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -1168,6 +1173,7 @@ extern "C" {
 	u32 cmdq_event_get_table_size(void);
 	struct cmdq_subsys_dts_name *cmdq_subsys_get_dts(void);
 	u32 cmdq_subsys_get_size(void);
+	void cmdq_core_set_spm_mode(enum CMDQ_SPM_MODE mode);
 
 #ifdef __cplusplus
 }

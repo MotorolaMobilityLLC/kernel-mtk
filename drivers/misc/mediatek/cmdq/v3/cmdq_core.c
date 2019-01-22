@@ -9738,3 +9738,20 @@ struct ContextStruct *cmdq_core_get_context(void)
 	return &gCmdqContext;
 }
 
+void cmdq_core_set_spm_mode(enum CMDQ_SPM_MODE mode)
+{
+	CMDQ_MSG("before setting, reg:0x%x\n", CMDQ_REG_GET32(CMDQ_H_SPEED_BUSY));
+
+	switch (mode) {
+	case CMDQ_CG_MODE:
+		CMDQ_REG_SET32(CMDQ_H_SPEED_BUSY, 0x20002);
+		break;
+	case CMDQ_PD_MODE:
+		CMDQ_REG_SET32(CMDQ_H_SPEED_BUSY, 0x3);
+		break;
+	default:
+		break;
+	}
+
+	CMDQ_MSG("after setting, reg:0x%x\n", CMDQ_REG_GET32(CMDQ_H_SPEED_BUSY));
+}
