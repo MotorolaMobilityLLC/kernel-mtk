@@ -3958,6 +3958,26 @@ static const char * const *get_mm_clk_names(size_t *num)
 	return clks;
 }
 
+static const char * const *get_mm_ccu_clk_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* MM */
+		"mm_smi_common",
+		"mm_smi_larb0",
+		"mm_smi_larb1",
+		"mm_gals_comm0",
+		"mm_gals_comm1",
+		"mm_gals_ccu2mm",
+		"mm_gals_ipu12mm",
+		"mm_gals_img2mm",
+		"mm_gals_cam2mm",
+		"mm_gals_ipu2mm",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+
 static const char * const *get_venc_clk_names(size_t *num)
 {
 	static const char * const clks[] = {
@@ -3978,6 +3998,18 @@ static const char * const *get_vdec_clk_names(size_t *num)
 		/* VDE */
 		"vdec_cken",
 		"vdec_larb1_cken",
+	};
+	*num = ARRAY_SIZE(clks);
+	return clks;
+}
+
+static const char * const *get_cam_pwr_names(size_t *num)
+{
+	static const char * const clks[] = {
+
+		/* PG */
+		"pg_dis",
+		"pg_cam",
 	};
 	*num = ARRAY_SIZE(clks);
 	return clks;
@@ -4091,6 +4123,43 @@ void subsys_if_on(void)
 	for (i = 0; i < num; i++)
 		dump_cg_state(clks[i]);
 #endif
+}
+
+void cam_mtcmos_check(void)
+{
+	unsigned int sta = spm_read(PWR_STATUS);
+	unsigned int sta_s = spm_read(PWR_STATUS_2ND);
+	int i = 0;
+	size_t cam_num, mm_num, pwr_num = 0;
+
+	/*const char * const *clks = get_all_clk_names(&num);*/
+	const char * const *cam_clks = get_cam_clk_names(&cam_num);
+	const char * const *mm_clks = get_mm_ccu_clk_names(&mm_num);
+	const char * const *cam_pwrs = get_cam_pwr_names(&pwr_num);
+
+	pr_notice("PWR_STATUS = %08x, %08x\n", spm_read(PWR_STATUS),
+		spm_read(PWR_STATUS_2ND));
+	pr_notice("PWR_CON = %08x, %08x\n", spm_read(DIS_PWR_CON),
+		spm_read(CAM_PWR_CON));
+
+	if ((sta & (1U << 3)) && (sta_s & (1U << 3))) {
+		pr_notice("%s: SYS_DIS is on!!!\n", __func__);
+		check_mm0_clk_sts();
+	} else {
+		pr_notice("%s: SYS_DIS is off!!!\n", __func__);
+	}
+	if ((sta & (1U << 25)) && (sta_s & (1U << 25))) {
+		pr_notice("%s: SYS_CAM is on!!!\n", __func__);
+		check_cam_clk_sts();
+	} else {
+		pr_notice("%s: SYS_CAM is off!!!\n", __func__);
+	}
+	for (i = 0; i < pwr_num; i++)
+		dump_cg_state(cam_pwrs[i]);
+	for (i = 0; i < mm_num; i++)
+		dump_cg_state(mm_clks[i]);
+	for (i = 0; i < cam_num; i++)
+		dump_cg_state(cam_clks[i]);
 }
 
 #if 1 /*only use for suspend test*/
