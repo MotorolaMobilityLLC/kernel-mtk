@@ -3,7 +3,11 @@
 #
 
 ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
-
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+	include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
+	subdir-ccflags-y += -I$(srctree)/drivers/spi/trustzone/spi/Tlspi/inc
+	subdir-ccflags-y += -I$(srctree)/drivers/spi/trustzone/spi/drspi/public
+endif
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 # small core, mostly translating board-specific
@@ -52,6 +56,7 @@ obj-$(CONFIG_SPI_MPC512x_PSC)		+= spi-mpc512x-psc.o
 obj-$(CONFIG_SPI_MPC52xx_PSC)		+= spi-mpc52xx-psc.o
 obj-$(CONFIG_SPI_MPC52xx)		+= spi-mpc52xx.o
 obj-$(CONFIG_SPI_MT65XX)                += spi-mt65xx.o
+obj-$(CONFIG_SPI_MT65XX)                += spi-mt65xx-dev.o
 obj-$(CONFIG_SPI_MXS)			+= spi-mxs.o
 obj-$(CONFIG_SPI_NUC900)		+= spi-nuc900.o
 obj-$(CONFIG_SPI_OC_TINY)		+= spi-oc-tiny.o
