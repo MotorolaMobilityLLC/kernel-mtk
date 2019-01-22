@@ -150,6 +150,13 @@ int hwmsen_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
 	int err;
 	struct i2c_msg msgs[2] = {{0}, {0} };
 
+	if (!client)
+		return -EINVAL;
+	else if (len > C_I2C_FIFO_SIZE) {
+		HWM_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		return -EINVAL;
+	}
+
 	if (len == 1)
 		return hwmsen_read_byte(client, addr, data);
 
@@ -162,14 +169,6 @@ int hwmsen_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
 	msgs[1].flags = I2C_M_RD;
 	msgs[1].len = len;
 	msgs[1].buf = data;
-
-
-	if (!client)
-		return -EINVAL;
-	else if (len > C_I2C_FIFO_SIZE) {
-		HWM_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
-		return -EINVAL;
-	}
 
 	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (err != 2) {
