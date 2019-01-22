@@ -797,7 +797,7 @@ CONFIG_SCHED_MC,PLATFORM,yt.chang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SCHED_STACK_END_CHECK,USER;PLATFORM,miles.chen,,X(PLATFORM),X(PLATFORM),X(PLATFORM),X(PLATFORM),X(PLATFORM),X(PLATFORM),X(USER),X(USER),X(PLATFORM),X(PLATFORM)
 CONFIG_SCHEDSTATS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SCHED_TUNE,PLATFORM,jing-ting.wu,,X,X,y,y,y,y,y,y,y,y
-CONFIG_SCHED_WALT,PLATFORM,michael.jiang,support from p40 and later chip,X,X,X,X,X,X,X,X,y,y
+CONFIG_SCHED_WALT,PLATFORM,michael.jiang,support from p40 and later chip,X,X,X,X,X,X,y,y,y,y
 CONFIG_SCSI,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_SCSI_LOWLEVEL,PROJECT,chun-hung.wu,,N,N,O,,,,,,,
 CONFIG_SCSI_SCAN_ASYNC,COMMON,,,y,y,y,y,y,y,y,y,y,y
