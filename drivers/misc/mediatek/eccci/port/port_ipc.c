@@ -422,7 +422,7 @@ static int port_ipc_kernel_write(int md_id, ipc_ilm_t *in_ilm)
 
 int ccci_ipc_send_ilm(int md_id, ipc_ilm_t *in_ilm)
 {
-	if (md_id < 0 || md_id > MAX_MD_NUM)
+	if (md_id < 0 || md_id >= MAX_MD_NUM)
 		return -EINVAL;
 	return port_ipc_kernel_write(md_id, in_ilm);
 }
