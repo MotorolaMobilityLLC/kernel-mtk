@@ -1295,9 +1295,10 @@ int dlpt_notify_handler(void *unused)
 					cnt++;
 					PMICLOG("[DLPT_POWER_OFF_EN] notify SOC=0 to power off , cnt=%d\n", cnt);
 
-					if (cnt >= 4)
+					if (cnt >= 4) {
+						pr_err("DLPT reboot system by low battery\n");
 						kernel_restart("DLPT reboot system");
-
+					}
 				} else {
 					cnt = 0;
 				}
