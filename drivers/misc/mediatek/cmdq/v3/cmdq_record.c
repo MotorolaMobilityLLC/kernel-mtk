@@ -97,29 +97,29 @@ int32_t cmdq_op_condition_query(const struct cmdq_stack_node *top_node, int *pos
 	return 0;
 }
 
-/* query while position from the stack */
-int32_t cmdq_op_condition_find_while(const struct cmdq_stack_node *top_node, const uint32_t position)
+/* query op position from the stack by type bit */
+s32 cmdq_op_condition_find_op_type(const struct cmdq_stack_node *top_node,
+	const u32 position, u32 op_type_bit, const struct cmdq_stack_node **op_node)
 {
 	const struct cmdq_stack_node *temp_node = top_node;
-	uint32_t got_position = position;
+	u32 got_position = position;
 
 	/* get the value of the top */
 	do {
-		if (top_node == NULL)
+		if (!temp_node)
 			break;
 
-		if (temp_node->stack_type == CMDQ_STACK_TYPE_WHILE) {
+		if ((1 << temp_node->stack_type) & op_type_bit) {
 			got_position = temp_node->position;
+			if (op_node)
+				*op_node = temp_node;
 			break;
 		}
-
-		if (temp_node->next == NULL)
-			break;
 
 		temp_node = temp_node->next;
 	} while (1);
 
-	return (int32_t)(got_position - position);
+	return (s32)(got_position - position);
 }
 
 static bool cmdq_is_cpr(uint32_t argument, uint32_t arg_type)
@@ -950,25 +950,23 @@ int32_t cmdq_op_poll_v2(struct cmdqRecStruct *handle, uint32_t addr, uint32_t va
 int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
 {
 	/*
-	* Simulate Code
-	* arg_temp = [addr] & mask
-	* while (arg_temp != value) {
-	*   wait_and_clear (100us);
-	*   arg_temp = [addr] & mask
-	* }
-	*/
+	 * Simulate Code
+	 * do {
+	 *   arg_temp = [addr] & mask
+	 *   wait_and_clear (100us);
+	 * } while (arg_temp != value);
+	 */
 
 	CMDQ_VARIABLE arg_loop_debug = CMDQ_TASK_LOOP_DEBUG_VAR;
 	u32 condition_value = value & mask;
 
 	cmdq_op_assign(handle, &handle->arg_value, condition_value);
 	cmdq_op_assign(handle, &arg_loop_debug, 0);
-	cmdq_op_read_reg(handle, addr, &handle->arg_source, mask);
-	cmdq_op_while(handle, handle->arg_value, CMDQ_NOT_EQUAL, handle->arg_source);
+	cmdq_op_do_while(handle);
+		cmdq_op_read_reg(handle, addr, &handle->arg_source, mask);
 		cmdq_op_add(handle, &arg_loop_debug, arg_loop_debug, 1);
 		cmdq_op_wait(handle, CMDQ_EVENT_TIMER_00 + CMDQ_POLLING_TPR_MASK_BIT);
-		cmdq_op_read_reg(handle, addr, &handle->arg_source, mask);
-	cmdq_op_end_while(handle);
+	cmdq_op_end_do_while(handle, handle->arg_value, CMDQ_NOT_EQUAL, handle->arg_source);
 	return 0;
 }
 
@@ -2494,8 +2492,7 @@ int32_t cmdq_append_jump_c_command(struct cmdqRecStruct *handle, CMDQ_VARIABLE a
 			break;
 
 		arg_abc_type = (arg_a_type << 2) | (arg_b_type << 1) | (arg_c_type);
-		if (true == cmdq_is_cpr(arg_b_i, arg_b_type)
-			|| true == cmdq_is_cpr(arg_c_i, arg_c_type)) {
+		if (cmdq_is_cpr(arg_b_i, arg_b_type) || cmdq_is_cpr(arg_c_i, arg_c_type)) {
 			/* save local variable position */
 			CMDQ_MSG("save jump_c: condition:%d, arg_b: 0x%08x, arg_c: 0x%08x, arg_abc_type: %d\n",
 				 arg_condition, arg_b_i, arg_c_i, arg_abc_type);
@@ -2516,15 +2513,15 @@ int32_t cmdq_append_jump_c_command(struct cmdqRecStruct *handle, CMDQ_VARIABLE a
 	return status;
 }
 
-int32_t cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle, uint32_t rewritten_position, uint32_t new_value)
+s32 cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle, u32 rewritten_position, u32 new_value)
 {
-	uint32_t op, op_arg_type, op_jump;
-	uint32_t *p_command;
+	u32 op, op_arg_type, op_jump;
+	u32 *p_command;
 
 	if (handle == NULL)
 		return -EFAULT;
 
-	p_command = (uint32_t *) ((uint8_t *) handle->pBuffer + rewritten_position);
+	p_command = (u32 *) ((u8 *) handle->pBuffer + rewritten_position);
 
 	if (likely(handle->scenario != CMDQ_SCENARIO_TIMER_LOOP)) {
 		/* reserve condition statement */
@@ -2543,7 +2540,7 @@ int32_t cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle, uint32_t rewritten_
 
 		/* rewrite actual jump value */
 		op_arg_type = (p_command[1] & 0xFFFF0000) >> 16;
-		p_command[1] = (op_arg_type << 16) | (new_value - rewritten_position);
+		p_command[1] = (op_arg_type << 16) | (((s32)new_value - (s32)rewritten_position) & 0xFFFF);
 	}
 
 	return 0;
@@ -2698,40 +2695,60 @@ int32_t cmdq_op_while(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
 	return status;
 }
 
-int32_t cmdq_op_continue(struct cmdqRecStruct *handle)
+s32 cmdq_op_continue(struct cmdqRecStruct *handle)
 {
-	int32_t status = 0;
-	uint32_t current_position;
-	int32_t rewritten_position;
-	uint32_t *p_command;
+	const u32 op_while_bit = 1 << CMDQ_STACK_TYPE_WHILE;
+	const u32 op_do_while_bit = 1 << CMDQ_STACK_TYPE_DO_WHILE;
+	s32 status = 0;
+	u32 current_position;
+	s32 rewritten_position;
+	u32 *p_command;
+	const struct cmdq_stack_node *op_node = NULL;
 
 	if (handle == NULL)
 		return -EFAULT;
 
-	p_command = (uint32_t *) ((uint8_t *) handle->pBuffer + handle->blockSize);
+	p_command = (u32 *)((u8 *) handle->pBuffer + handle->blockSize);
 
 	do {
 		current_position = handle->blockSize;
 
-		/* query while position from the stack */
-		rewritten_position = cmdq_op_condition_find_while(handle->while_stack_node, current_position);
-		if (rewritten_position >= 0) {
+		/* query while/do while position from the stack */
+		rewritten_position = cmdq_op_condition_find_op_type(handle->while_stack_node, current_position,
+			op_while_bit | op_do_while_bit, &op_node);
+
+		if (!op_node) {
 			status = -EFAULT;
 			break;
 		}
 
-		/* use jump command to start of while statement, since jump_c cannot process negative number */
-		cmdq_append_command(handle, CMDQ_CODE_JUMP, 0, rewritten_position, 0, 0);
+		if (op_node->stack_type == CMDQ_STACK_TYPE_WHILE) {
+			/*
+			 * use jump command to start of while statement,
+			 * since jump_c cannot process negative number
+			 */
+			status = cmdq_append_command(handle, CMDQ_CODE_JUMP, 0, rewritten_position, 0, 0);
+		} else if (op_node->stack_type == CMDQ_STACK_TYPE_DO_WHILE) {
+			/* append conditional jump instruction to jump end op while */
+			status = cmdq_append_jump_c_command(handle, 1, CMDQ_NOT_EQUAL, 1);
+			if (status < 0)
+				break;
+			status = cmdq_op_condition_push(&handle->while_stack_node, current_position,
+				CMDQ_STACK_TYPE_CONTINUE);
+		}
 	} while (0);
 
 	return status;
 }
 
-int32_t cmdq_op_break(struct cmdqRecStruct *handle)
+s32 cmdq_op_break(struct cmdqRecStruct *handle)
 {
-	int32_t status = 0;
-	uint32_t current_position;
-	int32_t while_position;
+	const u32 op_while_bit = 1 << CMDQ_STACK_TYPE_WHILE;
+	const u32 op_do_while_bit = 1 << CMDQ_STACK_TYPE_DO_WHILE;
+	const struct cmdq_stack_node *op_node = NULL;
+	s32 status = 0;
+	u32 current_position;
+	s32 while_position;
 
 	if (handle == NULL)
 		return -EFAULT;
@@ -2740,7 +2757,8 @@ int32_t cmdq_op_break(struct cmdqRecStruct *handle)
 		current_position = handle->blockSize;
 
 		/* query while position from the stack */
-		while_position = cmdq_op_condition_find_while(handle->while_stack_node, current_position);
+		while_position = cmdq_op_condition_find_op_type(handle->while_stack_node, current_position,
+			op_while_bit | op_do_while_bit, &op_node);
 		if (while_position >= 0) {
 			CMDQ_ERR("Incorrect break command, please review your while statement.");
 			status = -EFAULT;
@@ -2754,6 +2772,7 @@ int32_t cmdq_op_break(struct cmdqRecStruct *handle)
 
 		/* handle while stack */
 		status = cmdq_op_condition_push(&handle->while_stack_node, current_position, CMDQ_STACK_TYPE_BREAK);
+
 	} while (0);
 
 	return status;
@@ -2781,7 +2800,11 @@ int32_t cmdq_op_end_while(struct cmdqRecStruct *handle)
 		if (status < 0)
 			break;
 
-		if (rewritten_stack_type == CMDQ_STACK_TYPE_WHILE) {
+		if (rewritten_stack_type == CMDQ_STACK_TYPE_DO_WHILE) {
+			CMDQ_ERR("Mix with while and do while in while loop\n");
+			status = -EFAULT;
+			break;
+		} else if (rewritten_stack_type == CMDQ_STACK_TYPE_WHILE) {
 			if (whileCount <= 0)
 				break;
 			whileCount--;
@@ -2796,6 +2819,81 @@ int32_t cmdq_op_end_while(struct cmdqRecStruct *handle)
 		}
 
 		cmdq_op_rewrite_jump_c(handle, rewritten_position, handle->blockSize);
+	} while (1);
+
+	return status;
+}
+
+s32 cmdq_op_do_while(struct cmdqRecStruct *handle)
+{
+	s32 status = 0;
+	u32 current_position;
+
+	if (handle == NULL)
+		return -EFAULT;
+
+	current_position = handle->blockSize;
+	/* handle while stack */
+	status = cmdq_op_condition_push(&handle->while_stack_node, current_position, CMDQ_STACK_TYPE_DO_WHILE);
+	return status;
+}
+
+s32 cmdq_op_end_do_while(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
+	enum CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c)
+{
+	s32 status = 0;
+	u32 stack_op_position, condition_position;
+	enum CMDQ_STACK_TYPE_ENUM stack_op_type;
+
+	if (handle == NULL)
+		return -EFAULT;
+
+	/* mark position of end do while for continue */
+	condition_position = handle->blockSize;
+
+	/*
+	 * Append conditional jump instruction and rewrite later.
+	 * Reverse op since cmdq_append_jump_c_command always do reverse and jump.
+	 */
+	status = cmdq_append_jump_c_command(handle, arg_b, cmdq_reverse_op_condition(arg_condition), arg_c);
+
+	do {
+		u32 destination_position = handle->blockSize;
+
+		/* check while stack */
+		status = cmdq_op_condition_query(handle->while_stack_node, &stack_op_position, &stack_op_type);
+		if (status < 0)
+			break;
+
+		if (stack_op_type == CMDQ_STACK_TYPE_WHILE) {
+			CMDQ_ERR("Mix with while and do while in do-while loop\n");
+			status = -EFAULT;
+			break;
+		} else if (stack_op_type == CMDQ_STACK_TYPE_DO_WHILE) {
+			/* close do-while loop by jump to begin of do-while */
+			status = cmdq_op_condition_pop(&handle->while_stack_node, &stack_op_position,
+				&stack_op_type);
+			cmdq_op_rewrite_jump_c(handle, condition_position, stack_op_position);
+			break;
+		} else if (stack_op_type == CMDQ_STACK_TYPE_CONTINUE) {
+			/* jump to while condition to do check again */
+			destination_position = condition_position;
+		} else if (stack_op_type == CMDQ_STACK_TYPE_BREAK) {
+			/* jump after check to skip current loop */
+			destination_position = handle->blockSize;
+		} else {
+			/* unknown error type */
+			CMDQ_ERR("Unknown stack type in do-while loop: %d\n", stack_op_type);
+			break;
+		}
+
+		/* handle continue/break case in stack */
+		status = cmdq_op_condition_pop(&handle->while_stack_node, &stack_op_position, &stack_op_type);
+		if (status < 0) {
+			CMDQ_ERR("failed to pop cmdq_stack_node in do-while loop\n");
+			break;
+		}
+		cmdq_op_rewrite_jump_c(handle, stack_op_position, destination_position);
 	} while (1);
 
 	return status;
