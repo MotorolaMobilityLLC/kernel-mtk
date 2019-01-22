@@ -561,7 +561,7 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	mrdump_mini_ke_cpu_regs(NULL);
 	inner_dcache_flush_all();
 	if (!has_mt_dump_support())
-		emergency_restart();
+		aee_exception_reboot();
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_KERNEL_PANIC, "kernel PANIC");
 	if (!ipanic_data_is_valid(IPANIC_DT_KERNEL_LOG)) {
 		ipanic_klog_region(&dumper);
@@ -648,7 +648,7 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 	mrdump_mini_per_cpu_regs(cpu, regs, current);
 	inner_dcache_flush_all();
 	if (!has_mt_dump_support())
-		emergency_restart();
+		aee_exception_reboot();
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_NESTED_EXCEPTION, "Nested Panic");
 
 	ipanic_data_to_sd(IPANIC_DT_CURRENT_TSK, 0);
@@ -764,7 +764,7 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 
 	if (!has_mt_dump_support()) {
 		ipanic_zap_console_sem();
-		emergency_restart();
+		aee_exception_reboot();
 	}
 
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_KERNEL_PANIC, "kernel Oops");

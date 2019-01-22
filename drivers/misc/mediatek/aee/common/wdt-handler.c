@@ -467,7 +467,7 @@ void aee_wdt_irq_info(void)
 	xchg(&debug_locks, 0);
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_DONE);
 	aee_rr_rec_exp_type(1);
-	emergency_restart();
+	aee_exception_reboot();
 }
 
 #if defined(CONFIG_FIQ_GLUE)

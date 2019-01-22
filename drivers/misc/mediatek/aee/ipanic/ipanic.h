@@ -268,4 +268,7 @@ extern void wq_debug_dump(void);
 extern void __disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2(void);
 extern int console_trylock(void);
 
+/* dedicated reboot flow for exception */
+extern void aee_exception_reboot(void);
+
 #endif
