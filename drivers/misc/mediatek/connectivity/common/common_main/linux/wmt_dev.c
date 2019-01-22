@@ -208,7 +208,7 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 		g_es_lr_flag_for_quick_sleep = 0;
 		g_es_lr_flag_for_lpbk_onoff = 1;
 		osal_unlock_sleepable_lock(&g_es_lr_lock);
-		WMT_WARN_FUNC("@@@@@@@@@@wmt enter UNBLANK @@@@@@@@@@@@@@\n");
+		WMT_DBG_FUNC("@@@@@@@@@@wmt enter UNBLANK @@@@@@@@@@@@@@\n");
 		if (hif_info == 0)
 			break;
 		schedule_work(&gPwrOnOffWork);
@@ -218,7 +218,7 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 		g_es_lr_flag_for_quick_sleep = 1;
 		g_es_lr_flag_for_lpbk_onoff = 0;
 		osal_unlock_sleepable_lock(&g_es_lr_lock);
-		WMT_WARN_FUNC("@@@@@@@@@@wmt enter early POWERDOWN @@@@@@@@@@@@@@\n");
+		WMT_DBG_FUNC("@@@@@@@@@@wmt enter early POWERDOWN @@@@@@@@@@@@@@\n");
 		schedule_work(&gPwrOnOffWork);
 		break;
 	default:
@@ -428,7 +428,7 @@ INT32 wmt_dev_patch_get(PUINT8 pPatchName, osal_firmware **ppPatch)
 		WMT_ERR_FUNC("failed to open or read!(%s)\n", pPatchName);
 		return -1;
 	}
-	WMT_INFO_FUNC("loader firmware %s  ok!!\n", pPatchName);
+	WMT_DBG_FUNC("loader firmware %s  ok!!\n", pPatchName);
 	iRet = 0;
 	*ppPatch = fw;
 
@@ -1267,7 +1267,7 @@ static INT32 WMT_init(VOID)
 	INT32 ret = -1;
 	ENUM_WMT_CHIP_TYPE chip_type;
 
-	WMT_INFO_FUNC("WMT Version= %s DATE=%s\n", MTK_WMT_VERSION, MTK_WMT_DATE);
+	WMT_DBG_FUNC("WMT Version= %s DATE=%s\n", MTK_WMT_VERSION, MTK_WMT_DATE);
 	/* Prepare a UINT8 device */
 	/*static allocate chrdev */
 	gWmtInitDone = 0;
@@ -1361,7 +1361,7 @@ static INT32 WMT_init(VOID)
 	else
 		WMT_INFO_FUNC("wmt register fb_notifier OK!\n");
 #endif /* CONFIG_EARLYSUSPEND */
-	WMT_INFO_FUNC("success\n");
+	WMT_DBG_FUNC("success\n");
 
 	return 0;
 

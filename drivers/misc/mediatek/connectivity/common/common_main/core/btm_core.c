@@ -200,7 +200,7 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 	} else if (pOp->op.opId == STP_OPID_BTM_RST || pOp->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
 		if (!RB_FULL(pOpQ)) {
 			RB_PUT(pOpQ, pOp);
-			STP_BTM_ERR_FUNC("RB_PUT: 0x%x\n", pOp->op.opId);
+			STP_BTM_DBG_FUNC("RB_PUT: 0x%x\n", pOp->op.opId);
 		} else
 			ret = -1;
 	} else {
@@ -208,7 +208,7 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 		if (pOp_current) {
 			if (pOp_current->op.opId == STP_OPID_BTM_RST ||
 			    pOp_current->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
-				STP_BTM_ERR_FUNC("current: 0x%x\n", pOp_current->op.opId);
+				STP_BTM_DBG_FUNC("current: 0x%x\n", pOp_current->op.opId);
 				flag_current = 0;
 			}
 		}
@@ -217,7 +217,7 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 		if (pOp_latest) {
 			if (pOp_latest->op.opId == STP_OPID_BTM_RST ||
 				pOp_latest->op.opId == STP_OPID_BTM_DUMP_TIMEOUT) {
-				STP_BTM_ERR_FUNC("latest: 0x%x\n", pOp_latest->op.opId);
+				STP_BTM_DBG_FUNC("latest: 0x%x\n", pOp_latest->op.opId);
 				flag_latest = 0;
 			}
 			if (pOp_latest->op.opId == pOp->op.opId) {
@@ -229,7 +229,7 @@ static INT32 _stp_btm_put_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP_Q pOpQ, P_OSAL_OP 
 		if (flag_current && flag_latest) {
 			if (!RB_FULL(pOpQ)) {
 				RB_PUT(pOpQ, pOp);
-				STP_BTM_INFO_FUNC("RB_PUT: 0x%x\n", pOp->op.opId);
+				STP_BTM_DBG_FUNC("RB_PUT: 0x%x\n", pOp->op.opId);
 			} else
 				ret = -1;
 		} else
