@@ -90,6 +90,7 @@ struct last_reboot_reason {
 	uint32_t spm_suspend_data;
 	uint32_t spm_common_scenario_data;
 	uint32_t mtk_cpuidle_footprint[NR_CPUS];
+	uint32_t mcdi_footprint[NR_CPUS];
 	uint32_t clk_data[8];
 	uint32_t suspend_debug_flag;
 	uint32_t fiq_cache_step;
@@ -956,6 +957,13 @@ void aee_rr_rec_deepidle_val(u32 val)
 u32 aee_rr_curr_deepidle_val(void)
 {
 	return LAST_RR_VAL(deepidle_data);
+}
+
+void aee_rr_rec_mcdi_val(int id, u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET_WITH_ID(mcdi_footprint, id, val);
 }
 
 void aee_rr_rec_mcdi_wfi_val(u32 val)
@@ -2284,6 +2292,11 @@ void aee_rr_show_mtk_cpuidle_footprint(struct seq_file *m, int cpu)
 	seq_printf(m, "  mtk_cpuidle_footprint: 0x%x\n", LAST_RRR_VAL(mtk_cpuidle_footprint[cpu]));
 }
 
+void aee_rr_show_mcdi_footprint(struct seq_file *m, int cpu)
+{
+	seq_printf(m, "  mcdi footprint: 0x%x\n", LAST_RRR_VAL(mcdi_footprint[cpu]));
+}
+
 void aee_rr_show_clk(struct seq_file *m)
 {
 	int i = 0;
@@ -3088,6 +3101,7 @@ last_rr_show_cpu_t aee_rr_show_cpu[] = {
 	aee_rr_show_jiffies_last_irq_exit,
 	aee_rr_show_hotplug_footprint,
 	aee_rr_show_mtk_cpuidle_footprint,
+	aee_rr_show_mcdi_footprint,
 };
 
 last_rr_show_t aee_rr_last_xxx[] = {
