@@ -249,15 +249,15 @@
 #define CAM_UNI_REG_RAWI_ERR_STAT(module)  (isp_devs[module].regs + 0x0154)
 
 /* CAMSV */
-#define CAMSV_REG_MODULE_EN(module)  (isp_devs[module].regs + 0x0010)
-#define CAMSV_REG_INT_STATUS(module)  (isp_devs[module].regs + 0x001C)
-#define CAMSV_REG_SW_CTL(module)  (isp_devs[module].regs + 0x0020)
+#define CAMSV_REG_MODULE_EN(module)  (isp_devs[module].regs + 0x0510)
+#define CAMSV_REG_INT_STATUS(module)  (isp_devs[module].regs + 0x051C)
+#define CAMSV_REG_SW_CTL(module)  (isp_devs[module].regs + 0x0520)
 #define CAMSV_REG_FBC_IMGO_CTL1(module)  (isp_devs[module].regs + 0x0110)
 #define CAMSV_REG_FBC_IMGO_CTL2(module)  (isp_devs[module].regs + 0x0114)
-#define CAMSV_REG_IMGO_BASE_ADDR(module)  (isp_devs[module].regs + 0x0220)
-#define CAMSV_REG_TG_VF_CON(module)  (isp_devs[module].regs + 0x0504)
-#define CAMSV_REG_TG_INTER_ST(module)  (isp_devs[module].regs + 0x053C)
-#define CAMSV_REG_TG_TIME_STAMP(module)  (isp_devs[module].regs + 0x0570)
+#define CAMSV_REG_IMGO_BASE_ADDR(module)  (isp_devs[module].regs + 0x0020)
+#define CAMSV_REG_TG_VF_CON(module)  (isp_devs[module].regs + 0x0230)
+#define CAMSV_REG_TG_INTER_ST(module)  (isp_devs[module].regs + 0x026C)
+#define CAMSV_REG_TG_TIME_STAMP(module)  (isp_devs[module].regs + 0x02A0)
 
 union FBC_CTRL_1 {
 	struct { /* 0x18004110 */
