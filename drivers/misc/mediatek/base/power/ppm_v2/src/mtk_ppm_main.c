@@ -33,7 +33,22 @@
 #include "mtk_ppm_internal.h"
 
 
-#define PPM_TIMER_INTERVAL_MS		(1000)
+/*==============================================================*/
+/* Local Macros							*/
+/*==============================================================*/
+#define LOG_BUF_SIZE		(128)
+#define LOG_CHECK_INTERVAL	(500)	/* ms */
+#define LOG_MAX_CNT		(15)	/* max log cnt within a check interval */
+#define LOG_MAX_DIFF_INTERVAL	(100)	/* ms */
+
+/*==============================================================*/
+/* Local variables						*/
+/*==============================================================*/
+/* log filter parameters to avoid log too much issue */
+static ktime_t prev_log_time;
+static ktime_t prev_check_time;
+static unsigned int log_cnt;
+static unsigned int filter_cnt;
 
 /*==============================================================*/
 /* Local function declarition					*/
@@ -573,15 +588,39 @@ skip_pwr_check:
 	return final_state;
 }
 
-#define LOG_BUF_SIZE	128
 static void ppm_main_log_print(unsigned int policy_mask, unsigned int min_power_budget,
 	unsigned int root_cluster, char *msg)
 {
-#ifdef PPM_OUTPUT_TRANS_LOG_TO_UART
-	ppm_info("(0x%x)(%d)(%d)%s\n", policy_mask, min_power_budget, root_cluster, msg);
-#else
-	ppm_dbg(MAIN, "(0x%x)(%d)(%d)%s\n", policy_mask, min_power_budget, root_cluster, msg);
-#endif
+	bool filter_log;
+	ktime_t cur_time = ktime_get();
+	unsigned long long delta1, delta2;
+
+	delta1 = ktime_to_ms(ktime_sub(cur_time, prev_check_time));
+	delta2 = ktime_to_ms(ktime_sub(cur_time, prev_log_time));
+
+	if (delta1 >= LOG_CHECK_INTERVAL || delta2 >= LOG_MAX_DIFF_INTERVAL) {
+		prev_check_time = cur_time;
+		filter_log = false;
+		log_cnt = 1;
+		if (filter_cnt) {
+			ppm_info("Shrink %d PPM logs from last %lld ms!\n", filter_cnt, delta1);
+			filter_cnt = 0;
+		}
+	} else if (log_cnt < LOG_MAX_CNT) {
+		filter_log = false;
+		log_cnt++;
+	} else {
+		/* filter log */
+		filter_log = true;
+		filter_cnt++;
+	}
+
+	if (!filter_log)
+		ppm_info("(0x%x)(%d)(%d)%s\n", policy_mask, min_power_budget, root_cluster, msg);
+	else
+		ppm_ver("(0x%x)(%d)(%d)%s\n", policy_mask, min_power_budget, root_cluster, msg);
+
+	prev_log_time = cur_time;
 }
 
 int mt_ppm_main(void)
@@ -790,6 +829,7 @@ int mt_ppm_main(void)
 				if (c_req->cpu_limit[i].min_cpufreq_idx != last_req->cpu_limit[i].min_cpufreq_idx
 					|| c_req->cpu_limit[i].max_cpufreq_idx != last_req->cpu_limit[i].max_cpufreq_idx
 					|| c_req->cpu_limit[i].has_advise_freq) {
+#if 0
 					int min_freq_ori = last_req->cpu_limit[i].min_cpufreq_idx;
 					int max_freq_ori = last_req->cpu_limit[i].max_cpufreq_idx;
 					int min_freq = c_req->cpu_limit[i].min_cpufreq_idx;
@@ -802,6 +842,10 @@ int mt_ppm_main(void)
 						&& (abs(max_freq - max_freq_ori) >= (DVFS_OPP_NUM / 2)
 						|| abs(min_freq - min_freq_ori) >= (DVFS_OPP_NUM / 2)))
 						log_print = true;
+#else
+					notify_dvfs = true;
+					log_print = true;
+#endif
 				}
 
 				if (notify_hps && notify_dvfs)
