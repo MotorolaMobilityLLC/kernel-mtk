@@ -392,6 +392,106 @@ initcall_debug=1";
 	mt6370,intr_gpio = <&pio 10 0x0>;
 };
 
+&mt6370_typec {
+	mt6370pd,intr_gpio_num = <41>; /* direct defined GPIO num */
+	mt6370pd,intr_gpio = <&pio 41 0x0>;
+};
+
+/* USB TYPEC GPIO start */
+&pio {
+	usb_default: usb_default {
+	};
+
+	gpio_redriver_c1_init: c1_init {
+	};
+
+	gpio_redriver_c1_low: c1_low {
+	};
+
+	gpio_redriver_c1_hiz: c1_highz {
+	};
+
+	gpio_redriver_c1_high: c1_high {
+	};
+
+	gpio_redriver_c2_init: c2_init {
+	};
+
+	gpio_redriver_c2_low: c2_low {
+	};
+
+	gpio_redriver_c2_hiz: gc2_highz {
+	};
+
+	gpio_redriver_c2_high: c2_high {
+	};
+
+	gpio_u3_switch_sel1: u3_sw_sel1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO177__FUNC_GPIO177>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	gpio_u3_switch_sel2: u3_sw_sel2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO177__FUNC_GPIO177>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	gpio_u3_switch_enable: u3_sw_en {
+	};
+
+	gpio_u3_switch_disable: u3_sw_dis {
+	};
+};
+
+&usb_c_pinctrl {
+	pinctrl-names = "usb_default",
+		"redriver_c1_init",
+		"redriver_c1_low",
+		"redriver_c1_hiz",
+		"redriver_c1_high",
+		"redriver_c2_init",
+		"redriver_c2_low",
+		"redriver_c2_hiz",
+		"redriver_c2_high",
+		"u3_switch_sel1",
+		"u3_switch_sel2",
+		"u3_switch_enable",
+		"u3_switch_disable";
+
+	pinctrl-0 = <&usb_default>;
+	pinctrl-1 = <&gpio_redriver_c1_init>;
+	pinctrl-2 = <&gpio_redriver_c1_low>;
+	pinctrl-3 = <&gpio_redriver_c1_hiz>;
+	pinctrl-4 = <&gpio_redriver_c1_high>;
+	pinctrl-5 = <&gpio_redriver_c2_init>;
+	pinctrl-6 = <&gpio_redriver_c2_low>;
+	pinctrl-7 = <&gpio_redriver_c2_hiz>;
+	pinctrl-8 = <&gpio_redriver_c2_high>;
+	pinctrl-9 = <&gpio_u3_switch_sel1>;
+	pinctrl-10 = <&gpio_u3_switch_sel2>;
+	pinctrl-11 = <&gpio_u3_switch_enable>;
+	pinctrl-12 = <&gpio_u3_switch_disable>;
+	status = "okay";
+
+	usb_switch-data {
+		en_pin_num = <0>;
+		en_pin_val = <0>; /*DISABLE=0 ENABLE=1*/
+		sel_pin_num = <177>;
+		sel_pin_val = <1>; /*CC1=1, CC2=2*/
+		c1_pin_num = <0>;
+		c1_pin_val = <0>; /*Low=0, HighZ=1, High=2*/
+		c2_pin_num = <0>;
+		c2_pin_val = <0>;
+	};
+};
+/* USB TYPEC GPIO end */
+
 #if 0
 #include <k71v1_64_bsp/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/

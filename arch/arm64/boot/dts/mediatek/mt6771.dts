@@ -1535,6 +1535,15 @@
 		 fgpa_i2c_physical_base = <0x11009000>;
 	};
 
+	xhci0:usb3_xhci@11200000 {
+		compatible = "mediatek,mt67xx-xhci";
+		reg = <0 0x11200000 0 0x10000>,
+		      <0 0x11203E00 0 0x100>;
+		reg-names = "ssusb_base", "ssusb_ippc";
+		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_LOW>;
+		interrupt-names = "xhci";
+	};
+
 	audio: audio@11220000 {
 		compatible = "mediatek,audio", "syscon";
 		reg = <0 0x11220000 0 0x1000>;
