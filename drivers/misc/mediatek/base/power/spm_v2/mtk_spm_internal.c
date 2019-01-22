@@ -347,6 +347,22 @@ void __spm_init_event_vector(const struct pcm_desc *pcmdesc)
 
 #define RES_REQ(r) ((spm_get_resource_usage() & r) ? 1 : 0)
 
+void __spm_src_req_update(const struct pwr_ctrl *pwrctrl)
+{
+	/* SPM_SRC_REQ */
+	spm_write(SPM_SRC_REQ,
+		(((pwrctrl->spm_apsrc_req & 0x1) | RES_REQ(SPM_RESOURCE_DRAM)) << 0) |
+		(((pwrctrl->spm_f26m_req & 0x1) | RES_REQ(SPM_RESOURCE_CK_26M)) << 1) |
+		((pwrctrl->spm_lte_req & 0x1) << 2) |
+		((pwrctrl->spm_infra_req & 0x1) << 3) |
+		(((pwrctrl->spm_vrf18_req & 0x1) | RES_REQ(SPM_RESOURCE_MAINPLL)) << 4) |
+		((pwrctrl->spm_dvfs_req & 0x1) << 5) |
+		((pwrctrl->spm_dvfs_force_down & 0x1) << 6) |
+		(((pwrctrl->spm_ddren_req & 0x1) | RES_REQ(SPM_RESOURCE_DRAM)) << 7) |
+		((pwrctrl->spm_rsv_src_req & 0x7) << 8) |
+		((pwrctrl->cpu_md_dvfs_sop_force_on & 0x1) << 16));
+}
+
 void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 {
 	/* SPM_AP_STANDBY_CON */
@@ -368,14 +384,14 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 
 	/* SPM_SRC_REQ */
 	spm_write(SPM_SRC_REQ,
-		(((pwrctrl->spm_apsrc_req & 0x1) | RES_REQ(SPM_RESOURCE_DRAM)) << 0) |
-		(((pwrctrl->spm_f26m_req & 0x1) | RES_REQ(SPM_RESOURCE_CK_26M)) << 1) |
+		(((pwrctrl->spm_apsrc_req & 0x1)) << 0) |
+		(((pwrctrl->spm_f26m_req & 0x1)) << 1) |
 		((pwrctrl->spm_lte_req & 0x1) << 2) |
 		((pwrctrl->spm_infra_req & 0x1) << 3) |
-		(((pwrctrl->spm_vrf18_req & 0x1) | RES_REQ(SPM_RESOURCE_MAINPLL)) << 4) |
+		(((pwrctrl->spm_vrf18_req & 0x1)) << 4) |
 		((pwrctrl->spm_dvfs_req & 0x1) << 5) |
 		((pwrctrl->spm_dvfs_force_down & 0x1) << 6) |
-		(((pwrctrl->spm_ddren_req & 0x1) | RES_REQ(SPM_RESOURCE_DRAM)) << 7) |
+		(((pwrctrl->spm_ddren_req & 0x1)) << 7) |
 		((pwrctrl->spm_rsv_src_req & 0x7) << 8) |
 		((pwrctrl->cpu_md_dvfs_sop_force_on & 0x1) << 16));
 

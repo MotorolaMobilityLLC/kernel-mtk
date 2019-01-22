@@ -727,6 +727,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 	__spm_set_power_control(pwrctrl);
 
+	__spm_src_req_update(pwrctrl);
+
 	__spm_set_wakeup_event(pwrctrl);
 
 	spm_dpidle_pre_process();
