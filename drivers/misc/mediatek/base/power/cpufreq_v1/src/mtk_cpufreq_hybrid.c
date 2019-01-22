@@ -541,7 +541,7 @@ int cpuhvfs_set_cluster_on_off(int cluster_id, int state)
 	return 0;
 }
 
-int cpuhvfs_set_mix_max(int cluster_id, int base, int limit)
+int cpuhvfs_set_min_max(int cluster_id, int base, int limit)
 {
 #ifdef PPM_AP_SIDE
 	csram_write((OFFS_PPM_LIMIT_S + (cluster_id * 4)),
