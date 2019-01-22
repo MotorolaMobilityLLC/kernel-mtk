@@ -497,6 +497,50 @@ bypass_tcsense_overflow:
 	return snd_soc_write(codec, RT5509_REG_TCOEFF, tc_sense);
 }
 
+static int rt5509_adap_coefficent_fix(struct snd_soc_codec *codec)
+{
+	int i, ret = 0;
+	int64_t x = 0, y = 0, z = 0, w = 0;
+
+	dev_dbg(codec->dev, "%s\n", __func__);
+	ret = snd_soc_read(codec, RT5509_REG_ISENSEGAIN);
+	ret &= 0xffffff;
+	dev_info(codec->dev, "gsense otp -> 0x%08x\n", ret);
+	/* gsense otp value */
+	x = ret;
+	ret = snd_soc_read(codec, RT5509_REG_CALIB_DCR);
+	ret &= 0xffffff;
+	dev_info(codec->dev, "dcr otp -> 0x%08x\n", ret);
+	if (ret == 0xffffff)
+		ret = 0x800000;
+	/* rspk otp value */
+	w = ret;
+	for (i = 0; i < 6; i++) {
+		ret = snd_soc_read(codec, RT5509_REG_ADAPTB0 + i);
+		ret &= 0xffffff;
+		dev_info(codec->dev, "b factor before 0x%08x\n", ret);
+		/* y = phi factor */
+		y = ret;
+		if (ret < 0x800000) {
+			z = div64_s64(x * 1000000, w) * y;
+			z = div_s64(z, 1000000);
+		} else {
+			y = ((int64_t)0xffffff - y) * div64_s64(x * 1000000, w);
+			z = (int64_t)0xffffff * (int64_t)1000000;
+			z = z - y;
+			z = div_s64(z, 1000000);
+		}
+		ret = z & 0xffffff;
+		dev_info(codec->dev, "b factor after 0x%08x\n", ret);
+		ret = snd_soc_write(codec, RT5509_REG_ADAPTB0 + i, ret);
+		if (ret < 0) {
+			dev_err(codec->dev, "fix b factor fail %d\n", i);
+			return ret;
+		}
+	}
+	return 0;
+}
+
 static int rt5509_init_proprietary_setting(struct snd_soc_codec *codec)
 {
 	struct rt5509_chip *chip = snd_soc_codec_get_drvdata(codec);
@@ -530,6 +574,9 @@ static int rt5509_init_proprietary_setting(struct snd_soc_codec *codec)
 		}
 		dev_dbg(chip->dev, "%s end\n", prop_str[i]);
 	}
+	ret = rt5509_adap_coefficent_fix(codec);
+	if (ret < 0)
+		dev_err(chip->dev, "fix adap coefficient fail\n");
 	if (p_param->cfg_size[RT5509_CFG_SPEAKERPROT]) {
 		ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
 			RT5509_SPKPROT_ENMASK, RT5509_SPKPROT_ENMASK);
