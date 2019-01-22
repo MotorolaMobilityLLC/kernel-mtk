@@ -39,7 +39,6 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_spm_pmic_wrap.h>
-#include <mt6337_api.h>
 
 #include <mtk_power_gs_api.h>
 
