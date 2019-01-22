@@ -1882,7 +1882,7 @@ VOID nicProcessTxInterrupt(IN P_ADAPTER_T prAdapter)
 		kalSetEvent(prAdapter->prGlueInfo);
 
 	/* SER break point */
-	if (nicSerIsOperating(prAdapter)) {
+	if (nicSerIsTxStop(prAdapter)) {
 		/* Skip following Tx handling */
 		return;
 	}

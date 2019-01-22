@@ -148,10 +148,12 @@
 /* WHISR device to host (D2H) */
 /* N9 Interrupt Host to stop tx/rx operation (at the moment, HIF tx/rx are stopted) */
 #define SER_SDIO_N9_HOST_STOP_TX_RX_OP             BIT(8)
+/* N9 Interrupt Host to stop tx operation (at the moment, HIF tx are stopted) */
+#define SER_SDIO_N9_HOST_STOP_TX_OP                BIT(9)
 /* N9 Interrupt Host all modules were reset done (to let host reinit HIF) */
-#define SER_SDIO_N9_HOST_RESET_DONE                BIT(9)
+#define SER_SDIO_N9_HOST_RESET_DONE                BIT(10)
 /* N9 Interrupt Host System Error Recovery Done */
-#define SER_SDIO_N9_HOST_RECOVERY_DONE             BIT(10)
+#define SER_SDIO_N9_HOST_RECOVERY_DONE             BIT(11)
 
 /* WSICR host to device (H2D) */
 /* Host ACK HIF tx/rx ring stop operatio */
