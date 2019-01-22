@@ -51,11 +51,7 @@ static int crashing_cpu;
 static note_buf_t __percpu *crash_notes;
 
 static bool mrdump_enable = 1;
-static int mrdump_output_device;
-static int mrdump_output_fstype;
 static unsigned long mrdump_output_lbaooo;
-
-static struct mrdump_control_block mrdump_cblock __attribute__((section(".mrdump")));
 
 static const struct mrdump_platform *mrdump_plat;
 
@@ -301,10 +297,6 @@ void __mrdump_create_oops_dump(AEE_REBOOT_MODE reboot_mode, struct pt_regs *regs
 
 int __init mrdump_platform_init(const struct mrdump_platform *plat)
 {
-	struct mrdump_machdesc *machdesc_p;
-
-	memset(&mrdump_cblock, 0, sizeof(struct mrdump_control_block));
-
 	mrdump_plat = plat;
 
 	/* Allocate memory for saving cpu registers. */
@@ -326,29 +318,12 @@ int __init mrdump_platform_init(const struct mrdump_platform *plat)
 		return -EINVAL;
 	}
 
-	memcpy(&mrdump_cblock.sig, MRDUMP_GO_DUMP, 8);
-
 	/* move default enable MT-RAMDUMP to late_init (this function) */
 	if (mrdump_enable) {
 		mrdump_plat->hw_enable(mrdump_enable);
+		mrdump_cblock.enabled = MRDUMP_ENABLE_COOKIE;
 		__inner_flush_dcache_all();
 	}
-
-	machdesc_p = &mrdump_cblock.machdesc;
-	machdesc_p->output_device = MRDUMP_DEV_EMMC;
-	machdesc_p->output_fstype = MRDUMP_FS_EXT4;
-	machdesc_p->nr_cpus = mrdump_enable ? NR_CPUS : 0;
-	machdesc_p->page_offset = (uint64_t)PAGE_OFFSET;
-	machdesc_p->high_memory = (uintptr_t)high_memory;
-
-	machdesc_p->vmalloc_start = (uint64_t)VMALLOC_START;
-	machdesc_p->vmalloc_end = (uint64_t)VMALLOC_END;
-
-	machdesc_p->modules_start = (uint64_t)MODULES_VADDR;
-	machdesc_p->modules_end = (uint64_t)MODULES_END;
-
-	machdesc_p->phys_offset = (uint64_t)PHYS_OFFSET;
-	machdesc_p->master_page_table = (uintptr_t)&swapper_pg_dir;
 
 	return 0;
 }
@@ -396,50 +371,6 @@ module_init(mrdump_sysfs_init);
 
 #endif
 
-static int param_set_mrdump_device(const char *val, const struct kernel_param *kp)
-{
-	char strval[16], *strp;
-	int eval;
-
-	strlcpy(strval, val, sizeof(strval));
-	strp = strstrip(strval);
-
-	if (strcmp(strp, "null") == 0)
-		eval = MRDUMP_DEV_NULL;
-	else if (strcmp(strp, "sdcard") == 0)
-		eval = MRDUMP_DEV_SDCARD;
-	else if (strcmp(strp, "emmc") == 0)
-		eval = MRDUMP_DEV_EMMC;
-	else
-		eval = MRDUMP_DEV_NULL;
-	*(int *)kp->arg = eval;
-	mrdump_cblock.machdesc.output_device = eval;
-	__inner_flush_dcache_all();
-	return 0;
-}
-
-static int param_get_mrdump_device(char *buffer, const struct kernel_param *kp)
-{
-	char *dev;
-	switch (mrdump_cblock.machdesc.output_device) {
-	case MRDUMP_DEV_NULL:
-		dev = "null";
-		break;
-	case MRDUMP_DEV_SDCARD:
-		dev = "sdcard";
-		break;
-	case MRDUMP_DEV_EMMC:
-		dev = "emmc";
-		break;
-	default:
-		dev = "none(unknown)";
-		break;
-	}
-
-	strlcpy(buffer, dev, PAGE_SIZE);
-	return strlen(dev);
-}
-
 static int param_set_mrdump_enable(const char *val, const struct kernel_param *kp)
 {
 	int res, retval = 0;
@@ -456,62 +387,18 @@ static int param_set_mrdump_enable(const char *val, const struct kernel_param *k
 		retval = param_set_bool(val, kp);
 		if (retval == 0) {
 			mrdump_plat->hw_enable(mrdump_enable);
-			mrdump_cblock.machdesc.nr_cpus = mrdump_enable ? NR_CPUS : 0;
+			mrdump_cblock.enabled = MRDUMP_ENABLE_COOKIE;
 			__inner_flush_dcache_all();
 		}
 	}
 	return retval;
 }
 
-static int param_set_mrdump_fstype(const char *val, const struct kernel_param *kp)
-{
-	char strval[16], *strp;
-	int eval;
-
-	strlcpy(strval, val, sizeof(strval));
-	strp = strstrip(strval);
-
-	if (strcmp(strp, "null") == 0)
-		eval = MRDUMP_FS_NULL;
-	else if (strcmp(strp, "vfat") == 0)
-		eval = MRDUMP_FS_VFAT;
-	else if (strcmp(strp, "ext4") == 0)
-		eval = MRDUMP_FS_EXT4;
-	else
-		eval = MRDUMP_FS_NULL;
-
-	*(int *)kp->arg = eval;
-	mrdump_cblock.machdesc.output_fstype = eval;
-	__inner_flush_dcache_all();
-	return 0;
-}
-
-static int param_get_mrdump_fstype(char *buffer, const struct kernel_param *kp)
-{
-	char *dev;
-	switch (mrdump_cblock.machdesc.output_fstype) {
-	case MRDUMP_FS_NULL:
-		dev = "null";
-		break;
-	case MRDUMP_FS_VFAT:
-		dev = "vfat";
-		break;
-	case MRDUMP_FS_EXT4:
-		dev = "ext4";
-		break;
-	default:
-		dev = "none(unknown)";
-		break;
-	}
-	strlcpy(buffer, dev, PAGE_SIZE);
-	return strlen(dev);
-}
-
 static int param_set_mrdump_lbaooo(const char *val, const struct kernel_param *kp)
 {
 	int retval = param_set_ulong(val, kp);
-	if ((retval == 0) && (mrdump_cblock.machdesc.output_fstype == MRDUMP_FS_EXT4)) {
-		mrdump_cblock.machdesc.output_lbaooo = mrdump_output_lbaooo;
+	if (retval == 0) {
+		mrdump_cblock.output_fs_lbaooo = mrdump_output_lbaooo;
 		__inner_flush_dcache_all();
 	}
 	return retval;
@@ -530,16 +417,6 @@ param_check_ulong(lbaooo, &mrdump_output_lbaooo);
 module_param_cb(lbaooo, &param_ops_mrdump_lbaooo, &mrdump_output_lbaooo, S_IRUGO | S_IWUSR);
 __MODULE_PARM_TYPE(lbaooo, unsigned long);
 
-/* sys/modules/mrdump/parameter/fstype */
-struct kernel_param_ops param_ops_mrdump_fstype = {
-	.set = param_set_mrdump_fstype,
-	.get = param_get_mrdump_fstype,
-};
-
-param_check_int(fstype, &mrdump_output_fstype);
-module_param_cb(fstype, &param_ops_mrdump_fstype, &mrdump_output_fstype, S_IRUGO | S_IWUSR);
-__MODULE_PARM_TYPE(fstype, int);
-
 /* sys/modules/mrdump/parameter/enable */
 struct kernel_param_ops param_ops_mrdump_enable = {
 	.set = param_set_mrdump_enable,
@@ -548,17 +425,6 @@ struct kernel_param_ops param_ops_mrdump_enable = {
 param_check_bool(enable, &mrdump_enable);
 module_param_cb(enable, &param_ops_mrdump_enable, &mrdump_enable, S_IRUGO | S_IWUSR);
 __MODULE_PARM_TYPE(enable, bool);
-
-/* sys/modules/mrdump/parameter/device */
-struct kernel_param_ops param_ops_mrdump_device = {
-	.set = param_set_mrdump_device,
-	.get = param_get_mrdump_device,
-};
-
-param_check_int(device, &mrdump_output_device);
-module_param_cb(device, &param_ops_mrdump_device, &mrdump_output_device, S_IRUGO | S_IWUSR);
-__MODULE_PARM_TYPE(device, int);
-
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MediaTek MRDUMP module");
