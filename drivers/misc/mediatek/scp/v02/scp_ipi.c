@@ -197,7 +197,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		return ERROR;
 	}
 	if (is_scp_ready(scp_id) == 0) {
-		pr_err("scp_ipi_send: %s not enabled, id=%d\n", core_ids[scp_id], id);
+		/* pr_err("scp_ipi_send: %s not enabled, id=%d\n", core_ids[scp_id], id); */
 		return ERROR;
 	}
 	if (len > sizeof(scp_send_obj[scp_id]->share_buf) || buf == NULL) {
