@@ -37,19 +37,11 @@
  * Platform that wishes to use Clock Buffer Control, please be sure to #include
  * the header file above.
  ******************************************************************************/
-#if defined(CONFIG_MACH_MT6735) || defined(CONFIG_MACH_MT6735M) || defined(CONFIG_MACH_MT6753) || \
-	defined(CONFIG_MACH_MT6739) || \
-	defined(CONFIG_MACH_MT6755) || \
+#if defined(CONFIG_MACH_MT6739) || \
 	defined(CONFIG_MACH_MT6757) || \
 	defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6759) || \
-	defined(CONFIG_MACH_MT6763) || \
-	defined(CONFIG_MACH_MT6775) || \
-	defined(CONFIG_MACH_MT6797) || \
-	defined(CONFIG_MACH_MT6799) || \
-	defined(CONFIG_MACH_MT6580) || \
-	defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_ELBRUS)
+	defined(CONFIG_MACH_MT6763)
 #define CONNADP_HAS_CLOCK_BUF_CTRL
 #define KERNEL_clk_buf_ctrl connectivity_export_clk_buf_ctrl
 void connectivity_export_clk_buf_ctrl(/*enum clk_buf_id*/ int id, bool onoff);
@@ -60,25 +52,31 @@ void connectivity_export_clk_buf_ctrl(/*enum clk_buf_id*/ int id, bool onoff);
  * Caller please be sure to #include:
  *	drivers/misc/mediatek/include/mt-plat/upmu_common.h
  ******************************************************************************/
-#if defined(CONFIG_MACH_MT6735) || defined(CONFIG_MACH_MT6735M) || defined(CONFIG_MACH_MT6753) || \
-	defined(CONFIG_MACH_MT6739) || \
-	defined(CONFIG_MACH_MT6755) || \
+#if defined(CONFIG_MACH_MT6739) || \
 	defined(CONFIG_MACH_MT6757) || \
 	defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6759) || \
-	defined(CONFIG_MACH_MT6763) || \
-	defined(CONFIG_MACH_MT6797) || \
-	defined(CONFIG_MACH_MT6580) || \
-	defined(CONFIG_MACH_KIBOPLUS)
+	defined(CONFIG_MACH_MT6763)
 #define CONNADP_HAS_PMIC_API
 #define KERNEL_pmic_config_interface connectivity_export_pmic_config_interface
 #define KERNEL_pmic_read_interface connectivity_export_pmic_read_interface
 #define KERNEL_pmic_set_register_value connectivity_export_pmic_set_register_value
+#define KERNEL_pmic_get_register_value connectivity_export_pmic_get_register_value
+#define KERNEL_upmu_set_reg_value connectivity_export_upmu_set_reg_value
 void connectivity_export_pmic_config_interface(unsigned int RegNum, unsigned int val,
 						unsigned int MASK, unsigned int SHIFT);
 void connectivity_export_pmic_read_interface(unsigned int RegNum, unsigned int *val,
 						unsigned int MASK, unsigned int SHIFT);
 void connectivity_export_pmic_set_register_value(/*PMU_FLAGS_LIST_ENUM*/ int flagname, unsigned int val);
+unsigned short connectivity_export_pmic_get_register_value(/*PMU_FLAGS_LIST_ENUM*/ int flagname);
+void connectivity_export_upmu_set_reg_value(unsigned int reg, unsigned int reg_val);
+#endif
+#if defined(CONFIG_MACH_MT8167)
+#define CONNADP_HAS_UPMU_VCN_CTRL
+#define KERNEL_upmu_set_vcn35_on_ctrl_bt connectivity_export_upmu_set_vcn35_on_ctrl_bt
+#define KERNEL_upmu_set_vcn35_on_ctrl_wifi connectivity_export_upmu_set_vcn35_on_ctrl_wifi
+void connectivity_export_upmu_set_vcn35_on_ctrl_bt(unsigned int val);
+void connectivity_export_upmu_set_vcn35_on_ctrl_wifi(unsigned int val);
 #endif
 
 /*******************************************************************************
