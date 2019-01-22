@@ -19,7 +19,7 @@
 #define __MT_CPUFREQ_C__
 
 /* project includes */
-/* #include "mach/mt_ppm_api.h" */
+#include "mach/mt_ppm_api.h"
 
 /* local includes */
 #include "mtk_cpufreq_internal.h"
@@ -1221,8 +1221,6 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	return new_opp_idx;
 }
 
-/* Fix me, PPM */
-#if 0
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *ppm = (struct ppm_client_req *)&req;
@@ -1259,7 +1257,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	/* Don't care the parameters */
 	_mt_cpufreq_dvfs_request_wrapper(NULL, 0, MT_CPU_DVFS_PPM, NULL);
 }
-#endif
+
 /*
  * cpufreq driver
  */
@@ -1595,7 +1593,7 @@ static int _mt_cpufreq_resume(struct device *dev)
 
 static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 {
-	/* For table preparing*/
+	unsigned int lv = _mt_cpufreq_get_cpu_level();
 	struct mt_cpu_dvfs *p;
 	int j;
 	/* For init voltage check */
@@ -1631,9 +1629,9 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	}
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
-/* #ifdef CPUHVFS_HW_GOVERNOR */
+	/* #ifdef CPUHVFS_HW_GOVERNOR */
 	cpuhvfs_register_dvfs_notify(notify_cpuhvfs_change_cb);
-	/* For MD32 probe */
+	/* For SSPM probe */
 	cpuhvfs_set_init_sta();
 	register_syscore_ops(&_mt_cpufreq_syscore_ops);
 #endif
@@ -1644,17 +1642,13 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 
 	register_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
 
-/* Fix me, PPM */
-#if 0
 	for_each_cpu_dvfs(j, p) {
-
 		/* lv should be sync with DVFS_TABLE_TYPE_SB */
 		if (j != MT_CPU_DVFS_CCI)
 			mt_ppm_set_dvfs_table(p->cpu_id, p->freq_tbl_for_cpufreq, p->nr_opp_tbl, lv);
 
 	}
 	mt_ppm_register_client(PPM_CLIENT_DVFS, &ppm_limit_callback);
-#endif
 
 	pm_notifier(_mt_cpufreq_pm_callback, 0);
 
