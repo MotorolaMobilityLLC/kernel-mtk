@@ -926,7 +926,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 				}
 			}
 		}
-		if (dhl_raw) {
+		if (dhl_raw && dhl_raw->size) {
 			CCCI_MEM_LOG_TAG(md->index, TAG, "Dump DHL RAW share memory\n");
 			curr_ch_p = dhl_raw->base_ap_view_vir;
 			curr_p = (unsigned int *)curr_ch_p;

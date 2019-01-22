@@ -41,6 +41,8 @@ void collect_ccb_info(int md_id, struct ccci_smem_port *smem_port)
 
 	if (md_id != MD_SYS1)
 		return;
+	if (smem_port->user_id < SMEM_USER_CCB_START || smem_port->user_id > SMEM_USER_CCB_END)
+		return;
 
 	for (i = SMEM_USER_CCB_START; i <= SMEM_USER_CCB_END; i++) { /* check current port is CCB or not */
 		if (smem_port->user_id == i) {
@@ -85,6 +87,10 @@ void collect_ccb_info(int md_id, struct ccci_smem_port *smem_port)
 				curr->base_ap_view_vir = prev->base_ap_view_vir + prev->size;
 				curr->base_md_view_phy = prev->base_md_view_phy + prev->size;
 				curr->offset = prev->offset + prev->size;
+				CCCI_BOOTUP_LOG(md_id, TAG,
+					"CCB user %d: offset=%d, size=%d, base_ap = 0x%x, base_md = 0x%x\n",
+					i, curr->offset, curr->size,
+					(unsigned int)curr->base_ap_view_phy, (unsigned int)curr->base_md_view_phy);
 			}
 		}
 }
@@ -472,10 +478,6 @@ int port_smem_init(struct port_t *port)
 	struct ccci_smem_port *smem_port;
 	struct ccci_smem_region *smem_region = ccci_md_get_smem_by_user_id(md_id, port->minor);
 
-	if (!smem_region) {
-		CCCI_ERROR_LOG(md_id, CHAR, "smem port %d not available\n", port->minor);
-		return -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
-	}
 	/*Set SMEM MINOR base*/
 	port->minor += CCCI_SMEM_MINOR_BASE;
 	if (port->flags & PORT_F_WITH_CHAR_NODE) {
@@ -497,10 +499,16 @@ int port_smem_init(struct port_t *port)
 	smem_port->user_id = port->minor - CCCI_SMEM_MINOR_BASE;
 	spin_lock_init(&smem_port->write_lock);
 	smem_port->port = port;
-	smem_port->addr_phy = smem_region->base_ap_view_phy;
-	smem_port->addr_vir = smem_region->base_ap_view_vir;
-	smem_port->length = smem_region->size;
-	collect_ccb_info(md_id, smem_port); /* this may override addr_phy/vir and length */
+	if (!smem_region || smem_region->size == 0) {
+		smem_port->addr_phy = 0;
+		smem_port->addr_vir = 0;
+		smem_port->length = 0;
+	} else {
+		smem_port->addr_phy = smem_region->base_ap_view_phy;
+		smem_port->addr_vir = smem_region->base_ap_view_vir;
+		smem_port->length = smem_region->size;
+		collect_ccb_info(md_id, smem_port); /* this may override addr_phy/vir and length */
+	}
 
 	return 0;
 }
