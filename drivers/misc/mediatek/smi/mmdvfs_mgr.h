@@ -54,16 +54,24 @@ enum {
 	MMDVFS_SCEN_VPU_KERNEL, MMDVFS_PMQOS_ISP, MMDVFS_SCEN_VP_WFD, MMDVFS_SCEN_COUNT
 };
 
+#define LEGACY_CAM_SCENS ((1 << SMI_BWC_SCEN_VR) | \
+	(1 << SMI_BWC_SCEN_VR_SLOW) |	\
+	(1 << SMI_BWC_SCEN_VSS) |	\
+	(1 << SMI_BWC_SCEN_CAM_PV) |	\
+	(1 << SMI_BWC_SCEN_CAM_CP) |	\
+	(1 << SMI_BWC_SCEN_ICFP) |	\
+	(1 << MMDVFS_SCEN_ISP))
+
 enum mmdvfs_vpu_clk {
 		vpu_clk_0, vpu_clk_1, vpu_clk_2, vpu_clk_3
 };
 
 enum mmdvfs_vpu_if_clk {
-		vpu_if_clk_0, vpu_if_clk_1,	vpu_if_clk_2,	vpu_if_clk_3
+		vpu_if_clk_0, vpu_if_clk_1, vpu_if_clk_2, vpu_if_clk_3
 };
 
 enum mmdvfs_vimvo_vol {
-		vimvo_vol_0, vimvo_vol_1,	vimvo_vol_2,	vimvo_vol_3
+		vimvo_vol_0, vimvo_vol_1, vimvo_vol_2, vimvo_vol_3
 };
 
 

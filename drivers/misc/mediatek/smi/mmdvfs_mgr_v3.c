@@ -164,16 +164,9 @@ MTK_MMDVFS_CMD *cmd)
 int mmdvfs_get_stable_isp_clk(void)
 {
 	int legacy_mm_step = MMSYS_CLK_LOW;
-	int cam_scens = ((1 << SMI_BWC_SCEN_VR) |
-		(1 << SMI_BWC_SCEN_VR_SLOW) |
-		(1 << SMI_BWC_SCEN_VSS) |
-		(1 << SMI_BWC_SCEN_CAM_PV) |
-		(1 << SMI_BWC_SCEN_CAM_CP) |
-		(1 << SMI_BWC_SCEN_ICFP) |
-		(1 << MMDVFS_SCEN_ISP));
 	int cam_clk_opp = g_mmdvfs_step_util->get_clients_clk_opp(
 		g_mmdvfs_step_util, g_mmdvfs_adaptor,
-		cam_scens, MMDVFS_CLK_MUX_TOP_CAM_SEL);
+		LEGACY_CAM_SCENS, MMDVFS_CLK_MUX_TOP_CAM_SEL);
 
 	if (cam_clk_opp != -1)
 		legacy_mm_step = g_mmdvfs_step_util->get_legacy_mmclk_step_from_mmclk_opp(
