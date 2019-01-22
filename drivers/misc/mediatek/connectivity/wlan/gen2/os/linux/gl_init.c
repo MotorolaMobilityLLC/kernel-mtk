@@ -301,6 +301,30 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_set_country_code
 	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_GET_ROAMING_CAPABILITIES
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_get_roaming_capabilities
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_CONFIG_ROAMING
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_config_roaming
+	},
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_ENABLE_ROAMING
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_enable_roaming
+	},
 	/* GSCAN */
 #if CFG_SUPPORT_GSCN
 	{
@@ -2625,6 +2649,9 @@ static INT_32 wlanProbe(PVOID pvData)
 		prAdapter = prGlueInfo->prAdapter;
 
 		prGlueInfo->u4ReadyFlag = 0;
+
+		/* default set the FW roaming enable state to 'on' */
+		prGlueInfo->u4FWRoamingEnable = 1;
 
 		/*Check the build variant*/
 #if defined(WLAN_ENG_LOAD)
