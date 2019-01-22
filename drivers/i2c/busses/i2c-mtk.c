@@ -73,6 +73,26 @@ static inline u16 _i2c_readw(struct mt_i2c *i2c, u8 offset)
 		value; \
 	})
 
+#define i2c_writew_shadow(val, i2c, ofs) \
+	do { \
+		u32 tmp_offset = i2c->ch_offset; \
+		i2c->ch_offset = 0; \
+		if (((i2c)->dev_comp->ver != 0x2) || (V2_##ofs != 0xfff)) \
+			_i2c_writew(val, i2c, ((i2c)->dev_comp->ver == 0x2) ? (V2_##ofs) : ofs); \
+		i2c->ch_offset = tmp_offset; \
+	} while (0)
+
+#define i2c_readw_shadow(i2c, ofs) \
+	({ \
+		u16 value = 0; \
+		u32 tmp_offset = i2c->ch_offset; \
+		i2c->ch_offset = 0; \
+		if (((i2c)->dev_comp->ver != 0x2) || (V2_##ofs != 0xfff)) \
+			value = _i2c_readw(i2c, ((i2c)->dev_comp->ver == 0x2) ? (V2_##ofs) : ofs); \
+		i2c->ch_offset = tmp_offset; \
+		value; \
+	})
+
 void __iomem *cg_base;
 
 s32 map_cg_regs(struct mt_i2c *i2c)
@@ -420,26 +440,26 @@ static inline void mt_i2c_init_hw(struct mt_i2c *i2c)
 	/* clear interrupt status */
 	if (i2c->dev_comp->ver == 0x2)
 		int_reg |= I2C_TIMEOUT;
-	i2c_writew(~int_reg, i2c, OFFSET_INTR_MASK);
-	i2c_writew(int_reg, i2c, OFFSET_INTR_STAT);
-	i2c_writew(I2C_SOFT_RST, i2c, OFFSET_SOFTRESET);
+	i2c_writew_shadow(~int_reg, i2c, OFFSET_INTR_MASK);
+	i2c_writew_shadow(int_reg, i2c, OFFSET_INTR_STAT);
+	i2c_writew_shadow(I2C_SOFT_RST, i2c, OFFSET_SOFTRESET);
 	/* Set ioconfig */
 	if (i2c->use_push_pull)
-		i2c_writew(I2C_IO_CONFIG_PUSH_PULL, i2c, OFFSET_IO_CONFIG);
+		i2c_writew_shadow(I2C_IO_CONFIG_PUSH_PULL, i2c, OFFSET_IO_CONFIG);
 	else
-		i2c_writew(I2C_IO_CONFIG_OPEN_DRAIN, i2c, OFFSET_IO_CONFIG);
+		i2c_writew_shadow(I2C_IO_CONFIG_OPEN_DRAIN, i2c, OFFSET_IO_CONFIG);
 	if (i2c->have_dcm)
-		i2c_writew(I2C_DCM_DISABLE, i2c, OFFSET_DCM_EN);
+		i2c_writew_shadow(I2C_DCM_DISABLE, i2c, OFFSET_DCM_EN);
 
 	if (i2c->dev_comp->ver != 0x2)
-		i2c_writew(i2c->timing_reg, i2c, OFFSET_TIMING);
+		i2c_writew_shadow(i2c->timing_reg, i2c, OFFSET_TIMING);
 	else
-		i2c_writew(i2c->timing_reg | I2C_TIMEOUT_EN, i2c,
+		i2c_writew_shadow(i2c->timing_reg | I2C_TIMEOUT_EN, i2c,
 			   OFFSET_TIMING);
 
 	if (i2c->dev_comp->set_ltiming)
-		i2c_writew(i2c->ltiming_reg, i2c, OFFSET_LTIMING);
-	i2c_writew(i2c->high_speed_reg, i2c, OFFSET_HS);
+		i2c_writew_shadow(i2c->ltiming_reg, i2c, OFFSET_LTIMING);
+	i2c_writew_shadow(i2c->high_speed_reg, i2c, OFFSET_HS);
 	/* DMA warm reset, and waits for EN to become 0 */
 	i2c_writel_dma(I2C_DMA_WARM_RST, i2c, OFFSET_RST);
 	udelay(5);
@@ -752,7 +772,6 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	int data_size;
 	u8 *ptr;
 	int ret;
-	u16 ch_offset;
 
 	i2c->trans_stop = false;
 	i2c->irq_stat = 0;
@@ -976,7 +995,23 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		mt_irq_dump_status(i2c->irqnr);
 		#endif
 		dump_cg_regs(i2c);
+
+		if (i2c->ch_offset != 0)
+			i2c_writew(I2C_FIFO_ADDR_CLR_MCH | I2C_FIFO_ADDR_CLR,
+				   i2c, OFFSET_FIFO_ADDR_CLR);
+		else
+			i2c_writew(I2C_FIFO_ADDR_CLR, i2c,
+				   OFFSET_FIFO_ADDR_CLR);
+
+		/* This slave addr is used to check whether the shadow RG is */
+		/* mapped normally or not */
+		pr_info("SLAVE_ADDR=%x (shadow RG)",
+			i2c_readw_shadow(i2c, OFFSET_SLAVE_ADDR));
+
 		mt_i2c_init_hw(i2c);
+		if (i2c->ch_offset)
+			i2c_writew_shadow(I2C_RESUME_ARBIT, i2c, OFFSET_START);
+
 		if (start_reg & I2C_TRANSAC_START) {
 			dev_err(i2c->dev, "bus tied low/high\n");
 			return -EIO;
@@ -991,8 +1026,6 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			dev_info(i2c->dev, "addr: %x, transfer ACK error\n",
 				i2c->addr);
 
-		ch_offset = i2c->ch_offset;
-
 		if (i2c->ch_offset != 0)
 			i2c_writew(I2C_FIFO_ADDR_CLR_MCH | I2C_FIFO_ADDR_CLR,
 				   i2c, OFFSET_FIFO_ADDR_CLR);
@@ -1003,10 +1036,9 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		if (i2c->ext_data.isEnable ==  false || i2c->ext_data.isFilterMsg == false)
 			i2c_dump_info(i2c);
 
-		i2c->ch_offset = 0;
 		mt_i2c_init_hw(i2c);
-		if (ch_offset)
-			i2c_writew(I2C_RESUME_ARBIT, i2c, OFFSET_START);
+		if (i2c->ch_offset)
+			i2c_writew_shadow(I2C_RESUME_ARBIT, i2c, OFFSET_START);
 		return -EREMOTEIO;
 	}
 	if (i2c->op != I2C_MASTER_WR && isDMA == false) {

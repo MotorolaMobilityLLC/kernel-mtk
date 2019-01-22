@@ -363,9 +363,9 @@ struct mt_i2c {
 	int rec_idx; /* next record idx */
 	struct i2c_info rec_info[I2C_RECORD_LEN];
 	u32 ch_offset_default;
-	int ch_offset;
+	u32 ch_offset;
 	u32 dma_ch_offset_default;
-	int dma_ch_offset;
+	u32 dma_ch_offset;
 	bool have_scp;
 	int scp_ch;
 	bool have_ccu;
