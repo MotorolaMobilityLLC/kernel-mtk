@@ -123,7 +123,7 @@ int spm_msdc_dvfs_setting(int msdc, bool enable)
 
 	pwrctrl->autok_finish = enable;
 
-	vcorefs_crit("[%s] MSDC AUTO FINISH\n", __func__);
+	vcorefs_crit("[%s] MSDC AUTOK FINISH\n", __func__);
 
 #ifdef CONFIG_MTK_DCS
 	dcs_full_init();
