@@ -1216,6 +1216,12 @@ u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_ENABLE_SODI3
 };
 
+#if defined(CONFIG_MACH_MT6775)
+u32 slp_spm_SODI3_flags1 = {
+	SPM_RSV_CON2_DIS_MCDSR
+};
+#endif
+
 u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
@@ -1229,6 +1235,12 @@ u32 slp_spm_SODI_flags = {
 #endif
 	SPM_FLAG_SODI_OPTION
 };
+
+#if defined(CONFIG_MACH_MT6775)
+u32 slp_spm_SODI_flags1 = {
+	SPM_RSV_CON2_DIS_MCDSR
+};
+#endif
 
 #if defined(CONFIG_MACH_MT6799)
 
@@ -1258,6 +1270,12 @@ u32 slp_spm_deepidle_flags = {
 };
 
 #endif /* platform difference */
+
+#if defined(CONFIG_MACH_MT6775)
+u32 slp_spm_deepidle_flags1 = {
+	SPM_RSV_CON2_DIS_MCDSR
+};
+#endif
 
 u32 slp_spm_MCSODI_flags = {
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
@@ -1659,7 +1677,11 @@ int soidle3_enter(int cpu)
 	if (sodi3_force_vcore_lp_mode)
 		operation_cond |= DEEPIDLE_OPT_VCORE_LP_MODE;
 
+#if defined(CONFIG_MACH_MT6775)
+	spm_go_to_sodi3(slp_spm_SODI3_flags, slp_spm_SODI3_flags1, sodi3_flags, operation_cond);
+#else
 	spm_go_to_sodi3(slp_spm_SODI3_flags, (u32)cpu, sodi3_flags, operation_cond);
+#endif
 
 	/* Clear SODI_FLAG_DUMP_LP_GS in sodi3_flags */
 	sodi3_flags &= (~SODI_FLAG_DUMP_LP_GS);
@@ -1713,7 +1735,11 @@ int soidle_enter(int cpu)
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */
 
+#if defined(CONFIG_MACH_MT6775)
+	spm_go_to_sodi(slp_spm_SODI_flags, slp_spm_SODI_flags1, sodi_flags, operation_cond);
+#else
 	spm_go_to_sodi(slp_spm_SODI_flags, (u32)cpu, sodi_flags, operation_cond);
+#endif
 
 	/* Clear SODI_FLAG_DUMP_LP_GS in sodi_flags */
 	sodi_flags &= (~SODI_FLAG_DUMP_LP_GS);

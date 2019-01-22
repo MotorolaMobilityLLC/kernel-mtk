@@ -103,71 +103,68 @@ u32 sleep_vcorefs_debug;
 
 #define WAIT_UART_ACK_TIMES     10	/* 10 * 10us */
 
+#define WAKE_SRC_FOR_COMMON_SUSPEND (\
+	(WAKE_SRC_R12_PCMTIMER) | \
+	(WAKE_SRC_R12_SSPM_WDT_EVENT_B) | \
+	(WAKE_SRC_R12_KP_IRQ_B) | \
+	(WAKE_SRC_R12_SYS_TIMER_EVENT_B) | \
+	(WAKE_SRC_R12_EINT_EVENT_B) | \
+	(WAKE_SRC_R12_C2K_WDT_IRQ_B) | \
+	(WAKE_SRC_R12_CCIF0_EVENT_B) | \
+	(WAKE_SRC_R12_SSPM_SPM_IRQ_B) | \
+	(WAKE_SRC_R12_SCP_IPC_MD2SPM_B) | \
+	(WAKE_SRC_R12_SCP_WDT_EVENT_B) | \
+	(WAKE_SRC_R12_USBX_CDSC_B) | \
+	(WAKE_SRC_R12_USBX_POWERDWN_B) | \
+	(WAKE_SRC_R12_EINT_EVENT_SECURE_B) | \
+	(WAKE_SRC_R12_CCIF1_EVENT_B) | \
+	(WAKE_SRC_R12_MD1_WDT_B) | \
+	(WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT))
+
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
-#define WAKE_SRC_FOR_SUSPEND \
-	(WAKE_SRC_R12_PCMTIMER | \
-	WAKE_SRC_R12_SSPM_WDT_EVENT_B | \
-	WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_SYS_TIMER_EVENT_B | \
-	WAKE_SRC_R12_EINT_EVENT_B | \
-	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
-	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_SSPM_SPM_IRQ_B | \
-	WAKE_SRC_R12_SCP_IPC_MD2SPM_B | \
-	WAKE_SRC_R12_SCP_WDT_EVENT_B | \
-	WAKE_SRC_R12_USBX_CDSC_B | \
-	WAKE_SRC_R12_USBX_POWERDWN_B | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_MD1_WDT_B | \
-	WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT)
+#define WAKE_SRC_FOR_SUSPEND (WAKE_SRC_FOR_COMMON_SUSPEND)
 #else
 #define WAKE_SRC_FOR_SUSPEND \
-	(WAKE_SRC_R12_PCMTIMER | \
-	WAKE_SRC_R12_SSPM_WDT_EVENT_B | \
-	WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_SYS_TIMER_EVENT_B | \
-	WAKE_SRC_R12_EINT_EVENT_B | \
-	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
-	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_SSPM_SPM_IRQ_B | \
-	WAKE_SRC_R12_SCP_IPC_MD2SPM_B | \
-	WAKE_SRC_R12_SCP_WDT_EVENT_B | \
-	WAKE_SRC_R12_USBX_CDSC_B | \
-	WAKE_SRC_R12_USBX_POWERDWN_B | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_MD1_WDT_B | \
-	WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT | \
-	WAKE_SRC_R12_SEJ_EVENT_B)
+	(WAKE_SRC_FOR_COMMON_SUSPEND | WAKE_SRC_R12_SEJ_EVENT_B)
 #endif /* #if defined(CONFIG_MICROTRUST_TEE_SUPPORT) */
 
 #define spm_is_wakesrc_invalid(wakesrc)     (!!((u32)(wakesrc) & 0xc0003803))
 
 int __attribute__ ((weak)) mtk_enter_idle_state(int idx)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
 	return -1;
 }
 
 void __attribute__((weak)) mt_cirq_clone_gic(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) mt_cirq_enable(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) mt_cirq_flush(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) mt_cirq_disable(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	spm_crit2("NO %s !!!\n", __func__);
+}
+
+int __attribute__((weak)) vcorefs_get_curr_vcore(void)
+{
+	spm_crit2("NO %s !!!\n", __func__);
+	return 0;
+}
+
+void __attribute__((weak)) mt_eint_print_status(void)
+{
+	spm_crit2("NO %s !!!\n", __func__);
 }
 
 enum spm_suspend_step {
@@ -261,8 +258,8 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	/* SPM_SRC2_MASK */
 #if defined(CONFIG_MACH_MT6775)
-	.reg_disp0_apsrc_req_mask_b = 0,
-	.reg_disp1_apsrc_req_mask_b = 0,
+	.reg_disp0_apsrc_req_mask_b = 1,
+	.reg_disp1_apsrc_req_mask_b = 1,
 #else
 	.reg_disp0_req_mask_b = 0,
 	.reg_disp1_req_mask_b = 0,
@@ -271,8 +268,8 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_mfg_req_mask_b = 0,
 	.reg_vdec0_req_mask_b = 0,
 #if defined(CONFIG_MACH_MT6775)
-	.reg_gce_apsrc_req_mask_b = 0,
-	.reg_gce_ddr_en_req_mask_b = 0,
+	.reg_gce_apsrc_req_mask_b = 1,
+	.reg_gce_ddr_en_req_mask_b = 1,
 #else
 	.reg_gce_req_mask_b = 0,
 	.reg_gce_vrf18_req_mask_b = 0,
@@ -300,10 +297,10 @@ static struct pwr_ctrl suspend_ctrl = {
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	.reg_gce_vrf18_req2_mask_b = 0,
 #elif defined(CONFIG_MACH_MT6775)
-	.reg_gce_busclk_req_mask_b = 0,
+	.reg_gce_busclk_req_mask_b = 1,
 #endif
 #if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
-	.reg_ufs_srcclkena_mask_b = 0,
+	.reg_ufs_srcclkena_mask_b = 1,
 	.reg_ufs_vrf18_req_mask_b = 0,
 #endif
 
@@ -350,8 +347,8 @@ static struct pwr_ctrl suspend_ctrl = {
 	.reg_ccif5_md_event_mask_b = 1,
 #endif
 #if defined(CONFIG_MACH_MT6775)
-	.reg_disp0_ddren_req_mask_b = 0,
-	.reg_disp1_ddren_req_mask_b = 0,
+	.reg_disp0_ddren_req_mask_b = 1,
+	.reg_disp1_ddren_req_mask_b = 1,
 #endif
 	/* SPM_WAKEUP_EVENT_MASK */
 	.reg_wakeup_event_mask = 0xF1782218,
@@ -394,7 +391,16 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	/* SLEEP_MCU11_WFI_EN */
 	.mcu11_wfi_en = 1,
+#if defined(CONFIG_MACH_MT6775)
+	/* SLEEP_MCU12_WFI_EN */
+	.mcu12_wfi_en = 0,
 
+	/* SLEEP_MCU13_WFI_EN */
+	.mcu13_wfi_en = 0,
+
+	/* SLEEP_MCU14_WFI_EN */
+	.mcu14_wfi_en = 0,
+#else
 	/* SLEEP_MCU12_WFI_EN */
 	.mcu12_wfi_en = 1,
 
@@ -403,7 +409,7 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	/* SLEEP_MCU14_WFI_EN */
 	.mcu14_wfi_en = 1,
-
+#endif
 	/* SLEEP_MCU15_WFI_EN */
 	.mcu15_wfi_en = 0,
 
@@ -412,12 +418,15 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	/* SLEEP_MCU17_WFI_EN */
 	.mcu17_wfi_en = 0,
-#if defined(CONFIG_MACH_MT6759) \
-	|| defined(CONFIG_MACH_MT6758) \
-	|| defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MACH_MT6759)	|| defined(CONFIG_MACH_MT6758)
 	/* SPM_RSV_CON2 */
 	.spm_rsv_con2 = 0,
+#elif defined(CONFIG_MACH_MT6775)
+	/* SPM_RSV_CON2 */
+	.spm_rsv_con2 =
+		(SPM_RSV_CON2_DIS_MCDSR),
 #endif
+
 	/* Auto-gen End */
 };
 struct spm_lp_scen __spm_suspend = {
@@ -729,7 +738,9 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	pwrctrl = __spm_suspend.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+#if defined(CONFIG_MACH_MT6775)
+	set_pwrctrl_pcm_flags1(pwrctrl, spm_data);
+#endif
 	/* need be called after set_pwrctrl_pcm_flags1() */
 	/* spm_set_dummy_read_addr(false); */
 

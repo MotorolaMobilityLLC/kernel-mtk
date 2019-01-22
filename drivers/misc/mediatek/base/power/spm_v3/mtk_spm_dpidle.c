@@ -631,11 +631,21 @@ static void spm_dpidle_pcm_setup_before_wfi(bool sleep_dpidle, u32 cpu, struct p
 	/* Get SPM resource request and update reg_spm_xxx_req */
 	resource_usage = (!sleep_dpidle) ? spm_get_resource_usage() : 0;
 
+#if defined(CONFIG_MACH_MT6775)
+	mt_secure_call(MTK_SIP_KERNEL_SPM_DPIDLE_ARGS, pwrctrl->pcm_flags, resource_usage, pwrctrl->pcm_flags1);
+#else
 	mt_secure_call(MTK_SIP_KERNEL_SPM_DPIDLE_ARGS, pwrctrl->pcm_flags, resource_usage, 0);
+#endif
 	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS, SPM_PWR_CTRL_DPIDLE, PWR_OPP_LEVEL, pwrctrl->opp_level);
 
-	if (sleep_dpidle)
+	if (sleep_dpidle) {
+#if defined(CONFIG_MACH_MT6775)
+		mt_secure_call(MTK_SIP_KERNEL_SPM_SLEEP_DPIDLE_ARGS, pwrctrl->timer_val, pwrctrl->wake_src,
+			       pwrctrl->pcm_flags1);
+#else
 		mt_secure_call(MTK_SIP_KERNEL_SPM_SLEEP_DPIDLE_ARGS, pwrctrl->timer_val, pwrctrl->wake_src, 0);
+#endif
+	}
 }
 
 static void spm_dpidle_pcm_setup_after_wfi(bool sleep_dpidle, u32 operation_cond)
@@ -771,7 +781,7 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	unsigned int wr = WR_NONE;
 	struct pcm_desc *pcmdesc = NULL;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
-	u32 cpu = spm_data;
+	u32 cpu = smp_processor_id();
 	int ch;
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER);
@@ -779,7 +789,9 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	pwrctrl = __spm_dpidle.pwrctrl;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+#if defined(CONFIG_MACH_MT6775)
+	set_pwrctrl_pcm_flags1(pwrctrl, spm_data);
+#endif
 	/* need be called after set_pwrctrl_pcm_flags1() */
 	/* spm_set_dummy_read_addr(false); */
 
@@ -939,7 +951,9 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	dpidle_wake_src = pwrctrl->wake_src;
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-	/* set_pwrctrl_pcm_flags1(pwrctrl, spm_data); */
+#if defined(CONFIG_MACH_MT6775)
+	set_pwrctrl_pcm_flags1(pwrctrl, spm_data);
+#endif
 	/* need be called after set_pwrctrl_pcm_flags1() */
 	/* spm_set_dummy_read_addr(false); */
 

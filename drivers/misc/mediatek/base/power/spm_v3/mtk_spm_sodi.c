@@ -211,8 +211,13 @@ static void spm_sodi_pcm_setup_before_wfi(
 
 	/* Get SPM resource request and update reg_spm_xxx_req */
 	resource_usage = spm_get_resource_usage();
+#if defined(CONFIG_MACH_MT6775)
+	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
+		pwrctrl->pcm_flags, resource_usage, pwrctrl->pcm_flags1);
+#else
 	mt_secure_call(MTK_SIP_KERNEL_SPM_SODI_ARGS,
 		pwrctrl->pcm_flags, resource_usage, pwrctrl->timer_val);
+#endif
 	mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 		SPM_PWR_CTRL_SODI, PWR_OPP_LEVEL, pwrctrl->opp_level);
 }
