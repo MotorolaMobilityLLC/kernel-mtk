@@ -479,7 +479,7 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 int mt_irq_dump_cpu(int irq)
 {
 	int rc;
-	unsigned int result;
+	unsigned long result;
 
 	irq = virq_to_hwirq(irq);
 
