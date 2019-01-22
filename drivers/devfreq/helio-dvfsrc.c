@@ -121,6 +121,11 @@ char *dvfsrc_get_opp_table_info(char *p)
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+int qos_ipi_to_sspm_command(void *buffer, int slot)
+{
+	return sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, buffer, slot);
+}
+
 void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv)
 {
 	struct qos_data qos_d;
@@ -129,7 +134,7 @@ void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv)
 	qos_d.u.vcore_opp.opp = opp;
 	qos_d.u.vcore_opp.vcore_uv = vcore_uv;
 
-	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 3);
+	qos_ipi_to_sspm_command(&qos_d, 3);
 }
 
 void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
@@ -140,8 +145,9 @@ void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
 	qos_d.u.ddr_opp.opp = opp;
 	qos_d.u.ddr_opp.ddr_khz = ddr_khz;
 
-	sspm_ipi_send_async(IPI_ID_QOS, IPI_OPT_DEFAUT, &qos_d, 3);
+	qos_ipi_to_sspm_command(&qos_d, 3);
 }
+
 #endif
 
 void dvfsrc_init_opp_table(void)
@@ -246,7 +252,6 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 {
 	int ret = 0;
 	int level = 0;
-	int force_en_tar = 0;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
 
@@ -317,19 +322,17 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 			data = VCORE_DVFS_OPP_NUM;
 
 		if (data == VCORE_DVFS_OPP_NUM) { /* no fix opp*/
-			level = 0;
-			force_en_tar = 0;
 			dvfsrc_write(dvfsrc, DVFSRC_BASIC_CONTROL,
 					(dvfsrc_read(dvfsrc, DVFSRC_BASIC_CONTROL)
-					& ~(1 << 15)) | force_en_tar);
-			dvfsrc_write(dvfsrc, DVFSRC_FORCE, level);
+					& ~(1 << 15)));
+			dvfsrc_write(dvfsrc, DVFSRC_FORCE,
+				       dvfsrc_read(dvfsrc, DVFSRC_FORCE) & 0xFFFF0000);
 		} else { /* fix opp */
 			level = 1 << (VCORE_DVFS_OPP_NUM - data - 1);
-			force_en_tar = (1 << 15);
 			dvfsrc_write(dvfsrc, DVFSRC_FORCE, level);
 			dvfsrc_write(dvfsrc, DVFSRC_BASIC_CONTROL,
 					(dvfsrc_read(dvfsrc, DVFSRC_BASIC_CONTROL)
-					& ~(1 << 15)) | force_en_tar);
+					| (1 << 15)));
 
 			ret = wait_for_completion(get_dvfsrc_level(dvfsrc) == vcore_dvfs_to_vcore_dvfs_level[level],
 					SPM_DVFS_TIMEOUT);

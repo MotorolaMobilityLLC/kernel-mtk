@@ -188,6 +188,8 @@ extern int dvfsrc_get_bw(int type);
 extern int get_cur_vcore_dvfs_opp(void);
 
 extern void __iomem *qos_sram_base;
+extern int qos_ipi_to_sspm_command(void *buffer, int slot);
+extern void dvfsrc_force_opp(int opp);
 #endif
 
 #endif	/* _MTK_VCOREFS_GOVERNOR_H */
