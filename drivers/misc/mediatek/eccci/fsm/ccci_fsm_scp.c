@@ -54,7 +54,7 @@ static void ccci_scp_md_state_sync_work(struct work_struct *work)
 {
 	struct ccci_fsm_scp *scp_ctl = container_of(work, struct ccci_fsm_scp, scp_md_state_sync_work);
 	int ret;
-	MD_STATE_FOR_USER state = ccci_fsm_get_md_state_for_user(scp_ctl->md_id);
+	enum MD_STATE_FOR_USER state = ccci_fsm_get_md_state_for_user(scp_ctl->md_id);
 
 	switch (state) {
 	case MD_STATE_READY:
