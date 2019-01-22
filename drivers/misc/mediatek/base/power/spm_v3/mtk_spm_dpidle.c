@@ -621,8 +621,20 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_DPIDLE_MODE);
-	else
+	else {
+		#if defined(CONFIG_MACH_MT6775)
+		/* Note:
+		 *	To verify cpu not pdn path,
+		 *	need to comment out all cmd in CPU_PM_ENTER case
+		 *	at gic_cpu_pm_notifier() @ drivers/irqchip/irq-gic-v3.c
+		 */
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_DPIDLE, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_DPIDLE_FINISH, 0, 0);
+		#else
 		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_DPIDLE_MODE);
+		#endif
+	}
 
 	if (spm_dormant_sta < 0)
 		pr_err("dpidle spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
@@ -848,10 +860,6 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 	spm_dpidle_pcm_setup_before_wfi(false, cpu, pcmdesc, pwrctrl, operation_cond);
 	profile_dp_end(PIDX_PCM_SETUP_BEFORE_WFI);
 
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
-#endif
-
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
 	profile_dp_start(PIDX_SSPM_BEFORE_WFI_ASYNC_WAIT);
@@ -887,10 +895,6 @@ unsigned int spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 ope
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	trace_dpidle_rcuidle(cpu, 0);
-#endif
-
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[2]);
 #endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_WFI);

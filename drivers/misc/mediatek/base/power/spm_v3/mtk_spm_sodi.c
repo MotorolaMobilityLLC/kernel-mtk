@@ -199,8 +199,15 @@ void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 
 	if (is_cpu_pdn(pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_SODI_MODE);
-	else
+	else {
+		#if defined(CONFIG_MACH_MT6775)
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SODI, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SODI_FINISH, 0, 0);
+		#else
 		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_SODI_MODE);
+		#endif
+	}
 
 	if (spm_dormant_sta < 0)
 		sodi_pr_err("spm_dormant_sta(%d) < 0\n", spm_dormant_sta);
