@@ -36,10 +36,23 @@ m4u_callback_ret_t DIP_M4U_TranslationFault_callback(int port, unsigned int mva,
 #define DIP_DEV_MAJOR_NUMBER    251
 #define DIP_MAGIC               'D'
 
+/*Chip Dependent Constanct*/
 #define DIP_A_BASE_HW   0x15022000
+#define DIP_REG_RANGE           (PAGE_SIZE*6) /* 4096*6 */
+#define DIP_PHYSICAL_REG_SIZE   (0x6000) /* dependent on device tree setting */
 
-#define DIP_REG_RANGE           (PAGE_SIZE)
-#define DIP_REG_PER_DIP_RANGE   (PAGE_SIZE*6)
+#define MAX_TILE_TOT_NO (256)
+#define MAX_ISP_DUMP_HEX_PER_TILE (256)
+#define MAX_ISP_TILE_TDR_HEX_NO (MAX_TILE_TOT_NO*MAX_ISP_DUMP_HEX_PER_TILE)
+/*(GET_MAX_CQ_DESCRIPTOR_SIZE()/ISP_DIP_CQ_DUMMY_BUFFER+1)*ISP_DIP_CQ_DUMMY_BUFFER;*/
+#define MAX_DIP_CMDQ_BUFFER_SIZE (0x1000)
+
+/* 0xffff0000 chip dependent, sizeof = 256x256 = 0x10000 */
+#define DIP_TDRI_ADDR_MASK       (0xffff0000)
+#define DIP_IMBI_BASEADDR_OFFSET (0x500>>2)
+#define DIP_DUMP_ADDR_MASK       (0xffffffff)
+#define DIP_CMDQ_BASEADDR_OFFSET (12) /*0x15022214 -0x15022208, DIP_A_CQ_THR1_BASEADDR-DIP_A_CQ_THR0_BASEADDR  */
+
 
 /* In order with the suquence of device nodes defined in dtsi */
 enum DIP_DEV_NODE_ENUM {
@@ -162,12 +175,6 @@ struct compat_DIP_MEM_INFO_STRUCT {
 
 #endif
 
-#define DIP_DIP_PHYSICAL_REG_SIZE (4096*3)
-#define DIP_DIP_REG_SIZE (4096*4)
-#define MAX_TILE_TOT_NO (256)
-#define MAX_DIP_DUMP_HEX_PER_TILE (256)
-#define MAX_DIP_TILE_TDR_HEX_NO (MAX_TILE_TOT_NO*MAX_DIP_DUMP_HEX_PER_TILE)
-#define MAX_DIP_CMDQ_BUFFER_SIZE (0x1000)
 
 /* for keep ion handle */
 enum DIP_WRDMA_ENUM {
