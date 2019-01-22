@@ -158,7 +158,7 @@ int32_t cmdq_sec_fill_iwc_command_basic_unlocked(int32_t iwcCommand, void *_pTas
 	pIwc->cmd = iwcCommand;
 
 	/* medatada: debug config */
-	pIwc->debug.logLevel = 1;
+	pIwc->debug.logLevel = cmdq_core_should_print_msg() ? (1) : (0);
 	pIwc->debug.enableProfile = cmdq_core_profile_enabled();
 
 	return 0;
