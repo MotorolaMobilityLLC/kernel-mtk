@@ -20,7 +20,6 @@
 #include <linux/genalloc.h>
 #include <linux/io.h>
 #include <linux/mm.h>
-#include <m4u.h>
 #include <linux/scatterlist.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
@@ -30,6 +29,12 @@
 #include "ion_drv_priv.h"
 #include "mtk/ion_drv.h"
 #include "mtk/mtk_ion.h"
+
+#ifdef CONFIG_MTK_PSEUDO_M4U
+#include <mach/pseudo_m4u.h>
+#else
+#include <m4u.h>
+#endif
 
 /*fb heap base and size denamic access*/
 struct ion_fb_heap {

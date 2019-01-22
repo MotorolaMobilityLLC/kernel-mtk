@@ -30,8 +30,12 @@
 #include "ion_fb_heap.h"
 #include "ion_priv.h"
 #include "mtk/ion_drv.h"
-#include <m4u.h>
 #include "ion_sec_heap.h"
+#ifdef CONFIG_MTK_PSEUDO_M4U
+#include <mach/pseudo_m4u.h>
+#else
+#include <m4u.h>
+#endif
 
 struct ion_mm_buffer_info {
 	int module_id;
