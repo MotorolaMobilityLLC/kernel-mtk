@@ -3356,7 +3356,7 @@ void testcase_prefetch_from_DTS(void)
 
 	CMDQ_MSG("%s\n", __func__);
 
-	for (i = 0; i < CMDQ_MAX_THREAD_COUNT; i++) {
+	for (i = 0; i < cmdq_dev_get_thread_count(); i++) {
 		thread_prefetch_size = cmdq_core_get_thread_prefetch_size(i);
 
 		for (j = 100; j <= (thread_prefetch_size + 60); j += 40) {
@@ -5274,7 +5274,7 @@ enum POLL_POLICY_ENUM {
 
 enum TRIGGER_THREAD_POLICY_ENUM {
 	CMDQ_TESTCASE_TRIGGER_RANDOM = 0,
-	CMDQ_TESTCASE_TRIGGER_FASE = 4,
+	CMDQ_TESTCASE_TRIGGER_FAST = 4,
 	CMDQ_TESTCASE_TRIGGER_MEDIUM = 16,
 	CMDQ_TESTCASE_TRIGGER_SLOW = 80,
 };
@@ -5945,8 +5945,8 @@ static int _testcase_gen_task_thread(void *data)
 		cmdq_core_clean_stress_context();
 
 	atomic_set(&task_ref_count, 0);
-	for (task_count = 0; task_count < thread_data->run_count &&
-		!atomic_read(&thread_data->stop); task_count++) {
+	for (task_count = 0; !atomic_read(&thread_data->stop) &&
+		task_count < thread_data->run_count; task_count++) {
 		struct random_data *random_context = NULL;
 		struct cmdqRecStruct *handle = NULL;
 		u32 i = 0;
@@ -6156,7 +6156,7 @@ static int _testcase_trigger_event_thread(void *data)
 	u32 dummy_value = 0;
 	u32 trigger_interval = (u32)thread_data->policy.trigger_policy;
 
-	CMDQ_LOG("%s\n", __func__);
+	CMDQ_MSG("%s\n", __func__);
 
 	if (!trigger_interval)
 		trigger_interval = get_random_int() % (u32)CMDQ_TESTCASE_TRIGGER_SLOW;
@@ -6178,14 +6178,8 @@ static int _testcase_trigger_event_thread(void *data)
 		msleep_interruptible(get_random_int() % trigger_interval + 1);
 	}
 
-	/* clear token */
-	for (event_idx = 0; event_idx < ARRAY_SIZE(tokens); event_idx++)
-		cmdqCoreClearEvent(tokens[event_idx]);
-
 	CMDQ_LOG("%s END\n", __func__);
-
 	complete(&thread_data->cmplt);
-
 	return 0;
 }
 
@@ -6196,9 +6190,8 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 	struct thread_param random_thread = { {0} };
 	struct thread_param trigger_thread = { {0} };
 	const u32 finish_timeout_ms = 1000;
-	const u32 finish_timeout_max_count = 20;
 	u32 timeout_counter = 0;
-	u32 wait_status = 0;
+	s32 wait_status = 0;
 
 	CMDQ_LOG("%s start with multi-task: %s engine: %d wait: %d condition: %d loop: %d\n",
 		__func__, multi_task ? "True" : "False", policy.engines_policy,
@@ -6229,7 +6222,6 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 			CMDQ_TEST_FAIL("Fail to start trigger event thread\n");
 			atomic_set(&random_thread.stop, 1);
 			wait_for_completion(&random_thread.cmplt);
-			kthread_stop(random_thread_handle);
 			break;
 		}
 
@@ -6238,9 +6230,9 @@ static void testcase_gen_random_case(bool multi_task, struct stress_policy polic
 		do {
 			wait_status = wait_for_completion_interruptible_timeout(&trigger_thread.cmplt,
 				msecs_to_jiffies(finish_timeout_ms));
-			CMDQ_LOG("wait trigger thread complete count: %u status: %u\n",
-				timeout_counter, wait_status);
-		} while (wait_status != 0 && timeout_counter++ < finish_timeout_max_count);
+			CMDQ_LOG("wait trigger thread complete count: %u status: %d\n",
+				timeout_counter++, wait_status);
+		} while (wait_status != 0);
 	} while (0);
 
 	CMDQ_LOG("%s END\n", __func__);
@@ -6259,6 +6251,7 @@ void testcase_stress_basic(void)
 	policy.wait_policy = CMDQ_TESTCASE_WAITOP_BEFORE_END;
 	policy.condition_policy = CMDQ_TESTCASE_CONDITION_NONE;
 	policy.loop_policy = CMDQ_TESTCASE_LOOP_FAST;
+	policy.trigger_policy = CMDQ_TESTCASE_TRIGGER_MEDIUM;
 	testcase_gen_random_case(true, policy);
 
 	msleep_interruptible(10);
@@ -6314,6 +6307,11 @@ void testcase_stress_poll(void)
 void testcase_stress_timeout(void)
 {
 	struct stress_policy policy = {0};
+
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	if (gCmdqTestSecure)
+		policy.secure_policy = CMDQ_TESTCASE_SECURE_RANDOM;
+#endif
 
 	policy.engines_policy = CMDQ_TESTCASE_ENGINE_SAME;
 	policy.wait_policy = CMDQ_TESTCASE_WAITOP_RANDOM;

@@ -22,9 +22,6 @@ typedef uint32_t(*CmdqGetSubsysLSBArgA) (void);
 /* is a secure thread */
 typedef bool(*CmdqIsSecureThread) (const int32_t thread);
 
-/* is valid notify thread for secure path */
-typedef bool(*CmdqIsValidNotifyThread) (const int32_t thread);
-
 /* is display scenario */
 typedef bool(*CmdqIsDispScenario) (const enum CMDQ_SCENARIO_ENUM scenario);
 
@@ -106,7 +103,6 @@ typedef void (*CmdqInitModulePAStat) (void);
 struct cmdqCoreFuncStruct {
 	CmdqGetSubsysLSBArgA getSubsysLSBArgA;
 	CmdqIsSecureThread isSecureThread;
-	CmdqIsValidNotifyThread isValidNotifyThread;
 	CmdqIsDispScenario isDispScenario;
 	CmdqShouldEnablePrefetch shouldEnablePrefetch;
 	CmdqShouldProfile shouldProfile;

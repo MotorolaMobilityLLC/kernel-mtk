@@ -39,6 +39,7 @@ struct CmdqDeviceStruct {
 	int32_t dma_mask_result;
 };
 static struct CmdqDeviceStruct gCmdqDev;
+static u32 gThreadCount;
 static long gAPXGPT2Count;
 static uint32_t gMMSYSDummyRegOffset;
 
@@ -70,6 +71,11 @@ long cmdq_dev_get_module_base_PA_GCE(void)
 int32_t cmdq_dev_get_dma_mask_result(void)
 {
 	return gCmdqDev.dma_mask_result;
+}
+
+u32 cmdq_dev_get_thread_count(void)
+{
+	return gThreadCount;
 }
 
 long cmdq_dev_get_APXGPT2_count(void)
@@ -430,13 +436,18 @@ void cmdq_dev_init_resource(CMDQ_DEV_INIT_RESOURCE_CB init_cb)
 void cmdq_dev_init_device_tree(struct device_node *node)
 {
 	int status;
-	uint32_t apxgpt2_count_value = 0;
-	uint32_t mmsys_dummy_reg_offset_value = 0;
+	u32 apxgpt2_count_value = 0;
+	u32 mmsys_dummy_reg_offset_value = 0;
+	u32 thread_count = 16;
 
+	gThreadCount = 16;
 	gAPXGPT2Count = 0;
 	gMMSYSDummyRegOffset = 0;
 	cmdq_core_init_DTS_data();
 #ifdef CMDQ_OF_SUPPORT
+	status = of_property_read_u32(node, "thread_count", &thread_count);
+	if (status >= 0)
+		gThreadCount = thread_count;
 	/* init GCE subsys */
 	cmdq_dev_init_subsys(node);
 	/* init event table */
@@ -482,7 +493,7 @@ void cmdq_dev_init(struct platform_device *pDevice)
 #endif
 
 		CMDQ_LOG
-		    ("[CMDQ] platform_dev: dev: %p, PA: %lx, VA: %lx, irqId: %d,  irqSecId:%d\n",
+		    ("[CMDQ] platform_dev: dev: %p, PA: %lx, VA: %lx, irqId: %d, irqSecId: %d\n",
 		     gCmdqDev.pDev, gCmdqDev.regBasePA, gCmdqDev.regBaseVA, gCmdqDev.irqId,
 		     gCmdqDev.irqSecId);
 	} while (0);
