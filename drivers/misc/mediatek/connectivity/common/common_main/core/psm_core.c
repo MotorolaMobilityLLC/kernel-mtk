@@ -1138,7 +1138,7 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 				ret = STP_PSM_OPERATION_FAIL;
 			}
 		} else if (action == WAKEUP || action == HOST_AWAKE) {
-			STP_PSM_INFO_FUNC("In ACT state, dont do WAKEUP/HOST_AWAKE again\n");
+			STP_PSM_DBG_FUNC("In ACT state, dont do WAKEUP/HOST_AWAKE again\n");
 			_stp_psm_release_data(stp_psm);
 		} else {
 			STP_PSM_ERR_FUNC("invalid operation, the case should not happen\n");
