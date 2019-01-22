@@ -17,7 +17,11 @@
 		mt-tcpc,role_def = <4>; /* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
 		mt-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
 		mt-tcpc,vconn_supply  = <1>;  /* 0: Never, 1: Always, 2: EMarkOnly, 3: StartOnly */
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+		mt-tcpc,notifier_supply_num = <3>; /* the number of notifier supply */
+#else
 		mt-tcpc,notifier_supply_num = <2>; /* the number of notifier supply */
+#endif
 		mt6370pd,intr_gpio = <&pio 24 0x0>;
 		mt6370pd,intr_gpio_num = <24>;
 
