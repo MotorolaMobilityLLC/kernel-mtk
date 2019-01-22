@@ -586,7 +586,7 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 	if (request->n_ssids == 0) {
 		rScanRequest.u4SsidNum = 0;
 	} else if (request->n_ssids <= (SCN_SSID_MAX_NUM + 1)) {
-		if ((request->ssids[request->n_ssids - 1].ssid == NULL)
+		if ((request->ssids[request->n_ssids - 1].ssid[0] == 0)
 			|| (request->ssids[request->n_ssids - 1].ssid_len == 0))
 			request->n_ssids--; /* remove the rear NULL SSID if this is a wildcard scan*/
 
