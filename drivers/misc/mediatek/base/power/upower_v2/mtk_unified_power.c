@@ -44,6 +44,12 @@
 #include "mtk_common_static_power.h"
 #endif
 
+#if UPOWER_ENABLE_TINYSYS_SSPM && UPOWER_USE_QOS_IPI
+#include <mtk_spm_vcore_dvfs_ipi.h>
+#include <mtk_vcorefs_governor.h>
+#endif
+
+
 #if UPOWER_ENABLE
 unsigned char upower_enable = 1;
 #else
@@ -395,11 +401,31 @@ static int upower_update_tbl_ref(void)
 	return ret;
 }
 
+#if UPOWER_ENABLE_TINYSYS_SSPM && UPOWER_USE_QOS_IPI
+void upower_send_data_ipi(phys_addr_t phy_addr, unsigned long long size)
+{
+	struct qos_data qos_d;
+
+	qos_d.cmd = QOS_IPI_UPOWER_DATA_TRANSFER;
+	qos_d.u.upower_data.arg[0] = phy_addr;
+	qos_d.u.upower_data.arg[1] = size;
+	qos_ipi_to_sspm_command(&qos_d, 3);
+}
+
+void upower_dump_data_ipi(void)
+{
+	struct qos_data qos_d;
+
+	qos_d.cmd = QOS_IPI_UPOWER_DUMP_TABLE;
+	qos_ipi_to_sspm_command(&qos_d, 1);
+}
+#endif
+
 static int __init upower_get_tbl_ref(void)
 {
 #ifdef UPOWER_NOT_READY
 	return 0;
-#else
+#endif
 	/* get raw upower table and target upower table location */
 	get_original_table();
 
@@ -413,9 +439,14 @@ static int __init upower_get_tbl_ref(void)
 				(unsigned long long)upower_data_phy_addr,
 				(unsigned long long)upower_data_virt_addr);
 
-	upower_tbl_ref = (struct upower_tbl *)upower_data_virt_addr;
+	upower_tbl_ref = (struct upower_tbl *)(uintptr_t)upower_data_virt_addr;
+
+#if UPOWER_USE_QOS_IPI
+	upower_send_data_ipi(upower_data_phy_addr, upower_data_size);
+#else
 	/* send sspm reserved mem into sspm through eem's ipi */
 	mt_eem_send_upower_table_ref(upower_data_phy_addr, upower_data_size);
+#endif
 #endif
 	/* upower_tbl_ref has been assigned in get_original_table() if no sspm */
 	upower_debug("upower tbl orig location([0](%p)= %p\n",
@@ -423,7 +454,6 @@ static int __init upower_get_tbl_ref(void)
 	upower_debug("upower tbl new location([0](%p)\n", upower_tbl_ref);
 
 	return 0;
-#endif
 }
 
 #ifdef UPOWER_PROFILE_API_TIME
@@ -459,6 +489,9 @@ static int upower_debug_proc_show(struct seq_file *m, void *v)
 	ptr_tbl_info = *addr_ptr_tbl_info;
 	/* upower_debug("get upower tbl location = %p\n", ptr_tbl_info[0].p_upower_tbl); */
 
+	seq_printf(m, "ptr_tbl_info --> %p --> tbl %p (p_upower_tbl_infos --> %p)\n",
+		ptr_tbl_info, ptr_tbl_info[0].p_upower_tbl, p_upower_tbl_infos);
+
 	/* print all the tables that record in upower_tbl_infos[]*/
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		seq_printf(m, "%s\n", upower_tbl_infos[i].name);
@@ -474,6 +507,10 @@ static int upower_debug_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, " lkg_idx, num_row: %d, %d\n\n",
 					ptr_tbl->lkg_idx, ptr_tbl->row_num);
 	}
+
+#if UPOWER_ENABLE_TINYSYS_SSPM && UPOWER_USE_QOS_IPI
+	upower_dump_data_ipi();
+#endif
 
 	return 0;
 }

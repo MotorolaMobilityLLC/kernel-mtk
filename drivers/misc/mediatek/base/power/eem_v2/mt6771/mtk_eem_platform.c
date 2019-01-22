@@ -19,8 +19,8 @@
  */
 #define __MTK_EEM_PLATFORM_C__
 
-#include "mtk_eem.h"
 #include "mtk_eem_config.h"
+#include "mtk_eem.h"
 #include "mtk_eem_internal_ap.h"
 #include "mtk_eem_internal.h"
 #include "mtk_cpufreq_api.h"
@@ -55,31 +55,49 @@ struct eem_det_ops cci_det_ops = {
 	.get_orig_volt_table = get_orig_volt_table_cpu,
 };
 
+#ifndef EARLY_PORTING_CPU
+static unsigned int detid_to_dvfsid(struct eem_det *det)
+{
+	unsigned int cpudvfsindex;
+	enum eem_det_id detid = det_to_id(det);
+
+#if ENABLE_LOO
+	if ((detid == EEM_DET_2L) || (detid == EEM_DET_2L_HI))
+		cpudvfsindex = MT_CPU_DVFS_LL;
+	else if ((detid == EEM_DET_L) ||
+		((detid == EEM_DET_L_HI) && (det != &eem_detector_cci))
+		)
+		cpudvfsindex = MT_CPU_DVFS_L;
+	else
+		cpudvfsindex = MT_CPU_DVFS_CCI;
+#else
+	if (detid == EEM_DET_2L)
+		cpudvfsindex = MT_CPU_DVFS_LL;
+	else if (detid == EEM_DET_L)
+		cpudvfsindex = MT_CPU_DVFS_L;
+	else
+		cpudvfsindex = MT_CPU_DVFS_CCI;
+#endif
+
+#if 0
+	eem_debug("[detid_to_dvfsid] id:%d, cpudvfsindex:%d\n",
+		det->ctrl_id, cpudvfsindex);
+#endif
+
+	return cpudvfsindex;
+}
+#endif
+
 /* Will return 10uV */
 int get_volt_cpu(struct eem_det *det)
 {
 	unsigned int value = 0;
+	enum eem_det_id cpudvfsindex;
 
 	FUNC_ENTER(FUNC_LV_HELP);
-
 	/* unit mv * 100 = 10uv */
-	switch (det_to_id(det)) {
-	case EEM_DET_2L:
-		value = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL);
-		break;
-
-	case EEM_DET_L:
-		value = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L);
-		break;
-
-	case EEM_DET_CCI:
-		value = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_CCI);
-		break;
-
-	default:
-		value = 0;
-		break;
-	}
+	cpudvfsindex = detid_to_dvfsid(det);
+	value = mt_cpufreq_get_cur_volt(cpudvfsindex);
 
 	FUNC_EXIT(FUNC_LV_HELP);
 	return value;
@@ -89,6 +107,7 @@ int get_volt_cpu(struct eem_det *det)
 int set_volt_cpu(struct eem_det *det)
 {
 	int value = 0;
+	enum eem_det_id cpudvfsindex;
 #ifdef DRCC_SUPPORT
 	unsigned long flags;
 #endif
@@ -109,23 +128,22 @@ int set_volt_cpu(struct eem_det *det)
 		record_tbl_locked[value] = det->volt_tbl_pmic[value];
 #endif
 
-	switch (det_to_id(det)) {
-	case EEM_DET_2L:
-		value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL, record_tbl_locked, det->num_freq_tbl);
-		break;
-
-	case EEM_DET_L:
-		value = mt_cpufreq_update_volt(MT_CPU_DVFS_L, record_tbl_locked, det->num_freq_tbl);
-		break;
-
-	case EEM_DET_CCI:
-		value = mt_cpufreq_update_volt(MT_CPU_DVFS_CCI, record_tbl_locked, det->num_freq_tbl);
-		break;
-
-	default:
-		value = 0;
-		break;
-	}
+	cpudvfsindex = detid_to_dvfsid(det);
+	value = mt_cpufreq_update_volt(cpudvfsindex, record_tbl_locked, det->num_freq_tbl);
+#if 0
+	eem_debug("[set_volt_cpu %s].volt_tbl[0] = 0x%X ----- Ori[0x%x] volt_tbl_pmic[0] = 0x%X (%d)\n",
+		det->name,
+		det->volt_tbl[0], det->volt_tbl_orig[0],
+		det->volt_tbl_pmic[0], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[0]));
+	eem_debug("[set_volt_cpu %s].volt_tbl[7] = 0x%X ----- Ori[0x%x] volt_tbl_pmic[7] = 0x%X (%d)\n",
+		det->name,
+		det->volt_tbl[7], det->volt_tbl_orig[7],
+		det->volt_tbl_pmic[7], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[7]));
+	eem_debug("[set_volt_cpu %s].volt_tbl[8] = 0x%X ----- Ori[0x%x] volt_tbl_pmic[8] = 0x%X (%d)\n",
+		det->name,
+		det->volt_tbl[8], det->volt_tbl_orig[8],
+		det->volt_tbl_pmic[8], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[8]));
+#endif
 
 #ifdef DRCC_SUPPORT
 	mt_record_unlock(&flags);
@@ -167,17 +185,15 @@ void restore_default_volt_cpu(struct eem_det *det)
 void get_freq_table_cpu(struct eem_det *det)
 {
 	int i = 0;
-	enum mt_cpu_dvfs_id cpu_id;
-	enum eem_det_id det_id = det_to_id(det);
+	enum mt_cpu_dvfs_id cpudvfsindex;
+
 
 	FUNC_ENTER(FUNC_LV_HELP);
 
-	cpu_id = (det_id == EEM_DET_CCI) ? MT_CPU_DVFS_CCI :
-			(det_id == EEM_DET_2L) ? MT_CPU_DVFS_LL :
-			MT_CPU_DVFS_L;
+	cpudvfsindex = detid_to_dvfsid(det);
 
 	for (i = 0; i < NR_FREQ_CPU; i++) {
-		det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu_id, i), det->max_freq_khz);
+		det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpudvfsindex, i), det->max_freq_khz);
 		/* eem_debug("freq_tbl[%d]=%d 0x%0x\n", i, det->freq_tbl[i], det->freq_tbl[i]); */
 		if (det->freq_tbl[i] == 0)
 			break;
@@ -200,14 +216,13 @@ void get_orig_volt_table_cpu(struct eem_det *det)
 {
 #if SET_PMIC_VOLT_TO_DVFS
 	int i = 0, volt = 0;
-	unsigned int det_id = det_to_id(det);
+	enum mt_cpu_dvfs_id cpudvfsindex;
 
 	FUNC_ENTER(FUNC_LV_HELP);
+	cpudvfsindex = detid_to_dvfsid(det);
 
 	for (i = 0; i < det->num_freq_tbl; i++) {
-		volt = ((det_id == EEM_DET_2L) ? mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_LL, i) :
-			(det_id == EEM_DET_L) ?  mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_L, i) :
-			mt_cpufreq_get_volt_by_idx(MT_CPU_DVFS_CCI, i));
+		volt = mt_cpufreq_get_volt_by_idx(cpudvfsindex, i);
 
 		det->volt_tbl_orig[i] = det->ops->volt_2_pmic(det, volt);
 
@@ -219,6 +234,12 @@ void get_orig_volt_table_cpu(struct eem_det *det)
 			det->volt_tbl_orig[i]);
 #endif
 	}
+
+#if ENABLE_LOO
+	/* Use signoff volt */
+	memcpy(det->volt_tbl, det->volt_tbl_orig, sizeof(det->volt_tbl));
+	memcpy(det->volt_tbl_init2, det->volt_tbl_orig, sizeof(det->volt_tbl));
+#endif
 	FUNC_EXIT(FUNC_LV_HELP);
 #endif
 }
@@ -318,6 +339,13 @@ void get_orig_volt_table_gpu(struct eem_det *det)
 			det->volt_tbl_orig[i]);
 #endif
 	}
+
+#if ENABLE_LOO
+		/* Use signoff volt */
+		memcpy(det->volt_tbl, det->volt_tbl_orig, sizeof(det->volt_tbl));
+		memcpy(det->volt_tbl_init2, det->volt_tbl_orig, sizeof(det->volt_tbl));
+#endif
+
 	FUNC_EXIT(FUNC_LV_HELP);
 #endif
 #endif
