@@ -172,8 +172,10 @@ uint32_t cmdq_dev_enable_device_clock(bool enable, struct clk *clk_module, const
 {
 	int result = 0;
 
-	if (IS_ERR(clk_module))
+	if (IS_ERR(clk_module)) {
+		CMDQ_ERR("clock module does not support: %s\n", clkName);
 		return PTR_ERR(clk_module);
+	}
 
 	if (enable) {
 		result = clk_prepare_enable(clk_module);
