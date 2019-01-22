@@ -436,9 +436,6 @@ static void spm_set_sysclk_settle(void)
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
-	/* FIXME: */
-	/* set PMIC WRAP table for suspend power control */
-
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
