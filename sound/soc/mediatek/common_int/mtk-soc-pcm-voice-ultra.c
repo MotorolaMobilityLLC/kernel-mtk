@@ -522,15 +522,18 @@ static int mtk_voice_ultra_hw_params(struct snd_pcm_substream *substream,
 	ret |= AllocateAudioSram(&ultra_info.dl_dma_addr,
 				 &ultra_info.dl_dma_area,
 				 ultra_info.dl_size,
-				 substream);
+				 substream,
+				 params_format(hw_params), false);
 	ret |= AllocateAudioSram(&ultra_info.voice_dl_dma_addr,
 				 &ultra_info.voice_dl_dma_area,
 				 ultra_info.voice_dl_size,
-				 substream);
+				 substream,
+				 params_format(hw_params), false);
 	ret |= AllocateAudioSram(&ultra_info.ultra_ul_dma_addr,
 				 &ultra_info.ultra_ul_dma_area,
 				 ultra_info.ultra_ul_size,
-				 substream);
+				 substream,
+				 params_format(hw_params), false);
 	if (ret) {
 		pr_err("%s(), allocate sram fail, ret = %d\n", __func__, ret);
 		freeAudioSram((void *)substream);

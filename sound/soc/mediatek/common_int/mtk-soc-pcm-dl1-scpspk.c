@@ -411,9 +411,10 @@ static int dl1spk_allocate_feedback_buffer(struct snd_pcm_substream *substream, 
 	buffer_size = params_buffer_bytes(hw_params) / params_periods(hw_params) * 2;
 	Dl1Spk_runtime_feedback_dma_buf.bytes = buffer_size;
 	if (AllocateAudioSram(&Dl1Spk_runtime_feedback_dma_buf.addr,
-			&Dl1Spk_runtime_feedback_dma_buf.area,
-			Dl1Spk_runtime_feedback_dma_buf.bytes,
-			(void *)&Dl1Spk_feedback_user) == 0) {
+			       &Dl1Spk_runtime_feedback_dma_buf.area,
+			       Dl1Spk_runtime_feedback_dma_buf.bytes,
+			       (void *)&Dl1Spk_feedback_user
+			       params_format(hw_params), false) == 0) {
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL_DATA2, false, Dl1Spk_runtime_feedback_dma_buf.addr);
 	} else {
 		Dl1Spk_runtime_feedback_dma_buf.addr = Dl1Spk_feedback_dma_buf.addr + Dl1Spk_feedback_buf_offset;
@@ -481,7 +482,11 @@ static int dl1spk_allocate_platformdl_buffer(struct snd_pcm_substream *substream
 
 	SpkDL1Buffer.bytes = buffer_size;
 	if (buffer_size <= GetPLaybackSramFullSize() &&
-	AllocateAudioSram(&SpkDL1Buffer.addr, &SpkDL1Buffer.area, SpkDL1Buffer.bytes, substream) == 0) {
+	    AllocateAudioSram(&SpkDL1Buffer.addr,
+			      &SpkDL1Buffer.area,
+			      SpkDL1Buffer.bytes,
+			      substream,
+			      params_format(hw_params), false) == 0) {
 		AudDrv_Allocate_DL1_Buffer(mDev, PlatformBuffer.bytes,
 		PlatformBuffer.addr, PlatformBuffer.area);
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false, SpkDL1Buffer.addr);
