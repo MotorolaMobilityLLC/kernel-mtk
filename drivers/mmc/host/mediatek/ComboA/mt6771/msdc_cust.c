@@ -233,7 +233,8 @@ void msdc_power_calibration_init(struct msdc_host *host)
 
 int msdc_oc_check(struct msdc_host *host, u32 en)
 {
-#ifdef POWER_READY
+/* #ifdef POWER_READY */
+#if 0 /* mt6771 oc is detected by PMIc interrupt */
 	u32 val = 0;
 	int ret = 0;
 
@@ -306,13 +307,51 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
 
-		/* soft start 120 us, when power on */
-		if (card_on)
-			pmic_set_register_value(PMIC_RG_LDO_VMCH_STBTD, 0x1);
+		/* soft start, when power on */
+		if (card_on) {
+			/*
+			 * 2'b00: 60us
+			 * 2'b01: 120 us
+			 * 2'b10: 240 us
+			 * 2'b11: 360 us
+			 */
+			pmic_set_register_value(PMIC_RG_LDO_VMCH_STBTD, 0x2);
+			/*
+			 * 2'b00: 60us
+			 * 2'b01: 120 us
+			 * 2'b10: 180 us
+			 * 2'b11: 240 us
+			 */
+			pmic_set_register_value(PMIC_RG_LDO_VMCH_STBTD, 0x3);
+		}
+
+		/* Disable VMCH OC */
+		if (!card_on)
+			pmic_enable_interrupt(INT_VMCH_OC, 0, "sdcard");
 
 		/* VMCH VOLSEL */
 		msdc_ldo_power(card_on, host->mmc->supply.vmmc, VOL_3000,
 			&host->power_flash);
+
+		/* Enable VMCH OC */
+		if (card_on) {
+			mdelay(3);
+			pmic_enable_interrupt(INT_VMCH_OC, 1, "sdcard");
+		}
+
+		/* hw det, power off */
+		if (host->hw->flags & MSDC_VMCH_FASTOFF) {
+			if (card_on) {
+				if (host->hw->cd_level == 1) {
+					/*1: high; 0: low, vmch fast off hw_det default high active*/
+					pmic_set_register_value(PMIC_RG_LDO_VMCH_SD_POL, 0);
+				}
+				pmic_set_register_value(PMIC_RG_LDO_VMCH_SD_EN, 1);
+			} else {
+				udelay(1500);
+				pmic_set_register_value(PMIC_RG_LDO_VMCH_SD_EN, 0);
+			}
+		}
 		/* VMC VOLSEL */
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_3000,
 			&host->power_io);
@@ -320,6 +359,7 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		/* Clear VMC cal when power off */
 		if (!on)
 			pmic_set_register_value(PMIC_RG_VMC_VOCAL, 0x0);
+
 		pr_info("msdc%d power %s\n", host->id, (on ? "on" : "off"));
 		break;
 
@@ -1145,6 +1185,9 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 	if (of_find_property(np, "sd-uhs-ddr208", &len))
 		host->hw->flags |= MSDC_SDIO_DDR208;
 
+	if (of_find_property(np, "sd-vmch-fastoff", &len))
+		host->hw->flags |= MSDC_VMCH_FASTOFF;
+
 	/* Returns 0 on success, -EINVAL if the property does not exist,
 	 * -ENODATA if property does not have a value, and -EOVERFLOW if the
 	 * property data isn't large enough.
@@ -1213,6 +1256,10 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 		device_rename(mmc->parent, "bootdevice");
 	else if (host->id == 1)
 		device_rename(mmc->parent, "externdevice");
+
+	/* Register PMIC Interrupt for VMCH OC */
+	if (host->id == 1)
+		pmic_register_interrupt_callback(INT_VMCH_OC, msdc_sd_power_off);
 
 	return host->id;
 }
