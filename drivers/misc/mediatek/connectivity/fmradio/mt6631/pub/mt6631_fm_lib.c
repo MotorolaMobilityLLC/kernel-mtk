@@ -973,16 +973,16 @@ static signed int mt6631_PowerDown(void)
 
 	/* D0.  Clear top_clk_en_adie to indicate sleep controller after FM power off */
 	/* ret = fm_host_reg_read(0x80101030, &host_reg);
-	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, " pwroff read 0x80100030 failed\n");
-		return ret;
-	}
-	ret = fm_host_reg_write(0x80101030, host_reg & (~(0x1 << 1)));
-	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, " pwroff disable top_ck_en_adie failed\n");
-		return ret;
-	}
-	*/
+	 * if (ret) {
+	 *	WCN_DBG(FM_ALT | CHIP, " pwroff read 0x80100030 failed\n");
+	 *	return ret;
+	 * }
+	 * ret = fm_host_reg_write(0x80101030, host_reg & (~(0x1 << 1)));
+	 * if (ret) {
+	 *	WCN_DBG(FM_ALT | CHIP, " pwroff disable top_ck_en_adie failed\n");
+	 *	return ret;
+	 * }
+	 */
 	return ret;
 }
 
