@@ -75,6 +75,7 @@ struct upower_tbl_info upower_tbl_infos_SB[NR_UPOWER_BANK] = {
 
 /* points to all the raw tables */
 struct upower_tbl_info *p_upower_tbl_infos = &upower_tbl_infos[0];
+struct upower_tbl_info *new_p_tbl_infos;
 
 #if 0
 static void print_tbl(void)
@@ -247,6 +248,7 @@ static void upower_update_lkg_pwr(void)
 	unsigned int spower_bank_id;
 	unsigned int volt;
 	int degree;
+	unsigned int temp;
 	#endif
 
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
@@ -258,6 +260,13 @@ static void upower_update_lkg_pwr(void)
 		}
 		#else
 		spower_bank_id = upower_bank_to_spower_bank(i);
+
+		#if 0
+		upower_debug("upower bank, spower bank= %d, %d\n", i, spower_bank_id);
+		upower_debug("deg = %d, %d, %d, %d, %d, %d\n", degree_set[0], degree_set[1],
+							degree_set[2], degree_set[3], degree_set[4], degree_set[5]);
+		#endif
+
 		/* wrong bank */
 		if (spower_bank_id == -1)
 			continue;
@@ -267,16 +276,21 @@ static void upower_update_lkg_pwr(void)
 			for (k = 0; k < NR_UPOWER_DEGREE; k++) {
 				degree = degree_set[k];
 				/* get leakage from spower driver and transfer mw to uw */
-				upower_tbl_ref[i].row[j].lkg_pwr[k] =
-				mt_spower_get_leakage(spower_bank_id, (volt/100), degree) * 1000;
+				temp = mt_spower_get_leakage(spower_bank_id, (volt/100), degree);
+				upower_tbl_ref[i].row[j].lkg_pwr[k] = temp * 1000;
+				#if 0
+				upower_debug("deg[%d] temp[%u] lkg_pwr[%u]\n", degree, temp,
+							upower_tbl_ref[i].row[j].lkg_pwr[k]);
+				#endif
 			}
 			#if 0
-			upower_debug("volt[%u] deg[%d] lkg_pwr in tbl[%u, %u, %u, %u, %u]\n", volt, degree,
+			upower_debug("volt[%u] lkg_pwr[%u, %u, %u, %u, %u, %u]\n", volt,
 							upower_tbl_ref[i].row[j].lkg_pwr[0],
 							upower_tbl_ref[i].row[j].lkg_pwr[1],
 							upower_tbl_ref[i].row[j].lkg_pwr[2],
 							upower_tbl_ref[i].row[j].lkg_pwr[3],
-							upower_tbl_ref[i].row[j].lkg_pwr[4]);
+							upower_tbl_ref[i].row[j].lkg_pwr[4],
+							upower_tbl_ref[i].row[j].lkg_pwr[5]);
 			#endif
 		}
 		#endif
@@ -337,22 +351,24 @@ static void upower_init_volt(void)
 static int upower_update_tbl_ref(void)
 {
 	int i;
-	struct upower_tbl_info *new_p_tbl_infos;
 	int ret = 0;
 
 	#ifdef UPOWER_PROFILE_API_TIME
 	upower_get_start_time_us(UPDATE_TBL_PTR);
 	#endif
 
-	new_p_tbl_infos = kzalloc(sizeof(struct upower_tbl_info *) * NR_UPOWER_BANK, GFP_KERNEL);
+	new_p_tbl_infos = kzalloc(sizeof(*new_p_tbl_infos) * NR_UPOWER_BANK, GFP_KERNEL);
 	if (!new_p_tbl_infos) {
 		upower_error("Out of mem to create new_p_tbl_infos\n");
 		return -ENOMEM;
 	}
 
 	/* upower_tbl_ref is the ptr points to table in sram */
-	for (i = 0; i < NR_UPOWER_BANK; i++)
+	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		new_p_tbl_infos[i].p_upower_tbl = &upower_tbl_ref[i];
+		new_p_tbl_infos[i].name = upower_tbl_infos[i].name;
+		upower_debug("new_p_tbl_infos[%d].name = %s\n", i, new_p_tbl_infos[i].name);
+	}
 
 	#ifdef UPOWER_RCU_LOCK
 	rcu_assign_pointer(p_upower_tbl_infos, new_p_tbl_infos);
