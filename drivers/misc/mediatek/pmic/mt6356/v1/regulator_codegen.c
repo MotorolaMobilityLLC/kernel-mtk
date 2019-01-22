@@ -206,7 +206,7 @@ static const int vcn33_wifi_idx[] = {
 };
 
 static const int vmc_idx[] = {
-	0, 4, 10, 11, 13,
+	4, 10, 11, 13,
 };
 
 static const int vdram_idx[] = {
@@ -218,7 +218,7 @@ static const int vldo28_idx[] = {
 };
 
 static const int vsim2_idx[] = {
-	0, 3, 4, 8, 11, 12,
+	3, 4, 8, 11, 12,
 };
 
 
