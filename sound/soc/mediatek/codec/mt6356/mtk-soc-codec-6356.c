@@ -3190,7 +3190,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 
 		if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC1) {	/* main and headset mic */
 			/* Audio L preamplifier DCC precharge */
-			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0004, 0xffff);
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0004, 0xf8ff);
 
 			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
 				/* "ADC1", main_mic */
@@ -3211,7 +3211,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			}
 		} else if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC2) {
 			/* Audio R preamplifier DCC precharge */
-			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0004, 0xffff);
+			Ana_Set_Reg(AUDENC_ANA_CON1, 0x0004, 0xf8ff);
 
 			/* ref mic */
 			/* Audio R preamplifier input sel : AIN2. Enable audio R PGA */
