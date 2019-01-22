@@ -6405,6 +6405,12 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, in
 			cmdq_core_dump_resource_status(event);
 	}
 
+	/* no need to dump detail log for esd case */
+	if (task->scenario == CMDQ_SCENARIO_DISP_ESD_CHECK) {
+		cmdq_core_release_nginfo(nginfo);
+		return;
+	}
+
 	detail_log = error_num <= 2 || error_num % 16 == 0 || cmdq_core_should_full_error();
 	cmdq_core_attach_engine_error(task, thread, nginfo, !detail_log);
 	if (detail_log)
