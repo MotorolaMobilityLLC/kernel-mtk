@@ -190,6 +190,15 @@ void hdmi_force_on(int from_uart_drv)
 */
 }
 
+int hdmi_is_force_awake(void *argp)
+{
+	int ret;
+
+	ret = copy_to_user(argp, &hdmi_params->is_force_awake,
+				 sizeof(hdmi_params->is_force_awake)) ? -EFAULT : 0;
+	return ret;
+}
+
 /*params & 0xff: resolution,  params & 0xff00 : 3d support*/
 void hdmi_force_resolution(int params)
 {
