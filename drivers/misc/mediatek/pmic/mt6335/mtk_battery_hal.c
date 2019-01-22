@@ -26,6 +26,8 @@
 #include <mt-plat/mtk_rtc_hal_common.h>
 #include <mt-plat/mtk_rtc.h>
 #include "include/pmic_throttling_dlpt.h"
+#include <linux/proc_fs.h>
+
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6336
 #include "mt6336.h"
 #endif
@@ -81,6 +83,7 @@ static int bat_plug_out_time;
 
 static struct mutex fg_wlock;
 
+static int gspare0_reg, gspare3_reg;
 
 #define SWCHR_POWER_PATH
 
@@ -159,9 +162,14 @@ signed int MV_to_REG_12_temp_value(signed int _reg)
 
 signed int REG_to_MV_value(signed int _reg)
 {
-	int ret = (_reg * VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3) / ADC_PRECISE;
+	/*int ret = (_reg * VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3) / ADC_PRECISE;*/
+	long long _reg64 = _reg;
+	int ret;
 
-	bm_trace("[REG_to_MV_value] %d => %d\n", _reg, ret);
+	_reg64 = (_reg64 * VOLTAGE_FULL_RANGE * 10 * R_VAL_TEMP_3) / ADC_PRECISE;
+	ret = _reg64;
+
+	bm_trace("[REG_to_MV_value] %lld => %d\n", _reg64, ret);
 	return ret;
 }
 
@@ -727,11 +735,11 @@ signed int fgauge_set_columb_interrupt_internal1(void *data, int reset)
 
 
 	signed short m;
-	unsigned int car = *(unsigned int *) (data);
+	long long car = *(unsigned int *) (data);
 	unsigned int ret = 0;
 	signed int value32_CAR;
 
-	bm_trace("fgauge_set_columb_interrupt_internal1 car=%d\n", car);
+	bm_trace("fgauge_set_columb_interrupt_internal1 car=%lld\n", car);
 
 
 	if (car == 0) {
@@ -818,7 +826,7 @@ signed int fgauge_set_columb_interrupt_internal1(void *data, int reset)
 	upperbound = value32_CAR;
 	lowbound = value32_CAR;
 
-	bm_trace("[fgauge_set_columb_interrupt_internal1] upper = 0x%x:%d  low=0x%x:%d  diff_car=0x%x:%d\r\n",
+	bm_trace("[fgauge_set_columb_interrupt_internal1] upper = 0x%x:%d  low=0x%x:%d  diff_car=0x%llx:%lld\r\n",
 		 upperbound, upperbound, lowbound, lowbound, car, car);
 
 	upperbound = upperbound + car;
@@ -830,10 +838,10 @@ signed int fgauge_set_columb_interrupt_internal1(void *data, int reset)
 	upperbound_15_14 = (upperbound & 0xffff) >> 14;
 	lowbound_15_14 = (lowbound & 0xffff) >> 14;
 
-	bm_trace("[fgauge_set_columb_interrupt_internal1]final upper = 0x%x:%d  low=0x%x:%d  car=0x%x:%d\r\n",
+	bm_trace("[fgauge_set_columb_interrupt_internal1]final upper = 0x%x:%d  low=0x%x:%d  car=0x%llx:%lld\r\n",
 		 upperbound, upperbound, lowbound, lowbound, car, car);
 
-	bm_trace("[fgauge_set_columb_interrupt_internal1]final upper 0x%x 0x%x 0x%x low 0x%x 0x%x 0x%x car=0x%x\n",
+	bm_trace("[fgauge_set_columb_interrupt_internal1]final upper 0x%x 0x%x 0x%x low 0x%x 0x%x 0x%x car=0x%llx\n",
 		 upperbound, upperbound_31_16, upperbound_15_14, lowbound, lowbound_31_16, lowbound_15_14, car);
 
 	pmic_enable_interrupt(FG_BAT1_INT_H_NO, 0, "GM30");
@@ -1036,7 +1044,7 @@ signed int fgauge_get_time(void *data)
 	unsigned int time_29_16, time_15_00, ret_time;
 	int m = 0;
 	unsigned int ret = 0;
-	unsigned long time = 0;
+	long long time = 0;
 
 	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 	/*(2)    Keep i2c read when status = 1 (0x06) */
@@ -1059,7 +1067,7 @@ signed int fgauge_get_time(void *data)
 	ret_time = time;
 
 	bm_trace(
-		 "[fgauge_get_time] low:0x%x high:0x%x rtime:0x%lx 0x%x!\r\n",
+		 "[fgauge_get_time] low:0x%x high:0x%x rtime:0x%llx 0x%x!\r\n",
 		 time_15_00, time_29_16, time, ret_time);
 
 
@@ -1092,7 +1100,7 @@ signed int fgauge_get_soff_time(void *data)
 	unsigned int soff_time_29_16, soff_time_15_00, ret_time;
 	int m = 0;
 	unsigned int ret = 0;
-	unsigned long time = 0;
+	long long time = 0;
 
 	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 	/*(2)    Keep i2c read when status = 1 (0x06) */
@@ -1115,7 +1123,7 @@ signed int fgauge_get_soff_time(void *data)
 	ret_time = time;
 
 	bm_trace(
-		 "[fgauge_get_soff_time] low:0x%x high:0x%x rtime:0x%lx 0x%x!\r\n",
+		 "[fgauge_get_soff_time] low:0x%x high:0x%x rtime:0x%llx 0x%x!\r\n",
 		 soff_time_15_00, soff_time_29_16, time, ret_time);
 
 
@@ -1148,8 +1156,8 @@ signed int fgauge_set_time_interrupt(void *data)
 	unsigned int time_29_16, time_15_00;
 	int m = 0;
 	unsigned int ret = 0;
-	unsigned long time = 0, time2;
-	unsigned long now;
+	long long time = 0, time2;
+	long long now;
 	unsigned int offsetTime = *(unsigned int *) (data);
 
 	if (offsetTime == 0) {
@@ -1179,7 +1187,7 @@ signed int fgauge_set_time_interrupt(void *data)
 	time = time + offsetTime * 100 / UNIT_TIME;
 
 	bm_debug(
-			 "[fgauge_set_time_interrupt] now:%ld time:%ld\r\n",
+			 "[fgauge_set_time_interrupt] now:%lld time:%lld\r\n",
 			 now/2, time/2);
 	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0008, 0x000F, 0x0);
 
@@ -1220,7 +1228,7 @@ signed int fgauge_set_time_interrupt(void *data)
 		time2 |= time_29_16 << 16;
 
 		bm_debug(
-			 "[fgauge_set_time_interrupt] now:%ld time:%ld\r\n",
+			 "[fgauge_set_time_interrupt] now:%lld time:%lld\r\n",
 			 time2/2, time/2);
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0008, 0x000F, 0x0);
 
@@ -1237,7 +1245,7 @@ signed int fgauge_set_time_interrupt(void *data)
 		ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0000, 0x000F, 0x0);
 
 		bm_trace(
-			 "[fgauge_set_time_interrupt] low:0x%x high:0x%x time:%ld %ld\r\n",
+			 "[fgauge_set_time_interrupt] low:0x%x high:0x%x time:%lld %lld\r\n",
 			 pmic_get_register_value(PMIC_FG_TIME_HTH_15_00),
 			 pmic_get_register_value(PMIC_FG_TIME_HTH_29_16), time, time2);
 	} while (time2 >= time);
@@ -1388,6 +1396,9 @@ void Intr_Number_to_Name(char *intr_name, int intr_no)
 		sprintf(intr_name, "FG_INTR_BAT_TMP_C_LT");
 		break;
 
+	case FG_INTR_BAT_INT1_CHECK:
+		sprintf(intr_name, "FG_INTR_COULOMB_C");
+		break;
 
 	default:
 		sprintf(intr_name, "FG_INTR_UNKNOWN");
@@ -1399,7 +1410,7 @@ void Intr_Number_to_Name(char *intr_name, int intr_no)
 void read_fg_hw_info_time(void)
 {
 	unsigned int time_29_16, time_15_00;
-	unsigned long time = 0;
+	long long time = 0;
 
 	time_15_00 = pmic_get_register_value(PMIC_FG_NTER_15_00);
 	time_29_16 = pmic_get_register_value(PMIC_FG_NTER_29_16);
@@ -2726,13 +2737,15 @@ static signed int fg_get_rtc_invalid(void *data)
 static void fgauge_read_RTC_boot_status(void)
 {
 	int hw_id = pmic_get_register_value(PMIC_HWCID);
-	int spare0_reg = 0;
-	int spare0_reg_b13 = 0;
+	unsigned int spare0_reg = 0;
+	unsigned int spare0_reg_b13 = 0;
 	int spare3_reg = 0;
 	int spare3_reg_valid = 0;
 
 	spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
 	spare3_reg = get_rtc_spare_fg_value();
+	gspare0_reg = spare0_reg;
+	gspare3_reg = spare3_reg;
 	spare3_reg_valid = (spare3_reg & 0x80) >> 7;
 
 	if (spare3_reg_valid == 0)
@@ -2816,8 +2829,8 @@ static signed int fg_set_fg_reset_rtc_status(void *data)
 static signed int read_boot_battery_plug_out_status(void *data)
 {
 	*(unsigned int *) (data) = is_bat_plugout;
-	bm_err("[read_boot_battery_plug_out_status] rtc_invalid %d plugout %d bat_plug_out_time %d\n",
-			rtc_invalid, is_bat_plugout, bat_plug_out_time);
+	bm_err("[read_boot_battery_plug_out_status] rtc_invalid %d plugout %d bat_plug_out_time %d sp0:0x%x sp3:0x%x\n",
+			rtc_invalid, is_bat_plugout, bat_plug_out_time, gspare0_reg, gspare3_reg);
 
 	return STATUS_OK;
 }
@@ -3128,6 +3141,11 @@ static signed int fgauge_meta_cali_car_tune_value(void *data)
 #endif
 }
 
+void battery_dump_info(struct seq_file *m)
+{
+	seq_printf(m, "rtc_invalid %d is_bat_plugout %d bat_plug_out_time %d sp0:0x%x sp3:0x%x\n",
+			rtc_invalid, is_bat_plugout, bat_plug_out_time, gspare0_reg, gspare3_reg);
+}
 
 static signed int(*bm_func[BATTERY_METER_CMD_NUMBER]) (void *data);
 

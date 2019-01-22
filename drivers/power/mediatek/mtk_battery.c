@@ -48,6 +48,7 @@
 
 #include <linux/err.h>	/* IS_ERR, PTR_ERR */
 #include <linux/reboot.h>	/*kernel_power_off*/
+#include <linux/proc_fs.h>
 
 #include <linux/vmalloc.h>
 
@@ -174,16 +175,6 @@ bool g_ADC_Cali;
 
 static signed int gFG_daemon_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 
-/*****************************************/
-
-#if 0
-/********************** 0823_ac *******************************/
-static enum power_supply_property ac_props[] = {
-	POWER_SUPPLY_PROP_ONLINE,
-};
-/***************************************************/
-#endif
-
 static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_STATUS,
 	POWER_SUPPLY_PROP_HEALTH,
@@ -215,27 +206,6 @@ BATTERY_METER_CONTROL battery_meter_ctrl;
 /* ============================================================ */
 /* functions */
 /* ============================================================ */
-#if 0
-/************************************** 0823_ac **************************************/
-static int ac_get_property(struct power_supply *psy,
-			   enum power_supply_property psp, union power_supply_propval *val)
-{
-	int ret = 0;
-	struct ac_data *data = container_of(psy->desc, struct ac_data, psd);
-
-	switch (psp) {
-	case POWER_SUPPLY_PROP_ONLINE:
-		val->intval = data->AC_ONLINE;
-		break;
-	default:
-		ret = -EINVAL;
-		break;
-	}
-	return ret;
-}
-/****************************************************************************/
-#endif
-
 signed int battery_meter_get_tempR(signed int dwVolt)
 {
 #if defined(CONFIG_POWER_EXT)
@@ -361,22 +331,6 @@ static int battery_get_property(struct power_supply *psy,
 	return ret;
 }
 
-#if 0
-/************* 0823_ac ********************/
-/* ac_data initialization */
-static struct ac_data ac_main = {
-	.psd = {
-		.name = "ac",
-		.type = POWER_SUPPLY_TYPE_MAINS,
-		.properties = ac_props,
-		.num_properties = ARRAY_SIZE(ac_props),
-		.get_property = ac_get_property,
-	},
-	.AC_ONLINE = 0,
-};
-/********************************/
-#endif
-
 /* battery_data initialization */
 static struct battery_data battery_main = {
 	.psd = {
@@ -417,17 +371,6 @@ static struct battery_data battery_main = {
 	.adjust_power = -1,
 #endif
 };
-
-#if 0
-/************* 0823_ac ********************/
-static void ac_update(struct ac_data *ac_data)
-{
-	struct power_supply *ac_psy = ac_data->psy;
-
-	power_supply_changed(ac_psy);
-}
-/*********************************/
-#endif
 
 static void battery_update(struct battery_data *bat_data)
 {
@@ -493,6 +436,63 @@ struct fuel_gauge_table_custom_data fg_table_cust_data;
 /* ============================================================ */
 /* extern function */
 /* ============================================================ */
+static int proc_dump_dtsi_show(struct seq_file *m, void *v)
+{
+
+	seq_puts(m, "********** dump DTSI **********\n");
+
+	seq_printf(m, "g_FG_PSEUDO100_T0 = %d\n", fg_cust_data.pseudo100_t0);
+	seq_printf(m, "g_FG_PSEUDO100_T1 = %d\n", fg_cust_data.pseudo100_t1);
+	seq_printf(m, "g_FG_PSEUDO100_T2 = %d\n", fg_cust_data.pseudo100_t2);
+	seq_printf(m, "g_FG_PSEUDO100_T3 = %d\n", fg_cust_data.pseudo100_t3);
+
+	seq_printf(m, "DIFFERENCE_FULLOCV_ITH = %d\n", fg_cust_data.difference_fullocv_ith);
+	seq_printf(m, "MTK_CHR_EXIST = %d\n", fg_cust_data.mtk_chr_exist);
+	seq_printf(m, "Q_MAX_SYS_VOLTAGE_BAT0 = %d\n", fg_cust_data.q_max_sys_voltage);
+
+	seq_printf(m, "SHUTDOWN_1_TIME = %d\n", fg_cust_data.shutdown_1_time);
+	seq_printf(m, "KEEP_100_PERCENT = %d\n", fg_cust_data.keep_100_percent);
+	seq_printf(m, "R_FG_VALUE = %d\n", fg_cust_data.r_fg_value);
+	seq_printf(m, "TEMPERATURE_T0 = %d\n", fg_cust_data.temperature_t0);
+	seq_printf(m, "TEMPERATURE_T1 = %d\n", fg_cust_data.temperature_t1);
+	seq_printf(m, "TEMPERATURE_T2 = %d\n", fg_cust_data.temperature_t2);
+	seq_printf(m, "TEMPERATURE_T3 = %d\n", fg_cust_data.temperature_t3);
+
+	seq_printf(m, "EMBEDDED_SEL = %d\n", fg_cust_data.embedded_sel);
+	seq_printf(m, "PMIC_SHUTDOWN_CURRENT = %d\n", fg_cust_data.pmic_shutdown_current);
+	seq_printf(m, "FG_METER_RESISTANCE = %d\n", fg_cust_data.fg_meter_resistance);
+	seq_printf(m, "CAR_TUNE_VALUE = %d\n", fg_cust_data.car_tune_value);
+	seq_printf(m, "CAR_TUNE_VALUE = %d\n", fg_cust_data.car_tune_value);
+
+	seq_printf(m, "pl_two_sec_reboot = %d\n", pl_two_sec_reboot);
+
+	battery_dump_info(m);
+
+	return 0;
+}
+
+static int proc_dump_dtsi_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, proc_dump_dtsi_show, NULL);
+}
+
+static const struct file_operations battery_dump_dtsi_proc_fops = {
+	.open = proc_dump_dtsi_open,
+	.read = seq_read,
+};
+
+void battery_debug_init(void)
+{
+	struct proc_dir_entry *battery_dir;
+
+	battery_dir = proc_mkdir("battery", NULL);
+	if (!battery_dir) {
+		pr_err("fail to mkdir /proc/battery\n");
+		return;
+	}
+
+	proc_create("dump_dtsi", S_IRUGO | S_IWUSR, battery_dir, &battery_dump_dtsi_proc_fops);
+}
 
 static ssize_t show_Battery_Temperature(struct device *dev, struct device_attribute *attr,
 					       char *buf)
@@ -1850,7 +1850,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_FGADC_RESET:
 		{
-			bm_debug("[fg_res] fgadc_reset\n");
+			bm_err("[fg_res] fgadc_reset\n");
 			fgtimer_before_reset();
 			battery_meter_ctrl(BATTERY_METER_CMD_HW_RESET, NULL);
 			fgtimer_after_reset();
@@ -1968,7 +1968,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	{
 		memcpy(&fg_bat_int2_ht_en, &msg->fgd_data[0], sizeof(fg_bat_int2_ht_en));
 		battery_meter_ctrl(BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_HT_EN, &fg_bat_int2_ht_en);
-		bm_err("[fg_res][fg_bat_int2] FG_DAEMON_CMD_ENABLE_FG_BAT_INT2_HT = %d\n", fg_bat_int2_ht_en);
+		bm_debug("[fg_res][fg_bat_int2] FG_DAEMON_CMD_ENABLE_FG_BAT_INT2_HT = %d\n", fg_bat_int2_ht_en);
 	}
 	break;
 
@@ -1976,7 +1976,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	{
 		memcpy(&fg_bat_int2_lt_en, &msg->fgd_data[0], sizeof(fg_bat_int2_lt_en));
 		battery_meter_ctrl(BATTERY_METER_CMD_SET_COLUMB_INTERRUPT2_LT_EN, &fg_bat_int2_lt_en);
-		bm_err("[fg_res][fg_bat_int2] FG_DAEMON_CMD_ENABLE_FG_BAT_INT2_LT = %d\n", fg_bat_int2_lt_en);
+		bm_debug("[fg_res][fg_bat_int2] FG_DAEMON_CMD_ENABLE_FG_BAT_INT2_LT = %d\n", fg_bat_int2_lt_en);
 	}
 
 	break;
@@ -3057,10 +3057,12 @@ void fg_zcv_int_handler(void)
 	int fg_coulomb = 0;
 	int zcv_intr_en = 0;
 	int zcv_intr_curr = 0;
+	int zcv;
 
 	battery_meter_ctrl(BATTERY_METER_CMD_GET_FG_HW_CAR, &fg_coulomb);
 	battery_meter_ctrl(BATTERY_METER_CMD_GET_ZCV_CURR, &zcv_intr_curr);
-	bm_err("[fg_zcv_int_handler] car:%d zcv_curr:%d\n",	fg_coulomb, zcv_intr_curr);
+	battery_meter_ctrl(BATTERY_METER_CMD_GET_ZCV, &zcv);
+	bm_err("[fg_zcv_int_handler] car:%d zcv_curr:%d zcv:%d\n",	fg_coulomb, zcv_intr_curr, zcv);
 
 	if (abs(zcv_intr_curr) < SLEEP_CURRENT_AVG) {
 		wakeup_fg_algo(FG_INTR_FG_ZCV);
@@ -4119,9 +4121,11 @@ static int battery_probe(struct platform_device *dev)
 	const char *boot_voltage = NULL;
 	char boot_voltage_tmp[10];
 	int boot_voltage_len = 0;
+#if 0
 	const char *two_sec_reboot = NULL;
 	char two_sec_reboot_tmp[10];
 	int two_sec_reboot_len = 0;
+#endif
 
 /********* adc_cdev **********/
 	ret = alloc_chrdev_region(&adc_cali_devno, 0, 1, ADC_CALI_DEVNAME);
@@ -4151,18 +4155,8 @@ static int battery_probe(struct platform_device *dev)
 	kthread_run(battery_update_routine, NULL, "battery_thread");
 	fg_drv_thread_hrtimer_init();
 #endif
+
 	/* Power supply class */
-#if 0
-	/************* 0823_ac ********************/
-	ac_main.psy = power_supply_register(&(dev->dev), &ac_main.psd, NULL);
-	if (IS_ERR(ac_main.psy)) {
-		bm_err("[BAT_probe] power_supply_register AC Fail !!\n");
-		ret = PTR_ERR(ac_main.psy);
-		return ret;
-	}
-	bm_err("[BAT_probe] power_supply_register AC Success !!\n");
-#endif
-	/*********************************/
 	battery_main.psy = power_supply_register(&(dev->dev), &battery_main.psd, NULL);
 	if (IS_ERR(battery_main.psy)) {
 		bm_err("[BAT_probe] power_supply_register Battery Fail !!\n");
@@ -4281,6 +4275,7 @@ static int battery_probe(struct platform_device *dev)
 			boot_voltage, boot_voltage_len, boot_voltage_tmp, pl_bat_vol);
 	}
 
+#if 0
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
 		two_sec_reboot = of_get_flat_dt_prop(bat_node, "atag,two_sec_reboot", &two_sec_reboot_len);
 	if (two_sec_reboot == NULL) {
@@ -4292,6 +4287,11 @@ static int battery_probe(struct platform_device *dev)
 		bm_err(" two_sec_reboot = %s len %d two_sec_reboot_tmp %s pl_two_sec_reboot[%d]\n",
 			two_sec_reboot, two_sec_reboot_len, two_sec_reboot_tmp, pl_two_sec_reboot);
 	}
+#endif
+	pmic_read_interface(PMIC_SYSTEM_INFO_CON0_ADDR, &pl_two_sec_reboot, 0x0001, 0x0);
+	pmic_config_interface(PMIC_SYSTEM_INFO_CON0_ADDR, 0, 0x0001, 0x0);
+
+	battery_debug_init();
 	wake_unlock(&battery_lock);
 
 #if defined(CONFIG_MTK_DISABLE_GAUGE)

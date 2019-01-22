@@ -16,6 +16,7 @@
 
 #include <linux/types.h>
 #include <linux/power_supply.h>
+#include <linux/proc_fs.h>
 #include <mach/mtk_charger_init.h>
 
 /* ============================================================ */
@@ -735,7 +736,7 @@ extern int get_hw_ocv(void);
 extern int get_sw_ocv(void);
 extern void set_hw_ocv_unreliable(bool);
 extern signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data);
-
+extern void battery_dump_info(struct seq_file *m);
 extern signed int battery_meter_get_battery_temperature(void);
 extern unsigned int battery_meter_get_fg_time(void);
 extern unsigned int battery_meter_set_fg_timer_interrupt(unsigned int sec);
