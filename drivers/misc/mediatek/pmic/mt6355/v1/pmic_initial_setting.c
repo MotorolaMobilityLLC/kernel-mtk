@@ -542,6 +542,13 @@ void PMIC_LP_INIT_SETTING(void)
 	ret = pmic_ldo_vio18_lp(SRCLKEN2, 1, HW_LP);
 	ret = pmic_ldo_vgp_lp(SW, 1, SW_OFF);
 	ret = pmic_ldo_vgp2_lp(SW, 1, SW_OFF);
+
+	/* MT6355 REG special setting */
+	/* Set RG_REG_CK_PDN_HWEN = 0 */
+	pmic_set_register_value(PMIC_TOP_CKHWEN_CON0_CLR, 0x80);
+	pr_notice("RG_REG_CK_PDN_HWEN = %d(0), RG_REG_CK_PDN = %d(0)\n",
+		pmic_get_register_value(PMIC_RG_REG_CK_PDN_HWEN),
+		pmic_get_register_value(PMIC_RG_REG_CK_PDN));
 }
 #else
 void PMIC_LP_INIT_SETTING(void)
