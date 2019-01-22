@@ -303,12 +303,11 @@ static int disp_gamma_bypass(enum DISP_MODULE_ENUM module, int bypass)
 static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
-	if (module == DISP_MODULE_GAMMA) {
+	if (module == GAMMA0_MODULE_NAMING) {
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_GAMMA, "GAMMA");
 #else
@@ -330,8 +329,7 @@ static int disp_gamma_power_on(enum DISP_MODULE_ENUM module, void *handle)
 static int disp_gamma_power_off(enum DISP_MODULE_ENUM module, void *handle)
 {
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || \
-	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
 	/* gamma is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
