@@ -21,7 +21,7 @@
 #define MVA_MAX_BLOCK_NR        4095	/* 4GB */
 
 #define MVA_BLOCK_SIZE      (1<<MVA_BLOCK_SIZE_ORDER)	/* 0x100000 */
-#define MVA_BLOCK_ALIGN_MASK (MVA_BLOCK_SIZE-1)	/* 0x3ffff */
+#define MVA_BLOCK_ALIGN_MASK (MVA_BLOCK_SIZE-1)	/* 0xfffff */
 #define MVA_BLOCK_NR_MASK   (MVA_MAX_BLOCK_NR)	/* 0xfff */
 #define MVA_BUSY_MASK       (1<<15)	/* 0x8000 */
 #define MVA_RESERVED_MASK       (1<<14)	/* 0x4000 */
