@@ -206,7 +206,7 @@ static int rt5738_regmap_init(struct rt5738_regulator_info *info)
 
 static struct regulator_chip rt5738_datas[] = {
 	{
-		.vol_reg = RT5738_REG_VSEL0,
+		.vol_reg = RT5738_REG_VSEL1,
 		.mode_reg = RT5738_REG_CTRL1,
 		.mode_bit = 0x01,
 		.enable_reg = RT5738_REG_MONITOR,
