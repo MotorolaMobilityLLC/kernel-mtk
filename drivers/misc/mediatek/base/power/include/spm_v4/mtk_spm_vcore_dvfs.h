@@ -18,8 +18,8 @@
 #include <mtk_vcorefs_manager.h>
 
 /* Feature will disable both of DVS/DFS are 0 */
-#define SPM_VCORE_DVS_EN       0
-#define SPM_DDR_DFS_EN         0
+#define SPM_VCORE_DVS_EN       1
+#define SPM_DDR_DFS_EN         1
 #define SPM_MM_CLK_EN          0
 
 #define SPM_DVFS_TIMEOUT       1000	/* 1ms */
