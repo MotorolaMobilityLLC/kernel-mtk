@@ -65,6 +65,7 @@ extern "C" {
 #define CPU_LEVEL_1             (0x1)
 #define CPU_LEVEL_2             (0x2)
 #define CPU_LEVEL_3             (0x3)
+#define CPU_LEVEL_4             (0x4)
 #define CPU_LV_TO_OPP_IDX(lv)   ((lv))	/* cpu_level to opp_idx */
 
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
