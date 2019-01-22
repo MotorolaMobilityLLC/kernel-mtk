@@ -3023,7 +3023,6 @@ static void sched_freq_tick(int cpu)
 	struct sched_capacity_reqs *scr;
 	unsigned long capacity_orig, capacity_curr;
 	unsigned long capacity_req;
-	struct sched_domain *sd;
 
 	if (!sched_freq())
 		return;
@@ -3034,10 +3033,6 @@ static void sched_freq_tick(int cpu)
 	if (capacity_curr == capacity_orig)
 		return;
 
-	rcu_read_lock();
-	sd = rcu_dereference(per_cpu(sd_ea, cpu));
-	rcu_read_unlock();
-
 	/*
 	 * To make free room for a task that is building up its "real"
 	 * utilization and to harm its performance the least, request
@@ -3047,11 +3042,11 @@ static void sched_freq_tick(int cpu)
 	scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 
 	/* capacity_req which includes RT loading & capacity_margin */
-	capacity_req = sum_capacity_reqs(cpu_util(cpu), scr);
+	capacity_req = sum_capacity_reqs(boosted_cpu_util(cpu), scr);
 
 	if (capacity_curr <= capacity_req) {
-		if (sd) {
-			const struct sched_group_energy *const sge = sd->groups->sge;
+		if (sched_feat(ENERGY_AWARE)) {
+			const struct sched_group_energy *const sge = cpu_core_energy(cpu);
 			int nr_cap_states = sge->nr_cap_states;
 			int idx, tmp_idx;
 			int opp_jump_step;

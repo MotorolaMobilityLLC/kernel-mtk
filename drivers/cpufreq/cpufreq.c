@@ -362,7 +362,7 @@ static void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
  *********************************************************************/
 
 /* move to cpufreq.c if sched-asisted */
-#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 static DEFINE_PER_CPU(unsigned long, freq_scale) = SCHED_CAPACITY_SCALE;
 #endif
 static DEFINE_PER_CPU(unsigned long, max_freq_scale) = SCHED_CAPACITY_SCALE;
@@ -388,7 +388,7 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 
 	for_each_cpu(cpu, &cls_cpus) {
 		/* move to cpufreq.c if sched-asisted */
-		#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
+		#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		per_cpu(freq_scale, cpu) = scale;
 		arch_scale_set_curr_freq(cpu, cur);
 		#endif
@@ -399,7 +399,7 @@ scale_freq_capacity(struct cpufreq_policy *policy, struct cpufreq_freqs *freqs)
 #else
 	for_each_cpu(cpu, policy->cpus) {
 		/* move to cpufreq.c if sched-asisted */
-		#ifndef CONFIG_CPU_FREQ_SCHED_ASSIST
+		#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		per_cpu(freq_scale, cpu) = scale;
 		arch_scale_set_curr_freq(cpu, cur);
 		#endif
