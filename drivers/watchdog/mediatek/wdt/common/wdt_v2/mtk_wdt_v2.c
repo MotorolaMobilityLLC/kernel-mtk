@@ -401,8 +401,6 @@ void wdt_arch_reset(char mode)
 		pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
 	}
 
-	spin_lock(&rgu_reg_operation_spinlock);
-
 	/* Watchdog Rest */
 	mt_reg_sync_writel(MTK_WDT_RESTART_KEY, MTK_WDT_RESTART);
 
@@ -473,8 +471,6 @@ void wdt_arch_reset(char mode)
 
 	/* dump RGU registers (after SW reset) */
 	wdt_dump_reg();
-
-	spin_unlock(&rgu_reg_operation_spinlock);
 
 	while (1) {
 		/* check if system is alive for debugging */
