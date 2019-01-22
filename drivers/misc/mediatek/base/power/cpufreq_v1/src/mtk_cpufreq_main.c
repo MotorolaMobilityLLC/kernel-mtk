@@ -334,6 +334,37 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 
 	assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, cur_vsram, cur_vproc);
 
+#ifdef SUPPORT_VOLT_HW_AUTO_TRACK
+	unsigned int old_vproc = cur_vproc;
+	unsigned int old_vsram = cur_vsram;
+
+	volt = MIN(cur_vsram, MAX_VPROC_VOLT);
+
+	if (volt > old_vproc)
+		notify_cpu_volt_sampler(p->id, volt, VOLT_UP, VOLT_PRECHANGE);
+	else
+		notify_cpu_volt_sampler(p->id, volt, VOLT_DOWN, VOLT_PRECHANGE);
+
+	vproc_p->buck_ops->set_cur_volt(vproc_p, volt);
+
+	delay_us =
+		_calc_pmic_settle_time(p, old_vproc, old_vsram, cur_vproc, cur_vsram);
+	udelay(delay_us);
+
+	cpufreq_ver
+		("@%s(): UP --> old_vsram=%d, cur_vsram=%d, old_vproc=%d, cur_vproc=%d, delay=%d\n",
+		__func__, old_vsram, cur_vsram, old_vproc, cur_vproc, delay_us);
+
+	cur_vsram = get_cur_volt_wrapper(p, vsram_p);
+	cur_vproc = get_cur_volt_wrapper(p, vproc_p);
+
+	assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
+
+	if (volt > old_vproc)
+		notify_cpu_volt_sampler(p->id, volt, VOLT_UP, VOLT_POSTANGE);
+	else
+		notify_cpu_volt_sampler(p->id, volt, VOLT_DOWN, VOLT_POSTANGE);
+#else
 	/* UP */
 	if (volt > cur_vproc) {
 		unsigned int target_vsram = volt + NORMAL_DIFF_VRSAM_VPROC;
@@ -420,6 +451,7 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 		} while (cur_vproc > volt);
 		notify_cpu_volt_sampler(p->id, volt, VOLT_DOWN, VOLT_POSTCHANGE);
 	}
+#endif
 
 	vsram_p->cur_volt = cur_vsram;
 	vproc_p->cur_volt = cur_vproc;
