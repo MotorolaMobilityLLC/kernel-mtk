@@ -162,6 +162,7 @@ static const struct file_operations name ## _proc_fops = {		\
 }
 
 #define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
+#define PROC_ENTRY_DATA(name)	{__stringify(name), &name ## _proc_fops, g_ ## name}
 
 /*
  * BIT Operation
