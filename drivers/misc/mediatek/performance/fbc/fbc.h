@@ -45,17 +45,16 @@
 #include "eas_controller.h"
 #include "mtk_unified_power.h"
 
-#define	DEV_MAJOR	121
-#define	DEV_NAME	"debug"
-#define	DEV_IOCTLID	0xD0
-#define	IOCTL_WRITE	_IOW(DEV_IOCTLID, 10, int)
-#define	DEV_IOCTLID1 0xE0
-#define	IOCTL_WRITE1 _IOW(DEV_IOCTLID1, 10, int)
-#define	DEV_IOCTLID2 0xC0
-#define	IOCTL_WRITE2 _IOW(DEV_IOCTLID2, 10, int)
-#define	DEV_IOCTLID3 0xF0
-#define	IOCTL_WRITE3 _IOW(DEV_IOCTLID3, 10, int)
-/*#define SUPER_BOOST 30*/
+#define DEV_MAJOR 121
+#define DEV_NAME "debug"
+#define DEV_IOCTL_FC 0xD0
+#define IOCTL_WRITE_FC _IOW(DEV_IOCTL_FC, 10, int)
+#define DEV_IOCTL_IV 0xE0
+#define IOCTL_WRITE_IV _IOW(DEV_IOCTL_IV, 10, int)
+#define DEV_IOCTLID2 0xC0
+#define IOCTL_WRITE2 _IOW(DEV_IOCTLID2, 10, int)
+#define DEV_IOCTLID3 0xF0
+#define IOCTL_WRITE3 _IOW(DEV_IOCTLID3, 10, int)
 
 #define ID_EGL 1
 #define ID_OMR 2
