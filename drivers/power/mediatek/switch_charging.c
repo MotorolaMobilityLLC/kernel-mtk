@@ -49,15 +49,15 @@
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
 #include <mt-plat/charging.h>
-#include <mach/mt_charging.h>
-#include <mt-plat/mt_boot.h>
+#include <mach/mtk_charging.h>
+#include <mt-plat/mtk_boot.h>
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 #include <linux/mutex.h>
 #include <linux/wakelock.h>
 #include <linux/delay.h>
 #if !defined(TA_AC_CHARGING_CURRENT)
-#include <mach/mt_pe.h>
+#include <mach/mtk_pe.h>
 #endif
 #endif
 
