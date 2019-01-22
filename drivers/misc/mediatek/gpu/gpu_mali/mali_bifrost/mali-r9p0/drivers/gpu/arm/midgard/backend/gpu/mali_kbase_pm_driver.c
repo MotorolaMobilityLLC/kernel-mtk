@@ -48,6 +48,9 @@
 
 #ifdef ENABLE_MTK_DEBUG
 #include <mtk_gpufreq.h>
+#include <mtk_gpu_log.h>
+#else
+#define GPULOG(...) do { } while (0)
 #endif
 
 /**

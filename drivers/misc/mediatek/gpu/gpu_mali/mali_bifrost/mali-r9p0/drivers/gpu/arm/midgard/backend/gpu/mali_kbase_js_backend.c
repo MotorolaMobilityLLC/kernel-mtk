@@ -25,6 +25,12 @@
 #include <backend/gpu/mali_kbase_jm_internal.h>
 #include <backend/gpu/mali_kbase_js_internal.h>
 
+#ifdef ENABLE_MTK_DEBUG
+#include <mtk_gpu_log.h>
+#else
+#define GPULOG(...) do {} while (0)
+#endif
+
 /*
  * Hold the runpool_mutex for this
  */
