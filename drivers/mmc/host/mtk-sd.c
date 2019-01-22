@@ -78,6 +78,7 @@
 #define MSDC_PAD_TUNE0   0xf0
 #define PAD_DS_TUNE      0x188
 #define EMMC50_CFG0      0x208
+#define SDC_FIFO_CFG	 0x228
 
 /*--------------------------------------------------------------------------*/
 /* Register Mask                                                            */
@@ -236,6 +237,9 @@
 #define EMMC50_CFG_PADCMD_LATCHCK (0x1 << 0)   /* RW */
 #define EMMC50_CFG_CRCSTS_EDGE    (0x1 << 3)   /* RW */
 #define EMMC50_CFG_CFCSTS_SEL     (0x1 << 4)   /* RW */
+
+#define SDC_FIFO_CFG_WRVALIDSEL   (0x1 << 24)  /* RW */
+#define SDC_FIFO_CFG_RDVALIDSEL   (0x1 << 25)  /* RW */
 
 #define REQ_CMD_EIO  (0x1 << 0)
 #define REQ_CMD_TMO  (0x1 << 1)
@@ -1345,6 +1349,12 @@ static void msdc_init_hw(struct msdc_host *host)
 
 	/* Configure to default data timeout */
 	sdr_set_field(host->base + SDC_CFG, SDC_CFG_DTOC, 3);
+
+	/*write data  valid only that host have whole block len data in fifo */
+	sdr_clr_bits(host->base + SDC_FIFO_CFG, SDC_FIFO_CFG_WRVALIDSEL);
+
+	/*read data valid only that host have enough space for storing a block length data */
+	sdr_clr_bits(host->base + SDC_FIFO_CFG, SDC_FIFO_CFG_RDVALIDSEL);
 
 	host->def_tune_para.iocon = readl(host->base + MSDC_IOCON);
 	host->def_tune_para.pad_tune = readl(host->base + MSDC_PAD_TUNE);
