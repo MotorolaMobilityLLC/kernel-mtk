@@ -22,9 +22,7 @@
 #include <linux/platform_device.h>
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
-#include <linux/reboot.h>
 #include "tcpm.h"
-#include "mtk_direct_charge_vdm.h"
 
 #include <mt-plat/upmu_common.h>
 #if CONFIG_MTK_GAUGE_VERSION == 30
@@ -32,41 +30,24 @@
 #include <mt-plat/mtk_battery.h>
 #include <mt-plat/mtk_charger.h>
 #include <charger/mtk_charger_intf.h>
-#include <charger/mtk_pe30_intf.h>
 #else
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/charging.h>
 #endif /* CONFIG_MTK_GAUGE_VERSION */
-
-#ifdef CONFIG_USB_C_SWITCH_U3_MUX
-#include "usb_switch.h"
-#include "typec.h"
-#endif
 
 #include <mt-plat/mtk_boot.h>
 #include "musb_core.h"
 #define RT_PD_MANAGER_VERSION	"1.0.5_MTK"
 
 static DEFINE_MUTEX(param_lock);
-static DEFINE_MUTEX(tcpc_pe30_rdy_lock);
-static DEFINE_MUTEX(tcpc_pd_rdy_lock);
-static DEFINE_MUTEX(tcpc_usb_connect_lock);
-
-enum {
-	MTK_USB_UNATTACHE,
-	MTK_USB_ATTACHED,
-};
 
 static struct tcpc_device *tcpc_dev;
 static struct notifier_block pd_nb;
-static unsigned char pd_state;
 static int pd_sink_voltage_new;
 static int pd_sink_voltage_old;
 static int pd_sink_current_new;
 static int pd_sink_current_old;
 static unsigned char pd_sink_type;
-static bool is_pep30_en_unlock;
-static bool tcpc_usb_connected;
 static bool tcpc_kpoc;
 static unsigned char bc12_chr_type;
 #if 0 /* vconn is from vsys on mt6763 */
@@ -83,7 +64,7 @@ static struct charger_consumer *chg_consumer;
 static void tcpc_mt_power_off(void)
 {
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	kernel_power_off();
+	mt_power_off();
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
 }
 
@@ -122,7 +103,7 @@ void pd_wake_unlock(void)
 
 void pd_chrdet_int_handler(void)
 {
-	pr_info("[pd_chrdet_int_handler]CHRDET status = %d....\n",
+	pr_notice("[pd_chrdet_int_handler]CHRDET status = %d....\n",
 		pmic_get_register_value(PMIC_RGS_CHRDET));
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
@@ -133,8 +114,8 @@ void pd_chrdet_int_handler(void)
 
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 			|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
-			pr_info("[pd_chrdet_int_handler] Unplug Charger/USB\n");
-			kernel_power_off();
+			pr_notice("[pd_chrdet_int_handler] Unplug Charger/USB\n");
+			mt_power_off();
 		}
 	}
 #endif
@@ -150,17 +131,17 @@ int chrdet_thread_kthread(void *x)
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	set_current_state(TASK_INTERRUPTIBLE);
 
-	pr_info("[chrdet_thread_kthread] enter\n");
+	pr_notice("[chrdet_thread_kthread] enter\n");
 	pmic_enable_interrupt(CHRDET_INT_NO, 0, "pd_manager");
 
 	/* Run on a process content */
 	while (1) {
 		mutex_lock(&pd_chr_mutex);
 		if (updatechrdet == true) {
-			pr_info("chrdet_work_handler\n");
+			pr_notice("chrdet_work_handler\n");
 			pd_chrdet_int_handler();
 		} else
-			pr_info("chrdet_work_handler no update\n");
+			pr_err("chrdet_work_handler no update\n");
 		mutex_unlock(&pd_chr_mutex);
 		set_current_state(TASK_INTERRUPTIBLE);
 		pd_wake_unlock();
@@ -172,7 +153,7 @@ int chrdet_thread_kthread(void *x)
 
 void wake_up_pd_chrdet(void)
 {
-	pr_info("[wake_up_pd_chrdet]\r\n");
+	pr_notice("[wake_up_pd_chrdet]\r\n");
 	pd_wake_lock();
 	if (pd_thread_handle != NULL)
 		wake_up_process(pd_thread_handle);
@@ -188,57 +169,9 @@ enum {
 	SINK_TYPE_REQUEST,
 };
 
-int tcpc_is_usb_connect(void)
-{
-	signed int vbus;
-
-	if (tcpc_dev == NULL) {
-		vbus = battery_meter_get_charger_voltage();
-		pr_info("%s tcpc_dev is null , vbus:%d\n", __func__, vbus);
-		if (vbus < 4300)
-			return 0;
-		return 1;
-	}
-
-	if (!tcpm_get_boot_check_flag(tcpc_dev)) {
-		pr_info("%s ta hw %d\n",
-			__func__, tcpm_get_ta_hw_exist(tcpc_dev));
-		return tcpm_get_ta_hw_exist(tcpc_dev);
-	}
-
-	return tcpc_usb_connected ? 1 : 0;
-}
-
-bool mtk_is_ta_typec_only(void)
-{
-	bool stat;
-
-	if (!tcpc_is_usb_connect())
-		return false;
-	stat = ((pd_state == PD_CONNECT_TYPEC_ONLY_SNK_DFT) ||
-		(pd_state == PD_CONNECT_TYPEC_ONLY_SNK)) ? true : false;
-	return stat;
-}
-
-bool mtk_is_pd_chg_ready(void)
-{
-	bool ready;
-
-	if (!tcpc_is_usb_connect())
-		return false;
-	ready = (pd_state == PD_CONNECT_PE_READY_SNK) ? true : false;
-	return ready;
-}
-
 bool mtk_is_pep30_en_unlock(void)
 {
-#ifdef CONFIG_RT7207_ADAPTER
-	if (!mtk_is_pd_chg_ready())
-		return false;
-	return is_pep30_en_unlock;
-#else
 	return false;
-#endif /* CONFIG_RT7207_ADAPTER */
 }
 
 static int pd_tcp_notifier_call(struct notifier_block *nb,
@@ -252,10 +185,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
 
 	switch (event) {
-	case TCP_NOTIFY_PR_SWAP:
-		break;
-	case TCP_NOTIFY_DR_SWAP:
-		break;
 	case TCP_NOTIFY_SOURCE_VCONN:
 #if 0 /* vconn is from vsys on mt6763 */
 		if (noti->swap_state.new_role) {
@@ -272,10 +201,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			}
 		}
 #endif
-		break;
-	case TCP_NOTIFY_VCONN_SWAP:
-		break;
-	case TCP_NOTIFY_SOURCE_VBUS:
 		break;
 	case TCP_NOTIFY_SINK_VBUS:
 		mutex_lock(&param_lock);
@@ -336,26 +261,14 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		}
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
-		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
-			noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC) {
-			mutex_lock(&tcpc_usb_connect_lock);
+		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
 #if CONFIG_MTK_GAUGE_VERSION == 30
-		charger_dev_enable_chg_type_det(primary_charger, true);
+			charger_dev_enable_chg_type_det(primary_charger, true);
 #else
-		mtk_chr_enable_chr_type_det(true);
+			mtk_chr_enable_chr_type_det(true);
 #endif
-			tcpc_usb_connected = true;
-			mutex_unlock(&tcpc_usb_connect_lock);
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
-				noti->typec_state.polarity);
-#ifdef CONFIG_USB_C_SWITCH_U3_MUX
-			if (noti->typec_state.polarity == 0)
-				usb3_switch_ctrl_sel(CC1_SIDE);
-			else
-				usb3_switch_ctrl_sel(CC2_SIDE);
-#endif
-			if (!tcpm_get_boot_check_flag(tcpc_dev))
-				tcpm_set_boot_check_flag(tcpc_dev, 1);
+					noti->typec_state.polarity);
 #if CONFIG_MTK_GAUGE_VERSION == 20
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 			mutex_lock(&pd_chr_mutex);
@@ -363,15 +276,11 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			updatechrdet = true;
 			wake_up_pd_chrdet();
 			mutex_unlock(&pd_chr_mutex);
-			pr_info("TCP_NOTIFY_SINK_VBUS=> plug in");
+			pr_notice("TCP_NOTIFY_SINK_VBUS=> plug in");
 #endif
 #endif
-		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
-			noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC) &&
+		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
 			noti->typec_state.new_state == TYPEC_UNATTACHED) {
-			mutex_lock(&tcpc_usb_connect_lock);
-			tcpc_usb_connected = false;
-			mutex_unlock(&tcpc_usb_connect_lock);
 			if (tcpc_kpoc) {
 				vbus = battery_meter_get_charger_voltage();
 				pr_info("%s KPOC Plug out, vbus = %d\n",
@@ -379,14 +288,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				tcpc_mt_power_off();
 				break;
 			}
-#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
-			mutex_lock(&tcpc_pe30_rdy_lock);
-			is_pep30_en_unlock = false;
-			mutex_unlock(&tcpc_pe30_rdy_lock);
-#endif /* CONFIG_USB_PD_ALT_MODE_RTDC */
-#ifdef CONFIG_RT7207_ADAPTER
-			tcpm_reset_pe30_ta(tcpc_dev);
-#endif /* CONFIG_RT7207_ADAPTER */
 			pr_info("%s USB Plug out\n", __func__);
 #if CONFIG_MTK_GAUGE_VERSION == 20
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
@@ -395,7 +296,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			updatechrdet = true;
 			wake_up_pd_chrdet();
 			mutex_unlock(&pd_chr_mutex);
-			pr_info("TCP_NOTIFY_SINK_VBUS=> plug out");
+			pr_notice("TCP_NOTIFY_SINK_VBUS=> plug out");
 #endif
 #endif
 #if CONFIG_MTK_GAUGE_VERSION == 30
@@ -410,7 +311,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 					|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 					pr_err("%s: notify chg detach fail, power off\n", __func__);
-					kernel_power_off();
+					mt_power_off();
 				}
 			}
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
@@ -419,46 +320,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 	case TCP_NOTIFY_PD_STATE:
 		pr_info("%s pd state = %d\n",
 			__func__, noti->pd_state.connected);
-		mutex_lock(&tcpc_pd_rdy_lock);
-		pd_state = noti->pd_state.connected;
-		mutex_unlock(&tcpc_pd_rdy_lock);
-
-#ifdef CONFIG_MTK_SMART_BATTERY
-		pr_info("%s pd state = %d %d\n", __func__,
-			noti->pd_state.connected, mtk_check_pe_ready_snk());
-#if CONFIG_MTK_GAUGE_VERSION == 20
-		if (mtk_is_pd_chg_ready() == true ||
-		    mtk_is_pep30_en_unlock() == true)
-			wake_up_bat3();
-#endif
-#endif /* CONFIG_MTK_SMART_BATTERY */
-		break;
-#ifdef CONFIG_USB_PD_ALT_MODE_RTDC
-	case TCP_NOTIFY_DC_EN_UNLOCK:
-		mutex_lock(&tcpc_pe30_rdy_lock);
-		is_pep30_en_unlock = true;
-		mutex_unlock(&tcpc_pe30_rdy_lock);
-#ifdef CONFIG_MTK_SMART_BATTERY
-#if CONFIG_MTK_GAUGE_VERSION == 20
-		wake_up_bat3();
-#endif
-#endif /* CONFIG_MTK_SMART_BATTERY */
-
-		pr_info("%s Direct Charge En Unlock\n", __func__);
-		break;
-#endif /* CONFIG_USB_PD_ALT_MODE_RTDC */
-	case TCP_NOTIFY_EXIT_MODE:
-		pr_info("%s Must stop PE3.0 right now\n", __func__);
-		mutex_lock(&tcpc_pe30_rdy_lock);
-		is_pep30_en_unlock = false;
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
-#if CONFIG_MTK_GAUGE_VERSION == 30
-		mtk_pe30_plugout_reset(chg_consumer->cm);
-#else
-		mtk_pep30_plugout_reset();
-#endif /* CONFIG_MTK_GAUGE_VERSION == 30 */
-#endif
-		mutex_unlock(&tcpc_pe30_rdy_lock);
 		break;
 #ifdef CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK
 	case TCP_NOTIFY_ATTACHWAIT_SNK:
@@ -551,19 +412,12 @@ static int rt_pd_manager_probe(struct platform_device *pdev)
 	}
 
 	pd_nb.notifier_call = pd_tcp_notifier_call;
-	ret = register_tcp_dev_notifier(tcpc_dev, &pd_nb);
+	ret = register_tcp_dev_notifier(tcpc_dev, &pd_nb, TCP_NOTIFY_TYPE_ALL);
 	if (ret < 0) {
 		pr_err("%s: register tcpc notifer fail\n", __func__);
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_RT7207_ADAPTER
-	ret = mtk_direct_charge_vdm_init();
-	if (ret < 0) {
-		pr_err("%s mtk direct charge vdm init fail\n", __func__);
-		return -EINVAL;
-	}
-#endif /* CONFIG_RT7207_ADAPTER */
 
 #if CONFIG_MTK_GAUGE_VERSION == 20
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
@@ -577,9 +431,9 @@ static int rt_pd_manager_probe(struct platform_device *pdev)
 	if (IS_ERR(pd_thread_handle)) {
 		pd_thread_handle = NULL;
 		pr_err("[pd_thread_handle] creation fails\n");
-	} else
-		pr_info("[pd_thread_handle] kthread_create Done\n");
-
+	} else {
+		pr_notice("[pd_thread_handle] kthread_create Done\n");
+	}
 #endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT */
 #endif /* This part is for GM20 */
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Richtek Technology Corp.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * Power Delivery Debug Information
  *

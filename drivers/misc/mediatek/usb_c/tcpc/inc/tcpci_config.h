@@ -14,6 +14,7 @@
 #ifndef __LINUX_TCPC_CONFIG_H
 #define __LINUX_TCPC_CONFIG_H
 
+#ifdef CONFIG_TCPC_CLASS
 /* default config */
 
 #define CONFIG_PD_DBG_INFO
@@ -27,7 +28,7 @@
 /* #define CONFIG_TYPEC_CAP_DBGACC_SNK */
 #define CONFIG_TYPEC_CAP_CUSTOM_SRC
 
-/* #define CONFIG_TYPEC_CHECK_CC_STABLE */
+
 /* #define CONFIG_TYPEC_ATTACHED_SRC_SAFE0V_DELAY */
 #define CONFIG_TYPEC_ATTACHED_SRC_SAFE0V_TIMEOUT
 
@@ -51,18 +52,23 @@
 
 #define CONFIG_TYPEC_CAP_AUDIO_ACC_SINK_VBUS
 
+#define CONFIG_TYPEC_CAP_LOW_RP_DUTY
+#define CONFIG_TYPEC_WAKEUP_ONCE_LOW_DUTY
+
 /* #define CONFIG_TYPEC_CAP_CUSTOM_HV */
 
 #define CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SNK
 /* #define CONFIG_TYPEC_NOTIFY_ATTACHWAIT_SRC */
-#define CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT     5
 
-#define CONFIG_TCPC_DBG_PRESTR	"TCPC-"
+#define CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT	5
+
+#define CONFIG_TCPC_DBG_PRESTR		"TCPC-"
 
 /*
  * USB 2.0 & 3.0 current
  * Unconfigured :	100 / 150 mA
  * Configured :		500 / 900 mA
+ * http://www.testusb.com/power_issue.htm
  */
 
 #define CONFIG_TYPEC_SNK_CURR_DFT		150
@@ -104,10 +110,11 @@
 #define CONFIG_USB_PD_VCONN_SWAP
 #define CONFIG_USB_PD_PE_SINK
 #define CONFIG_USB_PD_PE_SOURCE
+/* #define CONFIG_USB_PD_DISABLE_PE */
 
+#define CONFIG_USB_PD_TCPM_CB_RETRY		3
 #define CONFIG_USB_PD_TCPM_CB_2ND
 #define CONFIG_USB_PD_BLOCK_TCPM
-#define CONFIG_USB_PD_LEGACY_TCPM
 
 /* #define CONFIG_USB_PD_RICHTEK_UVDM */
 
@@ -128,18 +135,97 @@
 
 /* #define CONFIG_USB_PD_DP_CHECK_CABLE */
 /* #define CONFIG_USB_PD_RTDC_CHECK_CABLE */
-#endif /* CONFIG_USB_PD_MODE_OPERATION */
+
+#endif	/* CONFIG_USB_PD_MODE_OPERATION */
 
 /**********************************************************
  * PD revision 3.0 feature
  **********************************************************/
 
-/* #define CONFIG_USB_PD_REV30 */
+#define CONFIG_USB_PD_REV30
 
 #ifdef CONFIG_USB_PD_REV30
-#define CONFIG_USB_PD_PPS_RETRY_MAX	3
+
+#define CONFIG_USB_PD_REV30_SYNC_SPEC_REV
+#define CONFIG_USB_PD_REV30_COLLISION_AVOID
+
+/*
+ * If DUT send a PD command immediately after Policy Engine is ready,
+ * it may interrupt the compliance test process and getting a failed result.
+ * even you make sure the CC state is SinkTxNG or SinkTxOK.
+ *
+ * SRC_FLOW_DELAY_STARTUP: For Ellisys
+ * SNK_FLOW_DELAY_STARTUP: For MQP
+ */
+
+#define CONFIG_USB_PD_REV30_SRC_FLOW_DELAY_STARTUP
+#define CONFIG_USB_PD_REV30_SNK_FLOW_DELAY_STARTUP
+
+#define CONFIG_USB_PD_REV30_DISCOVER_CABLE_WITH_VCONN
+
+/* PD30 Common Feature */
+
+#define CONFIG_USB_PD_REV30_SRC_CAP_EXT_LOCAL
+#define CONFIG_USB_PD_REV30_SRC_CAP_EXT_REMOTE
+
+#define CONFIG_USB_PD_REV30_BAT_CAP_LOCAL
+#define CONFIG_USB_PD_REV30_BAT_CAP_REMOTE
+
+#define CONFIG_USB_PD_REV30_BAT_STATUS_LOCAL
+#define CONFIG_USB_PD_REV30_BAT_STATUS_REMOTE
+
+#define CONFIG_USB_PD_REV30_MFRS_INFO_LOCAL
+#define CONFIG_USB_PD_REV30_MFRS_INFO_REMOTE
+
+#define CONFIG_USB_PD_REV30_COUNTRY_CODE_LOCAL
+#define CONFIG_USB_PD_REV30_COUNTRY_CODE_REMOTE
+
+#define CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL
+#define CONFIG_USB_PD_REV30_COUNTRY_INFO_REMOTE
+
+#define CONFIG_USB_PD_REV30_ALERT_LOCAL
+#define CONFIG_USB_PD_REV30_ALERT_REMOTE
+
+#define CONFIG_USB_PD_REV30_STATUS_LOCAL
+#define CONFIG_USB_PD_REV30_STATUS_REMOTE
+
+/* #define CONFIG_USB_PD_REV30_CHUNKING_BY_PE */
+
 #define CONFIG_USB_PD_REV30_PPS_SINK
 /* #define CONFIG_USB_PD_REV30_PPS_SOURCE */
+
+#ifdef CONFIG_USB_PD_REV30_STATUS_LOCAL
+#define CONFIG_USB_PD_REV30_STATUS_LOCAL_TEMP
+#endif	/* CONFIG_USB_PD_REV30_STATUS_LOCAL */
+
+#ifdef CONFIG_USB_PD_REV30_BAT_CAP_LOCAL
+#define CONFIG_USB_PD_REV30_BAT_INFO
+#endif	/* CONFIG_USB_PD_REV30_BAT_CAP_LOCAL */
+
+#ifdef CONFIG_USB_PD_REV30_BAT_STATUS_LOCAL
+#undef CONFIG_USB_PD_REV30_BAT_INFO
+#define CONFIG_USB_PD_REV30_BAT_INFO
+#endif	/* CONFIG_USB_PD_REV30_BAT_STATUS_LOCAL */
+
+#ifdef CONFIG_USB_PD_REV30_COUNTRY_CODE_LOCAL
+#define CONFIG_USB_PD_REV30_COUNTRY_AUTHORITY
+#endif	/* CONFIG_USB_PD_REV30_COUNTRY_CODE_LOCAL */
+
+#ifdef CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL
+#undef CONFIG_USB_PD_REV30_COUNTRY_AUTHORITY
+#define CONFIG_USB_PD_REV30_COUNTRY_AUTHORITY
+#endif	/* CONFIG_USB_PD_REV30_COUNTRY_INFO_LOCAL */
+
+#ifdef CONFIG_USB_PD_REV30_ALERT_LOCAL
+#define CONFIG_USB_PD_DPM_AUTO_SEND_ALERT
+#endif	/* CONFIG_USB_PD_REV30_ALERT_LOCAL */
+
+#ifdef CONFIG_USB_PD_REV30_ALERT_REMOTE
+#define CONFIG_USB_PD_DPM_AUTO_GET_STATUS
+#endif	/* CONFIG_USB_PD_REV30_ALERT_REMOTE */
+
+#define CONFIG_MTK_HANDLE_PPS_TIMEOUT
+
 #endif	/* CONFIG_USB_PD_REV30 */
 
 /**********************************************************
@@ -170,6 +256,8 @@
 
 /* Only in startup */
 #define CONFIG_USB_PD_UFP_FLOW_DELAY
+#define CONFIG_USB_PD_VCONN_STABLE_DELAY
+#define CONFIG_USB_PD_VCONN_SAFE5V_ONLY
 
 #define CONFIG_USB_PD_ATTEMP_DISCOVER_ID
 #define CONFIG_USB_PD_ATTEMP_DISCOVER_SVID
@@ -179,13 +267,55 @@
 
 /* #define CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY */
 
-/* #define CONFIG_USB_PD_SVDM */
+#define CONFIG_USB_PD_CUSTOM_VDM
+
+#ifdef CONFIG_USB_PD_CUSTOM_VDM
+#define CONFIG_USB_PD_SVDM
 #define CONFIG_USB_PD_UVDM
+#endif	/* CONFIG_USB_PD_CUSTOM_VDM */
+
 /* #define CONFIG_USB_PD_CUSTOM_DBGACC */
 
+/* S/W Patch for Huawei ESD issue :repeat HReset Alert */
 /* #define CONFIG_USB_PD_RECV_HRESET_COUNTER */
+
+/* S/W patch for NoGoodCRC if SNK_DFT */
 #define CONFIG_USB_PD_SNK_DFT_NO_GOOD_CRC
+
+/* S/W patch for NoGoodCRC after PR_SWAP (repeat PS_RDY)*/
 #define CONFIG_USB_PD_IGNORE_PS_RDY_AFTER_PR_SWAP
+
+/*
+ * S/W patch for INT handler was stuck by other task (system busy)
+ *
+ * If the communication fails due to a timeout,
+ * check the rx buffer is empty or not.
+ *
+ * If the rx buffer isn't empty, postpone timer.
+ */
+
+/* #define CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT */
+
+/*
+ * S/W patch for
+ * If the CC pin is shorted to ground and our receive ability is better,
+ * then we may receive message however always send failed.
+ *
+ * For the source role, it becomes an infinite hard reset loop.
+ * For the sink role, it becomes an infinite error recovery loop.
+ *
+ * RENEGOTIATION_COUNTER:
+ *     Auto error recovery
+ *     if retried hard reset many times still negotiation failed.
+ *
+ * ERROR_RECOVERY_ONCE:
+ *     If we have tried an error recovery,
+ *     using pure typec mode during next time we reconnect.
+ *
+ */
+
+#define CONFIG_USB_PD_RENEGOTIATION_COUNTER
+#define CONFIG_USB_PD_ERROR_RECOVERY_ONCE
 
 #define CONFIG_USB_PD_IGNORE_HRESET_COMPLETE_TIMER
 #define CONFIG_USB_PD_DROP_REPEAT_PING
@@ -212,6 +342,10 @@
 /* #define CONFIG_USB_PD_SAFE0V_DELAY */
 /* #define CONFIG_USB_PD_SAFE0V_TIMEOUT */
 
+#ifndef CONFIG_USB_PD_DPM_SVDM_RETRY
+#define CONFIG_USB_PD_DPM_SVDM_RETRY     2
+#endif     /* CONFIG_USB_PD_DPM_SVDM_RETRY */
+
 #ifndef CONFIG_USB_PD_DFP_FLOW_RETRY_MAX
 #define CONFIG_USB_PD_DFP_FLOW_RETRY_MAX 2
 #endif	/* CONFIG_USB_PD_DFP_FLOW_RETRY_MAX */
@@ -224,13 +358,25 @@
 #define CONFIG_USB_PD_VBUS_PRESENT_TOUT	20
 #endif	/* CONFIG_USB_PD_VBUS_PRESENT_TOUT */
 
-#ifndef CONFIG_USB_PD_UVDM_TOUT
-#define CONFIG_USB_PD_UVDM_TOUT	500
-#endif	/* CONFIG_USB_PD_UVDM_TOUT */
+#ifndef CONFIG_USB_PD_CUSTOM_VDM_TOUT
+#define CONFIG_USB_PD_CUSTOM_VDM_TOUT	500
+#endif	/* CONFIG_USB_PD_CUSTOM_VDM_TOUT */
 
 #ifndef CONFIG_USB_PD_VCONN_READY_TOUT
 #define CONFIG_USB_PD_VCONN_READY_TOUT		5
 #endif	/* CONFIG_USB_PD_VCONN_READY_TOUT */
+
+#ifndef CONFIG_USB_PD_DFP_FLOW_DLY
+#define CONFIG_USB_PD_DFP_FLOW_DLY	30
+#endif	/* CONFIG_USB_PD_DFP_FLOW_DLY */
+
+#ifndef CONFIG_USB_PD_UFP_FLOW_DLY
+#define CONFIG_USB_PD_UFP_FLOW_DLY			300
+#endif	/* CONFIG_USB_PD_UFP_FLOW_DLY */
+
+#ifndef CONFIG_USB_PD_PPS_REQUEST_INTERVAL
+#define CONFIG_USB_PD_PPS_REQUEST_INTERVAL	7000
+#endif	/* CONFIG_USB_PD_PPS_REQUEST_INTERVAL */
 
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
@@ -239,4 +385,5 @@
 /* #define CONFIG_USB_PD_DBG_SKIP_ALERT_HANDLER */
 #define CONFIG_USB_PD_DBG_DP_DFP_D_AUTO_UPDATE
 
+#endif /* CONFIG_TCPC_CLASS */
 #endif /* __LINUX_TCPC_CONFIG_H */

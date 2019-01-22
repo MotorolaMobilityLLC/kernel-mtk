@@ -13,8 +13,6 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/delay.h>
-
 #include "inc/pd_core.h"
 #include "inc/pd_dpm_core.h"
 #include "inc/tcpci.h"
@@ -25,64 +23,45 @@
  *      Dual-Role Port in Source to Sink Power Role Swap State Diagram
  */
 
-void pe_prs_src_snk_evaluate_pr_swap_entry(
-		struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_src_snk_evaluate_pr_swap_entry(struct pd_port *pd_port)
 {
 	pd_dpm_prs_evaluate_swap(pd_port, PD_ROLE_SINK);
-	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_prs_src_snk_accept_pr_swap_entry(
-		struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_src_snk_accept_pr_swap_entry(struct pd_port *pd_port)
 {
 	pd_notify_pe_execute_pr_swap(pd_port, true);
 
-	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_ACCEPT);
+	pd_send_sop_ctrl_msg(pd_port, PD_CTRL_ACCEPT);
 }
 
-void pe_prs_src_snk_transition_to_off_entry(
-			struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_src_snk_transition_to_off_entry(struct pd_port *pd_port)
 {
 	pd_lock_msg_output(pd_port);	/* for tSRCTransition */
 	pd_notify_pe_execute_pr_swap(pd_port, true);
 
 	pd_enable_timer(pd_port, PD_TIMER_SOURCE_TRANSITION);
-	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_prs_src_snk_assert_rd_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_src_snk_assert_rd_entry(struct pd_port *pd_port)
 {
 	pd_dpm_prs_change_role(pd_port, PD_ROLE_SINK);
 }
 
-void pe_prs_src_snk_wait_source_on_entry(
-		struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_src_snk_wait_source_on_entry(struct pd_port *pd_port)
 {
-	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_PS_RDY);
+	PE_STATE_HRESET_IF_TX_FAILED(pd_port);
+	pd_send_sop_ctrl_msg(pd_port, PD_CTRL_PS_RDY);
 }
 
-void pe_prs_src_snk_wait_source_on_exit(
-		struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_src_snk_send_swap_entry(struct pd_port *pd_port)
 {
-	pd_disable_timer(pd_port, PD_TIMER_PS_SOURCE_ON);
+	pe_send_swap_request_entry(pd_port, PD_CTRL_PR_SWAP);
 }
 
-void pe_prs_src_snk_send_swap_entry(
-		struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_src_snk_reject_pr_swap_entry(struct pd_port *pd_port)
 {
-	pd_port->pd_wait_sender_response = true;
-
-	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_PR_SWAP);
-}
-
-void pe_prs_src_snk_reject_pr_swap_entry(
-		struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	if (pd_event->msg_sec == PD_DPM_NAK_REJECT)
-		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_REJECT);
-	else
-		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_WAIT);
+	pd_reply_wait_reject_msg(pd_port);
 }
 
 /*
@@ -90,22 +69,19 @@ void pe_prs_src_snk_reject_pr_swap_entry(
  *      Dual-role Port in Sink to Source Power Role Swap State Diagram
  */
 
-void pe_prs_snk_src_evaluate_pr_swap_entry(
-		struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_snk_src_evaluate_pr_swap_entry(struct pd_port *pd_port)
 {
 	pd_dpm_prs_evaluate_swap(pd_port, PD_ROLE_SOURCE);
-	pd_free_pd_event(pd_port, pd_event);
 }
 
 void pe_prs_snk_src_accept_pr_swap_entry(
-			struct pd_port *pd_port, struct pd_event *pd_event)
+			struct pd_port *pd_port)
 {
 	pd_notify_pe_execute_pr_swap(pd_port, true);
-	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_ACCEPT);
+	pd_send_sop_ctrl_msg(pd_port, PD_CTRL_ACCEPT);
 }
 
-void pe_prs_snk_src_transition_to_off_entry(
-			struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_snk_src_transition_to_off_entry(struct pd_port *pd_port)
 {
 	/*
 	 * Sink should call pd_notify_pe_execute_pr_swap before this state,
@@ -113,54 +89,36 @@ void pe_prs_snk_src_transition_to_off_entry(
 	 * GoodCRC or Accept.
 	 */
 
-	pd_port->during_swap = true;
-	pd_enable_timer(pd_port, PD_TIMER_PS_SOURCE_OFF);
+	pd_port->pe_data.during_swap = true;
+	pd_enable_pe_state_timer(pd_port, PD_TIMER_PS_SOURCE_OFF);
 	pd_dpm_prs_turn_off_power_sink(pd_port);
-	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_prs_snk_src_transition_to_off_exit(
-			struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_disable_timer(pd_port, PD_TIMER_PS_SOURCE_OFF);
-}
-
-void pe_prs_snk_src_assert_rp_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_snk_src_assert_rp_entry(struct pd_port *pd_port)
 {
 	pd_dpm_prs_change_role(pd_port, PD_ROLE_SOURCE);
-	pd_free_pd_event(pd_port, pd_event);
 }
 
-void pe_prs_snk_src_source_on_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_snk_src_source_on_entry(struct pd_port *pd_port)
 {
+#ifdef CONFIG_USB_PD_RESET_CABLE
+	dpm_reaction_set(pd_port, DPM_REACTION_CAP_RESET_CABLE);
+#endif	/* CONFIG_USB_PD_RESET_CABLE */
+
+	PE_STATE_HRESET_IF_TX_FAILED(pd_port);
+	pd_dpm_dynamic_enable_vconn(pd_port);
 	pd_dpm_prs_enable_power_source(pd_port, true);
+
+	/* Send PS_Rdy in process_event after source_on */
 }
 
-void pe_prs_snk_src_source_on_exit(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_snk_src_send_swap_entry(struct pd_port *pd_port)
 {
-/*
- * Do it in process_event after source_on
- * pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_PS_RDY);
- */
-}
-
-void pe_prs_snk_src_send_swap_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_port->pd_wait_sender_response = true;
-
 	pd_notify_pe_execute_pr_swap(pd_port, false);
-	pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_PR_SWAP);
+	pe_send_swap_request_entry(pd_port, PD_CTRL_PR_SWAP);
 }
 
-void pe_prs_snk_src_reject_swap_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_prs_snk_src_reject_swap_entry(struct pd_port *pd_port)
 {
-	if (pd_event->msg_sec == PD_DPM_NAK_REJECT)
-		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_REJECT);
-	else
-		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_WAIT);
+	pd_reply_wait_reject_msg(pd_port);
 }

@@ -18,14 +18,19 @@
 #include "inc/pd_process_evt.h"
 #include "inc/pd_dpm_core.h"
 
+#ifdef CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY
+#define PE_PRS_SNK_HARD_RESET	PE_ERROR_RECOVERY
+#define PE_PRS_SRC_HARD_RESET	PE_ERROR_RECOVERY
+#else
+#define PE_PRS_SNK_HARD_RESET	PE_SNK_HARD_RESET
+#define PE_PRS_SRC_HARD_RESET	PE_SRC_HARD_RESET
+#endif	/* CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY */
+
 /* PD Control MSG reactions */
 
 DECL_PE_STATE_TRANSITION(PD_CTRL_MSG_GOOD_CRC) = {
 	{ PE_PRS_SRC_SNK_ACCEPT_PR_SWAP, PE_PRS_SRC_SNK_TRANSITION_TO_OFF },
-	{ PE_PRS_SRC_SNK_REJECT_PR_SWAP, PE_SRC_READY },
-
 	{ PE_PRS_SNK_SRC_ACCEPT_PR_SWAP, PE_PRS_SNK_SRC_TRANSITION_TO_OFF },
-	{ PE_PRS_SNK_SRC_REJECT_SWAP, PE_SNK_READY },
 
 	/* VBUS-ON & PS_RDY SENT */
 	{ PE_PRS_SNK_SRC_SOURCE_ON, PE_SRC_STARTUP },
@@ -37,12 +42,6 @@ DECL_PE_STATE_TRANSITION(PD_CTRL_MSG_ACCEPT) = {
 	{ PE_PRS_SNK_SRC_SEND_SWAP, PE_PRS_SNK_SRC_TRANSITION_TO_OFF },
 };
 DECL_PE_STATE_REACTION(PD_CTRL_MSG_ACCEPT);
-
-DECL_PE_STATE_TRANSITION(PD_CTRL_MSG_REJECT_WAIT) = {
-	{ PE_PRS_SRC_SNK_SEND_SWAP, PE_SRC_READY },
-	{ PE_PRS_SNK_SRC_SEND_SWAP, PE_SNK_READY },
-};
-DECL_PE_STATE_REACTION(PD_CTRL_MSG_REJECT_WAIT);
 
 DECL_PE_STATE_TRANSITION(PD_CTRL_MSG_PS_RDY) = {
 	{ PE_PRS_SRC_SNK_WAIT_SOURCE_ON, PE_SNK_STARTUP },
@@ -69,49 +68,13 @@ DECL_PE_STATE_REACTION(PD_DPM_MSG_NAK);
 
 /* HW Event reactions */
 
-DECL_PE_STATE_TRANSITION(PD_HW_TX_FAILED) = {
 #ifdef CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY
+DECL_PE_STATE_TRANSITION(PD_HW_TX_FAILED) = {
 	{ PE_PRS_SRC_SNK_WAIT_SOURCE_ON, PE_ERROR_RECOVERY },
 	{ PE_PRS_SNK_SRC_SOURCE_ON, PE_ERROR_RECOVERY },
-#else
-	{ PE_PRS_SRC_SNK_WAIT_SOURCE_ON, PE_SNK_HARD_RESET },
-	{ PE_PRS_SNK_SRC_SOURCE_ON, PE_SRC_HARD_RESET },
-#endif
 };
 DECL_PE_STATE_REACTION(PD_HW_TX_FAILED);
-
-DECL_PE_STATE_TRANSITION(PD_HW_VBUS_SAFE0V) = {
-	{ PE_PRS_SRC_SNK_TRANSITION_TO_OFF, PE_PRS_SRC_SNK_ASSERT_RD },
-};
-DECL_PE_STATE_REACTION(PD_HW_VBUS_SAFE0V);
-
-
-/* Timer Event reactions */
-
-DECL_PE_STATE_TRANSITION(PD_TIMER_SENDER_RESPONSE) = {
-	{ PE_PRS_SRC_SNK_SEND_SWAP, PE_SRC_READY },
-	{ PE_PRS_SNK_SRC_SEND_SWAP, PE_SNK_READY },
-};
-DECL_PE_STATE_REACTION(PD_TIMER_SENDER_RESPONSE);
-
-DECL_PE_STATE_TRANSITION(PD_TIMER_PS_SOURCE_ON) = {
-#ifdef CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY
-	{ PE_PRS_SRC_SNK_WAIT_SOURCE_ON, PE_ERROR_RECOVERY },
-#else
-	{ PE_PRS_SRC_SNK_WAIT_SOURCE_ON, PE_SNK_HARD_RESET },
-#endif
-};
-DECL_PE_STATE_REACTION(PD_TIMER_PS_SOURCE_ON);
-
-DECL_PE_STATE_TRANSITION(PD_TIMER_PS_SOURCE_OFF) = {
-#ifdef CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY
-	{ PE_PRS_SNK_SRC_TRANSITION_TO_OFF, PE_ERROR_RECOVERY },
-#else
-	{ PE_PRS_SNK_SRC_TRANSITION_TO_OFF, PE_SNK_HARD_RESET },
-#endif
-};
-DECL_PE_STATE_REACTION(PD_TIMER_PS_SOURCE_OFF);
-
+#endif	/* CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY */
 
 /*
  * [BLOCK] Porcess PD Ctrl MSG
@@ -122,7 +85,7 @@ static inline bool pd_process_ctrl_msg_good_crc(
 {
 	switch (pd_port->pe_state_curr) {
 	case PE_PRS_SRC_SNK_WAIT_SOURCE_ON:
-		pd_enable_timer(pd_port, PD_TIMER_PS_SOURCE_ON);
+		pd_enable_pe_state_timer(pd_port, PD_TIMER_PS_SOURCE_ON);
 		pd_unlock_msg_output(pd_port);	/* for tSRCTransition */
 		return false;
 
@@ -141,12 +104,6 @@ static inline bool pd_process_ctrl_msg(
 	case PD_CTRL_ACCEPT:
 		return PE_MAKE_STATE_TRANSIT(PD_CTRL_MSG_ACCEPT);
 
-	case PD_CTRL_WAIT:
-	case PD_CTRL_REJECT:
-		pd_notify_pe_cancel_pr_swap(pd_port);
-		pd_port->dpm_flags &= ~DPM_FLAGS_CHECK_PR_ROLE;
-		return PE_MAKE_STATE_TRANSIT(PD_CTRL_MSG_REJECT_WAIT);
-
 	case PD_CTRL_PS_RDY:
 		return PE_MAKE_STATE_TRANSIT(PD_CTRL_MSG_PS_RDY);
 
@@ -162,18 +119,15 @@ static inline bool pd_process_ctrl_msg(
 static inline bool pd_process_dpm_msg(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	bool ret = false;
-
 	switch (pd_event->msg) {
 	case PD_DPM_ACK:
-		ret = PE_MAKE_STATE_TRANSIT_VIRT(PD_DPM_MSG_ACK);
-		break;
+		return PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_ACK);
+
 	case PD_DPM_NAK:
-		ret = PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_NAK);
-		break;
+		return PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_NAK);
 	}
 
-	return ret;
+	return false;
 }
 
 /*
@@ -184,7 +138,7 @@ static inline bool pd_process_hw_msg_vbus_present(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	if (pd_port->pe_state_curr == PE_PRS_SNK_SRC_SOURCE_ON)
-		pd_send_ctrl_msg(pd_port, TCPC_TX_SOP, PD_CTRL_PS_RDY);
+		pd_send_sop_ctrl_msg(pd_port, PD_CTRL_PS_RDY);
 
 	return false;
 }
@@ -197,11 +151,15 @@ static inline bool pd_process_hw_msg(
 	case PD_HW_VBUS_PRESENT:
 		return pd_process_hw_msg_vbus_present(pd_port, pd_event);
 
+#ifdef CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY
 	case PD_HW_TX_FAILED:
 		return PE_MAKE_STATE_TRANSIT(PD_HW_TX_FAILED);
+#endif	/* CONFIG_USB_PD_PR_SWAP_ERROR_RECOVERY */
 
 	case PD_HW_VBUS_SAFE0V:
-		return PE_MAKE_STATE_TRANSIT(PD_HW_VBUS_SAFE0V);
+		return PE_MAKE_STATE_TRANSIT_SINGLE(
+			PE_PRS_SRC_SNK_TRANSITION_TO_OFF,
+			PE_PRS_SRC_SNK_ASSERT_RD);
 
 	default:
 		return false;
@@ -216,19 +174,19 @@ static inline bool pd_process_timer_msg(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_event->msg) {
-	case PD_TIMER_SENDER_RESPONSE:
-		pd_notify_pe_cancel_pr_swap(pd_port);
-		return PE_MAKE_STATE_TRANSIT(PD_TIMER_SENDER_RESPONSE);
-
 	case PD_TIMER_PS_SOURCE_ON:
-		return PE_MAKE_STATE_TRANSIT(PD_TIMER_PS_SOURCE_ON);
+		return PE_MAKE_STATE_TRANSIT_SINGLE(
+			PE_PRS_SRC_SNK_WAIT_SOURCE_ON, PE_PRS_SNK_HARD_RESET);
 
 	case PD_TIMER_PS_SOURCE_OFF:
-		return PE_MAKE_STATE_TRANSIT(PD_TIMER_PS_SOURCE_OFF);
+		return PE_MAKE_STATE_TRANSIT_SINGLE(
+			PE_PRS_SNK_SRC_TRANSITION_TO_OFF,
+			PE_PRS_SNK_HARD_RESET);
 
 	case PD_TIMER_SOURCE_TRANSITION:
 		pd_dpm_prs_enable_power_source(pd_port, false);
 		return false;
+
 	default:
 		return false;
 	}
