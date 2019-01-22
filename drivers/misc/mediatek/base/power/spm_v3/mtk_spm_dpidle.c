@@ -88,10 +88,12 @@
 enum spm_deepidle_step {
 	SPM_DEEPIDLE_ENTER = 0x00000001,
 	SPM_DEEPIDLE_ENTER_UART_SLEEP = 0x00000003,
+	SPM_DEEPIDLE_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI = 0x00000007,
 	SPM_DEEPIDLE_ENTER_WFI = 0x000000ff,
 	SPM_DEEPIDLE_LEAVE_WFI = 0x000001ff,
-	SPM_DEEPIDLE_ENTER_UART_AWAKE = 0x000003ff,
-	SPM_DEEPIDLE_LEAVE = 0x000007ff,
+	SPM_DEEPIDLE_LEAVE_SSPM_ASYNC_IPI_AFTER_WFI = 0x000003ff,
+	SPM_DEEPIDLE_ENTER_UART_AWAKE = 0x000007ff,
+	SPM_DEEPIDLE_LEAVE = 0x00000fff,
 	SPM_DEEPIDLE_SLEEP_DPIDLE = 0x80000000
 };
 
@@ -1082,17 +1084,19 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 
 	spm_dpidle_pcm_setup_before_wfi(false, cpu, pcmdesc, pwrctrl, operation_cond);
 
-	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
-
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
 #endif
+
+	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
 	spm_dpidle_notify_spm_before_wfi_async_wait();
 
 	/* Dump low power golden setting */
 	if (operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)
 		mt_power_gs_dump_dpidle();
+
+	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
 
@@ -1103,6 +1107,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_WFI);
 
 	spm_dpidle_notify_sspm_after_wfi(false, operation_cond);
+
+	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_SSPM_ASYNC_IPI_AFTER_WFI);
 
 	__spm_get_wakeup_status(&wakesta);
 
@@ -1252,6 +1258,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_pcm_setup_before_wfi(true, cpu, pcmdesc, pwrctrl, 0);
 
+	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
+
 	spm_dpidle_notify_spm_before_wfi_async_wait();
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_ENTER_WFI);
@@ -1261,6 +1269,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_LEAVE_WFI);
 
 	spm_dpidle_notify_sspm_after_wfi(false, 0);
+
+	spm_dpidle_footprint(SPM_DEEPIDLE_SLEEP_DPIDLE | SPM_DEEPIDLE_LEAVE_SSPM_ASYNC_IPI_AFTER_WFI);
 
 	__spm_get_wakeup_status(&wakesta);
 
