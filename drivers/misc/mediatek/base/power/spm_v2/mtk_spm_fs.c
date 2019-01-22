@@ -276,6 +276,8 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 		pwrctrl->disable_off_load_lpm);
 	p += sprintf(p, "en_sdio_dvfs_setting = %u\n",
 		pwrctrl->en_sdio_dvfs_setting);
+	p += sprintf(p, "en_emi_grouping = %u\n",
+		pwrctrl->en_emi_grouping);
 
 	/* SPM_SW_RSV_6 version control */
 	p += sprintf(p, "rsv6_legacy_version = %u\n",
@@ -660,6 +662,8 @@ static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t 
 		pwrctrl->disable_off_load_lpm = val;
 	else if (!strcmp(cmd, "en_sdio_dvfs_setting"))
 		pwrctrl->en_sdio_dvfs_setting = val;
+	else if (!strcmp(cmd, "en_emi_grouping"))
+		pwrctrl->en_emi_grouping = val;
 
 	/* SPM_SW_RSV_6 version control */
 	else if (!strcmp(cmd, "rsv6_legacy_version"))
