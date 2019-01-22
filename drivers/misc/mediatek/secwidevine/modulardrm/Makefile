@@ -24,5 +24,5 @@ ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
     #$(info "MTK_PATH_PLATFORM=$(MTK_PATH_PLATFORM)")
     ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/trustzone/utils/tlutils
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
-    obj-y += secwidevinemdw.o
+    obj-y += mtk_secwidevinemdw.o
 endif
