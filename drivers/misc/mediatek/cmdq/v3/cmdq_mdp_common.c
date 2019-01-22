@@ -482,6 +482,9 @@ static void cmdq_mdp_begin_task_virtual(struct TaskStruct *cmdq_task, struct Tas
 	uint32_t mdp_data_size = 0;
 	uint32_t mdp_curr_pixel_size = 0;
 	bool first_task = true;
+	/* For MET */
+	uint32_t *addr1 = NULL;
+	uint32_t *addr2 = NULL;
 
 	pmqos_curr_record = kzalloc(sizeof(struct mdp_pmqos_record), GFP_KERNEL);
 	cmdq_task->user_private = pmqos_curr_record;
@@ -642,6 +645,55 @@ static void cmdq_mdp_begin_task_virtual(struct TaskStruct *cmdq_task, struct Tas
 	/*update clock*/
 	if (mdp_curr_pmqos->mdp_total_pixel)
 		pm_qos_update_request(&mdp_clk_qos_request[thread_id], max_throughput);
+
+	/* For MET */
+
+	if (!cmdq_task->prop_addr)
+		return;
+	mdp_curr_pmqos = (struct mdp_pmqos *)cmdq_task->prop_addr;
+	do {
+		if (mdp_curr_pmqos->ispMetStringSize <= 0)
+			break;
+		addr1 = kcalloc(mdp_curr_pmqos->ispMetStringSize,
+			sizeof(char), GFP_KERNEL);
+
+		if (!addr1) {
+			CMDQ_MSG("[MDP] fail to alloc isp buf %d\n",
+				mdp_curr_pmqos->ispMetStringSize);
+			mdp_curr_pmqos->ispMetStringSize = 0;
+			break;
+		}
+		if (copy_from_user
+			(addr1, CMDQ_U32_PTR(mdp_curr_pmqos->ispMetString),
+			mdp_curr_pmqos->ispMetStringSize * sizeof(char))) {
+			mdp_curr_pmqos->ispMetStringSize = 0;
+			CMDQ_MSG("[MDP] fail to copy user isp log\n");
+			kfree(addr1);
+			break;
+		}
+		mdp_curr_pmqos->ispMetString = (unsigned long)addr1;
+	} while (0);
+
+	do {
+		if (mdp_curr_pmqos->mdpMetStringSize <= 0)
+			break;
+		addr2 = kcalloc(mdp_curr_pmqos->mdpMetStringSize,
+			sizeof(char), GFP_KERNEL);
+		if (!addr2) {
+			mdp_curr_pmqos->mdpMetStringSize = 0;
+			CMDQ_MSG("[MDP] fail to alloc mdp buf\n");
+			break;
+		}
+		if (copy_from_user
+			(addr2, CMDQ_U32_PTR(mdp_curr_pmqos->mdpMetString),
+			mdp_curr_pmqos->mdpMetStringSize  * sizeof(char))) {
+			mdp_curr_pmqos->mdpMetStringSize = 0;
+			CMDQ_MSG("[MDP] fail to copy user mdp log\n");
+			kfree(addr2);
+			break;
+		}
+		mdp_curr_pmqos->mdpMetString = (unsigned long)addr2;
+	} while (0);
 #endif
 }
 
@@ -864,6 +916,21 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 	/*update clock*/
 	if (mdp_curr_pmqos->mdp_total_pixel)
 		pm_qos_update_request(&mdp_clk_qos_request[thread_id], max_throughput);
+
+	/*For MET*/
+	if (cmdq_task->prop_addr) {
+		mdp_curr_pmqos = (struct mdp_pmqos *)cmdq_task->prop_addr;
+		if (mdp_curr_pmqos->ispMetStringSize > 0) {
+			kfree(CMDQ_U32_PTR(mdp_curr_pmqos->ispMetString));
+			mdp_curr_pmqos->ispMetString = 0;
+			mdp_curr_pmqos->ispMetStringSize = 0;
+		}
+		if (mdp_curr_pmqos->mdpMetStringSize > 0) {
+			kfree(CMDQ_U32_PTR(mdp_curr_pmqos->mdpMetString));
+			mdp_curr_pmqos->mdpMetString = 0;
+			mdp_curr_pmqos->mdpMetStringSize = 0;
+		}
+	}
 #endif
 }
 

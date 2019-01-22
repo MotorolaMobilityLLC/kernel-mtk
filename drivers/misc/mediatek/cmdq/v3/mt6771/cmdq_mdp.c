@@ -13,6 +13,7 @@
 #include "cmdq_core.h"
 #include "cmdq_reg.h"
 #include "cmdq_mdp_common.h"
+#include "cmdq_mdp_pmqos.h"
 #ifdef CMDQ_MET_READY
 #include <linux/met_drv.h>
 #endif
@@ -23,6 +24,11 @@
 #include "m4u.h"
 #endif
 #include "smi_public.h"
+#include <linux/uaccess.h>
+
+
+#define CREATE_TRACE_POINTS
+#include "mdp_events.h"
 
 #include "cmdq_device.h"
 struct CmdqMdpModuleBaseVA {
@@ -65,6 +71,10 @@ bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
 {		\
 	return cmdq_dev_device_clock_is_enable(gCmdqMdpModuleClock.clk_##HW_NAME);	\
 }
+
+#define ENUM_ISP_DL_MDP	1
+#define ENUM_ISP_ONLY	2
+#define ENUM_MDP_PURE	3
 
 IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP_TX, CAM_MDP_TX);
 IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP_RX, CAM_MDP_RX);
@@ -1065,6 +1075,86 @@ void testcase_clkmgr_mdp(void)
 			     MDP_COLOR_BASE + 0x438, 0x000001AB, MDP_COLOR_BASE + 0x438, true);
 #endif
 }
+
+void cmdq_mdp_start_task_atomic(const struct TaskStruct *task, u32 instr_size)
+{
+	int type = 0;
+	struct mdp_pmqos *qos;
+
+	if (!task->prop_addr)
+		return;
+	qos = (struct mdp_pmqos *)task->prop_addr;
+
+	/* ftrace print mdp enter */
+	if (qos->ispMetStringSize > 0) {
+		if (qos->mdpMetStringSize > 0)
+			type = ENUM_ISP_DL_MDP;
+		else
+			type = ENUM_ISP_ONLY;
+	} else {
+		if (qos->mdpMetStringSize > 0)
+			type = ENUM_MDP_PURE;
+	}
+
+	switch (type) {
+	case ENUM_ISP_DL_MDP:
+		trace_MDP__ISPDL_ISP_enter((unsigned long long)task->engineFlag,
+			(char *)CMDQ_U32_PTR(qos->ispMetString));
+		trace_MDP__ISPDL_MDP_enter((unsigned long long)task->engineFlag,
+			(char *)CMDQ_U32_PTR(qos->mdpMetString));
+		break;
+	case ENUM_ISP_ONLY:
+		trace_ISP__ISP_ONLY_enter((unsigned long long)task->engineFlag,
+			(char *)CMDQ_U32_PTR(qos->ispMetString));
+		break;
+	case ENUM_MDP_PURE:
+		trace_MDP__PURE_MDP_enter((unsigned long long)task->engineFlag,
+			(char *)CMDQ_U32_PTR(qos->mdpMetString));
+		break;
+	default:
+		CMDQ_MSG("[MDP] MET nothing\n");
+	}
+}
+
+void cmdq_mdp_finish_task_atomic(const struct TaskStruct *task, u32 instr_size)
+{
+	int type = 0;
+	struct mdp_pmqos *qos;
+
+	if (!task->prop_addr)
+		return;
+	qos = (struct mdp_pmqos *)task->prop_addr;
+
+	/* ftrace print mdp enter */
+	if (qos->ispMetStringSize > 0) {
+		if (qos->mdpMetStringSize > 0)
+			type = ENUM_ISP_DL_MDP;
+		else
+			type = ENUM_ISP_ONLY;
+	} else {
+		if (qos->mdpMetStringSize > 0)
+			type = ENUM_MDP_PURE;
+	}
+
+	switch (type) {
+	case ENUM_ISP_DL_MDP:
+		trace_MDP__ISPDL_ISP_leave(
+			(unsigned long long)task->engineFlag);
+		trace_MDP__ISPDL_MDP_leave(
+			(unsigned long long)task->engineFlag);
+		break;
+	case ENUM_ISP_ONLY:
+		trace_ISP__ISP_ONLY_leave(
+			(unsigned long long)task->engineFlag);
+		break;
+	case ENUM_MDP_PURE:
+		trace_MDP__PURE_MDP_leave(
+			(unsigned long long)task->engineFlag);
+		break;
+	default:
+		break;
+	}
+}
 void cmdq_mdp_platform_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc = cmdq_mdp_get_func();
@@ -1085,6 +1175,9 @@ void cmdq_mdp_platform_function_setting(void)
 	pFunc->mdpInitialSet = cmdqMdpInitialSetting;
 	pFunc->rdmaGetRegOffsetSrcAddr = cmdq_mdp_rdma_get_reg_offset_src_addr;
 	pFunc->wrotGetRegOffsetDstAddr = cmdq_mdp_wrot_get_reg_offset_dst_addr;
+	pFunc->wdmaGetRegOffsetDstAddr = cmdq_mdp_wdma_get_reg_offset_dst_addr;
 	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits;
 	pFunc->testcaseClkmgrMdp = testcase_clkmgr_mdp;
+	pFunc->startTask_atomic = cmdq_mdp_start_task_atomic;
+	pFunc->finishTask_atomic = cmdq_mdp_finish_task_atomic;
 }
