@@ -541,12 +541,14 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 	}
 	msleep(500);
 
-
+	cap.output_ma = 0;
+	cap.output_mv = 0;
 	ret = pe40_tcpm_dpm_pd_get_pps_status(pinfo->tcpc, NULL, &cap);
 
 	pe40->can_query = true;
-	if (ret == 0 && cap.output_ma == -1 &&
-		cap.output_mv == -1)
+	if (ret == 0 && (cap.output_ma == -1 || cap.output_mv == -1))
+		pe40->can_query = false;
+	else if (ret == TCP_DPM_RET_NOT_SUPPORT)
 		pe40->can_query = false;
 	else if (ret != 0) {
 		chr_err("[pe40_i0] err:2 %d\n", ret);
@@ -773,22 +775,26 @@ int mtk_pe40_safety_check(struct charger_manager *pinfo)
 		}
 	}
 
-	if (TAstatus.event_flags & PD_STASUS_EVENT_OCP ||
-		TAstatus.event_flags & PD_STATUS_EVENT_OTP ||
-		TAstatus.event_flags & PD_STATUS_EVENT_OVP) {
+	if (ret == TCP_DPM_RET_NOT_SUPPORT)
+		chr_err("[pe40]TA tcpm_dpm_pd_get_status not support\n");
+	else {
+		if (TAstatus.event_flags & PD_STASUS_EVENT_OCP ||
+			TAstatus.event_flags & PD_STATUS_EVENT_OTP ||
+			TAstatus.event_flags & PD_STATUS_EVENT_OVP) {
 
-		chr_err("[pe40_err]TA protect: ocp:%d otp:%d ovp:%d\n",
+			chr_err("[pe40_err]TA protect: ocp:%d otp:%d ovp:%d\n",
+				TAstatus.event_flags & PD_STASUS_EVENT_OCP,
+				TAstatus.event_flags & PD_STATUS_EVENT_OTP,
+				TAstatus.event_flags & PD_STATUS_EVENT_OVP);
+			goto err;
+		}
+
+		chr_err("PD_TA:TA protect: ocp:%d otp:%d ovp:%d tmp:%d\n",
 			TAstatus.event_flags & PD_STASUS_EVENT_OCP,
 			TAstatus.event_flags & PD_STATUS_EVENT_OTP,
-			TAstatus.event_flags & PD_STATUS_EVENT_OVP);
-		goto err;
+			TAstatus.event_flags & PD_STATUS_EVENT_OVP,
+			TAstatus.internal_temp);
 	}
-
-	chr_err("PD_TA:TA protect: ocp:%d otp:%d ovp:%d tmp:%d\n",
-		TAstatus.event_flags & PD_STASUS_EVENT_OCP,
-		TAstatus.event_flags & PD_STATUS_EVENT_OTP,
-		TAstatus.event_flags & PD_STATUS_EVENT_OVP,
-		TAstatus.internal_temp);
 
 	tmp = battery_get_bat_temperature();
 
