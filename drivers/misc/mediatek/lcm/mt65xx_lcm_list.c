@@ -167,6 +167,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt36672_fhdp_dsi_vdo_auo_lcm_drv,
 #endif
 
+#if defined(NT36672_FHDP_DSI_VDO_AUO_LANESWAP)
+	&nt36672_fhdp_dsi_vdo_auo_laneswap_lcm_drv,
+#endif
+
 #if defined(NT35590_HD720_DSI_CMD_AUO)
 	&nt35590_hd720_dsi_cmd_auo_lcm_drv,
 #endif
