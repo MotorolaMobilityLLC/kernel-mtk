@@ -15,7 +15,7 @@
 #include <mt-plat/charging.h>
 #include <linux/errno.h>
 #include <linux/delay.h>
-
+#include <pmic.h>
 
 static bool bif_exist;
 static bool bif_checked;
@@ -47,13 +47,12 @@ static int bif_set_cmd(u16 bif_cmd[], int bif_cmd_len)
 		ret = pmic_config_interface(MT6335_BIF_CON0 + con_index,
 			bif_cmd[i], 0x07FF, 0);
 		if (ret != 0) {
-			pr_err("%s: failed, bif_cmd[%d]\n",
-				__func__, i);
+			pr_err("%s: failed, bif_cmd[%d]\n", __func__, i);
 			return -EIO;
 		}
 		con_index += 0x2;
 	}
-	pr_debug("%s: OK\n", __func__);
+	PMICLOG("%s: OK\n", __func__);
 
 	return 0;
 }
@@ -63,7 +62,7 @@ static int bif_reset_irq(void)
 	int ret = 0;
 	u32 reg_irq = 0, retry_cnt = 0;
 
-	pr_debug("%s: starts\n", __func__);
+	PMICLOG("%s: starts\n", __func__);
 	pmic_set_register_value(PMIC_BIF_IRQ_CLR, 1);
 
 	/* Wait until IRQ is cleared */
@@ -74,11 +73,10 @@ static int bif_reset_irq(void)
 	} while ((reg_irq != 0) && (retry_cnt < 5));
 
 	if (reg_irq == 0)
-		pr_debug("%s: OK\n", __func__);
+		PMICLOG("%s: OK\n", __func__);
 	else {
 		ret = -EIO;
-		pr_err(
-			"%s: failed, PMIC_BIF_IRQ_CLR = 0x%02X\n",
+		pr_err("%s: failed, PMIC_BIF_IRQ_CLR = 0x%02X\n",
 			__func__, reg_irq);
 	}
 
@@ -92,7 +90,7 @@ static int bif_waitfor_slave(void)
 	int ret = 0;
 	u32 reg_irq = 0, retry_cnt = 0;
 
-	pr_debug("%s: starts\n", __func__);
+	PMICLOG("%s: starts\n", __func__);
 	do {
 		reg_irq = pmic_get_register_value(PMIC_BIF_IRQ);
 		retry_cnt++;
@@ -102,12 +100,10 @@ static int bif_waitfor_slave(void)
 
 	/* Success */
 	if (reg_irq == 1)
-		pr_debug(
-			"%s: OK, retry_cnt = %d\n", __func__, retry_cnt);
+		PMICLOG("%s: OK, retry_cnt = %d\n", __func__, retry_cnt);
 	else { /* Failed */
 		ret = -EIO;
-		pr_err(
-			"%s: failed, PMIC_BIF_IRQ = 0x%02X, retry_cnt = %d\n",
+		pr_err("%s: failed, PMIC_BIF_IRQ = 0x%02X, retry_cnt = %d\n",
 			__func__, reg_irq, retry_cnt);
 	}
 
@@ -122,7 +118,7 @@ static int bif_powerup_slave(void)
 	int ret = 0;
 	u32 bat_lost = 0, total_valid = 0, timeout = 0, retry_cnt = 0;
 
-	pr_debug("%s: starts\n", __func__);
+	PMICLOG("%s: starts\n", __func__);
 	do {
 		pmic_set_register_value(PMIC_BIF_POWER_UP, 1);
 		pmic_set_register_value(PMIC_BIF_TRASACT_TRIGGER, 1);
@@ -144,8 +140,7 @@ static int bif_powerup_slave(void)
 
 	/* Success */
 	if (bat_lost == 0 && total_valid == 0 && timeout == 0) {
-		pr_debug(
-			"%s: OK, retry_cnt = %d\n", __func__, retry_cnt);
+		PMICLOG("%s: OK, retry_cnt = %d\n", __func__, retry_cnt);
 		return ret;
 	}
 
@@ -162,7 +157,7 @@ static int bif_reset_slave(void)
 	u16 bif_cmd[1] = {0};
 	u32 bat_lost = 0, total_valid = 0, timeout = 0, retry_cnt = 0;
 
-	pr_debug("%s: starts\n", __func__);
+	PMICLOG("%s: starts\n", __func__);
 
 	/* Set command sequence */
 	bif_cmd[0] = BC | BUSRESET;
@@ -197,7 +192,7 @@ static int bif_reset_slave(void)
 
 
 	if (bat_lost == 0 && total_valid == 0 && timeout == 0) {
-		pr_debug("%s: OK, retry_cnt = %d\n",
+		PMICLOG("%s: OK, retry_cnt = %d\n",
 			__func__, retry_cnt);
 		return ret;
 	}
@@ -217,14 +212,13 @@ static int bif_write8(u16 addr, u8 *data)
 	u16 bif_cmd[4] = {0, 0, 0, 0};
 	u32 bat_lost = 0, total_valid = 0, timeout = 0, retry_cnt = 0;
 
-	pr_debug("%s: starts\n", __func__);
+	PMICLOG("%s: starts\n", __func__);
 
 
 	/* Set Extended & Write Register Address */
 	era = (addr & 0xFF00) >> 8;
 	wra = addr & 0x00FF;
-	pr_debug("%s: ERA = 0x%02x, WRA = 0x%02x\n",
-		__func__, era, wra);
+	PMICLOG("%s: ERA = 0x%02x, WRA = 0x%02x\n", __func__, era, wra);
 
 	/* Set command sequence */
 	bif_cmd[0] = SDA | MW3790;
@@ -264,17 +258,15 @@ static int bif_write8(u16 addr, u8 *data)
 
 
 	if (bat_lost == 0  && total_valid == 0 && timeout == 0) {
-		pr_debug("%s: OK, retry_cnt = %d\n",
-			__func__, retry_cnt);
+		PMICLOG("%s: OK, retry_cnt = %d\n", __func__, retry_cnt);
 		return ret;
 	}
 
 _err:
 	pr_err("%s: failed, retry_cnt = %d, ret = %d",
-			__func__, retry_cnt, ret);
-	pr_err(
-			"%s: bat_lost = %d, timeout = %d, total_valid = %d\n",
-			__func__, bat_lost, timeout, total_valid);
+		__func__, retry_cnt, ret);
+	pr_err("%s: bat_lost = %d, timeout = %d, total_valid = %d\n",
+		__func__, bat_lost, timeout, total_valid);
 
 	return ret;
 }
@@ -287,13 +279,12 @@ static int bif_read8(u16 addr, u8 *data)
 	u16 bif_cmd[3] = {0, 0, 0};
 	u32 bat_lost = 0, total_valid = 0, timeout = 0, retry_cnt = 0;
 
-	pr_debug("%s: starts\n", __func__);
+	PMICLOG("%s: starts\n", __func__);
 
 	/* Set Extended & Read Register Address */
 	era = (addr & 0xFF00) >> 8;
 	rra = addr & 0x00FF;
-	pr_debug("%s: ERA = 0x%02x, RRA = 0x%02x\n",
-		__func__, era, rra);
+	PMICLOG("%s: ERA = 0x%02x, RRA = 0x%02x\n", __func__, era, rra);
 
 	/* Set command sequence */
 	bif_cmd[0] = SDA | MW3790;
@@ -333,8 +324,7 @@ static int bif_read8(u16 addr, u8 *data)
 	/* Read data */
 	if (bat_lost == 0 && total_valid == 0 && timeout == 0) {
 		_data = pmic_get_register_value(PMIC_BIF_DATA_0);
-		pr_debug(
-			"%s: OK, data = 0x%02X, retry_cnt = %d\n",
+		pr_debug("%s: OK, data = 0x%02X, retry_cnt = %d\n",
 			__func__, _data, retry_cnt);
 		*data = _data & 0xFF;
 		return ret;
@@ -343,8 +333,7 @@ static int bif_read8(u16 addr, u8 *data)
 _err:
 	pr_err("%s: failed, retry_cnt = %d, ret = %d\n",
 		__func__, retry_cnt, ret);
-	pr_err(
-		"%s: failed, bat_lost = %d, timeout = %d, totoal_valid = %d\n",
+	pr_err("%s: failed, bat_lost = %d, timeout = %d, totoal_valid = %d\n",
 		__func__, bat_lost, timeout, total_valid);
 
 	return ret;
@@ -359,13 +348,12 @@ static int bif_read16(u16 addr, u16 *data)
 	u8 _data[2] = {0, 0}; /* 2 bytes data */
 	u32 bat_lost = 0, total_valid = 0, timeout = 0, retry_cnt = 0;
 
-	pr_debug("%s: starts\n", __func__);
+	PMICLOG("%s: starts\n", __func__);
 
 	/* Set Extended & Read Register Address */
 	era = (addr & 0xFF00) >> 8;
 	rra = addr & 0x00FF;
-	pr_debug("%s: ERA = 0x%02x, RRA= 0x%02x\n",
-		__func__, era, rra);
+	PMICLOG("%s: ERA = 0x%02x, RRA= 0x%02x\n", __func__, era, rra);
 
 	/* Set command sequence */
 	bif_cmd[0] = SDA | MW3790;
@@ -409,8 +397,7 @@ static int bif_read16(u16 addr, u16 *data)
 		_data[0] = pmic_get_register_value(PMIC_BIF_DATA_0);
 		_data[1] = pmic_get_register_value(PMIC_BIF_DATA_1);
 		*data = ((_data[0] & 0xFF) << 8) | (_data[1] & 0xFF);
-		pr_debug(
-			"%s: OK, data = 0x%02x, 0x%02x, retry_cnt = %d\n",
+		pr_debug("%s: OK, data = 0x%02x, 0x%02x, retry_cnt = %d\n",
 			__func__, _data[0], _data[1], retry_cnt);
 		return ret;
 	}
@@ -418,8 +405,7 @@ static int bif_read16(u16 addr, u16 *data)
 _err:
 	pr_err("%s: failed, retry_cnt = %d, ret = %d\n",
 		__func__, retry_cnt, ret);
-	pr_err(
-		"%s: bat_lost = %d, timeout = %d, totoal_valid = %d\n",
+	pr_err("%s: bat_lost = %d, timeout = %d, totoal_valid = %d\n",
 		__func__, bat_lost, timeout, total_valid);
 
 	return ret;
@@ -430,7 +416,7 @@ static int bif_adc_enable(void)
 	int ret = 0;
 	u8 reg = 0x18;
 
-	pr_debug("%s: starts\n", __func__);
+	PMICLOG("%s: starts\n", __func__);
 	ret = bif_write8(0x0110, &reg);
 	if (ret < 0)
 		goto _err;
@@ -444,7 +430,7 @@ static int bif_adc_enable(void)
 
 	mdelay(50);
 
-	pr_debug("%s: OK\n", __func__);
+	PMICLOG("%s: OK\n", __func__);
 	return ret;
 
 _err:
@@ -592,8 +578,7 @@ int mtk_bif_get_tbat(int *tbat)
 		goto _err;
 
 	*tbat = _tbat;
-	pr_debug("%s: OK, tbat = %d(degree)\n",
-		__func__, _tbat);
+	pr_debug("%s: OK, tbat = %d(degree)\n", __func__, _tbat);
 	/*unlockadcch3();*/
 	return ret;
 
@@ -627,8 +612,7 @@ int mtk_bif_init(void)
 	/* Read VBAT to check existence of BIF */
 	ret = mtk_bif_get_vbat(&vbat);
 	if (ret == 0 && vbat != 0) {
-		pr_err("%s: BIF battery detected\n",
-			__func__);
+		pr_err("%s: BIF battery detected\n", __func__);
 		bif_exist = true;
 		bif_checked = true;
 		return ret;
