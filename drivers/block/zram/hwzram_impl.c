@@ -1593,7 +1593,7 @@ retrydec:
 #ifdef CONFIG_MTK_ENG_BUILD
 	csize_data = hash;
 	csize_data = (csize_data << ZRAM_DCMD_CSIZE_HASH_SHIFT) |
-		(compr_size << ZRAM_DCMD_CSIZE_SIZE_SHIFT) |
+		((uint64_t)compr_size << ZRAM_DCMD_CSIZE_SIZE_SHIFT) |
 		0x1;
 #else
 	csize_data = (uint64_t)compr_size << ZRAM_DCMD_CSIZE_SIZE_SHIFT;
