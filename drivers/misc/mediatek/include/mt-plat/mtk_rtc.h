@@ -82,4 +82,7 @@ extern void mt_power_off(void);
 #define crystal_exist_status()		({ 0; })
 /* __weak void mt_power_off(void); */
 #endif/*ifdef CONFIG_MTK_RTC*/
+void __attribute__((weak)) rtc_clock_enable(int enable)
+{
+}
 #endif
