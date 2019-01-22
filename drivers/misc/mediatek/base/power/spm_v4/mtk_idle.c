@@ -49,6 +49,8 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 
+#include <trace/events/mtk_idle_event.h>
+
 #include "ufs-mtk.h"
 
 #ifdef CONFIG_MTK_DCS
@@ -646,7 +648,11 @@ static noinline void go_to_rgidle(int cpu)
 {
 	rgidle_before_wfi(cpu);
 
+	trace_rgidle_rcuidle(cpu, 1);
+
 	go_to_wfi();
+
+	trace_rgidle_rcuidle(cpu, 0);
 
 	rgidle_after_wfi(cpu);
 }
