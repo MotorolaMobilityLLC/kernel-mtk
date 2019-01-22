@@ -841,7 +841,7 @@ TRY_LOAD_IMG:
 			ret = -CCCI_ERR_LOAD_IMG_NOMEM;
 			goto out;
 		}
-		memcpy(start, fw_entry->data + read_size, size_per_read);
+		memcpy(start, (void *)(img_data_ptr + read_size), size_per_read);
 		iounmap(start);
 		start = NULL;
 		read_size += size_per_read;
