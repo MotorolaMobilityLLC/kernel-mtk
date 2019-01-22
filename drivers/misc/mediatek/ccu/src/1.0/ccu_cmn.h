@@ -176,8 +176,6 @@ int ccu_memclr(volatile void *dest, int length);
 
 int ccu_read_info_reg(int regNo);
 
-void ccu_set_current_fps(int32_t current_fps);
-
 int32_t ccu_get_current_fps(void);
 
 
@@ -232,9 +230,9 @@ int ccu_flush_commands_from_queue(ccu_user_t *user);
 /* #define LOG_WRN(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)*/
 /* #define LOG_ERR(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)*/
 
-/*#define LOG_DBG(format, args...)    pr_debug(CCU_TAG "[%s] " format, __func__, ##args)*/
-/*#define LOG_INF(format, args...)    pr_info(CCU_TAG "[%s] " format, __func__, ##args)*/
-/*#define LOG_WRN(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)*/
+#define LOG_DBG_MUST(format, args...)    pr_debug(CCU_TAG "[%s] " format, __func__, ##args)
+#define LOG_INF_MUST(format, args...)    pr_info(CCU_TAG "[%s] " format, __func__, ##args)
+#define LOG_WRN_MUST(format, args...)    pr_err(CCU_TAG "[%s] " format, __func__, ##args)
 #define LOG_DBG(format, args...)
 #define LOG_INF(format, args...)
 #define LOG_WRN(format, args...)
