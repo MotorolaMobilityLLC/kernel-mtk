@@ -1551,10 +1551,12 @@ static kal_uint32 streaming_control(kal_bool enable)
 
 static kal_uint32 get_sensor_temperature(void)
 {
-	UINT8 temperature;
+	UINT8 temperature, temp;
 	INT32 temperature_convert;
 
-	temperature = read_cmos_sensor(0x4d12);
+	temp = read_cmos_sensor_byte(0x4d12);
+	write_cmos_sensor_byte(0x4d12, temp | 0x01);
+	temperature = read_cmos_sensor_byte(0x4d13);
 
 	if (temperature <= 0xc0)
 		temperature_convert = temperature;
