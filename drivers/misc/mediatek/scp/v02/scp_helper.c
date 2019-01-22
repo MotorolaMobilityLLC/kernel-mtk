@@ -67,6 +67,7 @@
 #define EXPECTED_FREQ_REG SCP_A_GENERAL_REG3
 #define CURRENT_FREQ_REG  SCP_A_GENERAL_REG4
 
+
 /* scp ready status for notify*/
 unsigned int scp_ready[SCP_CORE_TOTAL];
 
@@ -548,7 +549,6 @@ static void scp_A_notify_ws(struct work_struct *ws)
 		mutex_unlock(&scp_A_notify_mutex);
 	}
 
-
 	if (!scp_ready[SCP_A_ID])
 		scp_aed(EXCEP_RESET, SCP_A_ID);
 
@@ -872,7 +872,7 @@ static int scp_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 				pr_debug("[SCP] scp_pm_event SCP reboot Fail\n");
 			}
 			return NOTIFY_DONE;
-	}
+		}
 	return NOTIFY_OK;
 }
 
