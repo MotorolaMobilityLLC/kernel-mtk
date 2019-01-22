@@ -100,7 +100,6 @@ static DEFINE_SPINLOCK(scp_awake_spinlock);
 /* set flag after driver initial done */
 static bool driver_init_done;
 unsigned char **scp_swap_buf;
-static struct wake_lock scp_suspend_lock;
 
 typedef struct {
 	u64 start;
@@ -1495,44 +1494,7 @@ void set_scp_mpu(void)
 
 }
 #endif
-uint32_t scp_get_freq(void)
-{
-	uint32_t i;
-	uint32_t sum_core_1 = 0;
-	uint32_t sum_core_2 = 0;
-	uint32_t sum = 0;
-	uint32_t return_freq = 0;
 
-	/*
-	 * calculate scp frequence
-	 */
-	for (i = 0; i < NUM_FEATURE_ID; i++) {
-		if (feature_table[i].enable == 1 && feature_table[i].core == SCP_A_ID)
-			sum_core_1 += feature_table[i].freq;
-		}
-
-	for (i = 0; i < NUM_FEATURE_ID; i++) {
-		if (feature_table[i].enable == 1 && feature_table[i].core == SCP_B_ID)
-			sum_core_2 += feature_table[i].freq;
-	}
-	if (sum_core_1 < sum_core_2)
-		sum = sum_core_2;
-	else
-		sum = sum_core_1;
-
-	/*pr_debug("[SCP] needed freq sum:%d\n",sum);*/
-	if (sum > FREQ_330MHZ)
-		return_freq = FREQ_416MHZ;
-	else if (sum > FREQ_286MHZ)
-		return_freq = FREQ_330MHZ;
-	else if (sum > FREQ_187MHZ)
-		return_freq = FREQ_286MHZ;
-	else if (sum > FREQ_104MHZ)
-		return_freq = FREQ_187MHZ;
-	else
-		return_freq = FREQ_104MHZ;
-	return return_freq;
-}
 void scp_register_feature(feature_id_t id)
 {
 	uint32_t i;
@@ -1552,10 +1514,17 @@ void scp_register_feature(feature_id_t id)
 			feature_table[i].enable = 1;
 	}
 	EXPECTED_FREQ_REG = scp_get_freq();
-	/* set scp freq. here*/
-	ret = scp_request_freq();
-	if (ret == -1) {
-		pr_err("[SCP]scp_register_feature request_freq fail\n");
+
+	/* send request only when scp is not down */
+	if (scp_ready[SCP_A_ID]) {
+		/* set scp freq. */
+		ret = scp_request_freq();
+		if (ret == -1) {
+			pr_err("[SCP]scp_register_feature request_freq fail\n");
+			WARN_ON(1);
+		}
+	} else {
+		pr_err("[SCP]Not send SCP DVFS request because SCP is down\n");
 		WARN_ON(1);
 	}
 	mutex_unlock(&scp_feature_mutex);
@@ -1575,10 +1544,17 @@ void scp_deregister_feature(feature_id_t id)
 			feature_table[i].enable = 0;
 	}
 	EXPECTED_FREQ_REG = scp_get_freq();
-	/* set scp freq. here*/
-	ret = scp_request_freq();
-	if (ret == -1) {
-		pr_err("[SCP]scp_register_feature request_freq fail\n");
+
+	/* send request only when scp is not down */
+	if (scp_ready[SCP_A_ID]) {
+		/* set scp freq. */
+		ret = scp_request_freq();
+		if (ret == -1) {
+			pr_err("[SCP]scp_register_feature request_freq fail\n");
+			WARN_ON(1);
+		}
+	} else {
+		pr_err("[SCP]Not send SCP DVFS request because SCP is down\n");
 		WARN_ON(1);
 	}
 	mutex_unlock(&scp_feature_mutex);
@@ -1602,72 +1578,6 @@ int scp_check_resource(void)
 	return scp_resource_status;
 }
 
-
-/* scp_request_freq
- * return :-1 means the scp request freq. error
- * return :0  means the request freq. finished
- */
-int scp_request_freq(void)
-{
-	int value = 0;
-	int timeout = 50;
-	int ret = 0;
-	int flag = 0;
-
-	/* return -1 to prevent from access when scp is down */
-	if (!scp_ready[SCP_A_ID])
-		return -1;
-
-	/* because we are waiting for scp to update register:CURRENT_FREQ_REG
-	 * use wake lock to prevent AP from entering suspend state
-	 */
-	wake_lock(&scp_suspend_lock);
-
-	if (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
-		/*  pll CCF ctrl */
-		scp_pll_ctrl_set(1, EXPECTED_FREQ_REG);
-
-		while (CURRENT_FREQ_REG != EXPECTED_FREQ_REG) {
-			ret = scp_ipi_send(IPI_DVFS_SET_FREQ, (void *)&value, sizeof(value), 0, SCP_A_ID);
-			if (ret != DONE)
-				pr_err("[SCP] set freq wait ipi=%d\n", ret);
-
-			mdelay(2);
-			timeout -= 1; /*try 50 times, total about 100ms*/
-			if (timeout <= 0) {
-				scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
-				flag = SET_PLL_FAIL;
-				goto fail_to_set_freq;
-			}
-		}
-
-		scp_pll_ctrl_set(0, EXPECTED_FREQ_REG);
-	}
-
-	/*  set pmic sshub_sleep_vcore_ctrl accroding to frequency */
-	ret = scp_set_pmic_vcore(CURRENT_FREQ_REG);
-	if (ret != 0) {
-		flag = SET_PMIC_VOLT_FAIL;
-		goto fatal_error;
-	}
-	wake_unlock(&scp_suspend_lock);
-	pr_info("[SCP] set freq OK, %d == %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
-	return 0;
-
-fail_to_set_freq:
-	scp_A_dump_regs();
-	wake_unlock(&scp_suspend_lock);
-	pr_err("[SCP] set freq fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
-	WARN_ON(1);
-	return -1;
-fatal_error:
-	scp_A_dump_regs();
-	wake_unlock(&scp_suspend_lock);
-	pr_err("[SCP] set voltge fail, %d != %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
-	WARN_ON(1);
-	return -1;
-}
-
 /*
  * driver initialization entry point
  */
@@ -1689,9 +1599,6 @@ static int __init scp_init(void)
 		mutex_init(&scp_awake_mutexs[i]);
 		wake_lock_init(&scp_awake_wakelock[i], WAKE_LOCK_SUSPEND, "scp awakelock");
 	}
-
-	wake_lock_init(&scp_suspend_lock, WAKE_LOCK_SUSPEND, "scp wakelock");
-
 
 	scp_workqueue = create_workqueue("SCP_WQ");
 	ret = scp_excep_init();
