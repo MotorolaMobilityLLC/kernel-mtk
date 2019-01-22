@@ -329,17 +329,20 @@ char *vcorefs_get_opp_table_info(char *p)
 {
 	struct opp_profile *opp_ctrl_table = opp_table;
 	int i;
+	char *buff_end = p + PAGE_SIZE;
 
 	for (i = 0; i < NUM_OPP; i++) {
-		p += sprintf(p, "[OPP_%d] vcore_uv: %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
-			     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
-		p += sprintf(p, "[OPP_%d] ddr_khz : %d\n", i, opp_ctrl_table[i].ddr_khz);
-		p += sprintf(p, "\n");
+		p += snprintf(p, buff_end - p,
+				"[OPP_%d] vcore_uv: %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
+				vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
+		p += snprintf(p, buff_end - p,
+				"[OPP_%d] ddr_khz : %d\n", i, opp_ctrl_table[i].ddr_khz);
+		p += snprintf(p, buff_end - p, "\n");
 	}
 
-	p += sprintf(p, "HPM   : %u\n", opp_ctrl_table[OPP_0].vcore_uv);
-	p += sprintf(p, "LPM   : %u\n", opp_ctrl_table[OPP_1].vcore_uv);
-	p += sprintf(p, "ULPM  : %u\n", opp_ctrl_table[OPP_2].vcore_uv);
+	p += snprintf(p, buff_end - p, "HPM   : %u\n", opp_ctrl_table[OPP_0].vcore_uv);
+	p += snprintf(p, buff_end - p, "LPM   : %u\n", opp_ctrl_table[OPP_1].vcore_uv);
+	p += snprintf(p, buff_end - p, "ULPM  : %u\n", opp_ctrl_table[OPP_2].vcore_uv);
 
 	return p;
 }
@@ -413,20 +416,27 @@ static int set_init_opp_index(void)
 static u32 sram_debug_info[SRAM_DEBUG_COUNT];
 static char *vcorefs_get_sram_debug_info(char *p)
 {
+	char *buff_end = p + PAGE_SIZE;
 	if (p) {
-		p += sprintf(p, "dvfs  up/down count: %u / %u\n",
+		p += snprintf(p, buff_end - p,
+				"dvfs  up/down count: %u / %u\n",
 				spm_read(VCOREFS_SRAM_DVFS_UP_COUNT),
 				spm_read(VCOREFS_SRAM_DVFS_DOWN_COUNT));
-		p += sprintf(p, "dvfs2 up/down count: %u / %u\n",
+		p += snprintf(p, buff_end - p,
+				"dvfs2 up/down count: %u / %u\n",
 				spm_read(VCOREFS_SRAM_DVFS2_UP_COUNT),
 				spm_read(VCOREFS_SRAM_DVFS2_DOWN_COUNT));
-		p += sprintf(p, "dvfs  up/down time: %u / %u\n",
+		p += snprintf(p, buff_end - p,
+				"dvfs  up/down time: %u / %u\n",
 				spm_read(VCOREFS_SRAM_DVFS_UP_TIME),
 				spm_read(VCOREFS_SRAM_DVFS_DOWN_TIME));
-		p += sprintf(p, "dvfs2 up/down time: %u / %u\n",
+		p += snprintf(p, buff_end - p,
+				"dvfs2 up/down time: %u / %u\n",
 				spm_read(VCOREFS_SRAM_DVFS2_UP_TIME),
 				spm_read(VCOREFS_SRAM_DVFS2_DOWN_TIME));
-		p += sprintf(p, "emi block time: %u\n", spm_read(VCOREFS_SRAM_EMI_BLOCK_TIME));
+		p += snprintf(p, buff_end - p,
+				"emi block time: %u\n",
+				spm_read(VCOREFS_SRAM_EMI_BLOCK_TIME));
 
 	} else {
 		sram_debug_info[0] = spm_read(VCOREFS_SRAM_DVFS_UP_COUNT);
@@ -596,37 +606,40 @@ char *governor_get_dvfs_info(char *p)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	int uv = vcorefs_get_curr_vcore();
+	char *buff_end = p + PAGE_SIZE;
 
-	p += sprintf(p, "sw_opp: %d\n", vcorefs_get_sw_opp());
-	p += sprintf(p, "hw_opp: %d\n", vcorefs_get_hw_opp());
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "sw_opp: %d\n", vcorefs_get_sw_opp());
+	p += snprintf(p, buff_end - p, "hw_opp: %d\n", vcorefs_get_hw_opp());
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "[plat_feature_en]: %d\n", gvrctrl->plat_feature_en);
-	p += sprintf(p, "[vcore_dvs   ]: %d\n", gvrctrl->vcore_dvs);
-	p += sprintf(p, "[ddr_dfs     ]: %d\n", gvrctrl->ddr_dfs);
-	p += sprintf(p, "[cpu_dvfs_req ]: 0x%x\n", gvrctrl->cpu_dvfs_req);
-	p += sprintf(p, "[ddr_type ]: 0x%x\n", gvrctrl->ddr_type);
-	p += sprintf(p, "[screen_off_ulpm]: %d\n", gvrctrl->screen_off_ulpm);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "[plat_feature_en]: %d\n", gvrctrl->plat_feature_en);
+	p += snprintf(p, buff_end - p, "[vcore_dvs   ]: %d\n", gvrctrl->vcore_dvs);
+	p += snprintf(p, buff_end - p, "[ddr_dfs     ]: %d\n", gvrctrl->ddr_dfs);
+	p += snprintf(p, buff_end - p, "[cpu_dvfs_req ]: 0x%x\n", gvrctrl->cpu_dvfs_req);
+	p += snprintf(p, buff_end - p, "[ddr_type ]: 0x%x\n", gvrctrl->ddr_type);
+	p += snprintf(p, buff_end - p, "[screen_off_ulpm]: %d\n", gvrctrl->screen_off_ulpm);
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
-	p += sprintf(p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
+	p += snprintf(p, buff_end - p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
+	p += snprintf(p, buff_end - p, "\n");
 
-	p += sprintf(p, "[perform_bw]: en=%d ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
+	p += snprintf(p, buff_end - p,
+			"[perform_bw]: en=%d ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
 			gvrctrl->perform_bw_enable,
 			gvrctrl->perform_bw_ulpm_threshold,
 			gvrctrl->perform_bw_lpm_threshold,
 			gvrctrl->perform_bw_hpm_threshold);
-	p += sprintf(p, "[total_bw]: en=%d ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
+	p += snprintf(p, buff_end - p,
+			"[total_bw]: en=%d ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
 			gvrctrl->total_bw_enable,
 			gvrctrl->total_bw_ulpm_threshold,
 			gvrctrl->total_bw_lpm_threshold,
 			gvrctrl->total_bw_hpm_threshold);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "\n");
 
 	p = vcorefs_get_sram_debug_info(p);
-	p += sprintf(p, "\n");
+	p += snprintf(p, buff_end - p, "\n");
 
 	return p;
 }
