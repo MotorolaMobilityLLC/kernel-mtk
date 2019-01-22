@@ -142,7 +142,7 @@ static fm_s32 rds_event_set(fm_u16 *events, fm_s32 event_mask)
 		WCN_DBG(FM_ERR | RDSC, "%s,invalid pointer\n", __func__);
 		return -FM_EPARA;
 	}
-	WCN_DBG(FM_NTC | RDSC, "rds set event[%x->%x]\n", event_mask, *events);
+	WCN_DBG(FM_INF | RDSC, "rds set event[0x%04x->0x%04x]\n", event_mask, *events);
 	*events |= event_mask;
 
 	return 0;
@@ -159,8 +159,8 @@ static fm_s32 rds_flag_set(fm_u32 *flags, fm_s32 flag_mask)
 		WCN_DBG(FM_ERR | RDSC, "%s,invalid pointer\n", __func__);
 		return -FM_EPARA;
 	}
+	WCN_DBG(FM_INF | RDSC, "rds set flag[0x%04x->0x%04x]\n", flag_mask, *flags);
 	*flags |= flag_mask;
-	WCN_DBG(FM_NTC | RDSC, "rds set flag[%x->%x]\n", flag_mask, *flags);
 
 	return 0;
 }
@@ -426,7 +426,7 @@ static fm_s32 rds_grp_tp_get(fm_u16 crc, fm_u16 blk, fm_u8 *tp, fm_bool *dirty)
 		*dirty = fm_false;	/* TP is the same as last one */
 	}
 
-	/* WCN_DBG(FM_NTC | RDSC, "TP=%d, %s\n", (fm_s32) *tp, *dirty ? "new" : "old"); */
+	/* WCN_DBG(FM_INF | RDSC, "TP=%d, %s\n", (fm_s32) *tp, *dirty ? "new" : "old"); */
 	return ret;
 }
 
@@ -555,7 +555,7 @@ static fm_s32 rds_g0_ps_get(fm_u16 crc, fm_u16 blkD, fm_u8 addr, fm_u8 *buf)
 	}
 #endif
 
-	WCN_DBG(FM_NTC | RDSC, "PS:addr[%02x]:0x%02x 0x%02x\n", addr, buf[idx], buf[idx + 1]);
+	WCN_DBG(FM_INF | RDSC, "PS:addr[%02x]:0x%02x 0x%02x\n", addr, buf[idx], buf[idx + 1]);
 	return 0;
 }
 
@@ -682,10 +682,10 @@ static fm_s32 rds_g0_ps_cmp(fm_u8 addr, fm_u16 cbc, fm_u8 *fresh,
 #endif
 	/* WCN_DBG(FM_NTC | RDSC, "PS seg=%s\n", *valid == fm_true ? "fm_true" : "fm_false"); */
 	/* WCN_DBG(FM_NTC | RDSC, "bitmap=%x\n", *bm); */
-	WCN_DBG(FM_NTC | RDSC, "PS[1]=%x %x %x %x %x %x %x %x\n", once[0], once[1], once[2],
-		once[3], once[4], once[5], once[6], once[7]);
-	WCN_DBG(FM_NTC | RDSC, "PS[2]=%x %x %x %x %x %x %x %x\n", twice[0], twice[1], twice[2],
-		twice[3], twice[4], twice[5], twice[6], twice[7]);
+	WCN_DBG(FM_NTC | RDSC, "PS[%02x][1]=%02x %02x %02x %02x %02x %02x %02x %02x\n", addr,
+		once[0], once[1], once[2], once[3], once[4], once[5], once[6], once[7]);
+	WCN_DBG(FM_NTC | RDSC, "PS[%02x][2]=%02x %02x %02x %02x %02x %02x %02x %02x\n", addr,
+		twice[0], twice[1], twice[2], twice[3], twice[4], twice[5], twice[6], twice[7]);
 	return ret;
 }
 
