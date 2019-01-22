@@ -56,7 +56,7 @@
 #endif
 
 
-typedef enum {
+enum IPI_RECEIVED_SPK_PROTECTION {
 	SPK_PROTECT_OPEN = 0x1,
 	SPK_PROTECT_CLOSE,
 	SPK_PROTECT_PREPARE,
@@ -74,14 +74,14 @@ typedef enum {
 	SPK_PROTECT_PCMDUMP_OK,
 	SPK_PROTECT_IRQDL = 0x100,
 	SPK_PROTECT_IRQUL,
-} IPI_RECEIVED_SPK_PROTECTION;
+};
 
-typedef struct Aud_Spk_Message {
+struct Aud_Spk_Message {
 	uint16_t msg_id;
 	uint32_t param1;
 	uint32_t param2;
 	char *payload;
-} Aud_Spk_Message_t;
+};
 
 
 void spkprocservice_ipicmd_received(ipi_msg_t *ipi_msg);

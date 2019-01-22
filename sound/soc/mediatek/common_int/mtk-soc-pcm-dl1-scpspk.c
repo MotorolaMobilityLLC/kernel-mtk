@@ -83,10 +83,10 @@ struct wake_lock scp_spk_suspend_lock;
 
 static struct afe_mem_control_t *pdl1spkMemControl;
 
-typedef struct SPK_PROTECT_SERVICE {
+struct SPK_PROTECT_SERVICE {
 	bool ipiwait;
 	bool ipiresult;
-} SPK_PROTECT_SERVICE_T;
+};
 
 
 #define SPKPROTECT_IPIMSG_TIMEOUT            50
@@ -115,7 +115,7 @@ static const int SpkDL1BufferOffset = SOC_NORMAL_USE_BUFFERSIZE_MAX;
 static struct snd_dma_buffer SpkDL1Buffer;
 
 static int SpkIrq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;
-static volatile uint32_t ipi_payload_buf[MAX_PARLOAD_SIZE];
+static uint32_t ipi_payload_buf[MAX_PARLOAD_SIZE];
 #endif
 
 /*
