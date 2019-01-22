@@ -295,9 +295,10 @@ static int __dcs_dram_channel_switch(enum dcs_status status)
 			pr_warn("status not changed. (%s should be %s\n",
 					dcs_status_name(sys_dcs_status),
 					dcs_status_name(status));
+		else
+			nr_swap++;
 		pr_info("dcs migration end\n");
 		pr_info("sys_dcs_status=%s\n", dcs_status_name(sys_dcs_status));
-		nr_swap++;
 
 		/* notify bwm */
 		notify_bwm_dcs(status == DCS_NORMAL ?
