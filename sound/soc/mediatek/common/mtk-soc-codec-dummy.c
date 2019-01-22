@@ -473,6 +473,7 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		      .formats = SND_SOC_ADV_MT_FMTS,
 		      },
 	 },
+#ifdef _NON_COMMON_FEATURE_READY
 	 {
 	.name = MT_SOC_CODEC_MOD_DAI_NAME,
 	.capture = {
@@ -483,6 +484,7 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		.formats = SND_SOC_ADV_MT_FMTS,
 		},
 	},
+#endif
 };
 
 static int dummy_codec_probe(struct snd_soc_codec *codec)
