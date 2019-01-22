@@ -316,6 +316,9 @@ bool other_cpu_off_but_cluster_on(int cpu)
 
 	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
 
+	if (cpu_check_mask == 0 && other_cluster_check_mask == 0)
+		return false;
+
 	if (((on_off_stat & cpu_check_mask) == cpu_check_mask) && (on_off_stat & other_cluster_check_mask) == 0)
 		return true;
 
