@@ -757,7 +757,7 @@ int hal_tx_dma_irq_handler(P_MTK_DMA_INFO_STR p_dma_info)
 		BTIF_ERR_FUNC
 		    ("**********************WARNING**************************\n");
 		BTIF_ERR_FUNC("invalid irq condition, dump register\n");
-		hal_dma_dump_reg(p_dma_info, REG_TX_DMA_ALL);
+		hal_dma_dump_reg(p_dma_info, REG_ALL);
 #endif
 		BTIF_DBG_FUNC
 		    ("superious IRQ occurs, vff_len(%d), valid_size(%d), left_len(%d)\n",
@@ -1129,8 +1129,8 @@ static int hal_tx_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info,
 	BTIF_INFO_FUNC("DMA's clock is on\n");
 	BTIF_INFO_FUNC("Tx DMA's base address: 0x%lx\n", base);
 
-	if (flag == REG_TX_DMA_ALL) {
-		BTIF_INFO_FUNC("TX_EN(:0x%x\n", enable);
+	if (flag == REG_ALL) {
+		BTIF_INFO_FUNC("TX_EN:0x%x\n", enable);
 		BTIF_INFO_FUNC("INT_FLAG:0x%x\n", int_flag);
 		BTIF_INFO_FUNC("TX_STOP:0x%x\n", stop);
 		BTIF_INFO_FUNC("TX_FLUSH:0x%x\n", flush);
@@ -1154,6 +1154,13 @@ static int hal_tx_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info,
 		BTIF_INFO_FUNC("DBG_STATUS:0x%x\n",
 			       BTIF_READ32(TX_DMA_DEBUG_STATUS(base)));
 		i_ret = 0;
+	} else if (flag == REG_IRQ) {
+		BTIF_INFO_FUNC("TX_EN:0x%x\n", enable);
+		BTIF_INFO_FUNC("INT_EN:0x%x\n",
+			       BTIF_READ32(TX_DMA_INT_EN(base)));
+		BTIF_INFO_FUNC("INT_FLAG:0x%x\n", int_flag);
+		BTIF_INFO_FUNC("TX_WPT:0x%x\n", wpt);
+		BTIF_INFO_FUNC("TX_RPT:0x%x\n", rpt);
 	} else {
 		BTIF_WARN_FUNC("unknown flag:%d\n", flag);
 	}
@@ -1205,8 +1212,8 @@ static int hal_rx_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info,
 	BTIF_INFO_FUNC("DMA's clock is on\n");
 	BTIF_INFO_FUNC("Rx DMA's base address: 0x%lx\n", base);
 
-	if (flag == REG_RX_DMA_ALL) {
-		BTIF_INFO_FUNC("RX_EN(:0x%x\n", enable);
+	if (flag == REG_ALL) {
+		BTIF_INFO_FUNC("RX_EN:0x%x\n", enable);
 		BTIF_INFO_FUNC("RX_STOP:0x%x\n", stop);
 		BTIF_INFO_FUNC("RX_FLUSH:0x%x\n", flush);
 		BTIF_INFO_FUNC("INT_FLAG:0x%x\n", int_flag);
@@ -1230,6 +1237,13 @@ static int hal_rx_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info,
 		BTIF_INFO_FUNC("DBG_STATUS:0x%x\n",
 			       BTIF_READ32(RX_DMA_DEBUG_STATUS(base)));
 		i_ret = 0;
+	}  else if (flag == REG_IRQ) {
+		BTIF_INFO_FUNC("RX_EN:0x%x\n", enable);
+		BTIF_INFO_FUNC("INT_EN:0x%x\n",
+			       BTIF_READ32(RX_DMA_INT_EN(base)));
+		BTIF_INFO_FUNC("INT_FLAG:0x%x\n", int_flag);
+		BTIF_INFO_FUNC("RX_WPT:0x%x\n", wpt);
+		BTIF_INFO_FUNC("RX_RPT:0x%x\n", rpt);
 	} else {
 		BTIF_WARN_FUNC("unknown flag:%d\n", flag);
 	}
