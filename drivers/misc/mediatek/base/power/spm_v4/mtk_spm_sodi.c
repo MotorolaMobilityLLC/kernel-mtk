@@ -41,6 +41,7 @@
 #include <mtk_spm_pmic_wrap.h>
 
 #include <mtk_power_gs_api.h>
+#include <trace/events/mtk_events.h>
 
 /**************************************
  * only for internal debug
@@ -394,7 +395,11 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags, u32 op
 	spm_sodi_footprint_val((1 << SPM_SODI_ENTER_WFI) |
 		(1 << SPM_SODI_B4) | (1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));
 
+	trace_sodi(cpu, 1);
+
 	spm_trigger_wfi_for_sodi(pwrctrl->pcm_flags);
+
+	trace_sodi(cpu, 0);
 
 	spm_sodi_footprint(SPM_SODI_LEAVE_WFI);
 
