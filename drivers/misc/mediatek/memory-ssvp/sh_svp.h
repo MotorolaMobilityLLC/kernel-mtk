@@ -23,11 +23,11 @@
 
 void show_pte(struct mm_struct *mm, unsigned long addr);
 
-#define UPPER_LIMIT32 (1UL << 32)
-#define UPPER_LIMIT64 (1UL << 63)
+#define UPPER_LIMIT32 (1ULL << 32)
+#define UPPER_LIMIT64 (1ULL << 63)
 
 extern int _tui_region_offline(phys_addr_t *pa, unsigned long *size,
-		unsigned long upper_limit);
+		u64 upper_limit);
 
 int tui_region_offline64(phys_addr_t *pa, unsigned long *size)
 {
@@ -42,7 +42,7 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 EXPORT_SYMBOL(tui_region_offline);
 
 extern int _svp_region_offline(phys_addr_t *pa, unsigned long *size,
-		unsigned long upper_limit);
+		u64 upper_limit);
 
 int svp_region_offline64(phys_addr_t *pa, unsigned long *size)
 {
