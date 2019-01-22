@@ -36,11 +36,17 @@ enum mt_dvfs_debug_id {
 #ifdef CONFIG_MTK_BASE_POWER
 extern int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq);
 extern unsigned int mt_cpufreq_find_close_freq(unsigned int cluster_id, unsigned int freq);
+extern unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx);
 #else
 static int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq) { return 0; }
 static unsigned int mt_cpufreq_find_close_freq(unsigned int cluster_id, unsigned int freq) { return 0; }
+static unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx) { return 0; }
 #endif
 
 #ifdef CONFIG_SCHED_WALT
 extern int walt_cpufreq_notifier_trans(unsigned int cpu, unsigned int new_freq);
+#endif
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHED
+extern unsigned long int min_boost_freq[3];
 #endif

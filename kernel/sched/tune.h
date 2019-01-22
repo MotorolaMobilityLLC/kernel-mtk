@@ -14,14 +14,17 @@ struct target_nrg {
 	unsigned long max_stc_pwr[32];
 };
 
+struct target_cap {
+	int cap;
+	int freq;
+};
+
 extern struct target_nrg schedtune_target_nrg;
 
 extern int stune_task_threshold;
 
 void show_ste_info(void);
 void show_pwr_info(void);
-
-extern int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq);
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 
