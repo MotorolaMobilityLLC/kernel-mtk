@@ -30,7 +30,7 @@
 #include "inc/tcpm.h"
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
-#define TCPC_CORE_VERSION		"2.0.1_MTK"
+#define TCPC_CORE_VERSION		"2.0.2_MTK"
 
 static ssize_t tcpc_show_property(struct device *dev,
 				  struct device_attribute *attr, char *buf);
@@ -452,9 +452,6 @@ static void bat_update_work_func(struct work_struct *work)
 	union power_supply_propval value;
 	int ret;
 
-	if (!tcpc)
-		return;
-
 	ret = power_supply_get_property(
 			tcpc->bat_psy, POWER_SUPPLY_PROP_CAPACITY, &value);
 	if (ret == 0) {
@@ -840,6 +837,10 @@ MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
 
 /* Release Version
- * 2.0.1_M
+ * 2.0.2_MTK
+ * (1) Fix Coverity and check patch issue
+ * (2) Fix 32-bit project build error
+ *
+ * 2.0.1_MTK
  *	First released PD3.0 Driver for MTK Platform
  */
