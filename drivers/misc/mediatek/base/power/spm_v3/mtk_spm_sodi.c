@@ -699,7 +699,7 @@ static bool spm_sodi_mem_mode_change(void)
 
 
 wake_reason_t spm_sodi_output_log(
-	struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 flags)
+	struct wake_status *wakesta, struct pcm_desc *pcmdesc, u32 flags, u32 operation_cond)
 {
 	wake_reason_t wr = WR_NONE;
 	unsigned long int sodi_logout_curr_time = 0;
@@ -707,9 +707,9 @@ wake_reason_t spm_sodi_output_log(
 
 	if (!(flags & SODI_FLAG_REDUCE_LOG) ||
 			(flags & SODI_FLAG_RESIDENCY)) {
-		so_warn(flags, "self_refresh = 0x%x, sw_flag = 0x%x, 0x%x\n",
+		so_warn(flags, "self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, oper_cond = 0x%0x\n",
 				spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-				spm_read(DUMMY1_PWR_CON));
+				spm_read(DUMMY1_PWR_CON), operation_cond);
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false, (flags&SODI_FLAG_3P0) ? "sodi3" : "sodi");
 		if (flags & SODI_FLAG_RESOURCE_USAGE)
 			spm_resource_req_dump();
@@ -918,7 +918,7 @@ RESTORE_IRQ:
 
 	spm_sodi_footprint(SPM_SODI_ENTER_UART_AWAKE);
 
-	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi_flags);
+	wr = spm_sodi_output_log(&wakesta, pcmdesc, sodi_flags, operation_cond);
 
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
