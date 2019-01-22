@@ -997,9 +997,12 @@ static int fastpath_init(void)
 	init_track_table();
 #endif
 
+/* <JQ_TO_DELETE> */
+#if 0
 	ret = init_fastpath_dev();
 	if (ret)
 		return ret;
+#endif
 
 	init_nat_tuple();
 	init_bridge_tuple();
