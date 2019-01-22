@@ -750,7 +750,7 @@ out:
 	is_power_on[core] = true;
 	force_change_vcore_opp[core] = false;
 	force_change_dsp_freq[core] = false;
-	LOG_INF("[vpu_%d] en_rc -\n", core);
+	LOG_DBG("[vpu_%d] en_rc -\n", core);
 	return ret;
 }
 
@@ -804,7 +804,7 @@ static int vpu_disable_regulator_and_clock(int core)
 	DISABLE_VPU_CLK(clk_mmsys_gals_comm0);
 	DISABLE_VPU_CLK(clk_mmsys_gals_comm1);
 	DISABLE_VPU_CLK(clk_mmsys_smi_common);
-	LOG_INF("[vpu_%d] dis_rc flag4\n", core);
+	LOG_DBG("[vpu_%d] dis_rc flag4\n", core);
 
 #define DISABLE_VPU_MTCMOS(clk) \
 	{ \
@@ -995,11 +995,13 @@ static int vpu_service_routine(void *arg)
 			user->running = true; /* for flush request from queue, DL usage */
 			/* unlock for avoiding long time locking */
 			mutex_unlock(&vpu_dev->user_mutex);
-			LOG_INF("[vpu_%d] run, opp(%d/%d)\n", service_core, req->power_param.opp_step,
+			LOG_DBG("[vpu_%d] run, opp(%d/%d)\n", service_core, req->power_param.opp_step,
 				req->power_param.freq_step);
 			vpu_opp_check(service_core, req->power_param.opp_step, req->power_param.freq_step);
-			LOG_INF("[vpu_%d] run, algo_id(%d/%d)\n", service_core,
-				(int)(req->algo_id[service_core]), vpu_service_cores[service_core].current_algo);
+			LOG_INF("[vpu_%d] run, algo_id(%d/%d), opp(%d->%d, %d->%d)\n", service_core,
+				(int)(req->algo_id[service_core]), vpu_service_cores[service_core].current_algo,
+				req->power_param.opp_step, opps.vcore.index,
+				req->power_param.freq_step, opps.dspcore[service_core].index);
 			if (req->algo_id[service_core] != vpu_service_cores[service_core].current_algo) {
 				if (vpu_find_algo_by_id(service_core, req->algo_id[service_core], &algo)) {
 					req->status = VPU_REQ_STATUS_INVALID;
@@ -1595,7 +1597,7 @@ int vpu_hw_boot_sequence(int core)
 	/* 1. write register */
 	/* set specific address for reset vector in external boot */
 	reg_value = vpu_read_field(core, FLD_CORE_XTENSA_ALTRESETVEC);
-	LOG_INF("vpu bf ALTRESETVEC (0x%x), RV(0x%x)\n",
+	LOG_DBG("vpu bf ALTRESETVEC (0x%x), RV(0x%x)\n",
 		reg_value, VPU_MVA_RESET_VECTOR);
 	switch (core) {
 	case 0:
@@ -1607,7 +1609,7 @@ int vpu_hw_boot_sequence(int core)
 		break;
 	}
 	reg_value = vpu_read_field(core, FLD_CORE_XTENSA_ALTRESETVEC);
-	LOG_INF("vpu af ALTRESETVEC (0x%x), RV(0x%x)\n",
+	LOG_DBG("vpu af ALTRESETVEC (0x%x), RV(0x%x)\n",
 		reg_value, VPU_MVA_RESET_VECTOR);
 
 	VPU_SET_BIT(ptr_ctrl, 31);      /* csr_p_debug_enable */
@@ -1849,7 +1851,7 @@ int vpu_shut_down(int core)
 {
 	int ret;
 
-	LOG_INF("[vpu_%d] shutdown +\n", core);
+	LOG_DBG("[vpu_%d] shutdown +\n", core);
 	mutex_lock(&power_mutex[core]);
 	if (!is_power_on[core]) {
 		mutex_unlock(&power_mutex[core]);
@@ -1867,7 +1869,7 @@ int vpu_shut_down(int core)
 out:
 	vpu_trace_end();
 	mutex_unlock(&power_mutex[core]);
-	LOG_INF("[vpu_%d] shutdown -\n", core);
+	LOG_DBG("[vpu_%d] shutdown -\n", core);
 	return ret;
 }
 
