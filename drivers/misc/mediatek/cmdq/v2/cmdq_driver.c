@@ -272,6 +272,7 @@ static void cmdq_driver_process_read_address_request(struct cmdqReadAddressStruc
 	do {
 		if (req_user == NULL ||
 		    req_user->count == 0 ||
+		    req_user->count > CMDQ_MAX_DUMP_REG_COUNT ||
 		    CMDQ_U32_PTR(req_user->values) == NULL ||
 		    CMDQ_U32_PTR(req_user->dmaAddresses) == NULL) {
 			CMDQ_ERR("[READ_PA] invalid req_user\n");
@@ -516,6 +517,11 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		if (copy_from_user(&command, (void *)param, sizeof(struct cmdqCommandStruct)))
 			return -EFAULT;
 
+		if (command.regRequest.count > CMDQ_MAX_DUMP_REG_COUNT ||
+			!command.blockSize ||
+			command.blockSize > CMDQ_MAX_COMMAND_SIZE)
+			return -EINVAL;
+
 		/* insert private_data for resource reclaim */
 		desc_private.node_private_data = pFile->private_data;
 		command.privateData = (cmdqU32Ptr_t)(unsigned long)(&desc_private);
@@ -535,6 +541,9 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 	case CMDQ_IOCTL_ASYNC_JOB_EXEC:
 		if (copy_from_user(&job, (void *)param, sizeof(struct cmdqJobStruct)))
 			return -EFAULT;
+
+		if (job.command.blockSize > CMDQ_MAX_COMMAND_SIZE)
+			return -EINVAL;
 
 		/* backup */
 		userRegCount = job.command.regRequest.count;
@@ -595,6 +604,8 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			return -EFAULT;
 		}
 		pTask = (struct TaskStruct *) (unsigned long)jobResult.hJob;
+		if (pTask->regCount > CMDQ_MAX_DUMP_REG_COUNT)
+			return -EINVAL;
 
 		/* utility service, fill the engine flag. */
 		/* this is required by MDP. */
