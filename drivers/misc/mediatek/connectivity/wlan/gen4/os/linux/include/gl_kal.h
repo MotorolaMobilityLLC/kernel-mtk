@@ -373,6 +373,14 @@ typedef struct _MONITOR_RADIOTAP_T {
 } __packed MONITOR_RADIOTAP_T, *P_MONITOR_RADIOTAP_T;
 #endif
 
+struct KAL_HALT_CTRL_T {
+	struct semaphore lock;
+	struct task_struct *owner;
+	BOOLEAN fgHalt;
+	BOOLEAN fgHeldByKalIoctl;
+	OS_SYSTIME u4HoldStart;
+};
+
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -387,6 +395,14 @@ typedef struct _MONITOR_RADIOTAP_T {
 *                                 M A C R O S
 ********************************************************************************
 */
+
+#define KAL_SET_BIT(bitOffset, value)				set_bit(bitOffset, &value)
+#define KAL_CLR_BIT(bitOffset, value)				clear_bit(bitOffset, &value)
+#define KAL_TEST_AND_CLEAR_BIT(bitOffset, value)	test_and_clear_bit(bitOffset, &value)
+#define KAL_TEST_BIT(bitOffset, value)				test_bit(bitOffset, &value)
+#define SUSPEND_FLAG_FOR_WAKEUP_REASON	(0)
+#define SUSPEND_FLAG_CLEAR_WHEN_RESUME	(1)
+
 
 /*----------------------------------------------------------------------------*/
 /* Macros of getting current thread id                                        */
@@ -1114,6 +1130,16 @@ VOID kalFreeTxMsduWorker(struct work_struct *work);
 VOID kalFreeTxMsdu(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
 VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled);
 
+INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonEnable(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
+VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam);
+INT_32 kalBoostCpu(UINT_32 core_num);
+INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo);
+VOID kalFbNotifierUnReg(VOID);
 #endif /* _GL_KAL_H */
 
 

@@ -1440,6 +1440,7 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	P_NETDEV_PRIVATE_GLUE_INFO prNetDevPrivate = (P_NETDEV_PRIVATE_GLUE_INFO) NULL;
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	UINT_8 ucBssIndex;
+	P_BSS_INFO_T prP2pBssInfo = NULL;
 
 	ASSERT(prSkb);
 	ASSERT(prDev);
@@ -1451,6 +1452,10 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	kalResetPacket(prGlueInfo, (P_NATIVE_PACKET) prSkb);
 
 	kalHardStartXmit(prSkb, prDev, prGlueInfo, ucBssIndex);
+	prP2pBssInfo = GET_BSS_INFO_BY_INDEX(prGlueInfo->prAdapter, ucBssIndex);
+	if ((prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
+		(prP2pBssInfo->rStaRecOfClientList.u4NumElem > 0))
+		kalPerMonStart(prGlueInfo);
 
 	return NETDEV_TX_OK;
 }				/* end of p2pHardStartXmit() */

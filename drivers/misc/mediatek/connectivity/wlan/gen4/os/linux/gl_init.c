@@ -1099,6 +1099,8 @@ int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev)
 	if (kalHardStartXmit(prSkb, prDev, prGlueInfo, ucBssIndex) == WLAN_STATUS_SUCCESS) {
 		/* Successfully enqueue to Tx queue */
 		/* Successfully enqueue to Tx queue */
+		if (netif_carrier_ok(prDev))
+			kalPerMonStart(prGlueInfo);
 	}
 
 	/* For Linux, we'll always return OK FLAG, because we'll free this skb by ourself */
@@ -2465,6 +2467,7 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 		wlanCfgSetSwCtrl(prGlueInfo->prAdapter);
 		wlanCfgSetChip(prGlueInfo->prAdapter);
 		wlanCfgSetCountryCode(prGlueInfo->prAdapter);
+		kalPerMonInit(prGlueInfo);
 #if CFG_MET_TAG_SUPPORT
 		if (met_tag_init() != 0)
 			DBGLOG(INIT, ERROR, "MET_TAG_INIT error!\n");
@@ -2572,6 +2575,7 @@ static VOID wlanRemove(VOID)
 #endif /* WLAN_INCLUDE_PROC */
 
 	prAdapter = prGlueInfo->prAdapter;
+	kalPerMonDestroy(prGlueInfo);
 
 #if CFG_ENABLE_BT_OVER_WIFI
 	if (prGlueInfo->rBowInfo.fgIsNetRegistered) {
@@ -2728,7 +2732,7 @@ static int initWlan(void)
 #if (CFG_CHIP_RESET_SUPPORT)
 	glResetInit();
 #endif
-
+	kalFbNotifierReg((P_GLUE_INFO_T) wiphy_priv(gprWdev->wiphy));
 	return ret;
 }				/* end of initWlan() */
 
@@ -2744,6 +2748,7 @@ static int initWlan(void)
 /* 1 Module Leave Point */
 static VOID exitWlan(void)
 {
+	kalFbNotifierUnReg();
 	/* printk("remove %p\n", wlanRemove); */
 #if CFG_CHIP_RESET_SUPPORT
 	glResetUninit();
