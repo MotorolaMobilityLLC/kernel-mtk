@@ -37,6 +37,8 @@
 #include <linux/miscdevice.h>
 #include <linux/dma-mapping.h>
 #include <linux/uaccess.h>
+#include <linux/memblock.h>
+#include <asm/tlbflush.h>
 #include "sh_svp.h"
 
 #define _SSVP_MBSIZE_ (CONFIG_MTK_SVP_RAM_SIZE + CONFIG_MTK_TUI_RAM_SIZE)
@@ -46,19 +48,29 @@
 #define COUNT_DOWN_MS 4000
 #define	COUNT_DOWN_INTERVAL 200
 
-#include <mt-plat/aee.h>
+#define SSVP_CMA_ALIGN_PAGE_ORDER 14
+#define SSVP_ALIGN_SHIFT (SSVP_CMA_ALIGN_PAGE_ORDER + PAGE_SHIFT)
+#define SSVP_ALIGN (1 << SSVP_ALIGN_SHIFT)
 
+#include <mt-plat/aee.h>
 #include "mt-plat/mtk_meminfo.h"
+
+/* no_release_memory:
+ *
+ * do not release memory back to buddy system,
+ * for dubugging or pmd mapping error.
+ */
+#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
+static bool no_release_memory __read_mostly = true;
+#else
+static bool no_release_memory __read_mostly;
+#endif
 
 static unsigned long svp_usage_count;
 static int ref_count;
 
-#define CONFIG_MTK_MEMORY_SSVP_WRAP
-#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
 static struct page *wrap_svp_pages;
 static struct page *wrap_tui_pages;
-#endif
-
 
 enum ssvp_subtype {
 	SSVP_SVP,
@@ -88,14 +100,16 @@ const char *const svp_state_text[NR_STATES] = {
 struct SSVP_Region {
 	unsigned int state;
 	unsigned long count;
+	bool is_unmapping;
 	struct page *page;
 };
 
 static struct task_struct *_svp_online_task; /* NULL */
-
 static struct cma *cma;
-
 static struct SSVP_Region _svpregs[__MAX_NR_SSVPSUBS];
+
+#define pmd_unmapping(virt, size) set_pmd_mapping(virt, size, 0)
+#define pmd_mapping(virt, size) set_pmd_mapping(virt, size, 1)
 
 void zmc_ssvp_init(struct cma *zmc_cma)
 {
@@ -106,7 +120,7 @@ void zmc_ssvp_init(struct cma *zmc_cma)
 }
 
 struct single_cma_registration memory_ssvp_registration = {
-	.align = 0x8000000,
+	.align = SSVP_ALIGN,
 	.size = (_SSVP_MBSIZE_ * SZ_1M),
 	.name = "memory-ssvp",
 	.init = zmc_ssvp_init,
@@ -158,6 +172,83 @@ phys_addr_t memory_ssvp_cma_size(void)
 	return cma_get_size(cma);
 }
 
+#ifdef CONFIG_ARM64
+/*
+ * success return 0, failed return -1;
+ */
+static int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
+{
+	unsigned long address = start;
+	pud_t *pud;
+	pmd_t *pmd;
+	pgd_t *pgd;
+	spinlock_t *plt;
+
+	if ((start != (start & PMD_MASK))
+			|| (size != (size & PMD_MASK))
+			|| !memblock_is_memory(virt_to_phys((void *)start))
+			|| !size || !start) {
+		pr_alert("[invalid parameter]: start=0x%lx, size=%pa\n",
+				start, &size);
+		return -1;
+	}
+
+	pr_debug("start=0x%lx, size=%pa, address=0x%p, map=%d\n",
+			start, &size, (void *)address, map);
+	while (address < (start + size)) {
+
+
+		pgd = pgd_offset_k(address);
+
+		if (pgd_none(*pgd) || pgd_bad(*pgd)) {
+			pr_alert("bad pgd break\n");
+			goto fail;
+		}
+
+		pud = pud_offset(pgd, address);
+
+		if (pud_none(*pud) || pud_bad(*pud)) {
+			pr_alert("bad pud break\n");
+			goto fail;
+		}
+
+		pmd = pmd_offset(pud, address);
+
+		if (pmd_none(*pmd)) {
+			pr_alert("none ");
+			goto fail;
+		}
+
+		if (pmd_table(*pmd)) {
+			pr_alert("pmd_table not set PMD\n");
+			goto fail;
+		}
+
+		plt = pmd_lock(&init_mm, pmd);
+		if (map)
+			set_pmd(pmd, (__pmd(*pmd) | PMD_SECT_VALID));
+		else
+			set_pmd(pmd, (__pmd(*pmd) & ~PMD_SECT_VALID));
+		spin_unlock(plt);
+		pr_debug("after pmd =%p, *pmd=%016llx\n", (void *)pmd, pmd_val(*pmd));
+		address += PMD_SIZE;
+	}
+
+	flush_tlb_all();
+	return 0;
+fail:
+	pr_alert("start=0x%lx, size=%pa, address=0x%p, map=%d\n",
+			start, &size, (void *)address, map);
+	show_pte(NULL, address);
+	return -1;
+}
+#else
+static inline int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
+{
+	return 0;
+}
+#endif
+
 int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 {
 	struct page *page;
@@ -169,14 +260,14 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 	if (_svpregs[SSVP_TUI].state == SVP_STATE_ON) {
 		_svpregs[SSVP_TUI].state = SVP_STATE_OFFING;
 
-#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-		page = wrap_tui_pages;
-#else
-		page = zmc_cma_alloc(cma, _svpregs[SSVP_TUI].count,
-				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT), &memory_ssvp_registration);
-		if (page)
-			svp_usage_count += _svpregs[SSVP_TUI].count;
-#endif
+		if (no_release_memory)
+			page = wrap_tui_pages;
+		else {
+			page = zmc_cma_alloc(cma, _svpregs[SSVP_TUI].count,
+					SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
+			if (page)
+				svp_usage_count += _svpregs[SSVP_TUI].count;
+		}
 
 		if (page) {
 			_svpregs[SSVP_TUI].page = page;
@@ -218,14 +309,14 @@ int tui_region_online(void)
 	if (_svpregs[SSVP_TUI].state == SVP_STATE_OFF) {
 		_svpregs[SSVP_TUI].state = SVP_STATE_ONING_WAIT;
 
-#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-		retb = true;
-#else
-		retb = cma_release(cma, _svpregs[SSVP_TUI].page, _svpregs[SSVP_TUI].count);
+		if (no_release_memory)
+			retb = true;
+		else {
+			retb = cma_release(cma, _svpregs[SSVP_TUI].page, _svpregs[SSVP_TUI].count);
 
-		if (retb == true)
-			svp_usage_count -= _svpregs[SSVP_TUI].count;
-#endif
+			if (retb == true)
+				svp_usage_count -= _svpregs[SSVP_TUI].count;
+		}
 
 		if (retb == true) {
 			_svpregs[SSVP_TUI].page = NULL;
@@ -335,6 +426,8 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 	struct page *page;
 	int retval = 0;
 	int res = 0;
+	int offline_retry;
+	int ret_map;
 
 	pr_alert("%s %d: svp to offline enter state: %s\n", __func__, __LINE__,
 			svp_state_text[_svpregs[SSVP_SVP].state]);
@@ -342,40 +435,73 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 	if (_svpregs[SSVP_SVP].state == SVP_STATE_ON) {
 		_svpregs[SSVP_SVP].state = SVP_STATE_OFFING;
 
-#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-		page = wrap_svp_pages;
-#else
-		page = zmc_cma_alloc(cma, _svpregs[SSVP_SVP].count,
-				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT), &memory_ssvp_registration);
+		if (no_release_memory) {
+			page = wrap_svp_pages;
+			goto offline_done;
+		}
 
-		if (page)
-			svp_usage_count += _svpregs[SSVP_SVP].count;
-#endif
+		offline_retry = 0;
+		do {
+			pr_info("[SSVP-ALLOCATION]: retry: %d\n", offline_retry);
+			page = zmc_cma_alloc(cma, _svpregs[SSVP_SVP].count,
+					SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
+
+			offline_retry++;
+			msleep(100);
+		} while (page == NULL && offline_retry < 20);
+
 
 		if (page) {
-			_svpregs[SSVP_SVP].page = page;
-			_svpregs[SSVP_SVP].state = SVP_STATE_OFF;
-
-			if (pa)
-				*pa = page_to_phys(page);
-			if (size)
-				*size = _svpregs[SSVP_SVP].count << PAGE_SHIFT;
-
-			pr_alert("%s %d: secmem_enable, res %d pa 0x%llx, size 0x%lx\n",
-					__func__, __LINE__, res,
-					page_to_phys(page),
+			svp_usage_count += _svpregs[SSVP_SVP].count;
+			ret_map = pmd_unmapping((unsigned long)__va((page_to_phys(page))),
 					_svpregs[SSVP_SVP].count << PAGE_SHIFT);
+
+			if (ret_map < 0) {
+				pr_alert("[unmapping fail]: virt:0x%lx, size:0x%lx",
+						(unsigned long)__va((page_to_phys(page))),
+						_svpregs[SSVP_SVP].count << PAGE_SHIFT);
+
+				aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
+						| DB_OPT_LOW_MEMORY_KILLER
+						| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
+						| DB_OPT_PROCESS_COREDUMP
+						| DB_OPT_PAGETYPE_INFO
+						| DB_OPT_DUMPSYS_PROCSTATS,
+						"SSVP unmapping fail:\nCRDISPATCH_KEY:SVP_SS1",
+						"[unmapping fail]: virt:0x%lx, size:0x%lx",
+						(unsigned long)__va((page_to_phys(page))),
+						_svpregs[SSVP_SVP].count << PAGE_SHIFT);
+
+				_svpregs[SSVP_SVP].is_unmapping = false;
+			} else
+				_svpregs[SSVP_SVP].is_unmapping = true;
+
+			goto offline_done;
 		} else {
 			_svpregs[SSVP_SVP].state = SVP_STATE_ON;
 			retval = -EAGAIN;
+			goto out;
 		}
 	} else {
 		retval = -EBUSY;
+		goto out;
 	}
 
+offline_done:
+	_svpregs[SSVP_SVP].page = page;
+	_svpregs[SSVP_SVP].state = SVP_STATE_OFF;
+	pr_alert("%s %d: secmem_enable, res %d pa 0x%llx, size 0x%lx\n",
+			__func__, __LINE__, res,
+			page_to_phys(page),
+			_svpregs[SSVP_SVP].count << PAGE_SHIFT);
+	if (pa)
+		*pa = page_to_phys(page);
+	if (size)
+		*size = _svpregs[SSVP_SVP].count << PAGE_SHIFT;
+
+out:
 	pr_alert("%s %d: svp to offline leave state: %s, retval: %d\n",
 			__func__, __LINE__, svp_state_text[_svpregs[SSVP_SVP].state], retval);
-
 	return retval;
 }
 EXPORT_SYMBOL(svp_region_offline);
@@ -383,29 +509,56 @@ EXPORT_SYMBOL(svp_region_offline);
 int svp_region_online(void)
 {
 	int retval = 0;
-	int retb;
 
 	pr_alert("%s %d: svp to online enter state: %s\n", __func__, __LINE__,
 			svp_state_text[_svpregs[SSVP_SVP].state]);
 
 	if (_svpregs[SSVP_SVP].state == SVP_STATE_OFF) {
-#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-		retb = true;
-#else
-		retb = cma_release(cma, _svpregs[SSVP_SVP].page, _svpregs[SSVP_SVP].count);
+		int ret_map = 0;
 
-		if (retb == true)
-			svp_usage_count -= _svpregs[SSVP_SVP].count;
-#endif
+		if (no_release_memory)
+			goto online_done;
 
-		if (retb == true) {
-			_svpregs[SSVP_SVP].page = NULL;
-			_svpregs[SSVP_SVP].state = SVP_STATE_ON;
+		/* remapping if unmapping while offline */
+		if (_svpregs[SSVP_SVP].is_unmapping)
+			ret_map = pmd_mapping((unsigned long)__va((page_to_phys(_svpregs[SSVP_SVP].page))),
+					_svpregs[SSVP_SVP].count << PAGE_SHIFT);
+
+		if (ret_map < 0) {
+			pr_alert("[remapping fail]: virt:0x%lx, size:0x%lx",
+					(unsigned long)__va((page_to_phys(_svpregs[SSVP_SVP].page))),
+					_svpregs[SSVP_SVP].count << PAGE_SHIFT);
+
+			aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
+					| DB_OPT_PID_MEMORY_INFO /* for smaps and hprof */
+					| DB_OPT_PROCESS_COREDUMP
+					| DB_OPT_PAGETYPE_INFO
+					| DB_OPT_DUMPSYS_PROCSTATS,
+					"SSVP remapping fail:\nCRDISPATCH_KEY:SVP_SS1",
+					"[remapping fail]: virt:0x%lx, size:0x%lx",
+					(unsigned long)__va((page_to_phys(_svpregs[SSVP_SVP].page))),
+					_svpregs[SSVP_SVP].count << PAGE_SHIFT);
+
+			no_release_memory = true;
+			svp_usage_count = _svpregs[SSVP_SVP].count;
+			wrap_svp_pages = _svpregs[SSVP_SVP].page;
+			goto online_done;
 		}
+
+		_svpregs[SSVP_SVP].is_unmapping = false;
+		cma_release(cma, _svpregs[SSVP_SVP].page, _svpregs[SSVP_SVP].count);
+		svp_usage_count -= _svpregs[SSVP_SVP].count;
+
 	} else {
 		retval = -EBUSY;
+		goto out;
 	}
 
+
+online_done:
+	_svpregs[SSVP_SVP].page = NULL;
+	_svpregs[SSVP_SVP].state = SVP_STATE_ON;
+out:
 	pr_alert("%s %d: svp to online leave state: %s, retval: %d\n",
 			__func__, __LINE__, svp_state_text[_svpregs[SSVP_SVP].state], retval);
 
@@ -532,10 +685,10 @@ static int memory_ssvp_show(struct seq_file *m, void *v)
 			__phys_to_pfn(cma_base), __phys_to_pfn(cma_end),
 			cma_get_size(cma) >> PAGE_SHIFT);
 
-#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-	seq_printf(m, "cma info: svp wrap: %pa\n", &wrap_svp_pages);
-	seq_printf(m, "cma info: tui wrap: %pa\n", &wrap_tui_pages);
-#endif
+	if (no_release_memory) {
+		seq_printf(m, "cma info: svp wrap: %pa\n", &wrap_svp_pages);
+		seq_printf(m, "cma info: tui wrap: %pa\n", &wrap_tui_pages);
+	}
 
 	seq_printf(m, "svp region base:0x%llx, count %lu, state %s\n",
 			_svpregs[SSVP_SVP].page == NULL ? 0 : page_to_phys(_svpregs[SSVP_SVP].page),
@@ -574,23 +727,6 @@ static int __init memory_ssvp_debug_init(void)
 		return 1;
 	}
 
-#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-	if (_SVP_MBSIZE > 0) {
-		wrap_svp_pages = zmc_cma_alloc(cma, _SVP_MBSIZE * SZ_1M >> PAGE_SHIFT,
-				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT), &memory_ssvp_registration);
-		svp_usage_count = _SVP_MBSIZE * SZ_1M >> PAGE_SHIFT;
-	} else
-		pr_err("wrap_svp_pages is not inited\n");
-
-	if (_TUI_MBSIZE > 0) {
-		wrap_tui_pages = zmc_cma_alloc(cma, _TUI_MBSIZE * SZ_1M >> PAGE_SHIFT,
-				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT), &memory_ssvp_registration);
-		svp_usage_count = _TUI_MBSIZE * SZ_1M >> PAGE_SHIFT;
-	} else
-		pr_err("wrap_tui_pages is not inited\n");
-
-#endif
-
 	dentry = debugfs_create_file("memory-ssvp", S_IRUGO, NULL, NULL,
 					&memory_ssvp_fops);
 	if (!dentry)
@@ -603,6 +739,12 @@ static int __init memory_ssvp_debug_init(void)
 
 		if (!procfs_entry)
 			pr_warn("Failed to create procfs svp_region file\n");
+
+		if (no_release_memory) {
+			wrap_svp_pages = zmc_cma_alloc(cma, _SVP_MBSIZE * SZ_1M >> PAGE_SHIFT,
+					SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
+			svp_usage_count = _SVP_MBSIZE * SZ_1M >> PAGE_SHIFT;
+		}
 
 		_svpregs[SSVP_SVP].count = (_SVP_MBSIZE * SZ_1M) >> PAGE_SHIFT;
 		_svpregs[SSVP_SVP].state = SVP_STATE_ON;
@@ -619,6 +761,12 @@ static int __init memory_ssvp_debug_init(void)
 
 		if (!procfs_entry)
 			pr_warn("Failed to create procfs tui_region file\n");
+
+		if (no_release_memory) {
+			wrap_tui_pages = zmc_cma_alloc(cma, _TUI_MBSIZE * SZ_1M >> PAGE_SHIFT,
+					SSVP_CMA_ALIGN_PAGE_ORDER, &memory_ssvp_registration);
+			svp_usage_count = _TUI_MBSIZE * SZ_1M >> PAGE_SHIFT;
+		}
 
 		_svpregs[SSVP_TUI].count = (_TUI_MBSIZE * SZ_1M) >> PAGE_SHIFT;
 		_svpregs[SSVP_TUI].state = SVP_STATE_ON;
