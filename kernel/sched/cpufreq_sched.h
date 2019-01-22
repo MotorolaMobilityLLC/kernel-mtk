@@ -38,9 +38,9 @@ extern int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq);
 extern unsigned int mt_cpufreq_find_close_freq(unsigned int cluster_id, unsigned int freq);
 extern unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx);
 #else
-static int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq) { return 0; }
-static unsigned int mt_cpufreq_find_close_freq(unsigned int cluster_id, unsigned int freq) { return 0; }
-static unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx) { return 0; }
+static inline int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq) { return 0; }
+static inline unsigned int mt_cpufreq_find_close_freq(unsigned int cluster_id, unsigned int freq) { return 0; }
+static inline unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx) { return 0; }
 #endif
 
 #ifdef CONFIG_SCHED_WALT
