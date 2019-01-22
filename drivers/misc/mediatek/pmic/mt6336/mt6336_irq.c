@@ -33,7 +33,6 @@
 #include <mt-plat/charging.h>
 
 #include "mt6336.h"
-#include "mtk_pmic_common.h"
 
 /*****************************************************************************
  * Global variable
