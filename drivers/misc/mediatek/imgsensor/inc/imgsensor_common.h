@@ -23,13 +23,13 @@
 
 #define DEBUG_CAMERA_HW_K
 #ifdef DEBUG_CAMERA_HW_K
-#define PK_DBG(fmt, arg...)			printk(PREFIX fmt, ##arg)//pr_debug(PREFIX fmt, ##arg)
-#define PK_ERR(fmt, arg...)         printk(PREFIX fmt, ##arg)//pr_err(fmt, ##arg)
-#define PK_INFO(fmt, arg...) 		printk(PREFIX fmt, ##arg)//pr_debug(PREFIX fmt, ##arg)
+#define PK_DBG(fmt, arg...)  pr_debug(PREFIX fmt, ##arg)
+#define PK_ERR(fmt, arg...)  pr_err(fmt, ##arg)
+#define PK_INFO(fmt, arg...) pr_debug(PREFIX fmt, ##arg)
 #else
 #define PK_DBG(fmt, arg...)
-#define PK_ERR(fmt, arg...)			pr_err(fmt, ##arg)
-#define PK_INFO(fmt, arg...)		pr_debug(PREFIX fmt, ##arg)
+#define PK_ERR(fmt, arg...)  pr_err(fmt, ##arg)
+#define PK_INFO(fmt, arg...) pr_debug(PREFIX fmt, ##arg)
 #endif
 
 typedef enum {
