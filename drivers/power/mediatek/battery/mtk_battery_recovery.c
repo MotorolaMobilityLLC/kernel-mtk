@@ -1799,16 +1799,18 @@ void fg_update_c_dod(void)
 
 void fgr_dod_init(void)
 {
-	int vbat = get_vbat();
+	int init_swocv = get_ptim_vbat();
 	int con0_soc = get_con0_soc();
 	int con0_uisoc = get_rtc_ui_soc();
 
 	rtc_ui_soc = UNIT_TRANS_100 * con0_uisoc;
 
 	if (rtc_ui_soc == 0 || con0_soc == 0) {
-		rtc_ui_soc = OCV_to_SOC_c(vbat);
+		rtc_ui_soc = OCV_to_SOC_c(init_swocv);
+		ui_d0_soc = rtc_ui_soc;
 		fg_c_d0_soc = rtc_ui_soc;
-		bm_err("[dod_init err]rtcui=0, vbat = %d, OCV_to_SOC_c=%d con0_soc=%d\n", vbat, rtc_ui_soc, con0_soc);
+		bm_err("[dod_init_recovery]rtcui=0,init_swocv=%d,OCV_to_SOC=%d ui:%d con0_soc=%d\n",
+			init_swocv, rtc_ui_soc, ui_d0_soc, con0_soc);
 	} else {
 		ui_d0_soc = rtc_ui_soc;
 		fg_c_d0_soc = UNIT_TRANS_100 * con0_soc;
