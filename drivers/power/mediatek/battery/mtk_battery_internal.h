@@ -170,6 +170,10 @@ enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_GET_FG_CURRENT_IAVG_VALID,
 	FG_DAEMON_CMD_GET_RTC_UI_SOC,
 	FG_DAEMON_CMD_SET_RTC_UI_SOC,
+	FG_DAEMON_CMD_GET_CON0_SOC,
+	FG_DAEMON_CMD_SET_CON0_SOC,
+	FG_DAEMON_CMD_GET_NVRAM_FAIL_STATUS,
+	FG_DAEMON_CMD_SET_NVRAM_FAIL_STATUS,
 	FG_DAEMON_CMD_SET_FG_BAT_TMP_C_GAP,
 	FG_DAEMON_CMD_IS_BATTERY_CYCLE_RESET,
 	FG_DAEMON_CMD_GET_RTC_TWO_SEC_REBOOT,
@@ -442,12 +446,18 @@ struct fuel_gauge_custom_data {
 	int additional_battery_table_en;
 
 	int d0_sel;
+	int dod_init_sel;
 	int aging_sel;
 	int fg_tracking_current;
 	int fg_tracking_current_iboot_en;
 	int ui_fast_tracking_en;
 	int ui_fast_tracking_gap;
 	int bat_par_i;
+	int c_old_d0;
+	int v_old_d0;
+	int c_soc;
+	int v_soc;
+	int ui_old_soc;
 
 	int aging_factor_min;
 	int aging_factor_diff;
@@ -633,12 +643,15 @@ enum {
 };
 
 extern struct fuel_gauge_custom_data fg_cust_data;
+extern struct fuel_gauge_table_custom_data fg_table_cust_data;
+
 extern struct PMU_ChargerStruct BMT_status;
 extern struct gauge_hw_status FG_status;
 
 
 extern int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1);
 extern int wakeup_fg_algo(unsigned int flow_state);
+extern void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg);
 
 /* mtk_power_misc.c */
 extern void mtk_power_misc_init(struct platform_device *pdev);
@@ -651,6 +664,10 @@ extern void set_shutdown_cond_flag(int);
 extern int get_shutdown_cond_flag(void);
 /* end mtk_power_misc.c */
 
+/* mtk_battery_recovery.c */
+extern void battery_recovery_init(void);
+extern void wakeup_fg_algo_recovery(unsigned int);
+extern int interpolation(int i1, int b1, int i2, int b2, int i);
 
 /* pmic */
 extern unsigned int upmu_get_rgs_chrdet(void);

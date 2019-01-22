@@ -19,5 +19,5 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
 
 
-obj-$(CONFIG_MTK_SMART_BATTERY) += mtk_battery.o mtk_power_misc.o mtk_gauge_time_service.o
+obj-$(CONFIG_MTK_SMART_BATTERY) += mtk_battery.o mtk_power_misc.o mtk_gauge_time_service.o mtk_battery_recovery.o
 

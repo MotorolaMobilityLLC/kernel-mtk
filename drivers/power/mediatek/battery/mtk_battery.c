@@ -295,6 +295,20 @@ bool is_battery_init_done(void)
 	return is_init_done;
 }
 
+bool is_recovery_mode(void)
+{
+	int boot_mode = get_boot_mode();
+
+	bm_err("mtk_battery boot mode =%d\n", boot_mode);
+	if (boot_mode == RECOVERY_BOOT)
+		return true;
+
+	if (boot_mode != RECOVERY_BOOT)
+		return false;
+
+	return false;
+}
+
 /* ============================================================ */
 /* gauge hal interface */
 /* ============================================================ */
@@ -2431,8 +2445,17 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_SET_DAEMON_PID:
 		{
-			memcpy(&g_fgd_pid, &msg->fgd_data[0], sizeof(g_fgd_pid));
-			bm_debug("[fg_res] FG_DAEMON_CMD_SET_DAEMON_PID = %d\n", g_fgd_pid);
+			/* check is daemon killed case*/
+			if (g_fgd_pid == 0) {
+				memcpy(&g_fgd_pid, &msg->fgd_data[0], sizeof(g_fgd_pid));
+				bm_err("[fg_res] FG_DAEMON_CMD_SET_DAEMON_PID = %d (first launch)\n", g_fgd_pid);
+			} else {
+				memcpy(&g_fgd_pid, &msg->fgd_data[0], sizeof(g_fgd_pid));
+				bm_err("[fg_res] FG_DAEMON_CMD_SET_DAEMON_PID = %d, kill daemon case\n", g_fgd_pid);
+				/* kill daemon dod_init 14*/
+				fg_cust_data.dod_init_sel = 14;
+			}
+
 		}
 		break;
 
@@ -3068,11 +3091,25 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	case FG_DAEMON_CMD_SET_KERNEL_SOC:
 	{
 		int daemon_soc;
+		int soc_type;
+
+		soc_type = msg->fgd_subcmd_para1;
 
 		memcpy(&daemon_soc, &msg->fgd_data[0], sizeof(daemon_soc));
-		FG_status.soc = (daemon_soc + 50) / 100;
-		bm_debug("[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d\n",
-			daemon_soc, FG_status.soc);
+		if (soc_type == 0)
+			FG_status.soc = (daemon_soc + 50) / 100;
+		else if (soc_type == 1)
+			fg_cust_data.c_old_d0 = daemon_soc;
+		else if (soc_type == 2)
+			fg_cust_data.v_old_d0 = daemon_soc;
+		else if (soc_type == 3)
+			fg_cust_data.c_soc = daemon_soc;
+		else if (soc_type == 4)
+			fg_cust_data.v_soc = daemon_soc;
+
+		bm_err("[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d, type:%d\n",
+			daemon_soc, FG_status.soc, fg_cust_data.c_old_d0,
+			fg_cust_data.v_old_d0, fg_cust_data.c_soc, fg_cust_data.v_soc, soc_type);
 	}
 	break;
 
@@ -3082,6 +3119,8 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		struct timespec now_time, diff;
 
 		memcpy(&daemon_ui_soc, &msg->fgd_data[0], sizeof(daemon_ui_soc));
+
+		fg_cust_data.ui_old_soc = daemon_ui_soc;
 
 		if (gDisableGM30 == true)
 			FG_status.ui_soc = 50;
@@ -3228,6 +3267,48 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	}
 	break;
 
+	case FG_DAEMON_CMD_SET_CON0_SOC:
+	{
+		int _soc = 0;
+
+		memcpy(&_soc, &msg->fgd_data[0], sizeof(_soc));
+		gauge_dev_set_info(gauge_dev, GAUGE_CON0_SOC, _soc);
+		bm_err("[fg_res] FG_DAEMON_CMD_SET_CON0_SOC = %d\n", _soc);
+	}
+	break;
+
+	case FG_DAEMON_CMD_GET_CON0_SOC:
+	{
+		int _soc = 0;
+
+		gauge_dev_get_info(gauge_dev, GAUGE_CON0_SOC, &_soc);
+		ret_msg->fgd_data_len += sizeof(_soc);
+		memcpy(ret_msg->fgd_data, &_soc, sizeof(_soc));
+		bm_err("[fg_res] FG_DAEMON_CMD_GET_CON0_SOC = %d\n", _soc);
+	}
+	break;
+
+	case FG_DAEMON_CMD_SET_NVRAM_FAIL_STATUS:
+	{
+		int flag = 0;
+
+		memcpy(&flag, &msg->fgd_data[0], sizeof(flag));
+		gauge_dev_set_info(gauge_dev, GAUGE_IS_NVRAM_FAIL_MODE, flag);
+		bm_err("[fg_res] FG_DAEMON_CMD_SET_NVRAM_FAIL_STATUS = %d\n", flag);
+	}
+	break;
+
+	case FG_DAEMON_CMD_GET_NVRAM_FAIL_STATUS:
+	{
+		int flag = 0;
+
+		gauge_dev_get_info(gauge_dev, GAUGE_IS_NVRAM_FAIL_MODE, &flag);
+		ret_msg->fgd_data_len += sizeof(flag);
+		memcpy(ret_msg->fgd_data, &flag, sizeof(flag));
+		bm_err("[fg_res] FG_DAEMON_CMD_GET_NVRAM_FAIL_STATUS = %d\n", flag);
+	}
+	break;
+
 	case FG_DAEMON_CMD_GET_RTC_TWO_SEC_REBOOT:
 	{
 		int two_sec_reboot_flag;
@@ -3332,6 +3413,11 @@ int wakeup_fg_algo(unsigned int flow_state)
 	if (gDisableGM30) {
 		bm_err("FG daemon is disabled\n");
 		return -1;
+	}
+
+	if (is_recovery_mode()) {
+		wakeup_fg_algo_recovery(flow_state);
+		return 0;
 	}
 
 	if (g_fgd_pid != 0) {
@@ -5275,6 +5361,9 @@ static int __init battery_probe(struct platform_device *dev)
 	battery_debug_init();
 
 	wake_unlock(&battery_lock);
+
+	if (is_recovery_mode())
+		battery_recovery_init();
 
 	if (bis_evb) {
 		bm_err("disable GM 3.0\n");

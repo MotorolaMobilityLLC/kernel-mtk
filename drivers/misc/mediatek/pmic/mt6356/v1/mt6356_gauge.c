@@ -116,8 +116,12 @@ static int fgauge_set_info(struct gauge_device *gauge_dev, enum gauge_info ginfo
 		pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x1);
 	else if (ginfo == GAUGE_MONITER_PLCHG_STATUS)
 		pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x2);
-
-	else
+	else if (ginfo == GAUGE_IS_NVRAM_FAIL_MODE)
+		pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x4);
+	else if (ginfo == GAUGE_CON0_SOC) {
+		value = value / 100;
+		pmic_config_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x007F, 0x9);
+	} else
 		ret = -1;
 
 	return 0;
@@ -133,7 +137,10 @@ static int fgauge_get_info(struct gauge_device *gauge_dev, enum gauge_info ginfo
 		pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x1);
 	else if (ginfo == GAUGE_MONITER_PLCHG_STATUS)
 		pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x2);
-
+	else if (ginfo == GAUGE_IS_NVRAM_FAIL_MODE)
+		pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x0001, 0x4);
+	else if (ginfo == GAUGE_CON0_SOC)
+		pmic_read_interface(PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x007F, 0x9);
 	else
 		ret = -1;
 
