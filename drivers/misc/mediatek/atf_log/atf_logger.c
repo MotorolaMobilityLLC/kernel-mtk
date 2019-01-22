@@ -16,6 +16,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/miscdevice.h>
+#include <linux/platform_device.h>
 #include <linux/kernel.h>       /* min() */
 #include <linux/uaccess.h>      /* copy_to_user() */
 #include <linux/sched.h>        /* TASK_INTERRUPTIBLE/signal_pending/schedule */
@@ -44,6 +45,10 @@
 #define atf_log_lock()        ((void)0)
 #define atf_log_unlock()      ((void)0)
 static wait_queue_head_t    atf_log_wq;
+static const struct of_device_id atf_logger_of_ids[] = {
+	{ .compatible = "mediatek,atf_logger", },
+	{}
+};
 
 #ifdef __aarch64__
 static void *_memcpy(void *dest, const void *src, size_t count)
@@ -463,7 +468,6 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	}
 }
 #endif
-
 static irqreturn_t ATF_log_irq_handler(int irq, void *dev_id)
 {
 	if (!atf_buf_vir_ctl->info.atf_reader_alive)
@@ -471,7 +475,6 @@ static irqreturn_t ATF_log_irq_handler(int irq, void *dev_id)
 	wake_up_interruptible(&atf_log_wq);
 	return IRQ_HANDLED;
 }
-
 static const struct file_operations proc_atf_log_file_operations = {
 	.owner  = THIS_MODULE,
 	.open   = atf_log_open,
@@ -523,13 +526,12 @@ static const struct file_operations proc_atf_dump_log_file_operations = {
 	.release = single_release,
 };
 #endif
-static int __init atf_log_init(void)
+static int atf_logger_probe(struct platform_device *pdev)
 {
 	/* register module driver */
 	int err;
 	struct proc_dir_entry *atf_log_proc_dir;
 	struct proc_dir_entry *atf_log_proc_file;
-	struct device_node *node = NULL;
 	int irq_num;
 #ifdef CONFIG_ARCH_MT6797
 	struct proc_dir_entry *atf_log_dump_proc_file;
@@ -566,15 +568,13 @@ static int __init atf_log_init(void)
 	/* initial wait queue */
 	init_waitqueue_head(&atf_log_wq);
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,atf_logger");
-	if (!node) {
-		pr_err("[SCP] Can't find node:mediatek,atf_logger.n");
-		return -1;
+	irq_num = platform_get_irq(pdev, 0);
+	if (irq_num == -ENXIO) {
+		pr_err("Fail to get atf_logger irq number from device tree\n");
+		WARN_ON(irq_num == -ENXIO);
+		return -EINVAL;
 	}
-
-	irq_num = irq_of_parse_and_map(node, 0);
 	pr_notice("atf irq num %d.\n", irq_num);
-
 	if (request_irq(irq_num, (irq_handler_t)ATF_log_irq_handler, IRQF_TRIGGER_NONE, "ATF_irq", NULL) != 0) {
 		pr_crit("Fail to request ATF_log_irq interrupt!\n");
 		return -1;
@@ -601,7 +601,6 @@ static int __init atf_log_init(void)
 		return -ENOMEM;
 	}
 #endif
-
 	register_syscore_ops(&atf_time_sync_syscore_ops);
 
 	/* Get local_clock and sync to ATF */
@@ -622,6 +621,34 @@ static void __exit atf_log_exit(void)
 	misc_deregister(&atf_log_dev);
 	pr_notice("atf_log: exited");
 }
+static int atf_logger_remove(struct platform_device *dev)
+{
+	return 0;
+}
+
+static struct platform_driver atf_logger_driver = {
+	.probe = atf_logger_probe,
+	.remove = atf_logger_remove,
+	.driver = {
+		.name = "atf_logger",
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = atf_logger_of_ids,
+#endif
+	},
+};
+
+static int __init atf_log_init(void)
+{
+	int ret = 0;
+
+	ret = platform_driver_register(&atf_logger_driver);
+	if (ret)
+		pr_err("atf logger init FAIL, ret 0x%x!!!\n", ret);
+
+	return ret;
+}
+
 
 module_init(atf_log_init);
 module_exit(atf_log_exit);
