@@ -58,7 +58,7 @@ typedef struct CONFIG_RECORD_LIST {
 	struct list_head list;
 } CONFIG_RECORD_LIST;
 
-enum MIPI_SETTING_TYPE {
+typedef enum {
 	HS_PRPR = 0,
 	HS_ZERO = 1,
 	HS_TRAIL = 2,
@@ -81,10 +81,10 @@ enum MIPI_SETTING_TYPE {
 	LPX = 19,
 	SSC_EN = 0xFE,
 	MAX = 0XFF,
-};
+} MIPI_SETTING_TYPE;
 
 typedef struct MIPI_TIMING {
-	enum MIPI_SETTING_TYPE type;
+	MIPI_SETTING_TYPE type;
 	unsigned int value;
 } MIPI_TIMING;
 
