@@ -390,7 +390,9 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 			headset_dts_data.four_key.up_key_four, headset_dts_data.four_key.down_key_four);
 	}
 #endif
-	/* accdet offset efuse: efuse bit 1760--1767 map to bit0-bit7, 1760/16=110 */
+	/* accdet offset efuse: efuse bit 1760--1767 map to bit0-bit7, 1760/16=110
+	 * this efuse must divided by 2
+	*/
 	efusevalue = pmic_Read_Efuse_HPOffset(110);
 	g_accdet_auxadc_offset = efusevalue & 0xFF;
 	if (g_accdet_auxadc_offset > 128)
@@ -398,41 +400,41 @@ static void accdet_pmic_Read_Efuse_HPOffset(void)
 	g_accdet_auxadc_offset = (g_accdet_auxadc_offset >> 1);
 	ACCDET_INFO(" efusevalue = 0x%x, accdet_auxadc_offset = %d\n", efusevalue, g_accdet_auxadc_offset);
 
+	/* all of moisture_vdd/moisture_offset0/eint is  2'complement we need to transfer it */
 #if defined(CONFIG_MOISTURE_EXTERNAL_SUPPORT) || defined(CONFIG_MOISTURE_INTERNAL_SUPPORT)
 	/* moisture vdd efuse : efuse bit 1816--1823 map to bit8-bit15. (1816-8)/16=113 */
 	efusevalue = pmic_Read_Efuse_HPOffset(113);
 	g_moisture_vdd_offset = (int)((efusevalue >> 8) & ACCDET_CALI_MASK0);
 	if (g_moisture_vdd_offset > 128)
 		g_moisture_vdd_offset -= 256;
-	g_moisture_vdd_offset = (g_moisture_vdd_offset / 2);
 	ACCDET_INFO("[moisture_vdd_efuse]efuse=0x%x, moisture_vdd_offset=%d mv\n",
 		efusevalue, g_moisture_vdd_offset);
+
 	/* moisture offset0 efuse  : efuse bit 1824--1831 map to bit0-bit7. (1824)/16=114 */
 	efusevalue = pmic_Read_Efuse_HPOffset(114);
 	g_moisture_offset = (int)(efusevalue & ACCDET_CALI_MASK0);
 	if (g_moisture_offset > 128)
 		g_moisture_offset -= 256;
-	g_moisture_offset = (g_moisture_offset / 2);
 	ACCDET_INFO("[moisture_efuse]efuse=0x%x,moisture_offset=%d mv\n",
 		efusevalue, g_moisture_offset);
 #endif
+
 #ifdef CONFIG_MOISTURE_INTERNAL_SUPPORT
-	/* RG_EINT_RES = RG_EINT1_RES<< 8 | RG_EINT0_RES */
 	/* RG_EINT0_RES: efuse bit 1800--1807 map to bit8-bit15. (1800-8)/16=112  */
 	efusevalue = pmic_Read_Efuse_HPOffset(112);
 	moisture_eint0 = (int)((efusevalue >> 8) & ACCDET_CALI_MASK0);
 	if (moisture_eint0 > 128)
 		moisture_eint0 -= 256;
-	moisture_eint0 = (moisture_eint0 / 2);
 
 	/* RG_EINT1_RES: efuse bit 1808--1815 map to bit0-bit7. (1808)/16=113  */
 	efusevalue = pmic_Read_Efuse_HPOffset(113);
 	moisture_eint1 = (int)(efusevalue & ACCDET_CALI_MASK0);
 	if (moisture_eint1 > 128)
 		moisture_eint1 -= 256;
-	moisture_eint1 = (moisture_eint1 / 2);
 
+	/* RG_EINT_RES = RG_EINT1_RES<<8 | RG_EINT0_RES */
 	g_moisture_eint_offset = (moisture_eint1 << 8) | moisture_eint0;
+
 	ACCDET_INFO("[moisture_eint_efuse]moisture_vdd_offset=%d mv\n", g_moisture_eint_offset);
 	g_moisture_vm = (2800 + g_moisture_vdd_offset) * 57000 / (57000 + (8 * g_moisture_eint_offset) + 450000)
 		+ g_moisture_offset / 2;
