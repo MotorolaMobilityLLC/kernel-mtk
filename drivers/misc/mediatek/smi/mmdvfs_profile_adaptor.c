@@ -18,7 +18,7 @@
 #include "mmdvfs_config_mt6799.h"
 #include "mtk_smi.h"
 #include "mmdvfs_mgr.h"
-
+#include "mmdvfs_internal.h"
 
 
 /* Class: mmdvfs_step_util */
@@ -29,6 +29,8 @@ int legacy_step);
 static void mmdvfs_step_util_init(struct mmdvfs_step_util *self);
 static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, int step,
 int client_id);
+static int mmdvfs_get_clients_clk_opp(struct mmdvfs_step_util *self, struct mmdvfs_adaptor *adaptor,
+int clients_mask, int clk_id);
 
 struct mmdvfs_step_util mmdvfs_step_util_obj = {
 	{0},
@@ -42,7 +44,8 @@ struct mmdvfs_step_util mmdvfs_step_util_obj = {
 	mmdvfs_step_util_init,
 	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
 	mmdvfs_get_opp_from_legacy_step,
-	mmdvfs_step_util_set_step
+	mmdvfs_step_util_set_step,
+	mmdvfs_get_clients_clk_opp
 };
 
 /* Class: mmdvfs_adaptor */
@@ -87,19 +90,19 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj = {
 static int mmdvfs_apply_hw_configurtion_by_step(struct mmdvfs_adaptor *self,
 int mmdvfs_step, const int current_step)
 {
-	MMDVFSMSG("current = %d, target = %d\n", current_step, mmdvfs_step);
+	MMDVFSDEBUG("current = %d, target = %d\n", current_step, mmdvfs_step);
 	if (current_step == -1 || ((mmdvfs_step != -1) && (mmdvfs_step
 	<= current_step))) {
-		MMDVFSMSG("Apply Vcore setting(%d --> %d):\n", current_step,
+		MMDVFSDEBUG("Apply Vcore setting(%d --> %d):\n", current_step,
 		mmdvfs_step);
-		MMDVFSMSG("current = %d, target = %d\n", current_step, mmdvfs_step);
+		MMDVFSDEBUG("current = %d, target = %d\n", current_step, mmdvfs_step);
 		self->apply_vcore_hw_configurtion_by_step(self, mmdvfs_step);
-		MMDVFSMSG("Apply CLK setting:\n");
+		MMDVFSDEBUG("Apply CLK setting:\n");
 		self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step);
 	} else {
-		MMDVFSMSG("Apply CLK setting:\n");
+		MMDVFSDEBUG("Apply CLK setting:\n");
 		self->apply_clk_hw_configurtion_by_step(self, mmdvfs_step);
-		MMDVFSMSG("Apply Vcore setting:\n");
+		MMDVFSDEBUG("Apply Vcore setting:\n");
 		self->apply_vcore_hw_configurtion_by_step(self, mmdvfs_step);
 	}
 
@@ -139,7 +142,7 @@ struct mmdvfs_adaptor *self, int mmdvfs_step)
 	}
 	vcorefs_request_dvfs_opp(KIR_MM, vcore_step);
 	/* Set vcore step */
-	MMDVFSMSG("Set vcore step: %d\n", vcore_step);
+	MMDVFSDEBUG("Set vcore step: %d\n", vcore_step);
 
 	return 0;
 
@@ -175,7 +178,7 @@ struct mmdvfs_adaptor *self, int mmdvfs_step_request)
 	if (hw_config_ptr == NULL)
 		return -1;
 
-	MMDVFSMSG("CLK SWITCH: total = %d\n", hw_config_ptr->total_clks);
+	MMDVFSDEBUG("CLK SWITCH: total = %d\n", hw_config_ptr->total_clks);
 
 	/* Get each clk and setp it accord to config method */
 	for (clk_idx = 0; clk_idx < hw_config_ptr->total_clks; clk_idx++) {
@@ -186,13 +189,13 @@ struct mmdvfs_adaptor *self, int mmdvfs_step_request)
 		&(self->mmdvfs_clk_hw_maps[clk_idx]);
 
 		if (clk_step < 0 || clk_step >= clk_hw_map_ptr->total_step) {
-			MMDVFSMSG("invalid clk step (%d) for %s\n", clk_step,
+			MMDVFSDEBUG("invalid clk step (%d) for %s\n", clk_step,
 			clk_hw_map_ptr->clk_mux.ccf_name);
 		} else {
 			int clk_mux_mask = get_mmdvfs_clk_mux_mask();
 
 			if (!((1 << clk_idx) & clk_mux_mask)) {
-				MMDVFSMSG("CLK %d(%s) swich is not enabled\n",
+				MMDVFSDEBUG("CLK %d(%s) swich is not enabled\n",
 				clk_idx, clk_hw_map_ptr->clk_mux.ccf_name);
 				continue;
 			}
@@ -206,14 +209,14 @@ struct mmdvfs_adaptor *self, int mmdvfs_step_request)
 
 				if (clk_source_id < 0 || clk_source_id
 				>= self->mmdvfs_clk_sources_num)
-					MMDVFSMSG(
+					MMDVFSDEBUG(
 					"invalid clk source id: %d, step:%d, mux:%s\n",
 					clk_source_id, mmdvfs_step,
 					clk_hw_map_ptr->clk_mux.ccf_name);
 				else {
 					int ccf_ret = -1;
 
-					MMDVFSMSG(
+					MMDVFSDEBUG(
 					"Change %s source to %s, expect clk = %d\n",
 					clk_hw_map_ptr->clk_mux.ccf_name,
 					self->mmdvfs_clk_sources[clk_source_id].ccf_name,
@@ -221,51 +224,77 @@ struct mmdvfs_adaptor *self, int mmdvfs_step_request)
 
 					if (clk_hw_map_ptr->clk_mux.ccf_handle == NULL ||
 						self->mmdvfs_clk_sources[clk_source_id].ccf_handle == NULL) {
-						MMDVFSMSG("CCF handle can't be NULL during MMDVFS\n");
+						MMDVFSDEBUG("CCF handle can't be NULL during MMDVFS\n");
 						continue;
 					}
 
 					ccf_ret =
 						clk_prepare_enable((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
-					MMDVFSMSG("clk_prepare_enable: handle = %lx\n",
+					MMDVFSDEBUG("clk_prepare_enable: handle = %lx\n",
 					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
 
 					if (ccf_ret) {
-						MMDVFSMSG("Failed to prepare clk: %s\n",
+						MMDVFSDEBUG("Failed to prepare clk: %s\n",
 						clk_hw_map_ptr->clk_mux.ccf_name);
 						return -1;
 					}
 
 					ccf_ret = clk_set_parent((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle,
 						(struct clk *)self->mmdvfs_clk_sources[clk_source_id].ccf_handle);
-					MMDVFSMSG("clk_set_parent: handle = (%lx,%lx), src id = %dn",
+					MMDVFSDEBUG("clk_set_parent: handle = (%lx,%lx), src id = %dn",
 					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle),
 					((unsigned long)self->mmdvfs_clk_sources[clk_source_id].ccf_handle),
 					clk_source_id);
 
 
 					if (ccf_ret) {
-						MMDVFSMSG("Failed to set parent:%s,%s\n",
+						MMDVFSDEBUG("Failed to set parent:%s,%s\n",
 						clk_hw_map_ptr->clk_mux.ccf_name,
 						self->mmdvfs_clk_sources[clk_source_id].ccf_name);
 						return -1;
 					}
 
-					if ((clk_idx != MMDVFS_CLK_MUX_TOP_MM_SEL) &&
-						(clk_idx != MMDVFS_CLK_MUX_TOP_IMG_SEL)) {
-						clk_disable_unprepare((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
-						MMDVFSMSG("clk_disable_unprepare: handle = %lx\n",
-						((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
-					} else {
-						MMDVFSMSG("[Workaround]MM_SEL can't be unprepared now, handle=%lx\n",
-						((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
-					}
+					clk_disable_unprepare((struct clk *)clk_hw_map_ptr->clk_mux.ccf_handle);
+					MMDVFSDEBUG("clk_disable_unprepare: handle = %lx\n",
+					((unsigned long)clk_hw_map_ptr->clk_mux.ccf_handle));
+
 				}
 			}
 		}
 	}
 	return 0;
 
+}
+static int mmdvfs_get_clients_clk_opp(struct mmdvfs_step_util *self,
+struct mmdvfs_adaptor *adaptor, int clients_mask, int clk_id)
+{
+	/* Get the opp determined only by the specified clients */
+	int opp_idx = 0;
+	int final_opp = -1;
+	int final_clk_opp = -1;
+
+	for (opp_idx = 0; opp_idx < self->total_opps; opp_idx++) {
+		int masked_concurrency = self->mmdvfs_concurrency_of_opps[opp_idx] & clients_mask;
+
+		if (masked_concurrency != 0) {
+			final_opp = opp_idx;
+			break;
+		}
+	}
+
+	/* if no request, return the lowerest step */
+	if (final_opp == -1)
+		final_opp = adaptor->step_num - 1;
+
+	/* Retriv the CLK opp setting associated the MMDVFS opp */
+	if (clk_id >= 0 && clk_id < adaptor->mmdvfs_clk_hw_maps_num) {
+		if (final_opp >= 0 && final_opp <= adaptor->step_num) {
+			struct mmdvfs_step_to_profile_mapping *mmdvfs_step_to_profile =
+			adaptor->step_profile_mappings + final_opp;
+			final_clk_opp = mmdvfs_step_to_profile->hw_config.clk_steps[clk_id];
+		}
+	}
+	return final_clk_opp;
 }
 
 static int mmdvfs_get_cam_sys_clk(struct mmdvfs_adaptor *self, int mmdvfs_step)
@@ -277,10 +306,10 @@ static int mmdvfs_get_cam_sys_clk(struct mmdvfs_adaptor *self, int mmdvfs_step)
 static void mmdvfs_single_profile_dump(struct mmdvfs_profile *profile)
 {
 	if (profile == NULL) {
-		MMDVFSMSG("mmdvfs_single_profile_dump: NULL profile found\n");
+		MMDVFSDEBUG("mmdvfs_single_profile_dump: NULL profile found\n");
 		return;
 	}
-	MMDVFSMSG("%s, %d, (%d,%d,%d), (%d,%d,%d)\n", profile->profile_name,
+	MMDVFSDEBUG("%s, %d, (%d,%d,%d), (%d,%d,%d)\n", profile->profile_name,
 	profile->smi_scenario_id, profile->cam_limit.sensor_size,
 	profile->cam_limit.feature_flag, profile->cam_limit.fps,
 	profile->video_limit.width, profile->video_limit.height,
@@ -295,9 +324,9 @@ static void mmdvfs_profile_dump(struct mmdvfs_adaptor *self)
 	struct mmdvfs_step_to_profile_mapping *profile_mapping =
 	self->step_profile_mappings;
 	if (profile_mapping == NULL)
-		MMDVFSMSG(
+		MMDVFSDEBUG(
 		"mmdvfs_profile_dump: step_profile_mappings can't be NULL\n");
-	MMDVFSMSG("MMDVFS DUMP (%d):\n", profile_mapping->mmdvfs_step);
+	MMDVFSDEBUG("MMDVFS DUMP (%d):\n", profile_mapping->mmdvfs_step);
 	for (i = 0; i < profile_mapping->total_profiles; i++) {
 		struct mmdvfs_profile *profile = profile_mapping->profiles + i;
 
@@ -328,7 +357,7 @@ struct mmdvfs_hw_configurtion *hw_configuration)
 		return;
 	}
 
-	MMDVFSMSG("Vcore step: %d\n", hw_configuration->vcore_step);
+	MMDVFSDEBUG("Vcore step: %d\n", hw_configuration->vcore_step);
 
 	for (i = 0; i < hw_configuration->total_clks; i++) {
 		char *ccf_clk_source_name = "NONE";
@@ -355,7 +384,7 @@ struct mmdvfs_hw_configurtion *hw_configuration)
 			= clk_sources[clk_source_id].requested_clk;
 		}
 
-		MMDVFSMSG("\t%s, %s, %dMhz\n", map_item->clk_mux.ccf_name,
+		MMDVFSDEBUG("\t%s, %s, %dMhz\n", map_item->clk_mux.ccf_name,
 		ccf_clk_source_name, requested_clk);
 	}
 }
@@ -418,11 +447,11 @@ static void mmdvfs_hw_configuration_dump(struct mmdvfs_adaptor *self)
 		return;
 	}
 
-	MMDVFSMSG("All OPP configurtion dump\n");
+	MMDVFSDEBUG("All OPP configurtion dump\n");
 	for (i = 0; i < self->step_num; i++) {
 		struct mmdvfs_step_to_profile_mapping *mapping_item = mapping
 		+ i;
-		MMDVFSMSG("MMDVFS OPP %d:\n", i);
+		MMDVFSDEBUG("MMDVFS OPP %d:\n", i);
 		if (mapping_item != NULL)
 			self->single_hw_configuration_dump_func(self,
 			&mapping_item->hw_config);
@@ -439,6 +468,8 @@ struct mmdvfs_cam_property *profile_property)
 	if (!cam_setting || !profile_property) {
 		is_match = 1;
 	} else {
+		int feature_flag_mask_default = cam_setting->feature_flag
+			& (~(MMDVFS_CAMERA_MODE_FLAG_DEFAULT));
 
 		/* Check the minium sensor resolution */
 		if (!(cam_setting->sensor_size >= profile_property->sensor_size))
@@ -453,7 +484,7 @@ struct mmdvfs_cam_property *profile_property)
 		/* 1 ==> don't change */
 		/* 0 ==> set is_match to 0 */
 		if (profile_property->feature_flag != 0
-		&& !(cam_setting->feature_flag & profile_property->feature_flag))
+		&& !(feature_flag_mask_default & profile_property->feature_flag))
 			is_match = 0;
 	}
 

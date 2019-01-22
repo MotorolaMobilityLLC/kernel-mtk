@@ -17,18 +17,6 @@
 #include <aee.h>
 #include "mtk_smi.h"
 
-
-#define MMDVFS_LOG_TAG	"MMDVFS"
-
-#define MMDVFSMSG(string, args...) pr_debug("[pid=%d]"string, current->tgid, ##args)
-#define MMDVFSMSG2(string, args...) pr_debug(string, ##args)
-#define MMDVFSTMP(string, args...) pr_debug("[pid=%d]"string, current->tgid, ##args)
-#define MMDVFSERR(string, args...) \
-		do {\
-			pr_debug("error: "string, ##args); \
-			aee_kernel_warning(MMDVFS_LOG_TAG, "error: "string, ##args);  \
-		} while (0)
-
 #define _BIT_(_bit_) (unsigned)(1 << (_bit_))
 #define _BITS_(_bits_, _val_) ((((unsigned) -1 >> (31 - ((1) ? _bits_))) \
 				& ~((1U << ((0) ? _bits_)) - 1)) & ((_val_)<<((0) ? _bits_)))
