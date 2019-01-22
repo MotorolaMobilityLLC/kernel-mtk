@@ -195,7 +195,7 @@ static void spm_sodi_notify_sspm_after_wfi_async_wait(void)
 
 void spm_trigger_wfi_for_sodi(u32 pcm_flags)
 {
-	int spm_dormant_sta;
+	int spm_dormant_sta = 0;
 
 	if (is_cpu_pdn(pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_SODI_MODE);

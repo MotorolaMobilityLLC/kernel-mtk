@@ -98,8 +98,6 @@ enum spm_deepidle_step {
 	SPM_DEEPIDLE_SLEEP_DPIDLE = 0x80000000
 };
 
-static int spm_dormant_sta;
-
 void __attribute__((weak)) mt_power_gs_t_dump_dpidle(int count, ...)
 {
 }
@@ -618,6 +616,8 @@ void spm_dpidle_notify_sspm_after_wfi_async_wait(void)
 
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
+	int spm_dormant_sta = 0;
+
 	if (is_cpu_pdn(pwrctrl->pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_DPIDLE_MODE);
 	else

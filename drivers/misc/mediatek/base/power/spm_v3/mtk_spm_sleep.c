@@ -438,8 +438,16 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 {
 	if (is_cpu_pdn(pwrctrl->pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_SUSPEND_MODE);
-	else
+	else {
+		#if defined(CONFIG_MACH_MT6775)
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SUSPEND, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_LEGACY_SLEEP, 0, 0, 0);
+		mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SUSPEND_FINISH, 0, 0);
+		spm_dormant_sta = 0;
+		#else
 		spm_dormant_sta = mtk_enter_idle_state(MTK_LEGACY_SUSPEND_MODE);
+		#endif
+        }
 
 	if (spm_dormant_sta < 0)
 		spm_crit2("spm_dormant_sta %d", spm_dormant_sta);
