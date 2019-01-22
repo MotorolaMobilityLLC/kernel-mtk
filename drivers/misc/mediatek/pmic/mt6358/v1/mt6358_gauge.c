@@ -1640,14 +1640,11 @@ static void fgauge_set_nafg_intr_internal(int _prd, int _zcv_mv, int _thr_mv)
 	pmic_set_register_value(PMIC_AUXADC_NAG_C_DLTV_TH_15_0, NAG_C_DLTV_Threashold_15_0);
 
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, _prd);
-#if defined(SWCHR_POWER_PATH) || defined(CONFIG_MTK_SWCHR_SUPPORT)
-	pmic_set_register_value(PMIC_AUXADC_NAG_VBAT1_SEL, 1);	/* use Isense */
-#else
 	pmic_set_register_value(PMIC_AUXADC_NAG_VBAT1_SEL, 0);	/* use Batsns */
-#endif
 
-	bm_debug("[fg_bat_nafg][fgauge_set_nafg_interrupt_internal] time[%d] zcv[%d:%d] thr[%d:%d] 26_16[0x%x] 15_00[0x%x]\n",
-		_prd, _zcv_mv, _zcv_reg, _thr_mv, _thr_reg, NAG_C_DLTV_Threashold_26_16, NAG_C_DLTV_Threashold_15_0);
+	bm_debug("[fg_bat_nafg][fgauge_set_nafg_interrupt_internal] time[%d] zcv[%d:%d] thr[%d:%d] 26_16[0x%x] 15_00[0x%x] %d\n",
+		_prd, _zcv_mv, _zcv_reg, _thr_mv, _thr_reg, NAG_C_DLTV_Threashold_26_16, NAG_C_DLTV_Threashold_15_0,
+		pmic_get_register_value(PMIC_AUXADC_NAG_VBAT1_SEL));
 
 }
 
@@ -2296,11 +2293,7 @@ int fgauge_enable_iavg_interrupt(struct gauge_device *gauge_dev, bool ht_en, int
 
 int fgauge_enable_vbat_low_interrupt(struct gauge_device *gauge_dev, int en)
 {
-#if defined(SWCHR_POWER_PATH) || defined(CONFIG_MTK_SWCHR_SUPPORT)
-	pmic_set_register_value(PMIC_AUXADC_SOURCE_LBAT2_SEL, 1);	/*0:Batsns, 1:Isense*/
-#else
 	pmic_set_register_value(PMIC_AUXADC_SOURCE_LBAT2_SEL, 0);
-#endif
 	pmic_set_register_value(PMIC_RG_INT_EN_BAT2_L, en);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_IRQ_EN_MIN, en);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_EN_MIN, en);
@@ -2310,11 +2303,7 @@ int fgauge_enable_vbat_low_interrupt(struct gauge_device *gauge_dev, int en)
 
 int fgauge_enable_vbat_high_interrupt(struct gauge_device *gauge_dev, int en)
 {
-#if defined(SWCHR_POWER_PATH) || defined(CONFIG_MTK_SWCHR_SUPPORT)
-	pmic_set_register_value(PMIC_AUXADC_SOURCE_LBAT2_SEL, 1);	/*0:Batsns, 1:Isense*/
-#else
 	pmic_set_register_value(PMIC_AUXADC_SOURCE_LBAT2_SEL, 0);
-#endif
 	pmic_set_register_value(PMIC_RG_INT_EN_BAT2_H, en);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_IRQ_EN_MAX, en);
 	pmic_set_register_value(PMIC_AUXADC_LBAT2_EN_MAX, en);
