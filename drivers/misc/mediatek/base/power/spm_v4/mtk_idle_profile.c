@@ -135,6 +135,14 @@ static const char *idle_met_label[NR_TYPES] = {
 };
 #endif
 
+u64 idle_get_current_time_ms(void)
+{
+	u64 idle_current_time = sched_clock();
+
+	do_div(idle_current_time, 1000000);
+	return idle_current_time;
+}
+
 struct mtk_idle_twam *mtk_idle_get_twam(void)
 {
 	return &idle_twam;
