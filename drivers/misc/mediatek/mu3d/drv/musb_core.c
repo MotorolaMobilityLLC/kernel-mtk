@@ -2882,6 +2882,9 @@ static struct platform_driver musb_driver = {
 	.remove = musb_remove,
 	.shutdown = musb_shutdown,
 };
+
+static int usb_test_wakelock_inited;
+static struct wake_lock usb_test_wakelock;
 int mu3d_force_on;
 static int set_mu3d_force_on(const char *val, const struct kernel_param *kp)
 {
@@ -2910,6 +2913,19 @@ static int set_mu3d_force_on(const char *val, const struct kernel_param *kp)
 	case 4:
 		os_printk(K_WARNIN, "stop connect test\n");
 		mt_usb_connect_test(0);
+		break;
+	case 5:
+		os_printk(K_WARNIN, "wake_lock usb_test_wakelock\n");
+		if (!usb_test_wakelock_inited) {
+			os_printk(K_WARNIN, "%s wake_lock_init\n", __func__);
+			wake_lock_init(&usb_test_wakelock, WAKE_LOCK_SUSPEND, "usb.test.lock");
+			usb_test_wakelock_inited = 1;
+		}
+		wake_lock(&usb_test_wakelock);
+		break;
+	case 6:
+		os_printk(K_WARNIN, "wake_unlock usb_test_wakelock\n");
+		wake_unlock(&usb_test_wakelock);
 		break;
 	default:
 		break;
