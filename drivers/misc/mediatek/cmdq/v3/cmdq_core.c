@@ -4732,17 +4732,19 @@ static void cmdq_core_parse_error(const struct TaskStruct *pTask, uint32_t threa
 
 	do {
 		/* confirm if SMI is hang */
-		isSMIHang = cmdq_get_func()->dumpSMI(0);
-		if (isSMIHang) {
-			module = "SMI";
-			break;
+		if (!pTask || !CMDQ_TASK_PRIVATE(pTask)->internal) {
+			isSMIHang = cmdq_get_func()->dumpSMI(0);
+			if (isSMIHang) {
+				module = "SMI";
+				break;
+			}
 		}
 
 		/* other cases, use instruction to judge */
 		/* because scenario / HW flag are not sufficient */
 		/* e.g. ISP pass 2 involves both MDP and ISP */
 		/* so we need to check which instruction timeout-ed. */
-		if (cmdq_core_get_pc(pTask, thread, insts)) {
+		if (pTask && cmdq_core_get_pc(pTask, thread, insts)) {
 			op = (insts[3] & 0xFF000000) >> 24;
 			arg_a = insts[3] & (~0xFF000000);
 			arg_b = insts[2];
