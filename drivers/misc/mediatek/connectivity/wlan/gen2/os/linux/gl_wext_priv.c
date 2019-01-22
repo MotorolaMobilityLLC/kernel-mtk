@@ -166,6 +166,10 @@ typedef struct priv_driver_cmd_s {
 #define CMD_NCHO_DFS_SCAN_MODE_SET		"SETDFSSCANMODE"
 #define CMD_NCHO_ENABLE				"NCHOENABLE"
 #define CMD_NCHO_DISABLE			"NCHODISABLE"
+static int
+priv_driver_enable_ncho(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen);
+static int
+priv_driver_disable_ncho(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen);
 
 int
 priv_driver_set_ncho_roam_trigger(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
@@ -1220,6 +1224,8 @@ priv_driver_set_ncho_wes_mode(IN struct net_device *prNetDev, IN char *pcCommand
 	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
 	INT_32 i4Ret = -1;
 	WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+	UINT_8 puCommondBuf[WLAN_CFG_ARGV_MAX];
+
 
 	ASSERT(prNetDev);
 	if (GLUE_CHK_PR2(prNetDev, pcCommand) == FALSE)
@@ -1236,8 +1242,17 @@ priv_driver_set_ncho_wes_mode(IN struct net_device *prNetDev, IN char *pcCommand
 			DBGLOG(REQ, ERROR, "NCHO parse u4Param error %d\n", i4Ret);
 			return -1;
 		}
+		/*If WES mode is 1, enable NCHO*/
+		/*If WES mode is 0, disable NCHO*/
+		if (u4Param == TRUE && prGlueInfo->prAdapter->rNchoInfo.fgECHOEnabled == FALSE) {
+			kalSnprintf(puCommondBuf, WLAN_CFG_ARGV_MAX, "%s %d", CMD_NCHO_ENABLE, 1);
+			priv_driver_enable_ncho(prNetDev, puCommondBuf, sizeof(puCommondBuf));
+		} else if (u4Param == FALSE && prGlueInfo->prAdapter->rNchoInfo.fgECHOEnabled == TRUE) {
+			kalSnprintf(puCommondBuf, WLAN_CFG_ARGV_MAX, "%s", CMD_NCHO_DISABLE);
+			priv_driver_disable_ncho(prNetDev, puCommondBuf, sizeof(puCommondBuf));
+		}
 
-		DBGLOG(INIT, TRACE, "NCHO set WES mode cmd %d\n", u4Param);
+		DBGLOG(INIT, INFO, "NCHO set WES mode cmd %d\n", u4Param);
 		rStatus = kalIoctl(prGlueInfo,
 				   wlanoidSetNchoWesMode,
 				   &u4Param, sizeof(UINT_32), FALSE, FALSE, TRUE, FALSE, &u4SetInfoLen);
@@ -1528,7 +1543,18 @@ priv_driver_disable_ncho(IN struct net_device *prNetDev, IN char *pcCommand, IN 
 		DBGLOG(REQ, ERROR, "NCHO error input parameter %d\n", i4Argc);
 		return i4BytesWritten;
 	}
+	/*<1> Set NCHO Disable to FW*/
+	u4Param = FALSE;
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidSetNchoEnable,
+			   &u4Param, sizeof(UINT_32), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
 
+	if (rStatus != WLAN_STATUS_SUCCESS) {
+		DBGLOG(INIT, ERROR, "NCHO wlanoidSetNchoEnable :%d fail 0x%x\n", u4Param, rStatus);
+		return i4BytesWritten;
+	}
+
+	/*<2> Query NCHOEnable Satus*/
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidQueryNchoEnable,
 			   &cmdV1Header,
@@ -1540,6 +1566,8 @@ priv_driver_disable_ncho(IN struct net_device *prNetDev, IN char *pcCommand, IN 
 	}
 
 	DBGLOG(REQ, TRACE, "NCHO query ok and ret is %s\n", cmdV1Header.buffer);
+
+
 	i4BytesWritten = kalkStrtou32(cmdV1Header.buffer, 0, &u4Param);
 	if (i4BytesWritten) {
 		DBGLOG(REQ, ERROR, "NCHO parse u4Param error %d!\n", i4BytesWritten);
@@ -4812,132 +4840,106 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 #if CFG_SUPPORT_NCHO
 		else if (kalStrniCmp(pcCommand,
 				  CMD_NCHO_ROAM_TRIGGER_SET,
-				  strlen(CMD_NCHO_ROAM_TRIGGER_SET)) == 0
-				  && priv_driver_auto_enable_ncho(prNetDev)) {
+				  strlen(CMD_NCHO_ROAM_TRIGGER_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_roam_trigger(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ROAM_TRIGGER_GET,
-				    strlen(CMD_NCHO_ROAM_TRIGGER_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ROAM_TRIGGER_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_roam_trigger(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ROAM_DELTA_SET,
-				    strlen(CMD_NCHO_ROAM_DELTA_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ROAM_DELTA_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_roam_delta(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ROAM_DELTA_GET,
-				    strlen(CMD_NCHO_ROAM_DELTA_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ROAM_DELTA_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_roam_delta(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ROAM_SCAN_PERIOD_SET,
-				    strlen(CMD_NCHO_ROAM_SCAN_PERIOD_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ROAM_SCAN_PERIOD_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_roam_scn_period(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ROAM_SCAN_PERIOD_GET,
-				    strlen(CMD_NCHO_ROAM_SCAN_PERIOD_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ROAM_SCAN_PERIOD_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_roam_scn_period(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ROAM_SCAN_CHANNELS_SET,
-				    strlen(CMD_NCHO_ROAM_SCAN_CHANNELS_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ROAM_SCAN_CHANNELS_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_roam_scn_chnl(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ROAM_SCAN_CHANNELS_GET,
-				    strlen(CMD_NCHO_ROAM_SCAN_CHANNELS_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ROAM_SCAN_CHANNELS_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_roam_scn_chnl(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ROAM_SCAN_CONTROL_SET,
-				    strlen(CMD_NCHO_ROAM_SCAN_CONTROL_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ROAM_SCAN_CONTROL_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_roam_scn_ctrl(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ROAM_SCAN_CONTROL_GET,
-				    strlen(CMD_NCHO_ROAM_SCAN_CONTROL_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ROAM_SCAN_CONTROL_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_roam_scn_ctrl(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_SCAN_CHANNEL_TIME_SET,
-				    strlen(CMD_NCHO_SCAN_CHANNEL_TIME_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_SCAN_CHANNEL_TIME_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_scn_chnl_time(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_SCAN_CHANNEL_TIME_GET,
-				    strlen(CMD_NCHO_SCAN_CHANNEL_TIME_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_SCAN_CHANNEL_TIME_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_scn_chnl_time(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_SCAN_HOME_TIME_SET,
-				    strlen(CMD_NCHO_SCAN_HOME_TIME_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_SCAN_HOME_TIME_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_scn_home_time(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_SCAN_HOME_TIME_GET,
-				    strlen(CMD_NCHO_SCAN_HOME_TIME_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_SCAN_HOME_TIME_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_scn_home_time(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_SCAN_HOME_AWAY_TIME_SET,
-				    strlen(CMD_NCHO_SCAN_HOME_AWAY_TIME_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_SCAN_HOME_AWAY_TIME_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_scn_home_away_time(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_SCAN_HOME_AWAY_TIME_GET,
-				    strlen(CMD_NCHO_SCAN_HOME_AWAY_TIME_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_SCAN_HOME_AWAY_TIME_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_scn_home_away_time(prNetDev, pcCommand, i4TotalLen);
 		}  else if (kalStrniCmp(pcCommand,
 				     CMD_NCHO_SCAN_NPROBES_SET,
-				     strlen(CMD_NCHO_SCAN_NPROBES_SET)) == 0
-				     && priv_driver_auto_enable_ncho(prNetDev)) {
+				     strlen(CMD_NCHO_SCAN_NPROBES_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_scn_nprobes(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_SCAN_NPROBES_GET,
-				    strlen(CMD_NCHO_SCAN_NPROBES_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_SCAN_NPROBES_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_scn_nprobes(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_REASSOC_SEND,
-				    strlen(CMD_NCHO_REASSOC_SEND)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_REASSOC_SEND)) == 0) {
 			i4BytesWritten = priv_driver_send_ncho_reassoc(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ACTION_FRAME_SEND,
-				    strlen(CMD_NCHO_ACTION_FRAME_SEND)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_ACTION_FRAME_SEND)) == 0) {
 			i4BytesWritten = priv_driver_send_ncho_action_frame(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_WES_MODE_SET,
-				    strlen(CMD_NCHO_WES_MODE_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_WES_MODE_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_wes_mode(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
-				    CMD_NCHO_WES_MODE_GET, strlen(CMD_NCHO_WES_MODE_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    CMD_NCHO_WES_MODE_GET, strlen(CMD_NCHO_WES_MODE_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_wes_mode(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_BAND_SET,
-				    strlen(CMD_NCHO_BAND_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_BAND_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_band(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_BAND_GET,
-				    strlen(CMD_NCHO_BAND_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_BAND_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_band(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_DFS_SCAN_MODE_SET,
-				    strlen(CMD_NCHO_DFS_SCAN_MODE_SET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_DFS_SCAN_MODE_SET)) == 0) {
 			i4BytesWritten = priv_driver_set_ncho_dfs_scn_mode(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_DFS_SCAN_MODE_GET,
-				    strlen(CMD_NCHO_DFS_SCAN_MODE_GET)) == 0
-				    && priv_driver_auto_enable_ncho(prNetDev)) {
+				    strlen(CMD_NCHO_DFS_SCAN_MODE_GET)) == 0) {
 			i4BytesWritten = priv_driver_get_ncho_dfs_scn_mode(prNetDev, pcCommand, i4TotalLen);
 		} else if (kalStrniCmp(pcCommand,
 				    CMD_NCHO_ENABLE,
