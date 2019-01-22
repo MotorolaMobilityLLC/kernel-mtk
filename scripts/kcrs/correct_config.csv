@@ -615,7 +615,7 @@ CONFIG_MTK_SMART_BATTERY,COMMON,Henry.Chen,,y,y,y,y,y
 CONFIG_MTK_SMI_EXT,COMMON,kendrick.hsu,,y,y,y,y,y
 CONFIG_MTK_SND_SOC_NEW_ARCH,PLATFORM,Chien-Wei.hsu,new config in this commit Id1263ee35209bb47f72e3e37cc57fa82d52c036f,y,y,y,y,y
 CONFIG_MTK_SPEAKER,PROJECT,georgecy.lin,,X,X,X,,
-CONFIG_MTK_SPI,COMMON,lomen.wu,,y,y,y,y,y
+CONFIG_MTK_SPI,platform,lomen.wu,,y,y,y,y,X
 CONFIG_MTK_SPKGPIO_REWORK,PROJECT,georgecy.lin,new config in this commit 378eb5b131260db917d022555fa920fa118ab3a1,X,X,X,,
 CONFIG_MTK_STATHUB,PROJECT,qiangming.xia,new config in this commit e5afb39d5bc749c04142bb69e4f89131015320a6,,,,,
 CONFIG_MTK_STEPSIGNHUB,PROJECT,hongxu.zhao,new config in this commit 5d3fd154d89af1a6fdf1dcf1963d1595834933de,,,,,
@@ -816,6 +816,7 @@ CONFIG_SND_VERBOSE_PRINTK,COMMON,,,y,y,y,y,y
 CONFIG_SOUND,COMMON,,,y,y,y,y,y
 CONFIG_SOUND_PRIME,COMMON,,,y,y,y,y,y
 CONFIG_SPI,COMMON,,,y,y,y,y,y
+CONFIG_SPI_MT65XX,platform,zh.chen,,X,X,X,X,y
 CONFIG_STAGING,COMMON,,,y,y,y,y,y
 CONFIG_SW_SYNC,COMMON,,,y,y,y,y,y
 CONFIG_SW_SYNC_USER,COMMON,,,y,y,y,y,y
