@@ -53,6 +53,14 @@
 #define SENSOR_TYPE_GLANCE_GESTURE					24
 #define SENSOR_TYPE_PICK_UP_GESTURE					25
 #define SENSOR_TYPE_WRIST_TILT_GESTURE				26
+#define SENSOR_TYPE_DEVICE_ORIENTATION              27
+#define SENSOR_TYPE_POSE_6DOF                       28
+#define SENSOR_TYPE_STATIONARY_DETECT               29
+#define SENSOR_TYPE_MOTION_DETECT                   30
+#define SENSOR_TYPE_HEART_BEAT                      31
+#define SENSOR_TYPE_DYNAMIC_SENSOR_META             32
+#define SENSOR_TYPE_ADDITIONAL_INFO                 33
+
 /* follow mtk add sensor type */
 #define SENSOR_TYPE_PEDOMETER						35
 #define SENSOR_TYPE_IN_POCKET						36
@@ -64,7 +72,6 @@
 #define SENSOR_TYPE_SHAKE							42
 #define SENSOR_TYPE_BRINGTOSEE						43
 #define SENSOR_TYPE_ANSWER_CALL						44
-#define SENSOR_TYPE_STATIONARY						45
 /* end sensor type */
 /*---------------------------------------------------------------------------*/
 #define ID_BASE							0
@@ -96,6 +103,13 @@
 #define ID_GLANCE_GESTURE				(ID_BASE + SENSOR_TYPE_GLANCE_GESTURE - 1)
 #define ID_PICK_UP_GESTURE				(ID_BASE + SENSOR_TYPE_PICK_UP_GESTURE - 1)
 #define ID_WRIST_TITL_GESTURE			(ID_BASE + SENSOR_TYPE_WRIST_TILT_GESTURE - 1)
+#define ID_DEVICE_ORIENTATION			(ID_BASE + SENSOR_TYPE_DEVICE_ORIENTATION - 1)
+#define ID_POSE_6DOF					(ID_BASE + SENSOR_TYPE_POSE_6DOF - 1)
+#define ID_STATIONARY_DETECT			(ID_BASE + SENSOR_TYPE_STATIONARY_DETECT - 1)
+#define ID_MOTION_DETECT				(ID_BASE + SENSOR_TYPE_MOTION_DETECT - 1)
+#define ID_HEART_BEAT					(ID_BASE + SENSOR_TYPE_HEART_BEAT - 1)
+#define ID_DYNAMIC_SENSOR_META			(ID_BASE + SENSOR_TYPE_DYNAMIC_SENSOR_META - 1)
+#define ID_ADDITIONAL_INFO				(ID_BASE + SENSOR_TYPE_ADDITIONAL_INFO - 1)
 /* follow mtk add sensor ID */
 #define ID_PEDOMETER                    (ID_BASE + SENSOR_TYPE_PEDOMETER - 1)
 #define ID_IN_POCKET                    (ID_BASE + SENSOR_TYPE_IN_POCKET - 1)
@@ -107,9 +121,8 @@
 #define ID_SHAKE                        (ID_BASE + SENSOR_TYPE_SHAKE - 1)
 #define ID_BRINGTOSEE                   (ID_BASE + SENSOR_TYPE_BRINGTOSEE - 1)
 #define ID_ANSWER_CALL                  (ID_BASE + SENSOR_TYPE_ANSWER_CALL - 1)
-#define ID_STATIONARY                   (ID_BASE + SENSOR_TYPE_STATIONARY - 1)
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE			(ID_BASE + SENSOR_TYPE_STATIONARY - 1)
+#define ID_SENSOR_MAX_HANDLE			(ID_BASE + SENSOR_TYPE_ANSWER_CALL - 1)
 #define ID_NONE							(ID_SENSOR_MAX_HANDLE + 1)
 #define ID_OFFSET                       (1)
 #define ID_SCP_MAX_SENSOR_TYPE			(57)
@@ -285,9 +298,9 @@
 #define PEDO_INPUTDEV_NAME               "m_pedo_input"
 #define PEDO_MISC_DEV_NAME               "m_pedo_misc"
 
-#define GES_PL_DEV_NAME                 "m_ges_pl"
-#define GES_INPUTDEV_NAME               "m_ges_input"
-#define GES_MISC_DEV_NAME               "m_ges_misc"
+#define SITU_PL_DEV_NAME                 "m_situ_pl"
+#define SITU_INPUTDEV_NAME               "m_situ_input"
+#define SITU_MISC_DEV_NAME               "m_situ_misc"
 
 #define EVENT_TYPE_SENSOR				0x01
 #define EVENT_TYPE_SENSOR_EXT				0x02
