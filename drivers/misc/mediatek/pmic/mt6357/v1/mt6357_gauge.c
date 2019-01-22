@@ -180,18 +180,29 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 
 	fgauge_read_RTC_boot_status(gauge_dev);
 
+#if defined(CONFIG_MTK_DISABLE_GAUGE)
+#else
+	pmic_set_register_value(PMIC_FG_SON_SLP_EN, 0);
+#endif
+
 	pmic_set_register_value(PMIC_AUXADC_NAG_PRD, 10);
 	fgauge_get_info(gauge_dev, GAUGE_BAT_PLUG_STATUS, &bat_flag);
 	fgauge_get_info(gauge_dev, GAUGE_PL_CHARGING_STATUS, &is_charger_exist);
+
+	bm_err("bat_plug:%d chr:%d info:0x%x\n",
+		bat_flag, is_charger_exist,
+		upmu_get_reg_value(PMIC_RG_SYSTEM_INFO_CON0_ADDR));
+
+	gauge_dev->fg_hw_info.pl_charger_status = is_charger_exist;
 
 	if (is_charger_exist == 1) {
 		is_bat_plugout = 1;
 		fgauge_set_info(gauge_dev, GAUGE_2SEC_REBOOT, 0);
 	} else {
-	if (bat_flag == 0)
-		is_bat_plugout = 1;
-	else
-		is_bat_plugout = 0;
+		if (bat_flag == 0)
+			is_bat_plugout = 1;
+		else
+			is_bat_plugout = 0;
 	}
 
 	return 0;
@@ -755,7 +766,7 @@ int fgauge_set_coulomb_interrupt1_ht(struct gauge_device *gauge_dev, int car_val
 		value32_CAR, value32_CAR, uvalue32_CAR_MSB, (pmic_get_register_value(PMIC_FG_CAR_15_00)),
 		(pmic_get_register_value(PMIC_FG_CAR_31_16)));
 
-	/* recover read */
+	/* recovery */
 	ret = pmic_config_interface(MT6357_FGADC_CON1, 0x0008, 0x000F, 0x0);
 	m = 0;
 	while (fg_get_data_ready_status() != 0) {
@@ -767,7 +778,8 @@ int fgauge_set_coulomb_interrupt1_ht(struct gauge_device *gauge_dev, int car_val
 		}
 	}
 	ret = pmic_config_interface(MT6357_FGADC_CON1, 0x0000, 0x000F, 0x0);
-	/* recover done */
+	/* recovery done */
+
 
 	/* gap to register-base */
 #if defined(__LP64__) || defined(_LP64)
@@ -881,7 +893,7 @@ int fgauge_set_coulomb_interrupt1_lt(struct gauge_device *gauge_dev, int car_val
 		value32_CAR, value32_CAR, uvalue32_CAR_MSB, (pmic_get_register_value(PMIC_FG_CAR_15_00)),
 		(pmic_get_register_value(PMIC_FG_CAR_31_16)));
 
-	/* recover read */
+	/* recovery */
 	ret = pmic_config_interface(MT6357_FGADC_CON1, 0x0008, 0x000F, 0x0);
 	m = 0;
 	while (fg_get_data_ready_status() != 0) {
@@ -893,7 +905,8 @@ int fgauge_set_coulomb_interrupt1_lt(struct gauge_device *gauge_dev, int car_val
 		}
 	}
 	ret = pmic_config_interface(MT6357_FGADC_CON1, 0x0000, 0x000F, 0x0);
-	/* recover done */
+	/* recovery done */
+
 
 	/* gap to register-base */
 #if defined(__LP64__) || defined(_LP64)
@@ -1223,6 +1236,8 @@ static int fgauge_get_nag_c_dltv(struct gauge_device *gauge_dev, int *nag_c_dltv
 
 static int fgauge_enable_zcv_interrupt(struct gauge_device *gauge_dev, int en)
 {
+	pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
+	pmic_enable_interrupt(FG_ZCV_NO, en, "GM30");
 	return 0;
 }
 
