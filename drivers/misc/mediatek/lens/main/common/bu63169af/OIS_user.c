@@ -90,7 +90,7 @@ void VCOSET1(void)
 /* ========================================================= */
 void WR_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat)
 {
-	s4AF_WriteReg_BU63165AF(slvadr << 1, dat, size);
+	s4AF_WriteReg_BU63169AF(slvadr << 1, dat, size);
 }
 
 /* ********************************************************* */
@@ -122,9 +122,9 @@ OIS_UWORD RD_I2C(OIS_UBYTE slvadr, OIS_UBYTE size, OIS_UBYTE *dat)
 
 	if (size == 1) {
 		dat[1] = 0;
-		s4AF_ReadReg_BU63165AF(slvadr << 1, dat, 2, (u8 *)&read_data, 2);
+		s4AF_ReadReg_BU63169AF(slvadr << 1, dat, 2, (u8 *)&read_data, 2);
 	} else if (size == 2) {
-		s4AF_ReadReg_BU63165AF(slvadr << 1, dat, 2, (u8 *)&read_data, 2);
+		s4AF_ReadReg_BU63169AF(slvadr << 1, dat, 2, (u8 *)&read_data, 2);
 	}
 
 	read_data_h = read_data >> 8;
@@ -180,61 +180,61 @@ _FACT_ADJ get_FADJ_MEM_from_non_volatile_memory(void)
 {
 	u16 ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0763, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0763, &ReadData);
 	FADJ_MEM.gl_CURDAT = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0765, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0765, &ReadData);
 	FADJ_MEM.gl_HALOFS_X = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0767, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0767, &ReadData);
 	FADJ_MEM.gl_HALOFS_Y = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0769, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0769, &ReadData);
 	FADJ_MEM.gl_HX_OFS = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x076B, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x076B, &ReadData);
 	FADJ_MEM.gl_HY_OFS = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x076D, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x076D, &ReadData);
 	FADJ_MEM.gl_PSTXOF = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x076F, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x076F, &ReadData);
 	FADJ_MEM.gl_PSTYOF = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0771, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0771, &ReadData);
 	FADJ_MEM.gl_GX_OFS = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0773, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0773, &ReadData);
 	FADJ_MEM.gl_GY_OFS = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0775, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0775, &ReadData);
 	FADJ_MEM.gl_KgxHG = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0777, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0777, &ReadData);
 	FADJ_MEM.gl_KgyHG = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0779, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0779, &ReadData);
 	FADJ_MEM.gl_KGXG = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x077B, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x077B, &ReadData);
 	FADJ_MEM.gl_KGYG = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x077D, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x077D, &ReadData);
 	FADJ_MEM.gl_SFTHAL_X = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x077F, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x077F, &ReadData);
 	FADJ_MEM.gl_SFTHAL_Y = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0781, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0781, &ReadData);
 	FADJ_MEM.gl_TMP_X_ = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0783, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0783, &ReadData);
 	FADJ_MEM.gl_TMP_Y_ = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0785, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0785, &ReadData);
 	FADJ_MEM.gl_KgxH0 = (OIS_UWORD) ReadData;
 
-	s4EEPROM_ReadReg_BU63165AF(0x0787, &ReadData);
+	s4EEPROM_ReadReg_BU63169AF(0x0787, &ReadData);
 	FADJ_MEM.gl_KgyH0 = (OIS_UWORD) ReadData;
 
 	return FADJ_MEM;	/* Note: This return data is for DEBUG. */
