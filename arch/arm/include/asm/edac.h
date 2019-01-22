@@ -16,6 +16,8 @@
  */
 #ifndef ASM_EDAC_H
 #define ASM_EDAC_H
+
+#include <asm/barrier.h>
 /*
  * ECC atomic, DMA, SMP and interrupt safe scrub function.
  * Implements the per arch edac_atomic_scrub() that EDAC use for software
@@ -29,6 +31,8 @@ static inline void edac_atomic_scrub(void *va, u32 size)
 	unsigned int *virt_addr = va;
 	unsigned int temp, temp2;
 	unsigned int i;
+
+	errata_855872_dmb();
 
 	for (i = 0; i < size / sizeof(*virt_addr); i++, virt_addr++) {
 		/* Very carefully read and write to memory atomically

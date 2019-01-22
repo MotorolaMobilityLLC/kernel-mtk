@@ -6,6 +6,7 @@
 #include <linux/futex.h>
 #include <linux/uaccess.h>
 #include <asm/errno.h>
+#include <asm/barrier.h>
 
 #define __futex_atomic_ex_table(err_reg)			\
 	"3:\n"							\
@@ -27,7 +28,9 @@
 	smp_mb();						\
 	prefetchw(uaddr);					\
 	__ua_flags = uaccess_save_and_enable();			\
-	__asm__ __volatile__(					\
+	errata_855872_dmb();					\
+								\
+	 __asm__ __volatile__(					\
 	"1:	ldrex	%1, [%3]\n"				\
 	"	" insn "\n"					\
 	"2:	strex	%2, %0, [%3]\n"				\
@@ -56,6 +59,8 @@ futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
 	/* Prefetching cannot fault */
 	prefetchw(uaddr);
 	__ua_flags = uaccess_save_and_enable();
+	errata_855872_dmb();
+
 	__asm__ __volatile__("@futex_atomic_cmpxchg_inatomic\n"
 	"1:	ldrex	%1, [%4]\n"
 	"	teq	%1, %2\n"
