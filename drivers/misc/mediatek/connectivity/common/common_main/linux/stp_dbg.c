@@ -2205,7 +2205,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 					break;
 				default:
 					/* gen2 fw task id*/
-					g_stp_dbg_cpupcr->fwTaskId = 2;
+					g_stp_dbg_cpupcr->fwTaskId = 9;
 				}
 
 				break;
