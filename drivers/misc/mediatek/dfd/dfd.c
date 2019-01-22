@@ -118,8 +118,11 @@ static int __init dfd_init(void)
 		void __iomem *infra = of_iomap(infra_node, 0);
 
 		if (infra && drv->base_addr_msb) {
-			infra += DFD_BASE_ADDR_MSB_IN_INFRA;
-			writel(readl(infra) | (drv->base_addr_msb >> 24), infra);
+			if (dfd_infra_base) {
+				infra += dfd_infra_base();
+				writel(readl(infra) | (drv->base_addr_msb >> 24),
+				       infra);
+			}
 		}
 	}
 
