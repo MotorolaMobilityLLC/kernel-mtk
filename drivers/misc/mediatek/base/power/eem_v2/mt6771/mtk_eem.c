@@ -2338,7 +2338,10 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		if ((i > 0) && (det->volt_tbl[i] > det->volt_tbl[i-1])) {
 #if ENABLE_LOO
 			/* It's not necessary to compare opp7~15 for high bank */
-			if (((detid == EEM_DET_2L_HI) ||
+			if (((detid == EEM_DET_2L) || (detid == EEM_DET_L))
+				&& (i == 8))
+				continue;
+			else if (((detid == EEM_DET_2L_HI) ||
 				((detid == EEM_DET_L_HI) && (det != &eem_detector_cci)))
 				&& (i >= 8))
 				continue;
