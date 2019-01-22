@@ -5130,8 +5130,10 @@ static int sched_group_energy(struct energy_env *eenv)
 				 * We try to get correct energy estimation while racing with hotplug
 				 * and avoid entering a infinite loop.
 				 */
-				if (only_lv1_sd)
-					return total_energy;
+				if (only_lv1_sd) {
+					eenv->energy = total_energy;
+					return 0;
+				}
 #endif
 
 				if (cpumask_equal(sched_group_cpus(sg), sched_group_cpus(eenv->sg_top)))
@@ -9344,18 +9346,18 @@ static
 void met_cpu_util(int cpu)
 {
 #if MET_SCHED_DEBUG
-	unsigned long _cpu_util, boosted_cpu_util;
+	unsigned long _cpu_util, _boosted_cpu_util;
 	char util_str[64] = {0};
 	char boost_str[64] = {0};
 
 	_cpu_util = cpu_util(cpu);
-	boosted_cpu_util = boosted_cpu_util(cpu);
+	_boosted_cpu_util = boosted_cpu_util(cpu);
 
 	snprintf(util_str, sizeof(util_str), "sched_util_cpu%d", cpu);
 	snprintf(boost_str, sizeof(boost_str), "sched_util_boosted_cpu%d", cpu);
 
 	met_tag_oneshot(0, util_str, cpu_online(cpu) ? _cpu_util:0);
-	met_tag_oneshot(0, boost_str, cpu_online(cpu) ? boosted_cpu_util:0);
+	met_tag_oneshot(0, boost_str, cpu_online(cpu) ? _boosted_cpu_util:0);
 #endif
 }
 
