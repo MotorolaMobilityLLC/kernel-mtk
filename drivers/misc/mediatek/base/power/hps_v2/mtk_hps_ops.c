@@ -225,6 +225,10 @@ int hps_algo_heavytsk_det(void)
 #endif
 static int hps_algo_perf_indicator(void)
 {
+	if (atomic_read(&hps_ctxt.is_ondemand) != 0) { /* for ondemand request */
+		atomic_set(&hps_ctxt.is_ondemand, 0);
+		return 1;
+	}
 	return 0;
 }
 
@@ -237,7 +241,6 @@ int hps_ops_init(void)
 	int i;
 
 	hps_sys.func_num = 0;
-	/* hps_sys.func_num = sizeof(hps_func) / sizeof(hps_func[0]); */
 	hps_sys.func_num = ARRAY_SIZE(hps_func);
 	hps_sys.hps_sys_ops = kcalloc(hps_sys.func_num, sizeof(*hps_sys.hps_sys_ops), GFP_KERNEL);
 	if (!hps_sys.hps_sys_ops) {

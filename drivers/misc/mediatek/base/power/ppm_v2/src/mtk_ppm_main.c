@@ -28,9 +28,7 @@
 #include <linux/sched/rt.h>
 #include <linux/string.h>
 #include <linux/topology.h>
-#ifdef _TRACE_
 #include <trace/events/mtk_events.h>
-#endif
 
 #include "mtk_ppm_internal.h"
 
@@ -856,8 +854,6 @@ static void ppm_main_send_request_for_suspend(void)
 	struct ppm_client_req *c_req = &(ppm_main_info.client_req);
 	struct ppm_client_req *last_req = &(ppm_main_info.last_req);
 	int i;
-
-	return;
 
 	FUNC_ENTER(FUNC_LV_MAIN);
 

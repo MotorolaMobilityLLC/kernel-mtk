@@ -21,9 +21,7 @@
 #include <asm-generic/bug.h>
 
 #include "mtk_hps_internal.h"
-#ifdef _TRACE_
 #include <trace/events/mtk_events.h>
-#endif
 
 /*
  * static
@@ -367,7 +365,6 @@ void hps_algo_main(void)
 
 	mutex_lock(&hps_ctxt.lock);
 	hps_ctxt.action = ACTION_NONE;
-		atomic_set(&hps_ctxt.is_ondemand, 0);
 	if (!hps_ctxt.enabled)
 		goto HPS_END;
 
