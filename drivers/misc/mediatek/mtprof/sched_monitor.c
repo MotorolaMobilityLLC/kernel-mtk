@@ -142,7 +142,7 @@ static void event_duration_check(struct sched_block_event *b)
 	t_dur = b->last_te - b->last_ts;
 	switch (b->type) {
 	case evt_ISR:
-		if (t_dur > WARN_ISR_DUR) {
+		if (WARN_ISR_DUR > 0 && t_dur > WARN_ISR_DUR) {
 			pr_err
 			    ("[ISR DURATION WARN] IRQ[%d:%s], dur:%llu ns > %d ms,(s:%llu,e:%llu)\n",
 			     (int)b->last_event, isr_name(b->last_event), t_dur,
@@ -157,7 +157,7 @@ static void event_duration_check(struct sched_block_event *b)
 			     b->preempt_count);
 		break;
 	case evt_SOFTIRQ:
-		if (t_dur > WARN_SOFTIRQ_DUR) {
+		if (WARN_SOFTIRQ_DUR > 0 && t_dur > WARN_SOFTIRQ_DUR) {
 			struct sched_block_event *b_isr = &__raw_get_cpu_var(ISR_mon);
 
 			b_isr = &__raw_get_cpu_var(ISR_mon);
@@ -183,7 +183,7 @@ static void event_duration_check(struct sched_block_event *b)
 			     (int)b->last_event, preempt_count(), b->preempt_count);
 		break;
 	case evt_TASKLET:
-		if (t_dur > WARN_TASKLET_DUR) {
+		if (WARN_TASKLET_DUR > 0 && t_dur > WARN_TASKLET_DUR) {
 			struct sched_block_event *b_isr;
 
 			b_isr = &__raw_get_cpu_var(ISR_mon);
@@ -205,7 +205,7 @@ static void event_duration_check(struct sched_block_event *b)
 			     (void *)b->last_event, preempt_count(), b->preempt_count);
 		break;
 	case evt_HRTIMER:
-		if (t_dur > WARN_HRTIMER_DUR) {
+		if (WARN_HRTIMER_DUR > 0 && t_dur > WARN_HRTIMER_DUR) {
 			struct sched_lock_event *lock_e;
 
 			lock_e = &__raw_get_cpu_var(rq_lock_mon);
@@ -227,7 +227,7 @@ static void event_duration_check(struct sched_block_event *b)
 			     (void *)b->last_event, preempt_count(), b->preempt_count);
 		break;
 	case evt_STIMER:
-		if (t_dur > WARN_STIMER_DUR) {
+		if (WARN_STIMER_DUR > 0 && t_dur > WARN_STIMER_DUR) {
 			struct sched_block_event *b_isr;
 
 			b_isr = &__raw_get_cpu_var(ISR_mon);
@@ -852,6 +852,7 @@ static ssize_t mt_sched_monitor_##param##_write(			\
 		return ret;							\
 											\
 	warn_dur = val;							\
+	pr_err(" to %lu\n", val);               \
 											\
 	return cnt;								\
 											\
