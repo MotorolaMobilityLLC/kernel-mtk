@@ -456,7 +456,8 @@
  * Flags and Parameters for Maximum Scan SSID number
  *------------------------------------------------------------------------------
  */
-#define CFG_SCAN_SSID_MAX_NUM                   (4)
+#define CFG_MULTI_SSID_SCAN			1
+#define CFG_SCAN_SSID_MAX_NUM                   (10)
 #define CFG_SCAN_SSID_MATCH_MAX_NUM             (16)
 
 /*------------------------------------------------------------------------------

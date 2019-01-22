@@ -531,7 +531,7 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 	if (scan_req_t->n_channels != 0) {
 
 		channel_counts = scan_req_t->n_channels;
-		DBGLOG(OID, INFO, "partional scan channel_counts=%d\n", channel_counts);
+		DBGLOG(OID, TRACE, "scan channel number: n_channels=%d\n", channel_counts);
 		if (channel_counts > MAXIMUM_OPERATION_CHANNEL_LIST)
 			return TRUE;
 		/*
@@ -575,7 +575,7 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 			i++;
 		}
 	}
-	DBGLOG(INIT, INFO, "set channel i=%d\n", i);
+	DBGLOG(OID, INFO, "Partial Scan: set channel i=%d\n", i);
 	if (i > 0) {
 		PartialScanChannel->ucChannelListNum = i;
 		/*ScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;*/
@@ -734,6 +734,107 @@ wlanoidSetBssidListScanExt(IN P_ADAPTER_T prAdapter,
 
 	return rStatus;
 }				/* wlanoidSetBssidListScanWithIE */
+
+#if CFG_MULTI_SSID_SCAN
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to request the driver to perform
+*        scanning with attaching information elements(IEs) specified from user space
+*        and multiple SSID
+*
+* \param[in] prAdapter Pointer to the Adapter structure.
+* \param[in] pvSetBuffer Pointer to the buffer that holds the data to be set.
+* \param[in] u4SetBufferLen The length of the set buffer.
+* \param[out] pu4SetInfoLen If the call is successful, returns the number of
+*                          bytes read from the set buffer. If the call failed
+*                          due to invalid length of the set buffer, returns
+*                          the amount of storage needed.
+*
+* \retval WLAN_STATUS_SUCCESS
+* \retval WLAN_STATUS_ADAPTER_NOT_READY
+* \retval WLAN_STATUS_FAILURE
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer,
+			IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+{
+	P_PARAM_SCAN_REQUEST_ADV_T prScanRequest;
+	PARAM_SSID_T rSsid[CFG_SCAN_SSID_MAX_NUM];
+	PUINT_8 pucIe;
+	UINT_8 ucSsidNum;
+	UINT_32 i, u4IeLength;
+	BOOLEAN	partial_result = FALSE;
+
+	DEBUGFUNC("wlanoidSetBssidListScanAdv()");
+
+	if (prAdapter->rAcpiState == ACPI_STATE_D3) {
+		DBGLOG(REQ, WARN, "Fail in set BSSID list scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
+			prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_ADAPTER_NOT_READY;
+	}
+
+	ASSERT(pu4SetInfoLen);
+	*pu4SetInfoLen = 0;
+
+	if (u4SetBufferLen != sizeof(PARAM_SCAN_REQUEST_ADV_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+	else if (pvSetBuffer == NULL)
+		return WLAN_STATUS_INVALID_DATA;
+
+	if (prAdapter->fgIsRadioOff) {
+		DBGLOG(REQ, WARN, "Return from BSSID list scan! (radio off). ACPI=D%d, Radio=%d\n",
+		prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
+		return WLAN_STATUS_SUCCESS;
+	}
+
+	prScanRequest = (P_PARAM_SCAN_REQUEST_ADV_T)pvSetBuffer;
+
+	ucSsidNum = (UINT_8)(prScanRequest->u4SsidNum);
+	for (i = 0 ; i < prScanRequest->u4SsidNum ; i++) {
+		COPY_SSID(rSsid[i].aucSsid, rSsid[i].u4SsidLen, prScanRequest->rSsid[i].aucSsid,
+			prScanRequest->rSsid[i].u4SsidLen);
+	}
+
+	pucIe = prScanRequest->pucIE;
+	u4IeLength = prScanRequest->u4IELength;
+
+#if CFG_SUPPORT_RDD_TEST_MODE
+	if (prAdapter->prGlueInfo->rRegInfo.u4RddTestMode) {
+		if ((prAdapter->fgEnOnlineScan == TRUE) && (prAdapter->ucRddStatus)) {
+			if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
+				partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
+				if (partial_result == FALSE)
+					return WLAN_STATUS_FAILURE;
+				aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
+			} else
+				return WLAN_STATUS_FAILURE;
+		} else {
+			return WLAN_STATUS_FAILURE;
+		}
+	} else
+#endif
+	{
+		if (prAdapter->fgEnOnlineScan == TRUE) {
+			if (prScanRequest == NULL)
+				return WLAN_STATUS_FAILURE;
+			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
+			if (partial_result == FALSE)
+				return WLAN_STATUS_FAILURE;
+			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
+		} else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
+			if (prScanRequest == NULL)
+				return WLAN_STATUS_FAILURE;
+			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
+			if (partial_result == FALSE)
+				return WLAN_STATUS_FAILURE;
+			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
+		} else
+			return WLAN_STATUS_FAILURE;
+	}
+
+	return WLAN_STATUS_SUCCESS;
+} /* wlanoidSetBssidListScanAdv */
+#endif
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -1122,7 +1223,9 @@ wlanoidSetSsid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetB
 	COPY_SSID(prAdapter->rWifiVar.rConnSettings.aucSSID,
 		  prAdapter->rWifiVar.rConnSettings.ucSSIDLen, pParamSsid->aucSsid, (UINT_8) pParamSsid->u4SsidLen);
 
+#if !defined(CFG_MULTI_SSID_SCAN)
 	prAdapter->rWifiVar.rConnSettings.u4FreqInKHz = pParamSsid->u4CenterFreq;
+#endif
 	if (EQUAL_SSID(prAdapter->rWlanInfo.rCurrBssId.rSsid.aucSsid,
 		       prAdapter->rWlanInfo.rCurrBssId.rSsid.u4SsidLen, pParamSsid->aucSsid, pParamSsid->u4SsidLen)) {
 		prAisAbortMsg->fgDelayIndication = TRUE;

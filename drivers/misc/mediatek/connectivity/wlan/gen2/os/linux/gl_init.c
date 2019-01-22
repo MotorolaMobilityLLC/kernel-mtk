@@ -993,7 +993,11 @@ static void createWirelessDevice(void)
 
 	/* <1.3> configure wireless_dev & wiphy */
 	prWdev->iftype = NL80211_IFTYPE_STATION;
-	prWiphy->max_scan_ssids = GL_CFG80211_SCAN_SSID_MAX_NUM; /* include one wildcard ssid */
+#if CFG_MULTI_SSID_SCAN
+	prWiphy->max_scan_ssids   = SCN_SSID_MAX_NUM + 1;
+#else
+	prWiphy->max_scan_ssids   = 1;
+#endif
 	prWiphy->max_scan_ie_len = 512;
 
 	prWiphy->max_sched_scan_ssids	= CFG_SCAN_SSID_MAX_NUM;
