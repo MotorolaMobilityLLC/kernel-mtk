@@ -580,8 +580,10 @@ bool tcpm_extract_power_cap_val(
 		cap->ma = info.ma;
 
 #ifdef CONFIG_USB_PD_REV30
-	if (info.type == DPM_PDO_TYPE_APDO)
+	if (info.type == DPM_PDO_TYPE_APDO) {
 		cap->apdo_type = info.apdo_type;
+		cap->pwr_limit = info.pwr_limit;
+	}
 #endif	/* CONFIG_USB_PD_REV30 */
 
 	return cap->type != TCPM_POWER_CAP_VAL_TYPE_UNKNOWN;

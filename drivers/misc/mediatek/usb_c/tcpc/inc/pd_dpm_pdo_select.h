@@ -19,6 +19,7 @@
 struct dpm_pdo_info_t {
 	uint8_t type;
 	uint8_t apdo_type;
+	uint8_t pwr_limit;
 	int vmin;
 	int vmax;
 	int uw;
