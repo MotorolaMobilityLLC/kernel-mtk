@@ -97,7 +97,8 @@ unsigned int scp_semaphore_flags[SCP_CORE_TOTAL] = {SEMAPHORE_SCP_A_AWAKE, SEMAP
 struct wake_lock scp_awake_wakelock[SCP_CORE_TOTAL];
 char *core_ids[SCP_CORE_TOTAL] = {"SCP A", "SCP B"};
 static DEFINE_SPINLOCK(scp_awake_spinlock);
-
+/* set flag after driver initial done */
+static bool driver_init_done;
 unsigned char **scp_swap_buf;
 static struct wake_lock scp_suspend_lock;
 
@@ -152,8 +153,8 @@ int get_scp_semaphore(int flag)
 	int ret = -1;
 	unsigned long spin_flags;
 
-	/* return 1 to prevent from access when scp is down */
-	if (!scp_ready[SCP_A_ID] && !scp_ready[SCP_B_ID])
+	/* return 1 to prevent from access when driver not ready */
+	if (!driver_init_done)
 		return -1;
 
 	/* spinlock context safe*/
@@ -200,8 +201,8 @@ int release_scp_semaphore(int flag)
 	int ret = -1;
 	unsigned long spin_flags;
 
-	/* return 1 to prevent from access when scp is down */
-	if (!scp_ready[SCP_A_ID] && !scp_ready[SCP_B_ID])
+	/* return 1 to prevent from access when driver not ready */
+	if (!driver_init_done)
 		return -1;
 
 	/* spinlock context safe*/
@@ -241,9 +242,10 @@ int scp_get_semaphore_3way(int flag)
 	int ret = -1;
 	unsigned long spin_flags;
 
-	/* return 1 to prevent from access when scp is down */
-	if (!scp_ready[SCP_A_ID] && !scp_ready[SCP_B_ID])
+	/* return 1 to prevent from access when driver not ready */
+	if (!driver_init_done)
 		return -1;
+
 	if (flag >= SEMA_3WAY_TOTAL) {
 		pr_err("[SCP] get sema. 3way flag=%d > total numbers ERROR\n", flag);
 		return ret;
@@ -722,6 +724,21 @@ int reset_scp(int reset)
 			int timeout = 50; /* max wait 1s */
 
 			while (--timeout) {
+#ifdef CFG_RECOVERY_SUPPORT
+				if (*(unsigned int *)SCP_GPR_CM4_A_REBOOT == 0x34) {
+					if (SCP_SLEEP_STATUS_REG & SCP_A_IS_SLEEP) {
+						/* reset */
+						*(unsigned int *)reg = 0x0;
+						scp_ready[SCP_A_ID] = 0;
+						*(unsigned int *)SCP_GPR_CM4_A_REBOOT = 1;
+						/* lock pll for ulposc calibration */
+						 /* do it only in reset */
+						scp_pll_ctrl_set(1, 0);
+						dsb(SY);
+						break;
+					}
+				}
+#else
 				if (SCP_SLEEP_STATUS_REG & SCP_A_IS_SLEEP) {
 					/* reset */
 					*(unsigned int *)reg = 0x0;
@@ -729,16 +746,12 @@ int reset_scp(int reset)
 					dsb(SY);
 					break;
 				}
+#endif
 				msleep(20);
 				if (timeout == 0)
 					pr_debug("[SCP] wait scp A reset timeout, skip\n");
 			}
 			pr_debug("[SCP] wait scp A reset timeout %d\n", timeout);
-#ifdef CFG_RECOVERY_SUPPORT
-			/* lock pll for ulposc calibration */
-			if (reset & 0x0f) /* do it only in reset */
-				scp_pll_ctrl_set(1, 0);
-#endif
 		}
 		if (scp_enable[SCP_A_ID]) {
 			pr_debug("[SCP] reset scp A\n");
