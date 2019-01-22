@@ -184,7 +184,7 @@ void hwzram_impl_free_buffers(struct hwzram_impl *hwz, phys_addr_t *bufs)
 }
 EXPORT_SYMBOL(hwzram_impl_free_buffers);
 
-static void hwzram_impl_free_fifos(struct hwzram_impl *hwz, phys_addr_t *bufs)
+static void hwzram_impl_free_fifos(struct hwzram_impl *hwz, uint64_t *bufs)
 {
 	int i;
 	phys_addr_t addr;
@@ -392,7 +392,7 @@ static void hwzram_impl_fifo_cleanup(struct hwzram_impl *hwz)
 			desc = p;
 		}
 		hwzram_impl_free_fifos(hwz,
-					 (phys_addr_t *)desc->dst_addr);
+					 (uint64_t *)desc->dst_addr);
 
 		/* clean up descriptor memory just for paranoia */
 		if (hwz->descriptor_type)
@@ -427,6 +427,7 @@ static void abort_incomplete_descriptors(struct hwzram_impl *hwz)
 	}
 }
 
+#if 0
 static void hwzram_impl_put_decompr_index(struct hwzram_impl *hwz, int index);
 static void hwzram_impl_complete_decompression(struct hwzram_impl *hwz,
 					       int index)
@@ -479,13 +480,13 @@ static void hwzram_impl_complete_decompression(struct hwzram_impl *hwz,
 	if (hwz->hwctrl)
 		hwz->hwctrl(DECOMP_DISABLE);
 }
+#endif
 
 static void hwzram_impl_timer_fn(unsigned long data)
 {
 	struct hwzram_impl *hwz = (void *)data;
 	unsigned long flags;
-	u64 compr, decompr, error;
-	int i;
+	u64 compr, error;
 
 	/* enable clock */
 	if (hwz->hwctrl) {
@@ -494,20 +495,10 @@ static void hwzram_impl_timer_fn(unsigned long data)
 	}
 
 	compr = hwzram_read_register(hwz, ZRAM_INTRP_STS_CMP);
-	decompr = hwzram_read_register(hwz, ZRAM_INTRP_STS_DCMP);
 	error = hwzram_read_register(hwz, ZRAM_INTRP_STS_ERROR);
 
 	if (compr)
 		hwzram_write_register(hwz, ZRAM_INTRP_STS_CMP, compr);
-
-	if (decompr) {
-		hwzram_write_register(hwz, ZRAM_INTRP_STS_DCMP,
-				      (unsigned long long)decompr);
-		for (i = 0; i < hwz->decompr_cmd_count; i++) {
-			if (decompr & (1 << i))
-				hwzram_impl_complete_decompression(hwz, i);
-		}
-	}
 
 	spin_lock_irqsave(&hwz->fifo_lock, flags);
 
@@ -1230,7 +1221,7 @@ static int process_completed_descriptor(struct hwzram_impl *hwz,
 				cmpl->buffers[i] = addr;
 
 				/* clear the entry in the descriptor */
-				desc->dst_addr[index - 1]  = 0;
+				desc->dst_addr[index - 1] = 0;
 				if (desc1)
 					desc1->dst_addr[index - 1] = 0;
 				buf_sel = buf_sel & ~(1 << (index - 1));
@@ -1524,16 +1515,18 @@ static void hwzram_impl_put_decompr_index(struct hwzram_impl *hwz, int index)
 	atomic_set(&hwz->decompr_cmd_used[index], 0);
 }
 
+/* atomic operation */
 int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 				struct page *page,
 				struct hwzram_impl_completion *cmpl)
 {
 	int index;
-	unsigned int i, ret = 0;
+	unsigned int status, i, ret = 0;
 	uint64_t csize_data, dest_data;
 	dma_addr_t daddr = 0;
 	phys_addr_t page_phys = page_to_phys(page);
 	uint16_t compr_size = cmpl->compr_size;
+	unsigned long timeout;
 
 	/* enable clock */
 	if (hwz->hwctrl)
@@ -1565,13 +1558,16 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 			       hwz->name, dest_data);
 			ret = -ENOMEM;
 			cmpl->decompr_status = HWZRAM_DCMD_ERROR;
+			hwzram_impl_put_decompr_index(hwz, index);
+			preempt_enable();
 			goto out_no_dest;
 		}
 	}
-	cmpl->daddr = daddr;
 
 	dest_data |= ((uint64_t)HWZRAM_DCMD_PEND) << ZRAM_DCMD_DEST_STATUS_SHIFT;
-	dest_data |= 1ULL << ZRAM_DCMD_DEST_INTR_SHIFT;
+
+	/* Set timeout for polling */
+	timeout = jiffies + 100;
 
 	hwzram_write_register(hwz, ZRAM_DCMD_CSIZE(index), csize_data);
 
@@ -1597,6 +1593,8 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 				       hwz->name, addr);
 				ret = -ENOMEM;
 				cmpl->decompr_status = HWZRAM_DCMD_ERROR;
+				hwzram_impl_put_decompr_index(hwz, index);
+				preempt_enable();
 				goto out_dma_unmap;
 			}
 			cmpl->dma_bufs[i] = PHYS_ADDR_TO_ENCODED(addr, size);
@@ -1612,9 +1610,38 @@ int hwzram_impl_decompress_page(struct hwzram_impl *hwz,
 	}
 
 	hwzram_write_register(hwz, ZRAM_DCMD_DEST(index), dest_data);
-	preempt_enable();
 
-	return 0;
+	do {
+		cpu_relax();
+		if (time_after(jiffies, timeout)) {
+			pr_err("%s: timeout waiting for dcmd %u\n", __func__, index);
+			ret = -1;
+			break;
+		}
+
+		dest_data = hwzram_read_register(hwz, ZRAM_DCMD_DEST(index));
+		status = ZRAM_DCMD_DEST_STATUS(dest_data);
+	} while (status == HWZRAM_DCMD_PEND);
+
+	cmpl->decompr_status = status;
+	pr_devel("%s: [%u] status = %u\n", hwz->name, index, status);
+
+	if (status != HWZRAM_DCMD_DECOMPRESSED) {
+		pr_err("%s: bad status 0x%x\n", hwz->name, status);
+		ret = -1;
+		hwzram_impl_dump_regs(hwz);
+	}
+
+	if (!ret &&
+	    (hwz->need_cache_invalidate || hwzram_force_non_coherent)) {
+		dma_sync_single_range_for_cpu(hwz->dev,
+					      daddr, 0,
+					      UNCOMPRESSED_BLOCK_SIZE,
+					      DMA_FROM_DEVICE);
+	}
+
+	hwzram_impl_put_decompr_index(hwz, index);
+	preempt_enable();
 
 out_dma_unmap:
 	if (hwzram_non_coherent(hwz)) {
@@ -1635,9 +1662,7 @@ out_dma_unmap:
 	}
 
 out_no_dest:
-	hwzram_impl_put_decompr_index(hwz, index);
 	cmpl->callback(cmpl);
-	preempt_enable();
 
 	/* disable clock */
 	if (hwz->hwctrl)

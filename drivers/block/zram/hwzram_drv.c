@@ -360,6 +360,11 @@ static void hwzram_impl_decompr_cb(struct hwzram_impl_completion *cmpl)
 	struct bio *bio = cmpl->data;
 	u32 index = cmpl->index;
 	unsigned int compr_size = cmpl->compr_size;
+	struct hwzram *hwzram = cmpl->hwzram;
+	struct hwzram_meta *meta = hwzram->meta;
+
+	/* Do unlock here to avoid deadlock in bio_endio */
+	bit_spin_unlock(HWZRAM_DRV_ACCESS, &meta->table[index].value);
 
 	pr_devel("%s: index %u size %u cmpl->decompr_status %u flags %u\n",
 		 __func__, index, compr_size, cmpl->decompr_status,
@@ -415,6 +420,7 @@ static int hwzram_bvec_read(struct hwzram *hwzram, struct bio_vec *bvec,
 	if (copied) {
 		ret = hwzram_impl_copy_buf(hwzram->hwz, page,
 				   meta->table[index].compressed_buffers);
+		bit_spin_unlock(HWZRAM_DRV_ACCESS, &meta->table[index].value);
 		/* Need to do bio_endio */
 		if (last)
 			bio_endio(bio);
@@ -423,6 +429,7 @@ static int hwzram_bvec_read(struct hwzram *hwzram, struct bio_vec *bvec,
 							      GFP_ATOMIC);
 		if (!cmpl) {
 			ret = -ENOMEM;
+			bit_spin_unlock(HWZRAM_DRV_ACCESS, &meta->table[index].value);
 			goto out;
 		}
 
@@ -437,13 +444,14 @@ static int hwzram_bvec_read(struct hwzram *hwzram, struct bio_vec *bvec,
 		memcpy(cmpl->dma_bufs, meta->table[index].compressed_buffers,
 		       sizeof(phys_addr_t) * HWZRAM_MAX_BUFFERS_USED);
 		ret = hwzram_impl_decompress_page(hwzram->hwz, page, cmpl);
+
+		/* bit_spin_unlock will be done in hwzram_impl_decompr_cb */
+
 		/* TBC - miss error handling */
 		if (ret != 0)
 			pr_err("%s: error %d\n", __func__, ret);
 	}
 out:
-	bit_spin_unlock(HWZRAM_DRV_ACCESS, &meta->table[index].value);
-
 	return ret;
 }
 
@@ -541,46 +549,6 @@ out:
 	return ret;
 }
 
-static void handle_pending_slot_free(struct hwzram *hwzram)
-{
-	struct hwzram_meta *meta;
-	unsigned long flags;
-	struct hwzram_slot_free *free_rq = NULL;
-
-	meta = hwzram->meta;
-next:
-	spin_lock_irqsave(&hwzram->slot_free_lock, flags);
-	if (hwzram->slot_free_rq) {
-		free_rq = hwzram->slot_free_rq;
-		hwzram->slot_free_rq = free_rq->next;
-	} else {
-		/* all free requests were finished */
-		spin_unlock_irqrestore(&hwzram->slot_free_lock, flags);
-		return;
-	}
-	spin_unlock_irqrestore(&hwzram->slot_free_lock, flags);
-
-retry:
-	/* free this slot */
-	local_irq_save(flags);
-
-	if (bit_spin_trylock(HWZRAM_DRV_ACCESS, &meta->table[free_rq->index].value)) {
-		hwzram_free_page(hwzram, free_rq->index);
-		bit_spin_unlock(HWZRAM_DRV_ACCESS, &meta->table[free_rq->index].value);
-	} else {
-		local_irq_restore(flags);
-		goto retry;
-	}
-
-	local_irq_restore(flags);
-
-	/* release this free_rq */
-	kfree(free_rq);
-	free_rq = NULL;
-
-	goto next;
-}
-
 static int hwzram_bvec_rw(struct hwzram *hwzram, struct bio_vec *bvec, u32 index,
 			  int offset, struct bio *bio, bool last)
 {
@@ -594,9 +562,6 @@ static int hwzram_bvec_rw(struct hwzram *hwzram, struct bio_vec *bvec, u32 index
 		atomic64_inc(&hwzram->stats.num_writes);
 		ret = hwzram_bvec_write(hwzram, bvec, index, offset, bio, last);
 	}
-
-	/* handle free requests */
-	handle_pending_slot_free(hwzram);
 
 	if (unlikely(ret)) {
 		if (rw == READ)
@@ -660,8 +625,6 @@ static void hwzram_reset_device(struct hwzram *hwzram, bool reset_capacity)
 		up_write(&hwzram->init_lock);
 		return;
 	}
-
-	flush_work(&hwzram->free_work);
 
 	meta = hwzram->meta;
 	/* Free all pages that are still in this hwzram device */
@@ -887,42 +850,19 @@ error:
 	return BLK_QC_T_NONE;
 }
 
-static void hwzram_slot_free(struct work_struct *work)
-{
-	struct hwzram *hwzram;
-
-	hwzram = container_of(work, struct hwzram, free_work);
-	handle_pending_slot_free(hwzram);
-}
-
-/* This may be called from interrupt context */
-static void add_slot_free(struct hwzram *hwzram, struct hwzram_slot_free *free_rq)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&hwzram->slot_free_lock, flags);
-	free_rq->next = hwzram->slot_free_rq;
-	hwzram->slot_free_rq = free_rq;
-	spin_unlock_irqrestore(&hwzram->slot_free_lock, flags);
-}
-
 /* This may be called from interrupt context */
 static void hwzram_slot_free_notify(struct block_device *bdev,
 				unsigned long index)
 {
 	struct hwzram *hwzram;
-	struct hwzram_slot_free *free_rq;
+	struct hwzram_meta *meta;
 
 	hwzram = bdev->bd_disk->private_data;
+	meta = hwzram->meta;
 
-	free_rq = kmalloc(sizeof(struct hwzram_slot_free), GFP_ATOMIC);
-	if (!free_rq)
-		return;
-
-	free_rq->index = index;
-	add_slot_free(hwzram, free_rq);
-	schedule_work(&hwzram->free_work);
-
+	bit_spin_lock(HWZRAM_DRV_ACCESS, &meta->table[index].value);
+	hwzram_free_page(hwzram, index);
+	bit_spin_unlock(HWZRAM_DRV_ACCESS, &meta->table[index].value);
 	atomic64_inc(&hwzram->stats.notify_free);
 }
 
@@ -1079,11 +1019,6 @@ static int create_device(struct hwzram *hwzram, int device_id,
 
 	hwzram->hwz = hwz;
 	init_rwsem(&hwzram->init_lock);
-
-	/* for the handling of free requests */
-	INIT_WORK(&hwzram->free_work, hwzram_slot_free);
-	spin_lock_init(&hwzram->slot_free_lock);
-	hwzram->slot_free_rq = NULL;
 
 	hwzram->queue = blk_alloc_queue(GFP_KERNEL);
 	if (!hwzram->queue) {
@@ -1266,8 +1201,6 @@ static void __exit hwzram_exit(void)
 		 */
 		hwzram_reset_device(hwzram, false);
 		destroy_device(hwzram);
-
-
 	}
 
 	unregister_blkdev(hwzram_major, "hwzram");
