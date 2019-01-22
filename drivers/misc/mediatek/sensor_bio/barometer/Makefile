@@ -17,3 +17,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensor_bio/hwmon/include
 obj-y   +=  barometer.o barometer_factory.o
 
 obj-$(CONFIG_MTK_BAROHUB)      +=  barohub/
+ifneq ($(CONFIG_MTK_BAROHUB),y)
+obj-$(CONFIG_MTK_BMP280_NEW) += BMP280-new/
+endif
