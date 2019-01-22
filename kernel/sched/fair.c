@@ -6910,7 +6910,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			} else
 				new_cpu = select_idle_sibling(p, prev_cpu, new_cpu);
 		}
-	} else while (sd) {
+	} else {
 		new_cpu = find_idlest_cpu(sd, p, cpu, prev_cpu, sd_flag);
 	}
 #ifdef CONFIG_MTK_SCHED_TRACERS
