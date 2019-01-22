@@ -17,14 +17,34 @@
 #include <linux/cpufreq.h>
 #include "mtk_cpufreq_config.h"
 
+/* Table Define */
+#define OP(khz, volt) {		\
+	.cpufreq_khz = khz,	\
+	.cpufreq_volt = volt,	\
+}
+
+struct mt_cpu_freq_info {
+	const unsigned int cpufreq_khz;
+	unsigned int cpufreq_volt;
+};
+
+struct opp_tbl_info {
+	struct mt_cpu_freq_info *const opp_tbl;
+	const int size;
+};
+
+#define FP(pos, clk) {		\
+	.pos_div = pos,		\
+	.clk_div = clk,		\
+}
+
 struct mt_cpu_freq_method {
 	const char pos_div;
 	const char clk_div;
 };
 
-struct mt_cpu_freq_info {
-	const unsigned int cpufreq_khz;
-	unsigned int cpufreq_volt;
+struct opp_tbl_m_info {
+	struct mt_cpu_freq_method *const opp_tbl_m;
 };
 
 struct mt_cpu_dvfs {
