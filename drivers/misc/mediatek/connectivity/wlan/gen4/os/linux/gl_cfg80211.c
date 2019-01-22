@@ -1377,11 +1377,11 @@ int mtk_cfg80211_set_rekey_data(struct wiphy *wiphy, struct net_device *dev, str
 	DBGLOG(RSN, INFO, "cfg80211_set_rekey_data size( %d)\n", sizeof(*data));
 
 	DBGLOG(RSN, INFO, "kek\n");
-	PF_ERROR_LOGDUMP8((PUINT_8)data->kek, NL80211_KEK_LEN);
+	DBGLOG_MEM8(PF, ERROR, (PUINT_8)data->kek, NL80211_KEK_LEN);
 	DBGLOG(RSN, INFO, "kck\n");
-	PF_ERROR_LOGDUMP8((PUINT_8)data->kck, NL80211_KCK_LEN);
+	DBGLOG_MEM8(PF, ERROR, (PUINT_8)data->kck, NL80211_KCK_LEN);
 	DBGLOG(RSN, INFO, "replay count\n");
-	PF_ERROR_LOGDUMP8((PUINT_8)data->replay_ctr, NL80211_REPLAY_CTR_LEN);
+	DBGLOG_MEM8(PF, ERROR, (PUINT_8)data->replay_ctr, NL80211_REPLAY_CTR_LEN);
 
 #if 0
 	kalMemCopy(prGtkData, data, sizeof(*data));

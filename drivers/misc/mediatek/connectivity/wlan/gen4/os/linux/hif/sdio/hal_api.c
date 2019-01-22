@@ -895,7 +895,7 @@ WLAN_STATUS halRxReadBuffer(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 			DBGLOG(RX, ERROR, "Read u4PktLen = %d, prHifRxHdr->u2PacketLen: %d\n",
 			       u4PktLen, HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus));
 #if DBG
-			dumpMemory8((PUINT_8) prRxStatus,
+			DBGLOG_MEM8(RX, TRACE, (PUINT_8) prRxStatus,
 				    (HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus) >
 				     4096) ? 4096 : prRxStatus->u2RxByteCount);
 #endif

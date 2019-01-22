@@ -1287,10 +1287,6 @@
 *                            P U B L I C   D A T A
 *******************************************************************************
 */
-#if DBG
-UINT_32 u4DebugModuleTemp;
-#endif /* DBG */
-
 PARAM_CUSTOM_KEY_CFG_STRUCT_T g_rDefaulteSetting[] = {
 		/*format :
 		*: {"firmware config parameter", "firmware config value"}

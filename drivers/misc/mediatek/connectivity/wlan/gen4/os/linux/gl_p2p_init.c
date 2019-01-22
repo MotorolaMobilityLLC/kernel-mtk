@@ -26,16 +26,9 @@
 ********************************************************************************
 */
 
-#define P2P_MODE_INF_NAME "p2p%d"
-#define AP_MODE_INF_NAME "ap%d"
-/* #define MAX_INF_NAME_LEN 15 */
-/* #define MIN_INF_NAME_LEN 1 */
+#define P2P_INF_NAME "p2p%d"
+#define AP_INF_NAME  "ap%d"
 
-#if 0
-#define RUNNING_P2P_MODE 0
-#define RUNNING_AP_MODE 1
-#define RUNNING_DUAL_AP_MODE 2
-#endif
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -50,14 +43,8 @@
 *                           P R I V A T E   D A T A
 ********************************************************************************
 */
-
-/*  Get interface name and running mode from module insertion parameter
-*       Usage: insmod p2p.ko mode=1
-*       default: interface name is p2p%d
-*                   running mode is P2P
-*/
-static PUCHAR ifname = P2P_MODE_INF_NAME;
-static PUCHAR ifname2 = P2P_MODE_INF_NAME;
+static PUCHAR ifname = P2P_INF_NAME;
+static PUCHAR ifname2 = P2P_INF_NAME;
 static UINT_16 mode = RUNNING_P2P_MODE;
 
 /*******************************************************************************
@@ -74,38 +61,6 @@ static UINT_16 mode = RUNNING_P2P_MODE;
 *                              F U N C T I O N S
 ********************************************************************************
 */
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief    check interface name parameter is valid or not
-*             if invalid, set ifname to P2P_MODE_INF_NAME
-*
-*
-* \retval
-*/
-/*----------------------------------------------------------------------------*/
-VOID p2pCheckInterfaceName(VOID)
-{
-
-	if (mode) {
-		mode = RUNNING_AP_MODE;
-		ifname = AP_MODE_INF_NAME;
-	}
-#if 0
-	UINT_32 ifLen = 0;
-
-	if (ifname) {
-		ifLen = strlen(ifname);
-
-		if (ifLen > MAX_INF_NAME_LEN)
-			ifname[MAX_INF_NAME_LEN] = '\0';
-		else if (ifLen < MIN_INF_NAME_LEN)
-			ifname = P2P_MODE_INF_NAME;
-	} else {
-		ifname = P2P_MODE_INF_NAME;
-	}
-#endif
-}
 
 VOID p2pSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 {
@@ -132,154 +87,68 @@ VOID p2pSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief
-*       run p2p init procedure, include register pointer to wlan
-*                                                     glue register p2p
-*                                                     set p2p registered flag
+*       run p2p init procedure, glue register p2p and set p2p registered flag
+*
 * \retval 1     Success
 */
 /*----------------------------------------------------------------------------*/
 BOOLEAN p2pLaunch(P_GLUE_INFO_T prGlueInfo)
 {
-	DBGLOG(INIT, INFO, "p2p Launch\n");
-
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered == TRUE) {
-		DBGLOG(INIT, INFO, "p2p already registered\n");
+		DBGLOG(P2P, INFO, "p2p is already registered\n");
 		return FALSE;
-	} else if (glRegisterP2P(prGlueInfo, ifname, ifname2, mode)) {
-		prGlueInfo->prAdapter->fgIsP2PRegistered = TRUE;
-		DBGLOG(INIT, INFO, "Launch success, fgIsP2PRegistered TRUE.\n");
-
-		return TRUE;
 	}
 
-	DBGLOG(INIT, INFO, "Launch Fail\n");
+	if (!glRegisterP2P(prGlueInfo, ifname, ifname2, mode)) {
+		DBGLOG(P2P, ERROR, "Launch failed\n");
+		return FALSE;
+	}
 
-	return FALSE;
+	prGlueInfo->prAdapter->fgIsP2PRegistered = TRUE;
+	DBGLOG(P2P, INFO, "Launch success, fgIsP2PRegistered TRUE\n");
+	return TRUE;
 }
 
-VOID p2pSetMode(IN UINT_8 ucAPMOde)
+VOID p2pSetMode(IN UINT_8 ucAPMode)
 {
-
-#if 0
-	if (fgIsAPMOde) {
-		mode = RUNNING_AP_MODE;
-		ifname = AP_MODE_INF_NAME;
-	} else {
-		mode = RUNNING_P2P_MODE;
-		ifname = P2P_MODE_INF_NAME;
-	}
-
-#endif
-
-	switch (ucAPMOde) {
+	switch (ucAPMode) {
 	case 0:
-		{
-			mode = RUNNING_P2P_MODE;
-			ifname = P2P_MODE_INF_NAME;
-		}
+		mode = RUNNING_P2P_MODE;
+		ifname = P2P_INF_NAME;
 		break;
 	case 1:
-		{
-			mode = RUNNING_AP_MODE;
-			ifname = AP_MODE_INF_NAME;
-		}
+		mode = RUNNING_AP_MODE;
+		ifname = AP_INF_NAME;
 		break;
 	case 2:
-		{
-			mode = RUNNING_DUAL_AP_MODE;
-			ifname = AP_MODE_INF_NAME;
-		}
+		mode = RUNNING_DUAL_AP_MODE;
+		ifname = AP_INF_NAME;
 		break;
 	case 3:
-		{
-			mode = RUNNING_P2P_AP_MODE;
-			ifname = P2P_MODE_INF_NAME;
-			ifname2 = AP_MODE_INF_NAME;
-		}
+		mode = RUNNING_P2P_AP_MODE;
+		ifname = P2P_INF_NAME;
+		ifname2 = AP_INF_NAME;
 		break;
 	}
-
 }				/* p2pSetMode */
 
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief
-*       run p2p exit procedure, include unregister pointer to wlan
-*                                                     glue unregister p2p
-*                                                     set p2p registered flag
-
+*       run p2p exit procedure, glue unregister p2p and set p2p registered flag
+*
 * \retval 1     Success
 */
 /*----------------------------------------------------------------------------*/
 BOOLEAN p2pRemove(P_GLUE_INFO_T prGlueInfo)
 {
-	DBGLOG(INIT, INFO, "p2p Remove\n");
-
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered == FALSE) {
-		DBGLOG(INIT, INFO, "p2p is not Registered.\n");
+		DBGLOG(P2P, INFO, "p2p is not registered\n");
 		return FALSE;
 	}
 
+	DBGLOG(P2P, INFO, "fgIsP2PRegistered FALSE\n");
 	prGlueInfo->prAdapter->fgIsP2PRegistered = FALSE;
 	glUnregisterP2P(prGlueInfo);
-	/*p2p is removed successfully */
 	return TRUE;
 }
-
-#if 0
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief Driver entry point when the driver is configured as a Linux Module, and
-*        is called once at module load time, by the user-level modutils
-*        application: insmod or modprobe.
-*
-* \retval 0     Success
-*/
-/*----------------------------------------------------------------------------*/
-static int initP2P(void)
-{
-	P_GLUE_INFO_T prGlueInfo;
-
-	/*check interface name validation */
-	p2pCheckInterfaceName();
-
-	DBGLOG(INIT, INFO, "InitP2P, Ifname: %s, Mode: %s\n", ifname, mode ? "AP" : "P2P");
-
-	/*register p2p init & exit function to wlan sub module handler */
-	wlanSubModRegisterInitExit(p2pLaunch, p2pRemove, P2P_MODULE);
-
-	/*if wlan is not start yet, do nothing
-	 * p2pLaunch will be called by txthread while wlan start
-	 */
-	/*if wlan is not started yet, return FALSE */
-	if (wlanExportGlueInfo(&prGlueInfo)) {
-		wlanSubModInit(prGlueInfo);
-		return prGlueInfo->prAdapter->fgIsP2PRegistered ? 0 : -EIO;
-	}
-
-	return 0;
-}				/* end of initP2P() */
-
-/*----------------------------------------------------------------------------*/
-/*!
-* \brief Driver exit point when the driver as a Linux Module is removed. Called
-*        at module unload time, by the user level modutils application: rmmod.
-*        This is our last chance to clean up after ourselves.
-*
-* \return (none)
-*/
-/*----------------------------------------------------------------------------*/
-/* 1 Module Leave Point */
-static VOID __exit exitP2P(void)
-{
-	P_GLUE_INFO_T prGlueInfo;
-
-	DBGLOG(INIT, INFO, "ExitP2P\n");
-
-	/*if wlan is not started yet, return FALSE */
-	if (wlanExportGlueInfo(&prGlueInfo))
-		wlanSubModExit(prGlueInfo);
-	/*UNregister p2p init & exit function to wlan sub module handler */
-	wlanSubModRegisterInitExit(NULL, NULL, P2P_MODULE);
-}				/* end of exitP2P() */
-#endif

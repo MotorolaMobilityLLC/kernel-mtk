@@ -1347,9 +1347,7 @@ extern void wlanUnregisterNotifier(void);
 
 #if (MTK_WCN_HIF_SDIO && CFG_SUPPORT_MTK_ANDROID_KK)
 typedef int (*set_p2p_mode) (struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_T p2pmode);
-typedef void (*set_dbg_level) (unsigned char modules[DBG_MODULE_NUM]);
 extern void register_set_p2p_mode_handler(set_p2p_mode handler);
-extern void register_set_dbg_level_handler(set_dbg_level handler);
 #endif
 
 #if CFG_ENABLE_EARLY_SUSPEND
