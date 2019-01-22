@@ -3569,3 +3569,8 @@ INT32 mtk_stp_sdio_retry_flag_get(VOID)
 {
 	return stp_sdio_retry_flag_get();
 }
+
+VOID mtk_stp_dump_sdio_register(VOID)
+{
+	stp_sdio_dump_register();
+}

@@ -314,6 +314,7 @@ INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit,
 VOID stp_sdio_retry_flag_ctrl(INT32 flag);
 INT32 stp_sdio_retry_flag_get(VOID);
 INT32 stp_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx);
+VOID stp_sdio_dump_register(VOID);
 INT32 stp_sdio_issue_fake_coredump(UINT8 *str);
 
 #endif				/* _STP_SDIO_H */

@@ -3490,6 +3490,37 @@ INT32 stp_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 	return ret;
 }
 
+VOID stp_sdio_dump_register(VOID)
+{
+	UINT32 count = 3;
+	MTK_WCN_HIF_SDIO_CLTCTX clt_ctx;
+	UINT32 val = 0;
+	UINT32 delay_us = 10000;
+
+	clt_ctx = gp_info->sdio_cltctx;
+	while (count) {
+		stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CCIR, &val, 0);
+		STPSDIO_ERR_FUNC("******CCIR == 0x%x*****\n", val);
+		stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CHLPCR, &val, 0);
+		STPSDIO_ERR_FUNC("******CHLPCR == 0x%x*****\n", val);
+		stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CSDIOCSR, &val, 0);
+		STPSDIO_ERR_FUNC("******CSDIOCSR == 0x%x*****\n", val);
+		stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CHCR, &val, 0);
+		STPSDIO_ERR_FUNC("******CHCR == 0x%x*****\n", val);
+		stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CHISR, &val, 0);
+		STPSDIO_ERR_FUNC("******CHISR == 0x%x*****\n", val);
+		stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CHIER, &val, 0);
+		STPSDIO_ERR_FUNC("******CHIER == 0x%x*****\n", val);
+		stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CTFSR, &val, 0);
+		STPSDIO_ERR_FUNC("******CTFSR == 0x%x*****\n", val);
+		stp_sdio_rw_retry(HIF_TYPE_READL, STP_SDIO_RETRY_LIMIT, clt_ctx, CRPLR, &val, 0);
+		STPSDIO_ERR_FUNC("******CRPLR == 0x%x*****\n", val);
+		count--;
+		osal_usleep_range(delay_us, 2 * delay_us);
+	}
+
+}
+
 /*!
  * \brief hif_sdio init function
  *
