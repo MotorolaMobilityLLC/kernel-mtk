@@ -35,6 +35,7 @@ else
 DTB_LIST := $(dtb-y)
 endif
 DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))
+targets += $(addprefix dts/,$(DTB_LIST))
 
 ifeq ($(CONFIG_XIP_KERNEL),y)
 
