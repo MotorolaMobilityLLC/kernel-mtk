@@ -17,10 +17,15 @@
 #include <mt-plat/mtk_chip.h>
 #include <mtk_dramc.h>
 
+#if defined(SMI_WHI)
 #include "mmdvfs_config_mt6799.h"
 #include "mmdvfs_config_mt6799_v2.h"
+#elif defined(SMI_ALA)
 #include "mmdvfs_config_mt6759.h"
+#elif defined(SMI_BIA)
 #include "mmdvfs_config_mt6763.h"
+#endif
+
 #include "mtk_smi.h"
 #include "mmdvfs_mgr.h"
 #include "mmdvfs_internal.h"
@@ -34,6 +39,7 @@ static int mmdvfs_step_util_set_step(struct mmdvfs_step_util *self, int step, in
 static int mmdvfs_get_clients_clk_opp(struct mmdvfs_step_util *self, struct mmdvfs_adaptor *adaptor,
 	int clients_mask, int clk_id);
 
+#if defined(SMI_WHI)
 struct mmdvfs_step_util mmdvfs_step_util_obj = {
 	{0},
 	MMDVFS_SCEN_COUNT,
@@ -66,7 +72,7 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6799_v2 = {
 	mmdvfs_get_clients_clk_opp
 };
 
-
+#elif defined(SMI_ALA)
 struct mmdvfs_step_util mmdvfs_step_util_obj_mt6759 = {
 	{0},
 	MMDVFS_SCEN_COUNT,
@@ -99,6 +105,7 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6759_non_force = {
 	mmdvfs_get_clients_clk_opp
 };
 
+#elif defined(SMI_BIA)
 struct mmdvfs_step_util mmdvfs_step_util_obj_mt6763 = {
 	{0},
 	MMDVFS_SCEN_COUNT,
@@ -114,6 +121,8 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6763 = {
 	mmdvfs_step_util_set_step,
 	mmdvfs_get_clients_clk_opp
 };
+#endif
+
 /* Class: mmdvfs_adaptor */
 static void mmdvfs_single_profile_dump(struct mmdvfs_profile *profile);
 static void mmdvfs_profile_dump(struct mmdvfs_adaptor *self);
@@ -133,6 +142,7 @@ static int is_camera_profile_matched(struct mmdvfs_cam_property *cam_setting,
 static int is_video_profile_matched(struct mmdvfs_video_property *video_setting,
 	struct mmdvfs_video_property *profile_property);
 
+#if defined(SMI_WHI)
 struct mmdvfs_adaptor mmdvfs_adaptor_obj = {
 	KIR_MM,
 	0, 0, 0,
@@ -157,7 +167,7 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6799_v2 = {
 	mmdvfs_clk_sources_setting_6799v2, MT6799_V2_MMDVFS_CLK_SOURCE_NUM,
 	mmdvfs_clk_hw_map_setting_6799v2, MMDVFS_CLK_MUX_NUM,
 	mmdvfs_step_to_profile_mappings_setting_6799v2, MT6799_V2_MMDVFS_OPP_MAX,
-	MT6759_MMDVFS_NON_FORCE_SMI_USER_CONTROL_SCEN_MASK,
+	MMDVFS_SMI_USER_CONTROL_SCEN_MASK,
 	mmdvfs_profile_dump,
 	mmdvfs_single_hw_configuration_dump,
 	mmdvfs_hw_configuration_dump,
@@ -169,7 +179,7 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6799_v2 = {
 	mmdvfs_single_profile_dump,
 };
 
-
+#elif defined(SMI_ALA)
 struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6759 = {
 	KIR_MM,
 	0, 0, 0,
@@ -207,6 +217,7 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6759_non_force = {
 	mmdvfs_single_profile_dump,
 };
 
+#elif defined(SMI_BIA)
 struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6763 = {
 	KIR_MM,
 	0, 0, 0,
@@ -260,6 +271,7 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6763_lp3 = {
 	mmdvfs_get_cam_sys_clk,
 	mmdvfs_single_profile_dump,
 };
+#endif
 
 /* class: ISP PMQoS Handler */
 
@@ -267,23 +279,41 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6763_lp3 = {
 static int get_step_by_threshold(struct mmdvfs_thresholds_dvfs_handler *self,
 	int class_id, int value);
 
+struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj = {
+	NULL,
+	0,
+	get_step_by_threshold
+};
+
+#if defined(SMI_ALA)
 struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj_mt6759 = {
 	mt6759_mmdvfs_threshold_settings,
 	MMDVFS_PM_QOS_SUB_SYS_NUM,
 	get_step_by_threshold
 };
 
+#elif defined(SMI_BIA)
 struct mmdvfs_thresholds_dvfs_handler mmdvfs_thresholds_dvfs_handler_obj_mt6763 = {
 	mt6763_mmdvfs_threshold_settings,
 	MMDVFS_PM_QOS_SUB_SYS_NUM,
 	get_step_by_threshold
 };
-
+#endif
 
 static const struct mmdvfs_vpu_steps_setting
 	*get_vpu_setting_impl(struct mmdvfs_vpu_dvfs_configurator *self, int vpu_opp);
 
 struct mmdvfs_vpu_dvfs_configurator mmdvfs_vpu_dvfs_configurator_obj = {
+	0,
+	0,
+	0,
+	0,
+	NULL,
+	get_vpu_setting_impl
+};
+
+#if defined(SMI_WHI)
+struct mmdvfs_vpu_dvfs_configurator mmdvfs_vpu_dvfs_configurator_obj_mt6799 = {
 	MT6799_MMDVFS_VPU_OPP_MAX,
 	MT6799_MMDVFS_VPU_INTERNAL_VPU_CLK_NUM,
 	MT6799_MMDVFS_VPU_INTERNAL_VPU_IF_CLK_NUM,
@@ -291,6 +321,7 @@ struct mmdvfs_vpu_dvfs_configurator mmdvfs_vpu_dvfs_configurator_obj = {
 	mt6799_mmdvfs_vpu_steps_settings,
 	get_vpu_setting_impl
 };
+#endif
 
 /* Member function implementation */
 static int mmdvfs_apply_hw_configurtion_by_step(struct mmdvfs_adaptor *self,
@@ -891,21 +922,27 @@ void mmdvfs_config_util_init(void)
 
 	switch (mmdvfs_profile_id) {
 	case MMDVFS_PROFILE_WHY:
-		g_mmdvfs_vpu_adaptor = &mmdvfs_vpu_dvfs_configurator_obj;
+#if defined(SMI_WHI)
+		g_mmdvfs_vpu_adaptor = &mmdvfs_vpu_dvfs_configurator_obj_mt6799;
 		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj;
 		g_mmdvfs_step_util = &mmdvfs_step_util_obj;
+#endif
 		break;
 	case MMDVFS_PROFILE_WHY2:
-		g_mmdvfs_vpu_adaptor = &mmdvfs_vpu_dvfs_configurator_obj;
+#if defined(SMI_WHI)
+		g_mmdvfs_vpu_adaptor = &mmdvfs_vpu_dvfs_configurator_obj_mt6799;
 		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6799_v2;
 		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6799_v2;
+#endif
 		break;
 	case MMDVFS_PROFILE_ALA:
+#if defined(SMI_ALA)
 		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6759;
 		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6759;
 		g_mmdvfs_non_force_adaptor = &mmdvfs_adaptor_obj_mt6759_non_force;
 		g_mmdvfs_non_force_step_util = &mmdvfs_step_util_obj_mt6759_non_force;
 		g_mmdvfs_thresholds_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj_mt6759;
+#endif
 		break;
 	case MMDVFS_PROFILE_BIA:
 #if defined(SMI_BIA)
@@ -919,11 +956,9 @@ void mmdvfs_config_util_init(void)
 			g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6763;
 			MMDVFSMSG("g_mmdvfs_step_util init with lp4 2-ch\n");
 		}
-#else
-		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6763;
-#endif
 		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6763;
 		g_mmdvfs_thresholds_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj_mt6763;
+#endif
 		break;
 
 	default:
