@@ -14,8 +14,17 @@
 #FPGA project no need build-in
 ifndef CONFIG_MTK_FPGA
 
-# ccci_util is build after eccci or later
-# ifdef CONFIG_MTK_ECCCI_DRIVER
+# ccci_util is build when ECCCI driver or CCCI driver enabled
+
+ENABLE_CCCI_UTIL=n
+ifeq ($(CONFIG_MTK_ECCCI_DRIVER), y)
+ENABLE_CCCI_UTIL=y
+endif
+ifeq ($(CONFIG_MTK_CCCI_EXT), y)
+ENABLE_CCCI_UTIL=y
+endif
+
+ifeq ($(ENABLE_CCCI_UTIL), y)
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccci_util
 
@@ -45,6 +54,6 @@ ifeq ($(mtkplatform_exist), y)
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 
-# endif
+endif
 
 obj-y += ccci_util_dummy.o # avoid build error
