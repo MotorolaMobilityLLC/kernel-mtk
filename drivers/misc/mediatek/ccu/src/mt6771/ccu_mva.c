@@ -29,16 +29,16 @@ int ccu_ion_init(void)
 
 	ccu_lock_ion_client_mutex();
 	if (!_ccu_ion_client && g_ion_device) {
-		LOG_INF_MUST("CCU ION client need init\n");
+		LOG_INF_MUST("CCU ION_client need init\n");
 		need_init = MTRUE;
 	}
-	ccu_unlock_ion_client_mutex();
 
 	if (need_init == MTRUE) {
 		_ccu_ion_client = ion_client_create(g_ion_device, "ccu");
-		LOG_INF_MUST("CCU ION client create success: 0x%p\n", _ccu_ion_client);
+		LOG_INF_MUST("CCU ION_client create success: 0x%p\n", _ccu_ion_client);
 	}
 
+	ccu_unlock_ion_client_mutex();
 	return 0;
 }
 
@@ -48,17 +48,17 @@ int ccu_ion_uninit(void)
 
 	ccu_lock_ion_client_mutex();
 	if (_ccu_ion_client && g_ion_device) {
-		LOG_INF_MUST("CCU ION client need uninit\n");
+		LOG_INF_MUST("CCU ION_client need uninit\n");
 		need_uninit = MTRUE;
 	}
-	ccu_unlock_ion_client_mutex();
 
 	if (need_uninit == MTRUE) {
 		ion_client_destroy(_ccu_ion_client);
-		LOG_INF_MUST("CCU ION client destroy done.\n");
+		LOG_INF_MUST("CCU ION_client destroy done.\n");
 		_ccu_ion_client = NULL;
 	}
 
+	ccu_unlock_ion_client_mutex();
 	return 0;
 }
 
