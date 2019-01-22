@@ -2280,6 +2280,39 @@ static void smi_apply_mmu_setting(void)
 	SMIDBG(1, "apply mmu setting done.\n");
 }
 
+void smi_common_ostd_setting(int enable)
+{
+	unsigned int val = 0;
+	unsigned int tmp_val = 0;
+
+	SMIDBG(1, "before setting, 0x118=0x%x, 0x11c=0x%x, 0x120=0x%x\n",
+	M4U_ReadReg32(get_common_base_addr(), 0x118),
+	M4U_ReadReg32(get_common_base_addr(), 0x11c),
+	M4U_ReadReg32(get_common_base_addr(), 0x120));
+	/* workaround for disable IPU/VENC/MJC write cmd via set write ostd = 0 */
+	if (enable == 0) {
+		val = 0xffcfbfff;
+		tmp_val = M4U_ReadReg32(get_common_base_addr(), 0x118) & val;
+		M4U_WriteReg32(get_common_base_addr(), 0x118, tmp_val);
+		tmp_val = M4U_ReadReg32(get_common_base_addr(), 0x11c) & val;
+		M4U_WriteReg32(get_common_base_addr(), 0x11c, tmp_val);
+		tmp_val = M4U_ReadReg32(get_common_base_addr(), 0x120) & val;
+		M4U_WriteReg32(get_common_base_addr(), 0x120, tmp_val);
+	} else {
+		val = 0x304000;
+		tmp_val = M4U_ReadReg32(get_common_base_addr(), 0x118) | val;
+		M4U_WriteReg32(get_common_base_addr(), 0x118, tmp_val);
+		tmp_val = M4U_ReadReg32(get_common_base_addr(), 0x11c) | val;
+		M4U_WriteReg32(get_common_base_addr(), 0x11c, tmp_val);
+		tmp_val = M4U_ReadReg32(get_common_base_addr(), 0x120) | val;
+		M4U_WriteReg32(get_common_base_addr(), 0x120, tmp_val);
+	}
+	SMIDBG(1, "after setting, 0x118=0x%x, 0x11c=0x%x, 0x120=0x%x\n",
+	M4U_ReadReg32(get_common_base_addr(), 0x118),
+	M4U_ReadReg32(get_common_base_addr(), 0x11c),
+	M4U_ReadReg32(get_common_base_addr(), 0x120));
+}
+
 module_param_named(mmdvfs_rt_debug_disable_mask, mmdvfs_rt_debug_disable_mask, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_mmdvfs, disable_mmdvfs, uint, S_IRUGO | S_IWUSR);
 module_param_named(disable_freq_hopping, disable_freq_hopping, uint, S_IRUGO | S_IWUSR);

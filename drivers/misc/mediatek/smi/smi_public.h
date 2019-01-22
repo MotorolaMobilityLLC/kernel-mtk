@@ -35,6 +35,6 @@ extern int smi_clk_prepare(enum SMI_MASTER_ID master_id, char *user_name, int en
 extern int smi_clk_enable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
 extern int smi_clk_unprepare(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
 extern int smi_clk_disable(enum SMI_MASTER_ID master_id, char *user_name, int enable_mtcmos);
+extern void smi_common_ostd_setting(int enable);
 #endif
-
 #endif
