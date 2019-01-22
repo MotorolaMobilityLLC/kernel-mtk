@@ -201,6 +201,12 @@ unsigned int mt6336_write_byte(unsigned int reg, unsigned char writeData)
 	return ret == xfers ? 1 : -1;
 }
 
+int mt6336_write_bytes(unsigned int reg, unsigned char *writeData, unsigned int len)
+{
+	new_client->addr = reg / CODA_ADDR_WIDTH + SLV_BASE_ADDR;
+	return i2c_smbus_write_i2c_block_data(new_client, (reg % CODA_ADDR_WIDTH), len, writeData);
+}
+
 /**********************************************************
   *
   *   [Read / Write Function]

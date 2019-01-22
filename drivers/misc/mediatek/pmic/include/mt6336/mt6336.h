@@ -35,6 +35,7 @@
 
 /* multi-read register */
 extern unsigned int mt6336_read_bytes(unsigned int reg, unsigned char *returnData, unsigned int len);
+extern int mt6336_write_bytes(unsigned int, unsigned char *, unsigned int);
 
 /* access register api */
 extern unsigned int mt6336_read_interface(unsigned int RegNum, unsigned char *val, unsigned char MASK,
