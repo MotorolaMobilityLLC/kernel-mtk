@@ -860,8 +860,6 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4Lo
 	spin_unlock(&g_SMIInfo.SMI_lock);
 
 	/* Fake mode is not a real SMI profile, so we need to return here */
-	if (result == 1)
-		return 0;
 
 	smi_bus_optimization_clock_control(bus_optimization_sync, BUS_ENABLE);
 
@@ -929,6 +927,8 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4Lo
 		eFinalScen = SMI_BWC_SCEN_VP;
 	else if ((1 << SMI_BWC_SCEN_SWDEC_VP) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_SWDEC_VP;
+	else if ((1 << SMI_BWC_SCEN_WFD) & u4Concurrency)
+		eFinalScen = SMI_BWC_SCEN_WFD;
 	else if ((1 << SMI_BWC_SCEN_VENC) & u4Concurrency)
 		eFinalScen = SMI_BWC_SCEN_VENC;
 	else
