@@ -1009,5 +1009,6 @@ int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data);
 int sensor_batch_to_hub(uint8_t sensorType, int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
 int sensor_flush_to_hub(uint8_t sensorType);
 int sensor_cfg_to_hub(uint8_t sensorType, uint8_t *data, uint8_t count);
+int sensor_calibration_to_hub(uint8_t sensorType);
 #endif
 #endif

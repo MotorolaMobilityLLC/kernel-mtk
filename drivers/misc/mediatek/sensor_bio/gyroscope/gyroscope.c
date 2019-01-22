@@ -803,11 +803,6 @@ static int gyro_probe(void)
 		GYRO_ERR("gyro real driver init fail\n");
 		goto real_driver_init_fail;
 	}
-
-	err = gyro_factory_device_init();
-	if (err)
-		GYRO_ERR("gyro_factory_device_init fail\n");
-
 	GYRO_LOG("----gyro_probe OK !!\n");
 	return 0;
 

@@ -1139,10 +1139,6 @@ static int alsps_probe(void)
 		ALSPS_ERR("alsps real driver init fail\n");
 		goto real_driver_init_fail;
 	}
-	/* init alsps common factory mode misc device */
-	err = alsps_factory_device_init();
-	if (err)
-		ALSPS_ERR("alsps factory device already registed\n");
 	ALSPS_LOG("----alsps_probe OK !!\n");
 	return 0;
 
