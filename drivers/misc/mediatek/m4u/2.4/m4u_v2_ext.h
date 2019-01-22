@@ -117,6 +117,6 @@ typedef enum m4u_callback_ret {
 typedef m4u_callback_ret_t (m4u_fault_callback_t)(int port, unsigned int mva, void *data);
 int m4u_register_fault_callback(int port, m4u_fault_callback_t *fn, void *data);
 int m4u_unregister_fault_callback(int port);
-int m4u_enable_tf(int port, bool fgenable);
+int m4u_enable_tf(unsigned int port, bool fgenable);
 
 #endif

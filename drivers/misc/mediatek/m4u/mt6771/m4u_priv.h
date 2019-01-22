@@ -148,7 +148,7 @@ struct m4u_domain {
 	unsigned int pgsize_bitmap;
 };
 
-struct m4u_buf_info {
+struct m4u_buf_info_t {
 	struct list_head link;
 	unsigned long va;
 	unsigned int mva;
@@ -164,7 +164,7 @@ struct m4u_buf_info {
 	unsigned long mapped_kernel_va_for_debug;
 };
 
-struct M4U_MAU {
+struct M4U_MAU_STRUCT {
 	M4U_PORT_ID port;
 	bool write;
 	unsigned int mva;
@@ -173,7 +173,7 @@ struct M4U_MAU {
 	bool force;
 };
 
-struct M4U_TF {
+struct M4U_TF_STRUCT {
 	M4U_PORT_ID port;
 	bool fgEnable;
 };
@@ -226,10 +226,13 @@ int m4u_dump_pfh_tlb(int m4u_id);
 int m4u_dump_victim_tlb(int m4u_id);
 int m4u_domain_init(struct m4u_device *m4u_dev, void *priv_reserve);
 
-int config_mau(struct M4U_MAU mau);
+/*int config_mau(struct M4U_MAU_STRUCT mau);*/
 int m4u_enable_tf(unsigned int port, bool fgenable);
-
-
+void m4u_dump_pgtable_for_debug(unsigned int mva, unsigned int mva_size);
+void m4u_dump_pgtable_in_range(struct m4u_domain *domain,
+					unsigned int mva,
+					unsigned int mva_size);
+unsigned int get_first_free_idx(void);
 extern int gM4U_4G_DRAM_Mode;
 
 /* ================================= */
@@ -320,7 +323,7 @@ enum M4U_MMP_TYPE {
 };
 extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
 
-struct M4U_MOUDLE {
+struct M4U_MOUDLE_STRUCT {
 	M4U_PORT_ID port;
 	unsigned long BufAddr;
 	unsigned int BufSize;
@@ -330,7 +333,7 @@ struct M4U_MOUDLE {
 	unsigned int flags;
 };
 
-struct M4U_CACHE {
+struct M4U_CACHE_STRUCT {
 	M4U_PORT_ID port;
 	M4U_CACHE_SYNC_ENUM eCacheSync;
 	unsigned long va;
@@ -338,7 +341,7 @@ struct M4U_CACHE {
 	unsigned int mva;
 };
 
-struct M4U_DMA {
+struct M4U_DMA_STRUCT {
 	M4U_PORT_ID port;
 	M4U_DMA_TYPE eDMAType;
 	M4U_DMA_DIR eDMADir;

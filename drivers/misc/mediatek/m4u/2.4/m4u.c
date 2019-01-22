@@ -1306,7 +1306,7 @@ int m4u_dump_info(int m4u_index)
 void m4u_get_pgd(m4u_client_t *client, M4U_PORT_ID port, void **pgd_va, void **pgd_pa,
 		 unsigned int *size)
 {
-	struct m4u_domain_t *pDomain;
+	struct m4u_domain *pDomain;
 
 	pDomain = m4u_get_domain_by_port(port);
 	*pgd_va = pDomain->pgd;
@@ -1317,7 +1317,7 @@ void m4u_get_pgd(m4u_client_t *client, M4U_PORT_ID port, void **pgd_va, void **p
 unsigned long m4u_mva_to_pa(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva)
 {
 	unsigned long pa;
-	struct m4u_domain_t *pDomain;
+	struct m4u_domain *pDomain;
 
 	pDomain = m4u_get_domain_by_port(port);
 
@@ -2294,23 +2294,6 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 #ifdef M4U_TEE_SERVICE_ENABLE
 			mutex_unlock(&gM4u_sec_init);
 #endif
-		}
-		break;
-	case MTK_M4U_T_CONFIG_MAU:
-		{
-			struct M4U_MAU_STRUCT rMAU;
-
-			ret = copy_from_user(&rMAU, (void *)arg, sizeof(struct M4U_MAU_STRUCT));
-			if (ret) {
-				M4UMSG("MTK_M4U_T_CONFIG_MAU,copy_from_user failed:%d\n", ret);
-				return -EFAULT;
-			}
-			if (rMAU.port < 0 || rMAU.port >= M4U_PORT_UNKNOWN) {
-				M4UMSG("MTK_M4U_T_CONFIG_MAU, port%d is invalid\n", rMAU.port);
-				return -EFAULT;
-			}
-
-			ret = config_mau(rMAU);
 		}
 		break;
 	case MTK_M4U_T_CONFIG_TF:

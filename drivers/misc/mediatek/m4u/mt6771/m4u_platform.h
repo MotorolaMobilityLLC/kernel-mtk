@@ -129,6 +129,9 @@ struct m4u_port_t gM4uPort[] = {
 	M4U0_PORT_INIT("CAM_SPARE_5", 0, 6, 6, 29),
 	M4U0_PORT_INIT("CAM_SPARE_6", 0, 6, 6, 30),
 
+	M4U0_PORT_INIT("VPU0", 0, 6, 6, 31),
+	M4U0_PORT_INIT("VPU1", 0, 6, 6, 32),
+
 	M4U0_PORT_INIT("UNKNOWN", 0, 0, 0, 0)
 };
 
