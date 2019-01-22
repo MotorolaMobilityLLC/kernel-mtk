@@ -537,7 +537,8 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 	/* setting dram ctrl config to scp*/
 	/* scp side get wakelock, AP to write info to scp sram*/
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID), (SCP_TCM + scp_A_log_dram_addr_last));
-
+	/* set init flag here*/
+	scp_A_logger_inited = 1;
 	spin_unlock_irqrestore(&scp_A_log_buf_spinlock, flags);
 
 	/*set a wq to enable scp logger*/
@@ -571,7 +572,7 @@ static void scp_logger_notify_ws(struct work_struct *ws)
 	retrytimes = SCP_IPI_RETRY_TIMES;
 	do {
 		ret = scp_ipi_send(scp_ipi_id, &magic, sizeof(magic), 0, scp_core_id);
-		pr_debug("[SCP]scp_logger_notify_ws ipi ret=%u\n", ret);
+		pr_debug("[SCP]scp_logger_notify_ws ipi ret=%d\n", ret);
 		if (ret == SCP_IPI_DONE)
 			break;
 		retrytimes--;
@@ -797,4 +798,17 @@ char *scp_get_last_log(enum scp_core_id id)
 	last_log = scp_A_last_log;
 
 	return last_log;
+}
+
+/*
+ * set scp_A_logger_inited
+ */
+void scp_logger_init_set(unsigned int value)
+{
+	/*scp_A_logger_inited
+	 *  0: logger not init
+	 *  1: logger inited
+	 */
+	scp_A_logger_inited = value;
+
 }
