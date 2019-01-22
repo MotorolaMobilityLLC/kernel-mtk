@@ -284,6 +284,20 @@ extern "C" {
 	int32_t cmdqRecSetEventToken(struct cmdqRecStruct *handle, enum CMDQ_EVENT_ENUM event);
 
 /**
+ * Replace overwite CPR parameters of arg_a.
+ * Parameter:
+ *	   handle: the command queue recorder handle
+ *	   index: the index of instruction to replace
+ *	   new_arg_a: the desired cpr value to overwrite arg_a
+ *	   new_arg_b: the desired cpr value to overwrite arg_b
+ *	   new_arg_c: the desired cpr value to overwrite arg_c
+ * Return:
+ *	   0 for success; else the error code is returned
+ */
+	s32 cmdq_op_replace_overwrite_cpr(struct cmdqRecStruct *handle, u32 index,
+		s32 new_arg_a, s32 new_arg_b, s32 new_arg_c);
+
+/**
  * Read a register value to a CMDQ general purpose register(GPR)
  * Parameter:
  *     handle: the command queue recorder handle
@@ -784,8 +798,6 @@ extern "C" {
  *     0 for success; else the error code is returned
  */
 	s32 cmdq_op_delay_us(struct cmdqRecStruct *handle, u32 delay_time);
-	s32 cmdq_op_backup_delay_result(struct cmdqRecStruct *handle,
-		cmdqBackupSlotHandle h_backup_slot, uint32_t slot_start_index, uint32_t slot_count);
 	s32 cmdq_op_backup_CPR(struct cmdqRecStruct *handle, CMDQ_VARIABLE cpr,
 		cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index);
 
