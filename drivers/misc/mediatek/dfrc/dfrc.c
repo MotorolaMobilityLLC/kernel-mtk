@@ -23,6 +23,8 @@
 #include <linux/cdev.h>
 #include <linux/platform_device.h>
 
+#include <ged_frr.h>
+
 #include "dfrc_drv.h"
 
 #define DFRC_DEVNAME "mtk_dfrc"
@@ -238,11 +240,23 @@ long dfrc_set_policy_locked(const struct DFRC_DRV_POLICY *policy)
 					node->policy.target_pid != policy->target_pid ||
 					node->policy.gl_context_id != policy->gl_context_id) {
 				change = true;
+				if (node->policy.mode == DFRC_DRV_MODE_FRR &&
+						node->policy.mode != policy->mode) {
+					if (node->policy.api == DFRC_DRV_API_GIFT) {
+						ged_frr_table_set_fps(node->policy.target_pid,
+								(uint64_t)node->policy.gl_context_id,
+								GED_FRR_TABLE_ZERO);
+					} else {
+						ged_frr_table_set_fps(GED_FRR_TABLE_FOR_ALL_PID,
+								GED_FRR_TABLE_FOR_ALL_CID,
+								GED_FRR_TABLE_ZERO);
+					}
+				}
 				node->policy.fps = policy->fps;
 				node->policy.mode = policy->mode;
 				node->policy.target_pid = policy->target_pid;
 				node->policy.gl_context_id = policy->gl_context_id;
-				DFRC_INFO("set_policy: [%llu] fps:%d mode:%d t_pid:%d gl_id:%p\n",
+				DFRC_INFO("set_policy: [%llu] fps:%d mode:%d t_pid:%d gl_id:%llu\n",
 						node->policy.sequence, policy->fps, policy->mode,
 						policy->target_pid, policy->gl_context_id);
 				break;
@@ -281,6 +295,17 @@ long dfrc_unreg_policy(const unsigned long long sequence)
 	list_for_each(iter, &g_fps_policy_list) {
 		node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
 		if (node->policy.sequence == sequence) {
+			if (node->policy.mode == DFRC_DRV_MODE_FRR) {
+				if (node->policy.api == DFRC_DRV_API_GIFT) {
+					ged_frr_table_set_fps(node->policy.target_pid,
+							(uint64_t)node->policy.gl_context_id,
+							GED_FRR_TABLE_ZERO);
+				} else {
+					ged_frr_table_set_fps(GED_FRR_TABLE_FOR_ALL_PID,
+							GED_FRR_TABLE_FOR_ALL_CID,
+							GED_FRR_TABLE_ZERO);
+				}
+			}
 			is_new = false;
 			list_del(&node->list);
 			vfree(node);
@@ -343,7 +368,7 @@ long dfrc_get_request_set(struct DFRC_DRC_REQUEST_SET *request_set)
 	int size;
 
 	mutex_lock(&g_mutex_request);
-	if (g_request_policy != NULL) {
+	if (g_request_policy != NULL && request_set->policy != NULL) {
 		size = request_set->num > g_request_notified.num_policy ? g_request_notified.num_policy :
 				request_set->num;
 		size *= sizeof(struct DFRC_DRV_POLICY);
@@ -422,7 +447,7 @@ void dfrc_set_fg_window(const struct DFRC_DRV_FOREGROUND_WINDOW_INFO *fg_window_
 	mutex_unlock(&g_mutex_data);
 }
 
-long dfrc_set_kernel_policy(int api, int fps, int mode, int target_pid, void *gl_context_id)
+long dfrc_set_kernel_policy(int api, int fps, int mode, int target_pid, unsigned long long gl_context_id)
 {
 	long res = 0L;
 	struct DFRC_DRV_POLICY *temp;
@@ -679,8 +704,10 @@ static void dfrc_idump(const char *fmt, ...)
 
 	va_start(vargs, fmt);
 
-	if (g_string_info_len >= DUMP_MAX_LENGTH - 32)
+	if (g_string_info_len >= DUMP_MAX_LENGTH - 32) {
+		va_end(vargs);
 		return;
+	}
 
 	tmp = vscnprintf(g_string_info + g_string_info_len,
 			DUMP_MAX_LENGTH - g_string_info_len, fmt, vargs);
@@ -698,8 +725,10 @@ static void dfrc_rdump(const char *fmt, ...)
 
 	va_start(vargs, fmt);
 
-	if (g_string_reason_len >= DUMP_MAX_LENGTH - 32)
+	if (g_string_reason_len >= DUMP_MAX_LENGTH - 32) {
+		va_end(vargs);
 		return;
+	}
 
 	tmp = vscnprintf(g_string_reason + g_string_reason_len,
 			DUMP_MAX_LENGTH - g_string_reason_len, fmt, vargs);
@@ -979,7 +1008,10 @@ static void dfrc_adjust_vsync(int which,
 	int hw_mode = DFRC_DRV_HW_MODE_ARR;
 	struct DFRC_DRV_POLICY *new_policy = NULL;
 	int size;
+	struct list_head *iter;
+	struct DFRC_DRV_POLICY_NODE *node;
 
+	memset(&new_request, 0, sizeof(new_request));
 	if (which == DFRC_DRV_MODE_DEFAULT) {
 		dfrc_rdump("which is default\n");
 		fps = -1;
@@ -992,6 +1024,7 @@ static void dfrc_adjust_vsync(int which,
 		new_request.valid_info = false;
 		new_request.transient_state = false;
 		new_request.num_policy = 0;
+		ged_frr_table_set_fps(GED_FRR_TABLE_FOR_ALL_PID, GED_FRR_TABLE_FOR_ALL_CID, GED_FRR_TABLE_ZERO);
 	} else if (which == DFRC_DRV_MODE_FRR) {
 		dfrc_rdump("which is frr\n");
 		fps = 60;
@@ -1006,6 +1039,18 @@ static void dfrc_adjust_vsync(int which,
 		new_request.num_policy = expected_frr->num_config;
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY) * expected_frr->num_config);
 		dfrc_pack_choosed_frr_policy(expected_frr->num_config, new_policy, frr_statistics);
+
+		list_for_each(iter, &frr_statistics->list) {
+			node = list_entry(iter, struct DFRC_DRV_POLICY_NODE, list);
+			if (node->policy.api != DFRC_DRV_API_GIFT) {
+				ged_frr_table_set_fps(GED_FRR_TABLE_FOR_ALL_PID,
+						GED_FRR_TABLE_FOR_ALL_CID, node->policy.fps);
+			} else {
+				ged_frr_table_set_fps(node->policy.target_pid,
+						(uint64_t)node->policy.gl_context_id,
+						node->policy.fps);
+			}
+		}
 	} else if (which == DFRC_DRV_MODE_ARR) {
 		dfrc_rdump("which is arr\n");
 		fps = expected_arr->fps;
@@ -1020,6 +1065,8 @@ static void dfrc_adjust_vsync(int which,
 		new_request.num_policy = 1;
 		new_policy = vmalloc(sizeof(struct DFRC_DRV_POLICY));
 		dfrc_pack_choosed_arr_policy(1, new_policy, arr_statistics);
+		ged_frr_table_set_fps(GED_FRR_TABLE_FOR_ALL_PID, GED_FRR_TABLE_FOR_ALL_CID,
+				GED_FRR_TABLE_UPPER_BOUND_FPS);
 	}
 
 	if (memcmp(&new_request, &g_request_now, sizeof(g_request_now))) {
