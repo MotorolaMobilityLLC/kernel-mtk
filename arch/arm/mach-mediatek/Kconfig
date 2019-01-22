@@ -169,6 +169,7 @@ config MACH_MT6771
 	select PINCTRL_MT6771
 	select MFD_SYSCON
 	select CPU_IDLE
+	select KERNEL_MODE_NEON
 	select MTK_BASE_POWER
 	select MTK_GIC_V3_EXT
 	select ARM_GIC_V3
