@@ -442,6 +442,16 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		struct OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 		int i = 0;
 
+		memset(ovl_all, 0, sizeof(ovl_all));
+
+#ifdef PRIMARY_OVL0_OVL0_2L_CASCADE
+				ovl_get_info(DISP_MODULE_OVL0, ovl_all);
+				ovl_get_info(DISP_MODULE_OVL0_2L, &ovl_all[4]);
+				for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++)
+					layers.layer_en[i] = (ovl_all[i].layer_en ? 1 : 0);
+
+#else
+
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
@@ -461,6 +471,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		layers.layer_en[i + 7] = (ovl_all[7].layer_en ? 1 : 0);
 #endif
 #endif
+#endif
 		pr_debug("[FB_LAYER_GET_EN] L0:%d L1:%d L2:%d L3:%d\n",
 			ovl_all[0].layer_en, ovl_all[1].layer_en, ovl_all[2].layer_en, ovl_all[3].layer_en);
 		return copy_to_user(argp, &layers, sizeof(layers)) ? -EFAULT : 0;
@@ -470,17 +481,24 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		struct PM_LAYER_INFO layer_info;
 		struct OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
+		memset(ovl_all, 0, sizeof(ovl_all));
 		if (copy_from_user(&layer_info, (void __user *)argp, sizeof(layer_info))) {
 			pr_debug("[FB_LAYER_GET_INFO]: copy_from_user failed! line:%d\n", __LINE__);
 			return -EFAULT;
 		}
 		global_layer_id = layer_info.index;
+#ifdef PRIMARY_OVL0_OVL0_2L_CASCADE
+				ovl_get_info(DISP_MODULE_OVL0, ovl_all);
+				ovl_get_info(DISP_MODULE_OVL0_2L, &ovl_all[4]);
+#else
+
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
 		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[6]);
 #else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
+#endif
 #endif
 		layer_info.height = ovl_all[layer_info.index].src_h;
 		layer_info.width = ovl_all[layer_info.index].src_w;
@@ -507,12 +525,20 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		unsigned int real_size = 0;
 		struct OVL_BASIC_STRUCT ovl_all[TOTAL_OVL_LAYER_NUM];
 
+		memset(ovl_all, 0, sizeof(ovl_all));
+
+#ifdef PRIMARY_OVL0_OVL0_2L_CASCADE
+				ovl_get_info(DISP_MODULE_OVL0, ovl_all);
+				ovl_get_info(DISP_MODULE_OVL0_2L, &ovl_all[4]);
+#else
+
 #ifdef PRIMARY_THREE_OVL_CASCADE
 		ovl_get_info(DISP_MODULE_OVL0_2L, ovl_all);
 		ovl_get_info(DISP_MODULE_OVL0, &ovl_all[2]);
 		ovl_get_info(DISP_MODULE_OVL1_2L, &ovl_all[6]);
 #else
 		ovl_get_info(DISP_MODULE_OVL0, ovl_all);
+#endif
 #endif
 		layer_size = ovl_all[global_layer_id].src_pitch * ovl_all[global_layer_id].src_h;
 		mva = ovl_all[global_layer_id].addr;
