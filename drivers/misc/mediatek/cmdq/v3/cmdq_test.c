@@ -1845,7 +1845,6 @@ static void testcase_backup_register(void)
 static void testcase_get_result(void)
 {
 #ifdef CMDQ_GPR_SUPPORT
-	int i;
 	struct cmdqRecStruct *handle = NULL;
 	int ret = 0;
 	struct cmdqCommandStruct desc = { 0 };
@@ -1858,7 +1857,7 @@ static void testcase_get_result(void)
 	/* make sure each scenario runs properly with empty commands */
 	/* use CMDQ_SCENARIO_PRIMARY_ALL to test */
 	/* because it has COLOR0 HW flag */
-	cmdq_task_create(CMDQ_SCENARIO_PRIMARY_ALL, &handle);
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, gCmdqTestSecure);
 
@@ -1885,18 +1884,10 @@ static void testcase_get_result(void)
 
 	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0xdeaddead);
 
-	/* manually raise the dirty flag */
-	cmdqCoreSetEvent(CMDQ_EVENT_MUTEX0_STREAM_EOF);
-	cmdqCoreSetEvent(CMDQ_EVENT_MUTEX1_STREAM_EOF);
-	cmdqCoreSetEvent(CMDQ_EVENT_MUTEX2_STREAM_EOF);
-	cmdqCoreSetEvent(CMDQ_EVENT_MUTEX3_STREAM_EOF);
-
-	for (i = 0; i < 1; ++i) {
-		ret = cmdqCoreSubmitTask(&desc);
-		if (CMDQ_U32_PTR(desc.regValue.regValues)[0] != 0xdeaddead) {
-			CMDQ_ERR("TEST FAIL: reg value is 0x%08x\n",
-				 CMDQ_U32_PTR(desc.regValue.regValues)[0]);
-		}
+	ret = cmdqCoreSubmitTask(&desc);
+	if (CMDQ_U32_PTR(desc.regValue.regValues)[0] != 0xdeaddead) {
+		CMDQ_ERR("TEST FAIL: reg value is 0x%08x\n",
+			 CMDQ_U32_PTR(desc.regValue.regValues)[0]);
 	}
 
 	cmdq_task_destroy(handle);
@@ -3636,6 +3627,7 @@ static void testcase_basic_logic(void)
 	/* test logic add */
 	cmdq_task_reset(handle);
 	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&get_value);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_add(handle, &result, get_value, test_var);
@@ -3655,6 +3647,7 @@ static void testcase_basic_logic(void)
 	/* test logic subtract */
 	cmdq_task_reset(handle);
 	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&get_value);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_subtract(handle, &result, get_value, test_var);
@@ -3674,6 +3667,7 @@ static void testcase_basic_logic(void)
 	/* test logic multiply */
 	cmdq_task_reset(handle);
 	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&get_value);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_multiply(handle, &result, get_value, test_var);
@@ -3693,6 +3687,7 @@ static void testcase_basic_logic(void)
 	/* test logic exclusive or */
 	cmdq_task_reset(handle);
 	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&get_value);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_xor(handle, &result, get_value, test_var);
@@ -3712,6 +3707,7 @@ static void testcase_basic_logic(void)
 	/* test logic not */
 	cmdq_task_reset(handle);
 	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&get_value);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_not(handle, &result, get_value);
@@ -3731,6 +3727,7 @@ static void testcase_basic_logic(void)
 	/* test logic or */
 	cmdq_task_reset(handle);
 	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&get_value);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_or(handle, &result, get_value, test_var);
@@ -3750,6 +3747,7 @@ static void testcase_basic_logic(void)
 	/* test logic and */
 	cmdq_task_reset(handle);
 	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&get_value);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_and(handle, &result, get_value, test_var);
@@ -3769,6 +3767,7 @@ static void testcase_basic_logic(void)
 	/* test logic left shift */
 	cmdq_task_reset(handle);
 	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&get_value);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_left_shift(handle, &result, get_value, test_var);
@@ -3788,6 +3787,7 @@ static void testcase_basic_logic(void)
 	/* test logic right shift */
 	cmdq_task_reset(handle);
 	cmdq_op_init_variable(&result);
+	cmdq_op_init_variable(&get_value);
 
 	cmdq_op_read_reg(handle, test_reg_pa, &get_value, ~0x0);
 	cmdq_op_right_shift(handle, &result, get_value, test_var);
@@ -5210,6 +5210,107 @@ void testcase_engineflag_conflict_dump(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
+static void testcase_end_behavior(bool test_prefetch, u32 dummy_size)
+{
+	struct CmdBufferStruct buffer_entry;
+	cmdqBackupSlotHandle slot_handle;
+	u32 *cmd_end;
+	s32 loop = 0;
+	u32 thread = 1;
+	u32 read_result = 0;
+	u32 cmd_size, last_cmd;
+
+	CMDQ_LOG("%s START with test_prefetch: %d\n", __func__, test_prefetch);
+
+	/* create command */
+	cmdq_alloc_mem(&slot_handle, 1);
+	cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_GPR_SET_4);
+	buffer_entry.pVABase = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), CMDQ_CMD_BUFFER_SIZE,
+			&buffer_entry.MVABase, GFP_KERNEL);
+	cmd_end = buffer_entry.pVABase;
+	cmd_end[1] = (CMDQ_CODE_MOVE << 24) | ((CMDQ_DATA_REG_DEBUG_DST & 0x1f) << 16) | (4 << 21);
+	cmd_end[0] = slot_handle;
+	cmd_end[3] = (CMDQ_CODE_WRITE << 24) | ((CMDQ_DATA_REG_DEBUG_DST & 0x1f) << 16) | (4 << 21);
+	cmd_end[2] = 1;
+	for (loop = 2; loop < dummy_size+2; loop++) {
+		cmd_end[loop*2+1] = (CMDQ_CODE_WRITE << 24) | ((CMDQ_DATA_REG_DEBUG_DST & 0x1f) << 16) | (4 << 21);
+		cmd_end[loop*2] = 1;
+	}
+	cmd_end[loop*2+1] = (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_TOKEN_GPR_SET_4;
+	cmd_end[loop*2] = ((0 << 31) | (1 << 15) | 1);
+	loop++;
+	cmd_end[loop*2+1] = (CMDQ_CODE_WRITE << 24) | ((CMDQ_DATA_REG_DEBUG_DST & 0x1f) << 16) | (4 << 21);
+	cmd_end[loop*2] = 2;
+	last_cmd = loop;
+	loop++;
+	cmd_size = loop * CMDQ_INST_SIZE;
+	CMDQ_LOG("verify END behavior with command size: %d\n", cmd_size);
+
+	/* start command with 1st END position */
+	CMDQ_REG_SET32(CMDQ_THR_WARM_RESET(thread), 0x01);
+	while (0x1 == (CMDQ_REG_GET32(CMDQ_THR_WARM_RESET(thread)))) {
+		if (loop > CMDQ_MAX_LOOP_COUNT)
+			CMDQ_ERR("Reset HW thread %d failed\n", thread);
+		loop++;
+	}
+	CMDQ_REG_SET32(CMDQ_THR_INST_CYCLES(thread), 0);
+	CMDQ_REG_SET32(CMDQ_THR_PREFETCH(thread), 0x1);
+	if (test_prefetch)
+		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), buffer_entry.MVABase + cmd_size);
+	else {
+		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), buffer_entry.MVABase + cmd_size - CMDQ_INST_SIZE);
+		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_GPR_SET_4);
+	}
+	CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), buffer_entry.MVABase);
+	CMDQ_LOG("Step0: PC: 0x%08x\n", CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
+	CMDQ_REG_SET32(CMDQ_THR_CFG(thread), 0x6);
+	CMDQ_REG_SET32(CMDQ_THR_IRQ_ENABLE(thread), 0x011);
+	CMDQ_REG_SET32(CMDQ_THR_ENABLE_TASK(thread), 0x01);
+
+	msleep_interruptible(50);
+	/* check if GCE stop in expected position */
+	cmdq_cpu_read_mem(slot_handle, 0, &read_result);
+	CMDQ_LOG("Step1: PC: 0x%08x, result: %d\n", CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)), read_result);
+	if (read_result != 1)
+		CMDQ_TEST_FAIL("%s read result fail: result: %d\n", __func__, read_result);
+
+	/* adjust command and reset END addr */
+	cmd_end[last_cmd*2] = 3;
+	CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), buffer_entry.MVABase + cmd_size);
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_GPR_SET_4);
+	/* check if GCE read correct instruction */
+	cmdq_cpu_read_mem(slot_handle, 0, &read_result);
+	CMDQ_LOG("Step2: PC: 0x%08x, result: %d\n", CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)), read_result);
+	if ((!test_prefetch && read_result != 3) || (test_prefetch && read_result != 2))
+		CMDQ_TEST_FAIL("%s read result fail: result: %d\n", __func__, read_result);
+
+	/* stop GCE thread */
+	CMDQ_LOG("Step3: PC: 0x%08x\n", CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
+	CMDQ_REG_SET32(CMDQ_THR_SUSPEND_TASK(thread), 0x01);
+	if ((0x01 & CMDQ_REG_GET32(CMDQ_THR_ENABLE_TASK(thread))) == 0)
+		CMDQ_LOG("[WARNING] thread %d suspend not effective\n", thread);
+
+	loop = 0;
+	while ((CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread)) & 0x2) == 0x0) {
+		if (loop > CMDQ_MAX_LOOP_COUNT)
+			CMDQ_ERR("Suspend HW thread %d failed\n", thread);
+		loop++;
+	}
+	loop = 0;
+	CMDQ_REG_SET32(CMDQ_THR_WARM_RESET(thread), 0x01);
+	while (0x1 == (CMDQ_REG_GET32(CMDQ_THR_WARM_RESET(thread)))) {
+		if (loop > CMDQ_MAX_LOOP_COUNT)
+			CMDQ_ERR("Reset HW thread %d failed\n", thread);
+		loop++;
+	}
+	CMDQ_REG_SET32(CMDQ_THR_ENABLE_TASK(thread), 0x00);
+	cmdq_free_mem(slot_handle);
+	cmdq_core_free_hw_buffer(cmdq_dev_get(), CMDQ_CMD_BUFFER_SIZE,
+		buffer_entry.pVABase, buffer_entry.MVABase);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
 static void testcase_end_addr_conflict(void)
 {
 	struct cmdqRecStruct *loop_handle, *submit_handle;
@@ -6365,6 +6466,7 @@ enum CMDQ_TESTCASE_ENUM {
 
 static void testcase_general_handling(int32_t testID)
 {
+	u32 i = 0;
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
@@ -6379,6 +6481,12 @@ static void testcase_general_handling(int32_t testID)
 		break;
 	case 300:
 		testcase_stress_basic();
+		break;
+	case 154:
+		testcase_end_behavior(true, 0);
+		testcase_end_behavior(false, 0);
+		for (i = 0; i < 500; i++)
+			testcase_end_behavior(false, get_random_int() % 50 + 1);
 		break;
 	case 153:
 		testcase_delay_for_suspend_resume_test();
