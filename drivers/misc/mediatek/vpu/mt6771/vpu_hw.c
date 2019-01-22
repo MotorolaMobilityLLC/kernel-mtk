@@ -2301,7 +2301,7 @@ int vpu_hw_boot_sequence(int core)
 	unsigned int reg_value = 0;
 
 	vpu_trace_begin("vpu_hw_boot_sequence");
-	LOG_INF("boot-seq core(%d)\n", core);
+	LOG_INF("[vpu_%d] boot-seq core(%d)\n", core, core);
 	LOG_DBG("CTRL(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x110));
 	LOG_DBG("XTENSA_INT(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x114));
 	LOG_DBG("CTL_XTENSA_INT(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x118));
@@ -2404,7 +2404,7 @@ int vpu_hw_boot_sequence(int core)
 out:
 	unlock_command(core);
 	vpu_trace_end();
-	LOG_INF("vpu_hw_boot_sequence -");
+	LOG_INF("[vpu_%d] hw_boot_sequence -\n", core);
 	return ret;
 }
 
@@ -2425,8 +2425,8 @@ int vpu_hw_set_debug(int core)
 	vpu_write_field(core, FLD_XTENSA_INFO21, vpu_service_cores[core].work_buf->pa + VPU_OFFSET_LOG);
 	vpu_write_field(core, FLD_XTENSA_INFO22, VPU_SIZE_LOG_BUF);
 	vpu_write_field(core, FLD_XTENSA_INFO23, now.tv_sec * 1000000 + now.tv_nsec / 1000);
-	LOG_DBG("work_buf->pa + VPU_OFFSET_LOG (0x%lx)",
-		(unsigned long)(vpu_service_cores[core].work_buf->pa + VPU_OFFSET_LOG));
+	LOG_INF("[vpu_%d] work_buf->pa + VPU_OFFSET_LOG (0x%lx)\n",
+		core, (unsigned long)(vpu_service_cores[core].work_buf->pa + VPU_OFFSET_LOG));
 	LOG_DBG("vpu_set ok, running");
 
 	/* 2. trigger interrupt */
@@ -2456,7 +2456,7 @@ int vpu_hw_set_debug(int core)
 out:
 	unlock_command(core);
 	vpu_trace_end();
-	LOG_DBG("vpu_hw_set_debug -");
+	LOG_INF("[vpu_%d] hw_set_debug -\n", core);
 	return ret;
 }
 
