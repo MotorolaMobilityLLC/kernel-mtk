@@ -886,9 +886,9 @@ skip_client_entry:
 				seq_log_count++;
 				sprintf(seq_log + strlen(seq_log), seq_fmt,
 					buffer, buffer->size,
-					buffer->pid, bug_info->pid, buffer->task_comm,
+					buffer->pid, bug_info->pid, buffer->task_comm, buffer->heap->id,
 					pdbg->value1, pdbg->value2, pdbg->value3, pdbg->value4,
-					buffer->heap->id, pdbg->dbg_name);
+					pdbg->dbg_name);
 
 				if ((seq_log_count % 2) == 0) {
 					ION_PRINT_LOG_OR_SEQ(NULL, "%s\n", seq_log);
