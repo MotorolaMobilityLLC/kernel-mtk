@@ -811,6 +811,7 @@ typedef struct _WIFI_VAR_T {
 	UINT_32 fgDisBcnLostDetection;
 	UINT_32 fgDisRoaming;		/* 0:enable roaming 1:disable */
 	UINT_32 fgEnArpFilter;
+	PARAM_POWER_MODE ePowerMode;
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */

@@ -7836,6 +7836,8 @@ wlanoidSet802dot11PowerSaveProfile(IN P_ADAPTER_T prAdapter,
 	/* only CAM mode allowed when TP/Sigma on */
 	if (prAdapter->rWifiVar.ucTpTestMode || prAdapter->rWifiVar.ucSigmaTestMode)
 		prPowerMode->ePowerMode = Param_PowerModeCAM;
+	else if (prAdapter->rWifiVar.ePowerMode != Param_PowerModeMax)
+		prPowerMode->ePowerMode = prAdapter->rWifiVar.ePowerMode;
 
 	status = nicConfigPowerSaveProfile(prAdapter, prPowerMode->ucBssIdx, prPowerMode->ePowerMode, TRUE);
 
