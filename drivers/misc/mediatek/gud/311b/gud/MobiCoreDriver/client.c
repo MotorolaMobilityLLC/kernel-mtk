@@ -315,6 +315,38 @@ void clients_kill_sessions(void)
 	mutex_unlock(&client_ctx.clients_lock);
 }
 
+static struct mc_uuid_t core_service_uuids[] = {
+	/* DRV_CRYPTO_UUID */
+	{ { 0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50, 0x00 } },
+	/* TA_MONOTONIC_COUNTER_UUID */
+	{ { 0x07, 0x05, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00,
+		 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x22 } },
+	/* DRV_SFS_UUID */
+	{ { 0x07, 0x05, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00,
+		 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20 } },
+	/* TA_SFS_PROXY_UUID */
+	{ { 0x07, 0x05, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00,
+		 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20 } },
+	/* DRV_STHU_MCUUID */
+	{ { 0x07, 0x05, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00,
+		 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30 } },
+	/* TA_DEBUG_SESSION_UUID */
+	{ { 0x08, 0x05, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00,
+		 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } },
+};
+
+static bool is_core_service(const struct mc_uuid_t *uuid)
+{
+	int i;
+
+	for (i = 0; i < sizeof(core_service_uuids)/sizeof(struct mc_uuid_t); i++) {
+		if (!memcmp(core_service_uuids[i].value, uuid, 16))
+			return true;
+	}
+	return false;
+}
+
 /*
  * Open TA for given client. TA binary is provided by the daemon.
  * @param
@@ -332,11 +364,26 @@ int client_open_session(struct tee_client *client, u32 *session_id,
 	/* Get secure object */
 	obj = tee_object_get(uuid, is_gp_uuid);
 	if (IS_ERR(obj)) {
-		/* Try to select secure object inside the SWd if not found */
-		if ((PTR_ERR(obj) == -ENOENT) && g_ctx.f_ta_auth)
-			obj = tee_object_select(uuid);
+		if (is_core_service(uuid)) {
+			mc_dev_devel("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x is core service, search SWd\n",
+					((u8 *)uuid)[0], ((u8 *)uuid)[1], ((u8 *)uuid)[2], ((u8 *)uuid)[3],
+					((u8 *)uuid)[4], ((u8 *)uuid)[5], ((u8 *)uuid)[6], ((u8 *)uuid)[7],
+					((u8 *)uuid)[8], ((u8 *)uuid)[9], ((u8 *)uuid)[10], ((u8 *)uuid)[11],
+					((u8 *)uuid)[12], ((u8 *)uuid)[13], ((u8 *)uuid)[14], ((u8 *)uuid)[15]);
+			/* Try to select secure object inside the SWd if not found */
+			if ((PTR_ERR(obj) == -ENOENT) && g_ctx.f_ta_auth)
+				obj = tee_object_select(uuid);
 
-		if (IS_ERR(obj)) {
+			if (IS_ERR(obj)) {
+				err = PTR_ERR(obj);
+				goto end;
+			}
+		} else {
+			mc_dev_devel("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x is not core service, not search SWd\n",
+					((u8 *)uuid)[0], ((u8 *)uuid)[1], ((u8 *)uuid)[2], ((u8 *)uuid)[3],
+					((u8 *)uuid)[4], ((u8 *)uuid)[5], ((u8 *)uuid)[6], ((u8 *)uuid)[7],
+					((u8 *)uuid)[8], ((u8 *)uuid)[9], ((u8 *)uuid)[10], ((u8 *)uuid)[11],
+					((u8 *)uuid)[12], ((u8 *)uuid)[13], ((u8 *)uuid)[14], ((u8 *)uuid)[15]);
 			err = PTR_ERR(obj);
 			goto end;
 		}
