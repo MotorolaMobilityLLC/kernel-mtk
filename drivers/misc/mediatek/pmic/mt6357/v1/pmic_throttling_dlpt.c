@@ -712,7 +712,7 @@ void enable_dummy_load(unsigned int en)
 		/* pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0); */
 
 		/* enable isink step */
-		pmic_set_register_value(PMIC_ISINK_CH0_STEP, 0x7);
+		/* pmic_set_register_value(PMIC_ISINK_CH0_STEP, 0x7); */
 		pmic_set_register_value(PMIC_ISINK_CH1_STEP, 0x7);
 		pmic_set_register_value(PMIC_ISINK_CH2_STEP, 0x7);
 		pmic_set_register_value(PMIC_ISINK_CH3_STEP, 0x7);
@@ -721,35 +721,35 @@ void enable_dummy_load(unsigned int en)
 		pmic_set_register_value(PMIC_RG_ISINK3_DOUBLE, 0x1); /*CH3 double on  */
 		pmic_set_register_value(PMIC_RG_ISINK2_DOUBLE, 0x1); /*CH2 double on  */
 		pmic_set_register_value(PMIC_RG_ISINK1_DOUBLE, 0); /*CH1 double off */
-		pmic_set_register_value(PMIC_RG_ISINK0_DOUBLE, 0); /*CH0 double off */
+		/*pmic_set_register_value(PMIC_RG_ISINK0_DOUBLE, 0);*/ /*CH0 double off */
 
 		/*enable isink */
 		pmic_set_register_value(PMIC_ISINK_CH3_BIAS_EN, 0x1);
 		pmic_set_register_value(PMIC_ISINK_CH2_BIAS_EN, 0x1);
 		pmic_set_register_value(PMIC_ISINK_CH1_BIAS_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH0_BIAS_EN, 0);
+		/*pmic_set_register_value(PMIC_ISINK_CH0_BIAS_EN, 0);*/
 		pmic_set_register_value(PMIC_ISINK_CHOP3_EN, 0); /* no chop */
 		pmic_set_register_value(PMIC_ISINK_CHOP2_EN, 0); /* no chop */
 		pmic_set_register_value(PMIC_ISINK_CHOP1_EN, 0); /* no chop */
-		pmic_set_register_value(PMIC_ISINK_CHOP0_EN, 0); /* no chop */
+		/*pmic_set_register_value(PMIC_ISINK_CHOP0_EN, 0);*/ /* no chop */
 		pmic_set_register_value(PMIC_ISINK_CH3_EN, 0x1);
 		pmic_set_register_value(PMIC_ISINK_CH2_EN, 0x1);
 		pmic_set_register_value(PMIC_ISINK_CH1_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH0_EN, 0);
+		/*pmic_set_register_value(PMIC_ISINK_CH0_EN, 0);*/
 		/*PMICLOG("[enable dummy load]\n"); */
 	} else {
 		pmic_set_register_value(PMIC_ISINK_CH3_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH2_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH1_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH0_EN, 0);
+		/*pmic_set_register_value(PMIC_ISINK_CH0_EN, 0);*/
 		pmic_set_register_value(PMIC_ISINK_CHOP3_EN, 0); /* no chop */
 		pmic_set_register_value(PMIC_ISINK_CHOP2_EN, 0); /* no chop */
 		pmic_set_register_value(PMIC_ISINK_CHOP1_EN, 0); /* no chop */
-		pmic_set_register_value(PMIC_ISINK_CHOP0_EN, 0); /* no chop */
+		/*pmic_set_register_value(PMIC_ISINK_CHOP0_EN, 0);*/ /* no chop */
 		pmic_set_register_value(PMIC_ISINK_CH3_BIAS_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH2_BIAS_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH1_BIAS_EN, 0);
-		pmic_set_register_value(PMIC_ISINK_CH0_BIAS_EN, 0);
+		/*pmic_set_register_value(PMIC_ISINK_CH0_BIAS_EN, 0);*/
 
 		/*1. enable isink pdn */ /* no design at 55*/
 		/* pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x1); */
@@ -1232,9 +1232,11 @@ int dlpt_notify_handler(void *unused)
 	cur_ui_soc = pre_ui_soc;
 
 	do {
-		if (dpidle_active_status())
-			ktime = ktime_set(20, 0); /* light-loading mode */
-		else
+		/* light-loading mode */
+		/*if (dpidle_active_status())
+		 *	ktime = ktime_set(20, 0);
+		 *else
+		 */
 			ktime = ktime_set(10, 0); /* normal mode */
 
 		wait_event_interruptible(dlpt_notify_waiter, (dlpt_notify_flag == true));
