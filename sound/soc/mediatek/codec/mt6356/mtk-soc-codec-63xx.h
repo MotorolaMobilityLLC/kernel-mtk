@@ -41,24 +41,6 @@
 #ifndef _AUDIO_CODEC_63xx_H
 #define _AUDIO_CODEC_63xx_H
 
-/*
- * if define, use hp_imp detect on pmic side
- * if not define, use hp_imp pcm on ap side
- * It depend on the each codec implement. and should sync at HAL android.mk
- */
-#define PMIC_HPIMP_DETECT
-
-/* Headphone Impedance Detection */
-struct mtk_hpdet_param {
-	int auxadc_upper_bound;
-	int dc_Step;
-	int dc_Phase0;
-	int dc_Phase1;
-	int dc_Phase2;
-	int resistance_first_threshold;
-	int resistance_second_threshold;
-};
-
 struct mtk_codec_ops {
 	int (*enable_dc_compensation)(bool enable);
 	int (*set_lch_dc_compensation)(int value);
@@ -70,27 +52,8 @@ struct mtk_codec_ops {
 };
 
 void audckbufEnable(bool enable);
-void OpenAnalogTrimHardware(bool bEnable);
-void setOffsetTrimMux(unsigned int Mux);
-void setOffsetTrimBufferGain(unsigned int gain);
-void EnableTrimbuffer(bool benable);
-void SetHplTrimOffset(int Offset);
-void SetHprTrimOffset(int Offset);
-void setHpGainZero(void);
-void CalculateDCCompenForEachdB_L(void);
-void CalculateDCCompenForEachdB_R(void);
-void set_hp_impedance(int impedance);
-
-/* headphone impedance detection function*/
-int read_efuse_hp_impedance_current_calibration(void);
-bool OpenHeadPhoneImpedanceSetting(bool bEnable);
-void mtk_read_hp_detection_parameter(struct mtk_hpdet_param *hpdet_param);
-int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff);
 
 void SetAnalogSuspend(bool bEnable);
-
-bool hasHpDepopHw(void);
-bool hasHp33Ohm(void);
 
 int set_codec_ops(struct mtk_codec_ops *ops);
 
