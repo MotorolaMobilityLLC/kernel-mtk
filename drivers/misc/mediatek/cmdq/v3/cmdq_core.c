@@ -404,20 +404,33 @@ static s32 cmdq_delay_thread_init(void)
 	dma_addr_t pa = 0;
 	u32 buffer_size = 0;
 	u32 cpr_offset = 0;
+	u32 free_sram_size = (g_dts_setting.cpr_size -
+		cmdq_dev_get_thread_count() * CMDQ_THR_FREE_CPR_MAX) * sizeof(u32);
 
 	memset(&(g_delay_thread_cmd), 0x0, sizeof(g_delay_thread_cmd));
 
-#ifdef CMDQ_DELAY_IN_DRAM
-	if (cmdq_task_create_delay_thread_dram(&p_delay_thread_buffer, &buffer_size) < 0) {
-		CMDQ_ERR("DELAY_INIT: create delay thread in dram failed!\n");
+	if (free_sram_size >= CMDQ_DELAY_THD_SIZE) {
+		if (cmdq_task_create_delay_thread_sram(&p_delay_thread_buffer, &buffer_size, &cpr_offset) < 0) {
+			CMDQ_ERR("DELAY_INIT: create delay thread in sram failed, free:%u\n", free_sram_size);
+			return -EFAULT;
+		}
+
+		CMDQ_LOG("DELAY_INIT: create delay thread in sram size:%u free:%u\n",
+			buffer_size, free_sram_size);
+	} else {
+		if (cmdq_task_create_delay_thread_dram(&p_delay_thread_buffer, &buffer_size) < 0) {
+			CMDQ_ERR("DELAY_INIT: create delay thread in dram failed!\n");
+			return -EFAULT;
+		}
+
+		CMDQ_LOG("DELAY_INIT: create delay thread in dram size:%u sram size:%u\n",
+			buffer_size, free_sram_size);
+	}
+
+	if (!buffer_size) {
+		CMDQ_ERR("DELAY_INIT: delay thread create failed\n");
 		return -EFAULT;
 	}
-#else
-	if (cmdq_task_create_delay_thread_sram(&p_delay_thread_buffer, &buffer_size, &cpr_offset) < 0) {
-		CMDQ_ERR("DELAY_INIT: create delay thread in sram failed!\n");
-		return -EFAULT;
-	}
-#endif
 
 	p_va = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), buffer_size, &pa, GFP_KERNEL);
 
@@ -1318,7 +1331,7 @@ s32 cmdq_core_alloc_sram_buffer(size_t size, const char *owner_name, u32 *out_cp
 		cpr_offset = p_last_chunk->start_offset + p_last_chunk->count;
 	}
 
-	if (cpr_offset + normalized_count > CMDQ_CPR_SIZE) {
+	if (cpr_offset + normalized_count > g_dts_setting.cpr_size) {
 		CMDQ_ERR("SRAM count is out of memory, start:%u, want:%zu, owner:%s\n",
 			cpr_offset, normalized_count, owner_name);
 		cmdq_core_dump_sram();
@@ -1369,7 +1382,7 @@ void cmdq_core_free_sram_buffer(u32 cpr_offset, size_t size)
 
 size_t cmdq_core_get_free_sram_size(void)
 {
-	return (CMDQ_CPR_SIZE - gCmdqContext.allocated_sram_count) * sizeof(u32);
+	return (g_dts_setting.cpr_size - gCmdqContext.allocated_sram_count) * sizeof(u32);
 }
 
 void cmdq_core_dump_sram(void)
@@ -2476,13 +2489,16 @@ void cmdq_core_reset_hw_events(void)
 
 void cmdq_core_config_prefetch_gsize(void)
 {
-	if (g_dts_setting.prefetch_thread_count == 4) {
-		uint32_t prefetch_gsize = (g_dts_setting.prefetch_size[0]/32-1) |
-				(g_dts_setting.prefetch_size[1]/32-1) << 4 |
-				(g_dts_setting.prefetch_size[2]/32-1) << 8 |
-				(g_dts_setting.prefetch_size[3]/32-1) << 12;
+	if (g_dts_setting.prefetch_thread_count <= 4) {
+		u32 i = 0, prefetch_gsize = 0, total_size = 0;
+
+		for (i = 0; i < g_dts_setting.prefetch_thread_count; i++) {
+			total_size += g_dts_setting.prefetch_size[i];
+			prefetch_gsize |= (g_dts_setting.prefetch_size[i] / 32 - 1) << (i * 4);
+		}
+
 		CMDQ_REG_SET32(CMDQ_PREFETCH_GSIZE, prefetch_gsize);
-		CMDQ_MSG("prefetch gsize configure: 0x%08x\n", prefetch_gsize);
+		CMDQ_MSG("prefetch gsize configure:0x%08x total size:%u\n", prefetch_gsize, total_size);
 	}
 }
 
@@ -9380,8 +9396,12 @@ int32_t cmdqCoreInitialize(void)
 
 		status = cmdq_core_alloc_sram_buffer(max_thread_count * CMDQ_THR_CPR_MAX * sizeof(u32),
 			"Fake SPR", &fake_spr_sram);
-		if (status < 0)
+		if (status < 0) {
 			CMDQ_ERR("Allocate Fake SPR failed !!");
+		} else {
+			CMDQ_LOG("CPR for thread allocated, thread:%u free:%zu\n",
+				max_thread_count, cmdq_core_get_free_sram_size());
+		}
 	}
 
 	/* pre-allocate delay CPR SRAM area */
@@ -9411,16 +9431,6 @@ int32_t cmdqCoreInitialize(void)
 	cmdqSecInitialize();
 	/* Initialize test case structure */
 	cmdq_test_init_setting();
-	/* Initialize DTS Setting structure */
-	memset(&g_dts_setting, 0x0, sizeof(struct cmdq_dts_setting));
-	/* Initialize setting for legacy chip */
-	g_dts_setting.prefetch_thread_count = 3;
-	g_dts_setting.prefetch_size = kzalloc(
-		sizeof(*g_dts_setting.prefetch_size) * max_thread_count,
-		GFP_KERNEL);
-	g_dts_setting.prefetch_size[0] = 240;
-	g_dts_setting.prefetch_size[2] = 32;
-	cmdq_dev_get_dts_setting(&g_dts_setting);
 	/* Initialize Resource via device tree */
 	cmdq_dev_init_resource(cmdq_core_init_resource);
 
@@ -10162,5 +10172,10 @@ struct StressContextStruct *cmdq_core_get_stress_context(void)
 void cmdq_core_clean_stress_context(void)
 {
 	memset(&gStressContext, 0, sizeof(gStressContext));
+}
+
+struct cmdq_dts_setting *cmdq_core_get_dts_setting(void)
+{
+	return &g_dts_setting;
 }
 

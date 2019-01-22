@@ -1094,6 +1094,7 @@ extern "C" {
 
 	struct cmdq_event_table *cmdq_event_get_table(void);
 	u32 cmdq_event_get_table_size(void);
+	struct cmdq_dts_setting *cmdq_core_get_dts_setting(void);
 #ifdef __cplusplus
 }
 #endif
