@@ -2554,7 +2554,8 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 
 	/* 3. wait until done */
 	ret = wait_command(core);
-	LOG_DBG("[vpu_%d] end d2d\n", core);
+	if (g_vpu_log_level > 1)
+		LOG_INF("[vpu_%d] end d2d\n", core);
 	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
 	#ifdef ENABLE_PMQOS
 	/* pmqos, release request after d2d done */
