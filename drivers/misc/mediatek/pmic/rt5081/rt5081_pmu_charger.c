@@ -31,6 +31,7 @@
 #include <mt-plat/charger_class.h>
 #include <mt-plat/charger_type.h>
 #include <mt-plat/aee.h>
+#include <mt-plat/mtk_boot.h>
 #include <mtk_charger_intf.h>
 #include <mtk_pe30_intf.h>
 #include <mtk_pe20_intf.h>
@@ -3413,6 +3414,7 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
 	struct rt5081_pmu_charger_desc *chg_desc = chg_data->chg_desc;
+	u32 boot_mode = get_boot_mode();
 
 	dev_info(chg_data->dev, "%s\n", __func__);
 
@@ -3434,7 +3436,12 @@ static int rt5081_chg_init_setting(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: set ichg failed\n", __func__);
 
-	ret = __rt5081_set_aicr(chg_data, chg_desc->aicr);
+	if (boot_mode == META_BOOT || boot_mode == ADVMETA_BOOT) {
+		ret = __rt5081_set_aicr(chg_data, 200000);
+		dev_info(chg_data->dev, "%s: set aicr to 200mA in meta mode\n",
+			__func__);
+	} else
+		ret = __rt5081_set_aicr(chg_data, chg_desc->aicr);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: set aicr failed\n", __func__);
 
