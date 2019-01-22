@@ -116,9 +116,6 @@ static void control_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 		CCCI_ERROR_LOG(port->md_id, KERN, "receive unknown data from CCCI_CONTROL_RX = %d\n", ccci_h->data[1]);
 		break;
 	}
-#ifdef FEATURE_SCP_CCCI_SUPPORT
-	port_proxy_md_scp_state_sync(port->port_proxy);
-#endif
 	if (ret != 2)
 		ccci_free_skb(skb);
 }
