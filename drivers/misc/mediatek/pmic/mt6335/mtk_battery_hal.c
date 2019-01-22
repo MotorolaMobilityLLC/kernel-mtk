@@ -2417,7 +2417,7 @@ int read_hw_ocv_6335_power_on(void)
 #endif
 }
 
-#if CONFIG_MTK_PMIC_CHIP_MT6336
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6336
 int read_hw_ocv_6336_charger_in(void)
 {
 #if defined(CONFIG_POWER_EXT)
@@ -2732,6 +2732,7 @@ static void fgauge_read_RTC_boot_status(void)
 
 static signed int fg_set_fg_reset_rtc_status(void *data)
 {
+	int hw_id = upmu_get_reg_value(0x0200);
 	int temp_value;
 	int spare0_reg, after_rst_spare0_reg;
 	int spare3_reg, after_rst_spare3_reg;
@@ -2741,13 +2742,28 @@ static signed int fg_set_fg_reset_rtc_status(void *data)
 	/* read spare0 */
 	spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
 
-	/* raise 15b to reset, then recover */
+	/* raise 15b to reset */
+#if 0
 	temp_value = spare0_reg | (1<<7);
 	hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
 	mdelay(1);
 	temp_value &= 0x7f;
 	hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
-
+#else
+	if ((hw_id & 0xff00) == 0x3500) {
+		temp_value = 0x80;
+		hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
+		mdelay(1);
+		temp_value = 0x00;
+		hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
+	} else {
+		temp_value = 0x80;
+		hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
+		mdelay(1);
+		temp_value = 0x20;
+		hal_rtc_set_spare_register(RTC_FG_INIT, temp_value);
+	}
+#endif
 	/* read spare0 again */
 	after_rst_spare0_reg = hal_rtc_get_spare_register(RTC_FG_INIT);
 
