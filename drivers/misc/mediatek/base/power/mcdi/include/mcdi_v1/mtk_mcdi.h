@@ -39,5 +39,6 @@ unsigned int get_pwr_stat_check_map(int type, int idx);
 int mcdi_get_mcdi_idle_state(int idx);
 void mcdi_status_init(void);
 void mcdi_of_init(void);
+void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask);
 
 #endif /* __MTK_MCDI_H__ */
