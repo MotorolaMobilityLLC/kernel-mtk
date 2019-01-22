@@ -171,7 +171,8 @@ static void spm_register_init(void)
 	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
 
 	/* kp_irq_b */
-#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6775)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,kp");
 	if (!node) {
 		spm_err("find keypad node failed\n");
@@ -209,7 +210,8 @@ static void spm_register_init(void)
 		if (!edge_trig_irqs[5])
 			spm_err("get mdcldma failed\n");
 	}
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) && \
+	!defined(CONFIG_MACH_MT6775)
 
 	/* lowbattery_irq_b */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,auxadc");
@@ -229,7 +231,8 @@ static void spm_register_init(void)
 		 edge_trig_irqs[4],
 		 edge_trig_irqs[5],
 		 edge_trig_irqs[6]);
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) && \
+	!defined(CONFIG_MACH_MT6775)
 	spm_set_dummy_read_addr(true);
 #endif
 }

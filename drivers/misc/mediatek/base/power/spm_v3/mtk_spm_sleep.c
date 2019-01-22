@@ -29,7 +29,8 @@
 #endif
 /* #include <mach/mtk_clkmgr.h> */
 #include <mtk_cpuidle.h>
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if defined(CONFIG_WATCHDOG) && defined(CONFIG_MTK_WATCHDOG) && \
+	defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
 #include <mt-plat/upmu_common.h>
@@ -433,9 +434,10 @@ static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 
 	if (spm_dormant_sta < 0)
 		spm_crit2("spm_dormant_sta %d", spm_dormant_sta);
-
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 	if (is_infra_pdn(pwrctrl->pcm_flags))
 		mtk_uart_restore();
+#endif
 }
 
 static void spm_set_sysclk_settle(void)
@@ -448,7 +450,8 @@ static void spm_set_sysclk_settle(void)
 	/* md_settle is keyword for suspend status */
 	spm_crit2("md_settle = %u, settle = %u\n", SPM_SYSCLK_SETTLE, settle);
 }
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758) && \
+	!defined(CONFIG_MACH_MT6775)
 static int mt_power_gs_dump_suspend_count = 2;
 #endif
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
@@ -699,7 +702,8 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	struct mtk_irq_mask mask;
 #endif
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if defined(CONFIG_WATCHDOG) && defined(CONFIG_MTK_WATCHDOG) && \
+	defined(CONFIG_MTK_WD_KICKER)
 	struct wd_api *wd_api;
 	int wd_ret;
 #endif
@@ -742,7 +746,8 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_PCM_WDT, 1, 30);
 
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if defined(CONFIG_WATCHDOG) && defined(CONFIG_MTK_WATCHDOG) && \
+	defined(CONFIG_MTK_WD_KICKER)
 	wd_ret = get_wd_api(&wd_api);
 	if (!wd_ret) {
 		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
@@ -783,11 +788,13 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_UART_SLEEP);
 
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (request_uart_to_sleep()) {
 		last_wr = WR_UART_BUSY;
 		goto RESTORE_IRQ;
 	}
+#endif
 #endif
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_WFI);
@@ -796,9 +803,11 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_footprint(SPM_SUSPEND_LEAVE_WFI);
 
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	request_uart_to_wakeup();
 RESTORE_IRQ:
+#endif
 #endif
 
 	/* record last wakesta */
@@ -824,7 +833,8 @@ RESTORE_IRQ:
 	/* need be called after spin_unlock_irqrestore() */
 	get_channel_unlock();
 
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+#if defined(CONFIG_WATCHDOG) && defined(CONFIG_MTK_WATCHDOG) && \
+	defined(CONFIG_MTK_WD_KICKER)
 	if (!wd_ret) {
 		if (!pwrctrl->wdt_disable)
 			wd_api->wd_resume_notify();

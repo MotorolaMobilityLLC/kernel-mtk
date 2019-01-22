@@ -221,7 +221,7 @@ void mt_spm_pmic_wrap_set_cmd(enum pmic_wrap_phase_id phase, int idx, unsigned i
 }
 EXPORT_SYMBOL(mt_spm_pmic_wrap_set_cmd);
 
-#if 1
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: fix it for MT6775 */
 void mt_spm_pmic_wrap_set_cmd_full(enum pmic_wrap_phase_id phase, int idx, unsigned int cmd_addr,
 				   unsigned int cmd_wdata)
 {

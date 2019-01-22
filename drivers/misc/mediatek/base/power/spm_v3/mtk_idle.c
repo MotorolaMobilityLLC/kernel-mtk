@@ -34,7 +34,9 @@
 
 #include <asm/system_misc.h>
 #include <mt-plat/sync_write.h>
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 #include <mach/mtk_gpt.h>
+#endif
 #include <mtk_spm.h>
 #include <mtk_spm_dpidle.h>
 #include <mtk_spm_idle.h>
@@ -52,7 +54,10 @@
 #include <mtk_spm_misc.h>
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
 #include <mtk_clkbuf_ctl.h>
+#endif
+#include <trace/events/mtk_idle_event.h>
 
 #include "ufs-mtk.h"
 
@@ -61,7 +66,9 @@
 #endif
 
 #include <linux/uaccess.h>
+#if !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
 #include <mtk_cpufreq_api.h>
+#endif
 
 #define IDLE_TAG     "Power/swap "
 #define idle_pr_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
@@ -246,6 +253,18 @@ int __attribute__((weak)) localtimer_set_next_event(unsigned long evt)
 void __attribute__((weak)) mcdi_heart_beat_log_dump(void)
 {
 
+}
+u32 __attribute__((weak)) clk_buf_bblpm_enter_cond(void)
+{
+	return 1;
+}
+
+void __attribute__((weak)) idle_refcnt_inc(void)
+{
+}
+
+void __attribute__((weak)) idle_refcnt_dec(void)
+{
 }
 
 #endif
@@ -617,7 +636,8 @@ static bool mtk_idle_cpu_criteria(void)
 }
 #endif
 
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 #define CPU_PWR_STATUS_MASK 0x6F78
 #endif
 
@@ -661,10 +681,12 @@ static bool soidle3_can_enter(int cpu, int reason)
 		}
 
 		/* check if univpll is used (sspm not included) */
+		#if !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
 		if (univpll_is_used()) {
 			reason = BY_PLL;
 			goto out;
 		}
+		#endif
 	}
 	#endif
 
@@ -1164,7 +1186,15 @@ static noinline void go_to_rgidle(int cpu)
 {
 	rgidle_before_wfi(cpu);
 
+#if 0 && !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
+	trace_rgidle_rcuidle(cpu, 1);
+#endif
+
 	go_to_wfi();
+
+#if 0 && !defined(CONFIG_MACH_MT6775)	/* TODO: Fix it for MT6775 */
+	trace_rgidle_rcuidle(cpu, 0);
+#endif
 
 	rgidle_after_wfi(cpu);
 }
@@ -1181,7 +1211,7 @@ u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6799)
 	SPM_FLAG_DIS_PERI_PDN |
 #endif
 	SPM_FLAG_ENABLE_ATF_ABORT |
@@ -1196,7 +1226,7 @@ u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6799)
 	SPM_FLAG_DIS_PERI_PDN |
 #endif
 	SPM_FLAG_ENABLE_ATF_ABORT |
@@ -1219,7 +1249,8 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
+	defined(CONFIG_MACH_MT6775)
 
 u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
@@ -1273,7 +1304,6 @@ static inline unsigned int soidle_pre_handler(void)
 	unsigned int op_cond = 0;
 
 	op_cond = ufs_cb_before_xxidle();
-
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef CONFIG_MTK_ACAO_SUPPORT
@@ -2637,7 +2667,8 @@ static void mtk_idle_profile_init(void)
 
 void mtk_idle_set_clkmux_addr(void)
 {
-#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 	unsigned int i;
 
 	for (i = 0; i < NF_CLK_CFG; i++)
@@ -2658,7 +2689,7 @@ void __init mtk_cpuidle_framework_init(void)
 
 	mtk_idle_gpt_init();
 
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6799)
 	dpidle_by_pass_pg = true;
 #endif
 
