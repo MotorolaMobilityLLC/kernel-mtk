@@ -53,6 +53,8 @@ static int ram_console_clear;
 struct last_reboot_reason {
 	uint32_t fiq_step;
 	uint32_t exp_type;	/* 0xaeedeadX: X=1 (HWT), X=2 (KE), X=3 (nested panic) */
+	uint64_t kaslr_offset;
+	uint64_t ram_console_buffer_addr;
 	uint32_t reboot_mode;
 
 	uint32_t last_irq_enter[AEE_MTK_CPU_NUMS];
@@ -739,6 +741,7 @@ RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "mediatek,ram_console",
 static void ram_console_init_val(void)
 {
 	LAST_RR_SET(pmic_ext_buck, 0xff);
+	LAST_RR_SET(ram_console_buffer_addr, (unsigned long)&ram_console_buffer);
 }
 
 void aee_rr_rec_reboot_mode(u8 mode)
@@ -780,6 +783,13 @@ unsigned int aee_rr_curr_exp_type(void)
 	unsigned int exp_type = LAST_RR_VAL(exp_type);
 
 	return (exp_type ^ 0xaeedead0) < 16 ? exp_type ^ 0xaeedead0 : exp_type;
+}
+
+void aee_rr_rec_kaslr_offset(uint64_t offset)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(kaslr_offset, offset);
 }
 
 /* composite api */
@@ -2173,6 +2183,20 @@ void aee_rr_show_exp_type(struct seq_file *m)
 		   (exp_type ^ 0xaeedead0) < 16 ? exp_type ^ 0xaeedead0 : exp_type);
 }
 
+void aee_rr_show_kaslr_offset(struct seq_file *m)
+{
+	uint64_t kaslr_offset = LAST_RRR_VAL(kaslr_offset);
+
+	seq_printf(m, "Kernel Offset: 0x%llx\n", kaslr_offset);
+}
+
+void aee_rr_show_ram_console_buffer_addr(struct seq_file *m)
+{
+	uint64_t ram_console_buffer_addr = LAST_RRR_VAL(ram_console_buffer_addr);
+
+	seq_printf(m, "&ram_console_buffer: 0x%llx\n", ram_console_buffer_addr);
+}
+
 void aee_rr_show_last_irq_enter(struct seq_file *m, int cpu)
 {
 	seq_printf(m, "  irq: enter(%d, ", LAST_RRR_VAL(last_irq_enter[cpu]));
@@ -2997,6 +3021,8 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_wdt_status,
 	aee_rr_show_fiq_step,
 	aee_rr_show_exp_type,
+	aee_rr_show_kaslr_offset,
+	aee_rr_show_ram_console_buffer_addr,
 	aee_rr_show_last_pc,
 	aee_rr_show_last_bus,
 	aee_rr_show_mcdi,

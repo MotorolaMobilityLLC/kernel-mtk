@@ -732,13 +732,32 @@ void ipanic_zap_console_sem(void)
 	console_unlock();
 }
 
+#ifdef CONFIG_RANDOMIZE_BASE
+static u64 show_kaslr(void)
+{
+	u64 const kaslr_offset = kimage_vaddr - KIMAGE_VADDR;
+
+	pr_notice("Kernel Offset: 0x%llx from 0x%lx\n", kaslr_offset, KIMAGE_VADDR);
+	return kaslr_offset;
+}
+#else
+static u64 show_kaslr(void)
+{
+	pr_notice("Kernel Offset: disabled\n");
+	return 0;
+}
+#endif
+
 static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 {
 	struct kmsg_dumper dumper;
 	struct die_args *dargs = (struct die_args *)ptr;
+	u64 kaslr_offset;
 
+	kaslr_offset = show_kaslr();
 	print_modules();
 #ifdef CONFIG_MTK_RAM_CONSOLE
+	aee_rr_rec_kaslr_offset(kaslr_offset);
 	aee_rr_rec_exp_type(2);
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_DIE);
 #endif
