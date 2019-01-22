@@ -612,7 +612,7 @@ static void update_freq_fastpath(void)
 		for_each_cpu(cpu, &cls_cpus) {
 			struct sched_capacity_reqs *scr;
 
-			if (!cpu_online(cpu))
+			if (!cpu_online(cpu) || cpu_isolated(cpu))
 				continue;
 
 			if (first_cpu < 0)

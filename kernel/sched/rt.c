@@ -290,8 +290,12 @@ static void pull_rt_task(struct rq *this_rq);
 
 static inline bool need_pull_rt_task(struct rq *rq, struct task_struct *prev)
 {
-	/* Try to pull RT tasks here if we lower this rq's prio */
-	return rq->rt.highest_prio.curr > prev->prio;
+	/*
+	 * Try to pull RT tasks here if we lower this rq's prio and cpu is not
+	 * isolated
+	 */
+	return rq->rt.highest_prio.curr > prev->prio &&
+	       !cpu_isolated(cpu_of(rq));
 }
 
 static inline int rt_overloaded(struct rq *rq)
@@ -1787,12 +1791,16 @@ static int mt_sched_interop_rt(int cpu, struct cpumask *lowest_mask)
 	mt_sched_printf(sched_interop, "current cpu=%d, find idle cpu from cpumask 0x%lx",
 			cpu, lowest_mask->bits[0]);
 
-	if (cpumask_test_cpu(cpu, lowest_mask) && idle_cpu(cpu) && hmp_cpu_is_slowest(cpu))
+	if (cpumask_test_cpu(cpu, lowest_mask) && idle_cpu(cpu) && hmp_cpu_is_slowest(cpu)
+				&& !cpu_isolated(cpu))
 		return cpu;
 
 	for_each_cpu(cpu, lowest_mask) {
 		struct rq *rq;
 		struct task_struct *curr;
+
+		if (cpu_isolated(cpu))
+			continue;
 
 		if (idle_cpu(cpu))
 			return cpu;
@@ -1851,7 +1859,7 @@ static int find_lowest_rq(struct task_struct *task)
 	 * We prioritize the last cpu that the task executed on since
 	 * it is most likely cache-hot in that location.
 	 */
-	if (cpumask_test_cpu(cpu, lowest_mask))
+	if (cpumask_test_cpu(cpu, lowest_mask) && !cpu_isolated(cpu))
 		return cpu;
 
 	/*
@@ -1871,14 +1879,15 @@ static int find_lowest_rq(struct task_struct *task)
 			 * remote processor.
 			 */
 			if (this_cpu != -1 &&
-			    cpumask_test_cpu(this_cpu, sched_domain_span(sd))) {
+			    cpumask_test_cpu(this_cpu, sched_domain_span(sd)) &&
+				!cpu_isolated(this_cpu)) {
 				rcu_read_unlock();
 				return this_cpu;
 			}
 
 			best_cpu = cpumask_first_and(lowest_mask,
 						     sched_domain_span(sd));
-			if (best_cpu < nr_cpu_ids) {
+			if (best_cpu < nr_cpu_ids && !cpu_isolated(best_cpu)) {
 				rcu_read_unlock();
 				return best_cpu;
 			}
@@ -1895,7 +1904,7 @@ static int find_lowest_rq(struct task_struct *task)
 		return this_cpu;
 
 	cpu = cpumask_any(lowest_mask);
-	if (cpu < nr_cpu_ids)
+	if (cpu < nr_cpu_ids && !cpu_isolated(cpu))
 		return cpu;
 	return -1;
 }
@@ -2055,9 +2064,11 @@ retry:
 		goto retry;
 	}
 
+	next_task->on_rq = TASK_ON_RQ_MIGRATING;
 	deactivate_task(rq, next_task, 0);
 	set_task_cpu(next_task, lowest_rq->cpu);
 	activate_task(lowest_rq, next_task, 0);
+	next_task->on_rq = TASK_ON_RQ_QUEUED;
 	ret = 1;
 
 	resched_curr(lowest_rq);
@@ -2309,9 +2320,11 @@ static void pull_rt_task(struct rq *this_rq)
 
 			resched = true;
 
+			p->on_rq = TASK_ON_RQ_MIGRATING;
 			deactivate_task(src_rq, p, 0);
 			set_task_cpu(p, this_cpu);
 			activate_task(this_rq, p, 0);
+			p->on_rq = TASK_ON_RQ_QUEUED;
 			/*
 			 * We continue with the search, just in
 			 * case there's an even higher prio task
@@ -2391,7 +2404,8 @@ static void switched_from_rt(struct rq *rq, struct task_struct *p)
 	 * we may need to handle the pulling of RT tasks
 	 * now.
 	 */
-	if (!task_on_rq_queued(p) || rq->rt.rt_nr_running)
+	if (!task_on_rq_queued(p) || rq->rt.rt_nr_running ||
+		cpu_isolated(cpu_of(rq)))
 		return;
 
 	queue_pull_task(rq);
