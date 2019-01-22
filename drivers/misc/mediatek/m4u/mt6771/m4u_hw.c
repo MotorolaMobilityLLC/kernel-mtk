@@ -2198,6 +2198,7 @@ int m4u_reg_init(struct m4u_domain *m4u_domain, unsigned long ProtectPA, int m4u
 		/* 4 write command throttling mode */
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU_WR_LEN, F_MMU_WR_THROT_DIS(3), F_MMU_WR_THROT_DIS(0));
 		m4uHw_set_field_by_mask(m4u_base, REG_MMU_DUMMY, F_REG_MMU_IDLE_ENABLE, 0);
+		M4U_WriteReg32(m4u_base, REG_MMU_DUMMY, 0xBC14E << 1);
 	}
 
 	return 0;
