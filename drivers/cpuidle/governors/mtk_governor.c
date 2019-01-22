@@ -575,7 +575,11 @@ static int mtk_governor_enable_device(struct cpuidle_driver *drv,
 
 static struct cpuidle_governor mtk_governor = {
 	.name =		"mtk_governor",
+#ifdef CONFIG_MTK_ACAO_SUPPORT
+	.rating =	10,
+#else
 	.rating =	100,
+#endif
 	.enable =	mtk_governor_enable_device,
 	.select =	mtk_governor_select,
 	.reflect =	mtk_governor_reflect,

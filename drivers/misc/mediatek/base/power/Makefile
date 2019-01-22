@@ -69,3 +69,6 @@ obj-$(CONFIG_MACH_MT6759) += dcm_v1/
 obj-$(CONFIG_MACH_MT6799) += dcm_v1/
 obj-$(CONFIG_MACH_MT8167) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT8167) += hps_v1/
+ifeq ($(CONFIG_MTK_ACAO_SUPPORT), y)
+obj-$(CONFIG_MACH_MT6763) += mcdi/
+endif

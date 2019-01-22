@@ -469,6 +469,13 @@ static int menu_enable_device(struct cpuidle_driver *drv,
 	return 0;
 }
 
+unsigned int get_menu_predict_us(void)
+{
+	struct menu_device *data = this_cpu_ptr(&menu_devices);
+
+	return data->predicted_us;
+}
+
 static struct cpuidle_governor menu_governor = {
 	.name =		"menu",
 	.rating =	20,
