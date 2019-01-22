@@ -200,7 +200,7 @@ static int32_t cmdq_create_variable_if_need(struct cmdqRecStruct *handle, CMDQ_V
 		}
 
 		if (handle->local_var_num > CMDQ_THR_FREE_USR_VAR_MAX) {
-			CMDQ_ERR("Exceed max number of local variable in one task, please review your instructions.");
+			CMDQ_ERR("Exceed max number of local variable in one task, please review your instructions.\n");
 			status = -EFAULT;
 			break;
 		}
@@ -222,6 +222,8 @@ int32_t cmdq_reset_v3_struct(struct cmdqRecStruct *handle)
 
 	/* reset local variable setting */
 	handle->local_var_num = CMDQ_THR_SPR_START;
+	handle->arg_poll_source = CMDQ_TASK_CPR_INITIAL_VALUE;
+	handle->arg_poll_value = CMDQ_TASK_CPR_INITIAL_VALUE;
 
 	do {
 		/* check if-else stack */
@@ -342,23 +344,11 @@ int32_t cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario, struct cmdqRecStruct 
 	handle->scenario = scenario;
 	handle->pBuffer = NULL;
 	handle->bufferSize = 0;
-	handle->blockSize = 0;
 	handle->engineFlag = cmdq_get_func()->flagFromScenario(scenario);
 	handle->priority = CMDQ_THR_PRIO_NORMAL;
-	handle->prefetchCount = 0;
-	handle->finalized = false;
 	handle->pRunningTask = NULL;
 
-	/* secure path */
-	handle->secData.is_secure = false;
-	handle->secData.enginesNeedDAPC = 0LL;
-	handle->secData.enginesNeedPortSecurity = 0LL;
-	handle->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)NULL;
-	handle->secData.addrMetadataMaxCount = 0;
-	handle->secData.addrMetadataCount = 0;
-
-	/* profile marker */
-	cmdq_reset_profile_maker_data(handle);
+	cmdq_task_reset(handle);
 
 	/* CMD */
 	if (cmdq_rec_realloc_cmd_buffer(handle, CMDQ_INITIAL_CMD_BLOCK_SIZE) != 0) {
@@ -940,7 +930,7 @@ int32_t cmdq_op_write_reg_secure(struct cmdqRecStruct *handle, uint32_t addr,
 #endif
 }
 
-int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
+int32_t cmdq_op_poll_v2(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
 {
 	int32_t status;
 
@@ -956,37 +946,27 @@ int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value
 }
 
 /* Efficient Polling */
-int32_t cmdq_op_poll_v3(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
+int32_t cmdq_op_poll(struct cmdqRecStruct *handle, uint32_t addr, uint32_t value, uint32_t mask)
 {
 	/*
 	* Simulate Code
-	* while (true) {
-	*   arg_temp = [addr] & mask
-	*   if (arg_temp == value) {
-	*     break;
-	*   }
+	* arg_temp = [addr] & mask
+	* while (arg_temp != value) {
 	*   wait_and_clear (100us);
+	*   arg_temp = [addr] & mask
 	* }
 	*/
 
-	CMDQ_VARIABLE arg_temp = CMDQ_TASK_CPR_INITIAL_VALUE,
-				 arg_value = CMDQ_TASK_CPR_INITIAL_VALUE,
-			arg_loop_debug = CMDQ_TASK_LOOP_DEBUG_VAR;
+	CMDQ_VARIABLE arg_loop_debug = CMDQ_TASK_LOOP_DEBUG_VAR;
 	u32 condition_value = value & mask;
 
-	if ((condition_value >> 16) > 0)
-		cmdq_op_assign(handle, &arg_value, condition_value);
-	else
-		arg_value = condition_value;
-
+	cmdq_op_assign(handle, &handle->arg_poll_value, condition_value);
 	cmdq_op_assign(handle, &arg_loop_debug, 0);
-	cmdq_op_while(handle, 0, CMDQ_EQUAL, 0);
-		cmdq_op_read_reg(handle, addr, &arg_temp, mask);
+	cmdq_op_read_reg(handle, addr, &handle->arg_poll_source, mask);
+	cmdq_op_while(handle, handle->arg_poll_value, CMDQ_NOT_EQUAL, handle->arg_poll_source);
 		cmdq_op_add(handle, &arg_loop_debug, arg_loop_debug, 1);
-		cmdq_op_if(handle, arg_temp, CMDQ_EQUAL, arg_value);
-			cmdq_op_break(handle);
-		cmdq_op_end_if(handle);
 		cmdq_op_wait(handle, CMDQ_EVENT_TIMER_00 + CMDQ_POLLING_TPR_MASK_BIT);
+		cmdq_op_read_reg(handle, addr, &handle->arg_poll_source, mask);
 	cmdq_op_end_while(handle);
 	return 0;
 }
@@ -2824,38 +2804,31 @@ int32_t cmdq_op_read_reg(struct cmdqRecStruct *handle, uint32_t addr,
 				   CMDQ_VARIABLE *arg_out, uint32_t mask)
 {
 	int32_t status = 0;
-	CMDQ_VARIABLE arg_a;
 	CMDQ_VARIABLE mask_var = CMDQ_TASK_TEMP_CPR_VAR;
 	uint32_t arg_a_i, arg_a_type;
 
-	cmdq_op_init_variable(&arg_a);
-
 	/* get arg_a register by using module storage manager */
 	do {
-		status = cmdq_create_variable_if_need(handle, &arg_a);
+		status = cmdq_create_variable_if_need(handle, arg_out);
+		CMDQ_CHECK_AND_BREAK_STATUS(status);
+
+		/* get actual arg_a_i & arg_a_type */
+		status = cmdq_var_data_type(*arg_out, &arg_a_i, &arg_a_type);
+		CMDQ_CHECK_AND_BREAK_STATUS(status);
+
+		status = cmdq_append_command(handle, CMDQ_CODE_READ_S, arg_a_i, addr, arg_a_type, 0);
 		CMDQ_CHECK_AND_BREAK_STATUS(status);
 
 		if (mask != 0xFFFFFFFF) {
 			if ((mask >> 16) > 0) {
 				status = cmdq_op_assign(handle, &mask_var, mask);
 				CMDQ_CHECK_AND_BREAK_STATUS(status);
+				status = cmdq_op_and(handle, arg_out, *arg_out, mask_var);
 			} else {
-				mask_var = mask;
+				status = cmdq_op_and(handle, arg_out, *arg_out, mask);
 			}
 		}
-
-		/* get actual arg_a_i & arg_a_type */
-		status = cmdq_var_data_type(arg_a, &arg_a_i, &arg_a_type);
-		CMDQ_CHECK_AND_BREAK_STATUS(status);
-
-		status = cmdq_append_command(handle, CMDQ_CODE_READ_S, arg_a_i, addr, arg_a_type, 0);
-		CMDQ_CHECK_AND_BREAK_STATUS(status);
-
-		if (mask != 0xFFFFFFFF)
-			status = cmdq_op_and(handle, &arg_a, arg_a, mask_var);
 	} while (0);
-
-	*arg_out = arg_a;
 
 	return status;
 }
