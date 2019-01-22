@@ -47,27 +47,27 @@ static unsigned int vmd1_trim;
 
 void vmd1_pmic_trim_setting(bool enable)
 {
-	unsigned int hwcid = pmic_get_register_value(PMIC_HWCID_ADDR);
+	unsigned int hwcid = pmic_get_register_value(PMIC_HWCID);
 
 	PMICLOG("vmd1_pmic_trim_setting HWCID: 0x%X\n", hwcid);
 	if (hwcid != 0x5520)
 		return;
 
 	if (vmd1_trim == 0)
-		vmd1_trim = pmic_get_register_value(PMIC_RG_VMODEM_ZXOS_TRIM_ADDR);
+		vmd1_trim = pmic_get_register_value(PMIC_RG_VMODEM_ZXOS_TRIM);
 
 	/*Set Trim Value*/
 	if (enable) {
 		unsigned int vmd1_trim_new = vmd1_trim+9;
 
-		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM_ADDR, vmd1_trim_new);
+		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM, vmd1_trim_new);
 		PMICLOG("vmd1_pmic_trim_setting ON, zxos trim 0x%X, new_value: 0x%X\n",
 			vmd1_trim,
 			vmd1_trim_new
 			);
 	} else {
 		/*Set Trim Value*/
-		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM_ADDR, vmd1_trim);
+		pmic_set_register_value(PMIC_RG_VMODEM_ZXOS_TRIM, vmd1_trim);
 		PMICLOG("vmd1_pmic_trim_setting OFF, zxos trim 0x%X, new_value: 0x%X\n",
 			vmd1_trim,
 			vmd1_trim
