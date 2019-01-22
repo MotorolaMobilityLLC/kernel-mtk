@@ -54,7 +54,7 @@ enum {
 
 enum {
 	SPM_ARGS_SPMFW_IDX = 0,
-#if defined(CONFIG_MACH_MT6739)
+#if defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6771)
 	SPM_ARGS_SPMFW_INIT,
 #endif
 	SPM_ARGS_SUSPEND,
