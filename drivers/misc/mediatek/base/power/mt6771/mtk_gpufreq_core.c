@@ -212,6 +212,7 @@ static bool g_pbm_limited_ignore_state;
 static bool g_thermal_protect_limited_ignore_state;
 static unsigned int g_efuse_speed_bound_id;
 static unsigned int g_efuse_turbo_id;
+static unsigned int g_efuse_turbo_lite_id;
 static unsigned int g_segment_id;
 static unsigned int g_opp_idx_num;
 static unsigned int g_cur_opp_freq;
@@ -2559,16 +2560,6 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 			g_clk->subsys_mfg_cg, g_clk->mtcmos_mfg_async, g_clk->mtcmos_mfg,
 			g_clk->mtcmos_mfg_core0, g_clk->mtcmos_mfg_core1, g_clk->mtcmos_mfg_core2);
 
-	/* check EFUSE register 0x11f10050[27:24] */
-	/* Free Version : 4'b0000 */
-	/* 1GHz Version : 4'b0001 */
-	/* 950MHz Version : 4'b0010 (Segment4) */
-	/* 900MHz Version : 4'b0011 (Segment1) */
-	/* 850MHz Version : 4'b0100 */
-	/* 800MHz Version : 4'b0101 (Segment2) */
-	/* 750MHz Version : 4'b0110 */
-	/* 700MHz Version : 4'b0111 (Segment3) */
-	/* check EFUSE register 0x11F10050[3]=1 for Segment4 */
 	g_efuse_base = __mt_gpufreq_of_ioremap("mediatek,efusec", 0);
 	if (!g_efuse_base) {
 		gpufreq_pr_err("@%s: EFUSEC iomap failed", __func__);
@@ -2576,6 +2567,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	}
 	g_efuse_speed_bound_id = (readl(g_efuse_base + 0x50) & 0x0F000000);
 	g_efuse_turbo_id = (readl(g_efuse_base + 0x50) & 0x00000008);
+	g_efuse_turbo_lite_id = (readl(g_efuse_base + 0x50) & 0x00000040);
 	if (g_efuse_speed_bound_id == 0x03000000) {
 		/* 900MHz Version */
 		g_segment_id = MT6771_SEGMENT_1;
@@ -2588,12 +2580,16 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	} else if (g_efuse_speed_bound_id == 0x02000000 && g_efuse_turbo_id == 0x00000008) {
 		/* 900MHz Version */
 		g_segment_id = MT6771_SEGMENT_4;
+	} else if (g_efuse_speed_bound_id == 0x02000000 && g_efuse_turbo_lite_id == 0x00000040) {
+		/* 900MHz Version */
+		g_segment_id = MT6771_SEGMENT_4;
 	} else {
 		/* Other Version, set default segment */
 		g_segment_id = MT6771_SEGMENT_2;
 	}
-	gpufreq_pr_info("@%s: g_efuse_speed_bound_id = 0x%08X, g_efuse_turbo_id = 0x%08X, g_segment_id = %d\n",
-			__func__, g_efuse_speed_bound_id, g_efuse_turbo_id, g_segment_id);
+	gpufreq_pr_info("@%s: g_efuse_speed_bound_id = 0x%08X, g_efuse_turbo_id = 0x%08X, \t"
+			"g_efuse_turbo_lite_id = 0x%08X, g_segment_id = %d\n",
+			__func__, g_efuse_speed_bound_id, g_efuse_turbo_id, g_efuse_turbo_lite_id, g_segment_id);
 
 	/* alloc PMIC regulator */
 	g_pmic = kzalloc(sizeof(struct g_pmic_info), GFP_KERNEL);
