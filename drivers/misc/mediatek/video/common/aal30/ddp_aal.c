@@ -69,7 +69,7 @@
 #endif
 
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6763)
 #define AAL_SUPPORT_PARTIAL_UPDATE
 #endif
 
