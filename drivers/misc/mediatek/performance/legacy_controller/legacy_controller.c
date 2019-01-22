@@ -32,6 +32,7 @@ static struct ppm_limit_data freq_set[MAX_KIR][NR_PPM_CLUSTERS];
 /*************************************************************************************/
 int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data *core_limit)
 {
+#ifndef CONFIG_MTK_ACAO_SUPPORT
 	struct ppm_limit_data final_core[NR_PPM_CLUSTERS];
 	int i, j;
 
@@ -81,6 +82,7 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 	mt_ppm_userlimit_cpu_core(NR_PPM_CLUSTERS, final_core);
 
 	mutex_unlock(&boost_core);
+#endif
 
 	return 0;
 }
