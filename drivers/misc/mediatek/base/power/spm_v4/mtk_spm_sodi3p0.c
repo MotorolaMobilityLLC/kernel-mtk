@@ -65,11 +65,6 @@ static void spm_sodi3_pre_process(struct pwr_ctrl *pwrctrl, u32 operation_cond)
 
 	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
 #endif
-
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_SET_ADDR, 1,
-			PMIC_RG_RTC_MCLK_PDN_MASK, PMIC_RG_RTC_MCLK_PDN_SHIFT);
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_SET_ADDR, 1,
-			PMIC_RG_RTC_32K_CK_PDN_MASK, PMIC_RG_RTC_32K_CK_PDN_SHIFT);
 }
 
 static void spm_sodi3_post_process(void)
@@ -77,11 +72,6 @@ static void spm_sodi3_post_process(void)
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 #endif
-
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_CLR_ADDR, 1,
-			PMIC_RG_RTC_MCLK_PDN_MASK, PMIC_RG_RTC_MCLK_PDN_SHIFT);
-	pmic_config_interface_nolock(PMIC_SCK_TOP_CKPDN_CON0_CLR_ADDR, 1,
-			PMIC_RG_RTC_32K_CK_PDN_MASK, PMIC_RG_RTC_32K_CK_PDN_SHIFT);
 }
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -276,6 +266,8 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 
 	spm_sodi3_pcm_setup_before_wfi(cpu, pcmdesc, pwrctrl, operation_cond);
 
+	spm_sodi3_notify_sspm_before_wfi_async_wait();
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	spm_sodi3_footprint(SPM_SODI3_ENTER_UART_SLEEP);
 
@@ -286,8 +278,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags, u32 
 		}
 	}
 #endif
-
-	spm_sodi3_notify_sspm_before_wfi_async_wait();
 
 	if (sodi3_flags & SODI_FLAG_DUMP_LP_GS)
 		mt_power_gs_dump_sodi3(GS_ALL);
@@ -345,10 +335,11 @@ RESTORE_IRQ:
 
 	soidle3_after_wfi(cpu);
 
-	spm_sodi3_notify_sspm_after_wfi_async_wait();
-	spm_sodi3_resume_wdt(pwrctrl, api);
-
 	spm_sodi3_footprint(SPM_SODI3_LEAVE);
+
+	spm_sodi3_notify_sspm_after_wfi_async_wait();
+
+	spm_sodi3_resume_wdt(pwrctrl, api);
 
 	spm_sodi3_reset_footprint();
 
