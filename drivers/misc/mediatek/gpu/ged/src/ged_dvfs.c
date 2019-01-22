@@ -636,30 +636,19 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target)
 	if (is_fallback_mode_triggered) {
 		is_fallback_mode_triggered = 0;
 		spin_unlock_irqrestore(&gsGpuUtilLock, ui32IRQFlags);
-#ifdef GED_DVFS_ENABLE
 		return mt_gpufreq_get_cur_freq();
-#else
-		return -1;
-#endif
 	}
 	is_fb_dvfs_triggered = 0;
 	spin_unlock_irqrestore(&gsGpuUtilLock, ui32IRQFlags);
 
 	if (t_gpu <= 0) {
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K][FB_DVFS] skip DVFS due to t_gpu <= 0, t_gpu: %d", t_gpu);
-#ifdef GED_DVFS_ENABLE
 		return mt_gpufreq_get_cur_freq();
-#else
-		return -1;
-#endif
 	}
 
 	t_gpu_target = t_gpu_target * (100 - gx_gpu_dvfs_margin) / 100;
-#ifdef GED_DVFS_ENABLE
 	i32MaxLevel = (int)(mt_gpufreq_get_dvfs_table_num() - 1);
-#endif
-	if (gpu_freq_pre == -1)
-		gpu_freq_pre = mt_gpufreq_get_freq_by_idx(0) >> 10;
+	gpu_freq_pre = mt_gpufreq_get_cur_freq() >> 10;
 
 	busy_cycle_cur = t_gpu * gpu_freq_pre;
 	busy_cycle[cur_frame_idx] = busy_cycle_cur;
@@ -679,9 +668,7 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target)
 	for (i = 0; i <= i32MaxLevel; i++) {
 		int gpu_freq;
 
-#ifdef GED_DVFS_ENABLE
 		gpu_freq = mt_gpufreq_get_freq_by_idx(i);
-#endif
 
 		if (gpu_freq_tar > gpu_freq) {
 			if (i == 0)
@@ -691,9 +678,6 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target)
 			break;
 		}
 	}
-#ifdef GED_DVFS_ENABLE
-	gpu_freq_pre = mt_gpufreq_get_freq_by_idx(ui32NewFreqID) >> 10;
-#endif
 	ged_log_buf_print(ghLogBuf_DVFS
 		, "[GED_K][FB_DVFS] FB DVFS mode, t_gpu: %d, t_gpu_target: %d, gpu_freq_tar: %d, gpu_freq_pre: %d"
 		, t_gpu, t_gpu_target, gpu_freq_tar, (gpu_freq_pre << 10));
