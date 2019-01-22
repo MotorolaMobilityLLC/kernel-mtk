@@ -351,11 +351,10 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 			   (kalIsCardRemoved(prAdapter->prGlueInfo) || fgIsBusAccessFailed || fgTimeout
 			    || wlanIsChipNoAck(prAdapter))) {
 
-#if CFG_SUPPORT_LOW_POWER_DEBUG
 			/* For driver own back fail debug,  get current PC value */
 			halPrintMailbox(prAdapter);
 			halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
-#endif
+
 			if ((prAdapter->u4OwnFailedCount == 0) ||
 			    CHECK_FOR_TIMEOUT(u4CurrTick, prAdapter->rLastOwnFailedLogTime,
 					      MSEC_TO_SYSTIME(LP_OWN_BACK_FAILED_LOG_SKIP_MS))) {
@@ -399,7 +398,6 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 		i++;
 	}
 
-	/* For Low power Test */
 	/* 1. Driver need to polling until CR4 ready, then could do normal Tx/Rx */
 	/* 2. Send a dummy command to change data path to store-forward mode */
 #if 1
@@ -423,11 +421,9 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 			} else if (kalIsCardRemoved(prAdapter->prGlueInfo) || fgIsBusAccessFailed || fgTimeout
 			    || wlanIsChipNoAck(prAdapter)) {
 
-#if CFG_SUPPORT_LOW_POWER_DEBUG
 				/* For driver own back fail debug,	get current PC value */
 				halPrintMailbox(prAdapter);
 				halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
-#endif
 
 				DBGLOG(NIC, ERROR,
 				       "Resetting[%u], CardRemoved[%u] NoAck[%u] Timeout[%u](%u - %u)ms\n",
@@ -531,11 +527,6 @@ VOID halWakeUpWiFi(IN P_ADAPTER_T prAdapter)
 		prAdapter->fgIsFwOwn = FALSE;
 	else
 		HAL_LP_OWN_CLR(prAdapter, &fgResult);
-
-#if CFG_SUPPORT_LOW_POWER_DEBUG
-	/* Polling MCU programming counter */
-	halPollDbgCr(prAdapter, LP_DBGCR_POLL_ROUND);
-#endif
 }
 
 VOID halDevInit(IN P_ADAPTER_T prAdapter)
@@ -1866,7 +1857,7 @@ VOID halProcessSoftwareInterrupt(IN P_ADAPTER_T prAdapter)
 	}
 
 	if ((u4IntrBits & ~WHISR_D2H_WKUP_BY_RX_PACKET) != 0)
-		DBGLOG(SW4, WARN, "u4IntrBits: 0x%lx\n", u4IntrBits);
+		DBGLOG(SW4, WARN, "u4IntrBits: 0x%08x\n", u4IntrBits);
 
 } /* end of halProcessSoftwareInterrupt() */
 
@@ -2144,7 +2135,7 @@ VOID halPollDbgCr(IN P_ADAPTER_T prAdapter, IN UINT_32 u4LoopCount)
 
 	for (u4Loop = 0; u4Loop < u4LoopCount; u4Loop++) {
 		HAL_MCR_RD(prAdapter, MCR_SWPCDBGR, &u4Data);
-		DBGLOG(INIT, TRACE, "SWPCDBGR 0x%08X\n", u4Data);
+		DBGLOG(INIT, WARN, "SWPCDBGR 0x%08X\n", u4Data);
 	}
 }
 
@@ -2172,6 +2163,6 @@ VOID halSerHifReset(IN P_ADAPTER_T prAdapter)
 VOID halPrintHifDbgInfo(IN P_ADAPTER_T prAdapter)
 {
 	halPrintMailbox(prAdapter);
-	halPollDbgCr(prAdapter, LP_OWN_BACK_FAILED_DBGCR_POLL_ROUND);
+	halPollDbgCr(prAdapter, LP_DBGCR_POLL_ROUND);
 }
 
