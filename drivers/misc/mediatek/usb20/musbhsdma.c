@@ -141,6 +141,10 @@ static struct dma_channel *dma_channel_allocate(struct dma_controller *c,
 static void dma_channel_release(struct dma_channel *channel)
 {
 	struct musb_dma_channel *musb_channel = channel->private_data;
+	u8 bchannel = musb_channel->idx;
+	void __iomem *mbase = musb_channel->controller->base;
+
+	musb_writew(mbase, MUSB_HSDMA_CHANNEL_OFFSET(bchannel, MUSB_HSDMA_CONTROL), 0);
 
 	channel->actual_len = 0;
 	musb_channel->start_addr = 0;
