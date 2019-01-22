@@ -150,6 +150,9 @@ static const unsigned int soc_high_supported_sample_rates[14] = {
 	8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 88200, 96000, 176400, 192000, 260000
 };
 
+/* Conventional and unconventional channels supported */
+static const unsigned int soc_multiple_supported_channels[3] = { 1, 2, 4 };
+
 #else
 extern const unsigned int soc_fm_supported_sample_rates[3];
 extern const unsigned int soc_voice_supported_sample_rates[3];
