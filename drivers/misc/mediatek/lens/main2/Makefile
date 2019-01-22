@@ -28,6 +28,10 @@ ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
 MAIN2_CFILES += main2_lens.c
 
+MAIN2_CFILES  += common/lc898212xdaf_f/LC898212XDAF_F.c
+MAIN2_CFILES  += common/lc898212xdaf_f/LC89821x_STMV.c
+MAIN2_CFILES  += common/ak7371af/AK7371AF.c
+
 obj-m := main2af.o
 main2af-objs := $(MAIN2_CFILES:.c=.o)
 

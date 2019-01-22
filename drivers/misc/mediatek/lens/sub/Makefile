@@ -27,16 +27,17 @@ ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 
 SUB_CFILES += sub_lens.c
 
-ifeq ($(CONFIG_MTK_LENS_AD5820AF_SUPPORT),y)
-SUB_CFILES += common/ad5820af/AD5820AF.c
-endif
-
-ifeq ($(CONFIG_MTK_LENS_DW9714AF_SUPPORT),y)
+SUB_CFILES  += common/fm50af/FM50AF.c
+SUB_CFILES  += common/bu6424af/BU6424AF.c
+SUB_CFILES  += common/bu6429af/BU6429AF.c
 SUB_CFILES += common/dw9714af/DW9714AF.c
-endif
-ifeq ($(CONFIG_MTK_LENS_LC898212AF_SUPPORT),y)
+SUB_CFILES  += common/dw9814af/DW9814AF.c
+SUB_CFILES  += common/dw9718af/DW9718AF.c
 SUB_CFILES += common/lc898212af/LC898212AF.c
-endif
+SUB_CFILES  += common/lc898214af/LC898214AF.c
+SUB_CFILES  += common/ad5820af/AD5820AF.c
+SUB_CFILES  += common/wv511aaf/WV511AAF.c
+SUB_CFILES  += common/ak7371af/AK7371AF.c
 
 obj-m := subaf.o
 subaf-objs := $(SUB_CFILES:.c=.o)
