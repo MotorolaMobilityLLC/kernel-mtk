@@ -25,6 +25,7 @@
 #include <linux/wait.h>
 #include <linux/err.h>
 #include <linux/interrupt.h>
+#include <linux/printk.h>
 
 #include <linux/types.h>
 #include <linux/file.h>
@@ -986,8 +987,8 @@ static int mtp_send_event(struct mtp_dev *dev, struct mtp_event *event)
 		return -ENODEV;
 
 	if (mtp_send_event_timeout_cnt > MTP_SEND_EVENT_TIMEOUT_CNT) {
-		pr_warn("%s, timeout count<%d> exceed %d, directly return\n",
-				__func__, mtp_send_event_timeout_cnt, MTP_SEND_EVENT_TIMEOUT_CNT);
+		pr_warn_ratelimited("%s, timeout count<%d> exceed %d, directly return\n",
+			__func__, mtp_send_event_timeout_cnt, MTP_SEND_EVENT_TIMEOUT_CNT);
 		return -ETIME;
 	}
 
