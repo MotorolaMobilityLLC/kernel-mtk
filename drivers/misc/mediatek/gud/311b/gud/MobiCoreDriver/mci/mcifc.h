@@ -24,16 +24,18 @@
 /* --- global ---- */
 #define MC_FC_INVALID	((u32)0)  /**< Invalid FastCall ID */
 
-#if (defined(CONFIG_ARM64) && !defined(MC_ARMV7_FC)) || (defined(MC_AARCH32_FC))
+#if (!defined(MC_ARMV7_FC)) || (defined(MC_AARCH32_FC))
 
-/* These should be handled as 64-bit FCs; now they are more like 32bits... */
-#define MC_FC_STD64_BASE	((u32)0xFF000000)
-#define MC_FC_STD64(x)	((u32)(MC_FC_STD64_BASE + (x)))
+#define FASTCALL_OWNER_TZOS_32  (0xBF000000) /**Trusted OS Fastcalls SMC32 */
 
-#define MC_FC_INIT	MC_FC_STD64(1)  /**< Initializing FastCall. */
-#define MC_FC_INFO	MC_FC_STD64(2)  /**< Info FastCall. */
-#define MC_FC_MEM_TRACE	MC_FC_STD64(10)  /**< Enable SWd tracing via memory */
-#define MC_FC_SWAP_CPU	MC_FC_STD64(54)  /**< Change new active Core */
+/* SMC32 Trusted OS owned Fastcalls */
+#define MC_FC_STD32_BASE	((u32)FASTCALL_OWNER_TZOS_32)
+#define MC_FC_STD32(x)	((u32)(MC_FC_STD32_BASE + (x)))
+
+#define MC_FC_INIT	MC_FC_STD32(1)  /**< Initializing FastCall. */
+#define MC_FC_INFO	MC_FC_STD32(2)  /**< Info FastCall. */
+#define MC_FC_MEM_TRACE	MC_FC_STD32(10)  /**< Enable SWd tracing via memory */
+#define MC_FC_SWAP_CPU	MC_FC_STD32(54)  /**< Change new active Core */
 
 #else
 
