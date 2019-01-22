@@ -26,11 +26,9 @@ else
 ccflags-y += -DION_RUNTIME_DEBUGGER=0
 endif
 
-ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/secmem/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/secmem/$(MTK_PLATFORM)/
-endif
 endif
 
 ifeq ($(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT),y)
