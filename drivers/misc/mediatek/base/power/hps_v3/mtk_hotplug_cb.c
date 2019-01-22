@@ -42,7 +42,7 @@
 #define BUCK_CTRL_DBLOG		(0)
 
 static struct notifier_block cpu_hotplug_nb;
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 static struct notifier_block hps_pm_notifier_func;
 #endif
 static DECLARE_BITMAP(cpu_cluster0_bits, CONFIG_NR_CPUS);
@@ -81,7 +81,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					break;
 				}
 #endif
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 				/*1. Turn on ARM PLL*/
 				armpll_control(1, 1);
 
@@ -109,7 +109,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					break;
 				}
 #endif
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 				if (hps_ctxt.init_state == INIT_STATE_DONE) {
 #if CPU_BUCK_CTRL
 #if BUCK_CTRL_DBLOG
@@ -177,7 +177,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					break;
 				}
 #endif
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 				/*1. Turn on ARM PLL*/
 				armpll_control(3, 1);
 
@@ -221,7 +221,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 			/* pr_crit("Start to power off etc and cluster %d\n", cpu/4); */
 #endif
 			mt_secure_call(MTK_SIP_POWER_DOWN_CLUSTER, cpu/4, 0, 0);
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 			/*pr_info("End of power off cluster %d\n", cpu/4);*/
 			switch (cpu/4) {/*Turn off ARM PLL*/
 			case 0:
@@ -303,7 +303,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 
 	return NOTIFY_OK;
 }
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 /*HPS PM notifier*/
 static int hps_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 			void *unused)
@@ -353,7 +353,7 @@ static __init int hotplug_cb_init(void)
 	if (ret)
 		return ret;
 	pr_info("CPU Hotplug Low Power Notification\n");
-#ifdef CONFIG_MACH_MT6799
+#if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
 	hps_pm_notifier_func = (struct notifier_block){
 		.notifier_call = hps_pm_event,
 		.priority = 0,
