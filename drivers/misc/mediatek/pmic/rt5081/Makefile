@@ -17,5 +17,5 @@ obj-$(CONFIG_RT5081_PMU_RGBLED)		+= rt5081_pmu_rgbled.o
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 obj-$(CONFIG_RT5081_PMU_CHARGER)	+= rt5081_pmu_charger.o
 else
-#obj-$(CONFIG_RT5081_PMU_CHARGER)	+= rt5081_pmu_charger_gm20.o
+obj-$(CONFIG_RT5081_PMU_CHARGER)	+= rt5081_pmu_charger_gm20.o
 endif
