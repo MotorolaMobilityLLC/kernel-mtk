@@ -36,3 +36,5 @@ extern void temporary_dvfs_down_throttle_change(int change, unsigned long new_th
 #ifdef CONFIG_SCHED_TUNE
 extern int prefer_idle_for_perf_idx(int idx, int prefer_idle);
 #endif
+
+extern int display_set_wait_idle_time(unsigned int wait_idle_time);
