@@ -2391,7 +2391,6 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 	UINT_32 u4RxAvailAggLen, u4CurrAvailFreeRfbCnt;
 	PUINT_8 pucSrcAddr;
 	P_HIF_RX_HEADER_T prHifRxHdr;
-	BOOLEAN fgResult = TRUE;
 	BOOLEAN fgIsRxEnhanceMode;
 	UINT_16 u2RxPktNum;
 #if CFG_SDIO_RX_ENHANCE
@@ -2498,7 +2497,7 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			HAL_READ_RX_PORT(prAdapter,
 					 rxNum,
 					 u4RxAggLength, prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-			if (!fgResult) {
+			if (fgIsBusAccessFailed) {
 				DBGLOG(RX, ERROR, "Read RX Agg Packet Error\n");
 				continue;
 			}
@@ -2539,6 +2538,20 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 					DBGLOG(RX, ERROR, "Drop the unexpected packet...\n");
 					DBGLOG_MEM8(RX, ERROR, pucSrcAddr,
 						ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
+
+					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
+					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+					continue;
+				}
+
+				if (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN) > CFG_RX_MAX_PKT_SIZE) {
+					DBGLOG(RX, ERROR,
+					       "[%s] Request_len(%d) is greater than CFG_RX_MAX_PKT_SIZE(%d)...",
+					       __func__, (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN)),
+					       CFG_RX_MAX_PKT_SIZE);
+					DBGLOG(RX, ERROR, "Drop the unexpected packet...\n");
+					DBGLOG_MEM8(RX, ERROR, pucSrcAddr,
+					       ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
 
 					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
 					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
