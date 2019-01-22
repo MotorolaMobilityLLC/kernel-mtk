@@ -43,7 +43,7 @@
 #endif
 
 /* global default 0 */
-int STUNE_TASK_THRESHOLD;
+int stune_task_threshold;
 
 #define TINY_TASK_THRESHOLD 0
 
@@ -5317,7 +5317,7 @@ boosted_task_util(struct task_struct *task)
 	trace_sched_boost_task(task, util, margin);
 
 	/* only boosted for heavy task */
-	if (util >= STUNE_TASK_THRESHOLD)
+	if (util >= stune_task_threshold)
 		return util + margin;
 	else
 		return util;

@@ -19,6 +19,8 @@
 
 unsigned int sysctl_sched_cfs_boost __read_mostly;
 
+static int default_stune_threshold;
+
 /* Performance Boost region (B) threshold params */
 static int perf_boost_idx;
 
@@ -417,6 +419,13 @@ int boost_value_for_GED_pid(int pid, int boost_value)
 	unsigned threshold_idx;
 	int boost_pct;
 
+	if (boost_value >= 1000) {
+		boost_value -= 1000;
+		stune_task_threshold = 0;
+	} else {
+		stune_task_threshold = default_stune_threshold;
+	}
+
 	if (boost_value < 0 || boost_value > 100)
 		printk_deferred("warning: GED boost value should be 0~100\n");
 
@@ -481,6 +490,13 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 	if (group_idx == 0) {
 		printk_deferred("error: don't boost GED task at root: idx=%d\n", group_idx);
 		return -EINVAL;
+	}
+
+	if (boost_value >= 1000) {
+		boost_value -= 1000;
+		stune_task_threshold = 0;
+	} else {
+		stune_task_threshold = default_stune_threshold;
 	}
 
 	if (boost_value < 0 || boost_value > 100)
@@ -642,8 +658,17 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	unsigned threshold_idx;
 	int boost_pct;
 
-	if (boost < 0 || boost > 100)
+	if (boost >= 1000) {
+		boost -= 1000;
+		stune_task_threshold = 0;
+	} else
+		stune_task_threshold = default_stune_threshold;
+
+	if (boost < 0 || boost > 100) {
+		stune_task_threshold = default_stune_threshold;
 		return -EINVAL;
+	}
+
 	boost_pct = boost;
 
 	/*
@@ -1030,6 +1055,10 @@ schedtune_init(void)
 	}
 
 	sg = sd->groups;
+
+	default_stune_threshold = sg->sge->cap_states[0].cap;
+
+
 #ifndef CONFIG_MTK_ACAO
 	/* mtk: compute max_power & min_power of all possible cores, not only online cores. */
 	schedtune_add_cluster_nrg_hotplug(ste, sg);

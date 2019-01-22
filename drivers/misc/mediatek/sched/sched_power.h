@@ -23,7 +23,7 @@
 #define DEFAULT_WATERSHED 236
 #define DEFAULT_SODI_LIMIT 400
 
-extern int STUNE_TASK_THRESHOLD;
+extern int stune_task_threshold;
 
 struct power_tuning_t {
 	int turning_point; /* max=100, default: 65% capacity */

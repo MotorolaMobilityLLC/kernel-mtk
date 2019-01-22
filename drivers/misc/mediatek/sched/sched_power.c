@@ -85,18 +85,14 @@ bool is_game_mode;
 void game_hint_notifier(int is_game)
 {
 	if (is_game) {
-		STUNE_TASK_THRESHOLD = 80;
 		capacity_margin_dvfs = 1024;
 		sodi_limit = 120;
 		is_game_mode = true;
 	} else {
-		STUNE_TASK_THRESHOLD = 0;
 		capacity_margin_dvfs = DEFAULT_CAP_MARGIN_DVFS;
 		sodi_limit = DEFAULT_SODI_LIMIT;
 		is_game_mode = false;
 	}
-
-	met_tag_oneshot(0, "sched_stune_filter", STUNE_TASK_THRESHOLD);
 }
 
 bool is_eas_enabled(void)
@@ -635,10 +631,10 @@ static ssize_t store_stune_task_thresh_knob(struct kobject *kobj,
 
 	if (sscanf(buf, "%iu", &val) != 0) {
 		if (val < 1024 || val >= 0)
-			STUNE_TASK_THRESHOLD = val;
+			stune_task_threshold = val;
 	}
 
-	met_tag_oneshot(0, "sched_stune_filter", STUNE_TASK_THRESHOLD);
+	met_tag_oneshot(0, "sched_stune_filter", stune_task_threshold);
 
 	return count;
 }
@@ -649,9 +645,9 @@ static ssize_t show_stune_task_thresh_knob(struct kobject *kobj,
 	unsigned int len = 0;
 	unsigned int max_len = 4096;
 
-	len += snprintf(buf, max_len, "stune_task_thresh=%d\n", STUNE_TASK_THRESHOLD);
+	len += snprintf(buf, max_len, "stune_task_thresh=%d\n", stune_task_threshold);
 
-	met_tag_oneshot(0, "sched_stune_filter", STUNE_TASK_THRESHOLD);
+	met_tag_oneshot(0, "sched_stune_filter", stune_task_threshold);
 
 	return len;
 }
