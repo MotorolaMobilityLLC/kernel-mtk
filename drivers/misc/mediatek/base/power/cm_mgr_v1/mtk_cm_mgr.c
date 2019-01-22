@@ -247,31 +247,6 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		}
 		cm_mgr_loop = cm_mgr_loop_count;
 
-#ifdef LIGHT_LOAD
-		cm_mgr_abs_load = 0;
-		cm_mgr_rel_load = 0;
-
-#ifdef CONFIG_MTK_SCHED_RQAVG_US
-		for_each_online_cpu(cpu) {
-			int tmp;
-
-			tmp = mt_cpufreq_get_cur_phy_freq_no_lock(cpu / 4) / 100000;
-			sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
-			cm_mgr_abs_load += abs_load * tmp;
-			cm_mgr_rel_load += rel_load * tmp;
-		}
-
-		/* pr_debug("#@# %s(%d)vcorefs_get_curr_ddr() %d\n", __func__, __LINE__, vcorefs_get_curr_ddr()); */
-		if ((cm_mgr_abs_load < light_load_cps) && (vcore_dram_opp_cur == CM_MGR_EMI_OPP)) {
-			cps_valid = 0;
-			cm_mgr_update_met();
-			spin_unlock(&cm_mgr_lock);
-			return;
-		}
-#endif /* CONFIG_MTK_SCHED_RQAVG_US */
-		cps_valid = 1;
-#endif
-
 		now = ktime_get();
 
 #ifdef ATF_SECURE_SMC
@@ -311,8 +286,8 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 
 		if (total_bw_value)
 			total_bw = total_bw_value;
-		if (total_bw >= VCORE_POWER_ARRAY_SIZE)
-			total_bw = VCORE_POWER_ARRAY_SIZE - 1;
+		if (total_bw >= vcore_power_array_size(cm_mgr_get_idx()))
+			total_bw = vcore_power_array_size(cm_mgr_get_idx()) - 1;
 
 		if (update_v2f_table == 1) {
 			update_v2f(1, 0);
@@ -336,6 +311,31 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		print_hex_dump(KERN_INFO, "cpu_opp_cur: ", DUMP_PREFIX_NONE, 16,
 				1, &cpu_opp_cur[0], ARRAY_SIZE(cpu_opp_cur), 0);
 #endif /* DEBUG_CM_MGR */
+
+#ifdef LIGHT_LOAD
+		cm_mgr_abs_load = 0;
+		cm_mgr_rel_load = 0;
+
+#ifdef CONFIG_MTK_SCHED_RQAVG_US
+		for_each_online_cpu(cpu) {
+			int tmp;
+
+			tmp = mt_cpufreq_get_cur_phy_freq_no_lock(cpu / 4) / 100000;
+			sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
+			cm_mgr_abs_load += abs_load * tmp;
+			cm_mgr_rel_load += rel_load * tmp;
+		}
+
+		/* pr_debug("#@# %s(%d)vcorefs_get_curr_ddr() %d\n", __func__, __LINE__, vcorefs_get_curr_ddr()); */
+		if ((cm_mgr_abs_load < light_load_cps) && (vcore_dram_opp_cur == CM_MGR_EMI_OPP)) {
+			cps_valid = 0;
+			cm_mgr_update_met();
+			spin_unlock(&cm_mgr_lock);
+			return;
+		}
+#endif /* CONFIG_MTK_SCHED_RQAVG_US */
+		cps_valid = 1;
+#endif
 
 		vcore_power_up = 0;
 		vcore_power_down = 0;
@@ -477,7 +477,7 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 			}
 
 			idx = level - 1;
-			vcore_power_down =  vcore_power_gain(vcore_power_gain, total_bw, idx);
+			vcore_power_down = vcore_power_gain(vcore_power_gain, total_bw, idx);
 #ifdef DEBUG_CM_MGR
 			pr_info("#@# %s(%d) vcore_power_down 0x%x cpu_power_total 0x%x\n", __func__, __LINE__,
 					vcore_power_down, cpu_power_total);
@@ -561,6 +561,7 @@ PROC_FOPS_RO(dbg_cm_mgr_status);
 static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 {
 	int i, j;
+	int count;
 
 	seq_printf(m, "cm_mgr_opp_enable %d\n", cm_mgr_opp_enable);
 	seq_printf(m, "cm_mgr_enable %d\n", cm_mgr_enable);
@@ -602,90 +603,56 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "update_v2f_table %d\n", update_v2f_table);
 	seq_printf(m, "update %d\n", update);
 
-	seq_puts(m, "vcore_power_gain\n");
-	for (i = 0; i < VCORE_POWER_ARRAY_SIZE; i++) {
-		seq_printf(m, "%.2d -", i);
-		for (j = 0; j < VCORE_ARRAY_SIZE; j++)
-			seq_printf(m, " %d", vcore_power_gain(vcore_power_gain, i, j));
-		seq_puts(m, "\n");
+	for (count = 0; count < CM_MGR_MAX; count++) {
+		seq_printf(m, "vcore_power_gain_%d\n", count);
+		for (i = 0; i < vcore_power_array_size(count); i++) {
+			seq_printf(m, "%.2d -", i);
+			for (j = 0; j < VCORE_ARRAY_SIZE; j++)
+				seq_printf(m, " %d", vcore_power_gain(vcore_power_gain_ptr(count), i, j));
+			seq_puts(m, "\n");
+		}
 	}
 
-#ifndef PER_CPU_STALL_RATIO
-	cpu_power_gain_up = &cpu_power_gain_up_low_1[0][0];
-	cpu_power_gain_down = &cpu_power_gain_down_low_1[0][0];
+#ifdef PER_CPU_STALL_RATIO
+#ifndef ATF_SECURE_SMC
+	for (count = 0; count < CM_MGR_MAX; count++) {
+		cpu_power_gain_ptr(0, count);
 
-	seq_puts(m, "cpu_power_gain_up_low_1\n");
-	for (i = 0; i < 20; i++) {
-		seq_printf(m, "%.2d -", i);
-		for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
-			seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_up, i, j));
-		seq_puts(m, "\n");
+		seq_printf(m, "cpu_power_gain_UpLow%d\n", count);
+		for (i = 0; i < 20; i++) {
+			seq_printf(m, "%.2d -", i);
+			for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
+				seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_up, i, j));
+			seq_puts(m, "\n");
+		}
+
+		seq_printf(m, "cpu_power_gain_DownLow%d\n", count);
+		for (i = 0; i < 20; i++) {
+			seq_printf(m, "%.2d -", i);
+			for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
+				seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_down, i, j));
+			seq_puts(m, "\n");
+		}
+
+		cpu_power_gain_ptr(0, CM_MGR_LOWER_OPP);
+
+		seq_printf(m, "cpu_power_gain_UpHigh%d\n", count);
+		for (i = 0; i < 20; i++) {
+			seq_printf(m, "%.2d -", i);
+			for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
+				seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_up, i, j));
+			seq_puts(m, "\n");
+		}
+
+		seq_printf(m, "cpu_power_gain_DownHigh%d\n", count);
+		for (i = 0; i < 20; i++) {
+			seq_printf(m, "%.2d -", i);
+			for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
+				seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_down, i, j));
+			seq_puts(m, "\n");
+		}
 	}
-
-	seq_puts(m, "cpu_power_gain_down_low_1\n");
-	for (i = 0; i < 20; i++) {
-		seq_printf(m, "%.2d -", i);
-		for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
-			seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_down, i, j));
-		seq_puts(m, "\n");
-	}
-
-	cpu_power_gain_up = &cpu_power_gain_up_high_1[0][0];
-	cpu_power_gain_down = &cpu_power_gain_down_high_1[0][0];
-
-	seq_puts(m, "cpu_power_gain_up_high_1\n");
-	for (i = 0; i < 20; i++) {
-		seq_printf(m, "%.2d -", i);
-		for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
-			seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_up, i, j));
-		seq_puts(m, "\n");
-	}
-
-	seq_puts(m, "cpu_power_gain_down_high_1\n");
-	for (i = 0; i < 20; i++) {
-		seq_printf(m, "%.2d -", i);
-		for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
-			seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_down, i, j));
-		seq_puts(m, "\n");
-	}
-
-	cpu_power_gain_up = &cpu_power_gain_up_low_2[0][0];
-	cpu_power_gain_down = &cpu_power_gain_down_low_2[0][0];
-
-	seq_puts(m, "cpu_power_gain_up_low_2\n");
-	for (i = 0; i < 20; i++) {
-		seq_printf(m, "%.2d -", i);
-		for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
-			seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_up, i, j));
-		seq_puts(m, "\n");
-	}
-
-	seq_puts(m, "cpu_power_gain_down_low_2\n");
-	for (i = 0; i < 20; i++) {
-		seq_printf(m, "%.2d -", i);
-		for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
-			seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_down, i, j));
-		seq_puts(m, "\n");
-	}
-
-	cpu_power_gain_up = &cpu_power_gain_up_high_2[0][0];
-	cpu_power_gain_down = &cpu_power_gain_down_high_2[0][0];
-
-	seq_puts(m, "cpu_power_gain_up_high_2\n");
-	for (i = 0; i < 20; i++) {
-		seq_printf(m, "%.2d -", i);
-		for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
-			seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_up, i, j));
-		seq_puts(m, "\n");
-	}
-
-	seq_puts(m, "cpu_power_gain_down_high_2\n");
-	for (i = 0; i < 20; i++) {
-		seq_printf(m, "%.2d -", i);
-		for (j = 0; j < CM_MGR_CPU_ARRAY_SIZE; j++)
-			seq_printf(m, " %d", cpu_power_gain(cpu_power_gain_down, i, j));
-		seq_puts(m, "\n");
-	}
+#endif
 #endif
 
 	seq_puts(m, "_v2f_all\n");
@@ -778,6 +745,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 		int err;
 		int copy_size = 0;
 		int offset = 0;
+		int count;
 
 		do {
 			j++;
@@ -793,107 +761,61 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			pr_info("request_firmware() %s, size 0x%x\n", CPU_FW_FILE, (int)fw->size);
 			update++;
 
-			copy_size = sizeof(vcore_power_gain_lp4);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize vcore_power_gain_lp4 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
+			for (count = 0; count < CM_MGR_MAX; count++) {
+				copy_size = vcore_power_array_size(count) * VCORE_ARRAY_SIZE * sizeof(unsigned int);
+				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+				if (fw->size < (copy_size + offset)) {
+					pr_info("oversize vcore_power_gain_%d 0x%x, 0x%x",
+							count, (int)fw->size, copy_size + offset);
+					goto out_fw;
+				}
+				memcpy(vcore_power_gain_ptr(count), fw->data, copy_size);
 			}
-			memcpy(&vcore_power_gain_lp4, fw->data, copy_size);
 
-#ifdef CM_MGR_IS_LP3
-			offset += copy_size;
-			copy_size = sizeof(vcore_power_gain_lp3);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize vcore_power_gain_lp3 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
-			}
-			memcpy(&vcore_power_gain_lp3, fw->data + offset, copy_size);
-#endif /* CM_MGR_IS_LP3 */
+#ifdef PER_CPU_STALL_RATIO
+#ifndef ATF_SECURE_SMC
+			for (count = 0; count < CM_MGR_MAX; count++) {
+				offset += copy_size;
+				copy_size = sizeof(cpu_power_gain_UpLow0);
+				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+				if (fw->size < (copy_size + offset)) {
+					pr_info("oversize cpu_power_gain_UpLow1 0x%x, 0x%x",
+							(int)fw->size, copy_size + offset);
+					goto out_fw;
+				}
+				memcpy(&cpu_power_gain_UpLow1, fw->data + offset, copy_size);
 
-#ifndef PER_CPU_STALL_RATIO
-			offset += copy_size;
-			copy_size = sizeof(cpu_power_gain_up_low_1);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize cpu_power_gain_up_low_1 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
-			}
-			memcpy(&cpu_power_gain_up_low_1, fw->data + offset, copy_size);
+				offset += copy_size;
+				copy_size = sizeof(cpu_power_gain_DownLow0);
+				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+				if (fw->size < (copy_size + offset)) {
+					pr_info("oversize cpu_power_gain_DownLow1 0x%x, 0x%x",
+							(int)fw->size, copy_size + offset);
+					goto out_fw;
+				}
+				memcpy(&cpu_power_gain_DownLow1, fw->data + offset, copy_size);
 
-			offset += copy_size;
-			copy_size = sizeof(cpu_power_gain_down_low_1);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize cpu_power_gain_down_low_1 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
-			}
-			memcpy(&cpu_power_gain_down_low_1, fw->data + offset, copy_size);
+				offset += copy_size;
+				copy_size = sizeof(cpu_power_gain_UpHigh0);
+				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+				if (fw->size < (copy_size + offset)) {
+					pr_info("oversize cpu_power_gain_UpHigh1 0x%x, 0x%x",
+							(int)fw->size, copy_size + offset);
+					goto out_fw;
+				}
+				memcpy(&cpu_power_gain_UpHigh1, fw->data + offset, copy_size);
 
-			offset += copy_size;
-			copy_size = sizeof(cpu_power_gain_up_high_1);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize cpu_power_gain_up_high_1 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
+				offset += copy_size;
+				copy_size = sizeof(cpu_power_gain_DownHigh0);
+				pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
+				if (fw->size < (copy_size + offset)) {
+					pr_info("oversize cpu_power_gain_DownHigh1 0x%x, 0x%x",
+							(int)fw->size, copy_size + offset);
+					goto out_fw;
+				}
+				memcpy(&cpu_power_gain_DownHigh1, fw->data + offset, copy_size);
 			}
-			memcpy(&cpu_power_gain_up_high_1, fw->data + offset, copy_size);
-
-			offset += copy_size;
-			copy_size = sizeof(cpu_power_gain_down_high_1);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize cpu_power_gain_down_high_1 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
-			}
-			memcpy(&cpu_power_gain_down_high_1, fw->data + offset, copy_size);
-
-			offset += copy_size;
-			copy_size = sizeof(cpu_power_gain_up_low_2);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize cpu_power_gain_up_low_2 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
-			}
-			memcpy(&cpu_power_gain_up_low_2, fw->data + offset, copy_size);
-
-			offset += copy_size;
-			copy_size = sizeof(cpu_power_gain_down_low_2);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize cpu_power_gain_down_low_2 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
-			}
-			memcpy(&cpu_power_gain_down_low_2, fw->data + offset, copy_size);
-
-			offset += copy_size;
-			copy_size = sizeof(cpu_power_gain_up_high_2);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize cpu_power_gain_up_high_2 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
-			}
-			memcpy(&cpu_power_gain_up_high_2, fw->data + offset, copy_size);
-
-			offset += copy_size;
-			copy_size = sizeof(cpu_power_gain_down_high_2);
-			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
-			if (fw->size < (copy_size + offset)) {
-				pr_info("oversize cpu_power_gain_down_high_2 0x%x, 0x%x",
-						(int)fw->size, copy_size + offset);
-				goto out_fw;
-			}
-			memcpy(&cpu_power_gain_down_high_2, fw->data + offset, copy_size);
+#endif
 #endif
 
 			offset += copy_size;
@@ -987,18 +909,7 @@ int __init cm_mgr_module_init(void)
 		return r;
 	}
 
-#ifdef CM_MGR_IS_LP3
-	/* check mem type */
-#ifdef CONFIG_MTK_DRAMC
-	if (get_ddr_type() == TYPE_LPDDR3) {
-		is_lp3 = 1;
-		vcore_power_gain = &vcore_power_gain_lp3[0][0];
-	}
-#endif
-
-	pr_info("is_lp3 = %d\n", is_lp3);
-
-#endif /* CM_MGR_IS_LP3 */
+	vcore_power_gain = vcore_power_gain_ptr(cm_mgr_get_idx());
 
 #ifdef ATF_SECURE_SMC
 	pr_info("ATF_SECURE_SMC\n");
