@@ -265,15 +265,22 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 
 	/* no energy comparison if the same cluster */
 	if (target_cpu != task_cpu(p)) {
+		int delta = 0;
 		struct energy_env eenv = {
 			.util_delta     = task_util(p),
 			.src_cpu        = task_cpu(p),
 			.dst_cpu        = target_cpu,
 			.task           = p,
+			.trg_cpu        = target_cpu,
 		};
 
+
+#ifdef CONFIG_SCHED_WALT
+               if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
+                       delta = task_util(p);
+#endif
 		/* Not enough spare capacity on previous cpu */
-		if (cpu_overutilized(task_cpu(p))) {
+		if (__cpu_overutilized(task_cpu(p), delta)) {
 			over_util = true;
 			goto unlock;
 		}
