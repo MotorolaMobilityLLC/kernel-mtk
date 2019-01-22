@@ -225,8 +225,7 @@ long port_smem_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg
 int port_smem_mmap(struct ccci_port *port, struct vm_area_struct *vma)
 {
 	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
-	int len, ret;
-	unsigned long pfn;
+	int pfn, len, ret;
 	int md_id = port->md_id;
 
 	CCCI_NORMAL_LOG(md_id, CHAR, "remap addr:0x%llx len:%d  map-len:%lu\n",
@@ -248,7 +247,7 @@ int port_smem_mmap(struct ccci_port *port, struct vm_area_struct *vma)
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 	ret = remap_pfn_range(vma, vma->vm_start, pfn, len, vma->vm_page_prot);
 	if (ret) {
-		CCCI_ERROR_LOG(md_id, CHAR, "remap failed %d/%lx, 0x%llx -> 0x%llx\n", ret, pfn,
+		CCCI_ERROR_LOG(md_id, CHAR, "remap failed %d/%x, 0x%llx -> 0x%llx\n", ret, pfn,
 			(unsigned long long)smem_port->addr_phy, (unsigned long long)vma->vm_start);
 		return -EAGAIN;
 	}
