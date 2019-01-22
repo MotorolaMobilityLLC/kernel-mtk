@@ -45,6 +45,22 @@
 
 #include <trace/events/mtk_events.h>
 
+__weak int get_spm_last_wakeup_src(struct seq_file *s, void *unused)
+{
+	return 0;
+}
+__weak int get_spm_sleep_count(struct seq_file *s, void *unused)
+{
+	return 0;
+}
+__weak void mt_spm_pmic_wrap_set_cmd(enum pmic_wrap_phase_id phase, int idx, unsigned int cmd_wdata)
+{
+}
+
+__weak void mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id phase)
+{
+}
+
 int spm_for_gps_flag;
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
@@ -804,7 +820,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		}
 		break;
 	case SPM_VCORE_PWARP_CMD:
-#if defined(CONFIG_MACH_MT6758)
+#if defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 		spm_d->cmd = cmd;
 		ret = sspm_ipi_send_sync(IPI_ID_SPM_SUSPEND, IPI_OPT_POLLING, spm_d, SPM_D_LEN, &ack_data, 1);
 		if (ret != 0) {

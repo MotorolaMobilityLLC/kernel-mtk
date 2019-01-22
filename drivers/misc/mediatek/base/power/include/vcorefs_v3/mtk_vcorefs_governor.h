@@ -74,6 +74,18 @@ enum dvfs_opp {
 	OPP_2,
 	NUM_OPP,
 };
+#elif defined(CONFIG_MACH_MT6775)
+enum dvfs_opp {
+	OPP_UNREQ = -1,
+	OPP_0 = 0,
+	OPP_1,
+	OPP_2,
+	OPP_3,
+	OPP_4,
+	OPP_5,
+	OPP_6,
+	NUM_OPP,
+};
 #else
 enum dvfs_opp {
 	OPP_UNREQ = -1,
@@ -124,7 +136,7 @@ struct opp_profile {
 #define VCORE_BASE_UV           500000
 #elif defined(CONFIG_MACH_MT6739)        /* PMIC MT6357 */
 #define VCORE_BASE_UV           518750
-#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)       /* PMIC MT6355 */
+#elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 #define VCORE_BASE_UV           406250
 #elif defined(CONFIG_MACH_MT6771)        /* PMIC MT6358 */
 #define VCORE_BASE_UV           500000
