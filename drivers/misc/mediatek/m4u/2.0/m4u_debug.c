@@ -20,6 +20,17 @@
 #include "m4u_debug.h"
 #include "m4u_priv.h"
 
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+#include "tz_cross/trustzone.h"
+#include "tz_cross/ta_mem.h"
+#include "trustzone/kree/system.h"
+#include "trustzone/kree/mem.h"
+#endif
+
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#include "secmem.h"
+#endif
+
 
 /* global variables */
 int gM4U_log_to_uart = 2;
@@ -689,8 +700,26 @@ static int m4u_debug_set(void *data, u64 val)
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 	case 50:
+	{
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+		u32 sec_handle = 0;
+		u32 refcount;
+
+		secmem_api_alloc(0, 0x1000, &refcount, &sec_handle, "m4u_ut", 0);
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+		u32 sec_handle = 0;
+		u32 refcount = 0;
+		int ret = 0;
+
+		ret = KREE_AllocSecurechunkmemWithTag(0, &sec_handle, 0, 0x1000, "m4u_ut");
+		if (ret != TZ_RESULT_SUCCESS) {
+			IONMSG("KREE_AllocSecurechunkmemWithTag failed, ret is 0x%x\n", ret);
+			return ret;
+		}
+#endif
 		m4u_sec_init();
 	break;
+	}
 	case 51:
 	{
 		M4U_PORT_STRUCT port;

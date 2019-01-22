@@ -234,6 +234,9 @@ void ion_fb_heap_destroy(struct ion_heap *);
 
 int ion_device_destroy_heaps(struct ion_device *dev);
 
+struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *unused);
+void ion_sec_heap_destroy(struct ion_heap *heap);
+
 #endif
 
 #endif
