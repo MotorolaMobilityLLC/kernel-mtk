@@ -110,7 +110,7 @@ int vpu_find_algo_by_id(vpu_id_t id, struct vpu_algo **ralgo)
 
 err:
 	*ralgo = NULL;
-	return -1;
+	return -ENOENT;
 }
 
 int vpu_find_algo_by_name(char *name, struct vpu_algo **ralgo)
@@ -139,7 +139,7 @@ int vpu_find_algo_by_name(char *name, struct vpu_algo **ralgo)
 
 err:
 	*ralgo = NULL;
-	return -1;
+	return -ENOENT;
 }
 
 

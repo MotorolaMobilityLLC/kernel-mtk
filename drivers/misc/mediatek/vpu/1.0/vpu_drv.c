@@ -192,7 +192,7 @@ int vpu_create_user(struct vpu_user **user)
 
 	u = kzalloc(sizeof(vlist_type(struct vpu_user)), GFP_KERNEL);
 	if (!u)
-		return -1;
+		return -ENOMEM;
 
 	mutex_init(&u->data_mutex);
 	u->id = ++vpu_num_users;
@@ -215,7 +215,7 @@ int vpu_push_request_to_queue(struct vpu_user *user, struct vpu_request *req)
 {
 	if (!user) {
 		LOG_ERR("empty user");
-		return -1;
+		return -EINVAL;
 	}
 
 	mutex_lock(&user->data_mutex);
@@ -274,7 +274,7 @@ int vpu_pop_request_from_queue(struct vpu_user *user, struct vpu_request **rreq)
 	if (ret < 0) {
 		LOG_ERR("interrupt by signal, while pop a request, ret=%d\n", ret);
 		*rreq = NULL;
-		return -1;
+		return -EINTR;
 	}
 
 	mutex_lock(&user->data_mutex);
@@ -283,7 +283,7 @@ int vpu_pop_request_from_queue(struct vpu_user *user, struct vpu_request **rreq)
 		mutex_unlock(&user->data_mutex);
 		LOG_ERR("pop a request from empty queue! ret=%d\n", ret);
 		*rreq = NULL;
-		return -1;
+		return -ENODATA;
 	};
 
 	/* get first node from deque list */
@@ -301,7 +301,7 @@ int vpu_delete_user(struct vpu_user *user)
 {
 	if (!user) {
 		LOG_ERR("delete empty user!\n");
-		return -1;
+		return -EINVAL;
 	}
 
 	vpu_flush_requests_from_queue(user);
