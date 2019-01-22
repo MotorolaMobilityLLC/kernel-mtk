@@ -36,7 +36,11 @@ static const struct kbase_pm_policy *const policy_list[] = {
 #endif
 #else				/* CONFIG_MALI_NO_MALI */
 #if !PLATFORM_POWER_DOWN_ONLY
+#ifdef WORKAROUND_MT6771
+	&kbase_pm_always_on_policy_ops,
+#else
 	&kbase_pm_demand_policy_ops,
+#endif
 #endif /* !PLATFORM_POWER_DOWN_ONLY */
 	&kbase_pm_coarse_demand_policy_ops,
 	&kbase_pm_always_on_policy_ops,
