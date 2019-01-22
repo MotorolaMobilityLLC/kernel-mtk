@@ -182,8 +182,12 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 		ipi_msg_ptr = (struct ccci_ipi_msg *)skb->data;
 		md = ccci_md_get_modem_by_id(ipi_msg_ptr->md_id);
 		if (!md) {
-			CCCI_ERROR_LOG(ipi_msg_ptr->md_id, CORE, "MD not exist\n");
-			return;
+			CCCI_ERROR_LOG(ipi_msg_ptr->md_id, CORE, "MD not exist, %d, %d/0x%x\n", scp_state,
+				ipi_msg_ptr->op_id, ipi_msg_ptr->data[0]);
+			if (!(scp_state == SCP_CCCI_STATE_INVALID &&
+			ipi_msg_ptr->op_id == CCCI_OP_SCP_STATE &&
+			ipi_msg_ptr->data[0] == SCP_CCCI_STATE_BOOTING))
+				return;
 		}
 		switch (ipi_msg_ptr->op_id) {
 		case CCCI_OP_SCP_STATE:
@@ -198,7 +202,7 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 						port_proxy_send_msg_to_md(md3->port_proxy_obj, CCCI_CONTROL_TX,
 								C2K_CCISM_SHM_INIT, 0, 1);
 				} else {
-					CCCI_NORMAL_LOG(md->index, CORE, "SCP boot up\n");
+					CCCI_NORMAL_LOG(ipi_msg_ptr->md_id, CORE, "SCP boot up\n");
 				}
 				/* too early to init share memory here, EMI MPU may not be ready yet */
 				break;
