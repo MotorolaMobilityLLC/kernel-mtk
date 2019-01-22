@@ -184,11 +184,7 @@ mtk_cfg80211_del_key(struct wiphy *wiphy, struct net_device *ndev, u8 key_index,
 int
 mtk_cfg80211_set_default_key(struct wiphy *wiphy, struct net_device *ndev, u8 key_index, bool unicast, bool multicast);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, const u8 *mac, struct station_info *sinfo);
-#else
-int mtk_cfg80211_get_station(struct wiphy *wiphy, struct net_device *ndev, u8 *mac, struct station_info *sinfo);
-#endif
 
 int
 mtk_cfg80211_get_link_statistics(struct wiphy *wiphy, struct net_device *ndev, u8 *mac, struct station_info *sinfo);
@@ -218,18 +214,11 @@ int mtk_cfg80211_remain_on_channel(struct wiphy *wiphy,
 				   struct ieee80211_channel *chan, unsigned int duration, u64 *cookie);
 
 int mtk_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy, struct wireless_dev *wdev, u64 cookie);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
+
 int mtk_cfg80211_mgmt_tx(struct wiphy *wiphy,
 			struct wireless_dev *wdev,
 			struct cfg80211_mgmt_tx_params *params,
 			u64 *cookie);
-#else
-int mtk_cfg80211_mgmt_tx(struct wiphy *wiphy,
-			 struct wireless_dev *wdev,
-			 struct ieee80211_channel *channel, bool offscan,
-			 unsigned int wait,
-			 const u8 *buf, size_t len, bool no_cck, bool dont_wait_for_ack, u64 *cookie);
-#endif
 
 void mtk_cfg80211_mgmt_frame_register(IN struct wiphy *wiphy,
 				      IN struct wireless_dev *wdev, IN u16 frame_type, IN bool reg);
@@ -242,11 +231,8 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy,
 					 IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo);
 
 int mtk_cfg80211_testmode_get_scan_done(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wdev, IN void *data, IN int len);
-#else
-int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
-#endif
+
 int mtk_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
 
 #if CFG_SUPPORT_PASSPOINT
@@ -272,7 +258,6 @@ int mtk_cfg80211_sched_scan_stop(IN struct wiphy *wiphy, IN struct net_device *n
 
 int mtk_cfg80211_assoc(struct wiphy *wiphy, struct net_device *ndev, struct cfg80211_assoc_request *req);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 int
 mtk_cfg80211_change_station(struct wiphy *wiphy, struct net_device *ndev,
 			    const u8 *mac, struct station_parameters *params);
@@ -280,41 +265,15 @@ mtk_cfg80211_change_station(struct wiphy *wiphy, struct net_device *ndev,
 int mtk_cfg80211_add_station(struct wiphy *wiphy, struct net_device *ndev,
 			     const u8 *mac, struct station_parameters *params);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
 int mtk_cfg80211_del_station(struct wiphy *wiphy, struct net_device *ndev, struct station_del_parameters *params);
-#else
-int mtk_cfg80211_del_station(struct wiphy *wiphy, struct net_device *ndev,
-		const u8 *mac);
-#endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
+
 int mtk_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
 			   const u8 *peer, u8 action_code, u8 dialog_token,
 			   u16 status_code, u32 peer_capability,
 			   bool initiator, const u8 *buf, size_t len);
-#else
-int mtk_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
-			const u8 *peer, u8 action_code, u8 dialog_token,
-			u16 status_code, u32 peer_capability,
-			const u8 *buf, size_t len);
-#endif
 
 int mtk_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev,
 			   const u8 *peer, enum nl80211_tdls_operation oper);
-#else
-int
-mtk_cfg80211_change_station(struct wiphy *wiphy, struct net_device *ndev, u8 *mac, struct station_parameters *params);
-
-int mtk_cfg80211_add_station(struct wiphy *wiphy, struct net_device *ndev, u8 *mac, struct station_parameters *params);
-
-int mtk_cfg80211_del_station(struct wiphy *wiphy, struct net_device *ndev, u8 *mac);
-
-int
-mtk_cfg80211_tdls_mgmt(struct wiphy *wiphy,
-		       struct net_device *dev,
-		       u8 *peer, u8 action_code, u8 dialog_token, u16 status_code, const u8 *buf, size_t len);
-
-int mtk_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev, u8 *peer, enum nl80211_tdls_operation oper);
-#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

@@ -81,9 +81,7 @@
 #include "gl_ate_agent.h"
 #include "gl_hook_api.h"
 #include "gl_qa_agent.h"
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
 #include <uapi/linux/nl80211.h>
-#endif
 
 /*******************************************************************************
 *						C O N S T A N T S

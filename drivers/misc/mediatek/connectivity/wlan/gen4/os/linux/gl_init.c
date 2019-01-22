@@ -347,8 +347,6 @@ static struct cfg80211_ops mtk_wlan_ops = {
 #endif
 };
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
-
 static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 	{
 		{
@@ -399,7 +397,6 @@ static const struct nl80211_vendor_cmd_info mtk_wlan_vendor_events[] = {
 		.subcmd = GSCAN_EVENT_HOTLIST_RESULTS_LOST
 	},
 };
-#endif
 
 /* There isn't a lot of sense in it, but you can transmit anything you like */
 static const struct ieee80211_txrx_stypes
@@ -489,36 +486,17 @@ unsigned int _cfg80211_classify8021d(struct sk_buff *skb)
 }
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
 UINT_16 wlanSelectQueue(struct net_device *dev, struct sk_buff *skb,
 			void *accel_priv, select_queue_fallback_t fallback)
 {
 	UINT_16 au16Wlan1dToQueueIdx[8] = { 1, 0, 0, 1, 2, 2, 3, 3 };
 
 	/* Use Linux wireless utility function */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0)
-	skb->priority = cfg80211_classify8021d(skb);
-#else
 	skb->priority = cfg80211_classify8021d(skb, NULL);
-#endif
 
 	return au16Wlan1dToQueueIdx[skb->priority];
 }
-#else
-UINT_16 wlanSelectQueue(struct net_device *dev, struct sk_buff *skb)
-{
-	UINT_16 au16Wlan1dToQueueIdx[8] = { 1, 0, 0, 1, 2, 2, 3, 3 };
 
-	/* Use Linux wireless utility function */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0)
-	skb->priority = cfg80211_classify8021d(skb);
-#else
-	skb->priority = cfg80211_classify8021d(skb, NULL);
-#endif
-
-	return au16Wlan1dToQueueIdx[skb->priority];
-}
-#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Load NVRAM data and translate it into REG_INFO_T
@@ -1209,15 +1187,10 @@ void wlanMonWorkHandler(struct work_struct *work)
 	if (prGlueInfo->fgIsEnableMon) {
 		if (prGlueInfo->prMonDevHandler)
 			return;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
+
 		prGlueInfo->prMonDevHandler =
 			alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_MONITOR_INF_NAME,
 				NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
-#else
-		prGlueInfo->prMonDevHandler =
-			alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_MONITOR_INF_NAME,
-					ether_setup, CFG_MAX_TXQ_NUM);
-#endif
 		if (prGlueInfo->prMonDevHandler == NULL) {
 			DBGLOG(INIT, ERROR, "wlanMonWorkHandler: Allocated prMonDevHandler context FAIL.\n");
 			return;
@@ -1361,7 +1334,6 @@ static INT_32 wlanNetRegister(struct wireless_dev *prWdev)
 	return i4DevIdx;	/* success */
 }				/* end of wlanNetRegister() */
 
-
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Unregister the device from the kernel
@@ -1442,32 +1414,22 @@ static void wlanCreateWirelessDevice(void)
 	prWiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
 	prWiphy->cipher_suites = (const u32 *)mtk_cipher_suites;
 	prWiphy->n_cipher_suites = ARRAY_SIZE(mtk_cipher_suites);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 15, 0)
-	prWiphy->flags = WIPHY_FLAG_CUSTOM_REGULATORY | WIPHY_FLAG_SUPPORTS_FW_ROAM | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
-#else
 	prWiphy->flags = WIPHY_FLAG_SUPPORTS_FW_ROAM | WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
 	prWiphy->regulatory_flags = REGULATORY_CUSTOM_REG;
-#endif
 
 #if (CFG_SUPPORT_TDLS == 1)
 	TDLSEX_WIPHY_FLAGS_INIT(prWiphy->flags);
 #endif /* CFG_SUPPORT_TDLS */
 	prWiphy->max_remain_on_channel_duration = 5000;
 	prWiphy->mgmt_stypes = mtk_cfg80211_ais_default_mgmt_stypes;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
 	prWiphy->vendor_commands = mtk_wlan_vendor_ops;
 	prWiphy->n_vendor_commands = sizeof(mtk_wlan_vendor_ops) / sizeof(struct wiphy_vendor_command);
 	prWiphy->vendor_events = mtk_wlan_vendor_events;
 	prWiphy->n_vendor_events = ARRAY_SIZE(mtk_wlan_vendor_events);
-#endif
+
 	/* 4 <1.4> wowlan support */
 #ifdef CONFIG_PM
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0)
 	prWiphy->wowlan = &mtk_wlan_wowlan_support;
-#else
-	kalMemCopy(&prWiphy->wowlan, &mtk_wlan_wowlan_support, sizeof(struct wiphy_wowlan_support));
-#endif
 #endif
 
 #ifdef CONFIG_CFG80211_WEXT
@@ -1569,16 +1531,11 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData, PVOID pvDriverData)
 
 	/* 4 <3> Initialize Glue structure */
 	/* 4 <3.1> Create net device */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
-		prGlueInfo->prDevHandler =
-			alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_INF_NAME,
-						NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
-#else
-		prGlueInfo->prDevHandler =
-			alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_INF_NAME,
-					ether_setup, CFG_MAX_TXQ_NUM);
-#endif
-		DBGLOG(INIT, INFO, "net_device prDev(0x%p) allocated\n", prGlueInfo->prDevHandler);
+	prGlueInfo->prDevHandler =
+		alloc_netdev_mq(sizeof(NETDEV_PRIVATE_GLUE_INFO), NIC_INF_NAME,
+				NET_NAME_PREDICTABLE, ether_setup, CFG_MAX_TXQ_NUM);
+
+	DBGLOG(INIT, INFO, "net_device prDev(0x%p) allocated\n", prGlueInfo->prDevHandler);
 
 	if (!prGlueInfo->prDevHandler) {
 		DBGLOG(INIT, ERROR, "Allocating memory to net_device context failed\n");
@@ -1625,7 +1582,6 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData, PVOID pvDriverData)
 	prGlueInfo->fgIsRegistered = FALSE;
 	prGlueInfo->prScanRequest = NULL;
 	prGlueInfo->prSchedScanRequest = NULL;
-
 
 #if CFG_SUPPORT_PASSPOINT
 	/* Init DAD */
@@ -1889,9 +1845,6 @@ VOID wlanGetParseConfig(P_ADAPTER_T prAdapter)
 		} else if (kalReadToFile("/data/misc/wifi/wifi.cfg", pucConfigBuf,
 					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
 			/* ToDo:: Nothing */
-		} else if (kalRequestFirmware("wifi.cfg", pucConfigBuf,
-					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen, prAdapter->prGlueInfo->prDev) == 0) {
-			/* ToDo:: Nothing */
 		}
 
 		if (pucConfigBuf[0] != '\0' && u4ConfigReadLen > 0)
@@ -1931,9 +1884,6 @@ VOID wlanGetConfig(P_ADAPTER_T prAdapter)
 			/* ToDo:: Nothing */
 		} else if (kalReadToFile("/data/misc/wifi/wifi.cfg", pucConfigBuf,
 					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen) == 0) {
-			/* ToDo:: Nothing */
-		} else if (kalRequestFirmware("wifi.cfg", pucConfigBuf,
-					 WLAN_CFG_FILE_BUF_SIZE, &u4ConfigReadLen, prAdapter->prGlueInfo->prDev) == 0) {
 			/* ToDo:: Nothing */
 		}
 
