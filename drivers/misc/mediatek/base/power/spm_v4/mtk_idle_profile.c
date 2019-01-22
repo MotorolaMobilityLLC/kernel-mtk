@@ -13,6 +13,7 @@
 #include <linux/kernel.h>
 #include <linux/math64.h>
 #include <mach/mtk_gpt.h>
+#include <mtk_cpufreq_api.h>
 #include "mtk_cpuidle.h"
 #include "mtk_idle_internal.h"
 #include "mtk_idle_profile.h"
@@ -32,6 +33,10 @@
 #define idle_prof_info(fmt, args...)    pr_debug(IDLE_PROF_TAG fmt, ##args)
 #define idle_prof_ver(fmt, args...)     pr_debug(IDLE_PROF_TAG fmt, ##args)
 #define idle_prof_dbg(fmt, args...)     pr_debug(IDLE_PROF_TAG fmt, ##args)
+
+#define LATENCY_PROF_TAG		"Power/latency_profile "
+#define latency_prof_crit(fmt, args...) pr_crit(LATENCY_PROF_TAG fmt, ##args)
+
 
 /* idle ratio */
 static bool idle_ratio_en;
@@ -521,3 +526,102 @@ void mtk_idle_twam_init(void)
 	idle_twam.event = 29;
 }
 
+
+static unsigned int dpidle_profile[NB_DPIDLE_PROFILE];
+static unsigned int dpidle_profile_seg[NB_DPIDLE_PROFILE - 1];
+static unsigned int dpidle_profile_sampling;
+static unsigned int dpidle_profile_cnt;
+static char *dpidle_profile_tags[NB_DPIDLE_PROFILE - 1] = {
+	"DPIDLE_ENTER",
+	"DPIDLE_ENTER_UFS_CB_BEFORE_XXIDLE_START",
+	"DPIDLE_ENTER_UFS_CB_BEFORE_XXIDLE_END",
+	"DPIDLE_PROFILE_IDLE_NOTIFIER_END",
+	"DPIDLE_TIMER_DEL_END",
+	"DPIDLE_NOTIFY_SSPM_BEFORE_WFI_START",
+	"DPIDLE_NOTIFY_SSPM_BEFORE_WFI_END",
+	"DPIDLE_CIRQ_ENABLE_END",
+	"DPIDLE_SETUP_BEFORE_WFI_END",
+	"DPIDLE_NOTIFY_SSPM_BEFORE_WFI_ASYNC_WAIT_START",
+	"DPIDLE_NOTIFY_SSPM_BEFORE_WFI_ASYNC_WAIT_END",
+	"DPIDLE_BEFORE_WFI",
+	"DPIDLE_AFTER_WFI",
+	"DPIDLE_NOTIFY_SSPM_AFTER_WFI_START",
+	"DPIDLE_NOTIFY_SSPM_AFTER_WFI_END",
+	"DPIDLE_SETUP_AFTER_WFI_START",
+	"DPIDLE_SETUP_AFTER_WFI_END",
+	"DPIDLE_OUTPUT_WAKEUP_REASON_END",
+	"DPIDLE_CIRQ_DISABLE_END",
+	"DPIDLE_TIMER_RESTORE_START",
+	"DPIDLE_TIMER_RESTORE_END",
+	"DPIDLE_UFS_CB_AFTER_XXIDLE_START",
+	"DPIDLE_UFS_CB_AFTER_XXIDLE_END",
+	"DPIDLE_NOTIFY_SSPM_AFTER_WFI_ASYNC_WAIT_END",
+	"DPIDLE_LEAVE",
+};
+
+#define SPM_DEEPIDLE_PROFILE_APXGPT GPT2
+
+void dpidle_set_profile_sampling(unsigned int time)
+{
+	int i;
+
+	/* clear latency profile record */
+	for (i = 0; i < NB_DPIDLE_PROFILE - 1; i++)
+		dpidle_profile_seg[i] = 0;
+
+	dpidle_profile_sampling = time;
+	dpidle_profile_cnt = time;
+}
+
+void dpidle_profile_time(int idx)
+{
+	if (dpidle_profile_cnt) {
+#ifdef IDLE_PROF_USING_STD_TIMER
+		dpidle_profile[idx] = lower_32_bits(mtk_timer_get_cnt(2));
+#else
+		gpt_get_cnt(SPM_DEEPIDLE_PROFILE_APXGPT, &dpidle_profile[idx]);
+#endif
+	}
+}
+
+void dpidle_show_profile_time(void)
+{
+	static struct mtk_idle_buf latency_profile_log;
+	unsigned int i;
+
+	if (dpidle_profile_cnt > 0) {
+		dpidle_profile_cnt--;
+
+		reset_idle_buf(latency_profile_log);
+
+		for (i = 0; i < NB_DPIDLE_PROFILE; i++) {
+			idle_buf_append(latency_profile_log,
+				"%d:%u, ", i, dpidle_profile[i]);
+			if (i)
+				dpidle_profile_seg[i - 1] +=
+					(abs(dpidle_profile[i] - dpidle_profile[i - 1]));
+		}
+
+		idle_buf_append(latency_profile_log, "cpu_freq:%u/%u\n",
+			mt_cpufreq_get_cur_freq(0),
+			mt_cpufreq_get_cur_freq(1));
+
+		idle_prof_info("%s", get_idle_buf(latency_profile_log));
+	}
+}
+
+#define IDLE_PROFILE_GPT_TIMER_UNIT 13
+
+void dpidle_show_profile_result(void)
+{
+	unsigned int sample = (dpidle_profile_sampling - dpidle_profile_cnt);
+	unsigned int i;
+
+	if (sample > 0) {
+		latency_prof_crit("sample,%d\n", sample);
+
+		for (i = 0; i < (NB_DPIDLE_PROFILE - 1); i++)
+			latency_prof_crit("%s,%u\n", dpidle_profile_tags[i],
+				(dpidle_profile_seg[i] / sample / IDLE_PROFILE_GPT_TIMER_UNIT));
+	}
+}

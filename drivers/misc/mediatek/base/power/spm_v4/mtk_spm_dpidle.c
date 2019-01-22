@@ -39,6 +39,7 @@
 #include <mtk_spm_misc.h>
 #include <mt-plat/upmu_common.h>
 
+#include <mtk_idle_profile.h>
 #include <mtk_spm_dpidle.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
@@ -794,7 +795,11 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
+	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_BEFORE_WFI_START);
+
 	spm_dpidle_notify_sspm_before_wfi(false, operation_cond, pwrctrl);
+
+	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_BEFORE_WFI_END);
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
@@ -806,16 +811,19 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
+	dpidle_profile_time(DPIDLE_PROFILE_CIRQ_ENABLE_END);
 
 	spm_dpidle_pcm_setup_before_wfi(false, cpu, pcmdesc, pwrctrl, operation_cond);
 
-#ifdef SPM_DEEPIDLE_PROFILE_TIME
-	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
-#endif
+	dpidle_profile_time(DPIDLE_PROFILE_SETUP_BEFORE_WFI_END);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_SSPM_ASYNC_IPI_BEFORE_WFI);
 
+	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_BEFORE_WFI_ASYNC_WAIT_START);
+
 	spm_dpidle_notify_spm_before_wfi_async_wait();
+
+	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_BEFORE_WFI_ASYNC_WAIT_END);
 
 	/* Dump low power golden setting */
 	if (operation_cond & DEEPIDLE_OPT_DUMP_LP_GOLDEN)
@@ -832,6 +840,14 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 	}
 #endif
 
+#if 0
+#ifdef SPM_DEEPIDLE_PROFILE_TIME
+	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[1]);
+#endif
+#else
+	dpidle_profile_time(DPIDLE_PROFILE_BEFORE_WFI);
+#endif
+
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_WFI);
 
 	trace_dpidle(cpu, 1);
@@ -840,8 +856,12 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 
 	trace_dpidle(cpu, 0);
 
+#if 0
 #ifdef SPM_DEEPIDLE_PROFILE_TIME
 	gpt_get_cnt(SPM_PROFILE_APXGPT, &dpidle_profile[2]);
+#endif
+#else
+	dpidle_profile_time(DPIDLE_PROFILE_AFTER_WFI);
 #endif
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_WFI);
@@ -852,17 +872,27 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 RESTORE_IRQ:
 #endif
 
+	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_AFTER_WFI_START);
+
 	spm_dpidle_notify_sspm_after_wfi(false, operation_cond);
+
+	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_AFTER_WFI_END);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_LEAVE_SSPM_ASYNC_IPI_AFTER_WFI);
 
 	__spm_get_wakeup_status(&wakesta);
 
+	dpidle_profile_time(DPIDLE_PROFILE_SETUP_AFTER_WFI_START);
+
 	spm_dpidle_pcm_setup_after_wfi(false, operation_cond);
+
+	dpidle_profile_time(DPIDLE_PROFILE_SETUP_AFTER_WFI_END);
 
 	spm_dpidle_footprint(SPM_DEEPIDLE_ENTER_UART_AWAKE);
 
 	wr = spm_output_wake_reason(&wakesta, pcmdesc, log_cond, operation_cond);
+
+	dpidle_profile_time(DPIDLE_PROFILE_OUTPUT_WAKEUP_REASON_END);
 
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
@@ -872,6 +902,8 @@ RESTORE_IRQ:
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&mask);
 #endif
+
+	dpidle_profile_time(DPIDLE_PROFILE_CIRQ_DISABLE_END);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 

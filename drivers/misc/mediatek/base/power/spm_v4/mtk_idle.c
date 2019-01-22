@@ -815,6 +815,8 @@ static void disable_dpidle_by_bit(int id)
 
 static bool dpidle_can_enter(int cpu, int reason)
 {
+	dpidle_profile_time(DPIDLE_PROFILE_CAN_ENTER);
+
 	/* check previous common criterion */
 	if (reason == BY_CLK) {
 		if (dpidle_by_pass_cg == 0) {
@@ -1062,9 +1064,15 @@ static unsigned int dpidle_pre_process(int cpu)
 {
 	unsigned int op_cond = 0;
 
+	dpidle_profile_time(DPIDLE_PROFILE_ENTER_UFS_CB_BEFORE_XXIDLE_START);
+
 	op_cond = ufs_cb_before_xxidle();
 
+	dpidle_profile_time(DPIDLE_PROFILE_ENTER_UFS_CB_BEFORE_XXIDLE_END);
+
 	mtk_idle_notifier_call_chain(NOTIFY_DPIDLE_ENTER);
+
+	dpidle_profile_time(DPIDLE_PROFILE_IDLE_NOTIFIER_END);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef CONFIG_MTK_ACAO_SUPPORT
@@ -1079,11 +1087,15 @@ static unsigned int dpidle_pre_process(int cpu)
 
 	timer_setting_before_wfi(false);
 
+	dpidle_profile_time(DPIDLE_PROFILE_TIMER_DEL_END);
+
 	return op_cond;
 }
 
 static void dpidle_post_process(int cpu)
 {
+	dpidle_profile_time(DPIDLE_PROFILE_TIMER_RESTORE_START);
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	timer_setting_after_wfi(false);
 
@@ -1097,13 +1109,21 @@ static void dpidle_post_process(int cpu)
 #endif
 #endif
 
+	dpidle_profile_time(DPIDLE_PROFILE_TIMER_RESTORE_END);
+
 	mtk_idle_notifier_call_chain(NOTIFY_DPIDLE_LEAVE);
 
+	dpidle_profile_time(DPIDLE_PROFILE_UFS_CB_AFTER_XXIDLE_START);
+
 	ufs_cb_after_xxidle();
+
+	dpidle_profile_time(DPIDLE_PROFILE_UFS_CB_AFTER_XXIDLE_END);
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	spm_dpidle_notify_sspm_after_wfi_async_wait();
 #endif
+
+	dpidle_profile_time(DPIDLE_PROFILE_NOTIFY_SSPM_AFTER_WFI_ASYNC_WAIT_END);
 
 	dpidle_cnt[cpu]++;
 }
@@ -1290,6 +1310,8 @@ int dpidle_enter(int cpu)
 	/* don't check lock dependency */
 	lockdep_off();
 
+	dpidle_profile_time(DPIDLE_PROFILE_ENTER);
+
 	mtk_idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 
 	operation_cond |= dpidle_pre_process(cpu);
@@ -1310,6 +1332,9 @@ int dpidle_enter(int cpu)
 	dpidle_post_process(cpu);
 
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
+
+	dpidle_profile_time(DPIDLE_PROFILE_LEAVE);
+	dpidle_show_profile_time();
 
 	lockdep_on();
 
@@ -1766,7 +1791,11 @@ static ssize_t dpidle_state_write(struct file *filp,
 				dpidle_gs_dump_req_ts = idle_get_current_time_ms();
 		} else if (!strcmp(cmd, "golden_delay_ms")) {
 			dpidle_gs_dump_delay_ms = (param >= 0) ? param : 0;
-		} else if (!strcmp(cmd, "log"))
+		} else if (!strcmp(cmd, "profile_sampling"))
+			dpidle_set_profile_sampling(param);
+		else if (!strcmp(cmd, "dump_profile_result"))
+			(param) ? dpidle_show_profile_result() : 0;
+		else if (!strcmp(cmd, "log"))
 			dpidle_dump_log = param;
 		else if (!strcmp(cmd, "force_vcore"))
 			dpidle_force_vcore_lp_mode = param;
