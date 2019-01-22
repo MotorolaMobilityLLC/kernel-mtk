@@ -987,7 +987,7 @@ GED_ERROR ged_log_system_init(void)
 		goto ERROR;
 	}
 
-	ged_log_trace_enable = 1;
+	ged_log_trace_enable = 0;
 
 	return err;
 
@@ -1115,9 +1115,9 @@ void ged_log_trace_counter(char *name, int count)
 	{
 			__mt_update_tracing_mark_write_addr();
 #ifdef ENABLE_GED_SYSTRACE_UTIL
-			/* preempt_disable(); */
+			preempt_disable();
 			event_trace_printk(tracing_mark_write_addr, "C|5566|%s|%d\n", name, count);
-			/* preempt_enable(); */
+			preempt_enable();
 #endif
 	}
 }
