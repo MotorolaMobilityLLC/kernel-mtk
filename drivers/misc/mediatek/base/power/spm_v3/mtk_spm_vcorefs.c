@@ -34,10 +34,11 @@
 #endif
 
 #include <mtk_spm_misc.h>
-#include <mtk_spm_vcorefs.h>
+#include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
-#include <mt_dvfsrc_reg.h>
+#include <mtk_dvfsrc_reg.h>
+/* #include <mtk_ptp.h> */ /* FIXME */
 
 #define is_dvfs_in_progress()    (spm_read(DVFS_LEVEL) & 0x1F)
 #define get_dvfs_level()         (spm_read(DVFS_LEVEL) & 0x1F)
@@ -549,10 +550,6 @@ static struct pwr_ctrl vcorefs_ctrl = {
 	/* default VCORE DVFS is disabled */
 	.pcm_flags		= (SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS),
 
-#if SPM_BYPASS_SYSPWREQ
-	.syspwreq_mask = 0,
-#endif
-
 	/* Auto-gen Start */
 
 	/* SPM_CLK_CON */
@@ -753,7 +750,7 @@ static struct pwr_ctrl vcorefs_ctrl = {
 	.mcu17_wfi_en = 0,
 
 	/* Auto-gen End */
-}
+};
 
 struct spm_lp_scen __spm_vcorefs = {
 #ifdef CONFIG_FPGA_EARLY_PORTING
@@ -897,7 +894,7 @@ static void spm_dvfsfw_init(void)
 	unsigned long flags;
 
 #ifndef CONFIG_MTK_SPM_IN_ATF
-	u32 dvfs_level[NUM_OPP] = { 0x8810, 0x4808, 0x4404, 0x2202, 0x1101};
+	u32 dvfs_level[NUM_OPP] = { 0x8810, 0x4404, 0x2202, 0x1101};
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -936,9 +933,6 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	dest_pwr_ctrl->reg_next_dvfs_level2_mask_b = src_pwr_ctrl->reg_next_dvfs_level2_mask_b;
 	dest_pwr_ctrl->reg_next_dvfs_level3_mask_b = src_pwr_ctrl->reg_next_dvfs_level3_mask_b;
 	dest_pwr_ctrl->reg_next_dvfs_level4_mask_b = src_pwr_ctrl->reg_next_dvfs_level4_mask_b;
-	dest_pwr_ctrl->reg_msdc1_dvfs_halt_mask = src_pwr_ctrl->reg_msdc1_dvfs_halt_mask;
-	dest_pwr_ctrl->reg_msdc2_dvfs_halt_mask = src_pwr_ctrl->reg_msdc2_dvfs_halt_mask;
-	dest_pwr_ctrl->reg_msdc3_dvfs_halt_mask = src_pwr_ctrl->reg_msdc3_dvfs_halt_mask;
 
 	dest_pwr_ctrl->pcm_flags = (dest_pwr_ctrl->pcm_flags & (~dvfs_mask)) |
 					(src_pwr_ctrl->pcm_flags & dvfs_mask);
@@ -950,7 +944,7 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 
 int spm_vcorefs_pwarp_cmd(void)
 {
-#if 1
+#if 0 /* FIXME */
 	/* PMIC_WRAP_PHASE_ALLINONE */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, IDX_ALL_VCORE_LEVEL3, get_vcore_ptp_volt(OPP_0));
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_ALLINONE, IDX_ALL_VCORE_LEVEL2, get_vcore_ptp_volt(OPP_1));

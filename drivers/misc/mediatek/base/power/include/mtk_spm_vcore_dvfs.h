@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MT_SPM_REG_H___
-#define __MT_SPM_REG_H___
+#ifndef _COMMON_MTK_SPM_VCORE_DVFS_H
+#define _COMMON_MTK_SPM_VCORE_DVFS_H
 
 #if defined(CONFIG_MACH_MT6755)
 
@@ -26,7 +26,11 @@
 
 #include "spm_v2/mt_spm_vcore_dvfs_mt6797.h"
 
+#elif defined(CONFIG_MACH_MT6799)
+
+#include "spm_v3/mtk_spm_vcore_dvfs.h"
+
 #endif
 
-#endif /* __MT_SPM_REG_H___ */
+#endif /* _COMMON_MTK_SPM_VCORE_DVFS_H */
 

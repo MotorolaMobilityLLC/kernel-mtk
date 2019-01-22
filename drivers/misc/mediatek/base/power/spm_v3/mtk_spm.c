@@ -21,7 +21,7 @@
 #include <mtk_spm_idle.h>
 /* #include <mach/irqs.h> */
 #include <mt-plat/upmu_common.h>
-#include <mtk_spm_vcorefs.h>
+#include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_internal.h>
 #include <mtk_dramc.h> /* for ucDram_Register_Read () */
 #include <linux/of.h>
