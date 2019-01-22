@@ -2944,7 +2944,7 @@ static unsigned long sum_capacity_reqs(unsigned long cfs_cap,
 {
 	unsigned long total = cfs_cap + scr->rt;
 
-	total = total * capacity_margin;
+	total = total * 1077; /*capacity_margin ~5%, 1077/1024=1.05 */
 	total /= SCHED_CAPACITY_SCALE;
 	total += scr->dl;
 	return total;
@@ -2955,6 +2955,7 @@ static void sched_freq_tick(int cpu)
 	struct sched_capacity_reqs *scr;
 	unsigned long capacity_orig, capacity_curr;
 	unsigned long capacity_req;
+	struct sched_domain *sd = rcu_dereference(per_cpu(sd_ea, cpu));
 
 	if (!sched_freq())
 		return;
@@ -2974,16 +2975,28 @@ static void sched_freq_tick(int cpu)
 	scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 
 	/* capacity_req which includes RT loading & capacity_margin */
-	capacity_req = sum_capacity_reqs(boosted_cpu_util(cpu), scr);
+	capacity_req = sum_capacity_reqs(cpu_util(cpu), scr);
 
-	if (capacity_curr < capacity_req) {
+	if (capacity_curr <= capacity_req) {
+		if (sd) {
+			const struct sched_group_energy *const sge = sd->groups->sge;
+			int nr_cap_states = sge->nr_cap_states;
+			int idx;
+
+			for (idx = 0; idx < nr_cap_states; idx++) {
+				if (sge->cap_states[idx].cap > capacity_curr+1)
+					break;
+			}
+
+			capacity_req = (sge->cap_states[idx].cap + capacity_curr)/2;
+		}
+
 		/* convert scale-invariant capacity */
 		capacity_req = capacity_req * SCHED_CAPACITY_SCALE / capacity_orig_of(cpu);
 
-		/* [FIXME]
-		 * capacity_req includes CFS + RT + DL loading and capacity margin.
-		 * but in here should we only refer CFS and remove additional capacitiy
-		 * margin? Whatever it should be better than capacity_max.
+		/*
+		 * If free room ~5% impact, jump to 1 more index hihger OPP.
+		 * Whatever it should be better than capacity_max.
 		 */
 		set_cfs_cpu_capacity(cpu, true, capacity_req, SCHE_ONESHOT);
 	}

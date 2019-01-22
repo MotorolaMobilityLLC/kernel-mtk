@@ -1591,7 +1591,7 @@ enum cpu_dvfs_sched_type {
 	NUM_SCHE_TYPE
 };
 
-#define DEFAULT_CAP_MARGIN_DVFS 1280 /* ~20% margin */
+#define DEFAULT_CAP_MARGIN_DVFS 1024 /* ~0% margin */
 
 extern unsigned int capacity_margin;
 extern unsigned int capacity_margin_dvfs;
