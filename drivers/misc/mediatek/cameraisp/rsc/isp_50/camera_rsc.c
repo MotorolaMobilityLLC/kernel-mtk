@@ -61,7 +61,7 @@
 #include <smi_public.h>
 #include "../engine_request.h"
 
-/*#define RSC_PMQOS_EN */
+#define RSC_PMQOS_EN
 #if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
 #include <linux/pm_qos.h>
 #endif
@@ -1230,7 +1230,7 @@ signed int CmdqRSCHW(struct frame *frame)
 #if 1
 	struct cmdqRecStruct *handle;
 	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_RSC);
-#if defined(RSC_PMQOS_EN) && definedCONFIG_MTK_QOS_SUPPORT
+#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
 	unsigned int w_imgi, h_imgi, w_mvio, h_mvio, w_bvo, h_bvo;
 	unsigned int dma_bandwidth, trig_num;
 #endif
@@ -1298,6 +1298,8 @@ signed int CmdqRSCHW(struct frame *frame)
 	cmdqRecWrite(handle, RSC_RAND_PNLTY_GAIN_CTRL_0_HW, pRscConfig->RSC_RAND_PNLTY_GAIN_CTRL0, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, RSC_RAND_PNLTY_GAIN_CTRL_1_HW, pRscConfig->RSC_RAND_PNLTY_GAIN_CTRL1, CMDQ_REG_MASK);
 #endif
+	cmdqRecWrite(handle, RSC_DCM_CTL_HW, 0x1111, CMDQ_REG_MASK);
+
 	cmdqRecWrite(handle, RSC_START_HW, 0x1, CMDQ_REG_MASK);	/* RSC Interrupt read-clear mode */
 
 	cmdqRecWait(handle, CMDQ_EVENT_RSC_EOF);
