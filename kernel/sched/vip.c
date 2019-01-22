@@ -158,6 +158,7 @@ int find_idle_vip_cpu(struct task_struct *p)
 	unsigned long task_util_boosted, new_util;
 	int big_idle_cpu = -1;
 	int best_idle_cpu = -1;
+	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
 
 	task_util_boosted = boosted_task_util(p);
 
@@ -172,7 +173,7 @@ int find_idle_vip_cpu(struct task_struct *p)
 
 		new_util = cpu_util(i) + task_util_boosted;
 
-		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allowed(p)))
+		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow))
 			continue;
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
@@ -472,6 +473,7 @@ int vip_task_force_migrate(void)
 	unsigned long flags;
 	int vip_pid = 0;
 	int reason = 0;
+	struct cpumask *tsk_cpus_allow;
 
 	/* no vip task */
 	if (!vip_ref_count)
@@ -508,6 +510,8 @@ int vip_task_force_migrate(void)
 		goto done;
 	}
 
+	tsk_cpus_allow = tsk_cpus_allowed(p);
+
 	/* find a higher idle cpu */
 	for (iter_cpu = 0; iter_cpu < (nr_cpu_ids); iter_cpu++) {
 		int i = nr_cpu_ids - iter_cpu - 1;
@@ -515,7 +519,7 @@ int vip_task_force_migrate(void)
 		mt_sched_printf(sched_lb, "%s:iter_cpu: vip=%d, i=%d",
 				__func__, p->pid, i);
 
-		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allowed(p))) {
+		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow)) {
 			mt_sched_printf(sched_lb, "%s:!cpu_online: vip=%d, i=%d",
 					__func__, p->pid, i);
 			continue;
