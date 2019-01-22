@@ -56,6 +56,8 @@ static const struct of_device_id cmdq_of_ids[] = {
 };
 #endif
 
+#define CMDQ_MAX_DUMP_REG_COUNT (2048)
+
 static dev_t gCmdqDevNo;
 static struct cdev *gCmdqCDev;
 static struct class *gCMDQClass;
@@ -218,6 +220,8 @@ static int cmdq_driver_create_reg_address_buffer(struct cmdqCommandStruct *pComm
 	}
 
 	/* how many register to dump? */
+	if (kernelRegCount > CMDQ_MAX_DUMP_REG_COUNT || userRegCount > CMDQ_MAX_DUMP_REG_COUNT)
+		return -EINVAL;
 	totalRegCount = kernelRegCount + userRegCount;
 
 	if (totalRegCount == 0) {
