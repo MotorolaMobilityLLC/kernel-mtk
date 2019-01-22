@@ -6582,7 +6582,7 @@ static void rsz_in_out_roi(struct disp_frame_cfg_t *cfg, struct disp_ddp_path_co
 	data_config->rsz_src_roi = src_total_roi;
 	data_config->rsz_dst_roi = dst_total_roi;
 
-	DISPMSG("[RPO] rsz_src(x,y,w,h)=(%d,%d,%d,%d),rsz_dst(x,y,w,h)=(%d,%d,%d,%d)\n",
+	DISPINFO("[RPO] rsz_src(x,y,w,h)=(%d,%d,%d,%d),rsz_dst(x,y,w,h)=(%d,%d,%d,%d)\n",
 			data_config->rsz_src_roi.x, data_config->rsz_src_roi.y,
 			data_config->rsz_src_roi.width, data_config->rsz_src_roi.height,
 			data_config->rsz_dst_roi.x, data_config->rsz_dst_roi.y,
