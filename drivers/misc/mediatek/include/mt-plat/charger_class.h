@@ -64,6 +64,7 @@ struct charger_ops {
 	/* set input_current */
 	int (*get_input_current)(struct charger_device *, u32 *uA);
 	int (*set_input_current)(struct charger_device *, u32 uA);
+	int (*get_min_input_current)(struct charger_device *, u32 *uA);
 
 	/* set termination current */
 	int (*get_eoc_current)(struct charger_device *, u32 *uA);
@@ -158,6 +159,7 @@ extern int charger_dev_get_charging_current(struct charger_device *charger_dev, 
 extern int charger_dev_get_min_charging_current(struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_set_input_current(struct charger_device *charger_dev, u32 uA);
 extern int charger_dev_get_input_current(struct charger_device *charger_dev, u32 *uA);
+extern int charger_dev_get_min_input_current(struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_set_eoc_current(struct charger_device *charger_dev, u32 uA);
 extern int charger_dev_get_eoc_current(struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_set_constant_voltage(struct charger_device *charger_dev, u32 uV);
