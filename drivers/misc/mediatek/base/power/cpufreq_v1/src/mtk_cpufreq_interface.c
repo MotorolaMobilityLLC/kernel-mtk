@@ -17,6 +17,7 @@
 
 #include "mtk_cpufreq_internal.h"
 #include "mtk_cpufreq_hybrid.h"
+#include "mtk_cpufreq_platform.h"
 
 unsigned int func_lv_mask;
 unsigned int do_dvfs_stress_test;
