@@ -45,12 +45,8 @@
 #include <linux/i2c.h>
 #include "i2c-mtk.h"
 
-
-
 #include "mtk_ion.h"
-
 #include "ion_drv.h"
-
 #include <linux/iommu.h>
 
 
@@ -67,6 +63,7 @@
 #include "ccu_drv.h"
 #include "ccu_cmn.h"
 #include "ccu_reg.h"
+#include "ccu_platform_def.h"
 #include "ccu_n3d_a.h"
 #include "ccu_i2c.h"
 #include "ccu_i2c_hw.h"
@@ -79,9 +76,9 @@
 
 struct clk *ccu_clock_ctrl;
 
-ccu_device_t *g_ccu_device;
-static ccu_power_t power;
-static struct ccu_platform_info g_ccu_platform_info;
+struct ccu_device_s *g_ccu_device;
+static struct ccu_power_s power;
+static uint32_t ccu_hw_base;
 
 static wait_queue_head_t wait_queue_deque;
 static wait_queue_head_t wait_queue_enque;
@@ -91,20 +88,20 @@ struct wakeup_source ccu_wake_lock;
 #else
 struct wake_lock ccu_wake_lock;
 #endif
-static volatile int g_bWaitLock;
+/*static volatile int g_bWaitLock;*/
 
 static irqreturn_t ccu_isr_callback_xxx(int rrq, void *device_id);
 
 typedef irqreturn_t(*ccu_isr_fp_t) (int, void *);
 
-typedef struct {
+struct ccu_isr_callback_t {
 	ccu_isr_fp_t irq_fp;
 	unsigned int int_number;
 	char device_name[16];
-} ccu_isr_callback_t;
+};
 
 /* int number is got from kernel api */
-const ccu_isr_callback_t ccu_isr_callbacks[CCU_IRQ_NUM_TYPES] = {
+const struct ccu_isr_callback_t ccu_isr_callbacks[CCU_IRQ_NUM_TYPES] = {
 	/* The last used be mapping to device node. Must be the same name with that in device node. */
 	{ccu_isr_callback_xxx, 0, "ccu2"}
 };
@@ -239,11 +236,11 @@ m4u_callback_ret_t ccu_m4u_fault_callback(int port, unsigned int mva, void *data
 /*---------------------------------------------------------------------------*/
 static int ccu_num_users;
 
-int ccu_create_user(ccu_user_t **user)
+int ccu_create_user(struct ccu_user_s **user)
 {
-	ccu_user_t *u;
+	struct ccu_user_s *u;
 
-	u = kmalloc(sizeof(vlist_type(ccu_user_t)), GFP_ATOMIC);
+	u = kmalloc(sizeof(vlist_type(struct ccu_user_s)), GFP_ATOMIC);
 	if (!u)
 		return -1;
 
@@ -260,7 +257,7 @@ int ccu_create_user(ccu_user_t **user)
 	/*mutex_unlock(&u->data_mutex);*/
 
 	mutex_lock(&g_ccu_device->user_mutex);
-	list_add_tail(vlist_link(u, ccu_user_t), &g_ccu_device->user_list);
+	list_add_tail(vlist_link(u, struct ccu_user_s), &g_ccu_device->user_list);
 	mutex_unlock(&g_ccu_device->user_mutex);
 
 	*user = u;
@@ -268,7 +265,7 @@ int ccu_create_user(ccu_user_t **user)
 }
 
 
-int ccu_push_command_to_queue(ccu_user_t *user, ccu_cmd_st *cmd)
+int ccu_push_command_to_queue(struct ccu_user_s *user, struct ccu_cmd_s *cmd)
 {
 	if (!user) {
 		LOG_ERR("empty user");
@@ -278,7 +275,7 @@ int ccu_push_command_to_queue(ccu_user_t *user, ccu_cmd_st *cmd)
 	LOG_DBG("+:%s\n", __func__);
 
 	mutex_lock(&user->data_mutex);
-	list_add_tail(vlist_link(cmd, ccu_cmd_st), &user->enque_ccu_cmd_list);
+	list_add_tail(vlist_link(cmd, struct ccu_cmd_s), &user->enque_ccu_cmd_list);
 	mutex_unlock(&user->data_mutex);
 
 	spin_lock(&g_ccu_device->cmd_wait.lock);
@@ -288,11 +285,11 @@ int ccu_push_command_to_queue(ccu_user_t *user, ccu_cmd_st *cmd)
 	return 0;
 }
 
-int ccu_flush_commands_from_queue(ccu_user_t *user)
+int ccu_flush_commands_from_queue(struct ccu_user_s *user)
 {
 
 	struct list_head *head, *temp;
-	ccu_cmd_st *cmd;
+	struct ccu_cmd_s *cmd;
 
 	mutex_lock(&user->data_mutex);
 
@@ -311,10 +308,10 @@ int ccu_flush_commands_from_queue(ccu_user_t *user)
 	mutex_lock(&user->data_mutex);
 	/* push the remaining enque to the deque */
 	list_for_each_safe(head, temp, &user->enque_ccu_cmd_list) {
-		cmd = vlist_node_of(head, ccu_cmd_st);
+		cmd = vlist_node_of(head, struct ccu_cmd_s);
 		cmd->status = CCU_ENG_STATUS_FLUSH;
-		list_del_init(vlist_link(cmd, ccu_cmd_st));
-		list_add_tail(vlist_link(cmd, ccu_cmd_st), &user->deque_ccu_cmd_list);
+		list_del_init(vlist_link(cmd, struct ccu_cmd_s));
+		list_add_tail(vlist_link(cmd, struct ccu_cmd_s), &user->deque_ccu_cmd_list);
 	}
 
 	user->flush = false;
@@ -322,10 +319,10 @@ int ccu_flush_commands_from_queue(ccu_user_t *user)
 	return 0;
 }
 
-int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
+int ccu_pop_command_from_queue(struct ccu_user_s *user, struct ccu_cmd_s **rcmd)
 {
 	int ret;
-	ccu_cmd_st *cmd;
+	struct ccu_cmd_s *cmd;
 
 	/* wait until condition is true */
 	ret = wait_event_interruptible_timeout(user->deque_wait,
@@ -355,8 +352,8 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
 	};
 
 	/* get first node from deque list */
-	cmd = vlist_node_of(user->deque_ccu_cmd_list.next, ccu_cmd_st);
-	list_del_init(vlist_link(cmd, ccu_cmd_st));
+	cmd = vlist_node_of(user->deque_ccu_cmd_list.next, struct ccu_cmd_s);
+	list_del_init(vlist_link(cmd, struct ccu_cmd_s));
 
 	mutex_unlock(&user->data_mutex);
 
@@ -365,7 +362,7 @@ int ccu_pop_command_from_queue(ccu_user_t *user, ccu_cmd_st **rcmd)
 }
 
 
-int ccu_delete_user(ccu_user_t *user)
+int ccu_delete_user(struct ccu_user_s *user)
 {
 
 	if (!user) {
@@ -377,7 +374,7 @@ int ccu_delete_user(ccu_user_t *user)
 	ccu_flush_commands_from_queue(user);
 
 	mutex_lock(&g_ccu_device->user_mutex);
-	list_del(vlist_link(user, ccu_user_t));
+	list_del(vlist_link(user, struct ccu_user_s));
 	mutex_unlock(&g_ccu_device->user_mutex);
 
 	kfree(user);
@@ -400,7 +397,7 @@ int ccu_unlock_user_mutex(void)
 /*---------------------------------------------------------------------------*/
 /* IOCTL: implementation                                                     */
 /*---------------------------------------------------------------------------*/
-int ccu_set_power(ccu_power_t *power)
+int ccu_set_power(struct ccu_power_s *power)
 {
 	return ccu_power(power);
 }
@@ -409,7 +406,7 @@ static int ccu_open(struct inode *inode, struct file *flip)
 {
 	int ret = 0;
 
-	ccu_user_t *user;
+	struct ccu_user_s *user;
 
 	ccu_create_user(&user);
 	if (IS_ERR_OR_NULL(user)) {
@@ -425,8 +422,8 @@ static int ccu_open(struct inode *inode, struct file *flip)
 static long ccu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	/*<<<<<<<<<< debug 32/64 compat check*/
-	compat_ccu_power_t __user *ptr_power32;
-	ccu_power_t __user *ptr_power64;
+	struct compat_ccu_power_s __user *ptr_power32;
+	struct ccu_power_s __user *ptr_power64;
 
 	compat_uptr_t uptr_Addr32;
 	compat_uint_t uint_Data32;
@@ -436,7 +433,7 @@ static long ccu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long 
 	/*>>>>>>>>>> debug 32/64 compat check*/
 
 	int ret = 0;
-	ccu_user_t *user = flip->private_data;
+	struct ccu_user_s *user = flip->private_data;
 
 #define CCU_ASSERT(condition, fmt, args...) {\
 			if (!(condition)) { \
@@ -453,9 +450,9 @@ static long ccu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long 
 			LOG_DBG("CCU_IOCTL_SET_POWER+\n");
 
 			/*<<<<<<<<<< debug 32/64 compat check*/
-			LOG_DBG("[IOCTL_DBG] ccu_power_t size: %zu\n", sizeof(ccu_power_t));
-			LOG_DBG("[IOCTL_DBG] ccu_working_buffer_t size: %zu\n",
-				sizeof(ccu_working_buffer_t));
+			LOG_DBG("[IOCTL_DBG] struct ccu_power_s size: %zu\n", sizeof(struct ccu_power_s));
+			LOG_DBG("[IOCTL_DBG] struct ccu_working_buffer_s size: %zu\n",
+				sizeof(struct ccu_working_buffer_s));
 			LOG_DBG("[IOCTL_DBG] arg: %p\n", (void *)arg);
 			LOG_DBG("[IOCTL_DBG] long size: %zu\n", sizeof(long));
 			LOG_DBG("[IOCTL_DBG] long long: %zu\n", sizeof(long long));
@@ -523,11 +520,11 @@ static long ccu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long 
 	return ret;
 }
 
-static int ccu_alloc_command(ccu_cmd_st **rcmd)
+static int ccu_alloc_command(struct ccu_cmd_s **rcmd)
 {
-	ccu_cmd_st *cmd;
+	struct ccu_cmd_s *cmd;
 
-	cmd = kzalloc(sizeof(vlist_type(ccu_cmd_st)), GFP_KERNEL);
+	cmd = kzalloc(sizeof(vlist_type(struct ccu_cmd_s)), GFP_KERNEL);
 	if (cmd == NULL) {
 		LOG_ERR("ccu_alloc_command(), node=0x%p\n", cmd);
 		return -ENOMEM;
@@ -539,7 +536,7 @@ static int ccu_alloc_command(ccu_cmd_st **rcmd)
 }
 
 
-static int ccu_free_command(ccu_cmd_st *cmd)
+static int ccu_free_command(struct ccu_cmd_s *cmd)
 {
 	kfree(cmd);
 	return 0;
@@ -567,8 +564,8 @@ void ccu_clock_disable(void)
 static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-	CCU_WAIT_IRQ_STRUCT IrqInfo;
-	ccu_user_t *user = flip->private_data;
+	struct CCU_WAIT_IRQ_STRUCT IrqInfo;
+	struct ccu_user_s *user = flip->private_data;
 
 #define CCU_ASSERT(condition, fmt, args...) {\
 			if (!(condition)) { \
@@ -579,12 +576,10 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 	LOG_DBG("ccu_ioctl+, cmd:%d\n", cmd);
 
-	if ((cmd == CCU_IOCTL_SEND_CMD) || (cmd == CCU_IOCTL_ENQUE_COMMAND) ||
-		(cmd == CCU_IOCTL_DEQUE_COMMAND) || (cmd == CCU_IOCTL_WAIT_IRQ) ||
-		(cmd == CCU_READ_REGISTER)) {
+	if ((cmd != CCU_IOCTL_SET_POWER) && (cmd != CCU_IOCTL_FLUSH_LOG)) {
 		ret = ccu_query_power_status();
 		if (ret == 0) {
-			LOG_WRN("ccuk: ioctl without powered on\n");
+			LOG_WARN("ccuk: ioctl without powered on\n");
 			return -EFAULT;
 		}
 	}
@@ -593,7 +588,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 	case CCU_IOCTL_SET_POWER:
 		{
 			LOG_DBG("ccuk: ioctl set powerk+\n");
-			ret = copy_from_user(&power, (void *)arg, sizeof(ccu_power_t));
+			ret = copy_from_user(&power, (void *)arg, sizeof(struct ccu_power_s));
 			CCU_ASSERT(ret == 0, "[SET_POWER] copy_from_user failed, ret=%d\n", ret);
 			ret = ccu_set_power(&power);
 			LOG_DBG("ccuk: ioctl set powerk-\n");
@@ -606,11 +601,11 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		}
 	case CCU_IOCTL_ENQUE_COMMAND:
 		{
-			ccu_cmd_st *cmd = 0;
+			struct ccu_cmd_s *cmd = 0;
 
-			/*allocate ccu_cmd_st_list instead of ccu_cmd_st*/
+			/*allocate ccu_cmd_st_list instead of struct ccu_cmd_s*/
 			ccu_alloc_command(&cmd);
-			ret = copy_from_user(cmd, (void *)arg, sizeof(ccu_cmd_st));
+			ret = copy_from_user(cmd, (void *)arg, sizeof(struct ccu_cmd_s));
 			CCU_ASSERT(ret == 0, "[ENQUE_COMMAND] copy_from_user failed, ret=%d\n",
 				   ret);
 			ret = ccu_push_command_to_queue(user, cmd);
@@ -618,12 +613,12 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		}
 	case CCU_IOCTL_DEQUE_COMMAND:
 		{
-			ccu_cmd_st *cmd = 0;
+			struct ccu_cmd_s *cmd = 0;
 
 			ret = ccu_pop_command_from_queue(user, &cmd);
 			CCU_ASSERT(ret == 0, "[DEQUE_COMMAND] pop command failed, ret=%d\n", ret);
 
-			ret = copy_to_user((void *)arg, cmd, sizeof(ccu_cmd_st));
+			ret = copy_to_user((void *)arg, cmd, sizeof(struct ccu_cmd_s));
 			CCU_ASSERT(ret == 0, "[DEQUE_COMMAND] copy_to_user failed, ret=%d\n", ret);
 
 			ret = ccu_free_command(cmd);
@@ -640,7 +635,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		}
 	case CCU_IOCTL_WAIT_IRQ:
 		{
-			if (copy_from_user(&IrqInfo, (void *)arg, sizeof(CCU_WAIT_IRQ_STRUCT)) == 0) {
+			if (copy_from_user(&IrqInfo, (void *)arg, sizeof(struct CCU_WAIT_IRQ_STRUCT)) == 0) {
 				if ((IrqInfo.Type >= CCU_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
 					ret = -EFAULT;
 					LOG_ERR("invalid type(%d)\n", IrqInfo.Type);
@@ -656,7 +651,67 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 				ret = ccu_waitirq(&IrqInfo);
 
-				if (copy_to_user((void *)arg, &IrqInfo, sizeof(CCU_WAIT_IRQ_STRUCT))
+				if (copy_to_user((void *)arg, &IrqInfo, sizeof(struct CCU_WAIT_IRQ_STRUCT))
+				    != 0) {
+					LOG_ERR("copy_to_user failed\n");
+					ret = -EFAULT;
+				}
+			} else {
+				LOG_ERR("copy_from_user failed\n");
+				ret = -EFAULT;
+			}
+
+			break;
+		}
+	case CCU_IOCTL_WAIT_AF_IRQ:
+		{
+			if (copy_from_user(&IrqInfo, (void *)arg, sizeof(struct CCU_WAIT_IRQ_STRUCT)) == 0) {
+				if ((IrqInfo.Type >= CCU_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
+					ret = -EFAULT;
+					LOG_ERR("invalid type(%d)\n", IrqInfo.Type);
+					goto EXIT;
+				}
+
+				LOG_DBG("AFIRQ type(%d), userKey(%d), timeout(%d), sttype(%d), st(%d)\n",
+					IrqInfo.Type,
+					IrqInfo.EventInfo.UserKey,
+					IrqInfo.EventInfo.Timeout,
+					IrqInfo.EventInfo.St_type,
+					IrqInfo.EventInfo.Status);
+
+				ret = ccu_AFwaitirq(&IrqInfo, CCU_CAM_TG_1);
+
+				if (copy_to_user((void *)arg, &IrqInfo, sizeof(struct CCU_WAIT_IRQ_STRUCT))
+				    != 0) {
+					LOG_ERR("copy_to_user failed\n");
+					ret = -EFAULT;
+				}
+			} else {
+				LOG_ERR("copy_from_user failed\n");
+				ret = -EFAULT;
+			}
+
+			break;
+		}
+	case CCU_IOCTL_WAIT_AFB_IRQ:
+		{
+			if (copy_from_user(&IrqInfo, (void *)arg, sizeof(struct CCU_WAIT_IRQ_STRUCT)) == 0) {
+				if ((IrqInfo.Type >= CCU_IRQ_TYPE_AMOUNT) || (IrqInfo.Type < 0)) {
+					ret = -EFAULT;
+					LOG_ERR("invalid type(%d)\n", IrqInfo.Type);
+					goto EXIT;
+				}
+
+				LOG_DBG("AFBIRQ type(%d), userKey(%d), timeout(%d), sttype(%d), st(%d)\n",
+					IrqInfo.Type,
+					IrqInfo.EventInfo.UserKey,
+					IrqInfo.EventInfo.Timeout,
+					IrqInfo.EventInfo.St_type,
+					IrqInfo.EventInfo.Status);
+
+				ret = ccu_AFwaitirq(&IrqInfo, CCU_CAM_TG_2);
+
+				if (copy_to_user((void *)arg, &IrqInfo, sizeof(struct CCU_WAIT_IRQ_STRUCT))
 				    != 0) {
 					LOG_ERR("copy_to_user failed\n");
 					ret = -EFAULT;
@@ -670,9 +725,9 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		}
 	case CCU_IOCTL_SEND_CMD:	/*--todo: not used for now, remove it*/
 		{
-			ccu_cmd_st cmd;
+			struct ccu_cmd_s cmd;
 
-			ret = copy_from_user(&cmd, (void *)arg, sizeof(ccu_cmd_st));
+			ret = copy_from_user(&cmd, (void *)arg, sizeof(struct ccu_cmd_s));
 
 			CCU_ASSERT(ret == 0, "[CCU_IOCTL_SEND_CMD] copy_from_user failed, ret=%d\n",
 				   ret);
@@ -686,16 +741,16 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		}
 	case CCU_IOCTL_GET_I2C_DMA_BUF_ADDR:
 		{
-			uint32_t mva;
+			uint32_t addr[3];
 
-			ret = ccu_get_i2c_dma_buf_addr(&mva);
+			ret = ccu_get_i2c_dma_buf_addr(&addr[0], &addr[1], &addr[2]);
 
 			if (ret != 0) {
 				LOG_DBG("ccu_get_i2c_dma_buf_addr fail: %d\n", ret);
 				break;
 			}
 
-			ret = copy_to_user((void *)arg, &mva, sizeof(uint32_t));
+			ret = copy_to_user((void *)arg, addr, sizeof(uint32_t) * 3);
 
 			break;
 		}
@@ -779,12 +834,6 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 			break;
 	}
 
-	case CCU_IOCTL_GET_PLATFORM_INFO:
-	{
-		ret = copy_to_user((void *)arg, &g_ccu_platform_info, sizeof(g_ccu_platform_info));
-		break;
-	}
-
 	case CCU_READ_REGISTER:
 		{
 			int regToRead = (int)arg;
@@ -792,7 +841,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 			return ccu_read_info_reg(regToRead);
 		}
 	default:
-		LOG_WRN("ioctl:No such command!\n");
+		LOG_WARN("ioctl:No such command!\n");
 		ret = -EINVAL;
 		break;
 	}
@@ -808,7 +857,7 @@ EXIT:
 
 static int ccu_release(struct inode *inode, struct file *flip)
 {
-	ccu_user_t *user = flip->private_data;
+	struct ccu_user_s *user = flip->private_data;
 
 	LOG_INF_MUST("ccu_release +");
 
@@ -841,29 +890,29 @@ static int ccu_mmap(struct file *flip, struct vm_area_struct *vma)
 
 	/*if (pfn >= CCU_REG_BASE_HW) {*/
 
-		if (pfn == (g_ccu_platform_info.ccu_hw_base - g_ccu_platform_info.ccu_hw_offset)) {
-			if (length > CCU_REG_RANGE) {
+		if (pfn == (ccu_hw_base - CCU_HW_OFFSET)) {
+			if (length > PAGE_SIZE) {
 				LOG_ERR
-				    ("mmap range error :module(0x%x),length(0x%lx),CCU_A_BASE_HW(0x%x)!\n",
+				    ("mmap range error :module(0x%x),length(0x%lx),CCU_HW_BASE(0x%x)!\n",
 				     pfn, length, 0x4000);
 				return -EAGAIN;
 			}
-		} else if (pfn == g_ccu_platform_info.ccu_camsys_base) {
-			if (length > g_ccu_platform_info.ccu_camsys_size) {
+		} else if (pfn == CCU_CAMSYS_BASE) {
+			if (length > CCU_CAMSYS_SIZE) {
 				LOG_ERR
 				    ("mmap range error :module(0x%x),length(0x%lx),CCU_CAMSYS_BASE_HW(0x%x)!\n",
 				     pfn, length, 0x4000);
 				return -EAGAIN;
 			}
-		} else if (pfn == g_ccu_platform_info.ccu_pmem_base) {
-			if (length > g_ccu_platform_info.ccu_pmem_size) {
+		} else if (pfn == CCU_PMEM_BASE) {
+			if (length > CCU_PMEM_SIZE) {
 				LOG_ERR
 				    ("mmap range error :module(0x%x),length(0x%lx),CCU_PMEM_BASE_HW(0x%x)!\n",
 				     pfn, length, 0x4000);
 				return -EAGAIN;
 			}
-		} else if (pfn == g_ccu_platform_info.ccu_dmem_base) {
-			if (length > g_ccu_platform_info.ccu_dmem_size) {
+		} else if (pfn == CCU_DMEM_BASE) {
+			if (length > CCU_DMEM_SIZE) {
 				LOG_ERR
 				    ("mmap range error :module(0x%x),length(0x%lx),CCU_PMEM_BASE_HW(0x%x)!\n",
 				     pfn, length, 0x4000);
@@ -959,39 +1008,24 @@ static int ccu_read_platform_info_from_dt(struct device_node *node)
 	if (ret < 0)
 		LOG_ERR("of_property_read_u32_array ERR : %d\n", ret);
 
-	g_ccu_platform_info.ccu_hw_base = reg[1];
-	of_property_read_u32(node, "ccu_hw_offset", &(g_ccu_platform_info.ccu_hw_offset));
-	of_property_read_u32(node, "ccu_pmem_base", &(g_ccu_platform_info.ccu_pmem_base));
-	of_property_read_u32(node, "ccu_pmem_size", &(g_ccu_platform_info.ccu_pmem_size));
-	of_property_read_u32(node, "ccu_dmem_base", &(g_ccu_platform_info.ccu_dmem_base));
-	of_property_read_u32(node, "ccu_dmem_size", &(g_ccu_platform_info.ccu_dmem_size));
-	of_property_read_u32(node, "ccu_dmem_offset", &(g_ccu_platform_info.ccu_dmem_offset));
-	of_property_read_u32(node, "ccu_log_base", &(g_ccu_platform_info.ccu_log_base));
-	of_property_read_u32(node, "ccu_log_size", &(g_ccu_platform_info.ccu_log_size));
-	of_property_read_u32(node, "ccu_hw_dump_size", &(g_ccu_platform_info.ccu_hw_dump_size));
-	of_property_read_u32(node, "ccu_camsys_base", &(g_ccu_platform_info.ccu_camsys_base));
-	of_property_read_u32(node, "ccu_camsys_size", &(g_ccu_platform_info.ccu_camsys_size));
-	of_property_read_u32(node, "ccu_n3d_a_base", &(g_ccu_platform_info.ccu_n3d_a_base));
-	of_property_read_u32(node, "ccu_n3d_a_size", &(g_ccu_platform_info.ccu_n3d_a_size));
-	of_property_read_u32(node, "ccu_sensor_pm_size", &(g_ccu_platform_info.ccu_sensor_pm_size));
-	of_property_read_u32(node, "ccu_sensor_dm_size", &(g_ccu_platform_info.ccu_sensor_dm_size));
+	ccu_hw_base = reg[1];
 
-	LOG_DBG("ccu read dt property ccu_hw_base = %x\n", g_ccu_platform_info.ccu_hw_base);
-	LOG_DBG("ccu read dt property ccu_hw_offset = %x\n", g_ccu_platform_info.ccu_hw_offset);
-	LOG_DBG("ccu read dt property ccu_pmem_base = %x\n", g_ccu_platform_info.ccu_pmem_base);
-	LOG_DBG("ccu read dt property ccu_pmem_size = %x\n", g_ccu_platform_info.ccu_pmem_size);
-	LOG_DBG("ccu read dt property ccu_dmem_base = %x\n", g_ccu_platform_info.ccu_dmem_base);
-	LOG_DBG("ccu read dt property ccu_dmem_size = %x\n", g_ccu_platform_info.ccu_dmem_size);
-	LOG_DBG("ccu read dt property ccu_dmem_offset = %x\n", g_ccu_platform_info.ccu_dmem_offset);
-	LOG_DBG("ccu read dt property ccu_log_base = %x\n", g_ccu_platform_info.ccu_log_base);
-	LOG_DBG("ccu read dt property ccu_log_size = %x\n", g_ccu_platform_info.ccu_log_size);
-	LOG_DBG("ccu read dt property ccu_hw_dump_size = %x\n", g_ccu_platform_info.ccu_hw_dump_size);
-	LOG_DBG("ccu read dt property ccu_camsys_base = %x\n", g_ccu_platform_info.ccu_camsys_base);
-	LOG_DBG("ccu read dt property ccu_camsys_size = %x\n", g_ccu_platform_info.ccu_camsys_size);
-	LOG_DBG("ccu read dt property ccu_n3d_a_base = %x\n", g_ccu_platform_info.ccu_n3d_a_base);
-	LOG_DBG("ccu read dt property ccu_n3d_a_size = %x\n", g_ccu_platform_info.ccu_n3d_a_size);
-	LOG_DBG("ccu read dt property ccu_sensor_pm_size = %x\n", g_ccu_platform_info.ccu_sensor_pm_size);
-	LOG_DBG("ccu read dt property ccu_sensor_dm_size = %x\n", g_ccu_platform_info.ccu_sensor_dm_size);
+	LOG_DBG("ccu read dt property ccu_hw_base = %x\n", ccu_hw_base);
+	LOG_DBG("CCU_HW_OFFSET = %x\n", CCU_HW_OFFSET);
+	LOG_DBG("CCU_PMEM_BASE = %x\n", CCU_PMEM_BASE);
+	LOG_DBG("CCU_PMEM_SIZE = %x\n", CCU_PMEM_SIZE);
+	LOG_DBG("CCU_DMEM_BASE = %x\n", CCU_DMEM_BASE);
+	LOG_DBG("CCU_DMEM_SIZE = %x\n", CCU_DMEM_SIZE);
+	LOG_DBG("CCU_DMEM_OFFSET = %x\n", CCU_DMEM_OFFSET);
+	LOG_DBG("CCU_LOG_BASE = %x\n", CCU_LOG_BASE);
+	LOG_DBG("CCU_LOG_SIZE = %x\n", CCU_LOG_SIZE);
+	LOG_DBG("CCU_HW_DUMP_SIZE = %x\n", CCU_HW_DUMP_SIZE);
+	LOG_DBG("CCU_CAMSYS_BASE = %x\n", CCU_CAMSYS_BASE);
+	LOG_DBG("CCU_CAMSYS_SIZE = %x\n", CCU_CAMSYS_SIZE);
+	LOG_DBG("CCU_N3D_A_BASE = %x\n", CCU_N3D_A_BASE);
+	LOG_DBG("CCU_N3D_A_SIZE = %x\n", CCU_N3D_A_SIZE);
+	LOG_DBG("CCU_SENSOR_PM_SIZE = %x\n", CCU_SENSOR_PM_SIZE);
+	LOG_DBG("CCU_SENSOR_DM_SIZE = %x\n", CCU_SENSOR_DM_SIZE);
 
 	return ret;
 }
@@ -1026,29 +1060,29 @@ static int ccu_probe(struct platform_device *pdev)
 			*/
 		{
 			/*remap ccu_base*/
-			phy_addr = g_ccu_platform_info.ccu_hw_base;
+			phy_addr = ccu_hw_base;
 			phy_size = 0x1000;
 			g_ccu_device->ccu_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
 			LOG_INF("ccu_base pa: 0x%x, size: 0x%x\n", phy_addr, phy_size);
 			LOG_INF("ccu_base va: 0x%lx\n", g_ccu_device->ccu_base);
 
 			/*remap dmem_base*/
-			phy_addr = g_ccu_platform_info.ccu_dmem_base;
-			phy_size = g_ccu_platform_info.ccu_dmem_size;
+			phy_addr = CCU_DMEM_BASE;
+			phy_size = CCU_DMEM_SIZE;
 			g_ccu_device->dmem_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
 			LOG_INF("dmem_base pa: 0x%x, size: 0x%x\n", phy_addr, phy_size);
 			LOG_INF("dmem_base va: 0x%lx\n", g_ccu_device->dmem_base);
 
 			/*remap camsys_base*/
-			phy_addr = g_ccu_platform_info.ccu_camsys_base;
-			phy_size = g_ccu_platform_info.ccu_camsys_size;
+			phy_addr = CCU_CAMSYS_BASE;
+			phy_size = CCU_CAMSYS_SIZE;
 			g_ccu_device->camsys_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
 			LOG_INF("camsys_base pa: 0x%x, size: 0x%x\n", phy_addr, phy_size);
 			LOG_INF("camsys_base va: 0x%lx\n", g_ccu_device->camsys_base);
 
 			/*remap n3d_a_base*/
-			phy_addr = g_ccu_platform_info.ccu_n3d_a_base;
-			phy_size = g_ccu_platform_info.ccu_n3d_a_size;
+			phy_addr = CCU_N3D_A_BASE;
+			phy_size = CCU_N3D_A_SIZE;
 			g_ccu_device->n3d_a_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
 			LOG_INF("n3d_a_base pa: 0x%x, size: 0x%x\n", phy_addr, phy_size);
 			LOG_INF("n3d_a_base va: 0x%lx\n", g_ccu_device->n3d_a_base);
@@ -1072,7 +1106,7 @@ static int ccu_probe(struct platform_device *pdev)
 
 			if (of_property_read_u32_array
 			    (node, "interrupts", irq_info, ARRAY_SIZE(irq_info))) {
-				dev_err(g_ccu_device->dev, "get irq flags from DTS fail!\n");
+				LOG_DERR(g_ccu_device->dev, "get irq flags from DTS fail!\n");
 				return -ENODEV;
 			}
 		} else {
@@ -1086,7 +1120,7 @@ static int ccu_probe(struct platform_device *pdev)
 			/* Register char driver */
 			ret = ccu_reg_chardev();
 			if (ret) {
-				dev_err(g_ccu_device->dev, "register char failed");
+				LOG_DERR(g_ccu_device->dev, "register char failed");
 				return ret;
 			}
 
@@ -1101,7 +1135,7 @@ static int ccu_probe(struct platform_device *pdev)
 			dev = device_create(ccu_class, NULL, ccu_devt, NULL, CCU_DEV_NAME);
 			if (IS_ERR(dev)) {
 				ret = PTR_ERR(dev);
-				dev_err(g_ccu_device->dev,
+				LOG_DERR(g_ccu_device->dev,
 					"Failed to create device: /dev/%s, err = %d", CCU_DEV_NAME,
 					ret);
 				goto EXIT;
@@ -1135,7 +1169,7 @@ EXIT:
 
 		ccu_init_hw(g_ccu_device);
 
-		LOG_ERR("ccu probe cuccess...\n");
+		LOG_INF_MUST("ccu probe cuccess...\n");
 
 	}
 #endif
@@ -1201,7 +1235,7 @@ static int __init CCU_INIT(void)
 	int ret = 0;
 	/*struct device_node *node = NULL;*/
 
-	g_ccu_device = kzalloc(sizeof(ccu_device_t), GFP_KERNEL);
+	g_ccu_device = kzalloc(sizeof(struct ccu_device_s), GFP_KERNEL);
 	/*g_ccu_device = dma_cache_coherent();*/
 
 	INIT_LIST_HEAD(&g_ccu_device->user_list);
