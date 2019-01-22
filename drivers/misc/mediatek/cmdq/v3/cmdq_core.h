@@ -1165,7 +1165,8 @@ extern "C" {
 	void cmdqCoreSetResourceCallback(enum CMDQ_EVENT_ENUM resourceEvent,
 								CmdqResourceAvailableCB resourceAvailable,
 								CmdqResourceReleaseCB resourceRelease);
-	void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent);
+	void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent,
+		const char *tag);
 
 	void cmdq_core_dump_dts_setting(void);
 	int32_t cmdq_core_get_running_task_by_engine_unlock(uint64_t engineFlag,

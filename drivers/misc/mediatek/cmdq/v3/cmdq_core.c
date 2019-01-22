@@ -3809,7 +3809,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 
 			if (cmdq_mdp_dump_wrot0_usage())
 				cmdq_core_dump_resource_status(
-					CMDQ_SYNC_RESOURCE_WROT0);
+					CMDQ_SYNC_RESOURCE_WROT0, "INFO");
 		} else if (clock_count < 0) {
 			CMDQ_ERR("enable clock %s error usage:%d smi use:%d\n",
 				__func__, clock_count, (s32)atomic_read(&gSMIThreadUsage));
@@ -4203,10 +4203,11 @@ static int32_t cmdq_core_acquire_thread(struct TaskStruct *task,
 			cmdq_core_enable_clock(task->engineFlag, thread, engineMustEnableClock, task->scenario);
 			/* Start delay thread after first task is coming */
 			cmdq_delay_thread_start();
-		}
 
-		if (task->res_engine_flag_acquire)
-			cmdq_core_enable_resource_clk_unlock(task->res_engine_flag_acquire, true);
+			if (task->res_engine_flag_acquire)
+				cmdq_core_enable_resource_clk_unlock(
+					task->res_engine_flag_acquire, true);
+		}
 
 		CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, acquire_thread_clock);
 	} while (0);
@@ -4346,12 +4347,11 @@ static void cmdq_core_release_thread(struct TaskStruct *pTask)
 	/* Stop delay thread after last task is done */
 	cmdq_delay_thread_stop();
 	/* clock off */
+	if (pTask->res_engine_flag_release)
+		cmdq_core_enable_resource_clk_unlock(pTask->res_engine_flag_release, false);
 	cmdq_core_disable_clock(engineFlag, engineNotUsed, pTask->scenario);
 	/* Delay release resource  */
 	cmdq_core_delay_check_unlock(engineFlag, engineNotUsed);
-
-	if (pTask->res_engine_flag_release)
-		cmdq_core_enable_resource_clk_unlock(pTask->res_engine_flag_release, false);
 
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, release_thread_clock);
 }
@@ -4634,7 +4634,8 @@ static void cmdq_core_parse_error(const struct TaskStruct *pTask, uint32_t threa
 
 }
 
-void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent)
+void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent,
+	const char *tag)
 {
 	struct ResourceUnitStruct *pResource = NULL;
 
@@ -4643,18 +4644,23 @@ void cmdq_core_dump_resource_status(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (resourceEvent == pResource->lockEvent) {
-			CMDQ_ERR("[Res] Dump resource with event: %d\n", resourceEvent);
+			CMDQ_LOG("[%s][Res] Dump resource with event: %d\n",
+				tag, resourceEvent);
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched resource */
-			CMDQ_ERR("[Res] Dump resource latest time:\n");
-			CMDQ_ERR("[Res]   notify: %llu, delay: %lld\n", pResource->notify, pResource->delay);
-			CMDQ_ERR("[Res]   lock: %llu, unlock: %lld\n", pResource->lock, pResource->unlock);
-			CMDQ_ERR("[Res]   acquire: %llu, release: %lld\n", pResource->acquire, pResource->release);
-			CMDQ_ERR("[Res] isUsed:%d, isLend:%d, isDelay:%d, ref:%d\n",
-				pResource->used, pResource->lend, pResource->delaying,
+			CMDQ_LOG("[%s][Res] Dump resource latest time:\n", tag);
+			CMDQ_LOG("[%s][Res]   notify: %llu, delay: %lld\n",
+				tag, pResource->notify, pResource->delay);
+			CMDQ_LOG("[%s][Res]   lock: %llu, unlock: %lld\n",
+				tag, pResource->lock, pResource->unlock);
+			CMDQ_LOG("[%s][Res]   acquire: %llu, release: %lld\n",
+				tag, pResource->acquire, pResource->release);
+			CMDQ_LOG("[%s][Res] isUsed:%d, isLend:%d, isDelay:%d, ref:%d\n",
+				tag, pResource->used, pResource->lend, pResource->delaying,
 				(s32)atomic_read(&pResource->ref));
 			if (pResource->releaseCB == NULL)
-				CMDQ_ERR("[Res] release CB func is NULL\n");
+				CMDQ_LOG("[%s][Res] release CB func is NULL\n",
+					tag);
 			mutex_unlock(&gCmdqResourceMutex);
 			break;
 		}
@@ -6397,7 +6403,7 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task, in
 		const u32 event = nginfo.inst[1] & ~0xFF000000;
 
 		if (event >= CMDQ_SYNC_RESOURCE_WROT0)
-			cmdq_core_dump_resource_status(event);
+			cmdq_core_dump_resource_status(event, "ERR");
 	}
 
 	/* no need to dump detail log for esd case */
@@ -8087,8 +8093,11 @@ int32_t cmdqCoreSuspend(void)
 	}
 
 	/* dump wrot0 usage for shre sram */
-	if (cmdq_mdp_dump_wrot0_usage())
-		cmdq_core_dump_resource_status(CMDQ_SYNC_RESOURCE_WROT0);
+	if (cmdq_mdp_dump_wrot0_usage()) {
+		cmdq_core_dump_resource_status(CMDQ_SYNC_RESOURCE_WROT0,
+			"INFO");
+		CMDQ_LOG("thread usage:%d\n", refCount);
+	}
 
 	/*  */
 	/* We need to ensure the system is ready to suspend, */
