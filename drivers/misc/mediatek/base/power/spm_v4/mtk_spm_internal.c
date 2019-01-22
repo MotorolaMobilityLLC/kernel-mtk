@@ -27,15 +27,12 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_vcorefs_governor.h>
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <mtk_spm_vcore_dvfs.h>
-#endif /* CONFIG_FPGA_EARLY_PORTING */
 #include <mt-plat/upmu_common.h>
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #include <scp_dvfs.h>
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
 /* #include <mt-plat/mtk_secure_api.h> */
-/* #include <mtk_secure_api.h> */
 #ifdef CONFIG_MTK_DCS
 #include <mt-plat/mtk_meminfo.h>
 #endif
@@ -310,10 +307,10 @@ long int spm_get_current_time_ms(void)
 	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
 }
 
-/* FIXME: */
-#if 0
 void spm_set_dummy_read_addr(int debug)
 {
+/* FIXME: */
+#if 0
 	u64 rank0_addr, rank1_addr;
 	u32 dram_rank_num;
 
@@ -342,8 +339,8 @@ void spm_set_dummy_read_addr(int debug)
 				enable_4G(), rank0_addr, rank1_addr);
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, rank0_addr, rank1_addr, 0);
-}
 #endif
+}
 
 void __spm_set_pcm_wdt(int en)
 {
