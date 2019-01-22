@@ -254,7 +254,6 @@ static bool             dpidle_force_vcore_lp_mode;
 /* SODI3 */
 
 static unsigned int     soidle3_pll_block_mask[NR_PLLS] = {0x0};
-static unsigned int     soidle3_time_criteria = 65000; /* 5ms */
 static unsigned long    soidle3_cnt[NR_CPUS] = {0};
 static unsigned long    soidle3_block_cnt[NR_REASONS] = {0};
 
@@ -265,7 +264,6 @@ static u32              sodi3_flags = SODI_FLAG_REDUCE_LOG;
 static bool             sodi3_force_vcore_lp_mode;
 
 /* SODI */
-static unsigned int     soidle_time_criteria = 26000; /* 2ms */
 static unsigned long    soidle_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
 static bool             soidle_by_pass_cg;
@@ -629,11 +627,6 @@ static bool soidle3_can_enter(int cpu, int reason)
 	}
 	#endif
 
-	if (!next_timer_criteria_check(soidle3_time_criteria)) {
-		reason = BY_TMR;
-		goto out;
-	}
-
 	/* Check Secure CGs - after other SODI3 criteria PASS */
 	if (!idle_by_pass_secure_cg) {
 		if (!mtk_idle_check_secure_cg(idle_block_mask)) {
@@ -723,11 +716,6 @@ static bool soidle_can_enter(int cpu, int reason)
 		}
 	}
 	#endif
-
-	if (!next_timer_criteria_check(soidle_time_criteria)) {
-		reason = BY_TMR;
-		goto out;
-	}
 
 	/* Check Secure CGs - after other SODI criteria PASS */
 	if (!idle_by_pass_secure_cg) {
@@ -1890,7 +1878,6 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	char *p = dbg_buf;
 
 	mt_idle_log("*********** soidle3 state ************\n");
-	mt_idle_log("soidle3_time_criteria=%u\n", soidle3_time_criteria);
 
 	for (i = 0; i < NR_REASONS; i++)
 		mt_idle_log("[%d]soidle3_block_cnt[%s]=%lu\n", i, mtk_get_reason_name(i), soidle3_block_cnt[i]);
@@ -1921,7 +1908,6 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	mt_idle_log("switch on/off: echo [soidle3] 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	mt_idle_log("modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("bypass pll:    echo bypass_pll 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
@@ -1955,8 +1941,6 @@ static ssize_t soidle3_state_write(struct file *filp,
 			enable_soidle3_by_bit(param);
 		else if (!strcmp(cmd, "disable"))
 			disable_soidle3_by_bit(param);
-		else if (!strcmp(cmd, "time"))
-			soidle3_time_criteria = param;
 		else if (!strcmp(cmd, "bypass_pll")) {
 			soidle3_by_pass_pll = param;
 			idle_dbg("bypass_pll = %d\n", soidle3_by_pass_pll);
@@ -2007,7 +1991,6 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	char *p = dbg_buf;
 
 	mt_idle_log("*********** soidle state ************\n");
-	mt_idle_log("soidle_time_criteria=%u\n", soidle_time_criteria);
 
 	for (i = 0; i < NR_REASONS; i++)
 		mt_idle_log("[%d]soidle_block_cnt[%s]=%lu\n", i, mtk_get_reason_name(i), soidle_block_cnt[i]);
@@ -2031,7 +2014,6 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	mt_idle_log("switch on/off: echo [soidle] 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle_state\n");
-	mt_idle_log("modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	mt_idle_log("sodi flags:    echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle_state\n");
@@ -2064,8 +2046,6 @@ static ssize_t soidle_state_write(struct file *filp,
 			enable_soidle_by_bit(param);
 		else if (!strcmp(cmd, "disable"))
 			disable_soidle_by_bit(param);
-		else if (!strcmp(cmd, "time"))
-			soidle_time_criteria = param;
 		else if (!strcmp(cmd, "bypass")) {
 			soidle_by_pass_cg = param;
 			idle_dbg("bypass = %d\n", soidle_by_pass_cg);
