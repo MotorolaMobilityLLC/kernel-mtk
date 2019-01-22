@@ -665,17 +665,14 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_SODI3:
-		if (!is_ext_buck_exist())
-			pmic_buck_vproc_lp(SRCLKEN0, 1, HW_LP);
-
 		pmic_ldo_vsram_proc_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_vldo28_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vldo28_lp(SW, 1, SW_ON);
 		/* VCORE */
-		pmic_config_interface(PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_ADDR, 0x20,
-				PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_MASK,
-				PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_SHIFT);
-		pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x5,
+		pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x20,
+				PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
+				PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
+		pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x6,
 				PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
 				PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
 		/* VSRAM_OTHERS */
@@ -690,18 +687,13 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_SUSPEND:
-		if (!is_ext_buck_exist()) {
-			pmic_buck_vproc_lp(SRCLKEN0, 0, HW_LP);
-			pmic_buck_vproc_lp(SW, 1, SW_OFF);
-		}
-
 		pmic_ldo_vsram_proc_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
 		pmic_ldo_vldo28_lp(SRCLKEN0, 1, HW_LP);
 		/* VCORE */
-		pmic_config_interface(PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_ADDR, 0x8,
-				PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_MASK,
-				PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_SHIFT);
+		pmic_config_interface(PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR, 0x8,
+				PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_MASK,
+				PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_SHIFT);
 		pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x1,
 				PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
 				PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
