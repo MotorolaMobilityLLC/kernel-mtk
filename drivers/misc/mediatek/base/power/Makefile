@@ -107,6 +107,7 @@ obj-$(CONFIG_MACH_MT6758) += hps_v3/
 endif
 obj-$(CONFIG_MACH_MT6759) += hps_v3/
 obj-$(CONFIG_MACH_MT6739) += hps_v3/
+obj-$(CONFIG_MACH_MT6771) += hps_v3/
 obj-$(CONFIG_MACH_KIBOPLUS) += hps_v2/
 obj-$(CONFIG_MACH_MT6757) += ppm_v2/
 obj-$(CONFIG_MACH_KIBOPLUS) += ppm_v2/
