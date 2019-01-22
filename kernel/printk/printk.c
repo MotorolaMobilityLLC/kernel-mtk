@@ -391,9 +391,11 @@ static u64 start_seq;
 #define LOG_MUCH_PLUS_LEN	(1 << 17)
 
 static void log_much_do_check_and_delay(struct printk_log *msg);
+#endif
 
-inline void set_detect_count(int count)
+void set_detect_count(int count)
 {
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
 	if (count >= detect_count)
 		detect_count = count;
 	else {
@@ -404,23 +406,37 @@ inline void set_detect_count(int count)
 		detect_count_change = true;
 	}
 	pr_info("Printk too much criteria: %d  delay_flag: %d\n", detect_count, detect_count_change);
-}
-
-inline int get_detect_count(void)
-{
-	return detect_count;
-}
-
-inline void set_logtoomuch_enable(int value)
-{
-	printk_too_much_enable = value;
-}
-
-inline int get_logtoomuch_enable(void)
-{
-	return printk_too_much_enable;
-}
 #endif
+}
+EXPORT_SYMBOL(set_detect_count);
+
+int get_detect_count(void)
+{
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	return detect_count;
+#else
+	return 0;
+#endif
+}
+EXPORT_SYMBOL(get_detect_count);
+
+void set_logtoomuch_enable(int value)
+{
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	printk_too_much_enable = value;
+#endif
+}
+EXPORT_SYMBOL(set_logtoomuch_enable);
+
+int get_logtoomuch_enable(void)
+{
+#if defined(CONFIG_MTK_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+	return printk_too_much_enable;
+#else
+	return 0;
+#endif
+}
+EXPORT_SYMBOL(get_logtoomuch_enable);
 
 /* Return log buffer address */
 char *log_buf_addr_get(void)
