@@ -18,8 +18,8 @@
 #ifndef __MTK_SPM_REG_H__
 #define __MTK_SPM_REG_H__
 
-#include <sleep_def.h>
-#include <pcm_def.h>
+#include "sleep_def.h"
+#include "pcm_def.h"
 
 /**************************************
  * Define and Declare
