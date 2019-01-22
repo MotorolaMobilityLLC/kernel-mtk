@@ -16,11 +16,69 @@
 #include "conn_md_dbg.h"
 
 /*global data structure defination*/
-
 struct conn_md_struct g_conn_md;
+static struct conn_md_log_msg_info g_log_msg_info;
 
 static int _conn_md_del_msg_by_uid(uint32 u_id);
 static int conn_md_dmp_msg(struct conn_md_queue *p_msg_list, uint32 src_id, uint32 dst_id);
+
+static unsigned long conn_md_log_msg_interval_ms(struct conn_md_time_struct *p_begin, struct conn_md_time_struct *p_end)
+{
+	long long diff_sec;
+	long diff_msec;
+
+	diff_sec = p_end->sec - p_begin->sec;
+	diff_msec = (p_end->msec - p_begin->msec);
+	if (diff_msec < 0) {
+		diff_msec += 1000;
+		diff_sec -= 1;
+	}
+
+	return (diff_sec * 1000 + diff_msec);
+}
+
+static void conn_md_get_local_time(struct conn_md_time_struct *time)
+{
+	time->sec = local_clock();
+	time->msec = do_div(time->sec, 1000000000) / 1000000;
+}
+
+static void conn_md_log_add_msg(struct conn_md_time_struct *cur_time)
+{
+	char buf[CONN_MD_MSG_TIME_LENGTH];
+
+	if (g_log_msg_info.msg_total == 0)
+		g_log_msg_info.msg_begin_time = *cur_time;
+
+	snprintf(buf, CONN_MD_MSG_TIME_LENGTH, " %llu.%03lu", cur_time->sec, cur_time->msec);
+	strcat(g_log_msg_info.msg_buf, buf);
+	g_log_msg_info.msg_total++;
+}
+
+#define CONN_MD_LOG_MSG_HEAD_NAME "send message to Modem,"
+#define CONN_MD_LOG_MSG_MAX_INTERVAL_MS 1000
+static void conn_md_log_print_msg(struct conn_md_time_struct *cur_time)
+{
+	if (g_log_msg_info.msg_total > 0 && (g_log_msg_info.msg_total == CONN_MD_MSG_MAX_NUM ||
+		conn_md_log_msg_interval_ms(&g_log_msg_info.msg_begin_time, cur_time) >
+			CONN_MD_LOG_MSG_MAX_INTERVAL_MS)) {
+		CONN_MD_INFO_FUNC("%s%s\n", CONN_MD_LOG_MSG_HEAD_NAME, g_log_msg_info.msg_buf);
+		g_log_msg_info.msg_buf[0] = '\0';
+		g_log_msg_info.msg_total = 0;
+	}
+}
+
+static void conn_md_log_msg_time(uint32 dest_id)
+{
+	struct conn_md_time_struct cur_time;
+
+	conn_md_get_local_time(&cur_time);
+
+	if (dest_id == MD_MOD_EL1)
+		conn_md_log_add_msg(&cur_time);
+
+	conn_md_log_print_msg(&cur_time);
+}
 
 int conn_md_add_user(uint32 u_id, struct conn_md_bridge_ops *p_ops)
 {
@@ -266,7 +324,6 @@ static int conn_md_thread(void *p_data)
 	struct list_head *p_user_pos = NULL;
 	struct conn_md_user_list *p_user_list = &p_conn_md->user_list;
 	struct ipc_ilm *p_cur_ilm = NULL;
-	static DEFINE_RATELIMIT_STATE(_rs, HZ, 20);
 
 	while (1) {
 		wait_for_completion_interruptible(&p_conn_md->tx_comp);
@@ -376,10 +433,7 @@ static int conn_md_thread(void *p_data)
 					 p_cur_ilm, &p_cur_ilm->local_para_ptr, p_cur_ilm->local_para_ptr->msg_len);
 			CONN_MD_DBG_FUNC("sending message to user id (0x%08x)\n", p_cur_ilm->dest_mod_id);
 			/*send package to dest module by call corresponding rx callback function */
-			if (p_cur_ilm->dest_mod_id == MD_MOD_EL1 && __ratelimit(&_rs)) {
-				CONN_MD_INFO_FUNC("send message to user(0x%08x), ilm(0x%08x)\n",
-					p_cur_ilm->dest_mod_id, p_cur_ilm);
-			}
+			conn_md_log_msg_time(p_cur_ilm->dest_mod_id);
 			(*(p_user->ops.rx_cb)) (p_cur_ilm);
 			CONN_MD_DBG_FUNC("message sent to user id (0x%08x) done\n", p_cur_ilm->dest_mod_id);
 			mutex_unlock(&p_user_list->lock);
