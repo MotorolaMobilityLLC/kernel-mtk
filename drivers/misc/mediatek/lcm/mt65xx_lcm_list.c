@@ -1003,6 +1003,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(S6E3HA3_WQHD_2K_CMD_LANESWAP)
 	&s6e3ha3_wqhd_2k_cmd_laneswap_drv,
 #endif
+
+#if defined(NT36380_WQHD_VDO_OK)
+	&nt36380_wqhd_vdo_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
@@ -1054,6 +1058,9 @@ unsigned char lcm_name_list[][128] = {
 	"s6e3ha3_wqhd_2k_cmd_laneswap_drv",
 #endif
 
+#if defined(NT36380_WQHD_VDO_OK)
+	"nt36380_wqhd_vdo_lcm_drv",
+#endif
 };
 
 #define LCM_COMPILE_ASSERT(condition) LCM_COMPILE_ASSERT_X(condition, __LINE__)
