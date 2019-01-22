@@ -106,37 +106,6 @@ char * const dcs_status_name(enum dcs_status status)
 #include "sspm_ipi.h"
 static unsigned int dcs_recv_data[4];
 
-/*
- * __dcs_set_lbw_region_ipi
- *
- * set lbw region, caller must hold dcs_lbw_lock
- * @start: 64-bit start physical address
- * @end: 64-bit end physical address
- *
- * return 0 on success or error code
- */
-static int __dcs_set_lbw_region_ipi(u64 start, u64 end)
-{
-	int ipi_data_ret = 0, err;
-	unsigned int ipi_buf[32];
-
-	ipi_buf[0] = IPI_DCS_SET_MD_REGION;
-	ipi_buf[1] = start;
-	ipi_buf[2] = start >> 32;
-	ipi_buf[3] = end;
-	ipi_buf[4] = end >> 32;
-
-	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
-
-	if (err) {
-		pr_err("[%d]ipi_write error: %d\n", __LINE__, err);
-		return -EBUSY;
-	}
-
-	return 0;
-}
-
-
 static int dcs_get_status_ipi(enum dcs_status *sys_dcs_status)
 {
 	int ipi_data_ret = 0, err;
@@ -163,24 +132,6 @@ static int dcs_migration_ipi(enum migrate_dir dir)
 
 	ipi_buf[0] = IPI_DCS_MIGRATION;
 	ipi_buf[1] = dir;
-
-	/*
-	 * setup lbw region, caller holds dcs_rwsem and
-	 * lbw cannot be updated after initialization, so
-	 * it's safe to not taking dcs_lbw_lock
-	 */
-	if (dir == NORMAL) {
-		/* switch to normal */
-		err = __dcs_set_lbw_region_ipi(lbw_end, lbw_start);
-	} else {
-		/* switch to lowpower */
-		err = __dcs_set_lbw_region_ipi(lbw_start, lbw_end);
-	}
-
-	if (err) {
-		pr_err("[%d] fail: %d\n", __LINE__, err);
-		return err;
-	}
 
 	pr_info("dcs migration start\n");
 	err = sspm_ipi_send_sync(IPI_ID_DCS, 1, (void *)ipi_buf, 0, &ipi_data_ret);
