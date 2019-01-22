@@ -882,7 +882,7 @@ int cpuhvfs_module_init(void)
 	return 0;
 }
 
-static int __init dvfsp_module_init(void)
+static int dvfsp_module_init(void)
 {
 	int r;
 
