@@ -3355,6 +3355,12 @@ VOID aisFsmRunEventScanDoneTimeOut(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	/*dump firmware status */
 	wlanDumpCommandFwStatus();
 
+	/* dump TX_Description for Scan Request */
+	/* (1) dump Tc4[0]~[3] for Scan Request before hal write */
+	/* (2) dump Tc4[0]~[3] for Scan Request after hal write done  */
+	/* if TC[X]ucOwn 1 -> 0,FW available and set 1, and Hardware receiced and set 0 */
+	wlanDebugScanDump(prAdapter);
+
 	ucScanTimeoutTimes++;
 	if (ucScanTimeoutTimes > SCAN_DONE_TIMEOUT_TIMES_LIMIT) {
 		kalSendAeeWarning("[Scan done timeout more than 20 times!]", __func__);

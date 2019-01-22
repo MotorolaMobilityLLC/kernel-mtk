@@ -1222,6 +1222,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 	UINT_8 ucEtherTypeOffsetInWord;
 	P_MSDU_INFO_T prMsduInfo;
 	P_TX_CTRL_T prTxCtrl;
+	BOOLEAN fgScanReqCmd = FALSE;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -1369,8 +1370,14 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 
 		if ((prCmdInfo->ucCID == CMD_ID_SCAN_REQ) ||
 			(prCmdInfo->ucCID == CMD_ID_SCAN_CANCEL) ||
-			(prCmdInfo->ucCID == CMD_ID_SCAN_REQ_V2))
+			(prCmdInfo->ucCID == CMD_ID_SCAN_REQ_V2)) {
 			DBGLOG(TX, INFO, "ucCmdSeqNum =%d, ucCID =%d\n", prCmdInfo->ucCmdSeqNum, prCmdInfo->ucCID);
+			/*record scan request tx_desciption*/
+			wlanDebugScanRecord(prAdapter
+				, DBG_SCAN_WRITE_BEFORE);
+			fgScanReqCmd = TRUE;
+
+		}
 	}
 
 	/* <4> Write frame to data port */
@@ -1378,6 +1385,10 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 			  ucPortIdx,
 			  (UINT_32) u2OverallBufferLength,
 			  (PUINT_8) pucOutputBuf, (UINT_32) prAdapter->u4CoalescingBufCachedSize);
+	if (fgScanReqCmd == TRUE)
+		/*record scan request tx_desciption*/
+		wlanDebugScanRecord(prAdapter
+			, DBG_SCAN_WRITE_DONE);
 
 	return WLAN_STATUS_SUCCESS;
 }				/* end of nicTxCmd() */
