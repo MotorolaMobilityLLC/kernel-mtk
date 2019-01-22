@@ -236,6 +236,18 @@ void rtc_disable_2sec_reboot(void)
 	rtc_write_trigger();
 }
 
+void rtc_bbpu_pwrdown(bool auto_boot)
+{
+	u16 bbpu;
+
+	if (auto_boot)
+		bbpu = RTC_BBPU_KEY | RTC_BBPU_AUTO | RTC_BBPU_PWREN;
+	else
+		bbpu = RTC_BBPU_KEY | RTC_BBPU_PWREN;
+	rtc_write(RTC_BBPU, bbpu);
+	rtc_write_trigger();
+}
+
 void hal_rtc_bbpu_pwdn(bool charger_status)
 {
 	u16 ret_val, con;

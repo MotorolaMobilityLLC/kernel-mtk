@@ -40,6 +40,7 @@
 #endif
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
+#include <linux/pm.h>
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -819,11 +820,19 @@ static int __init rtc_late_init(void)
 	return 0;
 }
 
+static int __init rtc_arch_init(void)
+{
+	pm_power_off = mt_power_off;
+
+	return 0;
+}
+
 /* module_init(rtc_mod_init); */
 /* module_exit(rtc_mod_exit); */
 
 late_initcall(rtc_late_init);
 device_initcall(rtc_device_init);
+arch_initcall(rtc_arch_init);
 
 module_param(rtc_show_time, int, 0644);
 module_param(rtc_show_alarm, int, 0644);
