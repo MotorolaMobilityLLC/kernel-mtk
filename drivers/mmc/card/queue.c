@@ -24,6 +24,7 @@
 #include <linux/mmc/host.h>
 #include "queue.h"
 #include "mtk_mmc_block.h"
+#include <mt-plat/mtk_io_boost.h>
 
 #define MMC_QUEUE_BOUNCESZ	65536
 
@@ -101,14 +102,21 @@ static int mmc_queue_thread(void *d)
 	int cmdq_full = 0;
 	unsigned int tmo;
 #endif
+	bool io_boost_done = false;
 
 	current->flags |= PF_MEMALLOC;
 
 	down(&mq->thread_sem);
 	mt_bio_queue_alloc(current, q);
+
 	do {
 		struct request *req = NULL;
 		unsigned int cmd_flags = 0;
+
+		if (!io_boost_done) {
+			if (!mtk_io_boost_add_tid(current->pid))
+				io_boost_done = true;
+		}
 
 		spin_lock_irq(q->queue_lock);
 
