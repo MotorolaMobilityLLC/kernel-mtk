@@ -18,3 +18,5 @@ obj-$(CONFIG_MACH_MT6757) += mtk_power_gs.o
 obj-$(CONFIG_MACH_MT6757) += mtk_power_gs_api.o
 obj-$(CONFIG_MACH_MT6799) += mtk_power_gs.o
 obj-$(CONFIG_MACH_MT6799) += mtk_power_gs_api.o
+obj-$(CONFIG_MACH_MT6759) += mtk_power_gs.o
+obj-$(CONFIG_MACH_MT6759) += mtk_power_gs_api.o
