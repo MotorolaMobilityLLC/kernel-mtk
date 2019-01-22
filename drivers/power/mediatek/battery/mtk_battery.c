@@ -2944,7 +2944,7 @@ static int battery_callback(
 	case CHARGER_NOTIFY_ERROR:
 		{
 /* charging enter error state */
-		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING;
+		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING;
 		battery_update(&battery_main);
 		}
 		break;
