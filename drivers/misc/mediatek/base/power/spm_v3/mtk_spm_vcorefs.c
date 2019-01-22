@@ -906,6 +906,9 @@ static void spm_dvfsfw_init(void)
 
 	spm_write(DVFS_LEVEL, dvfs_level[BOOT_UP_OPP]);
 
+	/* FIXME bypass MSDC ack  */
+	spm_write(SPM_SW_NONSERSV_3, 0xFFFFFFF0);
+
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 #else
@@ -1035,7 +1038,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		if (1) {
 			/* E1 HRT WQHD/FHD */
 			spm_write(DVFSRC_M3733, 0xa60b4); /* >5.3G to opp0 */
-			spm_write(DVFSRC_M3200, 0x64087); /* >3.2G to opp1 */
+			spm_write(DVFSRC_M3200, 0xa6087); /* >5.3G to opp0 */
 			spm_write(DVFSRC_M1600, 0x3205a); /* >1.6G to opp2 */
 		} else {
 			#ifdef CONFIG_MTK_SMI_EXT
@@ -1072,7 +1075,7 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 		if (1) {
 			/* E1 HRT WQHD/FHD */
 			spm_write(DVFSRC_M3733, 0xa60b4); /* >10.6G to opp0 */
-			spm_write(DVFSRC_M3200, 0x64087); /* >6.4G to opp1 */
+			spm_write(DVFSRC_M3200, 0xa6087); /* >10.6G to opp0 */
 			spm_write(DVFSRC_M1600, 0x3205a); /* >3.2G to opp2 */
 		} else {
 			#ifdef CONFIG_MTK_SMI_EXT

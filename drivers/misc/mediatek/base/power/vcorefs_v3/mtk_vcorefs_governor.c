@@ -121,7 +121,7 @@ void vcorefs_update_opp_table(void)
  */
 bool is_vcorefs_feature_enable(void)
 {
-#if 0 /* FIXME */
+#if 1
 	if (!dram_can_support_fh()) {
 		vcorefs_err("DISABLE DVFS DUE TO NOT SUPPORT DRAM FH\n");
 		return false;
@@ -202,7 +202,7 @@ int vcorefs_get_vcore_by_steps(u32 opp)
 
 int vcorefs_get_ddr_by_steps(u32 opp)
 {
-#if 0 /* FIXME */
+#if 1
 	int ddr_khz;
 
 	ddr_khz = dram_steps_freq(opp) * 1000;
