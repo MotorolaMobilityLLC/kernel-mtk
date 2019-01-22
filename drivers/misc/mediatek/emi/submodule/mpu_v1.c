@@ -400,6 +400,19 @@ static void protect_ap_region(void)
 }
 #endif
 
+#ifdef ENABLE_MPU_SLVERR
+static void enable_slverr(void)
+{
+	unsigned int value;
+	unsigned int domain;
+
+	for (domain = 0; domain < EMI_MPU_DOMAIN_NUM; domain++) {
+		value = emi_mpu_smc_read(EMI_MPU_CTRL_D(domain));
+		emi_mpu_smc_write(EMI_MPU_CTRL_D(domain), value | 0x2);
+	}
+}
+#endif
+
 void mpu_init(struct platform_driver *emi_ctrl, struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
@@ -440,6 +453,10 @@ void mpu_init(struct platform_driver *emi_ctrl, struct platform_device *pdev)
 
 #if ENABLE_AP_REGION
 	protect_ap_region();
+#endif
+
+#ifdef ENABLE_MPU_SLVERR
+	enable_slverr();
 #endif
 
 #if !defined(USER_BUILD_KERNEL)
