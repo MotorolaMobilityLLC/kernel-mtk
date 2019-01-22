@@ -411,7 +411,7 @@ static ssize_t mt_scp_dvfs_debug_proc_write(struct file *file, const char __user
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtouint(desc, 0, &debug) == 0) {
+	if (kstrtouint(desc, 10, &debug) == 0) {
 		if (debug == 0)
 			mt_scp_dvfs_debug = 0;
 		else if (debug == 1)
@@ -480,7 +480,7 @@ static ssize_t mt_scp_dvfs_sleep_proc_write(struct file *file, const char __user
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtouint(desc, 0, &val) == 0) {
+	if (kstrtouint(desc, 10, &val) == 0) {
 		if (val >= 0  && val <= 3) {
 			if (val != scp_sleep_flag) {
 				scp_sleep_flag = val;
@@ -542,7 +542,7 @@ static ssize_t mt_scp_dvfs_ctrl_proc_write(struct file *file, const char __user 
 		return 0;
 	desc[len] = '\0';
 
-	n = sscanf(desc, "%s %d", cmd, &req);
+	n = sscanf(desc, "%31s %d", cmd, &req);
 	if (n == 1 || n == 2) {
 		if (!strcmp(cmd, "on")) {
 			scp_dvfs_flag = 1;
