@@ -102,12 +102,7 @@ static struct scp_work_struct scp_timeout_work;
 static DEFINE_MUTEX(scp_A_notify_mutex);
 static DEFINE_MUTEX(scp_B_notify_mutex);
 static DEFINE_MUTEX(scp_feature_mutex);
-struct mutex scp_awake_mutexs[SCP_CORE_TOTAL];
-int scp_awake_counts[SCP_CORE_TOTAL];
-unsigned int scp_ipi_awake_number[SCP_CORE_TOTAL] = {SCP_A_IPI_AWAKE_NUM, SCP_B_IPI_AWAKE_NUM};
-unsigned int scp_deep_sleep_bits[SCP_CORE_TOTAL] = {SCP_A_DEEP_SLEEP_BIT, SCP_B_DEEP_SLEEP_BIT};
-unsigned int scp_semaphore_flags[SCP_CORE_TOTAL] = {SEMAPHORE_SCP_A_AWAKE, SEMAPHORE_SCP_B_AWAKE};
-struct wake_lock scp_awake_wakelock[SCP_CORE_TOTAL];
+
 char *core_ids[SCP_CORE_TOTAL] = {"SCP A", "SCP B"};
 DEFINE_SPINLOCK(scp_awake_spinlock);
 /* set flag after driver initial done */
@@ -331,198 +326,6 @@ int scp_release_semaphore_3way(int flag)
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_release_semaphore_3way);
-
-
-/*
- * acquire scp lock flag, keep scp awake
- * @param scp_core_id: scp core id
- * return  0 :get lock success
- *        -1 :get lock timeout
- */
-int scp_awake_lock(scp_core_id scp_id)
-{
-	int status_read_back;
-	unsigned long spin_flags;
-	struct mutex *scp_awake_mutex;
-	int scp_semaphore_flag;
-	char *core_id;
-	unsigned int scp_ipi_awake_num;
-	unsigned int scp_deep_sleep_bit;
-	int *scp_awake_count;
-	int count = 0;
-	int ret = -1;
-	int scp_awake_repeat = 0;
-
-	if (scp_id >= SCP_CORE_TOTAL) {
-		pr_err("scp_awake_lock: SCP ID >= SCP_CORE_TOTAL\n");
-		return ret;
-	}
-
-	scp_awake_mutex = &scp_awake_mutexs[scp_id];
-	scp_semaphore_flag = scp_semaphore_flags[scp_id];
-	scp_ipi_awake_num = scp_ipi_awake_number[scp_id];
-	scp_deep_sleep_bit = scp_deep_sleep_bits[scp_id];
-	scp_awake_count = (int *)&scp_awake_counts[scp_id];
-	core_id = core_ids[scp_id];
-
-	if (is_scp_ready(scp_id) == 0) {
-		pr_err("scp_awake_lock: %s not enabled\n", core_id);
-		return ret;
-	}
-
-	/* scp unlock awake */
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
-	if (*scp_awake_count > 0) {
-		*scp_awake_count = *scp_awake_count + 1;
-		spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-		return 0;
-	}
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
-	if (mutex_trylock(scp_awake_mutex) == 0) {
-		/*avoid scp ipi send log print too much*/
-		pr_err("scp_awake_lock: %s mutex_trylock busy..\n", core_id);
-		return ret;
-	}
-
-	/* get scp sema to keep scp awake*/
-	ret = get_scp_semaphore(scp_semaphore_flag);
-	if (ret == -1) {
-		*scp_awake_count = *scp_awake_count + 1;
-		pr_err("scp_awake_lock: %s get sema fail, scp_awake_count=%d\n", core_id, *scp_awake_count);
-		mutex_unlock(scp_awake_mutex);
-		return ret;
-	}
-
-	/* spinlock context safe */
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
-
-	/* WE1: set a direct IPI to awake SCP */
-	/*pr_debug("scp_awake_lock: try to awake %s\n", core_id);*/
-	writel((1 << scp_ipi_awake_num), SCP_GIPC_REG);
-
-	/*
-	 * check SCP awake status
-	 * SCP_CPU_SLEEP_STATUS
-	 * bit[1] cpu_a_deepsleep = 0 ,means scp active now
-	 * bit[3] cpu_b_deepsleep = 0 ,means scp active now
-	 * wait 1 us and insure scp activing
-	 */
-	status_read_back = (readl(SCP_CPU_SLEEP_STATUS) >> scp_deep_sleep_bit) & 0x1;
-
-	scp_awake_repeat = 0;
-	count = 0;
-	while (count != SCP_AWAKE_TIMEOUT) {
-		if (status_read_back == 0)
-			scp_awake_repeat++;
-
-		udelay(10);
-		status_read_back = (readl(SCP_CPU_SLEEP_STATUS) >> scp_deep_sleep_bit) & 0x1;
-		if (status_read_back == 0 && scp_awake_repeat > 0) {
-			ret = 0;
-			break;
-		}
-		count++;
-	}
-
-	/* scp lock awake success*/
-	if (ret != -1)
-		*scp_awake_count = *scp_awake_count + 1;
-
-	/* spinlock context safe */
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
-	if (ret == -1) {
-		pr_err("scp_awake_lock: awake %s fail..\n", core_id);
-		WARN_ON(1);
-	}
-
-	/* scp awake */
-	mutex_unlock(scp_awake_mutex);
-	/*pr_debug("scp_awake_lock: %s lock, count=%d\n", core_id, *scp_awake_count);*/
-	return ret;
-}
-EXPORT_SYMBOL_GPL(scp_awake_lock);
-
-/*
- * release scp awake lock flag
- * @param scp_core_id: scp core id
- * return  0 :release lock success
- *        -1 :release lock fail
- */
-int scp_awake_unlock(scp_core_id scp_id)
-{
-	struct mutex *scp_awake_mutex;
-	unsigned long spin_flags;
-	int scp_semaphore_flag;
-	int *scp_awake_count;
-	char *core_id;
-	int ret = -1;
-	unsigned int scp_ipi_awake_num;
-
-	scp_ipi_awake_num = scp_ipi_awake_number[scp_id];
-	if (scp_id >= SCP_CORE_TOTAL) {
-		pr_err("scp_awake_unlock: SCP ID >= SCP_CORE_TOTAL\n");
-		return ret;
-	}
-
-	scp_awake_mutex = &scp_awake_mutexs[scp_id];
-	scp_semaphore_flag = scp_semaphore_flags[scp_id];
-	scp_awake_count = (int *)&scp_awake_counts[scp_id];
-	core_id = core_ids[scp_id];
-
-	if (is_scp_ready(scp_id) == 0) {
-		pr_err("scp_awake_unlock: %s not enabled\n", core_id);
-		return ret;
-	}
-
-	/* scp unlock awake */
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
-	if (*scp_awake_count > 1) {
-		*scp_awake_count = *scp_awake_count - 1;
-		spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-		return 0;
-	}
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
-	if (mutex_trylock(scp_awake_mutex) == 0) {
-		/*avoid scp ipi send log print too much*/
-		pr_err("scp_awake_unlock: %s mutex_trylock busy..\n", core_id);
-		return ret;
-	}
-
-	/* get scp sema to keep scp awake*/
-	ret = release_scp_semaphore(scp_semaphore_flag);
-	if (ret == -1) {
-		pr_err("scp_awake_unlock: %s release sema. fail, scp_awake_count=%d\n", core_id, *scp_awake_count);
-		mutex_unlock(scp_awake_mutex);
-		WARN_ON(1);
-		return ret;
-	}
-	ret = 0;
-
-	/* spinlock context safe */
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
-
-	/* WE1: set a direct IPI to awake SCP */
-	/*pr_debug("scp_awake_unlock: try to awake %s\n", core_id);*/
-	writel((1 << scp_ipi_awake_num), SCP_GIPC_REG);
-
-	/* scp unlock awake success*/
-	if (ret != -1) {
-		*scp_awake_count = *scp_awake_count - 1;
-		if (*scp_awake_count < 0)
-			pr_err("scp_awake_unlock:%s scp_awake_count=%d NOT SYNC!\n", core_id, *scp_awake_count);
-	}
-
-	/* spinlock context safe */
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
-	mutex_unlock(scp_awake_mutex);
-	/*pr_debug("scp_awake_unlock: %s unlock, count=%d\n", core_id, *scp_awake_count);*/
-	return ret;
-}
-EXPORT_SYMBOL_GPL(scp_awake_unlock);
 
 static BLOCKING_NOTIFIER_HEAD(scp_A_notifier_list);
 static BLOCKING_NOTIFIER_HEAD(scp_B_notifier_list);
@@ -1730,6 +1533,27 @@ static int scp_device_remove(struct platform_device *dev)
 	return 0;
 }
 
+static int scpsys_device_probe(struct platform_device *pdev)
+{
+	int ret = 0;
+	struct resource *res;
+	struct device *dev = &pdev->dev;
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	scpreg.scpsys = devm_ioremap_resource(dev, res);
+	pr_debug("[SCP] scpreg.scpsys %p\n", scpreg.scpsys);
+	if (IS_ERR((void const *) scpreg.scpsys)) {
+		pr_err("[SCP] scpreg.sram error\n");
+		return -1;
+	}
+	return ret;
+}
+
+static int scpsys_device_remove(struct platform_device *dev)
+{
+	return 0;
+}
+
 static const struct of_device_id scp_of_ids[] = {
 	{ .compatible = "mediatek,scp", },
 	{}
@@ -1747,6 +1571,23 @@ static struct platform_driver mtk_scp_device = {
 	},
 };
 
+static const struct of_device_id scpsys_of_ids[] = {
+	{ .compatible = "mediatek,scpsys", },
+	{}
+};
+
+static struct platform_driver mtk_scpsys_device = {
+	.probe = scpsys_device_probe,
+	.remove = scpsys_device_remove,
+	.driver = {
+		.name = "scpsys",
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = scpsys_of_ids,
+#endif
+	},
+};
+
 /*
  * driver initialization entry point
  */
@@ -1759,16 +1600,11 @@ static int __init scp_init(void)
 	for (i = 0; i < SCP_CORE_TOTAL ; i++) {
 		scp_enable[i] = 0;
 		scp_ready[i] = 0;
-		scp_awake_counts[i] = 0;
 	}
 
 	/* scp platform initialise */
 	pr_debug("[SCP] platform init\n");
-	for (i = 0; i < SCP_CORE_TOTAL ; i++) {
-		mutex_init(&scp_awake_mutexs[i]);
-		wake_lock_init(&scp_awake_wakelock[i], WAKE_LOCK_SUSPEND, "scp awakelock");
-	}
-
+	scp_awake_init();
 	scp_workqueue = create_workqueue("SCP_WQ");
 	ret = scp_excep_init();
 	if (ret) {
@@ -1776,7 +1612,9 @@ static int __init scp_init(void)
 		return -1;
 	}
 	if (platform_driver_register(&mtk_scp_device))
-		pr_err("[SCP] device probe fail\n");
+		pr_err("[SCP] scp probe fail\n");
+	if (platform_driver_register(&mtk_scpsys_device))
+		pr_err("[SCP] scpsys probe fail\n");
 	/* scp ipi initialise */
 	pr_debug("[SCP] ipi irq init\n");
 	scp_send_buff[SCP_A_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);

@@ -23,8 +23,6 @@
 #include "scp_excep.h"
 #include "scp_dvfs.h"
 
-/* scp awake timout count definition*/
-#define SCP_AWAKE_TIMEOUT 5000
 
 /*
  * handler for wdt irq for scp
