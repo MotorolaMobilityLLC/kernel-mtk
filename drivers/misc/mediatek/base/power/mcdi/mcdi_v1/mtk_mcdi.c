@@ -51,6 +51,15 @@ void __iomem *sspm_base;
 static unsigned long mcdi_cnt_cpu_last[NF_CPU];
 static unsigned long mcdi_cnt_cluster_last[NF_CLUSTER];
 
+static unsigned long any_core_cpu_cond_info_last[NF_ANY_CORE_CPU_COND_INFO];
+
+static const char *any_core_cpu_cond_name[NF_ANY_CORE_CPU_COND_INFO] = {
+	"pause",
+	"onoff fail",
+	"residency fail",
+	"pass cpu"
+};
+
 static unsigned long long mcdi_heart_beat_log_prev;
 static DEFINE_SPINLOCK(mcdi_heart_beat_spin_lock);
 
@@ -122,6 +131,7 @@ static ssize_t mcdi_state_read(struct file *filp,
 	char *p = dbg_buf;
 	bool mcdi_enabled = false;
 	bool mcdi_paused = false;
+	unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
 
 	get_mcdi_enable_status(&mcdi_enabled, &mcdi_paused);
 
@@ -141,6 +151,15 @@ static ssize_t mcdi_state_read(struct file *filp,
 		mcdi_log("%lu ", mcdi_cnt_cluster[i]);
 	}
 	mcdi_log("\n");
+
+	any_core_cpu_cond_get(any_core_cpu_cond_info);
+
+	for (i = 0; i < NF_ANY_CORE_CPU_COND_INFO; i++) {
+		mcdi_log("%s = %lu\n",
+			any_core_cpu_cond_name[i],
+			any_core_cpu_cond_info[i]
+		);
+	}
 
 	len = p - dbg_buf;
 
@@ -310,6 +329,8 @@ void mcdi_heart_beat_log_dump(void)
 	unsigned long flags;
 	bool dump_log = false;
 	unsigned long mcdi_cnt;
+	unsigned long any_core_info = 0;
+	unsigned long any_core_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
 
 	spin_lock_irqsave(&mcdi_heart_beat_spin_lock, flags);
 
@@ -346,6 +367,14 @@ void mcdi_heart_beat_log_dump(void)
 		mcdi_cnt = mcdi_cnt_cluster[i] - mcdi_cnt_cluster_last[i];
 		mcdi_buf_append(buf, "%lu, ", mcdi_cnt);
 		mcdi_cnt_cluster_last[i] = mcdi_cnt_cluster[i];
+	}
+
+	any_core_cpu_cond_get(any_core_cpu_cond_info);
+
+	for (i = 0; i < NF_ANY_CORE_CPU_COND_INFO; i++) {
+		any_core_info = any_core_cpu_cond_info[i] - any_core_cpu_cond_info_last[i];
+		mcdi_buf_append(buf, "%s = %lu, ", any_core_cpu_cond_name[i], any_core_info);
+		any_core_cpu_cond_info_last[i] = any_core_cpu_cond_info[i];
 	}
 
 	pr_warn("%s\n", get_mcdi_buf(buf));
