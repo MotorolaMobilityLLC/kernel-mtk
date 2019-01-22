@@ -20,7 +20,7 @@
 
 
 #define MMDVFS_CLK_CONFIG_BY_MUX    (0)
-#define MMDVFS_CLK_CONFIG_HOPPING   (1)
+#define MMDVFS_CLK_CONFIG_PLL_RATE	(1)
 #define MMDVFS_CLK_CONFIG_NONE      (2)
 
 /* System OPP number limitation (Max opp support)*/
@@ -102,7 +102,7 @@ struct mmdvfs_profile {
 
 /* HW Configuration Management */
 
-struct mmdvfs_clk_mux_desc {
+struct mmdvfs_clk_desc {
 	void *ccf_handle;
 	char *ccf_name; /* For debugging*/
 };
@@ -115,22 +115,13 @@ struct mmdvfs_clk_source_desc {
 
 struct mmdvfs_clk_hw_map {
 	int config_method; /* 0: don't set, 1: clk_mux, 2: pll hopping */
-	struct mmdvfs_clk_mux_desc clk_mux;
+	struct mmdvfs_clk_desc clk_mux;
 	int pll_id;
 	int total_step;
 	/* DSS value of each step for this clk */
-	int step_hopping_dds_map[MMDVFS_CLK_OPP_NUM_LIMITATION];
+	int step_pll_freq_map[MMDVFS_CLK_OPP_NUM_LIMITATION];
 	/* CLK MUX of each step for this clk */
 	int step_clk_source_id_map[MMDVFS_CLK_OPP_NUM_LIMITATION];
-};
-
-struct mmdvfs_clk_hw_configuration {
-	int config_method; /* 0: don't set, 1: clk_mux, 2: pll hopping */
-	struct mmdvfs_clk_mux_desc clk_mux;
-	int pll_id;
-	int total_steps;
-	int step_hopping_dds_map[MMDVFS_CLK_MUX_NUM_LIMITATION];
-	int step_clk_source_id_map[MMDVFS_CLK_MUX_NUM_LIMITATION];
 };
 
 /* Record vcore and step of clks to be requested for a single MMDVFS step */
