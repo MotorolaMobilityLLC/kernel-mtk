@@ -685,6 +685,10 @@ void init_entity_runnable_average(struct sched_entity *se)
 	sa->util_avg = scale_load_down(SCHED_LOAD_SCALE);
 	sa->util_sum = sa->util_avg * LOAD_AVG_MAX;
 	/* when this task enqueue'ed, it will contribute to its cfs_rq's load_avg */
+
+	/* sched: add trace_sched */
+	if (entity_is_task(se))
+		trace_sched_task_entity_avg(0, task_of(se), &se->avg);
 }
 
 static inline unsigned long cfs_rq_runnable_load_avg(struct cfs_rq *cfs_rq);
@@ -2754,6 +2758,10 @@ static inline void update_load_avg(struct sched_entity *se, int update_tg)
 
 	if (update_cfs_rq_load_avg(now, cfs_rq) && update_tg)
 		update_tg_load_avg(cfs_rq, 0);
+
+	/* sched: add trace_sched */
+	if (entity_is_task(se))
+		trace_sched_task_entity_avg(1, task_of(se), &se->avg);
 }
 
 static void attach_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
@@ -4950,6 +4958,16 @@ static int cpu_util(int cpu)
 	return (util >= capacity) ? capacity : util;
 }
 
+#ifdef CONFIG_MTK_SCHED_TRACERS
+#define LB_RESET                0
+#define LB_AFFINITY             0x10
+#define LB_FORK                 0x30
+#define LB_SMP_SHIFT    16
+#define LB_SMP                  0x500000
+#define LB_HMP_SHIFT    24
+#define LB_HMP                  0x60000000
+#endif
+
 /*
  * select_task_rq_fair: Select target runqueue for the waking task in domains
  * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
@@ -4970,6 +4988,9 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int new_cpu = prev_cpu;
 	int want_affine = 0;
 	int sync = wake_flags & WF_SYNC;
+#ifdef CONFIG_MTK_SCHED_TRACERS
+	int policy = 0;
+#endif
 
 	if (sd_flag & SD_BALANCE_WAKE)
 		want_affine = !wake_wide(p) && cpumask_test_cpu(cpu, tsk_cpus_allowed(p));
@@ -5039,7 +5060,16 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		}
 		/* while loop will break here if sd == NULL */
 	}
+#ifdef CONFIG_MTK_SCHED_TRACERS
+	policy |= (new_cpu << LB_SMP_SHIFT);
+	policy |= LB_SMP;
+#endif
+
 	rcu_read_unlock();
+
+#ifdef CONFIG_MTK_SCHED_TRACERS
+	trace_sched_select_task_rq(p, policy, prev_cpu, new_cpu);
+#endif
 
 	return new_cpu;
 }
