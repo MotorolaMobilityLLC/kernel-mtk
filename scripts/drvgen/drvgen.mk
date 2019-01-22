@@ -26,10 +26,11 @@ else
 DRVGEN_FILE_LIST :=
 endif
 DRVGEN_TOOL := $(srctree)/tools/dct/DrvGen.py
+DRVGEN_FIG := $(wildcard $(dir $(DRVGEN_TOOL))config/*.fig)
 
 .PHONY: drvgen
 drvgen: $(DRVGEN_FILE_LIST)
-$(DRVGEN_OUT)/cust.dtsi: $(DRVGEN_TOOL) $(DWS_FILE)
+$(DRVGEN_OUT)/cust.dtsi: $(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_FIG)
 	@mkdir -p $(dir $@)
 	$(python) $(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
 
