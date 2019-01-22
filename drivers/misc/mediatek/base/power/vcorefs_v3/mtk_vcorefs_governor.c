@@ -625,7 +625,7 @@ int qos_ipi_to_sspm_command(void *buffer, int slot)
 {
 	int ack_data;
 
-	return sspm_ipi_send_sync(IPI_ID_QOS, IPI_OPT_WAIT, buffer, slot, &ack_data, 1);
+	return sspm_ipi_send_sync(IPI_ID_QOS, IPI_OPT_POLLING, buffer, slot, &ack_data, 1);
 }
 
 void dvfsrc_update_sspm_vcore_opp_table(int opp, unsigned int vcore_uv)
