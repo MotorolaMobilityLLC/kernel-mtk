@@ -14,13 +14,6 @@
 obj-$(CONFIG_MTK_CACHE_DUMP) += icache_dump.o
 obj-$(CONFIG_MTK_MEMCFG) += mtk_memcfg.o
 obj-$(CONFIG_MTK_MEMCFG) += mtk_memcfg_reserve_info.o
-ifneq ($(CONFIG_ARM64), y)
-# For arm32
-obj-y += mtk_common_hooks.o
-else
-############################ For arm64 #############################
-obj-y += mtk_common_hooks_64.o
-endif
 
 obj-y += mtk_meminfo.o
 MTK_PLATFORM_DIR=$(srctree)/drivers/misc/mediatek/mem/$(subst ",,$(CONFIG_MTK_PLATFORM))
