@@ -105,6 +105,8 @@
 #define D2H_RINGQ6  (RINGQ_BASE+6)
 #define D2H_RINGQ7  (RINGQ_BASE+7)
 
+/* #define RUN_WQ_BY_CHECKING_RINGBUF */
+
 struct c2k_port {
 	enum c2k_channel ch;
 	enum c2k_channel excp_ch;
@@ -757,12 +759,35 @@ static void md_ccif_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 	};
 }
 
+static void md_ccif_check_ringbuf(struct ccci_modem *md, int qno)
+{
+#ifdef RUN_WQ_BY_CHECKING_RINGBUF
+	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+	unsigned long flags;
+	int data_to_read;
+
+	if (atomic_read(&md_ctrl->rxq[qno].rx_on_going)) {
+		CCCI_DEBUG_LOG(md->index, TAG, "Q%d rx is on-going(%d)3\n",
+			     md_ctrl->rxq[qno].index,
+			     atomic_read(&md_ctrl->rxq[qno].rx_on_going));
+		return;
+	}
+	spin_lock_irqsave(&md_ctrl->rxq[qno].rx_lock, flags);
+	data_to_read = ccci_ringbuf_readable(md->index, md_ctrl->rxq[qno].ringbuf);
+	spin_unlock_irqrestore(&md_ctrl->rxq[qno].rx_lock, flags);
+	if (unlikely(data_to_read > 0) && ccci_md_napi_check_and_notice(md, qno) == 0 &&
+			md->md_state != EXCEPTION) {
+		CCCI_DEBUG_LOG(md->index, TAG, "%d data remain in q%d\n", data_to_read, qno);
+		queue_work(md_ctrl->rxq[qno].worker, &md_ctrl->rxq[qno].qwork);
+	}
+#endif
+}
+
 static void md_ccif_irq_tasklet(unsigned long data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
-	int data_to_read, i;
-	unsigned long flags;
+	int i;
 
 	CCCI_DEBUG_LOG(md->index, TAG, "ccif_irq_tasklet1: ch %ld\n", md_ctrl->channel_id);
 	while (md_ctrl->channel_id != 0) {
@@ -809,22 +834,8 @@ static void md_ccif_irq_tasklet(unsigned long data)
 				}
 				if (md->md_state == EXCEPTION || ccci_md_napi_check_and_notice(md, i) == 0)
 					queue_work(md_ctrl->rxq[i].worker, &md_ctrl->rxq[i].qwork);
-			} else {
-				if (atomic_read(&md_ctrl->rxq[i].rx_on_going)) {
-					CCCI_DEBUG_LOG(md->index, TAG, "Q%d rx is on-going(%d)3\n",
-						     md_ctrl->rxq[i].index,
-						     atomic_read(&md_ctrl->rxq[i].rx_on_going));
-					continue;
-				}
-				spin_lock_irqsave(&md_ctrl->rxq[i].rx_lock, flags);
-				data_to_read = ccci_ringbuf_readable(md->index, md_ctrl->rxq[i].ringbuf);
-				spin_unlock_irqrestore(&md_ctrl->rxq[i].rx_lock, flags);
-				if (unlikely(data_to_read > 0) && ccci_md_napi_check_and_notice(md, i) == 0 &&
-						md->md_state != EXCEPTION) {
-					CCCI_DEBUG_LOG(md->index, TAG, "%d data remain in q%d\n", data_to_read, i);
-					queue_work(md_ctrl->rxq[i].worker, &md_ctrl->rxq[i].qwork);
-				}
-			}
+			} else
+				md_ccif_check_ringbuf(md, i);
 		}
 		CCCI_DEBUG_LOG(md->index, TAG, "ccif_irq_tasklet2: ch %ld\n", md_ctrl->channel_id);
 	}
