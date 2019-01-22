@@ -147,12 +147,21 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
 static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 {
 	struct stackframe frame;
-	unsigned long irq_stack_ptr = IRQ_STACK_PTR(smp_processor_id());
+	unsigned long irq_stack_ptr;
 
 	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
 
 	if (!tsk)
 		tsk = current;
+
+	/*
+	 * Switching between stacks is valid when tracing current and in
+	 * non-preemptible context.
+	 */
+	if (tsk == current && !preemptible())
+		irq_stack_ptr = IRQ_STACK_PTR(smp_processor_id());
+	else
+		irq_stack_ptr = 0;
 
 	if (regs) {
 		frame.fp = regs->regs[29];
@@ -178,7 +187,7 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 		int ret;
 
 		dump_backtrace_entry(where);
-		ret = unwind_frame(&frame);
+		ret = unwind_frame(tsk, &frame);
 		if (ret < 0)
 			break;
 		stack = frame.sp;
