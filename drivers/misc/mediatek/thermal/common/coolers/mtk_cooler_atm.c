@@ -420,6 +420,9 @@ int get_target_tj(void)
 static int atm_sspm_enabled;
 static int atm_prev_active_atm_cl_id = -100;
 
+static DEFINE_MUTEX(atm_cpu_lmt_mutex);
+static DEFINE_MUTEX(atm_gpu_lmt_mutex);
+
 static int atm_update_atm_param_to_sspm(void)
 {
 	int ret = 0;
@@ -625,6 +628,12 @@ static void atm_profile_gpu_power_limit(s64 latest_latency)
 
 static void set_adaptive_cpu_power_limit(unsigned int limit)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	mutex_lock(&atm_cpu_lmt_mutex);
+#endif
+#endif
+
 	prv_adp_cpu_pwr_lim = adaptive_cpu_power_limit;
 	adaptive_cpu_power_limit = (limit != 0) ? limit : 0x7FFFFFFF;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -680,10 +689,22 @@ static void set_adaptive_cpu_power_limit(unsigned int limit)
 		}
 #endif
 	}
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	mutex_unlock(&atm_cpu_lmt_mutex);
+#endif
+#endif
 }
 
 static void set_adaptive_gpu_power_limit(unsigned int limit)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+		mutex_lock(&atm_gpu_lmt_mutex);
+#endif
+#endif
+
 	prv_adp_gpu_pwr_lim = adaptive_gpu_power_limit;
 	adaptive_gpu_power_limit = (limit != 0) ? limit : 0x7FFFFFFF;
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -713,6 +734,12 @@ static void set_adaptive_gpu_power_limit(unsigned int limit)
 #endif
 
 	}
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	mutex_unlock(&atm_gpu_lmt_mutex);
+#endif
+#endif
 }
 
 #if CPT_ADAPTIVE_AP_COOLER
