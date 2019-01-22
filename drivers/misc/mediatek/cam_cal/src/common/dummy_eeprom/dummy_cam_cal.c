@@ -24,7 +24,6 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
-#include "kd_camera_hw.h"
 #include "cam_cal.h"
 #include "cam_cal_define.h"
 
