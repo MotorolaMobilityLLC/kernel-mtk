@@ -114,16 +114,25 @@
 /*******************************************************************************
 * Static variables
 *******************************************************************************/
+#ifdef CONFIG_TOUCHSCREEN_FT5X26_WUXGA
 static unsigned char CTPM_FW[] = {
-
-#include "Acer_JetfireHD_neostra_FT5826S_V16_D03_20160525_app.i"
+	#include "Acer_JetfireLTE_neostra_A10_4G_FT5826S_V85_D04_20170227_app.i"
 };
+#else
+static unsigned char CTPM_FW[] = {
+	#include "Acer_JetfireHD_neostra_FT5826S_V16_D03_20160525_app.i"
+};
+#endif
 
-/* Begin Neostra huangxiaohui add  20160726 */
+#ifdef CONFIG_TOUCHSCREEN_FT5X26_WUXGA
 static unsigned char TAIGUAN_FW[] = {
-
-#include "Acer_JetfireHD_neostra_FT5826S_V40_D03_20161012_app.i"
+      #include "Acer_A10L2_TaiGuan_FT5826S_V51_D04_20170117_app.i"
 };
+#else
+static unsigned char TAIGUAN_FW[] = {
+	#include "Acer_JetfireHD_neostra_FT5826S_V40_D03_20161012_app.i"
+};
+#endif
 
 static u8 vendor_tp_id;
 /* End Neostra huangxiaohui add  20160726 */
@@ -2917,7 +2926,7 @@ int fts_ctpm_fw_upgrade_with_app_file(struct i2c_client *client, char *firmware_
 /* Begin Neostra huangxiaohui mod  20160726 */
 int fts_ctpm_get_i_file_ver(void)
 {
-	u16 ui_sz;
+	u16 ui_sz = 0;
 	u8 uc_host_fm_ver = 0x00;
 
 	FTS_DBG("[FTS] hxh fts_ctpm_get_i_file_ver tp_vendor_id = 0x%x\n", vendor_tp_id);
