@@ -325,7 +325,8 @@ static unsigned int scp_crash_dump(MemoryDump *pMemoryDump, scp_core_id id)
 	unsigned int scp_dump_size;
 
 	/*check SRAM lock ,awake scp*/
-	scp_awake_lock(id);
+	if (scp_awake_lock(id) == -1)
+		pr_err("scp_crash_dump: awake scp fail, scp id=%u\n", id);
 
 	reg = (unsigned int *) (scpreg.cfg + SCP_LOCK_OFS);
 	lock = *reg;
