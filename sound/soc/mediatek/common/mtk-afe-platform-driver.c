@@ -21,6 +21,100 @@
 #include "mtk-afe-platform-driver.h"
 #include "mtk-base-afe.h"
 
+int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
+{
+	struct snd_soc_dai_driver *sub_dai_drivers;
+	struct snd_soc_component_driver *sub_component;
+	struct snd_soc_dapm_widget *dapm_widgets;
+	struct snd_soc_dapm_route *dapm_routes;
+	size_t num_dai_drivers = 0, dai_idx = 0;
+	size_t num_widget = 0, widget_idx = 0;
+	size_t num_route = 0, route_idx = 0;
+	int i;
+
+	if (afe->sub_dais == NULL) {
+		dev_err(afe->dev, "%s(), sub_dais == NULL\n", __func__);
+		return -EINVAL;
+	}
+
+	/* calcualte sub_dais size */
+	for (i = 0; i < afe->num_sub_dais; i++) {
+		if (afe->sub_dais[i].dai_drivers != NULL &&
+		    afe->sub_dais[i].num_dai_drivers != 0)
+			num_dai_drivers += afe->sub_dais[i].num_dai_drivers;
+
+		if (afe->sub_dais[i].component != NULL) {
+			sub_component = afe->sub_dais[i].component;
+			num_widget += sub_component->num_dapm_widgets;
+			num_route += sub_component->num_dapm_routes;
+		}
+	}
+
+	dev_info(afe->dev, "%s(), num of dai %zd, widget %zd, route %zd\n",
+		 __func__, num_dai_drivers, num_widget, num_route);
+
+	/* combine sub_dais */
+	afe->num_dai_drivers = num_dai_drivers;
+	afe->dai_drivers = devm_kcalloc(afe->dev,
+					num_dai_drivers,
+					sizeof(struct snd_soc_dai_driver),
+					GFP_KERNEL);
+	if (!afe->dai_drivers)
+		return -ENOMEM;
+
+	dapm_widgets = devm_kcalloc(afe->dev,
+				    num_widget,
+				    sizeof(struct snd_soc_dapm_widget),
+				    GFP_KERNEL);
+	if (!dapm_widgets)
+		return -ENOMEM;
+
+	dapm_routes = devm_kcalloc(afe->dev,
+				   num_route,
+				   sizeof(struct snd_soc_dapm_route),
+				   GFP_KERNEL);
+	if (!dapm_routes)
+		return -ENOMEM;
+
+	for (i = 0; i < afe->num_sub_dais; i++) {
+		if (afe->sub_dais[i].dai_drivers != NULL &&
+		    afe->sub_dais[i].num_dai_drivers != 0) {
+			sub_dai_drivers = afe->sub_dais[i].dai_drivers;
+			/* dai driver */
+			memcpy(&afe->dai_drivers[dai_idx],
+			       sub_dai_drivers,
+			       afe->sub_dais[i].num_dai_drivers *
+			       sizeof(struct snd_soc_dai_driver));
+			dai_idx += afe->sub_dais[i].num_dai_drivers;
+		}
+
+		if (afe->sub_dais[i].component != NULL) {
+			sub_component = afe->sub_dais[i].component;
+
+			/* component driver, dapm_widgets */
+			memcpy(&dapm_widgets[widget_idx],
+			       sub_component->dapm_widgets,
+			       sub_component->num_dapm_widgets *
+			       sizeof(struct snd_soc_dapm_widget));
+			widget_idx += sub_component->num_dapm_widgets;
+
+			/* component driver, dapm_routes */
+			memcpy(&dapm_routes[route_idx],
+			       sub_component->dapm_routes,
+			       sub_component->num_dapm_routes *
+			       sizeof(struct snd_soc_dapm_route));
+			route_idx += sub_component->num_dapm_routes;
+		}
+	}
+
+	afe->component_driver.num_dapm_widgets = num_widget;
+	afe->component_driver.dapm_widgets = dapm_widgets;
+	afe->component_driver.num_dapm_routes = num_route;
+	afe->component_driver.dapm_routes = dapm_routes;
+
+	return 0;
+}
+
 static snd_pcm_uframes_t mtk_afe_pcm_pointer
 			 (struct snd_pcm_substream *substream)
 {
