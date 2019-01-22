@@ -3892,3 +3892,87 @@ BOOLEAN nicIsEcoVerEqualOrLaterTo(UINT_8 ucEcoVer)
 
 	return TRUE;
 }
+
+WLAN_STATUS nicSetUapsdParam(IN P_ADAPTER_T prAdapter,
+	IN P_PARAM_CUSTOM_UAPSD_PARAM_STRUCT_T prUapsdParams, IN ENUM_NETWORK_TYPE_T eNetworkTypeIdx)
+{
+	CMD_CUSTOM_UAPSD_PARAM_STRUCT_T rCmdUapsdParam;
+	P_PM_PROFILE_SETUP_INFO_T prPmProfSetupInfo;
+	P_BSS_INFO_T prBssInfo;
+	WLAN_STATUS ret;
+
+	DEBUGFUNC("nicSetUApsdParam");
+
+	ASSERT(prAdapter);
+	ASSERT(prUapsdParams);
+
+	if (eNetworkTypeIdx >= NETWORK_TYPE_NUM) {
+		DBGLOG(NIC, ERROR, "nicSetUApsdParam Invalid eNetworkTypeIdx\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
+	prBssInfo = prAdapter->aprBssInfo[eNetworkTypeIdx];
+	prPmProfSetupInfo = &prBssInfo->rPmProfSetupInfo;
+
+	kalMemZero(&rCmdUapsdParam, sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T));
+
+	rCmdUapsdParam.fgEnAPSD = prUapsdParams->fgEnAPSD;
+	rCmdUapsdParam.fgEnAPSD_AcBe = prUapsdParams->fgEnAPSD_AcBe;
+	rCmdUapsdParam.fgEnAPSD_AcBk = prUapsdParams->fgEnAPSD_AcBk;
+	rCmdUapsdParam.fgEnAPSD_AcVo = prUapsdParams->fgEnAPSD_AcVo;
+	rCmdUapsdParam.fgEnAPSD_AcVi = prUapsdParams->fgEnAPSD_AcVi;
+	rCmdUapsdParam.ucMaxSpLen = prUapsdParams->ucMaxSpLen;
+
+	/* Fill BmpDeliveryAC and BmpTriggerAC by UapsdParams */
+	prPmProfSetupInfo->ucBmpDeliveryAC =
+	    ((prUapsdParams->fgEnAPSD_AcBe << 0) |
+	     (prUapsdParams->fgEnAPSD_AcBk << 1) |
+	     (prUapsdParams->fgEnAPSD_AcVi << 2) |
+	     (prUapsdParams->fgEnAPSD_AcVo << 3));
+
+	prPmProfSetupInfo->ucBmpTriggerAC =
+	    ((prUapsdParams->fgEnAPSD_AcBe << 0) |
+	     (prUapsdParams->fgEnAPSD_AcBk << 1) |
+	     (prUapsdParams->fgEnAPSD_AcVi << 2) |
+	     (prUapsdParams->fgEnAPSD_AcVo << 3));
+
+	prPmProfSetupInfo->ucUapsdSp = prUapsdParams->ucMaxSpLen;
+
+	DBGLOG(NIC, INFO, "nicSetUApsdParam EnAPSD[%d] Be[%d] Bk[%d] Vo[%d] Vi[%d] SPLen[%d]\n",
+		rCmdUapsdParam.fgEnAPSD, rCmdUapsdParam.fgEnAPSD_AcBe, rCmdUapsdParam.fgEnAPSD_AcBk,
+		rCmdUapsdParam.fgEnAPSD_AcVo, rCmdUapsdParam.fgEnAPSD_AcVi, rCmdUapsdParam.ucMaxSpLen);
+
+	switch (eNetworkTypeIdx) {
+	case NETWORK_TYPE_AIS:
+		ret = wlanSendSetQueryCmd(prAdapter,
+			CMD_ID_SET_UAPSD_PARAM,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T),
+			(PUINT_8)&rCmdUapsdParam, NULL, 0);
+			break;
+
+	case NETWORK_TYPE_P2P:
+		ret = wlanoidSendSetQueryP2PCmd(prAdapter,
+			CMD_ID_SET_UAPSD_PARAM,
+			prBssInfo->ucBssIndex,
+			TRUE,
+			FALSE,
+			FALSE,
+			NULL,
+			NULL,
+			sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T),
+			(PUINT_8)&rCmdUapsdParam, NULL, 0);
+			break;
+
+	default:
+		ret = WLAN_STATUS_FAILURE;
+		break;
+	}
+
+	return ret;
+}
+

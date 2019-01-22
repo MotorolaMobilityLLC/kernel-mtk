@@ -1383,7 +1383,7 @@ wlanoidSetUApsdParam(IN P_ADAPTER_T prAdapter,
 	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prUapsdParam->ucBssIdx);
 	prPmProfSetupInfo = &prBssInfo->rPmProfSetupInfo;
 
-	kalMemZero(&rCmdUapsdParam, sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T));
+	kalMemZero(&rCmdUapsdParam, sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T));
 	rCmdUapsdParam.fgEnAPSD = prUapsdParam->fgEnAPSD;
 
 	rCmdUapsdParam.fgEnAPSD_AcBe = prUapsdParam->fgEnAPSD_AcBe;
@@ -1402,17 +1402,6 @@ wlanoidSetUApsdParam(IN P_ADAPTER_T prAdapter,
 	rCmdUapsdParam.ucMaxSpLen = prUapsdParam->ucMaxSpLen;
 	prPmProfSetupInfo->ucUapsdSp = prUapsdParam->ucMaxSpLen;
 
-#if 0
-	return wlanSendSetQueryCmd(prAdapter,
-				   CMD_ID_SET_UAPSD_PARAM,
-				   TRUE,
-				   FALSE,
-				   TRUE,
-				   nicCmdEventSetCommon,
-				   nicOidCmdTimeoutCommon,
-				   sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T),
-				   (PUINT_8) &rCmdUapsdParam, pvSetBuffer, u4SetBufferLen);
-#else
 	return wlanoidSendSetQueryP2PCmd(prAdapter,
 					 CMD_ID_SET_UAPSD_PARAM,
 					 prBssInfo->ucBssIndex,
@@ -1421,10 +1410,8 @@ wlanoidSetUApsdParam(IN P_ADAPTER_T prAdapter,
 					 TRUE,
 					 NULL,
 					 nicOidCmdTimeoutCommon,
-					 sizeof(CMD_CUSTOM_OPPPS_PARAM_STRUCT_T),
+					 sizeof(CMD_CUSTOM_UAPSD_PARAM_STRUCT_T),
 					 (PUINT_8) &rCmdUapsdParam, pvSetBuffer, u4SetBufferLen);
-
-#endif
 }
 
 WLAN_STATUS
