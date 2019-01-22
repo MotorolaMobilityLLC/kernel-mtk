@@ -883,7 +883,8 @@ static void hw_breakpoint_reset(void *unused)
 			write_wb_reg(AARCH64_DBG_REG_WCR, i, 0UL);
 			write_wb_reg(AARCH64_DBG_REG_WVR, i, 0UL);
 		}
-#endif	}
+	}
+#endif
 }
 
 static int hw_breakpoint_reset_notify(struct notifier_block *self,
