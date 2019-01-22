@@ -29,6 +29,7 @@
  */
 
 static struct tick_device tick_broadcast_device;
+
 static cpumask_var_t tick_broadcast_mask;
 static cpumask_var_t tick_broadcast_on;
 static cpumask_var_t tmpmask;
@@ -555,6 +556,10 @@ static void tick_broadcast_set_affinity(struct clock_event_device *bc,
 
 	bc->cpumask = cpumask;
 	irq_set_affinity(bc->irq, bc->cpumask);
+
+	/* MTK PATCH: record new target cpu for dynamic irq affinity */
+	bc->irq_affinity_on = cpumask_first(cpumask);
+	pr_debug("tb: irq ->%d\n", bc->irq_affinity_on);
 }
 
 static void tick_broadcast_set_event(struct clock_event_device *bc, int cpu,
@@ -564,6 +569,7 @@ static void tick_broadcast_set_event(struct clock_event_device *bc, int cpu,
 		clockevents_switch_state(bc, CLOCK_EVT_STATE_ONESHOT);
 
 	clockevents_program_event(bc, expires, 1);
+
 	tick_broadcast_set_affinity(bc, cpumask_of(cpu));
 }
 
@@ -675,6 +681,31 @@ static int broadcast_needs_cpu(struct clock_event_device *bc, int cpu)
 	if (bc->next_event.tv64 == KTIME_MAX)
 		return 0;
 	return bc->bound_on == cpu ? -EBUSY : 0;
+}
+
+/*
+ * MTK PATCH:
+ *
+ * For soc timer based broadcasting and irq affinity feature is enabled,
+ * if the dying cpu is exactly the target of irq by soc timer, we shall
+ * change the irq affinity to another online cpu to make sure irq will be
+ * serviced.
+ *
+ * Returns:
+ *  0:      Changing irq affinity target is not required.
+ *  Others: Changing irq affinity target is required.
+ */
+static int broadcast_needs_cpu_soctimer(struct clock_event_device *bc, int cpu)
+{
+	/* for soc timer based broadcasting only (not hrtimer based) */
+	if (bc->features & CLOCK_EVT_FEAT_HRTIMER)
+		return 0;
+
+	/* for dynamic irq affinity feature enabled only */
+	if (!(bc->features & CLOCK_EVT_FEAT_DYNIRQ))
+		return 0;
+
+	return bc->irq_affinity_on == cpu ? -EBUSY : 0;
 }
 
 static void broadcast_shutdown_local(struct clock_event_device *bc,
@@ -930,6 +961,7 @@ void hotplug_cpu__broadcast_tick_pull(int deadcpu)
 {
 	struct clock_event_device *bc;
 	unsigned long flags;
+	unsigned int next_cpu;
 
 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
 	bc = tick_broadcast_device.evtdev;
@@ -938,6 +970,27 @@ void hotplug_cpu__broadcast_tick_pull(int deadcpu)
 		/* This moves the broadcast assignment to this CPU: */
 		clockevents_program_event(bc, bc->next_event, 1);
 	}
+
+	/*
+	 * MTK PATCH:
+	 *
+	 * CPU will not be able to handle irq after shutdown. Change
+	 * irq affinity if irq is bound on dying cpu.
+	 *
+	 * We always set current cpu as new target since finding
+	 * real target is lousy and costs time.
+	 */
+	if (bc && broadcast_needs_cpu_soctimer(bc, deadcpu)) {
+
+		next_cpu = smp_processor_id();
+		irq_force_affinity(bc->irq, cpumask_of(next_cpu));
+		bc->irq_affinity_on = next_cpu;
+		pr_debug("tb: irq %d->%d\n", deadcpu, next_cpu);
+
+		/* re-arm soc timer to ensure irq will be serviced */
+		clockevents_program_event(bc, bc->next_event, 1);
+	}
+
 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
 }
 
@@ -947,8 +1000,6 @@ void hotplug_cpu__broadcast_tick_pull(int deadcpu)
 void tick_shutdown_broadcast_oneshot(unsigned int cpu)
 {
 	unsigned long flags;
-	struct clock_event_device *bc = tick_broadcast_device.evtdev;
-	unsigned int next_cpu;
 
 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
 
@@ -959,25 +1010,6 @@ void tick_shutdown_broadcast_oneshot(unsigned int cpu)
 	cpumask_clear_cpu(cpu, tick_broadcast_oneshot_mask);
 	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
 	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
-
-	/*
-	 * MTK PATCH:
-	 *
-	 * CPU will not be able to handle IRQ after shutdown. Ensure
-	 * dynamic IRQ affinity feature works in the future.
-	 *
-	 * We do not know if this CPU is exactly the target of IRQ
-	 * affinity, thus we always find the first online CPU and set
-	 * it as new target.
-	 *
-	 * Remind: This CPU is already removed from cpu_online_mask before,
-	 *         thus use cpu_online_mask directly for finding.
-	 */
-	if (bc->features & CLOCK_EVT_FEAT_DYNIRQ) {
-		next_cpu = cpumask_any(cpu_online_mask);
-		if (next_cpu < nr_cpu_ids)
-			irq_set_affinity(bc->irq, cpumask_of(next_cpu));
-	}
 
 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
 }
