@@ -838,8 +838,12 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, const cha
 		ASSERT(prP2pWdev->wiphy);
 		ASSERT(prDev);
 		ASSERT(prGlueInfo->prAdapter);
-
-		set_wiphy_dev(prP2pWdev->wiphy, prDev);
+		/* don't set prDev as parent of wiphy->dev, because we have done device_add
+		** in driver init. if we set parent here, parent will be not able to know this child,
+		** and may occurs a KE in device_shutdown, to free wiphy->dev, because his parent
+		** has been freed.
+		**/
+		/* set_wiphy_dev(prP2pWdev->wiphy, prDev); */
 
 		if (!prGlueInfo->prAdapter->fgEnable5GBand)
 			prP2pWdev->wiphy->bands[BAND_5G] = NULL;
@@ -1064,15 +1068,12 @@ void glP2pDestroyWirelessDevice(void)
 #else
 	int i = 0;
 
-	set_wiphy_dev(gprP2pWdev->wiphy, NULL);
-
 	wiphy_unregister(gprP2pWdev->wiphy);
 	wiphy_free(gprP2pWdev->wiphy);
 	kfree(gprP2pWdev);
 
 	for (i = 0; i < KAL_P2P_NUM; i++) {
 		if (gprP2pRoleWdev[i] && (gprP2pWdev != gprP2pRoleWdev[i])) {
-			set_wiphy_dev(gprP2pRoleWdev[i]->wiphy, NULL);
 
 			DBGLOG(INIT, INFO, "glP2pDestroyWirelessDevice (%x)\n", gprP2pRoleWdev[i]->wiphy);
 			wiphy_unregister(gprP2pRoleWdev[i]->wiphy);
