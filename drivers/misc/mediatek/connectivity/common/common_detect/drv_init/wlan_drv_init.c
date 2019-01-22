@@ -36,6 +36,18 @@ int do_wlan_drv_init(int chip_id)
 	i_ret += ret;
 
 	switch (chip_id) {
+	case 0x6632:
+#ifdef MTK_WCN_WLAN_GEN4
+		/* WLAN driver init */
+		ret = mtk_wcn_wlan_gen4_init();
+		WMT_DETECT_INFO_FUNC("WLAN-GEN4 driver init, ret:%d\n", ret);
+		i_ret += ret;
+#else
+		WMT_DETECT_ERR_FUNC("WLAN-GEN4 driver is not supported, please check CONFIG_MTK_COMBO_CHIP\n");
+		i_ret = -1;
+#endif
+		break;
+
 	case 0x6630:
 	case 0x6797:
 #ifdef MTK_WCN_WLAN_GEN3
