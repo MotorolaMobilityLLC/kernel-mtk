@@ -219,16 +219,11 @@ static void update_v2f(int update, int debug)
 	}
 }
 
-void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
+void check_cm_mgr_status_internal(void)
 {
 	unsigned long long result = 0;
 	ktime_t now, done;
 	int level;
-	int freq_idx = 0;
-	struct mt_cpu_dvfs *p;
-
-	p = id_to_cpu_dvfs(cluster);
-	freq_idx = _search_available_freq_idx(p, freq, 0);
 
 	if (cm_mgr_enable == 0)
 		return;
@@ -236,12 +231,6 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 	if (cm_mgr_disable_fb == 1 && cm_mgr_blank_status == 1)
 		return;
 
-	if (freq_idx == prev_freq_idx[cluster]) {
-		/* pr_debug("same index of cluster %d! skip it...\n", cluster); */
-		return;
-	}
-
-	prev_freq_idx[cluster] = freq_idx;
 	if (spin_trylock(&cm_mgr_lock)) {
 		int ret;
 		int idx;
@@ -570,6 +559,24 @@ cm_mgr_opp_end:
 	else
 		pr_debug("trylock fail, cpu=%d, cluster = %d!!!!!!\n", smp_processor_id(), cluster);
 #endif
+}
+
+void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
+{
+	int freq_idx = 0;
+	struct mt_cpu_dvfs *p;
+
+	p = id_to_cpu_dvfs(cluster);
+	freq_idx = _search_available_freq_idx(p, freq, 0);
+
+	if (freq_idx == prev_freq_idx[cluster]) {
+		/* pr_debug("same index of cluster %d! skip it...\n", cluster); */
+		return;
+	}
+
+	prev_freq_idx[cluster] = freq_idx;
+
+	check_cm_mgr_status_internal();
 }
 
 static int dbg_cm_mgr_status_proc_show(struct seq_file *m, void *v)
