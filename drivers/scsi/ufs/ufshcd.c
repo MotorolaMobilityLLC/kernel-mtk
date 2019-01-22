@@ -4834,7 +4834,7 @@ static void ufshcd_init_icc_levels(struct ufs_hba *hba)
 #define SEC_PROTOCOL_CMD_SIZE 12
 #define SEC_PROTOCOL_RETRIES 3
 #define SEC_PROTOCOL_RETRIES_ON_RESET 10
-#define SEC_PROTOCOL_TIMEOUT msecs_to_jiffies(5000)
+#define SEC_PROTOCOL_TIMEOUT msecs_to_jiffies(30000)
 
 static int
 ufshcd_rpmb_security_out(struct scsi_device *sdev,
