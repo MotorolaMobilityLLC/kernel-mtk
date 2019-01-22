@@ -266,7 +266,7 @@ int smi_debug_bus_hanging_detect_ext2(unsigned short larbs, int show_dump,
 	unsigned int u4Index = 0;
 	unsigned long u4Base = 0;
 
-	volatile unsigned int reg_temp = 0;
+	unsigned int reg_temp = 0;
 	unsigned char smi_larb_busy_count[SMI_LARB_NUM] = { 0 };
 	unsigned char smi_larb_mmu_status[SMI_LARB_NUM] = { 0 };
 	int smi_larb_clk_status[SMI_LARB_NUM] = { 0 };
