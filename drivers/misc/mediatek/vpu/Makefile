@@ -16,6 +16,7 @@ obj-$(CONFIG_MACH_MT6759) += 1.0/
 obj-$(CONFIG_MACH_MT6799) += 1.0/
 obj-$(CONFIG_MACH_MT6758) += 1.0/
 obj-$(CONFIG_MACH_MT6775) += 2.0/
+obj-$(CONFIG_MACH_MT6771) += 2.0/
 #subdir-ccflags-y += -DMTK_VPU_EMULATOR
 
 MTK_VPU_CORE := 1
@@ -27,6 +28,8 @@ MTK_VPU_CORE := 2
 else
 MTK_VPU_CORE := 3
 endif
+else ifneq (,$(filter $(strip $(MTK_PLATFORM)), mt6771))
+MTK_VPU_CORE := 2
 else ifneq (,$(filter $(strip $(MTK_PLATFORM)), mt6758 mt6799))
 MTK_VPU_CORE := 1
 else

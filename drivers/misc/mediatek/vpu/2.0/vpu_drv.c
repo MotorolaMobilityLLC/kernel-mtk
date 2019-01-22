@@ -1030,7 +1030,6 @@ static int vpu_probe(struct platform_device *pdev)
 			dev_err(vpu_device->dev[vpu_num_devs-1], "register char failed");
 			return ret;
 		}
-
 		/* Create class register */
 		vpu_class = class_create(THIS_MODULE, "vpudrv");
 		if (IS_ERR(vpu_class)) {
