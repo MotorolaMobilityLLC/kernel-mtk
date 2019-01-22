@@ -61,6 +61,9 @@ typedef enum {
 	/* currently no use */
 	Soc_Aud_Digital_Block_MEM_DL1_DATA2,
 	Soc_Aud_Digital_Block_MEM_VUL_DATA2,
+	Soc_Aud_Digital_Block_MEM_VUL2,
+	Soc_Aud_Digital_Block_MEM_DAI2,
+	Soc_Aud_Digital_Block_MEM_AWB2,
 	Soc_Aud_Digital_Block_MEM_I2S,		/* this is not actually a mem if... */
 	Soc_Aud_Digital_Block_MEM_HDMI,
 	/* ADDA */
@@ -111,7 +114,9 @@ typedef enum {
 	Soc_Aud_AFE_IO_Block_MEM_AWB_CH1,
 	Soc_Aud_AFE_IO_Block_MEM_MOD_DAI,
 	Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2,
-	Soc_Aud_AFE_IO_Block_MEM_VUL2_DATA2,
+	Soc_Aud_AFE_IO_Block_MEM_VUL2,
+	Soc_Aud_AFE_IO_Block_MEM_DAI2,
+	Soc_Aud_AFE_IO_Block_MEM_AWB2,
 	/* ADDA */
 	Soc_Aud_AFE_IO_Block_ADDA_UL,
 	Soc_Aud_AFE_IO_Block_ADDA_UL2,
@@ -139,6 +144,8 @@ typedef enum {
 	/* HDMI */
 	Soc_Aud_AFE_IO_Block_HDMI_OUT,
 	Soc_Aud_AFE_IO_Block_HDMI_IN,
+	/* Proximity CIC */
+	Soc_Aud_AFE_IO_Block_PROXIMITY_CIC,
 	/* connection to int main modem */
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O,
 	Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I,
@@ -248,14 +255,14 @@ typedef enum {
 
 #ifdef CONFIG_MTK_HDMI_TDM
 typedef enum {
-	Soc_Aud_InterConnectionInput_I30,
-	Soc_Aud_InterConnectionInput_I31,
-	Soc_Aud_InterConnectionInput_I32,
-	Soc_Aud_InterConnectionInput_I33,
-	Soc_Aud_InterConnectionInput_I34,
-	Soc_Aud_InterConnectionInput_I35,
-	Soc_Aud_InterConnectionInput_I36,
-	Soc_Aud_InterConnectionInput_I37,
+	Soc_Aud_Hdmi_InterConnectionInput_I30,
+	Soc_Aud_Hdmi_InterConnectionInput_I31,
+	Soc_Aud_Hdmi_InterConnectionInput_I32,
+	Soc_Aud_Hdmi_InterConnectionInput_I33,
+	Soc_Aud_Hdmi_InterConnectionInput_I34,
+	Soc_Aud_Hdmi_InterConnectionInput_I35,
+	Soc_Aud_Hdmi_InterConnectionInput_I36,
+	Soc_Aud_Hdmi_InterConnectionInput_I37,
 } Soc_Aud_Hdmi_InterConnectionInput;
 
 #if 0
