@@ -19,6 +19,8 @@
 
 static bool check_impedance = true;
 static int pd_idx = -1;
+static int vbus_l = PD_VBUS_LOW_BOUND / 1000;
+static int vbus_h = PD_VBUS_UPPER_BOUND / 1000;
 
 
 void mtk_pdc_plugout(struct charger_manager *info)
@@ -119,12 +121,13 @@ void mtk_pdc_plugout_reset(struct charger_manager *info)
 	info->pdc.cap.nr = 0;
 }
 
-void mtk_pdc_set_max_watt(struct charger_manager *info, unsigned int watt)
+void mtk_pdc_set_max_watt(struct charger_manager *info, int watt)
 {
-	info->pdc.pdc_max_watt = watt;
+	vbus_h = 10000;
+	info->pdc.pdc_max_watt_setting = watt;
 }
 
-unsigned int mtk_pdc_get_max_watt(struct charger_manager *info)
+int mtk_pdc_get_max_watt(struct charger_manager *info)
 {
 	int charging_current = info->data.pd_charger_current / 1000;
 	int vbat = pmic_get_battery_voltage();
@@ -132,12 +135,16 @@ unsigned int mtk_pdc_get_max_watt(struct charger_manager *info)
 	if (info->pdc.tcpc == NULL)
 		return 0;
 
-	if (info->chg1_data.thermal_charging_current_limit != -1)
-		charging_current = info->chg1_data.thermal_charging_current_limit / 1000;
+	if (info->pdc.pdc_max_watt_setting != -1)
+		info->pdc.pdc_max_watt = info->pdc.pdc_max_watt_setting;
+	else {
+		if (info->chg1_data.thermal_charging_current_limit != -1)
+			charging_current = info->chg1_data.thermal_charging_current_limit / 1000;
 
-	info->pdc.pdc_max_watt = vbat * charging_current;
-
-	chr_err("[%s]watt:%d vbat:%d c:%d=>\n", __func__,
+		info->pdc.pdc_max_watt = vbat * charging_current;
+	}
+	chr_err("[%s]watt:%d:%d vbat:%d c:%d=>\n", __func__,
+		info->pdc.pdc_max_watt_setting,
 		info->pdc.pdc_max_watt, vbat, charging_current);
 
 	return info->pdc.pdc_max_watt;
@@ -177,15 +184,18 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *vbus, int *cur, int *
 	if (pd->cap.nr == 0)
 		return -1;
 
+	if (info->enable_hv_charging == false)
+		vbus_h = 5000;
+
 	max_watt = mtk_pdc_get_max_watt(info);
 	*idx = -1;
 
 	for (i = 0; i < pd->cap.nr; i++) {
 
-		if (pd->cap.min_mv[i] < 5000 || pd->cap.max_mv[i] < 5000)
+		if (pd->cap.min_mv[i] < vbus_l || pd->cap.max_mv[i] < vbus_l)
 			continue;
 
-		if (pd->cap.min_mv[i] > 12000 || pd->cap.max_mv[i] > 12000)
+		if (pd->cap.min_mv[i] > vbus_h || pd->cap.max_mv[i] > vbus_h)
 			continue;
 
 		if (min_vbus_idx == -1) {
@@ -228,8 +238,9 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *vbus, int *cur, int *
 
 	}
 
-	chr_err("[%s]watt:%d vbus:%d current:%d idx:%d default_idx:%d\n", __func__,
-		info->pdc.pdc_max_watt, *vbus, *cur, *idx,
+	chr_err("[%s]watt:%d vbus:%d:%d:%d current:%d idx:%d default_idx:%d\n", __func__,
+		info->pdc.pdc_max_watt, *vbus, vbus_h, vbus_l,
+		*cur, *idx,
 		pd->cap.selected_cap_idx);
 
 	return 0;
@@ -289,6 +300,7 @@ void mtk_pdc_init_table(struct charger_manager *info)
 bool mtk_pdc_init(struct charger_manager *info)
 {
 	info->pdc.tcpc = tcpc_dev_get_by_name("type_c_port0");
+	info->pdc.pdc_max_watt_setting = -1;
 	return true;
 }
 

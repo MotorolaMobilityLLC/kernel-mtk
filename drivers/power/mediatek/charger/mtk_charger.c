@@ -820,6 +820,30 @@ static ssize_t store_charger_log_level(struct device *dev, struct device_attribu
 }
 static DEVICE_ATTR(charger_log_level, 0664, show_charger_log_level, store_charger_log_level);
 
+static ssize_t show_pdc_max_watt_level(struct device *dev, struct device_attribute *attr,
+					char *buf)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+
+	return sprintf(buf, "%d\n", mtk_pdc_get_max_watt(pinfo));
+}
+
+static ssize_t store_pdc_max_watt_level(struct device *dev, struct device_attribute *attr,
+					 const char *buf, size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	int temp;
+
+	if (kstrtoint(buf, 10, &temp) == 0) {
+		mtk_pdc_set_max_watt(pinfo, temp);
+		chr_err("[store_pdc_max_watt]:%d\n", temp);
+	} else
+		chr_err("[store_pdc_max_watt]: format error!\n");
+
+	return size;
+}
+static DEVICE_ATTR(pdc_max_watt, 0664, show_pdc_max_watt_level, store_pdc_max_watt_level);
+
 
 int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv)
 {
@@ -1240,11 +1264,11 @@ static int charger_routine_thread(void *arg)
 		i++;
 		curr_sign = battery_get_bat_current_sign();
 		bat_current = battery_get_bat_current();
-		chr_err("Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d\n", battery_get_bat_voltage(),
+		chr_err("Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d hv:%d\n", battery_get_bat_voltage(),
 			curr_sign ? bat_current : -1 * bat_current,
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc(),
-			mt_get_charger_type(), info->chr_type);
+			mt_get_charger_type(), info->chr_type, info->enable_hv_charging);
 
 		is_charger_on = mtk_is_charger_on(info);
 
@@ -1306,8 +1330,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
 	info->enable_pe_3 = of_property_read_bool(np, "enable_pe_3");
 
-	/* Currently, only pe20 is HV charging */
-	info->enable_hv_charging = info->enable_pe_2;
+	info->enable_hv_charging = true;
 
 	/* common */
 	if (of_property_read_u32(np, "battery_cv", &val) >= 0) {
@@ -1984,6 +2007,10 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 		goto _out;
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_charger_log_level);
+	if (ret)
+		goto _out;
+
+	ret = device_create_file(&(pdev->dev), &dev_attr_pdc_max_watt);
 	if (ret)
 		goto _out;
 
