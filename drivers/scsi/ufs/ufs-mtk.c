@@ -1125,11 +1125,22 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 	}
 }
 
+/* Notice: this function must be called in automic context */
+/* Because it is not protected by ufs spin_lock or mutex, it access ufs host directly. */
 int ufs_mtk_generic_read_dme(u32 uic_cmd, u16 mib_attribute, u16 gen_select_index, u32 *value, unsigned long retry_ms)
 {
 	u32 arg1;
 	u32 ret;
 	unsigned long elapsed_us = 0;
+
+	if (ufs_mtk_hba->outstanding_reqs || ufs_mtk_hba->outstanding_tasks
+		|| ufs_mtk_hba->active_uic_cmd || ufs_mtk_hba->pm_op_in_progress) {
+		dev_dbg(ufs_mtk_hba->dev, "req: %lx, task %lx, pm %x\n", ufs_mtk_hba->outstanding_reqs
+			, ufs_mtk_hba->outstanding_tasks, ufs_mtk_hba->pm_op_in_progress);
+		if (ufs_mtk_hba->active_uic_cmd != NULL)
+			dev_dbg(ufs_mtk_hba->dev, "uic not null\n");
+		return -1;
+	}
 
 	arg1 = ((u32)mib_attribute << 16) | (u32)gen_select_index;
 	ufshcd_writel(ufs_mtk_hba, arg1, REG_UIC_COMMAND_ARG_1);
