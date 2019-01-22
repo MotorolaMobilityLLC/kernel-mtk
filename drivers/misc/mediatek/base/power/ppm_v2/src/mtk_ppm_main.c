@@ -52,6 +52,8 @@ static ktime_t prev_log_time;
 static ktime_t prev_check_time;
 static unsigned int log_cnt;
 static unsigned int filter_cnt;
+/* force update limit to HPS since it's not ready at previous round */
+static bool force_update_to_hps;
 
 /*==============================================================*/
 /* Local function declarition					*/
@@ -831,9 +833,11 @@ int mt_ppm_main(void)
 			for (i = 0; i < c_req->cluster_num; i++) {
 				if (c_req->cpu_limit[i].min_cpu_core != last_req->cpu_limit[i].min_cpu_core
 					|| c_req->cpu_limit[i].max_cpu_core != last_req->cpu_limit[i].max_cpu_core
-					|| c_req->cpu_limit[i].has_advise_core) {
+					|| c_req->cpu_limit[i].has_advise_core
+					|| force_update_to_hps) {
 					notify_hps = true;
 					log_print = true;
+					force_update_to_hps = 0;
 				}
 				if (c_req->cpu_limit[i].min_cpufreq_idx != last_req->cpu_limit[i].min_cpufreq_idx
 					|| c_req->cpu_limit[i].max_cpufreq_idx != last_req->cpu_limit[i].max_cpufreq_idx
@@ -880,6 +884,9 @@ int mt_ppm_main(void)
 				now = ktime_get();
 				if (ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb)
 					ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb(*c_req);
+				else
+					/* force update to HPS next time */
+					force_update_to_hps = 1;
 				delta = ktime_to_us(ktime_sub(ktime_get(), now));
 				ppm_profile_update_client_exec_time(PPM_CLIENT_HOTPLUG, delta);
 				ppm_dbg(TIME_PROFILE, "Done! notify hps only! time = %lld us\n", delta);
@@ -921,6 +928,8 @@ int mt_ppm_main(void)
 				now = ktime_get();
 				if (ppm_main_info.client_info[i].limit_cb)
 					ppm_main_info.client_info[i].limit_cb(*c_req);
+				else if (i == PPM_CLIENT_HOTPLUG)
+					force_update_to_hps = 1;
 				delta = ktime_to_us(ktime_sub(ktime_get(), now));
 				ppm_profile_update_client_exec_time(i, delta);
 				ppm_dbg(TIME_PROFILE, "%s callback done! time = %lld us\n",
@@ -931,6 +940,8 @@ int mt_ppm_main(void)
 				now = ktime_get();
 				if (ppm_main_info.client_info[i].limit_cb)
 					ppm_main_info.client_info[i].limit_cb(*c_req);
+				else if (i == PPM_CLIENT_HOTPLUG)
+					force_update_to_hps = 1;
 				delta = ktime_to_us(ktime_sub(ktime_get(), now));
 				ppm_profile_update_client_exec_time(i, delta);
 				ppm_dbg(TIME_PROFILE, "%s callback done! time = %lld us\n",

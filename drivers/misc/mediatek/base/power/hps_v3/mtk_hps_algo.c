@@ -549,7 +549,7 @@ void hps_algo_main(void)
 		hps_sys.cluster_info[2].base_value = hps_sys.cluster_info[2].ref_base_value = 0;
 		hps_sys.cluster_info[0].limit_value = hps_sys.cluster_info[0].ref_limit_value = 4;
 		hps_sys.cluster_info[1].limit_value = hps_sys.cluster_info[1].ref_limit_value = 4;
-		hps_sys.cluster_info[2].limit_value = hps_sys.cluster_info[2].ref_limit_value = 2;
+		hps_sys.cluster_info[2].limit_value = hps_sys.cluster_info[2].ref_limit_value = 0;
 	}
 	for (i = 0; i < hps_sys.cluster_num; i++) {
 		hps_sys.cluster_info[i].base_value = hps_sys.cluster_info[i].ref_base_value;
