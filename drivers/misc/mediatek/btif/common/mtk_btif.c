@@ -262,9 +262,9 @@ int _btif_suspend(p_mtk_btif p_btif)
 {
 	int i_ret;
 
-	if (_btif_state_hold(p_btif))
-		return E_BTIF_INTR;
 	if (p_btif != NULL) {
+		if (_btif_state_hold(p_btif))
+			return E_BTIF_INTR;
 		if (!(p_btif->enable))
 			i_ret = 0;
 		else {
@@ -296,9 +296,9 @@ int _btif_suspend(p_mtk_btif p_btif)
 				}
 			}
 		}
+		BTIF_STATE_RELEASE(p_btif);
 	} else
 		i_ret = -1;
-	BTIF_STATE_RELEASE(p_btif);
 
 	return i_ret;
 }
@@ -396,9 +396,9 @@ int _btif_resume(p_mtk_btif p_btif)
 	int i_ret = 0;
 	ENUM_BTIF_STATE state = B_S_MAX;
 
-	if (_btif_state_hold(p_btif))
-		return E_BTIF_INTR;
 	if (p_btif != NULL) {
+		if (_btif_state_hold(p_btif))
+			return E_BTIF_INTR;
 		state = _btif_state_get(p_btif);
 		if (!(p_btif->enable))
 			i_ret = 0;
@@ -407,9 +407,9 @@ int _btif_resume(p_mtk_btif p_btif)
 		else
 			BTIF_INFO_FUNC
 				("BTIF state: %s before resume, do nothing\n", g_state[state]);
+		BTIF_STATE_RELEASE(p_btif);
 	} else
 		i_ret = -1;
-	BTIF_STATE_RELEASE(p_btif);
 
 	return i_ret;
 }
