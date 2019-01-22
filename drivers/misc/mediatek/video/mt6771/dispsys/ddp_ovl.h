@@ -58,5 +58,7 @@ unsigned int ovl_to_index(enum DISP_MODULE_ENUM module);
 
 void ovl_get_info(enum DISP_MODULE_ENUM module, void *data);
 unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid);
+enum DISP_MODULE_ENUM ovl_index_to_mod_for_debug(int index);
+unsigned long ovl_layer_num_for_debug(enum DISP_MODULE_ENUM module);
 
 #endif

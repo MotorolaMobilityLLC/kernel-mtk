@@ -55,6 +55,8 @@ static struct dentry *debugDir;
 
 
 static struct dentry *debugfs_dump;
+static struct dentry *debug_cmd_help;
+
 
 static const long int DEFAULT_LOG_FPS_WND_SIZE = 30;
 static int debug_init;
@@ -89,6 +91,26 @@ static char STR_HELP[] =
 	"       mmp\n"
 	"       dump_reg:moduleID\n dump_path:mutexID\n  dpfd_ut1:channel\n";
 
+static char cmd_help_analysis[] =
+	"\n\n"
+	"adb command:\n"
+	"every bit represent one parameter:\n"
+	"1: open the parameter; 0: close the parameter. when bit0~bit13 is zero,\n"
+	"disp information stop show.Any one bit is 1,the disp information will show.\n"
+	"\n"
+	"adb shell \"echo disp_info:0x010f > /d/mtkfb\"\n"
+	"bit0~bit7: layer0 ~ layer7 fps\n"
+	"bit8:  total fps\n"
+	"bit9:  hrt\n"
+	"bit10: enable layer num\n"
+	"bit11: all enable layer size equal to the number of full layer\n"
+	"bit12: path mode\n"
+	"bit13: dsi mode\n"
+	"\n"
+	"other cmd:the cmd will be used set background\n"
+	"adb shell \"echo bg_set:6,1 > /d/mtkfb\"\n"
+	"6: font size(default 6)\n"
+	"1: the location of lcm(default 1)\n";
 
 /* --------------------------------------------------------------------------- */
 /* Command Processor */
@@ -635,6 +657,15 @@ static const struct file_operations debug_fops_dump = {
 	.read = debug_dump_read,
 };
 
+static ssize_t cmd_help_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+{
+	return simple_read_from_buffer(ubuf, count, ppos, cmd_help_analysis, sizeof(cmd_help_analysis));
+};
+
+static const struct file_operations cmd_help_fops = {
+	.read = cmd_help_read,
+};
+
 void ddp_debug_init(void)
 {
 	struct dentry *d;
@@ -651,6 +682,9 @@ void ddp_debug_init(void)
 			debugfs_dump = debugfs_create_file("dump",
 							   S_IFREG | S_IRUGO, debugDir, NULL,
 							   &debug_fops_dump);
+			debug_cmd_help = debugfs_create_file("cmd_help",
+							   S_IFREG | S_IRUGO, debugDir, NULL,
+							   &cmd_help_fops);
 			d = debugfs_create_file("lowpowermode", S_IFREG | S_IRUGO, debugDir, NULL,
 						&low_power_cust_fops);
 			/*if (!d)*/
@@ -709,6 +743,7 @@ void ddp_debug_exit(void)
 {
 	debugfs_remove(debugfs);
 	debugfs_remove(debugfs_dump);
+	debugfs_remove(debug_cmd_help);
 	debug_init = 0;
 }
 

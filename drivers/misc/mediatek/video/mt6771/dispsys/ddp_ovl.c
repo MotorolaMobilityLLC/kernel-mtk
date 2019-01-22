@@ -154,6 +154,22 @@ static inline enum DISP_MODULE_ENUM ovl_index_to_module(int index)
 	return ovl_index_module[index];
 }
 
+enum DISP_MODULE_ENUM ovl_index_to_mod_for_debug(int index)
+{
+	int ovl_index;
+
+	ovl_index = ovl_index_to_module(index);
+	return ovl_index;
+}
+
+unsigned long ovl_layer_num_for_debug(enum DISP_MODULE_ENUM module)
+{
+	int layer_num;
+
+	layer_num = ovl_layer_num(module);
+	return layer_num;
+}
+
 int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned long ovl_base = ovl_base_addr(module);
@@ -1148,6 +1164,11 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 	int ovl_idx = module;
 	int phy_layer = -1, ext_layer = -1, ext_layer_idx = 0;
 	struct OVL_CONFIG_STRUCT *ovl_cfg;
+	int total_layer_num_ovl = TOTAL_OVL_LAYER_NUM;
+
+	/* need leave the last to layer for show debug disp info */
+	if (get_show_info_to_screen_flg())
+		total_layer_num_ovl--;
 
 	/* 1. check if it has been prepared, just only prepare once for each frame */
 	for (global_layer = 0; global_layer < TOTAL_OVL_LAYER_NUM; global_layer++) {
@@ -1158,7 +1179,7 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module, struct disp_ddp_path_c
 		return 0;
 
 	/* 2. prepare layer layout */
-	for (local_layer = 0; local_layer < TOTAL_OVL_LAYER_NUM; local_layer++) {
+	for (local_layer = 0; local_layer < total_layer_num_ovl; local_layer++) {
 		ovl_cfg = &pConfig->ovl_config[local_layer];
 		ovl_cfg->ovl_index = -1;
 	}

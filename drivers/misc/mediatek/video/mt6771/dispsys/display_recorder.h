@@ -135,6 +135,15 @@ struct dprec_logger {
 	unsigned long long ts_start;
 	unsigned long long ts_trigger;
 	unsigned long long count;
+	unsigned long long total_fps;
+	unsigned long long layer_fps[8];
+};
+
+struct dprec_logger_fps {
+	unsigned long long total_fps;
+	unsigned long long layer_fps[8];
+	unsigned long long ts_start_update;
+	unsigned long long ts_end_update;
 };
 
 struct fpsEx {
@@ -144,6 +153,13 @@ struct fpsEx {
 	unsigned long long avg;
 	unsigned long long max_period;
 	unsigned long long min_period;
+};
+
+struct fps_debug {
+	unsigned long long total_fps_high;
+	unsigned long long total_fps_low;
+	unsigned long long layer_fps_high[8];
+	unsigned long long layer_fps_low[8];
 };
 
 struct dprec_logger_event {
@@ -171,6 +187,8 @@ extern unsigned int gCaptureRdmaLayerEnable;
 extern unsigned int gCapturePriLayerDownX;
 extern unsigned int gCapturePriLayerDownY;
 extern unsigned int gCapturePriLayerNum;
+extern struct dprec_logger logger[DPREC_LOGGER_NUM];
+int _primary_monitor_fps_thread(void *data);
 
 
 void dprec_event_op(enum DPREC_EVENT event);
@@ -186,6 +204,7 @@ void dprec_logger_reset_all(void);
 int dprec_logger_get_result_string(enum DPREC_LOGGER_ENUM source, char *stringbuf, int strlen);
 int dprec_logger_get_result_string_all(char *stringbuf, int strlen);
 int dprec_logger_get_result_value(enum DPREC_LOGGER_ENUM source, struct fpsEx *fps);
+void cal_fps_for_debug(void);
 void dprec_stub_irq(unsigned int irq_bit);
 void dprec_stub_event(enum DISP_PATH_EVENT event);
 unsigned int dprec_get_vsync_count(void);
