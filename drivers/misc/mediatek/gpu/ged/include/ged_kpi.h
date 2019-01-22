@@ -59,6 +59,6 @@ extern int linear_real_boost(int linear_boost);
 /* extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu); */
 extern unsigned long arch_scale_get_max_freq(int cpu);
 #ifdef GED_ENABLE_FB_DVFS
-extern struct mutex gsGpuUtilLock;
+extern spinlock_t gsGpuUtilLock;
 #endif
 #endif

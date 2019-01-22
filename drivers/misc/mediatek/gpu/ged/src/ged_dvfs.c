@@ -48,7 +48,7 @@ extern GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
 extern GED_LOG_BUF_HANDLE ghLogBuf_ged_srv;
 
 #ifdef GED_ENABLE_FB_DVFS
-struct mutex gsGpuUtilLock;
+spinlock_t gsGpuUtilLock;
 #endif
 static struct mutex gsDVFSLock;
 static struct mutex gsVSyncOffsetLock;
@@ -629,12 +629,13 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target)
 	static int busy_cycle[GED_DVFS_BUSY_CYCLE_MONITORING_WINDOW_NUM];
 	int gpu_busy_cycle = 0;
 	int busy_cycle_cur;
+	unsigned long ui32IRQFlags;
 
 	ged_cancel_backup_timer();
-	mutex_lock(&gsGpuUtilLock);
+	spin_lock_irqsave(&gsGpuUtilLock, ui32IRQFlags);
 	if (is_fallback_mode_triggered) {
 		is_fallback_mode_triggered = 0;
-		mutex_unlock(&gsGpuUtilLock);
+		spin_unlock_irqrestore(&gsGpuUtilLock, ui32IRQFlags);
 #ifdef GED_DVFS_ENABLE
 		return mt_gpufreq_get_cur_freq();
 #else
@@ -642,7 +643,7 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target)
 #endif
 	}
 	is_fb_dvfs_triggered = 0;
-	mutex_unlock(&gsGpuUtilLock);
+	spin_unlock_irqrestore(&gsGpuUtilLock, ui32IRQFlags);
 
 	if (t_gpu <= 0) {
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K][FB_DVFS] skip DVFS due to t_gpu <= 0, t_gpu: %d", t_gpu);
@@ -1060,16 +1061,16 @@ void ged_dvfs_run(unsigned long t, long phase, unsigned long ul3DFenceDoneTime)
 		g_iSkipCount -= 1;
 	} else {
 #ifdef GED_ENABLE_FB_DVFS
-		mutex_lock(&gsGpuUtilLock);
+		spin_lock_irqsave(&gsGpuUtilLock, ui32IRQFlags);
 		if (is_fb_dvfs_triggered) {
-			mutex_unlock(&gsGpuUtilLock);
+			spin_unlock_irqrestore(&gsGpuUtilLock, ui32IRQFlags);
 			goto EXIT_ged_dvfs_run;
 		}
 
 		is_fallback_mode_triggered = 1;
 		ged_dvfs_cal_gpu_utilization(&gpu_loading, &gpu_block, &gpu_idle);
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K][FB_DVFS] fallback mode");
-		mutex_unlock(&gsGpuUtilLock);
+		spin_unlock_irqrestore(&gsGpuUtilLock, ui32IRQFlags);
 #else
 		ged_dvfs_cal_gpu_utilization(&gpu_loading, &gpu_block, &gpu_idle);
 #endif
@@ -1274,7 +1275,7 @@ GED_ERROR ged_dvfs_system_init()
 	mutex_init(&gsDVFSLock);
 	mutex_init(&gsVSyncOffsetLock);
 #ifdef GED_ENABLE_FB_DVFS
-	mutex_init(&gsGpuUtilLock);
+	spin_lock_init(&gsGpuUtilLock);
 #endif
 
 	/* initial as locked, signal when vsync_sw_notify */
