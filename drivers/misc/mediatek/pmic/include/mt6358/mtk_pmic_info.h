@@ -68,5 +68,6 @@ extern unsigned int pmic_scp_set_vcore(unsigned int);
 extern unsigned int pmic_scp_set_vcore_sleep(unsigned int);
 extern unsigned int pmic_scp_set_vsram_vcore(unsigned int);
 extern unsigned int pmic_scp_set_vsram_vcore_sleep(unsigned int);
+extern void wk_pmic_enable_sdn_delay(void);
 
 #endif				/* _MT_PMIC_INFO_H_ */

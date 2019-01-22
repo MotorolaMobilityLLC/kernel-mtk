@@ -70,6 +70,13 @@ void pmic_enable_smart_reset(unsigned char smart_en,
 		__func__, smart_en, smart_sdn_en);
 }
 
+void wk_pmic_enable_sdn_delay(void)
+{
+	pmic_set_register_value(PMIC_TMA_KEY, 0x9CA7);
+	pmic_set_register_value(PMIC_RG_SDN_DLY_ENB, 0);
+	pmic_set_register_value(PMIC_TMA_KEY, 0);
+}
+
 static unsigned int pmic_scp_set_regulator(struct mtk_regulator mt_reg,
 	enum PMU_FLAGS_LIST vosel_reg, unsigned int voltage, bool is_sleep_vol)
 {
