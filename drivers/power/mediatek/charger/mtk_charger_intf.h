@@ -238,6 +238,7 @@ struct charger_custom_data {
 	int pe40_dual_charger_input_current;
 	int pe40_dual_charger_chg1_current;
 	int pe40_dual_charger_chg2_current;
+	int pe40_stop_battery_soc;
 
 	/* pe3.0 */
 	int cv_limit;	/* vbus upper bound (mv)*/
@@ -383,6 +384,9 @@ struct charger_manager {
 	bool enable_pe_4;
 	struct mtk_pe40 pe4;
 
+	/* type-C*/
+	bool enable_type_c;
+
 	/* pd */
 	struct mtk_pdc pdc;
 
@@ -417,6 +421,7 @@ extern void _wake_up_charger(struct charger_manager *);
 extern int mtk_get_dynamic_cv(struct charger_manager *info, unsigned int *cv);
 extern bool is_dual_charger_supported(struct charger_manager *info);
 extern int charger_enable_vbus_ovp(struct charger_manager *pinfo, bool enable);
+extern bool is_typec_adapter(struct charger_manager *info);
 
 /* procfs */
 #define PROC_FOPS_RW(name)							\

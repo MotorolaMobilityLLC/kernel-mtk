@@ -353,7 +353,7 @@ bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 	pdata = &pinfo->chg1_data;
 
 	ret = charger_dev_get_ibus(pinfo->chg1_dev, &ibus);
-	chr_err("mtk_pe40_is_ready:%d hv:%d thermal:%d,%d tmp:%d,%d,%d pps:%d enable:%d ibus:%d\n",
+	chr_err("pe40_ready:%d hv:%d thermal:%d,%d tmp:%d,%d,%d pps:%d en:%d ibus:%d %d\n",
 		pinfo->enable_pe_4,
 		pinfo->enable_hv_charging,
 		pdata->thermal_charging_current_limit,
@@ -363,7 +363,8 @@ bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 		LOW_TEMP_TO_ENTER_PE40,
 		mtk_is_TA_support_pd_pps(pinfo),
 		mtk_pe40_get_is_enable(pinfo),
-		ret);
+		ret,
+		pinfo->data.pe40_stop_battery_soc);
 
 	if (pinfo->enable_pe_4 == false ||
 		pinfo->enable_hv_charging == false ||
@@ -372,6 +373,10 @@ bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 		tmp > HIGH_TEMP_TO_ENTER_PE40 ||
 		tmp < LOW_TEMP_TO_ENTER_PE40 ||
 		ret == -ENOTSUPP)
+		return false;
+
+	if (is_dual_charger_supported(pinfo) == true &&
+		battery_get_bat_soc() >= pinfo->data.pe40_stop_battery_soc)
 		return false;
 
 	if (mtk_is_TA_support_pd_pps(pinfo) == true)
@@ -404,6 +409,7 @@ int mtk_pe40_get_init_watt(struct charger_manager *pinfo)
 	struct charger_data *pdata;
 	int vbus1, ibus1;
 	int vbus2, ibus2;
+	int vbat1, vbat2;
 	int voltage = 0, input_current = 1000, actual_current = 0;
 	int voltage1 = 0, adapter_ibus;
 	bool is_enable = false, is_chip_enable = false;
@@ -429,6 +435,7 @@ int mtk_pe40_get_init_watt(struct charger_manager *pinfo)
 	charger_dev_get_ibus(pinfo->chg1_dev, &ibus1);
 	vbus1 = battery_get_vbus();
 	ibus1 = ibus1 / 1000;
+	vbat1 = battery_get_bat_voltage();
 	voltage1 = voltage;
 
 	voltage = 0;
@@ -448,15 +455,16 @@ int mtk_pe40_get_init_watt(struct charger_manager *pinfo)
 		charger_dev_get_ibus(pinfo->chg1_dev, &ibus2);
 		vbus2 = battery_get_vbus();
 		ibus2 = ibus2 / 1000;
+		vbat2 = battery_get_bat_voltage();
 
 		if (is_dual_charger_supported(pinfo) == true) {
 			charger_dev_is_enabled(pinfo->chg2_dev, &is_enable);
 			charger_dev_is_chip_enabled(pinfo->chg2_dev, &is_chip_enable);
 		}
 
-		chr_err("[pe40_vbus] vbus1:%d ibus1:%d vbus2:%d ibus2:%d watt:%d en:%d %d\n",
+		chr_err("[pe40_vbus] vbus1:%d ibus1:%d vbus2:%d ibus2:%d watt:%d en:%d %d vbat:%d %d\n",
 			vbus1, ibus1, vbus2, ibus2, voltage1 * ibus1, is_enable,
-			is_chip_enable);
+			is_chip_enable, vbat1, vbat2);
 	}
 
 	return voltage1 * ibus1;
