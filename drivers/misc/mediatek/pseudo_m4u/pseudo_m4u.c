@@ -1783,6 +1783,12 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		}
 
 		M4UDBG("MTK_M4U_T_ALLOC_MVA, %s, %d\n", __func__, __LINE__);
+
+		if (m4u_module.port < 0 || m4u_module.port > M4U_PORT_HW_VDEC_PPWRAP_EXT) {
+			M4UMSG("MTK_M4U_T_ALLOC_MVA,port is invalid:%d\n", m4u_module.port);
+			return -EFAULT;
+		}
+
 		ret = pseudo_alloc_mva(client, m4u_module.port, m4u_module.BufAddr,
 				    NULL, m4u_module.BufSize, m4u_module.prot, m4u_module.flags,
 				    &(m4u_module.MVAStart));
@@ -1814,6 +1820,11 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 			    ("MTK_M4U_T_DEALLOC_MVA, eModuleID : %d, VABuf:0x%lx, Length : %d, MVAStart = 0x%x \r\n",
 			     m4u_module.port, m4u_module.BufAddr, m4u_module.BufSize,
 			     m4u_module.MVAStart);
+
+			if (m4u_module.port < 0 || m4u_module.port > M4U_PORT_HW_VDEC_PPWRAP_EXT) {
+				M4UMSG("MTK_M4U_T_DEALLOC_MVA,port is invalid:%d\n", m4u_module.port);
+				return -EFAULT;
+			}
 
 			if (!m4u_module.BufAddr || !m4u_module.BufSize) {
 				M4UDBG("MTK_M4U_T_DEALLOC_MVA va is 0x%lx, size is 0x%x",
