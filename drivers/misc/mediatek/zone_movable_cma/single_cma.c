@@ -29,6 +29,7 @@ static struct cma *cma[MAX_CMA_AREAS];
 static phys_addr_t movable_min = ULONG_MAX;
 static phys_addr_t movable_max;
 
+phys_addr_t zmc_max_zone_dma_phys = 0xc0000000ULL;
 bool zmc_reserved_mem_inited;
 
 #define END_OF_REGISTER ((void *)(0x7a6d63))
@@ -54,6 +55,50 @@ static struct single_cma_registration *single_cma_list[NR_ZMC_LOCATIONS][4] = {
 	},
 };
 
+#ifdef CONFIG_MTK_MEMORY_LOWPOWER
+#define ZMC_CHECK_FIX_ALIGNMENT	(0x20000000ULL)	/* 512MB alignment for DRAM size > 4GB */
+/*
+ * Resize ZMC base & size according to total physical size (T).
+ * After resizing, zmc_max_zone_dma_phys will be,
+ * 0xc0000000 if T <= 4GB
+ * 0xc0000000 ~ 0x100000000 if 4GB < T <= 6GB
+ * 0x100000000 if T > 6GB
+ */
+static void __init check_and_fix_base(struct reserved_mem *rmem)
+{
+	phys_addr_t total_phys_size = memblock_phys_mem_size();
+	phys_addr_t new_zmc_base, return_size;
+
+	pr_info("%s: total phys size: %pa\n", __func__, &total_phys_size);
+
+	/* No need to fix if the size of DRAM is less or equal to 4GB */
+	if (total_phys_size <= 0x100000000ULL)
+		return;
+
+	/* Find a new base */
+	new_zmc_base = round_up(memblock_start_of_DRAM() + (total_phys_size >> 1),
+			ZMC_CHECK_FIX_ALIGNMENT);
+
+	/* Don't exceed the limitation of DMA zone */
+	zmc_max_zone_dma_phys = new_zmc_base = min(new_zmc_base, (phys_addr_t)(1ULL << 32));
+
+	/* Resize it */
+	if (rmem->base < new_zmc_base) {
+		return_size = new_zmc_base - rmem->base;
+		memblock_free(rmem->base, return_size);
+		memblock_add(rmem->base, return_size);
+		rmem->base = new_zmc_base;
+		rmem->size -= return_size;
+		pr_info("%s: new base: %pa, new size: %pa\n", __func__, &rmem->base, &rmem->size);
+	}
+}
+#else
+static void __init check_and_fix_base(struct reserved_mem *rmem)
+{
+	/* do nothing */
+}
+#endif
+
 static int __init zmc_memory_init(struct reserved_mem *rmem)
 {
 	int ret;
@@ -64,14 +109,16 @@ static int __init zmc_memory_init(struct reserved_mem *rmem)
 	pr_alert("%s, name: %s, base: %pa, size: %pa\n", __func__,
 			rmem->name, &rmem->base, &rmem->size);
 
-	if (rmem->base < (phys_addr_t)ZMC_MAX_ZONE_DMA_PHYS) {
+	if (rmem->base < zmc_max_zone_dma_phys) {
 		pr_warn("[Fail] Unsupported memory range under 0x%lx (DMA max range).\n",
-				(unsigned long)ZMC_MAX_ZONE_DMA_PHYS);
+				(unsigned long)zmc_max_zone_dma_phys);
 		pr_warn("Abort reserve memory.\n");
 		memblock_free(rmem->base, rmem->size);
 		memblock_add(rmem->base, rmem->size);
 		return -1;
 	}
+
+	check_and_fix_base(rmem);
 
 	/*
 	 * Init CMAs -
