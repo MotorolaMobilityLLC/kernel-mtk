@@ -625,6 +625,10 @@ struct musb {
 	u32 error_wQmuVal;
 	u32 error_wErrVal;
 #endif
+
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+	u32 bus_event;
+#endif
 };
 
 static inline struct musb *gadget_to_musb(struct usb_gadget *g)
@@ -832,6 +836,9 @@ static inline int mtk_is_host_mode(void)
 #ifdef CONFIG_USB_C_SWITCH
 extern int typec_switch_usb_disconnect(void *data);
 extern int typec_switch_usb_connect(void *data);
+#endif
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+extern int musb_notify_md_bus_event(struct musb *musb, u32 bus_event);
 #endif
 extern int mu3d_force_on;
 extern void mt_usb_connect(void);

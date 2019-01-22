@@ -1062,6 +1062,10 @@ struct rndis_function_config {
 	/* "Wireless" RNDIS; auto-detected by Windows */
 	bool	wceis;
 	struct eth_dev *dev;
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+	bool	direct_feature_on;
+	u8      direct_value;
+#endif
 };
 
 static int
@@ -1119,8 +1123,12 @@ rndis_function_bind_config(struct android_usb_function *f,
 		rndis_control_intf.bInterfaceProtocol =	 0x03;
 	}
 
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
 	return rndis_bind_config_vendor(c, rndis->ethaddr, rndis->vendorID,
-					   rndis->manufacturer, rndis->dev);
+		   rndis->manufacturer, rndis->dev, rndis->direct_feature_on, rndis->direct_value);
+#else
+	return rndis_bind_config_vendor(c, rndis->ethaddr, rndis->vendorID, rndis->manufacturer, rndis->dev);
+#endif
 }
 
 static void rndis_function_unbind_config(struct android_usb_function *f,
@@ -1241,12 +1249,95 @@ static ssize_t rndis_vendorID_store(struct device *dev,
 
 static DEVICE_ATTR(vendorID, S_IRUGO | S_IWUSR, rndis_vendorID_show,
 						rndis_vendorID_store);
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+static ssize_t rndis_direct_feature_on_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct android_usb_function *f = dev_get_drvdata(dev);
+	struct rndis_function_config *config = f->config;
+
+	return sprintf(buf, "%d\n", config->direct_feature_on);
+}
+
+static ssize_t rndis_direct_feature_on_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct android_usb_function *f = dev_get_drvdata(dev);
+	struct rndis_function_config *config = f->config;
+	int value;
+	int ret;
+
+	ret = kstrtoint(buf, 10, &value);
+	if (ret)
+		return -EINVAL;
+
+	if (value > 0)
+		config->direct_feature_on = true;
+	else
+		config->direct_feature_on = false;
+	return size;
+}
+
+static DEVICE_ATTR(direct_feature_on, S_IRUGO | S_IWUSR, rndis_direct_feature_on_show,
+						rndis_direct_feature_on_store);
+
+static ssize_t rndis_direct_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct android_usb_function *android_f = dev_get_drvdata(dev);
+	struct rndis_function_config *config = android_f->config;
+
+	if (config != NULL)
+		return sprintf(buf, "%d\n", config->direct_value);
+	else
+		return sprintf(buf, "%d\n", 0);
+}
+
+static ssize_t rndis_direct_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct android_usb_function *android_f = dev_get_drvdata(dev);
+	struct rndis_function_config *config = android_f->config;
+	struct android_dev *pdev = _android_dev;
+	struct usb_composite_dev *cdev = pdev->cdev;
+	struct usb_function		*f;
+	int value;
+	int ret;
+
+	ret = kstrtoint(buf, 10, &value);
+	if (ret)
+		return -1;
+
+	pr_info("%s value:%d\n", __func__, value);
+	if (config != NULL && value != config->direct_value) {
+		config->direct_value = value;
+		if (cdev->config != NULL) {
+			list_for_each_entry(f, &cdev->config->functions, list) {
+				if (f != NULL && !strcmp(f->name, "rndis")) {
+					if (value == 0)
+						rndis_set_direct_tethering(f, false);
+					else if (value == 1)
+						rndis_set_direct_tethering(f, true);
+				}
+			}
+		}
+	}
+	return size;
+}
+
+static DEVICE_ATTR(direct, S_IRUGO | S_IWUSR, rndis_direct_show,
+						rndis_direct_store);
+#endif
 
 static struct device_attribute *rndis_function_attributes[] = {
 	&dev_attr_manufacturer,
 	&dev_attr_wceis,
 	&dev_attr_ethaddr,
 	&dev_attr_vendorID,
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+	&dev_attr_direct_feature_on,
+	&dev_attr_direct,
+#endif
 	NULL
 };
 

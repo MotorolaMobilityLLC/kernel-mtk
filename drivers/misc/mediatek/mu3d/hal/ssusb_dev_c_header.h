@@ -17,6 +17,7 @@
 #define U3D_LV1IER                                (SSUSB_DEV_BASE+0x0004)
 #define U3D_LV1IESR                               (SSUSB_DEV_BASE+0x0008)
 #define U3D_LV1IECR                               (SSUSB_DEV_BASE+0x000C)
+#define U3D_LV1IER_MD                             (SSUSB_DEV_BASE+0x0014)
 #define U3D_AXI_WR_DMA_CFG                        (SSUSB_DEV_BASE+0x0020)
 #define U3D_AXI_RD_DMA_CFG                        (SSUSB_DEV_BASE+0x0024)
 #define U3D_MAC_U1_EN_CTRL                        (SSUSB_DEV_BASE+0x0030)
@@ -317,6 +318,14 @@
 #define U3D_CAP_RX_SLOT3                          (SSUSB_DEV_BASE+0x0C38)
 #define U3D_CAP_RX_SLOT4                          (SSUSB_DEV_BASE+0x0C3C)
 #define U3D_MISC_CTRL                             (SSUSB_DEV_BASE+0x0C84)
+
+#define U3D_QRCR0                                 (SSUSB_DEV_BASE+0x0A00)
+#define U3D_QRCR1                                 (SSUSB_DEV_BASE+0x0A04)
+#define U3D_QDIDR                                 (SSUSB_DEV_BASE+0x0A08)
+#define U3D_QRBR0                                 (SSUSB_DEV_BASE+0x0B00)
+#define U3D_QRBR1                                 (SSUSB_DEV_BASE+0x0B04)
+#define U3D_QRBR2                                 (SSUSB_DEV_BASE+0x0B08)
+#define U3D_QRBR3                                 (SSUSB_DEV_BASE+0x0B0c)
 
 /* SSUSB_DEV FIELD DEFINITION */
 

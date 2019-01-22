@@ -40,7 +40,49 @@
 	module_param(host_addr, charp, S_IRUGO|S_IWUSR);			\
 	MODULE_PARM_DESC(host_addr, "Host Ethernet Address")
 
-struct eth_dev;
+struct eth_dev {
+	/* lock is held while accessing port_usb
+	 */
+	spinlock_t		lock;
+	struct gether		*port_usb;
+
+	struct net_device	*net;
+	struct usb_gadget	*gadget;
+
+	spinlock_t		req_lock;	/* guard {tx}_reqs */
+	spinlock_t		reqrx_lock;	/* guard {rx}_reqs */
+	struct list_head	tx_reqs, rx_reqs;
+	unsigned		tx_qlen;
+/* Minimum number of TX USB request queued to UDC */
+#define TX_REQ_THRESHOLD	5
+	int			no_tx_req_used;
+	int			tx_skb_hold_count;
+	u32			tx_req_bufsize;
+
+	struct sk_buff_head	rx_frames;
+
+	unsigned		qmult;
+
+	unsigned		header_len;
+	unsigned int		ul_max_pkts_per_xfer;
+	unsigned int		dl_max_pkts_per_xfer;
+	uint32_t		dl_max_xfer_size;
+
+	struct sk_buff		*(*wrap)(struct gether *, struct sk_buff *skb);
+	int			(*unwrap)(struct gether *,
+						struct sk_buff *skb,
+						struct sk_buff_head *list);
+
+	struct work_struct	work;
+	struct work_struct	rx_work;
+	struct work_struct	rx_work1;
+	unsigned long		todo;
+#define	WORK_RX_MEMORY		0
+
+	bool			zlp;
+	u8			host_mac[ETH_ALEN];
+	u8			dev_mac[ETH_ALEN];
+};
 
 /*
  * This represents the USB side of an "ethernet" link, managed by a USB
@@ -289,5 +331,9 @@ extern unsigned long rndis_test_tx_stop;
 
 extern unsigned long rndis_test_tx_usb_out;
 extern unsigned long rndis_test_tx_complete;
+
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+extern void rx_fill(struct eth_dev *dev, gfp_t gfp_flags);
+#endif
 
 #endif /* __U_ETHER_H */

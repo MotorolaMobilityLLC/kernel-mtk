@@ -120,6 +120,10 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+#include "mtk_gadget.h"
+#endif
+
 #define TA_WAIT_BCON(m) max_t(int, (m)->a_wait_bcon, OTG_TIME_A_WAIT_BCON)
 
 
@@ -503,6 +507,10 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u32 int_usb, u8 devctl, u8
 		dev_notice(musb->controller, "RESUME (%s)\n",
 			   usb_otg_state_string(musb->xceiv->otg->state));
 
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+		musb->bus_event = UFPM_BUS_STATE_RESUME;
+#endif
+
 		/* We implement device mode only. */
 		switch (musb->xceiv->otg->state) {
 		case OTG_STATE_A_SUSPEND:
@@ -528,7 +536,7 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u32 int_usb, u8 devctl, u8
 			musb->int_usb &= ~SUSPEND_INTR;
 			break;
 		default:
-			WARNING("bogus %s RESUME (%s)\n",
+			dev_warn(musb->controller, "bogus %s RESUME (%s)\n",
 				"peripheral", usb_otg_state_string(musb->xceiv->otg->state));
 		}
 	}
@@ -630,6 +638,10 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u32 int_usb, u8 devctl, u8
 		dev_notice(musb->controller, "SUSPEND (%s) devctl %02x power %02x\n",
 			   usb_otg_state_string(musb->xceiv->otg->state), devctl, power);
 		handled = IRQ_HANDLED;
+
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+		musb->bus_event = UFPM_BUS_STATE_SUSPEND;
+#endif
 
 		switch (musb->xceiv->otg->state) {
 		case OTG_STATE_A_PERIPHERAL:
@@ -800,7 +812,7 @@ b_host:
 			musb_g_disconnect(musb);
 			break;
 		default:
-			WARNING("unhandled DISCONNECT transition (%s)\n",
+			dev_warn(musb->controller, "unhandled DISCONNECT transition (%s)\n",
 				usb_otg_state_string(musb->xceiv->otg->state));
 			break;
 		}
@@ -811,6 +823,10 @@ b_host:
 	 */
 	if (int_usb & RESET_INTR) {
 		handled = IRQ_HANDLED;
+
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+		musb->bus_event = UFPM_BUS_STATE_RESET;
+#endif
 
 		mu3d_hal_pdn_ip_port(1, 0, 1, 1);
 
@@ -2038,6 +2054,13 @@ static void musb_irq_work(struct work_struct *data)
 		sysfs_notify(&musb->controller->kobj, NULL, "mode");
 	}
 
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+	if (musb->bus_event != UFPM_BUS_STATE_NONE) {
+		os_printk(K_INFO, "%s: bus event %d\n", __func__, musb->bus_event);
+		musb_notify_md_bus_event(musb, musb->bus_event);
+		musb->bus_event = UFPM_BUS_STATE_NONE;
+	}
+#endif
 }
 
 const struct hc_driver musb_hc_driver = {
@@ -2294,6 +2317,10 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 	INIT_WORK(&musb->irq_work, musb_irq_work);
 
 	INIT_WORK(&musb->suspend_work, musb_suspend_work);
+
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+	musb->bus_event = UFPM_BUS_STATE_NONE;
+#endif
 
 #ifdef USE_SSUSB_QMU
 	tasklet_init(&musb->qmu_done, qmu_done_tasklet, (unsigned long)musb);

@@ -2256,6 +2256,46 @@ void composite_resume(struct usb_gadget *gadget)
 	cdev->suspended = 0;
 }
 
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+static int
+composite_md_msg_hdlr(struct usb_gadget *gadget, int msg_id, void *data)
+{
+	struct usb_composite_dev *cdev = get_gadget_data(gadget);
+	struct usb_function      *f;
+	int handled = 0;
+
+	if (cdev->config) {
+		list_for_each_entry(f, &cdev->config->functions, list) {
+			if (f->md_msg_hdlr) {
+				if (f->md_msg_hdlr(f, msg_id, data)) {
+					handled = 1;
+					break;
+				}
+			}
+		}
+	}
+	return handled;
+}
+
+static bool
+composite_md_status_qry(struct usb_gadget *gadget)
+{
+	struct usb_composite_dev *cdev = get_gadget_data(gadget);
+	struct usb_function      *f;
+
+	if (cdev != NULL && cdev->config != NULL) {
+		list_for_each_entry(f, &cdev->config->functions, list) {
+			if (f->md_status_qry) {
+				if (f->md_status_qry(f))
+					return true;
+			}
+		}
+	}
+	return false;
+}
+
+#endif
+
 /*-------------------------------------------------------------------------*/
 
 static const struct usb_gadget_driver composite_driver_template = {
@@ -2268,7 +2308,10 @@ static const struct usb_gadget_driver composite_driver_template = {
 
 	.suspend	= composite_suspend,
 	.resume		= composite_resume,
-
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+	.md_msg_hdlr = composite_md_msg_hdlr,
+	.md_status_qry = composite_md_status_qry,
+#endif
 	.driver	= {
 		.owner		= THIS_MODULE,
 	},

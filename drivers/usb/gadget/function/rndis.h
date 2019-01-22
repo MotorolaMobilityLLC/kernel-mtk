@@ -198,7 +198,11 @@ typedef struct rndis_params
 } rndis_params;
 
 /* RNDIS Message parser and other useless functions */
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+int  rndis_msg_parser(struct rndis_params *params, u8 *buf, u8 direct_state, struct usb_ctrlrequest *ctrl_req);
+#else
 int  rndis_msg_parser(struct rndis_params *params, u8 *buf);
+#endif
 struct rndis_params *rndis_register(void (*resp_avail)(void *v), void *v);
 void rndis_deregister(struct rndis_params *params);
 int  rndis_set_param_dev(struct rndis_params *params, struct net_device *dev,
@@ -219,5 +223,8 @@ int  rndis_signal_connect(struct rndis_params *params);
 int  rndis_signal_disconnect(struct rndis_params *params);
 int  rndis_state(struct rndis_params *params);
 extern void rndis_set_host_mac(struct rndis_params *params, const u8 *addr);
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+void rndis_set_direct_tethering(struct usb_function *f, bool direct);
+#endif
 
 #endif  /* _LINUX_RNDIS_H */

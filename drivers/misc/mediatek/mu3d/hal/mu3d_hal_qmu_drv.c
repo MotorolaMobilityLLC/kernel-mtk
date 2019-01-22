@@ -1125,8 +1125,10 @@ void mu3d_hal_start_qmu(DEV_INT32 Q_num, USB_DIR dir)
 	if (dir == USB_TX) {
 		txcsr = USB_ReadCsr32(U3D_TX1CSR0, Q_num) & 0xFFFEFFFF;
 		USB_WriteCsr32(U3D_TX1CSR0, Q_num, txcsr | TX_DMAREQEN);
+
 		QCR = os_readl(U3D_QCR0);
 		os_writel(U3D_QCR0, QCR | QMU_TX_CS_EN(Q_num));
+
 #if (TXZLP == HW_MODE)
 		QCR = os_readl(U3D_QCR1);
 		os_writel(U3D_QCR1, QCR & ~QMU_TX_ZLP(Q_num));
@@ -1152,6 +1154,7 @@ void mu3d_hal_start_qmu(DEV_INT32 Q_num, USB_DIR dir)
 	} else if (dir == USB_RX) {
 		USB_WriteCsr32(U3D_RX1CSR0, Q_num,
 			       USB_ReadCsr32(U3D_RX1CSR0, Q_num) | (RX_DMAREQEN));
+
 		QCR = os_readl(U3D_QCR0);
 		os_writel(U3D_QCR0, QCR | QMU_RX_CS_EN(Q_num));
 
@@ -1186,6 +1189,7 @@ void mu3d_hal_start_qmu(DEV_INT32 Q_num, USB_DIR dir)
 
 		qmu_printk(K_DEBUG, "USB_QMU_RQCSR:0x%08X\n", os_readl(USB_QMU_RQCSR(Q_num)));
 	}
+
 #if (CHECKSUM_TYPE == CS_16B)
 	os_writel(U3D_QCR0, os_readl(U3D_QCR0) | CS16B_EN);
 #else
@@ -1202,33 +1206,49 @@ void mu3d_hal_stop_qmu(DEV_INT32 q_num, USB_DIR dir)
 	if (dir == USB_TX) {
 		if (!(os_readl(USB_QMU_TQCSR(q_num)) & (QMU_Q_ACTIVE))) {
 			qmu_printk(K_INFO, "Tx%d inActive Now!\n", q_num);
-			return;
+		} else {
+			os_writel(USB_QMU_TQCSR(q_num), QMU_Q_STOP);
+			mb();
+			if (wait_for_value(USB_QMU_TQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
+				qmu_printk(K_CRIT, "Tx%d stop Now! CSR=0x%x\n",
+					   q_num, os_readl(USB_QMU_TQCSR(q_num)));
+			else {
+				qmu_printk(K_CRIT, "Tx%d UNSTOPABLE!! CSR=0x%x\n",
+					   q_num, os_readl(USB_QMU_TQCSR(q_num)));
+				WARN_ON(1);
+			}
 		}
-		os_writel(USB_QMU_TQCSR(q_num), QMU_Q_STOP);
-		mb();
-		if (wait_for_value(USB_QMU_TQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
-			qmu_printk(K_INFO, "Tx%d stop Now! CSR=0x%x\n", q_num,
-				   os_readl(USB_QMU_TQCSR(q_num)));
-		else {
-			qmu_printk(K_CRIT, "Tx%d UNSTOPABLE!! CSR=0x%x\n", q_num,
-				   os_readl(USB_QMU_TQCSR(q_num)));
-			WARN_ON(1);
-		}
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+		os_writel(U3D_QCR0, os_readl(U3D_QCR0)&~(QMU_TX_CS_EN(q_num)));
+		os_writel(U3D_QEMIESR, os_readl(U3D_QEMIESR)&~(QMU_TX_EMPTY(q_num)));
+		os_writel(U3D_TQERRIESR0, os_readl(U3D_TQERRIESR0)
+				  &~(QMU_TX_LEN_ERR(q_num))&~(QMU_TX_CS_ERR(q_num)));
+		qmu_printk(K_INFO, "Stop Tx%d qmu interrupt\n", q_num);
+#endif
 	} else if (dir == USB_RX) {
 		if (!(os_readl(USB_QMU_RQCSR(q_num)) & QMU_Q_ACTIVE)) {
 			qmu_printk(K_INFO, "Rx%d inActive Now!\n", q_num);
-			return;
+		} else {
+			os_writel(USB_QMU_RQCSR(q_num), QMU_Q_STOP);
+			mb();
+			if (wait_for_value(USB_QMU_RQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
+				qmu_printk(K_CRIT, "Rx%d stop Now! CSR=0x%x\n",
+					   q_num, os_readl(USB_QMU_RQCSR(q_num)));
+			else {
+				qmu_printk(K_CRIT, "Rx%d UNSTOPABLE!! CSR=0x%x\n",
+					   q_num, os_readl(USB_QMU_RQCSR(q_num)));
+				WARN_ON(1);
+			}
 		}
-		os_writel(USB_QMU_RQCSR(q_num), QMU_Q_STOP);
-		mb();
-		if (wait_for_value(USB_QMU_RQCSR(q_num), QMU_Q_ACTIVE, 0, 10, 100) == RET_SUCCESS)
-			qmu_printk(K_INFO, "Rx%d stop Now! CSR=0x%x\n", q_num,
-				   os_readl(USB_QMU_RQCSR(q_num)));
-		else {
-			qmu_printk(K_CRIT, "Rx%d UNSTOPABLE!! CSR=0x%x\n", q_num,
-				   os_readl(USB_QMU_RQCSR(q_num)));
-			WARN_ON(1);
-		}
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+		os_writel(U3D_QCR0, os_readl(U3D_QCR0)&~(QMU_RX_CS_EN(q_num)));
+		os_writel(U3D_QEMIESR, os_readl(U3D_QEMIESR)&~(QMU_RX_EMPTY(q_num)));
+		os_writel(U3D_RQERRIESR0, os_readl(U3D_RQERRIESR0)
+				  &~(QMU_RX_CS_ERR(q_num))&~(QMU_RX_LEN_ERR(q_num)));
+		os_writel(U3D_RQERRIESR1, os_readl(U3D_RQERRIESR1)
+				  &~(QMU_RX_ZLP_ERR(q_num))&~(QMU_RX_EP_ERR(q_num)));
+		qmu_printk(K_INFO, "Stop Rx%d qmu interrupt\n", q_num);
+#endif
 	}
 }
 
@@ -1395,6 +1415,23 @@ void mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 		/* os_printk(K_ERR,"RxQ %d Flush Now!\n", Q_num); */
 	}
 }
+
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+bool _ex_mu3d_hal_qmu_status_done(DEV_INT32 Q_num, USB_DIR dir)
+{
+	qmu_printk(K_CRIT, "%s QMU status %s-EP[%d]\n", __func__, ((dir == USB_TX)?"TX":"RX"), Q_num);
+
+	if (dir == USB_TX) {
+		if (Tx_gpd_end[Q_num] == Tx_gpd_last[Q_num])
+			return true;
+	} else if (dir == USB_RX) {
+		if (Rx_gpd_end[Q_num] == Rx_gpd_last[Q_num])
+			return true;
+	}
+
+	return false;
+}
+#endif
 
 void mu3d_reset_gpd_resource(void)
 {
