@@ -176,7 +176,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 
 	if (scp_id == SCP_A_ID) {
 		/*Send IPI to SCP A */
-		if (is_scp_A_ready() == 0) {
+		if (is_scp_ready(SCP_A_ID) == 0) {
 			pr_err("scp_ipi_send: SCP A not enabled\n");
 			return ERROR;
 		}
@@ -217,10 +217,14 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			return BUSY;
 		}
 
+		/* keep scp awake for sram copy*/
+		scp_awake_lock(SCP_A_ID);
+
 		/*get scp ipi mutex owner*/
 		scp_A_ipi_mutex_owner = id;
 
 		if ((GIPC_TO_SCP_REG & HOST_TO_SCP_A) > 0) {
+			scp_awake_unlock(SCP_A_ID);
 			mutex_unlock(&scp_A_ipi_mutex);
 			/*avoid scp ipi send log print too much*/
 			if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
@@ -248,13 +252,14 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			while ((GIPC_TO_SCP_REG & HOST_TO_SCP_A) > 0)
 				;
 		/*send host to scp ipi cpmplete, unlock mutex*/
+		scp_awake_unlock(SCP_A_ID);
 		mutex_unlock(&scp_A_ipi_mutex);
 
 		pr_debug("scp_ipi_send: SCP A ipi send id = %d done\n", id);
 
 	} else {
 		/*Send IPI to SCP B*/
-		if (is_scp_B_ready() == 0) {
+		if (is_scp_ready(SCP_B_ID) == 0) {
 			pr_err("scp_ipi_send: SCP B not enabled\n");
 			return ERROR;
 		}
@@ -295,11 +300,15 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			return BUSY;
 		}
 
+		/* keep scp awake for sram copy*/
+		scp_awake_lock(SCP_B_ID);
+
 		/*get scp ipi mutex owner
 		 */
 		scp_B_ipi_mutex_owner = id;
 
 		if ((GIPC_TO_SCP_REG & HOST_TO_SCP_A) > 0) {
+			scp_awake_unlock(SCP_B_ID);
 			mutex_unlock(&scp_B_ipi_mutex);
 			/*avoid scp ipi send log print too much*/
 			if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
@@ -327,6 +336,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 			while ((GIPC_TO_SCP_REG & HOST_TO_SCP_B) > 0)
 				;
 		/*send host to scp ipi cpmplete, unlock mutex*/
+		scp_awake_unlock(SCP_B_ID);
 		mutex_unlock(&scp_B_ipi_mutex);
 
 		pr_debug("scp_ipi_send: SCP B ipi send id = %d done\n", id);
