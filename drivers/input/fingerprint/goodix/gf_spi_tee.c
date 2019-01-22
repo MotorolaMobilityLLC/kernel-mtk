@@ -789,7 +789,9 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #else
 		/* register screen on/off callback */
 		gf_dev->notifier.notifier_call = gf_fb_notifier_callback;
-		fb_register_client(&gf_dev->notifier);
+		retval = fb_register_client(&gf_dev->notifier);
+		if (retval)
+			gf_debug(ERR_LOG, "%s register fb failed, retval=%d\n", __func__, retval);
 #endif
 
 		gf_dev->sig_count = 0;
@@ -1170,7 +1172,9 @@ static ssize_t gf_debug_store(struct device *dev,
 #else
 		/* register screen on/off callback */
 		gf_dev->notifier.notifier_call = gf_fb_notifier_callback;
-		fb_register_client(&gf_dev->notifier);
+		retval = fb_register_client(&gf_dev->notifier);
+		if (retval)
+			gf_debug(ERR_LOG, "%s register fb failed, retval=%d\n", __func__, retval);
 #endif
 
 		gf_dev->sig_count = 0;
