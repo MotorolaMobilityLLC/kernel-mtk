@@ -50,7 +50,9 @@
 #define ETB_RWD			0x24
 #define ETB_LAR			0xfb0
 
+#define DEM_DBGRST_ALL          0x28
 #define DEM_ATB_CLK		0x70
+#define DEM_DBGRST_ALL_TRACER   0x5C
 
 #define REPLICATOR1_BASE	0x7000
 #define REPLICATOR_LAR		0xfb0
