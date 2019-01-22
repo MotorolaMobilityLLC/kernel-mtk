@@ -278,6 +278,8 @@ static struct fdvt_device *fdvt_devs;
 static int nr_fdvt_devs;
 #endif
 
+bool haveConfig;
+
 void FDVT_basic_config(void)
 {
 	FDVT_WR32(0x00000111, FDVT_ENABLE);
@@ -721,14 +723,18 @@ static long FDVT_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case FDVT_IOC_INIT_SETPARA_CMD:
 		LOG_DBG("[FDVT] FDVT_INIT_CMD\n");
+		haveConfig = 0;
 		FDVT_basic_config();
 		break;
 	case FDVT_IOC_STARTFD_CMD:
 		/* LOG_DBG("[FDVT] FDVTIOC_STARTFD_CMD\n"); */
-		FDVT_WR32(0x00000001, FDVT_INT_EN);
-		FDVT_WR32(0x00000000, FDVT_START);
-		FDVT_WR32(0x00000001, FDVT_START);
-		FDVT_WR32(0x00000000, FDVT_START);
+		if (haveConfig) {
+			FDVT_WR32(0x00000001, FDVT_INT_EN);
+			FDVT_WR32(0x00000000, FDVT_START);
+			FDVT_WR32(0x00000001, FDVT_START);
+			FDVT_WR32(0x00000000, FDVT_START);
+			haveConfig = 0;
+		}
 		/* FDVT_DUMPREG(); */
 		break;
 	case FDVT_IOC_G_WAITIRQ:
@@ -740,11 +746,13 @@ static long FDVT_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		/* LOG_DBG("[FDVT] FDVT set FD config\n"); */
 		FaceDetecteConfig();  /* LDVT Disable, Due to the different feature number between FD/SD/BD/REC */
 		FDVT_SetRegHW((FDVTRegIO *)pBuff);
+		haveConfig = 1;
 		break;
 	case FDVT_IOC_T_SET_SDCONF_CMD:
 		/* LOG_DBG("[FDVT] FDVT set SD config\n"); */
 		SmileDetecteConfig();
 		FDVT_SetRegHW((FDVTRegIO *)pBuff);
+		haveConfig = 1;
 		break;
 	case FDVT_IOC_G_READ_FDREG_CMD:
 		/* LOG_DBG("[FDVT] FDVT read FD config\n"); */
