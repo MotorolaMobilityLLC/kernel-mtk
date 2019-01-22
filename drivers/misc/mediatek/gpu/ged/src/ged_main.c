@@ -171,7 +171,10 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 				break;
 			case GED_BRIDGE_COMMAND_WAIT_HW_VSYNC:
 				pFunc = (ged_bridge_func_type *)ged_bridge_wait_hw_vsync;
-			break;
+				break;
+			case GED_BRIDGE_COMMAND_QUERY_TARGET_FPS:
+				pFunc = (ged_bridge_func_type *)ged_bridge_query_target_fps;
+				break;
 			case GED_BRIDGE_COMMAND_GE_ALLOC:
 				pFunc = (ged_bridge_func_type *)ged_bridge_ge_alloc;
 				break;

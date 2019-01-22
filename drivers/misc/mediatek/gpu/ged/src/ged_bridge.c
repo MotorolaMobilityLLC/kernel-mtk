@@ -94,11 +94,6 @@ int ged_bridge_monitor_3D_fence(
 		GED_BRIDGE_IN_MONITOR3DFENCE *psMonitor3DFenceINT,
 		GED_BRIDGE_OUT_MONITOR3DFENCE *psMonitor3DFenceOUT)
 {
-#ifdef MTK_FRR20
-	psMonitor3DFenceOUT->fps = ged_frr_table_get_fps(psMonitor3DFenceINT->pid, psMonitor3DFenceINT->cid);
-#else
-	psMonitor3DFenceOUT->fps = 0;
-#endif
 	psMonitor3DFenceOUT->eError = ged_monitor_3D_fence_add(psMonitor3DFenceINT->fd);
 	return 0;
 }
@@ -194,4 +189,11 @@ int ged_bridge_wait_hw_vsync(void)
 	return 0;
 }
 /* ----------------------------------------------------------------------------- */
+int ged_bridge_query_target_fps(
+	GED_BRIDGE_IN_QUERY_TARGET_FPS * in,
+	GED_BRIDGE_OUT_QUERY_TARGET_FPS *out)
+{
+	out->fps = ged_frr_table_get_fps(in->pid, in->cid);
+	return 0;
+}
 module_param(ged_boost_enable, uint, 0644);
