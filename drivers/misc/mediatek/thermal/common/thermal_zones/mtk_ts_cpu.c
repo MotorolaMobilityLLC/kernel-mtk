@@ -37,9 +37,8 @@
 #else
 #include <linux/clk.h>
 #endif
-#if !defined(CONFIG_MACH_MT6757)
-#include <mt_ptp.h>
-#endif
+
+
 /* #include <mach/mt_wtd.h> */
 #include <mach/wd_api.h>
 #include <mtk_gpu_utility.h>

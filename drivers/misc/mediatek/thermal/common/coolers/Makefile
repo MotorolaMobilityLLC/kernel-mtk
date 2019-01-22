@@ -109,7 +109,7 @@ obj-$(CONFIG_THERMAL) += mtk_ta.o
 
 
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6757" "kiboplus"))
 ifeq ($(CONFIG_MTK_THERMAL_PA_VIA_ATCMD),y)
     #obj-$(CONFIG_THERMAL) += mtk_cooler_amddulthro.o
     #obj-$(CONFIG_THERMAL) += mtk_cooler_amdtxctrl.o
