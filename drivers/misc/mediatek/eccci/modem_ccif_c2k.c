@@ -898,6 +898,11 @@ static int md_ccif_op_start(struct ccci_modem *md)
 		CCCI_BOOTUP_LOG(md->index, TAG, "modem capability 0x%x\n", md->capability);
 		md->config.setting &= ~MD_SETTING_FIRST_BOOT;
 	}
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	ccci_set_bsi_bpi_SRAM_cfg(md, 1, MD_FLIGHT_MODE_NONE);
+#endif
+
 #ifdef FEATURE_CLK_CG_CONTROL
 	/*enable ccif clk*/
 	ccci_set_clk_cg(md, 1);
@@ -962,14 +967,14 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	return ret;
 }
 
-static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
+static int md_ccif_op_stop(struct ccci_modem *md, unsigned int stop_type)
 {
 	int ret = 0;
 	int idx = 0;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is power off, timeout=%d\n", timeout);
-	ret = md_ccif_power_off(md, timeout);
+	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is power off, stop_type=%d\n", stop_type);
+	ret = md_ccif_power_off(md, stop_type);
 	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is power off done, %d\n", ret);
 	for (idx = 0; idx < QUEUE_NUM; idx++)
 		flush_work(&md_ctrl->rxq[idx].qwork);
@@ -983,13 +988,18 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 	/*disable ccif clk*/
 	ccci_set_clk_cg(md, 0);
 #endif
+
+#ifdef FEATURE_BSI_BPI_SRAM_CFG
+	ccci_set_bsi_bpi_SRAM_cfg(md, 0, stop_type);
+#endif
+
 	/*don't reset queue here, some queue may still have unread data */
 	/*md_ccif_reset_queue(md); */
 	ccci_md_broadcast_state(md, GATED);
 	return 0;
 }
 
-static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops)
+static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 

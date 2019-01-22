@@ -50,8 +50,8 @@ struct ccci_modem_ops {
 	/* must-have */
 	int (*init)(struct ccci_modem *md);
 	int (*start)(struct ccci_modem *md);
-	int (*pre_stop)(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops);
-	int (*stop)(struct ccci_modem *md, unsigned int timeout);
+	int (*pre_stop)(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops);
+	int (*stop)(struct ccci_modem *md, unsigned int stop_type);
 	int (*soft_start)(struct ccci_modem *md, unsigned int mode);
 	int (*soft_stop)(struct ccci_modem *md, unsigned int mode);
 	int (*send_skb)(struct ccci_modem *md, int txqno, struct sk_buff *skb, int skb_from_pool, int blocking);
@@ -277,16 +277,16 @@ static inline int ccci_md_broadcast_state(struct ccci_modem *md, MD_STATE state)
 {
 	return md->ops->broadcast_state(md, state);
 }
-static inline int ccci_md_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops)
+static inline int ccci_md_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops)
 {
 	/*WDT happened at bootup, need stop timer*/
 	ccci_md_stop_bootup_timer(md);
-	return md->ops->pre_stop(md, timeout, other_ops);
+	return md->ops->pre_stop(md, stop_type, other_ops);
 }
 
-static inline int ccci_md_stop(struct ccci_modem *md, unsigned int timeout)
+static inline int ccci_md_stop(struct ccci_modem *md, unsigned int stop_type)
 {
-	return md->ops->stop(md, 0);
+	return md->ops->stop(md, stop_type);
 }
 static inline int ccci_md_start(struct ccci_modem *md)
 {

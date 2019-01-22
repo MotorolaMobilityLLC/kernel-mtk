@@ -50,6 +50,11 @@ static int dev_char_open(struct inode *inode, struct file *file)
 		port_poller_start(status_poller);
 	}
 #endif
+	if (port->flags & PORT_F_CH_TRAFFIC) {
+		port->rx_pkg_cnt = 0;
+		port->rx_drop_cnt = 0;
+		port->tx_pkg_cnt = 0;
+	}
 	port_proxy_user_register(port->port_proxy, port);
 	return 0;
 }
@@ -60,20 +65,24 @@ static int dev_char_close(struct inode *inode, struct file *file)
 	struct sk_buff *skb = NULL;
 	unsigned long flags;
 	struct ccci_port *status_poller;
+	int clear_cnt = 0;
 
 	/* 0. decrease usage count, so when we ask more, the packet can be dropped in recv_request */
 	atomic_dec(&port->usage_cnt);
 	/* 1. purge Rx request list */
 	spin_lock_irqsave(&port->rx_skb_list.lock, flags);
-	while ((skb = __skb_dequeue(&port->rx_skb_list)) != NULL)
+	while ((skb = __skb_dequeue(&port->rx_skb_list)) != NULL) {
 		ccci_free_skb(skb);
+		clear_cnt++;
+	}
+	port->rx_drop_cnt += clear_cnt;
 	/*  flush Rx */
 	port_proxy_ask_more_req_to_md(port->port_proxy, port);
 	spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
-	CCCI_NORMAL_LOG(port->md_id, CHAR, "port %s close rx_len=%d empty=%d\n", port->name,
-		     port->rx_skb_list.qlen, skb_queue_empty(&port->rx_skb_list));
-	ccci_event_log("md%d: port %s close rx_len=%d empty=%d\n", port->md_id, port->name,
-		     port->rx_skb_list.qlen, skb_queue_empty(&port->rx_skb_list));
+	CCCI_NORMAL_LOG(port->md_id, CHAR, "port %s close rx_len=%d empty=%d, clear_cnt=%d, drop=%d\n", port->name,
+		     port->rx_skb_list.qlen, skb_queue_empty(&port->rx_skb_list), clear_cnt, port->rx_drop_cnt);
+	ccci_event_log("md%d: port %s close rx_len=%d empty=%d, clear_cnt=%d, drop=%d\n", port->md_id, port->name,
+		     port->rx_skb_list.qlen, skb_queue_empty(&port->rx_skb_list), clear_cnt, port->rx_drop_cnt);
 #ifdef FEATURE_POLL_MD_EN
 	if (port->rx_ch == CCCI_MD_LOG_RX && port_proxy_get_md_state(port->port_proxy) == READY) {
 		status_poller = port_proxy_get_port_by_channel(port->port_proxy, CCCI_STATUS_RX);
@@ -85,20 +94,46 @@ static int dev_char_close(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static void port_ch_dump(int md_id, char *str, void *msg_buf, int len)
+static void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len)
 {
-#if 0
-#define DUMP_BUF_SIZE 200
+#if 1
+#define DUMP_BUF_SIZE 32
 	unsigned char *char_ptr = (unsigned char *)msg_buf;
 	char buf[DUMP_BUF_SIZE];
 	int i, j;
+	u64 ts_nsec;
+	unsigned long rem_nsec;
+	char *replace_str;
 
 	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j + 4 < DUMP_BUF_SIZE; i++) {
 		if (((char_ptr[i] >= 32) && (char_ptr[i] <= 126))) {
 			buf[j++] = char_ptr[i];
+		} else if (char_ptr[i] == '\r' ||
+			char_ptr[i] == '\n' ||
+			char_ptr[i] == '\t') {
+			switch (char_ptr[i]) {
+			case '\r':
+				replace_str = "\\r";
+				break;
+			case '\n':
+				replace_str = "\\n";
+				break;
+			case '\t':
+				replace_str = "\\t";
+				break;
+			default:
+				replace_str = "";
+				break;
+			}
+			if (DUMP_BUF_SIZE - j > 2) {
+				snprintf(buf+j, DUMP_BUF_SIZE - j, "%s", replace_str);
+				j += 2;
+			} else {
+				buf[j++] = '.';
+			}
 		} else {
 			if (DUMP_BUF_SIZE - j > 4) {
-				snprintf(buf+j, DUMP_BUF_SIZE-j, "[%02X]", char_ptr[i]);
+				snprintf(buf+j, DUMP_BUF_SIZE - j, "[%02X]", char_ptr[i]);
 				j += 4;
 			} else {
 				buf[j++] = '.';
@@ -106,7 +141,16 @@ static void port_ch_dump(int md_id, char *str, void *msg_buf, int len)
 		}
 	}
 	buf[j] = '\0';
-	CCCI_NORMAL_LOG(md_id, CHAR, "%s %d>%s\n", str, len, buf);
+	ts_nsec = local_clock();
+	rem_nsec = do_div(ts_nsec, 1000000000);
+	if (dir == 0)
+		CCCI_HISTORY_LOG(port->md_id, CHAR, "[%5lu.%06lu]C:%d,%d(%d,%d,%d) %s: %d>%s\n",
+			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->rx_ch,
+			port->rx_skb_list.qlen, port->rx_pkg_cnt, port->rx_drop_cnt, "R", len, buf);
+	else
+		CCCI_HISTORY_LOG(port->md_id, CHAR, "[%5lu.%06lu]C:%d,%d(%d) %s: %d>%s\n",
+			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->tx_ch,
+			port->tx_pkg_cnt, "W", len, buf);
 #endif
 }
 
@@ -114,7 +158,6 @@ static ssize_t dev_char_read(struct file *file, char *buf, size_t count, loff_t 
 {
 	struct ccci_port *port = file->private_data;
 	struct sk_buff *skb = NULL;
-	struct ccci_header *ccci_h = NULL;
 	int ret = 0, read_len = 0, full_req_done = 0;
 	unsigned long flags = 0;
 
@@ -166,8 +209,8 @@ READ_START:
 		read_len = count;
 	}
 	spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
-	if (ccci_h && ccci_h->channel == CCCI_UART2_RX)
-		port_ch_dump(port->md_id, "chr_read", skb->data, read_len);
+	if (port->flags & PORT_F_CH_TRAFFIC)
+		port_ch_dump(port, 0, skb->data, read_len);
 	/* 3. copy to user */
 	if (copy_to_user(buf, skb->data, read_len)) {
 		CCCI_ERROR_LOG(port->md_id, CHAR, "read on %s, copy to user failed, %d/%zu\n", port->name,
@@ -245,8 +288,8 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			else
 				ccci_h->reserved = ret;	/* Unity ID */
 		}
-		if (ccci_h && ccci_h->channel == CCCI_UART2_TX) {
-			port_ch_dump(port->md_id, "chr_write", skb->data + sizeof(struct ccci_header),
+		if (port->flags & PORT_F_CH_TRAFFIC) {
+			port_ch_dump(port, 1, skb->data + sizeof(struct ccci_header),
 				     actual_count);
 		}
 
@@ -406,6 +449,10 @@ static int port_char_init(struct ccci_port *port)
 	port->interception = 0;
 	port->skb_from_pool = 1;
 	port->flags |= PORT_F_ADJUST_HEADER;
+
+	if (port->rx_ch == CCCI_UART2_RX)
+		port->flags |= PORT_F_CH_TRAFFIC;
+
 	return ret;
 }
 
@@ -500,11 +547,23 @@ static void port_char_md_state_notice(struct ccci_port *port, MD_STATE state)
 	if (port->rx_ch == CCCI_SMEM_CH && state == RX_IRQ)
 		port_smem_rx_wakeup(port);
 }
-
+void port_char_dump_info(struct ccci_port *port, unsigned int flag)
+{
+	if (port == NULL) {
+		CCCI_ERROR_LOG(0, CHAR, "%s: port==NULL\n", __func__);
+		return;
+	}
+	if (port->flags & PORT_F_CH_TRAFFIC)
+		CCCI_REPEAT_LOG(port->md_id, CHAR, "CHR:(%d):%d_RX(%d, %d, %d):%d_TX(%d)\n",
+			port->flags,
+			port->rx_ch, port->rx_skb_list.qlen, port->rx_pkg_cnt, port->rx_drop_cnt,
+			port->tx_ch, port->tx_pkg_cnt);
+}
 struct ccci_port_ops char_port_ops = {
 	.init = &port_char_init,
 	.recv_skb = &port_char_recv_skb,
 	.recv_match = &port_char_recv_match,
 	.md_state_notice = &port_char_md_state_notice,
+	.dump_info = &port_char_dump_info,
 };
 

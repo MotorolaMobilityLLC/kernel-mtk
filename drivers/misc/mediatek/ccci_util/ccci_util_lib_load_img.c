@@ -154,7 +154,7 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 					md_size_check = true;
 				} else if (head->mem_size < md_size) {
 					md_size_check = true;
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 								  "[Warning]md size in md header isn't sync to DFO setting: (%08x, %08x)\n",
 								  head->mem_size, md_size);
 				}
@@ -182,19 +182,19 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 			if (md_type_check && md_plat_check && md_sys_match && md_size_check) {
 				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Modem header check OK!\n");
 			} else {
-				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Error]Modem header check fail!\n");
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]Modem header check fail!\n");
 				if (!md_type_check)
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Reason]MD type(2G/3G) mis-match to AP!\n");
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Reason]MD type(2G/3G) mis-match to AP!\n");
 
 				if (!md_plat_check)
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Reason]MD platform mis-match to AP!\n");
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Reason]MD platform mis-match to AP!\n");
 
 				if (!md_sys_match)
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Reason]MD image is not for MD SYS%d!\n",
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Reason]MD image is not for MD SYS%d!\n",
 								  md_id + 1);
 
 				if (!md_size_check)
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 								  "[Reason]MD mem size mis-match to AP setting!\n");
 
 				ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
@@ -223,7 +223,7 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 						aed_md_exception_api(NULL, 0, (const int *)info, sizeof(info),
 							(const char *)title, DB_OPT_DEFAULT);
 #endif
-						CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+						CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 									  "[Reason]MD image size mis-match to AP!\n");
 						ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
 					}
@@ -242,10 +242,10 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 				if (image->dsp_offset == 0xCDCDCDAA) {
 					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "DSP on EMI disabled\n");
 				} else if (((image->dsp_offset&0xFFFF) != 0) && (head->header_verno == 3)) {
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "DSP image offset not 64KB align\n");
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "DSP image offset not 64KB align\n");
 					ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
 				} else if (image->dsp_offset + image->dsp_size > md_size) {
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "DSP image size too large %x\n", md_size);
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "DSP image size too large %x\n", md_size);
 					ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
 				}
 			} else {
@@ -567,7 +567,7 @@ static int check_md_header(int md_id, void *parse_addr, struct ccci_image_info *
 					md_size_check = true;
 				} else if (head->mem_size < md_size) {
 					md_size_check = true;
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 								  "[Warning]md size in md header isn't sync to DFO setting: (%08x, %08x)\n",
 								  head->mem_size, md_size);
 				}
@@ -590,21 +590,21 @@ static int check_md_header(int md_id, void *parse_addr, struct ccci_image_info *
 			image->img_info.version = head->product_ver;
 
 			if (md_type_check && md_plat_check && md_sys_match && md_size_check) {
-				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Modem header check OK!\n");
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Modem header check OK!\n");
 			} else {
-				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Error]Modem header check fail!\n");
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]Modem header check fail!\n");
 				if (!md_type_check)
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Reason]MD type(2G/3G) mis-match to AP!\n");
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Reason]MD type(2G/3G) mis-match to AP!\n");
 
 				if (!md_plat_check)
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Reason]MD platform mis-match to AP!\n");
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Reason]MD platform mis-match to AP!\n");
 
 				if (!md_sys_match)
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Reason]MD image is not for MD SYS%d!\n",
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Reason]MD image is not for MD SYS%d!\n",
 								  md_id + 1);
 
 				if (!md_size_check)
-					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+					CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 								  "[Reason]MD mem size mis-match to AP setting!\n");
 
 				ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
@@ -621,14 +621,13 @@ static int check_md_header(int md_id, void *parse_addr, struct ccci_image_info *
 					if (image->size >= head->md_img_size)
 						image->size = head->md_img_size;
 					else {
-						CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+						CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 									  "[Reason]MD image size mis-match to AP!\n");
 						ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
 					}
 					image->ap_info.md_img_size = image->size;
 					image->img_info.md_img_size = head->md_img_size;
 				}
-				/* else {image->size -= 0x1A0;}  workaround for md not check in check header */
 				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "(MD)[img_size]=%x, (AP)[img_size]=%x\n",
 							  head->md_img_size, image->size);
 			}
@@ -815,22 +814,21 @@ TRY_LOAD_IMG:
 	load_addr = img->address;
 	CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Not cipher image: %s Firmware:size=%zu, img_size=%d\n",
 		img_name, fw_entry->size, img->size);
-
 	while (1) {
-		/*  Map 1M memory */
+		if (read_size + size_per_read > img->size)
+			size_per_read = img->size - read_size;
+		else
+			size_per_read = MAX_REMAP_SIZE;
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Firmware:read_size=%d, size_per_read=%d\n", read_size, size_per_read);
-		start = ioremap_nocache((load_addr + read_size), MAX_REMAP_SIZE);
+		/* size_per_read 8 bytes aligned remap memory */
+		start = ioremap_nocache((load_addr + read_size), roundup(size_per_read, 8));
 		if (start == 0) {
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail %d\n",
 						(unsigned int)(load_addr + read_size));
 			ret = -CCCI_ERR_LOAD_IMG_NOMEM;
 			goto out;
 		}
-		if (read_size + size_per_read > img->size - img->tail_length)
-			size_per_read = img->size - img->tail_length - read_size;
-		else
-			size_per_read = MAX_REMAP_SIZE;
-		memcpy(start, (void *)(img_data_ptr + read_size), size_per_read);
+		memcpy(start, fw_entry->data + read_size, size_per_read);
 		iounmap(start);
 		start = NULL;
 		read_size += size_per_read;
@@ -863,7 +861,7 @@ TRY_LOAD_IMG:
 
 	/* Construct image information string */
 	if (img->type == IMG_MD) {
-		sprintf(img_str, "MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
+		snprintf(img_str, sizeof(md_img_info_str[md_id]), "MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
 			img->img_info.image_type, img->img_info.platform,
 			img->img_info.build_ver, img->img_info.build_time,
 			img->img_info.product_ver, img->ap_info.image_type,
@@ -897,38 +895,6 @@ TRY_LOAD_IMG:
 
 	return ret;
 }
-
-#if 0
-int get_img_info(int md_id, int img_type, struct ccci_image_info *info_ptr)
-{
-	if ((md_id >= MAX_MD_NUM) || (info_ptr == NULL) || (img_type >= IMG_NUM))
-		return -1;
-
-	info_ptr->type = img_info[md_id][img_type].type;
-	memcpy(info_ptr->file_name, img_info[md_id][img_type].file_name, IMG_PATH_LEN);
-	info_ptr->address = img_info[md_id][img_type].address;
-	info_ptr->size = img_info[md_id][img_type].size;
-	info_ptr->offset = img_info[md_id][img_type].offset;
-	info_ptr->tail_length = img_info[md_id][img_type].tail_length;
-	info_ptr->ap_platform = img_info[md_id][img_type].ap_platform;
-
-	info_ptr->img_info.product_ver = img_info[md_id][img_type].img_info.product_ver;
-	info_ptr->img_info.image_type = img_info[md_id][img_type].img_info.image_type;
-	info_ptr->img_info.platform = img_info[md_id][img_type].img_info.platform;
-	info_ptr->img_info.build_time = img_info[md_id][img_type].img_info.build_time;
-	info_ptr->img_info.build_ver = img_info[md_id][img_type].img_info.build_ver;
-	info_ptr->img_info.mem_size = img_info[md_id][img_type].img_info.mem_size;
-
-	info_ptr->ap_info.product_ver = img_info[md_id][img_type].ap_info.product_ver;
-	info_ptr->ap_info.image_type = img_info[md_id][img_type].ap_info.image_type;
-	info_ptr->ap_info.platform = img_info[md_id][img_type].ap_info.platform;
-	info_ptr->ap_info.build_time = img_info[md_id][img_type].ap_info.build_time;
-	info_ptr->ap_info.build_ver = img_info[md_id][img_type].ap_info.build_ver;
-	info_ptr->ap_info.mem_size = img_info[md_id][img_type].ap_info.mem_size;
-
-	return 0;
-}
-#endif
 
 int ccci_init_security(void)
 {

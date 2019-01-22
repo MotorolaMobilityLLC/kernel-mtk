@@ -253,9 +253,8 @@ static void mdee_monitor2_func(unsigned long data)
 	if (ee_on_going)
 		return;
 
-	/* Dump MD register, only NO response case dump */
-	if (mdee->ee_case == MD_EE_CASE_NO_RESPONSE)
-		md_dump_flag = DUMP_FLAG_REG;
+	/* Dump MD register*/
+	md_dump_flag = DUMP_FLAG_REG;
 	if (mdee->ee_case == MD_EE_CASE_ONLY_SWINT)
 		md_dump_flag |= (DUMP_FLAG_QUEUE_0 | DUMP_FLAG_CCIF | DUMP_FLAG_CCIF_REG);
 	ccci_md_dump_info(mdee->md_obj, md_dump_flag, NULL, 0);
