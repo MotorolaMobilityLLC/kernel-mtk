@@ -32,3 +32,6 @@ struct power_tuning_t {
 
 
 extern struct power_tuning_t *get_eas_power_setting(void);
+
+/* Game Hint */
+extern void (*ged_kpi_set_game_hint_value_fp)(int is_game_mode);
