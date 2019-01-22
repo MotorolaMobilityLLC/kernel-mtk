@@ -64,6 +64,9 @@ endif
 obj-$(CONFIG_MACH_MT6757) += hps_v2/
 obj-$(CONFIG_MACH_MT6763) += hps_v3/
 obj-$(CONFIG_MACH_MT6799) += hps_v3/
+ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
+obj-$(CONFIG_MACH_MT6758) += hps_v3/
+endif
 obj-$(CONFIG_MACH_MT6759) += hps_v3/
 obj-$(CONFIG_MACH_KIBOPLUS) += hps_v2/
 obj-$(CONFIG_MACH_MT6757) += ppm_v2/
