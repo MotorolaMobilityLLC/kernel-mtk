@@ -40,7 +40,7 @@
 #endif
 
 
-#if defined(CONFIG_MTK_COMBO_FM)
+#if defined(CONFIG_MTK_FMRADIO)
 #define CFG_FUNC_FM_SUPPORT 1
 #else
 #define CFG_FUNC_FM_SUPPORT 0
