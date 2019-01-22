@@ -347,8 +347,7 @@ static struct file_system_type cpuset_fs_type = {
 /*
  * Return in pmask the portion of a cpusets's cpus_allowed that
  * are online.  If none are online, walk up the cpuset hierarchy
- * until we find one that does have some online cpus.  The top
- * cpuset always has some cpus online.
+ * until we find one that does have some online cpus.
  *
  * One way or another, we guarantee to return some non-empty subset
  * of cpu_online_mask.
@@ -358,11 +357,18 @@ static struct file_system_type cpuset_fs_type = {
 static void guarantee_online_cpus(struct cpuset *cs, struct cpumask *pmask)
 {
 	while (!cpumask_intersects(cs->effective_cpus, cpu_online_mask)) {
-		if (cs == &top_cpuset) {
+		cs = parent_cs(cs);
+		if (unlikely(!cs)) {
+			/*
+			 * The top cpuset doesn't have any online cpu as a
+			 * consequence of a race between cpuset_hotplug_work
+			 * and cpu hotplug notifier.  But we know the top
+			 * cpuset's effective_cpus is on its way to to be
+			 * identical to cpu_online_mask.
+			 */
 			cpumask_copy(pmask, cpu_online_mask);
 			return;
 		}
-		cs = parent_cs(cs);
 	}
 	cpumask_and(pmask, cs->effective_cpus, cpu_online_mask);
 }
@@ -2191,7 +2197,7 @@ static void cpuset_bind(struct cgroup_subsys_state *root_css)
  * which could have been changed by cpuset just after it inherits the
  * state from the parent and before it sits on the cgroup's task list.
  */
-void cpuset_fork(struct task_struct *task, void *private)
+void cpuset_fork(struct task_struct *task, void *priv)
 {
 	if (task_css_is_root(task, cpuset_cgrp_id))
 		return;
