@@ -374,7 +374,7 @@ int set_user_env(char *name, char *value)
 		return -1;
 	}
 	pr_debug("[%s]set user_env, name=%s,value=%s\n", MODULE_NAME, name, value);
-	sprintf(data, "%s %s=%s", TAG_SET_ENV, name, value);
+	snprintf(data, data_len, "%s %s=%s", TAG_SET_ENV, name, value);
 	ret = send_sysenv_msg(user_sysenv_pid, 0, data, data_len);
 	kfree(data);
 	return ret;
@@ -477,6 +477,7 @@ static int send_sysenv_msg(int pid, int seq, void *payload, int payload_len)
 		return -1;
 	if (len < payload_len) {
 		pr_err("[%s] payload is %d larger than skb len %d\n", MODULE_NAME, payload_len, len);
+		kfree_skb(skb);
 		return -1;
 	}
 	nlh = nlmsg_put(skb, pid, seq, 0, size, 0);
@@ -488,8 +489,6 @@ static int send_sysenv_msg(int pid, int seq, void *payload, int payload_len)
 	pr_debug("[%s] send %d data to user process(%d), ret = %d\n", MODULE_NAME, len, pid, ret);
 	if (ret < 0) {
 		pr_err("[%s] send failed\n", MODULE_NAME);
-		if (skb)
-			kfree_skb(skb);
 		return -1;
 	}
 	return 0;
