@@ -25,6 +25,10 @@
 #include <mtk_spm_vcore_dvfs.h>
 #include <mt-plat/upmu_common.h>
 
+#ifdef CONFIG_MTK_DCS
+#include <mt-plat/mtk_meminfo.h>
+#endif
+
 /**************************************
  * Config and Parameter
  **************************************/
@@ -766,6 +770,40 @@ u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
 		period = 36 * 3600;
 
 	return period;
+}
+
+int dcs_get_channel_lock(void)
+{
+#ifdef CONFIG_MTK_DCS
+	int ch = 0, ret = -1;
+	enum dcs_status dcs_status;
+
+	ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
+
+	if (!ret) {
+		spm_crit("dcs currnet channel number: %d, status: %d\n", ch, dcs_status);
+	} else {
+		spm_crit("dcs_get_dcs_status_lock busy\n");
+
+		return 4; /* FIXME */
+	}
+
+	return ch;
+#else
+	spm_crit("[%s] NOT SUPPORT DCS\n", __func__);
+
+	return 4; /* FIXME */
+#endif
+}
+
+void dcs_get_channel_unlock(void)
+{
+#ifdef CONFIG_MTK_DCS
+	dcs_get_dcs_status_unlock();
+
+#else
+	spm_crit("[%s] NOT SUPPORT DCS\n", __func__);
+#endif
 }
 
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");

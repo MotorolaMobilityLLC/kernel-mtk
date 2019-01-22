@@ -29,10 +29,6 @@
 
 #include <mt-plat/upmu_common.h>
 
-#ifdef CONFIG_MTK_DCS
-#include <mt-plat/mtk_meminfo.h>
-#endif
-
 #include <mtk_spm_misc.h>
 #include <mtk_spm_vcore_dvfs.h>
 #include <mtk_spm_internal.h>
@@ -586,33 +582,33 @@ static struct pwr_ctrl vcorefs_ctrl = {
 	.reg_csyspwreq_mask = 0,
 	.reg_md_srcclkena_0_infra_mask_b = 0,
 	.reg_md_srcclkena_1_infra_mask_b = 0,
-	.reg_md_apsrc_req_0_infra_mask_b = 1,
+	.reg_md_apsrc_req_0_infra_mask_b = 0,
 	.reg_md_apsrc_req_1_infra_mask_b = 0,
 	.reg_conn_srcclkena_infra_mask_b = 0,
-	.reg_conn_infra_req_mask_b = 1,
+	.reg_conn_infra_req_mask_b = 0,
 	.reg_sspm_srcclkena_infra_mask_b = 0,
-	.reg_sspm_infra_req_mask_b = 1,
+	.reg_sspm_infra_req_mask_b = 0,
 	.reg_scp_srcclkena_infra_mask_b = 0,
 	.reg_scp_infra_req_mask_b = 0,
 	.reg_srcclkeni0_infra_mask_b = 0,
 	.reg_srcclkeni1_infra_mask_b = 0,
 	.reg_srcclkeni2_infra_mask_b = 0,
-	.reg_ccif0_md_event_mask_b = 1,
-	.reg_ccif0_ap_event_mask_b = 1,
-	.reg_ccif1_md_event_mask_b = 1,
-	.reg_ccif1_ap_event_mask_b = 1,
-	.reg_ccif2_md_event_mask_b = 1,
-	.reg_ccif2_ap_event_mask_b = 1,
-	.reg_ccif3_md_event_mask_b = 1,
-	.reg_ccif3_ap_event_mask_b = 1,
+	.reg_ccif0_md_event_mask_b = 0,
+	.reg_ccif0_ap_event_mask_b = 0,
+	.reg_ccif1_md_event_mask_b = 0,
+	.reg_ccif1_ap_event_mask_b = 0,
+	.reg_ccif2_md_event_mask_b = 0,
+	.reg_ccif2_ap_event_mask_b = 0,
+	.reg_ccif3_md_event_mask_b = 0,
+	.reg_ccif3_ap_event_mask_b = 0,
 	.reg_ccifmd_md1_event_mask_b = 0,
 	.reg_ccifmd_md2_event_mask_b = 0,
-	.reg_c2k_ps_rccif_wake_mask_b = 1,
+	.reg_c2k_ps_rccif_wake_mask_b = 0,
 	.reg_c2k_l1_rccif_wake_mask_b = 0,
-	.reg_ps_c2k_rccif_wake_mask_b = 1,
+	.reg_ps_c2k_rccif_wake_mask_b = 0,
 	.reg_l1_c2k_rccif_wake_mask_b = 0,
 	.reg_disp2_req_mask_b = 0,
-	.reg_md_ddr_en_0_mask_b = 1,
+	.reg_md_ddr_en_0_mask_b = 0,
 	.reg_md_ddr_en_1_mask_b = 0,
 	.reg_conn_ddr_en_mask_b = 0,
 
@@ -626,23 +622,23 @@ static struct pwr_ctrl vcorefs_ctrl = {
 	.reg_gce_vrf18_req_mask_b = 0,
 	.reg_lpdma_req_mask_b = 0,
 	.reg_conn_srcclkena_cksel2_mask_b = 0,
-	.reg_sspm_apsrc_req_ddren_mask_b = 1,
-	.reg_scp_apsrc_req_ddren_mask_b = 1,
-	.reg_md_vrf18_req_0_mask_b = 1,
+	.reg_sspm_apsrc_req_ddren_mask_b = 0,
+	.reg_scp_apsrc_req_ddren_mask_b = 0,
+	.reg_md_vrf18_req_0_mask_b = 0,
 	.reg_md_vrf18_req_1_mask_b = 0,
 	.reg_next_dvfs_level0_mask_b = 1,
 	.reg_next_dvfs_level1_mask_b = 1,
 	.reg_next_dvfs_level2_mask_b = 1,
 	.reg_next_dvfs_level3_mask_b = 1,
 	.reg_next_dvfs_level4_mask_b = 1,
-	.reg_sw2spm_int0_mask_b = 1,
-	.reg_sw2spm_int1_mask_b = 1,
-	.reg_sw2spm_int2_mask_b = 1,
-	.reg_sw2spm_int3_mask_b = 1,
-	.reg_sspm2spm_int0_mask_b = 1,
-	.reg_sspm2spm_int1_mask_b = 1,
-	.reg_sspm2spm_int2_mask_b = 1,
-	.reg_sspm2spm_int3_mask_b = 1,
+	.reg_sw2spm_int0_mask_b = 0,
+	.reg_sw2spm_int1_mask_b = 0,
+	.reg_sw2spm_int2_mask_b = 0,
+	.reg_sw2spm_int3_mask_b = 0,
+	.reg_sspm2spm_int0_mask_b = 0,
+	.reg_sspm2spm_int1_mask_b = 0,
+	.reg_sspm2spm_int2_mask_b = 0,
+	.reg_sspm2spm_int3_mask_b = 0,
 	.reg_dqssoc_req_mask_b = 0,
 
 	/* SPM_SRC3_MASK */
@@ -663,24 +659,24 @@ static struct pwr_ctrl vcorefs_ctrl = {
 	.reg_srcclkeni1_cksel2_mask_b = 0,
 	.reg_srcclkeni0_cksel3_mask_b = 0,
 	.reg_srcclkeni0_cksel2_mask_b = 0,
-	.reg_md_ddr_en_0_dbc_en = 1,
+	.reg_md_ddr_en_0_dbc_en = 0,
 	.reg_md_ddr_en_1_dbc_en = 0,
 	.reg_conn_ddr_en_dbc_en = 0,
-	.reg_sspm_mask_b = 1,
-	.reg_md_0_mask_b = 1,
+	.reg_sspm_mask_b = 0,
+	.reg_md_0_mask_b = 0,
 	.reg_md_1_mask_b = 0,
-	.reg_scp_mask_b = 1,
-	.reg_srcclkeni0_mask_b = 1,
-	.reg_srcclkeni1_mask_b = 1,
+	.reg_scp_mask_b = 0,
+	.reg_srcclkeni0_mask_b = 0,
+	.reg_srcclkeni1_mask_b = 0,
 	.reg_srcclkeni2_mask_b = 0,
 	.reg_md_apsrc_1_sel = 0,
 	.reg_md_apsrc_0_sel = 0,
 	.reg_conn_mask_b = 0,
 	.reg_conn_apsrc_sel = 0,
-	.reg_md_srcclkena_0_vrf18_mask_b = 1,
+	.reg_md_srcclkena_0_vrf18_mask_b = 0,
 
 	/* SPM_WAKEUP_EVENT_MASK */
-	.reg_wakeup_event_mask = 0xF0F92218,
+	.reg_wakeup_event_mask = 0xFFFFFFFF,
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
@@ -793,7 +789,6 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "DVFS_LEVEL             : 0x%x\n", spm_read(DVFS_LEVEL));
 		p += sprintf(p, "DRAMC_DPY_CLK_SW_CON2  : 0x%x\n", spm_read(DRAMC_DPY_CLK_SW_CON2));
-		p += sprintf(p, "CLK_SW_CON_SEL         : 0x%x\n", spm_read(DRAMC_DPY_CLK_SW_CON_SEL));
 		p += sprintf(p, "PCM_REG_DATA_0~3       : 0x%x, 0x%x, 0x%x, 0x%x\n",
 								spm_read(PCM_REG0_DATA), spm_read(PCM_REG1_DATA),
 								spm_read(PCM_REG2_DATA), spm_read(PCM_REG3_DATA));
@@ -837,7 +832,6 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_warn("SPM_SW_FLAG            : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_warn("DVFS_LEVEL             : 0x%x\n", spm_read(DVFS_LEVEL));
 		spm_vcorefs_warn("DRAMC_DPY_CLK_SW_CON2  : 0x%x\n", spm_read(DRAMC_DPY_CLK_SW_CON2));
-		spm_vcorefs_warn("CLK_SW_CON_SEL         : 0x%x\n", spm_read(DRAMC_DPY_CLK_SW_CON_SEL));
 		spm_vcorefs_warn("PCM_REG_DATA_0~3       : 0x%x, 0x%x, 0x%x, 0x%x\n",
 								spm_read(PCM_REG0_DATA), spm_read(PCM_REG1_DATA),
 								spm_read(PCM_REG2_DATA), spm_read(PCM_REG3_DATA));
@@ -882,28 +876,38 @@ u32 spm_vcorefs_get_MD_status(void)
 static void spm_dvfsfw_init(void)
 {
 	unsigned long flags;
+	int ch = 0;
 
 #ifndef CONFIG_MTK_SPM_IN_ATF
-	u32 dvfs_level[NUM_OPP] = { 0x8810, 0x4404, 0x2202, 0x1101};
+	u32 dvfs_level[NUM_OPP] = { 0x8810, 0x4408, 0x2202, 0x1101};
+
+	ch = dcs_get_channel_lock();
 
 	spin_lock_irqsave(&__spm_lock, flags);
+
+	if (ch == DVFSRC_CHANNEL_2)
+		dvfs_level[OPP_1] = 0x4408;
+	else if (ch == DVFSRC_CHANNEL_4)
+		dvfs_level[OPP_1] = 0x2404;
 
 	spm_write(DVFS_LEVEL, dvfs_level[BOOT_UP_OPP]);
 
-	spm_write(DRAMC_DPY_CLK_SW_CON_SEL, 0xBFFFF);
-
 	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	dcs_get_channel_unlock();
 
 #else
+	ch = dcs_get_channel_lock();
+
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, BOOT_UP_OPP, 0);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, BOOT_UP_OPP, ch);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
+
+	dcs_get_channel_unlock();
 #endif
-	spm_vcorefs_warn("DVFS_LEVEL: 0x%x(%u), DRAMC_DPY: 0x%x\n",
-						spm_read(DVFS_LEVEL), BOOT_UP_OPP,
-						spm_read(DRAMC_DPY_CLK_SW_CON_SEL));
+	spm_vcorefs_warn("DVFS_LEVEL: 0x%x(%u), ch: %d\n", spm_read(DVFS_LEVEL), BOOT_UP_OPP, ch);
 }
 
 void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl)
@@ -951,16 +955,25 @@ int spm_vcorefs_pwarp_cmd(void)
 static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 {
 	u32 mask;
-	int r = 0;
+	int r = 0, ch = 0;
 
 	u32 dvfs_mask_fix[NUM_OPP] = { 0x7, 0xb, 0xd, 0xe};
 	u32 dvfs_mask[NUM_OPP] = { 0x7, 0x3, 0x1, 0x0};
-	u32 dvfs_level[NUM_OPP] = { 0x10, /*0x8*/0x4, 0x2, 0x1};
+	u32 dvfs_level[NUM_OPP] = { 0x10, 0x4, 0x2, 0x1};
 
 	if (fix)
 		mask = dvfs_mask_fix[opp];
 	else
 		mask = dvfs_mask[opp];
+
+	ch = dcs_get_channel_lock();
+
+	dcs_get_channel_unlock();
+
+	if (ch == DVFSRC_CHANNEL_2)
+		dvfs_level[OPP_1] = 0x8;
+	else if (ch == DVFSRC_CHANNEL_4)
+		dvfs_level[OPP_1] = 0x4;
 
 #if 1
 	/* check DVFS idle */
@@ -1049,33 +1062,20 @@ static void dvfsrc_init_by_channel(void)
 {
 	unsigned long flags;
 
-#ifdef CONFIG_MTK_DCS
-	int ch = 0, ret = -1;
-	enum dcs_status dcs_status;
+	int ch = 0;
 
-	ret = dcs_get_dcs_status_lock(&ch, &dcs_status);
-	if (!ret) {
-		spm_vcorefs_warn("dcs currnet channel number: %d, status: %d\n", ch, dcs_status);
+	ch = dcs_get_channel_lock();
 
-		spin_lock_irqsave(&__spm_lock, flags);
-		if (ch == 2)
-			spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_2);
-		else if (ch == 4)
-			spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_4);
-		spin_unlock_irqrestore(&__spm_lock, flags);
-
-		dcs_get_dcs_status_unlock();
-	} else {
-		spm_vcorefs_warn("dcs_get_dcs_status_lock busy\n");
-	}
-
-#else
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_4);
+	if (ch == DVFSRC_CHANNEL_2)
+		spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_2);
+	else if (ch == DVFSRC_CHANNEL_4)
+		spm_dvfsrc_set_channel_bw(DVFSRC_CHANNEL_4);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
-#endif
+
+	dcs_get_channel_unlock();
 }
 
 static void dvfsrc_init(void)
@@ -1088,10 +1088,15 @@ static void dvfsrc_init(void)
 
 	spm_write(DVFSRC_DEBUG_EN, 0x49);
 	spm_write(DVFSRC_SIGNAL_CTRL, 0xc08aaa);
-	spm_write(DVFSRC_CHANNEL_MASK, spm_read(DVFSRC_CHANNEL_MASK) | (1U << 20));
+	spm_write(DVFSRC_CHANNEL_MASK, 0x1fffff);
 	spm_write(DVFSRC_LEVEL_JMP_METHOD, (spm_read(DVFSRC_LEVEL_JMP_METHOD) & ~(0xffff << 16)) | (0x32c8 << 16));
 	spm_write(DVFSRC_BANDWIDTH_CONST1, (spm_read(DVFSRC_BANDWIDTH_CONST1) & ~(0xfff << 20)) | (0x41 << 20));
 	spm_write(DVFSRC_BANDWIDTH_CONST2, (spm_read(DVFSRC_BANDWIDTH_CONST2) & ~(0x3ffff << 14)) | (0x1041 << 14));
+
+	spm_write(DVFSRC_M3733, 0xa50b4);
+	spm_write(DVFSRC_M3200, 0x67087);
+	spm_write(DVFSRC_M1600, 0x3305a);
+
 	spm_write(DVFSRC_ENABLE, spm_read(DVFSRC_ENABLE) | (0x3));
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
