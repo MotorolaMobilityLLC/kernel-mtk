@@ -29,6 +29,7 @@ my $showfile = 0;
 my $file = 0;
 my $check = 0;
 my $check_orig = 0;
+my $mtk_check = 0;
 my $summary = 1;
 my $mailback = 0;
 my $summary_file = 0;
@@ -144,6 +145,7 @@ GetOptions(
 	'f|file!'	=> \$file,
 	'subjective!'	=> \$check,
 	'strict!'	=> \$check,
+	'mtk-strict!'   => \$mtk_check,
 	'ignore=s'	=> \@ignore,
 	'types=s'	=> \@use,
 	'show-types!'	=> \$show_types,
@@ -2510,7 +2512,7 @@ sub process {
 		}
 
 # Check for using deprecated configs mistakes
-		if(@deprecated_config) {
+		if($mtk_check && @deprecated_config) {
 			foreach (@deprecated_config) {
 				if($line =~ /^\+.*($_)/) {
 					ERROR("USE_DEPRECATED_CONFIG",
@@ -2520,13 +2522,13 @@ sub process {
 		}
 
 # check for ARCH_MTXXXX, please use MACH_MTXXXX instead
-		if ($line =~ /^\+.*\CONFIG_ARCH_MT\s*[0-9]/) {
+		if ($mtk_check && $line =~ /^\+.*\CONFIG_ARCH_MT\s*[0-9]/) {
 			ERROR("USE_ARCH_MTXXXX",
 				"please use MACH_MTXXXX instead of ARCH_MTXXXXX\n" . $herecurr);
 		}
 
 # Check all Makefiles, remove unnecessary build message
-		if (($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/)) {
+		if ($mtk_check && ($realfile =~ /Makefile.*/ || $realfile =~ /Kbuild.*/)) {
 			if ($rawline =~ /^\+\t*\s*(\@*echo).*/ || $rawline =~ /^\+\t*\s*(\$\(info).*/ ||
 			    $rawline =~ /^\+\t*\s*(\$\(warning).*/) {
 				my $herevet = "$here\n" . cat_vet($rawline) . "\n";
@@ -4547,7 +4549,7 @@ sub process {
 		}
 
 # warn if <foo.h> is #included but foo.h is available in current directory
-		if ($tree && $rawline =~ m{^.\s*\#\s*include\s*\<(.*)\.h\>}) {
+		if ($mtk_check && $tree && $rawline =~ m{^.\s*\#\s*include\s*\<(.*)\.h\>}) {
 			my $file = "$1.h";
 			my $realpath = dirname($realfile);
 			my $checkfile = "$realpath/$file";
