@@ -220,7 +220,7 @@ obj-n += crypto/
 
 #widevine drm
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
-obj-$(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) += sspm/
+obj-y += sspm/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/cpu_stress/),)
 obj-$(CONFIG_MTK_CPU_STRESS)	+= cpu_stress/
 endif
