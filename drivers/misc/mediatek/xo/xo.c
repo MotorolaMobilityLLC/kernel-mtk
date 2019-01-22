@@ -51,6 +51,7 @@ struct xo_dev {
 	struct clk *bsi_clk;
 	struct clk *rg_bsi_clk;
 	uint32_t cur_xo_capid;
+	uint32_t ori_xo_capid;
 	bool has_ext_crystal;
 	bool crystal_check_done;
 };
@@ -369,6 +370,27 @@ void enable_26M_clock_to_conn_rf(void)
 	BSI_write(0x29, value);
 }
 
+void enable_26M_clock_to_audio(void)
+{
+	pr_notice("@@@ toggle 1\n");
+	BSI_write(0x29, 0x01);
+	udelay(100);
+	pr_notice("@@@ toggle 0\n");
+	BSI_write(0x29, 0x00);
+	get_xo_status();
+}
+
+void disable_26M_clock_to_audio(void)
+{
+	BSI_write(0x25, BSI_read(0x25) | (1 << 12));
+	pr_notice("@@@ toggle 1\n");
+	BSI_write(0x29, BSI_read(0x29) | (1 << 0));
+	udelay(100);
+	pr_notice("@@@ toggle 0\n");
+	BSI_write(0x29, BSI_read(0x29) & ~(1 << 0));
+	get_xo_status();
+}
+
 static void bsi_clock_enable(bool en)
 {
 	if (en) {
@@ -425,7 +447,17 @@ static DEVICE_ATTR(xo_capid, 0664, show_xo_capid, store_xo_capid);
 
 static ssize_t show_xo_board_offset(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "not support!\n");
+	uint32_t offset;
+
+	if (xo_inst->cur_xo_capid > xo_inst->ori_xo_capid)
+		offset = xo_inst->cur_xo_capid - xo_inst->ori_xo_capid;
+	else{
+		offset = xo_inst->ori_xo_capid - xo_inst->cur_xo_capid;
+		offset |= 0x40;
+	}
+
+	return sprintf(buf, "xo capid offset: 0x%x\n", offset);
+
 }
 
 static ssize_t store_xo_board_offset(struct device *dev, struct device_attribute *attr,
@@ -447,7 +479,7 @@ static ssize_t store_xo_board_offset(struct device *dev, struct device_attribute
 
 		bsi_clock_enable(true);
 
-		capid = XO_trim_read();
+		capid = xo_inst->ori_xo_capid;
 		pr_notice("original cap code: 0x%x\n", capid);
 
 		/* check sign bit */
@@ -459,7 +491,7 @@ static ssize_t store_xo_board_offset(struct device *dev, struct device_attribute
 		XO_trim_write(capid);
 		mdelay(10);
 		xo_inst->cur_xo_capid = XO_trim_read();
-		pr_notice("write cap code 0x%x done. current cap code:0x%x\n", capid, xo_inst->cur_xo_capid);
+		pr_notice("write cap code offset 0x%x done. current cap code:0x%x\n", offset, xo_inst->cur_xo_capid);
 
 		bsi_clock_enable(false);
 	}
@@ -522,6 +554,12 @@ static ssize_t store_xo_cmd(struct device *dev, struct device_attribute *attr,
 			break;
 		case 9:
 			enable_26M_clock_to_conn_rf();
+			break;
+		case 10:
+			enable_26M_clock_to_audio();
+			break;
+		case 11:
+			disable_26M_clock_to_audio();
 			break;
 		default:
 			pr_notice("cmd not support!\n");
@@ -674,7 +712,7 @@ static int mt_xo_dts_probe(struct platform_device *pdev)
 	bsi_clock_enable(true);
 
 	xo_inst->cur_xo_capid = XO_trim_read();
-	pr_notice("[xo] current cap code: 0x%x\n", xo_inst->cur_xo_capid);
+	xo_inst->ori_xo_capid = XO_trim_read();
 
 	bsi_clock_enable(false);
 
