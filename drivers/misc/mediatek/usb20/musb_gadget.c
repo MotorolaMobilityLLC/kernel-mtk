@@ -2576,8 +2576,17 @@ int polling_vbus_value(void *data)
 			}
 			DBG(0, "%s: Vbus (%d)\n", __func__, vbus_value);
 
-			USBPHY_WRITE8(0x6c, 0x13);
-			USBPHY_WRITE8(0x6d, 0x3f);
+			{
+				u32 val = 0;
+
+				val = USBPHY_READ32(0x6c);
+				val = (val & ~(0xff<<0)) | (0x13<<0);
+				USBPHY_WRITE32(0x6c, val);
+
+				val = USBPHY_READ32(0x6c);
+				val = (val & ~(0xff<<8)) | (0x3f<<8);
+				USBPHY_WRITE32(0x6c, val);
+			}
 
 			/* Set Vbus Pulsing Length */
 			musb_writeb(mtk_musb->mregs, 0x7B, 1);
@@ -2615,7 +2624,12 @@ int polling_vbus_value(void *data)
 			DBG(0, "musb::Vbus (%d)\n", vbus_value);
 
 			if (!timeout_flag) {
-				USBPHY_WRITE8(0x6c, 0x2f);
+				u32 val = 0;
+
+				val = USBPHY_READ32(0x6c);
+				val = (val & ~(0xff<<0)) | (0x2f<<0);
+				USBPHY_WRITE32(0x6c, val);
+
 
 				power = musb_readb(mtk_musb->mregs, MUSB_POWER);
 				DBG(0, "Setting SOFT CONNECT: power: %02x\n", power);
