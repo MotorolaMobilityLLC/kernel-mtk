@@ -78,7 +78,7 @@ static long device_ioctl(struct file *filp,
 	case FPSGO_QUEUE:
 		/* FALLTHROUGH */
 	case FPSGO_DEQUEUE:
-		xgf_qudeq_notify(cmd, msgKM->value);
+		xgf_qudeq_notify(cmd, msgKM->start);
 		break;
 #else
 	case FPSGO_QUEUE:
@@ -101,13 +101,13 @@ static long device_ioctl(struct file *filp,
 	case FPSGO_NO_RENDER:
 		/* FALLTHROUGH */
 	case FPSGO_SWAP_BUFFER:
-		fbc_ioctl(cmd, msgKM->value);
+		fbc_ioctl(cmd, msgKM->frame_time);
 		break;
 #else
 	case FPSGO_TOUCH:
 		/* FALLTHROUGH */
 	case FPSGO_FRAME_COMPLETE:
-		touch_boost_ioctl(cmd, msgKM->value);
+		touch_boost_ioctl(cmd, msgKM->frame_time);
 		break;
 	case FPSGO_ACT_SWITCH:
 		/* FALLTHROUGH */
@@ -120,6 +120,9 @@ static long device_ioctl(struct file *filp,
 	case FPSGO_SWAP_BUFFER:
 		break;
 #endif
+
+	case FPSGO_QUEUE_CONNECT:
+		break;
 
 	default:
 		pr_debug(TAG "unknown cmd %u\n", cmd);
