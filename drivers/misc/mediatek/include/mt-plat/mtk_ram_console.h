@@ -52,6 +52,13 @@ enum AEE_FIQ_STEP_NUM {
 	AEE_FIQ_STEP_KE_NESTED_PANIC = 64,
 };
 
+enum AEE_EXP_TYPE_NUM {
+	AEE_EXP_TYPE_HWT = 1,
+	AEE_EXP_TYPE_KE = 2,
+	AEE_EXP_TYPE_NESTED_PANIC = 3,
+	AEE_EXP_TYPE_SMART_RESET = 4,
+};
+
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern int aee_rr_curr_fiq_step(void);
 extern void aee_rr_rec_fiq_step(u8 i);

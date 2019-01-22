@@ -814,14 +814,14 @@ void aee_rr_rec_exp_type(unsigned int type)
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
 	if (LAST_RR_VAL(exp_type) == 0 && type < 16)
-		LAST_RR_SET(exp_type, 0xaeedead0 | type);
+		LAST_RR_SET(exp_type, RAM_CONSOLE_EXP_TYPE_MAGIC | type);
 }
 
 unsigned int aee_rr_curr_exp_type(void)
 {
 	unsigned int exp_type = LAST_RR_VAL(exp_type);
 
-	return (exp_type ^ 0xaeedead0) < 16 ? exp_type ^ 0xaeedead0 : exp_type;
+	return RAM_CONSOLE_EXP_TYPE_DEC(exp_type);
 }
 
 void aee_rr_rec_kaslr_offset(uint64_t offset)
@@ -2253,7 +2253,7 @@ void aee_rr_show_exp_type(struct seq_file *m)
 	unsigned int exp_type = LAST_RRR_VAL(exp_type);
 
 	seq_printf(m, " exception type: %u\n",
-		   (exp_type ^ 0xaeedead0) < 16 ? exp_type ^ 0xaeedead0 : exp_type);
+		   RAM_CONSOLE_EXP_TYPE_DEC(exp_type));
 }
 
 void aee_rr_show_kaslr_offset(struct seq_file *m)
