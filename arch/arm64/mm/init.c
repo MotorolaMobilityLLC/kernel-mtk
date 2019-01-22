@@ -162,6 +162,13 @@ static void __init zone_sizes_init(unsigned long min, unsigned long max)
 
 			zhole_size[ZONE_MOVABLE] -= movable_end - movable_start;
 		}
+
+		if (!cma_size && end > max_dma) {
+			unsigned long normal_end = min(end, max);
+			unsigned long normal_start = max(start, max_dma);
+
+			zhole_size[ZONE_NORMAL] -= normal_end - normal_start;
+		}
 #else
 		if (end > max_dma) {
 			unsigned long normal_end = min(end, max);
