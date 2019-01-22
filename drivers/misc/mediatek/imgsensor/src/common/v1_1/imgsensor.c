@@ -52,6 +52,10 @@
 #endif
 #include "imgsensor.h"
 
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+#include "imgsensor_ca.h"
+#endif
+
 static DEFINE_MUTEX(gimgsensor_mutex);
 
 struct IMGSENSOR gimgsensor;
@@ -135,6 +139,10 @@ static void imgsensor_mutex_unlock(struct IMGSENSOR_SENSOR_INST *psensor_inst)
 MINT32 imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 {
 	MINT32 ret = ERROR_NONE;
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	MINT32 ret_sec = ERROR_NONE;
+	struct command_params c_params = {0};
+#endif
 	struct IMGSENSOR             *pimgsensor   = &gimgsensor;
 	struct IMGSENSOR_SENSOR_INST *psensor_inst = &psensor->inst;
 	SENSOR_FUNCTION_STRUCT       *psensor_func =  psensor->pfunc;
@@ -164,7 +172,19 @@ MINT32 imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 
 		psensor_func->psensor_inst = psensor_inst;
 
-		ret = psensor_func->SensorOpen();
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	PK_INFO("%s secure state %d", __func__, (int)(&gimgsensor)->imgsensor_sec_flag);
+		if ((&gimgsensor)->imgsensor_sec_flag) {
+
+		ret = imgsensor_ca_invoke_command(IMGSENSOR_TEE_CMD_OPEN, c_params, &ret_sec);
+
+		} else {
+#endif
+			ret = psensor_func->SensorOpen();
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+		}
+#endif
+
 		if (ret != ERROR_NONE) {
 			imgsensor_hw_power(&pimgsensor->hw, psensor, IMGSENSOR_HW_POWER_STATUS_OFF);
 			PK_PR_ERR("SensorOpen fail");
@@ -263,6 +283,10 @@ imgsensor_sensor_feature_control(
 		MUINT8 *pFeaturePara, MUINT32 *pFeatureParaLen)
 {
 	MUINT32 ret = ERROR_NONE;
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	MINT32 ret_sec = ERROR_NONE;
+	struct command_params c_params;
+#endif
 	struct IMGSENSOR_SENSOR_INST  *psensor_inst = &psensor->inst;
 	SENSOR_FUNCTION_STRUCT        *psensor_func =  psensor->pfunc;
 
@@ -273,8 +297,21 @@ imgsensor_sensor_feature_control(
 		imgsensor_mutex_lock(psensor_inst);
 
 		psensor_func->psensor_inst = psensor_inst;
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	PK_INFO("%s secure state %d", __func__, (int)(&gimgsensor)->imgsensor_sec_flag);
+	if ((&gimgsensor)->imgsensor_sec_flag) {
 
+		c_params.param0 = (void *)FeatureId;
+		c_params.param1 = (void *)pFeaturePara;
+		c_params.param2 = (void *)pFeatureParaLen;
+		ret = imgsensor_ca_invoke_command(IMGSENSOR_TEE_CMD_FEATURE_CONTROL, c_params, &ret_sec);
+
+	} else {
+#endif
 		ret = psensor_func->SensorFeatureControl(FeatureId, pFeaturePara, pFeatureParaLen);
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	}
+#endif
 		if (ret != ERROR_NONE)
 			PK_PR_ERR("[%s]\n", __func__);
 
@@ -290,6 +327,10 @@ MUINT32
 imgsensor_sensor_control(struct IMGSENSOR_SENSOR *psensor, MSDK_SCENARIO_ID_ENUM ScenarioId)
 {
 	MUINT32 ret = ERROR_NONE;
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	MINT32 ret_sec = ERROR_NONE;
+	struct command_params c_params;
+#endif
 	struct IMGSENSOR_SENSOR_INST *psensor_inst = &psensor->inst;
 	SENSOR_FUNCTION_STRUCT       *psensor_func =  psensor->pfunc;
 
@@ -307,7 +348,20 @@ imgsensor_sensor_control(struct IMGSENSOR_SENSOR *psensor, MSDK_SCENARIO_ID_ENUM
 		psensor_func->psensor_inst = psensor_inst;
 		psensor_func->ScenarioId = ScenarioId;
 
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	PK_INFO("%s secure state %d", __func__, (int)(&gimgsensor)->imgsensor_sec_flag);
+	if ((&gimgsensor)->imgsensor_sec_flag) {
+		c_params.param0 = (void *)ScenarioId;
+		c_params.param1 = (void *)&image_window;
+		c_params.param2 = (void *)&sensor_config_data;
+		ret = imgsensor_ca_invoke_command(IMGSENSOR_TEE_CMD_CONTROL, c_params, &ret_sec);
+
+	} else {
+#endif
 		ret = psensor_func->SensorControl(ScenarioId, &image_window, &sensor_config_data);
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	}
+#endif
 		if (ret != ERROR_NONE)
 			PK_PR_ERR("[%s]\n", __func__);
 
@@ -324,6 +378,10 @@ imgsensor_sensor_control(struct IMGSENSOR_SENSOR *psensor, MSDK_SCENARIO_ID_ENUM
 MINT32 imgsensor_sensor_close(struct IMGSENSOR_SENSOR *psensor)
 {
 	MINT32 ret = ERROR_NONE;
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	MINT32 ret_sec = ERROR_NONE;
+	struct command_params c_params = {0};
+#endif
 	struct IMGSENSOR *pimgsensor = &gimgsensor;
 	struct IMGSENSOR_SENSOR_INST  *psensor_inst = &psensor->inst;
 	SENSOR_FUNCTION_STRUCT *psensor_func =  psensor->pfunc;
@@ -339,8 +397,16 @@ MINT32 imgsensor_sensor_close(struct IMGSENSOR_SENSOR *psensor)
 #endif
 
 		psensor_func->psensor_inst = psensor_inst;
-
-		ret = psensor_func->SensorClose();
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+		PK_INFO("%s secure state %d", __func__, (int)(&gimgsensor)->imgsensor_sec_flag);
+		if ((&gimgsensor)->imgsensor_sec_flag) {
+			ret = imgsensor_ca_invoke_command(IMGSENSOR_TEE_CMD_CLOSE, c_params, &ret_sec);
+		} else {
+#endif
+			ret = psensor_func->SensorClose();
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+		}
+#endif
 		if (ret != ERROR_NONE) {
 			PK_PR_ERR("[%s]", __func__);
 		} else {
@@ -734,6 +800,12 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	ACDK_KD_SENSOR_SYNC_STRUCT *pSensorSyncInfo = NULL;
 	signed int ret = 0;
 
+#ifdef CONFIG_MTK_CAM_SECURITY_SUPPORT
+	struct command_params c_params;
+
+	memset(&c_params, 0, sizeof(struct command_params));
+#endif
+
 	pFeatureCtrl = (ACDK_SENSOR_FEATURECONTROL_STRUCT *) pBuf;
 	if (pFeatureCtrl == NULL) {
 		PK_PR_ERR("NULL pFeatureCtrl\n");
@@ -780,6 +852,30 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 	/*in case that some structure are passed from user sapce by ptr */
 	switch (pFeatureCtrl->FeatureId) {
+
+#ifdef CONFIG_MTK_CAM_SECURITY_SUPPORT
+	case SENSOR_FEATURE_OPEN_SECURE_SESSION:
+		PK_INFO("SECURE_SENSOR_ID = %x\n", (int)psensor->inst.psensor_list->id);
+
+		/* size : IMGSENSOR_SENSOR */
+		c_params.param0 = (void *)(uintptr_t)(psensor->inst.psensor_list->id);
+
+		imgsensor_ca_open();
+		if ((imgsensor_ca_invoke_command(IMGSENSOR_TEE_CMD_SET_SENSOR,
+		c_params, &ret) != 0) || (ret != 0)) {
+			PK_DBG("Error!! set secure sensor_pfunc failed!");
+			return ret;
+		}
+		break;
+	case SENSOR_FEATURE_CLOSE_SECURE_SESSION:
+		imgsensor_ca_close();
+		break;
+	case SENSOR_FEATURE_SET_AS_SECURE_DRIVER:
+		(&gimgsensor)->imgsensor_sec_flag = (*(unsigned long long *)pFeaturePara);
+		PK_INFO("debug: secure set as %d", (int)((&gimgsensor)->imgsensor_sec_flag));
+		break;
+#endif
+
 	case SENSOR_FEATURE_SET_I2C_BUF_MODE_EN:
 		ret = imgsensor_i2c_buffer_mode((*(unsigned long long *)pFeaturePara));
 		break;
@@ -1617,13 +1713,31 @@ static int imgsensor_open(struct inode *a_pstInode, struct file *a_pstFile)
 	return 0;
 }
 
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+static void imgsensor_release_secure_flag(void)
+{
+	struct IMGSENSOR *pimgsensor = &gimgsensor;
+
+	pimgsensor->imgsensor_sec_flag = 0;
+	PK_DBG("release secure flag! %d", (int)pimgsensor->imgsensor_sec_flag);
+}
+#endif
+
 static int imgsensor_release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	struct IMGSENSOR *pimgsensor = &gimgsensor;
 
 	atomic_dec(&pimgsensor->imgsensor_open_cnt);
-	if (atomic_read(&pimgsensor->imgsensor_open_cnt) == 0)
+	if (atomic_read(&pimgsensor->imgsensor_open_cnt) == 0) {
+
 		imgsensor_hw_release_all(&pimgsensor->hw);
+
+#ifdef CONFIG_MTK_CAM_SECURITY_SUPPORT
+		imgsensor_release_secure_flag();/* to reset sensor status */
+		imgsensor_ca_release();
+#endif
+
+	}
 
 	PK_DBG("imgsensor_release %d\n", atomic_read(&pimgsensor->imgsensor_open_cnt));
 	return 0;

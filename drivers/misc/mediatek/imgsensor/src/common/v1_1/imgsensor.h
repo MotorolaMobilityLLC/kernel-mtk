@@ -40,6 +40,9 @@ struct IMGSENSOR {
 	struct IMGSENSOR_SENSOR_LIST *psensor_list[MAX_NUM_OF_SUPPORT_SENSOR];
 
 	atomic_t imgsensor_open_cnt;
+#if defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	unsigned long long imgsensor_sec_flag;
+#endif
 };
 
 MINT32
