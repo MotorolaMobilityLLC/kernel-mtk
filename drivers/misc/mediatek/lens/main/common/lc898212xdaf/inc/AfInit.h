@@ -8,9 +8,6 @@ extern void ServoOn(void);
 
 extern unsigned int g_LC898212_SearchDir;
 
-/*====================================================================
-	Interface functions (import)
-=====================================================================*/
 extern void RamWriteA(unsigned short addr, unsigned short data);
 
 extern void RamReadA(unsigned short addr, unsigned short *data);

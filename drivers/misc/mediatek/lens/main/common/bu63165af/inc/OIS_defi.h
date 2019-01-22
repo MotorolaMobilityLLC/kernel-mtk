@@ -615,7 +615,7 @@
 #define _OTHR_HYpreOUT	0x0002
 
 /* Factory Adjustment data */
-typedef struct {
+struct _FACT_ADJ {
 	OIS_UWORD gl_CURDAT;
 	OIS_UWORD gl_HALOFS_X;
 	OIS_UWORD gl_HALOFS_Y;
@@ -635,11 +635,11 @@ typedef struct {
 	OIS_UWORD gl_TMP_Y_;	/* RHM_HT 2013/11/25    Added */
 	OIS_UWORD gl_KgxH0;	/* RHM_HT 2013/11/25    Added */
 	OIS_UWORD gl_KgyH0;	/* RHM_HT 2013/11/25    Added */
-} _FACT_ADJ;
+};
 
 /* Default Parameter of FACTORY Adjust data */
 /* --------------------------------------------- */
-EXT const _FACT_ADJ FADJ_DEF
+EXT const struct _FACT_ADJ FADJ_DEF
 #ifdef	OIS_MAIN_C
 = {
 	0x0200,			/* gl_CURDAT; */
@@ -673,7 +673,7 @@ EXT const _FACT_ADJ FADJ_DEF
 /* data from above memory and write to the OIS */
 /* controller. */
 /* --------------------------------------------- */
-EXT _FACT_ADJ FADJ_MEM
+EXT struct _FACT_ADJ FADJ_MEM
 #ifdef	OIS_MAIN_C
 = {
 	0x0201,			/* gl_CURDAT; */

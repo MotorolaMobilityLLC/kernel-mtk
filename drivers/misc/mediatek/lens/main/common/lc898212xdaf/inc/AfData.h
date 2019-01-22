@@ -9,9 +9,6 @@
 
 #define	WAIT				0xFF	/* Wait command */
 
-/*----------------------------------------------------------
-		Initial data table
------------------------------------------------------------*/
 struct INIDATA {
 	unsigned short addr;
 	unsigned short data;
