@@ -76,19 +76,16 @@ static int mtk_afe_i2s0_probe(struct snd_soc_platform *platform);
 int mtk_soc_always_hd;
 static int mi2s0_sidegen_control;
 static int mi2s0_hdoutput_control;
-static int mi2s0_extcodec_echoref_control;
-static int MD_type_control;
+static int extcodec_echoref_control;
 const char * const i2s0_SIDEGEN[] = {
 	"Off", "On48000", "On44100", "On32000", "On16000", "On8000"};
 const char * const i2s0_HD_output[] = {"Off", "On"};
-const char * const i2s0_ExtCodec_EchoRef[] = {"Off", "On"};
-const char * const MD_type[] = {"NotSet", "MD1", "MD3"};
+const char * const ExtCodec_EchoRef_Routing[] = {"NotSet", "MD1", "MD3", "VoIP"};
 
 static const struct soc_enum Audio_i2s0_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(i2s0_SIDEGEN), i2s0_SIDEGEN),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(i2s0_HD_output), i2s0_HD_output),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(i2s0_ExtCodec_EchoRef), i2s0_ExtCodec_EchoRef),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(MD_type), MD_type),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ExtCodec_EchoRef_Routing), ExtCodec_EchoRef_Routing),
 };
 
 static int Audio_i2s0_SideGen_Get(struct snd_kcontrol *kcontrol,
@@ -115,26 +112,24 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mi2s0_sidegen_control = ucontrol->value.integer.value[0];
-	pr_debug("%s(), sidegen = %d, hdoutput = %d, extcodec_echoref = %d, always_hd = %d, MD_type = %d\n",
+	pr_debug("%s(), sidegen = %d, hdoutput = %d, extcodec_echoref = %d, always_hd = %d\n",
 		 __func__,
 		 mi2s0_sidegen_control,
 		 mi2s0_hdoutput_control,
-		 mi2s0_extcodec_echoref_control,
-		 mtk_soc_always_hd,
-		 MD_type_control);
+		 extcodec_echoref_control,
+		 mtk_soc_always_hd);
 
 	/* Set SmartPa i2s by platform. Return false if no platform implement.*/
 	if (get_afe_platform_ops()->set_smartpa_i2s != NULL) {
 		ret = get_afe_platform_ops()->set_smartpa_i2s(mi2s0_sidegen_control,
 							      mi2s0_hdoutput_control,
-							      mi2s0_extcodec_echoref_control,
-							      mtk_soc_always_hd,
-							      MD_type_control);
+							      extcodec_echoref_control,
+							      mtk_soc_always_hd);
 		goto i2s_config_done;
 	}
 
 	if (mi2s0_sidegen_control) {
-		switch (MD_type_control) {
+		switch (extcodec_echoref_control) {
 		case 1:
 			/*MD1 connection*/
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
@@ -149,8 +144,12 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 			SetIntfConnection(Soc_Aud_InterCon_Connection,
 				Soc_Aud_AFE_IO_Block_I2S0_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
 			break;
+		case 3:
+			/*VoIP echo reference connection*/
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
+			break;
 		default:
-			pr_err("%s, MD_type_control no set\n", __func__);
 			break;
 		}
 
@@ -183,7 +182,7 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, true);
-			if (mi2s0_extcodec_echoref_control == true)
+			if (extcodec_echoref_control > 0)
 				Afe_Set_Reg(AFE_I2S_CON, 0x0, 0x1);
 		}
 		Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
@@ -194,7 +193,7 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		Afe_Set_Reg(AUDIO_TOP_CON1, 0x1 << 7,  0x1 << 7); /* I2S3 clock-gated */
 		/* I2S0 I2S3 clock-gated */
 
-		if (mi2s0_extcodec_echoref_control == true) {
+		if (extcodec_echoref_control > 0) {
 			/* I2S0 Input Control */
 			Audio_I2S_Dac = 0;
 			SetCLkMclk(Soc_Aud_I2S0, samplerate);
@@ -224,7 +223,7 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 
 		/* start I2S DAC out */
 
-		if (mi2s0_extcodec_echoref_control == true)
+		if (extcodec_echoref_control > 0)
 			Afe_Set_Reg(AFE_I2S_CON, Audio_I2S_Dac, MASK_ALL);	/* set I2S0 configuration */
 
 		Afe_Set_Reg(AFE_I2S_CON3, u32AudioI2S, AFE_MASK_ALL);	/* set I2S3 configuration */
@@ -240,20 +239,20 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		EnableAfe(true);
 
 	} else {
-		if (mi2s0_extcodec_echoref_control == true) {
+		if (extcodec_echoref_control > 0) {
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					Soc_Aud_AFE_IO_Block_I2S0_CH2,
-					Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
+				Soc_Aud_AFE_IO_Block_I2S0_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
 			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
-					Soc_Aud_AFE_IO_Block_I2S0_CH2,
-					Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+				Soc_Aud_AFE_IO_Block_I2S0_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
 		}
 
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
 
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false) {
 			Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);	/* Disable I2S3 */
-			if (mi2s0_extcodec_echoref_control == true)
+			if (extcodec_echoref_control > 0)
 				Afe_Set_Reg(AFE_I2S_CON, 0x0, 0x1);	/* Disable I2S0 */
 
 			udelay(20);
@@ -338,8 +337,8 @@ static int Audio_i2s0_hdoutput_Set(struct snd_kcontrol *kcontrol,
 static int Audio_i2s0_ExtCodec_EchoRef_Get(struct snd_kcontrol *kcontrol,
 					   struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_i2s0_ExtCodec_EchoRef_Get = %d\n", mi2s0_extcodec_echoref_control);
-	ucontrol->value.integer.value[0] = mi2s0_extcodec_echoref_control;
+	pr_debug("Audio_i2s0_ExtCodec_EchoRef_Get = %d\n", extcodec_echoref_control);
+	ucontrol->value.integer.value[0] = extcodec_echoref_control;
 	return 0;
 }
 
@@ -347,31 +346,11 @@ static int Audio_i2s0_ExtCodec_EchoRef_Set(struct snd_kcontrol *kcontrol,
 					   struct snd_ctl_elem_value *ucontrol)
 {
 	pr_debug("%s()\n", __func__);
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(i2s0_ExtCodec_EchoRef)) {
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ExtCodec_EchoRef_Routing)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	mi2s0_extcodec_echoref_control = ucontrol->value.integer.value[0];
-	return 0;
-}
-
-static int Audio_MD_Type_Get(struct snd_kcontrol *kcontrol,
-			     struct snd_ctl_elem_value *ucontrol)
-{
-	pr_debug("Audio_MD_Type_Get = %d\n", MD_type_control);
-	ucontrol->value.integer.value[0] = MD_type_control;
-	return 0;
-}
-
-static int Audio_MD_Type_Set(struct snd_kcontrol *kcontrol,
-			     struct snd_ctl_elem_value *ucontrol)
-{
-	pr_debug("%s()\n", __func__);
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(MD_type)) {
-		pr_err("return -EINVAL\n");
-		return -EINVAL;
-	}
-	MD_type_control = ucontrol->value.integer.value[0];
+	extcodec_echoref_control = ucontrol->value.integer.value[0];
 	return 0;
 }
 
@@ -385,8 +364,6 @@ static const struct snd_kcontrol_new Audio_snd_i2s0_controls[] = {
 	SOC_ENUM_EXT("Audio_ExtCodec_EchoRef_Switch",
 		     Audio_i2s0_Enum[2], Audio_i2s0_ExtCodec_EchoRef_Get,
 		     Audio_i2s0_ExtCodec_EchoRef_Set),
-	SOC_ENUM_EXT("Audio_MD_Type",
-		     Audio_i2s0_Enum[3], Audio_MD_Type_Get, Audio_MD_Type_Set),
 };
 
 static struct snd_pcm_hardware mtk_i2s0_hardware = {
