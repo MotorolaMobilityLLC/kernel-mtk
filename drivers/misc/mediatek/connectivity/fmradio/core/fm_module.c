@@ -359,8 +359,14 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 			struct fm_ctl_parm parm_ctl;
 
 			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_RW_REG\n");
+			if (fm->chipon == fm_false || fm_pwr_state_get(fm) == FM_PWR_OFF) {
+				WCN_DBG(FM_ERR | MAIN, "ERROR, FM chip is OFF\n");
+				ret = -EFAULT;
+				goto out;
+			}
 
 			if (copy_from_user(&parm_ctl, (void *)arg, sizeof(struct fm_ctl_parm))) {
+				WCN_DBG(FM_ALT | MAIN, "copy from user error\n");
 				ret = -EFAULT;
 				goto out;
 			}
@@ -387,8 +393,14 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 			struct fm_top_rw_parm parm_ctl;
 
 			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_TOP_RDWR\n");
+			if (fm->chipon == fm_false || fm_pwr_state_get(fm) == FM_PWR_OFF) {
+				WCN_DBG(FM_ERR | MAIN, "ERROR, FM chip is OFF\n");
+				ret = -EFAULT;
+				goto out;
+			}
 
 			if (copy_from_user(&parm_ctl, (void *)arg, sizeof(struct fm_top_rw_parm))) {
+				WCN_DBG(FM_ALT | MAIN, "copy from user error\n");
 				ret = -EFAULT;
 				goto out;
 			}
@@ -415,12 +427,23 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 			struct fm_host_rw_parm parm_ctl;
 
 			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_TOP_RDWR\n");
-
-			if (copy_from_user(&parm_ctl, (void *)arg, sizeof(struct fm_host_rw_parm))) {
+			if (fm->chipon == fm_false || fm_pwr_state_get(fm) == FM_PWR_OFF) {
+				WCN_DBG(FM_ERR | MAIN, "ERROR, FM chip is OFF\n");
 				ret = -EFAULT;
 				goto out;
 			}
 
+			if (copy_from_user(&parm_ctl, (void *)arg, sizeof(struct fm_host_rw_parm))) {
+				WCN_DBG(FM_ALT | MAIN, "copy from user error\n");
+				ret = -EFAULT;
+				goto out;
+			}
+
+			/* 4 bytes alignment and illegal address */
+			if (parm_ctl.addr % 4 != 0 || parm_ctl.addr >= 0x90000000) {
+				ret = -FM_EPARA;
+				goto out;
+			}
 			if (parm_ctl.rw_flag == 0)
 				ret = fm_host_write(fm, parm_ctl.addr, parm_ctl.val);
 			else
@@ -443,8 +466,14 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 			struct fm_pmic_rw_parm parm_ctl;
 
 			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_PMIC_RDWR\n");
+			if (fm->chipon == fm_false || fm_pwr_state_get(fm) == FM_PWR_OFF) {
+				WCN_DBG(FM_ERR | MAIN, "ERROR, FM chip is OFF\n");
+				ret = -EFAULT;
+				goto out;
+			}
 
 			if (copy_from_user(&parm_ctl, (void *)arg, sizeof(struct fm_pmic_rw_parm))) {
+				WCN_DBG(FM_ALT | MAIN, "copy from user error\n");
 				ret = -EFAULT;
 				goto out;
 			}
@@ -789,7 +818,7 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 		{
 			fm_desense_check_t tmp;
 
-			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_IS_DESE_CHAN\n");
+			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_DESENSE_CHECK\n");
 
 			if (copy_from_user(&tmp, (void *)arg, sizeof(fm_desense_check_t))) {
 				WCN_DBG(FM_ALT | MAIN, "desene check, copy_from_user err\n");
