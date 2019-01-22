@@ -68,6 +68,7 @@ struct rt9750_info {
 	struct power_supply *psy;
 	struct mutex i2c_access_lock;
 	struct mutex adc_access_lock;
+	struct mutex gpio_access_lock;
 	struct pinctrl *en_pinctrl;
 	struct pinctrl_state *en_enable;
 	struct pinctrl_state *en_disable;
@@ -957,6 +958,7 @@ static int rt9750_enable_chip(struct charger_device *chg_dev, bool en)
 		return -EINVAL;
 	}
 
+	mutex_lock(&info->gpio_access_lock);
 	if (en) {
 		/* Lock I2C to solve I2C SDA drop problem */
 		i2c_lock_adapter(info->i2c->adapter);
@@ -969,6 +971,7 @@ static int rt9750_enable_chip(struct charger_device *chg_dev, bool en)
 		pr_info("%s: set gpio low\n", __func__);
 	}
 
+	mutex_unlock(&info->gpio_access_lock);
 	return 0;
 }
 
@@ -1092,6 +1095,7 @@ static int rt9750_probe(struct i2c_client *i2c,
 	info->i2c = i2c;
 	mutex_init(&info->i2c_access_lock);
 	mutex_init(&info->adc_access_lock);
+	mutex_init(&info->gpio_access_lock);
 
 	ret = rt9750_parse_dt(info, &i2c->dev);
 	if (ret < 0) {
@@ -1184,6 +1188,7 @@ err_enable_chip:
 err_no_dev:
 	mutex_destroy(&info->i2c_access_lock);
 	mutex_destroy(&info->adc_access_lock);
+	mutex_destroy(&info->gpio_access_lock);
 	return ret;
 }
 
@@ -1201,6 +1206,7 @@ static int rt9750_remove(struct i2c_client *i2c)
 #endif
 		mutex_destroy(&info->i2c_access_lock);
 		mutex_destroy(&info->adc_access_lock);
+		mutex_destroy(&info->gpio_access_lock);
 	}
 
 	return ret;
@@ -1279,6 +1285,9 @@ MODULE_VERSION("1.0.0_MTK");
 
 /*
  * Version Note
+ * 1.0.1
+ * (1) Add gpio lock for rt9750_enable_chip
+ *
  * 1.0.0
  * First Release
  */
