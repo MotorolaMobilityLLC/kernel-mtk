@@ -573,3 +573,90 @@ void test_m4u_do_mva_alloc_stage3(void)
 		M4UMSG("after just boot, mva should not be allocated in stage 3!\n");
 	vfree(pinfo);
 }
+
+void test_m4u_do_mva_alloc_start_from_V2p4(void)
+{
+	int last_free_index_in_stage1, size0, size1, size2, nr;
+	struct m4u_buf_info_t *pinfo;
+	unsigned int result_mva0, result_mva1, result_mva2;
+
+	M4UMSG("start to test_m4u_do_mva_alloc_start_from_V2_4\n");
+	pinfo = vmalloc(sizeof(struct m4u_buf_info_t));
+	pinfo->port = 0;
+	last_free_index_in_stage1 = get_last_free_graph_idx_in_stage1_region();
+
+	if (last_free_index_in_stage1 < MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START)) {
+		nr = MVAGRAPH_INDEX(VPU_RESET_VECTOR_FIX_MVA_START) - 1 - last_free_index_in_stage1;
+		size0 = MVA_GRAPH_NR_TO_SIZE(nr);
+		M4UMSG("alloc mva in stage 1, port=%d  index = 0x%x size = 0x%x\n",
+			pinfo->port, last_free_index_in_stage1, size0);
+		result_mva0 = m4u_do_mva_alloc(0, size0, pinfo);
+		m4u_mvaGraph_dump();
+		M4UMSG("alloc mva in stage 1, result_mva0 = 0x%x\n", result_mva0);
+
+		pinfo->port = M4U_VPU_PORT_NAME;
+		size1 = 0x12000000;
+		M4UMSG("alloc mva in stage 2, port=%d, size = 0x%x\n", pinfo->port, size1);
+		result_mva1 = m4u_do_mva_alloc_start_from(0, 0x12000000, size1, pinfo);
+		m4u_mvaGraph_dump();
+		M4UMSG("alloc mva in stage 2, result_mva1 = 0x%x\n", result_mva1);
+
+		pinfo->port = 0;
+		size2 = 0x20000000;
+		M4UMSG("alloc mva in stage 3, size = 0x%x\n", size2);
+		result_mva2 = m4u_do_mva_alloc_start_from(0, 0x10000000, size2, pinfo);
+		m4u_mvaGraph_dump();
+		M4UMSG("alloc mva in stage 3, result_mva2 = 0x%x\n", result_mva2);
+
+		pinfo->port = M4U_VPU_PORT_NAME;
+		m4u_mvaGraph_dump();
+		m4u_do_mva_free(result_mva0, size0);
+		m4u_do_mva_free(result_mva1, size1);
+		m4u_do_mva_free(result_mva2, size2);
+		m4u_mvaGraph_dump();
+	} else
+		M4UMSG("after just boot, mva should not be allocated out of stage 1!\n");
+	vfree(pinfo);
+}
+
+void test_m4u_do_mva_alloc_start_from_V2p4_case1(void)
+{
+	int first_free_idx, size = 0x4000000;
+	struct m4u_buf_info_t *pinfo;
+	int i;
+	unsigned int *ret_mva = kzalloc(sizeof(unsigned int) * 4096, GFP_KERNEL);
+
+	M4UMSG("start to test_m4u_do_mva_alloc_start_from_V2p4_case1\n");
+	pinfo = vmalloc(sizeof(struct m4u_buf_info_t));
+	pinfo->port = 0;
+	first_free_idx = get_first_free_idx();
+	M4UMSG("get 1st free index = 0x%x\n", first_free_idx);
+	/*alloc non-vpu region*/
+	for (i = 0; i < 4096; i++) {
+		*(ret_mva + i) = m4u_do_mva_alloc_start_from(0, (first_free_idx << 20), size, pinfo);
+		if (!*(ret_mva + i)) {
+			M4UMSG("non vpu region has been allocated over, the last valid %d.\n", i-1);
+			break;
+		}
+	}
+	m4u_mvaGraph_dump();
+	/*alloc vpu region*/
+	pinfo->port = M4U_VPU_PORT_NAME;
+	for (; i < 4096; i++) {
+		*(ret_mva + i) = m4u_do_mva_alloc_start_from(0, 0x60000000, size, pinfo);
+		if (!*(ret_mva + i)) {
+			M4UMSG("vpu region has been allocated over, the last valid %d.\n", i-1);
+			break;
+		}
+	}
+	m4u_mvaGraph_dump();
+	/*free all*/
+	for (i = i - 1 ; i >= 0; i--) {
+		if (*(ret_mva + i))
+			m4u_do_mva_free(*(ret_mva + i), size);
+	}
+	m4u_mvaGraph_dump();
+	vfree(pinfo);
+	kfree(ret_mva);
+}
+

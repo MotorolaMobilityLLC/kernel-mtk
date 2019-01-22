@@ -169,7 +169,8 @@ static int m4u_test_map_kernel(void)
 	if (IS_ERR_OR_NULL(client))
 		M4UMSG("createclientfail!\n");
 
-	ret = m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, va, NULL, size, M4U_PROT_READ | M4U_PROT_CACHE, 0, &mva);
+	ret = m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, va, NULL, size,
+		M4U_PROT_READ | M4U_PROT_CACHE, 0, &mva);
 	if (ret) {
 		M4UMSG("alloc using kmalloc fail:va=0x%lx,size=0x%x\n", va, size);
 		return -1;
@@ -625,7 +626,8 @@ static int m4u_debug_set(void *data, u64 val)
 		m4u_client_t *client = m4u_create_client();
 
 		pSrc = vmalloc(128);
-		m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, (unsigned long)pSrc, NULL, 128, 0, 0, &mva);
+		m4u_alloc_mva(client, M4U_PORT_DISP_OVL0,
+			(unsigned long)pSrc, NULL, 128, 0, 0, &mva);
 
 		m4u_dump_pgtable(domain, NULL);
 
@@ -748,6 +750,47 @@ static int m4u_debug_set(void *data, u64 val)
 	{
 		M4UMSG("start to test m4u 2.4\n");
 		test_m4u_do_mva_alloc_stage3();
+		break;
+	}
+
+	case 36:
+	{
+		M4UMSG("start to test m4u 2.4\n");
+		test_m4u_do_mva_alloc_start_from_V2p4();
+		break;
+	}
+	case 37:
+	{
+		M4UMSG("start to test m4u 2.4\n");
+		test_m4u_do_mva_alloc_start_from_V2p4_case1();
+		break;
+	}
+
+	/*debug pagetable corruption*/
+	case 38:
+	{
+		int ret;
+		unsigned int mva;
+		int size;
+		m4u_client_t *client;
+		unsigned long va;
+
+		size = 0x500000;
+		va = (unsigned long)vmalloc(size);
+		client = m4u_create_client();
+		if (IS_ERR_OR_NULL(client))
+			M4UMSG("create client fail!\n");
+		ret = m4u_alloc_mva(client, M4U_PORT_DISP_OVL0, va, NULL, size,
+				    M4U_PROT_READ | M4U_PROT_CACHE, 0, &mva);
+		if (ret) {
+			M4UMSG("alloc mva fail: va=0x%lx size=0x%x,ret=%d\n", va, size, ret);
+			return -1;
+		}
+		m4u_dump_pgtable_for_debug(mva, size);
+		ret = m4u_dealloc_mva(client, M4U_PORT_DISP_OVL0, mva);
+		/* clean */
+		m4u_destroy_client(client);
+		vfree((void *)va);
 		break;
 	}
 
@@ -1549,4 +1592,9 @@ int m4u_debug_init(struct m4u_device *m4u_dev)
 
 
 	return 0;
+}
+
+void m4u_dump_pgtable_for_debug(unsigned int mva, unsigned int mva_size)
+{
+	m4u_dump_pgtable_in_range(m4u_get_domain_by_id(0), mva, mva_size);
 }
