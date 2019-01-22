@@ -262,14 +262,19 @@ void qmu_destroy_gpd_pool(struct device *dev)
 	}
 }
 
-static void prepare_rx_gpd(u8 *pBuf, u32 data_len, u8 ep_num, u8 isioc)
+static void prepare_rx_gpd(dma_addr_t pBuf, u32 data_len, u8 ep_num, u8 isioc)
 {
 	TGPD *gpd;
 
 	/* get gpd from tail */
 	gpd = Rx_gpd_end[ep_num];
 
-	TGPD_SET_DATA(gpd, pBuf);
+	TGPD_SET_DATA(gpd, (unsigned long)pBuf);
+
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+	TGPD_SET_DATA_RXHI(gpd, (u8)(pBuf >> 32));
+#endif
+
 	TGPD_CLR_FORMAT_BDP(gpd);
 
 	TGPD_SET_DataBUF_LEN(gpd, data_len);
@@ -290,7 +295,12 @@ static void prepare_rx_gpd(u8 *pBuf, u32 data_len, u8 ep_num, u8 isioc)
 
 	/* make sure struct ready before set to next */
 	mb();
-	TGPD_SET_NEXT(gpd, gpd_virt_to_phys(Rx_gpd_end[ep_num], RXQ, ep_num));
+	TGPD_SET_NEXT(gpd, (unsigned long)gpd_virt_to_phys(Rx_gpd_end[ep_num], RXQ, ep_num));
+
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+	TGPD_SET_NEXT_RXHI(gpd,
+		(u8)(gpd_virt_to_phys(Rx_gpd_end[ep_num], RXQ, ep_num) >> 32));
+#endif
 
 	TGPD_SET_CHKSUM_HWO(gpd, 16);
 
@@ -299,14 +309,19 @@ static void prepare_rx_gpd(u8 *pBuf, u32 data_len, u8 ep_num, u8 isioc)
 	TGPD_SET_FLAGS_HWO(gpd);
 }
 
-static void prepare_tx_gpd(u8 *pBuf, u32 data_len, u8 ep_num, u8 zlp, u8 isioc)
+static void prepare_tx_gpd(dma_addr_t pBuf, u32 data_len, u8 ep_num, u8 zlp, u8 isioc)
 {
 	TGPD *gpd;
 
 	/* get gpd from tail */
 	gpd = Tx_gpd_end[ep_num];
 
-	TGPD_SET_DATA(gpd, pBuf);
+	TGPD_SET_DATA(gpd, (unsigned long)pBuf);
+
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+	TGPD_SET_DATA_TXHI(gpd, (u8)(pBuf >> 32));
+#endif
+
 	TGPD_CLR_FORMAT_BDP(gpd);
 
 	TGPD_SET_BUF_LEN(gpd, data_len);
@@ -334,7 +349,12 @@ static void prepare_tx_gpd(u8 *pBuf, u32 data_len, u8 ep_num, u8 zlp, u8 isioc)
 
 	/* make sure struct ready before set to next */
 	mb();
-	TGPD_SET_NEXT(gpd, gpd_virt_to_phys(Tx_gpd_end[ep_num], TXQ, ep_num));
+	TGPD_SET_NEXT(gpd, (unsigned long)gpd_virt_to_phys(Tx_gpd_end[ep_num], TXQ, ep_num));
+
+#ifdef CONFIG_MTK_MUSB_DRV_36BIT
+	TGPD_SET_NEXT_TXHI(gpd,
+		(u8)(gpd_virt_to_phys(Tx_gpd_end[ep_num], TXQ, ep_num) >> 32));
+#endif
 
 	TGPD_SET_CHKSUM_HWO(gpd, 16);
 
@@ -503,6 +523,11 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 		MGC_WriteQMU32(base, MGC_O_QMU_QCR2, QCR | DQMU_TX_MULTIPLE(ep_num));
 #endif
 
+#ifdef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
+		QCR = musb_readb(mbase, MUSB_GPZCR);
+		musb_writeb(mbase, MUSB_GPZCR, QCR | (1 << (ep_num-1)));
+#endif
+
 		MGC_WriteQIRQ32(base, MGC_O_QIRQ_QIMCR,
 				DQMU_M_TX_DONE(ep_num) | DQMU_M_TQ_EMPTY | DQMU_M_TXQ_ERR |
 				DQMU_M_TXEP_ERR);
@@ -599,9 +624,9 @@ static void mtk_qmu_disable(u8 ep_num, u8 isRx)
 	}
 }
 
-void mtk_qmu_insert_task(u8 ep_num, u8 isRx, u8 *buf, u32 length, u8 zlp, u8 isioc)
+void mtk_qmu_insert_task(u8 ep_num, u8 isRx, dma_addr_t buf, u32 length, u8 zlp, u8 isioc)
 {
-	QMU_INFO("mtk_qmu_insert_task ep_num: %d, isRx: %d, buf: %p, length: %d zlp: %d isioc: %d\n",
+	QMU_INFO("mtk_qmu_insert_task ep_num: %d, isRx: %d, buf: %llx, length: %d zlp: %d isioc: %d\n",
 			ep_num, isRx, buf, length, zlp, isioc);
 	if (isRx) /* rx don't care zlp input */
 		prepare_rx_gpd(buf, length, ep_num, isioc);
@@ -653,10 +678,9 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 			MGC_ReadQUCS32(base, MGC_O_QUCS_USBGCSR));
 
 		QMU_ERR("[RXD][ERROR]HWO=%d, Next_GPD=%p ,DataBufLen=%d, DataBuf=%p, RecvLen=%d, Endpoint=%d\n",
-				(u32) TGPD_GET_FLAG(gpd), TGPD_GET_NEXT(gpd),
-				(u32) TGPD_GET_DataBUF_LEN(gpd), TGPD_GET_DATA(gpd),
+				(u32) TGPD_GET_FLAG(gpd), TGPD_GET_NEXT_RX(gpd),
+				(u32) TGPD_GET_DataBUF_LEN(gpd), TGPD_GET_DATA_RX(gpd),
 				(u32) TGPD_GET_BUF_LEN(gpd), (u32) TGPD_GET_EPaddr(gpd));
-
 		return;
 	}
 
@@ -688,12 +712,12 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 			QMU_ERR("[RXD][ERROR] rcv(%d) > buf(%d) AUK!?\n", rcv_len, buf_len);
 
 		QMU_INFO("[RXD]gpd=%p ->HWO=%d, Next_GPD=%p, RcvLen=%d, BufLen=%d, pBuf=%p\n",
-			 gpd, TGPD_GET_FLAG(gpd), TGPD_GET_NEXT(gpd), rcv_len, buf_len,
-			 TGPD_GET_DATA(gpd));
+			 gpd, TGPD_GET_FLAG(gpd), TGPD_GET_NEXT_RX(gpd), rcv_len, buf_len,
+			 TGPD_GET_DATA_RX(gpd));
 
 		request->actual += rcv_len;
 
-		if (!TGPD_GET_NEXT(gpd) || !TGPD_GET_DATA(gpd)) {
+		if (!TGPD_GET_NEXT_RX(gpd) || !TGPD_GET_DATA_RX(gpd)) {
 			QMU_ERR("[RXD][ERROR] EP%d ,gpd=%p\n", ep_num, gpd);
 			QMU_ERR("[RXD][ERROR] EP%d ,gpd=%p\n", ep_num, gpd);
 			QMU_ERR("[RXD][ERROR] EP%d ,gpd=%p\n", ep_num, gpd);
@@ -703,7 +727,7 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 			return;
 		}
 
-		gpd = TGPD_GET_NEXT(gpd);
+		gpd = TGPD_GET_NEXT_RX(gpd);
 
 		gpd = gpd_phys_to_virt((dma_addr_t) gpd, RXQ, ep_num);
 
@@ -742,8 +766,8 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 			MGC_ReadQUCS32(base, MGC_O_QUCS_USBGCSR));
 
 		QMU_ERR("[RXD][ERROR]HWO=%d, Next_GPD=%p ,DataBufLen=%d, DataBuf=%p, RecvLen=%d, Endpoint=%d\n",
-				(u32) TGPD_GET_FLAG(gpd), TGPD_GET_NEXT(gpd),
-				(u32) TGPD_GET_DataBUF_LEN(gpd), TGPD_GET_DATA(gpd),
+				(u32) TGPD_GET_FLAG(gpd), TGPD_GET_NEXT_RX(gpd),
+				(u32) TGPD_GET_DataBUF_LEN(gpd), TGPD_GET_DATA_RX(gpd),
 				(u32) TGPD_GET_BUF_LEN(gpd), (u32) TGPD_GET_EPaddr(gpd));
 	}
 
@@ -794,9 +818,9 @@ void qmu_done_tx(struct musb *musb, u8 ep_num)
 
 		QMU_INFO("[TXD]gpd=%p ->HWO=%d, BPD=%d, Next_GPD=%p, DataBuffer=%p, BufferLen=%d request=%p\n",
 			 gpd, (u32) TGPD_GET_FLAG(gpd), (u32) TGPD_GET_FORMAT(gpd),
-			 TGPD_GET_NEXT(gpd), TGPD_GET_DATA(gpd), (u32) TGPD_GET_BUF_LEN(gpd), req);
+			 TGPD_GET_NEXT_TX(gpd), TGPD_GET_DATA_TX(gpd), (u32) TGPD_GET_BUF_LEN(gpd), req);
 
-		if (!TGPD_GET_NEXT(gpd)) {
+		if (!TGPD_GET_NEXT_TX(gpd)) {
 			QMU_ERR("[TXD][ERROR]Next GPD is null!!\n");
 			QMU_ERR("[TXD][ERROR]Next GPD is null!!\n");
 			QMU_ERR("[TXD][ERROR]Next GPD is null!!\n");
@@ -806,7 +830,7 @@ void qmu_done_tx(struct musb *musb, u8 ep_num)
 			return;
 		}
 
-		gpd = TGPD_GET_NEXT(gpd);
+		gpd = TGPD_GET_NEXT_TX(gpd);
 
 		gpd = gpd_phys_to_virt((dma_addr_t) gpd, TXQ, ep_num);
 
@@ -843,7 +867,7 @@ void qmu_done_tx(struct musb *musb, u8 ep_num)
 
 		QMU_ERR("[TXD][ERROR]HWO=%d, BPD=%d, Next_GPD=%p, DataBuffer=%p, BufferLen=%d, Endpoint=%d\n",
 			(u32) TGPD_GET_FLAG(gpd), (u32) TGPD_GET_FORMAT(gpd),
-			TGPD_GET_NEXT(gpd), TGPD_GET_DATA(gpd),
+			TGPD_GET_NEXT_TX(gpd), TGPD_GET_DATA_TX(gpd),
 			(u32) TGPD_GET_BUF_LEN(gpd), (u32) TGPD_GET_EPaddr(gpd));
 	}
 
@@ -851,6 +875,7 @@ void qmu_done_tx(struct musb *musb, u8 ep_num)
 		 ep_num, Tx_gpd_last[ep_num], Tx_gpd_end[ep_num]);
 
 
+#ifndef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
 	/* special case handle for zero request , only solve 1 zlp case */
 	if (req != NULL) {
 		if (request->length == 0) {
@@ -863,6 +888,7 @@ void qmu_done_tx(struct musb *musb, u8 ep_num)
 			musb_g_giveback(musb_ep, request, 0);
 		}
 	}
+#endif
 }
 
 void flush_ep_csr(struct musb *musb, u8 ep_num, u8 isRx)
@@ -973,8 +999,8 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 					MGC_ReadQUCS32(base, MGC_O_QUCS_USBGCSR));
 
 		QMU_ERR("[RX]HWO=%d, Next_GPD=%p ,BufLen=%d, Buf=%p, RLen=%d, EP=%d\n",
-				(u32)TGPD_GET_FLAG(gpd), TGPD_GET_NEXT(gpd),
-				(u32)TGPD_GET_DataBUF_LEN(gpd), TGPD_GET_DATA(gpd),
+				(u32)TGPD_GET_FLAG(gpd), TGPD_GET_NEXT_RX(gpd),
+				(u32)TGPD_GET_DataBUF_LEN(gpd), TGPD_GET_DATA_RX(gpd),
 				(u32)TGPD_GET_BUF_LEN(gpd), (u32)TGPD_GET_EPaddr(gpd));
 
 		return;
@@ -1004,7 +1030,7 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 			return;
 		}
 
-		if (!TGPD_GET_NEXT(gpd) || !TGPD_GET_DATA(gpd)) {
+		if (!TGPD_GET_NEXT_RX(gpd) || !TGPD_GET_DATA_RX(gpd)) {
 			QMU_ERR("[RXD][ERROR] EP%d ,gpd=%p\n", ep_num, gpd);
 			return;
 		}
@@ -1031,7 +1057,7 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 			done = true;
 		}
 
-		gpd = TGPD_GET_NEXT(gpd);
+		gpd = TGPD_GET_NEXT_RX(gpd);
 
 		gpd = gpd_phys_to_virt((dma_addr_t)gpd, RXQ, ep_num);
 		DBG(4, "gpd = %p ep_num = %d\n", gpd, ep_num);
@@ -1078,8 +1104,8 @@ void h_qmu_done_rx(struct musb *musb, u8 ep_num)
 				MGC_ReadQUCS32(base, MGC_O_QUCS_USBGCSR));
 
 		QMU_ERR("[RX]HWO=%d, Next_GPD=%p ,BufLen=%d, Buf=%p, RLen=%d, EP=%d\n",
-				(u32)TGPD_GET_FLAG(gpd), TGPD_GET_NEXT(gpd),
-				(u32)TGPD_GET_DataBUF_LEN(gpd), TGPD_GET_DATA(gpd),
+				(u32)TGPD_GET_FLAG(gpd), TGPD_GET_NEXT_RX(gpd),
+				(u32)TGPD_GET_DataBUF_LEN(gpd), TGPD_GET_DATA_RX(gpd),
 				(u32)TGPD_GET_BUF_LEN(gpd), (u32)TGPD_GET_EPaddr(gpd));
 	}
 
@@ -1128,9 +1154,9 @@ void h_qmu_done_tx(struct musb *musb, u8 ep_num)
 	while (gpd != gpd_current && !TGPD_IS_FLAGS_HWO(gpd)) {
 		QMU_INFO("[TXD]gpd=%p ->HWO=%d, BPD=%d, Next_GPD=%p, DataBuffer=%p, BufferLen=%d\n",
 			gpd, (u32)TGPD_GET_FLAG(gpd), (u32)TGPD_GET_FORMAT(gpd),
-			TGPD_GET_NEXT(gpd), TGPD_GET_DATA(gpd), (u32)TGPD_GET_BUF_LEN(gpd));
+			TGPD_GET_NEXT_TX(gpd), TGPD_GET_DATA_TX(gpd), (u32)TGPD_GET_BUF_LEN(gpd));
 
-		if (!TGPD_GET_NEXT(gpd)) {
+		if (!TGPD_GET_NEXT_TX(gpd)) {
 			QMU_ERR("[TXD][ERROR]Next GPD is null!!\n");
 			break;
 		}
@@ -1141,7 +1167,7 @@ void h_qmu_done_tx(struct musb *musb, u8 ep_num)
 			return;
 		}
 
-		if (!TGPD_GET_NEXT(gpd) || !TGPD_GET_DATA(gpd)) {
+		if (!TGPD_GET_NEXT_TX(gpd) || !TGPD_GET_DATA_TX(gpd)) {
 			QMU_ERR("[RXD][ERROR] EP%d ,gpd=%p\n", ep_num, gpd);
 			return;
 		}
@@ -1170,7 +1196,7 @@ void h_qmu_done_tx(struct musb *musb, u8 ep_num)
 			qh->offset = TGPD_GET_BUF_LEN(gpd);
 			done = true;
 		}
-		gpd = TGPD_GET_NEXT(gpd);
+		gpd = TGPD_GET_NEXT_TX(gpd);
 		gpd = gpd_phys_to_virt((dma_addr_t)gpd, TXQ, ep_num);
 		Tx_gpd_last[ep_num] = gpd;
 		Tx_gpd_free_count[ep_num]++;
@@ -1382,14 +1408,14 @@ finished:
 
 }
 
-static void flush_urb_status(struct musb_qh	*qh, struct urb *urb)
+static void flush_urb_status(struct musb_qh *qh, struct urb *urb)
 {
 	qh->iso_idx = 0;
 	qh->offset = 0;
 	urb->actual_length = 0;
 	urb->status = -EINPROGRESS;
 	if (qh->type == USB_ENDPOINT_XFER_ISOC) {
-		struct usb_iso_packet_descriptor	*d;
+		struct usb_iso_packet_descriptor *d;
 		int index;
 
 		for (index = 0; index < urb->number_of_packets; index++) {
@@ -1471,19 +1497,25 @@ void mtk_qmu_err_recover(struct musb *musb, u8 ep_num, u8 isRx, bool is_len_err)
 				QMU_ERR("[TX] gpd=%p, epnum=%d, len=%d\n", Tx_gpd_end[ep_num],
 					ep_num, request->request.length);
 				request->request.actual = request->request.length;
+#ifdef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
+				if (request->request.length >= 0) {
+#else
 				if (request->request.length > 0) {
+#endif
 					QMU_ERR("[TX]Send non-ZLP cases\n");
 					mtk_qmu_insert_task(request->epnum,
 							    isRx,
-							    (u8 *) request->request.dma,
+							    request->request.dma,
 							    request->request.length,
 							    ((request->request.zero == 1) ? 1 : 0), 1);
 
+#ifndef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
 				} else if (request->request.length == 0) {
 					/* this case may be a problem */
 					QMU_ERR("[TX]Send ZLP cases, may be a problem!!!\n");
 					musb_tx_zlp_qmu(musb, request->epnum);
 					musb_g_giveback(musb_ep, &(request->request), 0);
+#endif
 				} else {
 					QMU_ERR("ERR, TX, request->request.length(%d)\n",
 						request->request.length);
@@ -1493,7 +1525,7 @@ void mtk_qmu_err_recover(struct musb *musb, u8 ep_num, u8 isRx, bool is_len_err)
 					Rx_gpd_end[ep_num], ep_num, request->request.length);
 				mtk_qmu_insert_task(request->epnum,
 						    isRx,
-						    (u8 *) request->request.dma,
+						    request->request.dma,
 						    request->request.length,
 						    ((request->request.zero == 1) ? 1 : 0), 1);
 			}

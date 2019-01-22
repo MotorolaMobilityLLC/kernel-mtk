@@ -25,7 +25,10 @@ extern irqreturn_t musb_q_irq(struct musb *musb);
 extern void musb_flush_qmu(u32 ep_num, u8 isRx);
 extern void musb_restart_qmu(struct musb *musb, u32 ep_num, u8 isRx);
 extern bool musb_is_qmu_stop(u32 ep_num, u8 isRx);
+
+#ifndef CONFIG_MTK_MUSB_QMU_PURE_ZLP_SUPPORT
 extern void musb_tx_zlp_qmu(struct musb *musb, u32 ep_num);
+#endif
 
 /*FIXME, not good layer present */
 extern void mtk_qmu_enable(struct musb *musb, u8 EP_Num, u8 isRx);
