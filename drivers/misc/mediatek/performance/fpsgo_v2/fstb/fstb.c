@@ -92,6 +92,7 @@ static long long FRAME_TIME_WINDOW_SIZE_US = 1000000;
 static long long ADJUST_INTERVAL_US = 1000000;
 static int fstb_enable, fstb_active, fstb_idle_cnt;
 static int camera_scn;
+static long long last_update_ts;
 
 static void reset_fps_level(void);
 static int set_fps_level(int nr_level, struct fps_level *level);
@@ -131,9 +132,23 @@ int is_fstb_enable(void)
 	return fstb_enable;
 }
 
-int is_fstb_active(void)
+int is_fstb_active(long long time_diff)
 {
-	return fstb_active;
+	int active = 0;
+	ktime_t cur_time;
+	long long cur_time_us;
+
+	cur_time = ktime_get();
+	cur_time_us = ktime_to_us(cur_time);
+
+	mutex_lock(&fstb_lock);
+
+	if (cur_time_us - last_update_ts < time_diff)
+		active = 1;
+
+	mutex_unlock(&fstb_lock);
+
+	return active;
 }
 
 int fpsgo_ctrl2fstb_switch_fstb(int enable)
@@ -602,6 +617,8 @@ void fpsgo_comp2fstb_queue_time_update(int pid,
 	unsigned long long bufferid, int api)
 {
 	struct FSTB_FRAME_INFO *iter;
+	ktime_t cur_time;
+	long long cur_time_us;
 
 	mutex_lock(&fstb_lock);
 
@@ -614,6 +631,10 @@ void fpsgo_comp2fstb_queue_time_update(int pid,
 		fstb_active = 1;
 		switch_fstb_active();
 	}
+
+	cur_time = ktime_get();
+	cur_time_us = ktime_to_us(cur_time);
+	last_update_ts = cur_time_us;
 
 	hlist_for_each_entry(iter, &fstb_frame_infos, hlist) {
 		if (iter->pid == pid)
