@@ -158,6 +158,8 @@ INT32 stp_dbg_combo_core_dump(INT32 dump_sink)
 		break;
 	case 1:
 		ret = stp_dbg_combo_put_dump_to_aee();
+		if (ret)
+			stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_TRUE);
 		break;
 	case 2:
 		ret = stp_dbg_combo_put_dump_to_nl();
