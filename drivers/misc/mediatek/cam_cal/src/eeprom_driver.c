@@ -32,17 +32,17 @@
 #endif
 
 /*#define CAM_CALGETDLT_DEBUG*/
-/*#define CAM_CAL_DEBUG*/
+#define CAM_CAL_DEBUG
 #define PFX "CAM_CAL_DRV"
 #ifdef CAM_CAL_DEBUG
 /*#include <linux/log.h>*/
-#define PK_DBG(fmt, arg...)			pr_debug(PFX fmt, ##arg)
-#define PK_ERR(fmt, arg...)         pr_err(fmt, ##arg)
-#define PK_INFO(fmt, arg...)		pr_debug(PFX fmt, ##arg)
+#define PK_INF(format, args...)     pr_debug(PFX "[%s] " format, __func__, ##args)
+#define PK_DBG(format, args...)     pr_debug(PFX "[%s] " format, __func__, ##args)
+#define PK_ERR(format, args...)     pr_debug(PFX "[%s] " format, __func__, ##args)
 #else
-#define PK_DBG(fmt, arg...)
-#define PK_ERR(fmt, arg...)			pr_err(fmt, ##arg)
-#define PK_INFO(fmt, arg...)		pr_debug(PFX fmt, ##arg)
+#define PK_INF(format, args...)
+#define PK_DBG(format, args...)
+#define PK_ERR(format, args...)     pr_debug(PFX "[%s] " format, __func__, ##args)
 #endif
 
 #define CAM_CAL_DRV_NAME "CAM_CAL_DRV"
@@ -66,6 +66,12 @@ static dev_t g_devNum = MKDEV(CAM_CAL_DEV_MAJOR_NUMBER, 0);
 static struct cdev *g_charDrv;
 static struct class *g_drvClass;
 static unsigned int g_drvOpened;
+static struct i2c_client *g_pstI2Cclient;
+static struct i2c_client *g_pstI2Cclient2;
+
+
+
+
 static DEFINE_SPINLOCK(g_spinLock); /*for SMP*/
 
 typedef enum {
@@ -93,6 +99,8 @@ typedef CAM_CAL_BUS_ID cam_cal_bus_id;
 
 static unsigned int g_busNum[BUS_ID_MAX] = {0, 0, 0, 0};
 static cam_cal_bus_id g_curBusIdx = BUS_ID_MAIN;
+static struct i2c_client *g_Current_Client;
+
 
 /*Note: Must Mapping to IHalSensor.h*/
 enum {
@@ -125,73 +133,45 @@ static stCAM_CAL_CMD_INFO_STRUCT g_camCalDrvInfo[CAM_CAL_I2C_MAX_SENSOR];
 *
 ********************************************************************************/
 
-static int cam_cal_set_i2c_bus(unsigned int deviceID)
+static int EEPROM_set_i2c_bus(unsigned int deviceID)
 {
 	switch (deviceID) {
 	case SENSOR_DEV_MAIN:
 		g_curBusIdx = BUS_ID_MAIN;
 		g_curDevIdx = I2C_DEV_1;
+		g_Current_Client = g_pstI2Cclient;
 		break;
 	case SENSOR_DEV_SUB:
 		g_curBusIdx = BUS_ID_SUB;
 		g_curDevIdx = I2C_DEV_2;
+		g_Current_Client = g_pstI2Cclient2;
 		break;
 	case SENSOR_DEV_MAIN_2:
 		g_curBusIdx = BUS_ID_MAIN2;
 		g_curDevIdx = I2C_DEV_3;
+		g_Current_Client = g_pstI2Cclient2;
 		break;
 	case SENSOR_DEV_SUB_2:
 		g_curBusIdx = BUS_ID_SUB2;
 		g_curDevIdx = I2C_DEV_4;
+		g_Current_Client = g_pstI2Cclient;
+		break;
 	default:
 		return 1;
 	}
-	PK_DBG("cam_cal_set_i2c_bus end! deviceID=%d g_curBusIdx=%d g_curDevIdx=%d\n",
+	PK_DBG("EEPROM_set_i2c_bus end! deviceID=%d g_curBusIdx=%d g_curDevIdx=%d\n",
 		deviceID, g_curBusIdx, g_curDevIdx);
 
 	return 0;
 
 }
 
-static int cam_cal_get_i2c_client(struct i2c_board_info *i2c_info,
-				  struct i2c_client **client)
-{
-	const unsigned short addr_list[] = {
-		i2c_info->addr,
-		I2C_CLIENT_END
-	};
-	struct i2c_adapter *adapt = NULL;
-	int ret = 1;
 
-	if (*client == NULL) {
-		PK_INFO("i2c_info->addr ==%x, register i2c g_busNum[%d]=%d\n", i2c_info->addr,
-			g_curBusIdx, g_busNum[g_curBusIdx]);
-
-		adapt = i2c_get_adapter(g_busNum[g_curBusIdx]);
-		if (adapt == NULL) {
-			PK_DBG("failed to get adapter i2c busID=%d\n", g_busNum[g_curBusIdx]);
-			ret = 0;
-		} else {
-			PK_DBG("g_adapt!=NULL, register i2c %d start !\n", g_curBusIdx);
-			*client = i2c_new_probed_device(adapt, i2c_info, addr_list, NULL);
-
-			i2c_put_adapter(adapt);
-
-			if (!(*client)) {
-				PK_DBG("failed to get client i2c busID=%d\n", g_busNum[g_curBusIdx]);
-				ret = 0;
-			}
-		}
-	}
-	return ret;
-
-}
-
-static int cam_cal_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT *cmdInfo)
+static int EEPROM_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT *cmdInfo)
 {
 	stCAM_CAL_LIST_STRUCT *pCamCalList = NULL;
 	stCAM_CAL_FUNC_STRUCT *pCamCalFunc = NULL;
-	int i = 0, j = 0;
+	int i = 0;
 
 	cam_cal_get_sensor_list(&pCamCalList);
 	cam_cal_get_func_list(&pCamCalFunc);
@@ -200,72 +180,18 @@ static int cam_cal_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT
 		for (i = 0; pCamCalList[i].sensorID != 0; i++) {
 			if (pCamCalList[i].sensorID == sensorID) {
 				(*g_i2c_info[g_curDevIdx]).addr = pCamCalList[i].slaveID >> 1;
+				cmdInfo->client = g_Current_Client;
+
 				PK_DBG("pCamCalList[%d].sensorID==%x\n", i, pCamCalList[i].sensorID);
 				PK_DBG("g_i2c_info[%d].addr =%x\n", g_curDevIdx,
 					  (*g_i2c_info[g_curDevIdx]).addr);
-				if (cam_cal_get_i2c_client(g_i2c_info[g_curDevIdx], &(cmdInfo->client))) {
-					for (j = 0; pCamCalFunc[j].cmdType != CMD_NONE; j++) {
-				if (pCamCalFunc[j].cmdType == pCamCalList[i].cmdType
-						    || pCamCalList[i].cmdType == CMD_AUTO) {
-					if (pCamCalList[i].checkFunc != NULL) {
-					if (pCamCalList[i].checkFunc(cmdInfo->client,
-						pCamCalFunc[j].readCamCalData)) {
+				PK_DBG("20 g_client =%p g_client2=%p Cur=%p\n",
+					g_pstI2Cclient, g_pstI2Cclient2, g_Current_Client);
+
+				if (pCamCalList[i].checkFunc(cmdInfo->client, pCamCalFunc[0].readCamCalData)) {
 					PK_DBG("pCamCalList[%d].checkFunc ok!\n", i);
-					cmdInfo->readCMDFunc = pCamCalFunc[j].readCamCalData;
-					/*151101=Write Command Unverified*/
-					/*cmdInfo->writeCMDFunc = pCamCalFunc[j].writeCamCalData;*/
+					cmdInfo->readCMDFunc = pCamCalFunc[0].readCamCalData;
 					return 1;
-					} else if (pCamCalList[i].cmdType == CMD_AUTO) {
-						PK_DBG("reset i2c\n");
-						i2c_unregister_device(cmdInfo->client);
-						cmdInfo->client = NULL;
-						cam_cal_get_i2c_client(g_i2c_info[g_curDevIdx],
-						&(cmdInfo->client));
-					}
-					}
-				}
-					}
-					if (cmdInfo->client != NULL) {
-						i2c_unregister_device(cmdInfo->client);
-						PK_DBG("unregister i2c\n");
-						cmdInfo->client = NULL;
-					}
-				} else {
-					int infoDeciceID = 0;
-
-					switch (pCamCalList[i].cmdType) {
-
-					case CMD_MAIN:
-						infoDeciceID = SENSOR_DEV_MAIN;
-						break;
-					case CMD_MAIN2:
-						infoDeciceID = SENSOR_DEV_MAIN_2;
-						break;
-					case CMD_SUB:
-						infoDeciceID = SENSOR_DEV_SUB;
-						break;
-					case CMD_SUB2:
-						infoDeciceID = SENSOR_DEV_SUB_2;
-						break;
-					default:
-						PK_DBG("cmdType=%d error.\n", pCamCalList[i].cmdType);
-						return 0;
-					}
-					for (j = 0; j < CAM_CAL_I2C_MAX_SENSOR; j++) {
-					if (g_camCalDrvInfo[j].deviceID == infoDeciceID) {
-						PK_DBG("g_camCalDrvInfo[%d].deviceID = %x!\n", j,
-						g_camCalDrvInfo[j].deviceID);
-						break;
-					}
-					}
-					PK_DBG("Check infoDeciceID=%d cmdInfo\n", infoDeciceID);
-					if (j < CAM_CAL_I2C_MAX_SENSOR &&
-						pCamCalList[j].checkFunc(g_camCalDrvInfo[j].client,
-						g_camCalDrvInfo[j].readCMDFunc)) {
-						cmdInfo->client = g_camCalDrvInfo[j].client;
-						cmdInfo->readCMDFunc = g_camCalDrvInfo[j].readCMDFunc;
-						return 1;
-					}
 				}
 			}
 		}
@@ -274,23 +200,26 @@ static int cam_cal_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT
 
 }
 
-static stCAM_CAL_CMD_INFO_STRUCT *cam_cal_get_cmd_info_ex(unsigned int sensorID,
+static stCAM_CAL_CMD_INFO_STRUCT *EEPROM_get_cmd_info_ex(unsigned int sensorID,
 	unsigned int deviceID)
 {
 	int i = 0;
 
+	/* To check device ID */
 	for (i = 0; i < CAM_CAL_I2C_MAX_SENSOR; i++) {
 		if (g_camCalDrvInfo[i].deviceID == deviceID) {
 			PK_DBG("g_camCalDrvInfo[%d].deviceID == deviceID == %x!\n", i, deviceID);
 			break;
 		}
 	}
+	/* To check cmd from Sensor ID */
 
 	if (i == CAM_CAL_I2C_MAX_SENSOR) {
 		for (i = 0; i < CAM_CAL_I2C_MAX_SENSOR; i++) {
+			/* To Set Client */
 			if (g_camCalDrvInfo[i].sensorID == 0) {
 				PK_DBG("g_camCalDrvInfo[%d].sensorID == 0, start get_cmd_info!\n", i);
-				cam_cal_get_cmd_info(sensorID, &g_camCalDrvInfo[i]);
+				EEPROM_get_cmd_info(sensorID, &g_camCalDrvInfo[i]);
 
 				if (g_camCalDrvInfo[i].readCMDFunc != NULL) {
 					g_camCalDrvInfo[i].sensorID = sensorID;
@@ -310,6 +239,139 @@ static stCAM_CAL_CMD_INFO_STRUCT *cam_cal_get_cmd_info_ex(unsigned int sensorID,
 	}
 }
 
+/*******************************************************************************
+* EEPROM_HW_i2c_probe
+********************************************************************************/
+static int EEPROM_HW_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+{
+    /* get sensor i2c client */
+	spin_lock(&g_spinLock);
+	g_pstI2Cclient = client;
+
+    /* set I2C clock rate */
+    #ifdef CONFIG_MTK_I2C_EXTENSION
+	g_pstI2Cclient->timing = 100;/* 100k */
+	g_pstI2Cclient->ext_flag &= ~I2C_POLLING_FLAG; /* No I2C polling busy waiting */
+    #endif
+
+	/* Default EEPROM Slave Address*/
+	g_pstI2Cclient->addr = 0x50;
+	spin_unlock(&g_spinLock);
+
+	return 0;
+}
+
+
+
+/*******************************************************************************
+* CAMERA_HW_i2c_remove
+********************************************************************************/
+static int EEPROM_HW_i2c_remove(struct i2c_client *client)
+{
+	return 0;
+}
+
+/*******************************************************************************
+* EEPROM_HW_i2c_probe2
+********************************************************************************/
+static int EEPROM_HW_i2c_probe2(struct i2c_client *client, const struct i2c_device_id *id)
+{
+    /* get sensor i2c client */
+	spin_lock(&g_spinLock);
+	g_pstI2Cclient2 = client;
+
+    /* set I2C clock rate */
+    #ifdef CONFIG_MTK_I2C_EXTENSION
+	g_pstI2Cclient2->timing = 100;/* 100k */
+	g_pstI2Cclient2->ext_flag &= ~I2C_POLLING_FLAG; /* No I2C polling busy waiting */
+    #endif
+
+	/* Default EEPROM Slave Address*/
+	g_pstI2Cclient2->addr = 0x50;
+	spin_unlock(&g_spinLock);
+
+	return 0;
+}
+
+/*******************************************************************************
+* CAMERA_HW_i2c_remove2
+********************************************************************************/
+static int EEPROM_HW_i2c_remove2(struct i2c_client *client)
+{
+	return 0;
+}
+
+/*******************************************************************************
+* I2C related variable
+********************************************************************************/
+
+static const struct i2c_device_id EEPROM_HW_i2c_id[] = {{CAM_CAL_DRV_NAME, 0}, {} };
+static const struct i2c_device_id EEPROM_HW_i2c_id2[] = {{CAM_CAL_I2C_DEV2_NAME, 0}, {} };
+
+
+
+#ifdef CONFIG_OF
+	static const struct of_device_id EEPROM_HW_i2c_of_ids[] = {
+	{ .compatible = "mediatek,camera_main_eeprom", },
+	{}
+	};
+#endif
+
+struct i2c_driver EEPROM_HW_i2c_driver = {
+	.probe = EEPROM_HW_i2c_probe,
+	.remove = EEPROM_HW_i2c_remove,
+	.driver = {
+	.name = CAM_CAL_DRV_NAME,
+	.owner = THIS_MODULE,
+
+#ifdef CONFIG_OF
+	.of_match_table = EEPROM_HW_i2c_of_ids,
+#endif
+	},
+	.id_table = EEPROM_HW_i2c_id,
+};
+
+/*******************************************************************************
+* I2C Driver structure for Sub
+********************************************************************************/
+#ifdef CONFIG_OF
+	static const struct of_device_id EEPROM_HW2_i2c_driver_of_ids[] = {
+	{ .compatible = "mediatek,camera_sub_eeprom", },
+	{}
+	};
+#endif
+
+struct i2c_driver EEPROM_HW_i2c_driver2 = {
+	.probe = EEPROM_HW_i2c_probe2,
+	.remove = EEPROM_HW_i2c_remove2,
+	.driver = {
+	.name = CAM_CAL_I2C_DEV2_NAME,
+	.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+	.of_match_table = EEPROM_HW2_i2c_driver_of_ids,
+#endif
+	},
+	.id_table = EEPROM_HW_i2c_id2,
+};
+
+
+/*******************************************************************************
+* EEPROM_HW_probe
+********************************************************************************/
+static int EEPROM_HW_probe(struct platform_device *pdev)
+{
+	i2c_add_driver(&EEPROM_HW_i2c_driver2);
+	return i2c_add_driver(&EEPROM_HW_i2c_driver);
+}
+/*******************************************************************************
+* EEPROM_HW_remove()
+********************************************************************************/
+static int EEPROM_HW_remove(struct platform_device *pdev)
+{
+	i2c_del_driver(&EEPROM_HW_i2c_driver);
+	i2c_del_driver(&EEPROM_HW_i2c_driver2);
+	return 0;
+}
 
 /*******************************************************************************
 *
@@ -322,13 +384,17 @@ static struct platform_device g_platDev = {
 };
 
 
-static struct platform_driver g_platDrv = {
+static struct platform_driver g_stEEPROM_HW_Driver = {
+	.probe      = EEPROM_HW_probe,
+	.remove     = EEPROM_HW_remove,
 	.driver     = {
 		.name   = CAM_CAL_DRV_NAME,
 		.owner  = THIS_MODULE,
 	}
 };
 
+
+/********************************************************************/
 
 #ifdef CONFIG_COMPAT
 static int compat_put_cal_info_struct(
@@ -356,7 +422,7 @@ static int compat_put_cal_info_struct(
 	return err;
 }
 
-static int cam_cal_compat_get_info(
+static int EEPROM_compat_get_info(
 	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
 	stCAM_CAL_INFO_STRUCT __user *data)
 {
@@ -379,7 +445,7 @@ static int cam_cal_compat_get_info(
 	return err;
 }
 
-static long cam_cal_drv_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+static long EEPROM_drv_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	long ret;
 
@@ -398,7 +464,7 @@ static long cam_cal_drv_compat_ioctl(struct file *filp, unsigned int cmd, unsign
 		if (data == NULL)
 			return -EFAULT;
 
-		err = cam_cal_compat_get_info(data32, data);
+		err = EEPROM_compat_get_info(data32, data);
 		if (err)
 			return err;
 
@@ -418,7 +484,7 @@ static long cam_cal_drv_compat_ioctl(struct file *filp, unsigned int cmd, unsign
 		if (data == NULL)
 			return -EFAULT;
 
-		err = cam_cal_compat_get_info(data32, data);
+		err = EEPROM_compat_get_info(data32, data);
 		if (err)
 			return err;
 
@@ -442,12 +508,12 @@ static long cam_cal_drv_compat_ioctl(struct file *filp, unsigned int cmd, unsign
 
 #define NEW_UNLOCK_IOCTL
 #ifndef NEW_UNLOCK_IOCTL
-static int cam_cal_drv_ioctl(struct inode *a_pstInode,
+static int EEPROM_drv_ioctl(struct inode *a_pstInode,
 			     struct file *a_pstFile,
 			     unsigned int a_u4Command,
 			     unsigned long a_u4Param)
 #else
-static long cam_cal_drv_ioctl(
+static long EEPROM_drv_ioctl(
 	struct file *file,
 	unsigned int a_u4Command,
 	unsigned long a_u4Param
@@ -517,7 +583,7 @@ static long cam_cal_drv_ioctl(
 
 	if (g_lastDevID != ptempbuf->deviceID) {
 		g_lastDevID = ptempbuf->deviceID;
-		if (cam_cal_set_i2c_bus(ptempbuf->deviceID)) {
+		if (EEPROM_set_i2c_bus(ptempbuf->deviceID)) {
 			PK_DBG("deviceID Error!\n");
 			kfree(pBuff);
 			kfree(pu1Params);
@@ -525,7 +591,7 @@ static long cam_cal_drv_ioctl(
 		}
 	}
 
-	pcmdInf = cam_cal_get_cmd_info_ex(ptempbuf->sensorID, ptempbuf->deviceID);
+	pcmdInf = EEPROM_get_cmd_info_ex(ptempbuf->sensorID, ptempbuf->deviceID);
 
 	if (pcmdInf != NULL) {
 		if (pcmdInf->writeCMDFunc != NULL) {
@@ -558,11 +624,10 @@ static long cam_cal_drv_ioctl(
 
 		if (g_lastDevID != ptempbuf->deviceID) {
 			g_lastDevID = ptempbuf->deviceID;
-			cam_cal_set_i2c_bus(ptempbuf->deviceID);
+			EEPROM_set_i2c_bus(ptempbuf->deviceID);
 		}
 		PK_DBG("SensorID=%x DeviceID=%x\n", ptempbuf->sensorID, ptempbuf->deviceID);
-
-		pcmdInf = cam_cal_get_cmd_info_ex(ptempbuf->sensorID, ptempbuf->deviceID);
+		pcmdInf = EEPROM_get_cmd_info_ex(ptempbuf->sensorID, ptempbuf->deviceID);
 
 		if (pcmdInf != NULL) {
 			if (pcmdInf->readCMDFunc != NULL)
@@ -605,11 +670,11 @@ static long cam_cal_drv_ioctl(
 	return i4RetValue;
 }
 
-static int cam_cal_drv_open(struct inode *a_pstInode, struct file *a_pstFile)
+static int EEPROM_drv_open(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	int ret = 0;
 
-	PK_DBG("cam_cal_drv_open start\n");
+	PK_DBG("EEPROM_drv_open start\n");
 	spin_lock(&g_spinLock);
 	if (g_drvOpened) {
 		spin_unlock(&g_spinLock);
@@ -624,7 +689,7 @@ static int cam_cal_drv_open(struct inode *a_pstInode, struct file *a_pstFile)
 	return ret;
 }
 
-static int cam_cal_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
+static int EEPROM_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	spin_lock(&g_spinLock);
 	g_drvOpened = 0;
@@ -635,13 +700,13 @@ static int cam_cal_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 
 static const struct file_operations g_stCAM_CAL_fops1 = {
 	.owner = THIS_MODULE,
-	.open = cam_cal_drv_open,
-	.release = cam_cal_drv_release,
+	.open = EEPROM_drv_open,
+	.release = EEPROM_drv_release,
 	/*.ioctl = CAM_CAL_Ioctl*/
 #ifdef CONFIG_COMPAT
-	.compat_ioctl = cam_cal_drv_compat_ioctl,
+	.compat_ioctl = EEPROM_drv_compat_ioctl,
 #endif
-	.unlocked_ioctl = cam_cal_drv_ioctl
+	.unlocked_ioctl = EEPROM_drv_ioctl
 };
 
 /*******************************************************************************
@@ -649,11 +714,11 @@ static const struct file_operations g_stCAM_CAL_fops1 = {
 ********************************************************************************/
 
 #define CAM_CAL_DYNAMIC_ALLOCATE_DEVNO 1
-static inline int cam_cal_chrdev_register(void)
+static inline int EEPROM_chrdev_register(void)
 {
 	struct device *device = NULL;
 
-	PK_DBG("cam_cal_chrdev_register Start\n");
+	PK_DBG("EEPROM_chrdev_register Start\n");
 
 #if CAM_CAL_DYNAMIC_ALLOCATE_DEVNO
 	if (alloc_chrdev_region(&g_devNum, 0, 1, CAM_CAL_DRV_NAME)) {
@@ -692,12 +757,12 @@ static inline int cam_cal_chrdev_register(void)
 		return ret;
 	}
 	device = device_create(g_drvClass, NULL, g_devNum, NULL, CAM_CAL_DRV_NAME);
-	PK_DBG("cam_cal_chrdev_register End\n");
+	PK_DBG("EEPROM_chrdev_register End\n");
 
 	return 0;
 }
 
-static void cam_cal_chrdev_unregister(void)
+static void EEPROM_chrdev_unregister(void)
 {
 	/*Release char driver*/
 
@@ -713,38 +778,41 @@ static void cam_cal_chrdev_unregister(void)
 /*******************************************************************************
 *
 ********************************************************************************/
-static int __init cam_cal_drv_init(void)
+
+static int __init EEPROM_drv_init(void)
 {
-	CAMERA_HW_Get_i2C_BusNum(g_busNum);
-	if (platform_driver_register(&g_platDrv)) {
-		PK_DBG("failed to register CAM_CAL driver1\n");
+	PK_DBG("EEPROM_drv_init Start!\n");
+
+	if (platform_driver_register(&g_stEEPROM_HW_Driver)) {
+		PK_ERR("failed to register EEPROM driver i2C main\n");
 		return -ENODEV;
 	}
 
 	if (platform_device_register(&g_platDev)) {
-		PK_DBG("failed to register CAM_CAL device1\n");
+		PK_ERR("failed to register EEPROM device");
 		return -ENODEV;
 	}
 
-	cam_cal_chrdev_register();
+	EEPROM_chrdev_register();
 
+	PK_DBG("EEPROM_drv_init End!\n");
 	return 0;
 }
 
-static void __exit cam_cal_drv_exit(void)
+static void __exit EEPROM_drv_exit(void)
 {
+
 	platform_device_unregister(&g_platDev);
+	platform_driver_unregister(&g_stEEPROM_HW_Driver);
 
-	platform_driver_unregister(&g_platDrv);
-
-	cam_cal_chrdev_unregister();
+	EEPROM_chrdev_unregister();
 }
 
-module_init(cam_cal_drv_init);
-module_exit(cam_cal_drv_exit);
+module_init(EEPROM_drv_init);
+module_exit(EEPROM_drv_exit);
 
-MODULE_DESCRIPTION("CAM_CAL Driver");
-MODULE_AUTHOR("DreamYeh <Dream.Yeh@mediatek.com>");
+MODULE_DESCRIPTION("EEPROM Driver");
+MODULE_AUTHOR("MM3_SW2");
 MODULE_LICENSE("GPL");
 
 
