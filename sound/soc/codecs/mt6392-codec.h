@@ -16,21 +16,6 @@
 #ifndef __MT6392_CODEC_H__
 #define __MT6392_CODEC_H__
 
-enum mt6392_speaker_mode {
-	MT6392_CLASS_D = 0,
-	MT6392_CLASS_AB,
-};
-
-struct mt6392_codec_priv {
-	struct snd_soc_codec *codec;
-	uint32_t speaker_mode;
-	uint32_t spk_amp_gain;
-	uint16_t spk_trim_offset;
-#ifdef CONFIG_DEBUG_FS
-	struct dentry *debugfs;
-#endif
-};
-
 #define PMIC_OFFSET              (0x00C00000)
 #define PMIC_REG(reg)            (reg | PMIC_OFFSET)
 
@@ -50,10 +35,5 @@ struct mt6392_codec_priv {
 #define SPK_CON12                PMIC_REG(0x006A)
 
 #define TOP_CKPDN1_CLR           PMIC_REG(0x010C)
-
-int mt6392_codec_probe(struct snd_soc_codec *codec);
-int mt6392_codec_remove(struct snd_soc_codec *codec);
-int mt6392_int_spk_turn_on(struct snd_soc_codec *codec);
-int mt6392_int_spk_turn_off(struct snd_soc_codec *codec);
 
 #endif
