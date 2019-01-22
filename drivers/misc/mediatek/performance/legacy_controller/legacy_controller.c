@@ -20,8 +20,8 @@ static struct mutex boost_freq;
 static struct mutex boost_core;
 static struct ppm_limit_data current_core[NR_PPM_CLUSTERS];
 static struct ppm_limit_data current_freq[NR_PPM_CLUSTERS];
-static struct ppm_limit_data core_set[MAX_KIR][NR_PPM_CLUSTERS];
-static struct ppm_limit_data freq_set[MAX_KIR][NR_PPM_CLUSTERS];
+static struct ppm_limit_data core_set[PPM_MAX_KIR][NR_PPM_CLUSTERS];
+static struct ppm_limit_data freq_set[PPM_MAX_KIR][NR_PPM_CLUSTERS];
 
 
 /*************************************************************************************/
@@ -60,7 +60,7 @@ int update_userlimit_cpu_core(int kicker, int num_cluster, struct ppm_limit_data
 #endif
 	}
 
-	for (i = 0; i < MAX_KIR; i++) {
+	for (i = 0; i < PPM_MAX_KIR; i++) {
 		for (j = 0; j < NR_PPM_CLUSTERS; j++) {
 			final_core[j].min = MAX(core_set[i][j].min, final_core[j].min);
 			final_core[j].max = MAX(core_set[i][j].max, final_core[j].max);
@@ -122,7 +122,7 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster, struct ppm_limit_data
 #endif
 	}
 
-	for (i = 0; i < MAX_KIR; i++) {
+	for (i = 0; i < PPM_MAX_KIR; i++) {
 		for (j = 0; j < NR_PPM_CLUSTERS; j++) {
 			final_freq[j].min = MAX(freq_set[i][j].min, final_freq[j].min);
 			final_freq[j].max = MAX(freq_set[i][j].max, final_freq[j].max);
@@ -178,7 +178,7 @@ static ssize_t perfmgr_perfserv_core_write(struct file *filp, const char __user 
 	if (i < arg_num)
 		pr_crit(TAG"@%s: number of arguments < %d!\n", __func__, arg_num);
 	else
-		update_userlimit_cpu_core(KIR_PERF, NR_PPM_CLUSTERS, core_limit);
+		update_userlimit_cpu_core(PPM_KIR_PERF, NR_PPM_CLUSTERS, core_limit);
 
 out:
 	free_page((unsigned long)buf);
@@ -192,7 +192,7 @@ static int perfmgr_perfserv_core_show(struct seq_file *m, void *v)
 
 	for (i = 0; i < NR_PPM_CLUSTERS; i++)
 		seq_printf(m, "cluster %d min:%d max:%d\n",
-				i, core_set[KIR_PERF][i].min, core_set[KIR_PERF][i].max);
+				i, core_set[PPM_KIR_PERF][i].min, core_set[PPM_KIR_PERF][i].max);
 
 	return 0;
 }
@@ -242,7 +242,7 @@ static ssize_t perfmgr_perfserv_freq_write(struct file *filp, const char __user 
 	if (i < arg_num)
 		pr_crit(TAG"@%s: number of arguments < %d!\n", __func__, arg_num);
 	else
-		update_userlimit_cpu_freq(KIR_PERF, NR_PPM_CLUSTERS, freq_limit);
+		update_userlimit_cpu_freq(PPM_KIR_PERF, NR_PPM_CLUSTERS, freq_limit);
 
 out:
 	free_page((unsigned long)buf);
@@ -256,7 +256,7 @@ static int perfmgr_perfserv_freq_show(struct seq_file *m, void *v)
 
 	for (i = 0; i < NR_PPM_CLUSTERS; i++)
 		seq_printf(m, "cluster %d min:%d max:%d\n",
-				i, freq_set[KIR_PERF][i].min, freq_set[KIR_PERF][i].max);
+				i, freq_set[PPM_KIR_PERF][i].min, freq_set[PPM_KIR_PERF][i].max);
 
 	return 0;
 }
@@ -343,7 +343,7 @@ static int __init perfmgr_legacy_boost_init(void)
 		current_freq[i].max = -1;
 	}
 
-	for (i = 0; i < MAX_KIR; i++) {
+	for (i = 0; i < PPM_MAX_KIR; i++) {
 		for (j = 0; j < NR_PPM_CLUSTERS; j++) {
 			core_set[i][j].min = -1;
 			core_set[i][j].max = -1;

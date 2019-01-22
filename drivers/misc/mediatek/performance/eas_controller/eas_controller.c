@@ -11,13 +11,13 @@
 #include <linux/platform_device.h>
 #include "eas_controller.h"
 
-
+#define TAG "Boost Controller"
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 static struct mutex boost_eas;
 static int current_fg_boost_value;
-static int boost_value[MAX_KIR];
+static int boost_value[EAS_MAX_KIR];
 static int fg_debug_boost_value;
 static int debug;
 
@@ -26,27 +26,34 @@ static int debug;
 #ifdef CONFIG_SCHED_TUNE
 static int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 {
-	int final_boost_value = 0, final_boost_value_1 = 0, final_boost_value_2 = 0;
-	int boost_1[MAX_KIR], boost_2[MAX_KIR];
+	int final_boost_value = 0, final_boost_value_1 = 0, final_boost_value_2 = -101;
+	int boost_1[EAS_MAX_KIR], boost_2[EAS_MAX_KIR];
+	int has_set = 0;
 	int i;
 
 	mutex_lock(&boost_eas);
 
-	for (i = 0; i < MAX_KIR; i++) {
+	boost_value[kicker] = value;
+
+	for (i = 0; i < EAS_MAX_KIR; i++) {
 		if (cgroup_idx == CGROUP_FG) {
 			boost_1[i] = boost_value[i] / 1000;
 			boost_2[i] = boost_value[i] % 1000;
 		}
 	}
 
-	for (i = 0; i < MAX_KIR; i++) {
-		if (cgroup_idx == CGROUP_FG) {
+	for (i = 0; i < EAS_MAX_KIR; i++) {
+		if (cgroup_idx == CGROUP_FG && boost_value[i] != 0) {
 			final_boost_value_1 = MAX(boost_1[i], final_boost_value_1);
 			final_boost_value_2 = MAX(boost_2[i], final_boost_value_2);
+			has_set = 1;
 		}
 	}
 
-	final_boost_value = final_boost_value_1 * 1000 + final_boost_value_2;
+	if (has_set)
+		final_boost_value = final_boost_value_1 * 1000 + final_boost_value_2;
+	else
+		final_boost_value = 0;
 
 	if (final_boost_value > 3000)
 		current_fg_boost_value = 3000;
@@ -54,6 +61,10 @@ static int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 		current_fg_boost_value = -100;
 	else
 		current_fg_boost_value = final_boost_value;
+
+	if (kicker == EAS_KIR_PERF)
+		pr_debug(TAG"kicker:%d, boost:%d, final:%d, current:%d",
+				kicker, boost_value[kicker], final_boost_value, current_fg_boost_value);
 
 	if (!debug)
 		if (current_fg_boost_value >= -100 && current_fg_boost_value < 3000)
@@ -74,8 +85,7 @@ static int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 #ifdef CONFIG_SCHED_TUNE
 int perfmgr_kick_fg_boost(int kicker, int value)
 {
-	boost_value[kicker] = value;
-	return update_eas_boost_value(kicker, CGROUP_FG, boost_value[kicker]);
+	return update_eas_boost_value(kicker, CGROUP_FG, value);
 }
 #else
 int perfmgr_kick_fg_boost(int kicker, int value)
@@ -101,20 +111,18 @@ static ssize_t perfmgr_perfserv_fg_boost_write(struct file *filp, const char *ub
 		return -1;
 
 	if (data > 3000)
-		boost_value[KIR_PERF] = 3000;
+		data = 3000;
 	else if (data < -100)
-		boost_value[KIR_PERF] = -100;
-	else
-		boost_value[KIR_PERF] = data;
+		data = -100;
 
-	update_eas_boost_value(KIR_PERF, CGROUP_FG, boost_value[KIR_PERF]);
+	update_eas_boost_value(EAS_KIR_PERF, CGROUP_FG, data);
 
 	return cnt;
 }
 
 static int perfmgr_perfserv_fg_boost_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%d\n", boost_value[KIR_PERF]);
+	seq_printf(m, "%d\n", boost_value[EAS_KIR_PERF]);
 
 	return 0;
 }
@@ -227,7 +235,7 @@ void perfmgr_eas_boost_init(void)
 	proc_create("debug_fg_boost", 0644, boost_dir, &perfmgr_debug_fg_boost_fops);
 
 	current_fg_boost_value = 0;
-	for (i = 0; i < MAX_KIR; i++)
+	for (i = 0; i < EAS_MAX_KIR; i++)
 		boost_value[i] = 0;
 
 	fg_debug_boost_value = 0;

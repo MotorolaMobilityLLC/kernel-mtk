@@ -12,9 +12,9 @@
  */
 
 #define CGROUP_FG 1
-#define KIR_PERF 0
-#define KIR_FBC 1
-#define MAX_KIR 2
+#define EAS_KIR_PERF 0
+#define EAS_KIR_FBC 1
+#define EAS_MAX_KIR 2
 
 extern int boost_value_for_GED_idx(int, int);
 int perfmgr_kick_fg_boost(int kicker, int value);
