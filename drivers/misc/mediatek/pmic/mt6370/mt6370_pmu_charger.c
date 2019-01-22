@@ -665,13 +665,6 @@ static int mt6370_enable_chgdet_flow(struct mt6370_pmu_charger_data *chg_data,
 	enum mt6370_usbsw_state usbsw =
 		en ? MT6370_USBSW_CHG : MT6370_USBSW_USB;
 
-	if (is_meta_mode()) {
-		/* Skip charger type detection to speed up meta boot.*/
-		pr_notice("charger type: force Standard USB Host in meta\n");
-		chrdet_inform_psy_changed(STANDARD_HOST, 1);
-		return ret;
-	}
-
 	if (en) {
 		/* Workaround for CDP port */
 		for (i = 0; i < max_wait_cnt; i++) {
