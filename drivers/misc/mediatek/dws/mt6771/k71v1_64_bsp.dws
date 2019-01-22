@@ -458,7 +458,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC1_DAT3</varName0>
@@ -469,7 +469,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC1_CMD</varName0>
@@ -480,7 +480,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC1_DAT0</varName0>
@@ -491,7 +491,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC1_DAT2</varName0>
@@ -502,7 +502,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC1_DAT1</varName0>
@@ -1430,7 +1430,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC0_CMD</varName0>
@@ -1441,7 +1441,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC0_DAT0</varName0>
@@ -1463,7 +1463,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC0_DAT2</varName0>
@@ -1474,7 +1474,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC0_DAT4</varName0>
@@ -1485,7 +1485,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC0_DAT6</varName0>
@@ -1496,7 +1496,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC0_DAT1</varName0>
@@ -1507,7 +1507,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC0_DAT5</varName0>
@@ -1518,7 +1518,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC0_DAT7</varName0>
@@ -1540,7 +1540,7 @@
                 <eint_mode>false</eint_mode>
                 <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSDC0_DAT3</varName0>
@@ -2112,14 +2112,19 @@
             </device6>
             <device7>
                 <varName>CAMERA_MAIN_TWO</varName>
-                <channel>I2C_CHANNEL_2</channel>
-                <address>0x1A</address>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x10</address>
             </device7>
             <device8>
                 <varName>CAMERA_MAIN_TWO_AF</varName>
-                <channel>I2C_CHANNEL_2</channel>
-                <address>0x09</address>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x72</address>
             </device8>
+            <device9>
+                <varName>CAMERA_MAIN_TWO_EEPROM</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x51</address>
+            </device9>
             <device10>
                 <varName>NFC</varName>
                 <channel>I2C_CHANNEL_3</channel>
@@ -2135,21 +2140,6 @@
                 <channel>I2C_CHANNEL_4</channel>
                 <address>0x54</address>
             </device12>
-            <device13>
-                <varName>CAMERA_SUB_TWO</varName>
-                <channel>I2C_CHANNEL_4</channel>
-                <address>0x10</address>
-            </device13>
-            <device14>
-                <varName>CAMERA_SUB_TWO_AF</varName>
-                <channel>I2C_CHANNEL_4</channel>
-                <address>0x09</address>
-            </device14>
-            <device15>
-                <varName>CAMERA_SUB_TWO_EEPROM</varName>
-                <channel>I2C_CHANNEL_4</channel>
-                <address>0x51</address>
-            </device15>
             <device16>
                 <varName>USB_TYPE_C</varName>
                 <channel>I2C_CHANNEL_5</channel>
