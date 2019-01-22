@@ -47,9 +47,10 @@
  * only for internal debug
  */
 #define SPM_VCOREFS_TAG	"[VcoreFS] "
-#define spm_vcorefs_err(fmt, args...)	pr_err(SPM_VCOREFS_TAG fmt, ##args)
-#define spm_vcorefs_warn(fmt, args...)	pr_warn(SPM_VCOREFS_TAG fmt, ##args)
-#define spm_vcorefs_debug(fmt, args...)	pr_debug(SPM_VCOREFS_TAG fmt, ##args)
+#define spm_vcorefs_err spm_vcorefs_info
+#define spm_vcorefs_warn spm_vcorefs_info
+#define spm_vcorefs_debug spm_vcorefs_info
+#define spm_vcorefs_info(fmt, args...)	pr_notice(SPM_VCOREFS_TAG fmt, ##args)
 
 void __iomem *dvfsrc_base;
 
