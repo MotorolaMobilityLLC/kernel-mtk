@@ -35,7 +35,11 @@
 #include "mtk_smi.h"
 #include "mmdvfs_mgr.h"
 #include "mmdvfs_internal.h"
+
+#ifdef CONFIG_MTK_FREQ_HOPPING
 #include "mach/mtk_freqhopping.h"
+#endif
+
 #ifdef USE_DDR_TYPE
 #include "mt_emi_api.h"
 #endif
@@ -707,6 +711,7 @@ static int mmdvfs_apply_clk_hw_configurtion_by_step(
 						MMDVFSMSG("Failed to set rate:%s->%d\n",
 						clk_hw_map_ptr->clk_mux.ccf_name, clk_rate);
 				} else {
+#ifdef CONFIG_MTK_FREQ_HOPPING
 					int hopping_ret = -1;
 
 					hopping_ret = mt_dfs_general_pll(pll_id, clk_rate);
@@ -714,6 +719,9 @@ static int mmdvfs_apply_clk_hw_configurtion_by_step(
 
 					if (hopping_ret)
 						MMDVFSMSG("Failed to hopping rate:%d->0x%08x\n", pll_id, clk_rate);
+#else
+					MMDVFSMSG("pll_hopping NOT SUPPORT: id = (%d)\n", pll_id);
+#endif
 				}
 			}
 		}
