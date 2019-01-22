@@ -71,7 +71,7 @@
 #define REG_JPEG_ENC_CODEC_SEL                      (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x314))
 #define REG_JPEG_ENC_ULTRA_THRES                    (*(volatile kal_uint32*)(JPEG_ENC_BASE + 0x318))
 
-#define JPEG_ENC_REG_COUNT                          0x314
+#define JPEG_ENC_REG_COUNT                          0x31C
 
 
 /********************************************************************/
