@@ -5075,8 +5075,8 @@ static int sched_group_energy(struct energy_env *eenv)
 								>> SCHED_CAPACITY_SHIFT;
 #else
 				/* Power value had been separated to static + dynamic here */
-				sg_busy_energy = (group_util * (sg->sge->cap_states[cap_idx].power +
-						sg->sge->cap_states[cap_idx].leak_power))
+				sg_busy_energy = (group_util * (sg->sge->cap_states[cap_idx].dyn_pwr +
+						sg->sge->cap_states[cap_idx].lkg_pwr[sg->sge->lkg_idx]))
 								>> SCHED_CAPACITY_SHIFT;
 				sg_idle_energy = ((SCHED_LOAD_SCALE-group_util) *
 						sg->sge->idle_states[idle_idx].power)
