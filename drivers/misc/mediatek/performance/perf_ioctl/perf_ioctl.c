@@ -107,11 +107,14 @@ static long device_ioctl(struct file *filp,
 			if (fpsgo_notify_connect_fp)
 				fpsgo_notify_connect_fp(msgKM->tid, msgKM->bufID, msgKM->connectedAPI);
 			break;
+
+	case FPSGO_TOUCH:
+			fbc_ioctl(cmd, msgKM->frame_time);
+			break;
+
 	case FPSGO_ACT_SWITCH:
 		/* FALLTHROUGH */
 	case FPSGO_GAME:
-		/* FALLTHROUGH */
-	case FPSGO_TOUCH:
 		/* FALLTHROUGH */
 	case FPSGO_SWAP_BUFFER:
 			break;

@@ -14,6 +14,12 @@
 #include <mtk_vcorefs_governor.h>
 #include <mtk_vcorefs_manager.h>
 
+#ifdef CONFIG_MTK_FPSGO_V2
+#include <linux/slab.h>
+#include <mt-plat/fpsgo_v2_common.h>
+#include "fstb.h"
+#endif
+
 #ifndef TOUCH_VCORE_OPP
 #define TOUCH_VCORE_OPP (-1)
 #endif
@@ -53,6 +59,13 @@ static int first_frame, swap_buffers_begin, first_vsync, frame_done, chase, act_
 static long frame_info[MAX_THREAD][2]; /*0:current id, 1: frametime, if no render -1*/
 static int his_bv[2];
 static int vip_group[10];
+#ifdef CONFIG_MTK_FPSGO_V2
+static int touch_boost_opp; /* boost freq of touch boost */
+static struct ppm_limit_data *target_freq, *reset_freq;
+static int nr_ppm_clusters;
+static int touch_boost_duration;
+static int prev_boost_pid;
+#endif
 
 struct fbc_operation_locked {
 	void (*ux_enable)(int);
@@ -98,6 +111,22 @@ void switch_init_boost(int boost_value)
 		touch_boost_value = boost_value;
 }
 
+#ifdef CONFIG_MTK_FPSGO_V2
+void switch_init_opp(int boost_opp)
+{
+		int i;
+
+		touch_boost_opp = boost_opp;
+		for (i = 0; i < nr_ppm_clusters; i++)
+			target_freq[i].min = mt_cpufreq_get_freq_by_idx(i, touch_boost_opp);
+}
+
+void switch_init_duration(int duration)
+{
+		touch_boost_duration = duration;
+}
+#endif
+
 void switch_twanted(int time)
 {
 		if (time < 60) {
@@ -134,6 +163,22 @@ void boost_touch_eas(void)
 }
 
 /*--------------------TIMER------------------------*/
+#ifdef CONFIG_MTK_FPSGO_V2
+static void enable_touch_boost_timer(void)
+{
+	ktime_t ktime;
+
+	ktime = ktime_set(0, touch_boost_duration);
+	hrtimer_start(&hrt1, ktime, HRTIMER_MODE_REL);
+}
+
+static void disable_touch_boost_timer(void)
+{
+	hrtimer_cancel(&hrt1);
+}
+
+#else /* CONFIG_MTK_FPSGO_V2 */
+
 static void enable_touch_up_timer(void)
 {
 	ktime_t ktime;
@@ -146,6 +191,7 @@ static void disable_touch_up_timer(void)
 {
 	hrtimer_cancel(&hrt1);
 }
+#endif /* CONFIG_MTK_FPSGO_V2 */
 
 static enum hrtimer_restart mt_touch_timeout(struct hrtimer *timer)
 {
@@ -222,6 +268,24 @@ static int notify_touch(int action)
 	/* lock is mandatory*/
 	WARN_ON(!mutex_is_locked(&notify_lock));
 
+#ifdef CONFIG_MTK_FPSGO_V2
+	if (is_fstb_active() || fbc_debug)
+		return ret;
+
+	/*action 1: touch down 2: touch up*/
+	if (action == 1) {
+		disable_touch_boost_timer();
+		enable_touch_boost_timer();
+
+		/* boost */
+		update_eas_boost_value(EAS_KIR_TOUCH, CGROUP_TA, touch_boost_value);
+		update_userlimit_cpu_freq(PPM_KIR_TOUCH, nr_ppm_clusters, target_freq);
+		prev_boost_pid = current->pid;
+		fpsgo_systrace_c_fbt(prev_boost_pid, 1, "touch");
+	}
+
+#else
+
 	fbc_ux_state_pre = fbc_ux_state;
 
 	/*action 1: touch down 2: touch up*/
@@ -236,6 +300,7 @@ static int notify_touch(int action)
 
 	if (fbc_ux_state == 1)
 		fbc_op->ux_enable(1);
+#endif /* CONFIG_MTK_FPSGO_V2 */
 
 	fbc_tracer(-3, "ux_state", fbc_ux_state);
 
@@ -246,13 +311,17 @@ static void notify_touch_up_timeout(void)
 {
 	mutex_lock(&notify_lock);
 
+#ifdef CONFIG_MTK_FPSGO_V2
+	update_eas_boost_value(EAS_KIR_TOUCH, CGROUP_TA, 0);
+	update_userlimit_cpu_freq(PPM_KIR_TOUCH, nr_ppm_clusters, reset_freq);
+	fpsgo_systrace_c_fbt(prev_boost_pid, 0, "touch");
+#else
 	fbc_ux_state_pre = fbc_ux_state;
 	fbc_ux_state = 0;
 	fbc_op->ux_enable(0);
-
+#endif
 	fbc_tracer(-3, "ux_state", fbc_ux_state);
 	mutex_unlock(&notify_lock);
-
 }
 
 static void notify_render_aware_timeout(void)
@@ -732,7 +801,12 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		switch_super_boost(arg);
 	else if (strncmp(cmd, "trace", 5) == 0)
 		fbc_trace = arg;
-
+#ifdef CONFIG_MTK_FPSGO_V2
+	else if (strncmp(cmd, "touch_opp", 9) == 0)
+		switch_init_opp(arg);
+	else if (strncmp(cmd, "duration", 8) == 0)
+		switch_init_duration(arg);
+#endif
 	return cnt;
 }
 
@@ -748,6 +822,10 @@ static int device_show(struct seq_file *m, void *v)
 	SEQ_printf(m, "first frame:\t%d\n", first_frame);
 	SEQ_printf(m, "super_boost:\t%d\n", super_boost);
 	SEQ_printf(m, "game mode:\t%d\n", fbc_game);
+#ifdef CONFIG_MTK_FPSGO_V2
+	SEQ_printf(m, "touch_opp:\t%d\n", touch_boost_opp);
+	SEQ_printf(m, "duration:\t%d\n", touch_boost_duration);
+#endif
 	SEQ_printf(m, "-----------------------------------------------------\n");
 	return 0;
 }
@@ -913,6 +991,19 @@ int init_fbc(void)
 	ema = 5;
 	super_boost = SUPER_BOOST;
 	touch_boost_value = TOUCH_BOOST_EAS;
+#ifdef CONFIG_MTK_FPSGO_V2
+	touch_boost_opp = TOUCH_BOOST_OPP;
+	touch_boost_duration = TOUCH_TIMEOUT_NSEC;
+	nr_ppm_clusters = arch_get_nr_clusters();
+
+	target_freq = kcalloc(nr_ppm_clusters, sizeof(struct ppm_limit_data), GFP_KERNEL);
+	reset_freq = kcalloc(nr_ppm_clusters, sizeof(struct ppm_limit_data), GFP_KERNEL);
+
+	for (i = 0; i < nr_ppm_clusters; i++) {
+		target_freq[i].min = mt_cpufreq_get_freq_by_idx(i, touch_boost_opp);
+		target_freq[i].max = reset_freq[i].min = reset_freq[i].max = -1;
+	}
+#endif
 
 	mutex_init(&notify_lock);
 	fbc_op = &fbc_eas;

@@ -128,6 +128,12 @@ int is_fstb_enable(void)
 {
 	return fstb_enable;
 }
+
+int is_fstb_active(void)
+{
+	return fstb_active;
+}
+
 int fpsgo_ctrl2fstb_switch_fstb(int enable)
 {
 	struct FSTB_FRAME_INFO *iter;
