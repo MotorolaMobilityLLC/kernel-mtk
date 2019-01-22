@@ -93,8 +93,7 @@ static inline int _dbg_level(unsigned level)
 } while (0)\
 
 /* extern const char *otg_state_string(struct musb *); */
-
-extern int musb_init_debugfs(struct musb *musb);
-extern void musb_exit_debugfs(struct musb *musb);
+extern int musb_init_debugfs(struct musb *musb)  __attribute__((weak));
+extern void musb_exit_debugfs(struct musb *musb) __attribute__((weak));
 
 #endif				/*  __MUSB_LINUX_DEBUG_H__ */
