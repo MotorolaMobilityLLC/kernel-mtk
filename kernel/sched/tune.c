@@ -26,6 +26,7 @@ unsigned int sysctl_sched_cfs_boost __read_mostly;
 
 static int default_stune_threshold;
 
+extern struct reciprocal_value schedtune_spc_rdiv;
 extern struct target_nrg schedtune_target_nrg;
 
 /* Performance Boost region (B) threshold params */
@@ -1545,6 +1546,8 @@ schedtune_init(void)
 #else
 	pr_info("schedtune: configured to support global boosting only\n");
 #endif
+
+	schedtune_spc_rdiv = reciprocal_value(100);
 
 	return 0;
 

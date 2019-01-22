@@ -5334,6 +5334,8 @@ static inline bool cpu_in_sg(struct sched_group *sg, int cpu)
 
 #ifdef CONFIG_SCHED_TUNE
 
+struct reciprocal_value schedtune_spc_rdiv;
+
 static long
 schedtune_margin(int cpu, unsigned long signal, long boost)
 {
@@ -5344,8 +5346,7 @@ schedtune_margin(int cpu, unsigned long signal, long boost)
 	 *
 	 * The Boost (B) value is used to compute a Margin (M) which is
 	 * proportional to the complement of the original Signal (S):
-	 *   M = B * (SCHED_LOAD_SCALE - S), if B is positive
-	 *   M = B * S, if B is negative
+	 *   M = B * (SCHED_CAPACITY_SCALE - S)
 	 * The obtained M could be used by the caller to "boost" S.
 	 */
 	/* if use kernel API to update negatice boost,
@@ -5353,7 +5354,7 @@ schedtune_margin(int cpu, unsigned long signal, long boost)
 	 */
 	if (cpu == -1) { /* task margin */
 		if (boost >= 0) {
-			margin  = SCHED_LOAD_SCALE - signal;
+			margin  = SCHED_CAPACITY_SCALE - signal;
 			margin *= boost;
 		} else if (!global_negative_flag) /* google original path */
 			margin = -signal * boost;
@@ -5365,20 +5366,7 @@ schedtune_margin(int cpu, unsigned long signal, long boost)
 			margin = -signal * boost;
 	}
 
-	/*
-	 * Fast integer division by constant:
-	 *  Constant   :                 (C) = 100
-	 *  Precision  : 0.1%            (P) = 0.1
-	 *  Reference  : C * 100 / P     (R) = 100000
-	 *
-	 * Thus:
-	 *  Shift bits : ceil(log(R,2))  (S) = 17
-	 *  Mult const : round(2^S/C)    (M) = 1311
-	 *
-	 *
-	 */
-	margin  *= 1311;
-	margin >>= 17;
+	margin  = reciprocal_divide(margin, schedtune_spc_rdiv);
 
 	if (boost < 0)
 		margin *= -1;
