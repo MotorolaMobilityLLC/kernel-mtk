@@ -87,6 +87,8 @@ static uint32_t ccu_hw_base;
 static wait_queue_head_t wait_queue_deque;
 static wait_queue_head_t wait_queue_enque;
 
+static struct ion_handle *import_buffer_handle[CCU_IMPORT_BUF_NUM];
+
 #ifdef CONFIG_PM_WAKELOCKS
 struct wakeup_source ccu_wake_lock;
 #else
@@ -412,7 +414,7 @@ int ccu_set_power(struct ccu_power_s *power)
 
 static int ccu_open(struct inode *inode, struct file *flip)
 {
-	int ret = 0;
+	int ret = 0, i;
 
 	struct ccu_user_s *user;
 
@@ -424,6 +426,10 @@ static int ccu_open(struct inode *inode, struct file *flip)
 
 	flip->private_data = user;
 	ccu_ion_init();
+
+	for (i = 0; i < CCU_IMPORT_BUF_NUM; i++)
+		import_buffer_handle[i] = NULL;
+
 	return ret;
 }
 
@@ -572,7 +578,6 @@ void ccu_clock_disable(void)
 
 }
 
-static struct ion_handle *import_buffer_handle[CCU_IMPORT_BUF_NUM];
 static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;

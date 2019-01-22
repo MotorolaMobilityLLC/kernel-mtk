@@ -186,8 +186,10 @@ void ccu_ion_free_import_handle(struct ion_handle *handle)
 		LOG_ERR("invalid ion client!\n");
 		return;
 	}
-	if (!handle)
+	if (handle == NULL) {
+		LOG_ERR("invalid ion handle!\n");
 		return;
+	}
 
 	ion_free(_ccu_ion_client, handle);
 }
