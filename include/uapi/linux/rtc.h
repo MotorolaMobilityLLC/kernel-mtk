@@ -75,6 +75,8 @@ struct rtc_pll_info {
 #define RTC_PIE_OFF	_IO('p', 0x06)	/* ... off			*/
 #define RTC_WIE_ON	_IO('p', 0x0f)  /* Watchdog int. enable on	*/
 #define RTC_WIE_OFF	_IO('p', 0x10)  /* ... off			*/
+#define RTC_AUTOBOOT_ON		_IO('p', 0x20)  /* RTC drop power auto reboot on	*/
+#define RTC_AUTOBOOT_OFF	_IO('p', 0x21)  /* ... off				*/
 
 #define RTC_ALM_SET	_IOW('p', 0x07, struct rtc_time) /* Set alarm time  */
 #define RTC_ALM_READ	_IOR('p', 0x08, struct rtc_time) /* Read alarm time */

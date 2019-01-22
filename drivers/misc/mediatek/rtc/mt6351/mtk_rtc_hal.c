@@ -29,9 +29,6 @@
 #include <linux/delay.h>
 #include <linux/types.h>
 
-#if 0
-#include <mach/irqs.h>
-#endif
 #include <mach/mtk_rtc_hal.h>
 #include <mtk_rtc_hal_common.h>
 #include <mach/mtk_rtc_hw.h>
@@ -40,8 +37,8 @@
 #include <mt_boot.h>
 #endif
 
-#if 0
 #include <mtk_gpio.h>
+#ifdef CONFIG_MTK_SMART_BATTERY
 #include <mt-plat/charging.h>
 #endif
 
@@ -177,6 +174,30 @@ void hal_rtc_set_gpio_32k_status(u16 user, bool enable)
 	hal_rtc_xinfo("RTC_GPIO user %d enable = %d 32k (0x%x), RTC_CON = %x\n", user, enable, pdn1, rtc_read(RTC_CON));
 }
 
+void rtc_enable_k_eosc(void)
+{
+	u16 osc32;
+
+	rtc_write(0x700E, 0x4FFE);/* only MD owner modify these, no AP owner, so hard code, */
+	rtc_write(0x7012, 0x40CF);/* before starting cali eosc, need to cali 26M first in MT6351, */
+	rtc_write(0x7004, 0x3AEA);/* the values are configured when MD starts up in MT6353. */
+
+	pmic_config_interface_nolock(PMIC_RG_SRCLKEN_IN0_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN0_HW_MODE_MASK,
+		PMIC_RG_SRCLKEN_IN0_HW_MODE_SHIFT);
+	pmic_config_interface_nolock(PMIC_RG_SRCLKEN_IN1_HW_MODE_ADDR, 1, PMIC_RG_SRCLKEN_IN1_HW_MODE_MASK,
+		PMIC_RG_SRCLKEN_IN1_HW_MODE_SHIFT);
+	/* If cali eosc every second, needing to add the following configuration, default period is 8 sec */
+	/*pmic_config_interface_nolock(PMIC_EOSC_CALI_TD_ADDR, 0x3, PMIC_EOSC_CALI_TD_MASK, PMIC_EOSC_CALI_TD_SHIFT);*/
+	pmic_config_interface_nolock(PMIC_EOSC_CALI_START_ADDR, 1, PMIC_EOSC_CALI_START_MASK,
+		PMIC_EOSC_CALI_START_SHIFT);
+
+	rtc_write(RTC_BBPU, rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
+	rtc_write_trigger();
+
+	osc32 = rtc_read(RTC_OSC32CON);
+	rtc_xosc_write((osc32 & ~RTC_EMBCK_SEL_EOSC) | RTC_EMBCK_SEL_K_EOSC | RTC_EMBCK_SRC_SEL, true);
+}
+
 void rtc_disable_2sec_reboot(void)
 {
 	u16 reboot;
@@ -191,6 +212,7 @@ void hal_rtc_bbpu_pwdn(void)
 	u16 ret_val, con;
 
 	rtc_disable_2sec_reboot();
+	rtc_enable_k_eosc();
 
 	/* disable 32K export if there are no RTC_GPIO users */
 	if (!(rtc_read(RTC_PDN1) & RTC_GPIO_USER_MASK)) {
@@ -200,7 +222,7 @@ void hal_rtc_bbpu_pwdn(void)
 	}
 	ret_val = hal_rtc_get_spare_register(RTC_32K_LESS);
 #if !defined(CONFIG_MTK_FPGA)
-#if 0
+#ifdef CONFIG_MTK_SMART_BATTERY
 	if (!ret_val && pmic_chrdet_status() == KAL_FALSE) {
 		/* 1.   Set SRCLKENAs GPIO GPIO as Output Mode, Output Low */
 		mt_set_gpio_dir(GPIO_SRCLKEN_PIN, GPIO_DIR_OUT);
