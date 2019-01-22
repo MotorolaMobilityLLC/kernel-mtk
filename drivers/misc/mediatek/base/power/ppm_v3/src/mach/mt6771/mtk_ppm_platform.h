@@ -26,56 +26,46 @@ extern "C" {
 /*==============================================================*/
 /* Macros							*/
 /*==============================================================*/
-#ifdef CONFIG_MTK_FPSGO_FBT_GAME
-#define PPM_CPI_CHECK_ENABLE		(1)
-#endif
-
-#if 0
-#define PPM_VPROC_5A_LIMIT_CHECK	(1)
-#define PPM_5A_LIMIT_FREQ_IDX		(1)
-#endif
-
 #define DYNAMIC_TABLE2REAL_PERCENTAGE	(58)
 
 /* for COBRA algo */
 #define PPM_COBRA_USE_CORE_LIMIT	(1)
-#define PPM_COBRA_RUNTIME_CALC_DELTA	(0)
+#define PPM_COBRA_RUNTIME_CALC_DELTA	(1)
 #ifdef PPM_COBRA_USE_CORE_LIMIT
 #define PPM_COBRA_MAX_FREQ_IDX	(COBRA_OPP_NUM)
 #else
 #define PPM_COBRA_MAX_FREQ_IDX	(COBRA_OPP_NUM-1)
 #endif
 #define COBRA_OPP_NUM	(DVFS_OPP_NUM)
-#define TOTAL_CORE_NUM	(CORE_NUM_LL+CORE_NUM_L)
-#define CORE_NUM_LL	(4)
+#define TOTAL_CORE_NUM	(CORE_NUM_L+CORE_NUM_B)
 #define CORE_NUM_L	(4)
+#define CORE_NUM_B	(4)
 
-#ifdef PPM_SSPM_SUPPORT
+
 #define PPM_COBRA_TBL_SRAM_ADDR	(0x0011B800)
 #define PPM_COBRA_TBL_SRAM_SIZE	(sizeof(struct ppm_cobra_basic_pwr_data)*TOTAL_CORE_NUM*COBRA_OPP_NUM)
+#ifdef PPM_SSPM_SUPPORT
 /* online core to SSPM */
 #define PPM_ONLINE_CORE_SRAM_ADDR	(PPM_COBRA_TBL_SRAM_ADDR + PPM_COBRA_TBL_SRAM_SIZE)
 #endif
 
 /* other policy settings */
-#define LCMOFF_MIN_FREQ		(598000)
-#define PTPOD_FREQ_IDX		(10)
+
+#define PTPOD_FREQ_IDX		(7)
 #define PWRTHRO_BAT_PER_MW	(600)
 #define PWRTHRO_BAT_OC_MW	(600)
 #define PWRTHRO_LOW_BAT_LV1_MW	(600)
 #define PWRTHRO_LOW_BAT_LV2_MW	(600)
 
 #define DVFS_OPP_NUM		(16)
-
-#define get_cluster_lcmoff_min_freq(id)		LCMOFF_MIN_FREQ	/* the same for each cluster */
 #define get_cluster_ptpod_fix_freq_idx(id)	PTPOD_FREQ_IDX	/* the same for each cluster */
 
 /*==============================================================*/
 /* Enum								*/
 /*==============================================================*/
 enum ppm_cluster {
-	PPM_CLUSTER_LL = 0,
-	PPM_CLUSTER_L,
+	PPM_CLUSTER_L = 0,
+	PPM_CLUSTER_B,
 
 	NR_PPM_CLUSTERS,
 };
@@ -100,9 +90,6 @@ struct ppm_cobra_delta_data {
 
 struct ppm_cobra_data {
 	struct ppm_cobra_basic_pwr_data basic_pwr_tbl[TOTAL_CORE_NUM][DVFS_OPP_NUM];
-#if !PPM_COBRA_RUNTIME_CALC_DELTA
-	struct ppm_cobra_delta_data delta_tbl_LxLL[CORE_NUM_L+1][CORE_NUM_LL+1][COBRA_OPP_NUM];
-#endif
 };
 
 struct ppm_cobra_lookup {
@@ -116,7 +103,7 @@ struct ppm_cobra_lookup {
 /*==============================================================*/
 /* Global Variables						*/
 /*==============================================================*/
-extern struct ppm_cobra_data cobra_tbl;
+extern struct ppm_cobra_data *cobra_tbl;
 extern struct ppm_cobra_lookup cobra_lookup_data;
 
 /*==============================================================*/

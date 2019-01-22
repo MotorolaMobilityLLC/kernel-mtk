@@ -28,10 +28,10 @@
 #include "../../mtk_cpufreq_hybrid.h"
 #include "mtk_devinfo.h"
 
-static struct regulator *regulator_proc1;
-static struct regulator *regulator_proc2;
-static struct regulator *regulator_sram1;
-static struct regulator *regulator_sram2;
+static struct regulator *regulator_proc11;
+static struct regulator *regulator_proc12;
+static struct regulator *regulator_sram11;
+static struct regulator *regulator_sram12;
 
 static unsigned long apmixed_base	= 0x1000c000;
 static unsigned long mcucfg_base	= 0x0c530000;
@@ -57,8 +57,8 @@ struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 		.idx_normal_max_opp = -1,
 		.idx_opp_ppm_base = 15,
 		.idx_opp_ppm_limit = 0,
-		.Vproc_buck_id	= CPU_DVFS_VPROC1,
-		.Vsram_buck_id	= CPU_DVFS_VSRAM1,
+		.Vproc_buck_id	= CPU_DVFS_VPROC12,
+		.Vsram_buck_id	= CPU_DVFS_VSRAM12,
 		.Pll_id		= PLL_LL_CLUSTER,
 	},
 
@@ -69,8 +69,8 @@ struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 		.idx_normal_max_opp = -1,
 		.idx_opp_ppm_base = 15,
 		.idx_opp_ppm_limit = 0,
-		.Vproc_buck_id	= CPU_DVFS_VPROC2,
-		.Vsram_buck_id	= CPU_DVFS_VSRAM2,
+		.Vproc_buck_id	= CPU_DVFS_VPROC11,
+		.Vsram_buck_id	= CPU_DVFS_VSRAM11,
 		.Pll_id		= PLL_L_CLUSTER,
 	},
 
@@ -82,8 +82,8 @@ struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 		.idx_normal_max_opp = -1,
 		.idx_opp_ppm_base = 15,
 		.idx_opp_ppm_limit = 0,
-		.Vproc_buck_id	= CPU_DVFS_VPROC1,
-		.Vsram_buck_id	= CPU_DVFS_VSRAM1,
+		.Vproc_buck_id	= CPU_DVFS_VPROC12,
+		.Vsram_buck_id	= CPU_DVFS_VSRAM12,
 		.Pll_id		= PLL_CCI_CLUSTER,
 	},
 };
@@ -92,20 +92,20 @@ static int set_cur_volt_proc_cpu(struct buck_ctrl_t *buck_p, unsigned int volt)
 {
 	unsigned int max_volt = MAX_VPROC_VOLT + 625;
 
-	if (buck_p->buck_id > CPU_DVFS_VPROC1)
-		return regulator_set_voltage(regulator_proc1, volt * 10, max_volt * 10);
+	if (buck_p->buck_id == CPU_DVFS_VPROC12)
+		return regulator_set_voltage(regulator_proc12, volt * 10, max_volt * 10);
 	else
-		return regulator_set_voltage(regulator_proc2, volt * 10, max_volt * 10);
+		return regulator_set_voltage(regulator_proc11, volt * 10, max_volt * 10);
 }
 
 static unsigned int get_cur_volt_proc_cpu(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata;
 
-	if (buck_p->buck_id > CPU_DVFS_VPROC1)
-		rdata = regulator_get_voltage(regulator_proc1) / 10;
+	if (buck_p->buck_id == CPU_DVFS_VPROC12)
+		rdata = regulator_get_voltage(regulator_proc12) / 10;
 	else
-		rdata = regulator_get_voltage(regulator_proc2) / 10;
+		rdata = regulator_get_voltage(regulator_proc11) / 10;
 
 	return rdata;
 }
@@ -135,10 +135,10 @@ static int set_cur_volt_sram_cpu(struct buck_ctrl_t *buck_p, unsigned int volt)
 #if 0
 	unsigned int max_volt = MAX_VSRAM_VOLT + 625;
 
-	if (buck_p->buck_id > CPU_DVFS_VSRAM1)
-		return regulator_set_voltage(regulator_sram1, volt * 10, max_volt * 10);
+	if (buck_p->buck_id == CPU_DVFS_VSRAM12)
+		return regulator_set_voltage(regulator_sram12, volt * 10, max_volt * 10);
 	else
-		return regulator_set_voltage(regulator_sram2, volt * 10, max_volt * 10);
+		return regulator_set_voltage(regulator_sram11, volt * 10, max_volt * 10);
 #endif
 	return 0;
 }
@@ -147,10 +147,10 @@ static unsigned int get_cur_volt_sram_cpu(struct buck_ctrl_t *buck_p)
 {
 	unsigned int rdata;
 
-	if (buck_p->buck_id > CPU_DVFS_VSRAM1)
-		rdata = regulator_get_voltage(regulator_sram1) / 10;
+	if (buck_p->buck_id == CPU_DVFS_VSRAM12)
+		rdata = regulator_get_voltage(regulator_sram12) / 10;
 	else
-		rdata = regulator_get_voltage(regulator_sram2) / 10;
+		rdata = regulator_get_voltage(regulator_sram11) / 10;
 
 	return rdata;
 }
@@ -182,27 +182,27 @@ static struct buck_ctrl_ops buck_ops_mt6358_vsram = {
 };
 
 struct buck_ctrl_t buck_ctrl[NR_MT_BUCK] = {
-	[CPU_DVFS_VPROC1] = {
-		.name		= __stringify(BUCK_MT6358_VPROC1),
-		.buck_id	= CPU_DVFS_VPROC1,
+	[CPU_DVFS_VPROC12] = {
+		.name		= __stringify(BUCK_MT6358_VPROC),
+		.buck_id	= CPU_DVFS_VPROC12,
 		.buck_ops	= &buck_ops_mt6358_vproc,
 	},
 
-	[CPU_DVFS_VPROC2] = {
-		.name		= __stringify(BUCK_MT6358_VPROC2),
-		.buck_id	= CPU_DVFS_VPROC2,
+	[CPU_DVFS_VPROC11] = {
+		.name		= __stringify(BUCK_MT6358_VPROC),
+		.buck_id	= CPU_DVFS_VPROC11,
 		.buck_ops	= &buck_ops_mt6358_vproc,
 	},
 
-	[CPU_DVFS_VSRAM1] = {
-		.name		= __stringify(BUCK_MT6358_VSRAM1),
-		.buck_id	= CPU_DVFS_VSRAM1,
+	[CPU_DVFS_VSRAM12] = {
+		.name		= __stringify(BUCK_MT6358_VSRAM),
+		.buck_id	= CPU_DVFS_VSRAM12,
 		.buck_ops	= &buck_ops_mt6358_vsram,
 	},
 
-	[CPU_DVFS_VSRAM2] = {
-		.name		= __stringify(BUCK_MT6358_VSRAM2),
-		.buck_id	= CPU_DVFS_VSRAM2,
+	[CPU_DVFS_VSRAM11] = {
+		.name		= __stringify(BUCK_MT6358_VSRAM),
+		.buck_id	= CPU_DVFS_VSRAM11,
 		.buck_ops	= &buck_ops_mt6358_vsram,
 	},
 };
@@ -538,20 +538,20 @@ int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
 
 int mt_cpufreq_regulator_map(struct platform_device *pdev)
 {
-	regulator_proc1 = regulator_get(&pdev->dev, "vproc11");
-	if (GEN_DB_ON(IS_ERR(regulator_proc1), "vproc11 Get Failed"))
+	regulator_proc11 = regulator_get(&pdev->dev, "vproc11");
+	if (GEN_DB_ON(IS_ERR(regulator_proc11), "vproc11 Get Failed"))
 		return -ENODEV;
 
-	regulator_proc2 = regulator_get(&pdev->dev, "vproc12");
-	if (GEN_DB_ON(IS_ERR(regulator_proc1), "vproc12 Get Failed"))
+	regulator_proc12 = regulator_get(&pdev->dev, "vproc12");
+	if (GEN_DB_ON(IS_ERR(regulator_proc12), "vproc12 Get Failed"))
 		return -ENODEV;
 
-	regulator_sram1 = regulator_get(&pdev->dev, "vsram_proc11");
-	if (GEN_DB_ON(IS_ERR(regulator_sram1), "vsram_proc11 Get Failed"))
+	regulator_sram11 = regulator_get(&pdev->dev, "vsram_proc11");
+	if (GEN_DB_ON(IS_ERR(regulator_sram11), "vsram_proc11 Get Failed"))
 		return -ENODEV;
 
-	regulator_sram2 = regulator_get(&pdev->dev, "vsram_proc12");
-	if (GEN_DB_ON(IS_ERR(regulator_sram2), "vsram_proc12 Get Failed"))
+	regulator_sram12 = regulator_get(&pdev->dev, "vsram_proc12");
+	if (GEN_DB_ON(IS_ERR(regulator_sram12), "vsram_proc12 Get Failed"))
 		return -ENODEV;
 
 	return 0;

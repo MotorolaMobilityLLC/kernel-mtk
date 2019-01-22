@@ -31,10 +31,10 @@ enum cpu_level {
 
 /* PMIC Config */
 enum mt_cpu_dvfs_buck_id {
-	CPU_DVFS_VPROC1,
-	CPU_DVFS_VPROC2,
-	CPU_DVFS_VSRAM1,
-	CPU_DVFS_VSRAM2,
+	CPU_DVFS_VPROC12,
+	CPU_DVFS_VPROC11,
+	CPU_DVFS_VSRAM12,
+	CPU_DVFS_VSRAM11,
 
 	NR_MT_BUCK,
 };

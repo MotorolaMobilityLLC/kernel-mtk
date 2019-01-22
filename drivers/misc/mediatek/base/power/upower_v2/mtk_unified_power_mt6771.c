@@ -28,6 +28,7 @@
 #include <mt-plat/mtk_chip.h>
 
 /* local include */
+#include "mtk_cpufreq_api.h"
 #include "mtk_upower.h"
 #include "mtk_unified_power_data.h"
 #include "mtk_devinfo.h"
@@ -183,10 +184,10 @@ static void upower_scale_l_cap(void)
 
 void get_original_table(void)
 {
-	unsigned short idx = 1; /* default use MT6771T_FY */
+	unsigned short idx = 0; /* default use MT6771T_FY */
 	int i, j;
 
-	idx = 0; /* MT6771 */
+	idx = mt_cpufreq_get_cpu_level();
 
 	/* get location of reference table */
 	upower_tbl_infos = &upower_tbl_infos_list[idx][0];

@@ -15,14 +15,14 @@
 #define _MTK_EEM_CONFIG_H_
 
 /* CONFIG (SW related) */
-#define EEM_NOT_READY	(1)
+/* #define EEM_NOT_READY	(1) */
 #define CONFIG_EEM_SHOWLOG	(0)
 #define EN_ISR_LOG		(1)
 #define EEM_BANK_SOC		(0) /* use voltage bin, so disable it */
 #define EARLY_PORTING		(0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE		(1)
 #define EEM_ENABLE		(1) /* enable; after pass HPT mini-SQC */
-#define EEM_FAKE_EFUSE		(0)
+#define EEM_FAKE_EFUSE		(1)
 #define UPDATE_TO_UPOWER	(0)
 #define EEM_LOCKTIME_LIMIT	(3000)
 #define ENABLE_EEMCTL0		(1)
@@ -88,7 +88,8 @@ enum mt_cpu_dvfs_id {
 ******************************************
 */
 #define NR_HW_RES_FOR_BANK	(13) /* real eem banks for efuse */
-#define EEM_INIT01_FLAG		(0x0F) /* should be 0x0F */
+/* #define EEM_INIT01_FLAG		(0x0F) */
+#define EEM_INIT01_FLAG		(0x07) /* should be 0x0F */
 
 #define NR_FREQ 16
 #define NR_FREQ_GPU 16
@@ -120,11 +121,11 @@ enum mt_cpu_dvfs_id {
 #define GPU_PMIC_BASE		(50000)
 #define GPU_PMIC_STEP		(625) /* 1.231/1024=0.001202v=120(10uv)*/
 
-/* common part: for big, cci, LL, L, GPU, SOC*/
-#define VBOOT_VAL		(0x40) /* volt domain: 0.8v */
-#define VMAX_VAL		(0x74) /* volt domain: 1.12v*/
-#define VMIN_VAL		(0x20) /* volt domain: 0.6v*/
-#define VCO_VAL			(0x20)
+/* common part: for cci, LL, L, GPU */
+#define VBOOT_VAL		(0x30) /* volt domain: 0.8v */
+#define VMAX_VAL		(0x64) /* volt domain: 1.12v*/
+#define VMIN_VAL		(0x10) /* volt domain: 0.6v*/
+#define VCO_VAL			(0x10)
 #define DVTFIXED_VAL		(0x9)
 
 #define DTHI_VAL		(0x01) /* positive */
@@ -135,8 +136,8 @@ enum mt_cpu_dvfs_id {
 #define DCCONFIG_VAL		(0x555555)
 
 /* different for GPU */
-#define VBOOT_VAL_GPU		(0x40) /* eem domain: 0x40, volt domain: 0.8v */
-#define VMAX_VAL_GPU		(0x50) /* eem domain: 0x60, volt domain: 1.0v */
+#define VBOOT_VAL_GPU		(0x30) /* eem domain: 0x40, volt domain: 0.8v */
+#define VMAX_VAL_GPU		(0x40) /* eem domain: 0x60, volt domain: 1.0v */
 #define DVTFIXED_VAL_GPU	(0x3)
 
 /* use in base_ops_mon_mode */
