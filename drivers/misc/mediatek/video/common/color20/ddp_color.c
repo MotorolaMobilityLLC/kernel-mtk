@@ -931,7 +931,10 @@ S_GAIN_BY_Y :
 
 S_GAIN_BY_Y_EN:0,
 
-LSP_EN:0
+LSP_EN:0,
+
+LSP :
+{0x0, 0x0, 0x7F, 0x7F, 0x7F, 0x0, 0x7F, 0x7F}
 #endif
 };
 
@@ -1418,10 +1421,12 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 		}
 	}
 	/* LSP */
-	_color_reg_mask(cmdq, DISP_COLOR_LSP_1 + offset, (0x7F << 0) | (0x7F << 7) | (0x0 << 14) | (0x0 << 22)
-				, 0x1FFFFFFF);
-	_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (0x7F << 0) | (0x7F << 8) | (0x0 << 16) | (0x7F << 23)
-				, 0x3FFF7F7F);
+	_color_reg_mask(cmdq, DISP_COLOR_LSP_1 + offset, (g_Color_Index.LSP[3] << 0) |
+		(g_Color_Index.LSP[2] << 7) | (g_Color_Index.LSP[1] << 14) | (g_Color_Index.LSP[0] << 22)
+		, 0x1FFFFFFF);
+	_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (g_Color_Index.LSP[7] << 0) |
+		(g_Color_Index.LSP[6] << 8) | (g_Color_Index.LSP[5] << 16) | (g_Color_Index.LSP[4] << 23)
+		, 0x3FFF7F7F);
 #endif
 
 	/* color window */
@@ -1677,10 +1682,12 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 		}
 	}
 	/* LSP */
-	_color_reg_mask(cmdq, DISP_COLOR_LSP_1 + offset, (0x7F << 0) | (0x7F << 7) | (0x0 << 14) | (0x0 << 22)
-					, 0x1FFFFFFF);
-	_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (0x7F << 0) | (0x7F << 8) | (0x0 << 16) | (0x7F << 23)
-					, 0x3FFF7F7F);
+	_color_reg_mask(cmdq, DISP_COLOR_LSP_1 + offset, (g_Color_Index.LSP[3] << 0) |
+		(g_Color_Index.LSP[2] << 7) | (g_Color_Index.LSP[1] << 14) | (g_Color_Index.LSP[0] << 22)
+		, 0x1FFFFFFF);
+	_color_reg_mask(cmdq, DISP_COLOR_LSP_2 + offset, (g_Color_Index.LSP[7] << 0) |
+		(g_Color_Index.LSP[6] << 8) | (g_Color_Index.LSP[5] << 16) | (g_Color_Index.LSP[4] << 23)
+		, 0x3FFF7F7F);
 #endif
 
 	/* color window */
