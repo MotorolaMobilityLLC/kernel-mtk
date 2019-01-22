@@ -562,6 +562,10 @@ struct RecordStruct {
 	uint32_t durReclaim;	/* allocae time duration */
 	uint32_t durRelease;	/* release time duration */
 
+	u32 start;		/* buffer start address */
+	u32 end;		/* command end address */
+	u32 jump;		/* last jump destination */
+
 	/* Custom profile marker */
 	uint32_t profileMarkerCount;
 	unsigned long long profileMarkerTimeNS[CMDQ_MAX_PROFILE_MARKER_IN_TASK];
