@@ -404,6 +404,18 @@ int ccu_unlock_user_mutex(void)
 	return 0;
 }
 
+int ccu_lock_ion_client_mutex(void)
+{
+	mutex_lock(&g_ccu_device->ion_client_mutex);
+	return 0;
+}
+
+int ccu_unlock_ion_client_mutex(void)
+{
+	mutex_unlock(&g_ccu_device->ion_client_mutex);
+	return 0;
+}
+
 /*---------------------------------------------------------------------------*/
 /* IOCTL: implementation                                                     */
 /*---------------------------------------------------------------------------*/
@@ -1262,6 +1274,7 @@ static int __init CCU_INIT(void)
 
 	INIT_LIST_HEAD(&g_ccu_device->user_list);
 	mutex_init(&g_ccu_device->user_mutex);
+	mutex_init(&g_ccu_device->ion_client_mutex);
 	init_waitqueue_head(&g_ccu_device->cmd_wait);
 
 	/* Register M4U callback */

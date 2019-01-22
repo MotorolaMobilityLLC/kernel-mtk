@@ -47,6 +47,7 @@ struct ccu_device_s {
 	unsigned long n3d_a_base;
 	unsigned int irq_num;
 	struct mutex user_mutex;
+	struct mutex ion_client_mutex;
 	/* list of vlist_type(ccu_user_t) */
 	struct list_head user_list;
 	/* notify enque thread */
@@ -201,6 +202,10 @@ int ccu_delete_user(struct ccu_user_s *user);
 int ccu_lock_user_mutex(void);
 
 int ccu_unlock_user_mutex(void);
+
+int ccu_lock_ion_client_mutex(void);
+
+int ccu_unlock_ion_client_mutex(void);
 
 /**
  * ccu_push_command_to_queue - add a command to user's queue
