@@ -20,27 +20,39 @@
 #include <linux/statfs.h>	/* kstatfs struct */
 #include <linux/file.h>		/*kernel write and kernel read */
 #include <linux/uaccess.h>	/*copy_to_user copy_from_user */
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
+#include <linux/init.h>
+#include <net/sock.h>
+#include <linux/netlink.h>
+#include <linux/skbuff.h>
 #include "mtk_sysenv.h"
 #include "mtk_partition.h"
+
+enum {
+	ENV_UNINIT = 0,
+	ENV_INIT,
+	ENV_READY,
+};
 
 static char env_get_char(int index);
 static char *env_get_addr(int index);
 static int envmatch(char *s1, int i2);
-static int write_env_area(char *env_buf);
-static int read_env_area(char *env_buf);
 static void env_init(void);
 static int get_env_valid_length(void);
 static char *findenv(const char *name);
 
-static char ENV_SIG[8] = "ENV_v1";
 struct env_struct g_env;
 static int env_valid;
 static u8 *env_buffer;
-static int env_init_done;
-static char env_path[64];
+static int env_init_state = ENV_UNINIT;
+static struct sock *netlink_sock;
+static long user_sysenv_pid = -1;
 
 #define ENV_NAME  "para"
 #define MODULE_NAME "KL_ENV"
+#define TAG_SET_ENV "SYSENV_SET_ENV"
 #define CFG_ENV_DATA_SIZE	\
 	(CFG_ENV_SIZE-sizeof(g_env.checksum)-sizeof(g_env.sig_head)	\
 	-sizeof(g_env.sig_tail))
@@ -51,29 +63,7 @@ static char env_path[64];
 #define CFG_ENV_CHECKSUM_OFFSET		\
 	(CFG_ENV_SIZE - sizeof(g_env.checksum))
 
-static int get_env_path(void)
-{
-	struct hd_struct *part = NULL;
-
-	if (env_path[0])
-		return 0;
-
-	part = get_part(ENV_NAME);
-	if (!part) {
-		pr_err("Not find partition %s\n", ENV_NAME);
-		return -1;
-	}
-
-#if defined(CONFIG_MMC_MTK)
-	snprintf(env_path, sizeof(env_path), "/dev/block/mmcblk0p%d", part->partno);
-#elif defined(CONFIG_MTK_UFS_BOOTING)
-	snprintf(env_path, sizeof(env_path), "/dev/block/sdc%d", part->partno);
-#endif
-	put_part(part);
-
-	return 0;
-}
-
+static int send_sysenv_msg(int pid, int seq, void *payload, int payload_len);
 static ssize_t env_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
 {
 	char p[32];
@@ -82,8 +72,10 @@ static ssize_t env_proc_read(struct file *file, char __user *buf, size_t size, l
 	ssize_t len = 0;
 	int env_valid_length = 0;
 
-	env_init();
-
+	if (env_init_state != ENV_READY) {
+		pr_err("[%s] data not ready yet\n", MODULE_NAME);
+		return 0;
+	}
 	if (!env_valid) {
 		pr_debug("[%s]read no env valid\n", MODULE_NAME);
 		page += sprintf(page, "\nno env valid\n");
@@ -205,12 +197,28 @@ static long env_proc_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 			goto end;
 		}
 		break;
+	case ENV_USER_INIT:
+		env_init_state = ENV_INIT;
+		pr_err("ENV_USER_INIT!\n");
+		/* do not break, ENV_INIT taking the same process as ENV_WRITE */
 	case ENV_WRITE:
 		if (copy_from_user((void *)value_buf, (void *)en_ctl.value, en_ctl.value_len)) {
 			ret = -EFAULT;
 			goto end;
 		}
 		ret = set_env(name_buf, value_buf);
+		break;
+	case ENV_SET_PID:
+		if (copy_from_user((void *)value_buf, (void *)en_ctl.value, en_ctl.value_len)) {
+			ret = -EFAULT;
+			goto end;
+		}
+		value_buf[en_ctl.value_len - 1] = '\0';
+		ret = kstrtol(value_buf, 10, &user_sysenv_pid);
+		pr_debug("[%s] user_sysenv_pid = %ld\n", MODULE_NAME, user_sysenv_pid);
+		pr_debug("[%s] user space sysenv init done\n", MODULE_NAME);
+		env_init_state = ENV_READY;
+		ret = 0;
 		break;
 	default:
 		pr_debug("[%s]Undefined command\n", MODULE_NAME);
@@ -224,11 +232,57 @@ fail_malloc:
 fail:
 	return ret;
 }
+#ifdef CONFIG_COMPAT
+struct env_compat_ioctl {
+	compat_uptr_t name;
+	compat_int_t name_len;
+	compat_uptr_t value;
+	compat_int_t value_len;
+};
+
+static int compat_get_env_ioctl(struct env_compat_ioctl __user *arg32, struct env_ioctl __user *arg64)
+{
+	compat_int_t i;
+	compat_uptr_t p;
+	int err;
+
+	err = get_user(p, &(arg32->name));
+	err |= put_user(compat_ptr(p), &(arg64->name));
+	err |= get_user(i, &(arg32->name_len));
+	err |= put_user(i, &(arg64->name_len));
+	err |= get_user(p, &(arg32->value));
+	err |= put_user(compat_ptr(p), &(arg64->value));
+	err |= get_user(i, &(arg32->value_len));
+	err |= put_user(i, &(arg64->value_len));
+	return err;
+}
+
+static long env_proc_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	struct env_compat_ioctl *arg32;
+	struct env_ioctl *arg64;
+	int err;
+
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		pr_err("f_op or unlocked ioctl is NULL.\n");
+		return -ENOTTY;
+	}
+	arg32 = compat_ptr(arg);
+	arg64 = compat_alloc_user_space(sizeof(*arg64));
+	err = compat_get_env_ioctl(arg32, arg64);
+	if (err)
+		return err;
+	return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long) arg64);
+}
+#endif
 
 static const struct file_operations env_proc_fops = {
 	.read = env_proc_read,
 	.write = env_proc_write,
 	.unlocked_ioctl = env_proc_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = env_proc_compat_ioctl,
+#endif
 };
 
 static int get_env_valid_length(void)
@@ -246,59 +300,16 @@ static int get_env_valid_length(void)
 
 static void env_init(void)
 {
-	int ret, i;
-	int checksum = 0;
-
-	if (env_init_done)
-		return;
-
 	pr_debug("[%s]ENV initialize\n", MODULE_NAME);
-
-	ret = get_env_path();
-	if (ret < 0) {
-		pr_err("[%s]get_env_path fail\n", MODULE_NAME);
-		goto end_path_fail;
-	}
 
 	env_buffer = kzalloc(CFG_ENV_SIZE, GFP_KERNEL);
 	if (!env_buffer)
 		return;
 
 	g_env.env_data = env_buffer + CFG_ENV_DATA_OFFSET;
-	ret = read_env_area(env_buffer);
-	if (ret < 0) {
-		pr_err("[%s]read_env_area fail\n", MODULE_NAME);
-		goto end_read_fail;
-	}
 
-	memcpy(g_env.sig_head, env_buffer, sizeof(g_env.sig_head));
-	memcpy(g_env.sig_tail, env_buffer + CFG_ENV_SIG_1_OFFSET, sizeof(g_env.sig_tail));
-
-	if (!strcmp(g_env.sig_head, ENV_SIG) && !strcmp(g_env.sig_tail, ENV_SIG)) {
-		g_env.checksum = *((int *)env_buffer + CFG_ENV_CHECKSUM_OFFSET / 4);
-		for (i = 0; i < CFG_ENV_DATA_SIZE; i++)
-			checksum += g_env.env_data[i];
-		if (checksum != g_env.checksum) {
-			pr_err("[%s]checksum mismatch\n", MODULE_NAME);
-			env_valid = 0;
-			goto end;
-		} else {
-			pr_debug("[%s]ENV initialize success\n", MODULE_NAME);
-			env_valid = 1;
-		}
-	} else {
-		pr_err("[%s]ENV SIG Wrong\n", MODULE_NAME);
-		env_valid = 0;
-		goto end;
-	}
-end:
-	if (!env_valid)
-		memset(env_buffer, 0x00, CFG_ENV_SIZE);
-	env_init_done = 1;
+	memset(env_buffer, 0x00, CFG_ENV_SIZE);
 	return;
-end_path_fail:
-end_read_fail:
-	env_init_done = 0;
 }
 
 static char *findenv(const char *name)
@@ -321,8 +332,6 @@ static char *findenv(const char *name)
 char *get_env(const char *name)
 {
 	pr_debug("[%s]get env name=%s\n", MODULE_NAME, name);
-
-	env_init();
 
 	if (!env_valid)
 		return NULL;
@@ -352,18 +361,42 @@ static int envmatch(char *s1, int i2)
 	return -1;
 }
 
+int set_user_env(char *name, char *value)
+{
+	int ret = 0;
+	int data_len;
+	char *data;
+
+	data_len = strlen(name) + strlen(value) + strlen(TAG_SET_ENV) + 3; /* 3 : 2 space and 1 \0 */
+	data = kmalloc(data_len, GFP_KERNEL); /* 3 : 2 space and 1 \0 */
+	if (data == NULL) {
+		pr_err("[%s] %s allocate %d buffer fail!\n", MODULE_NAME, __func__, data_len);
+		return -1;
+	}
+	pr_debug("[%s]set user_env, name=%s,value=%s\n", MODULE_NAME, name, value);
+	sprintf(data, "%s %s=%s", TAG_SET_ENV, name, value);
+	ret = send_sysenv_msg(user_sysenv_pid, 0, data, data_len);
+	kfree(data);
+	return ret;
+}
+
 int set_env(char *name, char *value)
 {
 	int len;
 	int oldval = -1;
 	char *env, *nxt = NULL;
-	int ret = 0;
 	char *env_data = NULL;
+	char *name_base, *value_base;
 
 	pr_debug("[%s]set env, name=%s,value=%s\n", MODULE_NAME, name, value);
 
-	env_init();
+	if (env_init_state == ENV_UNINIT) {
+		pr_err("[%s] data not ready yet\n", MODULE_NAME);
+		return 0;
+	}
 
+	name_base = name;
+	value_base = value;
 	env_data = g_env.env_data;
 	if (!env_buffer)
 		return -1;
@@ -421,85 +454,45 @@ write_env:
 /* end is marked with double '\0' */
 	*++env = '\0';
 	memset(env, 0x00, CFG_ENV_DATA_SIZE - (env - env_data));
-
-	ret = write_env_area(env_buffer);
-	if (ret < 0) {
-		pr_err("[%s]%s error: write env area fail\n", MODULE_NAME, __func__);
-		memset(env_buffer, 0x00, CFG_ENV_SIZE);
-		return -1;
+	if (env_init_state == ENV_READY) {
+		if (set_user_env(name_base, value_base) < 0)
+			pr_err("[%s]set user env fail: %s=%s\n", MODULE_NAME, name, value);
 	}
 	env_valid = 1;
 	return 0;
 }
 EXPORT_SYMBOL(set_env);
 
-static int write_env_area(char *env_buf)
+static int send_sysenv_msg(int pid, int seq, void *payload, int payload_len)
 {
-	int i, checksum = 0;
-	int result = 0;
-	int ret = 0;
-	loff_t pos = 0;
-	mm_segment_t old_fs;
-	struct file *write_fp;
+	struct sk_buff *skb;
+	struct nlmsghdr *nlh;
+	int size = payload_len+1;
+	int len = NLMSG_SPACE(size);
+	void *data;
+	int ret;
 
-	memcpy(env_buf, ENV_SIG, sizeof(g_env.sig_head));
-	memcpy(env_buf + CFG_ENV_SIG_1_OFFSET, ENV_SIG, sizeof(g_env.sig_tail));
-
-	for (i = 0; i < (CFG_ENV_DATA_SIZE); i++)
-		checksum += *(env_buf + CFG_ENV_DATA_OFFSET + i);
-	*((int *)env_buf + CFG_ENV_CHECKSUM_OFFSET / 4) = checksum;
-
-	write_fp = filp_open(env_path, O_RDWR, 0);
-	if (IS_ERR(write_fp)) {
-		result = PTR_ERR(write_fp);
-		pr_err("[%s]File open return fail,result=%d file=%p\n",
-		       MODULE_NAME, result, write_fp);
-		goto filp_open_fail;
+	skb = alloc_skb(len, GFP_ATOMIC);
+	if (!skb)
+		return -1;
+	if (len < payload_len) {
+		pr_err("[%s] payload is %d larger than skb len %d\n", MODULE_NAME, payload_len, len);
+		return -1;
 	}
-
-	pos += CFG_ENV_OFFSET;
-	ret = kernel_write(write_fp, (char *)env_buf, CFG_ENV_SIZE, pos);
+	nlh = nlmsg_put(skb, pid, seq, 0, size, 0);
+	data = nlmsg_data(nlh);
+	memcpy(data, payload, size);
+	NETLINK_CB(skb).portid = 0; /* from kernel */
+	NETLINK_CB(skb).dst_group = 0; /* unicast */
+	ret = netlink_unicast(netlink_sock, skb, pid, MSG_DONTWAIT);
+	pr_debug("[%s] send %d data to user process(%d), ret = %d\n", MODULE_NAME, len, pid, ret);
 	if (ret < 0) {
-		pr_err("[%s]Kernel write env fail\n", MODULE_NAME);
-		result = -1;
+		pr_err("[%s] send failed\n", MODULE_NAME);
+		if (skb)
+			kfree_skb(skb);
+		return -1;
 	}
-
-	old_fs = get_fs();
-	set_fs(get_ds());
-	ret = vfs_fsync(write_fp, 0);
-	if (ret < 0)
-		pr_warn("[%s]Kernel write env sync fail\n", MODULE_NAME);
-	set_fs(old_fs);
-
-	filp_close(write_fp, 0);
-filp_open_fail:
-	return result;
-}
-
-static int read_env_area(char *env_buf)
-{
-	int result = 0;
-	int ret = 0;
-	loff_t pos = 0;
-	struct file *read_fp;
-
-	read_fp = filp_open(env_path, O_RDWR, 0);
-	if (IS_ERR(read_fp)) {
-		result = PTR_ERR(read_fp);
-		pr_err("[%s]File open return fail,result=%d,file=%p\n",
-		       MODULE_NAME, result, read_fp);
-		goto filp_open_fail;
-	}
-
-	pos += CFG_ENV_OFFSET;
-	ret = kernel_read(read_fp, pos, (char *)env_buf, CFG_ENV_SIZE);
-	if (ret < 0) {
-		pr_err("[%s]Kernel read env fail\n", MODULE_NAME);
-		result = -1;
-	}
-	filp_close(read_fp, 0);
-filp_open_fail:
-	return result;
+	return 0;
 }
 
 static int __init sysenv_init(void)
@@ -509,6 +502,13 @@ static int __init sysenv_init(void)
 	sysenv_proc = proc_create("lk_env", 0600, NULL, &env_proc_fops);
 	if (!sysenv_proc)
 		pr_err("[%s]fail to create /proc/lk_env\n", MODULE_NAME);
+
+	env_init();
+
+	netlink_sock = netlink_kernel_create(&init_net, NETLINK_USERSOCK, NULL);
+	if (netlink_sock == NULL)
+		pr_err("[%s] netlink_kernel_create fail!\n", MODULE_NAME);
+
 	return 0;
 }
 
