@@ -1054,6 +1054,7 @@ typedef const int (*idle_power_func)(int, int, void*, int);
 typedef const int (*busy_power_func)(int, void*, int);
 #endif
 
+/* For multi-scheudling support */
 typedef enum {
 	SCHED_HMP_LB = 0,
 	SCHED_EAS_LB,

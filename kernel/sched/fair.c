@@ -4891,6 +4891,15 @@ static inline bool energy_aware(void)
 #endif
 }
 
+static inline bool hybrid_support(void)
+{
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	return is_hybrid_enabled() && sched_feat(ENERGY_AWARE);
+#else
+	return false;
+#endif
+}
+
 /*
  * __cpu_norm_util() returns the cpu util relative to a specific capacity,
  * i.e. it's busy ratio, in the range [0..SCHED_LOAD_SCALE] which is useful for
@@ -5572,6 +5581,14 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	int policy = 0;
 #endif
 
+	/*
+	 *  Consider EAS if only EAS enabled, but HMP
+	 *  if hybrid enabled and system is over-utilized.
+	 */
+	if ((energy_aware() && !hybrid_support()) ||
+			(hybrid_support() && !cpu_rq(cpu)->rd->overutilized))
+		goto CONSIDER_EAS;
+
 	/* HMP fork balance:
 	 * always put non-kernel forking tasks on a big domain
 	 */
@@ -5588,6 +5605,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			return new_cpu;
 		}
 	}
+
+CONSIDER_EAS:
 
 	if (sd_flag & SD_BALANCE_WAKE)
 		want_affine = (!wake_wide(p) && task_fits_max(p, cpu) &&
@@ -5668,7 +5687,11 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 
 	rcu_read_unlock();
 
-	if (sched_feat(SCHED_HMP)) {
+
+	/*  Consider hmp if no EAS  or over-utiled in hybrid mode. */
+	if ((!energy_aware() && sched_feat(SCHED_HMP)) ||
+		(hybrid_support() && cpu_rq(cpu)->rd->overutilized)) {
+
 		new_cpu = hmp_select_task_rq_fair(sd_flag, p, prev_cpu, new_cpu);
 #ifdef CONFIG_MTK_SCHED_TRACERS
 		policy |= (new_cpu << LB_HMP_SHIFT);
@@ -7991,7 +8014,7 @@ static int idle_balance(struct rq *this_rq)
 	rcu_read_unlock();
 
 #ifdef CONFIG_SCHED_HMP_PLUS
-	if (!pulled_task)
+	if (!energy_aware() && !pulled_task)
 		pulled_task = hmp_idle_pull(this_cpu);
 #endif
 	raw_spin_lock(&this_rq->lock);
@@ -8287,6 +8310,13 @@ static void rebalance_domains(struct rq *rq, enum cpu_idle_type idle)
 		if (!(sd->flags & SD_LOAD_BALANCE))
 			continue;
 
+		/* Don't consider GTS balance if hybrid support */
+		if (hybrid_support()) {
+			if (sd->child || (!sd->child &&
+				(rcu_dereference(per_cpu(sd_scs, cpu)) == NULL)))
+			continue;
+		}
+
 		/*
 		 * Stop the load balance at this level. There is another
 		 * CPU in our sched group which is doing load balancing more
@@ -8521,9 +8551,12 @@ static void run_rebalance_domains(struct softirq_action *h)
 	struct rq *this_rq = this_rq();
 	enum cpu_idle_type idle = this_rq->idle_balance ?
 						CPU_IDLE : CPU_NOT_IDLE;
+	int this_cpu = smp_processor_id();
 
-	if (sched_feat(SCHED_HMP))
-		hmp_force_up_migration(smp_processor_id());
+	/* bypass load balance of HMP if EAS consideration */
+	if ((!energy_aware() && sched_feat(SCHED_HMP)) ||
+			(hybrid_support() && cpu_rq(this_cpu)->rd->overutilized))
+		hmp_force_up_migration(this_cpu);
 
 	/*
 	 * If this cpu has a pending nohz_balance_kick, then do the
