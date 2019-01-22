@@ -487,6 +487,8 @@
 #define CFG_RX_PKTS_DUMP                        0
 
 #define CFG_ASSERT_DUMP                         1
+
+#define CFG_SUPPORT_TRACE_TC4			1
 /*------------------------------------------------------------------------------
  * Flags of Firmware Download Option.
  *------------------------------------------------------------------------------

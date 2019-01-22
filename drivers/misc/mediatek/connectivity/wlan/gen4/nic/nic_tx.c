@@ -301,9 +301,12 @@ BOOLEAN nicTxSanityCheckResource(IN P_ADAPTER_T prAdapter)
 * \retval WLAN_STATUS_RESOURCES Resource is not available.
 */
 /*----------------------------------------------------------------------------*/
+UINT_32 u4CurrTick;
 WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN UINT_32 u4PageCount,
 	IN BOOLEAN fgReqLock)
 {
+#define TC4_NO_RESOURCE_DELAY_MS      5    /* exponential of 5s */
+
 	P_TX_CTRL_T prTxCtrl;
 	P_TX_TCQ_STATUS_T prTc;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
@@ -322,6 +325,8 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN UI
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 #if 1
 	if (prTc->au4FreePageCount[ucTC] >= u4PageCount) {
+		if (ucTC == TC4_INDEX)
+			u4CurrTick = 0;
 		prTc->au4FreePageCount[ucTC] -= u4PageCount;
 		prTc->au4FreeBufferCount[ucTC] = (prTc->au4FreePageCount[ucTC] / NIC_TX_MAX_PAGE_PER_FRAME);
 
@@ -340,6 +345,18 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN UI
 #endif
 	if (fgReqLock)
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
+
+	if (ucTC == TC4_INDEX) {
+		if (u4CurrTick == 0)
+			u4CurrTick = kalGetTimeTick();
+		if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick,
+				SEC_TO_SYSTIME(TC4_NO_RESOURCE_DELAY_MS))) {
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
+			wlanDumpTcResAndTxedCmd(NULL, 0);
+#endif
+			cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
+		}
+	}
 
 	return u4Status;
 }
@@ -447,6 +464,10 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTc, IN UINT_3
 	if (fgReqLock)
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
+	if (ucTc == TC4_INDEX)
+		wlanTraceReleaseTcRes(prAdapter, u4PageCount, prTcqStatus->au4FreePageCount[ucTc]);
+#endif
 	bStatus = TRUE;
 
 	return bStatus;
@@ -1687,6 +1708,9 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 	ASSERT(prCmdInfo);
 
 	prTxCtrl = &prAdapter->rTxCtrl;
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
+	wlanTraceTxCmd(prCmdInfo);
+#endif
 
 	if (prCmdInfo->eCmdType == COMMAND_TYPE_SECURITY_FRAME) {
 		prMsduInfo = prCmdInfo->prMsduInfo;

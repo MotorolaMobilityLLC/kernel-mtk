@@ -136,7 +136,8 @@ CHIPS       := chips/
 COMMON_OBJS :=	$(COMMON_DIR)dump.o \
 	       		$(COMMON_DIR)wlan_lib.o \
 	       		$(COMMON_DIR)wlan_oid.o \
-	       		$(COMMON_DIR)wlan_bow.o
+			$(COMMON_DIR)wlan_bow.o \
+			$(COMMON_DIR)debug.o
 
 NIC_OBJS := $(NIC_DIR)nic.o \
 			$(NIC_DIR)nic_tx.o \
