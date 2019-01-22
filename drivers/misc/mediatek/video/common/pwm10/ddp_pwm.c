@@ -694,7 +694,9 @@ bool disp_pwm_is_osc(void)
 {
 	bool is_osc = false;
 #if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS) || \
-	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
+	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
+	defined(CONFIG_MACH_MT6763)
+
 	is_osc = disp_pwm_mux_is_osc();
 #endif
 	return is_osc;
