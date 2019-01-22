@@ -23,6 +23,7 @@
 
 /* Export API */
 int mt_freqhopping_devctl(unsigned int cmd, void *args);
+void mt_freqhopping_all_ssc_off(void);
 
 struct mt_fh_hal_proc_func {
 
