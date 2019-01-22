@@ -75,6 +75,9 @@ static int handle_to_index(int handle)
 	case ID_PDR:
 		index = pdr;
 		break;
+	case ID_GYRO_TEMPERATURE:
+		index = ungyro_temperature;
+		break;
 	default:
 		index = -1;
 		FUSION_PR_ERR("handle_to_index invalid handle:%d, index:%d\n", handle, index);
@@ -156,6 +159,12 @@ static ssize_t fusion_store_active(struct device *dev, struct device_attribute *
 		FUSION_PR_ERR("[%s] invalid handle\n", __func__);
 		return -1;
 	}
+
+	if (cxt->fusion_context[index].fusion_ctl.enable_nodata == NULL) {
+		pr_debug("[%s] ctl not registered\n", __func__);
+		return -1;
+	}
+
 	mutex_lock(&fusion_context_obj->fusion_op_mutex);
 	if (en == 1)
 		cxt->fusion_context[index].enable = 1;
@@ -230,6 +239,12 @@ static ssize_t fusion_store_batch(struct device *dev, struct device_attribute *a
 		FUSION_PR_ERR("[%s] invalid handle\n", __func__);
 		return -1;
 	}
+
+	if (cxt->fusion_context[index].fusion_ctl.batch == NULL) {
+		pr_debug("[%s] ctl not registered\n", __func__);
+		return -1;
+	}
+
 	FUSION_LOG("handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
 			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	cxt->fusion_context[index].delay_ns = samplingPeriodNs;
@@ -556,6 +571,10 @@ int orientation_flush_report(void)
 int uncali_gyro_data_report(int *data, int status, int64_t nt)
 {
 	return uncali_sensor_data_report(data, status, nt, ID_GYROSCOPE_UNCALIBRATED);
+}
+int uncali_gyro_temperature_data_report(int *data, int status, int64_t nt)
+{
+	return uncali_sensor_data_report(data, status, nt, ID_GYRO_TEMPERATURE);
 }
 
 int uncali_gyro_flush_report(void)
