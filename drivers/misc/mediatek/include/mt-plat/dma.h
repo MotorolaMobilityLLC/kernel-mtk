@@ -97,6 +97,7 @@ struct mt_gdma_conf {
 	unsigned int limiter;
 	dma_addr_t src;
 	dma_addr_t dst;
+	dma_addr_t jump;
 	int wpen;
 	int wpsd;
 	unsigned int wplen;
@@ -144,9 +145,9 @@ extern int mt_hard_reset_gdma(int channel);
 extern int mt_reset_gdma(int channel);
 extern void mt_dma_running_status(void);
 /* This channel is used for APDMA Dummy READ.
-*   in MT6592 this channel will be used by Frequency hopping all the time
-*   .Owner: Chieh-Jay Liu
-*/
+   in MT6592 this channel will be used by Frequency hopping all the time
+   .Owner: Chieh-Jay Liu
+   */
 #define DFS_APDMA_CHANNEL 0
 
 #endif				/* !__MT_DMA_H__ */
