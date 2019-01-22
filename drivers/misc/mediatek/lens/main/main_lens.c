@@ -120,10 +120,19 @@ static int g_regVCAMAFEn;
 
 void AF_PowerDown(void)
 {
-	#ifdef CONFIG_MTK_LENS_AK7371AF_SUPPORT
-	AK7371AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
-	AK7371AF_PowerDown();
-	#endif
+	if (g_pstAF_I2Cclient != NULL) {
+		LOG_INF("CONFIG_MTK_PLATFORM : %s\n", CONFIG_MTK_PLATFORM);
+
+		#ifdef CONFIG_MACH_MT6739
+		LC898217AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+		LC898217AF_PowerDown();
+		#endif
+
+		#ifdef CONFIG_MTK_LENS_AK7371AF_SUPPORT
+		AK7371AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+		AK7371AF_PowerDown();
+		#endif
+	}
 }
 EXPORT_SYMBOL(AF_PowerDown);
 
