@@ -175,7 +175,7 @@ int dvt_connect_path(void *handle)
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_SOUT_SEL_IN, value);
 
 	/*DBPI_SEL*/
-	value = 1;
+	value = 0x1 << 1;
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DBPI_SEL, value);
 
 	return 0;
@@ -430,6 +430,10 @@ int dvt_connect_ovl0_dpi(void *handle)
 	value = 0x0;
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_SOUT_SEL_IN, value);
 
+	/*DBPI_SEL*/
+	value = 0x1 << 1;
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DBPI_SEL, value);
+
 	return 0;
 }
 
@@ -468,6 +472,9 @@ int dvt_disconnect_ovl0_dpi(void *handle)
 
 	/*DPI0_SEL_SOUT to DPI0_THP_LMT */
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_SOUT_SEL_IN, value);
+
+	/*DBPI_SEL*/
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DBPI_SEL, value);
 
 	return 0;
 }
@@ -601,6 +608,10 @@ int dvt_connect_ovl1_2l_dpi(void *handle)
 	value = 0x0;
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_SOUT_SEL_IN, value);
 
+	/*DBPI_SEL*/
+	value = 0x1 << 1;
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DBPI_SEL, value);
+
 	return 0;
 }
 
@@ -621,6 +632,9 @@ int dvt_disconnect_ovl1_2l_dpi(void *handle)
 
 	/*DPI0_SEL_SOUT to DPI0_THP_LMT*/
 	DISP_REG_SET(handle, DISP_REG_CONFIG_DPI0_SEL_SOUT_SEL_IN, value);
+
+	/*DBPI_SEL*/
+	DISP_REG_SET(handle, DISP_REG_CONFIG_DBPI_SEL, value);
 
 	return 0;
 }
