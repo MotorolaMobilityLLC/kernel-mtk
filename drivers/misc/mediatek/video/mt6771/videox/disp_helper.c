@@ -309,8 +309,8 @@ const char *disp_helper_stage_spy(void)
 
 void disp_helper_option_init(void)
 {
-	disp_helper_set_option(DISP_OPT_USE_CMDQ, 0);
-	disp_helper_set_option(DISP_OPT_USE_M4U, 0);
+	disp_helper_set_option(DISP_OPT_USE_CMDQ, 1);
+	disp_helper_set_option(DISP_OPT_USE_M4U, 1);
 
 	/* test solution for 6795 rdma underflow caused by ufoe LR mode(ufoe fifo is larger than rdma) */
 	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN, 0);
@@ -337,7 +337,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_MET_LOG, 1);
 	/* =================End: lowpower option setting=================== */
 
-	disp_helper_set_option(DISP_OPT_PRESENT_FENCE, 0);
+	disp_helper_set_option(DISP_OPT_PRESENT_FENCE, 1);
 
 	/* use fake vsync timer for low power measurement */
 	disp_helper_set_option(DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT, 0);

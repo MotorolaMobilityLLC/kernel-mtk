@@ -42,9 +42,9 @@
 /* #define MTK_FB_SHARE_WDMA0_SUPPORT */
 
 /* #define SUPPORT_MMPROFILE */
-/* #define MTK_FB_ION_SUPPORT */
+#define MTK_FB_ION_SUPPORT
 /* #define FPGA_DEBUG_PAN */
-/* #define MTKFB_M4U_SUPPORT */
+#define MTKFB_M4U_SUPPORT
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
 
