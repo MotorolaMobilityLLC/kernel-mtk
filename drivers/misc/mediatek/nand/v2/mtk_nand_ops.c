@@ -152,6 +152,8 @@ static int mtk_nand_read_pages(struct mtk_nand_chip_info *info,
 
 	if (ret != 1)
 		ret = -ENANDREAD;
+	else
+		ret = 0;
 #if 0
 	else
 		ret =  mtd->ecc_stats.corrected - stats.corrected ? -ENANDFLIPS : 0;
@@ -1924,9 +1926,33 @@ static int compare_data(unsigned char *sbuf, unsigned char *dbuf, unsigned size)
 }
 #endif
 
+#ifdef MTK_NAND_PERFORMANCE_TEST
+static suseconds_t time_diff(struct timeval *end_time, struct timeval *start_time)
+{
+	struct timeval difference;
+
+	difference.tv_sec = end_time->tv_sec - start_time->tv_sec;
+	difference.tv_usec = end_time->tv_usec - start_time->tv_usec;
+
+	/* Using while instead of if below makes the code slightly more robust. */
+
+	while (difference.tv_usec < 0) {
+		difference.tv_usec += 1000000;
+		difference.tv_sec -= 1;
+	}
+
+	return 1000000LL * difference.tv_sec + difference.tv_usec;
+}
+#endif
+
 void mtk_chip_unit_test(void)
 {
 	struct mtk_nand_chip_info *chip_info = &data_info->chip_info;
+#ifdef MTK_NAND_PERFORMANCE_TEST
+	struct timeval stimer, etimer;
+	suseconds_t total_time;
+	unsigned long block_size;
+#endif
 	unsigned char *data_buffer, *temp_buf;
 	unsigned char *oob_buffer, *oob_buf;
 	unsigned int i, j, data_flag, read_cnt;
@@ -1977,7 +2003,8 @@ void mtk_chip_unit_test(void)
 
 	/* for (i = 0; i < 1; i += 2) { */
 #ifdef MTK_NAND_CHIP_MULTI_PLANE_TEST
-	for (i = 0; i < chip_info->data_block_num + chip_info->log_block_num; i += 2) {
+	/* for (i = 0; i < chip_info->data_block_num + chip_info->log_block_num; i += 2) { */
+	for (i = chip_info->data_block_num - 8; i < chip_info->data_block_num + 8; i += 2) {
 #else
 	for (i = 0; i < chip_info->data_block_num + chip_info->log_block_num; i++) {
 #endif
@@ -1995,7 +2022,9 @@ void mtk_chip_unit_test(void)
 
 		userdata = (i*chip_info->data_page_num) | (1<<31);
 #if 1
-
+#ifdef MTK_NAND_PERFORMANCE_TEST
+			do_gettimeofday(&stimer);
+#endif
 		ret = mtk_nand_chip_erase_block(chip_info, i, 1,
 			&mtk_nand_debug_callback, &userdata);
 		if (ret) {
@@ -2017,6 +2046,14 @@ void mtk_chip_unit_test(void)
 #endif
 		mtk_nand_chip_sync(chip_info);
 
+
+#ifdef MTK_NAND_PERFORMANCE_TEST
+		do_gettimeofday(&etimer);
+		total_time = time_diff(&etimer, &stimer);
+		nand_info("Erase total_time:%ld mS", total_time/1000);
+		total_time  = 0;
+#endif
+
 #if 1
 		if (data_flag++ & 1) {
 			prandom_bytes(data_buffer, chip_info->data_page_size);
@@ -2029,6 +2066,9 @@ void mtk_chip_unit_test(void)
 		memcpy(oob_buf, oob_buffer, chip_info->data_oob_size);
 #endif
 
+#ifdef MTK_NAND_PERFORMANCE_TEST
+			do_gettimeofday(&stimer);
+#endif
 		for (j = 0; j < pages_per_blk; j++) {
 #if 0
 			if (data_flag == 1) {
@@ -2041,6 +2081,7 @@ void mtk_chip_unit_test(void)
 			memcpy(temp_buf, data_buffer, chip_info->data_page_size);
 			memcpy(oob_buf, oob_buffer, chip_info->data_oob_size);
 #endif
+
 #ifdef MTK_NAND_CHIP_DUMP_DATA_TEST
 			nand_info("write blk:0x%x page:0x%x data dump", i, j);
 			dump_buf_data(data_buffer, chip_info->data_oob_size);
@@ -2055,6 +2096,7 @@ void mtk_chip_unit_test(void)
 				nand_err("bad block here block:0x%x", i);
 				break;
 			}
+
 #ifdef MTK_NAND_CHIP_MULTI_PLANE_TEST
 			ret = mtk_nand_chip_write_page(chip_info, data_buffer, oob_buffer,
 				i+1, j, 1, &mtk_nand_debug_callback, &userdata);
@@ -2095,6 +2137,19 @@ void mtk_chip_unit_test(void)
 
 		mtk_nand_chip_sync(chip_info);
 
+#ifdef MTK_NAND_PERFORMANCE_TEST
+		do_gettimeofday(&etimer);
+		total_time = time_diff(&etimer, &stimer);
+		block_size = (pages_per_blk*chip_info->data_page_size);
+		block_size *= 1000;
+#ifdef MTK_NAND_CHIP_MULTI_PLANE_TEST
+		block_size *= 2;
+#endif
+		nand_info("Write Speed: %ldKB/S, total_time:%ld mS, block_size:%ld",
+			block_size/total_time, total_time/1000, block_size/1000);
+		total_time  = 0;
+#endif
+
 #endif
 
 #if 1
@@ -2107,14 +2162,46 @@ READ_DISTUB:
 		for (j = 0; j < pages_per_blk; j++) {
 			memset(data_buffer, 0, chip_info->data_page_size);
 			memset(oob_buffer, 0, chip_info->data_oob_size);
-
+#ifdef MTK_NAND_PERFORMANCE_TEST
+			do_gettimeofday(&stimer);
+#endif
+#if 1
 			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
 				i, j, 0, chip_info->data_page_size);
 			if (ret && (ret != -ENANDFLIPS)) {
 				nand_err("read block failed i:0x%x j:0x%x", i, j);
 				break;
 			}
-
+#else
+			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
+				i, j, 0, 4096);
+			if (ret && (ret != -ENANDFLIPS)) {
+				nand_err("read block failed i:0x%x j:0x%x", i, j);
+				break;
+			}
+			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
+				i, j, 4096, 4096);
+			if (ret && (ret != -ENANDFLIPS)) {
+				nand_err("read block failed i:0x%x j:0x%x", i, j);
+				break;
+			}
+			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
+				i, j, 8192, 4096);
+			if (ret && (ret != -ENANDFLIPS)) {
+				nand_err("read block failed i:0x%x j:0x%x", i, j);
+				break;
+			}
+			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
+				i, j, 12288, 4096);
+			if (ret && (ret != -ENANDFLIPS)) {
+				nand_err("read block failed i:0x%x j:0x%x", i, j);
+				break;
+			}
+#endif
+#ifdef MTK_NAND_PERFORMANCE_TEST
+		do_gettimeofday(&etimer);
+		total_time += time_diff(&etimer, &stimer);
+#endif
 			if (check_data_empty(data_buffer, chip_info->data_page_size)) {
 				nand_err("*****Check empty page here blk:0x%x page:0x%x ", i, j);
 				break;
@@ -2141,13 +2228,46 @@ READ_DISTUB:
 #endif
 
 #ifdef MTK_NAND_CHIP_MULTI_PLANE_TEST
+#ifdef MTK_NAND_PERFORMANCE_TEST
+			do_gettimeofday(&stimer);
+#endif
+#if 1
 			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
 				i+1, j, 0, chip_info->data_page_size);
 			if (ret && (ret != -ENANDFLIPS)) {
 				nand_err("read block failed i:0x%x j:0x%x", i, j);
 				break;
 			}
-
+#else
+			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
+				i+1, j, 0, 4096);
+			if (ret && (ret != -ENANDFLIPS)) {
+				nand_err("read block failed i:0x%x j:0x%x", i, j);
+				break;
+			}
+			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
+				i+1, j, 4096, 4096);
+			if (ret && (ret != -ENANDFLIPS)) {
+				nand_err("read block failed i:0x%x j:0x%x", i, j);
+				break;
+			}
+			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
+				i+1, j, 8192, 4096);
+			if (ret && (ret != -ENANDFLIPS)) {
+				nand_err("read block failed i:0x%x j:0x%x", i, j);
+				break;
+			}
+			ret = mtk_nand_chip_read_page(chip_info, data_buffer, oob_buffer,
+				i+1, j, 12288, 4096);
+			if (ret && (ret != -ENANDFLIPS)) {
+				nand_err("read block failed i:0x%x j:0x%x", i, j);
+				break;
+			}
+#endif
+#ifdef MTK_NAND_PERFORMANCE_TEST
+		do_gettimeofday(&etimer);
+		total_time += time_diff(&etimer, &stimer);
+#endif
 			if (check_data_empty(data_buffer, chip_info->data_page_size)) {
 				nand_err("*****Check empty page here blk:0x%x page:0x%x ", i+1, j);
 				break;
@@ -2176,15 +2296,26 @@ READ_DISTUB:
 
 		}
 
+#ifdef MTK_NAND_PERFORMANCE_TEST
+
+		block_size = (pages_per_blk*chip_info->data_page_size);
+		block_size *= 1000;
+#ifdef MTK_NAND_CHIP_MULTI_PLANE_TEST
+		block_size *= 2;
+#endif
+		nand_info("Read Speed: %ldKB/S, total_time:%ld mS, block_size:%ld",
+			block_size/total_time, total_time/1000, block_size/1000);
+#endif
 		if (read_cnt++ < 1)
 			goto READ_DISTUB;
 #endif
+
 	}
 
 	kfree(data_buffer);
 	kfree(oob_buffer);
 
-	nand_err("^^^^^^^TEST END^^^^^^^^");
+	nand_info("^^^^^^^TEST END^^^^^^^^");
 
 	/* while(1); */
 
