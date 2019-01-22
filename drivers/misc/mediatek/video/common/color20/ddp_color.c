@@ -43,7 +43,7 @@
 #include "ddp_color.h"
 #include "cmdq_def.h"
 
-#if defined(CONFIG_MACH_MT6757)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6799)
 #include "mt-plat/mtk_chip.h"
 #endif
 
@@ -1351,7 +1351,7 @@ void DpEngine_COLORonConfig(enum DISP_MODULE_ENUM module, void *__cmdq)
 
 	if (g_config_color21 == false)
 		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
-	else if (g_config_color21 == true)
+	else
 		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
 
 	/* Partial Saturation Function */
@@ -1693,7 +1693,7 @@ static void color_write_hw_reg(enum DISP_MODULE_ENUM module,
 
 	if (g_config_color21 == false)
 		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN + offset, 0 << 13, 0x00002000);
-	else if (g_config_color21 == true)
+	else
 		_color_reg_mask(cmdq, DISP_COLOR_C_BOOST_MAIN_2 + offset, 0x40 << 24, 0xFF000000);
 
 	/* Partial Saturation Function */
@@ -2652,6 +2652,11 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 		g_config_color30 = true;
 	else
 		g_config_color21 = false;
+#endif
+#if defined(CONFIG_MACH_MT6799)
+	if (mt_get_chip_sw_ver() == 0x0001) { /* E2 */
+		g_config_color30 = true;
+	}
 #endif
 
 	return 0;
