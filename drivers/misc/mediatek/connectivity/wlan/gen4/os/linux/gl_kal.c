@@ -2653,6 +2653,11 @@ int hif_thread(void *data)
 		if (!KAL_WAKE_LOCK_ACTIVE(prGlueInfo->prAdapter, &rHifThreadWakeLock))
 			KAL_WAKE_LOCK(prGlueInfo->prAdapter, &rHifThreadWakeLock);
 #endif
+		if (prGlueInfo->prAdapter->fgIsFwOwn && (prGlueInfo->ulFlag == GLUE_FLAG_HIF_FW_OWN)) {
+			DBGLOG(INIT, INFO, "Only FW OWN request, but now already done FW OWN\n");
+			clear_bit(GLUE_FLAG_HIF_FW_OWN_BIT, &prGlueInfo->ulFlag);
+			continue;
+		}
 		wlanAcquirePowerControl(prGlueInfo->prAdapter);
 
 		/* Handle Interrupt */
