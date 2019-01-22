@@ -246,7 +246,7 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 					retryCounter--;
 					osal_sleep_ms(1000);
 				} else {
-					WMT_INFO_FUNC("WMT turn on LPBK suceed\n");
+					WMT_DBG_FUNC("WMT turn on LPBK suceed\n");
 					break;
 				}
 			} while (retryCounter > 0);

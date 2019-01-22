@@ -2707,7 +2707,7 @@ static INT32 stp_sdio_remove(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx)
 	/* STPSDIO_INFO_FUNC("kill tasklet finished\n"); */
 	osal_thread_destroy(&g_stp_sdio_host_info.tx_rx_thread);
 	osal_event_deinit(&g_stp_sdio_host_info.tx_rx_event);
-	STPSDIO_INFO_FUNC("destroy STP-SDIO tx_rx_thread\n");
+	STPSDIO_DBG_FUNC("destroy STP-SDIO tx_rx_thread\n");
 #else
 	flush_scheduled_work();
 	STPSDIO_INFO_FUNC("flush scheduled work end\n");
@@ -2720,7 +2720,7 @@ static INT32 stp_sdio_remove(const MTK_WCN_HIF_SDIO_CLTCTX clt_ctx)
 	stp_sdio_host_info_op(1);
 
 
-	STPSDIO_INFO_FUNC("clear g_stp_sdio_host_info[p_priv->stp_sdio_host_idx] done\n");
+	STPSDIO_DBG_FUNC("clear g_stp_sdio_host_info[p_priv->stp_sdio_host_idx] done\n");
 
 	STPSDIO_LOUD_FUNC("end\n");
 
