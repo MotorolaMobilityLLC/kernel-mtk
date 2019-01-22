@@ -1597,8 +1597,7 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 			if (kalP2PGetCcmpCipher(prAdapter->prGlueInfo)) {
 				rCmdSetBssInfo.ucAuthMode = (UINT_8) AUTH_MODE_WPA2_PSK;
 				rCmdSetBssInfo.ucEncStatus = (UINT_8) ENUM_ENCRYPTION3_ENABLED;
-			}
-			if (kalP2PGetTkipCipher(prAdapter->prGlueInfo)) {
+			} else if (kalP2PGetTkipCipher(prAdapter->prGlueInfo)) {
 				rCmdSetBssInfo.ucAuthMode = (UINT_8) AUTH_MODE_WPA_PSK;
 				rCmdSetBssInfo.ucEncStatus = (UINT_8) ENUM_ENCRYPTION2_ENABLED;
 			} else if (kalP2PGetCipher(prAdapter->prGlueInfo)) {
