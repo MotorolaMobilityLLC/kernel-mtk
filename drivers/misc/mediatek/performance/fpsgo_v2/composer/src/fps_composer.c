@@ -235,7 +235,7 @@ int fpsgo_com_update_render_api_info(struct render_info *f_render)
 }
 
 void fpsgo_ctrl2comp_enqueue_start(int pid,
-	unsigned long long enqueue_start_time, unsigned long long buffer_id)
+	unsigned long long enqueue_start_time, unsigned long long buffer_id, int queue_SF)
 {
 	struct render_info *f_render;
 	int xgf_ret = 0;
@@ -243,6 +243,9 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 	unsigned long long slptime = 0;
 
 	FPSGO_COM_TRACE("%s pid[%d] buffer_id %llu", __func__, pid, buffer_id);
+
+	if (!queue_SF)
+		return;
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
@@ -328,13 +331,16 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 }
 
 void fpsgo_ctrl2comp_enqueue_end(int pid,
-	unsigned long long enqueue_end_time, unsigned long long buffer_id)
+	unsigned long long enqueue_end_time, unsigned long long buffer_id, int queue_SF)
 {
 	struct render_info *f_render;
 	int xgf_ret = 0;
 	int check_render;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
+
+	if (!queue_SF)
+		return;
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
@@ -394,12 +400,14 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 }
 
 void fpsgo_ctrl2comp_dequeue_start(int pid,
-	unsigned long long dequeue_start_time, unsigned long long buffer_id)
+	unsigned long long dequeue_start_time, unsigned long long buffer_id, int queue_SF)
 {
 	struct render_info *f_render;
 	int xgf_ret = 0;
 	int check_render;
 
+	if (!queue_SF)
+		return;
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
@@ -455,13 +463,16 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 }
 
 void fpsgo_ctrl2comp_dequeue_end(int pid,
-	unsigned long long dequeue_end_time, unsigned long long buffer_id)
+	unsigned long long dequeue_end_time, unsigned long long buffer_id, int queue_SF)
 {
 	struct render_info *f_render;
 	int xgf_ret = 0;
 	int check_render;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
+
+	if (!queue_SF)
+		return;
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
