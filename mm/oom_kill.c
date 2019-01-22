@@ -633,11 +633,18 @@ void oom_kill_process(struct oom_control *oc, struct task_struct *p,
 #ifdef CONFIG_MTK_ENG_BUILD
 	if (atomic_read(&victim->usage) == 1) {
 		unsigned long flags;
+		int i;
 
 		spin_lock_irqsave(&victim->stack_trace_lock, flags);
 		pr_err("oom_kill_process put task with tsk->usage == 1, tsk previous bt:\n");
-		print_stack_trace(&victim->stack_trace, 0);
+		for (i = 0; i < 2; i++) {
+			pr_info("bt: %d\n", i);
+			victim->stack_trace.entries = victim->addrs[i];
+			print_stack_trace(&victim->stack_trace, 0);
+		}
 		spin_unlock_irqrestore(&victim->stack_trace_lock, flags);
+		pr_info("victim: %s\n, addr: 0x%lx, victim->mm: 0x%lx\n", victim->comm,
+				(unsigned long) victim, (unsigned long)victim->mm);
 		BUG();
 	}
 #endif
