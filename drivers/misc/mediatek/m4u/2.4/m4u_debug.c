@@ -543,10 +543,16 @@ static int m4u_debug_set(void *data, u64 val)
 		m4u_dump_pfh_tlb(0);
 		break;
 	case 18:
-		m4u_dump_main_tlb(1, 0);
+		if (TOTAL_M4U_NUM == 2) {
+			m4u_dump_main_tlb(1, 0);
+			break;
+		}
 		break;
 	case 19:
-		m4u_dump_pfh_tlb(1);
+		if (TOTAL_M4U_NUM == 2) {
+			m4u_dump_pfh_tlb(1);
+			break;
+		}
 		break;
 	case 20:
 	{
