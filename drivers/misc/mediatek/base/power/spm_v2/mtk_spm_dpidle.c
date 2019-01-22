@@ -57,7 +57,11 @@
 
 #define SPM_PWAKE_EN            1
 #define SPM_PCMWDT_EN           1
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#define SPM_BYPASS_SYSPWREQ     1
+#else
 #define SPM_BYPASS_SYSPWREQ     0
+#endif
 
 #define WAKE_SRC_FOR_MD32  0
 
@@ -104,6 +108,7 @@ static unsigned long mcucfg_phys_base;
 #define	ACINACTM_MP2	(0x11)
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+#include <mt-plat/mtk_secure_api.h>
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write_phy(addr##_PHYS, val)
 #else
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
@@ -579,7 +584,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		/* Determine print SPM log or not */
 		dpidle_log_print_curr_time = spm_get_current_time_ms();
 
-		if (wakesta->assert_pc != 0)
+		if (wakesta->assert_pc != 0 || wakesta->r12 == 0)
 			log_print = true;
 #if 0
 		/* Not wakeup by GPT */
@@ -616,7 +621,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 #endif
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if 0 /*defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)*/
 	if (wakesta->r12 == 0) {
 		int i;
 
