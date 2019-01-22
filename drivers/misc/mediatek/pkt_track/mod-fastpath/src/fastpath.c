@@ -71,7 +71,7 @@ static void fp_init_table_buffer(void)
 		track_table = kmalloc(sizeof(struct fp_track_table_t), GFP_ATOMIC);
 		if (!track_table) {
 			fp_printk(K_ERR, "%s: kmalloc failed!\n", __func__);
-			return;
+			continue;
 		}
 
 		memset(track_table, 0, sizeof(struct fp_track_table_t));
