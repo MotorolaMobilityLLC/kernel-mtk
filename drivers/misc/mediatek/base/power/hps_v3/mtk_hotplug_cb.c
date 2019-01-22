@@ -92,7 +92,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #endif
 
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6771)
-	int ret;
+	/*int ret;*/
 #endif
 	switch (action) {
 	case CPU_STARTING:
@@ -177,6 +177,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 #if CPU_BUCK_CTRL
 
 #if defined(CONFIG_MACH_MT6771)
+#if 0
 					ret = regulator_enable(cpu_vsram11_id);
 					if (ret)
 						pr_info("regulator_enable vsram11 failed\n");
@@ -186,7 +187,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 						pr_info("regulator_enable vproc11 failed\n");
 					dsb(sy);
 					MP1_BUCK_STATUS = MP_BUCK_ON;
-
+#endif
 #else
 					/*1. Power ON VSram*/
 					ret = buck_enable(VSRAM_DVFS2, 1);
@@ -309,9 +310,11 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 
 
 #if defined(CONFIG_MACH_MT6771)
+#if 0
 					regulator_disable(cpu_vproc11_id);
 					regulator_disable(cpu_vsram11_id);
 					MP1_BUCK_STATUS = MP_BUCK_OFF;
+#endif
 #else
 					/*4. Power off Vproc2*/
 					hps_power_off_vproc2();
