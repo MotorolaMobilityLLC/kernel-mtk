@@ -757,9 +757,16 @@ static void hp_pull_down(bool enable)
 	unsigned int to = enable ? 0x6 : 0x0;
 	unsigned int i;
 
-	for (i = from; i <= to; i = enable ? (i + 1) : (i - 1)) {
-		Ana_Set_Reg(AUDDEC_ANA_CON4, i, 0x7);
-		udelay(600);
+	if (enable) {
+		for (i = from; i <= to; i++) {
+			Ana_Set_Reg(AUDDEC_ANA_CON4, i, 0x7);
+			udelay(600);
+		}
+	} else {
+		for (i = from; i >= to; i--) {
+			Ana_Set_Reg(AUDDEC_ANA_CON4, i, 0x7);
+			udelay(600);
+		}
 	}
 }
 
