@@ -749,7 +749,7 @@ int mmc_blk_cmdq_switch(struct mmc_card *card, int enable)
 		mmc_wait_cmdq_empty(card->host);
 
 	ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-		EXT_CSD_CMDQ_MODE_EN, enable,
+		EXT_CSD_CMDQ_MODE_EN, !!enable,
 		card->ext_csd.generic_cmd6_time);
 
 	if (ret) {
@@ -760,11 +760,11 @@ int mmc_blk_cmdq_switch(struct mmc_card *card, int enable)
 		return ret;
 	}
 
-	card->ext_csd.cmdq_mode_en = enable;
+	card->ext_csd.cmdq_mode_en = !!enable;
 
-	pr_err("%s: set ext_csd.cmdq_mode_en = %d\n",
+	pr_notice("%s: set cmdq %s\n",
 		mmc_hostname(card->host),
-		card->ext_csd.cmdq_mode_en);
+		enable ? "on":"off");
 
 	return 0;
 }

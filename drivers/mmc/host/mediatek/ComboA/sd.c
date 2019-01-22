@@ -2807,6 +2807,11 @@ int msdc_rw_cmd_using_sync_dma(struct mmc_host *mmc, struct mmc_command *cmd,
 	host->dma.used_gpd = 0;
 	dma_unmap_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	/* clear flag for sync case */
+	host->mmc->is_data_dma = 0;
+#endif
+
 	return 0;
 }
 
