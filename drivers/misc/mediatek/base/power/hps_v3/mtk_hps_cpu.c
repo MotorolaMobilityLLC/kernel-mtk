@@ -89,10 +89,10 @@ unsigned int num_online_big_cpus(void)
 /*
  * hps cpu interface - scheduler
  */
-unsigned int hps_cpu_get_percpu_load(int cpu)
+unsigned int hps_cpu_get_percpu_load(int cpu, int get_abs)
 {
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
-	if (cpu >= 4)
+	if (!get_abs)
 		return sched_get_percpu_load(cpu, 1, 1);
 	else
 		return sched_get_percpu_load(cpu, 1, 0);

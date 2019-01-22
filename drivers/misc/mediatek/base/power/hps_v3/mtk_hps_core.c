@@ -135,10 +135,20 @@ static void hps_get_sysinfo(void)
 		dev_util += util;
 
 		hps_sys.cluster_info[idx].loading = 0;
+		hps_sys.cluster_info[idx].rel_load = 0;
+		hps_sys.cluster_info[idx].abs_load = 0;
 	}
 	/*for_each_possible_cpu(cpu) {*/
 	for_each_online_cpu(cpu) {
-		per_cpu(hps_percpu_ctxt, cpu).load = hps_cpu_get_percpu_load(cpu);
+		if (cpu < 4) {
+			per_cpu(hps_percpu_ctxt, cpu).load = hps_cpu_get_percpu_load(cpu, 0);
+			hps_sys.cluster_info[cpu/4].rel_load += per_cpu(hps_percpu_ctxt, cpu).load;
+			hps_sys.cluster_info[cpu/4].abs_load += hps_cpu_get_percpu_load(cpu, 1);
+		} else {
+			per_cpu(hps_percpu_ctxt, cpu).load = hps_cpu_get_percpu_load(cpu, 1);
+			hps_sys.cluster_info[cpu/4].abs_load += per_cpu(hps_percpu_ctxt, cpu).load;
+			hps_sys.cluster_info[cpu/4].rel_load += hps_cpu_get_percpu_load(cpu, 0);
+		}
 		hps_ctxt.cur_loads += per_cpu(hps_percpu_ctxt, cpu).load;
 
 		for (idx = 0 ; idx < hps_sys.cluster_num; idx++) {
