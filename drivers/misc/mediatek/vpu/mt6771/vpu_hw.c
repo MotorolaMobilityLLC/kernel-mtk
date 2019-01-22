@@ -1988,7 +1988,6 @@ int vpu_hw_boot_sequence(int core)
 	VPU_CLR_BIT(ptr_ctrl, 28);
 	VPU_CLR_BIT(ptr_ctrl, 27);
 	#endif
-
 	VPU_SET_BIT(ptr_reset, 12);     /* OCD_HALT_ON_RST pull up */
 	ndelay(27);                     /* wait for 27ns */
 
@@ -2008,8 +2007,15 @@ int vpu_hw_boot_sequence(int core)
 	VPU_SET_BIT(ptr_axi_1, 4);       /* AXI Request via M4U */
 	VPU_SET_BIT(ptr_axi_1, 9);
 #endif
-	LOG_DBG("REG_AXI_DEFAULT0(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x13C));
-	LOG_DBG("REG_AXI_DEFAULT1(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x140));
+	/* default set pre-ultra instead of ultra */
+	VPU_SET_BIT(ptr_axi_0, 28);
+
+	if (g_vpu_log_level > 1)
+		LOG_INF("[vpu_%d] REG_AXI_DEFAULT0(0x%x)\n", core,
+			vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x13C));
+
+	LOG_DBG("[vpu_%d] REG_AXI_DEFAULT1(0x%x)\n", core,
+		vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x140));
 
 	/* 2. trigger to run */
 	LOG_DBG("vpu dsp:running (%d/0x%x)", core, vpu_read_field(core, FLD_SRAM_CONFIGURE));
