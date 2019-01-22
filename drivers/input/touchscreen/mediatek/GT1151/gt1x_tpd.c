@@ -762,7 +762,7 @@ u32 gt1x_get_charger_status(void)
 {
 	u32 chr_status = 0;
 #ifdef MT6573
-	chr_status = *(volatile u32 *)CHR_CON0;
+	chr_status = *(u32 *)CHR_CON0;
 	chr_status &= (1 << 13);
 #else				/* ( defined(MT6575) || defined(MT6577) || defined(MT6589) ) */
 	chr_status = upmu_is_chr_det();
