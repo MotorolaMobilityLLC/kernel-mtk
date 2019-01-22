@@ -63,6 +63,9 @@
 #define LM3643_TORCH_RAMP_TIME (0x00)
 #define LM3643_FLASH_TIMEOUT   (0x0F)
 
+#define LM3643_REG_FLAG1 (0x0A)
+#define LM3643_REG_FLAG2 (0x0B)
+
 /* define channel, level */
 #define LM3643_CHANNEL_NUM 2
 #define LM3643_CHANNEL_CH1 0
@@ -224,6 +227,18 @@ static int lm3643_write_reg(struct i2c_client *client, u8 reg, u8 val)
 	return ret;
 }
 
+static int lm3643_read_reg(struct i2c_client *client, u8 reg)
+{
+	int val;
+	struct lm3643_chip_data *chip = i2c_get_clientdata(client);
+
+	mutex_lock(&chip->lock);
+	val = i2c_smbus_read_byte_data(client, reg);
+	mutex_unlock(&chip->lock);
+
+	return val;
+}
+
 /* flashlight enable function */
 static int lm3643_enable_ch1(void)
 {
@@ -378,6 +393,17 @@ static int lm3643_set_level(int channel, int level)
 		return -1;
 	}
 
+	return 0;
+}
+
+static int lm3643_get_flag(int num)
+{
+	if (num == 1)
+		return lm3643_read_reg(lm3643_i2c_client, LM3643_REG_FLAG1);
+	else if (num == 2)
+		return lm3643_read_reg(lm3643_i2c_client, LM3643_REG_FLAG2);
+
+	pr_info("Error num\n");
 	return 0;
 }
 
@@ -543,6 +569,16 @@ static int lm3643_ioctl(unsigned int cmd, unsigned long arg)
 	case FLASH_IOC_GET_HW_TIMEOUT:
 		pr_debug("FLASH_IOC_GET_HW_TIMEOUT(%d)\n", channel);
 		fl_arg->arg = LM3643_HW_TIMEOUT;
+		break;
+
+	case FLASH_IOC_GET_HW_FAULT:
+		pr_debug("FLASH_IOC_GET_HW_FAULT(%d)\n", channel);
+		fl_arg->arg = lm3643_get_flag(1);
+		break;
+
+	case FLASH_IOC_GET_HW_FAULT2:
+		pr_debug("FLASH_IOC_GET_HW_FAULT2(%d)\n", channel);
+		fl_arg->arg = lm3643_get_flag(2);
 		break;
 
 	default:
