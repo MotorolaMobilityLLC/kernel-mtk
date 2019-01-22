@@ -25,10 +25,10 @@
 #include <linux/vmalloc.h>
 #include <linux/seq_file.h>
 #include "ion_priv.h"
-#include "ion_fb_heap.h"
 #include "ion_drv_priv.h"
 #include "mtk/ion_drv.h"
 #include "mtk/mtk_ion.h"
+#include "ion_heap_debug.h"
 
 #ifdef CONFIG_MTK_IOMMU
 
@@ -80,7 +80,7 @@ void ion_fb_free(struct ion_heap *heap, ion_phys_addr_t addr,
 
 static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			    ion_phys_addr_t *addr, size_t *len) {
-	struct ion_fb_buffer_info *buffer_info = (struct ion_fb_buffer_info *)buffer->priv_virt;
+	struct ion_mm_buffer_info *buffer_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
 	port_mva_info_t port_info;
 
 	if (!buffer_info) {
@@ -124,7 +124,7 @@ static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 static int ion_fb_heap_allocate(struct ion_heap *heap,
 				struct ion_buffer *buffer, unsigned long size, unsigned long align,
 		unsigned long flags) {
-	struct ion_fb_buffer_info *buffer_info = NULL;
+	struct ion_mm_buffer_info *buffer_info = NULL;
 	ion_phys_addr_t paddr;
 
 	if (align > PAGE_SIZE)
@@ -162,7 +162,7 @@ static int ion_fb_heap_allocate(struct ion_heap *heap,
 static void ion_fb_heap_free(struct ion_buffer *buffer)
 {
 	struct ion_heap *heap = buffer->heap;
-	struct ion_fb_buffer_info *buffer_info = (struct ion_fb_buffer_info *)buffer->priv_virt;
+	struct ion_mm_buffer_info *buffer_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
 	struct sg_table *table = buffer->sg_table;
 
 	if (!buffer_info) {
@@ -184,7 +184,7 @@ struct sg_table *ion_fb_heap_map_dma(struct ion_heap *heap,
 				     struct ion_buffer *buffer) {
 	struct sg_table *table;
 	int ret;
-	struct ion_fb_buffer_info *buffer_info = (struct ion_fb_buffer_info *)buffer->priv_virt;
+	struct ion_mm_buffer_info *buffer_info = (struct ion_mm_buffer_info *)buffer->priv_virt;
 
 	table = kzalloc(sizeof(*table), GFP_KERNEL);
 	if (!table)
@@ -213,14 +213,6 @@ static struct ion_heap_ops fb_heap_ops = {
 		.map_kernel = ion_heap_map_kernel,
 		.unmap_kernel = ion_heap_unmap_kernel,
 };
-
-#define ION_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
-		do {\
-			if (seq_file)\
-				seq_printf(seq_file, fmt, ##args);\
-			else\
-				printk(fmt, ##args);\
-		} while (0)
 
 static void ion_fb_chunk_show(struct gen_pool *pool,
 			      struct gen_pool_chunk *chunk, void *data) {
