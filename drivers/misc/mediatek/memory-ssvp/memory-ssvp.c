@@ -110,6 +110,7 @@ struct single_cma_registration memory_ssvp_registration = {
 	.size = (_SSVP_MBSIZE_ * SZ_1M),
 	.name = "memory-ssvp",
 	.init = zmc_ssvp_init,
+	.prio = ZMC_SSVP,
 };
 
 static int __init memory_ssvp_init(struct reserved_mem *rmem)
@@ -172,7 +173,7 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 		page = wrap_tui_pages;
 #else
 		page = zmc_cma_alloc(cma, _svpregs[SSVP_TUI].count,
-				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT));
+				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT), &memory_ssvp_registration);
 		if (page)
 			svp_usage_count += _svpregs[SSVP_TUI].count;
 #endif
@@ -345,7 +346,7 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 		page = wrap_svp_pages;
 #else
 		page = zmc_cma_alloc(cma, _svpregs[SSVP_SVP].count,
-				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT));
+				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT), &memory_ssvp_registration);
 
 		if (page)
 			svp_usage_count += _svpregs[SSVP_SVP].count;
@@ -576,14 +577,14 @@ static int __init memory_ssvp_debug_init(void)
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
 	if (_SVP_MBSIZE > 0) {
 		wrap_svp_pages = zmc_cma_alloc(cma, _SVP_MBSIZE * SZ_1M >> PAGE_SHIFT,
-				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT));
+				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT), &memory_ssvp_registration);
 		svp_usage_count = _SVP_MBSIZE * SZ_1M >> PAGE_SHIFT;
 	} else
 		pr_err("wrap_svp_pages is not inited\n");
 
 	if (_TUI_MBSIZE > 0) {
 		wrap_tui_pages = zmc_cma_alloc(cma, _TUI_MBSIZE * SZ_1M >> PAGE_SHIFT,
-				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT));
+				fls((memory_ssvp_registration.align - 1) >> PAGE_SHIFT), &memory_ssvp_registration);
 		svp_usage_count = _TUI_MBSIZE * SZ_1M >> PAGE_SHIFT;
 	} else
 		pr_err("wrap_tui_pages is not inited\n");

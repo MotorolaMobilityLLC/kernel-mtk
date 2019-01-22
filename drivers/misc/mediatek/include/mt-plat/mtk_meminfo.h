@@ -33,13 +33,12 @@ extern struct single_cma_registration memory_lowpower_registration;
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 #define ZMC_ALLOC_ALL 0x01 /* allocate all memory reserved from dts */
 
-extern phys_addr_t zmc_base(void);
-extern struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align);
-extern bool zmc_cma_release(struct cma *cma, struct page *pages, int count);
-
-extern int zmc_register_client(struct notifier_block *nb);
-extern int zmc_unregister_client(struct notifier_block *nb);
-extern int zmc_notifier_call_chain(unsigned long val, void *v);
+/* Priority of ZONE_MOVABLE_CMA users */
+enum zmc_prio {
+	ZMC_SSVP,
+	ZMC_MLP,
+	NR_ZMC_OWNER,
+};
 
 struct single_cma_registration {
 	phys_addr_t size;
@@ -47,8 +46,18 @@ struct single_cma_registration {
 	unsigned long flag;
 	const char *name;
 	void (*init)(struct cma *);
+	enum zmc_prio prio;
 	bool reserve_fail;
 };
+
+extern phys_addr_t zmc_base(void);
+extern struct page *zmc_cma_alloc(struct cma *cma, int count, unsigned int align, struct single_cma_registration *p);
+extern bool zmc_cma_release(struct cma *cma, struct page *pages, int count);
+
+extern int zmc_register_client(struct notifier_block *nb);
+extern int zmc_unregister_client(struct notifier_block *nb);
+extern int zmc_notifier_call_chain(unsigned long val, void *v);
+
 
 #define ZMC_EVENT_ALLOC_MOVABLE 0x01
 #endif
