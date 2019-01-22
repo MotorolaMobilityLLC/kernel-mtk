@@ -36,9 +36,9 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 {
 	long err = 0;
 	void __user *ptr = (void __user *)arg;
-	int data;
+	int data = 0;
 	uint32_t enable = 0;
-	int threshold_data[2];
+	int threshold_data[2] = {0, 0};
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));

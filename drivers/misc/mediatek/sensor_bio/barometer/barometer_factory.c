@@ -36,7 +36,7 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 {
 	long err = 0;
 	void __user *ptr = (void __user *)arg;
-	int data;
+	int data = 0;
 	uint32_t flag = 0;
 
 	if (_IOC_DIR(cmd) & _IOC_READ)

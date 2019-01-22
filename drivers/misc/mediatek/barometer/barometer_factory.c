@@ -35,7 +35,7 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 	long err = 0;
 	struct baro_context *cxt = baro_context_obj;
 	void __user *ptr = (void __user *)arg;
-	int dat;
+	int dat = 0;
 	/* uint32_t enable = 0; */
 	/* int ps_cali; */
 	/* int threshold_data[2]; */
