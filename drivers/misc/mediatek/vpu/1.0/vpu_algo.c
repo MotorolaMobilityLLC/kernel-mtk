@@ -296,20 +296,21 @@ int vpu_dump_algo(struct seq_file *s)
 		}
 #undef LINE_BAR
 
-#define LINE_BAR "  +-----+---------------+-------+-------+\n"
+#define LINE_BAR "  +-----+---------------+-------+-------+-------+\n"
 		if (algo->sett_desc_count < 1)
 			continue;
 
 		vpu_print_seq(s, LINE_BAR);
-		vpu_print_seq(s, "  |%-5s|%-15s|%-7s|%-7s|\n", "Sett", "Name", "Type", "Count");
+		vpu_print_seq(s, "  |%-5s|%-15s|%-7s|%-7s|%-7s|\n", "Sett", "Name", "Offset", "Type", "Count");
 		vpu_print_seq(s, LINE_BAR);
 		for (i = 0; i < algo->sett_desc_count; i++) {
 			prop_desc = &algo->sett_descs[i];
 			data_length = prop_desc->count * g_vpu_prop_type_size[prop_desc->type];
 
-			vpu_print_seq(s, "  |%-5d|%-15s|%-7s|%-7d|\n",
+			vpu_print_seq(s, "  |%-5d|%-15s|%-7d|%-7s|%-7d|\n",
 						  prop_desc->id,
 						  prop_desc->name,
+						  prop_desc->offset,
 						  g_vpu_prop_type_names[prop_desc->type],
 						  prop_desc->count);
 		}
