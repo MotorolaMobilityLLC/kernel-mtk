@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MTK_STATIC_POWER_MTK6763_H__
-#define __MTK_STATIC_POWER_MTK6763_H__
+#ifndef __MTK_STATIC_POWER_MTK6771_H__
+#define __MTK_STATIC_POWER_MTK6771_H__
 
 /* mv */
 #define V_OF_FUSE_CPU	900
