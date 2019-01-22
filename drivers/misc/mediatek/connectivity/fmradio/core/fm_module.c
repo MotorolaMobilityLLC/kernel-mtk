@@ -548,7 +548,7 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 	case FM_IOCTL_RDS_SUPPORT:{
 			fm_s32 support = FM_RDS_ENABLE;
 
-			WCN_DBG(FM_NTC | MAIN, "FM_IOCTL_RDS_SUPPORT\n");
+			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_RDS_SUPPORT\n");
 
 			if (copy_to_user((void *)arg, &support, sizeof(fm_s32))) {
 				ret = -EFAULT;

@@ -1987,7 +1987,7 @@ static void fm_enable_rds_BlerCheck(struct fm *fm)
 		return;
 	fm_timer_sys->start(fm_timer_sys);
 	FM_UNLOCK(fm_timer_lock);
-	WCN_DBG(FM_NTC | MAIN, "enable rds timer ok\n");
+	WCN_DBG(FM_DBG | MAIN, "enable rds timer ok\n");
 }
 
 static void fm_disable_rds_BlerCheck(void)
@@ -1996,7 +1996,7 @@ static void fm_disable_rds_BlerCheck(void)
 		return;
 	fm_timer_sys->stop(fm_timer_sys);
 	FM_UNLOCK(fm_timer_lock);
-	WCN_DBG(FM_NTC | MAIN, "stop rds timer ok\n");
+	WCN_DBG(FM_DBG | MAIN, "stop rds timer ok\n");
 }
 
 void fm_rds_reset_work_func(unsigned long data)
