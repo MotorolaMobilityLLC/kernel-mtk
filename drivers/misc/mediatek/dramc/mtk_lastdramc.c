@@ -141,13 +141,17 @@ static int __init set_single_channel_test_angent(int channel)
 			pr_err("[LastDRAMC] undefined DRAM type\n");
 			return -1;
 		}
+#if defined(CONFIG_MACH_MT6739)
+		mt_dramc_ta_addr_set(rank, temp);
+ #else
 		Reg_Sync_Writel(dramc_ao_base+base_reg[rank], temp);
+ #endif
 	}
 
 	if (rank_max > 1)
 		Reg_Sync_Writel(dramc_ao_base+0x9c, Reg_Readl(dramc_ao_base+0x9c) | (rank_max - 1));
 
-	/* write test pattern */
+	/* write test pattern trigger test agent*/
 
 	return 0;
 }
