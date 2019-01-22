@@ -539,7 +539,8 @@ static int mt6336_send_ta20_current_pattern(struct charger_device *chg_dev, int 
 	}
 
 	/* Set charging current to 500mA */
-	mt6336_set_flag_register_value(MT6336_RG_ICC, 0x0);
+	mt6336_set_aicr(chg_dev, 500000);
+	mt6336_set_ichg(chg_dev, 500000);
 	usleep_range(1000, 1200);
 
 	/* Enable clock */
