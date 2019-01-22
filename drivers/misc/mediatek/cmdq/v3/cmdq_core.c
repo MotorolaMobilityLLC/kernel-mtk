@@ -56,9 +56,9 @@
 
 #define CMDQ_GET_COOKIE_CNT(thread) (CMDQ_REG_GET32(CMDQ_THR_EXEC_CNT(thread)) & CMDQ_MAX_COOKIE_VALUE)
 #define CMDQ_SYNC_TOKEN_APPEND_THR(id)     (CMDQ_SYNC_TOKEN_APPEND_THR0 + id)
-#define CMDQ_PROFILE_LIMIT_0	3000000
-#define CMDQ_PROFILE_LIMIT_1	10000000
-#define CMDQ_PROFILE_LIMIT_2	20000000
+#define CMDQ_PROFILE_LIMIT_0	10000000	/* 10ms */
+#define CMDQ_PROFILE_LIMIT_1	40000000	/* 40ms */
+#define CMDQ_PROFILE_LIMIT_2	100000000	/* 100ms */
 
 #ifdef CMDQ_PROFILE_LOCK
 static CMDQ_TIME cost_gCmdqTaskMutex;
@@ -75,7 +75,7 @@ mutex_lock(&lock);			\
 print_lock_cost = false;		\
 lock_cost_##tag = sched_clock() - lock_cost_##tag;	\
 if (lock_cost_##tag > CMDQ_PROFILE_LIMIT_2) {		\
-	CMDQ_MSG("[warn][%s]wait lock: %llu us > %ums\n",	\
+	CMDQ_LOG("[warn][lock]%s wait lock:%llu us > %ums\n",	\
 		#tag, div_s64(lock_cost_##tag, 1000),		\
 		CMDQ_PROFILE_LIMIT_2/1000000);		\
 }					\
@@ -87,12 +87,12 @@ cost_##lock = sched_clock();		\
 bool force_print_lock = print_lock_cost;	\
 cost_##lock = sched_clock() - cost_##lock;	\
 if (cost_##lock > CMDQ_PROFILE_LIMIT_1) {	\
-	CMDQ_MSG("[warn][%s]lock cost: %llu us > %ums\n",	\
-	#tag, div_s64(cost_##lock, 1000),		\
+	CMDQ_LOG("[warn][lock]%s lock duration:%llu us > %ums\n",	\
+		#tag, div_s64(cost_##lock, 1000),	\
 		CMDQ_PROFILE_LIMIT_1/1000000);	\
 } else if (force_print_lock) {			\
-	CMDQ_MSG("[%s]lock cost: %llu us < %ums\n",	\
-	#tag, div_s64(cost_##lock, 1000),		\
+	CMDQ_MSG("[lock]%s lock duration:%llu us < %ums\n",	\
+		#tag, div_s64(cost_##lock, 1000),	\
 		CMDQ_PROFILE_LIMIT_1/1000000);	\
 }						\
 mutex_unlock(&lock);				\
@@ -106,10 +106,10 @@ cost = sched_clock();			\
 #define CMDQ_PROF_TIME_END(cost, tag)	\
 {					\
 cost = sched_clock() - cost;		\
-if (cost > CMDQ_PROFILE_LIMIT_1) {	\
-	CMDQ_MSG("[warn][%s] t_cost %llu > %ums\n",	\
+if (cost > CMDQ_PROFILE_LIMIT_2) {	\
+	CMDQ_LOG("[warn][prof]%s t_cost %llu > %ums\n",	\
 		tag, div_s64(cost, 1000),			\
-		CMDQ_PROFILE_LIMIT_1/1000000);	\
+		CMDQ_PROFILE_LIMIT_2/1000000);	\
 }					\
 cost = sched_clock();			\
 }
@@ -130,9 +130,9 @@ cost_##lock = sched_clock();			\
 {						\
 cost_##lock = sched_clock() - cost_##lock;	\
 if (cost_##lock > CMDQ_PROFILE_LIMIT_0) {	\
-CMDQ_MSG("[warn][%s]spin lock cost: %llu > %ums\n",	\
-	#tag, (u64)div_s64(cost_##lock, 1000),		\
-	(u32)(CMDQ_PROFILE_LIMIT_0/1000000));	\
+	CMDQ_LOG("[warn][lock]%s spin lock duration:%llu > %ums\n",	\
+		#tag, (u64)div_s64(cost_##lock, 1000),		\
+		(u32)(CMDQ_PROFILE_LIMIT_0/1000000));	\
 }						\
 spin_unlock_irqrestore(&lock, flags);		\
 }
@@ -1274,14 +1274,22 @@ void *cmdq_core_alloc_hw_buffer_pool(const gfp_t flag, dma_addr_t *dma_handle_ou
 {
 	void *va = NULL;
 	dma_addr_t pa = 0;
+	static s32 max_cnt = 24;
+	s32 cnt;
 
 	if (unlikely(!g_task_buffer_pool))
 		return NULL;
 
-	if (atomic_inc_return(&g_pool_buffer_count) > CMDQ_DMA_POOL_COUNT) {
+	cnt = atomic_inc_return(&g_pool_buffer_count);
+	if (cnt > CMDQ_DMA_POOL_COUNT) {
 		/* not use pool, decrease to value before call */
 		atomic_dec(&g_pool_buffer_count);
 		return NULL;
+	}
+
+	if (cnt > max_cnt) {
+		max_cnt = cnt;
+		CMDQ_LOG("[INFO]buffer pool max usage up to:%d\n", max_cnt);
 	}
 
 	CMDQ_PROF_START(current->pid, __func__);
@@ -8637,6 +8645,7 @@ s32 cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask,
 	int32_t status;
 	int32_t thread;
 	int i;
+	CMDQ_TIME time_cost;
 
 	if (pTask == NULL) {
 		CMDQ_ERR("cmdqCoreWaitAndReleaseTask err ptr=0x%p\n", pTask);
@@ -8670,6 +8679,7 @@ s32 cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask,
 		CMDQ_PROF_MUTEX_UNLOCK(gCmdqTaskMutex, fill_reg_result);
 	}
 
+	CMDQ_PROF_TIME_BEGIN(time_cost);
 	cmdq_core_track_task_record(pTask, thread);
 	cmdq_core_release_thread(pTask);
 	cmdq_core_auto_release_task(pTask);
@@ -8677,6 +8687,7 @@ s32 cmdqCoreWaitResultAndReleaseTask(struct TaskStruct *pTask,
 		cmdq_core_add_consume_task();
 		g_cmdq_consume_again = false;
 	}
+	CMDQ_PROF_TIME_END(time_cost, "ending_task");
 	CMDQ_PROF_END(current->pid, __func__);
 
 	return status;
