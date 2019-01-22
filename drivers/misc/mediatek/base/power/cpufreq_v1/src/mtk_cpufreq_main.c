@@ -1317,6 +1317,7 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 }
 
 int cci_is_inited;
+int turbo_is_inited;
 static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 {
 	int ret = -EINVAL;
@@ -1364,6 +1365,16 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 				p->idx_normal_max_opp = p->idx_opp_tbl;
 		p->mt_policy = policy;
 		p->armpll_is_available = 1;
+
+#ifdef CONFIG_HYBRID_CPU_DVFS
+		if (turbo_flag && cpu_dvfs_is(p, MT_CPU_DVFS_B) && !turbo_is_inited) {
+			unsigned int turbo_f, turbo_v;
+
+			turbo_f = ((cpu_dvfs_get_max_freq(p) * 105 / 100) / 13) * 13 / 1000;
+			turbo_v = p->opp_tbl[0].cpufreq_volt;
+			cpuhvfs_set_turbo_scale(turbo_f * 1000, turbo_v);
+		}
+#endif
 
 		/* Sync cci */
 		if (cci_is_inited == 0) {
