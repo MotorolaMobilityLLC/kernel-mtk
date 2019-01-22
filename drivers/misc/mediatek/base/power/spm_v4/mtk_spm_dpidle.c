@@ -971,11 +971,9 @@ unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	struct mtk_irq_mask mask;
 #endif
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 	struct wd_api *wd_api;
 	int wd_ret;
-#endif
 #endif
 	static unsigned int last_wr = WR_NONE;
 	/* struct pcm_desc *pcmdesc = __spm_dpidle.pcmdesc; */
