@@ -102,8 +102,10 @@ unsigned long cmdq_dev_alloc_reference_VA_by_name(const char *ref_name)
 	if (node) {
 		VA = (unsigned long)of_iomap(node, 0);
 		of_node_put(node);
+		CMDQ_LOG("DEV: VA ref(%s): 0x%lx\n", ref_name, VA);
+	} else {
+		CMDQ_ERR("DEV: cannot parse node name:%s\n", ref_name);
 	}
-	CMDQ_LOG("DEV: VA ref(%s): 0x%lx\n", ref_name, VA);
 	return VA;
 }
 

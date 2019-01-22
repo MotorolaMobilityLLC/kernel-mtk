@@ -371,6 +371,9 @@ enum CMDQ_EVENT_ENUM {
 	CMDQ_EVENT_DISP_DBI0_SOF,
 	CMDQ_EVENT_DISP_DBI0_EOF,
 
+	/* 6771 New Event */
+	CMDQ_EVENT_SPE_B_FRAME_DONE,
+
 	/* Keep this at the end of HW events */
 	CMDQ_MAX_HW_EVENT_COUNT = 400,
 
