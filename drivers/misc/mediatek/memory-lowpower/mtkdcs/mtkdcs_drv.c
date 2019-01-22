@@ -22,6 +22,7 @@
 #include <linux/printk.h>
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
+#include <mach/emi_mpu.h>
 #include <mt-plat/mtk_meminfo.h>
 
 /* Memory lowpower private header file */
@@ -37,10 +38,6 @@ static DEFINE_SPINLOCK(dcs_lock);
 enum dcs_status dummy_ipi_read_dcs_status(void)
 {
 	return DCS_NORMAL;
-}
-int dummy_dram_channel_num(void)
-{
-	return 2;
 }
 int dummy_ipi_do_dcs(enum dcs_status status)
 {
@@ -64,17 +61,22 @@ int dcs_dram_channel_switch(enum dcs_status status)
 
 	if ((sys_dcs_status < DCS_BUSY) &&
 		(status < DCS_BUSY) &&
-		(sys_dcs_status != DCS_BUSY)) {
+		(sys_dcs_status != status)) {
 		dummy_ipi_do_dcs(status);
 		sys_dcs_status = DCS_BUSY;
+		spin_unlock(&dcs_lock);
+	} else {
+		pr_info("sys_dcs_status not changed\n");
+		spin_unlock(&dcs_lock);
+		return 0;
 	}
-	spin_unlock(&dcs_lock);
 	/*
 	 * assume we success doing channel switch, the sys_dcs_status
 	 * should be updated in the ISR
 	 */
 	spin_lock(&dcs_lock);
 	sys_dcs_status = status;
+	pr_info("sys_dcs_status=%d\n", sys_dcs_status);
 	spin_unlock(&dcs_lock);
 	return 0;
 }
@@ -99,6 +101,7 @@ int dcs_get_channel_num_trylock(int *num)
 		*num = lowpower_channel_num;
 		break;
 	default:
+		spin_unlock(&dcs_lock);
 		goto BUSY;
 	}
 	return 0;
@@ -130,8 +133,9 @@ static int __init mtkdcs_init(void)
 {
 	/* read system dcs status */
 	sys_dcs_status = dummy_ipi_read_dcs_status();
+
 	/* read number of dram channels */
-	normal_channel_num = dummy_dram_channel_num();
+	normal_channel_num = MAX_CHANNELS;
 
 	/* the channel number must be multiple of 2 */
 	if (normal_channel_num % 2) {
@@ -158,6 +162,16 @@ module_exit(mtkdcs_exit);
 #ifdef CONFIG_MTKDCS_DEBUG
 static int mtkdcs_show(struct seq_file *m, void *v)
 {
+	int num = 0, ret = -1;
+
+	ret = dcs_get_channel_num_trylock(&num);
+	if (!ret) {
+		pr_info("dcs currnet channel number=%d\n", num);
+		dcs_get_channel_num_unlock();
+	} else {
+		pr_info("dcs_get_channel_num_trylock busy\n");
+	}
+
 	return 0;
 }
 
@@ -176,12 +190,15 @@ static ssize_t mtkdcs_write(struct file *file, const char __user *buffer,
 			return -EFAULT;
 		state -= '0';
 
-		if (state)
+		if (state) {
 			/* low power to normal */
 			pr_alert("state=%d\n", state);
-		else
+			dcs_dram_channel_switch(DCS_NORMAL);
+		} else {
 			/* normal to low power */
 			pr_alert("state=%d\n", state);
+			dcs_dram_channel_switch(DCS_LOWPOWER);
+		}
 	}
 
 	return count;
