@@ -559,7 +559,7 @@ static void cmdq_mdp_begin_task_virtual(struct TaskStruct *cmdq_task, struct Tas
 					max_throughput = pmqos_list_record->mdp_throughput;
 			}
 			CMDQ_MSG(
-				"[MDP]list mdp %d pixel, mdp %d byte, isp %d pixel, isp %d byte, submit %06ld us, end %06ld us\n",
+				"[MDP]begin list mdp %d pixel, mdp %d byte, isp %d pixel, isp %d byte, submit %06ld us, end %06ld us\n",
 				mdp_curr_pixel_size,
 				mdp_data_size,
 				isp_curr_pixel_size, isp_data_size,
@@ -756,7 +756,7 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 	smi_larb_mon_act_cnt();
 #endif
 	do_gettimeofday(&curr_time);
-	CMDQ_MSG("enter %s with task:0x%p engine:0x%llx\n", __func__, cmdq_task, cmdq_task->engineFlag);
+	CMDQ_MSG("enter %s with task:0x%p engine:0x%llx size:%d\n", __func__, cmdq_task, cmdq_task->engineFlag, size);
 
 	if (!cmdq_task->prop_addr || !cmdq_task->user_private)
 		return;
@@ -773,8 +773,8 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 		if (!pmqos_list_record)
 			continue;
 
-		if (cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN) ||
-			cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2))
+		if (curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN) ||
+			curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2))
 			update_isp_throughput = true;
 
 		if (first_task) {
@@ -782,8 +782,8 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 			isp_curr_pixel_size = mdp_list_pmqos->isp_total_pixel;
 			mdp_data_size   = mdp_list_pmqos->mdp_total_datasize;
 			isp_data_size   = mdp_list_pmqos->isp_total_datasize;
-			if (cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN) ||
-				cmdq_task->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2))
+			if (curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN) ||
+				curTask->engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN2))
 				update_isp_bandwidth = true;
 
 			first_task = false;
@@ -878,7 +878,7 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 					max_throughput = pmqos_list_record->mdp_throughput;
 			}
 			CMDQ_MSG(
-				"[MDP]list mdp %d MHz, mdp %d pixel, mdp %d byte, mdp %d pixel, isp %d byte, submit %06ld us, end %06ld us\n",
+				"[MDP]end list mdp %d MHz, mdp %d pixel, mdp %d byte, mdp %d pixel, isp %d byte, submit %06ld us, end %06ld us\n",
 				pmqos_list_record->mdp_throughput, mdp_list_pmqos->mdp_total_pixel,
 				mdp_list_pmqos->mdp_total_datasize, mdp_list_pmqos->isp_total_pixel,
 				mdp_list_pmqos->isp_total_datasize,
