@@ -237,9 +237,9 @@ static int _charger_manager_enable_charging(struct charger_consumer *consumer,
 	if (info != NULL) {
 		struct charger_data *pdata;
 
-		if (idx == 0)
+		if (idx == MAIN_CHARGER)
 			pdata = &info->chg1_data;
-		else if (idx == 1)
+		else if (idx == SLAVE_CHARGER)
 			pdata = &info->chg2_data;
 		else
 			return -ENOTSUPP;
@@ -285,9 +285,9 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	if (info != NULL) {
 		struct charger_data *pdata;
 
-		if (idx == 0)
+		if (idx == MAIN_CHARGER)
 			pdata = &info->chg1_data;
-		else if (idx == 1)
+		else if (idx == SLAVE_CHARGER)
 			pdata = &info->chg2_data;
 		else
 			return -ENOTSUPP;
@@ -308,9 +308,9 @@ int charger_manager_set_charging_current_limit(struct charger_consumer *consumer
 	if (info != NULL) {
 		struct charger_data *pdata;
 
-		if (idx == 0)
+		if (idx == MAIN_CHARGER)
 			pdata = &info->chg1_data;
-		else if (idx == 1)
+		else if (idx == SLAVE_CHARGER)
 			pdata = &info->chg2_data;
 		else
 			return -ENOTSUPP;
@@ -323,6 +323,31 @@ int charger_manager_set_charging_current_limit(struct charger_consumer *consumer
 	return -EBUSY;
 }
 
+int charger_manager_get_charger_temperature(struct charger_consumer *consumer,
+	int idx, int *tchg_min,	int *tchg_max)
+{
+	struct charger_manager *info = consumer->cm;
+	int ret;
+
+	if (info != NULL) {
+		struct charger_device *pchr;
+
+		if (idx == MAIN_CHARGER)
+			pchr = info->chg1_dev;
+		else if (idx == SLAVE_CHARGER)
+			pchr = info->chg2_dev;
+		else if (idx == DIRECT_CHARGER)
+			pchr = info->dc_chg;
+		else
+			return -ENOTSUPP;
+
+		ret = charger_dev_get_temperature(pchr, tchg_min, tchg_max);
+
+		return ret;
+	}
+	return -EBUSY;
+}
+
 int charger_manager_force_charging_current(struct charger_consumer *consumer,
 	int idx, int charging_current)
 {
@@ -331,9 +356,9 @@ int charger_manager_force_charging_current(struct charger_consumer *consumer,
 	if (info != NULL) {
 		struct charger_data *pdata;
 
-		if (idx == 0)
+		if (idx == MAIN_CHARGER)
 			pdata = &info->chg1_data;
-		else if (idx == 1)
+		else if (idx == SLAVE_CHARGER)
 			pdata = &info->chg2_data;
 		else
 			return -ENOTSUPP;
