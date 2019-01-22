@@ -1168,31 +1168,39 @@ static void testcase_perisys_apb(void)
 	/* we use MSDC debug to test: */
 	/* write SEL, read OUT. */
 
+	const u32 MSDC_SW_DBG_OUT_OFFSET = 0xa4;
+	const u32 AUDIO_AFE_I2S_CON3_OFFSET = 0x4c;
+	const uint32_t UAR0_OFFSET = 0xbc;
+
 	const phys_addr_t MSDC_PA_START = cmdq_dev_get_reference_PA("msdc0", 0);
 	const phys_addr_t AUDIO_TOP_CONF0_PA = cmdq_dev_get_reference_PA("audio", 0);
-	const long MSDC_SW_DBG_SEL_PA = MSDC_PA_START + 0xA0;
-	const long MSDC_SW_DBG_OUT_PA = MSDC_PA_START + 0xA4;
+	const phys_addr_t UART0_PA_BASE = cmdq_dev_get_reference_PA("uart0", 0);
+	const unsigned long MSDC_SW_DBG_SEL_PA = MSDC_PA_START + 0xa0;
+	const unsigned long MSDC_SW_DBG_OUT_PA = MSDC_PA_START + MSDC_SW_DBG_OUT_OFFSET;
+	const phys_addr_t AUDIO_PA = AUDIO_TOP_CONF0_PA + AUDIO_AFE_I2S_CON3_OFFSET;
+	const phys_addr_t UART0_PA = UART0_PA_BASE + UAR0_OFFSET;
 
 	const unsigned long MSDC_VA_BASE = cmdq_dev_alloc_reference_VA_by_name("msdc0");
 	const unsigned long AUDIO_VA_BASE = cmdq_dev_alloc_reference_VA_by_name("audio");
-	const unsigned long MSDC_SW_DBG_OUT = MSDC_VA_BASE + 0xA4;
-	const unsigned long AUDIO_TOP_CONF0 = AUDIO_VA_BASE;
+	const unsigned long UART0_VA_BASE = cmdq_dev_alloc_reference_VA_by_name("uart0");
+	const unsigned long MSDC_SW_DBG_OUT = MSDC_VA_BASE + MSDC_SW_DBG_OUT_OFFSET;
+	const unsigned long AUDIO_VA = AUDIO_VA_BASE + AUDIO_AFE_I2S_CON3_OFFSET;
+	const unsigned long UAR0_BUS_VA = UART0_VA_BASE + UAR0_OFFSET;
 
-	const uint32_t AUDIO_TOP_MASK = ~0 & ~(1 << 28 |
-					       1 << 21 |
-					       1 << 17 |
-					       1 << 16 |
-					       1 << 15 |
-					       1 << 11 |
-					       1 << 10 |
-					       1 << 7 | 1 << 5 | 1 << 4 | 1 << 3 | 1 << 1 | 1 << 0);
+	const u32 write_pattern = 0xaabbccdd;
 	struct cmdqRecStruct *handle = NULL;
 	uint32_t data = 0;
 	uint32_t dataRead = 0;
 
 	CMDQ_LOG("%s\n", __func__);
-	CMDQ_LOG("MSDC_VA_BASE:  VA:0x%lx, PA: %pa\n", MSDC_VA_BASE, &MSDC_PA_START);
-	CMDQ_LOG("AUDIO_VA_BASE: VA:0x%lx, PA: %pa\n", AUDIO_VA_BASE, &AUDIO_TOP_CONF0_PA);
+	CMDQ_LOG("MSDC_VA_BASE:  VA:0x%lx, PA:%pa\n", MSDC_VA_BASE, &MSDC_PA_START);
+	CMDQ_LOG("AUDIO_VA_BASE: VA:0x%lx, PA:%pa\n", AUDIO_VA_BASE, &AUDIO_TOP_CONF0_PA);
+	CMDQ_LOG("UART0: VA:0x%lx, PA:%pa\n", UART0_VA_BASE, &UART0_PA_BASE);
+
+	if (!MSDC_PA_START || !AUDIO_PA || !UART0_PA) {
+		CMDQ_TEST_FAIL("msdc or audio node does not porting.\n");
+		return;
+	}
 
 	if (cmdq_core_subsys_from_phys_addr(MSDC_PA_START) < 0)
 		cmdq_core_set_addon_subsys(MSDC_PA_START & 0xffff0000, 99, 0xffff0000);
@@ -1223,35 +1231,61 @@ static void testcase_perisys_apb(void)
 	dataRead = CMDQ_REG_GET32(CMDQ_GPR_R32(CMDQ_DATA_REG_PQ_COLOR));
 	if (data != dataRead || data == 0) {
 		/* test fail */
-		CMDQ_ERR("TEST FAIL: CMDQ_DATA_REG_PQ_COLOR is 0x%08x, different=====\n", dataRead);
+		CMDQ_TEST_FAIL("CMDQ_DATA_REG_PQ_COLOR:0x%08x should be:0x%08x\n", dataRead, data);
 		CMDQ_ERR("MSDC_SW_DBG_OUT: PA(%pa) VA(0x%lx) =====\n", &MSDC_SW_DBG_OUT_PA, MSDC_SW_DBG_OUT);
 	}
 
-	if (cmdq_core_subsys_from_phys_addr(AUDIO_TOP_CONF0_PA) < 0)
-		cmdq_core_set_addon_subsys(AUDIO_TOP_CONF0_PA & 0xffff0000, 99, 0xffff0000);
+	if (cmdq_core_subsys_from_phys_addr(AUDIO_PA) < 0)
+		cmdq_core_set_addon_subsys(AUDIO_PA & 0xffff0000, 99, 0xffff0000);
 
-	CMDQ_REG_SET32(AUDIO_TOP_CONF0, ~0);
-	data = CMDQ_REG_GET32(AUDIO_TOP_CONF0);
-	if (data != ~0) {
-		CMDQ_ERR("write 0xFFFFFFFF to AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
-		CMDQ_ERR("AUDIO_TOP_CONF0: PA(%pa) VA(0x%lx) =====\n", &AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
+	CMDQ_REG_SET32(AUDIO_VA, write_pattern);
+	data = CMDQ_REG_GET32(AUDIO_VA);
+	if (data != write_pattern) {
+		CMDQ_TEST_FAIL("write 0x%08x to AUDIO_VA result:0x%08x\n", write_pattern, data);
+		CMDQ_ERR("AUDIO_PA: PA(%pa) VA(0x%lx) =====\n", &AUDIO_PA, AUDIO_VA);
 	} else {
-		CMDQ_LOG("write 0xFFFFFFFF to AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
+		CMDQ_LOG("write 0x%08x to AUDIO_VA = 0x%08x=====\n", write_pattern, data);
 	}
-	CMDQ_REG_SET32(AUDIO_TOP_CONF0, 0);
-	data = CMDQ_REG_GET32(AUDIO_TOP_CONF0);
-	CMDQ_LOG("Before AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
+	CMDQ_REG_SET32(AUDIO_VA, 0);
+	data = CMDQ_REG_GET32(AUDIO_VA);
+	CMDQ_LOG("Before AUDIO_VA = 0x%08x=====\n", data);
 	cmdq_task_reset(handle);
-	cmdq_op_write_reg(handle, AUDIO_TOP_CONF0_PA, 0xffffffff, AUDIO_TOP_MASK);
+	cmdq_op_write_reg(handle, AUDIO_PA, write_pattern, ~0);
 	cmdq_task_dump_command(handle);
 	cmdq_task_flush(handle);
 	/* verify data */
-	data = CMDQ_REG_GET32(AUDIO_TOP_CONF0);
-	CMDQ_LOG("after AUDIO_TOP_CONF0 = 0x%08x=====\n", data);
-	if (data != AUDIO_TOP_MASK) {
+	data = CMDQ_REG_GET32(AUDIO_VA);
+	CMDQ_LOG("after AUDIO_VA = 0x%08x=====\n", data);
+	if (data != write_pattern) {
 		/* test fail */
-		CMDQ_ERR("TEST FAIL: AUDIO_TOP_CONF0 is 0x%08x=====\n", data);
-		CMDQ_ERR("AUDIO_TOP_CONF0: PA(%pa) VA(0x%lx) =====\n", &AUDIO_TOP_CONF0_PA, AUDIO_TOP_CONF0);
+		CMDQ_TEST_FAIL("AUDIO_VA:0x%08x should be:0x%08x\n", data, write_pattern);
+		CMDQ_ERR("AUDIO_VA: PA(%pa) VA(0x%lx) =====\n", &AUDIO_PA, AUDIO_VA);
+	}
+
+	if (cmdq_core_subsys_from_phys_addr(UART0_PA_BASE) < 0)
+		cmdq_core_set_addon_subsys(UART0_PA_BASE & 0xffff0000, 99, 0xffff0000);
+
+	CMDQ_REG_SET32(UAR0_BUS_VA, 1);
+	data = CMDQ_REG_GET32(UAR0_BUS_VA);
+	if ((data & 0x1) != 1) {
+		CMDQ_TEST_FAIL("CPU: write 0x1 to UAR0_BUS_VA = 0x%08x=====\n", data);
+		CMDQ_ERR("CPU: UAR0_BUS_VA: PA_BASE(%pa) VA(0x%lx) =====\n", &UART0_PA_BASE, UAR0_BUS_VA);
+	}
+	CMDQ_REG_SET32(UAR0_BUS_VA, 0);
+	data = CMDQ_REG_GET32(UAR0_BUS_VA);
+	CMDQ_LOG("Before UAR0_BUS_VA = 0x%08x=====\n", data);
+
+	cmdq_task_reset(handle);
+	cmdq_op_write_reg(handle, UART0_PA, 0x1, ~0);
+	cmdq_task_dump_command(handle);
+	cmdq_task_flush(handle);
+	/* verify data */
+	data = CMDQ_REG_GET32(UAR0_BUS_VA);
+	CMDQ_LOG("after UAR0_BUS_VA = 0x%08x=====\n", data);
+	if ((data & 0x1) != 1) {
+		/* test fail */
+		CMDQ_TEST_FAIL("UAR0_BUS_VA:0x%08x should be:0x1\n", data);
+		CMDQ_ERR("UAR0_BUS_VA: PA_BASE(%pa) VA(0x%lx) =====\n", &UART0_PA_BASE, UAR0_BUS_VA);
 	}
 
 	cmdq_task_destroy(handle);
@@ -1259,6 +1293,7 @@ static void testcase_perisys_apb(void)
 	/* release registers map */
 	cmdq_dev_free_module_base_VA(MSDC_VA_BASE);
 	cmdq_dev_free_module_base_VA(AUDIO_VA_BASE);
+	cmdq_dev_free_module_base_VA(UART0_VA_BASE);
 
 	CMDQ_LOG("%s END\n", __func__);
 	return;
