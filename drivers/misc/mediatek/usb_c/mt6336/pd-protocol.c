@@ -1630,7 +1630,7 @@ static void pd_vdm_send_state_machine(struct typec_hba *hba)
 }
 
 #ifdef CONFIG_USB_PD_DUAL_ROLE
-static int pd_is_power_swapping(struct typec_hba *hba)
+int pd_is_power_swapping(struct typec_hba *hba)
 {
 	/* return true if in the act of swapping power roles */
 	return (hba->task_state == PD_STATE_SNK_SWAP_SNK_DISABLE ||
