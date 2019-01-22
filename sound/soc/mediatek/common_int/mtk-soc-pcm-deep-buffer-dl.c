@@ -20,7 +20,7 @@
  *
  * Filename:
  * ---------
- *   mt-soc-pcm-dl1-data2.c
+ *   mt-soc-pcm-deep-buffer-dl.c
  *
  * Project:
  * --------
@@ -62,15 +62,15 @@
 #include "mtk-soc-pcm-platform.h"
 
 
-#ifdef DEBUG_DL1_DATA2
-#define DEBUG_DL1_DATA2(format, args...)  pr_debug(format, ##args)
+#ifdef DEBUG_DEEP_BUFFER_DL
+#define DEBUG_DEEP_BUFFER_DL(format, args...)  pr_debug(format, ##args)
 #else
-#define DEBUG_DL1_DATA2(format, args...)
+#define DEBUG_DEEP_BUFFER_DL(format, args...)
 #endif
 
 
 static AFE_MEM_CONTROL_T *pMemControl;
-static struct snd_dma_buffer dl1_data2_dma_buf;
+static struct snd_dma_buffer deep_buffer_dl_dma_buf;
 static unsigned int mPlaybackDramState;
 
 static bool vcore_dvfs_enable;
@@ -79,7 +79,7 @@ static bool vcore_dvfs_enable;
 /*
  *    function implementation
  */
-static int dl1_data2_hdoutput;
+static int deep_buffer_dl_hdoutput;
 static bool mPrepareDone;
 static const void *irq_user_id;
 static uint32 irq6_cnt;
@@ -88,30 +88,31 @@ static struct device *mDev;
 static int deep_buffer_mem_blk;
 static int deep_buffer_mem_blk_io;
 
-const char * const dl1_data2_HD_output[] = {"Off", "On"};
+const char * const deep_buffer_dl_HD_output[] = {"Off", "On"};
 
-static const struct soc_enum dl1_data2_Enum[] = {
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dl1_data2_HD_output), dl1_data2_HD_output),
+static const struct soc_enum deep_buffer_dl_Enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(deep_buffer_dl_HD_output), deep_buffer_dl_HD_output),
 };
 
-static int dl1_data2_hdoutput_get(struct snd_kcontrol *kcontrol,
+static int deep_buffer_dl_hdoutput_get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s() = %d\n", __func__, dl1_data2_hdoutput);
-	ucontrol->value.integer.value[0] = dl1_data2_hdoutput;
+	pr_debug("%s() = %d\n", __func__, deep_buffer_dl_hdoutput);
+	ucontrol->value.integer.value[0] = deep_buffer_dl_hdoutput;
 	return 0;
 }
 
-static int dl1_data2_hdoutput_set(struct snd_kcontrol *kcontrol,
+static int deep_buffer_dl_hdoutput_set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	pr_debug("%s()\n", __func__);
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(dl1_data2_HD_output)) {
+	if (ucontrol->value.enumerated.item[0] >
+	    ARRAY_SIZE(deep_buffer_dl_HD_output)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 
-	dl1_data2_hdoutput = ucontrol->value.integer.value[0];
+	deep_buffer_dl_hdoutput = ucontrol->value.integer.value[0];
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI) == true) {
 		pr_debug("return HDMI enabled\n");
@@ -121,12 +122,12 @@ static int dl1_data2_hdoutput_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static const struct snd_kcontrol_new dl1_data2_controls[] = {
-	SOC_ENUM_EXT("dl1_data2_hd_Switch", dl1_data2_Enum[0],
-		     dl1_data2_hdoutput_get, dl1_data2_hdoutput_set),
+static const struct snd_kcontrol_new deep_buffer_dl_controls[] = {
+	SOC_ENUM_EXT("deep_buffer_dl_hd_Switch", deep_buffer_dl_Enum[0],
+		     deep_buffer_dl_hdoutput_get, deep_buffer_dl_hdoutput_set),
 };
 
-static struct snd_pcm_hardware mtk_dl1_data2_hardware = {
+static struct snd_pcm_hardware mtk_deep_buffer_dl_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP |
 	SNDRV_PCM_INFO_INTERLEAVED |
 	SNDRV_PCM_INFO_RESUME |
@@ -145,7 +146,7 @@ static struct snd_pcm_hardware mtk_dl1_data2_hardware = {
 };
 
 
-static int mtk_dl1_data2_stop(struct snd_pcm_substream *substream)
+static int mtk_deep_buffer_dl_stop(struct snd_pcm_substream *substream)
 {
 	/* AFE_BLOCK_T *Afe_Block = &(pMemControl->rBlock); */
 
@@ -161,8 +162,8 @@ static int mtk_dl1_data2_stop(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static snd_pcm_uframes_t mtk_dl1_data2_pointer(struct snd_pcm_substream
-					       *substream)
+static snd_pcm_uframes_t mtk_deep_buffer_dl_pointer(struct snd_pcm_substream
+						    *substream)
 {
 	unsigned int ptr_bytes = 0;
 
@@ -180,8 +181,8 @@ static snd_pcm_uframes_t mtk_dl1_data2_pointer(struct snd_pcm_substream
 	return bytes_to_frames(substream->runtime, ptr_bytes);
 }
 
-static int mtk_dl1_data2_hw_params(struct snd_pcm_substream *substream,
-				   struct snd_pcm_hw_params *hw_params)
+static int mtk_deep_buffer_dl_hw_params(struct snd_pcm_substream *substream,
+					struct snd_pcm_hw_params *hw_params)
 {
 	int ret = 0;
 
@@ -194,8 +195,8 @@ static int mtk_dl1_data2_hw_params(struct snd_pcm_substream *substream,
 			      params_format(hw_params), false) == 0) {
 		SetHighAddr(deep_buffer_mem_blk, false, substream->runtime->dma_addr);
 	} else {
-		substream->runtime->dma_area = dl1_data2_dma_buf.area;
-		substream->runtime->dma_addr = dl1_data2_dma_buf.addr;
+		substream->runtime->dma_area = deep_buffer_dl_dma_buf.area;
+		substream->runtime->dma_addr = deep_buffer_dl_dma_buf.addr;
 		SetHighAddr(deep_buffer_mem_blk, true, substream->runtime->dma_addr);
 		mPlaybackDramState = true;
 		AudDrv_Emi_Clk_On();
@@ -205,13 +206,13 @@ static int mtk_dl1_data2_hw_params(struct snd_pcm_substream *substream,
 		      deep_buffer_mem_blk);
 
 	pr_debug("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
-		 substream->runtime->dma_bytes, substream->runtime->dma_area,
-		 (long)substream->runtime->dma_addr);
+	       substream->runtime->dma_bytes, substream->runtime->dma_area,
+	       (long)substream->runtime->dma_addr);
 
 	return ret;
 }
 
-static int mtk_dl1_data2_hw_free(struct snd_pcm_substream *substream)
+static int mtk_deep_buffer_dl_hw_free(struct snd_pcm_substream *substream)
 {
 	pr_debug("%s substream = %p\n", __func__, substream);
 	if (mPlaybackDramState == true) {
@@ -229,7 +230,7 @@ static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 	.mask = 0,
 };
 
-static int mtk_dl1_data2_close(struct snd_pcm_substream *substream)
+static int mtk_deep_buffer_dl_close(struct snd_pcm_substream *substream)
 {
 	pr_debug("%s\n", __func__);
 
@@ -255,9 +256,9 @@ static int mtk_dl1_data2_close(struct snd_pcm_substream *substream)
 
 		EnableAfe(false);
 
-		if (dl1_data2_hdoutput == true) {
-			pr_debug("%s dl1_data2_hdoutput == %d\n", __func__,
-			       dl1_data2_hdoutput);
+		if (deep_buffer_dl_hdoutput == true) {
+			pr_debug("%s deep_buffer_dl_hdoutput == %d\n", __func__,
+				 deep_buffer_dl_hdoutput);
 			/* here to close APLL */
 			if (!mtk_soc_always_hd)
 				DisableALLbySampleRate(substream->runtime->rate);
@@ -276,19 +277,19 @@ static int mtk_dl1_data2_close(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static int mtk_dl1_data2_open(struct snd_pcm_substream *substream)
+static int mtk_deep_buffer_dl_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-	pr_debug("%s: mtk_I2S0dl1_hardware.buffer_bytes_max = %zu mPlaybackDramState = %d\n",
-			__func__,
-			mtk_dl1_data2_hardware.buffer_bytes_max,
-			mPlaybackDramState);
+	pr_debug("%s: hardware.buffer_bytes_max = %zu mPlaybackDramState = %d\n",
+		 __func__,
+		 mtk_deep_buffer_dl_hardware.buffer_bytes_max,
+		 mPlaybackDramState);
 
 	mPlaybackDramState = false;
-	runtime->hw = mtk_dl1_data2_hardware;
-	memcpy((void *)(&(runtime->hw)), (void *)&mtk_dl1_data2_hardware,
+	runtime->hw = mtk_deep_buffer_dl_hardware;
+	memcpy((void *)(&(runtime->hw)), (void *)&mtk_deep_buffer_dl_hardware,
 	       sizeof(struct snd_pcm_hardware));
 
 	AudDrv_Clk_On();
@@ -299,15 +300,15 @@ static int mtk_dl1_data2_open(struct snd_pcm_substream *substream)
 					 &constraints_sample_rates);
 
 	if (ret < 0) {
-		pr_err("snd_pcm_hw_constraint_integer failed, mtk_dl1_data2_close\n");
-		mtk_dl1_data2_close(substream);
+		pr_err("snd_pcm_hw_constraint_integer failed, close pcm\n");
+		mtk_deep_buffer_dl_close(substream);
 		return ret;
 	}
 
 	return 0;
 }
 
-static int mtk_dl1_data2_prepare(struct snd_pcm_substream *substream)
+static int mtk_deep_buffer_dl_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	bool mI2SWLen;
@@ -344,9 +345,9 @@ static int mtk_dl1_data2_prepare(struct snd_pcm_substream *substream)
 				  Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
 
 		/* I2S out Setting */
-		if (dl1_data2_hdoutput == true) {
-			pr_debug("%s dl1_data2_hdoutput == %d\n", __func__,
-				 dl1_data2_hdoutput);
+		if (deep_buffer_dl_hdoutput == true) {
+			pr_debug("%s deep_buffer_dl_hdoutput == %d\n", __func__,
+				 deep_buffer_dl_hdoutput);
 			/* here to open APLL */
 			if (!mtk_soc_always_hd)
 				EnableALLbySampleRate(runtime->rate);
@@ -358,7 +359,7 @@ static int mtk_dl1_data2_prepare(struct snd_pcm_substream *substream)
 		/* start I2S DAC out */
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == false) {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
-			SetI2SDacOut(substream->runtime->rate, dl1_data2_hdoutput, mI2SWLen);
+			SetI2SDacOut(substream->runtime->rate, deep_buffer_dl_hdoutput, mI2SWLen);
 			SetI2SDacEnable(true);
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
@@ -370,7 +371,7 @@ static int mtk_dl1_data2_prepare(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static int mtk_dl1_data2_start(struct snd_pcm_substream *substream)
+static int mtk_deep_buffer_dl_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
@@ -392,42 +393,40 @@ static int mtk_dl1_data2_start(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static int mtk_dl1_data2_trigger(struct snd_pcm_substream *substream, int cmd)
+static int mtk_deep_buffer_dl_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	/* pr_debug("mtk_pcm_I2S0dl1_trigger cmd = %d\n", cmd); */
-
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
-		return mtk_dl1_data2_start(substream);
+		return mtk_deep_buffer_dl_start(substream);
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
-		return mtk_dl1_data2_stop(substream);
+		return mtk_deep_buffer_dl_stop(substream);
 	}
 	return -EINVAL;
 }
 
 static void *dummy_page[2];
-static struct page *mtk_dl1_data2_page(struct snd_pcm_substream *substream,
+static struct page *mtk_deep_buffer_dl_page(struct snd_pcm_substream *substream,
 				       unsigned long offset)
 {
 	pr_debug("%s\n", __func__);
 	return virt_to_page(dummy_page[substream->stream]); /* the same page */
 }
 
-static struct snd_pcm_ops mtk_dl1_data2_ops = {
-	.open =     mtk_dl1_data2_open,
-	.close =    mtk_dl1_data2_close,
+static struct snd_pcm_ops mtk_deep_buffer_dl_ops = {
+	.open =     mtk_deep_buffer_dl_open,
+	.close =    mtk_deep_buffer_dl_close,
 	.ioctl =    snd_pcm_lib_ioctl,
-	.hw_params =    mtk_dl1_data2_hw_params,
-	.hw_free =  mtk_dl1_data2_hw_free,
-	.prepare =  mtk_dl1_data2_prepare,
-	.trigger =  mtk_dl1_data2_trigger,
-	.pointer =  mtk_dl1_data2_pointer,
-	.page =     mtk_dl1_data2_page,
+	.hw_params = mtk_deep_buffer_dl_hw_params,
+	.hw_free =  mtk_deep_buffer_dl_hw_free,
+	.prepare =  mtk_deep_buffer_dl_prepare,
+	.trigger =  mtk_deep_buffer_dl_trigger,
+	.pointer =  mtk_deep_buffer_dl_pointer,
+	.page =     mtk_deep_buffer_dl_page,
 };
 
-static int mtk_dl1_data2_platform_probe(struct snd_soc_platform *platform)
+static int mtk_deep_buffer_dl_platform_probe(struct snd_soc_platform *platform)
 {
 	deep_buffer_mem_blk = get_usage_digital_block(AUDIO_USAGE_DEEPBUFFER_PLAYBACK);
 	deep_buffer_mem_blk_io = get_usage_digital_block_io(AUDIO_USAGE_DEEPBUFFER_PLAYBACK);
@@ -442,28 +441,28 @@ static int mtk_dl1_data2_platform_probe(struct snd_soc_platform *platform)
 	pr_debug("%s(), deep_buffer_mem_blk %d, deep_buffer_mem_blk_io %d\n",
 		 __func__, deep_buffer_mem_blk, deep_buffer_mem_blk_io);
 
-	snd_soc_add_platform_controls(platform, dl1_data2_controls,
-				      ARRAY_SIZE(dl1_data2_controls));
+	snd_soc_add_platform_controls(platform, deep_buffer_dl_controls,
+				      ARRAY_SIZE(deep_buffer_dl_controls));
 	/* allocate dram */
-	dl1_data2_dma_buf.area = dma_alloc_coherent(platform->dev,
+	deep_buffer_dl_dma_buf.area = dma_alloc_coherent(platform->dev,
 						SOC_HIFI_BUFFER_SIZE,
-						&dl1_data2_dma_buf.addr,
+						&deep_buffer_dl_dma_buf.addr,
 						GFP_KERNEL | GFP_DMA);
-	if (!dl1_data2_dma_buf.area)
+	if (!deep_buffer_dl_dma_buf.area)
 		return -ENOMEM;
 
-	dl1_data2_dma_buf.bytes = SOC_HIFI_BUFFER_SIZE;
-	pr_debug("area = %p\n", dl1_data2_dma_buf.area);
+	deep_buffer_dl_dma_buf.bytes = SOC_HIFI_BUFFER_SIZE;
+	pr_debug("area = %p\n", deep_buffer_dl_dma_buf.area);
 
 	return 0;
 }
 
-static struct snd_soc_platform_driver mtk_dl1_data2_soc_platform = {
-	.ops        = &mtk_dl1_data2_ops,
-	.probe      = mtk_dl1_data2_platform_probe,
+static struct snd_soc_platform_driver mtk_deep_buffer_dl_soc_platform = {
+	.ops        = &mtk_deep_buffer_dl_ops,
+	.probe      = mtk_deep_buffer_dl_platform_probe,
 };
 
-static int mtk_dl1_data2_probe(struct platform_device *pdev)
+static int mtk_deep_buffer_dl_probe(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
 
@@ -472,17 +471,17 @@ static int mtk_dl1_data2_probe(struct platform_device *pdev)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
 	if (pdev->dev.of_node)
-		dev_set_name(&pdev->dev, "%s", MT_SOC_DL1_DATA2_PCM);
+		dev_set_name(&pdev->dev, "%s", MT_SOC_DEEP_BUFFER_DL_PCM);
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 
 	mDev = &pdev->dev;
 
 	return snd_soc_register_platform(&pdev->dev,
-					 &mtk_dl1_data2_soc_platform);
+					 &mtk_deep_buffer_dl_soc_platform);
 }
 
-static int mtk_dl1_data2_remove(struct platform_device *pdev)
+static int mtk_deep_buffer_dl_remove(struct platform_device *pdev)
 {
 	pr_debug("%s()\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
@@ -490,25 +489,25 @@ static int mtk_dl1_data2_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_OF
-static const struct of_device_id mt_soc_pcm_dl1_data2_of_ids[] = {
-	{ .compatible = "mediatek,mt_soc_pcm_dl1_data2", },
+static const struct of_device_id mt_soc_pcm_deep_buffer_dl_of_ids[] = {
+	{ .compatible = "mediatek,mt_soc_pcm_deep_buffer_dl", },
 	{}
 };
 #endif
 
-static struct platform_driver mtk_dl1_data2_driver = {
+static struct platform_driver mtk_deep_buffer_dl_driver = {
 	.driver = {
-		.name = MT_SOC_DL1_DATA2_PCM,
+		.name = MT_SOC_DEEP_BUFFER_DL_PCM,
 		.owner = THIS_MODULE,
 #ifdef CONFIG_OF
-		.of_match_table = mt_soc_pcm_dl1_data2_of_ids,
+		.of_match_table = mt_soc_pcm_deep_buffer_dl_of_ids,
 #endif
 	},
-	.probe = mtk_dl1_data2_probe,
-	.remove = mtk_dl1_data2_remove,
+	.probe = mtk_deep_buffer_dl_probe,
+	.remove = mtk_deep_buffer_dl_remove,
 };
 
-module_platform_driver(mtk_dl1_data2_driver);
+module_platform_driver(mtk_deep_buffer_dl_driver);
 
 MODULE_DESCRIPTION("AFE PCM module platform driver");
 MODULE_LICENSE("GPL");

@@ -1377,10 +1377,10 @@ static struct snd_soc_dai_driver mtk_6356_dai_codecs[] = {
 		      }
 	 },
 	 {
-	  .name = MT_SOC_CODEC_DL1DATA2TXDAI_NAME,
+	  .name = MT_SOC_CODEC_DEEPBUFFER_TX_DAI_NAME,
 	  .ops = &mt6323_aif1_dai_ops,
 	  .playback = {
-		      .stream_name = MT_SOC_DL1_DATA2_STREAM_NAME,
+		      .stream_name = MT_SOC_DEEP_BUFFER_DL_STREAM_NAME,
 		      .channels_min = 1,
 		      .channels_max = 2,
 		      .rate_min = 8000,
