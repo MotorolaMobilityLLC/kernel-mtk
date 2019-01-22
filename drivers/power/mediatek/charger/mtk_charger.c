@@ -1523,6 +1523,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	info->enable_pe_plus = of_property_read_bool(np, "enable_pe_plus");
 	info->enable_pe_2 = of_property_read_bool(np, "enable_pe_2");
 	info->enable_pe_3 = of_property_read_bool(np, "enable_pe_3");
+	info->enable_pe_4 = of_property_read_bool(np, "enable_pe_4");
 
 	info->enable_hv_charging = true;
 
@@ -1872,6 +1873,54 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 			TA_STOP_BATTERY_SOC);
 		info->data.ta_stop_battery_soc = TA_STOP_BATTERY_SOC;
 	}
+
+	/* PE 4.0 single */
+	if (of_property_read_u32(np, "pe40_single_charger_input_current", &val) >= 0) {
+		info->data.pe40_single_charger_input_current = val;
+	} else {
+		chr_err(
+			"use default pe40_single_charger_input_current:%d\n",
+			3000);
+		info->data.pe40_single_charger_input_current = 3000;
+	}
+
+	if (of_property_read_u32(np, "pe40_single_charger_current", &val) >= 0) {
+		info->data.pe40_single_charger_current = val;
+	} else {
+		chr_err(
+			"use default pe40_single_charger_current:%d\n",
+			3000);
+		info->data.pe40_single_charger_current = 3000;
+	}
+
+	/* PE 4.0 dual */
+	if (of_property_read_u32(np, "pe40_dual_charger_input_current", &val) >= 0) {
+		info->data.pe40_dual_charger_input_current = val;
+	} else {
+		chr_err(
+			"use default pe40_dual_charger_input_current:%d\n",
+			3000);
+		info->data.pe40_dual_charger_input_current = 3000;
+	}
+
+	if (of_property_read_u32(np, "pe40_dual_charger_chg1_current", &val) >= 0) {
+		info->data.pe40_dual_charger_chg1_current = val;
+	} else {
+		chr_err(
+			"use default pe40_dual_charger_chg1_current:%d\n",
+			2000);
+		info->data.pe40_dual_charger_chg1_current = 2000;
+	}
+
+	if (of_property_read_u32(np, "pe40_dual_charger_chg2_current", &val) >= 0) {
+		info->data.pe40_dual_charger_chg2_current = val;
+	} else {
+		chr_err(
+			"use default pe40_dual_charger_chg2_current:%d\n",
+			2000);
+		info->data.pe40_dual_charger_chg2_current = 2000;
+	}
+
 
 #ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 	/* dual charger */
@@ -2482,7 +2531,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	if (mtk_pe30_init(info) == false)
 		info->enable_pe_3 = false;
 
-	mtk_pe40_init(info);
+	if (mtk_pe40_init(info) == false)
+		info->enable_pe_4 = false;
 
 	mtk_pdc_init(info);
 	charger_ftm_init();
