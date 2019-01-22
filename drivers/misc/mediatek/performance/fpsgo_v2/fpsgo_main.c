@@ -41,7 +41,6 @@ enum FPSGO_NOTIFIER_PUSH_TYPE {
 	FPSGO_NOTIFIER_CONNECT				= 0x04,
 	FPSGO_NOTIFIER_CPU_CAP				= 0x05,
 	FPSGO_NOTIFIER_DFRC_FPS				= 0x06,
-	FPSGO_NOTIFIER_SWITCH_FPSGO_KEEP	= 0x07,
 };
 
 /* TODO: use union*/
@@ -144,32 +143,6 @@ static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend, unsigne
 	}
 }
 
-static void fpsgo_notifier_wq_cb_enable_keep(int enable)
-{
-	FPSGO_LOGI("[FPSGO_CB] keep enable %d, fpsgo_enable %d\n", enable, fpsgo_enable);
-
-	mutex_lock(&notify_lock);
-	if (enable == fpsgo_enable) {
-		mutex_unlock(&notify_lock);
-		return;
-	}
-
-	fpsgo_ctrl2fbt_switch_fbt(enable);
-	fpsgo_ctrl2fstb_switch_fstb(enable);
-	fpsgo_ctrl2xgf_switch_xgf(enable);
-
-	if (enable == 1 && fpsgo_enable == 2)
-		fpsgo_ctrl2comp_resent_by_pass_info();
-
-	if (enable == 0)
-		fpsgo_enable = 2;
-	else
-		fpsgo_enable = enable;
-
-	FPSGO_LOGI("[FPSGO_CB] fpsgo_enable %d\n", fpsgo_enable);
-	mutex_unlock(&notify_lock);
-}
-
 static void fpsgo_notifier_wq_cb_enable(int enable)
 {
 	FPSGO_LOGI("[FPSGO_CB] enable %d, fpsgo_enable %d\n", enable, fpsgo_enable);
@@ -183,6 +156,9 @@ static void fpsgo_notifier_wq_cb_enable(int enable)
 	fpsgo_ctrl2fbt_switch_fbt(enable);
 	fpsgo_ctrl2fstb_switch_fstb(enable);
 	fpsgo_ctrl2xgf_switch_xgf(enable);
+
+	if (enable == 1)
+		fpsgo_ctrl2comp_resent_by_pass_info();
 
 	fpsgo_enable = enable;
 	FPSGO_LOGI("[FPSGO_CB] fpsgo_enable %d\n", fpsgo_enable);
@@ -230,9 +206,6 @@ static void fpsgo_notifier_wq_cb(struct work_struct *psWork)
 		break;
 	case FPSGO_NOTIFIER_DFRC_FPS:
 		fpsgo_notifier_wq_cb_dfrc_fps(vpPush->dfrc_fps);
-		break;
-	case FPSGO_NOTIFIER_SWITCH_FPSGO_KEEP:
-		fpsgo_notifier_wq_cb_enable_keep(vpPush->enable);
 		break;
 	default:
 		FPSGO_LOGE("[FPSGO_CTRL] unhandled push type = %d\n", vpPush->ePushType);
@@ -396,9 +369,6 @@ void fpsgo_notify_connect(int pid, unsigned long long bufID, int connectedAPI)
 
 	FPSGO_LOGI("[FPSGO_CTRL] connect pid %d, buf %llu, API %d\n", pid, bufID, connectedAPI);
 
-	if (!fpsgo_enable)
-		return;
-
 	vpPush =
 		(struct FPSGO_NOTIFIER_PUSH_TAG *) fpsgo_alloc_atomic(sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
 
@@ -525,31 +495,6 @@ void fpsgo_switch_enable(int enable)
 	FPSGO_LOGI("[FPSGO_CTRL] switch enable %d\n", enable);
 
 	vpPush->ePushType = FPSGO_NOTIFIER_SWITCH_FPSGO;
-	vpPush->enable = enable;
-
-	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
-	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
-}
-
-void fpsgo_switch_enable_keep(int enable)
-{
-	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush =
-		(struct FPSGO_NOTIFIER_PUSH_TAG *) fpsgo_alloc_atomic(sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
-
-	if (!vpPush) {
-		FPSGO_LOGE("[FPSGO_CTRL] OOM\n");
-		return;
-	}
-
-	if (!g_psNotifyWorkQueue) {
-		FPSGO_LOGE("[FPSGO_CTRL] NULL WorkQueue\n");
-		fpsgo_free(vpPush, sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
-		return;
-	}
-
-	FPSGO_LOGI("[FPSGO_CTRL] switch enable %d\n", enable);
-
-	vpPush->ePushType = FPSGO_NOTIFIER_SWITCH_FPSGO_KEEP;
 	vpPush->enable = enable;
 
 	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
