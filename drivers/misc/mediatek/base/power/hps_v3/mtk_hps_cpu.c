@@ -180,7 +180,7 @@ int hps_cpu_init(void)
 		hps_sys.cluster_info[i].up_threshold = DEF_CPU_UP_THRESHOLD;
 		hps_sys.cluster_info[i].down_threshold = DEF_CPU_DOWN_THRESHOLD;
 	}
-#if 0
+#if 1
 /* Change default power sequence of HPS*/
 	hps_sys.cluster_info[0].pwr_seq = 0;
 	hps_sys.cluster_info[1].pwr_seq = 2;
