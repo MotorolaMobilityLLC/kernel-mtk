@@ -1157,12 +1157,12 @@ static int ext_layer_grouping(struct disp_layer_info *disp_info)
 		for (i = 0 ; i < disp_info->layer_num[disp_idx]; i++)
 			disp_info->input_config[disp_idx][i].ext_sel_layer = -1;
 
-			if (!disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER))
-				continue;
+		if (!disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER))
+			continue;
 
 #ifndef LAYERING_SUPPORT_EXT_LAYER_ON_2ND_DISP
-			if (i == HRT_SECONDARY)
-				continue;
+		if (disp_idx == HRT_SECONDARY)
+			continue;
 #endif
 
 		for (i = 1 ; i < disp_info->layer_num[disp_idx]; i++) {
