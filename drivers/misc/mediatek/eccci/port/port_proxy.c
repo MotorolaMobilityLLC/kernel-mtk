@@ -893,6 +893,7 @@ static inline int proxy_dispatch_recv_skb(struct port_proxy *proxy_p, int hif_id
 	int channel = CCCI_INVALID_CH_ID;
 	int wakeup_src;
 	unsigned int wakeup_count;
+	unsigned int reserved = 0;
 
 	if (unlikely(!skb)) {
 		ret = -CCCI_ERR_INVALID_PARAM;
@@ -902,6 +903,7 @@ static inline int proxy_dispatch_recv_skb(struct port_proxy *proxy_p, int hif_id
 	if (flag == NORMAL_DATA) {
 		ccci_h = (struct ccci_header *)skb->data;
 		channel = ccci_h->channel;
+		reserved = ccci_h->reserved;
 	} else if (flag == CLDMA_NET_DATA) {
 		lhif_h = (struct lhif_header *)skb->data;
 		if (!ccci_get_ccmni_channel(proxy_p->md_id, lhif_h->netif, &ccmni))
@@ -933,8 +935,8 @@ static inline int proxy_dispatch_recv_skb(struct port_proxy *proxy_p, int hif_id
 			wakeup_src = ccci_hif_get_wakeup_src(hif_id, &wakeup_count);
 			if (wakeup_src) {
 				if (channel == CCCI_IPC_RX) {
-					ccci_h->reserved &= 0xF;
-					switch (ccci_h->reserved) {
+					reserved &= 0xF;
+					switch (reserved) {
 					case CCCI_IPC_AGPS:
 						port->user = "agps";
 						break;
@@ -949,9 +951,19 @@ static inline int proxy_dispatch_recv_skb(struct port_proxy *proxy_p, int hif_id
 						break;
 					}
 				}
-				CCCI_NOTICE_LOG(md_id, TAG, "%s wakeup source:(%d/%d/%x)(%u)(%s)\n",
-					(hif_id == CCIF_HIF_ID) ? "CCIF_MD" : "CLDMA_MD",
-					port->rxq_index, channel, ccci_h->reserved, wakeup_count, port->user);
+				/* check wakeup source */
+				switch (hif_id) {
+				case CCIF_HIF_ID:
+					CCCI_NOTICE_LOG(md_id, TAG, "CCIF_MD wakeup source:(%d/%d/%x)(%u)(%s)\n",
+						port->rxq_index, channel, reserved, wakeup_count, port->user);
+					break;
+				case CLDMA_HIF_ID:
+					CCCI_NOTICE_LOG(md_id, TAG, "CLDMA_MD wakeup source:(%d/%d/%x)(%u)(%s)\n",
+						port->rxq_index, channel, reserved, wakeup_count, port->user);
+					break;
+				default:
+					break;
+				}
 			}
 			if (likely(skb && port->ops->recv_skb)) {
 				ret = port->ops->recv_skb(port, skb);
