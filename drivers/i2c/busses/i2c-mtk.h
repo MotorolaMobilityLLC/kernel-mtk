@@ -370,6 +370,7 @@ struct mt_i2c {
 	int scp_ch;
 	bool have_ccu;
 	u32 ccu_offset;
+	unsigned long main_clk;
 };
 
 #if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)

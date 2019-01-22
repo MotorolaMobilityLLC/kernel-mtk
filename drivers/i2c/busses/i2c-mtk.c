@@ -643,7 +643,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	       I2CTAG "Clk=%ld,Id=%d,Op=%x,Irq_stat=%x,Total_len=%x\n"
 	       I2CTAG "Trans_len=%x,Trans_num=%x,Trans_auxlen=%x,speed=%d\n"
 	       I2CTAG "Trans_stop=%u,cg_cnt=%d,hs_only=%d, ch_offset=%d,ch_offset_default=%d\n",
-	       clk_get_rate(i2c->clk_main), i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
+	       i2c->main_clk, i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
 			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop, i2c->cg_cnt,
 			i2c->hs_only, i2c->ch_offset, i2c->ch_offset_default);
 
@@ -1777,8 +1777,10 @@ static int mt_i2c_probe(struct platform_device *pdev)
 			return PTR_ERR(i2c->clk_pmic);
 		}
 		clk_src_in_hz = clk_get_rate(i2c->clk_pmic) / i2c->clk_src_div;
+		i2c->main_clk = clk_src_in_hz;
 	} else {
 		clk_src_in_hz = clk_get_rate(i2c->clk_main) / i2c->clk_src_div;
+		i2c->main_clk = clk_src_in_hz;
 	}
 	dev_warn(&pdev->dev, "i2c%d clock source %p,clock src frequency %d\n", i2c->id,
 		i2c->clk_main, clk_src_in_hz);
