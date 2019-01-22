@@ -595,7 +595,7 @@ int ion_phys(struct ion_client *client, struct ion_handle *handle,
 	ret = buffer->heap->ops->phys(buffer->heap, buffer, addr, len);
 
 	/*avoid camelcase, will modify in a letter*/
-	mmprofile_log_ex(ion_mmp_events[PROFILE_GET_PHYS], MMPROFILE_FLAG_END, buffer->size, *addr);
+	mmprofile_log_ex(ion_mmp_events[PROFILE_GET_PHYS], MMPROFILE_FLAG_END, buffer->size, (unsigned long)*addr);
 
 	return ret;
 }
