@@ -34,7 +34,7 @@
 #include <asm/tlbflush.h>
 #include "sh_svp.h"
 
-const int is_pre_reserve_memory;
+static int is_pre_reserve_memory;
 
 #define _SSVP_MBSIZE_ (CONFIG_MTK_SVP_RAM_SIZE + CONFIG_MTK_TUI_RAM_SIZE)
 #define SVP_MBSIZE CONFIG_MTK_SVP_RAM_SIZE
@@ -140,7 +140,7 @@ struct single_cma_registration memory_ssvp_registration = {
 };
 
 /*
- * CMA dts node callback function
+ * This is only used for all SSVP users wants dedicated reserved memory
  */
 static int __init memory_ssvp_init(struct reserved_mem *rmem)
 {
@@ -157,6 +157,8 @@ static int __init memory_ssvp_init(struct reserved_mem *rmem)
 		pr_err("%s cma failed, ret: %d\n", __func__, ret);
 		return 1;
 	}
+
+	is_pre_reserve_memory = 1;
 
 	return 0;
 }
