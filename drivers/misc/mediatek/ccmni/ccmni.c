@@ -389,9 +389,7 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		} else {
 			iph = (struct iphdr *)skb_network_header(skb);
 			CCMNI_DBG_MSG(ccmni->md_id,
-				      "ccmni-lan send wrong pkt with eth_len=0, ip_id=%04X, data=%p, head=%p, ip_h=%x, mac_len=%d, len=%d, iph_off=%d\n",
-				      iph->id, skb->data, skb->head, skb->network_header,
-				      skb->mac_len, skb->len, skb_network_offset(skb));
+				      "ccmni-lan send wrong pkt with eth_len=0, ip_id=%04X\n", iph->id);
 			dump_stack();
 			dev_kfree_skb(skb);
 			dev->stats.tx_dropped++;
@@ -464,6 +462,8 @@ tx_busy:
 	if (IS_CCMNI_LAN(dev)) {
 		skb_push(skb, mac_len);
 		skb_reset_mac_header(skb);
+		if (skb->len > skb_len)
+			skb->len = skb_len;
 	}
 	return NETDEV_TX_BUSY;
 }
@@ -557,7 +557,7 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	case SIOCCCMNICFG:
 		md_id_irat = ifr->ifr_ifru.ifru_ivalue;
 		md_id = ccmni->md_id;
-		if (md_id_irat < 0 && md_id_irat >= MAX_MD_NUM) {
+		if (md_id_irat < 0 || md_id_irat >= MAX_MD_NUM) {
 			CCMNI_DBG_MSG(md_id, "SIOCSCCMNICFG: %s invalid md_id(%d)\n",
 				      dev->name, (ifr->ifr_ifru.ifru_ivalue + 1));
 			return -EINVAL;
