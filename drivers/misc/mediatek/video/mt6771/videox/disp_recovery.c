@@ -873,6 +873,11 @@ static int primary_display_recovery_kthread(void *data)
 	while (1) {
 		dpmgr_wait_event(primary_get_dpmgr_handle(), DISP_PATH_EVENT_DISP_RECOVERY);
 
+		if (ddp_path_check_smi_busy())
+			continue;
+		else
+			DISPMSG("SMI idle, check display engine status\n");
+
 		if (atomic_read(&enable_wdma_recovery)) {
 			if (ddp_path_need_mmsys_sw_reset(DISP_MODULE_WDMA0)) {
 				DISPERR("Detect wdma0 malfunction, do recovery.\n");
