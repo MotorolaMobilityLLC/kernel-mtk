@@ -37,7 +37,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.11_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.10_MTK"
 
 /* ======================= */
 /* RT5081 Charger Variable */
@@ -416,7 +416,6 @@ static int rt5081_set_fast_charge_timer(
 static int rt5081_set_usbsw_state(struct rt5081_pmu_charger_data *chg_data,
 	int state)
 {
-#ifdef RT5081_CHARGER_DETECT_SUPPORT
 	dev_info(chg_data->dev, "%s: state = %d\n", __func__, state);
 
 	if (chg_data->usb_switch)
@@ -429,7 +428,7 @@ static int rt5081_set_usbsw_state(struct rt5081_pmu_charger_data *chg_data,
 			Charger_Detect_Release();
 	}
 #endif
-#endif
+
 	return 0;
 }
 
@@ -589,7 +588,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		if (ret < 0) {
 			dev_err(chg_data->dev, "%s: get aicr failed\n",
 				__func__);
-			goto out_unlock_all;
+			goto out;
 		}
 	} else if (adc_sel == RT5081_ADC_IBAT) {
 		mutex_lock(&chg_data->ichg_access_lock);
@@ -597,7 +596,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		if (ret < 0) {
 			dev_err(chg_data->dev, "%s: get ichg failed\n",
 				__func__);
-			goto out_unlock_all;
+			goto out;
 		}
 	}
 
@@ -608,7 +607,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 		dev_err(chg_data->dev,
 			"%s: start conversation failed, sel = %d, ret = %d\n",
 			__func__, adc_sel, ret);
-		goto out_unlock_all;
+		goto out;
 	}
 
 	for (i = 0; i < max_wait_times; i++) {
@@ -629,6 +628,9 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 			for (i = 0; i < ARRAY_SIZE(rt5081_chg_reg_addr); i++) {
 				ret = rt5081_pmu_reg_read(chg_data->chip,
 						rt5081_chg_reg_addr[i]);
+				if (ret < 0)
+					return ret;
+
 				dev_err(chg_data->dev, "%s: reg[0x%02X] = 0x%02X\n",
 					__func__, rt5081_chg_reg_addr[i], ret);
 			}
@@ -662,7 +664,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 	if (ret < 0) {
 		dev_err(chg_data->dev,
 			"%s: read ADC data failed, ret = %d\n", __func__, ret);
-		goto out_unlock_all;
+		goto out;
 	}
 
 	dev_dbg(chg_data->dev,
@@ -677,7 +679,7 @@ static int rt5081_get_adc(struct rt5081_pmu_charger_data *chg_data,
 	adc_result = (adc_data[0] * 256 + adc_data[1]) * rt5081_adc_unit[adc_sel]
 		+ rt5081_adc_offset[adc_sel];
 
-out_unlock_all:
+out:
 
 	/* Coefficient of IBUS & IBAT */
 	if (adc_sel == RT5081_ADC_IBUS) {
@@ -692,7 +694,6 @@ out_unlock_all:
 		mutex_unlock(&chg_data->ichg_access_lock);
 	}
 
-out:
 	*adc_val = adc_result;
 	rt5081_enable_hidden_mode(chg_data, false);
 	mutex_unlock(&chg_data->adc_access_lock);
@@ -925,9 +926,7 @@ static int rt5081_set_aicl_vth(struct rt5081_pmu_charger_data *chg_data,
 static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	bool en)
 {
-	int ret = 0;
-#ifdef RT5081_CHARGER_DETECT_SUPPORT
-	int i = 0;
+	int ret = 0, i = 0;
 #ifdef CONFIG_TCPC_CLASS
 	int vbus = 0;
 #endif
@@ -960,7 +959,7 @@ static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
 	ret = (en ? rt5081_pmu_reg_set_bit : rt5081_pmu_reg_clr_bit)
 		(chg_data->chip, RT5081_PMU_REG_DEVICETYPE, RT5081_MASK_USBCHGEN);
-#endif
+
 	return ret;
 
 }
@@ -996,7 +995,6 @@ static int _rt5081_set_mivr(struct rt5081_pmu_charger_data *chg_data, u32 uV)
 static int rt5081_inform_psy_changed(struct rt5081_pmu_charger_data *chg_data)
 {
 	int ret = 0;
-#ifdef RT5081_CHARGER_DETECT_SUPPORT
 	union power_supply_propval propval;
 
 	dev_info(chg_data->dev, "%s: online = %d, type = %d\n", __func__,
@@ -1036,7 +1034,7 @@ static int rt5081_inform_psy_changed(struct rt5081_pmu_charger_data *chg_data)
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: psy online failed, ret(%d)\n",
 			__func__, ret);
-#endif
+
 	return ret;
 }
 
@@ -2689,7 +2687,6 @@ static irqreturn_t rt5081_pmu_bst_olpi_irq_handler(int irq, void *data)
 
 static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 {
-#ifdef RT5081_CHARGER_DETECT_SUPPORT
 	int ret = 0;
 	u8 usb_status = 0;
 	struct rt5081_pmu_charger_data *chg_data =
@@ -2742,7 +2739,7 @@ static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 	if (chg_data->chg_type == STANDARD_HOST ||
 	    chg_data->chg_type == CHARGING_HOST)
 		rt5081_set_usbsw_state(chg_data, RT5081_USBSW_USB);
-#endif
+
 	return IRQ_HANDLED;
 }
 
@@ -3395,9 +3392,6 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
- * 1.1.11_MTK
- * (1) Fix get_adc mutex lock unbalance warning
- *
  * 1.1.10_MTK
  * (1) Add ext usb switch control
  * (2) Add RT5081_APPLE_SAMSUNG_TA_SUPPORT config
