@@ -323,13 +323,33 @@ bool other_cpu_off_but_cluster_on(int cpu)
 	unsigned int cpu_check_mask =
 				get_pwr_stat_check_map(CPU_IN_OTHER_CLUSTER, cpu) & mcdi_gov_data.avail_cpu_mask;
 
+	unsigned int other_cluster_idx =
+				get_pwr_stat_check_map(OTHER_CLUSTER_IDX, cpu);
+
 	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
 
+	/*
+	 * If there is only 1 available cluster, skip checking
+	 *     (1) The other cluster is offline
+	 *     (2) System only support single cluster
+	 */
 	if (cpu_check_mask == 0 && other_cluster_check_mask == 0)
 		return false;
 
-	if (((on_off_stat & cpu_check_mask) == cpu_check_mask) && (on_off_stat & other_cluster_check_mask) == 0)
-		return true;
+	if (((on_off_stat & cpu_check_mask) == cpu_check_mask) && (on_off_stat & other_cluster_check_mask) == 0) {
+
+		unsigned int other_cluster_will_pdn =
+				mcdi_mbox_read(MCDI_MBOX_CLUSTER_0_ATF_ACTION_DONE + other_cluster_idx);
+
+		/*
+		 * If other cluster is marked as power OFF (ATF afflvl = 1),
+		 * we have to wait until mcdi_controller power OFF completed.
+		 */
+		if (other_cluster_will_pdn)
+			return false;
+		else
+			return true;
+	}
 
 	return false;
 }
