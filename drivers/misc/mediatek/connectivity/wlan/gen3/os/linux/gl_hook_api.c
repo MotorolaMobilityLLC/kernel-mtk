@@ -3053,7 +3053,7 @@ INT_32 TxBfProfilePnRead(struct net_device *prNetDev, UINT_8 profileIdx)
 	return i4Status;
 }
 
-INT_32 TxBfProfilePnWrite(struct net_device *prNetDev, UINT_8 profileIdx, UINT_16 u2bw, UINT_16 au2XSTS[12])
+INT_32 TxBfProfilePnWrite(struct net_device *prNetDev, UINT_8 profileIdx, UINT_16 u2bw, PUINT_16 pau2XSTS)
 {
 	INT_32 i4Status = 0;
 	P_GLUE_INFO_T prGlueInfo = NULL;
@@ -3063,29 +3063,15 @@ INT_32 TxBfProfilePnWrite(struct net_device *prNetDev, UINT_8 profileIdx, UINT_1
 
 	kalMemZero(&rTxBfActionInfo, sizeof(rTxBfActionInfo));
 
-	ASSERT(prNetDev);
+	ASSERT(prNetDev && pau2XSTS);
 	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
 	prAdapter = prGlueInfo->prAdapter;
 
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : ucPfmuIdx = 0x%08x\n", profileIdx);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : u2bw = 0x%08x\n", u2bw);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[0] = 0x%08x\n", au2XSTS[0]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[1] = 0x%08x\n", au2XSTS[1]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[2] = 0x%08x\n", au2XSTS[2]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[3] = 0x%08x\n", au2XSTS[3]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[4] = 0x%08x\n", au2XSTS[4]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[5] = 0x%08x\n", au2XSTS[5]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[6] = 0x%08x\n", au2XSTS[6]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[7] = 0x%08x\n", au2XSTS[7]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[8] = 0x%08x\n", au2XSTS[8]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[9] = 0x%08x\n", au2XSTS[9]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[10] = 0x%08x\n", au2XSTS[10]);
-	DBGLOG(RFTEST, ERROR, "TxBfProfilePnWrite : au2XSTS[11] = 0x%08x\n", au2XSTS[11]);
-
+	DBGLOG(RFTEST, INFO, "TxBfProfilePnWrite : ucPfmuIdx = 0x%08x, u2bw = 0x%08x\n", profileIdx, u2bw);
 	rTxBfActionInfo.rProfilePnWrite.ucTxBfCategory = BF_PN_WRITE;
 	rTxBfActionInfo.rProfilePnWrite.ucPfmuIdx = profileIdx;
 	rTxBfActionInfo.rProfilePnWrite.u2bw = u2bw;
-	memcpy(&rTxBfActionInfo.rProfilePnWrite.ucBuf[0], &au2XSTS, sizeof(au2XSTS));
+	memcpy(&rTxBfActionInfo.rProfilePnWrite.ucBuf[0], pau2XSTS, 24);
 
 	i4Status = kalIoctl(prGlueInfo,
 			    wlanoidTxBfAction,
