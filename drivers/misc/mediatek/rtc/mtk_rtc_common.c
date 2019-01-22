@@ -174,6 +174,8 @@
 static struct rtc_device *rtc;
 static DEFINE_SPINLOCK(rtc_lock);
 
+static void rtc_save_pwron_time(bool enable, struct rtc_time *tm, bool logo);
+
 static int rtc_show_time;
 static int rtc_show_alarm = 1;
 
@@ -350,10 +352,21 @@ void rtc_disable_writeif(void)
 void rtc_mark_recovery(void)
 {
 	unsigned long flags;
+	struct rtc_time defaulttm;
 
 	rtc_xinfo("rtc_mark_recovery\n");
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_set_spare_register(RTC_FAC_RESET, 0x1);
+	/* Clear alarm setting when doing factory recovery. */
+	defaulttm.tm_year = RTC_DEFAULT_YEA - RTC_MIN_YEAR;
+	defaulttm.tm_mon = RTC_DEFAULT_MTH;
+	defaulttm.tm_mday = RTC_DEFAULT_DOM;
+	defaulttm.tm_wday = 1;
+	defaulttm.tm_hour = 0;
+	defaulttm.tm_min = 0;
+	defaulttm.tm_sec = 0;
+	rtc_save_pwron_time(false, &defaulttm, false);
+	hal_rtc_clear_alarm(&defaulttm);
 	spin_unlock_irqrestore(&rtc_lock, flags);
 }
 
