@@ -9,4 +9,10 @@ endif
 ccflags-$(CONFIG_MACH_MT6799) += -DMTK_PASR_VCORE_DVFS_CONTROL
 ccflags-$(CONFIG_MACH_MT6763) += -DMTK_PASR_VCORE_DVFS_CONTROL
 ccflags-$(CONFIG_MACH_MT6758) += -DMTK_PASR_VCORE_DVFS_CONTROL
+ccflags-$(CONFIG_MACH_MT6771) += -DMTK_PASR_VCORE_DVFS_CONTROL
+
+ifeq ($(CONFIG_MTK_QOS_SUPPORT), y)
+ccflags-y += -I$(srctree)/drivers/devfreq/
+endif
+
 obj-y += mtkpasr_drv.o mtkpasr_hw.o
