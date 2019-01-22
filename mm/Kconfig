@@ -594,6 +594,7 @@ config ZSMALLOC
 	tristate "Memory allocator for compressed pages"
 	depends on MMU
 	default n
+	select PGTABLE_MAPPING if (ARM || ARM64)
 	help
 	  zsmalloc is a slab-based memory allocator designed to store
 	  compressed RAM pages.  zsmalloc uses virtual memory mapping
