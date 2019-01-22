@@ -30,6 +30,9 @@ config TRUSTONIC_TEE_DEBUG
 	default n
 	---help---
 	  Enable the debug mode in the Trustonic TEE Driver.
+	  Unlike MOBICORE_DEBUG and MOBICORE_VERBOSE used in TBASE 302 series,
+	  TBASE 311 series use one option to turn on necessary debug logs.
+	  Enable this option for debugging and see more detailed driver flow.
 
 #
 # MobiCore configuration
