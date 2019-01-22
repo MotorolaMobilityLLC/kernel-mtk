@@ -172,6 +172,9 @@ static inline bool is_extended_layer(struct layer_config *layer_info)
 
 static bool is_extended_base_layer_valid(struct layer_config *configs, int layer_idx)
 {
+	if (is_yuv(configs->src_fmt))
+		return false;
+
 	if (layer_idx == 0 && has_layer_cap(configs, DISP_RSZ_LAYER))
 		return false;
 
