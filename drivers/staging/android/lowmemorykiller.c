@@ -371,7 +371,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		if (!p)
 			continue;
 
-#ifdef CONFIG_MTK_ENG_BUILD
+#ifdef CONFIG_MTK_AEE_FEATURE
 		if (p->signal->flags & SIGNAL_GROUP_COREDUMP) {
 			task_unlock(p);
 			continue;
