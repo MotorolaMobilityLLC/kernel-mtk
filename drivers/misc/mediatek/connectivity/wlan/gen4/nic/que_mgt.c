@@ -2561,7 +2561,13 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 
 	prRxStatus = prSwRfb->prRxStatus;
 	prSwRfb->ucTid = (UINT_8) (HAL_RX_STATUS_GET_TID(prRxStatus));
-	/* prSwRfb->eDst = RX_PKT_DESTINATION_HOST; */
+	if (prSwRfb->ucTid >= CFG_RX_MAX_BA_TID_NUM) {
+		DBGLOG(QM, WARN, "TID from RXD = %d, out of range!!\n", prSwRfb->ucTid);
+		DBGLOG_MEM8(QM, ERROR, prSwRfb->pucRecvBuff, HAL_RX_STATUS_GET_RX_BYTE_CNT(prRxStatus));
+		prSwRfb->eDst = RX_PKT_DESTINATION_NULL;
+		QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prSwRfb);
+		return;
+	}
 
 #if 0
 	if (!(prStaRec->fgIsValid)) {
@@ -2574,7 +2580,7 @@ VOID qmProcessPktWithReordering(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 	}
 #endif
 
-	RX_INC_CNT(&prAdapter->rRxCtrl, RX_DATA_REORDER_TOTAL_COUINT);
+	RX_INC_CNT(&prAdapter->rRxCtrl, RX_DATA_REORDER_TOTAL_COUNT);
 
 	/* Check whether the BA agreement exists */
 	prReorderQueParm = ((prStaRec->aprRxReorderParamRefTbl)[prSwRfb->ucTid]);
