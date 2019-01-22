@@ -503,6 +503,10 @@ initcall_debug=1";
 	disable_charger;
 };
 
+&bat_gm30 {
+	DISABLE_MTKBATTERY = <(1)>;
+};
+
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <10>; /* direct defined GPIO num */
 	mt6370,intr_gpio = <&pio 10 0x0>;
