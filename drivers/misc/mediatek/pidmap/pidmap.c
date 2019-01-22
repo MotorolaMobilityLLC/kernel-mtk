@@ -117,8 +117,8 @@ static void mtk_pidmap_seq_dump_readable(char **buff, unsigned long *size,
 			PIDMAP_AEE_BUFFER_SIZE);
 
 	seq_puts(seq, "\n<Configuration>\n");
-	seq_puts(seq, "echo 0 > pidmap: Dump readable pidmap (default)\n");
-	seq_puts(seq, "echo 1 > pidmap: Dump raw pidmap (for aee db)\n");
+	seq_puts(seq, "echo 0 > pidmap: Dump raw pidmap (default, for AEE DB)\n");
+	seq_puts(seq, "echo 1 > pidmap: Dump readable pidmap\n");
 	seq_puts(seq, "echo 2 > pidmap: Reset pidmap\n");
 
 }
@@ -172,10 +172,10 @@ static ssize_t mtk_pidmap_proc_write(struct file *file, const char *buf,
 		goto err;
 
 	if (mtk_pidmap_proc_cmd_buf[0] == '0') {
-		mtk_pidmap_proc_dump_mode = PIDMAP_PROC_DUMP_READABLE;
+		mtk_pidmap_proc_dump_mode = PIDMAP_PROC_DUMP_RAW;
 		pr_info("[pidmap] dump mode: raw\n");
 	} else if (mtk_pidmap_proc_cmd_buf[0] == '1') {
-		mtk_pidmap_proc_dump_mode = PIDMAP_PROC_DUMP_RAW;
+		mtk_pidmap_proc_dump_mode = PIDMAP_PROC_DUMP_READABLE;
 		pr_info("[pidmap] dump mode: readable\n");
 	} else if (mtk_pidmap_proc_cmd_buf[0] == '2') {
 		memset(mtk_pidmap, 0, sizeof(mtk_pidmap));
