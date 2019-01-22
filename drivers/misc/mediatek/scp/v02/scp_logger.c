@@ -227,7 +227,7 @@ static ssize_t scp_A_log_if_read(struct file *file, char __user *data, size_t le
 {
 	ssize_t ret;
 
-	pr_debug("[SCP A] scp_A_log_if_read\n");
+	/*pr_debug("[SCP A] scp_A_log_if_read\n");*/
 
 	ret = 0;
 
@@ -239,7 +239,7 @@ static ssize_t scp_A_log_if_read(struct file *file, char __user *data, size_t le
 
 static int scp_A_log_if_open(struct inode *inode, struct file *file)
 {
-	pr_debug("[SCP A] scp_A_log_if_open\n");
+	/*pr_debug("[SCP A] scp_A_log_if_open\n");*/
 	return nonseekable_open(inode, file);
 }
 
@@ -278,7 +278,7 @@ static unsigned int scp_A_log_enable_set(unsigned int enable)
 			if (ret == DONE)
 				break;
 			retrytimes--;
-			udelay(1);
+			udelay(100);
 		} while ((ret == BUSY) && retrytimes > 0);
 		/*
 		 *disable/enable logger flag
@@ -319,7 +319,7 @@ static unsigned int scp_A_log_wakeup_set(unsigned int enable)
 			if (ret == DONE)
 				break;
 			retrytimes--;
-			udelay(1);
+			udelay(100);
 		} while ((ret == BUSY) && retrytimes > 0);
 		/*
 		 *disable/enable logger flag
@@ -643,7 +643,7 @@ static ssize_t scp_B_log_if_read(struct file *file, char __user *data, size_t le
 {
 	ssize_t ret;
 
-	pr_debug("[SCP B] scp_B_log_if_read\n");
+	/*pr_debug("[SCP B] scp_B_log_if_read\n");*/
 
 	ret = 0;
 
@@ -655,7 +655,7 @@ static ssize_t scp_B_log_if_read(struct file *file, char __user *data, size_t le
 
 static int scp_B_log_if_open(struct inode *inode, struct file *file)
 {
-	pr_debug("[SCP B] scp_B_log_if_open\n");
+	/*pr_debug("[SCP B] scp_B_log_if_open\n");*/
 	return nonseekable_open(inode, file);
 }
 
@@ -695,7 +695,7 @@ static unsigned int scp_B_log_enable_set(unsigned int enable)
 			if (ret == DONE)
 				break;
 			retrytimes--;
-			udelay(1);
+			udelay(100);
 		} while ((ret == BUSY) && retrytimes > 0);
 		/*
 		 *disable/enable logger flag
@@ -736,7 +736,7 @@ static unsigned int scp_B_log_wakeup_set(unsigned int enable)
 			if (ret == DONE)
 				break;
 			retrytimes--;
-			udelay(1);
+			udelay(100);
 		} while ((ret == BUSY) && retrytimes > 0);
 		/*
 		 *disable/enable logger flag
