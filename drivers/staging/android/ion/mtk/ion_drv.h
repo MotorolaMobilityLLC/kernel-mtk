@@ -189,7 +189,6 @@ struct ion_mm_data {
 	union {
 		struct ion_mm_config_buffer_param config_buffer_param;
 		struct ion_mm_buf_debug_info buf_debug_info_param;
-		struct ion_mm_sf_buf_info sf_buf_info_param;
 	};
 };
 

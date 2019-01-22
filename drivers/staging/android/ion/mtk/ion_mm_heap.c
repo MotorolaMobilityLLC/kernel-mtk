@@ -56,7 +56,6 @@ struct ion_mm_buffer_info {
 	unsigned int iova_start;
 	unsigned int iova_end;
 	struct ion_mm_buf_debug_info dbg_info;
-	struct ion_mm_sf_buf_info sf_buf_info;
 	ion_mm_buf_destroy_callback_t *destroy_fn;
 	pid_t pid;
 };
@@ -663,17 +662,13 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
 			continue;
 		ION_PRINT_LOG_OR_SEQ(s,
-				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %5d(%5d) %16s 0x%x 0x%x 0x%x 0x%x %s",
+				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %5d(%5d) %16s 0x%x 0x%x 0x%x 0x%x %s\n",
 				     buffer, buffer->size, buffer->kmap_cnt,
 				     atomic_read(&buffer->ref.refcount), buffer->handle_count,
 				     bug_info->module_id, bug_info->MVA, bug_info->security,
 				     buffer->flags, buffer->pid, bug_info->pid, buffer->task_comm,
 				     pdbg->value1, pdbg->value2, pdbg->value3,
 				     pdbg->value4, pdbg->dbg_name);
-		ION_PRINT_LOG_OR_SEQ(s, " sf_info(");
-		for (i = 0; i < ION_MM_SF_BUF_INFO_LEN; i++)
-			ION_PRINT_LOG_OR_SEQ(s, "%d ", bug_info->sf_buf_info.info[i]);
-		ION_PRINT_LOG_OR_SEQ(s, ")\n");
 		if (!buffer->handle_count)
 			has_orphaned = true;
 	}
@@ -1163,95 +1158,8 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 		}
 	}
 	break;
-	case ION_MM_SET_SF_BUF_INFO:
-	{
-		struct ion_buffer *buffer;
-
-		if (param.sf_buf_info_param.handle) {
-			struct ion_handle *kernel_handle;
-
-			kernel_handle = ion_drv_get_handle(client, param.sf_buf_info_param.handle,
-							   param.sf_buf_info_param.kernel_handle, from_kernel);
-			if (IS_ERR(kernel_handle)) {
-				IONMSG("ion set sf buf info fail! kernel_handle=0x%p.\n", kernel_handle);
-				ret = -EINVAL;
-				break;
-			}
-
-			buffer = ion_handle_buffer(kernel_handle);
-			buffer_type = buffer->heap->type;
-			if ((int)buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
-				struct ion_mm_buffer_info *buffer_info = buffer->priv_virt;
-
-				buffer_sec = buffer_info->security;
-				ion_mm_copy_sf_buf_info(&param.sf_buf_info_param, &buffer_info->sf_buf_info);
-			} else if ((int)buffer->heap->type == ION_HEAP_TYPE_FB) {
-				struct ion_fb_buffer_info *buffer_info = buffer->priv_virt;
-
-				buffer_sec = buffer_info->security;
-				ion_mm_copy_sf_buf_info(&param.sf_buf_info_param, &buffer_info->sf_buf_info);
-			} else if ((int)buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
-				struct ion_sec_buffer_info *buffer_info = buffer->priv_virt;
-
-				buffer_sec = buffer_info->security;
-				ion_mm_copy_sf_buf_info(&param.sf_buf_info_param, &buffer_info->sf_buf_info);
-			} else {
-				IONMSG("[ion_heap]: Error. Cannot set sf_buf_info buffer that is not from %c heap.\n",
-				       buffer->heap->type);
-				ret = -EFAULT;
-			}
-			ion_drv_put_kernel_handle(kernel_handle);
-		} else {
-			IONMSG("[ion_heap]: Error. set sf_buf_info buffer with invalid handle.\n");
-			ret = -EFAULT;
-		}
-	}
-	break;
-	case ION_MM_GET_SF_BUF_INFO:
-	{
-		struct ion_buffer *buffer;
-
-		if (param.sf_buf_info_param.handle) {
-			struct ion_handle *kernel_handle;
-
-			kernel_handle = ion_drv_get_handle(client, param.sf_buf_info_param.handle,
-							   param.sf_buf_info_param.kernel_handle, from_kernel);
-			if (IS_ERR(kernel_handle)) {
-				IONMSG("ion get sf buf info fail! kernel_handle=0x%p.\n", kernel_handle);
-				ret = -EINVAL;
-				break;
-			}
-			buffer = ion_handle_buffer(kernel_handle);
-			buffer_type = buffer->heap->type;
-			if ((int)buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
-				struct ion_mm_buffer_info *buffer_info = buffer->priv_virt;
-
-				buffer_sec = buffer_info->security;
-				ion_mm_copy_sf_buf_info(&buffer_info->sf_buf_info, &param.sf_buf_info_param);
-			} else if ((int)buffer->heap->type == ION_HEAP_TYPE_FB) {
-				struct ion_fb_buffer_info *buffer_info = buffer->priv_virt;
-
-				buffer_sec = buffer_info->security;
-				ion_mm_copy_sf_buf_info(&buffer_info->sf_buf_info, &param.sf_buf_info_param);
-			} else if ((int)buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA_SEC) {
-				struct ion_sec_buffer_info *buffer_info = buffer->priv_virt;
-
-				buffer_sec = buffer_info->security;
-				ion_mm_copy_sf_buf_info(&buffer_info->sf_buf_info, &param.sf_buf_info_param);
-			} else {
-				IONMSG("[ion_heap]: Error. Cannot get sf_buf_info buffer that is not from %c heap.\n",
-				       buffer->heap->type);
-				ret = -EFAULT;
-			}
-			ion_drv_put_kernel_handle(kernel_handle);
-		} else {
-			IONMSG("[ion_heap]: Error. get sf_buf_info buffer with invalid handle.\n");
-			ret = -EFAULT;
-		}
-	}
-	break;
 	default:
-		IONMSG("[ion_heap]: Error. Invalid command.\n");
+		IONMSG("[ion_heap]: Error. Invalid command(%d).\n", param.mm_cmd);
 		ret = -EFAULT;
 	}
 
