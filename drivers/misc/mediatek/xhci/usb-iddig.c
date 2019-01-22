@@ -124,6 +124,8 @@ void mtk_enable_host(void)
 
 void mtk_disable_host(void)
 {
+	switch_int_to_host_and_mask();
+	if (mtk_is_host_mode() == true)
 	mtk_xhci_driver_unload();
 	mtk_idpin_cur_stat = IDPIN_OUT;
 }
@@ -347,7 +349,9 @@ static ssize_t otg_mode_store(struct device *dev, struct device_attribute *attr,
 				}
 				cancel_delayed_work_sync(&mtk_xhci_delaywork);
 				if (mtk_is_host_mode() == true)
-					mtk_unload_xhci_on_ipo();
+					mtk_xhci_driver_unload();
+				mtk_idpin_cur_stat = IDPIN_OUT;
+
 
 				if (!IS_ERR(pinctrl_iddig_disable))
 					pinctrl_select_state(pinctrl, pinctrl_iddig_disable);
