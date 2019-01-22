@@ -443,10 +443,10 @@ extern "C" {
 	int32_t cmdq_task_flush_async(struct cmdqRecStruct *handle);
 	int32_t cmdqRecFlushAsync(struct cmdqRecStruct *handle);
 
-	int32_t cmdq_task_flush_async_callback(struct cmdqRecStruct *handle, CmdqAsyncFlushCB callback,
-					  uint32_t userData);
-	int32_t cmdqRecFlushAsyncCallback(struct cmdqRecStruct *handle, CmdqAsyncFlushCB callback,
-					  uint32_t userData);
+	int32_t cmdq_task_flush_async_callback(struct cmdqRecStruct *handle,
+		CmdqAsyncFlushCB callback, u64 user_data);
+	int32_t cmdqRecFlushAsyncCallback(struct cmdqRecStruct *handle,
+		CmdqAsyncFlushCB callback, u64 user_data);
 
 /**
  * Trigger CMDQ to execute the recorded commands in loop.

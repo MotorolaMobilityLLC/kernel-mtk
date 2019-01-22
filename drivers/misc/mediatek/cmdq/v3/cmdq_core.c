@@ -8679,7 +8679,7 @@ static void cmdq_core_auto_release_work(struct work_struct *workItem)
 	int32_t status = 0;
 	struct TaskStruct *pTask = NULL;
 	CmdqAsyncFlushCB finishCallback = NULL;
-	uint32_t userData = 0;
+	u64 user_data = 0;
 	uint32_t *pCmd = NULL;
 	int32_t commandSize = 0;
 	struct CmdBufferStruct *cmd_buffer = NULL;
@@ -8689,7 +8689,7 @@ static void cmdq_core_auto_release_work(struct work_struct *workItem)
 
 	if (pTask) {
 		finishCallback = pTask->flushCallback;
-		userData = pTask->flushData;
+		user_data = pTask->flushData;
 		commandSize = pTask->commandSize;
 		pCmd = kzalloc(commandSize, GFP_KERNEL);
 		if (pCmd == NULL) {
@@ -8717,9 +8717,9 @@ static void cmdq_core_auto_release_work(struct work_struct *workItem)
 
 		/* Notify user */
 		if (finishCallback) {
-			CMDQ_VERBOSE("[Auto Release] call user callback %p with data 0x%08x\n",
-				     finishCallback, userData);
-			if (finishCallback(userData) < 0) {
+			CMDQ_VERBOSE("[Auto Release] call user callback %p with data 0x%016llx\n",
+				     finishCallback, user_data);
+			if (finishCallback(user_data) < 0) {
 				CMDQ_LOG
 				    ("[DEBUG]user complains execution abnormal, dump command...\n");
 				CMDQ_LOG("======TASK 0x%p command (%d) START\n", pTask,

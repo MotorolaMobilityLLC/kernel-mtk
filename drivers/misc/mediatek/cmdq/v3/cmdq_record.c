@@ -1535,8 +1535,8 @@ int32_t cmdq_task_flush_async(struct cmdqRecStruct *handle)
 	return status;
 }
 
-int32_t cmdq_task_flush_async_callback(struct cmdqRecStruct *handle, CmdqAsyncFlushCB callback,
-				  uint32_t userData)
+int32_t cmdq_task_flush_async_callback(struct cmdqRecStruct *handle,
+	CmdqAsyncFlushCB callback, u64 user_data)
 {
 	int32_t status = 0;
 	struct cmdqCommandStruct desc = { 0 };
@@ -1568,7 +1568,7 @@ int32_t cmdq_task_flush_async_callback(struct cmdqRecStruct *handle, CmdqAsyncFl
 	/* note that, the task may be already completed at this point. */
 	if (pTask) {
 		pTask->flushCallback = callback;
-		pTask->flushData = userData;
+		pTask->flushData = user_data;
 	}
 
 	CMDQ_MSG
@@ -3217,10 +3217,10 @@ int32_t cmdqRecFlushAsync(struct cmdqRecStruct *handle)
 	return cmdq_task_flush_async(handle);
 }
 
-int32_t cmdqRecFlushAsyncCallback(struct cmdqRecStruct *handle, CmdqAsyncFlushCB callback,
-				  uint32_t userData)
+int32_t cmdqRecFlushAsyncCallback(struct cmdqRecStruct *handle,
+	CmdqAsyncFlushCB callback, u64 user_data)
 {
-	return cmdq_task_flush_async_callback(handle, callback, userData);
+	return cmdq_task_flush_async_callback(handle, callback, user_data);
 }
 
 int32_t cmdqRecStartLoop(struct cmdqRecStruct *handle)
