@@ -207,7 +207,7 @@ int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 {
 	int energy_cost = 0;
 	struct sched_domain *sd;
-	const struct sched_group_energy *sge, *_sge, *sge_core, *sge_clus;
+	const struct sched_group_energy *_sge, *sge_core, *sge_clus;
 #ifdef CONFIG_ARM64
 	int cid = cpu_topology[cpu].cluster_id;
 #else
@@ -238,9 +238,7 @@ int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 				co_buck_cid, eenv->opp_idx[co_buck_cid]);
 	}
 
-	sge = sd->groups->sge;
-
-	sge = _sge = sge_core = sge_clus = NULL;
+	_sge = sge_core = sge_clus = NULL;
 
 	/* To handle only 1 CPU in cluster by HPS */
 	if (unlikely(!sd->child && (rcu_dereference(per_cpu(sd_scs, cpu)) == NULL))) {
@@ -287,7 +285,6 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 {
 	struct energy_env *eenv = (struct energy_env *)argu;
 	struct sched_domain *sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
-	const struct sched_group_energy *sge;
 	int energy_cost = 0;
 #ifdef CONFIG_ARM64
 	int cid = cpu_topology[cpu].cluster_id;
@@ -306,8 +303,6 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 	/* [FIXME] racing with hotplug */
 	if (cap_idx == -1)
 		return 0;
-
-	sge = sd->groups->sge;
 
 	if (is_share_buck(cid, &co_buck_cid)) {
 
