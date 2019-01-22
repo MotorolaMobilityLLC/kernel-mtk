@@ -6,3 +6,10 @@ config MTK_NFC_SUPPORT
 	  Card emulation or P2P function. If you are not sure about this, set n.
 	  Y means NFC_MT6605 define if use Mediatek NFC Function to provide reader
 	  Card emulation or P2P function. If you are not sure about this, set n.
+
+config NFC_CHIP_SUPPORT
+	string "STMicroelectronics ST21NFC NFC Controller Driver"
+	default "ST21NFCD"
+	depends on I2C
+	help
+	  STMicroelectronics ST21NFC Near Field Communication controller support.
