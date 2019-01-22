@@ -77,15 +77,18 @@ int mtk_soc_always_hd;
 static int mi2s0_sidegen_control;
 static int mi2s0_hdoutput_control;
 static int mi2s0_extcodec_echoref_control;
+static int MD_type_control;
 const char * const i2s0_SIDEGEN[] = {
-	"Off", "On48000", "On44100", "On32000", "On16000", "On8000", "On16000MD3", "On32000MD3"};
+	"Off", "On48000", "On44100", "On32000", "On16000", "On8000"};
 const char * const i2s0_HD_output[] = {"Off", "On"};
 const char * const i2s0_ExtCodec_EchoRef[] = {"Off", "On"};
+const char * const MD_type[] = {"NotSet", "MD1", "MD3"};
 
 static const struct soc_enum Audio_i2s0_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(i2s0_SIDEGEN), i2s0_SIDEGEN),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(i2s0_HD_output), i2s0_HD_output),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(i2s0_ExtCodec_EchoRef), i2s0_ExtCodec_EchoRef),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(MD_type), MD_type),
 };
 
 static int Audio_i2s0_SideGen_Get(struct snd_kcontrol *kcontrol,
@@ -112,44 +115,64 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mi2s0_sidegen_control = ucontrol->value.integer.value[0];
-	pr_debug("%s(), mi2s0_sidegen = %d, mi2s0_hdoutput = %d, mi2s0_extcodec_echoref = %d, mtk_soc_always_hd = %d\n",
+	pr_debug("%s(), sidegen = %d, hdoutput = %d, extcodec_echoref = %d, always_hd = %d, MD_type = %d\n",
 		 __func__,
 		 mi2s0_sidegen_control,
 		 mi2s0_hdoutput_control,
 		 mi2s0_extcodec_echoref_control,
-		 mtk_soc_always_hd);
+		 mtk_soc_always_hd,
+		 MD_type_control);
 
 	/* Set SmartPa i2s by platform. Return false if no platform implement.*/
 	if (get_afe_platform_ops()->set_smartpa_i2s != NULL) {
 		ret = get_afe_platform_ops()->set_smartpa_i2s(mi2s0_sidegen_control,
 							      mi2s0_hdoutput_control,
 							      mi2s0_extcodec_echoref_control,
-							      mtk_soc_always_hd);
+							      mtk_soc_always_hd,
+							      MD_type_control);
 		goto i2s_config_done;
 	}
 
 	if (mi2s0_sidegen_control) {
-		if (mi2s0_sidegen_control == 1) {
+		switch (MD_type_control) {
+		case 1:
+			/*MD1 connection*/
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_I2S0_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
+			break;
+		case 2:
+			/*MD3 connection*/
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+				Soc_Aud_AFE_IO_Block_I2S0_CH2, Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
+			break;
+		default:
+			pr_err("%s, MD_type_control no set\n", __func__);
+			break;
+		}
+
+		switch (mi2s0_sidegen_control) {
+		case 1:
 			samplerate = 48000;
-		} else if (mi2s0_sidegen_control == 2) {
+			break;
+		case 2:
 			samplerate = 44100;
-		} else if (mi2s0_sidegen_control == 3) {
+			break;
+		case 3:
 			samplerate = 32000;
-		} else if (mi2s0_sidegen_control == 4) {
+			break;
+		case 4:
 			samplerate = 16000;
-			/* here start digital part */
-			SetIntfConnection(Soc_Aud_InterCon_Connection,
-					Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
-		} else if (mi2s0_sidegen_control == 5) {
+			break;
+		case 5:
 			samplerate = 8000;
-			/* here start digital part */
-			SetIntfConnection(Soc_Aud_InterCon_Connection,
-					Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
-		} else if (mi2s0_sidegen_control == 6) {
-			samplerate = 16000;
-			/* here start digital part */
-			SetIntfConnection(Soc_Aud_InterCon_Connection,
-					Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1, Soc_Aud_AFE_IO_Block_I2S3);
+			break;
+		default:
+			pr_err("%s, sidegen_control error, return -EINVAL\n", __func__);
+			return false;
 		}
 
 		AudDrv_Clk_On();
@@ -172,16 +195,6 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		/* I2S0 I2S3 clock-gated */
 
 		if (mi2s0_extcodec_echoref_control == true) {
-			if (mi2s0_sidegen_control == 6) {
-				SetIntfConnection(Soc_Aud_InterCon_Connection,
-						Soc_Aud_AFE_IO_Block_I2S0_CH2,
-						Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O_CH4);
-			} else {
-				SetIntfConnection(Soc_Aud_InterCon_Connection,
-						Soc_Aud_AFE_IO_Block_I2S0_CH2,
-						Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O_CH4);
-			}
-
 			/* I2S0 Input Control */
 			Audio_I2S_Dac = 0;
 			SetCLkMclk(Soc_Aud_I2S0, samplerate);
@@ -342,6 +355,26 @@ static int Audio_i2s0_ExtCodec_EchoRef_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int Audio_MD_Type_Get(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("Audio_MD_Type_Get = %d\n", MD_type_control);
+	ucontrol->value.integer.value[0] = MD_type_control;
+	return 0;
+}
+
+static int Audio_MD_Type_Set(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(MD_type)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	MD_type_control = ucontrol->value.integer.value[0];
+	return 0;
+}
+
 static const struct snd_kcontrol_new Audio_snd_i2s0_controls[] = {
 	SOC_ENUM_EXT("Audio_i2s0_SideGen_Switch",
 		     Audio_i2s0_Enum[0], Audio_i2s0_SideGen_Get, Audio_i2s0_SideGen_Set),
@@ -352,6 +385,8 @@ static const struct snd_kcontrol_new Audio_snd_i2s0_controls[] = {
 	SOC_ENUM_EXT("Audio_ExtCodec_EchoRef_Switch",
 		     Audio_i2s0_Enum[2], Audio_i2s0_ExtCodec_EchoRef_Get,
 		     Audio_i2s0_ExtCodec_EchoRef_Set),
+	SOC_ENUM_EXT("Audio_MD_Type",
+		     Audio_i2s0_Enum[3], Audio_MD_Type_Get, Audio_MD_Type_Set),
 };
 
 static struct snd_pcm_hardware mtk_i2s0_hardware = {
