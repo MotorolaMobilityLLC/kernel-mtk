@@ -22,8 +22,10 @@
 #include "mtk_spm_misc.h"
 #include "mtk_spm_internal.h"
 
-#if defined(CONFIG_MACH_MT6799)
-
+#if defined(CONFIG_MACH_MT6763)
+#define WAKE_SRC_FOR_SODI3	0
+	/* FIXME: */
+#if 0
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #define WAKE_SRC_FOR_SODI3 \
 	(WAKE_SRC_R12_PCMTIMER | \
@@ -68,6 +70,7 @@
 	WAKE_SRC_R12_MD2AP_PEER_WAKEUP_EVENT | \
 	WAKE_SRC_R12_SEJ_EVENT_B)
 #endif /* CONFIG_MICROTRUST_TEE_SUPPORT */
+#endif
 #else
 #error "Does not support!"
 #endif

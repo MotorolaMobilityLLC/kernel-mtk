@@ -610,12 +610,14 @@ static bool soidle3_can_enter(int cpu, int reason)
 			reason = BY_PLL;
 			goto out;
 		}
-
+	/* FIXME: */
+#if 0
 		/* check if univpll is used (sspm not included) */
 		if (univpll_is_used()) {
 			reason = BY_PLL;
 			goto out;
 		}
+#endif
 	}
 	#endif
 
@@ -1002,8 +1004,8 @@ static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_DIS_PERI_PDN |
-	SPM_FLAG_DIS_SRCCLKEN_LOW |
+	/* SPM_FLAG_DIS_PERI_PDN | */
+	/* SPM_FLAG_DIS_SRCCLKEN_LOW | */
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
@@ -1015,8 +1017,8 @@ static u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_DIS_PERI_PDN |
-	SPM_FLAG_DIS_SRCCLKEN_LOW |
+	/* SPM_FLAG_DIS_PERI_PDN | */
+	/* SPM_FLAG_DIS_SRCCLKEN_LOW | */
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
@@ -1027,7 +1029,7 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_INFRA_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_DIS_PERI_PDN |
+	/* SPM_FLAG_DIS_PERI_PDN | */
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 #endif
@@ -1138,7 +1140,9 @@ static void dpidle_post_process(int cpu)
 
 	ufs_cb_after_xxidle();
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	spm_dpidle_notify_sspm_after_wfi_async_wait();
+#endif
 
 	dpidle_cnt[cpu]++;
 }
