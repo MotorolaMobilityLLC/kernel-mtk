@@ -70,6 +70,8 @@
 #include <asm/tlbflush.h>
 #include <asm/pgtable.h>
 
+#include <trace/events/pagemap.h>
+
 #ifdef CONFIG_MTK_EXTMEM
 #include <linux/exm_driver.h>
 #endif
@@ -2534,6 +2536,9 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
 	delayacct_set_flag(DELAYACCT_PF_SWAPIN);
 	page = lookup_swap_cache(entry);
 	if (!page) {
+		/* Trace event for swap-in */
+		trace_mm_swap_op_rd(swp_type(entry));
+
 		page = swapin_readahead(entry,
 					GFP_HIGHUSER_MOVABLE, vma, address);
 		if (!page) {
@@ -2568,9 +2573,16 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
 
 	delayacct_clear_flag(DELAYACCT_PF_SWAPIN);
 	if (!locked) {
+		/* Trace event for swap-in */
+		if (ret == VM_FAULT_MAJOR)
+			trace_mm_swap_op_rd_done(swp_type(entry));
 		ret |= VM_FAULT_RETRY;
 		goto out_release;
 	}
+
+	/* Trace event for swap-in */
+	if (ret == VM_FAULT_MAJOR)
+		trace_mm_swap_op_rd_done(swp_type(entry));
 
 	/*
 	 * Make sure try_to_free_swap or reuse_swap_page or swapoff did not
