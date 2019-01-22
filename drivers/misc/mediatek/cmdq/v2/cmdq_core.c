@@ -2479,6 +2479,7 @@ static int32_t cmdq_core_insert_backup_cookie_instr(struct TaskStruct *pTask, in
 	uint64_t WSMCookieAddr = gCmdqContext.hSecSharedMem->MVABase + addrCookieOffset;
 	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
 	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
+	uint32_t highAddr = 0;
 
 	const enum CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
 
@@ -2504,8 +2505,9 @@ static int32_t cmdq_core_insert_backup_cookie_instr(struct TaskStruct *pTask, in
 	/* Note that <MOVE> arg_b is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
+	CMDQ_GET_HIGH_ADDR(WSMCookieAddr, highAddr);
 	cmdq_core_append_command(pTask,
-		(CMDQ_CODE_MOVE << 24) | ((WSMCookieAddr >> 32) & 0xffff) |
+		(CMDQ_CODE_MOVE << 24) | highAddr |
 		((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) WSMCookieAddr);
 
 	/* write to memory */
