@@ -169,7 +169,7 @@ CONFIG_EXT4_ENCRYPTION,PROJECT,perry.hsu,new config at this commit c777cd8d34029
 CONFIG_EXT4_FS,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_EXT4_FS_ENCRYPTION,PROJECT,perry.hsu,disable in 1aadaf04723883ec1a64643c2a0d083e3135aafa,X,X,X,,,,,,,
 CONFIG_EXT4_FS_SECURITY,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_EXTREME_LOW_RAM,COMMON,,N,N,N,N,N,N,N,N,N,N,
+CONFIG_EXTREME_LOW_RAM,COMMON,yu-fu.kao,,X,X,X,X,X,X,X,X,X,X
 CONFIG_FAULT_INJECTION,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_FB,PLATFORM,,,y,y,X,y,y,y,y,y,y,y
 CONFIG_FB_MODE_HELPERS,COMMON,,,y,y,y,y,y,y,y,y,y,y
@@ -305,12 +305,12 @@ CONFIG_KASAN_INLINE,USER;PROJECT,walter-zh.wu,,X,X,X,O,O,O,O,O,O,O
 CONFIG_KCOV,PROJECT,,,X,X,X,O,O,O,O,O,O,O
 CONFIG_KEYBOARD_ATKBD,COMMON,Unused,,N,N,N,N,N,N,N,N,N,N
 CONFIG_KEYBOARD_MTK,COMMON,Zh.Chen,,y,y,y,y,y,y,y,y,y,y
-CONFIG_KEYBOARD_MTK_PMIC,PLATFORM,,,X,,,,,y,y,,y,
+CONFIG_KEYBOARD_MTK_PMIC,PLATFORM,chang-an.chen,Keypad owner,X,X,X,X,X,y,X,X,X,X
 CONFIG_KGDB,USER,my.chuang,,X,X,X,X,X,X,X,X,X,X
 CONFIG_KGDB_KDB,USER,my.chuang,,X,X,X,X,X,X,X,X,X,X
 CONFIG_KPD_PMIC_LPRST_TD,PROJECT,elvin.lin,,0,0,0,,,,,,,
 CONFIG_KPD_PWRKEY_USE_PMIC,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_KSM,PLATFORM,,,X,,,,,y,y,,y,
+CONFIG_KSM,PROJECT,Casper.Li,A-go project only,O,O,O,O,O,O,O,O,O,O
 CONFIG_LCM_HEIGHT,PROJECT,xiaobin.wei,,,,,,,,,,,
 CONFIG_LCM_WIDTH,PROJECT,xiaobin.wei,,,,,,,,,,,
 CONFIG_LEDS_CLASS,COMMON,,,y,y,y,y,y,y,y,y,y,y
@@ -343,7 +343,7 @@ CONFIG_MMC,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MMC_BLOCK_MINORS,COMMON,,,32,32,32,32,32,32,32,32,32,32
 CONFIG_MMC_MTK,PROJECT,,,N,N,N,,,,,,,
 CONFIG_MMC_MTK_PRO,PROJECT,andy.teng,new config in this commit 82cb77493ea32288206e7399cc206e617fefec81,y,y,y,,,,,,,
-CONFIG_MMPROFILE,COMMON,,,y,y,y,y,y,y,y,y,y,y
+CONFIG_MMPROFILE,COMMON,Le.Yang,ME5/ME13/ME16 defaule is y,X,X,X,X,X,X,X,X,X,X
 CONFIG_MOBICORE_API,PROJECT,tryout.chen,,,,,,,,,,,
 CONFIG_MOBICORE_DEBUG,PROJECT,tryout.chen,,,,,,,,,,,
 CONFIG_MOBICORE_DRIVER,PROJECT,tryout.chen,,,,,,,,,,,
@@ -406,14 +406,14 @@ CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT,PROJECT,harvey.huang,new config in this co
 CONFIG_MTK_BUS_TRACER,PLATFORM,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_BAROHUB,PROJECT,weiqi.fu,new config in this commit ddc5d59450d236e7d3732ebd43a19c5056787cc0,,,,,,,,,,
 CONFIG_MTK_BIF_SUPPORT,PROJECT,elvin.lin,,,,,,,,,,,
-CONFIG_MTK_BMI160GY_I2C,PLATFORM,lomen.wu,,,,,y,X,O,O,X,O,X
-CONFIG_MTK_BMI160_I2C,PLATFORM,lomen.wu,,,,,y,X,O,O,X,O,X
+CONFIG_MTK_BMI160GY_I2C,PROJECT,lomen.wu,Sensor owner,,,,y,X,O,O,X,O,X
+CONFIG_MTK_BMI160_I2C,PROJECT,lomen.wu,Sensor owner,,,,y,X,O,O,X,O,X
 CONFIG_MTK_BMP280,PROJECT,lomen.wu,new config in this commit 4486d5ee565d38da91ef65fd3918a57aaa5263f2,,,,,,,,,,
 CONFIG_MTK_BMP280_NEW,PROJECT,lomen.wu,,,,,,,,,,,
 CONFIG_MTK_BQ25896_SUPPORT,PROJECT,elvin.lin,,,,,,,,,,,
 CONFIG_MTK_BQ25898_DUAL_SUPPORT,PROJECT,stanley.song,new config in this commit b6db89c2627e63144eb53dbb76f8c9aaa73950ea,,,,,,,,,,
 CONFIG_MTK_BTCVSD,PROJECT,kaichieh.chuang,,X,X,X,,,,,,,
-CONFIG_SND_SOC_MTK_BTCVSD,PLATFORM,kaichieh.chuang,,y,y,X,y,y,y,y,y,y,y
+CONFIG_SND_SOC_MTK_BTCVSD,PLATFORM,Tina.Tsai,Auido with BT,y,y,X,y,y,y,y,y,y,y
 CONFIG_MTK_BTIF,PROJECT,xiufeng.wu,combo with sdio,y,y,O,,,,,,,
 CONFIG_MTK_C2K_LTE_MODE,PROJECT,yanbin.ren,,,,,,,,,,,
 CONFIG_MTK_C2K_SLOT2_SUPPORT,PROJECT,anny.hu,,,,,,,,,,,
@@ -440,8 +440,8 @@ CONFIG_MTK_COMBO,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_COMBO_ANT,PROJECT,zhiguo.niu,new config in this commit 3413d51500ed33e5696cbfe6286d5b8617867b35,,,,,,,,,,
 CONFIG_MTK_COMBO_BT,COMMON,Libin.Zang,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_COMBO_CHIP_CONSYS_6580,PLATFORM,robbin.chiu,,X,X,X,X,X,X,X,X,X,X
-CONFIG_MTK_COMBO_CHIP_CONSYS_6735,PROJECT,robbin.chiu,,X,X,X,,,,,,,
-CONFIG_MTK_COMBO_CHIP_CONSYS_6739,PLATFORM,robbin.chiu,,X,X,X,X,X,y,y,X,y,X
+CONFIG_MTK_COMBO_CHIP_CONSYS_6735,PROJECT,robbin.chiu,,X,X,X,X,X,X,X,X,X,X
+CONFIG_MTK_COMBO_CHIP_CONSYS_6739,PLATFORM,robbin.chiu,,X,X,X,X,X,y,X,X,X,X
 CONFIG_MTK_COMBO_CHIP_CONSYS_6755,PLATFORM,Yanjun.He,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_COMBO_CHIP_CONSYS_6757,PLATFORM,Yanjun.He,,y,y,X,X,X,X,X,X,X,X
 CONFIG_MTK_COMBO_CHIP_CONSYS_6758,PLATFORM,Xiufeng.wu,,X,X,X,X,y,X,X,X,X,X
@@ -464,9 +464,9 @@ CONFIG_MTK_CPU_AFFINITY,COMMON,jing-ting.wu,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CPU_TOPOLOGY,PLATFORM,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_CQDMA,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
 CONFIG_MTK_DEBUG_TRACER,PLATFORM,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_MTK_DEBUG_LATCH,PLATFORM,,,y,y,y,y,y,X,X,y,X,y
+CONFIG_MTK_DEBUG_LATCH,PLATFORM,mars.cheng,after dump in LK should be x,y,y,y,y,y,X,X,X,X,X
 CONFIG_MTK_DEBUG_PREEMPT,PLATFORM,jing-ting.wu,,X,X,X,X,X,X,X,X,X,X
-CONFIG_MTK_DEVAPC_DRIVER,COMMON,,,y,y,y,y,y,y,y,y,y,y
+CONFIG_MTK_DEVAPC_DRIVER,COMMON,neal.liu,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_DFD_INTERNAL_DUMP,PLATFORM,shun-chih.yu,new config in this commit 7eafd5acba56cd7ac2de590f4b4b303822a08d00,y,y,X,y,y,X,X,y,X,y
 CONFIG_MTK_DHCPV6C_WIFI,PROJECT,Zhuoliang.Zhang,,,,,,,,,,,
 CONFIG_MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION,PROJECT,menghui.lin,new config in this commit 6321904276499042c6c5d05746941980acaf5b2e,,,,,,,,,,
@@ -549,6 +549,7 @@ CONFIG_MTK_ICM20645GY,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda8
 CONFIG_MTK_IMGSENSOR,COMMON,Josepchi.Tsai,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_INPKHUB,PROJECT,qiangming.xia,new config in this commit e5afb39d5bc749c04142bb69e4f89131015320a6,,,,,,,,,,
 CONFIG_MTK_INTERNAL,PROJECT,junzhi.zhao,,,,,y,y,,,y,,y
+CONFIG_MTK_IO_BOOST,PLATFORM,stanley.chu,finetune for performance,X,X,X,X,X,X,y,y,X,X
 CONFIG_MTK_ION,COMMON,youhua.li,new config in this commit 30f50f4e2f5b4c1996816cc4997e5c6b86d28386,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_IRAT_SUPPORT,PROJECT,anny.hu,,,,,,,,,,,
 CONFIG_MTK_IRQ,PLATFORM,,,X,X,X,X,X,X,X,X,X,X
@@ -683,7 +684,7 @@ CONFIG_MTK_TC1_FEATURE,PROJECT,teddy.seo,,,,,,,,,,,
 CONFIG_MTK_THERMAL_PA_VIA_ATCMD,PROJECT,ethan.chang,,,,,,,,,,,
 CONFIG_MTK_TILTDETECTHUB,PROJECT,weiqi.fu,,,,,,,,,,,
 CONFIG_MTK_TINYSYS_SCP_SUPPORT,PROJECT,ts.kuo,new config in this commit a093c6e6d759ab57ff80b7553294c2a02c04a522,,,,,,,,,,
-CONFIG_MTK_TINYSYS_SSPM_SUPPORT,PLATFORM,jiachiam.liu,new config in this commit 0882fbfb410389a677423c4418d05ccf72744111,X,X,y,y,y,X,X,y,X,y
+CONFIG_MTK_TINYSYS_SSPM_SUPPORT,PLATFORM,jiachiam.liu,new config in this commit 0882fbfb410389a677423c4418d05ccf72744111,X,X,y,y,y,X,y,y,y,y
 CONFIG_MTK_TLC_NAND_SUPPORT,PROJECT,chienwei.chang,TLC nand project only,,,,,,,,,,
 CONFIG_MTK_TRUSTY_DEBUGFS,USER;PROJECT,vink.shen,,,,,,,,,,,
 CONFIG_MTK_TUI_RAM_SIZE,PROJECT,tehsin.lin,new config in this commit 127c1a282ad9be25750ea4a3fb5b64324301b7f3,,,,,,,,,,
@@ -773,7 +774,7 @@ CONFIG_NLS_ISO8859_1,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_NLS_UTF8,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_NO_HZ,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_NOP_USB_XCEIV,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_NR_CPUS,PLATFORM,scott.shu,,8,8,10,8,8,X,X,8,X,8
+CONFIG_NR_CPUS,PLATFORM,Frank.Lin,,8,8,10,8,8,4,8,8,8,8
 CONFIG_ONEKEY_REBOOT_NORMAL_MODE,PROJECT,Elvin.Lin,,,,,,,,,,,
 CONFIG_ONEKEY_REBOOT_OTHER_MODE,PROJECT,Elvin.Lin,,,,,,,,,,,
 CONFIG_OPROFILE,COMMON,ian-y.chen,,X,X,X,X,X,X,X,X,X,X
@@ -981,7 +982,7 @@ CONFIG_ZSMALLOC,COMMON,,,y,y,y,y,y,y,y,y,y,y
 CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT,PLATFORM,vend_gene_chen001,,X,X,X,y,y,y,y,y,y,y
 CONFIG_MTK_EXTBUCK,PROJECT,vend_jeff_chang001,,X,X,X,,,,,,,
 CONFIG_DMAUSER_PAGES,PROJECT,Miles.Chen,new config 246784055571763c932926925ddb585948ce81cd,O,O,O,,,,,,,
-CONFIG_DRM,PLATFORM,vincent.sung,whitney gpu requirement,X,X,y,X,X,y,y,X,y,X
+CONFIG_DRM,PLATFORM,vincent.sung,whitney gpu requirement,X,X,y,X,X,X,X,X,X,X
 CONFIG_MTK_PQ_COLOR_MODE,PROJECT,Yj.li, new config I1b7b0441f385f77703b529b6efe6b78d122676b1,O,O,O,,,,,,,
 CONFIG_MTK_PERIODIC_DATA_COLLECTION,PROJECT,,,y,y,y,,,,,,,
 CONFIG_ANDROID_INTF_ALARM_DEV,PROJECT,,,y,y,y,,,,,,,
@@ -1068,7 +1069,7 @@ CONFIG_SYSTEM_TRUSTED_KEYS,PROJECT,pangyen.chen,,,,,,,,,,,
 CONFIG_DM_ANDROID_VERITY,PROJECT,pangyen.chen,,,,,,,,,,,
 CONFIG_MTK_AKM09911,PROJECT,jy.lan,,,,,,,,,,,
 CONFIG_MTK_SENSORS_1_0,PROJECT,jy.lan,,,,,,,,,,,
-CONFIG_QUOTA_NETLINK_INTERFACE,COMMON,Light.Hsieh,File System,y,y,y,y,y,,,y,,y
+CONFIG_QUOTA_NETLINK_INTERFACE,COMMON,Light.Hsieh,File System default enable in Android O,y,y,y,y,y,y,y,y,y,y
 CONFIG_IP_NF_ARPFILTER,COMMON,,,y,y,y,y,y,,,y,,y
 CONFIG_IP_NF_ARP_MANGLE,COMMON,,,y,y,y,y,y,,,y,,y
 CONFIG_IP_NF_MATCH_AH,COMMON,,,y,y,y,y,y,,,y,,y
@@ -1108,7 +1109,7 @@ CONFIG_USB_CONFIGFS_F_MIDI,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_F_MTP,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_F_PTP,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
 CONFIG_USB_CONFIGFS_UEVENT,COMMON,marvin.lin,,y,y,y,y,y,y,y,y,y,y
-CONFIG_USELIB,COMMON,,,N,N,N,N,N,,,N,,N
+CONFIG_USELIB,COMMON,sophie.wang,File System,N,N,N,N,N,N,N,N,N,N
 CONFIG_MTK_GZ_KREE,PROJECT,chsuan.lin,,,,,O,O,,,O,,O
 CONFIG_GZ_V2_SUPPORT,PROJECT,chsuan.lin,,,,,O,O,,,O,,O
 CONFIG_DEBUG_OBJECTS,USER;PLATFORM,stanley.chu,new config in this commit 9fb8ecd5d6e7c3b01d18f003d07cc178eaee9bd9,X(PLATFORM),X(PLATFORM),X(PLATFORM),X(USER),X(PLATFORM),X(PLATFORM),X(USER),X(USER),X(PLATFORM),X(PLATFORM)
