@@ -89,7 +89,19 @@ static unsigned long __read_mostly tracing_mark_write_addr;
 
 /*  #include "smi_common.h" */
 
+#ifdef CONFIG_PM_WAKELOCKS
+#include <linux/pm_wakeup.h>
+#else
 #include <linux/wakelock.h>
+#endif
+
+
+#ifdef CONFIG_PM_WAKELOCKS
+struct wakeup_source dpe_wake_lock;
+#else
+struct wake_lock dpe_wake_lock;
+#endif
+
 
 /* DPE Command Queue */
 /* #include "../../cmdq/mt6797/cmdq_record.h" */
@@ -226,8 +238,6 @@ static struct Tasklet_table DPE_tasklet[DPE_IRQ_TYPE_AMOUNT] = {
 	{ISP_TaskletFunc_DPE, &Dpetkt[DPE_IRQ_TYPE_INT_DPE_ST]},
 };
 
-struct wake_lock DPE_wake_lock;
-
 static DEFINE_MUTEX(gDpeDveMutex);
 static DEFINE_MUTEX(gDpeDveDequeMutex);
 
@@ -263,7 +273,7 @@ static int nr_DPE_devs;
 
 
 static unsigned int g_u4EnableClockCount;
-
+static unsigned int g_u4DpeCnt;
 /* maximum number for supporting user to do interrupt operation */
 /* index 0 is for all the user that do not do register irq first */
 #define IRQ_USER_NUM_MAX 32
@@ -340,6 +350,7 @@ struct WMFE_CONFIG_STRUCT {
 static struct WMFE_REQUEST_RING_STRUCT g_WMFE_ReqRing;
 
 
+static signed int gDveCnt;
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -419,8 +430,11 @@ static struct SV_LOG_STR gSvLog[DPE_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
 	char *ptr; \
 	char *pDes;\
+	int avaLen;\
 	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
+	unsigned int logi;\
+	struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 	if (logT == _LOG_ERR) {\
 		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
 	} else if (logT == _LOG_DBG) {\
@@ -431,13 +445,67 @@ static struct SV_LOG_STR gSvLog[DPE_IRQ_TYPE_AMOUNT];
 		str_leng = 0;\
 	} \
 	ptr = pDes = (char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);    \
-	sprintf((char *)(pDes), fmt, ##__VA_ARGS__);   \
-	if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
-		LOG_INF("log str over flow(%d)", irq);\
+	avaLen = str_leng - 1 - gSvLog[irq]._cnt[ppb][logT];\
+	if (avaLen > 1) {\
+		snprintf((char *)(pDes), avaLen, fmt,\
+			##__VA_ARGS__);   \
+		if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
+			LOG_INF("log str over flow(%d)", irq);\
+		} \
+		while (*ptr++ != '\0') {        \
+			(*ptr2)++;\
+		}     \
+	} else { \
+		LOG_INF("(%d)(%d)log str avalible=0, print log\n", irq, logT);\
+		ptr = pSrc->_str[ppb][logT];\
+		if (pSrc->_cnt[ppb][logT] != 0) {\
+			if (logT == _LOG_DBG) {\
+				for (logi = 0; logi < DBG_PAGE; logi++) {\
+					if (ptr[NORMAL_STR_LEN*(logi+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(logi+1) - 1] = '\0';\
+						LOG_DBG("%s", &ptr[NORMAL_STR_LEN*logi]);\
+					} else{\
+						LOG_DBG("%s", &ptr[NORMAL_STR_LEN*logi]);\
+						break;\
+					} \
+				} \
+			} \
+			else if (logT == _LOG_INF) {\
+				for (logi = 0; logi < INF_PAGE; logi++) {\
+					if (ptr[NORMAL_STR_LEN*(logi+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(logi+1) - 1] = '\0';\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+					} else{\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+						break;\
+					} \
+				} \
+			} \
+			else if (logT == _LOG_ERR) {\
+				for (logi = 0; logi < ERR_PAGE; logi++) {\
+					if (ptr[NORMAL_STR_LEN*(logi+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(logi+1) - 1] = '\0';\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+					} else{\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*logi]);\
+						break;\
+					} \
+				} \
+			} \
+			else {\
+				LOG_INF("N.S.%d", logT);\
+			} \
+			ptr[0] = '\0';\
+			pSrc->_cnt[ppb][logT] = 0;\
+			avaLen = str_leng - 1;\
+			ptr = pDes = (char *)&(pSrc->_str[ppb][logT][pSrc->_cnt[ppb][logT]]);\
+			ptr2 = &(pSrc->_cnt[ppb][logT]);\
+			snprintf((char *)(pDes), avaLen, fmt, ##__VA_ARGS__);   \
+			while (*ptr++ != '\0') {\
+				(*ptr2)++;\
+			} \
+		} \
 	} \
-	while (*ptr++ != '\0') {        \
-		(*ptr2)++;\
-	}     \
 } while (0)
 #endif
 
@@ -935,6 +1003,39 @@ static inline unsigned int DPE_JiffiesToMs(unsigned int Jiffies)
 	} \
 }
 
+static bool ConfigDVEFrameByReqIdx(signed int ReqIdx)
+{
+#ifdef DPE_USE_GCE
+	unsigned int j;
+	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
+
+
+	spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
+
+	for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_; j++) {
+		if (DPE_FRAME_STATUS_ENQUE ==
+		    g_DVE_RequestRing.DVEReq_Struct[ReqIdx].DveFrameStatus[j]) {
+			g_DVE_RequestRing.DVEReq_Struct[ReqIdx].DveFrameStatus[j] =
+			    DPE_FRAME_STATUS_RUNNING;
+			spin_unlock_irqrestore(&
+					       (DPEInfo.
+						SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
+					       flags);
+			ConfigDVEHW(&g_DVE_RequestRing.DVEReq_Struct[ReqIdx].
+				    DveFrameConfig[j]);
+			spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
+					flags);
+			break;
+		}
+	}
+
+	spin_unlock_irqrestore(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
+	return MTRUE;
+#else
+	LOG_INF("ConfigDVEFrameByReqIdx don't support this mode.!!\n");
+	return MFALSE;
+#endif
+}
 
 static bool ConfigDVERequest(signed int ReqIdx)
 {
@@ -944,8 +1045,8 @@ static bool ConfigDVERequest(signed int ReqIdx)
 
 
 	spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-	if (g_DVE_RequestRing.DVEReq_Struct[ReqIdx].RequestState == DPE_REQUEST_STATE_PENDING) {
-		g_DVE_RequestRing.DVEReq_Struct[ReqIdx].RequestState = DPE_REQUEST_STATE_RUNNING;
+	/*if (g_DVE_RequestRing.DVEReq_Struct[ReqIdx].RequestState == DPE_REQUEST_STATE_PENDING) {*/
+		/*g_DVE_RequestRing.DVEReq_Struct[ReqIdx].RequestState = DPE_REQUEST_STATE_RUNNING;*/
 		for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_; j++) {
 			if (DPE_FRAME_STATUS_ENQUE ==
 			    g_DVE_RequestRing.DVEReq_Struct[ReqIdx].DveFrameStatus[j]) {
@@ -961,10 +1062,12 @@ static bool ConfigDVERequest(signed int ReqIdx)
 						  flags);
 			}
 		}
-	} else {
-		LOG_INF("ConfigDVERequest state machine error!!, ReqIdx:%d, RequestState:%d\n",
-			ReqIdx, g_DVE_RequestRing.DVEReq_Struct[ReqIdx].RequestState);
-	}
+
+	/*} else {*/
+		/*LOG_ERR("ConfigDVERequest state machine error!!, ReqIdx:%d, RequestState:%d\n",*/
+			/*ReqIdx, g_DVE_RequestRing.DVEReq_Struct[ReqIdx].RequestState);*/
+	/*}*/
+
 	spin_unlock_irqrestore(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
 
 
@@ -1496,6 +1599,7 @@ static signed int ConfigDVEHW(struct DPE_DVEConfig *pDveConfig)
 
 }
 
+#if 0
 static bool UpdateWMFE(pid_t *ProcessID)
 {
 #ifdef DPE_USE_GCE
@@ -1623,7 +1727,6 @@ static bool UpdateWMFE(pid_t *ProcessID)
 
 }
 
-#if 0
 static signed int ConfigWMFEHW(struct DPE_WMFEConfig *pWmfeCfg)
 {
 #ifdef DPE_USE_GCE
@@ -2408,6 +2511,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	struct DPE_CLEAR_IRQ_STRUCT ClearIrq;
 	struct DPE_DVERequest dpe_DveReq;
 	signed int DveWriteIdx = 0;
+	bool bDveFound = MFALSE;
 	int idx;
 	struct DPE_USER_INFO_STRUCT *pUserInfo;
 	int dequeNum;
@@ -2581,20 +2685,33 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_DVE_RequestRing.DVEReq_Struct[WIdx].RequestState = DPE_REQUEST_STATE_PENDING;
 				DveWriteIdx = WIdx;
 				g_DVE_RequestRing.WriteIdx = (WIdx + 1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-				LOG_INF("DVE request enque done!\n");
+					gDveCnt++;
+					if ((gDveCnt == 1) && (g_DVE_RequestRing.DVEReq_Struct[DveWriteIdx].RequestState
+						== DPE_REQUEST_STATE_PENDING)) {
+						g_DVE_RequestRing.DVEReq_Struct[DveWriteIdx].RequestState
+						= DPE_REQUEST_STATE_RUNNING;
+						bDveFound = MTRUE;
+					} else {
+						LOG_INF("DVE en req ste error!!, ReqIdx:%d, ReqState:%d, CfgCnt:%d\n",
+						DveWriteIdx, g_DVE_RequestRing.DVEReq_Struct[DveWriteIdx].RequestState,
+						gDveCnt);
+					}
 			} else {
 				LOG_INF("No DVE Buf! WriteIdx(%d),ReqSta(%d),FrameWRIdx(%d),enqReqNum(%d)\n",
 				     g_DVE_RequestRing.WriteIdx,
 				     g_DVE_RequestRing.DVEReq_Struct[WIdx].RequestState,
 				     g_DVE_RequestRing.DVEReq_Struct[WIdx].FrameWRIdx,
 				     g_DVE_RequestRing.DVEReq_Struct[WIdx].enqueReqNum);
+					     Ret = -EFAULT;
 			}
 			g_DVE_RequestRing.DVEReq_Struct[WIdx].FrameWRIdx = FWRIdx;
 			spin_unlock_irqrestore(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
 					       flags);
 			LOG_DBG("ConfigDVE Request!!\n");
-			ConfigDVERequest(DveWriteIdx);
+				if (bDveFound == MTRUE)
+					ConfigDVEFrameByReqIdx(DveWriteIdx);
 
+				LOG_INF("DVE enq done!,widx(%d),cfgcnt(%d)\n", g_DVE_RequestRing.WriteIdx, gDveCnt);
 			mutex_unlock(&gDpeDveMutex);
 		} else {
 			LOG_INF("DPE_DVE_ENQUE copy_from_user failed\n");
@@ -3246,9 +3363,22 @@ static signed int DPE_open(struct inode *pInode, struct file *pFile)
 	g_WMFE_ReqRing.ReadIdx = 0x0;
 	g_WMFE_ReqRing.HWProcessIdx = 0x0;
 
+	gDveCnt = 0;
 	/* Enable clock */
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&dpe_wake_lock);
+#else
+	wake_lock(&dpe_wake_lock);
+#endif
 	DPE_EnableClock(MTRUE);
-	LOG_DBG("DPE open g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	g_u4DpeCnt = 0;
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&dpe_wake_lock);
+#else
+	wake_unlock(&dpe_wake_lock);
+#endif
+
+	LOG_INF("DPE open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 
 	spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
@@ -3313,8 +3443,18 @@ static signed int DPE_release(struct inode *pInode, struct file *pFile)
 
 
 	/* Disable clock. */
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&dpe_wake_lock);
+#else
+	wake_lock(&dpe_wake_lock);
+#endif
 	DPE_EnableClock(MFALSE);
-	LOG_DBG("DPE release g_u4EnableClockCount: %d", g_u4EnableClockCount);
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&dpe_wake_lock);
+#else
+	wake_unlock(&dpe_wake_lock);
+#endif
+	LOG_INF("DPE release g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	/*  */
 EXIT:
@@ -3586,12 +3726,15 @@ static signed int DPE_probe(struct platform_device *pDev)
 		for (n = 0; n < DPE_IRQ_TYPE_AMOUNT; n++)
 			spin_lock_init(&(DPEInfo.SpinLockIrq[n]));
 
+#ifdef CONFIG_PM_WAKELOCKS
+		wakeup_source_init(&dpe_wake_lock, "dpe_lock_wakelock");
+#else
+		wake_lock_init(&dpe_wake_lock, WAKE_LOCK_SUSPEND, "dpe_lock_wakelock");
+#endif
 		/*  */
 		init_waitqueue_head(&DPEInfo.WaitQueueHead);
 		INIT_WORK(&DPEInfo.ScheduleDveWork, DPE_ScheduleDveWork);
 		INIT_WORK(&DPEInfo.ScheduleWmfeWork, DPE_ScheduleWmfeWork);
-
-		wake_lock_init(&DPE_wake_lock, WAKE_LOCK_SUSPEND, "dpe_lock_wakelock");
 
 		for (i = 0; i < DPE_IRQ_TYPE_AMOUNT; i++)
 			tasklet_init(DPE_tasklet[i].pDPE_tkt, DPE_tasklet[i].tkt_cb, 0);
@@ -3691,6 +3834,10 @@ static signed int DPE_suspend(struct platform_device *pDev, pm_message_t Mesg)
 
 	bPass1_On_In_Resume_TG1 = 0;
 
+	if (g_u4EnableClockCount > 0) {
+		DPE_EnableClock(MFALSE);
+		g_u4DpeCnt++;
+	}
 
 	return 0;
 }
@@ -3702,6 +3849,10 @@ static signed int DPE_resume(struct platform_device *pDev)
 {
 	LOG_DBG("bPass1_On_In_Resume_TG1(%d).\n", bPass1_On_In_Resume_TG1);
 
+	if (g_u4DpeCnt > 0) {
+		DPE_EnableClock(MTRUE);
+		g_u4DpeCnt--;
+	}
 	return 0;
 }
 
@@ -3716,6 +3867,7 @@ int DPE_pm_suspend(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	pr_debug("calling %s()\n", __func__);
+	LOG_INF("DPE suspend g_u4EnableClockCount: %d, g_u4DpeCnt: %d", g_u4EnableClockCount, g_u4DpeCnt);
 
 	return DPE_suspend(pdev, PMSG_SUSPEND);
 }
@@ -3727,6 +3879,7 @@ int DPE_pm_resume(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	pr_debug("calling %s()\n", __func__);
+	LOG_INF("DPE resume g_u4EnableClockCount: %d, g_u4DpeCnt: %d", g_u4EnableClockCount, g_u4DpeCnt);
 
 	return DPE_resume(pdev);
 }
@@ -3803,6 +3956,9 @@ static int dpe_dump_read(struct seq_file *m, void *v)
 
 	seq_puts(m, "\n============ dpe dump register============\n");
 	seq_puts(m, "DVE Config Info\n");
+
+	if (DPEInfo.UserCount <= 0)
+		return 0;
 
 	for (i = 0x2C; i < 0x8C; i = i + 4) {
 		seq_printf(m, "[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + i),
@@ -3915,6 +4071,9 @@ static int dpe_reg_read(struct seq_file *m, void *v)
 
 	seq_puts(m, "======== read dpe register ========\n");
 
+	if (DPEInfo.UserCount <= 0)
+		return 0;
+
 	for (i = 0x1C; i <= 0x308; i = i + 4) {
 		seq_printf(m, "[0x%08X 0x%08X]\n", (unsigned int)(DPE_BASE_HW + i),
 			   (unsigned int)DPE_RD32(ISP_DPE_BASE + i));
@@ -3945,6 +4104,9 @@ static ssize_t dpe_reg_write(struct file *file, const char __user *buffer, size_
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	if (DPEInfo.UserCount <= 0)
 		return 0;
 
 	desc[len] = '\0';
@@ -4195,8 +4357,60 @@ static void __exit DPE_Exit(void)
 ********************************************************************************/
 static void DPE_ScheduleDveWork(struct work_struct *data)
 {
+	unsigned int DpeDveSta0;
+	bool bFound = MFALSE;
+	bool bResulst = MFALSE;
+	pid_t ProcessID;
+	signed int DveWriteIdx = 0;
+
+	DpeDveSta0 = DPE_RD32(DPE_DVE_STA_REG);
+
 	if (DPE_DBG_DBGLOG & DPEInfo.DebugMask)
 		LOG_DBG("- E.");
+	spin_lock(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]));
+	bResulst = UpdateDVE(DpeDveSta0, &ProcessID);
+	if (bResulst == MTRUE) {
+#ifdef DPE_USE_GCE
+		DPEInfo.IrqInfo.Status[DPE_IRQ_TYPE_INT_DPE_ST] |= DPE_DVE_INT_ST;
+		DPEInfo.IrqInfo.ProcessID[DPE_PROCESS_ID_DVE] = ProcessID;
+		DPEInfo.IrqInfo.DveIrqCnt++;
+		DPEInfo.ProcessID[DPEInfo.WriteReqIdx] = ProcessID;
+		DPEInfo.WriteReqIdx =
+			(DPEInfo.WriteReqIdx + 1) % _SUPPORT_MAX_DPE_FRAME_REQUEST_;
+#endif
+		gDveCnt--;
+		/* Config the Next frame */
+		if (gDveCnt > 0) {
+			DveWriteIdx = g_DVE_RequestRing.WriteIdx - gDveCnt;
+			if (DveWriteIdx < 0)
+				DveWriteIdx = DveWriteIdx + _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
+
+			if (g_DVE_RequestRing.DVEReq_Struct[DveWriteIdx].RequestState == DPE_REQUEST_STATE_PENDING) {
+				g_DVE_RequestRing.DVEReq_Struct[DveWriteIdx].RequestState = DPE_REQUEST_STATE_RUNNING;
+				bFound = MTRUE;
+			} else {
+				LOG_INF("DPE_ScheduleDveWork  state machine error!!, DveWriteIdx:%d, RequestState:%d\n",
+				DveWriteIdx, g_DVE_RequestRing.DVEReq_Struct[DveWriteIdx].RequestState);
+			}
+		}
+	}
+
+	spin_unlock(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]));
+	if (bResulst == MFALSE)
+		ConfigDVEFrameByReqIdx(g_DVE_RequestRing.HWProcessIdx);
+
+	LOG_INF("DVE:bFound:%d, DveWriteIdx:%d, WriteIdx:%d, gDveCnt:%d, RequestState:%d,HWIdx:%d\n",
+		bFound, DveWriteIdx,
+		g_DVE_RequestRing.WriteIdx,
+		gDveCnt,
+		g_DVE_RequestRing.DVEReq_Struct[DveWriteIdx].RequestState,
+		g_DVE_RequestRing.HWProcessIdx);
+
+	if (bResulst == MTRUE)
+		wake_up_interruptible(&DPEInfo.WaitQueueHead);
+
+	if (bFound == MTRUE)
+		ConfigDVERequest(DveWriteIdx);
 
 }
 
@@ -4217,12 +4431,14 @@ static irqreturn_t ISP_Irq_DPE(signed int Irq, void *DeviceId)
 	unsigned int WmfeStatus;
 	unsigned int DpeDveSta0;
 	bool bResulst = MFALSE;
-	pid_t ProcessID;
 
 	DpeIntStatus = DPE_RD32(DPE_INT_STATUS_REG);	/* DPE_INT_STATUS */
 	DveStatus = DPE_RD32(DPE_DVE_INT_STATUS_REG);	/* DVE Status */
 	WmfeStatus = DPE_RD32(DPE_WMFE_INT_STATUS_REG);	/* WMFE Status */
 	DpeDveSta0 = DPE_RD32(DPE_DVE_STA_REG);	/* WMFE Status */
+	if (DVE_INT_ST == (DVE_INT_ST & DveStatus))
+		schedule_work(&DPEInfo.ScheduleDveWork);
+#if 0
 	spin_lock(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]));
 	if (DVE_INT_ST == (DVE_INT_ST & DveStatus)) {
 #ifdef __DPE_KERNEL_PERFORMANCE_MEASURE__
@@ -4305,6 +4521,7 @@ static irqreturn_t ISP_Irq_DPE(signed int Irq, void *DeviceId)
 	spin_unlock(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]));
 	if (bResulst == MTRUE)
 		wake_up_interruptible(&DPEInfo.WaitQueueHead);
+#endif
 
 	/* dump log, use tasklet */
 	IRQ_LOG_KEEPER(DPE_IRQ_TYPE_INT_DPE_ST, m_CurrentPPB, _LOG_INF,

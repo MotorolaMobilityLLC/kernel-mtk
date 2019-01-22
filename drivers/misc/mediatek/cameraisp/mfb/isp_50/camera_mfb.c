@@ -288,6 +288,7 @@ static int nr_MFB_devs;
 
 
 static unsigned int g_u4EnableClockCount;
+static unsigned int g_u4MfbCnt;
 
 /* maximum number for supporting user to do interrupt operation */
 /* index 0 is for all the user that do not do register irq first */
@@ -2890,6 +2891,7 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 
 	/* Enable clock */
 	MFB_EnableClock(MTRUE);
+	g_u4MfbCnt = 0;
 	log_dbg("MFB open g_u4EnableClockCount: %d", g_u4EnableClockCount);
 	/*  */
 
@@ -3390,7 +3392,10 @@ static signed int MFB_suspend(struct platform_device *pDev, pm_message_t Mesg)
 
 	bPass1_On_In_Resume_TG1 = 0;
 
-
+	if (g_u4EnableClockCount > 0) {
+		MFB_EnableClock(MFALSE);
+		g_u4MfbCnt++;
+	}
 	return 0;
 }
 
@@ -3401,6 +3406,10 @@ static signed int MFB_resume(struct platform_device *pDev)
 {
 	log_dbg("bPass1_On_In_Resume_TG1(%d).\n", bPass1_On_In_Resume_TG1);
 
+	if (g_u4MfbCnt > 0) {
+		MFB_EnableClock(MTRUE);
+		g_u4MfbCnt--;
+	}
 	return 0;
 }
 
@@ -3414,6 +3423,7 @@ int MFB_pm_suspend(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	pr_debug("calling %s()\n", __func__);
+	log_inf("MFB suspend g_u4EnableClockCount: %d, g_u4MfbCnt: %d", g_u4EnableClockCount, g_u4MfbCnt);
 
 	return MFB_suspend(pdev, PMSG_SUSPEND);
 }
@@ -3425,6 +3435,7 @@ int MFB_pm_resume(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	pr_debug("calling %s()\n", __func__);
+	log_inf("MFB resume g_u4EnableClockCount: %d, g_u4MfbCnt: %d", g_u4EnableClockCount, g_u4MfbCnt);
 
 	return MFB_resume(pdev);
 }
