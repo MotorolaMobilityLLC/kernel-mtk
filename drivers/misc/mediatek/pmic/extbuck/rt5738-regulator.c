@@ -230,6 +230,13 @@ static int rt5738_set_voltage(struct regulator_dev *rdev,
 	struct rt5738_regulator_info *info = rdev_get_drvdata(rdev);
 	struct regulator_chip *chip = info->reg_chip;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return -1;
+#endif
+
 	if (min_uV < 1300000)
 		*selector = (min_uV - 300000) / 5000;
 	else
@@ -247,6 +254,12 @@ static int rt5738_get_voltage(struct regulator_dev *rdev)
 	int ret;
 	uint32_t reg_val = 0;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return 850000;
+#endif
 	ret = rt5738_read_byte(info->i2c, chip->vol_reg, &reg_val);
 	if (ret < 0) {
 		pr_err("%s read voltage fail\n", __func__);
@@ -264,10 +277,12 @@ static int rt5738_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	struct regulator_chip *chip = info->reg_chip;
 	int ret;
 
-#if defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
 	/* for MT6775 RT5738 CPUL */
 	if (info->id == RT5738_H) {
 		rt5738_ipi_set_mode(mode);
+		return 0;
 	}
 #endif
 	switch (mode) {
@@ -290,6 +305,12 @@ static unsigned int rt5738_get_mode(struct regulator_dev *rdev)
 	int ret;
 	uint32_t regval = 0;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return 0;
+#endif
 	ret = rt5738_read_byte(info->i2c, chip->mode_reg, &regval);
 	if (ret < 0) {
 		pr_err("%s read mode fail\n", __func__);
@@ -306,6 +327,12 @@ static int rt5738_enable(struct regulator_dev *rdev)
 	struct rt5738_regulator_info *info = rdev_get_drvdata(rdev);
 	struct regulator_chip *chip = info->reg_chip;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return -1;
+#endif
 	return rt5738_set_bit(info->i2c, chip->enable_reg, chip->enable_bit);
 }
 
@@ -314,6 +341,16 @@ static int rt5738_disable(struct regulator_dev *rdev)
 	struct rt5738_regulator_info *info = rdev_get_drvdata(rdev);
 	struct regulator_chip *chip = info->reg_chip;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return -1;
+#endif
+	if (rdev->use_count == 0) {
+		pr_info("ext_buck should not be disable (use_count=%d)\n", rdev->use_count);
+		return -1;
+	}
 	return rt5738_clr_bit(info->i2c, chip->enable_reg, chip->enable_bit);
 }
 
@@ -324,6 +361,12 @@ static int rt5738_is_enabled(struct regulator_dev *rdev)
 	int ret;
 	uint32_t reg_val;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return 1;
+#endif
 	ret = rt5738_read_byte(info->i2c, chip->enable_reg, &reg_val);
 	if (ret < 0)
 		return ret;
