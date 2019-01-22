@@ -3256,8 +3256,8 @@ VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled)
 	CMD_PS_PROFILE_T arPowerSaveMode[NETWORK_TYPE_INDEX_NUM];
 
 	/* 4 <1> Sanity Check */
-	if ((u4WlanDevNum == 0) && (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
-		DBGLOG(INIT, ERROR, "wlanLateResume u4WlanDevNum==0 invalid!!\n");
+	if ((u4WlanDevNum == 0) || (u4WlanDevNum > CFG_MAX_WLAN_DEVICES)) {
+		DBGLOG(INIT, ERROR, "wlanLateResume u4WlanDevNum invalid!!\n");
 		return;
 	}
 
