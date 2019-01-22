@@ -57,7 +57,7 @@ unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 	}
 
 	ret_val =
-		sspm_ipi_send_sync_new(IPI_ID_PMIC, IPI_OPT_POLLING, buffer,
+		sspm_ipi_send_sync(IPI_ID_PMIC, IPI_OPT_POLLING, buffer,
 				PMIC_IPI_SEND_SLOT_SIZE, retbuf, PMIC_IPI_ACK_SLOT_SIZE);
 
 	if (monitor_cmd == 0x16B8)
