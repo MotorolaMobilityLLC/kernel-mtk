@@ -68,6 +68,7 @@
 #define MAX_FS_MODE_SPEED		400000
 #define MAX_HS_MODE_SPEED		3400000
 #define MAX_DMA_TRANS_SIZE		4096	/* 255 */
+#define MAX_CLOCK_DIV			8
 #define MAX_SAMPLE_CNT_DIV		8
 #define MAX_STEP_CNT_DIV		64
 #define MAX_HS_STEP_CNT_DIV		8
@@ -163,6 +164,7 @@ enum I2C_REGS_OFFSET {
 	OFFSET_DEBUGSTAT = 0x64,
 	OFFSET_DEBUGCTRL = 0x68,
 	OFFSET_TRANSFER_LEN_AUX = 0x6c,
+	OFFSET_CLOCK_DIV = 0x70,
 };
 
 enum PERICFG_OFFSET {
@@ -190,6 +192,8 @@ struct mt_i2c_ext {
 struct mtk_i2c_compatible {
 	unsigned char dma_support;  /* 0 : original; 1: 4gb  support 2: 33bit support; 3: 36 bit support */
 	unsigned char idvfs_i2c;
+	unsigned char set_dt_div; /* use dt to set div */
+	unsigned char check_max_freq; /* check max freq */
 	u16 ext_time_config;
 };
 
