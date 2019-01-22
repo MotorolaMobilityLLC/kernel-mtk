@@ -79,6 +79,7 @@ static int wait_ready(struct kbase_device *kbdev,
 		dev_err(kbdev->dev, "AS_ACTIVE bit stuck\n");
 #ifdef ENABLE_MTK_DEBUG
 		mt_gpufreq_dump_reg();
+		mt_gpufreq_set_MMU_AS_ACTIVE(1);
 #endif
 		return -1;
 	}
