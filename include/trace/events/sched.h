@@ -292,6 +292,10 @@ TRACE_EVENT(sched_switch,
 		__field(	int,	fair_preempt			)
 		__array(	char,	fair_dbg_buf,	MTK_FAIR_DBG_SZ )
 #endif
+#if defined(CONFIG_MTK_SCHED_TRACERS) && defined(CONFIG_CGROUPS)
+		__field(int,	prev_cgrp_id)
+		__field(int,	next_cgrp_id)
+#endif
 	),
 
 	TP_fast_assign(
@@ -306,11 +310,21 @@ TRACE_EVENT(sched_switch,
 		__entry->fair_preempt   = is_fair_preempt(preempt, __entry->fair_dbg_buf,
 							  prev, next);
 #endif
+#if defined(CONFIG_MTK_SCHED_TRACERS) && defined(CONFIG_CGROUPS)
+#if defined(CONFIG_CPUSETS)
+		__entry->prev_cgrp_id	= prev->cgroups->subsys[0]->cgroup->id;
+		__entry->next_cgrp_id	= next->cgroups->subsys[0]->cgroup->id;
+#else
+		__entry->prev_cgrp_id	= 0;
+		__entry->next_cgrp_id	= 0;
+#endif
+#endif
 	),
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
 	TP_printk(
-	"prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d%s%s %s",
+	"prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d" \
+	"%s%s %s prev->cgrp=%d next->cgrp=%d",
 		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
 		__entry->prev_state & (_MT_TASK_STATE_MASK) ?
 		__print_flags(__entry->prev_state & (_MT_TASK_STATE_MASK), "|",
@@ -339,6 +353,10 @@ TRACE_EVENT(sched_switch,
 # else
 				, ""
 # endif
+#if defined(CONFIG_CGROUPS)
+				, __entry->prev_cgrp_id
+				, __entry->next_cgrp_id
+#endif
 	)
 #else
 	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d",
