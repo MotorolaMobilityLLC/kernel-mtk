@@ -81,14 +81,14 @@ void Disable_CVSD_Wakeup(void)
 {
 	volatile kal_uint32 *INFRA_MISC_REGISTER = (volatile kal_uint32 *)(INFRA_MISC_ADDRESS);
 	*INFRA_MISC_REGISTER |= conn_bt_cvsd_mask;
-	pr_err("Disable_CVSD_Wakeup\n");
+	pr_debug("Disable_CVSD_Wakeup\n");
 }
 
 void Enable_CVSD_Wakeup(void)
 {
 	volatile kal_uint32 *INFRA_MISC_REGISTER = (volatile kal_uint32 *)(INFRA_MISC_ADDRESS);
 	*INFRA_MISC_REGISTER &= ~(conn_bt_cvsd_mask);
-	pr_err("Enable_CVSD_Wakeup\n");
+	pr_debug("Enable_CVSD_Wakeup\n");
 }
 
 #ifdef CONFIG_OF
@@ -107,7 +107,7 @@ static int Auddrv_BTCVSD_Irq_Map(void)
 		pr_debug("[BTCVSD] get btcvsd_irq_number failed!!!\n");
 		return -1;
 	}
-	pr_warn("%s, btcvsd_irq_number=%d\n", __func__, btcvsd_irq_number);
+	pr_debug("%s, btcvsd_irq_number=%d\n", __func__, btcvsd_irq_number);
 	return 0;
 }
 
@@ -140,26 +140,26 @@ static int Auddrv_BTCVSD_Address_Map(void)
 	btsys_sram_bank2_physical_base = (unsigned long)base;
 
 	/*print for debug */
-	pr_err("[BTCVSD] Auddrv_BTCVSD_Address_Map:\n");
-	pr_err("[BTCVSD] infra_misc_offset=0x%lx\n", infra_misc_offset);
-	pr_err("[BTCVSD] conn_bt_cvsd_mask=0x%lx\n", conn_bt_cvsd_mask);
-	pr_err("[BTCVSD] read_off=0x%lx\n", cvsd_mcu_read_offset);
-	pr_err("[BTCVSD] write_off=0x%lx\n", cvsd_mcu_write_offset);
-	pr_err("[BTCVSD] packet_ind=0x%lx\n", cvsd_packet_indicator);
-	pr_err("[BTCVSD] infra_base=0x%lx\n", infra_base);
-	pr_err("[BTCVSD] btsys_pkv_physical_base=0x%lx\n", btsys_pkv_physical_base);
-	pr_err("[BTCVSD] btsys_sram_bank2_physical_base=0x%lx\n", btsys_sram_bank2_physical_base);
+	pr_debug("[BTCVSD] Auddrv_BTCVSD_Address_Map:\n");
+	pr_debug("[BTCVSD] infra_misc_offset=0x%lx\n", infra_misc_offset);
+	pr_debug("[BTCVSD] conn_bt_cvsd_mask=0x%lx\n", conn_bt_cvsd_mask);
+	pr_debug("[BTCVSD] read_off=0x%lx\n", cvsd_mcu_read_offset);
+	pr_debug("[BTCVSD] write_off=0x%lx\n", cvsd_mcu_write_offset);
+	pr_debug("[BTCVSD] packet_ind=0x%lx\n", cvsd_packet_indicator);
+	pr_debug("[BTCVSD] infra_base=0x%lx\n", infra_base);
+	pr_debug("[BTCVSD] btsys_pkv_physical_base=0x%lx\n", btsys_pkv_physical_base);
+	pr_debug("[BTCVSD] btsys_sram_bank2_physical_base=0x%lx\n", btsys_sram_bank2_physical_base);
 
 	if (!infra_base) {
-		pr_err("[BTCVSD] get infra_base failed!!!\n");
+		pr_warn("[BTCVSD] get infra_base failed!!!\n");
 		return -1;
 	}
 	if (!btsys_pkv_physical_base) {
-		pr_err("[BTCVSD] get btsys_pkv_physical_base failed!!!\n");
+		pr_warn("[BTCVSD] get btsys_pkv_physical_base failed!!!\n");
 		return -1;
 	}
 	if (!btsys_sram_bank2_physical_base) {
-		pr_err("[BTCVSD] get btsys_sram_bank2_physical_base failed!!!\n");
+		pr_warn("[BTCVSD] get btsys_sram_bank2_physical_base failed!!!\n");
 		return -1;
 	}
 	return 0;
@@ -169,7 +169,7 @@ static int Auddrv_BTCVSD_Address_Map(void)
 
 static int mtk_pcm_btcvsd_rx_stop(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	Set_BTCVSD_State(BT_SCO_RXSTATE_ENDING);
 	return 0;
 }
@@ -230,7 +230,7 @@ static int mtk_pcm_btcvsd_rx_hw_params(struct snd_pcm_substream *substream,
 	int ret = 0;
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 #if 1
 
@@ -246,9 +246,9 @@ static int mtk_pcm_btcvsd_rx_hw_params(struct snd_pcm_substream *substream,
 		substream->runtime->dma_addr = BT_CVSD_Mem.RX_btcvsd_dma_buf.addr;
 	}
 
-	pr_warn("%s, 1 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n", __func__,
-			substream->runtime->dma_bytes, substream->runtime->dma_area,
-			(long)substream->runtime->dma_addr);
+	pr_debug("%s, 1 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n", __func__,
+		 substream->runtime->dma_bytes, substream->runtime->dma_area,
+		 (long)substream->runtime->dma_addr);
 
 #endif
 
@@ -278,7 +278,7 @@ static int mtk_pcm_btcvsd_rx_close(struct snd_pcm_substream *substream)
 {
 	int ret = 0;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	Set_BTCVSD_State(BT_SCO_RXSTATE_IDLE);
 	ret = AudDrv_btcvsd_Free_Buffer(1);
@@ -296,7 +296,7 @@ static int mtk_pcm_btcvsd_rx_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	ret = AudDrv_btcvsd_Allocate_Buffer(1);
 
@@ -313,11 +313,8 @@ static int mtk_pcm_btcvsd_rx_open(struct snd_pcm_substream *substream)
 	prev_sec_rx = begin_rx.tv_sec;
 	prev_usec_rx = begin_rx.tv_usec;
 
-	if (ret < 0)
-		pr_warn("snd_pcm_hw_constraint_integer failed\n");
-
 	if (ret < 0) {
-		pr_err("ret < 0 mtk_pcm_btcvsd_rx_close\n");
+		pr_warn("ret < 0 mtk_pcm_btcvsd_rx_close\n");
 		mtk_pcm_btcvsd_rx_close(substream);
 		return ret;
 	}
@@ -328,7 +325,7 @@ static int mtk_pcm_btcvsd_rx_open(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_btcvsd_rx_prepare(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	Set_BTCVSD_State(BT_SCO_RXSTATE_RUNNING);
 
@@ -337,7 +334,7 @@ static int mtk_pcm_btcvsd_rx_prepare(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_btcvsd_rx_start(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	prev_frame = 0;
 	prev_iPacket_w = btsco.pRX->iPacket_w;
@@ -430,7 +427,7 @@ static int btcvsd_band_set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(btsco_band_str)) {
-		pr_err("return -EINVAL\n");
+		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
 	set_btcvsd_band(ucontrol->value.integer.value[0]);
@@ -456,7 +453,7 @@ static int btcvsd_tx_mute_set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(btsco_mute_str)) {
-		pr_err("return -EINVAL\n");
+		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
 	if (!btsco.pTX)
@@ -480,7 +477,7 @@ static int btcvsd_rx_irq_received_set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(irq_received_str)) {
-		pr_err("return -EINVAL\n");
+		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
 
@@ -502,7 +499,7 @@ static int btcvsd_rx_timeout_set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(rx_timeout_str)) {
-		pr_err("return -EINVAL\n");
+		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
 
@@ -525,8 +522,8 @@ static int btcvsd_rx_timestamp_get(unsigned int __user *data, unsigned int size)
 		 sizeof(struct time_buffer_info));
 
 	if (copy_to_user(data, &time_buffer_info_rx, sizeof(struct time_buffer_info))) {
-		pr_err("%s(), Fail copy to user Ptr:%p,r_sz:%zu",
-		       __func__, &time_buffer_info_rx, sizeof(struct time_buffer_info));
+		pr_warn("%s(), Fail copy to user Ptr:%p,r_sz:%zu",
+			__func__, &time_buffer_info_rx, sizeof(struct time_buffer_info));
 		ret = -EFAULT;
 	}
 
@@ -535,6 +532,28 @@ static int btcvsd_rx_timestamp_get(unsigned int __user *data, unsigned int size)
 
 static int btcvsd_rx_timestamp_set(const unsigned int __user *data, unsigned int size)
 {
+	return 0;
+}
+
+static int btcvsd_tx_timeout_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), btcvsd tx timeout %d\n",
+		 __func__, btcvsd_tx_timeout() ? 1 : 0);
+	ucontrol->value.integer.value[0] = btcvsd_tx_timeout() ? 1 : 0;
+	/*btcvsd_tx_reset_timeout();*/
+	return 0;
+}
+
+static int btcvsd_tx_timeout_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(rx_timeout_str)) {
+		pr_warn("return -EINVAL\n");
+		return -EINVAL;
+	}
+
 	return 0;
 }
 
@@ -555,6 +574,10 @@ static const struct snd_kcontrol_new btcvsd_controls[] = {
 			  sizeof(struct time_buffer_info),
 			  btcvsd_rx_timestamp_get,
 			  btcvsd_rx_timestamp_set),
+	SOC_ENUM_EXT("btcvsd_tx_timeout",
+		     btcvsd_enum[3],
+		     btcvsd_tx_timeout_get,
+		     btcvsd_tx_timeout_set),
 };
 
 static int mtk_asoc_pcm_btcvsd_rx_probe(struct snd_soc_platform *platform)
@@ -581,7 +604,7 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_BTCVSD_RX_PCM);
 
-	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 
 	mDev_btcvsd_rx = &pdev->dev;
 
@@ -602,9 +625,10 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 	AUDIO_INFRA_BASE_VIRTUAL = ioremap_nocache(AUDIO_INFRA_BASE_PHYSICAL, 0x1000);
 	INFRA_MISC_ADDRESS = (volatile kal_uint32 *)(AUDIO_INFRA_BASE_VIRTUAL + INFRA_MISC_OFFSET);
 #endif
-	pr_warn("[BTCVSD probe] INFRA_MISC_ADDRESS = %p\n", INFRA_MISC_ADDRESS);
+	pr_debug("[BTCVSD probe] INFRA_MISC_ADDRESS = %p\n", INFRA_MISC_ADDRESS);
 
-	pr_warn("%s disable BT IRQ disableBTirq = %d,irq=%d\n", __func__, disableBTirq, btcvsd_irq_number);
+	pr_debug("%s disable BT IRQ disableBTirq = %d,irq=%d\n",
+		 __func__, disableBTirq, btcvsd_irq_number);
 	if (disableBTirq == 0) {
 		disable_irq(btcvsd_irq_number);
 		Disable_CVSD_Wakeup();
@@ -635,7 +659,7 @@ static int mtk_btcvsd_rx_probe(struct platform_device *pdev)
 	bt_hw_REG_CONTROL = (volatile kal_uint32 *)(BTSYS_PKV_BASE_ADDRESS + CVSD_PACKET_INDICATOR);
 #endif
 	pr_debug("[BTCVSD probe] BTSYS_PKV_BASE_ADDRESS = %p BTSYS_SRAM_BANK2_BASE_ADDRESS = %p\n",
-				BTSYS_PKV_BASE_ADDRESS, BTSYS_SRAM_BANK2_BASE_ADDRESS);
+		 BTSYS_PKV_BASE_ADDRESS, BTSYS_SRAM_BANK2_BASE_ADDRESS);
 
 	return snd_soc_register_platform(&pdev->dev, &mtk_btcvsd_rx_soc_platform);
 }
@@ -683,7 +707,7 @@ static int __init mtk_btcvsd_rx_soc_platform_init(void)
 {
 	int ret;
 
-	pr_warn("+%s\n", __func__);
+	pr_debug("+%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_mtk_btcvsd_rx_dev = platform_device_alloc(MT_SOC_BTCVSD_RX_PCM, -1);
 	if (!soc_mtk_btcvsd_rx_dev) {
@@ -713,7 +737,7 @@ module_init(mtk_btcvsd_rx_soc_platform_init);
 
 static void __exit mtk_btcvsd_rx_soc_platform_exit(void)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	platform_driver_unregister(&mtk_btcvsd_rx_driver);
 }
 module_exit(mtk_btcvsd_rx_soc_platform_exit);
