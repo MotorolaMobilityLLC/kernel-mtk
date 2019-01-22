@@ -14,7 +14,7 @@
 #define __SH_SVP_H__
 
 #if defined(CONFIG_TRUSTONIC_TRUSTED_UI) ||\
-	defined(CONFIG_SEC_VIDEO_PATH_SUPPORT)
+	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 #define SSVP_TUI_REGION_ENABLE
 #else
 #undef SSVP_TUI_REGION_ENABLE
@@ -148,7 +148,7 @@ static struct SSMR_Feature _ssmr_feats[__MAX_NR_SSMR_FEATURES] = {
 		.region = SSVP_TUI
 	},
 #endif
-#ifdef CONFIG_SEC_VIDEO_PATH_SUPPORT
+#ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 	[SSMR_FEAT_WFD] = {
 		.dt_prop_name = "wfd-size",
 		.feat_name = "wfd",
