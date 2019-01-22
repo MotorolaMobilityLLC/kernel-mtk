@@ -31,7 +31,6 @@
 
 /*===FEATURE SWITH===*/
 /* #define FPTPDAFSUPPORT   //for pdaf switch */
-/* #define FANPENGTAO   //for debug log */
 
 /* #define NONCONTINUEMODE */
 /*===FEATURE SWITH===*/

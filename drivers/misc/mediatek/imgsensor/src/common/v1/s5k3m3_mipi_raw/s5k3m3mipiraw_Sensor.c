@@ -50,6 +50,7 @@
 #include "s5k3m3mipiraw_Sensor.h"
 #include "s5k3m3_setting.h"	/* Move defines to s5k3m3_setting.h */
 
+#undef FANPENGTAO
 #define H_FOV 38
 #define V_FOV 29
 
