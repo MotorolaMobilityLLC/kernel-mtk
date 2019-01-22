@@ -1399,7 +1399,7 @@ int BattThermistorConverTemp(int Res)
 
 		TBatt_Value = (((Res - RES2) * TMP1) + ((RES1 - Res) * TMP2)) / (RES1 - RES2);
 	}
-	bm_debug("[BattThermistorConverTemp] %d %d %d %d %d %d\n", RES1, RES2, Res, TMP1, TMP2, TBatt_Value);
+	bm_trace("[BattThermistorConverTemp] %d %d %d %d %d %d\n", RES1, RES2, Res, TMP1, TMP2, TBatt_Value);
 
 	return TBatt_Value;
 }
@@ -1486,7 +1486,7 @@ int BattVoltToTemp(int dwVolt)
 	else
 		sBaTTMP = BattThermistorConverTemp((int)TRes - BIF_NTC_R);
 
-	bm_debug("[BattVoltToTemp] %d %d %d\n", dwVolt, RBAT_PULL_UP_R, vbif28);
+	bm_trace("[BattVoltToTemp] %d %d %d\n", dwVolt, RBAT_PULL_UP_R, vbif28);
 	return sBaTTMP;
 }
 
@@ -1549,7 +1549,7 @@ int force_get_tbat(bool update)
 #ifdef CONFIG_MTK_BIF_SUPPORT
 		/*	battery_charging_control(CHARGING_CMD_GET_BIF_TBAT, &bat_temperature_val); */
 #endif
-		bm_debug("[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
+		bm_trace("[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
 		bat_temperature_volt_temp, bat_temperature_volt, fg_current_state, fg_current_temp,
 		fg_r_value, bat_temperature_val);
 
@@ -1584,7 +1584,7 @@ int force_get_tbat(bool update)
 			pre_fg_r_value = fg_r_value;
 			pre_bat_temperature_val2 = bat_temperature_val;
 			pre_time = ctime;
-			bm_debug("[force_get_tbat][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d time:%d\n",
+			bm_trace("[force_get_tbat] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d time:%d\n",
 			bat_temperature_volt_temp, bat_temperature_volt, fg_current_state, fg_current_temp,
 			fg_r_value, bat_temperature_val, pre_bat_temperature_volt_temp, pre_bat_temperature_volt,
 			pre_fg_current_state, pre_fg_current_temp, pre_fg_r_value,
@@ -2707,7 +2707,7 @@ int wakeup_fg_algo(unsigned int flow_state)
 			return -1;
 		}
 
-		bm_debug("[wakeup_fg_algo] malloc size=%d pid=%d\n", size, g_fgd_pid);
+		bm_debug("[wakeup_fg_algo] malloc size=%d pid=%d cmd:%d\n", size, g_fgd_pid, flow_state);
 		memset(fgd_msg, 0, size);
 		fgd_msg->fgd_cmd = FG_DAEMON_CMD_NOTIFY_DAEMON;
 		memcpy(fgd_msg->fgd_data, &flow_state, sizeof(flow_state));
@@ -4294,7 +4294,7 @@ static int battery_probe(struct platform_device *dev)
 	battery_debug_init();
 	wake_unlock(&battery_lock);
 
-#if defined(CONFIG_MTK_DISABLE_GAUGE)
+#if defined(CONFIG_MTK_DISABLE_GAUGE) || defined(CONFIG_POWER_EXT)
 	bm_err("disable GM 3.0\n");
 	disable_fg();
 #endif
