@@ -3715,13 +3715,6 @@ const char *__check_heap_object(const void *ptr, unsigned long n,
 	/* Find offset within object. */
 	offset = (ptr - page_address(page)) % s->size;
 
-	/* Adjust for redzone and reject if within the redzone. */
-	if (kmem_cache_debug(s) && s->flags & SLAB_RED_ZONE) {
-		if (offset < s->red_left_pad)
-			return s->name;
-		offset -= s->red_left_pad;
-	}
-
 	/* Allow address range falling entirely within object size. */
 	if (offset <= object_size && n <= object_size - offset)
 		return NULL;
