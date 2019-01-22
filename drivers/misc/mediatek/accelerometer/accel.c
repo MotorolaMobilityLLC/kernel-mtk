@@ -14,7 +14,7 @@
 #include "inc/accel.h"
 #include "inc/accel_factory.h"
 
-struct acc_context *acc_context_obj = NULL;
+struct acc_context *acc_context_obj;
 
 
 static struct acc_init_info *gsensor_init_list[MAX_CHOOSE_G_NUM] = { 0 };
@@ -50,14 +50,16 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 	if (first) {
 		obj->target_ktime = ktime_add_ns(ktime_get(), (int64_t)delay_ms*1000000);
 		/* ACC_LOG("%d, cur_nt = %lld, delay_ms = %d, target_nt = %lld\n", count,
-			getCurNT(), delay_ms, ktime_to_us(obj->target_ktime)); */
+		*	getCurNT(), delay_ms, ktime_to_us(obj->target_ktime));
+		*/
 		count = 0;
 	} else {
 		do {
 			obj->target_ktime = ktime_add_ns(obj->target_ktime, (int64_t)delay_ms*1000000);
 		} while (ktime_to_ns(obj->target_ktime) < ktime_to_ns(ktime_get()));
 		/* ACC_LOG("%d, cur_nt = %lld, delay_ms = %d, target_nt = %lld\n", count,
-			getCurNT(), delay_ms, ktime_to_us(obj->target_ktime)); */
+		*	getCurNT(), delay_ms, ktime_to_us(obj->target_ktime));
+		*/
 		count++;
 	}
 
@@ -80,7 +82,7 @@ static void acc_work_func(struct work_struct *work)
 	cxt = acc_context_obj;
 	delay_ms = atomic_read(&cxt->delay);
 
-	if (NULL == cxt->acc_data.get_data) {
+	if (cxt->acc_data.get_data == NULL) {
 		ACC_ERR("acc driver not register data path\n");
 		return;
 	}
@@ -108,9 +110,9 @@ static void acc_work_func(struct work_struct *work)
 		pre_ns = cur_ns;
 		cxt->is_first_data_after_enable = false;
 		/* filter -1 value */
-		if (ACC_INVALID_VALUE == cxt->drv_data.acc_data.values[0] ||
-		    ACC_INVALID_VALUE == cxt->drv_data.acc_data.values[1] ||
-		    ACC_INVALID_VALUE == cxt->drv_data.acc_data.values[2]) {
+		if (cxt->drv_data.acc_data.values[0] == ACC_INVALID_VALUE ||
+		    cxt->drv_data.acc_data.values[1] == ACC_INVALID_VALUE ||
+		    cxt->drv_data.acc_data.values[2] == ACC_INVALID_VALUE) {
 			ACC_LOG(" read invalid data\n");
 			goto acc_loop;
 
@@ -190,7 +192,7 @@ static int acc_real_enable(int enable)
 	struct acc_context *cxt = NULL;
 
 	cxt = acc_context_obj;
-	if (1 == enable) {
+	if (enable == 1) {
 
 		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
 			err = cxt->acc_ctl.enable_nodata(1);
@@ -207,7 +209,7 @@ static int acc_real_enable(int enable)
 		}
 
 	}
-	if (0 == enable) {
+	if (enable == 0) {
 		if (false == cxt->is_active_data && false == cxt->is_active_nodata) {
 			err = cxt->acc_ctl.enable_nodata(0);
 			if (err)
@@ -225,12 +227,12 @@ static int acc_enable_data(int enable)
 	struct acc_context *cxt = NULL;
 
 	cxt = acc_context_obj;
-	if (NULL == cxt->acc_ctl.open_report_data) {
+	if (cxt->acc_ctl.open_report_data == NULL) {
 		ACC_ERR("no acc control path\n");
 		return -1;
 	}
 
-	if (1 == enable) {
+	if (enable == 1) {
 		ACC_LOG("ACC enable data\n");
 		cxt->is_active_data = true;
 		cxt->is_first_data_after_enable = true;
@@ -243,7 +245,7 @@ static int acc_enable_data(int enable)
 			}
 		}
 	}
-	if (0 == enable) {
+	if (enable == 0) {
 		ACC_LOG("ACC disable\n");
 
 		cxt->is_active_data = false;
@@ -272,15 +274,15 @@ int acc_enable_nodata(int enable)
 	struct acc_context *cxt = NULL;
 
 	cxt = acc_context_obj;
-	if (NULL == cxt->acc_ctl.enable_nodata) {
+	if (cxt->acc_ctl.enable_nodata == NULL) {
 		ACC_ERR("acc_enable_nodata:acc ctl path is NULL\n");
 		return -1;
 	}
 
-	if (1 == enable)
+	if (enable == 1)
 		cxt->is_active_nodata = true;
 
-	if (0 == enable)
+	if (enable == 0)
 		cxt->is_active_nodata = false;
 	acc_real_enable(enable);
 	return 0;
@@ -304,7 +306,7 @@ static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribu
 	ACC_LOG("acc_store_enable nodata buf=%s\n", buf);
 	mutex_lock(&acc_context_obj->acc_op_mutex);
 	cxt = acc_context_obj;
-	if (NULL == cxt->acc_ctl.enable_nodata) {
+	if (cxt->acc_ctl.enable_nodata == NULL) {
 		ACC_LOG("acc_ctl enable nodata NULL\n");
 		mutex_unlock(&acc_context_obj->acc_op_mutex);
 		return count;
@@ -331,7 +333,7 @@ static ssize_t acc_store_active(struct device *dev, struct device_attribute *att
 	ACC_LOG("acc_store_active buf=%s\n", buf);
 	mutex_lock(&acc_context_obj->acc_op_mutex);
 	cxt = acc_context_obj;
-	if (NULL == cxt->acc_ctl.open_report_data) {
+	if (cxt->acc_ctl.open_report_data == NULL) {
 		ACC_LOG("acc_ctl enable NULL\n");
 		mutex_unlock(&acc_context_obj->acc_op_mutex);
 		return count;
@@ -374,7 +376,7 @@ static ssize_t acc_store_delay(struct device *dev, struct device_attribute *attr
 
 	mutex_lock(&acc_context_obj->acc_op_mutex);
 	cxt = acc_context_obj;
-	if (NULL == cxt->acc_ctl.set_delay) {
+	if (cxt->acc_ctl.set_delay == NULL) {
 		ACC_LOG("acc_ctl set_delay NULL\n");
 		mutex_unlock(&acc_context_obj->acc_op_mutex);
 		return count;
@@ -523,10 +525,10 @@ static int acc_real_driver_init(void)
 	ACC_LOG(" acc_real_driver_init +\n");
 	for (i = 0; i < MAX_CHOOSE_G_NUM; i++) {
 		ACC_LOG(" i=%d\n", i);
-		if (0 != gsensor_init_list[i]) {
+		if (gsensor_init_list[i] != 0) {
 			ACC_LOG(" acc try to init driver %s\n", gsensor_init_list[i]->name);
 			err = gsensor_init_list[i]->init();
-			if (0 == err) {
+			if (err == 0) {
 				ACC_LOG(" acc real driver %s probe ok\n",
 					gsensor_init_list[i]->name);
 				break;
@@ -551,13 +553,13 @@ int acc_driver_add(struct acc_init_info *obj)
 		return -1;
 	}
 	for (i = 0; i < MAX_CHOOSE_G_NUM; i++) {
-		if ((i == 0) && (NULL == gsensor_init_list[0])) {
+		if ((i == 0) && (gsensor_init_list[0] == NULL)) {
 			ACC_LOG("register gensor driver for the first time\n");
 			if (platform_driver_register(&gsensor_driver))
 				ACC_ERR("failed to register gensor driver already exist\n");
 		}
 
-		if (NULL == gsensor_init_list[i]) {
+		if (gsensor_init_list[i] == NULL) {
 			obj->platform_diver_addr = &gsensor_driver;
 			gsensor_init_list[i] = obj;
 			break;
@@ -593,7 +595,7 @@ static int acc_input_init(struct acc_context *cxt)
 	int err = 0;
 
 	dev = input_allocate_device();
-	if (NULL == dev)
+	if (dev == NULL)
 		return -ENOMEM;
 
 	dev->name = ACC_INPUTDEV_NAME;
@@ -652,7 +654,7 @@ int acc_register_data_path(struct acc_data_path *data)
 	cxt->acc_data.get_raw_data = data->get_raw_data;
 	cxt->acc_data.vender_div = data->vender_div;
 	ACC_LOG("acc register data path vender_div: %d\n", cxt->acc_data.vender_div);
-	if (NULL == cxt->acc_data.get_data) {
+	if (cxt->acc_data.get_data == NULL) {
 		ACC_LOG("acc register data path fail\n");
 		return -1;
 	}

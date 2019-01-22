@@ -18,13 +18,13 @@
 #include <linux/rtc.h>
 #include <linux/types.h>
 
-typedef enum {
+enum rtc_gpio_user_t {
 	RTC_GPIO_USER_WIFI = 8,
 	RTC_GPIO_USER_GPS = 9,
 	RTC_GPIO_USER_BT = 10,
 	RTC_GPIO_USER_FM = 11,
 	RTC_GPIO_USER_PMIC = 12,
-} rtc_gpio_user_t;
+};
 
 #ifdef CONFIG_MTK_RTC
 
@@ -34,8 +34,8 @@ typedef enum {
  */
 
 extern unsigned long rtc_read_hw_time(void);
-extern void rtc_gpio_enable_32k(rtc_gpio_user_t user);
-extern void rtc_gpio_disable_32k(rtc_gpio_user_t user);
+extern void rtc_gpio_enable_32k(enum rtc_gpio_user_t user);
+extern void rtc_gpio_disable_32k(enum rtc_gpio_user_t user);
 extern bool rtc_gpio_32k_status(void);
 
 /* for AUDIOPLL (deprecated) */

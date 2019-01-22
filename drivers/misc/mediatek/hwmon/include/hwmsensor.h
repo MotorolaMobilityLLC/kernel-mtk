@@ -72,7 +72,7 @@
 #define SENSOR_STRING_TYPE_ANSWERCALL               "android.sensor.answer_call"
 #define SENSOR_TYPE_STATIONARY          (45)
 #define SENSOR_STRING_TYPE_STATIONARY               "android.sensor.stationary"
-#define SENSOR_TYPE_RGBW          	(46)
+#define SENSOR_TYPE_RGBW				(46)
 #define SENSOR_STRING_TYPE_RGBW                     "android.sensor.rgbw"
 #define SENSOR_TYPE_PRESSURE_UNCALIBRATED					(50)
 #define SENSOR_STRING_TYPE_PRESSURE_UNCALIBRATED             "android.sensor.pressure_uncalibrated"

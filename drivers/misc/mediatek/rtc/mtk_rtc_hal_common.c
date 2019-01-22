@@ -118,7 +118,7 @@ void rtc_set_writeif(bool enable)
 	}
 }
 
-void hal_rtc_set_spare_register(rtc_spare_enum cmd, u16 val)
+void hal_rtc_set_spare_register(enum rtc_spare_enum cmd, u16 val)
 {
 	u16 tmp_val;
 
@@ -136,7 +136,7 @@ void hal_rtc_set_spare_register(rtc_spare_enum cmd, u16 val)
 	}
 }
 
-u16 hal_rtc_get_spare_register(rtc_spare_enum cmd)
+u16 hal_rtc_get_spare_register(enum rtc_spare_enum cmd)
 {
 	u16 tmp_val;
 

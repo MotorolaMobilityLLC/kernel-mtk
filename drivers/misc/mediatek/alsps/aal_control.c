@@ -24,7 +24,7 @@
 #include "inc/aal_control.h"
 
 
-int aal_use = 0;
+int aal_use;
 
 static int AAL_open(struct inode *inode, struct file *file)
 {

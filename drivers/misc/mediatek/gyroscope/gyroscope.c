@@ -13,7 +13,7 @@
 
 #include "inc/gyroscope.h"
 
-struct gyro_context *gyro_context_obj = NULL;
+struct gyro_context *gyro_context_obj;
 static struct platform_device *pltfm_dev;
 
 static struct gyro_init_info *gyroscope_init_list[MAX_CHOOSE_GYRO_NUM] = {0};
@@ -49,14 +49,16 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 	if (first) {
 		obj->target_ktime = ktime_add_ns(ktime_get(), (int64_t)delay_ms*1000000);
 		/* GYRO_LOG("%d, cur_nt = %lld, delay_ms = %d, target_nt = %lld\n", count,
-			getCurNT(), delay_ms, ktime_to_us(obj->target_ktime)); */
+		*	getCurNT(), delay_ms, ktime_to_us(obj->target_ktime));
+		*/
 		count = 0;
 	} else {
 		do {
 			obj->target_ktime = ktime_add_ns(obj->target_ktime, (int64_t)delay_ms*1000000);
 		} while (ktime_to_ns(obj->target_ktime) < ktime_to_ns(ktime_get()));
 		/* GYRO_LOG("%d, cur_nt = %lld, delay_ms = %d, target_nt = %lld\n", count,
-			getCurNT(), delay_ms, ktime_to_us(obj->target_ktime)); */
+		*	getCurNT(), delay_ms, ktime_to_us(obj->target_ktime));
+		*/
 		count++;
 	}
 
@@ -81,7 +83,7 @@ static void gyro_work_func(struct work_struct *work)
 	cxt  = gyro_context_obj;
 	delay_ms = atomic_read(&cxt->delay);
 
-	if (NULL == cxt->gyro_data.get_data) {
+	if (cxt->gyro_data.get_data == NULL) {
 		GYRO_ERR("gyro driver not register data path\n");
 		return;
 	}
@@ -114,12 +116,12 @@ static void gyro_work_func(struct work_struct *work)
 		pre_ns = cur_ns;
 		cxt->is_first_data_after_enable = false;
 		/* filter -1 value */
-	    if (GYRO_INVALID_VALUE == cxt->drv_data.gyro_data.values[0] ||
-			     GYRO_INVALID_VALUE == cxt->drv_data.gyro_data.values[1] ||
-			     GYRO_INVALID_VALUE == cxt->drv_data.gyro_data.values[2]) {
+		if (cxt->drv_data.gyro_data.values[0] == GYRO_INVALID_VALUE ||
+			cxt->drv_data.gyro_data.values[1] == GYRO_INVALID_VALUE ||
+			cxt->drv_data.gyro_data.values[2] == GYRO_INVALID_VALUE) {
 			GYRO_LOG(" read invalid data\n");
 			goto gyro_loop;
-	    }
+		}
 	}
 
 	/* GYRO_LOG("gyro data[%d,%d,%d]\n" ,cxt->drv_data.gyro_data.values[0], */
@@ -192,7 +194,7 @@ static int gyro_real_enable(int enable)
 
 	cxt = gyro_context_obj;
 
-	if (1 == enable) {
+	if (enable == 1) {
 		if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
 			err = cxt->gyro_ctl.enable_nodata(1);
 			if (err) {
@@ -207,7 +209,7 @@ static int gyro_real_enable(int enable)
 		}
 	}
 
-	if (0 == enable) {
+	if (enable == 0) {
 		if (false == cxt->is_active_data && false == cxt->is_active_nodata) {
 			err = cxt->gyro_ctl.enable_nodata(0);
 			if (err)
@@ -224,12 +226,12 @@ static int gyro_enable_data(int enable)
 	struct gyro_context *cxt = NULL;
 
 	cxt = gyro_context_obj;
-	if (NULL  == cxt->gyro_ctl.open_report_data) {
+	if (cxt->gyro_ctl.open_report_data == NULL) {
 		GYRO_ERR("no gyro control path\n");
 		return -1;
 	}
 
-	if (1 == enable) {
+	if (enable == 1) {
 		GYRO_LOG("gyro enable data\n");
 		cxt->is_active_data = true;
 		cxt->is_first_data_after_enable = true;
@@ -243,7 +245,7 @@ static int gyro_enable_data(int enable)
 		}
 	}
 
-	if (0 == enable) {
+	if (enable == 0) {
 		GYRO_LOG("gyro disable\n");
 
 		cxt->is_active_data = false;
@@ -271,15 +273,15 @@ int gyro_enable_nodata(int enable)
 	struct gyro_context *cxt = NULL;
 
 	cxt = gyro_context_obj;
-	if (NULL  == cxt->gyro_ctl.enable_nodata) {
+	if (cxt->gyro_ctl.enable_nodata == NULL) {
 		GYRO_ERR("gyro_enable_nodata:gyro ctl path is NULL\n");
 		return -1;
 	}
 
-	if (1 == enable)
+	if (enable == 1)
 		cxt->is_active_nodata = true;
 
-	if (0 == enable)
+	if (enable == 0)
 		cxt->is_active_nodata = false;
 
 	gyro_real_enable(enable);
@@ -304,7 +306,7 @@ static ssize_t gyro_store_enable_nodata(struct device *dev, struct device_attrib
 	GYRO_LOG("gyro_store_enable nodata buf=%s\n", buf);
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
 	cxt = gyro_context_obj;
-	if (NULL == cxt->gyro_ctl.enable_nodata) {
+	if (cxt->gyro_ctl.enable_nodata == NULL) {
 		GYRO_LOG("gyro_ctl enable nodata NULL\n");
 		mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 		return count;
@@ -328,7 +330,7 @@ static ssize_t gyro_store_active(struct device *dev, struct device_attribute *at
 	GYRO_LOG("gyro_store_active buf=%s\n", buf);
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
 	cxt = gyro_context_obj;
-	if (NULL == cxt->gyro_ctl.open_report_data) {
+	if (cxt->gyro_ctl.open_report_data == NULL) {
 		GYRO_LOG("gyro_ctl enable NULL\n");
 		mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 		return count;
@@ -369,7 +371,7 @@ static ssize_t gyro_store_delay(struct device *dev, struct device_attribute *att
 
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
 	cxt = gyro_context_obj;
-	if (NULL == cxt->gyro_ctl.set_delay) {
+	if (cxt->gyro_ctl.set_delay == NULL) {
 		GYRO_LOG("gyro_ctl set_delay NULL\n");
 		mutex_unlock(&gyro_context_obj->gyro_op_mutex);
 		return count;
@@ -520,10 +522,10 @@ static int gyro_real_driver_init(struct platform_device *pdev)
 	GYRO_LOG("gyro_real_driver_init +\n");
 	for (i = 0; i < MAX_CHOOSE_GYRO_NUM; i++) {
 		GYRO_LOG("i=%d\n", i);
-		if (0 != gyroscope_init_list[i]) {
+		if (gyroscope_init_list[i] != 0) {
 			GYRO_LOG("gyro try to init driver %s\n", gyroscope_init_list[i]->name);
 			err = gyroscope_init_list[i]->init(pdev);
-			if (0 == err) {
+			if (err == 0) {
 				GYRO_LOG("gyro real driver %s probe ok\n", gyroscope_init_list[i]->name);
 				break;
 			}
@@ -548,17 +550,17 @@ int gyro_driver_add(struct gyro_init_info *obj)
 	}
 
 	for (i = 0; i < MAX_CHOOSE_GYRO_NUM; i++) {
-		if ((i == 0) && (NULL == gyroscope_init_list[0])) {
+		if ((i == 0) && (gyroscope_init_list[0]) == NULL) {
 			GYRO_LOG("register gyro driver for the first time\n");
 			if (platform_driver_register(&gyroscope_driver))
 				GYRO_ERR("failed to register gyro driver already exist\n");
 		}
 
-	    if (NULL == gyroscope_init_list[i]) {
+		if (gyroscope_init_list[i] == NULL) {
 			obj->platform_diver_addr = &gyroscope_driver;
 			gyroscope_init_list[i] = obj;
 			break;
-	    }
+		}
 	}
 
 	if (i >= MAX_CHOOSE_GYRO_NUM) {
@@ -584,12 +586,13 @@ static int gyro_misc_init(struct gyro_context *cxt)
 }
 
 /* static void gyro_input_destroy(struct gyro_context *cxt)
-{
-	struct input_dev *dev = cxt->idev;
-
-	input_unregister_device(dev);
-	input_free_device(dev);
-} */
+*{
+*	struct input_dev *dev = cxt->idev;
+*
+*	input_unregister_device(dev);
+*	input_free_device(dev);
+*}
+*/
 
 static int gyro_input_init(struct gyro_context *cxt)
 {
@@ -597,7 +600,7 @@ static int gyro_input_init(struct gyro_context *cxt)
 	int err = 0;
 
 	dev = input_allocate_device();
-	if (NULL == dev)
+	if (dev == NULL)
 		return -ENOMEM;
 
 	dev->name = GYRO_INPUTDEV_NAME;
@@ -659,7 +662,7 @@ int gyro_register_data_path(struct gyro_data_path *data)
 	cxt->gyro_data.vender_div = data->vender_div;
 	cxt->gyro_data.get_raw_data = data->get_raw_data;
 	GYRO_LOG("gyro register data path vender_div: %d\n", cxt->gyro_data.vender_div);
-	if (NULL == cxt->gyro_data.get_data) {
+	if (cxt->gyro_data.get_data == NULL) {
 		GYRO_LOG("gyro register data path fail\n");
 		return -1;
 	}
@@ -706,10 +709,10 @@ int gyro_register_control_path(struct gyro_control_path *ctl)
 	return 0;
 }
 
-int x_t = 0;
-int y_t = 0;
-int z_t = 0;
-long pc = 0;
+int x_t;
+int y_t;
+int z_t;
+long pc;
 
 static int check_repeat_data(int x, int y, int z)
 {
@@ -785,9 +788,10 @@ static int gyro_probe(void)
 
 	/* Structurally dead code (UNREACHABLE) */
 	/* if (err) {
-		GYRO_ERR("sysfs node creation error\n");
-		gyro_input_destroy(gyro_context_obj);
-	} */
+	*	GYRO_ERR("sysfs node creation error\n");
+	*	gyro_input_destroy(gyro_context_obj);
+	*}
+	*/
 
 real_driver_init_fail:
 exit_alloc_input_dev_failed:

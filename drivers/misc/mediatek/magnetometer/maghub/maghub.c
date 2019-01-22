@@ -46,13 +46,13 @@ static struct mag_init_info maghub_init_info;
 
 static int maghub_init_flag = -1;
 
-typedef enum {
+enum MAG_TRC {
 	MAG_FUN_DEBUG = 0x01,
 	MAG_MDATA_DEBUG = 0X02,
 	MAG_ODATA_DEBUG = 0X04,
 	MAG_CTR_DEBUG = 0X08,
 	MAG_IPI_DEBUG = 0x10,
-} MAG_TRC;
+};
 struct maghub_ipi_data {
 	int		direction;
 	atomic_t	trace;
@@ -124,7 +124,7 @@ static int maghub_GetMData(char *buf, int size)
 	if (atomic_read(&obj->suspend))
 		return -3;
 
-	if (NULL == buf)
+	if (buf == NULL)
 		return -1;
 	err = sensor_get_data_from_hub(ID_MAGNETIC, &data);
 	if (err < 0) {
@@ -169,7 +169,7 @@ static int maghub_GetOData(char *buf, int size)
 	if (atomic_read(&obj->suspend))
 		return -3;
 
-	if (NULL == buf)
+	if (buf == NULL)
 		return -1;
 	err = sensor_get_data_from_hub(ID_ORIENTATION, &data);
 	if (err < 0) {
@@ -226,7 +226,7 @@ static ssize_t show_trace_value(struct device_driver *ddri, char *buf)
 	ssize_t res = 0;
 	struct maghub_ipi_data *obj = mag_ipi_data;
 
-	if (NULL == obj) {
+	if (obj == NULL) {
 		MAGN_ERR("maghub_ipi_data is null!!\n");
 		return 0;
 	}
@@ -240,7 +240,7 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 	int trace = 0;
 	int res = 0;
 
-	if (NULL == obj) {
+	if (obj == NULL) {
 		MAGN_ERR("maghub_ipi_data is null!!\n");
 		return 0;
 	}
@@ -248,7 +248,7 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 		MAGN_ERR("sensor hub has not been ready!!\n");
 		return 0;
 	}
-	if (1 == sscanf(buf, "0x%x", &trace)) {
+	if (sscanf(buf, "0x%x", &trace) == 1) {
 		atomic_set(&obj->trace, trace);
 		res = sensor_set_cmd_to_hub(ID_MAGNETIC, CUST_ACTION_SET_TRACE, &trace);
 		if (res < 0) {
@@ -280,7 +280,7 @@ static ssize_t store_chip_orientation(struct device_driver *ddri, const char *bu
 	struct maghub_ipi_data *obj = mag_ipi_data;
 	int res = 0;
 
-	if (NULL == obj)
+	if (obj == NULL)
 		return 0;
 	if (!atomic_read(&obj->scp_init_done)) {
 		MAGN_ERR("sensor hub has not been ready!!\n");
@@ -324,7 +324,7 @@ static struct driver_attribute *maghub_attr_list[] = {
 static int maghub_create_attr(struct device_driver *driver)
 {
 	int idx = 0, err = 0;
-	int num = (int)(sizeof(maghub_attr_list) / sizeof(maghub_attr_list[0]));
+	int num = ARRAY_SIZE(maghub_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -341,7 +341,7 @@ static int maghub_create_attr(struct device_driver *driver)
 static int maghub_delete_attr(struct device_driver *driver)
 {
 	int idx = 0, err = 0;
-	int num = (int)(sizeof(maghub_attr_list) / sizeof(maghub_attr_list[0]));
+	int num = ARRAY_SIZE(maghub_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -600,7 +600,7 @@ static int maghub_m_get_data(int *x, int *y, int *z, int *status)
 
 	maghub_GetMData(buff, MAGHUB_BUFSIZE);
 
-	if (4 != sscanf(buff, "%x %x %x %x", x, y, z, status))
+	if (sscanf(buff, "%x %x %x %x", x, y, z, status) != 4)
 		MAGN_ERR("maghub_m_get_data sscanf fail!!\n");
 	return 0;
 }
@@ -648,7 +648,7 @@ static int maghub_o_get_data(int *x, int *y, int *z, int *status)
 
 	err = maghub_GetOData(buff, MAGHUB_BUFSIZE);
 
-	if (4 != sscanf(buff, "%x %x %x %x", x, y, z, status))
+	if (sscanf(buff, "%x %x %x %x", x, y, z, status) != 4)
 		MAGN_ERR("maghub_m_get_data sscanf fail!!\n");
 	return 0;
 }

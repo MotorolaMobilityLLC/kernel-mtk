@@ -42,11 +42,11 @@
 #define CM36558_ERR_IDENTIFICATION			-6
 
 /*----------------------------------------------------------------------------*/
-typedef enum {
+enum CM36558_NOTIFY_TYPE {
 	CM36558_NOTIFY_PROXIMITY_CHANGE = 1,
-} CM36558_NOTIFY_TYPE;
+};
 /*----------------------------------------------------------------------------*/
-typedef enum {
+enum CM36558_CUST_ACTION {
 	CM36558_CUST_ACTION_SET_CUST = 1,
 	CM36558_CUST_ACTION_CLR_CALI,
 	CM36558_CUST_ACTION_SET_CALI,
@@ -54,60 +54,58 @@ typedef enum {
 	CM36558_CUST_ACTION_SET_EINT_INFO,
 	CM36558_CUST_ACTION_GET_ALS_RAW_DATA,
 	CM36558_CUST_ACTION_GET_PS_RAW_DATA,
-} CM36558_CUST_ACTION;
+};
 /*----------------------------------------------------------------------------*/
-typedef struct {
+struct CM36558_CUST {
 	uint16_t action;
-} CM36558_CUST;
+};
 /*----------------------------------------------------------------------------*/
-typedef struct {
+struct CM36558_SET_CUST {
 	uint16_t action;
 	uint16_t part;
 	int32_t data[0];
-} CM36558_SET_CUST;
+};
 /*----------------------------------------------------------------------------*/
-typedef CM36558_CUST CM36558_CLR_CALI;
-/*----------------------------------------------------------------------------*/
-typedef struct {
+struct CM36558_SET_CALI {
 	uint16_t action;
 	int32_t cali;
-} CM36558_SET_CALI;
+};
 /*----------------------------------------------------------------------------*/
-typedef struct {
+struct CM36558_SET_PS_THRESHOLD {
 	uint16_t action;
 	int32_t threshold[2];
-} CM36558_SET_PS_THRESHOLD;
+};
 /*----------------------------------------------------------------------------*/
-typedef struct {
+struct CM36558_SET_EINT_INFO {
 	uint16_t action;
 	uint32_t gpio_pin;
 	uint32_t gpio_mode;
 	uint32_t eint_num;
 	uint32_t eint_is_deb_en;
 	uint32_t eint_type;
-} CM36558_SET_EINT_INFO;
+};
 /*----------------------------------------------------------------------------*/
-typedef struct {
+struct CM36558_GET_ALS_RAW_DATA {
 	uint16_t action;
 	uint16_t als;
-} CM36558_GET_ALS_RAW_DATA;
+};
 /*----------------------------------------------------------------------------*/
-typedef struct {
+struct CM36558_GET_PS_RAW_DATA {
 	uint16_t action;
 	uint16_t ps;
-} CM36558_GET_PS_RAW_DATA;
+};
 /*----------------------------------------------------------------------------*/
-typedef union {
+union CM36558_CUST_DATA {
 	uint32_t data[10];
-	CM36558_CUST cust;
-	CM36558_SET_CUST setCust;
-	CM36558_CLR_CALI clearCali;
-	CM36558_SET_CALI setCali;
-	CM36558_SET_PS_THRESHOLD setPSThreshold;
-	CM36558_SET_EINT_INFO setEintInfo;
-	CM36558_GET_ALS_RAW_DATA getALSRawData;
-	CM36558_GET_PS_RAW_DATA getPSRawData;
-} CM36558_CUST_DATA;
+	struct CM36558_CUST cust;
+	struct CM36558_SET_CUST setCust;
+	struct CM36558_CUST clearCali;
+	struct CM36558_SET_CALI setCali;
+	struct CM36558_SET_PS_THRESHOLD setPSThreshold;
+	struct CM36558_SET_EINT_INFO setEintInfo;
+	struct CM36558_GET_ALS_RAW_DATA getALSRawData;
+	struct CM36558_GET_PS_RAW_DATA getPSRawData;
+};
 /*----------------------------------------------------------------------------*/
 
 extern struct platform_device *get_alsps_platformdev(void);

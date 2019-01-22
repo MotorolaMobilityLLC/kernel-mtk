@@ -187,7 +187,7 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 			err = -EINVAL;
 			break;
 		}
-		GYRO_LOG("GYROSCOPE_IOCTL_GET_CALI data : (%d, %d, %d)!\n", cxt->cali_sw[0] , cxt->cali_sw[1],
+		GYRO_LOG("GYROSCOPE_IOCTL_GET_CALI data : (%d, %d, %d)!\n", cxt->cali_sw[0], cxt->cali_sw[1],
 			cxt->cali_sw[2]);
 		sensor_data.x = cxt->cali_sw[0];
 		sensor_data.y = cxt->cali_sw[1];
@@ -219,7 +219,8 @@ static long compat_gyro_factory_unlocked_ioctl(struct file *filp, unsigned int c
 	case COMPAT_GYROSCOPE_IOCTL_SMT_DATA:
 	case COMPAT_GYROSCOPE_IOCTL_READ_SENSORDATA_RAW:
 	/*case COMPAT_GYROSCOPE_IOCTL_READ_TEMPERATURE:
-	case COMPAT_GYROSCOPE_IOCTL_GET_POWER_STATUS: */
+	*case COMPAT_GYROSCOPE_IOCTL_GET_POWER_STATUS:
+	*/
 	case COMPAT_GYROSCOPE_IOCTL_READ_SENSORDATA:
 		/* NVRAM will use below ioctl */
 	case COMPAT_GYROSCOPE_IOCTL_SET_CALI:

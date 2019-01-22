@@ -29,14 +29,14 @@ static struct gyro_init_info gyrohub_init_info;
 struct platform_device *gyroPltFmDev;
 static int gyrohub_init_flag = -1;
 
-typedef enum {
+enum GYRO_TRC {
 	GYRO_TRC_FILTER = 0x01,
 	GYRO_TRC_RAWDATA = 0x02,
 	GYRO_TRC_IOCTL = 0x04,
 	GYRO_TRC_CALI = 0X08,
 	GYRO_TRC_INFO = 0X10,
 	GYRO_TRC_DATA = 0X20,
-} GYRO_TRC;
+};
 struct gyrohub_ipi_data {
 	int direction;
 	atomic_t trace;
@@ -186,7 +186,7 @@ static int gyrohub_ReadGyroData(char *buf, int bufsize)
 	if (atomic_read(&obj->suspend))
 		return -3;
 
-	if (NULL == buf)
+	if (buf == NULL)
 		return -1;
 	err = sensor_get_data_from_hub(ID_GYROSCOPE, &data);
 	if (err < 0) {
@@ -219,7 +219,7 @@ static int gyrohub_ReadChipInfo(char *buf, int bufsize)
 
 	memset(databuf, 0, sizeof(u8) * 10);
 
-	if ((NULL == buf) || (bufsize <= 30))
+	if ((buf == NULL) || (bufsize <= 30))
 		return -1;
 
 	sprintf(buf, "GYROHUB Chip");
@@ -248,7 +248,7 @@ static ssize_t show_chipinfo_value(struct device_driver *ddri, char *buf)
 	char strbuf[GYROHUB_BUFSIZE];
 	int err = 0;
 
-	if (NULL == obj) {
+	if (obj == NULL) {
 		GYROS_ERR("obj is null!!\n");
 		return 0;
 	}
@@ -271,7 +271,7 @@ static ssize_t show_sensordata_value(struct device_driver *ddri, char *buf)
 	char strbuf[GYROHUB_BUFSIZE];
 	int err = 0;
 
-	if (NULL == obj) {
+	if (obj == NULL) {
 		GYROS_ERR("obj is null!!\n");
 		return 0;
 	}
@@ -312,7 +312,7 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 		GYROS_ERR("sensor hub has not been ready!!\n");
 		return 0;
 	}
-	if (1 == sscanf(buf, "0x%x", &trace)) {
+	if (sscanf(buf, "0x%x", &trace) == 1) {
 		atomic_set(&obj->trace, trace);
 		res = sensor_set_cmd_to_hub(ID_GYROSCOPE, CUST_ACTION_SET_TRACE, &trace);
 		if (res < 0) {
@@ -354,7 +354,7 @@ static ssize_t store_chip_orientation(struct device_driver *ddri, const char *bu
 	int _nDirection = 0, ret = 0;
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 
-	if (NULL == obj)
+	if (obj == NULL)
 		return 0;
 	if (!atomic_read(&obj->scp_init_done)) {
 		GYROS_ERR("sensor hub has not been ready!!\n");
@@ -393,7 +393,7 @@ static struct driver_attribute *gyrohub_attr_list[] = {
 static int gyrohub_create_attr(struct device_driver *driver)
 {
 	int idx, err = 0;
-	int num = (int)(sizeof(gyrohub_attr_list) / sizeof(gyrohub_attr_list[0]));
+	int num = ARRAY_SIZE(gyrohub_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -411,7 +411,7 @@ static int gyrohub_create_attr(struct device_driver *driver)
 static int gyrohub_delete_attr(struct device_driver *driver)
 {
 	int idx, err = 0;
-	int num = (int)(sizeof(gyrohub_attr_list) / sizeof(gyrohub_attr_list[0]));
+	int num = ARRAY_SIZE(gyrohub_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -430,9 +430,9 @@ static void scp_init_work_done(struct work_struct *work)
 	if (atomic_read(&obj->scp_init_done) == 0) {
 		GYROS_ERR("scp is not ready to send cmd\n");
 	} else {
-		if (0 == atomic_read(&obj->first_ready_after_boot)) {
+		if (atomic_read(&obj->first_ready_after_boot) == 0)
 			atomic_set(&obj->first_ready_after_boot, 1);
-		} else {
+		else {
 			err = gyrohub_WriteCalibration_scp(obj->cali_sw);
 			if (err < 0)
 				GYROS_ERR("gyrohub_WriteCalibration_scp fail\n");
@@ -496,8 +496,8 @@ static long gyrohub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 	int cali[3];
 	int smtRes = 0;
 	int copy_cnt = 0;
-	static int first_time_enable = 0;
-	
+	static int first_time_enable;
+
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
 	else if (_IOC_DIR(cmd) & _IOC_WRITE)
@@ -550,7 +550,7 @@ static long gyrohub_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 			}
 			first_time_enable = 1;
 		}
-		err = gyrohub_ReadGyroData(strbuf, GYROHUB_BUFSIZE);	
+		err = gyrohub_ReadGyroData(strbuf, GYROHUB_BUFSIZE);
 		if (err) {
 			GYROS_ERR("gyrohub_ReadGyroData failed!\n");
 			break;
@@ -736,9 +736,9 @@ static int gyrohub_enable_nodata(int en)
 	int res = 0;
 	bool power = false;
 
-	if (1 == en)
+	if (en == 1)
 		power = true;
-	if (0 == en)
+	if (en == 0)
 		power = false;
 
 	res = gyrohub_SetPowerMode(power);
@@ -813,7 +813,8 @@ static int gyrohub_get_data(int *x, int *y, int *z, int *status)
 		GYROS_ERR("gyrohub_ReadGyroData fail!!\n");
 		return -1;
 	}
-	sscanf(buff, "%x %x %x %x", x, y, z, status);
+	if (sscanf(buff, "%x %x %x %x", x, y, z, status) != 4)
+		GYROS_ERR("Parsing failed, %s\n", buff);
 	return 0;
 }
 static int scp_ready_event(struct notifier_block *this, unsigned long event, void *ptr)
@@ -859,7 +860,7 @@ static int gyrohub_probe(struct platform_device *pdev)
 	atomic_set(&obj->scp_init_done, 0);
 	INIT_WORK(&obj->init_done_work, scp_init_work_done);
 
-	err = gpio_config();	
+	err = gpio_config();
 	if (err < 0) {
 		GYROS_ERR("gpio_config failed\n");
 		goto exit_kfree;

@@ -172,7 +172,7 @@ static int mag_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 l
 	msgs[1].len = len;
 	msgs[1].buf = data;
 
-	err = i2c_transfer(client->adapter, msgs, sizeof(msgs) / sizeof(msgs[0]));
+	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
 	if (err != 2) {
 		MAGN_ERR("i2c_transfer error: (%d %p %d) %d\n", addr, data, len, err);
 		err = -EIO;
@@ -224,10 +224,11 @@ static long AKI2C_RxData(char *rxData, int length)
 	struct i2c_client *client = this_client;
 	int res = 0;
 	char addr;
+
 	if ((rxData == NULL) || (length < 1))
 		return -EINVAL;
 	addr = rxData[0];
-	
+
 	res = mag_i2c_read_block(client, addr, rxData, length);
 	if (res < 0)
 		return -1;
@@ -281,8 +282,9 @@ static long AKI2C_TxData(char *txData, int length)
 	int res = 0;
 	char addr;
 	u8 *buff;
+
 	if ((txData == NULL) || (length < 2))
-		return -EINVAL; 
+		return -EINVAL;
 	addr = txData[0];
 	buff = &txData[1];
 
@@ -553,7 +555,7 @@ static long AKECS_GetData(char *rbuf, int size)
 
 	if (loop_i >= AKM09911_RETRY_COUNT) {
 		MAG_ERR("Data read retry larger the max count!\n");
-		if (0 == factory_mode)
+		if (factory_mode == 0)
 			/* if return we can not get data at factory mode */
 			return -1;
 	}
@@ -643,14 +645,14 @@ static int akm09911_ReadChipInfo(char *buf, int bufsize)
 
 /*----------------------------shipment test------------------------------------------------*/
 /*!
- @return If @a testdata is in the range of between @a lolimit and @a hilimit,
- the return value is 1, otherwise -1.
- @param[in] testno   A pointer to a text string.
- @param[in] testname A pointer to a text string.
- @param[in] testdata A data to be tested.
- @param[in] lolimit  The maximum allowable value of @a testdata.
- @param[in] hilimit  The minimum allowable value of @a testdata.
- @param[in,out] pf_total
+* @return If @a testdata is in the range of between @a lolimit and @a hilimit,
+* the return value is 1, otherwise -1.
+* @param[in] testno   A pointer to a text string.
+* @param[in] testname A pointer to a text string.
+* @param[in] testdata A data to be tested.
+* @param[in] lolimit  The maximum allowable value of @a testdata.
+* @param[in] hilimit  The minimum allowable value of @a testdata.
+* @param[in,out] pf_total
  */
 int TEST_DATA(const char testno[], const char testname[], const int testdata,
 	const int lolimit, const int hilimit, int *pf_total)
@@ -942,10 +944,10 @@ int FST_AK8963(void)
 
 
 /*!
- Execute "Onboard Function Test" (NOT includes "START" and "END" command).
- @retval 1 The test is passed successfully.
- @retval -1 The test is failed.
- @retval 0 The test is aborted by kind of system error.
+* Execute "Onboard Function Test" (NOT includes "START" and "END" command).
+* @retval 1 The test is passed successfully.
+* @retval -1 The test is failed.
+* @retval 0 The test is aborted by kind of system error.
  */
 int FST_AK09911(void)
 {
@@ -1129,10 +1131,10 @@ int FST_AK09911(void)
 }
 
 /*!
- Execute "Onboard Function Test" (includes "START" and "END" command).
- @retval 1 The test is passed successfully.
- @retval -1 The test is failed.
- @retval 0 The test is aborted by kind of system error.
+* Execute "Onboard Function Test" (includes "START" and "END" command).
+* @retval 1 The test is passed successfully.
+* @retval -1 The test is failed.
+* @retval 0 The test is aborted by kind of system error.
  */
 int FctShipmntTestProcess_Body(void)
 {
@@ -1176,10 +1178,10 @@ static ssize_t show_shipment_test(struct device_driver *ddri, char *buf)
 	int res = 0;
 
 	res = FctShipmntTestProcess_Body();
-	if (1 == res) {
+	if (res == 1) {
 		MAGN_LOG("shipment_test pass\n");
 		strncpy(result, "y", sizeof(result));
-	} else if (-1 == res) {
+	} else if (res == -1) {
 		MAGN_LOG("shipment_test fail\n");
 		strncpy(result, "n", sizeof(result));
 	} else {
@@ -1297,7 +1299,7 @@ static ssize_t show_trace_value(struct device_driver *ddri, char *buf)
 	ssize_t res;
 	struct akm09911_i2c_data *obj = i2c_get_clientdata(this_client);
 
-	if (NULL == obj) {
+	if (obj == NULL) {
 		MAG_ERR("akm09911_i2c_data is null!!\n");
 		return 0;
 	}
@@ -1311,12 +1313,12 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 	struct akm09911_i2c_data *obj = i2c_get_clientdata(this_client);
 	int trace;
 
-	if (NULL == obj) {
+	if (obj == NULL) {
 		MAG_ERR("akm09911_i2c_data is null!!\n");
 		return 0;
 	}
 
-	if (1 == sscanf(buf, "0x%x", &trace))
+	if (sscanf(buf, "0x%x", &trace) == 1)
 		atomic_set(&obj->trace, trace);
 	else
 		MAG_ERR("invalid content: '%s', length = %zu\n", buf, count);
@@ -1342,7 +1344,7 @@ static ssize_t store_chip_orientation(struct device_driver *ddri, const char *bu
 	int ret = 0;
 	struct akm09911_i2c_data *_pt_i2c_obj = i2c_get_clientdata(this_client);
 
-	if (NULL == _pt_i2c_obj)
+	if (_pt_i2c_obj == NULL)
 		return 0;
 
 	ret = kstrtoint(buf, 10, &_nDirection);
@@ -1428,7 +1430,7 @@ static struct driver_attribute *akm09911_attr_list[] = {
 static int akm09911_create_attr(struct device_driver *driver)
 {
 	int idx, err = 0;
-	int num = (int)(sizeof(akm09911_attr_list)/sizeof(akm09911_attr_list[0]));
+	int num = ARRAY_SIZE(akm09911_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -1445,8 +1447,8 @@ static int akm09911_create_attr(struct device_driver *driver)
 /*----------------------------------------------------------------------------*/
 static int akm09911_delete_attr(struct device_driver *driver)
 {
-	int idx , err = 0;
-	int num = (int)(sizeof(akm09911_attr_list)/sizeof(akm09911_attr_list[0]));
+	int idx, err = 0;
+	int num = ARRAY_SIZE(akm09911_attr_list);
 
 	if (driver == NULL)
 		return -EINVAL;
@@ -1505,7 +1507,8 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 	struct hwm_sensor_data *osensor_data;
 	uint32_t enable;
 	/* These two buffers are initialized at start up.
-		After that, the value is not changed */
+	*	After that, the value is not changed
+	*/
 	unsigned char sense_info[AKM_SENSOR_INFO_SIZE];
 	unsigned char sense_conf[AKM_SENSOR_CONF_SIZE];
 
@@ -1739,7 +1742,7 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		}
 		MAGN_LOG("MSENSOR_IOCTL_SENSOR_ENABLE enable=%d!\r\n", enable);
 		factory_mode = 1;
-		if (1 == enable) {
+		if (enable == 1) {
 			atomic_set(&o_flag, 1);
 			atomic_set(&open_flag, 1);
 		} else {
@@ -2664,7 +2667,7 @@ static int akm09911_m_open_report_data(int open)
 	return 0;
 }
 
-static int akm09911_m_get_data(int *x , int *y, int *z, int *status)
+static int akm09911_m_get_data(int *x, int *y, int *z, int *status)
 {
 	mutex_lock(&sensor_data_mutex);
 
@@ -2725,7 +2728,7 @@ static int akm09911_o_open_report_data(int open)
 	return 0;
 }
 
-static int akm09911_o_get_data(int *x , int *y, int *z, int *status)
+static int akm09911_o_get_data(int *x, int *y, int *z, int *status)
 {
 	mutex_lock(&sensor_data_mutex);
 
