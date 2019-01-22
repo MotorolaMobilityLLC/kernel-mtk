@@ -24,6 +24,7 @@
 #include <ion.h>
 #include <mtk/ion_drv.h>
 #include <mtk/mtk_ion.h>
+#include <smi_debug.h>
 
 #ifndef MTK_VPU_FPGA_PORTING
 #include <mmdvfs_mgr.h>
@@ -970,13 +971,56 @@ out:
 	return ret;
 }
 
+static unsigned int vpu_read_smi_bus_debug(int core)
+{
+	unsigned int smi_bus_value = 0x0;
+	unsigned int smi_bus_vpu_value = 0x0;
 
+#ifdef MTK_VPU_SMI_DEBUG_ON
+	if ((int)(vpu_dev->smi_common_base) != 0) {
+		switch (core) {
+		case 0:
+		default:
+			smi_bus_value = vpu_read_reg32(vpu_dev->smi_common_base, 0x414);
+			break;
+		case 1:
+			smi_bus_value = vpu_read_reg32(vpu_dev->smi_common_base, 0x418);
+			break;
+		}
+		smi_bus_vpu_value = (smi_bus_value & 0x007FE000) >> 13;
+	} else {
+		LOG_INF("[vpu_%d] null smi_common_base\n", core);
+	}
+#endif
+	LOG_INF("[vpu_%d] read_smi_bus (0x%x/0x%x)\n", core, smi_bus_value, smi_bus_vpu_value);
+
+	return smi_bus_vpu_value;
+}
 
 static int vpu_disable_regulator_and_clock(int core)
 {
 	int ret = 0;
 
-	LOG_INF("[vpu_%d] dis_rc +\n", core);
+	unsigned int smi_bus_vpu_value = 0x0;
+
+	/* check there is un-finished transaction in bus before turning off vpu power */
+#ifdef MTK_VPU_SMI_DEBUG_ON
+	smi_bus_vpu_value = vpu_read_smi_bus_debug(core);
+	LOG_INF("[vpu_%d] dis_rc 1 (0x%x)\n", core, smi_bus_vpu_value);
+	if ((int)smi_bus_vpu_value != 0) {
+		mdelay(1);
+		smi_bus_vpu_value = vpu_read_smi_bus_debug(core);
+		LOG_INF("[vpu_%d] dis_rc again (0x%x)\n", core, smi_bus_vpu_value);
+		if ((int)smi_bus_vpu_value != 0) {
+			smi_debug_bus_hanging_detect_ext2(0x1ff, 1, 0, 1);
+			vpu_aee_warn("VPU SMI CHECK", "core_%d fail to check smi, value=%d\n", core,
+				smi_bus_vpu_value);
+		}
+	}
+#else
+	LOG_INF("[vpu_%d] dis_rc + (0x%x)\n", core, smi_bus_vpu_value);
+#endif
+
 #define DISABLE_VPU_CLK(clk) \
 	{ \
 		if (clk != NULL) { \

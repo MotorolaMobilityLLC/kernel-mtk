@@ -953,13 +953,15 @@ static int vpu_probe(struct platform_device *pdev)
 	struct device *dev;
 	struct device_node *node;
 	unsigned int irq_info[3];	/* Record interrupts info from device tree */
+	struct device_node *smi_node = NULL;
 
 #ifdef MTK_VPU_FPGA_PORTING
 	core = vpu_num_devs - 3;
 #else
 	core = vpu_num_devs;
 #endif
-	if (core == (MTK_VPU_CORE)) {
+	smi_node = NULL;
+	if (core == MTK_VPU_CORE) {
 		LOG_INF("vpu_num_devs(%d), core(%d) = core(%d)+2 in FPGA, return\n", vpu_num_devs, core, MTK_VPU_CORE);
 		return ret;
 	}
@@ -992,7 +994,7 @@ static int vpu_probe(struct platform_device *pdev)
 		if (vpu_num_devs == 3) {
 #else
 		if (vpu_num_devs == 0) {
-#endif
+#endif	/*MTK_VPU_FPGA_PORTING*/
 			uint32_t phy_addr;
 			uint32_t phy_size;
 
@@ -1007,10 +1009,17 @@ static int vpu_probe(struct platform_device *pdev)
 			vpu_device->bin_base = (unsigned long)ioremap_wc(phy_addr, phy_size);
 			vpu_device->bin_pa = phy_addr;
 			vpu_device->bin_size = phy_size;
+
+			/* get smi common register */
+			#ifdef MTK_VPU_SMI_DEBUG_ON
+			smi_node = of_find_compatible_node(NULL, NULL, "mediatek,smi_common");
+			vpu_device->smi_common_base = (unsigned long) of_iomap(smi_node, 0);
+			#endif
+			LOG_INF("probe, smi_common_base: 0x%lx\n", vpu_device->smi_common_base);
 		}
 		break;
 	}
-#endif
+#endif	/*MTK_VPU_EMULATOR*/
 
 #ifdef MTK_VPU_FPGA_PORTING
 	if (vpu_num_devs > 2) {
@@ -1046,7 +1055,6 @@ static int vpu_probe(struct platform_device *pdev)
 	LOG_DBG("probe 2, vpu_syscfg_base: 0x%lx, vpu_adlctrl_base: 0x%lx vpu_vcorecfg_base: 0x%lx\n",
 			 vpu_device->vpu_syscfg_base,  vpu_device->vpu_adlctrl_base,  vpu_device->vpu_vcorecfg_base);
 #endif
-
 
 	/* Only register char driver in the 1st time */
 	if (++vpu_num_devs == 1) {
