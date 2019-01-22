@@ -496,7 +496,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	spm_suspend_footprint(SPM_SUSPEND_ENTER);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifdef CONFIG_MTK_PMIC
+#if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #if !defined(DISABLE_DLPT_FEATURE)
 	get_dlpt_imix_spm();
 #endif
