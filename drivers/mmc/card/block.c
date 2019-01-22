@@ -711,6 +711,35 @@ out:
 	return err;
 }
 
+#ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
+/* otp operations don't check CAP_SYS_RAWIO but
+ * lower driver must check address is valid or not
+ * to avoid lock invalid partition
+ */
+static int mmc_otp_ops_check(struct block_device *bdev,
+		struct mmc_blk_ioc_data *idata)
+{
+
+	if ((idata->ic.opcode == MMC_WRITE_BLOCK) ||
+	    (idata->ic.opcode == MMC_READ_SINGLE_BLOCK) ||
+	    (idata->ic.opcode == MMC_SET_WRITE_PROT) ||
+	    (idata->ic.opcode == MMC_CLR_WRITE_PROT) ||
+	    (idata->ic.opcode == MMC_SEND_WRITE_PROT) ||
+	    (idata->ic.opcode == 31) ||
+	    ((idata->ic.opcode == MMC_SWITCH) &&
+		(idata->ic.arg & (171 << 16)))) {
+		if (bdev != bdev->bd_contains)
+			return -EPERM;
+	} else {
+		if ((!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
+			return -EPERM;
+		else
+			return 0;
+	}
+	return 0;
+}
+#endif
+
 static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
 			       struct mmc_blk_ioc_data *idata)
 {
@@ -1002,18 +1031,30 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 	struct mmc_blk_data *md;
 	struct mmc_card *card;
 	int err = 0, ioc_err = 0;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	u8 cmdq_en = 0;
+#endif
 
 	/*
 	 * The caller must have CAP_SYS_RAWIO, and must be calling this on the
 	 * whole block device, not on a partition.  This prevents overspray
 	 * between sibling partitions.
 	 */
+#ifndef CONFIG_MTK_EMMC_SUPPORT_OTP
 	if ((!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
 		return -EPERM;
 
 	idata = mmc_blk_ioctl_copy_from_user(ic_ptr);
 	if (IS_ERR(idata))
 		return PTR_ERR(idata);
+#else
+	idata = mmc_blk_ioctl_copy_from_user(ic_ptr);
+	if (IS_ERR(idata))
+		return PTR_ERR(idata);
+	err = mmc_otp_ops_check(bdev, idata);
+	if (err)
+		goto cmd_err;
+#endif
 
 	md = mmc_blk_get(bdev->bd_disk);
 	if (!md) {
@@ -1028,8 +1069,29 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 	}
 
 	mmc_get_card(card);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	cmdq_en = card->ext_csd.cmdq_mode_en;
+	if (cmdq_en) {
+		err = mmc_blk_cmdq_switch(card, 0);
+		if (err) {
+			pr_err("%s, %s: disable cmdq error %d\n",
+				__func__, mmc_hostname(card->host), err);
+			mmc_put_card(card);
+			goto cmd_done;
+		}
+	}
+#endif
 
 	ioc_err = __mmc_blk_ioctl_cmd(card, md, idata);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (cmdq_en) {
+		err = mmc_blk_cmdq_switch(card, 1);
+		if (err)
+			pr_err("%s, %s: enable cmdq error %d\n",
+				__func__, mmc_hostname(card->host), err);
+	}
+#endif
 
 	mmc_put_card(card);
 
