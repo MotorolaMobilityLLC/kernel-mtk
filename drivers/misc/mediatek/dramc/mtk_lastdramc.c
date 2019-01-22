@@ -47,7 +47,7 @@
 #define Reg_Readl(addr) readl(IOMEM(addr))
 
 #ifdef LAST_DRAMC_IP_BASED
-static void *(*get_emi_base)(void);
+static void __iomem *(*get_emi_base)(void);
 
 static int __init set_single_channel_test_angent(int channel)
 {
@@ -160,7 +160,7 @@ static int __init last_dramc_test_agent_init(void)
 	void __iomem *emi_base;
 	unsigned int emi_cona, i, channel_num;
 
-	get_emi_base = (void *)symbol_get(mt_emi_base_get);
+	get_emi_base = (void __iomem *)symbol_get(mt_emi_base_get);
 	if (get_emi_base == NULL) {
 		pr_err("[LastDRAMC] mt_emi_base_get is NULL\n");
 		return 0;
