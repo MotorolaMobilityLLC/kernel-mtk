@@ -1033,7 +1033,7 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 				id, PWR_CONN_SRCCLKENA_INFRA_MASK_B, 0));
 	p += sprintf(p, "ufs_infra_req_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
-				id, PWR_UFS_SRCCLKENA_MASK_B, 0));
+				id, PWR_UFS_INFRA_REQ_MASK_B, 0));
 	p += sprintf(p, "srcclkeni_infra_mask_b = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_SRCCLKENI_INFRA_MASK_B, 0));
