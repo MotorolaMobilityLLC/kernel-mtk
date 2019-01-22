@@ -262,8 +262,8 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_WFI_OP] = "wfi_op",
 	[PWR_MP0_CPUTOP_IDLE_MASK] = "mp0_cputop_idle_mask",
 	[PWR_MCUSYS_IDLE_MASK] = "mcusys_idle_mask",
-	[PWR_SSPM_DDREN_REQ_DBC_EN] = "mcu_ddren_req_dbc_en",
-	[PWR_SSPM_APSRC_SEL] = "mcu_apsrc_sel",
+	[PWR_MCU_DDREN_REQ_DBC_EN] = "mcu_ddren_req_dbc_en",
+	[PWR_MCU_APSRC_SEL] = "mcu_apsrc_sel",
 	[PWR_MM_MASK_B] = "mm_mask_b",
 	[PWR_MD_DDR_EN_0_DBC_EN] = "md_ddr_en_0_dbc_en",
 	[PWR_MD_DDR_EN_1_DBC_EN] = "md_ddr_en_1_dbc_en",
@@ -307,7 +307,7 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_MD_APSRC_REQ_0_INFRA_MASK_B] = "md_apsrc_req_0_infra_mask_b",
 	[PWR_MD_APSRC_REQ_1_INFRA_MASK_B] = "md_apsrc_req_1_infra_mask_b",
 	[PWR_CONN_APSRCREQ_INFRA_MASK_B] = "conn_apsrcreq_infra_mask_b",
-	[PWR_SSPM_APSRCREQ_INFRA_MASK_B] = "mcu_apsrcreq_infra_mask_b",
+	[PWR_MCU_APSRCREQ_INFRA_MASK_B] = "mcu_apsrcreq_infra_mask_b",
 	[PWR_MD_DDR_EN_0_MASK_B] = "md_ddr_en_0_mask_b",
 	[PWR_MD_DDR_EN_1_MASK_B] = "md_ddr_en_1_mask_b",
 	[PWR_MD_VRF18_REQ_0_MASK_B] = "md_vrf18_req_0_mask_b",
@@ -332,8 +332,8 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_DISP_REQ_MASK_B] = "disp_req_mask_b",
 	[PWR_DISP1_REQ_MASK_B] = "disp1_req_mask_b",
 	[PWR_MFG_REQ_MASK_B] = "mfg_req_mask_b",
-	[PWR_SSPM_DDREN_REQ_MASK_B] = "mcu_ddren_req_mask_b",
-	[PWR_SSPM_APSRC_REQ_MASK_B] = "mcu_apsrc_req_mask_b",
+	[PWR_MCU_DDREN_REQ_MASK_B] = "mcu_ddren_req_mask_b",
+	[PWR_MCU_APSRC_REQ_MASK_B] = "mcu_apsrc_req_mask_b",
 	[PWR_PS_C2K_RCCIF_WAKE_MASK_B] = "ps_c2k_rccif_wake_mask_b",
 	[PWR_L1_C2K_RCCIF_WAKE_MASK_B] = "l1_c2k_rccif_wake_mask_b",
 	[PWR_SDIO_ON_DVFS_REQ_MASK_B] = "sdio_on_dvfs_req_mask_b",
@@ -434,10 +434,10 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 				id, PWR_MCUSYS_IDLE_MASK, 0));
 	p += sprintf(p, "mcu_ddren_req_dbc_en = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
-				id, PWR_SSPM_DDREN_REQ_DBC_EN, 0));
+				id, PWR_MCU_DDREN_REQ_DBC_EN, 0));
 	p += sprintf(p, "mcu_apsrc_sel = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
-				id, PWR_SSPM_APSRC_SEL, 0));
+				id, PWR_MCU_APSRC_SEL, 0));
 	p += sprintf(p, "mm_mask_b = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MM_MASK_B, 0));
@@ -569,7 +569,7 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 				id, PWR_CONN_APSRCREQ_INFRA_MASK_B, 0));
 	p += sprintf(p, "mcu_apsrcreq_infra_mask_b = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
-				id, PWR_SSPM_APSRCREQ_INFRA_MASK_B, 0));
+				id, PWR_MCU_APSRCREQ_INFRA_MASK_B, 0));
 	p += sprintf(p, "md_ddr_en_0_mask_b = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_MD_DDR_EN_0_MASK_B, 0));
@@ -644,10 +644,10 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 				id, PWR_MFG_REQ_MASK_B, 0));
 	p += sprintf(p, "mcu_ddren_req_mask_b = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
-				id, PWR_SSPM_DDREN_REQ_MASK_B, 0));
+				id, PWR_MCU_DDREN_REQ_MASK_B, 0));
 	p += sprintf(p, "mcu_apsrc_req_mask_b = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
-				id, PWR_SSPM_APSRC_REQ_MASK_B, 0));
+				id, PWR_MCU_APSRC_REQ_MASK_B, 0));
 	p += sprintf(p, "ps_c2k_rccif_wake_mask_b = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PS_C2K_RCCIF_WAKE_MASK_B, 0));
@@ -746,6 +746,7 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 
 	return p - buf;
 }
+
 #elif defined(CONFIG_MACH_MT6771)
 static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_PCM_FLAGS] = "pcm_flags",
@@ -1833,11 +1834,11 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->mcusys_idle_mask = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCUSYS_IDLE_MASK, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SSPM_DDREN_REQ_DBC_EN])) {
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU_DDREN_REQ_DBC_EN])) {
 		pwrctrl->mcu_ddren_req_dbc_en = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_SSPM_DDREN_REQ_DBC_EN, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SSPM_APSRC_SEL])) {
+				id, PWR_MCU_DDREN_REQ_DBC_EN, val);
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU_APSRC_SEL])) {
 		pwrctrl->mcu_apsrc_sel = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU_APSRC_SEL, val);
@@ -2013,10 +2014,10 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->conn_apsrcreq_infra_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_CONN_APSRCREQ_INFRA_MASK_B, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SSPM_APSRCREQ_INFRA_MASK_B])) {
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU_APSRCREQ_INFRA_MASK_B])) {
 		pwrctrl->mcu_apsrcreq_infra_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_SSPM_APSRCREQ_INFRA_MASK_B, val);
+				id, PWR_MCU_APSRCREQ_INFRA_MASK_B, val);
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MD_DDR_EN_0_MASK_B])) {
 		pwrctrl->md_ddr_en_0_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
@@ -2117,10 +2118,10 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->mcu_ddren_req_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_MCU_DDREN_REQ_MASK_B, val);
-	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_SSPM_APSRC_REQ_MASK_B])) {
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_MCU_APSRC_REQ_MASK_B])) {
 		pwrctrl->mcu_apsrc_req_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
-				id, PWR_SSPM_APSRC_REQ_MASK_B, val);
+				id, PWR_MCU_APSRC_REQ_MASK_B, val);
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PS_C2K_RCCIF_WAKE_MASK_B])) {
 		pwrctrl->ps_c2k_rccif_wake_mask_b = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
