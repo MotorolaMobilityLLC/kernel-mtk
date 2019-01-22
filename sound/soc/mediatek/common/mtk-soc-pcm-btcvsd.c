@@ -168,20 +168,24 @@ void AudDrv_BTCVSD_WriteToBT(BT_SCO_PACKET_LEN uLen,
 	unsigned long flags;
 	kal_uint8 *pDst;
 	unsigned long connsys_addr_tx, ap_addr_tx;
+	bool new_ap_addr_tx = true;
+
+	if (!btsco.pTX) {
+		pr_err("%s(), btsco.pTX == NULL\n", __func__);
+		return;
+	}
 
 	LOGBT("%s(+) btsco.pTX->iPacket_r=%d\n", __func__, btsco.pTX->iPacket_r);
 
 	spin_lock_irqsave(&auddrv_btcvsd_tx_lock, flags);
-	if (btsco.pTX != NULL) {
-		for (i = 0; i < uBlockSize; i++) {
-			memcpy(btsco.pTX->TempPacketBuf + (SCO_TX_ENCODE_SIZE * i),
-			       (btsco.pTX->PacketBuf +
-				(btsco.pTX->iPacket_r & SCO_TX_PACKET_MASK) *
-				SCO_TX_ENCODE_SIZE),
-			       SCO_TX_ENCODE_SIZE);
+	for (i = 0; i < uBlockSize; i++) {
+		memcpy(btsco.pTX->TempPacketBuf + (SCO_TX_ENCODE_SIZE * i),
+		       (btsco.pTX->PacketBuf +
+			(btsco.pTX->iPacket_r & SCO_TX_PACKET_MASK) *
+			SCO_TX_ENCODE_SIZE),
+		       SCO_TX_ENCODE_SIZE);
 
-			btsco.pTX->iPacket_r++;
-		}
+		btsco.pTX->iPacket_r++;
 	}
 	spin_unlock_irqrestore(&auddrv_btcvsd_tx_lock, flags);
 
@@ -190,10 +194,29 @@ void AudDrv_BTCVSD_WriteToBT(BT_SCO_PACKET_LEN uLen,
 	LOGBT("AudDrv_BTCVSD_WriteToBT connsys_addr_tx=0x%lx,ap_addr_tx=0x%lx\n", connsys_addr_tx, ap_addr_tx);
 	pDst = (kal_uint8 *)ap_addr_tx;
 
-	if (btsco.pTX != NULL) {
+	if (!btsco.pTX->mute) {
 		AudDrv_BTCVSD_DataTransfer(BT_SCO_DIRECT_ARM2BT, btsco.pTX->TempPacketBuf,
-								pDst, uPacketLength, uPacketNumber, btsco.uTXState);
+					   pDst, uPacketLength, uPacketNumber, btsco.uTXState);
 	}
+
+	/* store bt tx buffer sram info */
+	btsco.pTX->buffer_info.packet_length = uPacketLength;
+	btsco.pTX->buffer_info.packet_number = uPacketNumber;
+	for (i = 0; i < btsco.pTX->buffer_info.num_valid_addr; i++) {
+		if (btsco.pTX->buffer_info.addr_to_clean[i] == ap_addr_tx) {
+			new_ap_addr_tx = false;
+			break;
+		}
+	}
+	if (new_ap_addr_tx) {
+		btsco.pTX->buffer_info.num_valid_addr++;
+		pr_warn("%s(), new ap_addr_tx = 0x%lx, num_valid_addr %d\n",
+			__func__, ap_addr_tx, btsco.pTX->buffer_info.num_valid_addr);
+		btsco.pTX->buffer_info.addr_to_clean[btsco.pTX->buffer_info.num_valid_addr - 1] = ap_addr_tx;
+	}
+
+	if (btsco.pTX->mute)
+		btcvsd_tx_clean_buffer();
 
 	LOGBT("%s(-),btsco.pTX->iPacket_r=%d\n", __func__, btsco.pTX->iPacket_r);
 }
@@ -914,5 +937,56 @@ unsigned long btcvsd_bytes_to_frame(struct snd_pcm_substream *substream,
 		count = count >> 3;
 	/* printk("%s bytes = %d count = %d\n",__func__,bytes,count); */
 	return count;
+}
+
+void set_btcvsd_band(enum BT_SCO_BAND band)
+{
+	btsco.band = band;
+}
+
+enum BT_SCO_BAND get_btcvsd_band(void)
+{
+	return btsco.band;
+}
+
+/* write encoded mute data to bt sram */
+void btcvsd_tx_clean_buffer(void)
+{
+	unsigned int i;
+	enum BT_SCO_BAND band = get_btcvsd_band();
+
+	pr_debug("%s(), band %d, num_valid_addr %u\n",
+		 __func__,
+		 band,
+		 btsco.pTX->buffer_info.num_valid_addr);
+
+	if (!btsco.pTX) {
+		pr_err("%s(), btsco.pTX == NULL\n", __func__);
+		return;
+	}
+
+	/* prepare encoded mute data */
+	if (band == BT_SCO_NB)
+		memset(btsco.pTX->TempPacketBuf, 170, BT_SCO_PACKET_180);
+	else
+		memset(btsco.pTX->TempPacketBuf, 65, BT_SCO_PACKET_180);
+
+
+	/* write mute data to bt tx sram buffer */
+	for (i = 0; i < btsco.pTX->buffer_info.num_valid_addr; i++) {
+		kal_uint8 *pDst;
+
+		pr_debug("%s(), clean addr 0x%lx\n",
+			 __func__, btsco.pTX->buffer_info.addr_to_clean[i]);
+
+		pDst = (kal_uint8 *)btsco.pTX->buffer_info.addr_to_clean[i];
+
+		AudDrv_BTCVSD_DataTransfer(BT_SCO_DIRECT_ARM2BT,
+					   btsco.pTX->TempPacketBuf,
+					   pDst,
+					   btsco.pTX->buffer_info.packet_length,
+					   btsco.pTX->buffer_info.packet_number,
+					   btsco.uTXState);
+	}
 }
 

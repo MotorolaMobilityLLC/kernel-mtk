@@ -192,6 +192,17 @@ typedef enum {
 		BT_SCO_CVSD_MAX = 6
 } BT_SCO_PACKET_LEN;
 
+enum BT_SCO_BAND {
+	BT_SCO_NB,
+	BT_SCO_WB,
+};
+
+struct btcvsd_tx_buffer_info {
+	unsigned int num_valid_addr;
+	unsigned long addr_to_clean[20];
+	kal_uint32 packet_length;
+	kal_uint32 packet_number;
+};
 
 typedef struct {
 		dma_addr_t pucTXPhysBufAddr;
@@ -225,6 +236,8 @@ typedef struct {
 	kal_uint8 TempPacketBuf[BT_SCO_PACKET_180];
 	kal_bool fUnderflow;
 	kal_uint32 u4BufferSize; /* TX packetbuf size */
+	struct btcvsd_tx_buffer_info buffer_info;
+	bool mute;
 } BT_SCO_TX_T;
 
 typedef struct {
@@ -236,6 +249,7 @@ typedef struct {
 		CVSD_STATE uTXState;
 		CVSD_STATE uRXState;
 		kal_bool  fIsStructMemoryOnMED;
+		enum BT_SCO_BAND band;
 } BT_SCO_T;
 extern BT_SCO_T btsco;
 
@@ -274,6 +288,9 @@ unsigned long btcvsd_frame_to_bytes(struct snd_pcm_substream *substream,
 unsigned long btcvsd_bytes_to_frame(struct snd_pcm_substream *substream,
 				    unsigned long count);
 
+void set_btcvsd_band(enum BT_SCO_BAND band);
+enum BT_SCO_BAND get_btcvsd_band(void);
+void btcvsd_tx_clean_buffer(void);
 
 /* here is temp address for ioremap BT hardware register */
 extern volatile void *BTSYS_PKV_BASE_ADDRESS;
