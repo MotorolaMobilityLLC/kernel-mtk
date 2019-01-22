@@ -70,6 +70,10 @@ EXPORT_SYMBOL(cpu_hwcaps);
 		.width = 0,				\
 	}
 
+/* meta feature for alternatives */
+static bool __maybe_unused
+cpufeature_pan_not_uao(const struct arm64_cpu_capabilities *entry);
+
 static struct arm64_ftr_bits ftr_id_aa64isar0[] = {
 	ARM64_FTR_BITS(FTR_STRICT, FTR_EXACT, 32, 32, 0),
 	ARM64_FTR_BITS(FTR_STRICT, FTR_EXACT, ID_AA64ISAR0_RDM_SHIFT, 4, 0),
@@ -647,6 +651,39 @@ static bool has_no_hw_prefetch(const struct arm64_cpu_capabilities *entry)
 	return MIDR_IS_CPU_MODEL_RANGE(midr, MIDR_THUNDERX, rv_min, rv_max);
 }
 
+#ifdef CONFIG_UNMAP_KERNEL_AT_EL0
+static int __kpti_forced; /* 0: not forced, >0: forced on, <0: forced off */
+
+static bool unmap_kernel_at_el0(const struct arm64_cpu_capabilities *entry)
+{
+	/* Forced on command line? */
+	if (__kpti_forced) {
+		pr_info_once("kernel page table isolation forced %s by command line option\n",
+			     __kpti_forced > 0 ? "ON" : "OFF");
+		return __kpti_forced > 0;
+	}
+
+	/* Useful for KASLR robustness */
+	if (IS_ENABLED(CONFIG_RANDOMIZE_BASE))
+		return true;
+
+	return false;
+}
+
+static int __init parse_kpti(char *str)
+{
+	bool enabled;
+	int ret = strtobool(str, &enabled);
+
+	if (ret)
+		return ret;
+
+	__kpti_forced = enabled ? 1 : -1;
+	return 0;
+}
+__setup("kpti=", parse_kpti);
+#endif	/* CONFIG_UNMAP_KERNEL_AT_EL0 */
+
 static const struct arm64_cpu_capabilities arm64_features[] = {
 	{
 		.desc = "GIC system register CPU interface",
@@ -693,6 +730,18 @@ static const struct arm64_cpu_capabilities arm64_features[] = {
 		.enable = cpu_enable_uao,
 	},
 #endif /* CONFIG_ARM64_UAO */
+#ifdef CONFIG_ARM64_PAN
+	{
+		.capability = ARM64_ALT_PAN_NOT_UAO,
+		.matches = cpufeature_pan_not_uao,
+	},
+#endif /* CONFIG_ARM64_PAN */
+#ifdef CONFIG_UNMAP_KERNEL_AT_EL0
+	{
+		.capability = ARM64_UNMAP_KERNEL_AT_EL0,
+		.matches = unmap_kernel_at_el0,
+	},
+#endif
 	{},
 };
 
@@ -976,4 +1025,10 @@ void __init setup_cpu_features(void)
 	if (L1_CACHE_BYTES < cls)
 		pr_warn("L1_CACHE_BYTES smaller than the Cache Writeback Granule (%d < %d)\n",
 			L1_CACHE_BYTES, cls);
+}
+
+static bool __maybe_unused
+cpufeature_pan_not_uao(const struct arm64_cpu_capabilities *entry)
+{
+	return (cpus_have_cap(ARM64_HAS_PAN) && !cpus_have_cap(ARM64_HAS_UAO));
 }
