@@ -238,6 +238,9 @@ static int _cl_cam_status_read(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", _cl_cam_status);
 
+	if (_cl_cam_status)
+		mtk_cooler_cam_dprintk_always("%s: %d\n", __func__, _cl_cam_status);
+
 	return 0;
 }
 
