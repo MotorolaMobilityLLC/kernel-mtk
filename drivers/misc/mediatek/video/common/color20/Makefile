@@ -57,6 +57,10 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
     ccflags-y += -DSUPPORT_HDR
 endif
 
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6771) $(CONFIG_MACH_MT6775)))
+    ccflags-y += -DSUPPORT_MDP_AAL
+endif
+
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6763) \
              $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6775) $(CONFIG_MACH_MT6771)))
     ccflags-y += -DSUPPORT_ULTRA_RESOLUTION
