@@ -615,11 +615,10 @@ void set_hp_impedance(int impedance)
 	mhpimpedance = impedance;
 }
 
-void OpenTrimBufferHardware(bool enable)
+void OpenTrimBufferHardware(bool enable, bool buffer_on)
 {
-	pr_warn("%s(), enable %d\n", __func__, enable);
+	pr_warn("%s(), enable %d, buffer_on %d\n", __func__, enable, buffer_on);
 
-	/* TODO: KC: not final yet, need de last confirm */
 	if (enable) {
 		TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_HEADSETL);
 
@@ -677,20 +676,39 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0055, 0xffff);
 		/* Set HPP/N STB enhance circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc033, 0xffff);
-		/* No Pull-down HPL/R to AVSS28_AUD */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4033, 0xffff);
 
-		/* Enable HP driver bias circuits */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30c0, 0xffff);
-		/* Enable HP driver core circuits */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30f0, 0xffff);
-		/* Enable HP main CMFB loop */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
+		if (buffer_on) {
+			/* No Pull-down HPL/R to AVSS28_AUD */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4033, 0xffff);
+		} else {
+			/* Pull-down HPL/R to AVSS28_AUD */
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0xc033, 0xffff);
+		}
 
-		/* Enable HP aux output stage */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0xffff);
-		/* Enable HPR/L main output stage step by step */
-		hp_main_output_ramp(true);
+		if (buffer_on) {
+			/* Enable HP driver bias circuits */
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30c0, 0xffff);
+			/* Enable HP driver core circuits */
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30f0, 0xffff);
+			/* Enable HP main CMFB loop */
+			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0200, 0xffff);
+
+			/* Enable HP main output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0xffff);
+			/* Enable HPR/L main output stage step by step */
+			hp_main_output_ramp(true);
+		} else {
+			/* Enable HP driver bias circuits */
+			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30c0, 0xffff);
+			/* Disable HP main output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0xffff);
+			/* Enable HS driver bias circuits */
+			/* Disable HS main output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0012, 0xffff);
+			/* Enable LO driver bias circuits */
+			/* Disable LO main output stage */
+			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0012, 0xffff);
+		}
 
 		/* apply volume setting, 0dB */
 		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = 8;
@@ -699,24 +717,11 @@ void OpenTrimBufferHardware(bool enable)
 
 		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x1, 0x1);
-		/* Enable Audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x30ff, 0xffff);
 
 		/* Enable low-noise mode of DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0203, 0xffff);
 		udelay(100);
-
-		/* Switch HPL MUX to audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x32ff, 0xffff);
-		/* Switch HPR MUX to audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3aff, 0xffff);
-
-		/* Enable HS STB enhance circuit */
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0090, 0xffff);
 	} else {
-		/* Disable HS STB enhance circuit */
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0xffff);
-
 		/* HPR/HPL mux to open */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00);
 		/* Disable Audio DAC */
@@ -730,6 +735,11 @@ void OpenTrimBufferHardware(bool enable)
 
 		/* decrease HPR/L main output stage step by step */
 		hp_main_output_ramp(false);
+
+		/* disable HS driver bias circuits */
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0010, 0xffff);
+		/* disable LO driver bias circuits */
+		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0010, 0xffff);
 
 		/* Disable HP main output stage */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0, 0x3);
@@ -758,6 +768,9 @@ void OpenTrimBufferHardware(bool enable)
 		/* Disable NCP */
 		Ana_Set_Reg(AUDNCP_CLKDIV_CON3, 0x1, 0x1);
 
+		/* Disable Pull-down HPL/R to AVSS28_AUD */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4033, 0xffff);
+
 		TurnOffDacPower();
 
 	}
@@ -765,73 +778,6 @@ void OpenTrimBufferHardware(bool enable)
 
 void OpenAnalogTrimHardware(bool enable)
 {
-	if (enable) {
-		pr_warn("%s true\n", __func__);
-		TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_HEADSETL);
-		/* set analog part (HP playback) */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
-		/* Enable cap-less LDOs (1.6V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0100, 0x0100);
-		/* Enable NV regulator (-1.6V) */
-		Ana_Set_Reg(ZCD_CON0, 0x0000, 0xffff);
-		/* Disable AUD_ZCD */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
-		/* Disable headphone, voice and short-circuit protection */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0100);
-		/* Enable IBIST */
-		Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff);
-		/* Set HPR/HPL gain as minimum (~ -40dB) */
-		Ana_Set_Reg(ZCD_CON3, 0x001F, 0xffff);
-		/* Set HS gain as minimum (~ -40dB) */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0001, 0x0001);
-		/* De_OSC of HP */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2000, 0xffff);
-		/* enable output STBENH */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2100, 0xffff);
-		/* De_OSC of voice, enable output STBENH */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE090, 0xffff);
-		/* Enable voice driver */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2140, 0xffff);
-		/* Enable pre-charge buffer  */
-
-		udelay(50);
-
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA255, 0x0200);
-		/* Enable AUD_CLK */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE09F, 0xffff);
-		/* Enable Audio DAC  */
-
-		/* Apply digital DC compensation value to DAC */
-		Ana_Set_Reg(ZCD_CON2, 0x0489, 0xffff);
-		/* Set HPR/HPL gain to -1dB, step by step */
-		/* SetDcCompenSation(); */
-
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF49F, 0xffff);
-		/* Switch HP MUX to audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF4FF, 0xffff);
-		/* Enable HPR/HPL */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2100, 0xffff);
-		/* Disable pre-charge buffer */
-		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2000, 0xffff);
-		/* Disable De_OSC of voice */
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF4EF, 0xffff);
-		/* Disable voice buffer */
-	} else {
-		pr_warn("%s false\n", __func__);
-		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
-		/* Disable Audio DAC */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0200);
-		/* Audio decoder reset - bit 9 */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0x0100);
-		/* Disable IBIST  - bit 8 */
-		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0100);
-		/* Disable NV regulator (-1.6V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0155, 0xA000);
-		/* Disable cap-less LDOs (1.6V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x0001);
-		/* De_OSC of HP */
-		TurnOffDacPower();
-	}
 }
 
 bool OpenHeadPhoneImpedanceSetting(bool bEnable)
@@ -1035,8 +981,10 @@ static int SetDcCompenSation(bool enable)
 	abs_lch = sign_lch * diff_lch;
 	abs_rch = sign_rch * diff_rch;
 	times = abs_lch > abs_rch ? (abs_lch / ramp_step) : (abs_rch / ramp_step);
-	pr_aud("%s enable = %d, index_gain = %d, times = %d, lch_value = %d -> %d, rch_value = %d -> %d\n",
-	       __func__, enable, index_lgain, times, last_lch_comp_value, lch_value, last_rch_comp_value, rch_value);
+	pr_debug("%s(), enable = %d, index_gain = %d, times = %d, lch_value = %d -> %d, rch_value = %d -> %d, ramp_step %d\n",
+	       __func__, enable, index_lgain, times,
+	       last_lch_comp_value, lch_value,
+	       last_rch_comp_value, rch_value, ramp_step);
 
 	if (enable) {
 		enable_dc_compensation(true);
