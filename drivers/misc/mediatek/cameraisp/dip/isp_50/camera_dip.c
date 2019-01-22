@@ -19,7 +19,6 @@
  *
  ******************************************************************************/
 /* MET: define to enable MET*/
-#define DIP_MET_READY
 
 #include <linux/types.h>
 #include <linux/device.h>
@@ -3472,14 +3471,6 @@ static signed int DIP_probe(struct platform_device *pDev)
 		return -ENOMEM;
 	}
 	dip_devs = _dipdev;
-
-
-	#if defined(DIP_MET_READY)
-	/*MET: met mmsys profile*/
-	if (met_mmsys_config_isp_base_addr)
-		met_mmsys_config_isp_base_addr((unsigned long *)dip_devs);
-	#endif
-
 
 #else
 	/* WARNING:KREALLOC_ARG_REUSE:Reusing the krealloc arg is almost always a bug */
