@@ -596,7 +596,6 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 		do {
 			if ((resp & 1) && (!host->data_mrq_queued[i])) {
 				if (host->cur_rw_task == i) {
-					pr_err("[CQ] task %d ready not clear when DMA\n", i);
 					resp >>= 1;
 					i++;
 					continue;
