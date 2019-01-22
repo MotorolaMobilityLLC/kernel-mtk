@@ -971,6 +971,7 @@ if (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) {
 
 	/* Update Shutter */
 	write_cmos_sensor(0x0104, 0x01);
+	write_cmos_sensor(0x0350, 0x01); /* enable auto extend */
 	write_cmos_sensor(0x0202, (shutter >> 8) & 0xFF);
 	write_cmos_sensor(0x0203, shutter & 0xFF);
 	write_cmos_sensor(0x0104, 0x00);
