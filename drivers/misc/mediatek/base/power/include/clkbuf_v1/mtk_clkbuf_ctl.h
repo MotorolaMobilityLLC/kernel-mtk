@@ -70,10 +70,20 @@ enum xo_id {
 	XO_NUMBER
 };
 
+enum {
+	BBLPM_COND_SKIP = 1,
+	BBLPM_COND_CEL,
+	BBLPM_COND_NFC,
+	BBLPM_COND_WCN,
+	BBLPM_COND_EXT,
+};
+
 #define CLKBUF_NUM      XO_NUMBER
 
 #define STA_CLK_ON      1
 #define STA_CLK_OFF     0
+
+/* #define CLKBUF_USE_BBLPM */
 
 int clk_buf_init(void);
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff);
@@ -83,6 +93,7 @@ void clk_buf_set_by_flightmode(bool is_flightmode_on);
 void clk_buf_save_afc_val(unsigned int afcdac);
 void clk_buf_write_afcdac(void);
 void clk_buf_control_bblpm(bool on);
+u32 clk_buf_bblpm_enter_cond(void);
 bool is_clk_buf_under_flightmode(void);
 bool is_clk_buf_from_pmic(void);
 

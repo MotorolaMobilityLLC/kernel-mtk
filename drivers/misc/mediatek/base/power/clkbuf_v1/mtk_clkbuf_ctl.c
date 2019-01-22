@@ -119,15 +119,10 @@ static void __iomem *pwrap_base;
 #define PMIC_CW00_INIT_VAL			0x4FFD
 #define PMIC_CW11_INIT_VAL			0xA400
 
-/* FIXME: manual mode of driving current */
-#define PMIC_CW13_SUGGEST_VAL			0x4666
-#define PMIC_CW13_XO_EXTBUF_HD_VAL		((0x2 << 0) | (0x2 << 4) \
-						 | (0x2 << 8) | (0 << 12))
-
 /* TODO: marked this after driver is ready */
 /* #define CLKBUF_BRINGUP */
-/* NOTE: CLKBUF_INIT_BY_LK is used in kernel if CLKBUF is enabled in LK */
-#define CLKBUF_INIT_BY_LK
+/* NOTE: CLKBUF_INIT_BY_PL is used in kernel if CLKBUF is enabled in LK */
+#define CLKBUF_INIT_BY_PL
 
 /* Debug only */
 /* #define CLKBUF_TWAM_DEBUG */
@@ -143,7 +138,6 @@ static bool is_pmic_clkbuf = true;
 static bool g_is_flightmode_on;
 static bool clkbuf_debug;
 static unsigned int bblpm_cnt;
-static int g_xo_drv_curr_val = -1;
 
 #ifdef CLKBUF_TWAM_DEBUG
 struct delayed_work clkbuf_twam_dbg_work;
@@ -278,7 +272,7 @@ static void pmic_clk_buf_ctrl_multi(void)
 
 static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 {
-	uint32_t pmic_cw00 = 0, pmic_cw11 = 0;
+	u32 pmic_cw00 = 0, pmic_cw11 = 0;
 
 	if (!is_clkbuf_initiated)
 		return;
@@ -298,22 +292,13 @@ static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 		     status[2], status[3], status[4], status[5], status[6]);
 }
 
-/*
- * Baseband Low Power Mode (BBLPM) for PMIC clkbuf
- * Condition: TBD
- * Caller: deep idle
- */
 void clk_buf_control_bblpm(bool on)
 {
-/* TODO: Disable BBLPM before conditions are confirmed */
-#if 0
-	uint32_t cw00 = 0;
+#ifdef CLKBUF_USE_BBLPM
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	u32 cw00 = 0;
 
-	if (!is_clkbuf_initiated)
-		return;
-
-	if (!is_pmic_clkbuf ||
-	    (pmic_clk_buf_swctrl[CLK_BUF_NFC] == CLK_BUF_SW_ENABLE))
+	if (!is_clkbuf_initiated || !is_pmic_clkbuf)
 		return;
 
 	if (on) /* FPM -> BBLPM */
@@ -328,11 +313,46 @@ void clk_buf_control_bblpm(bool on)
 	pmic_read_interface_nolock(MT6335_DCXO_CW00, &cw00,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 
-	bblpm_cnt++;
-
-	clk_buf_dbg("%s(%u): CW00=0x%x, bblpm_cnt=%u\n", __func__, (on ? 1 : 0),
-		    cw00, bblpm_cnt);
+	clk_buf_dbg("%s(%u): CW00=0x%x\n", __func__, (on ? 1 : 0), cw00);
 #endif
+#endif
+}
+
+/*
+ * Baseband Low Power Mode (BBLPM) for PMIC clkbuf
+ * Condition: XO_CELL/XO_NFC/XO_WCN/XO_EXT OFF
+ * Caller: deep idle, SODI2.5
+ * Return: 0 if all conditions are matched & ready to enter BBLPM
+ */
+u32 clk_buf_bblpm_enter_cond(void)
+{
+	u32 bblpm_cond = 0;
+
+#ifdef CLKBUF_USE_BBLPM
+	if (!is_clkbuf_initiated || !is_pmic_clkbuf) {
+		bblpm_cond |= BBLPM_COND_SKIP;
+		return bblpm_cond;
+	}
+
+	if ((clkbuf_readl(MD1_PWR_CON) & 0x4) || (clkbuf_readl(C2K_PWR_CON) & 0x4))
+		bblpm_cond |= BBLPM_COND_CEL;
+
+	if (pmic_clk_buf_swctrl[XO_NFC] == CLK_BUF_SW_ENABLE)
+		bblpm_cond |= BBLPM_COND_NFC;
+
+#if 0 /* Check by caller in SSPM */
+#ifdef CONFIG_MTK_UFS_BOOTING
+	if (ufs_mtk_deepidle_hibern8_check())
+		bblpm_cond |= BBLPM_COND_EXT;
+#endif
+#endif
+
+	if (!bblpm_cond)
+		bblpm_cnt++;
+#else /* !CLKBUF_USE_BBLPM */
+	bblpm_cond |= BBLPM_COND_SKIP;
+#endif
+	return bblpm_cond;
 }
 
 /* for spm driver use */
@@ -611,7 +631,7 @@ static void clk_buf_dump_dts_log(void)
 
 static void clk_buf_calc_drv_curr_auxout(void)
 {
-	uint32_t pmic_cw19 = 0;
+	u32 pmic_cw19 = 0;
 
 	pmic_config_interface(MT6335_DCXO_CW18, 42,
 			      PMIC_XO_STATIC_AUXOUT_SEL_MASK,
@@ -669,7 +689,7 @@ static void clk_buf_calc_drv_curr_auxout(void)
 static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				  const char *buf, size_t count)
 {
-	uint32_t clk_buf_en[CLKBUF_NUM], i;
+	u32 clk_buf_en[CLKBUF_NUM], i;
 	char cmd[32];
 
 	if (sscanf(buf, "%31s %x %x %x %x %x %x %x", cmd, &clk_buf_en[XO_SOC],
@@ -730,7 +750,8 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 				 char *buf)
 {
 	int len = 0;
-	uint32_t pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw14 = 0;
+	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw14 = 0,
+	    pmic_cw16 = 0;
 
 	clk_buf_calc_drv_curr_auxout();
 
@@ -764,9 +785,6 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 			"PMIC switch on/off: echo pmic en1 en2 en3 en4 en5 en6 en7 > /sys/power/clk_buf/clk_buf_ctrl\n");
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"\n********** clock buffer debug info **********\n");
-	len += snprintf(buf+len, PAGE_SIZE-len,
-			"g_xo_drv_curr_val=0x%x, bblpm_cnt=%u\n",
-			g_xo_drv_curr_val, bblpm_cnt);
 	len += snprintf(buf+len, PAGE_SIZE-len, "pmic_drv_curr_vals=%d %d %d %d %d %d %d\n",
 			PMIC_CLK_BUF1_DRIVING_CURR, PMIC_CLK_BUF2_DRIVING_CURR,
 			PMIC_CLK_BUF3_DRIVING_CURR, PMIC_CLK_BUF4_DRIVING_CURR,
@@ -792,8 +810,10 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface_nolock(MT6335_DCXO_CW14, &pmic_cw14,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x\n",
-			pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14);
+	pmic_read_interface_nolock(MT6335_DCXO_CW16, &pmic_cw16,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CW00/CW02/CW11/CW14/CW16=0x%x/0x%x/0x%x/0x%x/0x%x\n",
+			pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
 
 	len += snprintf(buf+len, PAGE_SIZE-len, "DCXO_CONN_ADR0/WDATA0/ADR1/WDATA1/EN=0x%x/%x/%x/%x/%x\n",
 		     clkbuf_readl(DCXO_CONN_ADR0),
@@ -806,6 +826,10 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 		     clkbuf_readl(DCXO_NFC_WDATA0),
 		     clkbuf_readl(DCXO_NFC_ADR1),
 		     clkbuf_readl(DCXO_NFC_WDATA1));
+
+	len += snprintf(buf+len, PAGE_SIZE-len, "bblpm_cnt=%u, MD1/C2K_PWR_CON=0x%x/%x\n",
+			bblpm_cnt, clkbuf_readl(MD1_PWR_CON),
+			clkbuf_readl(C2K_PWR_CON));
 
 	return len;
 }
@@ -912,7 +936,7 @@ static int clk_buf_dts_map(void)
 {
 	struct device_node *node;
 #if !defined(CONFIG_MTK_LEGACY)
-	uint32_t vals[CLKBUF_NUM] = {0, 0, 0, 0, 0, 0, 0};
+	u32 vals[CLKBUF_NUM] = {0, 0, 0, 0, 0, 0, 0};
 	int ret = -1;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,pmic_clock_buffer");
@@ -967,34 +991,10 @@ bool is_clk_buf_from_pmic(void)
 	return true;
 };
 
-static void clk_buf_gen_drv_curr_val(void)
-{
-/* FIXME */
-#if 0
-#ifdef TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP
-	g_xo_drv_curr_val = PMIC_CW13_SUGGEST_VAL;
-#else
-	g_xo_drv_curr_val = PMIC_CW13_XO_EXTBUF_HD_VAL |
-			     (PMIC_CLK_BUF5_DRIVING_CURR << 2) |
-			     (PMIC_CLK_BUF6_DRIVING_CURR << 6) |
-			     (PMIC_CLK_BUF7_DRIVING_CURR << 10) |
-			     (PMIC_CLK_BUF8_DRIVING_CURR << 14);
-#endif
-
-	clk_buf_warn("%s: g_xo_drv_curr_val=0x%x, pmic_drv_curr_vals=%d %d %d %d\n",
-		     __func__, g_xo_drv_curr_val,
-		     PMIC_CLK_BUF5_DRIVING_CURR,
-		     PMIC_CLK_BUF6_DRIVING_CURR,
-		     PMIC_CLK_BUF7_DRIVING_CURR,
-		     PMIC_CLK_BUF8_DRIVING_CURR);
-#endif
-}
-
 static void clk_buf_pmic_wrap_init(void)
 {
-	uint32_t pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw14 = 0;
-
-	clk_buf_gen_drv_curr_val();
+	u32 pmic_cw00 = 0, pmic_cw02 = 0, pmic_cw11 = 0, pmic_cw14 = 0,
+	    pmic_cw16 = 0;
 
 	/* Dump registers before setting */
 	pmic_read_interface(MT6335_DCXO_CW00, &pmic_cw00,
@@ -1005,10 +1005,12 @@ static void clk_buf_pmic_wrap_init(void)
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface(MT6335_DCXO_CW14, &pmic_cw14,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	clk_buf_warn("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x\n",
-		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14);
+	pmic_read_interface(MT6335_DCXO_CW16, &pmic_cw16,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	clk_buf_warn("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x\n",
+		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
 
-#ifndef CLKBUF_INIT_BY_LK
+#ifndef CLKBUF_INIT_BY_PL
 	/* Setup initial PMIC clock buffer setting */
 	pmic_config_interface(MT6335_DCXO_CW02, 0,
 			    PMIC_XO_BUFLDOK_EN_MASK, PMIC_XO_BUFLDOK_EN_SHIFT);
@@ -1032,8 +1034,10 @@ static void clk_buf_pmic_wrap_init(void)
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 	pmic_read_interface(MT6335_DCXO_CW14, &pmic_cw14,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	clk_buf_warn("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x\n",
-		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14);
+	pmic_read_interface(MT6335_DCXO_CW16, &pmic_cw16,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	clk_buf_warn("%s DCXO_CW00=0x%x, CW02=0x%x, CW11=0x%x, CW14=0x%x, CW16=0x%x\n",
+		     __func__, pmic_cw00, pmic_cw02, pmic_cw11, pmic_cw14, pmic_cw16);
 
 	/* Setup PMIC_WRAP setting for XO2 & XO3 */
 	clkbuf_writel(DCXO_CONN_ADR0, PMIC_DCXO_CW00_CLR_ADDR);
