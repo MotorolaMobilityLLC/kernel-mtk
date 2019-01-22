@@ -788,7 +788,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 	u32 cpu = smp_processor_id();
 	int pcm_index;
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) /* || defined(CONFIG_MACH_KIBOPLUS) */
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	static int slp_count;
 #endif
@@ -818,7 +818,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	else
 		WARN_ON(1);
 	spm_crit2("Online CPU is %d, suspend FW ver. is %s\n", cpu, pcmdesc->version);
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MACH_MT6757) /* || defined(CONFIG_MACH_KIBOPLUS) */
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	slp_count++;
 	pr_warn("[%d] vcore opp = %d, SPM_SW_RSV_5 = 0x%x\n",
