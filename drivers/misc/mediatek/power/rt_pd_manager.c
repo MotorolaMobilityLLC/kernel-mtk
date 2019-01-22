@@ -272,10 +272,14 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 			noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
 			charger_ignore_usb(false);
+#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 #if CONFIG_MTK_GAUGE_VERSION == 30
 			charger_dev_enable_chg_type_det(primary_charger, true);
 #else
 			mtk_chr_enable_chr_type_det(true);
+#endif
+#else
+			mtk_pmic_enable_chr_type_det(true);
 #endif
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
@@ -322,10 +326,14 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #ifdef CONFIG_USB_C_SWITCH_U3_MUX
 			usb3_switch_dps_en(true);
 #endif
+#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 #if CONFIG_MTK_GAUGE_VERSION == 30
 			ret = charger_dev_enable_chg_type_det(primary_charger, false);
 #else
 			ret = mtk_chr_enable_chr_type_det(false);
+#endif
+#else
+			mtk_pmic_enable_chr_type_det(false);
 #endif
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
@@ -343,14 +351,21 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			/* source to sink */
 			pr_info("%s: Source_to_Sink\n", __func__);
 			charger_ignore_usb(true);
+#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 			charger_dev_enable_chg_type_det(primary_charger, true);
-
+#else
+			mtk_pmic_enable_chr_type_det(true);
+#endif
 		}  else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
 			/* sink to source */
 			pr_info("%s: Sink_to_Source\n", __func__);
 			charger_ignore_usb(true);
+#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 			charger_dev_enable_chg_type_det(primary_charger, false);
+#else
+			mtk_pmic_enable_chr_type_det(false);
+#endif
 		}
 		break;
 	case TCP_NOTIFY_PD_STATE:
