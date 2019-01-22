@@ -410,17 +410,6 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 	spm_write(SPM_EXT_WAKEUP_EVENT_MASK,
 		((pwrctrl->reg_ext_wakeup_event_mask & 0xffffffff) << 0));
 
-	/* msdc_dvfs_halt */
-	spm_write(MSDC_DVFS_HALT,
-		((pwrctrl->msdc_all_dvfs_halt & 0x1) << 0) |
-		((pwrctrl->msdc1_dvfs_halt & 0x1) << 1) |
-		((pwrctrl->msdc2_dvfs_halt & 0x1) << 2) |
-		((pwrctrl->msdc3_dvfs_halt & 0x1) << 3) |
-		((pwrctrl->bypass_msdc1_dvfs_halt & 0x1) << 4) |
-		((pwrctrl->bypass_msdc2_dvfs_halt & 0x1) << 5) |
-		((pwrctrl->bypass_msdc3_dvfs_halt & 0x1) << 6) |
-		((pwrctrl->bypass_msdc_dvfs_halt_all & 0x1) << 7));
-
 	/* MCU0_WFI_EN */
 	spm_write(MCU0_WFI_EN,
 		((pwrctrl->mcu0_wfi_en & 0x1) << 0));

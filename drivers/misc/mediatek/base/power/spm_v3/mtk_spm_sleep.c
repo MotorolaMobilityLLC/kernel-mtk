@@ -20,7 +20,7 @@
 #include <linux/of_fdt.h>
 #include <asm/setup.h>
 #ifdef CONFIG_MTK_SPM_IN_ATF
-#include <mach/mt_secure_api.h>
+#include <mtk_secure_api.h>
 #endif /* CONFIG_MTK_SPM_IN_ATF */
 
 #ifndef CONFIG_ARM64
@@ -319,16 +319,6 @@ static struct pwr_ctrl suspend_ctrl = {
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
-
-	/* MSDC_DVFS_HALT */
-	.msdc_all_dvfs_halt = 0,
-	.msdc1_dvfs_halt = 0,
-	.msdc2_dvfs_halt = 0,
-	.msdc3_dvfs_halt = 0,
-	.bypass_msdc1_dvfs_halt = 0,
-	.bypass_msdc2_dvfs_halt = 0,
-	.bypass_msdc3_dvfs_halt = 0,
-	.bypass_msdc_dvfs_halt_all = 0,
 
 	/* SLEEP_MCU0_WFI_EN */
 	.mcu0_wfi_en = 1,
@@ -755,7 +745,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&mask);
-	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+	mt_irq_unmask_for_sleep_ex(SPM_IRQ0_ID);
 #endif
 
 #if defined(CONFIG_MTK_SYS_CIRQ)

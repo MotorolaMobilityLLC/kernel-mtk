@@ -18,7 +18,7 @@
 #include <linux/delay.h>
 #include <linux/of_fdt.h>
 #ifdef CONFIG_MTK_SPM_IN_ATF
-#include <mach/mt_secure_api.h>
+#include <mtk_secure_api.h>
 #endif
 
 #ifdef CONFIG_OF
@@ -684,16 +684,6 @@ static struct pwr_ctrl vcorefs_ctrl = {
 
 	/* SPM_EXT_WAKEUP_EVENT_MASK */
 	.reg_ext_wakeup_event_mask = 0xFFFFFFFF,
-
-	/* MSDC_DVFS_HALT */
-	.msdc_all_dvfs_halt = 0,
-	.msdc1_dvfs_halt = 0,
-	.msdc2_dvfs_halt = 0,
-	.msdc3_dvfs_halt = 0,
-	.bypass_msdc1_dvfs_halt = 0,
-	.bypass_msdc2_dvfs_halt = 0,
-	.bypass_msdc3_dvfs_halt = 0,
-	.bypass_msdc_dvfs_halt_all = 0,
 
 	/* SLEEP_MCU0_WFI_EN */
 	.mcu0_wfi_en = 1,
