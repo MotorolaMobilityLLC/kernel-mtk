@@ -195,13 +195,33 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				LOG_DBG
 				       ("AFWaitQueueHead:%d\n",
 					receivedCcuCmd.in_data_ptr);
-				LOG_DBG
+				if (receivedCcuCmd.tg_info == 1) {
+					LOG_DBG
 				       ("================== AFO_A_done_from_CCU ===================\n");
-				AFbWaitCond[0] = true;
-				AFg_LogBufIdx[0] = 3;
+				    AFbWaitCond[0] = true;
+					AFg_LogBufIdx[0] = 3;
 
-				wake_up_interruptible(&ccuInfo.AFWaitQueueHead[0]);
-				LOG_DBG("wakeup ccuInfo.AFWaitQueueHead done\n");
+					wake_up_interruptible(&ccuInfo.AFWaitQueueHead[0]);
+					LOG_DBG("wakeup ccuInfo.AFWaitQueueHead done\n");
+				} else if (receivedCcuCmd.tg_info == 2) {
+					LOG_DBG
+				       ("================== AFO_B_done_from_CCU ===================\n");
+					AFbWaitCond[1] = true;
+					AFg_LogBufIdx[1] = 4;
+
+					wake_up_interruptible(&ccuInfo.AFWaitQueueHead[1]);
+					LOG_DBG("wakeup ccuInfo.AFBWaitQueueHead done\n");
+				} else {
+					AFbWaitCond[0] = true;
+					AFbWaitCond[1] = true;
+					AFg_LogBufIdx[0] = 5;
+					AFg_LogBufIdx[1] = 5;
+					wake_up_interruptible(&ccuInfo.AFWaitQueueHead[0]);
+					LOG_DBG("wakeup ccuInfo.AFWaitQueueHead done\n");
+					wake_up_interruptible(&ccuInfo.AFWaitQueueHead[1]);
+					LOG_DBG("wakeup ccuInfo.AFBWaitQueueHead done\n");
+					LOG_DBG("abort and wakeup\n");
+				}
 				break;
 			}
 			case MSG_TO_APMCU_CAM_B_AFO_i:
