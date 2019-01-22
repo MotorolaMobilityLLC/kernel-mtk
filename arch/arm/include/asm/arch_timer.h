@@ -78,6 +78,27 @@ static inline u32 arch_timer_get_cntfrq(void)
 	return val;
 }
 
+#ifdef CONFIG_ARM_ERRATA_858921
+static inline u64 arch_counter_get_cntpct(void)
+{
+	u64 old, new;
+
+	isb();
+	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (old));
+	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (new));
+	return (((old ^ new) >> 32) & 1) ? old : new;
+}
+
+static inline u64 arch_counter_get_cntvct(void)
+{
+	u64 old, new;
+
+	isb();
+	asm volatile("mrrc p15, 1, %Q0, %R0, c14" : "=r" (old));
+	asm volatile("mrrc p15, 1, %Q0, %R0, c14" : "=r" (new));
+	return (((old ^ new) >> 32) & 1) ? old : new;
+}
+#else
 static inline u64 arch_counter_get_cntpct(void)
 {
 	u64 cval;
@@ -95,6 +116,7 @@ static inline u64 arch_counter_get_cntvct(void)
 	asm volatile("mrrc p15, 1, %Q0, %R0, c14" : "=r" (cval));
 	return cval;
 }
+#endif
 
 static inline u32 arch_timer_get_cntkctl(void)
 {
