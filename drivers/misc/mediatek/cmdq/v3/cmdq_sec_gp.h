@@ -14,7 +14,10 @@
 #ifndef __CMDQ_SEC_GP_H__
 #define __CMDQ_SEC_GP_H__
 
+#include <linux/delay.h>
 #include <linux/types.h>
+
+#include "mobicore_driver_api.h"
 #include "tee_client_api.h"
 
 /* context for tee vendor */

@@ -85,6 +85,12 @@ static struct {
 static int mobicore_start(void);
 static void mobicore_stop(void);
 
+static bool mobicore_ready;
+bool is_mobicore_ready(void)
+{
+	return mobicore_ready;
+}
+
 int kasnprintf(struct kasnprintf_buf *buf, const char *fmt, ...)
 {
 	va_list args;
@@ -487,6 +493,7 @@ static int mobicore_start(void)
 #endif
 
 	main_ctx.start_ret = 0;
+	mobicore_ready = true;
 	goto got_ret;
 
 err_create_dev_user:
