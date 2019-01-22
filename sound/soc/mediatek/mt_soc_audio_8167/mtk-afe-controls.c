@@ -48,6 +48,8 @@ enum {
 
 	AFE_SGEN_O0O1,
 	AFE_SGEN_O2,
+	AFE_SGEN_O3,
+	AFE_SGEN_O4,
 	AFE_SGEN_O3O4,
 	AFE_SGEN_O5O6,
 	AFE_SGEN_O7O8,
@@ -102,6 +104,8 @@ static const char *const sgen_func[] = {
 	ENUM_TO_STR(AFE_SGEN_I21I22),
 	ENUM_TO_STR(AFE_SGEN_O0O1),
 	ENUM_TO_STR(AFE_SGEN_O2),
+	ENUM_TO_STR(AFE_SGEN_O3),
+	ENUM_TO_STR(AFE_SGEN_O4),
 	ENUM_TO_STR(AFE_SGEN_O3O4),
 	ENUM_TO_STR(AFE_SGEN_O5O6),
 	ENUM_TO_STR(AFE_SGEN_O7O8),
@@ -194,6 +198,12 @@ static int mtk_afe_sgen_put(struct snd_kcontrol *kcontrol,
 		break;
 	case AFE_SGEN_O2:
 		regmap_update_bits(afe->regmap, AFE_SGEN_CON0, 0xffffffff, 0x1c6c26c2);
+		break;
+	case AFE_SGEN_O3:
+		regmap_update_bits(afe->regmap, AFE_SGEN_CON0, 0xffffffff, 0x2e8c28c2);
+		break;
+	case AFE_SGEN_O4:
+		regmap_update_bits(afe->regmap, AFE_SGEN_CON0, 0xffffffff, 0x2d8c28c2);
 		break;
 	case AFE_SGEN_O3O4:
 		regmap_update_bits(afe->regmap, AFE_SGEN_CON0, 0xffffffff, 0x2c8c28c2);
