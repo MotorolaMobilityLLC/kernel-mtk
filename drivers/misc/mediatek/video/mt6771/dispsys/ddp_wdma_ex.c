@@ -26,8 +26,6 @@
 
 #define ALIGN_TO(x, n)	(((x) + ((n) - 1)) & ~((n) - 1))
 
-static unsigned long long wdma_bw;
-
 /*****************************************************************************/
 unsigned int wdma_index(enum DISP_MODULE_ENUM module)
 {
@@ -635,8 +633,6 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	consume_rate = res * frame_rate;
 	do_div(consume_rate, 1000);
 	consume_rate *= 1250;
-	wdma_bw = consume_rate * bytes_per_sec;
-	do_div(wdma_bw, frame_rate * 1000 * 1000);
 	do_div(consume_rate, 16 * 1000);
 
 	preultra_low = (preultra_low_us + fifo_off_drs_enter) * consume_rate * bytes_per_sec;
@@ -1031,6 +1027,8 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 
 	struct WDMA_CONFIG_STRUCT *config = &pConfig->wdma_config;
 	unsigned int is_primary_flag = 1; /*primary or external*/
+	unsigned int bwBpp;
+	unsigned long long wdma_bw;
 
 	if (!pConfig->wdma_dirty)
 		return 0;
@@ -1114,6 +1112,14 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 
 		p_golden_setting = pConfig->p_golden_setting_context;
 		wdma_golden_setting(module, p_golden_setting, is_primary_flag, handle);
+
+		/* calculate bandwidth */
+		bwBpp = ufmt_get_Bpp(config->outputFormat);
+		wdma_bw = (unsigned long long)config->clipWidth * config->clipHeight * bwBpp;
+		do_div(wdma_bw, 1000);
+		wdma_bw *= 1250;
+		do_div(wdma_bw, 1000 * 1000);
+		DDPMSG("W:width=%u,height=%u,Bpp:%u,bw:%llu\n", config->clipWidth, config->clipHeight, bwBpp, wdma_bw);
 
 		/* bandwidth report */
 		if (module == DISP_MODULE_WDMA0) {
