@@ -15,6 +15,7 @@
 #define __CMDQ_MDP_COMMON_H__
 
 #include "cmdq_def.h"
+#include "cmdq_core.h"
 
 #include <linux/types.h>
 
@@ -64,6 +65,10 @@ typedef uint32_t(*CmdqMdpWdmaGetRegOffsetDstAddr) (void);
 
 typedef void (*CmdqTestcaseClkmgrMdp) (void);
 
+typedef const char*(*CmdqDispatchModule) (uint64_t engineFlag);
+
+typedef void (*CmdqTrackTask) (const struct TaskStruct *pTask);
+
 struct cmdqMDPFuncStruct {
 	CmdqDumpMMSYSConfig dumpMMSYSConfig;
 	CmdqVEncDumpInfo vEncDumpInfo;
@@ -83,6 +88,21 @@ struct cmdqMDPFuncStruct {
 	CmdqMdpWrotGetRegOffsetDstAddr wrotGetRegOffsetDstAddr;
 	CmdqMdpWdmaGetRegOffsetDstAddr wdmaGetRegOffsetDstAddr;
 	CmdqTestcaseClkmgrMdp testcaseClkmgrMdp;
+	CmdqDispatchModule dispatchModule;
+	CmdqTrackTask trackTask;
+};
+
+/* track MDP task */
+#define DEBUG_STR_LEN 1024 /* debug str length */
+#define MDP_MAX_TASK_NUM 5 /* num of tasks to be keep */
+#define MDP_MAX_PLANE_NUM 3 /* max color format plane num */
+#define MDP_PORT_BUF_INFO_NUM (MDP_MAX_PLANE_NUM * 2) /* each plane has 2 info address and size */
+#define MDP_BUF_INFO_STR_LEN 8 /* each buf info length */
+#define MDP_DISPATCH_KEY_STR_LEN (TASK_COMM_LEN + 5) /* dispatch key format is MDP_(ThreadName) */
+
+struct cmdqMDPTaskStruct {
+	char callerName[TASK_COMM_LEN];
+	char userDebugStr[DEBUG_STR_LEN];
 };
 
 #ifdef __cplusplus
@@ -112,6 +132,8 @@ extern "C" {
 	void cmdq_mdp_dump_rot(const unsigned long base, const char *label);
 	void cmdq_mdp_dump_color(const unsigned long base, const char *label);
 	void cmdq_mdp_dump_wdma(const unsigned long base, const char *label);
+
+	void cmdq_mdp_check_TF_address(unsigned int mva, char *module);
 
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/

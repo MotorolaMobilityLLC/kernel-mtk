@@ -40,6 +40,7 @@ struct CmdqDeviceStruct {
 static struct CmdqDeviceStruct gCmdqDev;
 static long gMMSYS_CONFIG_Base_VA;
 static long gAPXGPT2Count;
+static uint32_t gMMSYSDummyRegOffset;
 
 struct device *cmdq_dev_get(void)
 {
@@ -79,6 +80,11 @@ long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
 long cmdq_dev_get_APXGPT2_count(void)
 {
 	return gAPXGPT2Count;
+}
+
+uint32_t cmdq_dev_get_mmsys_dummy_reg_offset(void)
+{
+	return gMMSYSDummyRegOffset;
 }
 
 void cmdq_dev_init_module_base_VA(void)
@@ -281,8 +287,8 @@ void cmdq_dev_init_MDP_PA(struct device_node *node)
 	int status;
 	uint32_t gceDispMutex[2] = {0, 0};
 	uint32_t *pMDPBaseAddress = cmdq_core_get_whole_DTS_Data()->MDPBaseAddress;
-	long module_pa_start;
-	long module_pa_end;
+	long module_pa_start = 0;
+	long module_pa_end = 0;
 
 	cmdq_dev_get_module_PA("mediatek,mm_mutex", 0,
 					    &module_pa_start,
@@ -475,8 +481,10 @@ void cmdq_dev_init_device_tree(struct device_node *node)
 {
 	int status;
 	uint32_t apxgpt2_count_value = 0;
+	uint32_t mmsys_dummy_reg_offset_value = 0;
 
 	gAPXGPT2Count = 0;
+	gMMSYSDummyRegOffset = 0;
 	cmdq_core_init_DTS_data();
 #ifdef CMDQ_OF_SUPPORT
 	/* init GCE subsys */
@@ -485,13 +493,24 @@ void cmdq_dev_init_device_tree(struct device_node *node)
 	cmdq_dev_init_event_table(node);
 	/* init MDP PA address */
 	cmdq_dev_init_MDP_PA(node);
-	do {
-		status = of_property_read_u32(node, "apxgpt2_count", &apxgpt2_count_value);
-		if (status < 0)
-			break;
-
+	status = of_property_read_u32(node, "apxgpt2_count", &apxgpt2_count_value);
+	if (status >= 0)
 		gAPXGPT2Count = apxgpt2_count_value;
-	} while (0);
+
+	/* read dummy register offset from device tree,
+	 * usually DUMMY_3 because DUMMY_0/1 is CLKMGR SW.
+	 */
+	status = of_property_read_u32(node, "mmsys_dummy_reg_offset", &mmsys_dummy_reg_offset_value);
+	if (status < 0)	{
+		/* in legency chip (before mt6757) dummy register offset fixed */
+#ifdef CMDQ_USE_LEGACY
+		mmsys_dummy_reg_offset_value = 0x890;
+#else
+		mmsys_dummy_reg_offset_value = 0x89C;
+#endif
+	}
+
+	gMMSYSDummyRegOffset = mmsys_dummy_reg_offset_value;
 #endif
 }
 

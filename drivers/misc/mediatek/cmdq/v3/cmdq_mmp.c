@@ -22,7 +22,7 @@ struct CMDQ_MMP_events_t *cmdq_mmp_get_event(void)
 
 void cmdq_mmp_init(void)
 {
-#if CMDQ_PROFILE_MMP
+#ifdef CMDQ_PROFILE_MMP
 	mmprofile_enable(1);
 	if (CMDQ_MMP_events.CMDQ == 0) {
 		CMDQ_MMP_events.CMDQ = mmprofile_register_event(MMP_RootEvent, "CMDQ");
