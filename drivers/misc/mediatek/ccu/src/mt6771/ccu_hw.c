@@ -119,55 +119,7 @@ static void isr_sp_task(void)
 }
 
 #define CCU_ISR_WORK_BUFFER_SZIE 16
-/*
- * static atomic_t isr_work_idx_front = ATOMIC_INIT(0);
- * static atomic_t isr_work_idx_rear = ATOMIC_INIT(0);
- * static struct work_struct isr_works[CCU_ISR_WORK_BUFFER_SZIE];
- */
 
-#if 0
-static void isr_worker(work_struct_t *isr_work)
-{
-	LOG_DBG("+++++++");
-
-	LOG_DBG("isr_worker, handling work with data:%ld\n", atomic_read(&isr_work->data));
-	bWaitCond = true;
-	g_LogBufIdx = (MUINT32) atomic_read(&isr_work->data);
-
-	LOG_DBG("isr_worker, accuiring APTaskMutex\n");
-	mutex_lock(&ap_task_manage.ApTaskMutex);
-	LOG_DBG("isr_worker, got APTaskMutex, wakeup WaitQueueHead & unlock mutex\n");
-	wake_up_interruptible(&ccuInfo.WaitQueueHead);
-	mutex_unlock(&ap_task_manage.ApTaskMutex);
-
-	/*vlist_node_of(ccuInfo.ApTskWorkList.next, work_struct_t);*/
-	LOG_DBG("isr_worker, free isrWork:%p\n", isr_work);
-	/*list_del_init(vlist_link(isr_work, work_struct_t));*/
-	kfree(isr_work);
-	LOG_DBG("-------");
-}
-
-void schedule_isr_worker(int data)
-{
-	work_struct_t *isrWork;
-
-	LOG_DBG("+++++++schedule_isr_worker\n");
-
-	LOG_DBG("allocate isrWork..\n");
-	isrWork = kmalloc(sizeof(vlist_type(work_struct_t)), GFP_KERNEL);
-	INIT_WORK(isrWork, isr_worker);
-	atomic_set(&isrWork->data, data);
-	/*isrWork->data = data;*/
-	/*ATOMIC_LONG_SET_OP()*/
-	/*list_add_tail(vlist_link(isrWork, work_struct_t), &ccuInfo.ApTskWorkList);*/
-
-	LOG_DBG("schedule_work:%p\n", isrWork);
-	LOG_DBG("ApTaskWorkQueue:%p\n", ap_task_manage.ApTaskWorkQueue);
-	queue_work(ap_task_manage.ApTaskWorkQueue, isrWork);
-
-	LOG_DBG("-------schedule_isr_worker\n");
-}
-#endif
 
 irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 {
@@ -195,24 +147,7 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 		LOG_DBG("receivedCcuCmd.msg_id : 0x%x\n", receivedCcuCmd.msg_id);
 
 		switch (receivedCcuCmd.msg_id) {
-#if 0
-		case MSG_TO_APMCU_FLUSH_LOG:
-			{
-				LOG_DBG
-					("got MSG_TO_APMCU_FLUSH_LOG:%d , wakeup ccuInfo.WaitQueueHead\n",
-					 receivedCcuCmd.in_data_ptr);
-				schedule_isr_worker(receivedCcuCmd.msg_id);
-				break;
-			}
-		case MSG_TO_APMCU_CCU_ASSERT:
-			{
-				LOG_DBG
-					("got MSG_TO_APMCU_CCU_ASSERT:%d, wakeup ccuInfo.WaitQueueHead\n",
-					 receivedCcuCmd.in_data_ptr);
-				schedule_isr_worker(receivedCcuCmd.msg_id);
-				break;
-			}
-#else
+
 		case MSG_TO_APMCU_FLUSH_LOG:
 			{
 				/*for ccu_waitirq();*/
@@ -284,7 +219,7 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 				break;
 			}
 #endif /*CCU_AF_ENABLE*/
-#endif
+
 		default:
 			LOG_DBG("got msgId: %d, cmd_wait\n", receivedCcuCmd.msg_id);
 			ccu_memcpy(&CcuAckCmd, &receivedCcuCmd, sizeof(struct ccu_msg));
@@ -403,19 +338,6 @@ static int ccu_enque_cmd_loop(void *arg)
 static void ccu_ap_task_mgr_init(void)
 {
 	mutex_init(&ap_task_manage.ApTaskMutex);
-	/*
-	 *if (!(ap_task_manage.ApTaskWorkQueue))
-	 *{
-	 *	LOG_ERR("creating ApTaskWorkQueue !!\n");
-	 *	ap_task_manage.ApTaskWorkQueue = create_singlethread_workqueue("CCU_AP_WorkQueue");
-	 *}
-	 *if (!(ap_task_manage.ApTaskWorkQueue))
-	 *{
-	 *	LOG_ERR("create ApTaskWorkQueue error!!\n");
-	 *}
-	 */
-	/*INIT_LIST_HEAD(&ap_task_manage.ApTskWorkList);*/
-
 }
 
 int ccu_init_hw(struct ccu_device_s *device)
@@ -916,12 +838,7 @@ int ccu_flushLog(int argc, int *argv)
 
 	bWaitCond = true;
 
-	LOG_DBG("accuiring APTaskMutex, wakeup WaitQueueHead & unlock mutex\n");
-	mutex_lock(&ap_task_manage.ApTaskMutex);
-	LOG_DBG("got APTaskMutex, wakeup WaitQueueHead & unlock mutex\n");
 	wake_up_interruptible(&ccuInfo.WaitQueueHead);
-	mutex_unlock(&ap_task_manage.ApTaskMutex);
-	LOG_DBG("unlock ApTaskMutex\n");
 
 	LOG_DBG("bWaitCond(%d)\n", bWaitCond);
 	return 0;
