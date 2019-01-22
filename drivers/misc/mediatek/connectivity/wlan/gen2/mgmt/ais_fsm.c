@@ -88,7 +88,7 @@ static VOID aisRemoveDisappearedBlacklist(P_ADAPTER_T prAdapter);
 
 static VOID
 aisSendNeighborRequest(P_ADAPTER_T prAdapter);
-#if CFG_SUPPORT_DYNAMOC_ROAM
+#if CFG_SUPPORT_DYNAMIC_ROAM
 static VOID aisFsmSetRoamingThreshold(P_ADAPTER_T prAdapter, INT_8 cThreshold);
 #endif
 /*******************************************************************************
@@ -253,7 +253,7 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 	prAisFsmInfo->fgIsAbortEvnetDuringScan = FALSE;
 
 	prAisFsmInfo->ucJoinFailCntAfterScan = 0;
-#if CFG_SUPPORT_DYNAMOC_ROAM
+#if CFG_SUPPORT_DYNAMIC_ROAM
 	prAisFsmInfo->cRoamTriggerThreshold = 0;
 #endif
 
@@ -2614,7 +2614,7 @@ VOID aisFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 			prAisFsmInfo->ucJoinFailCntAfterScan = 0;
 			/* 4 <1.7> Set the Next State of AIS FSM */
 			eNextState = AIS_STATE_NORMAL_TR;
-#if CFG_SUPPORT_DYNAMOC_ROAM
+#if CFG_SUPPORT_DYNAMIC_ROAM
 			aisFsmSetRoamingThreshold(prAdapter, AIS_DEFAULT_ROAMING_THRESHOLD);
 #endif
 		}
@@ -5702,11 +5702,12 @@ VOID aisRunEventChnlUtilRsp(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 	cnmMemFree(prAdapter, prChUtilRsp);
 	aisFsmSteps(prAdapter, AIS_STATE_SEARCH);
 }
-#if CFG_SUPPORT_DYNAMOC_ROAM
+#if CFG_SUPPORT_DYNAMIC_ROAM
+#define CFG_BUF_SIZE 64
 static VOID aisFsmSetRoamingThreshold(P_ADAPTER_T prAdapter, INT_8 cThreshold)
 {
 	P_AIS_FSM_INFO_T prAisFsmInfo = &prAdapter->rWifiVar.rAisFsmInfo;
-	UINT_8 aucRoamingCfgBuf[64];
+	UINT_8 aucRoamingCfgBuf[CFG_BUF_SIZE];
 	UINT_8 ucRCPI;
 
 	DBGLOG(AIS, INFO, "cThreshold %d, cRoamTriggerThreshold %d\n",
@@ -5723,7 +5724,8 @@ static VOID aisFsmSetRoamingThreshold(P_ADAPTER_T prAdapter, INT_8 cThreshold)
 	prAisFsmInfo->cRoamTriggerThreshold = cThreshold;
 	ucRCPI = dBm_TO_RCPI(cThreshold);
 	kalMemZero(aucRoamingCfgBuf, sizeof(aucRoamingCfgBuf));
-	kalSprintf(aucRoamingCfgBuf, "RoamingRCPIGoodValue %d\nRoamingRCPIPoorValue %d", ucRCPI, ucRCPI);
+	kalSnprintf(aucRoamingCfgBuf, CFG_BUF_SIZE, "RoamingRCPIGoodValue %d\nRoamingRCPIPoorValue %d"
+		, ucRCPI, ucRCPI);
 	if (wlanFwCfgParse(prAdapter, aucRoamingCfgBuf) != WLAN_STATUS_SUCCESS)
 		DBGLOG(AIS, INFO, "set cfg parse failed\n");
 }

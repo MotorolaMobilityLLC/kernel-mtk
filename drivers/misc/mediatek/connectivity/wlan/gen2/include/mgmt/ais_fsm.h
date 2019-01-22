@@ -239,7 +239,7 @@ typedef struct _AIS_FSM_INFO_T {
 	UINT_8 ucJoinFailCntAfterScan;
 
 	UINT_8 aucNeighborAPChnl[CFG_NEIGHBOR_AP_CHANNEL_NUM];
-#if CFG_SUPPORT_DYNAMOC_ROAM
+#if CFG_SUPPORT_DYNAMIC_ROAM
 	INT_8 cRoamTriggerThreshold;
 #endif
 	BOOLEAN fgIsAbortEvnetDuringScan;
