@@ -889,7 +889,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		pmic_ldo_vsram_vcore_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_vsram_dvfs1_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vsram_dvfs1_lp(SPM, 1, SPM_OFF);
-		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_OFF);
+		/* pmic_ldo_va10_lp(SRCLKEN0, 1, HW_OFF); */
+		pmic_ldo_va10_lp(SRCLKEN0, 1, HW_LP);
 
 		mt_power_gs_dump_suspend();
 		break;
