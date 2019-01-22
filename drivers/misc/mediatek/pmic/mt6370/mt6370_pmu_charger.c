@@ -414,7 +414,7 @@ static inline void mt6370_enable_irq(struct mt6370_pmu_charger_data *chg_data,
 
 	res = platform_get_resource_byname(pdev, IORESOURCE_IRQ, name);
 	if (res)
-		(en ? enable_irq : disable_irq)(res->start);
+		(en ? enable_irq : disable_irq_nosync)(res->start);
 	else
 		dev_err(chg_data->dev, "%s: get plat res fail\n", __func__);
 }
