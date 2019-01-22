@@ -2323,7 +2323,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 #endif
 			if (CHECK_FOR_TIMEOUT(rCurrentTime, prBssDesc->rUpdateTime,
 						SEC_TO_SYSTIME(u4ScnAdhocBssDescTimeout))) {
-				DBGLOG(SCN, LOUD, "SEARCH: Ignore stale Bss, CurrTime[%ld] BssUpdateTime[%ld]\n",
+				DBGLOG(SCN, LOUD, "SEARCH: Ignore stale Bss, CurrTime[%u] BssUpdateTime[%u]\n",
 					rCurrentTime, prBssDesc->rUpdateTime);
 				continue;
 			}
