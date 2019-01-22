@@ -243,6 +243,7 @@ static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
 bool                    dpidle_by_pass_pg;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
+static unsigned int     dpidle_run_once;
 
 /* SODI3 */
 static unsigned int     soidle3_pll_block_mask[NR_PLLS] = {0x0};
@@ -1119,9 +1120,9 @@ u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_DIS_BUS_CLOCK_OFF |
-	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
+	SPM_FLAG_DIS_PERI_PDN |
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
+	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
 	SPM_FLAG_DEEPIDLE_OPTION
 };
 
@@ -1460,6 +1461,10 @@ int dpidle_enter(int cpu)
 	dpidle_post_process(cpu);
 
 	idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
+
+	/* For test */
+	if (dpidle_run_once)
+		idle_switch[IDLE_TYPE_DP] = 0;
 
 	return ret;
 }
@@ -1861,6 +1866,8 @@ static ssize_t dpidle_state_write(struct file *filp,
 			idle_switch[IDLE_TYPE_DP] = param;
 		else if (!strcmp(cmd, "enable"))
 			enable_dpidle_by_bit(param);
+		else if (!strcmp(cmd, "once"))
+			dpidle_run_once = param;
 		else if (!strcmp(cmd, "disable"))
 			disable_dpidle_by_bit(param);
 		else if (!strcmp(cmd, "time"))
