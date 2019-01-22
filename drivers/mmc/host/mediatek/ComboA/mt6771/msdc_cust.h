@@ -116,7 +116,7 @@
 #endif
 #endif /* POWER_READY */
 
-#define REG_VCORE_VOSEL         0xBE8
+#define REG_VCORE_VOSEL         0x149E
 #define MASK_VCORE_VOSEL        0x7F
 #define SHIFT_VCORE_VOSEL       0
 
@@ -372,7 +372,7 @@
 /* Section 5: Adjustable Driver Parameter                     */
 /**************************************************************/
 /* Setting here will override, mtk_sd.h */
-#define CLK_TIMEOUT             (HZ/10)        /* 100ms */
+#define CLK_TIMEOUT             (HZ/100)        /* 10ms */
 
 #define HOST_MAX_BLKSZ          (2048)
 
