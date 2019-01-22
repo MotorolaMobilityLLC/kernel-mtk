@@ -390,7 +390,7 @@ VOID wlanPktStatusDebugDumpInfo(P_ADAPTER_T prAdapter)
 				/*ucIpProto = 0x11 UPD */
 				/*ucIpProto = 0x06 TCP */
 				offsetMsg += kalSnprintf(pucMsg + offsetMsg
-				, PKT_STATUS_MSG_LENGTH
+				, PKT_STATUS_MSG_LENGTH - offsetMsg
 				, "%d,%02x,%x "
 				, prPktInfo->u1Type
 				, prPktInfo->u2IpId
