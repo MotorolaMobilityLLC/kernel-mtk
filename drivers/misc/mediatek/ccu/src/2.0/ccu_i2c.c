@@ -55,7 +55,7 @@ static struct i2c_client *get_ccu_i2c_client(enum CCU_I2C_CHANNEL i2c_controller
 static void ccu_i2c_dump_info(struct mt_i2c *i2c);
 static int ccu_i2c_controller_en(enum CCU_I2C_CHANNEL i2c_controller_id, int enable);
 static int i2c_query_dma_buffer_addr(enum CCU_I2C_CHANNEL i2c_controller_id,
-							void **va, uint32_t *pa_h, uint32_t *pa_l, uint32_t *i2c_id);
+							void **va, uint32_t *va_h, uint32_t *va_l, uint32_t *i2c_id);
 static int ccu_i2c_controller_uninit(enum CCU_I2C_CHANNEL i2c_controller_id);
 
 /*i2c reg operation*/
@@ -214,7 +214,7 @@ int ccu_get_i2c_dma_buf_addr(struct ccu_i2c_buf_mva_ioarg *ioarg)
 	int ret = 0;
 	void *va;
 
-	ret = i2c_query_dma_buffer_addr(ioarg->i2c_controller_id, &va, &ioarg->pa_h, &ioarg->pa_l, &ioarg->i2c_id);
+	ret = i2c_query_dma_buffer_addr(ioarg->i2c_controller_id, &va, &ioarg->va_h, &ioarg->va_l, &ioarg->i2c_id);
 
 	if (ret != 0)
 		return ret;
@@ -261,7 +261,7 @@ void ccu_i2c_dump_errr(void)
 /* CCU i2c static funcs                                              */
 /*---------------------------------------------------------------------------*/
 static int i2c_query_dma_buffer_addr(enum CCU_I2C_CHANNEL i2c_controller_id, void **va,
-								 uint32_t *pa_h, uint32_t *pa_l, uint32_t *i2c_id)
+								 uint32_t *va_h, uint32_t *va_l, uint32_t *i2c_id)
 {
 	struct i2c_client *pClient = NULL;
 	struct mt_i2c *i2c;
@@ -277,8 +277,8 @@ static int i2c_query_dma_buffer_addr(enum CCU_I2C_CHANNEL i2c_controller_id, voi
 
 	/*i2c_get_dma_buffer_addr_imp(pClient->adapter ,va);*/
 	*va = i2c->dma_buf.vaddr;
-	*pa_l = i2c->dma_buf.paddr;
-	*pa_h = (i2c->dma_buf.paddr >> 32);
+	*va_l = i2c->dma_buf.paddr;
+	*va_h = (i2c->dma_buf.paddr >> 32);
 	*i2c_id = i2c->id;
 	LOG_DBG_MUST("pa(%lld), va(%d), i2c-id(%d)\n", i2c->dma_buf.paddr, *(i2c->dma_buf.vaddr), (uint32_t)i2c->id);
 
