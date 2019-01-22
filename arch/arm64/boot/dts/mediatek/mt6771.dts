@@ -1157,7 +1157,8 @@
 	wifi: wifi@180f0000 {
 		compatible = "mediatek,wifi";
 		reg = <0 0x180f0000 0 0x1100>, /* WIFI-HIF base */
-		      <0 0x10212180 0 0x06c>;  /* DMA base */
+		      <0 0x10212180 0 0x006c>, /* DMA base */
+		      <0 0x10001000 0 0x1000>; /* INFRACFG_AO_BASE */
 		interrupts = <GIC_SPI 290 IRQ_TYPE_LEVEL_LOW>, /* WIFI-HIF IRQ */
 			     <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>; /* DMA IRQ */
 		clocks = <&infracfg_ao INFRACFG_AO_CQ_DMA_CG>;
