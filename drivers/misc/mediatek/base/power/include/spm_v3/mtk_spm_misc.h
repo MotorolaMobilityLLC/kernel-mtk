@@ -156,4 +156,6 @@ int hps_get_root_id(void)
 	return 0;
 }
 
+extern struct dram_info *g_dram_info_dummy_read;
+
 #endif  /* __MTK_SPM_MISC_H__ */

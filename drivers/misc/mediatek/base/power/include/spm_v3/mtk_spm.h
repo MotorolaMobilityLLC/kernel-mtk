@@ -114,6 +114,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d);
 
 void mt_spm_for_gps_only(int enable);
 void mt_spm_dcs_s1_setting(int enable, int flags);
+extern void unmask_edge_trig_irqs_for_cirq(void);
 
 /**************************************
  * Macro and Inline

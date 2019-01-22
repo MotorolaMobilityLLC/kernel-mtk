@@ -27,7 +27,9 @@
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #include <scp_dvfs.h>
 #endif /* CONFIG_MTK_TINYSYS_SCP_SUPPORT */
-
+#ifdef CONFIG_MTK_SPM_IN_ATF
+#include <mt-plat/mtk_secure_api.h>
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 #ifdef CONFIG_MTK_DCS
 #include <mt-plat/mtk_meminfo.h>
 #endif
@@ -146,13 +148,15 @@ int __spm_check_opp_level(int ch)
 
 void __spm_set_cpu_status(int cpu)
 {
-	spm_write(COMMON_TOP_PWR_ADDR, 0x10b0021C);
-	spm_write(COMMON_CPU_PWR_ADDR, 0x10b00220);
 	if (cpu >= 0 && cpu < 4) {
+		spm_write(COMMON_TOP_PWR_ADDR, 0x10b00208);
+		spm_write(COMMON_CPU_PWR_ADDR, 0x10b0020C);
 		spm_write(ARMPLL_CLK_CON,
 				(spm_read(ARMPLL_CLK_CON) & ~(MUXSEL_SC_ARMPLL2_LSB | MUXSEL_SC_ARMPLL3_LSB)) |
 				(MUXSEL_SC_CCIPLL_LSB | MUXSEL_SC_ARMPLL1_LSB));
 	} else if (cpu >= 4 && cpu < 8) {
+		spm_write(COMMON_TOP_PWR_ADDR, 0x10b0021C);
+		spm_write(COMMON_CPU_PWR_ADDR, 0x10b00220);
 		spm_write(ARMPLL_CLK_CON,
 				(spm_read(ARMPLL_CLK_CON) & ~(MUXSEL_SC_ARMPLL1_LSB | MUXSEL_SC_ARMPLL3_LSB)) |
 				(MUXSEL_SC_CCIPLL_LSB | MUXSEL_SC_ARMPLL2_LSB));
@@ -758,6 +762,45 @@ long int spm_get_current_time_ms(void)
 
 	do_gettimeofday(&t);
 	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
+}
+
+void spm_set_dummy_read_addr(int debug)
+{
+	u64 rank0_addr, rank1_addr;
+	u32 dram_rank_num;
+
+#ifdef CONFIG_MTK_DRAMC
+	dram_rank_num = g_dram_info_dummy_read->rank_num;
+	rank0_addr = g_dram_info_dummy_read->rank_info[0].start;
+	if (dram_rank_num == 1)
+		rank1_addr = rank0_addr;
+	else
+		rank1_addr = g_dram_info_dummy_read->rank_info[1].start;
+#else
+	dram_rank_num = 1;
+	rank0_addr = rank1_addr = 0x40000000;
+#endif /* CONFIG_MTK_DRAMC */
+
+	if (debug) {
+		spm_crit("dram_rank_num: %d\n", dram_rank_num);
+		spm_crit("dummy read addr: rank0: 0x%llx, rank1: 0x%llx\n", rank0_addr, rank1_addr);
+	}
+
+	MAPPING_DRAM_ACCESS_ADDR(rank0_addr);
+	MAPPING_DRAM_ACCESS_ADDR(rank1_addr);
+
+	if (debug)
+		spm_crit("dummy read addr(4GB: %d): rank0: 0x%llx, rank1: 0x%llx\n",
+				enable_4G(), rank0_addr, rank1_addr);
+
+#ifndef CONFIG_MTK_SPM_IN_ATF
+	spm_write(SPM_PASR_DPD_2, rank0_addr & 0xffffffff);
+	spm_write(SPM_PASR_DPD_3, rank1_addr & 0xffffffff);
+	if ((rank1_addr >> 32) & 0x1)
+		spm_write(SPM_RSV_CON2, spm_read(SPM_RSV_CON2) | SPM_FLAG_MSB_FOR_DUMMY_READ_ADDR);
+#else
+	mt_secure_call(MTK_SIP_KERNEL_SPM_DUMMY_READ, rank0_addr, rank1_addr, 0);
+#endif /* CONFIG_MTK_SPM_IN_ATF */
 }
 
 void __spm_set_pcm_wdt(int en)
