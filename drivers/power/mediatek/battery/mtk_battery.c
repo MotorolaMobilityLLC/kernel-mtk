@@ -299,9 +299,11 @@ bool is_recovery_mode(void)
 {
 	int boot_mode = get_boot_mode();
 
-	bm_err("mtk_battery boot mode =%d\n", boot_mode);
-	if (boot_mode == RECOVERY_BOOT)
+	bm_debug("mtk_battery boot mode =%d\n", boot_mode);
+	if (boot_mode == RECOVERY_BOOT) {
+		bm_err("Recovery boot~! mtk_battery boot mode =%d\n", boot_mode);
 		return true;
+	}
 
 	if (boot_mode != RECOVERY_BOOT)
 		return false;
