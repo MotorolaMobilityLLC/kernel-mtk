@@ -157,7 +157,7 @@ static const struct reg_config revc_general_config[] = {
 
 static const struct reg_config revd_general_config[] = {
 	{ 0x14, 0x6800},
-	{ 0x16, 0x9d},
+	{ 0x16, 0x95},
 	{ 0x18, 0xaa},
 	{ 0x19, 0x016a},
 	{ 0x1a, 0x0000},
@@ -727,10 +727,8 @@ static struct platform_driver rt5509_param_driver = {
 
 static int rt5509_param_create(struct rt5509_chip *chip)
 {
-	static int dev_cnt;
-
 	chip->pdev = platform_device_register_data(chip->dev, "rt5509_param",
-						   dev_cnt++, NULL, 0);
+						   chip->dev_cnt, NULL, 0);
 	if (!chip->pdev)
 		return -EFAULT;
 	return platform_driver_register(&rt5509_param_driver);
@@ -889,10 +887,17 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 		ret = snd_soc_write(codec, RT5509_REG_OCPMAX, 0x7f);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_OVPUVPCTRL,
-			0x60, 0x60);
-		if (ret < 0)
-			goto out_boost_event;
+		if (chip->chip_rev >= RT5509_CHIP_REVD) {
+			ret = snd_soc_update_bits(codec, RT5509_REG_OVPUVPCTRL,
+				0xe0, 0xe0);
+			if (ret < 0)
+				goto out_boost_event;
+		} else {
+			ret = snd_soc_update_bits(codec, RT5509_REG_OVPUVPCTRL,
+				0x60, 0x60);
+			if (ret < 0)
+				goto out_boost_event;
+		}
 		ret = snd_soc_update_bits(codec, RT5509_REG_MSKFLAG,
 			0x3F, 0x3F);
 		if (ret < 0)
@@ -907,12 +912,18 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 		ret = snd_soc_write(codec, RT5509_REG_ISENSE_CTRL, 0x97);
 		if (ret < 0)
 			goto out_boost_event;
+		if (chip->chip_rev >= RT5509_CHIP_REVD) {
+			ret = snd_soc_update_bits(codec, RT5509_REG_MTPFLOWA,
+						  0x04, 0x04);
+			if (ret < 0)
+				goto out_boost_event;
+		}
 		dev_info(chip->dev, "amp turn on\n");
 		break;
 	case SND_SOC_DAPM_POST_PMU:
 		if (chip->chip_rev >= RT5509_CHIP_REVD) {
 			ret = snd_soc_update_bits(codec, RT5509_REG_MTPFLOWA,
-						  0x05, 0x05);
+						  0x01, 0x01);
 			if (ret < 0)
 				goto out_boost_event;
 		} else {
@@ -928,6 +939,19 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 			goto out_boost_event;
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
+		ret = snd_soc_read(codec, RT5509_REG_CHIPEN);
+		if (ret < 0)
+			goto out_boost_event;
+		if (ret & RT5509_SPKPROT_ENMASK) {
+			ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
+				RT5509_SPKPROT_ENMASK, ~RT5509_SPKPROT_ENMASK);
+			if (ret < 0)
+				goto out_boost_event;
+			ret = snd_soc_update_bits(codec, RT5509_REG_CHIPEN,
+				RT5509_SPKPROT_ENMASK, RT5509_SPKPROT_ENMASK);
+			if (ret < 0)
+				goto out_boost_event;
+		}
 		if (chip->chip_rev >= RT5509_CHIP_REVD) {
 			ret = snd_soc_update_bits(codec, RT5509_REG_MTPFLOWA,
 						  0x05, 0x00);
@@ -956,10 +980,17 @@ static int rt5509_boost_event(struct snd_soc_dapm_widget *w,
 			0x40, 0x00);
 		if (ret < 0)
 			goto out_boost_event;
-		ret = snd_soc_update_bits(codec, RT5509_REG_OVPUVPCTRL,
-			0x60, 0x00);
-		if (ret < 0)
-			goto out_boost_event;
+		if (chip->chip_rev >= RT5509_CHIP_REVD) {
+			ret = snd_soc_update_bits(codec, RT5509_REG_OVPUVPCTRL,
+				0xe0, 0x00);
+			if (ret < 0)
+				goto out_boost_event;
+		} else {
+			ret = snd_soc_update_bits(codec, RT5509_REG_OVPUVPCTRL,
+				0x60, 0x00);
+			if (ret < 0)
+				goto out_boost_event;
+		}
 		ret = snd_soc_write(codec, RT5509_REG_OCPMAX, 0x00);
 		if (ret < 0)
 			goto out_boost_event;
@@ -1725,6 +1756,7 @@ static int rt5509_i2c_probe(struct i2c_client *client,
 {
 	struct rt5509_pdata *pdata = client->dev.platform_data;
 	struct rt5509_chip *chip;
+	static int dev_cnt;
 	int ret = 0;
 
 	if (client->dev.of_node) {
@@ -1751,6 +1783,7 @@ static int rt5509_i2c_probe(struct i2c_client *client,
 	chip->i2c = client;
 	chip->dev = &client->dev;
 	chip->pdata = pdata;
+	chip->dev_cnt = dev_cnt;
 	i2c_set_clientdata(client, chip);
 #if RT5509_SIMULATE_DEVICE
 	ret = rt5509_calculate_total_size();
@@ -1814,12 +1847,14 @@ static int rt5509_i2c_probe(struct i2c_client *client,
 		dev_err(chip->dev, "power off fail\n");
 		goto err_put_sync;
 	}
-	dev_set_name(chip->dev, "%s", "RT5509_MT");
+	dev_set_name(chip->dev, "%s",
+		     kasprintf(GFP_KERNEL, "RT5509_MT_%d", chip->dev_cnt));
 	ret = rt5509_codec_register(chip);
 	if (ret < 0) {
 		dev_err(chip->dev, "codec register fail\n");
 		goto err_put_sync;
 	}
+	dev_cnt++;
 	dev_dbg(&client->dev, "successfully driver probed\n");
 	return 0;
 err_put_sync:
@@ -1848,7 +1883,8 @@ err_parse_dt:
 		devm_kfree(&client->dev, pdata);
 	dev_err(&client->dev, "error %d\n", ret);
 	i2c_set_clientdata(client, NULL);
-	dev_set_name(&client->dev, "%s", "RT5509_MT");
+	dev_set_name(&client->dev, "%s",
+		     kasprintf(GFP_KERNEL, "RT5509_MT_%d", dev_cnt++));
 	return rt5509_dummy_codec_register(&client->dev);
 }
 

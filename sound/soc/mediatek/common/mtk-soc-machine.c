@@ -585,7 +585,7 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 		.codec_name = "MAX98926_MT",
 #elif defined(CONFIG_SND_SOC_RT5509)
 		.codec_dai_name = "rt5509-aif1",
-		.codec_name = "RT5509_MT",
+		.codec_name = "RT5509_MT_0",
 		.ignore_suspend = 1,
 		.ignore_pmdown_time = true,
 #else
