@@ -197,6 +197,12 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		goto LEAVE_SLEEP;
 	}
 
+	if (is_sspm_ipi_lock_spm()) {
+		slp_error("CANNOT SLEEP DUE TO SSPM IPI\n");
+		ret = -EPERM;
+		goto LEAVE_SLEEP;
+	}
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!spm_load_firmware_status()) {
 		slp_error("SPM FIRMWARE IS NOT READY\n");

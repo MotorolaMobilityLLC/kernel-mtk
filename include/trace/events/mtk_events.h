@@ -353,6 +353,32 @@ TRACE_EVENT(sched_update,
 	TP_printk("(%d)(0x%x)", __entry->cluster_id, __entry->sched_info)
 );
 #endif
+
+TRACE_EVENT(sspm_ipi,
+
+	TP_PROTO(
+		int start,
+		int ipi_id,
+		int ipi_opt
+	),
+
+	TP_ARGS(start, ipi_id, ipi_opt),
+
+	TP_STRUCT__entry(
+		__field(int, start)
+		__field(int, ipi_id)
+		__field(int, ipi_opt)
+	),
+
+	TP_fast_assign(
+		__entry->start = start;
+		__entry->ipi_id = ipi_id;
+		__entry->ipi_opt = ipi_opt;
+	),
+
+	TP_printk("start=%d, id=%d, opt=%d", __entry->start, __entry->ipi_id, __entry->ipi_opt)
+);
+
 #endif /* _TRACE_MTK_EVENTS_H */
 
 /* This part must be outside protection */

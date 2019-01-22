@@ -1170,9 +1170,8 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	int i = NR_TYPES - 1;
 	int state = CPUIDLE_STATE_RG;
 	int reason = NR_REASONS;
-	unsigned int gpu_locked;
-	unsigned long flags = 0;
 #if defined(CONFIG_MTK_UFS_BOOTING)
+	unsigned long flags = 0;
 	unsigned int ufs_locked;
 #endif
 #ifdef CONFIG_MTK_DCS
@@ -1220,13 +1219,8 @@ int mtk_idle_select_base_on_menu_gov(int cpu, int menu_select_state)
 	}
 #endif
 
-	/* Check if GPU blocks deepidle/SODI */
-	spin_lock_irqsave(&idle_gpu_spin_lock, flags);
-	gpu_locked = idle_gpu_lock;
-	spin_unlock_irqrestore(&idle_gpu_spin_lock, flags);
-
-	if (gpu_locked) {
-		reason = BY_GPU;
+	if (is_sspm_ipi_lock_spm()) {
+		reason = BY_SSPM_IPI;
 		goto get_idle_idx_2;
 	}
 
