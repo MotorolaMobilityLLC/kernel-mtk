@@ -32,7 +32,6 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/secmem/$(MTK_PLATFORM)/
 endif
 
 ifeq ($(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT),y)
-ccflags-y += -I$(srctree)/include/trustzone
-ccflags-y += -I$(srctree)/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/trustzone
 endif
 
