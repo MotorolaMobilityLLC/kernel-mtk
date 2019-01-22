@@ -253,10 +253,9 @@ int is_intersected_with_ccu_region(unsigned int start, unsigned int nr)
 	unsigned int ccu_fix_block_end = MVAGRAPH_INDEX(CCU_FIX_MVA_END);
 	int ret = 0;
 
-#if 1
-	M4UINFO("%s:start = 0x%x, end = 0x%x nr = %x.\n",
+	M4ULOG_LOW("%s:start = 0x%x, end = 0x%x nr = %x.\n",
 		__func__, start, GET_END_INDEX(start, nr), nr);
-#endif
+
 	/*case 1: 1 <= start < 0x200 && 0x300<=end<=0xFFF*/
 	if ((start >= 1 && start < ccu_fix_block_start)
 	    && (GET_END_INDEX(start, nr) >= ccu_fix_block_start &&
@@ -267,10 +266,10 @@ int is_intersected_with_ccu_region(unsigned int start, unsigned int nr)
 		&& (GET_END_INDEX(start, nr) >= (ccu_fix_block_end + 1)
 			&& GET_END_INDEX(start, nr) <= MVA_MAX_BLOCK_NR))
 		ret = 1;
-#if 1
+
 	if (ret)
-		M4UINFO("input region intersects to ccu region\n");
-#endif
+		M4ULOG_LOW("input region intersects to ccu region\n");
+
 	return ret;
 
 }
@@ -532,7 +531,7 @@ static int __check_ccu_mva_region(unsigned int startIdx, unsigned int nr, void *
 	if (is_in && is_ccu_port)
 		return 1;
 	else if (is_in && !is_ccu_port) {
-		M4UINFO("[0x%x - 0x%x] requested by port(%d) is in ccu reserved region!\n",
+		M4ULOG_MID("[0x%x - 0x%x] requested by port(%d) is in ccu reserved region!\n",
 			startIdx, GET_END_INDEX(startIdx, nr),
 			pMvaInfo->port);
 		return -1;
