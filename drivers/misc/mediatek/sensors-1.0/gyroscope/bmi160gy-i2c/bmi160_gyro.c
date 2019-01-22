@@ -1741,6 +1741,8 @@ static int bmg_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	}
 
 	obj_i2c_data = obj;
+	if (!bmi160_acc_i2c_client)
+		goto exit_init_client_failed;
 	obj->client = bmi160_acc_i2c_client;
 	i2c_set_clientdata(obj->client, obj);
 	/*-----------------------------set debounce-----------------------------------------*/
