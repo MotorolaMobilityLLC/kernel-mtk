@@ -276,6 +276,13 @@ int ext_sync_signal(void);
 void ext_sync_signal_lock(void);
 void ext_sync_signal_unlock(void);
 
+/* api for other modules to allocate audio sram */
+int mtk_audio_request_sram(dma_addr_t *phys_addr,
+			   unsigned char **virt_addr,
+			   unsigned int length,
+			   void *user);
+void mtk_audio_free_sram(void *user);
+
 struct mtk_mem_blk_ops {
 	int (*set_memif_addr)(AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk);
 };
