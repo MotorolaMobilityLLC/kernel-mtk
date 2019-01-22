@@ -112,7 +112,7 @@
 #define WLAN_STATUS_BUFFER_TOO_SHORT            ((WLAN_STATUS) 0xC0010016L)
 #define WLAN_STATUS_BWCS_UPDATE                 ((WLAN_STATUS) 0xC0010017L)
 
-#define WLAN_STATUS_JOIN_TIMEOUT                ((WLAN_STATUS) 0xc0010018L)
+#define WLAN_STATUS_JOIN_FAILURE                ((WLAN_STATUS) 0xc0010018L)
 
 /* NIC status flags */
 #define ADAPTER_FLAG_HW_ERR                     0x00400000
