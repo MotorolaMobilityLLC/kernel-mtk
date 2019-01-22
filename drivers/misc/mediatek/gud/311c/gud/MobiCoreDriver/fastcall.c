@@ -406,7 +406,15 @@ int mc_fastcall_init(void)
 		mc_dev_err("cannot create fastcall wq: %d\n", ret);
 		return ret;
 	}
+#if 0
+	struct sched_param param = {.sched_priority = 1};
 
+	ret = sched_setscheduler(fastcall_thread, SCHED_FIFO, &param);
+	if (ret)
+		mc_dev_info("cannot set tee_fastcall priority: %d\n", ret);
+#else
+	set_user_nice(fastcall_thread, -20);
+#endif
 	/* this thread MUST run on CPU 0 at startup */
 	set_cpus_allowed_ptr(fastcall_thread, &CPU_MASK_CPU0);
 
