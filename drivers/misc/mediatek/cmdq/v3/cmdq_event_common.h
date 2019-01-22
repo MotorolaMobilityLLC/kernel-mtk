@@ -398,6 +398,8 @@ enum CMDQ_EVENT_ENUM {
 	CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY = 415,
 	/* Trigger thread notify config thread */
 	CMDQ_SYNC_TOKEN_EXT_STREAM_EOF = 416,
+	/* Check CABC setup finish */
+	CMDQ_SYNC_TOKEN_EXT_CABC_EOF = 417,
 
 	/* Secure video path notify SW token */
 	CMDQ_SYNC_DISP_OVL0_2NONSEC_END = 420,
