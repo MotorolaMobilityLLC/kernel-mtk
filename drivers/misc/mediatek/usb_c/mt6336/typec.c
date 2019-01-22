@@ -1469,14 +1469,6 @@ static void typec_basic_settings(struct typec_hba *hba)
 	if (is_print)
 		dev_err(hba->dev, "CORE_ANA_CON109(0x566)=0x%x [0x8]\n", typec_read8(hba, CORE_ANA_CON109));
 
-	typec_write8(hba, 0x0A, 0x0025);
-	if (is_print)
-		dev_err(hba->dev, "0x0025=0x%x [0xA]\n", typec_read8(hba, 0x0025));
-
-	typec_write8(hba, 0x20, 0x0504);
-	if (is_print)
-		dev_err(hba->dev, "0x0504=0x%x [0x20]\n", typec_read8(hba, 0x0504));
-
 #ifdef MT6336_E2
 	/*
 	 * For E2. Request from Chun-Kai Tseng 20160531_1607
@@ -1758,6 +1750,23 @@ static void typec_wait_vbus_on_attach_wait_snk(struct work_struct *work)
 	typec_enable_lowq(hba, "typec_wait_vbus_on_attach_wait_snk");
 }
 
+static int keep_low(struct typec_hba *hba, int vbus)
+{
+	static ktime_t last_t_vsafe5v;
+
+	if (vbus > PD_VSAFE0V_HIGH) {
+		last_t_vsafe5v = ktime_get();
+		return 0;
+	}
+
+	if (ktime_ms_delta(ktime_get(), last_t_vsafe5v) > 5000) {
+		dev_err(hba->dev, "%s VBUS Keep LOW lasting 5sec", __func__);
+		return 1;
+	}
+
+	return 0;
+}
+
 static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 {
 	struct typec_hba *hba = container_of(work, struct typec_hba, wait_vbus_off_attached_snk);
@@ -1775,7 +1784,7 @@ static void typec_wait_vbus_off_attached_snk(struct work_struct *work)
 		if (hba->dbg_lvl >= TYPEC_DBG_LVL_3)
 			dev_err(hba->dev, "%s VBUS = %d, DET_EN=%d", __func__, val, hba->vbus_det_en);
 
-		if (hba->vbus_det_en && (val < hba->vsafe_5v)) {
+		if ((hba->vbus_det_en && (val < hba->vsafe_5v)) || keep_low(hba, val)) {
 
 #if COMPLIANCE
 			if (val > PD_VSAFE0V_HIGH) {
@@ -2506,6 +2515,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	hba->vsafe_5v = PD_VSAFE5V_LOW;
 	hba->task_state = PD_STATE_DISABLED;
 	hba->is_kpoc = false;
+	hba->is_boost = false;
 	hba->wq_running = 0;
 	hba->wq_cnt = 0;
 
@@ -2533,7 +2543,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		hba->vbus_off_polling = hba->vbus_off_polling/2;
 		typec_set(hba, REG_TYPE_C_ADC_EN, TYPE_C_CTRL);
 
-		mt_ppm_sysboost_set_core_limit(BOOST_BY_USB, 1, 4, 4);
+		mt_ppm_sysboost_set_core_limit(BOOST_BY_USB_PD, 1, 4, 4);
+		hba->is_boost = true;
 	}
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
