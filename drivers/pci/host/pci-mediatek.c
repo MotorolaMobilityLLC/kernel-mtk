@@ -34,124 +34,124 @@
 
 
 /* PCI CfgWr/CfgRd registers */
-#define CFG_HEADER_0				0x460
-#define CFG_HEADER_1				0x464
-#define CFG_HEADER_2				0x468
-#define CFG_HEADER_3				0x46c
-#define CFG_WDATA				0x470
-#define APP_TLP_REQ				0x488
-#define APP_CFG_REQ				BIT(0)
-#define APP_MSG_REQ				BIT(1)
-#define APP_CPL_STATUS				GENMASK(7, 5)
-#define CFG_RDATA				0x48c
+#define CFG_HEADER_0                            0x460
+#define CFG_HEADER_1                            0x464
+#define CFG_HEADER_2                            0x468
+#define CFG_HEADER_3                            0x46c
+#define CFG_WDATA                               0x470
+#define APP_TLP_REQ                             0x488
+#define APP_CFG_REQ                             BIT(0)
+#define APP_MSG_REQ                             BIT(1)
+#define APP_CPL_STATUS                          GENMASK(7, 5)
+#define CFG_RDATA                               0x48c
 
 /* PCI Interrupt registers */
-#define INT_MASK				0x420
-#define INTA_MASK				BIT(16)
-#define INTB_MASK				BIT(17)
-#define INTC_MASK				BIT(18)
-#define	INTD_MASK				BIT(19)
-#define INTX_MASK				(INTA_MASK | \
+#define INT_MASK                                0x420
+#define INTA_MASK                               BIT(16)
+#define INTB_MASK                               BIT(17)
+#define INTC_MASK                               BIT(18)
+#define INTD_MASK                               BIT(19)
+#define INTX_MASK                               (INTA_MASK | \
 						INTB_MASK | \
 						INTC_MASK | \
 						INTD_MASK)
-#define MTK_PCIE_INTX_SHIFT			16
-#define	MSI_MASK				BIT(23)
-#define PCIE_L2_ENTRY_WAKE_MASK			BIT(30)
-#define INT_STATUS				0x424
-#define INTA_STATUS				BIT(16)
-#define INTB_STATUS				BIT(17)
-#define INTC_STATUS				BIT(18)
-#define INTD_STATUS				BIT(19)
-#define PM_HP_EVENT_STATUS			BIT(21)
-#define AER_EVENT_STATUS			BIT(22)
-#define MSI_STATUS				BIT(23)
-#define PCIE_L2_ENTRY_WAKE_STATUS		BIT(30)
-#define IMSI_STATUS				0x42c
+#define MTK_PCIE_INTX_SHIFT                     16
+#define MSI_MASK                                BIT(23)
+#define PCIE_L2_ENTRY_WAKE_MASK                 BIT(30)
+#define INT_STATUS                              0x424
+#define INTA_STATUS                             BIT(16)
+#define INTB_STATUS                             BIT(17)
+#define INTC_STATUS                             BIT(18)
+#define INTD_STATUS                             BIT(19)
+#define PM_HP_EVENT_STATUS                      BIT(21)
+#define AER_EVENT_STATUS                        BIT(22)
+#define MSI_STATUS                              BIT(23)
+#define PCIE_L2_ENTRY_WAKE_STATUS               BIT(30)
+#define IMSI_STATUS                             0x42c
 
-#define ICMD					0x434
-#define ICMD_TO_LINK				BIT(4)
+#define ICMD                                    0x434
+#define ICMD_TO_LINK                            BIT(4)
 
 /* IP Configuration registers */
-#define K_GBL_1					0x000
-#define K_CONF_FUNC0_0				0x100
-#define K_CONF_FUNC0_1				0x104
-#define K_CONF_FUNC0_2				0x108
+#define K_GBL_1                                 0x000
+#define K_CONF_FUNC0_0                          0x100
+#define K_CONF_FUNC0_1                          0x104
+#define K_CONF_FUNC0_2                          0x108
 
-#define MTK_ROOT_PORT				((4 << 12) & 0xf000)
-#define MTK_VEND_ID				(0x14c3)
-#define MTK_DEV_ID				(0x5396)
-#define MTK_SS_VEND_ID				(0x14c3)
-#define MTK_SS_DEV_ID				(0x5396)
+#define MTK_ROOT_PORT                           ((4 << 12) & 0xf000)
+#define MTK_VEND_ID                             (0x14c3)
+#define MTK_DEV_ID                              (0x5396)
+#define MTK_SS_VEND_ID                          (0x14c3)
+#define MTK_SS_DEV_ID                           (0x5396)
 
 #define K_CONF_IDS(vend, dev) \
 	((vend & 0xffff) | ((dev << 16) \
 	& 0xffff0000))
 
 /* PCI MAC registers */
-#define PCI_RSTCR				0x510
-#define PCI_PHY_RSTB				BIT(0)
-#define PCI_PIPE_SRSTB				BIT(1)
-#define PCI_MAC_SRSTB				BIT(2)
-#define PCI_CRSTB				BIT(3)
-#define PCI_PERSTB				BIT(8)
-#define PCI_PIPE_RST_EN				BIT(13)
-#define PCI_MAC_RST_EN				BIT(14)
-#define PCI_CONF_RST_EN				BIT(15)
-#define PCI_RST_DEASSERTED			(PCI_PHY_RSTB | \
+#define PCI_RSTCR                               0x510
+#define PCI_PHY_RSTB                            BIT(0)
+#define PCI_PIPE_SRSTB                          BIT(1)
+#define PCI_MAC_SRSTB                           BIT(2)
+#define PCI_CRSTB                               BIT(3)
+#define PCI_PERSTB                              BIT(8)
+#define PCI_PIPE_RST_EN                         BIT(13)
+#define PCI_MAC_RST_EN                          BIT(14)
+#define PCI_CONF_RST_EN                         BIT(15)
+#define PCI_RST_DEASSERTED                      (PCI_PHY_RSTB | \
 						PCI_PIPE_SRSTB | \
 						PCI_MAC_SRSTB | \
 						PCI_CRSTB)
-#define PCI_LINKDOWN_RST_EN			(PCI_PIPE_RST_EN | \
+#define PCI_LINKDOWN_RST_EN                     (PCI_PIPE_RST_EN | \
 						PCI_MAC_RST_EN | \
 						PCI_CONF_RST_EN)
-#define PCI_WAKE_CONTROL			0x52c
-#define CLKREQ_N_ENABLE				BIT(0)
-#define PCI_LINK_STATUS				0x804
-#define PCI_LINKUP				BIT(10)
-#define PCI_LTSSM_L0				0x00f
-#define PCI_LTSSM_L2_IDLE			0x018
-#define PCI_LTSSM_MASK				0x01f
-#define IMSI_ADDR				0x430
-#define MSI_VECTOR				0x0c0
-#define MSI_IRQS				32
-#define PCIE_PORT_MSI_BIT			32
+#define PCI_WAKE_CONTROL                        0x52c
+#define CLKREQ_N_ENABLE                         BIT(0)
+#define PCI_LINK_STATUS                         0x804
+#define PCI_LINKUP                              BIT(10)
+#define PCI_LTSSM_L0                            0x00f
+#define PCI_LTSSM_L2_IDLE                       0x018
+#define PCI_LTSSM_MASK                          0x01f
+#define IMSI_ADDR                               0x430
+#define MSI_VECTOR                              0x0c0
+#define MSI_IRQS                                32
+#define PCIE_PORT_MSI_BIT                       32
 
 /* 32 msi irqs for endpoint(b[31:0]) & 1 msi irq for pcie port(b32) */
-#define MAX_MSI_IRQS				(MSI_IRQS + 1)
-#define INTX_IRQ_NUM				5
-#define AHB2PCIE_BASE0_L			0x438
-#define AHB2PCIE_BASE0_H			0x43c
-#define AHB2PCIE_BASE1_L			0x440
-#define AHB2PCIE_BASE1_H			0x444
-#define PCIE2AXI_WIN				0x448
-#define WIN_NOPREFETCH				BIT(6)
-#define WIN_ENABLE				BIT(7)
+#define MAX_MSI_IRQS                            (MSI_IRQS + 1)
+#define INTX_IRQ_NUM                            5
+#define AHB2PCIE_BASE0_L                        0x438
+#define AHB2PCIE_BASE0_H                        0x43c
+#define AHB2PCIE_BASE1_L                        0x440
+#define AHB2PCIE_BASE1_H                        0x444
+#define PCIE2AXI_WIN                            0x448
+#define WIN_NOPREFETCH                          BIT(6)
+#define WIN_ENABLE                              BIT(7)
 
-#define AHB2PCIE_BASEL(base)			(base & 0xffffffff)
-#define AHB2PCIE_BASEH(base)			(base >> 32)
-#define NOPREFETCH(flag)			((flag & IORESOURCE_PREFETCH) \
+#define AHB2PCIE_BASEL(base)                    (base & 0xffffffff)
+#define AHB2PCIE_BASEH(base)                    (base >> 32)
+#define NOPREFETCH(flag)                        ((flag & IORESOURCE_PREFETCH) \
 								? 0 : 1 << 6)
-#define BASE_SIZE(sz)				(sz & 0x1f)
-#define PCIE2AXI_SIZE				0xffffffff
+#define BASE_SIZE(sz)                           (sz & 0x1f)
+#define PCIE2AXI_SIZE                           0xffffffff
 
 /* PCI Configuration Transaction Header */
-#define CFG_DW0_LENGTH(length)			(length & 0x3ff)
-#define CFG_DW0_ATTR(attr)			((attr << 12) & 0x3000)
-#define CFG_DW0_EP(ep)				((ep << 14) & 0x4000)
-#define CFG_DW0_TD(td)				((td << 15) & 0x8000)
-#define CFG_DW0_TC(tc)				((tc << 20) & 0x700000)
-#define CFG_DW0_TYPE(type)			((type << 24) & 0x1f000000)
-#define CFG_DW0_FMT(fmt)			((fmt << 29) & 0xe0000000)
-#define CFG_DW1_FBE(fbe)			(fbe & 0x0f)
-#define CFG_DW1_LBE(lbe)			((lbe << 4) & 0xf0)
-#define CFG_DW1_TAG(tag)			((tag << 8) & 0xff00)
-#define CFG_DW1_RID(rid)			((rid << 16) & 0xffff0000)
-#define CFG_DW2_REGN(regn)			((((regn >> 2) & 0x3f) << 2) | \
+#define CFG_DW0_LENGTH(length)                  (length & 0x3ff)
+#define CFG_DW0_ATTR(attr)                      ((attr << 12) & 0x3000)
+#define CFG_DW0_EP(ep)                          ((ep << 14) & 0x4000)
+#define CFG_DW0_TD(td)                          ((td << 15) & 0x8000)
+#define CFG_DW0_TC(tc)                          ((tc << 20) & 0x700000)
+#define CFG_DW0_TYPE(type)                      ((type << 24) & 0x1f000000)
+#define CFG_DW0_FMT(fmt)                        ((fmt << 29) & 0xe0000000)
+#define CFG_DW1_FBE(fbe)                        (fbe & 0x0f)
+#define CFG_DW1_LBE(lbe)                        ((lbe << 4) & 0xf0)
+#define CFG_DW1_TAG(tag)                        ((tag << 8) & 0xff00)
+#define CFG_DW1_RID(rid)                        ((rid << 16) & 0xffff0000)
+#define CFG_DW2_REGN(regn)                      ((((regn >> 2) & 0x3f) << 2) | \
 						(((regn >> 8) & 0x0f) << 8))
-#define CFG_DW2_FUN(fun)			((fun << 16) & 0x070000)
-#define CFG_DW2_DEV(dev)			((dev << 19) & 0xf80000)
-#define CFG_DW2_BUS(bus)			((bus << 24) & 0xff000000)
+#define CFG_DW2_FUN(fun)                        ((fun << 16) & 0x070000)
+#define CFG_DW2_DEV(dev)                        ((dev << 19) & 0xf80000)
+#define CFG_DW2_BUS(bus)                        ((bus << 24) & 0xff000000)
 
 #define  CFG_HEADER_DW0(ep, td, type, fmt) \
 	(CFG_DW0_LENGTH(1) | CFG_DW0_ATTR(0) | \
@@ -211,6 +211,10 @@ struct mtk_pcie {
 	struct list_head resources;
 	struct phy *phy;
 	struct clk *clk;
+	struct clk *p0;
+	struct clk *obff;
+	struct clk *aux;
+	struct clk *p1;
 	int nports;
 };
 
@@ -397,7 +401,7 @@ static int mtk_pcie_hw_wr_cfg(struct mtk_pcie_port *port, u32 bus, u32 devfn,
  * @val: Value to be read
  *
  * Return: PCIBIOS_SUCCESSFUL on success
- *	   PCIBIOS_DEVICE_NOT_FOUND on failure
+ *         PCIBIOS_DEVICE_NOT_FOUND on failure
  */
 static int mtk_pcie_read_config(struct pci_bus *bus, unsigned int devfn,
 				   int where, int size, u32 *val)
@@ -434,7 +438,7 @@ static int mtk_pcie_read_config(struct pci_bus *bus, unsigned int devfn,
  * @val: Value to be written to device
  *
  * Return: PCIBIOS_SUCCESSFUL on success
- *	   PCIBIOS_DEVICE_NOT_FOUND on failure
+ *         PCIBIOS_DEVICE_NOT_FOUND on failure
  */
 static int mtk_pcie_write_config(struct pci_bus *bus, unsigned int devfn,
 				    int where, int size, u32 val)
@@ -1128,10 +1132,10 @@ static int mtk_pcie_parse_and_add_res(struct mtk_pcie *pcie)
 		dev_err(dev, "failed to parse ranges property: %d\n",
 			err);
 		pcie->bus_range = (struct resource) {
-			.name	= node->name,
-			.start	= 0,
-			.end	= 0xff,
-			.flags	= IORESOURCE_BUS,
+			.name   = node->name,
+			.start  = 0,
+			.end    = 0xff,
+			.flags  = IORESOURCE_BUS,
 		};
 	}
 	/* Register bus resource */
@@ -1254,6 +1258,65 @@ static const struct of_device_id mtk_pcie_of_match[] = {
 	{},
 };
 MODULE_DEVICE_TABLE(of, mtk_pcie_of_match);
+
+
+static int mtk_pcie_clk_enable(struct mtk_pcie *pcie)
+{
+	unsigned int err;
+
+	pcie->clk = devm_clk_get(pcie->dev, "pcie-mac");
+	if (IS_ERR(pcie->clk)) {
+		dev_err(pcie->dev, "Failed to get pcie rc clock\n");
+		return PTR_ERR(pcie->clk);
+	}
+
+	pcie->p0 = devm_clk_get(pcie->dev, "mpcie-p0");
+	if (IS_ERR(pcie->clk)) {
+		dev_err(pcie->dev, "Failed to get pcie rc clock\n");
+		return PTR_ERR(pcie->clk);
+	}
+
+	pcie->obff = devm_clk_get(pcie->dev, "mpcie-obff");
+	if (IS_ERR(pcie->clk)) {
+		dev_err(pcie->dev, "Failed to get pcie rc clock\n");
+		return PTR_ERR(pcie->clk);
+	}
+
+	pcie->aux = devm_clk_get(pcie->dev, "mpcie-aux");
+	if (IS_ERR(pcie->clk)) {
+		dev_err(pcie->dev, "Failed to get pcie rc clock\n");
+		return PTR_ERR(pcie->clk);
+	}
+
+	pcie->p1 = devm_clk_get(pcie->dev, "mpcie-p1");
+	if (IS_ERR(pcie->clk)) {
+		dev_err(pcie->dev, "Failed to get pcie rc clock\n");
+		return PTR_ERR(pcie->clk);
+	}
+
+	err = clk_prepare_enable(pcie->clk);
+	if (err)
+		return err;
+
+	err = clk_prepare_enable(pcie->p0);
+	if (err)
+		return err;
+
+	err = clk_prepare_enable(pcie->obff);
+	if (err)
+		return err;
+
+	err = clk_prepare_enable(pcie->aux);
+	if (err)
+		return err;
+
+	err = clk_prepare_enable(pcie->p1);
+	if (err)
+		return err;
+
+	return 0;
+}
+
 /**
  * mtk_pcie_probe - Probe function
  * @pdev: Platform device pointer
@@ -1276,15 +1339,11 @@ static int __init mtk_pcie_probe(struct platform_device *pdev)
 
 	pcie->dev = &pdev->dev;
 
-	pcie->clk = devm_clk_get(&pdev->dev, "pcie-mac");
-	if (IS_ERR(pcie->clk)) {
-		dev_err(&pdev->dev, "Failed to get pcie rc clock\n");
-		return PTR_ERR(pcie->clk);
-	}
-
-	err = clk_prepare_enable(pcie->clk);
-	if (err)
+	err = mtk_pcie_clk_enable(pcie);
+	if (err) {
+		dev_err(&pdev->dev, "failed to enable clock.\n");
 		return err;
+	}
 
 	err = mtk_pcie_phy_init(pcie);
 	if (err)
