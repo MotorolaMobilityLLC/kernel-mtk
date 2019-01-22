@@ -779,9 +779,20 @@ static int tscpu_read_opp(struct seq_file *m, void *v)
 {
 	unsigned int cpu_power, gpu_power;
 	unsigned int gpu_loading = 0;
+#if defined(THERMAL_VPU_SUPPORT)
+	unsigned int vpu_power;
+#endif
 
 	cpu_power = apthermolmt_get_cpu_power_limit();
 	gpu_power = apthermolmt_get_gpu_power_limit();
+#if defined(THERMAL_VPU_SUPPORT)
+	vpu_power = apthermolmt_get_vpu_power_limit();
+#endif
+
+#if defined(THERMAL_VPU_SUPPORT)
+	seq_printf(m, "%d,",
+		   (int)((vpu_power != 0x7FFFFFFF) ? vpu_power : 0));
+#endif
 
 #if CPT_ADAPTIVE_AP_COOLER
 

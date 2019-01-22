@@ -49,6 +49,11 @@
 #include "mtk_thermal_ipi.h"
 #include "linux/delay.h"
 #endif
+#if defined(THERMAL_VPU_SUPPORT)
+#if defined(CONFIG_MTK_VPU_SUPPORT)
+#include "vpu_dvfs.h"
+#endif
+#endif
 
 /*****************************************************************************
  *  Local switches
@@ -73,8 +78,14 @@ static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 unsigned int adaptive_cpu_power_limit = 0x7FFFFFFF;
 unsigned int adaptive_gpu_power_limit = 0x7FFFFFFF;
+#if defined(THERMAL_VPU_SUPPORT)
+unsigned int adaptive_vpu_power_limit = 0x7FFFFFFF;
+#endif
 static unsigned int prv_adp_cpu_pwr_lim;
 static unsigned int prv_adp_gpu_pwr_lim;
+#if defined(THERMAL_VPU_SUPPORT)
+static unsigned int prv_adp_vpu_pwr_lim;
+#endif
 unsigned int gv_cpu_power_limit = 0x7FFFFFFF;
 unsigned int gv_gpu_power_limit = 0x7FFFFFFF;
 #if CPT_ADAPTIVE_AP_COOLER
@@ -92,11 +103,18 @@ static int MAXIMUM_GPU_POWER = 676;
 static int MINIMUM_TOTAL_POWER = 500 + 676;
 static int MAXIMUM_TOTAL_POWER = 1240 + 676;
 static int FIRST_STEP_TOTAL_POWER_BUDGET = 1750;
+#if defined(THERMAL_VPU_SUPPORT)
+static int MINIMUM_VPU_POWER = 300;
+static int MAXIMUM_VPU_POWER = 1000;
+#endif
 
 /* 1. MINIMUM_BUDGET_CHANGE = 0 ==> thermal equilibrium maybe at higher than TARGET_TJ_HIGH */
 /* 2. Set MINIMUM_BUDGET_CHANGE > 0 if to keep Tj at TARGET_TJ */
 static int MINIMUM_BUDGET_CHANGE = 50;
 static int g_total_power;
+#if defined(THERMAL_VPU_SUPPORT)
+static int g_delta_power;
+#endif
 #endif
 
 #if CPT_ADAPTIVE_AP_COOLER
@@ -425,6 +443,9 @@ static int atm_prev_active_atm_cl_id = -100;
 
 static DEFINE_MUTEX(atm_cpu_lmt_mutex);
 static DEFINE_MUTEX(atm_gpu_lmt_mutex);
+#if defined(THERMAL_VPU_SUPPORT)
+static DEFINE_MUTEX(atm_vpu_lmt_mutex);
+#endif
 
 static int atm_update_atm_param_to_sspm(void)
 {
@@ -745,6 +766,38 @@ static void set_adaptive_gpu_power_limit(unsigned int limit)
 #endif
 }
 
+#if defined(THERMAL_VPU_SUPPORT)
+static void set_adaptive_vpu_power_limit(unsigned int limit)
+{
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+		mutex_lock(&atm_vpu_lmt_mutex);
+#endif
+#endif
+
+	prv_adp_vpu_pwr_lim = adaptive_vpu_power_limit;
+	adaptive_vpu_power_limit = (limit != 0) ? limit : 0x7FFFFFFF;
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	if (atm_sspm_enabled)
+		adaptive_vpu_power_limit = 0x7FFFFFFF;
+#endif
+#endif
+
+	if (prv_adp_vpu_pwr_lim != adaptive_vpu_power_limit) {
+		tscpu_dprintk("%s %d\n", __func__,
+		     (adaptive_vpu_power_limit != 0x7FFFFFFF) ? adaptive_vpu_power_limit : 0);
+		apthermolmt_set_vpu_power_limit(&ap_atm, adaptive_vpu_power_limit);
+	}
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if THERMAL_ENABLE_TINYSYS_SSPM && CPT_ADAPTIVE_AP_COOLER && PRECISE_HYBRID_POWER_BUDGET && CONTINUOUS_TM
+	mutex_unlock(&atm_vpu_lmt_mutex);
+#endif
+#endif
+}
+#endif
+
 #if CPT_ADAPTIVE_AP_COOLER
 int is_cpu_power_unlimit(void)
 {
@@ -901,13 +954,23 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 	*/
 	static int cpu_power = 0, gpu_power;
 	static int last_cpu_power = 0, last_gpu_power;
+#if defined(THERMAL_VPU_SUPPORT)
+	static int vpu_power, last_vpu_power;
+#endif
 
 	last_cpu_power = cpu_power;
 	last_gpu_power = gpu_power;
+#if defined(THERMAL_VPU_SUPPORT)
+	last_vpu_power = vpu_power;
+#endif
 	g_total_power = total_power;
 
 	if (total_power == 0) {
 		cpu_power = gpu_power = 0;
+#if defined(THERMAL_VPU_SUPPORT)
+		vpu_power = 0;
+#endif
+
 #if THERMAL_HEADROOM
 		if (thp_max_cpu_power != 0)
 			set_adaptive_cpu_power_limit((unsigned int)
@@ -918,6 +981,9 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 		set_adaptive_cpu_power_limit(0);
 #endif
 		set_adaptive_gpu_power_limit(0);
+#if defined(THERMAL_VPU_SUPPORT)
+		set_adaptive_vpu_power_limit(0);
+#endif
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
 			aee_rr_rec_thermal_ATM_status(ATM_DONE);
 #endif
@@ -984,6 +1050,13 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 		cpu_power = MIN((total_power - gpu_power), MAXIMUM_CPU_POWER);
 	}
 
+#if defined(THERMAL_VPU_SUPPORT)
+	if (total_power <= MINIMUM_TOTAL_POWER)
+		vpu_power = MAX(last_vpu_power + g_delta_power, MINIMUM_VPU_POWER);
+	else
+		vpu_power = MAXIMUM_VPU_POWER;
+#endif
+
 #if 0
 	/* TODO: check if this segment can be used in original design
      * GPU SMA
@@ -1006,7 +1079,17 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 			set_adaptive_gpu_power_limit(gpu_power);
 	}
 
+#if defined(THERMAL_VPU_SUPPORT)
+	if (vpu_power != last_vpu_power) {
+		if (vpu_power >= MAXIMUM_VPU_POWER)
+			set_adaptive_vpu_power_limit(0);
+		else
+			set_adaptive_vpu_power_limit(vpu_power);
+	}
+	tscpu_dprintk("%s cpu %d, gpu %d, vpu %d\n", __func__, cpu_power, gpu_power, vpu_power);
+#else
 	tscpu_dprintk("%s cpu %d, gpu %d\n", __func__, cpu_power, gpu_power);
+#endif
 
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
 	aee_rr_rec_thermal_ATM_status(ATM_DONE);
@@ -1121,6 +1204,9 @@ static int phpb_calc_total(int prev_total_power, long curr_temp, long prev_temp)
 	int tp = prev_temp - curr_temp;
 
 	delta_power = phpb_calc_delta(curr_temp, prev_temp);
+#if defined(THERMAL_VPU_SUPPORT)
+	g_delta_power = delta_power;
+#endif
 	if (delta_power == 0)
 		return prev_total_power;
 
@@ -1603,6 +1689,11 @@ static ssize_t tscpu_write_atm_setting(struct file *file, const char __user *buf
 
 	int i_id = -1, i_first_step = -1, i_theta_r = -1, i_theta_f = -1, i_budget_change =
 	    -1, i_min_cpu_pwr = -1, i_max_cpu_pwr = -1, i_min_gpu_pwr = -1, i_max_gpu_pwr = -1;
+
+#if defined(THERMAL_VPU_SUPPORT)
+	MINIMUM_VPU_POWER = vpu_power_table[VPU_OPP_NUM - 1].power;
+	MAXIMUM_VPU_POWER = vpu_power_table[VPU_OPP_0].power;
+#endif
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
