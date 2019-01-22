@@ -310,6 +310,9 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 		{90, 89},
 		{98, 89}, {106, 89}, {114, 89}, {94, 97}, {102, 97}, {110, 97}, {118, 97} },
 	.iMirrorFlip = 0,	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
+
+	.i4BlockNumX = 140,
+	.i4BlockNumY = 104
 };
 
 

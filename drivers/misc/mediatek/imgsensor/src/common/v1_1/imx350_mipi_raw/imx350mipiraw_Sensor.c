@@ -107,9 +107,9 @@ static void KD_SENSOR_PROFILE(char *tag)
 /* #define imx350_ZHDR */
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
-#if 0
+
 static BYTE imx350_SPC_data[352] = { 0 };
-#endif
+
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = IMX350_SENSOR_ID,	/* record sensor id defined in Kd_imgsensor.h */
 
@@ -667,25 +667,22 @@ static void imx350_set_pd_focus_area(MUINT32 startpos, MUINT32 size)
 
 	if (imgsensor.pdaf_mode == 1) {
 		LOG_INF("GC pre PDAF\n");
-		 /*PDAF*/
-		/*PD_CAL_ENALBE */
-		write_cmos_sensor(0x3121, 0x01);
-		/*AREA MODE */
-		write_cmos_sensor(0x31B0, 0x02);	/* 8x6 output */
-		write_cmos_sensor(0x31B4, 0x01);	/* 8x6 output */
+		/*PDAF*/
 		/*PD_OUT_EN=1 */
-		write_cmos_sensor(0x3123, 0x01);
+		write_cmos_sensor(0x3E37, 0x01);
+
+		/*AREA MODE */
+		write_cmos_sensor(0x38A3, 0x01);	 /* 8x6 output */
 
 		/*Fixed area mode */
-
-		write_cmos_sensor(0x3158, (start_x_pos >> 8) & 0xFF);
-		write_cmos_sensor(0x3159, start_x_pos & 0xFF);	/* X start */
-		write_cmos_sensor(0x315a, (start_y_pos >> 8) & 0xFF);
-		write_cmos_sensor(0x315b, start_y_pos & 0xFF);	/* Y start */
-		write_cmos_sensor(0x315c, (end_x_pos >> 8) & 0xFF);
-		write_cmos_sensor(0x315d, end_x_pos & 0xFF);	/* X end */
-		write_cmos_sensor(0x315e, (end_y_pos >> 8) & 0xFF);
-		write_cmos_sensor(0x315f, end_y_pos & 0xFF);	/* Y end */
+		write_cmos_sensor(0x38A4, (start_x_pos >> 8) & 0xFF);
+		write_cmos_sensor(0x38A5, start_x_pos & 0xFF);	/* X start */
+		write_cmos_sensor(0x38A6, (start_y_pos >> 8) & 0xFF);
+		write_cmos_sensor(0x38A7, start_y_pos & 0xFF);	/* Y start */
+		write_cmos_sensor(0x38A8, (end_x_pos >> 8) & 0xFF);
+		write_cmos_sensor(0x38A9, end_x_pos & 0xFF);	/* X end */
+		write_cmos_sensor(0x38AA, (end_y_pos >> 8) & 0xFF);
+		write_cmos_sensor(0x38AB, end_y_pos & 0xFF);	/* Y end */
 	}
 
 	LOG_INF("start_x:%d, start_y:%d, width:%d, height:%d, end_x:%d, end_y:%d\n",
@@ -714,10 +711,10 @@ static void imx350_set_pdaf_reg_setting(MUINT32 regNum, kal_uint16 *regDa)
 		/* LOG_INF("%x %x", regDa[idx], regDa[idx+1]); */
 	}
 }
-#if 0
+
 static void imx350_apply_SPC(void)
 {
-	unsigned int start_reg = 0x7c00;
+	unsigned int start_reg = 0x7500;
 	char puSendCmd[355];
 	kal_uint32 tosend;
 
@@ -733,7 +730,7 @@ static void imx350_apply_SPC(void)
 	iBurstWriteReg_multi(puSendCmd, tosend, imgsensor.i2c_write_id, tosend,
 			     imgsensor_info.i2c_speed);
 }
-#endif
+
 static void set_dummy(void)
 {
 	LOG_INF("frame_length = %d, line_length = %d\n",
@@ -1579,20 +1576,6 @@ kal_uint16 addr_data_pair_init_imx350[] = {
 	0xAC1D, 0xC0,
 	0xAC1F, 0xC0,
 	0xB6D9, 0x00,
-
-	0x3ff9, 0x00,/* digital gain */
-	0x020e, 0x01,
-	0x020f, 0x00,
-	0x0210, 0x01,
-	0x0211, 0x00,
-	0x0212, 0x01,
-	0x0213, 0x00,
-	0x0214, 0x01,
-	0x0215, 0x00,
-	0x0204, 0x00,/* 1xgain */
-	0x0205, 0x00,
-	0x0b05, 0x01,/* dpc */
-	0x0b06, 0x01,/* dpc */
 };
 
 static void sensor_init(void)
@@ -1856,23 +1839,20 @@ static kal_uint32 streaming_control(kal_bool enable)
 
 
 kal_uint16 addr_data_pair_capture_imx350_pdaf_on[] = {
-	0x3001, 0x01,/*bit[0]PDAF enable during HDR on */
 	/*PDAF*/
-	/*PD_CAL_ENALBE */
-	0x3121, 0x01,
-	/*AREA MODE */
-	0x31B0, 0x01,
 	/*PD_OUT_EN=1 */
-	0x3123, 0x01,
+	0x3E37, 0x01,
+	/*AREA MODE */
+	0x38A3, 0x01,
 	/*Fixed area mode */
-	0x3150, 0x00,
-	0x3151, 0x70,
-	0x3152, 0x00,
-	0x3153, 0x58,
-	0x3154, 0x02,
-	0x3155, 0x80,
-	0x3156, 0x02,
-	0x3157, 0x80,
+	0x38A4, 0x00,
+	0x38A5, 0x70,
+	0x38A6, 0x00,
+	0x38A7, 0x58,
+	0x38A8, 0x02,
+	0x38A9, 0x80,
+	0x38AA, 0x02,
+	0x38AB, 0x80,
 };
 
 static void capture_setting(kal_uint16 currefps)
@@ -1884,13 +1864,14 @@ static void capture_setting(kal_uint16 currefps)
 				       sizeof(addr_data_pair_capture_imx350) / sizeof(kal_uint16));
 #if 0
 	zvhdr_setting();
+#endif
 
 	if (imgsensor.pdaf_mode == 1) {
 		imx350_table_write_cmos_sensor(addr_data_pair_capture_imx350_pdaf_on,
 					       sizeof(addr_data_pair_capture_imx350_pdaf_on) / sizeof(kal_uint16));
 		imx350_apply_SPC();
 	}
-#endif
+
 }
 
 kal_uint16 addr_data_pair_video_imx350[] = {
@@ -2184,7 +2165,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_lot_id_from_otp();	/* return_sensor_id(); */
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				/* imx350_read_SPC(imx350_SPC_data); */
+				imx350_read_SPC(imx350_SPC_data);
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
