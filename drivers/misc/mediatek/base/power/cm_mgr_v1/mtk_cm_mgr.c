@@ -717,22 +717,22 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	} else if (!strcmp(cmd, "cm_mgr_loop_count")) {
 		cm_mgr_loop_count = val_1;
 	} else if (!strcmp(cmd, "cpu_power_ratio_up")) {
-		if (ret == 3 && val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			cpu_power_ratio_up[val_1] = val_2;
 	} else if (!strcmp(cmd, "cpu_power_ratio_down")) {
-		if (ret == 3 && val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			cpu_power_ratio_down[val_1] = val_2;
 	} else if (!strcmp(cmd, "vcore_power_ratio_up")) {
-		if (ret == 3 && val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			vcore_power_ratio_up[val_1] = val_2;
 	} else if (!strcmp(cmd, "vcore_power_ratio_down")) {
-		if (ret == 3 && val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			vcore_power_ratio_down[val_1] = val_2;
 	} else if (!strcmp(cmd, "debounce_times_up_adb")) {
-		if (ret == 3 && val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			debounce_times_up_adb[val_1] = val_2;
 	} else if (!strcmp(cmd, "debounce_times_down_adb")) {
-		if (ret == 3 && val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			debounce_times_down_adb[val_1] = val_2;
 	} else if (!strcmp(cmd, "debounce_times_reset_adb")) {
 		debounce_times_reset_adb = val_1;
