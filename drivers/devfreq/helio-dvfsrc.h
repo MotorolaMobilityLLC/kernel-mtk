@@ -19,6 +19,8 @@
 
 #if defined(CONFIG_MACH_MT6775)
 #include <helio-dvfsrc-mt6775.h>
+#elif defined(CONFIG_MACH_MT6771)
+#include <helio-dvfsrc-mt6771.h>
 #endif
 
 struct reg_config {

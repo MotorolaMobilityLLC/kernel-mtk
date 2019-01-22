@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2017 MediaTek Inc.
  *
@@ -12,13 +11,12 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __HELIO_DVFSRC_OPP_H
-#define __HELIO_DVFSRC_OPP_H
+#ifndef __HELIO_DVFSRC_MT6771_H
+#define __HELIO_DVFSRC_MT6771_H
 
-#if defined(CONFIG_MACH_MT6775)
-#include <helio-dvfsrc-opp-mt6775.h>
-#elif defined(CONFIG_MACH_MT6771)
-#include <helio-dvfsrc-opp-mt6771.h>
-#endif
+#define PMIC_VCORE_ADDR         PMIC_RG_BUCK_VCORE_VOSEL
+#define VCORE_BASE_UV           500000
+#define VCORE_STEP_UV           6250
+#define VCORE_INVALID           0x80
 
-#endif
+#endif /* __HELIO_DVFSRC_MT6771_H */

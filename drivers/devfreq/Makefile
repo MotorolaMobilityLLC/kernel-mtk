@@ -27,6 +27,7 @@ ifeq ($(CONFIG_MTK_QOS_SUPPORT), y)
 endif
 
 #obj-$(CONFIG_MACH_MT6775)		+= helio-dvfsrc-opp-mt6775.o
+obj-$(CONFIG_MACH_MT6771)		+= helio-dvfsrc-opp-mt6771.o
 
 # DEVFREQ Event Drivers
 obj-$(CONFIG_PM_DEVFREQ_EVENT)		+= event/
