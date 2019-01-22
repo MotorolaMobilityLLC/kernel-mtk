@@ -267,6 +267,9 @@ void die(const char *str, struct pt_regs *regs, int err)
 	dump_stack();
 #endif
 
+	if (ESR_ELx_EC(err) == ESR_ELx_EC_DABT_CUR)
+		thread->cpu_excp++;
+
 	oops_enter();
 
 	raw_spin_lock_irq(&die_lock);
