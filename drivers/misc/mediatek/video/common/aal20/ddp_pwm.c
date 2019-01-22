@@ -328,13 +328,23 @@ static void disp_pwm_set_enabled(struct cmdqRecStruct *cmdq, disp_pwm_id_t id, i
 
 	if (enabled) {
 		if (!disp_pwm_is_enabled(id)) {
+#if defined(CONFIG_MACH_MT6799)
+			disp_dts_gpio_select_state(DTS_GPIO_STATE_DISP_PWM_TRANSPARENT);
+#endif
 			DISP_REG_MASK(cmdq, reg_base + DISP_PWM_EN_OFF, 0x1, 0x1);
 			PWM_MSG("disp_pwm_set_enabled: PWN_EN = 0x1");
 
 			disp_pwm_set_drverIC_en(id, enabled);
 		}
 	} else {
+#if defined(CONFIG_MACH_MT6799)
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_DISP_PWM_GPIO_LOW);
 		DISP_REG_MASK(cmdq, reg_base + DISP_PWM_EN_OFF, 0x0, 0x1);
+		DISP_REG_SET(cmdq, reg_base + DISP_PWM_RST_RX, 0x1);
+		DISP_REG_SET(cmdq, reg_base + DISP_PWM_RST_RX, 0x0);
+#else
+		DISP_REG_MASK(cmdq, reg_base + DISP_PWM_EN_OFF, 0x0, 0x1);
+#endif
 		disp_pwm_set_drverIC_en(id, enabled);
 	}
 }
@@ -655,7 +665,11 @@ static void disp_pwm_test_source(const char *cmd)
 
 static void disp_pwm_test_grad(const char *cmd)
 {
+#if defined(CONFIG_MACH_MT6799)
+	const unsigned long reg_grad = pwm_get_reg_base(DISP_PWM0) + 0x20;
+#else
 	const unsigned long reg_grad = pwm_get_reg_base(DISP_PWM0) + 0x18;
+#endif
 
 	switch (cmd[0]) {
 	case 'H':
@@ -856,9 +870,8 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 	} else if (strncmp(cmd, "queryBL", 7) == 0) {
 		disp_pwm_query_backlight(debug_output);
 	}
-
 #if defined(PWM_USE_HIGH_ULPOSC_FQ)
-	if (strncmp(cmd, "query_osc", 9) == 0) {
+	else if (strncmp(cmd, "query_osc", 9) == 0) {
 		disp_pwm_ulposc_query(debug_output);
 		PWM_MSG("Trigger query ulposc");
 	} else if (strncmp(cmd, "osc_cali", 8) == 0) {
