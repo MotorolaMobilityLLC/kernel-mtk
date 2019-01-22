@@ -85,6 +85,18 @@ unsigned int __attribute__ ((weak)) pmic_get_vbif28_volt(void)
 	return 0;
 }
 
+static void wk_auxadc_reset(void)
+{
+	pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
+	pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+	pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
+	pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
+	/* avoid GPS can't receive AUXADC ready after reset, request again */
+	pmic_set_register_value(PMIC_AUXADC_RQST_CH7, 1);
+	pmic_set_register_value(PMIC_AUXADC_RQST_DCXO_BY_GPS, 1);
+	pr_notice("reset AUXADC done\n");
+}
+
 bool is_isense_supported(void)
 {
 	/* PMIC MT6357 supports ISENSE */
@@ -147,7 +159,7 @@ void wk_auxadc_dbg_dump(void)
 			continue;
 		}
 		for (j = 0; adc_dbg_addr[j] != 0; j++) {
-			if (j % 43 == 0) {
+			if (j != 0 && j % 43 == 0) {
 				pr_notice("%d %s\n"
 				      , pmic_adc_dbg[dbg_stamp].ktime_sec
 				      , reg_log);
@@ -158,9 +170,7 @@ void wk_auxadc_dbg_dump(void)
 				 , pmic_adc_dbg[dbg_stamp].reg[j]);
 			strncat(reg_log, reg_str, 860);
 		}
-		pr_notice("[%s] %d %d %s\n"
-			  , __func__
-			  , dbg_stamp
+		pr_notice("%d %s\n"
 			  , pmic_adc_dbg[dbg_stamp].ktime_sec
 			  , reg_log);
 		strncpy(reg_log, "", 860);
@@ -205,11 +215,7 @@ int wk_auxadc_battmp_dbg(int bat_temp)
 			arr_bat_temp[3], arr_bat_temp[4], bat_temp);
 
 		/* Reset AuxADC to observe VBAT/IBAT/BAT_TEMP */
-		pr_notice("[%s] reset AUXADC\n", __func__);
-		pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
-		pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
-		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
-		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
+		wk_auxadc_reset();
 		for (i = 0; i < 5; i++) {
 			bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
