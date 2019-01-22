@@ -310,6 +310,8 @@ static inline void assert_volt_valid(int line, unsigned int volt, unsigned int c
 
 int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 {				/* volt: vproc (mv*100) */
+	unsigned int old_vproc;
+	unsigned int old_vsram;
 	unsigned int cur_vsram;
 	unsigned int cur_vproc;
 	unsigned int delay_us;
@@ -335,8 +337,8 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 	assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, cur_vsram, cur_vproc);
 
 #ifdef SUPPORT_VOLT_HW_AUTO_TRACK
-	unsigned int old_vproc = cur_vproc;
-	unsigned int old_vsram = cur_vsram;
+	old_vproc = cur_vproc;
+	old_vsram = cur_vsram;
 
 	volt = MIN(volt, MAX_VPROC_VOLT);
 
@@ -361,9 +363,9 @@ int set_cur_volt_wrapper(struct mt_cpu_dvfs *p, unsigned int volt)
 	assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
 
 	if (volt > old_vproc)
-		notify_cpu_volt_sampler(p->id, volt, VOLT_UP, VOLT_POSTANGE);
+		notify_cpu_volt_sampler(p->id, volt, VOLT_UP, VOLT_POSTCHANGE);
 	else
-		notify_cpu_volt_sampler(p->id, volt, VOLT_DOWN, VOLT_POSTANGE);
+		notify_cpu_volt_sampler(p->id, volt, VOLT_DOWN, VOLT_POSTCHANGE);
 #else
 	/* UP */
 	if (volt > cur_vproc) {
@@ -1445,6 +1447,10 @@ static int __init _mt_cpufreq_tbl_init(void)
 	int i, j;
 	struct opp_tbl_info *opp_tbl_info;
 	struct cpufreq_frequency_table *table;
+
+#ifdef CPU_DVFS_NOT_READY
+	return 0;
+#endif
 
 	/* Prepare OPP table for EEM */
 	for_each_cpu_dvfs(j, p) {
