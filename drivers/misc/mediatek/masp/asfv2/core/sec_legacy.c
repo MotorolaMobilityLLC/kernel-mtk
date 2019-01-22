@@ -86,24 +86,6 @@ int masp_ccci_version_info(void)
 	return CCCI_VERSION;
 }
 
-int sec_ccci_file_open(char *file_path)
-{
-	int fp_id;
-
-	fp_id = osal_filp_open_read_only(file_path);
-
-	if (fp_id != OSAL_FILE_NULL)
-		return fp_id;
-
-	return -1;
-}
-
-int sec_ccci_file_close(int fp_id)
-{
-	return osal_filp_close(fp_id);
-}
-
-
 int masp_ccci_is_cipherfmt(int fp_id, unsigned int start_off, unsigned int *img_len)
 {
 	return 0;
