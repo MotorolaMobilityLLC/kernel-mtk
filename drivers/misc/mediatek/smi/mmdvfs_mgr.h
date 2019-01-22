@@ -188,9 +188,9 @@ extern int primary_display_switch_mode_for_mmdvfs(int sess_mode, unsigned int se
 #define MMDVFS_DISPLAY_SIZE_HD  (1280 * 832)
 #define MMDVFS_DISPLAY_SIZE_FHD (1920 * 1216)
 
-typedef enum {
+enum mmdvfs_lcd_size_enum {
 	MMDVFS_LCD_SIZE_HD, MMDVFS_LCD_SIZE_FHD, MMDVFS_LCD_SIZE_WQHD, MMDVFS_LCD_SIZE_END_OF_ENUM
-} mmdvfs_lcd_size_enum;
+};
 
 
 #ifndef CONFIG_MTK_SMI_EXT
@@ -204,7 +204,7 @@ int mmdvfs_set_fine_step(enum MTK_SMI_BWC_SCEN smi_scenario, int mmdvfs_fine_ste
 extern int mmdvfs_get_mmdvfs_profile(void);
 extern int is_mmdvfs_supported(void);
 extern int mmdvfs_set_mmsys_clk(enum MTK_SMI_BWC_SCEN scenario, int mmsys_clk_mode);
-extern mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void);
+extern enum mmdvfs_lcd_size_enum mmdvfs_get_lcd_resolution(void);
 extern int register_mmdvfs_state_change_cb(int mmdvfs_client_id, mmdvfs_state_change_cb func);
 extern void mmdvfs_notify_prepare_action(struct mmdvfs_prepare_action_event *event);
 extern int register_mmdvfs_prepare_cb(int mmdvfs_client_id, mmdvfs_prepare_action_cb func);

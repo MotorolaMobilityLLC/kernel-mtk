@@ -62,7 +62,7 @@ u32 dram_issue;
 #define VMODEM_VCORE_COBUCK 1
 
 #ifdef CONFIG_MTK_SMI_EXT
-mmdvfs_lcd_size_enum plat_lcd_resolution;
+enum mmdvfs_lcd_size_enum plat_lcd_resolution;
 #else
 int plat_lcd_resolution;
 #endif
