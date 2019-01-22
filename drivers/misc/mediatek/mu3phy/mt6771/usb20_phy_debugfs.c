@@ -23,14 +23,16 @@
 #include "mtk-phy-asic.h"
 #endif
 
-#define USBPHY_READ8(offset)		U3PhyReadReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset)
-#define USBPHY_WRITE8(offset, value)	U3PhyWriteReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset, value)
+#define USBPHY_READ8(offset) \
+U3PhyReadReg8((u3phy_addr_t)(uintptr_t)(SSUSB_SIFSLV_U2PHY_COM_BASE+offset))
+#define USBPHY_WRITE8(offset, value) \
+U3PhyWriteReg8((u3phy_addr_t)(uintptr_t)(SSUSB_SIFSLV_U2PHY_COM_BASE+offset), value)
 #define USBPHY_SET8(offset, mask) \
-U3PhyWriteReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset, \
-U3PhyReadReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset)|(mask))
+U3PhyWriteReg8((u3phy_addr_t)(uintptr_t)(SSUSB_SIFSLV_U2PHY_COM_BASE+offset), \
+U3PhyReadReg8((u3phy_addr_t)(uintptr_t)(SSUSB_SIFSLV_U2PHY_COM_BASE+offset))|(mask))
 #define USBPHY_CLR8(offset, mask) \
-U3PhyWriteReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset, \
-U3PhyReadReg8((u3phy_addr_t)(uintptr_t)u3_sif2_base+0x800+offset)&(~mask))
+U3PhyWriteReg8((u3phy_addr_t)(uintptr_t)(SSUSB_SIFSLV_U2PHY_COM_BASE+offset), \
+U3PhyReadReg8((u3phy_addr_t)(uintptr_t)(SSUSB_SIFSLV_U2PHY_COM_BASE+offset))&(~mask))
 #define MYDBG(fmt, args...) pr_notice("MTK_ICUSB [DBG], <%s(), %d> " fmt, __func__, __LINE__, ## args)
 
 /* general */
