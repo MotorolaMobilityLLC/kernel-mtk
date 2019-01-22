@@ -249,16 +249,6 @@ int disp_destroy_session(struct disp_session_config *config)
 	for (i = 0; i < MAX_SESSION_COUNT; i++) {
 		if (session_config[i] == session) {
 			session_config[i] = 0;
-#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
-			if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, DEV_WFD)) {
-				/*it need lock, if set_idlemgr.*/
-				if (idle_flag)
-					set_idlemgr(idle_flag, 1);
-				if (smartovl_flag)
-					disp_helper_set_option(DISP_OPT_SMART_OVL, smartovl_flag);
-				has_memory_session = 0;
-			}
-#endif
 			ret = 0;
 			break;
 		}
@@ -273,9 +263,19 @@ int disp_destroy_session(struct disp_session_config *config)
 		release_session_buffer(config->session_id);
 
 	/* 2. Destroy this session */
-	if (ret == 0)
+	if (ret == 0) {
+#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
+		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, DEV_WFD)) {
+			/*it need lock, if set_idlemgr.*/
+			if (idle_flag)
+				set_idlemgr(idle_flag, 1);
+			if (smartovl_flag)
+				disp_helper_set_option(DISP_OPT_SMART_OVL, smartovl_flag);
+			has_memory_session = 0;
+		}
+#endif
 		DISPMSG("Destroy session(0x%x)\n", session);
-	else
+	} else
 		DISPPR_ERROR("session(0x%x) does not exists\n", session);
 
 
@@ -346,40 +346,34 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 	void __user *argp = (void __user *)arg;
 	struct fence_data data;
 	struct disp_present_fence preset_fence_struct;
-	static unsigned int fence_idx;
 	struct disp_sync_info *layer_info = NULL;
-	int timeline_id = disp_sync_get_present_timeline_id();
+	int timeline_id;
 
 	if (copy_from_user(&preset_fence_struct, (void __user *)arg, sizeof(struct disp_present_fence))) {
 		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
 	}
 
-	if (DISP_SESSION_TYPE(preset_fence_struct.session_id) != DISP_SESSION_PRIMARY) {
-		DISPPR_ERROR("non-primary ask for present fence! session=0x%x\n",
-			preset_fence_struct.session_id);
-		data.fence = MTK_FB_INVALID_FENCE_FD;
-		data.value = 0;
-	} else {
-		layer_info = _get_sync_info(preset_fence_struct.session_id, timeline_id);
-		if (layer_info == NULL) {
-			DISPPR_ERROR("layer_info is null\n");
-			ret = -EFAULT;
-			return ret;
-		}
-		/* create fence */
-		data.fence = MTK_FB_INVALID_FENCE_FD;
-		data.value = ++fence_idx;
-#ifdef MTK_FB_ION_SUPPORT /* FIXME: remove when ION ready */
-		ret = fence_create(layer_info->timeline, &data);
-#endif
-		if (ret != 0) {
-			DISPPR_ERROR("%s%d,layer%d create Fence Object failed!\n",
-				     disp_session_mode_spy(preset_fence_struct.session_id),
-				     DISP_SESSION_DEV(preset_fence_struct.session_id), timeline_id);
-			ret = -EFAULT;
-		}
+	timeline_id = disp_sync_get_present_timeline_id(preset_fence_struct.session_id);
+	layer_info = _get_sync_info(preset_fence_struct.session_id, timeline_id);
+	if (layer_info == NULL) {
+		DISPPR_ERROR("layer_info is null\n");
+		ret = -EFAULT;
+		return ret;
 	}
+
+	mutex_lock(&layer_info->sync_lock);
+	/* create fence */
+	data.fence = MTK_FB_INVALID_FENCE_FD;
+	data.value = ++prepare_present_fence_idx[DISP_SESSION_TYPE(preset_fence_struct.session_id) - 1];
+	ret = fence_create(layer_info->timeline, &data);
+	if (ret != 0) {
+		DISPPR_ERROR("%s%d,layer%d create Fence Object failed!\n",
+			     disp_session_mode_spy(preset_fence_struct.session_id),
+			     DISP_SESSION_DEV(preset_fence_struct.session_id), timeline_id);
+		ret = -EFAULT;
+	}
+	mutex_unlock(&layer_info->sync_lock);
 
 	preset_fence_struct.present_fence_fd = data.fence;
 	preset_fence_struct.present_fence_index = data.value;
@@ -387,9 +381,11 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 		pr_err("[FB Driver]: copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
-	mmprofile_log_ex(ddp_mmp_get_events()->present_fence_get, MMPROFILE_FLAG_PULSE,
-		       preset_fence_struct.present_fence_fd,
-		       preset_fence_struct.present_fence_index);
+	if (DISP_SESSION_TYPE(preset_fence_struct.session_id) == DISP_SESSION_PRIMARY) {
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_present_fence_get, MMPROFILE_FLAG_PULSE,
+			       preset_fence_struct.present_fence_fd,
+			       preset_fence_struct.present_fence_index);
+	}
 	DISPPR_FENCE("P+/%s%d/L%d/id%d/fd%d\n",
 		     disp_session_mode_spy(preset_fence_struct.session_id),
 		     DISP_SESSION_DEV(preset_fence_struct.session_id), timeline_id,
@@ -413,7 +409,7 @@ int _ioctl_prepare_buffer(unsigned long arg, enum PREPARE_FENCE_TYPE type)
 	if (type == PREPARE_INPUT_FENCE)
 		DISPDBG("There is do nothing in input fence.\n");
 	else if (type == PREPARE_PRESENT_FENCE)
-		info.layer_id = disp_sync_get_present_timeline_id();
+		info.layer_id = disp_sync_get_present_timeline_id(info.session_id);
 	else if (type == PREPARE_OUTPUT_FENCE)
 		info.layer_id = disp_sync_get_output_timeline_id();
 	else
@@ -468,6 +464,22 @@ int _ioctl_prepare_buffer(unsigned long arg, enum PREPARE_FENCE_TYPE type)
 		pr_err("[FB Driver]: copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
+	return ret;
+}
+
+int _ioctl_screen_freeze(unsigned long arg)
+{
+	int ret = 0;
+	void __user *argp = (void __user *)arg;
+	unsigned int enable;
+	int need_lock = 1;
+
+	if (copy_from_user(&enable, argp, sizeof(unsigned int))) {
+		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+		return -EFAULT;
+	}
+	ret = display_freeze_mode(enable, need_lock);
+
 	return ret;
 }
 
@@ -954,26 +966,36 @@ static int __frame_config(struct frame_queue_t *frame_node)
 	return 0;
 }
 
-static int _ioctl_frame_config(unsigned long arg)
+static long _ioctl_frame_config(unsigned long arg)
 {
+	void *ret_val = NULL;
 	struct frame_queue_t *frame_node;
 	struct disp_frame_cfg_t *frame_cfg;
 
 	frame_node = frame_queue_node_create();
-	if (IS_ERR_OR_NULL(frame_node))
-		return PTR_ERR(frame_node);
+	if (IS_ERR_OR_NULL(frame_node)) {
+		ret_val = ERR_PTR(-ENOMEM);
+		goto Error;
+	}
 
 	frame_cfg = &frame_node->frame_cfg;	/* this is initialized correctly when get node from framequeue list */
 
 	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg))) {
+		ret_val = ERR_PTR(-EFAULT);
 		pr_err("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
-		return -EINVAL;
+		goto Error;
 	}
 
-	if (disp_validate_ioctl_params(frame_cfg) != 0)
-		return -EINVAL;
-	else
-		return __frame_config(frame_node);
+	if (disp_validate_ioctl_params(frame_cfg)) {
+		ret_val = ERR_PTR(-EINVAL);
+		goto Error;
+	}
+
+	return __frame_config(frame_node);
+
+Error:
+	frame_queue_node_destroy(frame_node);
+	return PTR_ERR(ret_val);
 }
 
 static int _ioctl_wait_all_jobs_done(unsigned long arg)
@@ -1165,25 +1187,31 @@ int _ioctl_set_vsync(unsigned long arg)
 	return ret;
 }
 
-int _ioctl_query_valid_layer(unsigned long arg)
+static long _ioctl_query_valid_layer(unsigned long arg)
 {
-	int ret = 0;
 	struct disp_layer_info disp_info_user;
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
 		DISPPR_ERROR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		return -EFAULT;
+	}
+	/* check data from userspace is legal */
+	if (disp_info_user.layer_num[0] < 0 || disp_info_user.layer_num[0] > 0x300 ||
+		disp_info_user.layer_num[1] < 0 || disp_info_user.layer_num[1] > 0x300) {
+		DISPPR_ERROR("[FB]: disp_info_user.layer_num[0]= %d, disp_info_user.layer_num[1]= %d!\n",
+			disp_info_user.layer_num[0], disp_info_user.layer_num[1]);
+		return -EINVAL;
 	}
 
-	ret = layering_rule_start(&disp_info_user, 0);
+	layering_rule_start(&disp_info_user, 0);
 
 	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
 		DISPPR_ERROR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		return -EFAULT;
 	}
 
-	return ret;
+	return 0;
 }
 
 int _ioctl_set_scenario(unsigned long arg)
@@ -1301,6 +1329,8 @@ const char *_session_ioctl_spy(unsigned int cmd)
 		}
 	case DISP_IOCTL_GET_SESSION_INFO:
 		return "DISP_IOCTL_GET_SESSION_INFO";
+	case DISP_IOCTL_SCREEN_FREEZE:
+		return "DISP_IOCTL_SCREEN_FREEZE";
 	case DISP_IOCTL_AAL_EVENTCTL:
 		return "DISP_IOCTL_AAL_EVENTCTL";
 	case DISP_IOCTL_AAL_GET_HIST:
@@ -1426,6 +1456,8 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	{
 		return _ioctl_get_ut_result(arg);
 	}
+	case DISP_IOCTL_SCREEN_FREEZE:
+		return _ioctl_screen_freeze(arg);
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_INIT_REG:
@@ -1598,6 +1630,8 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 		/* arg of this ioctl is all unsigned int, don't need special compat ioctl */
 		return file->f_op->unlocked_ioctl(file, cmd, (unsigned long)data32);
 	}
+	case COMPAT_DISP_IOCTL_SCREEN_FREEZE:
+		return _compat_ioctl_screen_freeze(file, arg);
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_INIT_REG:

@@ -120,7 +120,7 @@ static int disp_pwm_get_muxbase(void)
 	struct device_node *node;
 
 	if (disp_pmw_mux_base != NULL) {
-		PWM_MSG("TOPCKGEN node exist");
+		/* PWM_MSG("TOPCKGEN node exist"); */
 		return 0;
 	}
 
@@ -166,8 +166,6 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 	ret = disp_pwm_get_muxbase();
 	reg_before = disp_pwm_get_pwmmux();
 
-	PWM_MSG("clk_req=%d clkid=%d", clk_req, clkid);
-
 	if (clkid != -1) {
 		ddp_clk_prepare_enable(MUX_PWM);
 		ddp_clk_set_parent(MUX_PWM, clkid);
@@ -176,7 +174,7 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 
 	reg_after = disp_pwm_get_pwmmux();
 	g_pwm_mux_clock_source = (reg_after>>16) & 0x3;
-	PWM_MSG("PWM_MUX %x->%x", reg_before, reg_after);
+	PWM_MSG("PWM_MUX %x->%x, clk_req=%d clkid=%d", reg_before, reg_after, clk_req, clkid);
 
 	return 0;
 }

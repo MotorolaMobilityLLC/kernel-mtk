@@ -63,7 +63,7 @@ obj-y += ddp_ovl.o
 obj-y += ddp_rdma_ex.o
 obj-y += ddp_wdma_ex.o
 obj-y += ddp_dsi.o
-#obj-y += ddp_dpi.o
+obj-y += ddp_dpi.o
 obj-y += ddp_clkmgr.o
 #common
 obj-y += ddp_drv.o

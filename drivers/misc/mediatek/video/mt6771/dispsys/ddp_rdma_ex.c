@@ -807,7 +807,7 @@ void rdma_dump_reg(enum DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_RDMA_DUMMY + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x094)R_OUT_SEL=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_DEBUG_OUT_SEL + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x094)R_M_START=0x%x\n",
+	DDPDUMP("(0xf00)R_M_START=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x0a0)R_BG_CON_0=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_BG_CON_0 + DISP_RDMA_INDEX_OFFSET * idx));
@@ -1116,6 +1116,48 @@ int rdma_switch_to_nonsec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 	return 0;
 }
 
+int rdma_wait_sec_done(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *handle)
+{
+	unsigned int rdma_idx = rdma_index(module);
+	enum CMDQ_ENG_ENUM cmdq_engine;
+	struct cmdqRecStruct *wait_handle;
+	int ret;
+
+	if (rdma_is_sec[rdma_idx] == 0)
+		return 0;
+	cmdq_engine = rdma_to_cmdq_engine(module);
+	/* rdma is in sec stat, we need to switch it to nonsec */
+	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP,
+			&(wait_handle));
+	if (ret)
+		DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
+			__func__, ret);
+	cmdqRecReset(wait_handle);
+	cmdqRecSetSecure(wait_handle, 1);
+	cmdqRecSecureEnablePortSecurity(wait_handle,
+		(1LL << cmdq_engine));
+	if (handle != NULL) {
+		/*Async Flush method*/
+		enum CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
+		/*cmdq_event_nonsec_end = module_to_cmdq_event_nonsec_end(module);*/
+		cmdq_event_nonsec_end = rdma_to_cmdq_event_nonsec_end(module);
+		cmdqRecSetEventToken(wait_handle, cmdq_event_nonsec_end);
+		cmdqRecFlushAsync(wait_handle);
+		cmdqRecWait(handle, cmdq_event_nonsec_end);
+	} else {
+		/*Sync Flush method*/
+		cmdqRecFlush(wait_handle);
+	}
+	cmdqRecDestroy(wait_handle);
+	mmprofile_log_ex(ddp_mmp_get_events()->svp_module[module],
+			MMPROFILE_FLAG_END, 0, 0);
+	/* MMProfileLogEx(ddp_mmp_get_events()->svp_module[module],
+	 * MMProfileFlagPulse, 1, 1);
+	 */
+	return 0;
+}
+
+
 static int setup_rdma_sec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_config *pConfig, void *handle)
 {
 	int ret;
@@ -1141,6 +1183,8 @@ static int setup_rdma_sec(enum DISP_MODULE_ENUM module, struct disp_ddp_path_con
 		if (ret)
 			DDPAEE("[SVP]fail to setup_ovl_sec: %s ret=%d\n",
 				__func__, ret);
+	} else {
+		rdma_wait_sec_done(module, pConfig, NULL);
 	}
 
 	return is_engine_sec;
