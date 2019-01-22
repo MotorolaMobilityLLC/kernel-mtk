@@ -75,6 +75,7 @@ void __iomem *ipu_core0_base;
 void __iomem *ipu_core1_base;
 
 /* CKSYS */
+#define CK_CFG_UPDATE		(cksys_base + 0x004)
 #define CLK_CFG_0		(cksys_base + 0x040)
 #define CLK_CFG_5		(cksys_base + 0x090)
 #define CLK_CFG_5_SET		(cksys_base + 0x094)
@@ -2733,6 +2734,7 @@ void aud_intbus_mux_sel(unsigned int aud_idx)
 {
 	clk_writel(CLK_CFG_5_CLR, 0x00000300);
 	clk_writel(CLK_CFG_5_SET, aud_idx << 8);
+	clk_writel(CK_CFG_UPDATE, 0x00200000);
 	/* pr_notice("CLK_CFG_5 = 0x%08x\r\n", clk_readl(CLK_CFG_5)); */
 }
 
