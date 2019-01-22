@@ -48,8 +48,6 @@ bool ufs_mtk_auto_hibern8_enabled;
 bool ufs_mtk_host_deep_stall_enable;
 bool ufs_mtk_host_scramble_enable;
 bool ufs_mtk_tr_cn_used;
-u32  ufs_mtk_qcmd_r_cmd_cnt;
-u32  ufs_mtk_qcmd_w_cmd_cnt;
 struct ufs_hba *ufs_mtk_hba;
 struct ufs_aborted_cmd_struct ufs_mtk_aborted_cmd[20];
 u32 ufs_mtk_aborted_cmd_idx;
@@ -216,20 +214,29 @@ void ufs_mtk_hwfde_key_config(struct ufs_hba *hba, struct scsi_cmnd *cmd) {};
 
 int ufs_mtk_perf_heurisic_if_allow_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd)
 {
+	u32 tag;
+
 	if (!(hba->quirks & UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC))
 		return 0;
 
 	/* Check rw commands only and allow all other commands. */
 	if (ufs_mtk_is_data_cmd(cmd->cmnd[0])) {
 
-		if (!ufs_mtk_qcmd_r_cmd_cnt && !ufs_mtk_qcmd_w_cmd_cnt) {
+		tag = cmd->request->tag;
+
+		if (hba->req_tag_map & (1 << tag)) {
+			dev_info(hba->dev, "tag %d is already set\n", tag);
+			return 0;
+		}
+
+		if (!hba->req_r_cnt && !hba->req_w_cnt) {
 
 			/* Case: no on-going r or w commands. */
 
 			if (ufs_mtk_is_data_write_cmd(cmd->cmnd[0]))
-				ufs_mtk_qcmd_w_cmd_cnt++;
+				hba->req_w_cnt++;
 			else
-				ufs_mtk_qcmd_r_cmd_cnt++;
+				hba->req_r_cnt++;
 
 		} else {
 
@@ -242,19 +249,21 @@ int ufs_mtk_perf_heurisic_if_allow_cmd(struct ufs_hba *hba, struct scsi_cmnd *cm
 
 			if (ufs_mtk_is_data_write_cmd(cmd->cmnd[0])) {
 
-				if (ufs_mtk_qcmd_r_cmd_cnt)
+				if (hba->req_r_cnt)
 					return 1;
 
-				ufs_mtk_qcmd_w_cmd_cnt++;
+				hba->req_w_cnt++;
 
 			} else {
 
-				if (ufs_mtk_qcmd_w_cmd_cnt)
+				if (hba->req_w_cnt)
 					return 1;
 
-				ufs_mtk_qcmd_r_cmd_cnt++;
+				hba->req_r_cnt++;
 			}
 		}
+
+		__set_bit(tag, &hba->req_tag_map);
 	}
 
 	return 0;
@@ -262,14 +271,26 @@ int ufs_mtk_perf_heurisic_if_allow_cmd(struct ufs_hba *hba, struct scsi_cmnd *cm
 
 void ufs_mtk_perf_heurisic_req_done(struct ufs_hba *hba, struct scsi_cmnd *cmd)
 {
+	u32 tag;
+
 	if (!(hba->quirks & UFSHCD_QUIRK_UFS_HCI_PERF_HEURISTIC))
 		return;
 
 	if (ufs_mtk_is_data_cmd(cmd->cmnd[0])) {
-		if (ufs_mtk_is_data_write_cmd(cmd->cmnd[0]))
-			ufs_mtk_qcmd_w_cmd_cnt--;
-		else
-			ufs_mtk_qcmd_r_cmd_cnt--;
+
+		tag = cmd->request->tag;
+
+		if (hba->req_tag_map & (1 << tag)) {
+
+			if (ufs_mtk_is_data_write_cmd(cmd->cmnd[0]))
+				hba->req_w_cnt--;
+			else
+				hba->req_r_cnt--;
+
+			__clear_bit(tag, &hba->req_tag_map);
+
+		} else
+			dev_info(hba->dev, "tag %d is not set in req_tag_map\n", tag);
 	}
 }
 
