@@ -33,7 +33,7 @@
 #define EEM_LOCKTIME_LIMIT	(3000)
 #define ENABLE_EEMCTL0		(1)
 #define ENABLE_LOO			(0)
-#define ENABLE_INIT1_STRESS	(1)
+#define ENABLE_INIT1_STRESS	(0)
 
 #define EEM_OFFSET
 #define SET_PMIC_VOLT (1)
