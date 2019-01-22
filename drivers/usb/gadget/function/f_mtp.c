@@ -82,6 +82,11 @@
 #define MTP_SEND_EVENT_TIMEOUT_CNT 5
 static int mtp_send_event_timeout_cnt;
 
+static bool mtp_skip_vfs_read;
+static bool mtp_skip_vfs_write;
+module_param(mtp_skip_vfs_read, bool, 0644);
+module_param(mtp_skip_vfs_write, bool, 0644);
+
 static const char mtp_shortname[] = DRIVER_NAME "_usb";
 
 struct mtp_dev {
@@ -886,8 +891,13 @@ static void send_file_work(struct work_struct *data)
 		}
 
 		usb_boost();
-		ret = vfs_read(filp, req->buf + hdr_size, xfer - hdr_size,
-								&offset);
+
+		if (mtp_skip_vfs_read) {
+			ret = (xfer - hdr_size);
+			offset += ret;
+		} else
+			ret = vfs_read(filp, req->buf + hdr_size, xfer - hdr_size,
+					&offset);
 		if (ret < 0) {
 			r = ret;
 			break;
@@ -973,8 +983,12 @@ static void receive_file_work(struct work_struct *data)
 			usb_boost();
 
 			DBG(cdev, "rx %p %d\n", write_req, write_req->actual);
-			ret = vfs_write(filp, write_req->buf, write_req->actual,
-				&offset);
+			if (mtp_skip_vfs_write) {
+				ret = write_req->actual;
+				offset += ret;
+			} else
+				ret = vfs_write(filp, write_req->buf, write_req->actual,
+						&offset);
 			DBG(cdev, "vfs_write %d\n", ret);
 			if (ret != write_req->actual) {
 				r = -EIO;
