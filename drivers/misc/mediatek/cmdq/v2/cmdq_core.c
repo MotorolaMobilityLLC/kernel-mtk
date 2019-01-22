@@ -1771,22 +1771,23 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 #endif
 
 #ifdef CMDQ_PWR_AWARE
-	pBuffer += sprintf(pBuffer, "====== Clock Status =======\n");
-	pBuffer += cmdq_get_func()->printStatusClock(pBuffer);
+	length += snprintf(&pBuffer[length], PAGE_SIZE - length, "====== Clock Status =======\n");
+	length += cmdq_get_func()->printStatusClock(&pBuffer[length]);
 #endif
 
-	pBuffer += sprintf(pBuffer, "====== DMA Mask Status =======\n");
-	pBuffer += sprintf(pBuffer, "dma_set_mask result: %d\n",
+	length += snprintf(&pBuffer[length], PAGE_SIZE - length, "====== DMA Mask Status =======\n");
+	length += snprintf(&pBuffer[length], PAGE_SIZE - length, "dma_set_mask result: %d\n",
 		cmdq_dev_get_dma_mask_result());
 
-	pBuffer += sprintf(pBuffer, "====== Engine Usage =======\n");
+	length += snprintf(&pBuffer[length], PAGE_SIZE - length, "====== Engine Usage =======\n");
 
 	for (listIdx = 0; listIdx < ARRAY_SIZE(engines); ++listIdx) {
 		pEngine = &gCmdqContext.engine[engines[listIdx]];
-		pBuffer += sprintf(pBuffer, "%s: count %d, owner %d, fail: %d, reset: %d\n",
-				   engineNames[listIdx],
-				   pEngine->userCount,
-				   pEngine->currOwner, pEngine->failCount, pEngine->resetCount);
+		length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+				"%s: count %d, owner %d, fail: %d, reset: %d\n",
+				engineNames[listIdx],
+				pEngine->userCount,
+				pEngine->currOwner, pEngine->failCount, pEngine->resetCount);
 	}
 
 
@@ -1801,7 +1802,7 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 		index = 0;
 		list_for_each(p, lists[listIdx]) {
 			pTask = list_entry(p, struct TaskStruct, listEntry);
-			pBuffer += sprintf(pBuffer,
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
 					   "====== %s Task(%d) 0x%p Usage =======\n",
 					   listNames[listIdx], index, pTask);
 #ifdef CMDQ_JUMP_MEM
@@ -1811,26 +1812,26 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 				pTask->taskState, pVABase, &MVABase,
 				pTask->commandSize);
 #else
-			pBuffer += sprintf(pBuffer,
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
 					   "State %d, VABase: 0x%p, MVABase: %pa, Size: %d\n",
 					   pTask->taskState, pTask->pVABase, &pTask->MVABase,
 					   pTask->commandSize);
 #endif
 
-			pBuffer += sprintf(pBuffer,
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
 					   "Scenario %d, Priority: %d, Flag: 0x%08llx, VAEnd: 0x%p\n",
 					   pTask->scenario, pTask->priority, pTask->engineFlag,
 					   pTask->pCMDEnd);
 
-			pBuffer += sprintf(pBuffer,
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
 					   "Reoder:%d, Trigger %lld, IRQ: %lld, Wait: %lld, Wake Up: %lld\n",
 					   pTask->reorder,
 					   pTask->trigger, pTask->gotIRQ, pTask->beginWait,
 					   pTask->wakedUp);
 			++index;
 		}
-		pBuffer +=
-		    sprintf(pBuffer, "====== Total %d %s Task =======\n", index,
+		length +=
+		    snprintf(&pBuffer[length], PAGE_SIZE - length, "====== Total %d %s Task =======\n", index,
 			    listNames[listIdx]);
 	}
 
@@ -1838,9 +1839,11 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 		pThread = &(gCmdqContext.thread[index]);
 
 		if (pThread->taskCount > 0) {
-			pBuffer += sprintf(pBuffer, "====== Thread %d Usage =======\n", index);
-			pBuffer += sprintf(pBuffer, "Wait Cookie %d, Next Cookie %d\n",
-					   pThread->waitCookie, pThread->nextCookie);
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+					"====== Thread %d Usage =======\n", index);
+			length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+					"Wait Cookie %d, Next Cookie %d\n",
+					pThread->waitCookie, pThread->nextCookie);
 
 			spin_lock_irqsave(&gCmdqThreadLock, flags);
 
@@ -1848,7 +1851,7 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 				pTask = pThread->pCurTask[inner];
 				if (pTask != NULL) {
 					/* dump task basic info */
-					pBuffer += sprintf(pBuffer,
+					length += snprintf(&pBuffer[length], PAGE_SIZE - length,
 							   "Slot: %d, Task: 0x%p, Pid: %d, Name: %s, Scn: %d,",
 							   index, pTask, pTask->callerPid,
 							   pTask->callerName, pTask->scenario);
@@ -1858,34 +1861,35 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 						" VABase: 0x%p, MVABase: %pa, Size: %d",
 						pVABase, &MVABase, pTask->commandSize);
 #else
-					pBuffer += sprintf(pBuffer,
+					length += snprintf(&pBuffer[length], PAGE_SIZE - length,
 							   " VABase: 0x%p, MVABase: %pa, Size: %d",
 							   pTask->pVABase, &pTask->MVABase,
 							   pTask->commandSize);
 #endif
 
 					if (pTask->pCMDEnd) {
-						pBuffer += sprintf(pBuffer,
+						length += snprintf(&pBuffer[length], PAGE_SIZE - length,
 								   ", Last Command: 0x%08x:0x%08x",
 								   pTask->pCMDEnd[-1],
 								   pTask->pCMDEnd[0]);
 					}
 
-					pBuffer += sprintf(pBuffer, "\n");
+					length += snprintf(&pBuffer[length], PAGE_SIZE - length, "\n");
 
 					/* dump PC info */
 					pcVA = cmdq_core_get_pc(pTask, index, insts);
 					if (pcVA) {
 						cmdq_core_parse_instruction(pcVA, parsedInstruction,
 									    sizeof(parsedInstruction));
-						pBuffer += sprintf(pBuffer,
+						length += snprintf(&pBuffer[length], PAGE_SIZE - length,
 								   "PC(VA): 0x%p, 0x%08x:0x%08x => %s",
 								   pcVA,
 								   insts[2],
 								   insts[3],
 								   parsedInstruction);
 					} else {
-						pBuffer += sprintf(pBuffer, "PC(VA): Not available\n");
+						length += snprintf(&pBuffer[length], PAGE_SIZE - length,
+								"PC(VA): Not available\n");
 					}
 				}
 			}
@@ -1897,7 +1901,6 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 	mutex_unlock(&gCmdqTaskMutex);
 
 	length = pBuffer - buf;
-
 	if (length > PAGE_SIZE)
 		CMDQ_AEE("CMDQ", "Lehgth large than page size, length:%d page size:%lu\n", length, PAGE_SIZE);
 
