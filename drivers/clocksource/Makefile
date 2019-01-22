@@ -51,11 +51,12 @@ obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
 obj-$(CONFIG_MACH_MT6757)	+= mtk_cpuxgpt_mt6757.o mtk_timer_mt6757.o arm_arch_timer_mt6757.o
 obj-$(CONFIG_MACH_MT6799)	+= mtk_timer_mt6799.o arm_arch_timer_mt6799.o
 obj-$(CONFIG_MACH_MT6759)	+= mtk_timer_mt6759.o arm_arch_timer_mt6759.o
+obj-$(CONFIG_MACH_MT6758)	+= mtk_timer_mt6758.o arm_arch_timer_mt6758.o
 obj-$(CONFIG_MACH_MT6763)	+= mtk_timer_mt6763.o arm_arch_timer_mt6763.o
 obj-$(CONFIG_CLKSRC_PISTACHIO)	+= time-pistachio.o
 obj-$(CONFIG_CLKSRC_TI_32K)	+= timer-ti-32k.o
 
-ifeq (,$(filter $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6799), y))
+ifeq (,$(filter $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6758), y))
 obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
 endif
 obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
