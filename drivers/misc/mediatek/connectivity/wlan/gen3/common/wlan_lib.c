@@ -854,7 +854,7 @@ wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN PVOID pvFwImageMapFile)
 								      NO_PROTECTION, NO_PROTECTION, NO_PROTECTION));
 #endif
 					prWifiEmiBaseAddr = ioremap_nocache(gConEmiPhyBase, WIFI_EMI_MEM_SIZE);
-					DBGLOG(INIT, INFO,
+					DBGLOG(INIT, TRACE,
 					       "ConsysEmiPhyBase %p, WifiEmiBaseAddr %p, idx %d, dst %p, len %d\n",
 					       gConEmiPhyBase,
 					       prWifiEmiBaseAddr,
