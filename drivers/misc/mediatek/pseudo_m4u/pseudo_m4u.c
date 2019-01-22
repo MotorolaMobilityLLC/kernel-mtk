@@ -603,7 +603,7 @@ static int __m4u_alloc_mva(M4U_PORT_ID port, unsigned long va, unsigned int size
 	}
 
 	if (!table) {
-		table = pseudo_get_sg(va, size);
+		table = pseudo_get_sg(port, va, size);
 		if (!table) {
 			M4UMSG("pseudo_get_sg failed\n");
 			goto err;
@@ -1342,7 +1342,7 @@ static int m4u_get_pages(M4U_MODULE_ID_ENUM eModuleID, unsigned long BufAddr,
  * if the va does not have pages, fill the sg_dma_address with pa.
  * We need to modify the arm_iommu_map_sg inter face.
  */
-struct sg_table *pseudo_get_sg(unsigned long va, int size)
+struct sg_table *pseudo_get_sg(int portid, unsigned long va, int size)
 {
 	int i, page_num, ret, have_page, get_pages;
 	struct sg_table *table;
@@ -1371,7 +1371,7 @@ struct sg_table *pseudo_get_sg(unsigned long va, int size)
 		M4UMSG("m4u_fill_pagetable : error to vmalloc %d*4 size\n", page_num);
 		goto err_free;
 	}
-	get_pages = m4u_get_pages(0, va, size, pPhys);
+	get_pages = m4u_get_pages(portid, va, size, pPhys);
 	if (get_pages <= 0) {
 		M4UDBG("Error : m4u_get_pages failed\n");
 		goto err_free;
