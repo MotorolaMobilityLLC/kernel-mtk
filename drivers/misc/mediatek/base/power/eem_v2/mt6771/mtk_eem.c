@@ -70,11 +70,10 @@
 #include "mtk_gpufreq.h"
 #include <mt-plat/mtk_devinfo.h>
 #include <regulator/consumer.h>
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6358)
-	#include "pmic_regulator.h"
-	#include "mtk_pmic_regulator.h"
-	#include "pmic_api_buck.h"
-#endif
+#include "pmic_regulator.h"
+#include "mtk_pmic_regulator.h"
+#include "pmic_api_buck.h"
+
 
 #if UPDATE_TO_UPOWER
 #include "mtk_upower.h"
@@ -90,7 +89,8 @@ static unsigned int ctrl_EEM_Enable = 1;
 static unsigned long long eem_pTime_us, eem_cTime_us, eem_diff_us;
 
 /* for setting pmic pwm mode and auto mode */
-struct regulator *eem_regulator_vproc;
+struct regulator *eem_regulator_vproc1;
+struct regulator *eem_regulator_vproc2;
 
 static void eem_set_eem_volt(struct eem_det *det);
 static void eem_restore_eem_volt(struct eem_det *det);
@@ -172,33 +172,18 @@ static int get_devinfo(void)
 	val[9] = DEVINFO_9;
 #endif
 
-#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
-			aee_rr_rec_ptp_e0((unsigned int)val[0]);
-			aee_rr_rec_ptp_e1((unsigned int)val[1]);
-			aee_rr_rec_ptp_e2((unsigned int)val[2]);
-			aee_rr_rec_ptp_e3((unsigned int)val[3]);
-			aee_rr_rec_ptp_e4((unsigned int)val[4]);
-			aee_rr_rec_ptp_e5((unsigned int)val[5]);
-			aee_rr_rec_ptp_e6((unsigned int)val[6]);
-			aee_rr_rec_ptp_e7((unsigned int)val[7]);
-			aee_rr_rec_ptp_e8((unsigned int)val[8]);
-			aee_rr_rec_ptp_e9((unsigned int)val[9]);
+#ifdef CONFIG_EEM_AEE_RR_REC)
+	aee_rr_rec_ptp_e0((unsigned int)val[0]);
+	aee_rr_rec_ptp_e1((unsigned int)val[1]);
+	aee_rr_rec_ptp_e2((unsigned int)val[2]);
+	aee_rr_rec_ptp_e3((unsigned int)val[3]);
+	aee_rr_rec_ptp_e4((unsigned int)val[4]);
+	aee_rr_rec_ptp_e5((unsigned int)val[5]);
+	aee_rr_rec_ptp_e6((unsigned int)val[6]);
+	aee_rr_rec_ptp_e7((unsigned int)val[7]);
+	aee_rr_rec_ptp_e8((unsigned int)val[8]);
+	aee_rr_rec_ptp_e9((unsigned int)val[9]);
 #endif
-
-	/* Update MTDES/BDES/MDES if they are modified by PICACHU. */
-	for_each_det(det) {
-		bdes_mdes_idx = (det->ctrl_id << 1) + 1;
-		mtdes_idx = bdes_mdes_idx + 1;
-
-		/* Update BDES */
-		val[bdes_mdes_idx] = (val[bdes_mdes_idx] & 0xFFFFFF00) & 0xff;
-
-		/* Update MDES */
-		val[bdes_mdes_idx] = (val[bdes_mdes_idx] & 0xFFFF00FF) & 0x0000FF00));
-
-		/* Update MTDES */
-		val[mtdes_idx] = (val[mtdes_idx] & 0xFF00FFFF) << 16);
-	}
 
 	eem_debug("M_HW_RES0 = 0x%08X\n", val[0]);
 	eem_debug("M_HW_RES1 = 0x%08X\n", val[1]);
@@ -244,7 +229,7 @@ static void mt_ptp_unlock(unsigned long *flags);
 * Local function definition
 *=============================================================
 */
-#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
+#ifdef CONFIG_EEM_AEE_RR_REC
 static void _mt_eem_aee_init(void)
 {
 	aee_rr_rec_ptp_vboot(0xFFFFFFFFFFFFFFFF);
@@ -271,7 +256,7 @@ static void _mt_eem_aee_init(void)
 	aee_rr_rec_ptp_temp(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_status(0xFF);
 }
-#endif /* if defined(CONFIG_EEM_AEE_RR_REC) */
+#endif
 
 /* common part in thermal */
 int __attribute__((weak))
@@ -440,7 +425,7 @@ int base_ops_init02(struct eem_det *det)
 
 int base_ops_mon_mode(struct eem_det *det)
 {
-#if defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL)
+#ifdef CONFIG_THERMAL
 	struct TS_PTPOD ts_info;
 	enum thermal_bank_name ts_bank;
 #endif
@@ -459,7 +444,7 @@ int base_ops_mon_mode(struct eem_det *det)
 		return -2;
 	}
 
-#if !defined(CONFIG_THERMAL)
+#ifndef CONFIG_THERMAL)
 	det->MTS = MTS_VAL;
 	det->BTS = BTS_VAL;
 #else
@@ -674,7 +659,7 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 
 int base_ops_get_temp(struct eem_det *det)
 {
-#if defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL)
+#ifdef CONFIG_THERMAL
 	enum thermal_bank_name ts_bank;
 
 	ts_bank = det_to_id(det);
@@ -818,7 +803,7 @@ static int eem_volt_thread_handler(void *data)
 
 		if ((ctrl->volt_update & EEM_VOLT_UPDATE) && det->ops->set_volt) {
 
-#if (defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING))
+#ifdef CONFIG_EEM_AEE_RR_REC
 			/* update set volt status for this bank */
 			int temp = -1;
 
@@ -865,7 +850,7 @@ static int eem_volt_thread_handler(void *data)
 #endif
 
 		/* clear out set volt status for this bank */
-#if (defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING))
+#ifdef CONFIG_EEM_AEE_RR_REC
 			if (temp >= EEM_CPU_2_LITTLE_IS_SET_VOLT)
 				aee_rr_rec_ptp_status(aee_rr_curr_ptp_status() & ~(1 << temp));
 #endif
@@ -1336,7 +1321,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 	memcpy(det->volt_tbl_init2, det->volt_tbl, sizeof(det->volt_tbl_init2));
 
 	for (i = 0; i < NR_FREQ; i++) {
-#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
+#ifdef CONFIG_EEM_AEE_RR_REC
 		switch (det->ctrl_id) {
 		case EEM_CTRL_2L:
 			if (i < 8) {
@@ -1466,7 +1451,7 @@ static inline void handle_init_err_isr(struct eem_det *det)
 static inline void handle_mon_mode_isr(struct eem_det *det)
 {
 	unsigned int i, verr = 0;
-#if defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL)
+#ifdef CONFIG_THERMAL
 	unsigned long long temp_long;
 	unsigned long long temp_cur = (unsigned long long)aee_rr_curr_ptp_temp();
 #endif
@@ -1475,7 +1460,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 
 	/* eem_debug("mode = mon %s-isr\n", ((char *)(det->name) + 8)); */
 
-#if 0 /* defined(CONFIG_THERMAL) && !defined(EARLY_PORTING_THERMAL) */
+#if 0 /* def CONFIG_THERMAL */
 	eem_isr_info("LL_temp=%d, L_temp=%d, CCI_temp=%d, GPU_temp=%d\n",
 		tscpu_get_temp_by_bank(THERMAL_BANK0),
 		tscpu_get_temp_by_bank(THERMAL_BANK1),
@@ -1484,7 +1469,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		);
 #endif
 
-#if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING_THERMAL)
+#ifdef CONFIG_EEM_AEE_RR_REC
 	switch (det->ctrl_id) {
 	case EEM_CTRL_2L:
 #ifdef CONFIG_THERMAL
@@ -1578,7 +1563,7 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	read_volt_from_VOP(det);
 
 	for (i = 0; i < NR_FREQ; i++) {
-#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
+#ifdef CONFIG_EEM_AEE_RR_REC
 		switch (det->ctrl_id) {
 		case EEM_CTRL_2L:
 			if (i < 8) {
@@ -1862,9 +1847,15 @@ static int eem_buck_get(struct platform_device *pdev)
 {
 	int ret = 0;
 
-	eem_regulator_vproc = regulator_get(&pdev->dev, "vproc");
-	if (!eem_regulator_vproc) {
-		eem_error("regulotor_proc error\n");
+	eem_regulator_vproc1 = regulator_get(&pdev->dev, "vproc11");
+	if (!eem_regulator_vproc1) {
+		eem_error("eem_regulator_vproc1 error\n");
+		return -EINVAL;
+	}
+
+	eem_regulator_vproc2 = regulator_get(&pdev->dev, "vproc12");
+	if (!eem_regulator_vproc2) {
+		eem_error("eem_regulator_vproc2 error\n");
 		return -EINVAL;
 	}
 
@@ -1875,7 +1866,13 @@ static void eem_buck_set_mode(unsigned int mode)
 {
 	/* set pwm mode for each buck */
 	eem_debug("pmic set mode (%d)\n", mode);
-	vproc_pmic_set_mode(mode);
+	if (mode) {
+		regulator_set_mode(eem_regulator_vproc1, REGULATOR_MODE_FAST);
+		regulator_set_mode(eem_regulator_vproc2, REGULATOR_MODE_FAST);
+	} else {
+		regulator_set_mode(eem_regulator_vproc1, REGULATOR_MODE_NORMAL);
+		regulator_set_mode(eem_regulator_vproc2, REGULATOR_MODE_NORMAL);
+	}
 }
 
 void eem_init01(void)
@@ -1893,7 +1890,7 @@ void eem_init01(void)
 			if (det->ops->get_volt != NULL) {
 				det->real_vboot = det->ops->volt_2_eem(det, det->ops->get_volt(det));
 
-#if defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING)
+#ifdef CONFIG_EEM_AEE_RR_REC
 					aee_rr_rec_ptp_vboot(
 						((unsigned long long)(det->real_vboot) << (8 * det->ctrl_id)) |
 						(aee_rr_curr_ptp_vboot() & ~
@@ -1903,7 +1900,6 @@ void eem_init01(void)
 #endif
 			}
 
-#if defined(__KERNEL__) && !(DVT) && !(EARLY_PORTING)
 			if (det->real_vboot != det->VBOOT) {
 				eem_error("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
 						__func__, __LINE__, det->name, det->real_vboot, det->VBOOT);
@@ -1915,7 +1911,6 @@ void eem_init01(void)
 			}
 			/* BUG_ON(vboot != det->VBOOT);*/
 			WARN_ON(det->real_vboot != det->VBOOT);
-#endif
 
 			mt_ptp_lock(&flag); /* <-XXX */
 			det->ops->init01(det);
@@ -1997,7 +1992,7 @@ static int eem_probe(struct platform_device *pdev)
 	}
 	eem_debug("Set EEM IRQ OK.\n");
 
-#if (defined(CONFIG_EEM_AEE_RR_REC) && !(EARLY_PORTING))
+#ifdef CONFIG_EEM_AEE_RR_REC
 		_mt_eem_aee_init();
 #endif
 
@@ -2005,8 +2000,8 @@ static int eem_probe(struct platform_device *pdev)
 		eem_init_ctrl(ctrl);
 
 	/* CPU/GPU pre-process */
-	mt_gpufreq_disable_by_ptpod();
 	mt_ppm_ptpod_policy_activate();
+	mt_gpufreq_disable_by_ptpod();
 	ret = eem_buck_get(pdev);
 	if (ret != 0)
 		eem_error("eem_buck_get failed\n");
@@ -2099,7 +2094,7 @@ void mt_eem_opp_status(enum eem_det_id id, unsigned int *temp, unsigned int *vol
 
 	FUNC_ENTER(FUNC_LV_API);
 
-#if defined(__KERNEL__) && defined(CONFIG_THERMAL) && !(EARLY_PORTING)
+#ifdef CONFIG_THERMAL
 	*temp = tscpu_get_temp_by_bank(id);
 #else
 	*temp = 0;
