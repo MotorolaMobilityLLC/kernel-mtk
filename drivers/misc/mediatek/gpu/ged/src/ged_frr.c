@@ -194,6 +194,10 @@ int ged_frr_table_get_fps(int targetPid, uint64_t targetCid)
 {
 	int i;
 
+	if (targetPid == 0 || targetCid == 0) {
+		return GED_FRR_UNDEFINED_VALUE;
+	}
+
 	if (!gpsFrrTable) {
 		GED_LOGE("[FRR] ged_frr_table_get_fps, gpsFrrTable(NULL)\n");
 		return GED_FRR_UNDEFINED_VALUE;

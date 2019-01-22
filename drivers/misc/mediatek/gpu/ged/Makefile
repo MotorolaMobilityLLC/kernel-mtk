@@ -66,6 +66,7 @@ ccflags-y += -DGED_DVFS_DEBUG_BUF
 
 ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt6799)
 ccflags-y += -DMTK_GED_KPI
+ccflags-y += -DMTK_FRR20
 endif
 
 ccflags-y += \
