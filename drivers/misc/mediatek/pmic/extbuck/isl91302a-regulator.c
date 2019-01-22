@@ -270,11 +270,6 @@ static int isl91302a_enable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 		return 0;
 	}
 
-	if (mreg_desc->rdev->use_count == 0) {
-		pr_info("[%s] should not be enable, regulator_register called\n", __func__);
-		return -1;
-	}
-
 	ret = extbuck_ipi_enable(buck_id, 1);
 	pr_info_ratelimited("%s [%s] id(%d), ret(%d)\n", __func__,
 				mreg_desc->rdesc.name, buck_id, ret);
@@ -297,11 +292,6 @@ static int isl91302a_disable_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 		return 0;
 	}
 
-	if (mreg_desc->rdev->use_count == 0) {
-		pr_info("[%s] should not be disable, regulator_register called\n", __func__);
-		return -1;
-	}
-
 	ret = extbuck_ipi_enable(buck_id, 0);
 	pr_info_ratelimited("%s [%s] id(%d), ret(%d)\n", __func__,
 				mreg_desc->rdesc.name, buck_id, ret);
@@ -319,11 +309,6 @@ static int isl91302a_is_enabled_ipi(struct mtk_simple_regulator_desc *mreg_desc)
 	if (buck_id != 1) {
 		pr_err("%s only support proc2\n", __func__);
 		return 0;
-	}
-
-	if (mreg_desc->rdev->use_count == 0) {
-		pr_info("[%s] should not be is_enabled, regulator_register called\n", __func__);
-		return -1;
 	}
 
 	ret = extbuck_ipi_enable(buck_id, 0xF);
