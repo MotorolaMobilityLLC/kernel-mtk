@@ -201,7 +201,7 @@ static int mtk_pe30_enable_direct_charge(struct charger_manager *info, bool en)
 		/*ret = mtk_enable_ta_dplus_dect(pe3->tcpc, false, 4000);*/
 		if (ret != 0)
 			ret2 = ret;
-		pe30_dc_set_vbus_ov(info, 55000000);
+		pe30_dc_set_vbus_ov(info, 5500000);
 		pe30_dc_set_ibus_oc(info, CC_NORMAL);
 	}
 	pe30_dc_enable(info, en);

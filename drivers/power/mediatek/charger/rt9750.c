@@ -43,6 +43,7 @@ struct rt9750_desc {
 	const char *eint_name;
 	u32 vbat_reg;
 	u32 vout_reg;
+	u32 iococp;
 	u32 wdt;
 };
 
@@ -54,6 +55,7 @@ static struct rt9750_desc rt9750_default_desc = {
 	.eint_name = "rt9750_chr_1",
 	.vbat_reg = 4400000,	/* uV */
 	.vout_reg = 5000000,	/* uV */
+	.iococp = 5000000,	/* uA */
 	.wdt = 2000000,		/* us */
 };
 
@@ -669,6 +671,9 @@ static int rt9750_parse_dt(struct rt9750_info *info, struct device *dev)
 	if (of_property_read_u32(np, "vbat_reg", &desc->vbat_reg) < 0)
 		pr_err("%s: no vbat regulation\n", __func__);
 
+	if (of_property_read_u32(np, "iococp", &desc->iococp) < 0)
+		pr_err("%s: no iococp\n", __func__);
+
 	if (of_property_read_u32(np, "wdt", &desc->wdt) < 0)
 		pr_err("%s: no wdt\n", __func__);
 
@@ -799,6 +804,26 @@ static int rt9750_set_vbat(struct rt9750_info *info, u32 uV)
 	return ret;
 }
 
+static int rt9750_set_iococp(struct rt9750_info *info, u32 uA)
+{
+	int ret = 0;
+	u8 reg_iococp = 0;
+
+	reg_iococp = rt9750_find_closest_reg_value(RT9750_IOCOCP_MIN,
+		RT9750_IOCOCP_MAX, RT9750_IOCOCP_STEP, RT9750_IOCOCP_NUM, uA);
+
+	pr_info("%s: iococp = %d (0x%02X)\n", __func__, uA, reg_iococp);
+
+	ret = rt9750_i2c_update_bits(
+		info,
+		RT9750_REG_PROT_DLYOCP,
+		reg_iococp << RT9750_SHIFT_IOCOCP,
+		RT9750_MASK_IOCOCP
+	);
+
+	return ret;
+}
+
 static int rt9750_init_setting(struct rt9750_info *info)
 {
 	int ret = 0;
@@ -816,6 +841,10 @@ static int rt9750_init_setting(struct rt9750_info *info)
 	ret = rt9750_set_vbat(info, info->desc->vbat_reg);
 	if (ret < 0)
 		pr_err("%s: set vbat failed\n", __func__);
+
+	ret = rt9750_set_iococp(info, info->desc->iococp);
+	if (ret < 0)
+		pr_err("%s: set iococp failed\n", __func__);
 
 	return ret;
 }
@@ -1049,13 +1078,14 @@ static int rt9750_set_ibusoc(struct charger_device *chg_dev, u32 uA)
 
 	ret = rt9750_i2c_update_bits(
 		info,
-		RT9750_REG_PROT_DLYOCP,
-		reg_ibusoc << RT9750_SHIFT_IOCOCP,
-		RT9750_MASK_IOCOCP
+		RT9750_REG_IBUS_OCP,
+		reg_ibusoc << RT9750_SHIFT_IBUS_OCP,
+		RT9750_MASK_IBUS_OCP
 	);
 
 	return ret;
 }
+
 
 static int rt9750_set_vbusov(struct charger_device *chg_dev, u32 uV)
 {
@@ -1353,10 +1383,14 @@ module_exit(rt9750_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("ShuFanLee <shufan_lee@richtek.com>");
 MODULE_DESCRIPTION("RT9750 Load Switch Driver");
-MODULE_VERSION("1.0.3_MTK");
+MODULE_VERSION("1.0.4_MTK");
 
 /*
  * Version Note
+ * 1.0.4
+ * (1) Add set_iococp
+ * (2) Init iococp in init_setting
+ *
  * 1.0.3
  * (1) Remove registering power supply class
  *
