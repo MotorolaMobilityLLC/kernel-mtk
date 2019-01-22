@@ -125,6 +125,7 @@ void AF_PowerDown(void)
 	AK7371AF_PowerDown();
 	#endif
 }
+EXPORT_SYMBOL(AF_PowerDown);
 
 static long AF_SetMotorName(__user struct stAF_MotorName *pstMotorName)
 {
