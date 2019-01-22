@@ -195,11 +195,10 @@ int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
 		}
 	}
 
-#if 1
 	mt_sched_printf(sched_eas_energy_calc,
 			"cid=%d max_cpu=%d (util=%ld new=%ld) opp_idx=%d (cap=%lld)",
-				cid, cpu, util, new_capacity, sel_idx, sge->cap_states[sel_idx].cap);
-#endif
+				cid, cpu, util, new_capacity, sel_idx,
+				(sel_idx > -1) ? sge->cap_states[sel_idx].cap : 0);
 
 	return sel_idx;
 }
