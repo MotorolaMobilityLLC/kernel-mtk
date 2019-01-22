@@ -15,15 +15,6 @@
 #define _KD_CAMERA_FEATURE_H_
 
 
-#ifndef FTYPE_ENUM
-#define FTYPE_ENUM(_enums...)  _enums
-#endif              /* FTYPE_ENUM */
-
-#ifndef FID_TO_TYPE_ENUM
-#define FID_TO_TYPE_ENUM(_fid, _enums) \
-	typedef enum { _enums/*, OVER_NUM_OF_##_fid*/ }
-#endif              /* FID_TO_TYPE_ENUM */
-
 #include <linux/string.h>
 
 #include "kd_camera_feature_id.h"
