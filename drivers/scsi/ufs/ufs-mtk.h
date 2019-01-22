@@ -27,6 +27,12 @@
 
 /* UFS device quirks */
 /*
+ * Toshiba Gen5 Gen6 UFS memory device need 100us delay before disable REF_CLK.
+ * If thoshiba can improve this delay in the future(ex: Gen7), this quirk can be removed then.
+ */
+#define UFS_DEVICE_QUIRK_DELAY_BEFORE_DISABLE_REF_CLK UFS_BIT(29)
+
+/*
  * Some UFS memory device needs limited RPMB max rw size otherwise
  * device issue, for example, device hang, may happen in some scenarios.
  */
