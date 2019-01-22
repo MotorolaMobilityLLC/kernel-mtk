@@ -316,6 +316,10 @@ PHY_INT32 I2cReadReg(PHY_UINT8 dev_id, PHY_UINT8 Addr, PHY_UINT8 *Data)
 #define REG_I2C_START        (*((unsigned short int *) (PHY_I2C_BASE + 0x24)))
 #define REG_I2C_SOFT_RESET   (*((unsigned short int *) (PHY_I2C_BASE + 0x50)))
 #define REG_I2C_CONTROL		 (*((unsigned short int *) (PHY_I2C_BASE + 0x10)))
+/* ADDITIONAL CONTROL */
+#define REG_I2C_TRANSAC_LEN  (PHY_I2C_BASE + 0x18)
+#define REG_I2C_HTIMING      (PHY_I2C_BASE + 0x20)
+#define REG_I2C_LTIMING      (PHY_I2C_BASE + 0x2C)
 
 #define IS_PRINT 0
 
@@ -326,6 +330,11 @@ PHY_INT32 I2cWriteReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 val)
 
 	REG_I2C_SLAVE_ADDR = dev_id << 1;
 	REG_I2C_TRANSFER_LEN = 2;
+
+	/* ADDITIONAL CONTROL */
+	writew(0x1, REG_I2C_TRANSAC_LEN);
+	writew(0x1303, REG_I2C_HTIMING);
+	writew(0x13C3, REG_I2C_LTIMING);
 
 	REG_I2C_DATA_PORT = addr;
 	REG_I2C_DATA_PORT = val;
@@ -345,6 +354,12 @@ PHY_INT32 I2cReadReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 *data)
 
 	REG_I2C_SLAVE_ADDR = dev_id << 1;
 	REG_I2C_TRANSFER_LEN = 0x01;
+
+	/* ADDITIONAL CONTROL */
+	writew(0x1, REG_I2C_TRANSAC_LEN);
+	writew(0x1303, REG_I2C_HTIMING);
+	writew(0x13C3, REG_I2C_LTIMING);
+
 	REG_I2C_DATA_PORT = addr;
 	REG_I2C_START = REG_I2C_START_BIT;
 
@@ -353,6 +368,12 @@ PHY_INT32 I2cReadReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 *data)
 
 	REG_I2C_SLAVE_ADDR = (dev_id << 1) | I2C_READ_BIT;
 	REG_I2C_TRANSFER_LEN = 0x01;
+
+	/* ADDITIONAL CONTROL */
+	writew(0x1, REG_I2C_TRANSAC_LEN);
+	writew(0x1303, REG_I2C_HTIMING);
+	writew(0x13C3, REG_I2C_LTIMING);
+
 	REG_I2C_START = REG_I2C_START_BIT;
 
 	while ((REG_I2C_START & REG_I2C_START_BIT))

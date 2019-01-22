@@ -1644,7 +1644,7 @@ static struct android_usb_function accessory_function = {
 	.ctrlrequest	= accessory_function_ctrlrequest,
 };
 
-
+#ifdef CONFIG_SND_PCM
 struct audio_source_function_config {
 	struct usb_function *f_aud;
 	struct usb_function_instance *f_aud_inst;
@@ -1700,7 +1700,7 @@ static struct android_usb_function audio_source_function = {
 	.cleanup	= audio_source_function_cleanup,
 	.bind_config	= audio_source_function_bind_config,
 };
-
+#endif
 
 #ifdef CONFIG_MTK_ECCCI_C2K
 static int rawbulk_function_init(struct android_usb_function *f,
@@ -1848,7 +1848,9 @@ static struct android_usb_function *supported_functions[] = {
 	&rndis_function,
 	&mass_storage_function,
 	&accessory_function,
+#ifdef CONFIG_SND_PCM
 	&audio_source_function,
+#endif
 #ifdef CONFIG_SND_RAWMIDI
 	&midi_function,
 #endif
@@ -2601,6 +2603,10 @@ void trigger_android_usb_state_monitor_work(void)
 {
 	static int inited;
 
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	pr_info("SKIP %s\n", __func__);
+	return;
+#endif
 	if (!inited) {
 		/* TIMER_DEFERRABLE for not interfering with deep idle */
 		INIT_DEFERRABLE_WORK(&android_usb_state_monitor_work, do_android_usb_state_monitor_work);
