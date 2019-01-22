@@ -94,10 +94,6 @@ ifeq ($(CONFIG_MMPROFILE),y)
 ccflags-y += -DDEFAULT_MMP_ENABLE
 endif
 
-ifeq ($(TARGET_BUILD_VARIANT),user)
-ccflags-y += -D_MTK_USER_
-endif
-
 ifeq ($(MTK_MIRAVISION_SUPPORT), yes)
     ccflags-y += -DCONFIG_FOR_SOURCE_PQ
 endif
