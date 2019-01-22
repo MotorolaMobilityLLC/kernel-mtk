@@ -447,6 +447,11 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 		      size_t count, loff_t *pos)
 {
 	static char state;
+	struct sched_param param = {
+		.sched_priority = MAX_RT_PRIO - 1,
+	};
+
+	sched_setscheduler(current, SCHED_FIFO, &param);
 
 	if (count > 0) {
 		if (get_user(state, buffer))
