@@ -933,7 +933,7 @@ static void _mtm_update_sysinfo(struct work_struct *work)
 	cancel_delayed_work(&_mtm_sysinfo_poll_queue);
 
 	if (_mtm_interval != 0)
-		queue_delayed_work(system_freezable_wq, &_mtm_sysinfo_poll_queue,
+		queue_delayed_work(system_freezable_power_efficient_wq, &_mtm_sysinfo_poll_queue,
 				   msecs_to_jiffies(_mtm_interval));
 }
 

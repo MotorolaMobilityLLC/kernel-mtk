@@ -631,7 +631,7 @@ static void mtkts_battery_start_thermal_timer(void)
 	/* For charging current throttling during deep idle,
 	*   this delayed work cannot be canceled.
 	*if (thz_dev != NULL && interval != 0)
-	*	mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue),
+	*	mod_delayed_work(system_freezable_power_efficient_wq, &(thz_dev->poll_queue),
 	*   round_jiffies(msecs_to_jiffies(3000)));
 	*
 	*return;
