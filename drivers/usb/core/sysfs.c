@@ -238,6 +238,35 @@ static ssize_t avoid_reset_quirk_store(struct device *dev,
 }
 static DEVICE_ATTR_RW(avoid_reset_quirk);
 
+static ssize_t set_suspend_show(struct device *dev,
+				      struct device_attribute *attr, char *buf)
+{
+	struct usb_device *udev;
+
+	udev = to_usb_device(dev);
+	return sprintf(buf, "%d\n", !!(udev->state == USB_STATE_SUSPENDED));
+}
+
+static ssize_t set_suspend_store(struct device *dev,
+				      struct device_attribute *attr,
+				      const char *buf, size_t count)
+{
+	struct usb_device	*udev = to_usb_device(dev);
+	int			val;
+
+	if (kstrtoint(buf, 0, &val) || val < 0 || val > 1)
+		return -EINVAL;
+	usb_lock_device(udev);
+	if (val)
+		usb_suspend(dev, PMSG_SUSPEND);
+	else
+		usb_resume(dev, PMSG_RESUME);
+	usb_unlock_device(udev);
+	return count;
+}
+
+static DEVICE_ATTR_RW(set_suspend);
+
 static ssize_t urbnum_show(struct device *dev, struct device_attribute *attr,
 			   char *buf)
 {
@@ -758,8 +787,10 @@ static struct attribute *dev_attrs[] = {
 	&dev_attr_remove.attr,
 	&dev_attr_removable.attr,
 	&dev_attr_ltm_capable.attr,
+	&dev_attr_set_suspend.attr,
 	NULL,
 };
+
 static struct attribute_group dev_attr_grp = {
 	.attrs = dev_attrs,
 };

@@ -1766,7 +1766,9 @@ int port_status;
 	port->port_id = port_id;
 	addr = &xhci->op_regs->port_status_base + NUM_PORT_REGS*((port_id - 1) & 0xff);
 	temp = xhci_readl(xhci, addr);
+#if TEST_OTG
 	pr_debug("[OTG_H] port_status change event port_status 0x%x\n", temp);
+#endif
 	port_status = rh_get_port_status(xhci, port_id);
 	pr_debug("port_status %x\n", port_status);
 	/*rh_port_clear_change(xhci, port_id); */
@@ -2236,6 +2238,10 @@ static int handle_tx_event(struct xhci_hcd *xhci,
 cleanup:
 	mtktest_inc_deq(xhci, xhci->event_ring, true);
 	mtktest_xhci_set_hc_event_deq(xhci);
+	if (td && td->urb && td->urb->complete) {
+		if (ret)
+			td->urb->complete(td->urb);
+	}
 
 	/* FIXME for multi-TD URBs (who have buffers bigger than 64MB) */
 	return 0;
@@ -3135,7 +3141,7 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 						frame_id = 0x7ff;
 
 					field |= ((frame_id) << 20);
-					xhci_err(xhci, "[DBG]start frame id = %d\n", frame_id);
+					pr_alert("[DBG]start frame id = %d\n", frame_id);
 				} else
 					field |= TRB_SIA;
 
