@@ -262,13 +262,18 @@ static ssize_t show_sched_info(struct kobject *kobj,
 	return len;
 }
 
+static DEFINE_MUTEX(ip_mutex);
+
 static ssize_t store_idle_prefer(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	unsigned int val = 0;
 	static unsigned int backup_mc;
+	static unsigned int backup_dvfs_margin;
 	static int is_dirty;
 	int en;
+
+	mutex_lock(&ip_mutex);
 
 	if (sscanf(buf, "%iu", &val) != 0)
 		idle_prefer_mode = val;
@@ -276,8 +281,10 @@ static ssize_t store_idle_prefer(struct kobject *kobj,
 	en = (idle_prefer_mode > 0) ? 1 : 0;
 
 	/* backup system settings */
-	if (!is_dirty)
+	if (!is_dirty) {
 		backup_mc = sysctl_sched_migration_cost;
+		backup_dvfs_margin = capacity_margin_dvfs;
+	}
 
 #ifdef CONFIG_SCHED_TUNE
 	/*
@@ -290,25 +297,19 @@ static ssize_t store_idle_prefer(struct kobject *kobj,
 	prefer_idle_for_perf_idx(1, en);
 #endif
 
-#ifndef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
-	/* consider HMP w/o enhanced idle balance */
-#ifdef CONFIG_MTK_SCHED_BOOST
-	/* trigger HMP */
-	set_sched_boost(en ? SCHED_FORCE_BOOST : SCHED_FORCE_STOP);
-#endif
-
-	/* trigger WALT */
-	sched_walt_enable(LT_WALT_SCHED, en);
-#endif /* end of MTK_IDLE_BALANCE  */
-
 	/* migration cost to 33us */
 	sysctl_sched_migration_cost = en ? 33000UL : backup_mc; /*500000UL;*/
 
 #if defined(CONFIG_MACH_MT6771)
+	/* marginless DVFS control for high TLP scene */
+	capacity_margin_dvfs = en ? 1024 : backup_dvfs_margin;
+
 	/* display idle timeout */
 	display_set_wait_idle_time(en ? 200 : 50);
 #endif
 	is_dirty = en;
+
+	mutex_unlock(&ip_mutex);
 
 	return count;
 }

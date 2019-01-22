@@ -3013,18 +3013,11 @@ unsigned long long task_sched_runtime(struct task_struct *p)
  */
 #ifdef CONFIG_MACH_MT6771
 #define jump_step(idx, nr, st) { *st = 1; }
-
-static inline bool is_margin_less(void)
-{
-#ifdef CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT
-	return false; /* PP: consider margin  */
+static int marginless_hroom = 1137;
 #else
-	return true; /* marginless */
-#endif
-}
-
-#else /* end of MT6771 */
+static int marginless_hroom = 1280;
 #define jump_step(idx, nr, st) { *st = (idx < nr/3) ? 2 : 1; }
+#endif
 
 static inline bool is_margin_less(void)
 {
@@ -3032,12 +3025,12 @@ static inline bool is_margin_less(void)
 		return true;
 	return false;
 }
-#endif
 
 static inline
 unsigned long add_capacity_margin(unsigned long cpu_capacity)
 {
-	cpu_capacity  = cpu_capacity * (is_margin_less() ? 1280 : capacity_margin_dvfs);
+	cpu_capacity  = cpu_capacity * (is_margin_less() ?
+				marginless_hroom : capacity_margin_dvfs);
 	cpu_capacity /= SCHED_CAPACITY_SCALE;
 	return cpu_capacity;
 }
