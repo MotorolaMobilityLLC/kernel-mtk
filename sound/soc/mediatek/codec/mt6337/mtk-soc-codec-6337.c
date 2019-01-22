@@ -104,6 +104,7 @@ static void audio_preamp2_en(bool power);
 static void audio_preamp3_en(bool power);
 static void audio_preamp4_en(bool power);
 static void audio_dmic_input_enable(bool power, AUDIO_ANALOG_DEVICE_TYPE device_in);
+static void hp_main_output_ramp(bool up);
 
 #ifdef CONFIG_MTK_VOW_SUPPORT
 static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable);
@@ -899,8 +900,17 @@ void OpenTrimBufferHardware(bool enable)
 		pr_warn("%s Enable\n", __func__);
 		TurnOnDacPower();
 
-		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0300, 0xff00);
-		/* Set HP status as power-up & enable HPL/R CMFB */
+		/* reset all dc compensation */
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG3, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG4, 0x0000, 0xffff);
+		Ana_Set_Reg(AFE_DL_DC_COMP_CFG2, 0x0000, 0xffff);
+
+		Ana_Set_Reg(AFUNC_AUD_CON0, 0xC3AD, 0xf7ff);
+		/* close sdm */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
+		/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0x4000);
 		/* Reduce ESD resistance of AU_REFN */
 
@@ -920,28 +930,63 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0x3000);
 		/* Disable headphone short-ckt protection. */
 		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x2A80, 0xff80);
-		/* Enable IBIST & Set HP & ZCD bias current optimization*/
+		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x4900, 0xff80);
+		/* Enable IBIST */
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x001A, 0x003f);
+		/* Set HPP/N STB enhance circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
 		/* No Pull-down HPL/R to AVSS30_AUD */
+		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0004, 0x000E);
+		/* Set HP bias in HIFI mdoe */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x00C0, 0x00C0);
+		/* Enable HP driver bias circuits */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0030, 0x0030);
+		/* Enable HP driver core circuits */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0300, 0xff00);
+		/* Set HP status as power-up & enable HPL/R CMFB */
+		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0001, 0x0001);
+		/* Change compensation for HP main loop */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0003, 0x0003);
+		/* Enable HP main output stage */
+		hp_main_output_ramp(true);
+		/* Enable HPP/N main output stage step by step */
 
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0001, 0x0001);
-		/* Enable AUD_CLK  */
+		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x000f, 0x000f);
 		/* Enable Audio DAC  */
+		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x8000, 0x8000);
+		/* Enable low-noise mode of DAC  */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0A00, 0x0f00);
+		/* Switch HPL/R MUX to audio DAC  */
 
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0080, 0xffff);
+		/* Set HS STB enhance circuits */
 	} else {
 		pr_warn("%s Disable\n", __func__);
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0000, 0xffff);
+		/* Disable HS STB enhance circuit */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0f00);
+		/* Open HPL/R MUX to audio DAC  */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x000f);
 		/* Disable Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0001);
 		/* Disable AUD_CLK  */
-		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x8000, 0x8000);
-		/* Disable IBIST */
-
+		hp_main_output_ramp(false);
+		/* Disable HPP/N main output stage step by step  */
+		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x0000, 0x0003);
+		/* Disable HP main output stage  */
+		Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0x0001);
+		/* Change compensation for HP main loop */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x00C0);
+		/* Disable HP driver bias circuits */
+		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0030);
+		/* Disable HP driver core circuits */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0000, 0xff00);
 		/* Disable HP aux CMFB loop */
 		Ana_Set_Reg(AUDDEC_ANA_CON11, 0x8000, 0x8000);
 		/* Disable IBIST */
+
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0000, 0x0780);
 		/* Restore NV regulator to -1.3V */
 		Ana_Set_Reg(AUDDEC_ANA_CON14, 0x0000, 0x0003);
@@ -1079,8 +1124,6 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable IBIST */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x003f);
 		/* Disable HPP/N STB enhance circuits */
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
-		/* No Pull-down HPL/R to AVSS30_AUD */
 		Ana_Set_Reg(AUDDEC_ANA_CON12, 0x0001, 0x0001);
 		/* Enable AUD_CLK */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0009, 0x0009);
@@ -1089,8 +1132,6 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable HPDET circuit, select DACLP as HPDET input and HPR as HPDET output */
 
 	} else {
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
-		/* Pull-down HPL/R to AVSS30_AUD */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0x1f00);
 		/* Disable HPDET circuit */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0x0009);
@@ -1105,9 +1146,6 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Disable NV regulator */
 		Ana_Set_Reg(AUDDEC_ANA_CON13, 0x0000, 0x002D);
 		/* Disable cap-less LDOs (1.6V) */
-
-		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x0000, 0x8000);
-		/* No Pull-down HPL/R to AVSS30_AUD */
 
 		TurnOffDacPower();
 	}
@@ -1711,9 +1749,6 @@ static void TurnOnDacPower(void)
 	ClsqEnable(true);	/* Turn on 26MHz source clock */
 	Topck_Enable(true);	/* Turn on AUDNCP_CLKDIV engine clock */
 
-	Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
-	/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
-
 	usleep_range(250, 350);
 
 	if (get_analog_input_status() == false)
@@ -1731,7 +1766,7 @@ static void TurnOnDacPower(void)
 
 	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0006, 0x009f);
 	/* sdm audio fifo clock power on */
-	Ana_Set_Reg(AFUNC_AUD_CON0, 0xC3A1, 0x7381);
+	Ana_Set_Reg(AFUNC_AUD_CON0, 0xC3A1, 0xf7ff);
 	/* scrambler clock on enable */
 	Ana_Set_Reg(AFUNC_AUD_CON2, 0x0003, 0x009f);
 	/* sdm power on */
@@ -1996,6 +2031,9 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false &&
 		    !ANC_enabled) {
 			pr_warn("%s\n", __func__);
+
+			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
+			/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0x0100, 0xff00);
 			/* Set HP status as power-up */
@@ -2698,6 +2736,8 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			TurnOnDacPower();
 
 		pr_warn("%s\n", __func__);
+		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x8000, 0x8000);
+		/* Pull-down HPL/R to AVSS30_AUD for de-pop noise */
 		Ana_Set_Reg(AUDDEC_ANA_CON2, 0x4000, 0x4000);
 		/* Reduce ESD resistance of AU_REFN */
 
