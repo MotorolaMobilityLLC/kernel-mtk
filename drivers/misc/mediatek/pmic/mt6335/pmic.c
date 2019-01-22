@@ -1011,7 +1011,8 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC] pmic_debug_init : done.\n");
 
 	pmic_ftm_init();
-	pmic_bif_init();
+	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT))
+		pmic_bif_init();
 
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_access);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_dvt);
