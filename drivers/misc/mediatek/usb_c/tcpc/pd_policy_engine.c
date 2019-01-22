@@ -940,7 +940,7 @@ static inline void print_state(
 		vdm_evt ? "VDM" : "PD", pe_state_name[state],
 		pd_port->power_role ? 'P' : 'C',
 		pd_port->data_role ? 'D' : 'U',
-		pd_port->vconn_source ? 'Y' : 'N');
+		pd_port->vconn_role ? 'Y' : 'N');
 #else
 	PE_STATE_INFO("%s-> %s\r\n",
 		vdm_evt ? "VDM" : "PD", pe_state_name[state]);
