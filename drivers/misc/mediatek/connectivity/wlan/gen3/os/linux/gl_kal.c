@@ -907,6 +907,7 @@ static mm_segment_t orgfs;
 static PUINT_8 apucFwPath[] = {
 	(PUINT_8) "/storage/sdcard0/",
 	(PUINT_8) "/etc/firmware/",
+	(PUINT_8) "/vendor/firmware/",
 #if !CONFIG_ANDROID
 	(PUINT_8) "/lib/firmware/",
 #endif
@@ -1115,11 +1116,11 @@ WLAN_STATUS kalFirmwareLoad(IN P_GLUE_INFO_T prGlueInfo, OUT PVOID prBuf, IN UIN
 	/* l = filp->f_path.dentry->d_inode->i_size; */
 
 	/* the object must have a read method */
-	if ((filp == NULL) || IS_ERR(filp) || (filp->f_op == NULL) || (filp->f_op->read == NULL)) {
+	if ((filp == NULL) || IS_ERR(filp) || (filp->f_op == NULL)) {
 		goto error_read;
 	} else {
 		filp->f_pos = u4Offset;
-		*pu4Size = filp->f_op->read(filp, prBuf, *pu4Size, &filp->f_pos);
+		*pu4Size = __vfs_read(filp, (__force void __user *)prBuf, *pu4Size, &filp->f_pos);
 	}
 
 	return WLAN_STATUS_SUCCESS;
