@@ -111,4 +111,7 @@ source "drivers/staging/wilc1000/Kconfig"
 source "drivers/staging/most/Kconfig"
 
 source "drivers/staging/nanohub/Kconfig"
+
+source "drivers/staging/dyn_obj/Kconfig"
+
 endif # STAGING
