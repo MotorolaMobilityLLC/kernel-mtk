@@ -592,7 +592,7 @@ int disable_ovl_layers(enum DISP_MODULE_ENUM module, void *handle)
 	unsigned int ovl_idx = ovl_to_index(module);
 
 	/* physical layer control */
-	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, 0);
+	DISP_REG_SET_FIELD(handle, SRC_CON_FLD_L_EN, ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, 0);
 	/* ext layer control */
 	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_DATAPATH_EXT_CON, 0);
 	DDPSVPMSG("[SVP] switch ovl%d to nonsec: disable all the layers first!\n", ovl_idx);
