@@ -1208,7 +1208,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_SET_LSC_TBL:
 		{
 			unsigned long long *pFeaturePara_64 = (unsigned long long *)pFeaturePara;
-			kal_uint32 u4RegLen = (*pFeaturePara_64);
+			kal_uint32 u4RegLen = (kal_uint32)(*pFeaturePara_64);
 			void *usr_ptr_Reg = (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
 			kal_uint32 index = *(pFeaturePara_64 + 2);
 			kal_uint8 *pReg = NULL;
