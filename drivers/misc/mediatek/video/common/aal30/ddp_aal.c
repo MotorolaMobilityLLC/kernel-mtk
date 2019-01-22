@@ -243,46 +243,13 @@ static int disp_aal_init(enum DISP_MODULE_ENUM module, int width, int height, vo
 	return 0;
 }
 
-#ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
-static int disp_aal_get_latency_lowerbound(void)
-{
-	int aalrefresh;
-#ifdef	CONFIG_MTK_SMI_EXT
-	MTK_SMI_BWC_SCEN bwc_scen;
-
-	bwc_scen = smi_get_current_profile();
-	if (bwc_scen == SMI_BWC_SCEN_VR || bwc_scen == SMI_BWC_SCEN_SWDEC_VP ||
-		bwc_scen == SMI_BWC_SCEN_SWDEC_VP || bwc_scen == SMI_BWC_SCEN_VP ||
-		bwc_scen == SMI_BWC_SCEN_VR_SLOW)
-
-		aalrefresh = AAL_REFRESH_33MS;
-	else
-		aalrefresh = AAL_REFRESH_17MS;
-#else
-	aalrefresh = AAL_REFRESH_17MS;
-#endif
-
-	return aalrefresh;
-}
-#endif
-
 
 static void disp_aal_trigger_refresh(int latency)
 {
-#ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
-	int scenario_latency = disp_aal_get_latency_lowerbound();
-#endif
-
 	if (g_ddp_notify != NULL) {
 		enum DISP_PATH_EVENT trigger_method = DISP_PATH_EVENT_TRIGGER;
 
 #ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
-		/* Allow 33ms latency only under VP & VR scenario for avoid */
-		/* longer animation reduce available time of SODI which cause. */
-		/* less power saving ratio when screen idle. */
-		if (scenario_latency < latency)
-			latency = scenario_latency;
-
 		if (latency == AAL_REFRESH_33MS)
 			trigger_method = DISP_PATH_EVENT_DELAYED_TRIGGER_33ms;
 #endif
