@@ -28,6 +28,8 @@ endif
 obj-$(CONFIG_MACH_MT6758) += udi_v1/
 obj-$(CONFIG_MACH_MT6759) += udi_v1/
 obj-$(CONFIG_MACH_MT6763) += udi_v1/
+obj-$(CONFIG_MACH_MT6771) += udi_v1/
+obj-$(CONFIG_MACH_MT6775) += udi_v1/
 obj-$(CONFIG_MACH_MT6759) += ocp_v1/
 obj-$(CONFIG_MACH_MT6799) += leakage_table_v1/
 obj-$(CONFIG_MACH_MT6759) += leakage_table_v2/
