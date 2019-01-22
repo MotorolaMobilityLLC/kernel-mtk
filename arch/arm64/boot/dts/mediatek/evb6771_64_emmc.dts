@@ -254,6 +254,6 @@ initcall_debug=1";
 
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <10>; /* direct defined GPIO num */
-	/* mt6370,intr_gpio = <&pio 10 0x0>; */
+	mt6370,intr_gpio = <&pio 10 0x0>;
 };
 
