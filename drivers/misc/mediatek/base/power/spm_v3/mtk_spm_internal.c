@@ -280,9 +280,9 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 	spm_write(PCM_CON0, SPM_REGWR_CFG_KEY | PCM_CK_EN_LSB | RG_EN_IM_SLEEP_DVS_LSB);
 
 	/* init PCM_CON1 (disable PCM timer but keep PCM WDT setting) */
-	con1 = spm_read(PCM_CON1) & (RG_PCM_WDT_WAKE_LSB | RG_PCM_WDT_EN_LSB);
+	con1 = spm_read(PCM_CON1) & (RG_PCM_WDT_WAKE_LSB);
 	spm_write(PCM_CON1, con1 | SPM_REGWR_CFG_KEY | REG_EVENT_LOCK_EN_LSB |
-		  REG_SPM_SRAM_ISOINT_B_LSB | RG_PCM_WDT_EN_LSB |
+		  REG_SPM_SRAM_ISOINT_B_LSB |
 		  (pcmdesc->replace ? 0 : RG_IM_NONRP_EN_LSB) |
 		  RG_AHBMIF_APBEN_LSB | RG_SSPM_APB_INTERNAL_EN_LSB);
 }
@@ -866,7 +866,7 @@ void __spm_set_pcm_wdt(int en)
 	if (en) {
 		u32 con1;
 
-		con1 = spm_read(PCM_CON1) & ~(RG_PCM_WDT_WAKE_LSB | RG_PCM_WDT_EN_LSB);
+		con1 = spm_read(PCM_CON1) & ~(RG_PCM_WDT_WAKE_LSB);
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | con1);
 
 		if (spm_read(PCM_TIMER_VAL) > PCM_TIMER_MAX)
