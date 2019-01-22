@@ -34,7 +34,6 @@
 #include <asm/page.h>
 #include <linux/vmalloc.h>
 #include <linux/interrupt.h>
-/*#include <mach/irqs.h>*/
 #include <linux/wait.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
@@ -50,11 +49,9 @@
 #ifdef SIGTEST
 #include <asm/siginfo.h>
 #endif
-#include <mach/gpio_const.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-/*#include <mach/mt_clkmgr.h>*/
 #include "scp_helper.h"
 #include "scp_ipi.h"
 #include "scp_excep.h"
