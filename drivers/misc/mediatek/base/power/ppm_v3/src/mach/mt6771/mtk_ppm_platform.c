@@ -309,6 +309,29 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 	return budget;
 }
 
+unsigned int mt_ppm_thermal_get_power_big_max_opp(unsigned int opp)
+{
+	struct ppm_cluster_status status[NR_PPM_CLUSTERS];
+	int i;
+	int power;
+
+	if (opp >= DVFS_OPP_NUM)
+		return (unsigned int)ppm_get_max_pwr_idx();
+
+	for_each_ppm_clusters(i) {
+		status[i].core_num = get_cluster_max_cpu_core(i);
+		status[i].freq_idx = (i == PPM_CLUSTER_B) ? opp
+			: get_cluster_max_cpufreq_idx(i);
+
+		ppm_ver("[%d] core = %d, freq_idx = %d\n",
+			i, status[i].core_num, status[i].freq_idx);
+	}
+
+	power = ppm_find_pwr_idx(status);
+	return (power == -1)
+		? (unsigned int)ppm_get_max_pwr_idx() : (unsigned int)power;
+}
+
 unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 {
 	int temp, dev_id, volt;
