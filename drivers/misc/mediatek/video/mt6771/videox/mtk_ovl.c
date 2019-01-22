@@ -703,7 +703,7 @@ int ovl2mem_deinit(void)
 	_ovl2mem_path_lock(__func__);
 
 	if (pgcl->state == 0) {
-		DISPPR_ERROR("path exit, state%d\n", pgcl->state);
+		DISPMSG("path exit, state%d\n", pgcl->state);
 		goto Exit;
 	}
 
