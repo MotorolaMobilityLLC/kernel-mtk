@@ -82,6 +82,11 @@ int get_overutil_threshold(void)
 	return overutil_threshold;
 }
 
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+static unsigned int heavy_task_prio = NICE_TO_PRIO(CONFIG_SCHED_HMP_PRIO_FILTER_VAL);
+#define task_low_priority(prio) ((prio >= heavy_task_prio)?1:0)
+#endif
+
 #ifdef CONFIG_CPU_FREQ
 #include <linux/cpufreq.h>
 #else  /* !CONFIG_CPU_FREQ  */

@@ -13,6 +13,8 @@
 
 LINUXINCLUDE += -include $(srctree)/kernel/sched/sched.h
 
+ccflags-y += -DMET_USER_EVENT_SUPPORT
+
 #
 # RQ stats for TLP estimation
 #

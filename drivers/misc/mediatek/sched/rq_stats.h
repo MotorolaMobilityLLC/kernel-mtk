@@ -44,9 +44,3 @@ extern void overutil_thresh_chg_notify(void);
 extern int get_overutil_stats(char *buf, int buf_size);
 extern unsigned long get_cpu_orig_capacity(unsigned int cpu);
 extern int get_overutil_threshold(void);
-
-#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
-static unsigned int heavy_task_prio = NICE_TO_PRIO(CONFIG_SCHED_HMP_PRIO_FILTER_VAL);
-#define task_low_priority(prio) ((prio >= heavy_task_prio)?1:0)
-#endif
-
