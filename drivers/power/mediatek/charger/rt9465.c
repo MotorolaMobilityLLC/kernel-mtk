@@ -604,9 +604,9 @@ static int rt9465_register_irq(struct rt9465_info *info)
 	dev_info(info->dev, "%s: irq = %d\n", __func__, info->irq);
 
 	/* Request threaded IRQ */
-	ret = request_threaded_irq(info->irq, NULL, rt9465_irq_handler,
-		IRQF_TRIGGER_FALLING | IRQF_ONESHOT, info->desc->eint_name,
-		info);
+	ret = devm_request_threaded_irq(info->dev, info->irq, NULL,
+		rt9465_irq_handler, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+		info->desc->eint_name, info);
 	if (ret < 0) {
 		dev_err(info->dev, "%s: request thread irq failed\n", __func__);
 		goto err_request_irq;
@@ -1265,7 +1265,7 @@ static int rt9465_probe(struct i2c_client *i2c,
 	int ret = 0;
 	struct rt9465_info *info = NULL;
 
-	dev_info(info->dev, "%s (%s)\n", __func__, RT9465_DRV_VERSION);
+	pr_info("%s (%s)\n", __func__, RT9465_DRV_VERSION);
 
 	info = devm_kzalloc(&i2c->dev, sizeof(struct rt9465_info), GFP_KERNEL);
 	if (!info)
