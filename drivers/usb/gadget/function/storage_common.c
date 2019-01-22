@@ -28,11 +28,12 @@
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/usb/composite.h>
+#include <uapi/linux/usb/ch9.h>
 
 #include "storage_common.h"
 
 #ifdef CONFIG_USBIF_COMPLIANCE
-static struct usb_otg_descriptor
+static struct usb_otg20_descriptor
 fsg_otg_desc = {
 	.bLength = sizeof(fsg_otg_desc),
 	.bDescriptorType = USB_DT_OTG,
