@@ -268,7 +268,7 @@ INT32 osal_dbg_print(const PINT8 str, ...);
 INT32 osal_warn_print(const PINT8 str, ...);
 
 INT32 osal_dbg_assert(INT32 expr, const PINT8 file, INT32 line);
-INT32 osal_dbg_assert_aee(const PINT8 module, const PINT8 detail_description);
+INT32 osal_dbg_assert_aee(const PINT8 module, const PINT8 detail_description, ...);
 INT32 osal_sprintf(PINT8 str, const PINT8 format, ...);
 PVOID osal_malloc(UINT32 size);
 VOID osal_free(const PVOID dst);

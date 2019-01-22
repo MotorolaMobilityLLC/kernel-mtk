@@ -1030,7 +1030,7 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			WMT_ERR_FUNC("copy assert string failed\n");
 		}
 		pBuffer[NAME_MAX] = '\0';
-		osal_dbg_assert_aee(pBuffer, pBuffer);
+		osal_dbg_assert_aee(pBuffer, "%s", pBuffer);
 		kfree(pBuffer);
 		break;
 	case 11:
