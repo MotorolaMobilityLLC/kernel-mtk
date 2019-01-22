@@ -34,6 +34,15 @@ enum {
 };
 
 enum {
+	MUX_ADC_L,
+	MUX_ADC_R,
+	MUX_PGA_L,
+	MUX_PGA_R,
+	MUX_MIC_TYPE,
+	MUX_NUM,
+};
+
+enum {
 	DEVICE_HP,
 	DEVICE_LO,
 	DEVICE_RCV,
@@ -54,8 +63,7 @@ enum {
 	SUPPLY_SEQ_AUD_TOP_LAST,
 	SUPPLY_SEQ_AFE,
 	/* capture */
-	SUPPLY_SEQ_PRE_MICBIAS,
-	SUPPLY_SEQ_MICBIAS,
+	SUPPLY_SEQ_ADC_SUPPLY,
 };
 
 #define REG_STRIDE 2
@@ -68,6 +76,7 @@ struct mt6358_priv {
 	unsigned int ul_rate;
 
 	int ana_gain[AUDIO_ANALOG_VOLUME_TYPE_MAX];
+	unsigned int mux_select[MUX_NUM];
 
 	int dev_counter[DEVICE_NUM];
 
@@ -528,21 +537,75 @@ static SOC_VALUE_ENUM_SINGLE_DECL(aif_out_mux_map_enum,
 static const struct snd_kcontrol_new aif_out_mux_control =
 	SOC_DAPM_ENUM("AIF Out Select", aif_out_mux_map_enum);
 
+/* Mic Type MUX */
+enum {
+	MIC_TYPE_MUX_IDLE = 0,
+	MIC_TYPE_MUX_ACC,
+	MIC_TYPE_MUX_DMIC,
+	MIC_TYPE_MUX_DCC,
+	MIC_TYPE_MUX_DCC_ECM_DIFF,
+	MIC_TYPE_MUX_DCC_ECM_SINGLE,
+	MIC_TYPE_MUX_MASK = 0xf,
+};
+
+#define IS_DCC_BASE(x) (x == MIC_TYPE_MUX_DCC || \
+			x == MIC_TYPE_MUX_DCC_ECM_DIFF || \
+			x == MIC_TYPE_MUX_DCC_ECM_SINGLE)
+
+static const char * const mic_type_mux_map[] = {
+	"Idle",
+	"ACC",
+	"DMIC",
+	"DCC",
+	"DCC_ECM_DIFF",
+	"DCC_ECM_SINGLE",
+};
+
+static int mic_type_mux_map_value[] = {
+	MIC_TYPE_MUX_IDLE,
+	MIC_TYPE_MUX_ACC,
+	MIC_TYPE_MUX_DMIC,
+	MIC_TYPE_MUX_DCC,
+	MIC_TYPE_MUX_DCC_ECM_DIFF,
+	MIC_TYPE_MUX_DCC_ECM_SINGLE,
+};
+
+static SOC_VALUE_ENUM_SINGLE_DECL(mic_type_mux_map_enum,
+				  SND_SOC_NOPM,
+				  0,
+				  MIC_TYPE_MUX_MASK,
+				  mic_type_mux_map,
+				  mic_type_mux_map_value);
+
+static const struct snd_kcontrol_new mic_type_mux_control =
+	SOC_DAPM_ENUM("Mic Type Select", mic_type_mux_map_enum);
+
 /* ADC L MUX */
+enum {
+	ADC_MUX_IDLE = 0,
+	ADC_MUX_AIN0,
+	ADC_MUX_PREAMPLIFIER,
+	ADC_MUX_IDLE1,
+	ADC_MUX_MASK = 0x3,
+};
+
 static const char * const adc_left_mux_map[] = {
 	"Idle", "AIN0", "Left Preamplifier", "Idle_1"
 };
 
-static int adc_left_mux_map_value[] = {
-	0x0, 0x1, 0x2, 0x3,
+static int adc_mux_map_value[] = {
+	ADC_MUX_IDLE,
+	ADC_MUX_AIN0,
+	ADC_MUX_PREAMPLIFIER,
+	ADC_MUX_IDLE1,
 };
 
 static SOC_VALUE_ENUM_SINGLE_DECL(adc_left_mux_map_enum,
-				  AUDENC_ANA_CON0,
-				  RG_AUDADCLINPUTSEL_SFT,
-				  RG_AUDADCLINPUTSEL_MASK,
+				  SND_SOC_NOPM,
+				  0,
+				  ADC_MUX_MASK,
 				  adc_left_mux_map,
-				  adc_left_mux_map_value);
+				  adc_mux_map_value);
 
 static const struct snd_kcontrol_new adc_left_mux_control =
 	SOC_DAPM_ENUM("ADC L Select", adc_left_mux_map_enum);
@@ -552,54 +615,53 @@ static const char * const adc_right_mux_map[] = {
 	"Idle", "AIN0", "Right Preamplifier", "Idle_1"
 };
 
-static int adc_right_mux_map_value[] = {
-	0x0, 0x1, 0x2, 0x3,
-};
-
 static SOC_VALUE_ENUM_SINGLE_DECL(adc_right_mux_map_enum,
-				  AUDENC_ANA_CON1,
-				  RG_AUDADCRINPUTSEL_SFT,
-				  RG_AUDADCRINPUTSEL_MASK,
+				  SND_SOC_NOPM,
+				  0,
+				  ADC_MUX_MASK,
 				  adc_right_mux_map,
-				  adc_right_mux_map_value);
+				  adc_mux_map_value);
 
 static const struct snd_kcontrol_new adc_right_mux_control =
 	SOC_DAPM_ENUM("ADC R Select", adc_right_mux_map_enum);
 
 /* PGA L MUX */
-static const char * const pga_left_mux_map[] = {
+enum {
+	PGA_MUX_NONE = 0,
+	PGA_MUX_AIN0,
+	PGA_MUX_AIN1,
+	PGA_MUX_AIN2,
+	PGA_MUX_MASK = 0x3,
+};
+
+static const char * const pga_mux_map[] = {
 	"None", "AIN0", "AIN1", "AIN2"
 };
 
-static int pga_left_mux_map_value[] = {
-	0x0, 0x1, 0x2, 0x3,
+static int pga_mux_map_value[] = {
+	PGA_MUX_NONE,
+	PGA_MUX_AIN0,
+	PGA_MUX_AIN1,
+	PGA_MUX_AIN2,
 };
 
 static SOC_VALUE_ENUM_SINGLE_DECL(pga_left_mux_map_enum,
-				  AUDENC_ANA_CON0,
-				  RG_AUDPREAMPLINPUTSEL_SFT,
-				  RG_AUDPREAMPLINPUTSEL_MASK,
-				  pga_left_mux_map,
-				  pga_left_mux_map_value);
+				  SND_SOC_NOPM,
+				  0,
+				  PGA_MUX_MASK,
+				  pga_mux_map,
+				  pga_mux_map_value);
 
 static const struct snd_kcontrol_new pga_left_mux_control =
 	SOC_DAPM_ENUM("PGA L Select", pga_left_mux_map_enum);
 
 /* PGA R MUX */
-static const char * const pga_right_mux_map[] = {
-	"None", "AIN0", "AIN1", "AIN2"
-};
-
-static int pga_right_mux_map_value[] = {
-	0x0, 0x1, 0x2, 0x3,
-};
-
 static SOC_VALUE_ENUM_SINGLE_DECL(pga_right_mux_map_enum,
-				  AUDENC_ANA_CON1,
-				  RG_AUDPREAMPRINPUTSEL_SFT,
-				  RG_AUDPREAMPRINPUTSEL_MASK,
-				  pga_right_mux_map,
-				  pga_right_mux_map_value);
+				  SND_SOC_NOPM,
+				  0,
+				  PGA_MUX_MASK,
+				  pga_mux_map,
+				  pga_mux_map_value);
 
 static const struct snd_kcontrol_new pga_right_mux_control =
 	SOC_DAPM_ENUM("PGA R Select", pga_right_mux_map_enum);
@@ -737,10 +799,11 @@ static int mt_hp_event(struct snd_soc_dapm_widget *w,
 	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
 	int device = DEVICE_HP;
 
-	dev_info(priv->dev, "%s(), event 0x%x, dev_counter[DEV_HP] %d, mux value %u\n",
+	dev_info(priv->dev, "%s(), event 0x%x, dev_counter[DEV_HP] %d, mux %u\n",
 		 __func__,
 		 event,
-		 priv->dev_counter[device], dapm_kcontrol_get_value(w->kcontrols[0]));
+		 priv->dev_counter[device],
+		 dapm_kcontrol_get_value(w->kcontrols[0]));
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
@@ -946,7 +1009,8 @@ static int mt_hp_event(struct snd_soc_dapm_widget *w,
 		snd_soc_update_bits(codec, AUDDEC_ANA_CON10, 0xff, 0xa8);
 
 		/* Disable IBIST */
-		snd_soc_update_bits(codec, AUDDEC_ANA_CON12, 0x1 << 8, 0x1 << 8);
+		snd_soc_update_bits(codec, AUDDEC_ANA_CON12,
+				    0x1 << 8, 0x1 << 8);
 
 		/* Disable AUD_ZCD */
 		hp_zcd_disable(codec);
@@ -977,37 +1041,343 @@ static int mt_aif_out_event(struct snd_soc_dapm_widget *w,
 	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
 
 	dev_dbg(priv->dev, "%s(), event 0x%x, rate %d\n",
-		 __func__, event, priv->ul_rate);
+		__func__, event, priv->ul_rate);
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		/* enable audio ADC CLKGEN, 13MHz */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON3, 0xffff, 0x0001);
-
-		/* TODO: check dcc/acc/dmic */
-		/* dcclk_div=11'b00100000011, dcclk_ref_ck_sel=2'b00 */
-		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2062);
-		/* dcclk_pdn=1'b0 */
-		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2060);
-		/* dcclk_gen_on=1'b1 */
-		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2061);
-
+		set_capture_gpio(codec, true);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
-		/* dcclk_gen_on=1'b0 */
-		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0x0001, 0x2060);
-		/* Default Value, dcclk_pdn=1'b0 */
-		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x0fe2);
-
-
-		/* disable ADC CLK from CLKGEN (13MHz) */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON3, 0x0018, 0x0000);
-		/* disable audio ADC CLKGEN */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON3, 0x0061, 0x0000);
+		set_capture_gpio(codec, false);
 		break;
 	default:
 		break;
 	}
+
+	return 0;
+}
+
+static int mt_adc_supply_event(struct snd_soc_dapm_widget *w,
+			       struct snd_kcontrol *kcontrol,
+			       int event)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
+	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
+
+	dev_dbg(priv->dev, "%s(), event 0x%x\n",
+		__func__, event);
+
+	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+		/* Enable audio ADC CLKGEN  */
+		snd_soc_update_bits(codec, AUDDEC_ANA_CON13,
+				    0x1 << 5, 0x1 << 5);
+		/* ADC CLK from CLKGEN (13MHz) */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON3, 0xffff, 0x0000);
+		/* Enable  LCLDO_ENC 1P8V */
+		snd_soc_update_bits(codec, AUDDEC_ANA_CON14, 0x2500, 0x0100);
+		/* LCLDO_ENC remote sense */
+		snd_soc_update_bits(codec, AUDDEC_ANA_CON14, 0x2500, 0x2500);
+		break;
+	case SND_SOC_DAPM_POST_PMD:
+		/* LCLDO_ENC remote sense off */
+		snd_soc_update_bits(codec, AUDDEC_ANA_CON14, 0x2500, 0x0100);
+		/* disable LCLDO_ENC 1P8V */
+		snd_soc_update_bits(codec, AUDDEC_ANA_CON14, 0x2500, 0x0000);
+
+		/* ADC CLK from CLKGEN (13MHz) */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON3, 0xffff, 0x0000);
+		/* disable audio ADC CLKGEN  */
+		snd_soc_update_bits(codec, AUDDEC_ANA_CON13,
+				    0x1 << 5, 0x0 << 5);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int mt6358_enable_amic(struct snd_soc_codec *codec)
+{
+	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
+	unsigned int mic_type = priv->mux_select[MUX_MIC_TYPE];
+	unsigned int mux_pga_l = priv->mux_select[MUX_PGA_L];
+	unsigned int mux_pga_r = priv->mux_select[MUX_PGA_R];
+	int mic_gain_l = priv->ana_gain[AUDIO_ANALOG_VOLUME_MICAMP1];
+	int mic_gain_r = priv->ana_gain[AUDIO_ANALOG_VOLUME_MICAMP2];
+
+	dev_info(priv->dev, "%s(), mux, mic %u, pga l %u, pga r %u, mic_gain l %d, r %d\n",
+		 __func__, mic_type, mux_pga_l, mux_pga_r,
+		 mic_gain_l, mic_gain_r);
+
+	if (IS_DCC_BASE(mic_type)) {
+		/* DCC 50k CLK (from 26M) */
+		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2062);
+		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2062);
+		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2060);
+		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2061);
+		snd_soc_update_bits(codec, AFE_DCCLK_CFG1, 0xffff, 0x1105);
+	}
+
+	/* mic bias 0 */
+	if (mux_pga_l == PGA_MUX_AIN0 || mux_pga_l == PGA_MUX_AIN2 ||
+	    mux_pga_r == PGA_MUX_AIN0 || mux_pga_r == PGA_MUX_AIN2) {
+		/* Enable MICBIAS0, MISBIAS0 = 1P9V */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON9, 0xffff, 0x0021);
+	}
+
+	/* mic bias 1 */
+	if (mux_pga_l == PGA_MUX_AIN1 || mux_pga_r == PGA_MUX_AIN1) {
+		/* Enable MICBIAS1, MISBIAS1 = 2P6V */
+		if (mic_type == MIC_TYPE_MUX_DCC_ECM_SINGLE)
+			snd_soc_update_bits(codec, AUDENC_ANA_CON10,
+					    0xffff, 0x0161);
+		else
+			snd_soc_update_bits(codec, AUDENC_ANA_CON10,
+					    0xffff, 0x0061);
+	}
+
+	/* set mic pga gain */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON0,
+			    RG_AUDPREAMPLGAIN_MASK_SFT,
+			    mic_gain_l << RG_AUDPREAMPLGAIN_SFT);
+	snd_soc_update_bits(codec, AUDENC_ANA_CON1,
+			    RG_AUDPREAMPRGAIN_MASK_SFT,
+			    mic_gain_r << RG_AUDPREAMPRGAIN_SFT);
+
+	if (IS_DCC_BASE(mic_type)) {
+		/* Audio L/R preamplifier DCC precharge */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON0, 0xf8ff, 0x0004);
+		snd_soc_update_bits(codec, AUDENC_ANA_CON1, 0xf8ff, 0x0004);
+	} else {
+		/* reset reg */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON0, 0xf8ff, 0x0000);
+		snd_soc_update_bits(codec, AUDENC_ANA_CON1, 0xf8ff, 0x0000);
+	}
+
+	if (mux_pga_l != PGA_MUX_NONE) {
+		/* L preamplifier input sel */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON0,
+				    RG_AUDPREAMPLINPUTSEL_MASK_SFT,
+				    mux_pga_l << RG_AUDPREAMPLINPUTSEL_SFT);
+
+		/* L preamplifier enable */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON0,
+				    RG_AUDPREAMPLON_MASK_SFT,
+				    0x1 << RG_AUDPREAMPLON_SFT);
+
+		if (IS_DCC_BASE(mic_type)) {
+			/* L preamplifier DCCEN */
+			snd_soc_update_bits(codec, AUDENC_ANA_CON0,
+					    RG_AUDPREAMPLDCCEN_MASK_SFT,
+					    0x1 << RG_AUDPREAMPLDCCEN_SFT);
+		}
+
+		/* L ADC input sel : L PGA. Enable audio L ADC */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON0,
+				    RG_AUDADCLINPUTSEL_MASK_SFT,
+				    ADC_MUX_PREAMPLIFIER << RG_AUDADCLINPUTSEL_SFT);
+		snd_soc_update_bits(codec, AUDENC_ANA_CON0,
+				    RG_AUDADCLPWRUP_MASK_SFT,
+				    0x1 << RG_AUDADCLPWRUP_SFT);
+	}
+
+	if (mux_pga_r != PGA_MUX_NONE) {
+		/* R preamplifier input sel */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON1,
+				    RG_AUDPREAMPRINPUTSEL_MASK_SFT,
+				    mux_pga_r << RG_AUDPREAMPRINPUTSEL_SFT);
+
+		/* R preamplifier enable */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON1,
+				    RG_AUDPREAMPRON_MASK_SFT,
+				    0x1 << RG_AUDPREAMPRON_SFT);
+
+		if (IS_DCC_BASE(mic_type)) {
+			/* R preamplifier DCCEN */
+			snd_soc_update_bits(codec, AUDENC_ANA_CON1,
+					    RG_AUDPREAMPRDCCEN_MASK_SFT,
+					    0x1 << RG_AUDPREAMPRDCCEN_SFT);
+		}
+
+		/* R ADC input sel : R PGA. Enable audio R ADC */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON1,
+				    RG_AUDADCRINPUTSEL_MASK_SFT,
+				    ADC_MUX_PREAMPLIFIER << RG_AUDADCRINPUTSEL_SFT);
+		snd_soc_update_bits(codec, AUDENC_ANA_CON1,
+				    RG_AUDADCRPWRUP_MASK_SFT,
+				    0x1 << RG_AUDADCRPWRUP_SFT);
+	}
+
+	if (IS_DCC_BASE(mic_type)) {
+		usleep_range(100, 150);
+		/* Audio L preamplifier DCC precharge off */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON0,
+				    RG_AUDPREAMPLDCRPECHARGE_MASK_SFT, 0x0);
+		/* Audio R preamplifier DCC precharge off */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON1,
+				    RG_AUDPREAMPRDCRPECHARGE_MASK_SFT, 0x0);
+
+		/* Short body to VCM in PGA */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON7, 0xffff, 0x0400);
+	}
+
+	/* here to set digital part */
+	/* MTKAIF TX format setting */
+	snd_soc_update_bits(codec, PMIC_AFE_ADDA_MTKAIF_CFG0, 0xffff, 0x0000);
+
+	/* enable aud_pad TX fifos */
+	snd_soc_update_bits(codec, AFE_AUD_PAD_TOP, 0xff00, 0x3100);
+
+	/* UL dmic setting off */
+	snd_soc_update_bits(codec, AFE_UL_SRC_CON0_H, 0xffff, 0x0000);
+
+	/* UL turn on */
+	snd_soc_update_bits(codec, AFE_UL_SRC_CON0_L, 0xffff, 0x0001);
+
+	return 0;
+}
+
+static void mt6358_disable_amic(struct snd_soc_codec *codec)
+{
+	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
+	unsigned int mic_type = priv->mux_select[MUX_MIC_TYPE];
+	unsigned int mux_pga_l = priv->mux_select[MUX_PGA_L];
+	unsigned int mux_pga_r = priv->mux_select[MUX_PGA_R];
+	int mic_gain_l = priv->ana_gain[AUDIO_ANALOG_VOLUME_MICAMP1];
+	int mic_gain_r = priv->ana_gain[AUDIO_ANALOG_VOLUME_MICAMP2];
+
+	dev_info(priv->dev, "%s(), mux, mic %u, pga l %u, pga r %u, mic_gain l %d, r %d\n",
+		 __func__, mic_type, mux_pga_l, mux_pga_r,
+		 mic_gain_l, mic_gain_r);
+
+	/* UL turn off */
+	snd_soc_update_bits(codec, AFE_UL_SRC_CON0_L, 0x0001, 0x0000);
+
+	/* disable aud_pad TX fifos */
+	snd_soc_update_bits(codec, AFE_AUD_PAD_TOP, 0xff00, 0x3000);
+
+	if (IS_DCC_BASE(mic_type)) {
+		/* Disable Short body to VCM in PGA */
+		snd_soc_update_bits(codec, AUDENC_ANA_CON7, 0xffff, 0x0000);
+	}
+
+	/* L ADC input sel : off, disable L ADC */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON0, 0xf000, 0x0000);
+	/* L preamplifier DCCEN */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON0, 0x1 << 1, 0x0);
+	/* L preamplifier input sel : off, L PGA 0 dB gain */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON0, 0xfffb, 0x0000);
+
+	/* disable L preamplifier DCC precharge */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON0, 0x1 << 2, 0x0);
+
+	/* R ADC input sel : off, disable R ADC */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON1, 0xf000, 0x0000);
+	/* R preamplifier DCCEN */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON1, 0x1 << 1, 0x0);
+	/* R preamplifier input sel : off, R PGA 0 dB gain */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON1, 0x0ffb, 0x0000);
+
+	/* disable R preamplifier DCC precharge */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON1, 0x1 << 2, 0x0);
+
+	/* mic bias */
+	/* Disable MICBIAS0, MISBIAS0 = 1P7V */
+	snd_soc_update_bits(codec, AUDENC_ANA_CON9, 0xffff, 0x0000);
+
+	/* Disable MICBIAS1, MISBIAS1 = 1P7V */
+	if (mic_type == MIC_TYPE_MUX_DCC_ECM_SINGLE)
+		snd_soc_update_bits(codec, AUDENC_ANA_CON10, 0xffff, 0x0100);
+	else
+		snd_soc_update_bits(codec, AUDENC_ANA_CON10, 0xffff, 0x0000);
+
+	if (IS_DCC_BASE(mic_type)) {
+		/* dcclk_gen_on=1'b0 */
+		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2060);
+		/* dcclk_pdn=1'b1 */
+		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2062);
+		/* dcclk_ref_ck_sel=2'b00 */
+		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2062);
+		/* dcclk_div=11'b00100000011 */
+		snd_soc_update_bits(codec, AFE_DCCLK_CFG0, 0xffff, 0x2062);
+	}
+}
+
+static int mt6358_enable_dmic(struct snd_soc_codec *codec)
+{
+	return 0;
+}
+
+static void mt6358_disable_dmic(struct snd_soc_codec *codec)
+{
+}
+
+static int mt_mic_type_event(struct snd_soc_dapm_widget *w,
+			     struct snd_kcontrol *kcontrol,
+			     int event)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
+	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
+	unsigned int mux = dapm_kcontrol_get_value(w->kcontrols[0]);
+
+	dev_dbg(priv->dev, "%s(), event 0x%x, mux %u\n",
+		__func__, event, mux);
+
+	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+		priv->mux_select[MUX_MIC_TYPE] = mux;
+
+		if (mux != MIC_TYPE_MUX_DMIC)
+			mt6358_enable_amic(codec);
+		else
+			mt6358_enable_dmic(codec);
+
+		break;
+	case SND_SOC_DAPM_POST_PMD:
+		if (mux != MIC_TYPE_MUX_DMIC)
+			mt6358_disable_amic(codec);
+		else
+			mt6358_disable_dmic(codec);
+
+		priv->mux_select[MUX_MIC_TYPE] = mux;
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int mt_adc_l_event(struct snd_soc_dapm_widget *w,
+			  struct snd_kcontrol *kcontrol,
+			  int event)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
+	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
+	unsigned int mux = dapm_kcontrol_get_value(w->kcontrols[0]);
+
+	dev_dbg(priv->dev, "%s(), event = 0x%x, mux %u\n",
+		__func__, event, mux);
+
+	priv->mux_select[MUX_ADC_L] = mux;
+
+	return 0;
+}
+
+static int mt_adc_r_event(struct snd_soc_dapm_widget *w,
+			  struct snd_kcontrol *kcontrol,
+			  int event)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
+	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
+	unsigned int mux = dapm_kcontrol_get_value(w->kcontrols[0]);
+
+	dev_dbg(priv->dev, "%s(), event = 0x%x, mux %u\n",
+		__func__, event, mux);
+
+	priv->mux_select[MUX_ADC_R] = mux;
 
 	return 0;
 }
@@ -1018,37 +1388,13 @@ static int mt_pga_left_event(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
 	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
-	int pga_gain = priv->ana_gain[AUDIO_ANALOG_VOLUME_MICAMP1];
+	unsigned int mux = dapm_kcontrol_get_value(w->kcontrols[0]);
 
-	dev_dbg(priv->dev, "%s(), event = 0x%x\n", __func__, event);
+	dev_dbg(priv->dev, "%s(), event = 0x%x, mux %u\n",
+		__func__, event, mux);
 
-	switch (event) {
-	case SND_SOC_DAPM_PRE_PMU:
-		/* TODO: check dcc/acc/dmic */
-		/* Audio L PGA precharge on */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON0,
-				    0x1 << RG_AUDPREAMPLDCPRECHARGE,
-				    0x1 << RG_AUDPREAMPLDCPRECHARGE);
-		/* Audio L PGA mode: 1_DCC */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON0,
-				    0x1 << RG_AUDPREAMPLDCCEN,
-				    0x1 << RG_AUDPREAMPLDCCEN);
+	priv->mux_select[MUX_PGA_L] = mux;
 
-		/* set L pga gain */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON0,
-				    0x3 << 8,
-				    pga_gain << 8);
-		break;
-	case SND_SOC_DAPM_POST_PMU:
-		udelay(100);
-		/* Audio L PGA precharge off */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON0,
-				    0x3 << RG_AUDPREAMPLDCPRECHARGE,
-				    0x0 << RG_AUDPREAMPLDCPRECHARGE);
-		break;
-	default:
-		break;
-	}
 	return 0;
 }
 
@@ -1058,99 +1404,13 @@ static int mt_pga_right_event(struct snd_soc_dapm_widget *w,
 {
 	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
 	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
-	int pga_gain = priv->ana_gain[AUDIO_ANALOG_VOLUME_MICAMP2];
+	unsigned int mux = dapm_kcontrol_get_value(w->kcontrols[0]);
 
-	dev_dbg(priv->dev, "%s(), event = 0x%x\n", __func__, event);
+	dev_dbg(priv->dev, "%s(), event = 0x%x, mux %u\n",
+		__func__, event, mux);
 
-	switch (event) {
-	case SND_SOC_DAPM_PRE_PMU:
-		/* TODO: check dcc/acc/dmic */
-		/* Audio R PGA precharge on */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON1,
-				    0x1 << RG_AUDPREAMPRDCPRECHARGE,
-				    0x1 << RG_AUDPREAMPRDCPRECHARGE);
-		/* Audio R PGA mode: 1_DCC */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON1,
-				    0x1 << RG_AUDPREAMPRDCCEN,
-				    0x1 << RG_AUDPREAMPRDCCEN);
+	priv->mux_select[MUX_PGA_R] = mux;
 
-		/* set R pga gain */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON1,
-				    0x3 << 8,
-				    pga_gain << 8);
-		break;
-	case SND_SOC_DAPM_POST_PMU:
-		udelay(100);
-		/* Audio R PGA precharge off */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON1,
-				    0x3 << RG_AUDPREAMPRDCPRECHARGE,
-				    0x0 << RG_AUDPREAMPRDCPRECHARGE);
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
-
-static int mt_mic_bias_0_event(struct snd_soc_dapm_widget *w,
-			       struct snd_kcontrol *kcontrol,
-			       int event)
-{
-	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
-	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
-
-	dev_dbg(priv->dev, "%s(), event = 0x%x\n", __func__, event);
-
-	switch (event) {
-	case SND_SOC_DAPM_PRE_PMU:
-		/* MIC Bias 0 LowPower: 0_Normal */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON10,
-				    0x1 << RG_AUDMICBIAS0LOWPEN, 0x0);
-		/* MISBIAS0 = 1P9V */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON10,
-				    0x7 << RG_AUDMICBIAS0VREF,
-				    0x2 << RG_AUDMICBIAS0VREF);
-		break;
-	case SND_SOC_DAPM_POST_PMD:
-		/* MISBIAS0 = 1P97 */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON10,
-				    0x7 << RG_AUDMICBIAS0VREF,
-				    0x0 << RG_AUDMICBIAS0VREF);
-		break;
-	default:
-		break;
-	}
-	return 0;
-}
-
-static int mt_mic_bias_1_event(struct snd_soc_dapm_widget *w,
-			       struct snd_kcontrol *kcontrol,
-			       int event)
-{
-	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
-	struct mt6358_priv *priv = snd_soc_codec_get_drvdata(codec);
-
-	dev_dbg(priv->dev, "%s(), event = 0x%x\n", __func__, event);
-
-	switch (event) {
-	case SND_SOC_DAPM_PRE_PMU:
-		/* MIC Bias 1 LowPower: 0_Normal */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON11,
-				    0x1 << RG_AUDMICBIAS1LOWPEN, 0x0);
-		/* MISBIAS1 = 2P7V */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON11,
-				    0x7 << RG_AUDMICBIAS1VREF,
-				    0x7 << RG_AUDMICBIAS1VREF);
-		break;
-	case SND_SOC_DAPM_POST_PMD:
-		/* MISBIAS1 = 1P7V */
-		snd_soc_update_bits(codec, AUDENC_ANA_CON11,
-				    0x7 << RG_AUDMICBIAS1VREF,
-				    0x0 << RG_AUDMICBIAS1VREF);
-		break;
-	default:
-		break;
-	}
 	return 0;
 }
 
@@ -1308,61 +1568,48 @@ static const struct snd_soc_dapm_widget mt6358_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("SGEN DL"),
 
 	/* Uplinks */
-	SND_SOC_DAPM_AIF_OUT_E("AIF1TX", "AIF1 Capture", 0, AFE_UL_SRC_CON0_L,
-			       UL_SRC_ON_TMP_CTL_SFT, 0,
+	SND_SOC_DAPM_AIF_OUT_E("AIF1TX", "AIF1 Capture", 0,
+			       SND_SOC_NOPM, 0, 0,
 			       mt_aif_out_event,
 			       SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+
+	SND_SOC_DAPM_SUPPLY_S("ADC Supply", SUPPLY_SEQ_ADC_SUPPLY,
+			      SND_SOC_NOPM, 0, 0,
+			      mt_adc_supply_event,
+			      SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 
 	/* Uplinks MUX */
 	SND_SOC_DAPM_MUX("AIF Out Mux", SND_SOC_NOPM, 0, 0,
 			 &aif_out_mux_control),
 
-	SND_SOC_DAPM_MUX("ADC L Mux", SND_SOC_NOPM, 0, 0,
-			 &adc_left_mux_control),
-	SND_SOC_DAPM_MUX("ADC R Mux", SND_SOC_NOPM, 0, 0,
-			 &adc_right_mux_control),
+	SND_SOC_DAPM_MUX_E("Mic Type Mux", SND_SOC_NOPM, 0, 0,
+			   &mic_type_mux_control,
+			   mt_mic_type_event,
+			   SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 
-	SND_SOC_DAPM_ADC("ADC L", NULL,
-			 AUDENC_ANA_CON0, RG_AUDADCLPWRUP, 0),
-	SND_SOC_DAPM_ADC("ADC R", NULL,
-			 AUDENC_ANA_CON1, RG_AUDADCRPWRUP, 0),
+	SND_SOC_DAPM_MUX_E("ADC L Mux", SND_SOC_NOPM, 0, 0,
+			   &adc_left_mux_control,
+			   mt_adc_l_event,
+			   SND_SOC_DAPM_WILL_PMU),
+	SND_SOC_DAPM_MUX_E("ADC R Mux", SND_SOC_NOPM, 0, 0,
+			   &adc_right_mux_control,
+			   mt_adc_r_event,
+			   SND_SOC_DAPM_WILL_PMU),
 
-	SND_SOC_DAPM_MUX("PGA L Mux", SND_SOC_NOPM, 0, 0,
-			 &pga_left_mux_control),
-	SND_SOC_DAPM_MUX("PGA R Mux", SND_SOC_NOPM, 0, 0,
-			 &pga_right_mux_control),
+	SND_SOC_DAPM_ADC("ADC L", NULL, SND_SOC_NOPM, 0, 0),
+	SND_SOC_DAPM_ADC("ADC R", NULL, SND_SOC_NOPM, 0, 0),
 
-	SND_SOC_DAPM_PGA_E("PGA L", AUDENC_ANA_CON0, RG_AUDPREAMPLON, 0,
-			   NULL, 0,
+	SND_SOC_DAPM_MUX_E("PGA L Mux", SND_SOC_NOPM, 0, 0,
+			   &pga_left_mux_control,
 			   mt_pga_left_event,
-			   SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU),
-	SND_SOC_DAPM_PGA_E("PGA R", AUDENC_ANA_CON1, RG_AUDPREAMPRON, 0,
-			   NULL, 0,
+			   SND_SOC_DAPM_WILL_PMU),
+	SND_SOC_DAPM_MUX_E("PGA R Mux", SND_SOC_NOPM, 0, 0,
+			   &pga_right_mux_control,
 			   mt_pga_right_event,
-			   SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU),
+			   SND_SOC_DAPM_WILL_PMU),
 
-	/* mic bias */
-	SND_SOC_DAPM_SUPPLY_S("Mic Bias 0_2", SUPPLY_SEQ_PRE_MICBIAS,
-			      SND_SOC_NOPM, 0, 0,
-			      mt_mic_bias_0_event,
-			      SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
-
-	SND_SOC_DAPM_SUPPLY_S("Mic Bias 0", SUPPLY_SEQ_MICBIAS,
-			      AUDENC_ANA_CON10, RG_AUDPWDBMICBIAS0, 0,
-			      NULL, 0),
-
-	SND_SOC_DAPM_SUPPLY_S("Mic Bias 2", SUPPLY_SEQ_MICBIAS,
-			      AUDENC_ANA_CON10, RG_AUDPWDBMICBIAS2, 0,
-			      NULL, 0),
-
-	SND_SOC_DAPM_SUPPLY_S("Mic Bias 1", SUPPLY_SEQ_MICBIAS,
-			      AUDENC_ANA_CON11, RG_AUDPWDBMICBIAS1, 0,
-			      mt_mic_bias_1_event,
-			      SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
-
-	SND_SOC_DAPM_SUPPLY_S("Mic Bias 1 DCC switch 1P", SUPPLY_SEQ_MICBIAS,
-			      AUDENC_ANA_CON11, RG_AUDMICBIAS1DCSW1PEN, 0,
-			      NULL, 0),
+	SND_SOC_DAPM_PGA("PGA L", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_PGA("PGA R", SND_SOC_NOPM, 0, 0, NULL, 0),
 
 	/* UL input */
 	SND_SOC_DAPM_INPUT("AIN0"),
@@ -1377,6 +1624,9 @@ static const struct snd_soc_dapm_route mt6358_dapm_routes[] = {
 		{"AIF1TX", NULL, "AUDGLB"},
 		{"AIF1TX", NULL, "CLKSQ Audio"},
 
+		{"AIF1TX", NULL, "AUD_CK"},
+		{"AIF1TX", NULL, "AUDIF_CK"},
+
 		{"AIF1TX", NULL, "AUDIO_TOP_AFE_CTL"},
 		{"AIF1TX", NULL, "AUDIO_TOP_ADC_CTL"},
 		{"AIF1TX", NULL, "AUDIO_TOP_BUCKOSC_CTL"},
@@ -1384,24 +1634,27 @@ static const struct snd_soc_dapm_route mt6358_dapm_routes[] = {
 		{"AIF1TX", NULL, "AUDIO_TOP_PDN_RESERVED"},
 		{"AIF1TX", NULL, "AUDIO_TOP_CK_DIV_RST"},
 		{"AIF1TX", NULL, "AUDIO_TOP_I2S_DL"},
-		{"AIF1TX", NULL, "AUDIO_TOP_PDN_AFE_TESTMODEL"}, /* only sgen need this ? */
 
 		{"AIF1TX", NULL, "AFE_ON"},
 
-	{"AIF Out Mux", "Normal Path", "ADC L"},
-	{"AIF Out Mux", "Normal Path", "ADC R"},
+	{"AIF Out Mux", NULL, "Mic Type Mux"},
+
+	{"Mic Type Mux", "ACC", "ADC L"},
+	{"Mic Type Mux", "ACC", "ADC R"},
+	{"Mic Type Mux", "DCC", "ADC L"},
+	{"Mic Type Mux", "DCC", "ADC R"},
+	{"Mic Type Mux", "DCC_ECM_DIFF", "ADC L"},
+	{"Mic Type Mux", "DCC_ECM_DIFF", "ADC R"},
+	{"Mic Type Mux", "DCC_ECM_SINGLE", "ADC L"},
+	{"Mic Type Mux", "DCC_ECM_SINGLE", "ADC R"},
 
 	{"ADC L", NULL, "ADC L Mux"},
-		{"ADC L", NULL, "AUD_CK"},
-		{"ADC L", NULL, "AUDIF_CK"},
+		{"ADC L", NULL, "ADC Supply"},
 	{"ADC R", NULL, "ADC R Mux"},
-		{"ADC R", NULL, "AUD_CK"},
-		{"ADC R", NULL, "AUDIF_CK"},
+		{"ADC R", NULL, "ADC Supply"},
 
-	{"ADC L Mux", "AIN0", "AIN0"},
 	{"ADC L Mux", "Left Preamplifier", "PGA L"},
 
-	{"ADC R Mux", "AIN0", "AIN0"},
 	{"ADC R Mux", "Right Preamplifier", "PGA R"},
 
 	{"PGA L", NULL, "PGA L Mux"},
@@ -1414,14 +1667,6 @@ static const struct snd_soc_dapm_route mt6358_dapm_routes[] = {
 	{"PGA R Mux", "AIN0", "AIN0"},
 	{"PGA R Mux", "AIN1", "AIN1"},
 	{"PGA R Mux", "AIN2", "AIN2"},
-
-	{"AIN0", NULL, "Mic Bias 0"},
-	{"AIN2", NULL, "Mic Bias 2"},
-		{"Mic Bias 0", NULL, "Mic Bias 0_2"},
-		{"Mic Bias 2", NULL, "Mic Bias 0_2"},
-
-	{"AIN1", NULL, "Mic Bias 1"},
-	{"AIN1", NULL, "Mic Bias 1 DCC switch 1P"},
 
 	/* DL Supply */
 	{"DL Power Supply", NULL, "CLK_BUF"},
@@ -1622,6 +1867,8 @@ static bool is_readable_reg(struct device *dev, unsigned int reg)
 	switch (reg) {
 	case DRV_CON3:
 	case GPIO_DIR0:
+	case GPIO_MODE2:
+	case GPIO_MODE3:
 	case TOP_CKPDN_CON0:
 	case TOP_CKHWEN_CON0:
 	case TOP_CLKSQ:
