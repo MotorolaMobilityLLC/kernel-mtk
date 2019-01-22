@@ -97,7 +97,7 @@ static long long last_update_ts;
 static void reset_fps_level(void);
 static int set_soft_fps_level(int nr_level, struct fps_level *level);
 
-static struct mutex fstb_lock;
+static DEFINE_MUTEX(fstb_lock);
 
 
 static int calculate_fps_limit(int target_fps);
@@ -1531,8 +1531,6 @@ int mtk_fstb_init(void)
 
 	ged_kpi_output_gfx_info2_fp = gpu_time_update;
 
-	mutex_init(&fstb_lock);
-
 
 	/* create debugfs file */
 	if (!fpsgo_debugfs_dir)
@@ -1612,7 +1610,7 @@ err:
 	return -1;
 }
 
-int mtk_fstb_exit(void)
+int __exit mtk_fstb_exit(void)
 {
 	mtk_fstb_dprintk("exit\n");
 
