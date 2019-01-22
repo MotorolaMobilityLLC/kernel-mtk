@@ -36,7 +36,8 @@ extern struct single_cma_registration memory_lowpower_registration;
 /* Priority of ZONE_MOVABLE_CMA users */
 enum zmc_prio {
 	ZMC_SSVP,
-	ZMC_MLP,
+	ZMC_CHECK_MEM_STAT,
+	ZMC_MLP = ZMC_CHECK_MEM_STAT,
 	NR_ZMC_OWNER,
 };
 
