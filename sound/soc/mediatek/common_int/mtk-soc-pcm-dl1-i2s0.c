@@ -100,7 +100,7 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
 	bool ret = false;
-	int samplerate = 0;
+	static int samplerate;
 	uint32 u32AudioI2sOut = 0;
 	uint32 u32Audio2ndI2sIn = 0;
 
