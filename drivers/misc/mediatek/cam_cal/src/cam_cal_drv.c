@@ -613,10 +613,10 @@ static int cam_cal_drv_open(struct inode *a_pstInode, struct file *a_pstFile)
 		spin_unlock(&g_spinLock);
 		CAM_CALDB("Opened, return -EBUSY\n");
 		ret = -EBUSY;
-	} else
+	} else {
 		g_drvOpened = 1;
-
-	spin_unlock(&g_spinLock);
+		spin_unlock(&g_spinLock);
+	}
 	mdelay(2);
 
 	return ret;
