@@ -1659,7 +1659,8 @@ static int decide_ttj(void)
 static void mtk_thermal_get_turbo(void)
 {
 
-	g_turbo_bin = (get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 3) & 0x1;
+	g_turbo_bin = ((get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 3) & 0x1)
+		| ((get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 6) & 0x1);
 
 	tscpu_printk("%s: turbo: %d\n", __func__, g_turbo_bin);
 }
