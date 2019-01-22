@@ -95,6 +95,7 @@ config MTK_POWER_GS
 config MTK_MEMORY_LOWPOWER
 	bool "Support Mediatek memory lowpower technology"
 	depends on CMA && ZONE_MOVABLE_CMA
+	default n
 	help
 	  Mediatek DRAM low power technology.
 	  It tries to safe DRAM power by switching
@@ -104,6 +105,7 @@ config MTK_MEMORY_LOWPOWER
 config MTK_DCS
 	bool "Support Mediatek DDRPHY DCS mechanism"
 	depends on MTK_MEMORY_LOWPOWER
+	default n
 	help
 	  Mediatek DDRPHY DCS mechanism.
 	  It tries to turn off free DDRPHY's power/clock.
@@ -113,6 +115,7 @@ config MTK_DCS
 config MTK_PASR
 	bool "Support Mediatek DRAM PASR mechanism"
 	depends on MTK_MEMORY_LOWPOWER
+	default n
 	help
 	  Mediatek DRAM PASR mechanism.
 	  It tries to turn off free DRAM segment's self-refresh.
