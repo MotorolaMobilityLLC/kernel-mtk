@@ -15,6 +15,7 @@
 #include "inc/aal_control.h"
 struct alsps_context *alsps_context_obj/* = NULL*/;
 struct platform_device *pltfm_dev;
+int last_als_report_data = -1;
 
 /* AAL default delay timer(nano seconds)*/
 #define AAL_DELAY	200000000
@@ -38,12 +39,15 @@ int als_data_report(int value, int status)
 			ALSPS_ERR("event buffer full, so drop this data\n");
 		cxt->is_get_valid_als_data_after_enable = true;
 	}
-	event.flush_action = DATA_ACTION;
-	event.word[0] = value;
-	event.status = status;
-	err = sensor_input_event(cxt->als_mdev.minor, &event);
-	if (err < 0)
-		ALSPS_ERR("event buffer full, so drop this data\n");
+	if (value != last_als_report_data) {
+		event.flush_action = DATA_ACTION;
+		event.word[0] = value;
+		event.status = status;
+		err = sensor_input_event(cxt->als_mdev.minor, &event);
+		if (err < 0)
+			ALSPS_ERR("event buffer full, so drop this data\n");
+		last_als_report_data = value;
+	}
 	return err;
 }
 
@@ -346,6 +350,7 @@ static ssize_t als_store_active(struct device *dev, struct device_attribute *att
 
 	if (!strncmp(buf, "1", 1)) {
 		cxt->als_enable = 1;
+		last_als_report_data = -1;
 		cxt->is_als_active_data = true;
 	} else if (!strncmp(buf, "0", 1)) {
 		cxt->als_enable = 0;
