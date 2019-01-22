@@ -30,13 +30,13 @@
 
 extern bool is_already_snap_shot;
 
-typedef enum {
+enum {
 	MODE_NORMAL,
 	MODE_COMPARE,
 	MODE_APPLY,
 	MODE_COLOR,
 	MODE_DIFF,
-} print_mode;
+};
 
 struct golden_setting {
 	unsigned int addr;
@@ -53,7 +53,7 @@ struct snapshot {
 struct golden {
 	unsigned int is_golden_log;
 
-	print_mode mode;
+	unsigned int mode;
 
 	char func[64];
 	unsigned int line;

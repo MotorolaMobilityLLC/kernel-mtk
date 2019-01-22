@@ -16,12 +16,12 @@
 
 #include "mtk_static_power.h"
 
-typedef struct spower_raw_s {
+struct spower_raw_t {
 	int vsize;
 	int tsize;
 	int table_size;
 	int *table[3];
-} spower_raw_t;
+};
 
 
 #if defined(CONFIG_MACH_MT6799)
@@ -32,23 +32,23 @@ typedef struct spower_raw_s {
 #include "mtk_spower_data_mt6759.h"
 #endif
 
-typedef struct voltage_row_s {
+struct vrow_t {
 	int mV[VSIZE];
-} vrow_t;
+};
 
-typedef struct temperature_row_s {
+struct trow_t {
 	int deg;
 	int mA[VSIZE];
-} trow_t;
+};
 
 
-typedef struct sptab_s {
+struct sptbl_t {
 	int vsize;
 	int tsize;
 	int *data;	/* array[VSIZE + TSIZE + (VSIZE*TSIZE)] */
-	vrow_t *vrow;	/* pointer to voltage row of data */
-	trow_t *trow;	/* pointer to temperature row of data */
-} sptbl_t;
+	struct vrow_t *vrow;	/* pointer to voltage row of data */
+	struct trow_t *trow;	/* pointer to temperature row of data */
+};
 
 #define trow(tab, ti)		((tab)->trow[ti])
 #define mA(tab, vi, ti)		((tab)->trow[ti].mA[vi])
@@ -58,17 +58,17 @@ typedef struct sptab_s {
 #define tsize(tab)		((tab)->tsize)
 #define tab_validate(tab)	(!!(tab) && (tab)->data != NULL)
 
-static inline void spower_tab_construct(sptbl_t (*tab)[], spower_raw_t *raw)
+static inline void spower_tab_construct(struct sptbl_t (*tab)[], struct spower_raw_t *raw)
 {
 	int i;
-	sptbl_t *ptab = (sptbl_t *)tab;
+	struct sptbl_t *ptab = (struct sptbl_t *)tab;
 
 	for (i = 0; i < raw->table_size; i++) {
 		ptab->vsize = raw->vsize;
 		ptab->tsize = raw->tsize;
 		ptab->data = raw->table[i];
-		ptab->vrow = (vrow_t *)ptab->data;
-		ptab->trow = (trow_t *)(ptab->data + ptab->vsize);
+		ptab->vrow = (struct vrow_t *)ptab->data;
+		ptab->trow = (struct trow_t *)(ptab->data + ptab->vsize);
 		ptab++;
 	}
 }
