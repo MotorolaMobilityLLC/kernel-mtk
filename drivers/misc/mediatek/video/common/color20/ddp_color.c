@@ -1034,14 +1034,14 @@ DISPLAY_TDSHP_T *get_TDSHP_index(void)
 
 static void _color_reg_set(void *__cmdq, unsigned long addr, unsigned int value)
 {
-	cmdqRecHandle cmdq = (cmdqRecHandle) __cmdq;
+	struct cmdqRecStruct cmdq = (struct cmdqRecStruct) __cmdq;
 
 	DISP_REG_SET(cmdq, addr, value);
 }
 
 static void _color_reg_mask(void *__cmdq, unsigned long addr, unsigned int value, unsigned int mask)
 {
-	cmdqRecHandle cmdq = (cmdqRecHandle) __cmdq;
+	struct cmdqRecStruct cmdq = (struct cmdqRecStruct) __cmdq;
 
 	DISP_REG_MASK(cmdq, addr, value, mask);
 }
@@ -1049,7 +1049,7 @@ static void _color_reg_mask(void *__cmdq, unsigned long addr, unsigned int value
 static void _color_reg_set_field(void *__cmdq, unsigned int field_mask, unsigned long addr,
 				 unsigned int value)
 {
-	cmdqRecHandle cmdq = (cmdqRecHandle) __cmdq;
+	struct cmdqRecStruct cmdq = (struct cmdqRecStruct) __cmdq;
 
 	DISP_REG_SET_FIELD(cmdq, field_mask, addr, value);
 }

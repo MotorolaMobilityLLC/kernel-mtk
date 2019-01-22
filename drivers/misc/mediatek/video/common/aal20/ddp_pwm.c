@@ -204,7 +204,7 @@ static void disp_pwm_set_drverIC_en(disp_pwm_id_t id, int enabled)
 }
 
 
-static void disp_pwm_set_enabled(cmdqRecHandle cmdq, disp_pwm_id_t id, int enabled)
+static void disp_pwm_set_enabled(struct cmdqRecStruct cmdq, disp_pwm_id_t id, int enabled)
 {
 	unsigned long reg_base = pwm_get_reg_base(id);
 
