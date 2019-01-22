@@ -221,7 +221,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta)
 
 #ifdef CONFIG_MTK_CCCI_DEVICES
 	/* if (wakesta->r13 & 0x18) { */
-		spm_crit2("dump ID_DUMP_MD_SLEEP_MODE");
+		/* spm_crit2("dump ID_DUMP_MD_SLEEP_MODE"); */
 		exec_ccci_kern_func_by_md_id(0, ID_DUMP_MD_SLEEP_MODE, NULL, 0);
 	/* } */
 #endif
