@@ -982,6 +982,7 @@ static void fstb_fps_stats(struct work_struct *work)
 
 	fpsgo_check_thread_status();
 	fpsgo_fstb2xgf_do_recycle(fstb_active2xgf);
+	fpsgo_create_render_dep();
 }
 
 static int set_soft_fps_level(int nr_level, struct fps_level *level)

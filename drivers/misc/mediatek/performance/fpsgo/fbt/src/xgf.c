@@ -769,6 +769,8 @@ query_err:
 	return ret;
 }
 
+void fpsgo_update_render_dep(struct task_struct *p) { }
+
 #define FPSGO_DEBUGFS_ENTRY(name) \
 static int fpsgo_##name##_open(struct inode *i, struct file *file) \
 { \

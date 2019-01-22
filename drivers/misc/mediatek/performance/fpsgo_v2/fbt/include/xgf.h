@@ -61,6 +61,11 @@ struct xgf_proc {
 	unsigned long long slptime;
 	unsigned long long quetime;
 	unsigned long long deqtime;
+
+	struct rb_root deps_rec;
+	int render_thread_called_count;
+	int has_increase_thread_count;
+	int total_increase_count;
 };
 
 struct xgf_timer {
@@ -75,6 +80,30 @@ struct xgf_timer {
 	};
 };
 
+struct xgf_deps {
+	struct rb_node rb_node;
+	pid_t tid;
+	int render_pre_count;
+	int render_count;
+	int render_dep;
+	int render_dep_deep;
+	int has_increase;
+
+	struct xgf_tick queue;
+	struct xgf_tick deque;
+
+	unsigned long long slptime;
+	unsigned long long quetime;
+	unsigned long long deqtime;
+};
+
+struct render_dep {
+	pid_t currentpid;
+	pid_t currenttgid;
+	pid_t becalledpid;
+	pid_t becalledtgid;
+};
+
 extern int (*xgf_est_slptime_fp)(struct xgf_proc *proc,
 		unsigned long long *slptime, struct xgf_tick *ref,
 		struct xgf_tick *now, pid_t r_pid);
@@ -84,6 +113,9 @@ int xgf_est_slptime(struct xgf_proc *proc, unsigned long long *slptime,
 		    struct xgf_tick *ref, struct xgf_tick *now, pid_t r_pid);
 void xgf_trace(const char *fmt, ...);
 void xgf_reset_render(struct xgf_proc *proc);
+int has_xgf_dep(pid_t tid);
+int xgf_dep_counts(void);
+
 
 void *xgf_kzalloc(size_t size);
 void xgf_kfree(const void *block);
@@ -91,6 +123,7 @@ void xgf_kfree(const void *block);
 void fpsgo_ctrl2xgf_switch_xgf(int val);
 int fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd, unsigned long long *sleep_time);
 void fpsgo_fstb2xgf_do_recycle(int fstb_active);
+void fpsgo_create_render_dep(void);
 
 int __init init_xgf(void);
 
