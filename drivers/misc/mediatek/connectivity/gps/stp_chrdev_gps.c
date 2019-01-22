@@ -50,7 +50,7 @@ MODULE_LICENSE("GPL");
 #define COMBO_IOC_D1_EFUSE_GET       9
 #define COMBO_IOC_RTC_FLAG	     10
 #define COMBO_IOC_CO_CLOCK_FLAG	     11
-
+#define COMBO_IOC_TRIGGER_WMT_ASSERT 12
 
 static UINT32 gDbgLevel = GPS_LOG_DBG;
 
@@ -344,6 +344,19 @@ long GPS_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #else
 		GPS_ERR_FUNC("Read Efuse not supported in this platform\n");
 #endif
+		break;
+
+	case COMBO_IOC_TRIGGER_WMT_ASSERT:
+		/* Trigger FW assert for debug */
+		GPS_INFO_FUNC("%s: Host trigger FW assert......, reason:%lu\n", __func__, arg);
+		retval = mtk_wcn_wmt_assert(WMTDRV_TYPE_GPS, arg);
+		if (retval == MTK_WCN_BOOL_TRUE) {
+			GPS_INFO_FUNC("Host trigger FW assert succeed\n");
+			retval = 0;
+		} else {
+			GPS_ERR_FUNC("Host trigger FW assert Failed\n");
+			retval = (-EBUSY);
+		}
 		break;
 
 	default:
