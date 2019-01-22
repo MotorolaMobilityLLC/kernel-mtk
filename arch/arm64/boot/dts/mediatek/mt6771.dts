@@ -4171,6 +4171,12 @@
 	usb_c_pinctrl: usb_c_pinctrl {
 	};
 
+	ssusb_ip_sleep: ssusb_ip_sleep {
+		compatible = "mediatek,usb_ipsleep";
+		interrupt-parent = <&pio>;
+		interrupts = <179 IRQ_TYPE_LEVEL_LOW 187 0>;
+		status = "okay";
+	};
 };
 
 #include "mt6358.dtsi"

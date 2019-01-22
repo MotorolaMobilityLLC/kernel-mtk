@@ -1367,12 +1367,93 @@ MODULE_AUTHOR("MediaTek");
 MODULE_LICENSE("GPL v2");
 module_platform_driver(mt_usb_dts_driver);
 
+static int usb_ipsleep_irqnum;
+static int usb_ipsleep_init;
+
+void mask_ipsleep(void)
+{
+	disable_irq(usb_ipsleep_irqnum);
+}
+
+void unmask_ipsleep(void)
+{
+	enable_irq(usb_ipsleep_irqnum);
+}
+
 void enable_ipsleep_wakeup(void)
 {
-	/* TODO */
+	if (usb_ipsleep_init)
+		unmask_ipsleep();
 }
+
 void disable_ipsleep_wakeup(void)
 {
-	/* TODO */
 }
+
+static irqreturn_t musb_ipsleep_eint_isr(int irqnum, void *data)
+{
+	disable_irq_nosync(irqnum);
+	return IRQ_HANDLED;
+}
+
+static int mtk_usb_ipsleep_eint_irq_en(struct platform_device *pdev)
+{
+	int retval = 0;
+
+	retval = request_irq(usb_ipsleep_irqnum, musb_ipsleep_eint_isr,
+						 IRQF_TRIGGER_NONE, "usbcd_eint", pdev);
+	if (retval != 0)
+		os_printk(K_ERR, "usbcd request_irq fail, ret %d, irqnum %d!!!\n",
+				  retval, usb_ipsleep_irqnum);
+	else
+		enable_irq_wake(usb_ipsleep_irqnum);
+
+	return retval;
+}
+static int mt_usb_ipsleep_probe(struct platform_device *pdev)
+{
+	int retval = 0;
+	struct device *dev = &pdev->dev;
+	struct device_node *node = dev->of_node;
+
+	usb_ipsleep_irqnum = irq_of_parse_and_map(node, 0);
+
+	if (usb_ipsleep_irqnum < 0)
+		return -ENODEV;
+
+	retval = mtk_usb_ipsleep_eint_irq_en(pdev);
+	if (retval != 0)
+		goto irqfail;
+
+	usb_ipsleep_init = 1;
+irqfail:
+	os_printk(K_INFO, "mt_usb_ipsleep_probe done\n");
+	return retval;
+}
+
+static int mt_usb_ipsleep_remove(struct platform_device *pdev)
+{
+	free_irq(usb_ipsleep_irqnum, pdev);
+	return 0;
+}
+
+static const struct of_device_id usb_ipsleep_of_match[] = {
+	{.compatible = "mediatek,usb_ipsleep"},
+	{},
+};
+
+MODULE_DEVICE_TABLE(of, usb_ipsleep_of_match);
+static struct platform_driver mt_usb_ipsleep_driver = {
+	.remove = mt_usb_ipsleep_remove,
+	.probe = mt_usb_ipsleep_probe,
+	.driver = {
+		.name = "usb_ipsleep",
+		.of_match_table = usb_ipsleep_of_match,
+	},
+};
+
+MODULE_DESCRIPTION("musb ipsleep eint");
+MODULE_AUTHOR("MediaTek");
+MODULE_LICENSE("GPL v2");
+module_platform_driver(mt_usb_ipsleep_driver);
 #endif
