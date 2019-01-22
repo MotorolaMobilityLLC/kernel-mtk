@@ -35,6 +35,7 @@
 #include <linux/spinlock.h>
 #include <linux/timer.h>
 #include <linux/atomic.h>
+#include <linux/fb.h>
 #include <asm/irqflags.h>
 
 /* hwzram impl header file */
@@ -64,6 +65,10 @@ struct clk *g_ufoclk_clk;
 
 static DEFINE_SPINLOCK(lock);
 static int hclk_count;
+
+#define UFOZIP_IN_SCREEN_ON	(0x1)
+#define UFOZIP_IN_SCREEN_OFF	(0x0)
+static atomic_t ufozip_screen_on;
 
 /* static unsigned int ufozip_default_fifo_size = 64; */
 static unsigned int ufozip_default_fifo_size = 256;
@@ -448,7 +453,7 @@ static int ufozip_entry(void *p)
 #define LOW_FREQ	(0x1)
 #define KEEP_FREQ	(0x0)	/* no actions */
 #define LOW_COUNT	(10)
-#define TIME_AFTER	(HZ/LOW_COUNT)
+#define TIME_AFTER	(HZ/LOW_COUNT/5)
 
 	int curr_freq = LOW_FREQ;
 	int set_freq = KEEP_FREQ;
@@ -471,6 +476,17 @@ static int ufozip_entry(void *p)
 			set_freq = LOW_FREQ;
 		spin_unlock_irqrestore(&lock, flags);
 
+		/* If system is in screen-off, no promotion of clock */
+		if (atomic_read(&ufozip_screen_on) == UFOZIP_IN_SCREEN_OFF) {
+			if (curr_freq == LOW_FREQ) {
+				requested_low_count = 0;
+				goto no_action;
+			}
+			/* Set it to low freq directly */
+			requested_low_count = LOW_COUNT;
+			set_freq = LOW_FREQ;
+		}
+
 		/* Shall we apply action */
 		if (set_freq == curr_freq)
 			set_freq = KEEP_FREQ;
@@ -479,7 +495,7 @@ static int ufozip_entry(void *p)
 		if (set_freq == LOW_FREQ) {
 			if (requested_low_count++ < LOW_COUNT)
 				set_freq = KEEP_FREQ;
-			/* If no actions in 1s, let it be in low freq. */
+			/* If no actions in 0.2s, let it be in low freq. */
 		} else {
 			requested_low_count = 0;
 		}
@@ -490,14 +506,13 @@ static int ufozip_entry(void *p)
 			requested_low_count = 0;
 		} else if (set_freq == HIGH_FREQ) {
 			ufozip_vcorectrl(true);
-		} else {
-			set_freq = KEEP_FREQ;
 		}
 
 		/* Record current level */
 		if (set_freq != KEEP_FREQ)
 			curr_freq = set_freq;
 
+no_action:
 		/* Schedule me */
 		if (requested_low_count) {
 			schedule_timeout_interruptible(TIME_AFTER);
@@ -506,6 +521,47 @@ static int ufozip_entry(void *p)
 			schedule();
 		}
 	} while (1);
+
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_PM
+/* FB event notifier */
+static int ufozip_fb_event(struct notifier_block *notifier, unsigned long event, void *data)
+{
+	struct fb_event *fb_event = data;
+	int new_status;
+
+	if (event != FB_EVENT_BLANK)
+		return NOTIFY_DONE;
+
+	new_status = *(int *)fb_event->data ? 1 : 0;
+
+	if (new_status == 0)
+		atomic_set(&ufozip_screen_on, UFOZIP_IN_SCREEN_ON);
+	else
+		atomic_set(&ufozip_screen_on, UFOZIP_IN_SCREEN_OFF);
+
+	pr_alert("%s: screen(%s)\n", __func__, new_status ? "off" : "on");
+
+#ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
+	/* Wake up ufozip_task to check whether we should change clock */
+	wake_up_process(ufozip_task);
+#endif
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block fb_notifier_block = {
+	.notifier_call = ufozip_fb_event,
+	.priority = 0,
+};
+
+static int __init ufozip_init_pm_ops(void)
+{
+	if (fb_register_client(&fb_notifier_block) != 0)
+		return -1;
 
 	return 0;
 }
@@ -538,7 +594,6 @@ static int ufozip_of_probe(struct platform_device *pdev)
 	pr_info("ufozip_of_probe clock init ...\n");
 
 #ifdef MTK_UFOZIP_USING_CCF
-
 	g_ufoclk_enc_sel = devm_clk_get(&pdev->dev, "ufo_sel");
 	WARN_ON(IS_ERR(g_ufoclk_enc_sel));
 
@@ -561,6 +616,16 @@ static int ufozip_of_probe(struct platform_device *pdev)
 		pr_warn("%s: failed to enable clock\n", __func__);
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_PM
+	if (ufozip_init_pm_ops()) {
+		pr_warn("%s: failed to init pm ops\n", __func__);
+		return -EINVAL;
+	}
+#endif
+
+	/* Screen-on by default */
+	atomic_set(&ufozip_screen_on, UFOZIP_IN_SCREEN_ON);
 
 #ifdef MTK_UFOZIP_VCORE_DVFS_CONTROL
 	ufozip_task = kthread_run(ufozip_entry, NULL, "ufozip_task");
