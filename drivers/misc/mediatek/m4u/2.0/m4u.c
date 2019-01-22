@@ -1473,7 +1473,7 @@ static int MTK_M4U_flush(struct file *filp, fl_owner_t a_id)
 static const struct mc_uuid_t m4u_drv_uuid = M4U_DRV_UUID;
 #endif
 static struct mc_session_handle m4u_dci_session;
-static m4u_msg_t *m4u_dci_msg;
+static struct m4u_msg *m4u_dci_msg;
 static DEFINE_MUTEX(m4u_dci_mutex);
 
 #define M4U_TL_UUID {0x98fb95bc, 0xb4bf, 0x42d2, {0x64, 0x73, 0xea, 0xe4, 0x86, 0x90, 0xd7, 0xea} }
@@ -1488,7 +1488,7 @@ static const struct TEEC_UUID m4u_tl_uuid = M4U_TL_UUID;
 static struct TEEC_Context m4u_tci_context;
 static struct TEEC_Session m4u_tci_session;
 static struct TEEC_SharedMemory shared_mem;
-static m4u_msg_t *m4u_tci_msg;
+static struct m4u_msg *m4u_tci_msg;
 static DEFINE_MUTEX(m4u_tci_mutex);
 
 static int m4u_open_trustlet(uint32_t deviceId)
@@ -1512,13 +1512,13 @@ static int m4u_open_trustlet(uint32_t deviceId)
 	}
 
 	memset(&shared_mem, 0, sizeof(shared_mem));
-	shared_mem.size = sizeof(m4u_msg_t);
+	shared_mem.size = sizeof(struct m4u_msg);
 	shared_mem.flags = TEEC_MEM_INPUT;
 
 	ret = TEEC_AllocateSharedMemory(&m4u_tci_context, &shared_mem);
 	if (ret == TEEC_SUCCESS) {
 		memset(shared_mem.buffer, 0, shared_mem.size);
-		m4u_tci_msg = (m4u_msg_t *)shared_mem.buffer;
+		m4u_tci_msg = (struct m4u_msg *)shared_mem.buffer;
 	} else {
 		M4UMSG("teec_allocate_shared_memory failed: %x\n", ret);
 		TEEC_FinalizeContext(&m4u_tci_context);
@@ -1557,7 +1557,7 @@ int m4u_close_trustlet(uint32_t deviceId)
 	return 0;
 }
 
-static int m4u_exec_tci(struct TEEC_Session *m4u_session, m4u_msg_t *m4u_msg)
+static int m4u_exec_tci(struct TEEC_Session *m4u_session, struct m4u_msg *m4u_msg)
 {
 	int ret;
 	struct TEEC_Operation m4u_operation;
@@ -1578,7 +1578,7 @@ static int m4u_exec_tci(struct TEEC_Session *m4u_session, m4u_msg_t *m4u_msg)
 #endif
 
 	m4u_operation.params[0].tmpref.buffer = (void *)m4u_msg;
-	m4u_operation.params[0].tmpref.size = sizeof(m4u_msg_t);
+	m4u_operation.params[0].tmpref.size = sizeof(struct m4u_msg);
 #else
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	m4u_operation.param_types = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT, TEEC_NONE, TEEC_NONE, TEEC_NONE);
@@ -1602,7 +1602,7 @@ exit:
 	return ret;
 }
 
-static int m4u_exec_cmd(struct mc_session_handle *m4u_session, m4u_msg_t *m4u_msg)
+static int m4u_exec_cmd(struct mc_session_handle *m4u_session, struct m4u_msg *m4u_msg)
 {
 	enum mc_result ret;
 
@@ -1672,13 +1672,13 @@ out:
 #define M4U_DRV_UUID {{0x90, 0x73, 0xF0, 0x3A, 0x96, 0x18, 0x38, 0x3B, 0xB1, 0x85, 0x6E, 0xB3, 0xF9, 0x90, 0xBA, 0xBD} }
 static const struct mc_uuid_t m4u_drv_uuid = M4U_DRV_UUID;
 static struct mc_session_handle m4u_dci_session;
-static m4u_msg_t *m4u_dci_msg;
+static struct m4u_msg *m4u_dci_msg;
 static DEFINE_MUTEX(m4u_dci_mutex);
 
 #define M4U_TL_UUID {{0x98, 0xfb, 0x95, 0xbc, 0xb4, 0xbf, 0x42, 0xd2, 0x64, 0x73, 0xea, 0xe4, 0x86, 0x90, 0xd7, 0xea} }
 static const struct mc_uuid_t m4u_tl_uuid = M4U_TL_UUID;
 static struct mc_session_handle m4u_tci_session;
-static m4u_msg_t *m4u_tci_msg;
+static struct m4u_msg *m4u_tci_msg;
 static DEFINE_MUTEX(m4u_tci_mutex);
 
 static int m4u_open_trustlet(uint32_t deviceId)
@@ -1689,7 +1689,7 @@ static int m4u_open_trustlet(uint32_t deviceId)
 	/* Initialize session handle data */
 	memset(&m4u_tci_session, 0, sizeof(m4u_tci_session));
 
-	mcRet = mc_malloc_wsm(deviceId, 0, sizeof(m4u_msg_t), (uint8_t **) &m4u_tci_msg, 0);
+	mcRet = mc_malloc_wsm(deviceId, 0, sizeof(struct m4u_msg), (uint8_t **) &m4u_tci_msg, 0);
 	if (mcRet != MC_DRV_OK) {
 		M4UMSG("tz_m4u: mc_malloc_wsm tci fail: %d\n", mcRet);
 		return -1;
@@ -1700,7 +1700,7 @@ static int m4u_open_trustlet(uint32_t deviceId)
 	mcRet = mc_open_session(&m4u_tci_session,
 				&m4u_tl_uuid,
 				(uint8_t *) m4u_tci_msg,
-				(uint32_t) sizeof(m4u_msg_t));
+				(uint32_t) sizeof(struct m4u_msg));
 	if (mcRet != MC_DRV_OK) {
 		M4UMSG("tz_m4u: mc_open_session returned: %d\n", mcRet);
 		return -1;
@@ -1731,7 +1731,7 @@ int m4u_close_trustlet(uint32_t deviceId)
 	return 0;
 }
 
-static int m4u_exec_cmd(struct mc_session_handle *m4u_session, m4u_msg_t *m4u_msg)
+static int m4u_exec_cmd(struct mc_session_handle *m4u_session, struct m4u_msg *m4u_msg)
 {
 	enum mc_result ret;
 
@@ -1806,7 +1806,7 @@ static int dr_map(unsigned long pa, size_t size)
 		goto out;
 	}
 
-	memset(m4u_dci_msg, 0, sizeof(m4u_msg_t));
+	memset(m4u_dci_msg, 0, sizeof(struct m4u_msg));
 
 	m4u_dci_msg->cmd = CMD_M4U_SYSTRACE_MAP;
 	m4u_dci_msg->systrace_param.pa = pa;
@@ -1836,7 +1836,7 @@ static int dr_unmap(unsigned long pa, size_t size)
 		goto out;
 	}
 
-	memset(m4u_dci_msg, 0, sizeof(m4u_msg_t));
+	memset(m4u_dci_msg, 0, sizeof(struct m4u_msg));
 
 	m4u_dci_msg->cmd = CMD_M4U_SYSTRACE_UNMAP;
 	m4u_dci_msg->systrace_param.pa = pa;
@@ -1866,7 +1866,7 @@ static int dr_transact(void)
 		goto out;
 	}
 
-	memset(m4u_dci_msg, 0, sizeof(m4u_msg_t));
+	memset(m4u_dci_msg, 0, sizeof(struct m4u_msg));
 
 	m4u_dci_msg->cmd = CMD_M4U_SYSTRACE_TRANSACT;
 	m4u_dci_msg->systrace_param.pa = 0;
@@ -1920,7 +1920,7 @@ int m4u_sec_init(void)
 #endif
 
 	/* Allocating WSM for DCI */
-	mcRet = mc_malloc_wsm(deviceId, 0, sizeof(m4u_msg_t), (uint8_t **) &m4u_dci_msg, 0);
+	mcRet = mc_malloc_wsm(deviceId, 0, sizeof(struct m4u_msg), (uint8_t **) &m4u_dci_msg, 0);
 	if (mcRet != MC_DRV_OK) {
 		M4UMSG("tz_m4u: mc_malloc_wsm returned: %d\n", mcRet);
 		return -1;
@@ -1931,7 +1931,7 @@ int m4u_sec_init(void)
 	mcRet = mc_open_session(&m4u_dci_session,
 				&m4u_drv_uuid,
 				(uint8_t *) m4u_dci_msg,
-				(uint32_t) sizeof(m4u_msg_t));
+				(uint32_t) sizeof(struct m4u_msg));
 	if (mcRet != MC_DRV_OK) {
 		M4UMSG("tz_m4u: mc_open_session returned: %d\n", mcRet);
 		return -1;
@@ -2016,7 +2016,7 @@ int m4u_config_port_array_tee(unsigned char *port_array)	/* native */
 		goto out;
 	}
 
-	memset(m4u_dci_msg, 0, sizeof(m4u_msg_t));
+	memset(m4u_dci_msg, 0, sizeof(struct m4u_msg));
 	memcpy(m4u_dci_msg->port_array_param.m4u_port_array, port_array,
 	       sizeof(m4u_dci_msg->port_array_param.m4u_port_array));
 
