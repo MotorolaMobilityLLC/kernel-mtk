@@ -83,11 +83,11 @@ static int uncali_gyro_recv_data(struct data_unit_t *event, void *reserved)
 	value[4] = event->uncalibrated_gyro_t.y_bias;
 	value[5] = event->uncalibrated_gyro_t.z_bias;
 #endif
-	if (event->flush_action == FLUSH_ACTION)
-		err = uncali_gyro_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION)
 		err = uncali_gyro_data_report(value, event->uncalibrated_gyro_t.status,
 			(int64_t)(event->time_stamp + event->time_stamp_gpt));
+	else if (event->flush_action == FLUSH_ACTION)
+		err = uncali_gyro_flush_report();
 
 	return err;
 }

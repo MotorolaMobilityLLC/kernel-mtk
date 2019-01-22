@@ -681,6 +681,22 @@ int acc_bias_report(struct acc_data *data)
 	return err;
 }
 
+int acc_cali_report(struct acc_data *data)
+{
+	struct sensor_event event;
+	int err = 0;
+
+	event.flush_action = CALI_ACTION;
+	event.word[0] = data->x;
+	event.word[1] = data->y;
+	event.word[2] = data->z;
+	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
+	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
+	if (err < 0)
+		ACC_ERR("failed due to event buffer full\n");
+	return err;
+}
+
 int acc_flush_report(void)
 {
 	struct sensor_event event;

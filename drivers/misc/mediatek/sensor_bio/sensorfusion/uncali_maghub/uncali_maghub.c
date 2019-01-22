@@ -81,11 +81,11 @@ static int uncali_mag_recv_data(struct data_unit_t *event, void *reserved)
 	value[4] = event->uncalibrated_mag_t.y_bias;
 	value[5] = event->uncalibrated_mag_t.z_bias;
 #endif
-	if (event->flush_action == FLUSH_ACTION)
-		err = uncali_mag_flush_report();
-	else if (event->flush_action == DATA_ACTION)
+	if (event->flush_action == DATA_ACTION)
 		err = uncali_mag_data_report(value, event->uncalibrated_mag_t.status,
 			(int64_t)(event->time_stamp + event->time_stamp_gpt));
+	else if (event->flush_action == FLUSH_ACTION)
+		err = uncali_mag_flush_report();
 	return err;
 }
 static int uncali_maghub_local_init(void)
