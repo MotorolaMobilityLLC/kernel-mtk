@@ -228,4 +228,16 @@ config GTP_POWER_CTRL_SLEEP
 
 	  To compile this dirver as a module, choose M here: the
 	  module will be called.
+
+config GTP_ICS_SLOT_REPORT
+	bool "GT1151 for TYPE_B_PROTOCOL"
+	default n
+	help
+	  Say Y here if you have GT1151 touch panel GTP_ICS_SLOT_REPORT
+	  to support TYPE_B_PROTOCOL.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
 endif
