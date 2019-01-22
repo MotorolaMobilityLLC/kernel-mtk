@@ -1960,7 +1960,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	case FG_DAEMON_CMD_FGADC_RESET:
 		{
 			bm_err("[fg_res] fgadc_reset\n");
-			gauge_reset_hw();
+			/*gauge_reset_hw();*/
 		}
 		break;
 
