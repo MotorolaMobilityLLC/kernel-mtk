@@ -222,11 +222,11 @@ static void spk_dump_data_routine(struct work_struct *ws)
 
 static void spk_dump_ivdata_routine(struct work_struct *ws)
 {
-	dump_work_t *dump_work = NULL;
+	struct dump_work_t *dump_work = NULL;
 	char *data_addr = NULL;
 	unsigned long flags = 0;
 
-	dump_work = container_of(ws, dump_work_t, work);
+	dump_work = container_of(ws, struct dump_work_t, work);
 
 	data_addr = get_resv_dram_vir_addr(dump_work->dma_addr);
 
@@ -258,7 +258,7 @@ void spkprotect_dump_message(struct ipi_msg_t *ipi_msg)
 		return;
 	} else if (ipi_msg->msg_id == SPK_PROTECT_PCMDUMP_OK) {
 		datasize = ipi_msg->param1;
-		idx = (dump_data_t)ipi_msg->param2;
+		idx = (uint8_t)ipi_msg->param2;
 		dump_work[idx].dma_addr = ipi_msg->dma_addr;
 		ret = queue_work(dump_workqueue[idx], &dump_work[idx].work);
 		if (ret == 0)
@@ -310,8 +310,7 @@ static int spkprotect_dump_kthread(void *data)
 		case DUMP_PCM_PRE: {
 			size = datasize;
 			writedata = datasize;
-			pcm_dump =
-				(pcm_dump_t *)dump_queue->dump_package[current_idx].data_addr;
+			pcm_dump = (struct pcm_dump_t *)dump_queue->dump_package[current_idx].data_addr;
 			AUD_LOG_D("pcm_dump = %p datasize = %d current_idx = %d\n", pcm_dump, datasize, current_idx);
 
 			while (size > 0) {
@@ -331,8 +330,7 @@ static int spkprotect_dump_kthread(void *data)
 		case DUMP_IV_DATA: {
 			size = datasize;
 			writedata = datasize;
-			pcm_dump =
-				(pcm_dump_t *)dump_queue->dump_package[current_idx].data_addr;
+			pcm_dump = (struct pcm_dump_t *)dump_queue->dump_package[current_idx].data_addr;
 			AUD_LOG_D("pcm_dump = %p datasize = %d current_idx = %d\n", pcm_dump, datasize, current_idx);
 
 			while (size > 0) {

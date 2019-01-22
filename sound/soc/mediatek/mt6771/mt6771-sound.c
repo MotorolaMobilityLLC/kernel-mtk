@@ -252,7 +252,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 		{AFE_IRQ_MCU_CLR, 23, 0x1}, /* irq miss clear */
 		{AFE_IRQ_MCU_STATUS, 7, 0x1}, /* irq status */
 		{AFE_IRQ_MCU_EN, 7, 0x1}, /* irq enable */
-		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+		 Soc_Aud_IRQ_CM4 /* irq use for specify purpose */
 	},
 	{	/*IRQ8*/
 		{AFE_IRQ_MCU_CON0, 8, 0x1}, /* irq on */
