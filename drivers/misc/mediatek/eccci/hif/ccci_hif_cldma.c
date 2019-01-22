@@ -562,6 +562,7 @@ again:
 				CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "error dma mapping\n");
 				req->data_buffer_ptr_saved = 0;
 				spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
+				ccci_free_skb(new_skb);
 				return -1;
 			}
 			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
@@ -1016,6 +1017,9 @@ static void cldma_rx_ring_init(struct md_cd_ctrl *md_ctrl, struct cldma_ring *ri
 				CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "error dma mapping\n");
 				item->data_buffer_ptr_saved = 0;
 				spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
+				ccci_free_skb(item->skb);
+				dma_pool_free(md_ctrl->gpd_dmapool, item->gpd, item->gpd_addr);
+				kfree(item);
 				return;
 			}
 			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
