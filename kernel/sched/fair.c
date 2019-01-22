@@ -5829,23 +5829,17 @@ static bool is_the_same_domain(int prev, int target)
 
 static int energy_aware_wake_cpu(struct task_struct *p, int target)
 {
-	struct sched_domain *sd;
-	struct sched_group *sg, *sg_target;
 	int target_max_cap = INT_MAX;
 	int target_cpu = task_cpu(p);
 	unsigned long min_util;
 	unsigned long new_util;
-	int i;
+	int i, cpu;
 	bool is_tiny = false;
 	int nrg_diff = 0;
-
-	sd = rcu_dereference(per_cpu(sd_ea, task_cpu(p)));
-
-	if (!sd)
-		return target;
-
-	sg = sd->groups;
-	sg_target = sg;
+	int cluster_id = 0;
+	struct cpumask cluster_cpus;
+	int max_cap_cpu = 0;
+	int best_cpu = 0;
 
 	/*
 	 * Find group with sufficient capacity. We only get here if no cpu is
@@ -5854,31 +5848,35 @@ static int energy_aware_wake_cpu(struct task_struct *p, int target)
 	 * load_balance() should sort it out later as we get above the tipping
 	 * point.
 	 */
-	do {
-		/* Assuming all cpus are the same in group */
-		int max_cap_cpu = group_first_cpu(sg);
+	cluster_id = arch_get_nr_clusters();
+	for (i = 0; i < cluster_id; i++) {
+		arch_get_cluster_cpus(&cluster_cpus, i);
+		max_cap_cpu = cpumask_first(&cluster_cpus);
 
-		/*
-		 * Assume smaller max capacity means more energy-efficient.
-		 * Ideally we should query the energy model for the right
-		 * answer but it easily ends up in an exhaustive search.
-		 */
-		if (capacity_of(max_cap_cpu) < target_max_cap &&
-		    task_fits_max(p, max_cap_cpu)) {
-			sg_target = sg;
-			target_max_cap = capacity_of(max_cap_cpu);
+		/* Assuming all cpus are the same in group */
+		for_each_cpu(cpu, &cluster_cpus) {
+
+			if (!cpu_online(cpu))
+				continue;
+
+			if (capacity_of(max_cap_cpu) < target_max_cap &&
+			task_fits_max(p, max_cap_cpu)) {
+				best_cpu = cpu;
+				target_max_cap = capacity_of(max_cap_cpu);
+			}
+			break;
 		}
-	} while (sg = sg->next, sg != sd->groups);
+	}
 
 	if (task_util(p) < TINY_TASK_THRESHOLD)
 		is_tiny = true;
 
 	/* Find cpu with sufficient capacity */
 	min_util = boosted_task_util(p);
-	if (!is_tiny || !sd->child)
-		target_cpu = select_max_spare_capacity_cpu(p, group_first_cpu(sg_target));
+	if (!is_tiny)
+		target_cpu = select_max_spare_capacity_cpu(p, best_cpu);
 	else
-		for_each_cpu_and(i, tsk_cpus_allowed(p), sched_group_cpus(sg_target)) {
+		for_each_cpu_and(i, tsk_cpus_allowed(p), &cluster_cpus) {
 
 			if (!cpu_online(i))
 				continue;
