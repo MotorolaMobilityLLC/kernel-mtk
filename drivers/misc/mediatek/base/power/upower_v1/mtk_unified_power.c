@@ -25,9 +25,9 @@
 #include <linux/seq_file.h>
 
 /* local include */
+#include "mtk_unified_power_internal.h"
 #include "mtk_unified_power.h"
 #include "mtk_unified_power_data.h"
-#include "mtk_unified_power_internal.h"
 
 #ifndef EARLY_PORTING_SPOWER
 	#include "mtk_static_power.h"
@@ -88,7 +88,7 @@ static void print_tbl(void)
 		tbl = upower_tbl_infos[i].p_upower_tbl;
 		/* table size must be 512 bytes */
 		upower_debug("Bank %d , tbl size %ld\n", i, sizeof(struct upower_tbl));
-		for (j = 0; j < OPP_NUM; j++) {
+		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			upower_debug(" cap, volt, dyn, lkg: %llu, %u, %u, {%u, %u, %u, %u, %u}\n",
 					tbl->row[j].cap, tbl->row[j].volt,
 					tbl->row[j].dyn_pwr, tbl->row[j].lkg_pwr[0],
@@ -104,7 +104,7 @@ static void print_tbl(void)
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		/* table size must be 512 bytes */
 		upower_debug("---Bank %d , tbl size %ld---\n", i, sizeof(struct upower_tbl));
-		for (j = 0; j < OPP_NUM; j++) {
+		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			upower_debug(" cap = %llu, volt = %u, dyn = %u, lkg = {%u, %u, %u, %u, %u}\n",
 					upower_tbl_ref[i].row[j].cap, upower_tbl_ref[i].row[j].volt,
 					upower_tbl_ref[i].row[j].dyn_pwr, upower_tbl_ref[i].row[j].lkg_pwr[0],
@@ -142,7 +142,7 @@ void upower_ut(void)
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		upower_debug("bank %d\n", i);
 		ptr_tbl = ptr_tbl_info[i].p_upower_tbl;
-		for (j = 0; j < OPP_NUM; j++) {
+		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			upower_debug(" cap = %llu, volt = %u, dyn = %u, lkg = {%u, %u, %u, %u, %u, %u}\n",
 					ptr_tbl->row[j].cap, ptr_tbl->row[j].volt,
 					ptr_tbl->row[j].dyn_pwr, ptr_tbl->row[j].lkg_pwr[0],
@@ -188,7 +188,7 @@ static void upower_update_dyn_pwr(void)
 
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		tbl = upower_tbl_infos[i].p_upower_tbl;
-		for (j = 0; j < OPP_NUM; j++) {
+		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			refPower = (unsigned long long)tbl->row[j].dyn_pwr;
 			refVolt = (unsigned long long)tbl->row[j].volt;
 			newVolt = (unsigned long long)upower_tbl_ref[i].row[j].volt;
@@ -252,7 +252,7 @@ static void upower_update_lkg_pwr(void)
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		#ifdef EARLY_PORTING_SPOWER
 		tbl = upower_tbl_infos[i].p_upower_tbl;
-		for (j = 0; j < OPP_NUM; j++) {
+		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			for (k = 0; k < NR_UPOWER_DEGREE; k++)
 				upower_tbl_ref[i].row[j].lkg_pwr[k] = tbl->row[j].lkg_pwr[k];
 		}
@@ -262,7 +262,7 @@ static void upower_update_lkg_pwr(void)
 		if (spower_bank_id == -1)
 			continue;
 
-		for (j = 0; j < OPP_NUM; j++) {
+		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			volt = (unsigned int)upower_tbl_ref[i].row[j].volt;
 			for (k = 0; k < NR_UPOWER_DEGREE; k++) {
 				degree = degree_set[k];
@@ -290,7 +290,7 @@ static void upower_init_cap(void)
 
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		tbl = upower_tbl_infos[i].p_upower_tbl;
-		for (j = 0; j < OPP_NUM; j++)
+		for (j = 0; j < UPOWER_OPP_NUM; j++)
 			upower_tbl_ref[i].row[j].cap = tbl->row[j].cap;
 	}
 }
@@ -300,7 +300,7 @@ static void upower_init_rownum(void)
 	int i;
 
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
-		upower_tbl_ref[i].row_num = OPP_NUM;
+		upower_tbl_ref[i].row_num = UPOWER_OPP_NUM;
 		/*
 		*upower_error("[bank %d]lkg_idx=%d, row num = %d\n", i, upower_tbl_ref[i].lkg_idx,
 		*								upower_tbl_ref[i].row_num);
@@ -328,7 +328,7 @@ static void upower_init_volt(void)
 
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		tbl = upower_tbl_infos[i].p_upower_tbl;
-		for (j = 0; j < OPP_NUM; j++)
+		for (j = 0; j < UPOWER_OPP_NUM; j++)
 			upower_tbl_ref[i].row[j].volt = tbl->row[j].volt;
 	}
 }
@@ -391,7 +391,7 @@ static void profile_api(void)
 	upower_debug("----profile upower_get_power()----\n");
 	/* do 56*2 times */
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
-		for (j = 0; j < OPP_NUM; j++) {
+		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			upower_get_power(i, j, UPOWER_DYN);
 			upower_get_power(i, j, UPOWER_LKG);
 		}
@@ -420,7 +420,7 @@ static int upower_debug_proc_show(struct seq_file *m, void *v)
 	for (i = 0; i < NR_UPOWER_BANK; i++) {
 		seq_printf(m, "%s\n", upower_tbl_infos[i].name);
 		ptr_tbl = ptr_tbl_info[i].p_upower_tbl;
-		for (j = 0; j < OPP_NUM; j++) {
+		for (j = 0; j < UPOWER_OPP_NUM; j++) {
 			seq_printf(m, " cap = %llu, volt = %u, dyn = %u, lkg = {%u, %u, %u, %u, %u, %u}\n",
 					ptr_tbl->row[j].cap, ptr_tbl->row[j].volt,
 					ptr_tbl->row[j].dyn_pwr, ptr_tbl->row[j].lkg_pwr[0],
@@ -435,6 +435,38 @@ static int upower_debug_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+#define PROC_FOPS_RW(name)					\
+	static int name ## _proc_open(struct inode *inode,	\
+		struct file *file)				\
+	{							\
+		return single_open(file, name ## _proc_show,	\
+			PDE_DATA(inode));			\
+	}							\
+	static const struct file_operations name ## _proc_fops = {	\
+		.owner		  = THIS_MODULE,				\
+		.open		   = name ## _proc_open,			\
+		.read		   = seq_read,				\
+		.llseek		 = seq_lseek,				\
+		.release		= single_release,			\
+		.write		  = name ## _proc_write,			\
+	}
+
+#define PROC_FOPS_RO(name)					\
+	static int name ## _proc_open(struct inode *inode,	\
+		struct file *file)				\
+	{							\
+		return single_open(file, name ## _proc_show,	\
+			PDE_DATA(inode));			\
+	}							\
+	static const struct file_operations name ## _proc_fops = {	\
+		.owner		  = THIS_MODULE,				\
+		.open		   = name ## _proc_open,			\
+		.read		   = seq_read,				\
+		.llseek		 = seq_lseek,				\
+		.release		= single_release,			\
+	}
+
+#define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 /* create fops */
 PROC_FOPS_RO(upower_debug);
 
@@ -489,7 +521,7 @@ static int __init upower_init(void)
 	upower_ut();
 	#endif
 
-	/* init rownum to OPP_NUM*/
+	/* init rownum to UPOWER_OPP_NUM*/
 	upower_init_rownum();
 
 	upower_init_cap();
