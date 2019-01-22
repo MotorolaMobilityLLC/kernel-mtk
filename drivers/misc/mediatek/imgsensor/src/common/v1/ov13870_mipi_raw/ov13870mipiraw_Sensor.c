@@ -180,7 +180,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.i2c_addr_table = {0x20, 0x6c, 0xff},	/* record sensor support all write id addr,
 						 * only supprt 4, must end with 0xff
 						 */
-	.i2c_speed = 400,	/* i2c read/write speed */
+	.i2c_speed = 1000,	/* i2c read/write speed */
 };
 
 
@@ -326,7 +326,7 @@ static void write_cmos_sensor_byte(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = { (char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF) };
 
-	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+	iWriteRegI2CTiming(pu_send_cmd, 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
 
 static kal_uint16 table_write_cmos_sensor_byte(kal_uint16 *para, kal_uint32 len)
