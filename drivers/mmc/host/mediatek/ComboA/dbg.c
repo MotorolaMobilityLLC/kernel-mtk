@@ -302,7 +302,7 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 		skip = dbg_run_host_log_dat[i].skip;
 		if (cmd == 44 && !type) {
 			cnt = arg & 0xffff;
-			tag = (arg >> 16) & 0xf;
+			tag = (arg >> 16) & 0x1f;
 			is_read = (arg >> 30) & 0x1;
 			is_rel = (arg >> 31) & 0x1;
 			is_fprg = (arg >> 24) & 0x1;
@@ -379,7 +379,7 @@ void msdc_dump_host_state(char **buff, unsigned long *size,
 	}
 }
 
-static void msdc_proc_dump(struct seq_file *m, u32 id)
+void msdc_proc_dump(struct seq_file *m, u32 id)
 {
 	struct msdc_host *host = mtk_msdc_host[id];
 
@@ -391,6 +391,7 @@ static void msdc_proc_dump(struct seq_file *m, u32 id)
 	msdc_dump_host_state(NULL, NULL, m, host);
 	mmc_cmd_dump(NULL, NULL, m, host->mmc, 500);
 }
+EXPORT_SYMBOL(msdc_proc_dump);
 
 void get_msdc_aee_buffer(unsigned long *vaddr, unsigned long *size)
 {

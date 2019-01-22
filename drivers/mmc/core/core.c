@@ -235,6 +235,18 @@ static void mmc_discard_cmdq(struct mmc_host *host)
 static void mmc_post_req(struct mmc_host *host, struct mmc_request *mrq, int err);
 static int mmc_reset_for_cmdq(struct mmc_host *host);
 
+static void mmc_reset_cq(struct mmc_host *host)
+{
+	while (mmc_reset_for_cmdq(host)) {
+		pr_notice("[CQ] reinit fail\n");
+		WARN_ON(1);
+	}
+	mmc_clr_dat_list(host);
+	mmc_restore_tasks(host);
+	atomic_set(&host->cq_wait_rdy, 0);
+	atomic_set(&host->cq_rdy_cnt, 0);
+}
+
 /*
  *	check CMDQ QSR
  */
@@ -265,14 +277,7 @@ void mmc_do_check(struct mmc_host *host)
 			 * otherwise timing issue will occur
 			 */
 			msleep(2000);
-			while (mmc_reset_for_cmdq(host)) {
-				pr_notice("[CQ] reinit fail\n");
-				WARN_ON(1);
-			}
-			mmc_clr_dat_list(host);
-			mmc_restore_tasks(host);
-			atomic_set(&host->cq_wait_rdy, 0);
-			atomic_set(&host->cq_rdy_cnt, 0);
+			mmc_reset_cq(host);
 		}
 
 		if (!host->que_mrq.cmd->error ||
@@ -452,21 +457,24 @@ int mmc_run_queue_thread(void *data)
 		}
 		if (done_mrq) {
 			if (done_mrq->data->error || done_mrq->cmd->error) {
-				mmc_wait_tran(host);
-				if (!is_err) {
-					is_err = true;
-					mmc_discard_cmdq(host);
+				/* reset eMMC for data timeout case */
+				if (done_mrq->data->error == (unsigned int)-ETIMEDOUT) {
+					mmc_reset_cq(host);
+				} else {
 					mmc_wait_tran(host);
-					mmc_clr_dat_list(host);
-					atomic_set(&host->cq_rdy_cnt, 0);
-				}
+					if (!is_err) {
+						is_err = true;
+						mmc_discard_cmdq(host);
+						mmc_wait_tran(host);
+						mmc_clr_dat_list(host);
+						atomic_set(&host->cq_rdy_cnt, 0);
+					}
 
-				if (host->ops->execute_tuning) {
-					err = host->ops->execute_tuning(host, MMC_SEND_TUNING_BLOCK_HS200);
-					if (err)
-						pr_err("[CQ] tuning failed\n");
-					else
-						pr_err("[CQ] tuning pass\n");
+					if (host->ops->execute_tuning) {
+						err = host->ops->execute_tuning(host, MMC_SEND_TUNING_BLOCK_HS200);
+						pr_notice("%s: tuning err: %d\n",
+							mmc_hostname(host), err);
+					}
 				}
 
 				host->cur_rw_task = 99;
@@ -558,14 +566,7 @@ int mmc_run_queue_thread(void *data)
 					 * otherwise timing issue will occur
 					 */
 					msleep(2000);
-					while (mmc_reset_for_cmdq(host)) {
-						pr_notice("[CQ] reinit fail\n");
-						WARN_ON(1);
-					}
-					mmc_clr_dat_list(host);
-					mmc_restore_tasks(host);
-					atomic_set(&host->cq_wait_rdy, 0);
-					atomic_set(&host->cq_rdy_cnt, 0);
+					mmc_reset_cq(host);
 				} else
 					atomic_inc(&host->cq_wait_rdy);
 				spin_lock_irq(&host->cmd_que_lock);

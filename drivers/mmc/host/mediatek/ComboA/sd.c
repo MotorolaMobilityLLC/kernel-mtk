@@ -384,6 +384,7 @@ void msdc_dump_info(u32 id)
 
 	msdc_dump_dbg_register(host);
 
+	msdc_proc_dump(NULL, id);
 }
 /***************************************************************
 * END register dump functions
@@ -859,10 +860,10 @@ int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
 	cmd.mrq = &mrq;
 	cmd.data = NULL;
 
-	/* tune until CMD13 pass. */
+	/* enlarge timeout in case device busy for too long */
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (host->mmc->card && host->mmc->card->ext_csd.cmdq_mode_en)
-		err = msdc_do_cmdq_command(host, &cmd,  CMD_TIMEOUT);
+		err = msdc_do_cmdq_command(host, &cmd, CMD_CQ_TIMEOUT);
 	else
 #endif
 		err = msdc_do_command(host, &cmd, CMD_TIMEOUT);
@@ -1884,7 +1885,8 @@ static unsigned int msdc_cmdq_command_start(struct msdc_host *host,
 				__func__, cmd->opcode);
 			spin_lock(&host->lock);
 			cmd->error = (unsigned int)-ETIMEDOUT;
-			msdc_reset_hw(host->id);
+			host->sw_timeout++;
+			msdc_dump_info(host->id);
 			return cmd->error;
 		}
 	}
@@ -3043,7 +3045,7 @@ int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (!data) {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 		if (check_mmc_cmd13_sqs(cmd)) {
-			if (msdc_do_cmdq_command(host, cmd, CMD_TIMEOUT) != 0)
+			if (msdc_do_cmdq_command(host, cmd, CMD_CQ_TIMEOUT) != 0)
 				goto done_no_data;
 		} else {
 #endif
@@ -3286,7 +3288,7 @@ static int msdc_do_request_cq(struct mmc_host *mmc,
 	}
 #endif
 
-	(void)msdc_do_cmdq_command(host, cmd, CMD_TIMEOUT);
+	(void)msdc_do_cmdq_command(host, cmd, CMD_CQ_TIMEOUT);
 
 	if (cmd->error == (unsigned int)-EILSEQ)
 		host->error |= REQ_CMD_EIO;
@@ -3295,7 +3297,7 @@ static int msdc_do_request_cq(struct mmc_host *mmc,
 
 	cmd  = mrq->cmd;
 
-	(void)msdc_do_cmdq_command(host, cmd, CMD_TIMEOUT);
+	(void)msdc_do_cmdq_command(host, cmd, CMD_CQ_TIMEOUT);
 
 	if (cmd->error == (unsigned int)-EILSEQ)
 		host->error |= REQ_CMD_EIO;
@@ -3305,25 +3307,42 @@ static int msdc_do_request_cq(struct mmc_host *mmc,
 	return host->error;
 }
 
-
-
 static int msdc_cq_cmd_wait_xfr_done(struct msdc_host *host)
 {
-	void __iomem *base = host->base;
 	unsigned long polling_tmo = jiffies + 10 * HZ;
+	int lock, ret = 0;
+	bool timeout = false;
+
+	/* some case lock is not held */
+	lock = spin_is_locked(&host->lock);
+
+	if (lock)
+		spin_unlock(&host->lock);
 
 	while (host->mmc->is_data_dma) {
-		if (time_after(jiffies, polling_tmo) && (host->mmc->is_data_dma)) {
-			msdc_dump_info(host->id);
-			msdc_dma_stop(host);
-			msdc_dma_clear(host);
-			msdc_reset_hw(host->id);
-			host->mmc->is_data_dma = 0;
-			return -1;
+		msleep(100);
+		if (time_after(jiffies, polling_tmo)) {
+			if (!timeout && host->mmc->is_data_dma) {
+				ERR_MSG("xfer tmo, check data timeout");
+				cancel_delayed_work_sync(&host->data_timeout_work);
+				host->data_timeout_ms = 0;
+				schedule_delayed_work(&host->data_timeout_work,
+					host->data_timeout_ms);
+				timeout = true;
+				/* wait 10 second for completion */
+				polling_tmo = jiffies + 10 * HZ;
+			} else if (timeout) {
+				ERR_MSG("wait data complete tmo");
+				ret = -1;
+				break;
+			}
 		}
 	}
 
-	return 0;
+	if (lock)
+		spin_lock(&host->lock);
+
+	return ret;
 }
 
 static int tune_cmdq_cmdrsp(struct mmc_host *mmc,
@@ -4506,6 +4525,10 @@ static void msdc_check_data_timeout(struct work_struct *work)
 		if (mrq->done)
 			mrq->done(mrq);
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+		/* clear flag here */
+		host->mmc->is_data_dma = 0;
+#endif
 		msdc_gate_clock(host, 1);
 		host->error |= REQ_DAT_ERR;
 	} else {
