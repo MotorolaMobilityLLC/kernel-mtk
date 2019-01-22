@@ -1195,18 +1195,18 @@ out:
 struct wait_for_peer_info_t {
 	char *process;
 	int pid;
-	unsigned long long when;
+	unsigned long when;
 };
 
 static void print_wait_peer_sock_info(unsigned long data)
 {
 	struct wait_for_peer_info_t *wait_info = (struct wait_for_peer_info_t *)data;
-	unsigned long long time = jiffies - wait_info->when;
+	unsigned long time = jiffies - wait_info->when;
 
 	/*Compatible 32bit projet and 64 bit project*/
 	do_div(time, HZ);
 	pr_info("----------------------wait for peer block info-----------------------\n");
-	pr_info("[mtk_net][sock]sockdbg %s[%d] is blocking because wait for peer more than %lld sec\n",
+	pr_info("[mtk_net][sock]sockdbg %s[%d] is blocking because wait for peer more than %ld sec\n",
 		wait_info->process, wait_info->pid, time);
 }
 #endif
