@@ -927,8 +927,6 @@ static char *smi_get_scenario_name(enum MTK_SMI_BWC_SCEN scen)
 		return "SMI_BWC_SCEN_HDMI4K";
 	case SMI_BWC_SCEN_VPMJC:
 		return "SMI_BWC_SCEN_VPMJC";
-	case SMI_BWC_SCEN_N3D:
-		return "SMI_BWC_SCEN_N3D";
 	case SMI_BWC_SCEN_CAM_PV:
 		return "SMI_BWC_SCEN_CAM_PV";
 	case SMI_BWC_SCEN_CAM_CP:
