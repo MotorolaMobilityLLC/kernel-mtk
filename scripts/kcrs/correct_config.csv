@@ -930,9 +930,9 @@ CONFIG_USB_C_SWITCH_FUSB302,PROJECT,justin.hsieh,new config in this commit 7ddbc
 CONFIG_USB_C_SWITCH_SII70XX,PROJECT,justin.hsieh,new config in this commit 7ddbca5bd9947e9e79a414898e8c6be366f24602,,,,,,,,,,
 CONFIG_USB_C_SWITCH_SII70XX_MHL_MODE,COMMON,chihhao.chen,new config in this commit 57c8a01463206721e18e958ecbc0692d08cf01eb,X,X,X,X,X,X,X,X,X,X
 CONFIG_USB_C_SWITCH_MT6336,PROJECT,justin.hsieh,,X,X,O,,,,,,,
-CONFIG_USB_G_ANDROID,COMMON,,,y,y,y,y,y,y,y,y,y,y
+CONFIG_USB_G_ANDROID,PLATFORM,,,y,y,y,y,y,y,y,y,X,X
 CONFIG_USB_GADGET,COMMON,,,y,y,y,y,y,y,y,y,y,y
-CONFIG_USB_GADGET_VBUS_DRAW,COMMON,marvin.lin,,500,500,500,500,500,500,500,500,500,500
+CONFIG_USB_GADGET_VBUS_DRAW,PLATFORM,marvin.lin,,500,500,500,500,500,500,500,500,X,X
 CONFIG_USB_MTK_DUALMODE,PROJECT,Arvin.Wang,,,,,,,,,,,
 CONFIG_USB_MTK_IDDIG,PROJECT,Arvin.Wang,new config in this commit Id7f09fd3b9edf96f17d0c792d3fbe0c8239ee721,,,,,,,,,,
 CONFIG_USB_MTK_OTG_SWITCH,PROJECT,Arvin.Wang,new config in this commit Id7f09fd3b9edf96f17d0c792d3fbe0c8239ee721,O,O,O,,,,,,,
