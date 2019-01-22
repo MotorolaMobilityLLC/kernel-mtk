@@ -1009,7 +1009,8 @@ static int pwrap_init(struct pmic_wrapper *wrp)
 	int ret;
 	u32 rdata;
 
-	reset_control_reset(wrp->rstc);
+	if (wrp->rstc)
+		reset_control_reset(wrp->rstc);
 	if (wrp->rstc_bridge)
 		reset_control_reset(wrp->rstc_bridge);
 
@@ -1266,11 +1267,13 @@ static int pwrap_probe(struct platform_device *pdev)
 	if (IS_ERR(wrp->base))
 		return PTR_ERR(wrp->base);
 
-	wrp->rstc = devm_reset_control_get(wrp->dev, "pwrap");
-	if (IS_ERR(wrp->rstc)) {
-		ret = PTR_ERR(wrp->rstc);
-		dev_dbg(wrp->dev, "cannot get pwrap reset: %d\n", ret);
-		return ret;
+	if (of_property_read_bool(pdev->dev.of_node, "resets")) {
+		wrp->rstc = devm_reset_control_get(wrp->dev, "pwrap");
+		if (IS_ERR(wrp->rstc)) {
+			ret = PTR_ERR(wrp->rstc);
+			dev_dbg(wrp->dev, "cannot get pwrap reset: %d\n", ret);
+			return ret;
+		}
 	}
 
 	if (wrp->master->has_bridge) {
