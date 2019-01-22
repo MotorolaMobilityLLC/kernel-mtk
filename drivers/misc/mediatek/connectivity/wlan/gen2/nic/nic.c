@@ -1871,11 +1871,11 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 	if (u2IELen > MAX_IE_LENGTH)
 		return WLAN_STATUS_INVALID_DATA;
 
-	if (eIeUpdMethod == IE_UPD_METHOD_UPDATE_RANDOM || eIeUpdMethod == IE_UPD_METHOD_UPDATE_ALL) {
+	if (eIeUpdMethod == IE_UPD_METHOD_UPDATE_RANDOM || eIeUpdMethod == IE_UPD_METHOD_UPDATE_ALL)
 		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, aucIE) + u2IELen;
-	} else if (eIeUpdMethod == IE_UPD_METHOD_DELETE_ALL) {
+	else if (eIeUpdMethod == IE_UPD_METHOD_DELETE_ALL)
 		u2CmdBufLen = OFFSET_OF(CMD_BEACON_TEMPLATE_UPDATE, u2IELen);
-	}
+
 #if CFG_SUPPORT_P2P_GO_OFFLOAD_PROBE_RSP
 	else if (eIeUpdMethod == IE_UPD_METHOD_UPDATE_PROBE_RSP) {
 		DBGLOG(NIC, INFO, "update probe response temp for probe response offload to firmware\n");

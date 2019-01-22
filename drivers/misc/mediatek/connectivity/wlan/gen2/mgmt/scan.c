@@ -167,7 +167,8 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 
 		pucRoamBSSBuff += ALIGN_4(sizeof(ROAM_BSS_DESC_T));
 	}
-	ASSERT(((ULONG) pucRoamBSSBuff - (ULONG) & prScanInfo->aucScanRoamBuffer[0]) == SCN_ROAM_MAX_BUFFER_SIZE);
+	ASSERT(((ULONG) pucRoamBSSBuff - (ULONG)&prScanInfo->aucScanRoamBuffer[0]) == SCN_ROAM_MAX_BUFFER_SIZE);
+
 	/* reset freest channel information */
 	prScanInfo->fgIsSparseChannelValid = FALSE;
 

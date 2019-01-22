@@ -1222,6 +1222,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 	P_BSS_INFO_T prBssInfo;
 #endif
 	BOOLEAN fgDropFrame = FALSE;
+
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMgmtTxReqInfo != NULL));
 

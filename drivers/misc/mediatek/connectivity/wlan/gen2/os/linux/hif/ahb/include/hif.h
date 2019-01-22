@@ -93,23 +93,23 @@ extern void upmu_set_vcn33_on_ctrl_wifi(UINT_32 val);
 ** layer info structure.
  */
 typedef struct _GL_HIF_DMA_OPS_T {	/* DMA Operators */
-	VOID (*DmaConfig)(IN VOID *HifInfo, IN VOID *Conf);
+	void (*DmaConfig)(IN PVOID HifInfo, IN PVOID Conf);
 
-	VOID (*DmaStart)(IN VOID *HifInfo);
+	void (*DmaStart)(IN PVOID HifInfo);
 
-	VOID (*DmaStop)(IN VOID *HifInfo);
+	void (*DmaStop)(IN PVOID HifInfo);
 
-	INT32 (*DmaPollStart)(IN VOID *HifInfo);
+	INT32 (*DmaPollStart)(IN PVOID HifInfo);
 
-	INT32 (*DmaPollIntr)(IN VOID *HifInfo);
+	INT32 (*DmaPollIntr)(IN PVOID HifInfo);
 
-	VOID (*DmaAckIntr)(IN VOID *HifInfo);
+	void (*DmaAckIntr)(IN PVOID HifInfo);
 
-	VOID (*DmaClockCtrl)(IN UINT_32 FlgIsEnabled);
+	void (*DmaClockCtrl)(IN UINT_32 FlgIsEnabled);
 
-	VOID (*DmaRegDump)(IN VOID *HifInfo);
+	void (*DmaRegDump)(IN PVOID HifInfo);
 
-	VOID (*DmaReset)(IN VOID *HifInfo);
+	void (*DmaReset)(IN PVOID HifInfo);
 
 } GL_HIF_DMA_OPS_T;
 

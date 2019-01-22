@@ -381,6 +381,7 @@ wmmRunEventTSOperate(
 	)
 {
 	struct MSG_TS_OPERATE *prMsgTsOperate = (struct MSG_TS_OPERATE *)prMsgHdr;
+
 	if (prMsgTsOperate == NULL) {
 		DBGLOG(WMM, INFO, "prMsgTsOperate = NULL, do nothing.\n");
 		return;

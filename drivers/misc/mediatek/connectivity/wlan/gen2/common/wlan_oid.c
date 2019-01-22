@@ -9765,11 +9765,10 @@ wlanoidSetStartSchedScan(IN P_ADAPTER_T prAdapter,
 	/*if schedScanReq is pending ,save it*/
 	kalMemCopy(&prScanInfo->rSchedScanRequest, prSchedScanRequest, sizeof(PARAM_SCHED_SCAN_REQUEST));
 
-	if (scnFsmSchedScanRequest(prAdapter) == TRUE) {
+	if (scnFsmSchedScanRequest(prAdapter) == TRUE)
 		return WLAN_STATUS_SUCCESS;
-	} else {
+	else
 		return WLAN_STATUS_FAILURE;
-	}
 }
 
 /*----------------------------------------------------------------------------*/
