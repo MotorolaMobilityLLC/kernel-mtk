@@ -1037,21 +1037,20 @@ u32 slp_spm_deepidle_flags = {
 
 unsigned int ufs_cb_before_xxidle(void)
 {
-#if defined(CONFIG_MTK_UFS_BOOTING)
 	unsigned int op_cond = 0;
-	bool ufs_in_hibernate = false;
 	bool bblpm_check = false;
+
+#if defined(CONFIG_MTK_UFS_BOOTING)
+	bool ufs_in_hibernate = false;
 
 	ufs_in_hibernate = !ufs_mtk_deepidle_hibern8_check();
 	op_cond = ufs_in_hibernate ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0;
+#endif
 
 	bblpm_check = !clk_buf_bblpm_enter_cond();
 	op_cond |= bblpm_check ? DEEPIDLE_OPT_CLKBUF_BBLPM : 0;
 
 	return op_cond;
-#else
-	return 0;
-#endif
 }
 
 void ufs_cb_after_xxidle(void)
