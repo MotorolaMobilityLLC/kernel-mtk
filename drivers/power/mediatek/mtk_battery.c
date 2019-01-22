@@ -919,7 +919,7 @@ int BattThermistorConverTemp(int Res)
 
 		TBatt_Value = (((Res - RES2) * TMP1) + ((RES1 - Res) * TMP2)) / (RES1 - RES2);
 	}
-	bm_notice("[BattThermistorConverTemp] %d %d %d %d %d %d\n", RES1, RES2, Res, TMP1, TMP2, TBatt_Value);
+	bm_debug("[BattThermistorConverTemp] %d %d %d %d %d %d\n", RES1, RES2, Res, TMP1, TMP2, TBatt_Value);
 
 	return TBatt_Value;
 }
@@ -994,7 +994,7 @@ int BattVoltToTemp(int dwVolt)
 	/* convert register to temperature */
 	sBaTTMP = BattThermistorConverTemp((int)TRes);
 
-	bm_notice("[BattVoltToTemp] %d %d %d\n", dwVolt, RBAT_PULL_UP_R, vbif28);
+	bm_debug("[BattVoltToTemp] %d %d %d\n", dwVolt, RBAT_PULL_UP_R, vbif28);
 	return sBaTTMP;
 }
 
@@ -1057,7 +1057,7 @@ int force_get_tbat(bool update)
 #ifdef CONFIG_MTK_BIF_SUPPORT
 		/*	battery_charging_control(CHARGING_CMD_GET_BIF_TBAT, &bat_temperature_val); */
 #endif
-		bm_notice("[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
+		bm_debug("[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
 		bat_temperature_volt_temp, bat_temperature_volt, fg_current_state, fg_current_temp,
 		fg_r_value, bat_temperature_val);
 		pre_bat_temperature_val2 = bat_temperature_val;
@@ -1344,8 +1344,9 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 	case FG_DAEMON_CMD_FGADC_RESET:
 		{
 			bm_debug("[fg_res] fgadc_reset\n");
-
+			fgtimer_before_reset();
 			battery_meter_ctrl(BATTERY_METER_CMD_HW_RESET, NULL);
+			fgtimer_after_reset();
 		}
 		break;
 

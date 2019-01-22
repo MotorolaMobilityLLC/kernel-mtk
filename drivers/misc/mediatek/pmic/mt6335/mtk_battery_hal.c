@@ -1194,6 +1194,11 @@ signed int fgauge_set_time_interrupt(void *data)
 	unsigned long now;
 	unsigned int offsetTime = *(unsigned int *) (data);
 
+	if (offsetTime == 0) {
+		pmic_enable_interrupt(FG_TIME_NO, 0, "GM30");
+		return STATUS_OK;
+	}
+
 	do {
 	ret = pmic_config_interface(MT6335_FGADC_CON1, 0x0001, 0x1F05, 0x0);
 	/*(2)    Keep i2c read when status = 1 (0x06) */

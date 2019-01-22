@@ -19,6 +19,8 @@
 
 struct list_head fgtimer_head = LIST_HEAD_INIT(fgtimer_head);
 struct mutex fgtimer_lock;
+unsigned long reset_time;
+
 
 void mutex_fgtimer_lock(void)
 {
@@ -49,6 +51,49 @@ void fgtimer_dump_list(void)
 		ptr->stime, ptr->endtime, ptr->interval);
 	}
 	pr_err("dump list end\n");
+}
+
+
+void fgtimer_before_reset(void)
+{
+	reset_time = battery_meter_get_fg_time();
+}
+
+void fgtimer_after_reset(void)
+{
+	struct list_head *pos;
+	struct list_head *phead = &fgtimer_head;
+	struct fgtimer *ptr;
+	unsigned long now = reset_time;
+	unsigned long duraction;
+
+	mutex_fgtimer_lock();
+	battery_meter_set_fg_timer_interrupt(0);
+	pr_err("fgtimer_reset\n");
+	fgtimer_dump_list();
+	list_for_each(pos, phead) {
+		ptr = container_of(pos, struct fgtimer, list);
+		if (ptr->endtime > now) {
+			ptr->stime = 0;
+			duraction = ptr->endtime - now;
+			if (duraction <= 0)
+				duraction = 1;
+			ptr->endtime = duraction;
+			ptr->interval = duraction;
+		} else {
+			ptr->stime = 0;
+			ptr->endtime = 1;
+			ptr->interval = 1;
+		}
+	}
+
+	pos = fgtimer_head.next;
+	if (list_empty(pos) != true) {
+		ptr = container_of(pos, struct fgtimer, list);
+		battery_meter_set_fg_timer_interrupt(ptr->endtime);
+	}
+	fgtimer_dump_list();
+	mutex_fgtimer_unlock();
 }
 
 void fgtimer_start(struct fgtimer *timer, int sec)
