@@ -8032,9 +8032,12 @@ static int __init mtk_nand_init(void)
 #ifdef CONFIG_MNTL_SUPPORT
 	get_mntl_buf(&base, &size);
 	if (base != 0) {
-		va = ioremap(base, size);
-	pr_debug("load ko %p\n", va);
-	init_module_mem((void *)va, size);
+		va = ioremap_wc(base, size);
+		if (va) {
+			pr_debug("load ko %p\n", va);
+			init_module_mem((void *)va, size);
+		} else
+			pr_info("remap ko memory fail\n");
 	} else
 		pr_debug("mntl mem buffer is NULL\n");
 #endif
