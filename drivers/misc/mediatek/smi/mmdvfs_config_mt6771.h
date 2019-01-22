@@ -293,7 +293,7 @@ int mt6771_mmdvfs_mmclk_opp_to_legacy_mmclk_step[MT6771_MMDVFS_OPP_MAX] = {
 
 /* Part V ISP DVFS configuration */
 #define MMDVFS_ISP_THRESHOLD_NUM 2
-int mt6771_mmdvs_isp_threshold_setting[MMDVFS_ISP_THRESHOLD_NUM] = {546, 64};
+int mt6771_mmdvs_isp_threshold_setting[MMDVFS_ISP_THRESHOLD_NUM] = {546, 364};
 int mt6771_mmdvs_isp_threshold_opp[MMDVFS_ISP_THRESHOLD_NUM] = {MMDVFS_FINE_STEP_OPP0, MMDVFS_FINE_STEP_OPP3};
 
 struct mmdvfs_threshold_setting mt6771_mmdvfs_threshold_settings[MMDVFS_PM_QOS_SUB_SYS_NUM] = {
