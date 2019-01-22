@@ -105,8 +105,7 @@ static unsigned long gL_ulCalResetTS_us = 0; // calculate loading reset time sta
 static unsigned long gL_ulPreCalResetTS_us = 0; // previous calculate loading reset time stamp
 static unsigned long gL_ulWorkingPeriod_us = 0; // last frame half, t0
 
-
-
+static unsigned long g_policy_tar_freq;
 
 static unsigned int  g_ui32FreqIDFromPolicy = 0;
 
@@ -144,6 +143,8 @@ extern void (*mtk_get_gpu_dvfs_from_fp)(MTK_GPU_DVFS_TYPE* peType, unsigned long
 extern unsigned long (*mtk_get_gpu_bottom_freq_fp)(void);
 extern unsigned long (*mtk_get_gpu_custom_boost_freq_fp)(void);
 extern unsigned long (*mtk_get_gpu_custom_upbound_freq_fp)(void);
+
+extern unsigned long (*mtk_get_gpu_dvfs_cal_freq_fp)(void);
 
 extern void ged_monitor_3D_fence_set_enable(GED_BOOL bEnable);
 
@@ -503,6 +504,10 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 		g_CommitType = MTK_GPU_DVFS_TYPE_VSYNCBASED;
 
 		g_um_gpu_tar_freq = gpu_tar_freq;
+		g_policy_tar_freq = g_um_gpu_tar_freq;
+		/*
+		* ADD CAP CALLBACK HERE
+		*/
 		ui32NewFreqID = i32MaxLevel;
 		for (i = 0; i <= i32MaxLevel; i++)
 		{
@@ -666,8 +671,10 @@ static bool ged_dvfs_policy(
 	}
 
 	*pui32NewFreqID = (unsigned int)i32NewFreqID;
-
-
+	g_policy_tar_freq = mt_gpufreq_get_freq_by_idx(i32NewFreqID);
+	/*
+	* ADD CAP CALLBACK HERE
+	*/
 	return *pui32NewFreqID != ui32GPUFreq ? GED_TRUE : GED_FALSE;
 #else
 	return GED_FALSE;
@@ -1072,6 +1079,11 @@ void ged_dvfs_get_gpu_pre_freq(GED_DVFS_FREQ_DATA* psData)
 #endif
 }
 
+unsigned long ged_get_gpu_dvfs_cal_freq(void)
+{
+	return g_policy_tar_freq;
+}
+
 
 
 
@@ -1196,6 +1208,8 @@ GED_ERROR ged_dvfs_system_init()
 	g_cust_upbound_freq_id = 0;
 	gpu_cust_upbound_freq = mt_gpufreq_get_freq_by_idx(g_cust_upbound_freq_id);
 
+	g_policy_tar_freq = 0;
+
 #ifdef ENABLE_TIMER_BACKUP
 	g_gpu_timer_based_emu=0;
 #else
@@ -1226,6 +1240,9 @@ GED_ERROR ged_dvfs_system_init()
 	mtk_get_gpu_bottom_freq_fp = ged_get_gpu_bottom_freq;
 	mtk_get_gpu_custom_boost_freq_fp = ged_get_gpu_custom_boost_freq;
 	mtk_get_gpu_custom_upbound_freq_fp = ged_get_gpu_custom_upbound_freq;
+
+	/* CAP query */
+	mtk_get_gpu_dvfs_cal_freq_fp = ged_get_gpu_dvfs_cal_freq;
 
 	spin_lock_init(&g_sSpinLock);
 
