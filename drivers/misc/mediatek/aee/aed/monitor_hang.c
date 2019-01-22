@@ -511,6 +511,9 @@ static int hang_detect_thread(void *arg)
 			if (hang_detect_counter == 0) {
 				LOGE("[Hang_Detect] hang_detect thread counts down %d:%d.\n",
 					hang_detect_counter, hd_timeout);
+				#ifdef CONFIG_MACH_MT6763
+				mtk_wdt_mode_config(0, 0, 1, 0, 0);
+				#endif
 				if (aee_mode < AEE_MODE_CUSTOMER_USER) {
 					LOGE("[Hang_Detect] we should triger Kernel API DB	...\n");
 					aee_kernel_exception_api
