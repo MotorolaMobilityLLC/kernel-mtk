@@ -55,14 +55,16 @@ static int power_l[16][2];
 static int power_b[16][2];
 
 
+
 inline void fbc_tracer(int pid, char *name, int count)
 {
-	if (fbc_trace && name) {
-		preempt_disable();
-		event_trace_printk(mark_addr, "C|%d|%s|%d\n",
-				   pid, name, count);
-		preempt_enable();
-	}
+	if (!fbc_trace || !name)
+		return;
+
+	preempt_disable();
+	event_trace_printk(mark_addr, "C|%d|%s|%d\n",
+			   pid, name, count);
+	preempt_enable();
 }
 
 void update_pwd_tbl(void)
@@ -171,6 +173,7 @@ static enum hrtimer_restart mt_twanted_timeout(struct hrtimer *timer)
 	if (boost_method == LEGACY)
 		if (wq)
 			queue_work(wq, &mt_tt_legacy_work);
+
 	return HRTIMER_NORESTART;
 }
 
@@ -191,8 +194,11 @@ static void notify_twanted_timeout_legacy(void)
 	mutex_unlock(&notify_lock);
 }
 
-void notify_touch_legacy(void)
+void notify_touch_legacy(int touch)
 {
+	mutex_lock(&notify_lock);
+	fbc_touch_pre = fbc_touch;
+	fbc_touch = touch;
 	fbc_tracer(-1, "touch", fbc_touch);
 
 	if (fbc_touch && fbc_touch_pre == 0) {
@@ -227,6 +233,7 @@ void notify_touch_legacy(void)
 
 		perfmgr_kick_fg_boost(KIR_FBC, -1);
 	}
+	mutex_unlock(&notify_lock);
 }
 
 void notify_frame_complete_legacy(unsigned long frame_time)
@@ -234,6 +241,11 @@ void notify_frame_complete_legacy(unsigned long frame_time)
 	long long boost_linear = 0;
 
 	mutex_lock(&notify_lock);
+
+	if (fbc_debug || is_game || !fbc_touch) {
+		mutex_unlock(&notify_lock);
+		return;
+	}
 
 	if (chase == 1) {
 		avg_capacity = (Twanted * capacity
@@ -280,6 +292,10 @@ void notify_frame_complete_legacy(unsigned long frame_time)
 void notify_intended_vsync_legacy(void)
 {
 	mutex_lock(&notify_lock);
+	if (fbc_debug || !fbc_touch || is_game) {
+		mutex_unlock(&notify_lock);
+		return;
+	}
 
 	frame_done = 0;
 	enable_frame_twanted_timer();
@@ -442,14 +458,12 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		boost_value = 0;
 		perfmgr_kick_fg_boost(KIR_FBC, boost_value);
 	} else if (strncmp(option, "touch", 5) == 0) {
-		fbc_touch_pre = fbc_touch;
-		fbc_touch = arg1;
 		if (fbc_debug || is_game)
 			return cnt;
 		if (boost_method == EAS)
 			notify_touch_eas();
 		else if (boost_method == LEGACY)
-			notify_touch_legacy();
+			notify_touch_legacy(arg1);
 	} else if (strncmp(option, "init", 4) == 0) {
 		touch_boost_value = arg1;
 		boost_value  = touch_boost_value;
@@ -514,9 +528,6 @@ ssize_t device_ioctl(struct file *filp,
 
 		frame_time = arg;
 
-		if (fbc_debug || is_game || !fbc_touch)
-			return 0;
-
 		if (boost_method == EAS)
 			notify_frame_complete_eas(frame_time);
 		else if (boost_method == LEGACY)
@@ -526,8 +537,6 @@ ssize_t device_ioctl(struct file *filp,
 	/*receive Intended-Vsync signal*/
 	case IOCTL_WRITE_IV:
 
-		if (fbc_debug || !fbc_touch || is_game)
-			return 0;
 
 		if (boost_method == EAS)
 			notify_intended_vsync_eas();
