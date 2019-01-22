@@ -1569,7 +1569,6 @@ static void __mt_gpufreq_bucks_enable(void)
 			gpufreq_pr_err("@%s: enable VSRAM_GPU failed, ret = %d\n", __func__, ret);
 			return;
 		}
-		udelay(VSRAM_GPU_ENABLE_TIME_US);
 	}
 	if (regulator_is_enabled(g_pmic->reg_vgpu) == 0) {
 		ret = regulator_enable(g_pmic->reg_vgpu);
@@ -1577,7 +1576,6 @@ static void __mt_gpufreq_bucks_enable(void)
 			gpufreq_pr_err("@%s: enable VGPU failed, ret = %d\n", __func__, ret);
 			return;
 		}
-		udelay(VGPU_ENABLE_TIME_US);
 	}
 	gpufreq_pr_debug("@%s: bucks is enabled\n", __func__);
 }
@@ -2346,10 +2344,8 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	/* enable bucks (VGPU && VSRAM_GPU) enforcement */
 	if (regulator_enable(g_pmic->reg_vsram_gpu))
 		gpufreq_pr_err("@%s: enable VSRAM_GPU failed\n", __func__);
-	udelay(VSRAM_GPU_ENABLE_TIME_US);
 	if (regulator_enable(g_pmic->reg_vgpu))
 		gpufreq_pr_err("@%s: enable VGPU failed\n", __func__);
-	udelay(VGPU_ENABLE_TIME_US);
 
 #ifdef MT_GPUFREQ_AEE_RR_REC
 	aee_rr_rec_gpu_dvfs_status(aee_rr_curr_gpu_dvfs_status() | (1 << GPU_DVFS_IS_VPROC_ENABLED));
@@ -2415,10 +2411,9 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	pr_info("[GPU/DVFS][INFO]@%s: VGPU sfchg raising rate: %d us, VGPU sfchg falling rate: %d us, \t"
 			"VSRAM_GPU sfchg raising rate: %d us, VSRAM_GPU sfchg falling rate: %d us, \t"
-			"VGPU enable time: %d us, VSRAM_GPU enable time: %d us, \t"
 			"PMIC SRCLKEN_HIGH time: %d us\n"
-			, __func__, g_vgpu_sfchg_rrate, g_vgpu_sfchg_frate, g_vsram_sfchg_rrate, g_vsram_sfchg_frate,
-			VGPU_ENABLE_TIME_US, VSRAM_GPU_ENABLE_TIME_US, PMIC_SRCLKEN_HIGH_TIME_US);
+			, __func__, g_vgpu_sfchg_rrate, g_vgpu_sfchg_frate,
+			g_vsram_sfchg_rrate, g_vsram_sfchg_frate, PMIC_SRCLKEN_HIGH_TIME_US);
 
 	g_DVFS_is_ready = true;
 
