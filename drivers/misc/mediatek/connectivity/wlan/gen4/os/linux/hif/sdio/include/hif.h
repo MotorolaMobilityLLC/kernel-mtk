@@ -212,6 +212,7 @@ typedef struct _SDIO_RX_COALESCING_BUF_T {
 	PVOID pvRxCoalescingBuf;
 	UINT_32 u4BufSize;
 	UINT_32 u4PktCount;
+	UINT_32 u4PktTotalLength;
 } SDIO_RX_COALESCING_BUF_T, *P_SDIO_RX_COALESCING_BUF_T;
 
 /* host interface's private data structure, which is attached to os glue
@@ -245,6 +246,9 @@ typedef struct _GL_HIF_INFO_T {
 
 	struct mutex rRxFreeBufQueMutex;
 	struct mutex rRxDeAggQueMutex;
+
+	/* Error handling */
+	BOOLEAN fgSkipRx;
 } GL_HIF_INFO_T, *P_GL_HIF_INFO_T;
 
 /*******************************************************************************

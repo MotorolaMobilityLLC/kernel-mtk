@@ -519,6 +519,8 @@ VOID glSetHifInfo(P_GLUE_INFO_T prGlueInfo, ULONG ulCookie)
 	mutex_init(&prHif->rRxFreeBufQueMutex);
 	mutex_init(&prHif->rRxDeAggQueMutex);
 
+	prHif->fgSkipRx = FALSE;
+
 }				/* end of glSetHifInfo() */
 
 /*----------------------------------------------------------------------------*/
