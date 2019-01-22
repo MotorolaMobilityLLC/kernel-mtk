@@ -35,6 +35,12 @@ extern int spm_for_gps_flag;
 
 #include <mtk_spm_reg.h>
 
+enum {
+	SPM_ARGS_SPMFW_IDX = 0,
+	SPM_ARGS_PCM_WDT,
+	SPM_ARGS_NUM,
+};
+
 typedef enum {
 	WR_NONE = 0,
 	WR_UART_BUSY = 1,

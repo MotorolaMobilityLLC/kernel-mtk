@@ -31,6 +31,7 @@
 #include <mt-plat/mtk_gpio.h>
 #include <mtk_hps_internal.h>
 #include <mt-plat/mtk_chip.h>
+#include <mtk_power_gs_api.h>
 
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 #include <mtk-soc-afe-control.h>
@@ -70,6 +71,7 @@ static wake_reason_t slp_wake_reason = WR_NONE;
 static bool slp_ck26m_on;
 bool slp_dump_gpio;
 bool slp_dump_golden_setting;
+int slp_dump_golden_setting_type = GS_PMIC;
 
 static u32 slp_spm_flags = {
 	SPM_FLAG_DIS_VCORE_DVS |
@@ -368,5 +370,6 @@ module_param(slp_spm_flags, uint, 0644);
 
 module_param(slp_dump_gpio, bool, 0644);
 module_param(slp_dump_golden_setting, bool, 0644);
+module_param(slp_dump_golden_setting_type, int, 0644);
 
 MODULE_DESCRIPTION("Sleep Driver v0.1");
