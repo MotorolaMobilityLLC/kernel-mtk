@@ -594,6 +594,7 @@ struct wake_status {
 	u32 event_reg;		/* PCM_EVENT_REG_STA */
 	u32 isr;		/* SLEEP_ISR_STATUS */
 	u32 log_index;
+	u32 dcs_ch;
 };
 
 struct spm_lp_scen {

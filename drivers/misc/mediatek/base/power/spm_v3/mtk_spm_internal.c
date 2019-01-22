@@ -790,8 +790,8 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 	}
 	WARN_ON(strlen(buf) >= LOG_BUF_SIZE);
 
-	spm_print(suspend, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
-		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag);
+	spm_print(suspend, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, ch = %u\n",
+		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag, wakesta->dcs_ch);
 
 	spm_print(suspend,
 		  "r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
@@ -924,9 +924,7 @@ int get_channel_lock(bool blocking)
 	else
 		ret = dcs_get_dcs_status_trylock(&ch, &dcs_status);
 
-	if (!ret) {
-		spm_crit("dcs currnet channel number: %d, status: %d\n", ch, dcs_status);
-	} else {
+	if (ret) {
 		aee_kernel_warning("DCS Warring", "dcs_get_dcs_status_lock busy");
 		return -1;
 	}

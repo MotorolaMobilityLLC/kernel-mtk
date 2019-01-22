@@ -730,6 +730,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	ch = get_channel_lock(0);
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
+	spm_wakesta.dcs_ch = (u32)ch;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 

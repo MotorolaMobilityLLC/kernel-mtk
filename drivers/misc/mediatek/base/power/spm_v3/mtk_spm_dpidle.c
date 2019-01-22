@@ -1054,6 +1054,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 log_cond, u32 op
 						__spm_get_vcore_volt_pmic_val(
 							!!(operation_cond & DEEPIDLE_OPT_VCORE_LP_MODE),
 							ch);
+	wakesta.dcs_ch = (u32)ch;
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
@@ -1225,6 +1226,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	ch = get_channel_lock(0);
 	pwrctrl->opp_level = __spm_check_opp_level(ch);
 	pwrctrl->vcore_volt_pmic_val = __spm_get_vcore_volt_pmic_val(true, ch);
+	wakesta.dcs_ch = (u32)ch;
 
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
