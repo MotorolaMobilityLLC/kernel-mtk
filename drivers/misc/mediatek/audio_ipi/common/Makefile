@@ -12,7 +12,11 @@
 #
 
 obj-y += framework/
+
+
+ifneq ($(filter y,$(CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT) $(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT)),)
 obj-y += tasks/
+endif
 
 
 

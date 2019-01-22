@@ -14,4 +14,8 @@
 ifneq ($(filter y,$(CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT) $(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT) $(CONFIG_MTK_VOW_SUPPORT)),)
 #obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-y += common/
+else
+# avoid build error
+obj-y += audio_ipi_dummy.o
 endif
+
