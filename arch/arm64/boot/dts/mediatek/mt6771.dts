@@ -545,12 +545,8 @@
 			 <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
-		/* This setting avoid getting HW semaphore*/
-		/* from CH0. For some platforms that the CH0 */
-		/* is not related to SCP channel, this property*/
-		/* (-1) should be set */
-		scp-ch = <(-1)>;
 		mediatek,hs_only;
+		mediatek,skip_scp_sema;
 	};
 
 	i2c1: i2c@11011000 {
@@ -563,8 +559,8 @@
 			 <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
-		scp-ch = <0>;
 		mediatek,hs_only;
+		mediatek,skip_scp_sema;
 	};
 
 	i2c2: i2c@11009000 {
@@ -636,7 +632,6 @@
 			 <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
-		scp-ch = <1>;
 		mediatek,hs_only;
 	};
 

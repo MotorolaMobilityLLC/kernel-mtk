@@ -329,7 +329,6 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 
 static int i2c_get_semaphore(struct mt_i2c *i2c)
 {
-	int id;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	int count = 100;
 #endif
@@ -354,14 +353,10 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 		}
 	}
 #endif
-	if (i2c->have_scp) {
-		if (i2c->scp_ch == -1)
-			return 0;
-		id = i2c->scp_ch;
-	} else
-		id = i2c->id;
+	if (i2c->skip_scp_sema)
+		return 0;
 
-	switch (id) {
+	switch (i2c->id) {
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	case 0:
 		while ((get_scp_semaphore(SEMAPHORE_I2C0) != 1) && count > 0)
@@ -379,21 +374,16 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 
 static int i2c_release_semaphore(struct mt_i2c *i2c)
 {
-	int id;
 	if (i2c->appm)
 		cpuhvfs_release_dvfsp_semaphore(SEMA_I2C_DRV);
 #ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
 	if (i2c->gpupm)
 		dvfs_gpu_pm_spin_unlock_for_vgpu();
 #endif
-	if (i2c->have_scp) {
-		if (i2c->scp_ch == -1)
-			return 0;
-		id = i2c->scp_ch;
-	} else
-		id = i2c->id;
+	if (i2c->skip_scp_sema)
+		return 0;
 
-	switch (id) {
+	switch (i2c->id) {
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	case 0:
 		return release_scp_semaphore(SEMAPHORE_I2C0) == 1 ? 0 : -EBUSY;
@@ -1519,11 +1509,6 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	of_property_read_u32(np, "ch_offset_default", &i2c->ch_offset_default);
 	of_property_read_u32(np, "dma_ch_offset_default", &i2c->dma_ch_offset_default);
 	of_property_read_u32(np, "aed", &i2c->aed);
-	ret = of_property_read_s32(np, "scp-ch", &i2c->scp_ch);
-	if (ret >= 0)
-		i2c->have_scp = true;
-	else
-		i2c->have_scp = false;
 	ret = of_property_read_u32(np, "ccu-ch-offset", &i2c->ccu_offset);
 	if (ret >= 0)
 		i2c->have_ccu = true;
@@ -1537,6 +1522,7 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	i2c->gpupm = of_property_read_bool(np, "mediatek,gpupm_used");
 	i2c->buffermode = of_property_read_bool(np, "mediatek,buffermode_used");
 	i2c->hs_only = of_property_read_bool(np, "mediatek,hs_only");
+	i2c->skip_scp_sema = of_property_read_bool(np, "mediatek,skip_scp_sema");
 	pr_info("[I2C] id : %d, freq : %d, div : %d, ch_offset: %d, dma_ch_offset: %d\n",
 		i2c->id, i2c->speed_hz, i2c->clk_src_div, i2c->ch_offset_default,
 		i2c->dma_ch_offset_default);
